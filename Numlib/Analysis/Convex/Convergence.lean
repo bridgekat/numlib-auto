@@ -7,58 +7,66 @@ import Numlib.Analysis.Convex.Continuity
 /-!
 # Equi-Lipschitz families and convergence of convex functions
 
-Four theorems about families of convex functions on a relatively open convex set. A pointwise
-bounded family is uniformly bounded and equi-Lipschitzian on compact subsets; a function convex in
-`x` and continuous in `t` is jointly continuous; pointwise convergence on a dense subset propagates
-and becomes uniform on compact subsets; and a bounded sequence has a subsequence converging
-uniformly on compact subsets.
+This file proves four theorems about families of real-valued convex functions on a relatively open
+convex set in a finite-dimensional real normed space. A pointwise bounded family is uniformly
+bounded and equi-Lipschitz on compact subsets. A function that is convex in $x$ and continuous in
+$t$ is jointly continuous. Pointwise convergence on a dense subset extends to the whole set and is
+uniform on compact subsets. A pointwise bounded sequence has a subsequence that converges uniformly
+on compact subsets. The presentation follows §10 of [rockafellar1970convex].
 
-Each theorem appears twice: an `interior` form, on an **open** convex set, which carries the whole
-argument, and a `_relint` form, on `ri C` for an arbitrary convex `C`, obtained from it through the
-linear chart of `Continuity.lean`. The hypotheses are the weakened pair throughout: a subset `C'`
-with `ri C ⊆ cl C'` on which the family is pointwise bounded above, plus a single point of `ri C`
-at which it is bounded below. Taking `C' = ri C` recovers the headline statements, and the two
-convergence theorems *need* the weakened form, their own hypotheses being about a dense subset.
+Each theorem has two forms. The interior form, on an open convex set $U$, contains the whole
+argument. The relative form, with the suffix `_relint`, is on $\operatorname{ri} C$ for an arbitrary
+convex set $C$, and follows from the interior form through the linear chart of
+`Numlib.Analysis.Convex.Continuity`. All theorems use weaker hypotheses than the usual ones: the
+family is pointwise bounded above on a subset $C'$ with $\operatorname{ri} C \subseteq
+\operatorname{cl} C'$, and bounded below at a single point of $\operatorname{ri} C$. With
+$C' = \operatorname{ri} C$ these are the usual statements. The two convergence theorems need the
+weaker form, because their own hypotheses are about a dense subset.
 
 ## Main results
 
-* `exists_forall_abs_le_of_isCompact`, `exists_forall_lipschitzOnWith_of_isCompact` and their
-  `_relint` twins — uniform boundedness and equi-Lipschitz continuity, with
-  `exists_forall_abs_le_and_lipschitzOnWith_of_isCompact_relint` as the headline form for a
-  pointwise bounded family. The uniform bound splits into `exists_forall_le_of_isCompact` and
-  `exists_forall_ge_of_isBounded`, and `bddAbove_range_of_subset_convexHull_closure` is the step
-  that spreads pointwise boundedness off a dense subset.
-* `continuousOn_prod_of_convexOn`, `continuousOn_prod_of_convexOn_relint` — joint continuity, for
-  an arbitrary locally compact `T`.
-* `exists_tendstoUniformlyOn_of_dense`, `exists_tendstoUniformlyOn_of_dense_relint` — convergence
-  from a dense subset, with `tendstoUniformlyOn_of_tendsto`(`_relint`) for the case where the limit
-  is already known and `eventually_forall_le_add_of_eventually_le`(`_relint`) for the eventual
-  upper bound. `uniformCauchySeqOn_of_dense` is the analytic core, and
-  `uniformCauchySeqOn_of_equiLipschitz` its metric core, with the convexity stripped out.
-* `exists_subseq_tendstoUniformlyOn`, `exists_subseq_tendstoUniformlyOn_relint` — a uniformly
-  convergent subsequence, from `exists_strictMono_tendsto_of_countable`.
-* `convexOn_ciSup` — a finite pointwise supremum of convex functions is convex.
-* `convexOn_chart`, `mem_relint_of_mem_interior_chart`, `mem_interior_chart_of_mem_relint`,
-  `chart_subset_interior_chart`, `interior_chart_subset_closure_chart` — the chart bookkeeping.
+* `ConvexAnalysis.exists_forall_abs_le_of_isCompact`,
+  `ConvexAnalysis.exists_forall_lipschitzOnWith_of_isCompact`, and their relative forms: uniform
+  boundedness and equi-Lipschitz continuity on compact subsets.
+  `ConvexAnalysis.exists_forall_abs_le_and_lipschitzOnWith_of_isCompact_relint` is the usual form
+  for a pointwise bounded family. The uniform bound comes from
+  `ConvexAnalysis.exists_forall_le_of_isCompact` and `ConvexAnalysis.exists_forall_ge_of_isBounded`,
+  and `ConvexAnalysis.bddAbove_range_of_subset_convexHull_closure` extends the pointwise bound from
+  a dense subset.
+* `ConvexAnalysis.continuousOn_prod_of_convexOn`,
+  `ConvexAnalysis.continuousOn_prod_of_convexOn_relint`: joint continuity, for an arbitrary locally
+  compact space of parameters $T$.
+* `ConvexAnalysis.exists_tendstoUniformlyOn_of_dense`,
+  `ConvexAnalysis.exists_tendstoUniformlyOn_of_dense_relint`: convergence from a dense subset.
+  `ConvexAnalysis.tendstoUniformlyOn_of_tendsto` and its relative form treat the case of a known
+  limit, and `ConvexAnalysis.eventually_forall_le_add_of_eventually_le` and its relative form give
+  an eventual upper bound. `ConvexAnalysis.uniformCauchySeqOn_of_dense` is the analytic core, and
+  `ConvexAnalysis.uniformCauchySeqOn_of_equiLipschitz` is the metric core, without convexity.
+* `ConvexAnalysis.exists_subseq_tendstoUniformlyOn`,
+  `ConvexAnalysis.exists_subseq_tendstoUniformlyOn_relint`: a subsequence that converges uniformly
+  on compact subsets, from `ConvexAnalysis.exists_strictMono_tendsto_of_countable`.
+* `ConvexAnalysis.convexOn_ciSup`: a pointwise supremum of convex functions that is finite
+  everywhere is convex.
+* `ConvexAnalysis.convexOn_chart`, `ConvexAnalysis.mem_relint_of_mem_interior_chart`,
+  `ConvexAnalysis.mem_interior_chart_of_mem_relint`, `ConvexAnalysis.chart_subset_interior_chart`,
+  `ConvexAnalysis.interior_chart_subset_closure_chart`: facts about the chart that the relative
+  forms use.
 
 ## Implementation notes
 
-The functions are real-valued rather than `EReal`-valued: these theorems are about families
-*finite* on a relatively open convex set, and every conclusion — a supremum, a Lipschitz constant,
-a uniform bound, a limit — is a statement about real numbers. So the family is `f : ι → E → ℝ` with
-`∀ i, ConvexOn ℝ C (f i)`, which composes directly with Mathlib; a caller holding an
-`EReal`-valued `ConvexFn` converts with `ConvexFn.convexOn_toReal_convexDom`. The upper-bound
-hypothesis actually needs only `C ⊆ conv (cl C')`, which is what
-`bddAbove_range_of_subset_convexHull_closure` proves; the theorems are stated with `cl C'` because
-the step from a bound to *uniform* convergence needs points of `C'` metrically near `S`, which a
-convex hull does not supply. The subsequence theorem avoids a diagonal argument: the values on a
-countable
-dense subset live in a compact box in `ℕ → ℝ`, compact by Tychonoff and sequentially compact
-because `ℕ → ℝ` is first countable.
-
-## References
-
-* [rockafellar1970convex] §10.
+* The functions are real-valued and not extended-real-valued. The theorems are about families that
+  are finite on a relatively open convex set, and every conclusion (a supremum, a Lipschitz
+  constant, a uniform bound, a limit) is a statement about real numbers. So the family is
+  `f : ι → E → ℝ` with `∀ i, ConvexOn ℝ C (f i)`, which works directly with Mathlib. For a function
+  of type `ConvexAnalysis.ConvexFn` into $[-\infty, +\infty]$,
+  `ConvexAnalysis.ConvexFn.convexOn_toReal_convexDom` gives the real-valued form.
+* The upper-bound hypothesis needs only $C \subseteq \operatorname{conv}(\operatorname{cl} C')$, and
+  `ConvexAnalysis.bddAbove_range_of_subset_convexHull_closure` proves this form. The theorems use
+  $\operatorname{cl} C'$, because the step from a bound to uniform convergence needs points of $C'$
+  that are metrically near $S$, and a convex hull does not give them.
+* The subsequence theorem avoids a diagonal argument. The values on a countable dense subset are in
+  a compact box in $\mathbb{R}^{\mathbb{N}}$, which is compact by Tychonoff's theorem and
+  sequentially compact because $\mathbb{R}^{\mathbb{N}}$ is first countable.
 -/
 open Set Filter Topology Metric
 open scoped NNReal Pointwise
@@ -71,8 +79,12 @@ variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] [FiniteDimension
   {ι : Type*} {U : Set W} {f : ι → W → ℝ}
 
 omit [FiniteDimensional ℝ W] in
-/-- The pointwise supremum of a family of functions convex on `U` is convex on `U`, provided the
-supremum is finite at every point of `U`. -/
+/-- Let $W$ be a real normed space, let $U \subseteq W$ be convex, and let $(f_i)_{i \in \iota}$ be
+a nonempty family of functions $W \to \mathbb{R}$ that are convex on $U$. If
+$\{f_i(x) \mid i \in \iota\}$ is bounded above for every $x \in U$, then the pointwise supremum
+$x \mapsto \sup_i f_i(x)$ is convex on $U$.
+
+The condition $\iota \neq \emptyset$ is `[Nonempty ι]`. -/
 theorem convexOn_ciSup [Nonempty ι] (hUc : Convex ℝ U) (hf : ∀ i, ConvexOn ℝ U (f i))
     (hbdd : ∀ x ∈ U, BddAbove (Set.range fun i => f i x)) :
     ConvexOn ℝ U fun x => ⨆ i, f i x := by
@@ -82,11 +94,15 @@ theorem convexOn_ciSup [Nonempty ι] (hUc : Convex ℝ U) (hf : ∀ i, ConvexOn 
   · exact le_ciSup (hbdd x hx) i
   · exact le_ciSup (hbdd y hy) i
 
-/-- **Pointwise boundedness spreads through a convex hull.** If a family of functions convex on an
-open convex set `U` is pointwise bounded above on a subset `C'` of `U` with `U ⊆ conv (cl C')`,
-then it is pointwise bounded above on all of `U`. This is the weakest form of the upper-bound
-hypothesis: the set of points where the family is bounded above is convex, so its closure
-contains `conv (cl C')`, and a convex set contains the interior of its own closure. -/
+/-- **Pointwise boundedness extends through a convex hull.** Let $W$ be a finite-dimensional real
+normed space, let $U \subseteq W$ be open and convex, and let $(f_i)_{i \in \iota}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$. Let $C' \subseteq U$ with $U \subseteq
+\operatorname{conv}(\operatorname{cl} C')$. If $\{f_i(x) \mid i \in \iota\}$ is bounded above
+for every $x \in C'$, then it is bounded above for every $x \in U$.
+
+This is the weakest form of the upper-bound hypothesis. The set of points where the family is
+bounded above is convex, so its closure contains $\operatorname{conv}(\operatorname{cl} C')$,
+and a convex set contains the interior of its own closure. -/
 theorem bddAbove_range_of_subset_convexHull_closure (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U)
     (hdense : U ⊆ convexHull ℝ (closure C'))
@@ -116,9 +132,13 @@ theorem bddAbove_range_of_subset_convexHull_closure (hU : IsOpen U) (hUc : Conve
     exact intrinsicInterior_subset this
   exact hxA.2
 
-/-- **Uniform boundedness from above**: a family of functions convex on an open convex set `U` and
-pointwise bounded above there is *uniformly* bounded above on every compact subset of `U`. The
-pointwise supremum is a finite convex function, hence continuous, hence bounded on compact
+/-- **Uniform boundedness from above.** Let $W$ be a finite-dimensional real normed space, let
+$U \subseteq W$ be open and convex, and let $(f_i)_{i \in \iota}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$, with $\{f_i(x) \mid i \in \iota\}$ bounded above for
+every $x \in U$. Then for every compact $S \subseteq U$ there is $M \in \mathbb{R}$ with
+$f_i(x) \le M$ for all $i$ and all $x \in S$.
+
+The pointwise supremum is a finite convex function, hence continuous, hence bounded on compact
 sets. -/
 theorem exists_forall_le_of_isCompact (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) (hbdd : ∀ x ∈ U, BddAbove (Set.range fun i => f i x))
@@ -136,12 +156,15 @@ theorem exists_forall_le_of_isCompact (hU : IsOpen U) (hUc : Convex ℝ U)
   rw [Real.norm_eq_abs] at h
   exact (le_abs_self _).trans h
 
-/-- **Uniform boundedness from below**: if a family of functions convex on an open convex set
-`U` is pointwise bounded above on `U` and bounded *below* at a single point
-`x₀`, it is uniformly bounded below on every bounded subset of `U`. For `x ∈ U` the point
-`z = x₀ + (δ/‖x₀ - x‖) • (x₀ - x)` lies on the sphere of radius `δ` about `x₀`, and `x₀` is a
-convex combination of `z` and `x`, which gives a bound depending on `x` only through
-`‖x₀ - x‖`. -/
+/-- **Uniform boundedness from below.** Let $W$ be a finite-dimensional real normed space, let
+$U \subseteq W$ be open and convex, and let $(f_i)_{i \in \iota}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$, with $\{f_i(x) \mid i \in \iota\}$ bounded above for
+every $x \in U$ and bounded below for $x = x_0 \in U$. Then for every bounded $S \subseteq U$
+there is $m \in \mathbb{R}$ with $m \le f_i(x)$ for all $i$ and all $x \in S$.
+
+For $x \in U$, the point $z = x_0 + (\delta / \|x_0 - x\|)(x_0 - x)$ is on the sphere of radius
+$\delta$ about $x_0$, and $x_0$ is a convex combination of $z$ and $x$. This gives a bound that
+depends on $x$ only through $\|x_0 - x\|$. -/
 theorem exists_forall_ge_of_isBounded (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) (hbdd : ∀ x ∈ U, BddAbove (Set.range fun i => f i x))
     {x₀ : W} (hx₀ : x₀ ∈ U) (hbelow : BddBelow (Set.range fun i => f i x₀))
@@ -209,12 +232,17 @@ theorem exists_forall_ge_of_isBounded (hU : IsOpen U) (hUc : Convex ℝ U)
   have h4 : (δ + R) * (β₁ - β₂) ≤ (δ + t) * (β₁ - β₂) := by nlinarith [hRS x hx]
   gcongr
 
-/-! ### Pointwise boundedness in the `interior` form -/
+/-! ### Pointwise boundedness, interior form -/
 
-/-- **The uniform boundedness half**, in the interior form: a family of functions convex on an
-open convex set `U`, pointwise bounded above on a subset `C'` whose closure
-contains `U` and bounded below at a single point of `U`, is uniformly bounded on every compact
-subset of `U`. Taking `C' = U` recovers the headline statement. -/
+/-- **Uniform boundedness**, interior form. Let $W$ be a finite-dimensional real normed space, let
+$U \subseteq W$ be open and convex, and let $(f_i)_{i \in \iota}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$. Let $C' \subseteq U$ with
+$U \subseteq \operatorname{cl} C'$. Suppose that $\{f_i(x) \mid i \in \iota\}$ is bounded above
+for every $x \in C'$ and bounded below for some $x_0 \in U$. Then for every compact
+$S \subseteq U$ there is $M \ge 0$ with $$|f_i(x)| \le M \quad \text{for all } i \text{ and all
+} x \in S.$$
+
+With $C' = U$ this is the usual statement. -/
 theorem exists_forall_abs_le_of_isCompact (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
     (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))
@@ -233,11 +261,13 @@ theorem exists_forall_abs_le_of_isCompact (hU : IsOpen U) (hUc : Convex ℝ U)
     linarith [hm i x hx]
   · exact (hM₁ i x hx).trans ((le_abs_self M₁).trans (le_max_left _ _))
 
-/-- **The equi-Lipschitz half**, in the interior form: under the hypotheses of
-`exists_forall_abs_le_of_isCompact` a single Lipschitz constant works for every member of the
-family on every compact subset of `U`. One `ε`-collar and one bound `M` feed
-`ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset`, whose constant `2M/ε` does not mention
-the function. -/
+/-- **Equi-Lipschitz continuity**, interior form. Under the hypotheses of
+`ConvexAnalysis.exists_forall_abs_le_of_isCompact`, for every compact $S \subseteq U$ there is
+one constant $K \ge 0$ such that every $f_i$ is Lipschitz on $S$ with constant $K$.
+
+One closed $\varepsilon$-neighbourhood of $S$ and one bound $M$ go into
+`ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset`, and its constant $2M/\varepsilon$
+does not depend on the function. -/
 theorem exists_forall_lipschitzOnWith_of_isCompact (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
     (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))
@@ -252,20 +282,34 @@ theorem exists_forall_lipschitzOnWith_of_isCompact (hU : IsOpen U) (hUc : Convex
 
 end OpenConvex
 
-/-! ### Equi-Lipschitz plus a dense Cauchy set
+/-!
+### Equi-Lipschitz continuity and a dense Cauchy set
 
-The metric core of the convergence theorems, with the convexity stripped out: on a compact `S`
-carrying a collar `S'` on which the sequence is equi-Lipschitz, pointwise Cauchy behaviour on a
-dense subset of `S` is already uniform Cauchy behaviour on `S`. -/
+The metric core of the convergence theorems, without convexity. Let $S$ be compact, and let $S'$
+contain every point of a dense set $A$ that is near $S$. If a sequence is equi-Lipschitz on $S'$ and
+pointwise Cauchy on $A$, then it is uniformly Cauchy on $S$.
+-/
 
 section UniformCauchy
 
 variable {Ω : Type*} [PseudoMetricSpace Ω] {f : ℕ → Ω → ℝ} {A S S' : Set Ω} {ε : ℝ} {k : ℝ≥0}
 
-/-- **Equi-Lipschitz on a collar plus pointwise Cauchy on a dense subset gives uniform Cauchy.**
-`hcollar` is the only thing the ambient structure has to supply: every point of `A` within `ε` of
-`S` must lie in `S'`, the set on which the family is equi-Lipschitz. In the `interior` setting
-`S' = cthickening ε S`; in the relative setting it is `exists_isCompact_collar_relint`. -/
+/-- **Equi-Lipschitz on a neighbourhood and pointwise Cauchy on a dense subset gives uniformly
+Cauchy.** Let $\Omega$ be a pseudometric space, let $(f_i)_{i \in \mathbb{N}}$ be functions
+$\Omega \to \mathbb{R}$, let $A, S, S' \subseteq \Omega$ with $S$ compact and $S \subseteq S'$,
+and let $\varepsilon > 0$. Suppose that:
+
+* every $y \in A$ with $\operatorname{dist}(y, x) \le \varepsilon$ for some $x \in S$ is in
+  $S'$;
+* $S \subseteq \operatorname{cl} A$;
+* every $f_i$ is Lipschitz on $S'$ with the same constant $k$;
+* $(f_i(z))_i$ is a Cauchy sequence for every $z \in A$.
+
+Then $(f_i)$ is uniformly Cauchy on $S$.
+
+The first condition (`hcollar`) is the only one that the ambient structure must give. In the
+interior setting $S'$ is the closed $\varepsilon$-neighbourhood `Metric.cthickening ε S`; in the
+relative setting it comes from `ConvexAnalysis.exists_isCompact_collar_relint`. -/
 theorem uniformCauchySeqOn_of_equiLipschitz (hS : IsCompact S) (hSS' : S ⊆ S') (hε : 0 < ε)
     (hcollar : ∀ y ∈ A, ∀ x ∈ S, dist y x ≤ ε → y ∈ S')
     (hdense : S ⊆ closure A) (hlip : ∀ i, LipschitzOnWith k (f i) S')
@@ -317,9 +361,15 @@ end UniformCauchy
 
 section Subseq
 
-/-- **A pointwise bounded sequence of real functions has a subsequence converging at every point
-of a countable set.** The values at the points of `A` live in a compact box of `ℕ → ℝ`, which is
-sequentially compact because `ℕ → ℝ` is first countable; no diagonal argument is needed. -/
+/-- **A pointwise bounded sequence of real functions has a subsequence that converges at every point
+of a countable set.** Let $A \subseteq \alpha$ be countable and let $(f_i)_{i \in \mathbb{N}}$
+be functions $\alpha \to \mathbb{R}$ such that $\{f_i(x) \mid i \in \mathbb{N}\}$ is bounded for
+every $x \in A$. Then there is a strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such
+that $(f_{\varphi(i)}(x))_i$ converges for every $x \in A$.
+
+The values at the points of $A$ are in a compact box of $\mathbb{R}^{\mathbb{N}}$, which is
+sequentially compact because $\mathbb{R}^{\mathbb{N}}$ is first countable. No diagonal argument
+is necessary. -/
 theorem exists_strictMono_tendsto_of_countable {α : Type*} {A : Set α} (hA : A.Countable)
     {f : ℕ → α → ℝ} (hbdd : ∀ x ∈ A, Bornology.IsBounded (Set.range fun i => f i x)) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ A, ∃ L : ℝ, Tendsto (fun i => f (φ i) x) atTop (𝓝 L) := by
@@ -351,11 +401,16 @@ section Sequence
 variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] [FiniteDimensional ℝ W]
   {U : Set W} {f : ℕ → W → ℝ}
 
-/-- **The uniform Cauchy property.** A sequence of functions convex on an open convex set `U`
-which is pointwise Cauchy on a subset `C'` whose closure contains `U` is *uniformly* Cauchy on
-every compact subset of `U`. Given `ε`, equi-Lipschitz continuity supplies one Lipschitz constant
-for the whole sequence on a compact collar of `S`, and finitely many points of `C'` then
-suffice. -/
+/-- **The uniform Cauchy property.** Let $W$ be a finite-dimensional real normed space, let
+$U \subseteq W$ be open and convex, and let $(f_i)_{i \in \mathbb{N}}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$. Let $C' \subseteq U$ with
+$U \subseteq \operatorname{cl} C'$. Suppose that $\{f_i(x) \mid i \in \mathbb{N}\}$ is bounded
+above for every $x \in C'$, bounded below for some $x_0 \in U$, and that $(f_i(x))_i$ is a
+Cauchy sequence for every $x \in C'$. Then $(f_i)$ is uniformly Cauchy on every compact
+$S \subseteq U$.
+
+Given $\varepsilon$, equi-Lipschitz continuity gives one Lipschitz constant for the whole
+sequence on a compact neighbourhood of $S$, and then finitely many points of $C'$ suffice. -/
 theorem uniformCauchySeqOn_of_dense (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
     (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))
@@ -370,12 +425,15 @@ theorem uniformCauchySeqOn_of_dense (hU : IsOpen U) (hUc : Convex ℝ U)
     (fun y _ x hx hyx => Metric.mem_cthickening_of_dist_le y x ε₀ S hx hyx)
     (fun x hx => hdense (hSU hx)) hK hcau
 
-/-- **Convergence from a dense subset**, in the interior form: a sequence of functions convex on
-an open convex set `U` which converges pointwise on a subset `C'` whose closure contains `U`
-converges pointwise
-on all of `U`, the limit is convex, and the convergence is uniform on every compact subset of `U`.
+/-- **Convergence from a dense subset**, interior form. Let $W$ be a finite-dimensional real normed
+space, let $U \subseteq W$ be open and convex, and let $(f_i)_{i \in \mathbb{N}}$ be functions
+$W \to \mathbb{R}$ that are convex on $U$. Let $C' \subseteq U$ with
+$U \subseteq \operatorname{cl} C'$, and suppose that $(f_i(x))_i$ converges for every
+$x \in C'$. Then there is a function $g : W \to \mathbb{R}$, convex on $U$, such that
+$f_i(x) \to g(x)$ for every $x \in U$, and $f_i \to g$ uniformly on every compact
+$S \subseteq U$.
 
-Taking `C' = U` gives the version in which convergence is assumed everywhere. -/
+With $C' = U$, convergence is assumed everywhere. -/
 theorem exists_tendstoUniformlyOn_of_dense (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
     (hcv : ∀ x ∈ C', ∃ L : ℝ, Tendsto (fun i => f i x) atTop (𝓝 L)) :
@@ -409,8 +467,11 @@ theorem exists_tendstoUniformlyOn_of_dense (hU : IsOpen U) (hUc : Convex ℝ U)
     (((hcauU x hx).tendsto_limUnder.const_mul a).add
       ((hcauU y hy).tendsto_limUnder.const_mul b)) fun i => (hf i).2 hx hy ha hb hs
 
-/-- The same with the limit function supplied: **pointwise convergence on all of an open convex
-`U` upgrades to uniform convergence on compact subsets.** -/
+/-- **Pointwise convergence on an open convex set is uniform on compact subsets.** Let $W$ be a
+finite-dimensional real normed space, let $U \subseteq W$ be open and convex, let
+$(f_i)_{i \in \mathbb{N}}$ be functions $W \to \mathbb{R}$ that are convex on $U$, and let
+$g : W \to \mathbb{R}$ with $f_i(x) \to g(x)$ for every $x \in U$. Then $f_i \to g$ uniformly on
+every compact $S \subseteq U$. -/
 theorem tendstoUniformlyOn_of_tendsto (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {g : W → ℝ}
     (hg : ∀ x ∈ U, Tendsto (fun i => f i x) atTop (𝓝 (g x)))
@@ -420,10 +481,14 @@ theorem tendstoUniformlyOn_of_tendsto (hU : IsOpen U) (hUc : Convex ℝ U)
   exact (huc hS hSU).congr_right fun x hx =>
     tendsto_nhds_unique (hg' x (hSU hx)) (hg x (hSU hx))
 
-/-- **Arzelà–Ascoli for convex functions**, in the interior form: a sequence of functions convex
-on an open convex set `U` whose values are bounded at each point of a subset `C'` with `U ⊆ cl C'`
-has a subsequence
-converging, uniformly on every compact subset of `U`, to a finite convex function. -/
+/-- **Arzelà–Ascoli theorem for convex functions**, interior form. Let $W$ be a finite-dimensional
+real normed space, let $U \subseteq W$ be open and convex, and let $(f_i)_{i \in \mathbb{N}}$ be
+functions $W \to \mathbb{R}$ that are convex on $U$. Let $C' \subseteq U$ with
+$U \subseteq \operatorname{cl} C'$, and suppose that $\{f_i(x) \mid i \in \mathbb{N}\}$ is
+bounded for every $x \in C'$. Then there are a strictly increasing
+$\varphi : \mathbb{N} \to \mathbb{N}$ and a function $g : W \to \mathbb{R}$, convex on $U$, such
+that $f_{\varphi(i)}(x) \to g(x)$ for every $x \in U$, and $f_{\varphi(i)} \to g$ uniformly on
+every compact $S \subseteq U$. -/
 theorem exists_subseq_tendstoUniformlyOn (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
     (hbdd : ∀ x ∈ C', Bornology.IsBounded (Set.range fun i => f i x)) :
@@ -450,10 +515,15 @@ section JointContinuity
 variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] [FiniteDimensional ℝ W]
   {U : Set W} {T : Type*} [TopologicalSpace T] [LocallyCompactSpace T]
 
-/-- **Joint continuity**, in the interior form: a real-valued function on `U × T`, with `U` open
-and convex and `T` locally compact, that is convex in its first argument and continuous in its
-second is *jointly* continuous. Continuity in `t` is only needed at the points of a subset `C'` of
-`U` whose closure contains `U`; taking `C' = U` gives the headline statement. -/
+/-- **Joint continuity**, interior form. Let $W$ be a finite-dimensional real normed space, let
+$U \subseteq W$ be open and convex, let $T$ be a locally compact topological space, and let
+$F : W \times T \to \mathbb{R}$ be such that $x \mapsto F(x, t)$ is convex on $U$ for every
+$t \in T$. Let $C' \subseteq U$ with $U \subseteq \operatorname{cl} C'$, and suppose that
+$t \mapsto F(x, t)$ is continuous for every $x \in C'$. Then $F$ is continuous on $U \times T$.
+
+Continuity in $t$ is needed only at the points of $C'$. With $C' = U$ this is the usual
+statement: a function convex in its first argument and continuous in its second is jointly
+continuous. -/
 theorem continuousOn_prod_of_convexOn (hU : IsOpen U) (hUc : Convex ℝ U) {F : W × T → ℝ}
     (hconv : ∀ t : T, ConvexOn ℝ U fun x => F (x, t))
     {C' : Set W} (hC' : C' ⊆ U) (hdense : U ⊆ closure C')
@@ -527,12 +597,16 @@ theorem continuousOn_prod_of_convexOn (hU : IsOpen U) (hUc : Convex ℝ U) {F : 
 
 end JointContinuity
 
-/-! ### The chart: from `interior` to `ri`
+/-!
+### The chart: from the interior to the relative interior
 
-Every statement above is transported to the relative interior by the linear chart of
-`Continuity.lean`: `exists_chart_retraction` produces a subspace `V`, a continuous linear
-retraction `r : E →L[ℝ] V`, and the identity `ri C = x₀ + ι (int (chart C x₀ V))`. The three
-lemmas here are the bookkeeping that identity buys. -/
+Every statement above transfers to the relative interior through the linear chart of
+`Numlib.Analysis.Convex.Continuity`. The theorem `ConvexAnalysis.exists_chart_retraction` gives a
+subspace $V$, a continuous linear retraction $r : E \to V$, and the identity $\operatorname{ri} C =
+x_0 + \iota(\operatorname{int} D)$, where $D$ is the chart of $C$ at $x_0$ in $V$ and
+$\iota : V \to E$ is the inclusion. The lemmas here are the consequences of this identity that the
+relative forms use.
+-/
 
 section Chart
 
@@ -540,14 +614,16 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {C C' : Set E} {x₀ : E} {V : Submodule ℝ E}
 
 omit [FiniteDimensional ℝ E] in
-/-- A function convex on `C` is convex on the chart of `C` at `x₀`. -/
+/-- If $\psi : E \to \mathbb{R}$ is convex on $C$, then $z \mapsto \psi(x_0 + z)$ is convex on the
+chart of $C$ at $x_0$ in $V$. -/
 theorem convexOn_chart {ψ : E → ℝ} (hψ : ConvexOn ℝ C ψ) :
     ConvexOn ℝ (chart C x₀ V) fun z : V => ψ (x₀ + (z : E)) := by
   have hshift : (AffineMap.const ℝ V x₀ + V.subtype.toAffineMap) ⁻¹' C = chart C x₀ V := rfl
   exact hshift ▸ hψ.comp_affineMap (AffineMap.const ℝ V x₀ + V.subtype.toAffineMap)
 
 omit [FiniteDimensional ℝ E] in
-/-- Points of the interior of the chart come from points of `ri C`. -/
+/-- Suppose that $\operatorname{ri} C = x_0 + \iota(\operatorname{int} D)$, where $D$ is the chart
+of $C$ at $x_0$ in $V$. If $z \in \operatorname{int} D$, then $x_0 + z \in \operatorname{ri} C$. -/
 theorem mem_relint_of_mem_interior_chart
     (himg : ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V))) {z : V}
     (hz : z ∈ interior (chart C x₀ V)) : x₀ + (z : E) ∈ ri C := by
@@ -555,7 +631,9 @@ theorem mem_relint_of_mem_interior_chart
   exact ⟨(z : E), ⟨z, hz, rfl⟩, rfl⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- Points of `ri C` come from points of the interior of the chart. -/
+/-- Suppose that $\operatorname{ri} C = x_0 + \iota(\operatorname{int} D)$, where $D$ is the chart
+of $C$ at $x_0$ in $V$. If $x \in \operatorname{ri} C$, then $x = x_0 + z$ for some
+$z \in \operatorname{int} D$. -/
 theorem mem_interior_chart_of_mem_relint
     (himg : ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V))) {x : E} (hx : x ∈ ri C) :
     ∃ z ∈ interior (chart C x₀ V), x₀ + (z : E) = x := by
@@ -564,7 +642,9 @@ theorem mem_interior_chart_of_mem_relint
   exact ⟨z, hz, rfl⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- A subset of `ri C` charts inside the interior of the chart. -/
+/-- Suppose that $\operatorname{ri} C = x_0 + \iota(\operatorname{int} D)$, where $D$ is the chart
+of $C$ at $x_0$ in $V$. If $C' \subseteq \operatorname{ri} C$, then the chart of $C'$ at $x_0$
+in $V$ is contained in $\operatorname{int} D$. -/
 theorem chart_subset_interior_chart
     (himg : ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V))) (hC' : C' ⊆ ri C) :
     chart C' x₀ V ⊆ interior (chart C x₀ V) := by
@@ -574,8 +654,10 @@ theorem chart_subset_interior_chart
   exact hzw ▸ hw
 
 omit [FiniteDimensional ℝ E] in
-/-- Density transports to the chart: if `C'` is dense in `ri C`, its chart is dense in the interior
-of the chart of `C`. -/
+/-- **Density transfers to the chart.** Suppose that $\operatorname{ri} C = x_0 +
+\iota(\operatorname{int} D)$, where $D$ is the chart of $C$ at $x_0$ in $V$. If
+$C' \subseteq \operatorname{ri} C$ and $\operatorname{ri} C \subseteq \operatorname{cl} C'$,
+then $\operatorname{int} D$ is contained in the closure of the chart of $C'$ at $x_0$ in $V$. -/
 theorem interior_chart_subset_closure_chart
     (himg : ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V))) (hC' : C' ⊆ ri C)
     (hdense : ri C ⊆ closure C') :
@@ -591,17 +673,22 @@ theorem interior_chart_subset_closure_chart
 
 end Chart
 
-/-! ### Pointwise boundedness in the `ri` form -/
+/-! ### Pointwise boundedness, relative form -/
 
 section Relint
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {ι : Type*} {C C' : Set E} {f : ι → E → ℝ}
 
-/-- **The uniform boundedness half**: a family of functions convex on a convex set `C`, pointwise
-bounded above on a subset `C'` of `ri C` whose closure contains `ri C` and bounded below at one
-point of `ri C`, is uniformly bounded on every compact subset of `ri C`. Taking `C' = ri C` gives
-the usual hypothesis, for a relatively open `C`. -/
+/-- **Uniform boundedness**, relative form. Let $E$ be a finite-dimensional real normed space, let
+$C \subseteq E$ be convex, and let $(f_i)_{i \in \iota}$ be functions $E \to \mathbb{R}$ that
+are convex on $C$. Let $C' \subseteq \operatorname{ri} C$ with $\operatorname{ri} C \subseteq
+\operatorname{cl} C'$. Suppose that $\{f_i(x) \mid i \in \iota\}$ is bounded above for every
+$x \in C'$ and bounded below for some $z \in \operatorname{ri} C$. Then for every compact
+$S \subseteq \operatorname{ri} C$ there is $M \ge 0$ with $|f_i(x)| \le M$ for all $i$ and all
+$x \in S$.
+
+With $C' = \operatorname{ri} C$ this is the usual hypothesis, for a relatively open $C$. -/
 theorem exists_forall_abs_le_of_isCompact_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i)) (hC' : C' ⊆ ri C) (hdense : ri C ⊆ closure C')
     (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))
@@ -626,9 +713,10 @@ theorem exists_forall_abs_le_of_isCompact_relint (hC : Convex ℝ C)
   have h := hM i _ (Set.mem_image_of_mem (fun x : E => r (x - x₀)) hx)
   rwa [hid x (hSC hx)] at h
 
-/-- **The equi-Lipschitz half**: under the hypotheses of
-`exists_forall_abs_le_of_isCompact_relint` a *single* Lipschitz constant serves the whole family on
-any compact subset of `ri C`. -/
+/-- **Equi-Lipschitz continuity**, relative form. Under the hypotheses of
+`ConvexAnalysis.exists_forall_abs_le_of_isCompact_relint`, for every compact
+$S \subseteq \operatorname{ri} C$ there is one constant $K \ge 0$ such that every $f_i$ is
+Lipschitz on $S$ with constant $K$. -/
 theorem exists_forall_lipschitzOnWith_of_isCompact_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i)) (hC' : C' ⊆ ri C) (hdense : ri C ⊆ closure C')
     (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))
@@ -666,17 +754,20 @@ theorem exists_forall_lipschitzOnWith_of_isCompact_relint (hC : Convex ℝ C)
 
 end Relint
 
-/-! ### Convergence, in the `ri` form -/
+/-! ### Convergence, relative form -/
 
 section RelintSequence
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C C' : Set E} {f : ℕ → E → ℝ}
 
-/-- **Convergence from a dense subset**: a sequence of functions convex on a convex set `C`
-which
-converges pointwise on a subset `C'` of `ri C` whose closure contains `ri C` converges pointwise on
-all of `ri C`, to a finite convex limit, uniformly on every compact subset of `ri C`. -/
+/-- **Convergence from a dense subset**, relative form. Let $E$ be a finite-dimensional real normed
+space, let $C \subseteq E$ be convex, and let $(f_i)_{i \in \mathbb{N}}$ be functions
+$E \to \mathbb{R}$ that are convex on $C$. Let $C' \subseteq \operatorname{ri} C$ with
+$\operatorname{ri} C \subseteq \operatorname{cl} C'$, and suppose that $(f_i(x))_i$ converges
+for every $x \in C'$. Then there is a function $g : E \to \mathbb{R}$, convex on
+$\operatorname{ri} C$, such that $f_i(x) \to g(x)$ for every $x \in \operatorname{ri} C$, and
+$f_i \to g$ uniformly on every compact $S \subseteq \operatorname{ri} C$. -/
 theorem exists_tendstoUniformlyOn_of_dense_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i)) (hC' : C' ⊆ ri C) (hdense : ri C ⊆ closure C')
     (hcv : ∀ x ∈ C', ∃ L : ℝ, Tendsto (fun i => f i x) atTop (𝓝 L)) :
@@ -714,8 +805,11 @@ theorem exists_tendstoUniformlyOn_of_dense_relint (hC : Convex ℝ C)
     have h := hi (r (x - x₀)) (Set.mem_image_of_mem _ hx)
     rwa [hid x (hSC hx)] at h
 
-/-- The same with the limit supplied: **pointwise convergence on `ri C` upgrades to uniform
-convergence on its compact subsets.** -/
+/-- **Pointwise convergence on the relative interior is uniform on compact subsets.** Let
+$C \subseteq E$ be convex, let $(f_i)_{i \in \mathbb{N}}$ be functions $E \to \mathbb{R}$ that
+are convex on $C$, and let $g : E \to \mathbb{R}$ with $f_i(x) \to g(x)$ for every
+$x \in \operatorname{ri} C$. Then $f_i \to g$ uniformly on every compact
+$S \subseteq \operatorname{ri} C$. -/
 theorem tendstoUniformlyOn_of_tendsto_relint (hC : Convex ℝ C) (hf : ∀ i, ConvexOn ℝ C (f i))
     {g : E → ℝ} (hg : ∀ x ∈ ri C, Tendsto (fun i => f i x) atTop (𝓝 (g x)))
     {S : Set E} (hS : IsCompact S) (hSC : S ⊆ ri C) : TendstoUniformlyOn f g atTop S := by
@@ -726,10 +820,14 @@ theorem tendstoUniformlyOn_of_tendsto_relint (hC : Convex ℝ C) (hf : ∀ i, Co
   rw [tendsto_nhds_unique (hg x (hSC hx)) (hg' x (hSC hx))]
   exact hi x hx
 
-/-- **An eventual upper bound**: if `limsup_i f i x ≤ g x` for every `x ∈ ri C`, with `g`
-convex, then on each compact `S ⊆ ri C` the bound `f i ≤ g + ε` holds uniformly for large `i`.
+/-- **An eventual upper bound**, relative form. Let $C \subseteq E$ be convex, let
+$(f_i)_{i \in \mathbb{N}}$ and $g$ be functions $E \to \mathbb{R}$ that are convex on $C$, and
+suppose that $\limsup_i f_i(x) \le g(x)$ for every $x \in \operatorname{ri} C$. Then for every
+compact $S \subseteq \operatorname{ri} C$ and every $\varepsilon > 0$, for all large $i$,
+$$f_i(x) \le g(x) + \varepsilon \quad \text{for all } x \in S.$$
 
-The `limsup` hypothesis is spelled as "for every `δ > 0`, eventually `f i x ≤ g x + δ`". -/
+The hypothesis $\limsup_i f_i(x) \le g(x)$ is written as "for every $\delta > 0$, eventually
+$f_i(x) \le g(x) + \delta$". -/
 theorem eventually_forall_le_add_of_eventually_le_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i)) {g : E → ℝ} (hg : ConvexOn ℝ C g)
     (hle : ∀ x ∈ ri C, ∀ δ > 0, ∀ᶠ i in atTop, f i x ≤ g x + δ)
@@ -752,12 +850,15 @@ theorem eventually_forall_le_add_of_eventually_le_relint (hC : Convex ℝ C)
   rw [Real.dist_eq, abs_sub_comm, abs_of_nonneg (by simp)] at h1
   exact (le_max_left (f i x) (g x)).trans (by linarith)
 
-/-- **An eventual upper bound**, in the interior form: if a sequence of functions convex on an
-open convex set `U` satisfies `limsup_i f i x ≤ g x` pointwise for a convex `g`, then on each
-compact
-`S ⊆ U` the bound `f i ≤ g + ε` holds for all large `i`. The `limsup` hypothesis is spelled as "for
-every `ε > 0`, eventually `f i x ≤ g x + ε`", which avoids the junk values `Filter.limsup` takes on
-unbounded sequences. The proof is the `_relint` form, an open convex set being its own relative
+/-- **An eventual upper bound**, interior form. Let $E$ be a finite-dimensional real normed space,
+let $U \subseteq E$ be open and convex, let $(f_i)_{i \in \mathbb{N}}$ and $g$ be functions
+$E \to \mathbb{R}$ that are convex on $U$, and suppose that $\limsup_i f_i(x) \le g(x)$ for
+every $x \in U$. Then for every compact $S \subseteq U$ and every $\varepsilon > 0$, for all
+large $i$, $$f_i(x) \le g(x) + \varepsilon \quad \text{for all } x \in S.$$
+
+The hypothesis $\limsup_i f_i(x) \le g(x)$ is written as "for every $\delta > 0$, eventually
+$f_i(x) \le g(x) + \delta$". This avoids the values that `Filter.limsup` takes on unbounded
+sequences. The proof is the relative form, because an open convex set is its own relative
 interior. -/
 theorem eventually_forall_le_add_of_eventually_le {U : Set E} (hU : IsOpen U)
     (hUc : Convex ℝ U) (hf : ∀ i, ConvexOn ℝ U (f i)) {g : E → ℝ} (hg : ConvexOn ℝ U g)
@@ -773,10 +874,15 @@ theorem eventually_forall_le_add_of_eventually_le {U : Set E} (hU : IsOpen U)
   exact eventually_forall_le_add_of_eventually_le_relint hUc hf hg (by rwa [hri]) hS
     (by rwa [hri]) hε
 
-/-- **Arzelà–Ascoli for convex functions**: a sequence of functions convex on `C` whose values are
-bounded
-at each point of a subset `C'` of `ri C` with `ri C ⊆ cl C'` has a subsequence converging uniformly
-on the compact subsets of `ri C` to a finite convex function. -/
+/-- **Arzelà–Ascoli theorem for convex functions**, relative form. Let $E$ be a finite-dimensional
+real normed space, let $C \subseteq E$ be convex, and let $(f_i)_{i \in \mathbb{N}}$ be
+functions $E \to \mathbb{R}$ that are convex on $C$. Let $C' \subseteq \operatorname{ri} C$ with
+$\operatorname{ri} C \subseteq \operatorname{cl} C'$, and suppose that
+$\{f_i(x) \mid i \in \mathbb{N}\}$ is bounded for every $x \in C'$. Then there are a strictly
+increasing $\varphi : \mathbb{N} \to \mathbb{N}$ and a function $g : E \to \mathbb{R}$, convex
+on $\operatorname{ri} C$, such that $f_{\varphi(i)}(x) \to g(x)$ for every
+$x \in \operatorname{ri} C$, and $f_{\varphi(i)} \to g$ uniformly on every compact
+$S \subseteq \operatorname{ri} C$. -/
 theorem exists_subseq_tendstoUniformlyOn_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i)) (hC' : C' ⊆ ri C) (hdense : ri C ⊆ closure C')
     (hbdd : ∀ x ∈ C', Bornology.IsBounded (Set.range fun i => f i x)) :
@@ -808,16 +914,19 @@ theorem exists_subseq_tendstoUniformlyOn_relint (hC : Convex ℝ C)
 
 end RelintSequence
 
-/-! ### Joint continuity, in the `ri` form -/
+/-! ### Joint continuity, relative form -/
 
 section RelintJoint
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C C' : Set E} {T : Type*} [TopologicalSpace T] [LocallyCompactSpace T]
 
-/-- **Joint continuity**: a real-valued function on `ri C × T`, with `T` locally compact,
-convex in its first argument and continuous in its second, is jointly continuous relative to
-`ri C × T`. -/
+/-- **Joint continuity**, relative form. Let $E$ be a finite-dimensional real normed space, let
+$C \subseteq E$ be convex, let $T$ be a locally compact topological space, and let
+$F : E \times T \to \mathbb{R}$ be such that $x \mapsto F(x, t)$ is convex on $C$ for every
+$t \in T$. Let $C' \subseteq \operatorname{ri} C$ with $\operatorname{ri} C \subseteq
+\operatorname{cl} C'$, and suppose that $t \mapsto F(x, t)$ is continuous for every $x \in C'$.
+Then $F$ is continuous on $\operatorname{ri} C \times T$. -/
 theorem continuousOn_prod_of_convexOn_relint (hC : Convex ℝ C) {F : E × T → ℝ}
     (hconv : ∀ t : T, ConvexOn ℝ C fun x => F (x, t))
     (hC' : C' ⊆ ri C) (hdense : ri C ⊆ closure C')
@@ -843,15 +952,20 @@ theorem continuousOn_prod_of_convexOn_relint (hC : Convex ℝ C) {F : E × T →
 
 end RelintJoint
 
-/-! ### The headline form -/
+/-! ### The usual form -/
 
 section Headline
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {ι : Type*} {C : Set E} {f : ι → E → ℝ}
 
-/-- **A family of convex functions finite and *pointwise bounded* on `ri C` is uniformly bounded
-and equi-Lipschitzian on every compact subset of `ri C`.** -/
+/-- **A pointwise bounded family of convex functions is uniformly bounded and equi-Lipschitz on
+compact subsets of the relative interior.** Let $E$ be a finite-dimensional real normed space,
+let $C \subseteq E$ be convex, and let $(f_i)_{i \in \iota}$ be functions $E \to \mathbb{R}$
+that are convex on $C$, with $\{f_i(x) \mid i \in \iota\}$ bounded for every
+$x \in \operatorname{ri} C$. Then for every compact $S \subseteq \operatorname{ri} C$ there are
+$M \ge 0$ with $|f_i(x)| \le M$ for all $i$ and all $x \in S$, and one constant $K \ge 0$ such
+that every $f_i$ is Lipschitz on $S$ with constant $K$. -/
 theorem exists_forall_abs_le_and_lipschitzOnWith_of_isCompact_relint (hC : Convex ℝ C)
     (hf : ∀ i, ConvexOn ℝ C (f i))
     (hbdd : ∀ x ∈ ri C, Bornology.IsBounded (Set.range fun i => f i x))

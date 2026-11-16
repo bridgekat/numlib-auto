@@ -10,29 +10,62 @@ import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.ModelBased.InexactRatio
 
 /-!
-# ARqpIDA/ARqpEDA: one iteration and the step-length algebra
+# One iteration of ARqpIDA and ARqpEDA, and the step-length algebra
 
-One iteration of the adaptive-regularization methods with inexact derivatives and dynamic
-accuracy ARqpIDA and ARqpEDA ([cartis2022evaluation], Algorithms 13.1.2 and 13.3.2): Step 1 with
-the halving of the optimality radii, Step 2 for the regularized inexact model
-`m̄_k(v) = \overline{T}_{f,p}(x_k, v) + σ_k/(p+1)! ‖v‖^{p+1}`, the regularization update and the
-accuracy-improving branch, together with the radii control (13.1.69)–(13.1.70) and the
-step-length algebra used by both analyses. The iteration is stated on a feasible set `X`
-(§14.2).
+This file states one iteration of the adaptive-regularization methods with inexact derivatives and
+dynamic accuracy ARqpIDA and ARqpEDA (Algorithms 13.1.2 and 13.3.2 of [cartis2022evaluation]) on a
+feasible set $X$ (§14.2), and proves the facts about one iteration that the analyses of both methods
+use. At iteration $k$ the method has an iterate $x_k$, a weight $\sigma_k$, radii $\delta^{(0)}_k$,
+accuracies $h_{k,i}$ and inexact derivatives $\overline{\nabla}^i f(x_k)$, which form the derivative
+data $D_k$. Write $\overline{\Delta T}_{f,j}(x_k, d)$ for the decrease along $d$ of the inexact
+Taylor polynomial $\overline{T}_{f,j}(x_k, \cdot)$ of order $j$, and
+$$\overline{m}_k(v) = \overline{T}_{f,p}(x_k, v) + \frac{\sigma_k}{(p+1)!} \|v\|^{p+1}, \qquad
+  \Delta\overline{m}_k(v) = \overline{m}_k(0) - \overline{m}_k(v),$$
+for the regularized inexact model (13.1.45) and its decrease.
+
+Step 1 halves the optimality radii from $\delta^{(0)}_k$ to $\delta^{(1)}_k$. Step 2 computes a step
+$s_k$ with radii $\delta_{s_k}$ for the model. Steps 3–4 accept or reject the step and update
+$\sigma_k$. Step 5, the accuracy-improving branch, multiplies the accuracies by $\gamma_h$. The file
+also gives the radii control (13.1.69)–(13.1.70), and the step-length algebra that turns the radius
+inequalities of Lemmas 13.1.16 and 13.1.17 into lower bounds on $\|s_k\|^{p+1}$.
 
 ## Main definitions
 
-* `ARqpIDAParams`, `ARqpStep1`, `ARqpStep2`, `ARqpDAStep`;
-* `ARqpDARadiiControl u`: the radii control, with unit radii (mode `u`) or the lower bounds of the
-  type (12.2.51) at every order (mode `¬ u`); `RadiiControl` is the mode `u = (q ≤ 2)`;
-* `arPiOf`, `arStepConstOf`: the exponents `π_j` and the constants of the step-length bounds.
+* `Optimization.ARqpIDAParams`: the constants of ARqpIDA and ARqpEDA.
+* `Optimization.ARqpStep1`, `Optimization.ARqpStep2`: Steps 1 and 2 at one iteration.
+* `Optimization.ARqpDAStep`: one iteration, given the ratio $\rho_k$.
+* `Optimization.ARqpDARadiiControl`: the radii control, with unit radii (mode $u$) or with lower
+  bounds of the type (12.2.51) at every order (mode not $u$).
+* `Optimization.RadiiControl`: the radii control in the mode $u = (q \le 2)$.
+* `Optimization.arKappaDelta1`: the constant $\kappa^{(1)}_\delta(\sigma) =
+  \varsigma\theta/(24\max\{\overline{L}, \sigma\})$ of (13.1.72).
+* `Optimization.arPiOf`, `Optimization.arStepConstOf`: the exponents $\pi_j$ and the constants of
+  the step-length bounds of Lemma 13.1.18.
 
 ## Main results
 
-* `arqpDA_card_trial_le` (Lemma 13.1.9), `ARqpStep1.radius_bounds` (Lemma 13.1.11),
-  `ARqpDAStep.taylorDecrement_ge` (Lemma 13.1.13), `arqpDA_radius_ge` (the radius bound
-  (13.1.71));
-* `arqp_pow_ge_of_radius_ineq`, `arqp_pow_succ_ge`: step lengths from radius inequalities.
+* `Optimization.arqpDA_card_trial_le`: the number of trial iterations is bounded by the number of
+  successful ones (Lemma 13.1.9).
+* `Optimization.ARqpStep1.radius_bounds`: the radii after Step 1 are bounded below (Lemma 13.1.11).
+* `Optimization.arqpDA_radius_ge`: the radius bound $\delta^{(1)}_{k,j} \ge
+  \kappa^{(1)}_\delta(\bar\sigma)\varepsilon_j$ (13.1.71) of Lemma 13.1.12.
+* `Optimization.ARqpStep2.not_acc_of_le`: small accuracies give a trial iteration, the accuracy
+  bound (13.1.73) of Lemma 13.1.12.
+* `Optimization.ARqpDAStep.taylorDecrement_ge`: the predicted decrease of a trial iteration is
+  positive (Lemma 13.1.13).
+* `Optimization.arqp_pow_ge_of_radius_ineq`, `Optimization.arqp_pow_succ_ge`: lower bounds on the
+  step length from a radius inequality.
+
+## Implementation notes
+
+* An iteration is a predicate `Optimization.ARqpDAStep` on whole sequences at an index $k$. Its
+  arguments `δ k`, `δ₁ k` and `δs k` are the radii $\delta^{(0)}_k$, $\delta^{(1)}_k$ and
+  $\delta_{s_k}$. The Step-1 displacement $d_{k,j}$ is `dd k j`. The order $j_k$ at which Step 2
+  is entered is `jk k`. The flag `acc k` says that iteration $k$ is accuracy-improving.
+* The halving loop of Step 1 is recorded by its effect, not by its single steps (see
+  `Optimization.ARqpStep1`).
+* The requirement $\varepsilon_j \le \delta_{0,j}$ is part of the run predicates, not of
+  `Optimization.ARqpIDAParams`.
 -/
 
 open Set Metric Finset
@@ -44,46 +77,64 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-! ### ARqpIDA: constants and one iteration -/
 
-/-- The constants of Algorithm 13.1.2 (ARqpIDA, [cartis2022evaluation], Step 0, (13.1.51)): the
-ARqp constants (`σ₀ > 0`, `0 < η₁ ≤ η₂ < 1`, `0 < γ₁ < 1 < γ₂ ≤ γ₃`, `θ ∈ (0, 1)`,
-`ς ∈ (0, 1]`) with `σ_min ∈ (0, σ₀]`, orders
-`1 ≤ q ≤ p`, `κ_s > 0`, `κ_h ≥ 0`, `γ_h ∈ (0, 1)`, initial radii `δ₀ ∈ (0, 1]^q` and initial
-accuracies `0 ≤ h_{0,i} ≤ κ_h` (`i ∈ [1, p]`). The requirement `ε_j ≤ δ_{0,j}` is part of the run
-predicate. -/
+/-- The constants of ARqpIDA (Step 0 of Algorithm 13.1.2 of [cartis2022evaluation], (13.1.51)), also
+used by ARqpEDA. An element consists of the ARqp constants of `Optimization.ARqpParams`
+($\sigma_0 > 0$, $0 \le \sigma_{\min} \le \sigma_0$, $0 < \eta_1 \le \eta_2 < 1$,
+$0 < \gamma_1 < 1 < \gamma_2 \le \gamma_3$, $\theta \in (0, 1)$ and $\varsigma \in (0, 1]$)
+together with $\sigma_{\min} > 0$, orders $1 \le q \le p$, an accuracy reduction factor
+$\gamma_h \in (0, 1)$, constants $\kappa_s > 0$ and $\kappa_h \ge 0$, initial radii
+$\delta_{0,j} \in (0, 1]$ for $j \in [1, q]$, and initial accuracies
+$0 \le h_{0,i} \le \kappa_h$ for $i \in [1, p]$.
+
+The requirement $\varepsilon_j \le \delta_{0,j}$ of (13.1.51) is part of the run predicates
+`Optimization.IsARqpIDARun` and `Optimization.IsARqpEDARun`. -/
 structure ARqpIDAParams extends ARqpParams where
-  /-- The criticality order. -/
+  /-- The criticality order $q$. -/
   q : ℕ
-  /-- The degree of the model. -/
+  /-- The degree $p$ of the model. -/
   p : ℕ
-  /-- The accuracy reduction factor. -/
+  /-- The accuracy reduction factor $\gamma_h$ of Step 5. -/
   γh : ℝ
-  /-- The constant of the accuracy test (13.1.46). -/
+  /-- The constant $\kappa_s$ of the accuracy test (13.1.46). -/
   κs : ℝ
-  /-- The bound on the initial accuracies. -/
+  /-- The bound $\kappa_h$ on the initial accuracies. -/
   κh : ℝ
-  /-- The initial optimality radii. -/
+  /-- The initial optimality radii $\delta_{0,j}$. -/
   δ₀ : ℕ → ℝ
-  /-- The initial requested accuracies. -/
+  /-- The initial requested accuracies $h_{0,i}$. -/
   h₀ : ℕ → ℝ
+  /-- The criticality order satisfies $q \ge 1$. -/
   one_le_q : 1 ≤ q
+  /-- The orders satisfy $q \le p$. -/
   q_le_p : q ≤ p
+  /-- The lower bound on the weights is positive: $\sigma_{\min} > 0$. -/
   σmin_pos : 0 < σmin
+  /-- The accuracy reduction factor satisfies $\gamma_h > 0$. -/
   γh_pos : 0 < γh
+  /-- The accuracy reduction factor satisfies $\gamma_h < 1$. -/
   γh_lt_one : γh < 1
+  /-- The constant of the accuracy test satisfies $\kappa_s > 0$. -/
   κs_pos : 0 < κs
+  /-- The bound on the initial accuracies satisfies $\kappa_h \ge 0$. -/
   κh_nonneg : 0 ≤ κh
+  /-- The initial radii satisfy $\delta_{0,j} \in (0, 1]$ for $j \in [1, q]$. -/
   δ₀_mem : ∀ j ∈ Finset.Icc 1 q, δ₀ j ∈ Set.Ioc 0 1
+  /-- The initial accuracies satisfy $h_{0,i} \ge 0$ for $i \in [1, p]$. -/
   h₀_nonneg : ∀ i ∈ Finset.Icc 1 p, 0 ≤ h₀ i
+  /-- The initial accuracies satisfy $h_{0,i} \le \kappa_h$ for $i \in [1, p]$. -/
   h₀_le : ∀ i ∈ Finset.Icc 1 p, h₀ i ≤ κh
 
 namespace ARqpIDAParams
 
 variable (P : ARqpIDAParams)
 
+/-- The degree satisfies $p \ge 1$. -/
 theorem one_le_p : 1 ≤ P.p := P.one_le_q.trans P.q_le_p
 
+/-- The order $1$ lies in $[1, q]$. -/
 theorem one_mem_Icc : 1 ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨le_rfl, P.one_le_q⟩
 
+/-- The orders satisfy $[1, q] \subseteq [1, p]$. -/
 theorem Icc_q_subset : Finset.Icc 1 P.q ⊆ Finset.Icc 1 P.p :=
   Finset.Icc_subset_Icc le_rfl P.q_le_p
 
@@ -95,13 +146,16 @@ variable {X : Set E} {P : ARqpIDAParams} {ε : ℕ → ℝ} {x : ℕ → E} {σ 
   {δ δ₁ δs : ℕ → ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ}
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E} {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
-/-- The decrease `Δm̄_k(v) = m̄_k(0) - m̄_k(v)` of the regularized inexact model
-`m̄_k(v) = \overline{T}_{f,p}(x_k, v) + σ_k/(p+1)! ‖v‖^{p+1}` (13.1.45). -/
+/-- The decrease $\Delta\overline{m}_k(v) = \overline{m}_k(0) - \overline{m}_k(v)$ of the
+regularized inexact model $\overline{m}_k(v) = \overline{T}_{f,p}(x_k, v) + \sigma_k
+\|v\|^{p+1}/(p+1)!$ of (13.1.45) of [cartis2022evaluation], where
+$\overline{T}_{f,p}(x_k, \cdot)$ is the Taylor sum of degree $p$ of the derivative data $D_k$. -/
 noncomputable abbrev arModelDec (P : ARqpIDAParams) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (σ : ℕ → ℝ) (k : ℕ) (v : E) : ℝ :=
   regularizedModel (D k) P.p (σ k) 0 - regularizedModel (D k) P.p (σ k) v
 
-/-- `Δm̄_k(v) = \overline{ΔT}_{f,p}(x_k, v) - σ_k/(p+1)! ‖v‖^{p+1}`. -/
+/-- The model decrease is $\Delta\overline{m}_k(v) = \overline{\Delta T}_{f,p}(x_k, v) - \sigma_k
+\|v\|^{p+1}/(p+1)!$. -/
 theorem arModelDec_eq (k : ℕ) (v : E) :
     arModelDec P D σ k v =
       (D k).taylorDecrement P.p v - σ k / ((P.p + 1)! : ℝ) * ‖v‖ ^ (P.p + 1) := by
@@ -109,133 +163,178 @@ theorem arModelDec_eq (k : ℕ) (v : E) :
     FormalMultilinearSeries.taylorDecrement]
   ring
 
-/-- The Step-1.2 test (13.1.53) passes at order `j` with the radius `δ^{(1)}_{k,j}`:
-`\overline{ΔT}_{f,j}(x_k, d_{k,j}) ≤ ½ ς ε_j (δ^{(1)}_{k,j})^j/j!`. -/
+/-- The test (13.1.53) of Step 1.2 of [cartis2022evaluation] at order $j$ of iteration $k$, with the
+radius $\delta^{(1)}_{k,j}$:
+$$\overline{\Delta T}_{f,j}(x_k, d_{k,j}) \le \frac{\varsigma\varepsilon_j
+  (\delta^{(1)}_{k,j})^j}{2\,j!}.$$
+-/
 def arqpDAPass (P : ARqpIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (δ₁ : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (k j : ℕ) : Prop :=
   (D k).taylorDecrement j (dd k j) ≤ P.ς * ε j * δ₁ k j ^ j / j ! / 2
 
-/-- Step 2 of ARqpIDA, entered at the least order `j_k` at which (13.1.53) fails (and (13.1.54)
-holds): the step `s_k` (feasible) decreases the model at least as much as `d_k` (13.1.55), and
-either `‖s_k‖ ≥ 1` with `δ_{s_k} = δ^{(1)}_k` (13.1.56) or the radii `δ_{s_k} ∈ (0, 1]^q` and
-displacements `d^m_{s_k,ℓ}` satisfy (13.1.57); the iteration is accuracy-improving iff
-`‖s_k‖ < 1` and the accuracy test (13.1.46) fails for some `i ∈ [1, p]`. -/
+/-- Step 2 of ARqpIDA at iteration $k$ on the feasible set $X$ (Algorithm 13.1.2 of
+[cartis2022evaluation]). It is entered at the least order $j_k \in [1, q]$ at which the test
+(13.1.53) fails, and the condition (13.1.54) holds at $j_k$. The trial point $x_k + s_k$ lies in
+$X$, and $s_k$ decreases the model at least as much as $d_{k,j_k}$ (13.1.55). Either
+$\|s_k\| \ge 1$ and $\delta_{s_k} = \delta^{(1)}_k$ (13.1.56), or the radii
+$\delta_{s_k,\ell} \in (0, 1]$ and some model displacements satisfy (13.1.57) for every
+$\ell \in [1, q]$. The iteration is accuracy-improving if and only if $\|s_k\| < 1$ and the
+accuracy test (13.1.46) fails for some $i \in [1, p]$. -/
 structure ARqpStep2 (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ → E) (σ : ℕ → ℝ)
     (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop where
-  /-- `j_k ∈ [1, q]`. -/
+  /-- The order $j_k$ lies in $[1, q]$. -/
   jk_mem : jk k ∈ Finset.Icc 1 P.q
-  /-- (13.1.53) fails at `j_k`. -/
+  /-- The test (13.1.53) fails at the order $j_k$. -/
   not_pass : ¬ arqpDAPass P ε D δ₁ dd k (jk k)
-  /-- (13.1.53) holds below `j_k`. -/
+  /-- The test (13.1.53) holds at every order $j \in [1, q]$ with $j < j_k$. -/
   pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → arqpDAPass P ε D δ₁ dd k j
-  /-- The radii above `j_k` are not examined in Step 1. -/
+  /-- The radii above $j_k$ are not examined in Step 1: $\delta^{(1)}_{k,j} = \delta^{(0)}_{k,j}$
+  for every $j \in [1, q]$ with $j > j_k$. -/
   radius_gt : ∀ j ∈ Finset.Icc 1 P.q, jk k < j → δ₁ k j = δ k j
-  /-- (13.1.54) at `j_k`. -/
+  /-- The condition (13.1.54) at $j_k$: $\Delta\overline{m}_k(d_{k,j_k}) \ge
+  \varsigma\varepsilon_{j_k}(\delta^{(1)}_{k,j_k})^{j_k}/(4\,j_k!)$. -/
   model_dec : P.ς * ε (jk k) * δ₁ k (jk k) ^ jk k / (jk k)! / 4 ≤ arModelDec P D σ k (dd k (jk k))
-  /-- The trial point is feasible. -/
+  /-- The trial point $x_k + s_k$ lies in $X$. -/
   mem : x k + s k ∈ X
-  /-- (13.1.55). -/
+  /-- The condition (13.1.55): $\Delta\overline{m}_k(d_{k,j_k}) \le \Delta\overline{m}_k(s_k)$. -/
   dec_le : arModelDec P D σ k (dd k (jk k)) ≤ arModelDec P D σ k (s k)
-  /-- (13.1.56) or (13.1.57). -/
+  /-- Either $\|s_k\| \ge 1$ and $\delta_{s_k} = \delta^{(1)}_k$ (13.1.56), or (13.1.57) holds: for
+  every $\ell \in [1, q]$, $\delta_{s_k,\ell} \in (0, 1]$, and some $\varsigma$-approximate
+  optimality displacement of the order-$\ell$ Taylor decrement of $\overline{m}_k$ at $s_k$, for
+  the radius $\delta_{s_k,\ell}$ and the displacements $e$ with $x_k + s_k + e \in X$, has
+  decrease at most $\varsigma\theta\varepsilon_\ell\delta_{s_k,\ell}^\ell/\ell!$. -/
   radii : (1 ≤ ‖s k‖ ∧ δs k = δ₁ k) ∨ ∀ ℓ ∈ Finset.Icc 1 P.q, δs k ℓ ∈ Set.Ioc 0 1 ∧
     ∃ dm, IsApproxMeasureStep
         ((ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ)
         (δs k ℓ) {e | x k + s k + e ∈ X} P.ς dm ∧
       (ftaylorSeries ℝ (regularizedModel (D k) P.p (σ k)) (s k)).taylorDecrement ℓ dm ≤
         P.ς * P.θ * ε ℓ * δs k ℓ ^ ℓ / ℓ !
-  /-- Branching to Step 5 iff `‖s_k‖ < 1` and (13.1.46) fails for some `i ∈ [1, p]`. -/
+  /-- The iteration branches to Step 5 if and only if $\|s_k\| < 1$ and the accuracy test (13.1.46)
+  fails for some $i \in [1, p]$, that is $\kappa_s \|s_k\|^{p-i+1} < h_{k,i}$. -/
   acc_iff : acc k ↔ ‖s k‖ < 1 ∧ ∃ i ∈ Finset.Icc 1 P.p, P.κs * ‖s k‖ ^ (P.p - i + 1) < h k i
 
-/-- **Step 1 of ARqpIDA / ARqpEDA** ([cartis2022evaluation], Algorithm 13.1.2, Steps 1.1–1.4) at
-iteration `k` on the feasible set `X`, with radii `δ k = δ^{(0)}_k` at the start of Step 1
-(13.1.60) and `δ₁ k = δ^{(1)}_k` at its end (13.1.61). The halving loop (`δ_{k,j}` is halved while
-(13.1.53) and (13.1.54) both fail) is recorded by its effect:
-`0 < δ^{(1)}_{k,j} = δ^{(0)}_{k,j}/2^m ≤ δ^{(0)}_{k,j}`, and after at least one halving,
-`2 δ^{(1)}_{k,j} ≤ δ^{(0)}_{k,j}` with a witness of the last halving (both tests failed at
-radius `2 δ^{(1)}_{k,j}`) and of the
-first one ((13.1.53) failed at radius `δ^{(0)}_{k,j}`). The final displacements satisfy
-(13.1.52). -/
+/-- Step 1 of ARqpIDA and ARqpEDA (Steps 1.1–1.4 of Algorithm 13.1.2 of [cartis2022evaluation]) at
+iteration $k$ on the feasible set $X$, with the radii $\delta^{(0)}_k$ at the start of Step 1
+(13.1.60) and $\delta^{(1)}_k$ at its end (13.1.61). The halving loop halves $\delta_{k,j}$
+while (13.1.53) and (13.1.54) both fail, and it is recorded by its effect. For every
+$j \in [1, q]$: $0 < \delta^{(1)}_{k,j} \le \delta^{(0)}_{k,j}$ and
+$\delta^{(1)}_{k,j} = \delta^{(0)}_{k,j}/2^m$ for some $m \in \mathbb{N}$; if
+$\delta^{(1)}_{k,j} < \delta^{(0)}_{k,j}$, then $2\delta^{(1)}_{k,j} \le \delta^{(0)}_{k,j}$,
+both tests failed at the radius $2\delta^{(1)}_{k,j}$ of the last halving, and (13.1.53) failed
+at the radius $\delta^{(0)}_{k,j}$ of the first halving; and the final displacement $d_{k,j}$
+satisfies (13.1.52). -/
 structure ARqpStep1 (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ → E) (σ : ℕ → ℝ)
     (δ δ₁ : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (k : ℕ) :
     Prop where
-  /-- `δ^{(1)}_{k,j} > 0`. -/
+  /-- The final radii are positive: $\delta^{(1)}_{k,j} > 0$ for $j \in [1, q]$. -/
   radius_pos : ∀ j ∈ Finset.Icc 1 P.q, 0 < δ₁ k j
-  /-- `δ^{(1)}_{k,j} ≤ δ^{(0)}_{k,j}`. -/
+  /-- The radii do not increase: $\delta^{(1)}_{k,j} \le \delta^{(0)}_{k,j}$ for $j \in [1, q]$. -/
   radius_le : ∀ j ∈ Finset.Icc 1 P.q, δ₁ k j ≤ δ k j
-  /-- The halving loop of Steps 1.1–1.4. -/
+  /-- The halving loop of Steps 1.1–1.4: if $\delta^{(1)}_{k,j} < \delta^{(0)}_{k,j}$ for some
+  $j \in [1, q]$, then $2\delta^{(1)}_{k,j} \le \delta^{(0)}_{k,j}$, some $d'$ with
+  $\|d'\| \le 2\delta^{(1)}_{k,j}$ and $x_k + d' \in X$ has $\overline{\Delta T}_{f,j}(x_k,
+  d') > \varsigma\varepsilon_j(2\delta^{(1)}_{k,j})^j/(2\,j!)$ and $\Delta\overline{m}_k(d') <
+  \varsigma\varepsilon_j(2\delta^{(1)}_{k,j})^j/(4\,j!)$, and some $d_0$ with
+  $\|d_0\| \le \delta^{(0)}_{k,j}$ and $x_k + d_0 \in X$ has $\overline{\Delta T}_{f,j}(x_k,
+  d_0) > \varsigma\varepsilon_j(\delta^{(0)}_{k,j})^j/(2\,j!)$. -/
   halving : ∀ j ∈ Finset.Icc 1 P.q, δ₁ k j < δ k j → 2 * δ₁ k j ≤ δ k j ∧
     (∃ d', ‖d'‖ ≤ 2 * δ₁ k j ∧ x k + d' ∈ X ∧
       P.ς * ε j * (2 * δ₁ k j) ^ j / j ! / 2 < (D k).taylorDecrement j d' ∧
       arModelDec P D σ k d' < P.ς * ε j * (2 * δ₁ k j) ^ j / j ! / 4) ∧
     ∃ d₀, ‖d₀‖ ≤ δ k j ∧ x k + d₀ ∈ X ∧
       P.ς * ε j * δ k j ^ j / j ! / 2 < (D k).taylorDecrement j d₀
-  /-- The radii at the end of Step 1 are obtained by halving:
-  `δ^{(1)}_{k,j} = δ^{(0)}_{k,j}/2^m`. -/
+  /-- The final radii come from halving: $\delta^{(1)}_{k,j} = \delta^{(0)}_{k,j}/2^m$ for some
+  $m \in \mathbb{N}$, for every $j \in [1, q]$. -/
   dyadic : ∀ j ∈ Finset.Icc 1 P.q, ∃ m : ℕ, δ₁ k j = δ k j / 2 ^ m
-  /-- (13.1.52). -/
+  /-- The condition (13.1.52): for $j \in [1, q]$, $d_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of $\overline{\Delta T}_{f,j}(x_k, \cdot)$ for the radius $\delta^{(1)}_{k,j}$
+  and the displacements $e$ with $x_k + e \in X$. -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((D k).taylorDecrement j) (δ₁ k j)
     {e | x k + e ∈ X} P.ς (dd k j)
 
-/-- **One iteration of ARqpIDA / ARqpEDA** ([cartis2022evaluation], Algorithm 13.1.2, Steps 1, 2,
-4, 5) on the feasible set `X`, given the ratio `ρ k`: Step 1 (`ARqpStep1`, radii `δ k`, `δ₁ k`);
-if (13.1.53) holds at every order the iteration is accuracy-improving, otherwise Step 2
-(`ARqpStep2`, radii `δs k = δ_{s_k}`) is performed. A trial iteration accepts or rejects the step,
-updates `σ` by (13.1.59), inherits the radii `δ_{s_k}` after a successful short step and
-`δ^{(1)}_k` otherwise, keeps the accuracies, and keeps the derivative estimates when the step is
-rejected; an accuracy-improving iteration keeps `x_k`, `σ_k` and `δ^{(0)}_k` and multiplies the
-accuracies by `γ_h`. -/
+/-- One iteration $k$ of ARqpIDA and ARqpEDA (Steps 1, 2, 4 and 5 of Algorithm 13.1.2 of
+[cartis2022evaluation]) on the feasible set $X$, given the ratio $\rho_k$. Step 1
+(`Optimization.ARqpStep1`) holds. If the test (13.1.53) holds at every order $j \in [1, q]$, the
+iteration is accuracy-improving; if the test fails at some order, Step 2
+(`Optimization.ARqpStep2`) holds. A trial iteration, that is an iteration that is not
+accuracy-improving, accepts or rejects the step and updates $\sigma$ by (13.1.59)
+(`Optimization.ARAcceptance`); it passes the radii $\delta^{(0)}_{k+1} = \delta_{s_k}$ to the
+next iteration if $\rho_k \ge \eta_1$ and $\|s_k\| < 1$, and
+$\delta^{(0)}_{k+1} = \delta^{(1)}_k$ otherwise; it keeps the accuracies; and it keeps the
+derivative estimates, $D_{k+1} = D_k$, if $\rho_k < \eta_1$. An accuracy-improving iteration
+keeps $x_k$, $\sigma_k$ and $\delta^{(0)}_k$, and sets $h_{k+1,i} = \gamma_h h_{k,i}$ for every
+$i$.
+
+The ratio $\rho_k$ is a parameter: it is the ratio (13.1.58) with exact function values for
+ARqpIDA and the ratio (13.3.19) with inexact function values for ARqpEDA. Step 3 of ARqpEDA,
+which computes the inexact function values, is stated separately. -/
 structure ARqpDAStep (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ → E) (σ : ℕ → ℝ)
     (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E) (acc : ℕ → Prop) (ρ : ℕ → ℝ) (k : ℕ) :
     Prop extends ARqpStep1 X P ε x σ δ δ₁ D dd k where
-  /-- Step 1 → Step 5 when (13.1.53) holds at every order. -/
+  /-- If the test (13.1.53) holds at every order $j \in [1, q]$, Step 1 branches to Step 5: the
+  iteration is accuracy-improving. -/
   acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arqpDAPass P ε D δ₁ dd k j) → acc k
-  /-- Step 2 otherwise. -/
+  /-- If the test (13.1.53) fails at some order $j \in [1, q]$, Step 2 holds. -/
   step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPass P ε D δ₁ dd k j) →
     ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k
-  /-- Steps 3–4 on a trial iteration. -/
+  /-- On a trial iteration, Steps 3–4 hold: the step is accepted or rejected and $\sigma$ is updated
+  for the ratio $\rho_k$. -/
   accept : ¬ acc k → ARAcceptance P.toARParams (ρ k) (x k) (s k) (x (k + 1)) (σ k) (σ (k + 1))
-  /-- The radii inherited by the next iteration (Step 3). -/
+  /-- On a trial iteration, the next radii are $\delta^{(0)}_{k+1} = \delta_{s_k}$ if
+  $\eta_1 \le \rho_k$ and $\|s_k\| < 1$, and $\delta^{(0)}_{k+1} = \delta^{(1)}_k$ otherwise
+  (Step 3). -/
   radii_trial : ¬ acc k →
     δ (k + 1) = if P.η₁ ≤ ρ k ∧ ‖s k‖ < 1 then δs k else δ₁ k
-  /-- The accuracies are kept on trial iterations. -/
+  /-- On a trial iteration, the accuracies are kept: $h_{k+1} = h_k$. -/
   h_trial : ¬ acc k → h (k + 1) = h k
-  /-- No new derivative estimates at an unchanged iterate. -/
+  /-- On an unsuccessful trial iteration ($\rho_k < \eta_1$), no new derivative estimates are made
+  at the unchanged iterate: $D_{k+1} = D_k$. -/
   D_unsucc : ¬ acc k → ρ k < P.η₁ → D (k + 1) = D k
-  /-- Step 5 keeps the iterate. -/
+  /-- Step 5 keeps the iterate: $x_{k+1} = x_k$. -/
   x_acc : acc k → x (k + 1) = x k
-  /-- Step 5 keeps the radii `δ^{(0)}_k`. -/
+  /-- Step 5 keeps the radii: $\delta^{(0)}_{k+1} = \delta^{(0)}_k$. -/
   δ_acc : acc k → δ (k + 1) = δ k
-  /-- Step 5 keeps the regularization parameter. -/
+  /-- Step 5 keeps the weight: $\sigma_{k+1} = \sigma_k$. -/
   σ_acc : acc k → σ (k + 1) = σ k
-  /-- Step 5 multiplies the accuracies by `γ_h`. -/
+  /-- Step 5 multiplies the accuracies by $\gamma_h$: $h_{k+1,i} = \gamma_h h_{k,i}$ for every $i$.
+  -/
   h_acc : acc k → ∀ i, h (k + 1) i = P.γh * h k i
 
-/-- The radii control of ARqpIDA / ARqpEDA in one of two modes, selected by the proposition `u`
-([cartis2022evaluation], (13.1.69)–(13.1.70) and §14.2): after a trial iteration with a short
-step `‖s_k‖ < 1`, if `u` holds then `δ_{s_k,j} = 1` for all `j ∈ [1, q]` (unit radii), and if `u`
-fails then `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` (the (12.2.51)-type lower
-bound at every order). Unit radii are what Algorithm 12.2.3 delivers for `q ≤ 2` without
-constraints (or for `q = 1` on a convex feasible set); the lower bound is available in every
-case, in particular for `q > 2` or with a general feasible set. The complexity orders depend on
-the mode (`arPiOf u`). -/
+/-- The radii control of ARqpIDA and ARqpEDA at iteration $k$ ((13.1.69)–(13.1.70) and §14.2 of
+[cartis2022evaluation]), in one of two modes selected by the proposition $u$. After a trial
+iteration $k$ with a short step $\|s_k\| < 1$: if $u$ holds, then $\delta_{s_k,j} = 1$ for all
+$j \in [1, q]$ (unit radii); if $u$ fails, then
+$$\delta_{s_k,j} \ge \frac{\varsigma\theta\varepsilon_j}{24\max\{\overline{L}, \sigma_k\}}
+  \qquad \text{for all } j \in [1, q],$$
+the lower bound of the type (12.2.51) at every order.
+
+Algorithm 12.2.3 delivers unit radii for $q \le 2$ without constraints, and for $q = 1$ on a
+convex feasible set. The lower bound is available in every case, in particular for $q > 2$ or
+with a general feasible set. The complexity orders depend on the mode through the exponents of
+`Optimization.arPiOf`. The argument `Lb` is the constant $\overline{L}$. -/
 def ARqpDARadiiControl (u : Prop) (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ)
     (δs : ℕ → ℕ → ℝ) (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop :=
   ¬ acc k → ‖s k‖ < 1 → (u → ∀ j ∈ Finset.Icc 1 P.q, δs k j = 1) ∧
     (¬ u → ∀ j ∈ Finset.Icc 1 P.q, P.ς * P.θ * ε j / (24 * max Lb (σ k)) ≤ δs k j)
 
-/-- The radii control in the mode determined by the order: `ARqpDARadiiControl` with unit radii
-exactly when `q ≤ 2`, i.e. after a trial iteration with a short step, `δ_{s_k,j} = 1` for all
-`j ∈ [1, q]` if `q ≤ 2`, and `δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` for all `j ∈ [1, q]` if
-`q > 2` (cf. [cartis2022evaluation], (13.1.69)–(13.1.70)). Unit radii at the orders `j ≤ 2` and
-the lower bound at the orders `j ≥ 3` imply it (`RadiiControl.of_unit_le_two`). -/
+/-- The radii control of [cartis2022evaluation], (13.1.69)–(13.1.70), in the mode fixed by the
+order: `Optimization.ARqpDARadiiControl` with unit radii exactly when $q \le 2$. After a trial
+iteration $k$ with $\|s_k\| < 1$, $\delta_{s_k,j} = 1$ for all $j \in [1, q]$ if $q \le 2$, and
+$\delta_{s_k,j} \ge \varsigma\theta\varepsilon_j/(24\max\{\overline{L}, \sigma_k\})$ for all
+$j \in [1, q]$ if $q > 2$.
+
+Unit radii at the orders $j \le 2$ together with the lower bound at the orders $j \ge 3$ imply
+it (`Optimization.RadiiControl.of_unit_le_two`). -/
 def RadiiControl (P : ARqpIDAParams) (ε : ℕ → ℝ) (Lb : ℝ) (σ : ℕ → ℝ) (δs : ℕ → ℕ → ℝ)
     (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop :=
   ARqpDARadiiControl (P.q ≤ 2) P ε Lb σ δs s acc k
 
 omit [InnerProductSpace ℝ E] in
-/-- `RadiiControl` unfolded, with the case `2 < q` for the lower bounds. -/
+/-- The radii control `Optimization.RadiiControl` unfolded: after a trial iteration $k$ with
+$\|s_k\| < 1$, $\delta_{s_k,j} = 1$ for $j \in [1, q]$ if $q \le 2$, and $\delta_{s_k,j} \ge
+\varsigma\theta\varepsilon_j/(24\max\{\overline{L}, \sigma_k\})$ for $j \in [1, q]$ if $2 < q$. -/
 theorem radiiControl_iff {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
     {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ} :
     RadiiControl P ε Lb σ δs s acc k ↔
@@ -244,9 +343,13 @@ theorem radiiControl_iff {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ :
   simp only [RadiiControl, ARqpDARadiiControl, not_le]
 
 omit [InnerProductSpace ℝ E] in
-/-- Unit radii give the radii control in either mode: if `δ_{s_k,j} = 1` for all `j ∈ [1, q]`
-after a trial iteration with a short step, `ε_j ≤ 1` and `L̄ ≥ 1`, then `ARqpDARadiiControl u` holds
-for every `u` (the lower bound `ς θ ε_j/(24 max(L̄, σ_k)) ≤ 1` is automatic). -/
+/-- Unit radii give the radii control in either mode. Let $\overline{L} \ge 1$ and
+$\varepsilon_j \le 1$ for $j \in [1, q]$. If $\delta_{s_k,j} = 1$ for all $j \in [1, q]$
+whenever iteration $k$ is a trial iteration with $\|s_k\| < 1$, then
+`Optimization.ARqpDARadiiControl u` holds at $k$ for every proposition $u$.
+
+The lower bound $\varsigma\theta\varepsilon_j/(24\max\{\overline{L}, \sigma_k\}) \le 1$ of the
+second mode is automatic. -/
 theorem ARqpDARadiiControl.of_unit {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
     {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ} {u : Prop} (hLb : 1 ≤ Lb)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ 1)
@@ -266,10 +369,11 @@ theorem ARqpDARadiiControl.of_unit {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : 
     linarith
 
 omit [InnerProductSpace ℝ E] in
-/-- Unit radii at the orders `j ≤ min(2, q)` and the lower bound
-`δ_{s_k,j} ≥ ς θ ε_j/(24 max(L̄, σ_k))` at the orders `j ∈ [3, q]` (after a trial iteration with a
-short step) imply `RadiiControl` when `ε ∈ (0, 1]^q` and `L̄ ≥ 1`
-([cartis2022evaluation], (13.1.69)–(13.1.70)). -/
+/-- Let $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$ and $\overline{L} \ge 1$. Suppose that after a
+trial iteration $k$ with $\|s_k\| < 1$, $\delta_{s_k,j} = 1$ for $j \in [1, \min\{2, q\}]$ and
+$\delta_{s_k,j} \ge \varsigma\theta\varepsilon_j/(24\max\{\overline{L}, \sigma_k\})$ for
+$j \in [3, q]$. Then the radii control `Optimization.RadiiControl` of [cartis2022evaluation],
+(13.1.69)–(13.1.70), holds at $k$. -/
 theorem RadiiControl.of_unit_le_two {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ} {σ : ℕ → ℝ}
     {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ}
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hLb : 1 ≤ Lb)
@@ -299,38 +403,46 @@ namespace ARqpDAStep
 variable (hs : ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ k)
 include hs
 
-/-- A trial iteration went through Step 2. -/
+/-- A trial iteration went through Step 2: if iteration $k$ is not accuracy-improving, then
+`Optimization.ARqpStep2` holds at $k$. -/
 theorem step2_of_not_acc (hk : ¬ acc k) : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k := by
   refine hs.step2 ?_
   by_contra hc
   push Not at hc
   exact hk (hs.acc_of_pass hc)
 
-/-- The parameter update of a trial iteration. -/
+/-- On a trial iteration, $\sigma_{k+1}$ is obtained from $\sigma_k$ by the update rule (2.4.4) for
+the ratio $\rho_k$. -/
 theorem update (hk : ¬ acc k) :
     ARUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ P.σmin (ρ k) (σ k) (σ (k + 1)) :=
   (hs.accept hk).2
 
-/-- The iterate is kept unless the iteration is successful. -/
+/-- The iterate is kept, $x_{k+1} = x_k$, unless iteration $k$ is a successful trial iteration
+($\rho_k \ge \eta_1$). -/
 theorem iterate_succ_eq (hk : ¬ (¬ acc k ∧ P.η₁ ≤ ρ k)) : x (k + 1) = x k := by
   by_cases ha : acc k
   · exact hs.x_acc ha
   · exact (hs.accept ha).eq_self (not_le.1 fun h' => hk ⟨ha, h'⟩)
 
-/-- A successful iteration moves to the trial point. -/
+/-- A successful trial iteration moves to the trial point: $x_{k+1} = x_k + s_k$. -/
 theorem iterate_succ_eq_add (hk : ¬ acc k) (hρ : P.η₁ ≤ ρ k) : x (k + 1) = x k + s k :=
   (hs.accept hk).eq_add hρ
 
-/-- The iterates stay feasible: `x_k ∈ X` implies `x_{k+1} ∈ X`. -/
+/-- The iterates stay feasible: if $x_k \in X$, then $x_{k+1} \in X$. -/
 theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
   by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
   · rw [hs.iterate_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
   · rw [hs.iterate_succ_eq hc]; exact hx
 
-/-- One iteration only involves the data at iterations `k` and `k + 1`: the step predicate at `k`
-transfers to sequences whose iterates, weights, radii `δ^{(0)}`, accuracies and estimates at `k'`
-and `k' + 1`, and whose radii `δ^{(1)}`, `δ_s`, displacements, order, step, flag and ratio at
-`k'`, are those of iterations `k` and `k + 1` (used to splice runs). -/
+/-- One iteration involves only the data at the indices $k$ and $k + 1$. Suppose that the step
+predicate `Optimization.ARqpDAStep` holds at $k$ for some sequences, and consider other
+sequences such that: the iterates, weights, radii $\delta^{(0)}$, accuracies and derivative
+estimates at $k'$ and $k' + 1$ equal those of the first sequences at $k$ and $k + 1$; and the
+radii $\delta^{(1)}$ and $\delta_s$, the Step-1 displacements, the order $j_k$, the step and the
+ratio at $k'$ equal those at $k$, and the flag at $k'$ holds if and only if the flag at $k$
+holds. Then the step predicate holds for the other sequences at $k'$.
+
+This is used to splice runs. -/
 theorem congr {x' : ℕ → E} {σ' : ℕ → ℝ} {δ' δ₁' δs' : ℕ → ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
     {D' : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd' : ℕ → ℕ → E} {jk' : ℕ → ℕ} {s' : ℕ → E}
     {acc' : ℕ → Prop} {ρ' : ℕ → ℝ} {k' : ℕ} (hx : x' k' = x k) (hx1 : x' (k' + 1) = x (k + 1))
@@ -374,14 +486,19 @@ theorem congr {x' : ℕ → E} {σ' : ℕ → ℝ} {δ' δ₁' δs' : ℕ → �
 
 end ARqpDAStep
 
-/-- The iterates of ARqpIDA/ARqpEDA sequences starting in `X` stay in `X`. -/
+/-- If the step predicate `Optimization.ARqpDAStep` holds at every iteration $i < k$ and
+$x_0 \in X$, then $x_k \in X$. -/
 theorem arqpDA_mem (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hx0 : x 0 ∈ X) : x k ∈ X := by
   induction k with
   | zero => exact hx0
   | succ k ih => exact (hstep k k.lt_succ_self).mem_succ (ih fun i hi => hstep i (by omega))
 
-/-- A trial step with `‖s_k‖ < 1` satisfies (13.1.57). -/
+/-- If Step 2 holds at iteration $k$ and $\|s_k\| < 1$, then (13.1.57) holds: for every
+$\ell \in [1, q]$, $\delta_{s_k,\ell} \in (0, 1]$, and some $\varsigma$-approximate optimality
+displacement of the order-$\ell$ Taylor decrement of $\overline{m}_k$ at $s_k$, for the radius
+$\delta_{s_k,\ell}$ and the displacements $e$ with $x_k + s_k + e \in X$, has decrease at most
+$\varsigma\theta\varepsilon_\ell\delta_{s_k,\ell}^\ell/\ell!$. -/
 theorem ARqpStep2.radii_of_lt (h2 : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k)
     (hs1 : ‖s k‖ < 1) :
     ∀ ℓ ∈ Finset.Icc 1 P.q, δs k ℓ ∈ Set.Ioc 0 1 ∧
@@ -392,7 +509,9 @@ theorem ARqpStep2.radii_of_lt (h2 : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk
           P.ς * P.θ * ε ℓ * δs k ℓ ^ ℓ / ℓ ! :=
   h2.radii.resolve_left fun h' => absurd h'.1 (not_le.2 hs1)
 
-/-- On a trial iteration with `‖s_k‖ < 1`, the accuracy test (13.1.46) holds. -/
+/-- If Step 2 holds at iteration $k$, the iteration is not accuracy-improving and $\|s_k\| < 1$,
+then the accuracy test (13.1.46) holds: $h_{k,i} \le \kappa_s \|s_k\|^{p-i+1}$ for every
+$i \in [1, p]$. -/
 theorem ARqpStep2.accuracy_le_of_not_acc (h2 : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k)
     (hk : ¬ acc k) (hs1 : ‖s k‖ < 1) :
     ∀ i ∈ Finset.Icc 1 P.p, h k i ≤ P.κs * ‖s k‖ ^ (P.p - i + 1) := by
@@ -400,9 +519,10 @@ theorem ARqpStep2.accuracy_le_of_not_acc (h2 : ARqpStep2 X P ε x σ δ δ₁ δ
   by_contra hc
   exact hk (h2.acc_iff.2 ⟨hs1, i, hi, not_le.1 hc⟩)
 
-/-- **Invariants of ARqpIDA/ARqpEDA sequences**: if the step predicate holds at every iteration
-`i < k`, `σ_0 = σ₀`, `δ_0 = δ₀` and `h_0 = h₀`, then `σ_k ≥ σ_min`, `δ_{k,j} ∈ (0, 1]` for
-`j ∈ [1, q]` and `0 ≤ h_{k,i} ≤ κ_h` for `i ∈ [1, p]`. -/
+/-- Invariants of ARqpIDA and ARqpEDA sequences. If the step predicate `Optimization.ARqpDAStep`
+holds at every iteration $i < k$ and the initial weight, radii and accuracies are $\sigma_0$,
+$\delta_0$ and $h_0$ of $P$, then $\sigma_k \ge \sigma_{\min}$, $\delta^{(0)}_{k,j} \in (0, 1]$
+for $j \in [1, q]$, and $0 \le h_{k,i} \le \kappa_h$ for $i \in [1, p]$. -/
 theorem arqpDA_invariants (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀) (hh0 : h 0 = P.h₀) :
     P.σmin ≤ σ k ∧ (∀ j ∈ Finset.Icc 1 P.q, 0 < δ k j ∧ δ k j ≤ 1) ∧
@@ -427,16 +547,25 @@ theorem arqpDA_invariants (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δ
     · exact ((hk.step2_of_not_acc ha).radii_of_lt hc.2 j hj).1
     · exact ⟨hk.radius_pos j hj, (hk.radius_le j hj).trans (hδ j hj).2⟩
 
-/-- The regularization parameters of ARqpIDA/ARqpEDA sequences are positive. -/
+/-- Under the hypotheses of `Optimization.arqpDA_invariants`, the weight is positive:
+$\sigma_k > 0$. -/
 theorem arqpDA_sigma_pos (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀) (hh0 : h 0 = P.h₀) : 0 < σ k :=
   P.σmin_pos.trans_le (arqpDA_invariants hstep hσ0 hδ0 hh0).1
 
 /-! ### Counting the trial iterations -/
 
-/-- **Counting the trial iterations** (Lemma 13.1.9 of [cartis2022evaluation]): for sequences
-satisfying the ARqpIDA step predicate at every iteration `i ≤ k` with `σ_0 = σ₀`, if
-`σ_{k+1} ≤ σ_max`, then `|𝒯_k| ≤ |𝒮_k| (1 + |log γ₁|/log γ₂) + log(σ_max/σ₀)/log γ₂` (13.1.62). -/
+/-- Let the step predicate `Optimization.ARqpDAStep` hold at every iteration $i \le k$, let the
+initial weight, radii and accuracies be those of $P$, and let $\sigma_{k+1} \le \sigma_{\max}$.
+Then (13.1.62)
+$$|\mathcal{T}_k| \le |\mathcal{S}_k| \Big(1 + \frac{|\log\gamma_1|}{\log\gamma_2}\Big) +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log\gamma_2},$$
+where $\mathcal{T}_k$ is the set of trial iterations $i \in [0, k]$ and $\mathcal{S}_k$ is the
+set of successful trial iterations $i \in [0, k]$, those with $\rho_i \ge \eta_1$. This is Lemma
+13.1.9 of [cartis2022evaluation].
+
+The two sets are `Optimization.successSet` of the predicates "not accuracy-improving" and "not
+accuracy-improving and $\eta_1 \le \rho_i$". -/
 theorem arqpDA_card_trial_le (hstep : ∀ i ≤ k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀) (hh0 : h 0 = P.h₀) {σmax : ℝ}
     (hσmax : σ (k + 1) ≤ σmax) :
@@ -473,11 +602,16 @@ theorem arqpDA_card_trial_le (hstep : ∀ i ≤ k, ARqpDAStep X P ε x σ δ δ�
 
 /-! ### Radii, accuracy and decrease at one iteration -/
 
-/-- **The radii after Step 1** (Lemma 13.1.11 of [cartis2022evaluation]): if Step 1 of ARqpIDA (or
-ARqpEDA) is performed at iteration `k` with `‖∇̄^i f(x_k)‖ ≤ L̄` for `i ∈ [1, p]` (`L̄ > 0`;
-(13.1.63) for ARqpIDA), `σ_k ≥ 0` and `δ^{(0)}_k ∈ (0, 1]^q`, then (13.1.66)
-`δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ min(ς ε_j/(16 max(L̄, σ_k)), δ^{(0)}_{k,j})` for `j ∈ [1, q]`.
-(That the halving loop stops is `exists_arqpDA_halving`.) -/
+/-- Let Step 1 hold at iteration $k$. Let $\overline{L} > 0$ with $\|\overline{\nabla}^i f(x_k)\|
+\le \overline{L}$ for $i \in [1, p]$ (for ARqpIDA this is (13.1.63)), let $\sigma_k \ge 0$, and
+let $\delta^{(0)}_{k,j} \le 1$ for $j \in [1, q]$. Then for every $j \in [1, q]$ (13.1.66)
+$$\delta^{(0)}_{k,j} \ge \delta^{(1)}_{k,j} \ge
+  \min\Big\{\frac{\varsigma\varepsilon_j}{16\max\{\overline{L}, \sigma_k\}},
+  \delta^{(0)}_{k,j}\Big\}.$$
+This is Lemma 13.1.11 of [cartis2022evaluation].
+
+The inexact derivative $\overline{\nabla}^i f(x_k)$ is the term `D k i` of the derivative data.
+That the halving loop stops is `Optimization.exists_arqpDA_halving`. -/
 theorem ARqpStep1.radius_bounds (hs : ARqpStep1 X P ε x σ δ δ₁ D dd k) {Lb : ℝ}
     (hLb : 0 < Lb) (hD : ∀ i ∈ Finset.Icc 1 P.p, ‖D k i‖ ≤ Lb) (hσ : 0 ≤ σ k)
     (hδ1 : ∀ j ∈ Finset.Icc 1 P.q, δ k j ≤ 1) {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
@@ -515,15 +649,18 @@ theorem ARqpStep1.radius_bounds (hs : ARqpStep1 X P ε x σ δ δ₁ D dd k) {Lb
   · rw [lt_div_iff₀ (by positivity)] at hcon
     nlinarith
 
-/-- The constant `κ^{(1)}_δ(σ) = ς θ/(24 max(L̄, σ))` of (13.1.72). -/
+/-- The constant $\kappa^{(1)}_\delta(\sigma) = \varsigma\theta/(24\max\{\overline{L}, \sigma\})$ of
+(13.1.72) of [cartis2022evaluation]. -/
 noncomputable def arKappaDelta1 (P : ARqpIDAParams) (Lb σ : ℝ) : ℝ :=
   P.ς * P.θ / (24 * max Lb σ)
 
+/-- If $\overline{L} > 0$, then $\kappa^{(1)}_\delta(\sigma) > 0$. -/
 theorem arKappaDelta1_pos {P : ARqpIDAParams} {Lb σ : ℝ} (hLb : 0 < Lb) :
     0 < arKappaDelta1 P Lb σ := by
   have := P.ς_pos; have := P.θ_pos
   exact div_pos (by positivity) (by have : 0 < max Lb σ := lt_max_of_lt_left hLb; positivity)
 
+/-- If $\overline{L} \ge 1$, then $\kappa^{(1)}_\delta(\sigma) \le 1$. -/
 theorem arKappaDelta1_le_one {P : ARqpIDAParams} {Lb σ : ℝ} (hLb : 1 ≤ Lb) :
     arKappaDelta1 P Lb σ ≤ 1 := by
   have := P.ς_pos; have := P.ς_le_one; have := P.θ_pos; have := P.θ_lt_one
@@ -532,8 +669,11 @@ theorem arKappaDelta1_le_one {P : ARqpIDAParams} {Lb σ : ℝ} (hLb : 1 ≤ Lb) 
   nlinarith
 
 omit [InnerProductSpace ℝ E] in
-/-- Either mode of the radii control gives the lower bound `κ^{(1)}_δ(σ̄) ε_j ≤ δ_{s_k,j}` after
-a trial iteration with a short step, when `ε ∈ (0, 1]^q`, `L̄ ≥ 1` and `σ_k ≤ σ̄`. -/
+/-- Either mode of the radii control gives a lower bound on the radii of Step 2. Let
+`Optimization.ARqpDARadiiControl u` hold at iteration $k$, let $k$ be a trial iteration with
+$\|s_k\| < 1$, let $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$, let $\overline{L} \ge 1$, and
+let $\sigma_k \le \bar\sigma$. Then $\kappa^{(1)}_\delta(\bar\sigma)\varepsilon_j \le
+\delta_{s_k,j}$ for every $j \in [1, q]$. -/
 theorem ARqpDARadiiControl.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ → ℝ} {Lb : ℝ}
     {σ : ℕ → ℝ} {δs : ℕ → ℕ → ℝ} {s : ℕ → E} {acc : ℕ → Prop} {k : ℕ}
     (hrc : ARqpDARadiiControl u P ε Lb σ δs s acc k) (hk : ¬ acc k) (hs : ‖s k‖ < 1)
@@ -556,11 +696,15 @@ theorem ARqpDARadiiControl.kappa_mul_le {u : Prop} {P : ARqpIDAParams} {ε : ℕ
     exact div_le_div_of_nonneg_left (by have := hεj.1; positivity) (by positivity)
       (by have := max_le_max (le_refl Lb) hσ; linarith)
 
-/-- **The radius bound (13.1.71) of Lemma 13.1.12** ([cartis2022evaluation]), for sequences
-satisfying the ARqpIDA step predicate at every iteration `i < k` and Step 1 at `k`, with
-`ε ∈ (0, 1]^q`, `ε ≤ δ₀`, `‖∇̄^ℓ f(x_i)‖ ≤ L̄` (`L̄ ≥ 1`), `σ_i ≤ σ̄` for `i ≤ k` and the radii
-control (`ARqpDARadiiControl`, either mode) at every `i < k`:
-`δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for `j ∈ [1, q]`. -/
+/-- Let the step predicate `Optimization.ARqpDAStep` hold at every iteration $i < k$ and Step 1 at
+iteration $k$, with the initial weight, radii and accuracies of $P$. Let
+$\varepsilon_j \in (0, 1]$ and $\varepsilon_j \le \delta_{0,j}$ for $j \in [1, q]$, let
+$\overline{L} \ge 1$ with $\|\overline{\nabla}^\ell f(x_i)\| \le \overline{L}$ for $i \le k$ and
+$\ell \in [1, p]$, let $\sigma_i \le \bar\sigma$ for $i \le k$, and let the radii control
+`Optimization.ARqpDARadiiControl u`, in either mode, hold at every iteration $i < k$. Then
+$$\delta^{(0)}_{k,j} \ge \delta^{(1)}_{k,j} \ge \kappa^{(1)}_\delta(\bar\sigma)\varepsilon_j,
+  \qquad j \in [1, q].$$
+This is the radius bound (13.1.71) of Lemma 13.1.12 of [cartis2022evaluation]. -/
 theorem arqpDA_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ i)
     (hstep1 : ARqpStep1 X P ε x σ δ δ₁ D dd k) (hσ0 : σ 0 = P.σ₀) (hδ0 : δ 0 = P.δ₀)
     (hh0 : h 0 = P.h₀)
@@ -623,10 +767,11 @@ theorem arqpDA_radius_ge (hstep : ∀ i < k, ARqpDAStep X P ε x σ δ δ₁ δs
   have h11 := ARqpStep1.radius_bounds hstep1 hLb0 (hD k le_rfl) (hσpos k le_rfl).le hδ1k hj
   exact ⟨(le_min (ha k le_rfl j hj) (hδk k le_rfl j hj)).trans h11.2, h11.1⟩
 
-/-- **The model decrease at a trial iteration** (Lemma 13.1.13 of [cartis2022evaluation]): at a
-trial iteration `k ∈ 𝒯` of ARqpIDA (or ARqpEDA) with `ε_{j_k} > 0` and `σ_k ≥ 0`,
-`\overline{ΔT}_{f,p}(x_k, s_k) ≥ σ_k/(p+1)! ‖s_k‖^{p+1}` (13.1.76) and
-`\overline{ΔT}_{f,p}(x_k, s_k) > 0`, so that the ratio (13.1.58) is well defined. -/
+/-- Let iteration $k$ of ARqpIDA or ARqpEDA be a trial iteration, let $\varepsilon_j > 0$ for
+$j \in [1, q]$, and let $\sigma_k \ge 0$. Then (13.1.76)
+$$\overline{\Delta T}_{f,p}(x_k, s_k) \ge \frac{\sigma_k}{(p+1)!} \|s_k\|^{p+1},$$
+and $\overline{\Delta T}_{f,p}(x_k, s_k) > 0$, so that the ratio (13.1.58) is well defined. This
+is Lemma 13.1.13 of [cartis2022evaluation]. -/
 theorem ARqpDAStep.taylorDecrement_ge (hs : ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ k)
     (hk : ¬ acc k)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, 0 < ε j) (hσ : 0 ≤ σ k) :
@@ -640,12 +785,16 @@ theorem ARqpDAStep.taylorDecrement_ge (hs : ARqpDAStep X P ε x σ δ δ₁ δs 
   have : 0 ≤ σ k / ((P.p + 1)! : ℝ) * ‖s k‖ ^ (P.p + 1) := by positivity
   constructor <;> linarith
 
-/-- **The accuracy bound (13.1.73) of Lemma 13.1.12** ([cartis2022evaluation]), for one
-iteration of the ARqpIDA step predicate that goes through Step 2: if `‖∇̄^i f(x_k)‖ ≤ L̄` for
-`i ∈ [1, p]` (`L̄ ≥ 1`), `σ_k ≥ 0`, any `σ̄`, `ε ∈ (0, 1]^q`, `0 ≤ κ ≤ 1` with
-`δ^{(1)}_{k,j} ≥ κ ε_j`,
-and `h_{k,i} ≤ κ_s (ς κ^q/(12 q! max(L̄, σ̄)))^p ε_min^{p(q+1)}` for `i ∈ [1, p]`, then the
-iteration is not accuracy-improving. -/
+/-- Let Step 2 hold at iteration $k$ with $\delta^{(1)}_{k,j} > 0$ for $j \in [1, q]$. Let
+$\overline{L} \ge 1$ with $\|\overline{\nabla}^i f(x_k)\| \le \overline{L}$ for $i \in [1, p]$,
+let $\sigma_k \ge 0$, let $\bar\sigma$ be any real number, let $\varepsilon_j \in (0, 1]$ for
+$j \in [1, q]$, and let $0 \le \kappa \le 1$ with $\delta^{(1)}_{k,j} \ge \kappa\varepsilon_j$
+for $j \in [1, q]$. If
+$$h_{k,i} \le \kappa_s \Big(\frac{\varsigma\kappa^q}{12\,q!\,\max\{\overline{L},
+  \bar\sigma\}}\Big)^p \varepsilon_{\min}^{p(q+1)}, \qquad i \in [1, p],$$
+with $\varepsilon_{\min} = \min_{j \in [1, q]} \varepsilon_j$, then iteration $k$ is not
+accuracy-improving. This is the accuracy bound (13.1.73) of Lemma 13.1.12 of
+[cartis2022evaluation]. -/
 theorem ARqpStep2.not_acc_of_le (h2 : ARqpStep2 X P ε x σ δ δ₁ δs h D dd jk s acc k)
     (hpos : ∀ j ∈ Finset.Icc 1 P.q, 0 < δ₁ k j) {Lb σbar κ : ℝ} (hLb : 1 ≤ Lb)
     (hD : ∀ i ∈ Finset.Icc 1 P.p, ‖D k i‖ ≤ Lb) (hσ : 0 ≤ σ k)
@@ -722,16 +871,23 @@ end ARStep
 
 section StepLength
 
-/-- The constant `κ̂ = min(κ, a/(2 q! A))` replacing `κ_{δ,min}` in the step-length bounds for
-`q > 2` (Lemmas 13.1.17, 13.1.18). -/
+/-- The constant $\hat\kappa = \min\{\kappa, a/(2\,q!\,A)\}$, which replaces $\kappa_{\delta,\min}$
+in the step-length bounds for $q > 2$ (Lemmas 13.1.17 and 13.1.18 of [cartis2022evaluation]). -/
 noncomputable def arKappaHat (q : ℕ) (a A κ : ℝ) : ℝ := min κ (a / (2 * q ! * A))
 
-/-- **The step-length bound of Lemma 13.1.17** ([cartis2022evaluation], via Lemma 12.2.12),
-from the radius inequality (13.1.79), in the unit-radius mode (`u`, where `δ = 1`) or the
-lower-bound mode (`¬ u`): let `a, A > 0`, `ε > 0`, `t ∈ (0, 1)`, `δ > 0`, `j ∈ [1, q]`, `q ≤ p`,
-`κ > 0` with `κ ε ≤ δ`, and `δ = 1` if `u`. If
-`a ε δ^j/j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}`, then `a/(2 j! A) ε ≤ t^{p-j+1}` if `u`, and
-`a/(2 j! A) κ̂^{j-1} ε^j ≤ t^p` with `κ̂ = min(κ, a/(2 q! A))` if `¬ u`. -/
+/-- Let $a > 0$, $A > 0$, $\varepsilon > 0$, $t \in (0, 1)$, $\delta > 0$, $j \in [1, q]$ and
+$q \le p$, let $\kappa > 0$ with $\kappa\varepsilon \le \delta$, and let $u$ be a proposition
+such that $\delta = 1$ if $u$ holds. If the radius inequality (13.1.79)
+$$\frac{a\varepsilon\delta^j}{j!} \le A \sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}
+  t^{p-\ell+1}$$
+holds, then $\frac{a}{2\,j!\,A}\varepsilon \le t^{p-j+1}$ if $u$ holds, and
+$\frac{a}{2\,j!\,A}\hat\kappa^{j-1}\varepsilon^j \le t^p$ with
+$\hat\kappa = \min\{\kappa, a/(2\,q!\,A)\}$ if $u$ fails. This is the step-length bound of Lemma
+13.1.17 of [cartis2022evaluation], obtained as in Lemma 12.2.12.
+
+The proposition $u$ is the mode of the radii control: unit radii if $u$ holds, and radii bounded
+below by $\kappa\varepsilon$ otherwise. The constant $\hat\kappa$ is
+`Optimization.arKappaHat q a A κ`. -/
 theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} {u : Prop} (ha : 0 < a)
     (hA : 0 < A) (hε : 0 < ε) (ht : 0 < t) (ht1 : t < 1) (hδ : 0 < δ) (hj : j ∈ Finset.Icc 1 q)
     (hqp : q ≤ p) (hκ : 0 < κ) (hκε : κ * ε ≤ δ) (hu : u → δ = 1)
@@ -760,54 +916,83 @@ theorem arqp_pow_ge_of_radius_ineq {a A t ε δ κ : ℝ} {j p q : ℕ} {u : Pro
     rw [this]
     gcongr
 
-/-- The exponent `π_j` of Lemma 13.1.18 in the radii mode `u` (`ARqpDARadiiControl`):
-`(p+1)/(p-j+1)` with unit radii (`u`) and `j(p+1)/p` with the lower-bound radii (`¬ u`). -/
+/-- The exponent $\pi_j$ of Lemma 13.1.18 of [cartis2022evaluation] in the mode $u$ of the radii
+control:
+$$\pi_j = \begin{cases} \dfrac{p+1}{p-j+1} & \text{if } u \text{ holds (unit radii)}, \\
+  \dfrac{j(p+1)}{p} & \text{otherwise (radii bounded below)}. \end{cases}$$
+
+The difference $p - j$ is taken in $\mathbb{N}$, so $p - j + 1 = 1$ for $j > p$. For $p = 0$ the
+second case is $0$, by the Lean convention for division by zero. -/
 noncomputable def arPiOf (u : Prop) [Decidable u] (p j : ℕ) : ℝ :=
   if u then ((p : ℝ) + 1) / ((p - j + 1 : ℕ) : ℝ) else (j : ℝ) * ((p : ℝ) + 1) / p
 
-/-- The exponent `π_j` of Lemma 13.1.18: `(p+1)/(p-j+1)` if `q ≤ 2`, `j(p+1)/p` if `q > 2`. -/
+/-- The exponent $\pi_j$ of Lemma 13.1.18 of [cartis2022evaluation] in the mode fixed by the order:
+$\pi_j = (p+1)/(p-j+1)$ if $q \le 2$ and $\pi_j = j(p+1)/p$ if $q > 2$. -/
 noncomputable def arPi (q p j : ℕ) : ℝ := arPiOf (q ≤ 2) p j
 
-/-- The step-length constant of Lemma 13.1.18 in the radii mode `u`:
-`(a/(2 q! A))^{(p+1)/(p-q+1)}` with unit radii (`u`), and `(a κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` with
-`κ̂ = arKappaHat q a A κ` with the lower-bound radii (`¬ u`). -/
+/-- The step-length constant of Lemma 13.1.18 of [cartis2022evaluation] in the mode $u$ of the radii
+control:
+$$\begin{cases} \Big(\dfrac{a}{2\,q!\,A}\Big)^{(p+1)/(p-q+1)} & \text{if } u \text{ holds (unit
+  radii)}, \\ \Big(\dfrac{a\hat\kappa^{q-1}}{2\,q!\,A}\Big)^{q(p+1)/p} & \text{otherwise (radii
+  bounded below)}, \end{cases}$$
+with $\hat\kappa = \min\{\kappa, a/(2\,q!\,A)\}$ (`Optimization.arKappaHat`).
+
+The powers are real powers. The exponents follow the same conventions as `Optimization.arPiOf`. -/
 noncomputable def arStepConstOf (u : Prop) [Decidable u] (q p : ℕ) (a A κ : ℝ) : ℝ :=
   if u then (a / (2 * q ! * A)) ^ (((p : ℝ) + 1) / ((p - q + 1 : ℕ) : ℝ))
   else (a * arKappaHat q a A κ ^ (q - 1) / (2 * q ! * A)) ^ ((q : ℝ) * ((p : ℝ) + 1) / p)
 
-/-- The step-length constant of Lemma 13.1.18: `(a/(2 q! A))^{(p+1)/(p-q+1)}` if `q ≤ 2`, and
-`(a κ̂^{q-1}/(2 q! A))^{q(p+1)/p}` with `κ̂ = arKappaHat q a A κ` if `q > 2`. -/
+/-- The step-length constant of Lemma 13.1.18 of [cartis2022evaluation] in the mode fixed by the
+order: $(a/(2\,q!\,A))^{(p+1)/(p-q+1)}$ if $q \le 2$, and
+$(a\hat\kappa^{q-1}/(2\,q!\,A))^{q(p+1)/p}$ with $\hat\kappa = \min\{\kappa, a/(2\,q!\,A)\}$ if
+$q > 2$. -/
 noncomputable def arStepConst (q p : ℕ) (a A κ : ℝ) : ℝ := arStepConstOf (q ≤ 2) q p a A κ
 
+/-- If $a, A, \kappa \ge 0$, the step-length constant `Optimization.arStepConstOf u q p a A κ` is
+nonnegative. -/
 theorem arStepConstOf_nonneg {u : Prop} [Decidable u] {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a)
     (hA : 0 ≤ A) (hκ : 0 ≤ κ) : 0 ≤ arStepConstOf u q p a A κ := by
   unfold arStepConstOf
   have : 0 ≤ arKappaHat q a A κ := le_min hκ (by positivity)
   split_ifs <;> positivity
 
+/-- If $a, A, \kappa > 0$, the step-length constant `Optimization.arStepConstOf u q p a A κ` is
+positive. -/
 theorem arStepConstOf_pos {u : Prop} [Decidable u] {q p : ℕ} {a A κ : ℝ} (ha : 0 < a)
     (hA : 0 < A) (hκ : 0 < κ) : 0 < arStepConstOf u q p a A κ := by
   unfold arStepConstOf
   have : 0 < arKappaHat q a A κ := lt_min hκ (by positivity)
   split_ifs <;> positivity
 
+/-- The exponent `Optimization.arPiOf u p j` is nonnegative. -/
 theorem arPiOf_nonneg {u : Prop} [Decidable u] {p j : ℕ} : 0 ≤ arPiOf u p j := by
   unfold arPiOf; split_ifs <;> positivity
 
+/-- If $a, A, \kappa \ge 0$, the step-length constant `Optimization.arStepConst q p a A κ` is
+nonnegative. -/
 theorem arStepConst_nonneg {q p : ℕ} {a A κ : ℝ} (ha : 0 ≤ a) (hA : 0 ≤ A) (hκ : 0 ≤ κ) :
     0 ≤ arStepConst q p a A κ :=
   arStepConstOf_nonneg ha hA hκ
 
+/-- If $a, A, \kappa > 0$, the step-length constant `Optimization.arStepConst q p a A κ` is
+positive. -/
 theorem arStepConst_pos {q p : ℕ} {a A κ : ℝ} (ha : 0 < a) (hA : 0 < A) (hκ : 0 < κ) :
     0 < arStepConst q p a A κ :=
   arStepConstOf_pos ha hA hκ
 
+/-- The exponent `Optimization.arPi q p j` is nonnegative. -/
 theorem arPi_nonneg {q p j : ℕ} : 0 ≤ arPi q p j := arPiOf_nonneg
 
-/-- **From step lengths to decrements** ([cartis2022evaluation], proof of Lemma 13.1.18): with
-`0 < a ≤ 1`, `A ≥ 1`, `0 < κ ≤ 1`, `ε ∈ (0, 1]`, `j ∈ [1, q]`, `q ≤ p`, `t > 0`, if either
-`t ≥ 1` or the bounds of `arqp_pow_ge_of_radius_ineq` (in the radii mode `u`) hold, then
-`arStepConstOf u q p a A κ · ε^{π_j} ≤ t^{p+1}` with `π_j = arPiOf u p j`. -/
+/-- Let $0 < a \le 1$, $A \ge 1$, $\varepsilon \in (0, 1]$, $t > 0$, $0 < \kappa \le 1$,
+$j \in [1, q]$ and $q \le p$, and let $u$ be a decidable proposition. Suppose that $t \ge 1$, or
+that the conclusions of `Optimization.arqp_pow_ge_of_radius_ineq` hold:
+$\frac{a}{2\,j!\,A}\varepsilon \le t^{p-j+1}$ if $u$ holds, and
+$\frac{a}{2\,j!\,A}\hat\kappa^{j-1}\varepsilon^j \le t^p$ if $u$ fails, with
+$\hat\kappa = \min\{\kappa, a/(2\,q!\,A)\}$. Then
+$$c\,\varepsilon^{\pi_j} \le t^{p+1},$$
+where $c$ is the step-length constant `Optimization.arStepConstOf u q p a A κ` and $\pi_j$ is
+the exponent `Optimization.arPiOf u p j`. This step turns step lengths into decrements in the
+proof of Lemma 13.1.18 of [cartis2022evaluation]. -/
 theorem arqp_pow_succ_ge {a A t ε κ : ℝ} {j p q : ℕ} {u : Prop} [Decidable u] (ha : 0 < a)
     (ha1 : a ≤ 1) (hA : 1 ≤ A) (hε : 0 < ε) (hε1 : ε ≤ 1) (ht : 0 < t) (hκ : 0 < κ)
     (hκ1 : κ ≤ 1) (hj : j ∈ Finset.Icc 1 q) (hqp : q ≤ p)

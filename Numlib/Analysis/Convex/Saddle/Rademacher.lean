@@ -8,38 +8,44 @@ import Numlib.Analysis.Convex.Saddle.Differential
 /-!
 # Differentiability almost everywhere of a saddle-function
 
-A finite concave-convex function on an open rectangle `C × D` is differentiable almost everywhere
-there, its points of differentiability are dense, and the gradient mapping is continuous on them.
-Gradients also converge wherever the functions converge pointwise, uniformly on every compact
-subset.
+Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real normed
+spaces, and let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Then $K$ is
+differentiable at almost every point of $C \times D$, its points of differentiability are dense in
+$C \times D$, and, in inner product spaces, the gradient mapping
+$\nabla K = (\nabla_1 K, \nabla_2 K)$ is continuous on the set of these points. If concave-convex
+functions $K_i$ converge pointwise to $K$ on $C \times D$, then their gradients converge to
+$\nabla K$ at each point where all the gradients exist, and uniformly on every compact subset of
+$C \times D$ when all the gradients exist everywhere. The presentation follows
+[rockafellar1970convex], §35.
 
-Convexity supplies only a local Lipschitz constant on a ball, after which Rademacher's theorem does
-the analysis. The convergence statements come from upper semicontinuity of the saddle
-subdifferential, with the subdifferentials collapsed to singletons at points of differentiability;
-in particular the pointwise clause needs differentiability only at the point in question.
+Concavity and convexity give a Lipschitz constant on a ball around each point, and Rademacher's
+theorem then gives differentiability almost everywhere. The statements on convergence come from the
+upper semicontinuity of the saddle subdifferential $\partial K$, which reduces to a single point
+where $K$ is differentiable. For this reason the pointwise statement needs differentiability only at
+the point in question.
 
 ## Main results
 
-* `ConcaveConvexOn.exists_lipschitzOnWith_ball` — a Lipschitz constant on a *ball*, which is what
-  Rademacher's theorem needs: differentiability within an open set is differentiability.
-* `ae_differentiableAt_of_concaveConvexOn`, `measure_diff_differentiableAt_of_concaveConvexOn`,
-  `subset_closure_differentiableAt_of_concaveConvexOn`, `continuousOn_saddleGradient` —
-  differentiability almost everywhere in two forms, then density and continuity of the gradient
-  ([rockafellar1970convex] Theorem 35.9).
-* `tendsto_of_hasSaddleGradientAt`, `tendstoUniformlyOn_saddleGradient` — gradients converge under
-  pointwise convergence, uniformly on compact sets ([rockafellar1970convex] Theorem 35.10).
+* `ConvexAnalysis.ConcaveConvexOn.exists_lipschitzOnWith_ball`: $K$ is Lipschitz on a ball around
+  each point of $C \times D$.
+* `ConvexAnalysis.ae_differentiableAt_of_concaveConvexOn`,
+  `ConvexAnalysis.measure_diff_differentiableAt_of_concaveConvexOn`: $K$ is differentiable almost
+  everywhere on $C \times D$, in two forms; this is Theorem 35.9 of [rockafellar1970convex].
+* `ConvexAnalysis.subset_closure_differentiableAt_of_concaveConvexOn`,
+  `ConvexAnalysis.continuousOn_saddleGradient`: the points of differentiability are dense, and the
+  gradient is continuous on them; this is also part of Theorem 35.9 of [rockafellar1970convex].
+* `ConvexAnalysis.tendsto_of_hasSaddleGradientAt`,
+  `ConvexAnalysis.tendstoUniformlyOn_saddleGradient`: gradients converge under pointwise convergence
+  of the functions, uniformly on compact sets; this is Theorem 35.10 of [rockafellar1970convex].
 
 ## Implementation notes
 
-`HasSaddleGradientAt K q p` says `∇K p = q` for a pair `q : U × X`, and there is no canonical `∇K`
-without choice, so the continuity and convergence statements take any `G` with
-`HasSaddleGradientAt K (G p) p` on the set in question; `prodInnerL` is injective, so such a `G` is
-unique there. The `εB` is the supremum ball of `U × X`; the Euclidean ball differs from it by a
-bounded factor, and every statement quantifies over all `ε > 0`.
-
-## References
-
-* [rockafellar1970convex] §35.
+* `ConvexAnalysis.HasSaddleGradientAt K q p` says $\nabla K(p) = q$ for a pair $q \in U \times X$.
+  There is no canonical $\nabla K$ without choice, so the statements on continuity and convergence
+  take any $G$ with `ConvexAnalysis.HasSaddleGradientAt K (G p) p` on the set in question. Such a
+  $G$ is unique there, because `ConvexAnalysis.prodInnerL` is injective.
+* The ball $\varepsilon B$ is the ball of the supremum norm of `U × X`. The Euclidean ball differs
+  from it by a bounded factor, and every statement quantifies over all $\varepsilon > 0$.
 -/
 
 open Set Filter MeasureTheory Metric Topology
@@ -55,10 +61,14 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   {C : Set U} {D : Set X} {K : U × X → ℝ} {p : U × X}
 
-/-- A finite concave-convex function on an open rectangle is Lipschitz on a whole *ball* around
-each of its points. Local Lipschitzness gives a constant on a product of compact sets; shrinking to
-an open ball makes it open as well, which is what upgrades `DifferentiableWithinAt` to
-`DifferentiableAt`. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real normed
+spaces, and let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Then for
+every $p \in C \times D$ there is $r > 0$ such that the ball $B(p, r)$ lies in $C \times D$ and
+$K$ is Lipschitz on $B(p, r)$ with some constant $k \ge 0$.
+
+The ball is open, which is what Rademacher's theorem needs: differentiability within an open set
+is differentiability. Local Lipschitz continuity first gives a constant on a product of compact
+sets, and the proof then shrinks this product to an open ball. -/
 theorem ConcaveConvexOn.exists_lipschitzOnWith_ball (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hp : p ∈ C ×ˢ D) :
     ∃ r > 0, ball p r ⊆ C ×ˢ D ∧ ∃ k : ℝ≥0, LipschitzOnWith k K (ball p r) := by
@@ -93,8 +103,10 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   {C : Set U} {D : Set X} {K : U × X → ℝ}
   [MeasurableSpace (U × X)] [BorelSpace (U × X)] {μ : Measure (U × X)} [μ.IsAddHaarMeasure]
 
-/-- A finite concave-convex function on an open rectangle is differentiable at almost every point
-of it. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real normed
+spaces, let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$, and let $\mu$ be
+an additive Haar measure on $U \times X$. Then for $\mu$-almost every $p$, if $p \in C \times D$
+then $K$ is differentiable at $p$. This is part of Theorem 35.9 of [rockafellar1970convex]. -/
 theorem ae_differentiableAt_of_concaveConvexOn (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) :
     ∀ᵐ p ∂μ, p ∈ C ×ˢ D → DifferentiableAt ℝ K p := by
@@ -115,7 +127,8 @@ theorem ae_differentiableAt_of_concaveConvexOn (hCo : IsOpen C) (hCc : Convex �
   obtain ⟨q, hqT, hpq⟩ := hcover p hpU
   exact (hp q hqT hpq).differentiableAt (isOpen_ball.mem_nhds hpq)
 
-/-- The points of the open rectangle at which `K` is not differentiable form a null set. -/
+/-- Under the hypotheses of `ConvexAnalysis.ae_differentiableAt_of_concaveConvexOn`, the set of
+points of $C \times D$ at which $K$ is not differentiable has $\mu$-measure zero. -/
 theorem measure_diff_differentiableAt_of_concaveConvexOn (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) :
     μ ((C ×ˢ D) \ {p | DifferentiableAt ℝ K p}) = 0 := by
@@ -133,8 +146,13 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- The points of differentiability are dense in the open rectangle. No measure appears in the
-statement; the proof borrows one. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real normed
+spaces, and let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Then
+$C \times D$ lies in the closure of the set of points at which $K$ is differentiable. This is
+part of Theorem 35.9 of [rockafellar1970convex].
+
+No measure appears in the statement; the proof uses an additive Haar measure and
+`ConvexAnalysis.measure_diff_differentiableAt_of_concaveConvexOn`. -/
 theorem subset_closure_differentiableAt_of_concaveConvexOn (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) :
     C ×ˢ D ⊆ closure {p | DifferentiableAt ℝ K p} := by
@@ -162,8 +180,14 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X]
   {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- The gradient mapping is continuous on any set of points of the open rectangle at which it
-exists: upper semicontinuity of `∂K` with both subdifferentials collapsed to singletons. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real inner
+product spaces, and let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Let
+$S \subseteq C \times D$, and let $G : U \times X \to U \times X$ satisfy $\nabla K(p) = G(p)$
+for every $p \in S$. Then $G$ is continuous on $S$. This is part of Theorem 35.9 of
+[rockafellar1970convex].
+
+The proof uses the upper semicontinuity of $\partial K$, where both halves of $\partial K$
+reduce to a single point. -/
 theorem continuousOn_saddleGradient (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) {S : Set (U × X)} (hS : S ⊆ C ×ˢ D)
     {G : U × X → U × X} (hG : ∀ p ∈ S, HasSaddleGradientAt K (G p) p) : ContinuousOn G S := by
@@ -195,8 +219,16 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
   {C : Set U} {D : Set X} {K : U × X → ℝ} {Ks : ℕ → U × X → ℝ} {p : U × X}
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- **An inclusion of singleton subdifferentials is a bound on gradients.** If `∇L(p) = a`,
-`∇M(p') = b` and `∂L(p) ⊆ ∂M(p') + εB`, then `‖a - b‖ ≤ ε`. -/
+/-- **An inclusion of single-point subdifferentials bounds the distance of the gradients.** Let
+$C \subseteq U$ and $D \subseteq X$ be open sets in real inner product spaces, and let
+$L, M : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Let $p, p' \in C \times D$
+with $\nabla L(p) = a$ and $\nabla M(p') = b$, and let $\varepsilon \in \mathbb{R}$. If
+$$\partial L(p) \subseteq \partial M(p') + \varepsilon B,$$
+where $\varepsilon B$ is the closed ball of radius $\varepsilon$ about the origin, then
+$\operatorname{dist}(a, b) \le \varepsilon$.
+
+The subdifferentials are `ConvexAnalysis.saddleSubdifferentialOn C D`, and the distance and the
+ball are those of the supremum norm of `U × X`. -/
 theorem dist_le_of_saddleSubdifferentialOn_subset (hCo : IsOpen C) (hDo : IsOpen D)
     {L M : U × X → ℝ} {p' a b : U × X} {ε : ℝ} (hL : ConcaveConvexOn C D L)
     (hM : ConcaveConvexOn C D M) (hp : p ∈ C ×ˢ D) (hp' : p' ∈ C ×ˢ D)
@@ -214,10 +246,14 @@ theorem dist_le_of_saddleSubdifferentialOn_subset (hCo : IsOpen C) (hDo : IsOpen
   rw [dist_eq_norm]
   exact norm_sub_le_of_mem_singleton_add_closedBall hmem
 
-/-- The gradients of finite concave-convex functions converging pointwise on an open rectangle
-converge at every point of it. Subdifferential convergence along the constant sequence of points,
-with the subdifferentials collapsed to singletons; differentiability is needed only at the point in
-question. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real inner
+product spaces, let $K_i$ ($i \in \mathbb{N}$) and $K$ be functions $U \times X \to \mathbb{R}$
+that are concave-convex on $C \times D$, and let $K_i(q) \to K(q)$ for every $q \in C \times D$.
+Let $p \in C \times D$, and let $\nabla K_i(p) = G_i$ for every $i$ and $\nabla K(p) = G'$. Then
+$G_i \to G'$. This is part of Theorem 35.10 of [rockafellar1970convex].
+
+The proof uses the convergence of the subdifferentials along the constant sequence of points,
+where all the subdifferentials reduce to single points. Differentiability is needed only at $p$. -/
 theorem tendsto_of_hasSaddleGradientAt (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ q ∈ C ×ˢ D, Tendsto (fun i => Ks i q) atTop (𝓝 (K q))) (hp : p ∈ C ×ˢ D)
@@ -232,12 +268,18 @@ theorem tendsto_of_hasSaddleGradientAt (hCo : IsOpen C) (hCc : Convex ℝ C) (hD
     (dist_le_of_saddleSubdifferentialOn_subset hCo hDo (hKs i) hK hp hp (hG i) hG' hi)
     (half_lt_self hε)
 
-/-- On every compact subset of the open rectangle the gradients converge uniformly.
+/-- Let $C \subseteq U$ and $D \subseteq X$ be open convex sets in finite-dimensional real inner
+product spaces, let $K_i$ ($i \in \mathbb{N}$) and $K$ be functions $U \times X \to \mathbb{R}$
+that are concave-convex on $C \times D$, and let $K_i(q) \to K(q)$ for every $q \in C \times D$.
+Let $G_i$ and $G$ satisfy $\nabla K_i(q) = G_i(q)$ and $\nabla K(q) = G(q)$ for every
+$q \in C \times D$. Then $G_i \to G$ uniformly on every compact set $S \subseteq C \times D$.
+This is part of Theorem 35.10 of [rockafellar1970convex].
 
-A failure of uniform convergence on a compact `S` produces indices `φ n` and points `zₙ ∈ S` with
-`‖∇K(zₙ) - ∇K_{φ n}(zₙ)‖ ≥ ε`; a convergent subsequence `zₙ → w ∈ S` turns subdifferential
-convergence along the subsequence and upper semicontinuity at `w` into two `ε/3` bounds that
-contradict it. -/
+If the convergence is not uniform on $S$, there are indices $\varphi(n)$ and points $z_n \in S$
+with $\|\nabla K(z_n) - \nabla K_{\varphi(n)}(z_n)\| \ge \varepsilon$. A subsequence of $(z_n)$
+converges to some $w \in S$, and the convergence of the subdifferentials along this subsequence
+and the upper semicontinuity at $w$ give two bounds $\varepsilon / 3$ that contradict this
+inequality. -/
 theorem tendstoUniformlyOn_saddleGradient (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ q ∈ C ×ˢ D, Tendsto (fun i => Ks i q) atTop (𝓝 (K q)))

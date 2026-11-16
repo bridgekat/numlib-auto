@@ -16,45 +16,59 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 /-!
 # The Faddeev–LeVerrier recurrence
 
-For a square matrix `A` over a field of characteristic zero, the recurrence of
-[quarteroni2000numerical] §3.6 (Faddeev–Faddeeva, *Computational Methods of Linear Algebra*, 1963),
+Let $A$ be an $N \times N$ matrix over a field $K$ of characteristic zero, with characteristic
+polynomial $p(X) = \det(XI - A) = \sum_i c_i X^i$. The recurrence of [quarteroni2000numerical] §3.6
+(after Faddeev and Faddeeva, *Computational Methods of Linear Algebra*, 1963) $$B_0 = I, \qquad
+\alpha_k = \frac{\operatorname{tr}(A B_{k-1})}{k}, \qquad B_k = \alpha_k I - A B_{k-1} \quad (k = 1,
+2, \dots)$$ computes the coefficients of $p$ and the inverse of $A$: $\alpha_k = (-1)^k c_{N-k}$ for
+$k \le N$, $B_N = 0$, and if $\alpha_N = \det A \ne 0$, then $A^{-1} = B_{N-1} / \alpha_N$.
 
-`B₀ = 1`, `α_k = tr(A B_{k-1}) / k`, `B_k = α_k • 1 - A B_{k-1}` (`k = 1, 2, …`),
+The proof goes through the **Horner partial sums** $H_k = \sum_{i \le k} c_{N-i} A^{k-i}$, the
+evaluation of $p$ at $A$ by Horner's scheme stopped after $k$ steps. They are the coefficients of
+the adjugate of the characteristic matrix, $\operatorname{adj}(XI - A) = \sum_{j < N} X^j
+H_{N-1-j}$, and $B_k = (-1)^k H_k$. **Jacobi's formula** $(\det M)' =
+\operatorname{tr}(\operatorname{adj}(M)\, M')$ for a matrix $M$ of polynomials gives $p' =
+\operatorname{tr} \operatorname{adj}(XI - A)$. Read coefficient by coefficient, this is
+$\operatorname{tr} H_k = (N - k)\, c_{N-k}$, the trace form of Newton's identities.
 
-produces the coefficients of the characteristic polynomial and the inverse of `A`: with
-`N = Fintype.card n` and `p = A.charpoly`, `α_k = (-1)^k p.coeff (N - k)` for `k ≤ N`, `B_N = 0`,
-and if `α_N = det A ≠ 0` then `A⁻¹ = α_N⁻¹ • B_{N-1}`. The unsigned partial sums
-`Matrix.charpolyHorner A k = ∑_{i ≤ k} p.coeff (N - i) • A^(k - i)`, Horner's evaluation of `p` at
-`A` stopped after `k` steps, are the coefficients of the adjugate of the characteristic matrix,
-`adjugate (X • 1 - A) = ∑_{k < N} X^(N-1-k) • charpolyHorner A k`
-(`Matrix.adjugate_charmatrix_eq_sum`), and `B_k = (-1)^k • charpolyHorner A k`.
+## Main definitions
 
-The identity that makes the traces come out is **Jacobi's formula**
-`derivative (det M) = trace (adjugate M * M.map derivative)` for a matrix `M` of polynomials
-(`Matrix.derivative_det`), which for the characteristic matrix reads
-`derivative A.charpoly = trace (adjugate (charmatrix A))` (`Matrix.derivative_charpoly`); reading
-it coefficient by coefficient gives `trace (charpolyHorner A k) = (N - k) p.coeff (N - k)`, which is
-the trace form of Newton's identities.
+* `Matrix.charpolyHorner`: the Horner partial sums $H_k$.
+* `Matrix.faddeevB`, `Matrix.faddeevAlpha`: the matrices $B_k$ and the scalars $\alpha_k$ of the
+  recurrence.
 
-## The signs
+## Main results
 
-`B_{k+1} = α_{k+1} • 1 - A B_k` subtracts, so the closed forms alternate in sign, and the unsigned
-forms `B_k = H_k` and `α_k = -p.coeff (N - k)` that suggest themselves are false already at
-`k = 1`. For `A = diag(a, b)` the characteristic polynomial is `X² - (a + b) X + a b`, so
-`H₁ = A + p.coeff 1 • 1 = diag(-b, -a)`, while the recurrence gives `α₁ = tr A = a + b` and
-`B₁ = α₁ • 1 - A = diag(b, a) = -H₁`; one step further, `α₂ = a b = +p.coeff 0`, not `-p.coeff 0`.
-The book prints only the recurrence, `B_n = 0` and `A⁻¹ = B_{n-1}/α_n`, all of which are sign-free,
-so nothing here contradicts [quarteroni2000numerical] §3.6; the caution is for anyone who reads the
-closed forms off the recurrence by eye. `Matrix.faddeevB_eq_smul_charpolyHorner` and
-`Matrix.faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff` are the signed statements.
+* `Matrix.derivative_det`: Jacobi's formula $(\det M)' = \operatorname{tr}(\operatorname{adj}(M)\,
+  M')$.
+* `Matrix.derivative_charpoly`: $p' = \operatorname{tr} \operatorname{adj}(XI - A)$.
+* `Matrix.adjugate_charmatrix_eq_sum`: $\operatorname{adj}(XI - A) = \sum_{j < N} X^j H_{N-1-j}$.
+* `Matrix.trace_charpolyHorner`: $\operatorname{tr} H_k = (N - k)\, c_{N-k}$ for $k \le N$.
+* `Matrix.faddeevB_eq_smul_charpolyHorner`, `Matrix.faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff`:
+  $B_k = (-1)^k H_k$ and $\alpha_k = (-1)^k c_{N-k}$ for $k \le N$.
+* `Matrix.faddeevB_card_eq_zero`, `Matrix.faddeevAlpha_card_eq_det`: $B_N = 0$ and
+  $\alpha_N = \det A$.
+* `Matrix.faddeevLeverrier_inv`: if $\alpha_N \ne 0$, then $A^{-1} = B_{N-1} / \alpha_N$.
 
 ## Implementation notes
 
-The closed forms hold for `k ≤ N` only: beyond `N` the recurrence produces zeros while the
-truncated subtraction `N - k` stalls at `0`. Jacobi's formula is proved from the Leibniz expansion
-of the determinant and the product rule, the sum over permutations of the terms with the `j`-th
-factor differentiated being the determinant with column `j` replaced by its derivative, that is,
-Cramer's rule evaluated at that column.
+* The signs alternate. Since $B_{k+1} = \alpha_{k+1} I - A B_k$ subtracts, the unsigned forms
+  $B_k = H_k$ and $\alpha_k = -c_{N-k}$ fail already at $k = 1$. For $A = \operatorname{diag}(a, b)$
+  the characteristic polynomial is $X^2 - (a + b) X + ab$, so
+  $H_1 = A + c_1 I = \operatorname{diag}(-b, -a)$. The recurrence gives
+  $\alpha_1 = \operatorname{tr} A = a + b$ and $B_1 = \alpha_1 I - A = \operatorname{diag}(b, a) =
+  -H_1$, and then $\alpha_2 = ab = +c_0$. [quarteroni2000numerical] §3.6 prints only the recurrence,
+  $B_N = 0$ and $A^{-1} = B_{N-1} / \alpha_N$, which have no signs, so nothing here contradicts the
+  source.
+* The recurrence sets $\alpha_0 = 1$, the leading coefficient of $p$, so that
+  $\alpha_k = (-1)^k c_{N-k}$ holds from $k = 0$ on.
+* The closed forms hold for $k \le N$ only. For $k > N$ the recurrence gives zeros, while the
+  truncated subtraction $N - k$ of natural numbers stays at $0$.
+* Jacobi's formula is proved from the Leibniz expansion of the determinant and the product rule. The
+  terms in which the entry in column $j$ is differentiated add up to the determinant with column $j$
+  replaced by its derivative, which Cramer's rule evaluates.
+* $N$ is `Fintype.card n` and $c_i$ is `A.charpoly.coeff i`. The characteristic matrix $XI - A$ is
+  `Matrix.charmatrix A`. The adjugate is `Matrix.adjugate`.
 -/
 
 open Polynomial Finset
@@ -67,11 +81,13 @@ section Jacobi
 
 variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **Jacobi's formula**: the derivative of the determinant of a matrix of polynomials is the
-trace of the adjugate against the entrywise derivative, `(det M)' = tr(adj M · M')`. From the
-Leibniz expansion and the product rule: the terms in which the entry in column `j` is
-differentiated add up to the determinant with column `j` replaced by its derivative, which
-Cramer's rule evaluates as `(adj M · M') j j`. -/
+/-- **Jacobi's formula.** Let $R$ be a commutative ring and let $M$ be a square matrix over $R[X]$.
+The derivative of $\det M$ is $$(\det M)' = \operatorname{tr}(\operatorname{adj}(M)\, M'),$$
+where $M'$ is the entrywise derivative of $M$.
+
+By the Leibniz expansion and the product rule, the terms in which the entry in column $j$ is
+differentiated add up to the determinant with column $j$ replaced by its derivative. Cramer's
+rule evaluates this determinant as $(\operatorname{adj}(M)\, M')_{jj}$. -/
 theorem derivative_det (M : Matrix n n R[X]) :
     derivative M.det = trace (adjugate M * M.map derivative) := by
   have hcol : ∀ σ : Equiv.Perm n, ∀ j : n,
@@ -92,7 +108,7 @@ theorem derivative_det (M : Matrix n n R[X]) :
   rw [← h, ← cramer_apply, cramer_eq_adjugate_mulVec, mulVec_apply_eq_sum]
   simp only [map_apply]
 
-/-- The derivative of the characteristic matrix is the identity. -/
+/-- The entrywise derivative of the characteristic matrix $XI - A$ is the identity. -/
 theorem charmatrix_map_derivative (A : Matrix n n R) : (charmatrix A).map derivative = 1 := by
   refine Matrix.ext fun i j => ?_
   rw [map_apply, charmatrix_apply, derivative_sub, derivative_C, sub_zero, diagonal_apply,
@@ -101,7 +117,9 @@ theorem charmatrix_map_derivative (A : Matrix n n R) : (charmatrix A).map deriva
   · exact derivative_X
   · exact derivative_zero
 
-/-- **Jacobi's formula for the characteristic polynomial**: `p' = tr(adj(X 1 - A))`. -/
+/-- **Jacobi's formula for the characteristic polynomial.** For a square matrix $A$ over a
+commutative ring, $p' = \operatorname{tr} \operatorname{adj}(XI - A)$, where $p$ is the
+characteristic polynomial of $A$. -/
 theorem derivative_charpoly (A : Matrix n n R) :
     derivative A.charpoly = trace (adjugate (charmatrix A)) := by
   rw [charpoly, derivative_det, charmatrix_map_derivative, Matrix.mul_one]
@@ -115,20 +133,23 @@ section Horner
 variable {R : Type*} [CommRing R] [Nontrivial R] {n : Type*} [Fintype n] [DecidableEq n]
   (A : Matrix n n R)
 
-/-- Horner's evaluation of the characteristic polynomial `p` at `A`, stopped after `k` steps:
-`charpolyHorner A k = ∑_{i ≤ k} p.coeff (N - i) • A^(k - i)`, `N = Fintype.card n`. It starts at
-`1` and ends at `p(A) = 0`, and its values are the coefficients of `adjugate (X • 1 - A)`. -/
+/-- Let $A$ be an $N \times N$ matrix over a nontrivial commutative ring, with characteristic
+polynomial $p = \sum_i c_i X^i$. The **Horner partial sum** of $p$ at $A$ after $k$ steps is
+$$H_k = \sum_{i \le k} c_{N-i} A^{k-i}.$$
+
+It starts at $H_0 = I$ and ends at $H_N = p(A) = 0$, and the $H_k$ are the coefficients of
+$\operatorname{adj}(XI - A)$. For $i > N$ the index $N - i$ is $0$ by truncated subtraction. -/
 noncomputable def charpolyHorner (k : ℕ) : Matrix n n R :=
   ∑ i ∈ range (k + 1), A.charpoly.coeff (Fintype.card n - i) • A ^ (k - i)
 
-/-- Horner's partial sums start at the identity. -/
+/-- The first Horner partial sum is the identity: $H_0 = I$. -/
 @[simp]
 theorem charpolyHorner_zero : charpolyHorner A 0 = 1 := by
   rw [charpolyHorner, zero_add, range_one, sum_singleton, Nat.sub_zero, Nat.sub_zero, pow_zero,
     ← charpoly_natDegree_eq_dim A, (charpoly_monic A).coeff_natDegree, one_smul]
 
 omit [Nontrivial R] in
-/-- **Horner's step**: `H_{k+1} = A H_k + p.coeff (N - (k + 1)) • 1`. -/
+/-- **Horner's step**: $H_{k+1} = A H_k + c_{N-(k+1)} I$. -/
 theorem charpolyHorner_succ (k : ℕ) :
     charpolyHorner A (k + 1)
       = A * charpolyHorner A k + A.charpoly.coeff (Fintype.card n - (k + 1)) • 1 := by
@@ -138,7 +159,7 @@ theorem charpolyHorner_succ (k : ℕ) :
   refine Finset.sum_congr rfl fun i hi => ?_
   rw [Matrix.mul_smul, ← pow_succ', Nat.succ_sub (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]
 
-/-- **Cayley–Hamilton in Horner form**: the `N`-th partial sum is `p(A) = 0`. -/
+/-- **Cayley–Hamilton in Horner form**: the $N$-th Horner partial sum is $H_N = p(A) = 0$. -/
 theorem charpolyHorner_card : charpolyHorner A (Fintype.card n) = 0 := by
   have h := aeval_self_charpoly A
   rw [aeval_eq_sum_range, charpoly_natDegree_eq_dim, ← Finset.sum_range_reflect] at h
@@ -146,7 +167,7 @@ theorem charpolyHorner_card : charpolyHorner A (Fintype.card n) = 0 := by
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [Nat.add_sub_cancel]
 
-/-- The last nontrivial Horner step: `A H_{N-1} = -p.coeff 0 • 1` when `N ≥ 1`. -/
+/-- The last Horner step: if $N \ge 1$, then $A H_{N-1} = -c_0 I$. -/
 theorem mul_charpolyHorner_pred (hn : 0 < Fintype.card n) :
     A * charpolyHorner A (Fintype.card n - 1) = -(A.charpoly.coeff 0 • 1) := by
   have h := charpolyHorner_succ A (Fintype.card n - 1)
@@ -156,13 +177,13 @@ theorem mul_charpolyHorner_pred (hn : 0 < Fintype.card n) :
 end Horner
 
 
-/-! ### The adjugate of the characteristic matrix, and the trace identities -/
+/-! ### The adjugate of the characteristic matrix -/
 
 section Adjugate
 
 variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n] (A : Matrix n n K)
 
-/-- The characteristic matrix, as `X • 1 - A` over `K[X]`. -/
+/-- Over a field $K$, the characteristic matrix of $A$ is $XI - A$ with $A$ embedded in $K[X]$. -/
 private theorem charmatrix_eq_smul_one_sub :
     charmatrix A = (X : K[X]) • (1 : Matrix n n K[X]) - A.map C := by
   refine Matrix.ext fun i j => ?_
@@ -171,7 +192,7 @@ private theorem charmatrix_eq_smul_one_sub :
   split_ifs <;> simp
 
 omit [Fintype n] in
-/-- The map `C` carries `c • 1` to `C c • 1`. -/
+/-- The embedding of $K$ into $K[X]$ carries $cI$ to $cI$. -/
 private theorem map_C_smul_one (c : K) :
     (c • (1 : Matrix n n K)).map C = C c • (1 : Matrix n n K[X]) := by
   refine Matrix.ext fun i j => ?_
@@ -179,11 +200,13 @@ private theorem map_C_smul_one (c : K) :
       smul_eq_mul, smul_eq_mul]
   split_ifs <;> simp
 
-/-- **The adjugate of the characteristic matrix**:
-`adjugate (X • 1 - A) = ∑_{j < N} X^j • H_{N-1-j}`, with `H` the Horner partial sums of the
-characteristic polynomial. The candidate `Q` satisfies `(X • 1 - A) Q = p • 1` by telescoping
-(`H_{k+1} = A H_k + p.coeff (N-k-1) • 1`, `H_0 = 1`, `H_N = 0`), and `p ≠ 0` makes the adjugate
-the unique such matrix. -/
+/-- **The adjugate of the characteristic matrix.** Let $A$ be an $N \times N$ matrix over a field
+$K$. Then $$\operatorname{adj}(XI - A) = \sum_{j < N} X^j H_{N-1-j},$$ where $H_k$ are the
+Horner partial sums of the characteristic polynomial $p$ of $A$.
+
+The right side $Q$ satisfies $(XI - A) Q = pI$ by telescoping, from
+$H_{k+1} = A H_k + c_{N-k-1} I$, $H_0 = I$ and $H_N = 0$. Since $p \ne 0$, the adjugate is the
+only such matrix. -/
 theorem adjugate_charmatrix_eq_sum :
     adjugate (charmatrix A) = ∑ j ∈ range (Fintype.card n),
       (X : K[X]) ^ j • (charpolyHorner A (Fintype.card n - 1 - j)).map C := by
@@ -253,7 +276,7 @@ section Trace
 
 variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n] (A : Matrix n n K)
 
-/-- Jacobi's formula read on the adjugate: `p' = ∑_{j < N} X^j * C (tr H_{N-1-j})`. -/
+/-- Jacobi's formula on the adjugate: $p' = \sum_{j < N} X^j \operatorname{tr} H_{N-1-j}$. -/
 private theorem derivative_charpoly_eq_sum :
     derivative A.charpoly = ∑ j ∈ range (Fintype.card n),
       (X : K[X]) ^ j * C (trace (charpolyHorner A (Fintype.card n - 1 - j))) := by
@@ -261,9 +284,12 @@ private theorem derivative_charpoly_eq_sum :
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [trace_smul, smul_eq_mul, ← AddMonoidHom.map_trace]
 
-/-- **The trace of a Horner partial sum**: `tr H_k = (N - k) p.coeff (N - k)` for `k ≤ N`. This is
-the trace form of Newton's identities, read off Jacobi's formula `p' = tr(adj(X 1 - A))`
-coefficient by coefficient. -/
+/-- **The trace of a Horner partial sum.** Let $A$ be an $N \times N$ matrix over a field. For
+$k \le N$, $$\operatorname{tr} H_k = (N - k)\, c_{N-k}.$$ This is the trace form of Newton's
+identities.
+
+It is Jacobi's formula $p' = \operatorname{tr} \operatorname{adj}(XI - A)$ read coefficient by
+coefficient. -/
 theorem trace_charpolyHorner {k : ℕ} (hk : k ≤ Fintype.card n) :
     trace (charpolyHorner A k)
       = ((Fintype.card n - k : ℕ) : K) * A.charpoly.coeff (Fintype.card n - k) := by
@@ -283,8 +309,10 @@ theorem trace_charpolyHorner {k : ℕ} (hk : k ≤ Fintype.card n) :
     · intro h'
       exact absurd (Finset.mem_range.2 (by omega)) h'
 
-/-- **Newton's identities in trace form**: `tr(A H_k) = -(k + 1) p.coeff (N - (k + 1))` for `k < N`,
-from `H_{k+1} = A H_k + p.coeff (N - (k + 1)) • 1` and the traces of the two Horner sums. -/
+/-- **Newton's identities in trace form.** Let $A$ be an $N \times N$ matrix over a field. For
+$k < N$, $$\operatorname{tr}(A H_k) = -(k + 1)\, c_{N-(k+1)}.$$
+
+This follows from $H_{k+1} = A H_k + c_{N-(k+1)} I$ and the traces of the two Horner sums. -/
 theorem trace_mul_charpolyHorner {k : ℕ} (hk : k < Fintype.card n) :
     trace (A * charpolyHorner A k)
       = -(((k + 1 : ℕ) : K) * A.charpoly.coeff (Fintype.card n - (k + 1))) := by
@@ -302,43 +330,45 @@ section Recurrence
 
 variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n] (A : Matrix n n K)
 
-/-- The pair `(B_k, α_k)` of the Faddeev–LeVerrier recurrence: `B₀ = 1`, `α₀ = 1`,
-`α_{k+1} = tr(A B_k) / (k + 1)`, `B_{k+1} = α_{k+1} • 1 - A B_k`. The value `α₀ = 1` is the
-leading coefficient of the characteristic polynomial, which makes the closed form
-`α_k = (-1)^k p.coeff (N - k)` hold from `k = 0` on. -/
+/-- The pair $(B_k, \alpha_k)$ of the Faddeev–LeVerrier recurrence for a square matrix $A$ over a
+field: $B_0 = I$, $\alpha_0 = 1$, and $$\alpha_{k+1} = \frac{\operatorname{tr}(A B_k)}{k + 1},
+\qquad B_{k+1} = \alpha_{k+1} I - A B_k.$$
+
+The value $\alpha_0 = 1$ is the leading coefficient of the characteristic polynomial, so that
+the closed form $\alpha_k = (-1)^k c_{N-k}$ holds from $k = 0$ on. -/
 noncomputable def faddeev : ℕ → Matrix n n K × K
   | 0 => (1, 1)
   | k + 1 =>
     let α := trace (A * (faddeev k).1) / (k + 1)
     (α • 1 - A * (faddeev k).1, α)
 
-/-- The matrices `B_k` of the Faddeev–LeVerrier recurrence ([quarteroni2000numerical] §3.6):
-`B₀ = 1`, `B_{k+1} = α_{k+1} • 1 - A B_k`. -/
+/-- The matrices $B_k$ of the Faddeev–LeVerrier recurrence ([quarteroni2000numerical] §3.6):
+$B_0 = I$ and $B_{k+1} = \alpha_{k+1} I - A B_k$. -/
 noncomputable def faddeevB (k : ℕ) : Matrix n n K := (faddeev A k).1
 
-/-- The scalars `α_k` of the Faddeev–LeVerrier recurrence ([quarteroni2000numerical] §3.6):
-`α_{k+1} = tr(A B_k) / (k + 1)`, with `α₀ = 1`. -/
+/-- The scalars $\alpha_k$ of the Faddeev–LeVerrier recurrence ([quarteroni2000numerical] §3.6):
+$\alpha_0 = 1$ and $\alpha_{k+1} = \operatorname{tr}(A B_k) / (k + 1)$. -/
 noncomputable def faddeevAlpha (k : ℕ) : K := (faddeev A k).2
 
-/-- The recurrence starts from `B₀ = 1`. -/
+/-- The recurrence starts from $B_0 = I$. -/
 @[simp] theorem faddeevB_zero : faddeevB A 0 = 1 := rfl
 
-/-- The recurrence starts from `α₀ = 1`, the leading coefficient of the characteristic
+/-- The recurrence starts from $\alpha_0 = 1$, the leading coefficient of the characteristic
 polynomial. -/
 @[simp] theorem faddeevAlpha_zero : faddeevAlpha A 0 = 1 := rfl
 
-/-- The scalar step of the recurrence. -/
+/-- The scalar step of the recurrence: $\alpha_{k+1} = \operatorname{tr}(A B_k) / (k + 1)$. -/
 theorem faddeevAlpha_succ (k : ℕ) :
     faddeevAlpha A (k + 1) = trace (A * faddeevB A k) / (k + 1) := rfl
 
-/-- The matrix step of the recurrence. -/
+/-- The matrix step of the recurrence: $B_{k+1} = \alpha_{k+1} I - A B_k$. -/
 theorem faddeevB_succ (k : ℕ) :
     faddeevB A (k + 1) = faddeevAlpha A (k + 1) • 1 - A * faddeevB A k := rfl
 
 variable [CharZero K]
 
-/-- The closed forms of the recurrence, proved together: for `k ≤ N`,
-`B_k = (-1)^k • H_k` and `α_k = (-1)^k p.coeff (N - k)`. -/
+/-- Over a field of characteristic zero, for $k \le N$: $B_k = (-1)^k H_k$ and
+$\alpha_k = (-1)^k c_{N-k}$. -/
 private theorem faddeev_eq {k : ℕ} (hk : k ≤ Fintype.card n) :
     faddeevB A k = (-1 : K) ^ k • charpolyHorner A k ∧
       faddeevAlpha A k = (-1) ^ k * A.charpoly.coeff (Fintype.card n - k) := by
@@ -361,31 +391,38 @@ private theorem faddeev_eq {k : ℕ} (hk : k ≤ Fintype.card n) :
     rw [faddeevB_succ, hα, hB, charpolyHorner_succ, Matrix.mul_smul, pow_succ]
     module
 
-/-- **The Faddeev–LeVerrier matrices are the signed Horner sums**: `B_k = (-1)^k • H_k` for
-`k ≤ N`, where `H_k = ∑_{i ≤ k} p.coeff (N - i) • A^(k - i)`. -/
+/-- Let $A$ be an $N \times N$ matrix over a field of characteristic zero. For $k \le N$, the
+Faddeev–LeVerrier matrices are the signed Horner partial sums: $$B_k = (-1)^k H_k, \qquad H_k =
+\sum_{i \le k} c_{N-i} A^{k-i}.$$
+-/
 theorem faddeevB_eq_smul_charpolyHorner {k : ℕ} (hk : k ≤ Fintype.card n) :
     faddeevB A k = (-1 : K) ^ k • charpolyHorner A k :=
   (faddeev_eq A hk).1
 
-/-- **The Faddeev–LeVerrier scalars are the signed coefficients of the characteristic
-polynomial**: `α_k = (-1)^k p.coeff (N - k)` for `k ≤ N`; in particular `α₁ = tr A` and
-`α_N = det A` (`Matrix.faddeevAlpha_card_eq_det`). -/
+/-- Let $A$ be an $N \times N$ matrix over a field of characteristic zero. For $k \le N$, the
+Faddeev–LeVerrier scalars are the signed coefficients of the characteristic polynomial:
+$$\alpha_k = (-1)^k c_{N-k}.$$ In particular $\alpha_1 = \operatorname{tr} A$ and
+$\alpha_N = \det A$ (`Matrix.faddeevAlpha_card_eq_det`). -/
 theorem faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff {k : ℕ} (hk : k ≤ Fintype.card n) :
     faddeevAlpha A k = (-1) ^ k * A.charpoly.coeff (Fintype.card n - k) :=
   (faddeev_eq A hk).2
 
-/-- **The recurrence terminates**: `B_N = 0`, by Cayley–Hamilton. -/
+/-- **The recurrence terminates**: over a field of characteristic zero, $B_N = 0$, by the
+Cayley–Hamilton theorem. -/
 theorem faddeevB_card_eq_zero : faddeevB A (Fintype.card n) = 0 := by
   rw [faddeevB_eq_smul_charpolyHorner A le_rfl, charpolyHorner_card, smul_zero]
 
-/-- The last scalar of the recurrence is the determinant: `α_N = det A`. -/
+/-- Over a field of characteristic zero, the last scalar of the recurrence is the determinant:
+$\alpha_N = \det A$. -/
 theorem faddeevAlpha_card_eq_det : faddeevAlpha A (Fintype.card n) = A.det := by
   rw [faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff A le_rfl, Nat.sub_self,
     det_eq_sign_charpoly_coeff]
 
-/-- **The Faddeev–LeVerrier formula for the inverse** ([quarteroni2000numerical] §3.6): when
-`α_N ≠ 0`, that is when `A` is nonsingular, `A⁻¹ = α_N⁻¹ • B_{N-1}`. From `B_N = 0`, the last step
-of the recurrence reads `A B_{N-1} = α_N • 1`. -/
+/-- **The Faddeev–LeVerrier formula for the inverse** ([quarteroni2000numerical] §3.6). Let $A$ be
+an $N \times N$ matrix over a field of characteristic zero with $\alpha_N \ne 0$, that is, with
+$A$ nonsingular. Then $$A^{-1} = \alpha_N^{-1} B_{N-1}.$$
+
+Since $B_N = 0$, the last step of the recurrence reads $A B_{N-1} = \alpha_N I$. -/
 theorem faddeevLeverrier_inv (h : faddeevAlpha A (Fintype.card n) ≠ 0) :
     A⁻¹ = (faddeevAlpha A (Fintype.card n))⁻¹ • faddeevB A (Fintype.card n - 1) := by
   obtain ⟨N, hN⟩ : ∃ N, N = Fintype.card n := ⟨_, rfl⟩

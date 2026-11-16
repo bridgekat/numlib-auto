@@ -12,72 +12,83 @@ import Mathlib.Topology.Instances.AddCircle.Defs
 import Numlib.Analysis.Calculus.Periodic
 
 /-!
-# `Cᵏ[a, b]`, the continuously differentiable functions on a compact interval
+# The space $C^k[a, b]$ of continuously differentiable functions on a compact interval
 
-The space of `k` times continuously differentiable real functions on a compact interval `[a, b]`,
-normed by `‖u‖ = ∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞`, as a Banach space, together with its closed subspace of the
-functions vanishing at both endpoints.  The space is defined in Kendall Atkinson and Weimin Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009,
-§1.4, and the norm used here is the one that book writes as (2.1.2) in §2.1; §1.4 uses the
-equivalent maximum `max_{j ≤ k} ‖u⁽ʲ⁾‖_∞` instead.
+Let $a \le b$ and $k \in \mathbb{N}$. The space $C^k[a, b]$ consists of the $k$ times continuously
+differentiable real functions on the compact interval $[a, b]$, with the norm
+$$\|u\| = \sum_{j=0}^{k} \|u^{(j)}\|_\infty.$$
+It is a Banach space. This module also defines its closed subspace $C^k_0[a, b]$ of the functions
+that vanish at both endpoints, and its closed subspace of the functions whose derivatives up to
+order $k$ take equal values at the two endpoints, which are the periodic $C^k$ functions read on one
+period. The space is defined in [han2009theoretical], §1.4. The norm used here is the one written
+(2.1.2) in §2.1 of [han2009theoretical]; §1.4 uses the equivalent norm
+$\max_{j \le k} \|u^{(j)}\|_\infty$ instead.
 
-Mathlib has the case `k = 0` as `C(X, ℝ)` for a compact `X`, and nothing beyond it for a compact
-interval.  `ContDiffMapSupportedIn` is a different space: its fields ask for `ContDiff ℝ n f` on
-the whole of `ℝ` together with `EqOn f 0 Kᶜ`, so membership would force every derivative to vanish
-at the endpoints, and it carries a family of seminorms rather than a norm.
+The derivatives at the endpoints are one-sided: $g$ is the derivative of $f$ on $[a, b]$ if $f$ has
+the derivative $g(t)$ within $[a, b]$ at every $t \in [a, b]$, the endpoints included. By the
+fundamental theorem of calculus this holds if and only if $f(t) = f(a) + \int_a^t g$ for all
+$t \in [a, b]$, and this form shows that the condition is closed for the supremum norm.
 
 ## Main definitions
 
-* `ContinuousMap.HasDerivIcc hab f g`: the continuous function `g` on `[a, b]` is the derivative of
-  the continuous function `f` there, at the two endpoints as well.
-* `ContinuousMap.antideriv hab g c`: the antiderivative `t ↦ c + ∫ₐᵗ g` of `g` on `[a, b]`.
-* `ContDiffMapIcc hab k`: the space `Cᵏ[a, b]`, with `ContDiffMapIcc.deriv u j` the `j`-th
-  derivative of `u`, `⇑u` the function `u` itself and `ContDiffMapIcc.extend u` that function read
-  on all of `ℝ`.
-* `ContDiffMapIcc.shift`, `ContDiffMapIcc.cons`: differentiation `d/dx : Cᵏ⁺¹[a, b] → Cᵏ[a, b]`,
-  and its section prepending an antiderivative with a prescribed value at `a`.
-* `ContDiffMapIcc.derivCLM`, `ContDiffMapIcc.shiftCLM`: those two as bounded linear maps of norm at
-  most one.
-* `ContDiffMapIcc.ofContDiff`, `ContDiffMapIcc.ofContDiffOn`: the two constructors from a function,
-  one for a globally `Cᵏ` function on `ℝ` and one for a function `ContDiffOn` on `[a, b]`.
-* `ContDiffMapIcc.zeroBoundary hab k`: the closed subspace `Cᵏ₀[a, b] = {v : v a = v b = 0}`.
-* `ContDiffMapIcc.periodicBoundary hab k`: the closed subspace on which every derivative up to
-  order `k` matches at the two endpoints — the periodic `Cᵏ` functions read on one period.
+* `ContinuousMap.HasDerivIcc`: the continuous function $g$ on $[a, b]$ is the derivative of the
+  continuous function $f$ on $[a, b]$, at the two endpoints as well.
+* `ContinuousMap.antideriv`: the antiderivative $t \mapsto c + \int_a^t g$ of $g$ on $[a, b]$.
+* `ContDiffMapIcc`: the space $C^k[a, b]$. For an element $u$, `ContDiffMapIcc.deriv u j` is the
+  $j$-th derivative $u^{(j)}$, `⇑u` is the function $u$ on $[a, b]$, and `ContDiffMapIcc.extend u`
+  is $u$ extended to $\mathbb{R}$ by constants.
+* `ContDiffMapIcc.shift`, `ContDiffMapIcc.cons`: the differentiation
+  $d/dx : C^{k+1}[a, b] \to C^k[a, b]$, and its right inverse that adds the antiderivative with a
+  given value at $a$.
+* `ContDiffMapIcc.derivCLM`, `ContDiffMapIcc.shiftCLM`: the maps $u \mapsto u^{(j)}$ from
+  $C^k[a, b]$ to $C([a, b])$ and $d/dx$ from $C^{k+1}[a, b]$ to $C^k[a, b]$, as bounded linear maps
+  of norm at most $1$.
+* `ContDiffMapIcc.ofContDiff`, `ContDiffMapIcc.ofContDiffOn`: the element of $C^k[a, b]$ given by a
+  function that is $C^k$ on $\mathbb{R}$, or $C^k$ on $[a, b]$.
+* `ContDiffMapIcc.zeroBoundary`: the closed subspace $C^k_0[a, b] = \{v \in C^k[a, b] : v(a) =
+  v(b) = 0\}$.
+* `ContDiffMapIcc.periodicBoundary`: the closed subspace of the $u$ with $u^{(j)}(a) = u^{(j)}(b)$
+  for all $j \le k$.
 
 ## Main results
 
-* `ContDiffMapIcc.isClosed_submodule` and the `CompleteSpace` instance: `Cᵏ[a, b]` is a Banach
-  space.
-* `ContDiffMapIcc.deriv_eq_iteratedDerivWithin`, `ContDiffMapIcc.coe_injective`: the representation
-  is faithful — the `j`-th entry of the tuple is `iteratedDerivWithin j u (Icc a b)`, so an element
-  is determined by the function it is.
-* `ContDiffMapIcc.contDiffOn` and `ContDiffMapIcc.ofContDiffOn`: the space is exactly the book's —
-  every element is `k` times continuously differentiable on `[a, b]` in the sense of `ContDiffOn`,
-  and conversely every such function is an element.
-* `ContDiffMapIcc.exists_periodic_contDiff` and
-  `ContDiffMapIcc.ofContDiff_mem_periodicBoundary`: the elements of `periodicBoundary` are exactly
-  the restrictions to `[a, b]` of the `(b - a)`-periodic `Cᵏ` functions on `ℝ`.
-* `ContinuousMap.hasDerivIcc_iff`: the fundamental theorem of calculus on `[a, b]`, which is what
-  makes the defining condition a closed one.
+* `ContDiffMapIcc.isClosed_submodule` and the instance `CompleteSpace (ContDiffMapIcc hab k)`:
+  $C^k[a, b]$ is a Banach space.
+* `ContDiffMapIcc.deriv_eq_iteratedDerivWithin`, `ContDiffMapIcc.coe_injective`: for $a < b$, the
+  $j$-th derivative of an element is its $j$-th iterated derivative within $[a, b]$, so that an
+  element is determined by the function $u$.
+* `ContDiffMapIcc.contDiffOn`, `ContDiffMapIcc.ofContDiffOn`: for $a < b$, every element is $C^k$ on
+  $[a, b]$, and every function that is $C^k$ on $[a, b]$ gives an element. Thus the space is the
+  space of [han2009theoretical], §1.4.
+* `ContDiffMapIcc.exists_periodic_contDiff`, `ContDiffMapIcc.ofContDiff_mem_periodicBoundary`: the
+  elements of the periodic subspace are exactly the restrictions to $[a, b]$ of the
+  $(b - a)$-periodic $C^k$ functions on $\mathbb{R}$.
+* `ContinuousMap.hasDerivIcc_iff`: the fundamental theorem of calculus on $[a, b]$, which makes the
+  defining condition of $C^k[a, b]$ a closed condition.
 
 ## Implementation notes
 
-An element is represented by the *tuple of its derivatives* `(u, u', …, u⁽ᵏ⁾)`, subject to each
-entry being the derivative of the one before it.  Two alternatives were rejected.
-
-* On `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` the expression `∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞` is only a
-  *semi*norm, being blind to the values of `u` off `[a, b]`, so that carrier would need a quotient.
-* Carrying a single function on the subtype `↥(Icc a b)` would need a calculus on that subtype,
-  which Mathlib does not have.
-
-The tuple avoids both: the norm `∑_j ‖p j‖_∞` is the norm of `PiLp 1 (Fin (k + 1) → C([a, b], ℝ))`,
-which is already a Banach space, and the space is a *closed* subspace of it.
-
-Closedness is where the work is.  It cannot be had from `hasDerivAt_of_tendstoUniformlyOn` or
-`hasFDerivAt_of_tendstoUniformlyOn`, which require the set to be **open** and so say nothing at the
-endpoints of `[a, b]`.  The route taken instead is the fundamental theorem of calculus: `g` is the
-derivative of `f` on `[a, b]` if and only if `f t = f a + ∫ₐᵗ g`, an identity between two
-continuous functions of `f` and `g` for the supremum norm, hence a closed condition.
+* An element $u$ is represented by the tuple $(u, u', \dots, u^{(k)})$ of its derivatives, each a
+  continuous function on $[a, b]$, with the condition that each entry is the derivative of the entry
+  before it on $[a, b]$. The norm $\sum_j \|p_j\|_\infty$ of a tuple $p$ is the norm of
+  `PiLp 1 (Fin (k + 1) → C(Icc a b, ℝ))`, which is a Banach space, and $C^k[a, b]$ is a closed
+  subspace of it.
+* Two other representations do not work. On `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` the
+  expression $\sum_{j \le k} \|u^{(j)}\|_\infty$ is only a seminorm, because it does not see the
+  values of $u$ outside $[a, b]$; this type would need a quotient. A single function on the subtype
+  `Icc a b` would need a differential calculus on that subtype, which Mathlib does not have.
+* The closedness does not follow from `hasDerivAt_of_tendstoUniformlyOn` or
+  `hasFDerivAt_of_tendstoUniformlyOn`. These need an open set, and so say nothing at the endpoints
+  of $[a, b]$. The fundamental theorem of calculus is used instead: $g$ is the derivative of $f$ on
+  $[a, b]$ if and only if $f(t) = f(a) + \int_a^t g$, an identity between two continuous functions
+  of $(f, g)$ for the supremum norm.
+* Mathlib has the case $k = 0$ as `C(X, ℝ)` for compact `X`, and nothing for $k \ge 1$ on a compact
+  interval. `ContDiffMapSupportedIn` is a different space: it asks for `ContDiff ℝ n f` on all of
+  $\mathbb{R}$ together with `EqOn f 0 Kᶜ`, so that every derivative of a member vanishes at the
+  endpoints, and it carries a family of seminorms rather than a norm.
+* A continuous function on $[a, b]$ is extended to $\mathbb{R}$ by `ContinuousMap.IccExtend`, which
+  is constant outside $[a, b]$. A derivative within $[a, b]$ at a point of $[a, b]$ sees only the
+  values on $[a, b]$, so the choice of extension does not matter.
 -/
 open Set MeasureTheory intervalIntegral
 
@@ -85,18 +96,22 @@ namespace ContinuousMap
 
 variable {a b : ℝ}
 
-/-- `f.HasDerivIcc hab g` says that the continuous function `g` on the compact interval `[a, b]`
-is the derivative of the continuous function `f` there: at every `t ∈ [a, b]`, including the two
-endpoints, `f` has derivative `g t` *within* `[a, b]`.
+/-- Let $a \le b$ and let $f, g$ be continuous real functions on $[a, b]$. The function $g$ is the
+**derivative of $f$ on $[a, b]$** if, at every $t \in [a, b]$ including the two endpoints, $f$
+has the derivative $g(t)$ within $[a, b]$.
 
-`f` is read as a function on all of `ℝ` through `ContinuousMap.IccExtend`, which is constant
-outside `[a, b]`; since a derivative within `[a, b]` at a point of `[a, b]` sees only the values on
-`[a, b]`, the choice of extension is immaterial. -/
+The function $f$ is extended to $\mathbb{R}$ by `ContinuousMap.IccExtend`, which is constant
+outside $[a, b]$. A derivative within $[a, b]$ at a point of $[a, b]$ sees only the values on
+$[a, b]$, so the choice of extension does not matter. -/
 def HasDerivIcc (hab : a ≤ b) (f g : C(Icc a b, ℝ)) : Prop :=
   ∀ t : Icc a b, HasDerivWithinAt (IccExtend hab f) (g t) (Icc a b) t
 
-/-- Integration from `a` to `t` of a continuous function on `[a, b]`, extended constantly outside
-the interval, as a bounded linear functional on `C([a, b], ℝ)` of norm at most `|t - a|`. -/
+/-- Let $a \le b$ and $t \in \mathbb{R}$. The map $f \mapsto \int_a^t f(s)\, ds$ on the continuous
+functions on $[a, b]$, extended by constants outside $[a, b]$, is a bounded linear functional of
+norm at most $|t - a|$.
+
+The extension outside $[a, b]$ is `ContinuousMap.IccExtend`. For $t$ outside $[a, b]$ the
+integral uses the constant values $f(a)$ or $f(b)$ there. -/
 noncomputable def integralIccCLM (hab : a ≤ b) (t : ℝ) : C(Icc a b, ℝ) →L[ℝ] ℝ :=
   LinearMap.mkContinuous
     { toFun := fun f => ∫ s in a..t, IccExtend hab f s
@@ -111,6 +126,8 @@ noncomputable def integralIccCLM (hab : a ≤ b) (t : ℝ) : C(Icc a b, ℝ) →
       refine (norm_integral_le_of_norm_le_const fun s _ => ?_).trans_eq (mul_comm _ _)
       exact norm_coe_le_norm f _
 
+/-- The value of `ContinuousMap.integralIccCLM hab t` at $f$ is $\int_a^t f(s)\, ds$, with $f$
+extended by constants outside $[a, b]$. -/
 @[simp]
 theorem integralIccCLM_apply (hab : a ≤ b) (t : ℝ) (f : C(Icc a b, ℝ)) :
     integralIccCLM hab t f = ∫ s in a..t, IccExtend hab f s :=
@@ -118,8 +135,8 @@ theorem integralIccCLM_apply (hab : a ≤ b) (t : ℝ) (f : C(Icc a b, ℝ)) :
 
 variable {f g : C(Icc a b, ℝ)}
 
-/-- One half of `ContinuousMap.hasDerivIcc_iff`: if `g` is the derivative of `f` on `[a, b]`, then
-`f` is recovered from `g` by the fundamental theorem of calculus. -/
+/-- If $g$ is the derivative of $f$ on $[a, b]$, then $\int_a^t g(s)\, ds = f(t) - f(a)$ for every
+$t \in [a, b]$. This is one direction of `ContinuousMap.hasDerivIcc_iff`. -/
 theorem HasDerivIcc.integral_eq {hab : a ≤ b} (h : HasDerivIcc hab f g) (t : Icc a b) :
     ∫ s in a..(t : ℝ), IccExtend hab g s = f t - f ⟨a, left_mem_Icc.2 hab⟩ := by
   have hderiv : ∀ x ∈ Ioo a (t : ℝ),
@@ -136,10 +153,13 @@ theorem HasDerivIcc.integral_eq {hab : a ≤ b} (h : HasDerivIcc hab f g) (t : I
     ((IccExtend hab g).continuous.intervalIntegrable _ _)]
   rw [ContinuousMap.coe_IccExtend, Set.IccExtend_val, Set.IccExtend_left]
 
-/-- **A continuous function on `[a, b]` is the derivative of another exactly when the second is the
-first's integral.**  This is the fundamental theorem of calculus in the form used to prove that
-`Cᵏ[a, b]` is complete: the right-hand side is a *closed* condition for the supremum norm, whereas
-the left-hand side is not visibly one. -/
+/-- The **fundamental theorem of calculus on $[a, b]$**. Let $a \le b$ and let $f, g$ be continuous
+real functions on $[a, b]$. Then $g$ is the derivative of $f$ on $[a, b]$, endpoints included,
+if and only if
+$$f(t) = f(a) + \int_a^t g(s)\, ds \qquad \text{for all } t \in [a, b].$$
+
+This is the form used to prove that $C^k[a, b]$ is complete: the right-hand side is a closed
+condition on $(f, g)$ for the supremum norm. The integral is `ContinuousMap.integralIccCLM`. -/
 theorem hasDerivIcc_iff (hab : a ≤ b) :
     HasDerivIcc hab f g ↔
       ∀ t : Icc a b, f t = f ⟨a, left_mem_Icc.2 hab⟩ + integralIccCLM hab t g := by
@@ -162,26 +182,34 @@ namespace ContinuousMap
 
 variable {a b : ℝ} {f₁ f₂ g₁ g₂ : C(Icc a b, ℝ)} {hab : a ≤ b}
 
+/-- If $g_1$ is the derivative of $f_1$ and $g_2$ is the derivative of $f_2$ on $[a, b]$, then
+$g_1 + g_2$ is the derivative of $f_1 + f_2$ on $[a, b]$. -/
 theorem HasDerivIcc.add (hf : HasDerivIcc hab f₁ g₁) (hg : HasDerivIcc hab f₂ g₂) :
     HasDerivIcc hab (f₁ + f₂) (g₁ + g₂) := fun t => by
   have h := (hf t).add (hg t)
   rw [show ((g₁ + g₂) t : ℝ) = g₁ t + g₂ t from rfl]
   exact h
 
+/-- If $g$ is the derivative of $f$ on $[a, b]$ and $c \in \mathbb{R}$, then $c g$ is the derivative
+of $c f$ on $[a, b]$. -/
 theorem HasDerivIcc.smul (c : ℝ) (hf : HasDerivIcc hab f₁ g₁) :
     HasDerivIcc hab (c • f₁) (c • g₁) := fun t => by
   have h := (hf t).const_smul c
   rw [show ((c • g₁) t : ℝ) = c • g₁ t from rfl]
   exact h
 
+/-- The zero function is the derivative of the zero function on $[a, b]$. -/
 theorem hasDerivIcc_zero (hab : a ≤ b) : HasDerivIcc hab (0 : C(Icc a b, ℝ)) 0 := fun t => by
   rw [show ((0 : C(Icc a b, ℝ)) t : ℝ) = 0 from rfl]
   exact (hasDerivWithinAt_const _ _ (0 : ℝ))
 
-/-- The antiderivative `t ↦ c + ∫ₐᵗ g` of a continuous function `g` on the compact interval
-`[a, b]`, again a continuous function on `[a, b]`.  It is the unique continuous function with value
-`c` at `a` whose derivative on `[a, b]` is `g` (`ContinuousMap.hasDerivIcc_antideriv` and
-`ContinuousMap.HasDerivIcc.eq_antideriv`). -/
+/-- Let $a \le b$, let $g$ be a continuous real function on $[a, b]$, and let $c \in \mathbb{R}$.
+The **antiderivative** of $g$ with value $c$ at $a$ is the continuous function
+$t \mapsto c + \int_a^t g(s)\, ds$ on $[a, b]$.
+
+It is the unique continuous function on $[a, b]$ with value $c$ at $a$ whose derivative on
+$[a, b]$ is $g$, by `ContinuousMap.hasDerivIcc_antideriv` and
+`ContinuousMap.HasDerivIcc.eq_antideriv`. -/
 noncomputable def antideriv (hab : a ≤ b) (g : C(Icc a b, ℝ)) (c : ℝ) : C(Icc a b, ℝ) where
   toFun t := c + ∫ s in a..(t : ℝ), IccExtend hab g s
   continuous_toFun := by
@@ -190,39 +218,44 @@ noncomputable def antideriv (hab : a ≤ b) (g : C(Icc a b, ℝ)) (c : ℝ) : C(
         (((IccExtend hab g).continuous.integral_hasStrictDerivAt a t).hasDerivAt).continuousAt)
     exact h.comp continuous_subtype_val
 
+/-- The value of the antiderivative at $t \in [a, b]$ is $c + \int_a^t g(s)\, ds$. -/
 @[simp]
 theorem antideriv_apply (hab : a ≤ b) (g : C(Icc a b, ℝ)) (c : ℝ) (t : Icc a b) :
     antideriv hab g c t = c + ∫ s in a..(t : ℝ), IccExtend hab g s := rfl
 
+/-- The antiderivative with value $c$ at $a$ has the value $c$ at $a$. -/
 @[simp]
 theorem antideriv_left (hab : a ≤ b) (g : C(Icc a b, ℝ)) (c : ℝ) :
     antideriv hab g c ⟨a, left_mem_Icc.2 hab⟩ = c := by
   simp
 
-/-- **The fundamental theorem of calculus on `[a, b]`**: `g` is the derivative of its
-antiderivative, at the endpoints too. -/
+/-- The **fundamental theorem of calculus on $[a, b]$**, existence. Let $a \le b$, let $g$ be a
+continuous real function on $[a, b]$, and let $c \in \mathbb{R}$. Then $g$ is the derivative on
+$[a, b]$, endpoints included, of its antiderivative $t \mapsto c + \int_a^t g(s)\, ds$. -/
 theorem hasDerivIcc_antideriv (hab : a ≤ b) (g : C(Icc a b, ℝ)) (c : ℝ) :
     HasDerivIcc hab (antideriv hab g c) g := by
   rw [hasDerivIcc_iff]
   intro t
   simp
 
-/-- A continuous function on `[a, b]` with a derivative there is the antiderivative of that
-derivative; in particular a function on `[a, b]` is determined by its derivative and its value at
-`a`. -/
+/-- Let $a \le b$, and let $g$ be the derivative of $f$ on $[a, b]$. Then $f$ is the antiderivative
+of $g$ with value $f(a)$ at $a$:
+$$f(t) = f(a) + \int_a^t g(s)\, ds \qquad \text{for all } t \in [a, b].$$
+In particular, a function on $[a, b]$ is determined by its derivative and its value at $a$. -/
 theorem HasDerivIcc.eq_antideriv {hab : a ≤ b} {f g : C(Icc a b, ℝ)} (h : HasDerivIcc hab f g) :
     f = antideriv hab g (f ⟨a, left_mem_Icc.2 hab⟩) := by
   ext t
   rw [antideriv_apply, ← integralIccCLM_apply]
   exact (hasDerivIcc_iff hab).1 h t
 
-/-- The derivative of a constant function on `[a, b]` is `0`. -/
+/-- For every $c \in \mathbb{R}$, the zero function is the derivative of the constant function $c$
+on $[a, b]$. -/
 theorem hasDerivIcc_const (hab : a ≤ b) (c : ℝ) :
     HasDerivIcc hab (ContinuousMap.const (Icc a b) c) 0 := fun t => by
   rw [show ((0 : C(Icc a b, ℝ)) t : ℝ) = 0 from rfl]
   exact hasDerivWithinAt_const _ _ _
 
-/-- On a nondegenerate interval the derivative on `[a, b]` is unique. -/
+/-- Let $a < b$. If $g_1$ and $g_2$ are both derivatives of $f$ on $[a, b]$, then $g_1 = g_2$. -/
 theorem HasDerivIcc.unique {hab : a ≤ b} (hlt : a < b) {f g₁ g₂ : C(Icc a b, ℝ)}
     (h₁ : HasDerivIcc hab f g₁) (h₂ : HasDerivIcc hab f g₂) : g₁ = g₂ := by
   ext t
@@ -234,10 +267,10 @@ open ContinuousMap
 
 variable {a b : ℝ}
 
-/-- The tuples `(p 0, …, p k)` of continuous functions on `[a, b]` in which each entry is the
-derivative of the one before it, as a submodule of `PiLp 1 (Fin (k + 1) → C([a, b], ℝ))`, the
-`(k + 1)`-fold product carrying the norm `∑_j ‖p j‖_∞`.  This is the carrier of
-`ContDiffMapIcc`. -/
+/-- The submodule of `PiLp 1 (Fin (k + 1) → C(Icc a b, ℝ))` of the tuples $(p_0, \dots, p_k)$ of
+continuous functions on $[a, b]$ in which $p_{j+1}$ is the derivative of $p_j$ on $[a, b]$ for
+each $j < k$. The ambient space carries the norm $\sum_j \|p_j\|_\infty$. This submodule is the
+carrier of `ContDiffMapIcc`. -/
 def ContDiffMapIcc.submodule (hab : a ≤ b) (k : ℕ) :
     Submodule ℝ (PiLp 1 fun _ : Fin (k + 1) => C(Icc a b, ℝ)) where
   carrier := {p | ∀ j : Fin k, HasDerivIcc hab (p j.castSucc) (p j.succ)}
@@ -245,22 +278,20 @@ def ContDiffMapIcc.submodule (hab : a ≤ b) (k : ℕ) :
   zero_mem' _ := hasDerivIcc_zero hab
   smul_mem' c _ hp j := (hp j).smul c
 
-/-- **`Cᵏ[a, b]`, the `k` times continuously differentiable real functions on the compact interval
-`[a, b]`** (Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, §1.4), as a Banach space under the norm
-`‖u‖ = ∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞`.
+/-- Let $a \le b$ and $k \in \mathbb{N}$. The space **$C^k[a, b]$** consists of the $k$ times
+continuously differentiable real functions on the compact interval $[a, b]$, with the norm
+$$\|u\| = \sum_{j=0}^{k} \|u^{(j)}\|_\infty.$$
+It is a Banach space. This is the space of [han2009theoretical], §1.4.
 
-An element is represented by the *tuple of its derivatives* `(u, u', …, u⁽ᵏ⁾)`, each a continuous
-function on `[a, b]`, subject to the requirement that each entry is the derivative of the one
-before it on `[a, b]`, endpoints included (`ContinuousMap.HasDerivIcc`).  The representation is
-forced: on `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` the expression `∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞` is only
-a *semi*norm, being blind to the values of `u` off `[a, b]`, so the naive carrier would need a
-quotient.  Carrying the derivatives instead makes the norm a genuine norm, and makes the space a
-closed subspace of a finite product of copies of `C([a, b], ℝ)`, whence completeness.
-
-`ContDiffMapIcc.deriv u j` is the `j`-th entry, `ContDiffMapIcc.deriv_eq_iteratedDerivWithin`
-identifies it with `iteratedDerivWithin j u (Icc a b)` when `a < b`, and `⇑u` is the function `u`
-itself. -/
+An element is represented by the tuple $(u, u', \dots, u^{(k)})$ of its derivatives, each a
+continuous function on $[a, b]$, with the condition that each entry is the derivative of the
+entry before it on $[a, b]$, endpoints included (`ContinuousMap.HasDerivIcc`). On
+`{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` the expression $\sum_{j \le k} \|u^{(j)}\|_\infty$
+would be only a seminorm, because it does not see the values of $u$ outside $[a, b]$. With the
+tuple, the norm is a norm, and the space is a closed subspace of a finite product of copies of
+$C([a, b])$, hence complete. `ContDiffMapIcc.deriv u j` is the $j$-th entry, and `⇑u` is the
+function $u$ itself. For $a < b$, `ContDiffMapIcc.deriv_eq_iteratedDerivWithin` identifies the
+$j$-th entry with `iteratedDerivWithin j u (Icc a b)`. -/
 def ContDiffMapIcc (hab : a ≤ b) (k : ℕ) : Type := ContDiffMapIcc.submodule hab k
 
 namespace ContDiffMapIcc
@@ -273,71 +304,88 @@ noncomputable instance : NormedAddCommGroup (ContDiffMapIcc hab k) :=
 noncomputable instance : NormedSpace ℝ (ContDiffMapIcc hab k) :=
   inferInstanceAs (NormedSpace ℝ (submodule hab k))
 
-/-- The `j`-th derivative of `u ∈ Cᵏ[a, b]`, as a continuous function on `[a, b]`; `j = 0` gives
-`u` itself. -/
+/-- The $j$-th derivative $u^{(j)}$ of $u \in C^k[a, b]$, for $j \le k$, as a continuous function on
+$[a, b]$. For $j = 0$ it is $u$ itself. -/
 def deriv (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) : C(Icc a b, ℝ) := u.1 j
 
-/-- Every `u ∈ Cᵏ[a, b]` is a function on `[a, b]`, namely its own zeroth derivative. -/
+/-- Every $u \in C^k[a, b]$ is a function on $[a, b]$, namely its zeroth derivative $u^{(0)}$. -/
 instance : CoeFun (ContDiffMapIcc hab k) fun _ => Icc a b → ℝ := ⟨fun u => u.deriv 0⟩
 
+/-- The function $u$ on $[a, b]$ of $u \in C^k[a, b]$ is its zeroth derivative $u^{(0)}$. -/
 theorem coe_def (u : ContDiffMapIcc hab k) : ⇑u = ⇑(u.deriv 0) := rfl
 
-/-- `u ∈ Cᵏ[a, b]` read as a function on all of `ℝ`, constant outside `[a, b]`.  Statements about
-the calculus of `u` are phrased through this extension: a derivative *within* `[a, b]` at a point
-of `[a, b]` does not see the values outside, so nothing depends on the choice of extension. -/
+/-- The element $u \in C^k[a, b]$ as a continuous function on all of $\mathbb{R}$, constant outside
+$[a, b]$.
+
+Statements about the calculus of $u$ use this extension. A derivative within $[a, b]$ at a point
+of $[a, b]$ does not see the values outside $[a, b]$, so no statement depends on the choice of
+extension. -/
 noncomputable def extend (u : ContDiffMapIcc hab k) : C(ℝ, ℝ) :=
   ContinuousMap.IccExtend hab (u.deriv 0)
 
+/-- On $[a, b]$, the extension of $u \in C^k[a, b]$ to $\mathbb{R}$ agrees with $u$. -/
 @[simp]
 theorem extend_val (u : ContDiffMapIcc hab k) (t : Icc a b) : u.extend t = u t :=
   Set.IccExtend_val hab _ t
 
+/-- For $t \in [a, b]$, the extension of $u \in C^k[a, b]$ to $\mathbb{R}$ takes the value $u(t)$ at
+$t$. -/
 theorem extend_of_mem (u : ContDiffMapIcc hab k) {t : ℝ} (ht : t ∈ Icc a b) :
     u.extend t = u ⟨t, ht⟩ :=
   Set.IccExtend_of_mem hab _ ht
 
-/-- Each entry of the tuple is the derivative of the one before it, on all of `[a, b]`. -/
+/-- For $u \in C^k[a, b]$ and $j < k$, the derivative $u^{(j+1)}$ is the derivative of $u^{(j)}$ on
+$[a, b]$, endpoints included. -/
 theorem hasDerivIcc (u : ContDiffMapIcc hab k) (j : Fin k) :
     HasDerivIcc hab (u.deriv j.castSucc) (u.deriv j.succ) := u.2 j
 
+/-- Two elements of $C^k[a, b]$ are equal if their $j$-th derivatives are equal for every $j \le k$.
+-/
 @[ext]
 theorem ext {u v : ContDiffMapIcc hab k} (h : ∀ j, u.deriv j = v.deriv j) : u = v :=
   Subtype.ext ((WithLp.ext_iff 1).2 (funext h))
 
+/-- The $j$-th derivative of $u + v$ is $u^{(j)} + v^{(j)}$. -/
 @[simp]
 theorem deriv_add (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     (u + v).deriv j = u.deriv j + v.deriv j := rfl
 
+/-- The $j$-th derivative of $c u$ is $c u^{(j)}$. -/
 @[simp]
 theorem deriv_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     (c • u).deriv j = c • u.deriv j := rfl
 
+/-- Every derivative of the zero element of $C^k[a, b]$ is zero. -/
 @[simp]
 theorem deriv_zero (j : Fin (k + 1)) : (0 : ContDiffMapIcc hab k).deriv j = 0 := rfl
 
+/-- The $j$-th derivative of $u - v$ is $u^{(j)} - v^{(j)}$. -/
 @[simp]
 theorem deriv_sub (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     (u - v).deriv j = u.deriv j - v.deriv j := rfl
 
-/-- The norm of `Cᵏ[a, b]` is `‖u‖ = ∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞`. -/
+/-- The norm of $u \in C^k[a, b]$ is $\|u\| = \sum_{j=0}^{k} \|u^{(j)}\|_\infty$, where
+$\|\cdot\|_\infty$ is the supremum norm on $[a, b]$. -/
 theorem norm_def (u : ContDiffMapIcc hab k) : ‖u‖ = ∑ j, ‖u.deriv j‖ := by
   have h : ‖u‖ = ‖(u.1 : PiLp 1 fun _ : Fin (k + 1) => C(Icc a b, ℝ))‖ := rfl
   rw [h, PiLp.norm_eq_of_L1]
   rfl
 
-/-- Each derivative is bounded by the norm of `Cᵏ[a, b]`. -/
+/-- For $u \in C^k[a, b]$ and $j \le k$, $\|u^{(j)}\|_\infty \le \|u\|$. -/
 theorem norm_deriv_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) : ‖u.deriv j‖ ≤ ‖u‖ := by
   rw [norm_def]
   exact Finset.single_le_sum (f := fun i => ‖u.deriv i‖) (fun _ _ => norm_nonneg _)
     (Finset.mem_univ j)
 
-/-- The defining condition of `Cᵏ[a, b]` is a *closed* condition on the tuple: by the fundamental
-theorem of calculus (`ContinuousMap.hasDerivIcc_iff`) it says that each entry is the integral of
-the next, and both sides of that identity are continuous for the supremum norm.
+/-- For $a \le b$ and $k \in \mathbb{N}$, the set of tuples $(p_0, \dots, p_k)$ of continuous
+functions on $[a, b]$ in which each $p_{j+1}$ is the derivative of $p_j$ on $[a, b]$ is closed
+in the product space with the norm $\sum_j \|p_j\|_\infty$.
 
-This is where completeness comes from, and it is the reason the fundamental theorem of calculus is
-used rather than Mathlib's `hasDerivAt_of_tendstoUniformlyOn`, which needs an *open* set and so
-says nothing at the endpoints of `[a, b]`. -/
+By the fundamental theorem of calculus (`ContinuousMap.hasDerivIcc_iff`), the condition says
+that each entry is the integral of the next, and both sides of this identity are continuous for
+the supremum norm. Mathlib's `hasDerivAt_of_tendstoUniformlyOn` is not used, because it needs an
+open set and so says nothing at the endpoints of $[a, b]$. This closedness gives the
+completeness of $C^k[a, b]$. -/
 theorem isClosed_submodule (hab : a ≤ b) (k : ℕ) :
     IsClosed (submodule hab k : Set (PiLp 1 fun _ : Fin (k + 1) => C(Icc a b, ℝ))) := by
   have hset : (submodule hab k : Set (PiLp 1 fun _ : Fin (k + 1) => C(Icc a b, ℝ))) =
@@ -353,49 +401,53 @@ theorem isClosed_submodule (hab : a ≤ b) (k : ℕ) :
   · exact ((continuous_eval_const _).comp (PiLp.proj (𝕜 := ℝ) 1 _ j.castSucc).continuous).add
       ((integralIccCLM hab t).continuous.comp (PiLp.proj (𝕜 := ℝ) 1 _ j.succ).continuous)
 
-/-- **`Cᵏ[a, b]` is a Banach space** (Atkinson and Han, *Theoretical Numerical Analysis*, 3rd
-edition, §1.4): it is a closed subspace of a finite product of copies of the Banach space
-`C([a, b], ℝ)`. -/
+/-- The space $C^k[a, b]$ is a Banach space ([han2009theoretical], §1.4). It is a closed subspace of
+a finite product of copies of the Banach space $C([a, b])$. -/
 instance : CompleteSpace (ContDiffMapIcc hab k) := by
   have : IsClosed (submodule hab k : Set (PiLp 1 fun _ : Fin (k + 1) => C(Icc a b, ℝ))) :=
     isClosed_submodule hab k
   exact inferInstanceAs (CompleteSpace (submodule hab k))
 
-/-- Build an element of `Cᵏ[a, b]` from the tuple of its derivatives: continuous functions
-`p 0, …, p k` on `[a, b]` in which each is the derivative of the one before it. -/
+/-- The element of $C^k[a, b]$ given by the tuple of its derivatives: continuous functions
+$p_0, \dots, p_k$ on $[a, b]$ such that $p_{j+1}$ is the derivative of $p_j$ on $[a, b]$ for
+each $j < k$. -/
 def mk (hab : a ≤ b) {k : ℕ} (p : Fin (k + 1) → C(Icc a b, ℝ))
     (hp : ∀ j : Fin k, HasDerivIcc hab (p j.castSucc) (p j.succ)) : ContDiffMapIcc hab k :=
   ⟨WithLp.toLp 1 p, hp⟩
 
+/-- The $j$-th derivative of the element built from the tuple $(p_0, \dots, p_k)$ is $p_j$. -/
 @[simp]
 theorem deriv_mk (hab : a ≤ b) {k : ℕ} (p : Fin (k + 1) → C(Icc a b, ℝ))
     (hp : ∀ j : Fin k, HasDerivIcc hab (p j.castSucc) (p j.succ)) (j : Fin (k + 1)) :
     (mk hab p hp).deriv j = p j := rfl
 
-/-- Taking the `j`-th derivative, `Cᵏ[a, b] → C([a, b], ℝ)`, as a bounded linear map of norm at
-most `1`. -/
+/-- For $j \le k$, the map $u \mapsto u^{(j)}$ from $C^k[a, b]$ to $C([a, b])$, as a bounded linear
+map of norm at most $1$. -/
 noncomputable def derivCLM (hab : a ≤ b) (k : ℕ) (j : Fin (k + 1)) :
     ContDiffMapIcc hab k →L[ℝ] C(Icc a b, ℝ) :=
   LinearMap.mkContinuous
     { toFun := fun u => u.deriv j, map_add' := fun _ _ => rfl, map_smul' := fun _ _ => rfl }
     1 fun u => (norm_deriv_le u j).trans_eq (one_mul _).symm
 
+/-- The map `ContDiffMapIcc.derivCLM hab k j` sends $u$ to $u^{(j)}$. -/
 @[simp]
 theorem derivCLM_apply (hab : a ≤ b) (k : ℕ) (j : Fin (k + 1)) (u : ContDiffMapIcc hab k) :
     derivCLM hab k j u = u.deriv j := rfl
 
-/-- **Differentiation `d/dx : Cᵏ⁺¹[a, b] → Cᵏ[a, b]`**, which on the tuple of derivatives is the
-shift dropping the zeroth entry. -/
+/-- **Differentiation** $d/dx : C^{k+1}[a, b] \to C^k[a, b]$, which sends $u$ to $u'$. On the tuple
+of derivatives it drops the zeroth entry. -/
 def shift (u : ContDiffMapIcc hab (k + 1)) : ContDiffMapIcc hab k :=
   mk hab (fun j => u.deriv j.succ) fun j => by
     have h := u.hasDerivIcc j.succ
     rwa [← Fin.succ_castSucc] at h
 
+/-- For $u \in C^{k+1}[a, b]$ and $j \le k$, the $j$-th derivative of $u'$ is $u^{(j+1)}$. -/
 @[simp]
 theorem deriv_shift (u : ContDiffMapIcc hab (k + 1)) (j : Fin (k + 1)) :
     (shift u).deriv j = u.deriv j.succ := rfl
 
-/-- Differentiation `d/dx : Cᵏ⁺¹[a, b] → Cᵏ[a, b]` as a bounded linear map of norm at most `1`. -/
+/-- Differentiation $d/dx : C^{k+1}[a, b] \to C^k[a, b]$ as a bounded linear map of norm at most
+$1$. -/
 noncomputable def shiftCLM (hab : a ≤ b) (k : ℕ) :
     ContDiffMapIcc hab (k + 1) →L[ℝ] ContDiffMapIcc hab k :=
   LinearMap.mkContinuous
@@ -408,14 +460,19 @@ noncomputable def shiftCLM (hab : a ≤ b) (k : ℕ) :
           rw [Finset.sum_image fun _ _ _ _ h => Fin.succ_injective _ h]
           rfl)
 
+/-- The map `ContDiffMapIcc.shiftCLM hab k` is `ContDiffMapIcc.shift`. -/
 @[simp]
 theorem shiftCLM_apply (hab : a ≤ b) (k : ℕ) (u : ContDiffMapIcc hab (k + 1)) :
     shiftCLM hab k u = shift u := rfl
 
-/-- The `j`-th entry of the tuple is the `j`-th iterated derivative of `u` within `[a, b]`.  This
-is what makes the representation faithful: `Cᵏ[a, b]` really is a space of functions, the higher
-entries being determined by the zeroth.  A nondegenerate interval is needed, since a derivative
-within a one-point set is not determined. -/
+/-- Let $a < b$ and $u \in C^k[a, b]$. Then for every $j \le k$ and $t \in [a, b]$, the $j$-th
+derivative $u^{(j)}(t)$ is the $j$-th iterated derivative within $[a, b]$ at $t$ of the
+extension of $u$ to $\mathbb{R}$.
+
+This makes the representation faithful: the higher entries of the tuple are determined by the
+zeroth, so $C^k[a, b]$ is a space of functions. The hypothesis $a < b$ is needed, because a
+derivative within a one-point set is not determined. The iterated derivative is
+`iteratedDerivWithin j u.extend (Icc a b)`. -/
 theorem deriv_eq_iteratedDerivWithin (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ∀ {j : ℕ} (hj : j < k + 1) (t : Icc a b),
       u.deriv ⟨j, hj⟩ t = iteratedDerivWithin j u.extend (Icc a b) t := by
@@ -439,16 +496,18 @@ theorem deriv_eq_iteratedDerivWithin (hlt : a < b) (u : ContDiffMapIcc hab k) :
       · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_val, ih hj' t]
     rw [iteratedDerivWithin_succ, ← hderiv.derivWithin (uniqueDiffOn_Icc hlt t t.2)]
 
-/-- The derivative of `u ∈ Cᵏ⁺¹[a, b]` within `[a, b]`, at every point of `[a, b]` including the
-two endpoints, is the first entry of the tuple. -/
+/-- For $u \in C^{k+1}[a, b]$ and $t \in [a, b]$, the extension of $u$ to $\mathbb{R}$ has the
+derivative $u'(t)$ within $[a, b]$ at $t$, endpoints included. -/
 theorem hasDerivWithinAt_extend (u : ContDiffMapIcc hab (k + 1)) (t : Icc a b) :
     HasDerivWithinAt u.extend (u.deriv 1 t) (Icc a b) t := by
   have h := u.hasDerivIcc 0 t
   rwa [show (0 : Fin (k + 1)).castSucc = 0 from rfl,
     show (0 : Fin (k + 1)).succ = 1 from rfl] at h
 
-/-- An element of `Cᵏ[a, b]` is, as a function, `k` times continuously differentiable on `[a, b]`,
-which is the book's definition of the space. -/
+/-- Let $a < b$. Every $u \in C^k[a, b]$ is $k$ times continuously differentiable on $[a, b]$, which
+is the definition of the space in [han2009theoretical], §1.4.
+
+The statement is `ContDiffOn ℝ k` on `Icc a b` for the extension of $u$ to $\mathbb{R}$. -/
 theorem contDiffOn (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ContDiffOn ℝ k u.extend (Icc a b) := by
   induction k with
@@ -465,24 +524,27 @@ theorem contDiffOn (hlt : a < b) (u : ContDiffMapIcc hab k) :
     exact ⟨fun t ht => (u.hasDerivWithinAt_extend ⟨t, ht⟩).differentiableWithinAt,
       fun h => absurd h (by simp), (ih (shift u)).congr hcongr⟩
 
+/-- For $t \in [a, b]$, $(u + v)(t) = u(t) + v(t)$. -/
 @[simp]
 theorem coe_add (u v : ContDiffMapIcc hab k) (t : Icc a b) : (u + v) t = u t + v t := rfl
 
+/-- For $t \in [a, b]$, $(c u)(t) = c\, u(t)$. -/
 @[simp]
 theorem coe_smul (c : ℝ) (u : ContDiffMapIcc hab k) (t : Icc a b) : (c • u) t = c * u t := rfl
 
+/-- The zero element of $C^k[a, b]$ is the zero function. -/
 @[simp]
 theorem coe_zero (t : Icc a b) : (0 : ContDiffMapIcc hab k) t = 0 := rfl
 
-/-- One half of the equivalence between the norm `∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞` carried here and the maximum
-`max_{j ≤ k} ‖u⁽ʲ⁾‖_∞` that Atkinson and Han, *Theoretical Numerical Analysis*, 3rd edition, §1.4
-uses instead. -/
+/-- For $u \in C^k[a, b]$, $\max_{j \le k} \|u^{(j)}\|_\infty \le \|u\|$. This is one half of the
+equivalence between the norm $\sum_{j \le k} \|u^{(j)}\|_\infty$ used here and the norm
+$\max_{j \le k} \|u^{(j)}\|_\infty$ of [han2009theoretical], §1.4. -/
 theorem iSup_norm_deriv_le_norm (u : ContDiffMapIcc hab k) : ⨆ j, ‖u.deriv j‖ ≤ ‖u‖ :=
   ciSup_le fun j => norm_deriv_le u j
 
-/-- The other half of the equivalence with the maximum norm of Atkinson and Han, *Theoretical
-Numerical Analysis*, 3rd edition, §1.4: the sum of the `k + 1` supremum norms is at most `k + 1`
-times their maximum. -/
+/-- For $u \in C^k[a, b]$, $\|u\| \le (k + 1) \max_{j \le k} \|u^{(j)}\|_\infty$. This is the other
+half of the equivalence with the norm $\max_{j \le k} \|u^{(j)}\|_\infty$ of
+[han2009theoretical], §1.4: a sum of $k + 1$ terms is at most $k + 1$ times the largest. -/
 theorem norm_le_iSup_norm_deriv (u : ContDiffMapIcc hab k) :
     ‖u‖ ≤ (k + 1) * ⨆ j, ‖u.deriv j‖ := by
   rw [norm_def]
@@ -491,19 +553,23 @@ theorem norm_le_iSup_norm_deriv (u : ContDiffMapIcc hab k) :
           le_ciSup (f := fun i => ‖u.deriv i‖) (Finite.bddAbove_range _) j
     _ = (k + 1) * ⨆ j, ‖u.deriv j‖ := by simp [Finset.sum_const]
 
-/-- `C⁰[a, b]` is `C([a, b], ℝ)`: a tuple of length one carries no condition. -/
+/-- A continuous function $f$ on $[a, b]$ as an element of $C^0[a, b]$. A tuple of length one
+carries no condition, so $C^0[a, b]$ is $C([a, b])$. -/
 def ofContinuousMap (hab : a ≤ b) (f : C(Icc a b, ℝ)) : ContDiffMapIcc hab 0 :=
   mk hab (fun _ => f) fun j => j.elim0
 
+/-- The zeroth derivative of the element of $C^0[a, b]$ given by $f$ is $f$. -/
 @[simp]
 theorem deriv_ofContinuousMap (hab : a ≤ b) (f : C(Icc a b, ℝ)) (j : Fin 1) :
     (ofContinuousMap hab f).deriv j = f := rfl
 
+/-- Every $u \in C^0[a, b]$ is the element given by the continuous function $u^{(0)}$. -/
 theorem ofContinuousMap_deriv (u : ContDiffMapIcc hab 0) : ofContinuousMap hab (u.deriv 0) = u :=
   ext fun j => by rw [Fin.fin_one_eq_zero j]; rfl
 
-/-- On a nondegenerate interval an element of `Cᵏ[a, b]` is determined by the function it is: the
-higher entries of the tuple are its iterated derivatives. -/
+/-- Let $a < b$. An element $u \in C^k[a, b]$ is determined by the function $u$ on $[a, b]$: the map
+$u \mapsto u$ from $C^k[a, b]$ to the functions on $[a, b]$ is injective. The higher entries of
+the tuple are the iterated derivatives of $u$. -/
 theorem coe_injective (hlt : a < b) :
     Function.Injective (fun u : ContDiffMapIcc hab k => ⇑u) := by
   intro u v huv
@@ -515,10 +581,13 @@ theorem coe_injective (hlt : a < b) :
   rw [show j = ⟨(j : ℕ), j.2⟩ from rfl, u.deriv_eq_iteratedDerivWithin hlt j.2 t,
     v.deriv_eq_iteratedDerivWithin hlt j.2 t, hext]
 
-/-- **Every function that is `k` times continuously differentiable on `[a, b]` is an element of
-`Cᵏ[a, b]`**: the tuple of its iterated derivatives within `[a, b]`.  Together with
-`ContDiffMapIcc.contDiffOn` this says that `Cᵏ[a, b]` is exactly the space Atkinson and Han,
-*Theoretical Numerical Analysis*, 3rd edition, §1.4 defines — no more and no less. -/
+/-- Let $a < b$, and let $f : \mathbb{R} \to \mathbb{R}$ be $k$ times continuously differentiable on
+$[a, b]$. Then $f$ gives an element of $C^k[a, b]$, whose $j$-th derivative is the $j$-th
+iterated derivative of $f$ within $[a, b]$.
+
+With `ContDiffMapIcc.contDiffOn`, this shows that $C^k[a, b]$ is exactly the space of
+[han2009theoretical], §1.4. The hypothesis "$C^k$ on $[a, b]$" is `ContDiffOn ℝ k f (Icc a b)`,
+and the derivatives are `iteratedDerivWithin j f (Icc a b)`. -/
 noncomputable def ofContDiffOn (hab : a ≤ b) (hlt : a < b) {k : ℕ} {f : ℝ → ℝ}
     (hf : ContDiffOn ℝ k f (Icc a b)) : ContDiffMapIcc hab k :=
   mk hab
@@ -535,42 +604,54 @@ noncomputable def ofContDiffOn (hab : a ≤ b) (hlt : a < b) {k : ℕ} {f : ℝ 
       · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_of_mem hab _ hy]; rfl
       · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_val]; rfl
 
+/-- For the element of $C^k[a, b]$ given by a function $f$ that is $C^k$ on $[a, b]$, the $j$-th
+derivative at $t$ is the $j$-th iterated derivative of $f$ within $[a, b]$ at $t$. -/
 @[simp]
 theorem deriv_ofContDiffOn (hab : a ≤ b) (hlt : a < b) {k : ℕ} {f : ℝ → ℝ}
     (hf : ContDiffOn ℝ k f (Icc a b)) (j : Fin (k + 1)) (t : Icc a b) :
     (ofContDiffOn hab hlt hf).deriv j t = iteratedDerivWithin j f (Icc a b) t := rfl
 
+/-- The element of $C^k[a, b]$ given by a function $f$ that is $C^k$ on $[a, b]$ takes the value
+$f(t)$ at $t \in [a, b]$. -/
 @[simp]
 theorem coe_ofContDiffOn (hab : a ≤ b) (hlt : a < b) {k : ℕ} {f : ℝ → ℝ}
     (hf : ContDiffOn ℝ k f (Icc a b)) (t : Icc a b) : ofContDiffOn hab hlt hf t = f t := rfl
 
-/-- Prepending an antiderivative: the element of `Cᵏ⁺¹[a, b]` whose derivative is `u` and whose
-value at `a` is `c`.  Together with `ContDiffMapIcc.shift` it exhibits `Cᵏ⁺¹[a, b]` as
-`Cᵏ[a, b] × ℝ`. -/
+/-- For $u \in C^k[a, b]$ and $c \in \mathbb{R}$, the element of $C^{k+1}[a, b]$ whose derivative is
+$u$ and whose value at $a$ is $c$: its zeroth entry is $t \mapsto c + \int_a^t u(s)\, ds$.
+
+With `ContDiffMapIcc.shift`, it identifies $C^{k+1}[a, b]$ with $C^k[a, b] \times \mathbb{R}$
+(`ContDiffMapIcc.shift_cons`, `ContDiffMapIcc.cons_shift`). -/
 noncomputable def cons (u : ContDiffMapIcc hab k) (c : ℝ) : ContDiffMapIcc hab (k + 1) :=
   mk hab (Fin.cons (antideriv hab (u.deriv 0) c) u.deriv) fun i => by
     refine Fin.cases ?_ (fun j => ?_) i
     · simpa using hasDerivIcc_antideriv hab (u.deriv 0) c
     · simpa [← Fin.succ_castSucc] using u.hasDerivIcc j
 
+/-- The zeroth derivative of `ContDiffMapIcc.cons u c` is the antiderivative of $u$ with value $c$
+at $a$. -/
 @[simp]
 theorem deriv_cons_zero (u : ContDiffMapIcc hab k) (c : ℝ) :
     (cons u c).deriv 0 = antideriv hab (u.deriv 0) c := rfl
 
+/-- The $(j+1)$-th derivative of `ContDiffMapIcc.cons u c` is $u^{(j)}$. -/
 @[simp]
 theorem deriv_cons_succ (u : ContDiffMapIcc hab k) (c : ℝ) (j : Fin (k + 1)) :
     (cons u c).deriv j.succ = u.deriv j := rfl
 
+/-- The derivative of `ContDiffMapIcc.cons u c` is $u$. -/
 @[simp]
 theorem shift_cons (u : ContDiffMapIcc hab k) (c : ℝ) : shift (cons u c) = u := by
   ext j; rfl
 
+/-- The value of `ContDiffMapIcc.cons u c` at $a$ is $c$. -/
 @[simp]
 theorem cons_left (u : ContDiffMapIcc hab k) (c : ℝ) :
     cons u c ⟨a, left_mem_Icc.2 hab⟩ = c := antideriv_left hab _ c
 
-/-- `cons` undoes `shift`: rebuilding a `C^{k+1}` map from its derivative and its value at the left
-endpoint returns the map itself. With `shift_cons` this exhibits `C^{k+1}[a, b] ≃ C^k[a, b] × ℝ`. -/
+/-- For $v \in C^{k+1}[a, b]$, the element built from the derivative $v'$ and the value $v(a)$ is
+$v$. With `ContDiffMapIcc.shift_cons`, this identifies $C^{k+1}[a, b]$ with
+$C^k[a, b] \times \mathbb{R}$. -/
 theorem cons_shift (v : ContDiffMapIcc hab (k + 1)) :
     cons (shift v) (v ⟨a, left_mem_Icc.2 hab⟩) = v := by
   refine ext fun j => ?_
@@ -580,35 +661,38 @@ theorem cons_shift (v : ContDiffMapIcc hab (k + 1)) :
     show (0 : Fin (k + 1)).succ = 1 from rfl] at h
   exact h.symm
 
-/-- Evaluating the `j`-th derivative at a point of `[a, b]` is continuous on `Cᵏ[a, b]`.  This is
-the one ingredient the closedness of `ContDiffMapIcc.zeroBoundary` and of
-`ContDiffMapIcc.periodicBoundary` share: both subspaces are cut out by equations between such
-evaluations. -/
+/-- For $j \le k$ and $t \in [a, b]$, the map $u \mapsto u^{(j)}(t)$ is continuous on $C^k[a, b]$.
+
+The closedness of `ContDiffMapIcc.zeroBoundary` and of `ContDiffMapIcc.periodicBoundary` both
+rest on this: both subspaces are defined by equations between such evaluations. -/
 theorem continuous_deriv_eval (hab : a ≤ b) (k : ℕ) (j : Fin (k + 1)) (t : Icc a b) :
     Continuous fun u : ContDiffMapIcc hab k => u.deriv j t :=
   (continuous_eval_const t).comp (derivCLM hab k j).continuous
 
-/-- Evaluation at a point of `[a, b]` is continuous on `Cᵏ[a, b]`. -/
+/-- For $t \in [a, b]$, the evaluation $u \mapsto u(t)$ is continuous on $C^k[a, b]$. -/
 theorem continuous_eval (hab : a ≤ b) (k : ℕ) (t : Icc a b) :
     Continuous fun u : ContDiffMapIcc hab k => u t :=
   continuous_deriv_eval hab k 0 t
 
-/-- The subspace `Cᵏ₀[a, b] = {v ∈ Cᵏ[a, b] : v a = v b = 0}` of the elements vanishing at both
-endpoints.  For `k = 2` on `[0, 1]` this is the space `C²₀[0, 1]` in which the two-point boundary
-value problem `u'' = f(t, u)`, `u(0) = u(1) = 0`, is posed (Atkinson and Han, *Theoretical
-Numerical Analysis*, 3rd edition, §5.4.2). -/
+/-- The subspace $C^k_0[a, b] = \{v \in C^k[a, b] : v(a) = v(b) = 0\}$ of the elements that vanish
+at both endpoints.
+
+For $k = 2$ on $[0, 1]$, this is the space $C^2_0[0, 1]$ in which [han2009theoretical], §5.4.2,
+poses the two-point boundary value problem $u'' = f(t, u)$, $u(0) = u(1) = 0$. -/
 def zeroBoundary (hab : a ≤ b) (k : ℕ) : Submodule ℝ (ContDiffMapIcc hab k) where
   carrier := {u | u ⟨a, left_mem_Icc.2 hab⟩ = 0 ∧ u ⟨b, right_mem_Icc.2 hab⟩ = 0}
   add_mem' hu hv := ⟨by simp [hu.1, hv.1], by simp [hu.2, hv.2]⟩
   zero_mem' := ⟨rfl, rfl⟩
   smul_mem' c _ hu := ⟨by simp [hu.1], by simp [hu.2]⟩
 
+/-- An element $u \in C^k[a, b]$ is in $C^k_0[a, b]$ if and only if $u(a) = 0$ and $u(b) = 0$. -/
 @[simp]
 theorem mem_zeroBoundary {u : ContDiffMapIcc hab k} :
     u ∈ zeroBoundary hab k ↔
       u ⟨a, left_mem_Icc.2 hab⟩ = 0 ∧ u ⟨b, right_mem_Icc.2 hab⟩ = 0 := Iff.rfl
 
-/-- `Cᵏ₀[a, b]` is closed in `Cᵏ[a, b]`, being cut out by two continuous conditions. -/
+/-- The subspace $C^k_0[a, b]$ is closed in $C^k[a, b]$, since it is defined by two continuous
+conditions. -/
 theorem isClosed_zeroBoundary (hab : a ≤ b) (k : ℕ) :
     IsClosed (zeroBoundary hab k : Set (ContDiffMapIcc hab k)) := by
   have hset : (zeroBoundary hab k : Set (ContDiffMapIcc hab k)) =
@@ -618,40 +702,42 @@ theorem isClosed_zeroBoundary (hab : a ≤ b) (k : ℕ) :
   exact (isClosed_eq (continuous_eval hab k _) continuous_const).inter
     (isClosed_eq (continuous_eval hab k _) continuous_const)
 
-/-- `Cᵏ₀[a, b]` is a Banach space, being a closed subspace of one. -/
+/-- The space $C^k_0[a, b]$ is a Banach space, as a closed subspace of a Banach space. -/
 instance : CompleteSpace (zeroBoundary hab k) := by
   have : IsClosed (zeroBoundary hab k : Set (ContDiffMapIcc hab k)) := isClosed_zeroBoundary hab k
   infer_instance
 
 /-! ### Periodic boundary conditions -/
 
-/-- The subspace of `Cᵏ[a, b]` cut out by matching the values of *every* derivative up to order `k`
-at the two endpoints, `u⁽ʲ⁾(a) = u⁽ʲ⁾(b)` for `j ≤ k`.
+/-- The subspace of $C^k[a, b]$ of the elements $u$ whose derivatives up to order $k$ take equal
+values at the two endpoints: $u^{(j)}(a) = u^{(j)}(b)$ for all $j \le k$.
 
-Its elements are exactly the restrictions to one period of the `(b - a)`-periodic functions on `ℝ`
-of class `Cᵏ` — the space that Atkinson and Han, *Theoretical Numerical Analysis*, 3rd edition,
-§1.2 write `C_p^k(T)` — which is `ContDiffMapIcc.exists_periodic_contDiff` in one direction and
-`ContDiffMapIcc.ofContDiff_mem_periodicBoundary` in the other.  Matching *all* orders up to `k`,
-and not merely the values, is what makes the periodic extension `Cᵏ` rather than only continuous.
+Its elements are exactly the restrictions to one period of the $(b - a)$-periodic functions of
+class $C^k$ on $\mathbb{R}$, the space that [han2009theoretical], §1.2, writes $C_p^k(T)$. One
+direction is `ContDiffMapIcc.exists_periodic_contDiff` and the other is
+`ContDiffMapIcc.ofContDiff_mem_periodicBoundary`. The periodic extension is $C^k$, and not only
+continuous, because all derivatives up to order $k$ match, not only the values.
 
-At `k = 0` this agrees with reading `C_p(T)` as `C(AddCircle T, ℝ)`: a continuous function on the
-circle is the same thing as a continuous function on `[a, b]` taking equal values at the two ends.
-The two readings do not conflict, and the circle one has no higher-order analogue here because
-Mathlib carries no differential calculus on `AddCircle`. -/
+For $k = 0$ this agrees with the reading of $C_p(T)$ as `C(AddCircle T, ℝ)`: a continuous
+function on the circle is the same as a continuous function on $[a, b]$ with equal values at the
+two ends. There is no circle version for higher orders here, because Mathlib has no differential
+calculus on `AddCircle`. -/
 def periodicBoundary (hab : a ≤ b) (k : ℕ) : Submodule ℝ (ContDiffMapIcc hab k) where
   carrier := {u | ∀ j, u.deriv j ⟨a, left_mem_Icc.2 hab⟩ = u.deriv j ⟨b, right_mem_Icc.2 hab⟩}
   add_mem' hu hv j := by simp [hu j, hv j]
   zero_mem' _ := rfl
   smul_mem' c _ hu j := by simp [hu j]
 
+/-- An element $u \in C^k[a, b]$ satisfies the periodic boundary conditions if and only if
+$u^{(j)}(a) = u^{(j)}(b)$ for all $j \le k$. -/
 @[simp]
 theorem mem_periodicBoundary {u : ContDiffMapIcc hab k} :
     u ∈ periodicBoundary hab k ↔
       ∀ j, u.deriv j ⟨a, left_mem_Icc.2 hab⟩ = u.deriv j ⟨b, right_mem_Icc.2 hab⟩ := Iff.rfl
 
-/-- The periodic boundary conditions are closed in `Cᵏ[a, b]`: like `zeroBoundary`, the subspace is
-cut out by equations between derivative evaluations, and each of those is continuous by
-`ContDiffMapIcc.continuous_deriv_eval`. -/
+/-- The subspace of $C^k[a, b]$ defined by the periodic boundary conditions is closed. As for
+`ContDiffMapIcc.zeroBoundary`, it is defined by equations between evaluations of derivatives,
+and each evaluation is continuous by `ContDiffMapIcc.continuous_deriv_eval`. -/
 theorem isClosed_periodicBoundary (hab : a ≤ b) (k : ℕ) :
     IsClosed (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) := by
   have hset : (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) =
@@ -662,18 +748,19 @@ theorem isClosed_periodicBoundary (hab : a ≤ b) (k : ℕ) :
   exact isClosed_iInter fun j =>
     isClosed_eq (continuous_deriv_eval hab k j _) (continuous_deriv_eval hab k j _)
 
-/-- The periodic `Cᵏ` functions on `[a, b]` form a Banach space, being a closed subspace of the
-Banach space `Cᵏ[a, b]`. -/
+/-- The periodic $C^k$ functions on $[a, b]$ form a Banach space, as a closed subspace of the Banach
+space $C^k[a, b]$. -/
 instance : CompleteSpace (periodicBoundary hab k) := by
   have : IsClosed (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) :=
     isClosed_periodicBoundary hab k
   infer_instance
 
-/-- The restriction to `[a, b]` of a function that is `k` times continuously differentiable on all
-of `ℝ`, as an element of `Cᵏ[a, b]`: the tuple of its iterated derivatives.
+/-- Let $a \le b$, and let $f : \mathbb{R} \to \mathbb{R}$ be $k$ times continuously differentiable
+on $\mathbb{R}$. The restriction of $f$ to $[a, b]$ as an element of $C^k[a, b]$, whose $j$-th
+derivative is the restriction of $f^{(j)}$.
 
-Unlike `ContDiffMapIcc.ofContDiffOn` this needs no nondegeneracy hypothesis, the derivatives being
-the global `iteratedDeriv` rather than `iteratedDerivWithin`. -/
+Unlike `ContDiffMapIcc.ofContDiffOn`, this needs no hypothesis $a < b$, because the derivatives
+are the global derivatives `iteratedDeriv j f` and not derivatives within $[a, b]$. -/
 noncomputable def ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f) :
     ContDiffMapIcc hab k :=
   mk hab
@@ -690,18 +777,25 @@ noncomputable def ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : C
       · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_of_mem hab _ hy]; rfl
       · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_val]; rfl
 
+/-- The $j$-th derivative at $t \in [a, b]$ of the restriction of a $C^k$ function $f$ on
+$\mathbb{R}$ is $f^{(j)}(t)$. -/
 @[simp]
 theorem deriv_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f)
     (j : Fin (k + 1)) (t : Icc a b) :
     (ofContDiff hab hf).deriv j t = iteratedDeriv j f t := rfl
 
+/-- The restriction of a $C^k$ function $f$ on $\mathbb{R}$ to $[a, b]$ takes the value $f(t)$ at
+$t \in [a, b]$. -/
 @[simp]
 theorem coe_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f) (t : Icc a b) :
     ofContDiff hab hf t = f t := rfl
 
-/-- **The restriction of a `(b - a)`-periodic `Cᵏ` function on `ℝ` satisfies the periodic boundary
-conditions.**  Together with `ContDiffMapIcc.exists_periodic_contDiff` this identifies
-`ContDiffMapIcc.periodicBoundary` with the periodic `Cᵏ` functions. -/
+/-- Let $a \le b$, and let $f : \mathbb{R} \to \mathbb{R}$ be $C^k$ and $(b - a)$-periodic. Then the
+restriction of $f$ to $[a, b]$ satisfies the periodic boundary conditions
+$f^{(j)}(a) = f^{(j)}(b)$ for $j \le k$.
+
+With `ContDiffMapIcc.exists_periodic_contDiff`, this identifies
+`ContDiffMapIcc.periodicBoundary` with the periodic $C^k$ functions. -/
 theorem ofContDiff_mem_periodicBoundary (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f)
     (hper : Function.Periodic f (b - a)) : ofContDiff hab hf ∈ periodicBoundary hab k := by
   intro j
@@ -710,19 +804,21 @@ theorem ofContDiff_mem_periodicBoundary (hab : a ≤ b) {k : ℕ} {f : ℝ → �
   rw [show a + (b - a) = b by ring] at h
   exact h.symm
 
-/-- **Every element of `ContDiffMapIcc.periodicBoundary` is the restriction of a `(b - a)`-periodic
-function on `ℝ` of class `Cᵏ`**, the converse of
-`ContDiffMapIcc.ofContDiff_mem_periodicBoundary`.  The two together say that the periodic boundary
-conditions describe exactly the periodic `Cᵏ` functions read on one period.
+/-- Let $a < b$ and let $u \in C^k[a, b]$ satisfy the periodic boundary conditions
+$u^{(j)}(a) = u^{(j)}(b)$ for $j \le k$. Then there is a $(b - a)$-periodic function
+$f : \mathbb{R} \to \mathbb{R}$ of class $C^k$ with $f(t) = u(t)$ for all $t \in [a, b]$. This
+is the converse of `ContDiffMapIcc.ofContDiff_mem_periodicBoundary`; together they say that the
+periodic boundary conditions describe exactly the periodic $C^k$ functions read on one period.
 
-The extension is built by integrating downwards rather than by gluing translates, which is what
-avoids a theorem about `Cᵏ` functions glued along a point.  The top derivative is extended
-periodically as a *continuous* function, which needs only its two endpoint values to agree; each
-lower one is then recovered as `x ↦ u⁽ʲ⁾(a) + ∫ₐˣ (the extension of u⁽ʲ⁺¹⁾)`, which is
-automatically one degree smoother, and is periodic exactly because the integral of the extension of
-`u⁽ʲ⁺¹⁾` over one period is `u⁽ʲ⁾(b) - u⁽ʲ⁾(a) = 0`.  So the matching at order `j + 1` is what
-makes the extension of `u⁽ʲ⁾` periodic, and the matching at all orders up to `k` is used exactly
-once each. -/
+The extension is built by integration from the top derivative down, and not by gluing
+translates, so no theorem about $C^k$ functions glued at a point is needed. The top derivative
+$u^{(k)}$ is extended periodically as a continuous function, which needs only that its two
+endpoint values agree. Each lower derivative is then recovered as
+$x \mapsto u^{(j)}(a) + \int_a^x \tilde u_{j+1}$, where $\tilde u_{j+1}$ is the extension of
+$u^{(j+1)}$. This function is one degree smoother, and it is periodic because the integral of
+$\tilde u_{j+1}$ over one period is $u^{(j)}(b) - u^{(j)}(a) = 0$. Thus the matching at order
+$j$ makes the extension of $u^{(j)}$ periodic, and each matching condition up to order $k$ is
+used once. -/
 theorem exists_periodic_contDiff (hlt : a < b) :
     ∀ {k : ℕ} (u : ContDiffMapIcc hab k), u ∈ periodicBoundary hab k →
       ∃ f : ℝ → ℝ, Function.Periodic f (b - a) ∧ ContDiff ℝ k f ∧ ∀ t : Icc a b, f t = u t := by

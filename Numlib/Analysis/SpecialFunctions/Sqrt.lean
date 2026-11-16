@@ -12,17 +12,26 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Real.Sqrt
 
 /-!
-# The sum of two square roots
+# Elementary bounds for square roots
 
-`Real.sqrt_add_sqrt_le_sqrt_two_mul`: `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`, the case of two terms
-of `(∑ √aᵢ)² ≤ n ∑ aᵢ`.
+This file proves two elementary inequalities for real square roots. The first is
+$\sqrt{p} + \sqrt{q} \le \sqrt{2}\,\sqrt{p + q}$ for $p, q \ge 0$, which is the case of two terms of
+$\bigl(\sum_{i=1}^n \sqrt{a_i}\bigr)^2 \le n \sum_{i=1}^n a_i$. The second is $A \le R \le A + F$
+when $R^2 = A^2 + F^2$ with $R, A, F \ge 0$.
 
-`Real.le_and_le_add_of_sq_eq_add_sq`: `A ≤ R ≤ A + F` when `R² = A² + F²`, `R, A, F ≥ 0`.
+## Main results
+
+* `Real.sqrt_add_sqrt_le_sqrt_two_mul`: $\sqrt{p} + \sqrt{q} \le \sqrt{2}\,\sqrt{p + q}$ for
+  $p, q \ge 0$.
+* `Real.le_and_le_add_of_sq_eq_add_sq`: if $R, A, F \ge 0$ and $R^2 = A^2 + F^2$, then
+  $A \le R \le A + F$.
 -/
 
 namespace Real
 
-/-- `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`. -/
+/-- Let $p, q \ge 0$. Then
+$$\sqrt{p} + \sqrt{q} \le \sqrt{2}\,\sqrt{p + q}.$$
+-/
 theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
     √p + √q ≤ √2 * √(p + q) := by
   have hsq : (√p + √q) ^ 2 ≤ (√2 * √(p + q)) ^ 2 := by
@@ -31,7 +40,7 @@ theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) 
     nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
   exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
 
-/-- `A ≤ R ≤ A + F` for `R = √(A² + F²)` with `A, F ≥ 0`. -/
+/-- Let $R, A, F \ge 0$ be real numbers with $R^2 = A^2 + F^2$. Then $A \le R$ and $R \le A + F$. -/
 theorem le_and_le_add_of_sq_eq_add_sq {R A F : ℝ} (hR : 0 ≤ R) (hsq : R ^ 2 = A ^ 2 + F ^ 2)
     (hA : 0 ≤ A) (hF : 0 ≤ F) : A ≤ R ∧ R ≤ A + F := by
   constructor <;> nlinarith [sq_nonneg (R - A), sq_nonneg (R - A - F), mul_nonneg hA hF]

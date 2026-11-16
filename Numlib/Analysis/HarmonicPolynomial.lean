@@ -13,32 +13,39 @@ import Mathlib.Tactic.Positivity.Basic
 /-!
 # The Laplacian of a multivariate polynomial
 
-`MvPolynomial.laplacian` is `Δ = Σ_i ∂²/∂x_i²` as a linear map on `MvPolynomial σ R`, and
-`MvPolynomial.sumSq` is `|x|² = Σ_i x_i²`.
+Let $\sigma$ be a finite set of $d$ variables and let $R$ be a commutative semiring. This module
+defines the Laplacian $\Delta = \sum_i \partial^2 / \partial x_i^2$ as a linear map on the
+polynomials in the variables $x_i$, $i \in \sigma$, with coefficients in $R$, and the polynomial
+$|x|^2 = \sum_i x_i^2$. Its main result is that a real polynomial multiple of $1 - |x|^2$ is
+harmonic only if it is zero: if $\Delta((1 - |x|^2) p) = 0$, then $p = 0$. In analysis this is the
+uniqueness statement for the Dirichlet problem on a ball: a harmonic function that is continuous up
+to the boundary and vanishes on the sphere is zero. The proof here uses no analysis.
 
-The result the module exists for is
-`MvPolynomial.eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero`: a polynomial multiple of `1 − |x|²`
-cannot be harmonic unless it is zero. Analytically that is the uniqueness statement for the
-Dirichlet problem on a ball — a harmonic function continuous up to the boundary and vanishing on the
-sphere vanishes — but the proof here uses no analysis. The engine is Euler's identity, which turns
-the product rule into `Δ(|x|² h) = (2d + 4m) h + |x|² Δh` for `h` homogeneous of degree `m`; that
-identity forces a homogeneous `h` with `a • h + |x|² Δh = 0` and `a > 0` to vanish, by a descent on
-the degree, and the general case follows by peeling off the homogeneous component of top degree.
-
-The consequence is that `Δ` is a linear bijection from `(1 − |x|²) Π_n^d` onto `Π_n^d`, which is
-what makes the spectral Galerkin method for a Dirichlet problem on a ball uniquely solvable.
+As a consequence, $\Delta$ is a linear bijection from $(1 - |x|^2) \Pi_n^d$ onto $\Pi_n^d$, where
+$\Pi_n^d$ is the space of real polynomials of total degree at most $n$ in $d$ variables. This makes
+the spectral Galerkin method for a Dirichlet problem on a ball uniquely solvable.
 
 ## Main definitions
 
-* `MvPolynomial.laplacian`: `Δ p = Σ_i ∂²p/∂x_i²`.
-* `MvPolynomial.sumSq σ R`: `Σ_i X_i²`.
+* `MvPolynomial.laplacian`: the Laplacian $\Delta p = \sum_i \partial^2 p / \partial x_i^2$.
+* `MvPolynomial.sumSq`: the polynomial $|x|^2 = \sum_i x_i^2$.
 
 ## Main results
 
-* `MvPolynomial.totalDegree_laplacian_le`: `Δ` drops the total degree by two.
-* `MvPolynomial.laplacian_sumSq_mul`: `Δ(|x|² h) = (2d + 4m) h + |x|² Δh` for homogeneous `h`.
-* `MvPolynomial.eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero` and
-  `MvPolynomial.eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero`.
+* `MvPolynomial.totalDegree_laplacian_le`: $\Delta$ lowers the total degree by at least two.
+* `MvPolynomial.laplacian_sumSq_mul`: $\Delta(|x|^2 h) = (2d + 4m) h + |x|^2 \Delta h$ for $h$
+  homogeneous of degree $m$.
+* `MvPolynomial.eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero`: a real homogeneous polynomial $h$
+  with $a h + |x|^2 \Delta h = 0$ for some $a > 0$ is zero.
+* `MvPolynomial.eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero`: if $d \ge 1$ and
+  $\Delta((1 - |x|^2) p) = 0$ for a real polynomial $p$, then $p = 0$.
+
+## Proof outline
+
+The main tool is Euler's identity $\sum_i x_i \partial_i h = m h$ for $h$ homogeneous of degree $m$.
+With the product rule, it gives $\Delta(|x|^2 h) = (2d + 4m) h + |x|^2 \Delta h$. This identity
+forces a homogeneous $h$ with $a h + |x|^2 \Delta h = 0$ and $a > 0$ to vanish, by a descent on the
+degree. The general case follows by taking off the homogeneous component of top degree.
 -/
 
 open Finset
@@ -49,7 +56,10 @@ section Degree
 
 variable {σ R : Type*} [CommSemiring R]
 
-/-- A partial derivative strictly drops the total degree, or is zero. -/
+/-- A partial derivative lowers the total degree: for $i \in \sigma$ and a polynomial $p$,
+$$\deg \frac{\partial p}{\partial x_i} \le \deg p - 1,$$
+where $\deg$ is the total degree and the subtraction is in $\mathbb{N}$, so that the bound is
+$0$ when $p$ is constant. -/
 theorem totalDegree_pderiv_le (i : σ) (p : MvPolynomial σ R) :
     (pderiv i p).totalDegree ≤ p.totalDegree - 1 := by
   classical
@@ -70,16 +80,20 @@ section Laplacian
 
 variable {σ R : Type*} [CommSemiring R] [Fintype σ]
 
-/-- The **Laplacian** `Δ p = Σ_i ∂²p/∂x_i²` of a polynomial in finitely many variables. -/
+/-- The **Laplacian** of a polynomial $p$ in finitely many variables $x_i$, $i \in \sigma$:
+$$\Delta p = \sum_{i \in \sigma} \frac{\partial^2 p}{\partial x_i^2},$$
+as an $R$-linear map on the polynomials. -/
 noncomputable def laplacian : MvPolynomial σ R →ₗ[R] MvPolynomial σ R :=
   ∑ i : σ, (pderiv (R := R) i).toLinearMap ∘ₗ (pderiv i).toLinearMap
 
-/-- The Laplacian evaluated: `Δ p` is the sum over the variables of the second derivatives. -/
+/-- The value of the Laplacian: $\Delta p = \sum_{i \in \sigma} \partial_i (\partial_i p)$, where
+$\partial_i$ is the partial derivative with respect to $x_i$. -/
 theorem laplacian_apply (p : MvPolynomial σ R) :
     laplacian p = ∑ i : σ, pderiv i (pderiv i p) := by
   simp [laplacian, LinearMap.sum_apply]
 
-/-- The Laplacian drops the total degree by two. -/
+/-- The Laplacian lowers the total degree by at least two: $\deg \Delta p \le \deg p - 2$, with the
+subtraction in $\mathbb{N}$. -/
 theorem totalDegree_laplacian_le (p : MvPolynomial σ R) :
     (laplacian p).totalDegree ≤ p.totalDegree - 2 := by
   rw [laplacian_apply]
@@ -88,8 +102,8 @@ theorem totalDegree_laplacian_le (p : MvPolynomial σ R) :
   have h2 := totalDegree_pderiv_le i p
   omega
 
-/-- The Laplacian of a polynomial of degree at most one vanishes: its first derivatives are
-constants. -/
+/-- If $p$ has total degree at most $1$, then $\Delta p = 0$, because the first partial derivatives
+of $p$ are constants. -/
 theorem laplacian_eq_zero_of_totalDegree_le_one {p : MvPolynomial σ R} (h : p.totalDegree ≤ 1) :
     laplacian p = 0 := by
   rw [laplacian_apply]
@@ -99,19 +113,24 @@ theorem laplacian_eq_zero_of_totalDegree_le_one {p : MvPolynomial σ R} (h : p.t
   rw [totalDegree_eq_zero_iff_eq_C.1 h2, pderiv_C]
 
 variable (σ R) in
-/-- `|x|² = Σ_i X_i²`, the polynomial whose real level set `|x|² = 1` is the unit sphere. -/
+/-- The polynomial
+$$|x|^2 = \sum_{i \in \sigma} x_i^2.$$
+Over $\mathbb{R}$, its level set $|x|^2 = 1$ is the unit sphere. -/
 noncomputable def sumSq : MvPolynomial σ R := ∑ i : σ, X i * X i
 
-/-- `|x|²` is homogeneous of degree two. -/
+/-- The polynomial $|x|^2$ is homogeneous of degree $2$. -/
 theorem isHomogeneous_sumSq : (sumSq σ R).IsHomogeneous 2 :=
   IsHomogeneous.sum _ _ _ fun i _ => by
     simpa using (isHomogeneous_X R i).mul (isHomogeneous_X R i)
 
+/-- The polynomial $|x|^2$ has total degree at most $2$. -/
 theorem totalDegree_sumSq_le : (sumSq σ R).totalDegree ≤ 2 :=
   isHomogeneous_sumSq.totalDegree_le
 
-/-- `∂|x|²/∂x_j = 2 x_j`, written without a numeral so that it holds over any commutative
-semiring. -/
+/-- For $j \in \sigma$, $\partial |x|^2 / \partial x_j = x_j + x_j$.
+
+The right side is written without the numeral $2$, so that the identity holds over every
+commutative semiring. -/
 theorem pderiv_sumSq (j : σ) : pderiv j (sumSq σ R) = X j + X j := by
   classical
   rw [sumSq, map_sum, Finset.sum_eq_single j]
@@ -120,17 +139,22 @@ theorem pderiv_sumSq (j : σ) : pderiv j (sumSq σ R) = X j + X j := by
     rw [pderiv_mul, pderiv_X_of_ne hij, zero_mul, mul_zero, add_zero]
   · simp
 
-/-- The Laplacian of a homogeneous polynomial of degree `m` is homogeneous of degree `m - 2`. -/
+/-- Let $p$ be homogeneous of degree $m$. Then $\Delta p$ is homogeneous of degree $m - 2$, with the
+subtraction in $\mathbb{N}$. -/
 theorem IsHomogeneous.laplacian {m : ℕ} {p : MvPolynomial σ R} (hp : p.IsHomogeneous m) :
     (MvPolynomial.laplacian p).IsHomogeneous (m - 2) := by
   rw [laplacian_apply]
   refine IsHomogeneous.sum _ _ _ fun i _ => ?_
   simpa [Nat.sub_sub] using (hp.pderiv (i := i)).pderiv (i := i)
 
-/-- **Euler's identity in the form the Dirichlet problem needs**: multiplying a homogeneous
-polynomial `h` of degree `m` by `|x|²` and applying the Laplacian gives `(2d + 4m) h + |x|² Δh`,
-with `d` the number of variables. The product rule contributes `2d h` and two cross terms, and
-Euler's identity `Σ_i x_i ∂_i h = m h` turns the cross terms into `4 m h`. -/
+/-- **Euler's identity in the form that the Dirichlet problem needs**: let $h$ be a homogeneous
+polynomial of degree $m$ in $d$ variables. Then
+$$\Delta(|x|^2 h) = (2d + 4m) h + |x|^2 \Delta h.$$
+
+The product rule gives $2d h$, the term $|x|^2 \Delta h$ and two cross terms
+$2 \sum_i 2 x_i \partial_i h$. Euler's identity $\sum_i x_i \partial_i h = m h$ turns the cross
+terms into $4 m h$. The number $d$ is `Fintype.card σ`, and $2d + 4m$ acts as a natural number
+scalar. -/
 theorem laplacian_sumSq_mul {m : ℕ} {h : MvPolynomial σ R} (hh : h.IsHomogeneous m) :
     laplacian (sumSq σ R * h)
       = (2 * Fintype.card σ + 4 * m) • h + sumSq σ R * laplacian h := by
@@ -152,16 +176,22 @@ section Real
 
 variable {σ : Type*} [Fintype σ]
 
-/-- `MvPolynomial.laplacian_sumSq_mul` with the coefficient written as a real scalar. -/
+/-- The identity `MvPolynomial.laplacian_sumSq_mul` for real polynomials, with the coefficient
+$2d + 4m$ as a real scalar: $\Delta(|x|^2 h) = (2d + 4m) h + |x|^2 \Delta h$ for $h$ homogeneous
+of degree $m$. -/
 theorem laplacian_sumSq_mul' {m : ℕ} {h : MvPolynomial σ ℝ} (hh : h.IsHomogeneous m) :
     laplacian (sumSq σ ℝ * h)
       = ((2 * Fintype.card σ + 4 * m : ℕ) : ℝ) • h + sumSq σ ℝ * laplacian h := by
   rw [laplacian_sumSq_mul hh, Nat.cast_smul_eq_nsmul]
 
-/-- A homogeneous polynomial `h` with `a • h + |x|² Δh = 0` for some `a > 0` is zero. The proof is a
-descent on the degree: applying `Δ` to the relation and expanding `Δ(|x|² Δh)` by
-`MvPolynomial.laplacian_sumSq_mul` gives a relation of the same shape for `Δh`, two degrees lower
-and with a larger positive constant, and below degree two the Laplacian already vanishes. -/
+/-- Let $h$ be a real homogeneous polynomial of degree $m$, and let $a > 0$ with
+$$a h + |x|^2 \Delta h = 0.$$
+Then $h = 0$.
+
+The proof is a descent on the degree. Applying $\Delta$ to the relation and expanding
+$\Delta(|x|^2 \Delta h)$ by `MvPolynomial.laplacian_sumSq_mul` gives a relation of the same form
+for $\Delta h$, two degrees lower and with a larger positive constant. Below degree two, the
+Laplacian is zero. -/
 theorem eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero {m : ℕ} {a : ℝ} (ha : 0 < a)
     {h : MvPolynomial σ ℝ} (hh : h.IsHomogeneous m)
     (heq : a • h + sumSq σ ℝ * laplacian h = 0) : h = 0 := by
@@ -179,12 +209,19 @@ theorem eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero {m : ℕ} {a : ℝ} (ha 
       rw [← hd]
       module
 
-/-- **A polynomial multiple of `1 − |x|²` is harmonic only if it is zero.** Analytically this says
-that a harmonic function on the unit ball, continuous up to the boundary and vanishing on the
-sphere, is zero; the proof here is algebraic. Peeling off the homogeneous component of top degree
-turns the hypothesis into `(2d + 4m) h + |x|² Δh = 0` for that component, which
-`MvPolynomial.eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero` kills; what is left of the polynomial
-then satisfies the same hypothesis one degree lower. -/
+/-- **A polynomial multiple of $1 - |x|^2$ is harmonic only if it is zero.** Let the number $d$ of
+variables be at least $1$, let $n \in \mathbb{N}$, and let $p$ be a real polynomial of total
+degree at most $n$ with
+$$\Delta\bigl((1 - |x|^2) p\bigr) = 0.$$
+Then $p = 0$.
+
+In analysis this says that a harmonic function on the unit ball that is continuous up to the
+boundary and vanishes on the sphere is zero; the proof here is algebraic. Taking off the
+homogeneous component of top degree turns the hypothesis into $(2d + 4m) h + |x|^2 \Delta h = 0$
+for that component $h$ of degree $m$, so $h = 0$ by
+`MvPolynomial.eq_zero_of_smul_add_sumSq_mul_laplacian_eq_zero`. The rest of the polynomial then
+satisfies the same hypothesis one degree lower. The degree bound $n$ is arbitrary, so it is no
+restriction on $p$; the hypothesis $d \ge 1$ is `Nonempty σ`. -/
 theorem eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero (hσ : Nonempty σ) {n : ℕ}
     {p : MvPolynomial σ ℝ} (hp : p.totalDegree ≤ n)
     (h : laplacian ((1 - sumSq σ ℝ) * p) = 0) : p = 0 := by

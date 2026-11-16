@@ -5,7 +5,6 @@ id = 'affineFn'
 
 [[node]]
 id = 'convexFn_affineFn'
-desc = 'An affine function of the pairing is convex.'
 
 [[node]]
 id = 'affineFn_le_iff'
@@ -36,7 +35,6 @@ id = 'IsContinuousPairing'
 
 [[node]]
 id = 'continuous_pairing'
-desc = 'Under `IsContinuousPairing`, the pairing against a fixed `y` is continuous.'
 
 [[node]]
 id = 'evalCLM'
@@ -46,14 +44,12 @@ id = 'IsCompatiblePairing'
 
 [[node]]
 id = 'exists_pairing_eq'
-desc = 'Under `IsCompatiblePairing`, every continuous linear functional is `⟨·, y⟩` for some `y`.'
 
 [[node]]
 id = 'instIsCompatiblePairingTopDual'
 
 [[node]]
 id = 'instIsContinuousPairingProd'
-desc = 'A product of continuous pairings is a continuous pairing.'
 
 [[node]]
 id = 'instIsCompatiblePairingProd'

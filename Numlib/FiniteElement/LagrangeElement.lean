@@ -8,71 +8,71 @@ import Numlib.Approximation.MvPolynomial
 import Numlib.Geometry.Triangulation
 
 /-!
-# The `ℙ_k` Lagrange element on the principal lattice of a triangle
+# The Lagrange element of degree $k$ on a triangle
 
-The Lagrange finite element of degree `k` on the reference triangle
-`K̂ = {x̂₁, x̂₂ > 0, x̂₁ + x̂₂ < 1}`: its nodes are the points of the **principal lattice**
+This file constructs the Lagrange finite element of degree $k \ge 1$ on the reference triangle $\hat
+K = \{\hat x : \hat x_1 > 0,\ \hat x_2 > 0,\ \hat x_1 + \hat x_2 < 1\}$. Its nodes are the points of
+the **principal lattice** $$\hat N_k = \{(m_1/k, m_2/k) : m_1, m_2 \in \mathbb{N},\ m_1 + m_2 \le
+k\},$$ which is (10.2.24) of [han2009theoretical]. Its local space is $\mathbb{P}_k$, the
+polynomials in two variables of total degree at most $k$, and its shape functions are
+**Silvester's** nodal polynomials $L_m$. The file proves the properties that the finite element
+theory on a triangulation (`Numlib.Geometry.Triangulation`) requires of an element: unisolvence of
+$\mathbb{P}_k$ on $\hat N_k$ (Proposition 10.2.1 of [han2009theoretical]), so that interpolation at
+the nodes reproduces $\mathbb{P}_k$; the shape functions are nodal, smooth and in $\mathbb{P}_k$,
+and the nodes lie in the closed reference triangle; the element is conforming on every triangulation
+(Example 10.2.3 and Exercise 10.2.4 of [han2009theoretical]); and the element is edge unisolvent.
 
-  `N̂_k = {(m₁/k, m₂/k) : m₁, m₂ ∈ ℕ, m₁ + m₂ ≤ k}`,
-
-its local space is `ℙ_k`, the polynomials of total degree at most `k`, and its shape functions are
-**Silvester's** nodal polynomials. The module proves what the finite element theory on a
-triangulation (`Numlib/Geometry/Triangulation.lean`) asks of an element:
-
-* **unisolvence** — a polynomial of total degree at most `k` is determined by its values on `N̂_k`
-  (`bijective_latticeEval`, `eq_zero_of_eval_latticePoint`), so interpolation at the nodes
-  reproduces `ℙ_k` (`nodalInterp_eval`);
-* the shape functions are **nodal** (`isNodalBasis`), smooth (`contDiff_shape`) and polynomials of
-  degree at most `k` (`shape_eq_eval`), and the nodes lie in the closed reference triangle
-  (`node_mem_closure`);
-* the element is **conforming** on every triangulation (`isConformingElement`): the local
-  interpolants of two elements agree on their common edge, and **edge unisolvent**
-  (`isEdgeUnisolvent`): an interpolant vanishing at the nodes of an edge vanishes on the edge.
-
-## The proof of unisolvence
-
-The nodal basis is exhibited explicitly. For a lattice point with barycentric multi-index
-`α = (α₁, α₂, α₃)`, `Σ αᵢ = k`, the shape function is Silvester's product
-
-  `L_α = ∏_c ∏_{r < α_c} (k λ_c − r) / (α_c − r)`
-
-(`latticeShape`), of total degree `Σ_c α_c = k`, where the `λ_c` are the barycentric coordinates.
-At the lattice point with multi-index `β` the scaled barycentric coordinate `k λ_c` takes the value
-`β_c`, so `L_α` there is `∏_c ∏_{r < α_c} (β_c − r)/(α_c − r)`: it is `1` at `β = α`, and at any
-other `β` some `β_c < α_c` — the two multi-indices have the same sum — so the factor `r = β_c`
-vanishes (`eval_latticeShape`). That makes evaluation on the lattice *surjective*, and since `ℙ_k`
-and the lattice have the same cardinality `C(k+2, 2)` — the lattice is indexed by the very
-exponent vectors that index the monomial basis (`latticeIndex`) — surjective forces bijective. No
-divisibility of a multivariate polynomial by an affine form is needed, and neither is the
-induction on `k` of the classical argument.
-
-Conformity and edge unisolvence are the same one-variable argument: along an edge
-`P + s (Q − P)` an interpolant restricts to a polynomial of degree at most `k` in `s`
-(`lineRestrict`), and the edge carries the `k + 1` lattice nodes `s = j/k`
-(`exists_node_eq_lineMap`).
+The interpolation error of this element on a regular family of triangulations is
+`LagrangeElement.sobolevNorm_sub_globalInterp_le` in `Numlib.FiniteElement.Interpolation`.
 
 ## Main definitions
 
-* `LagrangeElement.latticePoint`, `latticeShape`, `latticeEval` — the principal lattice, Silvester's
-  shape polynomials and the evaluation map on `ℙ_k`, in `MvPolynomial (Fin 2) ℝ`.
-* `LagrangeElement.LatticeNode k` — the index type of the nodes.
-* `LagrangeElement.node k`, `LagrangeElement.shape k` — the nodes and the shape functions of the
-  element on `EuclideanSpace ℝ (Fin 2)`, in the form `Triangulation.localInterp` takes them.
+* `LagrangeElement.latticePoint`: the point $(m_1/k, m_2/k)$ of $\hat N_k$.
+* `LagrangeElement.latticeShape`: Silvester's shape polynomial $L_m$.
+* `LagrangeElement.latticeEval`: the evaluation map from $\mathbb{P}_k$ to the values on $\hat N_k$.
+* `LagrangeElement.LatticeNode`: the index type of the nodes.
+* `LagrangeElement.node`, `LagrangeElement.shape`: the nodes and the shape functions of the element
+  on $\mathbb{R}^2$, in the form that `Triangulation.localInterp` takes.
 
 ## Main results
 
-* `LagrangeElement.bijective_latticeEval` — unisolvence of `ℙ_k` on `N̂_k`.
-* `LagrangeElement.nodalInterp_eval` — the interpolant reproduces `ℙ_k`.
-* `LagrangeElement.isConformingElement`, `LagrangeElement.isEdgeUnisolvent`.
+* `LagrangeElement.bijective_latticeEval`: unisolvence of $\mathbb{P}_k$ on $\hat N_k$.
+* `LagrangeElement.eq_zero_of_eval_latticePoint`: a polynomial in $\mathbb{P}_k$ that vanishes on
+  $\hat N_k$ is zero.
+* `LagrangeElement.isNodalBasis`: the shape functions satisfy $\varphi_i(x_j) = \delta_{ij}$.
+* `LagrangeElement.nodalInterp_eval`: the interpolant of a polynomial in $\mathbb{P}_k$ is the
+  polynomial.
+* `LagrangeElement.isConformingElement`: the local interpolants of two elements agree on their
+  common points.
+* `LagrangeElement.isEdgeUnisolvent`: an interpolant that vanishes at the nodes of an edge vanishes
+  on the edge.
 
-The interpolation error of the element on a regular family of triangulations is
-`LagrangeElement.sobolevNorm_sub_globalInterp_le`
-(`Numlib/FiniteElement/Interpolation.lean`).
+## Proof outline
 
-## References
+The nodal basis is given explicitly. For a lattice point with barycentric multi-index
+$\alpha = (\alpha_1, \alpha_2, \alpha_3)$, $\sum_c \alpha_c = k$, Silvester's shape function is
+$$L_\alpha = \prod_{c=1}^{3} \prod_{r=0}^{\alpha_c - 1} \frac{k \lambda_c - r}{\alpha_c - r},$$
+where the $\lambda_c$ are the barycentric coordinates. It has total degree $\sum_c \alpha_c = k$. At
+the lattice point with multi-index $\beta$ the scaled coordinate $k \lambda_c$ takes the value
+$\beta_c$. So $L_\alpha$ is $1$ at $\beta = \alpha$. At any other $\beta$ some $\beta_c < \alpha_c$,
+because the two multi-indices have the same sum, and then the factor with $r = \beta_c$ vanishes.
+Thus evaluation on the lattice is surjective. The space $\mathbb{P}_k$ and the lattice have the same
+cardinality $\binom{k+2}{2}$, because the lattice is indexed by the exponent vectors that index the
+monomial basis. Therefore evaluation is bijective. The proof needs neither the divisibility of a
+polynomial by an affine form nor the induction on $k$ of the classical argument.
 
-* [han2009theoretical] Proposition 10.2.1 (unisolvence, quoted there without proof), (10.2.24)
-  (the principal lattice), Example 10.2.3 and Exercise 10.2.4 (conformity).
+Conformity and edge unisolvence use the same one-variable argument. Along an edge $P + s(Q - P)$ an
+interpolant restricts to a polynomial of degree at most $k$ in $s$, and the edge carries the $k + 1$
+lattice nodes $s = j/k$.
+
+## Implementation notes
+
+* Polynomials are `MvPolynomial (Fin 2) ℝ`, and $\mathbb{P}_k$ is
+  `MvPolynomial.restrictTotalDegree (Fin 2) ℝ k`. A lattice point is indexed by its exponent vector
+  $m = (m_1, m_2)$ as an element of `Fin 2 →₀ ℕ`, whose entries Lean indexes by `0` and `1`.
+* The nodes and the shape functions on $\mathbb{R}^2$ are indexed by `Fin (Fintype.card
+  (LagrangeElement.LatticeNode k))`, through the enumeration `Fintype.equivFin` of the lattice
+  nodes.
 -/
 
 namespace LagrangeElement
@@ -81,13 +81,15 @@ section PrincipalLattice
 
 open Finset Module MvPolynomial
 
-/-- The **Lagrange factor** `∏_{r < a} (ℓ − r)/(a − r)` of an affine form `ℓ`: it is `1` where
-`ℓ = a` and `0` where `ℓ` takes a natural value smaller than `a`, and its total degree is at
-most `a`. -/
+/-- The **Lagrange factor** of a polynomial $\ell$ in two variables and of $a \in \mathbb{N}$ is the
+polynomial $$\prod_{r=0}^{a-1} \frac{\ell - r}{a - r}.$$ For an affine $\ell$ it equals $1$
+where $\ell = a$, it vanishes where $\ell$ takes a natural value smaller than $a$, and it has
+total degree at most $a$. -/
 noncomputable def lagFactor (ℓ : MvPolynomial (Fin 2) ℝ) (a : ℕ) : MvPolynomial (Fin 2) ℝ :=
   ∏ r ∈ Finset.range a, C ((a : ℝ) - r)⁻¹ * (ℓ - C (r : ℝ))
 
-/-- A Lagrange factor of an affine form has total degree at most its index. -/
+/-- If $\ell$ has total degree at most $1$, its Lagrange factor of index $a$ has total degree at
+most $a$. -/
 theorem totalDegree_lagFactor_le {ℓ : MvPolynomial (Fin 2) ℝ} (hℓ : ℓ.totalDegree ≤ 1) (a : ℕ) :
     (lagFactor ℓ a).totalDegree ≤ a := by
   refine le_trans (totalDegree_finsetProd _ _) ?_
@@ -96,13 +98,13 @@ theorem totalDegree_lagFactor_le {ℓ : MvPolynomial (Fin 2) ℝ} (hℓ : ℓ.to
   rw [totalDegree_C, zero_add]
   exact le_trans (totalDegree_sub_C_le _ _) hℓ
 
-/-- The value of a Lagrange factor: `∏_{r < a} (ℓ(x) − r)/(a − r)`. -/
+/-- The value of the Lagrange factor of $\ell$ and $a$ at $x$ is
+$\prod_{r=0}^{a-1} (\ell(x) - r)/(a - r)$. -/
 theorem eval_lagFactor (x : Fin 2 → ℝ) (ℓ : MvPolynomial (Fin 2) ℝ) (a : ℕ) :
     eval x (lagFactor ℓ a) = ∏ r ∈ Finset.range a, ((a : ℝ) - r)⁻¹ * (eval x ℓ - r) := by
   simp [lagFactor]
 
-/-- The Lagrange factor is `1` where its form takes the value `a`: every factor is `(a − r)/(a − r)`
-and `r < a`. -/
+/-- If $\ell(x) = a$, then the Lagrange factor of $\ell$ and $a$ takes the value $1$ at $x$. -/
 theorem eval_lagFactor_self {x : Fin 2 → ℝ} {ℓ : MvPolynomial (Fin 2) ℝ} {a : ℕ}
     (h : eval x ℓ = (a : ℝ)) : eval x (lagFactor ℓ a) = 1 := by
   rw [eval_lagFactor, h]
@@ -112,20 +114,20 @@ theorem eval_lagFactor_self {x : Fin 2 → ℝ} {ℓ : MvPolynomial (Fin 2) ℝ}
     linarith
   field_simp
 
-/-- The Lagrange factor vanishes where its form takes a natural value below `a`: the factor with
-`r = b` is zero. -/
+/-- If $\ell(x) = b$ for a natural number $b < a$, then the Lagrange factor of $\ell$ and $a$
+vanishes at $x$, because its factor with $r = b$ is zero. -/
 theorem eval_lagFactor_of_lt {x : Fin 2 → ℝ} {ℓ : MvPolynomial (Fin 2) ℝ} {a b : ℕ} (hb : b < a)
     (h : eval x ℓ = (b : ℝ)) : eval x (lagFactor ℓ a) = 0 := by
   rw [eval_lagFactor, h]
   exact Finset.prod_eq_zero (Finset.mem_range.mpr hb) (by simp)
 
-/-- The three barycentric coordinates `λ̂₁ = 1 − x̂₁ − x̂₂`, `λ̂₂ = x̂₁` and `λ̂₃ = x̂₂` of the
-reference triangle, scaled by `k`, so that each takes an integer value at every point of
-`N̂_k`. -/
+/-- The barycentric coordinates $\hat\lambda_1 = 1 - \hat x_1 - \hat x_2$,
+$\hat\lambda_2 = \hat x_1$ and $\hat\lambda_3 = \hat x_2$ of the reference triangle, multiplied
+by $k$. Each of them takes an integer value at every point of $\hat N_k$. -/
 noncomputable def scaledBary (k : ℕ) : Fin 3 → MvPolynomial (Fin 2) ℝ :=
   ![C (k : ℝ) * (1 - X 0 - X 1), C (k : ℝ) * X 0, C (k : ℝ) * X 1]
 
-/-- The scaled barycentric coordinates are affine. -/
+/-- The scaled barycentric coordinates have total degree at most $1$. -/
 theorem totalDegree_scaledBary_le (k : ℕ) (c : Fin 3) : (scaledBary k c).totalDegree ≤ 1 := by
   have hX : ∀ i : Fin 2, (X i : MvPolynomial (Fin 2) ℝ).totalDegree ≤ 1 := fun i =>
     le_of_eq (totalDegree_X i)
@@ -138,23 +140,30 @@ theorem totalDegree_scaledBary_le (k : ℕ) (c : Fin 3) : (scaledBary k c).total
   · exact hmul _ (hX 0)
   · exact hmul _ (hX 1)
 
-/-- The point `(m₁/k, m₂/k)` of the **principal lattice** `N̂_k` of the reference triangle. As `m`
-ranges over the exponent vectors with `m₁ + m₂ ≤ k` this is exactly
-`N̂_k = {Σ tᵢ âᵢ : Σ tᵢ = 1, tᵢ ∈ {0, 1/k, …, 1}}` of [han2009theoretical] (10.2.24). -/
+/-- The point $(m_1/k, m_2/k)$ of the **principal lattice** $\hat N_k$ of the reference triangle,
+for an exponent vector $m = (m_1, m_2) \in \mathbb{N}^2$. As $m$ ranges over the exponent
+vectors with $m_1 + m_2 \le k$, these points form the set $$\hat N_k = \Big\{\sum_i t_i \hat a_i
+: \sum_i t_i = 1,\ t_i \in \{0, 1/k, \dots, 1\}\Big\}$$ of (10.2.24) of [han2009theoretical],
+where the $\hat a_i$ are the vertices of the reference triangle.
+
+The exponent vector is an element of `Fin 2 →₀ ℕ`, the type that indexes the monomials of
+`MvPolynomial (Fin 2) ℝ`. For $k = 0$ the division by zero gives the origin. -/
 noncomputable def latticePoint (k : ℕ) (m : Fin 2 →₀ ℕ) (i : Fin 2) : ℝ := (m i : ℝ) / k
 
-/-- The barycentric multi-index `(k − m₁ − m₂, m₁, m₂)` of a lattice point: the values of the
-scaled barycentric coordinates there. -/
+/-- The barycentric multi-index $(k - m_1 - m_2, m_1, m_2)$ of the lattice point with exponent
+vector $m$: the values of the scaled barycentric coordinates at that point. The subtraction is
+truncated at $0$. -/
 def latticeMulti (k : ℕ) (m : Fin 2 →₀ ℕ) : Fin 3 → ℕ := ![k - m 0 - m 1, m 0, m 1]
 
-/-- The barycentric multi-index of a lattice point sums to `k`. -/
+/-- If $m_1 + m_2 \le k$, the barycentric multi-index of $m$ sums to $k$. -/
 theorem sum_latticeMulti {k : ℕ} {m : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k) :
     ∑ c, latticeMulti k m c = k := by
   simp only [Fin.sum_univ_three, latticeMulti, Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
   omega
 
-/-- At a lattice point the scaled barycentric coordinates take the values of its multi-index. -/
+/-- Let $k \ge 1$ and $m_1 + m_2 \le k$. At the lattice point of $m$ the scaled barycentric
+coordinates take the values of the barycentric multi-index of $m$. -/
 theorem eval_scaledBary {k : ℕ} (hk : 0 < k) {m : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k) (c : Fin 3) :
     eval (latticePoint k m) (scaledBary k c) = (latticeMulti k m c : ℝ) := by
   have hk0 : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
@@ -174,13 +183,16 @@ theorem eval_scaledBary {k : ℕ} (hk : 0 < k) {m : Fin 2 →₀ ℕ} (hm : m 0 
     simp only [map_mul, eval_C, eval_X, latticePoint]
     field_simp
 
-/-- **Silvester's shape function** of the principal lattice at the point with exponent vector `m`:
-the product over the three barycentric coordinates of the Lagrange factors of their multi-index
-entries. -/
+/-- **Silvester's shape function** of the principal lattice at the point with exponent vector $m$.
+With $\alpha = (\alpha_1, \alpha_2, \alpha_3)$ the barycentric multi-index of $m$ and
+$\lambda_c$ the barycentric coordinates, it is $$L_m = \prod_{c=1}^{3} \prod_{r=0}^{\alpha_c -
+1} \frac{k \lambda_c - r}{\alpha_c - r},$$ the product of the Lagrange factors of the three
+scaled barycentric coordinates. -/
 noncomputable def latticeShape (k : ℕ) (m : Fin 2 →₀ ℕ) : MvPolynomial (Fin 2) ℝ :=
   ∏ c, lagFactor (scaledBary k c) (latticeMulti k m c)
 
-/-- The shape functions lie in `ℙ_k`: the three multi-index entries sum to `k`. -/
+/-- If $m_1 + m_2 \le k$, the shape function $L_m$ has total degree at most $k$, so it lies in
+$\mathbb{P}_k$. -/
 theorem totalDegree_latticeShape_le {k : ℕ} {m : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k) :
     (latticeShape k m).totalDegree ≤ k := by
   refine le_trans (totalDegree_finsetProd _ _) ?_
@@ -188,9 +200,9 @@ theorem totalDegree_latticeShape_le {k : ℕ} {m : Fin 2 →₀ ℕ} (hm : m 0 +
     totalDegree_lagFactor_le (totalDegree_scaledBary_le k c) _) ?_
   exact le_of_eq (sum_latticeMulti hm)
 
-/-- Two distinct lattice points have multi-indices of the same sum, so one entry of the second is
-strictly below the corresponding entry of the first. This is what makes a shape function vanish at
-every node but its own. -/
+/-- Let $m \ne m'$ be exponent vectors with $m_1 + m_2 \le k$ and $m'_1 + m'_2 \le k$, with
+barycentric multi-indices $\alpha$ and $\beta$. Then $\beta_c < \alpha_c$ for some $c$, because
+both multi-indices sum to $k$. This makes a shape function vanish at every node except its own. -/
 theorem exists_latticeMulti_lt {k : ℕ} {m m' : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k)
     (hm' : m' 0 + m' 1 ≤ k) (hne : m ≠ m') :
     ∃ c, latticeMulti k m' c < latticeMulti k m c := by
@@ -210,7 +222,9 @@ theorem exists_latticeMulti_lt {k : ℕ} {m m' : Fin 2 →₀ ℕ} (hm : m 0 + m
       simp only [latticeMulti, Matrix.cons_val_zero]
       omega
 
-/-- **The shape functions are dual to the lattice points**: `L_m(x_{m'}) = δ_{m m'}`. -/
+/-- **The shape functions are dual to the lattice points.** Let $k \ge 1$, and let $m$ and $m'$ be
+exponent vectors with $m_1 + m_2 \le k$ and $m'_1 + m'_2 \le k$. Then $$L_m(x_{m'}) = \delta_{m
+m'},$$ where $x_{m'}$ is the lattice point of $m'$. -/
 theorem eval_latticeShape {k : ℕ} (hk : 0 < k) {m m' : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k)
     (hm' : m' 0 + m' 1 ≤ k) :
     eval (latticePoint k m') (latticeShape k m) = if m = m' then 1 else 0 := by
@@ -222,40 +236,46 @@ theorem eval_latticeShape {k : ℕ} (hk : 0 < k) {m m' : Fin 2 →₀ ℕ} (hm :
     exact Finset.prod_eq_zero (Finset.mem_univ c)
       (eval_lagFactor_of_lt hc (eval_scaledBary hk hm' c))
 
-/-- The index set of the principal lattice `N̂_k`, which is also the index set of the monomial basis
-of `ℙ_k`: the exponent vectors of total degree at most `k`. Indexing the nodes and the monomials by
-one type is what makes the two cardinalities agree without a separate count. -/
+/-- The index set of the principal lattice $\hat N_k$: the exponent vectors $m \in \mathbb{N}^2$
+with $m_1 + m_2 \le k$. It is also the index set of the monomial basis of $\mathbb{P}_k$, so the
+two sets have the same cardinality without a separate count. -/
 def latticeIndex (k : ℕ) : Set (Fin 2 →₀ ℕ) := {m | (m.sum fun _ e => e) ≤ k}
 
-/-- Membership of the lattice index set: `m₀ + m₁ ≤ k`. -/
+/-- An exponent vector $m$ lies in the lattice index set if and only if $m_1 + m_2 \le k$. -/
 theorem mem_latticeIndex_iff {k : ℕ} {m : Fin 2 →₀ ℕ} :
     m ∈ latticeIndex k ↔ m 0 + m 1 ≤ k := by
   change (m.sum fun _ e => e) ≤ k ↔ _
   rw [Finsupp.sum_fintype _ _ fun _ => rfl, Fin.sum_univ_two]
 
-/-- The interpolation map of the principal lattice: evaluation of a polynomial of total degree at
-most `k` at the points of `N̂_k`. -/
+/-- The **interpolation map** of the principal lattice: the linear map from $\mathbb{P}_k$ to
+$\mathbb{R}^{\hat N_k}$ that evaluates a polynomial of total degree at most $k$ at the points of
+$\hat N_k$.
+
+$\mathbb{P}_k$ is `MvPolynomial.restrictTotalDegree (Fin 2) ℝ k`, and the points are indexed by
+`LagrangeElement.latticeIndex k`. -/
 noncomputable def latticeEval (k : ℕ) :
     (MvPolynomial.restrictTotalDegree (Fin 2) ℝ k) →ₗ[ℝ] (latticeIndex k → ℝ) where
   toFun p m := eval (latticePoint k (m : Fin 2 →₀ ℕ)) (p : MvPolynomial (Fin 2) ℝ)
   map_add' p q := by ext m; simp
   map_smul' a p := by ext m; simp
 
+/-- The interpolation map sends $p \in \mathbb{P}_k$ to the family of its values $p(x_m)$ at the
+lattice points. -/
 @[simp]
 theorem latticeEval_apply (k : ℕ) (p : MvPolynomial.restrictTotalDegree (Fin 2) ℝ k)
     (m : latticeIndex k) :
     latticeEval k p m = eval (latticePoint k (m : Fin 2 →₀ ℕ)) (p : MvPolynomial (Fin 2) ℝ) := rfl
 
-/-- **Unisolvence of `ℙ_k` on the principal lattice**: a polynomial of total degree at most `k`
-on a triangle is uniquely
-determined by its values at the `(k+1)(k+2)/2` points of the principal lattice `N̂_k` — that is,
-the interpolation problem there is unisolvent.
+/-- **Unisolvence of $\mathbb{P}_k$ on the principal lattice.** Let $k \ge 1$. The interpolation map
+from $\mathbb{P}_k$ to the values at the $(k+1)(k+2)/2$ points of $\hat N_k$ is bijective. That
+is, a polynomial of total degree at most $k$ is uniquely determined by its values on $\hat N_k$,
+and all values can be prescribed. This is Proposition 10.2.1 of [han2009theoretical], which the
+source states without proof.
 
-The surjectivity is Silvester's shape functions `latticeShape`, which are dual to the nodes by
-`eval_latticeShape`; the injectivity then follows because `ℙ_k` and the lattice both have
-`C(k + 2, 2)` elements, the lattice by construction, since it is indexed by the very exponent
-vectors that index the monomial basis. [han2009theoretical] Proposition 10.2.1, quoted there
-without proof. -/
+Surjectivity comes from Silvester's shape functions `LagrangeElement.latticeShape`, which are
+dual to the nodes by `LagrangeElement.eval_latticeShape`. Injectivity follows because
+$\mathbb{P}_k$ and the lattice both have $\binom{k+2}{2}$ elements: the lattice is indexed by
+the exponent vectors that index the monomial basis. -/
 theorem bijective_latticeEval {k : ℕ} (hk : 0 < k) : Function.Bijective (latticeEval k) := by
   classical
   have hfin : Fintype (latticeIndex k) := by
@@ -297,9 +317,10 @@ theorem bijective_latticeEval {k : ℕ} (hk : 0 < k) : Function.Bijective (latti
     omega
   exact ⟨(LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).mpr hsurj, hsurj⟩
 
-/-- **Unisolvence**, in the form the finite element proofs use it: a polynomial of total degree
-at most `k` vanishing at every point of the principal lattice is the zero polynomial
-([han2009theoretical] Proposition 10.2.1). -/
+/-- **Unisolvence**, in the form that the finite element proofs use. Let $k \ge 1$ and let $p$ be a
+polynomial in two variables of total degree at most $k$. If $p(m_1/k, m_2/k) = 0$ for all
+$m_1, m_2 \in \mathbb{N}$ with $m_1 + m_2 \le k$, then $p = 0$. This is Proposition 10.2.1 of
+[han2009theoretical]. -/
 theorem eq_zero_of_eval_latticePoint {k : ℕ} (hk : 0 < k) {p : MvPolynomial (Fin 2) ℝ}
     (hp : p.totalDegree ≤ k)
     (h : ∀ m : Fin 2 →₀ ℕ, m 0 + m 1 ≤ k → eval (latticePoint k m) p = 0) : p = 0 := by
@@ -319,29 +340,31 @@ open Finset MvPolynomial EuclideanSpace TopologicalSpace
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The index type of the nodes of the principal lattice `N̂_k`: the pairs `(m₀, m₁)` of naturals
-with `m₀ + m₁ ≤ k`. -/
+/-- The index type of the nodes of the principal lattice $\hat N_k$: the pairs $(m_1, m_2)$ of
+natural numbers with $m_1 + m_2 \le k$.
+
+It is a subtype of `Fin (k + 1) × Fin (k + 1)`, hence finite. -/
 def LatticeNode (k : ℕ) : Type := {p : Fin (k + 1) × Fin (k + 1) // (p.1 : ℕ) + p.2 ≤ k}
 
-/-- The nodes of the principal lattice are finitely many. -/
+/-- There are finitely many lattice nodes. -/
 instance (k : ℕ) : Fintype (LatticeNode k) := Subtype.fintype _
 
-/-- The exponent vector `(m₀, m₁)` of a lattice node, as the `Fin 2 →₀ ℕ` that indexes
-`latticePoint` and `latticeShape`. -/
+/-- The exponent vector $(m_1, m_2)$ of a lattice node, as the element of `Fin 2 →₀ ℕ` that indexes
+`LagrangeElement.latticePoint` and `LagrangeElement.latticeShape`. -/
 noncomputable def LatticeNode.toFinsupp {k : ℕ} (p : LatticeNode k) : Fin 2 →₀ ℕ :=
   Finsupp.single 0 (p.1.1 : ℕ) + Finsupp.single 1 (p.1.2 : ℕ)
 
-/-- The first entry of the exponent vector of a lattice node. -/
+/-- The first entry of the exponent vector of the lattice node $(m_1, m_2)$ is $m_1$. -/
 @[simp]
 theorem LatticeNode.toFinsupp_zero {k : ℕ} (p : LatticeNode k) : p.toFinsupp 0 = p.1.1 := by
   simp [LatticeNode.toFinsupp]
 
-/-- The second entry of the exponent vector of a lattice node. -/
+/-- The second entry of the exponent vector of the lattice node $(m_1, m_2)$ is $m_2$. -/
 @[simp]
 theorem LatticeNode.toFinsupp_one {k : ℕ} (p : LatticeNode k) : p.toFinsupp 1 = p.1.2 := by
   simp [LatticeNode.toFinsupp]
 
-/-- The exponent vector of a lattice node has entries summing to at most `k`. -/
+/-- The entries of the exponent vector of a lattice node sum to at most $k$. -/
 theorem LatticeNode.sum_toFinsupp_le {k : ℕ} (p : LatticeNode k) :
     p.toFinsupp 0 + p.toFinsupp 1 ≤ k := by
   simp only [LatticeNode.toFinsupp_zero, LatticeNode.toFinsupp_one]
@@ -356,37 +379,45 @@ theorem LatticeNode.toFinsupp_injective (k : ℕ) :
   simp only [LatticeNode.toFinsupp_zero, LatticeNode.toFinsupp_one] at h0 h1
   exact Subtype.ext (Prod.ext (Fin.ext h0) (Fin.ext h1))
 
-/-- Every exponent vector with `m₀ + m₁ ≤ k` is the exponent vector of a lattice node. -/
+/-- Every exponent vector $m$ with $m_1 + m_2 \le k$ is the exponent vector of a lattice node. -/
 theorem LatticeNode.exists_toFinsupp_eq {k : ℕ} {m : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k) :
     ∃ p : LatticeNode k, p.toFinsupp = m :=
   ⟨⟨(⟨m 0, by omega⟩, ⟨m 1, by omega⟩), hm⟩, by
     ext i
     fin_cases i <;> simp [LatticeNode.toFinsupp]⟩
 
-/-- The lattice node with exponent vector `(m₀, m₁)`, given by two naturals with `m₀ + m₁ ≤ k`. -/
+/-- The lattice node with exponent vector $(m_1, m_2)$, for natural numbers with $m_1 + m_2 \le k$.
+-/
 def LatticeNode.mk' {k : ℕ} (m₀ m₁ : ℕ) (h : m₀ + m₁ ≤ k) : LatticeNode k :=
   ⟨(⟨m₀, by omega⟩, ⟨m₁, by omega⟩), h⟩
 
-/-- **The nodes of the `ℙ_k` Lagrange element** on the reference triangle: the points of the
-principal lattice `N̂_k` ([han2009theoretical] (10.2.24)), as points of
-`EuclideanSpace ℝ (Fin 2)`, indexed by
-`Fin (card (LatticeNode k))`. -/
+/-- **The nodes of the $\mathbb{P}_k$ Lagrange element** on the reference triangle: the points
+$(m_1/k, m_2/k)$ of the principal lattice $\hat N_k$ ((10.2.24) of [han2009theoretical]), as
+points of $\mathbb{R}^2$.
+
+The nodes are indexed by `Fin (Fintype.card (LagrangeElement.LatticeNode k))`, the form that
+`Triangulation.localInterp` takes, through the enumeration `Fintype.equivFin` of the lattice
+nodes. -/
 noncomputable def node (k : ℕ) : Fin (Fintype.card (LatticeNode k)) → 𝔼₂ := fun i ↦
   WithLp.toLp 2 (latticePoint k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp)
 
-/-- **The shape functions of the `ℙ_k` Lagrange element**: Silvester's `latticeShape`, as
-functions on `EuclideanSpace ℝ (Fin 2)`. -/
+/-- **The shape functions of the $\mathbb{P}_k$ Lagrange element**: Silvester's polynomials $L_m$
+(`LagrangeElement.latticeShape`), as functions on $\mathbb{R}^2$, indexed like the nodes
+`LagrangeElement.node`. -/
 noncomputable def shape (k : ℕ) : Fin (Fintype.card (LatticeNode k)) → 𝔼₂ → ℝ :=
   fun i x ↦
     eval (fun j ↦ x j) (latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp)
 
-/-- The coordinates of a lattice node: `(m₀ / k, m₁ / k)`. -/
+/-- The node with exponent vector $(m_1, m_2)$ has the coordinates $(m_1/k, m_2/k)$. -/
 theorem node_apply (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) (j : Fin 2) :
     node k i j
       = (((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp j : ℝ) / k := rfl
 
-/-- The shape functions of the lattice element are nodal for its nodes (the duality
-`L_m(x_{m'}) = δ_{m m'}` of `eval_latticeShape`). -/
+/-- Let $k \ge 1$. The shape functions of the $\mathbb{P}_k$ Lagrange element are nodal for its
+nodes: $\varphi_i(x_j) = \delta_{ij}$.
+
+The statement is `Approximation.IsNodalBasis`. It is the duality $L_m(x_{m'}) = \delta_{m m'}$
+of `LagrangeElement.eval_latticeShape`. -/
 theorem isNodalBasis {k : ℕ} (hk : 0 < k) :
     Approximation.IsNodalBasis (node k) (shape k) where
   eval_self i := by
@@ -403,7 +434,8 @@ theorem isNodalBasis {k : ℕ} (hk : 0 < k) :
     exact hij ((Fintype.equivFin (LatticeNode k)).symm.injective
       (LatticeNode.toFinsupp_injective k h))
 
-/-- The lattice nodes lie in the closed reference triangle. -/
+/-- Let $k \ge 1$. Every node of the $\mathbb{P}_k$ Lagrange element lies in the closed reference
+triangle $\overline{\hat K}$. -/
 theorem node_mem_closure {k : ℕ} (hk : 0 < k) (i : Fin (Fintype.card (LatticeNode k))) :
     node k i ∈ closure (referenceTriangle : Set 𝔼₂) := by
   refine mem_closure_referenceTriangle ?_
@@ -414,7 +446,7 @@ theorem node_mem_closure {k : ℕ} (hk : 0 < k) (i : Fin (Fintype.card (LatticeN
   rw [← add_div, div_le_one hk']
   exact_mod_cast h
 
-/-- The shape functions of the lattice element are smooth. -/
+/-- The shape functions of the $\mathbb{P}_k$ Lagrange element are $C^\infty$ on $\mathbb{R}^2$. -/
 theorem contDiff_shape (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) :
     ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) (shape k i) := by
   have : shape k i = evalBasis (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis
@@ -424,11 +456,14 @@ theorem contDiff_shape (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) :
   rw [this]
   exact MvPolynomial.contDiff_evalBasis _ _
 
-/-- **`ℙ_k` interpolation on the principal lattice reproduces `ℙ_k`** (unisolvence in the form of
-the polynomial invariance [han2009theoretical] (10.3.4)): interpolating a polynomial of total
-degree at most `k` at the lattice nodes with the shape functions `latticeShape` gives it back —
-their difference is a polynomial of degree at most `k` vanishing at every lattice node, hence
-zero. -/
+/-- **Interpolation on the principal lattice reproduces $\mathbb{P}_k$.** Let $k \ge 1$ and let $q$
+be a polynomial in two variables of total degree at most $k$. Then the nodal interpolant of $q$
+with the nodes $x_i$ and the shape functions $\varphi_i$ of the $\mathbb{P}_k$ Lagrange element
+equals $q$ at every point $x \in \mathbb{R}^2$: $$\sum_i \varphi_i(x)\, q(x_i) = q(x).$$ This is
+unisolvence in the form of the polynomial invariance (10.3.4) of [han2009theoretical].
+
+The difference of the interpolant and $q$ is a polynomial of total degree at most $k$ that
+vanishes at every lattice node, hence zero by `LagrangeElement.eq_zero_of_eval_latticePoint`. -/
 theorem nodalInterp_eval {k : ℕ} (hk : 0 < k) (q : MvPolynomial (Fin 2) ℝ)
     (hq : q.totalDegree ≤ k) (x : 𝔼₂) :
     Approximation.nodalInterp (node k) (shape k)
@@ -467,12 +502,13 @@ theorem nodalInterp_eval {k : ℕ} (hk : 0 < k) (q : MvPolynomial (Fin 2) ℝ)
   rw [map_mul, eval_C, smul_eq_mul, mul_comm]
   rfl
 
-/-- The composition of a polynomial in two variables with an affine parametrization
-`s ↦ (A₀ + B₀ s, A₁ + B₁ s)` of a line, as a polynomial in `s`. -/
+/-- The composition of a polynomial $q$ in two variables with the affine parametrization
+$s \mapsto (A_1 + B_1 s, A_2 + B_2 s)$ of a line, as a polynomial in $s$. -/
 noncomputable def lineRestrict (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) : Polynomial ℝ :=
   aeval (fun j ↦ Polynomial.C (A j) + Polynomial.C (B j) * Polynomial.X) q
 
-/-- The restriction to a line evaluates as the polynomial does along the line. -/
+/-- The restriction of $q$ to the line through $A$ with direction $B$, evaluated at $s$, is
+$q(A + sB)$. -/
 theorem eval_lineRestrict (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) (s : ℝ) :
     (lineRestrict q A B).eval s = eval (fun j ↦ A j + B j * s) q := by
   rw [lineRestrict, ← Polynomial.coe_aeval_eq_eval, comp_aeval_apply]
@@ -480,8 +516,7 @@ theorem eval_lineRestrict (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) (
     RingHom.id_apply]
   rw [MvPolynomial.aeval_eq_eval]
 
-/-- The restriction to a line of a polynomial of total degree at most `k` has degree at most
-`k`. -/
+/-- The restriction of $q$ to a line has degree at most the total degree of $q$. -/
 theorem natDegree_lineRestrict_le (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) :
     (lineRestrict q A B).natDegree ≤ q.totalDegree := by
   rw [lineRestrict, aeval_def, eval₂_eq']
@@ -498,8 +533,9 @@ theorem natDegree_lineRestrict_le (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 �
   have := le_totalDegree hd
   rwa [Finsupp.sum_fintype _ _ fun _ ↦ rfl] at this
 
-/-- **The lattice nodes on an edge**: the point `x̂_a + (j/k)(x̂_b − x̂_a)` of the segment from
-the vertex `a` to the vertex `b` of the reference triangle, `0 ≤ j ≤ k`, is a lattice node. -/
+/-- **The lattice nodes on an edge.** Let $k \ge 1$, let $\hat a$ and $\hat b$ be two vertices of
+the reference triangle, and let $0 \le j \le k$. Then the point
+$\hat a + (j/k)(\hat b - \hat a)$ is a node of the $\mathbb{P}_k$ Lagrange element. -/
 theorem exists_node_eq_lineMap {k : ℕ} (hk : 0 < k) (a b : Fin 3) {j : ℕ} (hj : j ≤ k) :
     ∃ i, node k i = referenceTriangleVertex a
       + ((j : ℝ) / k) • (referenceTriangleVertex b - referenceTriangleVertex a) := by
@@ -525,14 +561,15 @@ theorem exists_node_eq_lineMap {k : ℕ} (hk : 0 < k) (a b : Fin 3) {j : ℕ} (h
     fin_cases a <;> fin_cases b <;>
       simp [referenceTriangleVertex, sub_eq_add_neg, add_div, neg_div, hk.ne']
 
-/-- The local interpolant of the lattice element on an element, as a polynomial in the reference
-coordinates: `∑ᵢ v(F_K x̂ᵢ) L_i`. -/
+/-- The local interpolant of the $\mathbb{P}_k$ Lagrange element on an element $K$ of a
+triangulation, as a polynomial in the reference coordinates: $\sum_i v(F_K \hat x_i)\, L_i$,
+where $F_K$ is the affine map from the reference triangle onto $K$. -/
 noncomputable def localPoly {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) (T : 𝒯.elems)
     (v : 𝔼₂ → ℝ) : MvPolynomial (Fin 2) ℝ :=
   ∑ i, C (v (𝒯.linearPart T (node k i) + T.1 0))
     * latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp
 
-/-- The local polynomial of the lattice element has total degree at most `k`. -/
+/-- The local polynomial of the $\mathbb{P}_k$ Lagrange element has total degree at most $k$. -/
 theorem totalDegree_localPoly_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ)
     (T : 𝒯.elems) (v : 𝔼₂ → ℝ) : (localPoly 𝒯 k T v).totalDegree ≤ k := by
   rw [← mem_restrictTotalDegree]
@@ -541,8 +578,8 @@ theorem totalDegree_localPoly_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) 
   exact Submodule.smul_mem _ _ ((mem_restrictTotalDegree _ _ _).2
     (totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _)))
 
-/-- The local interpolant of the lattice element is its local polynomial read through
-`F_K⁻¹`. -/
+/-- The local interpolant of the $\mathbb{P}_k$ Lagrange element on an element $K$, at a point $y$,
+is the local polynomial evaluated at $F_K^{-1}(y)$. -/
 theorem localInterp_eq {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) (T : 𝒯.elems)
     (v : 𝔼₂ → ℝ) (y : 𝔼₂) :
     𝒯.localInterp (node k) (shape k) T v y
@@ -552,14 +589,17 @@ theorem localInterp_eq {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) 
   rw [map_mul, eval_C, mul_comm]
   rfl
 
-/-- **The `ℙ_k` Lagrange element on the principal lattice is conforming** ([han2009theoretical]
-Example 10.2.3 extended to every `k`, which the book leaves to the reader for `k = 2`, its Exercise
-10.2.4):
-the local interpolants of two elements agree at every point of a common closed element. At a
-common vertex both take the value of `v` (a vertex is a lattice node). Along a common edge
-`[P, Q]` both restrict to polynomials of degree at most `k` in the parameter `s` of
-`P + s (Q − P)`, which agree at the `k + 1` lattice nodes `s = j/k` of the edge — these are nodes
-of both elements, where each interpolant takes the value of `v` — hence everywhere. -/
+/-- **The $\mathbb{P}_k$ Lagrange element is conforming.** Let $k \ge 1$ and let $\mathcal{T}$ be a
+triangulation of an open set $\Omega \subseteq \mathbb{R}^2$. For every function $v$, the local
+interpolants of $v$ on any two elements agree at every point common to the two closed elements.
+This is Example 10.2.3 of [han2009theoretical], extended to every $k$; the source leaves the
+case $k = 2$ to the reader as Exercise 10.2.4.
+
+The statement is `Triangulation.IsConformingElement`. At a common vertex both interpolants take
+the value of $v$, because a vertex is a lattice node. Along a common edge $[P, Q]$ both
+interpolants restrict to polynomials of degree at most $k$ in the parameter $s$ of
+$P + s(Q - P)$. These polynomials agree at the $k + 1$ lattice nodes $s = j/k$ of the edge,
+which are nodes of both elements, hence everywhere. -/
 theorem isConformingElement {k : ℕ} (hk : 0 < k) {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) :
     𝒯.IsConformingElement (node k) (shape k) := by
   intro v T T' x hx hx'
@@ -625,18 +665,24 @@ theorem isConformingElement {k : ℕ} (hk : 0 < k) {Ω : Opens 𝔼₂} (𝒯 : 
         ((natDegree_lineRestrict_le _ _ _).trans (totalDegree_localPoly_le 𝒯 k S v))
     rw [key T, key T', Polynomial.eq_of_degrees_lt_of_eval_finset_eq _ (hdeg T) (hdeg T') hagree]
 
-/-- The shape functions of the `ℙ_k` Lagrange element are polynomials of total degree at most
-`k` (Silvester's `latticeShape`). -/
+/-- Every shape function of the $\mathbb{P}_k$ Lagrange element is a polynomial of total degree at
+most $k$: there is such a polynomial $q$ with $\varphi_i(x) = q(x)$ for all
+$x \in \mathbb{R}^2$. -/
 theorem shape_eq_eval (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) :
     ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
       ∀ x : 𝔼₂, shape k i x = eval (fun j ↦ x j) q :=
   ⟨_, totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _), fun _ ↦ rfl⟩
 
-/-- **The `ℙ_k` Lagrange element on the principal lattice is edge unisolvent**: along a
-reference edge `[x̂_a, x̂_b]`, the interpolant `Π̂ v` is a polynomial of degree at most `k` in the
-parameter `s` of `x̂_a + s (x̂_b − x̂_a)` (`lineRestrict`), and it vanishes at the `k + 1` lattice
-nodes `s = j/k` of the edge when `v` does — there `Π̂ v = v` — hence identically. This is the
-argument of `isConformingElement` with the zero polynomial as the second interpolant. -/
+/-- **The $\mathbb{P}_k$ Lagrange element is edge unisolvent.** Let $k \ge 1$, let
+$\hat a \ne \hat b$ be two vertices of the reference triangle, and let $v$ vanish at every node
+on the edge $[\hat a, \hat b]$. Then the interpolant
+$\hat\Pi v = \sum_i v(\hat x_i)\, \hat\varphi_i$ vanishes on the whole edge.
+
+The statement is `EuclideanSpace.IsEdgeUnisolvent`. Along the edge the interpolant is a
+polynomial of degree at most $k$ in the parameter $s$ of $\hat a + s(\hat b - \hat a)$
+(`LagrangeElement.lineRestrict`), and it vanishes at the $k + 1$ lattice nodes $s = j/k$ of the
+edge, hence identically. This is the argument of `LagrangeElement.isConformingElement` with the
+zero polynomial as the second interpolant. -/
 theorem isEdgeUnisolvent {k : ℕ} (hk : 0 < k) :
     IsEdgeUnisolvent (node k) (shape k) := by
   intro a b hab v hv y hy

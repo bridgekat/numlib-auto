@@ -5,30 +5,41 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.ODE.ExistUnique
 
 /-!
-# Picard–Lindelöf with the solution confined to the ball
+# The Picard–Lindelöf theorem with the solution confined to the ball
 
-Mathlib's `IsPicardLindelof f t₀ x₀ a r L K` bundles the hypotheses of the Picard–Lindelöf theorem:
-the vector field is `K`-Lipschitz in the state and bounded by `L` on the closed ball of radius `a`
-about `x₀`, continuous in time there, and the time interval is short enough that `L` times its
-length fits inside `a - r`. Its existence theorem
-`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` produces an integral curve, but says
-nothing about where that curve goes, while `ODE_solution_unique_of_mem_Icc` compares only solutions
-that are known to stay inside a set on which the field is Lipschitz. The two therefore do not
-compose into the textbook statement "the initial value problem has a *unique* solution on the short
-interval".
+Let $E$ be a real Banach space, $f : \mathbb{R} \times E \to E$, $t_0 \in [t_{\min}, t_{\max}]$ and
+$x_0 \in E$. Mathlib's `IsPicardLindelof f t₀ x₀ a r L K` collects the hypotheses of the
+Picard–Lindelöf theorem: on the closed ball $\bar B(x_0, a)$ the field $f(t, \cdot)$ is
+$K$-Lipschitz and bounded by $L$, $f$ is continuous in time there, and the time interval is so short
+that $L \max(t_{\max} - t_0, t_0 - t_{\min}) \le a - r$. Mathlib's existence theorem
+`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` gives an integral curve, but says
+nothing about where the curve goes. Mathlib's uniqueness theorem `ODE_solution_unique_of_mem_Icc`
+compares only solutions that stay in a set on which the field is Lipschitz. So the two theorems do
+not combine into the textbook statement that the initial value problem has a unique solution on the
+short interval.
 
-This file closes that gap. `IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt` gives an
-integral curve that stays in the closed ball of radius `a`, and
-`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt` adds that it is the only such
-curve.
+This file proves that statement. For an initial value $x$ with $\|x - x_0\| \le r$, there is an
+integral curve that stays in $\bar B(x_0, a)$, and it is the only integral curve with this property.
 
-The proof is the observation that every hypothesis of `IsPicardLindelof` constrains the field only
-on the ball, so the field may be replaced by one that is *constant outside* it — here `f t u` is
-replaced by `f t x₀` for `u` outside the ball. The replacement satisfies the same hypotheses, and it
-is bounded by `L` at *every* state, so the mean value inequality bounds the displacement of any of
-its integral curves by `L` times the elapsed time with no circularity. Note that the replacement
-need not be continuous, let alone Lipschitz: a radial retraction, whose Lipschitz constant in a
-general normed space is not in Mathlib, is not needed.
+## Main results
+
+* `IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt`: existence of an integral curve that
+  stays in $\bar B(x_0, a)$.
+* `IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`: existence and uniqueness among
+  the curves that stay in $\bar B(x_0, a)$.
+
+## Proof outline
+
+Every hypothesis of `IsPicardLindelof` constrains the field only on the ball. So the field can be
+replaced by one that is constant outside the ball: $f(t, u)$ is replaced by $f(t, x_0)$ for $u$
+outside the ball. The new field satisfies the same hypotheses, and it is bounded by $L$ at every
+state. The mean value inequality then bounds the displacement of each of its integral curves by $L$
+times the elapsed time, without circularity.
+
+## Implementation notes
+
+* The new field need not be continuous or Lipschitz. A radial retraction onto the ball is not
+  needed; its Lipschitz constant in a general normed space is not in Mathlib.
 -/
 
 open Metric Set
@@ -37,17 +48,19 @@ open scoped NNReal
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
   {f : ℝ → E → E} {tmin tmax : ℝ} {t₀ : Icc tmin tmax} {x₀ x : E} {a r L K : ℝ≥0}
 
-/-- **Picard–Lindelöf**, differential form, with the solution confined to the ball on which the
-hypotheses are stated: under `IsPicardLindelof f t₀ x₀ a r L K` and `‖x - x₀‖ ≤ r` there is an
-integral curve `α` of `f` on `Icc tmin tmax` with `α t₀ = x` **and** `α t ∈ closedBall x₀ a`
-throughout.
+/-- **Picard–Lindelöf theorem, existence in the ball.** Let $E$ be a real Banach space, and assume
+`IsPicardLindelof f t₀ x₀ a r L K`. Let $x \in E$ with $\|x - x_0\| \le r$. Then there is a
+curve $\alpha : \mathbb{R} \to E$ with $\alpha(t_0) = x$, with $\alpha(t) \in \bar B(x_0, a)$
+for all $t \in [t_{\min}, t_{\max}]$, and with
+$$\alpha'(t) = f(t, \alpha(t)), \qquad t \in [t_{\min}, t_{\max}],$$
+where the derivative is taken within $[t_{\min}, t_{\max}]$.
 
-Mathlib's `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` gives everything but the
-containment. To add it, replace `f` outside the ball by the constant field `f t x₀`: the hypotheses
-of `IsPicardLindelof` only ever speak about the ball, so they survive the replacement, while the
-bound `‖f t u‖ ≤ L` now holds at every state, and the mean value inequality then bounds
-`‖α t - α t₀‖` by `L |t - t₀| ≤ a - r`. On the ball the two fields agree, so `α` solves the original
-equation. -/
+Mathlib's `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` gives all but the
+containment in the ball. To add it, the proof replaces $f$ outside the ball by the constant
+field $f(t, x_0)$. The hypotheses of `IsPicardLindelof` speak only about the ball, so they hold
+for the new field, and the bound $\|f(t, u)\| \le L$ now holds at every state. The mean value
+inequality then gives $\|\alpha(t) - \alpha(t_0)\| \le L |t - t_0| \le a - r$. On the ball the
+two fields agree, so $\alpha$ solves the original equation. -/
 theorem IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt
     (hf : IsPicardLindelof f t₀ x₀ a r L K) (hx : x ∈ closedBall x₀ r) :
     ∃ α : ℝ → E, α t₀ = x ∧ (∀ t ∈ Icc tmin tmax, α t ∈ closedBall x₀ a) ∧
@@ -93,15 +106,17 @@ theorem IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt
   refine ⟨α, hα₀, hmem, fun t ht => ?_⟩
   simpa only [hpeq _ (hmem t ht)] using hα t ht
 
-/-- **Picard–Lindelöf**, differential form, existence *and* uniqueness: under
-`IsPicardLindelof f t₀ x₀ a r L K`, `‖x - x₀‖ ≤ r` and `tmin < t₀ < tmax`, the initial value
-problem `α' t = f t (α t)`, `α t₀ = x` has exactly one solution on `Icc tmin tmax` among the curves
-that stay in `closedBall x₀ a`.
+/-- **Picard–Lindelöf theorem, existence and uniqueness.** Let $E$ be a real Banach space, and
+assume `IsPicardLindelof f t₀ x₀ a r L K` with $t_{\min} < t_0 < t_{\max}$. Let $x \in E$ with
+$\|x - x_0\| \le r$. Then there is a curve $\alpha : \mathbb{R} \to E$ with $\alpha(t_0) = x$,
+with $\alpha(t) \in \bar B(x_0, a)$ and $\alpha'(t) = f(t, \alpha(t))$ for all
+$t \in [t_{\min}, t_{\max}]$ (derivatives within $[t_{\min}, t_{\max}]$), and every curve
+$\beta$ with these three properties agrees with $\alpha$ on $[t_{\min}, t_{\max}]$.
 
-Uniqueness is `ODE_solution_unique_of_mem_Icc` applied with that ball as the ambient set, which is
-legitimate precisely because `IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt` puts the
-solution it builds there. Restricting the comparison to ball-valued curves is not a weakening: `f`
-is only assumed Lipschitz on the ball, and outside it the equation is unconstrained. -/
+Uniqueness is `ODE_solution_unique_of_mem_Icc` with the ball as the set in which the solutions
+stay. This is possible because `IsPicardLindelof.exists_mem_closedBall_hasDerivWithinAt` puts
+the solution that it builds in the ball. The restriction to curves in the ball is not a
+weakening: $f$ is Lipschitz only on the ball, and outside it the equation is not constrained. -/
 theorem IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt
     (hf : IsPicardLindelof f t₀ x₀ a r L K) (hx : x ∈ closedBall x₀ r)
     (ht₀ : (t₀ : ℝ) ∈ Ioo tmin tmax) :

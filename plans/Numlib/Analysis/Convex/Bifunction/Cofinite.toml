@@ -8,7 +8,6 @@ id = 'CofiniteBifun.convexDomBifun_eq_univ'
 
 [[node]]
 id = 'CofiniteBifun.proper'
-desc = 'The graph function of a co-finite bifunction is proper.'
 
 [[node]]
 id = 'CofiniteBifun.bracket_lt_top'

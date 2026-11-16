@@ -9,27 +9,62 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 
 /-!
-# Projection methods: specifications and well-posedness
+# Specifications and well-posedness of projection methods
 
-The canonical Prop-valued specifications of a projection step ([saad2003iterative] Ch. 5,
-[fong2012cg] §2, [choi2006iterative] Table 2.5, [han2009theoretical] Ch. 9):
+A projection method for the equation $Ax = b$ chooses an approximation $x$ in an affine trial space
+$x_0 + K$ and fixes it by a condition on the residual $b - Ax$. This file gives the four standard
+conditions as propositions ([saad2003iterative] Chapter 5, [fong2012cg] §2, [choi2006iterative]
+Table 2.5, [han2009theoretical] Chapter 9). In the **Petrov–Galerkin** condition the residual is
+orthogonal to a test space $L$. The **Galerkin** condition is the case $L = K$ (FOM, CG, the Lanczos
+method). The **minimal-residual** condition asks that $x$ minimize $\|b - Ax\|$ over $x_0 + K$
+(GMRES, MINRES, CR). The **minimal-error** condition asks that $x$ minimize $\|x^* - x\|$ over
+$x_0 + K$ for a given target $x^*$ (SYMMLQ, CGNE).
 
-* `IsPetrovGalerkin A b x₀ K L x`: `x ∈ x₀ + K` and `b - A x ⟂ L`;
-* `IsGalerkin A b x₀ K x`: the case `L = K` (FOM, CG, Lanczos method);
-* `IsMinResidual A b x₀ K x`: `x ∈ x₀ + K` minimizes `‖b - A x‖` (GMRES, MINRES, CR);
-* `IsMinError xstar x₀ K x`: `x ∈ x₀ + K` minimizes `‖xstar - x‖` (SYMMLQ, CGNE).
+The file proves well-posedness ([saad2003iterative] Proposition 5.1), the equivalence of minimal
+residual with a Petrov–Galerkin condition (Proposition 5.3), the residual formula (Proposition 5.4),
+exactness on invariant subspaces (Proposition 5.6), the matrix form (5.7) and the general error
+bound (Theorem 5.7). The optimality characterizations of the Galerkin and minimal-error iterates are
+in `Numlib.Projection.Optimality`. Below, $r_0 = b - Ax_0$ is the initial residual and $P_K$ is the
+orthogonal projection onto $K$.
 
-Well-posedness ([saad2003iterative] Prop 5.1), the residual formula ([saad2003iterative] Prop 5.4),
-exactness on invariant subspaces ([saad2003iterative] Prop 5.6), the matrix representation
-([saad2003iterative] (5.7)) and the general error bound ([saad2003iterative] Thm 5.7) are stated
-here; optimality characterizations are in `Optimality.lean`.
+## Main definitions
 
-The operator may be rectangular, `A : E →ₗ F` with `b ∈ F`, in the Petrov–Galerkin and
-minimal-residual specifications and in everything that does not compare `A x` with `x`: the trial
-space `K` lives in `E` and the test space `L` in `F`, which is the setting of the normal-equation
-methods on a rectangular system ([golub2013matrix] §11.3.9) and of least-squares Krylov methods.
-The Galerkin specification `L = K` and the statements about coercivity or invariant subspaces need
-`E = F`.
+* `IsPetrovGalerkin`: $x - x_0 \in K$ and $b - Ax \perp L$.
+* `IsGalerkin`: the Petrov–Galerkin condition with $L = K$.
+* `IsMinResidual`: $x \in x_0 + K$ minimizes $\|b - Ay\|$ over $y \in x_0 + K$.
+* `IsMinError`: $x \in x_0 + K$ minimizes $\|x^* - y\|$ over $y \in x_0 + K$.
+
+## Main results
+
+* `IsMinResidual.iff_isPetrovGalerkin`: minimal residual over $x_0 + K$ is the Petrov–Galerkin
+  condition with $L = AK$.
+* `IsMinResidual.residual_eq`: for finite-dimensional $K$, a minimal-residual iterate has residual
+  $r_0 - P_{AK} r_0$.
+* `IsPetrovGalerkin.eq_of_invt`: if $K$ is invariant under $A$, $r_0 \in K$ and
+  $K \cap L^\perp = 0$, the Petrov–Galerkin iterate solves $Ax = b$.
+* `existsUnique_isGalerkin_of_isCoercive`: for coercive $A$ and finite-dimensional $K$, the Galerkin
+  problem has a unique solution.
+* `existsUnique_isPetrovGalerkin_of_finrank_eq`: if $\dim K = \dim L < \infty$ and no nonzero
+  $z \in K$ has $Az \perp L$, the Petrov–Galerkin problem has a unique solution.
+* `existsUnique_isMinResidual_of_injOn`: for finite-dimensional $K$ and $A$ injective on $K$, the
+  minimal-residual problem has a unique solution.
+* `isPetrovGalerkin_iff_mulVec`: in bases $V$ of $K$ and $W$ of $L$, the Petrov–Galerkin condition
+  for $x_0 + Vy$ is $(W^H A V) y = W^H r_0$.
+* `IsPetrovGalerkin.norm_residual_projected_le`: the general error bound of [saad2003iterative]
+  Theorem 5.7.
+
+## Implementation notes
+
+* The operator may be rectangular, $A : E \to F$ with $b \in F$, in the Petrov–Galerkin and
+  minimal-residual conditions and in every result that does not compare $Ax$ with $x$. The trial
+  space $K$ lies in $E$ and the test space $L$ in $F$. This is the setting of the normal-equation
+  methods for a rectangular system ([golub2013matrix] §11.3.9) and of the least-squares Krylov
+  methods. The Galerkin condition $L = K$ and the results about coercivity or invariant subspaces
+  need $E = F$.
+* The inner product $\langle u, v \rangle$ is `inner 𝕜 u v`, which is conjugate-linear in $u$. The
+  orthogonal complement $L^\perp$ is `Lᗮ`, and $P_K$ is `K.starProjection`.
+* The target $x^*$ of the minimal-error condition is a parameter, so that the condition has a
+  meaning also for singular $A$.
 -/
 
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -39,7 +74,8 @@ namespace Submodule
 
 variable {K : Submodule 𝕜 E}
 
-/-- Membership in the orthogonal complement of a span is tested on the spanning set. -/
+/-- Let $s$ be a subset of $E$. A vector $v$ lies in the orthogonal complement of
+$\operatorname{span} s$ if and only if $\langle u, v \rangle = 0$ for every $u \in s$. -/
 theorem mem_orthogonal_span {s : Set E} {v : E} :
     v ∈ (Submodule.span 𝕜 s)ᗮ ↔ ∀ u ∈ s, inner 𝕜 u v = 0 := by
   refine ⟨fun h u hu => h u (Submodule.subset_span hu), fun h u hu => ?_⟩
@@ -49,7 +85,10 @@ theorem mem_orthogonal_span {s : Set E} {v : E} :
   | add z w _ _ hz hw => rw [inner_add_left, hz, hw, add_zero]
   | smul c z _ hz => rw [inner_smul_left, hz, mul_zero]
 
-/-- The orthogonal projection is invisible to inner products against `K`. -/
+/-- Let $K$ be a subspace of $E$ that has an orthogonal projection $P_K$. For $w \in K$ and every
+$u \in E$,
+$$\langle w, P_K u \rangle = \langle w, u \rangle.$$
+-/
 theorem inner_starProjection_right [K.HasOrthogonalProjection] {w : E} (hw : w ∈ K) (u : E) :
     inner 𝕜 w (K.starProjection u) = inner 𝕜 w u := by
   have h : inner 𝕜 w (u - K.starProjection u) = (0 : 𝕜) :=
@@ -57,8 +96,11 @@ theorem inner_starProjection_right [K.HasOrthogonalProjection] {w : E} (hw : w �
   rw [inner_sub_right, sub_eq_zero] at h
   exact h.symm
 
-/-- Best approximation from a subspace: the error of a minimizer is orthogonal to the subspace (the
-pointwise form of `Submodule.norm_eq_iInf_iff_inner_eq_zero`). -/
+/-- Let $K$ be a subspace of $E$, let $u \in E$, and let $v \in K$ be a best approximation of $u$
+from $K$: $\|u - v\| \le \|u - w\|$ for all $w \in K$. Then $\langle u - v, w \rangle = 0$ for
+every $w \in K$.
+
+This is a pointwise form of `Submodule.norm_eq_iInf_iff_inner_eq_zero`. -/
 theorem inner_eq_zero_of_forall_norm_sub_le {u v : E} (hv : v ∈ K)
     (h : ∀ w ∈ K, ‖u - v‖ ≤ ‖u - w‖) {w : E} (hw : w ∈ K) : inner 𝕜 (u - v) w = 0 := by
   have hbdd : BddBelow (Set.range fun z : K => ‖u - (z : E)‖) := by
@@ -68,7 +110,9 @@ theorem inner_eq_zero_of_forall_norm_sub_le {u v : E} (hv : v ∈ K)
   refine (K.norm_eq_iInf_iff_inner_eq_zero hv).1 ?_ w hw
   exact le_antisymm (le_ciInf fun z => h z z.2) (ciInf_le hbdd ⟨v, hv⟩)
 
-/-- Conversely, a point of `K` whose error is orthogonal to `K` is a best approximation. -/
+/-- Let $K$ be a subspace of $E$, let $u \in E$ and $v \in K$, and assume
+$\langle u - v, w \rangle = 0$ for every $w \in K$. Then $v$ is a best approximation of $u$ from
+$K$: $\|u - v\| \le \|u - w\|$ for every $w \in K$. -/
 theorem norm_sub_le_of_forall_inner_eq_zero {u v : E} (hv : v ∈ K)
     (h : ∀ w ∈ K, inner 𝕜 (u - v) w = 0) {w : E} (hw : w ∈ K) : ‖u - v‖ ≤ ‖u - w‖ := by
   have hvw : u - w = (u - v) + (v - w) := by abel
@@ -81,42 +125,66 @@ theorem norm_sub_le_of_forall_inner_eq_zero {u v : E} (hv : v ∈ K)
 
 end Submodule
 
-/-- Petrov–Galerkin specification: `x ∈ x₀ + K` and `b - A x ⟂ L` ([saad2003iterative],
-(5.1)–(5.2)). -/
+/-- The **Petrov–Galerkin condition** ([saad2003iterative], (5.1)–(5.2)). Let $A : E \to F$ be
+linear, $b \in F$, $x_0 \in E$, and let $K \subseteq E$ and $L \subseteq F$ be subspaces. A
+vector $x \in E$ satisfies the condition if
+$$x \in x_0 + K \quad\text{and}\quad b - Ax \perp L.$$
+-/
 structure IsPetrovGalerkin (A : E →ₗ[𝕜] F) (b : F) (x₀ : E) (K : Submodule 𝕜 E) (L : Submodule 𝕜 F)
     (x : E) : Prop where
+  /-- The iterate lies in the affine trial space: $x - x_0 \in K$. -/
   mem : x - x₀ ∈ K
+  /-- The residual is orthogonal to the test space: $b - Ax \in L^\perp$. -/
   orth : b - A x ∈ Lᗮ
 
-/-- Galerkin (orthogonal projection) specification `L = K`. -/
+/-- The **Galerkin condition** (orthogonal projection method). Let $A : E \to E$ be linear,
+$b, x_0 \in E$ and $K \subseteq E$ a subspace. A vector $x$ satisfies the condition if
+$x \in x_0 + K$ and $b - Ax \perp K$. This is the Petrov–Galerkin condition `IsPetrovGalerkin`
+with $L = K$. -/
 abbrev IsGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop :=
   IsPetrovGalerkin A b x₀ K K x
 
-/-- Minimal-residual specification: `x ∈ x₀ + K` minimizes `‖b - A x‖`. -/
+/-- The **minimal-residual condition**. Let $A : E \to F$ be linear, $b \in F$, $x_0 \in E$ and
+$K \subseteq E$ a subspace. A vector $x$ satisfies the condition if $x \in x_0 + K$ and
+$$\|b - Ax\| \le \|b - Ay\| \quad\text{for all } y \in x_0 + K.$$
+-/
 structure IsMinResidual (A : E →ₗ[𝕜] F) (b : F) (x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
+  /-- The iterate lies in the affine trial space: $x - x_0 \in K$. -/
   mem : x - x₀ ∈ K
+  /-- The residual norm at $x$ is at most the residual norm at every $y \in x_0 + K$. -/
   min : ∀ y, y - x₀ ∈ K → ‖b - A x‖ ≤ ‖b - A y‖
 
-/-- Minimal-error specification: `x ∈ x₀ + K` minimizes the distance to the target `xstar` (the
-solution of `A x = b`, made explicit so that the specification is meaningful for singular `A`):
-SYMMLQ with `K = A 𝒦_m`, CGNE / Craig's method with `K = A† L`. No operator appears — this is best
-approximation of `xstar` from the affine subspace `x₀ + K`. -/
+/-- The **minimal-error condition**. Let $x^*, x_0 \in E$ and let $K \subseteq E$ be a subspace. A
+vector $x$ satisfies the condition if $x \in x_0 + K$ and
+$$\|x^* - x\| \le \|x^* - y\| \quad\text{for all } y \in x_0 + K.$$
+That is, $x$ is a best approximation of $x^*$ from the affine space $x_0 + K$. No operator
+appears in the condition.
+
+The target $x^*$ is the solution of $Ax = b$. It is a parameter, so that the condition has a
+meaning also for singular $A$. SYMMLQ uses $K = A \mathcal{K}_m$, and CGNE (Craig's method) uses
+$K = A^H L$. -/
 structure IsMinError (xstar x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
+  /-- The iterate lies in the affine trial space: $x - x_0 \in K$. -/
   mem : x - x₀ ∈ K
+  /-- The error at $x$ is at most the error at every $y \in x_0 + K$. -/
   min : ∀ y, y - x₀ ∈ K → ‖xstar - x‖ ≤ ‖xstar - y‖
 
 namespace IsPetrovGalerkin
 
 variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {L : Submodule 𝕜 F} {x : E}
 
-/-- The Petrov–Galerkin condition as a scalar equation: the residual `b - A x` is orthogonal to
-every test vector `w ∈ L`.  This is the form in which the orthogonality is used downstream. -/
+/-- Let $x$ satisfy the Petrov–Galerkin condition for $(A, b, x_0, K, L)$. Then the residual is
+orthogonal to every test vector: $\langle w, b - Ax \rangle = 0$ for every $w \in L$. -/
 theorem inner_residual_eq_zero (hx : IsPetrovGalerkin A b x₀ K L x) {w : F} (hw : w ∈ L) :
     inner 𝕜 w (b - A x) = 0 :=
   (Submodule.mem_orthogonal _ _).1 hx.orth w hw
 
-/-- Two Petrov–Galerkin solutions differ by an element of `K ⊓ A⁻¹(Lᗮ)`; uniqueness when `A` maps
-`K` injectively "modulo `Lᗮ`", the nondegeneracy condition of [saad2003iterative], Prop 5.1. -/
+/-- **Uniqueness of the Petrov–Galerkin iterate.** Let $x$ and $x'$ both satisfy the Petrov–Galerkin
+condition for $(A, b, x_0, K, L)$. Assume that $A$ maps $K$ injectively modulo $L^\perp$: every
+$z \in K$ with $Az \in L^\perp$ is $z = 0$. Then $x = x'$.
+
+The hypothesis is the nondegeneracy condition of [saad2003iterative], Proposition 5.1. The proof
+uses that $x - x'$ lies in $K$ and that $A(x - x')$ lies in $L^\perp$. -/
 theorem eq_of_forall (hx : IsPetrovGalerkin A b x₀ K L x) {x' : E}
     (hx' : IsPetrovGalerkin A b x₀ K L x')
     (hKL : ∀ z ∈ K, A z ∈ Lᗮ → z = 0) : x = x' := by
@@ -128,9 +196,10 @@ theorem eq_of_forall (hx : IsPetrovGalerkin A b x₀ K L x) {x' : E}
     rw [h]; exact Submodule.sub_mem _ hx'.orth hx.orth
   exact sub_eq_zero.1 (hKL _ hmem hAz)
 
-/-- [saad2003iterative], Prop 5.6: exactness on invariant subspaces.  If `K` is invariant under `A`,
-the initial residual lies in `K` and `K ⊓ Lᗮ = 0`, then the Petrov–Galerkin iterate solves `A x = b`
-exactly. -/
+/-- **Exactness on invariant subspaces** ([saad2003iterative], Proposition 5.6). Let $A : E \to E$
+be linear, and let $x$ satisfy the Petrov–Galerkin condition for $(A, b, x_0, K, L)$. Assume
+that $K$ is invariant under $A$, that the initial residual $b - Ax_0$ lies in $K$, and that
+$K \cap L^\perp = 0$. Then $Ax = b$. -/
 theorem eq_of_invt {A : E →ₗ[𝕜] E} {b : E} {L : Submodule 𝕜 E}
     (hx : IsPetrovGalerkin A b x₀ K L x) (hK : K ∈ Module.End.invtSubmodule A)
     (hr : b - A x₀ ∈ K) (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) : A x = b := by
@@ -140,8 +209,9 @@ theorem eq_of_invt {A : E →ₗ[𝕜] E} {b : E} {L : Submodule 𝕜 E}
     exact K.sub_mem hr ((Module.End.mem_invtSubmodule_iff_forall_mem_of_mem A).1 hK _ hx.mem)
   exact (sub_eq_zero.1 (hKL _ h1 hx.orth)).symm
 
-/-- Restarting: a Petrov–Galerkin step from `x₀` is a Petrov–Galerkin step from any `x₁ ∈ x₀ + K`.
--/
+/-- **Restart.** If $x$ satisfies the Petrov–Galerkin condition for $(A, b, x_0, K, L)$ and
+$x_1 \in x_0 + K$, then $x$ also satisfies the Petrov–Galerkin condition for
+$(A, b, x_1, K, L)$. -/
 theorem of_mem (hx : IsPetrovGalerkin A b x₀ K L x) {x₁ : E} (hx₁ : x₁ - x₀ ∈ K) :
     IsPetrovGalerkin A b x₁ K L x := by
   refine ⟨?_, hx.orth⟩
@@ -150,7 +220,7 @@ theorem of_mem (hx : IsPetrovGalerkin A b x₀ K L x) {x₁ : E} (hx₁ : x₁ -
 
 end IsPetrovGalerkin
 
-/-- The residual at `y` in terms of the initial residual. -/
+/-- The residual at $y$ in terms of the initial residual: $b - Ay = (b - Ax_0) - A(y - x_0)$. -/
 theorem residual_eq_sub_apply_sub (A : E →ₗ[𝕜] F) (b : F) (x₀ y : E) :
     b - A y = (b - A x₀) - A (y - x₀) := by rw [map_sub]; abel
 
@@ -158,8 +228,12 @@ namespace IsMinResidual
 
 variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {x : E}
 
-/-- [saad2003iterative], Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with `L = A
-K`. -/
+/-- **Minimal residual as a Petrov–Galerkin condition** ([saad2003iterative], Proposition 5.3). Let
+$A : E \to F$ be linear. A vector $x$ satisfies the minimal-residual condition for
+$(A, b, x_0, K)$ if and only if it satisfies the Petrov–Galerkin condition for
+$(A, b, x_0, K, AK)$.
+
+No hypothesis on the dimension of $K$ is needed. -/
 theorem iff_isPetrovGalerkin :
     IsMinResidual A b x₀ K x ↔ IsPetrovGalerkin A b x₀ K (K.map A) x := by
   constructor
@@ -181,14 +255,17 @@ theorem iff_isPetrovGalerkin :
     rw [← residual_eq_sub_apply_sub A b x₀ x]
     exact (Submodule.mem_orthogonal' _ _).1 horth w hw
 
-/-- The forward direction of `IsMinResidual.iff_isPetrovGalerkin`: a minimal-residual iterate is
-Petrov–Galerkin with `L = A K`. -/
+/-- A minimal-residual iterate for $(A, b, x_0, K)$ satisfies the Petrov–Galerkin condition with
+test space $L = AK$. This is the forward direction of `IsMinResidual.iff_isPetrovGalerkin`. -/
 theorem isPetrovGalerkin (hx : IsMinResidual A b x₀ K x) :
     IsPetrovGalerkin A b x₀ K (K.map A) x :=
   (iff_isPetrovGalerkin).1 hx
 
-/-- [saad2003iterative], Prop 5.4: the residual of every minimal-residual iterate is `(1 - P_{A K})
-r₀`, with `r₀ = b - A x₀` and `P_{A K}` the orthogonal projection onto `A K`. -/
+/-- **The minimal-residual residual** ([saad2003iterative], Proposition 5.4). Let $K$ be
+finite-dimensional, and let $x$ satisfy the minimal-residual condition for $(A, b, x_0, K)$.
+With $r_0 = b - Ax_0$ and $P_{AK}$ the orthogonal projection onto $AK$,
+$$b - Ax = (I - P_{AK}) r_0.$$
+-/
 theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) :
     b - A x = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
   have hproj : (K.map A).starProjection (b - A x₀) = A (x - x₀) :=
@@ -197,23 +274,29 @@ theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x)
       (by rw [residual_eq_sub_apply_sub A b x₀ x]; abel)
   rw [hproj, ← residual_eq_sub_apply_sub A b x₀ x]
 
-/-- The residual is unique even when the iterate is not. -/
+/-- Let $K$ be finite-dimensional. Any two minimal-residual iterates $x, x'$ for $(A, b, x_0, K)$
+have the same residual, $b - Ax = b - Ax'$, even when $x \neq x'$. -/
 theorem residual_unique [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) {x' : E}
     (hx' : IsMinResidual A b x₀ K x') : b - A x = b - A x' := by
   rw [hx.residual_eq, hx'.residual_eq]
 
-/-- A minimal-residual step never increases the residual norm, since the starting point `x₀` is
-itself a competitor in the minimization over `x₀ + K`. -/
+/-- A minimal-residual step does not increase the residual norm: if $x$ satisfies the
+minimal-residual condition for $(A, b, x_0, K)$, then $\|b - Ax\| \le \|b - Ax_0\|$.
+
+The proof compares $x$ with the starting point $x_0$, which lies in $x_0 + K$. -/
 theorem norm_residual_le_norm_residual_zero (hx : IsMinResidual A b x₀ K x) :
     ‖b - A x‖ ≤ ‖b - A x₀‖ :=
   hx.min x₀ (by simp)
 
-/-- Residual norms on nested subspaces are nonincreasing. -/
+/-- **Monotonicity on nested subspaces.** Let $K \subseteq K'$, let $x$ satisfy the minimal-residual
+condition for $(A, b, x_0, K)$, and let $x'$ satisfy it for $(A, b, x_0, K')$. Then
+$\|b - Ax'\| \le \|b - Ax\|$. -/
 theorem norm_residual_le {K' : Submodule 𝕜 E} {x' : E} (hx : IsMinResidual A b x₀ K x)
     (hx' : IsMinResidual A b x₀ K' x') (hKK' : K ≤ K') : ‖b - A x'‖ ≤ ‖b - A x‖ :=
   hx'.min x (hKK' hx.mem)
 
-/-- Exactness: if some `y ∈ x₀ + K` solves the system, so does every minimal-residual iterate. -/
+/-- Let $x$ satisfy the minimal-residual condition for $(A, b, x_0, K)$. If some $y \in x_0 + K$ has
+$Ay = b$, then $Ax = b$. -/
 theorem apply_eq_of_exists (hx : IsMinResidual A b x₀ K x) {y : E} (hy : y - x₀ ∈ K)
     (hAy : A y = b) :
     A x = b := by
@@ -223,8 +306,10 @@ theorem apply_eq_of_exists (hx : IsMinResidual A b x₀ K x) {y : E} (hy : y - x
 
 end IsMinResidual
 
-/-- Existence and characterization: `x₀ + P_K (x* - x₀)` is the minimal-error point.  Only the
-existence of the orthogonal projection onto `K` is needed, not finite dimension. -/
+/-- Let $K$ be a subspace of $E$ that has an orthogonal projection $P_K$. For all $x^*, x_0 \in E$,
+the vector $x_0 + P_K(x^* - x_0)$ satisfies the minimal-error condition for $(x^*, x_0, K)$.
+
+No hypothesis of finite dimension is needed, only the existence of $P_K$. -/
 theorem isMinError_add_starProjection {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     (xstar x₀ : E) : IsMinError xstar x₀ K (x₀ + K.starProjection (xstar - x₀)) := by
   refine ⟨?_, fun y hy => ?_⟩
@@ -240,8 +325,8 @@ section WellPosed
 
 variable {A : E →ₗ[𝕜] E} (b x₀ : E) (K : Submodule 𝕜 E)
 
-/-- Coercivity gives the nondegeneracy condition of [saad2003iterative], Prop 5.1 (i): no nonzero `z
-∈ K` has `A z ⟂ K`. -/
+/-- Let $A : E \to E$ be coercive and let $K$ be a subspace. If $z \in K$ and $Az \in K^\perp$, then
+$z = 0$. This is the nondegeneracy condition of [saad2003iterative], Proposition 5.1(i). -/
 theorem eq_zero_of_isCoercive_of_apply_mem_orthogonal (hA : A.IsCoercive) {z : E} (hz : z ∈ K)
     (hAz : A z ∈ Kᗮ) : z = 0 := by
   obtain ⟨c, hc, hAc⟩ := hA
@@ -253,10 +338,13 @@ theorem eq_zero_of_isCoercive_of_apply_mem_orthogonal (hA : A.IsCoercive) {z : E
   have hz2 : ‖z‖ ^ 2 = 0 := le_antisymm (by nlinarith) (sq_nonneg _)
   exact norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 hz2)
 
-/-- **The Galerkin problem is solvable as soon as the compression is injective**: if the
-compression `P_K A|_K` of `A` to a finite-dimensional `K` is injective, it is surjective, so the
-projected equation `P_K A z = P_K r₀` has a solution `z`, and `x₀ + z` solves the Galerkin
-problem. -/
+/-- **Solvability of the Galerkin problem.** Let $A : E \to E$ be linear and $K$ a
+finite-dimensional subspace. Assume that the compression $P_K A|_K : K \to K$ is injective. Then
+some $x$ satisfies the Galerkin condition for $(A, b, x_0, K)$.
+
+The compression is surjective because it is an injective map of a finite-dimensional space to
+itself. So the projected equation $P_K A z = P_K r_0$ has a solution $z \in K$, and
+$x = x_0 + z$ is a solution. -/
 theorem exists_isGalerkin_of_injective_compression [FiniteDimensional 𝕜 K]
     (hinj : Function.Injective
       ((K.orthogonalProjectionOnto : E →ₗ[𝕜] K).comp (A.comp K.subtype))) :
@@ -272,7 +360,9 @@ theorem exists_isGalerkin_of_injective_compression [FiniteDimensional 𝕜 K]
       Submodule.inner_starProjection_right hw]
   rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
 
-/-- [saad2003iterative], Prop 5.1 (i): Galerkin with coercive `A` is uniquely solvable. -/
+/-- **Well-posedness of the Galerkin problem** ([saad2003iterative], Proposition 5.1(i)). Let
+$A : E \to E$ be coercive and let $K$ be finite-dimensional. Then there is exactly one $x$ that
+satisfies the Galerkin condition for $(A, b, x_0, K)$. -/
 theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensional 𝕜 K] :
     ∃! x, IsGalerkin A b x₀ K x := by
   have hKL : ∀ z ∈ K, A z ∈ Kᗮ → z = 0 := fun z hz hAz =>
@@ -290,13 +380,15 @@ theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensi
   obtain ⟨x, hgal⟩ := exists_isGalerkin_of_injective_compression b x₀ K hinj
   exact ⟨x, hgal, fun y hy => hy.eq_of_forall hgal hKL⟩
 
-/-- **Well-posedness of the general Petrov–Galerkin step** ([saad2003iterative], Prop 5.1): if the
-trial and test spaces have the same finite dimension and `A` maps `K` injectively modulo `Lᗮ`, then
-the Petrov–Galerkin problem has exactly one solution.
+/-- **Well-posedness of the Petrov–Galerkin problem** ([saad2003iterative], Proposition 5.1). Let
+$A : E \to F$ be linear, $b \in F$, $x_0 \in E$, and let $K \subseteq E$ and $L \subseteq F$ be
+finite-dimensional subspaces with $\dim K = \dim L$. Assume that $A$ maps $K$ injectively modulo
+$L^\perp$: every $z \in K$ with $Az \in L^\perp$ is $z = 0$. Then there is exactly one $x$ that
+satisfies the Petrov–Galerkin condition for $(A, b, x_0, K, L)$.
 
-The nondegeneracy hypothesis is the one of `IsPetrovGalerkin.eq_of_forall`, which gives uniqueness;
-what the equal dimensions add is existence, by turning the injectivity of `z ↦ P_L (A z)` on `K`
-into surjectivity onto `L`. -/
+The nondegeneracy hypothesis is that of `IsPetrovGalerkin.eq_of_forall`, which gives uniqueness.
+The equal dimensions give existence: the map $z \mapsto P_L(Az)$ from $K$ to $L$ is injective,
+hence surjective. -/
 theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] F} (b : F) (x₀ : E)
     (K : Submodule 𝕜 E) (L : Submodule 𝕜 F) [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L)
@@ -317,7 +409,9 @@ theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] F} (b : 
     rw [hδ, sub_self]
   exact ⟨x₀ + δ, hPG, fun y hy => hy.eq_of_forall hPG hKL⟩
 
-/-- A minimal-error iterate always exists on a finite-dimensional `K` (projection of `x*`). -/
+/-- Let $K$ be finite-dimensional. For all $x^*, x_0 \in E$, some $x$ satisfies the minimal-error
+condition for $(x^*, x_0, K)$. The proof takes the orthogonal projection of $x^*$ onto
+$x_0 + K$. -/
 theorem exists_isMinError [FiniteDimensional 𝕜 K] (xstar : E) : ∃ x, IsMinError xstar x₀ K x :=
   ⟨_, isMinError_add_starProjection (K := K) xstar x₀⟩
 
@@ -327,7 +421,8 @@ section WellPosedMinResidual
 
 variable {A : E →ₗ[𝕜] F} (b : F) (x₀ : E) (K : Submodule 𝕜 E)
 
-/-- A minimal-residual iterate always exists on a finite-dimensional `K`. -/
+/-- Let $A : E \to F$ be linear and let $K$ be finite-dimensional. For all $b \in F$ and
+$x_0 \in E$, some $x$ satisfies the minimal-residual condition for $(A, b, x_0, K)$. -/
 theorem exists_isMinResidual [FiniteDimensional 𝕜 K] : ∃ x, IsMinResidual A b x₀ K x := by
   obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.1
     (Submodule.starProjection_apply_mem (K.map A) (b - A x₀))
@@ -337,8 +432,10 @@ theorem exists_isMinResidual [FiniteDimensional 𝕜 K] : ∃ x, IsMinResidual A
   rw [h]
   exact Submodule.sub_starProjection_mem_orthogonal _
 
-/-- [saad2003iterative], Prop 5.1 (ii): minimal residual with `A` injective on `K` is uniquely
-solvable. -/
+/-- **Well-posedness of the minimal-residual problem** ([saad2003iterative], Proposition 5.1(ii)).
+Let $A : E \to F$ be linear, let $K$ be finite-dimensional, and let $A$ be injective on $K$.
+Then there is exactly one $x$ that satisfies the minimal-residual condition for
+$(A, b, x_0, K)$. -/
 theorem existsUnique_isMinResidual_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.InjOn A K) :
     ∃! x, IsMinResidual A b x₀ K x := by
   obtain ⟨x, hx⟩ := exists_isMinResidual (A := A) b x₀ K
@@ -356,8 +453,14 @@ section MatrixForm
 variable {ι : Type*} [Fintype ι]
 variable {A : E →ₗ[𝕜] F} {b : F} {x₀ : E} {K : Submodule 𝕜 E} {L : Submodule 𝕜 F}
 
-/-- [saad2003iterative], (5.7): with bases `V` of `K` and `W` of `L`, `x = x₀ + V y` is
-Petrov–Galerkin iff `(Wᴴ A V) y = Wᴴ r₀`, where `r₀ = b - A x₀`. -/
+/-- **Matrix form of the Petrov–Galerkin condition** ([saad2003iterative], (5.7)). Let
+$V = (v_1, \dots, v_m)$ be a basis of $K$ and $W = (w_1, \dots, w_m)$ a basis of $L$, indexed by
+the same finite set, and let $r_0 = b - Ax_0$. For $y \in \mathbb{K}^m$, where $\mathbb{K}$ is
+the scalar field ($\mathbb{R}$ or $\mathbb{C}$), the vector $x_0 + \sum_j y_j v_j$ satisfies the
+Petrov–Galerkin condition for $(A, b, x_0, K, L)$ if and only if
+$$(W^H A V)\, y = W^H r_0,$$
+where $(W^H A V)_{ij} = \langle w_i, A v_j \rangle$ and
+$(W^H r_0)_i = \langle w_i, r_0 \rangle$. -/
 theorem isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Basis ι 𝕜 L)
     (y : ι → 𝕜) :
     IsPetrovGalerkin A b x₀ K L (x₀ + ∑ j, y j • (V j : E)) ↔
@@ -396,31 +499,32 @@ end MatrixForm
 
 section Projected
 
-/-! ### The general error bound
+/-!
+### The general error bound
 
-The projection step with `x₀ = 0` is the equation `A_m x = Q b` on `K`, where `Q` is a projector of
-`E` onto `K` and `A_m = compressionBy Q A` is the compression of `A` through it: in
-[saad2003iterative], §5.2.3, `Q = Q_K^L` is the oblique projector onto `K` along `Lᗮ`, which exists
-exactly under the nondegeneracy of [saad2003iterative], Prop 5.1.  The bound below says that the
-exact solution `x*` almost solves that equation, with a defect governed by the part of `x*` that `K`
-misses.
+The projection step with $x_0 = 0$ is the equation $A_m x = Qb$ on $K$. Here $Q$ is a projector of
+$E$ onto $K$, and $A_m = Q A|_K$ (`compressionBy Q A`) is the compression of $A$ through $Q$. In
+[saad2003iterative], §5.2.3, $Q = Q_K^L$ is the oblique projector onto $K$ along $L^\perp$, which
+exists exactly under the nondegeneracy condition of [saad2003iterative], Proposition 5.1. The bound
+below says that the exact solution $x^*$ almost solves this equation, with a defect controlled by
+the part of $x^*$ that $K$ misses.
 -/
 
 namespace IsPetrovGalerkin
 
-/-- **The general error bound** ([saad2003iterative], Thm 5.7).  Let `Q` be a projector of `E` onto
-`K`, let `A_m = compressionBy Q A` be the compression of `A` through it, and let `γ` bound the
-coupling `Q A` on `Kᗮ`.  If `b ∈ K` and `A x* = b`, then the residual of `x*` for the projected
-equation obeys `‖b - A_m (P_K x*)‖ ≤ γ ‖(1 - P_K) x*‖`, with the identity `b - A_m (P_K x*) = Q A (1
-- P_K) x*` behind it.  So the projected problem is the exact problem perturbed only by what `K`
-fails to capture, times the coupling constant; in [saad2003iterative] setting `γ = ‖Q A (1 - P_K)‖`.
+/-- **The general error bound** ([saad2003iterative], Theorem 5.7). Let $A : E \to E$ be linear, and
+let $K$ be a subspace with orthogonal projection $P_K$. Let $Q : E \to K$ be linear with
+$Qz = z$ for $z \in K$, and let $A_m = Q A|_K$ be the compression of $A$ through $Q$. Let
+$\gamma \in \mathbb{R}$ satisfy $\|QAz\| \le \gamma \|z\|$ for all $z \in K^\perp$. If $b \in K$
+and $Ax^* = b$, then
+$$\|b - A_m P_K x^*\| \le \gamma\, \|(I - P_K) x^*\|.$$
 
-The hypothesis `b ∈ K` is [saad2003iterative], and is what makes `Q b = b`; it holds for the Krylov
-choice `K = 𝒦ₘ(A, b)` with `x₀ = 0`.  The eigenvalue twin of this bound is
-`Krylov.compression_residual_le` in `Numlib.Eigen.RayleighRitz`, with the same shape of hypothesis
-on `γ`: taking the coupling constant as a hypothesis rather than as an operator norm keeps the
-statement available for an unbounded `A` and for the sharper values of `γ` that a particular `K`
-provides. -/
+The hypothesis $b \in K$ is in the source, and it gives $Qb = b$. It holds for the Krylov choice
+$K = \mathcal{K}_m(A, b)$ with $x_0 = 0$. The source takes $\gamma = \|QA(I - P_K)\|$. A
+hypothesis on $\gamma$ in place of an operator norm keeps the statement valid for an unbounded
+$A$ and for the sharper values of $\gamma$ that a particular $K$ gives. The proof uses the
+identity $b - A_m P_K x^* = QA(I - P_K)x^*$. The eigenvalue analogue is
+`Krylov.compression_residual_le`, with the same form of hypothesis on $\gamma$. -/
 theorem norm_residual_projected_le {A : E →ₗ[𝕜] E} {b : E} {K : Submodule 𝕜 E}
     [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ z : K, Q z = z) (hb : b ∈ K) {γ : ℝ}
     (hγ : ∀ z ∈ Kᗮ, ‖(Q (A z) : E)‖ ≤ γ * ‖z‖) {xstar : E} (hstar : A xstar = b) :

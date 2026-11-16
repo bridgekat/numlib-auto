@@ -11,76 +11,85 @@ import Numlib.Analysis.Convex.Homogeneous
 /-!
 # Separation theorems
 
-Separation of convex sets by hyperplanes, over a real topological vector space — locally convex
-where separation is actually invoked. Almost all of the *mathematics* is already in Mathlib, as the
-`geometric_hahn_banach_*` family and `iInter_halfSpaces_eq`; what this file supplies is the
-*vocabulary* — the three notions of separation, supporting hyperplanes and half-spaces — together
-with the statements Mathlib does not have.
+Let $E$ be a real topological vector space, locally convex where a separation theorem is used. A
+continuous linear functional $f$ and a real $c$ give the hyperplane $\{x \mid f(x) = c\}$ and the
+closed half-spaces $\{x \mid f(x) \le c\}$ and $\{x \mid f(x) \ge c\}$. The hyperplane **separates**
+sets $s$ and $t$ when $s$ lies in the first half-space and $t$ in the second; it separates them
+**properly** when $s$ and $t$ do not both lie in the hyperplane; and it separates them **strongly**
+when there is a gap,
+$$\sup_{x \in s} f(x) < c < \inf_{x \in t} f(x).$$
+Almost all of the mathematics is in Mathlib, as the `geometric_hahn_banach_*` theorems and
+`RCLike.iInter_halfSpaces_eq'`. This module supplies the vocabulary of separation, supporting
+hyperplanes and half-spaces, together with the statements that Mathlib does not have. The
+presentation follows [rockafellar1970convex], §11.
 
-Two statements of the textbook are **false** at this generality and are corrected rather than
-dropped. That a convex set other than the whole space lies in a closed half-space is proved there
-through `ri (cl C) ⊆ C`, and fails in infinite dimensions: the kernel of a discontinuous linear
-functional is a proper convex subset that is dense, so no nonzero continuous functional is bounded
-above on it. The hypothesis here is `closure s ≠ univ`, and likewise for the cone version.
-
-Proper separation by relative interiors, and the existence of a supporting hyperplane at every
-relative boundary point, rest on the line segment principle and on `ri C ≠ ∅` for nonempty convex
-`C`; they are finite-dimensional and live in `Numlib/Analysis/Convex/RelativeInterior.lean`.
+Two statements of the source are false in this generality, and they are corrected here. The source
+proves that a convex set other than the whole space lies in a closed half-space through the
+inclusion $\operatorname{ri}(\operatorname{cl} C) \subseteq C$. This fails in infinite dimensions:
+the kernel of a discontinuous linear functional is a proper convex subset that is dense, so no
+nonzero continuous functional is bounded above on it. The hypothesis here is
+$\operatorname{cl} s \neq E$, and similarly for the version for cones. Proper separation by relative
+interiors, and the existence of a supporting hyperplane at every point of the relative boundary,
+rest on the line segment principle and on $\operatorname{ri} C \neq \emptyset$ for nonempty convex
+$C$. These results are finite-dimensional and are in `Numlib.Analysis.Convex.RelativeInterior`.
 
 ## Main definitions
 
-* `Separates f c s t` — the hyperplane `{x | f x = c}` separates `s` and `t`: `s` lies in the
-  closed half-space `{x | f x ≤ c}` and `t` in the opposite one.
-* `SeparatesProperly f c s t` — separation in which `s` and `t` are not *both* contained in the
+* `ConvexAnalysis.Separates`: the hyperplane $\{f = c\}$ separates $s$ and $t$: $f \le c$ on $s$ and
+  $f \ge c$ on $t$.
+* `ConvexAnalysis.SeparatesProperly`: separation in which $s$ and $t$ do not both lie in the
   hyperplane.
-* `SeparatesStrongly f c s t` — separation with a *gap*: `⨆_{s} f < c < ⨅_{t} f`, the extrema
-  being taken in `EReal`.
-* `IsSupporting f c s` — `{x | f x ≤ c}` is a supporting half-space to `s` and `{x | f x = c}` a
-  supporting hyperplane: `f ≠ 0`, `f ≤ c` on `s`, and `f x = c` somewhere on `s`.
-* `halfSpaceCone f` — the homogeneous closed half-space `{x | f x ≤ 0}`, bundled as a
-  `PointedCone ℝ E`.
+* `ConvexAnalysis.SeparatesStrongly`: separation with a gap, $\sup_s f < c < \inf_t f$, with the
+  extrema taken in $[-\infty, +\infty]$.
+* `ConvexAnalysis.IsSupporting`: $\{f \le c\}$ is a supporting half-space to $s$ and $\{f = c\}$ a
+  supporting hyperplane: $f \neq 0$, $f \le c$ on $s$, and $f(x) = c$ for some $x \in s$.
+* `ConvexAnalysis.halfSpaceCone`: the closed half-space $\{f \le 0\}$ through the origin, as a
+  pointed cone.
 
 ## Main results
 
-* `separates_iff_iSup_le_iInf`, `exists_separatesProperly_iff_iSup_le_iInf`,
-  `exists_separatesStrongly_iff_iSup_lt_iInf` — the description of the three notions by the extrema
-  of `f` over the two sets ([rockafellar1970convex] Theorem 11.1).
-* `separatesStrongly_iff_exists_gap`, `separatesStrongly_iff_exists_nhds`,
-  `separatesStrongly_iff_exists_closedBall` — the three faces of strong separation: a uniform gap,
-  a neighbourhood of the origin, and — in a normed space — the textbook's `ε`-balls.
-* `exists_separates_of_isOpen_of_disjoint_affine` — an open convex set and a disjoint affine set
-  are separated by a hyperplane containing the affine set.
-* `separatesStrongly_iff_zero_notMem_closure_sub` — strong separation is possible exactly when
-  `0 ∉ closure (s - t)`; `separatesStrongly_of_disjoint_isCompact_isClosed` is the compact/closed
-  case.
-* Mathlib's `RCLike.iInter_halfSpaces_eq'` — a closed convex set is the intersection of the closed
-  half-spaces containing it ([rockafellar1970convex] Theorem 11.5), with
-  `mem_iff_forall_le_halfSpace` as its pointwise form and `closure_convexHull_eq_iInter_halfspaces`
-  for an arbitrary set.
-* `exists_isSupporting_iff_disjoint_interior` — a convex subset lies in a non-trivial supporting
-  hyperplane exactly when it misses the interior.
-* `SeparatesProperly.zero_of_isCone_left` — proper separation of a cone can always be moved to a
-  hyperplane through the origin, whence the half-space representations of cones.
-* `exists_separating_of_notMem_closed_convex` — the point/closed-convex-set case, in the form the
-  conjugacy module consumes.
-* `exists_affine_lt_of_notMem`, `exists_affine_le_of_isClosed_epi` — the `E × ℝ` specialisation:
-  separating a point from a closed convex set that has a point vertically above it produces a
-  *non-vertical* functional, hence a continuous affine function on `E`.
+* `ConvexAnalysis.separates_iff_iSup_le_iInf`,
+  `ConvexAnalysis.exists_separatesProperly_iff_iSup_le_iInf`,
+  `ConvexAnalysis.exists_separatesStrongly_iff_iSup_lt_iInf`: the three notions in terms of the
+  extrema of $f$ over the two sets; this is Theorem 11.1 of [rockafellar1970convex].
+* `ConvexAnalysis.separatesStrongly_iff_exists_gap`,
+  `ConvexAnalysis.separatesStrongly_iff_exists_nhds`,
+  `ConvexAnalysis.separatesStrongly_iff_exists_closedBall`: three equivalent forms of strong
+  separation, by a uniform gap, by a neighbourhood of the origin, and, in a normed space, by
+  Rockafellar's balls $\varepsilon B$.
+* `ConvexAnalysis.exists_separates_of_isOpen_of_disjoint_affine`: an open convex set and a disjoint
+  affine set are separated by a hyperplane that contains the affine set.
+* `ConvexAnalysis.separatesStrongly_iff_zero_notMem_closure_sub`: two convex sets can be separated
+  strongly if and only if $0 \notin \operatorname{cl}(s - t)$;
+  `ConvexAnalysis.separatesStrongly_of_disjoint_isCompact_isClosed` is the case of a compact set and
+  a closed set.
+* Mathlib's `RCLike.iInter_halfSpaces_eq'`: a closed convex set is the intersection of the closed
+  half-spaces that contain it; this is Theorem 11.5 of [rockafellar1970convex].
+  `ConvexAnalysis.mem_iff_forall_le_halfSpace` is its pointwise form, and
+  `ConvexAnalysis.closure_convexHull_eq_iInter_halfspaces` is the form for an arbitrary set.
+* `ConvexAnalysis.exists_isSupporting_iff_disjoint_interior`: a convex subset lies in a non-trivial
+  supporting hyperplane if and only if it does not meet the interior.
+* `ConvexAnalysis.SeparatesProperly.zero_of_isCone_left`: proper separation of a cone from a set can
+  always be done by a hyperplane through the origin; this gives the representations of cones by
+  half-spaces.
+* `ConvexAnalysis.exists_separating_of_notMem_closed_convex`: strong separation of a point from a
+  closed convex set, in the form that the theory of conjugate functions uses.
+* `ConvexAnalysis.exists_affine_lt_of_notMem`, `ConvexAnalysis.exists_affine_le_of_isClosed_epi`:
+  the case of $E \times \mathbb{R}$. Separating a point from a closed convex set that contains a
+  point vertically above it gives a non-vertical functional, hence a continuous affine function on
+  $E$.
 
 ## Implementation notes
 
-Strong separation is *defined* by the gap `⨆_{s} f < c < ⨅_{t} f` rather than by the textbook's
-`C₁ + εB`: the gap presupposes no topology on `E`, so its description by the extrema sits one layer
-below the separation theorems that produce it, and taking the extrema in `EReal` removes the
-`Nonempty` and `BddAbove` side conditions a real-valued `sSup` would force. Note that *pointwise*
-strict separation — `f < c` on `s` and `c < f` on `t` — is a genuinely weaker notion and is not
-among the three. General closed half-spaces are left as a pair `(f, c)`, since the only facts ever
-needed of `{x | f x ≤ c}` apply to that description directly; only the homogeneous ones are
-bundled, as `halfSpaceCone`.
-
-## References
-
-* [rockafellar1970convex] §11.
+* Strong separation is defined by the gap $\sup_s f < c < \inf_t f$, not by Rockafellar's condition
+  with $C_1 + \varepsilon B$. The gap needs no topology on $E$, so its description by the extrema
+  comes before the separation theorems that produce it. The extrema are taken in `EReal`, which
+  removes the side conditions `Nonempty` and `BddAbove` that a real `sSup` would need.
+* Pointwise strict separation, with $f < c$ on $s$ and $c < f$ on $t$, is a strictly weaker notion
+  and is not one of the three.
+* A general closed half-space is left as a pair $(f, c)$, because the only facts needed about
+  $\{f \le c\}$ apply to this description directly. Only the half-spaces through the origin are
+  bundled, as `ConvexAnalysis.halfSpaceCone`.
 -/
 
 open Set Filter Topology Pointwise
@@ -93,52 +102,61 @@ section Defs
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 
-/-- `Separates f c s t` : the hyperplane `{x | f x = c}` separates `s` and `t`, in the sense that
-`s` lies in the closed half-space `{x | f x ≤ c}` and `t` in the opposite one. Rockafellar asks in
-addition that `f ≠ 0`; that is not built in here, because it is automatic in the two notions where
-it matters (`SeparatesProperly.ne_zero`, `SeparatesStrongly.ne_zero`). -/
+/-- The hyperplane $\{x \mid f(x) = c\}$ **separates** $s$ and $t$: $f(x) \le c$ for every $x \in s$
+and $c \le f(x)$ for every $x \in t$.
+
+Rockafellar also requires $f \neq 0$. This is not part of the definition here, because it
+follows in the two notions where it matters (`ConvexAnalysis.SeparatesProperly.ne_zero`,
+`ConvexAnalysis.SeparatesStrongly.ne_zero`). -/
 structure Separates (f : E →L[ℝ] ℝ) (c : ℝ) (s t : Set E) : Prop where
-  /-- `f` is at most `c` on `s`. -/
+  /-- $f(x) \le c$ for every $x \in s$. -/
   le_of_mem_left : ∀ ⦃x⦄, x ∈ s → f x ≤ c
-  /-- `f` is at least `c` on `t`. -/
+  /-- $c \le f(x)$ for every $x \in t$. -/
   le_of_mem_right : ∀ ⦃x⦄, x ∈ t → c ≤ f x
 
-/-- `SeparatesProperly f c s t` : `f` separates `s` and `t` at level `c`, and `s` and `t` are not
-*both* contained in the hyperplane `{x | f x = c}`. One of the two may be. -/
+/-- The hyperplane $\{x \mid f(x) = c\}$ **separates $s$ and $t$ properly**: it separates $s$ and
+$t$, and $s$ and $t$ do not both lie in the hyperplane. One of the two sets may lie in it. -/
 structure SeparatesProperly (f : E →L[ℝ] ℝ) (c : ℝ) (s t : Set E) : Prop
     extends Separates f c s t where
-  /-- `s` and `t` do not both lie inside the separating hyperplane. -/
+  /-- $s \cup t$ is not contained in the hyperplane $\{x \mid f(x) = c\}$. -/
   not_subset : ¬ (s ∪ t ⊆ {x | f x = c})
 
-/-- `SeparatesStrongly f c s t` : `f` separates `s` and `t` with a *gap*, the extrema being taken in
-`EReal` so that empty and unbounded sets need no special treatment. Rockafellar's own definition
-presupposes a norm, and is recovered by `separatesStrongly_iff_exists_closedBall`. -/
+/-- The hyperplane $\{x \mid f(x) = c\}$ **separates $s$ and $t$ strongly**:
+$$\sup_{x \in s} f(x) < c < \inf_{x \in t} f(x),$$
+with the extrema taken in $[-\infty, +\infty]$, so that empty and unbounded sets need no special
+treatment.
+
+Rockafellar's definition needs a norm. It is recovered by
+`ConvexAnalysis.separatesStrongly_iff_exists_closedBall`. -/
 structure SeparatesStrongly (f : E →L[ℝ] ℝ) (c : ℝ) (s t : Set E) : Prop where
-  /-- `f` stays bounded away from `c` from below on `s`. -/
+  /-- $\sup_{x \in s} f(x) < c$ in $[-\infty, +\infty]$. -/
   iSup_lt : (⨆ x ∈ s, (f x : EReal)) < (c : EReal)
-  /-- `f` stays bounded away from `c` from above on `t`. -/
+  /-- $c < \inf_{x \in t} f(x)$ in $[-\infty, +\infty]$. -/
   lt_iInf : (c : EReal) < ⨅ x ∈ t, (f x : EReal)
 
 variable {f : E →L[ℝ] ℝ} {c : ℝ} {s t : Set E}
 
-/-- Separation is symmetric under exchanging the two sets and negating the functional. -/
+/-- If $\{f = c\}$ separates $s$ and $t$, then $\{-f = -c\}$ separates $t$ and $s$. -/
 theorem Separates.symm (h : Separates f c s t) : Separates (-f) (-c) t s :=
   ⟨fun _ hx => by simpa using neg_le_neg (h.le_of_mem_right hx),
    fun _ hx => by simpa using neg_le_neg (h.le_of_mem_left hx)⟩
 
-/-- Separation passes to subsets. -/
+/-- If $\{f = c\}$ separates $s$ and $t$, then it separates every $s' \subseteq s$ and
+$t' \subseteq t$. -/
 theorem Separates.mono {s' t' : Set E} (h : Separates f c s t) (hs : s' ⊆ s) (ht : t' ⊆ t) :
     Separates f c s' t' :=
   ⟨fun _ hx => h.le_of_mem_left (hs hx), fun _ hx => h.le_of_mem_right (ht hx)⟩
 
-/-- Separation passes to closures: closed half-spaces are closed. -/
+/-- If $\{f = c\}$ separates $s$ and $t$, then it separates their closures, because closed
+half-spaces are closed. -/
 theorem Separates.closure (h : Separates f c s t) : Separates f c (closure s) (closure t) :=
   ⟨fun _ hx => closure_minimal (fun _ hy => h.le_of_mem_left hy)
       (isClosed_le f.continuous continuous_const) hx,
    fun _ hx => closure_minimal (fun _ hy => h.le_of_mem_right hy)
       (isClosed_le continuous_const f.continuous) hx⟩
 
-/-- Separation passes to convex hulls: closed half-spaces are convex. -/
+/-- If $\{f = c\}$ separates $s$ and $t$, then it separates their convex hulls, because closed
+half-spaces are convex. -/
 theorem Separates.convexHull (h : Separates f c s t) :
     Separates f c (convexHull ℝ s) (convexHull ℝ t) :=
   ⟨fun _ hx => convexHull_min (fun _ hy => h.le_of_mem_left hy)
@@ -146,7 +164,8 @@ theorem Separates.convexHull (h : Separates f c s t) :
    fun _ hx => convexHull_min (fun _ hy => h.le_of_mem_right hy)
       (convex_halfSpace_ge f.toLinearMap.isLinear c) hx⟩
 
-/-- Proper separation is symmetric under exchanging the two sets and negating the functional. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ properly, then $\{-f = -c\}$ separates $t$ and $s$
+properly. -/
 theorem SeparatesProperly.symm (h : SeparatesProperly f c s t) :
     SeparatesProperly (-f) (-c) t s where
   toSeparates := h.toSeparates.symm
@@ -155,7 +174,8 @@ theorem SeparatesProperly.symm (h : SeparatesProperly f c s t) :
     have : -f x = -c := by simpa using hx'
     exact neg_injective this
 
-/-- A properly separating functional is nonzero, so that `{x | f x = c}` really is a hyperplane. -/
+/-- If $\{f = c\}$ separates nonempty sets $s$ and $t$ properly, then $f \neq 0$, so that
+$\{f = c\}$ is a hyperplane. -/
 theorem SeparatesProperly.ne_zero (h : SeparatesProperly f c s t) (hs : s.Nonempty)
     (ht : t.Nonempty) : f ≠ 0 := by
   rintro rfl
@@ -174,26 +194,30 @@ section Extrema
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   {f : E →L[ℝ] ℝ} {c : ℝ} {s t : Set E}
 
-/-- The value of `f` at a point of `s` is at most the supremum of `f` over `s`. Spelling out the
-indexed family is what keeps `le_iSup₂` from having to guess it through a coercion. -/
+/-- If $x \in s$, then $f(x) \le \sup_{y \in s} f(y)$ in $[-\infty, +\infty]$.
+
+The statement gives the indexed family explicitly, so that `le_iSup₂` does not have to infer it
+through a coercion. -/
 theorem coe_apply_le_iSup₂ {x : E} (hx : x ∈ s) :
     ((f x : ℝ) : EReal) ≤ ⨆ y ∈ s, (f y : EReal) :=
   le_iSup₂ (f := fun y (_ : y ∈ s) => ((f y : ℝ) : EReal)) x hx
 
-/-- The infimum of `f` over `t` is at most the value of `f` at a point of `t`. -/
+/-- If $x \in t$, then $\inf_{y \in t} f(y) \le f(x)$ in $[-\infty, +\infty]$. -/
 theorem iInf₂_le_coe_apply {x : E} (hx : x ∈ t) :
     (⨅ y ∈ t, (f y : EReal)) ≤ ((f x : ℝ) : EReal) :=
   iInf₂_le (f := fun y (_ : y ∈ t) => ((f y : ℝ) : EReal)) x hx
 
-/-- Strong separation passes to subsets, exactly as ordinary separation does: shrinking the sets
-only shrinks the two extrema. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ strongly, then it separates every $s' \subseteq s$ and
+$t' \subseteq t$ strongly: smaller sets have a smaller supremum and a larger infimum. -/
 theorem SeparatesStrongly.mono {s' t' : Set E} (h : SeparatesStrongly f c s t) (hs : s' ⊆ s)
     (ht : t' ⊆ t) : SeparatesStrongly f c s' t' :=
   ⟨lt_of_le_of_lt (iSup₂_le fun _ hx => coe_apply_le_iSup₂ (hs hx)) h.iSup_lt,
     lt_of_lt_of_le h.lt_iInf (le_iInf₂ fun _ hx => iInf₂_le_coe_apply (ht hx))⟩
 
-/-- `f` separates `s` and `t` at level `c` exactly when `c` lies between the supremum of `f` over
-`s` and its infimum over `t`. -/
+/-- The hyperplane $\{f = c\}$ separates $s$ and $t$ if and only if
+$$\sup_{x \in s} f(x) \le c \le \inf_{x \in t} f(x),$$
+with the extrema taken in $[-\infty, +\infty]$. This is part of Theorem 11.1 of
+[rockafellar1970convex]. -/
 theorem separates_iff_iSup_le_iInf :
     Separates f c s t ↔
       (⨆ x ∈ s, (f x : EReal)) ≤ (c : EReal) ∧ (c : EReal) ≤ ⨅ x ∈ t, (f x : EReal) := by
@@ -206,18 +230,18 @@ theorem separates_iff_iSup_le_iInf :
     · exact_mod_cast (coe_apply_le_iSup₂ hx).trans h₁
     · exact_mod_cast h₂.trans (iInf₂_le_coe_apply hx)
 
-/-- The supremum of a real-valued function over a nonempty set is not `⊥`. -/
+/-- The supremum in $[-\infty, +\infty]$ of $f$ over a nonempty set is greater than $-\infty$. -/
 theorem bot_lt_iSup₂_of_nonempty (hs : s.Nonempty) : (⊥ : EReal) < ⨆ x ∈ s, (f x : EReal) := by
   obtain ⟨x, hx⟩ := hs
   exact lt_of_lt_of_le (EReal.bot_lt_coe _) (coe_apply_le_iSup₂ hx)
 
-/-- The infimum of a real-valued function over a nonempty set is not `⊤`. -/
+/-- The infimum in $[-\infty, +\infty]$ of $f$ over a nonempty set is less than $+\infty$. -/
 theorem iInf₂_lt_top_of_nonempty (ht : t.Nonempty) : (⨅ x ∈ t, (f x : EReal)) < ⊤ := by
   obtain ⟨x, hx⟩ := ht
   exact lt_of_le_of_lt (iInf₂_le_coe_apply hx) (EReal.coe_lt_top _)
 
-/-- Some hyperplane orthogonal to `f` separates two nonempty sets exactly when `f` never exceeds on
-`s` what it attains on `t`. -/
+/-- For nonempty sets $s$ and $t$, some hyperplane $\{f = c\}$ separates $s$ and $t$ if and only if
+$\sup_{x \in s} f(x) \le \inf_{x \in t} f(x)$. -/
 theorem exists_separates_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.Nonempty) :
     (∃ c, Separates f c s t) ↔ (⨆ x ∈ s, (f x : EReal)) ≤ ⨅ x ∈ t, (f x : EReal) := by
   constructor
@@ -229,8 +253,9 @@ theorem exists_separates_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.Nonempty) :
       (bot_lt_iSup₂_of_nonempty (f := f) hs).ne' (lt_of_le_of_lt h (iInf₂_lt_top_of_nonempty ht))
     exact ⟨a, separates_iff_iSup_le_iInf.2 ⟨ha.le, ha ▸ h⟩⟩
 
-/-- Proper separation is separation in which `f` dips strictly below `c` somewhere on `s`, or rises
-strictly above it somewhere on `t`. -/
+/-- The hyperplane $\{f = c\}$ separates $s$ and $t$ properly if and only if it separates them and
+$$\inf_{x \in s} f(x) < c \quad \text{or} \quad c < \sup_{x \in t} f(x),$$
+that is, $f$ is less than $c$ somewhere on $s$ or greater than $c$ somewhere on $t$. -/
 theorem separatesProperly_iff_iInf_lt_or_lt_iSup :
     SeparatesProperly f c s t ↔ Separates f c s t ∧
       ((⨅ x ∈ s, (f x : EReal)) < (c : EReal) ∨ (c : EReal) < ⨆ x ∈ t, (f x : EReal)) := by
@@ -259,9 +284,12 @@ theorem separatesProperly_iff_iInf_lt_or_lt_iSup :
       rw [hfx] at hlt
       exact lt_irrefl _ hlt
 
-/-- Two nonempty sets are properly separated by some hyperplane orthogonal to `f` exactly when `f`
-never exceeds on `s` what it attains on `t`, and is not constant with one and the same value on
-both. -/
+/-- For nonempty sets $s$ and $t$, some hyperplane $\{f = c\}$ separates $s$ and $t$ properly if and
+only if
+$$\sup_{x \in s} f(x) \le \inf_{x \in t} f(x) \quad \text{and} \quad \inf_{x \in s} f(x) <
+  \sup_{x \in t} f(x),$$
+with the extrema taken in $[-\infty, +\infty]$. That is, $f$ is not constant with one and the
+same value on both sets. This is part of Theorem 11.1 of [rockafellar1970convex]. -/
 theorem exists_separatesProperly_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.Nonempty) :
     (∃ c, SeparatesProperly f c s t) ↔
       (⨆ x ∈ s, (f x : EReal)) ≤ ⨅ x ∈ t, (f x : EReal) ∧
@@ -284,8 +312,11 @@ theorem exists_separatesProperly_iff_iSup_le_iInf (hs : s.Nonempty) (ht : t.None
         le_antisymm ((biInf_le_biSup hs).trans ha.le) hge
       exact Or.inr (hEq ▸ h₂)
 
-/-- Strong separation by *some* hyperplane orthogonal to `f` is exactly a gap between the two
-extrema. No nonemptiness is needed here: for empty sets the extrema are `⊥` and `⊤`. -/
+/-- Some hyperplane $\{f = c\}$ separates $s$ and $t$ strongly if and only if
+$$\sup_{x \in s} f(x) < \inf_{x \in t} f(x)$$
+in $[-\infty, +\infty]$. This is part of Theorem 11.1 of [rockafellar1970convex].
+
+No nonemptiness is needed: for empty sets the extrema are $-\infty$ and $+\infty$. -/
 theorem exists_separatesStrongly_iff_iSup_lt_iInf :
     (∃ c, SeparatesStrongly f c s t) ↔ (⨆ x ∈ s, (f x : EReal)) < ⨅ x ∈ t, (f x : EReal) := by
   constructor
@@ -295,22 +326,25 @@ theorem exists_separatesStrongly_iff_iSup_lt_iInf :
     obtain ⟨c, h₁, h₂⟩ := EReal.lt_iff_exists_real_btwn.1 h
     exact ⟨c, h₁, h₂⟩
 
-/-- Strong separation is separation. -/
+/-- Strong separation implies separation. -/
 theorem SeparatesStrongly.separates (h : SeparatesStrongly f c s t) : Separates f c s t :=
   separates_iff_iSup_le_iInf.2 ⟨h.iSup_lt.le, h.lt_iInf.le⟩
 
-/-- On `s`, a strongly separating functional stays strictly below the level. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ strongly, then $f(x) < c$ for every $x \in s$. -/
 theorem SeparatesStrongly.lt_of_mem_left (h : SeparatesStrongly f c s t) {x : E} (hx : x ∈ s) :
     f x < c := by
   exact_mod_cast (coe_apply_le_iSup₂ hx).trans_lt h.iSup_lt
 
-/-- On `t`, a strongly separating functional stays strictly above the level. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ strongly, then $c < f(x)$ for every $x \in t$. -/
 theorem SeparatesStrongly.lt_of_mem_right (h : SeparatesStrongly f c s t) {x : E} (hx : x ∈ t) :
     c < f x := by
   exact_mod_cast h.lt_iInf.trans_le (iInf₂_le_coe_apply hx)
 
-/-- **Strong separation as a uniform gap.** This is the form of Rockafellar's condition (c) that
-proofs actually consume. -/
+/-- **Strong separation as a uniform gap.** The hyperplane $\{f = c\}$ separates $s$ and $t$
+strongly if and only if there is $\delta > 0$ with $f(x) \le c - \delta$ for every $x \in s$ and
+$c + \delta \le f(x)$ for every $x \in t$.
+
+This is the form of Rockafellar's condition that proofs use. -/
 theorem separatesStrongly_iff_exists_gap :
     SeparatesStrongly f c s t ↔
       ∃ δ > 0, (∀ x ∈ s, f x ≤ c - δ) ∧ ∀ x ∈ t, c + δ ≤ f x := by
@@ -340,15 +374,18 @@ theorem separatesStrongly_iff_exists_gap :
         (le_iInf₂ fun x hx => ?_)
       exact_mod_cast h₂ x hx
 
-/-- The workhorse constructor for strong separation out of Mathlib's separation theorems, which
-produce two levels `u < v` with `f < u` on `s` and `v < f` on `t`. -/
+/-- If $f(x) < u$ for every $x \in s$, $u < v$, and $v < f(x)$ for every $x \in t$, then the
+hyperplane $\{f = (u + v)/2\}$ separates $s$ and $t$ strongly.
+
+This is the main way to obtain strong separation from Mathlib's separation theorems, which give
+two such levels $u < v$. -/
 theorem separatesStrongly_of_forall_lt {u v : ℝ} (hs : ∀ x ∈ s, f x < u) (huv : u < v)
     (ht : ∀ x ∈ t, v < f x) : SeparatesStrongly f ((u + v) / 2) s t :=
   separatesStrongly_iff_exists_gap.2
     ⟨(v - u) / 2, by linarith, fun x hx => by have := hs x hx; linarith,
       fun x hx => by have := ht x hx; linarith⟩
 
-/-- A strongly separating functional is nonzero, provided both sets are nonempty. -/
+/-- If $\{f = c\}$ separates nonempty sets $s$ and $t$ strongly, then $f \neq 0$. -/
 theorem SeparatesStrongly.ne_zero (h : SeparatesStrongly f c s t) (hs : s.Nonempty)
     (ht : t.Nonempty) : f ≠ 0 := by
   rintro rfl
@@ -358,7 +395,8 @@ theorem SeparatesStrongly.ne_zero (h : SeparatesStrongly f c s t) (hs : s.Nonemp
   have h₂ : (0 : ℝ) < c := by simpa using h.lt_of_mem_left hx
   linarith
 
-/-- Strong separation is symmetric under exchanging the two sets and negating the functional. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ strongly, then $\{-f = -c\}$ separates $t$ and $s$
+strongly. -/
 theorem SeparatesStrongly.symm (h : SeparatesStrongly f c s t) :
     SeparatesStrongly (-f) (-c) t s := by
   obtain ⟨δ, hδ, h₁, h₂⟩ := separatesStrongly_iff_exists_gap.1 h
@@ -368,7 +406,8 @@ theorem SeparatesStrongly.symm (h : SeparatesStrongly f c s t) :
   · have := h₁ x hx
     simpa using (by linarith : -c + δ ≤ -f x)
 
-/-- Strong separation is proper, provided at least one of the two sets is nonempty. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ strongly and $s \cup t$ is nonempty, then it separates them
+properly. -/
 theorem SeparatesStrongly.separatesProperly (h : SeparatesStrongly f c s t)
     (hst : (s ∪ t).Nonempty) : SeparatesProperly f c s t where
   toSeparates := h.separates
@@ -389,9 +428,10 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] {f : E →L[ℝ] ℝ} {c : ℝ} {s t : Set E}
 
 omit [IsTopologicalAddGroup E] in
-/-- A nonzero continuous linear functional is strictly positive somewhere on every neighbourhood of
-the origin. This is the substitute, in a space with no norm, for "`|⟨y, b⟩| < δ` for `y` small
-enough". -/
+/-- A nonzero continuous linear functional $f$ takes a positive value somewhere on every
+neighbourhood $V$ of the origin.
+
+In a space with no norm, this replaces the argument that $|f(y)| < \delta$ for $y$ small enough. -/
 theorem exists_mem_pos_of_ne_zero (hf : f ≠ 0) {V : Set E} (hV : V ∈ 𝓝 (0 : E)) :
     ∃ v ∈ V, 0 < f v := by
   obtain ⟨z, hz⟩ : ∃ z, 0 < f z := by
@@ -419,8 +459,10 @@ theorem eq_zero_of_forall_le_zero {V : Set E} (hV : V ∈ 𝓝 (0 : E)) (h : ∀
   obtain ⟨v, hvV, hv⟩ := exists_mem_pos_of_ne_zero hf hV
   exact absurd (h v hvV) (not_le.2 hv)
 
-/-- A continuous linear functional attaining its maximum over a set at an *interior* point of that
-set is zero. This is what makes a supporting hyperplane at an interior point impossible. -/
+/-- Let $x$ be an interior point of $C$. If a continuous linear functional $f$ satisfies $f(x) = c$
+and $f(y) \le c$ for every $y \in C$, then $f = 0$.
+
+So a supporting hyperplane cannot pass through an interior point. -/
 theorem eq_zero_of_mem_interior_of_isMaxOn {C : Set E} {x : E} (hx : x ∈ interior C)
     (hfx : f x = c) (h : ∀ y ∈ C, f y ≤ c) : f = 0 := by
   refine eq_zero_of_forall_le_zero (V := (fun v => x + v) ⁻¹' C) ?_ fun v hv => ?_
@@ -432,9 +474,12 @@ theorem eq_zero_of_mem_interior_of_isMaxOn {C : Set E} {x : E} (hx : x ∈ inter
     linarith
 
 omit [IsTopologicalAddGroup E] in
-/-- **Strong separation by a neighbourhood of the origin**: the phrasing of Rockafellar's
-definition that survives the loss of a norm. `s + V` and `t + V` lie in opposite *open* half-spaces
-for some neighbourhood `V` of the origin. -/
+/-- **Strong separation by a neighbourhood of the origin.** The hyperplane $\{f = c\}$ separates $s$
+and $t$ strongly if and only if there is a neighbourhood $V$ of the origin such that $f(x) < c$
+for every $x \in s + V$ and $c < f(x)$ for every $x \in t + V$.
+
+This is the form of Rockafellar's definition that does not need a norm: $s + V$ and $t + V$ lie
+in opposite open half-spaces. -/
 theorem separatesStrongly_iff_exists_nhds :
     SeparatesStrongly f c s t ↔
       ∃ V ∈ 𝓝 (0 : E), (∀ x ∈ s + V, f x < c) ∧ ∀ x ∈ t + V, c < f x := by
@@ -491,8 +536,9 @@ theorem separatesStrongly_iff_exists_nhds :
 /-! ### A hyperplane through a disjoint affine set -/
 
 omit [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
-/-- A continuous linear functional bounded below on an affine set is constant on it: along a
-direction in which `f` decreases, an affine set is unbounded below for `f`. -/
+/-- If a linear functional $f$ is bounded below on an affine subspace $M$, then $f$ is constant on
+$M$: $f(p) = f(q)$ for all $p, q \in M$. Along a direction in which $f$ decreases, $f$ is
+unbounded below on $M$. -/
 theorem eq_of_le_on_affineSubspace {M : AffineSubspace ℝ E} {u : ℝ} (h : ∀ x ∈ M, u ≤ f x)
     {p q : E} (hp : p ∈ M) (hq : q ∈ M) : f p = f q := by
   have hd : q - p ∈ M.direction := by
@@ -509,11 +555,16 @@ theorem eq_of_le_on_affineSubspace {M : AffineSubspace ℝ E} {u : ℝ} (h : ∀
     linarith
   linarith [sub_eq_zero.1 hzero]
 
-/-- **An open convex set and a disjoint affine set can be separated** by a hyperplane containing
-the affine set, with the convex set inside one of the *open* half-spaces. Rockafellar's hypothesis
-is that `C` be *relatively* open, which in `ℝⁿ` covers every nonempty convex set through `ri C`;
-outside finite dimensions the relative interior is not available and openness is the right
-hypothesis. The relatively open version is `exists_lt_of_notMem_relint`. -/
+/-- **An open convex set and a disjoint affine set can be separated** by a hyperplane that contains
+the affine set. Let $C \subseteq E$ be a nonempty open convex set, and let $M$ be an affine
+subspace with $p \in M$ and $C \cap M = \emptyset$. Then there is a continuous linear functional
+$g \neq 0$ with $g(x) = g(p)$ for every $x \in M$ and $g(x) < g(p)$ for every $x \in C$. So $C$
+lies in one of the open half-spaces of the hyperplane $\{g = g(p)\}$, which contains $M$.
+
+Rockafellar assumes only that $C$ is relatively open, which in $\mathbb{R}^n$ covers every
+nonempty convex set through $\operatorname{ri} C$. Outside finite dimensions the relative
+interior is not available, and openness is the right hypothesis. The version for relatively open
+sets is `ConvexAnalysis.exists_lt_of_notMem_relint`. -/
 theorem exists_separates_of_isOpen_of_disjoint_affine {C : Set E} {M : AffineSubspace ℝ E}
     (hC₁ : Convex ℝ C) (hC₂ : IsOpen C) (hC₃ : C.Nonempty) {p : E} (hp : p ∈ M)
     (hdisj : Disjoint C (M : Set E)) :
@@ -529,8 +580,8 @@ theorem exists_separates_of_isOpen_of_disjoint_affine {C : Set E} {M : AffineSub
   have h₂ : u ≤ (0 : ℝ) := by simpa using hup
   linarith
 
-/-- The same in the vocabulary of this file: an open convex set and a disjoint affine set are
-separated properly, by a hyperplane containing the affine set. -/
+/-- Under the hypotheses of `ConvexAnalysis.exists_separates_of_isOpen_of_disjoint_affine`, some
+hyperplane separates $C$ and $M$ properly. -/
 theorem exists_separatesProperly_of_isOpen_of_disjoint_affine {C : Set E}
     {M : AffineSubspace ℝ E} (hC₁ : Convex ℝ C) (hC₂ : IsOpen C) (hC₃ : C.Nonempty) {p : E}
     (hp : p ∈ M) (hdisj : Disjoint C (M : Set E)) :
@@ -543,30 +594,38 @@ theorem exists_separatesProperly_of_isOpen_of_disjoint_affine {C : Set E}
 
 /-! ### Supporting hyperplanes and half-spaces -/
 
-/-- `IsSupporting f c s` : the closed half-space `{x | f x ≤ c}` is a *supporting half-space* to
-`s`, and its boundary `{x | f x = c}` a *supporting hyperplane* — a closed half-space containing
-`s` with a point of `s` in its boundary, `f ≠ 0` making the boundary a hyperplane rather than the
-whole space. A supporting hyperplane is *non-trivial* when `∃ x ∈ s, f x ≠ c`, written inline. -/
+/-- The closed half-space $\{x \mid f(x) \le c\}$ is a **supporting half-space** to $s$, and its
+boundary $\{x \mid f(x) = c\}$ is a **supporting hyperplane** to $s$: $f \neq 0$, $f(x) \le c$
+for every $x \in s$, and $f(x) = c$ for some $x \in s$. The condition $f \neq 0$ makes the
+boundary a hyperplane and not the whole space.
+
+A supporting hyperplane is **non-trivial** when $f(x) \neq c$ for some $x \in s$. This condition
+is written out where it is used. -/
 structure IsSupporting (f : E →L[ℝ] ℝ) (c : ℝ) (s : Set E) : Prop where
-  /-- A supporting hyperplane is a genuine hyperplane. -/
+  /-- $f \neq 0$, so that $\{f = c\}$ is a hyperplane. -/
   ne_zero : f ≠ 0
-  /-- The half-space contains `s`. -/
+  /-- $f(x) \le c$ for every $x \in s$. -/
   le_of_mem : ∀ ⦃x⦄, x ∈ s → f x ≤ c
-  /-- The hyperplane touches `s`. -/
+  /-- $f(x) = c$ for some $x \in s$. -/
   exists_eq : ∃ x ∈ s, f x = c
 
-/-- A supporting hyperplane misses the interior of the set it supports. -/
+/-- A supporting hyperplane to $C$ does not meet the interior of $C$. -/
 theorem IsSupporting.disjoint_interior {C : Set E} (h : IsSupporting f c C) :
     Disjoint (interior C) {x | f x = c} := by
   rw [Set.disjoint_left]
   intro x hx hfx
   exact h.ne_zero (eq_zero_of_mem_interior_of_isMaxOn hx hfx fun y hy => h.le_of_mem hy)
 
-/-- **A nonempty convex subset `D` of a convex set `C` with nonempty interior lies in a non-trivial
-supporting hyperplane to `C` exactly when `D` misses the interior of `C`.** Rockafellar's statement
-is about `ri C` and needs no interior hypothesis, because in `ℝⁿ` a nonempty convex set has
-nonempty relative interior; outside finite dimensions that fails. The relative-interior
-consequences are in `Numlib/Analysis/Convex/RelativeInterior.lean`. -/
+/-- **A nonempty convex subset $D$ of a convex set $C$ with nonempty interior lies in a non-trivial
+supporting hyperplane to $C$ if and only if $D$ does not meet the interior of $C$.** Let $C$ be
+a convex set with nonempty interior, and let $D \subseteq C$ be a nonempty convex set. Then
+there is a non-trivial supporting hyperplane $\{g = b\}$ to $C$ that contains $D$ if and only if
+$D$ does not meet the interior of $C$.
+
+Rockafellar states this for $\operatorname{ri} C$ and needs no hypothesis on the interior,
+because in $\mathbb{R}^n$ a nonempty convex set has a nonempty relative interior. Outside finite
+dimensions this fails. The consequences for relative interiors are in
+`Numlib.Analysis.Convex.RelativeInterior`. -/
 theorem exists_isSupporting_iff_disjoint_interior {C D : Set E} (hC : Convex ℝ C)
     (hD : Convex ℝ D) (hDC : D ⊆ C) (hD' : D.Nonempty) (hCi : (interior C).Nonempty) :
     (∃ (g : E →L[ℝ] ℝ) (b : ℝ), IsSupporting g b C ∧ (∀ x ∈ D, g x = b) ∧ ∃ x ∈ C, g x ≠ b) ↔
@@ -593,17 +652,20 @@ theorem exists_isSupporting_iff_disjoint_interior {C D : Set E} (hC : Convex ℝ
 
 end TopologicalVectorSpace
 
-/-! ### Strong separation by `ε`-balls -/
+/-! ### Strong separation by $\varepsilon$-balls -/
 
 section Normed
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E →L[ℝ] ℝ} {c : ℝ}
   {s t : Set E}
 
-/-- **Rockafellar's own definition of strong separation**, available once there is a norm: `s + εB`
-and `t + εB` lie in opposite open half-spaces for some `ε > 0`. With
-`separatesStrongly_iff_exists_nhds` this shows nothing is lost by taking the gap as the
-definition. -/
+/-- **Rockafellar's definition of strong separation.** Let $E$ be a real normed space and let $B$ be
+its closed unit ball. The hyperplane $\{f = c\}$ separates $s$ and $t$ strongly if and only if
+there is $\varepsilon > 0$ such that $f(x) < c$ for every $x \in s + \varepsilon B$ and
+$c < f(x)$ for every $x \in t + \varepsilon B$.
+
+With `ConvexAnalysis.separatesStrongly_iff_exists_nhds`, this shows that nothing is lost when
+the gap is taken as the definition. -/
 theorem separatesStrongly_iff_exists_closedBall :
     SeparatesStrongly f c s t ↔
       ∃ ε > 0, (∀ x ∈ s + Metric.closedBall 0 ε, f x < c) ∧
@@ -630,10 +692,11 @@ section Cone
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   {f : E →L[ℝ] ℝ} {c : ℝ} {s t : Set E}
 
-/-- The homogeneous closed half-space `{x | f x ≤ 0}`, bundled as a `PointedCone ℝ E`. The
-*homogeneous* closed half-spaces — those with the origin on their boundary — are exactly these, and
-bundling them makes `Submodule.span_le` available, which is what turns the cone representations
-below into two lines. -/
+/-- The closed half-space $\{x \mid f(x) \le 0\}$ through the origin, as a pointed cone. The closed
+half-spaces with the origin on their boundary are exactly these sets.
+
+The bundling makes `Submodule.span_le` available, which shortens the proofs of the
+representations of cones below. -/
 def halfSpaceCone (f : E →L[ℝ] ℝ) : PointedCone ℝ E where
   carrier := {x | f x ≤ 0}
   add_mem' {x y} hx hy := by
@@ -650,16 +713,16 @@ def halfSpaceCone (f : E →L[ℝ] ℝ) : PointedCone ℝ E where
     rw [map_smul, smul_eq_mul]
     nlinarith
 
-/-- Membership in the homogeneous half-space cone is the inequality defining it. -/
+/-- A point $x$ belongs to `ConvexAnalysis.halfSpaceCone f` if and only if $f(x) \le 0$. -/
 @[simp]
 theorem mem_halfSpaceCone {x : E} : x ∈ halfSpaceCone f ↔ f x ≤ 0 := Iff.rfl
 
-/-- The underlying set of `halfSpaceCone f` is the homogeneous half-space `{x | f x ≤ 0}`. -/
+/-- The underlying set of `ConvexAnalysis.halfSpaceCone f` is $\{x \mid f(x) \le 0\}$. -/
 @[simp]
 theorem coe_halfSpaceCone : (halfSpaceCone f : Set E) = {x | f x ≤ 0} := rfl
 
-/-- A linear functional bounded above on a cone is nonpositive on it: otherwise scaling up a point
-where it is positive breaks the bound. -/
+/-- If a continuous linear functional $f$ is bounded above on a cone $K$, then $f(x) \le 0$ for
+every $x \in K$. Otherwise scaling up a point where $f$ is positive breaks the bound. -/
 theorem le_zero_of_isCone_of_forall_le {K : Set E} {u : ℝ}
     (hcone : IsCone K) (h : ∀ x ∈ K, f x ≤ u) {x : E}
     (hx : x ∈ K) : f x ≤ 0 := by
@@ -671,8 +734,8 @@ theorem le_zero_of_isCone_of_forall_le {K : Set E} {u : ℝ}
   rw [map_smul, smul_eq_mul, div_mul_cancel₀ _ hcon.ne'] at hk
   linarith [le_max_left u 0]
 
-/-- A bound above for a linear functional on a nonempty cone is nonnegative: the functional comes
-arbitrarily close to `0` along any ray of the cone. -/
+/-- If a continuous linear functional $f$ satisfies $f \le u$ on a nonempty cone $K$, then
+$0 \le u$. The functional comes arbitrarily close to $0$ along any ray of the cone. -/
 theorem nonneg_of_isCone_of_forall_le {K : Set E} {u : ℝ}
     (hcone : IsCone K) (h : ∀ x ∈ K, f x ≤ u)
     (hK : K.Nonempty) : 0 ≤ u := by
@@ -694,9 +757,12 @@ theorem nonneg_of_isCone_of_forall_le {K : Set E} {u : ℝ}
     rw [hval] at hk
     linarith
 
-/-- **If two nonempty sets are properly separated and the *first* is a cone, then they are properly
-separated by a hyperplane through the origin.** Both sets must be nonempty: on the line, the cone
-`{0}` and the empty set are properly separated at level `1` but not at level `0`. -/
+/-- **If two nonempty sets are properly separated and the first is a cone, then they are properly
+separated by a hyperplane through the origin.** If $\{f = c\}$ separates $s$ and $t$ properly,
+$s$ is a cone, and $s$ and $t$ are nonempty, then $\{f = 0\}$ separates $s$ and $t$ properly.
+
+Both sets must be nonempty: on the line, the cone $\{0\}$ and the empty set are properly
+separated at level $1$ but not at level $0$. -/
 theorem SeparatesProperly.zero_of_isCone_left (h : SeparatesProperly f c s t)
     (hcone : IsCone s) (hs : s.Nonempty) (ht : t.Nonempty) :
     SeparatesProperly f 0 s t := by
@@ -710,7 +776,9 @@ theorem SeparatesProperly.zero_of_isCone_left (h : SeparatesProperly f c s t)
   have hc0 : c = 0 := le_antisymm hcle hc
   exact h.not_subset (by rw [hc0]; exact hsub)
 
-/-- The same with the cone on the right. -/
+/-- If $\{f = c\}$ separates $s$ and $t$ properly, $t$ is a cone, and $s$ and $t$ are nonempty, then
+$\{f = 0\}$ separates $s$ and $t$ properly. This is
+`ConvexAnalysis.SeparatesProperly.zero_of_isCone_left` with the cone on the right. -/
 theorem SeparatesProperly.zero_of_isCone_right (h : SeparatesProperly f c s t)
     (hcone : IsCone t) (hs : s.Nonempty) (ht : t.Nonempty) :
     SeparatesProperly f 0 s t := by
@@ -719,17 +787,20 @@ theorem SeparatesProperly.zero_of_isCone_right (h : SeparatesProperly f c s t)
 
 end Cone
 
-/-! ### Strong separation, half-space representations, and separation from a point -/
+/-! ### Strong separation, representation by half-spaces, and separation from a point -/
 
 section LocallyConvex
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] {s t : Set E}
 
-/-- **Two convex sets can be separated strongly exactly when the origin is not in the closure of
-their difference** — in a normed space, exactly when the distance between them is positive.
-Rockafellar assumes both sets nonempty; that is not needed, the empty set being strongly separated
-from anything by the zero functional. -/
+/-- **Two convex sets can be separated strongly if and only if the origin is not in the closure of
+their difference.** For convex sets $s$ and $t$ in a locally convex space, some hyperplane
+separates $s$ and $t$ strongly if and only if $0 \notin \operatorname{cl}(s - t)$. In a normed
+space this says that the distance between $s$ and $t$ is positive.
+
+Rockafellar assumes both sets nonempty. This is not needed: the empty set is strongly separated
+from any set by the zero functional. -/
 theorem separatesStrongly_iff_zero_notMem_closure_sub (hs : Convex ℝ s) (ht : Convex ℝ t) :
     (∃ (f : E →L[ℝ] ℝ) (c : ℝ), SeparatesStrongly f c s t) ↔ (0 : E) ∉ closure (s - t) := by
   constructor
@@ -779,33 +850,41 @@ theorem separatesStrongly_iff_zero_notMem_closure_sub (hs : Convex ℝ s) (ht : 
     · have := hle y hy
       linarith
 
-/-- **A compact convex set and a disjoint closed convex set can be separated strongly.** The book
-deduces this from a criterion phrased with recession cones, which is not available yet; the proof
-here goes through Mathlib's compact/closed geometric Hahn–Banach theorem. -/
+/-- **A compact convex set and a disjoint closed convex set can be separated strongly.** Let $s$ be
+compact and convex and $t$ be closed and convex in a locally convex space, with
+$s \cap t = \emptyset$. Then some hyperplane separates $s$ and $t$ strongly.
+
+Rockafellar deduces this from a criterion stated with recession cones, which is not available
+here. The proof uses Mathlib's geometric Hahn–Banach theorem for a compact set and a closed set. -/
 theorem separatesStrongly_of_disjoint_isCompact_isClosed (hs₁ : Convex ℝ s) (hs₂ : IsCompact s)
     (ht₁ : Convex ℝ t) (ht₂ : IsClosed t) (hd : Disjoint s t) :
     ∃ (f : E →L[ℝ] ℝ) (c : ℝ), SeparatesStrongly f c s t := by
   obtain ⟨f, u, v, h₁, huv, h₂⟩ := geometric_hahn_banach_compact_closed hs₁ hs₂ ht₁ ht₂ hd
   exact ⟨f, (u + v) / 2, separatesStrongly_of_forall_lt h₁ huv h₂⟩
 
-/-- The other order: a closed convex set and a disjoint compact convex set can be separated
-strongly. -/
+/-- Let $s$ be closed and convex and $t$ be compact and convex in a locally convex space, with
+$s \cap t = \emptyset$. Then some hyperplane separates $s$ and $t$ strongly. -/
 theorem separatesStrongly_of_disjoint_isClosed_isCompact (hs₁ : Convex ℝ s) (hs₂ : IsClosed s)
     (ht₁ : Convex ℝ t) (ht₂ : IsCompact t) (hd : Disjoint s t) :
     ∃ (f : E →L[ℝ] ℝ) (c : ℝ), SeparatesStrongly f c s t := by
   obtain ⟨f, u, v, h₁, huv, h₂⟩ := geometric_hahn_banach_closed_compact hs₁ hs₂ ht₁ ht₂ hd
   exact ⟨f, (u + v) / 2, separatesStrongly_of_forall_lt h₁ huv h₂⟩
 
-/-- **Separation of a point from a closed convex set**, in the form the conjugacy module consumes:
-a point outside a closed convex set is separated from it *strongly*. This is the workhorse instance
-of the compact/closed case, and the only separation the **Fenchel–Moreau theorem** needs. -/
+/-- **Separation of a point from a closed convex set.** Let $s$ be a closed convex set in a locally
+convex space, and let $x \notin s$. Then some hyperplane separates $s$ and $\{x\}$ strongly.
+
+This is the special case of `ConvexAnalysis.separatesStrongly_of_disjoint_isClosed_isCompact`
+that the theory of conjugate functions uses, and it is the only separation that the
+**Fenchel–Moreau theorem** needs. -/
 theorem exists_separating_of_notMem_closed_convex (hs₁ : Convex ℝ s) (hs₂ : IsClosed s) {x : E}
     (hx : x ∉ s) : ∃ (f : E →L[ℝ] ℝ) (c : ℝ), SeparatesStrongly f c s {x} :=
   separatesStrongly_of_disjoint_isClosed_isCompact hs₁ hs₂ (convex_singleton x)
     isCompact_singleton (Set.disjoint_singleton_right.2 hx)
 
-/-- **A point belongs to a closed convex set as soon as it satisfies every weak linear inequality
-that the set satisfies.** -/
+/-- **A point belongs to a closed convex set if and only if it satisfies every weak linear
+inequality that the set satisfies.** Let $s$ be a closed convex set in a locally convex space.
+Then $x \in s$ if and only if $f(x) \le c$ for every continuous linear functional $f$ and every
+real $c$ with $f \le c$ on $s$. -/
 theorem mem_iff_forall_le_halfSpace (hs₁ : Convex ℝ s) (hs₂ : IsClosed s) {x : E} :
     x ∈ s ↔ ∀ (f : E →L[ℝ] ℝ) (c : ℝ), (∀ y ∈ s, f y ≤ c) → f x ≤ c := by
   refine ⟨fun hx f c hf => hf x hx, fun h => ?_⟩
@@ -813,8 +892,8 @@ theorem mem_iff_forall_le_halfSpace (hs₁ : Convex ℝ s) (hs₂ : IsClosed s) 
   obtain ⟨f, c, hfs, hfx⟩ := geometric_hahn_banach_closed_point hs₁ hs₂ hx
   exact absurd (h f c fun y hy => (hfs y hy).le) (not_le.2 hfx)
 
-/-- The closed convex hull of an arbitrary set is the intersection of the closed half-spaces
-containing that set. -/
+/-- For every set $s$ in a locally convex space, the closure of the convex hull of $s$ is the
+intersection of the closed half-spaces $\{x \mid f(x) \le c\}$ that contain $s$. -/
 theorem closure_convexHull_eq_iInter_halfspaces (s : Set E) :
     ⋂ (f : E →L[ℝ] ℝ) (c : ℝ) (_ : ∀ y ∈ s, f y ≤ c), {x | f x ≤ c} =
       closure (convexHull ℝ s) := by
@@ -830,10 +909,15 @@ theorem closure_convexHull_eq_iInter_halfspaces (s : Set E) :
   simp only [Set.mem_iInter, Set.mem_ofPred]
   exact forall₂_congr fun f c => imp_congr_left (hkey f c)
 
-/-- **A nonempty convex set whose closure is not everything lies in a closed half-space**, the
-statement corrected for infinite dimensions. The book's hypothesis is `C ≠ ℝⁿ`, enough there
-because `ri (cl C) ⊆ C`, but not here: the kernel of a discontinuous linear functional is a proper
-convex subset which is dense, and no nonzero continuous functional is bounded above on it. -/
+/-- **A nonempty convex set whose closure is not the whole space lies in a closed half-space.** Let
+$s$ be a nonempty convex set in a locally convex space with $\operatorname{cl} s \neq E$. Then
+there are a continuous linear functional $f \neq 0$ and a real $c$ with $f(x) \le c$ for every
+$x \in s$.
+
+The source assumes $C \neq \mathbb{R}^n$, which is enough there because
+$\operatorname{ri}(\operatorname{cl} C) \subseteq C$. In infinite dimensions it is not enough:
+the kernel of a discontinuous linear functional is a proper convex subset that is dense, and no
+nonzero continuous functional is bounded above on it. -/
 theorem exists_ne_zero_forall_le_of_closure_ne_univ (hs₁ : Convex ℝ s) (hs₂ : s.Nonempty)
     (h : closure s ≠ univ) : ∃ (f : E →L[ℝ] ℝ) (c : ℝ), f ≠ 0 ∧ ∀ x ∈ s, f x ≤ c := by
   obtain ⟨a, ha⟩ := nonempty_compl.2 h
@@ -845,10 +929,15 @@ theorem exists_ne_zero_forall_le_of_closure_ne_univ (hs₁ : Convex ℝ s) (hs�
   have h₂ : c < (0 : ℝ) := by simpa using hfa
   linarith
 
-/-! ### Corollaries 11.7.1 to 11.7.3 -/
+/-!
+### Representation of cones by half-spaces
+
+This section corresponds to Corollaries 11.7.1 to 11.7.3 of [rockafellar1970convex].
+-/
 
 omit [IsTopologicalAddGroup E] [LocallyConvexSpace ℝ E] in
-/-- The closure of a cone is a cone. -/
+/-- The closure of a cone is a cone: if $K$ is a cone, $a > 0$ and $x \in \operatorname{cl} K$, then
+$a x \in \operatorname{cl} K$. -/
 theorem smul_mem_closure_of_isCone {K : Set E}
     (hcone : IsCone K) :
     ∀ ⦃a : ℝ⦄, 0 < a → ∀ ⦃x⦄, x ∈ closure K → a • x ∈ closure K := by
@@ -858,8 +947,8 @@ theorem smul_mem_closure_of_isCone {K : Set E}
   have hcl := hmaps.closure (continuous_const.smul continuous_id) hx
   rwa [closure_closure] at hcl
 
-/-- A nonempty closed convex cone is the intersection of the homogeneous closed half-spaces
-containing it. -/
+/-- A nonempty closed convex cone $K$ in a locally convex space is the intersection of the closed
+half-spaces $\{x \mid f(x) \le 0\}$ through the origin that contain $K$. -/
 theorem isClosed_convex_isCone_eq_iInter_halfSpaceCone {K : Set E} (hconv : Convex ℝ K)
     (hcone : IsCone K) (hcl : IsClosed K) (hne : K.Nonempty) :
     ⋂ (f : E →L[ℝ] ℝ) (_ : ∀ y ∈ K, f y ≤ 0), (halfSpaceCone f : Set E) = K := by
@@ -873,8 +962,11 @@ theorem isClosed_convex_isCone_eq_iInter_halfSpaceCone {K : Set E} (hconv : Conv
   have hu : 0 ≤ u := nonneg_of_isCone_of_forall_le hcone (fun z hz => (hfK z hz).le) hne
   exact absurd (h f hle) (not_le.2 (lt_of_le_of_lt hu hfx))
 
-/-- For an arbitrary set `S`, the closure of the convex cone generated by `S` is the intersection
-of the homogeneous closed half-spaces containing `S`. -/
+/-- For every set $S$ in a locally convex space, the closure of the pointed convex cone generated by
+$S$ is the intersection of the closed half-spaces $\{x \mid f(x) \le 0\}$ through the origin
+that contain $S$.
+
+The pointed cone is `PointedCone.hull ℝ S`, which contains the origin. -/
 theorem closure_hull_eq_iInter_halfSpaceCone (S : Set E) :
     ⋂ (f : E →L[ℝ] ℝ) (_ : ∀ y ∈ S, f y ≤ 0), (halfSpaceCone f : Set E) =
       closure (PointedCone.hull ℝ S : Set E) := by
@@ -891,9 +983,13 @@ theorem closure_hull_eq_iInter_halfSpaceCone (S : Set E) :
     isClosed_closure ⟨0, subset_closure (PointedCone.hull ℝ S).zero_mem⟩]
   exact iInter_congr fun f => by rw [hkey f]
 
-/-- A nonempty convex cone whose closure is not everything is contained in a homogeneous closed
-half-space, corrected for infinite dimensions exactly as
-`exists_ne_zero_forall_le_of_closure_ne_univ` is. -/
+/-- **A nonempty convex cone whose closure is not the whole space lies in a closed half-space
+through the origin.** Let $K$ be a nonempty convex cone in a locally convex space with
+$\operatorname{cl} K \neq E$. Then there is a continuous linear functional $f \neq 0$ with
+$f(x) \le 0$ for every $x \in K$.
+
+The hypothesis is corrected for infinite dimensions in the same way as in
+`ConvexAnalysis.exists_ne_zero_forall_le_of_closure_ne_univ`. -/
 theorem exists_ne_zero_forall_le_zero_of_closure_ne_univ {K : Set E} (hconv : Convex ℝ K)
     (hcone : IsCone K) (hne : K.Nonempty)
     (h : closure K ≠ univ) : ∃ f : E →L[ℝ] ℝ, f ≠ 0 ∧ ∀ x ∈ K, f x ≤ 0 := by
@@ -907,13 +1003,19 @@ theorem exists_ne_zero_forall_le_zero_of_closure_ne_univ {K : Set E} (hconv : Co
   have : u < 0 := by simpa using hfa
   linarith
 
-/-! ### The `E × ℝ` specialisation: non-vertical separation of an epigraph -/
+/-! ### The case of $E \times \mathbb{R}$: non-vertical separation of an epigraph -/
 
-/-- **Separation in `E × ℝ` by a non-vertical functional.** If `(x₀, μ) ∉ F` while `(x₀, ν) ∈ F` for
-some `ν > μ`, the functional separating `(x₀, μ)` from the closed convex set `F` cannot be
-*vertical*: a functional of the form `(y, 0)` takes the same value at `(x₀, μ)` and at `(x₀, ν)`.
-Normalising the vertical component to `-1` turns it into a continuous affine function of `E` that
-stays strictly below `F` and strictly above `μ` at `x₀`. -/
+/-- **Separation in $E \times \mathbb{R}$ by a non-vertical functional.** Let
+$F \subseteq E \times \mathbb{R}$ be closed and convex, let $x_0 \in E$ and $\mu < \nu$, and
+assume $(x_0, \nu) \in F$ and $(x_0, \mu) \notin F$. Then there are a continuous linear
+functional $y$ on $E$ and a real $b$ with
+$$y(x) - b < r \quad \text{for every } (x, r) \in F, \qquad \mu < y(x_0) - b.$$
+So the continuous affine function $x \mapsto y(x) - b$ lies strictly below $F$ and strictly
+above $\mu$ at $x_0$.
+
+A functional that separates $(x_0, \mu)$ from $F$ cannot be vertical, of the form
+$(x, r) \mapsto y(x)$, because such a functional takes the same value at $(x_0, \mu)$ and at
+$(x_0, \nu)$. Normalizing its vertical component to $-1$ gives the affine function. -/
 theorem exists_affine_lt_of_notMem {F : Set (E × ℝ)} (hF₁ : Convex ℝ F) (hF₂ : IsClosed F)
     {x₀ : E} {μ ν : ℝ} (hμν : μ < ν) (hν : (x₀, ν) ∈ F) (hμ : (x₀, μ) ∉ F) :
     ∃ (y : E →L[ℝ] ℝ) (b : ℝ), (∀ (x : E) (r : ℝ), (x, r) ∈ F → y x - b < r) ∧ μ < y x₀ - b := by
@@ -948,9 +1050,15 @@ theorem exists_affine_lt_of_notMem {F : Set (E × ℝ)} (hF₁ : Convex ℝ F) (
     rw [hval, lt_div_iff₀ hk]
     exact hstep
 
-/-- **The epigraph form.** A convex function with a closed epigraph has, at every point of its
-domain and below every value it takes there, a continuous affine minorant passing above that value.
-`exists_affine_le_of_closed_proper` is this lemma with `μ := f x₀ - 1`. -/
+/-- **The epigraph form.** Let $g : E \to [-\infty, +\infty]$ be a convex function with closed
+epigraph on a locally convex space, and let $x_0 \in E$ and reals $\mu, \nu$ satisfy
+$g(x_0) \le \nu$ and $\mu < g(x_0)$. Then there are a continuous linear functional $y$ and a
+real $b$ with
+$$y(x) - b \le g(x) \quad \text{for every } x, \qquad \mu < y(x_0) - b.$$
+That is, at every point of its domain and below every value that it takes there, $g$ has a
+continuous affine minorant that passes above that value.
+
+`ConvexAnalysis.exists_affine_le_of_closed_proper` is this lemma with $\mu = g(x_0) - 1$. -/
 theorem exists_affine_le_of_isClosed_epi {g : E → EReal} (hg : ConvexFn g)
     (hcl : IsClosed (epi g)) {x₀ : E} {μ ν : ℝ} (hν : g x₀ ≤ (ν : EReal))
     (hμ : (μ : EReal) < g x₀) :

@@ -7,34 +7,42 @@ import Mathlib.Analysis.Normed.Operator.Mul
 import Mathlib.Topology.ContinuousMap.Compact
 
 /-!
-# Nemytskii operators on `C(X, ℝ)`
+# Nemytskii operators on spaces of continuous functions
 
-The *Nemytskii*, or *superposition*, operator of a continuous function `f : X × ℝ → ℝ` is
-`u ↦ f(·, u ·)` on the Banach space `C(X, ℝ)` of continuous real functions on a compact space `X`.
-It is the nonlinearity of a differential or integral equation read as an operator, and the basic
-fact about it is that a continuous partial derivative in the second variable makes it Fréchet
-differentiable, with derivative *multiplication* by that partial derivative along `u`.
+Let $X$ be a compact metric space and let $f : X \times \mathbb{R} \to \mathbb{R}$ be continuous.
+The **Nemytskii operator**, or superposition operator, of $f$ maps a function
+$u \in C(X, \mathbb{R})$ to the function $x \mapsto f(x, u(x))$. It is the nonlinearity of a
+differential or integral equation, read as an operator on the Banach space $C(X, \mathbb{R})$ with
+the supremum norm. The main result is that a continuous partial derivative $f_z$ of $f$ in the
+second variable makes the operator Fréchet differentiable. Its derivative at $u$ is multiplication
+by the function $x \mapsto f_z(x, u(x))$.
 
 ## Main definitions
 
-* `Nemytskii.op f u`: the Nemytskii operator, `x ↦ f (x, u x)`.
+* `Nemytskii.op`: the Nemytskii operator $u \mapsto f(\cdot, u(\cdot))$.
 
 ## Main results
 
-* `Nemytskii.hasFDerivAt_op`: the Fréchet derivative of `Nemytskii.op f` at `u` is multiplication
-  by `f_z(·, u ·)`.
+* `Nemytskii.exists_abs_sub_sub_mul_le`: the linearization $f(x, t) - f(x, s) - f_z(x, s)(t - s)$ is
+  $o(|t - s|)$, uniformly in $x$ and in $s$ on bounded sets.
+* `Nemytskii.hasFDerivAt_op`: the Fréchet derivative of the Nemytskii operator at $u$ is
+  multiplication by $f_z(\cdot, u(\cdot))$.
+
+## Proof outline
+
+The only analytic fact is that $f_z$ is uniformly continuous on the compact tube
+$X \times [-(\|u\| + 1), \|u\| + 1]$ around the graph of $u$. For $\varepsilon > 0$ this gives
+$\delta > 0$ such that $\|v - u\| < \delta$ implies
+$$|f(x, v(x)) - f(x, u(x)) - f_z(x, u(x)) (v(x) - u(x))| \le \varepsilon |v(x) - u(x)|$$
+for every $x$. This follows from the mean value inequality for $z \mapsto f(x, z) - f_z(x, u(x)) z$
+on the segment from $u(x)$ to $v(x)$. The supremum over $x$ then gives the bound $o(\|v - u\|)$.
 
 ## Implementation notes
 
-Mathlib has no differentiation-under-a-parameter lemma in the supremum norm, so the estimate is
-written out.  Its only analytic ingredient is that `f_z` is uniformly continuous on the compact
-tube `X × [-(‖u‖ + 1), ‖u‖ + 1]` around the graph of `u`: given `ε > 0` this provides a `δ` such
-that `‖v - u‖ < δ` forces `|f (x, v x) - f (x, u x) - f_z (x, u x) (v x - u x)| ≤ ε |v x - u x|`,
-by the mean value inequality applied to `z ↦ f (x, z) - f_z (x, u x) z` on the segment from `u x` to
-`v x`.  Taking the supremum over `x` is then the whole of the `o(‖v - u‖)` bound.
-
-This is the same argument as the one for the Fréchet derivative of a Urysohn integral operator in
-`Numlib.IntegralEquations.Basic`, with the integration in the second space variable removed.
+* Mathlib has no lemma for differentiation under a parameter in the supremum norm, so the estimate
+  is written out.
+* The argument is the same as the one for the Fréchet derivative of a Urysohn integral operator in
+  `Numlib.IntegralEquations.Basic`, without the integration in the second space variable.
 -/
 
 open Set
@@ -43,22 +51,31 @@ namespace Nemytskii
 
 variable {X : Type*} [PseudoMetricSpace X]
 
-/-- The **Nemytskii**, or superposition, operator of a continuous `f : X × ℝ → ℝ`, acting on the
-continuous real functions on a compact space `X` by `u ↦ f(·, u ·)`. -/
+/-- The **Nemytskii operator**, or superposition operator, of a continuous function
+$f : X \times \mathbb{R} \to \mathbb{R}$. It maps a continuous function $u : X \to \mathbb{R}$
+to the continuous function $x \mapsto f(x, u(x))$.
+
+Here $X$ is a pseudometric space. Compactness of $X$ is assumed only for the derivative. -/
 def op (f : C(X × ℝ, ℝ)) (u : C(X, ℝ)) : C(X, ℝ) := ⟨fun x => f (x, u x), by fun_prop⟩
 
+/-- The value of the Nemytskii operator at $x$ is $f(x, u(x))$. -/
 @[simp]
 theorem op_apply (f : C(X × ℝ, ℝ)) (u : C(X, ℝ)) (x : X) : op f u x = f (x, u x) := rfl
 
 variable [CompactSpace X]
 
-/-- **The uniform linearization estimate in the second variable.**  If `f : X × ℝ → ℝ` has a
-continuous partial derivative `fz` in its second argument, then for every `R` and `ε > 0` there is
-`δ > 0` such that `|f (x, t) - f (x, s) - f_z (x, s) (t - s)| ≤ ε |t - s|` for all `x`, `|s| ≤ R`
-and `|t - s| < δ`.  The proof is the uniform continuity of `f_z` on the compact tube
-`X × [-(R + 1), R + 1]` and the mean value inequality for `z ↦ f (x, z) - f_z (x, s) z` on the
-segment from `s` to `t`; it is the analytic content of `Nemytskii.hasFDerivAt_op` and of the
-Fréchet derivative of a Urysohn integral operator. -/
+/-- **The uniform linearization estimate in the second variable.** Let $X$ be a compact pseudometric
+space, and let $f, f_z : X \times \mathbb{R} \to \mathbb{R}$ be continuous, such that for every
+$x \in X$ and $z \in \mathbb{R}$ the function $t \mapsto f(x, t)$ has the derivative $f_z(x, z)$
+at $z$. Then for every $R \in \mathbb{R}$ and every $\varepsilon > 0$ there is $\delta > 0$ such
+that
+$$|f(x, t) - f(x, s) - f_z(x, s)(t - s)| \le \varepsilon |t - s|$$
+for all $x \in X$ and all $s, t \in \mathbb{R}$ with $|s| \le R$ and $|t - s| < \delta$.
+
+The proof uses the uniform continuity of $f_z$ on the compact tube $X \times [-(R + 1), R + 1]$
+and the mean value inequality for $z \mapsto f(x, z) - f_z(x, s) z$ on the segment from $s$ to
+$t$. The estimate is the analytic content of `Nemytskii.hasFDerivAt_op` and of the Fréchet
+derivative of a Urysohn integral operator. -/
 theorem exists_abs_sub_sub_mul_le {f fz : C(X × ℝ, ℝ)}
     (hf : ∀ (x : X) (z : ℝ), HasDerivAt (fun t => f (x, t)) (fz (x, z)) z) (R : ℝ) {ε : ℝ}
     (hε : 0 < ε) :
@@ -106,10 +123,16 @@ theorem exists_abs_sub_sub_mul_le {f fz : C(X × ℝ, ℝ)}
       = |f (x, t) - fz (x, s) * t - (f (x, s) - fz (x, s) * s)| := by congr 1; ring
     _ ≤ ε * |t - s| := hmv2
 
-/-- **The Fréchet derivative of a Nemytskii operator.**  If `f : X × ℝ → ℝ` is continuous and has a
-continuous partial derivative `fz` in its second argument, then `u ↦ f(·, u ·)` is Fréchet
-differentiable at every `u ∈ C(X, ℝ)`, with derivative the multiplication operator
-`y ↦ f_z(·, u ·) · y`. -/
+/-- **The Fréchet derivative of a Nemytskii operator.** Let $X$ be a compact pseudometric space, and
+let $f, f_z : X \times \mathbb{R} \to \mathbb{R}$ be continuous, such that for every $x \in X$
+and $z \in \mathbb{R}$ the function $t \mapsto f(x, t)$ has the derivative $f_z(x, z)$ at $z$.
+Then the Nemytskii operator $u \mapsto f(\cdot, u(\cdot))$ on $C(X, \mathbb{R})$ is Fréchet
+differentiable at every $u \in C(X, \mathbb{R})$, and its derivative is the multiplication
+operator
+$$y \mapsto f_z(\cdot, u(\cdot))\, y.$$
+
+The multiplication operator is `ContinuousLinearMap.mul` applied to the function
+`Nemytskii.op fz u`. -/
 theorem hasFDerivAt_op {f fz : C(X × ℝ, ℝ)}
     (hf : ∀ (x : X) (z : ℝ), HasDerivAt (fun t => f (x, t)) (fz (x, z)) z) (u : C(X, ℝ)) :
     HasFDerivAt (op f) (ContinuousLinearMap.mul ℝ C(X, ℝ) (op fz u)) u := by

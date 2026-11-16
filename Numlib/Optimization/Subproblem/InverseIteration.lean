@@ -9,51 +9,69 @@ import Numlib.Optimization.Subproblem.Secular
 /-!
 # Inverse iteration with Rayleigh-quotient shifts from the definite side
 
-Let `H` be a symmetric operator on a finite-dimensional real inner product space `E`, with
-leftmost eigenvalue `λ₁` and leftmost eigenspace `E₁ = ker (H - λ₁)`. Algorithm 9.3.1 of
-Cartis–Gould–Toint, *Evaluation complexity of algorithms for nonconvex optimization* (after
-Gould–Robinson–Thorne), produces shifts `ℓₖ > -λ₁`, i.e. with `H + ℓₖ` positive definite, that
-converge to `-λ₁` with any prescribed Q-order. From a unit vector `zₖ` it performs `nₖ` steps of
-shifted inverse iteration `z ↦ (H + ℓₖ)⁻¹ z`, normalizes the result to `zₖ₊₁`, computes the
-Rayleigh quotient `ρₖ₊₁ = ⟪zₖ₊₁, H zₖ₊₁⟫ ≥ λ₁` and sets
-`ℓₖ₊₁ = -ρₖ₊₁ + ωₖ (ℓₖ + ρₖ₊₁) ^ γₖ`.
+Let $H$ be a symmetric operator on a finite-dimensional real inner product space $E$, with
+eigenvalues $\lambda_1 \le \dots \le \lambda_n$, leftmost eigenspace $E_1 = \ker(H - \lambda_1)$ and
+orthogonal projection $P_1$ onto $E_1$. Algorithm 9.3.1 of [cartis2022evaluation], which follows
+Gould, Robinson and Thorne, produces shifts $\ell_k > -\lambda_1$, so that each $H + \ell_k$ is
+positive definite, and these shifts converge to $-\lambda_1$ with any prescribed Q-order. From a
+unit vector $z_k$ it performs $n_k$ steps of shifted inverse iteration
+$z \mapsto (H + \ell_k)^{-1} z$, normalizes the result to $z_{k+1}$, computes the Rayleigh quotient
+$\rho_{k+1} = \langle z_{k+1}, H z_{k+1} \rangle \ge \lambda_1$, and sets
+$$\ell_{k+1} = -\rho_{k+1} + \omega_k (\ell_k + \rho_{k+1})^{\gamma_k}.$$
 
-As in `Numlib.Optimization.Subproblem.Secular`, the scaling matrix `M` of the book is not a
-parameter: `E` carries the energy inner product, in which the pencil `(H, M)` becomes the single
-symmetric operator `M⁻¹ H`.
+The file first expresses $P_1$ and the squared norms $\|P_1 z\|^2$ and $\|(1 - P_1) z\|^2$ in an
+orthonormal eigenvector basis. It then proves that the Rayleigh quotient of a unit vector has an
+error of at most $(\lambda_n - \lambda_1) \|(1 - P_1) z\|^2$, and that $n$ steps of shifted inverse
+iteration multiply the squared tangent $\|(1 - P_1) z\|^2 / \|P_1 z\|^2$ by at most $((\ell +
+\lambda_1) / (\ell + \lambda_1 + \mu))^{2n}$, where $\mu$ is a lower bound of the gap between
+$\lambda_1$ and the other eigenvalues. These two facts give Theorem 9.3.1: from a start close enough
+to $-\lambda_1$, the errors $e_k = \ell_k + \lambda_1$ satisfy $\frac{\omega_L}{2} e_k^{\gamma_k}
+\le e_{k+1} \le \omega_U 2^{\gamma_k} e_k^{\gamma_k}$.
 
 ## Main definitions
 
-* `leftmostSpace hH`: the leftmost eigenspace `E₁`; `leftmostWeight hH z` and `restWeight hH z`
-  are the squared norms of the components of `z` in `E₁` and in `E₁ᗮ`.
-* `IsInverseIterationRun`: a run of Algorithm 9.3.1.
+* `Subproblem.leftmostSpace`: the leftmost eigenspace $E_1$.
+* `Subproblem.leftmostWeight`, `Subproblem.restWeight`: the squared norms $\|P_1 z\|^2$ and
+  $\|(1 - P_1) z\|^2$, written in the eigenvector basis.
+* `Subproblem.IsInverseIterationRun`: a run of Algorithm 9.3.1.
 
 ## Main results
 
-* `starProjection_leftmostSpace`, `norm_starProjection_leftmostSpace_sq`,
-  `norm_sub_starProjection_leftmostSpace_sq`: the orthogonal projection onto `E₁` in the
+* `Subproblem.starProjection_leftmostSpace`, `Subproblem.norm_starProjection_leftmostSpace_sq`,
+  `Subproblem.norm_sub_starProjection_leftmostSpace_sq`: the orthogonal projection onto $E_1$ in the
   eigenvector basis.
-* `rayleigh_sub_leftmost_le`: `0 ≤ ρ(z) - λ₁ ≤ (λₙ - λ₁) ‖(1 - P₁) z‖²` for unit `z`.
-* `restWeight_div_leftmostWeight_inverse_pow_le`: `n` shifted inverse steps multiply the squared
-  tangent `‖(1 - P₁) z‖² / ‖P₁ z‖²` by at most `((ℓ + λ₁) / (ℓ + λ₁ + μ)) ^ (2 n)`, where `μ` is
-  a lower bound of the spectral gap.
-* `IsInverseIterationRun.convergence`, `IsInverseIterationRun.convergence_of_eventually_const`:
-  Theorem 9.3.1.
+* `Subproblem.rayleigh_sub_leftmost_le`: $0 \le \rho(z) - \lambda_1 \le (\lambda_n - \lambda_1)
+  \|(1 - P_1) z\|^2$ for a unit vector $z$.
+* `Subproblem.restWeight_div_leftmostWeight_inverse_pow_le`: $n$ steps of shifted inverse iteration
+  multiply the squared tangent by at most $((\ell + \lambda_1) / (\ell + \lambda_1 + \mu))^{2n}$.
+* `Subproblem.IsInverseIterationRun.convergence`,
+  `Subproblem.IsInverseIterationRun.convergence_of_eventually_const`: Theorem 9.3.1, the convergence
+  of the shifts with Q-order $\bar\gamma$.
+* `Subproblem.normalize_iterate`: normalizing after every step of a linear iteration gives the same
+  vector as normalizing at the end.
 
-## Hypotheses
+## Implementation notes
 
-* The start condition is `P₁ z₀ ≠ 0` for the orthogonal projection `P₁` onto `E₁` in the inner
-  product of `E`; for matrix data with a scaling `M` (the `M`-inner product) this is
-  `⟨z₀, M vᵢ⟩ ≠ 0` for some `M`-orthonormal leftmost eigenvector `vᵢ`.
-* The closeness `ε` depends on a bound `n_U` for `nₖ`. Without one (`n_U = ∞`) no single `ε`
-  serves all runs: for `H = diag (0, μ)` with `μ < 1` and `z₀ = (1, 1)/√2`, the choices
-  `γ₀ = 2 n₀ - γ_U` and `n₀` large give `ℓ₁ < -λ₁` from any given `ℓ₀ ∈ (-λ₁, 1 - μ - λ₁)`,
-  because the Rayleigh-quotient error `≈ μ (e/(e+μ))^(2 n₀)` beats `ω e ^ γ₀`. The convergence
-  holds when the sequences `nₖ, ωₖ, γₖ` are fixed before `ε`, with `nₖ` eventually
-  constant (`IsInverseIterationRun.convergence_of_eventually_const`, `n_U = ∞` allowed);
-  `IsInverseIterationRun.convergence` gives an `ε` uniform over all runs when `n_U < ∞`.
-* Only `γₖ = γ̄` for large `k` is needed for the Q-order `γ̄`; `nₖ` may keep varying. The two-sided
-  error bounds hold at every iteration.
+* As in `Numlib.Optimization.Subproblem.Secular`, the scaling matrix $M$ of the book is not a
+  parameter. The space $E$ carries the energy inner product, in which the pencil $(H, M)$ becomes
+  the single symmetric operator $M^{-1} H$.
+* The start condition is $P_1 z_0 \neq 0$, for the orthogonal projection in the inner product of
+  $E$. For matrix data with a scaling $M$ and the $M$-inner product, this is
+  $\langle z_0, M v_i \rangle \neq 0$ for some $M$-orthonormal leftmost eigenvector $v_i$.
+* The radius $\varepsilon$ of the start depends on a bound $n_U$ for the numbers $n_k$. Without such
+  a bound ($n_U = \infty$), no single $\varepsilon$ serves all runs. For
+  $H = \operatorname{diag}(0, \mu)$ with $\mu < 1$ and $z_0 = (1, 1)/\sqrt{2}$, the choices
+  $\gamma_0 = 2 n_0 - \gamma_U$ and $n_0$ large give $\ell_1 < -\lambda_1$ from any given
+  $\ell_0 \in (-\lambda_1, 1 - \mu - \lambda_1)$, because the error of the Rayleigh quotient, about
+  $\mu (e / (e + \mu))^{2 n_0}$, is larger than $\omega e^{\gamma_0}$. The convergence holds when
+  the sequences $(n_k)$, $(\omega_k)$, $(\gamma_k)$ are fixed before $\varepsilon$ and $(n_k)$ is
+  eventually constant (`Subproblem.IsInverseIterationRun.convergence_of_eventually_const`, where
+  $n_U = \infty$ is allowed). `Subproblem.IsInverseIterationRun.convergence` gives an $\varepsilon$
+  that is uniform over all runs when $n_U < \infty$.
+* For the Q-order $\bar\gamma$, only $\gamma_k = \bar\gamma$ for all large $k$ is needed; the
+  numbers $n_k$ may keep varying. The two-sided bounds on the errors hold at every iteration.
+* The inverse $(H + \ell)^{-1}$ is `Ring.inverse (H + ℓ • 1)`, the inverse in the ring of continuous
+  linear maps. It is the true inverse for $\ell > -\lambda_1$.
 -/
 
 open Set Filter Topology
@@ -70,38 +88,46 @@ section Spectral
 
 variable (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 
-/-- The leftmost eigenspace `E₁ = ker (H - λ₁)` of the symmetric operator `H`. -/
+/-- The **leftmost eigenspace** $E_1 = \ker(H - \lambda_1)$ of the symmetric operator $H$, where
+$\lambda_1$ is `Subproblem.leftmost`. -/
 noncomputable def leftmostSpace : Submodule ℝ E :=
   Module.End.eigenspace (H : E →ₗ[ℝ] E) (leftmost hH)
 
-/-- The squared norm `‖P₁ z‖²` of the component of `z` in the leftmost eigenspace, in the
-eigenvector basis (`norm_starProjection_leftmostSpace_sq`). -/
+/-- The squared norm of the component of $z$ in the leftmost eigenspace, in the eigenvector basis
+$(b_i)$ with eigenvalues $(\lambda_i)$:
+$$\sum_{i : \lambda_i = \lambda_1} \langle b_i, z \rangle^2.$$
+It equals $\|P_1 z\|^2$ by `Subproblem.norm_starProjection_leftmostSpace_sq`. -/
 noncomputable def leftmostWeight (z : E) : ℝ :=
   ∑ i, if hH.eigenvalues rfl i = leftmost hH then ⟪hH.eigenvectorBasis rfl i, z⟫ ^ 2 else 0
 
-/-- The squared norm `‖(1 - P₁) z‖²` of the component of `z` orthogonal to the leftmost
-eigenspace, in the eigenvector basis (`norm_sub_starProjection_leftmostSpace_sq`). -/
+/-- The squared norm of the component of $z$ orthogonal to the leftmost eigenspace, in the
+eigenvector basis $(b_i)$ with eigenvalues $(\lambda_i)$:
+$$\sum_{i : \lambda_i \neq \lambda_1} \langle b_i, z \rangle^2.$$
+It equals $\|(1 - P_1) z\|^2$ by `Subproblem.norm_sub_starProjection_leftmostSpace_sq`. -/
 noncomputable def restWeight (z : E) : ℝ :=
   ∑ i, if hH.eigenvalues rfl i = leftmost hH then 0 else ⟪hH.eigenvectorBasis rfl i, z⟫ ^ 2
 
 variable {hH}
 
-/-- The coordinates of `H v` in the eigenvector basis: `⟪bᵢ, H v⟫ = λᵢ ⟪bᵢ, v⟫`. -/
+/-- The coordinates of $Hv$ in the eigenvector basis: $\langle b_i, H v \rangle = \lambda_i \langle
+b_i, v \rangle$. -/
 theorem inner_eigenvectorBasis_apply (v : E) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, H v⟫ = hH.eigenvalues rfl i * ⟪hH.eigenvectorBasis rfl i, v⟫ := by
   simpa using inner_eigenvectorBasis_add_smul (hH := hH) 0 v i
 
+/-- A vector $v$ lies in the leftmost eigenspace if and only if $H v = \lambda_1 v$. -/
 theorem mem_leftmostSpace_iff {v : E} : v ∈ leftmostSpace hH ↔ H v = leftmost hH • v := by
   rw [leftmostSpace, Module.End.mem_eigenspace_iff, ContinuousLinearMap.coe_coe]
 
-/-- The squared norm in the coordinates of the eigenvector basis. -/
+/-- The squared norm in the coordinates of the eigenvector basis:
+$\|v\|^2 = \sum_i \langle b_i, v \rangle^2$. -/
 theorem norm_sq_eq_sum_eigenvectorBasis (v : E) :
     ‖v‖ ^ 2 = ∑ i, ⟪hH.eigenvectorBasis rfl i, v⟫ ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, inner_eq_sum_eigenvectorBasis (hH := hH)]
   simp [sq]
 
-/-- A vector of the leftmost eigenspace has no component along eigenvectors of other
-eigenvalues. -/
+/-- A vector of the leftmost eigenspace has no component along the basis eigenvectors of the other
+eigenvalues: if $v \in E_1$ and $\lambda_i \neq \lambda_1$, then $\langle b_i, v \rangle = 0$. -/
 theorem inner_eigenvectorBasis_eq_zero_of_mem {v : E} (hv : v ∈ leftmostSpace hH)
     {i : Fin (Module.finrank ℝ E)} (hi : hH.eigenvalues rfl i ≠ leftmost hH) :
     ⟪hH.eigenvectorBasis rfl i, v⟫ = 0 := by
@@ -111,7 +137,9 @@ theorem inner_eigenvectorBasis_eq_zero_of_mem {v : E} (hv : v ∈ leftmostSpace 
     rw [sub_mul]; linarith
   exact (mul_eq_zero.1 h').resolve_left (sub_ne_zero.2 hi)
 
-/-- The orthogonal projection onto the leftmost eigenspace keeps the leftmost coordinates. -/
+/-- The orthogonal projection onto the leftmost eigenspace keeps the leftmost coordinates:
+$$P_1 z = \sum_{i : \lambda_i = \lambda_1} \langle b_i, z \rangle \, b_i.$$
+-/
 theorem starProjection_leftmostSpace (z : E) :
     (leftmostSpace hH).starProjection z = ∑ i, (if hH.eigenvalues rfl i = leftmost hH then
       ⟪hH.eigenvectorBasis rfl i, z⟫ else 0) • hH.eigenvectorBasis rfl i := by
@@ -129,11 +157,14 @@ theorem starProjection_leftmostSpace (z : E) :
     · simp
     · rw [inner_eigenvectorBasis_eq_zero_of_mem hw h, mul_zero]
 
+/-- The coordinates of $P_1 z$: $\langle b_i, P_1 z \rangle$ is $\langle b_i, z \rangle$ if
+$\lambda_i = \lambda_1$, and $0$ otherwise. -/
 theorem inner_eigenvectorBasis_starProjection (z : E) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, (leftmostSpace hH).starProjection z⟫ =
       if hH.eigenvalues rfl i = leftmost hH then ⟪hH.eigenvectorBasis rfl i, z⟫ else 0 := by
   rw [starProjection_leftmostSpace, inner_eigenvectorBasis_sum]
 
+/-- $\|P_1 z\|^2$ is the leftmost weight `Subproblem.leftmostWeight` of $z$. -/
 theorem norm_starProjection_leftmostSpace_sq (z : E) :
     ‖(leftmostSpace hH).starProjection z‖ ^ 2 = leftmostWeight hH z := by
   rw [norm_sq_eq_sum_eigenvectorBasis (hH := hH), leftmostWeight]
@@ -141,6 +172,7 @@ theorem norm_starProjection_leftmostSpace_sq (z : E) :
   rw [inner_eigenvectorBasis_starProjection]
   split_ifs <;> simp
 
+/-- $\|z - P_1 z\|^2$ is the remaining weight `Subproblem.restWeight` of $z$. -/
 theorem norm_sub_starProjection_leftmostSpace_sq (z : E) :
     ‖z - (leftmostSpace hH).starProjection z‖ ^ 2 = restWeight hH z := by
   rw [norm_sq_eq_sum_eigenvectorBasis (hH := hH), restWeight]
@@ -148,12 +180,15 @@ theorem norm_sub_starProjection_leftmostSpace_sq (z : E) :
   rw [inner_sub_right, inner_eigenvectorBasis_starProjection]
   split_ifs <;> simp
 
+/-- The leftmost weight is nonnegative. -/
 theorem leftmostWeight_nonneg (z : E) : 0 ≤ leftmostWeight hH z :=
   Finset.sum_nonneg fun _ _ => by split_ifs <;> positivity
 
+/-- The remaining weight is nonnegative. -/
 theorem restWeight_nonneg (z : E) : 0 ≤ restWeight hH z :=
   Finset.sum_nonneg fun _ _ => by split_ifs <;> positivity
 
+/-- The leftmost weight and the remaining weight of $z$ add up to $\|z\|^2$. -/
 theorem leftmostWeight_add_restWeight (z : E) :
     leftmostWeight hH z + restWeight hH z = ‖z‖ ^ 2 := by
   rw [norm_sq_eq_sum_eigenvectorBasis (hH := hH), leftmostWeight, restWeight,
@@ -161,6 +196,7 @@ theorem leftmostWeight_add_restWeight (z : E) :
   refine Finset.sum_congr rfl fun i _ => ?_
   split_ifs <;> simp
 
+/-- The leftmost weight of $cz$ is $c^2$ times the leftmost weight of $z$. -/
 theorem leftmostWeight_smul (c : ℝ) (z : E) :
     leftmostWeight hH (c • z) = c ^ 2 * leftmostWeight hH z := by
   rw [leftmostWeight, leftmostWeight, Finset.mul_sum]
@@ -168,6 +204,7 @@ theorem leftmostWeight_smul (c : ℝ) (z : E) :
   rw [real_inner_smul_right]
   split_ifs <;> ring
 
+/-- The remaining weight of $cz$ is $c^2$ times the remaining weight of $z$. -/
 theorem restWeight_smul (c : ℝ) (z : E) :
     restWeight hH (c • z) = c ^ 2 * restWeight hH z := by
   rw [restWeight, restWeight, Finset.mul_sum]
@@ -175,6 +212,7 @@ theorem restWeight_smul (c : ℝ) (z : E) :
   rw [real_inner_smul_right]
   split_ifs <;> ring
 
+/-- $P_1 z \neq 0$ if and only if the leftmost weight of $z$ is positive. -/
 theorem starProjection_leftmostSpace_ne_zero_iff {z : E} :
     (leftmostSpace hH).starProjection z ≠ 0 ↔ 0 < leftmostWeight hH z := by
   rw [← norm_starProjection_leftmostSpace_sq, ← norm_ne_zero_iff]
@@ -182,7 +220,9 @@ theorem starProjection_leftmostSpace_ne_zero_iff {z : E} :
     fun h h0 => by simp [h0] at h⟩
 
 /-- The Rayleigh quotient in the eigenvector basis:
-`⟪z, H z⟫ - λ₁ ‖z‖² = ∑ᵢ (λᵢ - λ₁) ⟪bᵢ, z⟫²`. -/
+$$\langle z, H z \rangle - \lambda_1 \|z\|^2 = \sum_i (\lambda_i - \lambda_1) \langle b_i, z
+  \rangle^2.$$
+-/
 theorem inner_apply_sub_leftmost_mul (z : E) :
     ⟪z, H z⟫ - leftmost hH * ‖z‖ ^ 2 =
       ∑ i, (hH.eigenvalues rfl i - leftmost hH) * ⟪hH.eigenvectorBasis rfl i, z⟫ ^ 2 := by
@@ -192,8 +232,9 @@ theorem inner_apply_sub_leftmost_mul (z : E) :
   rw [inner_eigenvectorBasis_apply]
   ring
 
-/-- The Rayleigh-quotient error of a unit vector is at most `(λₙ - λ₁)` times its squared
-component off the leftmost eigenspace (coordinate form of `rayleigh_sub_leftmost_le`). -/
+/-- For a unit vector $z$, the error of the Rayleigh quotient satisfies $0 \le \langle z, H z
+\rangle - \lambda_1 \le (\lambda_n - \lambda_1) \sum_{i : \lambda_i \neq \lambda_1} \langle b_i,
+z \rangle^2$. This is the coordinate form of `Subproblem.rayleigh_sub_leftmost_le`. -/
 theorem rayleigh_sub_leftmost_le_restWeight {z : E} (hz : ‖z‖ = 1) :
     0 ≤ ⟪z, H z⟫ - leftmost hH ∧
       ⟪z, H z⟫ - leftmost hH ≤ (rightmost hH - leftmost hH) * restWeight hH z := by
@@ -209,10 +250,13 @@ theorem rayleigh_sub_leftmost_le_restWeight {z : E} (hz : ‖z‖ = 1) :
     · exact mul_le_mul_of_nonneg_right
         (by linarith [eigenvalues_le_rightmost (hH := hH) i]) (sq_nonneg _)
 
-/-- **The Rayleigh quotient is second-order accurate** (standard; used in Theorem 9.3.1). For a
-unit vector `z`, with `P₁` the orthogonal projection onto the leftmost eigenspace:
-`0 ≤ ⟪z, H z⟫ - λ₁ ≤ (λₙ - λ₁) ‖(1 - P₁) z‖²`, and if `P₁ z ≠ 0` then the off-eigenspace
-component is at most the tangent: `‖(1 - P₁) z‖ ≤ t = ‖(1 - P₁) z‖ / ‖P₁ z‖`. -/
+/-- **The Rayleigh quotient is accurate to second order.** Let $z$ be a unit vector. Then
+$$0 \le \langle z, H z \rangle - \lambda_1 \le (\lambda_n - \lambda_1) \, \|(1 - P_1) z\|^2,$$
+and if $P_1 z \neq 0$, then the component off the leftmost eigenspace is at most the tangent:
+$\|(1 - P_1) z\| \le \|(1 - P_1) z\| / \|P_1 z\|$.
+
+This standard fact is used in the proof of Theorem 9.3.1 of [cartis2022evaluation]. The numbers
+$\lambda_1$ and $\lambda_n$ are `Subproblem.leftmost` and `Subproblem.rightmost`. -/
 theorem rayleigh_sub_leftmost_le {z : E} (hz : ‖z‖ = 1) :
     0 ≤ ⟪z, H z⟫ - leftmost hH ∧
       ⟪z, H z⟫ - leftmost hH ≤
@@ -231,8 +275,8 @@ theorem rayleigh_sub_leftmost_le {z : E} (hz : ‖z‖ = 1) :
         norm_nonneg ((leftmostSpace hH).starProjection z)]
     exact le_div_self (norm_nonneg _) (norm_pos_iff.2 hP) h1
 
-/-- There is a positive lower bound `μ ≤ 1` on the gap `λᵢ - λ₁` between the leftmost eigenvalue
-and every other eigenvalue. -/
+/-- There is a number $\mu$ with $0 < \mu \le 1$ that bounds the gap between the leftmost eigenvalue
+and every other eigenvalue: $\lambda_1 + \mu \le \lambda_i$ whenever $\lambda_i \neq \lambda_1$. -/
 theorem exists_spectralGap :
     ∃ μ : ℝ, 0 < μ ∧ μ ≤ 1 ∧
       ∀ i, hH.eigenvalues rfl i ≠ leftmost hH → leftmost hH + μ ≤ hH.eigenvalues rfl i := by
@@ -255,10 +299,15 @@ theorem exists_spectralGap :
     exact ⟨min 1 (f i₀), lt_min one_pos (hf i₀), min_le_left _ _,
       key _ (min_le_left _ _) fun i => (min_le_right _ _).trans (hi₀ i)⟩
 
-/-- **Shifted inverse iteration reduces the tangent.** Let `ℓ > -λ₁` and let `μ > 0` bound the
-gap between `λ₁` and the other eigenvalues. For `v = (H + ℓ)⁻ⁿ z`:
-`‖P₁ v‖² = ‖P₁ z‖² / (ℓ + λ₁) ^ (2 n)` and the squared tangent `‖(1 - P₁) v‖² / ‖P₁ v‖²` is at
-most `((ℓ + λ₁)ⁿ / (ℓ + λ₁ + μ)ⁿ)²` times that of `z`. -/
+/-- **Shifted inverse iteration reduces the tangent.** Let $\ell > -\lambda_1$, let $\mu > 0$
+satisfy $\lambda_1 + \mu \le \lambda_i$ for every eigenvalue $\lambda_i \neq \lambda_1$, let $n$
+be a natural number, let $z \in E$, and let $v = (H + \ell)^{-n} z$. Then
+$$\|P_1 v\|^2 = \frac{\|P_1 z\|^2}{(\ell + \lambda_1)^{2n}}, \qquad \|(1 - P_1) v\|^2 \le
+  \frac{\|(1 - P_1) z\|^2}{(\ell + \lambda_1 + \mu)^{2n}}.$$
+Hence the squared tangent $\|(1 - P_1) v\|^2 / \|P_1 v\|^2$ is at most $((\ell + \lambda_1) /
+(\ell + \lambda_1 + \mu))^{2n}$ times that of $z$.
+
+The squared norms are written as `Subproblem.leftmostWeight` and `Subproblem.restWeight`. -/
 theorem restWeight_div_leftmostWeight_inverse_pow_le {μ ℓ : ℝ} (hμ : 0 < μ)
     (hgap : ∀ i, hH.eigenvalues rfl i ≠ leftmost hH → leftmost hH + μ ≤ hH.eigenvalues rfl i)
     (hℓ : -leftmost hH < ℓ) (n : ℕ) (z : E) :
@@ -284,9 +333,11 @@ theorem restWeight_div_leftmostWeight_inverse_pow_le {μ ℓ : ℝ} (hμ : 0 < �
       exact div_le_div_of_nonneg_left (sq_nonneg _) (by positivity)
         (pow_le_pow_left₀ (by positivity) (pow_le_pow_left₀ (by positivity) (by linarith) n) 2)
 
-/-- One block of Algorithm 9.3.1 in the eigenvector basis: normalizing `v = (H + ℓ)⁻ⁿ z` gives a
-unit vector with nonzero leftmost component whose squared tangent is at most
-`((ℓ + λ₁)ⁿ / (ℓ + λ₁ + μ)ⁿ)²` times that of `z`. -/
+/-- One block of Algorithm 9.3.1. Let $\ell > -\lambda_1$, let $\mu > 0$ bound the spectral gap as
+in `Subproblem.restWeight_div_leftmostWeight_inverse_pow_le`, let $P_1 z \neq 0$, and let
+$v = (H + \ell)^{-n} z$. Then $v / \|v\|$ is a unit vector with $P_1 (v / \|v\|) \neq 0$, and
+its squared tangent is at most $((\ell + \lambda_1)^n / (\ell + \lambda_1 + \mu)^n)^2$ times
+that of $z$. -/
 theorem inverseIteration_block {μ ℓ : ℝ} (hμ : 0 < μ)
     (hgap : ∀ i, hH.eigenvalues rfl i ≠ leftmost hH → leftmost hH + μ ≤ hH.eigenvalues rfl i)
     (hℓ : -leftmost hH < ℓ) (n : ℕ) {z v : E} (hz : 0 < leftmostWeight hH z)
@@ -320,32 +371,60 @@ end Spectral
 
 variable (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 
-/-- A run of **Algorithm 9.3.1** (potential hard case) with constants `ωL, ωU, γL, γU, nU`:
-shifts `ℓ k` (the book's `λᴳₖ`, starting with `ℓ 0 > -λ₁`), unit vectors `z k`, numbers of inverse
-iterations `1 ≤ n k ≤ nU`, and parameters `ω k ∈ [ωL, ωU]`, `γ k ∈ [γL, 2 n k - γU]`;
-`z (k+1)` is the normalization of `(H + ℓ k)⁻ⁿ⁽ᵏ⁾ z k` (normalizing after each inverse step, as
-the book does, gives the same vector) and `ℓ (k+1) = -ρ + ω k (ℓ k + ρ) ^ γ k` with the Rayleigh
-quotient `ρ = ⟪z (k+1), H z (k+1)⟫`. The book's constants satisfy `0 < ωL ≤ ωU`, `0 < γU ≤ 1`,
-`1 < γL ≤ 2 - γU` and `1 ≤ nU ≤ ∞`; they are hypotheses of the theorems, not of the run. -/
+/-- A run of **Algorithm 9.3.1** of [cartis2022evaluation], for the potential hard case, with the
+constants $\omega_L$, $\omega_U$, $\gamma_L$, $\gamma_U$ and
+$n_U \in \mathbb{N} \cup \{\infty\}$. It consists of shifts $\ell_k$ (the book's $\lambda^G_k$),
+vectors $z_k$, numbers $n_k$ of inverse iterations, and parameters $\omega_k$ and $\gamma_k$,
+such that $\|z_0\| = 1$, $\ell_0 > -\lambda_1$, and for every $k$:
+
+* $1 \le n_k \le n_U$, $\omega_k \in [\omega_L, \omega_U]$ and
+  $\gamma_k \in [\gamma_L, 2 n_k - \gamma_U]$;
+* $z_{k+1} = v / \|v\|$ with $v = (H + \ell_k)^{-n_k} z_k$;
+* $\ell_{k+1} = -\rho + \omega_k (\ell_k + \rho)^{\gamma_k}$, with the Rayleigh quotient
+  $\rho = \langle z_{k+1}, H z_{k+1} \rangle$.
+
+The book normalizes after each inverse step. This gives the same vector, by
+`Subproblem.normalize_iterate`. The book's constants satisfy $0 < \omega_L \le \omega_U$,
+$0 < \gamma_U \le 1$, $1 < \gamma_L \le 2 - \gamma_U$ and $1 \le n_U \le \infty$; these are
+hypotheses of the theorems, not conditions on the run. The inverse is `Ring.inverse`. The
+structure does not require $\ell_k > -\lambda_1$ for $k \ge 1$, so $z_{k+1}$ is a unit vector
+only when $v \neq 0$; under their hypotheses, the convergence theorems prove
+$\ell_k > -\lambda_1$ for all $k$. -/
 structure IsInverseIterationRun (ωL ωU γL γU : ℝ) (nU : ℕ∞) (ℓ : ℕ → ℝ) (z : ℕ → E)
     (n : ℕ → ℕ) (ω γ : ℕ → ℝ) : Prop where
+  /-- The initial vector is a unit vector: $\|z_0\| = 1$. -/
   norm_zero : ‖z 0‖ = 1
+  /-- The initial shift makes $H + \ell_0$ positive definite: $\ell_0 > -\lambda_1$. -/
   shift_zero : -leftmost hH < ℓ 0
+  /-- Each block performs at least one inverse iteration: $n_k \ge 1$. -/
   one_le_count : ∀ k, 1 ≤ n k
+  /-- The numbers of inverse iterations are bounded by $n_U$: $n_k \le n_U$. -/
   count_le : ∀ k, (n k : ℕ∞) ≤ nU
+  /-- The weights lie in $[\omega_L, \omega_U]$. -/
   weight_mem : ∀ k, ω k ∈ Icc ωL ωU
+  /-- The exponents satisfy $\gamma_L \le \gamma_k \le 2 n_k - \gamma_U$. -/
   exponent_mem : ∀ k, γ k ∈ Icc γL (2 * n k - γU)
+  /-- The next vector is the normalization of $(H + \ell_k)^{-n_k} z_k$. -/
   vector_succ : ∀ k, z (k + 1) = ‖(Ring.inverse (H + ℓ k • 1) ^ n k) (z k)‖⁻¹ •
     (Ring.inverse (H + ℓ k • 1) ^ n k) (z k)
+  /-- The next shift is $\ell_{k+1} = -\rho + \omega_k (\ell_k + \rho)^{\gamma_k}$, with the
+  Rayleigh quotient $\rho = \langle z_{k+1}, H z_{k+1} \rangle$. -/
   shift_succ : ∀ k, ℓ (k + 1) = -⟪z (k + 1), H (z (k + 1))⟫ +
     ω k * (ℓ k + ⟪z (k + 1), H (z (k + 1))⟫) ^ γ k
 
 variable {hH}
 
-/-- The error recursion of the shift update: with `e = ℓ + λ₁` and the Rayleigh-quotient error
-`d = ρ - λ₁ ≥ 0`, the new error is `e' = ω (e + d) ^ γ - d`. If `e ≤ ε` and `d ≤ K e ^ (2 n)` for
-an `ε` small in terms of `K` and the constants, then `ωL/2 · e ^ γ ≤ e' ≤ ωU 2 ^ γ e ^ γ` and
-`e' ≤ e / 2`. -/
+/-- The error recursion of the shift update. Let $0 < \gamma_U$, $1 < \gamma_L$, $K \ge 0$, and let
+$\varepsilon$ satisfy
+$$\varepsilon \le 1, \quad K \varepsilon \le 1, \quad K \varepsilon^{\gamma_U} \le \omega_L / 2,
+  \quad \omega_U 2^{2N} \varepsilon^{\gamma_L - 1} \le 1/2.$$
+Let $0 < e \le \varepsilon$ be the error $\ell + \lambda_1$, and let $d$ be the error
+$\rho - \lambda_1$ of the Rayleigh quotient, with $0 \le d \le K e^{2n}$, where $1 \le n \le N$.
+Let $\omega \in [\omega_L, \omega_U]$ and $\gamma \in [\gamma_L, 2n - \gamma_U]$. Then the new
+error $e' = \omega (e + d)^\gamma - d$ satisfies
+$$\frac{\omega_L}{2} e^\gamma \le e' \le \omega_U 2^\gamma e^\gamma \quad \text{and} \quad e'
+  \le e / 2.$$
+-/
 theorem shiftUpdate_bounds {ωL ωU γL γU K ε e d ω γ : ℝ} {n N : ℕ} (hγU : 0 < γU)
     (hγL : 1 < γL) (hK : 0 ≤ K) (hε1 : ε ≤ 1) (hKε : K * ε ≤ 1)
     (hKεγ : K * ε ^ γU ≤ ωL / 2) (hωε : ωU * 2 ^ (2 * N : ℝ) * ε ^ (γL - 1) ≤ 1 / 2)
@@ -405,7 +484,11 @@ theorem shiftUpdate_bounds {ωL ωU γL γU K ε e d ω γ : ℝ} {n N : ℕ} (h
       _ ≤ 1 / 2 * e := by gcongr
   linarith
 
-/-- The smallness conditions of `shiftUpdate_bounds` hold for all small `ε > 0`. -/
+/-- The smallness conditions of `Subproblem.shiftUpdate_bounds` hold for some $\varepsilon$: if
+$\omega_L > 0$, $\gamma_U > 0$ and $\gamma_L > 1$, then for every $K$, $\omega_U$ and natural
+number $N$ there is $\varepsilon > 0$ with $\varepsilon \le 1$, $K \varepsilon \le 1$,
+$K \varepsilon^{\gamma_U} \le \omega_L / 2$ and $\omega_U 2^{2N} \varepsilon^{\gamma_L - 1} \le
+1/2$. -/
 theorem exists_shiftUpdate_radius {K ωL ωU γL γU : ℝ} (hωL : 0 < ωL) (hγU : 0 < γU)
     (hγL : 1 < γL) (N : ℕ) :
     ∃ ε > 0, ε ≤ 1 ∧ K * ε ≤ 1 ∧ K * ε ^ γU ≤ ωL / 2 ∧
@@ -427,8 +510,10 @@ theorem exists_shiftUpdate_radius {K ωL ωU γL γU : ℝ} (hωL : 0 < ωL) (h�
       (nhdsWithin_le_nhds ((h1.and h2).and (h3.and h4)))).exists
   exact ⟨ε, hε, h1.le, h2.le, h3.le, h4.le⟩
 
-/-- The tangent factor of one block: `((e)ⁿ / (e + μ)ⁿ)² ≤ e ^ (2 n) / μ ^ (2 N)` for
-`0 < μ ≤ 1`, `n ≤ N`, and it is at most `1`. -/
+/-- The tangent factor of one block: for $e > 0$, $0 < \mu \le 1$ and natural numbers $n \le N$,
+$$\left(\frac{e^n}{(e + \mu)^n}\right)^2 \le \frac{e^{2n}}{\mu^{2N}} \quad \text{and} \quad
+  \left(\frac{e^n}{(e + \mu)^n}\right)^2 \le 1.$$
+-/
 theorem tangentFactor_le {e μ : ℝ} {n N : ℕ} (he : 0 < e) (hμ : 0 < μ) (hμ1 : μ ≤ 1)
     (hnN : n ≤ N) :
     (e ^ n / (e + μ) ^ n) ^ 2 ≤ e ^ (2 * n) / μ ^ (2 * N) ∧ (e ^ n / (e + μ) ^ n) ^ 2 ≤ 1 := by
@@ -443,20 +528,28 @@ theorem tangentFactor_le {e μ : ℝ} {n N : ℕ} (he : 0 < e) (hμ : 0 < μ) (h
         div_le_div_of_nonneg_left (by positivity) (by positivity)
           (pow_le_pow_of_le_one hμ.le hμ1 (by omega))
 
-/-- **Theorem 9.3.1 (fast convergence in the hard case).** Let `z₀` have a nonzero component in
-the leftmost eigenspace `E₁`, and let the constants satisfy `0 < ωL`, `0 < γU`, `1 < γL` and
-`nU < ∞`. There is `ε > 0` such that every run of Algorithm 9.3.1 with `z 0 = z₀` and
-`ℓ 0 < -λ₁ + ε` satisfies, with the errors `eₖ = ℓ k + λ₁`:
-* `ℓ k > -λ₁` for all `k` (every `H + ℓ k` is positive definite), `ℓ` is antitone and `ℓ k → -λ₁`;
-* `z k` approaches `E₁`: `‖(1 - P₁) z k‖ → 0`;
-* `ωL/2 · eₖ ^ γₖ ≤ eₖ₊₁ ≤ ωU 2 ^ γₖ eₖ ^ γₖ` for every `k`;
-* hence, if `γ k = γ̄` for all large `k`, the shifts converge with Q-order exactly `γ̄`: there are
-  `0 < c ≤ C` with `c eₖ ^ γ̄ ≤ eₖ₊₁ ≤ C eₖ ^ γ̄` for all large `k`, and
-  `ConvergesWithOrder ℓ (-λ₁) γ̄`.
+/-- **Theorem 9.3.1** of [cartis2022evaluation] (fast convergence in the hard case), with a bound on
+the numbers of inverse iterations. Let $z_0 \in E$ have $P_1 z_0 \neq 0$, and let the constants
+satisfy $\omega_L > 0$, $\gamma_U > 0$, $\gamma_L > 1$ and $n_U < \infty$. Then there is
+$\varepsilon > 0$ such that every run of Algorithm 9.3.1 with initial vector $z_0$ and
+$\ell_0 < -\lambda_1 + \varepsilon$ has the following properties, where
+$e_k = \ell_k + \lambda_1$:
 
-The start condition is read in the inner product of `E` (the `M`-inner product of the book), and
-`ε` depends on the bound `nU` for `n k`; see the module docstring and
-`IsInverseIterationRun.convergence_of_eventually_const`. -/
+* $\ell_k > -\lambda_1$ for all $k$, so every $H + \ell_k$ is positive definite; the shifts
+  decrease, and $\ell_k \to -\lambda_1$;
+* $z_k$ approaches $E_1$: $\|(1 - P_1) z_k\| \to 0$;
+* $\frac{\omega_L}{2} e_k^{\gamma_k} \le e_{k+1} \le \omega_U 2^{\gamma_k} e_k^{\gamma_k}$ for
+  every $k$;
+* if $\gamma_k = \bar\gamma$ for all large $k$, the shifts converge with Q-order exactly
+  $\bar\gamma$: there are $0 < c \le C$ with $c \, e_k^{\bar\gamma} \le e_{k+1} \le C
+  e_k^{\bar\gamma}$ for all large $k$, and $\ell$ converges to $-\lambda_1$ with order
+  $\bar\gamma$ in the sense of `ConvergesWithOrder`.
+
+The start condition is read in the inner product of $E$, which is the $M$-inner product of the
+book. The radius $\varepsilon$ depends on the bound $n_U$; without such a bound no uniform
+$\varepsilon$ exists (see the module documentation), and
+`Subproblem.IsInverseIterationRun.convergence_of_eventually_const` gives the version of the
+book. -/
 theorem IsInverseIterationRun.convergence {ωL ωU γL γU : ℝ} {nU : ℕ∞} (hωL : 0 < ωL)
     (hγU : 0 < γU) (hγL : 1 < γL) (hnU : nU ≠ ⊤) {z₀ : E}
     (hz₀ : (leftmostSpace hH).starProjection z₀ ≠ 0) :
@@ -587,11 +680,19 @@ theorem IsInverseIterationRun.convergence {ωL ωU γL γU : ℝ} {nU : ℕ∞} 
       exact hk.2
 
 
-/-- **Theorem 9.3.1 as stated in the book** (with `n_U = ∞` allowed). Fix the sequences `n k`,
-`ω k`, `γ k`, with `n k` eventually constant. Then there is `ε > 0` such that every run of
-Algorithm 9.3.1 with these sequences, `z 0 = z₀` and `ℓ 0 < -λ₁ + ε` satisfies the conclusions
-of `IsInverseIterationRun.convergence` (in particular Q-order `γ̄` when `γ k = γ̄` eventually).
-The `ε` depends on the sequences only through a bound for `n k`. -/
+/-- **Theorem 9.3.1** of [cartis2022evaluation], as stated in the book, where $n_U = \infty$ is
+allowed. Let $z_0 \in E$ have $P_1 z_0 \neq 0$, and let $\omega_L > 0$, $\gamma_U > 0$ and
+$\gamma_L > 1$. Fix the sequences $(n_k)$, $(\omega_k)$ and $(\gamma_k)$, with $n_k = \bar n$
+for all large $k$. Then there is $\varepsilon > 0$ such that, for every $n_U$, every run of
+Algorithm 9.3.1 with these sequences, initial vector $z_0$ and
+$\ell_0 < -\lambda_1 + \varepsilon$ has the properties of
+`Subproblem.IsInverseIterationRun.convergence`: $\ell_k > -\lambda_1$, the shifts decrease to
+$-\lambda_1$, $\|(1 - P_1) z_k\| \to 0$, the errors $e_k = \ell_k + \lambda_1$ satisfy
+$\frac{\omega_L}{2} e_k^{\gamma_k} \le e_{k+1} \le \omega_U 2^{\gamma_k} e_k^{\gamma_k}$, and
+the shifts converge with Q-order exactly $\bar\gamma$ when $\gamma_k = \bar\gamma$ for all large
+$k$.
+
+The radius $\varepsilon$ depends on the sequences only through a bound for $(n_k)$. -/
 theorem IsInverseIterationRun.convergence_of_eventually_const {ωL ωU γL γU : ℝ} (hωL : 0 < ωL)
     (hγU : 0 < γU) (hγL : 1 < γL) {z₀ : E} (hz₀ : (leftmostSpace hH).starProjection z₀ ≠ 0)
     {n : ℕ → ℕ} {ω γ : ℕ → ℝ} {nbar : ℕ} (hn : ∀ᶠ k in atTop, n k = nbar) :
@@ -618,9 +719,13 @@ theorem IsInverseIterationRun.convergence_of_eventually_const {ωL ωU γL γU :
   exact ⟨ε, hε, fun _ ℓ z hr hz0 hℓ0 =>
     hconv ℓ z n ω γ { hr with count_le := fun k => by exact_mod_cast hN k } hz0 hℓ0⟩
 
-/-- **Normalizing after every step of a linear iteration is normalizing at the end**: if
-`wᵢ₊₁ = normalize (R wᵢ)` and `w₀ = z` then `wᵢ₊₁ = normalize (Rⁱ⁺¹ z)` (the inner loop of
-Algorithm 9.3.1 of [cartis2022evaluation]). -/
+/-- **Normalizing after every step of a linear iteration is normalizing at the end.** Let $F$ be a
+real normed space, let $R : F \to F$ be a continuous linear map, and let $w_0 = z$ and
+$w_{i+1} = \operatorname{normalize}(R w_i)$, where $\operatorname{normalize}(v) = v / \|v\|$ and
+$\operatorname{normalize}(0) = 0$. Then $w_{i+1} = \operatorname{normalize}(R^{i+1} z)$ for
+every $i$.
+
+This is the inner loop of Algorithm 9.3.1 of [cartis2022evaluation]. -/
 theorem normalize_iterate {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] (R : F →L[ℝ] F)
     {w : ℕ → F} {z : F} (h0 : w 0 = z) (hs : ∀ i, w (i + 1) = NormedSpace.normalize (R (w i)))
     (i : ℕ) : w (i + 1) = NormedSpace.normalize ((R ^ (i + 1)) z) := by

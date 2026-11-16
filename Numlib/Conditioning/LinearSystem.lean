@@ -20,51 +20,73 @@ import Numlib.Conditioning.Problem
 /-!
 # Perturbation theory for linear systems
 
-Normwise error bounds for `A x = b` in terms of the condition number `κ(A) = ‖A‖ ‖A⁻¹‖`
-([saad2003iterative] §1.13.2 (1.76), [han2009theoretical] (2.4.1), [kress1998numerical] Thm 5.3,
-[higham2002accuracy] Thm 7.2, [quarteroni2000numerical] §3.1), the residual–error relation, and
-the Rigal–Gaches formula for the normwise backward error ([higham2002accuracy] Thm 7.1,
-[fong2012cg] (3.2)–(3.3)).  The normwise backward error of an approximate solution `y`, relative
-to tolerances `α` on `A` and `β` on `b`, is the least `ξ` for which `y` solves exactly some system
-`(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤ ξ β ‖b‖`; the Rigal–Gaches theorem
-evaluates it in closed form as `‖b - A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.
+Let $A$ be an isomorphism of a normed space $E$, and let $\kappa(A) = \|A\| \|A^{-1}\|$ be its
+condition number. This module gives the normwise error bounds for the linear system $Ax = b$: the
+residual–error relation $\|x - y\| / \|x\| \le \kappa(A) \|b - Ay\| / \|b\|$, the perturbation bound
+$$\frac{\|y - x\|}{\|x\|} \le \frac{\kappa(A)}{1 - \|A^{-1}\| \|\Delta A\|} \left( \frac{\|\Delta
+A\|}{\|A\|} + \frac{\|\Delta b\|}{\|b\|} \right)$$ for $(A + \Delta A) y = b + \Delta b$, and the
+derivative of the solution of a perturbed system. It also proves the Rigal–Gaches formula for the
+normwise backward error: the least $\xi$ for which $y$ solves exactly some system
+$(A + \Delta A) y = b + \Delta b$ with $\|\Delta A\| \le \xi \alpha \|A\|$ and
+$\|\Delta b\| \le \xi \beta \|b\|$ is $\|b - Ay\| / (\alpha \|A\| \|y\| + \beta \|b\|)$. The sources
+are [saad2003iterative], §1.13.2, [han2009theoretical], (2.4.1), [kress1998numerical], Theorem 5.3,
+[higham2002accuracy], Theorems 7.1 and 7.2, and [fong2012cg], (3.2)–(3.4).
 
-The chapter-3 layer of [quarteroni2000numerical] is here as well:
+The module also contains the material of §3.1 of [quarteroni2000numerical]: Kahan's formula
+$1 / \kappa(A)$ for the relative distance from $A$ to the singular operators (Remark 3.1), the two
+inequalities of Theorem 3.2, the relative bounds of Theorem 3.3, and Property 3.1 on approximate
+inverses with the a posteriori bound (3.20). Finally it shows that $\kappa(A)$ is the relative
+condition number of the inversion $T \mapsto T^{-1}$ at $A$, and proves the limit formula (2.6.7) of
+[golub2013matrix] for $\kappa(A)$.
 
-* Kahan's distance to singularity, `ContinuousLinearEquiv.isLeast_dist_singular` (Remark 3.1,
-  (3.6)): in any operator norm on a finite-dimensional space, the least relative distance from an
-  isomorphism to a singular operator is `1 / κ`; its lower half
-  `NormedRing.norm_le_of_not_isUnit_add` is the corrected (3.7);
-* the two inequalities of Theorem 3.2 (`relative_error_le_condNumber_mul_relative_residual`,
-  `ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error`) and the relative
-  bounds (3.12)–(3.13) of Theorem 3.3 (`relative_error_le_of_norm_le_mul`,
-  `norm_add_div_le_of_norm_le_mul`);
-* Property 3.1 on approximate inverses, in a complete normed ring
-  (`NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt` and its companions), with (3.19) and the a
-  posteriori bound (3.20) (`norm_error_le_of_norm_mul_sub_one_lt`).
+## Main definitions
 
-The condition number as the sensitivity of inversion ([golub2013matrix] §2.6):
+* `backwardError`: the normwise backward error $\|b - Ay\| / (\alpha \|A\| \|y\| + \beta \|b\|)$.
 
-* `relative_error_le_norm_inverse`, the rigorous form of (2.6.2), of which
-  `relative_error_le_condNumber` is the consequence after `‖b‖ ≤ ‖A‖ ‖x‖`;
-* `ContinuousLinearEquiv.relCondNumber_ringInverse`: `κ(A)` is the relative condition number
-  (`Conditioning.relCondNumber` of `Numlib/Conditioning/Problem`) of `T ↦ T⁻¹` at `A`, because the
-  derivative `H ↦ -A⁻¹ H A⁻¹` of inversion has norm `‖A⁻¹‖²`
+## Main results
+
+* `ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`,
+  `relative_error_le_condNumber_mul_relative_residual`: the residual–error relation, which is the
+  upper inequality of Theorem 3.2 of [quarteroni2000numerical].
+* `ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error`: the lower inequality
+  of Theorem 3.2 of [quarteroni2000numerical].
+* `relative_error_le_norm_inverse`: the rigorous form of (2.6.2) of [golub2013matrix], of which
+  `relative_error_le_condNumber` is the consequence after $\|b\| \le \|A\| \|x\|$.
+* `isLeast_backwardError`: the Rigal–Gaches theorem.
+* `hasDerivAt_perturbed_solution`: the derivative of the solution of $(A + \varepsilon B)
+  x(\varepsilon) = b + \varepsilon e$ at $\varepsilon = 0$.
+* `ContinuousLinearEquiv.isLeast_dist_singular`: Kahan's distance to singularity, (3.6) of
+  [quarteroni2000numerical], in any operator norm on a finite-dimensional space.
+* `NormedRing.norm_le_of_not_isUnit_add`: its lower half, which is also the corrected form of (3.7)
+  of [quarteroni2000numerical].
+* `ContinuousLinearEquiv.relCondNumber_ringInverse`: $\kappa(A)$ is the relative condition number of
+  inversion at $A$.
+* `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`: the limit formula (2.6.7) of
+  [golub2013matrix].
+* `relative_error_le_of_norm_le_mul`, `norm_add_div_le_of_norm_le_mul`: the bounds (3.13) and (3.12)
+  of Theorem 3.3 of [quarteroni2000numerical].
+* `NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt` and its companions: Property 3.1 of
+  [quarteroni2000numerical] in a complete normed ring, with (3.19).
+* `norm_error_le_of_norm_mul_sub_one_lt`: the a posteriori bound (3.20) of
+  [quarteroni2000numerical].
+
+## Implementation notes
+
+* The condition number is `NormedRing.condNumber` for an element of the operator ring $E \to E$ and
+  `ContinuousLinearEquiv.condNumber` for an isomorphism $E \to F$; for $F = E$ the two agree.
+* The proof that $\kappa(A)$ is the relative condition number of inversion uses the first-order
+  formula `Conditioning.relCondNumber_eq_enorm_fderiv` of `Numlib.Conditioning.Problem`. The
+  derivative of inversion at $A$ is $H \mapsto -A^{-1} H A^{-1}$, and its norm is $\|A^{-1}\|^2$
   (`ContinuousLinearEquiv.norm_mulLeftRight_symm_symm`, from
-  `ContinuousLinearMap.norm_mulLeftRight_apply_apply`);
-* `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`: the book's limit formula (2.6.7)
-  itself, by squeezing between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`.
-
-The componentwise theory (the Skeel condition numbers, (3.14)–(3.16)) is
-`Numlib/Conditioning/LinearSystem/Componentwise`.
-
-**Two backward errors.** The root-namespace `backwardError` of this module is the normwise,
-weighted backward error of a linear system (Rigal–Gaches), a real number. The
-`Conditioning.backwardError` of `Numlib/Conditioning/Method` is the `ℝ≥0∞`-valued infimum of the
-sizes of the data perturbations for which a computed solution of an abstract problem is exact.
-They measure different things — the former weights the perturbations of `A` and `b` relatively
-and by tolerances, the latter is absolute on a single datum — and no bridge between them is
-stated.
+  `ContinuousLinearMap.norm_mulLeftRight_apply_apply`).
+* The componentwise theory, with the Skeel condition numbers of (3.14)–(3.16) of
+  [quarteroni2000numerical], is in `Numlib.Conditioning.LinearSystem.Componentwise`.
+* There are two backward errors in the library. The root-namespace `backwardError` of this module is
+  the normwise, weighted backward error of a linear system, a real number.
+  `Conditioning.backwardError` of `Numlib.Conditioning.Method` is the $[0, \infty]$-valued infimum
+  of the sizes of the data perturbations for which a computed solution of an abstract problem is
+  exact. The first weights the perturbations of $A$ and $b$ relatively and by tolerances; the second
+  is absolute and for a single datum. No relation between them is stated.
 -/
 
 open Filter NormedRing Topology
@@ -75,11 +97,14 @@ section TwoSpace
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The two-space residual–error relation** ([han2009theoretical], (2.4.1)): for an isomorphism `L
-: E ≃L[𝕜] F` of normed spaces, the relative error of the solution of `L v = w` is at most `κ L`
-times the relative error of the data.
+/-- **The residual–error relation for two spaces.** Let $L : E \to F$ be an isomorphism of normed
+spaces, and let $L v = w$ and $L v' = w'$ with $w \neq 0$. Then $$\frac{\|v - v'\|}{\|v\|} \le
+\kappa(L) \, \frac{\|w - w'\|}{\|w\|},$$ where $\kappa(L) = \|L\| \|L^{-1}\|$. So the relative
+error of the solution of $L v = w$ is at most $\kappa(L)$ times the relative error of the data.
+This is (2.4.1) of [han2009theoretical].
 
-The single-space `relative_error_le_condNumber_mul_relative_residual` is the case `F = E`. -/
+The condition number is `ContinuousLinearEquiv.condNumber`. The single-space
+`relative_error_le_condNumber_mul_relative_residual` is the case $F = E$. -/
 theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual (L : E ≃L[𝕜] F)
     {v v' : E} {w w' : F} (hv : L v = w) (hv' : L v' = w') (hw : w ≠ 0) :
     ‖v - v'‖ / ‖v‖ ≤ L.condNumber * (‖w - w'‖ / ‖w‖) := by
@@ -105,20 +130,30 @@ theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual
 
 end TwoSpace
 
-/-- Residual–error relation: `‖x - y‖ / ‖x‖ ≤ κ(A) ‖b - A y‖ / ‖b‖`, where `κ(A) = ‖A‖ ‖A⁻¹‖`
-([han2009theoretical], (2.4.1)).  It is the case `F = E` of
-`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`, with `w' = A y`. -/
+/-- **The residual–error relation.** Let $A$ be an isomorphism of the normed space $E$, and let
+$Ax = b$ with $b \neq 0$. Then for every $y \in E$, $$\frac{\|x - y\|}{\|x\|} \le \kappa(A) \,
+\frac{\|b - Ay\|}{\|b\|},$$ where $\kappa(A) = \|A\| \|A^{-1}\|$. This is (2.4.1) of
+[han2009theoretical], and the upper inequality of Theorem 3.2 of [quarteroni2000numerical].
+
+The condition number is `NormedRing.condNumber` of $A$ in the operator ring. The theorem is the
+case $F = E$, $w' = Ay$ of
+`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`. -/
 theorem relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) {b x y : E}
     (hx : A x = b) (hb : b ≠ 0) :
     ‖x - y‖ / ‖x‖ ≤ condNumber (A : E →L[𝕜] E) * (‖b - A y‖ / ‖b‖) := by
   rw [ContinuousLinearEquiv.condNumber_coe]
   exact A.relative_error_le_condNumber_mul_relative_residual hx rfl hb
 
-/-- **The normwise perturbation bound with `‖A⁻¹‖`** ([golub2013matrix] (2.6.2), rigorous form):
-if `A x = b`, `(A + ΔA) y = b + Δb`, `‖A⁻¹‖ ‖ΔA‖ < 1` and `x ≠ 0`, then
-`‖y - x‖ / ‖x‖ ≤ ‖A⁻¹‖ / (1 - ‖A⁻¹‖ ‖ΔA‖) (‖Δb‖ / ‖x‖ + ‖ΔA‖)`. With `ΔA = ε F`, `Δb = ε f` this is
-the book's first-order bound with its `O(ε²)` term made explicit as the factor
-`1 / (1 - |ε| ‖A⁻¹‖ ‖F‖)`. From `A (y - x) = Δb - ΔA y` and `‖y‖ ≤ ‖y - x‖ + ‖x‖`. -/
+/-- **The normwise perturbation bound with $\|A^{-1}\|$.** Let $A$ be an isomorphism of the normed
+space $E$ and $\Delta A$ a bounded operator on $E$ with $\|A^{-1}\| \|\Delta A\| < 1$. If
+$Ax = b$ with $x \neq 0$ and $(A + \Delta A) y = b + \Delta b$, then $$\frac{\|y - x\|}{\|x\|}
+\le \frac{\|A^{-1}\|}{1 - \|A^{-1}\| \|\Delta A\|} \left( \frac{\|\Delta b\|}{\|x\|} + \|\Delta
+A\| \right).$$
+
+This is the rigorous form of (2.6.2) of [golub2013matrix]. With $\Delta A = \varepsilon F$ and
+$\Delta b = \varepsilon f$ it is the first-order bound of the source, with its
+$O(\varepsilon^2)$ term made explicit as the factor $1 / (1 - |\varepsilon| \|A^{-1}\| \|F\|)$.
+The proof uses $A (y - x) = \Delta b - \Delta A \, y$ and $\|y\| \le \|y - x\| + \|x\|$. -/
 theorem relative_error_le_norm_inverse (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E) {b Δb x y : E}
     (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
     (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) :
@@ -154,10 +189,16 @@ theorem relative_error_le_norm_inverse (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] 
   rw [div_le_iff₀ hxn, hexp, le_div_iff₀ hden]
   nlinarith [h1, h3]
 
-/-- Normwise perturbation bound ([saad2003iterative], (1.76); [kress1998numerical], Thm 5.3;
-[higham2002accuracy], *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
-`‖A⁻¹‖ ‖ΔA‖ < 1` then `‖y - x‖/‖x‖ ≤ κ(A)/(1 - ‖A⁻¹‖‖ΔA‖) (‖ΔA‖/‖A‖ + ‖Δb‖/‖b‖)`. It is
-`relative_error_le_norm_inverse` after `‖b‖ ≤ ‖A‖ ‖x‖`. -/
+/-- **The normwise perturbation bound.** Let $A$ be an isomorphism of the normed space $E$ and
+$\Delta A$ a bounded operator on $E$ with $\|A^{-1}\| \|\Delta A\| < 1$. If $Ax = b$ with
+$x \neq 0$ and $b \neq 0$, and $(A + \Delta A) y = b + \Delta b$, then $$\frac{\|y - x\|}{\|x\|}
+\le \frac{\kappa(A)}{1 - \|A^{-1}\| \|\Delta A\|} \left( \frac{\|\Delta A\|}{\|A\|} +
+\frac{\|\Delta b\|}{\|b\|} \right),$$ where $\kappa(A) = \|A\| \|A^{-1}\|$. This is (1.76) of
+[saad2003iterative], Theorem 5.3 of [kress1998numerical] and Theorem 7.2 of
+[higham2002accuracy].
+
+The condition number is `NormedRing.condNumber`. The theorem is `relative_error_le_norm_inverse`
+after $\|b\| \le \|A\| \|x\|$. -/
 theorem relative_error_le_condNumber (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
     {b Δb x y : E} (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
     (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) (hb : b ≠ 0) :
@@ -184,8 +225,10 @@ theorem relative_error_le_condNumber (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
   rw [div_le_div_iff₀ hxn hbn]
   nlinarith [norm_nonneg Δb]
 
-/-- The perturbed operator is invertible and the perturbed solution exists (companion to
-`relative_error_le_condNumber`). -/
+/-- Let $E$ be a Banach space, $A$ an isomorphism of $E$, and $\Delta A$ a bounded operator on $E$
+with $\|A^{-1}\| \|\Delta A\| < 1$. Then for every $b' \in E$ the perturbed system
+$(A + \Delta A) y = b'$ has a unique solution $y$. This complements
+`relative_error_le_condNumber`. -/
 theorem exists_perturbed_solution [CompleteSpace E] (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
     (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (b' : E) :
     ∃! y, ((A : E →L[𝕜] E) + ΔA) y = b' := by
@@ -199,26 +242,38 @@ section BackwardError
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The normwise backward error of `y` for `A x = b` with tolerances `α` on `A` and `β` on `b`: `‖b
-- A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  By the Rigal–Gaches theorem (`isLeast_backwardError`) this is the
-least `ξ` for which `y` solves exactly some `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤
-ξ β ‖b‖` ([fong2012cg], (3.2)). -/
+/-- The **normwise backward error** of an approximate solution $y$ of $Ax = b$, with the tolerances
+$\alpha$ on $A$ and $\beta$ on $b$: $$\frac{\|b - Ay\|}{\alpha \|A\| \|y\| + \beta \|b\|}.$$
+Here $E$ is an inner product space over $\mathbb{R}$ or $\mathbb{C}$ and $A$ is a bounded
+operator on $E$. The value is $0$ when the denominator is $0$.
+
+By the Rigal–Gaches theorem `isLeast_backwardError`, this is the least $\xi$ for which $y$
+solves exactly some system $(A + \Delta A) y = b + \Delta b$ with
+$\|\Delta A\| \le \xi \alpha \|A\|$ and $\|\Delta b\| \le \xi \beta \|b\|$ ([fong2012cg],
+(3.2)). -/
 noncomputable def backwardError (A : E →L[𝕜] E) (b y : E) (α β : ℝ) : ℝ :=
   ‖b - A y‖ / (α * ‖A‖ * ‖y‖ + β * ‖b‖)
 
-/-- The defining quotient of `backwardError`, in a form `rw` can use. -/
+/-- The backward error is the quotient $\|b - Ay\| / (\alpha \|A\| \|y\| + \beta \|b\|)$. -/
 private theorem backwardError_def (A : E →L[𝕜] E) (b y : E) (α β : ℝ) :
     backwardError A b y α β = ‖b - A y‖ / (α * ‖A‖ * ‖y‖ + β * ‖b‖) := rfl
 
-/-- The backward error is nonnegative when its denominator is positive. -/
+/-- If $\alpha \|A\| \|y\| + \beta \|b\| > 0$, then the backward error is nonnegative. -/
 private theorem backwardError_nonneg (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) : 0 ≤ backwardError A b y α β := by
   rw [backwardError_def]
   positivity
 
-/-- The optimal perturbations ([fong2012cg], (3.3)): `ΔA = ((1 - ω) / ‖y‖²) r ⊗ y`, `Δb = -ω r`,
-with `r = b - A y` and `ω = β ‖b‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  They attain the backward error exactly.
--/
+/-- **The optimal perturbations.** Let $\alpha, \beta \ge 0$ with
+$\alpha \|A\| \|y\| + \beta \|b\| > 0$, and let $\xi$ be the backward error of $y$. Then there
+are a bounded operator $\Delta A$ and a vector $\Delta b$ with $$(A + \Delta A) y = b + \Delta
+b, \qquad \|\Delta A\| = \xi \alpha \|A\|, \qquad \|\Delta b\| = \xi \beta \|b\|.$$
+
+For $y \neq 0$ the perturbations are those of (3.3) of [fong2012cg]: with $r = b - Ay$ and
+$\omega = \beta \|b\| / (\alpha \|A\| \|y\| + \beta \|b\|)$, they are $\Delta A = ((1 - \omega)
+/ \|y\|^2) \, r \otimes y$ and $\Delta b = -\omega r$, where $r \otimes y$ is the rank-one
+operator $z \mapsto \langle y, z \rangle \, r$. For $y = 0$ the proof takes
+$\Delta A = \xi \alpha A$ and $\Delta b = -b$. -/
 theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα : 0 ≤ α)
     (hβ : 0 ≤ β) (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     ∃ (ΔA : E →L[𝕜] E) (Δb : E), (A + ΔA) y = b + Δb ∧
@@ -266,9 +321,11 @@ theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
         hωdef]
       field_simp
 
-/-- The Rigal–Gaches theorem ([higham2002accuracy], *Accuracy and Stability*, Thm 7.1):
-`backwardError A b y α β` is the least `ξ` such that `(A + ΔA) y = b + Δb` for some `‖ΔA‖ ≤ ξ α
-‖A‖`, `‖Δb‖ ≤ ξ β ‖b‖`. -/
+/-- **The Rigal–Gaches theorem**, Theorem 7.1 of [higham2002accuracy]. Let $\alpha, \beta \ge 0$
+with $\alpha \|A\| \|y\| + \beta \|b\| > 0$. Then the backward error $\|b - Ay\| / (\alpha \|A\|
+\|y\| + \beta \|b\|)$ is the least real $\xi$ such that $(A + \Delta A) y = b + \Delta b$ for
+some bounded operator $\Delta A$ and vector $\Delta b$ with $\|\Delta A\| \le \xi \alpha \|A\|$
+and $\|\Delta b\| \le \xi \beta \|b\|$. -/
 theorem isLeast_backwardError (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα : 0 ≤ α) (hβ : 0 ≤ β)
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     IsLeast {ξ : ℝ | ∃ (ΔA : E →L[𝕜] E) (Δb : E), (A + ΔA) y = b + Δb ∧
@@ -288,8 +345,10 @@ theorem isLeast_backwardError (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα 
       _ ≤ ξ * α * ‖A‖ * ‖y‖ + ξ * β * ‖b‖ := by gcongr
       _ = ξ * (α * ‖A‖ * ‖y‖ + β * ‖b‖) := by ring
 
-/-- Stopping rule ([fong2012cg], (3.4)): with `r = b - A y`, `backwardError ≤ ξ ↔ ‖r‖ ≤ ξ (α ‖A‖ ‖y‖
-+ β ‖b‖)`. -/
+/-- **The stopping rule** (3.4) of [fong2012cg]. If $\alpha \|A\| \|y\| + \beta \|b\| > 0$, then for
+every real $\xi$, the backward error of $y$ is at most $\xi$ if and only if $$\|b - Ay\| \le \xi
+\, (\alpha \|A\| \|y\| + \beta \|b\|).$$
+-/
 theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     backwardError A b y α β ≤ ξ ↔ ‖b - A y‖ ≤ ξ * (α * ‖A‖ * ‖y‖ + β * ‖b‖) := by
@@ -297,14 +356,17 @@ theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
 
 end BackwardError
 
-/-- **First-order perturbation theory for a linear system** ([saad2003iterative], (1.74)–(1.75);
-[kress1998numerical], Thm 5.3; [higham2002accuracy], Ch. 7): for an isomorphism `A`, a perturbation
-direction `B` of the operator and `e` of the right-hand side, the solution of `(A + ε B) x(ε) = b +
-ε e` is differentiable in `ε` at `0`, with derivative `A⁻¹ (e - B (A⁻¹ b))`.
+/-- **First-order perturbation theory for a linear system.** Let $E$ be a Banach space, $A$ an
+isomorphism of $E$, $B$ a bounded operator on $E$, and $b, e \in E$. Then the solution
+$x(\varepsilon) = (A + \varepsilon B)^{-1} (b + \varepsilon e)$ of the perturbed system $(A +
+\varepsilon B) x(\varepsilon) = b + \varepsilon e$ is differentiable in $\varepsilon$ at $0$,
+with $$x'(0) = A^{-1} (e - B A^{-1} b).$$ This is (1.74)–(1.75) of [saad2003iterative], Theorem
+5.3 of [kress1998numerical], and Chapter 7 of [higham2002accuracy].
 
-The solution is written with `Ring.inverse` in the algebra `E →L[𝕜] E`, whose junk value is
-irrelevant here: `A` is a unit, so `A + ε B` is one for all small `ε` and the map differentiated
-agrees with the solution of the perturbed system near `0`. -/
+The inverse is `Ring.inverse` in the algebra of bounded operators, which is $0$ at a
+non-invertible operator. This value does not matter here: $A$ is invertible, so
+$A + \varepsilon B$ is invertible for all small $\varepsilon$, and near $0$ the map agrees with
+the solution of the perturbed system. -/
 theorem hasDerivAt_perturbed_solution [CompleteSpace E] (A : E ≃L[𝕜] E) (B : E →L[𝕜] E)
     (b e : E) :
     HasDerivAt (fun ε : 𝕜 => (Ring.inverse ((A : E →L[𝕜] E) + ε • B)) (b + ε • e))
@@ -341,11 +403,15 @@ section Lower
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The lower inequality of [quarteroni2000numerical] Theorem 3.2**, the first half of (3.11):
-for an isomorphism `L : E ≃L[𝕜] F` with `L v = w`, `L v' = w'` and `v ≠ 0`, the relative change
-of the data is at most `κ L` times the relative change of the solution, `‖w - w'‖ / ‖w‖ ≤ κ L
-(‖v - v'‖ / ‖v‖)` — that is, `(1 / κ L) ‖δb‖ / ‖b‖ ≤ ‖δx‖ / ‖x‖`. It is the upper inequality for
-`L.symm`, whose condition number is that of `L`. -/
+/-- **The lower inequality of Theorem 3.2** of [quarteroni2000numerical], the first half of (3.11).
+Let $L : E \to F$ be an isomorphism of normed spaces, and let $L v = w$ and $L v' = w'$ with
+$v \neq 0$. Then $$\frac{\|w - w'\|}{\|w\|} \le \kappa(L) \, \frac{\|v - v'\|}{\|v\|},$$ where
+$\kappa(L) = \|L\| \|L^{-1}\|$. In the notation of the source, $\frac{1}{\kappa(A)}
+\frac{\|\delta b\|}{\|b\|} \le \frac{\|\delta x\|}{\|x\|}$.
+
+The proof applies the upper inequality
+`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual` to $L^{-1}$, whose
+condition number is that of $L$. -/
 theorem ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error (L : E ≃L[𝕜] F)
     {v v' : E} {w w' : F} (hv : L v = w) (hv' : L v' = w') (hv0 : v ≠ 0) :
     ‖w - w'‖ / ‖w‖ ≤ L.condNumber * (‖v - v'‖ / ‖v‖) := by
@@ -362,11 +428,14 @@ section Distance
 variable {R : Type*} [NormedRing R] [NormOneClass R] [CompleteSpace R]
 
 omit [NormOneClass R] in
-/-- **The lower half of Kahan's distance-to-singularity formula** ([quarteroni2000numerical]
-Remark 3.1): a perturbation `t` that makes the unit `a` singular has norm at least `‖a⁻¹‖⁻¹`.
-This is also the corrected [quarteroni2000numerical] (3.7): a perturbation with `‖δA‖ ‖A⁻¹‖ < 1`
-leaves `A + δA` nonsingular (the printed (3.7) has `‖A‖` for `‖A⁻¹‖` and the implication
-backwards). Contrapositive of `Units.isUnit_add_of_norm_lt`. -/
+/-- **The lower half of Kahan's distance-to-singularity formula** (Remark 3.1 of
+[quarteroni2000numerical]). Let $R$ be a complete normed ring and $a \in R$ a unit. If $a + t$
+is not a unit, then $$\|t\| \ge \|a^{-1}\|^{-1}.$$
+
+This is also the corrected form of (3.7) of [quarteroni2000numerical]: a perturbation with
+$\|\delta A\| \|A^{-1}\| < 1$ leaves $A + \delta A$ nonsingular. The printed (3.7) has $\|A\|$
+in place of $\|A^{-1}\|$ and states the implication in the opposite direction. The theorem is
+the contrapositive of `Units.isUnit_add_of_norm_lt`. -/
 theorem NormedRing.norm_le_of_not_isUnit_add {a t : R} (ha : IsUnit a) (h : ¬ IsUnit (a + t)) :
     ‖Ring.inverse a‖⁻¹ ≤ ‖t‖ := by
   obtain ⟨x, rfl⟩ := ha
@@ -376,7 +445,9 @@ theorem NormedRing.norm_le_of_not_isUnit_add {a t : R} (ha : IsUnit a) (h : ¬ I
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- On a finite-dimensional space the operator norm is attained on the unit sphere. -/
+/-- Let $E$ be a nontrivial finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$. Every
+bounded operator $f$ on $E$ attains its norm on the unit sphere: there is $y \in E$ with
+$\|y\| = 1$ and $\|f y\| = \|f\|$. -/
 theorem ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq [FiniteDimensional 𝕜 E]
     [Nontrivial E] (f : E →L[𝕜] E) : ∃ y : E, ‖y‖ = 1 ∧ ‖f y‖ = ‖f‖ := by
   have : ProperSpace E := FiniteDimensional.proper_rclike 𝕜 E
@@ -399,13 +470,17 @@ theorem ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq [FiniteDimensio
     inv_mul_le_iff₀ (norm_pos_iff.2 hx0), mul_comm] at h2
   exact h2
 
-/-- **The upper half of Kahan's distance-to-singularity formula** ([quarteroni2000numerical]
-Remark 3.1, [Kah66], [Gas83]): on a nontrivial finite-dimensional space, an isomorphism `A` is
-made singular by a rank-one perturbation of norm exactly `‖A⁻¹‖⁻¹`. With `y` a unit vector at
-which `‖A⁻¹ y‖ = ‖A⁻¹‖`, `x = A⁻¹ y` and `φ` a norming functional of `x`, the perturbation
-`t = -‖x‖⁻¹ φ(·) y` sends `x` to `-y`, so `(A + t) x = 0`. The construction is that of the
-Rigal–Gaches optimal perturbation (`exists_optimal_perturbation`) with the inner product
-replaced by a norming functional, which is what makes it valid in any operator norm. -/
+/-- **The upper half of Kahan's distance-to-singularity formula** (Remark 3.1 of
+[quarteroni2000numerical], after the references Kah66 and Gas83 of the source). Let $E$ be a
+nontrivial finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be an
+isomorphism of $E$. Then there is a bounded operator $t$ on $E$ such that $A + t$ is not
+invertible and $$\|t\| = \|A^{-1}\|^{-1}.$$
+
+The perturbation constructed has rank one. Let $y$ be a unit vector with
+$\|A^{-1} y\| = \|A^{-1}\|$, let $x = A^{-1} y$, and let $\varphi$ be a norming functional of
+$x$. Then $t = -\|x\|^{-1} \varphi(\cdot) \, y$ sends $x$ to $-y$, so $(A + t) x = 0$. This is
+the construction of the Rigal–Gaches optimal perturbation (`exists_optimal_perturbation`) with
+the inner product replaced by a norming functional, which makes it valid in any operator norm. -/
 theorem ContinuousLinearEquiv.exists_not_isUnit_add_norm_le [FiniteDimensional 𝕜 E]
     [Nontrivial E] (A : E ≃L[𝕜] E) :
     ∃ t : E →L[𝕜] E, ¬ IsUnit ((A : E →L[𝕜] E) + t) ∧ ‖t‖ = ‖(A.symm : E →L[𝕜] E)‖⁻¹ := by
@@ -433,10 +508,13 @@ theorem ContinuousLinearEquiv.exists_not_isUnit_add_norm_le [FiniteDimensional �
       abs_of_nonneg (inv_nonneg.2 (norm_nonneg _)), hx, hy]
     ring
 
-/-- On a nontrivial finite-dimensional space, for operators `a`, `b` there is an operator `T` of
-norm `1` with `‖a T b‖ = ‖a‖ ‖b‖`: with unit vectors `y`, `z` at which `a` and `b` attain their
-norms and a norming functional `φ` of `b z`, the rank-one `T = φ(·) y` sends `z` through
-`a T b z = ‖b z‖ a y`. -/
+/-- Let $E$ be a nontrivial finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$. For
+bounded operators $a$ and $b$ on $E$ there is a bounded operator $T$ with $\|T\| = 1$ and
+$\|a T b\| = \|a\| \|b\|$.
+
+Take unit vectors $y$ and $z$ at which $a$ and $b$ attain their norms and a norming functional
+$\varphi$ of $b z$. The rank-one operator $T = \varphi(\cdot) \, y$ gives
+$a T b z = \|b z\| \, a y$. -/
 theorem ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq [FiniteDimensional 𝕜 E]
     [Nontrivial E] (a b : E →L[𝕜] E) : ∃ T : E →L[𝕜] E, ‖T‖ = 1 ∧ ‖a * T * b‖ = ‖a‖ * ‖b‖ := by
   obtain ⟨y, hy1, hay⟩ := a.exists_norm_eq_one_and_norm_apply_eq
@@ -455,10 +533,14 @@ theorem ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq [FiniteDimens
     _ ≤ ‖a * φ.smulRight y * b‖ * ‖z‖ := le_opNorm _ _
     _ = ‖a * φ.smulRight y * b‖ := by rw [hz1, mul_one]
 
-/-- On a nontrivial finite-dimensional space, the two-sided multiplication `T ↦ a T b` of the
-operator algebra has norm `‖a‖ ‖b‖`: `≤` is submultiplicativity
-(`ContinuousLinearMap.opNorm_mulLeftRight_apply_apply_le`), `≥` is attained at the `T` of
-`ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq`. -/
+/-- Let $E$ be a nontrivial finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$. For
+bounded operators $a$ and $b$ on $E$, the two-sided multiplication $T \mapsto a T b$ on the
+algebra of bounded operators has norm $\|a\| \|b\|$.
+
+The inequality $\le$ is submultiplicativity
+(`ContinuousLinearMap.opNorm_mulLeftRight_apply_apply_le`). The inequality $\ge$ comes from the
+operator $T$ of `ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq`. The map
+$T \mapsto a T b$ is `ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) a b`. -/
 theorem ContinuousLinearMap.norm_mulLeftRight_apply_apply [FiniteDimensional 𝕜 E] [Nontrivial E]
     (a b : E →L[𝕜] E) : ‖ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ = ‖a‖ * ‖b‖ := by
   refine le_antisymm (opNorm_mulLeftRight_apply_apply_le 𝕜 _ a b) ?_
@@ -467,21 +549,30 @@ theorem ContinuousLinearMap.norm_mulLeftRight_apply_apply [FiniteDimensional �
     _ ≤ ‖mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ * ‖T‖ := le_opNorm _ _
     _ = ‖mulLeftRight 𝕜 (E →L[𝕜] E) a b‖ := by rw [hT, mul_one]
 
-/-- **The Fréchet derivative of inversion has norm `‖A⁻¹‖²`** in an operator norm on a nontrivial
-finite-dimensional space: the derivative at `A` is `H ↦ -A⁻¹ H A⁻¹` (Mathlib
-`hasFDerivAt_ringInverse`), and `ContinuousLinearMap.norm_mulLeftRight_apply_apply` computes the
-norm of `H ↦ A⁻¹ H A⁻¹`. -/
+/-- **The Fréchet derivative of inversion has norm $\|A^{-1}\|^2$.** Let $E$ be a nontrivial
+finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be an isomorphism
+of $E$. Then the map $H \mapsto A^{-1} H A^{-1}$ on the algebra of bounded operators has norm
+$\|A^{-1}\|^2$.
+
+The derivative of inversion at $A$ is $H \mapsto -A^{-1} H A^{-1}$ (Mathlib's
+`hasFDerivAt_ringInverse`), so its norm is $\|A^{-1}\|^2$. The theorem is
+`ContinuousLinearMap.norm_mulLeftRight_apply_apply` for $a = b = A^{-1}$. -/
 theorem ContinuousLinearEquiv.norm_mulLeftRight_symm_symm [FiniteDimensional 𝕜 E] [Nontrivial E]
     (A : E ≃L[𝕜] E) :
     ‖ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (A.symm : E →L[𝕜] E) (A.symm : E →L[𝕜] E)‖
       = ‖(A.symm : E →L[𝕜] E)‖ ^ 2 := by
   rw [ContinuousLinearMap.norm_mulLeftRight_apply_apply, sq]
 
-/-- **The condition number is the relative condition number of inversion** ([golub2013matrix]
-(2.6.7), in the vocabulary of `Numlib/Conditioning/Problem`): on a nontrivial finite-dimensional
-space, the relative condition number of `T ↦ T⁻¹` at an isomorphism `A` is `κ(A) = ‖A‖ ‖A⁻¹‖`. By
-the first-order formula `Conditioning.relCondNumber_eq_enorm_fderiv`, it is
-`‖H ↦ A⁻¹ H A⁻¹‖ ‖A‖ / ‖A⁻¹‖ = ‖A⁻¹‖² ‖A‖ / ‖A⁻¹‖`. -/
+/-- **The condition number is the relative condition number of inversion.** Let $E$ be a nontrivial
+finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be an isomorphism
+of $E$. Then the first-order relative condition number of the inversion $T \mapsto T^{-1}$ at
+$A$, on the admissible data of all bounded operators, is $$K(A) = \kappa(A) = \|A\|
+\|A^{-1}\|.$$ This is (2.6.7) of [golub2013matrix] in the language of
+`Numlib.Conditioning.Problem`.
+
+The relative condition number is `Conditioning.relCondNumber`, and the inversion is
+`Ring.inverse`. By the first-order formula `Conditioning.relCondNumber_eq_enorm_fderiv`, $K(A) =
+\|H \mapsto A^{-1} H A^{-1}\| \, \|A\| / \|A^{-1}\| = \|A^{-1}\|^2 \|A\| / \|A^{-1}\|$. -/
 theorem ContinuousLinearEquiv.relCondNumber_ringInverse [FiniteDimensional 𝕜 E] [Nontrivial E]
     (A : E ≃L[𝕜] E) :
     Conditioning.relCondNumber (fun T : E →L[𝕜] E => Ring.inverse T) Set.univ (A : E →L[𝕜] E)
@@ -503,12 +594,11 @@ theorem ContinuousLinearEquiv.relCondNumber_ringInverse [FiniteDimensional 𝕜 
   congr 1
   field_simp
 
-/-- The two bounds behind `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`: for
-`0 < ε` with `ε κ(A) < 1`, the largest change of the inverse under perturbations of relative size
-`ε`, divided by `ε ‖A⁻¹‖`, lies between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`. The upper bound is
-`Units.norm_inverse_add_sub_le`; the lower one is attained at `ΔA = -ε ‖A‖ T` with `T` the
-operator of `ContinuousLinearMap.exists_norm_eq_one_and_norm_mul_mul_eq` for `A⁻¹, A⁻¹`, through
-`A⁻¹ ΔA A⁻¹ = (1 + A⁻¹ ΔA) ((A + ΔA)⁻¹ ΔA A⁻¹)` and `(A + ΔA)⁻¹ - A⁻¹ = -(A + ΔA)⁻¹ ΔA A⁻¹`. -/
+/-- Let $0 < \varepsilon$ with $\varepsilon \kappa(A) < 1$. Then the largest change
+$\|(A + \Delta A)^{-1} - A^{-1}\|$ over the perturbations with
+$\|\Delta A\| \le \varepsilon \|A\|$, divided by $\varepsilon \|A^{-1}\|$, lies between
+$\kappa(A) / (1 + \varepsilon \kappa(A))$ and $\kappa(A) / (1 - \varepsilon \kappa(A))$; these
+are the two bounds behind `ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div`. -/
 private theorem ContinuousLinearEquiv.iSup_norm_inverse_add_sub_div_mem [FiniteDimensional 𝕜 E]
     [Nontrivial E] (A : E ≃L[𝕜] E) {ε : ℝ} (hε : 0 < ε) (hεκ : ε * A.condNumber < 1) :
     A.condNumber / (1 + ε * A.condNumber)
@@ -594,10 +684,14 @@ private theorem ContinuousLinearEquiv.iSup_norm_inverse_add_sub_div_mem [FiniteD
           rw [div_mul_cancel₀ _ (by linarith : (0 : ℝ) < 1 - ε * (a * s)).ne']
           ring
 
-/-- **The book's limit formula for the condition number** ([golub2013matrix] (2.6.7)): on a
-nontrivial finite-dimensional space, `κ(A)` is the limit as `ε → 0⁺` of the largest change
-`‖(A + ΔA)⁻¹ - A⁻¹‖` over perturbations with `‖ΔA‖ ≤ ε ‖A‖`, divided by `ε ‖A⁻¹‖`. The quotient
-lies between `κ / (1 + ε κ)` and `κ / (1 - ε κ)`. -/
+/-- **The limit formula for the condition number**, (2.6.7) of [golub2013matrix]. Let $E$ be a
+nontrivial finite-dimensional normed space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be an
+isomorphism of $E$. Then $$\kappa(A) = \lim_{\varepsilon \to 0^+} \frac{1}{\varepsilon
+\|A^{-1}\|} \sup_{\|\Delta A\| \le \varepsilon \|A\|} \|(A + \Delta A)^{-1} - A^{-1}\|.$$
+
+The condition number is `ContinuousLinearEquiv.condNumber`, and the inverse of $A + \Delta A$ is
+`Ring.inverse`. For small $\varepsilon$ the quotient lies between
+$\kappa(A) / (1 + \varepsilon \kappa(A))$ and $\kappa(A) / (1 - \varepsilon \kappa(A))$. -/
 theorem ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div [FiniteDimensional 𝕜 E]
     [Nontrivial E] (A : E ≃L[𝕜] E) :
     Tendsto (fun ε : ℝ => (⨆ ΔA : {ΔA : E →L[𝕜] E // ‖ΔA‖ ≤ ε * ‖(A : E →L[𝕜] E)‖},
@@ -621,10 +715,14 @@ theorem ContinuousLinearEquiv.tendsto_iSup_norm_inverse_add_sub_div [FiniteDimen
   · exact (A.iSup_norm_inverse_add_sub_div_mem h.1 h.2).1
   · exact (A.iSup_norm_inverse_add_sub_div_mem h.1 h.2).2
 
-/-- **Kahan's distance-to-singularity formula** ([quarteroni2000numerical] Remark 3.1, (3.6);
-[Kah66], [Gas83]): on a nontrivial finite-dimensional space, the least relative distance
-`‖t‖ / ‖A‖` from an isomorphism `A` to a singular operator `A + t` is `1 / κ A`, in any operator
-norm. The two halves are `NormedRing.norm_le_of_not_isUnit_add` and
+/-- **Kahan's distance-to-singularity formula**, (3.6) of Remark 3.1 of [quarteroni2000numerical],
+after the references Kah66 and Gas83 of the source. Let $E$ be a nontrivial finite-dimensional
+normed space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be an isomorphism of $E$. Then the
+least relative distance from $A$ to a singular operator is $$\min \left\{ \frac{\|t\|}{\|A\|} :
+A + t \text{ is not invertible} \right\} = \frac{1}{\kappa(A)},$$ in any operator norm.
+
+The condition number is `ContinuousLinearEquiv.condNumber`. The two halves are
+`NormedRing.norm_le_of_not_isUnit_add` and
 `ContinuousLinearEquiv.exists_not_isUnit_add_norm_le`. -/
 theorem ContinuousLinearEquiv.isLeast_dist_singular [FiniteDimensional 𝕜 E] [Nontrivial E]
     (A : E ≃L[𝕜] E) :
@@ -659,10 +757,14 @@ section Theorem33
 
 open NormedRing
 
-/-- **[quarteroni2000numerical] Theorem 3.3, (3.13)**: if `A x = b`, `(A + δA) y = b + δb` with
-`‖δA‖ ≤ γ ‖A‖`, `‖δb‖ ≤ γ ‖b‖` and `γ κ(A) < 1`, then
-`‖y - x‖ / ‖x‖ ≤ 2 γ κ(A) / (1 - γ κ(A))`. From `relative_error_le_condNumber`, since
-`‖A⁻¹‖ ‖δA‖ ≤ γ κ(A)`. -/
+/-- **Theorem 3.3** of [quarteroni2000numerical], the bound (3.13). Let $A$ be an isomorphism of the
+normed space $E$ and $\Delta A$ a bounded operator on $E$, and let $\gamma$ be real with
+$\|\Delta A\| \le \gamma \|A\|$, $\|\Delta b\| \le \gamma \|b\|$ and $\gamma \kappa(A) < 1$. If
+$Ax = b$ with $b \neq 0$ and $(A + \Delta A) y = b + \Delta b$, then $$\frac{\|y - x\|}{\|x\|}
+\le \frac{2 \gamma}{1 - \gamma \kappa(A)} \, \kappa(A).$$
+
+The condition number is `NormedRing.condNumber`. The bound follows from
+`relative_error_le_condNumber`, since $\|A^{-1}\| \|\Delta A\| \le \gamma \kappa(A)$. -/
 theorem relative_error_le_of_norm_le_mul (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E) {b Δb x y : E}
     (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb) {γ : ℝ}
     (hΔA : ‖ΔA‖ ≤ γ * ‖(A : E →L[𝕜] E)‖) (hΔb : ‖Δb‖ ≤ γ * ‖b‖)
@@ -696,8 +798,9 @@ theorem relative_error_le_of_norm_le_mul (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜
           (div_nonneg (mul_nonneg hN0.le hM0) hpos'.le)
     _ = 2 * γ / (1 - γ * (N * M)) * (N * M) := by ring
 
-/-- **[quarteroni2000numerical] Theorem 3.3, (3.12)**: under the same hypotheses,
-`‖y‖ / ‖x‖ ≤ (1 + γ κ(A)) / (1 - γ κ(A))`, by the triangle inequality on (3.13). -/
+/-- **Theorem 3.3** of [quarteroni2000numerical], the bound (3.12). Under the hypotheses of
+`relative_error_le_of_norm_le_mul`, $$\frac{\|y\|}{\|x\|} \le \frac{1 + \gamma \kappa(A)}{1 -
+\gamma \kappa(A)}.$$ This follows from (3.13) by the triangle inequality. -/
 theorem norm_add_div_le_of_norm_le_mul (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E) {b Δb x y : E}
     (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb) {γ : ℝ}
     (hΔA : ‖ΔA‖ ≤ γ * ‖(A : E →L[𝕜] E)‖) (hΔb : ‖Δb‖ ≤ γ * ‖b‖)
@@ -726,9 +829,12 @@ section ApproxInverse
 
 variable {R : Type*} [NormedRing R] [NormOneClass R] [CompleteSpace R]
 
-/-- **[quarteroni2000numerical] Property 3.1, the first bound**: if `R = A C - 1` has norm
-less than one, then `‖A⁻¹‖ ≤ ‖C‖ / (1 - ‖R‖)`, since `A C = 1 + R` is a unit and `A⁻¹ = C (1 +
-R)⁻¹`. Stated in a complete normed ring for a unit `a`. -/
+/-- **Property 3.1** of [quarteroni2000numerical], the first bound. Let $R$ be a complete normed
+ring with $\|1\| = 1$, let $a \in R$ be a unit, and let $c \in R$ with $\|ac - 1\| < 1$. Then
+$$\|a^{-1}\| \le \frac{\|c\|}{1 - \|ac - 1\|}.$$
+
+The source states this for matrices $A$ and $C$. The proof uses that $ac = 1 + (ac - 1)$ is a
+unit and $a^{-1} = c (ac)^{-1}$. -/
 theorem NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : IsUnit a)
     (hr : ‖a * c - 1‖ < 1) : ‖Ring.inverse a‖ ≤ ‖c‖ / (1 - ‖a * c - 1‖) := by
   have hr' : ‖-(a * c - 1)‖ < 1 := by rwa [norm_neg]
@@ -748,8 +854,11 @@ theorem NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : IsUnit
     _ = ‖c‖ / (1 - ‖a * c - 1‖) := by rw [norm_neg]; ring
 
 omit [NormOneClass R] in
-/-- **[quarteroni2000numerical] Property 3.1, the upper bound of the second display**:
-`‖C - A⁻¹‖ ≤ ‖C‖ ‖R‖ / (1 - ‖R‖)`, since `C - A⁻¹ = -C ((1 + R)⁻¹ - 1)`. -/
+/-- **Property 3.1** of [quarteroni2000numerical], the upper bound of the second display. Let $R$ be
+a complete normed ring, let $a \in R$ be a unit, and let $c \in R$ with $\|ac - 1\| < 1$. Then
+$$\|c - a^{-1}\| \le \frac{\|c\| \|ac - 1\|}{1 - \|ac - 1\|}.$$
+
+The proof uses $c - a^{-1} = -c ((ac)^{-1} - 1)$. -/
 theorem NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : IsUnit a)
     (hr : ‖a * c - 1‖ < 1) :
     ‖c - Ring.inverse a‖ ≤ ‖c‖ * ‖a * c - 1‖ / (1 - ‖a * c - 1‖) := by
@@ -773,8 +882,9 @@ theorem NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt {a c : R} (ha : Is
     _ = ‖c‖ * ‖a * c - 1‖ / (1 - ‖a * c - 1‖) := by rw [norm_neg]; ring
 
 omit [NormOneClass R] [CompleteSpace R] in
-/-- **[quarteroni2000numerical] Property 3.1, the lower bound**: `‖A C - 1‖ / ‖A‖ ≤ ‖C - A⁻¹‖`
-for a unit `A`, since `A C - 1 = A (C - A⁻¹)`. -/
+/-- **Property 3.1** of [quarteroni2000numerical], the lower bound. Let $R$ be a normed ring and
+$a \in R$ a unit. Then for every $c \in R$, $$\frac{\|ac - 1\|}{\|a\|} \le \|c - a^{-1}\|,$$
+since $ac - 1 = a (c - a^{-1})$. -/
 theorem NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse {a c : R} (ha : IsUnit a) :
     ‖a * c - 1‖ / ‖a‖ ≤ ‖c - Ring.inverse a‖ := by
   have h : a * c - 1 = a * (c - Ring.inverse a) := by
@@ -786,10 +896,13 @@ theorem NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse {a c : R} (ha :
     exact _root_.norm_mul_le _ _
 
 omit [NormOneClass R] in
-/-- **[quarteroni2000numerical] Property 3.1, "then `A` and `C` are nonsingular"**: in a
-complete normed ring that is Dedekind-finite (`IsDedekindFiniteMonoid R`, which matrices over a
-field satisfy), `‖A C - 1‖ < 1` makes `A C` a unit, hence `A` and `C`, a one-sided inverse being
-two-sided. -/
+/-- **Property 3.1** of [quarteroni2000numerical], "then $A$ and $C$ are nonsingular". Let $R$ be a
+complete normed ring that is Dedekind-finite (`IsDedekindFiniteMonoid R`: $ab = 1$ implies
+$ba = 1$). If $\|ac - 1\| < 1$, then $a$ and $c$ are units.
+
+The operator rings of finite-dimensional spaces are Dedekind-finite
+(`ContinuousLinearMap.isDedekindFiniteMonoid`), and so are the matrices over a field. The proof
+shows that $ac$ is a unit; then $a$ and $c$ have one-sided inverses, which are two-sided. -/
 theorem isUnit_of_norm_mul_sub_one_lt [IsDedekindFiniteMonoid R] {a c : R}
     (hr : ‖a * c - 1‖ < 1) : IsUnit a ∧ IsUnit c := by
   have hr' : ‖-(a * c - 1)‖ < 1 := by rwa [norm_neg]
@@ -802,11 +915,14 @@ theorem isUnit_of_norm_mul_sub_one_lt [IsDedekindFiniteMonoid R] {a c : R}
   exact ⟨⟨⟨a, c * ↑u⁻¹, h1, mul_eq_one_symm h1⟩, rfl⟩, ⟨⟨c, ↑u⁻¹ * a, mul_eq_one_symm h2, h2⟩, rfl⟩⟩
 
 omit [NormOneClass R] in
-/-- **[quarteroni2000numerical] (3.19)**, the backward reading of Property 3.1 with the roles of
-`A` and `C` exchanged: if `C` is a unit and `‖C A - 1‖ < 1`, the perturbation `δA = C⁻¹ - A` that
-makes `C` an exact inverse satisfies `‖δA‖ ≤ ‖C A - 1‖ ‖A‖ / (1 - ‖C A - 1‖)`. The book writes the
-residual as `A C - 1`; in a noncommutative ring `‖C A - 1‖` and `‖A C - 1‖` differ, and the proof
-uses the former, which is the hypothesis taken here. -/
+/-- The bound (3.19) of [quarteroni2000numerical], the backward reading of Property 3.1 with the
+roles of $A$ and $C$ exchanged. Let $R$ be a complete normed ring, let $c \in R$ be a unit, and
+let $a \in R$ with $\|ca - 1\| < 1$. Then the perturbation $\delta A = c^{-1} - a$, for which
+$c$ is an exact inverse of $a + \delta A$, satisfies $$\|c^{-1} - a\| \le \frac{\|ca - 1\| \,
+\|a\|}{1 - \|ca - 1\|}.$$
+
+The source writes the residual as $AC - I$. In a noncommutative ring $\|ca - 1\|$ and
+$\|ac - 1\|$ differ; the proof uses $\|ca - 1\|$, and that is the hypothesis here. -/
 theorem NormedRing.norm_sub_le_of_norm_mul_sub_one_lt {a c : R} (hc : IsUnit c)
     (hr : ‖c * a - 1‖ < 1) :
     ‖Ring.inverse c - a‖ ≤ ‖c * a - 1‖ * ‖a‖ / (1 - ‖c * a - 1‖) := by
@@ -817,11 +933,10 @@ end ApproxInverse
 
 section DedekindFinite
 
-/-- **The operator ring of a finite-dimensional space is Dedekind-finite**: for operators of a
-finite-dimensional normed space, `a * b = 1` implies `b * a = 1`. `E →L[𝕜] E` is a
-finite-dimensional algebra over the field `𝕜`, hence an Artinian ring, and Artinian rings are
-Dedekind-finite. This is the hypothesis `isUnit_of_norm_mul_sub_one_lt` asks of the operator
-ring. -/
+/-- The ring of bounded operators on a finite-dimensional normed space is Dedekind-finite: $ab = 1$
+implies $ba = 1$. The operators form a finite-dimensional algebra over the field, hence an
+Artinian ring, and Artinian rings are Dedekind-finite. This is the hypothesis that
+`isUnit_of_norm_mul_sub_one_lt` asks of the operator ring. -/
 instance ContinuousLinearMap.isDedekindFiniteMonoid [FiniteDimensional 𝕜 E] :
     IsDedekindFiniteMonoid (E →L[𝕜] E) :=
   have : IsArtinianRing (E →L[𝕜] E) := IsArtinianRing.of_finite 𝕜 (E →L[𝕜] E)
@@ -835,11 +950,13 @@ section APosteriori
 
 open NormedRing
 
-/-- **[quarteroni2000numerical] (3.20)**: for an approximate inverse `C` of `A` with
-`‖A C - 1‖ < 1`, the error of any approximate solution `y` of `A x = b` is bounded by its residual,
-`‖y - x‖ ≤ ‖b - A y‖ ‖C‖ / (1 - ‖A C - 1‖)`, because `y - x = -A⁻¹ (b - A y)` and
-`‖A⁻¹‖ ≤ ‖C‖ / (1 - ‖A C - 1‖)` (`NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt` in the ring
-of operators). -/
+/-- **The a posteriori bound** (3.20) of [quarteroni2000numerical]. Let $E$ be a Banach space, $A$
+an isomorphism of $E$, and $C$ a bounded operator on $E$ with $\|AC - I\| < 1$. If $Ax = b$,
+then every $y \in E$ satisfies $$\|y - x\| \le \frac{\|b - Ay\| \, \|C\|}{1 - \|AC - I\|}.$$
+
+The proof uses $y - x = -A^{-1} (b - Ay)$ and the bound
+$\|A^{-1}\| \le \|C\| / (1 - \|AC - I\|)$ of `NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt`
+in the ring of operators. -/
 theorem norm_error_le_of_norm_mul_sub_one_lt [CompleteSpace E] (A : E ≃L[𝕜] E) (C : E →L[𝕜] E)
     (hr : ‖(A : E →L[𝕜] E) * C - 1‖ < 1) {b x : E} (hx : A x = b) (y : E) :
     ‖y - x‖ ≤ ‖b - A y‖ * ‖C‖ / (1 - ‖(A : E →L[𝕜] E) * C - 1‖) := by

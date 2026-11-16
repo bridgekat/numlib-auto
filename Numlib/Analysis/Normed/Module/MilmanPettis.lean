@@ -14,31 +14,41 @@ import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
 /-!
 # The Milman–Pettis theorem
 
-**Every uniformly convex Banach space is reflexive**
-(`NormedSpace.isReflexive_of_uniformConvexSpace`, registered as the instance
-`NormedSpace.instIsReflexiveOfUniformConvexSpace`). Uniform convexity is Mathlib's
-`UniformConvexSpace E`, a property of real normed spaces, so the theorem is stated over `ℝ`;
-reflexivity is `NormedSpace.IsReflexive ℝ E`.
+The **Milman–Pettis theorem** states that every uniformly convex Banach space is reflexive. This is
+Theorem 3.31 of [brezis2011functional]. A real normed space $E$ is uniformly convex if for every
+$\varepsilon > 0$ there is $\delta > 0$ such that $\|x\|, \|y\| \le 1$ and
+$\|x - y\| \ge \varepsilon$ imply $\|x + y\| \le 2 - \delta$. It is reflexive if the canonical
+embedding $J \colon E \to E^{**}$ is onto.
 
-The proof is the classical one. Given `ξ` of norm `1` in the bidual and `ε > 0`, let `δ` be the
-modulus of convexity for `ε / 2` (`exists_forall_closed_ball_dist_add_le_two_sub`: `‖x + y‖ ≤ 2 - δ`
-whenever `‖x‖, ‖y‖ ≤ 1` and `ε / 2 ≤ ‖x - y‖`) and pick `f` in the dual ball with
-`ξ f > 1 - δ / 4`. The weak-∗ neighbourhood `V = {η | |η f - ξ f| < δ / 4}` of `ξ` meets `J(B_E)` in
-some `J x` by Goldstine's lemma (`NormedSpace.goldstine`). If `‖ξ - J x‖ > ε / 2`, the complement
-`W` of the norm ball `J x + (ε/2) B` is a weak-∗ neighbourhood of `ξ` too, so `V ∩ W` meets `J(B_E)`
-in some `J y` with `‖x - y‖ > ε / 2`; but then `2 ξ f < f (x + y) + δ / 2 ≤ ‖x + y‖ + δ / 2`
-forces `‖x + y‖ > 2 - δ`, contradicting uniform convexity. Hence `ξ` is within `ε` of `J(B_E)` for
-every `ε`, and `J(B_E)` is norm closed because `E` is complete
-(`NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall`), so `ξ ∈ J(B_E)`. Scaling handles
-a general `ξ`.
+Uniformly convex spaces also have the Radon–Riesz property (`Numlib.Analysis.Convex.Uniform`). The
+spaces $L^p$ for $1 < p < \infty$ are uniformly convex by Clarkson's inequalities, and this theorem
+is one route to their reflexivity.
 
-Uniformly convex spaces have the Radon–Riesz property (`Numlib.Analysis.Convex.Uniform`); the
-`L^p` spaces for `1 < p < ∞` are uniformly convex by Clarkson's inequalities, and this theorem is
-one route to their reflexivity.
+## Main results
 
-## References
+* `NormedSpace.isReflexive_of_uniformConvexSpace`: a uniformly convex Banach space is reflexive. It
+  is also registered as the instance `NormedSpace.instIsReflexiveOfUniformConvexSpace`.
 
-[brezis2011functional] Theorem 3.31 (Milman–Pettis).
+## Proof outline
+
+The proof is the classical one. Let $\xi \in E^{**}$ have norm $1$ and let $\varepsilon > 0$. Let
+$\delta$ be the modulus of convexity for $\varepsilon / 2$, and pick $f$ in the unit ball of $E^*$
+with $\xi(f) > 1 - \delta/4$. The weak-$*$ neighbourhood
+$V = \{\eta : |\eta(f) - \xi(f)| < \delta/4\}$ of $\xi$ meets $J(B_E)$ in some $Jx$, by Goldstine's
+lemma. Suppose $\|\xi - Jx\| > \varepsilon/2$. The complement $W$ of the norm ball
+$Jx + (\varepsilon/2) B_{E^{**}}$ is also a weak-$*$ neighbourhood of $\xi$, so $V \cap W$ meets
+$J(B_E)$ in some $Jy$ with $\|x - y\| > \varepsilon/2$. Then $2\xi(f) < f(x + y) + \delta/2 \le
+\|x + y\| + \delta/2$ forces $\|x + y\| > 2 - \delta$, which contradicts uniform convexity. Hence
+$\xi$ is within $\varepsilon$ of $J(B_E)$ for every $\varepsilon > 0$. The set $J(B_E)$ is norm
+closed because $E$ is complete, so $\xi \in J(B_E)$. Scaling handles a general $\xi$.
+
+## Implementation notes
+
+* Uniform convexity is the Mathlib class `UniformConvexSpace E`, a property of real normed spaces,
+  so the theorem is stated over $\mathbb{R}$. Reflexivity is `NormedSpace.IsReflexive ℝ E`.
+* The modulus of convexity comes from `exists_forall_closed_ball_dist_add_le_two_sub`, Goldstine's
+  lemma is `NormedSpace.goldstine`, and the norm closedness of $J(B_E)$ is
+  `NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall`.
 -/
 
 open Filter Topology Metric Set Function
@@ -48,8 +58,8 @@ namespace NormedSpace
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
   [UniformConvexSpace E]
 
-/-- The unit-norm case of the Milman–Pettis theorem: an element of norm `1` of the bidual lies
-in `J(B_E)`. -/
+/-- In a uniformly convex Banach space $E$, every element $\xi$ of norm $1$ of the bidual $E^{**}$
+lies in $J(B_E)$, the image of the closed unit ball under the canonical embedding. -/
 private theorem mem_image_inclusionInDoubleDual_closedBall_of_norm_eq_one
     {ξ : StrongDual ℝ (StrongDual ℝ E)} (hξ : ‖ξ‖ = 1) :
     ξ ∈ inclusionInDoubleDual ℝ E '' closedBall (0 : E) 1 := by
@@ -128,9 +138,12 @@ private theorem mem_image_inclusionInDoubleDual_closedBall_of_norm_eq_one
   simp only [hJ, dual_def] at hxV' hyV'
   linarith
 
-/-- **The Milman–Pettis theorem: a uniformly convex Banach space is reflexive.** Every element
-of the bidual of norm `1` lies in `J(B_E)` (the argument in the module doc), and the rest by
-scaling. -/
+/-- The **Milman–Pettis theorem**. Let $E$ be a real Banach space that is uniformly convex. Then $E$
+is reflexive: the canonical embedding $J \colon E \to E^{**}$ is onto. This is Theorem 3.31 of
+[brezis2011functional].
+
+The proof shows that every element of $E^{**}$ of norm $1$ lies in $J(B_E)$, as in the proof
+outline of the module, and obtains the other elements by scaling. -/
 theorem isReflexive_of_uniformConvexSpace : IsReflexive ℝ E := by
   refine ⟨fun ξ => ?_⟩
   rcases eq_or_ne ξ 0 with rfl | hξ
@@ -141,10 +154,11 @@ theorem isReflexive_of_uniformConvexSpace : IsReflexive ℝ E := by
   refine ⟨‖ξ‖ • x, ?_⟩
   rw [map_smul, hx, smul_smul, mul_inv_cancel₀ hξ0.ne', one_smul]
 
-/-- The Milman–Pettis theorem as an instance: uniformly convex Banach spaces are reflexive, so
-that uniform convexity (Clarkson's inequalities for `L^p`, `1 < p < ∞`) yields reflexivity by
-instance search. Low priority, since Hilbert spaces are already reflexive by
-`instIsReflexiveOfInnerProductSpace`. -/
+/-- The Milman–Pettis theorem as an instance: a uniformly convex real Banach space is reflexive.
+
+With this instance, uniform convexity (for example of $L^p$, $1 < p < \infty$, by Clarkson's
+inequalities) gives reflexivity by instance search. It has low priority, because Hilbert spaces
+are already reflexive by `NormedSpace.instIsReflexiveOfInnerProductSpace`. -/
 instance (priority := 100) instIsReflexiveOfUniformConvexSpace : IsReflexive ℝ E :=
   isReflexive_of_uniformConvexSpace
 

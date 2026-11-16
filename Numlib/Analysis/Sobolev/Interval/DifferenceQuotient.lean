@@ -15,63 +15,75 @@ import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz
 
 /-!
-# `W^{1,p}(I)` by duality and by difference quotients
+# $W^{1,p}(I)$ by duality and by difference quotients
 
-The characterizations of `W^{1,p}(I)`, `1 < p ≤ ∞`, that rest on the duality of the `L^p`
-spaces, [brezis2011functional] §8.2–8.3: Proposition 8.3 (`u ∈ W^{1,p}(I)` iff
-`|∫_I u φ'| ≤ C ‖φ‖_{p'}` on the test functions), Proposition 8.5 (on `ℝ`, `u ∈ W^{1,p}(ℝ)` iff
-`‖τ_h u − u‖_p ≤ C |h|`), Remark 16 (ii) (`W_0^{1,p}(I)` by testing against `C_c^1(ℝ)`), the
-weak compactness of bounded sets of `W^{1,p}(I)` of Remark 10 and Exercise 8.2, and the compact
-embedding `W^{1,1}(I) ↪ L^q(I)` of Theorem 8.8 (7), which rests on the Kolmogorov–M. Riesz–Fréchet
-theorem.
+Let $I \subseteq \mathbb{R}$ be open, let $1 < p \le \infty$ and let $q$ be the conjugate exponent.
+This module proves the characterizations of $W^{1,p}(I)$ that rest on the duality of the $L^p$
+spaces, from §8.2–8.3 of [brezis2011functional]. A function $u \in L^p(I)$ lies in $W^{1,p}(I)$ if
+and only if there is a constant $C$ with $|\int_I u \varphi'| \le C \|\varphi\|_{L^q(I)}$ for all
+test functions $\varphi$ (Proposition 8.3). A function $u \in L^p(\mathbb{R})$ lies in
+$W^{1,p}(\mathbb{R})$ if $\|\tau_h u - u\|_{L^p} \le C |h|$ for all $h$, where
+$\tau_h u(x) = u(x + h)$ (Proposition 8.5). For $1 < p < \infty$, the same kind of bound against
+test functions on all of $\mathbb{R}$ characterizes $W_0^{1,p}(I)$ (Remark 16 (ii)).
 
-## Main statements
+The module also proves the weak compactness of bounded sets of $W^{1,p}(I)$ (Remark 10 and Exercise
+8.2 of [brezis2011functional]), the closedness of $W^{1,p}(I)$ under $L^p$ limits with bounded
+derivatives (Remark 4), and the compactness of the inclusion
+$W^{1,1}(a, b) \hookrightarrow L^q(a, b)$ for $1 \le q < \infty$ (Theorem 8.8 (7)), which rests on
+the Kolmogorov–M. Riesz–Fréchet theorem.
 
-* `SobolevIntervalLp.abs_integral_mul_deriv_le` (**Proposition 8.3, (i) ⇒ (ii)**, with the
-  constant `‖u'‖_p`, every `1 ≤ p ≤ ∞`) and
-  `memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le` (**(ii) ⇒ (i)**, `1 < p ≤ ∞`, with
-  the bound `‖u'‖_p ≤ C` on the weak derivative);
-  `memSobolevIntervalLp_iff_forall_abs_integral_mul_deriv_le` is the equivalence.
-* `MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le`: the `L^p(I)` norm of a
-  function is computed by pairing with the test functions, `1 < p ≤ ∞` — the dual
-  characterization behind the bound of (ii) ⇒ (i).
-* `memSobolevIntervalLp_of_eLpNorm_translate_sub_le` (**Proposition 8.5, (ii) ⇒ (i)**):
-  `‖τ_h u − u‖_p ≤ C |h|` for all `h` puts `u ∈ L^p(ℝ)` into `W^{1,p}(ℝ)`, `1 < p ≤ ∞`, with
-  `‖u'‖_p ≤ C`; the converse with the constant `‖u'‖_p` is
-  `SobolevIntervalLp.eLpNorm_translate_sub_le` of `Numlib/Analysis/Sobolev/Interval/Basic.lean`.
-* `mem_sobolevIntervalLpZero_iff_forall_abs_integral_le` (**Remark 16 (ii)**): for `1 < p < ∞`,
-  `u ∈ L^p(I)` is (the function of) an element of `W_0^{1,p}(I)` iff `|∫_I u φ'| ≤ C ‖φ‖_{L^q(I)}`
-  for all test functions `φ` on `ℝ`.
-* `SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded` (**Remark 10 (d), Exercise 8.2**):
-  a bounded sequence of `W^{1,p}(I)`, `1 < p ≤ ∞`, has a subsequence whose continuous
-  representatives converge uniformly on every bounded part of `Ī` to the representative of an
-  element `v ∈ W^{1,p}(I)`, and whose derivatives converge to `v'` weakly in `L^p(I)`
-  (weakly-∗ when `p = ∞`).
-* `SobolevIntervalLp.isCompactOperator_toLp_one` (**Theorem 8.8 (7)**): the inclusion
-  `W^{1,1}(a, b) ↪ L^q(a, b)` is compact for every `1 ≤ q < ∞`.
-* `SobolevIntervalLp.memSobolevIntervalLp_of_tendsto_of_bounded_deriv` (**Remark 4, second
-  clause**): an `L^p` limit of elements of `W^{1,p}(I)` with bounded derivatives lies in
-  `W^{1,p}(I)`, `1 < p ≤ ∞`.
+## Main results
 
-## Route
+* `SobolevIntervalLp.abs_integral_mul_deriv_le`: for $u \in W^{1,p}(I)$, $1 \le p \le \infty$, and
+  every test function $\varphi$, $|\int_I u \varphi'| \le \|u'\|_{L^p} \|\varphi\|_{L^q}$
+  (Proposition 8.3, (i) ⇒ (ii)).
+* `memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le`: for $1 < p \le \infty$, the bound
+  $|\int_I u \varphi'| \le C \|\varphi\|_{L^q}$ puts $u$ into $W^{1,p}(I)$ with $\|u'\|_{L^p} \le C$
+  (Proposition 8.3, (ii) ⇒ (i)).
+* `memSobolevIntervalLp_iff_forall_abs_integral_mul_deriv_le`: Proposition 8.3 as an equivalence.
+* `MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le`: for $1 < p \le \infty$, the
+  $L^p(I)$ norm of a function is bounded by its pairing with the test functions.
+* `memSobolevIntervalLp_of_eLpNorm_translate_sub_le`: for $1 < p \le \infty$,
+  $\|\tau_h u - u\|_{L^p} \le C |h|$ for all $h$ puts $u \in L^p(\mathbb{R})$ into
+  $W^{1,p}(\mathbb{R})$ with $\|u'\|_{L^p} \le C$ (Proposition 8.5, (ii) ⇒ (i)).
+* `mem_sobolevIntervalLpZero_iff_forall_abs_integral_le`: for $1 < p < \infty$, $u \in L^p(I)$ is an
+  element of $W_0^{1,p}(I)$ if and only if $|\int_I u \varphi'| \le C \|\varphi\|_{L^q(I)}$ for all
+  test functions $\varphi$ on $\mathbb{R}$ (Remark 16 (ii)).
+* `SobolevIntervalLp.isCompactOperator_toLp_one`: the inclusion
+  $W^{1,1}(a, b) \hookrightarrow L^q(a, b)$ is compact for $1 \le q < \infty$ (Theorem 8.8 (7)).
+* `SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded`: a bounded sequence of $W^{1,p}(I)$,
+  $1 < p \le \infty$, has a subsequence whose continuous representatives converge uniformly on
+  bounded parts of $\bar I$ and whose derivatives converge weakly (weakly-∗ for $p = \infty$) in
+  $L^p(I)$ (Remark 10 and Exercise 8.2).
+* `SobolevIntervalLp.memSobolevIntervalLp_of_tendsto_of_bounded_deriv`: for $1 < p \le \infty$, an
+  $L^p(I)$ limit of elements of $W^{1,p}(I)$ with bounded derivatives lies in $W^{1,p}(I)$ (Remark
+  4, second clause).
 
-Propositions 8.3 and 8.5 are the one-dimensional instances of Proposition 9.3 of
-[brezis2011functional], proved in `Numlib/Analysis/Sobolev/Friedrichs.lean` on any open subset of
-a finite-dimensional space (`HasWeakFDerivOn.abs_integral_smul_fderiv_le`,
+## Proof outline
+
+Propositions 8.3 and 8.5 are the one-dimensional cases of Proposition 9.3 of [brezis2011functional],
+which is proved on any open subset of a finite-dimensional space in
+`Numlib.Analysis.Sobolev.Friedrichs` (`HasWeakFDerivOn.abs_integral_smul_fderiv_le`,
 `HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le`,
-`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`), read on `E = ℝ` through the bridge
-of `Numlib/Analysis/Sobolev/Interval/Density.lean`; the bound on the weak derivative is recovered
-afterwards from the pairing with the test functions, which computes the `L^p` norm because the
-test functions are dense in `L^q(I)`, `q < ∞` (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`)
-and the pairing is isometric (`MeasureTheory.Lp.norm_toDualCLM_apply`).
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`). These results are read on $\mathbb{R}$
+through the comparison of the two formulations in `Numlib.Analysis.Sobolev.Interval.Density`. The
+bound on the weak derivative comes afterwards from the pairing with the test functions. This pairing
+computes the $L^p$ norm, because the test functions are dense in $L^q(I)$ for $q < \infty$ and the
+pairing $L^p \to (L^q)^*$ is isometric.
 
-The weak compactness statement does not extract subsequences window by window: the derivatives
-have a weakly-∗ convergent subsequence in `L^p(I) = (L^q(I))^*` by the sequential Banach–Alaoglu
-theorem (`WeakDual.isSeqCompact_closedBall`, `L^q(I)` being separable), the values at one base
-point of `I` have a convergent subsequence, and the representatives
-`ũ_n(x) = ũ_n(y₀) + ∫_{y₀}^x u_n'` then converge at every point of `Ī`; their uniform Hölder
-bound makes the convergence uniform on compact parts (`Equicontinuous.tendsto_uniformFun_iff_pi`),
-and Fatou's lemma puts the limit into `L^p(I)`.
+For the weak compactness, the derivatives have a weakly-∗ convergent subsequence in
+$L^p(I) = (L^q(I))^*$ by the sequential Banach–Alaoglu theorem, since $L^q(I)$ is separable. The
+values at one base point $y_0$ of $I$ have a convergent subsequence. Then the representatives
+$\tilde u_n(x) = \tilde u_n(y_0) + \int_{y_0}^x u_n'$ converge at every point of $\bar I$. Their
+uniform Hölder bound makes the convergence uniform on compact parts of $\bar I$, and Fatou's lemma
+puts the limit into $L^p(I)$. No subsequence is extracted interval by interval.
+
+## Implementation notes
+
+* Remark 16 (ii) of [brezis2011functional] tests against $C_c^1(\mathbb{R})$. Here the test
+  functions are the smooth functions with compact support in $\mathbb{R}$, `𝓓((⊤ : Opens ℝ), ℝ)`.
+* The condition $1 < p$ is expressed by the hypothesis `q ≠ ⊤` on the conjugate exponent $q$, given
+  by `ENNReal.HolderConjugate p q`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -85,10 +97,14 @@ section Duality
 
 variable {I : Opens ℝ} {p q : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **Proposition 8.3, (i) ⇒ (ii), with the constant `‖u'‖_p`** ([brezis2011functional], valid
-for every `1 ≤ p ≤ ∞`, Remark 8): for `u ∈ W^{1,p}(I)`, `q` the conjugate exponent and every
-test function `φ` on `I`, `|∫_I u φ'| ≤ ‖u'‖_p ‖φ‖_q`. The integration by parts formula and
-Hölder's inequality, through the general `HasWeakFDerivOn.abs_integral_smul_fderiv_le`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 \le p \le \infty$ and let $q$ be the conjugate
+exponent. For $u \in W^{1,p}(I)$ and every test function $\varphi$ on $I$,
+$$\Big|\int_I u\,\varphi'\Big| \le \|u'\|_{L^p(I)}\,\|\varphi\|_{L^q(I)}.$$
+This is Proposition 8.3, (i) ⇒ (ii), of [brezis2011functional], with the constant
+$\|u'\|_{L^p}$; by Remark 8 there it holds for every $1 \le p \le \infty$.
+
+The proof is the integration by parts formula and Hölder's inequality, through
+`HasWeakFDerivOn.abs_integral_smul_fderiv_le`. -/
 theorem SobolevIntervalLp.abs_integral_mul_deriv_le [ENNReal.HolderConjugate p q]
     (u : SobolevIntervalLp 1 p I) (φ : 𝓓(I, ℝ)) :
     |∫ x in (I : Set ℝ), SobolevIntervalLp.fn u x * _root_.deriv φ x|
@@ -112,11 +128,15 @@ theorem SobolevIntervalLp.abs_integral_mul_deriv_le [ENNReal.HolderConjugate p q
   rwa [Real.enorm_eq_ofReal_abs, ENNReal.toReal_ofReal (abs_nonneg _), ENNReal.toReal_mul,
     toReal_enorm] at this
 
-/-- **The `L^p(I)` norm is computed by pairing with the test functions**, `1 < p ≤ ∞`: if
-`w ∈ L^p(I)` and `|∫_I φ w| ≤ C ‖φ‖_q` for every test function `φ` on `I`, `q` the conjugate
-exponent, then `‖w‖_p ≤ C`. The pairing `f ↦ ∫ w f` is a functional on `L^q(I)` of norm `‖w‖_p`
-(`MeasureTheory.Lp.norm_toDualCLM_apply`), and its bound on the dense subspace of test functions
-(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`, `q < ∞`) is a bound on all of `L^q(I)`. -/
+/-- **The $L^p(I)$ norm is computed by pairing with the test functions.** Let
+$I \subseteq \mathbb{R}$ be open, let $1 < p \le \infty$ and let $q < \infty$ be the conjugate
+exponent. Let $w \in L^p(I)$ and $C \ge 0$. If $|\int_I \varphi\,w| \le C \|\varphi\|_{L^q(I)}$
+for every test function $\varphi$ on $I$, then $\|w\|_{L^p(I)} \le C$.
+
+The pairing $f \mapsto \int_I w f$ is a functional on $L^q(I)$ of norm $\|w\|_{L^p}$
+(`MeasureTheory.Lp.norm_toDualCLM_apply`). Its bound on the dense subspace of test functions
+(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`, which needs $q < \infty$) is a bound on all
+of $L^q(I)$. -/
 theorem MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le
     [ENNReal.HolderConjugate p q] (hq : q ≠ ⊤) {w : ℝ → ℝ} (hw : MemLp w p (volume.restrict I))
     {C : ℝ} (hC : 0 ≤ C)
@@ -151,12 +171,18 @@ theorem MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le
   rw [← Lp.norm_toLp w hw, ← hW]
   exact key
 
-/-- **Proposition 8.3, (ii) ⇒ (i)** ([brezis2011functional]): for `1 < p ≤ ∞`, `q` the conjugate
-exponent, `u ∈ L^p(I)` and a constant `C` with `|∫_I u φ'| ≤ C ‖φ‖_q` for every test function
-`φ` on `I`, `u` lies in `W^{1,p}(I)` and its weak derivative satisfies `‖u'‖_p ≤ C`. The
-membership is the one-dimensional case of `HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le`
-(Hahn–Banach and the Riesz representation theorem); the bound is
-`MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 < p \le \infty$ and let $q < \infty$ be the
+conjugate exponent. Let $u \in L^p(I)$ and $C \in \mathbb{R}$, and assume that
+$$\Big|\int_I u\,\varphi'\Big| \le C\,\|\varphi\|_{L^q(I)}$$
+for every test function $\varphi$ on $I$. Then $u \in W^{1,p}(I)$, and $u$ has a weak derivative
+$w$ on $I$ with $\|w\|_{L^p(I)} \le \max\{C, 0\}$. This is Proposition 8.3, (ii) ⇒ (i), of
+[brezis2011functional].
+
+The membership is the one-dimensional case of
+`HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le`, which uses the Hahn–Banach theorem and
+the Riesz representation theorem. The bound is
+`MeasureTheory.eLpNorm_le_of_forall_abs_integral_testFunction_mul_le`. The bound $\max\{C, 0\}$
+is `ENNReal.ofReal C`. -/
 theorem memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) {u : ℝ → ℝ} (hu : MemLp u p (volume.restrict I)) {C : ℝ}
     (h : ∀ φ : 𝓓(I, ℝ), |∫ x in (I : Set ℝ), u x * deriv φ x|
@@ -197,9 +223,11 @@ theorem memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le [ENNReal.Holder
   congr 1
   exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
 
-/-- **Proposition 8.3** ([brezis2011functional]), as an equivalence: for `1 < p ≤ ∞`, `q` the
-conjugate exponent and `u ∈ L^p(I)`, `u ∈ W^{1,p}(I)` if and only if there is a constant `C` with
-`|∫_I u φ'| ≤ C ‖φ‖_q` for every test function `φ` on `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 < p \le \infty$ and let $q < \infty$ be the
+conjugate exponent. For $u \in L^p(I)$, $u \in W^{1,p}(I)$ if and only if there is a constant
+$C$ with
+$$\Big|\int_I u\,\varphi'\Big| \le C\,\|\varphi\|_{L^q(I)}$$
+for every test function $\varphi$ on $I$. This is Proposition 8.3 of [brezis2011functional]. -/
 theorem memSobolevIntervalLp_iff_forall_abs_integral_mul_deriv_le [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) {u : ℝ → ℝ} (hu : MemLp u p (volume.restrict I)) :
     MemSobolevIntervalLp u 1 p I ↔ ∃ C : ℝ, ∀ φ : 𝓓(I, ℝ),
@@ -221,12 +249,18 @@ section Translate
 
 variable {p q : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **Proposition 8.5, (ii) ⇒ (i)** ([brezis2011functional]): for `1 < p ≤ ∞`, `q` the conjugate
-exponent, `u ∈ L^p(ℝ)` and a constant `C` with `‖τ_h u − u‖_p ≤ C |h|` for every `h`, `u` lies
-in `W^{1,p}(ℝ)` and its weak derivative satisfies `‖u'‖_p ≤ C`. The translation estimate gives
-the bound `|∫ u φ'| ≤ C ‖φ‖_q` of Proposition 8.3 (ii) by the difference-quotient argument of
-`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le` (Proposition 9.3, (iii) ⇒ (ii)),
-and Proposition 8.3 concludes. The converse, with the constant `C = ‖u'‖_p`, is
+/-- Let $1 < p \le \infty$ and let $q < \infty$ be the conjugate exponent. Let
+$u \in L^p(\mathbb{R})$ and $C \in \mathbb{R}$, and assume that for every $h \in \mathbb{R}$
+$$\|\tau_h u - u\|_{L^p(\mathbb{R})} \le \max\{C|h|, 0\}, \qquad \tau_h u(x) = u(x + h).$$
+Then $u \in W^{1,p}(\mathbb{R})$, and $u$ has a weak derivative $w$ on $\mathbb{R}$ with
+$\|w\|_{L^p(\mathbb{R})} \le \max\{C, 0\}$. This is Proposition 8.5, (ii) ⇒ (i), of
+[brezis2011functional].
+
+The bounds are `ENNReal.ofReal (C * |h|)` and `ENNReal.ofReal C`. The translation estimate gives
+the bound $|\int u \varphi'| \le C \|\varphi\|_{L^q}$ of Proposition 8.3 (ii) by the
+difference-quotient argument of `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`
+(Proposition 9.3, (iii) ⇒ (ii), of [brezis2011functional]), and Proposition 8.3 gives the
+conclusion. The converse, with the constant $C = \|u'\|_{L^p}$, is
 `SobolevIntervalLp.eLpNorm_translate_sub_le`. -/
 theorem memSobolevIntervalLp_of_eLpNorm_translate_sub_le [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) {u : ℝ → ℝ} (hu : MemLp u p volume) {C : ℝ}
@@ -269,14 +303,15 @@ theorem memSobolevIntervalLp_of_eLpNorm_translate_sub_le [ENNReal.HolderConjugat
 
 end Translate
 
-/-! ### Remark 16 (ii): `W_0^{1,p}(I)` by testing against `C_c^∞(ℝ)` -/
+/-! ### Remark 16 (ii): $W_0^{1,p}(I)$ by testing against $C_c^\infty(\mathbb{R})$ -/
 
 section Zero
 
 variable {I : Opens ℝ} {p q : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The integral over `ℝ` of a product with the zero extension of `f` off the open set `I` is
-the integral over `I` of the product with `f`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open and let $f, g : \mathbb{R} \to \mathbb{R}$. Then
+$$\int_{\mathbb{R}} g \cdot \mathbf{1}_I f = \int_I g f,$$
+where $\mathbf{1}_I f$ is the extension of $f$ by zero outside $I$. -/
 theorem MeasureTheory.integral_mul_indicator_eq_setIntegral (I : Opens ℝ) (g f : ℝ → ℝ) :
     ∫ x, g x * (I : Set ℝ).indicator f x = ∫ x in (I : Set ℝ), g x * f x := by
   rw [← integral_indicator I.isOpen.measurableSet]
@@ -285,15 +320,21 @@ theorem MeasureTheory.integral_mul_indicator_eq_setIntegral (I : Opens ℝ) (g f
   · simp only [indicator_of_mem hx]
   · simp only [indicator_of_notMem hx, mul_zero]
 
-/-- **Remark 16 (ii) of [brezis2011functional], Chapter 8**: for `1 < p < ∞`, `q` the conjugate
-exponent, an open interval `I` and `u ∈ L^p(I)`, `u` is (almost everywhere on `I`) the function
-of an element of `W_0^{1,p}(I)` if and only if there is a constant `C` with
-`|∫_I u φ'| ≤ C ‖φ‖_{L^q(I)}` for every test function `φ` on the whole line. Forwards, the zero
-extension `ū` of `v ∈ W_0^{1,p}(I)` has the zero extension of `v'` as weak derivative on `ℝ`
-(`SobolevIntervalLpZero.hasWeakDerivOn_indicator`, Remark 16 (i)), so `∫_I u φ' = −∫_I v' φ` and
-Hölder's inequality bounds it; backwards, the bound is Proposition 8.3 (ii) for `ū` on `ℝ`
-(`memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le`), so `ū ∈ W^{1,p}(ℝ)`, which is
-Remark 16 (i) (`mem_sobolevIntervalLpZero_iff_indicator_mem`). -/
+/-- Let $1 < p < \infty$, let $q$ be the conjugate exponent, let $I \subseteq \mathbb{R}$ be an open
+interval and let $u \in L^p(I)$. Then $u$ agrees almost everywhere on $I$ with the function of
+an element of $W_0^{1,p}(I)$ if and only if there is a constant $C$ with
+$$\Big|\int_I u\,\varphi'\Big| \le C\,\|\varphi\|_{L^q(I)}$$
+for every smooth function $\varphi$ with compact support in $\mathbb{R}$. This is Remark 16 (ii)
+of [brezis2011functional], Chapter 8.
+
+Forwards, the zero extension $\bar u$ of $v \in W_0^{1,p}(I)$ has the zero extension of $v'$ as
+weak derivative on $\mathbb{R}$ (`SobolevIntervalLpZero.hasWeakDerivOn_indicator`, Remark 16
+(i)). Hence $\int_I u \varphi' = -\int_I v' \varphi$, and Hölder's inequality bounds it.
+Backwards, the bound is Proposition 8.3 (ii) for $\bar u$ on $\mathbb{R}$
+(`memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le`), so
+$\bar u \in W^{1,p}(\mathbb{R})$, and Remark 16 (i)
+(`mem_sobolevIntervalLpZero_iff_indicator_mem`) concludes. The test functions are
+`𝓓((⊤ : Opens ℝ), ℝ)`. -/
 theorem mem_sobolevIntervalLpZero_iff_forall_abs_integral_le [ENNReal.HolderConjugate p q]
     (hp : p ≠ ⊤) (hq : q ≠ ⊤) (hI : (I : Set ℝ).OrdConnected) {u : ℝ → ℝ}
     (hu : MemLp u p (volume.restrict I)) :
@@ -363,14 +404,15 @@ theorem mem_sobolevIntervalLpZero_iff_forall_abs_integral_le [ENNReal.HolderConj
 
 end Zero
 
-/-! ### Theorem 8.8 (7): the compact embedding `W^{1,1}(a, b) ↪ L^q(a, b)` -/
+/-! ### Theorem 8.8 (7): the compact embedding $W^{1,1}(a, b) \hookrightarrow L^q(a, b)$ -/
 
 section Compact
 
 variable {q : ℝ≥0∞} [Fact (1 ≤ q)]
 
-/-- The translates of an `L^p(ℝ)` function agree almost everywhere with the translates of any
-almost everywhere equal function. -/
+/-- Let $f, g : \mathbb{R} \to \mathbb{R}$ with $f = g$ almost everywhere, and let
+$h \in \mathbb{R}$. Then $x \mapsto f(x + h) - f(x)$ and $x \mapsto g(x + h) - g(x)$ agree
+almost everywhere. -/
 theorem MeasureTheory.translate_sub_ae_eq {f g : ℝ → ℝ} (hfg : f =ᵐ[volume] g) (h : ℝ) :
     (fun x ↦ f (x + h) - f x) =ᵐ[volume] fun x ↦ g (x + h) - g x := by
   have := (measurePreserving_add_right volume h).quasiMeasurePreserving.ae_eq_comp hfg
@@ -380,10 +422,15 @@ theorem MeasureTheory.translate_sub_ae_eq {f g : ℝ → ℝ} (hfg : f =ᵐ[volu
 
 namespace SobolevIntervalLp
 
-/-- **The translation estimate in `L^q` for `W^{1,1}(ℝ)`**, the inequality of the proof of
-[brezis2011functional] Theorem 8.8 (7): for `U ∈ W^{1,1}(ℝ)` and `1 ≤ q < ∞`,
-`‖τ_h U − U‖_q ≤ (|h| ‖U'‖_1)^{1/q} (2 ‖U‖_∞)^{1 − 1/q}`, from `‖τ_h U − U‖_1 ≤ |h| ‖U'‖_1`
-(Proposition 8.5) and the interpolation `‖g‖_q ≤ ‖g‖_1^{1/q} ‖g‖_∞^{1 − 1/q}`. -/
+/-- **The translation estimate in $L^q$ for $W^{1,1}(\mathbb{R})$.** Let $1 \le q < \infty$,
+$U \in W^{1,1}(\mathbb{R})$ and $h \in \mathbb{R}$. Then
+$$\|\tau_h U - U\|_{L^q(\mathbb{R})} \le \big(|h|\,\|U'\|_{L^1}\big)^{1/q}
+  \big(2\,\|U\|_{L^\infty}\big)^{1 - 1/q}, \qquad \tau_h U(x) = U(x + h).$$
+This is the inequality in the proof of Theorem 8.8 (7) of [brezis2011functional].
+
+The inequality is stated in `ℝ≥0∞`. It follows from
+$\|\tau_h U - U\|_{L^1} \le |h|\,\|U'\|_{L^1}$ (Proposition 8.5 of [brezis2011functional]) and
+the interpolation inequality $\|g\|_{L^q} \le \|g\|_{L^1}^{1/q} \|g\|_{L^\infty}^{1 - 1/q}$. -/
 theorem eLpNorm_translate_sub_le_rpow (hq : q ≠ ⊤) (U : SobolevIntervalLp 1 1 ⊤) (h : ℝ) :
     eLpNorm (fun x ↦ fn U (x + h) - fn U x) q volume
       ≤ (ENNReal.ofReal |h| * ‖deriv U 1‖ₑ) ^ q.toReal⁻¹
@@ -411,14 +458,17 @@ theorem eLpNorm_translate_sub_le_rpow (hq : q ≠ ⊤) (U : SobolevIntervalLp 1 
 
 variable {a b : ℝ}
 
-/-- **Theorem 8.8 (7) of [brezis2011functional]**: for `a < b` and `1 ≤ q < ∞`, the inclusion
-`W^{1,1}(a, b) ↪ L^q(a, b)` is a compact operator. The extensions `P u`, `u` in the unit ball,
-form a family bounded in `L^1(ℝ) ∩ L^∞(ℝ)`, hence in `L^q(ℝ)`, whose translates are uniformly
-continuous in `L^q` by `SobolevIntervalLp.eLpNorm_translate_sub_le_rpow`; the
-Kolmogorov–M. Riesz–Fréchet theorem
-(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`) makes its
-restriction to `(a, b)`, which is the image of the unit ball, relatively compact in `L^q(a, b)`.
-Compactness in the vocabulary of `IsCompactEmbedding` is
+/-- Let $a < b$ and $1 \le q < \infty$. The inclusion $W^{1,1}(a, b) \hookrightarrow L^q(a, b)$,
+`SobolevIntervalLp.toLpOfBounded`, is a compact operator. This is Theorem 8.8 (7) of
+[brezis2011functional].
+
+The extensions $Pu$ of the elements $u$ of the unit ball form a family that is bounded in
+$L^1(\mathbb{R}) \cap L^\infty(\mathbb{R})$, hence in $L^q(\mathbb{R})$. By
+`SobolevIntervalLp.eLpNorm_translate_sub_le_rpow` its translates are uniformly continuous in
+$L^q$. The Kolmogorov–M. Riesz–Fréchet theorem
+(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`) makes the
+restriction of the family to $(a, b)$, which is the image of the unit ball, relatively compact
+in $L^q(a, b)$. The same statement with `IsCompactEmbedding` is
 `SobolevIntervalLp.isCompactEmbedding_toLp_one`. -/
 theorem isCompactOperator_toLp_one (hab : a < b) (hq : q ≠ ⊤) :
     IsCompactOperator (toLpOfBounded 1 hab q :
@@ -533,9 +583,10 @@ theorem isCompactOperator_toLp_one (hab : a < b) (hq : q ≠ ⊤) :
       _ < ε := hδε (by rw [Real.dist_eq, sub_zero]; exact hh)
   · rw [Real.volume_Ioo]; exact ENNReal.ofReal_ne_top
 
-/-- **Theorem 8.8 (7) of [brezis2011functional]**, in the vocabulary of
-`Numlib/Analysis/Normed/Operator/Embedding.lean`: for `a < b` and `1 ≤ q < ∞`,
-`W^{1,1}(a, b) ↪ L^q(a, b)` is a compact embedding. -/
+/-- Let $a < b$ and $1 \le q < \infty$. The inclusion $W^{1,1}(a, b) \hookrightarrow L^q(a, b)$ is a
+compact embedding in the sense of `IsCompactEmbedding`: it is injective, continuous, and maps
+bounded sequences to sequences with a convergent subsequence. This is Theorem 8.8 (7) of
+[brezis2011functional]. -/
 theorem isCompactEmbedding_toLp_one (hab : a < b) (hq : q ≠ ⊤) :
     IsCompactEmbedding (toLpOfBounded 1 hab q :
       SobolevIntervalLp 1 1 (Opens.Ioo a b) →ₗ[ℝ] Lp ℝ q (volume.restrict (Ioo a b))) := by
@@ -551,19 +602,22 @@ end SobolevIntervalLp
 
 end Compact
 
-/-! ### Weak-∗ sequential compactness in `L^p`, and uniform convergence from equicontinuity -/
+/-! ### Weak-∗ sequential compactness in $L^p$, and uniform convergence from equicontinuity -/
 
 section WeakStar
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α} {p q : ℝ≥0∞}
 
-/-- **Weak-∗ sequential compactness of bounded sets of `L^p`**, `1 < p ≤ ∞`: on a σ-finite
-measure with `L^q` separable, `q < ∞` the conjugate exponent, a sequence `w n ∈ L^p` with
-`‖w n‖ ≤ M` has a subsequence `w (φ n)` and a limit `w₀ ∈ L^p`, `‖w₀‖ ≤ M`, with
-`∫ w (φ n) f → ∫ w₀ f` for every `f ∈ L^q`. This is the sequential Banach–Alaoglu theorem
-`WeakDual.isSeqCompact_closedBall` read through the identification `L^p = (L^q)^*`
-(`MeasureTheory.Lp.dualEquiv`); for `p < ∞` it is weak convergence, for `p = ∞` weak-∗
-convergence in `σ(L^∞, L^1)`. -/
+/-- **Weak-∗ sequential compactness of bounded sets of $L^p$.** Let $\mu$ be a σ-finite measure, let
+$1 \le p \le \infty$ and let $q$ be the conjugate exponent, with $1 \le q < \infty$ and
+$L^q(\mu)$ separable. Let $w_n \in L^p(\mu)$ with $\|w_n\| \le M$ for all $n$. Then there are
+$w_0 \in L^p(\mu)$ with $\|w_0\| \le M$ and a strictly increasing
+$\varphi : \mathbb{N} \to \mathbb{N}$ such that
+$$\int w_{\varphi(n)} f \, d\mu \to \int w_0 f \, d\mu \quad \text{for every } f \in L^q(\mu).$$
+
+This is the sequential Banach–Alaoglu theorem `WeakDual.isSeqCompact_closedBall`, read through
+the identification $L^p = (L^q)^*$ (`MeasureTheory.Lp.dualEquiv`). For $p < \infty$ it is weak
+convergence; for $p = \infty$ it is weak-∗ convergence in $\sigma(L^\infty, L^1)$. -/
 theorem MeasureTheory.Lp.exists_subseq_forall_tendsto_integral_mul [SigmaFinite μ]
     [Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q] (hq : q ≠ ⊤)
     [TopologicalSpace.SeparableSpace (Lp ℝ q μ)] {w : ℕ → Lp ℝ p μ} {M : ℝ}
@@ -600,7 +654,9 @@ section Equicontinuous
 
 variable {X : Type*} [TopologicalSpace X] {F : ℕ → X → ℝ} {f : X → ℝ}
 
-/-- **Pointwise convergence of an equicontinuous sequence is uniform on compact sets.** -/
+/-- Let $X$ be a topological space, $K \subseteq X$ compact, and $F_n, f : X \to \mathbb{R}$. If the
+sequence $(F_n)$ is equicontinuous on $K$ and $F_n(x) \to f(x)$ for every $x \in K$, then
+$F_n \to f$ uniformly on $K$. -/
 theorem tendstoUniformlyOn_of_equicontinuousOn_of_tendsto {K : Set X} (hK : IsCompact K)
     (heq : EquicontinuousOn F K) (hpt : ∀ x ∈ K, Tendsto (fun n ↦ F n x) atTop (𝓝 (f x))) :
     TendstoUniformlyOn F f atTop K := by
@@ -614,14 +670,14 @@ theorem tendstoUniformlyOn_of_equicontinuousOn_of_tendsto {K : Set X} (hK : IsCo
 
 end Equicontinuous
 
-/-! ### Remark 10 (d), Exercise 8.2: weak compactness of bounded sets of `W^{1,p}(I)` -/
+/-! ### Remark 10 (d), Exercise 8.2: weak compactness of bounded sets of $W^{1,p}(I)$ -/
 
 section Subseq
 
 variable {I : Opens ℝ} {p q : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- A bounded interval `Ioc c d` with endpoints in the closure of the open interval `I` differs
-from `Ioc c d ∩ I` by a null set. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and let $c, d \in \bar I$. Then $(c, d] \cap I$
+and $(c, d]$ differ by a null set. -/
 theorem TopologicalSpace.Opens.Ioc_inter_ae_eq (hI : (I : Set ℝ).OrdConnected) {c d : ℝ}
     (hc : c ∈ closure (I : Set ℝ)) (hd : d ∈ closure (I : Set ℝ)) :
     Ioc c d ∩ (I : Set ℝ) =ᵐ[volume] Ioc c d := by
@@ -633,8 +689,10 @@ theorem TopologicalSpace.Opens.Ioc_inter_ae_eq (hI : (I : Set ℝ).OrdConnected)
   rw [ae_eq_set, sdiff_eq_empty.2 inter_subset_left, measure_empty]
   exact ⟨rfl, measure_mono_null h2 (I.volume_closure_diff_eq_zero hI)⟩
 
-/-- The integral of `v` over `Ioc c d`, for `c, d` in the closure of the open interval `I`, is
-the pairing of `v` with the indicator of `Ioc c d` over `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $c, d \in \bar I$ and
+$v : \mathbb{R} \to \mathbb{R}$. Then
+$$\int_{(c, d]} v = \int_I v \cdot \mathbf{1}_{(c, d]}.$$
+-/
 theorem MeasureTheory.setIntegral_Ioc_eq_setIntegral_mul_indicator (hI : (I : Set ℝ).OrdConnected)
     {c d : ℝ} (hc : c ∈ closure (I : Set ℝ)) (hd : d ∈ closure (I : Set ℝ)) (v : ℝ → ℝ) :
     ∫ t in Ioc c d, v t = ∫ t in (I : Set ℝ), v t * (Ioc c d).indicator (fun _ ↦ (1 : ℝ)) t := by
@@ -648,7 +706,8 @@ theorem MeasureTheory.setIntegral_Ioc_eq_setIntegral_mul_indicator (hI : (I : Se
         · simp only [indicator_of_mem ht, mul_one]
         · simp only [indicator_of_notMem ht, mul_zero]
 
-/-- The indicator of a bounded interval lies in every `L^q(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $q \in [0, \infty]$ and $c, d \in \mathbb{R}$. The
+indicator function $\mathbf{1}_{(c, d]}$ lies in $L^q(I)$. -/
 theorem MeasureTheory.memLp_indicator_Ioc_one (I : Opens ℝ) (q : ℝ≥0∞) (c d : ℝ) :
     MemLp ((Ioc c d).indicator fun _ ↦ (1 : ℝ)) q (volume.restrict (I : Set ℝ)) :=
   memLp_indicator_const q measurableSet_Ioc.nullMeasurableSet 1 (Or.inr
@@ -656,20 +715,27 @@ theorem MeasureTheory.memLp_indicator_Ioc_one (I : Opens ℝ) (q : ℝ≥0∞) (
 
 namespace SobolevIntervalLp
 
-/-- **Remark 10 (d) and Exercise 8.2 of [brezis2011functional]** (weak compactness of bounded
-sets of `W^{1,p}(I)`): for `1 < p ≤ ∞`, `q` the conjugate exponent, an open interval `I` and a
-sequence `u n ∈ W^{1,p}(I)` with `‖u n‖ ≤ M`, there are `v ∈ W^{1,p}(I)` and a subsequence
-`u (φ n)` whose continuous representatives converge to `ũ = ṽ` uniformly on every bounded part
-`Ī ∩ [-R, R]` of `Ī`, and whose derivatives converge to `v'` weakly in `L^p(I)` — weakly-∗ in
-`σ(L^∞, L^1)` when `p = ∞` — in the sense that `∫_I u_n' f → ∫_I v' f` for every `f ∈ L^q(I)`.
+/-- **Weak compactness of bounded sets of $W^{1,p}(I)$.** Let $I \subseteq \mathbb{R}$ be an open
+interval, let $1 < p \le \infty$ and let $q < \infty$ be the conjugate exponent. Let
+$u_n \in W^{1,p}(I)$ with $\|u_n\| \le M$ for all $n$. Then there are $v \in W^{1,p}(I)$ and a
+strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such that:
+* for every $R \in \mathbb{R}$, the continuous representatives $\tilde u_{\varphi(n)}$ converge
+  to $\tilde v$ uniformly on $\bar I \cap [-R, R]$;
+* $\int_I u_{\varphi(n)}' f \to \int_I v' f$ for every $f \in L^q(I)$.
 
-The derivatives have a weakly-∗ convergent subsequence by the sequential Banach–Alaoglu theorem
-(`MeasureTheory.Lp.exists_subseq_forall_tendsto_integral_mul`), the values `ũ_n(y₀)` at a base
-point a convergent one, so `ũ_n(x) = ũ_n(y₀) + ∫_{y₀}^x u_n'` converges at every `x ∈ Ī` to
-`G(x) = L + ∫_{y₀}^x w₀`; the representatives are uniformly Hölder continuous
-(`SobolevIntervalLp.abs_rep_sub_rep_le`), so the convergence is uniform on compact parts of `Ī`
-(`tendstoUniformlyOn_of_equicontinuousOn_of_tendsto`); `G ∈ L^p(I)` by Fatou's lemma, and
-`w₀` is its weak derivative (Lemma 8.2), so `G` is the representative of an element `v`. -/
+This is Remark 10 (d) and Exercise 8.2 of [brezis2011functional]. The second item is weak
+convergence in $L^p(I)$ for $p < \infty$ and weak-∗ convergence in $\sigma(L^\infty, L^1)$ for
+$p = \infty$.
+
+The derivatives have a weakly-∗ convergent subsequence with limit $w_0$ by the sequential
+Banach–Alaoglu theorem (`MeasureTheory.Lp.exists_subseq_forall_tendsto_integral_mul`), and the
+values $\tilde u_n(y_0)$ at a base point have a convergent subsequence with limit $L$. Then
+$\tilde u_n(x) = \tilde u_n(y_0) + \int_{y_0}^x u_n'$ converges at every $x \in \bar I$ to
+$G(x) = L + \int_{y_0}^x w_0$. The representatives are uniformly Hölder continuous
+(`SobolevIntervalLp.abs_rep_sub_rep_le`), so the convergence is uniform on compact parts of
+$\bar I$ (`tendstoUniformlyOn_of_equicontinuousOn_of_tendsto`). Fatou's lemma gives
+$G \in L^p(I)$, and $w_0$ is the weak derivative of $G$ by Lemma 8.2 of [brezis2011functional],
+so $G$ is the representative of an element $v$. -/
 theorem exists_subseq_tendsto_rep_of_bounded (hI : (I : Set ℝ).OrdConnected)
     [ENNReal.HolderConjugate p q] (hq : q ≠ ⊤) {u : ℕ → SobolevIntervalLp 1 p I} {M : ℝ}
     (hM : ∀ n, ‖u n‖ ≤ M) :
@@ -803,7 +869,7 @@ end SobolevIntervalLp
 
 end Subseq
 
-/-! ### Remark 4, second clause: an `L^p` limit with bounded derivatives is in `W^{1,p}` -/
+/-! ### Remark 4, second clause: an $L^p$ limit with bounded derivatives is in $W^{1,p}$ -/
 
 section Remark4
 
@@ -811,8 +877,9 @@ variable {I : Opens ℝ} {p q : ℝ≥0∞} [Fact (1 ≤ p)]
 
 namespace SobolevIntervalLp
 
-/-- The `L^p(I)` norm of the weak derivative of `u ∈ W^{1,p}(I)` read as a family of linear
-maps `t ↦ t u'(x)` (the tensor formulation) is `‖u'‖_p`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$. The $L^p(I)$
+norm of $x \mapsto (t \mapsto t\,u'(x))$, the weak derivative of $u$ as a family of linear maps,
+is $\|u'\|_{L^p(I)}$. -/
 theorem eLpNorm_toSpanSingleton_deriv (u : SobolevIntervalLp 1 p I) :
     eLpNorm (fun x ↦ ContinuousLinearMap.toSpanSingleton ℝ (deriv u 1 x)) p
       (volume.restrict (I : Set ℝ)) = ‖deriv u 1‖ₑ := by
@@ -821,10 +888,13 @@ theorem eLpNorm_toSpanSingleton_deriv (u : SobolevIntervalLp 1 p I) :
     |>.comp_aestronglyMeasurable (Lp.aestronglyMeasurable _)) (Lp.aestronglyMeasurable _)
     (Eventually.of_forall fun x ↦ ContinuousLinearMap.norm_toSpanSingleton _)
 
-/-- **Remark 4 of [brezis2011functional] §8.2, second clause** (the "in fact" sentence, Exercise
-8.2): for `1 < p ≤ ∞`, if `u_n ∈ W^{1,p}(I)` converge to `f` in `L^p(I)` and `‖u_n'‖_p` stays
-bounded, then `f ∈ W^{1,p}(I)`. No subsequence is extracted: the bound of Proposition 8.3 (ii)
-passes to the limit, `MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 < p \le \infty$ and let $q < \infty$ be the
+conjugate exponent. Let $u_n \in W^{1,p}(I)$ with $\|u_n'\|_{L^p(I)} \le M$ for all $n$, and let
+$f \in L^p(I)$ with $\|u_n - f\|_{L^p(I)} \to 0$. Then $f \in W^{1,p}(I)$. This is the second
+clause of Remark 4 of [brezis2011functional], §8.2 (see also Exercise 8.2 there).
+
+No subsequence is extracted: the bound of Proposition 8.3 (ii) passes to the limit, by
+`MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`. -/
 theorem memSobolevIntervalLp_of_tendsto_of_bounded_deriv [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) {u : ℕ → SobolevIntervalLp 1 p I} {M : ℝ} (hM : ∀ n, ‖deriv (u n) 1‖ ≤ M)
     {f : ℝ → ℝ} (hf : MemLp f p (volume.restrict I))

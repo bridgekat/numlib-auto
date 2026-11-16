@@ -15,25 +15,31 @@ import Numlib.LinearAlgebra.Tensor.HOSVD
 /-!
 # The Tucker format and the Tucker approximation problem
 
-A tensor is in Tucker format with multilinear rank at most `r` when it is a multilinear product
-`S ×₁ U₁ ⋯ ×_d U_d` of a core `S : Tensor (fun k => Fin (r k)) 𝕜` by factors `U k` with orthonormal
-columns ([golub2013matrix] §12.5.3). The Tucker approximation problem (12.5.12)–(12.5.13) asks for
-the best such approximation of a given tensor; for given factors the best core is
-`A ×₁ U₁ᴴ ⋯ ×_d U_dᴴ`, and the problem becomes the maximization of `‖A ×₁ U₁ᴴ ⋯ ×_d U_dᴴ‖`, which
-can be read through any modal unfolding. The alternating (ALS) iteration of the book is an
-unnumbered "Repeat" framework with no convergence theorem; what each of its updates solves is
-recorded here.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$. A tensor $\mathcal{A}$ over $\mathbb{K}$ is in
+Tucker format with multilinear rank at most $r = (r_1, \dots, r_d)$ when it is a multilinear product
+$\mathcal{A} = \mathcal{S} \times_1 U_1 \cdots \times_d U_d$ of a core $\mathcal{S} \in
+\mathbb{K}^{r_1 \times \cdots \times r_d}$ by factors $U_k$ with $r_k$ orthonormal columns
+([golub2013matrix], §12.5.3). The Tucker approximation problem (12.5.12)–(12.5.13) asks for the best
+such approximation of a given tensor. For given factors, the best core is $\mathcal{A} \times_1
+U_1^H \cdots \times_d U_d^H$. The problem then becomes the maximization of $\|\mathcal{A} \times_1
+U_1^H \cdots \times_d U_d^H\|$, and this norm can be computed from any mode-$k$ unfolding of
+$\mathcal{A}$.
 
-## Main statements
+The alternating least-squares iteration of [golub2013matrix] is an unnumbered "Repeat" framework
+without a convergence theorem. This module proves that each of its updates is optimal: with all
+factors except $U_k$ fixed, the best $U_k$ attains the sum of the squares of the $r_k$ largest
+singular values of a matrix built from the mode-$k$ unfolding.
 
-* `Tensor.multilinearRank_le_iff`: the Tucker format characterizes the multilinear rank.
-* `Tensor.norm_sub_multilinearProd_sq`: the best core for given factors.
-* `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`: the objective through an unfolding.
-* `Tensor.isGreatest_tucker_update`: one update of the alternating iteration is optimal (Ky Fan).
+## Main results
 
-## References
-
-* [golub2013matrix], §12.5.3.
+* `Tensor.multilinearRank_le_iff`: a tensor has multilinear rank at most $r$ if and only if it is in
+  Tucker format with a core of size $r_1 \times \cdots \times r_d$.
+* `Tensor.norm_sub_multilinearProd_sq`: for factors with orthonormal columns, the best core is
+  $\mathcal{A} \times_1 U_1^H \cdots \times_d U_d^H$.
+* `Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`: $\|\mathcal{A} \times_1 U_1^H \cdots
+  \times_d U_d^H\| = \|U_k^H \mathcal{A}_{(k)} (\bigotimes_{j \neq k} U_j^H)^T\|_F$.
+* `Tensor.isGreatest_tucker_update`: one update of the alternating iteration is optimal, by the Ky
+  Fan maximum principle.
 -/
 
 universe u v
@@ -47,11 +53,19 @@ variable {ι : Type u} {κ : ι → Type v} [Fintype ι] [DecidableEq ι] [∀ i
   {𝕜 : Type*} [RCLike 𝕜] {r : ι → ℕ}
 
 open scoped ComplexOrder in
-/-- The Tucker format characterizes the multilinear rank ([golub2013matrix] §12.5.2–12.5.3): `A`
-has multilinear rank at most `r` iff `A = S ×₁ U₁ ⋯ ×_d U_d` with a core of size `r` and factors
-with orthonormal columns (when `r k ≤ card (κ k)`, so that such factors exist). The factors are
-chosen among the HOSVD factors, keeping a set of `r k` directions containing every nonzero singular
-value of `A_(k)`; the truncated HOSVD is then exact. -/
+/-- The Tucker format characterizes the multilinear rank ([golub2013matrix], §12.5.2–12.5.3). Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $\mathcal{A}$ be a tensor over $\mathbb{K}$
+with finite index types $\kappa_k$, and let $r_k \le |\kappa_k|$ for every mode $k$. Then
+$\operatorname{rank} \mathcal{A}_{(k)} \le r_k$ for every $k$ if and only if there are matrices
+$U_k \in \mathbb{K}^{\kappa_k \times r_k}$ with $U_k^H U_k = I$ and a core $\mathcal{S} \in
+\mathbb{K}^{r_1 \times \cdots \times r_d}$ such that
+$$\mathcal{A} = \mathcal{S} \times_1 U_1 \cdots \times_d U_d.$$
+
+The hypothesis $r_k \le |\kappa_k|$ makes sure that factors with $r_k$ orthonormal columns
+exist. The multilinear rank is `Tensor.multilinearRank`. For the forward direction, the proof
+chooses the factors among the factors of the higher-order SVD: it keeps a set of $r_k$
+directions that contains every nonzero singular value of $\mathcal{A}_{(k)}$, and then the
+truncated higher-order SVD is exact. -/
 theorem multilinearRank_le_iff (A : Tensor κ 𝕜) (hr : ∀ k, r k ≤ Fintype.card (κ k)) :
     (∀ k, multilinearRank A k ≤ r k) ↔
       ∃ (U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜) (S : Tensor (fun k => Fin (r k)) 𝕜),
@@ -111,9 +125,17 @@ theorem multilinearRank_le_iff (A : Tensor κ 𝕜) (hr : ∀ k, r k ≤ Fintype
       _ ≤ Fintype.card (Fin (r k)) := rank_le_card_width _
       _ = r k := Fintype.card_fin _
 
-/-- **The best core** ([golub2013matrix] §12.5.3, the display after "the best `𝒮` given any
-triplet"): for factors with orthonormal columns,
-`‖A − S ×ᵢ Uᵢ‖² = ‖A‖² − ‖A ×ᵢ Uᵢᴴ‖² + ‖S − A ×ᵢ Uᵢᴴ‖²`. -/
+/-- **The best core** ([golub2013matrix], §12.5.3, the display after "the best $\mathcal{S}$ given
+any triplet"). Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let
+$U_k \in \mathbb{K}^{\kappa_k \times r_k}$ satisfy $U_k^H U_k = I$, and let $\mathcal{S} \in
+\mathbb{K}^{r_1 \times \cdots \times r_d}$. Then
+$$\|\mathcal{A} - \mathcal{S} \times_i U_i\|^2 = \|\mathcal{A}\|^2 - \|\mathcal{A} \times_i
+  U_i^H\|^2 + \|\mathcal{S} - \mathcal{A} \times_i U_i^H\|^2.$$
+Hence for fixed factors, the core $\mathcal{S} = \mathcal{A} \times_i U_i^H$ minimizes the
+error.
+
+Here $\mathcal{S} \times_i U_i$ is $\mathcal{S} \times_1 U_1 \cdots \times_d U_d$, and
+$\mathcal{A} \times_i U_i^H$ is $\mathcal{A} \times_1 U_1^H \cdots \times_d U_d^H$. -/
 theorem norm_sub_multilinearProd_sq {U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜}
     (hU : ∀ k, (U k)ᴴ * U k = 1) (A : Tensor κ 𝕜) (S : Tensor (fun k => Fin (r k)) 𝕜) :
     ‖A - multilinearProd U S‖ ^ 2
@@ -124,23 +146,36 @@ theorem norm_sub_multilinearProd_sq {U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜}
     frobenius_norm_multilinearProd_of_orthonormal hU, inner_re_symm (𝕜 := 𝕜) S]
   ring
 
-/-- The Tucker objective read through any unfolding ([golub2013matrix] §12.5.3, the three-line
-display): `‖A ×ᵢ Uᵢᴴ‖ = ‖U_kᴴ A_(k) (⊗_{j ≠ k} U_jᴴ)ᵀ‖`. -/
+/-- The Tucker objective in terms of a mode-$k$ unfolding ([golub2013matrix], §12.5.3, the
+three-line display). Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let
+$U_k \in \mathbb{K}^{\kappa_k \times r_k}$ be any matrices. Then for every mode $k$,
+$$\|\mathcal{A} \times_1 U_1^H \cdots \times_d U_d^H\| = \Bigl\|U_k^H \mathcal{A}_{(k)}
+  \Bigl(\bigotimes_{j \neq k} U_j^H\Bigr)^T\Bigr\|_F.$$
+
+No orthonormality of the $U_k$ is needed. The norm on the right is the Frobenius norm of a
+matrix. -/
 theorem norm_multilinearProd_conjTranspose_eq_modeUnfold (U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜)
     (A : Tensor κ 𝕜) (k : ι) :
     ‖multilinearProd (fun k => (U k)ᴴ) A‖
       = ‖(U k)ᴴ * A.modeUnfold k * (piKronecker fun j : {j // j ≠ k} => (U j)ᴴ)ᵀ‖ := by
   rw [← frobenius_norm_modeUnfold, modeUnfold_multilinearProd]
 
-/-- **One update of the alternating iteration is optimal** ([golub2013matrix] §12.5.3, "By freezing
-any two … we can improve the third by solving an optimization problem of the form (12.5.3)"): with
-the factors `U j`, `j ≠ k`, frozen and `W = A_(k) (⊗_{j ≠ k} U_jᴴ)ᵀ`, the largest value of the
-Tucker objective `‖A ×ᵢ U'ᵢᴴ‖²` over the `k`-th factors `U'_k = V` with orthonormal columns is
-`σ_0(W)² + ⋯ + σ_{r_k - 1}(W)²`, attained at the leading left singular vectors of `W`. The
-objective is `‖Vᴴ W‖_F²` (`Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`), and Ky Fan's
-maximum principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` concludes. With the best
-core (`Tensor.norm_sub_multilinearProd_sq`) this is why the error never increases along the
-iteration. -/
+/-- **One update of the alternating iteration is optimal** ([golub2013matrix], §12.5.3, "By freezing
+any two … we can improve the third by solving an optimization problem of the form (12.5.3)").
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $U_j \in \mathbb{K}^{\kappa_j \times r_j}$
+for every mode $j$, let $k$ be a mode with $r_k \le |\kappa_k|$, and let
+$$W = \mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k} U_j^H\Bigr)^T.$$
+Replace the factor $U_k$ by a matrix $V \in \mathbb{K}^{\kappa_k \times r_k}$ with $V^H V = I$,
+and keep the other factors. Then the greatest value of the Tucker objective $\|\mathcal{A}
+\times_1 U_1^H \cdots \times_k V^H \cdots \times_d U_d^H\|^2$ over all such $V$ exists and is
+$$\sigma_1(W)^2 + \cdots + \sigma_{r_k}(W)^2.$$
+
+The singular values $\sigma_{i+1}(W)$ are `Matrix.sortedSingularValues W i`. By
+`Tensor.norm_multilinearProd_conjTranspose_eq_modeUnfold`, the objective is $\|V^H W\|_F^2$, and
+the Ky Fan maximum principle `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul` gives the
+result; the maximum is attained at the leading left singular vectors of $W$. Together with the
+best core of `Tensor.norm_sub_multilinearProd_sq`, this is why the error never increases along
+the iteration. -/
 theorem isGreatest_tucker_update (U : ∀ k, Matrix (κ k) (Fin (r k)) 𝕜) (A : Tensor κ 𝕜) (k : ι)
     (hr : r k ≤ Fintype.card (κ k)) :
     IsGreatest ((fun V => ‖multilinearProd (fun j => (Function.update U k V j)ᴴ) A‖ ^ 2) ''

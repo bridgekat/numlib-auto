@@ -9,37 +9,42 @@ import Numlib.Analysis.Convex.Subdifferential.LegendreType
 /-!
 # The gradient formulas of Moreau's theorem
 
-For `f` closed proper convex on a finite-dimensional inner product space and `w z = ½‖z‖²`, the
-Moreau envelope `f □ w` is finite everywhere and differentiable everywhere, with
+Let $E$ be a finite-dimensional real inner product space, let $w(z) = \tfrac12 \|z\|^2$, and let $f$
+be a closed proper convex function on $E$ with conjugate $f^*$. Write
+$\operatorname{prox}(z \mid f)$ for the proximal point of $z$ with respect to $f$: the unique point
+that minimizes $x \mapsto f(x) + w(z - x)$. Then the Moreau envelope $f \mathbin{\square} w$ is
+finite and differentiable everywhere, and
+$$\nabla (f \mathbin{\square} w)(z) = z - \operatorname{prox}(z \mid f), \qquad \nabla (f^*
+  \mathbin{\square} w)(z) = \operatorname{prox}(z \mid f).$$
+So the two terms of Moreau's splitting $z = \operatorname{prox}(z \mid f) + \operatorname{prox}(z
+\mid f^*)$ are the gradients of the two envelopes. These are the gradient formulas of Theorem 31.5
+of [rockafellar1970convex], and the presentation follows §31 of that book.
 
-`∇(f □ w) z = z - prox (z | f)`,  `∇(f* □ w) z = prox (z | f)`.
-
-So the two halves of Moreau's splitting `z = prox (z | f) + prox (z | f*)` are the gradients of the
-two envelopes. The splitting itself is in `Extremum/Prox.lean`; what is added here is that
-`∂(f □ w) z` is a single point, and a convex function with a one-point subdifferential at `z` is
-differentiable there.
+The splitting itself is in `Numlib.Analysis.Convex.Extremum.Prox`. This module adds two facts: the
+subdifferential $\partial (f \mathbin{\square} w)(z)$ is a single point, and a convex function whose
+subdifferential at $z$ is a single point is differentiable at $z$.
 
 ## Main results
 
-* `subdifferential_infConv_quadFn` — `∂(f □ w) z = {prox (z | f*)}`.
-* `hasGradientAtFn_infConv_quadFn`, `hasGradientAtFn_infConv_convexConj_quadFn`,
-  `gradient_infConv_quadFn`, `gradient_infConv_convexConj_quadFn` — the gradient formulas
-  ([rockafellar1970convex] Theorem 31.5), in `HasGradientAtFn` form and in terms of Mathlib's
-  `gradient`.
-* `closedProperConvexFn_infConv_quadFn` — the Moreau envelope is finite everywhere, hence closed
-  proper convex.
-* `convexConj_infConv_quadFn` — `(f □ w)* = f* + w`, since conjugation turns `□` into `+` and
-  `w* = w`.
+* `ConvexAnalysis.subdifferential_infConv_quadFn`: $\partial (f \mathbin{\square} w)(z) =
+  \{\operatorname{prox}(z \mid f^*)\}$.
+* `ConvexAnalysis.hasGradientAtFn_infConv_quadFn`,
+  `ConvexAnalysis.hasGradientAtFn_infConv_convexConj_quadFn`: the envelopes $f \mathbin{\square} w$
+  and $f^* \mathbin{\square} w$ have the gradients $\operatorname{prox}(z \mid f^*)$ and
+  $\operatorname{prox}(z \mid f)$ at $z$, in the form `ConvexAnalysis.HasGradientAtFn`.
+* `ConvexAnalysis.gradient_infConv_quadFn`, `ConvexAnalysis.gradient_infConv_convexConj_quadFn`: the
+  same formulas for the Mathlib `gradient`, $\nabla (f \mathbin{\square} w)(z) = z -
+  \operatorname{prox}(z \mid f)$ and $\nabla (f^* \mathbin{\square} w)(z) = \operatorname{prox}(z
+  \mid f)$.
+* `ConvexAnalysis.closedProperConvexFn_infConv_quadFn`: the Moreau envelope is finite everywhere,
+  hence a closed proper convex function.
+* `ConvexAnalysis.convexConj_infConv_quadFn`: $(f \mathbin{\square} w)^* = f^* + w$.
 
 ## Implementation notes
 
-No relative-interior or exactness hypothesis is needed: the conjugate of an infimal convolution is
-used in its unconditional direction, and the constraint qualification for the subgradient sum rule
-is supplied by `w` being finite and continuous.
-
-## References
-
-* [rockafellar1970convex] §31.
+* No relative-interior or exactness hypothesis is needed. The formula for the conjugate of an
+  infimal convolution is used only in the direction that holds without hypotheses. The constraint
+  qualification for the subgradient sum rule comes from the fact that $w$ is finite and continuous.
 -/
 
 namespace ConvexAnalysis
@@ -53,12 +58,18 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 /-! ### The Moreau envelope is closed proper convex -/
 
-/-- The Moreau envelope is finite everywhere. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$.
+Then the effective domain of the Moreau envelope $f \mathbin{\square} w$ is all of $E$. -/
 theorem convexDom_infConv_quadFn (hf : ClosedProperConvexFn f) :
     convexDom (infConv f (quadFn (innerₗ E))) = Set.univ :=
   Set.eq_univ_of_forall fun z => mem_convexDom.2 (lt_top_iff_ne_top.2 (infConv_quadFn_ne_top hf z))
 
-/-- Finite everywhere and convex, hence closed. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$,
+and let $w(z) = \tfrac12 \|z\|^2$. Then the Moreau envelope $f \mathbin{\square} w$ is a closed
+proper convex function.
+
+The envelope is convex and finite everywhere (`ConvexAnalysis.convexDom_infConv_quadFn`), and a
+convex function that is finite everywhere on a finite-dimensional space is closed. -/
 theorem closedProperConvexFn_infConv_quadFn (hf : ClosedProperConvexFn f) :
     ClosedProperConvexFn (infConv f (quadFn (innerₗ E))) := by
   have hc : ConvexFn (infConv f (quadFn (innerₗ E))) := convexFn_infConv hf.convex convexFn_quadFn
@@ -68,7 +79,12 @@ theorem closedProperConvexFn_infConv_quadFn (hf : ClosedProperConvexFn f) :
   exact ⟨hc, closedConvex_of_convexDom_eq_univ hc hp (convexDom_infConv_quadFn hf), hp⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- The conjugate of a Moreau envelope: `(f □ w)* = f* + w`, since `w* = w`. -/
+/-- Let $f$ be any function on a real inner product space $E$ with values in the extended reals, and
+let $w(z) = \tfrac12 \|z\|^2$. Then the conjugate of the Moreau envelope is
+$$(f \mathbin{\square} w)^* = f^* + w.$$
+
+The conjugate of an infimal convolution is the sum of the conjugates, and $w^* = w$
+(`ConvexAnalysis.convexConj_quadFn`). Conjugates are taken with respect to the inner product. -/
 theorem convexConj_infConv_quadFn (f : E → EReal) :
     convexConj (innerₗ E) (infConv f (quadFn (innerₗ E))) = convexConj (innerₗ E) f
         + quadFn (innerₗ E) := by
@@ -79,9 +95,15 @@ theorem convexConj_infConv_quadFn (f : E → EReal) :
 
 /-! ### The gradient formulas -/
 
-/-- **The subdifferential of a Moreau envelope is a single point**: `∂(f □ w) z = {prox (z | f*)}`.
-Conjugate inversion turns `y ∈ ∂(f □ w) z` into `z ∈ ∂(f* + w) y`, the sum rule splits that as
-`∂f* y + {y}`, and what is left, `z - y ∈ ∂f* y`, characterises `prox (z | f*)`. -/
+/-- **The subdifferential of a Moreau envelope is a single point.** Let $f$ be a closed proper
+convex function on a finite-dimensional real inner product space $E$, and let
+$w(z) = \tfrac12 \|z\|^2$. Then for every $z \in E$,
+$$\partial (f \mathbin{\square} w)(z) = \{\operatorname{prox}(z \mid f^*)\}.$$
+
+Conjugate inversion turns $y \in \partial (f \mathbin{\square} w)(z)$ into
+$z \in \partial (f^* + w)(y)$. The sum rule splits this subdifferential as
+$\partial f^*(y) + \{y\}$, and the remaining condition $z - y \in \partial f^*(y)$ characterizes
+$\operatorname{prox}(z \mid f^*)$. -/
 theorem subdifferential_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     subdifferential (innerₗ E) (infConv f (quadFn (innerₗ E))) z
       = {prox (innerₗ E) (convexConj (innerₗ E) f) z} := by
@@ -102,13 +124,22 @@ theorem subdifferential_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
   · intro hy
     exact ⟨z - y, (prox_eq_iff hcf z y).1 hy.symm, y, rfl, by change z - y + y = z; abel⟩
 
-/-- The two proximal points add up to `z`, written here as a formula for the second. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$.
+Then $\operatorname{prox}(z \mid f^*) = z - \operatorname{prox}(z \mid f)$ for every $z \in E$:
+the two proximal points add up to $z$. -/
 theorem prox_convexConj_eq (hf : ClosedProperConvexFn f) (z : E) :
     prox (innerₗ E) (convexConj (innerₗ E) f) z = z - prox (innerₗ E) f z :=
   eq_sub_of_add_eq (by rw [add_comm]; exact prox_add_prox_convexConj hf z)
 
-/-- `prox (z | f*) = ∇(f □ w) z`: the subdifferential is a single point, so the envelope is
-differentiable there. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$,
+and let $w(z) = \tfrac12 \|z\|^2$. Then for every $z \in E$, the Moreau envelope
+$f \mathbin{\square} w$ is differentiable at $z$, with gradient
+$$\nabla (f \mathbin{\square} w)(z) = \operatorname{prox}(z \mid f^*).$$
+
+The subdifferential at $z$ is a single point (`ConvexAnalysis.subdifferential_infConv_quadFn`),
+so the envelope is differentiable there. The gradient is stated as
+`ConvexAnalysis.HasGradientAtFn` with the functional `InnerProductSpace.toDual ℝ E` applied to
+$\operatorname{prox}(z \mid f^*)$. -/
 theorem hasGradientAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     HasGradientAtFn (infConv f (quadFn (innerₗ E)))
       (InnerProductSpace.toDual ℝ E (prox (innerₗ E) (convexConj (innerₗ E) f) z)) z :=
@@ -116,8 +147,15 @@ theorem hasGradientAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     (closedProperConvexFn_infConv_quadFn hf).convex
     (closedProperConvexFn_infConv_quadFn hf).proper (subdifferential_infConv_quadFn hf z)
 
-/-- `prox (z | f) = ∇(f* □ w) z`. The previous statement applied to `f*`, using
-`prox (z | f**) = z - prox (z | f*) = prox (z | f)`. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$,
+and let $w(z) = \tfrac12 \|z\|^2$. Then for every $z \in E$, the Moreau envelope
+$f^* \mathbin{\square} w$ of the conjugate is differentiable at $z$, with gradient
+$$\nabla (f^* \mathbin{\square} w)(z) = \operatorname{prox}(z \mid f).$$
+
+This is `ConvexAnalysis.hasGradientAtFn_infConv_quadFn` applied to $f^*$, together with
+$\operatorname{prox}(z \mid f^{**}) = z - \operatorname{prox}(z \mid f^*) =
+\operatorname{prox}(z \mid f)$. The gradient is stated as `ConvexAnalysis.HasGradientAtFn` with
+the functional `InnerProductSpace.toDual ℝ E` applied to $\operatorname{prox}(z \mid f)$. -/
 theorem hasGradientAtFn_infConv_convexConj_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     HasGradientAtFn (infConv (convexConj (innerₗ E) f) (quadFn (innerₗ E)))
       (InnerProductSpace.toDual ℝ E (prox (innerₗ E) f z)) z := by
@@ -125,20 +163,35 @@ theorem hasGradientAtFn_infConv_convexConj_quadFn (hf : ClosedProperConvexFn f) 
   have h := hasGradientAtFn_infConv_quadFn hcf z
   rwa [prox_convexConj_eq hcf z, prox_convexConj_eq hf z, sub_sub_cancel] at h
 
-/-- `∇(f □ w) z = z - prox (z | f)`. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$,
+and let $w(z) = \tfrac12 \|z\|^2$. Then for every $z \in E$,
+$$\nabla (f \mathbin{\square} w)(z) = z - \operatorname{prox}(z \mid f).$$
+This is the first gradient formula in Theorem 31.5 of [rockafellar1970convex].
+
+The gradient is the Mathlib `gradient` of the real-valued function
+$u \mapsto (f \mathbin{\square} w)(u)$, obtained by `EReal.toReal`; the envelope is finite
+everywhere. -/
 theorem gradient_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     gradient (fun u => (infConv f (quadFn (innerₗ E)) u).toReal) z = z - prox (innerₗ E) f z := by
   rw [(hasGradientAtFn_infConv_quadFn hf z).gradient_toReal_eq,
     LinearIsometryEquiv.symm_apply_apply, prox_convexConj_eq hf z]
 
-/-- `∇(f* □ w) z = prox (z | f)`. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$,
+and let $w(z) = \tfrac12 \|z\|^2$. Then for every $z \in E$,
+$$\nabla (f^* \mathbin{\square} w)(z) = \operatorname{prox}(z \mid f).$$
+This is the second gradient formula in Theorem 31.5 of [rockafellar1970convex].
+
+The gradient is the Mathlib `gradient` of the real-valued function
+$u \mapsto (f^* \mathbin{\square} w)(u)$, obtained by `EReal.toReal`; the envelope is finite
+everywhere. -/
 theorem gradient_infConv_convexConj_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     gradient (fun u => (infConv (convexConj (innerₗ E) f) (quadFn (innerₗ E)) u).toReal) z
       = prox (innerₗ E) f z := by
   rw [(hasGradientAtFn_infConv_convexConj_quadFn hf z).gradient_toReal_eq,
     LinearIsometryEquiv.symm_apply_apply]
 
-/-- The Moreau envelope is differentiable everywhere. -/
+/-- Let $f$ be a closed proper convex function on a finite-dimensional real inner product space $E$.
+Then the Moreau envelope $f \mathbin{\square} w$ is differentiable at every point of $E$. -/
 theorem differentiableAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     DifferentiableAtFn (infConv f (quadFn (innerₗ E))) z :=
   ⟨_, hasGradientAtFn_infConv_quadFn hf z⟩

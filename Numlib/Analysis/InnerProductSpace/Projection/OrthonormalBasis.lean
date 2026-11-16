@@ -14,12 +14,22 @@ import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 /-!
 # Projection onto the span of some vectors of an orthonormal basis
 
-In the coordinates of an orthonormal basis `b`, the orthogonal projection `P` onto
-`span (b '' s)` keeps the coordinates indexed by `s` and sets the others to `0`
-(`OrthonormalBasis.repr_starProjection_span_image`). Hence `‖P x‖²` and `‖x − P x‖²` are the sums
-of the squared coordinates in and outside `s` (`OrthonormalBasis.norm_sq_starProjection_span_image`,
-`OrthonormalBasis.norm_sq_sub_starProjection_span_image`), which is how the angle between a vector
-and an invariant subspace spanned by eigenvectors is read off the eigenvector coordinates.
+Let $E$ be a finite-dimensional inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$,
+let $(b_j)_{j \in \iota}$ be an orthonormal basis of $E$, and write $x_j = \langle b_j, x \rangle$
+for the coordinates of $x \in E$. For a set $s \subseteq \iota$, let $P$ be the orthogonal
+projection onto $\operatorname{span}\{b_j : j \in s\}$. In the coordinates of $b$, the projection
+$P$ keeps the coordinates indexed by $s$ and sets the others to $0$. Hence
+$$\|Px\|^2 = \sum_{j \in s} |x_j|^2, \qquad \|x - Px\|^2 = \sum_{j \notin s} |x_j|^2.$$
+These identities give the angle between a vector and an invariant subspace spanned by eigenvectors
+in terms of the eigenvector coordinates of the vector.
+
+## Main results
+
+* `OrthonormalBasis.repr_starProjection_span_image`: $(Px)_j = x_j$ for $j \in s$ and $(Px)_j = 0$
+  for $j \notin s$.
+* `OrthonormalBasis.norm_sq_starProjection_span_image`: $\|Px\|^2 = \sum_{j \in s} |x_j|^2$.
+* `OrthonormalBasis.norm_sq_sub_starProjection_span_image`:
+  $\|x - Px\|^2 = \sum_{j \notin s} |x_j|^2$.
 -/
 
 namespace OrthonormalBasis
@@ -29,8 +39,10 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 variable [FiniteDimensional 𝕜 E] (s : Set ι) [DecidablePred (· ∈ s)]
 
-/-- The coordinates of the orthogonal projection onto the span of some vectors of an orthonormal
-basis: those coordinates are kept, the others are set to `0`. -/
+/-- Let $(b_j)_{j \in \iota}$ be an orthonormal basis of $E$, let $s \subseteq \iota$, and let $P$
+be the orthogonal projection onto $\operatorname{span}\{b_j : j \in s\}$. Then for every
+$x \in E$ and $j \in \iota$, the $j$-th coordinate of $Px$ in the basis $b$ is the $j$-th
+coordinate of $x$ if $j \in s$, and $0$ otherwise. -/
 theorem repr_starProjection_span_image (x : E) (j : ι) :
     b.repr ((Submodule.span 𝕜 (b '' s)).starProjection x) j = if j ∈ s then b.repr x j else 0 := by
   rw [OrthonormalBasis.repr_apply_apply, OrthonormalBasis.repr_apply_apply]
@@ -48,7 +60,11 @@ theorem repr_starProjection_span_image (x : E) (j : ι) :
       | smul c z _ hz => rw [inner_smul_right, hz, mul_zero]
     exact key _ (Submodule.starProjection_apply_mem _ x)
 
-/-- `‖P x‖² = ∑_{j ∈ s} |x_j|²` for the orthogonal projection `P` onto `span (b '' s)`. -/
+/-- Let $(b_j)_{j \in \iota}$ be an orthonormal basis of $E$, let $s \subseteq \iota$, and let $P$
+be the orthogonal projection onto $\operatorname{span}\{b_j : j \in s\}$. Then for every
+$x \in E$ with coordinates $x_j$ in the basis $b$,
+$$\|Px\|^2 = \sum_{j \in s} |x_j|^2.$$
+-/
 theorem norm_sq_starProjection_span_image (x : E) :
     ‖(Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
       ∑ j, if j ∈ s then ‖b.repr x j‖ ^ 2 else 0 := by
@@ -57,7 +73,11 @@ theorem norm_sq_starProjection_span_image (x : E) :
   rw [← b.repr_apply_apply, repr_starProjection_span_image b s]
   split_ifs <;> simp
 
-/-- `‖x - P x‖² = ∑_{j ∉ s} |x_j|²` for the orthogonal projection `P` onto `span (b '' s)`. -/
+/-- Let $(b_j)_{j \in \iota}$ be an orthonormal basis of $E$, let $s \subseteq \iota$, and let $P$
+be the orthogonal projection onto $\operatorname{span}\{b_j : j \in s\}$. Then for every
+$x \in E$ with coordinates $x_j$ in the basis $b$,
+$$\|x - Px\|^2 = \sum_{j \notin s} |x_j|^2.$$
+-/
 theorem norm_sq_sub_starProjection_span_image (x : E) :
     ‖x - (Submodule.span 𝕜 (b '' s)).starProjection x‖ ^ 2 =
       ∑ j, if j ∈ s then 0 else ‖b.repr x j‖ ^ 2 := by

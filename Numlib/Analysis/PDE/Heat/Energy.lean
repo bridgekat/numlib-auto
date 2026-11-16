@@ -12,51 +12,75 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # The energy estimate for the heat equation on an interval
 
-The classical solution of the heat equation `u_t - ν u_xx = f` on `[0, 1] × [0, T]` with
-homogeneous Dirichlet conditions ([quarteroni2000numerical] (13.1)–(13.4)) and its a priori
-energy estimate ([quarteroni2000numerical] (13.7)): with `E(t) = ∫₀¹ u(x, t)² dx` and
-`F(t) = ∫₀¹ f(x, t)² dx`,
-
-`E(t) ≤ e^{-2ν t} E(0) + ∫₀ᵗ e^{2ν(s-t)} F(s)/(2ν) ds`,
-
-the rate `2ν = ν / C_P²` coming from Poincaré's inequality on `(0, 1)`.
+This module studies classical solutions of the heat equation with homogeneous Dirichlet conditions
+on the unit interval, as in (13.1)–(13.4) of [quarteroni2000numerical]:
+$$u_t - \nu u_{xx} = f \ \text{ on } [0, 1] \times [0, T], \qquad u(0, t) = u(1, t) = 0, \qquad
+  u(x, 0) = u_0(x).$$
+Let $E(t) = \int_0^1 u(x, t)^2 \, dx$ be the energy of the solution and
+$F(t) = \int_0^1 f(x, t)^2 \, dx$ the energy of the source. For $\nu > 0$ the module proves the a
+priori estimate (13.7) of [quarteroni2000numerical],
+$$E(t) \le e^{-2\nu t} E(0) + \int_0^t e^{2\nu(s - t)} \frac{F(s)}{2\nu} \, ds, \qquad 0 \le t \le
+  T.$$
+The rate $2\nu = \nu / C_P^2$ comes from the Poincaré inequality on $(0, 1)$.
 
 ## Main definitions
 
-* `Heat.IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx`: `u` is a classical solution with the
-  partial derivatives `ut`, `ux`, `uxx` named, taken one-sidedly within the rectangle's edges and
-  continuous on the closed rectangle; `Heat.IsClassicalSolutionIcc` quantifies them away.
-* `Heat.energy u t`: the energy `∫₀¹ u(x, t)² dx`.
+* `Heat.IsClassicalSolutionIccWith`: $u$ is a classical solution with given partial derivatives
+  $u_t$, $u_x$, $u_{xx}$, which are one-sided at the edges of the rectangle and continuous on it.
+* `Heat.IsClassicalSolutionIcc`: $u$ is a classical solution for some choice of the partial
+  derivatives.
+* `Heat.energy`: the energy $\int_0^1 u(x, t)^2 \, dx$.
 
 ## Main results
 
-* `Heat.IsClassicalSolutionIccWith.continuousOn`: a classical solution is jointly continuous on
-  the rectangle — the mean value inequality on each coordinate line, the partial derivatives being
-  bounded on the compact rectangle.
-* `Heat.IsClassicalSolutionIccWith.energy_sub_eq`: `E(t) - E(0) = ∫₀ᵗ 2 ∫₀¹ u u_t`, the
-  "interchange of differentiation and integration" done in integrated form by Fubini, since a
-  derivative under the integral sign would have to be two-sided at `t = 0`.
-* `Heat.IsClassicalSolutionIccWith.two_mul_integral_mul_le`: the differential inequality
-  `2 ∫₀¹ u u_t ≤ -2ν E + F/(2ν)` — integration by parts, Poincaré, Cauchy–Schwarz and Young.
-* `Heat.IsClassicalSolutionIcc.energy_le`: the estimate, by the differential Gronwall lemma
-  `Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le`.
+* `Heat.IsClassicalSolutionIccWith.continuousOn`: a classical solution is jointly continuous on the
+  rectangle.
+* `Heat.IsClassicalSolutionIccWith.energy_sub_eq`: $E(t) - E(0) = \int_0^t 2 \int_0^1 u u_t \, dx \,
+  ds$.
+* `Heat.IsClassicalSolutionIccWith.two_mul_integral_mul_le`: the differential inequality $2 \int_0^1
+  u u_t \, dx \le -2\nu E + F / (2\nu)$.
+* `Heat.IsClassicalSolutionIcc.energy_le`: the energy estimate (13.7).
 
-The interval is `[0, 1]`, as in the source; the general interval changes only the Poincaré
-constant. The pointwise side of the classical theory (the maximum principle) is
-`Numlib/Analysis/PDE/Heat/Classical`; the semigroup solution on a domain of `ℝᴺ` is
-`Numlib/Analysis/PDE/Heat`.
+## Proof outline
+
+Multiply the equation by $u$ and integrate in $x$. Integration by parts turns $\int_0^1 u_{xx} u$
+into $-\int_0^1 u_x^2$, the Poincaré inequality bounds this by $-2E$, and the Cauchy–Schwarz and
+Young inequalities bound $2 \int_0^1 f u$ by $2\nu E + F / (2\nu)$. This gives
+$E' \le -2\nu E + F / (2\nu)$ in integrated form, and the differential Gronwall lemma
+`Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le` gives the estimate.
+
+## Implementation notes
+
+* The interval is $[0, 1]$, as in the source. A general interval changes only the Poincaré constant.
+* The partial derivatives are taken within the edges of the rectangle, so they are one-sided at the
+  boundary. They are required to be continuous on the closed rectangle, which is what the energy
+  computation uses.
+* The source differentiates $E$ under the integral sign. Here $E$ is shown to be a primitive of
+  $2 \int_0^1 u u_t \, dx$ by the fundamental theorem of calculus and Fubini's theorem, because
+  Mathlib differentiates under the integral sign only two-sidedly, and so not at $t = 0$.
+* Fubini's theorem is applied to a composition with the retraction of the plane onto the rectangle,
+  which is continuous on the whole plane.
+* The maximum principle for classical solutions is in `Numlib.Analysis.PDE.Heat.Classical`. The
+  semigroup solution on an open subset of $\mathbb{R}^N$ is in `Numlib.Analysis.PDE.Heat`.
 -/
 
 open Set Filter Topology intervalIntegral
 
 namespace Heat
 
-/-- **A classical solution of the heat equation on `[0, 1] × [0, T]`, with its derivatives
-named** ([quarteroni2000numerical] (13.1)–(13.4)): `u` solves `u_t - ν u_xx = f` with diffusivity
-`ν`, source `f`, homogeneous Dirichlet conditions `u(0, t) = u(1, t) = 0` and initial datum `u₀`,
-the three partial derivatives being `ut = ∂u/∂t`, `ux = ∂u/∂x`, `uxx = ∂²u/∂x²`. The derivatives
-are taken *within* the rectangle's edges, one-sided at the boundary, and are required continuous
-on the closed rectangle, which is what the energy computation uses. -/
+/-- **Classical solution of the heat equation on $[0, 1] \times [0, T]$, with given derivatives.**
+Let $\nu, T \in \mathbb{R}$, let $f(x, t)$ be a source, let $u_0$ be an initial datum, and let
+$u$, $u_t$, $u_x$, $u_{xx}$ be functions of $(x, t)$. The predicate holds if, for all
+$x \in [0, 1]$ and $t \in [0, T]$, the function $s \mapsto u(x, s)$ has derivative $u_t(x, t)$
+at $t$ within $[0, T]$, the function $y \mapsto u(y, t)$ has derivative $u_x(x, t)$ at $x$
+within $[0, 1]$, the function $y \mapsto u_x(y, t)$ has derivative $u_{xx}(x, t)$ at $x$ within
+$[0, 1]$, and
+$$u_t(x, t) - \nu u_{xx}(x, t) = f(x, t);$$
+if $u_t$, $u_x$ and $u_{xx}$ are continuous on $[0, 1] \times [0, T]$; if
+$u(0, t) = u(1, t) = 0$ for $t \in [0, T]$; and if $u(x, 0) = u_0(x)$ for $x \in [0, 1]$. This
+is the problem (13.1)–(13.4) of [quarteroni2000numerical].
+
+The derivatives within the edges of the rectangle are one-sided at the boundary. -/
 def IsClassicalSolutionIccWith (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u ut ux uxx : ℝ → ℝ → ℝ) :
     Prop :=
   (∀ x ∈ Icc (0 : ℝ) 1, ∀ t ∈ Icc (0 : ℝ) T,
@@ -70,17 +94,19 @@ def IsClassicalSolutionIccWith (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : �
     (∀ t ∈ Icc (0 : ℝ) T, u 0 t = 0 ∧ u 1 t = 0) ∧
     (∀ x ∈ Icc (0 : ℝ) 1, u x 0 = u₀ x)
 
-/-- **The classical Dirichlet problem for the heat equation** ([quarteroni2000numerical]
-(13.1)–(13.4)): `u` solves `u_t - ν u_xx = f` on `[0, 1] × [0, T]` with `u(0, t) = u(1, t) = 0`
-and `u(x, 0) = u₀(x)`, in the classical sense of `Heat.IsClassicalSolutionIccWith` for some choice
-of the partial derivatives. -/
+/-- **The classical Dirichlet problem for the heat equation** on $[0, 1] \times [0, T]$,
+(13.1)–(13.4) of [quarteroni2000numerical]: $u$ solves $u_t - \nu u_{xx} = f$ with
+$u(0, t) = u(1, t) = 0$ and $u(x, 0) = u_0(x)$, in the sense of
+`Heat.IsClassicalSolutionIccWith` for some functions $u_t$, $u_x$, $u_{xx}$. -/
 def IsClassicalSolutionIcc (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u : ℝ → ℝ → ℝ) : Prop :=
   ∃ ut ux uxx, IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx
 
 /-! ### The energy -/
 
-/-- The energy `E(t) = ∫₀¹ u(x, t)² dx` of [quarteroni2000numerical] §13.1. The source energy
-`F(t) = ∫₀¹ f(x, t)² dx` of the same section is `Heat.energy f t`. -/
+/-- The **energy** of a function $u(x, t)$ at time $t$ is
+$$E(t) = \int_0^1 u(x, t)^2 \, dx,$$
+as in §13.1 of [quarteroni2000numerical]. The energy $F(t) = \int_0^1 f(x, t)^2 \, dx$ of the
+source in the same section is `Heat.energy f t`. -/
 noncomputable def energy (u : ℝ → ℝ → ℝ) (t : ℝ) : ℝ := ∫ x in (0 : ℝ)..1, u x t ^ 2
 
 /-! ### The a priori energy estimate -/
@@ -91,13 +117,14 @@ open MeasureTheory
 
 variable {ν T : ℝ} {f : ℝ → ℝ → ℝ} {u₀ : ℝ → ℝ} {u ut ux uxx : ℝ → ℝ → ℝ}
 
-/-- **A classical solution is jointly continuous on the rectangle**.
-`Heat.IsClassicalSolutionIccWith` asks only for the *partial* derivative data and the continuity
-of `u_t`, `u_x`, `u_xx`; joint continuity of
-`u` itself follows, because the two partial derivatives are bounded on the compact rectangle
-(`IsCompact.exists_bound_of_continuousOn`), so the mean value inequality on each coordinate line
-(`Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`) makes `u` Lipschitz there. Everything the
-energy argument does with `u` — Fubini, the continuity of the parametric integrals — needs this. -/
+/-- **A classical solution is jointly continuous.** Let $T \ge 0$ and let $u$ satisfy
+`Heat.IsClassicalSolutionIccWith` with the derivatives $u_t$, $u_x$, $u_{xx}$. Then
+$(x, t) \mapsto u(x, t)$ is continuous on $[0, 1] \times [0, T]$.
+
+The definition asks only for the partial derivatives and the continuity of $u_t$, $u_x$,
+$u_{xx}$. The two first partial derivatives are bounded on the compact rectangle, so the mean
+value inequality on each coordinate line makes $u$ Lipschitz there. The Fubini argument and the
+continuity of the parametric integrals in the energy estimate need this result. -/
 theorem IsClassicalSolutionIccWith.continuousOn (hT : 0 ≤ T)
     (h : IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx) :
     ContinuousOn (fun p : ℝ × ℝ => u p.1 p.2) (Icc 0 1 ×ˢ Icc 0 T) := by
@@ -147,9 +174,11 @@ theorem IsClassicalSolutionIccWith.continuousOn (hT : 0 ≤ T)
   rw [hK0]
   exact this
 
-/-- **Integration by parts in `x`** for a classical solution, the step `∫₀¹ u_xx u = -∫₀¹ (u_x)²`
-of [quarteroni2000numerical] §13.1: `(u_x u)' = u_xx u + (u_x)²` and the boundary term vanishes
-by the Dirichlet conditions. -/
+/-- **Integration by parts in $x$.** Let $u$ satisfy `Heat.IsClassicalSolutionIccWith` with the
+derivatives $u_t$, $u_x$, $u_{xx}$, and let $t \in [0, T]$. Then
+$$\int_0^1 u_{xx}(x, t) \, u(x, t) \, dx = -\int_0^1 u_x(x, t)^2 \, dx.$$
+This is a step of §13.1 of [quarteroni2000numerical]. The proof uses
+$(u_x u)' = u_{xx} u + u_x^2$, and the boundary term vanishes by the Dirichlet conditions. -/
 theorem IsClassicalSolutionIccWith.integral_mul_eq_neg_integral_sq
     (h : IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx)
     {t : ℝ} (ht : t ∈ Icc 0 T) :
@@ -185,20 +214,19 @@ theorem IsClassicalSolutionIccWith.integral_mul_eq_neg_integral_sq
   rw [hsplit] at hfun
   linarith
 
-/-- **The clamped surrogate** of a function of space and time: `clampRect T w` is `w` composed with
-the retraction of the plane onto the rectangle `[0, 1] × [0, T]`. It is *globally* continuous as
-soon as `w` is continuous on the rectangle, which is what Mathlib's Fubini theorem and its
-parametric-continuity lemma for interval integrals both ask for, neither of them having a
-`ContinuousOn` form. -/
+/-- The composition of $w$ with the retraction of the plane onto $[0, 1] \times [0, T]$, which is
+continuous on the plane when $w$ is continuous on the rectangle, as Fubini's theorem and
+parametric continuity of interval integrals in Mathlib require. -/
 private noncomputable def clampRect (T : ℝ) (w : ℝ → ℝ → ℝ) (p : ℝ × ℝ) : ℝ :=
   w (max 0 (min 1 p.1)) (max 0 (min T p.2))
 
-/-- The clamped surrogate agrees with the function on the rectangle. -/
+/-- The composition with the retraction agrees with $w$ on the rectangle $[0, 1] \times [0, T]$. -/
 private theorem clampRect_eq (w : ℝ → ℝ → ℝ) {x s : ℝ} (hx : x ∈ Icc (0 : ℝ) 1)
     (hs : s ∈ Icc (0 : ℝ) T) : clampRect T w (x, s) = w x s := by
   rw [clampRect, min_eq_right hx.2, max_eq_right hx.1, min_eq_right hs.2, max_eq_right hs.1]
 
-/-- The clamped surrogate of a function continuous on the rectangle is continuous on the plane. -/
+/-- The composition with the retraction of a function continuous on the rectangle is continuous on
+the plane. -/
 private theorem continuous_clampRect (hT : 0 ≤ T) {w : ℝ → ℝ → ℝ}
     (hw : ContinuousOn (fun p : ℝ × ℝ => w p.1 p.2) (Icc 0 1 ×ˢ Icc 0 T)) :
     Continuous (clampRect T w) := by
@@ -210,13 +238,16 @@ private theorem continuous_clampRect (hT : 0 ≤ T) {w : ℝ → ℝ → ℝ}
       ⟨le_max_left _ _, max_le hT (min_le_left _ _)⟩⟩
   exact hw.comp_continuous hcl hmem
 
-/-- **The energy is the primitive of `2 ∫₀¹ u u_t`**:
-`E(t) - E(0) = ∫₀ᵗ (2 ∫₀¹ u u_t dx) ds`. This is the book's "interchanged differentiation and
-integration", done in the integrated form: the fundamental theorem of calculus in `t` at each fixed
-`x` gives `u(x, t)² - u(x, 0)² = ∫₀ᵗ 2 u u_t ds`, and Fubini on the rectangle
-(`MeasureTheory.integral_integral_swap`, over the clamped surrogate, which is globally continuous
-and hence integrable there) exchanges the two integrals. It replaces differentiating `E` under the
-integral sign, which Mathlib can only do two-sidedly and so not at `t = 0`. -/
+/-- **The energy is a primitive of $2 \int_0^1 u u_t$.** Let $T \ge 0$, let $u$ satisfy
+`Heat.IsClassicalSolutionIccWith` with the derivatives $u_t$, $u_x$, $u_{xx}$, and let
+$t \in [0, T]$. Then
+$$E(t) - E(0) = \int_0^t 2 \int_0^1 u(x, s) \, u_t(x, s) \, dx \, ds.$$
+
+This replaces the step of the source that interchanges differentiation and integration. For each
+fixed $x$, the fundamental theorem of calculus in $t$ gives
+$u(x, t)^2 - u(x, 0)^2 = \int_0^t 2 u u_t \, ds$, and Fubini's theorem on the rectangle
+(`MeasureTheory.integral_integral_swap`) exchanges the two integrals. Mathlib can differentiate
+under the integral sign only two-sidedly, and so not at $t = 0$. -/
 theorem IsClassicalSolutionIccWith.energy_sub_eq (hT : 0 ≤ T)
     (h : IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx)
     {t : ℝ} (ht : t ∈ Icc 0 T) :
@@ -292,8 +323,8 @@ theorem IsClassicalSolutionIccWith.energy_sub_eq (hT : 0 ≤ T)
   rw [uIcc_of_le zero_le_one] at hx
   rw [hGeq x hx s hsT]
 
-/-- The source `f` of a classical solution is continuous on the rectangle, being `u_t - ν u_xx`
-there. -/
+/-- The source $f$ of a classical solution is continuous on $[0, 1] \times [0, T]$, because it
+equals $u_t - \nu u_{xx}$ there. -/
 theorem IsClassicalSolutionIccWith.continuousOn_source
     (h : IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx) :
     ContinuousOn (fun p : ℝ × ℝ => f p.1 p.2) (Icc 0 1 ×ˢ Icc 0 T) := by
@@ -303,11 +334,17 @@ theorem IsClassicalSolutionIccWith.continuousOn_source
   rintro ⟨x, s⟩ ⟨hx, hs⟩
   exact (h.1 x hx s hs).2.2.2.symm
 
-/-- **The differential inequality behind the energy estimate** ([quarteroni2000numerical] §13.1):
-`2 ∫₀¹ u u_t ≤ -2ν E(t) + F(t)/(2ν)`, with `γ = ν/C_P² = 2ν`. Writing `u_t = ν u_xx + f`,
-integration by parts turns
-`2ν ∫ u u_xx` into `-2ν ∫ (u_x)²`, Poincaré bounds that by `-4ν E`, and Cauchy–Schwarz followed by
-Young's inequality ([quarteroni2000numerical] (12.40)) bounds `2 ∫ f u` by `2ν E + F/(2ν)`. -/
+/-- **The differential inequality for the energy.** Let $\nu > 0$, let $u$ satisfy
+`Heat.IsClassicalSolutionIccWith` with source $f$ and derivatives $u_t$, $u_x$, $u_{xx}$, and
+let $s \in [0, T]$. Then
+$$2 \int_0^1 u(x, s) \, u_t(x, s) \, dx \le -2\nu E(s) + \frac{F(s)}{2\nu},$$
+where $E$ and $F$ are the energies of $u$ and $f$. This is the inequality of §13.1 of
+[quarteroni2000numerical] with $\gamma = \nu / C_P^2 = 2\nu$.
+
+Write $u_t = \nu u_{xx} + f$. Integration by parts turns $2\nu \int u u_{xx}$ into
+$-2\nu \int u_x^2$, and the Poincaré inequality bounds this by $-4\nu E$. The Cauchy–Schwarz
+inequality and Young's inequality, (12.40) of [quarteroni2000numerical], bound $2 \int f u$ by
+$2\nu E + F / (2\nu)$. -/
 theorem IsClassicalSolutionIccWith.two_mul_integral_mul_le (hν : 0 < ν)
     (h : IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx) {s : ℝ} (hs : s ∈ Icc (0 : ℝ) T) :
     (2 * ∫ x in (0 : ℝ)..1, u x s * ut x s)
@@ -366,23 +403,25 @@ theorem IsClassicalSolutionIccWith.two_mul_integral_mul_le (hν : 0 < ν)
   rw [hsplit, hibp]
   nlinarith [hpoin, hyoung, hν]
 
-/-- **The a priori energy estimate** ([quarteroni2000numerical] (13.7)): for a classical
-solution of the heat equation on `[0, 1] × [0, T]` with `ν > 0`,
+/-- **The a priori energy estimate.** Let $\nu > 0$ and $T \ge 0$, let $u$ be a classical solution
+of $u_t - \nu u_{xx} = f$ on $[0, 1] \times [0, T]$ with $u(0, t) = u(1, t) = 0$ and
+$u(x, 0) = u_0(x)$, and let $t \in [0, T]$. With $E(t) = \int_0^1 u(x, t)^2 \, dx$ and
+$F(t) = \int_0^1 f(x, t)^2 \, dx$,
+$$E(t) \le e^{-2\nu t} E(0) + \int_0^t e^{2\nu(s - t)} \frac{F(s)}{2\nu} \, ds.$$
+This is (13.7) of [quarteroni2000numerical], with $\gamma = \nu / C_P^2 = 2\nu$. In particular,
+for $f = 0$ the energy decays exponentially.
 
-`E(t) ≤ e^{-γ t} E(0) + (1/γ) ∫₀ᵗ e^{γ(s-t)} F(s) ds`, `γ = ν / C_P² = 2ν`,
-
-with `E(t) = ∫₀¹ u(x, t)² dx` and `F(t) = ∫₀¹ f(x, t)² dx`; in particular, for `f ≡ 0` the energy
-decays exponentially. The source multiplies the equation by `u`, integrates in `x`, integrates by
-parts, and applies Cauchy–Schwarz, Poincaré ([quarteroni2000numerical] (12.16)), Young and the
-differential Gronwall lemma;
-the steps are `Heat.IsClassicalSolutionIccWith.integral_mul_eq_neg_integral_sq`,
+The source multiplies the equation by $u$, integrates in $x$, integrates by parts, and applies
+the Cauchy–Schwarz inequality, the Poincaré inequality (12.16) of [quarteroni2000numerical],
+Young's inequality and the differential Gronwall lemma. These steps are
+`Heat.IsClassicalSolutionIccWith.integral_mul_eq_neg_integral_sq`,
 `intervalIntegral.sq_integral_mul_le_of_continuousOn`,
 `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`,
 `Heat.IsClassicalSolutionIccWith.two_mul_integral_mul_le` and
-`Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le`. The one step that is *not* the
-book's is "interchanging differentiation and integration": `E` is exhibited as a primitive
-(`Heat.IsClassicalSolutionIccWith.energy_sub_eq`, by Fubini) rather than differentiated under the
-integral sign, because the latter would need a two-sided derivative at `t = 0`. -/
+`Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le`. One step differs from the source:
+instead of differentiating $E$ under the integral sign, which would need a two-sided derivative
+at $t = 0$, the proof shows that $E$ is a primitive
+(`Heat.IsClassicalSolutionIccWith.energy_sub_eq`). -/
 theorem IsClassicalSolutionIcc.energy_le (hν : 0 < ν) (hT : 0 ≤ T)
     (hu : IsClassicalSolutionIcc ν T f u₀ u) {t : ℝ} (ht : t ∈ Icc 0 T) :
     energy u t ≤ Real.exp (-(2 * ν) * t) * energy u 0

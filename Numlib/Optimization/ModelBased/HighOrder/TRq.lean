@@ -11,45 +11,64 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 /-!
 # The high-order trust-region method TRq
 
-The trust-region method TRq of [cartis2022evaluation] (Algorithm 12.2.1) seeks
-`(ε, δ)`-approximate `q`-th order minimizers ((12.1.25)). At iteration `k` it sets the optimality
-radius `δ_k = min(Δ_k, ϑ)`, computes for `j = 1, …, q` approximate optimality displacements
-`d_{k,j}` ((12.2.1)) and stops when `ΔT_j(x_k, d_{k,j}) ≤ ς ε_j δ_k^j / j!` for every `j`. Otherwise
-`j_k` is the least failing order, `d_k = d_{k,j_k}`, and any step `s_k ∈ B_{Δ_k}` with
-`ΔT_{j_k}(x_k, s_k) ≥ ΔT_{j_k}(x_k, d_k)` ((12.2.3)) is tried with the trust-region acceptance
-rule ((12.2.4)–(12.2.5)), the radius being capped by `Δ_max`.
+The trust-region method TRq of [cartis2022evaluation], Algorithm 12.2.1, seeks
+$(\varepsilon, \delta)$-approximate $q$-th order minimizers in the sense of (12.1.25). At iteration
+$k$ it sets the optimality radius $\delta_k = \min(\Delta_k, \vartheta)$. For $j = 1, \dots, q$ it
+computes approximate optimality displacements $d_{k,j}$ (12.2.1), and it stops when
+$$\Delta T_j(x_k, d_{k,j}) \le \frac{\varsigma \varepsilon_j \delta_k^j}{j!} \qquad \text{for } 1
+  \le j \le q.$$
+Otherwise $j_k$ is the least order at which this test fails, $d_k = d_{k,j_k}$, and the method tries
+a step $s_k$ with $\|s_k\| \le \Delta_k$ and $\Delta T_{j_k}(x_k, s_k) \ge \Delta T_{j_k}(x_k, d_k)$
+(12.2.3). It accepts or rejects the step and updates the radius by the trust-region rules
+(12.2.4)–(12.2.5), with the radius capped by $\Delta_{\max}$.
 
-The method is stated as a relational run predicate on top of the generic trust-region run
-`Optimization.IsTRRun`, generic in
-* the derivative data `D k : FormalMultilinearSeries ℝ E ℝ` used at iteration `k` (exact TRq:
-  `D k = ftaylorSeries ℝ f (x k)`; inexact data in the variants of Chapter 13), and
-* the feasible displacement sets `S k : Set E` (`univ` for TRq; `{d | x k + d ∈ X}` for the
-  simply constrained variant TRq-SC of §14.2).
-
-Step-1 witnesses `d k j` are required for all orders `j ∈ [1, q]` (also beyond the first failing
-order, where they exist and are unused).
+Here $\Delta T_j(D, s) = T_j(D, 0) - T_j(D, s)$ is the decrease of the Taylor polynomial
+$T_j(D, s) = \sum_{i=0}^{j} D_i[s]^i / i!$ of order $j$ of the derivative data $D$. The file defines
+the runs of TRq and proves the one-iteration lemmas of §12.2 of the source: the lower bound on the
+scaled criticality gaps (Lemma 12.2.1), the condition for a very successful iteration (Lemma
+12.2.2), the lower bound on the radius (Lemma 12.2.3), and the lower bounds on the decreases (Lemma
+12.2.4).
 
 ## Main definitions
 
-* `Optimization.TRqParams`: the constants of Algorithm 12.2.1;
-* `Optimization.trqTest`: the Step-1 termination test;
-* `Optimization.IsTRqStep`: Steps 1.2 and 2 of one iteration;
-* `Optimization.IsTRqRun`: a run of TRq;
-* `Optimization.trqGap`: the scaled approximate criticality gap `φ̂` of (12.2.8);
-* `Optimization.trqKappa`: the constant `κ_Δ` of (12.2.14).
+* `Optimization.TRqParams`: the constants of Algorithm 12.2.1.
+* `Optimization.trqTest`: the termination test of Step 1.
+* `Optimization.IsTRqStep`: Steps 1.2 and 2 of one iteration.
+* `Optimization.IsTRqRun`: a run of TRq.
+* `Optimization.trqGap`: the scaled approximate criticality gap
+  $\hat\phi = j! \, \Delta T_j(D, d) / \delta^j$ of (12.2.8).
+* `Optimization.trqKappa`: the constant $\kappa_\Delta$ of (12.2.14).
 
 ## Main results
 
-* `Optimization.exists_isTRqRun`: runs exist (finite dimension, closed feasible sets);
-* `Optimization.IsTRqRun.trqGap_ge`: Lemma 12.2.1;
-* `Optimization.IsTRqRun.le_reductionRatio`: Lemma 12.2.2;
-* `Optimization.IsTRqRun.radius_ge`: Lemma 12.2.3;
-* `Optimization.IsTRqRun.taylorDecrement_ge`: Lemma 12.2.4.
+* `Optimization.exists_isTRqRun`: in finite dimension, with closed feasible sets, every starting
+  point starts a run.
+* `Optimization.IsTRqRun.trqGap_ge`: Lemma 12.2.1, the scaled gaps are at least
+  $\varsigma \varepsilon_{\min}$ before termination.
+* `Optimization.IsTRqRun.le_reductionRatio`: Lemma 12.2.2, a small radius gives a very successful
+  iteration.
+* `Optimization.IsTRqRun.radius_ge`: Lemma 12.2.3, a lower bound on the trust-region radius.
+* `Optimization.IsTRqRun.mul_le_delta`: the radius is at least
+  $\varsigma \kappa_\Delta \varepsilon_{\min}$ up to termination.
+* `Optimization.IsTRqRun.taylorDecrement_ge`: Lemma 12.2.4, lower bounds on the model decrease and
+  on the function decrease.
+* `Optimization.IsTRqRun.abs_sub_le_of_lipschitz`: exact data of a function with Lipschitz
+  derivatives satisfy the model-fidelity bound.
 
-The one-iteration lemmas assume an abstract *model-fidelity* bound
-`|f(x_k + s_k) - (f(x_k) - ΔT_{j_k}(s_k))| ≤ L ‖s_k‖^{j_k+1} / (j_k+1)!` before termination; for
-exact data and `∇^{j_k} f` Lipschitz with constant `L` this is (A.19)
-(`abs_sub_taylorPolynomial_le_of_lipschitz`).
+## Implementation notes
+
+* The method is a relational run predicate built on the generic trust-region run
+  `Optimization.IsTRRun`. It is generic in the derivative data `D k : FormalMultilinearSeries ℝ E ℝ`
+  used at iteration $k$, which is `ftaylorSeries ℝ f (x k)` for exact TRq and inexact data for the
+  variants of Chapter 13 of the source. It is also generic in the sets `S k : Set E` of feasible
+  displacements, which are `univ` for TRq and `{d | x k + d ∈ X}` for the simply constrained variant
+  TRq-SC of §14.2.
+* The displacements `d k j` of Step 1 are required for all orders $1 \le j \le q$, also beyond the
+  first failing order, where they exist and are not used.
+* The one-iteration lemmas assume an abstract **model-fidelity** bound $|f(x_k + s_k) - (f(x_k) -
+  \Delta T_{j_k}(s_k))| \le L \|s_k\|^{j_k+1} / (j_k+1)!$ before termination. For exact data and
+  $\nabla^{j_k} f$ Lipschitz with constant $L$, this is (A.19) of the source,
+  `abs_sub_taylorPolynomial_le_of_lipschitz`; see `Optimization.IsTRqRun.abs_sub_le_of_lipschitz`.
 -/
 
 open Set Metric Finset
@@ -57,20 +76,24 @@ open scoped Nat
 
 namespace Optimization
 
-/-- The constants of the TRq method ([cartis2022evaluation], Algorithm 12.2.1, Step 0): the
-trust-region constants, the maximal radius `Δ_max ≥ Δ₀` and the fraction `ς ∈ (0, 1]` of the
-measure that the Step-1 displacements must achieve. (The threshold `ϑ` depends on the tolerances
-and is an argument of the run predicate.) -/
+/-- The constants of the TRq method of [cartis2022evaluation], Algorithm 12.2.1, Step 0. An element
+consists of the trust-region constants `Optimization.TRParams`, a maximal radius
+$\Delta_{\max} \ge \Delta_0$, and a fraction $\varsigma \in (0, 1]$ of the criticality measure
+that the displacements of Step 1 must achieve.
+
+The threshold $\vartheta$ depends on the tolerances, so it is an argument of the run predicate
+and not a field. -/
 structure TRqParams extends TRParams where
-  /-- The maximal trust-region radius. -/
+  /-- The maximal trust-region radius $\Delta_{\max}$. -/
   Δmax : ℝ
-  /-- The fraction of the criticality measure achieved by the Step-1 displacements. -/
+  /-- The fraction $\varsigma$ of the criticality measure that the displacements of Step 1 achieve.
+  -/
   ς : ℝ
-  /-- `Δ₀ ≤ Δ_max`. -/
+  /-- The initial radius is at most the maximal radius: $\Delta_0 \le \Delta_{\max}$. -/
   Δ₀_le_Δmax : Δ₀ ≤ Δmax
-  /-- `ς > 0`. -/
+  /-- The fraction is positive: $\varsigma > 0$. -/
   ς_pos : 0 < ς
-  /-- `ς ≤ 1`. -/
+  /-- The fraction is at most one: $\varsigma \le 1$. -/
   ς_le_one : ς ≤ 1
 
 /-! ### Prefix minima -/
@@ -79,25 +102,32 @@ section PrefixMin
 
 variable {α : Type*} [LinearOrder α] {u : ℕ → α}
 
-/-- The minimum `min_{i ∈ [0, k]} u_i` of the first `k + 1` terms of a sequence. -/
+/-- The **prefix minimum** $\min_{0 \le i \le k} u_i$ of the first $k + 1$ terms of a sequence $u$
+in a linear order. -/
 def prefixMin (u : ℕ → α) (k : ℕ) : α :=
   (range (k + 1)).inf' nonempty_range_add_one u
 
+/-- $c \le \min_{0 \le i \le k} u_i$ if and only if $c \le u_i$ for all $i \le k$. -/
 theorem le_prefixMin_iff {k : ℕ} {c : α} : c ≤ prefixMin u k ↔ ∀ i ≤ k, c ≤ u i := by
   simp [prefixMin]
 
+/-- For $i \le k$, $\min_{0 \le i' \le k} u_{i'} \le u_i$. -/
 theorem prefixMin_le {i k : ℕ} (hi : i ≤ k) : prefixMin u k ≤ u i :=
   le_prefixMin_iff.1 le_rfl i hi
 
+/-- For $k \le k'$, $\min_{0 \le i \le k'} u_i \le \min_{0 \le i \le k} u_i$. -/
 theorem prefixMin_mono {k k' : ℕ} (h : k ≤ k') : prefixMin u k' ≤ prefixMin u k :=
   le_prefixMin_iff.2 fun _ hi => prefixMin_le (hi.trans h)
 
+/-- The prefix minimum does not increase with $k$. -/
 theorem prefixMin_antitone : Antitone (prefixMin u) := fun _ _ h => prefixMin_mono h
 
+/-- The prefix minimum of the first term is $u_0$. -/
 @[simp]
 theorem prefixMin_zero : prefixMin u 0 = u 0 :=
   le_antisymm (prefixMin_le le_rfl) (le_prefixMin_iff.2 fun i hi => by rw [Nat.le_zero.1 hi])
 
+/-- $\min_{0 \le i \le k+1} u_i = \min\big(\min_{0 \le i \le k} u_i,\ u_{k+1}\big)$. -/
 @[simp]
 theorem prefixMin_succ (k : ℕ) : prefixMin u (k + 1) = min (prefixMin u k) (u (k + 1)) := by
   refine le_antisymm (le_min (prefixMin_mono (Nat.le_succ k)) (prefixMin_le le_rfl))
@@ -112,77 +142,98 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### The run predicate -/
 
-/-- The Step-1 termination test of TRq ([cartis2022evaluation], Algorithm 12.2.1, Step 1) at
-iteration `k`: with `δ_k = min(Δ_k, ϑ)`, `ΔT_j(D_k, d_{k,j}) ≤ ς ε_j δ_k^j / j!` for all
-`j ∈ [1, q]`. -/
+/-- The **termination test** of TRq, [cartis2022evaluation], Algorithm 12.2.1, Step 1, at iteration
+$k$. With $\delta_k = \min(\Delta_k, \vartheta)$, the test passes if
+$$\Delta T_j(D_k, d_{k,j}) \le \frac{\varsigma \varepsilon_j \delta_k^j}{j!} \qquad \text{for }
+  1 \le j \le q.$$
+
+This is `Optimization.MeasureTestPasses` for the Taylor decrements of `D k`, with the same
+radius $\delta_k$ at all orders. -/
 def trqTest (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ)
     (ϑ : ℝ) (Δ : ℕ → ℝ) (d : ℕ → ℕ → E) (k : ℕ) : Prop :=
   MeasureTestPasses (fun j => (D k).taylorDecrement j) q P.ς ε (fun _ => min (Δ k) ϑ) (d k)
 
+/-- The termination test of TRq at iteration $k$ is `Optimization.MeasureTestPasses` for the Taylor
+decrements of `D k`, the fraction $\varsigma$, the tolerances $\varepsilon$, the radius
+$\min(\Delta_k, \vartheta)$ at all orders, and the displacements `d k`. -/
 theorem trqTest_iff {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {P : TRqParams} {q : ℕ}
     {ε : ℕ → ℝ} {ϑ : ℝ} {Δ : ℕ → ℝ} {d : ℕ → ℕ → E} {k : ℕ} :
     trqTest D P q ε ϑ Δ d k ↔
       MeasureTestPasses (fun j => (D k).taylorDecrement j) q P.ς ε (fun _ => min (Δ k) ϑ) (d k) :=
   Iff.rfl
 
-/-- The ratio (12.2.4) of TRq: the reduction ratio with the predicted decrease
-`ΔT_{j_k}(D_k, s_k)`. -/
+/-- The reduction ratio (12.2.4) of TRq:
+$$\rho_k = \frac{f(x_k) - f(x_k + s_k)}{\Delta T_{j_k}(D_k, s_k)},$$
+with the decrease of the Taylor polynomial of order $j_k$ as the predicted decrease. -/
 noncomputable def trqRatio (f : E → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (x s : ℕ → E)
     (jk : ℕ → ℕ) (k : ℕ) : ℝ :=
   reductionRatio f (x k) (s k) ((D k).taylorDecrement (jk k) (s k))
 
+/-- The ratio of TRq at iteration $k$ is `Optimization.reductionRatio` at $x_k$ and $s_k$ with the
+predicted decrease $\Delta T_{j_k}(D_k, s_k)$. -/
 theorem trqRatio_eq {f : E → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {x s : ℕ → E}
     {jk : ℕ → ℕ} {k : ℕ} :
     trqRatio f D x s jk k = reductionRatio f (x k) (s k) ((D k).taylorDecrement (jk k) (s k)) :=
   rfl
 
-/-- Steps 1.2 and 2 of one TRq iteration ([cartis2022evaluation], (12.2.2)–(12.2.3)), for data
-`D`, feasible displacements `S`, optimality radius `δ`, trust-region radius `Δ`, Step-1
-displacements `d`: the order `j ∈ [1, q]` is the least order failing the test, and the step `s`
-is feasible, in the trust region, and decreases the order-`j` Taylor model at least as much as
-`d j`. -/
+/-- Steps 1.2 and 2 of one TRq iteration, (12.2.2)–(12.2.3) of [cartis2022evaluation]. Let $D$ be
+derivative data, $S$ a set of feasible displacements, $\delta$ the optimality radius, $\Delta$
+the trust-region radius and $d_1, \dots, d_q$ the displacements of Step 1. An order $j$ and a
+step $s$ form a **TRq step** if $j$ is the least order in $\{1, \dots, q\}$ at which the
+termination test fails, and the step $s$ is feasible, lies in the trust region, and decreases
+the Taylor polynomial of order $j$ at least as much as $d_j$. -/
 structure IsTRqStep (D : FormalMultilinearSeries ℝ E ℝ) (S : Set E) (ς : ℝ) (q : ℕ)
     (ε : ℕ → ℝ) (δ Δ : ℝ) (d : ℕ → E) (j : ℕ) (s : E) : Prop where
-  /-- The order lies in `[1, q]`. -/
+  /-- The order $j$ lies in $\{1, \dots, q\}$. -/
   order_mem : j ∈ Finset.Icc 1 q
-  /-- The test fails at order `j` ((12.2.2)). -/
+  /-- The test fails at order $j$, (12.2.2): $\varsigma \varepsilon_j \delta^j / j! < \Delta T_j(D,
+  d_j)$. -/
   lt_taylorDecrement : ς * ε j * δ ^ j / j ! < D.taylorDecrement j (d j)
-  /-- The test passes at the lower orders. -/
+  /-- The test passes at the lower orders: $\Delta T_i(D, d_i) \le \varsigma \varepsilon_i \delta^i
+  / i!$ for $1 \le i < j$. -/
   taylorDecrement_le_of_lt :
     ∀ i ∈ Finset.Icc 1 q, i < j → D.taylorDecrement i (d i) ≤ ς * ε i * δ ^ i / i !
-  /-- The step lies in the trust region and is feasible. -/
+  /-- The step lies in the trust region and is feasible: $\|s\| \le \Delta$ and $s \in S$. -/
   mem : s ∈ closedBall 0 Δ ∩ S
-  /-- The step decreases the model at least as much as the Step-1 displacement ((12.2.3)). -/
+  /-- The step decreases the model at least as much as the displacement of Step 1, (12.2.3):
+  $\Delta T_j(D, d_j) \le \Delta T_j(D, s)$. -/
   taylorDecrement_le : D.taylorDecrement j (d j) ≤ D.taylorDecrement j s
 
-/-- A run of the TRq method ([cartis2022evaluation], Algorithm 12.2.1) with derivative data
-`D k` and feasible displacement sets `S k` at iteration `k`, constants `P`, order `q`, tolerances
-`ε`, threshold `ϑ`, iterates `x`, steps `s`, radii `Δ`, orders `jk` and Step-1 displacements `d`.
-Writing `δ_k = min(Δ_k, ϑ)`:
-* Steps 2–4 form a trust-region run (`Optimization.IsTRRun`) with termination test
-  `Optimization.trqTest`, step condition `Optimization.IsTRqStep` and ratio
+/-- A **run of TRq**, [cartis2022evaluation], Algorithm 12.2.1. The data are an objective
+$f : E \to \mathbb{R}$, derivative data $D_k$ and sets $S_k$ of feasible displacements at
+iteration $k$, constants $P$, an order $q$, tolerances $\varepsilon_j$, a threshold $\vartheta$,
+iterates $x_k$, steps $s_k$, radii $\Delta_k$, orders $j_k$ and displacements $d_{k,j}$ of
+Step 1. With $\delta_k = \min(\Delta_k, \vartheta)$, these data form a run if:
+* Steps 2–4 form a trust-region run (`Optimization.IsTRRun`) with the termination test
+  `Optimization.trqTest`, the step condition `Optimization.IsTRqStep` and the ratio
   `Optimization.trqRatio`;
-* the displacements `d k j` are approximate optimality displacements ((12.2.1)) at every
-  iteration up to and including termination;
-* the radii stay below `Δ_max` ((12.2.5)).
+* at every iteration up to and including termination, and for $1 \le j \le q$, the displacement
+  $d_{k,j}$ is an approximate optimality displacement (12.2.1) for $\Delta T_j(D_k, \cdot)$, the
+  radius $\delta_k$, the set $S_k$ and the fraction $\varsigma$;
+* at every iteration before termination, $\Delta_{k+1} \le \Delta_{\max}$, (12.2.5).
 
-Exact TRq: `D k = ftaylorSeries ℝ f (x k)`, `S k = univ`; TRq-SC: `S k = {d | x k + d ∈ X}`. -/
+For exact TRq, `D k = ftaylorSeries ℝ f (x k)` and `S k = univ`. For TRq-SC,
+`S k = {d | x k + d ∈ X}`. -/
 structure IsTRqRun (f : E → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (S : ℕ → Set E)
     (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ) (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ)
     (d : ℕ → ℕ → E) : Prop extends
     IsTRRun P.toTRParams (trqTest D P q ε ϑ Δ d)
       (fun k => IsTRqStep (D k) (S k) P.ς q ε (min (Δ k) ϑ) (Δ k) (d k) (jk k) (s k))
       (trqRatio f D x s jk) x s Δ where
-  /-- Step 1.1: approximate optimality displacements at every iteration up to termination. -/
+  /-- The displacements of Step 1.1: at every iteration $k$ up to and including termination, and for
+  $1 \le j \le q$, $d_{k,j}$ is an approximate optimality displacement for
+  $\Delta T_j(D_k, \cdot)$, the radius $\min(\Delta_k, \vartheta)$, the set $S_k$ and the
+  fraction $\varsigma$. -/
   witness : ∀ k, (∀ i < k, ¬ trqTest D P q ε ϑ Δ d i) → ∀ j ∈ Finset.Icc 1 q,
     IsApproxMeasureStep ((D k).taylorDecrement j) (min (Δ k) ϑ) (S k) P.ς (d k j)
-  /-- The cap `Δ_{k+1} ≤ Δ_max` of (12.2.5). -/
+  /-- The cap of (12.2.5): $\Delta_{k+1} \le \Delta_{\max}$ at every iteration $k$ before
+  termination. -/
   cap : UntilHit (trqTest D P q ε ϑ Δ d) fun k => Δ (k + 1) ≤ P.Δmax
 
 /-! ### Existence of runs -/
 
-/-- The state of a TRq run at iteration `k`: iterate, radius and Step-1 displacements at `k`,
-and the step and order chosen at iteration `k - 1`. -/
+/-- The state of a TRq run at iteration $k$: the iterate, the radius and the displacements of Step 1
+at $k$, and the step and the order chosen at iteration $k - 1$. -/
 private structure TRqState (E : Type*) where
   x : E
   Δ : ℝ
@@ -190,11 +241,17 @@ private structure TRqState (E : Type*) where
   s : E
   j : ℕ
 
-/-- **Existence of TRq runs** ([cartis2022evaluation], Algorithm 12.2.1, well-posedness). In
-finite dimension, for data `J y` and feasible displacement sets `C' y` depending on the current
-iterate `y`, with every `C' y` closed and containing `0`, and `ϑ ≥ 0`, every starting point `x₀`
-starts a TRq run. (Construction: exact maximizers as Step-1 displacements, `s_k = d_k`, and the
-canonical radius update, which never increases the radius.) -/
+/-- **Existence of TRq runs**, the well-posedness of [cartis2022evaluation], Algorithm 12.2.1. Let
+$E$ be a finite-dimensional real normed space and $f : E \to \mathbb{R}$. Let $J(y)$ be
+derivative data and $C'(y) \subseteq E$ a set of feasible displacements that depend on the
+current iterate $y$, with every $C'(y)$ closed and $0 \in C'(y)$. Let $P$ be constants of TRq,
+$q \in \mathbb{N}$, $\varepsilon_j$ tolerances and $\vartheta \ge 0$. Then for every $x_0 \in E$
+there are iterates $x_k$ with $x_0$ as the first iterate, steps $s_k$, radii $\Delta_k$, orders
+$j_k$ and displacements $d_{k,j}$ that form a run of TRq with the data $D_k = J(x_k)$ and the
+sets $S_k = C'(x_k)$.
+
+The construction takes exact maximizers as the displacements of Step 1, the step $s_k = d_k$,
+and the canonical radius update, which never increases the radius. -/
 theorem exists_isTRqRun [FiniteDimensional ℝ E] (f : E → ℝ)
     (J : E → FormalMultilinearSeries ℝ E ℝ) (C' : E → Set E) (hC : ∀ y, IsClosed (C' y))
     (hC0 : ∀ y, (0 : E) ∈ C' y) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) {ϑ : ℝ} (hϑ : 0 ≤ ϑ)
@@ -247,16 +304,19 @@ theorem exists_isTRqRun [FiniteDimensional ℝ E] (f : E → ℝ)
 
 /-! ### One-iteration lemmas -/
 
-/-- The scaled approximate criticality gap ([cartis2022evaluation], (12.2.8)):
-`φ̂ = j! ΔT_j(D, d) / δ^j`, for order `j`, optimality radius `δ` and displacement `d`. -/
+/-- The **scaled approximate criticality gap** of (12.2.8) of [cartis2022evaluation], for derivative
+data $D$, an order $j$, an optimality radius $\delta$ and a displacement $d$:
+$$\hat\phi = \frac{j! \, \Delta T_j(D, d)}{\delta^j}.$$
+When $\delta^j = 0$, the value is $0$, by the Lean convention for division by zero. -/
 noncomputable def trqGap (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ) (d : E) : ℝ :=
   j ! * D.taylorDecrement j d / δ ^ j
 
+/-- The scaled gap is $\hat\phi = j! \, \Delta T_j(D, d) / \delta^j$. -/
 theorem trqGap_def (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ) (d : E) :
     trqGap D j δ d = j ! * D.taylorDecrement j d / δ ^ j :=
   rfl
 
-/-- For `δ > 0`, `ΔT_j(D, d) = φ̂ δ^j / j!`. -/
+/-- For $\delta > 0$, $\hat\phi \, \delta^j / j! = \Delta T_j(D, d)$. -/
 theorem trqGap_mul_pow_div (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) {δ : ℝ} (hδ : 0 < δ)
     (d : E) : trqGap D j δ d * δ ^ j / j ! = D.taylorDecrement j d := by
   have := pow_pos hδ j
@@ -264,14 +324,16 @@ theorem trqGap_mul_pow_div (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) {δ
   rw [trqGap_def]
   field_simp
 
-/-- The constant `κ_Δ` of [cartis2022evaluation], (12.2.14):
-`γ₁ (1 - η₂) / L · min(ϑ, Δ₀ δ₀^q / (2 q! M))` with `δ₀ = min(Δ₀, ϑ)`, where `L` is the
-model-fidelity constant and `M` bounds the norms of the derivative data at `x₀` of orders
-`1, …, q` (in the book, `M = max_{i ∈ [1, q]} ‖∇^i f(x₀)‖`). -/
+/-- The constant $\kappa_\Delta$ of (12.2.14) of [cartis2022evaluation]:
+$$\kappa_\Delta = \frac{\gamma_1 (1 - \eta_2)}{L} \min\Big(\vartheta, \frac{\Delta_0
+  \delta_0^q}{2 \, q! \, M}\Big), \qquad \delta_0 = \min(\Delta_0, \vartheta),$$
+where $L$ is the model-fidelity constant and $M$ bounds the norms of the derivative data at
+$x_0$ of orders $1, \dots, q$. In the source, $M = \max_{1 \le i \le q} \|\nabla^i f(x_0)\|$. -/
 noncomputable def trqKappa (P : TRqParams) (L ϑ M : ℝ) (q : ℕ) : ℝ :=
   P.γ₁ * (1 - P.η₂) / L * min ϑ (P.Δ₀ * min P.Δ₀ ϑ ^ q / (2 * q ! * M))
 
 
+/-- If $L > 0$, $\vartheta > 0$ and $M > 0$, then $\kappa_\Delta > 0$. -/
 theorem trqKappa_pos {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 0 < L) (hϑ : 0 < ϑ)
     (hM : 0 < M) : 0 < trqKappa P L ϑ M q := by
   have := P.Δ₀_pos
@@ -281,14 +343,14 @@ theorem trqKappa_pos {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 0 < L) (hϑ 
   have := P.one_sub_η₂_pos
   positivity
 
-/-- `κ_Δ ≤ γ₁ (1 - η₂) ϑ / L`. -/
+/-- If $L > 0$, then $\kappa_\Delta \le \gamma_1 (1 - \eta_2) \vartheta / L$. -/
 theorem trqKappa_le {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 0 < L) :
     trqKappa P L ϑ M q ≤ P.γ₁ * (1 - P.η₂) / L * ϑ := by
   have := P.γ₁_pos
   have := P.one_sub_η₂_pos
   exact mul_le_mul_of_nonneg_left (min_le_left _ _) (by positivity)
 
-/-- `κ_Δ ≤ γ₁` when `L ≥ 1` and `ϑ ≤ 1`. -/
+/-- If $L \ge 1$ and $\vartheta \le 1$, then $\kappa_\Delta \le \gamma_1$. -/
 theorem trqKappa_le_γ₁ {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) :
     trqKappa P L ϑ M q ≤ P.γ₁ := by
   refine (trqKappa_le (by linarith)).trans ?_
@@ -307,7 +369,7 @@ theorem trqKappa_le_γ₁ {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 1 ≤ L
           linarith
     _ = P.γ₁ := mul_one _
 
-/-- `κ_Δ < 1` when `L ≥ 1` and `ϑ ≤ 1`. -/
+/-- If $L \ge 1$ and $\vartheta \le 1$, then $\kappa_\Delta < 1$. -/
 theorem trqKappa_lt_one {P : TRqParams} {L ϑ M : ℝ} {q : ℕ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) :
     trqKappa P L ϑ M q < 1 :=
   (trqKappa_le_γ₁ hL hϑ1).trans_lt P.γ₁_lt_one
@@ -319,33 +381,39 @@ variable {f : E → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {S : �
   (h : IsTRqRun f D S P q ε ϑ x s Δ jk d)
 include h
 
-/-- The step conditions at an iteration before termination. -/
+/-- At an iteration $k$ before termination, the order $j_k$ and the step $s_k$ form a TRq step for
+the data $D_k$, the set $S_k$, the optimality radius $\min(\Delta_k, \vartheta)$, the radius
+$\Delta_k$ and the displacements $d_{k,\cdot}$. -/
 theorem isTRqStep {k : ℕ} (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) :
     IsTRqStep (D k) (S k) P.ς q ε (min (Δ k) ϑ) (Δ k) (d k) (jk k) (s k) :=
   h.step k hk
 
-/-- The radii are positive up to (and including) termination. -/
+/-- The radius $\Delta_k$ is positive at every iteration up to and including termination. -/
 theorem delta_pos' {k : ℕ} (hk : ∀ i < k, ¬ trqTest D P q ε ϑ Δ d i) : 0 < Δ k :=
   h.delta_pos hk k le_rfl
 
-/-- The optimality radius `δ_k = min(Δ_k, ϑ)` is positive up to termination when `ϑ > 0`. -/
+/-- If $\vartheta > 0$, the optimality radius $\delta_k = \min(\Delta_k, \vartheta)$ is positive at
+every iteration up to and including termination. -/
 theorem radius_pos (hϑ : 0 < ϑ) {k : ℕ} (hk : ∀ i < k, ¬ trqTest D P q ε ϑ Δ d i) :
     0 < min (Δ k) ϑ :=
   lt_min (h.delta_pos' hk) hϑ
 
-/-- The radii stay below `Δ_max` up to (and including) termination. -/
+/-- The radius satisfies $\Delta_k \le \Delta_{\max}$ at every iteration up to and including
+termination. -/
 theorem delta_le_max {k : ℕ} (hk : ∀ i < k, ¬ trqTest D P q ε ϑ Δ d i) : Δ k ≤ P.Δmax := by
   rcases k with _ | k
   · rw [h.delta_zero]; exact P.Δ₀_le_Δmax
   · exact h.cap k fun i hi => hk i (Nat.lt_succ_of_le hi)
 
-/-- Up to termination, `φ̂_k δ_k^{j_k} / j_k! = ΔT_{j_k}(D_k, d_{k,j_k})` (definition (12.2.8)). -/
+/-- If $\vartheta > 0$, then at every iteration up to and including termination, $\hat\phi_k
+\delta_k^{j_k} / j_k! = \Delta T_{j_k}(D_k, d_{k,j_k})$, by the definition (12.2.8). -/
 theorem trqGap_mul_pow_div_eq (hϑ : 0 < ϑ) {k : ℕ} (hk : ∀ i < k, ¬ trqTest D P q ε ϑ Δ d i) :
     trqGap (D k) (jk k) (min (Δ k) ϑ) (d k (jk k)) * min (Δ k) ϑ ^ jk k / (jk k) ! =
       (D k).taylorDecrement (jk k) (d k (jk k)) :=
   trqGap_mul_pow_div _ _ (h.radius_pos hϑ hk) _
 
-/-- `ς ε_{j_k} < φ̂_k` before termination. -/
+/-- If $\vartheta > 0$, then $\varsigma \varepsilon_{j_k} < \hat\phi_k$ at every iteration $k$
+before termination. -/
 theorem lt_trqGap (hϑ : 0 < ϑ) {k : ℕ} (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) :
     P.ς * ε (jk k) < trqGap (D k) (jk k) (min (Δ k) ϑ) (d k (jk k)) := by
   have hδ := h.radius_pos hϑ fun i hi => hk i hi.le
@@ -356,16 +424,25 @@ theorem lt_trqGap (hϑ : 0 < ϑ) {k : ℕ} (hk : ∀ i ≤ k, ¬ trqTest D P q �
   rw [div_lt_div_iff_of_pos_right (by positivity)] at hlt
   exact lt_of_mul_lt_mul_right hlt this.le
 
-/-- (12.2.10): before termination, `φ̂_k δ_k^{j_k} / j_k! ≤ ΔT_{j_k}(D_k, s_k)`. -/
+/-- The inequality (12.2.10): if $\vartheta > 0$, then at every iteration $k$ before termination,
+$\hat\phi_k \delta_k^{j_k} / j_k! \le \Delta T_{j_k}(D_k, s_k)$. -/
 theorem trqGap_mul_pow_div_le (hϑ : 0 < ϑ) {k : ℕ} (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) :
     trqGap (D k) (jk k) (min (Δ k) ϑ) (d k (jk k)) * min (Δ k) ϑ ^ jk k / (jk k) ! ≤
       (D k).taylorDecrement (jk k) (s k) := by
   rw [h.trqGap_mul_pow_div_eq hϑ fun i hi => hk i hi.le]
   exact (h.isTRqStep hk).taylorDecrement_le
 
-/-- **Lemma 12.2.1** ([cartis2022evaluation], (12.2.9)–(12.2.10)). If `ϑ > 0` and `εmin ≤ ε_j` for
-all `j ∈ [1, q]`, then at every iteration `k` before termination `ς εmin ≤ min_{i ≤ k} φ̂_i`
-(12.2.9) and `φ̂_k δ_k^{j_k} / j_k! ≤ ΔT_{j_k}(D_k, s_k)` (12.2.10). -/
+/-- **Lemma 12.2.1** of [cartis2022evaluation]. Consider a run of TRq with $\vartheta > 0$, and let
+$\varepsilon_{\min} \le \varepsilon_j$ for $1 \le j \le q$. Then at every iteration $k$ before
+termination,
+$$\varsigma \varepsilon_{\min} \le \min_{0 \le i \le k} \hat\phi_i \quad (12.2.9), \qquad
+  \frac{\hat\phi_k \delta_k^{j_k}}{j_k!} \le \Delta T_{j_k}(D_k, s_k) \quad (12.2.10),$$
+where $\hat\phi_i$ is the scaled gap of $D_i$, $j_i$, $\delta_i$ and $d_{i,j_i}$, and
+$\delta_k = \min(\Delta_k, \vartheta)$.
+
+The scaled gap $\hat\phi_i$ is `Optimization.trqGap (D i) (jk i) (min (Δ i) ϑ) (d i (jk i))`,
+and the minimum is `Optimization.prefixMin`. Here $\varepsilon_{\min}$ is any lower bound of the
+tolerances. -/
 theorem trqGap_ge (hϑ : 0 < ϑ) {εmin : ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, εmin ≤ ε j) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) :
     P.ς * εmin ≤ prefixMin (fun i => trqGap (D i) (jk i) (min (Δ i) ϑ) (d i (jk i))) k ∧
@@ -376,17 +453,20 @@ theorem trqGap_ge (hϑ : 0 < ϑ) {εmin : ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 
   refine le_trans ?_ (h.lt_trqGap hϑ hi').le
   exact mul_le_mul_of_nonneg_left (hε _ (h.isTRqStep hi').order_mem) P.ς_pos.le
 
-/-- The scaled gaps are positive before termination when the tolerances are nonnegative. -/
+/-- If $\vartheta > 0$ and $\varepsilon_j \ge 0$ for $1 \le j \le q$, then the scaled gap
+$\hat\phi_k$ is positive at every iteration $k$ before termination. -/
 theorem trqGap_pos (hϑ : 0 < ϑ) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) :
     0 < trqGap (D k) (jk k) (min (Δ k) ϑ) (d k (jk k)) :=
   lt_of_le_of_lt (mul_nonneg P.ς_pos.le (hε _ (h.isTRqStep hk).order_mem)) (h.lt_trqGap hϑ hk)
 
-/-- **Lemma 12.2.2** ([cartis2022evaluation]): condition for a very successful iteration. Let `k`
-be an iteration before termination with model fidelity
-`|f(x_k + s_k) - (f(x_k) - ΔT_{j_k}(s_k))| ≤ L ‖s_k‖^{j_k+1} / (j_k+1)!` (`L > 0`) and
-`Δ_k ≤ min(ϑ, (1 - η₂) φ̂_k / L)` ((12.2.11)). Then `δ_k = Δ_k`, `ρ_k ≥ η₂` and
-`Δ_k ≤ Δ_{k+1}`. -/
+/-- **Lemma 12.2.2** of [cartis2022evaluation], a condition for a very successful iteration.
+Consider a run of TRq and an iteration $k$ before termination. Let $L > 0$, and assume the model
+fidelity
+$$|f(x_k + s_k) - (f(x_k) - \Delta T_{j_k}(D_k, s_k))| \le \frac{L}{(j_k+1)!} \|s_k\|^{j_k+1}$$
+and
+$$\Delta_k \le \min\Big(\vartheta, \frac{(1 - \eta_2) \hat\phi_k}{L}\Big) \qquad (12.2.11).$$
+Then $\delta_k = \Delta_k$, $\rho_k \ge \eta_2$, and $\Delta_k \le \Delta_{k+1}$. -/
 theorem le_reductionRatio {L : ℝ} (hL : 0 < L) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i)
     (hfid : |f (x k + s k) - (f (x k) - (D k).taylorDecrement (jk k) (s k))| ≤
@@ -431,9 +511,9 @@ theorem le_reductionRatio {L : ℝ} (hL : 0 < L) {k : ℕ}
     linarith
   exact ⟨hδ, hρ, (h.update hk).le_of_very_successful hρ⟩
 
-/-- Positivity of the bound `M` on the initial data when the run does not stop at once: if
-`‖D 0 i‖ ≤ M` for `i ∈ [1, q]`, `ε_j ≥ 0` and `ϑ ≥ 0`, and the test fails at `k = 0`, then
-`M > 0`. -/
+/-- Positivity of the bound $M$ on the initial data when the run does not stop at once. If
+$\|D_{0,i}\| \le M$ for $1 \le i \le q$, $\varepsilon_j \ge 0$ for $1 \le j \le q$,
+$\vartheta \ge 0$, and the termination test fails at $k = 0$, then $M > 0$. -/
 theorem pos_of_not_trqTest_zero (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hϑ : 0 ≤ ϑ) {M : ℝ}
     (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M) (h0 : ¬ trqTest D P q ε ϑ Δ d 0) : 0 < M := by
   have hstep := h.isTRqStep (k := 0) fun i hi => by rwa [Nat.le_zero.1 hi]
@@ -457,9 +537,11 @@ theorem pos_of_not_trqTest_zero (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (h�
   have := abs_le.1 (hb.trans this)
   linarith
 
-/-- Bound on the initial scaled gap ([cartis2022evaluation], proof of Lemma 12.2.3): if
-`‖D 0 i‖ ≤ M` for `i ∈ [1, q]`, `0 < ϑ ≤ 1` and the test fails at `k = 0`, then
-`φ̂_0 ≤ 2 q! M / δ₀^q`. -/
+/-- A bound on the initial scaled gap, from the proof of Lemma 12.2.3 of [cartis2022evaluation]. If
+$\|D_{0,i}\| \le M$ for $1 \le i \le q$, $0 < \vartheta \le 1$, and the termination test fails
+at $k = 0$, then
+$$\hat\phi_0 \le \frac{2 \, q! \, M}{\delta_0^q}.$$
+-/
 theorem trqGap_zero_le (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1) {M : ℝ}
     (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M) (h0 : ¬ trqTest D P q ε ϑ Δ d 0) :
     trqGap (D 0) (jk 0) (min (Δ 0) ϑ) (d 0 (jk 0)) ≤ 2 * q ! * M / min (Δ 0) ϑ ^ q := by
@@ -504,8 +586,10 @@ theorem trqGap_zero_le (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1) {M : ℝ}
     _ = 2 * q ! * M * δ ^ (q + 1) := by ring
     _ ≤ 2 * q ! * M * δ ^ j := by gcongr
 
-/-- The initial scaled gap and `κ_Δ` ([cartis2022evaluation], proof of Lemma 12.2.3): under the
-hypotheses of `IsTRqRun.trqGap_zero_le` and `L ≥ 1`, `κ_Δ φ̂_0 ≤ Δ₀`. -/
+/-- The initial scaled gap and $\kappa_\Delta$, from the proof of Lemma 12.2.3 of
+[cartis2022evaluation]. If $L \ge 1$, $0 < \vartheta \le 1$, $\varepsilon_j \ge 0$ and
+$\|D_{0,i}\| \le M$ for $1 \le i \le q$, and the termination test fails at $k = 0$, then
+$\kappa_\Delta \hat\phi_0 \le \Delta_0$. -/
 theorem trqKappa_mul_trqGap_zero_le {L M : ℝ} (hL : 1 ≤ L) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M)
     (h0 : ¬ trqTest D P q ε ϑ Δ d 0) :
@@ -537,13 +621,19 @@ theorem trqKappa_mul_trqGap_zero_le {L M : ℝ} (hL : 1 ≤ L) (hϑ : 0 < ϑ) (h
     _ ≤ 1 * P.Δ₀ := mul_le_mul_of_nonneg_right hc1 P.Δ₀_pos.le
     _ = P.Δ₀ := one_mul _
 
-/-- **Lemma 12.2.3** ([cartis2022evaluation], (12.2.13)): lower bound on the trust-region radius.
-Assume `L ≥ 1`, `0 < ϑ ≤ 1`, `ε_j ≥ 0`, `‖D 0 i‖ ≤ M` for `i ∈ [1, q]`, and the model fidelity
-`|f(x_k + s_k) - (f(x_k) - ΔT_{j_k}(s_k))| ≤ L ‖s_k‖^{j_k+1} / (j_k+1)!` at every iteration before
-termination. Then for every `k` before termination (so the test fails at `0`) both `Δ_k` and
-`Δ_{k+1}` are at least `min(γ₁ ϑ, κ_Δ min_{i ≤ k} φ̂_i)`, with `κ_Δ = trqKappa P L ϑ M q`
-((12.2.14)). (The bound on `Δ_{k+1}` gives the bound at the termination index with the minimum
-over the earlier iterations.) -/
+/-- **Lemma 12.2.3** of [cartis2022evaluation] (12.2.13), a lower bound on the trust-region radius.
+Consider a run of TRq. Assume $L \ge 1$, $0 < \vartheta \le 1$, $\varepsilon_j \ge 0$ for
+$1 \le j \le q$, $\|D_{0,i}\| \le M$ for $1 \le i \le q$, and the model fidelity
+$$|f(x_k + s_k) - (f(x_k) - \Delta T_{j_k}(D_k, s_k))| \le \frac{L}{(j_k+1)!} \|s_k\|^{j_k+1}$$
+at every iteration $k$ before termination. Then at every iteration $k$ before termination,
+$$\min\Big(\gamma_1 \vartheta, \kappa_\Delta \min_{0 \le i \le k} \hat\phi_i\Big) \le \Delta_k
+  \quad \text{and} \quad \min\Big(\gamma_1 \vartheta, \kappa_\Delta \min_{0 \le i \le k}
+  \hat\phi_i\Big) \le \Delta_{k+1},$$
+with $\kappa_\Delta$ = `Optimization.trqKappa P L ϑ M q` of (12.2.14).
+
+An iteration before termination exists only if the test fails at $k = 0$. The bound on
+$\Delta_{k+1}$ gives the bound at the termination index, with the minimum over the earlier
+iterations. -/
 theorem radius_ge {L M : ℝ} (hL : 1 ≤ L) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M)
     (hfid : ∀ k, (∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) →
@@ -593,9 +683,13 @@ theorem radius_ge {L M : ℝ} (hL : 1 ≤ L) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
   · exact h.toIsTRRun.delta_ge hK (fun i _ => hθ i) hforce k (Nat.le_succ k)
   · exact h.toIsTRRun.delta_succ_ge hK (fun i _ => hθ i) hforce k (Nat.lt_succ_self k)
 
-/-- The minimal radius in the proof of [cartis2022evaluation], Theorem 12.2.5: under the
-hypotheses of `IsTRqRun.radius_ge` with `0 < εmin ≤ ϑ` and `εmin ≤ ε_j` for `j ∈ [1, q]`,
-`ς κ_Δ εmin ≤ Δ_k` for every `k` up to and including the first termination index. -/
+/-- The minimal radius in the proof of Theorem 12.2.5 of [cartis2022evaluation]. Consider a run of
+TRq. Assume $L \ge 1$, $\vartheta \le 1$, $0 < \varepsilon_{\min} \le \vartheta$,
+$\varepsilon_{\min} \le \varepsilon_j$ and $\|D_{0,i}\| \le M$ for $1 \le i \le q$, that the
+termination test fails at $k = 0$, and the model fidelity of `Optimization.IsTRqRun.radius_ge`
+at every iteration before termination. Then
+$$\varsigma \kappa_\Delta \varepsilon_{\min} \le \Delta_k$$
+for every iteration $k$ up to and including the first termination index. -/
 theorem mul_le_delta {L M εmin : ℝ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) (hεmin : 0 < εmin)
     (hεϑ : εmin ≤ ϑ) (hε : ∀ j ∈ Finset.Icc 1 q, εmin ≤ ε j)
     (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M) (h0 : ¬ trqTest D P q ε ϑ Δ d 0)
@@ -628,11 +722,18 @@ theorem mul_le_delta {L M εmin : ℝ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) (hεmin 
       calc P.ς * trqKappa P L ϑ M q * εmin = trqKappa P L ϑ M q * (P.ς * εmin) := by ring
         _ ≤ _ := mul_le_mul_of_nonneg_left this hκ.le
 
-/-- **Lemma 12.2.4** ([cartis2022evaluation], (12.2.18)–(12.2.19)): model and function decreases.
-Under the hypotheses of `IsTRqRun.radius_ge` with `0 < εmin ≤ ϑ` and `εmin ≤ ε_j` for
-`j ∈ [1, q]`, at every iteration `k` before termination
-`(ς κ_Δ)^{q+1} εmin^{q+1} / q! ≤ ΔT_{j_k}(D_k, s_k)`, and if `k` is successful,
-`η₁ (ς κ_Δ)^{q+1} εmin^{q+1} / q! ≤ f(x_k) - f(x_{k+1})`. -/
+/-- **Lemma 12.2.4** of [cartis2022evaluation] (12.2.18)–(12.2.19), the model and function
+decreases. Consider a run of TRq. Assume $L \ge 1$, $\vartheta \le 1$,
+$0 < \varepsilon_{\min} \le \vartheta$, $\varepsilon_{\min} \le \varepsilon_j$ and
+$\|D_{0,i}\| \le M$ for $1 \le i \le q$, and the model fidelity of
+`Optimization.IsTRqRun.radius_ge` at every iteration before termination. Then at every iteration
+$k$ before termination,
+$$\frac{(\varsigma \kappa_\Delta)^{q+1}}{q!} \varepsilon_{\min}^{q+1} \le \Delta T_{j_k}(D_k,
+  s_k),$$
+and if the iteration is successful, $\rho_k \ge \eta_1$, then
+$$\eta_1 \frac{(\varsigma \kappa_\Delta)^{q+1}}{q!} \varepsilon_{\min}^{q+1} \le f(x_k) -
+  f(x_{k+1}).$$
+-/
 theorem taylorDecrement_ge {L M εmin : ℝ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) (hεmin : 0 < εmin)
     (hεϑ : εmin ≤ ϑ) (hε : ∀ j ∈ Finset.Icc 1 q, εmin ≤ ε j)
     (hM : ∀ i ∈ Finset.Icc 1 q, ‖D 0 i‖ ≤ M)
@@ -694,10 +795,14 @@ theorem taylorDecrement_ge {L M εmin : ℝ} (hL : 1 ≤ L) (hϑ1 : ϑ ≤ 1) (h
 
 end IsTRqRun
 
-/-- **Model fidelity for exact data** ((A.19), used in Lemma 12.2.2): for a TRq run with the exact
-Taylor data `D k = ftaylorSeries ℝ f (x k)` of a `C^q` function whose derivatives of orders
-`1, …, q` are `L`-Lipschitz (f.D1qL with `L_f ≤ L`), the hypothesis `hfid` of
-`IsTRqRun.radius_ge` and `IsTRqRun.taylorDecrement_ge` holds. -/
+/-- **Model fidelity for exact data**, (A.19) of [cartis2022evaluation], as used in Lemma 12.2.2.
+Consider a run of TRq with the exact Taylor data $D_k$ = `ftaylorSeries ℝ f (x k)`. Let $f$ be
+$q$ times continuously differentiable, and let $\nabla^j f$ be Lipschitz on $E$ with constant
+$L$ for $1 \le j \le q$ (assumption f.D1qL of the source with $L_f \le L$). Then at every
+iteration $k$ before termination,
+$$|f(x_k + s_k) - (f(x_k) - \Delta T_{j_k}(x_k, s_k))| \le \frac{L}{(j_k+1)!} \|s_k\|^{j_k+1}.$$
+This is the hypothesis `hfid` of `Optimization.IsTRqRun.radius_ge` and
+`Optimization.IsTRqRun.taylorDecrement_ge`. -/
 theorem IsTRqRun.abs_sub_le_of_lipschitz {f : E → ℝ} {S : ℕ → Set E} {P : TRqParams} {q : ℕ}
     {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → E} {Δ : ℕ → ℝ} {jk : ℕ → ℕ} {d : ℕ → ℕ → E} {L : ℝ}
     (h : IsTRqRun f (fun k => ftaylorSeries ℝ f (x k)) S P q ε ϑ x s Δ jk d)

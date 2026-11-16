@@ -11,62 +11,76 @@ import Mathlib.Analysis.Calculus.Taylor
 /-!
 # Taylor expansions with explicit remainder bounds
 
-Taylor's theorem in the forms the numerical estimates of this library need: not the asymptotic
-`IsLittleO` statement, but an inequality with a named constant, valid on a named set, and written
-with the *two-sided* derivatives `iteratedDeriv` rather than with `iteratedDerivWithin`.
+This module states Taylor's theorem in the forms that the numerical error estimates of this library
+need. A remainder bound here is an inequality with a named constant on a named set, not an
+asymptotic statement, and the coefficients of the expansion are the two-sided derivatives $f^{(k)}$
+(`iteratedDeriv`), not derivatives within a set (`iteratedDerivWithin`). For
+$f : \mathbb{R} \to \mathbb{R}$ with $|f^{(n+1)}| \le M$ the typical bound is
+$$\Bigl| f(x) - \sum_{k=0}^{n} \frac{(x - x_0)^k}{k!} f^{(k)}(x_0) \Bigr|
+  \le \frac{M |x - x_0|^{n+1}}{(n+1)!}.$$
 
-## Scalar expansions
+The module treats real functions of a real variable, curves $y : \mathbb{R} \to E$ in a real normed
+space $E$, and maps between normed spaces along a segment. For a curve, the hypotheses are a chain
+of derivative functions $Y_0, Y_1, \dots$ on $[a, b]$, in which $Y_{k+1}(s)$ is the derivative of
+$Y_k$ within $[a, b]$ at $s$. This is the form in which the truncation errors of one-step methods
+and the order conditions of Runge–Kutta methods are given. One asymptotic statement is included: the
+Peano remainder $o(\|y - x\|^2)$ of a second-order expansion, which a second-order sufficient
+condition for a local minimum uses.
 
-For `f : ℝ → ℝ` the remainder comes from Mathlib's `taylor_mean_remainder_lagrange`, whose
-intermediate point lies in the *open* interval; that is what lets
-`exists_taylorWithinEval_add_iteratedDeriv_mul` state the remainder with `iteratedDeriv` and
-`taylorWithinEval_eq_sum_of_contDiffAt` rewrite the Taylor polynomial as
-`∑_{k ≤ n} (x - x₀)^k / k! f^{(k)}(x₀)`. On an open convex set the two combine into
-`exists_eq_sum_taylor_add`, the expansion `f (x + δ) = ∑_{j ≤ k} f^{(j)}(x) / j! δ^j + R` with a
-Lagrange remainder at a point of the set. The uniform bound is stated on an *open ball*
-(`abs_sub_sum_taylor_le`): `iteratedDeriv` is determined by `f` only on an open set, so a
-`ContDiffOn` hypothesis over a closed interval does not determine the coefficients of the
-expansion, and a `uIcc` formulation of the primitive would not do. For a function that is `C^{n+1}`
-on all of `ℝ` the ball disappears (`abs_sub_sum_taylor_le_of_contDiff`), and `abs_taylor_one`,
-`abs_taylor_two`, `abs_taylor_three` are its first three orders written out.
-Where only the third derivative is controlled, and only by a Lipschitz bound at the centre,
-`abs_sub_taylor_three_le_of_lipschitz` bounds the order-three remainder by `M (y - x)⁴/24` through
-the integral remainder and the first two moments of the order-two kernel `(y - t)²/2`.
+## Main results
 
-## Expansions of a curve in a normed space
+* `exists_taylorWithinEval_add_iteratedDeriv_mul`: Taylor's theorem with the Lagrange remainder, the
+  intermediate point in the open interval.
+* `abs_sub_sum_taylor_le`: the uniform remainder bound for a function of class $C^{n+1}$ on an open
+  ball.
+* `abs_sub_sum_taylor_le_of_contDiff`: the uniform remainder bound for a function of class $C^{n+1}$
+  on $\mathbb{R}$; `abs_taylor_one`, `abs_taylor_two` and `abs_taylor_three` are its first three
+  orders.
+* `abs_sub_taylor_three_le_of_lipschitz`: the order-three remainder is at most $M (y - x)^4 / 24$
+  when the third derivative is Lipschitz at the expansion point with constant $M$.
+* `exists_forall_norm_sub_sub_smul_le`: for a curve of class $C^1$ on a compact interval, the
+  first-order remainder is at most $\varepsilon |s|$ for all steps $|s| \le \eta$.
+* `norm_sub_sum_smul_le`: the remainder bound for a chain of derivatives, at an arbitrary expansion
+  point and an arbitrary evaluation point of the interval.
+* `norm_sub_taylorSum_le`: the remainder bound for a chain of derivatives, expanded at the left
+  endpoint; `norm_sub_sub_smul_le_mul_sq_div_two` and
+  `norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` are its cases $n = 1$ and $n = 2$, and
+  `norm_sub_sub_smul_le_mul_sq_div_two'` expands at the right endpoint.
+* `norm_sub_sub_smul_add_le_mul_pow_three_div_twelve`: the Peano-kernel bound $M (b - a)^3 / 12$ of
+  the trapezoidal rule.
+* `norm_sub_sub_smul_apply_le_of_hasFDerivAt` and `norm_sub_taylor_segment_le`: the remainder bounds
+  of order two and four along a segment of a normed space.
+* `isLittleO_taylor_two`: the second-order expansion of $L : E \to \mathbb{R}$ has the remainder
+  $o(\|y - x\|^2)$.
+* `norm_sub_firstOrder_le_of_lipschitzAt_segment`, `norm_sub_firstOrder_le_of_hessian_bound` and
+  `abs_sub_secondOrder_le_of_lipschitzAt_segment`: quadratic and cubic remainder bounds from a
+  Lipschitz bound on the first or second Fréchet derivative, or from a bound on the second
+  derivative.
 
-For a curve `y : ℝ → E` the hypotheses are a chain of *derivative functions* rather than a
-`ContDiffOn` hypothesis: `HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s` for `k ≤ n`. This is
-what the truncation errors of one-step methods and the order conditions of Runge–Kutta methods
-have to hand, and it avoids `iteratedDerivWithin` at the endpoints entirely. For a curve that is
-merely `C¹` the first-order bound holds uniformly over the interval with an arbitrary `ε`
-(`exists_forall_norm_sub_sub_smul_le`: uniform continuity of `y'` and the mean value inequality),
-which is what consistency of one-step and multistep methods needs. The general bound is
-`norm_sub_sum_smul_le`, which expands at an arbitrary point `c` of the interval and evaluates at
-an arbitrary `x` on either side of it; forwards it is `norm_sub_sum_smul_le_of_le`, proved by
-induction on the order from `image_norm_le_of_norm_deriv_right_le_deriv_boundary`, and backwards it
-is the forward case for the reflected tower. Expanding at the left endpoint gives
-`norm_sub_taylorSum_le`, of which `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
-`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`) are the low-order cases,
-`norm_sub_sub_smul_le_mul_sq_div_two'` is the second-order bound expanded at the right endpoint,
-and `norm_sub_sub_smul_add_le_mul_pow_three_div_twelve` is the Peano-kernel bound of the
-trapezoidal rule, obtained without integrals.
+## Proof outline
 
-Along a segment of a normed space the same bounds are read off the curve `s ↦ G (p + s • w)`,
-whose `k`-th derivative is the `k`-th Fréchet derivative of `G` applied to `w` that many times:
-`norm_sub_sub_smul_apply_le_of_hasFDerivAt` at order two and `norm_sub_taylor_segment_le` at
-order four.
+For a real function, the remainder comes from Mathlib's `taylor_mean_remainder_lagrange`. Its
+intermediate point lies in the open interval, where the derivative within the interval is the
+two-sided derivative. For a chain of derivatives, the forward bound is proved by induction on the
+order from the comparison lemma `image_norm_le_of_norm_deriv_right_le_deriv_boundary`, and the
+backward bound is the forward bound for the reflected chain. The trapezoidal bound is obtained
+without integrals. Along a segment, the bounds are read off the curve $s \mapsto G(p + s w)$, whose
+$k$-th derivative is the $k$-th Fréchet derivative of $G$ applied to $w$ in every argument. The
+Peano remainder is the mean value inequality along the segment $[x, y]$ and needs no integrability
+of the derivative.
 
-## The Peano remainder
+## Implementation notes
 
-`isLittleO_taylor_two` is the one asymptotic statement here: for `L : E → ℝ` differentiable near
-`x` with derivative `L'` differentiable at `x` with derivative `H`, the second-order expansion has
-remainder `o(‖y - x‖²)`, which is what a second-order sufficient condition for a local minimum
-reads off. It is the mean value inequality along the segment `[x, y]`, without any integrability
-of `L'`.
-
-These are all Mathlib-shaped statements; the module is an upstreaming candidate whose natural home
-is `Mathlib.Analysis.Calculus.Taylor`.
+* `iteratedDeriv` is determined by $f$ only on an open set. So a `ContDiffOn` hypothesis on a closed
+  interval does not determine the coefficients of the expansion at an endpoint, and a formulation on
+  `uIcc` alone would not do. The uniform bound is therefore stated on an open ball
+  (`abs_sub_sum_taylor_le`), or with the extra hypothesis that $f$ is $C^n$ at the expansion point
+  (`abs_sub_sum_taylor_le_of_contDiffOn`). For a function of class $C^{n+1}$ on all of $\mathbb{R}$
+  no ball is needed.
+* The chain-of-derivatives hypotheses for curves avoid `iteratedDerivWithin` at the endpoints
+  entirely. Mathlib's `taylor_mean_remainder_bound` expands at the left endpoint only.
+* The statements follow Mathlib conventions, and their natural place in Mathlib is
+  `Mathlib.Analysis.Calculus.Taylor`.
 -/
 
 open Set Topology
@@ -79,8 +93,17 @@ section Scalar
 
 variable {f : ℝ → ℝ} {x₀ x : ℝ} {n : ℕ}
 
-/-- Taylor's theorem with the Lagrange remainder, the derivative in the remainder being the
-two-sided `iteratedDeriv` (the intermediate point is interior to the interval). -/
+/-- **Taylor's theorem with the Lagrange remainder**, with a two-sided derivative in the remainder.
+Let $f : \mathbb{R} \to \mathbb{R}$, let $n \in \mathbb{N}$, let $x_0 \neq x$, and let $f$ be of
+class $C^{n+1}$ on the closed interval $I$ between $x_0$ and $x$. Then there is a point $\xi$
+strictly between $x_0$ and $x$ with
+$$f(x) = P_n(x) + \frac{f^{(n+1)}(\xi) (x - x_0)^{n+1}}{(n+1)!},$$
+where $P_n$ is the Taylor polynomial of degree $n$ of $f$ at $x_0$, formed with the derivatives
+of $f$ within $I$.
+
+$P_n(x)$ is Mathlib's `taylorWithinEval f n (uIcc x₀ x) x₀ x`, and $f^{(n+1)}(\xi)$ is the
+two-sided `iteratedDeriv (n + 1) f ξ`. The two-sided derivative is possible because $\xi$ is an
+interior point of $I$. The proof specializes Mathlib's `taylor_mean_remainder_lagrange`. -/
 theorem exists_taylorWithinEval_add_iteratedDeriv_mul (hne : x₀ ≠ x)
     (hf : ContDiffOn ℝ (n + 1) f (uIcc x₀ x)) :
     ∃ ξ ∈ uIoo x₀ x, f x = taylorWithinEval f n (uIcc x₀ x) x₀ x
@@ -94,8 +117,15 @@ theorem exists_taylorWithinEval_add_iteratedDeriv_mul (hne : x₀ ≠ x)
   rw [iteratedDerivWithin_eq_iteratedDeriv hs (hf.contDiffAt hξ') (hsub hξ)] at h
   linarith
 
-/-- The Taylor polynomial of `f` at an interior point `x₀` of a set on which `f` is `C^n`, written
-with the two-sided iterated derivatives. -/
+/-- Let $f : \mathbb{R} \to \mathbb{R}$ be of class $C^n$ at $x_0$, and let $x \neq x_0$. Then the
+Taylor polynomial of degree $n$ of $f$ at $x_0$, formed with the derivatives of $f$ within the
+closed interval between $x_0$ and $x$, is the polynomial formed with the two-sided derivatives:
+$$P_n(x) = \sum_{k=0}^{n} \frac{(x - x_0)^k}{k!} f^{(k)}(x_0).$$
+
+The derivative $f^{(k)}$ is `iteratedDeriv k f`, and $P_n(x)$ is
+`taylorWithinEval f n (uIcc x₀ x) x₀ x`. The point $x_0$ is an endpoint of the interval. The
+hypothesis `ContDiffAt ℝ n f x₀` makes $f$ of class $C^n$ on a neighbourhood of $x_0$, so that the
+derivatives within the interval at $x_0$ are the two-sided ones. -/
 theorem taylorWithinEval_eq_sum_of_contDiffAt (hne : x₀ ≠ x) (hf : ContDiffAt ℝ n f x₀) :
     taylorWithinEval f n (uIcc x₀ x) x₀ x
       = ∑ k ∈ range (n + 1), (x - x₀) ^ k / k ! * iteratedDeriv k f x₀ := by
@@ -106,15 +136,19 @@ theorem taylorWithinEval_eq_sum_of_contDiffAt (hne : x₀ ≠ x) (hf : ContDiffA
     smul_eq_mul]
   ring
 
-/-- **Taylor's theorem with a uniform remainder bound between two points**: if `f` is `C^{n+1}` on
-the closed interval between `x₀` and `x`, is `C^n` near `x₀`, and its `(n+1)`-st derivative is
-bounded by `M` on that interval, then
-`|f x - ∑_{k ≤ n} (x - x₀)^k / k! f^{(k)}(x₀)| ≤ M |x - x₀|^{n+1} / (n + 1)!`.
+/-- **Taylor's theorem with a uniform remainder bound between two points.** Let
+$f : \mathbb{R} \to \mathbb{R}$, $n \in \mathbb{N}$ and $x_0, x, M \in \mathbb{R}$. Let $f$ be
+of class $C^{n+1}$ on the closed interval $I$ between $x_0$ and $x$, let $f$ be of class $C^n$
+at $x_0$, and let $|f^{(n+1)}(t)| \le M$ for all $t \in I$. Then
+$$\Bigl| f(x) - \sum_{k=0}^{n} \frac{(x - x_0)^k}{k!} f^{(k)}(x_0) \Bigr|
+  \le \frac{M |x - x_0|^{n+1}}{(n+1)!}.$$
 
-The hypothesis `ContDiffAt ℝ n f x₀` is not implied by the `ContDiffOn` one and cannot be dropped:
-the coefficients of the expansion are the *two-sided* `iteratedDeriv`, which smoothness on a closed
-interval does not determine at an endpoint of it. The two forms below supply it in the two ways
-that occur in practice — from an open set around `x₀`, and from smoothness on all of `ℝ`. -/
+The derivatives, also in the hypothesis on $f^{(n+1)}$, are the two-sided `iteratedDeriv`. The
+hypothesis `ContDiffAt ℝ n f x₀` does not follow from the hypothesis on $I$ and cannot be
+dropped: smoothness on a closed interval does not determine the two-sided derivatives at an
+endpoint. `abs_sub_sum_taylor_le` and `abs_sub_sum_taylor_le_of_convex` supply it in the two
+ways that occur in practice, from an open set around $x_0$ and from smoothness on all of
+$\mathbb{R}$. -/
 theorem abs_sub_sum_taylor_le_of_contDiffOn {M : ℝ}
     (hf : ContDiffOn ℝ (n + 1) f (uIcc x₀ x)) (hx₀ : ContDiffAt ℝ n f x₀)
     (hM : ∀ t ∈ uIcc x₀ x, |iteratedDeriv (n + 1) f t| ≤ M) :
@@ -129,9 +163,15 @@ theorem abs_sub_sum_taylor_le_of_contDiffOn {M : ℝ}
   gcongr
   exact hM ξ (Ioo_subset_Icc_self hξ)
 
-/-- **Taylor's theorem with a uniform remainder bound on a ball**: if `f` is `C^{n+1}` on
-`ball x ε` with `|f^{(n+1)}| ≤ M` there, then for every `y` in the ball
-`|f y - ∑_{k ≤ n} (y - x)^k / k! f^{(k)}(x)| ≤ M |y - x|^{n+1} / (n + 1)!`. -/
+/-- **Taylor's theorem with a uniform remainder bound on a ball.** Let
+$f : \mathbb{R} \to \mathbb{R}$, $n \in \mathbb{N}$ and $x_0, \varepsilon, M \in \mathbb{R}$.
+Let $f$ be of class $C^{n+1}$ on the open ball $B(x_0, \varepsilon)$, and let
+$|f^{(n+1)}(t)| \le M$ for all $t$ in the ball. Then for every $y$ in the ball
+$$\Bigl| f(y) - \sum_{k=0}^{n} \frac{(y - x_0)^k}{k!} f^{(k)}(x_0) \Bigr|
+  \le \frac{M |y - x_0|^{n+1}}{(n+1)!}.$$
+
+The derivatives are the two-sided `iteratedDeriv`. The ball is open because `iteratedDeriv` is
+determined by $f$ only on an open set. -/
 theorem abs_sub_sum_taylor_le {ε M : ℝ} (hf : ContDiffOn ℝ (n + 1) f (Metric.ball x₀ ε))
     (hM : ∀ t ∈ Metric.ball x₀ ε, |iteratedDeriv (n + 1) f t| ≤ M) {y : ℝ}
     (hy : y ∈ Metric.ball x₀ ε) :
@@ -145,11 +185,15 @@ theorem abs_sub_sum_taylor_le {ε M : ℝ} (hf : ContDiffOn ℝ (n + 1) f (Metri
     ((hf.contDiffAt (Metric.isOpen_ball.mem_nhds hx₀)).of_le (by exact_mod_cast n.le_succ))
     fun t ht => hM t (hsub ht)
 
-/-- **Taylor's theorem with a uniform remainder bound on a convex set**: if `f` is `C^{n+1}` on all
-of `ℝ` and `|f^{(n+1)}| ≤ M` on a convex set `s`, then the `n`-th Taylor polynomial of `f` at
-`x₀ ∈ s` approximates `f` at `x ∈ s` to within `M |x - x₀|^{n+1} / (n + 1)!`. The set need not be
-open here, unlike in `abs_sub_sum_taylor_le`: the iterated derivatives come from the global
-smoothness, and only the bound is local. -/
+/-- **Taylor's theorem with a uniform remainder bound on a convex set.** Let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^{n+1}$ on $\mathbb{R}$, let
+$s \subseteq \mathbb{R}$ be convex, and let $|f^{(n+1)}(t)| \le M$ for all $t \in s$. Then for
+all $x_0, x \in s$
+$$\Bigl| f(x) - \sum_{k=0}^{n} \frac{(x - x_0)^k}{k!} f^{(k)}(x_0) \Bigr|
+  \le \frac{M |x - x_0|^{n+1}}{(n+1)!}.$$
+
+The set $s$ need not be open, unlike the ball of `abs_sub_sum_taylor_le`: the derivatives come
+from the smoothness on $\mathbb{R}$, and only the bound is local. -/
 theorem abs_sub_sum_taylor_le_of_convex {s : Set ℝ} {M : ℝ} (hs : Convex ℝ s)
     (hf : ContDiff ℝ (n + 1) f) (hx₀ : x₀ ∈ s) (hx : x ∈ s)
     (hM : ∀ t ∈ s, |iteratedDeriv (n + 1) f t| ≤ M) :
@@ -159,9 +203,12 @@ theorem abs_sub_sum_taylor_le_of_convex {s : Set ℝ} {M : ℝ} (hs : Convex ℝ
     (hf.contDiffAt.of_le (by exact_mod_cast n.le_succ))
     fun t ht => hM t (hs.ordConnected.uIcc_subset hx₀ hx ht)
 
-/-- **Taylor's theorem with a uniform remainder bound on the whole line**: for `g` of class
-`C^{n+1}` with `|g^{(n+1)}| ≤ M` everywhere,
-`|g (ξ + h) - ∑_{k ≤ n} h^k/k! g^{(k)}(ξ)| ≤ M |h|^{n+1}/(n+1)!`. -/
+/-- **Taylor's theorem with a uniform remainder bound on the whole line.** Let
+$g : \mathbb{R} \to \mathbb{R}$ be of class $C^{n+1}$, and let $|g^{(n+1)}(y)| \le M$ for all
+$y \in \mathbb{R}$. Then for all $\xi, h \in \mathbb{R}$
+$$\Bigl| g(\xi + h) - \sum_{k=0}^{n} \frac{h^k}{k!} g^{(k)}(\xi) \Bigr|
+  \le \frac{M |h|^{n+1}}{(n+1)!}.$$
+-/
 theorem abs_sub_sum_taylor_le_of_contDiff {g : ℝ → ℝ} {n : ℕ} {M : ℝ}
     (hg : ContDiff ℝ (n + 1) g) (hM : ∀ y, |iteratedDeriv (n + 1) g y| ≤ M) (ξ h : ℝ) :
     |g (ξ + h) - ∑ k ∈ Finset.range (n + 1), h ^ k / k ! * iteratedDeriv k g ξ|
@@ -174,7 +221,11 @@ theorem abs_sub_sum_taylor_le_of_contDiff {g : ℝ → ℝ} {n : ℕ} {M : ℝ}
     hg.contDiffOn (fun t _ => hM t) hmem
   simpa using h1
 
-/-- **First-order Taylor**: `|g (ξ + h) - g ξ - h g'(ξ)| ≤ M h²/2` for `|g''| ≤ M`. -/
+/-- **First-order Taylor bound.** Let $g : \mathbb{R} \to \mathbb{R}$ be of class $C^2$, and let
+$|g''(y)| \le M$ for all $y$. Then for all $\xi, h \in \mathbb{R}$
+$$|g(\xi + h) - g(\xi) - h g'(\xi)| \le \frac{M h^2}{2}.$$
+
+This is the case $n = 1$ of `abs_sub_sum_taylor_le_of_contDiff`. -/
 theorem abs_taylor_one {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 2 g)
     (hM : ∀ y, |iteratedDeriv 2 g y| ≤ M) (ξ h : ℝ) :
     |g (ξ + h) - g ξ - h * deriv g ξ| ≤ M * h ^ 2 / 2 := by
@@ -189,7 +240,12 @@ theorem abs_taylor_one {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 2 g)
   calc |g (ξ + h) - g ξ - h * deriv g ξ| ≤ M * |h| ^ ((1 : ℕ) + 1) / ((1 : ℕ) + 1)! := h1
     _ = M * h ^ 2 / 2 := by norm_num [sq_abs]
 
-/-- **Second-order Taylor**: `|g (ξ + h) - g ξ - h g' - h²/2 g''| ≤ M |h|³/6` for `|g'''| ≤ M`. -/
+/-- **Second-order Taylor bound.** Let $g : \mathbb{R} \to \mathbb{R}$ be of class $C^3$, and let
+$|g'''(y)| \le M$ for all $y$. Then for all $\xi, h \in \mathbb{R}$
+$$\Bigl| g(\xi + h) - g(\xi) - h g'(\xi) - \frac{h^2}{2} g''(\xi) \Bigr|
+  \le \frac{M |h|^3}{6}.$$
+
+This is the case $n = 2$ of `abs_sub_sum_taylor_le_of_contDiff`. -/
 theorem abs_taylor_two {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 3 g)
     (hM : ∀ y, |iteratedDeriv 3 g y| ≤ M) (ξ h : ℝ) :
     |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ| ≤ M * |h| ^ 3 / 6 := by
@@ -206,8 +262,12 @@ theorem abs_taylor_two {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 3 g)
       ≤ M * |h| ^ ((2 : ℕ) + 1) / ((2 : ℕ) + 1)! := h1
     _ = M * |h| ^ 3 / 6 := by norm_num
 
-/-- **Third-order Taylor**: `|g (ξ + h) - g ξ - h g' - h²/2 g'' - h³/6 g'''| ≤ M h⁴/24` for a
-fourth derivative bounded by `M`. -/
+/-- **Third-order Taylor bound.** Let $g : \mathbb{R} \to \mathbb{R}$ be of class $C^4$, and let
+$|g^{(4)}(y)| \le M$ for all $y$. Then for all $\xi, h \in \mathbb{R}$
+$$\Bigl| g(\xi + h) - g(\xi) - h g'(\xi) - \frac{h^2}{2} g''(\xi) - \frac{h^3}{6} g'''(\xi) \Bigr|
+  \le \frac{M h^4}{24}.$$
+
+This is the case $n = 3$ of `abs_sub_sum_taylor_le_of_contDiff`. -/
 theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
     (hM : ∀ y, |iteratedDeriv 4 g y| ≤ M) (ξ h : ℝ) :
     |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ
@@ -232,7 +292,8 @@ theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
             abs_of_nonneg (by positivity : (0 : ℝ) ≤ h ^ 4)]]
         norm_num
 
-/-- The order-two Taylor kernel integrates to `(y - x)³/6` over `x..y`, in either orientation. -/
+/-- The order-two Taylor kernel integrates to $\int_x^y (y - t)^2 / 2 \, dt = (y - x)^3 / 6$, in
+either orientation. -/
 private theorem integral_sub_sq_div_two (x y : ℝ) :
     ∫ t in x..y, (y - t) ^ 2 / 2 = (y - x) ^ 3 / 6 := by
   have hF : ∀ t ∈ uIcc x y, HasDerivAt (fun s : ℝ => -((y - s) ^ 3 / 6)) ((y - t) ^ 2 / 2) t := by
@@ -245,8 +306,8 @@ private theorem integral_sub_sq_div_two (x y : ℝ) :
     (Continuous.intervalIntegrable (by fun_prop) _ _)]
   ring
 
-/-- The first moment of the order-two Taylor kernel: `∫_x^y (y - t)²/2 · (t - x) dt =
-(y - x)⁴/24`, in either orientation. -/
+/-- The first moment of the order-two Taylor kernel is $\int_x^y \frac{(y - t)^2}{2} (t - x) \, dt =
+\frac{(y - x)^4}{24}$, in either orientation. -/
 private theorem integral_sub_sq_div_two_mul_sub (x y : ℝ) :
     ∫ t in x..y, (y - t) ^ 2 / 2 * (t - x) = (y - x) ^ 4 / 24 := by
   have hF : ∀ t ∈ uIcc x y, HasDerivAt
@@ -266,11 +327,18 @@ private theorem integral_sub_sq_div_two_mul_sub (x y : ℝ) :
     (Continuous.intervalIntegrable (by fun_prop) _ _)]
   ring
 
-/-- **Taylor's theorem of order three with a Lipschitz third derivative**: for `u` of class `C³`
-on the closed interval between `x` and `y`, whose third derivative there differs from its value at
-`x` by at most `M |t - x|`, the order-three Taylor polynomial at `x` approximates `u y` to within
-`M (y - x)⁴/24`. This is the integral remainder (12.21) of [quarteroni2000numerical] Remark 12.2,
-bounded by `M ∫_0^{|y - x|} s (|y - x| - s)²/2 ds`. -/
+/-- **Taylor's theorem of order three with a Lipschitz third derivative.** Let
+$u : \mathbb{R} \to \mathbb{R}$, let $x \neq y$, and let $M \ge 0$. Let $u$ be of class $C^3$ on
+the closed interval $I$ between $x$ and $y$ and of class $C^3$ at $x$, and let
+$$|u_I'''(t) - u'''(x)| \le M |t - x|$$
+for every $t$ strictly between $x$ and $y$, where $u_I'''$ is the third derivative of $u$ within
+$I$. Then
+$$\Bigl| u(y) - \Bigl( u(x) + (y - x) u'(x) + \frac{(y - x)^2}{2} u''(x)
+  + \frac{(y - x)^3}{6} u'''(x) \Bigr) \Bigr| \le \frac{M (y - x)^4}{24}.$$
+
+The derivatives at $x$ are the two-sided `iteratedDeriv`, and $u_I'''$ is
+`iteratedDerivWithin 3 u (uIcc x y)`. The proof bounds the integral remainder (12.21) of Remark
+12.2 of [quarteroni2000numerical] by $M \int_0^{|y - x|} s (|y - x| - s)^2 / 2 \, ds$. -/
 theorem abs_sub_taylor_three_le_of_lipschitz {u : ℝ → ℝ} {M x y : ℝ} (hne : x ≠ y)
     (hM : 0 ≤ M) (hu : ContDiffOn ℝ 3 u (uIcc x y)) (hx : ContDiffAt ℝ 3 u x)
     (hlip : ∀ t ∈ uIoo x y,
@@ -344,8 +412,12 @@ theorem abs_sub_taylor_three_le_of_lipschitz {u : ℝ → ℝ} {M x y : ℝ} (hn
       abs_of_nonneg (by positivity : (0 : ℝ) ≤ (y - x) ^ 4 / 24)]
     ring
 
-/-- Taylor's theorem with the Lagrange remainder on an open convex set, with the Taylor
-polynomial `∑ j ≤ k, f⁽ʲ⁾(x) / j! * δ ^ j` written with two-sided derivatives. -/
+/-- **Taylor's theorem with the Lagrange remainder on an open convex set.** Let
+$U \subseteq \mathbb{R}$ be open and convex, let $f : \mathbb{R} \to \mathbb{R}$ be of class
+$C^{k+1}$ on $U$, and let $x, x + \delta \in U$. Then there is $\xi \in U$ with
+$$f(x + \delta)
+  = \sum_{j=0}^{k} \frac{f^{(j)}(x)}{j!} \delta^j + \frac{f^{(k+1)}(\xi) \delta^{k+1}}{(k+1)!}.$$
+The derivatives are the two-sided `iteratedDeriv`. -/
 theorem exists_eq_sum_taylor_add {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U) (hUc : Convex ℝ U)
     {k : ℕ} (hf : ContDiffOn ℝ (k + 1) f U) {x δ : ℝ} (hx : x ∈ U) (hxδ : x + δ ∈ U) :
     ∃ ξ ∈ U, f (x + δ) = ∑ j ∈ range (k + 1), iteratedDeriv j f x / j ! * δ ^ j
@@ -366,14 +438,22 @@ theorem exists_eq_sum_taylor_add {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U)
 
 end Scalar
 
-/-! ### Expansions of a curve given by a chain of derivative functions -/
+/-!
+### Expansions of a curve given by a chain of derivative functions
+
+In this part, $E$ is a real normed space and $y : \mathbb{R} \to E$ is a curve. The hypotheses give
+the derivatives of $y$ within $[a, b]$ as functions $y', y'', \dots$, not through a smoothness
+hypothesis.
+-/
 
 section Curve
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {a b M : ℝ} {y y' y'' y''' : ℝ → E}
 
-/-- Reflecting a curve with derivative `y'` on `Icc a b` through the midpoint gives a curve with
-derivative `-y' (a + b - s)` on `Icc a b`. -/
+/-- Let $E$ be a real normed space, let $y, y' : \mathbb{R} \to E$, and let $y'(s)$ be the
+derivative of $y$ within $[a, b]$ at every $s \in [a, b]$. Then $-y'(a + b - s)$ is the
+derivative of the reflected curve $s \mapsto y(a + b - s)$ within $[a, b]$ at every
+$s \in [a, b]$. -/
 theorem hasDerivWithinAt_comp_const_sub_Icc
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s) {s : ℝ} (hs : s ∈ Icc a b) :
     HasDerivWithinAt (fun s => y (a + b - s)) (-y' (a + b - s)) (Icc a b) s := by
@@ -385,11 +465,15 @@ theorem hasDerivWithinAt_comp_const_sub_Icc
   have := (hy _ hmem).scomp s h1 hmaps
   simpa [Function.comp_def, neg_one_smul] using this
 
-/-- **The uniform first-order Taylor bound on a compact interval**: if `y` has derivative `y' s`
-within `Icc a b` at every point of `Icc a b` and `y'` is continuous there, then for every `ε > 0`
-there is `η > 0` with `‖y (t + s) - y t - s • y' t‖ ≤ ε * |s|` whenever `t, t + s ∈ Icc a b` and
-`|s| ≤ η`. This is the uniform continuity of `y'` on the compact interval together with the mean
-value inequality for `u ↦ y u - u • y' t` on the segment between `t` and `t + s`. -/
+/-- **The uniform first-order Taylor bound on a compact interval.** Let $E$ be a real normed space
+and $y, y' : \mathbb{R} \to E$. Let $y'(s)$ be the derivative of $y$ within $[a, b]$ at every
+$s \in [a, b]$, and let $y'$ be continuous on $[a, b]$. Then for every $\varepsilon > 0$ there
+is $\eta > 0$ such that
+$$\|y(t + s) - y(t) - s \, y'(t)\| \le \varepsilon |s|$$
+whenever $t, t + s \in [a, b]$ and $|s| \le \eta$.
+
+The proof combines the uniform continuity of $y'$ on the compact interval with the mean value
+inequality for $u \mapsto y(u) - u \, y'(t)$ on the segment between $t$ and $t + s$. -/
 theorem exists_forall_norm_sub_sub_smul_le
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s) (hy' : ContinuousOn y' (Icc a b))
     {ε : ℝ} (hε : 0 < ε) :
@@ -419,22 +503,30 @@ theorem exists_forall_norm_sub_sub_smul_le
     rw [add_smul]; abel
   rwa [e] at key
 
-/-! #### The expansion at an arbitrary point of the interval
+/-!
+### The expansion at an arbitrary point of the interval
 
-The Taylor remainder bound for a tower of derivative functions `y 0, y 1, …, y n` with
-`HasDerivWithinAt (y m) (y (m+1) s) (Icc a b) s`, at an arbitrary expansion point `c ∈ [a, b]`
-and evaluation point `x ∈ [a, b]` on either side of it. It extends the second- and third-order
-bounds below and is proved the same way, by the comparison lemma
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary` and induction on the order; the backward
-case is the forward case for the reflected tower `s ↦ (-1)^m • y m (a + b - s)`. Mathlib's
-`taylor_mean_remainder_bound` expands at the left endpoint of the interval only. -/
+This part bounds the Taylor remainder of a chain $y_0, y_1, \dots, y_n$ of curves in which
+$y_{m+1}(s)$ is the derivative of $y_m$ within $[a, b]$ at $s$. The expansion point $c \in [a, b]$
+is arbitrary, and the evaluation point $x \in [a, b]$ can lie on either side of it. The bound
+extends the second- and third-order bounds below and is proved in the same way: by the comparison
+lemma `image_norm_le_of_norm_deriv_right_le_deriv_boundary` and induction on the order. The backward
+case is the forward case for the reflected chain $s \mapsto (-1)^m y_m(a + b - s)$. Mathlib's
+`taylor_mean_remainder_bound` expands at the left endpoint of the interval only.
+-/
 
 section Taylor
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {a b K : ℝ} {y : ℕ → ℝ → E}
 
-/-- The Taylor bound in the forward direction: for a tower `y` of derivatives on `Icc a b` with
-`‖y n‖ ≤ K` there, `‖y 0 b - ∑_{m < n} ((b - a)^m / m!) y m a‖ ≤ K (b - a)^n / n!`. -/
+/-- The Taylor bound in the forward direction. Let $E$ be a real normed space, let $a \le b$ and
+$n \in \mathbb{N}$, and let $y_0, \dots, y_n : \mathbb{R} \to E$ be such that $y_{m+1}(s)$ is
+the derivative of $y_m$ within $[a, b]$ at every $s \in [a, b]$, for $m < n$. If
+$\|y_n(s)\| \le K$ for all $s \in [a, b]$, then
+$$\Bigl\| y_0(b) - \sum_{m=0}^{n-1} \frac{(b - a)^m}{m!} y_m(a) \Bigr\|
+  \le \frac{K (b - a)^n}{n!}.$$
+
+The chain is a function `y : ℕ → ℝ → E`, of which only $y_0, \dots, y_n$ enter. -/
 theorem norm_sub_sum_smul_le_of_le (hab : a ≤ b) (n : ℕ)
     (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
     (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) :
@@ -506,7 +598,11 @@ theorem norm_sub_sum_smul_le_of_le (hab : a ≤ b) (n : ℕ)
       (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
     simpa [g] using key
 
-/-- The reflected tower `s ↦ (-1)^m • y m (a + b - s)` is a tower of derivatives on `Icc a b`. -/
+/-- Let $E$ be a real normed space and $y_m, y_{m+1} : \mathbb{R} \to E$, and let $y_{m+1}(s)$ be
+the derivative of $y_m$ within $[a, b]$ at every $s \in [a, b]$. Then
+$(-1)^{m+1} y_{m+1}(a + b - s)$ is the derivative of $s \mapsto (-1)^m y_m(a + b - s)$ within
+$[a, b]$ at every $s \in [a, b]$. So the reflected chain is again a chain of derivatives on
+$[a, b]$. -/
 theorem hasDerivWithinAt_reflect (m : ℕ)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s) {s : ℝ}
     (hs : s ∈ Icc a b) :
@@ -516,10 +612,17 @@ theorem hasDerivWithinAt_reflect (m : ℕ)
   refine this.congr_deriv ?_
   rw [pow_succ, smul_neg, mul_neg_one, neg_smul]
 
-/-- **The Taylor bound at an arbitrary expansion point**: for a tower `y` of derivatives on
-`Icc a b` with `‖y n‖ ≤ K` there, and `c, x ∈ Icc a b`,
-`‖y 0 x - ∑_{m < n} ((x - c)^m / m!) y m c‖ ≤ K |x - c|^n / n!`. With `n = 0` it reads
-`‖y 0 x‖ ≤ K`, with `n = 1` it is the mean value inequality. -/
+/-- **The Taylor bound at an arbitrary expansion point.** Let $E$ be a real normed space, let
+$n \in \mathbb{N}$, and let $y_0, \dots, y_n : \mathbb{R} \to E$ be such that $y_{m+1}(s)$ is
+the derivative of $y_m$ within $[a, b]$ at every $s \in [a, b]$, for $m < n$. Let
+$\|y_n(s)\| \le K$ for all $s \in [a, b]$. Then for all $c, x \in [a, b]$
+$$\Bigl\| y_0(x) - \sum_{m=0}^{n-1} \frac{(x - c)^m}{m!} y_m(c) \Bigr\|
+  \le \frac{K |x - c|^n}{n!}.$$
+For $n = 0$ the bound reads $\|y_0(x)\| \le K$, and for $n = 1$ it is the mean value inequality.
+
+The chain is a function `y : ℕ → ℝ → E`. If $x$ lies to the right of $c$, the bound is
+`norm_sub_sum_smul_le_of_le` on $[c, x]$. For $x < c$ it is the same bound on $[x, c]$ for the
+chain reflected through the midpoint of $[x, c]$ (`hasDerivWithinAt_reflect`). -/
 theorem norm_sub_sum_smul_le (n : ℕ)
     (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
     (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) {c x : ℝ} (hc : c ∈ Icc a b) (hx : x ∈ Icc a b) :
@@ -550,12 +653,17 @@ theorem norm_sub_sum_smul_le (n : ℕ)
 
 end Taylor
 
-/-- **Taylor's theorem with a bound on the top derivative**, for a curve in a normed space over a
-closed interval: if `Y 0, …, Y (n + 1)` is a chain of successive derivatives on `Icc a b` and
-`‖Y (n + 1)‖ ≤ M` there, then `Y 0 b` differs from its Taylor polynomial at `a` by at most
-`M (b - a)^{n+1} / (n+1)!`. This is `norm_sub_sum_smul_le_of_le` expanded at the left endpoint;
-it subsumes `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
-`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`). -/
+/-- **Taylor's theorem with a bound on the top derivative**, for a curve in a normed space. Let $X$
+be a real normed space, let $a \le b$ and $n \in \mathbb{N}$, and let
+$Y_0, \dots, Y_{n+1} : \mathbb{R} \to X$ be such that $Y_{k+1}(s)$ is the derivative of $Y_k$
+within $[a, b]$ at every $s \in [a, b]$, for $k \le n$. If $\|Y_{n+1}(s)\| \le M$ for all
+$s \in [a, b]$, then
+$$\Bigl\| Y_0(b) - \sum_{k=0}^{n} \frac{(b - a)^k}{k!} Y_k(a) \Bigr\|
+  \le \frac{M (b - a)^{n+1}}{(n+1)!}.$$
+
+The chain is a function `Y : ℕ → ℝ → X`. This is `norm_sub_sum_smul_le_of_le` at order $n + 1$,
+expanded at the left endpoint. Its cases $n = 1$ and $n = 2$ are
+`norm_sub_sub_smul_le_mul_sq_div_two` and `norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six`. -/
 theorem norm_sub_taylorSum_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
     {M a b : ℝ} {Y : ℕ → ℝ → X} {n : ℕ} (hab : a ≤ b)
     (hY : ∀ k ≤ n, ∀ s ∈ Icc a b, HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s)
@@ -564,10 +672,13 @@ theorem norm_sub_taylorSum_le {X : Type*} [NormedAddCommGroup X] [NormedSpace �
       M * (b - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) :=
   norm_sub_sum_smul_le_of_le hab (n + 1) (fun m hm => hY m (by omega)) hM
 
-/-- **Second-order Taylor bound, forward form**: if `y'` is the derivative of `y` and `y''` that
-of `y'` on `Icc a b`, with `‖y''‖ ≤ M` there, then
-`‖y b - y a - (b - a) • y' a‖ ≤ M (b - a)² / 2`. The case `n = 1` of
-`norm_sub_taylorSum_le`. -/
+/-- **Second-order Taylor bound, forward form.** Let $E$ be a real normed space, let $a \le b$, and
+let $y, y', y'' : \mathbb{R} \to E$. Let $y'(s)$ be the derivative of $y$ and $y''(s)$ the
+derivative of $y'$ within $[a, b]$ at every $s \in [a, b]$, and let $\|y''(s)\| \le M$ for all
+$s \in [a, b]$. Then
+$$\|y(b) - y(a) - (b - a) y'(a)\| \le \frac{M (b - a)^2}{2}.$$
+
+This is the case $n = 1$ of `norm_sub_taylorSum_le`. -/
 theorem norm_sub_sub_smul_le_mul_sq_div_two (hab : a ≤ b)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
     (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
@@ -595,8 +706,10 @@ theorem norm_sub_sub_smul_le_mul_sq_div_two (hab : a ≤ b)
   refine key.trans (le_of_eq ?_)
   norm_num
 
-/-- **Second-order Taylor bound, backward form**: under the hypotheses of
-`norm_sub_sub_smul_le_mul_sq_div_two`, `‖y a - y b - (a - b) • y' b‖ ≤ M (b - a)² / 2`. -/
+/-- **Second-order Taylor bound, backward form.** Under the hypotheses of
+`norm_sub_sub_smul_le_mul_sq_div_two`, the expansion at the right endpoint satisfies
+$$\|y(a) - y(b) - (a - b) y'(b)\| \le \frac{M (b - a)^2}{2}.$$
+-/
 theorem norm_sub_sub_smul_le_mul_sq_div_two' (hab : a ≤ b)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
     (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
@@ -613,13 +726,18 @@ theorem norm_sub_sub_smul_le_mul_sq_div_two' (hab : a ≤ b)
   simp only [add_sub_cancel_right, add_sub_cancel_left, smul_neg, ← neg_smul, neg_sub] at this
   exact this
 
-/-- **Third-order Taylor bound for the trapezoidal rule**: if `y'`, `y''`, `y'''` are the
-successive derivatives of `y` on `Icc a b` with `‖y'''‖ ≤ M` there, then
-`‖y b - y a - ((b - a) / 2) • (y' a + y' b)‖ ≤ M (b - a)³ / 12`. This is the Peano-kernel
-bound of the trapezoidal rule for `∫_a^b y' = y b - y a`, obtained here without integrals: the
-residual `g s = y s - y a - ((s - a)/2) (y' a + y' s)` has derivative
-`(1/2) (y' s - y' a - (s - a) y'' s)`, a backward second-order remainder of `y'` bounded by
-`M (s - a)² / 4`, and the comparison with `M (s - a)³ / 12` concludes. -/
+/-- **Third-order Taylor bound for the trapezoidal rule.** Let $E$ be a real normed space, let
+$a \le b$, and let $y, y', y'', y''' : \mathbb{R} \to E$ be such that each of $y', y'', y'''$
+gives the derivative of the preceding function within $[a, b]$ at every point of $[a, b]$. If
+$\|y'''(s)\| \le M$ for all $s \in [a, b]$, then
+$$\Bigl\| y(b) - y(a) - \frac{b - a}{2} \bigl( y'(a) + y'(b) \bigr) \Bigr\|
+  \le \frac{M (b - a)^3}{12}.$$
+
+This is the Peano-kernel bound of the trapezoidal rule for $\int_a^b y' = y(b) - y(a)$, obtained
+here without integrals. The residual $g(s) = y(s) - y(a) - \frac{s - a}{2} (y'(a) + y'(s))$ has
+the derivative $\frac12 (y'(s) - y'(a) - (s - a) y''(s))$. This is a backward second-order
+remainder of $y'$, bounded by $M (s - a)^2 / 4$, and the comparison with $M (s - a)^3 / 12$
+concludes. -/
 theorem norm_sub_sub_smul_add_le_mul_pow_three_div_twelve (hab : a ≤ b)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
     (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
@@ -660,10 +778,14 @@ theorem norm_sub_sub_smul_add_le_mul_pow_three_div_twelve (hab : a ≤ b)
     (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
   simpa using key
 
-/-- **Third-order Taylor bound**: if `y'`, `y''`, `y'''` are the successive derivatives of `y`
-on `Icc a b` with `‖y'''‖ ≤ M` there, then
-`‖y b - y a - (b - a) • y' a - ((b - a)² / 2) • y'' a‖ ≤ M (b - a)³ / 6`. The case `n = 2` of
-`norm_sub_taylorSum_le`. -/
+/-- **Third-order Taylor bound.** Let $E$ be a real normed space, let $a \le b$, and let
+$y, y', y'', y''' : \mathbb{R} \to E$ be such that each of $y', y'', y'''$ gives the derivative
+of the preceding function within $[a, b]$ at every point of $[a, b]$. If $\|y'''(s)\| \le M$ for
+all $s \in [a, b]$, then
+$$\Bigl\| y(b) - y(a) - (b - a) y'(a) - \frac{(b - a)^2}{2} y''(a) \Bigr\|
+  \le \frac{M (b - a)^3}{6}.$$
+
+This is the case $n = 2$ of `norm_sub_taylorSum_le`. -/
 theorem norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six (hab : a ≤ b)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
     (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
@@ -695,13 +817,18 @@ theorem norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six (hab : a ≤ b)
   refine key.trans (le_of_eq ?_)
   norm_num
 
-/-- **Fourth-order Taylor bound along a segment** for a map `G` on a normed space with Fréchet
-derivatives `G₁, G₂, G₃, G₄` and `‖G₄‖ ≤ M`:
-`‖G(p + w) - G p - G₁ p w - (1/2) G₂ p w w - (1/6) G₃ p w w w‖ ≤ M ‖w‖⁴ / 24`. It is
-`norm_sub_taylorSum_le` for `s ↦ G (p + s • w)` on `[0, 1]`, whose `k`-th derivative is
-`G_k (p + s • w)` applied to `w` `k` times (`HasFDerivAt.comp_hasDerivAt` and
-`HasFDerivAt.clm_apply`); it is the order-four analogue of
-`norm_sub_sub_smul_apply_le_of_hasFDerivAt`. -/
+/-- **Fourth-order Taylor bound along a segment.** Let $X$ be a real normed space and $G : X \to X$.
+Let $G_1, G_2, G_3, G_4$ be maps on $X$ such that, with $G_0 = G$, $G_{k+1}(p)$ is the Fréchet
+derivative of $G_k$ at $p$ for every $p \in X$ and $k = 0, 1, 2, 3$. If $\|G_4(p)\| \le M$ for
+all $p$, then for all $p, w \in X$
+$$\Bigl\| G(p + w) - G(p) - G_1(p) w - \frac12 G_2(p) w w - \frac16 G_3(p) w w w \Bigr\|
+  \le \frac{M \|w\|^4}{24}.$$
+
+$G_k(p)$ is a continuous $k$-linear map, written in curried form, and $G_2(p) w w$ is
+`G₂ p w w`. The proof applies `norm_sub_taylorSum_le` on $[0, 1]$ to the curve
+$s \mapsto G(p + s w)$, whose $k$-th derivative is $G_k(p + s w)$ applied to $w$ in all $k$
+arguments (`HasFDerivAt.comp_hasDerivAt` and `HasFDerivAt.clm_apply`). It is the order-four
+analogue of `norm_sub_sub_smul_apply_le_of_hasFDerivAt`. -/
 theorem norm_sub_taylor_segment_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
     {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
     {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {M : ℝ}
@@ -787,7 +914,12 @@ theorem norm_sub_taylor_segment_le {X : Type*} [NormedAddCommGroup X] [NormedSpa
 
 variable {F : ℝ × E → E} {F' : ℝ × E → ℝ × E →L[ℝ] E} {F'' : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
 
-/-- The segment bound `norm_sub_sub_smul_apply_le_of_hasFDerivAt` for `σ ≥ 0`. -/
+/-- The bound of `norm_sub_sub_smul_apply_le_of_hasFDerivAt` for $\sigma \ge 0$. Let $E$ be a real
+normed space and $F : \mathbb{R} \times E \to E$. Let $F'(p)$ be the Fréchet derivative of $F$
+and $F''(p)$ that of $F'$ at every $p$, and let $\|F''(p)\| \le M$ for all $p$. Then for all
+$p, v \in \mathbb{R} \times E$ and $\sigma \ge 0$
+$$\|F(p + \sigma v) - F(p) - \sigma F'(p) v\| \le \frac{M \|v\|^2 \sigma^2}{2}.$$
+-/
 theorem norm_sub_sub_smul_apply_le_of_hasFDerivAt_of_nonneg
     (hF : ∀ p, HasFDerivAt F (F' p) p) (hF' : ∀ p, HasFDerivAt F' (F'' p) p)
     (hM : ∀ p, ‖F'' p‖ ≤ M) (p v : ℝ × E) {σ : ℝ}
@@ -811,11 +943,15 @@ theorem norm_sub_sub_smul_apply_le_of_hasFDerivAt_of_nonneg
     (fun s _ => (hφ s).hasDerivWithinAt) (fun s _ => (hφ' s).hasDerivWithinAt) hbound
   simpa using key
 
-/-- **Second-order Taylor bound along a segment** for a map `F : ℝ × E → E` with Fréchet
-derivatives `F'` and `F''`, `‖F''‖ ≤ M`:
-`‖F (p + σ • v) - F p - σ • F' p v‖ ≤ M ‖v‖² σ² / 2` for every real `σ`. This is the
-one-variable bound `norm_sub_sub_smul_le_mul_sq_div_two` for `s ↦ F (p + s • v)`, whose second
-derivative is `F'' (p + s • v) v v`; a negative `σ` is the case of `-v`. -/
+/-- **Second-order Taylor bound along a segment.** Let $E$ be a real normed space and
+$F : \mathbb{R} \times E \to E$. Let $F'(p)$ be the Fréchet derivative of $F$ and $F''(p)$ that
+of $F'$ at every $p \in \mathbb{R} \times E$, and let $\|F''(p)\| \le M$ for all $p$. Then for
+all $p, v \in \mathbb{R} \times E$ and every real $\sigma$
+$$\|F(p + \sigma v) - F(p) - \sigma F'(p) v\| \le \frac{M \|v\|^2 \sigma^2}{2}.$$
+
+This is the one-variable bound `norm_sub_sub_smul_le_mul_sq_div_two` for the curve
+$s \mapsto F(p + s v)$, whose second derivative is $F''(p + s v) v v$. A negative $\sigma$ is
+the case of the direction $-v$. -/
 theorem norm_sub_sub_smul_apply_le_of_hasFDerivAt (hF : ∀ p, HasFDerivAt F (F' p) p)
     (hF' : ∀ p, HasFDerivAt F' (F'' p) p) (hM : ∀ p, ‖F'' p‖ ≤ M) (p v : ℝ × E) (σ : ℝ) :
     ‖F (p + σ • v) - F p - σ • F' p v‖ ≤ M * ‖v‖ ^ 2 * σ ^ 2 / 2 := by
@@ -833,12 +969,16 @@ section Peano
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- Second-order Taylor expansion with Peano remainder: if `L` is differentiable near `x` with
-derivative `L'` and `L'` is differentiable at `x` with derivative `H`, then
-`L y - L x - L' x (y - x) - ½ H (y - x) (y - x) = o(‖y - x‖²)`. The mean value inequality along
-the segment `[x, y]` for `t ↦ L (x + t (y - x)) - t L' x (y - x) - ½ t² H (y - x) (y - x)`, whose
-derivative is `(L' (x + t (y - x)) - L' x - H (t (y - x))) (y - x)`, gives the estimate; no
-integrability of `L'` along the segment is needed. -/
+/-- **Second-order Taylor expansion with the Peano remainder.** Let $E$ be a real normed space,
+$L : E \to \mathbb{R}$ and $x \in E$. Let $L'(y)$ be the Fréchet derivative of $L$ at every $y$
+in a neighbourhood of $x$, and let $H$ be the Fréchet derivative of $L'$ at $x$. Then, as
+$y \to x$,
+$$L(y) - L(x) - L'(x)(y - x) - \frac12 H(y - x)(y - x) = o(\|y - x\|^2).$$
+
+The little-o is `=o[𝓝 x]` against $y \mapsto \|y - x\|^2$. The proof applies the mean value
+inequality on $[0, 1]$ to $t \mapsto L(x + t(y - x)) - t L'(x)(y - x) - \frac12 t^2 H(y - x)(y -
+x)$, whose derivative is $(L'(x + t(y - x)) - L'(x) - H(t(y - x)))(y - x)$. No integrability of
+$L'$ along the segment is needed. -/
 theorem isLittleO_taylor_two {L : E → ℝ} {L' : E → E →L[ℝ] ℝ} {H : E →L[ℝ] E →L[ℝ] ℝ} {x : E}
     (hL : ∀ᶠ y in 𝓝 x, HasFDerivAt L (L' y) y) (hH : HasFDerivAt L' H x) :
     (fun y => L y - L x - L' x (y - x) - H (y - x) (y - x) / 2) =o[𝓝 x] fun y => ‖y - x‖ ^ 2 := by
@@ -898,7 +1038,11 @@ section LipschitzRemainder
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The derivative of a function along the affine line with base point `x` and direction `s`. -/
+/-- Let $E$ and $F$ be real normed spaces, $f : E \to F$, $x, s \in E$ and $t \in \mathbb{R}$, and
+let $f$ be differentiable at $x + t s$. Then the function $u \mapsto f(x + u s)$ on $\mathbb{R}$
+has the derivative $Df(x + t s) \, s$ at $t$.
+
+$Df(z)$ is `fderiv ℝ f z`. -/
 theorem DifferentiableAt.hasDerivAt_comp_add_smul {f : E → F} {x s : E} {t : ℝ}
     (hf : DifferentiableAt ℝ f (x + t • s)) :
     HasDerivAt (fun u : ℝ => f (x + u • s)) (fderiv ℝ f (x + t • s) s) t :=
@@ -923,8 +1067,13 @@ private theorem norm_le_mul_pow_succ_of_norm_deriv_le
     (fun u hu => (hd u (Ico_subset_Icc_self hu)).hasDerivWithinAt)
     (by simp [hzero]) hB (fun u hu => hb u (Ico_subset_Icc_self hu)) ht
 
-/-- The derivative estimate along a segment gives the quadratic Taylor remainder.
-Differentiability and the estimate are required only on the segment. -/
+/-- Let $E$ and $F$ be real normed spaces, $f : E \to F$, $x, s \in E$ and $\gamma \in \mathbb{R}$.
+Let $f$ be differentiable at $x + t s$ and
+$$\|Df(x + t s) - Df(x)\| \le \gamma t \|s\|$$
+for every $t \in [0, 1]$. Then
+$$\|f(x + s) - (f(x) + Df(x) s)\| \le \frac12 \gamma \|s\|^2.$$
+
+Differentiability and the estimate are required only on the segment. $Df(z)$ is `fderiv ℝ f z`. -/
 theorem norm_sub_firstOrder_le_of_lipschitz_on_segment {f : E → F} {x s : E} {γ : ℝ}
     (hd : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ f (x + t • s))
     (hlip : ∀ t ∈ Icc (0 : ℝ) 1,
@@ -948,8 +1097,12 @@ theorem norm_sub_firstOrder_le_of_lipschitz_on_segment {f : E → F} {x s : E} {
   norm_num [g, d] at h
   convert h using 1; ring
 
-/-- A pointwise Lipschitz bound on the Fréchet derivative gives the quadratic remainder
-bound along any segment in the differentiability domain. -/
+/-- Let $E$ and $F$ be real normed spaces, let $S \subseteq E$ be open, and let $f : E \to F$ be of
+class $C^1$ on $S$. Let $x, s \in E$ with $x + t s \in S$ for all $t \in [0, 1]$, and let
+$\|Df(z) - Df(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
+$$\|f(x + s) - (f(x) + Df(x) s)\| \le \frac12 \gamma \|s\|^2.$$
+
+$Df(z)$ is `fderiv ℝ f z`. -/
 theorem norm_sub_firstOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S) {f : E → F}
     (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -961,8 +1114,12 @@ theorem norm_sub_firstOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S
     simpa only [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] using
       hlip _ (hseg t ht)
 
-/-- On a convex set, a uniform bound on the second derivative gives the usual
-quadratic Taylor remainder with coefficient half that bound. -/
+/-- Let $E$ and $F$ be real normed spaces, let $S \subseteq E$ be convex, and let $x, x + s \in S$.
+Let $f : E \to F$ be differentiable at every point of $S$, let $Df$ be differentiable at every
+point of $S$, and let $\|D^2 f(z)\| \le B$ for all $z \in S$. Then
+$$\|f(x + s) - (f(x) + Df(x) s)\| \le \frac12 B \|s\|^2.$$
+
+$Df$ is `fderiv ℝ f`, and $D^2 f$ is `fderiv ℝ (fderiv ℝ f)`. -/
 theorem norm_sub_firstOrder_le_of_hessian_bound {S : Set E} (hS : Convex ℝ S)
     {f : E → F} {x s : E} (hx : x ∈ S) (hs : x + s ∈ S)
     (hf : ∀ z ∈ S, DifferentiableAt ℝ f z)
@@ -976,8 +1133,14 @@ theorem norm_sub_firstOrder_le_of_hessian_bound {S : Set E} (hS : Convex ℝ S)
   simpa only [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1] using
     Convex.norm_image_sub_le_of_norm_fderiv_le hd hB hS hx (hseg t ht)
 
-/-- A Hessian that is Lipschitz relative to the expansion point
-gives a cubic remainder for the second-order Taylor model. -/
+/-- Let $E$ be a real normed space, let $S \subseteq E$ be open, and let $f : E \to \mathbb{R}$ be
+of class $C^2$ on $S$. Let $x, s \in E$ with $x + t s \in S$ for all $t \in [0, 1]$, and let
+$\|D^2 f(z) - D^2 f(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then the second-order Taylor
+model has a cubic remainder:
+$$\Bigl| f(x + s) - \Bigl( f(x) + Df(x) s + \frac12 D^2 f(x) s s \Bigr) \Bigr|
+  \le \frac16 \gamma \|s\|^3.$$
+
+$Df$ is `fderiv ℝ f`, and $D^2 f$ is `fderiv ℝ (fderiv ℝ f)`. -/
 theorem abs_sub_secondOrder_le_of_lipschitzAt_segment {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     (hf : ContDiffOn ℝ 2 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)

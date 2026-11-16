@@ -8,27 +8,35 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic
 
 /-!
-# The Cauchy integral of the primary functional calculus
+# The Cauchy integral formula for the primary functional calculus
 
-The Cauchy integral representation of `pfc` ([golub2013matrix] (9.2.8)), for contours that are
-circles, the only contours Mathlib integrates over (`circleIntegral`): if `f` is holomorphic on a
-closed disc whose interior contains the spectrum of `a`, then
-
-  `f(a) = (2πi)⁻¹ ∮_{|z - c| = R} f(z) (z - a)⁻¹ dz`.
-
-A general closed contour enclosing the spectrum is not formalized (it needs winding numbers).
+This module proves the Cauchy integral representation (9.2.8) of [golub2013matrix] for the primary
+functional calculus $f(a)$ = `pfc f a`, for contours that are circles. If $f$ is holomorphic on a
+closed disc whose interior contains the spectrum of $a$, then
+$$f(a) = \frac{1}{2\pi i} \oint_{|z - c| = R} f(z) (z - a)^{-1}\, dz.$$
 
 ## Main results
 
-* `circleIntegral_div_sub_pow`: the scalar Cauchy formula for derivatives at any point of the disc,
-  `∮ f(z)/(z - w)^{j+1} dz = 2πi f⁽ʲ⁾(w)/j!` (Mathlib has it at the centre only).
-* `inverse_sub_eq_sum_spectralIdempotent`: the resolvent in the spectral decomposition,
-  `(z - a)⁻¹ = ∑_λ ∑_{j < m_λ} (z - λ)^{-(j+1)} (a - λ)ʲ E_λ` for `z` outside the spectrum.
-* `pfc_eq_circleIntegral`: the Cauchy integral formula for `pfc`.
+* `circleIntegral_div_sub_pow`: Cauchy's formula for derivatives at any point $w$ of the open disc,
+  $\oint f(z)/(z - w)^{j+1}\, dz = 2\pi i\, f^{(j)}(w)/j!$.
+* `inverse_sub_eq_sum_spectralIdempotent`: the resolvent in the spectral decomposition, $(z -
+  a)^{-1} = \sum_\lambda \sum_{j < m_\lambda} (z - \lambda)^{-(j+1)} (a - \lambda)^j E_\lambda$ for
+  $z$ outside the spectrum.
+* `pfc_eq_circleIntegral`: the Cauchy integral formula for the primary functional calculus.
 
-The route avoids contour deformation: both sides are read on the spectral decomposition, and the
-scalar formula at a non-central point comes from the Taylor expansion with analytic remainder
+## Proof outline
+
+The proof avoids contour deformation. Both sides of the formula are expanded in the spectral
+decomposition, and the problem reduces to the scalar formula for derivatives at a point that need
+not be the centre. This scalar formula comes from the Taylor expansion with analytic remainder
 (`AnalyticAt.exists_eq_sum_add_pow_mul`) and Cauchy's theorem for the remainder.
+
+## Implementation notes
+
+* The contours are circles because circles are the only contours over which Mathlib integrates
+  (`circleIntegral`). A general closed contour around the spectrum is not treated, because it needs
+  winding numbers.
+* Mathlib has Cauchy's formula for derivatives at the centre of the disc only.
 -/
 
 open Polynomial Hermite Complex Metric
@@ -38,8 +46,16 @@ section Resolvent
 
 variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [Ring A] [Algebra 𝕜 A]
 
-/-- **The resolvent in the spectral decomposition**: for `z` not an eigenvalue of `a` (integral,
-split minimal polynomial), `(z - a)⁻¹ = ∑_λ ∑_{j < m_λ} (z - λ)^{-(j+1)} (a - λ)ʲ E_λ`. -/
+/-- **The resolvent in the spectral decomposition.** Let $\mathbb{K}$ be a nontrivially normed
+field, let $A$ be a $\mathbb{K}$-algebra, and let $a \in A$ be integral over $\mathbb{K}$ with a
+split minimal polynomial. If $z \in \mathbb{K}$ is not a root of the minimal polynomial of $a$,
+then
+$$(z - a)^{-1} = \sum_\lambda \sum_{j < m_\lambda} (z - \lambda)^{-(j+1)} (a - \lambda)^j
+  E_\lambda,$$
+where $\lambda$ runs over the distinct roots of the minimal polynomial, $m_\lambda$ is the
+multiplicity of $\lambda$, and $E_\lambda$ is the spectral idempotent `spectralIdempotent a λ`.
+
+The inverse is `Ring.inverse`. -/
 theorem inverse_sub_eq_sum_spectralIdempotent [DecidableEq 𝕜] {a : A} (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) {z : 𝕜} (hz : z ∉ (minpoly 𝕜 a).roots) :
     Ring.inverse (algebraMap 𝕜 A z - a) = ∑ l ∈ (minpoly 𝕜 a).roots.toFinset,
@@ -87,9 +103,13 @@ end Resolvent
 
 section Scalar
 
-/-- **Cauchy's formula for derivatives at any point of the disc**: if `f` is holomorphic on the
-closed disc `closedBall c R` and `w` lies in the open disc, then
-`∮_{|z - c| = R} f(z)/(z - w)^{j+1} dz = 2πi f⁽ʲ⁾(w)/j!`. -/
+/-- **Cauchy's formula for derivatives at any point of the disc.** Let
+$f : \mathbb{C} \to \mathbb{C}$ be complex differentiable on the closed disc
+$\overline{B}(c, R)$, and let $w$ lie in the open disc $B(c, R)$. Then for every
+$j \in \mathbb{N}$,
+$$\oint_{|z - c| = R} \frac{f(z)}{(z - w)^{j+1}}\, dz = 2\pi i\, \frac{f^{(j)}(w)}{j!}.$$
+
+Mathlib has this formula for $w = c$ only. -/
 theorem circleIntegral_div_sub_pow {f : ℂ → ℂ} {c w : ℂ} {R : ℝ}
     (hf : DifferentiableOn ℂ f (closedBall c R)) (hw : w ∈ ball c R) (j : ℕ) :
     (∮ z in C(c, R), f z / (z - w) ^ (j + 1)) = 2 * π * I * taylorJet f w j := by
@@ -177,9 +197,13 @@ section Integral
 
 variable {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A]
 
-/-- **The Cauchy integral formula for `pfc`** ([golub2013matrix] (9.2.8), circular contours): if
-`f` is holomorphic on the closed disc `closedBall c R` and the spectrum of the integral element `a`
-lies in the open disc, then `f(a) = (2πi)⁻¹ ∮_{|z - c| = R} f(z) (z - a)⁻¹ dz`. -/
+/-- **The Cauchy integral formula for the primary functional calculus** ([golub2013matrix], (9.2.8),
+for circular contours). Let $A$ be a complex Banach algebra, and let $a \in A$ be integral over
+$\mathbb{C}$. Let $f : \mathbb{C} \to \mathbb{C}$ be complex differentiable on the closed disc
+$\overline{B}(c, R)$, and let the spectrum of $a$ lie in the open disc $B(c, R)$. Then
+$$f(a) = \frac{1}{2\pi i} \oint_{|z - c| = R} f(z) (z - a)^{-1}\, dz.$$
+
+The inverse is `Ring.inverse`. -/
 theorem pfc_eq_circleIntegral {a : A} (ha : IsIntegral ℂ a) {f : ℂ → ℂ} {c : ℂ} {R : ℝ}
     (hf : DifferentiableOn ℂ f (closedBall c R)) (hσ : spectrum ℂ a ⊆ ball c R) :
     pfc f a = (2 * π * I)⁻¹ • ∮ z in C(c, R), f z • Ring.inverse (algebraMap ℂ A z - a) := by

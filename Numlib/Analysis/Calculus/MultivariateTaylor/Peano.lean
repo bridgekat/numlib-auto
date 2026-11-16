@@ -7,24 +7,30 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 /-!
 # Taylor's theorem with Peano remainder
 
-If `f : E → F` (real normed spaces) is `C^n` at `x`, then
-`f(x + h) - T_{f,n}(x, h) = o(‖h‖^n)` as `h → 0` ([cartis2022evaluation], (A.12)), where
-`T_{f,n}(x, h) = taylorPolynomial f n x h = ∑_{i ≤ n} (1/i!) ∇^i f(x)[h]^i`.
+Let $E$ and $F$ be real normed spaces, and let $f \colon E \to F$ be of class $C^n$ at $x$. Let
+$T_{f,n}(x, h) = \sum_{i=0}^{n} \frac{1}{i!} \nabla^i f(x)[h]^i$ be the Taylor polynomial of degree
+$n$ of $f$ at $x$ (`taylorPolynomial`). This module proves **Taylor's theorem with Peano
+remainder**, (A.12) of [cartis2022evaluation]:
+$$f(x + h) - T_{f,n}(x, h) = o(\|h\|^n) \quad \text{as } h \to 0.$$
+For $n = 0$ the Taylor polynomial is $f(x)$, and the statement is the continuity of $f$ at $x$.
 
 ## Main results
 
-* `exists_norm_sub_taylorPolynomial_le`: the quantitative form — for every `η > 0` there is
-  `r > 0` with `‖f(x + h) - T_{f,n}(x, h)‖ ≤ η ‖h‖^n` whenever `‖h‖ < r`;
+* `exists_norm_sub_taylorPolynomial_le`: for every $\eta > 0$ there is $r > 0$ such that
+  $\|f(x + h) - T_{f,n}(x, h)\| \le \eta \|h\|^n$ whenever $\|h\| < r$.
 * `sub_taylorPolynomial_isLittleO`: the little-o form (A.12).
+
+## Proof outline
+
+On a small ball about $x$, the $n$-th derivative $\nabla^n f$ is Hölder continuous with exponent
+$\beta = 0$, and its Hölder constant is the oscillation of $\nabla^n f$ on the ball. This constant
+is small because $\nabla^n f$ is continuous at $x$. The Hölder remainder bound (A.14) then gives the
+result, since the generalized factorial $(n + 0)!$ is $n!$.
 
 ## Implementation notes
 
-Here `f` is `C^n` at `x` (i.e. `C^n` on a neighbourhood of `x`), the setting of all the
-applications of (A.12). The proof is the
-Hölder bound (A.14) with exponent `β = 0` on a small ball, whose "Hölder constant" is the
-oscillation of `∇^n f`, small by continuity; the generalized factorial `(n + 0)!` is `n!`.
-
-For `n = 0` the Taylor polynomial is `f(x)` and the statement is the continuity of `f` at `x`.
+* The hypothesis is that $f$ is $C^n$ at $x$, that is, $C^n$ on a neighbourhood of $x$
+  (`ContDiffAt ℝ n f x`). This is the setting of all applications of (A.12).
 -/
 
 open Filter Metric Asymptotics
@@ -33,16 +39,20 @@ open scoped Nat Topology
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {f : E → F} {n : ℕ} {x : E}
 
-/-- If `∇^n f` oscillates by at most `H` on `C`, it is `(H, 0)`-Hölder on `C`. -/
+/-- Let $C \subseteq E$. If $\|\nabla^n f(y) - \nabla^n f(z)\| \le H$ for all $y, z \in C$, then
+$\nabla^n f$ is Hölder continuous on $C$ with constant $H$ and exponent $0$
+(`IteratedFDerivHolderOn`). -/
 theorem iteratedFDerivHolderOn_zero_of_norm_sub_le {C : Set E} {H : ℝ}
     (h : ∀ y ∈ C, ∀ z ∈ C, ‖iteratedFDeriv ℝ n f y - iteratedFDeriv ℝ n f z‖ ≤ H) :
     IteratedFDerivHolderOn f n H 0 C := by
   intro y hy z hz
   simpa using h y hy z hz
 
-/-- **Peano remainder, quantitative form** ([cartis2022evaluation], (A.12)). If `f` is `C^n` at
-`x`, then for every `η > 0` there is `r > 0` such that
-`‖f(x + h) - T_{f,n}(x, h)‖ ≤ η ‖h‖^n` whenever `‖h‖ < r`. -/
+/-- **Peano remainder, quantitative form.** Let $f \colon E \to F$ be of class $C^n$ at $x$, and let
+$\eta > 0$. Then there is $r > 0$ such that for every $h \in E$ with $\|h\| < r$,
+$$\|f(x + h) - T_{f,n}(x, h)\| \le \eta \|h\|^n.$$
+
+This is the quantitative content of (A.12) of [cartis2022evaluation]. -/
 theorem exists_norm_sub_taylorPolynomial_le (hf : ContDiffAt ℝ n f x) {η : ℝ} (hη : 0 < η) :
     ∃ r > 0, ∀ h : E, ‖h‖ < r → ‖f (x + h) - taylorPolynomial f n x h‖ ≤ η * ‖h‖ ^ n := by
   have hfac : (0 : ℝ) < n ! := by exact_mod_cast Nat.factorial_pos n
@@ -70,8 +80,11 @@ theorem exists_norm_sub_taylorPolynomial_le (hf : ContDiffAt ℝ n f x) {η : �
   rwa [holderFactorial_zero_right, add_zero, Real.rpow_natCast, mul_div_cancel_right₀ _ hfac.ne']
     at key
 
-/-- **Taylor's theorem with Peano remainder** ([cartis2022evaluation], (A.12)). If `f` is `C^n`
-at `x`, then `f(x + h) - T_{f,n}(x, h) = o(‖h‖^n)` as `h → 0`. -/
+/-- **Taylor's theorem with Peano remainder.** Let $f \colon E \to F$ be of class $C^n$ at $x$. Then
+$$f(x + h) - T_{f,n}(x, h) = o(\|h\|^n) \quad \text{as } h \to 0.$$
+
+This is (A.12) of [cartis2022evaluation]. The little-o is `Asymptotics.IsLittleO` along the
+neighbourhood filter of $0$. -/
 theorem sub_taylorPolynomial_isLittleO (hf : ContDiffAt ℝ n f x) :
     (fun h => f (x + h) - taylorPolynomial f n x h) =o[𝓝 0] fun h => ‖h‖ ^ n := by
   refine isLittleO_iff.2 fun η hη => ?_

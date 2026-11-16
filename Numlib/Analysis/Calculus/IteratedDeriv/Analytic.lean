@@ -14,17 +14,33 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 /-!
 # Power series of the iterated derivatives
 
-`HasFPowerSeriesOnBall.exists_hasFPowerSeriesOnBall_iteratedDeriv`: if `f : 𝕜 → 𝕜` has the power
-series `∑ cₙ (z - z₀)ⁿ` on a ball, its `j`-th derivative has a power series on the same ball,
-with the differentiated coefficients `(n + j)(n + j - 1) ⋯ (n + 1) c_{n+j}`. It is the iterate of
-Mathlib's `HasFPowerSeriesOnBall.fderiv`, with the coefficients made explicit.
+Let $\mathbb{K}$ be a complete nontrivially normed field, and let $f : \mathbb{K} \to \mathbb{K}$
+have the power series $\sum_n c_n (z - z_0)^n$ on a ball. Then the $j$-th derivative $f^{(j)}$ has a
+power series on the same ball, with the differentiated coefficients
+$(n + j)(n + j - 1) \cdots (n + 1) \, c_{n+j}$.
+
+## Main results
+
+* `HasFPowerSeriesOnBall.exists_hasFPowerSeriesOnBall_iteratedDeriv`: the power series of $f^{(j)}$
+  and its coefficients.
+
+## Implementation notes
+
+* The result is the iterate of Mathlib's `HasFPowerSeriesOnBall.fderiv`, with the coefficients made
+  explicit.
 -/
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
 
-/-- **The iterated derivatives of a function with a power series have power series on the same
-ball**, with the differentiated coefficients: the `n`-th coefficient of `f⁽ʲ⁾` is
-`(n + j)! / n! · c_{n+j}`. -/
+/-- The **iterated derivatives of a function with a power series have power series on the same
+ball.** Let $\mathbb{K}$ be a complete nontrivially normed field, and let
+$f : \mathbb{K} \to \mathbb{K}$ have the power series $p$ on the ball of radius $r$ about $z_0$,
+with coefficients $c_n$. Then for every $j \in \mathbb{N}$ there is a power series $q$ of
+$f^{(j)}$ on the same ball, with coefficients
+$$q_n = \frac{(n + j)!}{n!} \, c_{n+j} \qquad (n \in \mathbb{N}).$$
+
+The coefficients are `FormalMultilinearSeries.coeff`, and $(n + j)!/n!$ is
+`Nat.descFactorial (n + j) j`. -/
 theorem HasFPowerSeriesOnBall.exists_hasFPowerSeriesOnBall_iteratedDeriv {f : 𝕜 → 𝕜}
     {p : FormalMultilinearSeries 𝕜 𝕜 𝕜} {z₀ : 𝕜} {r : ENNReal}
     (hf : HasFPowerSeriesOnBall f p z₀ r) (j : ℕ) :

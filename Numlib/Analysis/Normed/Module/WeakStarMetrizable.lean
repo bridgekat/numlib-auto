@@ -15,61 +15,82 @@ import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
 /-!
 # Metrizability of the weak and weak-∗ topologies
 
-On bounded sets the weak topologies are metrizable exactly when the right space is separable,
-and on the whole space they are never metrizable in infinite dimension.
+Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with dual $E'$. This file
+shows that the weak topologies are metrizable on bounded sets exactly when the right space is
+separable, and that on the whole space they are never metrizable in infinite dimension. The closed
+unit ball of $E'$ is weak-∗ metrizable if and only if $E$ is separable. The closed unit ball of $E$
+is weakly metrizable if and only if $E'$ is separable. If $E$ is infinite-dimensional, the weak
+topology on $E$ is not first countable, and if moreover $E$ is complete, the weak-∗ topology on $E'$
+is not first countable either; in particular neither is metrizable. The presentation follows
+[brezis2011functional], Theorems 3.28 and 3.29, Remarks 3 and 20, and Exercises 3.8 and 3.24.
 
-## Main statements
+The proofs rest on two auxiliary facts, also proved here. A countable neighbourhood basis of $0$ in
+a weak topology is cut out by countably many functionals. By the Baire category theorem, a Banach
+space spanned by a countable set is finite-dimensional.
 
-* `WeakDual.metrizableSpace_closedBall` and `separableSpace_of_metrizableSpace_weakDual_closedBall`
-  — **the closed unit ball of `E'` is weak-∗ metrizable iff `E` is separable**. The forward half
-  is Mathlib's `WeakDual.metrizable_of_isCompact` on the Banach–Alaoglu ball; for the converse, a
-  countable neighbourhood basis of `0` in the ball is cut out by countably many points of `E`, and
-  a functional vanishing on them lies in every neighbourhood of `0`, so their closed span is
-  everything by Hahn–Banach (`Submodule.exists_dual_eq_zero_of_notMem`).
-* `WeakSpace.metrizableSpace_image_closedBall` and
-  `separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall` — **the closed unit ball
-  of `E` is weakly metrizable iff `E'` is separable**. The forward half restricts the embedding of
-  the weak space into the weak-∗ bidual to the balls; the converse is the same argument with the
-  roles exchanged, except that the functional Hahn–Banach produces lives in `E''`, and Goldstine's
-  lemma (`NormedSpace.goldstine`) brings it back to a point of the ball of `E`.
-* `not_firstCountableTopology_weakSpace`, `not_metrizableSpace_weakSpace`,
-  `not_firstCountableTopology_weakDual`, `not_metrizableSpace_weakDual` — **in infinite dimension
-  neither weak topology is metrizable on the whole space, nor even first countable.** A countable
-  neighbourhood basis of `0` would make every functional (resp. every evaluation at a point of
-  `E`) continuous for the topology induced by countably many functionals (resp. points), hence a
-  finite linear combination of them (`LinearMap.mem_span_iff_continuous`), so the dual (resp.
-  `E`) would be spanned by a countable set; by Baire, a Banach space spanned by a countable set is
-  finite-dimensional (`FiniteDimensional.of_span_eq_top_of_countable`). The weak case applies
-  Baire in the complete dual and needs no completeness of `E`; the weak-∗ case applies it in `E`.
+## Main results
+
+* `WeakDual.metrizableSpace_closedBall`: if $E$ is separable, the closed balls of $E'$ are weak-∗
+  metrizable.
+* `separableSpace_of_metrizableSpace_weakDual_closedBall`: if the closed unit ball of $E'$ is weak-∗
+  metrizable, then $E$ is separable.
+* `WeakSpace.metrizableSpace_image_closedBall`: if $E'$ is separable, the closed balls of $E$ are
+  weakly metrizable.
+* `separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall`: if the closed unit ball of
+  $E$ is weakly metrizable, then $E'$ is separable.
+* `not_firstCountableTopology_weakSpace`, `not_metrizableSpace_weakSpace`: in infinite dimension the
+  weak topology of $E$ is not first countable, hence not metrizable.
+* `not_firstCountableTopology_weakDual`, `not_metrizableSpace_weakDual`: for an infinite-dimensional
+  Banach space $E$, the weak-∗ topology of $E'$ is not first countable, hence not metrizable.
+* `FiniteDimensional.of_span_eq_top_of_countable`: a Banach space spanned by a countable set is
+  finite-dimensional.
+
+## Proof outline
+
+The forward half of the first equivalence is Mathlib's `WeakDual.metrizable_of_isCompact` on the
+ball, which is weak-∗ compact by the Banach–Alaoglu theorem. For the converse, a countable
+neighbourhood basis of $0$ in the ball is cut out by countably many points of $E$. A functional that
+vanishes on them lies in every neighbourhood of $0$, so their closed span is $E$ by the Hahn–Banach
+theorem (`Submodule.exists_dual_eq_zero_of_notMem`).
+
+For the second equivalence, the forward half restricts the embedding of the weak space into the
+weak-∗ bidual to the balls. The converse is the same argument with the roles of $E$ and $E'$
+exchanged, except that the functional from the Hahn–Banach theorem lies in $E''$, and Goldstine's
+lemma (`NormedSpace.goldstine`) brings it back to a point of the ball of $E$.
+
+For the non-metrizability, a countable neighbourhood basis of $0$ would make every functional (in
+the weak-∗ case, every evaluation at a point of $E$) continuous for the topology induced by
+countably many functionals (respectively points). Then each is a finite linear combination of them
+(`LinearMap.mem_span_iff_continuous`), so $E'$ (respectively $E$) is spanned by a countable set, and
+is finite-dimensional by the Baire category theorem. The weak case applies the Baire theorem in the
+dual, which is always complete, and needs no completeness of $E$. The weak-∗ case applies it in $E$.
 
 ## Implementation notes
 
-The balls are `WeakDual.toStrongDual ⁻¹' Metric.closedBall 0 r : Set (WeakDual 𝕜 E)` (Mathlib's
-spelling in `WeakDual.isCompact_closedBall`) and `toWeakSpace 𝕜 E '' Metric.closedBall 0 r :
-Set (WeakSpace 𝕜 E)`; "metrizable" is `TopologicalSpace.MetrizableSpace` of the subtype. The
-neighbourhood-basis extraction is done once, for the filter `𝓝[S] 0` of an arbitrary subset of
-`WeakBilin B` (`WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhdsWithin`), because stating
-it for the subtype would tie it to the subtype's topology instance, which the `def`s `WeakDual`
-and `WeakSpace` hide from instance search.
-
-## References
-
-[brezis2011functional] Theorems 3.28 and 3.29, Exercise 3.24, Remarks 3 and 20, Exercise 3.8.
+* The balls are `WeakDual.toStrongDual ⁻¹' Metric.closedBall 0 r : Set (WeakDual 𝕜 E)`, which is
+  Mathlib's form in `WeakDual.isCompact_closedBall`, and `toWeakSpace 𝕜 E '' Metric.closedBall 0 r :
+  Set (WeakSpace 𝕜 E)`. "Metrizable" is `TopologicalSpace.MetrizableSpace` of the subtype.
+* The extraction of a neighbourhood basis is done once, for the filter `𝓝[S] 0` of an arbitrary
+  subset $S$ of `WeakBilin B` (`WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhdsWithin`). A
+  statement for the subtype would depend on the topology instance of the subtype, which the
+  definitions `WeakDual` and `WeakSpace` hide from instance search.
 -/
 
 open Filter Topology Metric Set Function TopologicalSpace
 
-/-!
-### Countable neighbourhood bases of `0` in a weak topology
--/
+/-! ### Countable neighbourhood bases of $0$ in a weak topology -/
 
 section Basic
 
 variable {𝕜 E F : Type*} [NormedField 𝕜] [AddCommGroup E] [Module 𝕜 E] [AddCommGroup F]
   [Module 𝕜 F]
 
-/-- If `𝓝 0` in `WeakBilin B` is countably generated, a sequence of basic sets
-`{x | ∀ y ∈ Φ n, ‖B x y‖ < ε n}` is a neighbourhood basis of `0`. -/
+/-- Let $E$ and $F$ be modules over a normed field $\mathbb{K}$, and let
+$B : E \times F \to \mathbb{K}$ be bilinear. Give $E$ the weak topology induced by $B$
+(`WeakBilin B`). If the neighbourhood filter of $0$ is countably generated, then there are
+finite sets $\Phi_n \subseteq F$ and numbers $\varepsilon_n > 0$, for $n \in \mathbb{N}$, such
+that every neighbourhood $U$ of $0$ contains a set $$\{x \in E : |B(x, y)| < \varepsilon_n
+\text{ for all } y \in \Phi_n\}$$ for some $n$. -/
 theorem WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhds_zero
     {B : E →ₗ[𝕜] F →ₗ[𝕜] 𝕜} (h : (𝓝 (0 : WeakBilin B)).IsCountablyGenerated) :
     ∃ (Φ : ℕ → Finset F) (ε : ℕ → ℝ), (∀ n, 0 < ε n) ∧
@@ -83,9 +104,15 @@ theorem WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhds_zero
   obtain ⟨n, hn⟩ := hu.mem_iff.1 hU
   exact ⟨n, (hΦ n).trans hn⟩
 
-/-- If the filter `𝓝[S] 0` of neighbourhoods of `0` within a subset `S` of `WeakBilin B` is
-countably generated (as it is when `S` is first countable, e.g. metrizable, in the subspace
-topology), a sequence of basic sets intersected with `S` is a basis of it. -/
+/-- Let $E$ and $F$ be modules over a normed field $\mathbb{K}$, let $B : E \times F \to \mathbb{K}$
+be bilinear, and let $S$ be a subset of $E$ with the weak topology induced by $B$. If the filter
+of neighbourhoods of $0$ within $S$ is countably generated, then there are finite sets
+$\Phi_n \subseteq F$ and numbers $\varepsilon_n > 0$ such that every neighbourhood $U$ of $0$
+within $S$ contains a set $$\{x \in S : |B(x, y)| < \varepsilon_n \text{ for all } y \in
+\Phi_n\}$$ for some $n$.
+
+The hypothesis holds when $S$ is first countable, for example metrizable, in the subspace
+topology. -/
 theorem WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhdsWithin
     {B : E →ₗ[𝕜] F →ₗ[𝕜] 𝕜} {S : Set (WeakBilin B)}
     (h : (𝓝[S] (0 : WeakBilin B)).IsCountablyGenerated) :
@@ -104,9 +131,14 @@ theorem WeakBilin.exists_seq_finset_of_isCountablyGenerated_nhdsWithin
   obtain ⟨n, hn⟩ := hu.mem_iff.1 hU
   exact ⟨n, (hΦ n).trans hn⟩
 
-/-- **A linear functional dominated near `0` by finitely many members of a family `g` of linear
-functionals is continuous for the topology induced by the family**, hence (by Mathlib's
-`LinearMap.mem_span_iff_continuous`) a linear combination of finitely many of them. -/
+/-- Let $E$ be a module over a normed field $\mathbb{K}$, let $(g_i)_{i \in \iota}$ be linear
+functionals on $E$, and let $\varphi$ be a linear functional on $E$. Suppose that for every
+$\delta > 0$ there are a finite set $s \subseteq \iota$ and $\varepsilon > 0$ such that
+$|g_i(x)| < \varepsilon$ for all $i \in s$ implies $|\varphi(x)| < \delta$. Then $\varphi$ is
+continuous for the coarsest topology on $E$ that makes every $g_i$ continuous.
+
+By Mathlib's `LinearMap.mem_span_iff_continuous`, $\varphi$ is then a linear combination of
+finitely many of the $g_i$. -/
 theorem LinearMap.continuous_iInf_induced_of_forall_exists_finset {ι : Type*}
     (g : ι → E →ₗ[𝕜] 𝕜) (φ : E →ₗ[𝕜] 𝕜)
     (h : ∀ δ > 0, ∃ (s : Finset ι) (ε : ℝ), 0 < ε ∧ ∀ x, (∀ i ∈ s, ‖g i x‖ < ε) → ‖φ x‖ < δ) :
@@ -131,16 +163,15 @@ theorem LinearMap.continuous_iInf_induced_of_forall_exists_finset {ι : Type*}
 
 end Basic
 
-/-!
-### Baire: a Banach space spanned by a countable set is finite-dimensional
--/
+/-! ### Baire: a Banach space spanned by a countable set is finite-dimensional -/
 
 section Span
 
 variable {R M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
 
-/-- A module spanned by a sequence is the union of the spans of the initial segments of the
-sequence. -/
+/-- Let $M$ be a module over a semiring $R$ spanned by the range of a sequence
+$(g_n)_{n \in \mathbb{N}}$. Then $M$ is the union over $n$ of the spans of
+$\{g_0, \dots, g_n\}$. -/
 theorem Submodule.iUnion_coe_span_image_Iic_eq_univ {g : ℕ → M}
     (h : Submodule.span R (Set.range g) = ⊤) :
     ⋃ n, ((Submodule.span R (g '' Set.Iic n) : Submodule R M) : Set M) = univ := by
@@ -164,8 +195,12 @@ variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [N
   [NormedSpace 𝕜 E] [CompleteSpace E]
 
 /-- **A Banach space that is a countable union of finite-dimensional subspaces is
-finite-dimensional**: finite-dimensional subspaces are closed, so by Baire one of them has
-nonempty interior, and a subspace with nonempty interior is everything. -/
+finite-dimensional.** Let $E$ be a Banach space over a complete nontrivially normed field, and
+let $(p_i)_{i \in \iota}$ be a countable family of finite-dimensional subspaces with
+$\bigcup_i p_i = E$. Then $E$ is finite-dimensional.
+
+Finite-dimensional subspaces are closed, so by the Baire category theorem one of them has
+nonempty interior, and a subspace with nonempty interior is the whole space. -/
 theorem FiniteDimensional.of_iUnion_eq_univ {ι : Type*} [Countable ι] (p : ι → Submodule 𝕜 E)
     (hp : ∀ i, FiniteDimensional 𝕜 (p i)) (h : ⋃ i, (p i : Set E) = univ) :
     FiniteDimensional 𝕜 E := by
@@ -176,15 +211,20 @@ theorem FiniteDimensional.of_iUnion_eq_univ {ι : Type*} [Countable ι] (p : ι 
   rw [htop] at this
   exact Module.Finite.equiv (Submodule.topEquiv (R := 𝕜) (M := E))
 
-/-- **A Banach space spanned by a sequence is finite-dimensional**: it is the union of the
-finite-dimensional spans of the initial segments. -/
+/-- **A Banach space spanned by a sequence is finite-dimensional.** Let $E$ be a Banach space over a
+complete nontrivially normed field, and let $(g_n)_{n \in \mathbb{N}}$ be a sequence whose
+linear span is $E$. Then $E$ is finite-dimensional.
+
+The space is the union of the finite-dimensional spans of the initial segments of the sequence. -/
 theorem FiniteDimensional.of_span_range_eq_top {g : ℕ → E}
     (h : Submodule.span 𝕜 (Set.range g) = ⊤) : FiniteDimensional 𝕜 E :=
   FiniteDimensional.of_iUnion_eq_univ (fun n => Submodule.span 𝕜 (g '' Set.Iic n))
     (fun n => FiniteDimensional.span_of_finite 𝕜 ((Set.finite_Iic n).image g))
     (Submodule.iUnion_coe_span_image_Iic_eq_univ h)
 
-/-- **A Banach space spanned by a countable set is finite-dimensional.** -/
+/-- **A Banach space spanned by a countable set is finite-dimensional.** Let $E$ be a Banach space
+over a complete nontrivially normed field, and let $D \subseteq E$ be countable with linear span
+$E$. Then $E$ is finite-dimensional. -/
 theorem FiniteDimensional.of_span_eq_top_of_countable {D : Set E} (hD : D.Countable)
     (h : Submodule.span 𝕜 D = ⊤) : FiniteDimensional 𝕜 E := by
   obtain ⟨g, hg⟩ := (hD.insert 0).exists_eq_range ⟨0, mem_insert 0 _⟩
@@ -193,26 +233,31 @@ theorem FiniteDimensional.of_span_eq_top_of_countable {D : Set E} (hD : D.Counta
 
 end Baire
 
-/-!
-### Metrizability of the balls
--/
+/-! ### Metrizability of the balls -/
 
 section Metrizable
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **The closed balls of the dual of a separable space are weak-∗ metrizable**: they are
-weak-∗ compact (Banach–Alaoglu) and a compact subset of the weak-∗ dual of a separable space is
-metrizable (`WeakDual.metrizable_of_isCompact`). -/
+/-- **The closed balls of the dual of a separable space are weak-∗ metrizable.** Let $E$ be a
+separable normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$r \in \mathbb{R}$. Then the closed ball $\{f \in E' : \|f\| \le r\}$, with the weak-∗ topology,
+is metrizable.
+
+The ball is weak-∗ compact by the Banach–Alaoglu theorem, and a compact subset of the weak-∗
+dual of a separable space is metrizable (`WeakDual.metrizable_of_isCompact`). -/
 theorem WeakDual.metrizableSpace_closedBall [SeparableSpace E] (r : ℝ) :
     MetrizableSpace (WeakDual.toStrongDual ⁻¹' closedBall (0 : StrongDual 𝕜 E) r) :=
   WeakDual.metrizable_of_isCompact 𝕜 E _ (WeakDual.isCompact_closedBall 0 r)
 
-/-- **If the closed unit ball of the dual is weak-∗ metrizable, the space is separable.** A
-countable neighbourhood basis of `0` in the ball is cut out by countably many points of `E`; a
-functional of norm `1` vanishing on all of them would lie in every neighbourhood of `0` within
-the ball, hence be `0`, so the closed span of these points is everything. No completeness is
-needed. -/
+/-- **If the closed unit ball of the dual is weak-∗ metrizable, the space is separable.** Let $E$ be
+a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the closed unit ball
+$\{f \in E' : \|f\| \le 1\}$, with the weak-∗ topology, is metrizable, then $E$ is separable.
+
+No completeness is needed. A countable neighbourhood basis of $0$ in the ball is cut out by
+countably many points of $E$. A functional of norm $1$ that vanishes on all of them would lie in
+every neighbourhood of $0$ within the ball, and hence be $0$. So the closed span of these points
+is $E$. -/
 theorem separableSpace_of_metrizableSpace_weakDual_closedBall
     (h : MetrizableSpace (WeakDual.toStrongDual ⁻¹' closedBall (0 : StrongDual 𝕜 E) 1)) :
     SeparableSpace E := by
@@ -255,10 +300,15 @@ theorem separableSpace_of_metrizableSpace_weakDual_closedBall
     Submodule.topologicalClosure_coe]
   exact hDc.isSeparable.span.closure
 
-/-- **The closed balls of a space with separable dual are weakly metrizable**: the embedding of
-the weak space into the weak-∗ bidual (`NormedSpace.isEmbedding_inclusionInDoubleDualWeak`) maps
-a ball of `E` into a ball of `E''`, which is metrizable by `WeakDual.metrizableSpace_closedBall`
-applied to the separable `E'`. -/
+/-- **The closed balls of a space with separable dual are weakly metrizable.** Let $E$ be a normed
+space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ whose dual $E'$ is separable, and let
+$r \in \mathbb{R}$. Then the closed ball $\{x \in E : \|x\| \le r\}$, with the weak topology, is
+metrizable.
+
+The embedding of the weak space into the weak-∗ bidual
+(`NormedSpace.isEmbedding_inclusionInDoubleDualWeak`) maps a ball of $E$ into a ball of $E''$,
+which is metrizable by `WeakDual.metrizableSpace_closedBall` applied to the separable space
+$E'$. -/
 theorem WeakSpace.metrizableSpace_image_closedBall [SeparableSpace (StrongDual 𝕜 E)] (r : ℝ) :
     MetrizableSpace (toWeakSpace 𝕜 E '' closedBall (0 : E) r) := by
   have hT := WeakDual.metrizableSpace_closedBall (𝕜 := 𝕜) (E := StrongDual 𝕜 E) r
@@ -272,12 +322,17 @@ theorem WeakSpace.metrizableSpace_image_closedBall [SeparableSpace (StrongDual �
   exact ((NormedSpace.isEmbedding_inclusionInDoubleDualWeak 𝕜 E).comp
     Topology.IsEmbedding.subtypeVal).codRestrict _ hmaps |>.metrizableSpace
 
-/-- **If the closed unit ball is weakly metrizable, the dual is separable.** A countable
-neighbourhood basis of `0` in the ball is cut out by countably many functionals; if their closed
-span were not everything, Hahn–Banach would give `ξ ∈ E''` of norm `1` vanishing on it and some
-`f₁` with `ξ f₁ = 2`, and Goldstine's lemma would give `x₁` in the ball of `E` with `f x₁ ≈ ξ f = 0`
-on the finitely many functionals of one basic neighbourhood and `f₁ x₁ ≈ ξ f₁ = 2` — but the
-basic neighbourhood sits inside `{x | ‖f₁ x‖ < 1/2}`. No completeness is needed. -/
+/-- **If the closed unit ball is weakly metrizable, the dual is separable.** Let $E$ be a normed
+space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the closed unit ball
+$\{x \in E : \|x\| \le 1\}$, with the weak topology, is metrizable, then $E'$ is separable.
+
+No completeness is needed. A countable neighbourhood basis of $0$ in the ball is cut out by
+countably many functionals. If their closed span were not $E'$, the Hahn–Banach theorem would
+give $\xi \in E''$ of norm $1$ that vanishes on it, and some $f_1$ with $\xi(f_1) = 2$.
+Goldstine's lemma would then give $x_1$ in the ball of $E$ with $f(x_1) \approx \xi(f) = 0$ for
+the finitely many functionals $f$ of one basic neighbourhood, and
+$f_1(x_1) \approx \xi(f_1) = 2$. This is impossible, because that basic neighbourhood lies in
+$\{x : |f_1(x)| < 1/2\}$. -/
 theorem separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall
     (h : MetrizableSpace (toWeakSpace 𝕜 E '' closedBall (0 : E) 1)) :
     SeparableSpace (StrongDual 𝕜 E) := by
@@ -345,19 +400,21 @@ theorem separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall
 
 end Metrizable
 
-/-!
-### Non-metrizability on the whole space
--/
+/-! ### Non-metrizability on the whole space -/
 
 section NotMetrizable
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **The weak topology of an infinite-dimensional normed space is not first countable.** A
-countable neighbourhood basis of `0` is cut out by a countable set `D` of functionals; every
-functional is then continuous for the topology induced by `D`, hence in the span of `D`
-(`LinearMap.mem_span_iff_continuous`), so the complete dual is spanned by a countable set and is
-finite-dimensional by Baire; then so is `E`. No completeness of `E` is needed. -/
+/-- **The weak topology of an infinite-dimensional normed space is not first countable.** Let $E$ be
+a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ that is not finite-dimensional.
+Then $E$ with the weak topology is not first countable.
+
+No completeness of $E$ is needed. A countable neighbourhood basis of $0$ is cut out by a
+countable set $D$ of functionals. Every functional is then continuous for the topology induced
+by $D$, and hence in the span of $D$ (`LinearMap.mem_span_iff_continuous`). So the dual, which
+is complete, is spanned by a countable set, and it is finite-dimensional by the Baire category
+theorem; then so is $E$. -/
 theorem not_firstCountableTopology_weakSpace (h : ¬ FiniteDimensional 𝕜 E) :
     ¬ FirstCountableTopology (WeakSpace 𝕜 E) := by
   classical
@@ -396,19 +453,23 @@ theorem not_firstCountableTopology_weakSpace (h : ¬ FiniteDimensional 𝕜 E) :
   exact h (Module.Finite.of_injective (NormedSpace.inclusionInDoubleDualLi 𝕜 (E := E)).toLinearMap
     (NormedSpace.inclusionInDoubleDualLi 𝕜).injective)
 
-/-- **The weak topology of an infinite-dimensional normed space is not metrizable**, not being
-first countable. -/
+/-- **The weak topology of an infinite-dimensional normed space is not metrizable.** Let $E$ be a
+normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ that is not finite-dimensional. Then
+$E$ with the weak topology is not metrizable, because it is not first countable. -/
 theorem not_metrizableSpace_weakSpace (h : ¬ FiniteDimensional 𝕜 E) :
     ¬ MetrizableSpace (WeakSpace 𝕜 E) := fun hm => by
   have := hm
   exact not_firstCountableTopology_weakSpace h inferInstance
 
 /-- **The weak-∗ topology on the dual of an infinite-dimensional Banach space is not first
-countable.** A countable neighbourhood basis of `0` is cut out by a countable set `D` of points of
-`E`; every evaluation at a point of `E` is then continuous for the topology induced by the
-evaluations at `D`, hence a linear combination of them, and since `y ↦ (f ↦ f y)` is injective
-(`SeparatingDual`) `E` is spanned by `D`, so it is finite-dimensional by Baire. This is where
-completeness of `E` is used. -/
+countable.** Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ that is
+not finite-dimensional. Then $E'$ with the weak-∗ topology is not first countable.
+
+A countable neighbourhood basis of $0$ is cut out by a countable set $D$ of points of $E$. Every
+evaluation at a point of $E$ is then continuous for the topology induced by the evaluations at
+the points of $D$, and hence a linear combination of them. Since $y \mapsto (f \mapsto f(y))$ is
+injective (`SeparatingDual`), $E$ is spanned by $D$, and so it is finite-dimensional by the
+Baire category theorem. This is where the completeness of $E$ is used. -/
 theorem not_firstCountableTopology_weakDual [CompleteSpace E] (h : ¬ FiniteDimensional 𝕜 E) :
     ¬ FirstCountableTopology (WeakDual 𝕜 E) := by
   classical
@@ -449,9 +510,13 @@ theorem not_firstCountableTopology_weakDual [CompleteSpace E] (h : ¬ FiniteDime
     exact (hinj hyy') ▸ hy'
   exact h (FiniteDimensional.of_span_eq_top_of_countable hDc hspan)
 
-/-- **The weak-∗ topology on the dual of an infinite-dimensional Banach space is not
-metrizable**, not being first countable. In particular no norm on `E'` induces the weak-∗
-topology on all of `E'`, only on its bounded sets when `E` is separable. -/
+/-- **The weak-∗ topology on the dual of an infinite-dimensional Banach space is not metrizable.**
+Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ that is not
+finite-dimensional. Then $E'$ with the weak-∗ topology is not metrizable, because it is not
+first countable.
+
+In particular, no norm on $E'$ induces the weak-∗ topology on all of $E'$. When $E$ is
+separable, the weak-∗ topology is metrizable on the bounded sets of $E'$ only. -/
 theorem not_metrizableSpace_weakDual [CompleteSpace E] (h : ¬ FiniteDimensional 𝕜 E) :
     ¬ MetrizableSpace (WeakDual 𝕜 E) := fun hm => by
   have := hm

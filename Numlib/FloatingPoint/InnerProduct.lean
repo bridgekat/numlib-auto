@@ -10,50 +10,74 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Rounding errors of inner products and matrix products
 
-The componentwise error bounds of [higham2002accuracy] §3.1–3.5 for recursive summation, inner
-products, matrix–vector products and matrix products, in the relational model of
-`Numlib/FloatingPoint/Model.lean`.
+This module proves the componentwise error bounds of [higham2002accuracy], §3.1–§3.5, for recursive
+summation, inner products, matrix–vector products and matrix products, in the rounding model of
+`Numlib.FloatingPoint.Model`. In that model, a rounding model on an ordered field $K$ has a unit
+roundoff $u \ge 0$, an admissible rounding $\mathrm{fl}(x)$ of $x$ satisfies
+$|\mathrm{fl}(x) - x| \le u |x|$, and the error constants are $\gamma_n = nu / (1 - nu)$. The main
+bounds are $|\hat s - \sum_i x_i| \le \gamma_{n-1} \sum_i |x_i|$ for a computed recursive sum of $n$
+numbers, $|\mathrm{fl}(x^T y) - x^T y| \le \gamma_n |x|^T |y|$ for a computed inner product of
+length $n$, with the backward form $\mathrm{fl}(x^T y) = (x + \Delta x)^T y$,
+$|\Delta x| \le \gamma_n |x|$, and the entrywise bounds $|\hat y - Ax| \le \gamma_n |A| |x|$ and
+$|\hat C - AB| \le \gamma_n |A| |B|$, where $n$ is the inner dimension.
 
-Everything here is about an *explicit evaluation order*: `RoundsSumFrom m s l t` says that `t`
-arises from the partial sum `s` by adding the terms of the list `l` from left to right, rounding
-after each addition, and `RoundsSum m l s` is the recursive summation `s₁ = x₁`, `sᵢ = fl(sᵢ₋₁ +
-xᵢ)`.  `RoundsDot m x y s` computes an inner product as the recursive sum, in some order of the
-indices, of the rounded products `fl(xᵢ yᵢ)`; the order is existentially quantified, so a theorem
-about it holds whatever order an implementation uses.  Because the rounding relation is not a
-function, every statement quantifies over all admissible roundings at once.
+Each statement is about an explicit order of evaluation. A recursive sum adds the terms from left to
+right and rounds after each addition. A computed inner product is a recursive sum, in some order of
+the indices, of the rounded products $\mathrm{fl}(x_i y_i)$, and the results hold for every order.
+The sharp product form $\mathrm{fl}(x^T y) = \sum_i x_i y_i (1 + \theta_i)$ with
+$|\theta_i| \le (1 + u)^n - 1$ of [golub2013matrix] (2.7.10) needs no hypothesis on $nu$, and it
+gives the classical constant $1.01\, nu$ of [golub2013matrix] (2.7.11). The module also treats the
+running difference $c - \sum_{r} a_r b_r$ of [higham2002accuracy], Lemma 8.4, which computes the
+entries in the substitutions of `Numlib.FloatingPoint.Substitution` and in the factorizations of
+`Numlib.FloatingPoint.LU`.
 
-The bounds are [higham2002accuracy]:
+## Main definitions
 
-* `abs_sub_le_of_roundsSum` — `|ŝ - ∑ xᵢ| ≤ γ_{n-1} ∑ |xᵢ|`;
-* `abs_sub_le_of_roundsDot` — `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|`, with the backward form `fl(xᵀy) = (x
-  + Δx)ᵀ y`, `|Δx| ≤ γ_n |x|`, as `exists_roundsDot_eq_dotProduct_add`;
-* `abs_sub_le_of_roundsMulVec` and `abs_sub_entrywiseLE_of_roundsMul` — `|ŷ - A x| ≤ γ_n |A| |x|`
-  and `|Ĉ - A B| ≤ γ_n |A| |B|`, in the entrywise order of `Numlib/LinearAlgebra/Matrix/Order.lean`.
+* `FloatingPoint.RoundsSumFrom`: $t$ results from a partial sum $s$ when the terms of a list are
+  added from left to right, with one rounding per addition.
+* `FloatingPoint.RoundsSum`: $s$ is a computed recursive sum of a list.
+* `FloatingPoint.RoundsDot`: $s$ is a computed inner product $x^T y$, in some order of summation.
+* `FloatingPoint.RoundsRunningDiff`: $t$ is a computed running difference
+  $c - \sum_{r \in o} a_r b_r$.
+* `FloatingPoint.RoundsMulVec` and `FloatingPoint.RoundsMul`: each entry of the result is a computed
+  inner product of a row of $A$ with $x$, or with a column of $B$.
 
-The uniform bound `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` is `abs_sub_le_of_roundsMulVec_of_abs_le`, stated
-with row sums and an entrywise bound on `x` rather than with norms, since the scalar field here
-carries an order but no norm.
+## Main results
 
-The sharp product form of a computed inner product, `fl(xᵀy) = ∑ xᵢ yᵢ (1 + θᵢ)` with `|θᵢ| ≤ (1 +
-u)^n - 1` (`exists_eq_sum_mul_one_add_of_roundsDot`, [golub2013matrix] (2.7.10)), needs no
-hypothesis on `n u` and gives the classical `1.01 n u` constant of [golub2013matrix] (2.7.11)
-through `abs_sub_le_one_add_pow_sub_one_of_roundsDot`. Also here: the error of one rounded update
-`fl(y + fl(a x))` (`abs_sub_le_of_rounds_add_mul`), the invariance of `RoundsDot` under
-reindexing (`roundsDot_comp_equiv_iff`), a computed `v̂ᵀv̂` as a relative perturbation of `vᵀv`
-(`isRelPert_of_roundsDot_self`), the running sum one term at a time
-(`roundsSumFrom_append_singleton`), in the exact model (`roundsSumFrom_exact_iff`) and in product
-form `t = c (1 + φ) + ∑ f_j (1 + θ_j)` (`exists_roundsSumFrom_map_eq_add_sum_one_add_pow`, with
-the `γ_k` form `exists_roundsSumFrom_map_eq_add_sum`).
+* `FloatingPoint.abs_sub_le_of_roundsSum`: $|\hat s - \sum_i x_i| \le \gamma_{n-1} \sum_i |x_i|$.
+* `FloatingPoint.abs_sub_le_of_roundsDot`: $|\mathrm{fl}(x^T y) - x^T y| \le \gamma_n |x|^T |y|$.
+* `FloatingPoint.exists_roundsDot_eq_dotProduct_add`: $\mathrm{fl}(x^T y) = (x + \Delta x)^T y$ with
+  $|\Delta x| \le \gamma_n |x|$.
+* `FloatingPoint.exists_eq_sum_mul_one_add_of_roundsDot`: $\mathrm{fl}(x^T y) = \sum_i x_i y_i (1 +
+  \theta_i)$ with $|\theta_i| \le (1 + u)^n - 1$.
+* `FloatingPoint.abs_sub_le_of_roundsMulVec`: $|\hat y - Ax| \le \gamma_n |A| |x|$ entrywise.
+* `FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`: $|\hat C - AB| \le \gamma_n |A| |B|$ entrywise.
+* `FloatingPoint.exists_roundsSumFrom_map_eq_add_sum`: a running sum is
+  $c (1 + \varphi) + \sum_j f_j (1 + \theta_j)$ with $|\varphi|, |\theta_j| \le \gamma_k$.
+* `FloatingPoint.roundsRunningDiff_exact_iff`: in the exact model, a computed running difference is
+  the difference $c - \sum_r a_r b_r$.
 
-**Running differences.** `RoundsRunningDiff m o a b c t` is the running difference
-`c - ∑_{r ∈ o} a_r b_r` of [higham2002accuracy] Lemma 8.4, one rounding per product and per
-subtraction: the entry relation of every substitution and factorization of
-`Numlib/FloatingPoint/Substitution` and `Numlib/FloatingPoint/LU`, and the relation of the program
-`FloatingPoint.runningDiff` of `Numlib/FloatingPoint/Program`. In the exact model it is the
-difference (`roundsRunningDiff_exact_iff`).
+## Proof outline
 
-Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is `γ_k (1 + u)
-+ u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
+Every bound follows from one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`:
+$\gamma_k (1 + u) + u \le \gamma_{k+1}$. That is, one more rounding raises the order of a relative
+perturbation by one.
+
+## Implementation notes
+
+* The rounding relation is not a function. Therefore every statement holds for all admissible
+  roundings at once.
+* The first term of a recursive sum enters unrounded, so a list of length $n$ costs $n - 1$
+  roundings.
+* The uniform bound $\|\hat y - Ax\|_\infty \le \gamma_n \|A\|_\infty \|x\|_\infty$ is
+  `FloatingPoint.abs_sub_le_of_roundsMulVec_of_abs_le`. It is stated with row sums and an entrywise
+  bound on $x$, because the scalar field has an order but no norm.
+* The entrywise order and the entrywise absolute value of matrices are those of
+  `Numlib.LinearAlgebra.Matrix.Order`: `A ≤ₑ B` is `Matrix.EntrywiseLE A B`, and `A.abs` is
+  `Matrix.abs A`.
+* Over a list of distinct indices, the results of the program `FloatingPoint.runningDiff` of
+  `Numlib.FloatingPoint.Program` are exactly the computed running differences
+  (`FloatingPoint.mem_run_runningDiff_iff`).
 -/
 
 open Finset
@@ -66,29 +90,40 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-! ### Recursive summation -/
 
-/-- `RoundsSumFrom m s l t`: starting from the partial sum `s`, the terms of the list `l` are added
-from left to right, one rounding per addition, and `t` is an admissible result.  The relation is not
-functional, so a theorem proved about it holds for every admissible sequence of roundings. -/
+/-- Let $K$ be an ordered field with a rounding model of unit roundoff $u$. For $s, t \in K$ and a
+list $l = (x_1, \dots, x_k)$, the relation holds when $t$ is a possible computed value of the
+addition of the terms of $l$ to the partial sum $s$, from left to right, with one rounding per
+addition: $t_0 = s$, $t_i$ is an admissible rounding of $t_{i-1} + x_i$ for $i = 1, \dots, k$,
+and $t = t_k$.
+
+The relation is defined inductively. It is not a function, so a theorem about it holds for every
+admissible sequence of roundings. -/
 inductive RoundsSumFrom (m : RoundingModel K) : K → List K → K → Prop
-  /-- Adding no terms leaves the partial sum unchanged. -/
+  /-- The addition of no terms leaves the partial sum unchanged. -/
   | nil (s : K) : RoundsSumFrom m s [] s
-  /-- One rounded addition, followed by the rest of the list. -/
+  /-- If $t$ is an admissible rounding of $s + x$, and the addition of the terms of $l$ to $t$ gives
+  $r$, then the addition of the terms of $x :: l$ to $s$ gives $r$. -/
   | cons {s x t r : K} {l : List K} (ht : m.Rounds (s + x) t) (hr : RoundsSumFrom m t l r) :
       RoundsSumFrom m s (x :: l) r
 
-/-- `RoundsSum m l s`: `s` is an admissible floating-point value of the **recursive summation** `s₁
-= x₁`, `sᵢ = fl(sᵢ₋₁ + xᵢ)` of the list `l` ([higham2002accuracy], §3.1).  The first term enters
-unrounded, so a list of length `n` costs `n - 1` roundings. -/
+/-- The **recursive summation** of a list ([higham2002accuracy], §3.1). A value $s$ is a computed
+recursive sum of $(x_1, \dots, x_n)$ if $s_1 = x_1$, $s_i$ is an admissible rounding of
+$s_{i-1} + x_i$ for $i = 2, \dots, n$, and $s = s_n$. The recursive sum of the empty list is
+exactly $0$.
+
+The first term enters unrounded, so a list of length $n$ costs $n - 1$ roundings. For a nonempty
+list, the relation is `FloatingPoint.RoundsSumFrom` started at the first term. -/
 def RoundsSum (m : RoundingModel K) : List K → K → Prop
   | [], s => s = 0
   | x :: l, s => RoundsSumFrom m x l s
 
-/-- The recursive summation of the empty list is `0`. -/
+/-- A value $s$ is a computed recursive sum of the empty list if and only if $s = 0$. -/
 @[simp]
 theorem roundsSum_nil {m : RoundingModel K} {s : K} : RoundsSum m [] s ↔ s = 0 := Iff.rfl
 
-/-- The recursive summation of `x :: l` is the left-to-right sweep over `l` started at the
-*unrounded* first term `x`, which is why a list of length `n` costs only `n - 1` roundings. -/
+/-- A value $s$ is a computed recursive sum of $x :: l$ if and only if it results from the addition
+of the terms of $l$ to the unrounded first term $x$, with one rounding per addition. Therefore a
+list of length $n$ costs only $n - 1$ roundings. -/
 @[simp]
 theorem roundsSum_cons {m : RoundingModel K} {x : K} {l : List K} {s : K} :
     RoundsSum m (x :: l) s ↔ RoundsSumFrom m x l s := Iff.rfl
@@ -99,9 +134,11 @@ private theorem sum_map_abs_nonneg (l : List K) : 0 ≤ (l.map (|·|)).sum :=
     obtain ⟨z, -, rfl⟩ := List.mem_map.1 hy
     exact abs_nonneg z
 
-/-- **[higham2002accuracy] bound for recursive summation from a partial sum** (*Accuracy and
-Stability of Numerical Algorithms*, (3.2)–(3.3)): adding the `k` terms of `l` to `s`, one rounding
-per addition, perturbs the exact value `s + ∑ lᵢ` by at most `γ_k (|s| + ∑ |lᵢ|)`. -/
+/-- Let $u < 1$, and let $l = (x_1, \dots, x_k)$ be a list with $ku < 1$. If $t$ results from the
+addition of the terms of $l$ to $s$, from left to right with one rounding per addition, then
+$$\Bigl|t - \Bigl(s + \sum_i x_i\Bigr)\Bigr| \le \gamma_k \Bigl(|s| + \sum_i |x_i|\Bigr).$$
+This is the bound (3.2)–(3.3) of [higham2002accuracy] for a recursive sum that starts from a
+partial sum. -/
 theorem abs_sub_le_of_roundsSumFrom {m : RoundingModel K} (hu : m.u < 1) {s : K} {l : List K}
     {t : K} (h : RoundsSumFrom m s l t) (hlu : ((l.length : ℕ) : K) * m.u < 1) :
     |t - (s + l.sum)| ≤ gamma m.u l.length * (|s| + (l.map (|·|)).sum) := by
@@ -148,9 +185,12 @@ theorem abs_sub_le_of_roundsSumFrom {m : RoundingModel K} (hu : m.u < 1) {s : K}
             (mul_le_mul_of_nonneg_right hmono hS)
       _ = gamma m.u (l.length + 1) * (|s| + (|x| + (l.map (|·|)).sum)) := by ring
 
-/-- **[higham2002accuracy] bound for recursive summation** (*Accuracy and Stability of Numerical
-Algorithms*, (3.2)–(3.3)): a computed sum of `n` numbers differs from the exact sum by at most
-`γ_{n-1} ∑ |xᵢ|`. -/
+/-- Let $u < 1$, and let $l = (x_1, \dots, x_n)$ be a list with $(n - 1) u < 1$. A computed
+recursive sum $\hat s$ of $l$ satisfies
+$$\Bigl|\hat s - \sum_i x_i\Bigr| \le \gamma_{n-1} \sum_i |x_i|.$$
+This is the bound (3.2)–(3.3) of [higham2002accuracy].
+
+The index $n - 1$ is subtraction of natural numbers, so it is $0$ for the empty list. -/
 theorem abs_sub_le_of_roundsSum {m : RoundingModel K} (hu : m.u < 1) {l : List K} {s : K}
     (h : RoundsSum m l s) (hlu : ((l.length - 1 : ℕ) : K) * m.u < 1) :
     |s - l.sum| ≤ gamma m.u (l.length - 1) * (l.map (|·|)).sum := by
@@ -160,8 +200,11 @@ theorem abs_sub_le_of_roundsSum {m : RoundingModel K} (hu : m.u < 1) {l : List K
     simp only [List.length_cons, Nat.add_sub_cancel] at hlu ⊢
     simpa using abs_sub_le_of_roundsSumFrom hu (roundsSum_cons.1 h) hlu
 
-/-- **Appending one term to a running sum**: the step lemma of every loop invariant that grows a
-running sum one term at a time. -/
+/-- **Appending one term to a running sum.** The addition of the terms of $l$ followed by $x$ to $s$
+gives $r$ if and only if there is a $t$ such that the addition of the terms of $l$ to $s$ gives
+$t$ and $r$ is an admissible rounding of $t + x$.
+
+This is the step of every loop invariant that grows a running sum one term at a time. -/
 theorem roundsSumFrom_append_singleton {m : RoundingModel K} {s x r : K} {l : List K} :
     RoundsSumFrom m s (l ++ [x]) r ↔ ∃ t, RoundsSumFrom m s l t ∧ m.Rounds (t + x) r := by
   induction l generalizing s with
@@ -181,7 +224,8 @@ theorem roundsSumFrom_append_singleton {m : RoundingModel K} {s x r : K} {l : Li
     · rintro ⟨t, (_ | ⟨ht, hr⟩), h2⟩
       exact .cons ht (ih.2 ⟨t, hr, h2⟩)
 
-/-- **A running sum in the exact model** (`RoundingModel.exact`) is the sum. -/
+/-- In the exact model `FloatingPoint.RoundingModel.exact`, the addition of the terms of $l$ to $c$
+gives $t$ if and only if $t = c + \sum_i l_i$. -/
 theorem roundsSumFrom_exact_iff {c t : K} {l : List K} :
     RoundsSumFrom (RoundingModel.exact K) c l t ↔ t = c + l.sum := by
   induction l generalizing c with
@@ -201,8 +245,10 @@ theorem roundsSumFrom_exact_iff {c t : K} {l : List K} :
 
 /-! ### One rounded update -/
 
-/-- **One rounded update** `fl(y + fl(a x))` ([golub2013matrix] (2.7.17)–(2.7.18), with the
-second-order term displayed): its error is at most `u |y| + (2u + u²) |a x|`. -/
+/-- Let $a, x, y \in K$. If $p$ is an admissible rounding of $ax$ and $s$ is an admissible rounding
+of $y + p$, so that $s = \mathrm{fl}(y + \mathrm{fl}(ax))$, then
+$$|s - (y + ax)| \le u |y| + (2u + u^2) |ax|.$$
+This is (2.7.17)–(2.7.18) of [golub2013matrix], with the second-order term written out. -/
 theorem abs_sub_le_of_rounds_add_mul {m : RoundingModel K} {a x y p s : K}
     (hp : m.Rounds (a * x) p) (hs : m.Rounds (y + p) s) :
     |s - (y + a * x)| ≤ m.u * |y| + (2 * m.u + m.u ^ 2) * |a * x| := by
@@ -228,16 +274,19 @@ theorem abs_sub_le_of_rounds_add_mul {m : RoundingModel K} {a x y p s : K}
 
 variable {ι : Type*}
 
-/-- `RoundsDot m x y s`: `s` is an admissible floating-point value of the inner product `xᵀ y`,
-computed as the recursive summation, in some order `o` of the indices, of the rounded products
-`fl(xᵢ yᵢ)` ([higham2002accuracy], §3.1).  The order is existentially quantified, so a theorem about
-`RoundsDot` holds for every order in which an implementation may accumulate the products. -/
+/-- Let $x, y \colon \iota \to K$. A value $s$ is a **computed inner product** of $x$ and $y$ if
+there are a list $o$ that contains every index exactly once and admissible roundings $p_i$ of
+the products $x_i y_i$ such that $s$ is a computed recursive sum of the values $p_i$ in the
+order of $o$. This is the evaluation of $x^T y$ in [higham2002accuracy], §3.1.
+
+The order $o$ is existentially quantified. Therefore a theorem about `FloatingPoint.RoundsDot`
+holds for every order in which an implementation accumulates the products. -/
 def RoundsDot (m : RoundingModel K) (x y : ι → K) (s : K) : Prop :=
   ∃ (o : List ι) (p : ι → K), o.Nodup ∧ (∀ i, i ∈ o) ∧ (∀ i, m.Rounds (x i * y i) (p i)) ∧
     RoundsSum m (o.map p) s
 
-/-- One direction of `roundsDot_comp_equiv_iff`: the order and the rounded products are carried
-along the equivalence. -/
+/-- One direction of `FloatingPoint.roundsDot_comp_equiv_iff`: the order and the rounded products
+are carried along the bijection. -/
 private theorem roundsDot_of_comp_equiv {κ : Type*} {m : RoundingModel K} (e : κ ≃ ι)
     {x y : ι → K} {s : K} (h : RoundsDot m (x ∘ e) (y ∘ e) s) : RoundsDot m x y s := by
   obtain ⟨o, p, ho, hfull, hp, hsum⟩ := h
@@ -246,8 +295,9 @@ private theorem roundsDot_of_comp_equiv {κ : Type*} {m : RoundingModel K} (e : 
   · simpa using hp (e.symm i)
   · rwa [List.map_map, Function.comp_assoc, Equiv.symm_comp_self, Function.comp_id]
 
-/-- **`RoundsDot` is invariant under reindexing**: an inner product computed over one index type
-is one computed over any equivalent index type, the summation order being carried along. -/
+/-- Let $e \colon \kappa \to \iota$ be a bijection. A value $s$ is a computed inner product of
+$x \circ e$ and $y \circ e$ if and only if it is a computed inner product of $x$ and $y$. The
+order of summation is carried along $e$. -/
 theorem roundsDot_comp_equiv_iff {κ : Type*} {m : RoundingModel K} (e : κ ≃ ι) {x y : ι → K}
     {s : K} : RoundsDot m (x ∘ e) (y ∘ e) s ↔ RoundsDot m x y s := by
   refine ⟨roundsDot_of_comp_equiv e, fun h => roundsDot_of_comp_equiv e.symm ?_⟩
@@ -255,8 +305,8 @@ theorem roundsDot_comp_equiv_iff {κ : Type*} {m : RoundingModel K} (e : κ ≃ 
   have hy : (y ∘ e) ∘ e.symm = y := by ext; simp
   rwa [hx, hy]
 
-/-- The product form of a running sum over a duplicate-free list of indices: every term, and the
-start, carry a factor `1 + θ` with `|θ| ≤ (1 + u)^k - 1`, `k` the number of additions. -/
+/-- The product form of a running sum over a list of $k$ distinct indices: the start and every term
+carry a factor $1 + \theta$ with $|\theta| \le (1 + u)^k - 1$. -/
 private theorem exists_eq_of_roundsSumFrom_map {m : RoundingModel K} {l : List ι} (hl : l.Nodup)
     {v : ι → K} {a t : K} (h : RoundsSumFrom m a (l.map v) t) :
     ∃ (φ : K) (θ : ι → K), t = a * (1 + φ) + (l.map fun i => v i * (1 + θ i)).sum ∧
@@ -290,11 +340,15 @@ private theorem exists_eq_of_roundsSumFrom_map {m : RoundingModel K} {l : List �
       · rw [Function.update_of_ne fun (e : j = i) => hi (e ▸ hj)]
         exact (hθ j hj).trans hmono
 
-/-- **The product form of a running sum** ([higham2002accuracy] (3.2) for a running sum from a
-partial sum), sharp: if `t` is obtained from `c` by adding the terms `f j`, `j ∈ o`, one rounding
-per addition, then `t = c (1 + φ) + ∑_{j ∈ o} f j (1 + θ_j)` with `|φ|` and every `|θ_j|` at most
-`(1 + u)^k - 1`, `k` the number of terms. No hypothesis on `k u` is needed;
-`FloatingPoint.exists_roundsSumFrom_map_eq_add_sum` is the `γ_k` form. -/
+/-- Let $o$ be a list of $k$ distinct indices, and let $f \colon \iota \to K$ and $c \in K$. If $t$
+results from the addition of the terms $f_j$, $j \in o$, to $c$ in the order of $o$, with one
+rounding per addition, then there are $\varphi \in K$ and $\theta \colon \iota \to K$ with
+$$t = c (1 + \varphi) + \sum_{j \in o} f_j (1 + \theta_j), \qquad |\varphi| \le (1 + u)^k - 1,
+  \quad |\theta_j| \le (1 + u)^k - 1 \ (j \in o).$$
+No hypothesis on $ku$ is needed. This is the product form (3.2) of [higham2002accuracy] for a
+running sum that starts from a partial sum, with the sharp constant $(1 + u)^k - 1$.
+
+`FloatingPoint.exists_roundsSumFrom_map_eq_add_sum` is the form with the constant $\gamma_k$. -/
 theorem exists_roundsSumFrom_map_eq_add_sum_one_add_pow [DecidableEq ι] {m : RoundingModel K}
     {o : List ι} (hnd : o.Nodup) {f : ι → K} {c t : K} (h : RoundsSumFrom m c (o.map f) t) :
     ∃ (φ : K) (θ : ι → K), |φ| ≤ (1 + m.u) ^ o.length - 1 ∧
@@ -303,11 +357,15 @@ theorem exists_roundsSumFrom_map_eq_add_sum_one_add_pow [DecidableEq ι] {m : Ro
   obtain ⟨φ, θ, rfl, hφ, hθ⟩ := exists_eq_of_roundsSumFrom_map hnd h
   exact ⟨φ, θ, hφ, hθ, by rw [List.sum_toFinset _ hnd]⟩
 
-/-- **The product form of a running sum**, with Higham's constant: if `t` is obtained from `c` by
-adding the terms `f j`, `j ∈ o`, one rounding per addition, then
-`t = c (1 + φ) + ∑_{j ∈ o} f j (1 + θ_j)` with `|φ|` and every `|θ_j|` at most `γ_k`, `k` the
-number of terms. The result `t` is not perturbed, which is what a sum that is used afterwards
-(subtracted, divided) needs. -/
+/-- Let $o$ be a list of $k$ distinct indices with $ku < 1$, and let $f \colon \iota \to K$ and
+$c \in K$. If $t$ results from the addition of the terms $f_j$, $j \in o$, to $c$ in the order
+of $o$, with one rounding per addition, then there are $\varphi \in K$ and
+$\theta \colon \iota \to K$ with
+$$t = c (1 + \varphi) + \sum_{j \in o} f_j (1 + \theta_j), \qquad |\varphi| \le \gamma_k, \quad
+  |\theta_j| \le \gamma_k \ (j \in o).$$
+
+The computed result $t$ itself is not perturbed. A later operation on the sum, such as a
+subtraction or a division, needs this form. -/
 theorem exists_roundsSumFrom_map_eq_add_sum [DecidableEq ι] {m : RoundingModel K} {c t : K}
     {f : ι → K} {o : List ι} (hnd : o.Nodup) (h : RoundsSumFrom m c (o.map f) t)
     (hlu : ((o.length : ℕ) : K) * m.u < 1) :
@@ -319,27 +377,33 @@ theorem exists_roundsSumFrom_map_eq_add_sum [DecidableEq ι] {m : RoundingModel 
 
 /-! ### Running differences -/
 
-/-- `RoundsRunningDiff m o a b c t`: `t` is an admissible value of the **running difference**
-`c - ∑_{r ∈ o} a_r b_r` evaluated as [higham2002accuracy] Lemma 8.4 evaluates it: the products
-`a_r b_r` are rounded (`p r`) and subtracted one after the other from `c`, in the order of the list
-`o`, with one rounding per subtraction. This is the entry relation of the substitutions and
-factorizations of `Numlib/FloatingPoint/Substitution` and `Numlib/FloatingPoint/LU`
-(`RoundsForwardSubst`, `RoundsLU`, `RoundsCholesky`, `RoundsLDL`, `RoundsCholeskyDiv`), and every
-result of the program `FloatingPoint.runningDiff` over a duplicate-free order satisfies it
-(`FloatingPoint.mem_run_runningDiff_iff`). -/
+/-- Let $o$ be a list of indices, let $a, b \colon \iota \to K$ and let $c \in K$. A value $t$ is a
+computed **running difference** $c - \sum_{r \in o} a_r b_r$ if there are admissible roundings
+$p_r$ of the products $a_r b_r$, $r \in o$, such that $t$ results from the addition of the terms
+$-p_r$ to $c$ in the order of $o$, with one rounding per addition. This is the evaluation in
+[higham2002accuracy], Lemma 8.4.
+
+This relation computes the entries in the substitutions and factorizations
+`FloatingPoint.RoundsForwardSubst`, `FloatingPoint.RoundsLU`, `FloatingPoint.RoundsCholesky`,
+`FloatingPoint.RoundsLDL` and `FloatingPoint.RoundsCholeskyDiv`. Over a list of distinct
+indices, the results of the program `FloatingPoint.runningDiff` are exactly the values that
+satisfy it (`FloatingPoint.mem_run_runningDiff_iff`). -/
 def RoundsRunningDiff (m : RoundingModel K) (o : List ι) (a b : ι → K) (c t : K) : Prop :=
   ∃ p : ι → K, (∀ r ∈ o, m.Rounds (a r * b r) (p r)) ∧ RoundsSumFrom m c (o.map fun r => -p r) t
 
-/-- A running difference reads the factors `a r`, `b r` only for `r` in the list. -/
+/-- A running difference over $o$ depends on $a_r$ and $b_r$ only for $r \in o$: if $a'_r = a_r$ and
+$b'_r = b_r$ for every $r \in o$, then a computed running difference for $a, b$ is one for
+$a', b'$. -/
 theorem RoundsRunningDiff.congr {m : RoundingModel K} {o : List ι} {a a' b b' : ι → K} {c t : K}
     (h : RoundsRunningDiff m o a b c t) (ha : ∀ r ∈ o, a' r = a r) (hb : ∀ r ∈ o, b' r = b r) :
     RoundsRunningDiff m o a' b' c t := by
   obtain ⟨p, hp, hs⟩ := h
   exact ⟨p, fun r hr => by rw [ha r hr, hb r hr]; exact hp r hr, hs⟩
 
-/-- **One more term of a running difference**: appending the term `a x b x`, rounded to `q` and
-subtracted with one more rounding, to a running difference over `o` (which does not list `x`) is
-a running difference over `o ++ [x]`. -/
+/-- **One more term of a running difference.** Let $t$ be a computed running difference
+$c - \sum_{r \in o} a_r b_r$, and let $x$ be an index that is not in $o$. If $q$ is an
+admissible rounding of $a_x b_x$ and $s$ is an admissible rounding of $t - q$, then $s$ is a
+computed running difference over the list $o$ followed by $x$. -/
 theorem RoundsRunningDiff.append_singleton {m : RoundingModel K} {o : List ι}
     {a b : ι → K} {c t : K} (h : RoundsRunningDiff m o a b c t) {x : ι} (hx : x ∉ o) {q s : K}
     (hq : m.Rounds (a x * b x) q) (hs : m.Rounds (t - q) s) :
@@ -359,8 +423,8 @@ theorem RoundsRunningDiff.append_singleton {m : RoundingModel K} {o : List ι}
     rw [hmap, roundsSumFrom_append_singleton]
     exact ⟨t, ht, by rw [← sub_eq_add_neg]; exact hs⟩
 
-/-- **A running difference in the exact model** (`RoundingModel.exact`) is the difference
-`c - ∑_{r ∈ o} a_r b_r`. -/
+/-- In the exact model `FloatingPoint.RoundingModel.exact`, $t$ is a computed running difference
+over $o$ if and only if $t = c - \sum_{r \in o} a_r b_r$, with the sum taken along the list $o$. -/
 theorem roundsRunningDiff_exact_iff {o : List ι} {a b : ι → K} {c t : K} :
     RoundsRunningDiff (RoundingModel.exact K) o a b c t ↔
       t = c - (o.map fun r => a r * b r).sum := by
@@ -377,7 +441,8 @@ theorem roundsRunningDiff_exact_iff {o : List ι} {a b : ι → K} {c t : K} :
       roundsSumFrom_exact_iff.2 ?_⟩
     rw [h, hneg, ← sub_eq_add_neg]
 
-/-- A running difference in the exact model over a duplicate-free order, as a `Finset` sum. -/
+/-- In the exact model, a computed running difference over a list $o$ of distinct indices is
+$c - \sum_{r} a_r b_r$, with the sum over the finite set of the entries of $o$. -/
 theorem RoundsRunningDiff.eq_of_exact [DecidableEq ι] {o : List ι} (hnd : o.Nodup) {a b : ι → K}
     {c t : K} (h : RoundsRunningDiff (RoundingModel.exact K) o a b c t) :
     t = c - ∑ r ∈ o.toFinset, a r * b r := by
@@ -385,9 +450,10 @@ theorem RoundsRunningDiff.eq_of_exact [DecidableEq ι] {o : List ι} (hnd : o.No
 
 variable [Fintype ι]
 
-/-- **[higham2002accuracy] inner-product bound** (*Accuracy and Stability of Numerical Algorithms*,
-(3.4)): a computed inner product of two vectors of length `n` satisfies `|fl(xᵀy) - xᵀy| ≤ γ_n
-|x|ᵀ|y|`, whatever the order of accumulation. -/
+/-- Let $\iota$ be a finite index set with $n$ elements, and let $u < 1$ and $nu < 1$. A computed
+inner product $s$ of $x, y \colon \iota \to K$ satisfies
+$$|s - x^T y| \le \gamma_n |x|^T |y|,$$
+whatever the order of summation. This is (3.4) of [higham2002accuracy]. -/
 theorem abs_sub_le_of_roundsDot {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ι : K) * m.u < 1) {x y : ι → K} {s : K} (h : RoundsDot m x y s) :
     |s - x ⬝ᵥ y| ≤ gamma m.u (Fintype.card ι) * (|x| ⬝ᵥ |y|) := by
@@ -455,9 +521,12 @@ theorem abs_sub_le_of_roundsDot {m : RoundingModel K} (hu : m.u < 1)
       _ = (gamma m.u n * (1 + m.u) + m.u) * ∑ i, |x i| * |y i| := by ring
       _ ≤ gamma m.u (n + 1) * ∑ i, |x i| * |y i| := mul_le_mul_of_nonneg_right hstep hD0
 
-/-- The elementary redistribution behind the backward form of an error bound: a residual `r` no
-larger than `c ∑ |aᵢ| |bᵢ|` is realised by a componentwise perturbation of `a` of relative size `c`:
-`∑ dᵢ bᵢ = r` with `|dᵢ| ≤ c |aᵢ|`. -/
+/-- Let $\iota$ be finite, let $c \ge 0$, let $a, b \colon \iota \to K$, and let $r \in K$ with
+$|r| \le c \sum_i |a_i| |b_i|$. Then there is $d \colon \iota \to K$ with $|d_i| \le c |a_i|$
+for every $i$ and
+$$\sum_i d_i b_i = r.$$
+This turns a forward error bound into a backward one: the residual $r$ is the effect of a
+componentwise relative perturbation of $a$ of size $c$. -/
 theorem _root_.Fintype.exists_sum_mul_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b : ι → K}
     (h : |r| ≤ c * ∑ i, |a i| * |b i|) :
     ∃ d : ι → K, (∀ i, |d i| ≤ c * |a i|) ∧ ∑ i, d i * b i = r := by
@@ -495,10 +564,11 @@ theorem _root_.Fintype.exists_sum_mul_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b
         _ = c * θ * ∑ i, |a i| * |b i| := by rw [Finset.mul_sum]
         _ = r := hθr
 
-/-- **The backward form of [higham2002accuracy] inner-product bound** (*Accuracy and Stability of
-Numerical Algorithms*, (3.5)): a computed inner product is the exact inner product of a
-componentwise relative perturbation of `x` with `y`, `fl(xᵀ y) = (x + Δx)ᵀ y` with `|Δx| ≤ γ_n |x|`.
--/
+/-- Let $\iota$ be a finite index set with $n$ elements, and let $u < 1$ and $nu < 1$. If $s$ is a
+computed inner product of $x, y \colon \iota \to K$, then there is $\Delta x \colon \iota \to K$
+with $|\Delta x_i| \le \gamma_n |x_i|$ for every $i$ and
+$$s = (x + \Delta x)^T y.$$
+This is the backward form (3.5) of [higham2002accuracy] of the inner-product bound. -/
 theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ι : K) * m.u < 1) {x y : ι → K} {s : K} (h : RoundsDot m x y s) :
     ∃ dx : ι → K, (∀ i, |dx i| ≤ gamma m.u (Fintype.card ι) * |x i|) ∧ s = (x + dx) ⬝ᵥ y := by
@@ -513,10 +583,11 @@ theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
   rw [hexp, hsum]
   ring
 
-/-- **A computed `v̂ᵀv̂`**: if `v̂` is entrywise a relative perturbation of order `k` of `v`, a
-computed inner product of `v̂` with itself is a relative perturbation of order `2k + n` of `vᵀv`
-(the terms `v̂_i v̂_i` are of order `2k`, the backward error of `RoundsDot` adds `n`, and the sum of
-the nonnegative `v_i²` keeps the order, `IsRelPert.sum_of_nonneg`). -/
+/-- Let $\iota$ be a finite index set with $n$ elements, let $u < 1$, and let $k$ be a natural
+number with $(2k + n) u < 1$. If $\hat v_i$ is a relative perturbation of order $k$ of $v_i$ for
+every $i$ (that is, $\hat v_i = v_i (1 + \theta_i)$ with $|\theta_i| \le \gamma_k$), then a
+computed inner product $s$ of $\hat v$ with itself is a relative perturbation of order $2k + n$
+of $v^T v$: $s = v^T v (1 + \theta)$ with $|\theta| \le \gamma_{2k + n}$. -/
 theorem isRelPert_of_roundsDot_self {m : RoundingModel K} (hu : m.u < 1) {k : ℕ}
     (hk : ((2 * k + Fintype.card ι : ℕ) : K) * m.u < 1) {v vhat : ι → K}
     (hv : ∀ i, IsRelPert m.u k (v i) (vhat i)) {s : K} (hs : RoundsDot m vhat vhat s) :
@@ -540,10 +611,11 @@ theorem isRelPert_of_roundsDot_self {m : RoundingModel K} (hu : m.u < 1) {k : �
   exact IsRelPert.sum_of_nonneg Finset.univ (gamma_nonneg hu0 (hlt _ le_rfl))
     (fun i _ => mul_self_nonneg _) fun i _ => hterm i
 
-/-- **The product form of a computed inner product** ([golub2013matrix] (2.7.10);
-[higham2002accuracy] (3.2)): a computed inner product of two vectors of length `n` is
-`∑ x_i y_i (1 + θ_i)` with `|θ_i| ≤ (1 + u)^n - 1`, whatever the order of accumulation. No
-hypothesis on `n u` is needed. -/
+/-- Let $\iota$ be a finite index set with $n$ elements. If $s$ is a computed inner product of
+$x, y \colon \iota \to K$, then there is $\theta \colon \iota \to K$ with
+$$s = \sum_i x_i y_i (1 + \theta_i), \qquad |\theta_i| \le (1 + u)^n - 1 \text{ for every } i,$$
+whatever the order of summation. No hypothesis on $nu$ is needed. This is (2.7.10) of
+[golub2013matrix] and (3.2) of [higham2002accuracy]. -/
 theorem exists_eq_sum_mul_one_add_of_roundsDot {m : RoundingModel K} {x y : ι → K} {s : K}
     (h : RoundsDot m x y s) :
     ∃ θ : ι → K, s = ∑ i, x i * y i * (1 + θ i) ∧
@@ -586,10 +658,14 @@ theorem exists_eq_sum_mul_one_add_of_roundsDot {m : RoundingModel K} {x y : ι �
         have hi : i ∈ o := (List.mem_cons.1 (hfull i)).resolve_left hik
         exact abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one (hθ i hi) (hδ i)
 
-/-- **The sharp inner-product bound** behind [golub2013matrix] (2.7.11): a computed inner product
-of vectors of length `n` satisfies `|fl(xᵀy) - xᵀy| ≤ ((1 + u)^n - 1) |x|ᵀ|y|`. With
-`abs_prod_one_add_sub_one_le_of_mul_le` this gives the book's `1.01 n u |x|ᵀ|y|` for `n u ≤
-0.01`. -/
+/-- Let $\iota$ be a finite index set with $n$ elements. A computed inner product $s$ of
+$x, y \colon \iota \to K$ satisfies
+$$|s - x^T y| \le \bigl((1 + u)^n - 1\bigr) |x|^T |y|.$$
+No hypothesis on $nu$ is needed.
+
+This is the sharp bound behind (2.7.11) of [golub2013matrix]. With
+`FloatingPoint.abs_prod_one_add_sub_one_le_of_mul_le`, it gives the bound
+$1.01\, nu\, |x|^T |y|$ of the source when $nu \le 0.01$. -/
 theorem abs_sub_le_one_add_pow_sub_one_of_roundsDot {m : RoundingModel K} {x y : ι → K} {s : K}
     (h : RoundsDot m x y s) :
     |s - x ⬝ᵥ y| ≤ ((1 + m.u) ^ Fintype.card ι - 1) * (|x| ⬝ᵥ |y|) := by
@@ -608,23 +684,30 @@ theorem abs_sub_le_one_add_pow_sub_one_of_roundsDot {m : RoundingModel K} {x y :
 
 variable {μ ν ρ : Type*}
 
-/-- `RoundsMulVec m A x ŷ`: every entry of `ŷ` is an admissible computed inner product of the
-corresponding row of `A` with `x`, which is how a matrix–vector product is evaluated
-([higham2002accuracy], §3.5). -/
+/-- Let $A \in K^{\mu \times \nu}$ and $x \in K^\nu$. A vector $\hat y \in K^\mu$ is a **computed
+matrix–vector product** $Ax$ if, for every $i$, $\hat y_i$ is a computed inner product of row
+$i$ of $A$ with $x$. This is the evaluation in [higham2002accuracy], §3.5.
+
+The order of summation can be different in each row. -/
 def RoundsMulVec (m : RoundingModel K) (A : Matrix μ ν K) (x : ν → K) (yhat : μ → K) : Prop :=
   ∀ i, RoundsDot m (A i) x (yhat i)
 
-/-- `RoundsMul m A B Ĉ`: every entry of `Ĉ` is an admissible computed inner product of a row of `A`
-with a column of `B`. -/
+/-- Let $A \in K^{\mu \times \nu}$ and $B \in K^{\nu \times \rho}$. A matrix
+$C \in K^{\mu \times \rho}$ is a **computed matrix product** $AB$ if, for every $i$ and $j$,
+$C_{ij}$ is a computed inner product of row $i$ of $A$ with column $j$ of $B$. -/
 def RoundsMul (m : RoundingModel K) (A : Matrix μ ν K) (B : Matrix ν ρ K) (C : Matrix μ ρ K) :
     Prop :=
   ∀ i j, RoundsDot m (A i) (fun k => B k j) (C i j)
 
 variable [Fintype ν]
 
-/-- **[higham2002accuracy] matrix–vector bound** (*Accuracy and Stability of Numerical Algorithms*,
-(3.12)): a computed matrix–vector product satisfies `|ŷ - A x| ≤ γ_n |A| |x|` entrywise, `n` being
-the inner dimension. -/
+/-- Let $\nu$ be a finite index set with $n$ elements, and let $u < 1$ and $nu < 1$. If $\hat y$ is
+a computed matrix–vector product of $A \in K^{\mu \times \nu}$ and $x \in K^\nu$, then,
+entrywise,
+$$|\hat y - Ax| \le \gamma_n |A| |x|.$$
+This is (3.12) of [higham2002accuracy].
+
+The matrix $|A|$ is `Matrix.abs A`, and the order on vectors is the pointwise order. -/
 theorem abs_sub_le_of_roundsMulVec {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {x : ν → K} {yhat : μ → K}
     (h : RoundsMulVec m A x yhat) :
@@ -637,8 +720,13 @@ theorem abs_sub_le_of_roundsMulVec {m : RoundingModel K} (hu : m.u < 1)
   rw [hlhs, hrhs]
   exact hi
 
-/-- **[higham2002accuracy] matrix–matrix bound** (*Accuracy and Stability of Numerical Algorithms*,
-(3.13)): a computed matrix product satisfies `|Ĉ - A B| ≤ γ_n |A| |B|` in the entrywise order. -/
+/-- Let $\nu$ be a finite index set with $n$ elements, and let $u < 1$ and $nu < 1$. If $C$ is a
+computed matrix product of $A \in K^{\mu \times \nu}$ and $B \in K^{\nu \times \rho}$, then,
+entrywise,
+$$|C - AB| \le \gamma_n |A| |B|.$$
+This is (3.13) of [higham2002accuracy].
+
+The inequality is `Matrix.EntrywiseLE`, and $|A|$ is `Matrix.abs A`. -/
 theorem abs_sub_entrywiseLE_of_roundsMul {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {B : Matrix ν ρ K}
     {C : Matrix μ ρ K} (h : RoundsMul m A B C) :
@@ -651,10 +739,12 @@ theorem abs_sub_entrywiseLE_of_roundsMul {m : RoundingModel K} (hu : m.u < 1)
   rw [hlhs, hrhs]
   exact hij
 
-/-- The uniform (`∞`-norm) form of `abs_sub_le_of_roundsMulVec`: if every entry of `x` is at most
-`c` in absolute value, then every entry of the computed residual is at most `γ_n` times the row sum
-of `|A|` times `c`.  This is `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` written without a norm, since the
-scalar field carries only an order. -/
+/-- Let $\nu$ be a finite index set with $n$ elements, let $u < 1$ and $nu < 1$, and let $\hat y$ be
+a computed matrix–vector product of $A$ and $x$. If $|x_j| \le c$ for every $j$, then for every
+row $i$,
+$$|\hat y_i - (Ax)_i| \le \gamma_n \Bigl(\sum_j |a_{ij}|\Bigr) c.$$
+This is the bound $\|\hat y - Ax\|_\infty \le \gamma_n \|A\|_\infty \|x\|_\infty$, written
+without norms, because the scalar field has an order but no norm. -/
 theorem abs_sub_le_of_roundsMulVec_of_abs_le {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {x : ν → K} {yhat : μ → K}
     (h : RoundsMulVec m A x yhat) {c : K} (hx : ∀ j, |x j| ≤ c) (i : μ) :

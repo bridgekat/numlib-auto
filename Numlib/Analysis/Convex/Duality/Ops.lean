@@ -12,53 +12,74 @@ import Numlib.Analysis.Convex.Operations.InfConv
 /-!
 # The dual operations table
 
-Every operation on convex functions has a dual operation, and conjugacy exchanges the two.
+Let $E$ and $F$ be real vector spaces paired by $B$, and write $f^*$ for the conjugate of
+$f : E \to [-\infty, +\infty]$. Every operation on convex functions has a dual operation, and
+conjugacy exchanges the two. This module proves the rows of the following table, which is §16 of
+[rockafellar1970convex]. Here $a > 0$, $(A, A')$ is an adjoint pair of linear maps, $f a$ is right
+scalar multiplication, $A f$ is the image and $g A$ the inverse image under a linear map, $\square$
+is infimal convolution, and $\operatorname{conv}$ is the convex hull of a family of functions.
 
-| primal | dual | form |
+| Primal | Conjugate | Form |
 |---|---|---|
-| `a • f` | `smulRight (convexConj B f) a` | unconditional |
-| `smulRight f a` | `a • convexConj B f` | unconditional |
-| `mapLin A f` | `compLin (convexConj B f) A'` | unconditional |
-| `compLin g A` | `mapLin A' (convexConj B' g)` | up to closure |
-| `infConv f g` | `convexConj B f + convexConj B g` | unconditional |
-| `f + g` | `infConv (convexConj B f) (convexConj B g)` | up to closure |
-| `convFn f` | `⨆ i, convexConj B (f i)` | unconditional |
-| `⨆ i, f i` | `convFn fun i => convexConj B (f i)` | up to closure |
+| $a f$ | $f^* a$ | unconditional |
+| $f a$ | $a f^*$ | unconditional |
+| $A f$ | $f^* A'$ | unconditional |
+| $g A$ | $\operatorname{cl}(A' g^*)$ | up to closure |
+| $f \mathbin{\square} g$ | $f^* + g^*$ | unconditional |
+| $f + g$ | $\operatorname{cl}(f^* \mathbin{\square} g^*)$ | up to closure |
+| $\operatorname{conv} \{f_i\}$ | $\sup_i f_i^*$ | unconditional |
+| $\sup_i f_i$ | $\operatorname{cl} \operatorname{conv} \{f_i^*\}$ | up to closure |
 
-Each row appears in up to three forms. The **unconditional** half is an identity valid for
-arbitrary functions; the rows marked "up to closure" hold for closed convex functions with a
-`convexCl` on the dual side; and the *exact* forms, in which the closure is dropped and the infimum
-attained, are the consequences of `IsExactSum` and `IsExactImage` in `Duality/Exact.lean`. Nothing
-in this file needs a constraint qualification.
+Each row has up to three forms. The **unconditional** form is an identity for arbitrary functions.
+The rows marked "up to closure" hold for closed convex functions, with a closure on the dual side.
+The **exact** forms, in which the closure is dropped and the infimum is attained, are consequences
+of `ConvexAnalysis.IsExactSum` and `ConvexAnalysis.IsExactImage` in
+`Numlib.Analysis.Convex.Duality.Exact`. Nothing in this module needs a constraint qualification.
 
 ## Main results
 
-* `convexConj_ofEpi` — the conjugate read off an epigraph-defining set.
-* `convexConj_smul`, `convexConj_smulRight` — scalar multiplication is dual to right scalar
-  multiplication.
-* `convexConj_mapLin` — the image row, unconditional half; `convexConj_compLin_eq_convexCl_mapLin`
-  is the closure form.
-* `convexConj_infConv` — the convolution row, unconditional half;
-  `convexConj_add_eq_convexCl_infConv` the closure form. `convexConj_sum_toInfConvFn` is the `m`-ary
-  version, `(f₁ □ ⋯ □ fₘ)* = ∑ fᵢ*`, which says that `convexConj B` is a monoid homomorphism out of
-  `InfConvFn E`.
-* `convexConj_convFn`, `convexConj_convHullFn`, `convexConj_convFn₂` — the convex-hull row,
-  unconditional half; `convexConj_iSup_eq_convexCl_convFn` the closure form.
+* `ConvexAnalysis.convexConj_ofEpi`: the conjugate of the function determined by a set
+  $S \subseteq E \times \mathbb{R}$ is the supremum of $\langle x, y \rangle - \mu$ over
+  $(x, \mu) \in S$.
+* `ConvexAnalysis.convexConj_smul`, `ConvexAnalysis.convexConj_smulRight`: for $a > 0$,
+  $(a f)^* = f^* a$ and $(f a)^* = a f^*$.
+* `ConvexAnalysis.convexConj_mapLin`: the image row, $(A f)^* = f^* A'$.
+  `ConvexAnalysis.convexConj_compLin_eq_convexCl_mapLin` is its closure form
+  $(g A)^* = \operatorname{cl}(A' g^*)$.
+* `ConvexAnalysis.convexConj_infConv`: the convolution row, $(f \mathbin{\square} g)^* = f^* + g^*$.
+  `ConvexAnalysis.convexConj_add_eq_convexCl_infConv` is its closure form $(f + g)^* =
+  \operatorname{cl}(f^* \mathbin{\square} g^*)$.
+* `ConvexAnalysis.concaveConj_supConv`: the concave counterpart of the convolution row, for supremal
+  convolution.
+* `ConvexAnalysis.convexConj_sum_toInfConvFn`: the $m$-ary convolution row, $(f_1 \mathbin{\square}
+  \cdots \mathbin{\square} f_m)^* = f_1^* + \cdots + f_m^*$. It says that conjugation is a monoid
+  homomorphism out of the infimal convolution monoid `ConvexAnalysis.InfConvFn E`.
+* `ConvexAnalysis.convexConj_convFn`, `ConvexAnalysis.convexConj_convHullFn`,
+  `ConvexAnalysis.convexConj_convFn₂`: the convex hull row,
+  $(\operatorname{conv} \{f_i\})^* = \sup_i f_i^*$.
+  `ConvexAnalysis.convexConj_iSup_eq_convexCl_convFn` is its closure form $(\sup_i f_i)^* =
+  \operatorname{cl} \operatorname{conv} \{f_i^*\}$.
 
-## Implementation notes
+## Proof outline
 
-Most of the unconditional identities are proved by showing that both sides are `≤ (c : EReal)`
-under the same condition on `c` — that is, by comparing the two collections of affine minorants
-rather than by manipulating suprema. The exception is `convexConj_infConv`, whose right-hand side is
-a *sum*, which has no such characterisation.
+Most unconditional identities are proved by showing that both sides are at most $c$ under the same
+condition on $c \in \mathbb{R}$, that is, by a comparison of the two sets of affine minorants
+instead of a manipulation of suprema. The exception is `ConvexAnalysis.convexConj_infConv`, whose
+right-hand side is a sum, which has no such characterization.
 
-Each closure form is the unconditional identity for the *dual* operation, conjugated once more and
-read through Fenchel–Moreau; that is why each needs compatible topologies on both spaces and closed
-convex inputs.
+Each closure form is the unconditional identity for the dual operation, conjugated once more and
+read through the Fenchel–Moreau theorem. This is why each closure form needs compatible topologies
+on both spaces and closed convex inputs.
 
-## References
+## Notation
 
-* [rockafellar1970convex] §16.
+* $f a$: the right scalar multiple `ConvexAnalysis.smulRight f a`, with $(f a)(x) = a f(a^{-1} x)$
+  for $a > 0$.
+* $A f$: the image `ConvexAnalysis.mapLin A f`, with $(A f)(y) = \inf \{f(x) \mid A x = y\}$.
+* $g A$: the inverse image `ConvexAnalysis.compLin g A`, with $(g A)(x) = g(A x)$.
+* $f \mathbin{\square} g$: the infimal convolution `ConvexAnalysis.infConv f g`.
+* $\operatorname{conv} \{f_i\}$: the convex hull `ConvexAnalysis.convFn f` of a family.
+* $\operatorname{cl} f$: the closure `ConvexAnalysis.convexCl f`.
 -/
 
 open Pointwise Set
@@ -72,9 +93,13 @@ section OfEpi
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
 
-/-- **The conjugate reads off an epigraph-defining set.** `(ofEpi S)*(y)` is the supremum of
-`⟨x, y⟩ - μ` over the points `(x, μ)` of `S`. The infimum defining `ofEpi S` need not be attained,
-so this is not a rearrangement of the supremum defining `convexConj`. -/
+/-- **The conjugate read off a set that defines an epigraph.** Let $S \subseteq E \times \mathbb{R}$
+and let $h$ be the function whose graph is the lower boundary of $S$,
+$h(x) = \inf \{\mu \mid (x, \mu) \in S\}$. Then for every $y \in F$, $$h^*(y) = \sup_{(x, \mu)
+\in S} \bigl(B(x, y) - \mu\bigr).$$
+
+The function $h$ is `ConvexAnalysis.ofEpi S`. The infimum that defines $h$ need not be attained,
+so this is not a rearrangement of the supremum that defines `ConvexAnalysis.convexConj`. -/
 theorem convexConj_ofEpi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (S : Set (E × ℝ)) (y : F) :
     convexConj B (ofEpi S) y = ⨆ p ∈ S, ((B p.1 y - p.2 : ℝ) : EReal) := by
   refine EReal.eq_of_forall_le_coe_iff fun c => ?_
@@ -91,7 +116,9 @@ theorem convexConj_ofEpi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (S : Set (E × �
     rw [mem_epi, affineFn_eq_coe, EReal.coe_le_coe_iff]
     linarith
 
-/-- `convexConj_ofEpi` for the epigraph itself: the conjugate is a supremum over the epigraph. -/
+/-- The conjugate is a supremum over the epigraph: for $f : E \to [-\infty, +\infty]$ and $y \in F$,
+$$f^*(y) = \sup_{(x, \mu) \in \operatorname{epi} f} \bigl(B(x, y) - \mu\bigr).$$ This is
+`ConvexAnalysis.convexConj_ofEpi` for $S = \operatorname{epi} f$. -/
 theorem convexConj_eq_biSup_epi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (y : F) :
     convexConj B f y = ⨆ p ∈ epi f, ((B p.1 y - p.2 : ℝ) : EReal) := by
   have h := convexConj_ofEpi B (epi f) y
@@ -106,8 +133,11 @@ section Smul
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {a : ℝ}
 
-/-- `(af)* = f*a` for `a > 0`: ordinary scalar multiplication is dual to right scalar
-multiplication. -/
+/-- Let $f : E \to [-\infty, +\infty]$ and $a > 0$. The conjugate of $a f$ is the right scalar
+multiple of the conjugate: $$(a f)^* = f^* a, \qquad \text{that is,} \qquad (a f)^*(y) = a
+f^*(a^{-1} y).$$ So ordinary scalar multiplication is dual to right scalar multiplication.
+
+The right scalar multiple is `ConvexAnalysis.smulRight`. -/
 theorem convexConj_smul (ha : 0 < a) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     convexConj B (fun x => (a : EReal) * f x) = smulRight (convexConj B f) a := by
   funext y
@@ -121,7 +151,11 @@ theorem convexConj_smul (ha : 0 < a) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : 
     ring
   rw [affineFn_eq_coe, affineFn_eq_coe, EReal.coe_le_coe_mul_iff ha, hcoe]
 
-/-- `(fa)* = a(f*)` for `a > 0`, the other half. -/
+/-- Let $f : E \to [-\infty, +\infty]$ and $a > 0$. The conjugate of the right scalar multiple $f a$
+is $a$ times the conjugate: $$(f a)^* = a f^*.$$
+
+The right scalar multiple is `ConvexAnalysis.smulRight`. This is the other half of
+`ConvexAnalysis.convexConj_smul`. -/
 theorem convexConj_smulRight (ha : 0 < a) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     convexConj B (smulRight f a) = fun y => (a : EReal) * convexConj B f y := by
   have ha0 : a ≠ 0 := ha.ne'
@@ -152,10 +186,14 @@ variable {E F G H : Type*}
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
   {A : E →ₗ[ℝ] G} {A' : H →ₗ[ℝ] F}
 
-/-- **The image row**, unconditional half: `(Af)* = f*A'`. The conjugate of an image is the
-*inverse* image of the conjugate under the transpose, with no hypothesis on `f` and no closure.
-Contrast `IsExactImage.convexConj_compLin`, the other row, which needs a constraint
-qualification. -/
+/-- **The image row**, unconditional form. Let $B$ pair $E$ with $F$ and $B'$ pair $G$ with $H$, and
+let $A : E \to G$ and $A' : H \to F$ form an adjoint pair. For every
+$f : E \to [-\infty, +\infty]$, $$(A f)^* = f^* A',$$ where
+$(A f)(z) = \inf \{f(x) \mid A x = z\}$ is the image of $f$ and $(f^* A')(w) = f^*(A' w)$.
+
+There is no hypothesis on $f$ and no closure: the conjugate of an image is the inverse image of
+the conjugate under the adjoint. Contrast `ConvexAnalysis.IsExactImage.convexConj_compLin`, the
+other row, which needs a constraint qualification. -/
 theorem convexConj_mapLin (hA : IsAdjointPair B B' A A') (f : E → EReal) :
     convexConj B' (mapLin A f) = compLin (convexConj B f) A' := by
   funext z
@@ -182,9 +220,12 @@ section InfConv
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
 
-/-- **The convolution row**, unconditional half: `(f □ g)* = f* + g*`, with no hypothesis on `f`
-and `g`. The reverse row, `(f + g)* = f* □ g*`, is `IsExactSum.convexConj_add` and needs a
-constraint qualification. -/
+/-- **The convolution row**, unconditional form. For all $f, g : E \to [-\infty, +\infty]$, $$(f
+\mathbin{\square} g)^* = f^* + g^*.$$
+
+There is no hypothesis on $f$ and $g$. The sum on the right is the sum of extended reals, in
+which $-\infty + \infty = -\infty$. The reverse row, $(f + g)^* = f^* \mathbin{\square} g^*$, is
+`ConvexAnalysis.IsExactSum.convexConj_add` and needs a constraint qualification. -/
 theorem convexConj_infConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → EReal) :
     convexConj B (infConv f g) = convexConj B f + convexConj B g := by
   funext y
@@ -205,9 +246,14 @@ theorem convexConj_infConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → ER
   · rw [← hadd p q]
     exact le_iSup₂_of_le (p + q) (Set.add_mem_add hp hq) le_rfl
 
-/-- **The concave convolution row**, the twin of `convexConj_infConv` and like it unconditional:
-`(g □ h)* = g* + h*` for the supremal convolution, where the sum on the right is taken in the
-*concave* `∞ - ∞` convention, `-(-u + -v)`, under which `⊤ + ⊥ = ⊤`. -/
+/-- **The concave convolution row**, the counterpart of `ConvexAnalysis.convexConj_infConv`, and
+like it unconditional. For all $g, h : E \to [-\infty, +\infty]$, the concave conjugate of the
+supremal convolution satisfies $$(g \mathbin{\square} h)^*(y) = g^*(y) + h^*(y),$$ where the sum
+is taken in the concave convention $u + v := -((-u) + (-v))$, under which
+$\infty + (-\infty) = \infty$.
+
+The supremal convolution is `ConvexAnalysis.supConv` and the concave conjugate is
+`ConvexAnalysis.concaveConj`. -/
 theorem concaveConj_supConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g h : E → EReal) :
     concaveConj B (supConv g h) = fun y => -(-(concaveConj B g y) + -(concaveConj B h y)) := by
   funext y
@@ -216,18 +262,27 @@ theorem concaveConj_supConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g h : E → E
   rw [neg_concaveConj, neg_concaveConj, ← Pi.add_apply, ← convexConj_infConv,
     concaveConj_eq_neg_convexConj_neg, hneg]
 
-/-- The conjugate of `δ(· | 0)` is the zero function — the identity of `□` goes to the identity
-of `+`, which is what makes conjugacy a monoid homomorphism here. -/
+/-- The conjugate of the indicator function $\delta(\cdot \mid 0)$ of the origin is the zero
+function.
+
+The identity of $\square$ goes to the identity of $+$, which makes conjugation a monoid
+homomorphism. -/
 @[simp] theorem convexConj_indicatorFn_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) :
     convexConj B (indicatorFn ({0} : Set E)) = 0 := by
   rw [← supportFn_eq_convexConj_indicatorFn, supportFn_singleton]
   funext y
   simp
 
-/-- **The convolution row** in its `m`-ary form: `(f₁ □ ⋯ □ fₘ)* = f₁* + ⋯ + fₘ*`,
-unconditionally. The `□`-product being the `AddCommMonoid` sum of `InfConvFn E`, this says that
-`convexConj B` is a monoid homomorphism from `(E → EReal, □, δ(· | 0))` to `(F → EReal, +, 0)`. No
-properness is needed, and none may be assumed: `□` does not preserve it. -/
+/-- **The convolution row** in its $m$-ary form. For a finite family
+$f_1, \dots, f_m : E \to [-\infty, +\infty]$, $$(f_1 \mathbin{\square} \cdots \mathbin{\square}
+f_m)^* = f_1^* + \cdots + f_m^*,$$ with no hypothesis on the functions. For the empty family,
+both sides are $0$.
+
+No properness is needed, and none can be assumed, because $\square$ does not preserve
+properness. The convolution of the family is the sum `∑ i ∈ s, toInfConvFn (f i)` in the
+commutative monoid `ConvexAnalysis.InfConvFn E`, whose addition is $\square$ and whose zero is
+$\delta(\cdot \mid 0)$. So the result says that conjugation is a monoid homomorphism from $(E
+\to [-\infty, +\infty], \square, \delta(\cdot \mid 0))$ to $(F \to [-\infty, +\infty], +, 0)$. -/
 theorem convexConj_sum_toInfConvFn {ι : Type*} (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Finset ι)
     (f : ι → E → EReal) :
     convexConj B (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i))) = ∑ i ∈ s, convexConj B (f i) := by
@@ -246,8 +301,11 @@ section Hull
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι : Sort*}
 
-/-- **The convex-hull row**, unconditional half: `(conv {fᵢ})* = sup {fᵢ*}`, with no hypothesis on
-the family. The empty family is not an exception: both sides are then `⊥`. -/
+/-- **The convex hull row**, unconditional form. For every family $(f_i)_{i \in \iota}$ of functions
+$E \to [-\infty, +\infty]$, $$(\operatorname{conv} \{f_i\})^* = \sup_i f_i^*.$$
+
+There is no hypothesis on the family. The empty family is not an exception: both sides are then
+the constant $-\infty$. The convex hull of the family is `ConvexAnalysis.convFn f`. -/
 theorem convexConj_convFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal) :
     convexConj B (convFn f) = ⨆ i, convexConj B (f i) := by
   funext y
@@ -256,8 +314,9 @@ theorem convexConj_convFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E �
   refine ⟨fun h i => convexConj_le_coe_iff.2 (h.trans (convFn_le f i)), fun h => ?_⟩
   exact le_convFn (convexFn_affineFn y c) fun i => convexConj_le_coe_iff.1 (h i)
 
-/-- A function and its convex hull have the same conjugate, since they have the same affine
-minorants. -/
+/-- A function and its convex hull have the same conjugate: for every
+$g : E \to [-\infty, +\infty]$, $(\operatorname{conv} g)^* = g^*$. The reason is that they have
+the same affine minorants. -/
 theorem convexConj_convHullFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal) :
     convexConj B (convHullFn g) = convexConj B g := by
   funext y
@@ -265,6 +324,11 @@ theorem convexConj_convHullFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → E
   rw [convexConj_le_coe_iff, convexConj_le_coe_iff]
   exact ⟨fun h => h.trans (convHullFn_le g), fun h => le_convHullFn (convexFn_affineFn y c) h⟩
 
+/-- For all $f, g : E \to [-\infty, +\infty]$, the conjugate of the convex hull of $f$ and $g$ is
+the pointwise maximum of the conjugates: $$(\operatorname{conv} \{f, g\})^* = \max \{f^*,
+g^*\}.$$
+
+The convex hull of two functions is `ConvexAnalysis.convFn₂ f g`. -/
 theorem convexConj_convFn₂ (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → EReal) :
     convexConj B (convFn₂ f g) = convexConj B f ⊔ convexConj B g := by
   funext y
@@ -275,10 +339,13 @@ theorem convexConj_convFn₂ (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → 
 
 end Hull
 
-/-! ### The closure forms
+/-!
+### The closure forms
 
-The second row of each pair carries a closure on the dual side: `(fA)* = cl(A'f*)`,
-`(f + g)* = cl(f* □ g*)`, `(sup fᵢ)* = cl conv{fᵢ*}`. -/
+The second row of each pair carries a closure on the dual side:
+$(g A)^* = \operatorname{cl}(A' g^*)$, $(f + g)^* = \operatorname{cl}(f^* \mathbin{\square} g^*)$
+and $(\sup_i f_i)^* = \operatorname{cl} \operatorname{conv} \{f_i^*\}$.
+-/
 
 section Closure
 
@@ -288,8 +355,14 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
   {f g : E → EReal} {ι : Sort*}
 
-/-- **The convolution row**, closure form: `(f + g)* = cl(f* □ g*)` for closed convex `f` and `g`.
-`IsExactSum.convexConj_add` is the same statement with the closure dropped. -/
+/-- **The convolution row**, closure form. Let $E$ and $F$ be locally convex spaces, and let the
+pairing $B$ be compatible with the topologies of both $E$ and $F$. If
+$f, g : E \to [-\infty, +\infty]$ are convex and closed, then $$(f + g)^* =
+\operatorname{cl}(f^* \mathbin{\square} g^*).$$
+
+The compatibility hypotheses are `ConvexAnalysis.IsCompatiblePairing B` and
+`ConvexAnalysis.IsCompatiblePairing B.flip`. `ConvexAnalysis.IsExactSum.convexConj_add` is the
+same statement without the closure. -/
 theorem convexConj_add_eq_convexCl_infConv (hf : ConvexFn f) (hfc : ClosedConvex f)
     (hg : ConvexFn g)
     (hgc : ClosedConvex g) :
@@ -302,8 +375,11 @@ theorem convexConj_add_eq_convexCl_infConv (hf : ConvexFn f) (hfc : ClosedConvex
   exact convexBiconj_eq_convexCl
       (B := B.flip) (convexFn_infConv (convexFn_convexConj B f) (convexFn_convexConj B g))
 
-/-- **The convex-hull row**, closure form: `(sup fᵢ)* = cl conv {fᵢ*}` for a family of closed
-convex functions. -/
+/-- **The convex hull row**, closure form. Let $E$ and $F$ be locally convex spaces, and let the
+pairing $B$ be compatible with the topologies of both $E$ and $F$. If every member of the family
+$(f_i)_{i \in \iota}$ of functions $E \to [-\infty, +\infty]$ is convex and closed, then
+$$\Bigl(\sup_i f_i\Bigr)^* = \operatorname{cl} \operatorname{conv} \{f_i^*\}.$$
+-/
 theorem convexConj_iSup_eq_convexCl_convFn {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i))
     (hfc : ∀ i, ClosedConvex (f i)) :
     convexConj B (⨆ i, f i) = convexCl (convFn fun i => convexConj B (f i)) := by
@@ -325,8 +401,15 @@ variable {E F G H : Type*}
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
   {A : E →ₗ[ℝ] G} {A' : H →ₗ[ℝ] F} {g : G → EReal}
 
-/-- **The image row**, closure form: `(gA)* = cl(A'g*)` for closed convex `g`.
-`IsExactImage.convexConj_compLin` is the same statement with the closure dropped. -/
+/-- **The image row**, closure form. Let $B$ pair $E$ with $F$ and $B'$ pair $G$ with $H$, where $F$
+and $G$ are locally convex spaces, $B'$ is compatible with the topology of $G$ and $B$ is
+compatible with the topology of $F$. Let $A : E \to G$ and $A' : H \to F$ form an adjoint pair.
+If $g : G \to [-\infty, +\infty]$ is convex and closed, then $$(g A)^* = \operatorname{cl}(A'
+g^*),$$ where $(g A)(x) = g(A x)$ and $A' g^*$ is the image of $g^*$ under $A'$.
+
+The compatibility hypotheses are `ConvexAnalysis.IsCompatiblePairing B'` and
+`ConvexAnalysis.IsCompatiblePairing B.flip`. `ConvexAnalysis.IsExactImage.convexConj_compLin` is
+the same statement without the closure. -/
 theorem convexConj_compLin_eq_convexCl_mapLin [IsCompatiblePairing B'] [IsCompatiblePairing B.flip]
     (hA : IsAdjointPair B B' A A') (hg : ConvexFn g) (hgc : ClosedConvex g) :
     convexConj B (compLin g A) = convexCl (mapLin A' (convexConj B' g)) := by

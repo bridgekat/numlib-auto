@@ -17,60 +17,87 @@ import Numlib.Topology.ContinuousMap.ArzelaAscoli
 /-!
 # The Sobolev embeddings in one dimension
 
-The embedding `W^{1,p}(I) ⊆ L^∞(I)` and its consequences, [brezis2011functional] Theorem 8.8
-(5)–(6) and Corollaries 8.9–8.11 with Remarks 11–12, for every exponent `1 ≤ p ≤ ∞` and every
-open interval `I ⊆ ℝ`.
+Let $I \subseteq \mathbb{R}$ be an open interval, possibly unbounded, and let $1 \le p \le \infty$.
+Every $u \in W^{1,p}(I)$ has a continuous representative $\tilde u$ on the closure $\bar I$
+(`SobolevIntervalLp.rep`). This module proves that $W^{1,p}(I) \subseteq L^\infty(I)$ with a
+continuous injection,
+$$\|u\|_{L^\infty(I)} \le C\,\|u\|_{W^{1,p}(I)},$$
+where $C$ depends only on the length $|I| \le \infty$, and derives the consequences: Theorem 8.8
+(5)–(6), Corollaries 8.9–8.11 and Remarks 11–12 of [brezis2011functional], Chapter 8. On a bounded
+interval $(a, b)$ the embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$ is compact for
+$1 < p \le \infty$. On an unbounded interval $\tilde u(x) \to 0$ as $|x| \to \infty$ for
+$p < \infty$. Products and compositions with $C^1$ functions stay in $W^{1,p}(I)$, with the usual
+product and chain rules.
 
-## Main statements
+## Main definitions
 
-* `SobolevIntervalLp.abs_rep_le_of_bounded` (Theorem 8.8 (5), bounded interval, with the
-  constant): `|ũ(x)| ≤ |I|^{-1/p} ‖u‖_p + |I|^{1 - 1/p} ‖u'‖_p` on `Ī`;
-  `SobolevIntervalLp.abs_rep_le_of_unbounded`: `|ũ(x)| ≤ ‖u‖_p + ‖u'‖_p` on an unbounded
-  interval; `SobolevIntervalLp.abs_rep_le`, `eLpNorm_top_le`, `memLp_top`: **`W^{1,p}(I) ⊆ L^∞(I)`
-  with continuous injection**, `‖u‖_∞ ≤ C ‖u‖_{W^{1,p}}` with the constant
-  `SobolevIntervalLp.embeddingConst p I` depending only on `|I| ≤ ∞`.
-* `SobolevIntervalLp.abs_rep_sub_rep_le`: the Hölder estimate
-  `|ũ(x) - ũ(y)| ≤ ‖u'‖_p |x - y|^{1 - 1/p}`.
-* `SobolevIntervalLp.toContinuousMap`: the embedding `W^{1,p}(a, b) ↪ C[a, b]` as a continuous
-  linear map, with `SobolevIntervalLp.isCompactOperator_toContinuousMap` (Theorem 8.8 (6)): it is
-  **compact for `1 < p ≤ ∞`**, by Arzelà–Ascoli on the uniformly Hölder unit ball.
-* `SobolevIntervalLp.toLp` (Remark 12): the inclusions `W^{1,p}(I) ⊆ L^q(I)` for `p ≤ q ≤ ∞`, and
-  `toLpOfBounded` for every `q` on a bounded interval; `SobolevIntervalLp.norm_equiv_of_bounded`
-  (Remark 11): on a bounded interval `‖u'‖_p + ‖u‖_q` is a norm equivalent to the `W^{1,p}` norm,
-  from the window estimate with an `L^q` function part (`enorm_rep_le_of_Icc_subset'`).
-* `SobolevIntervalLp.tendsto_rep_cocompact` (Corollary 8.9): `ũ(x) → 0` as `|x| → ∞` on an
-  unbounded interval, `1 ≤ p < ∞`.
-* `SobolevIntervalLp.hasWeakDerivOn_rep_mul`, `memSobolevIntervalLp_mul`, `mul` and
-  `integral_deriv_mul_add_mul_deriv` (Corollary 8.10): the product rule `(uv)' = u'v + uv'` in
-  `W^{1,p}(I)` and integration by parts.
-* `SobolevIntervalLp.hasWeakDerivOn_comp`, `memSobolevIntervalLp_comp` (Corollary 8.11): the
-  chain rule `(G ∘ u)' = (G' ∘ u) u'` for `G ∈ C¹` with `G(0) = 0`.
-* `SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one` (Remark 10, Exercise 8.3): **Helly's
-  selection theorem**, a bounded sequence of `W^{1,1}(a, b)` has a subsequence whose
-  representatives converge at every point of `[a, b]`, from the selection theorem for monotone
-  functions `exists_subseq_forall_tendsto_of_forall_monotoneOn`.
+* `SobolevIntervalLp.embeddingConst`: the constant $C = \max\{2, |I|^{-1/p} + |I|^{1 - 1/p}\}$ of
+  the embedding $W^{1,p}(I) \subseteq L^\infty(I)$.
+* `SobolevIntervalLp.toContinuousMap`: the embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$,
+  $u \mapsto \tilde u$, as a continuous linear map.
+* `SobolevIntervalLp.toLp` and `SobolevIntervalLp.toLpOfBounded`: the inclusions
+  $W^{1,p}(I) \subseteq L^q(I)$ for $p \le q \le \infty$, and $W^{1,p}(a, b) \subseteq L^q(a, b)$
+  for $1 \le q \le \infty$ (Remark 12).
+* `SobolevIntervalLp.mul`: the product of two elements of $W^{1,p}(I)$ (Corollary 8.10).
 
-## Route: the representative, not density
+## Main results
 
-The book proves (5) on `ℝ` for `C_c^1` functions and extends by density (its Theorem 8.7) and the
-extension operator. Here everything is proved directly from the continuous representative
-`SobolevIntervalLp.rep` of `Numlib/Analysis/Sobolev/Interval/Basic.lean`: on an interval `[c, d]`
-of the closure of `I`, `|ũ(x)| ≤ |ũ(y)| + |∫_y^x u'|` for every `y`, averaged over `y ∈ (c, d)`
-and combined with Hölder's inequality twice, gives
-`|ũ(x)| ≤ (d - c)^{-1/p} ‖u‖_{L^p(c, d)} + (d - c)^{1 - 1/p} ‖u'‖_{L^p(c, d)}`
-(`SobolevIntervalLp.enorm_rep_le_of_Icc_subset`); a bounded interval is one such window, and an
-unbounded interval contains a window of length one around each of its points, which gives the
-book's (5) with a constant depending only on `|I|`, and Corollary 8.9 by letting the window run
-off to infinity. The product and chain rules are the calculus of absolutely continuous functions
-(`SobolevIntervalLp.integral_deriv_mul_rep_add_mul_deriv` of `Interval/Extension`) followed by
-Lemma 8.2, exactly as `Numlib/Analysis/Sobolev/Interval.lean` does at `p = 2`. The book's
-inequality (8), `|ũ(x)|^p ≤ p ‖u‖_p^{p-1} ‖u'‖_p`, is not needed on this route; it is proved
-separately (`SobolevIntervalLp.abs_rep_pow_le`) by the same absolutely-continuous calculus
-applied to `|ũ|^p`, with Hölder's inequality and Corollary 8.9.
+* `SobolevIntervalLp.abs_rep_le_of_bounded`: $|\tilde u(x)| \le |I|^{-1/p} \|u\|_{L^p} + |I|^{1 -
+  1/p} \|u'\|_{L^p}$ on $\bar I$ for a bounded interval $I$ (Theorem 8.8 (5), with the constant).
+* `SobolevIntervalLp.abs_rep_le_of_unbounded`: $|\tilde u(x)| \le \|u\|_{L^p} + \|u'\|_{L^p}$ on
+  $\bar I$ for an unbounded interval $I$.
+* `SobolevIntervalLp.abs_rep_le`, `SobolevIntervalLp.eLpNorm_top_le` and
+  `SobolevIntervalLp.memLp_top`: $W^{1,p}(I) \subseteq L^\infty(I)$ with
+  $\|u\|_{L^\infty} \le C \|u\|_{W^{1,p}}$ (Theorem 8.8 (5)).
+* `SobolevIntervalLp.abs_rep_sub_rep_le`: the Hölder estimate $|\tilde u(x) - \tilde u(y)| \le
+  \|u'\|_{L^p} |x - y|^{1 - 1/p}$.
+* `SobolevIntervalLp.isCompactOperator_toContinuousMap`: the embedding
+  $W^{1,p}(a, b) \hookrightarrow C([a, b])$ is compact for $1 < p \le \infty$ (Theorem 8.8 (6)).
+* `SobolevIntervalLp.norm_equiv_of_bounded`: on a bounded interval, $\|u'\|_{L^p} + \|u\|_{L^q}$ is
+  a norm equivalent to the norm of $W^{1,p}$ (Remark 11).
+* `SobolevIntervalLp.tendsto_rep_cocompact`: $\tilde u(x) \to 0$ as $|x| \to \infty$ in $I$, for
+  $1 \le p < \infty$ (Corollary 8.9).
+* `SobolevIntervalLp.hasWeakDerivOn_rep_mul`, `SobolevIntervalLp.memSobolevIntervalLp_mul` and
+  `SobolevIntervalLp.integral_deriv_mul_add_mul_deriv`: the product rule $(uv)' = u'v + uv'$ in
+  $W^{1,p}(I)$ and integration by parts (Corollary 8.10).
+* `SobolevIntervalLp.hasWeakDerivOn_comp` and `SobolevIntervalLp.memSobolevIntervalLp_comp`: the
+  chain rule $(G \circ u)' = (G' \circ u)\,u'$ for $G \in C^1(\mathbb{R})$ with $G(0) = 0$
+  (Corollary 8.11).
+* `SobolevIntervalLp.abs_rep_pow_le`: the inequality $|\tilde u(x)|^p \le p \|u\|_{L^p}^{p-1}
+  \|u'\|_{L^p}$ on an unbounded interval, inequality (8) in the proof of Theorem 8.8 of
+  [brezis2011functional].
+* `SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one`: **Helly's selection theorem**, a bounded
+  sequence of $W^{1,1}(a, b)$ has a subsequence whose representatives converge at every point of
+  $[a, b]$ (Remark 10 and Exercise 8.3). It rests on the selection theorem for monotone functions,
+  `exists_subseq_forall_tendsto_of_forall_monotoneOn`.
 
-Compactness is stated with Mathlib's `IsCompactOperator` on the bundled embedding; the relation
-`IsCompactEmbedding` of `Numlib/Analysis/Normed/Operator/Embedding.lean` is recovered through
-`isCompactEmbedding_iff_isCompactOperator` (`SobolevIntervalLp.isCompactEmbedding_toContinuousMap`).
+## Proof outline
+
+[brezis2011functional] proves (5) on $\mathbb{R}$ for functions of $C_c^1$, and extends it by
+density (Theorem 8.7 there) and the extension operator. Here everything is proved directly from the
+continuous representative. Let $[c, d] \subseteq \bar I$. For every $y$, $|\tilde u(x)| \le |\tilde
+u(y)| + |\int_y^x u'|$. The average over $y \in (c, d)$ and Hölder's inequality, used twice, give
+the window estimate
+$$|\tilde u(x)| \le (d - c)^{-1/p} \|u\|_{L^p(c, d)} + (d - c)^{1 - 1/p} \|u'\|_{L^p(c, d)}.$$
+A bounded interval is one such window. An unbounded interval contains a window of length one around
+each of its points; this gives (5) with a constant that depends only on $|I|$, and Corollary 8.9
+when the window moves off to infinity.
+
+The product and chain rules come from the calculus of absolutely continuous functions
+(`SobolevIntervalLp.integral_deriv_mul_rep_add_mul_deriv`) and Lemma 8.2 of [brezis2011functional],
+as in `Numlib.Analysis.Sobolev.Interval` at $p = 2$. Inequality (8) of [brezis2011functional] is not
+needed on this route. It is proved separately (`SobolevIntervalLp.abs_rep_pow_le`) by the same
+calculus applied to $|\tilde u|^p$, with Hölder's inequality and Corollary 8.9.
+
+## Implementation notes
+
+* Compactness is stated with Mathlib's `IsCompactOperator` for the bundled embedding. The relation
+  `IsCompactEmbedding` of `Numlib.Analysis.Normed.Operator.Embedding` follows through
+  `isCompactEmbedding_iff_isCompactOperator`
+  (`SobolevIntervalLp.isCompactEmbedding_toContinuousMap`).
+* The exponent $1/p$ is `p.toReal⁻¹`, which is $0$ for $p = \infty$. The length $|I|$ is
+  `(volume (I : Set ℝ)).toReal`, which is $0$ for an unbounded interval.
+* Many estimates are stated in `ℝ≥0∞`, where no integrability hypothesis is needed.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -85,14 +112,14 @@ section Holder
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- The real exponent `1 - 1/p` of the Hölder conjugate of `p`, read from `ℝ≥0∞`: for `p = ∞` it
-is `1`, in agreement with `p.toReal⁻¹ = 0`. -/
+/-- Let $1 \le p \le \infty$. Then $1 - p^{-1}$, computed in `ℝ≥0∞` and converted to a real number,
+equals $1 - 1/p$ with $1/p$ = `p.toReal⁻¹`. At $p = \infty$ both sides are $1$. -/
 theorem ENNReal.toReal_one_sub_inv (hp : 1 ≤ p) : (1 - p⁻¹).toReal = 1 - p.toReal⁻¹ := by
   rw [ENNReal.toReal_sub_of_le (ENNReal.inv_le_one.2 hp) ENNReal.one_ne_top, ENNReal.toReal_one,
     ENNReal.toReal_inv]
 
 omit [Fact (1 ≤ p)] in
-/-- The exponent `1 - 1/p` is nonnegative for `1 ≤ p ≤ ∞`. -/
+/-- For $1 \le p \le \infty$, the exponent $1 - 1/p$ is nonnegative, where $1/p$ is `p.toReal⁻¹`. -/
 theorem one_sub_toReal_inv_nonneg (hp : 1 ≤ p) : 0 ≤ 1 - p.toReal⁻¹ := by
   rw [sub_nonneg]
   rcases eq_or_ne p ⊤ with rfl | hp'
@@ -101,8 +128,11 @@ theorem one_sub_toReal_inv_nonneg (hp : 1 ≤ p) : 0 ≤ 1 - p.toReal⁻¹ := by
       have := ENNReal.toReal_mono hp' hp
       rwa [ENNReal.toReal_one] at this)
 
-/-- **Hölder's inequality for the integral of `‖f‖` over a set**, in `ℝ≥0∞` and without any
-hypothesis on `f`: `∫_s ‖f‖ ≤ μ(s)^{1 - 1/p} ‖f‖_{L^p(μ)}` for every `1 ≤ p ≤ ∞`. -/
+/-- **Hölder's inequality for the integral of $|f|$ over a set.** Let $\mu$ be a measure on
+$\mathbb{R}$, $1 \le p \le \infty$, $f : \mathbb{R} \to \mathbb{R}$ and $s$ a measurable set.
+Then
+$$\int_s |f| \, d\mu \le \mu(s)^{1 - 1/p} \, \|f\|_{L^p(\mu)}.$$
+The inequality is stated in `ℝ≥0∞`, with no hypothesis on $f$. -/
 theorem MeasureTheory.setLIntegral_enorm_le_rpow_mul_eLpNorm {μ : Measure ℝ} (f : ℝ → ℝ)
     {s : Set ℝ} (hs : MeasurableSet s) :
     ∫⁻ x in s, ‖f x‖ₑ ∂μ ≤ μ s ^ (1 - p.toReal⁻¹) * eLpNorm f p μ := by
@@ -128,8 +158,11 @@ theorem MeasureTheory.setLIntegral_enorm_le_rpow_mul_eLpNorm {μ : Measure ℝ} 
     _ = μ s ^ (1 - p.toReal⁻¹) * eLpNorm f p μ := by
         rw [enorm_one, one_mul, hexp]
 
-/-- **Hölder's inequality for an interval integral**, in `ℝ≥0∞` and without any hypothesis on
-`f`: `‖∫_x^y f‖ ≤ |y - x|^{1 - 1/p} ‖f‖_{L^p(Ι x y)}`. -/
+/-- **Hölder's inequality for an interval integral.** Let $1 \le p \le \infty$,
+$f : \mathbb{R} \to \mathbb{R}$ and $x, y \in \mathbb{R}$. Then
+$$\Big|\int_x^y f\Big| \le |y - x|^{1 - 1/p} \, \|f\|_{L^p(J)},$$
+where $J$ is the interval between $x$ and $y$ (`Set.uIoc x y`). The inequality is stated in
+`ℝ≥0∞`, with no hypothesis on $f$. -/
 theorem MeasureTheory.enorm_intervalIntegral_le_rpow_mul_eLpNorm (f : ℝ → ℝ) (x y : ℝ) :
     ‖∫ t in x..y, f t‖ₑ ≤ ENNReal.ofReal |y - x| ^ (1 - p.toReal⁻¹)
       * eLpNorm f p (volume.restrict (Ι x y)) := by
@@ -141,7 +174,9 @@ theorem MeasureTheory.enorm_intervalIntegral_le_rpow_mul_eLpNorm (f : ℝ → �
     Real.volume_uIoc] at this
   exact this
 
-/-- `L^p` norms over a subinterval of the closure of an open interval only see the interval. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $s \subseteq \bar I$,
+$f : \mathbb{R} \to \mathbb{R}$ and $q \in [0, \infty]$. Then
+$\|f\|_{L^q(s)} = \|f\|_{L^q(s \cap I)}$. -/
 theorem MeasureTheory.eLpNorm_restrict_eq_of_subset_closure {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) {s : Set ℝ} (hs : s ⊆ closure (I : Set ℝ)) (f : ℝ → ℝ)
     (q : ℝ≥0∞) : eLpNorm f q (volume.restrict s) = eLpNorm f q (volume.restrict (s ∩ I)) := by
@@ -151,8 +186,9 @@ theorem MeasureTheory.eLpNorm_restrict_eq_of_subset_closure {I : Opens ℝ}
     exact ⟨hs ht.1, fun h ↦ ht.2 ⟨ht.1, h⟩⟩
   · rw [sdiff_eq_empty.2 inter_subset_left, measure_empty]
 
-/-- `L^p` norms over a subset of the closure of an open interval are dominated by the `L^p(I)`
-norm. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $s \subseteq \bar I$,
+$f : \mathbb{R} \to \mathbb{R}$ and $q \in [0, \infty]$. Then
+$\|f\|_{L^q(s)} \le \|f\|_{L^q(I)}$. -/
 theorem MeasureTheory.eLpNorm_restrict_le_of_subset_closure {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) {s : Set ℝ} (hs : s ⊆ closure (I : Set ℝ)) (f : ℝ → ℝ)
     (q : ℝ≥0∞) : eLpNorm f q (volume.restrict s) ≤ eLpNorm f q (volume.restrict I) := by
@@ -161,16 +197,20 @@ theorem MeasureTheory.eLpNorm_restrict_le_of_subset_closure {I : Opens ℝ}
 
 end Holder
 
-/-! ### Theorem 8.8 (5): `W^{1,p}(I) ⊆ L^∞(I)` -/
+/-! ### Theorem 8.8 (5): $W^{1,p}(I) \subseteq L^\infty(I)$ -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ}
 
-/-- **The averaging argument of Theorem 8.8 (5)**, for a function `g` on `[c, d]` with
-`g y - g x = ∫_x^y w`: from `|g x| ≤ |g y| + |∫_y^x w| ≤ |g y| + K` for every `y ∈ [c, d]`,
-integrating over `y ∈ (c, d)`, `|g x| ≤ (d - c)⁻¹ ∫_c^d |g| + K`. Stated in `ℝ≥0∞`, where no
-integrability is needed. -/
+/-- **The averaging argument of Theorem 8.8 (5).** Let $c < d$ and
+$g, w : \mathbb{R} \to \mathbb{R}$ with $g(y) - g(x) = \int_x^y w$ for all $x, y \in [c, d]$.
+Let $K \in [0, \infty]$ with $|\int_x^y w| \le K$ for all $x, y \in [c, d]$. Then for every
+$x \in [c, d]$,
+$$|g(x)| \le \frac{1}{d - c} \int_c^d |g| + K.$$
+
+The inequality is stated in `ℝ≥0∞`, where no integrability is needed. It follows from
+$|g(x)| \le |g(y)| + K$ for every $y \in (c, d)$, integrated over $y$. -/
 theorem enorm_le_of_forall_sub_eq_integral {c d : ℝ} (hcd : c < d) {g w : ℝ → ℝ}
     (hgw : ∀ x ∈ Icc c d, ∀ y ∈ Icc c d, g y - g x = ∫ t in x..y, w t) {K : ℝ≥0∞}
     (hK : ∀ x ∈ Icc c d, ∀ y ∈ Icc c d, ‖∫ t in x..y, w t‖ₑ ≤ K) {x : ℝ} (hx : x ∈ Icc c d) :
@@ -201,12 +241,15 @@ theorem enorm_le_of_forall_sub_eq_integral {c d : ℝ} (hcd : c < d) {g w : ℝ 
 
 variable [Fact (1 ≤ p)]
 
-/-- **The window estimate, with an `L^q` norm of the function**: for `u ∈ W^{1,p}(I)`, a compact
-interval `[c, d]` inside the closure of `I` and every `1 ≤ q ≤ ∞`,
-`|ũ(x)| ≤ (d - c)^{-1/q} ‖u‖_{L^q(c, d)} + (d - c)^{1 - 1/p} ‖u'‖_{L^p(c, d)}` for every
-`x ∈ [c, d]`, in `ℝ≥0∞`: the averaging argument of Theorem 8.8 (5) with Hölder's inequality
-`‖ũ‖_{L^1(c, d)} ≤ (d - c)^{1 - 1/q} ‖ũ‖_{L^q(c, d)}` for the mean (Remark 11 of
-[brezis2011functional], Chapter 8). -/
+/-- **The window estimate, with an $L^q$ norm of the function.** Let $I \subseteq \mathbb{R}$ be an
+open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and $1 \le q \le \infty$. Let $c < d$
+with $[c, d] \subseteq \bar I$. Then for every $x \in [c, d]$,
+$$|\tilde u(x)| \le (d - c)^{-1/q} \|u\|_{L^q(c, d)} + (d - c)^{1 - 1/p} \|u'\|_{L^p(c, d)}.$$
+
+The inequality is stated in `ℝ≥0∞`. It is the averaging argument of Theorem 8.8 (5) of
+[brezis2011functional] together with Hölder's inequality $\|\tilde u\|_{L^1(c, d)} \le (d -
+c)^{1 - 1/q} \|\tilde u\|_{L^q(c, d)}$ for the mean, as in Remark 11 of [brezis2011functional],
+Chapter 8. -/
 theorem enorm_rep_le_of_Icc_subset' (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     (q : ℝ≥0∞) [Fact (1 ≤ q)] {c d : ℝ} (hcd : c < d) (hsub : Icc c d ⊆ closure (I : Set ℝ))
     {x : ℝ} (hx : x ∈ Icc c d) :
@@ -258,10 +301,13 @@ theorem enorm_rep_le_of_Icc_subset' (hI : (I : Set ℝ).OrdConnected) (u : Sobol
         gcongr
     _ = _ := by rw [← mul_assoc, h2]
 
-/-- **The window estimate**: for `u ∈ W^{1,p}(I)` and a compact interval `[c, d]` inside the
-closure of `I`, `|ũ(x)| ≤ (d - c)^{-1/p} ‖u‖_{L^p(c, d)} + (d - c)^{1 - 1/p} ‖u'‖_{L^p(c, d)}`
-for every `x ∈ [c, d]`, in `ℝ≥0∞`. Theorem 8.8 (5) of [brezis2011functional] on a bounded
-interval, and the local estimate behind its unbounded case and Corollary 8.9. -/
+/-- **The window estimate.** Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$
+and $u \in W^{1,p}(I)$. Let $c < d$ with $[c, d] \subseteq \bar I$. Then for every
+$x \in [c, d]$,
+$$|\tilde u(x)| \le (d - c)^{-1/p} \|u\|_{L^p(c, d)} + (d - c)^{1 - 1/p} \|u'\|_{L^p(c, d)}.$$
+
+The inequality is stated in `ℝ≥0∞`. It is Theorem 8.8 (5) of [brezis2011functional] on a bounded
+interval, and the local estimate behind the unbounded case and Corollary 8.9. -/
 theorem enorm_rep_le_of_Icc_subset (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {c d : ℝ} (hcd : c < d) (hsub : Icc c d ⊆ closure (I : Set ℝ)) {x : ℝ} (hx : x ∈ Icc c d) :
     ‖rep u x‖ₑ ≤ ENNReal.ofReal (d - c) ^ (-p.toReal⁻¹)
@@ -270,22 +316,26 @@ theorem enorm_rep_le_of_Icc_subset (hI : (I : Set ℝ).OrdConnected) (u : Sobole
         * eLpNorm (deriv u 1) p (volume.restrict (Ioo c d)) :=
   enorm_rep_le_of_Icc_subset' hI u p hcd hsub hx
 
-/-- The real form of `(ENNReal.ofReal L) ^ e * ‖x‖ₑ`. -/
+/-- For $L \ge 0$, $e \in \mathbb{R}$ and $x$ in a normed group, the real number of the extended
+number $L^e \|x\|$ (computed in `ℝ≥0∞`) is the real number $L^e \|x\|$. -/
 theorem toReal_ofReal_rpow_mul_enorm {E : Type*} [NormedAddCommGroup E] {L : ℝ} (hL : 0 ≤ L)
     (e : ℝ) (x : E) : (ENNReal.ofReal L ^ e * ‖x‖ₑ).toReal = L ^ e * ‖x‖ := by
   rw [ENNReal.toReal_mul, ← ENNReal.toReal_rpow, ENNReal.toReal_ofReal hL, toReal_enorm]
 
-/-- `(ENNReal.ofReal L) ^ e * ‖x‖ₑ` is finite for `L > 0`. -/
+/-- For $L > 0$, $e \in \mathbb{R}$ and $x$ in a normed group, the extended number $L^e \|x\|$
+(computed in `ℝ≥0∞`) is finite. -/
 theorem ofReal_rpow_mul_enorm_ne_top {E : Type*} [NormedAddCommGroup E] {L : ℝ} (hL : 0 < L)
     (e : ℝ) (x : E) : ENNReal.ofReal L ^ e * ‖x‖ₑ ≠ ⊤ :=
   ENNReal.mul_ne_top (ENNReal.rpow_ne_top_of_nonneg' (ENNReal.ofReal_pos.2 hL)
     ENNReal.ofReal_ne_top) enorm_ne_top
 
-/-- **Theorem 8.8 (5) of [brezis2011functional] on a bounded interval, with the constant**: for
-`a < b`, `1 ≤ p ≤ ∞`, `u ∈ W^{1,p}(a, b)` and `x ∈ [a, b]`,
-`|ũ(x)| ≤ (b - a)^{-1/p} ‖u‖_{L^p} + (b - a)^{1 - 1/p} ‖u'‖_{L^p}` (with `1/p = 0` for `p = ∞`).
-At `p = 2` this is the constant `(b - a)^{-1/2} + (b - a)^{1/2}` of
-`SobolevInterval.abs_rep_le`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $u \in W^{1,p}(a, b)$ and $x \in [a, b]$. Then
+$$|\tilde u(x)| \le (b - a)^{-1/p} \|u\|_{L^p} + (b - a)^{1 - 1/p} \|u'\|_{L^p},$$
+with $1/p = 0$ for $p = \infty$. This is Theorem 8.8 (5) of [brezis2011functional] on a bounded
+interval, with the constant.
+
+At $p = 2$ the constant is $(b - a)^{-1/2} + (b - a)^{1/2}$, as in `SobolevInterval.abs_rep_le`.
+The norm $\|u\|_{L^p}$ is `‖deriv u 0‖`. -/
 theorem abs_rep_le_of_bounded {a b : ℝ} (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
     {x : ℝ} (hx : x ∈ Icc a b) :
     |rep u x| ≤ (b - a) ^ (-p.toReal⁻¹) * ‖deriv u 0‖
@@ -305,8 +355,8 @@ theorem abs_rep_le_of_bounded {a b : ℝ} (hab : a < b) (u : SobolevIntervalLp 1
       (ofReal_rpow_mul_enorm_ne_top hba _ _),
     toReal_ofReal_rpow_mul_enorm hba.le, toReal_ofReal_rpow_mul_enorm hba.le] at this
 
-/-- An unbounded open interval contains, around each point of its closure, a compact interval
-of length one. -/
+/-- Let $I \subseteq \mathbb{R}$ be an unbounded open interval and $x \in \bar I$. Then there is $c$
+with $x \in [c, c + 1]$ and $[c, c + 1] \subseteq \bar I$. -/
 theorem exists_Icc_subset_closure_of_not_isBounded (hI : (I : Set ℝ).OrdConnected)
     (hunb : ¬ Bornology.IsBounded (I : Set ℝ)) {x : ℝ} (hx : x ∈ closure (I : Set ℝ)) :
     ∃ c, c < c + 1 ∧ x ∈ Icc c (c + 1) ∧ Icc c (c + 1) ⊆ closure (I : Set ℝ) := by
@@ -327,9 +377,12 @@ theorem exists_Icc_subset_closure_of_not_isBounded (hI : (I : Set ℝ).OrdConnec
     refine ⟨x, by linarith, ⟨le_rfl, by linarith⟩, ?_⟩
     exact (Icc_subset_Icc_right hyx.le).trans (hcl.out hx (subset_closure hy))
 
-/-- **Theorem 8.8 (5) of [brezis2011functional] on an unbounded interval**: for `1 ≤ p ≤ ∞`,
-`u ∈ W^{1,p}(I)` and `x ∈ Ī`, `|ũ(x)| ≤ ‖u‖_{L^p(I)} + ‖u'‖_{L^p(I)}` — the window estimate on an
-interval of length one around `x`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an unbounded open interval, $1 \le p \le \infty$,
+$u \in W^{1,p}(I)$ and $x \in \bar I$. Then
+$$|\tilde u(x)| \le \|u\|_{L^p(I)} + \|u'\|_{L^p(I)}.$$
+This is Theorem 8.8 (5) of [brezis2011functional] on an unbounded interval.
+
+The proof is the window estimate on an interval of length one around $x$. -/
 theorem abs_rep_le_of_unbounded (hI : (I : Set ℝ).OrdConnected)
     (hunb : ¬ Bornology.IsBounded (I : Set ℝ)) (u : SobolevIntervalLp 1 p I) {x : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) : |rep u x| ≤ ‖deriv u 0‖ + ‖deriv u 1‖ := by
@@ -349,33 +402,42 @@ theorem abs_rep_le_of_unbounded (hI : (I : Set ℝ).OrdConnected)
     ENNReal.toReal_add enorm_ne_top enorm_ne_top, toReal_enorm, toReal_enorm] at this
 
 variable (p I) in
-/-- **The constant of the embedding `W^{1,p}(I) ⊆ L^∞(I)`**, a function of `|I| ≤ ∞` alone:
-`max (2, |I|^{-1/p} + |I|^{1 - 1/p})`, where `|I| = (volume I).toReal` is `0` for an unbounded
-interval, on which the constant `2` of the window estimate applies. -/
+/-- **The constant of the embedding $W^{1,p}(I) \subseteq L^\infty(I)$.** For an open set
+$I \subseteq \mathbb{R}$ and $p \in [0, \infty]$,
+$$C(p, I) = \max\big\{2,\ |I|^{-1/p} + |I|^{1 - 1/p}\big\},$$
+where $|I|$ is the Lebesgue measure of $I$ as a real number and $1/p$ is `p.toReal⁻¹`.
+
+For an unbounded interval $|I|$ is `(volume I).toReal = 0`, and the constant is $2$, the
+constant of the window estimate of length one. -/
 def embeddingConst : ℝ :=
   max 2 ((volume (I : Set ℝ)).toReal ^ (-p.toReal⁻¹)
     + (volume (I : Set ℝ)).toReal ^ (1 - p.toReal⁻¹))
 
 omit [Fact (1 ≤ p)] in
-/-- The embedding constant is at least `2`. -/
+/-- For every $p$ and $I$, the embedding constant `SobolevIntervalLp.embeddingConst p I` is at least
+$2$. -/
 theorem two_le_embeddingConst (p : ℝ≥0∞) (I : Opens ℝ) : 2 ≤ embeddingConst p I :=
   le_max_left _ _
 
 omit [Fact (1 ≤ p)] in
-/-- The embedding constant is positive. -/
+/-- For every $p$ and $I$, the embedding constant `SobolevIntervalLp.embeddingConst p I` is
+positive. -/
 theorem embeddingConst_pos (p : ℝ≥0∞) (I : Opens ℝ) : 0 < embeddingConst p I :=
   zero_lt_two.trans_le (two_le_embeddingConst p I)
 
 omit [Fact (1 ≤ p)] in
-/-- The embedding constant of a bounded interval dominates `|I|^{-1/p} + |I|^{1 - 1/p}`. -/
+/-- For $a < b$, the embedding constant of $(a, b)$ is at least
+$(b - a)^{-1/p} + (b - a)^{1 - 1/p}$. -/
 theorem rpow_add_rpow_le_embeddingConst {a b : ℝ} (hab : a < b) :
     (b - a) ^ (-p.toReal⁻¹) + (b - a) ^ (1 - p.toReal⁻¹) ≤ embeddingConst p (Opens.Ioo a b) := by
   refine le_trans (le_of_eq ?_) (le_max_right _ _)
   rw [Opens.coe_Ioo, Real.volume_Ioo, ENNReal.toReal_ofReal (sub_pos.2 hab).le]
 
-/-- **Theorem 8.8 (5) of [brezis2011functional]**: for every `1 ≤ p ≤ ∞` and every open interval
-`I`, `|ũ(x)| ≤ C ‖u‖_{W^{1,p}(I)}` on `Ī`, with `C = embeddingConst p I` depending only on
-`|I| ≤ ∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$x \in \bar I$. Then
+$$|\tilde u(x)| \le C\,\|u\|_{W^{1,p}(I)},$$
+where $C$ = `SobolevIntervalLp.embeddingConst p I` depends only on $p$ and $|I| \le \infty$.
+This is Theorem 8.8 (5) of [brezis2011functional]. -/
 theorem abs_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {x : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) : |rep u x| ≤ embeddingConst p I * ‖u‖ := by
   have h0 := norm_deriv_le u 0
@@ -404,8 +466,11 @@ theorem abs_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p 
       _ ≤ embeddingConst p I * ‖u‖ :=
         mul_le_mul_of_nonneg_right (two_le_embeddingConst p I) (norm_nonneg _)
 
-/-- **`W^{1,p}(I) ⊆ L^∞(I)` with continuous injection** ([brezis2011functional] Theorem 8.8 (5)):
-`‖u‖_{L^∞(I)} ≤ C ‖u‖_{W^{1,p}(I)}` with `C = embeddingConst p I`. -/
+/-- **$W^{1,p}(I) \subseteq L^\infty(I)$ with continuous injection.** Let $I \subseteq \mathbb{R}$
+be an open interval, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$. Then
+$$\|u\|_{L^\infty(I)} \le C\,\|u\|_{W^{1,p}(I)}$$
+with $C$ = `SobolevIntervalLp.embeddingConst p I`. This is Theorem 8.8 (5) of
+[brezis2011functional]. -/
 theorem eLpNorm_top_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     eLpNorm (fn u) ⊤ (volume.restrict I) ≤ ENNReal.ofReal (embeddingConst p I * ‖u‖) := by
   have h := eLpNorm_le_of_ae_bound (p := ⊤) (μ := volume.restrict (I : Set ℝ))
@@ -416,19 +481,22 @@ theorem eLpNorm_top_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 
     rw [Real.norm_eq_abs, deriv_zero, hx]
     exact abs_rep_le hI u (subset_closure hxI)
 
-/-- The function of `u ∈ W^{1,p}(I)` lies in `L^∞(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le \infty$. The function of every
+$u \in W^{1,p}(I)$ lies in $L^\infty(I)$. -/
 theorem memLp_top (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     MemLp (fn u) ⊤ (volume.restrict I) :=
   memLp_iff.2 ((eLpNorm_top_le hI u).trans_lt ENNReal.ofReal_lt_top)
 
-/-- The continuous representative of `u ∈ W^{1,p}(I)` lies in `L^∞(I)`, with the bound of
-Theorem 8.8 (5). -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$.
+Then $\|\tilde u\|_{L^\infty(I)} \le C\,\|u\|_{W^{1,p}(I)}$ with $C$ =
+`SobolevIntervalLp.embeddingConst p I`. -/
 theorem eLpNorm_top_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     eLpNorm (rep u) ⊤ (volume.restrict I) ≤ ENNReal.ofReal (embeddingConst p I * ‖u‖) := by
   rw [← eLpNorm_congr_ae (fn_ae_eq_rep hI u)]
   exact eLpNorm_top_le hI u
 
-/-- The continuous representative of `u ∈ W^{1,p}(I)` lies in `L^∞(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le \infty$. The continuous
+representative $\tilde u$ of every $u \in W^{1,p}(I)$ lies in $L^\infty(I)$. -/
 theorem memLp_top_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     MemLp (rep u) ⊤ (volume.restrict I) :=
   (memLp_top hI u).ae_eq (fn_ae_eq_rep hI u)
@@ -436,15 +504,17 @@ theorem memLp_top_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1
 end SobolevIntervalLp
 
 
-/-! ### The Hölder estimate and the embedding `W^{1,p}(a, b) ↪ C[a, b]` -/
+/-! ### The Hölder estimate and the embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$ -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **The Hölder estimate of Theorem 8.8's proof of (6)**: for `u ∈ W^{1,p}(I)` and
-`x, y ∈ Ī`, `|ũ(x) - ũ(y)| ≤ ‖u'‖_p |x - y|^{1 - 1/p}` (the Lipschitz bound of Proposition
-8.4 at `p = ∞`). -/
+/-- **The Hölder estimate.** Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$,
+$u \in W^{1,p}(I)$ and $x, y \in \bar I$. Then
+$$|\tilde u(x) - \tilde u(y)| \le \|u'\|_{L^p(I)}\,|x - y|^{1 - 1/p}.$$
+This is the estimate in the proof of Theorem 8.8 (6) of [brezis2011functional]. At $p = \infty$
+it is the Lipschitz bound of Proposition 8.4 there. -/
 theorem abs_rep_sub_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {x y : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) :
     |rep u x - rep u y| ≤ ‖deriv u 1‖ * |x - y| ^ (1 - p.toReal⁻¹) := by
@@ -461,8 +531,9 @@ theorem abs_rep_sub_rep_le (hI : (I : Set ℝ).OrdConnected) (u : SobolevInterva
   rwa [Real.enorm_eq_ofReal_abs, ENNReal.toReal_ofReal (abs_nonneg _),
     toReal_ofReal_rpow_mul_enorm (abs_nonneg _), mul_comm] at this
 
-/-- The continuous representative is uniformly Hölder continuous of exponent `1 - 1/p` on the
-closure of `I`, with constant `‖u'‖_p`, in Mathlib's vocabulary. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$.
+The continuous representative $\tilde u$ is Hölder continuous on $\bar I$ with exponent
+$1 - 1/p$ and constant $\|u'\|_{L^p(I)}$, in the sense of Mathlib's `HolderOnWith`. -/
 theorem holderOnWith_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     HolderOnWith ‖deriv u 1‖₊ ⟨1 - p.toReal⁻¹, one_sub_toReal_inv_nonneg Fact.out⟩ (rep u)
       (closure (I : Set ℝ)) := by
@@ -476,15 +547,19 @@ theorem holderOnWith_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalL
 
 variable {a b : ℝ}
 
-/-- The embedding `W^{1,p}(a, b) → C[a, b]` as a linear map: `u ↦` its continuous
-representative, restricted to `[a, b]`. Linearity is the canonicity of the representative. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The linear map $W^{1,p}(a, b) \to C([a, b])$ that sends
+$u$ to the restriction of its continuous representative $\tilde u$ to $[a, b]$.
+
+The map is linear because the representative is canonical. -/
 def toContinuousMapₗ (hab : a < b) : SobolevIntervalLp 1 p (Opens.Ioo a b) →ₗ[ℝ] C(Icc a b, ℝ) where
   toFun u := ⟨fun x ↦ rep u x,
     (continuousOn_rep_Icc hab u).comp_continuous continuous_subtype_val fun x ↦ x.2⟩
   map_add' u v := ContinuousMap.ext fun x ↦ rep_add_Icc hab u v x.2
   map_smul' c u := ContinuousMap.ext fun x ↦ rep_smul_Icc hab c u x.2
 
-/-- The embedding constant, for the linear map. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W^{1,p}(a, b)$. The image of $u$ under
+`SobolevIntervalLp.toContinuousMapₗ` has sup norm at most $C\,\|u\|_{W^{1,p}}$, with $C$ =
+`SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`. -/
 theorem norm_toContinuousMapₗ_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ‖toContinuousMapₗ hab u‖ ≤ embeddingConst p (Opens.Ioo a b) * ‖u‖ :=
   (ContinuousMap.norm_le _ (mul_nonneg (embeddingConst_pos p (Opens.Ioo a b)).le
@@ -492,55 +567,68 @@ theorem norm_toContinuousMapₗ_le (hab : a < b) (u : SobolevIntervalLp 1 p (Ope
     rw [Real.norm_eq_abs]
     exact abs_rep_le (ordConnected_coe_Ioo a b) u (by rw [closure_coe_Ioo hab]; exact x.2)
 
-/-- **The embedding `W^{1,p}(a, b) ↪ C[a, b]`** ([brezis2011functional] Theorem 8.8): the
-continuous linear map sending `u` to its continuous representative on `[a, b]`, of norm at most
-`embeddingConst p (Opens.Ioo a b)`. It is injective (`toContinuousMap_injective`) and, for
-`1 < p ≤ ∞`, compact (`isCompactOperator_toContinuousMap`). -/
+/-- **The embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$.** Let $a < b$ and
+$1 \le p \le \infty$. This is the continuous linear map that sends $u \in W^{1,p}(a, b)$ to its
+continuous representative on $[a, b]$. Its norm is at most `SobolevIntervalLp.embeddingConst p
+(Opens.Ioo a b)`. This is the embedding of Theorem 8.8 of [brezis2011functional].
+
+It is injective (`SobolevIntervalLp.toContinuousMap_injective`) and, for $1 < p \le \infty$,
+compact (`SobolevIntervalLp.isCompactOperator_toContinuousMap`). -/
 def toContinuousMap (hab : a < b) : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] C(Icc a b, ℝ) :=
   LinearMap.mkContinuous (toContinuousMapₗ hab) (embeddingConst p (Opens.Ioo a b))
     (fun u ↦ norm_toContinuousMapₗ_le hab u)
 
-/-- The embedding is the continuous representative on `[a, b]`. -/
+/-- Let $a < b$, $u \in W^{1,p}(a, b)$ and $x \in [a, b]$. The embedding of $u$ into $C([a, b])$
+takes the value $\tilde u(x)$ at $x$. -/
 theorem toContinuousMap_apply (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
     (x : Icc a b) : toContinuousMap hab u x = rep u x := rfl
 
-/-- **The embedding constant of `W^{1,p}(a, b) ↪ C[a, b]`**:
-`‖u‖_∞ ≤ embeddingConst p (Opens.Ioo a b) * ‖u‖_{W^{1,p}}`. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W^{1,p}(a, b)$. The embedding of $u$ into
+$C([a, b])$ has sup norm at most $C\,\|u\|_{W^{1,p}}$, with $C$ =
+`SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`. -/
 theorem norm_toContinuousMap_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ‖toContinuousMap hab u‖ ≤ embeddingConst p (Opens.Ioo a b) * ‖u‖ :=
   norm_toContinuousMapₗ_le hab u
 
-/-- The operator norm of the embedding `W^{1,p}(a, b) ↪ C[a, b]`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The operator norm of the embedding
+$W^{1,p}(a, b) \hookrightarrow C([a, b])$ is at most `SobolevIntervalLp.embeddingConst p
+(Opens.Ioo a b)`. -/
 theorem norm_toContinuousMap_le' (hab : a < b) :
     ‖(toContinuousMap hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] C(Icc a b, ℝ))‖
       ≤ embeddingConst p (Opens.Ioo a b) :=
   LinearMap.mkContinuous_norm_le _ (embeddingConst_pos p (Opens.Ioo a b)).le _
 
-/-- The function of `u` agrees almost everywhere on `(a, b)` with its embedding into `C[a, b]`,
-extended by the endpoint values outside `[a, b]`. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W^{1,p}(a, b)$. The function of $u$ agrees almost
+everywhere on $(a, b)$ with its embedding into $C([a, b])$, extended to $\mathbb{R}$ by the
+endpoint values outside $[a, b]$ (`Set.IccExtend`). -/
 theorem coe_toContinuousMap_ae_eq (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hab.le (toContinuousMap hab u) :=
   (fn_ae_eq_rep (ordConnected_coe_Ioo a b) u).trans ((ae_restrict_iff' measurableSet_Ioo).2
     (Eventually.of_forall fun x hx ↦ by
       rw [IccExtend_of_mem hab.le _ (Ioo_subset_Icc_self hx)]; rfl))
 
-/-- The embedding is canonical: any function continuous on `[a, b]` that agrees almost everywhere
-with `u` on `(a, b)` is the embedding of `u` on all of `[a, b]`. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W^{1,p}(a, b)$. If $g$ is continuous on $[a, b]$
+and agrees almost everywhere on $(a, b)$ with the function of $u$, then the embedding of $u$
+into $C([a, b])$ equals $g$ at every point of $[a, b]$. -/
 theorem toContinuousMap_eq_of_continuousOn (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
     {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b)) (hu : fn u =ᵐ[volume.restrict (Ioo a b)] g)
     (x : Icc a b) : toContinuousMap hab u x = g x :=
   rep_eq_of_continuousOn (ordConnected_coe_Ioo a b) u (by rwa [closure_coe_Ioo hab]) hu
     (by rw [closure_coe_Ioo hab]; exact x.2)
 
-/-- **The fundamental theorem of calculus in `W^{1,p}(a, b)`**: the embedding of `u` into
-`C[a, b]` is the integral of `u'` between any two points of `[a, b]`. -/
+/-- **The fundamental theorem of calculus in $W^{1,p}(a, b)$.** Let $a < b$, $1 \le p \le \infty$
+and $u \in W^{1,p}(a, b)$, and let $\tilde u$ be its embedding into $C([a, b])$. Then for all
+$x, y \in [a, b]$,
+$$\tilde u(y) - \tilde u(x) = \int_x^y u'.$$
+-/
 theorem toContinuousMap_sub_eq_integral (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
     (x y : Icc a b) :
     toContinuousMap hab u y - toContinuousMap hab u x = ∫ t in (x : ℝ)..y, deriv u 1 t :=
   rep_sub_rep_Ioo hab u x.2 y.2
 
-/-- The embedding of `u` into `C[a, b]`, extended by the endpoint values outside `[a, b]`, is
-absolutely continuous on `[a, b]`. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W^{1,p}(a, b)$. The embedding of $u$ into
+$C([a, b])$, extended to $\mathbb{R}$ by the endpoint values outside $[a, b]$, is absolutely
+continuous on $[a, b]$. -/
 theorem absolutelyContinuousOnInterval_toContinuousMap (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     AbsolutelyContinuousOnInterval (IccExtend hab.le (toContinuousMap hab u)) a b :=
@@ -550,9 +638,12 @@ theorem absolutelyContinuousOnInterval_toContinuousMap (hab : a < b)
     rw [uIcc_of_le hab.le] at hx
     rw [IccExtend_of_mem hab.le _ hx]; rfl
 
-/-- **The embedding `W^{1,p}(a, b) ↪ C[a, b]` is injective**: the continuous representative
-determines the `L^p` class of the function, and the weak derivative is determined by the
-function almost everywhere. -/
+/-- **The embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$ is injective.** Let $a < b$ and
+$1 \le p \le \infty$. Two elements of $W^{1,p}(a, b)$ with the same continuous representative on
+$[a, b]$ are equal.
+
+The continuous representative determines the $L^p$ class of the function, and the function
+determines the weak derivative almost everywhere. -/
 theorem toContinuousMap_injective (hab : a < b) :
     Function.Injective (toContinuousMap hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] _) := by
   intro u v huv
@@ -561,26 +652,28 @@ theorem toContinuousMap_injective (hab : a < b) :
   rw [huv] at h1
   exact SobolevMultiIndex.ext_of_fn_ae_eq (h1.trans h2.symm)
 
-/-- **A function of `W^{1,p}(a, b)` continuous on `[a, b]` is the continuous representative of
-an element**. -/
+/-- Let $a < b$, $1 \le p \le \infty$, and let $g$ be continuous on $[a, b]$ with
+$g \in W^{1,p}(a, b)$. Then there is $u \in W^{1,p}(a, b)$ whose embedding into $C([a, b])$
+equals $g$ on $[a, b]$. -/
 theorem exists_toContinuousMap_eq (hab : a < b) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
     (hmem : MemSobolevIntervalLp g 1 p (Opens.Ioo a b)) :
     ∃ u : SobolevIntervalLp 1 p (Opens.Ioo a b), ∀ t : Icc a b, toContinuousMap hab u t = g t := by
   obtain ⟨u, hu⟩ := hmem.exists_sobolevIntervalLp
   exact ⟨u, fun t ↦ toContinuousMap_eq_of_continuousOn hab u hg hu t⟩
 
-/-- **Point evaluation on `W^{1,p}(a, b)`** at a point of `[a, b]`, as a bounded linear
-functional: the composition of the embedding into `C[a, b]` with evaluation. -/
+/-- **Point evaluation on $W^{1,p}(a, b)$.** Let $a < b$, $1 \le p \le \infty$ and $c \in [a, b]$.
+This is the continuous linear functional $u \mapsto \tilde u(c)$ on $W^{1,p}(a, b)$, the
+composition of the embedding into $C([a, b])$ with evaluation at $c$. -/
 def evalCLM (hab : a < b) (c : Icc a b) : StrongDual ℝ (SobolevIntervalLp 1 p (Opens.Ioo a b)) :=
   (ContinuousMap.evalCLM ℝ c).comp (toContinuousMap hab)
 
-/-- Point evaluation on `W^{1,p}(a, b)` evaluates the continuous representative. -/
+/-- Point evaluation at $c \in [a, b]$ sends $u \in W^{1,p}(a, b)$ to $\tilde u(c)$. -/
 @[simp]
 theorem evalCLM_apply (hab : a < b) (c : Icc a b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     evalCLM hab c u = rep u c := rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The exponent `1 - 1/p` is positive for `1 < p ≤ ∞`. -/
+/-- For $1 < p \le \infty$, the exponent $1 - 1/p$ is positive, where $1/p$ is `p.toReal⁻¹`. -/
 theorem one_sub_toReal_inv_pos (hp : 1 < p) : 0 < 1 - p.toReal⁻¹ := by
   rw [sub_pos]
   rcases eq_or_ne p ⊤ with rfl | hp'
@@ -589,11 +682,14 @@ theorem one_sub_toReal_inv_pos (hp : 1 < p) : 0 < 1 - p.toReal⁻¹ := by
       have := (ENNReal.toReal_lt_toReal ENNReal.one_ne_top hp').2 hp
       rwa [ENNReal.toReal_one] at this)
 
-/-- **Theorem 8.8 (6) of [brezis2011functional]**: for `1 < p ≤ ∞` and a bounded interval, the
-embedding `W^{1,p}(a, b) ↪ C[a, b]` is a compact operator. The image of the unit ball is bounded
-in `C[a, b]` by (5) and uniformly Hölder continuous of exponent `1 - 1/p > 0`
-(`SobolevIntervalLp.abs_rep_sub_rep_le`), so its closure is compact by Arzelà–Ascoli
-(`ContinuousMap.isCompact_closure_of_forall_norm_le`); this is where `p > 1` enters. -/
+/-- Let $a < b$ and $1 < p \le \infty$. The embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$ is a
+compact operator. This is Theorem 8.8 (6) of [brezis2011functional].
+
+The image of the unit ball is bounded in $C([a, b])$ by Theorem 8.8 (5), and it is uniformly
+Hölder continuous with exponent $1 - 1/p > 0$ (`SobolevIntervalLp.abs_rep_sub_rep_le`). So its
+closure is compact by the Arzelà–Ascoli theorem
+(`ContinuousMap.isCompact_closure_of_forall_norm_le`). The hypothesis $p > 1$ is used for the
+positive exponent. -/
 theorem isCompactOperator_toContinuousMap (hab : a < b) (hp : 1 < p) :
     IsCompactOperator (toContinuousMap hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] _) := by
   refine (isCompactOperator_iff_isCompact_closure_image_closedBall
@@ -636,9 +732,9 @@ theorem isCompactOperator_toContinuousMap (hab : a < b) (hp : 1 < p) :
           exact Real.rpow_lt_rpow (abs_nonneg _) hd he0
       _ = ε := by rw [one_mul, hδe]
 
-/-- **Theorem 8.8 (6) of [brezis2011functional]**, in the vocabulary of
-`Numlib/Analysis/Normed/Operator/Embedding.lean`: for `1 < p ≤ ∞`, `W^{1,p}(a, b) ↪ C[a, b]` is
-a compact embedding. -/
+/-- Let $a < b$ and $1 < p \le \infty$. The embedding $W^{1,p}(a, b) \hookrightarrow C([a, b])$ is a
+compact embedding in the sense of `IsCompactEmbedding`. This is Theorem 8.8 (6) of
+[brezis2011functional]. -/
 theorem isCompactEmbedding_toContinuousMap (hab : a < b) (hp : 1 < p) :
     IsCompactEmbedding
       (toContinuousMap (p := p) hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →ₗ[ℝ] C(Icc a b, ℝ)) :=
@@ -648,15 +744,20 @@ theorem isCompactEmbedding_toContinuousMap (hab : a < b) (hp : 1 < p) :
 end SobolevIntervalLp
 
 
-/-! ### Remark 12: the inclusions `W^{1,p}(I) ⊆ L^q(I)` -/
+/-! ### Remark 12: the inclusions $W^{1,p}(I) \subseteq L^q(I)$ -/
 
 section Interpolation
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
-/-- **The interpolation inequality `‖f‖_q ≤ ‖f‖_p^{p/q} ‖f‖_∞^{1 - p/q}`** for `0 < p ≤ q < ∞`
-([brezis2011functional] Remark 12 of chapter 8, and Remark 2 of chapter 4 with `q = ∞`): almost
-everywhere `‖f‖^q = ‖f‖^p ‖f‖^{q - p} ≤ ‖f‖^p ‖f‖_∞^{q - p}`, integrated. -/
+/-- **The interpolation inequality.** Let $\mu$ be a measure, $f$ an almost everywhere strongly
+measurable real function, and $0 < p \le q < \infty$. Then
+$$\|f\|_{L^q} \le \|f\|_{L^p}^{p/q}\,\|f\|_{L^\infty}^{1 - p/q}.$$
+This is Remark 12 of [brezis2011functional], Chapter 8, and the case of Remark 2 of Chapter 4
+there in which the larger exponent is $\infty$.
+
+The inequality is stated in `ℝ≥0∞`. Almost everywhere $|f|^q = |f|^p |f|^{q - p} \le |f|^p
+\|f\|_\infty^{q - p}$, and the inequality follows by integration. -/
 theorem MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_top_rpow {f : α → ℝ}
     (hf : AEStronglyMeasurable f μ) {p q : ℝ≥0∞} (hp : p ≠ 0) (hpq : p ≤ q) (hq : q ≠ ⊤) :
     eLpNorm f q μ ≤ eLpNorm f p μ ^ (p.toReal / q.toReal)
@@ -697,7 +798,9 @@ theorem MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_top_rpow {f : α → �
         · field_simp
         · field_simp
 
-/-- **`L^p ∩ L^∞ ⊆ L^q` for `p ≤ q`** ([brezis2011functional] Remark 12 of chapter 8). -/
+/-- Let $\mu$ be a measure and $0 < p \le q \le \infty$. If a real function $f$ lies in $L^p(\mu)$
+and in $L^\infty(\mu)$, then it lies in $L^q(\mu)$. This is Remark 12 of [brezis2011functional],
+Chapter 8. -/
 theorem MeasureTheory.MemLp.of_le_of_memLp_top {f : α → ℝ} {p q : ℝ≥0∞} (hp : p ≠ 0) (hpq : p ≤ q)
     (hfp : MemLp f p μ) (hft : MemLp f ⊤ μ) : MemLp f q μ := by
   rcases eq_or_ne q ⊤ with rfl | hq
@@ -716,9 +819,13 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **Remark 12 of [brezis2011functional]**: for `p ≤ q ≤ ∞`, the function of `u ∈ W^{1,p}(I)`
-lies in `L^q(I)`, with `‖u‖_{L^q} ≤ C ‖u‖_{W^{1,p}}` for the constant of Theorem 8.8 (5), since
-`‖u‖_q ≤ ‖u‖_p^{p/q} ‖u‖_∞^{1 - p/q}`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le q \le \infty$ and
+$u \in W^{1,p}(I)$. Then
+$$\|u\|_{L^q(I)} \le C\,\|u\|_{W^{1,p}(I)},$$
+with $C$ = `SobolevIntervalLp.embeddingConst p I`, the constant of Theorem 8.8 (5). This is
+Remark 12 of [brezis2011functional].
+
+The proof uses $\|u\|_{L^q} \le \|u\|_{L^p}^{p/q}\,\|u\|_{L^\infty}^{1 - p/q}$. -/
 theorem eLpNorm_le_of_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p ≤ q)
     (u : SobolevIntervalLp 1 p I) :
     eLpNorm (fn u) q (volume.restrict I) ≤ ENNReal.ofReal (embeddingConst p I * ‖u‖) := by
@@ -750,13 +857,15 @@ theorem eLpNorm_le_of_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq
     _ = C := by
         rw [← ENNReal.rpow_add_of_nonneg _ _ hθ0 hθ1, add_sub_cancel, ENNReal.rpow_one]
 
-/-- **Remark 12 of [brezis2011functional]**: `W^{1,p}(I) ⊆ L^q(I)` for `p ≤ q ≤ ∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le q \le \infty$. The function of
+every $u \in W^{1,p}(I)$ lies in $L^q(I)$. This is Remark 12 of [brezis2011functional]. -/
 theorem memLp_of_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p ≤ q)
     (u : SobolevIntervalLp 1 p I) : MemLp (fn u) q (volume.restrict I) :=
   memLp_iff.2 ((eLpNorm_le_of_le hI hpq u).trans_lt ENNReal.ofReal_lt_top)
 
 variable (p) in
-/-- The inclusion `W^{1,p}(I) → L^q(I)`, `p ≤ q ≤ ∞`, as a linear map. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le q \le \infty$. The linear map
+$W^{1,p}(I) \to L^q(I)$ that sends $u$ to its function. -/
 def toLpₗ (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p ≤ q) :
     SobolevIntervalLp 1 p I →ₗ[ℝ] Lp ℝ q (volume.restrict (I : Set ℝ)) where
   toFun u := (memLp_of_le hI hpq u).toLp _
@@ -767,7 +876,9 @@ def toLpₗ (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} (hpq : p ≤ q) :
     rw [RingHom.id_apply, (memLp_of_le hI hpq (r • u)).toLp_congr
       ((memLp_of_le hI hpq u).const_smul r) (SobolevMultiIndex.fn_smul r u), MemLp.toLp_const_smul]
 
-/-- The `L^q` norm of the inclusion of `u`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le q \le \infty$ and
+$u \in W^{1,p}(I)$. The image of $u$ under `SobolevIntervalLp.toLpₗ` has $L^q(I)$ norm at most
+$C\,\|u\|_{W^{1,p}}$, with $C$ = `SobolevIntervalLp.embeddingConst p I`. -/
 theorem norm_toLpₗ_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact (1 ≤ q)] (hpq : p ≤ q)
     (u : SobolevIntervalLp 1 p I) : ‖toLpₗ p hI hpq u‖ ≤ embeddingConst p I * ‖u‖ := by
   rw [toLpₗ, LinearMap.coe_mk, AddHom.coe_mk, Lp.norm_toLp]
@@ -775,27 +886,34 @@ theorem norm_toLpₗ_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact
   exact ENNReal.toReal_ofReal (mul_nonneg (embeddingConst_pos p I).le (norm_nonneg _))
 
 variable (p) in
-/-- **The inclusion `W^{1,p}(I) ↪ L^q(I)` for `p ≤ q ≤ ∞`** ([brezis2011functional] Remark 12),
-as a continuous linear map of norm at most `embeddingConst p I`; at `q = ∞` this is the
-embedding of Theorem 8.8 (5). -/
+/-- **The inclusion $W^{1,p}(I) \hookrightarrow L^q(I)$ for $p \le q \le \infty$.** Let
+$I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le q \le \infty$. This is the
+continuous linear map $W^{1,p}(I) \to L^q(I)$ that sends $u$ to its function. Its norm is at
+most `SobolevIntervalLp.embeddingConst p I`. This is Remark 12 of [brezis2011functional]; at
+$q = \infty$ it is the embedding of Theorem 8.8 (5). -/
 def toLp (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact (1 ≤ q)] (hpq : p ≤ q) :
     SobolevIntervalLp 1 p I →L[ℝ] Lp ℝ q (volume.restrict (I : Set ℝ)) :=
   LinearMap.mkContinuous (toLpₗ p hI hpq) (embeddingConst p I) (fun u ↦ norm_toLpₗ_le hI hpq u)
 
-/-- The inclusion into `L^q(I)` is the function, almost everywhere. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le q \le \infty$ and
+$u \in W^{1,p}(I)$. The image of $u$ under `SobolevIntervalLp.toLp` agrees almost everywhere on
+$I$ with the function of $u$. -/
 theorem coeFn_toLp (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact (1 ≤ q)] (hpq : p ≤ q)
     (u : SobolevIntervalLp 1 p I) : ⇑(toLp p hI hpq u) =ᵐ[volume.restrict I] fn u :=
   (memLp_of_le hI hpq u).coeFn_toLp
 
-/-- The norm of the inclusion `W^{1,p}(I) ↪ L^q(I)` is at most `embeddingConst p I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le q \le \infty$. The norm of the
+inclusion $W^{1,p}(I) \hookrightarrow L^q(I)$ is at most `SobolevIntervalLp.embeddingConst p I`. -/
 theorem norm_toLp_le (hI : (I : Set ℝ).OrdConnected) {q : ℝ≥0∞} [Fact (1 ≤ q)] (hpq : p ≤ q) :
     ‖toLp p hI hpq‖ ≤ embeddingConst p I :=
   LinearMap.mkContinuous_norm_le _ (embeddingConst_pos p I).le _
 
 variable {a b : ℝ}
 
-/-- On a bounded interval, the function of `u ∈ W^{1,p}(a, b)` lies in every `L^q(a, b)`,
-`1 ≤ q ≤ ∞`, being bounded. -/
+/-- Let $a, b \in \mathbb{R}$, $1 \le p \le \infty$ and $q \in [0, \infty]$. The function of every
+$u \in W^{1,p}(a, b)$ lies in $L^q(a, b)$.
+
+The function is bounded by Theorem 8.8 (5), and $(a, b)$ has finite measure. -/
 theorem memLp_of_bounded (q : ℝ≥0∞) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     MemLp (fn u) q (volume.restrict (Ioo a b)) := by
   have : IsFiniteMeasure (volume.restrict ((Opens.Ioo a b : Opens ℝ) : Set ℝ)) := ⟨by
@@ -803,7 +921,13 @@ theorem memLp_of_bounded (q : ℝ≥0∞) (u : SobolevIntervalLp 1 p (Opens.Ioo 
     exact ENNReal.ofReal_lt_top⟩
   exact (memLp_top (ordConnected_coe_Ioo a b) u).mono_exponent le_top
 
-/-- The `L^q(a, b)` norm of `u ∈ W^{1,p}(a, b)`: `‖u‖_q ≤ (b - a)^{1/q} ‖u‖_∞`. -/
+/-- Let $a, b \in \mathbb{R}$, $1 \le p \le \infty$, $q \in [0, \infty]$ and $u \in W^{1,p}(a, b)$.
+Then
+$$\|u\|_{L^q(a, b)} \le (b - a)^{1/q}\,C\,\|u\|_{W^{1,p}(a, b)},$$
+with $C$ = `SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)` and $1/q$ = `q.toReal⁻¹`.
+
+The inequality is stated in `ℝ≥0∞`, where $b - a$ is read as $\max\{b - a, 0\}$. It combines
+$\|u\|_{L^q(a, b)} \le (b - a)^{1/q} \|u\|_{L^\infty}$ with Theorem 8.8 (5). -/
 theorem eLpNorm_le_of_bounded (q : ℝ≥0∞) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     eLpNorm (fn u) q (volume.restrict (Ioo a b))
       ≤ ENNReal.ofReal (b - a) ^ q.toReal⁻¹
@@ -817,7 +941,8 @@ theorem eLpNorm_le_of_bounded (q : ℝ≥0∞) (u : SobolevIntervalLp 1 p (Opens
   exact eLpNorm_top_le (ordConnected_coe_Ioo a b) u
 
 variable (p) in
-/-- The inclusion `W^{1,p}(a, b) → L^q(a, b)`, every `1 ≤ q ≤ ∞`, as a linear map. -/
+/-- Let $1 \le p \le \infty$ and $q \in [0, \infty]$. The linear map $W^{1,p}(a, b) \to L^q(a, b)$
+that sends $u$ to its function. -/
 def toLpOfBoundedₗ (q : ℝ≥0∞) :
     SobolevIntervalLp 1 p (Opens.Ioo a b) →ₗ[ℝ] Lp ℝ q (volume.restrict (Ioo a b)) where
   toFun u := (memLp_of_bounded q u).toLp _
@@ -829,7 +954,10 @@ def toLpOfBoundedₗ (q : ℝ≥0∞) :
       ((memLp_of_bounded q u).const_smul r) (SobolevMultiIndex.fn_smul r u),
       MemLp.toLp_const_smul]
 
-/-- The `L^q(a, b)` norm of the inclusion of `u`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $1 \le q \le \infty$ and $u \in W^{1,p}(a, b)$. The image of
+$u$ under `SobolevIntervalLp.toLpOfBoundedₗ` has $L^q(a, b)$ norm at most
+$(b - a)^{1/q}\,C\,\|u\|_{W^{1,p}}$, with $C$ = `SobolevIntervalLp.embeddingConst p (Opens.Ioo a
+b)`. -/
 theorem norm_toLpOfBoundedₗ_le (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ‖toLpOfBoundedₗ p q u‖
@@ -844,16 +972,20 @@ theorem norm_toLpOfBoundedₗ_le (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     ENNReal.toReal_ofReal (mul_nonneg (embeddingConst_pos _ _).le (norm_nonneg _)), mul_assoc]
 
 variable (p) in
-/-- **The inclusion `W^{1,p}(a, b) ↪ L^q(a, b)` for every `1 ≤ q ≤ ∞`** on a bounded interval
-([brezis2011functional] Remark 12 and Theorem 8.8 (5)), as a continuous linear map of norm at
-most `(b - a)^{1/q} embeddingConst p (Opens.Ioo a b)`. -/
+/-- **The inclusion $W^{1,p}(a, b) \hookrightarrow L^q(a, b)$ on a bounded interval.** Let $a < b$,
+$1 \le p \le \infty$ and $1 \le q \le \infty$. This is the continuous linear map
+$W^{1,p}(a, b) \to L^q(a, b)$ that sends $u$ to its function. Its norm is at most
+$(b - a)^{1/q}\,C$ with $C$ = `SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`. This is
+Remark 12 and Theorem 8.8 (5) of [brezis2011functional]. -/
 def toLpOfBounded (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)] :
     SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] Lp ℝ q (volume.restrict (Ioo a b)) :=
   LinearMap.mkContinuous (toLpOfBoundedₗ p q)
     ((b - a) ^ q.toReal⁻¹ * embeddingConst p (Opens.Ioo a b))
     (fun u ↦ norm_toLpOfBoundedₗ_le hab q u)
 
-/-- The inclusion into `L^q(a, b)` is the function, almost everywhere. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $1 \le q \le \infty$ and $u \in W^{1,p}(a, b)$. The image of
+$u$ under `SobolevIntervalLp.toLpOfBounded` agrees almost everywhere on $(a, b)$ with the
+function of $u$. -/
 theorem coeFn_toLpOfBounded (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ⇑(toLpOfBounded p hab q u) =ᵐ[volume.restrict (Ioo a b)] fn u :=
@@ -868,7 +1000,8 @@ section Tail
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The `L^p` norm of `f ∈ L^p(μ)`, `p < ∞`, over the tail `(x, ∞)` tends to `0` as `x → ∞`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, $1 \le p < \infty$ and $f \in L^p(\mu)$. Then
+$\|f\|_{L^p(\mu|_{(x, \infty)})} \to 0$ as $x \to \infty$. -/
 theorem MeasureTheory.tendsto_eLpNorm_restrict_Ioi_atTop {μ : Measure ℝ} {f : ℝ → ℝ} (hp : p ≠ ⊤)
     (hf : MemLp f p μ) : Tendsto (fun x ↦ eLpNorm f p (μ.restrict (Ioi x))) atTop (𝓝 0) := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
@@ -890,7 +1023,8 @@ theorem MeasureTheory.tendsto_eLpNorm_restrict_Ioi_atTop {μ : Measure ℝ} {f :
     rwa [Real.zero_rpow (inv_ne_zero hpr.ne')] at this
   simpa using ENNReal.tendsto_ofReal h3
 
-/-- The `L^p` norm of `f ∈ L^p(μ)`, `p < ∞`, over the tail `(-∞, x)` tends to `0` as `x → -∞`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, $1 \le p < \infty$ and $f \in L^p(\mu)$. Then
+$\|f\|_{L^p(\mu|_{(-\infty, x)})} \to 0$ as $x \to -\infty$. -/
 theorem MeasureTheory.tendsto_eLpNorm_restrict_Iio_atBot {μ : Measure ℝ} {f : ℝ → ℝ} (hp : p ≠ ⊤)
     (hf : MemLp f p μ) : Tendsto (fun x ↦ eLpNorm f p (μ.restrict (Iio x))) atBot (𝓝 0) := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
@@ -922,8 +1056,13 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **The continuous representative tends to `0` along windows of length one whose `L^p` norms
-tend to `0`**: the engine of Corollary 8.9, for any filter on the line. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$, $l$
+a filter on $\mathbb{R}$ and $c : \mathbb{R} \to \mathbb{R}$. Assume that, eventually along $l$,
+$x \in [c(x), c(x) + 1] \subseteq \bar I$. If $\|u\|_{L^p(c(x), c(x) + 1)} \to 0$ and
+$\|u'\|_{L^p(c(x), c(x) + 1)} \to 0$ along $l$, then $\tilde u(x) \to 0$ along $l$.
+
+This is the main step of Corollary 8.9 of [brezis2011functional]: it follows from the window
+estimate. -/
 theorem tendsto_rep_of_tendsto_window (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {l : Filter ℝ} {c : ℝ → ℝ}
     (hc : ∀ᶠ x in l, x ∈ Icc (c x) (c x + 1) ∧ Icc (c x) (c x + 1) ⊆ closure (I : Set ℝ))
@@ -957,8 +1096,9 @@ theorem tendsto_rep_of_tendsto_window (hI : (I : Set ℝ).OrdConnected) (u : Sob
   rw [ENNReal.toReal_zero] at this
   exact this
 
-/-- The `L^p(I)` norms of `f ∈ L^p(I)`, `p < ∞`, over windows `(x, x + 1)` lying eventually in
-the closure of `I` tend to `0` as `x → ∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p < \infty$ and $f \in L^p(I)$. If
+$[x, x + 1] \subseteq \bar I$ for all large $x$, then $\|f\|_{L^p(x, x + 1)} \to 0$ as
+$x \to \infty$. -/
 theorem tendsto_eLpNorm_window_atTop (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤) {f : ℝ → ℝ}
     (hf : MemLp f p (volume.restrict I))
     (hsub : ∀ᶠ x in atTop, Icc x (x + 1) ⊆ closure (I : Set ℝ)) :
@@ -970,8 +1110,11 @@ theorem tendsto_eLpNorm_window_atTop (hI : (I : Set ℝ).OrdConnected) (hp : p �
     ← Measure.restrict_restrict measurableSet_Ioo]
   exact eLpNorm_mono_measure _ (Measure.restrict_mono Ioo_subset_Ioi_self le_rfl)
 
-/-- The `L^p(I)` norms of `f ∈ L^p(I)`, `p < ∞`, over windows `(x - 1, x)` lying eventually in
-the closure of `I` tend to `0` as `x → -∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p < \infty$ and $f \in L^p(I)$. If
+$[x - 1, x] \subseteq \bar I$ for all $x$ near $-\infty$, then $\|f\|_{L^p(x - 1, x)} \to 0$ as
+$x \to -\infty$.
+
+The window is written `Ioo (x - 1) (x - 1 + 1)`. -/
 theorem tendsto_eLpNorm_window_atBot (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤) {f : ℝ → ℝ}
     (hf : MemLp f p (volume.restrict I))
     (hsub : ∀ᶠ x in atBot, Icc (x - 1) (x - 1 + 1) ⊆ closure (I : Set ℝ)) :
@@ -985,8 +1128,9 @@ theorem tendsto_eLpNorm_window_atBot (hI : (I : Set ℝ).OrdConnected) (hp : p �
   rw [sub_add_cancel]
   exact Ioo_subset_Iio_self
 
-/-- **Corollary 8.9 of [brezis2011functional], the right end**: on an interval unbounded above,
-`ũ(x) → 0` as `x → ∞`, for `1 ≤ p < ∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval that is not bounded above, $1 \le p < \infty$
+and $u \in W^{1,p}(I)$. Then $\tilde u(x) \to 0$ as $x \to \infty$. This is Corollary 8.9 of
+[brezis2011functional] at the right end. -/
 theorem tendsto_rep_atTop (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (hunb : ¬ BddAbove (I : Set ℝ)) (u : SobolevIntervalLp 1 p I) :
     Tendsto (rep u) atTop (𝓝 0) := by
@@ -1005,8 +1149,9 @@ theorem tendsto_rep_atTop (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
   · exact tendsto_eLpNorm_window_atTop hI hp (Lp.memLp (deriv u 0)) hsub
   · exact tendsto_eLpNorm_window_atTop hI hp (Lp.memLp (deriv u 1)) hsub
 
-/-- **Corollary 8.9 of [brezis2011functional], the left end**: on an interval unbounded below,
-`ũ(x) → 0` as `x → -∞`, for `1 ≤ p < ∞`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval that is not bounded below, $1 \le p < \infty$
+and $u \in W^{1,p}(I)$. Then $\tilde u(x) \to 0$ as $x \to -\infty$. This is Corollary 8.9 of
+[brezis2011functional] at the left end. -/
 theorem tendsto_rep_atBot (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (hunb : ¬ BddBelow (I : Set ℝ)) (u : SobolevIntervalLp 1 p I) :
     Tendsto (rep u) atBot (𝓝 0) := by
@@ -1026,10 +1171,15 @@ theorem tendsto_rep_atBot (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
   · exact tendsto_eLpNorm_window_atBot hI hp (Lp.memLp (deriv u 0)) hsub
   · exact tendsto_eLpNorm_window_atBot hI hp (Lp.memLp (deriv u 1)) hsub
 
-/-- **Corollary 8.9 of [brezis2011functional] (decay at infinity)**: on an unbounded open
-interval `I` and for `1 ≤ p < ∞`, the continuous representative of `u ∈ W^{1,p}(I)` tends to `0`
-as `|x| → ∞`, `x ∈ I`. Proved directly from the window estimate of Theorem 8.8 (5), whose
-right-hand side tends to `0` along windows running off to infinity; no density argument. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p < \infty$ and $u \in W^{1,p}(I)$.
+Then
+$$\tilde u(x) \to 0 \quad \text{as } |x| \to \infty,\ x \in I.$$
+This is Corollary 8.9 of [brezis2011functional].
+
+The limit is along the filter `cocompact ℝ ⊓ 𝓟 I`. For a bounded interval this filter is trivial
+and the statement is empty. The proof uses the window estimate of Theorem 8.8 (5), whose
+right-hand side tends to $0$ along windows that move off to infinity; it uses no density
+argument. -/
 theorem tendsto_rep_cocompact (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) :
     Tendsto (rep u) (cocompact ℝ ⊓ 𝓟 (I : Set ℝ)) (𝓝 0) := by
@@ -1058,18 +1208,22 @@ namespace SobolevIntervalLp
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- The continuous representative of `u ∈ W^{1,p}(I)` lies in `L^p(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $u \in W^{1,p}(I)$. The continuous
+representative $\tilde u$ lies in $L^p(I)$. -/
 theorem memLp_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     MemLp (rep u) p (volume.restrict I) :=
   (Lp.memLp (deriv u 0)).ae_eq (fn_ae_eq_rep hI u)
 
-/-- The continuous representative is continuous on `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$.
+The continuous representative $\tilde u$ is continuous on $I$. -/
 theorem continuousOn_rep' (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     ContinuousOn (rep u) I :=
   (continuousOn_rep hI u).mono subset_closure
 
-/-- The Leibniz expression `u' ṽ + ũ v'` is locally integrable on `I`: each term is an `L^p`
-function times a continuous one. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and
+$u, v \in W^{1,p}(I)$. The function $u' \tilde v + \tilde u v'$ is locally integrable on $I$.
+
+Each term is a function of $L^p$ times a continuous function. -/
 theorem locallyIntegrableOn_leibniz (hI : (I : Set ℝ).OrdConnected)
     (u v : SobolevIntervalLp 1 p I) :
     LocallyIntegrableOn (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) I :=
@@ -1077,11 +1231,14 @@ theorem locallyIntegrableOn_leibniz (hI : (I : Set ℝ).OrdConnected)
     I.isOpen.isLocallyClosed).add ((locallyIntegrableOn_deriv v 1).continuousOn_mul
     (continuousOn_rep' hI u) I.isOpen.isLocallyClosed)
 
-/-- **Corollary 8.10 of [brezis2011functional] (differentiation of a product), weak-derivative
-form**: for `u, v ∈ W^{1,p}(I)`, the product `ũ ṽ` of the continuous representatives has the
-weak derivative `u' ṽ + ũ v'` on `I`. The product is the primitive of that expression
-(`SobolevIntervalLp.integral_deriv_mul_rep_add_mul_deriv`, Mathlib's product rule for absolutely
-continuous functions), so Lemma 8.2 applies. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and
+$u, v \in W^{1,p}(I)$. The product $\tilde u \tilde v$ of the continuous representatives has the
+weak derivative $u' \tilde v + \tilde u v'$ on $I$. This is Corollary 8.10 of
+[brezis2011functional] (differentiation of a product), in the form of a weak derivative.
+
+The product is the primitive of $u' \tilde v + \tilde u v'$
+(`SobolevIntervalLp.integral_deriv_mul_rep_add_mul_deriv`, the product rule for absolutely
+continuous functions), so Lemma 8.2 of [brezis2011functional] applies. -/
 theorem hasWeakDerivOn_rep_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     HasWeakDerivOn (fun t ↦ rep u t * rep v t)
       (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) I := by
@@ -1104,28 +1261,36 @@ theorem hasWeakDerivOn_rep_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevI
   rw [e, key]
   ring
 
-/-- The Leibniz expression `u' ṽ + ũ v'` lies in `L^p(I)`: a product of an `L^p` function and
-an `L^∞` one (Theorem 8.8 (5)), twice. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and
+$u, v \in W^{1,p}(I)$. The function $u' \tilde v + \tilde u v'$ lies in $L^p(I)$.
+
+Each term is a function of $L^p$ times a function of $L^\infty$, by Theorem 8.8 (5). -/
 theorem memLp_leibniz (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     MemLp (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) p (volume.restrict I) :=
   ((Lp.memLp (deriv u 1)).mul (memLp_top_rep hI v)).add ((memLp_top_rep hI u).mul
     (Lp.memLp (deriv v 1)))
 
-/-- The product of the continuous representatives lies in `L^p(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and
+$u, v \in W^{1,p}(I)$. The product $\tilde u \tilde v$ of the continuous representatives lies in
+$L^p(I)$. -/
 theorem memLp_rep_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     MemLp (fun t ↦ rep u t * rep v t) p (volume.restrict I) :=
   (memLp_top_rep hI u).mul (memLp_rep hI v)
 
-/-- **Corollary 8.10 of [brezis2011functional] (differentiation of a product)**: for
-`u, v ∈ W^{1,p}(I)`, `1 ≤ p ≤ ∞`, the product `ũ ṽ` of the continuous representatives lies in
-`W^{1,p}(I)`, with weak derivative `u' ṽ + ũ v'` (`SobolevIntervalLp.hasWeakDerivOn_rep_mul`). -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$ and
+$u, v \in W^{1,p}(I)$. The product $\tilde u \tilde v$ of the continuous representatives lies in
+$W^{1,p}(I)$. This is Corollary 8.10 of [brezis2011functional] (differentiation of a product).
+
+The weak derivative is $u' \tilde v + \tilde u v'$ by
+`SobolevIntervalLp.hasWeakDerivOn_rep_mul`. -/
 theorem memSobolevIntervalLp_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     MemSobolevIntervalLp (fun t ↦ rep u t * rep v t) 1 p I :=
   memSobolevIntervalLp_one_iff.2 ⟨memLp_rep_mul hI u v, _, hasWeakDerivOn_rep_mul hI u v,
     memLp_leibniz hI u v⟩
 
-/-- **The product in `W^{1,p}(I)`**: the element `u v` whose function is `ũ ṽ` and whose weak
-derivative is `u' ṽ + ũ v'`. -/
+/-- **The product in $W^{1,p}(I)$.** Let $I \subseteq \mathbb{R}$ be an open interval,
+$1 \le p \le \infty$ and $u, v \in W^{1,p}(I)$. The product $uv$ is the element of $W^{1,p}(I)$
+whose function is $\tilde u \tilde v$ and whose weak derivative is $u' \tilde v + \tilde u v'$. -/
 def mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     SobolevIntervalLp 1 p I :=
   SobolevIntervalLp.mk ![(memLp_rep_mul hI u v).toLp _, (memLp_leibniz hI u v).toLp _] fun j ↦ by
@@ -1141,25 +1306,29 @@ def mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     · exact h0
     · exact h1
 
-/-- The function of the product is `ũ ṽ`. -/
+/-- The function of the product $uv \in W^{1,p}(I)$ agrees almost everywhere on $I$ with
+$\tilde u \tilde v$. -/
 theorem fn_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     fn (mul hI u v) =ᵐ[volume.restrict I] fun t ↦ rep u t * rep v t :=
   (memLp_rep_mul hI u v).coeFn_toLp
 
-/-- The weak derivative of the product is `u' ṽ + ũ v'`. -/
+/-- The weak derivative of the product $uv \in W^{1,p}(I)$ agrees almost everywhere on $I$ with
+$u' \tilde v + \tilde u v'$. -/
 theorem coeFn_deriv_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     ⇑(deriv (mul hI u v) 1) =ᵐ[volume.restrict I]
       fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t :=
   (memLp_leibniz hI u v).coeFn_toLp
 
-/-- The continuous representative of the product is the product of the representatives, on the
-closure of `I`. -/
+/-- The continuous representative of the product $uv \in W^{1,p}(I)$ equals $\tilde u \tilde v$ on
+$\bar I$. -/
 theorem rep_mul (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     EqOn (rep (mul hI u v)) (fun t ↦ rep u t * rep v t) (closure (I : Set ℝ)) :=
   rep_eq_of_continuousOn hI _ ((continuousOn_rep hI u).mul (continuousOn_rep hI v)) (fn_mul hI u v)
 
-/-- **Integration by parts in `W^{1,p}(I)`** ([brezis2011functional] Corollary 8.10, formula
-(11)): for `x, y ∈ Ī`, `∫_y^x (u' ṽ + ũ v') = ũ(x) ṽ(x) - ũ(y) ṽ(y)`. -/
+/-- **Integration by parts in $W^{1,p}(I)$.** Let $I \subseteq \mathbb{R}$ be an open interval,
+$1 \le p \le \infty$, $u, v \in W^{1,p}(I)$ and $x, y \in \bar I$. Then
+$$\int_y^x (u' \tilde v + \tilde u v') = \tilde u(x) \tilde v(x) - \tilde u(y) \tilde v(y).$$
+This is formula (11) of Corollary 8.10 of [brezis2011functional]. -/
 theorem integral_deriv_mul_add_mul_deriv (hI : (I : Set ℝ).OrdConnected)
     (u v : SobolevIntervalLp 1 p I) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (hy : y ∈ closure (I : Set ℝ)) :
@@ -1173,8 +1342,12 @@ theorem integral_deriv_mul_add_mul_deriv (hI : (I : Set ℝ).OrdConnected)
   rw [e, key]
   ring
 
-/-- **Integration by parts in `W^{1,p}(I)` against an absolutely continuous factor** `ψ`:
-`∫_y^x u' ψ = ũ(x) ψ(x) - ũ(y) ψ(y) - ∫_y^x ũ ψ'`, where `ψ'` is the classical derivative. -/
+/-- **Integration by parts against an absolutely continuous factor.** Let $I \subseteq \mathbb{R}$
+be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and $x, y \in \bar I$. Let $\psi$
+be absolutely continuous on the interval between $y$ and $x$, with classical derivative $\psi'$.
+Then
+$$\int_y^x u' \psi = \tilde u(x) \psi(x) - \tilde u(y) \psi(y) - \int_y^x \tilde u \psi'.$$
+-/
 theorem integral_deriv_mul_eq_sub_integral_mul_deriv_of_absolutelyContinuousOnInterval
     (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {x y : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) {ψ : ℝ → ℝ}
@@ -1196,8 +1369,11 @@ theorem integral_deriv_mul_eq_sub_integral_mul_deriv_of_absolutelyContinuousOnIn
   rw [e1, e2]
   linarith [key]
 
-/-- **Integration by parts in `W^{1,p}(I)` against a `C¹` factor** `ψ`, such as a coefficient of
-a differential operator. -/
+/-- **Integration by parts against a $C^1$ factor.** Let $I \subseteq \mathbb{R}$ be an open
+interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and $x, y \in \bar I$. Let $\psi$ be $C^1$ on
+the closed interval between $y$ and $x$. Then
+$$\int_y^x u' \psi = \tilde u(x) \psi(x) - \tilde u(y) \psi(y) - \int_y^x \tilde u \psi'.$$
+A typical factor $\psi$ is a coefficient of a differential operator. -/
 theorem integral_deriv_mul_contDiffOn (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {x y : ℝ} (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) {ψ : ℝ → ℝ}
     (hψ : ContDiffOn ℝ 1 ψ (uIcc y x)) :
@@ -1206,7 +1382,11 @@ theorem integral_deriv_mul_contDiffOn (hI : (I : Set ℝ).OrdConnected) (u : Sob
   integral_deriv_mul_eq_sub_integral_mul_deriv_of_absolutelyContinuousOnInterval hI u hx hy
     hψ.absolutelyContinuousOnInterval
 
-/-- **Integration by parts in `W^{1,p}(I)`**, the form `∫_y^x u' ṽ = [ũ ṽ]_y^x - ∫_y^x ũ v'`. -/
+/-- **Integration by parts in $W^{1,p}(I)$.** Let $I \subseteq \mathbb{R}$ be an open interval,
+$1 \le p \le \infty$, $u, v \in W^{1,p}(I)$ and $x, y \in \bar I$. Then
+$$\int_y^x u' \tilde v = \tilde u(x) \tilde v(x) - \tilde u(y) \tilde v(y) - \int_y^x \tilde u
+  v'.$$
+-/
 theorem integral_deriv_mul_eq_sub_integral_mul_deriv (hI : (I : Set ℝ).OrdConnected)
     (u v : SobolevIntervalLp 1 p I) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (hy : y ∈ closure (I : Set ℝ)) :
@@ -1230,11 +1410,15 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **Corollary 8.11 of [brezis2011functional] (differentiation of a composition), weak-derivative
-form**: for `G ∈ C¹(ℝ)` and `u ∈ W^{1,p}(I)`, `G ∘ ũ` has the weak derivative `(G' ∘ ũ) u'` on
-`I`. The composition is absolutely continuous on every compact subinterval of `Ī` (`G` is
-Lipschitz on the bounded range of `ũ`), its classical derivative is `G'(ũ) u'` almost everywhere
-by the chain rule, and Lemma 8.2 applies to the resulting integral representation. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$G \in C^1(\mathbb{R})$. Then $G \circ \tilde u$ has the weak derivative
+$(G' \circ \tilde u)\,u'$ on $I$. This is Corollary 8.11 of [brezis2011functional]
+(differentiation of a composition), in the form of a weak derivative.
+
+The composition is absolutely continuous on every compact subinterval of $\bar I$, because $G$
+is Lipschitz on the bounded range of $\tilde u$. By the chain rule its classical derivative is
+$G'(\tilde u)\,u'$ almost everywhere, and Lemma 8.2 of [brezis2011functional] applies to the
+resulting integral representation. -/
 theorem hasWeakDerivOn_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) :
     HasWeakDerivOn (fun t ↦ G (rep u t)) (fun t ↦ _root_.deriv G (rep u t) * deriv u 1 t) I := by
@@ -1276,7 +1460,10 @@ theorem hasWeakDerivOn_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevInterv
   simp only [Function.comp_apply]
   ring
 
-/-- `G'(ũ) u'` lies in `L^p(I)` for `G ∈ C¹`: `G' ∘ ũ` is bounded (`ũ` is, Theorem 8.8 (5)). -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$G \in C^1(\mathbb{R})$. Then $(G' \circ \tilde u)\,u'$ lies in $L^p(I)$.
+
+The function $G' \circ \tilde u$ is bounded because $\tilde u$ is bounded (Theorem 8.8 (5)). -/
 theorem memLp_deriv_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) :
     MemLp (fun t ↦ _root_.deriv G (rep u t) * deriv u 1 t) p (volume.restrict I) := by
@@ -1294,9 +1481,11 @@ theorem memLp_deriv_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalL
       (Eventually.of_forall fun t ht ↦ hC _ (hmem t ht)))
   exact hbdd.mul (Lp.memLp (deriv u 1))
 
-/-- `G ∘ ũ` lies in `L^p(I)` when `G ∈ C¹` and `G(0) = 0`: `|G(s)| ≤ K |s|` on the bounded range
-of `ũ`, so `|G ∘ ũ| ≤ K |ũ|`. This is where `G(0) = 0` is used (footnote 9 of
-[brezis2011functional]). -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$G \in C^1(\mathbb{R})$ with $G(0) = 0$. Then $G \circ \tilde u$ lies in $L^p(I)$.
+
+On the bounded range of $\tilde u$, $|G(s)| \le K|s|$, so $|G \circ \tilde u| \le K |\tilde u|$.
+This is where $G(0) = 0$ is used (footnote 9 of [brezis2011functional]). -/
 theorem memLp_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {G : ℝ → ℝ}
     (hG : ContDiff ℝ 1 G) (hG0 : G 0 = 0) :
     MemLp (fun t ↦ G (rep u t)) p (volume.restrict I) := by
@@ -1316,11 +1505,15 @@ theorem memLp_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p 
   rw [hG0, dist_zero_right, dist_zero_right] at h
   simpa [Real.norm_eq_abs, abs_mul, abs_of_nonneg (K.coe_nonneg)] using h
 
-/-- **Corollary 8.11 of [brezis2011functional] (differentiation of a composition)**: for
-`G ∈ C¹(ℝ)` with `G(0) = 0` and `u ∈ W^{1,p}(I)`, `1 ≤ p ≤ ∞`, the composition `G ∘ ũ` lies in
-`W^{1,p}(I)` and `(G ∘ ũ)' = (G' ∘ ũ) u'`. The hypothesis `G(0) = 0` is only used to put `G ∘ ũ`
-in `L^p(I)` on an unbounded interval (footnote 9); `memSobolevIntervalLp_comp_of_bounded` drops
-it for a bounded interval. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$G \in C^1(\mathbb{R})$ with $G(0) = 0$. Then $G \circ \tilde u \in W^{1,p}(I)$ and
+$$(G \circ \tilde u)' = (G' \circ \tilde u)\,u'$$
+weakly on $I$. This is Corollary 8.11 of [brezis2011functional] (differentiation of a
+composition).
+
+The hypothesis $G(0) = 0$ is used only to put $G \circ \tilde u$ in $L^p(I)$ on an unbounded
+interval (footnote 9 of [brezis2011functional]).
+`SobolevIntervalLp.memSobolevIntervalLp_comp_of_bounded` drops it on a bounded interval. -/
 theorem memSobolevIntervalLp_comp (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) (hG0 : G 0 = 0) :
     MemSobolevIntervalLp (fun t ↦ G (rep u t)) 1 p I ∧
@@ -1328,9 +1521,10 @@ theorem memSobolevIntervalLp_comp (hI : (I : Set ℝ).OrdConnected) (u : Sobolev
   ⟨memSobolevIntervalLp_one_iff.2 ⟨memLp_comp hI u hG hG0, _, hasWeakDerivOn_comp hI u hG,
     memLp_deriv_comp hI u hG⟩, hasWeakDerivOn_comp hI u hG⟩
 
-/-- **Corollary 8.11 on a bounded interval, without `G(0) = 0`** (footnote 9 of
-[brezis2011functional]): for `G ∈ C¹(ℝ)` and `u ∈ W^{1,p}(a, b)`, `G ∘ ũ ∈ W^{1,p}(a, b)` with
-`(G ∘ ũ)' = (G' ∘ ũ) u'`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $u \in W^{1,p}(a, b)$ and $G \in C^1(\mathbb{R})$. Then
+$G \circ \tilde u \in W^{1,p}(a, b)$ and $(G \circ \tilde u)' = (G' \circ \tilde u)\,u'$ weakly
+on $(a, b)$. This is Corollary 8.11 of [brezis2011functional] on a bounded interval, without the
+hypothesis $G(0) = 0$ (footnote 9 there). -/
 theorem memSobolevIntervalLp_comp_of_bounded {a b : ℝ} (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) :
     MemSobolevIntervalLp (fun t ↦ G (rep u t)) 1 p (Opens.Ioo a b) ∧
@@ -1355,9 +1549,11 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
-/-- **Theorem 8.8 (5) on a bounded interval with an `L^q` norm of the function** (Remark 11 of
-[brezis2011functional], Chapter 8): for `a < b`, `1 ≤ p, q ≤ ∞`, `u ∈ W^{1,p}(a, b)` and
-`x ∈ [a, b]`, `|ũ(x)| ≤ (b - a)^{-1/q} ‖u‖_{L^q} + (b - a)^{1 - 1/p} ‖u'‖_{L^p}`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $1 \le q \le \infty$, $u \in W^{1,p}(a, b)$ and
+$x \in [a, b]$. Then
+$$|\tilde u(x)| \le (b - a)^{-1/q} \|u\|_{L^q} + (b - a)^{1 - 1/p} \|u'\|_{L^p}.$$
+This is Theorem 8.8 (5) of [brezis2011functional] on a bounded interval with an $L^q$ norm of
+the function, as in Remark 11 of Chapter 8 there. -/
 theorem abs_rep_le_of_bounded' (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) {x : ℝ} (hx : x ∈ Icc a b) :
     |rep u x| ≤ (b - a) ^ (-q.toReal⁻¹) * ‖toLpOfBounded p hab q u‖
@@ -1378,9 +1574,11 @@ theorem abs_rep_le_of_bounded' (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
       (ofReal_rpow_mul_enorm_ne_top hba _ _),
     toReal_ofReal_rpow_mul_enorm hba.le, toReal_ofReal_rpow_mul_enorm hba.le] at this
 
-/-- **Remark 11 of [brezis2011functional], Chapter 8, first half**: on a bounded interval the
-`W^{1,p}` norm is controlled by `‖u'‖_p` and any `L^q` norm of `u`:
-`‖u‖_{W^{1,p}} ≤ (b - a)^{1/p} ((b - a)^{-1/q} ‖u‖_q + (b - a)^{1 - 1/p} ‖u'‖_p) + ‖u'‖_p`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $1 \le q \le \infty$ and $u \in W^{1,p}(a, b)$. Then
+$$\|u\|_{W^{1,p}} \le (b - a)^{1/p} \big((b - a)^{-1/q} \|u\|_{L^q} + (b - a)^{1 - 1/p}
+  \|u'\|_{L^p}\big) + \|u'\|_{L^p}.$$
+This is the first half of Remark 11 of [brezis2011functional], Chapter 8: on a bounded interval,
+$\|u'\|_{L^p}$ and any $L^q$ norm of $u$ control the norm of $W^{1,p}$. -/
 theorem norm_le_of_bounded' (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ‖u‖ ≤ (b - a) ^ p.toReal⁻¹ * ((b - a) ^ (-q.toReal⁻¹) * ‖toLpOfBounded p hab q u‖
@@ -1406,9 +1604,10 @@ theorem norm_le_of_bounded' (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     rw [deriv_zero, hx1, Real.norm_eq_abs]
     exact abs_rep_le_of_bounded' hab q u (Ioo_subset_Icc_self hx2)
 
-/-- **Remark 11 of [brezis2011functional], Chapter 8, second half**:
-`‖u'‖_p + ‖u‖_q ≤ (1 + (b - a)^{1/q} C) ‖u‖_{W^{1,p}}` with `C` the embedding constant of
-Theorem 8.8 (5). -/
+/-- Let $a < b$, $1 \le p \le \infty$, $1 \le q \le \infty$ and $u \in W^{1,p}(a, b)$. Then
+$$\|u'\|_{L^p} + \|u\|_{L^q} \le \big(1 + (b - a)^{1/q} C\big) \|u\|_{W^{1,p}},$$
+with $C$ = `SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`, the constant of Theorem 8.8
+(5). This is the second half of Remark 11 of [brezis2011functional], Chapter 8. -/
 theorem norm_deriv_add_norm_toLpOfBounded_le (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)]
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     ‖deriv u 1‖ + ‖toLpOfBounded p hab q u‖
@@ -1416,9 +1615,12 @@ theorem norm_deriv_add_norm_toLpOfBounded_le (hab : a < b) (q : ℝ≥0∞) [Fac
   rw [add_mul, one_mul]
   exact add_le_add (norm_deriv_le u 1) (norm_toLpOfBoundedₗ_le hab q u)
 
-/-- **Remark 11 of [brezis2011functional], Chapter 8**: on a bounded interval `(a, b)`, for every
-`1 ≤ q ≤ ∞`, the quantity `‖u'‖_p + ‖u‖_q` is a norm on `W^{1,p}(a, b)` equivalent to the
-`W^{1,p}` norm. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $1 \le q \le \infty$. There are constants $C_1, C_2 > 0$
+such that for every $u \in W^{1,p}(a, b)$,
+$$\|u\|_{W^{1,p}} \le C_1 \big(\|u'\|_{L^p} + \|u\|_{L^q}\big) \quad \text{and} \quad
+  \|u'\|_{L^p} + \|u\|_{L^q} \le C_2 \|u\|_{W^{1,p}}.$$
+So $\|u'\|_{L^p} + \|u\|_{L^q}$ is a norm on $W^{1,p}(a, b)$ equivalent to the norm of
+$W^{1,p}$. This is Remark 11 of [brezis2011functional], Chapter 8. -/
 theorem norm_equiv_of_bounded (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)] :
     ∃ C₁ C₂ : ℝ, 0 < C₁ ∧ 0 < C₂ ∧ ∀ u : SobolevIntervalLp 1 p (Opens.Ioo a b),
       ‖u‖ ≤ C₁ * (‖deriv u 1‖ + ‖toLpOfBounded p hab q u‖) ∧
@@ -1438,11 +1640,12 @@ theorem norm_equiv_of_bounded (hab : a < b) (q : ℝ≥0∞) [Fact (1 ≤ q)] :
 end SobolevIntervalLp
 
 
-/-! ### Theorem 8.8 (5): the book's inequality (8) -/
+/-! ### Theorem 8.8 (5): inequality (8) of the source -/
 
 section AbsRpow
 
-/-- `t ↦ |t|^r`, `r ≥ 1`, is Lipschitz on `[-M, M]` with constant `r M^{r-1}`. -/
+/-- Let $r \ge 1$ and $M \ge 0$. The function $t \mapsto |t|^r$ is Lipschitz on $[-M, M]$ with
+constant $r M^{r-1}$. -/
 theorem lipschitzOnWith_abs_rpow {r M : ℝ} (hr : 1 ≤ r) (hM : 0 ≤ M) :
     LipschitzOnWith ((r * M ^ (r - 1)).toNNReal * 1) (fun t : ℝ ↦ |t| ^ r) (Icc (-M) M) := by
   have h1 : LipschitzOnWith (r * M ^ (r - 1)).toNNReal (fun t : ℝ ↦ t ^ r) (Icc 0 M) := by
@@ -1457,7 +1660,7 @@ theorem lipschitzOnWith_abs_rpow {r M : ℝ} (hr : 1 ≤ r) (hM : 0 ≤ M) :
     (lipschitzWith_one_norm (E := ℝ)).lipschitzOnWith
   exact h1.comp h2 fun t ht ↦ ⟨abs_nonneg t, abs_le.2 ht⟩
 
-/-- `|t|^r → 0`-type continuity: `t ↦ ‖|t|^r‖ₑ` is continuous. -/
+/-- For $r \ge 0$, the function $t \mapsto |t|^r$, with values in `ℝ≥0∞`, is continuous. -/
 theorem continuous_enorm_abs_rpow {r : ℝ} (hr : 0 ≤ r) :
     Continuous fun t : ℝ ↦ ‖|t| ^ r‖ₑ :=
   continuous_enorm.comp ((Real.continuous_rpow_const hr).comp continuous_abs)
@@ -1468,18 +1671,24 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- The cocompact filter restricted to an unbounded set is nontrivial. -/
+/-- Let $I \subseteq \mathbb{R}$ be an unbounded open set. Then the filter of sets that contain the
+complement of a compact set, restricted to $I$ (`cocompact ℝ ⊓ 𝓟 I`), is nontrivial. -/
 theorem neBot_cocompact_inf_principal (hunb : ¬ Bornology.IsBounded (I : Set ℝ)) :
     (cocompact ℝ ⊓ 𝓟 (I : Set ℝ)).NeBot :=
   Filter.neBot_iff.2 fun h ↦ hunb (Bornology.isBounded_def.2
     ((Metric.cobounded_eq_cocompact (α := ℝ)) ▸ Filter.inf_principal_eq_bot.1 h))
 
-/-- **The book's inequality (8), in `ℝ≥0∞`**: for an unbounded interval `I`, `1 ≤ p < ∞`,
-`u ∈ W^{1,p}(I)` and `x ∈ Ī`, `|ũ(x)|^p ≤ p ‖u‖_p^{p-1} ‖u'‖_p`. The function `w = |ũ|^p` is
-absolutely continuous on compact subintervals (`|·|^p` is Lipschitz on bounded sets), with
-`|w'| ≤ p |ũ|^{p-1} |u'|` almost everywhere, so `|w(x) - w(y)| ≤ p ∫_I |ũ|^{p-1} |u'|`, which
-Hölder's inequality bounds by `p ‖u‖_p^{p-1} ‖u'‖_p`; and `w(y) → 0` as `y → ∞` in `I`
-(Corollary 8.9). -/
+/-- Let $I \subseteq \mathbb{R}$ be an unbounded open interval, $1 \le p < \infty$,
+$u \in W^{1,p}(I)$ and $x \in \bar I$. Then
+$$|\tilde u(x)|^p \le p\,\|u\|_{L^p}^{p-1}\,\|u'\|_{L^p}.$$
+This is inequality (8) in the proof of Theorem 8.8 (5) of [brezis2011functional], stated in
+`ℝ≥0∞`.
+
+The function $w = |\tilde u|^p$ is absolutely continuous on compact subintervals, because
+$|\cdot|^p$ is Lipschitz on bounded sets, and $|w'| \le p |\tilde u|^{p-1} |u'|$ almost
+everywhere. So $|w(x) - w(y)| \le p \int_I |\tilde u|^{p-1} |u'|$, which Hölder's inequality
+bounds by $p \|u\|_{L^p}^{p-1} \|u'\|_{L^p}$. Finally $w(y) \to 0$ as $y \to \infty$ in $I$, by
+Corollary 8.9. -/
 theorem enorm_abs_rep_rpow_le (hI : (I : Set ℝ).OrdConnected)
     (hunb : ¬ Bornology.IsBounded (I : Set ℝ)) (hp : p ≠ ⊤) (u : SobolevIntervalLp 1 p I)
     {x : ℝ} (hx : x ∈ closure (I : Set ℝ)) :
@@ -1618,9 +1827,10 @@ theorem enorm_abs_rep_rpow_le (hI : (I : Set ℝ).OrdConnected)
           exact hB y (subset_closure hy)
 
 
-/-- **The book's inequality (8)** ([brezis2011functional], proof of Theorem 8.8 (5)): for an
-unbounded interval `I`, `1 ≤ p < ∞`, `u ∈ W^{1,p}(I)` and `x ∈ Ī`,
-`|ũ(x)|^p ≤ p ‖u‖_p^{p-1} ‖u'‖_p`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an unbounded open interval, $1 \le p < \infty$,
+$u \in W^{1,p}(I)$ and $x \in \bar I$. Then
+$$|\tilde u(x)|^p \le p\,\|u\|_{L^p}^{p-1}\,\|u'\|_{L^p}.$$
+This is inequality (8) in the proof of Theorem 8.8 (5) of [brezis2011functional]. -/
 theorem abs_rep_pow_le (hI : (I : Set ℝ).OrdConnected) (hunb : ¬ Bornology.IsBounded (I : Set ℝ))
     (hp : p ≠ ⊤) (u : SobolevIntervalLp 1 p I) {x : ℝ} (hx : x ∈ closure (I : Set ℝ)) :
     |rep u x| ^ p.toReal ≤ p.toReal * ‖deriv u 0‖ ^ (p.toReal - 1) * ‖deriv u 1‖ := by
@@ -1639,9 +1849,13 @@ end SobolevIntervalLp
 
 section Helly
 
-/-- **Pointwise extraction on a countable set**: a sequence of real functions uniformly bounded on
-a countable set `s` has a subsequence converging at every point of `s` — the diagonal argument,
-here as the sequential compactness of the countable product `s → [-M, M]`. -/
+/-- **Pointwise extraction on a countable set.** Let $s \subseteq \mathbb{R}$ be countable and let
+$f_n : \mathbb{R} \to \mathbb{R}$ with $|f_n(x)| \le M$ for all $n$ and all $x \in s$. Then
+there is a strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such that
+$f_{\varphi(n)}(x)$ converges for every $x \in s$.
+
+This is the diagonal argument, here as the sequential compactness of the countable product of
+copies of $[-M, M]$ indexed by $s$. -/
 theorem exists_subseq_forall_tendsto_of_countable {s : Set ℝ} (hs : s.Countable)
     {f : ℕ → ℝ → ℝ} {M : ℝ} (hbdd : ∀ n, ∀ x ∈ s, |f n x| ≤ M) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ s, ∃ l, Tendsto (fun n ↦ f (φ n) x) atTop (𝓝 l) := by
@@ -1651,13 +1865,17 @@ theorem exists_subseq_forall_tendsto_of_countable {s : Set ℝ} (hs : s.Countabl
   refine ⟨φ, hφ, fun x hx ↦ ⟨(L ⟨x, hx⟩ : ℝ), ?_⟩⟩
   exact (continuous_subtype_val.tendsto _).comp (tendsto_pi_nhds.1 hL ⟨x, hx⟩)
 
-/-- **Helly's selection theorem for monotone functions**: a sequence of functions nondecreasing
-and uniformly bounded on `[a, b]` has a subsequence converging at every point of `[a, b]`.
-Extract (`exists_subseq_forall_tendsto_of_countable`) a subsequence converging on the rationals of
-`[a, b]` and at the endpoints, with limit `l`; the envelope `g x = inf {l r : r rational, x < r}`
-is nondecreasing, so has countably many discontinuities (`Monotone.countable_not_continuousAt`);
-extract again on these; at every other `x ∈ (a, b)` the subsequence converges to `g x`, squeezed
-between its values at rationals `q < x < r`. -/
+/-- **Helly's selection theorem for monotone functions.** Let $f_n : \mathbb{R} \to \mathbb{R}$ be
+nondecreasing on $[a, b]$ with $|f_n(x)| \le M$ for all $n$ and all $x \in [a, b]$. Then there
+is a strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such that $f_{\varphi(n)}(x)$
+converges for every $x \in [a, b]$.
+
+First extract (`exists_subseq_forall_tendsto_of_countable`) a subsequence that converges at the
+rational points of $[a, b]$ and at the endpoints, with limit $l$. The envelope $g(x) =
+\inf\{l(r) : r \text{ rational}, x < r\}$ is nondecreasing, so it has countably many
+discontinuities (`Monotone.countable_not_continuousAt`). Extract again at these points. At every
+other $x \in (a, b)$ the subsequence converges to $g(x)$, because it is squeezed between its
+values at rationals $q < x < r$. -/
 theorem exists_subseq_forall_tendsto_of_forall_monotoneOn {f : ℕ → ℝ → ℝ} {a b M : ℝ}
     (hmono : ∀ n, MonotoneOn (f n) (Icc a b)) (hbdd : ∀ n, ∀ x ∈ Icc a b, |f n x| ≤ M) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ Icc a b, ∃ l, Tendsto (fun n ↦ f (φ n) x) atTop (𝓝 l) := by
@@ -1744,12 +1962,16 @@ namespace SobolevIntervalLp
 
 variable {a b : ℝ}
 
-/-- **Helly's selection theorem** ([brezis2011functional] Chapter 8, Remark 10 and Exercise 8.3):
-a bounded sequence of `W^{1,1}(a, b)` has a subsequence whose continuous representatives converge
-at every point of `[a, b]`. The representative is the difference of the two nondecreasing
-functions `v_n(x) = ∫_a^x |u_n'|` and `w_n = v_n - ũ_n` (as `w_n(y) - w_n(x) = ∫_x^y (|u_n'| -
-u_n') ≥ 0`), both bounded by a multiple of `‖u_n‖`; two applications of Helly's theorem for
-monotone functions (`exists_subseq_forall_tendsto_of_forall_monotoneOn`) give the subsequence. -/
+/-- **Helly's selection theorem.** Let $a < b$ and let $u_n \in W^{1,1}(a, b)$ with $\|u_n\| \le M$
+for all $n$. Then there is a strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such that
+$\tilde u_{\varphi(n)}(x)$ converges for every $x \in [a, b]$. This is Remark 10 and Exercise
+8.3 of [brezis2011functional], Chapter 8.
+
+The representative is the difference of the two nondecreasing functions
+$v_n(x) = \int_a^x |u_n'|$ and $w_n = v_n - \tilde u_n$, since $w_n(y) - w_n(x) = \int_x^y
+(|u_n'| - u_n') \ge 0$. Both are bounded by a multiple of $\|u_n\|$. Two applications of Helly's
+theorem for monotone functions (`exists_subseq_forall_tendsto_of_forall_monotoneOn`) give the
+subsequence. -/
 theorem exists_subseq_tendsto_of_bounded_one (hab : a < b)
     {u : ℕ → SobolevIntervalLp 1 1 (Opens.Ioo a b)} {M : ℝ} (hM : ∀ n, ‖u n‖ ≤ M) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧

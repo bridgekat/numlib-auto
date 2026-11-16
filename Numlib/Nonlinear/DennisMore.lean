@@ -8,44 +8,83 @@ import Numlib.Nonlinear.QuasiNewton
 /-!
 # Local convergence of Broyden's method: the Dennis–Moré theory
 
-The local superlinear convergence of Broyden's method ([quarteroni2000numerical] Property 7.2;
-[dennis1974characterization]; [dennis1996numerical] Theorem 8.2.2), on `EuclideanSpace ℝ n`, for
-the iteration `Broyden.iterate` of `Numlib/Nonlinear/QuasiNewton`. The proof has three layers.
+Let $F : \mathbb{R}^n \to \mathbb{R}^n$ have a root $z$, near which the Jacobian $J$ is Lipschitz
+and $J(z)$ is invertible. Broyden's method computes $x_{k+1} = x_k - Q_k^{-1} F(x_k)$ and updates
+the Jacobian approximation by $Q_{k+1} = Q_k + ((y_k - Q_k s_k) s_k^T)/(s_k^T s_k)$, with
+$s_k = x_{k+1} - x_k$ and $y_k = F(x_{k+1}) - F(x_k)$. This module proves that Broyden's method
+converges locally and superlinearly: if $x_0$ is close to $z$ and $Q_0$ is close to $J(z)$, then
+every $Q_k$ is invertible, $\|x_k - z\| \le \varepsilon/2^k$, and
+$\|x_{k+1} - z\| \le c_k \|x_k - z\|$ with $c_k \to 0$. This is Property 7.2 of
+[quarteroni2000numerical], the theorem of [dennis1974characterization], and Theorem 8.2.2 of
+[dennis1996numerical]. The iteration is `Broyden.iterate` of `Numlib.Nonlinear.QuasiNewton`, on
+`EuclideanSpace ℝ n`.
 
-* **The Frobenius geometry of the update.** With `P = s sᵀ / (sᵀ s)` the projector onto the step,
-  Pythagoras `‖A (1 - P)‖_F² + ‖A P‖_F² = ‖A‖_F²`
-  (`Matrix.frobenius_norm_sq_mul_one_sub_add_sq_mul`) and `‖A s‖ ≤ ‖A P‖_F ‖s‖` give the
-  **Dennis–Moré inequality** `‖A s‖² / ‖s‖² ≤ 2 ‖A‖_F (‖A‖_F - ‖A (1 - P)‖_F)`
-  (`Matrix.sq_norm_mulVec_div_le_frobenius`),
-  and for Broyden's update `Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)` with `E = Q - J`, `E₊ = Q₊ - J`,
-  `‖E s‖² / ‖s‖² ≤ 2 ‖E‖_F (‖E‖_F - ‖E₊‖_F + ‖y - J s‖ / ‖s‖)`
-  (`Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate`): the update cannot decrease the Frobenius
-  error much without the error along the step being small.
-* **Bounded deterioration and linear convergence** ([dennis1996numerical] Theorem 8.2.2, the
-  two-sequence induction). Under `Broyden.LipschitzJacobianRoot` — `F` differentiable on a convex
-  `D` with Jacobian `J`, Lipschitz at the root `z` — and `‖J z⁻¹‖ ≤ β`, one step from a `Q`
-  within `1 / (3β)` of `J z` is well defined and contracts,
-  `‖x₊ - z‖ ≤ (3β / 2) (‖Q - J z‖ + (L / 2) ‖x - z‖) ‖x - z‖` (`Broyden.norm_step_x_sub_le`);
-  the bounded deterioration `‖M_{k+1} - J z‖_F ≤ ‖M_k - J z‖_F + (L / 2) (‖x_{k+1} - z‖ +
-  ‖x_k - z‖)` of `Matrix.frobenius_norm_broydenUpdate_sub_le_add` along the iteration
-  (`Broyden.frobenius_norm_symm_iterate_succ_sub_le`) and the invariant `‖x_k - z‖ ≤ ε / 2ᵏ`,
-  `‖M_k - J z‖_F ≤ 2δ` (`Broyden.norm_iterate_sub_le_and_frobenius_norm_le`) follow by
-  induction under the thresholds `12 β δ ≤ 1`, `3 L ε ≤ 2δ`.
-* **The Dennis–Moré condition and superlinear convergence.** Summing the Dennis–Moré inequality
-  along the iteration telescopes the Frobenius errors, so the quotients
-  `η_k = ‖(Q_k - J z) s_k‖ / ‖s_k‖` (`Broyden.dennisMoreQuotient`) are square-summable and tend
-  to zero (`Broyden.tendsto_dennisMoreQuotient`); the secant equation `Q_k s_k = -F x_k` then
-  gives `‖x_{k+1} - z‖ ≤ 4β (η_k + L ‖x_k - z‖) ‖x_k - z‖` (`Broyden.norm_iterate_succ_sub_le_mul`),
-  which is superlinear convergence with the explicit constants `c_k = 4β (η_k + L ε / 2ᵏ) → 0`
-  (`Broyden.superlinear_of_le`, and `Broyden.exists_superlinear` in the book's existential form,
-  with the hypothesis on `Q₀` in the operator norm).
+The module does not claim that $Q_k \to J(z)$. This fails in general (Example 7.3 of
+[quarteroni2000numerical]).
 
-The Jacobian is carried as a matrix-valued `J : E → Matrix n n ℝ`, because the deterioration
-estimate lives in the Frobenius norm; the operators of `Broyden.iterate` are read back as
-matrices through `Matrix.toEuclideanCLM.symm` (`Broyden.symm_iterate_succ_Q`), and the two norms
-are compared by `Matrix.norm_toEuclideanCLM_le_frobenius_norm` and
-`Matrix.frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM`. Whether `Q_k → J z` is not
-claimed: it fails in general ([quarteroni2000numerical] Example 7.3).
+## Main definitions
+
+* `Broyden.LipschitzJacobianRoot`: the standing hypotheses: $F$ is differentiable on a convex set
+  $D$, and its Jacobian is Lipschitz at the root $z \in D$.
+* `Broyden.dennisMoreQuotient`: the quotient $\eta_k = \|(Q_k - J(z)) s_k\| / \|s_k\|$.
+
+## Main results
+
+* `Matrix.sq_norm_mulVec_div_le_frobenius`: the Dennis–Moré inequality $\|A s\|^2/\|s\|^2 \le 2
+  \|A\|_F (\|A\|_F - \|A (I - P)\|_F)$ for the projector $P$ onto $s$.
+* `Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate`: the Dennis–Moré inequality for Broyden's update.
+* `Broyden.norm_step_x_sub_le`: one Broyden step from an operator $Q$ with
+  $3\beta \|Q - J(z)\| \le 1$ is well defined, and $\|x_+ - z\| \le (3\beta/2)(\|Q - J(z)\| +
+  (L/2)\|x - z\|)\|x - z\|$.
+* `Broyden.frobenius_norm_symm_iterate_succ_sub_le`: bounded deterioration of the Jacobian
+  approximations in the Frobenius norm.
+* `Broyden.norm_iterate_sub_le_and_frobenius_norm_le`: local linear convergence,
+  $\|x_k - z\| \le \varepsilon/2^k$.
+* `Broyden.tendsto_dennisMoreQuotient`: the Dennis–Moré condition $\eta_k \to 0$.
+* `Broyden.norm_iterate_succ_sub_le_mul`: the superlinear step bound $\|x_{k+1} - z\| \le
+  4\beta(\eta_k + L\|x_k - z\|)\|x_k - z\|$.
+* `Broyden.superlinear_of_le`: local superlinear convergence, quantitative form.
+* `Broyden.exists_superlinear`: local superlinear convergence, existential form.
+
+## Proof outline
+
+The proof has three layers.
+
+The first layer is the Frobenius geometry of the update. Let $P = s s^T/(s^T s)$ be the projector
+onto the step. The Pythagoras identity $\|A (I - P)\|_F^2 + \|A P\|_F^2 = \|A\|_F^2$
+(`Matrix.frobenius_norm_sq_mul_one_sub_add_sq_mul`) and the bound $\|A s\| \le \|A P\|_F \|s\|$ give
+the Dennis–Moré inequality. For Broyden's update $Q_+$ with the errors $E = Q - J$ and
+$E_+ = Q_+ - J$, it gives
+$$\frac{\|E s\|^2}{\|s\|^2} \le 2 \|E\|_F \Bigl(\|E\|_F - \|E_+\|_F + \frac{\|y - J
+  s\|}{\|s\|}\Bigr).$$
+So the update cannot decrease the Frobenius error much unless the error along the step is small.
+
+The second layer is bounded deterioration and linear convergence, the two-sequence induction of
+Theorem 8.2.2 of [dennis1996numerical]. Let $\|J(z)^{-1}\| \le \beta$. One step from a $Q$ within
+$1/(3\beta)$ of $J(z)$ is well defined and satisfies $\|x_+ - z\| \le (3\beta/2)(\|Q - J(z)\| +
+(L/2)\|x - z\|)\|x - z\|$. Along the iteration, the matrices $M_k$ of $Q_k$ satisfy $\|M_{k+1} -
+J(z)\|_F \le \|M_k - J(z)\|_F + (L/2)(\|x_{k+1} - z\| + \|x_k - z\|)$, by
+`Matrix.frobenius_norm_broydenUpdate_sub_le_add`. Under the thresholds $12 \beta \delta \le 1$ and
+$3 L \varepsilon \le 2\delta$, induction gives $\|x_k - z\| \le \varepsilon/2^k$ and
+$\|M_k - J(z)\|_F \le 2\delta$.
+
+The third layer is the Dennis–Moré condition and superlinear convergence. The sum of the Dennis–Moré
+inequalities along the iteration telescopes the Frobenius errors. So the quotients $\eta_k$ are
+square-summable and tend to $0$. The secant equation $Q_k s_k = -F(x_k)$ then gives $\|x_{k+1} - z\|
+\le 4\beta(\eta_k + L\|x_k - z\|)\|x_k - z\|$. This is superlinear convergence with the explicit
+factors $c_k = 4\beta(\eta_k + L\varepsilon/2^k) \to 0$.
+
+## Implementation notes
+
+* The Jacobian is a matrix-valued function `J : E → Matrix n n ℝ`, because the deterioration
+  estimate is in the Frobenius norm. The operators $Q_k$ of `Broyden.iterate` are read back as
+  matrices through `Matrix.toEuclideanCLM.symm` (`Broyden.symm_iterate_succ_Q`). The operator norm
+  and the Frobenius norm are compared by `Matrix.norm_toEuclideanCLM_le_frobenius_norm` and
+  `Matrix.frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM`.
+* The invertibility of $J(z)$ is a continuous linear equivalence `e` whose underlying map is $J(z)$,
+  and $\beta$ bounds the norm of its inverse.
+* `Broyden.superlinear_of_le` takes the hypothesis on $Q_0$ in the Frobenius norm.
+  `Broyden.exists_superlinear`, the existential form of the source, takes it in the operator norm.
 -/
 
 open scoped InnerProductSpace
@@ -59,20 +98,25 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The projected part of `A` sees `A s`**: `‖A s‖₂ ≤ ‖A P‖_F ‖s‖₂` for `P = s sᵀ / (sᵀ s)`,
-since `(A P) s = A s`. -/
+/-- **The projected part of $A$ sees $A s$.** Let $A \in \mathbb{R}^{n \times n}$ and
+$s \in \mathbb{R}^n$ with $s \neq 0$, and let $P = s s^T/(s^T s)$. Then
+$$\|A s\|_2 \le \|A P\|_F \|s\|_2,$$
+because $(A P) s = A s$. -/
 theorem norm_mulVec_le_frobenius_norm_mul_proj (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
     ‖toLp 2 (A *ᵥ s)‖ ≤ ‖A * ((1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ * ‖toLp 2 s‖ := by
   have h := frobenius_norm_mulVec_le (A * ((1 / (s ⬝ᵥ s)) • vecMulVec s s)) s
   rwa [← mulVec_mulVec, smul_vecMulVec_mulVec_self hs] at h
 
-/-- **The Dennis–Moré inequality for the projection off a line**:
-`‖A s‖₂² / ‖s‖₂² ≤ 2 ‖A‖_F (‖A‖_F - ‖A (1 - P)‖_F)` with `P = s sᵀ / (sᵀ s)`. From Pythagoras,
-`‖A s‖² / ‖s‖² ≤ ‖A P‖_F² = ‖A‖_F² - ‖A (1 - P)‖_F²
-= (‖A‖_F - ‖A (1 - P)‖_F)(‖A‖_F + ‖A (1 - P)‖_F)` and `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is the
-quantitative form of "the update cannot decrease the Frobenius error along `s` without paying
-for it" behind the superlinear convergence of
-Broyden's method ([dennis1996numerical], proof of Theorem 8.2.2). -/
+/-- **The Dennis–Moré inequality for the projection off a line.** Let
+$A \in \mathbb{R}^{n \times n}$ and $s \in \mathbb{R}^n$ with $s \neq 0$, and let
+$P = s s^T/(s^T s)$. Then
+$$\frac{\|A s\|_2^2}{\|s\|_2^2} \le 2 \|A\|_F \bigl(\|A\|_F - \|A (I - P)\|_F\bigr).$$
+This is the quantitative form of the fact that the update cannot decrease the Frobenius error
+along $s$ without a cost. It is behind the superlinear convergence of Broyden's method (proof of
+Theorem 8.2.2 of [dennis1996numerical]).
+
+By the Pythagoras identity, $\|A s\|^2/\|s\|^2 \le \|A P\|_F^2 = \|A\|_F^2 - \|A (I - P)\|_F^2 =
+(\|A\|_F - \|A (I - P)\|_F)(\|A\|_F + \|A (I - P)\|_F)$, and $\|A (I - P)\|_F \le \|A\|_F$. -/
 theorem sq_norm_mulVec_div_le_frobenius (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
     ‖toLp 2 (A *ᵥ s)‖ ^ 2 / ‖toLp 2 s‖ ^ 2
       ≤ 2 * ‖A‖ * (‖A‖ - ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖) := by
@@ -90,16 +134,18 @@ theorem sq_norm_mulVec_div_le_frobenius (A : Matrix n n ℝ) {s : n → ℝ} (hs
       _ = b ^ 2 * ‖toLp 2 s‖ ^ 2 := by ring
   nlinarith
 
-/-- **The Dennis–Moré inequality for Broyden's update** ([dennis1996numerical], proof of Theorem
-8.2.2): for `s ≠ 0`, with `E = Q - J` the current error and `E₊ = Q₊ - J` the error after the
-update `Q₊ = broydenUpdate Q s y`,
+/-- **The Dennis–Moré inequality for Broyden's update** (proof of Theorem 8.2.2 of
+[dennis1996numerical]). Let $Q, J \in \mathbb{R}^{n \times n}$ and $s, y \in \mathbb{R}^n$ with
+$s \neq 0$. Let $Q_+ = Q + ((y - Q s) s^T)/(s^T s)$ be Broyden's update, and let $E = Q - J$ and
+$E_+ = Q_+ - J$ be the errors before and after the update. Then
+$$\frac{\|E s\|_2^2}{\|s\|_2^2} \le 2 \|E\|_F \Bigl(\|E\|_F - \|E_+\|_F + \frac{\|y - J
+  s\|_2}{\|s\|_2}\Bigr).$$
 
-`‖E s‖₂² / ‖s‖₂² ≤ 2 ‖E‖_F (‖E‖_F - ‖E₊‖_F + ‖y - J s‖₂ / ‖s‖₂)`.
-
-From `E₊ = E (1 - P) + ((y - J s) sᵀ) / (sᵀ s)`, `‖E₊‖_F ≤ ‖E (1 - P)‖_F + ‖y - J s‖ / ‖s‖`, and
-`sq_norm_mulVec_div_le_frobenius`. Summed along Broyden's iteration, where `‖y - J s‖ / ‖s‖` is
-`O(‖x - z‖)` and the Frobenius errors are bounded, this forces `‖E_k s_k‖ / ‖s_k‖ → 0`, the
-Dennis–Moré condition for superlinear convergence. -/
+The proof uses $E_+ = E (I - P) + ((y - J s) s^T)/(s^T s)$, so $\|E_+\|_F \le \|E (I - P)\|_F +
+\|y - J s\|/\|s\|$, and `Matrix.sq_norm_mulVec_div_le_frobenius`. Along Broyden's iteration,
+$\|y - J s\|/\|s\|$ is $O(\|x - z\|)$ and the Frobenius errors are bounded. So the sum of these
+inequalities forces $\|E_k s_k\|/\|s_k\| \to 0$, the Dennis–Moré condition for superlinear
+convergence. -/
 theorem sq_norm_sub_mulVec_div_le_broydenUpdate (Q J : Matrix n n ℝ) {s y : n → ℝ}
     (hs : s ≠ 0) :
     ‖toLp 2 ((Q - J) *ᵥ s)‖ ^ 2 / ‖toLp 2 s‖ ^ 2
@@ -128,32 +174,39 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 local notation "E" => EuclideanSpace ℝ n
 
-/-- **The standing hypotheses of the local convergence theory** ([dennis1996numerical]
-Theorem 8.2.2, [quarteroni2000numerical] Theorem 7.1): `F` is differentiable on a convex set `D`
-with Jacobian matrix `J w` at `w ∈ D`, `z ∈ D` is a root, `F z = 0`, and the Jacobian is Lipschitz
-at `z` on `D` with constant `L`, `‖J w - J z‖ ≤ L ‖w - z‖`, in the Euclidean operator norm. -/
+/-- **The standing hypotheses of the local convergence theory** (Theorem 8.2.2 of
+[dennis1996numerical], Theorem 7.1 of [quarteroni2000numerical]). Let
+$F : \mathbb{R}^n \to \mathbb{R}^n$, $J : \mathbb{R}^n \to \mathbb{R}^{n \times n}$,
+$D \subseteq \mathbb{R}^n$, $z \in \mathbb{R}^n$ and $L \in \mathbb{R}$. The hypotheses are: $D$
+is convex; $F$ is differentiable at every $w \in D$ with Jacobian matrix $J(w)$; $z \in D$ and
+$F(z) = 0$; the Jacobian is Lipschitz at $z$ on $D$ with constant $L \ge 0$, that is,
+$$\|J(w) - J(z)\| \le L \|w - z\| \quad \text{for } w \in D,$$
+in the Euclidean operator norm. -/
 structure LipschitzJacobianRoot (F : E → E) (J : E → Matrix n n ℝ) (D : Set E) (z : E)
     (L : ℝ) : Prop where
-  /-- `D` is convex. -/
+  /-- The set $D$ is convex. -/
   convex : Convex ℝ D
-  /-- `F` has Jacobian `J w` at every `w ∈ D`. -/
+  /-- The map $F$ has the Jacobian matrix $J(w)$ at every $w \in D$. -/
   hasFDerivAt : ∀ w ∈ D, HasFDerivAt F (toEuclideanCLM (𝕜 := ℝ) (J w)) w
-  /-- `z` is a root. -/
+  /-- The point $z$ is a root: $F(z) = 0$. -/
   root : F z = 0
-  /-- `z ∈ D`. -/
+  /-- The root $z$ lies in $D$. -/
   mem : z ∈ D
-  /-- The Jacobian is Lipschitz at `z` on `D`. -/
+  /-- The Jacobian is Lipschitz at $z$ on $D$: $\|J(w) - J(z)\| \le L \|w - z\|$ for $w \in D$, in
+  the operator norm. -/
   lipschitz : ∀ w ∈ D,
     ‖toEuclideanCLM (𝕜 := ℝ) (J w) - toEuclideanCLM (𝕜 := ℝ) (J z)‖ ≤ L * ‖w - z‖
-  /-- The Lipschitz constant is nonnegative (automatic unless `D = {z}`). -/
+  /-- The Lipschitz constant is nonnegative. This is automatic unless $D = \{z\}$. -/
   nonneg : 0 ≤ L
 
 -- the local notation `E` must not be used in `variable` lines (it elaborates to `sorry` there)
 variable {F : EuclideanSpace ℝ n → EuclideanSpace ℝ n} {J : EuclideanSpace ℝ n → Matrix n n ℝ}
   {D : Set (EuclideanSpace ℝ n)} {z : EuclideanSpace ℝ n} {L : ℝ}
 
-/-- The quadratic remainder at the root: `‖F x - J z (x - z)‖ ≤ (L / 2) ‖x - z‖²` for `x ∈ D`
-(the third-point mean value inequality with `x = z` as base point). -/
+/-- **The quadratic remainder at the root.** Under `Broyden.LipschitzJacobianRoot`, for every
+$x \in D$,
+$$\|F(x) - J(z)(x - z)\| \le \frac{L}{2} \|x - z\|^2.$$
+This is the mean value inequality with three points, with $z$ as the base point. -/
 theorem LipschitzJacobianRoot.norm_sub_apply_le (h : LipschitzJacobianRoot F J D z L) {x : E}
     (hx : x ∈ D) : ‖F x - toEuclideanCLM (𝕜 := ℝ) (J z) (x - z)‖ ≤ L / 2 * ‖x - z‖ ^ 2 := by
   have hmv := Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add h.convex h.hasFDerivAt
@@ -161,23 +214,25 @@ theorem LipschitzJacobianRoot.norm_sub_apply_le (h : LipschitzJacobianRoot F J D
   rw [h.root, sub_zero, sub_self, norm_zero, zero_add] at hmv
   linarith [sq ‖x - z‖]
 
-/-- The secant remainder: `‖F y - F x - J z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖` for
-`x, y ∈ D`. -/
+/-- **The secant remainder.** Under `Broyden.LipschitzJacobianRoot`, for all $x, y \in D$,
+$$\|F(y) - F(x) - J(z)(y - x)\| \le \frac{L}{2} \bigl(\|x - z\| + \|y - z\|\bigr) \|y - x\|.$$
+-/
 theorem LipschitzJacobianRoot.norm_sub_sub_apply_le (h : LipschitzJacobianRoot F J D z L)
     {x y : E} (hx : x ∈ D) (hy : y ∈ D) :
     ‖F y - F x - toEuclideanCLM (𝕜 := ℝ) (J z) (y - x)‖ ≤ L / 2 * (‖x - z‖ + ‖y - z‖) * ‖y - x‖ :=
   Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add h.convex h.hasFDerivAt hx hy
     h.lipschitz
 
-/-- **One Broyden step near the root** ([dennis1996numerical], proof of Theorem 8.2.2): if `Q` is
-within `1 / (3β)` of `J z` in the operator norm, where `‖J z⁻¹‖ ≤ β`, then `Q` is invertible
-with `‖Q⁻¹‖ ≤ 3β / 2` (the perturbation theorem
-`ContinuousLinearEquiv.exists_symm_norm_le_of_add`) and the point `x₊ = x - Q⁻¹ F x` of
-`Broyden.step` satisfies
+/-- **One Broyden step near the root** (proof of Theorem 8.2.2 of [dennis1996numerical]). Assume
+`Broyden.LipschitzJacobianRoot`, let $J(z)$ be invertible with $\|J(z)^{-1}\| \le \beta$, and
+let $x \in D$. Let $Q$ be an operator on $\mathbb{R}^n$ with $3 \beta \|Q - J(z)\| \le 1$, in
+the operator norm. Then $Q$ is invertible with $\|Q^{-1}\| \le 3\beta/2$, and the point
+$x_+ = x - Q^{-1} F(x)$ of `Broyden.step` satisfies
+$$\|x_+ - z\| \le \frac{3\beta}{2} \Bigl(\|Q - J(z)\| + \frac{L}{2} \|x - z\|\Bigr) \|x - z\|.$$
 
-`‖x₊ - z‖ ≤ (3β / 2) (‖Q - J z‖ + (L / 2) ‖x - z‖) ‖x - z‖`,
-
-from `x₊ - z = Q⁻¹ ((Q - J z) (x - z) - (F x - J z (x - z)))`. -/
+The invertibility of $Q$ is the perturbation theorem
+`ContinuousLinearEquiv.exists_symm_norm_le_of_add`. The bound follows from $x_+ - z =
+Q^{-1}\bigl((Q - J(z))(x - z) - (F(x) - J(z)(x - z))\bigr)$. -/
 theorem norm_step_x_sub_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) {x : E} (hx : x ∈ D) {Q : E →L[ℝ] E}
@@ -222,10 +277,12 @@ section Iteration
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The matrix recurrence of Broyden's iteration**: with `M_k` the matrix of the operator
-`Q_k` of `Broyden.iterate`, `M_{k+1} = broydenUpdate M_k s_k y_k` for the secant pair
-`s_k = x_{k+1} - x_k`, `y_k = F x_{k+1} - F x_k` (`Broyden.step_Q` read through
-`Matrix.toEuclideanCLM_broydenUpdate`). -/
+/-- **The matrix recurrence of Broyden's iteration.** For every $F$, $x_0$ and $Q_0$, let $M_k$ be
+the matrix of the operator $Q_k$ of `Broyden.iterate`. Then $M_{k+1}$ is Broyden's update of
+$M_k$ with the secant pair $s_k = x_{k+1} - x_k$ and $y_k = F(x_{k+1}) - F(x_k)$:
+$$M_{k+1} = M_k + \frac{(y_k - M_k s_k) s_k^T}{s_k^T s_k}.$$
+
+This is `Broyden.step_Q`, read through `Matrix.toEuclideanCLM_broydenUpdate`. -/
 theorem symm_iterate_succ_Q (F : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k : ℕ) :
     (toEuclideanCLM (𝕜 := ℝ)).symm (iterate F x₀ Q₀ (k + 1)).Q
       = broydenUpdate ((toEuclideanCLM (𝕜 := ℝ)).symm (iterate F x₀ Q₀ k).Q)
@@ -234,16 +291,20 @@ theorem symm_iterate_succ_Q (F : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k :
   rw [StarAlgEquiv.symm_apply_eq, toEuclideanCLM_broydenUpdate, StarAlgEquiv.apply_symm_apply,
     toLp_ofLp, toLp_ofLp, iterate_succ, step_Q]
 
-/-- The operator error of the iteration is the image of the matrix error. -/
+/-- For every matrix $M$, the operator $Q_k - M$ is the operator of the matrix $M_k - M$, where
+$M_k$ is the matrix of $Q_k$. -/
 theorem iterate_Q_sub_eq (F : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k : ℕ) (M : Matrix n n ℝ) :
     (iterate F x₀ Q₀ k).Q - toEuclideanCLM (𝕜 := ℝ) M
       = toEuclideanCLM (𝕜 := ℝ) ((toEuclideanCLM (𝕜 := ℝ)).symm (iterate F x₀ Q₀ k).Q - M) := by
   rw [map_sub, StarAlgEquiv.apply_symm_apply]
 
-/-- **Bounded deterioration along Broyden's iteration** ([dennis1996numerical] Lemma 8.2.1 at every
-step): if `x_k, x_{k+1} ∈ D` then, in the Frobenius norm,
-`‖M_{k+1} - J z‖_F ≤ ‖M_k - J z‖_F + (L / 2) (‖x_{k+1} - z‖ + ‖x_k - z‖)`; a zero step leaves
-`M_k` unchanged. -/
+/-- **Bounded deterioration along Broyden's iteration** (Lemma 8.2.1 of [dennis1996numerical], at
+every step). Assume `Broyden.LipschitzJacobianRoot`, and let $x_k, x_{k+1} \in D$. Then, in the
+Frobenius norm,
+$$\|M_{k+1} - J(z)\|_F \le \|M_k - J(z)\|_F + \frac{L}{2} \bigl(\|x_{k+1} - z\| + \|x_k -
+  z\|\bigr).$$
+
+A zero step $x_{k+1} = x_k$ leaves $M_k$ unchanged. -/
 theorem frobenius_norm_symm_iterate_succ_sub_le (h : LipschitzJacobianRoot F J D z L)
     {x₀ : E} {Q₀ : E →L[ℝ] E} {k : ℕ} (hk : (iterate F x₀ Q₀ k).x ∈ D)
     (hk1 : (iterate F x₀ Q₀ (k + 1)).x ∈ D) :
@@ -265,16 +326,21 @@ theorem frobenius_norm_symm_iterate_succ_sub_le (h : LipschitzJacobianRoot F J D
     have := frobenius_norm_broydenUpdate_sub_le_add h.convex h.hasFDerivAt h.lipschitz hk hs hxs M
     simpa only [toLp_ofLp, add_sub_cancel] using this
 
-/-- **The two-sequence induction of [dennis1996numerical] Theorem 8.2.2** (local linear
-convergence of Broyden's method). With `‖J z⁻¹‖ ≤ β` and thresholds `ε`, `δ` such that `12 β δ ≤ 1`,
-`3 L ε ≤ 2 δ` (so `3 β L ε ≤ 1 / 6`) and `closedBall z ε ⊆ D`, every start with `‖x₀ - z‖ ≤ ε` and
-`‖M₀ - J z‖_F ≤ δ` gives, for all `k`,
+/-- **The two-sequence induction of Theorem 8.2.2** of [dennis1996numerical], local linear
+convergence of Broyden's method. Assume `Broyden.LipschitzJacobianRoot`, and let $J(z)$ be
+invertible with $\|J(z)^{-1}\| \le \beta$. Let $\varepsilon \ge 0$ and $\delta$ satisfy
+$12 \beta \delta \le 1$, $3 L \varepsilon \le 2\delta$ and $\bar B(z, \varepsilon) \subseteq D$.
+Let $\|x_0 - z\| \le \varepsilon$, and let the matrix $M_0$ of $Q_0$ satisfy
+$\|M_0 - J(z)\|_F \le \delta$. Then for every $k$,
+$$\|x_k - z\| \le \frac{\varepsilon}{2^k} \quad \text{and} \quad \|M_k - J(z)\|_F \le \delta +
+  \frac{3L}{2} \varepsilon \Bigl(1 - \frac{1}{2^k}\Bigr),$$
+and in particular $\|M_k - J(z)\|_F \le 2\delta$.
 
-`‖x_k - z‖ ≤ ε / 2ᵏ` and `‖M_k - J z‖_F ≤ δ + (3 L / 2) ε (1 - 1 / 2ᵏ)` (in particular `≤ 2δ`).
-
-The step estimate `norm_step_x_sub_le` halves the error because
-`(3β / 2) (2δ + L ε / 2) ≤ 1 / 2`, and the bounded deterioration adds at most
-`(L / 2) (3 / 2) ε / 2ᵏ` to the Frobenius error, whose sum stays below `δ`. -/
+The thresholds give $3 \beta L \varepsilon \le 1/6$. The step estimate
+`Broyden.norm_step_x_sub_le` halves the error, because
+$(3\beta/2)(2\delta + L\varepsilon/2) \le 1/2$. The bounded deterioration adds at most
+$(L/2)(3/2)\varepsilon/2^k$ to the Frobenius error, and the sum of these terms stays below
+$\delta$. -/
 theorem norm_iterate_sub_le_and_frobenius_norm_le (h : LipschitzJacobianRoot F J D z L)
     (e : E ≃L[ℝ] E) (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) {ε δ : ℝ} (hε : 0 ≤ ε) (hβδ : 12 * β * δ ≤ 1)
@@ -353,14 +419,15 @@ section Superlinear
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The Dennis–Moré inequality along Broyden's iteration**: with `η_k = ‖(Q_k - J z) s_k‖ / ‖s_k‖`
-the relative error of the Jacobian approximation along the step `s_k = x_{k+1} - x_k`, and
-`x_k, x_{k+1} ∈ D`,
+/-- **The Dennis–Moré inequality along Broyden's iteration.** Assume
+`Broyden.LipschitzJacobianRoot`, and let $x_k, x_{k+1} \in D$. Let $s_k = x_{k+1} - x_k$ and
+$\eta_k = \|(Q_k - J(z)) s_k\|/\|s_k\|$, the relative error of the Jacobian approximation along
+the step. Then
+$$\eta_k^2 \le 2 \|M_k - J(z)\|_F \Bigl(\|M_k - J(z)\|_F - \|M_{k+1} - J(z)\|_F + \frac{L}{2}
+  \bigl(\|x_k - z\| + \|x_{k+1} - z\|\bigr)\Bigr).$$
 
-`η_k² ≤ 2 ‖M_k - J z‖_F (‖M_k - J z‖_F - ‖M_{k+1} - J z‖_F + (L / 2) (‖x_k - z‖ + ‖x_{k+1} - z‖))`.
-
-This is `Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate` with the secant remainder bounded by the
-mean value inequality; a zero step gives `η_k = 0` and `M_{k+1} = M_k`. -/
+This is `Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate`, with the secant remainder bounded by
+the mean value inequality. A zero step gives $\eta_k = 0$ and $M_{k+1} = M_k$. -/
 theorem sq_norm_iterate_sub_apply_div_le (h : LipschitzJacobianRoot F J D z L) {x₀ : E}
     {Q₀ : E →L[ℝ] E} {k : ℕ} (hk : (iterate F x₀ Q₀ k).x ∈ D)
     (hk1 : (iterate F x₀ Q₀ (k + 1)).x ∈ D) :
@@ -403,19 +470,22 @@ theorem sq_norm_iterate_sub_apply_div_le (h : LipschitzJacobianRoot F J D z L) {
       exact hmv
     gcongr
 
-/-- The Dennis–Moré quotient `η_k = ‖(Q_k - J z) s_k‖ / ‖s_k‖` of Broyden's iteration. -/
+/-- The **Dennis–Moré quotient** $\eta_k = \|(Q_k - J(z)) s_k\|/\|s_k\|$ of Broyden's iteration,
+with $s_k = x_{k+1} - x_k$. For $s_k = 0$ its value is $0$, because division by zero gives $0$
+in Lean. -/
 noncomputable def dennisMoreQuotient (F : E → E) (J : E → Matrix n n ℝ) (z x₀ : E)
     (Q₀ : E →L[ℝ] E) (k : ℕ) : ℝ :=
   ‖((iterate F x₀ Q₀ k).Q - toEuclideanCLM (𝕜 := ℝ) (J z))
       ((iterate F x₀ Q₀ (k + 1)).x - (iterate F x₀ Q₀ k).x)‖
     / ‖(iterate F x₀ Q₀ (k + 1)).x - (iterate F x₀ Q₀ k).x‖
 
-/-- The Dennis–Moré quotient is nonnegative. -/
+/-- The Dennis–Moré quotient is nonnegative: $\eta_k \ge 0$. -/
 theorem dennisMoreQuotient_nonneg (F : E → E) (J : E → Matrix n n ℝ) (z x₀ : E)
     (Q₀ : E →L[ℝ] E) (k : ℕ) : 0 ≤ dennisMoreQuotient F J z x₀ Q₀ k :=
   div_nonneg (norm_nonneg _) (norm_nonneg _)
 
-/-- `‖(Q_k - J z) s_k‖ ≤ η_k ‖s_k‖`, with equality unless `s_k = 0`. -/
+/-- For every $k$, $\|(Q_k - J(z)) s_k\| \le \eta_k \|s_k\|$. In fact equality holds, also for
+$s_k = 0$, where both sides are $0$. -/
 theorem norm_sub_apply_le_dennisMoreQuotient_mul (F : E → E) (J : E → Matrix n n ℝ) (z x₀ : E)
     (Q₀ : E →L[ℝ] E) (k : ℕ) :
     ‖((iterate F x₀ Q₀ k).Q - toEuclideanCLM (𝕜 := ℝ) (J z))
@@ -427,11 +497,15 @@ theorem norm_sub_apply_le_dennisMoreQuotient_mul (F : E → E) (J : E → Matrix
   · rw [hs, map_zero, norm_zero, div_zero, zero_mul]
   · rw [div_mul_cancel₀ _ (norm_ne_zero_iff.2 hs)]
 
-/-- **The Dennis–Moré condition holds along Broyden's iteration** ([dennis1996numerical], proof of
-Theorem 8.2.2): under the thresholds of `norm_iterate_sub_le_and_frobenius_norm_le`,
-`η_k = ‖(Q_k - J z) s_k‖ / ‖s_k‖ → 0`. Summing `sq_norm_iterate_sub_apply_div_le` telescopes
-the Frobenius errors, whose total variation is at most `‖M₀ - J z‖_F + (L / 2) ∑ (‖x_k - z‖ +
-‖x_{k+1} - z‖) ≤ δ + 2 L ε`, so `∑ η_k² ≤ 4δ (δ + 2 L ε) < ∞`. -/
+/-- **The Dennis–Moré condition holds along Broyden's iteration** (proof of Theorem 8.2.2 of
+[dennis1996numerical]). Under the hypotheses of
+`Broyden.norm_iterate_sub_le_and_frobenius_norm_le`, the Dennis–Moré quotient tends to $0$:
+$$\eta_k = \frac{\|(Q_k - J(z)) s_k\|}{\|s_k\|} \to 0.$$
+
+The sum of the inequalities `Broyden.sq_norm_iterate_sub_apply_div_le` telescopes the Frobenius
+errors. Their total variation is at most $\|M_0 - J(z)\|_F + (L/2) \sum_k (\|x_k - z\| +
+\|x_{k+1} - z\|) \le \delta + 2 L \varepsilon$, so $\sum_k \eta_k^2 \le 4\delta(\delta + 2 L
+\varepsilon) < \infty$. -/
 theorem tendsto_dennisMoreQuotient (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) {ε δ : ℝ} (hε : 0 ≤ ε) (hβδ : 12 * β * δ ≤ 1)
@@ -510,16 +584,15 @@ theorem tendsto_dennisMoreQuotient (h : LipschitzJacobianRoot F J D z L) (e : E 
   rw [Real.sqrt_zero] at h0
   exact h0.congr fun k => Real.sqrt_sq (dennisMoreQuotient_nonneg F J z x₀ Q₀ k)
 
-/-- **The superlinear step bound** ([dennis1996numerical] Lemma 8.2.3 / Theorem 8.2.4, the "if" half
-of the Dennis–Moré characterization, made quantitative): under the thresholds of
-`norm_iterate_sub_le_and_frobenius_norm_le`,
+/-- **The superlinear step bound** (Lemma 8.2.3 and Theorem 8.2.4 of [dennis1996numerical], the "if"
+half of the Dennis–Moré characterization in a quantitative form). Under the hypotheses of
+`Broyden.norm_iterate_sub_le_and_frobenius_norm_le`, for every $k$,
+$$\|x_{k+1} - z\| \le 4\beta \bigl(\eta_k + L \|x_k - z\|\bigr) \|x_k - z\|.$$
 
-`‖x_{k+1} - z‖ ≤ 4β (η_k + L ‖x_k - z‖) ‖x_k - z‖`.
-
-From `Q_k s_k = -F x_k`, `F x_{k+1} = (F x_{k+1} - F x_k - J z s_k) - (Q_k - J z) s_k`, so
-`‖F x_{k+1}‖ ≤ (η_k + L ‖x_k - z‖) ‖s_k‖` with `‖s_k‖ ≤ 2 ‖x_k - z‖`, while
-`‖x_{k+1} - z‖ ≤ β ‖J z (x_{k+1} - z)‖ ≤ β (‖F x_{k+1}‖ + (L / 2) ‖x_{k+1} - z‖²)` and
-`β L ‖x_{k+1} - z‖ ≤ 1 / 3`. -/
+From $Q_k s_k = -F(x_k)$ follows $F(x_{k+1}) = (F(x_{k+1}) - F(x_k) - J(z) s_k) - (Q_k - J(z))
+s_k$. So $\|F(x_{k+1})\| \le (\eta_k + L\|x_k - z\|)\|s_k\|$ with $\|s_k\| \le 2\|x_k - z\|$.
+Also $\|x_{k+1} - z\| \le \beta \|J(z)(x_{k+1} - z)\| \le \beta(\|F(x_{k+1})\| +
+(L/2)\|x_{k+1} - z\|^2)$ and $\beta L \|x_{k+1} - z\| \le 1/3$. -/
 theorem norm_iterate_succ_sub_le_mul (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) {ε δ : ℝ} (hε : 0 ≤ ε) (hβδ : 12 * β * δ ≤ 1)
@@ -626,19 +699,24 @@ section Main
 
 open scoped Matrix.Norms.Frobenius
 
-/-- `ε / 2ᵏ → 0`. -/
+/-- For every $\varepsilon \in \mathbb{R}$, $\varepsilon/2^k \to 0$ as $k \to \infty$. -/
 theorem tendsto_div_two_pow (ε : ℝ) : Tendsto (fun k : ℕ => ε / 2 ^ k) atTop (𝓝 0) :=
   tendsto_const_nhds.div_atTop (tendsto_pow_atTop_atTop_of_one_lt one_lt_two)
 
-/-- **Local superlinear convergence of Broyden's method, quantitative form** (Dennis–Moré 1974;
-[dennis1996numerical] Theorem 8.2.2; [quarteroni2000numerical] Property 7.2). Let `F` have a
-Lipschitz Jacobian at a root `z` on a convex `D` (`LipschitzJacobianRoot`), with
-`‖J z⁻¹‖ ≤ β`, and let `ε`, `δ` satisfy `12 β δ ≤ 1`, `3 L ε ≤ 2 δ` and `closedBall z ε ⊆ D`.
-Then for every start `x₀` with `‖x₀ - z‖ ≤ ε` and every `Q₀` whose matrix is within `δ` of
-`J z` in the Frobenius norm, Broyden's iteration `Broyden.iterate F x₀ Q₀` is well defined
-(every `Q_k` is invertible), converges to `z` at least linearly, `‖x_k - z‖ ≤ ε / 2ᵏ`, and
-superlinearly: `‖x_{k+1} - z‖ ≤ c_k ‖x_k - z‖` with `c_k = 4β (η_k + L ε / 2ᵏ) → 0`, where
-`η_k → 0` is the Dennis–Moré quotient (`tendsto_dennisMoreQuotient`). -/
+/-- **Local superlinear convergence of Broyden's method, quantitative form**
+([dennis1974characterization]; Theorem 8.2.2 of [dennis1996numerical]; Property 7.2 of
+[quarteroni2000numerical]). Assume `Broyden.LipschitzJacobianRoot`, and let $J(z)$ be invertible
+with $\|J(z)^{-1}\| \le \beta$. Let $\varepsilon \ge 0$ and $\delta$ satisfy
+$12 \beta \delta \le 1$, $3 L \varepsilon \le 2\delta$ and $\bar B(z, \varepsilon) \subseteq D$.
+Let $\|x_0 - z\| \le \varepsilon$, and let the matrix $M_0$ of $Q_0$ satisfy
+$\|M_0 - J(z)\|_F \le \delta$. Then Broyden's iteration from $(x_0, Q_0)$ has the following
+properties:
+* every $Q_k$ is invertible, so the iteration is well defined;
+* $\|x_k - z\| \le \varepsilon/2^k$ for every $k$, and $x_k \to z$;
+* there is a sequence $c_k \to 0$ with $\|x_{k+1} - z\| \le c_k \|x_k - z\|$ for every $k$.
+
+The proof takes $c_k = 4\beta(\eta_k + L\varepsilon/2^k)$, where $\eta_k \to 0$ is the
+Dennis–Moré quotient (`Broyden.tendsto_dennisMoreQuotient`). -/
 theorem superlinear_of_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) {ε δ : ℝ} (hε : 0 ≤ ε) (hβδ : 12 * β * δ ≤ 1)
@@ -681,15 +759,20 @@ theorem superlinear_of_le (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ]
       (norm_nonneg _)
     exact add_le_add le_rfl (mul_le_mul_of_nonneg_left (hinv k).1 hL0)
 
-/-- **Local superlinear convergence of Broyden's method** ([dennis1974characterization];
-[dennis1996numerical] Theorem 8.2.2; [quarteroni2000numerical] Property 7.2), existential form.
-Let `F` have a Lipschitz Jacobian at a root `z` on a convex `D ⊇ ball z R`
-(`LipschitzJacobianRoot`), with `J z` invertible and `‖J z⁻¹‖ ≤ β`, `β > 0`, `R > 0`. Then there
-are `ε, γ > 0` such that for every `x₀` with `‖x₀ - z‖ ≤ ε` and every `Q₀` with `‖Q₀ - J z‖ ≤ γ`
-(operator norm), Broyden's iteration from `(x₀, Q₀)` is well defined, converges to `z` with
-`‖x_k - z‖ ≤ ε / 2ᵏ`, and converges superlinearly: `‖x_{k+1} - z‖ ≤ c_k ‖x_k - z‖` with `c_k → 0`.
-The thresholds are `δ = 1 / (12 β)`, `ε = min (R / 2) (2δ / (3 (L + 1)))`, `γ = δ / (√n + 1)`,
-the last converting the operator-norm hypothesis to the Frobenius one of `superlinear_of_le`. -/
+/-- **Local superlinear convergence of Broyden's method**, existential form
+([dennis1974characterization]; Theorem 8.2.2 of [dennis1996numerical]; Property 7.2 of
+[quarteroni2000numerical]). Assume `Broyden.LipschitzJacobianRoot`, let $J(z)$ be invertible
+with $\|J(z)^{-1}\| \le \beta$ and $\beta > 0$, and let $R > 0$ with $B(z, R) \subseteq D$. Then
+there are $\varepsilon > 0$ and $\gamma > 0$ such that for every $x_0$ with
+$\|x_0 - z\| \le \varepsilon$ and every operator $Q_0$ with $\|Q_0 - J(z)\| \le \gamma$ in the
+operator norm, Broyden's iteration from $(x_0, Q_0)$ has the following properties:
+* every $Q_k$ is invertible, so the iteration is well defined;
+* $\|x_k - z\| \le \varepsilon/2^k$ for every $k$, and $x_k \to z$;
+* there is a sequence $c_k \to 0$ with $\|x_{k+1} - z\| \le c_k \|x_k - z\|$ for every $k$.
+
+The proof takes $\delta = 1/(12\beta)$, $\varepsilon = \min\{R/2, 2\delta/(3(L + 1))\}$ and
+$\gamma = \delta/(\sqrt{n} + 1)$. The choice of $\gamma$ converts the hypothesis in the operator
+norm to the hypothesis in the Frobenius norm of `Broyden.superlinear_of_le`. -/
 theorem exists_superlinear (h : LipschitzJacobianRoot F J D z L) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = toEuclideanCLM (𝕜 := ℝ) (J z)) {β : ℝ}
     (hβ : ‖(e.symm : E →L[ℝ] E)‖ ≤ β) (hβ0 : 0 < β) {R : ℝ} (hR : 0 < R)

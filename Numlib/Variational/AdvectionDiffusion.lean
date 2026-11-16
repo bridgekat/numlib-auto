@@ -8,83 +8,106 @@ import Numlib.Variational.EllipticInterval
 import Numlib.FiniteElement.Interval
 
 /-!
-# Advection–diffusion in one dimension, and its stabilized discretizations
+# Advection–diffusion in one dimension and its stabilized discretizations
 
-The model problem `-ε u'' + β u' = 0` on `(0, 1)` with `u(0) = 0`, `u(1) = 1` and `ε, β > 0`
-([quarteroni2000numerical] §12.5), in the regime `ε/β ≪ 1` where advection dominates diffusion,
-together with the discretizations that cure the oscillations of the centred scheme.
+This file studies the model problem $$-\varepsilon u'' + \beta u' = 0 \text{ on } (0, 1), \qquad
+u(0) = 0, \quad u(1) = 1, \qquad \varepsilon, \beta > 0,$$ of [quarteroni2000numerical], §12.5, in
+the regime $\varepsilon/\beta \ll 1$ where advection dominates diffusion. It gives the exact
+solution, the centred difference scheme and its oscillations when the local Péclet number
+$\mathrm{Pe} = |\beta| h/(2\varepsilon)$ exceeds $1$, and the stabilized schemes that cure these
+oscillations. A stabilized scheme is the centred scheme with the numerical viscosity
+$\varepsilon_h = \varepsilon(1 + \phi(\mathrm{Pe}))$, for the upwind viscosity function
+$\phi^{UP}(t) = t$ or the Scharfetter–Gummel viscosity function $\phi^{SG}(t) = t - 1 + B(2t)$,
+where $B(t) = t/(e^t - 1)$ is the Bernoulli function.
+
+The scheme with viscosity is the centred scheme at the stabilized Péclet number $\mathrm{Pe}^* =
+\mathrm{Pe}/(1 + \phi(\mathrm{Pe}))$. Both viscosity functions give $\mathrm{Pe}^* < 1$ for every
+mesh size, so the matrix of the scheme is an M-matrix, and the Scharfetter–Gummel scheme is even
+nodally exact. For the finite element method, the stabilized bilinear form $a_h(u, v) = \int_a^b
+(\varepsilon_h u' v' + \beta u' v)$ on $H^1(a, b)$ satisfies an error bound of Strang type, which
+gives the convergence rates of Theorem 12.4 of the source.
 
 ## Main definitions
 
-* `AdvectionDiffusion.globalPeclet β L ε = |β| L / (2 ε)` and
-  `AdvectionDiffusion.localPeclet β h ε = |β| h / (2 ε)`, the global and local Péclet numbers
-  ([quarteroni2000numerical] (12.71) and §12.5.1);
-* `AdvectionDiffusion.exactSolution ε β x = (e^{βx/ε} - 1)/(e^{β/ε} - 1)`, the solution of the
-  model problem;
-* `AdvectionDiffusion.centredSolution n Pe i = (1 - ρ^i)/(1 - ρ^n)` with
-  `ρ = AdvectionDiffusion.centredRatio Pe = (1 + Pe)/(1 - Pe)`, the solution of the centred
-  difference equation (12.76);
-* `AdvectionDiffusion.viscosityScheme ε β n φ u`, the centred scheme (12.79) with the numerical
-  viscosity `ε_h = AdvectionDiffusion.viscosity ε β h φ = ε (1 + φ(Pe))` of (12.82), and
-  `AdvectionDiffusion.upwindScheme`, the upwind scheme (12.78);
-* `AdvectionDiffusion.bernoulliFn t = t/(e^t - 1)` (value `1` at `0`), the Bernoulli function, and
-  the viscosity functions `AdvectionDiffusion.phiUpwind t = t` and
-  `AdvectionDiffusion.phiSG t = t - 1 + B(2t)` of (12.83), the latter being the
-  Scharfetter–Gummel (exponential fitting) choice;
-* `AdvectionDiffusion.stabilizedPeclet φ Pe = Pe/(1 + φ(Pe))`, the Péclet number `Pe*` of the
-  stabilized scheme (§12.5.2);
-* `AdvectionDiffusion.stabilizedForm a b ε β h φ`, the stabilized bilinear form (12.84)
-  `a_h(u, v) = ∫ (ε_h u' v' + β u' v)` on `H^1(a, b)`, an instance of
-  `EllipticInterval.form` with the constant `L^∞` coefficients `ε_h`, `β`, `0`.
+* `AdvectionDiffusion.globalPeclet`: the global Péclet number
+  $\mathrm{Pe}_{gl} = |\beta| L/(2\varepsilon)$ of (12.71).
+* `AdvectionDiffusion.localPeclet`: the local Péclet number $\mathrm{Pe} = |\beta| h/(2\varepsilon)$
+  of §12.5.1.
+* `AdvectionDiffusion.exactSolution`: the exact solution $u(x) = (e^{\beta x/\varepsilon} -
+  1)/(e^{\beta/\varepsilon} - 1)$ of the model problem.
+* `AdvectionDiffusion.centredRatio`: the amplification ratio
+  $\rho = (1 + \mathrm{Pe})/(1 - \mathrm{Pe})$ of the centred difference equation (12.76).
+* `AdvectionDiffusion.centredSolution`: the explicit solution $u_i = (1 - \rho^i)/(1 - \rho^n)$ of
+  (12.76).
+* `AdvectionDiffusion.bernoulliFn`: the Bernoulli function $B(t) = t/(e^t - 1)$, with $B(0) = 1$.
+* `AdvectionDiffusion.phiUpwind` and `AdvectionDiffusion.phiSG`: the upwind viscosity function
+  $\phi^{UP}(t) = t$ and the Scharfetter–Gummel (exponential fitting) viscosity function
+  $\phi^{SG}(t) = t - 1 + B(2t)$ of (12.83).
+* `AdvectionDiffusion.stabilizedPeclet`: the stabilized Péclet number $\mathrm{Pe}^* =
+  \mathrm{Pe}/(1 + \phi(\mathrm{Pe}))$ of §12.5.2.
+* `AdvectionDiffusion.viscosity`: the numerical viscosity $\varepsilon_h = \varepsilon(1 +
+  \phi(\mathrm{Pe}))$ of (12.82).
+* `AdvectionDiffusion.viscosityScheme`: the centred scheme (12.79) with the numerical viscosity
+  $\varepsilon_h$, on the uniform mesh of $(0, 1)$.
+* `AdvectionDiffusion.upwindScheme`: the upwind scheme (12.78).
+* `AdvectionDiffusion.stabilizedForm`: the stabilized bilinear form $a_h$ of (12.84), which is
+  `EllipticInterval.form` with the constant coefficients $\varepsilon_h$, $\beta$, $0$.
 
-## Main statements
+## Main results
 
-* `AdvectionDiffusion.exactSolution_solves` and `AdvectionDiffusion.exactSolution_unique`: the
-  exact solution and its uniqueness among `C²` solutions.
-* `AdvectionDiffusion.centredSolution_solves`, `centredSolution_unique`: the centred difference
-  equation (12.76) has exactly one solution with the two boundary values, and it is the explicit
-  one; `AdvectionDiffusion.centredSolution_oscillates`: **for `Pe > 1` its increments alternate
-  in sign**, while `centredSolution_strictMono` gives monotonicity for `Pe < 1`.
-* `AdvectionDiffusion.upwindScheme_iff_viscosityScheme`: **upwinding is centred differencing
-  with the artificial viscosity** `ε (1 + Pe)` (12.78)–(12.81), and
-  `viscosityScheme_eq_centredSolution` identifies the solution of the scheme with viscosity as
-  the centred solution at the stabilized Péclet number `Pe*`.
+* `AdvectionDiffusion.exactSolution_solves` and `AdvectionDiffusion.exactSolution_unique`: the exact
+  solution solves the model problem, and it is the only $C^2$ solution.
+* `AdvectionDiffusion.centredSolution_solves` and `AdvectionDiffusion.centredSolution_unique`: the
+  explicit solution is the only solution of (12.76) with the boundary values $u_0 = 0$, $u_n = 1$.
+* `AdvectionDiffusion.centredSolution_oscillates`: for $\mathrm{Pe} > 1$ the increments of the
+  explicit solution alternate in sign.
+* `AdvectionDiffusion.centredSolution_strictMono`: for $0 < \mathrm{Pe} < 1$ the explicit solution
+  is strictly increasing.
+* `AdvectionDiffusion.upwindScheme_iff_viscosityScheme`: the upwind scheme is the centred scheme
+  with the artificial viscosity $\varepsilon(1 + \mathrm{Pe})$, as in (12.78)–(12.81).
+* `AdvectionDiffusion.viscosityScheme_eq_centredSolution`: the solution of the scheme with viscosity
+  is the explicit solution of (12.76) at the stabilized Péclet number $\mathrm{Pe}^*$.
 * `AdvectionDiffusion.stabilizedPeclet_phiUpwind_lt_one` and
-  `stabilizedPeclet_phiSG_eq_tanh`: `Pe* < 1` for the upwind and the Scharfetter–Gummel
-  viscosities, for every mesh size; `AdvectionDiffusion.viscosityScheme_isMMatrix`: the matrix of
-  the scheme is then an M-matrix, so the discrete maximum principle holds.
-* `AdvectionDiffusion.sg_nodal_exact`: **the Scharfetter–Gummel scheme is nodally exact** for the
-  model problem, for every mesh size.
-* `AdvectionDiffusion.phiSG_asymptotics` and `phiSG_le_sq`: `φ^SG - φ^UP → -1` (so the two are
-  asymptotically equal, `phiSG_div_phiUpwind_tendsto`) and `0 ≤ φ^SG(t) ≤ t²/3`, which is why the
-  Scharfetter–Gummel viscosity is `O(h²)` where the upwind one is `O(h)`.
-* `AdvectionDiffusion.stabilizedForm_self`, `stabilizedForm_isBoundedWith_seminorm` and
-  `seminorm_sub_stabilized_le`: `a_h(v, v) = ε_h |v|²_{H^1}` on `H^1_0(a, b)`, the continuity
-  constant `M_h = ε_h + |β| C_P`, and the error bound of [quarteroni2000numerical] (12.87)–(12.89)
-  in Strang form.
-* `AdvectionDiffusion.rep_eq_exactSolution_of_galerkin_sg` and
-  `seminorm_sub_stabilized_le_sg`: **the `P_1` Scharfetter–Gummel finite element solution of the
-  model problem is nodally exact**, hence equal to the piecewise linear interpolant of the exact
-  solution, so its error is the interpolation error and (12.85) holds with the constant `1`.
+  `AdvectionDiffusion.stabilizedPeclet_phiSG_eq_tanh`: $\mathrm{Pe}^* < 1$ for the upwind viscosity,
+  and $\mathrm{Pe}^* = \tanh \mathrm{Pe} < 1$ for the Scharfetter–Gummel viscosity, for every mesh
+  size.
+* `AdvectionDiffusion.viscosityScheme_isMMatrix`: if $|\mathrm{Pe}^*| \le 1$, the matrix of the
+  scheme is an M-matrix, so the discrete maximum principle holds.
+* `AdvectionDiffusion.sg_nodal_exact`: the Scharfetter–Gummel scheme is nodally exact for the model
+  problem, for every mesh size.
+* `AdvectionDiffusion.phiSG_asymptotics` and `AdvectionDiffusion.phiSG_div_phiUpwind_tendsto`:
+  $\phi^{SG}(t) - \phi^{UP}(t) \to -1$ and $\phi^{SG}(t)/\phi^{UP}(t) \to 1$ as $t \to \infty$.
+* `AdvectionDiffusion.phiSG_le_sq`: $\phi^{SG}(t) \le t^2/3$ for $t \ge 0$, so the
+  Scharfetter–Gummel viscosity is $O(h^2)$ where the upwind viscosity is $O(h)$.
+* `AdvectionDiffusion.stabilizedForm_self`: $a_h(v, v) = \varepsilon_h |v|_{H^1}^2$ on
+  $H^1_0(a, b)$.
+* `AdvectionDiffusion.stabilizedForm_isBoundedWith_seminorm`: the continuity bound of $a_h$ in the
+  $H^1$ seminorm, with the constant $M_h = \varepsilon_h + |\beta| C_P$, $C_P = (b - a)/\sqrt{2}$.
+* `AdvectionDiffusion.seminorm_sub_stabilized_le`: the error bound (12.87)–(12.89) of the stabilized
+  method, in the form of Strang's lemma.
+* `AdvectionDiffusion.rep_eq_exactSolution_of_galerkin_sg`: the $\mathbb{P}_1$ Scharfetter–Gummel
+  finite element solution of the model problem is nodally exact.
+* `AdvectionDiffusion.seminorm_sub_stabilized_le_sg`: so its error is the interpolation error, and
+  (12.85) holds with the constant $1$.
 * `AdvectionDiffusion.seminorm_sub_stabilized_le_upwind` and
-  `seminorm_sub_stabilized_le_sg_quadratic`: Theorem 12.4's two general clauses, the first-order
-  rate (12.85) of the upwind method with `P_1` elements and the second-order rate (12.86) of the
-  Scharfetter–Gummel method with `P_2` elements, both with an explicit constant.
+  `AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic`: the two general clauses of Theorem
+  12.4, the first-order rate (12.85) of the upwind method with $\mathbb{P}_1$ elements and the
+  second-order rate (12.86) of the Scharfetter–Gummel method with $\mathbb{P}_2$ elements, both with
+  an explicit constant.
 
 ## Implementation notes
 
-Grid functions are indexed by `ℕ`, not by `Fin (n + 1)`: the schemes are three-term relations
-whose index arithmetic is painless on `ℕ` and painful on `Fin`, and a grid function is only ever
-constrained at the indices `0, …, n`. The difference equations are stated in the shifted form
-`i, i + 1, i + 2` for the same reason (no truncated subtraction).
-
-The bilinear form is not defined again here: `EllipticInterval.form` already takes `L^∞`
-coefficients, and the stabilized form is that form at the constant coefficients `ε_h`, `β`, `0`
-(`EllipticInterval.constLinf` packages a constant as an element of `L^∞(a, b)`). Everything
-about it therefore inherits the conventions of `Numlib/Variational/EllipticInterval.lean`: the
-space is `SobolevInterval 1 a b`, the Dirichlet test space is `SobolevIntervalZero a b`, and the
-discrete problem is `IsGalerkinSolution` in a subspace `K ≤ H^1_0(a, b)` — no finite element
-space is needed to state or to prove the error bound.
+* Grid functions are indexed by `ℕ`, not by `Fin (n + 1)`. The schemes are three-term relations,
+  whose index arithmetic is simple on `ℕ`, and a grid function is constrained only at the indices
+  $0, \dots, n$. For the same reason the difference equations are written in the shifted form at the
+  indices $i$, $i + 1$, $i + 2$, without truncated subtraction.
+* The bilinear form is not defined again here. `EllipticInterval.form` already takes $L^\infty$
+  coefficients, and the stabilized form is that form at the constant coefficients $\varepsilon_h$,
+  $\beta$, $0$; `EllipticInterval.constLinf` makes a constant an element of $L^\infty(a, b)$. The
+  stabilized form therefore follows the conventions of `Numlib.Variational.EllipticInterval`: the
+  space is `SobolevInterval 1 a b`, the Dirichlet test space is `SobolevIntervalZero a b`, and the
+  discrete problem is `IsGalerkinSolution` in a subspace $K \le H^1_0(a, b)$. No finite element
+  space is needed to state or to prove the general error bound.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -96,47 +119,62 @@ namespace AdvectionDiffusion
 
 /-! ### The Péclet numbers -/
 
-/-- **The global Péclet number** `Pe_gl = |β| L / (2 ε)` of [quarteroni2000numerical] (12.71),
-measuring the dominance of the advective term `β u'` over the diffusive term `-ε u''` on a domain
-of size `L`. -/
+/-- The **global Péclet number** $\mathrm{Pe}_{gl} = |\beta| L/(2\varepsilon)$ of the problem
+$-\varepsilon u'' + \beta u' = 0$ on a domain of length $L$. It measures how much the advective
+term $\beta u'$ dominates the diffusive term $-\varepsilon u''$. This is the number of (12.71)
+in [quarteroni2000numerical].
+
+For $\varepsilon = 0$ the Lean division by zero gives the value $0$. -/
 def globalPeclet (β L ε : ℝ) : ℝ := |β| * L / (2 * ε)
 
-/-- **The local (mesh) Péclet number** `Pe = |β| h / (2 ε)` of [quarteroni2000numerical] §12.5.1:
-the global Péclet number of a single mesh panel of width `h`. -/
+/-- The **local Péclet number** (mesh Péclet number) $\mathrm{Pe} = |\beta| h/(2\varepsilon)$: the
+global Péclet number of one mesh interval of width $h$. This is the number of
+[quarteroni2000numerical], §12.5.1. -/
 def localPeclet (β h ε : ℝ) : ℝ := |β| * h / (2 * ε)
 
-/-- On the unit interval the local Péclet number is `h` times the global one. -/
+/-- For all real $\beta$, $h$ and $\varepsilon$, the local Péclet number is $h$ times the global
+Péclet number of the unit interval: $\mathrm{Pe}(\beta, h, \varepsilon) =
+h\,\mathrm{Pe}_{gl}(\beta, 1, \varepsilon)$. -/
 theorem localPeclet_eq_globalPeclet_mul (β h ε : ℝ) :
     localPeclet β h ε = globalPeclet β 1 ε * h := by
   rw [localPeclet, globalPeclet]
   ring
 
-/-- The local Péclet number is nonnegative for a nonnegative mesh size and a positive
-diffusion. -/
+/-- If $h \ge 0$ and $\varepsilon \ge 0$, then the local Péclet number $|\beta| h/(2\varepsilon)$ is
+nonnegative. -/
 theorem localPeclet_nonneg {β h ε : ℝ} (hh : 0 ≤ h) (hε : 0 ≤ ε) : 0 ≤ localPeclet β h ε := by
   unfold localPeclet
   positivity
 
-/-- The local Péclet number is positive when the advection is nonzero. -/
+/-- If $\beta \neq 0$, $h > 0$ and $\varepsilon > 0$, then the local Péclet number
+$|\beta| h/(2\varepsilon)$ is positive. -/
 theorem localPeclet_pos {β h ε : ℝ} (hβ : β ≠ 0) (hh : 0 < h) (hε : 0 < ε) :
     0 < localPeclet β h ε := by
   unfold localPeclet
   positivity
 
-/-- For a positive advection coefficient, `|β| h = 2 ε Pe`. -/
+/-- If $\varepsilon \neq 0$, then $2\varepsilon\,\mathrm{Pe} = |\beta| h$ for all real $\beta$ and
+$h$, where $\mathrm{Pe} = |\beta| h/(2\varepsilon)$. -/
 theorem mul_localPeclet {β h ε : ℝ} (hε : ε ≠ 0) : 2 * ε * localPeclet β h ε = |β| * h := by
   rw [localPeclet]
   field_simp
 
 /-! ### The exact solution and its boundary layer -/
 
-/-- **The exact solution of the model problem** `-ε u'' + β u' = 0`, `u(0) = 0`, `u(1) = 1`
-([quarteroni2000numerical] §12.5): `u(x) = (e^{βx/ε} - 1)/(e^{β/ε} - 1)`.  For `β/ε = 0` the
-denominator vanishes and the definition returns the junk value `0`; every statement about it
-assumes `ε, β > 0`. -/
+/-- The **exact solution of the model problem** $-\varepsilon u'' + \beta u' = 0$ on $(0, 1)$,
+$u(0) = 0$, $u(1) = 1$: for real $\varepsilon$ and $\beta$, $$u(x) = \frac{e^{\beta
+x/\varepsilon} - 1}{e^{\beta/\varepsilon} - 1}.$$ This is the solution in
+[quarteroni2000numerical], §12.5.
+
+The formula is defined for every real $x$. If $\beta/\varepsilon = 0$, which in Lean includes
+the case $\varepsilon = 0$, the denominator vanishes and the value is $0$. The boundary value
+$u(1) = 1$ and the uniqueness assume $\varepsilon > 0$ and $\beta > 0$; the value $u(0) = 0$
+holds for all $\varepsilon$ and $\beta$. -/
 def exactSolution (ε β x : ℝ) : ℝ := (Real.exp (β * x / ε) - 1) / (Real.exp (β / ε) - 1)
 
-/-- The exact solution is differentiable, with `u'(x) = (β/ε) e^{βx/ε}/(e^{β/ε} - 1)`. -/
+/-- For all real $\varepsilon$, $\beta$ and $x$, the exact solution is differentiable at $x$ with
+$$u'(x) = \frac{(\beta/\varepsilon)\, e^{\beta x/\varepsilon}}{e^{\beta/\varepsilon} - 1}.$$
+-/
 theorem hasDerivAt_exactSolution (ε β x : ℝ) :
     HasDerivAt (exactSolution ε β)
       (β / ε * Real.exp (β * x / ε) / (Real.exp (β / ε) - 1)) x := by
@@ -147,12 +185,14 @@ theorem hasDerivAt_exactSolution (ε β x : ℝ) :
   refine h2.congr_deriv ?_
   ring
 
-/-- The derivative of the exact solution. -/
+/-- For all real $\varepsilon$, $\beta$ and $x$, the derivative of the exact solution is $u'(x) =
+(\beta/\varepsilon)\, e^{\beta x/\varepsilon}/(e^{\beta/\varepsilon} - 1)$. -/
 theorem deriv_exactSolution (ε β x : ℝ) :
     deriv (exactSolution ε β) x = β / ε * Real.exp (β * x / ε) / (Real.exp (β / ε) - 1) :=
   (hasDerivAt_exactSolution ε β x).deriv
 
-/-- The second derivative of the exact solution. -/
+/-- For all real $\varepsilon$, $\beta$ and $x$, the second derivative of the exact solution is
+$u''(x) = (\beta/\varepsilon)^2 e^{\beta x/\varepsilon}/(e^{\beta/\varepsilon} - 1)$. -/
 theorem deriv_deriv_exactSolution (ε β x : ℝ) :
     deriv (deriv (exactSolution ε β)) x
       = (β / ε) ^ 2 * Real.exp (β * x / ε) / (Real.exp (β / ε) - 1) := by
@@ -167,12 +207,12 @@ theorem deriv_deriv_exactSolution (ε β x : ℝ) :
   refine h2.deriv.trans ?_
   ring
 
-/-- The exact solution vanishes at the left endpoint. -/
+/-- For all real $\varepsilon$ and $\beta$, the exact solution satisfies $u(0) = 0$. -/
 @[simp]
 theorem exactSolution_zero (ε β : ℝ) : exactSolution ε β 0 = 0 := by
   simp [exactSolution]
 
-/-- The exact solution takes the value `1` at the right endpoint, provided `β/ε ≠ 0`. -/
+/-- If $\varepsilon > 0$ and $\beta > 0$, then the exact solution satisfies $u(1) = 1$. -/
 @[simp]
 theorem exactSolution_one {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) : exactSolution ε β 1 = 1 := by
   have hk : (0 : ℝ) < β / ε := div_pos hβ hε
@@ -182,20 +222,27 @@ theorem exactSolution_one {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) : exactSol
   rw [exactSolution, mul_one]
   field_simp
 
-/-- **The exact solution solves the model problem** `-ε u'' + β u' = 0`
-([quarteroni2000numerical] §12.5): the characteristic roots are `0` and `β/ε`. -/
+/-- **The exact solution solves the model problem**: if $\varepsilon \neq 0$, then for all real
+$\beta$ and $x$, $$-\varepsilon u''(x) + \beta u'(x) = 0.$$ This is the solution formula of
+[quarteroni2000numerical], §12.5.
+
+The characteristic roots of the equation are $0$ and $\beta/\varepsilon$. -/
 theorem exactSolution_solves {ε : ℝ} (hε : ε ≠ 0) (β x : ℝ) :
     -ε * deriv (deriv (exactSolution ε β)) x + β * deriv (exactSolution ε β) x = 0 := by
   rw [deriv_deriv_exactSolution, deriv_exactSolution]
   field_simp
   ring
 
-/-- **Uniqueness of the solution of the model problem**: a twice continuously differentiable
-`u : ℝ → ℝ` with `-ε u'' + β u' = 0`, `u(0) = 0` and `u(1) = 1` is the exact solution.  Writing
-`k = β/ε`, the equation says `u'' = k u'`, so `u' - k u` is constant, say `c`, and then
-`(u + c/k) e^{-kx}` is constant as well; the two boundary values fix the two constants.  The
-book states the uniqueness on `[0, 1]`; the statement here is on `ℝ`, which is where the
-hypotheses of Mathlib's `is_const_of_deriv_eq_zero` live. -/
+/-- **Uniqueness of the solution of the model problem.** Let $\varepsilon > 0$ and $\beta > 0$, and
+let $u : \mathbb{R} \to \mathbb{R}$ be twice continuously differentiable with
+$-\varepsilon u''(x) + \beta u'(x) = 0$ for every $x \in \mathbb{R}$, $u(0) = 0$ and $u(1) = 1$.
+Then $u$ is the exact solution `AdvectionDiffusion.exactSolution`.
+
+The source states the uniqueness on $[0, 1]$. Here the function and the equation are on all of
+$\mathbb{R}$, because Mathlib's `is_const_of_deriv_eq_zero` is stated for functions on
+$\mathbb{R}$. Proof idea: with $k = \beta/\varepsilon$ the equation says $u'' = k u'$, so
+$u' - k u$ is a constant $c$, and then $(u + c/k) e^{-kx}$ is constant as well; the two boundary
+values fix the two constants. -/
 theorem exactSolution_unique {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) {u : ℝ → ℝ}
     (hu : ContDiff ℝ 2 u) (hode : ∀ x, -ε * deriv (deriv u) x + β * deriv u x = 0)
     (h0 : u 0 = 0) (h1 : u 1 = 1) : u = exactSolution ε β := by
@@ -265,26 +312,32 @@ theorem exactSolution_unique {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) {u : �
 
 /-! ### The centred difference equation and its explicit solution -/
 
-/-- The amplification ratio `ρ = (1 + Pe)/(1 - Pe)` of the centred difference equation (12.76):
-the nontrivial root of its characteristic equation `(Pe - 1) ρ² + 2 ρ - (Pe + 1) = 0`, the other
-root being `1` ([quarteroni2000numerical] §12.5.1). -/
+/-- The **amplification ratio** $\rho = (1 + \mathrm{Pe})/(1 - \mathrm{Pe})$ of the centred
+difference equation (12.76). It is the root other than $1$ of the characteristic equation
+$(\mathrm{Pe} - 1)\rho^2 + 2\rho - (\mathrm{Pe} + 1) = 0$, as in [quarteroni2000numerical],
+§12.5.1.
+
+For $\mathrm{Pe} = 1$ the Lean division by zero gives $\rho = 0$. -/
 def centredRatio (Pe : ℝ) : ℝ := (1 + Pe) / (1 - Pe)
 
-/-- The defining relation `(1 - Pe) ρ = 1 + Pe` of the amplification ratio. -/
+/-- If $\mathrm{Pe} \neq 1$, then the amplification ratio satisfies
+$(1 - \mathrm{Pe})\rho = 1 + \mathrm{Pe}$. -/
 theorem one_sub_mul_centredRatio {Pe : ℝ} (hPe : Pe ≠ 1) :
     (1 - Pe) * centredRatio Pe = 1 + Pe := by
   rw [centredRatio]
   field_simp
 
-/-- The amplification ratio is a root of the characteristic equation of (12.76). -/
+/-- If $\mathrm{Pe} \neq 1$, then the amplification ratio is a root of the characteristic equation
+of (12.76): $$(\mathrm{Pe} - 1)\rho^2 + 2\rho - (\mathrm{Pe} + 1) = 0.$$
+-/
 theorem centredRatio_root {Pe : ℝ} (hPe : Pe ≠ 1) :
     (Pe - 1) * centredRatio Pe ^ 2 + 2 * centredRatio Pe - (Pe + 1) = 0 := by
   have h := one_sub_mul_centredRatio hPe
   linear_combination (1 - centredRatio Pe) * h
 
-/-- For a positive local Péclet number other than `1` the amplification ratio has modulus greater
-than `1`: below `1` it is `(1 + Pe)/(1 - Pe) > 1`, above `1` it is negative of modulus
-`(1 + Pe)/(Pe - 1) > 1`. -/
+/-- If $\mathrm{Pe} > 0$ and $\mathrm{Pe} \neq 1$, then the amplification ratio satisfies
+$|\rho| > 1$. For $\mathrm{Pe} < 1$ it is $(1 + \mathrm{Pe})/(1 - \mathrm{Pe}) > 1$; for
+$\mathrm{Pe} > 1$ it is negative with modulus $(1 + \mathrm{Pe})/(\mathrm{Pe} - 1) > 1$. -/
 theorem one_lt_abs_centredRatio {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) :
     1 < |centredRatio Pe| := by
   have hne : (1 : ℝ) - Pe ≠ 0 := sub_ne_zero.2 fun h => hPe1 h.symm
@@ -294,18 +347,18 @@ theorem one_lt_abs_centredRatio {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) :
   · rw [abs_of_pos (by linarith)]; linarith
   · rw [abs_of_neg (by linarith)]; linarith
 
-/-- The amplification ratio is negative when the local Péclet number exceeds `1`: this is the
-negative base whose powers make the discrete solution oscillate. -/
+/-- If $\mathrm{Pe} > 1$, then the amplification ratio is negative: $\rho < 0$. The powers of this
+negative ratio make the discrete solution oscillate. -/
 theorem centredRatio_neg {Pe : ℝ} (hPe : 1 < Pe) : centredRatio Pe < 0 :=
   div_neg_of_pos_of_neg (by linarith) (by linarith)
 
-/-- The amplification ratio exceeds `1` when the local Péclet number is below `1`. -/
+/-- If $0 < \mathrm{Pe} < 1$, then the amplification ratio satisfies $\rho > 1$. -/
 theorem one_lt_centredRatio {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe < 1) : 1 < centredRatio Pe := by
   rw [centredRatio, lt_div_iff₀ (by linarith)]
   linarith
 
-/-- No positive power of the amplification ratio is `1`, so the denominator of the explicit
-solution of (12.76) never vanishes. -/
+/-- If $\mathrm{Pe} > 0$, $\mathrm{Pe} \neq 1$ and $n \ge 1$, then $\rho^n \neq 1$. So the
+denominator of the explicit solution of (12.76) on $n$ intervals does not vanish. -/
 theorem centredRatio_pow_ne_one {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) {n : ℕ} (hn : n ≠ 0) :
     centredRatio Pe ^ n ≠ 1 := by
   intro h
@@ -313,26 +366,34 @@ theorem centredRatio_pow_ne_one {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) {n :
   rw [← abs_pow, h, abs_one] at h1
   exact lt_irrefl 1 h1
 
-/-- **The explicit solution of the centred difference equation** (12.76) on `n` panels with the
-boundary values `u_0 = 0`, `u_n = 1` ([quarteroni2000numerical] §12.5.1):
-`u_i = (1 - ρ^i)/(1 - ρ^n)` with `ρ = AdvectionDiffusion.centredRatio Pe`. -/
+/-- The **explicit solution of the centred difference equation** (12.76) on $n$ intervals, with the
+boundary values $u_0 = 0$ and $u_n = 1$: $$u_i = \frac{1 - \rho^i}{1 - \rho^n},$$ where $\rho$
+is the amplification ratio `AdvectionDiffusion.centredRatio` at $\mathrm{Pe}$. This is the
+solution in [quarteroni2000numerical], §12.5.1.
+
+The formula is defined for every $i \in \mathbb{N}$, not only for $i \le n$. If $\rho^n = 1$,
+the denominator vanishes and the value is $0$. -/
 def centredSolution (n : ℕ) (Pe : ℝ) (i : ℕ) : ℝ :=
   (1 - centredRatio Pe ^ i) / (1 - centredRatio Pe ^ n)
 
-/-- The discrete solution vanishes at the left endpoint. -/
+/-- For all $n$ and $\mathrm{Pe}$, the explicit solution satisfies $u_0 = 0$. -/
 @[simp]
 theorem centredSolution_zero (n : ℕ) (Pe : ℝ) : centredSolution n Pe 0 = 0 := by
   simp [centredSolution]
 
-/-- The discrete solution takes the value `1` at the right endpoint. -/
+/-- If $\mathrm{Pe} > 0$, $\mathrm{Pe} \neq 1$ and $n \ge 1$, then the explicit solution satisfies
+$u_n = 1$. -/
 @[simp]
 theorem centredSolution_self {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) {n : ℕ} (hn : n ≠ 0) :
     centredSolution n Pe n = 1 :=
   div_self (sub_ne_zero.2 fun h => centredRatio_pow_ne_one hPe hPe1 hn h.symm)
 
-/-- **The explicit solution solves the centred difference equation** (12.76),
-`(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0`, written here in the shifted form at the indices
-`i`, `i + 1`, `i + 2`. -/
+/-- **The explicit solution solves the centred difference equation** (12.76): if
+$\mathrm{Pe} \neq 1$, then for all $n, i \in \mathbb{N}$, $$(\mathrm{Pe} - 1) u_{i+2} +
+2u_{i+1} - (\mathrm{Pe} + 1) u_i = 0.$$
+
+The source writes the equation as $(\mathrm{Pe} - 1) u_{i+1} + 2u_i - (\mathrm{Pe} + 1)
+u_{i-1} = 0$; here the indices are shifted by one. -/
 theorem centredSolution_solves {Pe : ℝ} (hPe : Pe ≠ 1) (n i : ℕ) :
     (Pe - 1) * centredSolution n Pe (i + 2) + 2 * centredSolution n Pe (i + 1)
       - (Pe + 1) * centredSolution n Pe i = 0 := by
@@ -347,17 +408,20 @@ theorem centredSolution_solves {Pe : ℝ} (hPe : Pe ≠ 1) (n i : ℕ) :
   simp only [centredSolution, ← hρ, ← hD]
   rw [e, key, zero_div]
 
-/-- The increments of the discrete solution are the powers of the amplification ratio times the
-first one: `u_{i+1} - u_i = ρ^i (u_1 - u_0)`. -/
+/-- For all $n$, $\mathrm{Pe}$ and $i$, the increments of the explicit solution are powers of the
+amplification ratio times the first increment: $u_{i+1} - u_i = \rho^i (u_1 - u_0)$. -/
 theorem centredSolution_sub_eq (n : ℕ) (Pe : ℝ) (i : ℕ) :
     centredSolution n Pe (i + 1) - centredSolution n Pe i
       = centredRatio Pe ^ i * (centredSolution n Pe 1 - centredSolution n Pe 0) := by
   simp only [centredSolution]
   ring
 
-/-- **The centred scheme oscillates when the local Péclet number exceeds `1`**
-([quarteroni2000numerical] §12.5.1): the increments of the discrete solution alternate in sign,
-because `ρ^i` does. -/
+/-- **The centred scheme oscillates when $\mathrm{Pe} > 1$.** Let $\mathrm{Pe} > 1$ and $n \ge 1$.
+Then the increments of the explicit solution alternate in sign: for every $i \in \mathbb{N}$,
+$$(-1)^i (u_{i+1} - u_i)(u_1 - u_0) > 0.$$ This is the oscillation of [quarteroni2000numerical],
+§12.5.1.
+
+The reason is that $\rho^i$ alternates in sign, because $\rho < 0$. -/
 theorem centredSolution_oscillates {Pe : ℝ} (hPe : 1 < Pe) {n : ℕ} (hn : n ≠ 0) (i : ℕ) :
     0 < (-1) ^ i * (centredSolution n Pe (i + 1) - centredSolution n Pe i)
       * (centredSolution n Pe 1 - centredSolution n Pe 0) := by
@@ -376,8 +440,9 @@ theorem centredSolution_oscillates {Pe : ℝ} (hPe : 1 < Pe) {n : ℕ} (hn : n �
   have h1 : 0 < (-centredRatio Pe) ^ i := pow_pos (by linarith) i
   positivity
 
-/-- **The centred scheme is monotone when the local Péclet number is below `1`**, matching the
-monotonicity of the exact solution. -/
+/-- **The centred scheme is monotone when $\mathrm{Pe} < 1$.** If $0 < \mathrm{Pe} < 1$ and
+$n \ge 1$, then the explicit solution $i \mapsto u_i$ is strictly increasing on $\mathbb{N}$.
+This matches the monotonicity of the exact solution. -/
 theorem centredSolution_strictMono {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe < 1) {n : ℕ} (hn : n ≠ 0) :
     StrictMono (centredSolution n Pe) := by
   have hρ : 1 < centredRatio Pe := one_lt_centredRatio hPe hPe1
@@ -389,9 +454,12 @@ theorem centredSolution_strictMono {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe < 1) {n 
   have := centredSolution_sub_eq n Pe i
   nlinarith [pow_pos (show (0 : ℝ) < centredRatio Pe by linarith) i]
 
-/-- A solution of the centred difference equation (12.76) with `u_0 = 0` is determined by `u_1`:
-it is `u_1 ∑_{j < i} ρ^j`.  This is the uniqueness half of [quarteroni2000numerical] §12.5.1, and
-the only place where `Pe ≠ 1` — so that the recurrence can be solved for `u_{i+2}` — is used. -/
+/-- Let $\mathrm{Pe} \neq 1$ and $n \in \mathbb{N}$, and let $u : \mathbb{N} \to \mathbb{R}$ satisfy
+$u_0 = 0$ and $(\mathrm{Pe} - 1) u_{i+2} + 2u_{i+1} - (\mathrm{Pe} + 1) u_i = 0$ for every $i$
+with $i + 2 \le n$. Then $$u_i = u_1 \sum_{j < i} \rho^j \qquad \text{for every } i \le n.$$
+This is the uniqueness half of the argument in [quarteroni2000numerical], §12.5.1.
+
+The hypothesis $\mathrm{Pe} \neq 1$ lets the recurrence be solved for $u_{i+2}$. -/
 theorem eq_mul_geom_sum_of_centredRecurrence {Pe : ℝ} (hPe : Pe ≠ 1) {n : ℕ} {u : ℕ → ℝ}
     (h0 : u 0 = 0)
     (hrec : ∀ i, i + 2 ≤ n → (Pe - 1) * u (i + 2) + 2 * u (i + 1) - (Pe + 1) * u i = 0) :
@@ -418,8 +486,11 @@ theorem eq_mul_geom_sum_of_centredRecurrence {Pe : ℝ} (hPe : Pe ≠ 1) {n : �
       rw [Finset.sum_range_succ, Finset.sum_range_succ]
       linear_combination hX
 
-/-- **The centred difference equation has exactly one solution with the two boundary values**, and
-it is `AdvectionDiffusion.centredSolution` ([quarteroni2000numerical] §12.5.1). -/
+/-- **Uniqueness for the centred difference equation.** Let $\mathrm{Pe} > 0$, $\mathrm{Pe} \neq 1$
+and $n \ge 1$. If $u : \mathbb{N} \to \mathbb{R}$ satisfies $u_0 = 0$, $u_n = 1$ and
+$(\mathrm{Pe} - 1) u_{i+2} + 2u_{i+1} - (\mathrm{Pe} + 1) u_i = 0$ for every $i$ with
+$i + 2 \le n$, then $u_i$ is the explicit solution $(1 - \rho^i)/(1 - \rho^n)$ for every
+$i \le n$. This is the uniqueness statement of [quarteroni2000numerical], §12.5.1. -/
 theorem centredSolution_unique {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) {n : ℕ} (hn : n ≠ 0)
     {u : ℕ → ℝ} (h0 : u 0 = 0) (hlast : u n = 1)
     (hrec : ∀ i, i + 2 ≤ n → (Pe - 1) * u (i + 2) + 2 * u (i + 1) - (Pe + 1) * u i = 0)
@@ -450,25 +521,27 @@ theorem centredSolution_unique {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe ≠ 1) {n : 
 
 /-! ### The Bernoulli function and the viscosity functions -/
 
-/-- **The Bernoulli function** `B(t) = t/(e^t - 1)`, extended by `B(0) = 1`
-([quarteroni2000numerical] (12.83)).  Mathlib carries the Bernoulli *numbers*, not this
-function. -/
+/-- The **Bernoulli function** $B(t) = t/(e^t - 1)$ for $t \neq 0$, with $B(0) = 1$. This is the
+function of (12.83) in [quarteroni2000numerical].
+
+Mathlib has the Bernoulli numbers, but not this function. -/
 def bernoulliFn (t : ℝ) : ℝ := if t = 0 then 1 else t / (Real.exp t - 1)
 
-/-- The Bernoulli function takes the value `1` at the origin, the limit of `t/(e^t - 1)`. -/
+/-- The Bernoulli function satisfies $B(0) = 1$. This value is the limit of $t/(e^t - 1)$ as
+$t \to 0$. -/
 @[simp]
 theorem bernoulliFn_zero : bernoulliFn 0 = 1 := by simp [bernoulliFn]
 
-/-- Away from the origin the Bernoulli function is the quotient it is named for. -/
+/-- For $t \neq 0$, the Bernoulli function is $B(t) = t/(e^t - 1)$. -/
 theorem bernoulliFn_of_ne_zero {t : ℝ} (ht : t ≠ 0) : bernoulliFn t = t / (Real.exp t - 1) := by
   simp [bernoulliFn, ht]
 
-/-- `e^t - 1` vanishes only at the origin. -/
+/-- For $t \neq 0$, $e^t - 1 \neq 0$. -/
 theorem exp_sub_one_ne_zero {t : ℝ} (ht : t ≠ 0) : Real.exp t - 1 ≠ 0 :=
   sub_ne_zero.2 fun h => ht ((Real.exp_eq_one_iff t).1 h)
 
-/-- The reflection formula `B(-t) = t + B(t)`, the identity behind
-[quarteroni2000numerical] Exercise 12.13. -/
+/-- The **reflection formula** of the Bernoulli function: $B(-t) = t + B(t)$ for every real $t$.
+This identity is behind Exercise 12.13 of [quarteroni2000numerical]. -/
 theorem bernoulliFn_neg (t : ℝ) : bernoulliFn (-t) = t + bernoulliFn t := by
   rcases eq_or_ne t 0 with rfl | ht
   · simp
@@ -479,7 +552,7 @@ theorem bernoulliFn_neg (t : ℝ) : bernoulliFn (-t) = t + bernoulliFn t := by
     field_simp
     ring
 
-/-- The Bernoulli function is positive. -/
+/-- The Bernoulli function is positive: $B(t) > 0$ for every real $t$. -/
 theorem bernoulliFn_pos (t : ℝ) : 0 < bernoulliFn t := by
   rcases lt_trichotomy t 0 with ht | rfl | ht
   · rw [bernoulliFn_of_ne_zero ht.ne]
@@ -490,7 +563,7 @@ theorem bernoulliFn_pos (t : ℝ) : 0 < bernoulliFn t := by
   · rw [bernoulliFn_of_ne_zero ht.ne']
     exact div_pos ht (by have : (1 : ℝ) < Real.exp t := Real.one_lt_exp_iff.2 ht; linarith)
 
-/-- The Bernoulli function is at most `1` on `[0, ∞)`, since `t + 1 ≤ e^t`. -/
+/-- For $t \ge 0$, the Bernoulli function satisfies $B(t) \le 1$, because $t + 1 \le e^t$. -/
 theorem bernoulliFn_le_one {t : ℝ} (ht : 0 ≤ t) : bernoulliFn t ≤ 1 := by
   rcases eq_or_lt_of_le ht with rfl | ht'
   · simp
@@ -498,8 +571,10 @@ theorem bernoulliFn_le_one {t : ℝ} (ht : 0 ≤ t) : bernoulliFn t ≤ 1 := by
       have : (1 : ℝ) < Real.exp t := Real.one_lt_exp_iff.2 ht'; linarith)]
     linarith [Real.add_one_le_exp t]
 
-/-- The Bernoulli function is continuous, the value `1` at the origin being the limit of
-`t/(e^t - 1)`: the reciprocal of the difference quotient of `exp` at `0`. -/
+/-- The Bernoulli function is continuous on $\mathbb{R}$.
+
+At the origin this says that $t/(e^t - 1) \to 1$ as $t \to 0$; the quotient is the reciprocal of
+the difference quotient of $\exp$ at $0$. -/
 theorem continuous_bernoulliFn : Continuous bernoulliFn := by
   refine continuous_iff_continuousAt.2 fun t => ?_
   rcases eq_or_ne t 0 with rfl | ht
@@ -521,20 +596,21 @@ theorem continuous_bernoulliFn : Continuous bernoulliFn := by
     filter_upwards [isOpen_compl_singleton.mem_nhds (by simpa using ht)] with s hs
     exact (bernoulliFn_of_ne_zero (by simpa using hs)).symm
 
-/-- **The upwind viscosity function** `φ^UP(t) = t` ([quarteroni2000numerical] §12.5.2). -/
+/-- The **upwind viscosity function** $\phi^{UP}(t) = t$ of [quarteroni2000numerical], §12.5.2. -/
 def phiUpwind (t : ℝ) : ℝ := t
 
-/-- **The Scharfetter–Gummel (exponential fitting) viscosity function**
-`φ^SG(t) = t - 1 + B(2t)` ([quarteroni2000numerical] (12.83), [SG69]). -/
+/-- The **Scharfetter–Gummel viscosity function** (exponential fitting)
+$\phi^{SG}(t) = t - 1 + B(2t)$, where $B$ is the Bernoulli function. This is the function of
+(12.83) in [quarteroni2000numerical]. -/
 def phiSG (t : ℝ) : ℝ := t - 1 + bernoulliFn (2 * t)
 
-/-- The Scharfetter–Gummel viscosity function vanishes at the origin, as (12.82) requires of
-every viscosity function. -/
+/-- The Scharfetter–Gummel viscosity function satisfies $\phi^{SG}(0) = 0$, as (12.82) of
+[quarteroni2000numerical] requires of every viscosity function. -/
 @[simp]
 theorem phiSG_zero : phiSG 0 = 0 := by simp [phiSG]
 
-/-- The relation `(1 + φ^SG(t))(e^{2t} - 1) = t (e^{2t} + 1)`, from which the closed forms of
-`1 + φ^SG` and of the stabilized Péclet number follow. -/
+/-- For $t \neq 0$, $$(1 + \phi^{SG}(t))(e^{2t} - 1) = t\,(e^{2t} + 1).$$ The closed forms of
+$1 + \phi^{SG}$ and of the stabilized Péclet number follow from this relation. -/
 theorem one_add_phiSG_mul {t : ℝ} (ht : t ≠ 0) :
     (1 + phiSG t) * (Real.exp (2 * t) - 1) = t * (Real.exp (2 * t) + 1) := by
   have h2 : (2 : ℝ) * t ≠ 0 := by simpa using ht
@@ -545,7 +621,8 @@ theorem one_add_phiSG_mul {t : ℝ} (ht : t ≠ 0) :
   rw [phiSG, bernoulliFn_of_ne_zero h2, e, div_mul_cancel₀ _ hE]
   ring
 
-/-- `1 + φ^SG(t) = t coth t`, the closed form of the Scharfetter–Gummel viscosity. -/
+/-- For $t \neq 0$, $1 + \phi^{SG}(t) = t \cosh t/\sinh t = t \coth t$. This is the closed form of
+the Scharfetter–Gummel viscosity. -/
 theorem one_add_phiSG {t : ℝ} (ht : t ≠ 0) :
     1 + phiSG t = t * Real.cosh t / Real.sinh t := by
   have h2 : (2 : ℝ) * t ≠ 0 := by simpa using ht
@@ -562,12 +639,14 @@ theorem one_add_phiSG {t : ℝ} (ht : t ≠ 0) :
   rw [hcs, eq_div_iff hE]
   exact one_add_phiSG_mul ht
 
-/-- `φ^SG(t) = t coth t - 1` ([quarteroni2000numerical] Remark 12.6). -/
+/-- For $t \neq 0$, $\phi^{SG}(t) = t \coth t - 1$. This is the formula of Remark 12.6 of
+[quarteroni2000numerical]. -/
 theorem phiSG_eq {t : ℝ} (ht : t ≠ 0) : phiSG t = t * Real.cosh t / Real.sinh t - 1 := by
   have := one_add_phiSG ht
   linarith
 
-/-- `t cosh t - sinh t` is nondecreasing: its derivative is `t sinh t ≥ 0`. -/
+/-- The function $t \mapsto t \cosh t - \sinh t$ is nondecreasing on $\mathbb{R}$, because its
+derivative is $t \sinh t \ge 0$. -/
 theorem monotone_mul_cosh_sub_sinh :
     Monotone fun t : ℝ => t * Real.cosh t - Real.sinh t := by
   refine monotone_of_deriv_nonneg
@@ -584,13 +663,16 @@ theorem monotone_mul_cosh_sub_sinh :
   · have := Real.sinh_nonpos_iff.2 hx
     nlinarith
 
-/-- `sinh t ≤ t cosh t` for `t ≥ 0`, with the reverse inequality for `t ≤ 0`. -/
+/-- For $t \ge 0$, $\sinh t \le t \cosh t$.
+
+For $t \le 0$ the reverse inequality holds, because $t \cosh t - \sinh t$ is an odd function of
+$t$. That case is not stated here. -/
 theorem sinh_le_mul_cosh {t : ℝ} (ht : 0 ≤ t) : Real.sinh t ≤ t * Real.cosh t := by
   have := monotone_mul_cosh_sub_sinh ht
   simpa using this
 
-/-- `(t²/3 + 1) sinh t - t cosh t` is nondecreasing: its derivative is
-`(t/3)(t cosh t - sinh t) ≥ 0`. -/
+/-- The function $t \mapsto (t^2/3 + 1) \sinh t - t \cosh t$ is nondecreasing on $\mathbb{R}$,
+because its derivative is $(t/3)(t \cosh t - \sinh t) \ge 0$. -/
 theorem monotone_sq_mul_sinh_sub :
     Monotone fun t : ℝ => (t ^ 2 / 3 + 1) * Real.sinh t - t * Real.cosh t := by
   refine monotone_of_deriv_nonneg ((((differentiable_id.pow 2).div_const 3).add_const
@@ -616,17 +698,21 @@ theorem monotone_sq_mul_sinh_sub :
       simpa using monotone_mul_cosh_sub_sinh hx
     nlinarith
 
-/-- The Scharfetter–Gummel viscosity function is nonnegative on `[0, ∞)`. -/
+/-- For $t \ge 0$, the Scharfetter–Gummel viscosity function satisfies $\phi^{SG}(t) \ge 0$. -/
 theorem phiSG_nonneg {t : ℝ} (ht : 0 ≤ t) : 0 ≤ phiSG t := by
   rcases eq_or_lt_of_le ht with rfl | ht'
   · simp
   · rw [phiSG_eq ht'.ne', sub_nonneg, le_div_iff₀ (Real.sinh_pos_iff.2 ht')]
     simpa using sinh_le_mul_cosh ht
 
-/-- **The Scharfetter–Gummel viscosity is quadratic in the Péclet number**:
-`0 ≤ φ^SG(t) ≤ t²/3` for `t ≥ 0`, which is [quarteroni2000numerical] Remark 12.6's
-`φ^SG = O(h²)` (against `φ^UP(Pe) = Pe = O(h)`), with the explicit constant.  The inequality is
-`t cosh t ≤ (t²/3 + 1) sinh t`, a consequence of `AdvectionDiffusion.monotone_sq_mul_sinh_sub`. -/
+/-- **The Scharfetter–Gummel viscosity is quadratic in the Péclet number**: for $t \ge 0$,
+$$\phi^{SG}(t) \le t^2/3.$$ Together with `AdvectionDiffusion.phiSG_nonneg` this gives
+$0 \le \phi^{SG}(t) \le t^2/3$. It is the statement $\phi^{SG} = O(h^2)$ of Remark 12.6 of
+[quarteroni2000numerical], with an explicit constant, in contrast with
+$\phi^{UP}(\mathrm{Pe}) = \mathrm{Pe} = O(h)$.
+
+The inequality is equivalent to $t \cosh t \le (t^2/3 + 1) \sinh t$, which follows from
+`AdvectionDiffusion.monotone_sq_mul_sinh_sub`. -/
 theorem phiSG_le_sq {t : ℝ} (ht : 0 ≤ t) : phiSG t ≤ t ^ 2 / 3 := by
   rcases eq_or_lt_of_le ht with rfl | ht'
   · simp
@@ -635,11 +721,12 @@ theorem phiSG_le_sq {t : ℝ} (ht : 0 ≤ t) : phiSG t ≤ t ^ 2 / 3 := by
     simp only [Real.sinh_zero, Real.cosh_zero] at this
     nlinarith [this]
 
-/-- **`φ^SG` and `φ^UP` are asymptotically equal as the Péclet number grows**
-([quarteroni2000numerical] Remark 12.6): their difference tends to `-1`, because
-`B(2t) = 2t/(e^{2t} - 1) → 0`.  The book writes `φ^SG ≃ φ^UP`, which is the ratio statement
-`AdvectionDiffusion.phiSG_div_phiUpwind_tendsto` below; the difference does **not** tend to
-`0`. -/
+/-- **The difference of $\phi^{SG}$ and $\phi^{UP}$ for large Péclet numbers**: $$\phi^{SG}(t) -
+\phi^{UP}(t) \to -1 \qquad (t \to \infty),$$ because $B(2t) = 2t/(e^{2t} - 1) \to 0$. This
+belongs to Remark 12.6 of [quarteroni2000numerical].
+
+The source writes $\phi^{SG} \simeq \phi^{UP}$, which is the statement about the ratio,
+`AdvectionDiffusion.phiSG_div_phiUpwind_tendsto`. The difference does not tend to $0$. -/
 theorem phiSG_asymptotics : Tendsto (fun t => phiSG t - phiUpwind t) atTop (𝓝 (-1)) := by
   have hexp : Tendsto (fun x : ℝ => Real.exp (-x)) atTop (𝓝 0) :=
     Real.tendsto_exp_neg_atTop_nhds_zero
@@ -666,7 +753,9 @@ theorem phiSG_asymptotics : Tendsto (fun t => phiSG t - phiUpwind t) atTop (𝓝
     ring
   simpa [he] using hcomp.sub_const 1
 
-/-- The ratio form of [quarteroni2000numerical] Remark 12.6's `φ^SG ≃ φ^UP`. -/
+/-- The ratio of the two viscosity functions tends to $1$: $\phi^{SG}(t)/\phi^{UP}(t) \to 1$ as
+$t \to \infty$. This is the statement $\phi^{SG} \simeq \phi^{UP}$ of Remark 12.6 of
+[quarteroni2000numerical]. -/
 theorem phiSG_div_phiUpwind_tendsto : Tendsto (fun t => phiSG t / phiUpwind t) atTop (𝓝 1) := by
   have h1 : Tendsto (fun t : ℝ => (phiSG t - phiUpwind t) / t) atTop (𝓝 0) :=
     phiSG_asymptotics.div_atTop tendsto_id
@@ -677,100 +766,132 @@ theorem phiSG_div_phiUpwind_tendsto : Tendsto (fun t => phiSG t / phiUpwind t) a
     ring
   simpa using (h1.add_const 1).congr' he
 
-/-- **The stabilized local Péclet number** `Pe* = Pe/(1 + φ(Pe))` of
-[quarteroni2000numerical] §12.5.2: the local Péclet number of the scheme with viscosity
-`ε_h = ε (1 + φ(Pe))`. -/
+/-- The **stabilized local Péclet number** $\mathrm{Pe}^* = \mathrm{Pe}/(1 + \phi(\mathrm{Pe}))$ for
+a viscosity function $\phi$. It is the local Péclet number of the scheme with the viscosity
+$\varepsilon_h = \varepsilon(1 + \phi(\mathrm{Pe}))$, as in [quarteroni2000numerical], §12.5.2.
+
+If $1 + \phi(\mathrm{Pe}) = 0$, the Lean division by zero gives the value $0$. -/
 def stabilizedPeclet (φ : ℝ → ℝ) (Pe : ℝ) : ℝ := Pe / (1 + φ Pe)
 
-/-- For the upwind viscosity, `Pe* = Pe/(1 + Pe)`. -/
+/-- For the upwind viscosity function, the stabilized Péclet number is
+$\mathrm{Pe}^* = \mathrm{Pe}/(1 + \mathrm{Pe})$, for every real $\mathrm{Pe}$. -/
 theorem stabilizedPeclet_phiUpwind (Pe : ℝ) : stabilizedPeclet phiUpwind Pe = Pe / (1 + Pe) := rfl
 
-/-- **`Pe* < 1` for the upwind scheme, for every mesh size** ([quarteroni2000numerical]
-§12.5.2). -/
+/-- **$\mathrm{Pe}^* < 1$ for the upwind scheme**: if $\mathrm{Pe} > 0$, then
+$\mathrm{Pe}/(1 + \phi^{UP}(\mathrm{Pe})) < 1$. So the bound holds for every mesh size, as in
+[quarteroni2000numerical], §12.5.2. -/
 theorem stabilizedPeclet_phiUpwind_lt_one {Pe : ℝ} (hPe : 0 < Pe) :
     stabilizedPeclet phiUpwind Pe < 1 := by
   rw [stabilizedPeclet_phiUpwind, div_lt_one (by linarith)]
   linarith
 
-/-- The stabilized Péclet number of the upwind scheme is positive. -/
+/-- If $\mathrm{Pe} > 0$, then the stabilized Péclet number of the upwind scheme is positive. -/
 theorem stabilizedPeclet_phiUpwind_pos {Pe : ℝ} (hPe : 0 < Pe) :
     0 < stabilizedPeclet phiUpwind Pe := by
   rw [stabilizedPeclet_phiUpwind]
   positivity
 
-/-- **The stabilized Péclet number of the Scharfetter–Gummel scheme is `tanh Pe`**
-([quarteroni2000numerical] §12.5.2), since `1 + φ^SG(Pe) = Pe coth Pe`. -/
+/-- **The stabilized Péclet number of the Scharfetter–Gummel scheme is $\tanh \mathrm{Pe}$**: if
+$\mathrm{Pe} > 0$, then $$\frac{\mathrm{Pe}}{1 + \phi^{SG}(\mathrm{Pe})} = \tanh \mathrm{Pe}.$$
+This is in [quarteroni2000numerical], §12.5.2.
+
+The proof uses $1 + \phi^{SG}(\mathrm{Pe}) = \mathrm{Pe} \coth \mathrm{Pe}$. -/
 theorem stabilizedPeclet_phiSG_eq_tanh {Pe : ℝ} (hPe : 0 < Pe) :
     stabilizedPeclet phiSG Pe = Real.tanh Pe := by
   rw [stabilizedPeclet, one_add_phiSG hPe.ne', Real.tanh_eq_sinh_div_cosh, div_div_eq_mul_div,
     div_eq_div_iff (by positivity) (Real.cosh_pos Pe).ne']
   ring
 
-/-- **`Pe* < 1` for the Scharfetter–Gummel scheme, for every mesh size**. -/
+/-- **$\mathrm{Pe}^* < 1$ for the Scharfetter–Gummel scheme**: if $\mathrm{Pe} > 0$, then
+$\mathrm{Pe}/(1 + \phi^{SG}(\mathrm{Pe})) < 1$. So the bound holds for every mesh size. -/
 theorem stabilizedPeclet_phiSG_lt_one {Pe : ℝ} (hPe : 0 < Pe) :
     stabilizedPeclet phiSG Pe < 1 := by
   rw [stabilizedPeclet_phiSG_eq_tanh hPe]
   exact Real.tanh_lt_one Pe
 
-/-- The stabilized Péclet number of the Scharfetter–Gummel scheme is positive. -/
+/-- If $\mathrm{Pe} > 0$, then the stabilized Péclet number of the Scharfetter–Gummel scheme is
+positive. -/
 theorem stabilizedPeclet_phiSG_pos {Pe : ℝ} (hPe : 0 < Pe) : 0 < stabilizedPeclet phiSG Pe := by
   rw [stabilizedPeclet_phiSG_eq_tanh hPe, Real.tanh_eq_sinh_div_cosh]
   exact div_pos (Real.sinh_pos_iff.2 hPe) (Real.cosh_pos Pe)
 
 /-! ### The difference schemes: centred, upwind, and with artificial viscosity -/
 
-/-- The uniform mesh width `h = 1/n` of a partition of `(0, 1)` into `n` panels. -/
+/-- The width $h = 1/n$ of the uniform mesh of $(0, 1)$ with $n$ intervals.
+
+For $n = 0$ the Lean division by zero gives $h = 0$. -/
 def meshWidth (n : ℕ) : ℝ := 1 / n
 
-/-- The mesh width is positive. -/
+/-- If $n \ge 1$, then the mesh width $1/n$ is positive. -/
 theorem meshWidth_pos {n : ℕ} (hn : n ≠ 0) : 0 < meshWidth n := by
   rw [meshWidth]
   positivity
 
-/-- **The numerical viscosity** `ε_h = ε (1 + φ(Pe))` of [quarteroni2000numerical] (12.82), the
-diffusion coefficient of the stabilized centred scheme. -/
+/-- The **numerical viscosity** $\varepsilon_h = \varepsilon(1 + \phi(\mathrm{Pe}))$ for a viscosity
+function $\phi$, where $\mathrm{Pe} = |\beta| h/(2\varepsilon)$ is the local Péclet number. This
+is (12.82) of [quarteroni2000numerical]. It is the diffusion coefficient of the stabilized
+centred scheme. -/
 def viscosity (ε β h : ℝ) (φ : ℝ → ℝ) : ℝ := ε * (1 + φ (localPeclet β h ε))
 
-/-- The viscosity function `φ = 0` gives back the physical diffusion: the centred scheme
-(12.77). -/
+/-- For the viscosity function $\phi = 0$, the numerical viscosity is the physical diffusion:
+$\varepsilon_h = \varepsilon$. The scheme is then the centred scheme (12.77) of
+[quarteroni2000numerical]. -/
 @[simp]
 theorem viscosity_zero (ε β h : ℝ) : viscosity ε β h 0 = ε := by
   simp [viscosity]
 
-/-- **The upwind viscosity is the artificial diffusion `|β| h / 2`** of
-[quarteroni2000numerical] (12.81): `ε_h = ε (1 + Pe) = ε + |β| h / 2`. -/
+/-- **The upwind viscosity is the artificial diffusion $|\beta| h/2$**: if $\varepsilon \neq 0$,
+then for the upwind viscosity function, $$\varepsilon_h = \varepsilon(1 + \mathrm{Pe}) =
+\varepsilon + |\beta| h/2.$$ This is (12.81) of [quarteroni2000numerical]. -/
 theorem viscosity_phiUpwind {ε : ℝ} (hε : ε ≠ 0) (β h : ℝ) :
     viscosity ε β h phiUpwind = ε + |β| * h / 2 := by
   rw [viscosity, phiUpwind, localPeclet]
   field_simp
 
-/-- The viscosity is positive when `φ(Pe) ≥ 0`, as it is for the upwind and Scharfetter–Gummel
-choices. -/
+/-- If $\varepsilon > 0$ and $\phi(\mathrm{Pe}) \ge 0$, then the numerical viscosity is positive:
+$\varepsilon_h > 0$. The upwind and the Scharfetter–Gummel viscosity functions satisfy
+$\phi(\mathrm{Pe}) \ge 0$. -/
 theorem viscosity_pos {ε β h : ℝ} {φ : ℝ → ℝ} (hε : 0 < ε)
     (hφ : 0 ≤ φ (localPeclet β h ε)) : 0 < viscosity ε β h φ := by
   rw [viscosity]
   positivity
 
-/-- **The centred scheme with numerical viscosity**, [quarteroni2000numerical] (12.79) with
-(12.82): the grid function `u` on the uniform mesh of `n` panels satisfies `u_0 = 0`, `u_n = 1`
-and `-ε_h (u_{i+1} - 2 u_i + u_{i-1})/h² + β (u_{i+1} - u_{i-1})/(2h) = 0` at the interior nodes,
-written here at the indices `i`, `i + 1`, `i + 2`.  `φ = 0` is the centred scheme (12.77) and
-`φ = AdvectionDiffusion.phiUpwind` the upwind scheme (12.78). -/
+/-- The **centred scheme with numerical viscosity**, (12.79) with (12.82) of
+[quarteroni2000numerical]. Let $h = 1/n$ and let $\varepsilon_h$ be the numerical viscosity for
+the viscosity function $\phi$. A grid function $u : \mathbb{N} \to \mathbb{R}$ solves the scheme
+if $u_0 = 0$, $u_n = 1$ and, at the interior nodes, $$-\varepsilon_h \frac{u_{i+1} - 2u_i +
+u_{i-1}}{h^2} + \beta\, \frac{u_{i+1} - u_{i-1}}{2h} = 0.$$
+
+The interior equation is written at the indices $i$, $i + 1$, $i + 2$, for every $i$ with
+$i + 2 \le n$. The values $u_i$ with $i > n$ are not constrained. The viscosity function
+$\phi = 0$ gives the centred scheme (12.77), and `AdvectionDiffusion.phiUpwind` gives the upwind
+scheme (12.78), by `AdvectionDiffusion.upwindScheme_iff_viscosityScheme`. -/
 def viscosityScheme (ε β : ℝ) (n : ℕ) (φ : ℝ → ℝ) (u : ℕ → ℝ) : Prop :=
   u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
     -viscosity ε β (meshWidth n) φ * ((u (i + 2) - 2 * u (i + 1) + u i) / meshWidth n ^ 2)
       + β * ((u (i + 2) - u i) / (2 * meshWidth n)) = 0
 
-/-- **The upwind scheme**, [quarteroni2000numerical] (12.78): the centred second difference for
-`u''` and the backward difference for `u'` (the case `β > 0`). -/
+/-- The **upwind scheme** (12.78) of [quarteroni2000numerical]. Let $h = 1/n$. A grid function
+$u : \mathbb{N} \to \mathbb{R}$ solves the scheme if $u_0 = 0$, $u_n = 1$ and, at the interior
+nodes, $$-\varepsilon \frac{u_{i+1} - 2u_i + u_{i-1}}{h^2} + \beta\, \frac{u_i - u_{i-1}}{h} =
+0.$$
+
+The first derivative is replaced by the backward difference, which is the upwind difference when
+$\beta > 0$. The interior equation is written at the indices $i$, $i + 1$, $i + 2$, for every
+$i$ with $i + 2 \le n$. -/
 def upwindScheme (ε β : ℝ) (n : ℕ) (u : ℕ → ℝ) : Prop :=
   u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
     -ε * ((u (i + 2) - 2 * u (i + 1) + u i) / meshWidth n ^ 2)
       + β * ((u (i + 1) - u i) / meshWidth n) = 0
 
-/-- **The centred scheme is the `P_1` difference equation (12.75)**: multiplying (12.77) by `h`
-gives `(ε/h)(-u_{i-1} + 2 u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0`, the equation the
-piecewise linear Galerkin method produces ([quarteroni2000numerical] §12.5.2). -/
+/-- **The centred scheme is the $\mathbb{P}_1$ difference equation (12.75)**: let $n \ge 1$ and
+$h = 1/n$. A grid function $u$ solves the centred scheme ($\phi = 0$) if and only if $u_0 = 0$,
+$u_n = 1$ and, at the interior nodes, $$\frac{\varepsilon}{h}(-u_{i-1} + 2u_i - u_{i+1}) +
+\frac{\beta}{2}(u_{i+1} - u_{i-1}) = 0.$$ This is the equation that the piecewise linear
+Galerkin method produces, [quarteroni2000numerical], §12.5.2.
+
+The equation is (12.77) multiplied by $h$. It is written at the indices $i$, $i + 1$, $i + 2$,
+for $i + 2 \le n$. -/
 theorem viscosityScheme_zero_iff {ε β : ℝ} {n : ℕ} (hn : n ≠ 0) (u : ℕ → ℝ) :
     viscosityScheme ε β n 0 u ↔ u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
       ε / meshWidth n * (-u i + 2 * u (i + 1) - u (i + 2)) + β / 2 * (u (i + 2) - u i) = 0 := by
@@ -783,9 +904,14 @@ theorem viscosityScheme_zero_iff {ε β : ℝ} {n : ℕ} (hn : n ≠ 0) (u : ℕ
   exact ⟨fun h => by rw [h, mul_zero], fun h => by
     simpa [hh.ne'] using (mul_eq_zero.1 h).resolve_left hh.ne'⟩
 
-/-- **Upwinding is centred differencing with the artificial viscosity `ε (1 + Pe)`**
-([quarteroni2000numerical] (12.78)–(12.81)): the two schemes have the same equations, by the
-identity `(u_i - u_{i-1})/h = (u_{i+1} - u_{i-1})/(2h) - (h/2)(u_{i+1} - 2u_i + u_{i-1})/h²`. -/
+/-- **Upwinding is centred differencing with the artificial viscosity
+$\varepsilon(1 + \mathrm{Pe})$**: if $\varepsilon \neq 0$, $\beta > 0$ and $n \ge 1$, then a
+grid function solves the upwind scheme if and only if it solves the centred scheme with the
+upwind viscosity function. This is (12.78)–(12.81) of [quarteroni2000numerical].
+
+The proof uses the identity $$\frac{u_i - u_{i-1}}{h} = \frac{u_{i+1} - u_{i-1}}{2h} -
+\frac{h}{2} \cdot \frac{u_{i+1} - 2u_i + u_{i-1}}{h^2}.$$
+-/
 theorem upwindScheme_iff_viscosityScheme {ε β : ℝ} {n : ℕ} (hε : ε ≠ 0) (hβ : 0 < β) (hn : n ≠ 0)
     (u : ℕ → ℝ) : upwindScheme ε β n u ↔ viscosityScheme ε β n phiUpwind u := by
   have hh := meshWidth_pos hn
@@ -797,9 +923,13 @@ theorem upwindScheme_iff_viscosityScheme {ε β : ℝ} {n : ℕ} (hε : ε ≠ 0
       = -(ε + β * meshWidth n / 2) * ((u (i + 2) - 2 * u (i + 1) + u i) / meshWidth n ^ 2)
         + β * ((u (i + 2) - u i) / (2 * meshWidth n)) by field_simp; ring]
 
-/-- **With no diffusion the upwind scheme transports the boundary value**
-([quarteroni2000numerical] §12.5.2): for `ε = 0` it reduces to `u_i = u_{i-1}`, the solution of
-the limit problem `β u' = 0`. -/
+/-- **Without diffusion, the upwind scheme transports the boundary value**: if $\beta \neq 0$,
+$n \ge 1$ and $u$ solves the upwind scheme with $\varepsilon = 0$, then $u_{i+1} = u_i$ for
+every $i$ with $i + 2 \le n$. This is the discrete form of the limit problem $\beta u' = 0$, as
+in [quarteroni2000numerical], §12.5.2.
+
+So $u_0 = u_1 = \dots = u_{n-1} = 0$, and the boundary value $u_n = 1$ is not seen by the
+interior equations. -/
 theorem upwindScheme_zero_diffusion {β : ℝ} {n : ℕ} (hβ : β ≠ 0) (hn : n ≠ 0) {u : ℕ → ℝ}
     (hu : upwindScheme 0 β n u) {i : ℕ} (hi : i + 2 ≤ n) : u (i + 1) = u i := by
   have hh := meshWidth_pos hn
@@ -811,16 +941,22 @@ theorem upwindScheme_zero_diffusion {β : ℝ} {n : ℕ} (hβ : β ≠ 0) (hn : 
   · linarith
   · exact absurd h1 hh.ne'
 
-/-- The local Péclet number of the scheme with viscosity `ε_h` is the stabilized Péclet number
-`Pe* = Pe/(1 + φ(Pe))` of [quarteroni2000numerical] §12.5.2. -/
+/-- If $\varepsilon \neq 0$, then the local Péclet number with the diffusion $\varepsilon_h$ is the
+stabilized Péclet number: $$\frac{|\beta| h}{2\varepsilon_h} = \mathrm{Pe}^* =
+\frac{\mathrm{Pe}}{1 + \phi(\mathrm{Pe})}.$$ See [quarteroni2000numerical], §12.5.2. -/
 theorem localPeclet_viscosity {ε β h : ℝ} {φ : ℝ → ℝ} (hε : ε ≠ 0) :
     localPeclet β h (viscosity ε β h φ) = stabilizedPeclet φ (localPeclet β h ε) := by
   rw [viscosity, localPeclet, localPeclet, stabilizedPeclet]
   field_simp
 
-/-- **The scheme with viscosity is the centred difference equation (12.76) at the stabilized
-Péclet number**: dividing (12.79) by `ε_h/h²` turns it into `(Pe* - 1) u_{i+1} + 2 u_i -
-(Pe* + 1) u_{i-1} = 0` ([quarteroni2000numerical] §12.5.2). -/
+/-- **The scheme with viscosity is the centred difference equation (12.76) at the stabilized Péclet
+number.** Let $\beta > 0$, $n \ge 1$, $h = 1/n$, $\varepsilon \neq 0$ and
+$\varepsilon_h \neq 0$. Then a grid function $u$ solves the scheme with viscosity if and only if
+$u_0 = 0$, $u_n = 1$ and, at the interior nodes, $$(\mathrm{Pe}^* - 1) u_{i+1} + 2u_i -
+(\mathrm{Pe}^* + 1) u_{i-1} = 0.$$ See [quarteroni2000numerical], §12.5.2.
+
+The equation is (12.79) divided by $\varepsilon_h/h^2$. It is written at the indices $i$,
+$i + 1$, $i + 2$, for $i + 2 \le n$. -/
 theorem viscosityScheme_iff_centredRecurrence {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (hβ : 0 < β)
     (hn : n ≠ 0) (hε : ε ≠ 0) (hεh : viscosity ε β (meshWidth n) φ ≠ 0) (u : ℕ → ℝ) :
     viscosityScheme ε β n φ u ↔ u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
@@ -845,10 +981,18 @@ theorem viscosityScheme_iff_centredRecurrence {ε β : ℝ} {n : ℕ} {φ : ℝ 
     exact div_ne_zero (by positivity) hεh
   exact (mul_eq_zero.1 h).resolve_left hne
 
-/-- **The solution of the scheme with viscosity is the explicit oscillating solution (12.76) at
-the stabilized Péclet number** ([quarteroni2000numerical] §12.5.1–12.5.2).  In particular it
-oscillates exactly when `Pe* > 1`, which is why the upwind and Scharfetter–Gummel viscosities —
-for which `Pe* < 1` for every `h` — cure the oscillations. -/
+/-- **The solution of the scheme with viscosity is the explicit solution of (12.76) at the
+stabilized Péclet number.** Let $\beta > 0$, $n \ge 1$, $h = 1/n$, $\varepsilon \neq 0$ and
+$\varepsilon_h \neq 0$, and suppose that $\mathrm{Pe}^* > 0$ and $\mathrm{Pe}^* \neq 1$. If $u$
+solves the scheme with viscosity, then for every $i \le n$, $$u_i = \frac{1 - \rho^i}{1 -
+\rho^n}, \qquad \rho = \frac{1 + \mathrm{Pe}^*}{1 - \mathrm{Pe}^*}.$$ See
+[quarteroni2000numerical], §12.5.1–12.5.2.
+
+With `AdvectionDiffusion.centredSolution_oscillates` and
+`AdvectionDiffusion.centredSolution_strictMono`, the solution oscillates when
+$\mathrm{Pe}^* > 1$ and is monotone when $\mathrm{Pe}^* < 1$. The upwind and the
+Scharfetter–Gummel viscosities give $\mathrm{Pe}^* < 1$ for every $h$, so they remove the
+oscillations. -/
 theorem viscosityScheme_eq_centredSolution {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (hβ : 0 < β) (hn : n ≠ 0)
     (hε : ε ≠ 0) (hεh : viscosity ε β (meshWidth n) φ ≠ 0)
     (hpos : 0 < stabilizedPeclet φ (localPeclet β (meshWidth n) ε))
@@ -860,9 +1004,12 @@ theorem viscosityScheme_eq_centredSolution {ε β : ℝ} {n : ℕ} {φ : ℝ →
 
 /-! ### Nodal exactness of the Scharfetter–Gummel scheme -/
 
-/-- **The amplification ratio of the Scharfetter–Gummel scheme is the exact one**:
-`(1 + Pe*)/(1 - Pe*) = e^{2 Pe}` because `Pe* = tanh Pe`.  This is the whole content of the nodal
-exactness of the exponential fitting scheme ([quarteroni2000numerical] Remark 12.6). -/
+/-- **The amplification ratio of the Scharfetter–Gummel scheme is exact**: if $\mathrm{Pe} > 0$ and
+$\mathrm{Pe}^* = \mathrm{Pe}/(1 + \phi^{SG}(\mathrm{Pe}))$, then $$\frac{1 + \mathrm{Pe}^*}{1 -
+\mathrm{Pe}^*} = e^{2\mathrm{Pe}}.$$
+
+The proof uses $\mathrm{Pe}^* = \tanh \mathrm{Pe}$. This identity is the content of the nodal
+exactness of the exponential fitting scheme, Remark 12.6 of [quarteroni2000numerical]. -/
 theorem centredRatio_stabilizedPeclet_phiSG {Pe : ℝ} (hPe : 0 < Pe) :
     centredRatio (stabilizedPeclet phiSG Pe) = Real.exp (2 * Pe) := by
   have h1 : 1 - Real.tanh Pe ≠ 0 := sub_ne_zero.2 (Real.tanh_lt_one Pe).ne'
@@ -875,12 +1022,16 @@ theorem centredRatio_stabilizedPeclet_phiSG {Pe : ℝ} (hPe : 0 < Pe) :
   field_simp
   ring
 
-/-- **The Scharfetter–Gummel scheme is nodally exact** ([quarteroni2000numerical] Remark 12.6):
-for the model problem (12.70) its solution agrees with the exact solution at every node, whatever
-the mesh size — and hence whatever the local Péclet number.  The reason is
-`AdvectionDiffusion.centredRatio_stabilizedPeclet_phiSG`: the discrete amplification ratio
-`(1 + Pe*)/(1 - Pe*)` is exactly `e^{βh/ε}`, the ratio of the exact solution's exponential
-between consecutive nodes. -/
+/-- **The Scharfetter–Gummel scheme is nodally exact.** Let $\varepsilon > 0$, $\beta > 0$,
+$n \ge 1$ and $h = 1/n$. If $u$ solves the centred scheme with the Scharfetter–Gummel viscosity
+function, then $u_i = \bar u(ih)$ for every $i \le n$, where $\bar u$ is the exact solution
+(12.70) of the model problem. This holds for every mesh size, and so for every local Péclet
+number. This is Remark 12.6 of [quarteroni2000numerical].
+
+The reason is `AdvectionDiffusion.centredRatio_stabilizedPeclet_phiSG`: the discrete
+amplification ratio $(1 + \mathrm{Pe}^*)/(1 - \mathrm{Pe}^*)$ equals $e^{\beta h/\varepsilon}$,
+which is the ratio of the exponential $e^{\beta x/\varepsilon}$ of the exact solution between
+consecutive nodes. -/
 theorem sg_nodal_exact {ε β : ℝ} {n : ℕ} (hε : 0 < ε) (hβ : 0 < β) (hn : n ≠ 0) {u : ℕ → ℝ}
     (hu : viscosityScheme ε β n phiSG u) {i : ℕ} (hi : i ≤ n) :
     u i = exactSolution ε β (i * meshWidth n) := by
@@ -911,14 +1062,19 @@ theorem sg_nodal_exact {ε β : ℝ} {n : ℕ} (hε : 0 < ε) (hβ : 0 < β) (hn
 
 /-! ### The matrix of the stabilized scheme is an M-matrix -/
 
-/-- **The matrix of the stabilized difference scheme is an M-matrix**
-([quarteroni2000numerical] §12.5.2 and Exercise 12.13): the `(n - 1) × (n - 1)` matrix of the
-interior equations of `AdvectionDiffusion.viscosityScheme` is
-`(ε_h/h²) tridiag(-(1 + Pe*), 2, -(1 - Pe*))`, and it is an M-matrix as soon as `|Pe*| ≤ 1` —
-which `AdvectionDiffusion.stabilizedPeclet_phiUpwind_lt_one` and
-`stabilizedPeclet_phiSG_lt_one` give for the upwind and the Scharfetter–Gummel viscosities, for
-every mesh size.  The discrete maximum principle then follows from
-`Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`. -/
+/-- **The matrix of the stabilized difference scheme is an M-matrix.** Let $n \ge 1$ and $h = 1/n$,
+and suppose that $\varepsilon_h > 0$ and $|\mathrm{Pe}^*| \le 1$. Then for every
+$m \in \mathbb{N}$ the $m \times m$ matrix $$\frac{\varepsilon_h}{h^2}\,
+\mathrm{tridiag}\big(-(1 + \mathrm{Pe}^*),\ 2,\ -(1 - \mathrm{Pe}^*)\big),$$ with
+$-(1 + \mathrm{Pe}^*)$ on the subdiagonal and $-(1 - \mathrm{Pe}^*)$ on the superdiagonal, is an
+M-matrix. See [quarteroni2000numerical], §12.5.2 and Exercise 12.13.
+
+For $m = n - 1$ and $\beta > 0$ this is the matrix of the interior equations of
+`AdvectionDiffusion.viscosityScheme`; the Lean statement does not tie $m$ to $n$. The matrix is
+`Matrix.tridiagonalToeplitz`. `AdvectionDiffusion.stabilizedPeclet_phiUpwind_lt_one` and
+`AdvectionDiffusion.stabilizedPeclet_phiSG_lt_one` give the hypothesis on $\mathrm{Pe}^*$ for
+the upwind and the Scharfetter–Gummel viscosities, for every mesh size. The discrete maximum
+principle then follows from `Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`. -/
 theorem viscosityScheme_isMMatrix {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (m : ℕ)
     (hεh : 0 < viscosity ε β (meshWidth n) φ) (hn : n ≠ 0)
     (hPe : |stabilizedPeclet φ (localPeclet β (meshWidth n) ε)| ≤ 1) :
@@ -938,16 +1094,21 @@ open EllipticInterval (constLinf coeFn_constLinf norm_constLinf mulL_constLinf)
 
 variable {a b : ℝ}
 
-/-- **The stabilized bilinear form** of [quarteroni2000numerical] (12.84),
-`a_h(u, v) = ∫_a^b (ε_h u' v' + β u' v)` with the numerical viscosity
-`ε_h = AdvectionDiffusion.viscosity ε β h φ`: the elliptic form of
-`Numlib/Variational/EllipticInterval.lean` at the constant coefficients `ε_h`, `β`, `0`.  The
-unstabilized Galerkin form (12.73) is the case `φ = 0`. -/
+/-- The **stabilized bilinear form** (12.84) of [quarteroni2000numerical] on $H^1(a, b)$: $$a_h(u,
+v) = \int_a^b (\varepsilon_h u' v' + \beta u' v),$$ where $\varepsilon_h$ is the numerical
+viscosity for $\varepsilon$, $\beta$, $h$ and $\phi$. The unstabilized Galerkin form (12.73) is
+the case $\phi = 0$.
+
+The form is `EllipticInterval.form` with the constant coefficients $\varepsilon_h$, $\beta$ and
+$0$. -/
 def stabilizedForm (a b : ℝ) (ε β h : ℝ) (φ : ℝ → ℝ) : SesqForm ℝ (SobolevInterval 1 a b) :=
   EllipticInterval.form a b (constLinf a b (viscosity ε β h φ)) (constLinf a b β) 0
 
-/-- **The stabilization term** `b(u, v) = ε φ(Pe) ∫ u' v'` of [quarteroni2000numerical] (12.84)
-is the difference between the stabilized form and the Galerkin form. -/
+/-- **The stabilization term**: for all $u, v \in H^1(a, b)$, the stabilized form minus the Galerkin
+form with diffusion $\varepsilon$ is $$a_h(u, v) - a(u, v) = \varepsilon\, \phi(\mathrm{Pe})
+\int_a^b u' v'.$$ This is the term $b(u, v)$ of (12.84) in [quarteroni2000numerical].
+
+The integral is the $L^2(a, b)$ inner product of the weak derivatives. -/
 theorem stabilizedForm_sub_form (a b : ℝ) (ε β h : ℝ) (φ : ℝ → ℝ)
     (u v : SobolevInterval 1 a b) :
     stabilizedForm a b ε β h φ u v
@@ -958,9 +1119,12 @@ theorem stabilizedForm_sub_form (a b : ℝ) (ε β h : ℝ) (φ : ℝ → ℝ)
     real_inner_smul_left, viscosity]
   ring
 
-/-- **The energy identity `a_h(v, v) = ε_h |v|²_{H^1}`** on `H^1_0(a, b)`
-([quarteroni2000numerical] §12.5.3): the advective term contributes nothing, because
-`∫ β v' v = -½ ∫ β' v² = 0` for a constant `β` and `v` vanishing at both endpoints. -/
+/-- **The energy identity**: if $a < b$, then for every viscosity function $\phi$ and every
+$v \in H^1_0(a, b)$, $$a_h(v, v) = \varepsilon_h |v|_{H^1}^2.$$ This is in
+[quarteroni2000numerical], §12.5.3.
+
+The advective term vanishes: for a constant $\beta$ and a function $v$ that vanishes at both
+endpoints, $\int \beta v' v = -\frac{1}{2} \int \beta' v^2 = 0$. -/
 theorem stabilizedForm_self (hab : a < b) {ε β h : ℝ} (φ : ℝ → ℝ)
     {v : SobolevInterval 1 a b} (hv : v ∈ SobolevIntervalZero a b) :
     stabilizedForm a b ε β h φ v v
@@ -1003,9 +1167,11 @@ theorem stabilizedForm_self (hab : a < b) {ε β h : ℝ} (φ : ℝ → ℝ)
   dsimp only
   rw [sq_abs, sq]
 
-/-- **The continuity constant `M_h = ε_h + |β| C_P` of the stabilized form** in the `H^1`
-seminorm on `H^1_0(a, b)`, the constant of the proof of [quarteroni2000numerical] Theorem 12.4,
-with `C_P = (b - a)/√2`. -/
+/-- **Continuity of the stabilized form in the $H^1$ seminorm.** Let $a < b$ and
+$\varepsilon_h \ge 0$. Then for all $u, v \in H^1_0(a, b)$, $$|a_h(u, v)| \le (\varepsilon_h +
+C_P |\beta|)\, |u|_{H^1} |v|_{H^1}, \qquad C_P = (b - a)/\sqrt{2}.$$ The constant
+$M_h = \varepsilon_h + |\beta| C_P$ is the one in the proof of Theorem 12.4 of
+[quarteroni2000numerical]. -/
 theorem stabilizedForm_isBoundedWith_seminorm (hab : a < b) {ε β h : ℝ} {φ : ℝ → ℝ}
     (hεh : 0 ≤ viscosity ε β h φ) {u v : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) (hv : v ∈ SobolevIntervalZero a b) :
@@ -1018,13 +1184,15 @@ theorem stabilizedForm_isBoundedWith_seminorm (hab : a < b) {ε β h : ℝ} {φ 
     add_zero] at h
   exact h
 
-/-- **Strang's first lemma in a seminorm**: if the perturbed form `B` is bounded by `M` and
-coercive with constant `c` for the seminorm `q` relative to a subspace `W`, `uN ∈ K ≤ W` and the
-consistency defect satisfies `|B (u - uN) z| ≤ δ q z` for every `z ∈ K`
-([quarteroni2000numerical] (12.87) is such a defect), then
-`q (u - uN) ≤ (1 + M/c) q (u - w) + δ/c` for every `w ∈ K`.  Only additivity of `B` in each slot
-is used.  Belongs in `Numlib/Variational/Galerkin.lean`, as the seminorm companion of
-`strang_first`. -/
+/-- **Strang's first lemma in a seminorm.** Let $V$ be a real vector space with a seminorm $q$, and
+let $B : V \times V \to \mathbb{R}$ be additive in its first argument. Let $W \le V$ be a
+subspace on which $|B(x, y)| \le M\, q(x)\, q(y)$ and $c\, q(x)^2 \le B(x, x)$, with $c > 0$.
+Let $K \le W$ be a subspace, $u \in W$, $u_N \in K$, and $\delta \ge 0$ with
+$|B(u - u_N, z)| \le \delta\, q(z)$ for every $z \in K$. Then for every $w \in K$, $$q(u - u_N)
+\le (1 + M/c)\, q(u - w) + \delta/c.$$
+
+The consistency defect (12.87) of [quarteroni2000numerical] is a defect of this kind. The lemma
+is the seminorm companion of `strang_first`. -/
 theorem seminorm_sub_le_of_consistencyDefect {V : Type*} [AddCommGroup V] [Module ℝ V]
     (q : Seminorm ℝ V) (B : V → V → ℝ) (hadd : ∀ x y z, B (x + y) z = B x z + B y z)
     {W : Submodule ℝ V} {M c δ : ℝ} (hc : 0 < c) (hδ : 0 ≤ δ)
@@ -1073,16 +1241,21 @@ theorem seminorm_sub_le_of_consistencyDefect {V : Type*} [AddCommGroup V] [Modul
     _ ≤ q (u - w) + (M * q (u - w) + δ) / c := by linarith
     _ = (1 + M / c) * q (u - w) + δ / c := by field_simp; ring
 
-/-- **The error bound of the stabilized finite element method**, the content of
-[quarteroni2000numerical] (12.87)–(12.89) in Strang form: if `u ∈ H^1_0(a, b)` solves the
-Galerkin problem `a(u, v) = ℓ(v)` on the subspace `K ≤ H^1_0(a, b)` and `u_h ∈ K` solves the
-stabilized problem `a_h(u_h, v) = ℓ(v)` on `K`, then for every `w ∈ K`
+/-- **Error bound for the stabilized finite element method.** Let $a < b$, $\varepsilon > 0$ and
+$h \in \mathbb{R}$, let $\mathrm{Pe} = |\beta| h/(2\varepsilon)$ with $\phi(\mathrm{Pe}) \ge 0$,
+and let $\ell$ be a continuous linear functional on $H^1(a, b)$. Let $a(\cdot, \cdot)$ be the
+Galerkin form with diffusion $\varepsilon$ and advection $\beta$, and $a_h(\cdot, \cdot)$ the
+stabilized form. Let $K \le H^1_0(a, b)$ be a subspace, let $u \in H^1_0(a, b)$ satisfy
+$a(u, v) = \ell(v)$ for every $v \in K$, and let $u_h \in K$ satisfy $a_h(u_h, v) = \ell(v)$ for
+every $v \in K$. Then for every $w \in K$, $$|u - u_h|_{H^1} \le \Big(1 +
+\frac{M_h}{\varepsilon_h}\Big) |u - w|_{H^1} + \frac{\varepsilon\,
+\phi(\mathrm{Pe})}{\varepsilon_h} |u|_{H^1},$$ with $M_h = \varepsilon_h + C_P |\beta|$ and
+$C_P = (b - a)/\sqrt{2}$. This is the content of (12.87)–(12.89) of [quarteroni2000numerical],
+in the form of Strang's lemma.
 
-`|u - u_h|_{H^1} ≤ (1 + M_h/ε_h) |u - w|_{H^1} + (ε φ(Pe)/ε_h) |u|_{H^1}`,
-
-with `M_h = ε_h + |β| C_P`.  This is sharper than the book's (12.89), which applies Young's
-inequality to the same two terms; the interpolation estimates of Theorem 8.3 turn it into the
-convergence rates of Theorem 12.4 once the trial space `K` is a finite element space. -/
+The bound is sharper than (12.89) of the source, which applies Young's inequality to the same
+two terms. With the interpolation estimates of Theorem 8.3 of the source, it gives the
+convergence rates of Theorem 12.4 when $K$ is a finite element space. -/
 theorem seminorm_sub_stabilized_le (hab : a < b) {ε β h : ℝ} {φ : ℝ → ℝ} (hε : 0 < ε)
     (hφ : 0 ≤ φ (localPeclet β h ε)) {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ}
     {K : Submodule ℝ (SobolevInterval 1 a b)} (hK : K ≤ SobolevIntervalZero a b)
@@ -1129,13 +1302,25 @@ theorem seminorm_sub_stabilized_le (hab : a < b) {ε β h : ℝ} {φ : ℝ → �
   refine key.trans_eq ?_
   ring
 
-/-- **Theorem 12.4 for the upwind method with `k = 1`** ([quarteroni2000numerical] (12.85)): on
-a partition of mesh at most `h` with the `P_1` finite element space `X_h^{1,0}` as trial space,
-the upwind-stabilized Galerkin error satisfies
-`|ů - ů_h|_{H¹} ≤ C h (|ů|_{H¹} + |ů|_{H²})` with `C = 2 + C_P |β|/ε + |β|/(2ε)` independent of
-`h` and of `ů`. This is `AdvectionDiffusion.seminorm_sub_stabilized_le` with
-`w = Π_h^1 ů` (`FiniteElement.lagrangeInterp`), the interpolation estimate (8.27)
-`FiniteElement.seminorm_sub_lagrangeInterp_le`, and `ε φ^{UP}(Pe)/ε_h ≤ Pe = |β| h/(2ε)`. -/
+/-- **Theorem 12.4 for the upwind method with $k = 1$.** Let $a < b$, let
+$a = x_0 < x_1 < \dots < x_n = b$ be a partition with $n \ge 1$ and $x_{k+1} - x_k \le h$ for
+every $k < n$, and let $\varepsilon > 0$. Let $X_h^{1,0}$ be the $\mathbb{P}_1$ finite element
+space on this partition with zero boundary values, and let $\ell$ be a continuous linear
+functional on $H^1(a, b)$. Let $u \in H^1_0(a, b)$ be the image of an element $U \in H^2(a, b)$,
+and suppose that $a(u, v) = \ell(v)$ for every $v \in X_h^{1,0}$, where $a$ is the Galerkin form
+with diffusion $\varepsilon$ and advection $\beta$. If $u_h$ is the Galerkin solution in
+$X_h^{1,0}$ for the stabilized form with the upwind viscosity, then $$|u - u_h|_{H^1} \le C h\,
+(|u|_{H^1} + |U|_{H^2}), \qquad C = 2 + \frac{C_P |\beta|}{\varepsilon} +
+\frac{|\beta|}{2\varepsilon},$$ with $C_P = (b - a)/\sqrt{2}$. The constant does not depend on
+$h$ or on $u$. This is the estimate (12.85) of Theorem 12.4 of [quarteroni2000numerical] for the
+upwind method.
+
+The stabilized form uses the mesh bound $h$ in its viscosity. The source states the estimate for
+the solution $\mathring u$ with homogeneous boundary values; here that solution is $u$. The
+proof is `AdvectionDiffusion.seminorm_sub_stabilized_le` with $w = \Pi_h^1 u$
+(`FiniteElement.lagrangeInterp`), the interpolation estimate (8.27)
+(`FiniteElement.seminorm_sub_lagrangeInterp_le`), and $\varepsilon
+\phi^{UP}(\mathrm{Pe})/\varepsilon_h \le \mathrm{Pe} = |\beta| h/(2\varepsilon)$. -/
 theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → ℝ}
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h) {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ}
@@ -1212,16 +1397,21 @@ theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → �
           * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 2 a b U) := by
         nlinarith [mul_nonneg (mul_nonneg ha0 hh) h1, mul_nonneg (mul_nonneg hbeta hh) h2]
 
-/-! ### Theorem 12.4 for the Scharfetter-Gummel method -/
+/-! ### Theorem 12.4 for the Scharfetter–Gummel method -/
 
 section ScharfetterGummelFEM
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The scheme with viscosity in the stencil form of the `P_1` Galerkin method**: multiplying
-(12.79) by `h` gives `(ε_h/h)(-u_{i-1} + 2 u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0`, the
-equation the piecewise linear Galerkin method produces ([quarteroni2000numerical] §12.5.2).
-This is `AdvectionDiffusion.viscosityScheme_zero_iff` for a general viscosity function. -/
+/-- **The scheme with viscosity in the stencil form of the $\mathbb{P}_1$ Galerkin method**: let
+$n \ge 1$ and $h = 1/n$. A grid function $u$ solves the scheme with viscosity if and only if
+$u_0 = 0$, $u_n = 1$ and, at the interior nodes, $$\frac{\varepsilon_h}{h}(-u_{i-1} + 2u_i -
+u_{i+1}) + \frac{\beta}{2}(u_{i+1} - u_{i-1}) = 0.$$ This is the equation that the piecewise
+linear Galerkin method produces, [quarteroni2000numerical], §12.5.2.
+
+The equation is (12.79) multiplied by $h$. It is written at the indices $i$, $i + 1$, $i + 2$,
+for $i + 2 \le n$. This is `AdvectionDiffusion.viscosityScheme_zero_iff` for a general viscosity
+function. -/
 theorem viscosityScheme_iff_galerkinStencil {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (hn : n ≠ 0)
     (u : ℕ → ℝ) :
     viscosityScheme ε β n φ u ↔ u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
@@ -1238,7 +1428,9 @@ theorem viscosityScheme_iff_galerkinStencil {ε β : ℝ} {n : ℕ} {φ : ℝ �
   exact ⟨fun h => by rw [h, mul_zero], fun h => by
     simpa [hh.ne'] using (mul_eq_zero.1 h).resolve_left hh.ne'⟩
 
-/-- The stabilized form (12.84) in the spelling of `FiniteElement.galerkin_iff_centredScheme`. -/
+/-- The stabilized form (12.84) is `EllipticInterval.form` with the three coefficients
+`EllipticInterval.constLinf a b` of $\varepsilon_h$, $\beta$ and $0$. This is the form in which
+`FiniteElement.galerkin_iff_centredScheme` is stated. -/
 theorem stabilizedForm_eq_form_constLinf (a b : ℝ) (ε β h : ℝ) (φ : ℝ → ℝ) :
     stabilizedForm a b ε β h φ
       = EllipticInterval.form a b (EllipticInterval.constLinf a b (viscosity ε β h φ))
@@ -1247,13 +1439,18 @@ theorem stabilizedForm_eq_form_constLinf (a b : ℝ) (ε β h : ℝ) (φ : ℝ �
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The `P_1` Scharfetter–Gummel approximation of the model problem is nodally exact**
-([quarteroni2000numerical] Remark 12.6): on the uniform mesh of `n` panels of `[0, 1]`, a
-continuous piecewise linear `u_h` with `u_h(0) = 0`, `u_h(1) = 1` that solves the stabilized
-Galerkin problem (12.84) with the Scharfetter–Gummel viscosity takes the values of the exact
-solution (12.70) at every node.  The proof is the chain
-`FiniteElement.galerkin_iff_centredScheme` (the Galerkin system is the centred difference scheme
-at the viscosity `ε_h`), `AdvectionDiffusion.viscosityScheme_iff_galerkinStencil` and
+/-- **The $\mathbb{P}_1$ Scharfetter–Gummel approximation of the model problem is nodally exact.**
+Let $0 = x_0 < x_1 < \dots < x_n = 1$ be the uniform partition of $[0, 1]$, with $n \ge 1$ and
+$x_{k+1} - x_k = h = 1/n$, and let $\varepsilon > 0$ and $\beta > 0$. Let $u_h \in X_h^1$ be a
+continuous piecewise linear function with $u_h(0) = 0$ and $u_h(1) = 1$, and suppose that
+$a_h(u_h, v) = 0$ for every $v \in X_h^{1,0}$, where $a_h$ is the stabilized form (12.84) with
+the Scharfetter–Gummel viscosity function. Then for every $i \le n$, $u_h(x_i)$ is the value at
+$x_i$ of the exact solution (12.70). This is Remark 12.6 of [quarteroni2000numerical].
+
+The values of $u_h$ are those of its continuous representative `SobolevInterval.rep`. The proof
+combines `FiniteElement.galerkin_iff_centredScheme` (the Galerkin system is the centred
+difference scheme with the diffusion $\varepsilon_h$),
+`AdvectionDiffusion.viscosityScheme_iff_galerkinStencil` and
 `AdvectionDiffusion.sg_nodal_exact`. -/
 theorem rep_eq_exactSolution_of_galerkin_sg (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
@@ -1290,19 +1487,25 @@ theorem rep_eq_exactSolution_of_galerkin_sg (hx : IsIntervalPartition 0 1 n x) (
     sg_nodal_exact hε hβ hn0 hscheme hi
   rw [hnodal, hx.node_eq_of_uniform huni hi, zero_add]
 
-/-- **Theorem 12.4 for the Scharfetter-Gummel method with `k = 1`**
-([quarteroni2000numerical] (12.85)): on the uniform mesh of `n` panels of `[0, 1]` the
-`P_1` Scharfetter-Gummel approximation of the model problem (12.70) satisfies
+/-- **Theorem 12.4 for the Scharfetter–Gummel method with $k = 1$.** Let
+$0 = x_0 < x_1 < \dots < x_n = 1$ be the uniform partition of $[0, 1]$, with $n \ge 1$ and mesh
+width $h = 1/n$, and let $\varepsilon > 0$ and $\beta > 0$. Let $u \in H^1(0, 1)$ be the image
+of an element $U \in H^2(0, 1)$, and suppose that $u(x_i)$ is the value at $x_i$ of the exact
+solution (12.70) for every $i \le n$. Let $u_h \in X_h^1$ satisfy $u_h(0) = 0$, $u_h(1) = 1$ and
+$a_h(u_h, v) = 0$ for every $v \in X_h^{1,0}$, for the Scharfetter–Gummel viscosity function.
+Then $$|u - u_h|_{H^1(0, 1)} \le h\, |U|_{H^2(0, 1)}.$$ This is the estimate (12.85) of Theorem
+12.4 of [quarteroni2000numerical] for the Scharfetter–Gummel method, in the form
+$C h\, G(\mathring u)$ with $G(\mathring u) = |\mathring u|_{H^2}$ and the constant $C = 1$.
 
-`|ů - ů_h|_{H¹(0,1)} ≤ h |ů|_{H²(0,1)}`,
-
-which is the book's `C h G(ů)` with `G(ů) = |ů|_{H²}` and the constant `C = 1`: the book's
-factor `(1 + 2 Pe_gl C_P)` is absent, because by `AdvectionDiffusion.sg_nodal_exact` the
-discrete solution is *nodally exact*, so `ů_h = Π_h^1 ů` and the Galerkin error **is** the
-interpolation error of (8.27).  The statement is written for the unlifted pair `u`, `u_h` —
-`u` the exact solution (12.70) with `u(0) = 0`, `u(1) = 1`, and `u_h ∈ X_h^1` the stabilized
-Galerkin solution with the same boundary values — which is the same inequality: the lifting
-`ū(x) = x` cancels in `ů - ů_h = u - u_h`, and `|ů|_{H²} = |u|_{H²}` because `ū` is affine. -/
+The factor $(1 + 2 \mathrm{Pe}_{gl} C_P)$ of the source is absent: by
+`AdvectionDiffusion.rep_eq_exactSolution_of_galerkin_sg` the discrete solution is nodally exact,
+so $u_h$ is the piecewise linear interpolant of $u$, and the Galerkin error is the interpolation
+error of (8.27). The source states the estimate for the pair $\mathring u$, $\mathring u_h$ with
+the boundary values lifted out. The statement here is for the unlifted pair $u$, $u_h$, which
+gives the same inequality: the lifting $\bar u(x) = x$ cancels in
+$\mathring u - \mathring u_h = u - u_h$, and $|\mathring u|_{H^2} = |u|_{H^2}$ because $\bar u$
+is affine. The hypothesis on $u$ uses only its values at the nodes, so the exact solution is one
+case of the statement. -/
 theorem seminorm_sub_stabilized_le_sg (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
     {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
@@ -1324,18 +1527,27 @@ theorem seminorm_sub_stabilized_le_sg (hx : IsIntervalPartition 0 1 n x) (hn : 1
   exact FiniteElement.seminorm_sub_lagrangeInterp_le zero_lt_one hx hn
     (fun k hk ↦ le_of_eq (huni k hk)) U
 
-/-- **Theorem 12.4 for the Scharfetter-Gummel method with `k = 2`**
-([quarteroni2000numerical] (12.86)): on a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}` whose `n`
-elements `[x_{2m}, x_{2m+2}]` have length at most `h`, with the `P_2` finite element space
-`X_h^{2,0}` as trial space, the Scharfetter–Gummel-stabilized Galerkin error satisfies
-`|ů - ů_h|_{H¹} ≤ C h² (|ů|_{H¹} + |ů|_{H³})` with `C = 2 + C_P |β|/ε + β²/(12 ε²)`
-independent of `h` and of `ů`.  This is `AdvectionDiffusion.seminorm_sub_stabilized_le` with
-`w = Π_h^2 ů` (`FiniteElement.quadraticInterp`), the interpolation estimate (8.26) at `k = 2`,
-`m = 1` (`FiniteElement.seminorm_sub_quadraticInterp_le`), and
-`ε φ^{SG}(Pe)/ε_h ≤ φ^{SG}(Pe) ≤ Pe²/3 = β² h²/(12 ε²)` (`AdvectionDiffusion.phiSG_le_sq`): the
-Scharfetter–Gummel consistency defect is second order in `h` where the upwind one
-(`seminorm_sub_stabilized_le_upwind`) is only first order, which is what upgrades the rate of
-(12.85) to that of (12.86). -/
+/-- **Theorem 12.4 for the Scharfetter–Gummel method with $k = 2$.** Let $a < b$, let
+$a = x_0 < x_1 < \dots < x_{2n} = b$ be a partition with $n \ge 1$ whose $n$ elements
+$[x_{2m}, x_{2m+2}]$ have length at most $h$, and let $\varepsilon > 0$. Let $X_h^{2,0}$ be the
+$\mathbb{P}_2$ finite element space with zero boundary values on the partition
+$x_0 < x_2 < \dots < x_{2n}$, and let $\ell$ be a continuous linear functional on $H^1(a, b)$.
+Let $u \in H^1_0(a, b)$ be the image of an element $U \in H^3(a, b)$, and suppose that
+$a(u, v) = \ell(v)$ for every $v \in X_h^{2,0}$, where $a$ is the Galerkin form with diffusion
+$\varepsilon$ and advection $\beta$. If $u_h$ is the Galerkin solution in $X_h^{2,0}$ for the
+stabilized form with the Scharfetter–Gummel viscosity, then $$|u - u_h|_{H^1} \le C h^2
+(|u|_{H^1} + |U|_{H^3}), \qquad C = 2 + \frac{C_P |\beta|}{\varepsilon} + \frac{\beta^2}{12
+\varepsilon^2},$$ with $C_P = (b - a)/\sqrt{2}$. The constant does not depend on $h$ or on $u$.
+This is the estimate (12.86) of Theorem 12.4 of [quarteroni2000numerical].
+
+The proof is `AdvectionDiffusion.seminorm_sub_stabilized_le` with $w = \Pi_h^2 u$
+(`FiniteElement.quadraticInterp`), the interpolation estimate (8.26) at $k = 2$, $m = 1$
+(`FiniteElement.seminorm_sub_quadraticInterp_le`), and $\varepsilon
+\phi^{SG}(\mathrm{Pe})/\varepsilon_h \le \phi^{SG}(\mathrm{Pe}) \le \mathrm{Pe}^2/3 = \beta^2
+h^2/(12 \varepsilon^2)$ (`AdvectionDiffusion.phiSG_le_sq`). The Scharfetter–Gummel consistency
+defect is of second order in $h$, while the upwind defect
+(`AdvectionDiffusion.seminorm_sub_stabilized_le_upwind`) is of first order; this gives the
+better rate of (12.86). -/
 theorem seminorm_sub_stabilized_le_sg_quadratic (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
     (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)

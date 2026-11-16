@@ -14,64 +14,99 @@ import Mathlib.LinearAlgebra.Projection
 /-!
 # Spectral subspaces
 
-The *spectral subspace* of an endomorphism `A` for the eigenvalues selected by a predicate `p` is
-the sum of the corresponding generalized eigenspaces, `⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ`
-(`Module.End.spectralSubspace`). It is the invariant subspace attached to a part of the spectrum:
-the stable subspace of the Hamiltonian–Schur form (`p μ := μ.re < 0`), the dominant subspace of
-subspace iteration (`p` selects the `m` largest moduli), the generalized eigenspace of one
-eigenvalue (`p := (· = l)`), the invariant subspace of a spectral set `Λ` (`p := (· ∈ Λ)`).
+Let $A$ be an endomorphism of a vector space $V$ over a field $K$, and let $p$ be a predicate on $K$
+that selects a set of eigenvalues. For $\mu \in K$, write $G_\mu(A) = \bigcup_{k} \ker (A - \mu)^k$
+for the maximal generalized eigenspace of $\mu$; it is $0$ when $\mu$ is not an eigenvalue. The
+**spectral subspace** of $A$ for $p$ is the sum of the generalized eigenspaces of the selected
+eigenvalues,
+$$S_p(A) = \sum_{\mu \,:\, p(\mu)} G_\mu(A).$$
+It is the invariant subspace attached to a part of the spectrum. Examples are the stable subspace of
+the Hamiltonian–Schur form ($p(\mu)$ is $\operatorname{Re} \mu < 0$), the dominant subspace of
+subspace iteration ($p$ selects the $m$ eigenvalues of largest modulus), the generalized eigenspace
+of one eigenvalue $l$ ($p(\mu)$ is $\mu = l$), and the invariant subspace of a spectral set
+$\Lambda$ ($p(\mu)$ is $\mu \in \Lambda$).
+
+Over an algebraically closed field in finite dimension, $S_p(A)$ and $S_{\neg p}(A)$ are
+complementary. The **spectral projector** $P_p$ is the projection onto $S_p(A)$ along
+$S_{\neg p}(A)$. It is the Riesz projector of the selected eigenvalues, and in general it is an
+oblique projector. An invariant subspace on which every eigenvalue satisfies $p$ lies in $S_p(A)$,
+and it is equal to $S_p(A)$ if the dimensions agree. The module also proves that, when the
+eigenspaces of an endomorphism span the space, every generalized eigenspace is an eigenspace.
 
 ## Main definitions
 
-* `Module.End.spectralSubspace A p`.
-* `Module.End.spectralProjector A p`: over an algebraically closed field in finite dimension, the
-  projection onto `A.spectralSubspace p` along `A.spectralSubspace (¬ p ·)`, an *oblique* projector
-  (the Riesz projector of the selected eigenvalues).
+* `Module.End.spectralSubspace`: the spectral subspace $S_p(A) = \sum_{p(\mu)} G_\mu(A)$.
+* `Module.End.spectralProjector`: over an algebraically closed field in finite dimension, the
+  projection $P_p$ onto $S_p(A)$ along $S_{\neg p}(A)$.
 
-## Main statements
+## Main results
 
-* `Module.End.spectralSubspace_mem_invtSubmodule`: spectral subspaces are invariant.
-* `Module.End.isCompl_spectralSubspace`: over an algebraically closed field in finite dimension
-  the spectral subspaces of `p` and of `¬ p` are complementary.
-* `Module.End.invtSubmodule_le_spectralSubspace` and `Module.End.invtSubmodule_eq_spectralSubspace`:
-  an invariant subspace on which every eigenvalue satisfies `p` lies in `A.spectralSubspace p`, and
-  equals it when the dimensions agree — the uniqueness of the invariant subspace of a spectral set.
-* `Module.End.maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top`: when the eigenspaces span,
-  every generalized eigenspace is an eigenspace (a diagonalizable endomorphism has no defective
-  eigenvalue).
+* `Module.End.spectralSubspace_mem_invtSubmodule`: $S_p(A)$ is invariant under $A$.
+* `Module.End.isCompl_spectralSubspace`: over an algebraically closed field in finite dimension,
+  $S_p(A)$ and $S_{\neg p}(A)$ are complementary subspaces.
+* `Module.End.invtSubmodule_le_spectralSubspace`: an invariant subspace on which every eigenvalue
+  satisfies $p$ lies in $S_p(A)$.
+* `Module.End.invtSubmodule_eq_spectralSubspace`: such a subspace with the dimension of $S_p(A)$ is
+  equal to $S_p(A)$.
+* `Module.End.maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top`: if the eigenspaces of $f$
+  span $V$, then $G_\mu(f) = \ker(f - \mu)$ for every $\mu$.
+* `Module.End.ker_spectralProjector`, `Module.End.range_spectralProjector`:
+  $\ker P_p = S_{\neg p}(A)$ and $\operatorname{range} P_p = S_p(A)$.
+* `Module.End.existsUnique_mem_spectralProjector_eq`: if a subspace $W$ meets $S_{\neg p}(A)$ only
+  in $0$ and has the dimension of $S_p(A)$, then $P_p$ maps $W$ bijectively onto $S_p(A)$.
+
+## Implementation notes
+
+* The spectral subspace is `⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ`. The sum runs over all $\mu \in K$
+  with $p(\mu)$; the scalars that are not eigenvalues contribute $0$.
+* The spectral projector is `Submodule.projection` for the complementary pair of
+  `Module.End.isCompl_spectralSubspace`. It is an orthogonal projection only when the two subspaces
+  are orthogonal, for example when $A$ is normal.
 -/
 
 namespace Module.End
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-/-- The *spectral subspace* of `A` for the eigenvalues satisfying `p`: the sum of their generalized
-eigenspaces. -/
+/-- The **spectral subspace** of an endomorphism $A$ of $V$ for a predicate $p$ on $K$ is the sum of
+the maximal generalized eigenspaces of the scalars that satisfy $p$:
+$$S_p(A) = \sum_{\mu \,:\, p(\mu)} G_\mu(A), \qquad G_\mu(A) = \bigcup_k \ker (A - \mu)^k.$$
+A scalar $\mu$ that is not an eigenvalue has $G_\mu(A) = 0$, so only the selected eigenvalues
+contribute.
+
+The generalized eigenspace $G_\mu(A)$ is `Module.End.maxGenEigenspace A μ`, and the sum is the
+supremum of submodules. -/
 def spectralSubspace (A : End K V) (p : K → Prop) : Submodule K V :=
   ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ
 
 variable {A : End K V} {p q : K → Prop}
 
+/-- The spectral subspace $S_p(A)$ is the supremum of `A.maxGenEigenspace μ` over the scalars $\mu$
+with $p(\mu)$. -/
 theorem spectralSubspace_def (A : End K V) (p : K → Prop) :
     A.spectralSubspace p = ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ :=
   rfl
 
-/-- The generalized eigenspace of a selected eigenvalue lies in the spectral subspace. -/
+/-- If $p(\mu)$ holds, then $G_\mu(A) \subseteq S_p(A)$. -/
 theorem maxGenEigenspace_le_spectralSubspace {μ : K} (hμ : p μ) :
     A.maxGenEigenspace μ ≤ A.spectralSubspace p :=
   le_iSup₂_of_le μ hμ le_rfl
 
-/-- The spectral subspace of a single eigenvalue is its generalized eigenspace. -/
+/-- The spectral subspace for the predicate $\mu = l$ is the generalized eigenspace of $l$:
+$S_{\mu = l}(A) = G_l(A)$. -/
 @[simp]
 theorem spectralSubspace_eq (A : End K V) (l : K) :
     A.spectralSubspace (· = l) = A.maxGenEigenspace l :=
   iSup_iSup_eq_left
 
-/-- Spectral subspaces grow with the set of selected eigenvalues. -/
+/-- If $p(\mu)$ implies $q(\mu)$ for every $\mu$, then $S_p(A) \subseteq S_q(A)$. -/
 theorem spectralSubspace_mono (h : ∀ μ, p μ → q μ) : A.spectralSubspace p ≤ A.spectralSubspace q :=
   iSup₂_le fun μ hμ => maxGenEigenspace_le_spectralSubspace (h μ hμ)
 
-/-- **Spectral subspaces are invariant.** -/
+/-- **Spectral subspaces are invariant.** For every endomorphism $A$ of $V$ and every predicate $p$
+on $K$, the spectral subspace $S_p(A)$ is invariant under $A$: $A(S_p(A)) \subseteq S_p(A)$.
+
+The proof uses that each generalized eigenspace $G_\mu(A)$ is invariant under $A$. -/
 theorem spectralSubspace_mem_invtSubmodule (A : End K V) (p : K → Prop) :
     A.spectralSubspace p ∈ A.invtSubmodule := by
   rw [mem_invtSubmodule_iff_map_le, spectralSubspace, Submodule.map_iSup]
@@ -80,15 +115,20 @@ theorem spectralSubspace_mem_invtSubmodule (A : End K V) (p : K → Prop) :
   refine iSup_mono fun _ => ?_
   exact Submodule.map_le_iff_le_comap.2 (A.mapsTo_maxGenEigenspace_of_comm (Commute.refl A) μ)
 
-/-- The elementwise form of `Module.End.spectralSubspace_mem_invtSubmodule`. -/
+/-- If $x \in S_p(A)$, then $Ax \in S_p(A)$. This is the elementwise form of
+`Module.End.spectralSubspace_mem_invtSubmodule`. -/
 theorem apply_mem_spectralSubspace {x : V} (hx : x ∈ A.spectralSubspace p) :
     A x ∈ A.spectralSubspace p :=
   A.spectralSubspace_mem_invtSubmodule p hx
 
-/-- **The spectral splitting of a set of eigenvalues.** Over an algebraically closed field in finite
-dimension, the spectral subspaces of `p` and of its complement are complementary: disjointness is
-the independence of the generalized eigenspaces, split along the two halves of `p`; codisjointness
-is `iSup_split` together with the fact that the generalized eigenspaces span. -/
+/-- **The spectral splitting of a set of eigenvalues.** Let $K$ be algebraically closed, let $V$ be
+finite-dimensional, let $A$ be an endomorphism of $V$, and let $p$ be a predicate on $K$. Then
+the spectral subspaces of $p$ and of its negation are complementary:
+$$S_p(A) \cap S_{\neg p}(A) = 0, \qquad S_p(A) + S_{\neg p}(A) = V.$$
+
+The intersection is $0$ because the generalized eigenspaces of distinct eigenvalues are
+independent. The sum is $V$ because the generalized eigenspaces span $V$ over an algebraically
+closed field. -/
 theorem isCompl_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V] (A : End K V)
     (p : K → Prop) : IsCompl (A.spectralSubspace p) (A.spectralSubspace fun μ => ¬ p μ) where
   disjoint := (A.independent_maxGenEigenspace).disjoint_biSup_biSup
@@ -97,10 +137,13 @@ theorem isCompl_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V] (A : En
     rw [codisjoint_iff, spectralSubspace, spectralSubspace, ← iSup_split (A.maxGenEigenspace) p,
       A.iSup_maxGenEigenspace_eq_top]
 
-/-- An invariant subspace on which every eigenvalue satisfies `p` lies in the spectral subspace of
-`p`: over an algebraically closed field, `S` is the sum of the generalized eigenspaces of `A|_S`
-(`Module.End.iSup_maxGenEigenspace_eq_top`), each inside the corresponding one of `A`, and those
-of eigenvalues outside `p` vanish. -/
+/-- Let $K$ be algebraically closed, let $V$ be finite-dimensional, and let $A$ be an endomorphism
+of $V$. Let $W$ be an $A$-invariant subspace on which every eigenvalue satisfies $p$: if
+$\neg p(\mu)$, $x \in W$ and $Ax = \mu x$, then $x = 0$. Then $W \subseteq S_p(A)$.
+
+The proof writes $W$ as the sum of the generalized eigenspaces of the restriction $A|_W$
+(`Module.End.iSup_maxGenEigenspace_eq_top`). Each of them lies in the corresponding generalized
+eigenspace of $A$, and those of the eigenvalues that fail $p$ are $0$. -/
 theorem invtSubmodule_le_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V]
     {S : Submodule K V} (hS : S ∈ A.invtSubmodule)
     (hp : ∀ μ, ¬ p μ → ∀ x ∈ S, A x = μ • x → x = 0) :
@@ -124,10 +167,15 @@ theorem invtSubmodule_le_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V
   rw [h0, Submodule.map_bot]
   exact bot_le
 
-/-- **Uniqueness of the invariant subspace of a spectral set** ([golub2013matrix] §7.3.2, §7.6.2):
-over an algebraically closed field, an `A`-invariant subspace `S` on which every eigenvalue of `A`
-satisfies `p` (`A x = μ x`, `x ∈ S`, `¬ p μ` force `x = 0`) and whose dimension is that of
-`A.spectralSubspace p` (the sum of the algebraic multiplicities) *is* that subspace. -/
+/-- **Uniqueness of the invariant subspace of a spectral set.** Let $K$ be algebraically closed, let
+$V$ be finite-dimensional, and let $A$ be an endomorphism of $V$. Let $W$ be an $A$-invariant
+subspace on which every eigenvalue satisfies $p$: if $\neg p(\mu)$, $x \in W$ and $Ax = \mu x$,
+then $x = 0$. If $\dim W = \dim S_p(A)$, then $W = S_p(A)$. See §7.3.2 and §7.6.2 of
+[golub2013matrix].
+
+The dimension of $S_p(A)$ is the sum of the algebraic multiplicities of the eigenvalues that
+satisfy $p$. The proof combines `Module.End.invtSubmodule_le_spectralSubspace` with the equality
+of dimensions. -/
 theorem invtSubmodule_eq_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V]
     {S : Submodule K V} (hS : S ∈ A.invtSubmodule)
     (hp : ∀ μ, ¬ p μ → ∀ x ∈ S, A x = μ • x → x = 0)
@@ -137,12 +185,16 @@ theorem invtSubmodule_eq_spectralSubspace [IsAlgClosed K] [FiniteDimensional K V
 
 /-! ### Diagonalizable endomorphisms -/
 
-/-- **A diagonalizable endomorphism has no defective eigenvalue**: if the eigenspaces of `f` span
-the whole space, the maximal generalized eigenspace of `μ` is already the eigenspace of `μ`
-([saad2003iterative] Proposition 1.7, the direction from diagonalizability). The reason is that
-`f - μ` maps every *other* eigenspace into itself and annihilates the `μ`-eigenspace, so its range
-misses the `μ`-eigenspace; a vector killed by `(f - μ)²` therefore has `(f - μ) v` in both, hence
-zero, and the general power follows by induction. -/
+/-- **A diagonalizable endomorphism has no defective eigenvalue.** Let $f$ be an endomorphism of $V$
+whose eigenspaces span $V$, that is, $\sum_{\mu \in K} \ker(f - \mu) = V$. Then for every
+$\mu \in K$, the maximal generalized eigenspace of $\mu$ is the eigenspace:
+$$G_\mu(f) = \ker(f - \mu).$$
+This is the direction from diagonalizability in Proposition 1.7 of [saad2003iterative].
+
+The idea of the proof: $f - \mu$ maps every other eigenspace into itself and is $0$ on
+$\ker(f - \mu)$, so its range meets $\ker(f - \mu)$ only in $0$. A vector $v$ with
+$(f - \mu)^2 v = 0$ therefore has $(f - \mu)v = 0$, and induction gives the result for all
+powers. -/
 theorem maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top {f : End K V}
     (hf : (⨆ μ : K, f.eigenspace μ) = ⊤) (μ : K) :
     f.maxGenEigenspace μ = f.eigenspace μ := by
@@ -203,55 +255,62 @@ section SpectralProjector
 
 variable [IsAlgClosed K] [FiniteDimensional K V]
 
-/-- **The spectral projector** of the eigenvalues picked out by `p`: the projection onto
-`A.spectralSubspace p` along the spectral subspace of the remaining eigenvalues. It is *oblique*
-— an orthogonal projection only when the two subspaces are orthogonal, as for a normal `A` — and
-taking `p := (· = l)` gives the projector onto a single generalized eigenspace. -/
+/-- **The spectral projector.** Let $K$ be algebraically closed, let $V$ be finite-dimensional, and
+let $A$ be an endomorphism of $V$. The spectral projector $P_p$ of the eigenvalues selected by
+$p$ is the projection onto $S_p(A)$ along $S_{\neg p}(A)$: every $x \in V$ is $x = u + w$ with
+$u \in S_p(A)$ and $w \in S_{\neg p}(A)$ in exactly one way, and $P_p x = u$.
+
+In general $P_p$ is an oblique projector. It is an orthogonal projection only when the two
+subspaces are orthogonal, for example when $A$ is normal. For the predicate $\mu = l$ it is the
+projector onto the generalized eigenspace $G_l(A)$. The definition is `Submodule.projection` for
+the pair of `Module.End.isCompl_spectralSubspace`. -/
 noncomputable def spectralProjector (A : End K V) (p : K → Prop) : End K V :=
   Submodule.projection _ _ (A.isCompl_spectralSubspace p)
 
-/-- The projector lands in the spectral subspace of the selected eigenvalues. -/
+/-- For every $x \in V$, $P_p x \in S_p(A)$. -/
 @[simp]
 theorem spectralProjector_apply_mem (x : V) : A.spectralProjector p x ∈ A.spectralSubspace p :=
   Submodule.projection_apply_mem _ _
 
-/-- The complementary part of `x` lies in the spectral subspace of the discarded eigenvalues. -/
+/-- For every $x \in V$, $x - P_p x \in S_{\neg p}(A)$. -/
 theorem sub_spectralProjector_mem (x : V) :
     x - A.spectralProjector p x ∈ A.spectralSubspace fun μ => ¬ p μ :=
   Submodule.sub_projection_mem _ _
 
-/-- The projector fixes the spectral subspace it projects onto. -/
+/-- The spectral projector fixes its range: if $x \in S_p(A)$, then $P_p x = x$. -/
 theorem spectralProjector_apply_of_mem {x : V} (hx : x ∈ A.spectralSubspace p) :
     A.spectralProjector p x = x :=
   Submodule.projection_apply_of_mem_left _ hx
 
-/-- The projector kills exactly the spectral subspace of the discarded eigenvalues. -/
+/-- For $x \in V$, $P_p x = 0$ if and only if $x \in S_{\neg p}(A)$. -/
 @[simp]
 theorem spectralProjector_apply_eq_zero_iff {x : V} :
     A.spectralProjector p x = 0 ↔ x ∈ A.spectralSubspace fun μ => ¬ p μ :=
   Submodule.projection_apply_eq_zero_iff _
 
-/-- The kernel of the spectral projector is the spectral subspace of the discarded eigenvalues. -/
+/-- The kernel of the spectral projector is the spectral subspace of the other eigenvalues:
+$\ker P_p = S_{\neg p}(A)$. -/
 theorem ker_spectralProjector :
     LinearMap.ker (A.spectralProjector p) = A.spectralSubspace fun μ => ¬ p μ :=
   Submodule.ker_projection _
 
-/-- The range of the spectral projector is the spectral subspace of the selected eigenvalues. -/
+/-- The range of the spectral projector is the spectral subspace of the selected eigenvalues:
+$\operatorname{range} P_p = S_p(A)$. -/
 theorem range_spectralProjector : LinearMap.range (A.spectralProjector p) = A.spectralSubspace p :=
   Submodule.range_projection _
 
-/-- A projector is idempotent. -/
+/-- The spectral projector is idempotent: $P_p^2 = P_p$. -/
 theorem isIdempotentElem_spectralProjector : IsIdempotentElem (A.spectralProjector p) :=
   Submodule.isIdempotentElem_projection _
 
-/-- The projector reads off the first summand of the spectral splitting. -/
+/-- If $u \in S_p(A)$ and $w \in S_{\neg p}(A)$, then $P_p(u + w) = u$. -/
 theorem spectralProjector_add_of_mem {u w : V} (hu : u ∈ A.spectralSubspace p)
     (hw : w ∈ A.spectralSubspace fun μ => ¬ p μ) : A.spectralProjector p (u + w) = u := by
   rw [map_add, spectralProjector_apply_of_mem hu, spectralProjector_apply_eq_zero_iff.mpr hw,
     add_zero]
 
-/-- The spectral projector is injective on a subspace exactly when that subspace meets the spectral
-subspace of the discarded eigenvalues only in `0`. -/
+/-- Let $W$ be a subspace of $V$. The spectral projector $P_p$ is injective on $W$ if and only if
+$W \cap S_{\neg p}(A) = 0$. -/
 theorem injOn_spectralProjector_iff {S : Submodule K V} :
     Set.InjOn (A.spectralProjector p) S ↔ Disjoint S (A.spectralSubspace fun μ => ¬ p μ) := by
   refine ⟨fun h => disjoint_iff_inf_le.mpr fun x hx => ?_, fun h => ?_⟩
@@ -260,11 +319,12 @@ theorem injOn_spectralProjector_iff {S : Submodule K V} :
   · refine LinearMap.injOn_of_disjoint_ker (le_refl (S : Set V)) ?_
     rwa [ker_spectralProjector]
 
-/-- **A starting subspace has a unique preimage for each vector of the spectral subspace.** If the
-spectral projector is injective on `S` and `S` has the dimension of the spectral subspace, then
-every `u` of that subspace is `P s` for exactly one `s ∈ S`: injectivity makes `P` a bijection from
-`S` onto its image by rank–nullity, and the equality of dimensions promotes the image to the whole
-spectral subspace. -/
+/-- Let $W$ be a subspace of $V$ with $W \cap S_{\neg p}(A) = 0$ and $\dim W = \dim S_p(A)$. Then
+for every $u \in S_p(A)$ there is exactly one $s \in W$ with $P_p s = u$.
+
+By `Module.End.injOn_spectralProjector_iff`, the first hypothesis says that $P_p$ is injective
+on $W$. Then $P_p$ maps $W$ bijectively onto its image, and the equality of dimensions makes
+this image all of $S_p(A)$. -/
 theorem existsUnique_mem_spectralProjector_eq {S : Submodule K V}
     (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
     (hrank : Module.finrank K S = Module.finrank K (A.spectralSubspace p))

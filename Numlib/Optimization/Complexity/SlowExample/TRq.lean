@@ -7,24 +7,32 @@ import Numlib.Optimization.ModelBased.HighOrder.TRqComplexity
 /-!
 # Building runs of TRq for slow examples
 
-Lower-bound constructions for the trust-region method TRq ([cartis2022evaluation],
-Algorithm 12.2.1) exhibit runs whose first iterations are written down explicitly and whose
-continuation is any run (which exists by `Optimization.exists_isTRqRun`). This file provides the
-generic tools for such constructions, for an arbitrary objective on a real normed space:
+A lower-bound construction for the trust-region method TRq (Algorithm 12.2.1 of
+[cartis2022evaluation]) exhibits a run whose first iterations are written down explicitly and whose
+continuation is any run; such a run exists by `Optimization.exists_isTRqRun`. This module gives the
+generic tools for these constructions, for an arbitrary objective on a real normed space. An
+explicit prefix of iterations that satisfy Steps 1–4, followed by a run that starts at the last
+point of the prefix with the last radius of the prefix, is a run. A run with exact data on a
+feasible set $X$ is also a run for every other objective with the same Taylor decrements and the
+same differences of values on $X$. A run whose first iterations are unsuccessful stays at its
+starting point; this is `Optimization.IsTRRun.eq_zero_of_unsucc` in
+`Numlib.Optimization.ModelBased.TRRun`.
 
-* `Optimization.TRqParams.withΔ₀`: the parameters with another initial radius, for the run that
-  continues an explicit prefix with the radius reached by the prefix;
-* `Optimization.exists_isTRqRun_append`: an explicit prefix of iterations satisfying Steps 1–4,
-  followed by a run started at its last point with its last radius, is a run; its termination
-  tests and its successful iterations are those of the prefix and of the continuation;
-* `Optimization.IsTRqRun.congr_of_taylorDecrement_eq`: a run with exact data on a feasible set
-  `X` is also a run for any other objective with the same Taylor decrements and the same
-  differences of values on `X` (e.g. differing by a constant near `X`).
-Runs whose first iterations are unsuccessful stay at their start
-(`Optimization.IsTRRun.eq_zero_of_unsucc`, in `Numlib.Optimization.ModelBased.TRRun`).
+## Main definitions
 
-The data (Taylor data `D y` and feasible displacements `S y`) depend on the current iterate `y`,
-as in `Optimization.exists_isTRqRun`.
+* `Optimization.TRqParams.withΔ₀`: the TRq parameters with another initial radius.
+
+## Main results
+
+* `Optimization.exists_isTRqRun_append`: an explicit prefix followed by a run is a run, and its
+  termination tests and successful iterations are those of the prefix and of the continuation.
+* `Optimization.IsTRqRun.congr_of_taylorDecrement_eq`: a run with exact data on $X$ is a run for
+  every objective with the same Taylor decrements and the same differences of values on $X$.
+
+## Implementation notes
+
+* The data, Taylor data $D(y)$ and feasible displacements $S(y)$, depend on the current iterate $y$,
+  as in `Optimization.exists_isTRqRun`.
 -/
 
 open Set Metric
@@ -32,16 +40,19 @@ open scoped Nat
 
 namespace Optimization
 
-/-- The exact Taylor data `k ↦ ftaylorSeries ℝ f (x k)` along the iterates. -/
+/-- The exact Taylor data $k \mapsto$ (the jet of $f$ at $x_k$) along the iterates. -/
 local notation "𝒥" f:max x:max => fun k : ℕ => ftaylorSeries ℝ f (x k)
 
-/-- The feasible displacements `k ↦ {e | x k + e ∈ X}`. -/
+/-- The feasible displacements $k \mapsto \{e \mid x_k + e \in X\}$. -/
 local notation "𝒳" X:max x:max => fun k : ℕ => Set.ofPred fun e => x k + e ∈ X
 
-/-- The TRq parameters `P` with the initial radius replaced by `r ∈ (0, Δ_max]`. -/
+/-- Let $P$ be TRq parameters and let $0 < r \le \Delta_{\max}$. Then `P.withΔ₀ r` is $P$ with the
+initial radius $\Delta_0$ replaced by $r$. It is the parameter set of the run that continues an
+explicit prefix with the radius that the prefix reached. -/
 def TRqParams.withΔ₀ (P : TRqParams) (r : ℝ) (h0 : 0 < r) (h1 : r ≤ P.Δmax) : TRqParams :=
   { P with Δ₀ := r, Δ₀_pos := h0, Δ₀_le_Δmax := h1 }
 
+/-- The initial radius of `P.withΔ₀ r` is $r$. -/
 @[simp]
 theorem TRqParams.withΔ₀_Δ₀ (P : TRqParams) (r : ℝ) (h0 : 0 < r) (h1 : r ≤ P.Δmax) :
     (P.withΔ₀ r h0 h1).Δ₀ = r :=
@@ -49,14 +60,22 @@ theorem TRqParams.withΔ₀_Δ₀ (P : TRqParams) (r : ℝ) (h0 : 0 < r) (h1 : r
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- An iteration satisfying Step 2 fails the termination test of TRq. -/
+/-- If the order $j$ and the step $s$ satisfy Step 2 of TRq for the data $D$, the feasible
+displacements $S$ and the Step-1 displacements $d_j$, then the Step-1 termination test fails:
+with $\Delta T_j$ the Taylor decrement of order $j$ of $D$, it is not true that $\Delta T_j(d_j)
+\le \varsigma \varepsilon_j \delta^j / j!$ for every $j \in [1, q]$.
+
+Step 2 is `Optimization.IsTRqStep` and the test is `Optimization.MeasureTestPasses`. The order
+$j$ of Step 2 is an order at which the test fails. -/
 theorem IsTRqStep.not_measureTestPasses {D : FormalMultilinearSeries ℝ E ℝ} {S : Set E}
     {ς : ℝ} {q : ℕ} {ε : ℕ → ℝ} {δ Δ : ℝ} {d : ℕ → E} {j : ℕ} {s : E}
     (h : IsTRqStep D S ς q ε δ Δ d j s) :
     ¬ MeasureTestPasses (fun j => D.taylorDecrement j) q ς ε (fun _ => δ) d :=
   fun ht => absurd (ht j h.order_mem) (not_le.2 h.lt_taylorDecrement)
 
-/-- Step 2 of TRq only depends on the Taylor decrements of the data. -/
+/-- Step 2 of TRq depends on the data only through their Taylor decrements. If $D$ and $D'$ have the
+same Taylor decrements of every order, and the order $j$ and the step $s$ satisfy Step 2 for
+$D$, then they satisfy Step 2 for $D'$. -/
 theorem IsTRqStep.of_taylorDecrement_eq {D D' : FormalMultilinearSeries ℝ E ℝ}
     (h : ∀ j, D'.taylorDecrement j = D.taylorDecrement j) {S : Set E} {ς : ℝ} {q : ℕ}
     {ε : ℕ → ℝ} {δ Δ : ℝ} {d : ℕ → E} {j : ℕ} {s : E}
@@ -67,14 +86,35 @@ theorem IsTRqStep.of_taylorDecrement_eq {D D' : FormalMultilinearSeries ℝ E �
   · rw [h]; exact hs.taylorDecrement_le
 
 open Classical in
-/-- **Appending a run to an explicit prefix.** If `T` explicit iterations
-`(x_k, s_k, Δ_k, j_k, d_k)`, `k < T`, starting from `Δ_0 = Δ₀`, satisfy Steps 1–4 of
-Algorithm 12.2.1 with data `D (x_k)` and feasible sets `S (x_k)` and the cap `Δ_{k+1} ≤ Δ_max`,
-and a run `y` starts at `x_T` with initial radius `r = Δ_T`, the concatenation is a run. It does
-not terminate before `T + T'` if the continuation does not terminate before `T'`, its successful
-iterations below `T + T'` are those of the prefix and of the continuation below `T'`, and it
-agrees with the prefix up to `T` (iterates and radii up to `T`, steps, orders and Step-1
-displacements below `T`). -/
+/-- **Appending a run to an explicit prefix.** Let $E$ be a real normed space, let
+$f \colon E \to \mathbb{R}$, and let the data $D(y)$ and the feasible displacements $S(y)$
+depend on the current iterate $y$. Let $P$ be TRq parameters, let $T \in \mathbb{N}$, and let
+$(x_k, s_k, \Delta_k, j_k, d_k)$ be explicit iterates, steps, radii, orders and Step-1
+displacements such that $\Delta_0$ is the initial radius of $P$ and
+$\Delta_T = r \in (0, \Delta_{\max}]$. Assume that for every $k < T$, with
+$\delta_k = \min\{\Delta_k, \vartheta\}$:
+
+* the order $j_k$ and the step $s_k$ satisfy Step 2 for $D(x_k)$ and $S(x_k)$;
+* $x_{k+1}$ and $\Delta_{k+1}$ satisfy Steps 3–4 with the ratio
+  $(f(x_k) - f(x_k + s_k)) / \Delta T_{j_k}(s_k)$, where $\Delta T_{j}$ is the Taylor decrement
+  of order $j$ of $D(x_k)$;
+* every $d_{k,j}$, $j \in [1, q]$, is an approximate optimality displacement at the radius
+  $\delta_k$;
+* $\Delta_{k+1} \le \Delta_{\max}$.
+
+Let $y$ be a TRq run with the parameters `P.withΔ₀ r` that starts at $y_0 = x_T$, does not
+terminate before iteration $T'$, and has at least $c$ successful iterations below $T'$. Then
+there is a TRq run with the parameters $P$ that starts at $x_0$ and
+
+* does not terminate before iteration $T + T'$;
+* has at least as many successful iterations below $T + T'$ as the prefix has below $T$, plus
+  $c$;
+* agrees with the prefix in the iterates and the radii up to $T$, and in the steps, the orders
+  and the Step-1 displacements below $T$.
+
+Step 2 is `Optimization.IsTRqStep`, Steps 3–4 are `Optimization.TRAcceptance`, the approximate
+optimality displacements are `Optimization.IsApproxMeasureStep`, and the termination test is
+`Optimization.trqTest`. An iteration is successful when its ratio is at least $\eta_1$. -/
 theorem exists_isTRqRun_append {f : E → ℝ} {D : E → FormalMultilinearSeries ℝ E ℝ}
     {S : E → Set E} {P : TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {T : ℕ} {xp sp : ℕ → E}
     {Δp : ℕ → ℝ} {jp : ℕ → ℕ} {dp : ℕ → ℕ → E} (h0 : Δp 0 = P.Δ₀) {r : ℝ} (hr : Δp T = r)
@@ -203,10 +243,21 @@ theorem exists_isTRqRun_append {f : E → ℝ} {D : E → FormalMultilinearSerie
     · refine hyc.trans (le_of_eq (congrArg Finset.card (Finset.filter_congr fun m _ => ?_)))
       rw [trqRatio_eq, trqRatio_eq, hxr, hsr, hjr]
 
-/-- **Transfer of a run to an objective with the same Taylor decrements and the same differences
-on `X`** (e.g. an objective differing by a constant near `X`): a run of TRq with exact data on `f`
-and feasible set `X` is a run with exact data on `g`, with the same termination tests (before
-termination) and ratios. -/
+/-- **Transfer of a run to an objective with the same Taylor decrements.** Let
+$f, g \colon E \to \mathbb{R}$ and $X \subseteq E$. Assume that at every $y \in X$ the jets of
+$g$ and $f$ have the same Taylor decrements of every order, that $g(y) - g(z) = f(y) - f(z)$ for
+all $y, z \in X$ (for example, $g$ and $f$ differ by a constant near $X$), and that $x_0 \in X$.
+Let $x$ be a TRq run for $f$ with exact data and the feasible displacements
+$\{e \mid x_k + e \in X\}$. Then:
+
+* the same sequences form a TRq run for $g$ with exact data;
+* at every iteration $k$ such that the run for $f$ does not terminate at any iteration $i < k$,
+  the termination test for $g$ holds if and only if the termination test for $f$ holds;
+* at every iteration $k$ such that the run for $f$ does not terminate at any iteration
+  $i \le k$, the ratios for $g$ and $f$ are equal.
+
+The run is `Optimization.IsTRqRun`, the test is `Optimization.trqTest` and the ratio is
+`Optimization.trqRatio`. -/
 theorem IsTRqRun.congr_of_taylorDecrement_eq {f g : E → ℝ} {X : Set E} {P : TRqParams}
     {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → E} {Δ : ℕ → ℝ} {jk : ℕ → ℕ} {d : ℕ → ℕ → E}
     (hT : ∀ y ∈ X, ∀ j, (ftaylorSeries ℝ g y).taylorDecrement j =

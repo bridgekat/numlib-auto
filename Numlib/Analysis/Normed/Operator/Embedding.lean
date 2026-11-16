@@ -15,42 +15,50 @@ import Mathlib.Analysis.SpecificLimits.Basic
 /-!
 # Continuous and compact embeddings of normed spaces
 
-A normed space `V` is *continuously embedded* in a normed space `W` when the inclusion `V ⊆ W` is
-injective, linear and bounded, `‖v‖_W ≤ c ‖v‖_V`; it is *compactly embedded* when, in addition,
-every bounded sequence of `V` has a subsequence whose image converges in `W`. These are the
-relations written `V ↪ W` and `V ↪↪ W` in Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009, Definition 7.3.6, in which
-they are the vocabulary of the Sobolev embedding theorems and of Rellich–Kondrachov.
-
-The inclusion `V ⊆ W` is carried by an arbitrary injective linear map `ι : V →ₗ[𝕜] W` rather than
-by a subset relation, because the two spaces carry different norms and the embeddings of interest —
-`W^{k,p}(Ω) ↪ L^q(Ω)`, `H^k(Ω) ↪ C(closure Ω)` — are between different types.
+A normed space $V$ is **continuously embedded** in a normed space $W$ when the inclusion
+$V \subseteq W$ is injective, linear and bounded, $\|v\|_W \le c \|v\|_V$. It is **compactly
+embedded** when, in addition, every bounded sequence of $V$ has a subsequence whose image converges
+in $W$. These are the relations $V \hookrightarrow W$ and $V \hookrightarrow\hookrightarrow W$ of
+[han2009theoretical], Definition 7.3.6, where they are the vocabulary of the Sobolev embedding
+theorems and of the Rellich–Kondrachov theorem. This file shows that a continuous embedding is an
+injective continuous linear map and that a compact embedding is an injective compact operator, and
+proves that the two kinds of embedding compose.
 
 ## Main definitions
 
-* `IsContinuousEmbedding ι`, the relation `V ↪ W` along `ι`;
-* `IsCompactEmbedding ι`, the relation `V ↪↪ W` along `ι`, with the *sequential* compactness
-  condition as its definition.
+* `IsContinuousEmbedding`: the relation $V \hookrightarrow W$ along an injective linear map
+  $\iota : V \to W$.
+* `IsCompactEmbedding`: the relation $V \hookrightarrow\hookrightarrow W$ along $\iota$, defined by
+  the sequential compactness condition.
 
-## Main statements
+## Main results
 
 * `isContinuousEmbedding_iff_continuous`: a continuous embedding is exactly an injective continuous
-  linear map, the bound `‖ι v‖ ≤ c ‖v‖` being the continuity of a linear map between normed spaces;
-* `isCompactEmbedding_iff_isCompactOperator`: a compact embedding is exactly an injective
-  `IsCompactOperator`, so the closure properties of compact operators and the Riesz theory apply to
-  it. Note that the continuity clause of the definition is not an extra hypothesis on the
-  right-hand side: `IsCompactOperator.continuous` makes it automatic.
+  linear map.
+* `isCompactEmbedding_iff_isCompactOperator`: a compact embedding is exactly an injective compact
+  operator, so the closure properties of compact operators and the Riesz theory apply to it.
+* `IsCompactEmbedding.comp_isContinuousEmbedding`, `IsContinuousEmbedding.comp_isCompactEmbedding`:
+  a compact embedding composed with a continuous embedding, in either order, is a compact embedding.
+* `isCompactEmbedding_of_isCompact_closure_image_closedBall`: an injective bounded linear map whose
+  image of the closed unit ball has compact closure is a compact embedding.
 
 ## Implementation notes
 
-The definition of `IsCompactEmbedding` is the sequential one because that is how the relation is
-introduced in the source cited above and how its consumers use it — a bounded sequence in the
-finer space is passed to a convergent subsequence in the coarser one. The identification with
-`IsCompactOperator`, whose definition is the compactness of the closure of the image of a
-neighbourhood of `0`, is the two halves of the Bolzano–Weierstrass theorem in a metrizable space:
-`IsCompact.isSeqCompact` one way and `IsSeqCompact.isCompact` the other. Neither space is required
-to be complete; the source states the definition for Banach spaces, but completeness enters none of
-the arguments here.
+* The inclusion $V \subseteq W$ is an arbitrary injective linear map `ι : V →ₗ[𝕜] W` and not a
+  subset relation, because the two spaces carry different norms and the embeddings of interest, such
+  as $W^{k,p}(\Omega) \hookrightarrow L^q(\Omega)$ and $H^k(\Omega) \hookrightarrow
+  C(\overline{\Omega})$, are between different types.
+* The definition of `IsCompactEmbedding` is the sequential one, because the source introduces the
+  relation in this form and its users apply it in this form: a bounded sequence in the finer space
+  has a subsequence that converges in the coarser one. `IsCompactOperator` asks instead that the
+  image of a neighbourhood of $0$ has compact closure. The two agree by the Bolzano–Weierstrass
+  theorem in a metrizable space, `IsCompact.isSeqCompact` in one direction and
+  `IsSeqCompact.isCompact` in the other.
+* The continuity clause of `IsCompactEmbedding` is not an extra hypothesis on the right-hand side of
+  `isCompactEmbedding_iff_isCompactOperator`: a compact operator is continuous by
+  `IsCompactOperator.continuous`.
+* Neither space needs to be complete. The source states the definition for Banach spaces, but
+  completeness enters none of the arguments here.
 -/
 
 open Filter Metric Set
@@ -60,29 +68,33 @@ open scoped Topology
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {V W : Type*} [NormedAddCommGroup V]
   [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- **The continuous embedding `V ↪ W`** along an inclusion `ι : V → W`: the map is injective and
-bounded, `‖ι v‖_W ≤ c ‖v‖_V` for some constant `c` and all `v ∈ V`.
+/-- **Continuous embedding.** Let $V$ and $W$ be normed spaces over a nontrivially normed field and
+let $\iota : V \to W$ be linear. Then $V$ is **continuously embedded** in $W$ along $\iota$,
+written $V \hookrightarrow W$, if $\iota$ is injective and there is a constant $c$ with
+$$\|\iota v\|_W \le c \, \|v\|_V \qquad \text{for all } v \in V.$$
 
-This is the relation `V ↪ W` of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Springer, 2009, Definition 7.3.6, equation (7.3.1),
-with the book's `V ⊆ W` read as an arbitrary injective linear map because the two spaces carry
-different norms. `IsContinuousEmbedding.toContinuousLinearMap` bundles `ι` as a continuous linear
-map, which is what the bound says. -/
+This is the relation $V \hookrightarrow W$ of [han2009theoretical], Definition 7.3.6, equation
+(7.3.1). The inclusion $V \subseteq W$ of the book is an arbitrary injective linear map here,
+because the two spaces carry different norms. `IsContinuousEmbedding.toContinuousLinearMap`
+bundles $\iota$ as a continuous linear map, which is what the bound says. -/
 structure IsContinuousEmbedding (ι : V →ₗ[𝕜] W) : Prop where
-  /-- The inclusion is injective: `V` is a subspace of `W`. -/
+  /-- The inclusion $\iota$ is injective, so that $V$ is identified with a subspace of $W$. -/
   injective : Function.Injective ι
-  /-- The inclusion is bounded: `‖v‖_W ≤ c ‖v‖_V`. -/
+  /-- The inclusion is bounded: $\|\iota v\|_W \le c \|v\|_V$ for some $c$ and all $v \in V$. -/
   exists_bound : ∃ c : ℝ, ∀ v : V, ‖ι v‖ ≤ c * ‖v‖
 
-/-- **The compact embedding `V ↪↪ W`** along an inclusion `ι : V → W`: the space `V` is
-continuously embedded in `W` and, in addition, every bounded sequence of `V` has a subsequence
-whose image converges in `W`.
+/-- **Compact embedding.** Let $V$ and $W$ be normed spaces over a nontrivially normed field and let
+$\iota : V \to W$ be linear. Then $V$ is **compactly embedded** in $W$ along $\iota$, written
+$V \hookrightarrow\hookrightarrow W$, if $V \hookrightarrow W$ along $\iota$ and every bounded
+sequence $(u_n)$ of $V$ has a subsequence $(u_{\varphi(n)})$ such that $\iota u_{\varphi(n)}$
+converges in $W$.
 
-This is the relation `V ↪↪ W` of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Springer, 2009, Definition 7.3.6.
-`isCompactEmbedding_iff_isCompactOperator` identifies it with an injective `IsCompactOperator`. -/
+This is the relation $V \hookrightarrow\hookrightarrow W$ of [han2009theoretical], Definition
+7.3.6. `isCompactEmbedding_iff_isCompactOperator` identifies it with an injective compact
+operator. -/
 structure IsCompactEmbedding (ι : V →ₗ[𝕜] W) : Prop extends IsContinuousEmbedding ι where
-  /-- Every bounded sequence of `V` has a subsequence whose image converges in `W`. -/
+  /-- Every bounded sequence $(u_n)$ of $V$ has a subsequence $(u_{\varphi(n)})$, with $\varphi$
+  strictly increasing, such that $\iota u_{\varphi(n)}$ converges in $W$. -/
   exists_subseq_tendsto : ∀ u : ℕ → V, (∃ M : ℝ, ∀ n, ‖u n‖ ≤ M) →
     ∃ (φ : ℕ → ℕ) (w : W), StrictMono φ ∧ Tendsto (fun n ↦ ι (u (φ n))) atTop (𝓝 w)
 
@@ -90,10 +102,11 @@ namespace IsContinuousEmbedding
 
 variable {ι : V →ₗ[𝕜] W}
 
-/-- The inclusion of a continuous embedding, bundled as a continuous linear map. -/
+/-- The inclusion $\iota$ of a continuous embedding, as a continuous linear map $V \to W$. -/
 noncomputable def toContinuousLinearMap (h : IsContinuousEmbedding ι) : V →L[𝕜] W :=
   ι.mkContinuousOfExistsBound h.exists_bound
 
+/-- The underlying function of `IsContinuousEmbedding.toContinuousLinearMap` is $\iota$. -/
 @[simp]
 theorem coe_toContinuousLinearMap (h : IsContinuousEmbedding ι) :
     ⇑h.toContinuousLinearMap = ⇑ι := rfl
@@ -104,17 +117,24 @@ theorem continuous (h : IsContinuousEmbedding ι) : Continuous ι :=
 
 end IsContinuousEmbedding
 
-/-- **An injective linear map is a continuous embedding exactly when it is continuous**: the bound
-`‖ι v‖ ≤ c ‖v‖` is the continuity of a linear map between normed spaces. -/
+/-- **An injective linear map is a continuous embedding exactly when it is continuous.** Let
+$\iota : V \to W$ be a linear map between normed spaces over a nontrivially normed field. Then
+$V \hookrightarrow W$ along $\iota$ if and only if $\iota$ is injective and continuous.
+
+The bound $\|\iota v\| \le c \|v\|$ is the continuity of a linear map between normed spaces. -/
 theorem isContinuousEmbedding_iff_continuous {ι : V →ₗ[𝕜] W} :
     IsContinuousEmbedding ι ↔ Function.Injective ι ∧ Continuous ι :=
   ⟨fun h ↦ ⟨h.injective, h.continuous⟩,
     fun ⟨hi, hc⟩ ↦ ⟨hi, ‖(⟨ι, hc⟩ : V →L[𝕜] W)‖, (⟨ι, hc⟩ : V →L[𝕜] W).le_opNorm⟩⟩
 
-/-- **The sequential criterion for a compact operator**: a linear map `T` that sends every
-sequence of the closed unit ball to a sequence with a convergent subsequence is a compact
-operator. A point of the closure of the image of the ball is within `1 / (n + 1)` of some `T vₙ`,
-`‖vₙ‖ ≤ 1`, and a convergent subsequence of `T vₙ` gives one of the original sequence. -/
+/-- **The sequential criterion for a compact operator.** Let $T : V \to W$ be a linear map between
+normed spaces over a nontrivially normed field. Suppose that for every sequence $(u_n)$ with
+$\|u_n\| \le 1$ for all $n$ there are a strictly increasing
+$\varphi : \mathbb{N} \to \mathbb{N}$ and $w \in W$ with $T u_{\varphi(n)} \to w$. Then $T$ is a
+compact operator.
+
+A point of the closure of the image of the unit ball is within $1/(n + 1)$ of some $T v_n$ with
+$\|v_n\| \le 1$, and a convergent subsequence of $(T v_n)$ gives one of the original sequence. -/
 theorem isCompactOperator_of_forall_exists_subseq_tendsto {T : V →ₗ[𝕜] W}
     (h : ∀ u : ℕ → V, (∀ n, ‖u n‖ ≤ 1) →
       ∃ (φ : ℕ → ℕ) (w : W), StrictMono φ ∧ Tendsto (fun n ↦ T (u (φ n))) atTop (𝓝 w)) :
@@ -137,14 +157,16 @@ theorem isCompactOperator_of_forall_exists_subseq_tendsto {T : V →ₗ[𝕜] W}
   have : (n : ℝ) ≤ (φ n : ℝ) := by exact_mod_cast hφ.le_apply
   linarith
 
-/-- **A compact embedding is exactly an injective compact operator.** The sequential condition —
-every bounded sequence of `V` has a subsequence whose image converges in `W` — is the sequential
-form of the compactness of the closure of the image of a ball, which is `IsCompactOperator`; the
-two agree because a normed space is metrizable, and there compactness and sequential compactness
-coincide.
+/-- **A compact embedding is exactly an injective compact operator.** Let $\iota : V \to W$ be a
+linear map between normed spaces over a nontrivially normed field. Then
+$V \hookrightarrow\hookrightarrow W$ along $\iota$ if and only if $\iota$ is injective and is a
+compact operator.
 
-The continuity clause of `IsCompactEmbedding` is not an extra hypothesis on the right-hand side: a
-compact operator is automatically continuous, by `IsCompactOperator.continuous`. -/
+The sequential condition of the definition is the sequential form of the compactness of the
+closure of the image of a ball, which is `IsCompactOperator`. The two agree because a normed
+space is metrizable, and there compactness and sequential compactness coincide. The continuity
+clause of `IsCompactEmbedding` is not an extra hypothesis on the right-hand side, because a
+compact operator is continuous by `IsCompactOperator.continuous`. -/
 theorem isCompactEmbedding_iff_isCompactOperator {ι : V →ₗ[𝕜] W} :
     IsCompactEmbedding ι ↔ Function.Injective ι ∧ IsCompactOperator ι := by
   constructor
@@ -158,41 +180,56 @@ theorem isCompactEmbedding_iff_isCompactOperator {ι : V →ₗ[𝕜] W} :
         fun n ↦ subset_closure ⟨u n, mem_closedBall_zero_iff.2 (hM n), rfl⟩
     exact ⟨φ, w, hφ, hwφ⟩
 
-/-- The inclusion of a compact embedding is a compact operator. -/
+/-- The inclusion $\iota$ of a compact embedding $V \hookrightarrow\hookrightarrow W$ is a compact
+operator. -/
 theorem IsCompactEmbedding.isCompactOperator {ι : V →ₗ[𝕜] W} (h : IsCompactEmbedding ι) :
     IsCompactOperator ι :=
   (isCompactEmbedding_iff_isCompactOperator.1 h).2
 
 /-! ### Composition, and the closed-ball criterion -/
 
-/-- **A compact embedding followed by a continuous embedding is a compact embedding**: for
-`ι : V →ₗ[𝕜] W` compact and `κ : W →ₗ[𝕜] X` continuous, `κ ∘ₗ ι` is compact. Injectivity
-composes, and a convergent subsequence of `ι (u n)` is carried to a convergent one by the
-continuous `κ`. This is how `W^{1,p}(Ω) ↪↪ C(closure Ω) ↪ L^p(Ω)` gives `W^{1,p}(Ω) ↪↪ L^p(Ω)`
-for `p > N` in the Rellich–Kondrachov theorem ([brezis2011functional] Theorem 9.16). -/
+/-- **A compact embedding followed by a continuous embedding is a compact embedding.** Let $V$, $W$,
+$X$ be normed spaces over a nontrivially normed field, and let $\iota : V \to W$ and
+$\kappa : W \to X$ be linear. If $V \hookrightarrow\hookrightarrow W$ along $\iota$ and
+$W \hookrightarrow X$ along $\kappa$, then $V \hookrightarrow\hookrightarrow X$ along
+$\kappa \circ \iota$.
+
+Injectivity composes, and the continuous $\kappa$ carries a convergent subsequence of
+$(\iota u_n)$ to a convergent one. This is how $W^{1,p}(\Omega) \hookrightarrow\hookrightarrow
+C(\overline{\Omega}) \hookrightarrow L^p(\Omega)$ gives $W^{1,p}(\Omega)
+\hookrightarrow\hookrightarrow L^p(\Omega)$ for $p > N$ in the Rellich–Kondrachov theorem
+([brezis2011functional], Theorem 9.16). -/
 theorem IsCompactEmbedding.comp_isContinuousEmbedding {X : Type*} [NormedAddCommGroup X]
     [NormedSpace 𝕜 X] {ι : V →ₗ[𝕜] W} {κ : W →ₗ[𝕜] X} (hι : IsCompactEmbedding ι)
     (hκ : IsContinuousEmbedding κ) : IsCompactEmbedding (κ ∘ₗ ι) := by
   rw [isCompactEmbedding_iff_isCompactOperator] at hι ⊢
   exact ⟨hκ.injective.comp hι.1, hι.2.clm_comp hκ.toContinuousLinearMap⟩
 
-/-- **A continuous embedding followed by a compact embedding is a compact embedding**: for
-`ι : V →ₗ[𝕜] W` continuous and `κ : W →ₗ[𝕜] X` compact, `κ ∘ₗ ι` is compact. A bounded sequence
-is carried by `ι` to a bounded sequence, to which `κ` applies. This is how
-`W^{1,N}(Ω) ↪ W^{1,q}(Ω) ↪↪ L^r(Ω)` reduces the case `p = N` of the Rellich–Kondrachov theorem to
-the case `p < N` ([brezis2011functional] Theorem 9.16, proof). -/
+/-- **A continuous embedding followed by a compact embedding is a compact embedding.** Let $V$, $W$,
+$X$ be normed spaces over a nontrivially normed field, and let $\iota : V \to W$ and
+$\kappa : W \to X$ be linear. If $V \hookrightarrow W$ along $\iota$ and
+$W \hookrightarrow\hookrightarrow X$ along $\kappa$, then $V \hookrightarrow\hookrightarrow X$
+along $\kappa \circ \iota$.
+
+The map $\iota$ carries a bounded sequence to a bounded sequence, to which the condition for
+$\kappa$ applies. This is how $W^{1,N}(\Omega) \hookrightarrow W^{1,q}(\Omega)
+\hookrightarrow\hookrightarrow L^r(\Omega)$ reduces the case $p = N$ of the Rellich–Kondrachov
+theorem to the case $p < N$ (proof of Theorem 9.16 of [brezis2011functional]). -/
 theorem IsContinuousEmbedding.comp_isCompactEmbedding {X : Type*} [NormedAddCommGroup X]
     [NormedSpace 𝕜 X] {ι : V →ₗ[𝕜] W} {κ : W →ₗ[𝕜] X} (hι : IsContinuousEmbedding ι)
     (hκ : IsCompactEmbedding κ) : IsCompactEmbedding (κ ∘ₗ ι) := by
   rw [isCompactEmbedding_iff_isCompactOperator] at hκ ⊢
   exact ⟨hκ.1.comp hι.injective, hκ.2.comp_clm hι.toContinuousLinearMap⟩
 
-/-- **The closed-ball criterion for a compact embedding**: an injective bounded linear map
-`ι : V →L[𝕜] W` whose image of the closed unit ball has compact closure is a compact embedding.
-This is the form in which the Rellich–Kondrachov theorem is proved — the image of the unit ball of
-`W^{1,p}(Ω)` is shown to have compact closure in `L^q(Ω)` ([brezis2011functional] Theorem 9.16,
-proof) — and it is `isCompactEmbedding_iff_isCompactOperator` together with Mathlib's
-`isCompactOperator_iff_isCompact_closure_image_closedBall`. -/
+/-- **The closed-ball criterion for a compact embedding.** Let $\iota : V \to W$ be an injective
+bounded linear map between normed spaces over a nontrivially normed field. If the image under
+$\iota$ of the closed unit ball of $V$ has compact closure in $W$, then
+$V \hookrightarrow\hookrightarrow W$ along $\iota$.
+
+This is the form in which the Rellich–Kondrachov theorem is proved: the image of the unit ball
+of $W^{1,p}(\Omega)$ is shown to have compact closure in $L^q(\Omega)$ (proof of Theorem 9.16 of
+[brezis2011functional]). The proof combines `isCompactEmbedding_iff_isCompactOperator` with
+Mathlib's `isCompactOperator_iff_isCompact_closure_image_closedBall`. -/
 theorem isCompactEmbedding_of_isCompact_closure_image_closedBall {ι : V →L[𝕜] W}
     (hinj : Function.Injective ι) (hK : IsCompact (closure (ι '' closedBall 0 1))) :
     IsCompactEmbedding (ι : V →ₗ[𝕜] W) :=

@@ -9,33 +9,55 @@ import Numlib.Variational.Galerkin
 /-!
 # Projection methods for operator equations
 
-The operator-level twin of `Numlib.Variational.Galerkin`: instead of a sesquilinear form on a
-Hilbert space, the data is a bounded operator `A` and a bounded projection `P` of the space onto the
-trial space, and the discrete problem is `P (A u) = P f` with `u ∈ range P`
-(`IsProjectionMethodSolution`, [kress1998numerical] (11.30)).  For an orthogonal projection this is
-the Galerkin specification `IsGalerkin A f 0 (range P) u` of `Numlib.Projection.Basic`
-(`isProjectionMethodSolution_starProjection_iff`), and Céa's lemma reads `‖u* - u_n‖ ≤ (‖A‖ / c)
-inf_{v ∈ range P} ‖u* - v‖` for a strictly coercive `A`
-(`IsProjectionMethodSolution.norm_sub_le_of_isCoercive`).
+Let $X$ be a normed space, $A : X \to X$ a linear operator, $f \in X$, and $P$ a bounded projection
+of $X$ onto a trial space. The **projection method** for the equation $Au = f$ seeks
+$$u \in \operatorname{range} P, \qquad P(Au) = Pf,$$
+as in (11.30) of [kress1998numerical]. This is the operator form of the Galerkin method of
+`Numlib.Variational.Galerkin`: the data are an operator and a projection instead of a sesquilinear
+form. For an orthogonal projection onto a subspace $K$ of a Hilbert space, the projection method is
+the Galerkin method on $K$. If $A$ is bounded and coercive with constant $c > 0$, Céa's lemma then
+reads
+$$\|u^* - u\| \le \frac{\|A\|}{c} \inf_{v \in K} \|u^* - v\|,$$
+where $u^*$ is the exact solution. For an equation of the second kind $(I - T)u = f$ with $T$
+compact, projections that converge pointwise to the identity give a stable and convergent method.
+
+## Main definitions
+
+* `IsProjectionMethodSolution`: $u$ is a solution of the projection method for $Au = f$ with the
+  projection $P$.
+
+## Main results
+
+* `isProjectionMethodSolution_starProjection_iff`: for an orthogonal projection, the projection
+  method is the Galerkin method.
+* `IsProjectionMethodSolution.norm_sub_le_of_isCoercive`: Céa's lemma in operator form for a bounded
+  coercive $A$.
+* `existsUnique_isProjectionMethodSolution_of_isCoercive`: for a bounded coercive $A$ and a complete
+  trial space, the projection method has exactly one solution.
+* `exists_isProjectionMethodSolution_of_isCompactOperator`: for $T$ compact with $I - T$ injective
+  and projections that converge pointwise to the identity, the projection method for $(I - T)u = f$
+  is uniquely solvable for all large $n$, with an error bound uniform in $n$.
 -/
 
 section Defs
 
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- **The projection method** for the operator equation `A u = f` ([kress1998numerical], (11.30)):
-the approximation `u` lies in the range of the bounded projection `P` and satisfies the projected
-equation `P (A u) = P f`.
+/-- **The projection method** for the operator equation $Au = f$. Let $X$ be a normed space,
+$A : X \to X$ linear, $f \in X$, and $P : X \to X$ bounded and linear. A point $u$ **solves the
+projection method** if
+$$u \in \operatorname{range} P \qquad \text{and} \qquad P(Au) = Pf.$$
+This is (11.30) of [kress1998numerical].
 
-Only the *projected* residual is required to vanish, which is what makes this a computable
-finite-dimensional problem when `range P` is finite dimensional.  For an orthogonal projection on a
-Hilbert space it is exactly the Galerkin specification with `x₀ = 0`, see
-`isProjectionMethodSolution_starProjection_iff`. -/
+Only the projected residual must vanish. This makes the problem computable and
+finite-dimensional when the range of $P$ is finite-dimensional. The definition does not require
+$P$ to be idempotent; the results that need it assume it. For an orthogonal projection on a
+Hilbert space, the definition is the Galerkin method with initial guess $0$
+(`isProjectionMethodSolution_starProjection_iff`). -/
 def IsProjectionMethodSolution (A : X →ₗ[𝕜] X) (f : X) (P : X →L[𝕜] X) (u : X) : Prop :=
   u ∈ LinearMap.range (P : X →ₗ[𝕜] X) ∧ P (A u) = P f
 
-/-- Membership in the trial space, in the form in which it is usually used: a projection fixes its
-range, so `P u = u`. -/
+/-- If $P$ is idempotent and $u$ solves the projection method with $P$, then $Pu = u$. -/
 theorem IsProjectionMethodSolution.apply_eq_self {A : X →ₗ[𝕜] X} {f : X} {P : X →L[𝕜] X}
     (hP : IsIdempotentElem P) {u : X} (h : IsProjectionMethodSolution A f P u) : P u = u := by
   obtain ⟨v, rfl⟩ := h.1
@@ -47,10 +69,14 @@ section Hilbert
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [InnerProductSpace 𝕜 X]
 
-/-- For an orthogonal projection the projection method is the Galerkin method with `x₀ = 0`: the
-projected equation `P (A u) = P f` says exactly that the residual `f - A u` is orthogonal to the
-trial space ([kress1998numerical], §12.1; the same specification is
-`Numlib.Projection.Basic`'s `IsGalerkin`). -/
+/-- **The projection method for an orthogonal projection is the Galerkin method.** Let $X$ be an
+inner product space, $A : X \to X$ linear, $f \in X$, and $K$ a subspace of $X$ with orthogonal
+projection $P_K$. Then $u$ solves the projection method with $P_K$ if and only if
+$$u \in K \qquad \text{and} \qquad f - Au \perp K.$$
+See §12.1 of [kress1998numerical].
+
+The right-hand side is `IsGalerkin A f 0 K u` of `Numlib.Projection.Basic`, and $P_K$ is
+`K.starProjection`. -/
 theorem isProjectionMethodSolution_starProjection_iff (A : X →ₗ[𝕜] X) (f : X)
     (K : Submodule 𝕜 X) [K.HasOrthogonalProjection] (u : X) :
     IsProjectionMethodSolution A f K.starProjection u ↔ IsGalerkin A f 0 K u := by
@@ -74,13 +100,16 @@ theorem isProjectionMethodSolution_starProjection_iff (A : X →ₗ[𝕜] X) (f 
 
 variable [CompleteSpace X]
 
-/-- **Céa's lemma in operator form** ([kress1998numerical], Thm 11.17): for a bounded and strictly
-coercive `A` and an orthogonal projection onto `K`, the projection method solution obeys `‖u* - u‖ ≤
-(‖A‖ / c) inf_{v ∈ K} ‖u* - v‖`, so it is quasi-optimal.
+/-- **Céa's lemma in operator form.** Let $X$ be a Hilbert space, let $A : X \to X$ be bounded,
+linear and coercive with constant $c > 0$, that is, $\operatorname{Re} \langle Ax, x \rangle \ge
+c \|x\|^2$ for all $x$, and let $K$ be a subspace of $X$ with orthogonal projection $P_K$. Let
+$u^*$ satisfy $Au^* = f$, and let $u$ solve the projection method for $Au = f$ with $P_K$. Then
+$$\|u^* - u\| \le \frac{\|A\|}{c} \operatorname{dist}(u^*, K),$$
+so the projection method is quasi-optimal. This is Theorem 11.17 of [kress1998numerical].
 
-This is the operator reading of `IsGalerkinSolution.norm_sub_le_infDist`: the form `⟪A u, v⟫` has
-the same coercivity constant as `A` and the same norm, so the constant `M / c` of Céa's lemma
-becomes `‖A‖ / c`. -/
+This is the operator form of `IsGalerkinSolution.norm_sub_le_infDist`. The form
+$(u, v) \mapsto \langle Au, v \rangle$ has the same coercivity constant and the same norm as
+$A$, so the constant $M / c$ of Céa's lemma becomes $\|A\| / c$. -/
 theorem IsProjectionMethodSolution.norm_sub_le_of_isCoercive {A : X →L[𝕜] X} {c : ℝ} (hc : 0 < c)
     (hA : (A : X →ₗ[𝕜] X).IsCoerciveWith c) {f : X} {K : Submodule 𝕜 X}
     [K.HasOrthogonalProjection] {u : X}
@@ -103,8 +132,14 @@ theorem IsProjectionMethodSolution.norm_sub_le_of_isCoercive {A : X →L[𝕜] X
     (SesqForm.forall_apply_eq_iff_toOperator_eq a _ ustar).2 (by rw [hop, hriesz, hstar])
   exact IsGalerkinSolution.norm_sub_le_infDist hc hbdd hcoer hgal hstar'
 
-/-- Unique solvability of the projection equations for a strictly coercive `A` on a complete trial
-space ([kress1998numerical], Thm 11.17): Lax–Milgram applied to the restricted form. -/
+/-- **Unique solvability of the projection method for a coercive operator.** Let $X$ be a Hilbert
+space, let $A : X \to X$ be bounded, linear and coercive with constant $c > 0$, and let $K$ be a
+complete subspace of $X$ with orthogonal projection $P_K$. Then for every $f \in X$ the
+projection method for $Au = f$ with $P_K$ has exactly one solution. This is part of Theorem
+11.17 of [kress1998numerical].
+
+The proof applies the Lax–Milgram lemma to the restriction of the form
+$(u, v) \mapsto \langle Au, v \rangle$ to $K$. -/
 theorem existsUnique_isProjectionMethodSolution_of_isCoercive {A : X →L[𝕜] X} {c : ℝ} (hc : 0 < c)
     (hA : (A : X →ₗ[𝕜] X).IsCoerciveWith c) (f : X) (K : Submodule 𝕜 X)
     [K.HasOrthogonalProjection] [CompleteSpace K] :
@@ -132,12 +167,9 @@ section SecondKind
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X] [CompleteSpace X]
 
-/-- **Pointwise convergence becomes uniform against a compact operator**: if `P n x → x` for every
-`x` and `T` is compact, then `‖P n T - T‖ → 0`.  This is the one place where compactness of `T` is
-used, and it is what lets a Neumann series perturb `1 - T` into `1 - P n T`.
-
-It is `tendsto_opNorm_comp_of_isCompactOperator` at `A n = P n - 1`, that being the family the
-general statement was written for. -/
+/-- If $P_n x \to x$ for every $x$ and $T$ is compact, then $\|P_n T - T\| \to 0$; this is
+`tendsto_opNorm_comp_of_isCompactOperator` for the family $P_n - I$, and it is the only use of
+the compactness of $T$. -/
 private theorem tendsto_norm_comp_sub_of_isCompactOperator {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {P : ℕ → (X →L[𝕜] X)}
     (hP : ∀ x, Filter.Tendsto (fun n => P n x) Filter.atTop (nhds x)) :
@@ -149,18 +181,20 @@ private theorem tendsto_norm_comp_sub_of_isCompactOperator {T : X →L[𝕜] X}
     fun x => by simpa using (hP x).sub (tendsto_const_nhds (x := x))
   simpa only [hid] using tendsto_opNorm_comp_of_isCompactOperator hzero hT
 
-/-- **Stability and convergence of a projection method for an equation of the second kind**
-([kress1998numerical], Ch. 12): let `T` be a compact operator with `1 - T` injective — by the
-Fredholm alternative, invertible — and let `P n` be bounded projections converging pointwise to the
-identity.  Then for all large `n` the projected equations are uniquely solvable, and the error is
-bounded by the projection error of the exact solution, with a constant independent of `n`.
+/-- **Stability and convergence of a projection method for an equation of the second kind.** Let $X$
+be a Banach space, let $T : X \to X$ be a compact operator with $I - T$ injective, and let
+$P_n : X \to X$ be bounded projections with $P_n x \to x$ for every $x \in X$. Then there is a
+constant $C$ such that for all large $n$ and every $u^* \in X$ the projection method for
+$$(I - T)u = f, \qquad f = (I - T)u^*,$$
+with the projection $P_n$ has exactly one solution $u$, and
+$$\|u - u^*\| \le C \|P_n u^* - u^*\|.$$
+See Chapter 12 of [kress1998numerical].
 
-The proof is `‖1 - P n T‖ → ‖1 - T‖` in operator norm
-(`tendsto_norm_comp_sub_of_isCompactOperator`), so that `1 - P n T` is invertible with uniformly
-bounded inverse by the Neumann perturbation `ContinuousLinearEquiv.exists_symm_norm_le_of_add`. On
-the range of `P n` the projected equation `P n ((1 - T) u) = P n f` *is* `(1 - P n T) u = P n f`,
-and `1 - P n T` preserves that range in both directions; the error identity `(1 - P n T) (u - u*) =
-P n u* - u*` finishes the estimate. -/
+By the Fredholm alternative, $I - T$ is invertible, so every $f$ has this form. Compactness of
+$T$ makes $P_n T \to T$ in operator norm, so $I - P_n T$ is invertible with uniformly bounded
+inverse by the Neumann series perturbation `ContinuousLinearEquiv.exists_symm_norm_le_of_add`.
+On the range of $P_n$ the projected equation $P_n(I - T)u = P_n f$ is $(I - P_n T)u = P_n f$,
+and the error identity $(I - P_n T)(u - u^*) = P_n u^* - u^*$ gives the estimate. -/
 theorem exists_isProjectionMethodSolution_of_isCompactOperator {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) (hinj : Function.Injective (1 - T : X →L[𝕜] X))
     {P : ℕ → (X →L[𝕜] X)} (hP : ∀ n, IsIdempotentElem (P n))

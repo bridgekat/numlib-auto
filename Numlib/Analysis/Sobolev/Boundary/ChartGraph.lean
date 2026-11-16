@@ -16,53 +16,64 @@ import Mathlib.Analysis.InnerProductSpace.Projection.Reflection
 import Numlib.Analysis.Sobolev.Chart
 
 /-!
-# From local charts to local graphs: the chart ⇒ graph bridge
+# From local charts to local graphs
 
-Two definitions of a `C^n` domain coexist in this library: Atkinson–Han's `IsContDiffDomain n Ω`
-(`Numlib/Analysis/Sobolev/Domain.lean`: near every boundary point and after a rigid motion of the
-coordinates, `Ω` is the region above the graph of a `C^n` function) and Brezis's
-`IsContDiffChartDomain n Ω` (`Numlib/Analysis/Sobolev/Chart.lean`: every boundary point lies in the
-range of a chart `H : Q → U` of class `C^n` with `H(Q₊) = U ∩ Ω`). The direction graph ⇒ chart is
-elementary and is `IsContDiffDomain.isContDiffChartDomain` of `Chart.lean`; this file proves the
-converse, `IsContDiffChartDomain.isContDiffDomain`, by the implicit function theorem, so that the
-two definitions are equivalent (`isContDiffChartDomain_iff_isContDiffDomain`) for `1 ≤ n`,
-`n ≠ ω`, and every chart domain inherits the boundary data (surface measure, outward normal,
-divergence theorem, trace) built on the graph definition.
+Two definitions of a $C^n$ domain $\Omega \subseteq \mathbb{R}^{d+1}$ are used in this library. The
+graph definition `IsContDiffDomain` (Definition 7.2.1 of [han2009theoretical], in
+`Numlib.Analysis.Sobolev.Domain`) asks that near every boundary point, and after a rigid motion of
+the coordinates, $\Omega$ is the region above the graph of a $C^n$ function. The chart definition
+`IsContDiffChartDomain` (§9.2 of [brezis2011functional], in `Numlib.Analysis.Sobolev.Chart`) asks
+that every boundary point lies in the range $U$ of a chart $H \colon Q \to U$ of class $C^n$ with
+$H(Q_+) = U \cap \Omega$. The direction from graphs to charts is elementary, and it is
+`IsContDiffDomain.isContDiffChartDomain`. This module proves the converse
+`IsContDiffChartDomain.isContDiffDomain` for $1 \le n$ and $n \neq \omega$ with the implicit
+function theorem.
 
-The proof: at a boundary point `x₀` with chart `(U, H, H⁻¹)`, the last coordinate
-`Φ := (H⁻¹ ·)_N` is `C^n` on the open set `U`, `Ω ∩ U = {Φ > 0}` and `Φ x₀ = 0`; its derivative
-at `x₀` is nonzero because `DH⁻¹(x₀)` is invertible with inverse `DH(H⁻¹ x₀)`
-(`ContDiffChart.isInvertible_fderiv_invFun`, the chain rule on the two open sets). A rigid motion
-`L` sends a unit vector `v` with `DΦ(x₀) v > 0` to `e_N`; in the rotated coordinates
-`Ψ := Φ ∘ L⁻¹` has `∂_N Ψ > 0` near `L x₀`, and Mathlib's implicit function theorem
-`ContDiffAt.implicitFunction` on `ℝ^d × ℝ` gives the graph function `g₀` of the zero set.
-Since `Ψ` is strictly increasing along vertical lines where `∂_N Ψ > 0`
-(`EuclideanSpace.lt_of_fderiv_single_last_pos`), `{Ψ > 0}` is the region *above* the graph in a
-small ball; the implicit function theorem applied again at every point of the graph shows `g₀`
-is `C^n` on a ball (this is what makes the case `n = ∞` work, where `ContDiffAt` at one point
-gives no neighbourhood of regularity), and a smooth bump function extends `g₀` from that ball to
-a globally `C^n` function `g`. This last step is why `n = ω` is excluded: an analytic graph
-function on a ball need not extend analytically to all of `ℝ^d` (the unit disc is a chart domain
-of class `C^ω` but not a `C^ω` graph domain).
+The two definitions are therefore equivalent for $1 \le n$ and $n \neq \omega$, and every chart
+domain has the boundary data that are built on the graph definition: the surface measure, the
+outward normal, the divergence theorem and the trace.
 
-## Main statements
+Below, $N = d + 1$, $e_N$ is the last vector of the standard basis of $\mathbb{R}^{d+1}$, a point is
+written $y = (y', y_N)$ with $y' \in \mathbb{R}^d$, and $\partial_N \Psi(y) = D\Psi(y) e_N$.
+
+## Main results
 
 * `ContDiffChart.isInvertible_fderiv_invFun`: the derivative of the inverse chart is invertible at
-  every point of `U`;
-* `EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last`: a rigid motion sending a given
-  unit vector to `e_N` (a reflection);
+  every point of $U$.
+* `EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last`: a linear isometry sends a given
+  unit vector to $e_N$.
 * `EuclideanSpace.exists_contDiff_forall_pos_iff_of_fderiv_single_last_pos`: the implicit function
-  theorem in graph form — near a point where `Ψ = 0` and `∂_N Ψ > 0`, `{Ψ > 0}` is the region above
-  the graph of a globally `C^n` function;
+  theorem in graph form. Near a point where $\Psi = 0$ and $\partial_N \Psi > 0$, the set
+  $\{\Psi > 0\}$ is the region above the graph of a $C^n$ function on $\mathbb{R}^d$.
 * `IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero`: a regular level set is locally a graph after
-  a rigid motion, in the shape of `IsBoundaryGraphAt`;
-* `IsContDiffChartDomain.isContDiffDomain`, `isContDiffChartDomain_iff_isContDiffDomain`: the
-  bridge and the equivalence of the two definitions.
+  a rigid motion.
+* `IsContDiffChartDomain.isContDiffDomain`, `isContDiffChartDomain_iff_isContDiffDomain`: a chart
+  domain of class $C^n$ is a graph domain of class $C^n$, and the two definitions are equivalent.
 
-## References
+## Proof outline
 
-[brezis2011functional] §9.2 (the chart definition); Atkinson–Han, Definition 7.2.1 (the graph
-definition).
+Let $x_0$ be a boundary point with a chart $(U, H, H^{-1})$. The last coordinate $\Phi = (H^{-1})_N$
+is $C^n$ on the open set $U$, $\Omega \cap U = \{\Phi > 0\}$ and $\Phi(x_0) = 0$. Its derivative at
+$x_0$ is nonzero, because $DH^{-1}(x_0)$ is invertible with inverse $DH(H^{-1} x_0)$. A rigid motion
+$L$ sends a unit vector $v$ with $D\Phi(x_0) v > 0$ to $e_N$. In the new coordinates,
+$\Psi = \Phi \circ L^{-1}$ has $\partial_N \Psi > 0$ near $L x_0$, and the implicit function theorem
+on $\mathbb{R}^d \times \mathbb{R}$ gives a graph function $g_0$ of the zero set of $\Psi$. Since
+$\Psi$ is strictly increasing along vertical lines where $\partial_N \Psi > 0$, the set
+$\{\Psi > 0\}$ is the region above the graph in a small ball. The implicit function theorem at every
+point of the graph shows that $g_0$ is $C^n$ on a ball. A smooth bump function then extends $g_0$
+from a smaller ball to a $C^n$ function $g$ on all of $\mathbb{R}^d$.
+
+## Implementation notes
+
+* The regularity of $g_0$ on a ball, and not only at one point, is what makes the case $n = \infty$
+  work: `ContDiffAt` of order $\infty$ at one point gives no neighbourhood on which the function is
+  $C^\infty$.
+* The case $n = \omega$ is excluded because of the extension by a bump function. An analytic graph
+  function on a ball need not extend to an analytic function on all of $\mathbb{R}^d$. The unit disc
+  of $\mathbb{R}^2$ is a chart domain of class $C^\omega$, but it is not a graph domain of class
+  $C^\omega$.
+* The implicit function theorem is Mathlib's `ContDiffAt.implicitFunction`, applied through the
+  splitting `EuclideanSpace.initLastL` of $\mathbb{R}^{d+1}$ as $\mathbb{R}^d \times \mathbb{R}$.
 -/
 
 open Filter Set Topology
@@ -73,13 +84,15 @@ noncomputable section
 
 variable {d : ℕ}
 
-/-! ### Two general lemmas
+/-!
+### Two general lemmas
 
-Candidates for relocation: a scalar continuous linear map with `A 1 ≠ 0` is invertible, and a
-nonzero functional is positive at some unit vector. -/
+A continuous linear map $A \colon \mathbb{R} \to \mathbb{R}$ with $A(1) \neq 0$ is invertible, and a
+nonzero continuous linear functional is positive at some unit vector.
+-/
 
-/-- A continuous linear map `ℝ →L[ℝ] ℝ` with `A 1 ≠ 0` is invertible: its inverse is
-`(A 1)⁻¹ • id`. -/
+/-- Let $A \colon \mathbb{R} \to \mathbb{R}$ be a continuous linear map with $A(1) \neq 0$. Then $A$
+is invertible, with inverse $t \mapsto A(1)^{-1} t$. -/
 theorem ContinuousLinearMap.isInvertible_of_apply_one_ne_zero (A : ℝ →L[ℝ] ℝ) (h : A 1 ≠ 0) :
     A.IsInvertible := by
   refine ContinuousLinearMap.IsInvertible.of_inverse (g := (A 1)⁻¹ • ContinuousLinearMap.id ℝ ℝ)
@@ -89,7 +102,8 @@ theorem ContinuousLinearMap.isInvertible_of_apply_one_ne_zero (A : ℝ →L[ℝ]
   · refine ContinuousLinearMap.ext_ring ?_
     simp [inv_mul_cancel₀ h]
 
-/-- A nonzero continuous linear functional is positive at some unit vector. -/
+/-- Let $F$ be a real normed space and let $L \colon F \to \mathbb{R}$ be a nonzero continuous
+linear functional. Then there is a $v \in F$ with $\|v\| = 1$ and $L v > 0$. -/
 theorem ContinuousLinearMap.exists_norm_eq_one_and_pos_of_ne_zero {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] {L : F →L[ℝ] ℝ} (hL : L ≠ 0) :
     ∃ v : F, ‖v‖ = 1 ∧ 0 < L v := by
@@ -106,12 +120,16 @@ theorem ContinuousLinearMap.exists_norm_eq_one_and_pos_of_ne_zero {F : Type*}
     rw [map_smul, smul_eq_mul]
     exact mul_pos (inv_pos.2 (norm_pos_iff.2 hx0)) hpos
 
-/-! ### A rigid motion sending a unit vector to `e_N` -/
+/-! ### A rigid motion that sends a unit vector to $e_N$ -/
 
 namespace EuclideanSpace
 
-/-- **A rigid motion taking a unit vector to the last basis vector `e_N`**: the reflection across
-the hyperplane orthogonal to `v - e_N` (the identity when `v = e_N`). -/
+/-- **A rigid motion that sends a unit vector to $e_N$.** Let $v \in \mathbb{R}^{d+1}$ with
+$\|v\| = 1$. Then there is a linear isometry $L$ of $\mathbb{R}^{d+1}$ onto itself with
+$L v = e_N$.
+
+The isometry is the reflection across the hyperplane orthogonal to $v - e_N$, or the identity
+when $v = e_N$. -/
 theorem exists_linearIsometryEquiv_apply_eq_single_last {v : EuclideanSpace ℝ (Fin (d + 1))}
     (hv : ‖v‖ = 1) :
     ∃ L : EuclideanSpace ℝ (Fin (d + 1)) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin (d + 1)),
@@ -119,9 +137,12 @@ theorem exists_linearIsometryEquiv_apply_eq_single_last {v : EuclideanSpace ℝ 
   refine ⟨Submodule.reflection (ℝ ∙ (v - single (Fin.last d) 1))ᗮ, Submodule.reflection_sub ?_⟩
   simp [hv]
 
-/-- **A rigid motion taking a unit vector to `e_N`**, as an affine isometry equivalence (linear,
-`T 0 = 0`): the affine form of `exists_linearIsometryEquiv_apply_eq_single_last`, in the shape
-`IsBoundaryGraphAt` carries. -/
+/-- **A rigid motion that sends a unit vector to $e_N$, as an affine isometry.** Let
+$v \in \mathbb{R}^{d+1}$ with $\|v\| = 1$. Then there is an affine isometry $T$ of
+$\mathbb{R}^{d+1}$ onto itself with $T(0) = 0$ whose linear part sends $v$ to $e_N$.
+
+This is `EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last` in the form that
+`IsBoundaryGraphAt` uses. -/
 theorem exists_affineIsometryEquiv_map_eq_single_last {v : EuclideanSpace ℝ (Fin (d + 1))}
     (hv : ‖v‖ = 1) :
     ∃ T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)),
@@ -129,15 +150,23 @@ theorem exists_affineIsometryEquiv_map_eq_single_last {v : EuclideanSpace ℝ (F
   obtain ⟨L, hL⟩ := exists_linearIsometryEquiv_apply_eq_single_last hv
   exact ⟨L.toAffineIsometryEquiv, by simp, by simpa using hL⟩
 
-/-! ### Monotonicity along the vertical lines of `ℝ^{d+1}`
+/-!
+### Monotonicity along the vertical lines of $\mathbb{R}^{d+1}$
 
-The splitting `ℝ^{d+1} ≃ ℝ^d × ℝ` in the order the implicit function theorem wants
-(`EuclideanSpace.initLastL`) and the vertical lines `t ↦ (x', t)` are in
-`Numlib/Analysis/Sobolev/Chart.lean`. -/
+The splitting of $\mathbb{R}^{d+1}$ as $\mathbb{R}^d \times \mathbb{R}$, in the order that the
+implicit function theorem uses (`EuclideanSpace.initLastL`), and the vertical lines
+$t \mapsto (x', t)$ are in `Numlib.Analysis.Sobolev.Chart`.
+-/
 
-/-- **Monotonicity along vertical lines**: on a convex set where `Ψ` is differentiable with
-`∂_N Ψ > 0`, `Ψ` is strictly increasing along every vertical line `t ↦ (x', t)`. This is what
-puts `{Ψ > 0}` *above* the zero set of `Ψ`. -/
+/-- **Monotonicity along vertical lines.** Let $s \subseteq \mathbb{R}^{d+1}$ be convex, and let
+$\Psi \colon \mathbb{R}^{d+1} \to \mathbb{R}$ be differentiable at every point $y \in s$ with
+$\partial_N \Psi(y) > 0$. Let $x' \in \mathbb{R}^d$ and $a < b$ with $(x', a) \in s$ and
+$(x', b) \in s$. Then
+$$\Psi(x', a) < \Psi(x', b).$$
+
+This is what puts $\{\Psi > 0\}$ above the zero set of $\Psi$. The point $(x', t)$ is
+`EuclideanSpace.snocLast x' t`, and $\partial_N \Psi(y)$ is
+`fderiv ℝ Ψ y (single (Fin.last d) 1)`. -/
 theorem lt_of_fderiv_single_last_pos {Ψ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {s : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hs : Convex ℝ s)
     (hΨ : ∀ y ∈ s, DifferentiableAt ℝ Ψ y ∧ 0 < fderiv ℝ Ψ y (single (Fin.last d) 1))
@@ -162,17 +191,21 @@ theorem lt_of_fderiv_single_last_pos {Ψ : EuclideanSpace ℝ (Fin (d + 1)) → 
 
 /-! ### The implicit function theorem in graph form -/
 
-/-- **The implicit function theorem in graph form**: if `Ψ : ℝ^{d+1} → ℝ` is `C^n` on a
-neighbourhood of `y₀` (`1 ≤ n`, `n ≠ ω`), vanishes at `y₀` and has `∂_N Ψ (y₀) > 0`, then there
-are `ρ > 0` and a globally `C^n` function `g : ℝ^d → ℝ` such that, in the ball `B(y₀, ρ)`,
-`{Ψ > 0}` is the region strictly above the graph of `g`: `0 < Ψ y ↔ g y' < y_N`.
+/-- **The implicit function theorem in graph form.** Let $n \in \mathbb{N} \cup \{\infty, \omega\}$
+with $1 \le n$ and $n \neq \omega$. Let $\Psi \colon \mathbb{R}^{d+1} \to \mathbb{R}$ be $C^n$
+at every point of a neighbourhood of $y_0$, with $\Psi(y_0) = 0$ and $\partial_N \Psi(y_0) > 0$.
+Then there are $\rho > 0$ and a $C^n$ function $g \colon \mathbb{R}^d \to \mathbb{R}$ such that
+for every $y$ in the ball $B(y_0, \rho)$,
+$$\Psi(y) > 0 \iff g(y') < y_N.$$
+So in this ball, $\{\Psi > 0\}$ is the region strictly above the graph of $g$.
 
-Mathlib's `ContDiffAt.implicitFunction` on `ℝ^d × ℝ` gives the local graph function `g₀` of the
-zero set; `lt_of_fderiv_single_last_pos` identifies `{Ψ > 0}` with the region above it in a ball
-where `∂_N Ψ > 0`; the implicit function theorem at every point of the graph makes `g₀` `C^n` on
-a ball around `y₀'` (needed for `n = ∞`, where `ContDiffAt` at a point gives no neighbourhood
-of regularity); a smooth bump function then extends `g₀` from a smaller ball to all of `ℝ^d` —
-the step that excludes `n = ω`. -/
+Mathlib's `ContDiffAt.implicitFunction` on $\mathbb{R}^d \times \mathbb{R}$ gives a local graph
+function $g_0$ of the zero set. `EuclideanSpace.lt_of_fderiv_single_last_pos` identifies
+$\{\Psi > 0\}$ with the region above it in a ball where $\partial_N \Psi > 0$. The implicit
+function theorem at every point of the graph makes $g_0$ a $C^n$ function on a ball around
+$y_0'$; this is needed for $n = \infty$, where `ContDiffAt` at one point gives no neighbourhood
+of regularity. A smooth bump function then extends $g_0$ from a smaller ball to all of
+$\mathbb{R}^d$, and this step excludes $n = \omega$. -/
 theorem exists_contDiff_forall_pos_iff_of_fderiv_single_last_pos {n : WithTop ℕ∞} (h1n : 1 ≤ n)
     (hnω : n ≠ ω) {Ψ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} {y₀ : EuclideanSpace ℝ (Fin (d + 1))}
     (hΨ : ∀ᶠ y in 𝓝 y₀, ContDiffAt ℝ n Ψ y) (hΨ₀ : Ψ y₀ = 0)
@@ -304,18 +337,24 @@ open EuclideanSpace
 
 variable {n : WithTop ℕ∞} {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **A regular level set is locally a graph**, in the shape of `IsBoundaryGraphAt`: for
-`1 ≤ n`, `n ≠ ω`, a neighbourhood `V` of `x₀` and `Φ : ℝ^{d+1} → ℝ` which is `C^n` on a
-neighbourhood of `x₀`, with `Φ x₀ = 0`, `DΦ(x₀) ≠ 0` and `Ω ∩ V = {x ∈ V | 0 < Φ x}`, there is
-`r > 0` with `IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r`: after the rigid motion sending a
-unit vector `v` with `DΦ(x₀) v > 0` to `e_N`
-(`EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last`), the implicit function theorem
-in graph form (`EuclideanSpace.exists_contDiff_forall_pos_iff_of_fderiv_single_last_pos`) applies
-to `Ψ := Φ ∘ L⁻¹` at `L x₀`.
+/-- **A regular level set is locally a graph.** Let $n \in \mathbb{N} \cup \{\infty, \omega\}$ with
+$1 \le n$ and $n \neq \omega$, let $\Omega \subseteq \mathbb{R}^{d+1}$, let $V$ be a
+neighbourhood of $x_0 \in \mathbb{R}^{d+1}$, and let
+$\Phi \colon \mathbb{R}^{d+1} \to \mathbb{R}$ be $C^n$ at every point of a neighbourhood of
+$x_0$. Assume that $\Phi(x_0) = 0$, $D\Phi(x_0) \neq 0$ and
+$$\Omega \cap V = \{x \in V : \Phi(x) > 0\}.$$
+Then there is an $r > 0$ such that, in the ball $B(x_0, r)$ and after a rigid motion, $\Omega$
+is the region strictly above the graph of a $C^n$ function on $\mathbb{R}^d$.
 
-The regularity hypothesis is on a neighbourhood because `ContDiffAt ℝ ∞ Φ x₀` alone gives no
-neighbourhood on which `Φ` is `C^∞` (for `n ≠ ∞` the two are equivalent, `ContDiffAt.eventually`);
-`n ≠ ω` because the graph function is globalized by a bump function. -/
+The conclusion is `IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r`. The rigid motion $L$ sends a
+unit vector $v$ with $D\Phi(x_0) v > 0$ to $e_N$
+(`EuclideanSpace.exists_linearIsometryEquiv_apply_eq_single_last`), and
+`EuclideanSpace.exists_contDiff_forall_pos_iff_of_fderiv_single_last_pos` applies to
+$\Psi = \Phi \circ L^{-1}$ at $L x_0$. The regularity hypothesis is on a neighbourhood because
+`ContDiffAt` of order $\infty$ at $x_0$ alone gives no neighbourhood on which $\Phi$ is
+$C^\infty$; for $n \neq \infty$ the two hypotheses are equivalent (`ContDiffAt.eventually`). The
+case $n = \omega$ is excluded because the graph function is extended to all of $\mathbb{R}^d$ by
+a bump function. -/
 theorem IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero (h1n : 1 ≤ n) (hnω : n ≠ ω)
     {V : Set (EuclideanSpace ℝ (Fin (d + 1)))} {x₀ : EuclideanSpace ℝ (Fin (d + 1))}
     {Φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hV : V ∈ 𝓝 x₀)
@@ -373,17 +412,21 @@ namespace ContDiffChart
 
 variable {n : WithTop ℕ∞} {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (c : ContDiffChart n Ω)
 
-/-- The inverse chart `H⁻¹ ∈ C^n(Ū)` is `C^n` at every point of the open set `U`. -/
+/-- Let $(U, H, H^{-1})$ be a chart of class $C^n$. The inverse chart $H^{-1}$, which is $C^n$ on
+$\overline{U}$, is $C^n$ at every point of the open set $U$. -/
 theorem contDiffAt_invFun {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : x ∈ c.U) :
     ContDiffAt ℝ n c.invFun x :=
   (c.contDiffOn_invFun.mono subset_closure).contDiffAt (c.isOpen_U.mem_nhds hx)
 
-/-- The chart `H ∈ C^n(Q̄)` is `C^n` at every point of the open cylinder `Q`. -/
+/-- Let $(U, H, H^{-1})$ be a chart of class $C^n$. The chart $H$, which is $C^n$ on $\overline{Q}$,
+is $C^n$ at every point of the open cylinder $Q$. -/
 theorem contDiffAt_toFun {y : EuclideanSpace ℝ (Fin (d + 1))} (hy : y ∈ unitChartCube d) :
     ContDiffAt ℝ n c.toFun y :=
   (c.contDiffOn.mono subset_closure).contDiffAt (isOpen_unitChartCube.mem_nhds hy)
 
-/-- The chain rule for `H ∘ H⁻¹ = id` on the open set `U`: `DH(H⁻¹ x) ∘ DH⁻¹(x) = id`. -/
+/-- Let $(U, H, H^{-1})$ be a chart of class $C^n$ with $1 \le n$, and let $x \in U$. Then
+$$DH(H^{-1} x) \circ DH^{-1}(x) = \mathrm{id}.$$
+This is the chain rule for $H \circ H^{-1} = \mathrm{id}$ on the open set $U$. -/
 theorem fderiv_toFun_comp_fderiv_invFun (h1n : 1 ≤ n) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : x ∈ c.U) :
     fderiv ℝ c.toFun (c.invFun x) ∘L fderiv ℝ c.invFun x = ContinuousLinearMap.id ℝ _ := by
@@ -395,8 +438,10 @@ theorem fderiv_toFun_comp_fderiv_invFun (h1n : 1 ≤ n) {x : EuclideanSpace ℝ 
     (c.isOpen_U.eventually_mem hx).mono fun y hy ↦ c.toFun_invFun hy
   rw [← fderiv_comp x h2 h1, hcomp.fderiv_eq, fderiv_id]
 
-/-- The chain rule for `H⁻¹ ∘ H = id` on the open cylinder `Q`, read at `H⁻¹ x` for `x ∈ U`:
-`DH⁻¹(x) ∘ DH(H⁻¹ x) = id`. -/
+/-- Let $(U, H, H^{-1})$ be a chart of class $C^n$ with $1 \le n$, and let $x \in U$. Then
+$$DH^{-1}(x) \circ DH(H^{-1} x) = \mathrm{id}.$$
+This is the chain rule for $H^{-1} \circ H = \mathrm{id}$ on the open cylinder $Q$, at the point
+$H^{-1} x$. -/
 theorem fderiv_invFun_comp_fderiv_toFun (h1n : 1 ≤ n) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : x ∈ c.U) :
     fderiv ℝ c.invFun x ∘L fderiv ℝ c.toFun (c.invFun x) = ContinuousLinearMap.id ℝ _ := by
@@ -413,16 +458,21 @@ theorem fderiv_invFun_comp_fderiv_toFun (h1n : 1 ≤ n) {x : EuclideanSpace ℝ 
   rw [hcomp.fderiv_eq, fderiv_id, c.toFun_invFun hx] at this
   exact this.symm
 
-/-- **The derivative of the inverse chart is invertible** at every point of `U`, for `1 ≤ n`:
-its inverse is `DH(H⁻¹ x)`, by the chain rule on `H ∘ H⁻¹ = id` (on `U`) and `H⁻¹ ∘ H = id`
-(on `Q`). -/
+/-- **The derivative of the inverse chart is invertible.** Let $(U, H, H^{-1})$ be a chart of class
+$C^n$ with $1 \le n$. Then $DH^{-1}(x)$ is invertible for every $x \in U$.
+
+Its inverse is $DH(H^{-1} x)$, by `ContDiffChart.fderiv_toFun_comp_fderiv_invFun` and
+`ContDiffChart.fderiv_invFun_comp_fderiv_toFun`. -/
 theorem isInvertible_fderiv_invFun (h1n : 1 ≤ n) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : x ∈ c.U) : (fderiv ℝ c.invFun x).IsInvertible :=
   .of_inverse (c.fderiv_invFun_comp_fderiv_toFun h1n hx)
     (c.fderiv_toFun_comp_fderiv_invFun h1n hx)
 
-/-- **The last coordinate of the inverse chart has nonzero derivative** at every point of `U`,
-for `1 ≤ n`: `DH⁻¹(x)` is surjective, so some direction is sent to `e_N`. -/
+/-- **The last coordinate of the inverse chart has a nonzero derivative.** Let $(U, H, H^{-1})$ be a
+chart of class $C^n$ with $1 \le n$, and let $x \in U$. Then the derivative at $x$ of
+$y \mapsto (H^{-1} y)_N$ is nonzero.
+
+The derivative $DH^{-1}(x)$ is surjective, so some direction is sent to $e_N$. -/
 theorem fderiv_invFun_last_ne_zero (h1n : 1 ≤ n) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : x ∈ c.U) :
     fderiv ℝ (fun y ↦ c.invFun y (Fin.last d)) x ≠ 0 := by
@@ -441,25 +491,25 @@ theorem fderiv_invFun_last_ne_zero (h1n : 1 ≤ n) {x : EuclideanSpace ℝ (Fin 
 
 end ContDiffChart
 
-/-! ### Chart ⇒ graph -/
+/-! ### From charts to graphs -/
 
 section Bridge
 
 variable {n : WithTop ℕ∞} {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **Chart ⇒ graph**: an open set of class `C^n` by local charts in the sense of
-[brezis2011functional] §9.2 (`IsContDiffChartDomain`) is a `C^n` domain in the graph sense of
-Atkinson–Han, Definition 7.2.1 (`IsContDiffDomain`), for `1 ≤ n`, `n ≠ ω`. At a boundary point
-`x₀` with chart `(U, H, H⁻¹)`, the last coordinate `Φ := (H⁻¹ ·)_N` is `C^n` on `U`, vanishes
-at `x₀` (`x₀ ∈ ∂Ω`, `ContDiffChart.invFun_mem_zero_iff`), has nonzero derivative
-(`ContDiffChart.fderiv_invFun_last_ne_zero`) and `Ω ∩ U = {Φ > 0}`
-(`ContDiffChart.invFun_mem_pos_iff`), so `IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero`
-gives the graph chart. Together with `IsContDiffDomain.isContDiffChartDomain` of `Chart.lean`,
-the two definitions are equivalent (`isContDiffChartDomain_iff_isContDiffDomain`).
+/-- **A chart domain is a graph domain.** Let $n \in \mathbb{N} \cup \{\infty, \omega\}$ with
+$1 \le n$ and $n \neq \omega$. If $\Omega \subseteq \mathbb{R}^{d+1}$ is an open set of class
+$C^n$ by local charts in the sense of §9.2 of [brezis2011functional], then $\Omega$ is a $C^n$
+domain in the graph sense of Definition 7.2.1 of [han2009theoretical].
 
-The exclusion of `n = ω` is genuine: the unit disc of `ℝ²` is a chart domain of class `C^ω`
-(polar coordinates), but no rigid motion makes its boundary the graph of a function analytic on
-the whole line. -/
+The hypothesis is `IsContDiffChartDomain n Ω` and the conclusion is `IsContDiffDomain n Ω`. At a
+boundary point $x_0$ with a chart $(U, H, H^{-1})$, the last coordinate $\Phi = (H^{-1})_N$ is
+$C^n$ on $U$, vanishes at $x_0$ (`ContDiffChart.invFun_mem_zero_iff`), has a nonzero derivative
+(`ContDiffChart.fderiv_invFun_last_ne_zero`), and satisfies $\Omega \cap U = \{\Phi > 0\}$
+(`ContDiffChart.invFun_mem_pos_iff`). Then `IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero`
+gives the graph. The case $n = \omega$ is excluded for a real reason: the unit disc of
+$\mathbb{R}^2$ is a chart domain of class $C^\omega$ (by polar coordinates), but no rigid motion
+makes its boundary the graph of a function that is analytic on the whole line. -/
 theorem IsContDiffChartDomain.isContDiffDomain (h : IsContDiffChartDomain n Ω) (h1n : 1 ≤ n)
     (hnω : n ≠ ω) : IsContDiffDomain n Ω := by
   refine ⟨h.isOpen, fun x₀ hx₀ ↦ ?_⟩
@@ -482,8 +532,13 @@ theorem IsContDiffChartDomain.isContDiffDomain (h : IsContDiffChartDomain n Ω) 
   exact IsBoundaryGraphAt.of_contDiffAt_of_fderiv_ne_zero h1n hnω (c.isOpen_U.mem_nhds hx₀U) hΦ
     hΦ₀ hΦ' hΩ
 
-/-- **The two definitions of a `C^n` domain agree** for `1 ≤ n`, `n ≠ ω`: Brezis's by local
-charts (`IsContDiffChartDomain`) and Atkinson–Han's by local graphs (`IsContDiffDomain`). -/
+/-- **The two definitions of a $C^n$ domain agree.** Let $n \in \mathbb{N} \cup \{\infty, \omega\}$
+with $1 \le n$ and $n \neq \omega$, and let $\Omega \subseteq \mathbb{R}^{d+1}$. Then $\Omega$
+is of class $C^n$ by local charts ([brezis2011functional], §9.2) if and only if $\Omega$ is a
+$C^n$ domain by local graphs (Definition 7.2.1 of [han2009theoretical]).
+
+The two directions are `IsContDiffChartDomain.isContDiffDomain` and
+`IsContDiffDomain.isContDiffChartDomain`. -/
 theorem isContDiffChartDomain_iff_isContDiffDomain (h1n : 1 ≤ n) (hnω : n ≠ ω) :
     IsContDiffChartDomain n Ω ↔ IsContDiffDomain n Ω :=
   ⟨fun h ↦ h.isContDiffDomain h1n hnω, fun h ↦ h.isContDiffChartDomain⟩

@@ -13,56 +13,66 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares
 /-!
 # Weighted and generalized least squares
 
-Weighted and generalized least-squares problems ([golub2013matrix] §6.1.1–6.1.3), in the operator
-picture of `Numlib/LinearAlgebra/Matrix/LeastSquares`: vectors are `EuclideanSpace 𝕜 m`, matrices
-act through `Matrix.toEuclideanLin`, the scalars are `[RCLike 𝕜]` except in the statements about a
-derivative in a weight, which are over `ℝ`.
-
-## Design
-
-* **No weighted-least-squares predicate.** "`x` minimizes `‖M (A x - b)‖`" is literally
-  `Matrix.IsLeastSquaresSolution (M * A) (toEuclideanLin M b) x`; a surface names the book's
-  diagonal-weight problem as an abbreviation of it.
-* **`Matrix.weightedLeastSquaresOp W A = (Aᴴ W A)⁻¹ Aᴴ W`** is the solution operator of the weighted
-  problem for full column rank and Hermitian positive definite `W = Mᴴ M`: the full-rank weighted
-  pseudoinverse, not the general-rank weighted pseudoinverse of the literature. "Weighted" here
-  always means row (or column) weights.
-* The augmented-system lemma carries a general weight factor `M`, so the unweighted augmented system
-  ([golub2013matrix] (5.3.20)) is its case `M = 1`.
-* **Paige's generalized least-squares problem** `min {‖v‖ : b = A x + B v}` is the predicate
-  `Matrix.IsGeneralizedLeastSquaresSolution`, defined for rank-deficient `A` and `B`; for a
-  nonsingular `B` it is the weighted problem with weight `B⁻¹`. Paige's method is stated through the
-  equations that define its output, so it needs neither `B` nor the factor `S` to be triangular.
+This file studies the weighted and generalized least-squares problems of [golub2013matrix],
+§6.1.1–6.1.3. Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$, where $\mathbb{K}$ is
+$\mathbb{R}$ or $\mathbb{C}$. For an invertible weight factor $M \in \mathbb{K}^{m \times m}$, the
+weighted problem is to minimize $\|M(Ax - b)\|$, and for $W = M^H M$ and $A$ of full column rank its
+unique solution is $x_W = (A^H W A)^{-1} A^H W b$. The file compares $x_W$ with the unweighted
+solution $A^+ b$, shows that a change of one row weight is a rank-one update of the normal
+equations, computes the derivative of a residual component in its own weight, and treats the
+augmented system. Paige's generalized problem minimizes $\|v\|$ subject to $b = Ax + Bv$; the file
+reduces it to the weighted problem for a nonsingular $B$ and proves the correctness of Paige's
+method. Finally, column weighting $x = G^{-1} y$ gives the least-squares solution of least $G$-norm.
 
 ## Main definitions
 
-* `Matrix.weightedLeastSquaresOp`: the weighted solution operator `(Aᴴ W A)⁻¹ Aᴴ W`.
-* `Matrix.weightedResidual`: the residual of the weighted solution as a function of real weights.
-* `Matrix.IsGeneralizedLeastSquaresSolution`: Paige's generalized least-squares problem.
+* `Matrix.weightedLeastSquaresOp`: the weighted solution operator $(A^H W A)^{-1} A^H W$.
+* `Matrix.weightedResidual`: the residual $b - A x_w$ of the weighted solution, as a function of
+  real weights $w$.
+* `Matrix.IsGeneralizedLeastSquaresSolution`: the pair $(x, v)$ minimizes $\|v\|$ subject to
+  $b = Ax + Bv$.
 
 ## Main results
 
-* `Matrix.isLeastSquaresSolution_weightedLeastSquaresOp`: the weighted solution is the unique
-  solution of the weighted problem ([golub2013matrix] (6.1.1)–(6.1.2)).
-* `Matrix.weightedLeastSquaresOp_mulVec_sub_pinv_mulVec`: weighted minus unweighted solution
-  ([golub2013matrix] (6.1.3)).
+* `Matrix.isLeastSquaresSolution_weightedLeastSquaresOp`: for an invertible $M$ and $A$ of full
+  column rank, $x$ minimizes $\|M(Ax - b)\|$ if and only if $x = (A^H M^H M A)^{-1} A^H M^H M b$
+  ([golub2013matrix] (6.1.1)–(6.1.2)).
+* `Matrix.weightedLeastSquaresOp_mulVec_sub_pinv_mulVec`: $x_W - A^+ b = (A^H W A)^{-1} A^H (W -
+  I)(b - A A^+ b)$ ([golub2013matrix] (6.1.3)).
 * `Matrix.conjTranspose_mul_diagonal_update_mul`, `Matrix.conjTranspose_mul_diagonal_update_mulVec`:
-  changing one row weight is a rank-one update of the weighted normal equations; deleting a row is
-  the weight `0` (`Matrix.tikhonov_deleteRow_eq` in `LeastSquares/Regularized`).
-* `Matrix.hasDerivAt_weightedResidual`, `Matrix.antitoneOn_abs_weightedResidual`: the derivative
-  of a residual in its own weight, and the monotone decrease of that residual
-  ([golub2013matrix] (6.1.4)).
-* `Matrix.isLeastSquaresSolution_of_augmented`: the augmented system ([golub2013matrix] (6.1.5)).
-* `Matrix.isGeneralizedLeastSquaresSolution_iff`,
-  `Matrix.isGeneralizedLeastSquaresSolution_of_paige`: the generalized problem for nonsingular `B`,
-  and Paige's method ([golub2013matrix] (6.1.7)–(6.1.10)).
+  a change of one row weight is a rank-one update of the weighted normal equations. The deletion of
+  a row is the weight $0$, as in `Matrix.tikhonov_deleteRow_eq` in
+  `Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized`.
+* `Matrix.hasDerivAt_weightedResidual`, `Matrix.antitoneOn_abs_weightedResidual`: the derivative of
+  a residual component in its own weight, and the decrease of its absolute value as that weight
+  grows ([golub2013matrix] (6.1.4)).
+* `Matrix.isLeastSquaresSolution_of_augmented`: a solution of the augmented system solves the
+  weighted problem ([golub2013matrix] (6.1.5)).
+* `Matrix.isGeneralizedLeastSquaresSolution_iff`: for a nonsingular $B$ the generalized problem is
+  the weighted problem with weight factor $B^{-1}$ ([golub2013matrix] (6.1.7)–(6.1.8)).
+* `Matrix.isGeneralizedLeastSquaresSolution_of_paige`: Paige's method solves the generalized problem
+  ([golub2013matrix] (6.1.9)–(6.1.10)).
 * `Matrix.isLeastSquaresSolution_mul_inv_iff`,
-  `Matrix.IsMinNormLeastSquaresSolution.norm_le_of_mul_inv`: column weighting
-  ([golub2013matrix] §6.1.3).
+  `Matrix.IsMinNormLeastSquaresSolution.norm_le_of_mul_inv`: column weighting ([golub2013matrix]
+  §6.1.3).
 
-## References
+## Implementation notes
 
-* [golub2013matrix] §6.1.1–6.1.3.
+* Vectors are `EuclideanSpace 𝕜 m`, and matrices act on them through `Matrix.toEuclideanLin`, as in
+  `Numlib.LinearAlgebra.Matrix.LeastSquares`. The scalars are `[RCLike 𝕜]`, except in the statements
+  about a derivative in a weight, which are over `ℝ`.
+* There is no separate predicate for the weighted problem. The statement "$x$ minimizes
+  $\|M(Ax - b)\|$" is `Matrix.IsLeastSquaresSolution (M * A) (toEuclideanLin M b) x`. A surface
+  module can name the diagonal-weight problem of the source as an abbreviation of it.
+* `Matrix.weightedLeastSquaresOp W A` $= (A^H W A)^{-1} A^H W$ is the solution operator of the
+  weighted problem for $A$ of full column rank and a Hermitian positive definite $W = M^H M$. It is
+  the full-rank weighted pseudoinverse, not the weighted pseudoinverse of general rank of the
+  literature. Here "weighted" always means weights on the rows (or on the columns).
+* The augmented-system result has a general weight factor $M$, so the unweighted augmented system
+  ([golub2013matrix] (5.3.20)) is its case $M = I$.
+* `Matrix.IsGeneralizedLeastSquaresSolution` is defined for rank-deficient $A$ and $B$. Paige's
+  method is stated through the equations that define its output, so the statement needs neither $B$
+  nor the factor $S$ to be triangular.
 -/
 
 open Finset
@@ -76,23 +86,32 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 
 section Weighted
 
-/-- The **weighted least-squares solution operator** `(Aᴴ W A)⁻¹ Aᴴ W` ([golub2013matrix] (6.1.2)
-with `W = D²`). It solves `min ‖M (A x - b)‖` when `W = Mᴴ M` for an invertible `M` and `A` has full
-column rank (`Matrix.isLeastSquaresSolution_weightedLeastSquaresOp`), and it is junk (through Lean's
-`⁻¹`) when `Aᴴ W A` is singular. It is not the general-rank weighted pseudoinverse. -/
+/-- The **weighted least-squares solution operator** of $W \in \mathbb{K}^{m \times m}$ and
+$A \in \mathbb{K}^{m \times n}$ is the matrix $$(A^H W A)^{-1} A^H W \in \mathbb{K}^{n \times
+m}.$$ This is (6.1.2) of [golub2013matrix] with $W = D^2$.
+
+When $W = M^H M$ for an invertible $M$ and $A$ has full column rank, the operator solves the
+problem of minimizing $\|M(Ax - b)\|$ (`Matrix.isLeastSquaresSolution_weightedLeastSquaresOp`).
+When $A^H W A$ is singular, Lean's `⁻¹` gives the zero matrix as its inverse, and the operator
+has no meaning. It is not the weighted pseudoinverse of general rank. -/
 noncomputable def weightedLeastSquaresOp (W : Matrix m m 𝕜) (A : Matrix m n 𝕜) : Matrix n m 𝕜 :=
   (Aᴴ * W * A)⁻¹ * Aᴴ * W
 
-/-- The weighted solution operator, unfolded. -/
+/-- Let $W \in \mathbb{K}^{m \times m}$ and $A \in \mathbb{K}^{m \times n}$. The weighted solution
+operator `Matrix.weightedLeastSquaresOp W A` is equal to $(A^H W A)^{-1} A^H W$. -/
 theorem weightedLeastSquaresOp_def (W : Matrix m m 𝕜) (A : Matrix m n 𝕜) :
     weightedLeastSquaresOp W A = (Aᴴ * W * A)⁻¹ * Aᴴ * W := rfl
 
 variable [DecidableEq m]
 
-/-- **The weighted solution solves the weighted problem** ([golub2013matrix] (6.1.1)–(6.1.2)): for
-an invertible weight factor `M` and `A` of full column rank, the least-squares solutions of
-`M A x = M b` are exactly `x = (Aᴴ Mᴴ M A)⁻¹ Aᴴ Mᴴ M b`. The matrix `M A` has full column rank, and
-its pseudoinverse is `((M A)ᴴ (M A))⁻¹ (M A)ᴴ`. -/
+/-- Let $M \in \mathbb{K}^{m \times m}$ be invertible, let $A \in \mathbb{K}^{m \times n}$ have
+linearly independent columns, and let $b \in \mathbb{K}^m$ and $x \in \mathbb{K}^n$. Then $x$
+minimizes $\|M(Ay - b)\|$ over all $y \in \mathbb{K}^n$ if and only if $$x = (A^H M^H M A)^{-1}
+A^H M^H M b.$$ This is (6.1.1)–(6.1.2) of [golub2013matrix].
+
+The weighted problem is `Matrix.IsLeastSquaresSolution (M * A) (toEuclideanLin M b) x`, and the
+solution is `Matrix.weightedLeastSquaresOp (Mᴴ * M) A` applied to $b$. The proof uses that $MA$
+has full column rank and that its pseudoinverse is $((MA)^H MA)^{-1} (MA)^H$. -/
 theorem isLeastSquaresSolution_weightedLeastSquaresOp {M : Matrix m m 𝕜} (hM : IsUnit M)
     {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) {b : EuclideanSpace 𝕜 m}
     {x : EuclideanSpace 𝕜 n} :
@@ -110,11 +129,14 @@ theorem isLeastSquaresSolution_weightedLeastSquaresOp {M : Matrix m m 𝕜} (hM 
     weightedLeastSquaresOp, conjTranspose_mul]
   simp only [Matrix.mul_assoc]
 
-/-- **Weighted minus unweighted solution** ([golub2013matrix] (6.1.3)): if `Aᴴ W A` is invertible,
-`x_W - x = (Aᴴ W A)⁻¹ Aᴴ (W - 1) (b - A x)` with `x = A⁺ b` the unweighted (minimal-norm)
-least-squares solution. Subtract the two normal equations: `Aᴴ (b - A x) = 0`, so
-`Aᴴ W A (x_W - x) = Aᴴ W (b - A x) - Aᴴ (b - A x)`. No rank hypothesis on `A` beyond the
-invertibility of `Aᴴ W A` is needed. -/
+/-- Let $W \in \mathbb{K}^{m \times m}$ and $A \in \mathbb{K}^{m \times n}$ be such that $A^H W A$
+is invertible, and let $b \in \mathbb{K}^m$. Let $x_W = (A^H W A)^{-1} A^H W b$ be the weighted
+solution and $x = A^+ b$ the unweighted least-squares solution of least norm. Then $$x_W - x =
+(A^H W A)^{-1} A^H (W - I)(b - Ax).$$ This is (6.1.3) of [golub2013matrix].
+
+No rank hypothesis on $A$ is needed beyond the invertibility of $A^H W A$. The proof subtracts
+the two normal equations: $A^H(b - Ax) = 0$, so $A^H W A (x_W - x) = A^H W (b - Ax) - A^H (b -
+Ax)$. The matrix $A^+$ is `Matrix.pinv A`. -/
 theorem weightedLeastSquaresOp_mulVec_sub_pinv_mulVec {W : Matrix m m 𝕜} {A : Matrix m n 𝕜}
     (hW : IsUnit (Aᴴ * W * A)) (b : EuclideanSpace 𝕜 m) :
     toEuclideanLin (weightedLeastSquaresOp W A) b - toEuclideanLin A.pinv b =
@@ -136,10 +158,13 @@ theorem weightedLeastSquaresOp_mulVec_sub_pinv_mulVec {W : Matrix m m 𝕜} {A :
   congr 1
   rw [toEuclideanLin_sub_apply, toEuclideanLin_one_apply, toEuclideanLin_mul_apply]
 
-/-- **The augmented system of weighted least squares** ([golub2013matrix] (6.1.5), and (5.3.20) at
-`M = 1`): for an invertible weight factor `M`, if `r` and `x` satisfy `(Mᴴ M)⁻¹ r + A x = b` and
-`Aᴴ r = 0`, then `x` solves the weighted problem `min ‖M (A x - b)‖`. Indeed `r = Mᴴ M (b - A x)`,
-so the second equation is the normal equations of the weighted problem. -/
+/-- Let $M \in \mathbb{K}^{m \times m}$ be invertible, let $A \in \mathbb{K}^{m \times n}$, and let
+$b, r \in \mathbb{K}^m$ and $x \in \mathbb{K}^n$. If $r$ and $x$ solve the **augmented system**
+$$(M^H M)^{-1} r + Ax = b, \qquad A^H r = 0,$$ then $x$ minimizes $\|M(Ay - b)\|$ over all
+$y \in \mathbb{K}^n$. This is (6.1.5) of [golub2013matrix], and its case $M = I$ is (5.3.20).
+
+The first equation gives $r = M^H M (b - Ax)$, so the second equation is the normal equations of
+the weighted problem. -/
 theorem isLeastSquaresSolution_of_augmented {M : Matrix m m 𝕜} (hM : IsUnit M)
     {A : Matrix m n 𝕜} {b r : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
     (h1 : toEuclideanLin (Mᴴ * M)⁻¹ r + toEuclideanLin A x = b) (h2 : toEuclideanLin Aᴴ r = 0) :
@@ -162,23 +187,29 @@ section RealWeights
 
 variable [DecidableEq m] {A : Matrix m n ℝ}
 
-/-- The **residual of the weighted solution** as a function of the weights ([golub2013matrix]
-§6.1.1, `r(δ)`): for real `A`, `b` and weights `w`, `b - A x_w` with
-`x_w = (Aᵀ diag(w) A)⁻¹ Aᵀ diag(w) b`. The book's `D(δ)²` with its `k`-th weight perturbed to
-`d_k² (1 + δ)` is `diagonal (Function.update (d²) k (d_k² (1 + δ)))`. -/
+/-- The **residual of the weighted solution** as a function of the weights. For
+$A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and weights $w \in \mathbb{R}^m$, it is
+$$r(w) = b - A x_w, \qquad x_w = (A^T \operatorname{diag}(w) A)^{-1} A^T \operatorname{diag}(w)
+b.$$ This is the residual $r(\delta)$ of [golub2013matrix], §6.1.1.
+
+The matrix $D(\delta)^2$ of the source, whose $k$-th weight $d_k^2$ is changed to
+$d_k^2 (1 + \delta)$, is `diagonal (Function.update (d²) k (d_k² (1 + δ)))`. When
+$A^T \operatorname{diag}(w) A$ is singular, the inverse is the zero matrix and $r(w) = b$. -/
 noncomputable def weightedResidual (A : Matrix m n ℝ) (b : m → ℝ) (w : m → ℝ) : m → ℝ :=
   b - A *ᵥ (weightedLeastSquaresOp (diagonal w) A *ᵥ b)
 
 omit [DecidableEq n] [Fintype n] in
-/-- The weighted Gram matrix of positive weights and a matrix of full column rank is positive
-definite. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ have linearly independent columns and let
+$u \in \mathbb{R}^m$ have positive entries. Then the weighted Gram matrix
+$A^T \operatorname{diag}(u) A$ is positive definite. -/
 theorem posDef_conjTranspose_mul_diagonal_mul [Finite n] (hA : LinearIndependent ℝ Aᵀ)
     {u : m → ℝ} (hu : ∀ i, 0 < u i) : (Aᴴ * diagonal u * A).PosDef := by
   cases nonempty_fintype n
   exact (PosDef.diagonal hu).conjTranspose_mul_mul_same (mulVec_injective_iff.2 hA)
 
 omit [Fintype m] in
-/-- A single changed weight as an additive correction. -/
+/-- A change of one entry is the addition of a multiple of a standard basis vector:
+$w[k \mapsto t] = w + (t - w_k) e_k$. -/
 private theorem update_eq_add_single (w : m → ℝ) (k : m) (t : ℝ) :
     Function.update w k t = w + Pi.single k (t - w k) := by
   ext i
@@ -188,7 +219,8 @@ private theorem update_eq_add_single (w : m → ℝ) (k : m) (t : ℝ) :
   · simp [hi]
 
 omit [Fintype n] [DecidableEq n] in
-/-- A weight on one row gives a rank-one weighted Gram matrix: `Aᵀ diag(c e_k) A = c a_k a_kᵀ`. -/
+/-- A weight on one row gives a rank-one weighted Gram matrix: $A^T \operatorname{diag}(c e_k) A =
+c\, a_k a_k^T$. -/
 private theorem conjTranspose_mul_diagonal_single_mul (A : Matrix m n ℝ) (k : m) (c : ℝ) :
     Aᴴ * diagonal (Pi.single k c) * A = c • vecMulVec (A k) (A k) := by
   ext i j
@@ -200,9 +232,13 @@ private theorem conjTranspose_mul_diagonal_single_mul (A : Matrix m n ℝ) (k : 
   · simp
 
 omit [Fintype n] [DecidableEq n] in
-/-- **Changing one row weight is a rank-one update of the weighted Gram matrix**:
-`Aᵀ diag(w[k ↦ t]) A = Aᵀ diag(w) A + (t - w_k) a_k a_kᵀ`, with `a_kᵀ = A k` the `k`-th row.
-Deleting row `k` is the case `w = 1`, `t = 0`: `Aᵀ D_k A = Aᵀ A - a_k a_kᵀ`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ have rows $a_1^T, \dots, a_m^T$, let $w \in \mathbb{R}^m$,
+let $k$ be a row index and let $t \in \mathbb{R}$. A change of the $k$-th weight to $t$ is a
+rank-one update of the weighted Gram matrix: $$A^T \operatorname{diag}(w[k \mapsto t]) A = A^T
+\operatorname{diag}(w) A + (t - w_k)\, a_k a_k^T.$$
+
+The deletion of row $k$ is the case $w = 1$, $t = 0$: $A^T D_k A = A^T A - a_k a_k^T$. The row
+$a_k^T$ is `A k`. -/
 theorem conjTranspose_mul_diagonal_update_mul (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ) :
     Aᴴ * diagonal (Function.update w k t) * A =
       Aᴴ * diagonal w * A + (t - w k) • vecMulVec (A k) (A k) := by
@@ -212,8 +248,12 @@ theorem conjTranspose_mul_diagonal_update_mul (A : Matrix m n ℝ) (w : m → �
     conjTranspose_mul_diagonal_single_mul]
 
 omit [Fintype n] [DecidableEq n] in
-/-- **Changing one row weight changes the weighted right-hand side by a multiple of the row**:
-`Aᵀ diag(w[k ↦ t]) b = Aᵀ diag(w) b + (t - w_k) b_k a_k`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ have rows $a_1^T, \dots, a_m^T$, let
+$w, b \in \mathbb{R}^m$, let $k$ be a row index and let $t \in \mathbb{R}$. A change of the
+$k$-th weight to $t$ changes the weighted right-hand side by a multiple of the $k$-th row: $$A^T
+\operatorname{diag}(w[k \mapsto t])\, b = A^T \operatorname{diag}(w)\, b + (t - w_k)\, b_k\,
+a_k.$$
+-/
 theorem conjTranspose_mul_diagonal_update_mulVec (A : Matrix m n ℝ) (w : m → ℝ) (k : m) (t : ℝ)
     (b : m → ℝ) : (Aᴴ * diagonal (Function.update w k t)) *ᵥ b
       = (Aᴴ * diagonal w) *ᵥ b + ((t - w k) * b k) • A k := by
@@ -229,15 +269,21 @@ theorem conjTranspose_mul_diagonal_update_mulVec (A : Matrix m n ℝ) (w : m →
     simp [mul_diagonal, hx]
   · simp
 
-/-- The weighted solution, unfolded as the solution of its normal equations. -/
+/-- The weighted solution is $(A^T \operatorname{diag}(u) A)^{-1} (A^T \operatorname{diag}(u) b)$.
+-/
 private theorem weightedLeastSquaresOp_diagonal_mulVec (A : Matrix m n ℝ) (u b : m → ℝ) :
     weightedLeastSquaresOp (diagonal u) A *ᵥ b
       = (Aᴴ * diagonal u * A)⁻¹ *ᵥ ((Aᴴ * diagonal u) *ᵥ b) := by
   simp only [weightedLeastSquaresOp, mulVec_mulVec, Matrix.mul_assoc]
 
-/-- **The residual as a function of one weight** (the Sherman–Morrison computation behind
-[golub2013matrix] (6.1.4)): if both weighted Gram matrices are invertible,
-`r_k(w[k ↦ t]) (1 + (t - w_k) a_kᵀ (Aᵀ diag(w) A)⁻¹ a_k) = r_k(w)`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ have rows $a_1^T, \dots, a_m^T$, let
+$w, b \in \mathbb{R}^m$, let $k$ be a row index and let $t \in \mathbb{R}$. Write $r(w)$ for
+`Matrix.weightedResidual`. If the matrices $A^T \operatorname{diag}(w) A$ and
+$A^T \operatorname{diag}(w[k \mapsto t]) A$ are both invertible, then the $k$-th residual
+components satisfy $$r_k(w[k \mapsto t]) \left(1 + (t - w_k)\, a_k^T (A^T \operatorname{diag}(w)
+A)^{-1} a_k\right) = r_k(w).$$
+
+This is the Sherman–Morrison computation behind (6.1.4) of [golub2013matrix]. -/
 theorem weightedResidual_update_mul {w : m → ℝ} {k : m} {t : ℝ}
     (hM : IsUnit (Aᴴ * diagonal w * A)) (hMt : IsUnit (Aᴴ * diagonal (Function.update w k t) * A))
     (b : m → ℝ) :
@@ -265,13 +311,17 @@ theorem weightedResidual_update_mul {w : m → ℝ} {k : m} {t : ℝ}
   simp only [weightedResidual, Pi.sub_apply, ← hy_def, ← hx_def, hAy, hAx]
   linear_combination -h3
 
-/-- **The derivative of a residual in its own weight** ([golub2013matrix] (6.1.4)): for real `A`
-of full column rank and positive weights `w`, with `W = diag(w)`,
-`d/dt r_k(w[k ↦ t]) = -(a_kᵀ (Aᵀ W A)⁻¹ a_k) r_k(w)` at `t = w_k` (`a_kᵀ = A k` the `k`-th row).
-The book's `d/dδ` carries the extra factor `d_k²` of the chain rule through `δ ↦ d_k² (1 + δ)`.
+/-- Let $A \in \mathbb{R}^{m \times n}$ have linearly independent columns and rows
+$a_1^T, \dots, a_m^T$, let $w \in \mathbb{R}^m$ have positive entries, let $b \in \mathbb{R}^m$,
+and let $k$ be a row index. Write $W = \operatorname{diag}(w)$ and $r(w)$ for
+`Matrix.weightedResidual`. Then the function $t \mapsto r_k(w[k \mapsto t])$ has at $t = w_k$
+the derivative $$-\left(a_k^T (A^T W A)^{-1} a_k\right) r_k(w).$$ This is (6.1.4) of
+[golub2013matrix].
 
-Near `w_k`, `r_k(w[k ↦ t]) = r_k(w) / (1 + (t - w_k) a_kᵀ (Aᵀ W A)⁻¹ a_k)`
-(`Matrix.weightedResidual_update_mul`), whose derivative at `w_k` is the claim. -/
+The source differentiates in $\delta$, where the weight is $d_k^2 (1 + \delta)$, so its
+derivative has the extra factor $d_k^2$ of the chain rule. The proof uses that near $w_k$,
+$r_k(w[k \mapsto t]) = r_k(w) / (1 + (t - w_k)\, a_k^T (A^T W A)^{-1} a_k)$
+(`Matrix.weightedResidual_update_mul`). -/
 theorem hasDerivAt_weightedResidual (hA : LinearIndependent ℝ Aᵀ) {w : m → ℝ}
     (hw : ∀ i, 0 < w i) (b : m → ℝ) (k : m) :
     HasDerivAt (fun t => weightedResidual A b (Function.update w k t) k)
@@ -305,12 +355,17 @@ theorem hasDerivAt_weightedResidual (hA : LinearIndependent ℝ Aᵀ) {w : m →
   rw [eq_mul_inv_iff_mul_eq₀ hne]
   exact key
 
-/-- **Raising a weight never increases its residual** ([golub2013matrix] §6.1.1, "`|r_k(δ)|` is a
-monotone decreasing function of `δ`"): for real `A` of full column rank and positive weights,
-`t ↦ |r_k(w[k ↦ t])|` is antitone on `t > 0`. The derivative of `r_k²` is
-`-2 (a_kᵀ M⁻¹ a_k) r_k² ≤ 0` (`Matrix.hasDerivAt_weightedResidual`, `M⁻¹` positive definite). The
-book's strict decrease fails when `a_k = 0` or `r_k = 0` (then `r_k` is constant), and is not
-claimed. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ have linearly independent columns, let $w \in \mathbb{R}^m$
+have positive entries, let $b \in \mathbb{R}^m$, and let $k$ be a row index. Then the function
+$t \mapsto |r_k(w[k \mapsto t])|$ is antitone on $t > 0$, where $r$ is
+`Matrix.weightedResidual`. So an increase of a weight never increases its residual component.
+This is the statement of [golub2013matrix], §6.1.1, that "$|r_k(\delta)|$ is a monotone
+decreasing function of $\delta$".
+
+The source suggests a strict decrease. The decrease is not strict when $a_k = 0$ or $r_k = 0$,
+because then $r_k$ is constant, so only the weak form is stated. The proof uses that the
+derivative of $r_k^2$ is $-2 (a_k^T (A^T W A)^{-1} a_k) r_k^2 \le 0$
+(`Matrix.hasDerivAt_weightedResidual`), where $(A^T W A)^{-1}$ is positive definite. -/
 theorem antitoneOn_abs_weightedResidual (hA : LinearIndependent ℝ Aᵀ) {w : m → ℝ}
     (hw : ∀ i, 0 < w i) (b : m → ℝ) (k : m) :
     AntitoneOn (fun t => |weightedResidual A b (Function.update w k t) k|) (Set.Ioi 0) := by
@@ -356,22 +411,32 @@ section Generalized
 
 variable {l : Type*} [Fintype l] [DecidableEq l]
 
-/-- **The generalized least-squares problem** ([golub2013matrix] (6.1.8), after Paige): the pair
-`(x, v)` solves `min ‖v‖` subject to `b = A x + B v`. It is defined for rank-deficient `A` and `B`,
-which is its point; for a nonsingular `B` it is the weighted problem with weight factor `B⁻¹`
-(`Matrix.isGeneralizedLeastSquaresSolution_iff`). -/
+/-- The **generalized least-squares problem** of Paige ([golub2013matrix] (6.1.8)). Let
+$A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{m \times l}$ and $b \in \mathbb{K}^m$. A
+pair $(x, v)$ with $x \in \mathbb{K}^n$ and $v \in \mathbb{K}^l$ **solves the generalized
+least-squares problem** if $b = Ax + Bv$ and every pair $(x', v')$ with $b = Ax' + Bv'$ has
+$\|v\| \le \|v'\|$.
+
+The definition allows rank-deficient $A$ and $B$. For a nonsingular $B$ it is the weighted
+problem with weight factor $B^{-1}$ (`Matrix.isGeneralizedLeastSquaresSolution_iff`). -/
 structure IsGeneralizedLeastSquaresSolution (A : Matrix m n 𝕜) (B : Matrix m l 𝕜)
     (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) (v : EuclideanSpace 𝕜 l) : Prop where
-  /-- The pair is feasible. -/
+  /-- The constraint holds: $b = Ax + Bv$. -/
   eq_add : b = toEuclideanLin A x + toEuclideanLin B v
-  /-- Every feasible pair has a noise vector at least as long. -/
+  /-- Every pair $(x', v')$ with $b = Ax' + Bv'$ has $\|v\| \le \|v'\|$. -/
   norm_le : ∀ x' v', b = toEuclideanLin A x' + toEuclideanLin B v' → ‖v‖ ≤ ‖v'‖
 
 variable [DecidableEq m]
 
-/-- **For a nonsingular `B` the generalized problem is the weighted one** ([golub2013matrix] §6.1.2,
-(6.1.7) is (6.1.8)): feasibility forces `v = B⁻¹ (b - A x)`, so the objective is
-`‖B⁻¹ (A x - b)‖`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, let $B \in \mathbb{K}^{m \times m}$ be invertible, and let
+$b, v \in \mathbb{K}^m$ and $x \in \mathbb{K}^n$. Then $(x, v)$ solves the generalized
+least-squares problem if and only if $x$ minimizes $\|B^{-1}(Ay - b)\|$ over all
+$y \in \mathbb{K}^n$ and $v = B^{-1}(b - Ax)$. So for a nonsingular $B$ the problem (6.1.8) of
+[golub2013matrix] is the weighted problem (6.1.7) (§6.1.2).
+
+The constraint $b = Ax + Bv$ forces $v = B^{-1}(b - Ax)$, so the objective is
+$\|B^{-1}(Ax - b)\|$. The weighted problem is `Matrix.IsLeastSquaresSolution (B⁻¹ * A)
+(toEuclideanLin B⁻¹ b) x`. -/
 theorem isGeneralizedLeastSquaresSolution_iff {A : Matrix m n 𝕜} {B : Matrix m m 𝕜}
     (hB : IsUnit B) {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n} {v : EuclideanSpace 𝕜 m} :
     IsGeneralizedLeastSquaresSolution A B b x v ↔
@@ -406,18 +471,25 @@ section Paige
 
 variable {p q : ℕ}
 
-/-- **Paige's method for the generalized least-squares problem** ([golub2013matrix]
-(6.1.9)–(6.1.10)): let `A = Q R` be a full QR factorization of `A ∈ 𝕜^{(p+q) × p}`, with
-`Q = [Q₁ Q₂]` split `p | q` (`Matrix.firstColumns`, `Matrix.lastColumns`) and `R₁` the leading
-`p × p` block of `R`; let `Z = [Z₁ Z₂]` (split `p | q`) be unitary with `Q₂ᴴ B Z = [0 S]`, `S`
-nonsingular. If `S u = Q₂ᴴ b` and `R₁ x = Q₁ᴴ b - Q₁ᴴ B Z₂ u`, then `(x, Z₂ u)` solves the
-generalized problem `min ‖v‖` subject to `b = A x + B v`.
+/-- **Paige's method** for the generalized least-squares problem ([golub2013matrix]
+(6.1.9)–(6.1.10)). Let $A \in \mathbb{K}^{(p+q) \times p}$ have a full QR factorization
+$A = QR$, and split $Q = [Q_1\ Q_2]$ into its first $p$ and its last $q$ columns. Let $R_1$ be
+the leading $p \times p$ block of $R$. Let $B, Z \in \mathbb{K}^{(p+q) \times (p+q)}$ with $Z$
+unitary, split $Z = [Z_1\ Z_2]$ into its first $p$ and its last $q$ columns, and let
+$S \in \mathbb{K}^{q \times q}$ be invertible with $$Q_2^H B Z_1 = 0, \qquad Q_2^H B Z_2 = S.$$
+Let $b \in \mathbb{K}^{p+q}$, $u \in \mathbb{K}^q$ and $x \in \mathbb{K}^p$ satisfy $$S u =
+Q_2^H b, \qquad R_1 x = Q_1^H b - Q_1^H B Z_2 u.$$ Then $(x, Z_2 u)$ solves the generalized
+least-squares problem: it minimizes $\|v\|$ subject to $b = Ax + Bv$.
 
-The book computes `Z` from an RQ factorization, so that `S` is upper triangular, and assumes `B`
-nonsingular and `A` of full column rank to make `S` and `R₁` nonsingular; the statement uses only
-what the proof does. Feasibility is checked on the two blocks of `Qᴴ (A x + B v)`; minimality: a
-feasible `(x', v')` has `S (Z₂ᴴ v') = Q₂ᴴ b`, so `Z₂ᴴ v' = u` and
-`‖v'‖ ≥ ‖Z₂ᴴ v'‖ = ‖u‖ = ‖Z₂ u‖`. -/
+The source computes $Z$ from an RQ factorization, so that $S$ is upper triangular, and it
+assumes that $B$ is nonsingular and that $A$ has full column rank, so that $S$ and $R_1$ are
+nonsingular. The statement uses only what the proof needs. The proof checks the constraint on
+the two blocks of $Q^H(Ax + Bv)$. For minimality, a feasible $(x', v')$ has
+$S (Z_2^H v') = Q_2^H b$, so $Z_2^H v' = u$ and $\|v'\| \ge \|Z_2^H v'\| = \|u\| = \|Z_2 u\|$.
+
+The QR factorization is `Matrix.IsQR A Q R`. The blocks are $Q_1$ = `Matrix.firstColumns Q`,
+$Q_2$ = `Matrix.lastColumns Q`, $Z_1$ = `Matrix.firstColumns Z`, $Z_2$ = `Matrix.lastColumns Z`
+and $R_1$ = `Matrix.firstRows R`. -/
 theorem isGeneralizedLeastSquaresSolution_of_paige {A : Matrix (Fin (p + q)) (Fin p) 𝕜}
     {Q : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜} {R : Matrix (Fin (p + q)) (Fin p) 𝕜}
     (hQR : IsQR A Q R) {B Z : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
@@ -511,9 +583,12 @@ end Paige
 
 section ColumnWeighting
 
-/-- **Column weighting** ([golub2013matrix] §6.1.3): for an invertible `G`, `y` is a least-squares
-solution of `A G⁻¹ y = b` iff `G⁻¹ y` is one of `A x = b`; the change of variables `x = G⁻¹ y` is a
-bijection. -/
+/-- **Column weighting** ([golub2013matrix], §6.1.3). Let $A \in \mathbb{K}^{m \times n}$, let
+$G \in \mathbb{K}^{n \times n}$ be invertible, and let $b \in \mathbb{K}^m$ and
+$y \in \mathbb{K}^n$. Then $y$ is a least-squares solution of $A G^{-1} y = b$ if and only if
+$G^{-1} y$ is a least-squares solution of $Ax = b$.
+
+The change of variables $x = G^{-1} y$ is a bijection. -/
 theorem isLeastSquaresSolution_mul_inv_iff {A : Matrix m n 𝕜} {G : Matrix n n 𝕜} (hG : IsUnit G)
     {b : EuclideanSpace 𝕜 m} {y : EuclideanSpace 𝕜 n} :
     IsLeastSquaresSolution (A * G⁻¹) b y ↔ IsLeastSquaresSolution A b (toEuclideanLin G⁻¹ y) := by
@@ -525,10 +600,11 @@ theorem isLeastSquaresSolution_mul_inv_iff {A : Matrix m n 𝕜} {G : Matrix n n
   · intro h y'
     exact h _
 
-/-- **The column-weighted solution has least `G`-norm** ([golub2013matrix] §6.1.3, "within the set
-of minimizers, `x_G` has the smallest `G`-norm", `‖z‖_G = ‖G z‖`): if `y` is the minimal-norm
-least-squares solution of `A G⁻¹ y = b` and `x` is any least-squares solution of `A x = b`, then
-`‖y‖ ≤ ‖G x‖`, that is `‖x_G‖_G ≤ ‖x‖_G` for `x_G = G⁻¹ y`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, let $G \in \mathbb{K}^{n \times n}$ be invertible, and let
+$b \in \mathbb{K}^m$. Write $\|z\|_G = \|Gz\|$. If $y$ is the least-squares solution of
+$A G^{-1} y = b$ of least norm and $x$ is any least-squares solution of $Ax = b$, then $$\|y\|
+\le \|Gx\|,$$ that is, $\|x_G\|_G \le \|x\|_G$ for $x_G = G^{-1} y$. This is the statement of
+[golub2013matrix], §6.1.3, that "within the set of minimizers, $x_G$ has the smallest $G$-norm". -/
 theorem IsMinNormLeastSquaresSolution.norm_le_of_mul_inv {A : Matrix m n 𝕜} {G : Matrix n n 𝕜}
     (hG : IsUnit G) {b : EuclideanSpace 𝕜 m} {y x : EuclideanSpace 𝕜 n}
     (hy : IsMinNormLeastSquaresSolution (A * G⁻¹) b y) (hx : IsLeastSquaresSolution A b x) :

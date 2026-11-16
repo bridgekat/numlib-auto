@@ -10,39 +10,56 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 /-!
 # Symmetric indefinite systems: Bunch–Parlett growth and the Stewart–Todd bound
 
-Numerical facts about symmetric indefinite systems ([golub2013matrix] §4.4.4–4.4.5;
-[higham2002accuracy] Ch. 11; Bunch–Parlett 1971; Stewart 1989, Todd 1990): the element growth of
-Bunch–Parlett pivoting, and the uniform bound on weighted least-squares operators behind the
-equilibrium systems.
+This module proves two numerical facts about symmetric indefinite systems, following
+[golub2013matrix], §4.4.4–4.4.5, and [higham2002accuracy], Chapter 11: the bounds on element growth
+in the pivoting strategy of Bunch and Parlett (1971), and the uniform bound of Stewart (1989) and
+Todd (1990) on weighted least-squares operators, which is behind the analysis of equilibrium
+systems.
 
-One step of a block `L D Lᵀ` factorization eliminates either one pivot (`1 × 1`, the Schur
-complement `Matrix.schurComplementSingle`) or a `2 × 2` pivot block (`Matrix.schurComplement` of
-the block indexing `{p, q} ⊕ rest`). With `μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, the
-Bunch–Parlett rule takes a `1 × 1` pivot when `μ₁ ≥ α μ₀` and the `2 × 2` pivot of an off-diagonal
-entry of modulus `μ₀` otherwise; the two element-growth bounds are
+One step of a block $LDL^T$ factorization eliminates either one pivot ($1 \times 1$) or a
+$2 \times 2$ pivot block, and leaves a Schur complement $\tilde A$. Let
+$\mu_0 = \max_{i,j} |a_{ij}|$ and $\mu_1 = \max_i |a_{ii}|$, and let $0 < \alpha < 1$. The rule of
+Bunch and Parlett takes a $1 \times 1$ pivot when $\mu_1 \ge \alpha \mu_0$, and otherwise the
+$2 \times 2$ pivot block of an off-diagonal entry of modulus $\mu_0$. The entries of the Schur
+complement then satisfy $|\tilde a_{ij}| \le (1 + \alpha^{-1}) \mu_0$ after a $1 \times 1$ step and
+$|\tilde a_{ij}| \le \frac{3 - \alpha}{1 - \alpha} \mu_0$ after a $2 \times 2$ step. The parameter
+$\alpha = (1 + \sqrt{17})/8$ makes the growth of two $1 \times 1$ steps equal to that of one
+$2 \times 2$ step.
 
-* `BunchParlett.abs_schurComplementSingle_le` ([golub2013matrix] (4.4.16)): `|ã_ij| ≤ (1 + α⁻¹) μ₀`;
-* `BunchParlett.abs_schurComplement_two_le` ([golub2013matrix] (4.4.17)):
-  `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`, the pivot block being nonsingular;
+## Main results
 
-and `BunchParlett.alpha_eq` identifies the parameter `α = (1 + √17)/8` that equates the growth
-of two `1 × 1` steps with that of one `2 × 2` step.
+* `BunchParlett.abs_schurComplementSingle_le`: the bound
+  $|\tilde a_{ij}| \le (1 + \alpha^{-1}) \mu_0$ of [golub2013matrix] (4.4.16) for a $1 \times 1$
+  pivot.
+* `BunchParlett.abs_schurComplement_two_le`: the $2 \times 2$ pivot block is nonsingular, and
+  $|\tilde a_{ij}| \le \frac{3 - \alpha}{1 - \alpha} \mu_0$, [golub2013matrix] (4.4.17).
+* `BunchParlett.alpha_eq`: $\alpha = (1 + \sqrt{17})/8$ is the unique $\alpha \in (0, 1)$ with $(1 +
+  \alpha^{-1})^2 = \frac{3 - \alpha}{1 - \alpha}$.
+* `Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le`: the Stewart–Todd bound
+  [golub2013matrix] (4.4.21). For $B$ of full column rank, the weighted least-squares operators
+  $(B^T D B)^{-1} B^T D$ are bounded uniformly in the positive diagonal weights $D$.
 
-For the equilibrium systems of §4.4.5, `Matrix.exists_forall_l2_opNorm_weightedLeastSquaresOp_le`
-is the Stewart–Todd bound (4.4.21): the weighted least-squares operators `(Bᵀ D B)⁻¹ Bᵀ D` of a
-matrix of full column rank are bounded uniformly in the positive diagonal weights. Its proof goes
-through the Cauchy–Binet formula (`Matrix.factorial_mul_det_transpose_mul_diagonal_mul` of
-`Numlib/LinearAlgebra/Matrix/CauchyBinet`, stated symmetrized over the orderings of the row
-selections so that no sorted subsets appear), which writes the operator as a convex combination
-of the inverses of the nonsingular `p × p` row submatrices.
+## Proof outline
 
-The specifications of the factorizations themselves (`Matrix.IsAasen`, `Matrix.IsBlockLDL`) are
-in `Numlib/LinearAlgebra/Matrix/SymmetricIndefinite`; the equilibrium matrix `[C B; Bᵀ 0]` of
-§4.4.5 is `Matrix.saddleMatrix` of `Numlib/LinearAlgebra/Matrix/SchurComplement`.
+The proof of the Stewart–Todd bound uses Cramer's rule and the Cauchy–Binet formula. They write the
+operator $(B^T D B)^{-1} B^T D$ as a convex combination of the inverses of the nonsingular
+$p \times p$ row submatrices of $B$, and these inverses are finitely many.
 
-The hypotheses are the weakest the arguments use: the `1 × 1` bound needs only
-`α μ₀ ≤ |a_pp|` (the maximal diagonal entry is one such pivot), the `2 × 2` bound only
-`|a_pp|, |a_qq| ≤ α μ₀` and `|a_qp| = μ₀`.
+## Implementation notes
+
+* The $1 \times 1$ Schur complement is `Matrix.schurComplementSingle`. The $2 \times 2$ Schur
+  complement is `Matrix.schurComplement` of the matrix reindexed by `{p, q} ⊕ rest`, with the two
+  pivot rows first.
+* The hypotheses are the weakest that the arguments use. The $1 \times 1$ bound needs only
+  $\alpha \mu_0 \le |a_{pp}|$; the maximal diagonal entry is one such pivot. The $2 \times 2$ bound
+  needs only $|a_{pp}|, |a_{qq}| \le \alpha \mu_0$ and $|a_{qp}| = \mu_0$.
+* The Cauchy–Binet formula is `Matrix.factorial_mul_det_transpose_mul_diagonal_mul` of
+  `Numlib.LinearAlgebra.Matrix.CauchyBinet`. It is stated symmetrized over the orderings of the row
+  selections, so that no sorted subsets appear.
+* The specifications of the factorizations, `Matrix.IsAasen` and `Matrix.IsBlockLDL`, are in
+  `Numlib.LinearAlgebra.Matrix.SymmetricIndefinite`. The equilibrium matrix
+  $\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$ of [golub2013matrix], §4.4.5, is
+  `Matrix.saddleMatrix` of `Numlib.LinearAlgebra.Matrix.SchurComplement`.
 -/
 
 open Matrix
@@ -53,11 +70,18 @@ namespace BunchParlett
 
 variable {n : Type*}
 
-/-- **The `1 × 1` Bunch–Parlett step** ([golub2013matrix] (4.4.16), P4.4.6): if every entry of
-`A` has modulus at most `μ₀ > 0` and the pivot satisfies `α μ₀ ≤ |a_pp|` (`α > 0`; the book takes
-`p` with `|a_pp| = μ₁ = max |a_ii| ≥ α μ₀`), every entry of the Schur complement
-`Ã = B − v vᵀ / a_pp` has `|ã_ij| ≤ (1 + α⁻¹) μ₀`:
-`|a_ij − a_ip a_pj / a_pp| ≤ μ₀ + μ₀² / |a_pp| ≤ μ₀ + μ₀ / α`. -/
+/-- **The $1 \times 1$ step of Bunch and Parlett** ([golub2013matrix] (4.4.16) and Problem P4.4.6).
+Let $A \in \mathbb{R}^{n \times n}$, and let $\alpha > 0$ and $\mu_0 > 0$ with
+$|a_{ij}| \le \mu_0$ for all $i$ and $j$. Let the pivot index $p$ satisfy
+$\alpha \mu_0 \le |a_{pp}|$. Then every entry of the Schur complement $\tilde a_{ij} = a_{ij} -
+a_{ip} a_{pj} / a_{pp}$, for $i, j \neq p$, satisfies
+$$|\tilde a_{ij}| \le (1 + \alpha^{-1}) \mu_0.$$
+
+The book takes $p$ with $|a_{pp}| = \mu_1 = \max_i |a_{ii}| \ge \alpha \mu_0$, and writes the
+Schur complement of a symmetric matrix as $B - v v^T / a_{pp}$; the statement here does not need
+$A$ to be symmetric. The proof is $|a_{ij} - a_{ip} a_{pj} / a_{pp}| \le \mu_0 + \mu_0^2 /
+|a_{pp}| \le \mu_0 + \mu_0 / \alpha$. The Schur complement is `Matrix.schurComplementSingle`.
+-/
 theorem abs_schurComplementSingle_le {A : Matrix n n ℝ} {p : n} {α μ₀ : ℝ} (hα : 0 < α)
     (hμ₀ : 0 < μ₀) (hA : ∀ i j, |A i j| ≤ μ₀) (hp : α * μ₀ ≤ |A p p|)
     (i j : {i : n // i ≠ p}) :
@@ -76,8 +100,9 @@ theorem abs_schurComplementSingle_le {A : Matrix n n ℝ} {p : n} {α μ₀ : �
     _ = (1 + α⁻¹) * μ₀ := by
         field_simp
 
-/-- The Schur complement of a `2 × 2` pivot block: with the pivot rows `p`, `q` first,
-`ã_ij = a_ij − [a_ip a_iq] E⁻¹ [a_pj; a_qj]`, `E⁻¹ = det(E)⁻¹ adj(E)`. -/
+/-- The Schur complement of a $2 \times 2$ pivot block $E$, with the pivot rows $p$ and $q$ first,
+has the entries $\tilde a_{ij} = a_{ij} - [a_{ip} \; a_{iq}] \, E^{-1} [a_{pj} \; a_{qj}]^T$,
+written out with $E^{-1} = \det(E)^{-1} \operatorname{adj}(E)$. -/
 private theorem schurComplement_two_apply (A : Matrix n n ℝ) (p q : n)
     (i j : {i : n // i ≠ p ∧ i ≠ q}) :
     (A.submatrix (Sum.elim ![p, q] Subtype.val) (Sum.elim ![p, q] Subtype.val)).schurComplement
@@ -91,13 +116,18 @@ private theorem schurComplement_two_apply (A : Matrix n n ℝ) (p q : n)
   simp only [cons_val_zero, cons_val_one, cons_val_fin_one, Fin.isValue]
   ring
 
-/-- **The `2 × 2` Bunch–Parlett step** ([golub2013matrix] (4.4.17), P4.4.6): let `A` be symmetric
-with every entry of modulus at most `μ₀ > 0`, `0 < α < 1`, and a `2 × 2` pivot
-`E = A{p, q}` with `|a_qp| = μ₀` and `|a_pp|, |a_qq| ≤ α μ₀` (the book's case `μ₁ < α μ₀`). Then
-`E` is nonsingular, `|det E| ≥ μ₀² − α²μ₀²`, and every entry of the Schur complement
-`Ã = B − C E⁻¹ Cᵀ` has `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`: an entry of `C adj(E) Cᵀ` is bounded by
-`2 μ₀³ (1 + α)`, so `|(C E⁻¹ Cᵀ)_ij| ≤ 2 μ₀ / (1 − α)`. The Schur complement is
-`Matrix.schurComplement` of the reindexing `{p, q} ⊕ rest`. -/
+/-- **The $2 \times 2$ step of Bunch and Parlett** ([golub2013matrix] (4.4.17) and Problem P4.4.6).
+Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $0 < \alpha < 1$, and let $\mu_0 > 0$ with
+$|a_{ij}| \le \mu_0$ for all $i$ and $j$. Let $p$ and $q$ be indices with $|a_{qp}| = \mu_0$,
+$|a_{pp}| \le \alpha \mu_0$ and $|a_{qq}| \le \alpha \mu_0$, and let $E = \begin{bmatrix} a_{pp}
+& a_{pq} \\ a_{qp} & a_{qq} \end{bmatrix}$. Then $E$ is nonsingular, and every entry of the
+Schur complement $\tilde A = B - C E^{-1} C^T$ satisfies
+$$|\tilde a_{ij}| \le \frac{3 - \alpha}{1 - \alpha} \, \mu_0, \qquad i, j \notin \{p, q\}.$$
+
+The hypotheses are the case $\mu_1 < \alpha \mu_0$ of the book. The proof shows
+$|\det E| \ge \mu_0^2 - \alpha^2 \mu_0^2$ and bounds an entry of $C \operatorname{adj}(E) C^T$
+by $2 \mu_0^3 (1 + \alpha)$, so that $|(C E^{-1} C^T)_{ij}| \le 2 \mu_0 / (1 - \alpha)$. The
+Schur complement is `Matrix.schurComplement` of the matrix reindexed by `{p, q} ⊕ rest`. -/
 theorem abs_schurComplement_two_le {A : Matrix n n ℝ} (hA : A.IsSymm) {p q : n} {α μ₀ : ℝ}
     (hα₀ : 0 < α) (hα₁ : α < 1) (hμ₀ : 0 < μ₀) (hAμ : ∀ i j, |A i j| ≤ μ₀) (hqp : |A q p| = μ₀)
     (hpp : |A p p| ≤ α * μ₀) (hqq : |A q q| ≤ α * μ₀) :
@@ -162,10 +192,14 @@ theorem abs_schurComplement_two_le {A : Matrix n n ℝ} (hA : A.IsSymm) {p q : n
         field_simp
         ring
 
-/-- **The Bunch–Parlett parameter** ([golub2013matrix] §4.4.4, "equating the growth factor of two
-`s = 1` steps with that of one `s = 2` step"): `α = (1 + √17)/8` is the unique `α ∈ (0, 1)` with
-`(1 + α⁻¹)² = (3 − α)/(1 − α)`. Clearing denominators, `(1 + α)² (1 − α) = α² (3 − α)`, which is
-`4α² − α − 1 = 0` after the cubic terms cancel. -/
+/-- **The parameter of Bunch and Parlett** ([golub2013matrix], §4.4.4). The number
+$\alpha = (1 + \sqrt{17})/8$ is the unique $\alpha$ with $0 < \alpha < 1$ and
+$$(1 + \alpha^{-1})^2 = \frac{3 - \alpha}{1 - \alpha}.$$
+The book chooses $\alpha$ by "equating the growth factor of two $s = 1$ steps with that of one
+$s = 2$ step".
+
+After clearing denominators the equation is $(1 + \alpha)^2 (1 - \alpha) = \alpha^2 (3 -
+\alpha)$. The cubic terms cancel, and it becomes $4\alpha^2 - \alpha - 1 = 0$. -/
 theorem alpha_eq :
     {α : ℝ | 0 < α ∧ α < 1 ∧ (1 + α⁻¹) ^ 2 = (3 - α) / (1 - α)} = {(1 + √17) / 8} := by
   have h17 : √17 ^ 2 = 17 := Real.sq_sqrt (by norm_num)
@@ -201,8 +235,9 @@ namespace Matrix
 
 /-! ### The Stewart–Todd bound -/
 
-/-- Cramer's rule, weighted: `det A · (Cramer A v)_k = det(A)² (A⁻¹ v)_k`, both sides vanishing for
-a singular `A`. -/
+/-- A weighted form of Cramer's rule: for a square real matrix $A$ and a vector $v$, $\det A \cdot
+(\operatorname{Cramer}(A, v))_k = (\det A)^2 (A^{-1} v)_k$; for a singular $A$ both sides
+vanish. -/
 private theorem det_mul_cramer_apply {p : Type*} [Fintype p] [DecidableEq p] (A : Matrix p p ℝ)
     (v : p → ℝ) (k : p) : A.det * cramer A v k = A.det ^ 2 * (A⁻¹ *ᵥ v) k := by
   by_cases hA : A.det = 0
@@ -213,12 +248,18 @@ private theorem det_mul_cramer_apply {p : Type*} [Fintype p] [DecidableEq p] (A 
     field_simp
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The Stewart–Todd bound** ([golub2013matrix] (4.4.21); Stewart 1989, O'Leary 1990,
-Todd 1990): for `B : Matrix n p ℝ` of full column rank the weighted least-squares operators
-`(Bᵀ D B)⁻¹ Bᵀ D` are bounded independently of the positive diagonal weights `D`. By Cramer's
-rule and the Cauchy–Binet formula, `(Bᵀ D B)⁻¹ Bᵀ D b = ∑_r λ_r B_r⁻¹ b_r`, a convex combination
-over the row selections `r` with weights `λ_r ∝ (∏ d_{r i}) det(B_r)²` (Dikin; Ben-Tal–Teboulle),
-so `ψ_B = √p ∑_r ‖B_r⁻¹‖₂` works. -/
+/-- **The Stewart–Todd bound** ([golub2013matrix] (4.4.21); Stewart 1989, O'Leary 1990, Todd 1990).
+Let $B \in \mathbb{R}^{n \times p}$ have linearly independent columns. Then there is a number
+$\psi$ such that for every diagonal matrix $D = \operatorname{diag}(d)$ with $d_i > 0$ for every
+$i$,
+$$\|(B^T D B)^{-1} B^T D\|_2 \le \psi.$$
+
+The norm is the operator norm induced by the Euclidean norm, and the operator is
+`Matrix.weightedLeastSquaresOp (Matrix.diagonal d) B`. By Cramer's rule and the Cauchy–Binet
+formula, $(B^T D B)^{-1} B^T D b = \sum_r \lambda_r B_r^{-1} b_r$. This is a convex combination
+over the row selections $r$ with nonsingular $B_r$, with the weights $\lambda_r$ proportional to
+$(\prod_i d_{r_i}) \det(B_r)^2$ (Dikin; Ben-Tal and Teboulle). So
+$\psi = \sqrt{p} \sum_r \|B_r^{-1}\|_2$ works. -/
 theorem exists_forall_l2_opNorm_weightedLeastSquaresOp_le {n p : Type*} [Fintype n]
     [DecidableEq n] [Fintype p] [DecidableEq p] {B : Matrix n p ℝ}
     (hB : LinearIndependent ℝ Bᵀ) :

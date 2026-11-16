@@ -8,50 +8,57 @@ import Numlib.Approximation.NewtonCotes
 /-!
 # The Euler–Maclaurin formula
 
-The Euler–Maclaurin summation formula in the form the composite trapezoidal rule uses: for `f`
-of class `C^{2k+2}` on an open set containing `[a, b]`, `h = (b - a)/m` and `T_m(f)` the
-composite trapezoidal sum,
-
-`T_m(f) = ∫_a^b f + ∑_{i=1}^{k} B_{2i}/(2i)! h^{2i} (f^{(2i-1)}(b) - f^{(2i-1)}(a))
-          + B_{2k+2}/(2k+2)! h^{2k+2} (b - a) f^{(2k+2)}(η)`
-
-for some `η ∈ (a, b)` (`EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul`;
-[quarteroni2000numerical] Property 9.3, (9.36)). The `B_j` are Mathlib's Bernoulli numbers
-`bernoulli j : ℚ` (the `B₁ = -1/2` convention; only even indices occur), and
-`bernoulli_eq_tsum_two_div_pow` identifies them with the book's zeta-series definition.
+This file proves the Euler–Maclaurin summation formula in the form that the composite trapezoidal
+rule uses. Let $f$ be of class $C^{2k+2}$ on an open set that contains $[a, b]$, let $m \ge 1$, let
+$h = (b - a)/m$, and let $T_m(f)$ be the composite trapezoidal sum with $m$ panels. Then there is
+$\eta \in (a, b)$ with
+$$T_m(f) = \int_a^b f + \sum_{i=1}^k \frac{B_{2i}}{(2i)!} h^{2i} \bigl(f^{(2i-1)}(b) -
+  f^{(2i-1)}(a)\bigr) + \frac{B_{2k+2}}{(2k+2)!} h^{2k+2} (b - a) f^{(2k+2)}(\eta).$$
+This is Property 9.3 and (9.36) of [quarteroni2000numerical], §9.6; see also [kress1998numerical],
+§9.4. Here $B_j$ are the Bernoulli numbers and $B_j(t)$ the Bernoulli polynomials. The file also
+proves that the definition of $B_{2j}$ by a zeta series in [quarteroni2000numerical] agrees with
+Mathlib's definition.
 
 ## Main results
 
-* `EulerMaclaurin.integral_bernoulliFun_mul_eq` — one integration by parts against a Bernoulli
-  polynomial: `∫_0^1 B_j F = [B_{j+1} F]_0^1/(j+1) - (1/(j+1)) ∫_0^1 B_{j+1} F'`.
-* `EulerMaclaurin.integral_eq_sub_sum_sub_integral` — the one-panel identity on `[0, 1]` with the
-  integral remainder `-(1/(2k+1)!) ∫_0^1 B_{2k+1} g^{(2k+1)}`, by induction on `k`: two
-  integrations by parts per step, the odd boundary terms vanishing because the odd Bernoulli
-  numbers beyond `B₁` are zero.
-* `EulerMaclaurin.bernoulliFun_sub_bernoulli_sign`, `EulerMaclaurin.neg_one_pow_mul_bernoulli_pos`
-  — `B_{2k}(t) - B_{2k}` has the constant sign `(-1)^k` on `[0, 1]`, and `B_{2k}` itself the sign
-  `(-1)^{k+1}`: both read off Mathlib's Fourier expansion `hasSum_one_div_nat_pow_mul_cos` and
-  `hasSum_zeta_nat`.
-* `EulerMaclaurin.exists_integral_eq_mul` — the one-panel identity with the mean value remainder
-  `-B_{2k+2}/(2k+2)! g^{(2k+2)}(η)`, `η ∈ (0, 1)`, from the sign of the weight
-  `B_{2k+2} - B_{2k+2}(t)` and the weighted mean value theorem
-  `intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral`.
-* `EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul` — the composite formula: each panel is
-  the reference panel scaled by `h`, the interior boundary terms telescope, and the `m` remainders
-  are collected by the discrete mean value theorem on the open interval.
+* `EulerMaclaurin.integral_bernoulliFun_mul_eq`: one integration by parts against a Bernoulli
+  polynomial, $\int_0^1 B_j F = [B_{j+1} F]_0^1/(j + 1) - \frac{1}{j+1} \int_0^1 B_{j+1} F'$.
+* `EulerMaclaurin.integral_eq_sub_sum_sub_integral`: the one-panel identity on $[0, 1]$ with the
+  integral remainder $-\frac{1}{(2k+1)!} \int_0^1 B_{2k+1}(t)\, g^{(2k+1)}(t)\,dt$.
+* `EulerMaclaurin.bernoulliFun_sub_bernoulli_sign`: $B_{2k}(t) - B_{2k}$ has the constant sign
+  $(-1)^k$ on $[0, 1]$.
+* `EulerMaclaurin.neg_one_pow_mul_bernoulli_pos`: $B_{2k}$ has the sign $(-1)^{k+1}$ for $k \ge 1$.
+* `EulerMaclaurin.exists_integral_eq_mul`: the one-panel identity with the mean value remainder
+  $-\frac{B_{2k+2}}{(2k+2)!} g^{(2k+2)}(\eta)$, $\eta \in (0, 1)$.
+* `EulerMaclaurin.exists_integral_eq_of_contDiffOn`: the identity on one panel
+  $[\alpha, \alpha + h]$.
+* `EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul`: the composite formula displayed above.
+* `bernoulli_eq_tsum_two_div_pow`: $B_{2j} = (-1)^{j-1} (2j)! \sum_{n \ge 1} 2/(2n\pi)^{2j}$ for
+  $j \ge 1$.
 
-The one-panel statements take the integrand as a chain of derivatives `F 0, F 1, …` on `[0, 1]`,
-as `Quadrature.error_eq_integral_peanoKernel` does, so that the composite theorem can instantiate
-them with `F r s = h^r f^{(r)}(x_j + s h)` without a smoothness transport.
+## Proof outline
 
-Relation to the rest of the library: `Quadrature.abs_sub_trapezoidSum_add_le` in
-`Numlib/Approximation/CompositeQuadrature` is the case `k = 1` as a bound; the expansion here is
-what Richardson extrapolation (`Numlib/Approximation/Extrapolation`, Romberg's method) consumes.
-Mathlib has the Bernoulli polynomials and their Fourier expansion but no Euler–Maclaurin formula.
+The one-panel identity with integral remainder is proved by induction on $k$, with two integrations
+by parts in each step; the odd boundary terms vanish because the odd Bernoulli numbers after $B_1$
+are zero. The signs of $B_{2k}(t) - B_{2k}$ and of $B_{2k}$ follow from Mathlib's Fourier expansion
+`hasSum_one_div_nat_pow_mul_cos` and from `hasSum_zeta_nat`. The sign of the weight
+$B_{2k+2} - B_{2k+2}(t)$ and the weighted mean value theorem
+`intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral` turn the integral remainder into the
+mean value remainder. For the composite formula, each panel is the reference panel scaled by $h$,
+the interior boundary terms telescope, and a discrete mean value theorem on the open interval
+collects the $m$ remainders.
 
-## References
+## Implementation notes
 
-[quarteroni2000numerical] §9.6, Property 9.3; [kress1998numerical] §9.4.
+* The $B_j$ are Mathlib's Bernoulli numbers `bernoulli j : ℚ`, with the convention $B_1 = -1/2$;
+  only even indices occur in the formula. The Bernoulli polynomials are `bernoulliFun`.
+* The one-panel statements take the integrand as a chain of derivatives `F 0, F 1, …` on $[0, 1]$,
+  as `Quadrature.error_eq_integral_peanoKernel` does. The composite theorem then instantiates them
+  with $F_r(s) = h^r f^{(r)}(x_j + sh)$, without a transfer of smoothness.
+* `Quadrature.abs_sub_trapezoidSum_add_le` in `Numlib.Approximation.CompositeQuadrature` is the case
+  $k = 1$ as a bound. Richardson extrapolation and Romberg's method in
+  `Numlib.Approximation.Extrapolation` use the expansion here.
+* Mathlib has the Bernoulli polynomials and their Fourier expansion, but no Euler–Maclaurin formula.
 -/
 
 open Filter Set Topology intervalIntegral
@@ -62,10 +69,13 @@ namespace EulerMaclaurin
 
 /-! ### Integration by parts against the Bernoulli polynomials -/
 
-/-- **One integration by parts against a Bernoulli polynomial**: for `F` differentiable on
-`[0, 1]` with continuous derivative `F'`,
-`∫_0^1 B_j F = (B_{j+1}(1) F(1) - B_{j+1}(0) F(0))/(j + 1) - (1/(j + 1)) ∫_0^1 B_{j+1} F'`,
-since `B_{j+1}/(j + 1)` is an antiderivative of `B_j`. -/
+/-- **One integration by parts against a Bernoulli polynomial.** Let $j$ be a natural number, and
+let $F, F' : \mathbb{R} \to \mathbb{R}$ be such that $F$ has derivative $F'(t)$ at every
+$t \in [0, 1]$ and $F'$ is continuous on $[0, 1]$. Then
+$$\int_0^1 B_j(t) F(t)\,dt = \frac{B_{j+1}(1) F(1) - B_{j+1}(0) F(0)}{j + 1} - \frac{1}{j + 1}
+  \int_0^1 B_{j+1}(t) F'(t)\,dt.$$
+
+The proof uses that $B_{j+1}/(j + 1)$ is an antiderivative of $B_j$. -/
 theorem integral_bernoulliFun_mul_eq (j : ℕ) {F F' : ℝ → ℝ}
     (hF : ∀ t ∈ Icc (0 : ℝ) 1, HasDerivAt F (F' t) t) (hF' : ContinuousOn F' (Icc 0 1)) :
     (∫ t in (0 : ℝ)..1, bernoulliFun j t * F t)
@@ -86,16 +96,18 @@ theorem integral_bernoulliFun_mul_eq (j : ℕ) {F F' : ℝ → ℝ}
   rw [e1, hparts, e2]
   ring
 
-/-- **The one-panel Euler–Maclaurin identity with integral remainder.** For a chain of
-derivatives `F 0, F 1, …, F (2k+1)` on `[0, 1]` with `F (2k+1)` continuous,
-`∫_0^1 F 0 = (F 0 0 + F 0 1)/2 - ∑_{i ∈ Icc 1 k} B_{2i}/(2i)! (F (2i-1) 1 - F (2i-1) 0)
-  - (1/(2k+1)!) ∫_0^1 B_{2k+1}(t) F (2k+1) t dt`.
+/-- **The one-panel Euler–Maclaurin identity with integral remainder.** Let $k$ be a natural number,
+and let $F_0, F_1, \dots$ be real functions such that $F_j$ has derivative $F_{j+1}(t)$ at every
+$t \in [0, 1]$ for $j < 2k + 1$, and $F_{2k+1}$ is continuous on $[0, 1]$. Then
+$$\int_0^1 F_0 = \frac{F_0(0) + F_0(1)}{2} - \sum_{i=1}^k \frac{B_{2i}}{(2i)!}
+  \bigl(F_{2i-1}(1) - F_{2i-1}(0)\bigr) - \frac{1}{(2k+1)!} \int_0^1 B_{2k+1}(t)
+  F_{2k+1}(t)\,dt.$$
+This is the identity behind Property 9.3 of [quarteroni2000numerical]; see also
+[kress1998numerical], §9.4.
 
-Induction on `k`: the base case is one integration by parts against `B₁(t) = t - 1/2`; the step
-is two integrations by parts, the boundary term of the odd step vanishing because
-`B_{2k+3}(0) = B_{2k+3}(1) = B_{2k+3} = 0`.
-
-Reference: [quarteroni2000numerical], Property 9.3; [kress1998numerical], §9.4. -/
+The proof is an induction on $k$. The base case is one integration by parts against
+$B_1(t) = t - 1/2$. The step is two integrations by parts; the boundary term of the odd step
+vanishes because $B_{2k+3}(0) = B_{2k+3}(1) = B_{2k+3} = 0$. -/
 theorem integral_eq_sub_sum_sub_integral (k : ℕ) {F : ℕ → ℝ → ℝ}
     (hF : ∀ j < 2 * k + 1, ∀ t ∈ Icc (0 : ℝ) 1, HasDerivAt (F j) (F (j + 1) t) t)
     (hc : ContinuousOn (F (2 * k + 1)) (Icc 0 1)) :
@@ -153,12 +165,15 @@ theorem integral_eq_sub_sum_sub_integral (k : ℕ) {F : ℕ → ℝ → ℝ}
     field_simp
     ring
 
-/-! ### The sign of `B_{2k}(t) - B_{2k}` -/
+/-! ### The sign of $B_{2k}(t) - B_{2k}$ -/
 
-/-- `B_{2k}(t) - B_{2k}` has the constant sign `(-1)^k` on `[0, 1]` (`k = 1`: `t² - t ≤ 0`).
-From the Fourier expansion `B_{2k}(t) = (-1)^{k+1} 2 (2k)!/(2π)^{2k} ∑ cos(2πnt)/n^{2k}`, so that
-`B_{2k}(t) - B_{2k}` is that constant times `∑ (cos(2πnt) - 1)/n^{2k}`, a series with nonpositive
-terms. -/
+/-- Let $k \ge 1$ and $t \in [0, 1]$. Then $B_{2k}(t) - B_{2k}$ has the sign $(-1)^k$:
+$$(-1)^k \bigl(B_{2k}(t) - B_{2k}\bigr) \ge 0.$$
+For $k = 1$ this is $t^2 - t \le 0$.
+
+The proof uses the Fourier expansion $B_{2k}(t) = (-1)^{k+1}\, 2\,(2k)!\,(2\pi)^{-2k} \sum_{n
+\ge 1} \cos(2\pi n t)/n^{2k}$. So $B_{2k}(t) - B_{2k}$ is that constant times
+$\sum_{n \ge 1} (\cos(2\pi n t) - 1)/n^{2k}$, a series with nonpositive terms. -/
 theorem bernoulliFun_sub_bernoulli_sign {k : ℕ} (hk : 0 < k) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
     0 ≤ (-1) ^ k * (bernoulliFun (2 * k) t - ((bernoulli (2 * k) : ℚ) : ℝ)) := by
   set c : ℝ := (-1 : ℝ) ^ (k + 1) * (2 * Real.pi) ^ (2 * k) / 2 / (2 * k)! with hc
@@ -193,8 +208,9 @@ theorem bernoulliFun_sub_bernoulli_sign {k : ℕ} (hk : 0 < k) {t : ℝ} (ht : t
   rw [e2] at this
   nlinarith
 
-/-- `∫_0^1 (B_{2k}(t) - B_{2k}) dt = -B_{2k}` for `0 < k`: the Bernoulli polynomial itself
-integrates to zero. -/
+/-- Let $k \ge 1$. Then
+$$\int_0^1 \bigl(B_{2k}(t) - B_{2k}\bigr)\,dt = -B_{2k},$$
+because the Bernoulli polynomial $B_{2k}(t)$ itself integrates to zero over $[0, 1]$. -/
 theorem integral_bernoulliFun_sub_bernoulli {k : ℕ} (hk : 0 < k) :
     (∫ t in (0 : ℝ)..1, (bernoulliFun (2 * k) t - ((bernoulli (2 * k) : ℚ) : ℝ)))
       = -((bernoulli (2 * k) : ℚ) : ℝ) := by
@@ -202,9 +218,12 @@ theorem integral_bernoulliFun_sub_bernoulli {k : ℕ} (hk : 0 < k) :
     integral_bernoulliFun_eq_zero (by omega), integral_const]
   simp
 
-/-- **The sign of the even Bernoulli numbers**: `(-1)^{k+1} B_{2k} > 0` for `0 < k`
-(`B₂ = 1/6`, `B₄ = -1/30`, …), from the zeta series
-`∑ 1/n^{2k} = (-1)^{k+1} 2^{2k-1} π^{2k} B_{2k}/(2k)!`, whose value is positive. -/
+/-- **The sign of the even Bernoulli numbers**: for $k \ge 1$,
+$$(-1)^{k+1} B_{2k} > 0.$$
+For example, $B_2 = 1/6$ and $B_4 = -1/30$.
+
+The proof uses the zeta series $\sum_{n \ge 1} 1/n^{2k} = (-1)^{k+1}\, 2^{2k-1} \pi^{2k}
+B_{2k}/(2k)!$, whose value is positive. -/
 theorem neg_one_pow_mul_bernoulli_pos {k : ℕ} (hk : 0 < k) :
     0 < (-1 : ℝ) ^ (k + 1) * ((bernoulli (2 * k) : ℚ) : ℝ) := by
   have h := hasSum_zeta_nat hk.ne'
@@ -224,16 +243,19 @@ theorem neg_one_pow_mul_bernoulli_pos {k : ℕ} (hk : 0 < k) :
 
 /-! ### The mean value remainder -/
 
-/-- **The one-panel Euler–Maclaurin identity with the mean value remainder.** For a chain of
-derivatives `F 0, …, F (2k+2)` on `[0, 1]` with `F (2k+2)` continuous, there is `η ∈ (0, 1)` with
-`∫_0^1 F 0 = (F 0 0 + F 0 1)/2 - ∑_{i ∈ Icc 1 k} B_{2i}/(2i)! (F (2i-1) 1 - F (2i-1) 0)
-  - B_{2k+2}/(2k+2)! F (2k+2) η`.
+/-- **The one-panel Euler–Maclaurin identity with the mean value remainder.** Let $k$ be a natural
+number, and let $F_0, F_1, \dots$ be real functions such that $F_j$ has derivative $F_{j+1}(t)$
+at every $t \in [0, 1]$ for $j < 2k + 2$, and $F_{2k+2}$ is continuous on $[0, 1]$. Then there
+is $\eta \in (0, 1)$ with
+$$\int_0^1 F_0 = \frac{F_0(0) + F_0(1)}{2} - \sum_{i=1}^k \frac{B_{2i}}{(2i)!}
+  \bigl(F_{2i-1}(1) - F_{2i-1}(0)\bigr) - \frac{B_{2k+2}}{(2k+2)!} F_{2k+2}(\eta).$$
 
-One more integration by parts of the integral remainder of `integral_eq_sub_sum_sub_integral`,
-together with `F (2k+1) 1 - F (2k+1) 0 = ∫_0^1 F (2k+2)`, writes it as
-`-(1/(2k+2)!) ∫_0^1 (B_{2k+2} - B_{2k+2}(t)) F (2k+2) t dt`; the weight has the constant sign
-`(-1)^k`, integrates to `B_{2k+2}`, and the weighted mean value theorem gives `η`, inside the
-open interval because the weight's integral is nonzero. -/
+One more integration by parts of the integral remainder of
+`EulerMaclaurin.integral_eq_sub_sum_sub_integral`, with
+$F_{2k+1}(1) - F_{2k+1}(0) = \int_0^1 F_{2k+2}$, writes the remainder as $-\frac{1}{(2k+2)!}
+\int_0^1 (B_{2k+2} - B_{2k+2}(t)) F_{2k+2}(t)\,dt$. The weight has the constant sign $(-1)^k$
+and integrates to $B_{2k+2}$. The weighted mean value theorem gives $\eta$, which lies in the
+open interval because the integral of the weight is nonzero. -/
 theorem exists_integral_eq_mul (k : ℕ) {F : ℕ → ℝ → ℝ}
     (hF : ∀ j < 2 * k + 2, ∀ t ∈ Icc (0 : ℝ) 1, HasDerivAt (F j) (F (j + 1) t) t)
     (hc : ContinuousOn (F (2 * k + 2)) (Icc 0 1)) :
@@ -334,13 +356,15 @@ theorem exists_integral_eq_mul (k : ℕ) {F : ℕ → ℝ → ℝ}
 
 /-! ### The composite formula -/
 
-/-- **One panel of the composite formula.** For `h > 0` and `f` of class `C^{2k+2}` on an open set
-containing `[α, α + h]`, there is `ξ ∈ (α, α + h)` with
-`∫_α^{α+h} f = h (f(α) + f(α + h))/2
-  - ∑_{i ∈ Icc 1 k} B_{2i}/(2i)! h^{2i} (f^{(2i-1)}(α + h) - f^{(2i-1)}(α))
-  - B_{2k+2}/(2k+2)! h^{2k+3} f^{(2k+2)}(ξ)`:
-the reference identity `exists_integral_eq_mul` for `F r s = h^r f^{(r)}(α + s h)`, scaled by
-`h`. -/
+/-- **One panel of the composite formula.** Let $h > 0$, let $k$ be a natural number, and let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^{2k+2}$ on an open set $U$ that contains
+$[\alpha, \alpha + h]$. Then there is $\xi \in (\alpha, \alpha + h)$ with
+$$\int_\alpha^{\alpha+h} f = \frac{h}{2} \bigl(f(\alpha) + f(\alpha + h)\bigr) - \sum_{i=1}^k
+  \frac{B_{2i}}{(2i)!} h^{2i} \bigl(f^{(2i-1)}(\alpha + h) - f^{(2i-1)}(\alpha)\bigr) -
+  \frac{B_{2k+2}}{(2k+2)!} h^{2k+3} f^{(2k+2)}(\xi).$$
+
+The proof applies `EulerMaclaurin.exists_integral_eq_mul` to $F_r(s) = h^r f^{(r)}(\alpha + sh)$
+and scales by $h$. The derivatives $f^{(r)}$ are `iteratedDeriv r f`. -/
 theorem exists_integral_eq_of_contDiffOn {α h : ℝ} (hh : 0 < h) {k : ℕ} {f : ℝ → ℝ} {U : Set ℝ}
     (hU : IsOpen U) (hUα : Icc α (α + h) ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) :
@@ -395,16 +419,19 @@ theorem exists_integral_eq_of_contDiffOn {α h : ℝ} (hh : 0 < h) {k : ℕ} {f 
   rw [mul_sub, mul_sub, Finset.mul_sum, hS]
   ring
 
-/-- **The Euler–Maclaurin expansion of the composite trapezoidal rule**
-([quarteroni2000numerical] Property 9.3, (9.36)). For `a < b`, `f` of class `C^{2k+2}` on an open
-set containing `[a, b]`, `0 < m` and `h = (b - a)/m`, there is `η ∈ (a, b)` with
+/-- **The Euler–Maclaurin expansion of the composite trapezoidal rule.** Let $a < b$, let $k$ be a
+natural number, let $f : \mathbb{R} \to \mathbb{R}$ be of class $C^{2k+2}$ on an open set $U$
+that contains $[a, b]$, let $m \ge 1$, and let $h = (b - a)/m$. Let $T_m(f) = \sum_{j < m}
+\frac{h}{2} \bigl(f(a + jh) + f(a + (j + 1)h)\bigr)$ be the composite trapezoidal sum. Then
+there is $\eta \in (a, b)$ with
+$$T_m(f) = \int_a^b f + \sum_{i=1}^k \frac{B_{2i}}{(2i)!} h^{2i} \bigl(f^{(2i-1)}(b) -
+  f^{(2i-1)}(a)\bigr) + \frac{B_{2k+2}}{(2k+2)!} h^{2k+2} (b - a) f^{(2k+2)}(\eta).$$
+This is Property 9.3 and (9.36) of [quarteroni2000numerical].
 
-`T_m(f) = ∫_a^b f + ∑_{i=1}^{k} B_{2i}/(2i)! h^{2i} (f^{(2i-1)}(b) - f^{(2i-1)}(a))
-          + B_{2k+2}/(2k+2)! h^{2k+2} (b - a) f^{(2k+2)}(η)`.
-
-Each panel is `exists_integral_eq_of_contDiffOn`; the interior boundary terms telescope, and the
-`m` remainders, each at a point strictly inside its panel, are collected by the discrete mean value
-theorem on the open interval `(a, b)`. -/
+The sum $T_m(f)$ is `Quadrature.trapezoidSum f a h m`. Each panel is
+`EulerMaclaurin.exists_integral_eq_of_contDiffOn`. The interior boundary terms telescope, and a
+discrete mean value theorem on the open interval $(a, b)$ collects the $m$ remainders, each at a
+point strictly inside its panel. -/
 theorem trapezoidSum_eq_integral_add_sum_add_mul {a b : ℝ} (hab : a < b) {k : ℕ} {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) {m : ℕ} (hm : 0 < m) :
@@ -505,9 +532,12 @@ theorem trapezoidSum_eq_integral_add_sum_add_mul {a b : ℝ} (hab : a < b) {k : 
 
 /-! ### The zeta-series definition of the Bernoulli numbers -/
 
-/-- **The book's definition of the Bernoulli numbers agrees with Mathlib's**: for `0 < j`,
-`B_{2j} = (-1)^{j-1} (2j)! ∑_{n ≥ 1} 2/(2nπ)^{2j}` ([quarteroni2000numerical] Property 9.3), from
-`hasSum_zeta_nat`. -/
+/-- **The definition of the Bernoulli numbers in [quarteroni2000numerical] agrees with Mathlib's.**
+For $j \ge 1$,
+$$B_{2j} = (-1)^{j-1} (2j)! \sum_{n \ge 1} \frac{2}{(2n\pi)^{2j}}.$$
+This is the definition used in Property 9.3 of [quarteroni2000numerical].
+
+The proof uses `hasSum_zeta_nat`. In Lean the sum runs over $n + 1$ with $n \ge 0$. -/
 theorem _root_.bernoulli_eq_tsum_two_div_pow {j : ℕ} (hj : 0 < j) :
     ((bernoulli (2 * j) : ℚ) : ℝ)
       = (-1) ^ (j - 1) * (2 * j)! * ∑' n : ℕ, 2 / (2 * ((n : ℝ) + 1) * Real.pi) ^ (2 * j) := by

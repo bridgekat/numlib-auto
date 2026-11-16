@@ -9,54 +9,70 @@ import Numlib.Optimization.Subproblem.Krylov
 /-!
 # Convergence of the Krylov subproblem solutions
 
-Let `H` be a symmetric operator on a finite-dimensional real inner product space, `g ≠ 0`, and let
-`sₖ` solve the regularization or trust-region subproblem restricted to the Krylov subspace
-`𝒦_k = 𝒦_k(H, g)` (`Numlib.Optimization.Subproblem.Krylov`), with multiplier `λₖ`. This file proves
-the convergence bounds of [cartis2022evaluation] §10.2.4 and §10.3 (Gould–Simoncini): the gradient
-(resp. residual) `g + H sₖ + λₖ sₖ` decays like `q(κₖ)^{k-1}`, where
-`κₖ = (θₖ + λₖ)/(θ₁ + λₖ)` is the condition number of the positive definite `T_k + λₖ` and
-`q(κ) = (√κ - 1)/(√κ + 1)`, and the resulting iteration counts for the stopping tests.
-
-The proof follows the book: in Lanczos coordinates the residual is `β_{k-1} |ȳ_{k-1}|` with
-`ȳ = -‖g‖ (T_k + λₖ)⁻¹ e₀` ((B.10.1)–(B.10.2)); the `(k-1, 0)` entry of the inverse of a positive
-definite tridiagonal matrix decays geometrically (Lemma B.10.1,
-`Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`); `‖g‖ ≤ (θₖ + λₖ) ‖sₖ‖` ((B.10.3)); and
-`β_{k-1} ≤ ‖H‖` ((B.10.4)).
+Let $H$ be a symmetric operator on a finite-dimensional real inner product space, let $g \neq 0$,
+and let $s_k$ solve the regularization or trust-region subproblem restricted to the Krylov subspace
+$\mathcal{K}_k = \mathcal{K}_k(H, g)$ (see `Numlib.Optimization.Subproblem.Krylov`), with multiplier
+$\lambda_k$. This file proves the convergence bounds of Section 10.2.4 and Section 10.3 of
+[cartis2022evaluation], which follow Gould and Simoncini. The gradient (for regularization) or the
+residual (for the trust region) $g + H s_k + \lambda_k s_k$ decays like $q(\kappa_k)^{k-1}$, where
+$$\kappa_k = \frac{\theta_k + \lambda_k}{\theta_1 + \lambda_k}, \qquad q(\kappa) =
+  \frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1},$$
+and $\kappa_k$ is the condition number of the positive definite matrix $T_k + \lambda_k$, with
+$\theta_1 \le \theta_k$ the extreme Ritz values. The file also derives the resulting bounds on the
+number of iterations until the stopping tests hold.
 
 ## Main definitions
 
-* `Subproblem.krylovCond hH g k μ`: the condition number `κₖ(μ) = (θₖ + μ)/(θ₁ + μ)` of the
-  compression of `H + μ` to `𝒦_k`, `θ₁ ≤ θₖ` the extreme Ritz values ((10.2.8)).
-* `Subproblem.convFactor κ = (√κ - 1)/(√κ + 1)`.
+* `Subproblem.krylovCond`: the condition number $\kappa_k(\mu) = (\theta_k + \mu) / (\theta_1 +
+  \mu)$ of the compression of $H + \mu$ to $\mathcal{K}_k$, as in (10.2.8).
+* `Subproblem.convFactor`: the convergence factor $q(\kappa) = (\sqrt{\kappa} - 1) /
+  (\sqrt{\kappa} + 1)$.
 
-`Subproblem.krylovCond_eq_ritzValues` identifies `θ₁`, `θₖ` with the extreme eigenvalues of the
-Lanczos tridiagonal `T_k` (`Lanczos.ritzValues`).
+## Main results
 
-## Main statements
+* `Subproblem.krylov_residual_le`: the residual bound $2 \|H\| \kappa_k \|s_k\| q(\kappa_k)^{k-1}$
+  for every point of $\mathcal{K}_k$ that satisfies the restricted first-order condition with a
+  shift $\mu > -\theta_1$.
+* `Subproblem.krylov_gradient_bound_regularization`: Theorem 10.2.2, the bound on the gradient at
+  the minimizer of the regularized model over $\mathcal{K}_k$.
+* `Subproblem.krylov_residual_bound_trustRegion`: Theorem 10.3.2, the bound on the residual at the
+  trust-region solution over $\mathcal{K}_k$.
+* `Subproblem.krylov_iteration_bound_regularization`: Corollary 10.2.3, the number of iterations
+  until the stopping rule (9.3.14b) holds.
+* `Subproblem.krylov_iteration_bound_trustRegion`: Corollary 10.3.3, the number of iterations until
+  the residual test (10.3.2) holds.
+* `Subproblem.leftmost_rightmost_compressionL_eq_ritzValues`, `Subproblem.krylovCond_eq_ritzValues`:
+  for $k \le \operatorname{grade}(H, g)$, $\theta_1$ and $\theta_k$ are the extreme eigenvalues of
+  the Lanczos tridiagonal matrix $T_k$, so $\kappa_k(\mu) = (\lambda_{\max}(T_k) + \mu) /
+  (\lambda_{\min}(T_k) + \mu)$.
+* `Subproblem.posDef_tridiag_add`, `Subproblem.eigenvalues_tridiag_add_mem`: for $\mu > -\theta_1$,
+  the matrix $T_{m+1} + \mu$ is positive definite, with spectrum in
+  $[\theta_1 + \mu, \theta_{m+1} + \mu]$.
+* `Subproblem.beta_le_opNorm`, `Subproblem.rightmost_compressionL_le`: $\beta_m \le \|H\|$, and the
+  greatest Ritz value is at most $\lambda_{\max}(H)$.
+* `Subproblem.residual_eq_zero_of_grade_le`: the restricted solution is exact at the grade.
 
-* `Subproblem.krylov_residual_le`: the residual bound `2 ‖H‖ κₖ ‖sₖ‖ q(κₖ)^{k-1}` for any point of
-  `𝒦_k` satisfying the restricted first-order condition with a shift `μ > -θ₁`.
-* `Subproblem.krylov_gradient_bound_regularization`: Theorem 10.2.2.
-* `Subproblem.krylov_residual_bound_trustRegion`: Theorem 10.3.2.
-* `Subproblem.krylov_iteration_bound_regularization`: Corollary 10.2.3.
-* `Subproblem.krylov_iteration_bound_trustRegion`: Corollary 10.3.3.
-* Supporting facts: `Subproblem.posDef_tridiag_add` and `Subproblem.eigenvalues_tridiag_add_mem`
-  (the shifted Lanczos tridiagonal is positive definite with spectrum in `[θ₁ + μ, θₖ + μ]`),
-  `Subproblem.beta_le_opNorm`, `Subproblem.rightmost_compressionL_le` (`θₖ ≤ λmax`),
-  `Subproblem.residual_eq_zero_of_grade_le` (exactness at the grade).
+## Proof outline
+
+The proof follows the book. In Lanczos coordinates the residual is $\beta_{k-1} |\bar y_{k-1}|$ with
+$\bar y = -\|g\| (T_k + \lambda_k)^{-1} e_0$, by (B.10.1)–(B.10.2). The $(k-1, 0)$ entry of the
+inverse of a positive definite tridiagonal matrix decays geometrically (Lemma B.10.1,
+`Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`). Moreover
+$\|g\| \le (\theta_k + \lambda_k) \|s_k\|$ by (B.10.3), and $\beta_{k-1} \le \|H\|$ by (B.10.4).
 
 ## Implementation notes
 
-`‖H‖` is the operator norm of `E`. For matrix data with a scaling `M`, `E` carries the
-`M`-inner product (`Numlib.Optimization.Subproblem.Matrix`), and `‖H‖` is the largest `|λ|` of the
-pencil `(H, M)`, i.e. `‖M^{-1/2} H M^{-1/2}‖₂`. It is at most `‖M⁻¹ H‖₂` and may be smaller
-(similarity preserves eigenvalues, not Euclidean norms); the results are stated with it.
-
-In the iteration counts `⌈log A / log((√κ* + 1)/(√κ* - 1))⌉₊ + 1` the ceiling is `⌈·⌉₊`
-(when `log A < 0` the bound is `k ≤ 1`), and the case `κ* = 1` (where
-`log((√κ* + 1)/(√κ* - 1))` is undefined) is stated separately: then `q* = 0` and the test holds
-at some `k ≤ min 2 grade`. The constant `κ*` may be any upper bound of the `κₖ`,
-`1 ≤ k ≤ grade`, such as their maximum (10.2.10).
+* $\|H\|$ is the operator norm of $E$. For matrix data with a scaling $M$, the space $E$ carries the
+  $M$-inner product (see `Numlib.Optimization.Subproblem.Matrix`), and $\|H\|$ is the largest
+  $|\lambda|$ of the pencil $(H, M)$, that is, $\|M^{-1/2} H M^{-1/2}\|_2$. It is at most
+  $\|M^{-1} H\|_2$ and can be smaller, because a similarity preserves the eigenvalues but not the
+  Euclidean norm. The results are stated with $\|H\|$.
+* In the iteration counts $\lceil \log A / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1))
+  \rceil + 1$, the ceiling is `Nat.ceil`, so the bound is $k \le 1$ when $\log A < 0$. The case
+  $\kappa_* = 1$, where $\log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1))$ is undefined, is stated
+  separately: then $q_* = 0$, and the test holds at some $k \le \min(2, \operatorname{grade})$.
+* The constant $\kappa_*$ can be any upper bound of the numbers $\kappa_k$ for
+  $1 \le k \le \operatorname{grade}(H, g)$, such as their maximum (10.2.10).
 -/
 
 open Set Matrix Krylov
@@ -66,40 +82,42 @@ namespace Subproblem
 
 /-! ### The convergence factor -/
 
-/-- The convergence factor `q(κ) = (√κ - 1)/(√κ + 1)` of a condition number `κ`
-([cartis2022evaluation] (10.2.9)). -/
+/-- The **convergence factor** $q(\kappa) = (\sqrt{\kappa} - 1) / (\sqrt{\kappa} + 1)$ of a
+condition number $\kappa$. This is (10.2.9) of [cartis2022evaluation]. -/
 noncomputable def convFactor (κ : ℝ) : ℝ := (√κ - 1) / (√κ + 1)
 
+/-- The defining formula $q(\kappa) = (\sqrt{\kappa} - 1) / (\sqrt{\kappa} + 1)$. -/
 theorem convFactor_def (κ : ℝ) : convFactor κ = (√κ - 1) / (√κ + 1) := rfl
 
-/-- `q(κ) ≥ 0` for `κ ≥ 1`. -/
+/-- $q(\kappa) \ge 0$ for $\kappa \ge 1$. -/
 theorem convFactor_nonneg {κ : ℝ} (hκ : 1 ≤ κ) : 0 ≤ convFactor κ := by
   have : 1 ≤ √κ := Real.one_le_sqrt.2 hκ
   unfold convFactor; positivity
 
-/-- `q(κ) < 1`. -/
+/-- $q(\kappa) < 1$ for every real $\kappa$. -/
 theorem convFactor_lt_one (κ : ℝ) : convFactor κ < 1 := by
   have : 0 ≤ √κ := Real.sqrt_nonneg κ
   rw [convFactor, div_lt_one (by positivity)]; linarith
 
-/-- `q(κ) > 0` for `κ > 1`. -/
+/-- $q(\kappa) > 0$ for $\kappa > 1$. -/
 theorem convFactor_pos {κ : ℝ} (hκ : 1 < κ) : 0 < convFactor κ := by
   have : 1 < √κ := Real.lt_sqrt_of_sq_lt (by simpa using hκ)
   unfold convFactor
   exact div_pos (by linarith) (by linarith)
 
-/-- `q(1) = 0`: a perfectly conditioned system converges in one step. -/
+/-- $q(1) = 0$: a perfectly conditioned system converges in one step. -/
 @[simp]
 theorem convFactor_one : convFactor 1 = 0 := by simp [convFactor]
 
-/-- For `κ ≥ 1`, `q(κ) = 0` exactly when `κ = 1`. -/
+/-- For $\kappa \ge 1$, $q(\kappa) = 0$ if and only if $\kappa = 1$. -/
 theorem convFactor_eq_zero_iff {κ : ℝ} (hκ : 1 ≤ κ) : convFactor κ = 0 ↔ κ = 1 := by
   refine ⟨fun h => ?_, fun h => h ▸ convFactor_one⟩
   rcases hκ.eq_or_lt with h1 | h1
   · exact h1.symm
   · exact absurd h (convFactor_pos h1).ne'
 
-/-- The convergence factor increases with the condition number. -/
+/-- The convergence factor increases with the condition number: $\kappa \le \kappa'$ implies
+$q(\kappa) \le q(\kappa')$. -/
 theorem convFactor_le_convFactor {κ κ' : ℝ} (h : κ ≤ κ') :
     convFactor κ ≤ convFactor κ' := by
   have h1 : 0 ≤ √κ := Real.sqrt_nonneg κ
@@ -107,8 +125,8 @@ theorem convFactor_le_convFactor {κ κ' : ℝ} (h : κ ≤ κ') :
   rw [convFactor, convFactor, div_le_div_iff₀ (by positivity) (by positivity)]
   nlinarith
 
-/-- **Iteration count for a geometric bound.** If `0 < q < 1` and `A ∈ ℝ`, then
-`A q^N ≤ 1` for `N = ⌈log A / log (1/q)⌉₊`. -/
+/-- **Iteration count for a geometric bound.** If $0 < q < 1$ and $A \in \mathbb{R}$, then
+$A q^N \le 1$ for $N = \lceil \log A / \log(1/q) \rceil$, where the ceiling is `Nat.ceil`. -/
 theorem mul_pow_le_one_of_ceil {A q : ℝ} (hq0 : 0 < q) (hq1 : q < 1) :
     A * q ^ ⌈Real.log A / Real.log (1 / q)⌉₊ ≤ 1 := by
   set N := ⌈Real.log A / Real.log (1 / q)⌉₊
@@ -124,10 +142,15 @@ theorem mul_pow_le_one_of_ceil {A q : ℝ} (hq0 : 0 < q) (hq1 : q < 1) :
   rw [le_div_iff₀ hqN] at this
   linarith
 
-/-- **From a geometric test to an iteration count.** Let `G ≥ 1`, `0 ≤ q < 1`, and let `P` hold at
-every `k ∈ [1, G]` with `A q^{k-1} ≤ 1`, and at `k = G`. Then `P k` holds at some
-`k ∈ [1, min (⌈log A / log (1/q)⌉₊ + 1) G]` when `q > 0`, and at some `k ∈ [1, min 2 G]` when
-`q = 0`. -/
+/-- **From a geometric test to an iteration count.** Let $G \ge 1$ be a natural number and $A, q$
+real numbers. Let $P$ be a property of natural numbers that holds at every $k \in [1, G]$ with
+$A q^{k-1} \le 1$, and that holds at $k = G$. Then:
+
+* if $0 < q < 1$, then $P(k)$ holds for some $k$ with $1 \le k \le \min(\lceil \log A /
+  \log(1/q) \rceil + 1, G)$;
+* if $q = 0$, then $P(k)$ holds for some $k$ with $1 \le k \le \min(2, G)$.
+
+The ceiling is `Nat.ceil`. -/
 theorem exists_le_min_of_geometric {P : ℕ → Prop} {G : ℕ} (hG : 1 ≤ G) {A q : ℝ}
     (hP : ∀ k, 1 ≤ k → k ≤ G → A * q ^ (k - 1) ≤ 1 → P k) (hPG : P G) :
     (0 < q → q < 1 →
@@ -153,38 +176,49 @@ section Tridiagonal
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {H : E →L[ℝ] E} {g : E}
 
-/-- `𝒦ₕ[k]` is the Krylov subspace `𝒦_k(H, g)` of the operator `H` and the gradient `g`. -/
+/-- $\mathcal{K}_k$ denotes the Krylov subspace $\mathcal{K}_k(H, g)$ of the operator $H$ and the
+gradient $g$. -/
 local notation "𝒦ₕ[" k "]" => 𝒦[(H : E →ₗ[ℝ] E), g] k
 
-/-- The Lanczos vectors `q j = Arnoldi.vec H g j`. -/
+/-- $q_j$ denotes the Lanczos vector `Arnoldi.vec H g j`. -/
 local notation "𝐪" => Arnoldi.vec (H : E →ₗ[ℝ] E) g
 
-/-- The Lanczos tridiagonal matrices `T_m = Lanczos.tridiag H g m`. -/
+/-- $T_m$ denotes the Lanczos tridiagonal matrix `Lanczos.tridiag H g m`. -/
 local notation "𝐓" => Lanczos.tridiag (H : E →ₗ[ℝ] E) g
 
-/-- The Lanczos off-diagonal coefficients `β j = Lanczos.beta H g j`. -/
+/-- $\beta_j$ denotes the Lanczos off-diagonal coefficient `Lanczos.beta H g j`. -/
 local notation "𝛃" => Lanczos.beta (H : E →ₗ[ℝ] E) g
 
-/-- The **condition number** `κₖ(μ) = (θₖ + μ)/(θ₁ + μ)` of the shifted compression of `H` to the
-Krylov subspace `𝒦_k(H, g)`, `θ₁ ≤ θₖ` its extreme eigenvalues (the extreme Ritz values). At the
-multiplier `μ = λₖ` and for `k ≤ grade(H, g)` this is the book's `κₖ = κ(T_k + λₖ I)` (10.2.8),
-by `krylovCond_eq_ritzValues`. -/
+/-- The **condition number**
+$$\kappa_k(\mu) = \frac{\theta_k + \mu}{\theta_1 + \mu}$$
+of the shifted compression of $H$ to the Krylov subspace $\mathcal{K}_k(H, g)$, where
+$\theta_1 \le \theta_k$ are the extreme eigenvalues of the compression (the extreme Ritz
+values). At the multiplier $\mu = \lambda_k$ and for $k \le \operatorname{grade}(H, g)$, this is
+the book's $\kappa_k = \kappa(T_k + \lambda_k I)$ of (10.2.8) in [cartis2022evaluation], by
+`Subproblem.krylovCond_eq_ritzValues`.
+
+The extreme eigenvalues are `Subproblem.leftmost` and `Subproblem.rightmost` of the compression.
+If $\theta_1 + \mu = 0$, division by zero gives the value $0$. -/
 noncomputable def krylovCond (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (g : E) (k : ℕ) (μ : ℝ) : ℝ :=
   (rightmost (isSymmetric_compressionL (K := 𝒦[(H : E →ₗ[ℝ] E), g] k) hH) + μ) /
     (leftmost (isSymmetric_compressionL (K := 𝒦[(H : E →ₗ[ℝ] E), g] k) hH) + μ)
 
 omit [FiniteDimensional ℝ E] in
-/-- Changing the dimension witness only reindexes the eigenvalues. -/
+/-- Changing the witness for the dimension only reindexes the eigenvalues, so the set of eigenvalues
+is the same. -/
 private theorem range_eigenvalues_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [FiniteDimensional ℝ F] {T : F →ₗ[ℝ] F} (hT : T.IsSymmetric) {n : ℕ}
     (hn : Module.finrank ℝ F = n) : range (hT.eigenvalues hn) = range (hT.eigenvalues rfl) := by
   subst hn; rfl
 
-/-- **The extreme Ritz values are the extreme eigenvalues of the Lanczos tridiagonal**: for
-`k ≤ grade(H, g)`, the least and greatest eigenvalues `θ₁`, `θₖ` of the compression of `H` to
-`𝒦_k` are the least and greatest eigenvalues of `T_k = Lanczos.tridiag H g k`
-(`Lanczos.ritzValues`, the sorted eigenvalues of `T_k`). So `krylovCond hH g k λₖ` is the book's
-`κ(T_k + λₖ I) = (θ_{k,k} + λₖ)/(θ_{1,k} + λₖ)` (10.2.8). -/
+/-- **The extreme Ritz values are the extreme eigenvalues of the Lanczos tridiagonal matrix.** Let
+$H$ be symmetric and $k \le \operatorname{grade}(H, g)$. Then the least and the greatest
+eigenvalues $\theta_1$ and $\theta_k$ of the compression of $H$ to $\mathcal{K}_k$ are the least
+and the greatest eigenvalues of $T_k$, that is, the infimum and the supremum of
+`Lanczos.ritzValues`, the sorted eigenvalues of $T_k$.
+
+Therefore `Subproblem.krylovCond` at $\lambda_k$ is the book's $\kappa(T_k + \lambda_k I) =
+(\theta_{k,k} + \lambda_k) / (\theta_{1,k} + \lambda_k)$ of (10.2.8). -/
 theorem leftmost_rightmost_compressionL_eq_ritzValues (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k : ℕ}
     (hk : k ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) :
     leftmost (isSymmetric_compressionL (K := 𝒦ₕ[k]) hH) =
@@ -201,8 +235,10 @@ theorem leftmost_rightmost_compressionL_eq_ritzValues (hH : (H : E →ₗ[ℝ] E
   · change sInf (range _) = sInf (range _); rw [hrange]
   · change sSup (range _) = sSup (range _); rw [hrange]
 
-/-- `krylovCond` in terms of the Ritz values (the eigenvalues of `T_k`), for `k ≤ grade(H, g)`:
-`κₖ(μ) = (λmax(T_k) + μ)/(λmin(T_k) + μ)`, the book's (10.2.8). -/
+/-- The condition number in terms of the Ritz values: for $H$ symmetric and
+$k \le \operatorname{grade}(H, g)$,
+$$\kappa_k(\mu) = \frac{\lambda_{\max}(T_k) + \mu}{\lambda_{\min}(T_k) + \mu},$$
+as in (10.2.8) of [cartis2022evaluation]. -/
 theorem krylovCond_eq_ritzValues (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k : ℕ}
     (hk : k ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) (μ : ℝ) :
     krylovCond hH g k μ = ((⨆ i, Lanczos.ritzValues (H : E →ₗ[ℝ] E) g k i) + μ) /
@@ -210,24 +246,28 @@ theorem krylovCond_eq_ritzValues (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k : �
   obtain ⟨h1, h2⟩ := leftmost_rightmost_compressionL_eq_ritzValues hH hk
   rw [krylovCond, h1, h2]
 
-/-- A positive definite shift has condition number at least `1`. -/
+/-- If $\mu > -\theta_1$, so that the shifted compression is positive definite, then
+$\kappa_k(\mu) \ge 1$. -/
 theorem one_le_krylovCond (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k : ℕ} {μ : ℝ}
     (hμ : -leftmost (isSymmetric_compressionL (K := 𝒦ₕ[k]) hH) < μ) :
     1 ≤ krylovCond hH g k μ := by
   rw [krylovCond, one_le_div (by linarith)]
   linarith [leftmost_le_rightmost (hH := isSymmetric_compressionL (K := 𝒦ₕ[k]) hH)]
 
-/-- The quadratic form of the shifted compression on a subspace is that of `H`. -/
+/-- The quadratic form of the shifted compression to a subspace $K$ is that of $H$: $\langle (P_K
+H|_K + \mu) v, v \rangle = \langle v, H v + \mu v \rangle$ for $v \in K$. -/
 theorem inner_compressionL_add_smul_apply (K : Submodule ℝ E) (μ : ℝ) (v : K) :
     ⟪(compressionL H K + μ • (1 : K →L[ℝ] K)) v, v⟫ = ⟪(v : E), H v + μ • (v : E)⟫ := by
   simp only [_root_.add_apply, _root_.smul_apply, one_apply_eq_self, inner_add_left,
     inner_smul_left, inner_compressionL_left, inner_add_right, inner_smul_right, conj_trivial]
   rw [Submodule.coe_inner, real_inner_comm (H v)]
 
-/-- **The quadratic form of the shifted Lanczos tridiagonal is enclosed by the extreme Ritz
-values**: for `g ≠ 0`, `m + 1 ≤ grade(H, g)`, `T = T_{m+1}` and `θ₁ ≤ θ_{m+1}` the extreme
-eigenvalues of the compression of `H` to `𝒦_{m+1}`,
-`(θ₁ + μ) ‖x‖² ≤ x ⬝ (T + μ) x ≤ (θ_{m+1} + μ) ‖x‖²`. -/
+/-- **The extreme Ritz values enclose the quadratic form of the shifted Lanczos tridiagonal
+matrix.** Let $H$ be symmetric, $g \neq 0$, $m + 1 \le \operatorname{grade}(H, g)$,
+$T = T_{m+1}$, and let $\theta_1 \le \theta_{m+1}$ be the extreme eigenvalues of the compression
+of $H$ to $\mathcal{K}_{m+1}$. Then for every $\mu$ and $x \in \mathbb{R}^{m+1}$,
+$$(\theta_1 + \mu) \, x \cdot x \le x \cdot (T + \mu) x \le (\theta_{m+1} + \mu) \, x \cdot x.$$
+-/
 theorem dotProduct_tridiag_add_mem (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0) {m : ℕ}
     (hm : m + 1 ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) (μ : ℝ) (x : Fin (m + 1) → ℝ) :
     (leftmost (isSymmetric_compressionL (K := 𝒦ₕ[m + 1]) hH) + μ) * (x ⬝ᵥ x) ≤
@@ -248,8 +288,10 @@ theorem dotProduct_tridiag_add_mem (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg 
   · rw [add_comm (leftmost _)]; exact add_leftmost_mul_norm_sq_le μ v
   · rw [add_comm (rightmost _)]; exact inner_add_smul_le_add_rightmost μ v
 
-/-- **The shifted Lanczos tridiagonal is positive definite** when the shift is to the right of the
-least Ritz value: `T_{m+1} + μ ≻ 0` for `μ > -θ₁`. -/
+/-- **The shifted Lanczos tridiagonal matrix is positive definite** when the shift lies to the right
+of the least Ritz value. Let $H$ be symmetric, $g \neq 0$ and
+$m + 1 \le \operatorname{grade}(H, g)$. If $\mu > -\theta_1$, then $T_{m+1} + \mu$ is positive
+definite. -/
 theorem posDef_tridiag_add (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0) {m : ℕ}
     (hm : m + 1 ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) {μ : ℝ}
     (hμ : -leftmost (isSymmetric_compressionL (K := 𝒦ₕ[m + 1]) hH) < μ) :
@@ -267,8 +309,9 @@ theorem posDef_tridiag_add (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 
     simp only [star_trivial]
     nlinarith
 
-/-- The eigenvalues of the shifted Lanczos tridiagonal lie between the shifted extreme Ritz
-values. -/
+/-- Let $H$ be symmetric, $g \neq 0$ and $m + 1 \le \operatorname{grade}(H, g)$, and let
+$T_{m+1} + \mu$ be positive definite. Then every eigenvalue of $T_{m+1} + \mu$ lies in
+$[\theta_1 + \mu, \theta_{m+1} + \mu]$. -/
 theorem eigenvalues_tridiag_add_mem (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0) {m : ℕ}
     (hm : m + 1 ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) {μ : ℝ}
     (hG : (𝐓 (m + 1) + μ • (1 : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ)).PosDef)
@@ -287,7 +330,7 @@ theorem eigenvalues_tridiag_add_mem (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg
   exact ⟨he ▸ h1, he ▸ h2⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- The shifted Lanczos tridiagonal is tridiagonal. -/
+/-- The shifted Lanczos matrix $T_m + \mu$ is tridiagonal. -/
 theorem tridiag_add_isTridiagonal (m : ℕ) (μ : ℝ) :
     (𝐓 m + μ • (1 : Matrix (Fin m) (Fin m) ℝ)).IsTridiagonal := by
   intro i j hij
@@ -298,8 +341,11 @@ theorem tridiag_add_isTridiagonal (m : ℕ) (μ : ℝ) :
     Matrix.one_apply_ne hne, smul_zero, add_zero]
 
 omit [FiniteDimensional ℝ E] in
-/-- The next Lanczos coefficient is bounded by the operator norm: `β_m ≤ ‖H‖` (the correct form
-of the book's (B.10.4), `γ_{k+1} ≤ ‖M⁻¹ H‖`). -/
+/-- The Lanczos off-diagonal coefficients are bounded by the operator norm: $\beta_m \le \|H\|$ for
+every $m$.
+
+This is the correct form of (B.10.4) of [cartis2022evaluation], which the book states as
+$\gamma_{k+1} \le \|M^{-1} H\|$. -/
 theorem beta_le_opNorm (m : ℕ) : 𝛃 m ≤ ‖H‖ := by
   rw [Lanczos.beta, Arnoldi.w_eq_sub_starProjection, ← Submodule.starProjection_orthogonal_val]
   refine (Submodule.norm_starProjection_apply_le _ _).trans ?_
@@ -318,21 +364,22 @@ section Residual
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {H : E →L[ℝ] E} {g : E}
 
-/-- `𝒦ₕ[k]` is the Krylov subspace `𝒦_k(H, g)` of the operator `H` and the gradient `g`. -/
+/-- $\mathcal{K}_k$ denotes the Krylov subspace $\mathcal{K}_k(H, g)$ of the operator $H$ and the
+gradient $g$. -/
 local notation "𝒦ₕ[" k "]" => 𝒦[(H : E →ₗ[ℝ] E), g] k
 
-/-- The Lanczos vectors `q j = Arnoldi.vec H g j`. -/
+/-- $q_j$ denotes the Lanczos vector `Arnoldi.vec H g j`. -/
 local notation "𝐪" => Arnoldi.vec (H : E →ₗ[ℝ] E) g
 
-/-- The Lanczos tridiagonal matrices `T_m = Lanczos.tridiag H g m`. -/
+/-- $T_m$ denotes the Lanczos tridiagonal matrix `Lanczos.tridiag H g m`. -/
 local notation "𝐓" => Lanczos.tridiag (H : E →ₗ[ℝ] E) g
 
-/-- The Lanczos off-diagonal coefficients `β j = Lanczos.beta H g j`. -/
+/-- $\beta_j$ denotes the Lanczos off-diagonal coefficient `Lanczos.beta H g j`. -/
 local notation "𝛃" => Lanczos.beta (H : E →ₗ[ℝ] E) g
 
-/-- **Exactness at the grade.** Once `𝒦_k` is the whole Krylov space (`grade(H, g) ≤ k`), it is
-`H`-invariant, so a point `s ∈ 𝒦_k` whose residual `g + H s + μ s` is orthogonal to `𝒦_k` has
-zero residual. -/
+/-- **Exactness at the grade.** Let $k \ge 1$ and $\operatorname{grade}(H, g) \le k$, so that
+$\mathcal{K}_k$ is the whole Krylov space and is $H$-invariant. If $s \in \mathcal{K}_k$ and the
+residual $g + H s + \mu s$ is orthogonal to $\mathcal{K}_k$, then $g + H s + \mu s = 0$. -/
 theorem residual_eq_zero_of_grade_le {k : ℕ} (hk : 1 ≤ k)
     (hgr : Krylov.grade (H : E →ₗ[ℝ] E) g ≤ k) {s : E} {μ : ℝ} (hs : s ∈ 𝒦ₕ[k])
     (hgal : ∀ v ∈ 𝒦ₕ[k], ⟪g + H s + μ • s, v⟫ = 0) : g + H s + μ • s = 0 := by
@@ -345,10 +392,13 @@ theorem residual_eq_zero_of_grade_le {k : ℕ} (hk : 1 ≤ k)
     Submodule.add_mem _ (Submodule.add_mem _ (mem_krylov H g hk) hHs) (Submodule.smul_mem _ _ hs)
   exact inner_self_eq_zero.1 (hgal _ hr)
 
-/-- **The restricted first-order condition in Lanczos coordinates** ((10.2.2), (B.10.1)). Let
-`g ≠ 0`, `m + 1 ≤ grade(H, g)`, `s ∈ 𝒦_{m+1}` with `g + H s + μ s ⟂ 𝒦_{m+1}`, and let
-`ȳⱼ = ⟪qⱼ, s⟫` be its Lanczos coordinates. Then `(T_{m+1} + μ) ȳ = -‖g‖ e₀` and
-`‖g + H s + μ s‖ = β_m |ȳ_m|`. -/
+/-- **The restricted first-order condition in Lanczos coordinates.** Let $H$ be symmetric,
+$g \neq 0$ and $m + 1 \le \operatorname{grade}(H, g)$. Let $s \in \mathcal{K}_{m+1}$ be such
+that $g + H s + \mu s$ is orthogonal to $\mathcal{K}_{m+1}$, and let
+$\bar y_j = \langle q_j, s \rangle$ be its Lanczos coordinates. Then
+$$(T_{m+1} + \mu) \bar y = -\|g\| e_0 \quad \text{and} \quad \|g + H s + \mu s\| = \beta_m |\bar
+  y_m|.$$
+This is (10.2.2) and (B.10.1) of [cartis2022evaluation]. -/
 theorem lanczos_galerkin (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0) {m : ℕ}
     (hm : m + 1 ≤ Krylov.grade (H : E →ₗ[ℝ] E) g) {s : E} {μ : ℝ} (hs : s ∈ 𝒦ₕ[m + 1])
     (hgal : ∀ v ∈ 𝒦ₕ[m + 1], ⟪g + H s + μ • s, v⟫ = 0) :
@@ -371,9 +421,12 @@ theorem lanczos_galerkin (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
   rw [hnorm hsys]
   simp [y]
 
-/-- **The size of a restricted solution** (proofs of [cartis2022evaluation] Theorem 10.2.2 and
-Corollary 10.2.3): if `s ∈ 𝒦_k` satisfies `g + H s + μ s ⟂ 𝒦_k` with `μ ≥ -θ₁`, then
-`‖g‖ ≤ (θₖ + μ) ‖s‖`, `θₖ` the greatest Ritz value. -/
+/-- **The size of a restricted solution.** Let $H$ be symmetric and $k \ge 1$. If
+$s \in \mathcal{K}_k$ satisfies the condition that $g + H s + \mu s$ is orthogonal to
+$\mathcal{K}_k$, with $\mu \ge -\theta_1$, then
+$$\|g\| \le (\theta_k + \mu) \|s\|,$$
+where $\theta_k$ is the greatest Ritz value. This is used in the proofs of Theorem 10.2.2 and
+Corollary 10.2.3 of [cartis2022evaluation]. -/
 theorem norm_le_of_galerkin_krylov (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k : ℕ} (hk : 1 ≤ k)
     {s : E} {μ : ℝ} (hs : s ∈ 𝒦ₕ[k]) (hgal : ∀ v ∈ 𝒦ₕ[k], ⟪g + H s + μ • s, v⟫ = 0)
     (hμ : -leftmost (isSymmetric_compressionL (K := 𝒦ₕ[k]) hH) ≤ μ) :
@@ -384,17 +437,21 @@ theorem norm_le_of_galerkin_krylov (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {k :
   simp only [add_comm μ] at h
   exact h
 
-/-- **The residual bound** (core of [cartis2022evaluation] Theorems 10.2.2 and 10.3.2; Gould and
-Simoncini). Let `g ≠ 0`, `k ≥ 1`, `s ∈ 𝒦_k` with `g + H s + μ s ⟂ 𝒦_k`, and let the shift
-`μ` be to the right of the least Ritz value `θ₁` of `𝒦_k`, so that `κ = κₖ(μ)` is the condition
-number of the positive definite `T_k + μ`. Then
-`‖g + H s + μ s‖ ≤ 2 ‖H‖ κ ‖s‖ q(κ)^{k-1}`, `q(κ) = (√κ - 1)/(√κ + 1)`.
+/-- **The residual bound.** Let $H$ be symmetric, $g \neq 0$ and $k \ge 1$. Let
+$s \in \mathcal{K}_k$ be such that $g + H s + \mu s$ is orthogonal to $\mathcal{K}_k$, and let
+the shift satisfy $\mu > -\theta_1$, where $\theta_1$ is the least Ritz value of
+$\mathcal{K}_k$; then $\kappa = \kappa_k(\mu)$ is the condition number of the positive definite
+matrix $T_k + \mu$. Then
+$$\|g + H s + \mu s\| \le 2 \|H\| \, \kappa \, \|s\| \, q(\kappa)^{k-1}, \qquad q(\kappa) =
+  \frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}.$$
+This is the core of Theorems 10.2.2 and 10.3.2 of [cartis2022evaluation], which follow Gould and
+Simoncini.
 
-Proof: in Lanczos coordinates the residual is `β_{k-1} |ȳ_{k-1}|` with
-`ȳ = -‖g‖ (T_k + μ)⁻¹ e₀`; the `(k-1, 0)` entry of the inverse of the positive definite tridiagonal
-`T_k + μ` is at most `2 q^{k-1} / (θ₁ + μ)` (`Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`,
-Lemma B.10.1), `‖g‖ = ‖(P H| + μ) s‖ ≤ (θₖ + μ) ‖s‖`, and `β_{k-1} ≤ ‖H‖`. Beyond the grade
-the residual vanishes. -/
+In Lanczos coordinates the residual is $\beta_{k-1} |\bar y_{k-1}|$ with
+$\bar y = -\|g\| (T_k + \mu)^{-1} e_0$. The $(k-1, 0)$ entry of the inverse of the positive
+definite tridiagonal matrix $T_k + \mu$ is at most $2 q^{k-1} / (\theta_1 + \mu)$ (Lemma B.10.1,
+`Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`); moreover $\|g\| = \|(PH| + \mu) s\| \le
+(\theta_k + \mu) \|s\|$ and $\beta_{k-1} \le \|H\|$. Beyond the grade the residual is $0$. -/
 theorem krylov_residual_le (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0) {k : ℕ} (hk : 1 ≤ k)
     {s : E} {μ : ℝ} (hs : s ∈ 𝒦ₕ[k]) (hgal : ∀ v ∈ 𝒦ₕ[k], ⟪g + H s + μ • s, v⟫ = 0)
     (hμ : -leftmost (isSymmetric_compressionL (K := 𝒦ₕ[k]) hH) < μ) :
@@ -446,22 +503,28 @@ theorem krylov_residual_le (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 
     _ = 2 * ‖H‖ * (b / a) * ‖s‖ * convFactor (b / a) ^ m := by
         field_simp
 
-/-- **Interlacing at the top**: the greatest Ritz value on a nonzero subspace is at most the
-greatest eigenvalue `λmax` of `H` ([cartis2022evaluation], proof of Corollary 10.2.3). -/
+/-- **Interlacing at the top.** Let $H$ be symmetric and let $K$ be a nonzero subspace. Then the
+greatest eigenvalue of the compression $P_K H|_K$ is at most the greatest eigenvalue
+$\lambda_{\max}$ of $H$. This is used in the proof of Corollary 10.2.3 of
+[cartis2022evaluation]. -/
 theorem rightmost_compressionL_le (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (K : Submodule ℝ E)
     [Nontrivial K] : rightmost (isSymmetric_compressionL (K := K) hH) ≤ rightmost hH :=
   rightmost_le_of_forall fun v => by
     rw [inner_compressionL_right]
     exact inner_le_rightmost_mul_norm_sq (hH := hH) (v : E)
 
-/-- **Theorem 10.2.2** (bound on the gradient at the Krylov subspace minimizer;
-[cartis2022evaluation] Theorem 10.2.2, Gould–Simoncini). Let `H` be symmetric, `g ≠ 0`, `σ > 0`,
-`r > 2`, `k ≥ 1`, and let `sₖ` minimize the regularized model over `𝒦_k(H, g)`, with multiplier
-`λₖ = σ ‖sₖ‖^{r-2}` ((10.2.3)) and `κₖ = κₖ(λₖ)` ((10.2.8)). Then the gradient of the regularized
-model satisfies
-`‖g + H sₖ + λₖ sₖ‖ ≤ 2 ‖H‖ κₖ (λₖ/σ)^{1/(r-2)} ((√κₖ - 1)/(√κₖ + 1))^{k-1}` ((10.2.9)).
-Here `‖H‖` is the operator norm of `E` (for scaled data, the largest `|λ|` of the pencil
-`(H, M)`, which is at most the book's `‖M⁻¹ H‖`). -/
+/-- **Bound on the gradient at the Krylov subspace minimizer of the regularized model.** Let $H$ be
+symmetric, $g \neq 0$, $\sigma > 0$, $r > 2$ and $k \ge 1$. Let $s_k \in \mathcal{K}_k(H, g)$
+minimize the regularized model over $\mathcal{K}_k(H, g)$, with multiplier
+$\lambda_k = \sigma \|s_k\|^{r-2}$ as in (10.2.3), and let $\kappa_k = \kappa_k(\lambda_k)$ as
+in (10.2.8). Then the gradient of the regularized model satisfies
+$$\|g + H s_k + \lambda_k s_k\| \le 2 \|H\| \, \kappa_k
+  \left(\frac{\lambda_k}{\sigma}\right)^{1/(r-2)} \left(\frac{\sqrt{\kappa_k} -
+  1}{\sqrt{\kappa_k} + 1}\right)^{k-1}.$$
+This is Theorem 10.2.2 of [cartis2022evaluation], (10.2.9), which follows Gould and Simoncini.
+
+Here $\|H\|$ is the operator norm of $E$. For scaled data it is the largest $|\lambda|$ of the
+pencil $(H, M)$, which is at most the book's $\|M^{-1} H\|$. -/
 theorem krylov_gradient_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
     {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) {k : ℕ} (hk : 1 ≤ k) {s : E} (hs : s ∈ 𝒦ₕ[k])
     (hmin : IsMinOn (regModel g H σ r) (𝒦ₕ[k] : Set E) s) :
@@ -476,11 +539,14 @@ theorem krylov_gradient_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymme
   exact krylov_residual_le hH hg hk hs (galerkin_of_isMinOn_regModel_subspace hH hσ hr hs hmin).1
     (neg_leftmost_lt_of_isMinOn_regModel_krylov hH hg hσ hr hk hs hmin).1
 
-/-- **Theorem 10.3.2** (bound on the residual at the Krylov subspace trust-region minimizer;
-[cartis2022evaluation] Theorem 10.3.2). Let `H` be symmetric, `g ≠ 0`, `k ≥ 1`, and let `sₖ ∈ 𝒦_k`
-be feasible (`‖sₖ‖ ≤ Δ`) with trust-region multiplier `λₖ` for the subproblem restricted to `𝒦_k`
-(the compressed data), and `κₖ = κₖ(λₖ)`. Then the residual (10.3.1) satisfies
-`‖g + H sₖ + λₖ sₖ‖ ≤ 2 ‖H‖ κₖ Δ ((√κₖ - 1)/(√κₖ + 1))^{k-1}`. -/
+/-- **Bound on the residual at the Krylov subspace trust-region solution.** Let $H$ be symmetric,
+$g \neq 0$ and $k \ge 1$. Let $s_k \in \mathcal{K}_k$ satisfy $\|s_k\| \le \Delta$ and have the
+trust-region multiplier $\lambda_k$ (`Subproblem.IsTrustRegionMultiplier`) for the subproblem
+restricted to $\mathcal{K}_k$, that is, for the compressed data. Let
+$\kappa_k = \kappa_k(\lambda_k)$. Then the residual (10.3.1) satisfies
+$$\|g + H s_k + \lambda_k s_k\| \le 2 \|H\| \, \kappa_k \, \Delta \left(\frac{\sqrt{\kappa_k} -
+  1}{\sqrt{\kappa_k} + 1}\right)^{k-1}.$$
+This is Theorem 10.3.2 of [cartis2022evaluation]. -/
 theorem krylov_residual_bound_trustRegion (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
     {Δ μ : ℝ} {k : ℕ} (hk : 1 ≤ k) {s : E} (hs : s ∈ 𝒦ₕ[k]) (hsΔ : ‖s‖ ≤ Δ)
     (h : IsTrustRegionMultiplier ((𝒦ₕ[k]).orthogonalProjectionOnto g) (compressionL H _) Δ
@@ -493,19 +559,30 @@ theorem krylov_residual_bound_trustRegion (hH : (H : E →ₗ[ℝ] E).IsSymmetri
   have hq := convFactor_nonneg hκ
   gcongr
 
-/-- **Corollary 10.2.3** (iteration bound for the Krylov approximation, regularization;
-[cartis2022evaluation] Corollary 10.2.3). Let `H` be symmetric, `g ≠ 0`, `σ > 0`,
-`r > 2`, `θ > 0` (the constant `θ₁` of the stopping rule (9.3.14b)), and for `1 ≤ k ≤ grade(H, g)`
-let `sₖ` minimize the regularized model over `𝒦_k(H, g)`, with multiplier `λₖ = σ ‖sₖ‖^{r-2}`.
-Let `s*` be a global minimizer with `λ* = σ ‖s*‖^{r-2}`, `λmax` the greatest eigenvalue of `H`,
-`κ*` an upper bound of the `κₖ(λₖ)` (such as their maximum (10.2.10)), `q* = q(κ*)` and
-`A = (4 ‖H‖ κ* / θ) (λ*/σ)^{1/(r-2)} ((λmax + λ*)/‖g‖)²`. Then the stopping rule (9.3.14b),
-`‖g + H sₖ + λₖ sₖ‖ ≤ ½ θ ‖sₖ‖²`, holds
-(i) at every `k ∈ [1, grade]` with `A q*^{k-1} ≤ 1`, and (ii) at `k = grade`; hence
-(iii) if `κ* > 1`, at some `k ≤ min (⌈log A / log (1/q*)⌉₊ + 1) grade`, and
-(iv) if `κ* = 1`, at some `k ≤ min 2 grade`.
-The ceiling is `⌈·⌉₊` (`log A` may be negative), and the case `κ* = 1`, where
-`log((√κ* + 1)/(√κ* - 1))` is undefined, is separate. -/
+/-- **Iteration bound for the Krylov approximation, regularization.** Let $H$ be symmetric,
+$g \neq 0$, $\sigma > 0$, $r > 2$ and $\theta > 0$; here $\theta$ is the constant $\theta_1$ of
+the stopping rule (9.3.14b). Let $(s_k)$ be a sequence with $s_k \in \mathcal{K}_k(H, g)$ for
+all $k$, such that for $1 \le k \le \operatorname{grade}(H, g)$ the point $s_k$ minimizes the
+regularized model over $\mathcal{K}_k(H, g)$, with multiplier
+$\lambda_k = \sigma \|s_k\|^{r-2}$. Let $s_*$ be a global minimizer of the regularized model,
+with $\lambda_* = \sigma \|s_*\|^{r-2}$, let $\lambda_{\max}$ be the greatest eigenvalue of $H$,
+let $\kappa_*$ be an upper bound of the numbers $\kappa_k(\lambda_k)$ for
+$1 \le k \le \operatorname{grade}(H, g)$, let $q_* = q(\kappa_*)$, and let
+$$A = \frac{4 \|H\| \kappa_*}{\theta} \left(\frac{\lambda_*}{\sigma}\right)^{1/(r-2)}
+  \left(\frac{\lambda_{\max} + \lambda_*}{\|g\|}\right)^2.$$
+Then the stopping rule (9.3.14b), $\|g + H s_k + \lambda_k s_k\| \le \frac12 \theta \|s_k\|^2$,
+holds:
+
+* (i) at every $k \in [1, \operatorname{grade}]$ with $A q_*^{k-1} \le 1$;
+* (ii) at $k = \operatorname{grade}$;
+* (iii) if $\kappa_* > 1$, at some $k$ with $1 \le k \le \min(\lceil \log A / \log(1/q_*)
+  \rceil + 1, \operatorname{grade})$;
+* (iv) if $\kappa_* = 1$, at some $k$ with $1 \le k \le \min(2, \operatorname{grade})$.
+
+This is Corollary 10.2.3 of [cartis2022evaluation].
+
+The ceiling is `Nat.ceil`, since $\log A$ may be negative. The case $\kappa_* = 1$, where
+$\log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1))$ is undefined, is stated separately. -/
 theorem krylov_iteration_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
     {σ r θ : ℝ} (hσ : 0 < σ) (hr : 2 < r) (hθ : 0 < θ) {s : ℕ → E}
     (hs : ∀ k, s k ∈ 𝒦ₕ[k])
@@ -586,14 +663,22 @@ theorem krylov_iteration_bound_regularization (hH : (H : E →ₗ[ℝ] E).IsSymm
   refine ⟨hP, hPG, fun hκ => h1 (convFactor_pos hκ) (convFactor_lt_one κs), fun hκ => h2 ?_⟩
   rw [hκ, convFactor_one]
 
-/-- **Corollary 10.3.3** (iteration bound for the Krylov approximation, trust region;
-[cartis2022evaluation] Corollary 10.3.3). Let `H` be symmetric, `g ≠ 0`, `ε > 0`, and
-for `1 ≤ k ≤ grade(H, g)` let `sₖ ∈ 𝒦_k` be feasible with trust-region multiplier `λₖ` for the
-subproblem restricted to `𝒦_k`. Let `κ*` bound the `κₖ(λₖ)` and `q* = q(κ*)`. Then the residual
-test (10.3.2), `‖g + H sₖ + λₖ sₖ‖ ≤ ε`, holds (i) at every `k ∈ [1, grade]` with
-`2 ‖H‖ κ* Δ q*^{k-1} ≤ ε`, and (ii) at `k = grade`; hence (iii) if `κ* > 1`, at some
-`k ≤ min (⌈log (2 ‖H‖ κ* Δ / ε) / log (1/q*)⌉₊ + 1) grade`, and (iv) if `κ* = 1`, at some
-`k ≤ min 2 grade`. -/
+/-- **Iteration bound for the Krylov approximation, trust region.** Let $H$ be symmetric, $g \neq 0$
+and $\varepsilon > 0$. Let $(s_k)$ be a sequence with $s_k \in \mathcal{K}_k$ for all $k$, such
+that for $1 \le k \le \operatorname{grade}(H, g)$ we have $\|s_k\| \le \Delta$ and $s_k$ has the
+trust-region multiplier $\lambda_k$ for the subproblem restricted to $\mathcal{K}_k$. Let
+$\kappa_*$ be an upper bound of the numbers $\kappa_k(\lambda_k)$ for
+$1 \le k \le \operatorname{grade}(H, g)$, and let $q_* = q(\kappa_*)$. Then the residual test
+(10.3.2), $\|g + H s_k + \lambda_k s_k\| \le \varepsilon$, holds:
+
+* (i) at every $k \in [1, \operatorname{grade}]$ with $2 \|H\| \kappa_* \Delta q_*^{k-1} \le
+  \varepsilon$;
+* (ii) at $k = \operatorname{grade}$;
+* (iii) if $\kappa_* > 1$, at some $k$ with $1 \le k \le \min(\lceil \log(2 \|H\| \kappa_*
+  \Delta / \varepsilon) / \log(1/q_*) \rceil + 1, \operatorname{grade})$;
+* (iv) if $\kappa_* = 1$, at some $k$ with $1 \le k \le \min(2, \operatorname{grade})$.
+
+This is Corollary 10.3.3 of [cartis2022evaluation]. The ceiling is `Nat.ceil`. -/
 theorem krylov_iteration_bound_trustRegion (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hg : g ≠ 0)
     {Δ ε : ℝ} (hε : 0 < ε) {s : ℕ → E} {μ : ℕ → ℝ} (hs : ∀ k, s k ∈ 𝒦ₕ[k])
     (hmul : ∀ k, 1 ≤ k → k ≤ Krylov.grade (H : E →ₗ[ℝ] E) g → ‖s k‖ ≤ Δ ∧

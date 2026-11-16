@@ -7,72 +7,95 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.Stationary.RegularSplitting
 
 /-!
-# Incomplete `LU` factorizations
+# Incomplete LU factorizations
 
-An *incomplete* `LU` factorization of a square matrix `A` is a pair `L`, `U` — unit lower triangular
-and upper triangular — that both vanish on a prescribed *zero pattern* `P ⊆ n × n` and whose product
-agrees with `A` off that pattern. Writing `R = L U - A` for the residual, `A = L U - R` is a
-splitting of `A` whose `M` factor is cheap to apply, and `R` is supported in `P`.
+Let $A$ be a square matrix and let $P$ be a set of positions, the *zero pattern*. An *incomplete LU
+factorization* of $A$ for $P$ is a pair of matrices $L$ and $U$, with $L$ unit lower triangular and
+$U$ upper triangular, such that both vanish on $P$ and $(LU)_{ij} = a_{ij}$ for every position
+$(i, j) \notin P$ ([saad2003iterative], §10.3). With the residual $R = LU - A$, the factorization
+gives the splitting $A = LU - R$, whose first part is cheap to invert, and $R$ is supported in $P$.
+The level-zero factorization $\mathrm{ILU}(0)$ takes for $P$ the off-diagonal zero pattern of $A$.
+The modified factorization $\mathrm{MILU}$ replaces the condition on the diagonal by the condition
+that $LU$ and $A$ have the same row sums. The incomplete Cholesky factorization of a symmetric
+matrix $B$ is one lower triangular factor $L$ that vanishes on $P$, with $(L L^T)_{ij} = b_{ij}$ for
+$(i, j) \notin P$.
 
-## The declarative definition
+The main theorem is due to [meijerink1977iterative]. An M-matrix $A$ has an incomplete LU
+factorization for every zero pattern that avoids the diagonal, no pivot vanishes, and $A = LU - R$
+is a regular splitting, so the iteration that it defines converges (Theorem 10.2 of
+[saad2003iterative]). In the symmetric case, a Stieltjes matrix has an incomplete Cholesky factor
+with a positive diagonal for every symmetric zero pattern that avoids the diagonal
+([meijerink1977iterative]; [golub2013matrix], §11.5.8). For the threshold factorization
+$\mathrm{ILUT}$, a row recurrence for matrices of the class $\hat{M}$ of [saad2003iterative] keeps a
+positive pivot (Theorem 10.8 of [saad2003iterative]).
 
-`Matrix.IsILU P A L U` states exactly the five constraints above, and not an algorithm.
-[saad2003iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such factors,
-proves that two of them agree, and observes before Algorithm 10.4 that the factors are in general
-not unique. Each loop order produces factors satisfying `Matrix.IsILU`, and every downstream
-statement of §10.3–10.5 uses only these constraints; so the constraints are the definition here.
-Once the pivots are nonzero the factors are in fact determined
-(`Matrix.IsILU.eq_of_diag_ne_zero`); the non-uniqueness is that of a vanishing pivot.
-`Matrix.IsILU0`, taking `P` to be the off-diagonal zero pattern `Matrix.zeroPattern A` of `A`
-itself, is the level-zero factorization `ILU(0)`.
+## Main definitions
 
-`Matrix.IsMILU` is the *modified* variant of §10.3.5: the constraints hold off the diagonal, and the
-diagonal is chosen so that the row sums of `L U` and of `A` agree, which is what makes the
-preconditioner exact on constant vectors.
+* `Matrix.zeroPattern`: the off-diagonal positions at which a matrix vanishes.
+* `Matrix.IsILU`: $L$ and $U$ form an incomplete LU factorization of $A$ for the zero pattern $P$.
+* `Matrix.IsMILU`: the modified incomplete LU factorization.
+* `Matrix.IsILU0`: the factorization $\mathrm{ILU}(0)$.
+* `Matrix.IsIC`: $L$ is an incomplete Cholesky factor of $B$ for the zero pattern $P$.
+* `Matrix.IsIC0`: the factorization $\mathrm{IC}(0)$.
+* `Matrix.IsMHat`: the class of $\hat{M}$ matrices of [saad2003iterative].
 
-`Matrix.IsIC` is the symmetric sibling: one lower triangular factor `L`, vanishing on `P`, with
-`L Lᵀ` agreeing off `P` with a symmetric matrix `B` — the incomplete Cholesky factorization used
-in §10.8.2 to precondition the normal equations. It is normalized by a *positive* diagonal rather
-than by a unit one, so it is not literally an incomplete `LU` factorization;
-`Matrix.IsIC.isILU` rescales it into one, `B = (L D⁻¹) (D Lᵀ)`. An incomplete Cholesky factor with
-a positive diagonal is unique (`Matrix.IsIC.eq_of_diag_pos`), which is what lets a theorem speak of
-*the* `L` factor of `B`.
+## Main results
 
-## Existence for M-matrices
+* `Matrix.IsILU.sub_eq_zero_of_notMem`: the residual $LU - A$ vanishes off the zero pattern.
+* `Matrix.IsILU.dropStrategy_rowSum`: the residual has zero row sums if and only if $LU$ and $A$
+  have the same row sums.
+* `Matrix.IsIC.sub_eq_zero_of_notMem`: the residual $L L^T - B$ vanishes off the zero pattern.
+* `Matrix.IsIC.isILU`: an incomplete Cholesky factorization, rescaled by its diagonal, is an
+  incomplete LU factorization.
+* `Matrix.IsIC.eq_of_diag_pos`: an incomplete Cholesky factor with a positive diagonal is unique.
+* `Matrix.IsMHat.ilut_rows_nonpos`, `Matrix.IsMHat.ilut_rows_diag_nonneg`,
+  `Matrix.IsMHat.ilut_rows`: the sign pattern, the row sums and the pivot of the working row in the
+  threshold elimination of an $\hat{M}$ matrix.
+* `Matrix.IsMMatrix.isMMatrix_elimStep`: one step of Gaussian elimination maps an M-matrix to an
+  M-matrix.
+* `Matrix.IsMMatrix.exists_isILU_isMMatrix`, `Matrix.IsMMatrix.exists_isILU`: an M-matrix has an
+  incomplete LU factorization for every zero pattern that avoids the diagonal, and the splitting is
+  regular.
+* `Matrix.IsILU.eq_of_diag_ne_zero`: incomplete LU factors with nonzero pivots are unique.
+* `Matrix.IsILU.eq_diagonal_mul_transpose`: for a symmetric matrix and a symmetric pattern,
+  $U = D L^T$ with $D$ the diagonal of $U$.
+* `Matrix.IsStieltjes.exists_isIC`: a Stieltjes matrix has an incomplete Cholesky factor with a
+  positive diagonal.
+* `Matrix.IsILU.isRegular`, `Matrix.IsILU.complexSpectralRadius_lt_one`: the splitting $A = LU - R$
+  is regular, and for an M-matrix the iteration converges.
 
-The theorem of the chapter is that an M-matrix (`Matrix.IsMMatrix`) admits an incomplete
-factorization for *every* zero pattern avoiding the diagonal, that no pivot vanishes, and that `A =
-L U - R` is then a regular splitting, hence a convergent iteration (`Matrix.IsMMatrix.exists_isILU`
-and `Matrix.IsILU.isRegular`). This is due to [meijerink1977iterative]; the induction rests on
-[fan1960note] theorem [fan1960note], that one step of Gaussian elimination applied to an M-matrix
-produces an M-matrix (`Matrix.IsMMatrix.schurComplementSingle`), and on the comparison
-theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which is what
-makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the matrix
-up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal entries is
-again an M-matrix.
+## Proof outline
 
-The symmetric case is `Matrix.IsStieltjes.exists_isIC`: a Stieltjes matrix has an incomplete
-Cholesky factor with a positive diagonal for every symmetric zero pattern avoiding the diagonal
-([meijerink1977iterative]; [golub2013matrix] §11.5.8). The incomplete `LU` factorization of a
-symmetric matrix with nonzero pivots is symmetric, `U = D Lᵀ`
+The existence theorem for M-matrices is an induction over the pivots in increasing order. At each
+step, Gaussian elimination below the pivot keeps the working matrix an M-matrix, by the theorem of
+[fan1960note] (`Matrix.IsMMatrix.schurComplementSingle`). Then the entries in the zero pattern are
+dropped. A dropped off-diagonal entry is nonpositive, so dropping moves the matrix up in the
+entrywise order, and the comparison theorem `Matrix.IsMMatrix.of_entrywiseLE` keeps it an M-matrix.
+For a Stieltjes matrix, the incomplete LU factorization is symmetric, $U = D L^T$
 (`Matrix.IsILU.eq_diagonal_mul_transpose`), and the pivots are positive because the last working
-matrix is an M-matrix (`Matrix.IsMMatrix.exists_isILU_isMMatrix`), so `L D^{1/2}` is the factor.
+matrix is an M-matrix (`Matrix.IsMMatrix.exists_isILU_isMMatrix`). So $L D^{1/2}$ is the incomplete
+Cholesky factor.
 
-The elimination step is taken in the form `Matrix.elimStep` of
-`Numlib/LinearAlgebra/Matrix/LU/Elimination`, which keeps the index type fixed: it is `G⁻¹ A` for
-the unipotent `G = Matrix.elimMul A p` carrying the multipliers of column `p`, so the accumulated
-`L` factor is a product of such matrices and no reindexing appears. The `1 × 1`-pivot Schur
-complement `Matrix.schurComplementSingle` of `Numlib/LinearAlgebra/Matrix/SchurComplement` is the
-same step read on the smaller index type, and [fan1960note] theorem is stated for it in
-`Numlib/LinearAlgebra/Matrix/MMatrix`.
+## Implementation notes
 
-## Threshold factorizations
-
-`Matrix.IsMHat` is the weaker class of matrices for which the ILUT existence theorem of §10.4.1
-holds: positive diagonal except possibly in the last row, nonpositive off-diagonal entries, and a
-strictly negative sum of the entries to the right of the diagonal in every row but the last. No
-nonsingularity and no nonnegative inverse are assumed. `Matrix.IsMHat.ilut_rows` is the resulting
-theorem, stated over the abstract row recurrence rather than over an algorithm.
+* `Matrix.IsILU` states the constraints on the factors and not an algorithm. [saad2003iterative],
+  §10.3.1, gives several loop orders (KIJ, IKJ) that compute such factors, proves that two of them
+  agree, and observes before Algorithm 10.4 that the factors are in general not unique. Each loop
+  order gives factors that satisfy `Matrix.IsILU`, and all later statements of §10.3–10.5 use only
+  these constraints. When the pivots are nonzero the factors are unique
+  (`Matrix.IsILU.eq_of_diag_ne_zero`), so the non-uniqueness comes only from a zero pivot.
+* `Matrix.IsIC` is normalized by a positive diagonal and not by a unit diagonal, so it is not
+  literally an incomplete LU factorization. `Matrix.IsIC.isILU` rescales it into one,
+  $B = (L D^{-1})(D L^T)$. The uniqueness `Matrix.IsIC.eq_of_diag_pos` lets a theorem speak of the
+  incomplete Cholesky factor of $B$.
+* The elimination step is `Matrix.elimStep` of `Numlib.LinearAlgebra.Matrix.LU.Elimination`, which
+  keeps the index type fixed. It is $G^{-1} A$ for the unipotent matrix $G$ = `Matrix.elimMul A p`
+  that carries the multipliers of column $p$. So the accumulated factor $L$ is a product of such
+  matrices, without reindexing. The Schur complement `Matrix.schurComplementSingle` of
+  `Numlib.LinearAlgebra.Matrix.SchurComplement` is the same step on the smaller index type, and the
+  theorem of [fan1960note] is stated for it in `Numlib.LinearAlgebra.Matrix.MMatrix`.
+* The class `Matrix.IsMHat` assumes neither nonsingularity nor a nonnegative inverse. The theorem
+  `Matrix.IsMHat.ilut_rows` is stated for an abstract row recurrence and not for an algorithm.
 -/
 
 open Finset
@@ -88,20 +111,21 @@ section ZeroPattern
 
 variable [Zero α]
 
-/-- **The off-diagonal zero pattern of `A`** ([saad2003iterative], §10.3.2): the positions off the
-diagonal at which `A` vanishes.
+/-- The **off-diagonal zero pattern** of a square matrix $A$ (§10.3.2 of [saad2003iterative]): the
+set of positions $(i, j)$ with $i \neq j$ and $a_{ij} = 0$.
 
-Taking it as the zero pattern of an incomplete factorization gives `ILU(0)`, whose factors have the
-sparsity of the lower and upper parts of `A`. -/
+The incomplete factorization with this zero pattern is $\mathrm{ILU}(0)$, whose factors have the
+sparsity of the lower and the upper part of $A$. -/
 def zeroPattern (A : Matrix n n α) : Set (n × n) := {p | A p.1 p.2 = 0 ∧ p.1 ≠ p.2}
 
-/-- Membership in the off-diagonal zero pattern, entry by entry. -/
+/-- A position $(i, j)$ is in the off-diagonal zero pattern of $A$ if and only if $a_{ij} = 0$ and
+$i \neq j$. -/
 @[simp]
 theorem mem_zeroPattern {A : Matrix n n α} {p : n × n} :
     p ∈ A.zeroPattern ↔ A p.1 p.2 = 0 ∧ p.1 ≠ p.2 := Iff.rfl
 
-/-- The off-diagonal zero pattern avoids the diagonal, which is the hypothesis under which the
-existence theorem `Matrix.IsMMatrix.exists_isILU` applies. -/
+/-- The off-diagonal zero pattern contains no diagonal position. This is the hypothesis of the
+existence theorem `Matrix.IsMMatrix.exists_isILU`. -/
 theorem diag_notMem_zeroPattern (A : Matrix n n α) (i : n) : (i, i) ∉ A.zeroPattern :=
   fun h => h.2 rfl
 
@@ -111,75 +135,86 @@ section Defs
 
 variable [Fintype n] [Preorder n] [Semiring α]
 
-/-- The *shape* constraints on a pair of incomplete factors for the zero pattern `P`: `L` is unit
-lower triangular, `U` is upper triangular, and both vanish on `P`.
+/-- The **shape constraints** on a pair of incomplete factors for the zero pattern $P$: $L$ is unit
+lower triangular, $U$ is upper triangular, and both vanish on $P$.
 
-This is the part of `Matrix.IsILU` that does not mention the matrix being factored; it is shared
-with the modified factorization `Matrix.IsMILU`. -/
+This is the part of `Matrix.IsILU` that does not mention the factored matrix. The modified
+factorization `Matrix.IsMILU` uses it too. -/
 structure IsILUFactors (P : Set (n × n)) (L U : Matrix n n α) : Prop where
-  /-- `L` has a unit diagonal. -/
+  /-- The diagonal entries of $L$ are $1$. -/
   l_diag : ∀ i, L i i = 1
-  /-- `L` is lower triangular. -/
+  /-- $L$ is lower triangular: $L_{ij} = 0$ for $i < j$. -/
   l_eq_zero_of_lt : ∀ i j, i < j → L i j = 0
-  /-- `U` is upper triangular. -/
+  /-- $U$ is upper triangular: $U_{ij} = 0$ for $j < i$. -/
   u_eq_zero_of_gt : ∀ i j, j < i → U i j = 0
-  /-- `L` vanishes on the zero pattern. -/
+  /-- $L$ vanishes on the zero pattern. -/
   l_eq_zero_of_mem : ∀ i j, (i, j) ∈ P → L i j = 0
-  /-- `U` vanishes on the zero pattern. -/
+  /-- $U$ vanishes on the zero pattern. -/
   u_eq_zero_of_mem : ∀ i j, (i, j) ∈ P → U i j = 0
 
-/-- **An incomplete `LU` factorization** of `A` for the zero pattern `P` ([saad2003iterative],
-§10.3.2): `L` is unit lower triangular, `U` is upper triangular, both vanish on `P`, and `L U`
-agrees with `A` off `P`.
+/-- An **incomplete LU factorization** of $A$ for the zero pattern $P$ (§10.3.2 of
+[saad2003iterative]). Let $A$, $L$ and $U$ be square matrices over a semiring, indexed by a
+preordered finite type, and let $P$ be a set of positions. Then $(L, U)$ is an incomplete LU
+factorization of $A$ for $P$ if $L$ is unit lower triangular, $U$ is upper triangular,
+$L_{ij} = U_{ij} = 0$ for $(i, j) \in P$, and
+$$(LU)_{ij} = a_{ij} \quad \text{for } (i, j) \notin P.$$
 
-The definition is a constraint rather than an algorithm: every loop order of §10.3.1 produces
-factors satisfying it, and the factors it describes are not unique. See the module documentation. -/
+The definition states constraints and not an algorithm. Every loop order of §10.3.1 of
+[saad2003iterative] gives factors that satisfy it, and the factors that it describes are in
+general not unique. -/
 structure IsILU (P : Set (n × n)) (A L U : Matrix n n α) : Prop extends IsILUFactors P L U where
-  /-- Off the zero pattern, the product of the factors reproduces `A`. -/
+  /-- Off the zero pattern, the product $LU$ agrees with $A$. -/
   agree : ∀ i j, (i, j) ∉ P → (L * U) i j = A i j
 
-/-- **The modified incomplete `LU` factorization** `MILU` ([saad2003iterative], §10.3.5): the shape
-constraints of `Matrix.IsILU` hold, the product reproduces `A` off the diagonal and off `P`, and on
-the diagonal the *row sums* agree, `(L U) e = A e` for `e` the vector of ones.
+/-- The **modified incomplete LU factorization** $\mathrm{MILU}$ (§10.3.5 of [saad2003iterative]).
+The pair $(L, U)$ satisfies the shape constraints of `Matrix.IsILU` for the zero pattern $P$,
+$(LU)_{ij} = a_{ij}$ for $i \neq j$ and $(i, j) \notin P$, and the row sums agree:
+$$(LU) e = A e,$$
+where $e$ is the vector of ones.
 
-The entries that an ordinary incomplete factorization discards are added to the diagonal instead, so
-the preconditioner is exact on constant vectors; that is the whole of its justification. -/
+The entries that an ordinary incomplete factorization drops are added to the diagonal instead.
+So the preconditioner is exact on constant vectors, and this is its justification. -/
 structure IsMILU (P : Set (n × n)) (A L U : Matrix n n α) : Prop extends IsILUFactors P L U where
-  /-- Off the diagonal and off the zero pattern, the product of the factors reproduces `A`. -/
+  /-- Off the diagonal and off the zero pattern, the product $LU$ agrees with $A$. -/
   agree_of_ne : ∀ i j, i ≠ j → (i, j) ∉ P → (L * U) i j = A i j
-  /-- The row sums of `L U` and of `A` agree. -/
+  /-- The row sums of $LU$ and of $A$ agree. -/
   mulVec_one : (L * U) *ᵥ 1 = A *ᵥ 1
 
-/-- **`ILU(0)`** ([saad2003iterative], §10.3.2, Algorithm 10.4): the incomplete factorization whose
-zero pattern is the off-diagonal zero pattern of `A` itself, so that `L` and `U` have the sparsity
-of the lower and upper parts of `A` and `L U` matches `A` wherever `A` is nonzero. -/
+/-- The factorization $\mathrm{ILU}(0)$ (§10.3.2 and Algorithm 10.4 of [saad2003iterative]): an
+incomplete LU factorization of $A$ whose zero pattern is the off-diagonal zero pattern of $A$.
+
+Then $L$ and $U$ have the sparsity of the lower and the upper part of $A$, and $LU$ agrees with
+$A$ at every position where $A$ is nonzero. -/
 abbrev IsILU0 (A L U : Matrix n n α) : Prop := IsILU A.zeroPattern A L U
 
-/-- **An incomplete Cholesky factorization** of a symmetric matrix `B` for the zero pattern `P`
-(Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003, §10.8.2 and
-§10.4.5): `L` is lower triangular, vanishes on `P`, and `L Lᵀ` agrees with `B` off `P`. It is the
-symmetric case of `Matrix.IsILU`, which the book does not give a section of its own.
+/-- An **incomplete Cholesky factorization** of a symmetric matrix $B$ for the zero pattern $P$
+(§10.8.2 and §10.4.5 of [saad2003iterative]). The matrix $L$ is an incomplete Cholesky factor of
+$B$ if $L$ is lower triangular, $L_{ij} = 0$ for $(i, j) \in P$, and
+$$(L L^T)_{ij} = b_{ij} \quad \text{for } (i, j) \notin P.$$
+It is the symmetric case of `Matrix.IsILU`, which the book does not treat in a section of its
+own. Section 10.8.2 of [saad2003iterative] uses it to precondition the normal equations.
 
-Like `Matrix.IsILU`, this is a constraint and not an algorithm. The one difference in shape is the
-normalization: `Matrix.IsILU` fixes a unit diagonal on its lower factor, whereas a Cholesky factor
-carries the scaling itself and is normalized by a *positive* diagonal. Positivity is not
-expressible over a semiring, so it is a hypothesis of the statements that need it
-(`Matrix.IsIC.eq_of_diag_pos`) rather than a field here; `Matrix.IsIC.isILU` rescales an incomplete
-Cholesky factorization with an invertible diagonal into an incomplete `LU` factorization.
+Like `Matrix.IsILU`, the definition states constraints and not an algorithm. The difference in
+shape is the normalization. `Matrix.IsILU` requires a unit diagonal of the lower factor, but a
+Cholesky factor carries the scaling itself and is normalized by a positive diagonal. Positivity
+cannot be expressed over a semiring, so it is a hypothesis of the results that need it
+(`Matrix.IsIC.eq_of_diag_pos`) and not a field of the structure. `Matrix.IsIC.isILU` rescales an
+incomplete Cholesky factorization with an invertible diagonal into an incomplete LU
+factorization.
 
-The factorization is written with the plain transpose, `B = L Lᵀ`, which is the real symmetric
-case; a Hermitian variant would put `Lᴴ` in its place and is not defined here. -/
+The factorization uses the transpose, $B = L L^T$, which is the real symmetric case. A Hermitian
+variant with $L^H$ is not defined here. -/
 structure IsIC (P : Set (n × n)) (B L : Matrix n n α) : Prop where
-  /-- `L` is lower triangular. -/
+  /-- $L$ is lower triangular: $L_{ij} = 0$ for $i < j$. -/
   l_eq_zero_of_lt : ∀ i j, i < j → L i j = 0
-  /-- `L` vanishes on the zero pattern. -/
+  /-- $L$ vanishes on the zero pattern. -/
   l_eq_zero_of_mem : ∀ i j, (i, j) ∈ P → L i j = 0
-  /-- Off the zero pattern, `L Lᵀ` reproduces `B`. -/
+  /-- Off the zero pattern, $L L^T$ agrees with $B$. -/
   agree : ∀ i j, (i, j) ∉ P → (L * Lᵀ) i j = B i j
 
-/-- **`IC(0)`** (Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §10.8.2): the incomplete Cholesky factorization whose zero pattern is the off-diagonal zero
-pattern of `B` itself, so that `L` has the sparsity of the lower part of `B`. -/
+/-- The factorization $\mathrm{IC}(0)$ (§10.8.2 of [saad2003iterative]): an incomplete Cholesky
+factorization of $B$ whose zero pattern is the off-diagonal zero pattern of $B$. Then $L$ has
+the sparsity of the lower part of $B$. -/
 abbrev IsIC0 (B L : Matrix n n α) : Prop := IsIC B.zeroPattern B L
 
 end Defs
@@ -188,35 +223,40 @@ section Residual
 
 variable [Fintype n] [Preorder n] [Ring α] {P : Set (n × n)} {A L U : Matrix n n α}
 
-/-- **[saad2003iterative] Proposition 10.4** (*Iterative Methods for Sparse Linear Systems*): an
-incomplete factorization writes `A = L U - R` with the residual `R = L U - A` supported in the zero
-pattern.
+/-- **Proposition 10.4** of [saad2003iterative]. Let $(L, U)$ be an incomplete LU factorization of
+$A$ for the zero pattern $P$, over a ring. Then the residual $R = LU - A$ satisfies
+$$R_{ij} = 0 \quad \text{for } (i, j) \notin P,$$
+so $A = LU - R$ with $R$ supported in $P$.
 
-This is the form in which `R` enters the regular-splitting statement `Matrix.IsILU.isRegular` and
-the error analysis of §10.5. -/
+In this form $R$ enters the regular splitting `Matrix.IsILU.isRegular` and the error analysis of
+§10.5. -/
 theorem IsILU.sub_eq_zero_of_notMem (h : IsILU P A L U) {i j : n} (hij : (i, j) ∉ P) :
     (L * U - A) i j = 0 := by
   rw [Matrix.sub_apply, h.agree i j hij, sub_self]
 
 omit [Preorder n] in
-/-- **The row-sum identity behind `MILU`** ([saad2003iterative], (10.21)): a residual `R = L U - A`
-has vanishing row sums exactly when the row sums of `L U` and of `A` agree.
+/-- The row-sum identity behind $\mathrm{MILU}$ ((10.21) of [saad2003iterative]). For square
+matrices $A$, $L$ and $U$ over a ring, the residual $R = LU - A$ has zero row sums if and only
+if $LU$ and $A$ have the same row sums:
+$$R e = 0 \iff (LU) e = A e,$$
+where $e$ is the vector of ones.
 
-Correcting each diagonal entry of `U` by the row sum of the entries dropped in that row is what
-makes the left-hand side hold, and the right-hand side is the defining property
-`Matrix.IsMILU.mulVec_one` of the modified factorization. -/
+The correction of each diagonal entry of $U$ by the sum of the entries dropped in its row makes
+the left side hold. The right side is the defining property `Matrix.IsMILU.mulVec_one` of the
+modified factorization. -/
 theorem IsILU.dropStrategy_rowSum (A L U : Matrix n n α) :
     (L * U - A) *ᵥ (1 : n → α) = 0 ↔ (L * U) *ᵥ (1 : n → α) = A *ᵥ 1 := by
   rw [sub_mulVec, sub_eq_zero]
 
-/-- The residual of a modified incomplete factorization has vanishing row sums, which is the sense
-in which `MILU` is exact on constant vectors. -/
+/-- The residual $LU - A$ of a modified incomplete LU factorization has zero row sums. In this sense
+$\mathrm{MILU}$ is exact on constant vectors. -/
 theorem IsMILU.residual_mulVec_one (h : IsMILU P A L U) : (L * U - A) *ᵥ (1 : n → α) = 0 :=
   (IsILU.dropStrategy_rowSum A L U).2 h.mulVec_one
 
-/-- An incomplete Cholesky factorization writes `B = L Lᵀ - R` with the residual `R = L Lᵀ - B`
-supported in the zero pattern, exactly as `Matrix.IsILU.sub_eq_zero_of_notMem` does for an
-incomplete `LU` factorization. -/
+/-- Let $L$ be an incomplete Cholesky factor of $B$ for the zero pattern $P$, over a ring. Then the
+residual $R = L L^T - B$ satisfies $R_{ij} = 0$ for $(i, j) \notin P$, so $B = L L^T - R$ with
+$R$ supported in $P$. This is the analogue of `Matrix.IsILU.sub_eq_zero_of_notMem` for
+incomplete Cholesky factorizations. -/
 theorem IsIC.sub_eq_zero_of_notMem {B : Matrix n n α} (h : IsIC P B L) {i j : n}
     (hij : (i, j) ∉ P) : (L * Lᵀ - B) i j = 0 := by
   rw [Matrix.sub_apply, h.agree i j hij, sub_self]
@@ -231,8 +271,8 @@ variable [Fintype n] [Preorder n] [DecidableEq n] [Field α] {P : Set (n × n)}
 variable {B L : Matrix n n α}
 
 omit [Preorder n] in
-/-- Scaling the columns of `L` by the inverse of its diagonal, and the rows of `Lᵀ` by its
-diagonal, leaves the product `L Lᵀ` unchanged. -/
+/-- If the diagonal entries of $L$ are nonzero, then $(L D^{-1})(D L^T) = L L^T$, where $D$ is the
+diagonal of $L$. -/
 private theorem mul_diagInv_mul_diag_mul_transpose (hd : ∀ i, L i i ≠ 0) :
     (L * diagonal fun i => (L i i)⁻¹) * (diagonal (fun i => L i i) * Lᵀ) = L * Lᵀ := by
   ext i j
@@ -241,13 +281,13 @@ private theorem mul_diagInv_mul_diag_mul_transpose (hd : ∀ i, L i i ≠ 0) :
   rw [mul_diagonal, diagonal_mul, transpose_apply, mul_assoc, ← mul_assoc ((L k k)⁻¹),
     inv_mul_cancel₀ (hd k), one_mul]
 
-/-- **An incomplete Cholesky factorization is an incomplete `LU` factorization after rescaling.**
-If the diagonal `D` of `L` is invertible and the zero pattern is symmetric, then `L D⁻¹` is unit
-lower triangular, `D Lᵀ` is upper triangular, both vanish on the pattern, and their product is
-`L Lᵀ`; so `Matrix.IsILU P B (L * D⁻¹) (D * Lᵀ)` holds.
+/-- An incomplete Cholesky factorization is an incomplete LU factorization after rescaling. Let $L$
+be an incomplete Cholesky factor of $B$ over a field for a zero pattern $P$ that is symmetric,
+that is, $(i, j) \in P$ implies $(j, i) \in P$. If the diagonal $D$ of $L$ has nonzero entries,
+then $(L D^{-1}, D L^T)$ is an incomplete LU factorization of $B$ for $P$.
 
-Symmetry of the pattern is needed because `Matrix.IsILU` imposes one pattern on both factors, and
-the upper factor of a Cholesky factorization is the transpose of the lower one. -/
+The pattern must be symmetric because `Matrix.IsILU` imposes one pattern on both factors, and
+the upper factor of a Cholesky factorization is the transpose of the lower factor. -/
 theorem IsIC.isILU (h : IsIC P B L) (hP : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hd : ∀ i, L i i ≠ 0) :
     IsILU P B (L * diagonal fun i => (L i i)⁻¹) (diagonal (fun i => L i i) * Lᵀ) where
   l_diag i := by rw [mul_diagonal, mul_inv_cancel₀ (hd i)]
@@ -267,15 +307,16 @@ section ICUnique
 
 variable [Fintype n] [LinearOrder n] {P : Set (n × n)} {B L₁ L₂ : Matrix n n ℝ}
 
-/-- **An incomplete Cholesky factor with a positive diagonal is unique.** Two such factors of the
-same matrix for the same zero pattern — which must avoid the diagonal, since the diagonal entries
-are what the positivity normalizes — are equal.
+/-- An incomplete Cholesky factor with a positive diagonal is unique. Let $B$ be a real square
+matrix, indexed by a linearly ordered finite type, and let $P$ be a zero pattern that contains
+no diagonal position. If $L_1$ and $L_2$ are incomplete Cholesky factors of $B$ for $P$ with
+positive diagonal entries, then $L_1 = L_2$.
 
-This is the point at which incomplete Cholesky differs from incomplete `LU`, whose factors are not
-unique, and it is what lets a statement speak of *the* `L` factor of an incomplete Cholesky
-factorization. The proof is the row-by-row elimination: with the rows before `i` and the entries of
-row `i` before column `j` already known to agree, the constraint at `(i, j)` reads
-`(L₁ i j - L₂ i j) * L₁ j j = 0` off the diagonal and `L₁ i i ^ 2 = L₂ i i ^ 2` on it. -/
+In this respect incomplete Cholesky differs from incomplete LU, whose factors are in general not
+unique. The uniqueness lets a statement speak of the incomplete Cholesky factor. The proof goes
+row by row. When the earlier rows and the entries of row $i$ before column $j$ agree, the
+constraint at $(i, j)$ gives $(L_1 - L_2)_{ij} (L_1)_{jj} = 0$ off the diagonal and
+$(L_1)_{ii}^2 = (L_2)_{ii}^2$ on the diagonal. -/
 theorem IsIC.eq_of_diag_pos (h₁ : IsIC P B L₁) (h₂ : IsIC P B L₂) (hP : ∀ i, (i, i) ∉ P)
     (hp₁ : ∀ i, 0 < L₁ i i) (hp₂ : ∀ i, 0 < L₂ i i) : L₁ = L₂ := by
   classical
@@ -330,46 +371,47 @@ theorem IsIC.eq_of_diag_pos (h₁ : IsIC P B L₁) (h₂ : IsIC P B L₂) (hP : 
 
 end ICUnique
 
-/-! ### Threshold factorizations and [saad2003iterative] `M̂` matrices -/
+/-! ### Threshold factorizations and the matrices of class $\hat{M}$ -/
 
 section MHat
 
 variable [Fintype n] [LinearOrder n]
 
-/-- **[saad2003iterative] `M̂` matrix** (*Iterative Methods for Sparse Linear Systems*,
-(10.25)-(10.27)): the diagonal entries are positive except possibly in the last row, where they need
-only be nonnegative; the off-diagonal entries are nonpositive; and in every row but the last the
-entries strictly to the right of the diagonal have a strictly negative sum.
+/-- An **$\hat{M}$ matrix** ((10.25)–(10.27) of [saad2003iterative]). A real square matrix $H$,
+indexed by a linearly ordered finite type, is an $\hat{M}$ matrix if:
+* $h_{ii} > 0$ for every row $i$ other than the last row, and $h_{ii} \ge 0$ in the last row;
+* $h_{ij} \le 0$ for $i \neq j$;
+* $\sum_{j > i} h_{ij} < 0$ for every row $i$ other than the last row.
 
-This is strictly weaker than `Matrix.IsMMatrix`: neither nonsingularity nor a nonnegative inverse is
-required. It is the class for which the threshold factorization `ILUT` of §10.4 is shown not to
-break down. "The last row" is the row indexed by the greatest element, `IsMax i`. -/
+Unlike the definition of an M-matrix (`Matrix.IsMMatrix`), it requires neither nonsingularity
+nor a nonnegative inverse. It is the class for which [saad2003iterative], §10.4, shows that the
+threshold factorization $\mathrm{ILUT}$ does not break down. The last row is the row indexed by
+the greatest element, `IsMax i`. -/
 structure IsMHat (H : Matrix n n ℝ) : Prop where
-  /-- The diagonal entries are positive away from the last row. -/
+  /-- The diagonal entries are positive in every row other than the last row. -/
   diag_pos : ∀ i, ¬ IsMax i → 0 < H i i
   /-- The diagonal entry of the last row is nonnegative. -/
   diag_nonneg_of_isMax : ∀ i, IsMax i → 0 ≤ H i i
   /-- The off-diagonal entries are nonpositive. -/
   offDiag_nonpos : ∀ i j, i ≠ j → H i j ≤ 0
-  /-- In every row but the last, the entries to the right of the diagonal sum to a strictly negative
-  number: each such row has a nonzero entry strictly to the right of the diagonal. -/
+  /-- In every row other than the last row, the entries to the right of the diagonal have a negative
+  sum. In particular, each such row has a nonzero entry to the right of the diagonal. -/
   sum_gt_neg : ∀ i, ¬ IsMax i → ∑ j ∈ Finset.univ.filter (fun j => i < j), H i j < 0
 
-/-- Every diagonal entry of an `M̂` matrix is nonnegative. -/
+/-- Every diagonal entry of an $\hat{M}$ matrix is nonnegative. -/
 theorem IsMHat.diag_nonneg {H : Matrix n n ℝ} (hH : H.IsMHat) (i : n) : 0 ≤ H i i := by
   by_cases hi : IsMax i
   · exact hH.diag_nonneg_of_isMax i hi
   · exact (hH.diag_pos i hi).le
 
-/-- **A diagonally dominant `M̂` matrix** ([saad2003iterative], §10.4.1): an `M̂` matrix all of
-whose row sums are nonnegative. This is the hypothesis of the `ILUT` existence theorem
-`Matrix.IsMHat.ilut_rows`. -/
+/-- A **diagonally dominant $\hat{M}$ matrix** (§10.4.1 of [saad2003iterative]): an $\hat{M}$ matrix
+whose row sums are all nonnegative. This is the hypothesis of the $\mathrm{ILUT}$ existence
+theorem `Matrix.IsMHat.ilut_rows`. -/
 structure IsMHat.IsDiagDominant (H : Matrix n n ℝ) : Prop extends IsMHat H where
   /-- Every row sum is nonnegative. -/
   rowSum_nonneg : ∀ i, 0 ≤ ∑ j, H i j
 
-/-- The sum over the entries strictly to the right of `d` dominates the sum over all entries other
-than `d`, when those entries are nonpositive. -/
+/-- If $x_j \le 0$ for $j \neq d$, then $\sum_{j \neq d} x_j \le \sum_{j > d} x_j$. -/
 private theorem sum_erase_le_sum_gt (x : n → ℝ) (d : n) (hoff : ∀ j, j ≠ d → x j ≤ 0) :
     ∑ j ∈ Finset.univ.erase d, x j ≤ ∑ j ∈ Finset.univ.filter (fun j => d < j), x j := by
   have hsub : Finset.univ.filter (fun j => d < j) ⊆ Finset.univ.erase d := fun j hj =>
@@ -380,7 +422,8 @@ private theorem sum_erase_le_sum_gt (x : n → ℝ) (d : n) (hoff : ∀ j, j ≠
   linarith
 
 omit [Fintype n] in
-/-- A sum of terms that are nonpositive away from `a` is at most the term at `a`. -/
+/-- If $a \in s$ and $x_j \le 0$ for $j \in s$ with $j \neq a$, then $\sum_{j \in s} x_j \le x_a$.
+-/
 private theorem sum_le_of_mem (x : n → ℝ) (s : Finset n) {a : n} (ha : a ∈ s)
     (hnp : ∀ j ∈ s, j ≠ a → x j ≤ 0) : ∑ j ∈ s, x j ≤ x a := by
   have hsplit := Finset.add_sum_erase s x ha
@@ -388,23 +431,31 @@ private theorem sum_le_of_mem (x : n → ℝ) (s : Finset n) {a : n} (ha : a ∈
     Finset.sum_nonpos fun j hj => hnp j (Finset.mem_of_mem_erase hj) (Finset.mem_erase.1 hj).1
   linarith
 
-/-- The diagonal entry is positive as soon as the row sum is nonnegative and the entries to the
-right of the diagonal sum to a negative number. -/
+/-- If $x_j \le 0$ for $j \neq d$, $\sum_j x_j \ge 0$ and $\sum_{j > d} x_j < 0$, then $x_d > 0$. -/
 private theorem pos_of_sum_nonneg_of_sum_gt_neg (x : n → ℝ) (d : n) (hoff : ∀ j, j ≠ d → x j ≤ 0)
     (hsum : 0 ≤ ∑ j, x j) (hgt : ∑ j ∈ Finset.univ.filter (fun j => d < j), x j < 0) : 0 < x d := by
   have h1 := Finset.add_sum_erase Finset.univ x (Finset.mem_univ d)
   have h2 := sum_erase_le_sum_gt x d hoff
   linarith
 
-/-- **The sign pattern and the row sums along a threshold elimination** ([saad2003iterative],
-(10.28) and (10.29)): the working row `u k` stays nonpositive off its own diagonal position `d`, and
-its row sum stays nonnegative and never decreases.
+/-- The sign pattern and the row sums in a threshold elimination ((10.28) and (10.29) of
+[saad2003iterative]). Let $H$ be a real square matrix, indexed by a linearly ordered finite
+type, that is a diagonally dominant $\hat{M}$ matrix, and let $d$ be a row index. Let
+$u_k, w_k, r_k \in \mathbb{R}^n$, $l_k \in \mathbb{R}$ and pivot indices $p_k$ for
+$k \in \mathbb{N}$ satisfy, for all $k$ and $j$:
+* $u_0$ is row $d$ of $H$, and $u_{k+1} = u_k - l_k w_k - r_k$;
+* $(w_k)_j \le 0$ for $j \neq p_k$, $\sum_j (w_k)_j \ge 0$, and $l_k \le 0$;
+* $l_k (w_k)_{p_k} = (u_k)_{p_k}$;
+* $(r_k)_j = 0$ or $(r_k)_j = (u_k)_j - l_k (w_k)_j$, and $(r_k)_d = 0$.
 
-This is the half of [saad2003iterative] Theorem 10.8 that needs neither the strictly negative sum to
-the right of the diagonal — (10.27), which is vacuous in the last row — nor the protected entry of
-the drop strategy, so it holds in *every* row. The full statement, with the strictly positive pivot,
-is `Matrix.IsMHat.ilut_rows`; the last row keeps `Matrix.IsMHat.ilut_rows_diag_nonneg`. The data and
-the remaining hypotheses are described there. -/
+Then for every $k$, $(u_k)_j \le 0$ for all $j \neq d$, and
+$$0 \le \sum_j (u_k)_j \le \sum_j (u_{k+1})_j.$$
+
+This is the half of Theorem 10.8 of [saad2003iterative] that needs neither the negative sum to
+the right of the diagonal, (10.27), which does not constrain the last row, nor the protected
+entry of the drop strategy. So it holds in every row. The meaning of the data is explained at
+`Matrix.IsMHat.ilut_rows`, which states the full theorem with the positive pivot. In the last
+row, `Matrix.IsMHat.ilut_rows_diag_nonneg` remains. -/
 theorem IsMHat.ilut_rows_nonpos {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) (d : n)
     (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
     (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
@@ -454,12 +505,14 @@ theorem IsMHat.ilut_rows_nonpos {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant
     obtain ⟨hoff, hsum, hmono⟩ := ih
     exact ⟨(step k hoff).1, hsum.trans hmono, (step (k + 1) (step k hoff).1).2⟩
 
-/-- **[saad2003iterative] `u^n_n ≥ 0`**, the last-row half of (10.30): the diagonal entry of the
-working row is nonnegative, in every row and at every step.
+/-- The last-row part of (10.30) of [saad2003iterative], $u^n_n \ge 0$. Under the hypotheses of
+`Matrix.IsMHat.ilut_rows_nonpos`, the diagonal entry of the working row is nonnegative:
+$(u_k)_d \ge 0$ for every $k$.
 
-Only the sign pattern and the nonnegative row sum of `Matrix.IsMHat.ilut_rows_nonpos` are used, so
-this needs neither (10.27) nor the drop-strategy modification, and it is all that is available in
-the last row, where `Matrix.IsMHat.ilut_rows` does not apply. -/
+The proof uses only the sign pattern and the nonnegative row sum of
+`Matrix.IsMHat.ilut_rows_nonpos`. So it needs neither (10.27) nor the modification of the drop
+strategy, and it holds in every row. In the last row, where `Matrix.IsMHat.ilut_rows` does not
+apply, it is the only available result. -/
 theorem IsMHat.ilut_rows_diag_nonneg {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) (d : n)
     (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
     (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
@@ -472,25 +525,36 @@ theorem IsMHat.ilut_rows_diag_nonneg {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDom
   exact hsum.trans
     (sum_le_of_mem (u k) Finset.univ (Finset.mem_univ d) fun j _ hj => hoff j hj)
 
-/-- **[saad2003iterative] Theorem 10.8** (*Iterative Methods for Sparse Linear Systems*), the
-existence result for the threshold factorization `ILUT`.
+/-- **Theorem 10.8** of [saad2003iterative], the existence theorem for the threshold factorization
+$\mathrm{ILUT}$. Let $H$ be a real square matrix, indexed by a linearly ordered finite type,
+that is a diagonally dominant $\hat{M}$ matrix, and let $d$ be a row index other than the last.
+Let $u_k, w_k, r_k \in \mathbb{R}^n$, $l_k \in \mathbb{R}$ and pivot indices $p_k$ for
+$k \in \mathbb{N}$ satisfy, for all $k$ and $j$:
+* $u_0$ is row $d$ of $H$, and $u_{k+1} = u_k - l_k w_k - r_k$;
+* $(w_k)_j \le 0$ for $j \neq p_k$, $\sum_j (w_k)_j \ge 0$, and $l_k \le 0$;
+* $p_k < d$ and $l_k (w_k)_{p_k} = (u_k)_{p_k}$;
+* $(r_k)_j = 0$ or $(r_k)_j = (u_k)_j - l_k (w_k)_j$, and $(r_k)_d = 0$;
+* there is $j_0 > d$ with $(r_k)_{j_0} = 0$ and $(u_k)_{j_0} - l_k (w_k)_{j_0} \le (u_k)_j - l_k
+  (w_k)_j$ for all $j > d$.
 
-The data is the row recurrence (10.23) of §10.4.1 rather than an algorithm: `u k` is the working
-copy of row `d` after `k` elimination steps, `w k` is the pivot row used at step `k` — a row of the
-`U` factor already computed, with pivot index `p k` strictly to the left of `d` — `l k` is the
-multiplier, and `r k` is the part of the row that the drop strategy discards. The hypotheses say
-that the pivot rows have the sign pattern and the nonnegative row sums of an `M̂` matrix, that the
-multiplier annihilates the pivot entry, that each entry is either kept whole or dropped whole, that
-the diagonal entry is never dropped, and — the modification of §10.4.2 — that the entry of largest
-modulus to the right of the diagonal is never dropped.
+Then for every $k$: $(u_k)_j \le 0$ for all $j \neq d$;
+$0 \le \sum_j (u_k)_j \le \sum_j (u_{k+1})_j$; $\sum_{j > d} (u_k)_j < 0$; and $(u_k)_d > 0$. So
+the factorization does not break down.
 
-The conclusion is the book's, for every `k`: the row stays nonpositive off its diagonal; its sum
-stays nonnegative and never decreases; the entries to the right of the diagonal still sum to a
-strictly negative number; and the pivot `u k d` is therefore strictly positive, so the factorization
-does not break down.
+The data is the row recurrence (10.23) of §10.4.1 of [saad2003iterative] and not an algorithm.
+The vector $u_k$ is the working copy of row $d$ after $k$ elimination steps. The vector $w_k$ is
+the pivot row of step $k$, a row of the factor $U$ that is already computed, with the pivot
+index $p_k$ to the left of $d$. The number $l_k$ is the multiplier, and $r_k$ is the part of the
+row that the drop strategy drops. The hypotheses say that the pivot rows have the sign pattern
+and the nonnegative row sums of an $\hat{M}$ matrix, that the multiplier eliminates the pivot
+entry, that each entry is either kept or dropped completely, that the diagonal entry is never
+dropped, and that the entry of largest modulus to the right of the diagonal is never dropped.
+The last condition is the modification of §10.4.2 of [saad2003iterative]. Since the entries to
+the right of the diagonal are nonpositive, the entry of largest modulus is the least entry.
 
-In the last row, where the hypothesis `¬ IsMax d` fails and (10.27) is vacuous, the first two
-clauses alone give `0 ≤ u k d`, which is [saad2003iterative] `u^n_n ≥ 0`. -/
+In the last row, the hypothesis that $d$ is not the last index fails and (10.27) does not apply.
+There, the first two conclusions alone give $(u_k)_d \ge 0$, which is $u^n_n \ge 0$ of
+[saad2003iterative] (`Matrix.IsMHat.ilut_rows_diag_nonneg`). -/
 theorem IsMHat.ilut_rows {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) {d : n}
     (hd : ¬ IsMax d) (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
     (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
@@ -540,7 +604,8 @@ section ElimStep
 variable [Fintype n] [LinearOrder n] [DecidableEq n]
 
 set_option linter.unusedDecidableInType false in
-/-- A sum over a linearly ordered index type, split at one point. -/
+/-- For a linearly ordered finite index type and a point $p$, $\sum_c f(c) = f(p) + \sum_{c < p}
+f(c) + \sum_{c > p} f(c)$. -/
 private theorem sum_split_at (p : n) (f : n → ℝ) :
     ∑ c, f c = f p + (∑ c ∈ Finset.univ.filter (fun c => c < p), f c
       + ∑ c ∈ Finset.univ.filter (fun c => p < c), f c) := by
@@ -556,14 +621,18 @@ private theorem sum_split_at (p : n) (f : n → ℝ) :
   exact Finset.disjoint_left.2 fun c hc hc' =>
     absurd ((Finset.mem_filter.1 hc).2.trans (Finset.mem_filter.1 hc').2) (lt_irrefl c)
 
-/-- **[fan1960note] theorem on the whole index type** ([saad2003iterative], Theorem 10.1): one step
-of Gaussian elimination applied to an M-matrix produces an M-matrix.
+/-- The theorem of [fan1960note] on the whole index type (Theorem 10.1 of [saad2003iterative]). Let
+$M$ be a real square M-matrix, indexed by a linearly ordered finite type, and let $p$ be an
+index. Then the matrix `Matrix.elimStep M p`, obtained from $M$ by one step of Gaussian
+elimination at the pivot $p$, is an M-matrix.
 
-Off the diagonal the argument is the book's. For the inverse, `M₁ = (1 - N) M` gives `M₁⁻¹ = M⁻¹ (1
-+ N)`, which agrees with `M⁻¹` off the pivot column, and in the pivot column is `(M p p)⁻¹ (δ_{ip} -
-∑_{c < p} M⁻¹ i c M c p)`, a nonnegative number because `M⁻¹` is nonnegative and the off-diagonal
-entries of `M` are nonpositive. [saad2003iterative] own argument covers only the first pivot, where
-the pivot column of `M₁` is `M p p e_p`; this form of it works at every pivot. -/
+Off the diagonal, the argument is the argument of the book. For the inverse, $M_1 = (1 - N) M$
+gives $M_1^{-1} = M^{-1}(1 + N)$. This agrees with $M^{-1}$ off the pivot column. In the pivot
+column, its entry in row $i$ is
+$$(m_{pp})^{-1} \Bigl(\delta_{ip} - \sum_{c < p} (M^{-1})_{ic} \, m_{cp}\Bigr),$$
+which is nonnegative because $M^{-1}$ is nonnegative and the off-diagonal entries of $M$ are
+nonpositive. The argument in [saad2003iterative] covers only the first pivot, where the pivot
+column of $M_1$ is $m_{pp} e_p$. This form of the argument works at every pivot. -/
 theorem IsMMatrix.isMMatrix_elimStep {M : Matrix n n ℝ} (hM : M.IsMMatrix) (p : n) :
     (elimStep M p).IsMMatrix := by
   have hpp : 0 < M p p := hM.diag_pos p
@@ -641,27 +710,27 @@ section Existence
 variable [Fintype n] [LinearOrder n] [DecidableEq n]
 
 open scoped Classical in
-/-- The matrix obtained by setting to zero the entries in the zero pattern. -/
+/-- The matrix obtained from $M$ by replacing the entries in the zero pattern $P$ by $0$. -/
 private noncomputable def dropPattern (P : Set (n × n)) (M : Matrix n n ℝ) : Matrix n n ℝ :=
   Matrix.of fun i j => if (i, j) ∈ P then 0 else M i j
 
 omit [Fintype n] [LinearOrder n] [DecidableEq n] in
-/-- Inside the zero pattern, dropping leaves a zero. -/
+/-- Inside the zero pattern, the dropped matrix has the entry $0$. -/
 private theorem dropPattern_of_mem {P : Set (n × n)} {M : Matrix n n ℝ} {i j : n}
     (h : (i, j) ∈ P) : dropPattern P M i j = 0 := by
   classical
   simp [dropPattern, h]
 
 omit [Fintype n] [LinearOrder n] [DecidableEq n] in
-/-- Outside the zero pattern, dropping changes nothing. -/
+/-- Outside the zero pattern, the dropped matrix has the entries of $M$. -/
 private theorem dropPattern_of_notMem {P : Set (n × n)} {M : Matrix n n ℝ} {i j : n}
     (h : (i, j) ∉ P) : dropPattern P M i j = M i j := by
   classical
   simp [dropPattern, h]
 
 omit [LinearOrder n] in
-/-- A matrix with nonpositive off-diagonal entries is moved up in the entrywise order by dropping
-entries off the diagonal, and keeps its nonpositive off-diagonal entries. -/
+/-- If $P$ contains no diagonal position and $M$ is an M-matrix, then the matrix obtained from $M$
+by dropping the entries in $P$ is an M-matrix. -/
 private theorem isMMatrix_dropPattern {P : Set (n × n)} (hP : ∀ i, (i, i) ∉ P)
     {M : Matrix n n ℝ} (hM : M.IsMMatrix) : (dropPattern P M).IsMMatrix := by
   refine hM.of_entrywiseLE (fun i j => ?_) fun i j hij => ?_
@@ -674,37 +743,42 @@ private theorem isMMatrix_dropPattern {P : Set (n × n)} (hP : ∀ i, (i, i) ∉
     · rw [dropPattern_of_notMem h]
       exact hM.offDiag_nonpos i j hij
 
-/-- The invariant of the induction that proves [saad2003iterative] Theorem 10.2: after `k`
-elimination steps, `L` is the accumulated unipotent factor, `M` the working matrix, and `L M - A`
-the residual accumulated so far. `rank` is the position of an index in the increasing enumeration,
-so that "`rank j < k`" is "column `j` has already been eliminated". -/
+/-- The invariant of the induction that proves Theorem 10.2 of [saad2003iterative]: after $k$
+elimination steps, $L$ is the accumulated unipotent factor, $M$ is the working matrix, and
+$LM - A$ is the residual so far; `rank` gives the position of an index in the increasing
+enumeration, so that $\operatorname{rank} j < k$ means that column $j$ is already eliminated. -/
 private structure ILUState (P : Set (n × n)) (A : Matrix n n ℝ) (rank : n → ℕ) (k : ℕ)
     (L M : Matrix n n ℝ) : Prop where
-  /-- `L` has a unit diagonal. -/
+  /-- The diagonal entries of $L$ are $1$. -/
   l_diag : ∀ i, L i i = 1
-  /-- `L` is lower triangular. -/
+  /-- $L$ is lower triangular. -/
   l_upper : ∀ i j, i < j → L i j = 0
-  /-- `L` differs from the identity only in the columns already eliminated. -/
+  /-- $L$ differs from the identity only in the columns that are already eliminated. -/
   l_late : ∀ i j, i ≠ j → k ≤ rank j → L i j = 0
-  /-- `L` vanishes on the zero pattern. -/
+  /-- $L$ vanishes on the zero pattern. -/
   l_pattern : ∀ i j, (i, j) ∈ P → L i j = 0
-  /-- The inverse of `L` is entrywise nonnegative. -/
+  /-- The inverse of $L$ is entrywise nonnegative. -/
   l_inv_nonneg : L⁻¹.EntrywiseNonneg
-  /-- `L` is nonsingular. -/
+  /-- $L$ is nonsingular. -/
   l_unit : IsUnit L
-  /-- The working matrix is still an M-matrix. -/
+  /-- The working matrix is an M-matrix. -/
   m_mmatrix : M.IsMMatrix
   /-- The working matrix vanishes on the zero pattern. -/
   m_pattern : ∀ i j, (i, j) ∈ P → M i j = 0
-  /-- The columns already eliminated are upper triangular. -/
+  /-- The columns that are already eliminated are zero below the diagonal. -/
   m_lower : ∀ i j, j < i → rank j < k → M i j = 0
   /-- The residual is entrywise nonnegative. -/
   res_nonneg : (L * M - A).EntrywiseNonneg
-  /-- The residual is supported in the zero pattern. -/
+  /-- The residual vanishes off the zero pattern. -/
   res_pattern : ∀ i j, (i, j) ∉ P → (L * M - A) i j = 0
 
-/-- The upper factor produced by the proof of `Matrix.IsMMatrix.exists_isILU` is itself an
-M-matrix; in particular its pivots are positive. -/
+/-- Let $A$ be a real square M-matrix, indexed by a linearly ordered finite type, and let $P$ be a
+zero pattern that contains no diagonal position. Then there is an incomplete LU factorization
+$(L, U)$ of $A$ for $P$ such that $U$ is an M-matrix, $LU$ is nonsingular, $(LU)^{-1}$ is
+entrywise nonnegative, and $LU - A$ is entrywise nonnegative.
+
+This strengthens `Matrix.IsMMatrix.exists_isILU` by the property that $U$ is an M-matrix. In
+particular the pivots $U_{ii}$ are positive. -/
 theorem IsMMatrix.exists_isILU_isMMatrix {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set (n × n))
     (hP : ∀ i, (i, i) ∉ P) :
     ∃ L U : Matrix n n ℝ, IsILU P A L U ∧ U.IsMMatrix ∧ IsUnit (L * U) ∧
@@ -870,21 +944,23 @@ theorem IsMMatrix.exists_isILU_isMMatrix {A : Matrix n n ℝ} (hA : A.IsMMatrix)
   · rw [Matrix.mul_inv_rev]
     exact hst.m_mmatrix.inv_entrywiseNonneg.mul hst.l_inv_nonneg
 
-/-- **[meijerink1977iterative] and van der Vorst's theorem** ([saad2003iterative], Theorem 10.2): a
-real M-matrix has an incomplete `LU` factorization for every zero pattern avoiding the diagonal, no
-pivot vanishes, and the resulting splitting `A = L U - R` is regular — the product `L U` is
-nonsingular with a nonnegative inverse, and the residual is entrywise nonnegative.
+/-- The theorem of Meijerink and van der Vorst [meijerink1977iterative] (Theorem 10.2 of
+[saad2003iterative]). Let $A$ be a real square M-matrix, indexed by a linearly ordered finite
+type, and let $P$ be a zero pattern that contains no diagonal position. Then there is an
+incomplete LU factorization $(L, U)$ of $A$ for $P$ such that $LU$ is nonsingular, $(LU)^{-1}$
+is entrywise nonnegative, and the residual $LU - A$ is entrywise nonnegative. So no pivot
+vanishes, and $A = LU - R$ is a regular splitting.
 
-The induction is over the pivots in increasing order. At each step the working matrix is eliminated
-below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by [fan1960note] theorem
-(`Matrix.IsMMatrix.isMMatrix_elimStep`), and the entries in the zero pattern are then dropped, which
-moves it *up* in the entrywise order and so keeps it an M-matrix by the comparison theorem
-`Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor `L` differs from the identity only in the
-columns already eliminated, which is what makes the dropped mass pass through it unchanged and makes
-the residual a sum of nonnegative matrices.
+The proof is an induction over the pivots in increasing order. At each step, the working matrix
+is eliminated below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by the theorem of
+[fan1960note] (`Matrix.IsMMatrix.isMMatrix_elimStep`). Then the entries in the zero pattern are
+dropped. This moves the matrix up in the entrywise order, so it stays an M-matrix by the
+comparison theorem `Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor $L$ differs from
+the identity only in the columns that are already eliminated. So the dropped entries pass
+through $L$ unchanged, and the residual is a sum of nonnegative matrices.
 
-See `Matrix.IsILU.isRegular` for the reading of the conclusion as a
-`Stationary.Splitting.IsRegular`, and hence for the convergence of the iteration it defines. -/
+See `Matrix.IsILU.isRegular` for the conclusion as a regular splitting
+`Stationary.Splitting.IsRegular`, and for the convergence of the iteration that it defines. -/
 theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set (n × n))
     (hP : ∀ i, (i, i) ∉ P) :
     ∃ L U : Matrix n n ℝ, IsILU P A L U ∧ IsUnit (L * U) ∧ ((L * U)⁻¹).EntrywiseNonneg ∧
@@ -894,17 +970,21 @@ theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set 
 
 end Existence
 
-/-! ### Uniqueness of incomplete `LU` factors, and incomplete Cholesky for Stieltjes matrices -/
+/-! ### Uniqueness of incomplete LU factors, and incomplete Cholesky for Stieltjes matrices -/
 
 section ICExistence
 
 variable [Fintype n] [LinearOrder n] [DecidableEq n] {P : Set (n × n)}
 
 omit [DecidableEq n] in
-/-- **Incomplete `LU` factors with nonzero pivots are unique.** Two incomplete `LU` factorizations
-of the same matrix for the same zero pattern agree as soon as the pivots `U₁ i i` of one of them are
-nonzero: row by row, and within a row from left to right, the constraint at `(i, j)` determines
-`U i j` for `i ≤ j` and `L i j U j j` for `j < i` from entries already known. -/
+/-- Incomplete LU factors with nonzero pivots are unique. Let $A$ be a real square matrix, indexed
+by a linearly ordered finite type, and let $(L_1, U_1)$ and $(L_2, U_2)$ be incomplete LU
+factorizations of $A$ for the same zero pattern $P$. If $(U_1)_{ii} \neq 0$ for every $i$, then
+$L_1 = L_2$ and $U_1 = U_2$.
+
+The proof goes row by row, and in each row from left to right. The constraint at $(i, j)$
+determines $U_{ij}$ for $i \le j$, and $L_{ij} U_{jj}$ for $j < i$, from the entries that are
+already known. -/
 theorem IsILU.eq_of_diag_ne_zero {A L₁ U₁ L₂ U₂ : Matrix n n ℝ} (h₁ : IsILU P A L₁ U₁)
     (h₂ : IsILU P A L₂ U₂) (hd : ∀ i, U₁ i i ≠ 0) : L₁ = L₂ ∧ U₁ = U₂ := by
   classical
@@ -952,10 +1032,14 @@ theorem IsILU.eq_of_diag_ne_zero {A L₁ U₁ L₂ U₂ : Matrix n n ℝ} (h₁ 
           exact add_left_cancel e₁
   exact ⟨Matrix.ext fun i j => (key i j).1, Matrix.ext fun i j => (key i j).2⟩
 
-/-- **The incomplete `LU` factorization of a symmetric matrix is symmetric**: for a symmetric `A`, a
-symmetric zero pattern and nonzero pivots, the upper factor is the diagonal times the transpose of
-the lower one, `U = D Lᵀ` with `D = diag(U)`. The pair `(Uᵀ D⁻¹, D Lᵀ)` is again an incomplete `LU`
-factorization of `Aᵀ = A`, so `Matrix.IsILU.eq_of_diag_ne_zero` applies. -/
+/-- The incomplete LU factorization of a symmetric matrix is symmetric. Let $A$ be a real symmetric
+matrix, indexed by a linearly ordered finite type, let $P$ be a symmetric zero pattern, and let
+$(L, U)$ be an incomplete LU factorization of $A$ for $P$ with $U_{ii} \neq 0$ for every $i$.
+Then
+$$U = D L^T, \qquad D = \operatorname{diag}(U_{11}, \dots, U_{nn}).$$
+
+The pair $(U^T D^{-1}, D L^T)$ is also an incomplete LU factorization of $A^T = A$, so
+`Matrix.IsILU.eq_of_diag_ne_zero` applies. -/
 theorem IsILU.eq_diagonal_mul_transpose {A L U : Matrix n n ℝ} (h : IsILU P A L U)
     (hA : A.IsSymm) (hP : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hd : ∀ i, U i i ≠ 0) :
     U = diagonal (fun i => U i i) * Lᵀ := by
@@ -981,16 +1065,17 @@ theorem IsILU.eq_diagonal_mul_transpose {A L U : Matrix n n ℝ} (h : IsILU P A 
   exact (h.eq_of_diag_ne_zero h' hd).2
 
 omit [DecidableEq n] in
-/-- **Incomplete Cholesky exists for Stieltjes matrices** ([meijerink1977iterative], the symmetric
-case; [golub2013matrix] §11.5.8): a Stieltjes matrix `A` has, for every symmetric zero pattern `P`
-avoiding the diagonal, an incomplete Cholesky factor `L` with a positive diagonal — unique by
-`Matrix.IsIC.eq_of_diag_pos`.
+/-- Incomplete Cholesky factors exist for Stieltjes matrices ([meijerink1977iterative], the
+symmetric case; [golub2013matrix], §11.5.8). Let $A$ be a real Stieltjes matrix, indexed by a
+linearly ordered finite type, and let $P$ be a symmetric zero pattern that contains no diagonal
+position. Then $A$ has an incomplete Cholesky factor $L$ for $P$ with $L_{ii} > 0$ for every
+$i$. By `Matrix.IsIC.eq_of_diag_pos`, this factor is unique.
 
-A Stieltjes matrix is an M-matrix, so it has an incomplete `LU` factorization whose upper factor
-has positive pivots `d_i` (`Matrix.IsMMatrix.exists_isILU_isMMatrix`); by symmetry `U = D Lᵀ`
-(`Matrix.IsILU.eq_diagonal_mul_transpose`), and `L D^{1/2}` is the incomplete Cholesky factor. The
-book's recursive `incChol`, which keeps each Schur complement Stieltjes by
-`Matrix.IsStieltjes.sub_drop`, computes the same factor. -/
+A Stieltjes matrix is an M-matrix, so it has an incomplete LU factorization whose upper factor
+has positive pivots $d_i$ (`Matrix.IsMMatrix.exists_isILU_isMMatrix`). By symmetry $U = D L^T$
+(`Matrix.IsILU.eq_diagonal_mul_transpose`), and $L D^{1/2}$ is the incomplete Cholesky factor.
+The recursive algorithm incChol of [golub2013matrix], §11.5.8, keeps each Schur complement a
+Stieltjes matrix by `Matrix.IsStieltjes.sub_drop`, and it computes the same factor. -/
 theorem IsStieltjes.exists_isIC {A : Matrix n n ℝ} (hA : A.IsStieltjes)
     (hPs : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hP : ∀ i, (i, i) ∉ P) :
     ∃ L : Matrix n n ℝ, IsIC P A L ∧ ∀ i, 0 < L i i := by
@@ -1020,13 +1105,18 @@ section Regular
 variable [Fintype n] [LinearOrder n] [DecidableEq n]
 variable {P : Set (n × n)} {A L U : Matrix n n ℝ}
 
-/-- **The splitting defined by an incomplete factorization is regular** ([saad2003iterative], the
-sentence drawn after Theorem 10.2): with `M = L U` nonsingular and entrywise nonnegatively
-invertible, and the residual nonnegative on the zero pattern, `A = M - N` is a regular splitting —
-off the pattern the residual vanishes, by [saad2003iterative] Proposition 10.4.
+/-- The splitting of an incomplete factorization is regular (the remark after Theorem 10.2 of
+[saad2003iterative]). Let $(L, U)$ be an incomplete LU factorization of a real square matrix $A$
+for the zero pattern $P$. Assume that $LU$ is nonsingular, that $(LU)^{-1}$ is entrywise
+nonnegative, and that $(LU - A)_{ij} \ge 0$ for $(i, j) \in P$. Then $A = LU - (LU - A)$ is a
+regular splitting.
 
-Combined with `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix`, this is
-the convergence of the `ILU`-preconditioned fixed-point iteration for an M-matrix. -/
+Off the pattern the residual vanishes, by Proposition 10.4 of [saad2003iterative]
+(`Matrix.IsILU.sub_eq_zero_of_notMem`). The splitting is the `Stationary.Splitting A` with first
+part $LU$. Together with
+`Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix`, this gives the
+convergence of the fixed-point iteration preconditioned by the incomplete factorization, for an
+M-matrix. -/
 theorem IsILU.isRegular (h : IsILU P A L U) (hu : IsUnit (L * U))
     (hinv : ((L * U)⁻¹).EntrywiseNonneg)
     (hres : ∀ i j, (i, j) ∈ P → 0 ≤ (L * U - A) i j) :
@@ -1037,9 +1127,15 @@ theorem IsILU.isRegular (h : IsILU P A L U) (hu : IsUnit (L * U))
     · exact hres i j hij
     · exact (h.sub_eq_zero_of_notMem hij).ge
 
-/-- The `ILU`-preconditioned fixed-point iteration for an M-matrix converges: the spectral radius of
-its iteration operator is less than one ([saad2003iterative], the corollary drawn from Theorem
-10.2). -/
+/-- The fixed-point iteration preconditioned by an incomplete LU factorization converges for an
+M-matrix (the corollary of Theorem 10.2 of [saad2003iterative]). Let $A$ be a real square
+M-matrix, and let $(L, U)$ be an incomplete LU factorization of $A$ for the zero pattern $P$.
+Assume that $LU$ is nonsingular, that $(LU)^{-1}$ is entrywise nonnegative, and that
+$(LU - A)_{ij} \ge 0$ for $(i, j) \in P$. Then the iteration operator $I - (LU)^{-1} A$ has
+spectral radius less than $1$.
+
+The spectral radius is `Matrix.complexSpectralRadius`, the spectral radius of the real matrix as
+a complex matrix. -/
 theorem IsILU.complexSpectralRadius_lt_one (hA : A.IsMMatrix) (h : IsILU P A L U)
     (hu : IsUnit (L * U)) (hinv : ((L * U)⁻¹).EntrywiseNonneg)
     (hres : ∀ i j, (i, j) ∈ P → 0 ≤ (L * U - A) i j) :

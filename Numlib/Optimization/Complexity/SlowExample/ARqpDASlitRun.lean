@@ -10,22 +10,30 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDA
 /-!
 # A slow ARqpIDA run on a nonconvex feasible set
 
-The criterion of ARqpIDA ([cartis2022evaluation], Algorithm 13.1.2, `Optimization.arqpIDATest`)
-asks for approximate optimality for *some* radii `δ ∈ (0, 1]^q`. On a line, the gradient spikes
-`β_k ≈ ε^q/q!` of the slow example of [cartis2022evaluation], Theorem 12.2.17 meet it at radius
-`1`, so the lower-bound mode of the radii control does not slow the method down there. On the
-closed nonconvex set `X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1} ⊂ ℝ²` (a line and a parallel half-plane at
-distance `ρ ∈ (ε, 2ε]`, `Optimization.slitSet`) with `∂f/∂(v 1) = -1`, every radius `δ ≥ ρ` sees
-the half-plane and fails the criterion, while radii `δ < ρ` (among them the radii `ε` of the run)
-only see the line. With `ρ^n = ε^n (1 + 1/k_ε)`, `n = max(q - 1, 1)`, the first approximately
-optimal iterate is `x_{k_ε}`, `k_ε = ⌈ε^{-q(p+1)/p}⌉`. After `k_ε` the run makes one more step, to
-a point where the derivatives along the line vanish, and continues with accuracy-improving
-iterations there.
+The criterion of ARqpIDA (Algorithm 13.1.2 of [cartis2022evaluation], `Optimization.arqpIDATest`)
+asks for approximate optimality for *some* radii $\delta \in (0, 1]^q$. On a line, the gradient
+spikes $\beta_k \approx \varepsilon^q/q!$ of the slow example of Theorem 12.2.17 of
+[cartis2022evaluation] meet this criterion at radius $1$, so the lower-bound mode of the radii
+control does not slow the method down there. This module uses instead the closed nonconvex set
+$$X = \{v \in \mathbb{R}^2 : v_1 = 0\} \cup \{v \in \mathbb{R}^2 : v_1 \ge \rho\},$$
+a line and a parallel half-plane at distance $\rho \in (\varepsilon, 2\varepsilon]$
+(`Optimization.slitSet`), with $\partial f / \partial v_1 = -1$. Every radius $\delta \ge \rho$ sees
+the half-plane and fails the criterion, while the radii $\delta < \rho$, among them the radii
+$\varepsilon$ of the run, only see the line. With $\rho^n = \varepsilon^n (1 + 1/k_\varepsilon)$ and
+$n = \max\{q - 1, 1\}$, the first approximately optimal iterate is $x_{k_\varepsilon}$, where
+$k_\varepsilon = \lceil \varepsilon^{-q(p+1)/p} \rceil$. After $k_\varepsilon$ the run makes one
+more step, to a point where the derivatives along the line vanish, and continues with
+accuracy-improving iterations there.
 
 ## Main results
 
-* `Optimization.exists_isARqpIDARun_slit`: an ARqpIDA run on `X` in the lower-bound mode of the
-  radii control whose first approximately optimal iterate is `x_{k_ε}`.
+* `Optimization.exists_isARqpIDARun_slit`: a run of ARqpIDA on $X$ in the lower-bound mode of the
+  radii control, whose first approximately optimal iterate is $x_{k_\varepsilon}$.
+
+## Implementation notes
+
+* The coordinates of $v \in \mathbb{R}^2$ are `v 0` and `v 1`, so $v_1$ above is the second
+  coordinate `v 1`.
 -/
 
 open Set Metric
@@ -37,8 +45,8 @@ section Slit
 
 variable {e₁ e₂ : EuclideanSpace ℝ (Fin 2)}
 
-/-- The weight `σ = (3/(p+2))^p` of the slit example satisfies `σ/(p+1)! ≤ 1/(2 q!)` for
-`q ≤ p`. -/
+/-- For $1 \le q \le p$, the weight $\sigma = (3/(p+2))^p$ of the slit example satisfies
+$\sigma/(p+1)! \le 1/(2 \, q!)$. -/
 private theorem slit_sigma_le {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     (3 / ((p : ℝ) + 2)) ^ p / ((p + 1)! : ℝ) ≤ 1 / (2 * q !) := by
   have hσ1 : (3 / ((p : ℝ) + 2)) ^ p ≤ 1 := by
@@ -54,31 +62,50 @@ private theorem slit_sigma_le {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
   rw [div_le_div_iff₀ (by positivity) (by positivity), one_mul]
   nlinarith
 
-/-- **A slow ARqpIDA run on a nonconvex feasible set** in the lower-bound mode of the radii
-control, with exact derivatives, for every `1 ≤ q ≤ p`. There are `f_low`, `L ≥ 1` and `ε₀ > 0`
-such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA constants with orders `p, q`,
-weight `σ₀ = (3/(p+2))^p`, initial radii `δ₀ = ε` and initial accuracies
-`h_{0,i} ≤ κ_s ε^{p-i+1}`, there are `ρ ∈ (ε, 2ε]`, the closed feasible set
-`X = {v | v 1 = 0} ∪ {v | ρ ≤ v 1}` (`v 1` is the second coordinate; a line and a parallel
-half-plane at distance `ρ`), a `C^p` function `f ≥ f_low` with `L`-Lipschitz derivatives of orders
-`0, …, p` and an ARqpIDA run on `X` with exact derivatives from `x₀ = 0` satisfying the radii
-control in the lower-bound mode (`Optimization.ARqpDARadiiControl False` for every `L̄ ≥ 1`; all
-radii are `ε`), whose first iterate that is `(ε, δ)`-approximately optimal on `X` for some radii
-`δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is `x_{k_ε}`, `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after
-`k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` function and derivative evaluations.
+/-- **A slow ARqpIDA run on a nonconvex feasible set.** Let $1 \le q \le p$. Then there are
+$f_{\mathrm{low}} \in \mathbb{R}$, $L \ge 1$ and $\varepsilon_0 > 0$ with the following
+property. Let $\varepsilon \in (0, \varepsilon_0]$, with all tolerances
+$\varepsilon_j = \varepsilon$, and let $P$ be constants of ARqpIDA with orders $p$ and $q$,
+initial weight $\sigma_0 = (3/(p+2))^p$, initial radii $\delta_{0,j} = \varepsilon$ for
+$j \in \{1, \dots, q\}$, and initial accuracies $h_{0,i} \le \kappa_s \varepsilon^{p-i+1}$ for
+$i \in \{1, \dots, p\}$. Then there are:
 
-The run follows the slow example of [cartis2022evaluation], Theorem 12.2.17 (`r = p`) on the line
-`v 1 = 0`: `f(v) = G(v 0) + H(v 1)` with gradient spikes `G'(x_k) = -β_k`,
-`β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!`, steps the minimizers of the model on the line (admissible
-Step-2 steps, since (13.1.55)–(13.1.57) are local conditions, but not global minimizers of the
-model on `X`, which are in the half-plane), `σ_k = σ₀`, `ρ_k = 1`, and `H'(0) = -1`, so that the
-half-plane lowers the Taylor models by at least `ρ > ε`. Radii `δ < ρ` only see the line, where
-the measure of order `q` is `β_k δ`; with `ρ^n = ε^n (1 + 1/k_ε)`, `n = max(q - 1, 1)`, this
-exceeds `ε δ^q/q!` for every `δ < ρ` exactly when `k < k_ε`, and radii `δ ≥ ρ` reach the
-half-plane. So the criterion fails at every radius before `k_ε`, while the Step-1 and Step-2 radii
-`ε < ρ` only see the line, where the model measures at the steps vanish ([cartis2022evaluation],
-Example 12.1.3). After `k_ε` one more step reaches a point where all derivatives of `G` vanish,
-and the run continues with accuracy-improving iterations there. -/
+* a number $\rho$ with $\varepsilon < \rho \le 2\varepsilon$, and the closed set $X = \{v \in
+  \mathbb{R}^2 : v_1 = 0\} \cup \{v \in \mathbb{R}^2 : v_1 \ge \rho\}$;
+* a $C^p$ function $f : \mathbb{R}^2 \to \mathbb{R}$ with $f \ge f_{\mathrm{low}}$ whose
+  derivatives of orders $0, \dots, p$ are $L$-Lipschitz;
+* a run of ARqpIDA on $X$ for $f$ from $x_0 = 0$, with exact derivatives ($D_k$ is the Taylor
+  series of $f$ at $x_k$, and the oracle constants are $0$).
+
+The run satisfies the radii control in the lower-bound mode for every $\bar L \ge 1$; all its
+radii are $\varepsilon$. Its first iterate that is an $(\varepsilon, \delta)$-approximate $q$-th
+order minimizer of $f$ on $X$ for some radii $\delta \in (0, 1]^q$ is $x_{k_\varepsilon}$, where
+$k_\varepsilon = \lceil \varepsilon^{-q(p+1)/p} \rceil$. Up to that iterate, both the number of
+function evaluations ($1$ plus the number of trial iterations before $k_\varepsilon$) and the
+number of derivative evaluations ($1$ plus the number of iterations before $k_\varepsilon$ that
+are accuracy-improving or successful trial iterations) are at least
+$\varepsilon^{-q(p+1)/p} + 1$.
+
+The run follows the slow example of Theorem 12.2.17 of [cartis2022evaluation], with $r = p$, on
+the line $v_1 = 0$. The function is $f(v) = G(v_0) + H(v_1)$, with gradient spikes
+$G'(x_k) = -\beta_k$, where $\beta_k = (\varepsilon^q + \varepsilon^q (k_\varepsilon -
+k)/k_\varepsilon)/q!$, and $H'(0) = -1$, so that the half-plane lowers the Taylor models by at
+least $\rho > \varepsilon$. The steps are the minimizers of the model on the line. They are
+admissible Step-2 steps, since (13.1.55)–(13.1.57) are local conditions, but they are not global
+minimizers of the model on $X$, which lie in the half-plane. The run has $\sigma_k = \sigma_0$
+and $\rho_k = 1$. Radii $\delta < \rho$ only see the line, where the measure of order $q$ is
+$\beta_k \delta$. With $\rho^n = \varepsilon^n (1 + 1/k_\varepsilon)$ and
+$n = \max\{q - 1, 1\}$, this measure exceeds $\varepsilon \delta^q/q!$ for every $\delta < \rho$
+exactly when $k < k_\varepsilon$, and radii $\delta \ge \rho$ reach the half-plane. So the
+criterion fails at every radius before $k_\varepsilon$. The Step-1 and Step-2 radii
+$\varepsilon < \rho$ only see the line, where the model measures at the steps vanish (Example
+12.1.3 of [cartis2022evaluation]). After $k_\varepsilon$, one more step reaches a point where
+all derivatives of $G$ vanish, and the run continues with accuracy-improving iterations there.
+
+The run is `Optimization.IsARqpIDARun`, the radii control is
+`Optimization.ARqpDARadiiControl False`, the criterion is `Optimization.arqpIDATest`, and the
+counts are `Optimization.derivEvalCount`. The Lipschitz conditions are
+`LipschitzDerivsAnchored f univ univ 0 p`. -/
 theorem exists_isARqpIDARun_slit {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →

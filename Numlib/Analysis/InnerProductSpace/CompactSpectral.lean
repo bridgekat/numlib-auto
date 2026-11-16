@@ -16,60 +16,79 @@ import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
 /-!
 # The eigenvalues of a compact self-adjoint operator, enumerated with multiplicity
 
-For a compact self-adjoint operator `T` on a Hilbert space, this module produces the eigenvalue
-sequence and the orthonormal basis of eigenvectors that the classical spectral theorem for compact
-self-adjoint operators asserts, in the form that the convergence theory of iterative methods
-consumes: a sequence `ℕ → ℝ` and a `HilbertBasis ℕ`.
+Let $T$ be a compact self-adjoint operator on a Hilbert space $E$ over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$. This module constructs the eigenvalue sequence $(\lambda_j)_{j \in \mathbb{N}}$ and
+the orthonormal family of eigenvectors $(e_j)_{j \in \mathbb{N}}$ that the classical spectral
+theorem for compact self-adjoint operators asserts, in the form that the convergence theory of
+iterative methods uses: a sequence $\mathbb{N} \to \mathbb{R}$, and a Hilbert basis indexed by
+$\mathbb{N}$. The eigenvalues are listed with multiplicity, $|\lambda_0| \ge |\lambda_1| \ge \dots$,
+and $\lambda_j \to 0$. If $E$ is infinite-dimensional, then $|\lambda_0| = \|T\|$,
+$Te_j = \lambda_j e_j$, the family $(e_j)$ is orthonormal, and every vector orthogonal to all $e_j$
+lies in $\ker T$; if moreover $T$ is injective, $(e_j)$ is a Hilbert basis of $E$. The theorem is
+classical; see [conway2007course], Chapter II §5, and [han2009theoretical], Section 2.8.
 
 ## Main definitions
 
-* `ContinuousLinearMap.IsSymmetric.eigenvalueSeq` — the eigenvalues of `T` listed *with
-  multiplicity* in decreasing order of modulus. It is built greedily: the `j`-th eigenvector is a
-  unit vector realizing the operator norm of `T` on the orthogonal complement of the previous ones,
-  so `eigenvalueSeq_antitone` is immediate from the construction rather than from a sorting
-  argument.
-* `ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero` — the eigenvalues tend to `0`. This
-  is the only clause that uses compactness of `T` for anything but the existence of one eigenvector:
-  if the moduli stayed above `ε` then `T` would map an orthonormal sequence to a sequence of
-  pairwise distance at least `ε`, which no compact operator does.
-* `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` — the eigenvectors, as a `HilbertBasis
-  ℕ`.
+* `ContinuousLinearMap.IsTopEigenpair`: a unit eigenvector $u$ in a subspace $W$ with a real
+  eigenvalue $\mu$ such that $|\mu|$ bounds $T$ on $W$.
+* `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`: the eigenvalues of $T$, listed with multiplicity
+  in decreasing order of modulus.
+* `ContinuousLinearMap.IsSymmetric.eigenvector`: the unit eigenvectors chosen with them.
+* `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`: for injective $T$ on an
+  infinite-dimensional space, the eigenvectors as a Hilbert basis indexed by $\mathbb{N}$.
 
-## The two hypotheses beyond compactness and symmetry
+## Main results
 
-Enumerating *all* eigenvalues of `T` with multiplicity, in decreasing order of modulus, by an index
-running over `ℕ`, is not always possible, and the two extra hypotheses of `eigenvectorHilbertBasis`
-are what make it possible.
+* `ContinuousLinearMap.IsSymmetric.exists_isTopEigenpair`: $T$ attains its norm at an eigenvector on
+  every nonzero closed invariant subspace.
+* `ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone`: the moduli $|\lambda_j|$ decrease.
+* `ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero`: $\lambda_j \to 0$.
+* `ContinuousLinearMap.IsSymmetric.abs_eigenvalueSeq_zero`: $|\lambda_0| = \|T\|$.
+* `ContinuousLinearMap.IsSymmetric.apply_eigenvector` and
+  `ContinuousLinearMap.IsSymmetric.orthonormal_eigenvector`: $Te_j = \lambda_j e_j$, and the $e_j$
+  are orthonormal.
+* `ContinuousLinearMap.IsSymmetric.orthogonal_span_range_eigenvector_le_ker`: a vector orthogonal to
+  all $e_j$ is in $\ker T$.
+* `ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis`: the vectors of the Hilbert basis
+  are eigenvectors for the $\lambda_j$.
 
-* `T` must be injective. If `T` has both infinitely many nonzero eigenvalues and a nontrivial kernel
-  — take `T = diag (1, 1/2, 1/3, …) ⊕ 0` on `ℓ² ⊕ ℓ²`, which is compact and self-adjoint — then a
-  decreasing enumeration would have to place the eigenvalue `0` after infinitely many nonzero ones,
-  and no such enumeration by `ℕ` exists. The remaining case that *is* representable, `T` of finite
-  rank with an infinite-dimensional separable kernel, is not treated here; it is the case in which
-  separability of the space becomes a genuine hypothesis, since the kernel of a compact operator on
-  a non-separable space is non-separable. Under injectivity, separability of the space is a
-  *conclusion*, not a hypothesis: the eigenvectors are a countable dense-spanning family.
-* The space must be infinite-dimensional, since a finite-dimensional space carries no `HilbertBasis
-  ℕ` at all. In finite dimension the enumeration is Mathlib's `LinearMap.IsSymmetric.eigenvalues`,
-  indexed by `Fin n` and already antitone.
+## Proof outline
+
+The construction is greedy. The vector $e_j$ is a unit eigenvector at which $T$ attains its norm on
+the orthogonal complement of $e_0, \dots, e_{j-1}$, and $\lambda_j$ is its eigenvalue. So
+$|\lambda_j|$ is the norm of $T$ on a decreasing sequence of subspaces, and the moduli decrease by
+construction, with no sorting argument. The greedy step
+(`ContinuousLinearMap.IsSymmetric.exists_isTopEigenpair`) is the only place where the spectrum
+appears: for a self-adjoint operator the spectral radius is $\|T\|$, the spectrum is compact so the
+supremum is attained, and a nonzero point of the spectrum of a compact operator is an eigenvalue.
+The limit $\lambda_j \to 0$ is the only other use of compactness: if the moduli stayed above
+$\varepsilon > 0$, then $T$ would map the orthonormal sequence $(e_j)$ to a sequence of points at
+pairwise distance at least $\varepsilon$, which has no convergent subsequence.
 
 ## Implementation notes
 
-The greedy step is `ContinuousLinearMap.IsSymmetric.exists_isTopEigenpair`: a compact self-adjoint
-operator attains its norm at an eigenvector of a nonzero invariant closed subspace. Its proof is the
-only place where the spectrum appears — `spectralRadius T = ‖T‖` for a self-adjoint operator, the
-spectrum is compact so the supremum is attained, and a nonzero point of the spectrum of a compact
-operator is an eigenvalue.
-
-The recursion is carried by a plain (non-dependent) structural recursion `eigenAux` on `ℕ` whose
-value is the pair `(eigenvector, eigenvalue)` together with the subspace the next step works in; the
-invariance and closedness of that subspace, which the greedy step needs, are proved afterwards by
-induction rather than threaded through the definition.
-
-## References
-
-The theorem is classical; see [conway2007course], Chapter II §5, and [han2009theoretical], Section
-2.8.
+* An enumeration of all eigenvalues with multiplicity, in decreasing order of modulus and indexed by
+  $\mathbb{N}$, does not always exist. The two extra hypotheses of
+  `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` make it possible.
+* The operator $T$ must be injective. Let $T = \operatorname{diag}(1, 1/2, 1/3, \dots) \oplus 0$ on
+  $\ell^2 \oplus \ell^2$, which is compact and self-adjoint. It has infinitely many nonzero
+  eigenvalues and a nontrivial kernel, so a decreasing enumeration would have to place the
+  eigenvalue $0$ after infinitely many nonzero ones, and no such enumeration by $\mathbb{N}$ exists.
+  The remaining case that can be enumerated, $T$ of finite rank with an infinite-dimensional
+  separable kernel, is not treated here. In that case separability of the space is a real
+  hypothesis, since the kernel of a compact operator on a non-separable space is non-separable.
+  Under injectivity, separability of the space is a conclusion and not a hypothesis: the
+  eigenvectors are a countable family with dense span.
+* The space must be infinite-dimensional, since a finite-dimensional space has no Hilbert basis
+  indexed by $\mathbb{N}$. In finite dimension the enumeration is Mathlib's
+  `LinearMap.IsSymmetric.eigenvalues`, indexed by `Fin n` and already antitone.
+* The recursion is a plain, non-dependent structural recursion on $\mathbb{N}$. Its value at each
+  stage is the pair (eigenvector, eigenvalue) together with the subspace in which the next step
+  works. The invariance and closedness of that subspace, which the greedy step needs, are proved
+  afterwards by induction and are not part of the definition. Where no top eigenpair exists, the
+  recursion takes the value $(0, 0)$.
+* The Hilbert-basis form without injectivity, separability or dimension hypotheses, indexed by a set
+  of vectors, is in `Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis`.
 -/
 
 open Filter Module.End Submodule
@@ -82,13 +101,19 @@ namespace ContinuousLinearMap
 
 /-! ### One greedy step -/
 
-/-- `p = (u, μ)` is a *top eigenpair* of `T` on the subspace `W`: `u` is a unit eigenvector of `T`
-lying in `W` with the real eigenvalue `μ`, and `|μ|` bounds `T` on all of `W`. -/
+/-- Let $T$ be a bounded operator on $E$ and let $W$ be a subspace of $E$. A pair
+$(u, \mu) \in E \times \mathbb{R}$ is a **top eigenpair** of $T$ on $W$ if $u \in W$,
+$\|u\| = 1$, $Tu = \mu u$, and $\|Tx\| \le |\mu| \|x\|$ for every $x \in W$. -/
 def IsTopEigenpair (T : E →L[𝕜] E) (W : Submodule 𝕜 E) (p : E × ℝ) : Prop :=
   p.1 ∈ W ∧ ‖p.1‖ = 1 ∧ T p.1 = (p.2 : 𝕜) • p.1 ∧ ∀ x ∈ W, ‖T x‖ ≤ |p.2| * ‖x‖
 
-/-- A compact self-adjoint operator attains its norm on any nonzero closed invariant subspace, at an
-eigenvector: the greedy step of the spectral theorem. -/
+/-- The **greedy step** of the spectral theorem. Let $E$ be a Hilbert space, let $T$ be a compact
+symmetric operator on $E$, and let $W \neq \{0\}$ be a closed subspace of $E$ with
+$TW \subseteq W$. Then $T$ has a top eigenpair on $W$: there are a unit vector $u \in W$ and
+$\mu \in \mathbb{R}$ with $Tu = \mu u$ and $\|Tx\| \le |\mu| \|x\|$ for all $x \in W$.
+
+So a compact self-adjoint operator attains its norm on a nonzero closed invariant subspace, at
+an eigenvector. -/
 theorem IsSymmetric.exists_isTopEigenpair [CompleteSpace E] (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) {W : Submodule 𝕜 E} (hW : ∀ x ∈ W, T x ∈ W)
     (hWc : IsClosed (W : Set E)) (hWne : W ≠ ⊥) : ∃ p, IsTopEigenpair T W p := by
@@ -149,8 +174,8 @@ theorem IsSymmetric.exists_isTopEigenpair [CompleteSpace E] (hT : (T : E →ₗ[
 
 /-! ### The greedy recursion -/
 
-/-- The greedy choice of a top eigenpair of `T` on `W`, junk-valued at `(0, 0)` when there is none.
--/
+/-- There is a pair that is a top eigenpair of $T$ on $W$ whenever one exists, and equals $(0, 0)$
+otherwise. -/
 private theorem exists_topEigen (T : E →L[𝕜] E) (W : Submodule 𝕜 E) :
     ∃ p : E × ℝ, ((∃ q, IsTopEigenpair T W q) → IsTopEigenpair T W p) ∧
       ((¬ ∃ q, IsTopEigenpair T W q) → p = (0, 0)) := by
@@ -291,8 +316,8 @@ private theorem tendsto_abs_eigenVal (hK : IsCompactOperator T) :
   have hne : ψ N ≠ ψ (N + 1) := fun he => by simpa using hψ.injective he
   exact absurd hlt (not_lt.2 (hsep _ _ hne))
 
-/-- In an infinite-dimensional inner product space the orthogonal complement of a
-finite-dimensional submodule is nontrivial. -/
+/-- Let $E$ be an infinite-dimensional inner product space and let $S$ be a finite-dimensional
+subspace of $E$. Then $S^\perp \neq \{0\}$. -/
 theorem _root_.Submodule.orthogonal_ne_bot_of_not_finiteDimensional
     (hfin : ¬ FiniteDimensional 𝕜 E) {S : Submodule 𝕜 E} [FiniteDimensional 𝕜 S] : Sᗮ ≠ ⊥ := by
   intro h
@@ -352,21 +377,24 @@ private theorem orthogonal_span_range_le (T : E →L[𝕜] E) (n : ℕ) :
 
 /-! ### The eigenvalue sequence and the eigenvector basis -/
 
-/-- The eigenvalues of a compact self-adjoint operator `T`, listed **with multiplicity** in
-decreasing order of modulus, and padded with zeros beyond the point where the construction runs out
-of eigenvectors.
+/-- The **eigenvalues** $\lambda_0, \lambda_1, \dots$ of a compact symmetric operator $T$, listed
+with multiplicity in decreasing order of modulus.
 
-The sequence is built greedily: `eigenvalueSeq hT hK n` is, up to sign, the operator norm of `T` on
-the orthogonal complement of the first `n` eigenvectors, so that
-`ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone` holds by construction. Each eigenvalue is
-therefore repeated as often as the dimension of its eigenspace, which is what a sum over the
-sequence must see. -/
+The sequence is built greedily: $|\lambda_n|$ is the norm of $T$ on the orthogonal complement of
+the first $n$ eigenvectors, so `ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone` holds by
+construction. Each eigenvalue is therefore repeated as often as the dimension of its eigenspace,
+which is what a sum over the sequence needs. Where the construction finds no top eigenpair, the
+value is $0$; on an infinite-dimensional Hilbert space this does not happen. -/
 noncomputable def IsSymmetric.eigenvalueSeq (_hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (_hK : IsCompactOperator T) : ℕ → ℝ := eigenVal T
 
-/-- The unit eigenvectors of a compact self-adjoint operator `T` chosen alongside
-`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`: `eigenvector hT hK n` is an eigenvector for the
-eigenvalue `eigenvalueSeq hT hK n`, and the family is orthonormal. -/
+/-- The unit **eigenvectors** $e_0, e_1, \dots$ of a compact symmetric operator $T$, chosen together
+with `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`.
+
+On an infinite-dimensional Hilbert space, $e_n$ is an eigenvector for the eigenvalue $\lambda_n$
+(`ContinuousLinearMap.IsSymmetric.apply_eigenvector`) and the family is orthonormal
+(`ContinuousLinearMap.IsSymmetric.orthonormal_eigenvector`). Where the construction finds no top
+eigenpair, the value is $0$. -/
 noncomputable def IsSymmetric.eigenvector (_hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (_hK : IsCompactOperator T) : ℕ → E := eigenVec T
 
@@ -376,30 +404,35 @@ private theorem eigenvalueSeq_eq (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
 private theorem eigenvector_eq (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) : IsSymmetric.eigenvector hT hK = eigenVec T := rfl
 
-/-- The eigenvalues of a compact self-adjoint operator are enumerated in decreasing order of
-modulus. -/
+/-- Let $T$ be a compact symmetric operator on $E$. Its eigenvalue sequence is decreasing in
+modulus: $|\lambda_j| \ge |\lambda_{j+1}|$ for every $j$. -/
 theorem IsSymmetric.eigenvalueSeq_antitone (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) : Antitone fun j => |eigenvalueSeq hT hK j| :=
   abs_eigenVal_antitone T
 
-/-- The eigenvalues of a compact self-adjoint operator tend to zero.
+/-- Let $T$ be a compact symmetric operator on $E$. Its eigenvalue sequence tends to zero:
+$\lambda_j \to 0$ as $j \to \infty$.
 
-This is where compactness is used: were the moduli to stay above `ε`, the operator would send the
-orthonormal sequence of eigenvectors to a sequence whose points are pairwise at distance at least
-`ε`, and such a sequence has no convergent subsequence. -/
+This is where compactness is used. If the moduli stayed above $\varepsilon > 0$, the operator
+would map the orthonormal sequence of eigenvectors to a sequence of points at pairwise distance
+at least $\varepsilon$, and such a sequence has no convergent subsequence. -/
 theorem IsSymmetric.tendsto_eigenvalueSeq_zero (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) : Tendsto (eigenvalueSeq hT hK) atTop (𝓝 0) := by
   rw [eigenvalueSeq_eq]
   exact squeeze_zero_norm (fun n => le_of_eq (Real.norm_eq_abs _)) (tendsto_abs_eigenVal hK)
 
-/-- Each `eigenvector` is an eigenvector for the corresponding `eigenvalueSeq`. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be a compact symmetric operator on
+$E$. Then $Te_j = \lambda_j e_j$ for every $j$, where $e_j$ and $\lambda_j$ are the greedily
+chosen eigenvectors and eigenvalues. -/
 theorem IsSymmetric.apply_eigenvector [CompleteSpace E] (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) (hfin : ¬ FiniteDimensional 𝕜 E) (j : ℕ) :
     T (eigenvector hT hK j) = ((eigenvalueSeq hT hK j : ℝ) : 𝕜) • eigenvector hT hK j :=
   (isTopEigenpair_of_exists (exists_isTopEigenpair_eigenSpace hT hK hfin j).2.2).2.2.1
 
-/-- The first eigenvalue of the greedy enumeration has modulus `‖T‖`: a compact self-adjoint
-operator attains its norm. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be a compact symmetric operator on
+$E$. Then the first eigenvalue of the greedy enumeration has modulus $|\lambda_0| = \|T\|$.
+
+So a compact self-adjoint operator attains its norm. -/
 theorem IsSymmetric.abs_eigenvalueSeq_zero [CompleteSpace E] (hT : (T : E →ₗ[𝕜] E).IsSymmetric)
     (hK : IsCompactOperator T) (hfin : ¬ FiniteDimensional 𝕜 E) :
     |eigenvalueSeq hT hK 0| = ‖T‖ := by
@@ -415,7 +448,8 @@ theorem IsSymmetric.abs_eigenvalueSeq_zero [CompleteSpace E] (hT : (T : E →ₗ
     _ ≤ ‖T‖ * ‖eigenVec T 0‖ := T.le_opNorm _
     _ = ‖T‖ := by rw [hnorm, mul_one]
 
-/-- The eigenvectors of a compact self-adjoint operator, chosen greedily, are orthonormal. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be a compact symmetric operator on
+$E$. Then the greedily chosen eigenvectors $e_0, e_1, \dots$ are orthonormal. -/
 theorem IsSymmetric.orthonormal_eigenvector [CompleteSpace E]
     (hT : (T : E →ₗ[𝕜] E).IsSymmetric) (hK : IsCompactOperator T)
     (hfin : ¬ FiniteDimensional 𝕜 E) : Orthonormal 𝕜 (eigenvector hT hK) := by
@@ -427,10 +461,13 @@ theorem IsSymmetric.orthonormal_eigenvector [CompleteSpace E]
     · rw [← inner_conj_symm,
         inner_eigenVec_eq_zero h (exists_isTopEigenpair_eigenSpace hT hK hfin i).2.2, map_zero]
 
-/-- Whatever the kernel of `T`, the greedily chosen eigenvectors span everything outside it: a
-vector orthogonal to all of them is annihilated by `T`. This is the general completeness statement
-of the construction, and it is why injectivity is exactly what
-`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` needs on top of it. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be a compact symmetric operator on
+$E$. Then every vector orthogonal to all the greedily chosen eigenvectors $e_j$ is annihilated
+by $T$:
+$$\bigl(\operatorname{span} \{e_j : j \in \mathbb{N}\}\bigr)^\perp \subseteq \ker T.$$
+
+This holds whatever the kernel of $T$ is. It is why injectivity is exactly the extra hypothesis
+that `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` needs. -/
 theorem IsSymmetric.orthogonal_span_range_eigenvector_le_ker [CompleteSpace E]
     (hT : (T : E →ₗ[𝕜] E).IsSymmetric) (hK : IsCompactOperator T)
     (hfin : ¬ FiniteDimensional 𝕜 E) :
@@ -450,12 +487,13 @@ private theorem orthogonal_span_range_eq_bot [CompleteSpace E]
     (Submodule.span 𝕜 (Set.range (eigenVec T)))ᗮ = ⊥ :=
   le_bot_iff.1 (hinj ▸ IsSymmetric.orthogonal_span_range_eigenvector_le_ker hT hK hfin)
 
-/-- **The spectral theorem for compact self-adjoint operators**, in the form of an orthonormal basis
-of eigenvectors indexed by `ℕ`: for an injective compact self-adjoint operator `T` on an
-infinite-dimensional Hilbert space, the greedily chosen eigenvectors form a `HilbertBasis ℕ`.
+/-- The **spectral theorem for compact self-adjoint operators**, in the form of an orthonormal basis
+of eigenvectors indexed by $\mathbb{N}$. Let $E$ be an infinite-dimensional Hilbert space and
+let $T$ be an injective compact symmetric operator on $E$. Then the greedily chosen eigenvectors
+$e_0, e_1, \dots$ form a Hilbert basis of $E$.
 
-Both extra hypotheses are needed; see the module documentation. Injectivity of `T` also makes the
-space separable, since a `HilbertBasis ℕ` exists. -/
+Both extra hypotheses are needed; see the module documentation. Since a Hilbert basis indexed by
+$\mathbb{N}$ exists, the space is separable. Injectivity is the hypothesis $\ker T = \{0\}$. -/
 noncomputable def IsSymmetric.eigenvectorHilbertBasis [CompleteSpace E]
     (hT : (T : E →ₗ[𝕜] E).IsSymmetric) (hK : IsCompactOperator T)
     (hinj : LinearMap.ker (T : E →ₗ[𝕜] E) = ⊥) (hfin : ¬ FiniteDimensional 𝕜 E) :
@@ -463,8 +501,10 @@ noncomputable def IsSymmetric.eigenvectorHilbertBasis [CompleteSpace E]
   HilbertBasis.mkOfOrthogonalEqBot (IsSymmetric.orthonormal_eigenvector hT hK hfin)
     (orthogonal_span_range_eq_bot hT hK hinj hfin)
 
-/-- The basis vectors of `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` are the greedily
-chosen eigenvectors `ContinuousLinearMap.IsSymmetric.eigenvector`. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be an injective compact symmetric
+operator on $E$. The vectors of the Hilbert basis
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` are the greedily chosen eigenvectors
+`ContinuousLinearMap.IsSymmetric.eigenvector`. -/
 @[simp]
 theorem IsSymmetric.coe_eigenvectorHilbertBasis [CompleteSpace E]
     (hT : (T : E →ₗ[𝕜] E).IsSymmetric) (hK : IsCompactOperator T)
@@ -472,10 +512,14 @@ theorem IsSymmetric.coe_eigenvectorHilbertBasis [CompleteSpace E]
     ⇑(eigenvectorHilbertBasis hT hK hinj hfin) = eigenvector hT hK :=
   HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- The basis vectors of `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` are eigenvectors
-of `T` for the eigenvalues of `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`. Together with
-`eigenvalueSeq_antitone` and `tendsto_eigenvalueSeq_zero`, this is the eigen-decomposition data that
-a superlinear convergence theorem for the conjugate gradient method consumes. -/
+/-- Let $E$ be an infinite-dimensional Hilbert space and let $T$ be an injective compact symmetric
+operator on $E$. Then the $j$-th vector $e_j$ of the Hilbert basis
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` satisfies $Te_j = \lambda_j e_j$,
+where $\lambda_j$ is `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`.
+
+Together with `ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone` and
+`ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero`, this is the eigendecomposition
+that a superlinear convergence theorem for the conjugate gradient method uses. -/
 theorem IsSymmetric.apply_eigenvectorHilbertBasis [CompleteSpace E]
     (hT : (T : E →ₗ[𝕜] E).IsSymmetric) (hK : IsCompactOperator T)
     (hinj : LinearMap.ker (T : E →ₗ[𝕜] E) = ⊥) (hfin : ¬ FiniteDimensional 𝕜 E) (j : ℕ) :

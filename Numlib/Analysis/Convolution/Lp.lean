@@ -16,110 +16,110 @@ import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.MeasureTheory.Function.LpInterpolation
 
 /-!
-# `L^p` estimates for convolutions, and `L^p` convergence of mollification
+# $L^p$ estimates for convolutions, and $L^p$ convergence of mollification
 
-`Mathlib/Analysis/Convolution.lean` builds the convolution `f ⋆[L, μ] g` and its pointwise theory
--- existence, support, continuity, smoothness, and pointwise or almost-everywhere convergence of
-`φ_ε ⋆ f` to `f` -- but it contains no estimate on the *size* of a convolution in `L^p`. This file
-supplies those estimates, and the `L^p` convergence of mollification that follows from them.
+Let $G$ be a measurable additive group with a right-invariant measure $\mu$, and let $L$ be a
+continuous bilinear map. The convolution of $f$ and $g$ with respect to $L$ is $(f \star g)(x) =
+\int L(f(t), g(x - t)) \, d\mu(t)$. Mathlib's `Mathlib.Analysis.Convolution` gives its pointwise
+theory: existence, support, continuity, smoothness, and pointwise or almost-everywhere convergence
+of $\varphi_\varepsilon \star f$ to $f$. It has no estimate of the size of a convolution in $L^p$.
+This module proves these estimates and the $L^p$ convergence of mollification that follows from
+them. The main estimate is **Young's convolution inequality**. Its case $L^1 \star L^p \to L^p$,
+$$\|f \star g\|_p \le \|L\| \, \|f\|_1 \, \|g\|_p \qquad (1 \le p \le \infty),$$
+holds for every s-finite right-invariant measure on a measurable additive group. The general form,
+with $1/p + 1/q = 1 + 1/r$, needs a measure that is also invariant under negation, because its proof
+integrates a reflected translate of $g$.
 
-The main estimate is Young's convolution inequality. Its `L^1 ∗ L^p → L^p` case,
-`eLpNorm (f ⋆[L, μ] g) p μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNorm g p μ` for `1 ≤ p ≤ ∞`, holds over any
-right-invariant measure on a measurable additive group; the general form `1/p + 1/q = 1 + 1/r`
-asks for a measure invariant under negation as well, because its proof integrates a reflected
-translate of `g`. Minkowski's integral inequality is proved here in both a weighted and an
-unweighted form. For the classical statements see for instance E. H. Lieb and M. Loss, *Analysis*,
-2nd edition, American Mathematical Society, 2001, chapters 2 and 4, or H. Brezis, *Functional
-Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, chapter 4.
+The module also proves Minkowski's integral inequality in a weighted and an unweighted form, the
+adjoint identity $\int (f \star g) h = \int g (\check f \star h)$ with $\check f(x) = f(-x)$,
+convolution with a fixed integrable kernel as a bounded operator on $L^p$, the continuity of
+translation on $L^p$, and the formulas for the derivatives of a convolution. For the classical
+statements, see Chapter 4 of [brezis2011functional], or E. H. Lieb and M. Loss, *Analysis*, 2nd
+edition, American Mathematical Society, 2001, Chapters 2 and 4.
 
 ## Main results
 
-* `ENNReal.rpow_lintegral_mul_le`: Jensen's inequality for the convex function `t ↦ t ^ p` against
-  a weight, `(∫⁻ a, w a * h a ∂μ) ^ p ≤ (∫⁻ a, w a ∂μ) ^ (p - 1) * ∫⁻ a, w a * h a ^ p ∂μ`.
-* `ENNReal.lintegral_rpow_lintegral_mul_le`: the weighted form of Minkowski's integral inequality
-  obtained from it by Tonelli's theorem. This is the analytic core of the `L^1 ∗ L^p` estimate.
-* `ENNReal.lintegral_rpow_lintegral_le`: Minkowski's integral inequality proper, in the unweighted
-  form `‖∫ H (·, t) dt‖_p ≤ ∫ ‖H (·, t)‖_p dt`, for a σ-finite `μ`.
-* `MeasureTheory.eLpNorm_convolution_le` and `MeasureTheory.MemLp.convolution`: Young's convolution
-  inequality in the case `L^1 ∗ L^p → L^p`, and the resulting membership statement.
-* `MeasureTheory.MemLp.ae_convolutionExistsAt`: the convolution of an `L^1` function with an `L^p`
-  function exists almost everywhere, for every `1 ≤ p ≤ ∞`.
-* `MeasureTheory.Lp.convolutionCLM`: convolution with a fixed integrable kernel as a bounded
-  operator on `Lp F p μ`, of norm at most the `L^1` norm of the kernel
-  (`MeasureTheory.Lp.norm_convolutionCLM_le`).
-* `MeasureTheory.integral_convolution_mul`: the adjoint identity `∫ (f ⋆ g) h = ∫ g (f̌ ⋆ h)` for
-  `f ∈ L^1`, `g ∈ L^p`, `h ∈ L^q` with `1/p + 1/q = 1`, where `f̌ x = f (-x)`.
-* `MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv`: Young's convolution inequality in its
-  general form `1/p + 1/q = 1 + 1/r`, over a measure that is also invariant under negation.
-* `MeasureTheory.eLpNorm_convolution_lsmul_le`: the same inequality with constant `1`, for the
-  convolution of a scalar function against a vector-valued one.
-* `MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`: translation is continuous on `L^p`, in the
-  form `‖f (· - t) - f‖_p → 0` as `t → 0`.
+* `ENNReal.rpow_lintegral_mul_le`: Jensen's inequality for $t \mapsto t^p$ against a weight $w$,
+  $(\int w h)^p \le (\int w)^{p - 1} \int w h^p$.
+* `ENNReal.lintegral_rpow_lintegral_mul_le`: the weighted form of Minkowski's integral inequality,
+  which follows from it by Tonelli's theorem.
+* `ENNReal.lintegral_rpow_lintegral_le`: Minkowski's integral inequality $\| \int H(\cdot, t) \, dt
+  \|_p \le \int \|H(\cdot, t)\|_p \, dt$, for a σ-finite $\mu$.
+* `MeasureTheory.eLpNorm_convolution_le` and `MeasureTheory.MemLp.convolution`: Young's inequality
+  in the case $L^1 \star L^p \to L^p$, and the resulting membership $f \star g \in L^p$.
+* `MeasureTheory.MemLp.ae_convolutionExistsAt`: the convolution of an $L^1$ function with an $L^p$
+  function exists almost everywhere, for every $1 \le p \le \infty$.
+* `MeasureTheory.Lp.convolutionCLM` and `MeasureTheory.Lp.norm_convolutionCLM_le`: convolution with
+  a fixed integrable kernel $K$ is a bounded operator on $L^p$ of norm at most $\|K\|_1$.
+* `MeasureTheory.integral_convolution_mul`: the adjoint identity
+  $\int (f \star g) h = \int g (\check f \star h)$ for $f \in L^1$, $g \in L^p$, $h \in L^q$ with
+  $1/p + 1/q = 1$.
+* `MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv`: Young's inequality in the general form
+  $1/p + 1/q = 1 + 1/r$, for a measure that is also invariant under negation.
+* `MeasureTheory.eLpNorm_convolution_lsmul_le`: Young's inequality with constant $1$ for the
+  convolution of a real function with a vector-valued one.
+* `MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`: translation is continuous on $L^p$:
+  $\|f(\cdot - t) - f\|_p \to 0$ as $t \to 0$.
 * `MeasureTheory.tendsto_eLpNorm_convolution_sub` and
-  `ContDiffBump.tendsto_eLpNorm_convolution_sub`: mollification converges in `L^p`. For
-  `f ∈ L^p(μ)` with `p ≠ ∞` and an approximate identity --
-  nonnegative probability densities `φ i` whose supports shrink to `0`, for instance normalized
-  bump functions whose outer radii tend to `0` -- the mollifications `φ i ⋆ f` tend to `f` in
-  `L^p`.
+  `ContDiffBump.tendsto_eLpNorm_convolution_sub`: for $f \in L^p$ with $p < \infty$ and an
+  approximate identity $(\varphi_i)$, such as normalized bump functions whose outer radii tend to
+  $0$, $\varphi_i \star f \to f$ in $L^p$.
 * `MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`,
   `MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm` and
-  `MeasureTheory.enorm_integral_smul_le_of_bound`: the estimates that pass to the limit in an
-  integral along a sequence converging in `L^p` -- Hölder's inequality in the limit, the comparison
-  of `L^1` with `L^p` on a finite measure, and the bound of an integral against a bounded scalar
-  factor.
+  `MeasureTheory.enorm_integral_smul_le_of_bound`: three estimates for passing to the limit in an
+  integral along a sequence that converges in $L^p$.
 * `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` and
-  `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`: differentiating a
-  convolution, once in a fixed direction (a `C¹` factor suffices) or `n` times along a tuple of
-  directions, moves the derivatives onto the compactly supported factor (smooth for the iterated
-  form: the induction uses the symmetry of the second derivative); and
-  `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt`: a convolution against a compactly
-  supported continuous function exists as soon as the other factor is locally integrable on an open
-  set containing the closed ball carrying the support.
+  `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`: derivatives of
+  $\varphi \star g$ fall on the compactly supported factor $\varphi$, once in a fixed direction for
+  a $C^1$ factor, or $n$ times along a tuple of directions for a smooth factor.
+* `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt`: a convolution with a continuous function
+  supported in a closed ball exists as soon as the other factor is locally integrable on a set that
+  contains the translated ball.
+
+## Proof outline
+
+The case $L^1 \star L^p \to L^p$ of Young's inequality is proved from Jensen's inequality, and not
+from Minkowski's integral inequality or from reading $f \star g$ as a Bochner integral with values
+in $L^p$. With the weight $w = \|f(\cdot)\|$, Jensen's inequality for the measure $w \, d\mu$ and
+the convex function $t \mapsto t^p$ bounds $(\int w h)^p$ by $(\int w)^{p - 1} \int w h^p$.
+Tonelli's theorem and the translation invariance of $\mu$ then finish the estimate. Jensen's
+inequality itself is Hölder's inequality applied to $w h = w^{1 - 1/p} (w h^p)^{1/p}$.
+
+The unweighted Minkowski inequality is proved by duality. Write $F^p = F^{p - 1} F$, apply Tonelli's
+theorem and Hölder's inequality with the exponents $p / (p - 1)$ and $p$, and divide by
+$(\int F^p)^{1 - 1/p}$. The general form of Young's inequality comes from the three-exponent Hölder
+inequality applied to the splitting
+$$\|f(t)\| \, \|g(x - t)\| = \big(\|f(t)\|^p \|g(x - t)\|^q\big)^{1/r} \,
+  \big(\|f(t)\|^p\big)^{1/p - 1/r} \, \big(\|g(x - t)\|^q\big)^{1/q - 1/r},$$
+followed by Tonelli's theorem. The $L^p$ convergence of mollification is proved from the weighted
+Minkowski inequality and the continuity of translation on $L^p$, without the usual approximation by
+compactly supported continuous functions. A normalized bump is a probability density concentrated
+near $0$, so the weighted inequality bounds the $L^p$ error of mollification by an average of the
+translation errors $\|f(\cdot - t) - f\|_p$ over the support of the bump, and these errors are
+uniformly small there.
 
 ## Implementation notes
 
-The `L^1 ∗ L^p → L^p` case of Young's inequality is proved from Jensen's inequality rather than
-from Minkowski's integral inequality or from reading `f ⋆ g` as a Bochner integral valued in
-`L^p`. Writing `w = ‖f ·‖ₑ` and
-using the convexity of `t ↦ t ^ p`, Jensen's inequality for the measure `w dμ` bounds
-`(∫⁻ w h) ^ p` by `(∫⁻ w) ^ (p - 1) * ∫⁻ w h ^ p`; Tonelli's theorem and the translation
-invariance of `μ` then finish the estimate in one step each. The advantage over the other two
-routes is that no integrability hypothesis is needed anywhere: the bound `‖∫ ...‖ₑ ≤ ∫⁻ ‖...‖ₑ`
-holds unconditionally, because a Bochner integral that does not converge is `0`, so
-`MeasureTheory.eLpNorm_convolution_le` asks only for measurability. Jensen's inequality itself is
-`ENNReal.lintegral_mul_norm_pow_le`, the two-exponent form of Hölder's inequality, applied to
-`w * h = w ^ (1 - 1/p) * (w * h ^ p) ^ (1/p)`.
-
-The two forms of Minkowski's integral inequality proved here are independent.
-`ENNReal.lintegral_rpow_lintegral_mul_le` carries a weight and pays for it with a factor
-`(∫⁻ w) ^ (p - 1)`, which is what makes it provable from Hölder's inequality alone, and it is all
-the mollification estimates below need, since they normalize the weight to `∫⁻ w = 1`. The
-unweighted `ENNReal.lintegral_rpow_lintegral_le` is *not* a corollary of it -- taking the weight to
-be `1` there costs a factor `ν univ ^ (p - 1)`, vacuous for an infinite `ν` -- and is proved by
-duality instead: write `F ^ p = F ^ (p - 1) * F`, apply Tonelli's theorem and Hölder's inequality
-with the exponents `p / (p - 1)` and `p`, and divide by `(∫⁻ F ^ p) ^ (1 - 1/p)`. That division
-needs the quantity to be finite, which is what `ENNReal.lintegral_rpow_le_of_truncation_le`
-arranges, and it is the only reason `μ` is asked to be σ-finite there.
-
-The general form of Young's inequality comes out of the three-exponent Hölder inequality
-`ENNReal.lintegral_mul_mul_norm_pow_le` applied to the splitting
-`‖f t‖ * ‖g (x - t)‖ = (‖f t‖ ^ p * ‖g (x - t)‖ ^ q) ^ (1/r) * (‖f t‖ ^ p) ^ (1/p - 1/r) *
-(‖g (x - t)‖ ^ q) ^ (1/q - 1/r)`, followed by Tonelli's theorem;
-`MeasureTheory.lintegral_enorm_convolution_rpow_le` is that argument with the exponents as real
-numbers. Only the endpoint `r = ∞` needs a separate treatment, because `p = ∞` and `q = ∞` both
-force `r = ∞`. Both the splitting and the endpoint case integrate `t ↦ ‖g (x - t)‖`, so both need
-the reflection `t ↦ x - t` to preserve `μ`; that is where `MeasureTheory.Measure.IsNegInvariant`
-enters, and it is why the `L^1 ∗ L^p → L^p` case is kept as a separate theorem rather than
-specialized from the general one.
-
-`MeasureTheory.tendsto_eLpNorm_convolution_sub` is proved from the weighted Minkowski inequality
-and the continuity of translation on `L^p` directly, without the usual detour through the density
-of the compactly supported continuous functions in `L^p`: a normalized bump is a probability
-density concentrating at `0`, so the weighted inequality turns the `L^p` error of mollification
-into an average of the translation errors `‖f (· - t) - f‖_p` over the support of the bump, and
-continuity of translation makes those uniformly small. The continuity of translation is in turn
-read off Mathlib's continuity of the action of `Gᵈᵃᵃ` on `MeasureTheory.Lp`,
-`MeasureTheory.Lp.instContinuousVAddDomAddAct`.
+* The $L^p$ seminorm $\|f\|_p$ is `MeasureTheory.eLpNorm f p μ`, with values in $[0, \infty]$, and
+  $\|L\|$ is the extended norm `‖L‖ₑ`. The convolution is `f ⋆[L, μ] g`.
+* The case $L^1 \star L^p \to L^p$ needs no integrability hypothesis, only measurability. The bound
+  $\|\int \cdots\| \le \int \|\cdots\|$ holds unconditionally, because a Bochner integral that does
+  not converge is $0$. This is an advantage of the route through Jensen's inequality.
+* The two forms of Minkowski's inequality are independent. `ENNReal.lintegral_rpow_lintegral_mul_le`
+  has a weight and the factor $(\int w)^{p - 1}$, so it follows from Hölder's inequality alone. The
+  mollification estimates need only this form, because they normalize the weight to $\int w = 1$.
+  `ENNReal.lintegral_rpow_lintegral_le` is not a corollary of it: the weight $1$ there gives the
+  factor $\nu(\beta)^{p - 1}$, which is infinite when $\nu$ is infinite. The division in its proof
+  needs $\int F^p < \infty$, which `ENNReal.lintegral_rpow_le_of_truncation_le` arranges. This is
+  the only reason why $\mu$ must be σ-finite there.
+* `MeasureTheory.lintegral_enorm_convolution_rpow_le` is the general form of Young's inequality with
+  the exponents as real numbers. Only the endpoint $r = \infty$ needs a separate proof, because
+  $p = \infty$ and $q = \infty$ both force $r = \infty$. Both the splitting and the endpoint case
+  integrate $t \mapsto \|g(x - t)\|$, so they need the reflection $t \mapsto x - t$ to preserve
+  $\mu$. This is where `MeasureTheory.Measure.IsNegInvariant` is used, and it is why the case
+  $L^1 \star L^p \to L^p$ is a separate theorem and not a special case of the general one.
+* The continuity of translation on $L^p$ is read off from Mathlib's continuity of the action of
+  `Gᵈᵃᵃ` on `MeasureTheory.Lp`, `MeasureTheory.Lp.instContinuousVAddDomAddAct`.
 -/
 
 open Filter Function MeasureTheory MeasureTheory.Measure Metric Topology
@@ -128,9 +128,11 @@ open scoped Convolution ENNReal
 
 variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] {μ : Measure α} {ν : Measure β}
 
-/-- Almost every slice of an almost-everywhere measurable function on a product is
-almost-everywhere measurable. This is the `AEMeasurable` companion of
-`MeasureTheory.Integrable.prod_right_ae`. -/
+/-- Let $\mu$ be a measure on $\alpha$ and let $\nu$ be an s-finite measure on $\beta$. If $f$ is
+almost-everywhere measurable on $\alpha \times \beta$ for $\mu \times \nu$, then for
+$\mu$-almost every $x$ the slice $y \mapsto f(x, y)$ is almost-everywhere measurable for $\nu$.
+
+This is the counterpart for `AEMeasurable` of `MeasureTheory.Integrable.prod_right_ae`. -/
 theorem AEMeasurable.prod_right_ae {γ : Type*} [MeasurableSpace γ] [SFinite ν] {f : α × β → γ}
     (hf : AEMeasurable f (μ.prod ν)) : ∀ᵐ x ∂μ, AEMeasurable (fun y => f (x, y)) ν := by
   obtain ⟨g, hg, hfg⟩ := hf
@@ -138,7 +140,11 @@ theorem AEMeasurable.prod_right_ae {γ : Type*} [MeasurableSpace γ] [SFinite ν
 
 namespace ENNReal
 
-/-- **Hölder's inequality** for three functions and three nonnegative exponents summing to `1`.
+/-- **Hölder's inequality** for three functions. Let $f, g, h \colon \alpha \to [0, \infty]$ be
+almost-everywhere measurable and let $a, b, c \ge 0$ with $a + b + c = 1$. Then
+$$\int f^a g^b h^c \, d\mu \le \Big(\int f \, d\mu\Big)^a \Big(\int g \, d\mu\Big)^b \Big(\int h
+  \, d\mu\Big)^c.$$
+
 This is the three-function form of `ENNReal.lintegral_mul_norm_pow_le`. -/
 theorem lintegral_mul_mul_norm_pow_le {f g h : α → ℝ≥0∞}
     (hf : AEMeasurable f μ) (hg : AEMeasurable g μ) (hh : AEMeasurable h μ)
@@ -152,11 +158,13 @@ theorem lintegral_mul_mul_norm_pow_le {f g h : α → ℝ≥0∞}
     (fun i _ => by fin_cases i <;> assumption)
   simpa [Fin.prod_univ_three] using key
 
-/-- **Jensen's inequality** for the convex function `t ↦ t ^ p` on `ℝ≥0∞`, `1 ≤ p`, against a
-weight `w`: the `p`-th power of the `w`-average of `h` is at most the `w`-average of `h ^ p`, in
-the unnormalized form that does not ask `∫⁻ w` to be finite or nonzero.
+/-- **Jensen's inequality** for the convex function $t \mapsto t^p$ on $[0, \infty]$. Let $p \ge 1$
+and let $w, h \colon \alpha \to [0, \infty]$ be almost-everywhere measurable. Then
+$$\Big(\int w h \, d\mu\Big)^p \le \Big(\int w \, d\mu\Big)^{p - 1} \int w h^p \, d\mu.$$
+This is the unnormalized form of the inequality "the $p$-th power of the $w$-average of $h$ is
+at most the $w$-average of $h^p$", and it does not ask $\int w$ to be finite or nonzero.
 
-This is Hölder's inequality applied to `w * h = w ^ (1 - 1/p) * (w * h ^ p) ^ (1/p)`. -/
+The proof is Hölder's inequality applied to $w h = w^{1 - 1/p} (w h^p)^{1/p}$. -/
 theorem rpow_lintegral_mul_le {p : ℝ} (hp : 1 ≤ p) {w h : α → ℝ≥0∞}
     (hw : AEMeasurable w μ) (hh : AEMeasurable h μ) :
     (∫⁻ a, w a * h a ∂μ) ^ p ≤ (∫⁻ a, w a ∂μ) ^ (p - 1) * ∫⁻ a, w a * h a ^ p ∂μ := by
@@ -183,9 +191,15 @@ theorem rpow_lintegral_mul_le {p : ℝ} (hp : 1 ≤ p) {w h : α → ℝ≥0∞}
         congr 2
         field_simp
 
-/-- A weighted form of **Minkowski's integral inequality**: the `L^p` norm of a weighted average
-of the functions `H · t` is controlled by the weighted average of their `L^p` norms, up to the
-factor `(∫⁻ w) ^ (p - 1)` that disappears when the weight is a probability density.
+/-- A weighted form of **Minkowski's integral inequality**. Let $\mu$ and $\nu$ be s-finite, let
+$p \ge 1$, let $w \colon \beta \to [0, \infty]$ be almost-everywhere measurable, and let
+$H \colon \alpha \times \beta \to [0, \infty]$ be almost-everywhere measurable for
+$\mu \times \nu$. Then
+$$\int \Big(\int w(t) H(x, t) \, d\nu(t)\Big)^p d\mu(x) \le \Big(\int w \, d\nu\Big)^{p - 1}
+  \int w(t) \int H(x, t)^p \, d\mu(x) \, d\nu(t).$$
+So the $L^p$ norm of a weighted average of the functions $H(\cdot, t)$ is bounded by the
+weighted average of their $L^p$ norms, up to the factor $(\int w)^{p - 1}$, which is $1$ when
+$w$ is a probability density.
 
 Unlike Minkowski's integral inequality proper, which needs a duality argument, this follows from
 `ENNReal.rpow_lintegral_mul_le` and Tonelli's theorem. -/
@@ -213,13 +227,15 @@ theorem lintegral_rpow_lintegral_mul_le [SFinite μ] [SFinite ν] {p : ℝ} (hp 
 
 /-! ### Minkowski's integral inequality -/
 
-/-- **Truncation for a σ-finite measure.** A bound on `∫⁻ x, G x ^ p ∂μ` that holds for every
-measurable `G ≤ F` whose `p`-th moment is finite holds for `F` itself.
+/-- **Truncation for a σ-finite measure.** Let $\mu$ be σ-finite, let $p > 0$, let
+$F \colon \alpha \to [0, \infty]$ be measurable and let $c \in [0, \infty]$. Suppose that
+$\int G^p \, d\mu \le c$ for every measurable $G \le F$ with $\int G^p \, d\mu < \infty$. Then
+$\int F^p \, d\mu \le c$.
 
-Capping the values of `F` at `n` and its support at the `n`-th of the sets exhausting `μ` gives an
-increasing sequence of such `G`, converging pointwise to `F`; monotone convergence then finishes.
-This is what lets an argument that has to divide by `∫⁻ x, F x ^ p ∂μ`, and therefore needs it
-finite, conclude in general. -/
+Capping the values of $F$ at $n$ and its support at the $n$-th set of an exhausting sequence for
+$\mu$ gives an increasing sequence of such $G$ that converges pointwise to $F$, and monotone
+convergence finishes the proof. This lets an argument that must divide by $\int F^p \, d\mu$,
+and so needs it finite, conclude in general. -/
 theorem lintegral_rpow_le_of_truncation_le [SigmaFinite μ] {p : ℝ} (hp : 0 < p)
     {F : α → ℝ≥0∞} (hF : Measurable F) {c : ℝ≥0∞}
     (h : ∀ G : α → ℝ≥0∞, Measurable G → (∀ x, G x ≤ F x) → ∫⁻ x, G x ^ p ∂μ ≠ ∞ →
@@ -274,14 +290,16 @@ theorem lintegral_rpow_le_of_truncation_le [SigmaFinite μ] {p : ℝ} (hp : 0 < 
           (fun m n hmn x => ENNReal.rpow_le_rpow (hGmono hmn x) hp.le)
     _ ≤ c := iSup_le fun n => h (G n) (hGmeas n) (hGle n) (hfin n)
 
-/-- The duality step in Minkowski's integral inequality: a minorant `G` of `x ↦ ∫⁻ t, H x t ∂ν`
-whose `p`-th moment is finite already has that moment bounded by the right-hand side of the
-inequality.
+/-- The duality step of Minkowski's integral inequality. Let $\mu$ and $\nu$ be s-finite, let
+$p > 1$, let $H \colon \alpha \times \beta \to [0, \infty]$ be measurable, and let
+$G \colon \alpha \to [0, \infty]$ be measurable with $G(x) \le \int H(x, t) \, d\nu(t)$ for all
+$x$ and $\int G^p \, d\mu < \infty$. Then
+$$\int G^p \, d\mu \le \Big(\int \Big(\int H(x, t)^p \, d\mu(x)\Big)^{1/p} d\nu(t)\Big)^p.$$
 
-Writing `G ^ p = G ^ (p - 1) * G`, bounding the last factor by the integral it lies below,
-exchanging the order of integration and applying Hölder's inequality with the exponents
-`p / (p - 1)` and `p` bounds `∫⁻ G ^ p` by `(∫⁻ G ^ p) ^ (1 - 1/p)` times the right-hand side; the
-finiteness of `∫⁻ G ^ p` is what lets that factor be cancelled. -/
+Write $G^p = G^{p - 1} G$, bound the last factor by the integral above it, exchange the order of
+integration and apply Hölder's inequality with the exponents $p / (p - 1)$ and $p$. This bounds
+$\int G^p$ by $(\int G^p)^{1 - 1/p}$ times the right-hand side, and the finiteness of $\int G^p$
+lets this factor cancel. -/
 theorem lintegral_rpow_le_of_le_lintegral [SFinite μ] [SFinite ν] {p : ℝ} (hp : 1 < p)
     {H : α → β → ℝ≥0∞} (hH : Measurable (uncurry H)) {G : α → ℝ≥0∞} (hG : Measurable G)
     (hGF : ∀ x, G x ≤ ∫⁻ t, H x t ∂ν) (hfin : ∫⁻ x, G x ^ p ∂μ ≠ ∞) :
@@ -336,9 +354,13 @@ theorem lintegral_rpow_le_of_le_lintegral [SFinite μ] [SFinite ν] {p : ℝ} (h
         rw [← ENNReal.rpow_mul, one_div_mul_cancel hp0.ne', ENNReal.rpow_one]
     _ ≤ R ^ p := ENNReal.rpow_le_rpow hkey hp0.le
 
-/-- **Minkowski's integral inequality** for a measurable integrand. See
-`ENNReal.lintegral_rpow_lintegral_le` for the version that asks for measurability only almost
-everywhere. -/
+/-- **Minkowski's integral inequality** for a measurable integrand. Let $\mu$ be σ-finite, let $\nu$
+be s-finite, let $p \ge 1$ and let $H \colon \alpha \times \beta \to [0, \infty]$ be measurable.
+Then
+$$\Big(\int \Big(\int H(x, t) \, d\nu(t)\Big)^p d\mu(x)\Big)^{1/p} \le \int \Big(\int H(x, t)^p
+  \, d\mu(x)\Big)^{1/p} d\nu(t).$$
+See `ENNReal.lintegral_rpow_lintegral_le` for the version that asks for measurability only
+almost everywhere. -/
 theorem lintegral_rpow_lintegral_le_of_measurable [SigmaFinite μ] [SFinite ν] {p : ℝ} (hp : 1 ≤ p)
     {H : α → β → ℝ≥0∞} (hH : Measurable (uncurry H)) :
     (∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1 / p)
@@ -358,15 +380,19 @@ theorem lintegral_rpow_lintegral_le_of_measurable [SigmaFinite μ] [SFinite ν] 
       _ = ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν := by
           rw [← ENNReal.rpow_mul, mul_one_div_cancel hp0.ne', ENNReal.rpow_one]
 
-/-- **Minkowski's integral inequality**, `1 ≤ p`: the `L^p` norm of an integral is at most the
-integral of the `L^p` norms.
+/-- **Minkowski's integral inequality.** Let $\mu$ be σ-finite, let $\nu$ be s-finite, let
+$p \ge 1$, and let $H \colon \alpha \times \beta \to [0, \infty]$ be almost-everywhere
+measurable for $\mu \times \nu$. Then
+$$\Big(\int \Big(\int H(x, t) \, d\nu(t)\Big)^p d\mu(x)\Big)^{1/p} \le \int \Big(\int H(x, t)^p
+  \, d\mu(x)\Big)^{1/p} d\nu(t).$$
+So the $L^p$ norm of an integral is at most the integral of the $L^p$ norms.
 
-Unlike `ENNReal.lintegral_rpow_lintegral_mul_le` this carries no weight and no compensating factor,
-and it is not a corollary of that inequality: putting the weight `1` there costs a factor
-`ν univ ^ (p - 1)`, which is vacuous when `ν` is infinite. It is proved by duality instead, and `μ`
-is asked to be σ-finite for the truncation the duality argument needs. See for instance
-E. H. Lieb and M. Loss, *Analysis*, 2nd edition, American Mathematical Society, 2001, section 2.4.
--/
+Unlike `ENNReal.lintegral_rpow_lintegral_mul_le`, this inequality has no weight and no
+compensating factor, and it is not a corollary of that inequality: the weight $1$ there gives
+the factor $\nu(\beta)^{p - 1}$, which is infinite when $\nu$ is infinite. It is proved by
+duality instead, and $\mu$ must be σ-finite for the truncation that the duality argument needs.
+See for instance E. H. Lieb and M. Loss, *Analysis*, 2nd edition, American Mathematical Society,
+2001, Section 2.4. -/
 theorem lintegral_rpow_lintegral_le [SigmaFinite μ] [SFinite ν] {p : ℝ} (hp : 1 ≤ p)
     {H : α → β → ℝ≥0∞} (hH : AEMeasurable (uncurry H) (μ.prod ν)) :
     (∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1 / p)
@@ -395,7 +421,10 @@ namespace MeasureTheory
 
 variable {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0∞}
 
-/-- The square of the `L²` seminorm is the Lebesgue integral of the squared norms. -/
+/-- For an almost-everywhere strongly measurable $f \colon E \to \mathbb{C}$, the square of the
+$L^2$ seminorm is the integral of $|f|^2$:
+$$\|f\|_2^2 = \int |f(\xi)|^2 \, d\mu(\xi).$$
+-/
 theorem sq_eLpNorm_two {E : Type*} [MeasurableSpace E] {f : E → ℂ}
     {μ : Measure E} (hf : AEStronglyMeasurable f μ) :
     eLpNorm f 2 μ ^ 2 = ∫⁻ ξ, ‖f ξ‖ₑ ^ 2 ∂μ := by
@@ -406,14 +435,15 @@ theorem sq_eLpNorm_two {E : Type*} [MeasurableSpace E] {f : E → ℂ}
   simp only [ENNReal.toReal_ofNat, h2] at h
   exact h.symm
 
-/-- The Lebesgue integral of the enorm of a nonnegative probability density is `1`. -/
+/-- If $\varphi \ge 0$ is integrable with $\int \varphi \, d\mu = 1$, then the Lebesgue integral
+$\int |\varphi| \, d\mu$, computed in $[0, \infty]$, is $1$. -/
 theorem lintegral_enorm_eq_one {φ : α → ℝ} (hφ₀ : ∀ t, 0 ≤ φ t) (hφ : Integrable φ μ)
     (hφ₁ : ∫ t, φ t ∂μ = 1) : ∫⁻ t, ‖φ t‖ₑ ∂μ = 1 := by
   rw [← ofReal_integral_norm_eq_lintegral_enorm hφ]
   simp_rw [Real.norm_of_nonneg (hφ₀ _)]
   rw [hφ₁, ENNReal.ofReal_one]
 
-/-! ### Young's convolution inequality in the case `L¹ ∗ Lᵖ → Lᵖ` -/
+/-! ### Young's convolution inequality in the case $L^1 \star L^p \to L^p$ -/
 
 section Young
 
@@ -423,14 +453,16 @@ variable {𝕜 G E E' : Type*} [NontriviallyNormedField 𝕜]
   [MeasurableSpace G] [AddGroup G] {μ : Measure G}
   {f : G → E} {g : G → E'} {L : E →L[𝕜] E' →L[𝕜] F}
 
-/-- The convolution is pointwise dominated by the convolution of the norms, with no integrability
-hypothesis: a Bochner integral that does not converge is `0`. -/
+/-- The convolution is bounded pointwise by the convolution of the norms: for every $x$,
+$$\|(f \star g)(x)\| \le \int \|L\| \, \|f(t)\| \, \|g(x - t)\| \, d\mu(t).$$
+No integrability hypothesis is needed, because a Bochner integral that does not converge is $0$. -/
 theorem enorm_convolution_le_lintegral_enorm (x : G) :
     ‖(f ⋆[L, μ] g) x‖ₑ ≤ ∫⁻ t, ‖L‖ₑ * ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ :=
   (enorm_integral_le_lintegral_enorm _).trans (lintegral_mono fun _ => L.le_opENorm₂ _ _)
 
-/-- The convolution is additive in its first factor at every point where both convolutions
-exist, subtraction version of `MeasureTheory.ConvolutionExistsAt.add_distrib`. -/
+/-- If the convolutions $f \star g$ and $f' \star g$ both exist at $x$, then $((f - f') \star
+g)(x) = (f \star g)(x) - (f' \star g)(x)$. This is the version with subtraction of
+`MeasureTheory.ConvolutionExistsAt.add_distrib`. -/
 theorem ConvolutionExistsAt.sub_distrib {f' : G → E} {x : G} (hfg : ConvolutionExistsAt f g x L μ)
     (hfg' : ConvolutionExistsAt f' g x L μ) :
     ((f - f') ⋆[L, μ] g) x = (f ⋆[L, μ] g) x - (f' ⋆[L, μ] g) x := by
@@ -438,20 +470,24 @@ theorem ConvolutionExistsAt.sub_distrib {f' : G → E} {x : G} (hfg : Convolutio
 
 variable [MeasurableAdd₂ G] [MeasurableNeg G] [SFinite μ] [μ.IsAddRightInvariant]
 
-/-- The right-hand factor of a convolution integrand, seen as a function on `G × G`, is
-almost-everywhere strongly measurable. -/
+/-- If $g$ is almost-everywhere strongly measurable for $\mu$, then $(x, t) \mapsto g(x - t)$ is
+almost-everywhere strongly measurable for $\mu \times \mu$. This is the measurability of the
+second factor of a convolution integrand. -/
 theorem AEStronglyMeasurable.comp_fst_sub_snd (hg : AEStronglyMeasurable g μ) :
     AEStronglyMeasurable (fun z : G × G => g (z.1 - z.2)) (μ.prod μ) :=
   (hg.mono_ac (quasiMeasurePreserving_sub_of_right_invariant μ
     μ).absolutelyContinuous).comp_measurable measurable_sub
 
 omit [NormedSpace ℝ F] in
-/-- The intermediate estimate of the `L¹ ∗ Lᵖ → Lᵖ` case of Young's inequality, for `p ≠ ∞`: the
-`p`-th moment of the convolution of the norms, `x ↦ ∫⁻ t, ‖L‖ₑ * ‖f t‖ₑ * ‖g (x - t)‖ₑ`, is at
-most `(‖L‖ₑ * ‖f‖₁) ^ p * ‖g‖ₚ ^ p`. This is the weighted Minkowski inequality
-`ENNReal.lintegral_rpow_lintegral_mul_le` with the weight `‖L‖ₑ * ‖f ·‖ₑ`, followed by the
-translation invariance of `μ`; it carries both the norm bound
-`MeasureTheory.eLpNorm_convolution_le_of_ne_top` and the almost-everywhere existence
+/-- Let $1 \le p < \infty$ and let $f$ and $g$ be almost-everywhere strongly measurable. Then the
+convolution of the norms satisfies
+$$\int \Big(\int \|L\| \, \|f(t)\| \, \|g(x - t)\| \, d\mu(t)\Big)^p d\mu(x) \le (\|L\| \,
+  \|f\|_1)^p \, \|g\|_p^p.$$
+
+This is the intermediate estimate of Young's inequality in the case $L^1 \star L^p \to L^p$. It
+is the weighted Minkowski inequality `ENNReal.lintegral_rpow_lintegral_mul_le` with the weight
+$\|L\| \, \|f(\cdot)\|$, followed by the translation invariance of $\mu$. It gives both the norm
+bound `MeasureTheory.eLpNorm_convolution_le_of_ne_top` and the almost-everywhere existence
 `MeasureTheory.MemLp.ae_convolutionExistsAt`. -/
 theorem lintegral_rpow_lintegral_enorm_mul_enorm_sub_le (L : E →L[𝕜] E' →L[𝕜] F) (hp : 1 ≤ p)
     (hp' : p ≠ ∞) (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
@@ -486,7 +522,9 @@ theorem lintegral_rpow_lintegral_enorm_mul_enorm_sub_le (L : E →L[𝕜] E' →
     _ = (‖L‖ₑ * eLpNorm f 1 μ) ^ p.toReal * eLpNorm g p μ ^ p.toReal := by
         rw [hwint, lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp' hg]
 
-/-- **Young's convolution inequality** in the case `L¹ ∗ Lᵖ → Lᵖ` with `p ≠ ∞`. -/
+/-- **Young's convolution inequality** in the case $L^1 \star L^p \to L^p$ with $1 \le p < \infty$:
+for almost-everywhere strongly measurable $f$ and $g$, $\|f \star g\|_p \le \|L\| \, \|f\|_1 \,
+\|g\|_p$. -/
 theorem eLpNorm_convolution_le_of_ne_top (hp : 1 ≤ p) (hp' : p ≠ ∞)
     (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
     eLpNorm (f ⋆[L, μ] g) p μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNorm g p μ := by
@@ -505,8 +543,10 @@ theorem eLpNorm_convolution_le_of_ne_top (hp : 1 ≤ p) (hp' : p ≠ ∞)
           mul_one_div_cancel hq0.ne', ENNReal.rpow_one]
 
 omit [NormedSpace ℝ F] in
-/-- The convolution of the norms is bounded pointwise by `‖L‖ₑ * ‖f‖₁ * ‖g‖_∞`; this is the
-`L¹ ∗ L^∞` case of Young's inequality before the essential supremum is taken. -/
+/-- If $f$ is almost-everywhere strongly measurable, then for every $x$,
+$$\int \|L\| \, \|f(t)\| \, \|g(x - t)\| \, d\mu(t) \le \|L\| \, \|f\|_1 \, \|g\|_\infty,$$
+where $\|g\|_\infty$ is the essential supremum of $\|g\|$. This is the case $L^1 \star L^\infty$
+of Young's inequality before the essential supremum is taken. -/
 theorem lintegral_enorm_mul_enorm_sub_le_eLpNormEssSup (L : E →L[𝕜] E' →L[𝕜] F)
     (hf : AEStronglyMeasurable f μ) (x : G) :
     ∫⁻ t, ‖L‖ₑ * ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNormEssSup g μ := by
@@ -520,7 +560,9 @@ theorem lintegral_enorm_mul_enorm_sub_le_eLpNormEssSup (L : E →L[𝕜] E' →L
         rw [lintegral_mul_const'' _ (hf.enorm.const_mul _), lintegral_const_mul'' _ hf.enorm,
           eLpNorm_one_eq_lintegral_enorm hf]
 
-/-- **Young's convolution inequality** in the case `L¹ ∗ L^∞ → L^∞`. -/
+/-- **Young's convolution inequality** in the case $L^1 \star L^\infty \to L^\infty$: if $f$ is
+almost-everywhere strongly measurable, then $\|f \star g\|_\infty \le \|L\| \, \|f\|_1 \,
+\|g\|_\infty$, where $\|\cdot\|_\infty$ is the essential supremum of the norm. -/
 theorem eLpNormEssSup_convolution_le (hf : AEStronglyMeasurable f μ) :
     eLpNormEssSup (f ⋆[L, μ] g) μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNormEssSup g μ := by
   rw [eLpNormEssSup]
@@ -528,10 +570,13 @@ theorem eLpNormEssSup_convolution_le (hf : AEStronglyMeasurable f μ) :
   exact (enorm_convolution_le_lintegral_enorm x).trans
     (lintegral_enorm_mul_enorm_sub_le_eLpNormEssSup L hf x)
 
-/-- **Young's convolution inequality** in the case `L¹ ∗ Lᵖ → Lᵖ`, for every `1 ≤ p ≤ ∞`.
+/-- **Young's convolution inequality** in the case $L^1 \star L^p \to L^p$. Let $G$ be a measurable
+additive group with an s-finite right-invariant measure $\mu$, let $1 \le p \le \infty$, and let
+$f$ and $g$ be almost-everywhere strongly measurable. Then
+$$\|f \star g\|_p \le \|L\| \, \|f\|_1 \, \|g\|_p.$$
 
-Only measurability is assumed: where the convolution fails to exist it is `0`, and the bound holds
-there for free. -/
+Only measurability is assumed. Where the convolution does not exist, it is $0$, and the bound
+holds there trivially. -/
 theorem eLpNorm_convolution_le (hp : 1 ≤ p) (hf : AEStronglyMeasurable f μ)
     (hg : AEStronglyMeasurable g μ) :
     eLpNorm (f ⋆[L, μ] g) p μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNorm g p μ := by
@@ -540,8 +585,8 @@ theorem eLpNorm_convolution_le (hp : 1 ≤ p) (hf : AEStronglyMeasurable f μ)
     exact eLpNormEssSup_convolution_le hf
   · exact eLpNorm_convolution_le_of_ne_top hp hp' hf hg
 
-/-- `Lᵖ` is a module over `L¹` under convolution: the convolution of an `L¹` function with an `Lᵖ`
-function is in `Lᵖ`. -/
+/-- If $f \in L^1$, $g \in L^p$ and $1 \le p \le \infty$, then $f \star g \in L^p$. So $L^p$ is a
+module over $L^1$ under convolution. -/
 theorem MemLp.convolution (hp : 1 ≤ p) (hf : MemLp f 1 μ) (hg : MemLp g p μ) :
     MemLp (f ⋆[L, μ] g) p μ := by
   refine lt_of_le_of_lt
@@ -550,13 +595,15 @@ theorem MemLp.convolution (hp : 1 ≤ p) (hf : MemLp f 1 μ) (hg : MemLp g p μ)
     hg.eLpNorm_lt_top
 
 omit [NormedSpace ℝ F] in
-/-- **The convolution of an `L¹` function with an `Lᵖ` function exists almost everywhere**
-([brezis2011functional] Theorem 4.15, first sentence): for `f ∈ L¹` and `g ∈ Lᵖ`, `1 ≤ p ≤ ∞`,
-the integrand `t ↦ L (f t) (g (x - t))` is integrable for almost every `x`. Mathlib has the case
-`p = 1` (`MeasureTheory.Integrable.ae_convolution_exists`); for `p ≠ ∞` the `p`-th moment of the
-convolution of the norms is finite by
-`MeasureTheory.lintegral_rpow_lintegral_enorm_mul_enorm_sub_le`, so that convolution is finite
-almost everywhere, and for `p = ∞` it is bounded everywhere. -/
+/-- **The convolution of an $L^1$ function with an $L^p$ function exists almost everywhere.** Let
+$f \in L^1$, $g \in L^p$ and $1 \le p \le \infty$. Then for almost every $x$, the function
+$t \mapsto L(f(t), g(x - t))$ is integrable.
+
+This is the first sentence of Theorem 4.15 of [brezis2011functional]. Mathlib has the case
+$p = 1$ (`MeasureTheory.Integrable.ae_convolution_exists`). For $p < \infty$, the $p$-th moment
+of the convolution of the norms is finite by
+`MeasureTheory.lintegral_rpow_lintegral_enorm_mul_enorm_sub_le`, so this convolution is finite
+almost everywhere. For $p = \infty$, it is bounded everywhere. -/
 theorem MemLp.ae_convolutionExistsAt (hp : 1 ≤ p) (hf : MemLp f 1 μ) (hg : MemLp g p μ) :
     ∀ᵐ x ∂μ, ConvolutionExistsAt f g x L μ := by
   have hmeas : ∀ x, AEStronglyMeasurable (fun t => L (f t) (g (x - t))) μ := fun x =>
@@ -591,16 +638,20 @@ theorem MemLp.ae_convolutionExistsAt (hp : 1 ≤ p) (hf : MemLp f 1 μ) (hg : Me
     exact (ENNReal.rpow_lt_top_iff_of_pos hq0).1 hx
 
 omit [MeasurableNeg G] [SFinite μ] in
-/-- Translating a convolution translates its first factor:
-`(f ⋆ g) (x + h) = (f (· + h) ⋆ g) x`. -/
+/-- Translating a convolution translates its first factor: for all $x, h \in G$,
+$$(f \star g)(x + h) = (f(\cdot + h) \star g)(x).$$
+-/
 theorem convolution_apply_add_right (x h : G) :
     (f ⋆[L, μ] g) (x + h) = ((fun t => f (t + h)) ⋆[L, μ] g) x := by
   simp only [convolution_def]
   rw [← integral_add_right_eq_self (fun t => L (f t) (g (x + h - t))) h]
   simp only [add_sub_add_right_eq_sub]
 
-/-- **Young's convolution inequality** for the convolution of a scalar function against a
-vector-valued one, where the constant is `1`. -/
+/-- **Young's convolution inequality** for the convolution of a real function $\varphi$ with a
+vector-valued function $h$, with constant $1$: if $1 \le p \le \infty$ and $\varphi$ and $h$ are
+almost-everywhere strongly measurable, then
+$$\|\varphi \star h\|_p \le \|\varphi\|_1 \, \|h\|_p.$$
+-/
 theorem eLpNorm_convolution_lsmul_le {φ : G → ℝ} {h : G → F} (hp : 1 ≤ p)
     (hφ : AEStronglyMeasurable φ μ) (hh : AEStronglyMeasurable h μ) :
     eLpNorm (φ ⋆[lsmul ℝ ℝ, μ] h) p μ ≤ eLpNorm φ 1 μ * eLpNorm h p μ := by
@@ -611,7 +662,7 @@ theorem eLpNorm_convolution_lsmul_le {φ : G → ℝ} {h : G → F} (hp : 1 ≤ 
 
 end Young
 
-/-! ### Convolution with a fixed kernel as an operator on `Lᵖ` -/
+/-! ### Convolution with a fixed kernel as an operator on $L^p$ -/
 
 section ConvolutionCLM
 
@@ -619,12 +670,17 @@ variable {G : Type*} [MeasurableSpace G] [AddGroup G] [MeasurableAdd₂ G] [Meas
   {μ : Measure G} [SFinite μ] [μ.IsAddRightInvariant] [NormedSpace ℝ F] {K : G → ℝ}
 
 variable (F p) in
-/-- **Convolution with a fixed integrable kernel** `K` as a bounded operator on `Lp F p μ`,
-`f ↦ K ⋆ f` ([brezis2011functional] Corollary 4.28, the operator `u ↦ G ⋆ u`). Its values are in
-`Lᵖ` by Young's inequality (`MeasureTheory.MemLp.convolution`), it is linear because the
-convolution is linear in its second factor wherever the integral exists, which is almost
-everywhere (`MeasureTheory.MemLp.ae_convolutionExistsAt`), and its norm is at most `‖K‖₁`
-(`MeasureTheory.eLpNorm_convolution_lsmul_le`). -/
+/-- **Convolution with a fixed integrable kernel.** Let $G$ be a measurable additive group with an
+s-finite right-invariant measure $\mu$, let $1 \le p \le \infty$, and let
+$K \colon G \to \mathbb{R}$ be integrable. The map $f \mapsto K \star f$ is a bounded linear
+operator on $L^p(G, F)$ of norm at most $\|K\|_1$.
+
+This is the operator of convolution with a fixed kernel in Corollary 4.28 of
+[brezis2011functional]. Its values are in $L^p$ by Young's inequality
+(`MeasureTheory.MemLp.convolution`). It is linear because the convolution is linear in its
+second factor wherever the integral exists, which is almost everywhere
+(`MeasureTheory.MemLp.ae_convolutionExistsAt`). Its norm bound is
+`MeasureTheory.eLpNorm_convolution_lsmul_le`. -/
 noncomputable def Lp.convolutionCLM [Fact (1 ≤ p)] (hK : Integrable K μ) :
     Lp F p μ →L[ℝ] Lp F p μ :=
   LinearMap.mkContinuous
@@ -653,19 +709,20 @@ noncomputable def Lp.convolutionCLM [Fact (1 ≤ p)] (hK : Integrable K μ) :
       exact eLpNorm_convolution_lsmul_le Fact.out hK.aestronglyMeasurable
         (Lp.aestronglyMeasurable f)
 
-/-- The operator `MeasureTheory.Lp.convolutionCLM` is the convolution, almost everywhere. -/
+/-- The operator `MeasureTheory.Lp.convolutionCLM` maps $f$ to a function that is equal to
+$K \star f$ almost everywhere. -/
 theorem Lp.coeFn_convolutionCLM [Fact (1 ≤ p)] (hK : Integrable K μ) (f : Lp F p μ) :
     ⇑(Lp.convolutionCLM F p hK f) =ᵐ[μ] K ⋆[lsmul ℝ ℝ, μ] f :=
   MemLp.coeFn_toLp
     ((memLp_one_iff_integrable.2 hK).convolution (L := lsmul ℝ ℝ) Fact.out (Lp.memLp f))
 
-/-- The operator norm of the convolution with `K` is at most `‖K‖₁`
-([brezis2011functional] Corollary 4.28, Exercise 4.32). -/
+/-- The operator norm of convolution with $K$ on $L^p$ is at most $\|K\|_1$. This is in Corollary
+4.28 and Exercise 4.32 of [brezis2011functional]. -/
 theorem Lp.norm_convolutionCLM_le [Fact (1 ≤ p)] (hK : Integrable K μ) :
     ‖Lp.convolutionCLM F p hK‖ ≤ (eLpNorm K 1 μ).toReal :=
   LinearMap.mkContinuous_norm_le _ ENNReal.toReal_nonneg _
 
-/-- **Young's inequality on `Lᵖ`**: `‖K ⋆ f‖ₚ ≤ ‖K‖₁ * ‖f‖ₚ`. -/
+/-- **Young's inequality on $L^p$**: for $f \in L^p$, $\|K \star f\|_p \le \|K\|_1 \, \|f\|_p$. -/
 theorem Lp.norm_convolutionCLM_apply_le [Fact (1 ≤ p)] (hK : Integrable K μ) (f : Lp F p μ) :
     ‖Lp.convolutionCLM F p hK f‖ ≤ (eLpNorm K 1 μ).toReal * ‖f‖ :=
   (Lp.convolutionCLM F p hK).le_of_opNorm_le (Lp.norm_convolutionCLM_le hK) f
@@ -683,22 +740,27 @@ variable {𝕜 G E E' : Type*} [NontriviallyNormedField 𝕜]
   {f : G → E} {g : G → E'} {L : E →L[𝕜] E' →L[𝕜] F}
   [MeasurableAdd₂ G] [MeasurableNeg G] [μ.IsAddRightInvariant] [μ.IsNegInvariant]
 
-/-- On an additive group carrying a measure that is invariant under right translation and under
-negation, the reflection `t ↦ x - t` is measure preserving. This is the counterpart of
-`MeasureTheory.measurePreserving_sub_left`, which assumes left instead of right invariance. -/
+/-- Let $G$ be an additive group with a measure $\mu$ that is invariant under right translation and
+under negation. Then for every $x \in G$ the reflection $t \mapsto x - t$ preserves $\mu$.
+
+This is the counterpart of `MeasureTheory.measurePreserving_sub_left`, which assumes left
+invariance instead of right invariance. -/
 theorem measurePreserving_sub_left_of_isAddRightInvariant (μ : Measure G) [μ.IsAddRightInvariant]
     [μ.IsNegInvariant] (x : G) : MeasurePreserving (fun t => x - t) μ μ := by
   have h := (measurePreserving_neg μ).comp (measurePreserving_sub_right μ x)
   simpa [Function.comp_def, neg_sub] using h
 
-/-- Reflection invariance of the `Lᵖ` seminorm: `‖g (x - ·)‖_p = ‖g‖_p`. -/
+/-- If $g$ is almost-everywhere strongly measurable, then $\|g(x - \cdot)\|_p = \|g\|_p$ for every
+$x$. -/
 theorem eLpNorm_comp_sub_left (hg : AEStronglyMeasurable g μ) (x : G) :
     eLpNorm (fun t => g (x - t)) p μ = eLpNorm g p μ :=
   eLpNorm_comp_measurePreserving hg (measurePreserving_sub_left_of_isAddRightInvariant μ x)
 
-/-- Reflection invariance of the Lebesgue integral, with no measurability hypothesis. This is the
-counterpart of `MeasureTheory.lintegral_sub_left_eq_self`, which assumes left instead of right
-invariance. -/
+/-- For every function $h \colon G \to [0, \infty]$ and every $x \in G$, $\int h(x - t) \, d\mu(t) =
+\int h(t) \, d\mu(t)$. No measurability is needed.
+
+This is the counterpart of `MeasureTheory.lintegral_sub_left_eq_self`, which assumes left
+invariance instead of right invariance. -/
 theorem lintegral_sub_left_eq_self_of_isAddRightInvariant (h : G → ℝ≥0∞) (x : G) :
     ∫⁻ t, h (x - t) ∂μ = ∫⁻ t, h t ∂μ :=
   calc ∫⁻ t, h (x - t) ∂μ = ∫⁻ t, (fun s => h (-s)) (t - x) ∂μ := by simp_rw [neg_sub]
@@ -707,15 +769,18 @@ theorem lintegral_sub_left_eq_self_of_isAddRightInvariant (h : G → ℝ≥0∞)
 
 variable [SFinite μ]
 
-/-- The analytic core of Young's convolution inequality in its general form, with the exponents
-as real numbers: for `1 ≤ P, Q` and `0 < R` with `1/P + 1/Q = 1 + 1/R`,
-`∫⁻ ‖f ⋆ g‖ ^ R ≤ ‖L‖ ^ R * (∫⁻ ‖f‖ ^ P) ^ (R/P) * (∫⁻ ‖g‖ ^ Q) ^ (R/Q)`.
+/-- The analytic core of Young's convolution inequality in its general form, with real exponents.
+Let $P, Q \ge 1$ and $R > 0$ with $1/P + 1/Q = 1 + 1/R$, and let $f$ and $g$ be
+almost-everywhere strongly measurable. Then
+$$\int \|(f \star g)(x)\|^R \, d\mu(x) \le \|L\|^R \Big(\int \|f\|^P \, d\mu\Big)^{R/P}
+  \Big(\int \|g\|^Q \, d\mu\Big)^{R/Q}.$$
 
-The proof is the three-exponent Hölder inequality `ENNReal.lintegral_mul_mul_norm_pow_le` applied
-to the splitting `‖f t‖ * ‖g (x - t)‖ = (‖f t‖ ^ P * ‖g (x - t)‖ ^ Q) ^ (1/R) *
-(‖f t‖ ^ P) ^ (1/P - 1/R) * (‖g (x - t)‖ ^ Q) ^ (1/Q - 1/R)`, followed by Tonelli's theorem. Both
-the `Q`-th moment of the reflected translate `g (x - ·)` and the exchange of the two integrations
-use the invariance of `μ`. -/
+The proof applies the three-exponent Hölder inequality `ENNReal.lintegral_mul_mul_norm_pow_le`
+to the splitting
+$$\|f(t)\| \, \|g(x - t)\| = \big(\|f(t)\|^P \|g(x - t)\|^Q\big)^{1/R} \,
+  \big(\|f(t)\|^P\big)^{1/P - 1/R} \, \big(\|g(x - t)\|^Q\big)^{1/Q - 1/R},$$
+followed by Tonelli's theorem. Both the $Q$-th moment of the reflected translate $g(x - \cdot)$
+and the exchange of the two integrals use the invariance of $\mu$. -/
 theorem lintegral_enorm_convolution_rpow_le {P Q R : ℝ} (hP : 1 ≤ P) (hQ : 1 ≤ Q) (hR : 0 < R)
     (hPQR : 1 / P + 1 / Q = 1 + 1 / R)
     (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
@@ -817,8 +882,10 @@ theorem lintegral_enorm_convolution_rpow_le {P Q R : ℝ} (hP : 1 ≤ P) (hQ : 1
     _ = ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ (R/P) * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ (R/Q) :=
         halg _ _ _
 
-/-- **Young's convolution inequality** in the case `r = ∞`, that is, for Hölder conjugate `p` and
-`q`: the convolution of an `Lᵖ` function with an `L^q` function is bounded. -/
+/-- **Young's convolution inequality** in the case $r = \infty$, that is, for Hölder conjugate
+exponents $p$ and $q$ with $1/p + 1/q = 1$: if $f$ and $g$ are almost-everywhere strongly
+measurable, then $\|f \star g\|_\infty \le \|L\| \, \|f\|_p \, \|g\|_q$. So the convolution of
+an $L^p$ function with an $L^q$ function is essentially bounded. -/
 theorem eLpNormEssSup_convolution_le_of_inv_add_inv {p q : ℝ≥0∞}
     (hpq : 1 / p + 1 / q = 1) (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
     eLpNormEssSup (f ⋆[L, μ] g) μ ≤ ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ := by
@@ -832,7 +899,9 @@ theorem eLpNormEssSup_convolution_le_of_inv_add_inv {p q : ℝ≥0∞}
   have h2 := eLpNorm_le_enorm_mul_eLpNorm_mul_eLpNorm (p := p) (q := q) (r := 1) L hf hgx
   rwa [eLpNorm_comp_sub_left hg x] at h2
 
-/-- **Young's convolution inequality** in its general form, for a finite `r`. -/
+/-- **Young's convolution inequality** in its general form for $r < \infty$: if $p, q \ge 1$,
+$1/p + 1/q = 1 + 1/r$, and $f$ and $g$ are almost-everywhere strongly measurable, then $\|f
+\star g\|_r \le \|L\| \, \|f\|_p \, \|g\|_q$. -/
 theorem eLpNorm_convolution_le_of_inv_add_inv_of_ne_top {p q r : ℝ≥0∞} (hp : 1 ≤ p) (hq : 1 ≤ q)
     (hr : r ≠ ∞) (hpqr : 1 / p + 1 / q = 1 + 1 / r)
     (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
@@ -882,14 +951,17 @@ theorem eLpNorm_convolution_le_of_inv_add_inv_of_ne_top {p q r : ℝ≥0∞} (hp
         rw [← ENNReal.mul_rpow_of_nonneg _ _ hR0.le, ← ENNReal.mul_rpow_of_nonneg _ _ hR0.le,
           ← ENNReal.rpow_mul, mul_one_div_cancel hR0.ne', ENNReal.rpow_one]
 
-/-- **Young's convolution inequality** in its general form: for `1 ≤ p, q ≤ ∞` and an exponent `r`
-with `1/p + 1/q = 1 + 1/r`, `‖f ⋆ g‖_r ≤ ‖L‖ * ‖f‖_p * ‖g‖_q`.
+/-- **Young's convolution inequality.** Let $G$ be a measurable additive group with an s-finite
+measure $\mu$ that is invariant under right translation and under negation. Let
+$1 \le p, q \le \infty$ and let $r$ satisfy $1/p + 1/q = 1 + 1/r$. If $f$ and $g$ are
+almost-everywhere strongly measurable, then
+$$\|f \star g\|_r \le \|L\| \, \|f\|_p \, \|g\|_q.$$
 
-The measure is asked to be invariant under negation on top of being invariant under right
-translation: the proof integrates `t ↦ ‖g (x - t)‖`, so it needs the reflection `t ↦ x - t` to
-preserve `μ`. The case `q = 1`, `r = p` is `MeasureTheory.eLpNorm_convolution_le`, which is proved
-separately because it needs no such hypothesis. See for instance E. H. Lieb and M. Loss,
-*Analysis*, 2nd edition, American Mathematical Society, 2001, section 4.2. -/
+The invariance under negation is needed because the proof integrates $t \mapsto \|g(x - t)\|$,
+so the reflection $t \mapsto x - t$ must preserve $\mu$. The case $q = 1$, $r = p$ is
+`MeasureTheory.eLpNorm_convolution_le`, which is proved separately because it does not need this
+hypothesis. See for instance E. H. Lieb and M. Loss, *Analysis*, 2nd edition, American
+Mathematical Society, 2001, Section 4.2. -/
 theorem eLpNorm_convolution_le_of_inv_add_inv {p q r : ℝ≥0∞} (hp : 1 ≤ p) (hq : 1 ≤ q)
     (hpqr : 1 / p + 1 / q = 1 + 1 / r)
     (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
@@ -899,11 +971,17 @@ theorem eLpNorm_convolution_le_of_inv_add_inv {p q r : ℝ≥0∞} (hp : 1 ≤ p
     exact eLpNormEssSup_convolution_le_of_inv_add_inv (by simpa using hpqr) hf hg
   · exact eLpNorm_convolution_le_of_inv_add_inv_of_ne_top hp hq hr hpqr hf hg
 
-/-- **The adjoint identity for the convolution** ([brezis2011functional] Proposition 4.16): for
-`f ∈ L¹`, `g ∈ Lᵖ` and `h ∈ L^q` with `1/p + 1/q = 1`, writing `f̌ x = f (-x)`,
-`∫ (f ⋆ g) h = ∫ g (f̌ ⋆ h)`. The function `(x, t) ↦ f t * g (x - t) * h x` is integrable on
-`μ × μ` by Young's and Hölder's inequalities, and the identity is Fubini's theorem for it after
-the measure-preserving change of variables `(x, t) ↦ (x - t, -t)`. -/
+/-- **The adjoint identity for the convolution.** Let $G$ be a measurable additive group with an
+s-finite measure $\mu$ that is invariant under right translation and under negation, and let
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Let $p$ and $q$ be Hölder conjugate exponents, and
+let $f \in L^1$, $g \in L^p$ and $h \in L^q$ be functions $G \to \mathbb{K}$. Then, with
+$\check f(x) = f(-x)$,
+$$\int (f \star g)(x) \, h(x) \, d\mu(x) = \int g(y) \, (\check f \star h)(y) \, d\mu(y).$$
+
+This is Proposition 4.16 of [brezis2011functional]. The convolutions are taken for
+multiplication in $\mathbb{K}$. The function $(x, t) \mapsto f(t) g(x - t) h(x)$ is integrable
+on $G \times G$ by Young's and Hölder's inequalities, and the identity is Fubini's theorem for
+it after the measure-preserving change of variables $(x, t) \mapsto (x - t, -t)$. -/
 theorem integral_convolution_mul {𝕂 : Type*} [RCLike 𝕂] {p q : ℝ≥0∞} [p.HolderConjugate q]
     {f g h : G → 𝕂} (hf : MemLp f 1 μ) (hg : MemLp g p μ) (hh : MemLp h q μ) :
     ∫ x, (f ⋆[mul 𝕂 𝕂, μ] g) x * h x ∂μ = ∫ y, g y * ((f ∘ Neg.neg) ⋆[mul 𝕂 𝕂, μ] h) y ∂μ := by
@@ -963,15 +1041,16 @@ theorem integral_convolution_mul {𝕂 : Type*} [RCLike 𝕂] {p q : ℝ≥0∞}
 end YoungGeneral
 
 
-/-! ### Continuity of translation on `Lᵖ` -/
+/-! ### Continuity of translation on $L^p$ -/
 
 section Translation
 
 variable {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimensional ℝ G]
   [MeasurableSpace G] [BorelSpace G] {μ : Measure G} [μ.IsAddHaarMeasure] {f : G → F}
 
-/-- **Continuity of translation on `Lᵖ`**: for `f ∈ Lᵖ` with `1 ≤ p < ∞`, the `Lᵖ` distance
-between `f` and its translate by `t` tends to `0` as `t` tends to `0`.
+/-- **Continuity of translation on $L^p$.** Let $G$ be a finite-dimensional real normed space with a
+Haar measure $\mu$, let $1 \le p < \infty$ and let $f \in L^p$. Then
+$$\|f(\cdot - t) - f\|_p \to 0 \quad \text{as } t \to 0.$$
 
 This is a restatement of the continuity of the action of `Gᵈᵃᵃ` on `MeasureTheory.Lp`,
 `MeasureTheory.Lp.instContinuousVAddDomAddAct`. -/
@@ -1002,16 +1081,18 @@ theorem MemLp.tendsto_eLpNorm_sub_translate (hp : 1 ≤ p) (hp' : p ≠ ∞) (hf
 
 end Translation
 
-/-! ### `Lᵖ` convergence of mollification -/
+/-! ### Convergence of mollification in $L^p$ -/
 
 section Mollifier
 
 variable {G : Type*} [NormedAddCommGroup G] [MeasurableSpace G] [NormedSpace ℝ F]
   [CompleteSpace F] {μ : Measure G} {f : G → F} {φ : G → ℝ}
 
-/-- Convolving with a probability density `φ` and subtracting averages the translation errors:
-at a point `x` where the convolution exists, the mollification error is dominated by the
-`φ`-average of `‖f (x - t) - f x‖`. -/
+/-- Let $\varphi$ be integrable with $\int \varphi \, d\mu = 1$, and let the convolution
+$\varphi \star f$ exist at $x$. Then
+$$\|(\varphi \star f)(x) - f(x)\| \le \int |\varphi(t)| \, \|f(x - t) - f(x)\| \, d\mu(t).$$
+So at $x$, the mollification error is bounded by a $|\varphi|$-average of the translation
+errors. -/
 theorem enorm_convolution_sub_le (hφ : Integrable φ μ) (hφ₁ : ∫ t, φ t ∂μ = 1) (x : G)
     (hex : ConvolutionExistsAt φ f x (lsmul ℝ ℝ) μ) :
     ‖(φ ⋆[lsmul ℝ ℝ, μ] f - f) x‖ₑ ≤ ∫⁻ t, ‖φ t‖ₑ * ‖f (x - t) - f x‖ₑ ∂μ := by
@@ -1027,8 +1108,12 @@ theorem enorm_convolution_sub_le (hφ : Integrable φ μ) (hφ₁ : ∫ t, φ t 
 
 variable [NormedSpace ℝ G] [FiniteDimensional ℝ G] [BorelSpace G] [μ.IsAddHaarMeasure]
 
-/-- The `Lᵖ` error of mollification by a probability density `φ` is bounded by the `φ`-average of
-the `p`-th powers of the translation errors `‖f (· - t) - f‖_p`. -/
+/-- Let $G$ be a finite-dimensional real normed space with a Haar measure $\mu$, let
+$1 \le p < \infty$, let $f \in L^p$, and let $\varphi \ge 0$ be integrable with
+$\int \varphi \, d\mu = 1$. Then
+$$\|\varphi \star f - f\|_p^p \le \int \varphi(t) \, \|f(\cdot - t) - f\|_p^p \, d\mu(t).$$
+So the $L^p$ error of mollification is bounded by the $\varphi$-average of the $p$-th powers of
+the translation errors. -/
 theorem eLpNorm_convolution_sub_rpow_le (hp : 1 ≤ p) (hp' : p ≠ ∞) (hf : MemLp f p μ)
     (hφ₀ : ∀ t, 0 ≤ φ t) (hφ : Integrable φ μ) (hφ₁ : ∫ t, φ t ∂μ = 1) :
     eLpNorm (φ ⋆[lsmul ℝ ℝ, μ] f - f) p μ ^ p.toReal
@@ -1062,15 +1147,19 @@ theorem eLpNorm_convolution_sub_rpow_le (hp : 1 ≤ p) (hp' : p ≠ ∞) (hf : M
             (measurePreserving_sub_right μ t)).sub hf.aestronglyMeasurable
         rw [lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp' hm]
 
-/-- **Mollification by an approximate identity converges in `Lᵖ`**
-([brezis2011functional] Theorem 4.22). If `f ∈ Lᵖ(μ)` with `1 ≤ p < ∞` and `φ i` are
-eventually nonnegative probability densities whose supports shrink to `0`, then the
-mollifications `φ i ⋆ f` tend to `f` in `Lᵖ(μ)`. The support hypothesis is the one of
-`MeasureTheory.convolution_tendsto_right`: `Tendsto (fun i => support (φ i)) l (𝓝 0).smallSets`.
+/-- **Mollification by an approximate identity converges in $L^p$.** Let $G$ be a finite-dimensional
+real normed space with a Haar measure $\mu$, let $1 \le p < \infty$ and let $f \in L^p(\mu)$.
+Let $(\varphi_i)$ be a family of real functions indexed along a filter $l$ such that, eventually
+along $l$, $\varphi_i \ge 0$, $\varphi_i$ is integrable and $\int \varphi_i \, d\mu = 1$, and
+such that the supports of the $\varphi_i$ shrink to $0$: for every neighbourhood $U$ of $0$,
+eventually $\operatorname{supp} \varphi_i \subseteq U$. Then
+$$\|\varphi_i \star f - f\|_p \to 0 \quad \text{along } l.$$
 
-The `Lᵖ` error of mollification is bounded by the `φ i`-average of the translation errors
-(`MeasureTheory.eLpNorm_convolution_sub_rpow_le`), which are uniformly small on the support of
-`φ i` once it lies in a small enough ball, by the continuity of translation
+This is Theorem 4.22 of [brezis2011functional]. The support hypothesis is the one of
+`MeasureTheory.convolution_tendsto_right`: `Tendsto (fun i => support (φ i)) l (𝓝 0).smallSets`.
+The $L^p$ error is bounded by the $\varphi_i$-average of the translation errors
+(`MeasureTheory.eLpNorm_convolution_sub_rpow_le`). These are uniformly small on the support of
+$\varphi_i$ once it lies in a small enough ball, by the continuity of translation
 (`MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`). -/
 theorem tendsto_eLpNorm_convolution_sub {ι : Type*} {l : Filter ι} {φ : ι → G → ℝ}
     (hφ₀ : ∀ᶠ i in l, ∀ t, 0 ≤ φ i t) (hφ : ∀ᶠ i in l, Integrable (φ i) μ)
@@ -1103,14 +1192,17 @@ theorem tendsto_eLpNorm_convolution_sub {ι : Type*} {l : Filter ι} {φ : ι �
             lintegral_enorm_eq_one hi₀ hi hi₁, one_mul]
   exact (ENNReal.rpow_le_rpow_iff hq0).1 hkey
 
-/-- **Mollification converges in `Lᵖ`.** If `f ∈ Lᵖ(μ)` with `1 ≤ p < ∞` and the outer radii of a
-family of bump functions tend to `0`, then the mollifications `(φ i).normed μ ⋆ f` tend to `f` in
-`Lᵖ(μ)`.
+/-- **Mollification converges in $L^p$.** Let $G$ be a finite-dimensional real normed space with a
+Haar measure $\mu$, let $1 \le p < \infty$ and let $f \in L^p(\mu)$. Let $(\varphi_i)$ be a
+family of bump functions about $0$, indexed along a filter $l$, whose outer radii tend to $0$
+along $l$. Then the mollifications by the normalized bump functions tend to $f$ in $L^p(\mu)$:
+$$\|\tilde\varphi_i \star f - f\|_p \to 0, \qquad \tilde\varphi_i = \varphi_i \Big/ \int
+  \varphi_i \, d\mu.$$
 
-This is the `Lᵖ` counterpart of `ContDiffBump.convolution_tendsto_right`, which gives the
-pointwise convergence for a continuous `f`; it is the case of
-`MeasureTheory.tendsto_eLpNorm_convolution_sub` where the approximate identity consists of
-normalized bump functions. -/
+The normalized bump function $\tilde\varphi_i$ is `(φ i).normed μ`. This is the $L^p$
+counterpart of `ContDiffBump.convolution_tendsto_right`, which gives pointwise convergence for a
+continuous $f$. It is the case of `MeasureTheory.tendsto_eLpNorm_convolution_sub` in which the
+approximate identity consists of normalized bump functions. -/
 theorem _root_.ContDiffBump.tendsto_eLpNorm_convolution_sub {ι : Type*} {l : Filter ι}
     {φ : ι → ContDiffBump (0 : G)} (hφ : Tendsto (fun i => (φ i).rOut) l (𝓝 0))
     (hp : 1 ≤ p) (hp' : p ≠ ∞) (hf : MemLp f p μ) :
@@ -1123,16 +1215,20 @@ theorem _root_.ContDiffBump.tendsto_eLpNorm_convolution_sub {ι : Type*} {l : Fi
 
 end Mollifier
 
-/-! ### Limits of `L^p` pairings
+/-!
+### Limits of $L^p$ pairings
 
-Three estimates that are used to pass to the limit in an integral along a sequence converging in
-`L^p`: Hölder's inequality in the limit, the comparison of `L^1` with `L^p` on a finite measure,
-and the bound of an integral against a bounded scalar factor. -/
+Three estimates for passing to the limit in an integral along a sequence that converges in $L^p$:
+Hölder's inequality in the limit, the comparison of $L^1$ with $L^p$ for a finite measure, and the
+bound of an integral against a bounded scalar factor.
+-/
 
 section Limits
 
-/-- **Hölder's inequality in the limit**: if `a j → a₀` in `L^p` and `b ∈ L^q` with `p` and `q`
-Hölder conjugate, then the pairings `∫ b (a j)` converge to `∫ b a₀`. -/
+/-- **Hölder's inequality in the limit.** Let $p$ and $q$ be Hölder conjugate exponents, let
+$a_j, a_0 \in L^p$ and $b \in L^q$ be real functions, and let $\|a_j - a_0\|_p \to 0$. Then
+$$\int b \, a_j \, d\mu \to \int b \, a_0 \, d\mu.$$
+-/
 theorem tendsto_integral_mul_of_tendsto_eLpNorm {q : ℝ≥0∞} [ENNReal.HolderConjugate p q]
     {a : ℕ → α → ℝ} {a₀ b : α → ℝ} (ha : ∀ j, MemLp (a j) p μ) (ha₀ : MemLp a₀ p μ)
     (hb : MemLp b q μ)
@@ -1170,9 +1266,9 @@ theorem tendsto_integral_mul_of_tendsto_eLpNorm {q : ℝ≥0∞} [ENNReal.Holder
           rw [← ofReal_norm, ENNReal.toReal_ofReal (norm_nonneg _)]
       _ ≤ _ := ENNReal.toReal_mono hfin (h1.trans h2)
 
-/-- On a finite measure, convergence to zero in `L^p` implies convergence to zero in `L^1`: the
-exponents are ordered the other way from the inclusion of the spaces, and the loss is a power of
-the total mass. -/
+/-- Let $\mu$ be a finite measure, let $p \ge 1$, and let $(h_j)$ be almost-everywhere strongly
+measurable functions with $\|h_j\|_p \to 0$. Then $\|h_j\|_1 \to 0$. The loss in the comparison
+of the two norms is a power of the total mass of $\mu$. -/
 theorem tendsto_eLpNorm_one_of_tendsto_eLpNorm [IsFiniteMeasure μ] (hp : 1 ≤ p)
     {h : ℕ → α → F} (hmeas : ∀ j, AEStronglyMeasurable (h j) μ)
     (hlim : Tendsto (fun j ↦ eLpNorm (h j) p μ) atTop (𝓝 0)) :
@@ -1193,7 +1289,10 @@ theorem tendsto_eLpNorm_one_of_tendsto_eLpNorm [IsFiniteMeasure μ] (hp : 1 ≤ 
     (fun j ↦ ?_)
   exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hp (hmeas j)
 
-/-- An integral against a bounded scalar factor is bounded by that factor times the `L^1` norm. -/
+/-- Let $b$ be a real function with $|b(x)| \le C$ for all $x$, and let $h$ be a function with
+values in a real normed space. Then
+$$\Big\| \int b(x) \, h(x) \, d\mu(x) \Big\| \le C \, \|h\|_1.$$
+The factor $C$ enters as `ENNReal.ofReal C`. No integrability is assumed. -/
 theorem enorm_integral_smul_le_of_bound [NormedSpace ℝ F] {b : α → ℝ} {C : ℝ}
     (hC : ∀ x, |b x| ≤ C) {h : α → F} :
     ‖∫ x, b x • h x ∂μ‖ₑ ≤ ENNReal.ofReal C * eLpNorm h 1 μ := by
@@ -1218,9 +1317,15 @@ variable {E E₁ E₂ V : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E]
   {μ : Measure E} [μ.IsAddHaarMeasure] {L : E₁ →L[ℝ] E₂ →L[ℝ] V} {g : E → E₂}
 
-/-- Differentiating a convolution in a fixed direction moves the derivative onto the `C¹`,
-compactly supported factor. This is `HasCompactSupport.hasFDerivAt_convolution_left` with the
-`ContinuousLinearMap.precompL` bookkeeping unwound by evaluating at a direction. -/
+/-- Let $E$ be a finite-dimensional real normed space with a Haar measure $\mu$, let $g$ be locally
+integrable, and let $\varphi$ be a $C^1$ function with compact support. Then for all
+$x, v \in E$,
+$$D(\varphi \star g)(x)\,v = \big((t \mapsto D\varphi(t)\,v) \star g\big)(x).$$
+So differentiating a convolution in a fixed direction moves the derivative onto the compactly
+supported factor.
+
+This is `HasCompactSupport.hasFDerivAt_convolution_left` with the `ContinuousLinearMap.precompL`
+bookkeeping removed by evaluation at a direction. -/
 theorem LocallyIntegrable.fderiv_convolution_left_apply
     (hg : LocallyIntegrable g μ) {φ : E → E₁} (hcφ : HasCompactSupport φ) (hφ : ContDiff ℝ 1 φ)
     (x v : E) :
@@ -1233,10 +1338,18 @@ theorem LocallyIntegrable.fderiv_convolution_left_apply
   rfl
 
 open scoped ContDiff in
-/-- Differentiating a convolution `n` times along a tuple of directions moves all `n` derivatives
-onto the smooth, compactly supported factor. The induction peels the directions off the front of
-the tuple with `ContDiff.iteratedFDeriv_succ_apply_left'`, so that no reversal of the tuple
-appears. -/
+/-- Let $E$ be a finite-dimensional real normed space with a Haar measure $\mu$ and let $g$ be
+locally integrable. Then for every $n$, every smooth function $\varphi$ with compact support,
+every $x \in E$ and every tuple of directions $y = (y_1, \dots, y_n)$,
+$$D^n(\varphi \star g)(x)\,y = \big((z \mapsto D^n\varphi(z)\,y) \star g\big)(x).$$
+So differentiating a convolution $n$ times moves all $n$ derivatives onto the smooth, compactly
+supported factor.
+
+The derivatives are Mathlib's `iteratedFDeriv`. The induction takes the directions off the front
+of the tuple with `ContDiff.iteratedFDeriv_succ_apply_left'`, so that the tuple is never
+reversed. That step uses the symmetry of the second derivative, and this is why $\varphi$ must
+be smooth here, while `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` needs only
+a $C^1$ factor. -/
 theorem LocallyIntegrable.iteratedFDeriv_convolution_left_apply (hg : LocallyIntegrable g μ) :
     ∀ (n : ℕ) {φ : E → E₁}, HasCompactSupport φ → ContDiff ℝ ∞ φ → ∀ (x : E) (y : Fin n → E),
       _root_.iteratedFDeriv ℝ n (φ ⋆[L, μ] g) x y
@@ -1256,9 +1369,14 @@ theorem LocallyIntegrable.iteratedFDeriv_convolution_left_apply (hg : LocallyInt
     exact congrArg (fun h ↦ (h ⋆[L, μ] g) x)
       (funext fun z ↦ (hφ.iteratedFDeriv_succ_apply_left' n y z).symm)
 
-/-- A convolution against a compactly supported continuous function only sees the other factor on
-the closed ball whose radius is that of the support, so it exists as soon as that factor is
-locally integrable on an open set containing the ball. -/
+/-- Let $E$ be a finite-dimensional real normed space with a Haar measure $\mu$, let
+$U \subseteq E$, let $g$ be locally integrable on $U$, and let $\varphi$ be continuous with
+$\operatorname{supp} \varphi \subseteq \overline{B}(0, \varepsilon)$. If
+$\overline{B}(x, \varepsilon) \subseteq U$, then the convolution $\varphi \star g$ exists at
+$x$.
+
+The convolution at $x$ sees $g$ only on the closed ball $\overline{B}(x, \varepsilon)$. The
+support of $\varphi$ is its closed support `tsupport φ`. The set $U$ need not be open. -/
 theorem LocallyIntegrableOn.convolutionExistsAt {U : Set E}
     (hg : LocallyIntegrableOn g U μ) {φ : E → E₁} (hφ : Continuous φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ U) :

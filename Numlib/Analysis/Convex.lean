@@ -130,135 +130,241 @@ import Numlib.Analysis.Convex.Uniform
 /-!
 # Convex analysis
 
-The **backbone** for convex analysis: the theory of convex sets and of extended-real-valued convex
-functions over real vector spaces, named for its subject and stated at the weakest hypotheses that
-carry each proof. Nothing here is tied to a particular text. `NumlibSurface.Rockafellar` is the
-surface that tests it against one.
+This module imports the convex analysis of the backbone, the modules under `Numlib.Analysis.Convex`,
+and adds no declaration. The library studies convex sets and extended-real-valued convex functions
+$f : E \to [-\infty, +\infty]$ on a real vector space $E$: epigraphs and the functional operations,
+closures and relative interiors, separation, conjugacy and polarity, recession, subgradients,
+polyhedral convexity, convex programs and their duality, saddle-functions, convex bifunctions and
+convex processes. The development follows [rockafellar1970convex], but each result is stated at the
+weakest of four levels of generality that its proof uses, and duality is stated for an abstract dual
+pair instead of $\mathbb{R}^n$ with its inner product. The surface library
+`NumlibSurface.Rockafellar` instantiates the results with $\mathbb{R}^n$. The declarations are in
+the namespace `ConvexAnalysis`, except in the four modules `Gateaux`, `StrictConvexSpace`, `Uniform`
+and `Extremum.Projection`, which extend Mathlib's names. The natural place of the library in Mathlib
+is `Mathlib.Analysis.Convex`, and no module of the library imports a numerical module of the
+backbone.
 
-This module imports the whole of `Numlib.Analysis.Convex` and adds nothing of its own. The
-directory is one library, laid out below, and its natural home upstream is
-`Mathlib.Analysis.Convex`. No module of it depends on a numerical-analysis layer of the project,
-which is what makes that an honest claim.
+The four levels of generality are a real vector space, `[AddCommGroup E] [Module ℝ E]` (convexity,
+epigraphs, the functional operations, and conjugacy against a dual pair); a topological vector
+space, with continuous addition and scalar multiplication (closures, lower semicontinuity,
+continuity); a locally convex space, `[LocallyConvexSpace ℝ E]` (separation, and through it
+biconjugation and the existence of subgradients); and a finite-dimensional real normed space,
+`[NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]` (relative interiors, and every
+result that uses that the relative interior of a nonempty convex set is nonempty). Some results,
+such as those on proximal mappings, Moreau's decomposition and gradients, also need
+`[InnerProductSpace ℝ E]`, because they are about the pairing of a space with itself. A dual pair is
+a bilinear map $B : E \times F \to \mathbb{R}$, written `B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ`. In applications $F$
+is the continuous dual of a locally convex space, or $E$ itself with an inner product.
 
-Where it meets the rest of the project the meeting is a bridge module, and a bridge sits with the
-more specific of the two subjects. Two of them are here, because convex analysis is the more
-specific side: `Extremum/Projection` reads the metric projection of
-`Numlib/Analysis/Normed/Module/BestApprox` as a proximal mapping, and `Saddle/Real` reads the
-real-valued saddle-point theory of Atkinson–Han through `IsSaddlePointOn`. Two are elsewhere,
-because the numerical layer is the more specific side there:
-`Numlib/Variational/Inequality/NormalCone` reads the elliptic variational inequality as a
-normal-cone and subgradient condition, and `Numlib/Variational/EnergyPairing` reads the energy
-inner product of a symmetric coercive operator as an `IsInnerPairing`.
+## Contents
 
-## Four levels of generality
+| Module | Subject |
+|---|---|
+| `Bifunction.Algebra` | the algebra of bifunctions |
+| `Bifunction.Cofinite` | co-finite bifunctions |
+| `Caratheodory` | Carathéodory's theorem and its variants |
+| `Closure` | closures of convex functions |
+| `Continuity` | continuity of a convex function on the relative interior of its domain |
+| `Convergence` | equi-Lipschitz families and convergence of convex functions |
+| `Duality.Barrier` | the barrier cone and the recession cone |
+| `Duality.Conjugate` | conjugates of convex and concave functions |
+| `Duality.Continuity` | the continuity constraint qualification |
+| `Duality.Exact` | exact duality for sums and inverse images |
+| `Duality.FiniteProduct` | convex analysis on a finite product |
+| `Duality.Gauge` | gauges, polars of convex functions, and obverses |
+| `Duality.GaugeLike` | monotone conjugacy on the half-line, convex functions of a gauge |
+| `Duality.HomConePolar` | the conjugate read off the polar of the homogenized epigraph |
+| `Duality.InnerPairing` | self-pairings of inner-product type |
+| `Duality.Level` | support functions of level sets |
+| `Duality.Ops` | the dual operations table |
+| `Duality.Pairing` | dual pairs |
+| `Duality.Polar` | polars of convex sets and convex cones |
+| `Duality.PolarBounded` | boundedness of a polar |
+| `Duality.Relint` | the relative-interior constraint qualification |
+| `Duality.RelintSeparation` | when a subspace meets a relative interior |
+| `Duality.Support` | support functions |
+| `Duality.SupportRelint` | relative interior and affine hull from the support function |
+| `Epigraph` | extended-real-valued convex and concave functions |
+| `Eponyms` | the named theorems under their names |
+| `EuclideanProd` | convexity along the concatenation of coordinates |
+| `Exposed` | exposed directions and the exposed representation of a closed convex set |
+| `Extremum.Adjoint` | adjoint bifunctions and dual programs |
+| `Extremum.ConeDuality` | duality between a co-finite function and a closed convex cone |
+| `Extremum.Fenchel` | Fenchel's duality theorem |
+| `Extremum.Lagrangian` | Lagrangians of generalized convex programs |
+| `Extremum.Maximum` | the maximum of a convex function |
+| `Extremum.Minimum` | the minimum of a convex function |
+| `Extremum.Moreau` | Moreau's decomposition |
+| `Extremum.MoreauGradient` | the gradient formulas of Moreau's theorem |
+| `Extremum.Normal` | normality of a dual pair of convex programs |
+| `Extremum.Perturbation` | convex bifunctions and generalized convex programs |
+| `Extremum.Program` | ordinary convex programs and Lagrange multipliers |
+| `Extremum.Projection` | the metric projection onto a convex set as a proximal mapping |
+| `Extremum.Prox` | proximal mappings and maximal monotonicity of the subdifferential |
+| `Face` | faces of a convex set |
+| `Gateaux` | convexity of a functional through its directional derivatives |
+| `Helly` | systems of convex inequalities: theorems of the alternative |
+| `HellyRefined` | the refined theorems of the alternative |
+| `Homogeneous` | positively homogeneous convex functions |
+| `Homogenize` | right scalar multiplication and homogenization |
+| `HullDirections` | convex hulls of points and directions |
+| `Indicator` | indicator functions |
+| `Lattice` | the complete lattice of convex functions |
+| `Line` | convexity along a line |
+| `LinearInequalities` | finite systems of linear inequalities |
+| `Operations.Basic` | convexity of suprema, sums, compositions and restrictions |
+| `Operations.Closed` | closedness of inverse images under linear maps |
+| `Operations.Epi` | the function determined by a set in $E \times \mathbb{R}$ |
+| `Operations.Hull` | the convex hull of a family of functions |
+| `Operations.Image` | images and inverse images of convex functions under a linear map |
+| `Operations.InfConv` | infimal convolution |
+| `Polyhedral.Closedness` | closedness of a sum with a polyhedral set |
+| `Polyhedral.Cone` | polyhedral convex cones and the Minkowski–Weyl theorem |
+| `Polyhedral.Conjugate` | conjugates of polyhedral convex functions |
+| `Polyhedral.Defs` | polyhedral convex sets and the Minkowski–Weyl theorem |
+| `Polyhedral.Duality` | polyhedral constraint qualifications |
+| `Polyhedral.Faces` | finite generation and a finite set of faces |
+| `Polyhedral.Function` | polyhedral convex functions |
+| `Polyhedral.Homogeneous` | the homogeneous convex function generated by finitely many points |
+| `Polyhedral.NormalForm` | the normal form of a polyhedral convex function |
+| `Polyhedral.Ops` | the polyhedral calculus |
+| `Polyhedral.Recession` | the recession cone of a polyhedral set |
+| `Polyhedral.Separation` | proper separation from a polyhedral set |
+| `Polyhedral.Simplicial` | polytopes, triangulation, and local simpliciality |
+| `Process.Basic` | convex processes |
+| `Process.Duality` | the two inner products of a convex process |
+| `Process.Linear` | linear transformations inside the convex algebra |
+| `Recession.Closedness` | closedness of linear images of convex sets and functions |
+| `Recession.Cone` | recession cones and lineality spaces |
+| `Recession.ConeHull` | the convex cone generated by a convex set |
+| `Recession.Conjugate` | recession functions, conjugates and polar cones |
+| `Recession.Function` | recession functions |
+| `Recession.PiSum` | sums of finitely many convex sets |
+| `RelativeInterior` | relative interiors of convex sets |
+| `Representation` | internal representation of a closed convex set |
+| `Saddle.Closure` | the lower and upper closures of a saddle-function |
+| `Saddle.Conjugate` | the two conjugates of a saddle-function form a closure pair |
+| `Saddle.Continuity` | continuity of finite saddle-functions |
+| `Saddle.Correspondence` | the correspondence between saddle-functions and bifunctions |
+| `Saddle.Defs` | saddle-functions and partial conjugacy |
+| `Saddle.Differential` | directional derivatives and subgradients of a saddle-function |
+| `Saddle.Equiv` | equivalence classes of saddle-functions |
+| `Saddle.Existence` | existence of saddle-values and saddle-points |
+| `Saddle.Kernel` | kernels of saddle-functions |
+| `Saddle.Minimax` | minimax problems and conjugate saddle-functions |
+| `Saddle.Monotone` | the subdifferential of a saddle-function as a monotone mapping |
+| `Saddle.Rademacher` | differentiability almost everywhere of a saddle-function |
+| `Saddle.Real` | saddle-points relative to a product set, and real-valued saddle-functions |
+| `Saddle.Subdifferential` | subdifferentials of saddle-functions |
+| `Separation` | separation theorems |
+| `Simplicial` | simplices, locally simplicial sets, and upper semicontinuity |
+| `StrictConvexSpace` | strict convexity of a normed space from a strictly convex norm power |
+| `Subdifferential.Approx` | ε-subgradients |
+| `Subdifferential.BoundaryDirDeriv` | essential smoothness in terms of directional derivatives |
+| `Subdifferential.Bounded` | local boundedness of the subdifferential |
+| `Subdifferential.Calculus` | subdifferential calculus |
+| `Subdifferential.Cofinite` | co-finiteness and the growth of the gradient |
+| `Subdifferential.Convergence` | convergence of directional derivatives and of subgradients |
+| `Subdifferential.Defs` | subgradients, normal cones and directional derivatives |
+| `Subdifferential.Differentiability` | points of differentiability of a convex function |
+| `Subdifferential.EssentiallySmooth` | essential smoothness |
+| `Subdifferential.Existence` | existence of subgradients |
+| `Subdifferential.Gradient` | gradients and the subdifferential |
+| `Subdifferential.GradientLimit` | convergence of gradients |
+| `Subdifferential.Integral` | a convex function of one variable is the integral of its derivative |
+| `Subdifferential.Legendre` | the Legendre transformation |
+| `Subdifferential.LegendreType` | convex functions of Legendre type |
+| `Subdifferential.Monotone` | monotonicity and cyclic monotonicity of the subdifferential |
+| `Subdifferential.OneDim` | one-sided derivatives of a convex function on the line |
+| `Subdifferential.Preservation` | preservation of essential smoothness |
+| `Subdifferential.Primitive` | the convex primitive of a nondecreasing function on the line |
+| `Subdifferential.Rademacher` | almost everywhere differentiability of a convex function |
+| `Subdifferential.Reconstruction` | the subdifferential reconstructed from the gradient mapping |
+| `Subdifferential.StrictlyConvex` | essential strict convexity |
+| `Subdifferential.Uniqueness` | a unique subgradient forces differentiability |
+| `Tangent` | tangent half-spaces of a convex set |
+| `Uniform` | the Radon–Riesz property |
 
-Every result is stated at the weakest of these that supports it, so a reader can see from a
-declaration's hypotheses what its proof actually uses.
+## Main results
 
-* **A real vector space**, `[AddCommGroup E] [Module ℝ E]` — convexity, epigraphs, the functional
-  operations, and conjugacy against a dual pair.
-* **A topological vector space**, adding `[TopologicalSpace E]` with continuous addition and
-  scalar multiplication — closures, lower semicontinuity, continuity.
-* **A locally convex space**, adding `[LocallyConvexSpace ℝ E]` — separation, and through it
-  biconjugation and the existence of subgradients.
-* **Finite-dimensional Euclidean space**, `[NormedAddCommGroup E] [NormedSpace ℝ E]`
-  `[FiniteDimensional ℝ E]` — relative interiors, and everything that rests on `ri C` being
-  non-empty for non-empty convex `C`.
+* `ConvexAnalysis.fenchel_moreau`: the **Fenchel–Moreau theorem** $f^{**} = \operatorname{cl} f$ for
+  a convex function on a locally convex space, paired compatibly with its topology.
+* `ConvexAnalysis.fenchel_inequality`: **Fenchel's inequality**
+  $\langle x, y \rangle \le f(x) + f^*(y)$ for a proper function $f$.
+* `ConvexAnalysis.jensen`: **Jensen's inequality** for a finite convex combination.
+* `ConvexAnalysis.caratheodory`: **Carathéodory's theorem**: in dimension $n$, a point of the convex
+  hull of $S$ is a convex combination of $n + 1$ points of $S$.
+* `ConvexAnalysis.krein_milman`: a compact convex set in a finite-dimensional space is the convex
+  hull of its extreme points.
+* `ConvexAnalysis.minkowski_weyl`: the **Minkowski–Weyl theorem**: a cone is polyhedral if and only
+  if it is finitely generated.
+* `ConvexAnalysis.moreau_decomposition`: **Moreau's decomposition** $(f \mathbin{\square} w) + (f^*
+  \mathbin{\square} w) = w$ for a closed proper convex function $f$ and
+  $w(z) = \tfrac12 \langle z, z \rangle$, where $\square$ is infimal convolution.
+* `ConvexAnalysis.subdifferential_maximalMonotone`: in finite dimension, the subdifferential of a
+  closed proper convex function is maximal monotone.
+* `ConvexAnalysis.fenchel_duality`: **Fenchel's duality theorem** $\inf_x \{f(x) - g(x)\} = \sup_y
+  \{g^*(y) - f^*(y)\}$ when $f$ and $-g$ add exactly.
+* `ConvexAnalysis.helly_finite`: **Helly's theorem** for a finite family of convex sets in dimension
+  $n$: if any $n + 1$ or fewer of the sets have a common point, then all of them do.
+* `ConvexAnalysis.polyhedral_iff_finitelyGenerated`: in finite dimension, a set is polyhedral if and
+  only if it is finitely generated (the Minkowski–Weyl theorem for sets).
+* `ConvexAnalysis.ae_differentiableAtFn`: in finite dimension, a proper convex function is
+  differentiable at almost every point of the interior of its effective domain.
 
-A handful of results — proximal mappings, Moreau's decomposition, the gradient theory — additionally
-want `[InnerProductSpace ℝ E]`, because they are about a self-pairing rather than a general one.
+## Implementation notes
 
-**Duality is stated for a dual pair**, a bilinear `B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ`, rather than for a
-topological dual. `F` is then whatever the application supplies: the continuous dual of a locally
-convex space, or `E` itself under an inner product. `Duality.Pairing` collects the two side
-conditions a pairing may satisfy — that `⟨·, y⟩` is continuous, and that every continuous linear
-functional is some `⟨·, y⟩` — and results ask for them only where they are needed.
-
-## The modules
-
-**The basics.** `Epigraph` introduces `ConvexFn` through the convexity of `epi f`, with `dom f` and
-`ProperConvex f`; `Concave` mirrors it. `Closure` builds the closure of a convex function and
-`RelativeInterior` the relative interior `ri`. `Continuity` and `Convergence` give continuity on
-`ri (dom f)` and the equi-Lipschitz behaviour of convergent families. `Separation` proves the
-separation theorems the duality layer runs on. `Face`, `Exposed`, `Representation` and `Tangent`
-describe a closed convex set from its boundary; `Caratheodory`, `HullDirections` and `Simplicial`
-from its interior. `Helly`, `HellyRefined` and `LinearInequalities` are the theorems of the
-alternative. `Homogeneous`, `Homogenize`, `Indicator`, `Lattice`, `Line` and `EuclideanProd` are
-the small standing pieces, and `Eponyms` collects the results that have names.
-
-**Real-valued convexity on a normed space.** Three modules keep to Mathlib's `ConvexOn` for
-`f : E → ℝ`, where the extended-real convention would only get in the way, and are the entry points
-from the numerical side of the project. `Gateaux` characterizes convexity on a convex set by the
-directional derivatives: the tangent functional is a global minorant exactly when the gradient is a
-monotone operator exactly when `f` is convex, and a constrained minimum is then a variational
-inequality. `StrictConvexSpace` derives Mathlib's `StrictConvexSpace ℝ V` from strict convexity of
-a power of the norm, the form in which a best-approximation uniqueness theorem asks for it.
-`Uniform` proves the Radon–Riesz property — weak convergence with convergent norms gives norm
-convergence — for uniformly convex spaces and, as an equivalence, for inner product spaces.
-
-**`Operations`.** Sums, suprema, images and inverse images, infimal convolution: which preserve
-convexity, and which preserve closedness.
-
-**`Duality`.** Conjugates and biconjugates, support functions, polars of sets and of functions,
-gauges and obverses, and the dual operations table that matches each functional operation with its
-conjugate. `Relint`, `Continuity` and `Exact` are the constraint qualifications under which a
-closure may be dropped from a duality formula.
-
-**`Recession`.** Recession cones and recession functions, lineality and constancy spaces, and the
-closedness criteria for images and sums that they govern.
-
-**`Subdifferential`.** Subgradients, normal cones and directional derivatives; gradients and where a
-convex function is differentiable; monotonicity and cyclic monotonicity of `∂f`; the Legendre
-transformation, essential smoothness and essential strict convexity.
-
-**`Polyhedral`.** Polyhedra by their two descriptions and the Minkowski–Weyl theorem relating them,
-the polyhedral calculus, polyhedral functions and their conjugates, and the sharper qualifications
-polyhedrality allows.
-
-**`Extremum`.** The minimum and the maximum of a convex function, ordinary and generalized convex
-programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality gaps,
-Fenchel's duality theorem, and the Moreau envelope with its proximal mapping. This is the duality
-theory of an extremum problem, and not an algorithm for one, which is why it is named for the
-problem: descent methods, line searches, nonlinear conjugate gradients and quasi-Newton updates are
-the separate top-level directory `Numlib/Optimization`, and that directory owns the word. The two
-meet in `Numlib/Optimization/Constrained`, which cites the results it borrows from here by their
-full `ConvexAnalysis` names.
-
-**`Saddle`.** Concave-convex functions, their two partial closures and the equivalence classes
-these generate, continuity and differentiability, minimax problems, and the conjugacy that carries
-the existence theory of saddle-values.
-
-**`Bifunction`.** The algebra of convex bifunctions — addition, scalar multiplication, application,
-composition, the inverse and the two adjoints — and the co-finiteness condition under which that
-algebra loses its side conditions. The bifunction itself is introduced in `Extremum/Perturbation`,
-where it is the family of minimisation problems a generalized convex program offers.
-
-**`Process`.** Convex processes: the multivalued maps whose graphs are convex cones containing the
-origin, bundled as a `PointedCone`. They share the algebra of `Bifunction` and are embedded into it
-by `indicatorBifun`, but the object is its own — a cone, not a function — so it has its own
-directory, with the two embeddings that place it between a linear transformation and a bifunction,
-and the relative-interior theorems identifying its two inner products.
-
-## Named results
-
-`Eponyms` aliases the results that carry a name, and is the quickest way in: `fenchel_moreau`
-(`f** = cl f`), `fenchel_inequality`, `jensen`, `caratheodory`, `krein_milman`, `minkowski_weyl`,
-`moreau_decomposition`, `subdifferential_maximalMonotone`, and `perspective`. Beyond those, the
-headline theorems are `fenchel_duality` in `Extremum.Fenchel`, the separation theorems in
-`Separation`, `helly_finite` in `Helly`, `polyhedral_iff_finitelyGenerated` in `Polyhedral.Defs`,
-and `ae_differentiableAtFn` in `Subdifferential.Rademacher`.
-
-## Conventions
-
-* A convex function is `E → EReal`, total, taking `⊤` off its effective domain and `⊥` only when
-  improper. This makes the functional operations total and the lattice complete, at the cost of
-  carrying properness as a hypothesis wherever `⊥` would spoil an identity.
-* `ri` is scoped notation for `intrinsicInterior ℝ`.
-* `f*` is `convexConj B f`, against an explicit pairing `B`; there is no ambient dual.
-* Concave counterparts are separate definitions rather than `-f` rewrites, so that a statement about
-  concave functions reads as one.
-
-## References
-
-* [rockafellar1970convex].
+* A convex function is a total function `E → EReal`. It takes the value $+\infty$ off its effective
+  domain and the value $-\infty$ only when it is improper. With this convention the functional
+  operations are total and the convex functions form a complete lattice, but properness is a
+  hypothesis wherever $-\infty$ would spoil an identity. `ConvexAnalysis.ConvexFn f` says that
+  $\operatorname{epi} f$ is convex, `ConvexAnalysis.convexDom f` is the effective domain
+  $\operatorname{dom} f$, and `ConvexAnalysis.ProperConvex f` is properness.
+* Concave functions have their own definitions, such as `ConvexAnalysis.ConcaveFn`, and are not
+  written as $-f$ for a convex $f$, so that a statement about a concave function reads as one.
+* `ri` is scoped notation for `intrinsicInterior ℝ`, the relative interior.
+* The conjugate $f^*$ is `ConvexAnalysis.convexConj B f`, for an explicit pairing `B`; there is no
+  ambient dual space. The classes `ConvexAnalysis.IsContinuousPairing` (each
+  $x \mapsto \langle x, y \rangle$ is continuous) and `ConvexAnalysis.IsCompatiblePairing`
+  (moreover, every continuous linear functional on $E$ is some $x \mapsto \langle x, y \rangle$) are
+  assumed only where a result needs them.
+* Three modules work with Mathlib's real-valued `ConvexOn` on a normed space instead of
+  extended-real-valued functions, and they are the entry points from the numerical modules of the
+  backbone. `Numlib.Analysis.Convex.Gateaux` characterizes convexity on a convex set by directional
+  derivatives: the tangent functional is a global minorant if and only if the gradient is monotone
+  if and only if $f$ is convex, and a constrained minimum is then a variational inequality.
+  `Numlib.Analysis.Convex.StrictConvexSpace` derives `StrictConvexSpace ℝ V` from the strict
+  convexity of a power of the norm, the form in which a uniqueness theorem for best approximation
+  uses it. `Numlib.Analysis.Convex.Uniform` proves the Radon–Riesz property (weak convergence
+  together with convergence of the norms gives norm convergence) for uniformly convex spaces, and as
+  an equivalence for inner product spaces.
+* Four modules connect the convex library with the rest of the backbone.
+  `Numlib.Analysis.Convex.Extremum.Projection` reads the metric projection of
+  `Numlib.Analysis.Normed.Module.BestApprox` as a proximal mapping, and
+  `Numlib.Analysis.Convex.Saddle.Real` reads the real-valued saddle-point theory of
+  [han2009theoretical] through `ConvexAnalysis.IsSaddlePointOn`. Outside this directory,
+  `Numlib.Variational.Inequality.NormalCone` reads an elliptic variational inequality as a
+  normal-cone and subgradient condition, and `Numlib.Variational.EnergyPairing` reads the energy
+  inner product of a symmetric coercive operator as a `ConvexAnalysis.IsInnerPairing`.
+* The modules under `Numlib.Analysis.Convex.Extremum` contain the theory of an extremum problem: the
+  minimum and the maximum of a convex function, ordinary and generalized convex programs, Lagrange
+  multipliers, dual programs, normality and duality gaps, Fenchel duality, and the Moreau envelope.
+  Iterative methods for optimization (descent methods, line searches, nonlinear conjugate gradients,
+  quasi-Newton updates) are in `Numlib.Optimization`. The two meet in the modules under
+  `Numlib.Optimization.Constrained`.
+* Many duality formulas hold without a closure operation, and with the infimum that defines the dual
+  operation attained, under a constraint qualification. `Numlib.Analysis.Convex.Duality.Exact` names
+  this conclusion for sums and inverse images (`ConvexAnalysis.IsExactSum`,
+  `ConvexAnalysis.IsExactImage`). `Numlib.Analysis.Convex.Duality.Relint`,
+  `Numlib.Analysis.Convex.Duality.Continuity` and `Numlib.Analysis.Convex.Polyhedral.Duality` prove
+  it under the relative-interior, the continuity and the polyhedral qualifications.
+* The convex bifunctions are introduced in `Numlib.Analysis.Convex.Extremum.Perturbation`, as the
+  family of minimization problems of a generalized convex program. A convex process
+  `ConvexAnalysis.ConvexProcess` is given by its graph, a `PointedCone`, because it is a cone and
+  not a function; `ConvexAnalysis.ConvexProcess.indicatorBifun` embeds it in the convex bifunctions.
+* `Numlib.Analysis.Convex.Eponyms` gives the named theorems their names as aliases of descriptive
+  primary names.
+* The modules `Numlib.Analysis.Convex.Function` (finite sums of functions convex in the sense of
+  `ConvexOn`) and `Numlib.Analysis.Convex.Segment` (segments of the plane) are in the same directory
+  but are not part of this library, and this module does not import them.
 -/

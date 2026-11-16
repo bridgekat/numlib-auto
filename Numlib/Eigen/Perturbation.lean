@@ -29,85 +29,109 @@ import Numlib.Topology.Algebra.Polynomial
 /-!
 # Eigenvalue perturbation and a posteriori bounds
 
-Residual bounds for approximate eigenpairs of symmetric operators ([saad2011numerical], Cor 3.3,
-Lemma 3.2, Thm 3.8–3.9 for Kato–Temple; [meurant2006lanczos] §2.1; [choi2006iterative] §2.4),
-Bauer–Fike for diagonalizable matrices ([saad2011numerical], Thm 3.6; [kress1998numerical] Problem
-7.6), the backward error of an approximate eigenpair ([saad2011numerical], Prop 3.4), Bendixson
-([saad2003iterative], Thm 1.35), the Gershgorin discs with their counting theorem
-([saad2011numerical], Thm 3.11–3.12) and Rayleigh-quotient bounds.
+This file bounds the distance from an approximate eigenvalue to the spectrum, and the motion of the
+eigenvalues under a perturbation. An approximate eigenpair of an operator $A$ is a vector $x$,
+usually of norm $1$, together with a scalar $\theta$, usually the Rayleigh quotient $\theta =
+\operatorname{Re} \langle Ax, x \rangle$; its residual is $r = Ax - \theta x$. For a symmetric
+operator on a finite-dimensional space, the residual bounds turn $\|r\|$ into a distance from
+$\theta$ to the spectrum: some eigenvalue lies within $\|r\|$ of $\theta$, and the Kato–Temple bound
+and its corollaries improve this to $\|r\|^2 / \delta$ when the other eigenvalues are at distance
+$\delta$. A small residual and a separated eigenvalue also force a small angle between $x$ and the
+eigenspace. These results follow [saad2011numerical], Chapter 3; see also [meurant2006lanczos], §2.1
+and [choi2006iterative], §2.4.
 
-Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ` (usually
-the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the bounds below turn
-`‖r‖` into a distance from `θ` to the spectrum.
+For general matrices, the file proves the **Bauer–Fike theorem**: if $A = XDX^{-1}$ with $D$
+diagonal, every eigenvalue of $A + E$ lies within $\kappa(X) \|E\|$ of an eigenvalue of $A$
+([saad2011numerical], Theorem 3.6; [kress1998numerical], Problem 7.6; [golub2013matrix], Theorem
+7.2.2). It also proves a bound of Henrici type from a Schur form ([golub2013matrix], Theorem 7.2.3),
+the backward error of an approximate eigenpair ([saad2011numerical], Proposition 3.4), the theorems
+of Bendixson and Hirsch on the real and imaginary parts of the eigenvalues ([saad2003iterative],
+Theorem 1.35; [quarteroni2000numerical], Theorem 5.1), the Gershgorin discs and the count of the
+eigenvalues in a union of discs ([saad2011numerical], Theorems 3.11 and 3.12), and the first-order
+perturbation theory of a simple eigenvalue ([saad2011numerical], Definition 3.1 and §3.2.1).
 
-## The eigenvector and the condition numbers
+## Main definitions
 
-`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div` is the residual bound for the eigen*vector*
-([saad2011numerical], Thm 3.9): a small residual and a separated eigenvalue force a small angle
-between `x` and the eigenspace.  The subspace really has to be the eigenspace and not the line
-through a single eigenvector, which is what the printed statement uses; the two agree exactly when
-the eigenvalue is simple, and that case is
-`LinearMap.IsSymmetric.sin_angle_span_singleton_le_norm_residual_div`.  The theorem's doc comment
-carries the three-by-three counterexample to the line form at a multiple eigenvalue.
+* `Module.End.eigenvalueCondNumber`: the condition number $\|u\| \|w\| / |\langle w, u \rangle|$ of
+  a simple eigenvalue with right eigenvector $u$ and left eigenvector $w$.
+* `Module.End.IsLeftEigenvector`: $\langle w, Ay \rangle = \lambda \langle w, y \rangle$ for every
+  $y$.
 
-`Module.End.eigenvalueCondNumber` is the sensitivity of a simple eigenvalue ([saad2011numerical],
-Def 3.1), the reciprocal cosine of the angle between the right and the left eigenvector.  It is at
-least one, it is one for a normal operator, and it is what bounds the first-order motion of the
-eigenvalue under a perturbation: `Module.End.deriv_eigenvalue_perturbation` computes the derivative
-of a differentiable branch of eigenvalues of `A + t B` as `⟪w, B u⟫ / ⟪w, u⟫`, and
-`Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by `‖B‖` times the condition number.
-`Module.End.hasDerivAt_eigenvalue_perturbation` produces the branch, for a simple eigenvalue: the
-inverse function theorem applied to `(t, μ, z) ↦ (t, ⟪w, z⟫, A z + t B z - μ z)`, whose derivative
-is injective exactly because the eigenvalue is simple.  No determinant and no implicit function
-theorem are involved.
+## Main results
 
-The `ε`-pseudospectra, open (`ContinuousLinearMap.pseudospectrum`) and closed
-(`ContinuousLinearMap.closedPseudospectrum`), live in `Numlib/Eigen/Pseudospectrum.lean`.
+* `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le`: some eigenvalue $\mu$ has
+  $|\mu - \theta| \le \|Ax - \theta x\| / \|x\|$.
+* `LinearMap.IsSymmetric.kato_temple`: the Kato–Temple bounds $-\|r\|^2 / (b - \theta) \le \lambda -
+  \theta \le \|r\|^2 / (\theta - a)$.
+* `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`: $\sin \angle(x, \ker(A - \lambda)) \le
+  \|r\| / \delta$.
+* `LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div`: the distance from $x$ to the
+  span of a group of eigenvectors is at most $\|r\| / \delta$.
+* `isLeast_eigen_backwardError`: the least norm of a perturbation that makes $(\theta, u)$ an exact
+  eigenpair is $\|Au - \theta u\|$.
+* `re_hasEigenvalue_mem_Icc_of_symmetricPart`, `Matrix.hirsch_re`, `Matrix.hirsch_im`: the real and
+  the imaginary parts of the eigenvalues of $A$ lie between the extreme eigenvalues of $(A + A^H)/2$
+  and of $(A - A^H)/(2i)$.
+* `Module.End.deriv_eigenvalue_perturbation`, `Module.End.norm_deriv_eigenvalue_perturbation_le`:
+  along a differentiable branch of eigenpairs of $A + tB$, the eigenvalue has the derivative
+  $\langle w, Bu \rangle / \langle w, u \rangle$ at $t = 0$, of modulus at most $\|B\|$ times the
+  condition number.
+* `Module.End.hasDerivAt_eigenvalue_perturbation`,
+  `Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one`: a simple eigenvalue has such a
+  branch.
+* `Matrix.bauer_fike`, `Matrix.bauer_fike_lpOpNorm`, `Matrix.bauer_fike_residual`: the Bauer–Fike
+  theorem, in the spectral norm, in every induced $p$-norm, and in residual form.
+* `Matrix.exists_norm_sub_le_of_schur`: the Henrici-type bound for a matrix that need not be
+  diagonalizable.
+* `Matrix.spectrum_subset_iUnion_closedBall`, `Matrix.card_spectrum_of_disjoint_gershgorin`: the
+  spectrum lies in the union of the Gershgorin discs, and a union of $m$ discs that is disjoint from
+  the other discs contains exactly $m$ eigenvalues, counted with multiplicity.
+* `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul`,
+  `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`: if
+  $\|AQ_1 - Q_1 S\|_2 \le \varepsilon$ for an orthonormal block $Q_1$, each eigenvalue of $S$ is
+  within $\varepsilon$ of an eigenvalue of $A$, and the sorted eigenvalues of $S$ are within
+  $\sqrt{2} \varepsilon$ of distinct eigenvalues of $A$ ([golub2013matrix], Theorem 8.1.13).
 
-## Non-diagonalizable matrices and approximate invariant subspaces
+## Proof outline
 
-`Matrix.one_le_norm_mul_of_mem_spectrum_add` (and its `p`-norm twin) is the resolvent step shared
-by the eigenvalue perturbation bounds of [golub2013matrix] §7.2: an eigenvalue `μ` of `A + E` that
-is not one of `A` has `‖(μ I - A)⁻¹ E‖ ≥ 1`. `Matrix.exists_norm_sub_le_of_schur` is
-[golub2013matrix] Theorem 7.2.3, the Henrici-type bound for a matrix that need not be
-diagonalizable: from a Schur form `Qᴴ A Q = D + N`, the distance from `μ` to the diagonal of `D` is
-at most `max θ θ^{1/p}`, `θ = ‖E‖₂ ∑_{k<p} ‖N‖₂^k`, where `p` is the nilpotency index of the
-entrywise absolute value `|N|`. `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul`
-is the block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with constant `1`): an
-orthonormal block `Q₁` and a Hermitian `S` with `‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A`
-within `ε` of every eigenvalue of `S`. The book's paired form,
-`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`, matches the sorted eigenvalues of
-`S` with distinct eigenvalues of `A`, within `√2 ε`.
+The symmetric bounds expand $x$ in an orthonormal eigenbasis $v_i$ with eigenvalues $\lambda_i$, and
+compare sums $\sum_i f(\lambda_i) |\langle v_i, x \rangle|^2$. The Gershgorin count follows the
+homotopy $A(t) = D + tH$ of [saad2011numerical], with $D$ the diagonal of $A$; its continuity
+argument is `Polynomial.countRootsIn_eq_of_preconnected`: the number of roots of a monic polynomial
+in a compact set is constant along a connected family, as long as the roots stay in the union of two
+disjoint compact sets. This is a compactness argument in the coefficients and not Rouché's theorem,
+so the union $S$ may consist of overlapping discs. The branch of a simple eigenvalue comes from the
+inverse function theorem for $(t, \mu, z) \mapsto (t, \langle w, z \rangle, Az + tBz - \mu z)$,
+whose derivative is injective because the eigenvalue is simple; no determinant and no implicit
+function theorem are used. The Bauer–Fike and Henrici-type bounds rest on one resolvent step: an
+eigenvalue $\mu$ of $A + E$ that is not an eigenvalue of $A$ has $\|(\mu I - A)^{-1} E\| \ge 1$.
 
-## The Gershgorin discs and how many eigenvalues each group of them holds
+## Implementation notes
 
-`Matrix.spectrum_subset_iUnion_closedBall` and its column-sum twin place the spectrum in the union
-of the discs ([saad2011numerical], Thm 3.11), and `Matrix.card_spectrum_of_disjoint_gershgorin`
-counts ([saad2011numerical], Thm 3.12): a union `S` of `m` discs that is disjoint from the other
-discs contains exactly `m` eigenvalues with multiplicity, and
-`Matrix.card_spectrum_of_isolated_gershgorin` is the case `m = 1` that is used in practice.  The
-count is `Polynomial.countRootsIn S A.charpoly`, the number of roots of the characteristic
-polynomial in `S` with multiplicity.
-
-The proof is the homotopy `A t = D + t H` of the book, whose "continuity argument" is
-`Polynomial.countRootsIn_eq_of_preconnected` in `Numlib/Topology/Algebra/Polynomial.lean`: the
-number of roots of a monic polynomial in a compact set is constant along a connected family, as
-long as the roots stay in the union of two disjoint compact sets.  That is a compactness argument
-in the coefficients rather than Rouché's theorem, which is what lets `S` be a union of overlapping
-discs instead of something with a contour around it.
-
-Two books by [saad2011numerical] are cited in this file and are kept apart by their short titles:
-*Large Eigenvalue Problems* and *Iterative Methods*.  Bauer–Fike, Gershgorin, Kato–Temple and
-Bendixson are the classical names of the results; the numbered forms used here are the ones proved
-in the cited texts.
+* The residual bound for the eigenvector uses the eigenspace of $\lambda$, and not the line through
+  one eigenvector, which [saad2011numerical], Theorem 3.9 uses. The two agree exactly when $\lambda$
+  is simple, and that case is `LinearMap.IsSymmetric.sin_angle_span_singleton_le_norm_residual_div`.
+  The doc comment of `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div` gives a counterexample
+  to the line form at a multiple eigenvalue.
+* The block residual bound `Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` has
+  the constant $1$ of the residual bound for one vector, in place of the constant $\sqrt{2}$ of
+  [golub2013matrix], Theorem 8.1.13.
+* The count of the eigenvalues in a set $S$ is `Polynomial.countRootsIn S A.charpoly`, the number of
+  roots of the characteristic polynomial in $S$, counted with multiplicity.
+* Bauer–Fike, Gershgorin, Kato–Temple and Bendixson are the classical names of the results; the
+  forms proved here are those of the cited texts.
+* The open and the closed $\varepsilon$-pseudospectra are in `Numlib.Eigen.Pseudospectrum`.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The sine of the angle depends only on the subspace, so two spellings of the same subspace give
-the same value even when their `HasOrthogonalProjection` instances are found by different routes.
-Rewriting a subspace under `sinAngle` directly fails, the instance argument depending on it. This is
-the twin of `Submodule.tanAngle_congr`. -/
+/-- Let $K$ and $L$ be subspaces with orthogonal projections. If $K = L$, then
+$\sin \angle(u, K) = \sin \angle(u, L)$ for every vector $u$.
+
+This lemma is needed because `Submodule.sinAngle` depends on an instance of
+`Submodule.HasOrthogonalProjection`, and two spellings of the same subspace can carry instances
+found in different ways; rewriting the subspace directly under `Submodule.sinAngle` fails. It is
+the analogue of `Submodule.tanAngle_congr`. -/
 theorem Submodule.sinAngle_congr {K L : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     [L.HasOrthogonalProjection] (h : K = L) (u : E) : K.sinAngle u = L.sinAngle u := by
   subst h
@@ -118,10 +142,13 @@ namespace LinearMap.IsSymmetric
 variable [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-! ### Diagonalization bookkeeping
+/-!
+### Expansion in an eigenbasis
 
-All the symmetric bounds below are inequalities between the sums `∑ i, f (λ i) ‖⟪v i, x⟫‖²` over an
-orthonormal eigenbasis `v` with eigenvalues `λ`. -/
+All the bounds for symmetric operators below are inequalities between sums
+$\sum_i f(\lambda_i) |\langle v_i, x \rangle|^2$ over an orthonormal eigenbasis $v$ with eigenvalues
+$\lambda$.
+-/
 
 private theorem repr_sub_smul {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ : ℝ) (x : E) (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (A x - (θ : 𝕜) • x) i =
@@ -138,9 +165,11 @@ private theorem norm_residual_sq {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ 
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hA.repr_sub_smul hn, norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs]
 
-/-- The identity behind [saad2011numerical], Lemma 3.2 and the Kato–Temple bounds: for a unit vector
-`x` with Rayleigh quotient `θ = re⟪A x, x⟫`, residual `r = A x - θ x` and eigenbasis coefficients
-`c`, `∑ (λ - u)(λ - v) ‖c‖² = ‖r‖² + (θ - u)(θ - v)`. -/
+/-- For a unit vector $x$ with Rayleigh quotient $\theta = \operatorname{Re} \langle Ax, x \rangle$,
+residual $r = Ax - \theta x$ and eigenbasis coefficients $c_i$, and for all
+$u, v \in \mathbb{R}$, $\sum_i (\lambda_i - u)(\lambda_i - v) |c_i|^2 = \|r\|^2 + (\theta -
+u)(\theta - v)$; this identity is behind [saad2011numerical], Lemma 3.2 and the Kato–Temple
+bounds. -/
 private theorem sum_quadratic {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E} (hx : ‖x‖ = 1)
     (u v : ℝ) :
     ∑ i, (hA.eigenvalues hn i - u) * (hA.eigenvalues hn i - v) *
@@ -172,8 +201,11 @@ private theorem quadratic_nonneg {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x :
   rw [← hA.sum_quadratic hn hx u v]
   exact Finset.sum_nonneg fun i _ => mul_nonneg (h i) (sq_nonneg _)
 
-/-- Residual bound ([saad2011numerical], Cor 3.3): some eigenvalue lies within `‖A x - θ x‖ / ‖x‖`
-of `θ`. -/
+/-- **Residual bound** ([saad2011numerical], Corollary 3.3). Let $A$ be a symmetric operator on a
+finite-dimensional inner product space, let $\theta \in \mathbb{R}$, and let $x \neq 0$. Then
+$A$ has an eigenvalue $\mu$ with
+$$|\mu - \theta| \le \frac{\|Ax - \theta x\|}{\|x\|}.$$
+-/
 theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
     ∃ μ : 𝕜, Module.End.HasEigenvalue A μ ∧ ‖μ - (θ : 𝕜)‖ ≤ ‖A x - (θ : 𝕜) • x‖ / ‖x‖ := by
   set n := Module.finrank 𝕜 E with hn'
@@ -199,8 +231,12 @@ theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
       sq_abs (hA.eigenvalues hn i₀ - θ), sq_abs (hA.eigenvalues hn i - θ)]
   exact le_of_sq_le_sq key (norm_nonneg _)
 
-/-- [saad2011numerical], Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and an interval `(α, β) ∋ θ`
-free of eigenvalues, `(β - θ)(θ - α) ≤ ‖r‖²` for the residual `r = A x - θ x`. -/
+/-- Let $A$ be a symmetric operator on a finite-dimensional inner product space, and let $x$ be a
+unit vector with Rayleigh quotient $\theta = \operatorname{Re} \langle Ax, x \rangle$ and
+residual $r = Ax - \theta x$. Let $\alpha < \theta < \beta$, and suppose that no eigenvalue of
+$A$ has its real part in $(\alpha, \beta)$. Then
+$$(\beta - \theta)(\theta - \alpha) \le \|r\|^2.$$
+This is Lemma 3.2 of [saad2011numerical]. -/
 theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ}
     (hαβ : α < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < β)
     (hfree : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∉ Set.Ioo α β) :
@@ -218,16 +254,20 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     · exact mul_nonneg (by linarith) (by linarith)
   nlinarith [h]
 
-/-- Kato–Temple ([saad2011numerical], Thm 3.8): if `(a, b)` contains the Rayleigh quotient `θ = re⟪A
-x, x⟫` of a unit vector `x` and at most one eigenvalue, `μ` (every eigenvalue with real part in
-`(a, b)` is `μ`; `μ` itself need not be one, which only makes the statement more general), then
-`-‖r‖²/(b - θ) ≤ re μ - θ ≤ ‖r‖²/(θ - a)` for the residual `r = A x - θ x`.
+/-- The **Kato–Temple bounds** ([saad2011numerical], Theorem 3.8). Let $A$ be a symmetric operator
+on a finite-dimensional inner product space, and let $x$ be a unit vector with Rayleigh quotient
+$\theta = \operatorname{Re} \langle Ax, x \rangle$ and residual $r = Ax - \theta x$. Let
+$a < \theta < b$, and let $\mu$ be a scalar with $\operatorname{Re} \mu \in (a, b)$ such that
+every eigenvalue of $A$ with real part in $(a, b)$ equals $\mu$. Then
+$$-\frac{\|r\|^2}{b - \theta} \le \operatorname{Re} \mu - \theta \le \frac{\|r\|^2}{\theta -
+  a}.$$
 
-The denominators here are the ones the proof produces: the *lower* bound is controlled by the
-distance from `θ` to the right end `b`, and the *upper* bound by the distance to the left end `a`.
-Exchanging the two denominators gives a false statement: for `A = diag(0, 10)` and `x` with `‖x‖ =
-1`, `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`, and `(a, b) = (5, 20)` contains only the eigenvalue
-`10`, yet `10 - 6 = 4 > 24/(20 - 6)`. -/
+The scalar $\mu$ need not be an eigenvalue; this only makes the statement more general. The
+lower bound has the distance from $\theta$ to the right end $b$ in the denominator, and the
+upper bound the distance to the left end $a$. With the two denominators exchanged the statement
+is false: for $A = \operatorname{diag}(0, 10)$ and a unit vector $x$ with $x_2^2 = 3/5$, one
+gets $\theta = 6$ and $\|r\|^2 = 24$, and $(a, b) = (5, 20)$ contains only the eigenvalue $10$,
+but $10 - 6 = 4 > 24 / (20 - 6)$. -/
 theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜}
     (hab : a < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < b)
     (hμab : RCLike.re μ ∈ Set.Ioo a b)
@@ -271,9 +311,13 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜}
     rw [le_div_iff₀ (by linarith : (0 : ℝ) < θ - a)]
     nlinarith [h]
 
-/-- [saad2011numerical], Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ`, where `θ = re⟪A x, x⟫` is the Rayleigh
-quotient of a unit vector `x`, `r = A x - θ x` its residual, and `δ` the gap from `θ` to the
-eigenvalues other than `λ`. -/
+/-- Let $A$ be a symmetric operator on a finite-dimensional inner product space, and let $x$ be a
+unit vector with Rayleigh quotient $\theta = \operatorname{Re} \langle Ax, x \rangle$ and
+residual $r = Ax - \theta x$. Let $\mu$ be a scalar and $\delta > 0$, suppose that every
+eigenvalue $\mu' \neq \mu$ of $A$ has $\delta \le |\operatorname{Re} \mu' - \theta|$, and
+suppose that $|\operatorname{Re} \mu - \theta| \le \|r\|$. Then
+$$|\operatorname{Re} \mu - \theta| \le \frac{\|r\|^2}{\delta}.$$
+This is Corollary 3.4 of [saad2011numerical]. -/
 theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜} {δ : ℝ}
     (hδ : 0 < δ)
     (hgap : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → μ' ≠ μ →
@@ -305,7 +349,12 @@ theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ 
           mul_le_mul hclose (hlt.trans hclose) hδ.le (norm_nonneg _)
       _ = ‖A x - (θ : 𝕜) • x‖ ^ 2 := (sq _).symm
 
-/-- Rayleigh quotient bounds: `λmin ≤ re⟪A x, x⟫ / ‖x‖² ≤ λmax`. -/
+/-- **Bounds of the Rayleigh quotient.** Let $A$ be a symmetric operator on a finite-dimensional
+inner product space, and suppose that every eigenvalue of $A$ has its real part in
+$[\lambda_{\min}, \lambda_{\max}]$. Then for every $x \neq 0$,
+$$\lambda_{\min} \le \frac{\operatorname{Re} \langle Ax, x \rangle}{\|x\|^2} \le
+  \lambda_{\max}.$$
+-/
 theorem rayleigh_mem_Icc {lmin lmax : ℝ}
     (hspec : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∈ Set.Icc lmin lmax) {x : E}
     (hx : x ≠ 0) : RCLike.re (inner 𝕜 (A x) x) / ‖x‖ ^ 2 ∈ Set.Icc lmin lmax := by
@@ -327,29 +376,35 @@ theorem rayleigh_mem_Icc {lmin lmax : ℝ}
     exact Finset.sum_le_sum fun i _ =>
       mul_le_mul_of_nonneg_right (hbounds i).2 (sq_nonneg _)
 
-/-! ### The eigenvector residual bound
+/-!
+### The residual bound for the eigenvector
 
-A small residual forces the approximate eigenvector to be close to an eigenspace, provided the
-corresponding eigenvalue is separated from the rest of the spectrum. -/
-
-/-- **The eigenvector residual bound** ([saad2011numerical], Thm 3.9): for a unit vector `x` with
-Rayleigh quotient `θ = re⟪A x, x⟫` and residual `r = A x - θ x`, and a real number `lam` separated
-by `δ > 0` from every eigenvalue of `A` other than `lam` itself, `sin ∠(x, ker (A - lam)) ≤ ‖r‖/δ`.
-
-The subspace is the **eigenspace** of `lam`, not the line through one eigenvector for it: with a
-multiple eigenvalue the statement about a line is false, as `A = diag(1, 1, 5)` with `x` the second
-basis vector shows -- there `r = 0` and `δ = 4`, yet the angle to the line through the first basis
-vector is a right angle. [saad2011numerical] takes `δ` to bound `A - θ` from below on the orthogonal
-complement of that line, which it does only when `lam` is a simple eigenvalue; the simple case is
-`sin_angle_span_singleton_le_norm_residual_div` below.
-
-No hypothesis says that `lam` is an eigenvalue at all.  When it is not, the eigenspace is `⊥`, the
-left-hand side is `1`, and the separation applies at every index, so the bound still holds.
-
-The proof splits `x` into `p + q` along the eigenspace and its complement.  The residual splits
-accordingly as `(lam - θ) p + (A - θ) q`, whose two terms are orthogonal because the eigenspace of a
-symmetric operator is invariant and so is its complement, and Pythagoras then discards the `p` term.
+A small residual forces the approximate eigenvector to be close to an eigenspace, if the
+corresponding eigenvalue is separated from the rest of the spectrum.
 -/
+
+/-- **The residual bound for the eigenvector** ([saad2011numerical], Theorem 3.9). Let $A$ be a
+symmetric operator on an inner product space of finite dimension $n$, with eigenvalues
+$\lambda_i$ listed with multiplicity, and let $x$ be a unit vector with Rayleigh quotient
+$\theta = \operatorname{Re} \langle Ax, x \rangle$ and residual $r = Ax - \theta x$. Let
+$\lambda \in \mathbb{R}$ and $\delta > 0$, and suppose that $\delta \le |\lambda_i - \theta|$
+for every $i$ with $\lambda_i \neq \lambda$. Then
+$$\sin \angle(x, \ker(A - \lambda)) \le \frac{\|r\|}{\delta}.$$
+
+The subspace is the eigenspace of $\lambda$, and not the line through one eigenvector for
+$\lambda$. At a multiple eigenvalue the statement for a line is false: for
+$A = \operatorname{diag}(1, 1, 5)$ and $x$ the second basis vector, $r = 0$ and $\delta = 4$,
+but the angle between $x$ and the line through the first basis vector is a right angle. The
+source takes $\delta$ to bound $A - \theta$ from below on the orthogonal complement of that
+line, which holds only when $\lambda$ is a simple eigenvalue; the simple case is
+`LinearMap.IsSymmetric.sin_angle_span_singleton_le_norm_residual_div`.
+
+No hypothesis says that $\lambda$ is an eigenvalue. If it is not, the eigenspace is $\{0\}$, the
+left side is $1$, and the separation holds at every index, so the bound still holds. The
+eigenvalues are `LinearMap.IsSymmetric.eigenvalues`. The proof splits $x = p + q$ along the
+eigenspace and its orthogonal complement. The residual splits as
+$(\lambda - \theta) p + (A - \theta) q$, with orthogonal terms because both subspaces are
+invariant, and the theorem of Pythagoras removes the term in $p$. -/
 theorem sin_angle_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E}
     (hx : ‖x‖ = 1) {lam δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i, hA.eigenvalues hn i ≠ lam →
@@ -393,13 +448,16 @@ theorem sin_angle_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n
     _ = δ * ‖x - W.starProjection x‖ := by rw [Submodule.sinAngle_mul_norm]
     _ ≤ _ := hle
 
-/-- **The eigenvector residual bound at a simple eigenvalue**, which is [saad2011numerical], Thm 3.9
-as printed: when the `lam`-eigenspace is a line, the angle it bounds is the angle to any eigenvector
-`u` for `lam`.
+/-- **The residual bound for the eigenvector at a simple eigenvalue** ([saad2011numerical], Theorem
+3.9, as printed). Let $A$, $x$, $\theta$, $r$, $\lambda$ and $\delta$ be as in
+`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. Let $u \neq 0$ satisfy $Au = \lambda u$,
+and suppose that the eigenspace of $\lambda$ has dimension $1$. Then
+$$\sin \angle(x, \operatorname{span}\{u\}) \le \frac{\|r\|}{\delta}.$$
 
-Simplicity is what the printed proof needs and does not state: it takes `δ` to bound `A - θ` from
-below on `u`'s orthogonal complement, and at a multiple eigenvalue that complement still meets the
-`lam`-eigenspace, where `A - θ` is only `lam - θ`. -/
+The proof in the source needs the simplicity of $\lambda$ but does not state it. It takes
+$\delta$ to bound $A - \theta$ from below on the orthogonal complement of $u$; at a multiple
+eigenvalue that complement meets the eigenspace of $\lambda$, where $A - \theta$ is only
+$\lambda - \theta$. -/
 theorem sin_angle_span_singleton_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n)
     {x : E} (hx : ‖x‖ = 1) {lam δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i, hA.eigenvalues hn i ≠ lam →
@@ -416,9 +474,13 @@ theorem sin_angle_span_singleton_le_norm_residual_div {n : ℕ} (hn : Module.fin
 
 end LinearMap.IsSymmetric
 
-/-- Backward error of an approximate eigenpair ([saad2011numerical], Prop 3.4): the least `‖ΔA‖`
-with `(A - ΔA) u = θ u` (`‖u‖ = 1`) is `‖A u - θ u‖`, attained by the rank-one perturbation `r uᴴ`
-built from the residual `r = A u - θ u`. -/
+/-- **Backward error of an approximate eigenpair** ([saad2011numerical], Proposition 3.4). Let $A$
+be a bounded operator on an inner product space, let $u$ be a unit vector and let $\theta$ be a
+scalar. Then the least norm $\|\Delta A\|$ of a bounded operator $\Delta A$ with
+$(A - \Delta A) u = \theta u$ is $\|Au - \theta u\|$.
+
+The least value is attained by the rank-one operator $r u^H$, built from the residual
+$r = Au - \theta u$. -/
 theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ = 1) (θ : 𝕜) :
     IsLeast {ε : ℝ | ∃ ΔA : E →L[𝕜] E, (A - ΔA) u = θ • u ∧ ‖ΔA‖ = ε} ‖A u - θ • u‖ := by
   have huu : inner 𝕜 u u = (1 : 𝕜) := by
@@ -437,8 +499,16 @@ theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ =
       _ ≤ ‖ΔA‖ * ‖u‖ := ΔA.le_opNorm u
       _ = ‖ΔA‖ := by rw [hu, mul_one]
 
-/-- Bendixson's theorem ([saad2003iterative], Thm 1.35): the real part of every eigenvalue of a
-bounded operator lies between the extreme eigenvalues of its symmetric part `H = (A + A†)/2`. -/
+/-- **Bendixson's theorem** ([saad2003iterative], Theorem 1.35). Let $A$ and $H$ be linear operators
+on an inner product space, and suppose that $H$ is symmetric with $\lambda_{\min} \|x\|^2 \le
+\operatorname{Re} \langle Hx, x \rangle \le \lambda_{\max} \|x\|^2$ for all $x$, and that
+$\operatorname{Re} \langle Hx, x \rangle = \operatorname{Re} \langle Ax, x \rangle$ for all $x$.
+Then every eigenvalue $\mu$ of $A$ satisfies $\lambda_{\min} \le \operatorname{Re} \mu \le
+\lambda_{\max}$.
+
+The intended $H$ is the symmetric part $(A + A^*)/2$ of $A$, with $\lambda_{\min}$ and
+$\lambda_{\max}$ its extreme eigenvalues. The bounds on $H$ are
+`LinearMap.IsSymmetricBoundedBy`, and no finite dimension is needed. -/
 theorem re_hasEigenvalue_mem_Icc_of_symmetricPart {A H : E →ₗ[𝕜] E} {lmin lmax : ℝ}
     (hH : H.IsSymmetricBoundedBy lmin lmax)
     (hHA : ∀ x, RCLike.re (inner 𝕜 (H x) x) = RCLike.re (inner 𝕜 (A x) x)) {μ : 𝕜}
@@ -455,30 +525,35 @@ theorem re_hasEigenvalue_mem_Icc_of_symmetricPart {A H : E →ₗ[𝕜] E} {lmin
   exact ⟨le_of_mul_le_mul_right (by linarith) hpos,
     le_of_mul_le_mul_right (by linarith) hpos⟩
 
-/-! ### The condition number of a simple eigenvalue
+/-!
+### The condition number of a simple eigenvalue
 
-[saad2011numerical], Def 3.1 measures the sensitivity of a simple eigenvalue by `‖u‖ ‖w‖ / |⟪w, u⟫|`
-for a right eigenvector `u` and a left eigenvector `w`, that is, by the reciprocal cosine of the
-angle between them.  The quantity is scale invariant, so it depends on the eigenvalue alone whenever
-the eigenvalue is simple, its two eigenvectors being determined up to scale. -/
+The sensitivity of a simple eigenvalue is measured by $\|u\| \|w\| / |\langle w, u \rangle|$ for a
+right eigenvector $u$ and a left eigenvector $w$, that is, by the reciprocal cosine of the angle
+between them ([saad2011numerical], Definition 3.1). The quantity does not change when $u$ or $w$ is
+scaled, so it depends only on the eigenvalue when the eigenvalue is simple, because its two
+eigenvectors are then determined up to scale.
+-/
 
-/-- **The condition number of a simple eigenvalue** ([saad2011numerical], Def 3.1): `‖u‖ ‖w‖ / ‖⟪w,
-u⟫‖` for a right eigenvector `u` (`A u = μ u`) and a left eigenvector `w` (`A† w = conj μ • w`).
+/-- The **condition number of a simple eigenvalue** ([saad2011numerical], Definition 3.1) with right
+eigenvector $u$ and left eigenvector $w$ is
+$$\kappa(u, w) = \frac{\|u\| \|w\|}{|\langle w, u \rangle|} = \frac{1}{\cos \angle(u, w)}.$$
+If $\langle w, u \rangle = 0$, the value is $0$.
 
-The definition mentions neither the operator nor the eigenvalue, because it does not depend on them:
-it is `1 / cos ∠(u, w)`, and by `Module.End.eigenvalueCondNumber_smul` it is unchanged when either
-eigenvector is rescaled, so at a *simple* eigenvalue — where each of the two eigenvectors spans a
-line — it is a function of the eigenvalue.  The junk value at `⟪w, u⟫ = 0` is `0`;
-`Module.End.one_le_eigenvalueCondNumber` therefore assumes the inner product nonzero, which for a
-simple eigenvalue is a theorem rather than a hypothesis. -/
+The definition mentions neither the operator nor the eigenvalue. It does not change when $u$ or
+$w$ is scaled (`Module.End.eigenvalueCondNumber_smul`), so at a simple eigenvalue, where each of
+the two eigenvectors spans a line, it depends only on the eigenvalue. Because of the value $0$
+at $\langle w, u \rangle = 0$, `Module.End.one_le_eigenvalueCondNumber` assumes
+$\langle w, u \rangle \neq 0$; at an algebraically simple eigenvalue this holds by
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`. -/
 noncomputable def Module.End.eigenvalueCondNumber (𝕜 : Type*) {E : Type*} [RCLike 𝕜]
     [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] (u w : E) : ℝ :=
   ‖u‖ * ‖w‖ / ‖(inner 𝕜 w u : 𝕜)‖
 
 namespace Module.End
 
-/-- The condition number of a simple eigenvalue is scale invariant, which is what makes it a
-function of the eigenvalue and not of the choice of eigenvectors. -/
+/-- For nonzero scalars $a$ and $b$, $\kappa(au, bw) = \kappa(u, w)$: the condition number of a
+simple eigenvalue does not depend on the choice of the eigenvectors. -/
 theorem eigenvalueCondNumber_smul {u w : E} {a b : 𝕜} (ha : a ≠ 0) (hb : b ≠ 0) :
     eigenvalueCondNumber 𝕜 (a • u) (b • w) = eigenvalueCondNumber 𝕜 u w := by
   have hi : ‖(inner 𝕜 (b • w) (a • u) : 𝕜)‖ = ‖b‖ * ‖a‖ * ‖(inner 𝕜 w u : 𝕜)‖ := by
@@ -492,15 +567,20 @@ theorem eigenvalueCondNumber_smul {u w : E} {a b : 𝕜} (ha : a ≠ 0) (hb : b 
     rw [eigenvalueCondNumber, eigenvalueCondNumber, hi, norm_smul, norm_smul]
     field_simp
 
-/-- The condition number of a simple eigenvalue is at least one, by Cauchy–Schwarz. -/
+/-- If $\langle w, u \rangle \neq 0$, then $\kappa(u, w) \ge 1$, by the Cauchy–Schwarz inequality.
+-/
 theorem one_le_eigenvalueCondNumber {u w : E} (h : (inner 𝕜 w u : 𝕜) ≠ 0) :
     1 ≤ eigenvalueCondNumber 𝕜 u w := by
   rw [eigenvalueCondNumber, le_div_iff₀ (norm_pos_iff.2 h), one_mul, mul_comm]
   exact norm_inner_le_norm w u
 
-/-- A **normal** operator is perfectly conditioned at every simple eigenvalue: its left and right
-eigenvectors span the same line (`LinearMap.IsStarNormal.eigenspace_adjoint`), so the angle between
-them is zero and the condition number is `1`. -/
+/-- A **normal** operator is perfectly conditioned at every simple eigenvalue. Let $A$ be a normal
+operator on a finite-dimensional inner product space, let $Au = \mu u$ with $u \neq 0$, let
+$A^* w = \bar{\mu} w$ with $w \neq 0$, and suppose that the eigenspace of $\mu$ has dimension
+$1$. Then $\kappa(u, w) = 1$.
+
+The left and the right eigenvectors span the same line
+(`LinearMap.IsStarNormal.eigenspace_adjoint`), so the angle between them is zero. -/
 theorem eigenvalueCondNumber_eq_one_of_isStarNormal [FiniteDimensional 𝕜 E]
     {A : E →ₗ[𝕜] E} (hA : IsStarNormal A) {μ : 𝕜} {u w : E} (hu : A u = μ • u) (hu0 : u ≠ 0)
     (hw : A.adjoint w = (starRingEnd 𝕜) μ • w) (hw0 : w ≠ 0)
@@ -525,45 +605,49 @@ theorem eigenvalueCondNumber_eq_one_of_isStarNormal [FiniteDimensional 𝕜 E]
 
 /-! ### Left eigenvectors -/
 
-/-- `w` is a **left eigenvector** of `A` for `l`: `⟪w, A y⟫ = l ⟪w, y⟫` for every `y`, that is
-`A† w = conj l • w` wherever the adjoint exists. Stated without the adjoint, so that neither
-completeness nor finite dimension is needed; `w = 0` is allowed, and the statements that need
-`w ≠ 0` assume it separately. -/
+/-- A vector $w$ is a **left eigenvector** of $A$ for the scalar $\lambda$ if $\langle w, Ay
+\rangle = \lambda \langle w, y \rangle$ for every $y$.
+
+Where the adjoint exists, this says $A^* w = \bar{\lambda} w$. The definition does not use the
+adjoint, so it needs neither completeness nor finite dimension. The vector $w = 0$ is allowed;
+the results that need $w \neq 0$ assume it separately. -/
 def IsLeftEigenvector (A : E →ₗ[𝕜] E) (l : 𝕜) (w : E) : Prop :=
   ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y
 
-/-- Unfolding `Module.End.IsLeftEigenvector`. -/
+/-- $w$ is a left eigenvector of $A$ for $\lambda$ if and only if $\langle w, Ay \rangle = \lambda
+\langle w, y \rangle$ for every $y$. -/
 theorem isLeftEigenvector_iff {A : E →ₗ[𝕜] E} {l : 𝕜} {w : E} :
     IsLeftEigenvector A l w ↔ ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y :=
   Iff.rfl
 
-/-- The defining identity of a left eigenvector, at a vector. -/
+/-- If $w$ is a left eigenvector of $A$ for $\lambda$, then $\langle w, Ay \rangle = \lambda \langle
+w, y \rangle$ for every vector $y$. -/
 theorem IsLeftEigenvector.inner_apply {A : E →ₗ[𝕜] E} {l : 𝕜} {w : E}
     (h : IsLeftEigenvector A l w) (y : E) : (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y :=
   h y
 
-/-! ### First-order perturbation of a simple eigenvalue
+/-!
+### First-order perturbation of a simple eigenvalue
 
-Along a differentiable branch of eigenpairs of `A + t B` the eigenvalue moves at the rate `⟪w, B u⟫
-/ ⟪w, u⟫`, whose modulus is at most `‖B‖` times the condition number of the eigenvalue.
-[saad2011numerical], §3.2.1 displays exactly this computation.
+Along a differentiable branch of eigenpairs of $A + tB$ the eigenvalue moves at the rate
+$\langle w, Bu \rangle / \langle w, u \rangle$, whose modulus is at most $\|B\|$ times the condition
+number of the eigenvalue. [saad2011numerical], §3.2.1 displays this computation. The branch is
+assumed here, and it is constructed in `Module.End.hasDerivAt_eigenvalue_perturbation`, whose
+hypotheses are the same relations together with the simplicity of the eigenvalue.
+-/
 
-The branch is assumed here and constructed in
-`Module.End.hasDerivAt_eigenvalue_perturbation`, whose hypotheses are the same eigen-relations
-together with the simplicity of `λ`. -/
+/-- **The derivative of a simple eigenvalue** ([saad2011numerical], §3.2.1). Let $A$ and $B$ be
+bounded operators on an inner product space $E$ over $\mathbb{K}$. Let $u : \mathbb{K} \to E$
+and $\mu : \mathbb{K} \to \mathbb{K}$ have the derivatives $u'$ and $\mu'$ at $0$, and suppose
+that $A u(t) + t B u(t) = \mu(t) u(t)$ for all $t$ near $0$. Let $w$ be a left eigenvector of
+$A$ for $\lambda = \mu(0)$ with $\langle w, u(0) \rangle \neq 0$. Then
+$$\mu' = \frac{\langle w, B u(0) \rangle}{\langle w, u(0) \rangle}.$$
 
-/-- **The derivative of a simple eigenvalue** ([saad2011numerical], §3.2.1): along a differentiable
-branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B` — the eigen-relation needed only for `t` near
-`0`, which is what `Module.End.hasDerivAt_eigenvalue_perturbation` supplies — with `w` a left
-eigenvector of `A` for `λ = μ 0` not orthogonal to `u 0`, the eigenvalue's derivative at `0` is
-`⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
-
-The left-eigenvector hypothesis `Module.End.IsLeftEigenvector` is `⟪w, A y⟫ = λ ⟪w, y⟫` for every
-`y`, which is what the proof tests the differentiated eigenvalue equation against; it is equivalent
-to `A† w = conj λ • w` in finite dimension, and needs no adjoint to state.
-
-Differentiating `A (u t) + t B (u t) = μ t • u t` at `t = 0` gives `A u' + B (u 0) = μ 0 • u' + μ' •
-u 0`, and testing against `w` cancels the two terms carrying the unknown `u'`. -/
+The left eigenvector is `Module.End.IsLeftEigenvector`; in finite dimension this is
+$A^* w = \bar{\lambda} w$. The branch is supplied by
+`Module.End.hasDerivAt_eigenvalue_perturbation`. The derivative at $t = 0$ of the eigenvalue
+equation is $A u' + B u(0) = \mu(0) u' + \mu' u(0)$, and the inner product with $w$ removes the
+two terms that contain the unknown $u'$. -/
 theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
@@ -592,11 +676,13 @@ theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     linear_combination htest
   rw [hmul, mul_div_assoc, div_self hne, mul_one]
 
-/-- **The condition number bounds the first-order sensitivity** ([saad2011numerical], §3.2.1): the
-rate at which a simple eigenvalue moves under the perturbation `t B` is at most `‖B‖` times its
-condition number.
+/-- **The condition number bounds the first-order sensitivity** ([saad2011numerical], §3.2.1). Under
+the hypotheses of `Module.End.deriv_eigenvalue_perturbation`, the derivative of the eigenvalue
+satisfies
+$$|\mu'| \le \|B\| \, \kappa(u(0), w).$$
 
-No normalization of `u 0` or of `w` is needed: both sides are scale invariant. -/
+No normalization of $u(0)$ or of $w$ is needed, because both sides do not change when these
+vectors are scaled. -/
 theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
@@ -615,27 +701,31 @@ theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 �
       ≤ (‖B‖ * (‖u 0‖ * ‖w‖)) / ‖(inner 𝕜 w (u 0) : 𝕜)‖ := by gcongr
     _ = ‖B‖ * (‖u 0‖ * ‖w‖ / ‖(inner 𝕜 w (u 0) : 𝕜)‖) := by ring
 
-/-- **A simple eigenvalue moves differentiably** ([saad2011numerical], §3.2.1): if `l` is an
-eigenvalue of `A` with eigenvector `u` whose eigenspace is `𝕜 ∙ u`, and `w` is a left eigenvector
-for `l` not orthogonal to `u`, then near `t = 0` there is a branch `t ↦ (mu t, v t)` of eigenpairs
-of `A + t B` through `(l, u)`, differentiable at `0`, whose eigenvalue derivative is Saad's
-`⟪w, B u⟫ / ⟪w, u⟫`.
+/-- **A simple eigenvalue moves differentiably** ([saad2011numerical], §3.2.1). Let $A$ and $B$ be
+bounded operators on a finite-dimensional inner product space $E$ over $\mathbb{K}$. Let
+$Au = \lambda u$, let $w$ be a left eigenvector of $A$ for $\lambda$ with
+$\langle w, u \rangle \neq 0$, and suppose that every $z$ with $Az = \lambda z$ is a scalar
+multiple of $u$. Then there are functions $\mu : \mathbb{K} \to \mathbb{K}$ and
+$v : \mathbb{K} \to E$ and a vector $v'$ such that
+* $\mu(0) = \lambda$ and $v(0) = u$;
+* $A v(t) + t B v(t) = \mu(t) v(t)$ for all $t$ near $0$;
+* $v$ has the derivative $v'$ at $0$;
+* $\mu$ has the derivative $\langle w, Bu \rangle / \langle w, u \rangle$ at $0$.
 
-This is the branch that `Module.End.deriv_eigenvalue_perturbation` assumes. It is built by the
-inverse function theorem, not by the implicit function theorem and not through a determinant:
-the map
-
-`F (t, μ, z) = (t, ⟪w, z⟫, A z + t B z - μ z)`
-
-on `𝕜 × 𝕜 × E` is a polynomial, so its strict derivative at `(0, l, u)` is immediate, and that
-derivative is *injective* exactly because the eigenvalue is simple — testing `(A - l) δz = δμ u`
-against `w` kills the left-hand side and forces `δμ = 0`, after which simplicity puts `δz` in
-`𝕜 ∙ u` and `⟪w, δz⟫ = 0` kills it. In finite dimension injective is bijective, so `F` has a local
-inverse `g`, and the branch is `t ↦ g (t, ⟪w, u⟫, 0)`. The derivative of the eigenvalue is read off
-the same test: the second component `r` of `F' ⁻¹ (1, 0, 0)` satisfies `r ⟪w, u⟫ = ⟪w, B u⟫`.
-
-The normalization carried along the branch is `⟪w, v t⟫ = ⟪w, u⟫`, which is what makes the branch
-unique; it is the second component of the local inverse's defining equation. -/
+This is the branch that `Module.End.deriv_eigenvalue_perturbation` assumes. It comes from the
+inverse function theorem, without the implicit function theorem and without a determinant. The
+map $F(t, \mu, z) = (t, \langle w, z \rangle, Az + tBz - \mu z)$ on
+$\mathbb{K} \times \mathbb{K} \times E$ is polynomial, so its strict derivative at
+$(0, \lambda, u)$ is immediate. That derivative is injective because the eigenvalue is simple:
+the inner product of $(A - \lambda) \delta z = \delta\mu \, u$ with $w$ gives $\delta\mu = 0$,
+then simplicity puts $\delta z$ in $\operatorname{span}\{u\}$, and
+$\langle w, \delta z \rangle = 0$ gives $\delta z = 0$. In finite dimension the derivative is
+then bijective, $F$ has a local inverse $g$, and the branch is
+$t \mapsto g(t, \langle w, u \rangle, 0)$. The second component $\rho$ of $F'^{-1}(1, 0, 0)$
+satisfies $\rho \langle w, u \rangle = \langle w, Bu \rangle$, which gives the derivative of the
+eigenvalue. The constructed branch has the normalization
+$\langle w, v(t) \rangle = \langle w, u \rangle$, which makes it unique; this normalization is
+not part of the statement. -/
 theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E →L[𝕜] E} {l : 𝕜}
     {u w : E} (hAu : A u = l • u) (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) l w)
     (hne : (inner 𝕜 w u : 𝕜) ≠ 0)
@@ -802,9 +892,15 @@ open scoped Matrix.Norms.L2Operator
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Bauer–Fike ([saad2011numerical], Thm 3.6; [kress1998numerical], Problem 7.6): for a
-diagonalizable `A = X D X⁻¹` and `μ ∈ σ(A + ΔA)`, `dist(μ, σ(A)) ≤ κ₂(X) ‖ΔA‖₂`, where `κ₂(X) = ‖X‖₂
-‖X⁻¹‖₂`. -/
+/-- The **Bauer–Fike theorem** ([saad2011numerical], Theorem 3.6; [kress1998numerical], Problem
+7.6). Let $X \in \mathbb{C}^{n \times n}$ be invertible, let $d \in \mathbb{C}^n$, and let
+$A = X \operatorname{diag}(d) X^{-1}$. If $\mu$ is an eigenvalue of $A + \Delta A$, then for
+some $i$
+$$|\mu - d_i| \le \kappa_2(X) \|\Delta A\|_2,$$
+where $\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$.
+
+The norm is the operator norm induced by the Euclidean norm, and $\kappa_2(X)$ is
+`NormedRing.condNumber X`. -/
 theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : Matrix n n ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (X * Matrix.diagonal d * X⁻¹ + ΔA)) :
     ∃ i, ‖μ - d i‖ ≤ NormedRing.condNumber X * ‖ΔA‖ := by
@@ -894,8 +990,13 @@ theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : M
   calc ‖μ - d i₀‖ ≤ ‖X⁻¹‖ * ‖ΔA‖ * ‖X‖ := h3
     _ = ‖X‖ * ‖X⁻¹‖ * ‖ΔA‖ := by ring
 
-/-- Residual form of Bauer–Fike: for a unit approximate eigenpair `(θ, u)` of a diagonalizable `A =
-X D X⁻¹`, `dist(θ, σ(A)) ≤ κ₂(X) ‖A u - θ u‖`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
+/-- **The Bauer–Fike theorem in residual form.** Let $X \in \mathbb{C}^{n \times n}$ be invertible,
+let $d \in \mathbb{C}^n$, and let $A = X \operatorname{diag}(d) X^{-1}$. For every unit vector
+$u \in \mathbb{C}^n$ and every $\theta \in \mathbb{C}$ there is an index $i$ with
+$$|\theta - d_i| \le \kappa_2(X) \|Au - \theta u\|,$$
+where $\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$.
+
+The vector $u$ is in `EuclideanSpace ℂ n`, and $A$ acts on it through `Matrix.toEuclideanLin`. -/
 theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
     {u : EuclideanSpace ℂ n} (hu : ‖u‖ = 1) (θ : ℂ) :
     ∃ i, ‖θ - d i‖ ≤ NormedRing.condNumber X *
@@ -937,9 +1038,13 @@ theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
   obtain ⟨i, hi⟩ := bauer_fike X d hX (-M) hspec
   exact ⟨i, by rwa [norm_neg, hMnorm] at hi⟩
 
-/-- Gershgorin discs, union form ([saad2011numerical], Thm 3.11; [kress1998numerical], Thm 7.7): the
-spectrum is contained in the union over `i` of the discs centred at `a_ii` with radius `∑_{j ≠ i}
-|a_ij|`.  Mathlib's `eigenvalue_mem_ball` is the pointwise version. -/
+/-- **The Gershgorin theorem**, row form ([saad2011numerical], Theorem 3.11; [kress1998numerical],
+Theorem 7.7). The spectrum of $A \in \mathbb{C}^{n \times n}$ lies in the union of the closed
+discs with centers $a_{ii}$ and radii $\sum_{j \neq i} |a_{ij}|$:
+$$\sigma(A) \subseteq \bigcup_i \Big\{ z \in \mathbb{C} : |z - a_{ii}| \le \sum_{j \neq i}
+  |a_{ij}| \Big\}.$$
+
+The version for one eigenvalue is Mathlib's `eigenvalue_mem_ball`. -/
 theorem spectrum_subset_iUnion_closedBall (A : Matrix n n ℂ) :
     spectrum ℂ A ⊆ ⋃ i, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖) := by
   intro μ hμ
@@ -947,34 +1052,32 @@ theorem spectrum_subset_iUnion_closedBall (A : Matrix n n ℂ) :
   obtain ⟨i, hi⟩ := _root_.eigenvalue_mem_ball (Module.End.hasEigenvalue_iff_mem_spectrum.mpr hμ)
   exact Set.mem_iUnion.mpr ⟨i, hi⟩
 
-/-- The column-sum Gershgorin theorem ([saad2011numerical], Thm 3.11; [saad2003iterative], Thm 4.6,
-column form): the spectrum is contained in the union over `j` of the discs centred at `a_jj` with
-radius `∑_{i ≠ j} |a_ij|`.
+/-- **The Gershgorin theorem**, column form ([saad2011numerical], Theorem 3.11; [saad2003iterative],
+Theorem 4.6). The spectrum of $A \in \mathbb{C}^{n \times n}$ lies in the union of the closed
+discs with centers $a_{jj}$ and radii $\sum_{i \neq j} |a_{ij}|$.
 
-A matrix and its transpose have the same spectrum, so this is the row form applied to the transpose.
--/
+A matrix and its transpose have the same spectrum, so this is the row form for the transpose. -/
 theorem spectrum_subset_iUnion_closedBall_col (A : Matrix n n ℂ) :
     spectrum ℂ A ⊆ ⋃ j, Metric.closedBall (A j j) (∑ i ∈ Finset.univ.erase j, ‖A i j‖) := by
   intro μ hμ
   have hT : μ ∈ spectrum ℂ Aᵀ := by rwa [Matrix.spectrum_transpose]
   simpa using spectrum_subset_iUnion_closedBall Aᵀ hT
 
-/-- **Gershgorin disc counting** (Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd
-edition, Theorem 3.12): if the union `S` of the Gershgorin discs indexed by `τ` is disjoint from
-the union `S'` of the remaining discs, then `S` contains exactly `τ.card` eigenvalues, counted with
-multiplicity.
+/-- **Counting eigenvalues in Gershgorin discs** ([saad2011numerical], Theorem 3.12). Let
+$A \in \mathbb{C}^{n \times n}$ and let $\tau$ be a set of indices. Let $S$ be the union of the
+Gershgorin discs $\{z : |z - a_{ii}| \le \sum_{j \neq i} |a_{ij}|\}$ for $i \in \tau$, and let
+$S'$ be the union of these discs for $i \notin \tau$. If $S$ and $S'$ are disjoint, then $S$
+contains exactly $|\tau|$ eigenvalues of $A$, counted with algebraic multiplicity.
 
-The count is `Polynomial.countRootsIn`, the number of roots of the characteristic polynomial in
-`S` with multiplicity, which by `Matrix.mem_spectrum_iff_isRoot_charpoly` is the total algebraic
-multiplicity of the eigenvalues lying in `S`.
-
-The proof is Saad's homotopy `A t = D + t H`, with `D` the diagonal of `A` and `H` the rest.  The
-Gershgorin discs of `A t` are those of `A` shrunk by the factor `t`, so for `0 ≤ t ≤ 1` the
-eigenvalues of `A t` stay in `S ∪ S'` throughout; at `t = 0` the eigenvalues are the diagonal
-entries, of which exactly those indexed by `τ` lie in `S`.  Saad's "continuity argument" — that the
-branches of eigenvalues cannot cross from `S` to `S'` — is
-`Polynomial.countRootsIn_eq_of_preconnected`, a compactness argument in the coefficients that needs
-no complex analysis and no separation of the branches from each other. -/
+The count is `Polynomial.countRootsIn S A.charpoly`, the number of roots of the characteristic
+polynomial in $S$, counted with multiplicity; by `Matrix.mem_spectrum_iff_isRoot_charpoly` this
+is the sum of the algebraic multiplicities of the eigenvalues in $S$. The proof is the homotopy
+$A(t) = D + tH$ of the source, with $D$ the diagonal of $A$ and $H = A - D$. The Gershgorin
+discs of $A(t)$ are those of $A$ with the radii multiplied by $t$, so for $0 \le t \le 1$ the
+eigenvalues of $A(t)$ stay in $S \cup S'$; at $t = 0$ the eigenvalues are the diagonal entries,
+and exactly those with index in $\tau$ lie in $S$. The continuity argument of the source, that
+the eigenvalues cannot move from $S$ to $S'$, is `Polynomial.countRootsIn_eq_of_preconnected`, a
+compactness argument in the coefficients that needs no complex analysis. -/
 theorem card_spectrum_of_disjoint_gershgorin (A : Matrix n n ℂ) (τ : Finset n) {S S' : Set ℂ}
     (hS : S = ⋃ i ∈ τ, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
     (hS' : S' = ⋃ i ∈ τᶜ, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
@@ -1057,11 +1160,14 @@ theorem card_spectrum_of_disjoint_gershgorin (A : Matrix n n ℂ) (τ : Finset n
     rw [hS]
     exact Set.mem_iUnion₂.mpr ⟨i, hiτ, Metric.mem_closedBall_self (hr0 i)⟩
 
-/-- **An isolated Gershgorin disc contains exactly one eigenvalue** (Saad, *Numerical Methods for
-Large Eigenvalue Problems*, 2nd edition, the particular case of Theorem 3.12 noted after its
-proof): the case `τ = {i}` of `Matrix.card_spectrum_of_disjoint_gershgorin`.
+/-- **An isolated Gershgorin disc contains exactly one eigenvalue** ([saad2011numerical], the
+special case of Theorem 3.12 noted after its proof). Let $A \in \mathbb{C}^{n \times n}$, let
+$S$ be the Gershgorin disc $\{z : |z - a_{ii}| \le \sum_{j \neq i} |a_{ij}|\}$ of the index $i$,
+and let $S'$ be the union of the other Gershgorin discs. If $S$ and $S'$ are disjoint, then $S$
+contains exactly one eigenvalue of $A$, counted with algebraic multiplicity.
 
-In particular the eigenvalue in an isolated disc is simple. -/
+It follows that the eigenvalue in an isolated disc is simple. This is the case $\tau = \{i\}$ of
+`Matrix.card_spectrum_of_disjoint_gershgorin`. -/
 theorem card_spectrum_of_isolated_gershgorin (A : Matrix n n ℂ) (i : n) {S S' : Set ℂ}
     (hS : S = Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
     (hS' : S' = ⋃ k ∈ ({i} : Finset n)ᶜ,
@@ -1073,20 +1179,27 @@ theorem card_spectrum_of_isolated_gershgorin (A : Matrix n n ℂ) (i : n) {S S' 
 
 end Matrix
 
-/-! ### Hirsch's bounds
+/-!
+### The theorem of Hirsch
 
-[quarteroni2000numerical] Theorem 5.1 (Hirsch): the real and the imaginary part of every eigenvalue
-of `A` lie between the extreme eigenvalues of the Hermitian part `H = (A + Aᴴ)/2` and of the matrix
-`S = (A - Aᴴ)/(2i)` respectively. Both are Bendixson's theorem
-`re_hasEigenvalue_mem_Icc_of_symmetricPart` read through `Matrix.toEuclideanLin`, the imaginary
-half being the real half for `-i A`, whose Hermitian part is `S`. -/
+The real and the imaginary parts of every eigenvalue of $A$ lie between the extreme eigenvalues of
+the Hermitian part $H = (A + A^H)/2$ and of the matrix $S = (A - A^H)/(2i)$, respectively
+([quarteroni2000numerical], Theorem 5.1). Both bounds are Bendixson's theorem
+`re_hasEigenvalue_mem_Icc_of_symmetricPart` for matrices, through `Matrix.toEuclideanLin`; the bound
+for the imaginary part is the bound for the real part of $-iA$, whose Hermitian part is $S$.
+-/
 
 namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Bendixson's theorem for matrices: if `H` is Hermitian and its quadratic form is the real part
-of that of `A`, every eigenvalue of `A` has real part between the extreme eigenvalues of `H`. -/
+/-- **Bendixson's theorem for matrices.** Let $A, H \in \mathbb{K}^{n \times n}$ with $H$ Hermitian,
+and suppose that $\operatorname{Re} \langle Hx, x \rangle = \operatorname{Re} \langle Ax, x
+\rangle$ for every $x \in \mathbb{K}^n$. Then every eigenvalue $\mu$ of $A$ satisfies
+$$\lambda_{\min}(H) \le \operatorname{Re} \mu \le \lambda_{\max}(H).$$
+
+Here $\lambda_{\min}(H)$ and $\lambda_{\max}(H)$ are the infimum and the supremum of
+`Matrix.IsHermitian.eigenvalues`. -/
 theorem re_mem_Icc_eigenvalues_of_mem_spectrum {A H : Matrix n n 𝕜} (hH : H.IsHermitian)
     (hHA : ∀ x : EuclideanSpace 𝕜 n, RCLike.re (inner 𝕜 (toEuclideanLin H x) x)
       = RCLike.re (inner 𝕜 (toEuclideanLin A x) x))
@@ -1096,18 +1209,26 @@ theorem re_mem_Icc_eigenvalues_of_mem_spectrum {A H : Matrix n n 𝕜} (hH : H.I
     fun i => ⟨ciInf_le (Set.finite_range _).bddBelow i, le_ciSup (Set.finite_range _).bddAbove i⟩)
     hHA ((hasEigenvalue_toEuclideanLin_iff A μ).mpr hμ)
 
-/-- **Hirsch's theorem, real part** ([quarteroni2000numerical] Theorem 5.1; Bendixson): the real
-part of every eigenvalue of `A` lies between the smallest and the largest eigenvalue of the
-Hermitian part `H = (A + Aᴴ)/2`. -/
+/-- **The theorem of Hirsch**, real part ([quarteroni2000numerical], Theorem 5.1). Let
+$A \in \mathbb{K}^{n \times n}$ and let $H = (A + A^H)/2$ be its Hermitian part. Then every
+eigenvalue $\mu$ of $A$ satisfies
+$$\lambda_{\min}(H) \le \operatorname{Re} \mu \le \lambda_{\max}(H).$$
+
+This half is also due to Bendixson. The matrix $H$ is `Matrix.hermitianPart A`, and
+$\lambda_{\min}(H)$ and $\lambda_{\max}(H)$ are the infimum and the supremum of its eigenvalues. -/
 theorem hirsch_re (A : Matrix n n 𝕜) {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 A) :
     RCLike.re μ ∈ Set.Icc (⨅ i, (hermitianPart_isHermitian A).eigenvalues i)
       (⨆ i, (hermitianPart_isHermitian A).eigenvalues i) :=
   re_mem_Icc_eigenvalues_of_mem_spectrum _ (re_inner_hermitianPart A) hμ
 
-/-- **Hirsch's theorem, imaginary part** ([quarteroni2000numerical] Theorem 5.1): the imaginary
-part of every eigenvalue of `A` lies between the smallest and the largest eigenvalue of
-`S = (A - Aᴴ)/(2i)`. It is the real part of the theorem for `-i A`, whose Hermitian part is `S`
-and whose eigenvalues are `-i` times those of `A`. -/
+/-- **The theorem of Hirsch**, imaginary part ([quarteroni2000numerical], Theorem 5.1). Let
+$A \in \mathbb{C}^{n \times n}$ and let $S = (A - A^H)/(2i)$. Then every eigenvalue $\mu$ of $A$
+satisfies
+$$\lambda_{\min}(S) \le \operatorname{Im} \mu \le \lambda_{\max}(S).$$
+
+The matrix $S$ is `Matrix.skewHermitianPart A`, and $\lambda_{\min}(S)$ and $\lambda_{\max}(S)$
+are the infimum and the supremum of its eigenvalues. The proof applies the real part of the
+theorem to $-iA$, whose Hermitian part is $S$ and whose eigenvalues are $-i$ times those of $A$. -/
 theorem hirsch_im (A : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     μ.im ∈ Set.Icc (⨅ i, (skewHermitianPart_isHermitian A).eigenvalues i)
       (⨆ i, (skewHermitianPart_isHermitian A).eigenvalues i) := by
@@ -1121,20 +1242,23 @@ theorem hirsch_im (A : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) 
 
 end Matrix
 
-/-! ### Algebraically simple eigenvalues
+/-!
+### Algebraically simple eigenvalues
 
-At an eigenvalue of algebraic multiplicity one — `finrank (maxGenEigenspace A l) = 1` — the two
-hypotheses that `Module.End.hasDerivAt_eigenvalue_perturbation` carries separately, `⟪w, u⟫ ≠ 0`
-and the geometric simplicity `∀ z, A z = l • z → ∃ c, z = c • u`, are theorems. The first is the
-opening paragraph of the proof of [quarteroni2000numerical] Theorem 5.4, without its
-diagonalizability. -/
+At an eigenvalue $\lambda$ of algebraic multiplicity one, that is, with a maximal generalized
+eigenspace of dimension $1$, the two hypotheses of `Module.End.hasDerivAt_eigenvalue_perturbation`,
+$\langle w, u \rangle \neq 0$ and geometric simplicity, are theorems. The first is the opening
+paragraph of the proof of [quarteroni2000numerical], Theorem 5.4, without the diagonalizability
+assumed there.
+-/
 
 namespace Module.End
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- At an eigenvalue of algebraic multiplicity one, the maximal generalized eigenspace is the line
-through any eigenvector. -/
+/-- Let $A$ be a linear operator on a finite-dimensional inner product space, and let
+$Au = \lambda u$ with $u \neq 0$. If the maximal generalized eigenspace of $\lambda$ has
+dimension $1$, then it is $\operatorname{span}\{u\}$. -/
 theorem maxGenEigenspace_eq_span_singleton_of_finrank_eq_one {A : E →ₗ[𝕜] E} {l : 𝕜} {u : E}
     (hAu : A u = l • u) (hu : u ≠ 0)
     (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) :
@@ -1145,17 +1269,20 @@ theorem maxGenEigenspace_eq_span_singleton_of_finrank_eq_one {A : E →ₗ[𝕜]
   exact (Submodule.eq_of_le_of_finrank_le hle (by rw [hsimple, finrank_span_singleton hu])).symm
 
 /-- **A right and a left eigenvector for an algebraically simple eigenvalue are not orthogonal**
-([quarteroni2000numerical] Theorem 5.4, first step of the proof; [saad2011numerical] §3.2.1): if
-`A u = l u` with `u ≠ 0`, `⟪w, A y⟫ = l ⟪w, y⟫` for all `y` with `w ≠ 0`, and
-`finrank (maxGenEigenspace A l) = 1`, then `⟪w, u⟫ ≠ 0`.
+([quarteroni2000numerical], Theorem 5.4, the first step of the proof; [saad2011numerical],
+§3.2.1). Let $A$ be a linear operator on a finite-dimensional inner product space, let
+$Au = \lambda u$ with $u \neq 0$, and let $w \neq 0$ be a left eigenvector of $A$ for $\lambda$.
+If the maximal generalized eigenspace of $\lambda$ has dimension $1$, then
+$\langle w, u \rangle \neq 0$.
 
-Were `⟪w, u⟫ = 0`, `u` would lie in `(𝕜 ∙ w)ᗮ`, which is the range of `A - l`: that range is
-contained in `(𝕜 ∙ w)ᗮ` because `w` is a left eigenvector, and both have codimension one, the
-kernel of `A - l` being the line through `u`. So `u = (A - l) z` for some `z`, which makes `z` a
-generalized eigenvector of index two — `(A - l)² z = 0` with `(A - l) z ≠ 0` — inside a generalized
-eigenspace that is only a line. This is why the hypothesis `hne` of
-`Module.End.hasDerivAt_eigenvalue_perturbation` is automatic at an algebraically simple eigenvalue.
--/
+Suppose that $\langle w, u \rangle = 0$. Then $u$ lies in $\{w\}^\perp$, which is the range of
+$A - \lambda$: the range is contained in $\{w\}^\perp$ because $w$ is a left eigenvector, and
+both have codimension one, since the kernel of $A - \lambda$ is the line through $u$. So
+$u = (A - \lambda) z$ for some $z$, and $z$ is a generalized eigenvector of index two, with
+$(A - \lambda)^2 z = 0$ and $(A - \lambda) z \neq 0$, in a generalized eigenspace that is only a
+line. Thus the hypothesis $\langle w, u \rangle \neq 0$ of
+`Module.End.hasDerivAt_eigenvalue_perturbation` holds automatically at an algebraically simple
+eigenvalue. -/
 theorem inner_ne_zero_of_finrank_maxGenEigenspace_eq_one {A : E →ₗ[𝕜] E} {l : 𝕜} {u w : E}
     (hAu : A u = l • u) (hu : u ≠ 0) (hw : IsLeftEigenvector A l w)
     (hw0 : w ≠ 0) (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) :
@@ -1195,11 +1322,21 @@ theorem inner_ne_zero_of_finrank_maxGenEigenspace_eq_one {A : E →ₗ[𝕜] E} 
   rw [map_smul, hBu, smul_zero] at hz
   exact hu hz.symm
 
-/-- **A simple eigenvalue moves differentiably**, under the single hypothesis that it is
-algebraically simple: `Module.End.hasDerivAt_eigenvalue_perturbation` with its two hypotheses
-`⟪w, u⟫ ≠ 0` and geometric simplicity replaced by `finrank (maxGenEigenspace A l) = 1`, for any
-nonzero eigenvector `u` and any nonzero left eigenvector `w`. This is the branch that
-[quarteroni2000numerical] Theorem 5.4 presupposes when it calls `λ` simple. -/
+/-- **A simple eigenvalue moves differentiably**, for an algebraically simple eigenvalue. Let $A$
+and $B$ be bounded operators on a finite-dimensional inner product space $E$ over $\mathbb{K}$,
+let $Au = \lambda u$ with $u \neq 0$, let $w \neq 0$ be a left eigenvector of $A$ for $\lambda$,
+and suppose that the maximal generalized eigenspace of $\lambda$ has dimension $1$. Then there
+are functions $\mu : \mathbb{K} \to \mathbb{K}$ and $v : \mathbb{K} \to E$ and a vector $v'$
+such that
+* $\mu(0) = \lambda$ and $v(0) = u$;
+* $A v(t) + t B v(t) = \mu(t) v(t)$ for all $t$ near $0$;
+* $v$ has the derivative $v'$ at $0$;
+* $\mu$ has the derivative $\langle w, Bu \rangle / \langle w, u \rangle$ at $0$.
+
+This is `Module.End.hasDerivAt_eigenvalue_perturbation` with its two hypotheses,
+$\langle w, u \rangle \neq 0$ and geometric simplicity, replaced by the single hypothesis of
+algebraic simplicity. It is the branch that [quarteroni2000numerical], Theorem 5.4 presupposes
+when it calls $\lambda$ simple. -/
 theorem hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one {A B : E →L[𝕜] E} {l : 𝕜}
     {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
     (hw : IsLeftEigenvector (A : E →ₗ[𝕜] E) l w) (hw0 : w ≠ 0)
@@ -1227,8 +1364,13 @@ namespace LinearMap.IsSymmetric
 variable [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- A vector is orthogonal to `hA.eigenvectorSpan hn s` exactly when its eigenbasis coordinates
-vanish on `s`. -/
+/-- Let $A$ be a symmetric operator on an inner product space of dimension $n$, with orthonormal
+eigenbasis $v_i$, and let $s$ be a set of indices. A vector $x$ is orthogonal to
+$\operatorname{span}\{v_i \mid i \in s\}$ if and only if $\langle v_i, x \rangle = 0$ for every
+$i \in s$.
+
+The span is `LinearMap.IsSymmetric.eigenvectorSpan`, and the coefficients are those of
+`LinearMap.IsSymmetric.eigenvectorBasis`. -/
 theorem mem_orthogonal_eigenvectorSpan_iff {n : ℕ} (hn : Module.finrank 𝕜 E = n)
     {s : Finset (Fin n)} {x : E} :
     x ∈ (hA.eigenvectorSpan hn s)ᗮ ↔ ∀ i ∈ s, (hA.eigenvectorBasis hn).repr x i = 0 := by
@@ -1238,20 +1380,21 @@ theorem mem_orthogonal_eigenvectorSpan_iff {n : ℕ} (hn : Module.finrank 𝕜 E
     forall_apply_eq_imp_iff₂, forall_eq, OrthonormalBasis.repr_apply_apply]
 
 /-- **The distance from an approximate eigenvector to a group of eigenvectors**
-([quarteroni2000numerical] Property 5.6; Isaacson–Keller, *Analysis of Numerical Methods*,
-pp. 142–143): for a symmetric `A` with eigenpairs `(hA.eigenvalues hn i, hA.eigenvectorBasis hn
-i)`, an approximate pair `(θ, x)` with residual `r = A x - θ x`, and a set `s` of indices such that
-every eigenvalue *outside* `s` is at distance at least `δ > 0` from `θ`, the distance from `x` to
-the span of the eigenvectors indexed by `s` is at most `‖r‖ / δ`.
+([quarteroni2000numerical], Property 5.6; [isaacson1994analysis], pp. 142–143). Let $A$ be a
+symmetric operator on an inner product space of dimension $n$, with eigenvalues $\lambda_i$ and
+orthonormal eigenvectors $v_i$. Let $\theta \in \mathbb{R}$, let $x$ be a vector with residual
+$r = Ax - \theta x$, let $s$ be a set of indices, and let $\delta > 0$ satisfy
+$\delta \le |\lambda_i - \theta|$ for every $i \notin s$. Then
+$$\|x - P_s x\| \le \frac{\|r\|}{\delta},$$
+where $P_s$ is the orthogonal projection onto $\operatorname{span}\{v_i \mid i \in s\}$.
 
-The book also assumes `|λ_i - θ| ≤ ‖r‖` for `i ∈ s`; that hypothesis plays no role. Taking `s` to
-be the indices of one eigenvalue recovers `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`,
-the residual bound for a single eigenspace.
-
-The proof is the one of that theorem: split `x = p + q` along the span and its complement, both
-`A`-invariant; the residual splits as `(A - θ) p + (A - θ) q` with orthogonal terms, so
-`‖r‖ ≥ ‖(A - θ) q‖`, and in the eigenbasis `‖(A - θ) q‖² = ∑_{i ∉ s} (λ_i - θ)² |q_i|² ≥ δ² ‖q‖²`.
--/
+The source also assumes $|\lambda_i - \theta| \le \|r\|$ for $i \in s$; that hypothesis is not
+needed. If $s$ is the set of the indices of one eigenvalue, the result is the residual bound for
+one eigenspace, `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. The proof splits
+$x = p + q$ along the span and its orthogonal complement, which are both invariant under $A$.
+The residual splits as $(A - \theta) p + (A - \theta) q$ with orthogonal terms, so
+$\|r\| \ge \|(A - \theta) q\|$, and in the eigenbasis $\|(A - \theta) q\|^2 = \sum_{i \notin s}
+(\lambda_i - \theta)^2 |q_i|^2 \ge \delta^2 \|q\|^2$. -/
 theorem dist_eigenvectorSpan_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n)
     (s : Finset (Fin n)) (θ : ℝ) (x : E) {δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i ∉ s, δ ≤ |hA.eigenvalues hn i - θ|) :
@@ -1295,33 +1438,39 @@ theorem dist_eigenvectorSpan_le_norm_residual_div {n : ℕ} (hn : Module.finrank
 
 end LinearMap.IsSymmetric
 
-/-! ### The resolvent step, the Schur-form bound and approximate invariant subspaces
+/-!
+### The resolvent step, the bound from a Schur form, and approximate invariant subspaces
 
-`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` (in `Numlib/Analysis/Normed/Ring/Inverse`)
-is the step shared by every resolvent-based perturbation bound ([golub2013matrix] (7.2.1), via
-Lemma 2.3.3): if `μ` is an eigenvalue of `A + E` but not of `A`, then `‖(μ - A)⁻¹ E‖ ≥ 1`, since
-otherwise
-`μ - A - E = (μ - A)(1 - (μ - A)⁻¹ E)` would be invertible by the Neumann series.
-`Matrix.exists_norm_sub_le_of_schur` is [golub2013matrix] Theorem 7.2.3, a Henrici-type bound for
-a matrix that need not be diagonalizable: with a Schur form `Qᴴ A Q = D + N`, the resolvent of
-`D + N` is a finite Neumann series in `(μ - D)⁻¹ N`, whose length is the nilpotency index of the
-entrywise absolute value `|N|`.
-
-`Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` is the block form of the
-residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1` of the one-vector residual
-bound instead of the book's `√2`): an orthonormal block `Q₁` and a Hermitian `S` with
-`‖A Q₁ - Q₁ S‖₂ ≤ ε` put an eigenvalue of `A` within `ε` of every eigenvalue of `S`. -/
+The step shared by the resolvent-based perturbation bounds is
+`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` in `Numlib.Analysis.Normed.Ring.Inverse`
+([golub2013matrix], (7.2.1), through Lemma 2.3.3 there): if $\mu$ is an eigenvalue of $A + E$ but
+not of $A$, then $\|(\mu - A)^{-1} E\| \ge 1$, because otherwise
+$\mu - A - E = (\mu - A)(1 - (\mu - A)^{-1} E)$ would be invertible by the Neumann series.
+`Matrix.exists_norm_sub_le_of_schur` is [golub2013matrix], Theorem 7.2.3, a bound of Henrici type
+for a matrix that need not be diagonalizable: with a Schur form $Q^H A Q = D + N$, the resolvent of
+$D + N$ is a finite Neumann series in $(\mu - D)^{-1} N$, whose length is the nilpotency index of
+the entrywise absolute value $|N|$.
+`Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul` is the block form of the residual
+bound ([golub2013matrix], Theorem 8.1.13, with the constant $1$ of the residual bound for one vector
+in place of the constant $\sqrt{2}$ of the source): an orthonormal block $Q_1$ and a Hermitian $S$
+with $\|AQ_1 - Q_1 S\|_2 \le \varepsilon$ put an eigenvalue of $A$ within $\varepsilon$ of every
+eigenvalue of $S$.
+-/
 
 namespace LinearMap.IsSymmetric
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- **Orthonormal eigenvectors sit in the sorted spectrum**: if a symmetric `T` on an
-`N`-dimensional space has orthonormal eigenvectors `v k`, `T (v k) = s k • v k`, with `s`
-antitone, then `s` is a sublist of the sorted eigenvalues of `T`: some order embedding
-`σ : Fin r ↪o Fin N` has `λ_{σ k}(T) = s k`. Each value `c` occurs among the `s k` at most as
-often as among the eigenvalues, the `v k` with `s k = c` being independent vectors of the span of
-the eigenvectors for `c`; and a sorted sub-multiset of a sorted list is a sublist. -/
+/-- **Orthonormal eigenvectors are a sublist of the sorted spectrum.** Let $T$ be a symmetric
+operator on an inner product space of dimension $N$, with eigenvalues
+$\lambda_0(T) \ge \dots \ge \lambda_{N-1}(T)$. Let $v_0, \dots, v_{r-1}$ be orthonormal with
+$T v_k = s_k v_k$, where $s$ is antitone. Then there is a strictly increasing map $\sigma : \{0,
+\dots, r-1\} \to \{0, \dots, N-1\}$ with $\lambda_{\sigma(k)}(T) = s_k$ for every $k$.
+
+Each value $c$ occurs among the $s_k$ at most as often as among the eigenvalues, because the
+$v_k$ with $s_k = c$ are independent vectors in the eigenspace of $c$, and a sorted submultiset
+of a sorted list is a sublist. The map $\sigma$ is an order embedding `Fin r ↪o Fin N`, and the
+eigenvalues are `LinearMap.IsSymmetric.eigenvalues`. -/
 theorem exists_orderEmbedding_eigenvalues_eq {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {N : ℕ}
     (hN : Module.finrank 𝕜 E = N) {r : ℕ} {v : Fin r → E} (hv : Orthonormal 𝕜 v)
     {s : Fin r → ℝ} (hs : Antitone s) (hTv : ∀ k, T (v k) = (s k : 𝕜) • v k) :
@@ -1392,9 +1541,13 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The step shared by [golub2013matrix] Theorems 7.2.1–7.2.3 and 7.9.8 ((7.2.1), via their
-Lemma 2.3.3), in the spectral norm: if `μ ∈ σ(A + E)` and `μ ∉ σ(A)` then
-`1 ≤ ‖(μ I - A)⁻¹ E‖₂` (and so `1 ≤ ‖(μ I - A)⁻¹‖₂ ‖E‖₂`). -/
+/-- **The resolvent step** in the spectral norm. Let $A, E \in \mathbb{K}^{n \times n}$. If $\mu$ is
+an eigenvalue of $A + E$ but not of $A$, then
+$$1 \le \|(\mu I - A)^{-1} E\|_2,$$
+and so $1 \le \|(\mu I - A)^{-1}\|_2 \|E\|_2$.
+
+This step is shared by [golub2013matrix], Theorems 7.2.1–7.2.3 and 7.9.8; it is (7.2.1) there,
+through Lemma 2.3.3. -/
 theorem one_le_norm_mul_of_mem_spectrum_add {A E : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 (A + E)) (hA : μ ∉ spectrum 𝕜 A) : 1 ≤ ‖(μ • 1 - A)⁻¹ * E‖ := by
   rw [nonsing_inv_eq_ringInverse]
@@ -1403,8 +1556,12 @@ theorem one_le_norm_mul_of_mem_spectrum_add {A E : Matrix n n 𝕜} {μ : 𝕜}
 
 end L2
 
-/-- The resolvent step `Matrix.one_le_norm_mul_of_mem_spectrum_add` in every induced `p`-norm:
-if `μ ∈ σ(A + E)` and `μ ∉ σ(A)` then `1 ≤ ‖(μ I - A)⁻¹ E‖_p`. -/
+/-- **The resolvent step** in every induced $p$-norm. Let $1 \le p \le \infty$ and
+$A, E \in \mathbb{K}^{n \times n}$. If $\mu$ is an eigenvalue of $A + E$ but not of $A$, then
+$1 \le \|(\mu I - A)^{-1} E\|_p$.
+
+The norm $\|\cdot\|_p$ is `Matrix.lpOpNorm p`. The spectral-norm form is
+`Matrix.one_le_norm_mul_of_mem_spectrum_add`. -/
 theorem one_le_lpOpNorm_mul_of_mem_spectrum_add (p : ENNReal) [Fact (1 ≤ p)]
     {A E : Matrix n n 𝕜} {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 (A + E)) (hA : μ ∉ spectrum 𝕜 A) :
     1 ≤ lpOpNorm p ((μ • 1 - A)⁻¹ * E) := by
@@ -1416,12 +1573,19 @@ theorem one_le_lpOpNorm_mul_of_mem_spectrum_add (p : ENNReal) [Fact (1 ≤ p)]
   rw [this, isUnit_lpCLM_iff]
   exact not_isUnit_sub_sub_of_mem_spectrum_add hμ
 
-/-- **Bauer–Fike in every induced `p`-norm** ([golub2013matrix] Theorem 7.2.2): for `1 ≤ p`, an
-invertible `X`, `d : n → ℂ` and `μ ∈ σ(X diag(d) X⁻¹ + E)`, some `i` has
-`|μ - d i| ≤ κ_p(X) ‖E‖_p`. If `μ` is no `d i`, then `μ ∈ σ(D + X⁻¹ E X)` and `μ ∉ σ(D)`, so the
-resolvent step `Matrix.one_le_lpOpNorm_mul_of_mem_spectrum_add` gives
-`1 ≤ ‖(μ - D)⁻¹‖_p ‖X⁻¹‖_p ‖E‖_p ‖X‖_p` with `‖(μ - D)⁻¹‖_p = max 1/|μ - d_i|`
-(`Matrix.lpOpNorm_diagonal`). `Matrix.bauer_fike` is the case `p = 2`. -/
+/-- **The Bauer–Fike theorem in every induced $p$-norm** ([golub2013matrix], Theorem 7.2.2). Let
+$1 \le p \le \infty$, let $X \in \mathbb{C}^{n \times n}$ be invertible and
+$d \in \mathbb{C}^n$. If $\mu$ is an eigenvalue of $X \operatorname{diag}(d) X^{-1} + E$, then
+for some $i$
+$$|\mu - d_i| \le \kappa_p(X) \|E\|_p,$$
+where $\kappa_p(X) = \|X\|_p \|X^{-1}\|_p$.
+
+The norm is `Matrix.lpOpNorm p`, the condition number is `Matrix.condNumberLp p`, and
+`Matrix.bauer_fike` is the case $p = 2$. If $\mu$ is no $d_i$, then $\mu$ is an eigenvalue of
+$D + X^{-1} E X$ but not of $D$, so the resolvent step
+`Matrix.one_le_lpOpNorm_mul_of_mem_spectrum_add` gives
+$$1 \le \|(\mu - D)^{-1}\|_p \|X^{-1}\|_p \|E\|_p \|X\|_p,$$
+and $\|(\mu - D)^{-1}\|_p = \max_i 1/|\mu - d_i|$ (`Matrix.lpOpNorm_diagonal`). -/
 theorem bauer_fike_lpOpNorm (p : ENNReal) [Fact (1 ≤ p)] (X : Matrix n n ℂ) (d : n → ℂ)
     (hX : IsUnit X) (E : Matrix n n ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (X * diagonal d * X⁻¹ + E)) :
@@ -1488,8 +1652,9 @@ section Schur
 
 open scoped Matrix.Norms.L2Operator
 
-/-- Entrywise domination of powers: if `‖M i j‖ ≤ c ‖N i j‖` entrywise then
-`‖(M ^ k) i j‖ ≤ c ^ k ((|N|) ^ k) i j`, with `|N| = N.map ‖·‖`. -/
+/-- If $|m_{ij}| \le c |n_{ij}|$ for all entries, with $c \ge 0$, then
+$|(M^k)_{ij}| \le c^k (|N|^k)_{ij}$ and $(|N|^k)_{ij} \ge 0$, where $|N|$ is the entrywise
+absolute value of $N$. -/
 private theorem norm_pow_apply_le {M N : Matrix n n ℂ} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ i j, ‖M i j‖ ≤ c * ‖N i j‖) (k : ℕ) (i j : n) :
     ‖(M ^ k) i j‖ ≤ c ^ k * ((N.map (‖·‖)) ^ k) i j ∧ 0 ≤ ((N.map (‖·‖)) ^ k) i j := by
@@ -1510,15 +1675,20 @@ private theorem norm_pow_apply_le {M N : Matrix n n ℂ} {c : ℝ} (hc : 0 ≤ c
     · rw [pow_succ, Matrix.mul_apply]
       exact Finset.sum_nonneg fun l _ => mul_nonneg (ih i l).2 (by rw [map_apply]; positivity)
 
-/-- [golub2013matrix] Theorem 7.2.3: let `Qᴴ A Q = diagonal d + N` for a unitary `Q`, and let
-`p ≥ 1` be such that the entrywise absolute value `|N|` satisfies `|N| ^ p = 0` (for a strictly
-upper triangular `N`, `p = n` always works; the book takes the least such `p`). If `μ` is an
-eigenvalue of `A + E`, then `|μ - d i| ≤ max θ θ^{1/p}` for some `i`, where
-`θ = ‖E‖₂ ∑_{k < p} ‖N‖₂ ^ k`. With `δ = min_i |μ - d_i| > 0`, the resolvent of `D + N` is the
-finite Neumann series `∑_{k<p} ((μ - D)⁻¹ N)^k (μ - D)⁻¹` (the entrywise bound
-`|((μ - D)⁻¹ N)^p| ≤ δ^{-p} |N|^p = 0`), so `‖(μ - A)⁻¹‖₂ ≤ ∑_{k<p} ‖N‖₂^k / δ^{k+1}` and
-`1 ≤ ‖(μ - A)⁻¹‖₂ ‖E‖₂` gives `δ ≤ θ` if `δ ≥ 1` and `δ^p ≤ θ` if `δ < 1`. The book's
-hypothesis that `N` be strictly upper triangular is not needed. -/
+/-- **Perturbation bound from a Schur form** ([golub2013matrix], Theorem 7.2.3). Let
+$A \in \mathbb{C}^{n \times n}$, let $Q$ be unitary with $Q^H A Q = \operatorname{diag}(d) + N$,
+and let $p \ge 1$ be such that the entrywise absolute value $|N|$ satisfies $|N|^p = 0$. Let
+$E \in \mathbb{C}^{n \times n}$, and let $\mu$ be an eigenvalue of $A + E$. Then for some $i$
+$$|\mu - d_i| \le \max\{\theta, \theta^{1/p}\}, \qquad \theta = \|E\|_2 \sum_{k=0}^{p-1}
+  \|N\|_2^k.$$
+
+The source assumes that $N$ is strictly upper triangular; this hypothesis is not needed. For a
+strictly upper triangular $N$, $p = n$ always works, and the source takes the least such $p$.
+With $\delta = \min_i |\mu - d_i| > 0$, the resolvent of $D + N$ is the finite Neumann series
+$\sum_{k<p} ((\mu - D)^{-1} N)^k (\mu - D)^{-1}$, by the entrywise bound $|((\mu - D)^{-1} N)^p|
+\le \delta^{-p} |N|^p = 0$. So $\|(\mu - A)^{-1}\|_2 \le \sum_{k<p} \|N\|_2^k / \delta^{k+1}$,
+and $1 \le \|(\mu - A)^{-1}\|_2 \|E\|_2$ gives $\delta \le \theta$ if $\delta \ge 1$, and
+$\delta^p \le \theta$ if $\delta < 1$. -/
 theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
     (hQ : Q ∈ unitaryGroup n ℂ) {d : n → ℂ} {N : Matrix n n ℂ}
     (hQA : star Q * A * Q = diagonal d + N) {p : ℕ} (hp : 1 ≤ p) (hN : (N.map (‖·‖)) ^ p = 0)
@@ -1647,12 +1817,16 @@ theorem exists_norm_sub_le_of_schur {A : Matrix n n ℂ} {Q : Matrix n n ℂ}
 
 end Schur
 
-/-- The block form of the residual bound ([golub2013matrix] Theorem 8.1.13, with the constant `1`
-in place of `√2`): let `A` and `S` be Hermitian, `Q₁ : Matrix n r 𝕜` have orthonormal columns
-(`Q₁ᴴ Q₁ = 1`) and `‖A Q₁ - Q₁ S‖₂ ≤ ε`. Then every eigenvalue `θ` of `S` has an eigenvalue `μ`
-of `A` with `|μ - θ| ≤ ε`: a unit eigenvector `y` of `S` gives the unit vector `x = Q₁ y` with
-`A x - θ x = (A Q₁ - Q₁ S) y`, and `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` does the
-rest. The book's paired form, with `√2 ε` and distinct eigenvalues of `A` for distinct `θ`, is
+/-- **The block residual bound** ([golub2013matrix], Theorem 8.1.13, with the constant $1$ in place
+of $\sqrt{2}$). Let $A \in \mathbb{K}^{n \times n}$ and $S \in \mathbb{K}^{r \times r}$ be
+Hermitian, let $Q_1 \in \mathbb{K}^{n \times r}$ have orthonormal columns, $Q_1^H Q_1 = I$, and
+let $\|AQ_1 - Q_1 S\|_2 \le \varepsilon$. Then for every eigenvalue $\theta$ of $S$ there is an
+eigenvalue $\mu$ of $A$ with $|\mu - \theta| \le \varepsilon$.
+
+The norm is `Matrix.lpOpNorm 2`. A unit eigenvector $y$ of $S$ for $\theta$ gives the unit
+vector $x = Q_1 y$ with $Ax - \theta x = (AQ_1 - Q_1 S) y$, and
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` gives the rest. The form of the source,
+with $\sqrt{2} \varepsilon$ and distinct eigenvalues of $A$ for the eigenvalues of $S$, is
 `Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`. -/
 theorem IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul {r : Type*} [Fintype r]
     [DecidableEq r] {A : Matrix n n 𝕜} {S : Matrix r r 𝕜} (hA : A.IsHermitian)
@@ -1695,17 +1869,23 @@ theorem IsHermitian.exists_mem_spectrum_abs_sub_le_of_mul_sub_mul {r : Type*} [F
   exact hε
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The paired block residual bound** ([golub2013matrix] Theorem 8.1.13): let `A` and `S` be
-Hermitian, `Q₁ : Matrix n r 𝕜` have orthonormal columns (`Q₁ᴴ Q₁ = 1`) and
-`‖A Q₁ - Q₁ S‖₂ ≤ ε`. Then the sorted eigenvalues of `S` are within `√2 ε` of distinct eigenvalues
-of `A`, taken in order: some order embedding `σ` has `|λ_{σ k}(A) - λ_k(S)| ≤ √2 ε`. With
-`F = A Q₁ - Q₁ S`, the Hermitian `B = A - F Q₁ᴴ - Q₁ Fᴴ + Q₁ (Fᴴ Q₁) Q₁ᴴ` has `B Q₁ = Q₁ S`, so the
-eigenvectors of `S` carried by `Q₁` are orthonormal eigenvectors of `B` and the sorted eigenvalues
-of `S` are a sublist of those of `B`
-(`LinearMap.IsSymmetric.exists_orderEmbedding_eigenvalues_eq`); and
-`(A - B) x = F Q₁ᴴ x + Q₁ Fᴴ (1 - Q₁ Q₁ᴴ) x` has norm at most `ε (‖P x‖ + ‖(1 - P) x‖) ≤ √2 ε ‖x‖`,
-`P` the projection onto the range of `Q₁` — the book's `‖E‖₂ ≤ √2 ‖E₁‖₂` — so Weyl's inequality
-compares the eigenvalues of `A` and `B` index by index. -/
+/-- **The paired block residual bound** ([golub2013matrix], Theorem 8.1.13). Let
+$A \in \mathbb{K}^{n \times n}$ and $S \in \mathbb{K}^{r \times r}$ be Hermitian, let
+$Q_1 \in \mathbb{K}^{n \times r}$ have orthonormal columns, $Q_1^H Q_1 = I$, and let
+$\|AQ_1 - Q_1 S\|_2 \le \varepsilon$. Let $\lambda_0(A) \ge \lambda_1(A) \ge \cdots$ and
+$\lambda_0(S) \ge \lambda_1(S) \ge \cdots$ be the sorted eigenvalues. Then there is a strictly
+increasing map $\sigma$ from the indices of $S$ to the indices of $A$ such that for every $k$
+$$|\lambda_{\sigma(k)}(A) - \lambda_k(S)| \le \sqrt{2} \, \varepsilon.$$
+
+The sorted eigenvalues are `Matrix.IsHermitian.eigenvalues₀`, and $\sigma$ is an order embedding
+`Fin (Fintype.card r) ↪o Fin (Fintype.card n)`. With $F = AQ_1 - Q_1 S$, the Hermitian matrix
+$B = A - F Q_1^H - Q_1 F^H + Q_1 (F^H Q_1) Q_1^H$ satisfies $BQ_1 = Q_1 S$. So the eigenvectors
+of $S$, carried by $Q_1$, are orthonormal eigenvectors of $B$, and the sorted eigenvalues of $S$
+are a sublist of those of $B$ (`LinearMap.IsSymmetric.exists_orderEmbedding_eigenvalues_eq`).
+Also $(A - B) x = F Q_1^H x + Q_1 F^H (1 - Q_1 Q_1^H) x$ has norm at most $\varepsilon (\|Px\| +
+\|(1 - P) x\|) \le \sqrt{2} \varepsilon \|x\|$, where $P$ is the orthogonal projection onto the
+range of $Q_1$; this is the bound $\|E\|_2 \le \sqrt{2} \|E_1\|_2$ of the source. Weyl's
+inequality then compares the eigenvalues of $A$ and $B$ index by index. -/
 theorem IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul {r : Type*} [Fintype r]
     [DecidableEq r] {A : Matrix n n 𝕜} {S : Matrix r r 𝕜} (hA : A.IsHermitian)
     (hS : S.IsHermitian) {Q₁ : Matrix n r 𝕜} (hQ : Q₁ᴴ * Q₁ = 1) {ε : ℝ}

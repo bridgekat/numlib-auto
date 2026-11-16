@@ -20,51 +20,57 @@ import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Numlib.Eigen.NumericalRange
 
 /-!
-# Spectral theory of bounded operators beyond Mathlib
+# Spectra of bounded operators: polynomials, the numerical range and isometries
 
-The operator-theoretic part of [brezis2011functional] §11.4 (Propositions 11.29, 11.32, 11.33,
-11.37 and Remark 1), in three groups.
+This module formalizes the operator-theoretic part of [brezis2011functional], §11.4: Propositions
+11.29, 11.32, 11.33 and 11.37, and Remark 1. The results fall into three groups. First, over an
+algebraically closed field, $\mu$ is an eigenvalue of $p(f)$ for a polynomial $p$ of positive degree
+if and only if $\mu = p(\nu)$ for an eigenvalue $\nu$ of $f$. Second, a bounded operator $T$ on a
+complex Hilbert space has its spectrum in the closure of its numerical range $W(T) = \{\langle u, Tu
+\rangle / \langle u, u \rangle : u \neq 0\}$, with the resolvent bound $\|(\lambda - T)^{-1}\| \le
+1/\operatorname{dist}(\lambda, W(T))$. Third, the eigenvalues of an isometry lie on the unit circle,
+a surjective isometry is unitary, and a non-surjective isometry of a complex Hilbert space has the
+closed unit disc as its spectrum.
 
-* **Eigenvalues under polynomials.** `Module.End.hasEigenvalue_aeval_iff`: over an algebraically
-  closed field, for a polynomial `p` of positive degree, `μ` is an eigenvalue of `p(f)` iff
-  `μ = p(ν)` for some eigenvalue `ν` of `f` — the `EV` half of [brezis2011functional]
-  Proposition 11.32, display (20). Mathlib has the inclusion `p(EV f) ⊆ EV(p(f))`
-  (`Module.End.aeval_apply_of_hasEigenvector`) and the spectrum half
-  (`spectrum.map_polynomial_aeval`), but not this. The converse is by induction on the degree,
-  splitting off one root factor `X - C ν` at a time: if `p(f)` kills `x ≠ 0` then either
-  `q(f) x ≠ 0` is an eigenvector of `f` for the root `ν` or `q(f)` kills `x`, with `p = (X - ν) q`.
-  The degree hypothesis is needed: for `p = C c` and `f` without eigenvalues (the right shift) the
-  left side is `c = μ` while the right side is empty.
-* **The numerical range** `W(T) = {⟪u, T u⟫ / ⟪u, u⟫ : u ≠ 0}` (the backbone's
-  `LinearMap.numericalRange`, convex by `LinearMap.convex_numericalRange`) on a complex Hilbert
-  space: the estimate `dist (λ, W(T)) ‖u‖ ≤ ‖T u - λ u‖`
-  (`ContinuousLinearMap.infDist_numericalRange_mul_norm_le_norm_sub_smul`), so that
-  `λ ∉ closure W(T)` puts `λ` in the resolvent set
-  (`ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange`, by Mathlib's
-  Lax–Milgram criterion `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`, which is
-  [brezis2011functional] Proposition 11.29) with the resolvent bound
-  `‖(T - λ)⁻¹‖ ≤ 1 / dist (λ, W(T))`
-  (`ContinuousLinearMap.norm_resolvent_le_inv_infDist_numericalRange`); hence
-  `σ(T) ⊆ closure W(T)` (`ContinuousLinearMap.spectrum_subset_closure_numericalRange`,
-  [brezis2011functional] Proposition 11.33). Remark 1 of that section,
-  `ContinuousLinearMap.exists_re_inner_smul_ge_of_norm_inner_ge`: the hypothesis
-  `|⟪u, T u⟫| ≥ α ‖u‖²` of the "more general" Lax–Milgram is the coercivity `re ⟪u, ξ T u⟫ ≥ α ‖u‖²`
-  after a rotation by a unit complex number `ξ`, obtained by projecting `0` onto the closed convex
-  set `closure W(T)`.
-* **Isometries** ([brezis2011functional] Proposition 11.37): the eigenvalues of an isometry lie on
-  the unit circle (`ContinuousLinearMap.norm_eq_one_of_hasEigenvalue_of_isometry`, over any normed
-  field); a surjective isometry of a Hilbert space is unitary
-  (`ContinuousLinearMap.mem_unitary_of_isometry_of_surjective`, so that Mathlib's
-  `spectrum.subset_circle_of_unitary` gives `σ(T) ⊆ S¹`); and a non-surjective isometry of a
-  complex Hilbert space has the whole closed unit disc as its spectrum
-  (`ContinuousLinearMap.spectrum_eq_closedBall_of_isometry_of_not_surjective`): for `|λ| < 1`,
-  `T - λ = (1 - λ T†) T` with `1 - λ T†` invertible, so `T - λ` invertible would make `T` onto.
+## Main results
 
-Conventions: Mathlib's inner product is conjugate-linear in the first slot, so the book's
-`(T u, u)` is `⟪u, T u⟫` here. The compact normal spectral theorem (Proposition 11.36) is
-`Numlib.Analysis.InnerProductSpace.CompactSpectral.Normal`, on the assembly lemma of
-`CompactSpectral.Basis`; the spectral radius material (Proposition 11.31) is
-`Numlib.Analysis.Normed.Algebra.SpectralRadius` and Mathlib.
+* `Module.End.exists_hasEigenvalue_isRoot_of_hasEigenvalue_aeval_zero`: if $0$ is an eigenvalue of
+  $p(f)$ for $p \neq 0$, then some root of $p$ is an eigenvalue of $f$.
+* `Module.End.hasEigenvalue_aeval_iff`: the spectral mapping theorem for eigenvalues,
+  [brezis2011functional], Proposition 11.32, display (20).
+* `ContinuousLinearMap.infDist_numericalRange_mul_norm_le_norm_sub_smul`:
+  $\operatorname{dist}(\lambda, W(T))\, \|u\| \le \|Tu - \lambda u\|$.
+* `ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange`: a point outside
+  $\overline{W(T)}$ is in the resolvent set.
+* `ContinuousLinearMap.spectrum_subset_closure_numericalRange`:
+  $\sigma(T) \subseteq \overline{W(T)}$, [brezis2011functional], Proposition 11.33.
+* `ContinuousLinearMap.norm_resolvent_le_inv_infDist_numericalRange`: $\|(\lambda - T)^{-1}\| \le
+  1/\operatorname{dist}(\lambda, W(T))$ for $\lambda \notin \overline{W(T)}$.
+* `ContinuousLinearMap.exists_re_inner_smul_ge_of_norm_inner_ge`: Remark 1 of
+  [brezis2011functional], §11.4; if $|\langle u, Tu \rangle| \ge \alpha \|u\|^2$, then a rotation
+  $\xi T$ with $|\xi| = 1$ is coercive.
+* `ContinuousLinearMap.norm_eq_one_of_hasEigenvalue_of_isometry`: the eigenvalues of an isometry
+  have modulus $1$.
+* `ContinuousLinearMap.mem_unitary_of_isometry_of_surjective`: a surjective isometry of a Hilbert
+  space is unitary.
+* `ContinuousLinearMap.spectrum_eq_closedBall_of_isometry_of_not_surjective`: a non-surjective
+  isometry of a complex Hilbert space has the closed unit disc as its spectrum.
+
+## Implementation notes
+
+* Mathlib's inner product is conjugate-linear in the first argument, so the expression $(Tu, u)$ of
+  the source is `⟪u, T u⟫` here.
+* The numerical range is `LinearMap.numericalRange` of `Numlib.Eigen.NumericalRange`, and it is
+  convex by `LinearMap.convex_numericalRange`.
+* Mathlib has the inclusion $p(\mathrm{EV}(f)) \subseteq \mathrm{EV}(p(f))$
+  (`Module.End.aeval_apply_of_hasEigenvector`) and the spectral mapping theorem for the spectrum
+  (`spectrum.map_polynomial_aeval`), but not the equality for eigenvalues.
+* Proposition 11.29 of [brezis2011functional] is Mathlib's Lax–Milgram criterion
+  `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`. Proposition 11.31 is in
+  `Numlib.Analysis.Normed.Algebra.SpectralRadius` and Mathlib. Proposition 11.36, the spectral
+  theorem for compact normal operators, is in
+  `Numlib.Analysis.InnerProductSpace.CompactSpectral.Normal`, which uses the assembly lemma of
+  `Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis`.
 -/
 
 open scoped InnerProductSpace
@@ -77,10 +83,12 @@ open Polynomial
 
 variable {K V : Type*} [Field K] [IsAlgClosed K] [AddCommGroup V] [Module K V]
 
-/-- If `0` is an eigenvalue of `p(f)` for a nonzero polynomial `p` over an algebraically closed
-field, some root of `p` is an eigenvalue of `f`: split off a root factor `p = (X - ν) q`; either
-`q(f) x` is a `ν`-eigenvector or `q(f)` already kills the eigenvector `x`, and induct on the
-degree. -/
+/-- Let $K$ be an algebraically closed field, $V$ a $K$-vector space, $f$ a linear endomorphism of
+$V$, and $p \in K[X]$ nonzero. If $0$ is an eigenvalue of $p(f)$, then some root $\nu$ of $p$ is
+an eigenvalue of $f$.
+
+Proof idea: split off a root factor $p = (X - \nu) q$. For an eigenvector $x$ of $p(f)$, either
+$q(f) x$ is an eigenvector of $f$ for $\nu$, or $q(f) x = 0$; induct on the degree. -/
 theorem exists_hasEigenvalue_isRoot_of_hasEigenvalue_aeval_zero (f : Module.End K V) (p : K[X])
     (hp : p ≠ 0) (h : (aeval f p).HasEigenvalue 0) : ∃ ν, f.HasEigenvalue ν ∧ p.IsRoot ν := by
   induction hn : p.natDegree using Nat.strong_induction_on generalizing p with
@@ -117,11 +125,14 @@ theorem exists_hasEigenvalue_isRoot_of_hasEigenvalue_aeval_zero (f : Module.End 
       rwa [map_sub, aeval_X, aeval_C, LinearMap.sub_apply, Module.algebraMap_end_apply,
         sub_eq_zero] at h1
 
-/-- **The spectral mapping theorem for eigenvalues** ([brezis2011functional] Proposition 11.32,
-display (20)): over an algebraically closed field, for a polynomial `p` of positive degree, `μ` is
-an eigenvalue of `p(f)` iff `μ = p(ν)` for some eigenvalue `ν` of `f`. The degree hypothesis is
-needed: for `p = C c` and `f` without eigenvalues the left side is `c = μ` and the right side
-is empty. -/
+/-- **The spectral mapping theorem for eigenvalues.** Let $K$ be an algebraically closed field, $f$
+a linear endomorphism of a $K$-vector space, and $p \in K[X]$ of positive degree. Then
+$\mu \in K$ is an eigenvalue of $p(f)$ if and only if $\mu = p(\nu)$ for some eigenvalue $\nu$
+of $f$. This is Proposition 11.32, display (20), of [brezis2011functional].
+
+The degree hypothesis is needed. For a constant polynomial $p = c$ and an $f$ without
+eigenvalues, such as the right shift, $\mu = c$ is an eigenvalue of $p(f) = c$, but no
+eigenvalue $\nu$ of $f$ exists. -/
 theorem hasEigenvalue_aeval_iff (f : Module.End K V) {p : K[X]} (hp : 0 < p.degree) (μ : K) :
     (aeval f p).HasEigenvalue μ ↔ ∃ ν, f.HasEigenvalue ν ∧ p.eval ν = μ := by
   constructor
@@ -156,13 +167,15 @@ section NumericalRange
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
 
-/-- `⟪x, T x - λ x⟫ = (⟪x, T x⟫ / ⟪x, x⟫ - λ) ⟪x, x⟫` for `x ≠ 0`. -/
+/-- For $x \neq 0$, $\langle x, Tx - \lambda x \rangle = (\langle x, Tx \rangle / \langle x, x
+\rangle - \lambda)\, \langle x, x \rangle$. -/
 private theorem inner_sub_smul_eq (T : H →L[ℂ] H) (lam : ℂ) {x : H} (hx : x ≠ 0) :
     ⟪x, T x - lam • x⟫_ℂ = (⟪x, T x⟫_ℂ / ⟪x, x⟫_ℂ - lam) * ⟪x, x⟫_ℂ := by
   have hxx : ⟪x, x⟫_ℂ ≠ 0 := inner_self_ne_zero.2 hx
   rw [inner_sub_right, inner_smul_right, sub_mul, div_mul_cancel₀ _ hxx]
 
-/-- `‖⟪x, T x - λ x⟫‖ = ‖⟪x, T x⟫ / ⟪x, x⟫ - λ‖ ‖x‖ ^ 2` for `x ≠ 0`. -/
+/-- For $x \neq 0$, $|\langle x, Tx - \lambda x \rangle| = |\langle x, Tx \rangle / \langle x, x
+\rangle - \lambda|\, \|x\|^2$. -/
 private theorem norm_inner_sub_smul (T : H →L[ℂ] H) (lam : ℂ) {x : H} (hx : x ≠ 0) :
     ‖⟪x, T x - lam • x⟫_ℂ‖ = ‖⟪x, T x⟫_ℂ / ⟪x, x⟫_ℂ - lam‖ * ‖x‖ ^ 2 := by
   have h : ‖⟪x, x⟫_ℂ‖ = ‖x‖ ^ 2 := by
@@ -174,10 +187,16 @@ private theorem div_inner_mem_numericalRange (T : H →L[ℂ] H) {x : H} (hx : x
     ⟪x, T x⟫_ℂ / ⟪x, x⟫_ℂ ∈ (T : H →ₗ[ℂ] H).numericalRange :=
   ⟨x, hx, rfl⟩
 
-/-- The estimate inside [brezis2011functional] Proposition 11.33:
-`dist (λ, W(T)) ‖u‖ ≤ ‖T u - λ u‖` for every `u`, where `W(T)` is the numerical range. For
-`u ≠ 0` the Rayleigh quotient `z = ⟪u, T u⟫ / ⟪u, u⟫` lies in `W(T)` and
-`‖z - λ‖ ‖u‖ ^ 2 = ‖⟪u, T u - λ u⟫‖ ≤ ‖u‖ ‖T u - λ u‖`. No completeness is needed. -/
+/-- Let $H$ be a complex inner product space, let $T$ be a bounded operator on $H$ with numerical
+range $W(T) = \{\langle u, Tu \rangle / \langle u, u \rangle : u \neq 0\}$, and let
+$\lambda \in \mathbb{C}$. Then for every $u \in H$,
+$$\operatorname{dist}(\lambda, W(T))\, \|u\| \le \|Tu - \lambda u\|.$$
+This is the estimate in the proof of Proposition 11.33 of [brezis2011functional].
+
+No completeness is needed. For $u \neq 0$ the Rayleigh quotient $z = \langle u, Tu \rangle /
+\langle u, u \rangle$ lies in $W(T)$, and $|z - \lambda|\, \|u\|^2 = |\langle u, Tu - \lambda u
+\rangle| \le \|u\|\, \|Tu - \lambda u\|$. The distance is `Metric.infDist`, which is $0$ when
+$W(T)$ is empty, that is, when $H = 0$. -/
 theorem infDist_numericalRange_mul_norm_le_norm_sub_smul (T : H →L[ℂ] H) (lam : ℂ) (u : H) :
     Metric.infDist lam (T : H →ₗ[ℂ] H).numericalRange * ‖u‖ ≤ ‖T u - lam • u‖ := by
   rcases eq_or_ne u 0 with rfl | hu
@@ -201,11 +220,15 @@ theorem infDist_numericalRange_mul_norm_le_norm_sub_smul (T : H →L[ℂ] H) (la
 
 variable [CompleteSpace H]
 
-/-- **[brezis2011functional] Proposition 11.33, first clause**: a point outside the closure of
-the numerical range is in the resolvent set. With `α = dist (λ, W(T)) > 0`,
-`‖⟪u, (T - λ) u⟫‖ ≥ α ‖u‖ ^ 2` for all `u`, so `T - λ` is invertible by the Lax–Milgram criterion
-`ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map` ([brezis2011functional] Proposition
-11.29). -/
+/-- Let $H$ be a complex Hilbert space and $T$ a bounded operator on $H$. If
+$\lambda \in \mathbb{C}$ does not lie in the closure of the numerical range $W(T)$, then
+$\lambda$ is in the resolvent set of $T$. This is the first clause of Proposition 11.33 of
+[brezis2011functional].
+
+With $\alpha = \operatorname{dist}(\lambda, W(T)) > 0$, every $u$ satisfies $|\langle u, (T -
+\lambda) u \rangle| \ge \alpha \|u\|^2$. So $T - \lambda$ is invertible by the Lax–Milgram
+criterion `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`, which is Proposition 11.29
+of [brezis2011functional]. -/
 theorem mem_resolventSet_of_notMem_closure_numericalRange (T : H →L[ℂ] H) {lam : ℂ}
     (h : lam ∉ closure (T : H →ₗ[ℂ] H).numericalRange) : lam ∈ resolventSet ℂ T := by
   rw [spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one]
@@ -238,8 +261,12 @@ theorem mem_resolventSet_of_notMem_closure_numericalRange (T : H →L[ℂ] H) {l
     _ = ‖⟪(T - lam • (1 : H →L[ℂ] H)) x, x⟫_ℂ‖ := by
         rw [norm_inner_symm, sub_apply, smul_apply, one_apply_eq_self]
 
-/-- **[brezis2011functional] Proposition 11.33, display (23)**: the spectrum lies in the closure
-of the numerical range, `σ(T) ⊆ closure W(T)`. The convexity clause of that proposition is
+/-- Let $H$ be a complex Hilbert space and $T$ a bounded operator on $H$. Then the spectrum lies in
+the closure of the numerical range:
+$$\sigma(T) \subseteq \overline{W(T)}.$$
+This is display (23) of Proposition 11.33 of [brezis2011functional].
+
+The convexity of $W(T)$, the other clause of that proposition, is
 `LinearMap.convex_numericalRange`. -/
 theorem spectrum_subset_closure_numericalRange (T : H →L[ℂ] H) :
     spectrum ℂ T ⊆ closure (T : H →ₗ[ℂ] H).numericalRange := by
@@ -249,10 +276,14 @@ theorem spectrum_subset_closure_numericalRange (T : H →L[ℂ] H) :
     (spectrum.mem_resolventSet_iff.1 (mem_resolventSet_of_notMem_closure_numericalRange T h))
 
 omit [CompleteSpace H] in
-/-- The resolvent bound of [brezis2011functional] Proposition 11.33 in pointwise form: for `λ` in
-the resolvent set, `dist (λ, W(T)) ‖(λ - T)⁻¹ v‖ ≤ ‖v‖` for every `v`, where `(λ - T)⁻¹` is
-Mathlib's `resolvent T λ`. This is `infDist_numericalRange_mul_norm_le_norm_sub_smul` at
-`u = (λ - T)⁻¹ v`. -/
+/-- Let $H$ be a complex inner product space, let $T$ be a bounded operator on $H$, and let
+$\lambda$ be in the resolvent set of $T$. Then for every $v \in H$,
+$$\operatorname{dist}(\lambda, W(T))\, \|(\lambda - T)^{-1} v\| \le \|v\|.$$
+This is the resolvent bound of Proposition 11.33 of [brezis2011functional], in pointwise form.
+
+Here $(\lambda - T)^{-1}$ is Mathlib's `resolvent T lam`. The proof applies
+`ContinuousLinearMap.infDist_numericalRange_mul_norm_le_norm_sub_smul` to
+$u = (\lambda - T)^{-1} v$. -/
 theorem infDist_numericalRange_mul_norm_resolvent_apply_le (T : H →L[ℂ] H) {lam : ℂ}
     (hlam : lam ∈ resolventSet ℂ T) (v : H) :
     Metric.infDist lam (T : H →ₗ[ℂ] H).numericalRange * ‖resolvent T lam v‖ ≤ ‖v‖ := by
@@ -268,8 +299,10 @@ theorem infDist_numericalRange_mul_norm_resolvent_apply_le (T : H →L[ℂ] H) {
     rw [← neg_sub, h3]
   rwa [h2, norm_neg] at h
 
-/-- **[brezis2011functional] Proposition 11.33, second clause**: for `λ ∉ closure W(T)`,
-`‖(λ - T)⁻¹‖ ≤ 1 / dist (λ, W(T))`. -/
+/-- Let $H$ be a complex Hilbert space, let $T$ be a bounded operator on $H$, and let
+$\lambda \in \mathbb{C}$ lie outside the closure of the numerical range $W(T)$. Then
+$$\|(\lambda - T)^{-1}\| \le \frac{1}{\operatorname{dist}(\lambda, W(T))}.$$
+This is the second clause of Proposition 11.33 of [brezis2011functional]. -/
 theorem norm_resolvent_le_inv_infDist_numericalRange (T : H →L[ℂ] H) {lam : ℂ}
     (h : lam ∉ closure (T : H →ₗ[ℂ] H).numericalRange) :
     ‖resolvent T lam‖ ≤ (Metric.infDist lam (T : H →ₗ[ℂ] H).numericalRange)⁻¹ := by
@@ -290,12 +323,19 @@ theorem norm_resolvent_le_inv_infDist_numericalRange (T : H →L[ℂ] H) {lam : 
     exact hv
 
 omit [CompleteSpace H] in
-/-- **[brezis2011functional] §11.4, Remark 1**: if `|⟪u, T u⟫| ≥ α ‖u‖ ^ 2` for all `u` with
-`α > 0`, then after a rotation by a unit complex number `ξ` the operator `ξ T` is coercive,
-`re ⟪u, ξ T u⟫ ≥ α ‖u‖ ^ 2`. The numerical range is convex (Toeplitz–Hausdorff,
-`LinearMap.convex_numericalRange`) and at distance at least `α` from `0`; if `p` is the
-projection of `0` onto its closure, `ξ = conj p / ‖p‖` and the variational inequality of the
-projection gives `re (ξ w) ≥ ‖p‖ ≥ α` for every `w` in the numerical range. -/
+/-- Let $H$ be a complex inner product space, let $T$ be a bounded operator on $H$, and let
+$\alpha > 0$ satisfy $|\langle u, Tu \rangle| \ge \alpha \|u\|^2$ for all $u \in H$. Then there
+is $\xi \in \mathbb{C}$ with $|\xi| = 1$ such that $\xi T$ is coercive:
+$$\operatorname{Re} \langle u, \xi T u \rangle \ge \alpha \|u\|^2 \qquad \text{for all } u \in
+  H.$$
+This is Remark 1 of [brezis2011functional], §11.4: the hypothesis of the more general
+Lax–Milgram theorem becomes coercivity after a rotation.
+
+Proof idea: the numerical range is convex (the Toeplitz–Hausdorff theorem,
+`LinearMap.convex_numericalRange`) and has distance at least $\alpha$ from $0$. Let $p$ be the
+projection of $0$ onto its closure, and let $\xi = \bar{p}/|p|$. The variational inequality of
+the projection gives $\operatorname{Re}(\xi w) \ge |p| \ge \alpha$ for every $w$ in the
+numerical range. -/
 theorem exists_re_inner_smul_ge_of_norm_inner_ge (T : H →L[ℂ] H) {α : ℝ} (hα : 0 < α)
     (h : ∀ u, α * ‖u‖ ^ 2 ≤ ‖⟪u, T u⟫_ℂ‖) :
     ∃ ξ : ℂ, ‖ξ‖ = 1 ∧ ∀ u, α * ‖u‖ ^ 2 ≤ RCLike.re ⟪u, (ξ • T) u⟫_ℂ := by
@@ -365,9 +405,12 @@ end NumericalRange
 
 section Isometry
 
-/-- **[brezis2011functional] Proposition 11.37, first clause**: the eigenvalues of an isometry lie
-on the unit circle, `EV(T) ⊆ S¹`, over any normed field: from an eigenvector `u ≠ 0`,
-`‖u‖ = ‖T u‖ = ‖μ‖ ‖u‖`. -/
+/-- Let $\mathbb{K}$ be a normed field, $X$ a normed space over $\mathbb{K}$, and $T$ a bounded
+operator on $X$ that is an isometry. Every eigenvalue $\mu$ of $T$ satisfies $|\mu| = 1$. This
+is the first clause of Proposition 11.37 of [brezis2011functional],
+$\mathrm{EV}(T) \subseteq S^1$.
+
+For an eigenvector $u \neq 0$, $\|u\| = \|Tu\| = |\mu|\, \|u\|$. -/
 theorem norm_eq_one_of_hasEigenvalue_of_isometry {𝕜 X : Type*} [NormedField 𝕜]
     [NormedAddCommGroup X] [NormedSpace 𝕜 X] {T : X →L[𝕜] X} (hT : Isometry T) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (T : Module.End 𝕜 X) μ) : ‖μ‖ = 1 := by
@@ -380,10 +423,13 @@ theorem norm_eq_one_of_hasEigenvalue_of_isometry {𝕜 X : Type*} [NormedField �
 
 variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H]
 
-/-- A surjective isometry of a Hilbert space is unitary: `T† T = 1` is
-`ContinuousLinearMap.isometry_iff_adjoint_comp_self`, and `T T† = 1` follows on the range of `T`,
-which is everything. With Mathlib's `spectrum.subset_circle_of_unitary` this is
-[brezis2011functional] Proposition 11.37, second clause: `σ(T) ⊆ S¹` for unitary `T`. -/
+/-- Let $H$ be a Hilbert space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T$ be a
+bounded operator on $H$ that is a surjective isometry. Then $T$ is unitary: $T^* T = T T^* = 1$.
+
+The identity $T^* T = 1$ is `ContinuousLinearMap.isometry_iff_adjoint_comp_self`, and
+$T T^* = 1$ follows on the range of $T$, which is all of $H$. Together with Mathlib's
+`spectrum.subset_circle_of_unitary`, this gives the second clause of Proposition 11.37 of
+[brezis2011functional]: $\sigma(T) \subseteq S^1$. -/
 theorem mem_unitary_of_isometry_of_surjective {T : H →L[𝕜] H} (hT : Isometry T)
     (hs : Function.Surjective T) : T ∈ unitary (H →L[𝕜] H) := by
   have h1 : adjoint T ∘L T = 1 := (isometry_iff_adjoint_comp_self T).1 hT
@@ -402,11 +448,15 @@ section IsometryComplex
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
 
-/-- **[brezis2011functional] Proposition 11.37, third clause**: a non-surjective isometry of a
-complex Hilbert space has the whole closed unit disc as its spectrum. `‖T‖ ≤ 1` gives
-`σ(T) ⊆ closedBall 0 1`; for `‖λ‖ < 1`, `T - λ = (1 - λ T†) T` with `1 - λ T†` invertible
-(`Units.oneSub`), so `T - λ` invertible would make `T` invertible, hence onto; the spectrum is
-closed, so it contains the closure of the open disc. -/
+/-- Let $H$ be a complex Hilbert space, and let $T$ be a bounded operator on $H$ that is an isometry
+but is not surjective. Then the spectrum of $T$ is the closed unit disc:
+$$\sigma(T) = \{\lambda \in \mathbb{C} : |\lambda| \le 1\}.$$
+This is the third clause of Proposition 11.37 of [brezis2011functional].
+
+Proof idea: $\|T\| \le 1$ gives $\sigma(T) \subseteq \{|\lambda| \le 1\}$. For $|\lambda| < 1$,
+$T - \lambda = (1 - \lambda T^*) T$ with $1 - \lambda T^*$ invertible, so if $T - \lambda$ were
+invertible, then $T$ would be invertible and hence onto. The spectrum is closed, so it contains
+the closure of the open disc. -/
 theorem spectrum_eq_closedBall_of_isometry_of_not_surjective {T : H →L[ℂ] H} (hT : Isometry T)
     (hs : ¬ Function.Surjective T) : spectrum ℂ T = Metric.closedBall 0 1 := by
   have hnorm : ∀ x, ‖T x‖ = ‖x‖ := (AddMonoidHomClass.isometry_iff_norm T).1 hT

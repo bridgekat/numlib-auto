@@ -14,44 +14,53 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # The CS decomposition
 
-The blocks of a matrix with orthonormal columns, and of a unitary matrix partitioned into 2-by-2
-blocks, have simultaneously diagonalizable SVDs: the *cosine–sine* (CS) decomposition
-([golub2013matrix] §2.5.4, Theorems 2.5.2 and 2.5.3, after C. C. Paige and M. A. Saunders,
-SIAM J. Numer. Anal. 18 (1981)).
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$. The blocks of a matrix with orthonormal columns,
+and the blocks of a unitary matrix partitioned into $2 \times 2$ blocks, have singular value
+decompositions with common unitary factors. This is the **cosine–sine (CS) decomposition** of
+[golub2013matrix], §2.5.4, Theorems 2.5.2 and 2.5.3, after C. C. Paige and M. A. Saunders, *Towards
+a generalized singular value decomposition*, SIAM J. Numer. Anal. 18 (1981).
+
+For the thin form, let $Q_1 \in \mathbb{K}^{m_1 \times n_1}$ and
+$Q_2 \in \mathbb{K}^{m_2 \times n_1}$ with $Q_1^H Q_1 + Q_2^H Q_2 = I$ and $n_1 \le m_1$. Then there
+are unitary $U_1$, $U_2$, $V$ and angles $0 \le \theta_0 \le \theta_1 \le \dots \le \pi/2$ with
+$U_1^H Q_1 V = \operatorname{diag}(\cos \theta)$ and
+$U_2^H Q_2 V = \operatorname{diag}(\sin \theta)$, where the sine block is shifted by
+$p = n_1 - \min(n_1, m_2)$ columns when $Q_2$ has fewer rows than columns. The full form decomposes
+all four blocks of a unitary matrix in this way. The module also proves that the two off-diagonal
+blocks of a unitary matrix have equal $2$-norms.
 
 ## Main definitions
 
-* `Matrix.IsThinCSD Q₁ Q₂ U₁ U₂ V θ`: a thin CS decomposition of the stacked matrix `[Q₁; Q₂]`:
-  unitary `U₁`, `U₂`, `V` and angles `0 ≤ θ₀ ≤ θ₁ ≤ ⋯ ≤ π/2` with `U₁ᴴ Q₁ V = diag(cos θ)` and
-  `U₂ᴴ Q₂ V = diag(sin θ)`, the latter shifted by `p = n₁ − min n₁ m₂` columns when `Q₂` has fewer
-  rows than columns.
-* `Matrix.IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ`: a CS decomposition of the unitary matrix
-  `fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂`, in the 5-by-5 block form of [golub2013matrix] Theorem 2.5.3; it
-  extends the thin CS decomposition `Matrix.IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ` of the first block column.
-
-The field names follow the two-sided factorizations (`Matrix.IsUnitaryEquiv`): *left* and *right*
-name the side of the factored block, the subscripts the block row or column (`U₁`, `U₂` on the
-left, `V₁`, `V₂` on the right), and `star_mul_mul₁` … `star_mul_mul₂₂` the blocks
-(`Matrix.IsThinCSD.isUnitaryEquiv₁`, `Matrix.IsThinCSD.isUnitaryEquiv₂` package the two blocks of
-a thin CS decomposition as unitary equivalences).
+* `Matrix.IsThinCSD`: a thin CS decomposition of the stacked matrix
+  $\begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$.
+* `Matrix.csdUpperRight`: the shape of the upper right block of a CS decomposition.
+* `Matrix.IsCSD`: a CS decomposition of the unitary matrix $\begin{bmatrix} Q_{11} & Q_{12} \\
+  Q_{21} & Q_{22} \end{bmatrix}$, in the $5 \times 5$ block form of Theorem 2.5.3 of
+  [golub2013matrix]. It extends the thin CS decomposition of the first block column.
 
 ## Main results
 
-* `Matrix.exists_isThinCSD`: [golub2013matrix] Theorem 2.5.2, without its hypothesis `m₂ ≥ n₁`.
-* `Matrix.exists_isCSD`: [golub2013matrix] Theorem 2.5.3.
+* `Matrix.exists_isThinCSD`: Theorem 2.5.2 of [golub2013matrix], without its hypothesis
+  $m_2 \ge n_1$.
+* `Matrix.exists_isCSD`: Theorem 2.5.3 of [golub2013matrix], without its hypothesis $m_2 \le m_1$.
+* `Matrix.l2_opNorm_toBlocks₂₁_eq_toBlocks₁₂`: the off-diagonal blocks $Q_{21}$ and $Q_{12}$ of a
+  unitary matrix have equal $2$-norms.
 
 ## Implementation notes
 
-The shapes are `Fin` so that the diagonal factors are `Matrix.rectDiagonal` and
-`Matrix.shiftedRectDiagonal` of a function `ℕ → 𝕜`, as in `Matrix.exists_svd`; one monotone
-`θ : ℕ → ℝ` carries the angles (a monotone extension past `n₁` always exists). "The columns of
-`[Q₁; Q₂]` are orthonormal" is `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1`. When `m₂ < n₁` at least `p = n₁ − m₂` of the
-cosines equal `1`: the nonzero columns of `Q₂ V` are orthogonal vectors of `𝕜^{m₂}`.
-
-## References
-
-* [golub2013matrix] §2.5.4; C. C. Paige, M. A. Saunders, *Towards a generalized singular value
-  decomposition*, SIAM J. Numer. Anal. 18 (1981).
+* The shapes are indexed by `Fin`, so that the diagonal factors are `Matrix.rectDiagonal` and
+  `Matrix.shiftedRectDiagonal` of a function on the natural numbers, as in `Matrix.exists_svd`.
+  One monotone function $\theta \colon \mathbb{N} \to \mathbb{R}$ carries the angles; a monotone
+  extension past $n_1$ always exists.
+* "The columns of $\begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$ are orthonormal" is
+  $Q_1^H Q_1 + Q_2^H Q_2 = I$.
+* When $m_2 < n_1$, at least $p = n_1 - m_2$ of the cosines equal $1$, because the nonzero columns
+  of $Q_2 V$ are orthogonal vectors of $\mathbb{K}^{m_2}$.
+* The field names follow the two-sided factorizations of `Matrix.IsUnitaryEquiv`. The words *left*
+  and *right* name the side of the factored block, the subscripts name the block row or column
+  ($U_1$, $U_2$ on the left, $V_1$, $V_2$ on the right), and `star_mul_mul₁` to `star_mul_mul₂₂`
+  name the blocks. `Matrix.IsThinCSD.isUnitaryEquiv₁` and `Matrix.IsThinCSD.isUnitaryEquiv₂` package
+  the two blocks of a thin CS decomposition as unitary equivalences.
 -/
 
 open scoped ComplexOrder
@@ -64,57 +73,72 @@ section Thin
 
 variable {m₁ m₂ n₁ : ℕ}
 
-/-- **A thin CS decomposition, as a specification** ([golub2013matrix] Theorem 2.5.2, without its
-hypothesis `m₂ ≥ n₁`): unitary `U₁`, `U₂`, `V` and monotone angles `θ i ∈ [0, π/2]`, the first
-`p = n₁ − min n₁ m₂` of them `0`, with `U₁ᴴ Q₁ V = rectDiagonal (cos θ)` and
-`U₂ᴴ Q₂ V = shiftedRectDiagonal p (sin θ)`. For `m₂ ≥ n₁` (the book's case) `p = 0` and the sine
-block is `rectDiagonal` (`Matrix.shiftedRectDiagonal_zero`). -/
+/-- **A thin CS decomposition** ([golub2013matrix], Theorem 2.5.2, without its hypothesis
+$m_2 \ge n_1$). Let $Q_1 \in \mathbb{K}^{m_1 \times n_1}$ and
+$Q_2 \in \mathbb{K}^{m_2 \times n_1}$, and let $p = n_1 - \min(n_1, m_2)$. A thin CS
+decomposition of $\begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$ consists of unitary matrices $U_1$
+of order $m_1$, $U_2$ of order $m_2$ and $V$ of order $n_1$, and a monotone sequence of angles
+$\theta_i \in [0, \pi/2]$ with $\theta_i = 0$ for $i < p$, such that
+$$U_1^H Q_1 V = \operatorname{diag}(\cos \theta_i), \qquad U_2^H Q_2 V = S_p,$$
+where $\operatorname{diag}(\cos \theta_i)$ is the rectangular diagonal matrix with
+$\cos \theta_i$ at $(i, i)$, and $S_p$ has $\sin \theta_j$ at $(j - p, j)$ for $j \ge p$ and $0$
+elsewhere.
+
+For $m_2 \ge n_1$, the case of the source, $p = 0$ and the sine block is the rectangular
+diagonal matrix (`Matrix.shiftedRectDiagonal_zero`). The two blocks are `Matrix.rectDiagonal`
+and `Matrix.shiftedRectDiagonal p` of the sequences $\cos \theta$ and $\sin \theta$. -/
 structure IsThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜)
     (U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜) (U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜)
     (V : Matrix (Fin n₁) (Fin n₁) 𝕜) (θ : ℕ → ℝ) : Prop where
-  /-- The first left factor is unitary. -/
+  /-- The first left factor $U_1$ is unitary. -/
   mem_unitaryGroup_left₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜
-  /-- The second left factor is unitary. -/
+  /-- The second left factor $U_2$ is unitary. -/
   mem_unitaryGroup_left₂ : U₂ ∈ unitaryGroup (Fin m₂) 𝕜
-  /-- The right factor is unitary. -/
+  /-- The right factor $V$ is unitary. -/
   mem_unitaryGroup_right : V ∈ unitaryGroup (Fin n₁) 𝕜
-  /-- The angles are sorted. -/
+  /-- The angles are sorted: $\theta$ is monotone. -/
   monotone : Monotone θ
-  /-- The angles lie in `[0, π/2]`. -/
+  /-- Every angle lies in $[0, \pi/2]$. -/
   mem_Icc : ∀ i, θ i ∈ Set.Icc 0 (Real.pi / 2)
-  /-- The first `p = n₁ − min n₁ m₂` angles vanish. -/
+  /-- The first $p = n_1 - \min(n_1, m_2)$ angles are $0$. -/
   eq_zero_of_lt : ∀ i < n₁ - min n₁ m₂, θ i = 0
-  /-- The cosine block `U₁ᴴ Q₁ V`. -/
+  /-- The cosine block: $U_1^H Q_1 V = \operatorname{diag}(\cos \theta_i)$. -/
   star_mul_mul₁ : star U₁ * Q₁ * V = rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)
-  /-- The sine block `U₂ᴴ Q₂ V`. -/
+  /-- The sine block: $U_2^H Q_2 V$ has $\sin \theta_j$ at $(j - p, j)$ for $j \ge p$ and $0$
+  elsewhere. -/
   star_mul_mul₂ :
     star U₂ * Q₂ * V = shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜)
 
 variable {Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜}
 
-/-- The cosine block of a thin CS decomposition as a two-sided unitary equivalence. -/
+/-- The cosine block of a thin CS decomposition is a two-sided unitary equivalence: $U_1^H Q_1 V =
+\operatorname{diag}(\cos \theta_i)$ with $U_1$ and $V$ unitary. -/
 theorem IsThinCSD.isUnitaryEquiv₁ {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
     IsUnitaryEquiv Q₁ U₁ (rectDiagonal fun i => ((Real.cos (θ i) : ℝ) : 𝕜)) V :=
   ⟨h.mem_unitaryGroup_left₁, h.mem_unitaryGroup_right, h.star_mul_mul₁⟩
 
-/-- The sine block of a thin CS decomposition as a two-sided unitary equivalence. -/
+/-- The sine block of a thin CS decomposition is a two-sided unitary equivalence:
+$U_2^H Q_2 V = S_p$ with $U_2$ and $V$ unitary. -/
 theorem IsThinCSD.isUnitaryEquiv₂ {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) :
     IsUnitaryEquiv Q₂ U₂
       (shiftedRectDiagonal (n₁ - min n₁ m₂) fun i => ((Real.sin (θ i) : ℝ) : 𝕜)) V :=
   ⟨h.mem_unitaryGroup_left₂, h.mem_unitaryGroup_right, h.star_mul_mul₂⟩
 
-/-- The angles of a thin CS decomposition have nonnegative cosines. -/
+/-- The angles of a thin CS decomposition have nonnegative cosines: $\cos \theta_i \ge 0$ for every
+$i$. -/
 theorem IsThinCSD.cos_nonneg {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) (i : ℕ) :
     0 ≤ Real.cos (θ i) :=
   Real.cos_nonneg_of_mem_Icc ⟨by linarith [(h.mem_Icc i).1, Real.pi_pos], (h.mem_Icc i).2⟩
 
-/-- The angles of a thin CS decomposition have nonnegative sines. -/
+/-- The angles of a thin CS decomposition have nonnegative sines: $\sin \theta_i \ge 0$ for every
+$i$. -/
 theorem IsThinCSD.sin_nonneg {U₁ U₂ V θ} (h : IsThinCSD Q₁ Q₂ U₁ U₂ V θ) (i : ℕ) :
     0 ≤ Real.sin (θ i) :=
   Real.sin_nonneg_of_nonneg_of_le_pi (h.mem_Icc i).1 (by linarith [(h.mem_Icc i).2, Real.pi_pos])
 
-/-- The Gram matrix of `Q₂ V` in the proof of the thin CS decomposition: if `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1`
-and `U₁ᴴ Q₁ V = diag(c)` with `n₁ ≤ m₁`, then `(Q₂ V)ᴴ (Q₂ V) = diag(1 − |c_j|²)`. -/
+/-- If $Q_1^H Q_1 + Q_2^H Q_2 = I$, $n_1 \le m_1$, $U_1$ and $V$ are unitary and
+$U_1^H Q_1 V = \operatorname{diag}(c)$, then $(Q_2 V)^H (Q_2 V) = \operatorname{diag}(1 -
+c_j^2)$. -/
 private theorem gram_mul_eq_diagonal (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) (hnm : n₁ ≤ m₁)
     {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {V : Matrix (Fin n₁) (Fin n₁) 𝕜}
     (hU₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜) (hV : V ∈ unitaryGroup (Fin n₁) 𝕜) {c : ℕ → ℝ}
@@ -137,13 +161,18 @@ private theorem gram_mul_eq_diagonal (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) 
   rw [ite_eq_left (lt_of_lt_of_le j.isLt hnm)]
   simp [sq]
 
-/-- **The thin CS decomposition** ([golub2013matrix] Theorem 2.5.2, without its hypothesis
-`m₂ ≥ n₁`): if `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1` and `n₁ ≤ m₁`, then `[Q₁; Q₂]` has a thin CS decomposition.
-Following the book: an SVD `U₁ᴴ Q₁ V = diag(c)` has `1 ≥ c₀ ≥ ⋯ ≥ 0`; the columns of `Q₂ V` are
-pairwise orthogonal with squared norms `1 − c_j²`, so at most `m₂` of them are nonzero, whence the
-first `p = n₁ − min n₁ m₂` cosines are `1`; the normalized nonzero columns, placed at the positions
-`j − p`, extend to a unitary `U₂` (`Matrix.exists_mem_unitaryGroup_submatrix_eq`), and
-`θ_j = arccos c_j`. -/
+/-- **The thin CS decomposition** ([golub2013matrix], Theorem 2.5.2). Let
+$Q_1 \in \mathbb{K}^{m_1 \times n_1}$ and $Q_2 \in \mathbb{K}^{m_2 \times n_1}$ with
+$$Q_1^H Q_1 + Q_2^H Q_2 = I \qquad \text{and} \qquad n_1 \le m_1.$$
+Then $\begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$ has a thin CS decomposition in the sense of
+`Matrix.IsThinCSD`.
+
+The source also assumes $m_2 \ge n_1$; the statement here does not need it. The proof follows
+the source. A singular value decomposition $U_1^H Q_1 V = \operatorname{diag}(c)$ has
+$1 \ge c_0 \ge \dots \ge 0$. The columns of $Q_2 V$ are pairwise orthogonal with squared norms
+$1 - c_j^2$, so at most $m_2$ of them are nonzero, and the first $p$ cosines are $1$. The
+normalized nonzero columns, placed at the positions $j - p$, extend to a unitary $U_2$
+(`Matrix.exists_mem_unitaryGroup_submatrix_eq`), and $\theta_j = \arccos c_j$. -/
 theorem exists_isThinCSD (Q₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₂ : Matrix (Fin m₂) (Fin n₁) 𝕜)
     (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) (hnm : n₁ ≤ m₁) :
     ∃ U₁ U₂ V θ, IsThinCSD Q₁ Q₂ U₁ U₂ V θ := by
@@ -289,10 +318,14 @@ end Thin
 
 section Full
 
-/-- **The upper right block of a CS decomposition** ([golub2013matrix] Theorem 2.5.3): `s_i` at
-`(i, i − p)` for `p ≤ i < n₁`, and an identity block from `(n₁, n₁ − p + q)` on, `0` elsewhere.
-This is the book's `[0 0; S 0; 0 I]` with row blocks `p, n₁ − p, m₁ − n₁` and column blocks
-`n₁ − p, q, m₁ − n₁`. -/
+/-- **The upper right block of a CS decomposition** ([golub2013matrix], Theorem 2.5.3). For natural
+numbers $n_1$, $p$, $q$ and a sequence $s$, this is the $m \times n$ matrix with $s_i$ at
+$(i, i - p)$ for $p \le i < n_1$, with $1$ at $(i, i - p + q)$ for $i \ge n_1$, and with $0$
+elsewhere.
+
+This is the block $\begin{bmatrix} 0 & 0 & 0 \\ S & 0 & 0 \\ 0 & 0 & I \end{bmatrix}$ of the
+source, with row blocks of sizes $p$, $n_1 - p$, $m_1 - n_1$ and column blocks of sizes
+$n_1 - p$, $q$, $m_1 - n_1$. -/
 def csdUpperRight {α : Type*} [Zero α] [One α] {m n : ℕ} (n₁ p q : ℕ) (s : ℕ → α) :
     Matrix (Fin m) (Fin n) α :=
   of fun i j => if p ≤ (i : ℕ) ∧ (i : ℕ) < n₁ ∧ (j : ℕ) = i - p then s i
@@ -300,32 +333,42 @@ def csdUpperRight {α : Type*} [Zero α] [One α] {m n : ℕ} (n₁ p q : ℕ) (
 
 variable {m₁ m₂ n₁ n₂ : ℕ}
 
-/-- **A CS decomposition of a unitary matrix, as a specification** ([golub2013matrix]
-Theorem 2.5.3). For `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂` (given by its four blocks), unitary
-`U₁, U₂, V₁, V₂` and monotone angles `θ i ∈ [0, π/2]`, the first `p = n₁ − min n₁ m₂` of them `0`,
-with `q = m₂ − min n₁ m₂`, `c_i = cos θ_i`, `s_i = sin θ_i`:
-* `U₁ᴴ Q₁₁ V₁ = diag(c)` and `U₂ᴴ Q₂₁ V₁ = S` shifted by `p` (a thin CS decomposition of the first
-  block column, `Matrix.IsCSD.toIsThinCSD`),
-* `U₁ᴴ Q₁₂ V₂ = Matrix.csdUpperRight n₁ p q s` and
-  `U₂ᴴ Q₂₂ V₂ = diag(−c_p, …, −c_{n₁−1}, 1, …, 1)`.
-This is the book's 5-by-5 block form with row blocks `p, n₁ − p, m₁ − n₁ | n₁ − p, q` and column
-blocks `p, n₁ − p | n₁ − p, q, m₁ − n₁`; the printed display has its row labels mangled, and this
-reading is the one whose block sizes add up. -/
+/-- **A CS decomposition of a unitary matrix** ([golub2013matrix], Theorem 2.5.3). Let $Q =
+\begin{bmatrix} Q_{11} & Q_{12} \\ Q_{21} & Q_{22} \end{bmatrix}$ with
+$Q_{11} \in \mathbb{K}^{m_1 \times n_1}$ and $Q_{22} \in \mathbb{K}^{m_2 \times n_2}$, let
+$p = n_1 - \min(n_1, m_2)$ and $q = m_2 - \min(n_1, m_2)$, and write $c_i = \cos \theta_i$ and
+$s_i = \sin \theta_i$. A CS decomposition of $Q$ consists of unitary matrices $U_1$, $U_2$,
+$V_1$, $V_2$ of orders $m_1$, $m_2$, $n_1$, $n_2$, and a monotone sequence of angles
+$\theta_i \in [0, \pi/2]$ with $\theta_i = 0$ for $i < p$, such that:
+
+* $U_1^H Q_{11} V_1 = \operatorname{diag}(c)$ and $U_2^H Q_{21} V_1 = S_p$, the sine block
+  shifted by $p$; this is a thin CS decomposition of the first block column
+  (`Matrix.IsCSD.toIsThinCSD`);
+* $U_1^H Q_{12} V_2$ is `Matrix.csdUpperRight n₁ p q s`;
+* $U_2^H Q_{22} V_2 = \operatorname{diag}(-c_p, \dots, -c_{n_1 - 1}, 1, \dots, 1)$, a
+  rectangular diagonal matrix.
+
+This is the $5 \times 5$ block form of the source, with row blocks of sizes $p$, $n_1 - p$,
+$m_1 - n_1$ and $n_1 - p$, $q$, and column blocks of sizes $p$, $n_1 - p$ and $n_1 - p$, $q$,
+$m_1 - n_1$. The display printed in the source has wrong row labels; this reading is the one
+whose block sizes add up. -/
 structure IsCSD (Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜) (Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜)
     (Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜) (Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜)
     (U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜) (U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜)
     (V₁ : Matrix (Fin n₁) (Fin n₁) 𝕜) (V₂ : Matrix (Fin n₂) (Fin n₂) 𝕜) (θ : ℕ → ℝ) : Prop
     extends IsThinCSD Q₁₁ Q₂₁ U₁ U₂ V₁ θ where
-  /-- The second right factor is unitary. -/
+  /-- The second right factor $V_2$ is unitary. -/
   mem_unitaryGroup_right₂ : V₂ ∈ unitaryGroup (Fin n₂) 𝕜
-  /-- The `(1, 2)` block. -/
+  /-- The $(1, 2)$ block: $U_1^H Q_{12} V_2$ is `Matrix.csdUpperRight n₁ p q s`, with
+  $s_i = \sin \theta_i$. -/
   star_mul_mul₁₂ : star U₁ * Q₁₂ * V₂ = csdUpperRight n₁ (n₁ - min n₁ m₂) (m₂ - min n₁ m₂)
     fun i => ((Real.sin (θ i) : ℝ) : 𝕜)
-  /-- The `(2, 2)` block. -/
+  /-- The $(2, 2)$ block: $U_2^H Q_{22} V_2$ is the rectangular diagonal matrix with
+  $-\cos \theta_{i + p}$ at $(i, i)$ for $i < n_1 - p$ and $1$ at the other diagonal entries. -/
   star_mul_mul₂₂ : star U₂ * Q₂₂ * V₂ = rectDiagonal fun i =>
     if i < n₁ - (n₁ - min n₁ m₂) then -((Real.cos (θ (i + (n₁ - min n₁ m₂))) : ℝ) : 𝕜) else 1
 
-/-- `(Uᴴ X V)(U'ᴴ Y V)ᴴ = Uᴴ (X Yᴴ) U'` for unitary `V`. -/
+/-- If $V$ is unitary, then $(U^H X V)(U'^H Y V)^H = U^H (X Y^H) U'$. -/
 private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a) (Fin a) 𝕜)
     (U' : Matrix (Fin b) (Fin b) 𝕜) {V : Matrix (Fin c) (Fin c) 𝕜}
     (hV : V ∈ unitaryGroup (Fin c) 𝕜) (X : Matrix (Fin a) (Fin c) 𝕜)
@@ -339,16 +382,26 @@ private theorem star_mul_mul_mul_conjTranspose {a b c : ℕ} (U : Matrix (Fin a)
 variable {Q₁₁ : Matrix (Fin m₁) (Fin n₁) 𝕜} {Q₁₂ : Matrix (Fin m₁) (Fin n₂) 𝕜}
   {Q₂₁ : Matrix (Fin m₂) (Fin n₁) 𝕜} {Q₂₂ : Matrix (Fin m₂) (Fin n₂) 𝕜}
 
-/-- **The CS decomposition** ([golub2013matrix] Theorem 2.5.3, which defers the proof to Paige
-and Saunders (1981)): a unitary `Q = fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂` with `n₁ ≤ m₁` has a
-CS decomposition (the book's second hypothesis `m₂ ≤ m₁` is not needed). Unitarity is given as
-`Qᴴ Q = 1` for the square shape `m₁ + m₂ = n₁ + n₂`, which gives `Q Qᴴ = 1`. Take a thin CS
-decomposition `(U₁, U₂, V₁, θ)` of the first block column
-(`Matrix.exists_isThinCSD`). With `Yᵢ = Uᵢᴴ Qᵢ₂`, `[C; S]` the transformed first block column
-and `[T₁; T₂]` the target second block column, set `V₂ = Y₁ᴴ T₁ + Y₂ᴴ T₂`. The rows of the unitary
-`diag(U₁, U₂)ᴴ Q diag(V₁, I)` are orthonormal, so `Y Yᴴ = I − [C; S][C; S]ᴴ`; and `[T₁; T₂]` has
-orthonormal columns orthogonal to those of `[C; S]` (an entrywise computation with
-`c_i² + s_i² = 1`). Hence `Y V₂ = T` and `V₂ᴴ V₂ = Tᴴ T = I`. -/
+/-- **The CS decomposition** ([golub2013matrix], Theorem 2.5.3). Let $Q = \begin{bmatrix} Q_{11} &
+Q_{12} \\ Q_{21} & Q_{22} \end{bmatrix}$ with $Q_{11} \in \mathbb{K}^{m_1 \times n_1}$,
+$Q_{12} \in \mathbb{K}^{m_1 \times n_2}$, $Q_{21} \in \mathbb{K}^{m_2 \times n_1}$ and
+$Q_{22} \in \mathbb{K}^{m_2 \times n_2}$, where $m_1 + m_2 = n_1 + n_2$, $Q^H Q = I$ and
+$n_1 \le m_1$. Then $Q$ has a CS decomposition in the sense of `Matrix.IsCSD`.
+
+The source defers the proof to Paige and Saunders (1981). Its second hypothesis $m_2 \le m_1$ is
+not needed. Unitarity is given as $Q^H Q = I$ for the square shape $m_1 + m_2 = n_1 + n_2$,
+which implies $Q Q^H = I$.
+
+The proof takes a thin CS decomposition $(U_1, U_2, V_1, \theta)$ of the first block column
+(`Matrix.exists_isThinCSD`). Let $Y_i = U_i^H Q_{i2}$, let
+$\begin{bmatrix} C \\ S \end{bmatrix}$ be the transformed first block column, and let
+$\begin{bmatrix} T_1 \\ T_2 \end{bmatrix}$ be the target second block column; set
+$V_2 = Y_1^H T_1 + Y_2^H T_2$. The rows of the unitary matrix $\operatorname{diag}(U_1, U_2)^H Q
+\operatorname{diag}(V_1, I)$ are orthonormal, so $Y Y^H = I - \begin{bmatrix} C \\ S
+\end{bmatrix} \begin{bmatrix} C \\ S \end{bmatrix}^H$. The columns of
+$\begin{bmatrix} T_1 \\ T_2 \end{bmatrix}$ are orthonormal and orthogonal to those of
+$\begin{bmatrix} C \\ S \end{bmatrix}$, by an entrywise computation with $c_i^2 + s_i^2 = 1$.
+Hence $Y V_2 = T$ and $V_2^H V_2 = T^H T = I$. -/
 theorem exists_isCSD (hmn : m₁ + m₂ = n₁ + n₂)
     (hQ : (fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂)ᴴ * fromBlocks Q₁₁ Q₁₂ Q₂₁ Q₂₂ = 1) (hn₁ : n₁ ≤ m₁) :
     ∃ U₁ U₂ V₁ V₂ θ, IsCSD Q₁₁ Q₁₂ Q₂₁ Q₂₂ U₁ U₂ V₁ V₂ θ := by
@@ -528,12 +581,17 @@ section OffDiagonal
 variable {k l : Type*} [Fintype k] [Fintype l] [DecidableEq k] [DecidableEq l]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The off-diagonal blocks of a unitary matrix with a square leading block have equal
-`2`-norms** ([golub2013matrix] proof of Theorem 2.5.1): for `Q ∈ unitaryGroup (k ⊕ l) 𝕜`,
-`‖Q₂₁‖₂ = ‖Q₁₂‖₂`. The first block column of `Q` and the first block column of `Qᴴ` are stacked
-isometries with the square leading blocks `Q₁₁` and `Q₁₁ᴴ`, so by the stacked-isometry identity
-`Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues` both squared norms are
-`1 − σ_min(Q₁₁)²`, a square matrix and its adjoint having the same singular values. -/
+/-- **The off-diagonal blocks of a unitary matrix have equal $2$-norms** ([golub2013matrix], proof
+of Theorem 2.5.1). Let $Q = \begin{bmatrix} Q_{11} & Q_{12} \\ Q_{21} & Q_{22} \end{bmatrix}$ be
+a unitary matrix over $\mathbb{K}$, with rows and columns both indexed by $k \sqcup l$, so that
+$Q_{11}$ is square. Then
+$$\|Q_{21}\|_2 = \|Q_{12}\|_2.$$
+
+The norm is the operator norm induced by the Euclidean norm. The first block column of $Q$ and
+the first block column of $Q^H$ have orthonormal columns, with the square leading blocks
+$Q_{11}$ and $Q_{11}^H$. By `Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`, both
+squared norms are $1 - \sigma_{\min}(Q_{11})^2$, because a square matrix and its conjugate
+transpose have the same singular values. -/
 theorem l2_opNorm_toBlocks₂₁_eq_toBlocks₁₂ {Q : Matrix (k ⊕ l) (k ⊕ l) 𝕜}
     (hQ : Q ∈ unitaryGroup (k ⊕ l) 𝕜) : ‖Q.toBlocks₂₁‖ = ‖Q.toBlocks₁₂‖ := by
   cases isEmpty_or_nonempty k with

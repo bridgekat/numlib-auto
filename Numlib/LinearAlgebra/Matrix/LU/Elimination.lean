@@ -15,77 +15,93 @@ import Numlib.LinearAlgebra.Matrix.LU
 /-!
 # One step of Gaussian elimination
 
-One step of Gaussian elimination at a pivot `p`, applied to a square matrix `M` indexed by a
-finite linear order `n`: the rows strictly below `p` have `M i p / M p p` times the row `p`
-subtracted from them, and every other row is left alone. It is the elementary operation from which
-the `LU` factorization (`Numlib/LinearAlgebra/Matrix/LU`) and the incomplete factorizations of
-`Numlib/Preconditioner/ILU` are built.
+Let $K$ be a field, let $n$ be a finite linearly ordered index set, and let $M \in K^{n \times n}$.
+One step of Gaussian elimination at a pivot $p \in n$ subtracts $M_{ip} / M_{pp}$ times the row $p$
+from each row $i > p$, and leaves the other rows alone. With the *multiplier matrix* $N$, which has
+the entries $N_{ip} = M_{ip} / M_{pp}$ for $i > p$ and is zero elsewhere, the eliminated matrix is
+$M' = M - NM = (I - N) M$. Since $N^2 = 0$, the matrix $G = I + N$ is unipotent with inverse
+$I - N$, and $M = G M'$. The matrix $I - N$ is the Gaussian transformation matrix $M_p$ of
+[quarteroni2000numerical], §3.3.1. This step is the elementary operation from which the LU
+factorization of `Numlib.LinearAlgebra.Matrix.LU` and the incomplete factorizations of
+`Numlib.Preconditioner.ILU` are built ([saad2003iterative], §10.3).
+
+On $A \in K^{N \times N}$, the stages of the Gaussian elimination method are $A^{(0)} = A$ and
+$A^{(k+1)} = M_k A^{(k)}$, the elimination of $A^{(k)}$ at the pivot $(k, k)$, for $k < N$. With
+nonzero pivots $a^{(k)}_{kk}$ for $k = 0, \dots, N - 2$, this gives $A = LU$ with $U = A^{(N)}$ and
+$L$ the unit lower triangular matrix of the multipliers, and these pivots are nonzero exactly when
+the strict leading principal submatrices of $A$ are nonsingular. The module also defines the
+Doolittle recurrence for the LU factors on any finite linear order, shows that it computes the same
+factors, and derives the Crout factorization from it ([quarteroni2000numerical], §3.3).
 
 ## Main definitions
 
-* `Matrix.elimMultipliers M p`: the matrix `N` of multipliers, `M i p / M p p` in the column `p`
-  below the pivot and zero elsewhere; `Matrix.elimMul M p`: the unipotent factor `G = 1 + N` of
-  the step; `Matrix.elimStep M p`: the eliminated matrix `M - N M = (1 - N) M`;
-  `Matrix.gaussTransform M p = 1 - N`, the Gaussian transformation matrix `M_p` of
-  [quarteroni2000numerical] §3.3.1.
-* `Matrix.gemStage A k`, the stages `A^{(k+1)}` of the Gaussian elimination method on `Fin N`
-  ([quarteroni2000numerical] (3.29)), and `Matrix.gemLower A`, the matrix of multipliers ((3.37)).
-* `Matrix.luPacked A`, the Doolittle recurrence ((3.43)) as one total function on any finite
-  linear order, by well-founded recursion on the number of indices below `min i j`, with
-  `Matrix.luLower A` and `Matrix.luUpper A` the two factors read off the packed form; and the Crout
-  factors `Matrix.croutLower`, `Matrix.croutUpper`, which are Doolittle applied to the transpose.
+* `Matrix.elimMultipliers`: the multiplier matrix $N$ of one step of elimination at a pivot $p$.
+* `Matrix.elimMul`: the unipotent factor $G = I + N$ of the step.
+* `Matrix.elimStep`: the eliminated matrix $M - NM$.
+* `Matrix.gaussTransform`: the Gaussian transformation matrix $I - N$.
+* `Matrix.gemStage`: the stages $A^{(k)}$ of the Gaussian elimination method on $K^{N \times N}$.
+* `Matrix.gemLower`: the unit lower triangular matrix $L$ of the multipliers.
+* `Matrix.blockEmb`: the order embedding of the block of consecutive indices $k, \dots, k + j - 1$.
+* `Matrix.luPacked`: the Doolittle recurrence, with both factors packed in one matrix.
+* `Matrix.luLower`, `Matrix.luUpper`: the two Doolittle factors read off the packed form.
+* `Matrix.croutLower`, `Matrix.croutUpper`: the Crout factors, which are the Doolittle factors of
+  the transpose, transposed back.
 
 ## Main results
 
-* `Matrix.elimStep_apply_pivot`: the step annihilates the pivot column below the pivot, and
-  `Matrix.elimStep_apply_of_not_lt` says it changes nothing above it.
-* `Matrix.elimMultipliers_mul_self`: `N * N = 0`, so that `G⁻¹ = 1 - N`
-  (`Matrix.inv_elimMul`, `Matrix.gaussTransform_mul_elimMul`), [quarteroni2000numerical] (3.36).
-* `Matrix.elimMul_mul_elimStep`: the factorization `M = G * elimStep M p` of one step;
-  `Matrix.gemStage_succ_eq_gaussTransform_mul`: `A^{(k+1)} = M_k A^{(k)}` ((3.35)).
-* `Matrix.isLU_gemLower_gemStage`: Gaussian elimination as a factorization method, `A = L U` with
-  `U = A^{(N)}` the last stage, when the pivots `a_kk^{(k)}`, `k < N - 1`, are nonzero; and
-  `Matrix.gemStage_pivots_ne_zero_iff`: those pivots are nonzero exactly when the strict leading
-  principal submatrices of `A` are nonsingular (the book's sentence after (3.33)).
-* `Matrix.elimStep_submatrix_orderEmbedding` and `Matrix.gemStage_submatrix_blockEmb`: elimination
-  commutes with the restriction to a block of indices carried by an order embedding, so that the
-  elimination of the trailing block of `A^{(k)}` on the `j` consecutive indices `k, …, k + j - 1`
-  (`Matrix.blockEmb`) is the restriction of the global elimination;
-  `Matrix.elimStep_submatrix_id_of_apply_self`: one step commutes with a permutation of the columns
-  fixing the pivot.
-* `Matrix.isLU_luLower_luUpper`: the Doolittle recurrence computes the LU factorization whenever
-  the strict leading principal submatrices are nonsingular; `Matrix.luLower_eq_gemLower`: every
-  loop order computes the same factors; `Matrix.croutLower_mul_croutUpper`: the Crout
-  factorization.
+* `Matrix.elimStep_apply_pivot`: the step annihilates the pivot column below a nonzero pivot.
+* `Matrix.elimMultipliers_mul_self`: $N^2 = 0$.
+* `Matrix.inv_elimMul`: $G^{-1} = I - N$.
+* `Matrix.elimMul_mul_elimStep`: $M = G M'$.
+* `Matrix.gemStage_succ_eq_gaussTransform_mul`: $A^{(k+1)} = M_k A^{(k)}$.
+* `Matrix.isLU_gemLower_gemStage`: if the pivots $a^{(k)}_{kk}$, $k = 0, \dots, N - 2$, are nonzero,
+  then $A = LU$ with $U = A^{(N)}$.
+* `Matrix.gemStage_pivots_ne_zero_iff`: these pivots are nonzero if and only if every strict leading
+  principal submatrix of $A$ is nonsingular.
+* `Matrix.elimStep_submatrix_orderEmbedding`, `Matrix.gemStage_submatrix_blockEmb`: elimination
+  commutes with the restriction to a set of indices carried by an order embedding, so the
+  elimination of a trailing block of $A^{(k)}$ is the restriction of the global elimination.
+* `Matrix.elimStep_submatrix_id_of_apply_self`: one step commutes with a permutation of the columns
+  that fixes the pivot.
+* `Matrix.isLU_luLower_luUpper`: the Doolittle recurrence computes the LU factorization when the
+  strict leading principal submatrices are nonsingular.
+* `Matrix.luLower_eq_gemLower`: the Doolittle factors are the factors of Gaussian elimination.
+* `Matrix.croutLower_mul_croutUpper`: the Crout factorization.
+
+## Notation
+
+* $A^{(k)}$ is `Matrix.gemStage A k`, with entries $a^{(k)}_{ij}$.
+* $A(\le k)$ and $A(< k)$ are `Matrix.leadingPrincipalSubmatrix A k` and
+  `Matrix.strictLeadingPrincipalSubmatrix A k`, the blocks of $A$ on the indices $i \le k$ and
+  $i < k$.
 
 ## Implementation notes
 
-The index type is kept fixed: elimination is written as multiplication by the unipotent `G` on
-the whole of `n`, rather than as a Schur complement on the smaller index type `{i // i ≠ p}`. The
-accumulated `L` factor of a factorization is then a product of the matrices `elimMul`, and no
-reindexing appears anywhere in the statements; the same step read on the smaller index type is
-`Matrix.schurComplementSingle` of `Numlib/LinearAlgebra/Matrix/SchurComplement`. Only the strict
-order `p < i` of the index type is used, to say which rows lie below the pivot.
-
-The last pivot `a_{N-1,N-1}^{(N-1)}` is never used as a divisor, so the factorization theorems ask
-only for the pivots `k` with `k + 1 < N` to be nonzero; this is what makes them equivalent to the
-nonsingularity of the *strict* leading principal submatrices, and lets a singular matrix with
-nonsingular strict leading blocks (Example 3.3's `B`) be factored. The restriction is not a
-convenience: quantifying `Matrix.gemStage_pivots_ne_zero_iff` over *all* the pivots would make it
-false. For `B = !![1, 2; 1, 2]` of [quarteroni2000numerical] Example 3.3 the strict leading
-principal submatrices are the empty one and `!![1]`, both units, while the last pivot is
-`b₂₂ - (b₂₁/b₁₁) b₁₂ = 2 - 2 = 0`; the `1 × 1` zero matrix is the same failure with an empty strict
-block. The last pivot is `det A / det A(< N - 1)`, so it vanishes for every singular `A` whose
-strict leading blocks are nonsingular. The book restricts its own condition the same way, to
-`k = 1, …, n - 1`, in the sentence after (3.33) and in Theorem 3.4.
-
-Everything is over a field, and nothing here is numerical: pivoting and the growth factor belong
-to `Numlib/LinearAlgebra/Matrix/LU/Pivoting`.
-
-## References
-
-* [saad2003iterative] §10.3.
-* [quarteroni2000numerical] §3.3.
+* Indices and stages are numbered from $0$. The source numbers both from $1$, so $A^{(k)}$ here is
+  $A^{(k+1)}$ in [quarteroni2000numerical], and the pivots $k = 0, \dots, N - 2$ here are its pivots
+  $k = 1, \dots, n - 1$.
+* The index type is kept fixed: elimination is multiplication by the unipotent matrix $G$ on all of
+  $n$, not a Schur complement on the smaller index type `{i // i ≠ p}`. Then the accumulated lower
+  factor of a factorization is a product of the matrices `Matrix.elimMul`, and no statement needs a
+  reindexing. The same step on the smaller index type is `Matrix.schurComplementSingle` of
+  `Numlib.LinearAlgebra.Matrix.SchurComplement`. Only the strict order $p < i$ of the index type is
+  used, to say which rows lie below the pivot.
+* Division by zero is $0$ in Lean. At a zero pivot the multipliers are $0$, and the step leaves the
+  matrix unchanged.
+* The last pivot $a^{(N-1)}_{N-1,N-1}$ is never used as a divisor. So the factorization theorems
+  require only the pivots with $k + 1 < N$ to be nonzero, which makes the condition equivalent to
+  the nonsingularity of the *strict* leading principal submatrices, and a singular matrix with
+  nonsingular strict leading blocks can be factored. The restriction is necessary:
+  `Matrix.gemStage_pivots_ne_zero_iff` with all $N$ pivots is false. For the matrix $B =
+  \begin{bmatrix} 1 & 2 \\ 1 & 2 \end{bmatrix}$ of Example 3.3 of [quarteroni2000numerical], the
+  strict leading principal submatrices are the empty matrix and $[1]$, both nonsingular, but the
+  last pivot is $b_{22} - (b_{21} / b_{11}) b_{12} = 2 - 2 = 0$. The $1 \times 1$ zero matrix fails
+  in the same way, with an empty strict block. In general the last pivot is
+  $\det A / \det A(< N - 1)$, so it vanishes for every singular $A$ whose strict leading blocks are
+  nonsingular. The source restricts its condition in the same way, to $k = 1, \dots, n - 1$, in the
+  sentence after (3.33) and in Theorem 3.4.
+* Everything is over a field, and nothing here is numerical. Pivoting and the growth factor are in
+  `Numlib.LinearAlgebra.Matrix.LU.Pivoting`.
 -/
 
 open Finset
@@ -96,34 +112,43 @@ section Step
 
 variable {n K : Type*} [LinearOrder n] [DecidableEq n] [Field K]
 
-/-- **The multipliers of one step of Gaussian elimination** at the pivot `p`: the entries `M i p / M
-p p` in column `p` and in the rows below `p`, and zero elsewhere. It is nilpotent of square zero,
-because its only nonzero column is indexed by `p` and its row `p` vanishes. -/
+/-- The **multiplier matrix** of one step of Gaussian elimination at the pivot $p$: the matrix $N$
+with
+$$N_{ij} = \begin{cases} M_{ip} / M_{pp} & \text{if } i > p \text{ and } j = p, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+
+Its only nonzero column is the column $p$, and its row $p$ is zero, so $N^2 = 0$
+(`Matrix.elimMultipliers_mul_self`). If $M_{pp} = 0$, then $N = 0$, because division by zero is
+$0$. -/
 noncomputable def elimMultipliers (M : Matrix n n K) (p : n) : Matrix n n K :=
   Matrix.of fun i j => if p < i ∧ j = p then M i p * (M p p)⁻¹ else 0
 
-/-- **The unipotent factor** of one step of Gaussian elimination at the pivot `p`. -/
+/-- The **unipotent factor** $G = I + N$ of one step of Gaussian elimination at the pivot $p$, where
+$N$ is the multiplier matrix `Matrix.elimMultipliers M p`. -/
 noncomputable def elimMul (M : Matrix n n K) (p : n) : Matrix n n K :=
   1 + elimMultipliers M p
 
-/-- Entries of the multiplier matrix: `M i p / M p p` in column `p` below the pivot, zero elsewhere.
--/
+/-- The entry $(i, j)$ of the multiplier matrix is $M_{ip} / M_{pp}$ if $i > p$ and $j = p$, and $0$
+otherwise. -/
 @[simp]
 theorem elimMultipliers_apply (M : Matrix n n K) (p i j : n) :
     elimMultipliers M p i j = if p < i ∧ j = p then M i p * (M p p)⁻¹ else 0 := rfl
 
 variable [Fintype n]
 
-/-- **One step of Gaussian elimination** at the pivot `p`, on the whole index type: the rows
-strictly below `p` have `M i p / M p p` times row `p` subtracted from them, and every other row is
-left alone. Keeping the index type fixed is what lets the accumulated `L` factor of a
-factorization be a product of `Matrix.elimMul`s, with no reindexing anywhere; the same step read on
-the index type without `p` is `Matrix.schurComplementSingle`. -/
+/-- **One step of Gaussian elimination** at the pivot $p$: the matrix $M - NM$, with $N$ the
+multiplier matrix `Matrix.elimMultipliers M p`. Its entries are
+$$(M - NM)_{ij} = \begin{cases} M_{ij} - (M_{ip} / M_{pp}) M_{pj} & \text{if } i > p, \\ M_{ij}
+  & \text{otherwise.} \end{cases}$$
+
+The step is defined on the whole index type. So the accumulated lower factor of a factorization
+is a product of the matrices `Matrix.elimMul`, and no reindexing is needed. The same step on the
+index type without $p$ is `Matrix.schurComplementSingle`. -/
 noncomputable def elimStep (M : Matrix n n K) (p : n) : Matrix n n K :=
   M - elimMultipliers M p * M
 
-/-- The multipliers of one row: the product `N M` has the correction of one elimination step as its
-entries. -/
+/-- The entry $(i, j)$ of the product $NM$ of the multiplier matrix and $M$ is
+$(M_{ip} / M_{pp}) M_{pj}$ if $i > p$, and $0$ otherwise. -/
 theorem elimMultipliers_mul_apply (M : Matrix n n K) (p i j : n) :
     (elimMultipliers M p * M) i j = if p < i then M i p * (M p p)⁻¹ * M p j else 0 := by
   rw [Matrix.mul_apply]
@@ -132,33 +157,37 @@ theorem elimMultipliers_mul_apply (M : Matrix n n K) (p i j : n) :
     simp [hi]
   · simp [hi]
 
-/-- Entries of the eliminated matrix: the rows below the pivot lose `M i p / M p p` times row `p`,
-and every other row is unchanged. -/
+/-- The entry $(i, j)$ of the eliminated matrix is $M_{ij} - (M_{ip} / M_{pp}) M_{pj}$ if $i > p$,
+and $M_{ij}$ otherwise. -/
 theorem elimStep_apply (M : Matrix n n K) (p i j : n) :
     elimStep M p i j = M i j - if p < i then M i p * (M p p)⁻¹ * M p j else 0 := by
   rw [elimStep, Matrix.sub_apply, elimMultipliers_mul_apply]
 
-/-- Above the pivot and in the pivot row itself, one elimination step changes nothing. -/
+/-- If $i \le p$, the step at the pivot $p$ does not change the row $i$: the entry $(i, j)$ of the
+eliminated matrix is $M_{ij}$. -/
 theorem elimStep_apply_of_not_lt (M : Matrix n n K) {p i : n} (hi : ¬ p < i) (j : n) :
     elimStep M p i j = M i j := by
   rw [elimStep_apply, ite_eq_right hi, sub_zero]
 
-/-- Below the pivot, one elimination step is the usual formula. -/
+/-- If $i > p$, the entry $(i, j)$ of the eliminated matrix is $M_{ij} - (M_{ip} / M_{pp}) M_{pj}$.
+-/
 theorem elimStep_apply_of_lt (M : Matrix n n K) {p i : n} (hi : p < i) (j : n) :
     elimStep M p i j = M i j - M i p * (M p p)⁻¹ * M p j := by
   rw [elimStep_apply, ite_eq_left hi]
 
-/-- One elimination step annihilates the pivot column below the pivot. -/
+/-- If $M_{pp} \neq 0$ and $i > p$, the entry $(i, p)$ of the eliminated matrix is $0$: the step
+annihilates the pivot column below the pivot. -/
 theorem elimStep_apply_pivot (M : Matrix n n K) {p i : n} (hi : p < i) (hp : M p p ≠ 0) :
     elimStep M p i p = 0 := by
   rw [elimStep_apply_of_lt M hi, mul_assoc, inv_mul_cancel₀ hp, mul_one, sub_self]
 
-/-- One elimination step leaves a column that is already zero in the pivot row alone. -/
+/-- If $M_{pj} = 0$, the step at the pivot $p$ does not change the column $j$: the entry $(i, j)$ of
+the eliminated matrix is $M_{ij}$ for every $i$. -/
 theorem elimStep_apply_of_pivot_row_eq_zero (M : Matrix n n K) (p i : n) {j : n}
     (hj : M p j = 0) : elimStep M p i j = M i j := by
   rw [elimStep_apply, hj, mul_zero, ite_self, sub_zero]
 
-/-- The multiplier matrix squares to zero. -/
+/-- The multiplier matrix squares to zero: $N^2 = 0$. -/
 theorem elimMultipliers_mul_self (M : Matrix n n K) (p : n) :
     elimMultipliers M p * elimMultipliers M p = 0 := by
   ext i j
@@ -168,31 +197,31 @@ theorem elimMultipliers_mul_self (M : Matrix n n K) (p : n) :
   · simp
   · simp [hc]
 
-/-- The unipotent factor is inverted by `1 - N`. -/
+/-- $(I + N)(I - N) = I$, for the multiplier matrix $N$. -/
 theorem elimMul_mul_one_sub (M : Matrix n n K) (p : n) :
     elimMul M p * (1 - elimMultipliers M p) = 1 := by
   rw [elimMul, add_mul, Matrix.one_mul, Matrix.mul_sub, Matrix.mul_one,
     elimMultipliers_mul_self, sub_zero]
   abel
 
-/-- `1 - N` inverts the unipotent factor on the left as well. -/
+/-- $(I - N)(I + N) = I$, for the multiplier matrix $N$. -/
 theorem one_sub_mul_elimMul (M : Matrix n n K) (p : n) :
     (1 - elimMultipliers M p) * elimMul M p = 1 := by
   rw [elimMul, Matrix.mul_add, Matrix.mul_one, sub_mul, Matrix.one_mul,
     elimMultipliers_mul_self, sub_zero]
   abel
 
-/-- The unipotent factor of an elimination step is a unit. -/
+/-- The unipotent factor $I + N$ of an elimination step is invertible. -/
 theorem isUnit_elimMul (M : Matrix n n K) (p : n) : IsUnit (elimMul M p) :=
   ⟨⟨_, _, elimMul_mul_one_sub M p, one_sub_mul_elimMul M p⟩, rfl⟩
 
-/-- The inverse of the unipotent factor is `1 - N`, obtained by negating the multipliers. -/
+/-- The inverse of the unipotent factor is $(I + N)^{-1} = I - N$. -/
 theorem inv_elimMul (M : Matrix n n K) (p : n) :
     (elimMul M p)⁻¹ = 1 - elimMultipliers M p :=
   Matrix.inv_eq_right_inv (elimMul_mul_one_sub M p)
 
-/-- **The factorization of one elimination step**: `M = G M₁` with `G` the unipotent factor and `M₁`
-the eliminated matrix. -/
+/-- **The factorization of one elimination step**: $M = G M'$, with $G = I + N$ the unipotent factor
+and $M' = M - NM$ the eliminated matrix. -/
 theorem elimMul_mul_elimStep (M : Matrix n n K) (p : n) : elimMul M p * elimStep M p = M := by
   rw [elimStep, elimMul, Matrix.mul_sub, add_mul, Matrix.one_mul, add_mul, Matrix.one_mul,
     ← Matrix.mul_assoc, elimMultipliers_mul_self, Matrix.zero_mul, add_zero]
@@ -204,33 +233,38 @@ end Step
 
 variable {n K : Type*} [LinearOrder n] [Field K]
 
-/-- The `p`-th Gaussian transformation matrix `M_p = 1 - m_p e_pᵀ` of
-[quarteroni2000numerical] §3.3.1: the identity with the negated multipliers in column `p` below
-the pivot. It is the inverse of the unipotent factor `Matrix.elimMul`, and it performs one
-elimination step by left multiplication (`Matrix.gaussTransform_mul`). -/
+/-- The **Gaussian transformation matrix** $M_p = I - N$ at the pivot $p$, with $N$ the multiplier
+matrix `Matrix.elimMultipliers M p`. It is the identity with the negated multipliers
+$-M_{ip} / M_{pp}$, $i > p$, in the column $p$.
+
+In [quarteroni2000numerical], §3.3.1, it is written $M_p = I - m_p e_p^T$. It is the inverse of
+the unipotent factor `Matrix.elimMul` (`Matrix.inv_elimMul_eq_gaussTransform`), and left
+multiplication by it is one elimination step (`Matrix.gaussTransform_mul`). -/
 noncomputable def gaussTransform (M : Matrix n n K) (p : n) : Matrix n n K :=
   1 - elimMultipliers M p
 
 variable [Fintype n]
 
-/-- `M_p⁻¹ = 2 I - M_p = 1 + m_p e_pᵀ`, [quarteroni2000numerical] (3.36): the Gaussian
-transformation and the unipotent factor are mutually inverse. -/
+/-- $M_p (I + N) = I$: the Gaussian transformation and the unipotent factor are inverse to each
+other. This is $M_p^{-1} = 2I - M_p$, equation (3.36) of [quarteroni2000numerical]. -/
 theorem gaussTransform_mul_elimMul (M : Matrix n n K) (p : n) :
     gaussTransform M p * elimMul M p = 1 :=
   one_sub_mul_elimMul M p
 
-/-- The unipotent factor times the Gaussian transformation is the identity. -/
+/-- $(I + N) M_p = I$, for the unipotent factor $I + N$ and the Gaussian transformation $M_p$. -/
 theorem elimMul_mul_gaussTransform (M : Matrix n n K) (p : n) :
     elimMul M p * gaussTransform M p = 1 :=
   elimMul_mul_one_sub M p
 
-/-- The inverse of the unipotent factor is the Gaussian transformation. -/
+/-- The inverse of the unipotent factor is the Gaussian transformation: $(I + N)^{-1} = M_p$. -/
 theorem inv_elimMul_eq_gaussTransform (M : Matrix n n K) (p : n) :
     (elimMul M p)⁻¹ = gaussTransform M p :=
   inv_elimMul M p
 
-/-- One elimination step is left multiplication by the Gaussian transformation
-([quarteroni2000numerical] (3.35)). -/
+/-- One elimination step is left multiplication by the Gaussian transformation: $M_p M = M - NM$,
+where the right side is `Matrix.elimStep M p`.
+
+This is equation (3.35) of [quarteroni2000numerical]. -/
 theorem gaussTransform_mul (M : Matrix n n K) (p : n) : gaussTransform M p * M = elimStep M p := by
   rw [gaussTransform, elimStep, sub_mul, Matrix.one_mul]
 
@@ -240,49 +274,66 @@ section Stages
 
 variable {N : ℕ}
 
-/-- The stages `A^{(k+1)}` of the Gaussian elimination method, [quarteroni2000numerical] (3.29):
-`gemStage A 0 = A` and `gemStage A (k + 1)` eliminates the column `k` below the pivot `(k, k)` of
-`gemStage A k`. Beyond `N` nothing happens, and `gemStage A N` is the upper factor `U`. -/
+/-- The **stages of the Gaussian elimination method** on $A \in K^{N \times N}$: $A^{(0)} = A$, and
+for $k < N$ the stage $A^{(k+1)}$ is one elimination step of $A^{(k)}$ at the pivot $(k, k)$,
+$$a^{(k+1)}_{ij} = \begin{cases} a^{(k)}_{ij} - (a^{(k)}_{ik} / a^{(k)}_{kk}) a^{(k)}_{kj} &
+  \text{if } i > k, \\ a^{(k)}_{ij} & \text{otherwise.} \end{cases}$$
+For $k \ge N$ the stage does not change: $A^{(k+1)} = A^{(k)}$.
+
+These are the matrices $A^{(k)}$ of equation (3.29) of [quarteroni2000numerical], numbered from
+$0$ here and from $1$ in the source. Under the pivot hypothesis of
+`Matrix.isLU_gemLower_gemStage`, the stage $A^{(N)}$ is the upper factor $U$. -/
 noncomputable def gemStage (A : Matrix (Fin N) (Fin N) K) : ℕ → Matrix (Fin N) (Fin N) K
   | 0 => A
   | k + 1 => if h : k < N then elimStep (gemStage A k) ⟨k, h⟩ else gemStage A k
 
 variable (A : Matrix (Fin N) (Fin N) K)
 
-/-- Stage `0` is the matrix itself. -/
+/-- $A^{(0)} = A$. -/
 @[simp]
 theorem gemStage_zero : gemStage A 0 = A := rfl
 
-/-- Stage `k + 1` eliminates column `k` of stage `k`. -/
+/-- For $k < N$, the stage $A^{(k+1)}$ is the elimination step of $A^{(k)}$ at the pivot $k$. -/
 theorem gemStage_succ_of_lt {k : ℕ} (h : k < N) :
     gemStage A (k + 1) = elimStep (gemStage A k) ⟨k, h⟩ := by
   simp only [gemStage, h, dite_true]
 
-/-- Beyond `N`, the stages do not change. -/
+/-- For $k \ge N$, $A^{(k+1)} = A^{(k)}$. -/
 theorem gemStage_succ_of_le {k : ℕ} (h : N ≤ k) : gemStage A (k + 1) = gemStage A k := by
   simp only [gemStage, not_lt.2 h, dite_false]
 
-/-- [quarteroni2000numerical] (3.35): `A^{(k+1)} = M_k A^{(k)}`. -/
+/-- For $k < N$,
+$$A^{(k+1)} = M_k A^{(k)},$$
+where $M_k$ is the Gaussian transformation matrix of $A^{(k)}$ at the pivot $k$.
+
+This is equation (3.35) of [quarteroni2000numerical], with the stages numbered from $0$. -/
 theorem gemStage_succ_eq_gaussTransform_mul {k : ℕ} (h : k < N) :
     gemStage A (k + 1) = gaussTransform (gemStage A k) ⟨k, h⟩ * gemStage A k := by
   rw [gemStage_succ_of_lt A h, gaussTransform_mul]
 
-/-- Stage `k + 1` changes only the rows strictly below `k`. -/
+/-- The stage $A^{(k+1)}$ differs from $A^{(k)}$ only in the rows $i > k$: if $i \le k$, then
+$a^{(k+1)}_{ij} = a^{(k)}_{ij}$ for every $j$. -/
 theorem gemStage_succ_apply_of_le {k : ℕ} {i : Fin N} (hi : (i : ℕ) ≤ k) (j : Fin N) :
     gemStage A (k + 1) i j = gemStage A k i j := by
   by_cases h : k < N
   · rw [gemStage_succ_of_lt A h, elimStep_apply_of_not_lt _ (by simpa [Fin.lt_def] using hi)]
   · rw [gemStage_succ_of_le A (not_lt.1 h)]
 
-/-- Row `i` is final after stage `i`: the later stages do not change it. -/
+/-- The row $i$ does not change after the stage $i$: if $i \le k \le k'$, then
+$$a^{(k')}_{ij} = a^{(k)}_{ij}$$
+for every column $j$. -/
 theorem gemStage_apply_of_le {k k' : ℕ} {i : Fin N} (hi : (i : ℕ) ≤ k) (hk : k ≤ k') (j : Fin N) :
     gemStage A k' i j = gemStage A k i j := by
   induction k', hk using Nat.le_induction with
   | base => rfl
   | succ k' hk ih => rw [gemStage_succ_apply_of_le A (hi.trans hk), ih]
 
-/-- The shape of `A^{(k)}` in [quarteroni2000numerical] (3.29): if the pivots of the stages before
-`k` are nonzero, then stage `k` vanishes below the diagonal in the first `k` columns. -/
+/-- The shape of $A^{(k)}$: suppose that the pivots $a^{(m)}_{mm}$ are nonzero for every $m < k$
+with $m + 1 < N$. Then $A^{(k)}$ vanishes below the diagonal in its first $k$ columns: if
+$j < k$ and $j < i$, then
+$$a^{(k)}_{ij} = 0.$$
+
+This is the shape of the matrices $A^{(k)}$ in equation (3.29) of [quarteroni2000numerical]. -/
 theorem gemStage_apply_eq_zero_of_lt {k : ℕ}
     (hpiv : ∀ (m : ℕ) (hm : m < N), m < k → m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0)
     {i j : Fin N} (hjk : (j : ℕ) < k) (hji : j < i) : gemStage A k i j = 0 := by
@@ -303,36 +354,44 @@ theorem gemStage_apply_eq_zero_of_lt {k : ℕ}
       exact elimStep_apply_pivot _ hji (hpiv j j.2 (Nat.lt_succ_self _)
         (Nat.lt_of_lt_of_le (Nat.succ_lt_succ (Fin.lt_def.1 hji)) i.2))
 
-/-- The multiplier matrix of Gaussian elimination, [quarteroni2000numerical] (3.37): unit lower
-triangular, with the multiplier `m_ij = a_ij^{(j)} / a_jj^{(j)}` produced at stage `j` in position
-`(i, j)` below the diagonal. -/
+/-- The **multiplier matrix of Gaussian elimination** on $A \in K^{N \times N}$: the matrix $L$ with
+$$l_{ij} = \begin{cases} a^{(j)}_{ij} / a^{(j)}_{jj} & \text{if } j < i, \\ 1 & \text{if } i =
+  j, \\ 0 & \text{if } i < j. \end{cases}$$
+The entry below the diagonal is the multiplier that the stage $j$ produces in the position
+$(i, j)$.
+
+This is the matrix $L$ of equation (3.37) of [quarteroni2000numerical]. A zero pivot gives the
+multiplier $0$. -/
 noncomputable def gemLower : Matrix (Fin N) (Fin N) K :=
   of fun i j => if j < i then gemStage A j i j / gemStage A j j j else if i = j then 1 else 0
 
-/-- The multiplier matrix is unit lower triangular. -/
+/-- The multiplier matrix $L$ of Gaussian elimination is unit lower triangular. -/
 theorem isUnitLowerTriangular_gemLower : (gemLower A).IsUnitLowerTriangular := by
   refine ⟨fun i j hij => ?_, fun i => ?_⟩
   · have hij' : i < j := OrderDual.toDual_lt_toDual.1 hij
     simp [gemLower, hij'.not_gt, hij'.ne]
   · simp [gemLower]
 
-/-- The partial multiplier matrix after `k` stages: the multipliers of the columns `j < k`. -/
+/-- The **partial multiplier matrix** $L_k$ after $k$ stages: the unit lower triangular matrix with
+the multiplier $a^{(j)}_{ij} / a^{(j)}_{jj}$ in each position $(i, j)$ with $j < i$ and $j < k$,
+ones on the diagonal, and zeros elsewhere. -/
 noncomputable def gemLowerStage (k : ℕ) : Matrix (Fin N) (Fin N) K :=
   of fun i j =>
     if j < i ∧ (j : ℕ) < k then gemStage A j i j / gemStage A j j j else if i = j then 1 else 0
 
-/-- Before the first stage, the partial multiplier matrix is the identity. -/
+/-- $L_0 = I$. -/
 theorem gemLowerStage_zero : gemLowerStage A 0 = 1 := by
   ext i j
   simp [gemLowerStage, Matrix.one_apply]
 
-/-- After all `N` stages, the partial multiplier matrix is the multiplier matrix. -/
+/-- If $k \ge N$, then $L_k = L$, the multiplier matrix `Matrix.gemLower A`. -/
 theorem gemLowerStage_of_le {k : ℕ} (hk : N ≤ k) : gemLowerStage A k = gemLower A := by
   ext i j
   simp [gemLowerStage, gemLower, j.2.trans_le hk]
 
-/-- One more stage multiplies the partial multiplier matrix by the unipotent factor of the stage:
-the new column of multipliers is appended. -/
+/-- For $k < N$, one more stage multiplies the partial multiplier matrix by the unipotent factor of
+that stage: $L_{k+1} = L_k G_k$, with $G_k$ the unipotent factor `Matrix.elimMul` of $A^{(k)}$
+at the pivot $k$. The product appends the column $k$ of multipliers. -/
 theorem gemLowerStage_succ {k : ℕ} (h : k < N) :
     gemLowerStage A (k + 1) = gemLowerStage A k * elimMul (gemStage A k) ⟨k, h⟩ := by
   ext i j
@@ -357,7 +416,9 @@ theorem gemLowerStage_succ {k : ℕ} (h : k < N) :
       simp [gemLowerStage, this, Ne.symm hri]
     · rw [mul_zero]
 
-/-- After `k` stages, `A = L_k A^{(k)}` with `L_k` the partial multiplier matrix. -/
+/-- For every $k$,
+$$A = L_k A^{(k)},$$
+with $L_k$ the partial multiplier matrix after $k$ stages. No pivot needs to be nonzero. -/
 theorem gemLowerStage_mul_gemStage (k : ℕ) : gemLowerStage A k * gemStage A k = A := by
   induction k with
   | zero => rw [gemLowerStage_zero, gemStage_zero, Matrix.one_mul]
@@ -369,7 +430,7 @@ theorem gemLowerStage_mul_gemStage (k : ℕ) : gemLowerStage A k * gemStage A k 
       rw [gemStage_succ_of_le A hN, gemLowerStage_of_le A (hN.trans (Nat.le_succ k)),
         ← gemLowerStage_of_le A hN, ih]
 
-/-- The partial multiplier matrices are unit lower triangular. -/
+/-- Each partial multiplier matrix $L_k$ is unit lower triangular. -/
 theorem isUnitLowerTriangular_gemLowerStage (k : ℕ) :
     (gemLowerStage A k).IsUnitLowerTriangular := by
   refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -377,10 +438,14 @@ theorem isUnitLowerTriangular_gemLowerStage (k : ℕ) :
     simp [gemLowerStage, hij'.not_gt, hij'.ne]
   · simp [gemLowerStage]
 
-/-- **Gaussian elimination as a factorization method**, [quarteroni2000numerical] §3.3.1 and
-(3.37): if the pivots `a_kk^{(k)}`, `k = 0, …, N - 2`, are nonzero, then `A = L U` with `L` the
-multiplier matrix and `U = A^{(N)}` the last stage. The last pivot is never used, so it is not
-required to be nonzero. -/
+/-- **Gaussian elimination as a factorization method.** Let $A \in K^{N \times N}$, and suppose that
+the pivots $a^{(k)}_{kk}$ are nonzero for $k = 0, \dots, N - 2$. Then
+$$A = LU,$$
+with $L$ the unit lower triangular multiplier matrix `Matrix.gemLower A` and $U = A^{(N)}$ upper
+triangular.
+
+This is the factorization of [quarteroni2000numerical], §3.3.1 and equation (3.37). The last
+pivot is never used as a divisor, so it may be zero. -/
 theorem isLU_gemLower_gemStage
     (hpiv : ∀ (m : ℕ) (hm : m < N), m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) :
     IsLU A (gemLower A) (gemStage A N) where
@@ -389,9 +454,11 @@ theorem isLU_gemLower_gemStage
     gemStage_apply_eq_zero_of_lt A (fun m hm _ hmN => hpiv m hm hmN) j.2 hij
   mul_eq := by rw [← gemLowerStage_of_le A le_rfl, gemLowerStage_mul_gemStage]
 
-/-- After `k` stages with nonzero pivots, the leading block of order `k + 1` of
-`A = L_k A^{(k)}` is an LU factorization of the leading block of `A`: the block of `A^{(k)}` is
-already upper triangular. -/
+/-- Let $k < N$, and suppose that the pivots $a^{(m)}_{mm}$ are nonzero for every $m < k$ with
+$m + 1 < N$. Then the leading principal submatrices of order $k + 1$ give an LU factorization
+$$A(\le k) = L_k(\le k) \, A^{(k)}(\le k),$$
+with $L_k$ the partial multiplier matrix: the block $A^{(k)}(\le k)$ is already upper
+triangular. -/
 theorem isLU_leadingPrincipalSubmatrix_gemStage {k : ℕ} (hk : k < N)
     (hpiv : ∀ (m : ℕ) (hm : m < N), m < k → m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) :
     IsLU (A.leadingPrincipalSubmatrix ⟨k, hk⟩)
@@ -410,14 +477,18 @@ theorem isLU_leadingPrincipalSubmatrix_gemStage {k : ℕ} (hk : k < N)
       (isUnitLowerTriangular_gemLowerStage A k).isLowerTriangular.toBlock_not_eq_zero
         (fun _ _ hi hji => hji.trans hi), Matrix.zero_mul, add_zero]
 
-/-- **The pivots are nonzero iff the strict leading principal submatrices are nonsingular**
-([quarteroni2000numerical], the sentence after (3.33)): `a_kk^{(k)} ≠ 0` for `k = 0, …, N - 2`
-exactly when every `A(< k)` is a unit. Forwards, `det A(< k) = ∏_{m < k} a_mm^{(m)}`; backwards,
-by strong induction, `A = L_k A^{(k)}` restricts to the leading block of order `k + 1`, whose
-determinant `∏_{m ≤ k} a_mm^{(m)}` is nonzero. The last pivot `a_{N-1,N-1}^{(N-1)}` is excluded on
-both sides, and must be: it is `det A / det A(< N - 1)`, which vanishes for a singular `A`, as for
-`B = !![1, 2; 1, 2]` of [quarteroni2000numerical] Example 3.3, whose strict leading principal
-submatrices are units and whose last pivot is `0`. -/
+/-- **The pivots are nonzero if and only if the strict leading principal submatrices are
+nonsingular.** For $A \in K^{N \times N}$, the pivots $a^{(k)}_{kk}$ are nonzero for
+$k = 0, \dots, N - 2$ if and only if every strict leading principal submatrix $A(< k)$,
+$k = 0, \dots, N - 1$, is nonsingular.
+
+This is the sentence after equation (3.33) of [quarteroni2000numerical]. The last pivot
+$a^{(N-1)}_{N-1,N-1}$ must be excluded: it is $\det A / \det A(< N - 1)$, so it vanishes for a
+singular $A$ with nonsingular strict leading blocks, such as $B = \begin{bmatrix} 1 & 2 \\ 1 & 2
+\end{bmatrix}$ of Example 3.3 of [quarteroni2000numerical]. In one direction, $\det A(< k)$ is
+the product of the pivots $a^{(m)}_{mm}$ with $m < k$. In the other direction, a strong
+induction uses $A = L_k A^{(k)}$ on the leading block of order $k + 1$, whose determinant is the
+product of the pivots $a^{(m)}_{mm}$ with $m \le k$. -/
 theorem gemStage_pivots_ne_zero_iff :
     (∀ (m : ℕ) (hm : m < N), m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) ↔
       A.HasUnitStrictLeadingPrincipalSubmatrices := by
@@ -450,44 +521,57 @@ theorem gemStage_pivots_ne_zero_iff :
 
 end Stages
 
-/-! ### Restriction to a block of indices
+/-!
+### Restriction to a block of indices
 
-Elimination is local: the formula for the entry `(i, j)` of one step uses only the entries
-`(i, j)`, `(i, p)`, `(p, p)` and `(p, j)`, so it commutes with the restriction to any subset of
-the indices carried by an order embedding, and with any permutation of the columns fixing the
-pivot. For the consecutive block `k, …, k + j - 1` of `Matrix.blockEmb` this says that the
-elimination of a trailing block of `A^{(k)}` is the restriction of the global elimination. -/
+Elimination is local: the entry $(i, j)$ of one step depends only on the entries in the positions
+$(i, j)$, $(i, p)$, $(p, p)$ and $(p, j)$. So the step commutes with the restriction to any set of
+indices carried by an order embedding, and with any permutation of the columns that fixes the pivot.
+For the consecutive block $k, \dots, k + j - 1$ of `Matrix.blockEmb`, this says that the elimination
+of a trailing block of $A^{(k)}$ is the restriction of the global elimination.
+-/
 
-/-- One step of elimination commutes with a permutation of the columns that fixes the pivot. -/
+/-- Let $\rho$ be a permutation of the indices with $\rho(p) = p$. Then one elimination step at $p$
+commutes with the permutation of the columns by $\rho$: the step at $p$ of the matrix with the
+entries $M_{i \rho(j)}$ is the matrix with the entries $M'_{i \rho(j)}$, where $M'$ is the step
+of $M$ at $p$. -/
 theorem elimStep_submatrix_id_of_apply_self {m : Type*} [LinearOrder m] [Fintype m]
     (M : Matrix m m K) {p : m} {ρ : Equiv.Perm m} (hρ : ρ p = p) :
     elimStep (M.submatrix id ρ) p = (elimStep M p).submatrix id ρ := by
   ext i j
   simp only [elimStep_apply, submatrix_apply, id, hρ]
 
-/-- The order embedding `Fin j ↪o Fin N`, `i ↦ k + i`, of a block of `j` consecutive indices
-starting at `k`. -/
+/-- The order embedding $\{0, \dots, j - 1\} \to \{0, \dots, N - 1\}$, $i \mapsto k + i$, of the
+block of $j$ consecutive indices that starts at $k$, for $k + j \le N$. -/
 def blockEmb (k j N : ℕ) (h : k + j ≤ N) : Fin j ↪o Fin N :=
   OrderEmbedding.ofStrictMono (fun i => ⟨k + i, by have := i.isLt; omega⟩)
     (fun a b hab => by simp only [Fin.lt_def] at hab ⊢; omega)
 
-/-- The value of `Matrix.blockEmb`. -/
+/-- `Matrix.blockEmb k j N h` maps $i$ to $k + i$. -/
 @[simp]
 theorem blockEmb_apply {k j N : ℕ} (h : k + j ≤ N) (i : Fin j) (hki : k + (i : ℕ) < N) :
     blockEmb k j N h i = ⟨k + (i : ℕ), hki⟩ := rfl
 
-/-- One step of elimination commutes with the restriction to a subset of the indices carried by
-an order embedding: the formula for the entry `(i, j)` uses only the entries `(i, j)`, `(i, p)`,
-`(p, p)` and `(p, j)`, all inside the block. -/
+/-- One elimination step commutes with the restriction to a set of indices carried by an order
+embedding. Let $m$ and $n$ be finite linear orders, let $e \colon m \to n$ be an order
+embedding, let $M \in K^{n \times n}$, and let $p \in m$. Then the step at $p$ of the
+restriction $(M_{e(i) e(j)})_{i, j \in m}$ is the restriction along $e$ of the step of $M$ at
+$e(p)$.
+
+The entry $(i, j)$ of a step uses only the entries in the positions $(i, j)$, $(i, p)$, $(p, p)$
+and $(p, j)$, which all lie in the block. -/
 theorem elimStep_submatrix_orderEmbedding {m n K : Type*} [LinearOrder m] [Fintype m]
     [LinearOrder n] [Fintype n] [Field K] (M : Matrix n n K) (e : m ↪o n) (p : m) :
     elimStep (M.submatrix e e) p = (elimStep M (e p)).submatrix e e := by
   ext i j
   simp only [elimStep_apply, submatrix_apply, e.lt_iff_lt]
 
-/-- **Gaussian elimination on a trailing block is the restriction of the global elimination**:
-the `t`-th stage of the elimination of the block of `A^{(k)}` on the indices `k, …, k + j - 1` is
-the block of `A^{(k + t)}` on the same indices, for `t ≤ j`. -/
+/-- **Gaussian elimination on a trailing block is the restriction of the global elimination.** Let
+$A \in K^{N \times N}$ and $k + j \le N$, and let $B$ be the block of $A^{(k)}$ on the indices
+$k, \dots, k + j - 1$. Then for every $t \le j$, the stage $B^{(t)}$ of Gaussian elimination on
+$B$ is the block of $A^{(k + t)}$ on the same indices.
+
+The block is taken along `Matrix.blockEmb`. -/
 theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
     {k j : ℕ} (h : k + j ≤ N) :
     ∀ t ≤ j, gemStage ((gemStage A k).submatrix (blockEmb k j N h) (blockEmb k j N h)) t =
@@ -505,14 +589,17 @@ theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix 
 
 /-! ### The Doolittle recurrence -/
 
-/-- The Doolittle recurrence, [quarteroni2000numerical] (3.43), as one total function on a finite
-linear order, in packed form: `luPacked A i j = A i j - ∑_{r < i} luPacked A i r * luPacked A r j`
-for `i ≤ j` (the entry `u_ij` of the upper factor) and
-`luPacked A i j = (A i j - ∑_{r < j} luPacked A i r * luPacked A r j) / luPacked A j j` for `j < i`
-(the entry `l_ij` of the unit lower factor). The recursion is well founded on the number of
-indices below `min i j`, the `l` entries after the `u` entries at the same level; a zero pivot
-gives junk (`x / 0 = 0`) rather than a hypothesis, and `Matrix.isLU_luLower_luUpper` says when
-the result is right. -/
+/-- The **Doolittle recurrence** in packed form, on a finite linear order. The function $\pi$ holds
+both factors: for $i \le j$, $\pi_{ij}$ is the entry $u_{ij}$ of the upper factor, and for
+$j < i$ it is the entry $l_{ij}$ of the unit lower factor. It is defined by
+$$\pi_{ij} = a_{ij} - \sum_{r < i} \pi_{ir} \pi_{rj} \quad (i \le j), \qquad \pi_{ij} =
+  \frac{1}{\pi_{jj}} \Big( a_{ij} - \sum_{r < j} \pi_{ir} \pi_{rj} \Big) \quad (j < i).$$
+
+This is the recurrence (3.43) of [quarteroni2000numerical], as one total function. The recursion
+is well founded on the number of indices below $\min(i, j)$, and at the same value the entries
+$l$ come after the entries $u$. A zero pivot $\pi_{jj} = 0$ gives the value $0$, since division
+by zero is $0$ in Lean. `Matrix.isLU_luLower_luUpper` says when the result is the LU
+factorization. -/
 noncomputable def luPacked (A : Matrix n n K) : n → n → K
   | i, j =>
     if j < i then
@@ -540,34 +627,41 @@ section Doolittle
 
 variable (A : Matrix n n K)
 
-/-- The Doolittle recurrence for the entries of the upper factor. -/
+/-- The Doolittle recurrence for the upper factor: if $i \le j$, then $\pi_{ij} = a_{ij} - \sum_{r <
+i} \pi_{ir} \pi_{rj}$. -/
 theorem luPacked_of_le {i j : n} (hij : i ≤ j) :
     luPacked A i j = A i j - ∑ r ∈ univ.filter (· < i), luPacked A i r * luPacked A r j := by
   rw [luPacked, ite_eq_right (not_lt.2 hij),
     Finset.sum_attach (univ.filter (· < i)) fun r => luPacked A i r * luPacked A r j]
 
-/-- The Doolittle recurrence for the entries of the lower factor. -/
+/-- The Doolittle recurrence for the lower factor: if $j < i$, then
+$$\pi_{ij} = \frac{1}{\pi_{jj}} \Big( a_{ij} - \sum_{r < j} \pi_{ir} \pi_{rj} \Big).$$
+-/
 theorem luPacked_of_lt {i j : n} (hij : j < i) :
     luPacked A i j =
       (A i j - ∑ r ∈ univ.filter (· < j), luPacked A i r * luPacked A r j) / luPacked A j j := by
   rw [luPacked, ite_eq_left hij,
     Finset.sum_attach (univ.filter (· < j)) fun r => luPacked A i r * luPacked A r j]
 
-/-- The unit lower factor read off the packed Doolittle recurrence. -/
+/-- The **Doolittle lower factor**: the unit lower triangular matrix with the entries $\pi_{ij}$ of
+the packed recurrence `Matrix.luPacked A` below the diagonal and ones on the diagonal. -/
 noncomputable def luLower : Matrix n n K :=
   of fun i j => if j < i then luPacked A i j else if i = j then 1 else 0
 
-/-- The upper factor read off the packed Doolittle recurrence. -/
+/-- The **Doolittle upper factor**: the upper triangular matrix with the entries $\pi_{ij}$,
+$i \le j$, of the packed recurrence `Matrix.luPacked A` on and above the diagonal. -/
 noncomputable def luUpper : Matrix n n K :=
   of fun i j => if i ≤ j then luPacked A i j else 0
 
-/-- **Correctness of the Doolittle recurrence** ([quarteroni2000numerical] (3.43)): when the strict
-leading principal submatrices are nonsingular, the packed recurrence computes the (unique) LU
-factorization. The recurrence equations are exactly the entrywise identities
-`Matrix.IsLU.upper_apply_eq` and `Matrix.IsLU.lower_apply_mul_diag_eq` satisfied by any LU
-factorization, so the packed entries agree with the factors of
-`Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix` by strong induction along
-the order of `min i j`. -/
+/-- **Correctness of the Doolittle recurrence.** Let $A = LU$ be an LU factorization, and suppose
+that every strict leading principal submatrix of $A$ is nonsingular. Then for every $m$ and all
+indices $i, j$ with $\min(i, j) = m$, the packed recurrence satisfies $\pi_{ij} = u_{ij}$ if
+$i \le j$ and $\pi_{ij} = l_{ij}$ if $j < i$.
+
+The statement is fixed at one value $m$ of $\min(i, j)$, so that it can be proved by strong
+induction on $m$. The recurrence equations are the entrywise identities
+`Matrix.IsLU.upper_apply_eq` and `Matrix.IsLU.lower_apply_mul_diag_eq` of any LU factorization.
+This is the recurrence (3.43) of [quarteroni2000numerical]. -/
 theorem luPacked_eq {L U : Matrix n n K} (h : IsLU A L U)
     (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) (m : n) :
     ∀ i j, min i j = m → (i ≤ j → luPacked A i j = U i j) ∧ (j < i → luPacked A i j = L i j) := by
@@ -593,8 +687,9 @@ theorem luPacked_eq {L U : Matrix n n K} (h : IsLU A L U)
   rw [(ih r hrm i r (min_eq_right (hr'.trans hij).le)).2 (hr'.trans hij),
     (ih r hrm r j (min_eq_left hr'.le)).1 hr'.le]
 
-/-- **Correctness of the Doolittle factorization**: with nonsingular strict leading principal
-submatrices, `A = luLower A * luUpper A` is the LU factorization of `A`. -/
+/-- **Correctness of the Doolittle factorization.** If every strict leading principal submatrix of
+$A$ is nonsingular, then the Doolittle factors form an LU factorization: `Matrix.luLower A` is
+unit lower triangular, `Matrix.luUpper A` is upper triangular, and their product is $A$. -/
 theorem isLU_luLower_luUpper (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     IsLU A (luLower A) (luUpper A) := by
   obtain ⟨L, U, h⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix hA
@@ -618,9 +713,13 @@ theorem isLU_luLower_luUpper (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
 
 end Doolittle
 
-/-- **Every loop order computes the same factors** ([quarteroni2000numerical] §3.3.4, "the
-Doolittle factorization is nothing but the `ijk` version of GEM"): on `Fin N` with nonzero
-pivots, the Doolittle factors are the Gaussian elimination factors, by uniqueness of the LU
+/-- **The Doolittle factors are the factors of Gaussian elimination.** Let $A \in K^{N \times N}$,
+and suppose that the pivots $a^{(k)}_{kk}$ are nonzero for $k = 0, \dots, N - 2$. Then the
+Doolittle lower factor is the multiplier matrix `Matrix.gemLower A`, and the Doolittle upper
+factor is the last stage $A^{(N)}$.
+
+This expresses the remark of [quarteroni2000numerical], §3.3.4, that "the Doolittle
+factorization is nothing but the $ijk$ version of GEM". The proof uses the uniqueness of the LU
 factorization. -/
 theorem luLower_eq_gemLower {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
     (hpiv : ∀ (m : ℕ) (hm : m < N), m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) :
@@ -634,17 +733,24 @@ section Crout
 
 variable (A : Matrix n n K)
 
-/-- The lower factor of the Crout factorization ([quarteroni2000numerical] §3.3.4, `u_kk = 1`):
-Doolittle applied to the transpose, transposed back. -/
+/-- The **Crout lower factor** $(U')^T$, where $U'$ is the Doolittle upper factor of $A^T$. It is
+lower triangular.
+
+The Crout factorization of [quarteroni2000numerical], §3.3.4, is the factorization with
+$u_{kk} = 1$. -/
 noncomputable def croutLower : Matrix n n K := (luUpper Aᵀ)ᵀ
 
-/-- The unit upper factor of the Crout factorization: Doolittle applied to the transpose,
-transposed back. -/
+/-- The **Crout upper factor** $(L')^T$, where $L'$ is the Doolittle lower factor of $A^T$. It is
+unit upper triangular. -/
 noncomputable def croutUpper : Matrix n n K := (luLower Aᵀ)ᵀ
 
-/-- **The Crout factorization**: with nonsingular strict leading principal submatrices,
-`A = croutLower A * croutUpper A` with `croutLower A` lower triangular and `croutUpper A` unit
-upper triangular. -/
+/-- **The Crout factorization.** If every strict leading principal submatrix of $A$ is nonsingular,
+then
+$$A = L U,$$
+with $L$ the Crout lower factor, which is lower triangular, and $U$ the Crout upper factor,
+which is unit upper triangular.
+
+Unit upper triangularity is stated as: the transpose of $U$ is unit lower triangular. -/
 theorem croutLower_mul_croutUpper (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     croutLower A * croutUpper A = A ∧ (croutLower A).IsLowerTriangular ∧
       (croutUpper A)ᵀ.IsUnitLowerTriangular := by

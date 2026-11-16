@@ -18,39 +18,47 @@ import Mathlib.Topology.Algebra.Module.FiniteDimension
 /-!
 # Compact operators: closure properties, Schauder's theorem, and Riesz theory
 
-What Mathlib's `Mathlib.Analysis.Normed.Operator.Compact` does not have, and the classical Riesz
-theory of `μ - K` needs.
+This file proves the facts about compact operators that Mathlib's
+`Mathlib.Analysis.Normed.Operator.Compact` does not have and that the classical Riesz theory of
+$\mu I - K$ needs. A bounded operator of finite rank is compact, and an operator-norm limit of
+compact operators is compact; conversely, a compact operator into an inner product space is an
+operator-norm limit of operators of finite rank. The adjoint of a compact operator between Hilbert
+spaces is compact (Schauder's theorem). For a compact operator $K$ and $\varepsilon > 0$, only
+finitely many eigenvalues have modulus at least $\varepsilon$, so the eigenvalues can accumulate
+only at $0$. For $\mu \neq 0$ the range of $\mu I - K$ is closed, and on a Hilbert space
+$$\operatorname{range}(\mu I - K) = \ker(\bar\mu I - K^\dagger)^\perp,$$ so the equation
+$(\mu I - K) u = f$ is solvable exactly when $f$ is orthogonal to the kernel of the adjoint
+equation. Here $I$ is the identity and $K^\dagger$ is the Hilbert adjoint.
 
-## Main statements
+These are Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem 2.8.12(1) and (4), and Theorem
+2.8.14(2) of [han2009theoretical]. The finite-rank approximation is Remark 1 of Chapter 6 of
+[brezis2011functional]. The Riesz theory of ascent and descent, that the null spaces of
+$(\mu I - K)^n$ stabilize and that $\ker(\mu I - K)$ and $\ker(\bar\mu I - K^\dagger)$ have equal
+dimension, is in `Numlib.Analysis.Normed.Operator.Riesz`.
 
-* `IsCompactOperator.of_finiteDimensional_range` — a bounded operator of finite rank is compact.
-* `IsCompactOperator.of_tendsto` — an operator-norm limit of compact operators is compact, in the
-  sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form.
-* `IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt` — the converse when the codomain
-  is an inner product space: a compact operator is an operator-norm limit of finite-rank
-  operators (the orthogonal projections of `T` onto the spans of finite nets of `T(B_E)`). This is
-  the positive answer to the approximation problem for Hilbert codomains, [brezis2011functional]
-  Chapter 6, Remark 1.
-* `IsCompactOperator.adjoint` — **Schauder's theorem**: the adjoint of a compact operator between
-  Hilbert spaces is compact. The proof needs no finite-rank approximation: `K` composed with `K†` is
-  compact, and `‖K† z‖² ≤ ‖K (K† z)‖ ‖z‖` turns a finite net for `K ∘ K†` on the unit ball into a
-  finite net for `K†`.
-* `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le` — for `ε > 0` only finitely many
-  eigenvalues have modulus at least `ε`, so the eigenvalues of a compact operator can accumulate
-  only at `0`. Riesz's lemma applied to the strictly increasing chain of spans of eigenvectors for
-  distinct eigenvalues.
-* `IsCompactOperator.isClosed_range_smul_sub` — the range of `μ • 1 - K` is closed for `μ ≠ 0`.
-* `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` — the solvability criterion on a
-  Hilbert space: `range (μ • 1 - K) = (ker (conj μ • 1 - K†))ᗮ`, so `(μ • 1 - K) u = f` is solvable
-  exactly when `f` is orthogonal to the kernel of the adjoint equation.
+## Main results
 
-Neither the finiteness of the eigenvalues of modulus at least `ε` nor the closed range needs the
-domain to be complete: Riesz's lemma and the compactness of `K` carry both arguments on their own.
-The Riesz ascent–descent theory — that the chain of null spaces of `(μ - K)ⁿ` stabilizes, and that
-`ker (μ - K)` and `ker (conj μ - K†)` have equal dimension — is not developed here.
+* `IsCompactOperator.of_finiteDimensional_range`: a bounded operator of finite rank is compact.
+* `IsCompactOperator.of_tendsto`: an operator-norm limit of a sequence of compact operators is
+  compact.
+* `IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt`: a compact operator into an inner
+  product space is an operator-norm limit of operators of finite rank.
+* `IsCompactOperator.adjoint`: **Schauder's theorem**, the adjoint of a compact operator between
+  Hilbert spaces is compact.
+* `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`: for $\varepsilon > 0$ only finitely many
+  eigenvalues have modulus at least $\varepsilon$.
+* `IsCompactOperator.isClosed_range_smul_sub`: the range of $\mu I - K$ is closed for $\mu \neq 0$.
+* `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint`: on a Hilbert space,
+  $\operatorname{range}(\mu I - K) = \ker(\bar\mu I - K^\dagger)^\perp$ for $\mu \neq 0$.
 
-These are [han2009theoretical] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem 2.8.12 clauses
-(1) and (4), and Theorem 2.8.14 clause (2).
+## Implementation notes
+
+* The operator $\mu I - K$ is `μ • (1 : X →L[𝕜] X) - K`.
+* The conjugate $\bar\mu$ is `(starRingEnd 𝕜) μ`.
+* `IsCompactOperator.of_tendsto` is the sequential form; Mathlib's `isCompactOperator_of_tendsto` is
+  the general form for filters.
+* Neither the finiteness of the eigenvalues of modulus at least $\varepsilon$ nor the closed range
+  needs the domain to be complete: Riesz's lemma and the compactness of $K$ carry both arguments.
 -/
 
 open Filter Topology Metric Set
@@ -66,9 +74,14 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [Loc
   {E F : Type*} [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **A bounded operator with finite-dimensional range is compact.** Corestricting to the range,
-which is locally compact because it is finite dimensional over a locally compact complete field,
-makes the operator a continuous linear map into a locally compact space. -/
+/-- **A bounded operator with finite-dimensional range is compact.** Let $\mathbb{K}$ be a complete,
+locally compact, nontrivially normed field, let $E$ be a seminormed space and $F$ a normed space
+over $\mathbb{K}$, and let $f : E \to F$ be a continuous linear map whose range is
+finite-dimensional. Then $f$ is a compact operator.
+
+The range is locally compact, because it is finite-dimensional over a locally compact complete
+field. So the corestriction of $f$ to its range is a continuous linear map into a locally
+compact space. -/
 theorem of_finiteDimensional_range (f : E →L[𝕜] F)
     [FiniteDimensional 𝕜 (LinearMap.range (f : E →ₗ[𝕜] F))] : IsCompactOperator f := by
   have : LocallyCompactSpace (LinearMap.range (f : E →ₗ[𝕜] F)) :=
@@ -85,9 +98,13 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {E F : Type*}
   [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace F]
 
-/-- **An operator-norm limit of compact operators is compact**, when the codomain is complete. This
-is the sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form, and
-`isClosed_setOfPred_isCompactOperator` the closedness that both rest on. -/
+/-- **An operator-norm limit of compact operators is compact.** Let $E$ be a seminormed space and
+$F$ a Banach space over a nontrivially normed field. If $A_0, A_1, \dots : E \to F$ are compact
+operators and $f : E \to F$ is a continuous linear map with $\|A_n - f\| \to 0$, then $f$ is a
+compact operator.
+
+This is the sequential form. Mathlib's `isCompactOperator_of_tendsto` is the general form for
+filters, and both rest on the closedness `isClosed_setOfPred_isCompactOperator`. -/
 theorem of_tendsto {A : ℕ → E →L[𝕜] F} {f : E →L[𝕜] F} (hA : ∀ n, IsCompactOperator (A n))
     (h : Tendsto (fun n => ‖A n - f‖) atTop (𝓝 0)) : IsCompactOperator f :=
   isCompactOperator_of_tendsto (tendsto_iff_norm_sub_tendsto_zero.2 h) (.of_forall hA)
@@ -102,11 +119,14 @@ variable {𝕜 E F : Type*} [RCLike 𝕜]
   [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [CompleteSpace E]
   [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] [CompleteSpace F]
 
-/-- **Schauder's theorem**: the adjoint of a compact operator between Hilbert spaces is compact.
+/-- **Schauder's theorem.** Let $E$ and $F$ be Hilbert spaces over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, and let $K : E \to F$ be a compact operator. Then its adjoint
+$K^\dagger : F \to E$ is a compact operator.
 
-No approximation property is used. The composite `K ∘ K†` is compact, being a compact operator
-preceded by a bounded one, and `‖K† z‖² ≤ ‖K (K† z)‖ ‖z‖` converts a finite net for `K ∘ K†` on the
-unit ball into a finite net for `K†`. -/
+No approximation property is used. The composite $K K^\dagger$ is compact, because it is a
+compact operator after a bounded one. The inequality $\|K^\dagger z\|^2 \le \|K K^\dagger z\| \,
+\|z\|$ converts a finite net for $K K^\dagger$ on the unit ball into a finite net for
+$K^\dagger$. -/
 theorem adjoint {K : E →L[𝕜] F} (hK : IsCompactOperator K) :
     IsCompactOperator (ContinuousLinearMap.adjoint K) := by
   have hest : ∀ y y' : F,
@@ -187,13 +207,17 @@ section Eigenvalues
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
   [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- **The eigenvalues of a compact operator accumulate only at `0`**: for every `ε > 0` there are
-only finitely many eigenvalues `μ` with `ε ≤ ‖μ‖`.
+/-- **The eigenvalues of a compact operator accumulate only at $0$.** Let $X$ be a normed space over
+a complete nontrivially normed field, let $T : X \to X$ be a compact operator, and let
+$\varepsilon > 0$. Then the set of eigenvalues $\mu$ of $T$ with $\varepsilon \le |\mu|$ is
+finite.
 
-If there were infinitely many, the spans `Vₙ` of the first `n` eigenvectors would form a strictly
-increasing chain of finite-dimensional, hence closed, subspaces; Riesz's lemma produces `wₙ ∈ Vₙ₊₁`
-of bounded norm at distance at least `1` from `Vₙ`, and `(T - μₙ) Vₙ₊₁ ⊆ Vₙ` makes the points `T wₙ`
-pairwise at distance at least `ε`, which no sequence in a compact set can be. -/
+The space $X$ need not be complete. If there were infinitely many such eigenvalues, the spans
+$V_n$ of the first $n$ eigenvectors would form a strictly increasing chain of
+finite-dimensional, hence closed, subspaces. Riesz's lemma gives $w_n \in V_{n+1}$ of bounded
+norm at distance at least $1$ from $V_n$, and $(T - \mu_n) V_{n+1} \subseteq V_n$ makes the
+points $T w_n$ pairwise at distance at least $\varepsilon$, which is impossible for a sequence
+in a compact set. -/
 theorem finite_setOf_hasEigenvalue_norm_le {T : X →L[𝕜] X} (hT : IsCompactOperator T) {ε : ℝ}
     (hε : 0 < ε) :
     {μ : 𝕜 | Module.End.HasEigenvalue (T : Module.End 𝕜 X) μ ∧ ε ≤ ‖μ‖}.Finite := by
@@ -311,14 +335,14 @@ theorem finite_setOf_hasEigenvalue_norm_le {T : X →L[𝕜] X} (hT : IsCompactO
 
 end Eigenvalues
 
-/-! ### The range of `μ - K` is closed -/
+/-! ### The range of $\mu I - K$ is closed -/
 
 section ClosedRange
 
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- Every vector has a representative modulo a submodule whose norm is within `1` of the distance to
-that submodule. -/
+/-- For a submodule $N$ and a vector $v$ there is $z \in N$ with $\|v - z\| \le \|v - z - t\| + 1$
+for all $t \in N$. -/
 private theorem exists_almost_minimal (N : Submodule 𝕜 X) (v : X) :
     ∃ z ∈ N, ∀ t ∈ N, ‖v - z‖ ≤ ‖v - z - t‖ + 1 := by
   have hne : (N : Set X).Nonempty := ⟨0, N.zero_mem⟩
@@ -332,8 +356,8 @@ private theorem exists_almost_minimal (N : Submodule 𝕜 X) (v : X) :
   rw [dist_eq_norm] at hzlt
   linarith
 
-/-- An almost minimal representative modulo `ker (μ • 1 - K)` has norm controlled by the norm of its
-image: `μ • 1 - K` is bounded below modulo its kernel. -/
+/-- For a compact $K$ and $\mu \neq 0$ there is $C \ge 0$ with $\|v\| \le C (1 + \|(\mu I - K) v\|)$
+for every $v$ such that $\|v\| \le \|v - t\| + 1$ for all $t \in \ker(\mu I - K)$. -/
 private theorem exists_bound {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ v : X,
       (∀ t ∈ (μ • (1 : X →L[𝕜] X) - K).ker, ‖v‖ ≤ ‖v - t‖ + 1) →
@@ -421,11 +445,14 @@ private theorem exists_bound {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ
   have hpos : (0 : ℝ) < 1 / ‖c‖ := by positivity
   linarith
 
-/-- **The range of `μ • 1 - K` is closed** for a compact operator `K` and `μ ≠ 0`.
+/-- **The range of $\mu I - K$ is closed.** Let $X$ be a normed space over a nontrivially normed
+field, let $K : X \to X$ be a compact operator, and let $\mu \neq 0$. Then the range of
+$\mu I - K$ is closed.
 
-An almost minimal representative of a coset of the kernel has norm bounded in terms of the norm of
-its image (`exists_bound`), so a convergent sequence in the range comes from a bounded sequence;
-compactness of `K` then produces a convergent subsequence, and the limit is attained. -/
+The space $X$ need not be complete. A representative of a coset of the kernel that is almost of
+minimal norm has norm bounded in terms of the norm of its image. So a convergent sequence in the
+range comes from a bounded sequence, the compactness of $K$ gives a convergent subsequence, and
+the limit is in the range. -/
 theorem isClosed_range_smul_sub {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     IsClosed ((μ • (1 : X →L[𝕜] X) - K).range : Set X) := by
   obtain ⟨C, hC0, hC⟩ := exists_bound hK hμ
@@ -475,14 +502,16 @@ section Solvability
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [InnerProductSpace 𝕜 X] [CompleteSpace X]
 
-/-- **The solvability criterion for a second-kind equation** (the "Fredholm alternative" in the form
-used to solve `(μ - K) u = f`): on a Hilbert space, for a compact `K` and `μ ≠ 0`, `range (μ • 1 -
-K) = (ker (conj μ • 1 - K†))ᗮ`. So the equation `(μ • 1 - K) u = f` is solvable exactly when `f` is
-orthogonal to every solution of the homogeneous adjoint equation, and `X = ker (conj μ • 1 - K†) ⊕
-range (μ • 1 - K)`.
+/-- **The solvability criterion for an equation of the second kind.** Let $X$ be a Hilbert space
+over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $K : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $$\operatorname{range}(\mu I - K) = \ker(\bar\mu I - K^\dagger)^\perp.$$ So
+the equation $(\mu I - K) u = f$ is solvable exactly when $f$ is orthogonal to every solution of
+the homogeneous adjoint equation, and $X = \ker(\bar\mu I - K^\dagger) \oplus
+\operatorname{range}(\mu I - K)$.
 
-The inclusion of the range in the orthogonal complement is formal; equality is
-`isClosed_range_smul_sub`. -/
+This is the form of the Fredholm alternative that is used to solve $(\mu I - K) u = f$. The
+inclusion of the range in the orthogonal complement is formal. Equality holds because the range
+is closed (`IsCompactOperator.isClosed_range_smul_sub`). -/
 theorem range_smul_sub_eq_orthogonal_ker_adjoint {K : X →L[𝕜] X} (hK : IsCompactOperator K)
     {μ : 𝕜} (hμ : μ ≠ 0) :
     (μ • (1 : X →L[𝕜] X) - K).range =
@@ -507,18 +536,20 @@ section FiniteRankApprox
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
-/-- **A compact operator into an inner product space is an operator-norm limit of finite-rank
-operators**: for `T : E →L[𝕜] F` compact and `ε > 0` there is `S : E →L[𝕜] F` with
-finite-dimensional range and `‖S - T‖ < ε`. This is the positive answer to the approximation
-problem (Banach, Grothendieck) when the codomain is a Hilbert space, [brezis2011functional]
-Chapter 6, Remark 1; the converse is `IsCompactOperator.of_tendsto` with
-`IsCompactOperator.of_finiteDimensional_range`.
+/-- **A compact operator into an inner product space is an operator-norm limit of operators of
+finite rank.** Let $E$ be a normed space and $F$ an inner product space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : E \to F$ be a compact operator, and let
+$\varepsilon > 0$. Then there is a continuous linear map $S : E \to F$ with finite-dimensional
+range and $\|S - T\| < \varepsilon$.
 
-The proof is the book's: `T(B_E)` has compact closure, so it has a finite `ε/4`-net `s`; with
-`G` the span of `s` and `P_G` the orthogonal projection onto `G` (finite-dimensional, hence
-complete — no completeness of `F` is needed), `S := P_G ∘ T` has range in `G`, and for `‖x‖ = 1`
-and `f ∈ s` within `ε/4` of `T x`, `‖P_G (T x) - f‖ = ‖P_G (T x - f)‖ ≤ ‖T x - f‖`, so
-`‖S x - T x‖ < ε/2`. -/
+This is the positive answer to the approximation problem (Banach, Grothendieck) when the
+codomain is a Hilbert space, Remark 1 of Chapter 6 of [brezis2011functional]. The converse is
+`IsCompactOperator.of_tendsto` together with `IsCompactOperator.of_finiteDimensional_range`. The
+proof is the one of the book. The set $T(B_E)$ has compact closure, so it has a finite
+$\varepsilon/4$-net $s$. Let $P_G$ be the orthogonal projection onto the span $G$ of $s$; it
+exists because $G$ is finite-dimensional and hence complete, so $F$ need not be complete. Then
+$S = P_G T$ has range in $G$. For $\|x\| = 1$ and $f \in s$ within $\varepsilon/4$ of $Tx$,
+$\|P_G(Tx) - f\| = \|P_G(Tx - f)\| \le \|Tx - f\|$, so $\|Sx - Tx\| < \varepsilon/2$. -/
 theorem exists_finiteDimensional_range_norm_sub_lt {T : E →L[𝕜] F} (hT : IsCompactOperator T)
     {ε : ℝ} (hε : 0 < ε) :
     ∃ S : E →L[𝕜] F, FiniteDimensional 𝕜 (LinearMap.range (S : E →ₗ[𝕜] F)) ∧ ‖S - T‖ < ε := by

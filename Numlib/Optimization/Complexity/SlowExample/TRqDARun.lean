@@ -10,26 +10,31 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqEDA
 /-!
 # Slow runs of the dynamic-accuracy trust-region methods
 
-The slow trust-region example of [cartis2022evaluation], Theorem 12.2.6, lifted to `ℝ¹` along
-the coordinate direction `e₁` (a ridge `x ↦ λ g ⟪e₁, x⟫`, `λ ∈ (0, 1]`), gives runs of the
-dynamic-accuracy trust-region methods TRqIDA and TRqEDA ([cartis2022evaluation], Algorithms 13.1.1
-and 13.3.1, `Optimization.IsTRqIDARun`, `Optimization.IsTRqEDARun`) with exact derivatives (and
-values) whose first approximately optimal iterate is `x_{k_ε}`, `k_ε = ⌈ε^{-(q+1)}⌉`. The class
-constants (`f_low`, the Lipschitz constant `L`) do not depend on `ε`.
+The slow trust-region example of Theorem 12.2.6 of [cartis2022evaluation] gives slow runs of the
+dynamic-accuracy trust-region methods TRqIDA and TRqEDA (Algorithms 13.1.1 and 13.3.1 of
+[cartis2022evaluation]) with exact derivatives, and for TRqEDA also exact function values. The
+example is lifted to $\mathbb{R}^1$ as the ridge function
+$x \mapsto \lambda g(\langle e_1, x \rangle)$ along the coordinate unit vector $e_1$, with
+$\lambda \in (0, 1]$. The first approximately optimal iterate of these runs is $x_{k_\varepsilon}$
+with $k_\varepsilon = \lceil \varepsilon^{-(q+1)} \rceil$. The constants of the function class, the
+lower bound $f_{\mathrm{low}}$ and the Lipschitz constant $L$, do not depend on $\varepsilon$.
 
-The iterates are `x_k = k ε e₁` with radii `Δ_k = ϑ = ε`, ratios `ρ_k = 1` and no
-accuracy-improving iteration, as long as the initial accuracies pass the accuracy test (13.1.9)
-along steps of length `ε`. The tests (13.1.14) and (13.3.7) have half the threshold of the TRq
-test, so TRqEDA is run on `f/2` to terminate at `k_ε`. TRqIDA has no termination rule; after
-`k_ε` its run continues as any TRqIDA run from `x_{k_ε}` (`Optimization.exists_trqDA_run`),
-spliced with `Optimization.TRqDAStep.seqAppend`.
+The iterates are $x_k = k \varepsilon e_1$, with the radii $\Delta_k = \vartheta = \varepsilon$, the
+ratios $\rho_k = 1$ and no accuracy-improving iteration, as long as the initial accuracies pass the
+accuracy test (13.1.9) along steps of length $\varepsilon$. The tests (13.1.14) and (13.3.7) have
+half the threshold of the TRq test, so TRqEDA is run on $f/2$, which makes it terminate at
+$k_\varepsilon$. TRqIDA has no termination rule. After $k_\varepsilon$ its run continues as any
+TRqIDA run from $x_{k_\varepsilon}$ (`Optimization.exists_trqDA_run`), joined to the explicit
+iterations by `Optimization.TRqDAStep.seqAppend`.
 
 ## Main results
 
-* `Optimization.exists_isTRqIDARun_slow`: a TRqIDA run on `ℝ¹` whose first approximately optimal
-  iterate is `x_{k_ε}`, after `k_ε + 1 ≥ ε^{-(q+1)} + 1` evaluations;
-* `Optimization.exists_isTRqEDARun_slow`: a TRqEDA run on `ℝ¹` that first terminates at `k_ε`,
-  after `2 k_ε` function and `k_ε + 1` derivative evaluations.
+* `Optimization.exists_isTRqIDARun_slow`: a TRqIDA run on $\mathbb{R}^1$ whose first approximately
+  optimal iterate is $x_{k_\varepsilon}$, after at least $\varepsilon^{-(q+1)} + 1$ evaluations of
+  the function and of the derivatives.
+* `Optimization.exists_isTRqEDARun_slow`: a TRqEDA run on $\mathbb{R}^1$ that first terminates at
+  $k_\varepsilon$, after at least $2 \varepsilon^{-(q+1)}$ function evaluations and at least
+  $\varepsilon^{-(q+1)} + 1$ derivative evaluations.
 -/
 
 open Set Metric
@@ -39,20 +44,21 @@ namespace Optimization
 
 open EuclideanSpace (norm_single_one inner_single_smul_self)
 
-/-- The coordinate direction of `ℝ¹`. -/
+/-- The coordinate unit vector $e_1$ of $\mathbb{R}^1$. -/
 local notation "e₀" => EuclideanSpace.single (0 : Fin 1) (1 : ℝ)
 
 private theorem smul_e₀_succ (k : ℕ) (ε : ℝ) :
     ((k : ℝ) * ε) • e₀ + ε • e₀ = (((k : ℝ) + 1) * ε) • e₀ := by
   rw [← add_smul]; ring_nf
 
-/-- **The slow trust-region example on `ℝ¹`** ([cartis2022evaluation], Theorem 12.2.6, lifted
-along `e₁` and scaled by `λ ∈ (0, 1]`). For `q ≥ 1` there are `f_low` and `L ≥ 1` such that, for
-every `ε ∈ (0, 1]` and `λ ∈ (0, 1]`, with `k_ε = ⌈ε^{-(q+1)}⌉`, `c_k = 2 - k/k_ε` and
-`x_k = k ε e₁`, there is a `C^q` function `f ≥ f_low` whose derivatives of orders `0, …, q` are
-`L`-Lipschitz and whose Taylor decrements at `x_k` (`k ≤ k_ε`) are
-`ΔT_{f,j}(x_k, d) = 0` for `j < q` and `λ ε c_k ⟪e₁, d⟫^q` for `j = q`, and with
-`f(x_{k+1}) = f(x_k) - λ ε^{q+1} c_k` (`k < k_ε`). -/
+/-- The slow trust-region example of Theorem 12.2.6 of [cartis2022evaluation] on $\mathbb{R}^1$,
+lifted along $e_1$ and scaled by $\lambda \in (0, 1]$: for $q \ge 1$ there are
+$f_{\mathrm{low}}$ and $L \ge 1$ such that for all $\varepsilon, \lambda \in (0, 1]$, with
+$k_\varepsilon = \lceil \varepsilon^{-(q+1)} \rceil$, $c_k = 2 - k/k_\varepsilon$ and
+$x_k = k \varepsilon e_1$, some $f \ge f_{\mathrm{low}}$ with $L$-Lipschitz derivatives of
+orders $0, \dots, q$ has the Taylor decrements $\Delta T_{f,j}(x_k, d) = 0$ for $j < q$ and
+$\lambda \varepsilon c_k \langle e_1, d \rangle^q$ for $j = q$ ($k \le k_\varepsilon$), and the
+values $f(x_{k+1}) = f(x_k) - \lambda \varepsilon^{q+1} c_k$ ($k < k_\varepsilon$). -/
 private theorem exists_slowTRq_ridge {q : ℕ} (hq : 1 ≤ q) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ lam : ℝ, 0 < lam → lam ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, (∀ y, flow ≤ f y) ∧
@@ -88,9 +94,11 @@ private theorem exists_slowTRq_ridge {q : ℕ} (hq : 1 ≤ q) :
     push_cast at this
     rw [this]; ring
 
-/-- The bookkeeping of the slow trust-region example: for `ε ∈ (0, 1/q!]`,
-`k_ε = ⌈ε^{-(q+1)}⌉ ≥ max(1, ε^{-(q+1)})`, `c_k = 2 - k/k_ε` is `> 1` before `k_ε`, `≥ 0` up to
-`k_ε` and `1` at `k_ε`, and the tolerances `ε_j = j! ε` lie in `(0, 1]` with `ε_min = ε`. -/
+/-- For $q \ge 1$ and $\varepsilon \in (0, 1/q!]$, with $k_\varepsilon = \lceil \varepsilon^{-(q+1)}
+\rceil$ and $c_k = 2 - k/k_\varepsilon$: $\varepsilon \le 1$, $k_\varepsilon \ge \max\{1,
+\varepsilon^{-(q+1)}\}$, $c_k > 1$ for $k < k_\varepsilon$, $c_k \ge 0$ for
+$k \le k_\varepsilon$, $c_{k_\varepsilon} = 1$, the tolerances $\varepsilon_j = j! \varepsilon$
+lie in $(0, 1]$ for $j \in [1, q]$, and $\min_j \varepsilon_j = \varepsilon$. -/
 private theorem slowTRq_setup {q : ℕ} (hq : 1 ≤ q) {ε : ℝ} (hε : 0 < ε) (hεq : ε ≤ 1 / q !) :
     ε ≤ 1 ∧ 1 ≤ ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧ (ε ^ (q + 1))⁻¹ ≤ ⌈(ε ^ (q + 1))⁻¹⌉₊ ∧
       (∀ k < ⌈(ε ^ (q + 1))⁻¹⌉₊, 1 < 2 - (k : ℝ) / ⌈(ε ^ (q + 1))⁻¹⌉₊) ∧
@@ -118,17 +126,33 @@ private theorem slowTRq_setup {q : ℕ} (hq : 1 ≤ q) {ε : ℝ} (hε : 0 < ε)
     have h2 : (1 : ℝ) ≤ j ! := by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero _)
     exact le_mul_of_one_le_left hε.le h2
 
-/-- **A slow TRqIDA run** on `X = ℝ¹` with exact derivatives (`κ_{∇,i} = 0`, so the accuracy
-requirement (13.1.2) asks for zero error). For `q ≥ 1` there are `f_low` and `L ≥ 1` such that,
-for every `ε ∈ (0, 1/q!]` (tolerances `ε_j = j! ε`) and all TRqIDA constants with `q`,
-`Δ₀ = ϑ = ε` and initial accuracies passing the accuracy test (13.1.9) along steps of length `ε`
-(`h_{0,i} ≤ κ_s ε^{q-i+1}`), there is a `C^q` function `f ≥ f_low` whose derivatives of orders
-`0, …, q` are `L`-Lipschitz and a TRqIDA run with exact derivatives from `x₀ = 0` whose first
-`(ε, δ_k)`-approximately optimal iterate is `x_{k_ε}`, `k_ε = ⌈ε^{-(q+1)}⌉`, after
-`k_ε + 1 ≥ ε^{-(q+1)} + 1` function evaluations and as many derivative evaluations. The run
-follows the slow example of [cartis2022evaluation], Theorem 12.2.6 (`x_k = k ε e₁`, `Δ_k = ε`,
-`ρ_k = 1`, no accuracy-improving iteration) up to `k_ε`, and continues as any run from `x_{k_ε}`
-(`Optimization.exists_trqDA_run`). -/
+/-- **A slow TRqIDA run** on $X = \mathbb{R}^1$ with exact derivatives. Let $q \ge 1$. There are
+$f_{\mathrm{low}} \in \mathbb{R}$ and $L \ge 1$ with the following property. Let
+$0 < \varepsilon \le 1/q!$, and let $P$ be TRqIDA parameters with the order $q$, the radii
+$\Delta_0 = \vartheta = \varepsilon$, and initial accuracies
+$h_{0,i} \le \kappa_s \varepsilon^{q-i+1}$ for $i \in [1, q]$; these pass the accuracy test
+(13.1.9) along steps of length $\varepsilon$. Then there are a function
+$f \colon \mathbb{R}^1 \to \mathbb{R}$ of class $C^q$ with $f \ge f_{\mathrm{low}}$ whose
+derivatives of orders $0, \dots, q$ are $L$-Lipschitz on $\mathbb{R}^1$, and a TRqIDA run for
+$f$ with the tolerances $\varepsilon_j = j! \varepsilon$, the oracle constants
+$\kappa_{\nabla,i} = 0$ and the starting point $x_0 = 0$, such that:
+
+* the data are exact: $D_k$ is the jet of $f$ at $x_k$ for every $k$;
+* the first iterate $x_k$ that is an $(\varepsilon, \delta_k)$-approximate $q$-th order
+  minimizer is $x_{k_\varepsilon}$, with $k_\varepsilon = \lceil \varepsilon^{-(q+1)} \rceil$;
+* up to iteration $k_\varepsilon$, the number of function evaluations (one at $x_0$ and one per
+  iteration that is not accuracy-improving) is at least $\varepsilon^{-(q+1)} + 1$;
+* up to iteration $k_\varepsilon$, the number of derivative evaluations (one at $x_0$ and one
+  per accuracy-improving or successful iteration) is at least $\varepsilon^{-(q+1)} + 1$.
+
+The oracle constants $\kappa_{\nabla,i} = 0$ make the accuracy requirement (13.1.2) ask for zero
+error. The smoothness and the Lipschitz condition are `LipschitzDerivsAnchored f univ univ 0 q
+(fun _ => L)`, the run is `Optimization.IsTRqIDARun`, the test of approximate optimality is
+`Optimization.trqIDATest`, and the counts are `Optimization.derivEvalCount`. Up to
+$k_\varepsilon$ the run follows the slow example of Theorem 12.2.6 of [cartis2022evaluation]:
+$x_k = k \varepsilon e_1$, $\Delta_k = \varepsilon$, $\rho_k = 1$, and no iteration is
+accuracy-improving, so both counts are $k_\varepsilon + 1$. After $k_\varepsilon$ it continues
+as any run from $x_{k_\varepsilon}$ (`Optimization.exists_trqDA_run`). -/
 theorem exists_isTRqIDARun_slow {q : ℕ} (hq : 1 ≤ q) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : TRqIDAParams, P.q = q →
       P.Δ₀ = ε → P.ϑ = ε → (∀ i ∈ Finset.Icc 1 q, P.h₀ i ≤ P.κs * ε ^ (q - i + 1)) →
@@ -247,18 +271,38 @@ theorem exists_isTRqIDARun_slow {q : ℕ} (hq : 1 ≤ q) :
       rw [hρ1 i hi]; exact P.η₁_le_η₂.trans P.η₂_lt_one.le⟩]
     push_cast; linarith
 
-/-- **A slow TRqEDA run** on `X = ℝ¹` with exact function and derivative values. For `q ≥ 1`
-there are `f_low` and `L ≥ 1` such that, for every `ε ∈ (0, 1/q!]` (tolerances `ε_j = j! ε`) and
-all TRqEDA constants with `q`, `Δ₀ = ϑ = ε`, (13.3.5) `κ_s ≤ min(η₁, 1 - η₂)/4` and initial
-accuracies passing the accuracy test (13.1.9) along steps of length `ε` and the termination test
-(13.3.8) at radius `ε` (`∑_{i=1}^q h_{0,i} ε^i/i! ≤ ½ ς ε ε^q/q!`), there is a `C^q` function
-`f ≥ f_low` whose derivatives of orders `0, …, q` are `L`-Lipschitz and a TRqEDA run with exact
-derivatives and function values from `x₀ = 0` that first terminates at `k_ε = ⌈ε^{-(q+1)}⌉`,
-after `2 k_ε ≥ 2 ε^{-(q+1)}` function evaluations (each value recomputed) and
-`k_ε + 1 ≥ ε^{-(q+1)} + 1` derivative evaluations. The run is the slow example of
-[cartis2022evaluation], Theorem 12.2.6 with `f` halved (`x_k = k ε e₁`, `Δ_k = ε`, `ρ_k = 1`, no
-accuracy-improving iteration), the halving making the test (13.3.7), whose threshold is half that
-of TRq, pass exactly at `k_ε`. -/
+/-- **A slow TRqEDA run** on $X = \mathbb{R}^1$ with exact function values and exact derivatives.
+Let $q \ge 1$. There are $f_{\mathrm{low}} \in \mathbb{R}$ and $L \ge 1$ with the following
+property. Let $0 < \varepsilon \le 1/q!$, and let $P$ be TRqIDA parameters with the order $q$,
+the radii $\Delta_0 = \vartheta = \varepsilon$, the condition (13.3.5)
+$\kappa_s \le \min\{\eta_1, 1 - \eta_2\}/4$, and initial accuracies that pass the accuracy test
+(13.1.9) along steps of length $\varepsilon$ and the termination test (13.3.8) at the radius
+$\varepsilon$:
+$$h_{0,i} \le \kappa_s \varepsilon^{q-i+1} \quad (i \in [1, q]), \qquad \sum_{i=1}^q
+  \frac{h_{0,i} \varepsilon^i}{i!} \le \frac{1}{2} \varsigma \varepsilon
+  \frac{\varepsilon^q}{q!}.$$
+Then there are a function $f \colon \mathbb{R}^1 \to \mathbb{R}$ of class $C^q$ with
+$f \ge f_{\mathrm{low}}$ whose derivatives of orders $0, \dots, q$ are $L$-Lipschitz on
+$\mathbb{R}^1$, and a TRqEDA run for $f$ with the tolerances $\varepsilon_j = j! \varepsilon$
+and the starting point $x_0 = 0$, such that:
+
+* the data are exact: $D_k$ is the jet of $f$ at $x_k$, and the computed values are $f(x_k)$ and
+  $f(x_k + s_k)$, for every $k$;
+* the run first terminates at $k_\varepsilon = \lceil \varepsilon^{-(q+1)} \rceil$;
+* up to iteration $k_\varepsilon$, the number of function evaluations is at least
+  $2 \varepsilon^{-(q+1)}$;
+* up to iteration $k_\varepsilon$, the number of derivative evaluations (one at $x_0$ and one
+  per accuracy-improving or successful iteration) is at least $\varepsilon^{-(q+1)} + 1$.
+
+The smoothness and the Lipschitz condition are `LipschitzDerivsAnchored f univ univ 0 q (fun
+_ => L)`, the run is `Optimization.IsTRqEDARun`, the termination test is
+`Optimization.edaStopTR`, and the counts are `Optimization.edaFunEvalCount` and
+`Optimization.derivEvalCount`. The run is the slow example of Theorem 12.2.6 of
+[cartis2022evaluation] with $f$ halved: $x_k = k \varepsilon e_1$, $\Delta_k = \varepsilon$,
+$\rho_k = 1$, and no iteration is accuracy-improving. Each function value is computed again, so
+the function evaluations number $2 k_\varepsilon$, and the derivative evaluations number
+$k_\varepsilon + 1$. The halving makes the test (13.3.7), whose threshold is half that of TRq,
+pass exactly at $k_\varepsilon$. -/
 theorem exists_isTRqEDARun_slow {q : ℕ} (hq : 1 ≤ q) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : TRqIDAParams, P.q = q →
       P.Δ₀ = ε → P.ϑ = ε → P.κs ≤ min P.η₁ (1 - P.η₂) / 4 →

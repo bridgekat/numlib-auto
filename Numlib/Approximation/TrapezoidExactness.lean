@@ -14,30 +14,38 @@ import Numlib.Analysis.Fourier.TrigonometricPolynomial
 /-!
 # The periodic trapezoidal rule is exact on trigonometric polynomials
 
-Over one period, `N` equispaced nodes `θ_m = 2 π m / N`, `m = 0, …, N − 1`, and equal weights
-`2 π / N` integrate a trigonometric polynomial of degree less than `N` exactly:
+Let $N \ge 1$, and let $\theta_m = 2\pi m / N$, $m = 0, \dots, N - 1$, be $N$ equispaced nodes in
+one period. The trapezoidal rule with these nodes and the equal weights $2\pi / N$ integrates every
+trigonometric polynomial $f$ of degree less than $N$ exactly:
+$$\frac{2\pi}{N} \sum_{m=0}^{N-1} f(\theta_m) = \int_0^{2\pi} f(\theta) \, d\theta.$$
 
-`(2 π / N) ∑_{m < N} f (θ_m) = ∫_0^{2π} f`.
+The reason is the pair of orthogonality relations for the character $\theta \mapsto e^{ip\theta}$,
+$p \in \mathbb{Z}$. Its integral over a period vanishes unless $p = 0$, and its sum over the nodes
+vanishes unless $N \mid p$. For $|p| < N$ the two conditions coincide, so the rule sees exactly the
+constant term of $f$, which is what the integral sees.
 
-The mechanism is the pair of orthogonality relations for the character `θ ↦ exp (i p θ)`: its
-integral over a period vanishes unless `p = 0`, and its equispaced sum vanishes unless `N ∣ p`.
-Below `N` the two conditions coincide, so the rule sees exactly the constant term of `f`, which is
-what the integral sees.
+## Main definitions
+
+* `Quadrature.angleNode`: the node $\theta_m = 2\pi m / N$.
 
 ## Main results
 
-* `Quadrature.sum_exp_angleNode` — the discrete orthogonality relation; the continuous one is
-  `integral_exp_I_int_mul`.
-* `Quadrature.trapezoid_eq_integral_of_expSum` — exactness on any finite combination of characters
-  of degree less than `N`.
-* `Quadrature.trapezoid_eq_integral_cos_pow_mul_sin_pow` — exactness on `cos^a θ sin^b θ` when
-  `a + b < N`, the form a product quadrature rule on a disk needs. The expansion behind it is
-  `Complex.cos_pow_mul_sin_pow_eq_expSum`.
+* `Quadrature.sum_exp_angleNode`: the discrete orthogonality relation,
+  $\sum_{m=0}^{N-1} e^{ip\theta_m}$ is $N$ if $N \mid p$ and $0$ otherwise. The continuous relation
+  is `integral_exp_I_int_mul`.
+* `Quadrature.trapezoid_eq_integral_of_expSum`: the rule is exact on every finite combination of
+  characters $e^{ip\theta}$ with $|p| < N$.
+* `Complex.cos_pow_mul_sin_pow_eq_expSum`: the expansion of $\cos^a z \sin^b z$ in characters
+  $e^{ipz}$ with $|p| \le a + b$.
+* `Quadrature.trapezoid_eq_integral_cos_pow_mul_sin_pow`: the rule is exact on
+  $\cos^a \theta \sin^b \theta$ when $a + b < N$, the form that a product quadrature rule on a disk
+  needs.
 
 ## Implementation notes
 
-The characters are indexed by `ℤ`, and the degree bound is `|p| < N` rather than `p < N`, so that
-`N ∣ p ↔ p = 0` on the range that occurs.
+* The characters are indexed by $\mathbb{Z}$, and the degree bound is $|p| < N$ rather than $p < N$,
+  so that $N \mid p$ is equivalent to $p = 0$ on the range that occurs.
+* The character $e^{ip\theta}$ is written `Complex.exp (p * θ * I)`.
 -/
 
 open Complex Finset intervalIntegral MeasureTheory
@@ -46,12 +54,17 @@ open scoped Real
 
 namespace Quadrature
 
-/-- The `m`-th of the `N` equispaced angles of a period, `2 π m / N`. -/
+/-- The $m$-th of the $N$ equispaced angles of one period, $\theta_m = 2\pi m / N$. For $N = 0$ the
+value is $0$, because division by zero gives $0$. -/
 noncomputable def angleNode (N m : ℕ) : ℝ := 2 * π * m / N
 
-/-- **Discrete orthogonality of the characters**: summed over the `N` equispaced angles of a
-period, `exp (i p θ)` gives `N` when `N ∣ p` and `0` otherwise, being a sum of `N`-th roots of
-unity. -/
+/-- The **discrete orthogonality of the characters**: let $N \ge 1$ and $p \in \mathbb{Z}$. Then
+$$\sum_{m=0}^{N-1} e^{ip\theta_m} = \begin{cases} N & \text{if } N \mid p, \\ 0 &
+  \text{otherwise,} \end{cases}$$
+where $\theta_m = 2\pi m / N$.
+
+The terms $e^{ip\theta_m}$ are the powers of the $N$-th root of unity $e^{2\pi i p / N}$. The
+divisibility $N \mid p$ is divisibility in $\mathbb{Z}$. -/
 theorem sum_exp_angleNode {N : ℕ} (hN : 0 < N) (p : ℤ) :
     ∑ m ∈ range N, Complex.exp (p * (angleNode N m : ℝ) * I)
       = if (N : ℤ) ∣ p then (N : ℂ) else 0 := by
@@ -76,8 +89,14 @@ theorem sum_exp_angleNode {N : ℕ} (hN : 0 < N) (p : ℤ) :
   · have hz1 : z ≠ 1 := fun h => hdvd ((hprim.zpow_eq_one_iff_dvd p).1 h)
     rw [ite_eq_right hdvd, geom_sum_eq hz1, hzN, sub_self, zero_div]
 
-/-- **Exactness of the trapezoidal rule on a trigonometric polynomial** of degree less than `N`,
-written as a finite combination `∑ i ∈ s, c i * exp (i p_i θ)` of characters with `|p i| < N`. -/
+/-- The **exactness of the trapezoidal rule on trigonometric polynomials**: let $N \ge 1$, let $S$
+be a finite index set, and let $c_j \in \mathbb{C}$ and $p_j \in \mathbb{Z}$ with $|p_j| < N$
+for all $j \in S$. Then $f(\theta) = \sum_{j \in S} c_j e^{i p_j \theta}$ satisfies
+$$\frac{2\pi}{N} \sum_{m=0}^{N-1} f(\theta_m) = \int_0^{2\pi} f(\theta) \, d\theta,$$
+where $\theta_m = 2\pi m / N$.
+
+The proof compares the two sides term by term with the discrete relation
+`Quadrature.sum_exp_angleNode` and the continuous relation `integral_exp_I_int_mul`. -/
 theorem trapezoid_eq_integral_of_expSum {ι : Type*} {N : ℕ} (hN : 0 < N) {s : Finset ι}
     {c : ι → ℂ} {p : ι → ℤ} (hp : ∀ i ∈ s, |p i| < (N : ℤ)) :
     ((2 * π / N : ℝ) : ℂ) * ∑ m ∈ range N, ∑ i ∈ s, c i * Complex.exp (p i * (angleNode N m) * I)
@@ -109,7 +128,9 @@ namespace Complex
 
 open Finset
 
-/-- `cos z ^ a` expanded in characters: `cos^a z = 2^{-a} ∑_j C(a, j) exp (i (2 j − a) z)`. -/
+/-- The expansion of $\cos^a z$ in characters: for $a \in \mathbb{N}$ and $z \in \mathbb{C}$,
+$$\cos^a z = 2^{-a} \sum_{j=0}^{a} \binom{a}{j} e^{i(2j - a) z}.$$
+-/
 theorem cos_pow_eq_expSum (a : ℕ) (z : ℂ) :
     cos z ^ a = ∑ j ∈ range (a + 1),
       (a.choose j : ℂ) * (2 : ℂ)⁻¹ ^ a * Complex.exp (((2 * j - a : ℤ) : ℂ) * z * I) := by
@@ -126,8 +147,10 @@ theorem cos_pow_eq_expSum (a : ℕ) (z : ℂ) :
       = ((2 * j - a : ℤ) : ℂ) * z * I by rw [Nat.cast_sub hj']; push_cast; ring]
   ring
 
-/-- `sin z ^ b` expanded in characters:
-`sin^b z = ∑_k C(b, k) (i/2)^k (−i/2)^{b−k} exp (i (b − 2 k) z)`. -/
+/-- The expansion of $\sin^b z$ in characters: for $b \in \mathbb{N}$ and $z \in \mathbb{C}$,
+$$\sin^b z = \sum_{k=0}^{b} \binom{b}{k} \left(\frac{i}{2}\right)^k
+  \left(-\frac{i}{2}\right)^{b-k} e^{i(b - 2k) z}.$$
+-/
 theorem sin_pow_eq_expSum (b : ℕ) (z : ℂ) :
     sin z ^ b = ∑ k ∈ range (b + 1),
       ((b.choose k : ℂ) * (I / 2) ^ k * (-I / 2) ^ (b - k))
@@ -144,8 +167,14 @@ theorem sin_pow_eq_expSum (b : ℕ) (z : ℂ) :
       = ((b - 2 * k : ℤ) : ℂ) * z * I by rw [Nat.cast_sub hk']; push_cast; ring]
   ring
 
-/-- `cos^a z sin^b z` expanded in characters: a combination of `exp (i p z)` over
-`p = (2 j − a) + (b − 2 k)`, whose absolute value is at most `a + b`. -/
+/-- The expansion of $\cos^a z \sin^b z$ in characters: for $a, b \in \mathbb{N}$ and
+$z \in \mathbb{C}$,
+$$\cos^a z \sin^b z = \sum_{j=0}^{a} \sum_{k=0}^{b} 2^{-a} \binom{a}{j} \binom{b}{k}
+  \left(\frac{i}{2}\right)^k \left(-\frac{i}{2}\right)^{b-k} e^{i p_{jk} z}, \qquad p_{jk} =
+  (2j - a) + (b - 2k).$$
+Every exponent satisfies $|p_{jk}| \le a + b$.
+
+The double sum is a sum over the product `range (a + 1) ×ˢ range (b + 1)`. -/
 theorem cos_pow_mul_sin_pow_eq_expSum (a b : ℕ) (z : ℂ) :
     cos z ^ a * sin z ^ b
       = ∑ q ∈ range (a + 1) ×ˢ range (b + 1),
@@ -165,9 +194,15 @@ namespace Quadrature
 
 open Finset
 
-/-- **The periodic trapezoidal rule is exact on `cos^a θ sin^b θ` when `a + b < N`.** This is the
-angular half of a product quadrature rule on a disk: the `N` equispaced angles with equal weights
-`2 π / N` integrate every such product exactly. -/
+/-- The **exactness of the periodic trapezoidal rule on $\cos^a \theta \sin^b \theta$**: let
+$a, b, N \in \mathbb{N}$ with $a + b < N$. Then
+$$\frac{2\pi}{N} \sum_{m=0}^{N-1} \cos^a \theta_m \sin^b \theta_m = \int_0^{2\pi} \cos^a \theta
+  \sin^b \theta \, d\theta,$$
+where $\theta_m = 2\pi m / N$.
+
+This is the angular half of a product quadrature rule on a disk: the $N$ equispaced angles with
+the equal weights $2\pi / N$ integrate every such product exactly. The statement is over the
+reals. The expansion behind it is `Complex.cos_pow_mul_sin_pow_eq_expSum`. -/
 theorem trapezoid_eq_integral_cos_pow_mul_sin_pow {N a b : ℕ} (hN : a + b < N) :
     (2 * π / N) * ∑ m ∈ range N, Real.cos (angleNode N m) ^ a * Real.sin (angleNode N m) ^ b
       = ∫ θ in (0 : ℝ)..(2 * π), Real.cos θ ^ a * Real.sin θ ^ b := by

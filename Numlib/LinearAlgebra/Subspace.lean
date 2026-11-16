@@ -7,23 +7,31 @@ import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
 /-!
 # The affine hull of a set containing the origin
 
-Upstreaming candidate: nothing here is specific to numerical analysis.
+Let $C$ be a subset of a vector space $E$ over a field $K$. If $0 \in C$, then the affine hull of
+$C$ and the linear hull of $C$ agree. Mathlib states this for the sets as `affineSpan_insert_zero`.
+This module states it for the direction: $\operatorname{vectorSpan}_K C = \operatorname{span}_K C$,
+which is the form that other modules rewrite with. This is Theorem 1.1 of [rockafellar1970convex]
+(the affine sets that contain the origin are exactly the subspaces), stated for an arbitrary module
+over a field. Nothing here is about convexity.
 
-A set containing the origin has the same affine hull and linear hull. Mathlib states this for the
-*sets* as `affineSpan_insert_zero`; `vectorSpan_eq_span_of_zero_mem` is the same fact for the
-*direction*, `vectorSpan K C = span K C`, which is the form its consumers rewrite with. It is
-**Rockafellar, Theorem 1.1** — the affine sets through the origin are exactly the subspaces —
-stated for an arbitrary module over a field; nothing here is about convexity.
+## Main results
 
-## References
+* `vectorSpan_eq_span_of_zero_mem`: if $0 \in C$, then $\operatorname{vectorSpan}_K C =
+  \operatorname{span}_K C$.
 
-* [rockafellar1970convex] §1.
+## Implementation notes
+
+* Nothing in this module is specific to numerical analysis.
 -/
 
 variable {K E : Type*} [Field K] [AddCommGroup E] [Module K E]
 
-/-- For a set containing the origin the affine hull and the linear hull agree: the direction form
-of Mathlib's `affineSpan_insert_zero`. -/
+/-- Let $E$ be a vector space over a field $K$, and let $C \subseteq E$ contain $0$. Then the
+direction of the affine hull of $C$ is the linear hull of $C$:
+$$\operatorname{vectorSpan}_K C = \operatorname{span}_K C.$$
+
+This is the direction form of Mathlib's `affineSpan_insert_zero`, and the content of Theorem 1.1
+of [rockafellar1970convex]. -/
 theorem vectorSpan_eq_span_of_zero_mem {C : Set E} (h0 : (0 : E) ∈ C) :
     vectorSpan K C = Submodule.span K C := by
   have h : affineSpan K C = (Submodule.span K C).toAffineSubspace := AffineSubspace.coe_injective

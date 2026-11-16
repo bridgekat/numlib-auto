@@ -14,23 +14,30 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 /-!
 # Orthogonality and Parseval for trigonometric polynomials
 
-Finite computations with interval integrals over one period, for trigonometric polynomials with
-integer frequencies:
+This module computes interval integrals over one period of trigonometric polynomials with integer
+frequencies. It proves the orthogonality relations $\int_{-\pi}^{\pi} \cos(m r) \, dr = 2 \pi
+\delta_{m0}$ and $\int_0^{2\pi} e^{ik\varphi} \, d\varphi = 2 \pi \delta_{k0}$ for
+$m, k \in \mathbb{Z}$, and Parseval's identity for a trigonometric polynomial,
+$$\int_0^{2\pi} \Bigl| \sum_{s \in A} v_s e^{-is\varphi} \Bigr|^2 d\varphi = 2 \pi \sum_{s \in A}
+  |v_s|^2$$
+for a finite set $A \subset \mathbb{Z}$. The proofs need no $L^2$ theory of the circle: the cross
+terms integrate to zero one by one.
 
-* `integral_cos_int_mul_neg_pi_pi`: `∫_{-π}^{π} cos (m r) dr = 2π δ_{m0}`;
-* `integral_exp_I_int_mul`: `∫_0^{2π} e^{ikφ} dφ = 2π δ_{k0}`;
-* `integral_norm_sq_trigPoly`: **Parseval's identity** for a trigonometric polynomial,
-  `∫_0^{2π} |∑_s v_s e^{-isφ}|² dφ = 2π ∑_s |v_s|²`.
+## Main results
 
-They need no `L²` theory of the circle: the cross terms integrate to zero one by one.
+* `integral_cos_int_mul_neg_pi_pi`: $\int_{-\pi}^{\pi} \cos(m r) \, dr = 2 \pi \delta_{m0}$.
+* `integral_exp_I_int_mul`: $\int_0^{2\pi} e^{ik\varphi} \, d\varphi = 2 \pi \delta_{k0}$.
+* `integral_norm_sq_trigPoly`: Parseval's identity for a trigonometric polynomial.
 -/
 
 open scoped Real
 
-/-- **Orthogonality of the cosines over a symmetric period**: `∫_{-π}^{π} cos (m r) dr` is `2π` at
-`m = 0` and `0` at every other integer frequency. The half-period form
-`∫_0^π cos (m x) dx = π δ_{m0}` is `integral_cos_int_mul` in `Numlib.Analysis.Fourier.CosineBasis`.
--/
+/-- **Orthogonality of the cosines over a symmetric period**: for $m \in \mathbb{Z}$,
+$$\int_{-\pi}^{\pi} \cos(m r) \, dr = \begin{cases} 2 \pi & \text{if } m = 0, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+
+The half-period form $\int_0^{\pi} \cos(m x) \, dx = \pi \delta_{m0}$ is `integral_cos_int_mul`
+in `Numlib.Analysis.Fourier.CosineBasis`. -/
 theorem integral_cos_int_mul_neg_pi_pi (m : ℤ) :
     (∫ r in -π..π, Real.cos ((m : ℝ) * r)) = if m = 0 then 2 * π else 0 := by
   by_cases hm : m = 0
@@ -51,15 +58,18 @@ section Exp
 
 open Complex
 
-/-- `conj (e^{-isφ}) = e^{isφ}` for an integer `s` and a real `φ`. -/
+/-- For $s \in \mathbb{Z}$ and $\varphi \in \mathbb{R}$, the complex conjugate of $e^{-is\varphi}$
+is $e^{is\varphi}$. -/
 private theorem conj_exp_neg_int_mul (s : ℤ) (φ : ℝ) :
     (starRingEnd ℂ) (exp (-(I * s * φ))) = exp (I * s * φ) := by
   rw [← Complex.exp_conj]
   congr 1
   simp
 
-/-- **Orthogonality of the exponentials over one period**: `∫_0^{2π} e^{ikφ} dφ` is `2π` when
-`k = 0` and `0` otherwise. -/
+/-- **Orthogonality of the exponentials over one period**: for $k \in \mathbb{Z}$,
+$$\int_0^{2\pi} e^{ik\varphi} \, d\varphi = \begin{cases} 2 \pi & \text{if } k = 0, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+-/
 theorem integral_exp_I_int_mul (k : ℤ) :
     (∫ φ in (0 : ℝ)..(2 * Real.pi), exp (I * k * φ))
       = if k = 0 then ((2 * Real.pi : ℝ) : ℂ) else 0 := by
@@ -75,8 +85,11 @@ theorem integral_exp_I_int_mul (k : ℤ) :
     rw [h, htop]
     simp
 
-/-- **Parseval's identity for a trigonometric polynomial**: for finitely many complex
-coefficients, `∫_0^{2π} |∑_s v_s e^{-isφ}|² dφ = 2π ∑_s |v_s|²`. -/
+/-- **Parseval's identity for a trigonometric polynomial**: let $A \subset \mathbb{Z}$ be finite and
+let $v \colon \mathbb{Z} \to \mathbb{C}$. Then
+$$\int_0^{2\pi} \Bigl| \sum_{s \in A} v_s e^{-is\varphi} \Bigr|^2 d\varphi = 2 \pi \sum_{s \in
+  A} |v_s|^2.$$
+-/
 theorem integral_norm_sq_trigPoly (A : Finset ℤ) (v : ℤ → ℂ) :
     (∫ φ in (0 : ℝ)..(2 * Real.pi), ‖∑ s ∈ A, v s * exp (-(I * s * φ))‖ ^ 2)
       = 2 * Real.pi * ∑ s ∈ A, ‖v s‖ ^ 2 := by

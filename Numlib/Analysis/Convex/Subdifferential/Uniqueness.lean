@@ -9,33 +9,51 @@ import Numlib.Analysis.Convex.Subdifferential.Gradient
 /-!
 # A unique subgradient forces differentiability
 
-A proper convex function on a finite-dimensional space is differentiable at `x` exactly when it has
-a single subgradient there, and that subgradient is then the gradient. The forward half is
-`subdifferential_eq_singleton_of_hasFDerivAt`; the converse is proved here, and with it the exposed
-points of `epi f*` and of a support set move from a subgradient form to a gradient form.
+Let $E$ be a finite-dimensional real normed space and let $f \colon E \to [-\infty, +\infty]$ be a
+proper convex function. Then $f$ is differentiable at $x$ if and only if it has exactly one
+subgradient at $x$, and this subgradient is then the gradient $\nabla f(x)$. This is Theorem 25.1 of
+[rockafellar1970convex]. The forward direction is
+`ConvexAnalysis.subdifferential_eq_singleton_of_hasFDerivAt`, and this module proves the converse.
+With it, the descriptions of the exposed points of the epigraph of $f^*$ and of a support set by
+single-point subdifferentials become descriptions by gradients, as in §23 and §25 of
+[rockafellar1970convex].
 
-The substance is an interior step the book passes over. `∂f x = {y₀}` leaves no room for a normal
-direction to `dom f`, and in finite dimensions a convex set is a neighbourhood of every point at
-which its normal cone is trivial. With `x` interior, `f'(x; ·)` is finite in every direction, hence
-continuous and closed, so the support-function formula — which computes only `cl f'(x; ·)` —
-computes `f'(x; ·)` itself, and it is linear.
+The main step, which the proof in [rockafellar1970convex] passes over, is that a unique subgradient
+puts $x$ in $\operatorname{int}(\operatorname{dom} f)$. If $\partial f(x) = \{y_0\}$, there is no
+nonzero normal direction to $\operatorname{dom} f$ at $x$, and in finite dimensions a convex set is
+a neighbourhood of every point at which its normal cone is trivial. At an interior point, the
+directional derivative $f'(x; \cdot)$ is finite in every direction, so it is continuous and closed.
+Then the support-function formula, which in general gives only the closure of $f'(x; \cdot)$, gives
+$f'(x; \cdot)$ itself, and this function is linear.
 
 ## Main results
 
-* `mem_interior_convexDom_of_subdifferential_eq_singleton` — the interior step.
-* `hasGradientAtFn_iff_subdifferential_eq_singleton` — the equivalence in full
-  ([rockafellar1970convex] Theorem 25.1), with
-  `differentiableAtFn_iff_exists_subdifferential_eq_singleton` naming no gradient.
-* `hasGradientAtFn_convexCl_iff` — `∇(cl f) = ∇f`: a closure changes no gradient and creates none.
-* `mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn`,
-  `mem_exposedPoints_supportSet_iff_hasGradientAtFn` — the exposed points of `epi f*` and of a
-  support set, for a merely proper convex `f`, by reduction to `cl f`. Only the *gradients*
-  transfer: `∂f = ∂(cl f)` fails at relative boundary points, so the subgradient forms in
-  `Gradient.lean` keep their `ClosedConvex` hypothesis.
+* `ConvexAnalysis.mem_interior_convexDom_of_subdifferential_eq_singleton`: if $\partial f(x)$ is a
+  single point, then $x \in \operatorname{int}(\operatorname{dom} f)$.
+* `ConvexAnalysis.hasGradientAtFn_iff_subdifferential_eq_singleton`: $f$ has the gradient $f'$ at
+  $x$ if and only if $\partial f(x) = \{f'\}$.
+* `ConvexAnalysis.differentiableAtFn_iff_exists_subdifferential_eq_singleton`: $f$ is differentiable
+  at $x$ if and only if $\partial f(x)$ is a single point.
+* `ConvexAnalysis.hasGradientAtFn_convexCl_iff`: $\operatorname{cl} f$ and $f$ have the same
+  gradients at the same points.
+* `ConvexAnalysis.mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn`: the exposed points of the
+  epigraph of $f^*$ are the points $(\nabla f(x), f^*(\nabla f(x)))$ at which $f$ is differentiable.
+* `ConvexAnalysis.mem_exposedPoints_supportSet_iff_hasGradientAtFn`: for a positively homogeneous
+  $f$, the exposed points of the set supported by $f$ are the gradients of $f$.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §23, §25.
+* Subgradients are taken for a pairing $\langle \cdot, \cdot \rangle$ of $E$ with a real vector
+  space $F$. Where the gradient appears, the pairing is the canonical pairing
+  `(topDualPairing ℝ E).flip` of $E$ with its continuous dual, so that subgradients and gradients
+  are both elements of `StrongDual ℝ E`.
+* The exposed-point results hold for a proper convex $f$ that need not be closed. They reduce to
+  $\operatorname{cl} f$, which has the same conjugate and the same gradients. Only the gradient
+  forms transfer in this way: $\partial f = \partial(\operatorname{cl} f)$ fails at relative
+  boundary points of $\operatorname{dom} f$, so the subgradient forms
+  `ConvexAnalysis.mem_exposedPoints_epi_convexConj_iff` and
+  `ConvexAnalysis.mem_exposedPoints_supportSet_iff` keep their hypothesis that the function is
+  closed.
 -/
 
 open Set
@@ -50,9 +68,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E} {y₀ : F}
 
 include B in
-/-- A lone subgradient puts `x` in the interior of `dom f`: it leaves no room for a normal
-direction to `dom f`, and in finite dimensions a convex set is a neighbourhood of every point at
-which its normal cone is trivial. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\langle \cdot, \cdot \rangle$ be a
+compatible pairing of $E$ with a real vector space $F$, and let $f$ be a proper convex function
+on $E$. If $\partial f(x) = \{y_0\}$, then $x \in \operatorname{int}(\operatorname{dom} f)$.
+
+A compatible pairing (`ConvexAnalysis.IsCompatiblePairing`) is continuous in its first argument,
+and every continuous linear functional on $E$ is $\langle \cdot, y \rangle$ for some $y \in F$.
+A unique subgradient leaves no room for a nonzero normal direction to $\operatorname{dom} f$ at
+$x$, and in finite dimensions a convex set is a neighbourhood of every point at which its normal
+cone is trivial. -/
 theorem mem_interior_convexDom_of_subdifferential_eq_singleton [IsCompatiblePairing B]
     (hf : ConvexFn f)
     (hp : ProperConvex f) (h : subdifferential B f x = {y₀}) : x ∈ interior (convexDom f) := by
@@ -70,9 +94,11 @@ section Converse
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E} {y₀ : F}
 
-/-- At an interior point of `dom f` the directional derivative is its own closure: it is finite in
-every direction there, hence a finite convex function on the whole space, hence continuous. This is
-what removes the `cl` from the support-function formula for `f'(x; ·)`. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f$ be a proper convex function on $E$
+and let $x \in \operatorname{int}(\operatorname{dom} f)$. Then the directional derivative
+$y \mapsto f'(x; y)$ is a closed function. It is finite in every direction, so it is a finite
+convex function on $E$ and therefore continuous. This removes the closure from the
+support-function formula for $f'(x; \cdot)$. -/
 theorem closedConvex_dirDeriv_of_mem_interior_convexDom (hf : ConvexFn f) (hp : ProperConvex f)
     (hx : x ∈ interior (convexDom f)) : ClosedConvex (dirDeriv f x) := by
   have hri : x ∈ ri (convexDom f) := Convex.interior_subset_relint hx
@@ -84,9 +110,13 @@ theorem closedConvex_dirDeriv_of_mem_interior_convexDom (hf : ConvexFn f) (hp : 
   exact (closedConvex_iff_lowerSemicontinuous hgp.ne_bot).2
     (hgc.continuous_of_convexDom_eq_univ hgp hdom).lowerSemicontinuous
 
-/-- **The converse half**: a convex function with a *unique* subgradient at `x` is differentiable
-there, and the subgradient is the gradient. Properness replaces the usual "let `f` be finite at
-`x`", which is weaker only in appearance: where `f = -∞`, every element of `F` is a subgradient. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\langle \cdot, \cdot \rangle$ be a
+compatible pairing of $E$ with $F$, and let $f$ be a proper convex function on $E$. If
+$\partial f(x) = \{y_0\}$, then $f$ has the gradient $\langle \cdot, y_0 \rangle$ at $x$.
+
+The functional $\langle \cdot, y_0 \rangle$ is `ConvexAnalysis.evalCLM B y₀`. Properness
+replaces the usual hypothesis that $f(x)$ is finite. This is weaker only in appearance: where
+$f(x) = -\infty$, every element of $F$ is a subgradient. -/
 theorem hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton [IsCompatiblePairing B]
     (hf : ConvexFn f) (hp : ProperConvex f) (h : subdifferential B f x = {y₀}) :
     HasGradientAtFn f (evalCLM B y₀) x := by
@@ -108,19 +138,33 @@ section Full
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x : E} {f' : StrongDual ℝ E}
 
-/-- The converse half in the pairing of `E` with its continuous dual: there `evalCLM` is the
-identity, so the unique subgradient *is* the gradient. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a proper convex function on
+$E$. If $\partial f(x) = \{f'\}$ for the canonical pairing of $E$ with its continuous dual, then
+$f$ has the gradient $f'$ at $x$. -/
 theorem hasGradientAtFn_of_subdifferential_eq_singleton (hf : ConvexFn f) (hp : ProperConvex f)
     (h : subdifferential (topDualPairing ℝ E).flip f x = {f'}) : HasGradientAtFn f f' x :=
   hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton (B := (topDualPairing ℝ E).flip) hf hp h
 
-/-- For a proper convex function, having gradient `f'` at `x` and having `f'` as sole subgradient
-at `x` are the same thing. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f \colon E \to [-\infty, +\infty]$ be a
+proper convex function, let $x \in E$ and let $f'$ be a continuous linear functional on $E$.
+Then $f$ has the gradient $f'$ at $x$ if and only if
+$$\partial f(x) = \{f'\}.$$
+
+This is Theorem 25.1 of [rockafellar1970convex]. The subdifferential is taken for the canonical
+pairing `(topDualPairing ℝ E).flip` of $E$ with its continuous dual. The forward direction is
+`ConvexAnalysis.subdifferential_eq_singleton_of_hasFDerivAt`, and the converse is
+`ConvexAnalysis.hasGradientAtFn_of_subdifferential_eq_singleton`. -/
 theorem hasGradientAtFn_iff_subdifferential_eq_singleton (hf : ConvexFn f) (hp : ProperConvex f) :
     HasGradientAtFn f f' x ↔ subdifferential (topDualPairing ℝ E).flip f x = {f'} :=
   ⟨fun h => h.subdifferential_eq hf, hasGradientAtFn_of_subdifferential_eq_singleton hf hp⟩
 
-/-- Differentiability at `x` is exactly the subdifferential being a single point. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a proper convex function on
+$E$. Then $f$ is differentiable at $x$ if and only if there is a continuous linear functional
+$y$ on $E$ with $\partial f(x) = \{y\}$.
+
+The subdifferential is taken for the canonical pairing `(topDualPairing ℝ E).flip`. This is
+`ConvexAnalysis.hasGradientAtFn_iff_subdifferential_eq_singleton` without a name for the
+gradient. -/
 theorem differentiableAtFn_iff_exists_subdifferential_eq_singleton (hf : ConvexFn f)
     (hp : ProperConvex f) :
     DifferentiableAtFn f x ↔
@@ -129,25 +173,34 @@ theorem differentiableAtFn_iff_exists_subdifferential_eq_singleton (hf : ConvexF
 
 end Full
 
-/-! ### `∇(cl f) = ∇f` -/
+/-! ### The gradients of $\operatorname{cl} f$ -/
 
 section Closure
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x : E} {f' : StrongDual ℝ E}
 
-/-- `cl f` agrees with `f` on a whole neighbourhood of an interior point of `dom f`, since
-`interior (dom f)` is open and sits inside `ri (dom f)`. -/
+/-- Let $f$ be a convex function and let $x \in \operatorname{int}(\operatorname{dom} f)$. Then
+$\operatorname{cl} f$ is equal to $f$ on a neighbourhood of $x$, since
+$\operatorname{int}(\operatorname{dom} f)$ is open and is contained in the relative interior of
+$\operatorname{dom} f$. -/
 theorem ConvexFn.convexCl_eventuallyEq_of_mem_interior_convexDom (hf : ConvexFn f)
     (hx : x ∈ interior (convexDom f)) : convexCl f =ᶠ[nhds x] f := by
   filter_upwards [isOpen_interior.mem_nhds hx] with z hz
   exact hf.convexCl_eq_of_mem_relint_convexDom
       (Convex.interior_subset_relint hz)
 
-/-- `∇(cl f) = ∇f` for a proper convex `f`: a closure changes no gradient, and creates none. One
-direction holds because a gradient of `f` at `x` puts `x` in `int (dom f)`, where the two functions
-agree on a neighbourhood; the other needs `ConvexFn.interior_convexDom_convexCl`, since a gradient
-of `cl f` only supplies a point interior to the larger domain `dom (cl f)`. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f$ be a proper convex function on $E$,
+let $x \in E$ and let $f'$ be a continuous linear functional on $E$. Then $\operatorname{cl} f$
+has the gradient $f'$ at $x$ if and only if $f$ has the gradient $f'$ at $x$. So the closure
+operation changes no gradient and creates no new one.
+
+The closure $\operatorname{cl} f$ is `ConvexAnalysis.convexCl f`. If $f$ has a gradient at $x$,
+then $x \in \operatorname{int}(\operatorname{dom} f)$, where the two functions are equal near
+$x$. For the converse, a gradient of $\operatorname{cl} f$ at $x$ gives only $x \in
+\operatorname{int}(\operatorname{dom}(\operatorname{cl} f))$, and
+`ConvexAnalysis.ConvexFn.interior_convexDom_convexCl` shows that this set is
+$\operatorname{int}(\operatorname{dom} f)$. -/
 theorem hasGradientAtFn_convexCl_iff (hf : ConvexFn f) (hp : ProperConvex f) :
     HasGradientAtFn (convexCl f) f' x ↔ HasGradientAtFn f f' x := by
   constructor
@@ -162,7 +215,8 @@ theorem hasGradientAtFn_convexCl_iff (hf : ConvexFn f) (hp : ProperConvex f) :
     obtain ⟨g, hfg, hd⟩ := h
     exact ⟨g, (hf.convexCl_eventuallyEq_of_mem_interior_convexDom hx).trans hfg, hd⟩
 
-/-- `∇(cl f) = ∇f`, in the form that names no gradient. -/
+/-- Let $f$ be a proper convex function on a finite-dimensional real normed space. Then
+$\operatorname{cl} f$ is differentiable at $x$ if and only if $f$ is differentiable at $x$. -/
 theorem differentiableAtFn_convexCl_iff (hf : ConvexFn f) (hp : ProperConvex f) :
     DifferentiableAtFn (convexCl f) x ↔ DifferentiableAtFn f x :=
   exists_congr fun _ => hasGradientAtFn_convexCl_iff hf hp
@@ -176,9 +230,14 @@ section ClosureExposedEpi
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- A subdifferential that is a single point is unchanged by taking the closure: `∂(cl f) = ∂f`
-wherever `(cl f) x = f x`, and a singleton subdifferential puts `x` inside `ri (dom f)`, where the
-two functions do agree. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\langle \cdot, \cdot \rangle$ be a
+compatible pairing of $E$ with $F$, let $f$ be a proper convex function on $E$ and let
+$y \in F$. Then there is $x$ with $\partial(\operatorname{cl} f)(x) = \{y\}$ if and only if
+there is $x$ with $\partial f(x) = \{y\}$.
+
+The two subdifferentials are equal wherever $(\operatorname{cl} f)(x) = f(x)$, and a
+single-point subdifferential puts $x$ in the relative interior of $\operatorname{dom} f$, where
+the two functions are equal. -/
 theorem exists_subdifferential_convexCl_eq_singleton_iff [IsCompatiblePairing B] (hf : ConvexFn f)
     (hp : ProperConvex f) {y : F} :
     (∃ x : E, subdifferential B (convexCl f) x = {y}) ↔ ∃ x : E, subdifferential B f x = {y} := by
@@ -199,9 +258,16 @@ theorem exists_subdifferential_convexCl_eq_singleton_iff [IsCompatiblePairing B]
 
 variable [TopologicalSpace F]
 
-/-- The exposed points of `epi f*` for `f` merely proper convex. `(cl f)* = f*`, and `cl f` has
-exactly the same points of single-valued subdifferential as `f`, so the `ClosedConvex` hypothesis of
-`mem_exposedPoints_epi_convexConj_iff` can be discharged by passing to `cl f`. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\langle \cdot, \cdot \rangle$ be a
+pairing of $E$ with a real vector space $F$ that carries a topology, such that both the pairing
+and its flip are compatible, and let $f$ be a proper convex function on $E$. Then
+$(y, \mu) \in F \times \mathbb{R}$ is an exposed point of the epigraph of $f^*$ if and only if
+$f^*(y) = \mu$ and there is $x$ with $\partial f(x) = \{y\}$.
+
+The function $f$ need not be closed. Since $(\operatorname{cl} f)^* = f^*$ and
+`ConvexAnalysis.exists_subdifferential_convexCl_eq_singleton_iff` holds, the result follows from
+`ConvexAnalysis.mem_exposedPoints_epi_convexConj_iff` for the closed function
+$\operatorname{cl} f$. -/
 theorem mem_exposedPoints_epi_convexConj_iff_of_properConvex [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ConvexFn f) (hp : ProperConvex f) {y : F} {μ : ℝ} :
     (y, μ) ∈ (epi (convexConj B f)).exposedPoints ℝ ↔
@@ -219,9 +285,15 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g : F → EReal}
 
-/-- The exposed points of a support set for `g` merely positively homogeneous proper convex. The
-reduction to `cl g` is done directly here; `cl g` supports the same set and is again positively
-homogeneous. -/
+/-- Let $F$ be a finite-dimensional real normed space, let $\langle \cdot, \cdot \rangle$ be a
+pairing of a real vector space $E$ that carries a topology with $F$, such that both the pairing
+and its flip are compatible, and let $g$ be a positively homogeneous proper convex function on
+$F$. Then $z \in E$ is an exposed point of the set $\{z : \langle z, y \rangle \le g(y) \text{
+for all } y\}$ supported by $g$ if and only if there is $y \in F$ with $\partial g(y) = \{z\}$.
+
+The set is `ConvexAnalysis.supportSet B.flip g`, and $\partial g$ is taken for the pairing
+`B.flip`. The function $g$ need not be closed: $\operatorname{cl} g$ supports the same set and
+is again positively homogeneous. -/
 theorem mem_exposedPoints_supportSet_iff_of_properConvex [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
     {z : E} :
@@ -243,8 +315,14 @@ section Exposed
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- The exposed points of `epi f*` are the points `(∇f x, f* (∇f x))` at which `f` is
-differentiable. `f` need not be closed. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f$ be a proper convex function on $E$,
+let $y$ be a continuous linear functional on $E$ and let $\mu \in \mathbb{R}$. Then $(y, \mu)$
+is an exposed point of the epigraph of $f^*$ if and only if $f^*(y) = \mu$ and there is $x$ at
+which $f$ has the gradient $y$. So the exposed points of the epigraph of $f^*$ are the points
+$(\nabla f(x), f^*(\nabla f(x)))$ at which $f$ is differentiable.
+
+The conjugate is taken for the canonical pairing `(topDualPairing ℝ E).flip`. The function $f$
+need not be closed. -/
 theorem mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn (hf : ConvexFn f) (hp : ProperConvex f)
     {y : StrongDual ℝ E} {μ : ℝ} :
     (y, μ) ∈ (epi (convexConj (topDualPairing ℝ E).flip f)).exposedPoints ℝ ↔
@@ -253,8 +331,13 @@ theorem mem_exposedPoints_epi_convexConj_iff_hasGradientAtFn (hf : ConvexFn f) (
   exact and_congr_right fun _ =>
     exists_congr fun _ => (hasGradientAtFn_iff_subdifferential_eq_singleton hf hp).symm
 
-/-- For a proper convex positively homogeneous `f`, the exposed points of the closed convex set
-that `f` supports are exactly its gradients. Again `f` need not be closed. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a positively homogeneous proper
+convex function on $E$. Then a continuous linear functional $z$ on $E$ is an exposed point of
+the set $\{z : z(x) \le f(x) \text{ for all } x\}$ supported by $f$ if and only if there is
+$y \in E$ at which $f$ has the gradient $z$.
+
+The set is `ConvexAnalysis.supportSet (topDualPairing ℝ E).flip f`. The function $f$ need not be
+closed. -/
 theorem mem_exposedPoints_supportSet_iff_hasGradientAtFn (hgh : PosHomogeneous f) (hgc : ConvexFn f)
     (hgp : ProperConvex f) {z : StrongDual ℝ E} :
     z ∈ (supportSet (topDualPairing ℝ E).flip f).exposedPoints ℝ ↔

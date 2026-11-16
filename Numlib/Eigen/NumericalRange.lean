@@ -19,32 +19,53 @@ import Mathlib.Topology.Order.IntermediateValue
 /-!
 # The numerical range of a complex operator
 
-The *numerical range* (or *field of values*) of a linear operator `T` on a complex inner product
-space is the set of values of its Rayleigh quotient `⟪x, T x⟫ / ⟪x, x⟫` at the nonzero vectors.
-Its basic structural property is the **Toeplitz–Hausdorff theorem**: the numerical range is a
-convex subset of `ℂ`. It is stated without proof in [saad2003iterative], Proposition 1.18.
+Let $E$ be a complex inner product space, with the inner product $\langle x, y \rangle$
+conjugate-linear in $x$, and let $T \colon E \to E$ be linear. The **numerical range** (or **field
+of values**) of $T$ is the set
+$$W(T) = \left\{ \frac{\langle x, Tx \rangle}{\langle x, x \rangle} : x \in E,\ x \neq 0 \right\}
+  \subseteq \mathbb{C}$$
+of the values of its Rayleigh quotient. This file proves the **Toeplitz–Hausdorff theorem**: $W(T)$
+is convex. The theorem is stated without proof in [saad2003iterative], Proposition 1.18. The file
+also proves **Berger's power inequality** for finite-dimensional $E$: if $c \ge 0$ and
+$|\langle x, Tx \rangle| \le c \|x\|^2$ for all $x$, then
+$|\langle x, T^k x \rangle| \le c^k \|x\|^2$ for all $x$ and all $k \ge 1$.
+
+## Main definitions
+
+* `LinearMap.numericalRange`: the numerical range $W(T)$ of a complex linear operator $T$.
 
 ## Main results
 
-* `LinearMap.numericalRange`: the numerical range of `T : E →ₗ[ℂ] E`.
-* `LinearMap.mem_numericalRange_smul_add`: the numerical range transforms affinely,
-  `N(c • T + b) = c • N(T) + b` for `c ≠ 0`, stated as an equivalence between memberships.
-* `LinearMap.convex_numericalRange`: the Toeplitz–Hausdorff theorem.
+* `LinearMap.mem_numericalRange_smul_add`: for $c \neq 0$, $cz + b \in W(cT + bI)$ if and only if
+  $z \in W(T)$.
+* `LinearMap.convex_numericalRange`: the Toeplitz–Hausdorff theorem, $W(T)$ is convex.
+* `LinearMap.norm_inner_pow_le`: Berger's power inequality, $\nu(T^k) \le \nu(T)^k$ for the
+  numerical radius $\nu$, stated through the quadratic forms.
 
-## Implementation notes
+## Proof outline
 
-The usual textbook proof reduces the problem to a `2 × 2` matrix and computes that the numerical
-range of a `2 × 2` matrix is a filled ellipse. The proof here avoids that computation entirely and
-needs no finite dimensionality.
+The usual textbook proof of the Toeplitz–Hausdorff theorem reduces the problem to a $2 \times 2$
+matrix and computes that the numerical range of a $2 \times 2$ matrix is a filled ellipse. The proof
+here avoids that computation and needs no finite dimension. After the affine change
+$T \mapsto cT + bI$ it is enough to show that if $0$ and $1$ are in $W(T)$, then the real interval
+$[0, 1]$ is in $W(T)$. Pick $x$ and $z$ with $\langle x, Tx \rangle = 0$ and
+$\langle z, Tz \rangle = \langle z, z \rangle$. Replace $z$ by $y = \zeta z$ for a complex
+$\zeta \neq 0$ that makes the cross term $\delta = \langle x, Ty \rangle + \langle y, Tx \rangle$
+real. This phase step is the only place where the field must be $\mathbb{C}$ and not $\mathbb{R}$.
+Along the real segment $u(t) = (1 - t) x + t y$ the quadratic form is then the real number $\langle
+u(t), T u(t) \rangle = (1 - t) t \delta + t^2 \|y\|^2$ for every $t$. Divided by $\|u(t)\|^2$ it is
+a continuous real function of $t$ that goes from $0$ to $1$, and the intermediate value theorem
+gives the claim.
 
-After the affine normalisation `mem_numericalRange_smul_add` it is enough to show that `0` and `1`
-in the numerical range force the whole real interval `[0, 1]` into it. Pick `x` and `z` with
-`⟪x, T x⟫ = 0` and `⟪z, T z⟫ = ⟪z, z⟫`. Rescaling `z` by a suitable complex `ζ ≠ 0` — the *phase*
-step, and the only place where the field being `ℂ` rather than `ℝ` is used — makes the cross term
-`⟪x, T y⟫ + ⟪y, T x⟫` real, where `y = ζ • z`. Along the real segment `u t = (1 - t) • x + t • y`
-the quadratic form `⟪u t, T (u t)⟫` is then *real* for every `t`, and equals
-`(1 - t) t δ + t² ‖y‖²`; dividing by `‖u t‖²` gives a continuous real function of `t` running from
-`0` to `1`, and the intermediate value theorem finishes.
+Berger's power inequality has Pearcy's proof, which uses no unitary dilation. Normalize to $c = 1$,
+and call an operator accretive if the real part of its quadratic form is nonnegative. Fix $z$ with
+$|z| < 1$ and a primitive $k$-th root of unity $\omega$. The operators $B_j = I - \omega^j z T$ are
+strictly accretive, hence invertible in finite dimension, and $B_j D_j = I - z^k T^k$ for the
+geometric sums $D_j = \sum_{m < k} (\omega^j z T)^m$. The sum of the $D_j$ over $j$ is $kI$, because
+$\sum_j \omega^{jm} = 0$ for $0 < m < k$. Hence $\bigl(k^{-1} \sum_j B_j^{-1}\bigr) (I - z^k T^k) =
+I$. The left factor is accretive, as an average of inverses of accretive operators, so its inverse
+$I - z^k T^k$ is accretive. Letting $z$ run over the open unit disc gives
+$|\langle x, T^k x \rangle| \le \|x\|^2$.
 -/
 
 open scoped ComplexConjugate
@@ -53,16 +74,24 @@ namespace LinearMap
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
 
-/-- The **numerical range** (or *field of values*) of a complex linear operator: the set of values
-of the Rayleigh quotient `⟪x, T x⟫ / ⟪x, x⟫` at the nonzero vectors `x`. -/
+/-- The **numerical range** (or **field of values**) of a complex linear operator $T \colon E \to E$
+is the set of the values $\langle x, Tx \rangle / \langle x, x \rangle$ of its Rayleigh quotient
+at the nonzero vectors $x \in E$. -/
 def numericalRange (T : E →ₗ[ℂ] E) : Set ℂ :=
   {z | ∃ x : E, x ≠ 0 ∧ inner ℂ x (T x) / inner ℂ x x = z}
 
-/-- Membership in the numerical range, unfolded. -/
+/-- A complex number $z$ is in the numerical range of $T$ if and only if there is a vector
+$x \neq 0$ with $\langle x, Tx \rangle / \langle x, x \rangle = z$. -/
 theorem mem_numericalRange {T : E →ₗ[ℂ] E} {z : ℂ} :
     z ∈ T.numericalRange ↔ ∃ x : E, x ≠ 0 ∧ inner ℂ x (T x) / inner ℂ x x = z := Iff.rfl
 
-/-- The Rayleigh quotient of `c • T + b` is `c` times that of `T`, plus `b`. -/
+/-- Let $T \colon E \to E$ be linear, let $c, b \in \mathbb{C}$, and let $x \neq 0$. Then the
+Rayleigh quotient of $cT + bI$ at $x$ is $c$ times the Rayleigh quotient of $T$ at $x$, plus
+$b$:
+$$\frac{\langle x, (cT + bI) x \rangle}{\langle x, x \rangle}
+  = c \, \frac{\langle x, Tx \rangle}{\langle x, x \rangle} + b.$$
+
+The identity $I$ is `LinearMap.id`. -/
 theorem inner_smul_add_smul_id_div (T : E →ₗ[ℂ] E) (c b : ℂ) {x : E} (hx : x ≠ 0) :
     inner ℂ x ((c • T + b • (LinearMap.id : E →ₗ[ℂ] E)) x) / inner ℂ x x
       = c * (inner ℂ x (T x) / inner ℂ x x) + b := by
@@ -71,8 +100,10 @@ theorem inner_smul_add_smul_id_div (T : E →ₗ[ℂ] E) (c b : ℂ) {x : E} (hx
     inner_smul_right]
   field_simp
 
-/-- The numerical range transforms affinely: `c z + b` lies in the numerical range of
-`c • T + b` exactly when `z` lies in that of `T`. -/
+/-- The numerical range transforms affinely. Let $T \colon E \to E$ be linear, let
+$c \in \mathbb{C}$ with $c \neq 0$, and let $b, z \in \mathbb{C}$. Then
+$$cz + b \in W(cT + bI) \iff z \in W(T).$$
+-/
 theorem mem_numericalRange_smul_add {T : E →ₗ[ℂ] E} {c : ℂ} (hc : c ≠ 0) (b z : ℂ) :
     c * z + b ∈ (c • T + b • LinearMap.id).numericalRange ↔ z ∈ T.numericalRange := by
   constructor
@@ -82,10 +113,9 @@ theorem mem_numericalRange_smul_add {T : E →ₗ[ℂ] E} {c : ℂ} (hc : c ≠ 
   · rintro ⟨x, hx, hq⟩
     exact ⟨x, hx, by rw [inner_smul_add_smul_id_div T c b hx, hq]⟩
 
-/-- The core of the Toeplitz–Hausdorff theorem, after the phase has been fixed: if `⟪x, T x⟫ = 0`,
-`⟪y, T y⟫ = ⟪y, y⟫` and the cross term `⟪x, T y⟫ + ⟪y, T x⟫` is real, then the quadratic form of
-`T` is real along the whole real segment from `x` to `y`, and the intermediate value theorem puts
-every `t ∈ [0, 1]` into the numerical range. -/
+/-- If $x, y \neq 0$, $\langle x, Tx \rangle = 0$, $\langle y, Ty \rangle = \langle y, y \rangle$
+and $\langle x, Ty \rangle + \langle y, Tx \rangle$ is real, then every real $t \in [0, 1]$ is
+in the numerical range of $T$. -/
 private theorem ofReal_mem_numericalRange_aux (T : E →ₗ[ℂ] E) {x y : E} (hx : x ≠ 0) (hy : y ≠ 0)
     (hxx : (inner ℂ x (T x) : ℂ) = 0) (hyy : (inner ℂ y (T y) : ℂ) = inner ℂ y y)
     (him : ((inner ℂ x (T y) : ℂ) + inner ℂ y (T x)).im = 0) {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
@@ -146,8 +176,7 @@ private theorem ofReal_mem_numericalRange_aux (T : E →ₗ[ℂ] E) {x y : E} (h
     (show t ∈ Set.Icc (g 0) (g 1) by rw [hg0, hg1]; exact ⟨ht0, ht1⟩)
   exact ⟨u s, hune s, by rw [hquot s, hs]⟩
 
-/-- Every complex number can be rotated onto the real axis by multiplication with a nonzero
-scalar. -/
+/-- For every $d \in \mathbb{C}$ there is a $\zeta \neq 0$ such that $\zeta d$ is real. -/
 private theorem exists_ne_zero_mul_im_eq_zero (d : ℂ) : ∃ ζ : ℂ, ζ ≠ 0 ∧ (ζ * d).im = 0 := by
   rcases eq_or_ne d 0 with rfl | h
   · exact ⟨1, one_ne_zero, by simp⟩
@@ -155,7 +184,7 @@ private theorem exists_ne_zero_mul_im_eq_zero (d : ℂ) : ∃ ζ : ℂ, ζ ≠ 0
     simp only [Complex.mul_im, Complex.conj_re, Complex.conj_im]
     ring
 
-/-- If `0` and `1` belong to the numerical range, so does every real number between them. -/
+/-- If $0$ and $1$ are in the numerical range of $T$, then every real $t \in [0, 1]$ is in it. -/
 private theorem ofReal_mem_numericalRange (T : E →ₗ[ℂ] E) (h0 : (0 : ℂ) ∈ T.numericalRange)
     (h1 : (1 : ℂ) ∈ T.numericalRange) {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
     (t : ℂ) ∈ T.numericalRange := by
@@ -177,8 +206,12 @@ private theorem ofReal_mem_numericalRange (T : E →ₗ[ℂ] E) (h0 : (0 : ℂ) 
       ring]
     exact hζim
 
-/-- **The Toeplitz–Hausdorff theorem**: the numerical range of a linear operator on a complex
-inner product space is convex. -/
+/-- The **Toeplitz–Hausdorff theorem**. Let $E$ be a complex inner product space and let
+$T \colon E \to E$ be linear. Then the numerical range $W(T)$ is a convex subset of
+$\mathbb{C}$.
+
+This is stated without proof in [saad2003iterative], Proposition 1.18. The space $E$ need not be
+finite-dimensional. Convexity is convexity over $\mathbb{R}$ in $\mathbb{C}$. -/
 theorem convex_numericalRange (T : E →ₗ[ℂ] E) : Convex ℝ T.numericalRange := by
   intro p hp q hq a b ha hb hab
   rcases eq_or_ne p q with rfl | hpq
@@ -211,11 +244,10 @@ theorem convex_numericalRange (T : E →ₗ[ℂ] E) : Convex ℝ T.numericalRang
 
 section PowerInequality
 
-/-- An operator is *accretive* when the real part of its quadratic form is everywhere
-nonnegative. -/
+/-- An operator $T$ is accretive if $\operatorname{Re} \langle x, Tx \rangle \ge 0$ for all $x$. -/
 private def Accretive (T : Module.End ℂ E) : Prop := ∀ x : E, 0 ≤ (inner ℂ x (T x) : ℂ).re
 
-/-- The quadratic form of `1 - c • T`. -/
+/-- The quadratic form of $I - cT$ is $\langle x, x \rangle - c \langle x, Tx \rangle$. -/
 private theorem inner_one_sub_smul (c : ℂ) (T : Module.End ℂ E) (x : E) :
     (inner ℂ x ((1 - c • T) x) : ℂ) = (inner ℂ x x : ℂ) - c * inner ℂ x (T x) := by
   simp [inner_sub_right, inner_smul_right]
@@ -233,8 +265,7 @@ private theorem accretive_real_smul {r : ℝ} (hr : 0 ≤ r) {T : Module.End ℂ
     Complex.ofReal_im, zero_mul, sub_zero]
   exact mul_nonneg hr (h x)
 
-/-- An invertible accretive operator has an accretive inverse: writing `x` for `u⁻¹ y`, the two
-quadratic forms `⟪y, u⁻¹ y⟫` and `⟪x, u x⟫` are complex conjugates of one another. -/
+/-- The inverse of an invertible accretive operator is accretive. -/
 private theorem accretive_units_inv {u : (Module.End ℂ E)ˣ} (h : Accretive (u : Module.End ℂ E)) :
     Accretive (↑u⁻¹ : Module.End ℂ E) := by
   intro y
@@ -246,8 +277,8 @@ private theorem accretive_units_inv {u : (Module.End ℂ E)ˣ} (h : Accretive (u
 
 variable [FiniteDimensional ℂ E]
 
-/-- On a finite-dimensional space a strictly accretive operator is invertible: its kernel is
-trivial because the quadratic form vanishes there. -/
+/-- On a finite-dimensional space, an operator with $\operatorname{Re} \langle x, Tx \rangle > 0$
+for all $x \neq 0$ is invertible. -/
 private theorem isUnit_of_re_inner_pos {T : Module.End ℂ E}
     (h : ∀ x : E, x ≠ 0 → 0 < (inner ℂ x (T x) : ℂ).re) : IsUnit T := by
   have hinj : Function.Injective T := by
@@ -259,15 +290,8 @@ private theorem isUnit_of_re_inner_pos {T : Module.End ℂ E}
     simp at hpos
   exact (Module.End.isUnit_iff T).2 ⟨hinj, LinearMap.injective_iff_surjective.1 hinj⟩
 
-/-- The heart of the power inequality. If the quadratic form of `T` is dominated by `‖x‖²` then,
-for every `z` in the open unit disc, `1 - zᵏ Tᵏ` is accretive.
-
-The `k` shifted operators `B j = 1 - ωʲ z T`, with `ω` a primitive `k`-th root of unity, are
-strictly accretive, hence invertible, and each satisfies `B j * D j = 1 - zᵏ Tᵏ` for the geometric
-sum `D j = ∑_{m < k} (ωʲ z T)ᵐ`. Summing the `D j` over `j` collapses to `k`, because
-`∑_j ωʲᵐ` vanishes for `0 < m < k`; so `(k⁻¹ ∑_j (B j)⁻¹) (1 - zᵏ Tᵏ) = 1`. The left factor is
-accretive, being an average of inverses of accretive operators, and the inverse of an accretive
-operator is accretive — which, applied once more, is the claim. -/
+/-- If $|\langle x, Tx \rangle| \le \|x\|^2$ for all $x$, $k \ge 1$ and $|z| < 1$, then
+$I - z^k T^k$ is accretive. -/
 private theorem accretive_one_sub_smul_pow (T : Module.End ℂ E)
     (hT : ∀ x : E, ‖(inner ℂ x (T x) : ℂ)‖ ≤ ‖x‖ ^ 2) {k : ℕ} (hk : 0 < k) {z : ℂ}
     (hz : ‖z‖ < 1) : Accretive (1 - (z ^ k) • T ^ k) := by
@@ -383,8 +407,8 @@ private theorem accretive_one_sub_smul_pow (T : Module.End ℂ E)
   rw [← hP]
   exact haccP
 
-/-- The normalised power inequality: a quadratic form dominated by `‖x‖²` stays dominated by it
-under powers. -/
+/-- If $|\langle x, Tx \rangle| \le \|x\|^2$ for all $x$ and $k \ge 1$, then
+$|\langle x, T^k x \rangle| \le \|x\|^2$ for all $x$. -/
 private theorem norm_inner_pow_le_one {T : Module.End ℂ E}
     (hT : ∀ x : E, ‖(inner ℂ x (T x) : ℂ)‖ ≤ ‖x‖ ^ 2) {k : ℕ} (hk : 0 < k) (x : E) :
     ‖(inner ℂ x ((T ^ k) x) : ℂ)‖ ≤ ‖x‖ ^ 2 := by
@@ -423,14 +447,16 @@ private theorem norm_inner_pow_le_one {T : Module.End ℂ E}
   rw [div_lt_iff₀ hcpos] at ht1
   linarith
 
-/-- **Berger's power inequality** for the numerical radius: if the quadratic form of `T` is
-dominated by `c ‖x‖²` then the quadratic form of `Tᵏ` is dominated by `cᵏ ‖x‖²`. Equivalently, the
-numerical radius is *power-bounded*, `ν(Tᵏ) ≤ ν(T)ᵏ` — an inequality that is far from obvious,
-since the numerical radius is not submultiplicative.
+/-- **Berger's power inequality**. Let $E$ be a finite-dimensional complex inner product space, let
+$T \colon E \to E$ be linear, and let $c \ge 0$. If $|\langle x, Tx \rangle| \le c \|x\|^2$ for
+all $x \in E$, then for every $k \ge 1$ and every $x \in E$
+$$|\langle x, T^k x \rangle| \le c^k \|x\|^2.$$
 
-The proof is Pearcy's: no unitary dilation is used, only an averaging of the resolvents
-`(1 - ωʲ z T)⁻¹` over the `k`-th roots of unity `ωʲ`. See
-`LinearMap.accretive_one_sub_smul_pow` for the construction. -/
+Equivalently, the numerical radius $\nu(T) = \sup_{x \neq 0} |\langle x, Tx \rangle| / \|x\|^2$
+satisfies $\nu(T^k) \le \nu(T)^k$. This is far from obvious, because the numerical radius is not
+submultiplicative. The proof is Pearcy's: it averages the resolvents $(I - \omega^j z T)^{-1}$
+over the $k$-th roots of unity $\omega^j$ and uses no unitary dilation (see the module doc
+comment). -/
 theorem norm_inner_pow_le {T : Module.End ℂ E} {c : ℝ} (hc : 0 ≤ c)
     (hT : ∀ x : E, ‖(inner ℂ x (T x) : ℂ)‖ ≤ c * ‖x‖ ^ 2) {k : ℕ} (hk : 0 < k) (x : E) :
     ‖(inner ℂ x ((T ^ k) x) : ℂ)‖ ≤ c ^ k * ‖x‖ ^ 2 := by

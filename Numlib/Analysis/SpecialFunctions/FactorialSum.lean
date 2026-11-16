@@ -7,36 +7,50 @@ import Mathlib.Analysis.Complex.Exponential
 /-!
 # Bounds on partial sums of the exponential series
 
-Elementary bounds on the sums `∑ δ^ℓ/ℓ!` that control Taylor sums ([cartis2022evaluation],
-Lemma A.10.1 and (A.34)–(A.35)). They all follow from `∑_{i < n} δ^i/i! ≤ exp δ`
-(`Real.sum_le_exp_of_nonneg`) and `exp δ - 1 ≤ 2 δ` for `δ ∈ [0, 1]` (`Real.abs_exp_sub_one_le`).
+This file proves elementary bounds on sums of the form $\sum_\ell \delta^\ell / \ell!$, which
+control Taylor sums in the complexity analysis of high-order methods. They follow
+[cartis2022evaluation], Lemma A.10.1 and (A.34)–(A.35). All of them follow from
+$\sum_{i < n} \delta^i / i! \le e^\delta$ (`Real.sum_le_exp_of_nonneg`) and from
+$e^\delta - 1 \le 2\delta$ for $\delta \in [0, 1]$ (`Real.abs_exp_sub_one_le`). A sum
+$\sum_{\ell = j}^p$ with $j > p$ is empty and equal to $0$.
 
-* `sum_pow_div_factorial_le_one_add_two_mul`: `∑_{ℓ=j}^p δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ`;
-* `sum_pow_div_factorial_Icc_succ_le`: `∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!`;
-* `sum_pow_div_factorial_le_two_mul`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ` for `δ ∈ [0, 1]` (A.34);
-* `sum_pow_div_factorial_le_two_mul_pow`: `∑_{ℓ=1}^j δ^ℓ/ℓ! ≤ 2δ^j` for `δ ≥ 1` (A.35);
-* `sum_inv_factorial_sub_le_exp_one`: `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e` (towards (A.36));
-* `half_mul_pow_div_factorial_le`: the closing step of the model-decrease lemmas
-  (Lemmas 12.2.8, 13.1.10, 14.1.2);
-* `pow_div_factorial_le_of_lt`: `ε^q/q! ≤ ε^j/(c j!)` for `j < q`, `ε ∈ [0, 1]`, `c ε ≤ 1`.
+## Main results
+
+* `sum_pow_div_factorial_le_two_mul`: $\sum_{\ell=1}^j \delta^\ell/\ell! \le 2\delta$ for
+  $\delta \in [0, 1]$; this is (A.34) of [cartis2022evaluation].
+* `sum_pow_div_factorial_le_one_add_two_mul`: $\sum_{\ell=j}^p \delta^{\ell-j}/(\ell-j)! \le 1 +
+  2\delta$ for $\delta \in [0, 1]$.
+* `sum_pow_div_factorial_Icc_succ_le`: $\sum_{\ell=j+1}^{p+1} \delta^\ell/\ell! \le
+  2\delta^{j+1}/j!$ for $\delta \in [0, 1]$.
+* `sum_pow_div_factorial_le_two_mul_pow`: $\sum_{\ell=1}^j \delta^\ell/\ell! \le 2\delta^j$ for
+  $\delta \ge 1$; this is (A.35) of [cartis2022evaluation].
+* `sum_inv_factorial_sub_le_exp_one`: $\sum_{\ell=j}^p 1/(\ell-j)! \le e$.
+* `half_mul_pow_div_factorial_le`: half of a decrement $\alpha \delta^j/j!$ survives a perturbation
+  of order $\delta^{j+1}$.
+* `pow_div_factorial_le_of_lt`: $\varepsilon^q/q! \le \varepsilon^j/(c\,j!)$ for $j < q$,
+  $\varepsilon \in [0, 1]$ and $c \varepsilon \le 1$.
 -/
 
 open Finset
 open scoped Nat
 
-/-- A sum over `Icc (j + 1) (n + j)` shifted to `Icc 1 n`. -/
+/-- For $f : \mathbb{N} \to \mathbb{R}$ and natural numbers $j, n$, the sum of $f(\ell)$ over
+$j + 1 \le \ell \le n + j$ equals the sum of $f(i + j)$ over $1 \le i \le n$. -/
 private theorem sum_Icc_add_eq {f : ℕ → ℝ} (j n : ℕ) :
     ∑ ℓ ∈ Icc (j + 1) (n + j), f ℓ = ∑ i ∈ Icc 1 n, f (i + j) := by
   refine sum_nbij' (· - j) (· + j) ?_ ?_ ?_ ?_ ?_ <;> intro a ha <;>
     simp only [mem_Icc] at ha ⊢ <;> first | omega | (congr 1; omega)
 
-/-- `∑_{ℓ=1}^{j} δ^ℓ/ℓ! = ∑_{ℓ<j+1} δ^ℓ/ℓ! - 1`. -/
+/-- For $\delta \in \mathbb{R}$ and a natural number $j$, $\sum_{\ell=1}^j \delta^\ell/\ell! =
+\sum_{\ell=0}^j \delta^\ell/\ell! - 1$. -/
 private theorem sum_Icc_one_eq (δ : ℝ) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) = ∑ ℓ ∈ range (j + 1), δ ^ ℓ / (ℓ ! : ℝ) - 1 := by
   rw [range_eq_Ico, sum_eq_sum_Ico_succ_bot (Nat.succ_pos j), ← Ico_add_one_right_eq_Icc]
   simp
 
-/-- **(A.34)** For `δ ∈ [0, 1]`: `∑_{ℓ=1}^{j} δ^ℓ/ℓ! ≤ 2 δ`. -/
+/-- Let $0 \le \delta \le 1$, and let $j$ be a natural number. Then
+$$\sum_{\ell=1}^j \frac{\delta^\ell}{\ell!} \le 2\delta.$$
+This is (A.34) of [cartis2022evaluation]. -/
 theorem sum_pow_div_factorial_le_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤ 1) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ := by
   rw [sum_Icc_one_eq]
@@ -45,8 +59,10 @@ theorem sum_pow_div_factorial_le_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤
   rw [abs_of_nonneg h0] at h'
   linarith [le_abs_self (Real.exp δ - 1)]
 
-/-- **[cartis2022evaluation], Lemma A.10.1, first bound of (A.33).** For `δ ∈ [0, 1]`:
-`∑_{ℓ=j}^{p} δ^{ℓ-j}/(ℓ-j)! ≤ 1 + 2δ` (for `j > p` the sum is empty). -/
+/-- Let $0 \le \delta \le 1$, and let $j, p$ be natural numbers. Then
+$$\sum_{\ell=j}^p \frac{\delta^{\ell-j}}{(\ell-j)!} \le 1 + 2\delta.$$
+For $j > p$ the sum is empty. This is the first bound of (A.33) in Lemma A.10.1 of
+[cartis2022evaluation]. -/
 theorem sum_pow_div_factorial_le_one_add_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤ 1) (j p : ℕ) :
     ∑ ℓ ∈ Icc j p, δ ^ (ℓ - j) / ((ℓ - j)! : ℝ) ≤ 1 + 2 * δ := by
   have e : ∑ ℓ ∈ Icc j p, δ ^ (ℓ - j) / ((ℓ - j)! : ℝ) =
@@ -61,8 +77,10 @@ theorem sum_pow_div_factorial_le_one_add_two_mul {δ : ℝ} (h0 : 0 ≤ δ) (h1 
   · rw [h'] at h; linarith
   · rw [show p + 1 - j = 0 by omega]; simp; linarith
 
-/-- **[cartis2022evaluation], Lemma A.10.1, second bound of (A.33).** For `δ ∈ [0, 1]`:
-`∑_{ℓ=j+1}^{p+1} δ^ℓ/ℓ! ≤ 2 δ^{j+1}/j!` (for `j > p` the sum is empty). -/
+/-- Let $0 \le \delta \le 1$, and let $j, p$ be natural numbers. Then
+$$\sum_{\ell=j+1}^{p+1} \frac{\delta^\ell}{\ell!} \le \frac{2\delta^{j+1}}{j!}.$$
+For $j > p$ the sum is empty. This is the second bound of (A.33) in Lemma A.10.1 of
+[cartis2022evaluation]. -/
 theorem sum_pow_div_factorial_Icc_succ_le {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ ≤ 1) (j p : ℕ) :
     ∑ ℓ ∈ Icc (j + 1) (p + 1), δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ (j + 1) / (j ! : ℝ) := by
   rcases lt_or_ge p j with hpj | hjp
@@ -86,8 +104,9 @@ theorem sum_pow_div_factorial_Icc_succ_le {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ �
         gcongr; exact sum_pow_div_factorial_le_two_mul h0 h1 n
     _ = 2 * δ ^ (j + 1) / (j ! : ℝ) := by ring
 
-/-- **(A.35)** For `δ ≥ 1`: `∑_{ℓ=1}^{j} δ^ℓ/ℓ! ≤ 2 δ^j`. (For
-`j = 0` the two sides are `0` and `2`.) -/
+/-- Let $\delta \ge 1$, and let $j$ be a natural number. Then
+$$\sum_{\ell=1}^j \frac{\delta^\ell}{\ell!} \le 2\delta^j.$$
+For $j = 0$ the two sides are $0$ and $2$. This is (A.35) of [cartis2022evaluation]. -/
 theorem sum_pow_div_factorial_le_two_mul_pow {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ 2 * δ ^ j := by
   calc ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) ≤ ∑ ℓ ∈ Icc 1 j, δ ^ j * ((1 : ℝ) ^ ℓ / (ℓ ! : ℝ)) := by
@@ -101,7 +120,8 @@ theorem sum_pow_div_factorial_le_two_mul_pow {δ : ℝ} (h1 : 1 ≤ δ) (j : ℕ
         simpa using sum_pow_div_factorial_le_two_mul zero_le_one le_rfl j
     _ = 2 * δ ^ j := mul_comm _ _
 
-/-- `∑_{ℓ=j}^p 1/(ℓ-j)! ≤ e`: a partial sum of the exponential series at `1`. -/
+/-- For natural numbers $j$ and $p$, $\sum_{\ell=j}^p 1/(\ell-j)! \le e$. This is a partial sum of
+the exponential series at $1$, and it is a step towards (A.36) of [cartis2022evaluation]. -/
 theorem sum_inv_factorial_sub_le_exp_one (j p : ℕ) :
     ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) ≤ Real.exp 1 := by
   have e : ∑ ℓ ∈ Icc j p, 1 / ((ℓ - j)! : ℝ) = ∑ i ∈ range (p + 1 - j), 1 ^ i / (i ! : ℝ) := by
@@ -110,9 +130,11 @@ theorem sum_inv_factorial_sub_le_exp_one (j p : ℕ) :
   rw [e]
   exact Real.sum_le_exp_of_nonneg zero_le_one _
 
-/-- **Half of a decrement survives a perturbation of order `δ^{j+1}`** (the closing step of
-[cartis2022evaluation], Lemmas 12.2.8, 13.1.10 and 14.1.2): if `δ ≥ 0`, `4 K δ ≤ α`,
-`a ≥ α δ^j/j!` and `b ≥ a - 2 K δ^{j+1}/j!`, then `b ≥ (α/2) δ^j/j!`. -/
+/-- **Half of a decrement survives a perturbation of order $\delta^{j+1}$.** Let
+$K, \alpha, \delta, a, b$ be real numbers and $j$ a natural number, with $\delta \ge 0$ and
+$4K\delta \le \alpha$. If $a \ge \alpha \delta^j/j!$ and $b \ge a - 2K\delta^{j+1}/j!$, then
+$$b \ge \frac{\alpha}{2} \cdot \frac{\delta^j}{j!}.$$
+This is the closing step of Lemmas 12.2.8, 13.1.10 and 14.1.2 of [cartis2022evaluation]. -/
 theorem half_mul_pow_div_factorial_le {K α δ a b : ℝ} {j : ℕ} (hδ : 0 ≤ δ)
     (hKα : 4 * K * δ ≤ α) (ha : α * δ ^ j / j ! ≤ a)
     (hb : a - 2 * K * δ ^ (j + 1) / j ! ≤ b) : α / 2 * δ ^ j / j ! ≤ b := by
@@ -125,8 +147,11 @@ theorem half_mul_pow_div_factorial_le {K α δ a b : ℝ} {j : ℕ} (hδ : 0 ≤
     ring
   linarith
 
-/-- `ε^q/q! ≤ ε^j/(c j!)` for `j < q`, `0 ≤ ε ≤ 1` and `c ε ≤ 1` (`c > 0`): the higher-order
-thresholds of the Step-1 test are dominated by the lower-order ones. -/
+/-- Let $0 \le \varepsilon \le 1$ and $c > 0$ with $c\varepsilon \le 1$, and let $j < q$ be natural
+numbers. Then
+$$\frac{\varepsilon^q}{q!} \le \frac{\varepsilon^j}{c\,j!}.$$
+Thus the higher-order thresholds of the Step 1 test in the high-order methods of
+[cartis2022evaluation] are dominated by the lower-order ones. -/
 theorem pow_div_factorial_le_of_lt {ε c : ℝ} {j q : ℕ} (hε : 0 ≤ ε) (hε1 : ε ≤ 1) (hc : 0 < c)
     (hcε : c * ε ≤ 1) (hjq : j < q) : ε ^ q / q ! ≤ ε ^ j / j ! / c := by
   have h1 : ε ^ q ≤ ε ^ j / c := by

@@ -9,37 +9,55 @@ import Numlib.Optimization.ModelBased.HighOrder.TRqCall
 /-!
 # Trust-region inner calls on a rectangle
 
-On `ℝ²`, the problem with objective `f(x) = x₁`, constraint `c(x) = x₂ ∈ ℝ¹` and feasible set
-`X = [0, 2] × [-1, 1]`, started at `x₀ = (2, 0)`. The merit function
-`μ(·, t) = ½ ‖r(·, t)‖² = ½ (x₂² + (x₁ - t)²)` is quadratic with unit Hessian, and its first-order
-measure at `v ∈ X` with `t ≤ v₁` is at least `max(v₁ - t, |v₂|) δ ≥ ‖r(v, t)‖ δ/√2` for radii
-`δ ≤ min(v₁, 1)`. Hence, for the dual tolerance `ε₁ = 1/2`:
+This module studies runs of Phase 2 of the two-phase method TPqp-GC of [cartis2022evaluation],
+Algorithm 14.3.2 (`Constrained.IsHighOrderTargetRun`), whose inner calls are calls of the
+trust-region method TRq. The problem is posed on $\mathbb{R}^2$ with the objective $f(x) = x_1$, the
+equality constraint $c(x) = x_2 \in \mathbb{R}^1$ and the feasible set $X = [0, 2] \times [-1, 1]$,
+and Phase 2 starts at $x_1 = x_0 = (2, 0)$. The merit function $\mu(x, t) = \tfrac12 \|r(x, t)\|^2 =
+\tfrac12 (x_2^2 + (x_1 - t)^2)$ is quadratic with unit Hessian. At a point $v \in X$ with
+$t \le v_1$, its first-order measure with a radius $\delta \le \min(v_1, 1)$ is at least $\max(v_1 -
+t, |v_2|)\, \delta \ge \|r(v, t)\|\, \delta / \sqrt2$. Hence, for the tolerance
+$\varepsilon_1 = 1/2$, the criticality test (14.3.34) fails at every such point. For the same
+reason, a TRq call (`Optimization.IsTRqCallOut`) on $\mu(\cdot, t)$ with the first-order tolerance
+$\beta \|r(x_{k,0}, t)\| / 2$ makes only unsuccessful first-order iterations while its radius is
+large, so it stays at its start for $L$ iterations when $4 \varepsilon_0 / (\varsigma \beta) \le
+\gamma_1^L \min(\Delta_0, \vartheta)$.
 
-* the criticality test (14.3.34) of [cartis2022evaluation] fails at every such point
-  (`Constrained.TwoPhaseExample.Rectangle.not_targetCrit`);
-* a call of the trust-region method TRq (`Optimization.IsTRqCallOut`) on `μ(·, t)` with tolerance
-  `β ‖r(x_{k,0}, t)‖/2` makes only unsuccessful first-order iterations as long as its radius is
-  large, so it stays at its start for `L` iterations when `4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`
-  (`Constrained.TwoPhaseExample.Rectangle.trqCall_eq_start`).
-
-Along every run of Phase 2 of a high-order target-following method
-(`Constrained.IsHighOrderTargetRun`) from `x₀` the targets drop by at most `2 ε₀` per outer
-iteration, so the first `⌊1/(4 ε₀)⌋` outer iterations do not stop, and when every inner call is a
-TRq call each of their calls is longer than `L`: the run uses at least `⌊1/(4ε₀)⌋ (L + 1)`
-evaluations (`Constrained.TwoPhaseExample.Rectangle.funEvals_ge`), of order
-`ε₀^{-1} log(1/ε₀)`.
+Along every run of Phase 2 from $x_1$, the targets drop by at most $2 \varepsilon_0$ per outer
+iteration. So the first $\lfloor 1/(4 \varepsilon_0) \rfloor$ outer iterations do not stop, and when
+every inner call is a TRq call, each of these calls has more than $L$ iterations. The run therefore
+uses at least $\lfloor 1/(4 \varepsilon_0) \rfloor (L + 1)$ evaluations, which is of order
+$\varepsilon_0^{-1} \log(1/\varepsilon_0)$. This shows that the logarithmic factor in Theorem 14.3.9
+of [cartis2022evaluation] with a trust-region inner method is necessary for $q = 1$
+(`CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`).
 
 ## Main definitions
 
-* `Constrained.TwoPhaseExample.Rectangle.obj`, `con`, `rect`, `start`: the data;
-* `Constrained.TwoPhaseExample.Rectangle.tol ε₀`: the tolerances `(ε₀, 1/2, 1/2, …)`.
+* `Constrained.TwoPhaseExample.Rectangle.obj`, `Constrained.TwoPhaseExample.Rectangle.con`,
+  `Constrained.TwoPhaseExample.Rectangle.rect`, `Constrained.TwoPhaseExample.Rectangle.start`: the
+  objective $f$, the constraint $c$, the set $X$ and the starting point $x_0$.
+* `Constrained.TwoPhaseExample.Rectangle.tol`: the tolerances $(\varepsilon_0, 1/2, 1/2, \dots)$.
 
 ## Main results
 
-* `Constrained.TwoPhaseExample.Rectangle.trqCall_eq_start`: short TRq calls do not move;
-* `Constrained.TwoPhaseExample.Rectangle.not_stop`, `lt_e_of_trqCalls`: early outer iterations do
-  not stop and their TRq calls are long;
-* `Constrained.TwoPhaseExample.Rectangle.funEvals_ge`: the evaluation count of every such run.
+* `Constrained.TwoPhaseExample.Rectangle.taylorMeasure_ge`,
+  `Constrained.TwoPhaseExample.Rectangle.taylorMeasure_gt`: lower bounds on the first-order measure
+  of $\mu(\cdot, t)$.
+* `Constrained.TwoPhaseExample.Rectangle.not_targetCrit`: the criticality test fails at the points
+  of $X$ to the right of the target.
+* `Constrained.TwoPhaseExample.Rectangle.trqCall_eq_start`: a short TRq call does not move.
+* `Constrained.TwoPhaseExample.Rectangle.target_ge`: the targets drop by at most $2 \varepsilon_0$
+  per outer iteration.
+* `Constrained.TwoPhaseExample.Rectangle.not_stop`,
+  `Constrained.TwoPhaseExample.Rectangle.lt_e_of_trqCalls`: the early outer iterations do not stop,
+  and their TRq calls are long.
+* `Constrained.TwoPhaseExample.Rectangle.funEvals_ge`: the lower bound on the number of evaluations
+  of every run with TRq calls.
+
+## Implementation notes
+
+* The coordinates $x_1$ and $x_2$ of $x \in \mathbb{R}^2$ are `x 0` and `x 1`. The constraint takes
+  values in $\mathbb{R}^1$ (`EuclideanSpace ℝ (Fin 1)`).
 -/
 
 open Set Metric
@@ -49,38 +67,45 @@ namespace Constrained.TwoPhaseExample.Rectangle
 
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
-/-- The coordinates are continuous. -/
+/-- For $i \in \{1, 2\}$, the coordinate map $v \mapsto v_i$ of $\mathbb{R}^2$ is continuous. -/
 theorem continuous_coord (i : Fin 2) : Continuous (fun v : ℝ² => v i) :=
   (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).continuous
 
-/-- The objective `f(x) = x₁` (`x₁ = v 0`). -/
+/-- The objective $f(x) = x_1$ on $\mathbb{R}^2$. -/
 noncomputable def obj : ℝ² → ℝ := fun v => v 0
 
-/-- The constraint `c(x) = x₂`, as a map into `ℝ¹` (`x₂ = v 1`). -/
+/-- The equality constraint $c(x) = x_2$, with values in $\mathbb{R}^1$.
+
+It is `EuclideanSpace.single 0 (x 1)`. -/
 noncomputable def con : ℝ² → EuclideanSpace ℝ (Fin 1) := fun v => EuclideanSpace.single 0 (v 1)
 
-/-- The feasible set `X = [0, 2] × [-1, 1]`. -/
+/-- The feasible set $X = [0, 2] \times [-1, 1]$. -/
 def rect : Set ℝ² := {v | 0 ≤ v 0 ∧ v 0 ≤ 2 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1}
 
-/-- The starting point `x₀ = (2, 0)`. -/
+/-- The starting point $x_0 = (2, 0)$.
+
+Since $c(x_0) = 0$, Phase 1 stops at once and Phase 2 starts at $x_1 = x_0$. -/
 noncomputable def start : ℝ² := EuclideanSpace.single 0 2
 
-/-- `‖c(v)‖ = |v₂|`. -/
+/-- $\|c(v)\| = |v_2|$ for $v \in \mathbb{R}^2$. -/
 theorem norm_con (v : ℝ²) : ‖con v‖ = |v 1| := by
   simp [con]
 
-/-- `μ(v, t) = (v₂² + (v₁ - t)²)/2`. -/
+/-- For every target $t$, the merit function of the problem is
+$$\mu(v, t) = \tfrac12 \bigl(v_2^2 + (v_1 - t)^2\bigr).$$
+-/
 theorem targetMerit_eq (t : ℝ) : targetMerit obj con t =
     fun v => ((v 1) ^ 2 + (v 0 - t) ^ 2) / 2 := by
   funext v
   simp [targetMerit_def, norm_con, obj, sq_abs]
 
-/-- `‖r(v, t)‖ = √(v₂² + (v₁ - t)²)`. -/
+/-- $\|r(v, t)\| = \sqrt{v_2^2 + (v_1 - t)^2}$ for $v \in \mathbb{R}^2$ and $t \in \mathbb{R}$. -/
 theorem targetResidual_eq (t : ℝ) (v : ℝ²) : targetResidual obj con t v =
     √((v 1) ^ 2 + (v 0 - t) ^ 2) := by
   simp [targetResidual_def, norm_con, obj, sq_abs]
 
-/-- The derivative of `μ(·, t)`: `s ↦ v₂ s₂ + (v₁ - t) s₁`. -/
+/-- At every point $v$, the derivative of $w \mapsto \tfrac12 (w_2^2 + (w_1 - t)^2)$ is the linear
+map $s \mapsto v_2 s_2 + (v_1 - t) s_1$. -/
 theorem hasFDerivAt_targetMerit (t : ℝ) (v : ℝ²) :
     HasFDerivAt (fun w : ℝ² => ((w 1) ^ 2 + (w 0 - t) ^ 2) / 2)
       ((v 1) • (EuclideanSpace.proj 1 : ℝ² →L[ℝ] ℝ) + (v 0 - t) • EuclideanSpace.proj 0) v := by
@@ -93,8 +118,8 @@ theorem hasFDerivAt_targetMerit (t : ℝ) (v : ℝ²) :
   · funext w; simp only [Pi.add_apply]; ring
   · ext s; simp; ring
 
-/-- The first-order Taylor decrement of `μ(·, t)` at `v`:
-`ΔT₁(s) = -(v₂ s₂ + (v₁ - t) s₁)`. -/
+/-- The first-order Taylor decrement of $\mu(\cdot, t)$ at $v$ along $s$ is
+$\Delta T_1(v, s) = -(v_2 s_2 + (v_1 - t) s_1)$. -/
 theorem taylorDecrement_one (t : ℝ) (v s : ℝ²) :
     (ftaylorSeries ℝ (targetMerit obj con t) v).taylorDecrement 1 s =
       -(v 1 * s 1 + (v 0 - t) * s 0) := by
@@ -104,8 +129,9 @@ theorem taylorDecrement_one (t : ℝ) (v s : ℝ²) :
   simp
 
 
-/-- `μ(·, t)` is quadratic with unit Hessian:
-`μ(v + s) = μ(v) + ∇μ(v)·s + ‖s‖²/2`. -/
+/-- The merit function $\mu(\cdot, t)$ is quadratic with unit Hessian: for $v, s \in \mathbb{R}^2$,
+$$\mu(v + s, t) = \mu(v, t) + (v_2 s_2 + (v_1 - t) s_1) + \tfrac12 \|s\|^2.$$
+-/
 theorem targetMerit_add (t : ℝ) (v s : ℝ²) :
     targetMerit obj con t (v + s) =
       targetMerit obj con t v +
@@ -114,7 +140,8 @@ theorem targetMerit_add (t : ℝ) (v s : ℝ²) :
   simp only [PiLp.add_apply]
   ring
 
-/-- `|∇μ(v)·s| ≤ ‖r(v, t)‖ ‖s‖` (Cauchy–Schwarz). -/
+/-- For $v, s \in \mathbb{R}^2$, $|v_2 s_2 + (v_1 - t) s_1| \le \|r(v, t)\|\, \|s\|$, by the
+Cauchy–Schwarz inequality. -/
 theorem abs_lin_le (t : ℝ) (v s : ℝ²) :
     |v 1 * s 1 + (v 0 - t) * s 0| ≤ targetResidual obj con t v * ‖s‖ := by
   rw [targetResidual_eq, ← Real.sqrt_sq (norm_nonneg s), EuclideanSpace.norm_sq_eq_fin_two,
@@ -122,11 +149,16 @@ theorem abs_lin_le (t : ℝ) (v s : ℝ²) :
   apply Real.abs_le_sqrt
   nlinarith [sq_nonneg (v 1 * s 0 - (v 0 - t) * s 1)]
 
-/-- Membership in `X`. -/
+/-- $v \in X$ if and only if $0 \le v_1 \le 2$ and $-1 \le v_2 \le 1$. -/
 theorem mem_rect {v : ℝ²} : v ∈ rect ↔ 0 ≤ v 0 ∧ v 0 ≤ 2 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1 := Iff.rfl
 
-/-- The two coordinate directions give the lower bounds `(v₀ - t) δ` and `|v₁| δ` for the
-first-order measure of `μ(·, t)` at `v ∈ X` with `t ≤ v₀` and `δ ≤ min(v₀, 1)`. -/
+/-- **Lower bounds on the first-order measure.** Let $v \in X$, $t \in \mathbb{R}$ and
+$0 \le \delta \le \min(v_1, 1)$. Let $\phi$ be the first-order measure of $\mu(\cdot, t)$ at $v$
+with radius $\delta$ on $X(v) = \{d : v + d \in X\}$. Then
+$$(v_1 - t)\, \delta \le \phi \quad \text{and} \quad |v_2|\, \delta \le \phi.$$
+
+The two bounds are the decreases along the feasible displacements $-\delta e_1$ and
+$\pm \delta e_2$. The first bound is trivial for $t > v_1$, since $\phi \ge 0$. -/
 theorem taylorMeasure_ge {t δ : ℝ} {v : ℝ²} (hv : v ∈ rect) (hδ0 : 0 ≤ δ) (hδv : δ ≤ v 0)
     (hδ1 : δ ≤ 1) :
     (v 0 - t) * δ ≤ Optimization.taylorMeasure
@@ -182,8 +214,14 @@ theorem taylorMeasure_ge {t δ : ℝ} {v : ℝ²} (hv : v ∈ rect) (hδ0 : 0 �
       rw [abs_of_nonpos hs]
       linarith
 
-/-- The criticality test (14.3.34) fails at every `v ∈ X` with `t ≤ v₀`, positive residual and
-radius `δ ≤ min(v₀, 1)`, for `ε₁ = 1/2` and every `q ≥ 1` (its first-order part fails). -/
+/-- **The criticality test fails to the right of the target.** Let $q \ge 1$, let $\varepsilon$ be
+tolerances with $\varepsilon_1 = 1/2$, and let $\delta$ be radii. Let $v \in X$ and $t \le v_1$
+with $\|r(v, t)\| > 0$, and let $0 < \delta_1 \le \min(v_1, 1)$. Then the criticality test
+(14.3.34) fails at $v$ for the target $t$, the tolerances $\varepsilon$ and the radii $\delta$.
+
+Its first-order part fails: by `Constrained.TwoPhaseExample.Rectangle.taylorMeasure_ge`, the
+first-order measure is at least $\max(v_1 - t, |v_2|)\, \delta_1 \ge \|r(v, t)\|\, \delta_1 /
+\sqrt2 > \varepsilon_1 \|r(v, t)\|\, \delta_1$. -/
 theorem not_targetCrit {q : ℕ} (hq : 1 ≤ q) {t : ℝ} {v : ℝ²} {ε δo : ℕ → ℝ}
     (hε1 : ε 1 = 1 / 2) (hv : v ∈ rect)
     (ht : t ≤ v 0) (hρ : 0 < targetResidual obj con t v) (hδ0 : 0 < δo 1)
@@ -204,9 +242,12 @@ theorem not_targetCrit {q : ℕ} (hq : 1 ≤ q) {t : ℝ} {v : ℝ²} {ε δo : 
   nlinarith
 
 
-/-- At `v ∈ X` with `t ≤ v₁` and `v₁ ≥ 1`, positive residual `ρ`, radius `δ ∈ (0, 1]` and
-`β ≤ 1`, the first-order measure of `μ(·, t)` exceeds `β ρ δ/2`: it is at least
-`max(v₁ - t, |v₂|) δ ≥ ρ δ/√2` (`taylorMeasure_ge`). -/
+/-- Let $v \in X$ with $t \le v_1$ and $v_1 \ge 1$, let $\rho = \|r(v, t)\| > 0$, let
+$0 < \delta \le 1$ and let $\beta \le 1$. Then the first-order measure of $\mu(\cdot, t)$ at $v$
+with radius $\delta$ on $X(v)$ is larger than $\beta \rho \delta / 2$.
+
+By `Constrained.TwoPhaseExample.Rectangle.taylorMeasure_ge`, the measure is at least $\max(v_1 -
+t, |v_2|)\, \delta \ge \rho \delta / \sqrt2$. -/
 theorem taylorMeasure_gt {t δ β : ℝ} {v : ℝ²} (hv : v ∈ rect) (ht : t ≤ v 0) (hx1 : 1 ≤ v 0)
     (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) (hβ1 : β ≤ 1)
     (hρ : 0 < targetResidual obj con t v) :
@@ -234,14 +275,22 @@ theorem taylorMeasure_gt {t δ β : ℝ} {v : ℝ²} (hv : v ∈ rect) (ht : t �
   have h7 : (ρ * δ) ^ 2 = ((v 1) ^ 2 + (v 0 - t) ^ 2) * δ ^ 2 := by rw [mul_pow, hsq]
   nlinarith
 
-/-- **A TRq call on `μ(·, t)` stays at its start for `L` iterations** (any `q ≥ 1`): if the
-call starts at `x_{k,0} ∈ X` with `t ≤ (x_{k,0})_1` and `(x_{k,0})_1 ≥ 1`, the residual
-`ρ₀ = ‖r(x_{k,0}, t)‖ ∈ (0, ε₀]`, the tolerance is `ε'_1 = β ρ₀/2` with `β ≤ 1`, `ϑ ≤ 1` and
-`4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`, then every iteration `i < min(e, L)` is unsuccessful: the
-first-order test fails at `x_{k,0}` (its measure is at least `ρ₀ δ/√2 > ε'_1 δ`), so the step has
-order `1`; the radius is at least `4 ρ₀/(ς β)`, so the step has length `> 2 ρ₀` and increases
-`μ(·, t)` (`μ` is quadratic with unit Hessian). Hence a call of length `e ≤ L` ends where it
-started. -/
+/-- **A short TRq call on $\mu(\cdot, t)$ does not move.** Let $q \ge 1$, let $P$ be the constants
+of TRq, with initial radius $\Delta_0$, smallest shrinking factor $\gamma_1$ and measure
+fraction $\varsigma$, and let $\vartheta \in [0, 1]$. Consider a TRq call
+(`Optimization.IsTRqCallOut`) on $\mu(\cdot, t)$ over $X$ with tolerances $\varepsilon'$ and
+threshold $\vartheta$, with iterates $x_{k,0}, \dots, x_{k,e}$. Assume that $x_{k,0} \in X$,
+$t \le (x_{k,0})_1$ and $(x_{k,0})_1 \ge 1$, that the residual $\rho_0 = \|r(x_{k,0}, t)\|$
+satisfies $0 < \rho_0 \le \varepsilon_0$, and that $\varepsilon'_1 = \beta \rho_0 / 2$ with
+$0 < \beta \le 1$. If $L \in \mathbb{N}$ satisfies
+$$\frac{4 \varepsilon_0}{\varsigma \beta} \le \gamma_1^L \min(\Delta_0, \vartheta)$$
+and $e \le L$, then $x_{k,e} = x_{k,0}$.
+
+Every iteration $i < \min(e, L)$ is unsuccessful. The first-order test fails at $x_{k,0}$,
+because the measure is at least $\rho_0 \delta / \sqrt2 > \varepsilon'_1 \delta$, so the step
+has order $1$. The radius is at least $4 \rho_0 / (\varsigma \beta)$, so the step has length
+larger than $2 \rho_0$, and it increases $\mu(\cdot, t)$, which is quadratic with unit Hessian.
+Hence a call of length $e \le L$ ends where it started. -/
 theorem trqCall_eq_start {q : ℕ} (hq : 1 ≤ q) {P : Optimization.TRqParams} {ϑ β ε₀ t : ℝ}
     {xi : ℕ → ℝ²} {e : ℕ} {succ : ℕ → Prop} {δo ε' : ℕ → ℝ}
     (h : Optimization.IsTRqCallOut (targetMerit obj con t) rect P q ε' ϑ
@@ -342,7 +391,9 @@ section Run
 
 variable {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : ℝ²} {D : HighOrderTargetSeq ℝ²} {q : ℕ}
 
-/-- `f(x_{k+1}) ≥ t_k - ε₀` along Phase 2. -/
+/-- Along every run of Phase 2 for this problem, from any $x_1$ and with any $q$, $\theta$, $\beta$
+and tolerances $\varepsilon$, every outer iteration $k \ge 1$ that is reached satisfies
+$f(x_{k+1}) \ge t_k - \varepsilon_0$. -/
 theorem obj_succ_ge (h2 : IsHighOrderTargetRun obj con rect q θ β ε x₁ D) {k : ℕ}
     (hk1 : 1 ≤ k)
     (hk : D.Before obj con rect q θ ε k) : D.t k - ε 0 ≤ obj (D.x (k + 1)) := by
@@ -353,8 +404,11 @@ theorem obj_succ_ge (h2 : IsHighOrderTargetRun obj con rect q θ β ε x₁ D) {
   have := neg_abs_le (obj (D.x (k + 1)) - D.t k)
   linarith
 
-/-- **The targets decrease by at most `2 ε₀` per outer iteration**: starting from
-`x₁ = (2, 0)`, `t_k ≥ 2 - (2k - 1) ε₀` for every outer iteration `k ≥ 1` reached. -/
+/-- **The targets drop by at most $2 \varepsilon_0$ per outer iteration.** Along every run of Phase
+2 for this problem from $x_1 = (2, 0)$, with any $q$, $\theta$, $\beta$ and tolerances
+$\varepsilon$, every outer iteration $k \ge 1$ that is reached satisfies
+$$t_k \ge 2 - (2k - 1)\, \varepsilon_0.$$
+-/
 theorem target_ge (h2 : IsHighOrderTargetRun obj con rect q θ β ε start D) :
     ∀ k, 1 ≤ k → D.Before obj con rect q θ ε k → 2 - (2 * k - 1) * ε 0 ≤ D.t k := by
   have hε₀ := h2.ε₀_pos
@@ -384,9 +438,15 @@ theorem target_ge (h2 : IsHighOrderTargetRun obj con rect q θ β ε start D) :
     · rw [h2.t_succ_b k hk1 hk hb]
       linarith
 
-/-- **Phase 2 cannot stop early**: at an outer iteration `k ≥ 1` reached with
-`(2k + 1) ε₀ ≤ 1`, the iterate `x_{k+1}` has `f ≥ 1`, so (14.3.34) fails there for every
-target that Step 2 can produce, and the Step-1 output condition (14.3.32) excludes case (c). -/
+/-- **Phase 2 cannot stop early.** Let $q \ge 1$, and consider a run of Phase 2 for this problem
+from $x_1 = (2, 0)$ with tolerances $\varepsilon$ such that $\varepsilon_1 = 1/2$. Then Phase 2
+does not terminate at an outer iteration $k \ge 1$ that is reached and satisfies
+$(2k + 1)\, \varepsilon_0 \le 1$.
+
+The iterate $x_{k+1}$ satisfies $f(x_{k+1}) \ge 1$. So the criticality test (14.3.34) fails
+there for every target that Step 2 can produce, by
+`Constrained.TwoPhaseExample.Rectangle.not_targetCrit`, and the Step-1 output condition
+(14.3.32) excludes case (c). -/
 theorem not_stop (hq : 1 ≤ q)
     (h2 : IsHighOrderTargetRun obj con rect q θ β ε start D) (hε1 : ε 1 = 1 / 2)
     {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before obj con rect q θ ε k)
@@ -432,10 +492,19 @@ section Count
 
 variable {P : Optimization.TRqParams} {ϑ θ β : ℝ} {ε : ℕ → ℝ} {D : HighOrderTargetSeq ℝ²} {q : ℕ}
 
-/-- **Every call of an early outer iteration is long**: at an outer iteration `k ≥ 1` reached
-with `(2k - 1) ε₀ ≤ 1`, a TRq call has more than `L` iterations when
-`4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`: otherwise it returns `x_{k+1} = x_k`, where no test of
-(14.3.32) holds. -/
+/-- **Every call of an early outer iteration is long.** Let $q \ge 1$, and consider a run of Phase 2
+for this problem from $x_1 = (2, 0)$ with tolerances $\varepsilon$ such that
+$\varepsilon_1 = 1/2$. Assume that for every outer iteration $k \ge 1$ that is reached, the
+$k$-th inner call is a TRq call (`Optimization.IsTRqCallOut`) on $\mu(\cdot, t_k)$ over $X$ with
+the constants $P$, the tolerances $\beta \|r(x_k, t_k)\| \varepsilon_j$, the threshold
+$\vartheta \in [0, 1]$ and the returned radii $\delta_{k+1}$. Let $L \in \mathbb{N}$ satisfy $4
+\varepsilon_0 / (\varsigma \beta) \le \gamma_1^L \min(\Delta_0, \vartheta)$. Then every outer
+iteration $k \ge 1$ that is reached and satisfies $(2k - 1)\, \varepsilon_0 \le 1$ has a call
+with more than $L$ iterations: $L < e_k$.
+
+Otherwise the call would return $x_{k+1} = x_k$ by
+`Constrained.TwoPhaseExample.Rectangle.trqCall_eq_start`, and no test of (14.3.32) holds at
+$x_k$. -/
 theorem lt_e_of_trqCalls (hq : 1 ≤ q)
     (h2 : IsHighOrderTargetRun obj con rect q θ β ε start D)
     (hcalls : ∀ k, 1 ≤ k → D.Before obj con rect q θ ε k →
@@ -469,8 +538,22 @@ theorem lt_e_of_trqCalls (hq : 1 ≤ q)
     exact not_targetCrit hq hε1 (h2.x_mem k hk1 hk) hft (hθε.trans_le hlo) hδ0
       (hδ1.trans hx1) hδ1 h
 
-/-- **The evaluation count of Phase 2 is at least `⌊1/(4ε₀)⌋ (L + 1)`** for every run from `x₀`
-whose inner calls are TRq calls, when `ε₀ ≤ 1/2` and `4 ε₀/(ς β) ≤ γ₁^L min(Δ₀, ϑ)`. -/
+/-- **The number of evaluations of Phase 2 is at least
+$\lfloor 1/(4 \varepsilon_0) \rfloor (L + 1)$.** Let $q \ge 1$, and consider a run of Phase 2
+for this problem from $x_1 = (2, 0)$ with tolerances $\varepsilon$ such that
+$\varepsilon_0 \le 1/2$ and $\varepsilon_1 = 1/2$. Assume that for every outer iteration
+$k \ge 1$ that is reached, the $k$-th inner call is a TRq call on $\mu(\cdot, t_k)$ over $X$
+with the constants $P$, the tolerances $\beta \|r(x_k, t_k)\| \varepsilon_j$, the threshold
+$\vartheta \in [0, 1]$ and the returned radii $\delta_{k+1}$. Let $L \in \mathbb{N}$ satisfy $4
+\varepsilon_0 / (\varsigma \beta) \le \gamma_1^L \min(\Delta_0, \vartheta)$. If Phase 2
+terminates at the outer iteration $k_\varepsilon$, then the number of evaluations of $(f, c)$ up
+to $k_\varepsilon$ satisfies
+$$\lfloor 1/(4 \varepsilon_0) \rfloor\, (L + 1) \le 1 + \sum_{j=1}^{k_\varepsilon} e_j.$$
+
+The count on the right is `Constrained.HighOrderTargetSeq.funEvals`. The first
+$\lfloor 1/(4 \varepsilon_0) \rfloor$ outer iterations are reached and do not stop
+(`Constrained.TwoPhaseExample.Rectangle.not_stop`), and each of their calls has more than $L$
+iterations (`Constrained.TwoPhaseExample.Rectangle.lt_e_of_trqCalls`). -/
 theorem funEvals_ge (hq : 1 ≤ q)
     (h2 : IsHighOrderTargetRun obj con rect q θ β ε start D)
     (hcalls : ∀ k, 1 ≤ k → D.Before obj con rect q θ ε k →
@@ -521,11 +604,12 @@ theorem funEvals_ge (hq : 1 ≤ q)
 
 end Count
 
-/-- The coordinates are smooth. -/
+/-- For $i \in \{1, 2\}$, the coordinate map $v \mapsto v_i$ of $\mathbb{R}^2$ is of class
+$C^\infty$. -/
 theorem contDiff_coord (i : Fin 2) : ContDiff ℝ ∞ (fun v : ℝ² => v i) :=
   (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).contDiff
 
-/-- `X` is closed. -/
+/-- The set $X$ is closed. -/
 theorem isClosed_rect : IsClosed rect := by
   have hc : ∀ a : ℝ, Continuous fun _ : ℝ² => a := fun a => continuous_const
   have h := ((isClosed_le (hc 0) (continuous_coord 0)).inter
@@ -537,12 +621,12 @@ theorem isClosed_rect : IsClosed rect := by
   simp only [rect, Set.mem_ofPred_eq, Set.mem_inter_iff]
   tauto
 
-/-- `x₀ ∈ X`. -/
+/-- The starting point $x_0$ lies in $X$. -/
 theorem start_mem : start ∈ rect := by
   simp only [mem_rect, start, PiLp.single_apply]
   norm_num
 
-/-- `X` lies in the ball of radius `3`. -/
+/-- The set $X$ lies in the open ball $B(0, 3)$. -/
 theorem rect_subset_ball : rect ⊆ ball (0 : ℝ²) 3 := by
   intro v hv
   obtain ⟨h0, h2, h3, h4⟩ := hv
@@ -551,7 +635,7 @@ theorem rect_subset_ball : rect ⊆ ball (0 : ℝ²) 3 := by
   have : ‖v‖ ^ 2 < 3 ^ 2 := by nlinarith
   exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
 
-/-- The tolerances `ε₀` and `ε_j = 1/2` (`j ≥ 1`). -/
+/-- The tolerances $\varepsilon_0$ (a parameter) and $\varepsilon_j = 1/2$ for $j \ge 1$. -/
 noncomputable def tol (ε₀ : ℝ) : ℕ → ℝ := fun j => if j = 0 then ε₀ else 1 / 2
 
 end Constrained.TwoPhaseExample.Rectangle

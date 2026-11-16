@@ -10,41 +10,67 @@ import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-!
-# The exponential of a Banach algebra: perturbation and conditioning
+# The exponential in a Banach algebra: perturbation and conditioning
 
-Upstreaming candidate: natural home `Mathlib/Analysis/Normed/Algebra/Exponential`, whose name this
-module mirrors.
+Let $\mathbb{A}$ be a complete normed $\mathbb{R}$-algebra; complex matrices are one through
+`NormedAlgebra.complexToReal`. This module develops the first-order perturbation theory of
+$t \mapsto \exp(ta)$ for Mathlib's exponential `NormedSpace.exp`. The central fact is the
+variation-of-constants identity
+$$\exp(t(a + e)) - \exp(ta) = \int_0^t \exp((t - s)a)\, e\, \exp(s(a + e))\, ds.$$
+Its first-order term in $e$ is the Fréchet derivative $L(a, t)$ of $a \mapsto \exp(ta)$, with $L(a,
+t)\, e = \int_0^t \exp((t - s)a)\, e\, \exp(sa)\, ds$. From it comes Van Loan's relative condition
+number $\nu(a, t) = \|L(a, t)\| \|a\| / \|\exp(ta)\|$ of the exponential ([golub2013matrix],
+§9.3.2), which is the relative condition number of $a \mapsto \exp(ta)$ in the sense of Higham,
+*Functions of Matrices*, §3.1. The module also bounds the resolvent in a complex Banach algebra
+through the Laplace transform $(z - a)^{-1} = \int_0^\infty e^{-zt} \exp(ta)\, dt$
+([golub2013matrix], (9.3.6)).
 
-In a complete normed `ℝ`-algebra `𝔸` (complex matrices are one through
-`NormedAlgebra.complexToReal`), this module develops the first-order perturbation theory of
-`t ↦ exp (t • a)` beyond Mathlib's `NormedSpace.exp`:
+Section 9.3.2 of [golub2013matrix] states that $\nu(A, t) = t \|A\|_2$ holds if and only if $A$ is
+normal. The equality criterion of this module shows that equality holds whenever
+$\|\exp(sa)\| = e^{cs}$ for $s \in [0, t]$. Normal matrices satisfy this with $c$ the spectral
+abscissa, but so does the non-normal matrix
+$[1] \oplus \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$, so the direction "only if" is false.
+
+## Main definitions
+
+* `NormedSpace.expFrechet`: the Fréchet derivative $L(a, t)$ of $a \mapsto \exp(ta)$, the continuous
+  linear map $e \mapsto \int_0^t \exp((t - s)a)\, e\, \exp(sa)\, ds$.
+* `NormedSpace.expCondNumber`: Van Loan's condition number
+  $\nu(a, t) = \|L(a, t)\| \|a\| / \|\exp(ta)\|$.
+
+## Main results
 
 * `NormedSpace.continuous_exp_real`, `NormedSpace.exp_add_of_commute_real`,
-  `NormedSpace.exp_nsmul_real`: Mathlib's continuity and addition theorems, which ask for a normed
-  `ℚ`-algebra, for a complete normed `ℝ`-algebra; with `‖1‖ = 1`, the bounds
-  `NormedSpace.norm_exp_le_exp_norm` (`‖e^x‖ ≤ e^{‖x‖}`) and
-  `NormedSpace.norm_exp_sub_one_le_mul_exp_norm` (`‖e^x - 1‖ ≤ ‖x‖ e^{‖x‖}`);
+  `NormedSpace.exp_nsmul_real`: the exponential is continuous, $\exp(x + y) = \exp x \exp y$ for
+  commuting $x$ and $y$, and $\exp(mx) = (\exp x)^m$.
+* `NormedSpace.norm_exp_le_exp_norm`, `NormedSpace.norm_exp_sub_one_le_mul_exp_norm`: if
+  $\|1\| = 1$, then $\|\exp x\| \le e^{\|x\|}$ and $\|\exp x - 1\| \le \|x\| e^{\|x\|}$.
 * `NormedSpace.exp_eq_sum_range_of_pow_eq_zero`, `NormedSpace.exp_eq_one_add_of_sq_eq_zero`: the
-  exponential of a nilpotent element of any topological algebra is a finite sum;
-* `NormedSpace.exp_smul_add_sub_exp_smul`: the **variation-of-constants identity**
-  `e^{t(a+e)} - e^{ta} = ∫₀ᵗ e^{(t-s)a} e e^{s(a+e)} ds`, with the norm bound
-  `NormedSpace.norm_exp_smul_add_sub_exp_smul_le`;
-* `NormedSpace.eq_exp_smul_of_hasDerivAt`: `t ↦ e^{ta}` is the unique solution of `X' = aX`,
-  `X(0) = 1`;
-* `NormedSpace.expFrechet a t`: the Fréchet derivative `e ↦ ∫₀ᵗ e^{(t-s)a} e e^{sa} ds` of
-  `a ↦ e^{ta}` (`NormedSpace.hasFDerivAt_exp_smul`), as an integral of continuous linear maps;
-* `NormedSpace.expCondNumber a t = ‖L(a, t)‖ ‖a‖ / ‖e^{ta}‖`: Van Loan's relative condition number
-  of the exponential ([golub2013matrix] §9.3.2), the relative condition number of `a ↦ e^{ta}` in
-  the sense of Higham, *Functions of Matrices*, §3.1, with its lower bound
-  `NormedSpace.mul_norm_le_expCondNumber` and the equality criterion
-  `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`;
-* `norm_resolvent_le_of_norm_exp_smul_le`: in a complex Banach algebra, `‖e^{ta}‖ ≤ M` for `t ≥ 0`
-  gives `‖(z - a)⁻¹‖ ≤ M / Re z` for `Re z > 0`, the resolvent being the Laplace transform
-  `∫₀^∞ e^{-zt} e^{ta} dt` ([golub2013matrix] (9.3.6)).
+  exponential of a nilpotent element of a topological algebra is a finite sum.
+* `NormedSpace.exp_smul_add_sub_exp_smul`: the variation-of-constants identity, with the norm bound
+  `NormedSpace.norm_exp_smul_add_sub_exp_smul_le`.
+* `NormedSpace.eq_exp_smul_of_hasDerivAt`: $t \mapsto \exp(ta)$ is the unique solution of $X' = aX$,
+  $X(0) = 1$.
+* `NormedSpace.hasFDerivAt_exp_smul`: $L(a, t)$ is the Fréchet derivative of $b \mapsto \exp(tb)$ at
+  $a$.
+* `NormedSpace.mul_norm_le_expCondNumber`: $t \|a\| \le \nu(a, t)$ for $t \ge 0$.
+* `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`: if $\|\exp(sa)\| = e^{cs}$ on $[0, t]$, then
+  $\nu(a, t) = t \|a\|$.
+* `norm_resolvent_le_of_norm_exp_smul_le`: in a complex Banach algebra, if $\|\exp(ta)\| \le M$ for
+  $t \ge 0$ and $\operatorname{Re} z > 0$, then $z \notin \sigma(a)$ and
+  $\|(z - a)^{-1}\| \le M / \operatorname{Re} z$.
 
-The equality criterion is the correct form of [golub2013matrix] §9.3.2's "`ν(A, t) = t‖A‖₂` iff
-`A` is normal": equality holds whenever `‖e^{sa}‖ = e^{cs}` on `[0, t]`, which normal matrices
-satisfy with `c` the spectral abscissa, but so does the non-normal `[1] ⊕ [[0, 1], [0, 0]]`.
+## Implementation notes
+
+* Mathlib's `NormedSpace.exp_continuous`, `NormedSpace.exp_add_of_commute` and
+  `NormedSpace.exp_nsmul` ask for a normed $\mathbb{Q}$-algebra structure. The versions with the
+  suffix `_real` ask instead for a complete normed $\mathbb{R}$-algebra, and are proved from the
+  analyticity of the exponential over $\mathbb{R}$.
+* `NormedSpace.expFrechet` is an interval integral of continuous linear maps, that is, an integral
+  in the space of operators on $\mathbb{A}$. `NormedSpace.expFrechet_apply` evaluates it at a
+  direction.
+* The module extends the Mathlib module `Mathlib.Analysis.Normed.Algebra.Exponential`, whose name it
+  mirrors.
 -/
 
 open Filter Topology MeasureTheory
@@ -57,8 +83,11 @@ variable {𝕂 𝔸 : Type*} [Field 𝕂] [CharZero 𝕂] [Ring 𝔸] [Algebra �
   [IsTopologicalRing 𝔸]
 
 variable (𝕂) in
-/-- **The exponential of a nilpotent element** is a finite sum: if `x ^ n = 0` then
-`exp x = ∑_{k < n} x^k / k!`. -/
+/-- Let $\mathbb{K}$ be a field of characteristic zero and let $\mathbb{A}$ be a topological ring
+that is a $\mathbb{K}$-algebra. The **exponential of a nilpotent element** is a finite sum: if
+$x^n = 0$, then
+$$\exp x = \sum_{k < n} \frac{x^k}{k!}.$$
+-/
 theorem exp_eq_sum_range_of_pow_eq_zero {x : 𝔸} {n : ℕ} (hx : x ^ n = 0) :
     exp x = ∑ k ∈ Finset.range n, ((k.factorial : 𝕂)⁻¹) • x ^ k := by
   rw [exp_eq_tsum 𝕂]
@@ -66,7 +95,8 @@ theorem exp_eq_sum_range_of_pow_eq_zero {x : 𝔸} {n : ℕ} (hx : x ^ n = 0) :
   rw [Finset.mem_range, not_lt] at hk
   rw [show k = n + (k - n) by omega, pow_add, hx, zero_mul, smul_zero]
 
-/-- A square-zero element has `exp x = 1 + x`. -/
+/-- Let $\mathbb{A}$ be a topological ring that is a $\mathbb{Q}$-algebra. If $x \in \mathbb{A}$
+satisfies $x^2 = 0$, then $\exp x = 1 + x$. -/
 theorem exp_eq_one_add_of_sq_eq_zero [Algebra ℚ 𝔸] {x : 𝔸} (hx : x ^ 2 = 0) : exp x = 1 + x := by
   rw [exp_eq_sum_range_of_pow_eq_zero ℚ hx]
   simp [Finset.sum_range_succ]
@@ -75,26 +105,30 @@ end Nilpotent
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]
 
-/-- The exponential of a complete normed `ℝ`-algebra is continuous (from its analyticity over
-`ℝ`; Mathlib's `NormedSpace.exp_continuous` asks for a normed `ℚ`-algebra structure). -/
+/-- In a complete normed $\mathbb{R}$-algebra, the exponential $\exp : \mathbb{A} \to \mathbb{A}$ is
+continuous. The proof uses the analyticity of the exponential over $\mathbb{R}$; Mathlib's
+`NormedSpace.exp_continuous` asks for a normed $\mathbb{Q}$-algebra structure. -/
 theorem continuous_exp_real : Continuous (exp : 𝔸 → 𝔸) :=
   continuous_iff_continuousAt.mpr fun x => (exp_analytic (𝕂 := ℝ) x).continuousAt
 
-/-- `s ↦ exp (c(s) • a)` is continuous for continuous `c`. -/
+/-- For a continuous function $c : X \to \mathbb{R}$, the map $s \mapsto \exp(c(s)\, a)$ is
+continuous. -/
 private theorem continuous_exp_smul {X : Type*} [TopologicalSpace X] {c : X → ℝ}
     (hc : Continuous c) (a : 𝔸) : Continuous fun s => exp (c s • a) :=
   continuous_exp_real.comp (hc.smul continuous_const)
 
-/-- `exp (x + y) = exp x * exp y` for commuting `x`, `y` in a complete normed `ℝ`-algebra
-(Mathlib's `NormedSpace.exp_add_of_commute` asks for a normed `ℚ`-algebra structure). -/
+/-- If $x$ and $y$ commute in a complete normed $\mathbb{R}$-algebra, then
+$\exp(x + y) = \exp x \exp y$. Mathlib's `NormedSpace.exp_add_of_commute` asks for a normed
+$\mathbb{Q}$-algebra structure. -/
 theorem exp_add_of_commute_real {x y : 𝔸} (h : Commute x y) :
     exp (x + y) = exp x * exp y :=
   exp_add_of_commute_of_mem_ball (𝕂 := ℝ) h
     ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
     ((expSeries_radius_eq_top ℝ 𝔸).symm ▸ edist_lt_top _ _)
 
-/-- `exp (m • x) = exp x ^ m` in a complete normed `ℝ`-algebra (Mathlib's
-`NormedSpace.exp_nsmul` asks for a normed `ℚ`-algebra structure). -/
+/-- In a complete normed $\mathbb{R}$-algebra, $\exp(mx) = (\exp x)^m$ for every $x$ and every
+natural number $m$. Mathlib's `NormedSpace.exp_nsmul` asks for a normed $\mathbb{Q}$-algebra
+structure. -/
 theorem exp_nsmul_real (m : ℕ) (x : 𝔸) : exp (m • x) = exp x ^ m := by
   induction m with
   | zero => simp
@@ -105,7 +139,8 @@ section NormOneClass
 
 variable [NormOneClass 𝔸]
 
-/-- `‖e^x‖ ≤ e^{‖x‖}` in a complete normed `ℝ`-algebra with `‖1‖ = 1`. -/
+/-- In a complete normed $\mathbb{R}$-algebra with $\|1\| = 1$, every $x$ satisfies
+$\|\exp x\| \le e^{\|x\|}$. -/
 theorem norm_exp_le_exp_norm (x : 𝔸) : ‖exp x‖ ≤ Real.exp ‖x‖ := by
   have hx := exp_series_hasSum_exp' (𝕂 := ℝ) x
   have hr := exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖
@@ -114,7 +149,8 @@ theorem norm_exp_le_exp_norm (x : 𝔸) : ‖exp x‖ ≤ Real.exp ‖x‖ := by
   rw [norm_smul, Real.norm_of_nonneg (by positivity), smul_eq_mul]
   exact mul_le_mul_of_nonneg_left (norm_pow_le x n) (by positivity)
 
-/-- `‖e^x - 1‖ ≤ ‖x‖ e^{‖x‖}` in a complete normed `ℝ`-algebra with `‖1‖ = 1`. -/
+/-- In a complete normed $\mathbb{R}$-algebra with $\|1\| = 1$, every $x$ satisfies
+$\|\exp x - 1\| \le \|x\| e^{\|x\|}$. -/
 theorem norm_exp_sub_one_le_mul_exp_norm (x : 𝔸) : ‖exp x - 1‖ ≤ ‖x‖ * Real.exp ‖x‖ := by
   have hx := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) x)
   have hr := (hasSum_nat_add_iff' 1).mpr (exp_series_hasSum_exp' (𝕂 := ℝ) ‖x‖)
@@ -131,7 +167,7 @@ theorem norm_exp_sub_one_le_mul_exp_norm (x : 𝔸) : ‖exp x - 1‖ ≤ ‖x�
 
 end NormOneClass
 
-/-- The derivative of `s ↦ exp ((t - s) • a)`. -/
+/-- The derivative of $s \mapsto \exp((t - s)a)$ is $-a \exp((t - s)a)$. -/
 private theorem hasDerivAt_exp_sub_smul (a : 𝔸) (t s : ℝ) :
     HasDerivAt (fun s : ℝ => exp ((t - s) • a)) (-(a * exp ((t - s) • a))) s := by
   have h := (hasDerivAt_exp_smul_const' a (t - s)).scomp s ((hasDerivAt_id s).const_sub t)
@@ -146,9 +182,13 @@ private theorem continuous_variation (a e b : 𝔸) (t : ℝ) :
   ((continuous_exp_smul (continuous_const.sub continuous_id) a).mul continuous_const).mul
     (continuous_exp_smul continuous_id b)
 
-/-- **The variation-of-constants identity**:
-`e^{t(a+e)} - e^{ta} = ∫₀ᵗ e^{(t-s)a} e e^{s(a+e)} ds`. The integrand is the derivative of
-`s ↦ e^{(t-s)a} e^{s(a+e)}`, the `a`-terms cancelling because `a` commutes with `e^{(t-s)a}`. -/
+/-- The **variation-of-constants identity**. Let $\mathbb{A}$ be a complete normed
+$\mathbb{R}$-algebra, let $a, e \in \mathbb{A}$ and let $t \in \mathbb{R}$. Then
+$$\exp(t(a + e)) - \exp(ta) = \int_0^t \exp((t - s)a)\, e\, \exp(s(a + e))\, ds.$$
+
+The integral is an interval integral, so for $t < 0$ it is $-\int_t^0$. The integrand is the
+derivative of $s \mapsto \exp((t - s)a) \exp(s(a + e))$; the terms with $a$ cancel because $a$
+commutes with $\exp((t - s)a)$. -/
 theorem exp_smul_add_sub_exp_smul (a e : 𝔸) (t : ℝ) :
     exp (t • (a + e)) - exp (t • a) =
       ∫ s in (0 : ℝ)..t, exp ((t - s) • a) * e * exp (s • (a + e)) := by
@@ -163,7 +203,11 @@ theorem exp_smul_add_sub_exp_smul (a e : 𝔸) (t : ℝ) :
     ((continuous_variation a e (a + e) t).intervalIntegrable _ _)]
   simp
 
-/-- The norm bound of the variation-of-constants identity, for `t ≥ 0`. -/
+/-- The norm bound of the variation-of-constants identity. Let $\mathbb{A}$ be a complete normed
+$\mathbb{R}$-algebra, let $a, e \in \mathbb{A}$ and let $t \ge 0$. Then
+$$\|\exp(t(a + e)) - \exp(ta)\| \le \|e\| \int_0^t \|\exp((t - s)a)\| \, \|\exp(s(a + e))\| \,
+  ds.$$
+-/
 theorem norm_exp_smul_add_sub_exp_smul_le (a e : 𝔸) {t : ℝ} (ht : 0 ≤ t) :
     ‖exp (t • (a + e)) - exp (t • a)‖ ≤
       ‖e‖ * ∫ s in (0 : ℝ)..t, ‖exp ((t - s) • a)‖ * ‖exp (s • (a + e))‖ := by
@@ -178,8 +222,12 @@ theorem norm_exp_smul_add_sub_exp_smul_le (a e : 𝔸) {t : ℝ} (ht : 0 ≤ t) 
           (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right (norm_mul_le _ _) (norm_nonneg _))
       _ = ‖e‖ * (‖exp ((t - s) • a)‖ * ‖exp (s • (a + e))‖) := by ring
 
-/-- **`e^{ta}` is the unique solution of `X' = aX`, `X(0) = 1`** ([golub2013matrix] §9.3.2). That
-`t ↦ exp (t • a)` is a solution is Mathlib's `hasDerivAt_exp_smul_const'`. -/
+/-- **$\exp(ta)$ is the unique solution of $X' = aX$, $X(0) = 1$.** Let $\mathbb{A}$ be a complete
+normed $\mathbb{R}$-algebra, let $a \in \mathbb{A}$, and let $X : \mathbb{R} \to \mathbb{A}$
+satisfy $X'(t) = a X(t)$ for every $t$ and $X(0) = 1$. Then $X(t) = \exp(ta)$ for every
+$t \in \mathbb{R}$. This is the characterization of $e^{tA}$ in [golub2013matrix], §9.3.2.
+
+That $t \mapsto \exp(ta)$ is a solution is Mathlib's `hasDerivAt_exp_smul_const'`. -/
 theorem eq_exp_smul_of_hasDerivAt {a : 𝔸} {X : ℝ → 𝔸} (hX : ∀ t, HasDerivAt X (a * X t) t)
     (h0 : X 0 = 1) (t : ℝ) : X t = exp (t • a) := by
   have hψ : ∀ s, HasDerivAt (fun s => exp ((0 - s) • a) * X s) 0 s := by
@@ -200,8 +248,8 @@ theorem eq_exp_smul_of_hasDerivAt {a : 𝔸} {X : ℝ → 𝔸} (hX : ∀ t, Has
 
 /-! ### The Fréchet derivative and the condition number -/
 
-/-- The integrand of the Fréchet derivative, as continuous linear maps
-`e ↦ e^{(t-s)a} e e^{sa}`. -/
+/-- For fixed $a$, $t$ and $s$, the continuous linear map $e \mapsto \exp((t - s)a)\, e\, \exp(sa)$,
+which is the integrand of the Fréchet derivative. -/
 private noncomputable def frechetIntegrand (a : 𝔸) (t s : ℝ) : 𝔸 →L[ℝ] 𝔸 :=
   (ContinuousLinearMap.mul ℝ 𝔸 (exp ((t - s) • a))).comp
     ((ContinuousLinearMap.mul ℝ 𝔸).flip (exp (s • a)))
@@ -212,20 +260,28 @@ private theorem continuous_frechetIntegrand (a : 𝔸) (t : ℝ) :
     (continuous_exp_smul (continuous_const.sub continuous_id) a)).clm_comp
     ((ContinuousLinearMap.mul ℝ 𝔸).flip.continuous.comp (continuous_exp_smul continuous_id a))
 
-/-- **The Fréchet derivative of `a ↦ e^{ta}`**: `expFrechet a t e = ∫₀ᵗ e^{(t-s)a} e e^{sa} ds`
-(`NormedSpace.expFrechet_apply`, `NormedSpace.hasFDerivAt_exp_smul`); [golub2013matrix] §9.3.2,
-the first-order term of the variation-of-constants identity; Higham, *Functions of Matrices*,
-(10.15). -/
+/-- The **Fréchet derivative of the exponential** $a \mapsto \exp(ta)$. For $a$ in a complete normed
+$\mathbb{R}$-algebra $\mathbb{A}$ and $t \in \mathbb{R}$, $L(a, t)$ is the continuous linear map
+on $\mathbb{A}$ given by
+$$L(a, t)\, e = \int_0^t \exp((t - s)a)\, e\, \exp(sa)\, ds.$$
+It is the first-order term in $e$ of the variation-of-constants identity ([golub2013matrix],
+§9.3.2), and it is (10.15) of Higham, *Functions of Matrices*.
+
+The definition is the interval integral of the operator-valued map $s \mapsto (e \mapsto
+\exp((t - s)a)\, e\, \exp(sa))$. `NormedSpace.expFrechet_apply` evaluates it at a direction, and
+`NormedSpace.hasFDerivAt_exp_smul` proves that it is the Fréchet derivative. -/
 noncomputable def expFrechet (a : 𝔸) (t : ℝ) : 𝔸 →L[ℝ] 𝔸 :=
   ∫ s in (0 : ℝ)..t, frechetIntegrand a t s
 
+/-- The value of the Fréchet derivative $L(a, t)$ at a direction $e$ is
+$\int_0^t \exp((t - s)a)\, e\, \exp(sa)\, ds$. -/
 theorem expFrechet_apply (a : 𝔸) (t : ℝ) (e : 𝔸) :
     expFrechet a t e = ∫ s in (0 : ℝ)..t, exp ((t - s) • a) * e * exp (s • a) := by
   rw [expFrechet, ContinuousLinearMap.intervalIntegral_apply
     ((continuous_frechetIntegrand a t).intervalIntegrable _ _)]
   simp [frechetIntegrand, mul_assoc]
 
-/-- The Fréchet derivative in the direction `1` is `t e^{ta}`. -/
+/-- The Fréchet derivative in the direction $1$ is $L(a, t)\, 1 = t \exp(ta)$. -/
 theorem expFrechet_one (a : 𝔸) (t : ℝ) : expFrechet a t 1 = t • exp (t • a) := by
   rw [expFrechet_apply]
   have h : ∀ s : ℝ, exp ((t - s) • a) * exp (s • a) = exp (t • a) := fun s => by
@@ -233,8 +289,11 @@ theorem expFrechet_one (a : 𝔸) (t : ℝ) : expFrechet a t 1 = t • exp (t �
       sub_add_cancel]
   simp [h]
 
-/-- In a direction commuting with `a`, the Fréchet derivative of the exponential is
-`t e^{ta} e`. -/
+/-- Let $\mathbb{A}$ be a complete normed $\mathbb{R}$-algebra, let $a, e \in \mathbb{A}$ commute,
+and let $t \in \mathbb{R}$. Then the Fréchet derivative of the exponential in the direction $e$
+is
+$$L(a, t)\, e = t \exp(ta)\, e.$$
+-/
 theorem expFrechet_apply_of_commute {a e : 𝔸} (h : Commute a e) (t : ℝ) :
     expFrechet a t e = t • (exp (t • a) * e) := by
   rw [expFrechet_apply]
@@ -244,10 +303,14 @@ theorem expFrechet_apply_of_commute {a e : 𝔸} (h : Commute a e) (t : ℝ) :
       sub_add_cancel]
   simp [hc]
 
-/-- **`expFrechet a t` is the Fréchet derivative of `a ↦ e^{ta}`.** The exponential is analytic,
-hence differentiable; its derivative in a direction `e` is computed from the variation-of-constants
-identity, `e^{t(a+εe)} - e^{ta} = ε ∫₀ᵗ e^{(t-s)a} e e^{s(a+εe)} ds`, the integral being continuous
-in `ε`. -/
+/-- **$L(a, t)$ is the Fréchet derivative of the exponential.** Let $\mathbb{A}$ be a complete
+normed $\mathbb{R}$-algebra, let $a \in \mathbb{A}$ and let $t \in \mathbb{R}$. Then the map
+$b \mapsto \exp(tb)$ has the Fréchet derivative $L(a, t)$ (`NormedSpace.expFrechet`) at $a$.
+
+The exponential is analytic, hence differentiable. Its derivative in a direction $e$ is computed
+from the variation-of-constants identity $\exp(t(a + \varepsilon e)) - \exp(ta) = \varepsilon
+\int_0^t \exp((t - s)a)\, e\, \exp(s(a + \varepsilon e))\, ds$, whose integral is continuous in
+$\varepsilon$. -/
 theorem hasFDerivAt_exp_smul (a : 𝔸) (t : ℝ) :
     HasFDerivAt (fun b : 𝔸 => exp (t • b)) (expFrechet a t) a := by
   have hdiff : DifferentiableAt ℝ (fun b : 𝔸 => exp (t • b)) a :=
@@ -284,16 +347,28 @@ theorem hasFDerivAt_exp_smul (a : 𝔸) (t : ℝ) :
   rw [hline.unique hI, expFrechet_apply]
   simp [I]
 
-/-- **Van Loan's condition number of the exponential** ([golub2013matrix] §9.3.2):
-`ν(a, t) = ‖L(a, t)‖ ‖a‖ / ‖e^{ta}‖`, with `L(a, t) = expFrechet a t` the Fréchet derivative of
-`a ↦ e^{ta}`. The book's `max_{‖E‖ ≤ 1} ‖∫₀ᵗ e^{A(t-s)} E e^{As} ds‖` is this operator norm. -/
+/-- **Van Loan's condition number of the exponential** ([golub2013matrix], §9.3.2). For $a$ in a
+complete normed $\mathbb{R}$-algebra and $t \in \mathbb{R}$,
+$$\nu(a, t) = \frac{\|L(a, t)\| \, \|a\|}{\|\exp(ta)\|},$$
+where $L(a, t)$ is the Fréchet derivative `NormedSpace.expFrechet` of $b \mapsto \exp(tb)$ at
+$a$, and $\|L(a, t)\|$ is its operator norm.
+
+The source writes $\|L(a, t)\|$ as $\max_{\|E\| \le 1} \|\int_0^t e^{A(t - s)} E e^{As}\, ds\|$,
+which is this operator norm. The division is the division of real numbers in Lean, so
+$\nu(a, t) = 0$ if $\exp(ta) = 0$; this happens only in the zero algebra, because $\exp(ta)$ is
+invertible. -/
 noncomputable def expCondNumber (a : 𝔸) (t : ℝ) : ℝ :=
   ‖expFrechet a t‖ * ‖a‖ / ‖exp (t • a)‖
 
 variable [NormOneClass 𝔸]
 
-/-- **`ν(a, t) ≥ t ‖a‖`** ([golub2013matrix] §9.3.2): the Fréchet derivative in the direction `1`
-is `t e^{ta}`. -/
+/-- Let $\mathbb{A}$ be a complete normed $\mathbb{R}$-algebra with $\|1\| = 1$, let
+$a \in \mathbb{A}$ and let $t \ge 0$. Then
+$$t \|a\| \le \nu(a, t).$$
+This is the lower bound of [golub2013matrix], §9.3.2.
+
+The proof evaluates $L(a, t)$ in the direction $1$, where it is $t \exp(ta)$
+(`NormedSpace.expFrechet_one`). -/
 theorem mul_norm_le_expCondNumber (a : 𝔸) {t : ℝ} (ht : 0 ≤ t) : t * ‖a‖ ≤ expCondNumber a t := by
   have : Nontrivial 𝔸 := NormOneClass.nontrivial
   have hunit : IsUnit (exp (t • a)) := by
@@ -308,10 +383,14 @@ theorem mul_norm_le_expCondNumber (a : 𝔸) {t : ℝ} (ht : 0 ≤ t) : t * ‖a
   calc t * ‖a‖ * ‖exp (t • a)‖ = t * ‖exp (t • a)‖ * ‖a‖ := by ring
     _ ≤ ‖expFrechet a t‖ * ‖a‖ := mul_le_mul_of_nonneg_right hL (norm_nonneg _)
 
-/-- **The equality case of Van Loan's condition number**: if `‖e^{sa}‖ = e^{cs}` for all
-`s ∈ [0, t]`, then `ν(a, t) = t ‖a‖`. It holds for normal matrices with `c` the spectral abscissa
-([golub2013matrix] (9.3.4)), and also for some non-normal ones (`[1] ⊕ [[0, 1], [0, 0]]`), which is
-why [golub2013matrix] §9.3.2's "iff `A` is normal" fails. -/
+/-- **The equality case of Van Loan's condition number.** Let $\mathbb{A}$ be a complete normed
+$\mathbb{R}$-algebra with $\|1\| = 1$, let $a \in \mathbb{A}$, $t \ge 0$ and $c \in \mathbb{R}$.
+If $\|\exp(sa)\| = e^{cs}$ for all $s \in [0, t]$, then $\nu(a, t) = t \|a\|$.
+
+Normal matrices satisfy the hypothesis in the spectral norm with $c$ the spectral abscissa
+([golub2013matrix], (9.3.4)). The non-normal matrix $[1] \oplus \begin{bmatrix} 0 & 1 \\ 0 & 0
+\end{bmatrix}$ satisfies it too, with $c = 1$. So the claim of [golub2013matrix], §9.3.2, that
+$\nu(A, t) = t \|A\|_2$ holds if and only if $A$ is normal, is false in the direction "only if". -/
 theorem expCondNumber_eq_of_norm_exp_smul_eq (a : 𝔸) {t c : ℝ} (ht : 0 ≤ t)
     (h : ∀ s ∈ Set.Icc 0 t, ‖exp (s • a)‖ = Real.exp (c * s)) :
     expCondNumber a t = t * ‖a‖ := by
@@ -353,9 +432,15 @@ section Resolvent
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℂ 𝔸] [CompleteSpace 𝔸]
 
-/-- **The Laplace-transform resolvent bound** behind [golub2013matrix] (9.3.6): in a complex Banach
-algebra, if `‖e^{ta}‖ ≤ M` for all real `t ≥ 0` and `Re z > 0`, then `z` is not in the spectrum of
-`a` and `‖(z - a)⁻¹‖ ≤ M / Re z`. The inverse is `∫₀^∞ e^{-zt} e^{ta} dt`. -/
+/-- **The resolvent bound from the Laplace transform.** Let $\mathbb{A}$ be a complete normed
+$\mathbb{C}$-algebra, let $a \in \mathbb{A}$, and let $M \in \mathbb{R}$ satisfy
+$\|\exp(ta)\| \le M$ for all real $t \ge 0$. If $z \in \mathbb{C}$ has
+$\operatorname{Re} z > 0$, then $z$ is not in the spectrum of $a$, and
+$$\|(z - a)^{-1}\| \le \frac{M}{\operatorname{Re} z}.$$
+This is the bound behind [golub2013matrix], (9.3.6).
+
+The inverse is the Laplace transform $\int_0^\infty e^{-zt} \exp(ta)\, dt$. In the statement it
+is `Ring.inverse`, which is the true inverse because $z - a$ is a unit. -/
 theorem norm_resolvent_le_of_norm_exp_smul_le {a : 𝔸} {M : ℝ}
     (hM : ∀ t : ℝ, 0 ≤ t → ‖exp (t • a)‖ ≤ M) {z : ℂ} (hz : 0 < z.re) :
     z ∉ spectrum ℂ a ∧ ‖Ring.inverse (algebraMap ℂ 𝔸 z - a)‖ ≤ M / z.re := by

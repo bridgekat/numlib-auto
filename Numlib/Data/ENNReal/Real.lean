@@ -11,16 +11,31 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Basic.ENNReal.Real
 
 /-!
-# `1 ≤ p.toReal` for a finite exponent
+# The real value of a finite exponent
 
-The exponent bookkeeping of the `L^p` theory: an exponent `p : ℝ≥0∞` with `1 ≤ p` (as a `Fact`,
-the form the `Lp` API carries it in) and `p ≠ ∞` has `1 ≤ p.toReal`
-(`ENNReal.one_le_toReal_of_ne_top`).
+An exponent of the $L^p$ theory is an extended nonnegative real number $p \in [0, \infty]$. This
+module proves that a finite exponent with $1 \le p$ has real value at least $1$: if $1 \le p$ and
+$p \neq \infty$, then $1 \le \operatorname{toReal}(p)$, where
+$\operatorname{toReal}(p) \in \mathbb{R}$ is the Lean term `ENNReal.toReal p`.
+
+## Main results
+
+* `ENNReal.one_le_toReal_of_ne_top`: if $1 \le p$ and $p \neq \infty$, then
+  $1 \le \operatorname{toReal}(p)$.
+
+## Implementation notes
+
+* The hypothesis $1 \le p$ is an instance argument `Fact (1 ≤ p)`, the form in which the $L^p$ API
+  of Mathlib takes it.
 -/
 
 open scoped ENNReal
 
-/-- `1 ≤ p.toReal` for `1 ≤ p < ∞`. -/
+/-- Let $p \in [0, \infty]$ satisfy $1 \le p$ and $p \neq \infty$. Then the real value of $p$ is at
+least $1$: $$1 \le \operatorname{toReal}(p).$$
+
+The real value $\operatorname{toReal}(p)$ is `ENNReal.toReal p`. The hypothesis $1 \le p$ is the
+instance argument `Fact (1 ≤ p)`. -/
 theorem ENNReal.one_le_toReal_of_ne_top {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     1 ≤ p.toReal := by
   rw [← ENNReal.toReal_one]

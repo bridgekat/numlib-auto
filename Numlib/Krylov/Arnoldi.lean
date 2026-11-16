@@ -9,32 +9,77 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.Projection.Basic
 
 /-!
-# Arnoldi's process
+# The Arnoldi process
 
-The Arnoldi vectors are the Gram–Schmidt orthonormalization of the Krylov sequence `b, A b, A² b, …`
-(`InnerProductSpace.gramSchmidtNormed`), which is `0` after breakdown. This gives orthonormality,
-`span {v₀, …, v_{m-1}} = 𝒦_m` ([saad2003iterative], Prop 6.4), breakdown iff grade (Prop 6.6), the
-Hessenberg structure of `h i j = ⟪v i, A v j⟫` and the Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j
-v_i` (Prop 6.5, (6.9)), and the identification with the classical recurrence `w_j = A v_j - ∑_{i ≤
-j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book. Also the basis-free form `(1
-- P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the orthogonal projection onto `𝒦_m`
-([saad2011numerical], P-6.1, which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`).
-Indices are `0`-based: `v 0 = b / ‖b‖`.
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $A : E \to E$
+be linear, and let $b \in E$. The Krylov subspaces are $\mathcal{K}_m = \mathcal{K}_m(A, b) =
+\operatorname{span}\{b, Ab, \dots, A^{m-1} b\}$. The **Arnoldi vectors** $v_0, v_1, \dots$ are the
+normalized Gram–Schmidt orthogonalization of the Krylov sequence $b, Ab, A^2 b, \dots$; a vector is
+$0$ once the sequence has become linearly dependent (breakdown). The **Arnoldi coefficients** are
+$h_{ij} = \langle v_i, A v_j \rangle$. This file proves the basic facts of [saad2003iterative]: the
+vectors are orthonormal and $\operatorname{span}\{v_0, \dots, v_{m-1}\} = \mathcal{K}_m$
+(Proposition 6.4), breakdown happens exactly at the grade of $b$ (Proposition 6.6), the matrix
+$(h_{ij})$ is upper Hessenberg, and the **Arnoldi relation**
+$$A v_j = \sum_{i=0}^{j+1} h_{ij} v_i$$
+holds (Proposition 6.5 and (6.9)). It also identifies the vectors with the classical recurrence
+$w_j = A v_j - \sum_{i \le j} h_{ij} v_i$, $v_{j+1} = w_j / \|w_j\|$ of Algorithm 6.1, and gives the
+basis-free form $(I - P_{m+1}) A v_m = h_{m+1,m} v_{m+1}$, where $P_{m+1}$ is the orthogonal
+projection onto $\mathcal{K}_{m+1}$; this measures how far $\mathcal{K}_{m+1}$ is from being
+invariant under $A$ ([saad2011numerical], problem P-6.1).
 
-A map `N` intertwining two operators (`N ∘ B = C ∘ N`) carries an Arnoldi vector of `B` to a vector
-whose component along the Arnoldi vector of `C` of the same step is a nonnegative real
-(`Arnoldi.inner_vec_apply_vec_of_semiconj`), the fact that makes the two families of the
-Golub–Kahan process line up.
+Three further facts close the file. If a linear map $N$ intertwines two operators, $N B = C N$, then
+$N$ carries an Arnoldi vector of $B$ to a vector whose component along the Arnoldi vector of $C$ of
+the same step is a nonnegative real; this makes the two families of the Golub–Kahan process line up.
+The process is natural under linear isometries, which carries it between an operator and its matrix,
+and between isometric models of one space. Finally, the modified Gram–Schmidt form of the process
+([saad2003iterative], Algorithm 6.2; [golub2013matrix], Algorithm 10.5.1), which removes the
+components along $v_0, \dots, v_j$ one at a time, computes the same vectors in exact arithmetic, and
+any sequence that satisfies this recurrence is the sequence of Arnoldi vectors.
 
-Two further facts close the file. The process is natural under linear isometries
-(`Arnoldi.vec_conj_linearIsometryEquiv`, `Arnoldi.coeff_conj_linearIsometryEquiv`), which carries it
-between an operator and its matrix and between isometric models of one space; the proof is the
-naturality of Gram–Schmidt. And the modified Gram–Schmidt recurrence `Arnoldi.mgsVec`, whose inner
-loop subtracts the projections one at a time against the current vector ([saad2003iterative] Alg
-6.2, [golub2013matrix] Algorithm 10.5.1), computes the same vectors in exact arithmetic
-(`Arnoldi.mgsVec_eq_vec`); more generally any sequence satisfying that recurrence is `Arnoldi.vec`
-(`Arnoldi.eq_vec_of_modifiedGramSchmidt`), which is how a textbook's program is identified with the
-backbone.
+## Main definitions
+
+* `Arnoldi.vec`: the Arnoldi vectors $v_j$, the normalized Gram–Schmidt vectors of the Krylov
+  sequence, with $v_j = 0$ after breakdown.
+* `Arnoldi.coeff`: the Arnoldi coefficients $h_{ij} = \langle v_i, A v_j \rangle$.
+* `Arnoldi.w`: the unnormalized next vector $w_j = A v_j - \sum_{i \le j} h_{ij} v_i$.
+* `Arnoldi.orthonormalBasis`: the orthonormal basis $v_0, \dots, v_{m-1}$ of $\mathcal{K}_m$ for $m$
+  at most the grade.
+* `Arnoldi.hessenberg`, `Arnoldi.hessenbergSq`: the $(m+1) \times m$ Hessenberg matrix $\bar H_m$
+  and its leading $m \times m$ block $H_m$.
+* `Arnoldi.mgsVec`: the Arnoldi vectors computed with modified Gram–Schmidt.
+
+## Main results
+
+* `Arnoldi.span_vec`: $\operatorname{span}\{v_0, \dots, v_{m-1}\} = \mathcal{K}_m$.
+* `Arnoldi.inner_vec_eq_zero`, `Arnoldi.orthonormal`: distinct Arnoldi vectors are orthogonal, and
+  the vectors below the grade are orthonormal.
+* `Arnoldi.vec_eq_zero_iff`: $v_j = 0$ if and only if $j$ is at least the grade of $b$.
+* `Arnoldi.apply_vec`: the Arnoldi relation $A v_j = \sum_{i \le j+1} h_{ij} v_i$.
+* `Arnoldi.isUpperHessenberg_coeff`: $h_{ij} = 0$ for $i > j + 1$.
+* `Arnoldi.vec_succ_eq`, `Arnoldi.coeff_succ_self`: $v_{j+1} = w_j / \|w_j\|$ and
+  $h_{j+1,j} = \|w_j\|$.
+* `Arnoldi.apply_sum`: the matrix form $A V_m = V_{m+1} \bar H_m$.
+* `Arnoldi.hessenbergSq_eq_toMatrix_compression`: $H_m$ is the matrix of the compression of $A$ to
+  $\mathcal{K}_m$.
+* `Arnoldi.coeff_eq_zero_of_adjoint_mem`: if $A^*$ maps each $v$ into $\mathcal{K}_s(A, v)$, then
+  $h_{ij} = 0$ for $i + s \le j$.
+* `Arnoldi.inner_vec_apply_vec_of_semiconj`: an intertwining map carries Arnoldi vectors to vectors
+  with a nonnegative leading coefficient.
+* `Arnoldi.vec_conj_linearIsometryEquiv`, `Arnoldi.coeff_conj_linearIsometryEquiv`: naturality under
+  linear isometries.
+* `Arnoldi.eq_vec_of_modifiedGramSchmidt`, `Arnoldi.mgsVec_eq_vec`: the modified Gram–Schmidt
+  recurrence determines the Arnoldi vectors.
+
+## Implementation notes
+
+* Indices start at $0$: $v_0 = b / \|b\|$, and $v_0, \dots, v_{m-1}$ span $\mathcal{K}_m$, which is
+  `Krylov.subspace A b m`.
+* The inner product $\langle x, y \rangle$ of Mathlib is conjugate-linear in $x$, so
+  $h_{ij} = v_i^H A v_j$ for matrices.
+* No hypothesis on the dimension is needed to define the vectors. The results that mention the grade
+  assume that the full Krylov space `Krylov.fullSubspace A b` is finite-dimensional.
+* After breakdown the vectors are $0$, so most identities hold for all indices without a hypothesis
+  on the grade.
 -/
 
 open Krylov
@@ -43,22 +88,35 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 namespace Arnoldi
 
-/-- Arnoldi vectors: Gram–Schmidt of the Krylov sequence; `0` after breakdown. -/
+/-- The **Arnoldi vectors** $v_0, v_1, \dots$ of $A$ and $b$: the normalized Gram–Schmidt
+orthogonalization of the Krylov sequence $b, Ab, A^2 b, \dots$. Thus $v_j = u_j / \|u_j\|$,
+where $u_j$ is the component of $A^j b$ orthogonal to $\mathcal{K}_j$, and $v_j = 0$ if
+$u_j = 0$.
+
+The definition is `InnerProductSpace.gramSchmidtNormed` applied to the sequence
+$i \mapsto A^i b$. Indices start at $0$. -/
 noncomputable def vec (A : E →ₗ[𝕜] E) (b : E) : ℕ → E :=
   InnerProductSpace.gramSchmidtNormed 𝕜 (fun i : ℕ => (A ^ i) b)
 
-/-- Arnoldi (Hessenberg) coefficients `h i j = ⟪v i, A v j⟫`. -/
+/-- The **Arnoldi coefficients** $h_{ij} = \langle v_i, A v_j \rangle$ of $A$ and $b$, the entries
+of the Hessenberg matrix of the Arnoldi process.
+
+The inner product is conjugate-linear in its first argument, so for matrices
+$h_{ij} = v_i^H A v_j$. Indices start at $0$. -/
 noncomputable def coeff (A : E →ₗ[𝕜] E) (b : E) (i j : ℕ) : 𝕜 :=
   inner 𝕜 (vec A b i) (A (vec A b j))
 
 variable (A : E →ₗ[𝕜] E) (b : E)
 
-/-! ### The unnormalized Gram–Schmidt vectors
+/-!
+### The unnormalized Gram–Schmidt vectors
 
-`gs` is `vec` before normalization; the statements about `vec` and `w` are proved by first
-identifying both with a nonnegative real multiple of `gs`. -/
+Let $u_j$ be the unnormalized Gram–Schmidt vectors of the Krylov sequence, so that
+$v_j = u_j / \|u_j\|$. The statements about $v_j$ and $w_j$ are proved by first writing both as
+nonnegative real multiples of these vectors.
+-/
 
-/-- The unnormalized Gram–Schmidt vectors of the Krylov sequence. -/
+/-- The unnormalized Gram–Schmidt vectors $u_j$ of the Krylov sequence $b, Ab, A^2 b, \dots$. -/
 private noncomputable def gs : ℕ → E :=
   InnerProductSpace.gramSchmidt 𝕜 (fun i : ℕ => (A ^ i) b)
 
@@ -70,7 +128,7 @@ private theorem vec_eq_smul_gs (j : ℕ) : vec A b j = (‖gs A b j‖ : 𝕜)�
 private theorem gs_orthogonal {i j : ℕ} (h : i ≠ j) : inner 𝕜 (gs A b i) (gs A b j) = 0 :=
   InnerProductSpace.gramSchmidt_orthogonal 𝕜 _ h
 
-/-- `x⁻¹ (y⁻¹ x²) = y⁻¹ x`, also when `x = 0`. -/
+/-- For real $x$ and $y$, $x^{-1} (y^{-1} x^2) = y^{-1} x$ in $\mathbb{K}$, also when $x = 0$. -/
 private theorem inv_mul_inv_mul_sq (x y : ℝ) :
     ((x : 𝕜))⁻¹ * ((y : 𝕜)⁻¹ * (x : 𝕜) ^ 2) = ((y⁻¹ * x : ℝ) : 𝕜) := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -79,7 +137,8 @@ private theorem inv_mul_inv_mul_sq (x y : ℝ) :
     push_cast
     field_simp
 
-/-- `(y⁻¹ x)⁻¹ y⁻¹ = x⁻¹` for `y ≠ 0`, also when `x = 0`. -/
+/-- For real $x$ and $y \neq 0$, $(y^{-1} x)^{-1} y^{-1} = x^{-1}$ in $\mathbb{K}$, also when
+$x = 0$. -/
 private theorem inv_mul_inv_cancel (x y : ℝ) (hy : y ≠ 0) :
     (((y⁻¹ * x : ℝ)) : 𝕜)⁻¹ * ((y : ℝ) : 𝕜)⁻¹ = ((x : ℝ) : 𝕜)⁻¹ := by
   have hy' : ((y : ℝ) : 𝕜) ≠ 0 := by simpa using hy
@@ -101,7 +160,8 @@ private theorem gs_mem_orthogonal (j : ℕ) : gs A b j ∈ (subspace A b j)ᗮ :
   rintro _ ⟨i, hi, rfl⟩
   exact gs_orthogonal A b hi.ne
 
-/-- `gs j` is the component of `A^j b` orthogonal to `𝒦_j`. -/
+/-- The vector $u_j$ is the component of $A^j b$ orthogonal to $\mathcal{K}_j$:
+$u_j = A^j b - P_{\mathcal{K}_j} A^j b$. -/
 private theorem gs_eq_sub_starProjection (j : ℕ) :
     gs A b j = (A ^ j) b - (subspace A b j).starProjection ((A ^ j) b) := by
   have hd := InnerProductSpace.gramSchmidt_def' 𝕜 (fun i : ℕ => (A ^ i) b) j
@@ -127,16 +187,19 @@ private theorem gs_eq_zero_iff (j : ℕ) : gs A b j = 0 ↔ (A ^ j) b ∈ subspa
 
 -- `hb` is not needed: for `b = 0` both sides are `0`.
 set_option linter.unusedVariables false in
-/-- The process starts from the normalized right-hand side: `v_0 = b/‖b‖`. -/
+/-- Let $b \neq 0$. The first Arnoldi vector is the normalized starting vector,
+$$v_0 = \frac{b}{\|b\|}.$$
+
+The hypothesis $b \neq 0$ is not used: for $b = 0$ both sides are $0$. -/
 theorem vec_zero (hb : b ≠ 0) : vec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
   have h0 : gs A b 0 = b := by
     rw [gs_def, show (0 : ℕ) = ⊥ from rfl, InnerProductSpace.gramSchmidt_bot]
     simp
   rw [vec_eq_smul_gs, h0]
 
-/-- Breakdown at step `j` is exactly the closing up of the Krylov sequence there: `v_j = 0` iff `A^j
-b` already lies in `𝒦_j`. The form of `Arnoldi.vec_eq_zero_iff` that needs no finite-dimensionality.
--/
+/-- Breakdown at step $j$ means that the Krylov sequence closes up there: $v_j = 0$ if and only if
+$A^j b \in \mathcal{K}_j$. This form of `Arnoldi.vec_eq_zero_iff` needs no
+finite-dimensionality. -/
 theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
     vec A b j = 0 ↔ (A ^ j) b ∈ subspace A b j := by
   rw [← gs_eq_zero_iff, vec_eq_smul_gs, smul_eq_zero]
@@ -144,33 +207,45 @@ theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
   rw [inv_eq_zero, RCLike.ofReal_eq_zero, norm_eq_zero] at hc
   exact hc
 
-/-- An Arnoldi vector that has not broken down is a unit vector. -/
+/-- An Arnoldi vector $v_j \neq 0$ is a unit vector: $\|v_j\| = 1$. -/
 theorem norm_vec_eq_one_of_ne_zero {j : ℕ} (h : vec A b j ≠ 0) : ‖vec A b j‖ = 1 :=
   InnerProductSpace.gramSchmidtNormed_unit_length' h
 
-/-- `v_j` lies in `𝒦_{j+1}`: orthonormalizing the `j`-th Krylov vector only combines `b, A b, …, A^j
-b`. -/
+/-- For every $j$, the Arnoldi vector $v_j$ lies in $\mathcal{K}_{j+1}$.
+
+The orthogonalization of $A^j b$ combines only $b, Ab, \dots, A^j b$. -/
 theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_subspace A b j.lt_succ_self)
 
-/-- The first `m` Arnoldi vectors all lie in `𝒦_m`. -/
+/-- If $i < m$, then the Arnoldi vector $v_i$ lies in $\mathcal{K}_m$. -/
 theorem vec_mem_subspace_of_lt {i m : ℕ} (h : i < m) : vec A b i ∈ subspace A b m :=
   subspace_mono A b h (vec_mem_subspace A b i)
 
-/-- `v_j` is orthogonal to all of `𝒦_j`, that is, to every earlier Arnoldi vector at once; this is
-what Gram–Schmidt subtracts off. -/
+/-- For every $j$, the Arnoldi vector $v_j$ is orthogonal to $\mathcal{K}_j$, that is,
+$v_j \in \mathcal{K}_j^\perp$.
+
+Since $\mathcal{K}_j$ is spanned by $v_0, \dots, v_{j-1}$, this says that $v_j$ is orthogonal to
+all earlier Arnoldi vectors at once. -/
 theorem vec_mem_orthogonal (j : ℕ) : vec A b j ∈ (subspace A b j)ᗮ := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_orthogonal A b j)
 
-/-- Distinct Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis on the
-grade: past breakdown the vectors are `0`, and the inner product vanishes for that reason. -/
+/-- Distinct Arnoldi vectors are orthogonal: for all $i \neq j$,
+$$\langle v_i, v_j \rangle = 0.$$
+
+No hypothesis on the grade is needed: after breakdown the vectors are $0$, and the inner product
+vanishes for that reason. -/
 theorem inner_vec_eq_zero {i j : ℕ} (h : i ≠ j) : inner 𝕜 (vec A b i) (vec A b j) = 0 := by
   rw [vec_eq_smul_gs, vec_eq_smul_gs, inner_smul_left, inner_smul_right, gs_orthogonal A b h]
   simp
 
-/-- [saad2003iterative], Prop 6.4: the Arnoldi vectors span the Krylov subspaces. -/
+/-- For every $m$, the first $m$ Arnoldi vectors span the $m$-th Krylov subspace:
+$$\operatorname{span}\{v_0, \dots, v_{m-1}\} = \mathcal{K}_m.$$
+This is part of Proposition 6.4 of [saad2003iterative].
+
+No hypothesis on the grade is needed: after breakdown $\mathcal{K}_m$ stops growing and the
+added vectors are $0$. -/
 theorem span_vec (m : ℕ) : Submodule.span 𝕜 (vec A b '' Set.Iio m) = subspace A b m := by
   rw [subspace_eq_span_gs_image]
   exact InnerProductSpace.span_gramSchmidtNormed (fun i : ℕ => (A ^ i) b) (Set.Iio m)
@@ -179,17 +254,29 @@ section FiniteDimensional
 
 variable [FiniteDimensional 𝕜 (fullSubspace A b)]
 
-/-- [saad2003iterative], Prop 6.6: breakdown at step `j` iff `j ≥ grade`. -/
+/-- Suppose that the full Krylov space $\operatorname{span}\{A^i b : i \ge 0\}$ is
+finite-dimensional, and let $d$ be its dimension, the grade of $b$ with respect to $A$. Then for
+every $j$,
+$$v_j = 0 \iff d \le j.$$
+This is Proposition 6.6 of [saad2003iterative]: the process breaks down exactly at the grade.
+
+The grade is `Krylov.grade A b`. -/
 theorem vec_eq_zero_iff (j : ℕ) : vec A b j = 0 ↔ grade A b ≤ j := by
   rw [vec_eq_zero_iff_pow_apply_mem, grade_le_iff]
 
-/-- Below the grade the Arnoldi vectors are genuine unit vectors; from the grade onwards they are
-`0`, by `vec_eq_zero_iff`. -/
+/-- Suppose that the full Krylov space of $A$ and $b$ is finite-dimensional. If $j$ is less than the
+grade of $b$, then $\|v_j\| = 1$.
+
+From the grade on, the vectors are $0$ by `Arnoldi.vec_eq_zero_iff`. -/
 theorem norm_vec_eq_one_of_lt_grade {j : ℕ} (h : j < grade A b) : ‖vec A b j‖ = 1 :=
   norm_vec_eq_one_of_ne_zero A b (fun hz => absurd ((vec_eq_zero_iff A b j).1 hz) (not_le.2 h))
 
-/-- [saad2003iterative], Prop 6.4: the Arnoldi vectors up to the grade — exactly the ones that
-survive the process — form an orthonormal family. -/
+/-- Suppose that the full Krylov space of $A$ and $b$ is finite-dimensional, and let $d$ be the
+grade of $b$. Then $v_0, \dots, v_{d-1}$ is an orthonormal family. This is part of Proposition
+6.4 of [saad2003iterative].
+
+These are exactly the Arnoldi vectors that are not $0$. The family is indexed by
+`Fin (Krylov.grade A b)`. -/
 theorem orthonormal : Orthonormal 𝕜 (fun i : Fin (grade A b) => vec A b i) :=
   ⟨fun i => norm_vec_eq_one_of_lt_grade A b i.2,
     fun _ _ hij => inner_vec_eq_zero A b fun h => hij (Fin.val_injective h)⟩
@@ -213,8 +300,11 @@ private theorem sub_sum_inner_smul_vec_mem_orthogonal (x : E) (m : ℕ) :
   · intro hk'
     exact absurd (Finset.mem_range.2 hk) hk'
 
-/-- Every element of `𝒦_m` is its own orthonormal expansion in the Arnoldi vectors (the vectors that
-vanish after breakdown contribute nothing). -/
+/-- Every $x \in \mathcal{K}_m$ is its own orthonormal expansion in the first $m$ Arnoldi vectors:
+$$x = \sum_{i=0}^{m-1} \langle v_i, x \rangle v_i.$$
+
+No hypothesis on the grade is needed: the vectors that are $0$ after breakdown contribute
+nothing. -/
 theorem eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
     x = ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i := by
   have hy : x - ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i ∈ subspace A b m :=
@@ -225,9 +315,11 @@ theorem eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
   rw [inner_self_eq_zero, sub_eq_zero] at h0
   exact h0
 
-/-- A vector of `𝒦_{m+1}` orthogonal to `𝒦_m` is the multiple `⟪v_m, x⟫ • v_m` of the `m`-th Arnoldi
-vector: in the expansion of `Arnoldi.eq_sum_inner_smul_vec` only the last coefficient survives. This
-is the step that turns "the new direction" into a scalar. -/
+/-- If $x \in \mathcal{K}_{m+1}$ is orthogonal to $\mathcal{K}_m$, then
+$x = \langle v_m, x \rangle v_m$.
+
+In the expansion of `Arnoldi.eq_sum_inner_smul_vec` only the last coefficient survives. This is
+the step that turns the new direction of a Krylov subspace into a scalar. -/
 theorem eq_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b (m + 1))
     (hxo : x ∈ (subspace A b m)ᗮ) :
     x = inner 𝕜 (vec A b m) x • vec A b m := by
@@ -240,7 +332,7 @@ theorem eq_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b (m + 1))
 
 section OrthonormalBasis
 
-/-- The Arnoldi vectors of `𝒦_m`, as elements of `𝒦_m`. -/
+/-- The Arnoldi vectors $v_0, \dots, v_{m-1}$ as elements of $\mathcal{K}_m$. -/
 private noncomputable def vecIn {m : ℕ} (i : Fin m) : subspace A b m :=
   ⟨vec A b i, vec_mem_subspace_of_lt A b i.2⟩
 
@@ -262,13 +354,21 @@ private theorem span_vecIn {m : ℕ} :
   exact Submodule.sum_mem _ fun i _ =>
     Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
-/-- The Arnoldi vectors form an orthonormal basis of `𝒦_m` for `m ≤ grade`. -/
+/-- Suppose that the full Krylov space of $A$ and $b$ is finite-dimensional, and let $m$ be at most
+the grade of $b$. The Arnoldi vectors $v_0, \dots, v_{m-1}$ form an **orthonormal basis** of
+$\mathcal{K}_m$.
+
+The basis is indexed by `Fin m`. Its vectors are elements of the subspace
+`Krylov.subspace A b m`; `Arnoldi.coe_orthonormalBasis_apply` identifies them with
+`Arnoldi.vec`. -/
 noncomputable def orthonormalBasis [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) : OrthonormalBasis (Fin m) 𝕜 (subspace A b m) :=
   OrthonormalBasis.mk (orthonormal_vecIn A b hm) (span_vecIn A b)
 
-/-- The orthonormal basis of `𝒦_m` is made of the Arnoldi vectors themselves, so any statement about
-it may be read back in terms of `vec`. -/
+/-- The $i$-th vector of `Arnoldi.orthonormalBasis`, as an element of $E$, is the Arnoldi vector
+$v_i$.
+
+Any statement about the basis can therefore be read back in terms of `Arnoldi.vec`. -/
 @[simp]
 theorem coe_orthonormalBasis_apply [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) (i : Fin m) : (orthonormalBasis A b hm i : E) = vec A b i :=
@@ -279,25 +379,36 @@ end OrthonormalBasis
 
 /-! ### The Hessenberg structure -/
 
-/-- Hessenberg structure: `h i j = 0` for `i > j + 1`. -/
+/-- The Arnoldi coefficients vanish below the first subdiagonal: if $i > j + 1$, then $h_{ij} = 0$.
+-/
 theorem coeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : coeff A b i j = 0 := by
   refine Submodule.inner_left_of_mem_orthogonal (K := subspace A b (j + 2))
     (map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩) ?_
   exact Submodule.orthogonal_le (subspace_mono A b (by omega)) (vec_mem_orthogonal A b i)
 
-/-- The Arnoldi coefficients are upper Hessenberg, as an `ℕ`-indexed array. -/
+/-- The infinite array $(h_{ij})_{i, j \ge 0}$ of Arnoldi coefficients is upper Hessenberg:
+$h_{ij} = 0$ whenever some index $k$ satisfies $j < k < i$.
+
+This is `Matrix.IsUpperHessenberg` for a matrix indexed by $\mathbb{N}$, and it is the matrix
+form of `Arnoldi.coeff_eq_zero_of_lt`. -/
 theorem isUpperHessenberg_coeff : Matrix.IsUpperHessenberg (n := ℕ) (coeff A b) :=
   Matrix.isUpperHessenberg_iff_nat.2 fun _ _ hij => coeff_eq_zero_of_lt A b hij
 
-/-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i` ([saad2003iterative], (6.9)). -/
+/-- The **Arnoldi relation**: for every $j$,
+$$A v_j = \sum_{i=0}^{j+1} h_{ij} v_i.$$
+This is equation (6.9) of [saad2003iterative].
+
+No hypothesis on the grade is needed: after breakdown the vectors are $0$. -/
 theorem apply_vec (j : ℕ) :
     A (vec A b j) = ∑ i ∈ Finset.range (j + 2), coeff A b i j • vec A b i := by
   have hx : A (vec A b j) ∈ subspace A b (j + 1 + 1) :=
     map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩
   simpa [coeff] using eq_sum_inner_smul_vec A b hx
 
-/-- The Arnoldi relation with the sum padded out to any length `n ≥ j + 2`: the extra terms carry
-Hessenberg-zero coefficients, so lengthening the range costs nothing. -/
+/-- The Arnoldi relation with a longer sum: if $j + 2 \le n$, then
+$$A v_j = \sum_{i=0}^{n-1} h_{ij} v_i.$$
+
+The extra terms have coefficients $h_{ij} = 0$ with $i > j + 1$, by the Hessenberg structure. -/
 theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
     A (vec A b j) = ∑ i ∈ Finset.range n, coeff A b i j • vec A b i := by
   rw [apply_vec]
@@ -306,14 +417,19 @@ theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
   rw [Finset.mem_range, not_lt] at hi
   rw [coeff_eq_zero_of_lt A b (by omega), zero_smul]
 
-/-- The unnormalized next vector `w_j = A v_j - ∑_{i ≤ j} h i j v_i` ([saad2003iterative], Alg 6.1,
-line 4). -/
+/-- The **unnormalized next Arnoldi vector**
+$$w_j = A v_j - \sum_{i=0}^{j} h_{ij} v_i,$$
+computed in line 4 of Algorithm 6.1 of [saad2003iterative]. -/
 noncomputable def w (j : ℕ) : E :=
   A (vec A b j) - ∑ i ∈ Finset.range (j + 1), coeff A b i j • vec A b i
 
-/-- `w_j` is exactly the component of `A v_j` orthogonal to `𝒦_{j+1}`: subtracting the coefficients
-of [saad2003iterative], Alg 6.1 is the same as removing the orthogonal projection onto the space
-built so far. -/
+/-- The vector $w_j$ is the component of $A v_j$ orthogonal to $\mathcal{K}_{j+1}$:
+$$w_j = A v_j - P_{\mathcal{K}_{j+1}} A v_j,$$
+where $P_{\mathcal{K}_{j+1}}$ is the orthogonal projection onto $\mathcal{K}_{j+1}$.
+
+So subtracting the coefficients as in Algorithm 6.1 of [saad2003iterative] is the same as
+removing the orthogonal projection onto the space built so far. The projection is
+`Submodule.starProjection`. -/
 theorem w_eq_sub_starProjection (j : ℕ) :
     w A b j = A (vec A b j) - (subspace A b (j + 1)).starProjection (A (vec A b j)) := by
   rw [w]
@@ -325,10 +441,16 @@ theorem w_eq_sub_starProjection (j : ℕ) :
     exact Submodule.inner_left_of_mem_orthogonal hy
       (sub_sum_inner_smul_vec_mem_orthogonal A b (A (vec A b j)) (j + 1))
 
-/-- [saad2003iterative], (6.108), the band structure established in the proof of Prop 6.22 and
-generalizing Lanczos tridiagonality: if `A` has an adjoint `B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with `B v ∈
-𝒦_s(A, v)` for every `v`, then `h i j = 0` for `i + s ≤ j`. (Prop 6.22 itself draws from this the
-equivalence of DIOM(s) with FOM.) -/
+/-- Let $B : E \to E$ be an adjoint of $A$, that is, $\langle A x, y \rangle = \langle x, B y
+\rangle$ for all $x, y \in E$, and let $s \in \mathbb{N}$ be such that
+$B v \in \mathcal{K}_s(A, v)$ for every $v \in E$. Then for all $i$ and $j$ with $i + s \le j$,
+$$h_{ij} = 0.$$
+This is the band structure (6.108) of [saad2003iterative], established in the proof of
+Proposition 6.22. It generalizes the tridiagonal structure of the Lanczos process.
+
+Proposition 6.22 itself uses this band structure to show that DIOM($s$) is equivalent to FOM.
+The adjoint condition is `LinearMap.IsAdjointPair` for the flipped inner product, which states
+$\langle B y, x \rangle = \langle y, A x \rangle$. -/
 theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E}
     (hB : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A B)
     {s : ℕ} (hs : ∀ v, B v ∈ subspace A v s) {i j : ℕ} (h : i + s ≤ j) : coeff A b i j = 0 := by
@@ -377,7 +499,9 @@ private theorem inner_vec_succ_w (j : ℕ) :
     inner_self_eq_norm_sq_to_K, map_inv₀, RCLike.conj_ofReal]
   exact inv_mul_inv_mul_sq _ _
 
-/-- `h_{j+1,j} = ‖w_j‖` (real and nonnegative). -/
+/-- The subdiagonal Arnoldi coefficient is the norm of the unnormalized next vector: for every $j$,
+$$h_{j+1,j} = \|w_j\|.$$
+In particular it is real and nonnegative. -/
 theorem coeff_succ_self (j : ℕ) : coeff A b (j + 1) j = (‖w A b j‖ : 𝕜) := by
   have hsplit : A (vec A b j) =
       w A b j + (subspace A b (j + 1)).starProjection (A (vec A b j)) := by
@@ -386,7 +510,11 @@ theorem coeff_succ_self (j : ℕ) : coeff A b (j + 1) j = (‖w A b j‖ : 𝕜)
     Submodule.inner_left_of_mem_orthogonal (Submodule.starProjection_apply_mem _ _)
       (vec_mem_orthogonal A b (j + 1)), add_zero]
 
-/-- [saad2003iterative], Alg 6.1, line 7: `v_{j+1} = w_j / ‖w_j‖` (and `0` on breakdown). -/
+/-- The classical Arnoldi recurrence: for every $j$,
+$$v_{j+1} = \frac{w_j}{\|w_j\|},$$
+as in line 7 of Algorithm 6.1 of [saad2003iterative]. If $w_j = 0$, then $v_{j+1} = 0$.
+
+The case $w_j = 0$ follows the convention $0^{-1} = 0$ of Lean. -/
 theorem vec_succ_eq (j : ℕ) : vec A b (j + 1) = (‖w A b j‖⁻¹ : 𝕜) • w A b j := by
   rcases eq_or_ne (gs A b j) 0 with h0 | h0
   · have h1 : gs A b (j + 1) = 0 := by
@@ -398,8 +526,8 @@ theorem vec_succ_eq (j : ℕ) : vec A b (j + 1) = (‖w A b j‖⁻¹ : 𝕜) �
     exact congrArg (· • gs A b (j + 1))
       (inv_mul_inv_cancel (𝕜 := 𝕜) _ _ (norm_ne_zero_iff.2 h0)).symm
 
-/-- `w_j = ‖w_j‖ v_{j+1}` ([saad2003iterative], Alg 6.1, line 7 read backwards), also on
-breakdown, where both sides vanish. -/
+/-- For every $j$, $w_j = \|w_j\| \, v_{j+1}$. This is line 7 of Algorithm 6.1 of
+[saad2003iterative] read backwards; it also holds on breakdown, where both sides are $0$. -/
 theorem w_eq_norm_smul_vec (j : ℕ) : w A b j = (‖w A b j‖ : 𝕜) • vec A b (j + 1) := by
   rw [vec_succ_eq, smul_smul]
   rcases eq_or_ne (w A b j) 0 with h | h
@@ -412,35 +540,49 @@ private theorem w_eq_zero_iff (j : ℕ) : w A b j = 0 ↔ vec A b (j + 1) = 0 :=
   by_contra h0
   exact smul_ne_zero (inv_ne_zero (by simpa using norm_ne_zero_iff.2 h0)) h0 h
 
-/-- Breakdown read off the Hessenberg matrix ([saad2003iterative], Prop 6.6): the subdiagonal entry
-`h_{j+1,j}` vanishes exactly when the process has stopped by step `j + 1`. -/
+/-- Breakdown read off the Hessenberg matrix. Suppose that the full Krylov space of $A$ and $b$ is
+finite-dimensional, and let $d$ be the grade of $b$. Then for every $j$,
+$$h_{j+1,j} = 0 \iff d \le j + 1.$$
+This is Proposition 6.6 of [saad2003iterative] in terms of the subdiagonal coefficient. -/
 theorem coeff_succ_self_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     coeff A b (j + 1) j = 0 ↔ grade A b ≤ j + 1 := by
   rw [coeff_succ_self, RCLike.ofReal_eq_zero, norm_eq_zero, w_eq_zero_iff, vec_eq_zero_iff]
 
 /-! ### The Hessenberg matrices -/
 
-/-- The `(m+1) × m` Hessenberg matrix `H̄_m` ([saad2003iterative], Prop 6.5). -/
+/-- The $(m+1) \times m$ **Hessenberg matrix** $\bar H_m$ of the Arnoldi process, with entries
+$(\bar H_m)_{ij} = h_{ij}$ for $0 \le i \le m$ and $0 \le j \le m - 1$. This is the matrix
+$\bar H_m$ of Proposition 6.5 of [saad2003iterative].
+
+Rows and columns are indexed by `Fin (m + 1)` and `Fin m`, from $0$. -/
 noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
-/-- The square Hessenberg matrix `H_m`: `H̄_m` with its last row deleted ([saad2003iterative], Prop
-6.5). -/
+/-- The $m \times m$ **Hessenberg matrix** $H_m$ of the Arnoldi process, with entries
+$(H_m)_{ij} = h_{ij}$ for $0 \le i, j \le m - 1$. It is $\bar H_m$ with its last row deleted, as
+in Proposition 6.5 of [saad2003iterative]. -/
 noncomputable def hessenbergSq (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
-/-- `H̄_m` is upper Hessenberg: it vanishes more than one place below the diagonal. The matrix form
-of `coeff_eq_zero_of_lt`. -/
+/-- For every $m$, the matrix $\bar H_m$ is upper Hessenberg: $(\bar H_m)_{ij} = 0$ whenever
+$i > j + 1$.
+
+This is `Matrix.IsUpperHessenbergRect`, the matrix form of `Arnoldi.coeff_eq_zero_of_lt`. -/
 theorem hessenberg_isUpperHessenbergRect (m : ℕ) :
     (hessenberg A b m).IsUpperHessenbergRect := fun _ _ h => coeff_eq_zero_of_lt A b h
 
-/-- `H_m` is upper Hessenberg. The square form of `Arnoldi.coeff_eq_zero_of_lt`. -/
+/-- For every $m$, the matrix $H_m$ is upper Hessenberg: $(H_m)_{ij} = 0$ whenever $i > j + 1$. This
+is the square form of `Arnoldi.coeff_eq_zero_of_lt`. -/
 theorem hessenbergSq_isUpperHessenberg (m : ℕ) : (hessenbergSq A b m).IsUpperHessenberg := by
   rintro i j ⟨k, hjk, hki⟩
   rw [Fin.lt_def] at hjk hki
   exact coeff_eq_zero_of_lt A b (by omega)
 
-/-- `A V_m = V_{m+1} H̄_m` ([saad2003iterative], (6.7)), coordinate form. -/
+/-- The matrix form $A V_m = V_{m+1} \bar H_m$ of the Arnoldi relation, equation (6.7) of
+[saad2003iterative], applied to a coordinate vector: for every $y \in \mathbb{K}^m$,
+$$A \Big( \sum_{j=0}^{m-1} y_j v_j \Big) = \sum_{i=0}^{m} (\bar H_m y)_i \, v_i.$$
+
+Here $V_m$ is the map $y \mapsto \sum_j y_j v_j$, and $y$ is a function `Fin m → 𝕜`. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     A (∑ j, y j • vec A b j) = ∑ i : Fin (m + 1), (hessenberg A b m).mulVec y i • vec A b i := by
   rw [map_sum]
@@ -458,8 +600,14 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     simp [Matrix.mulVec, dotProduct, hessenberg, mul_comm]
   rw [hmv, Finset.sum_smul]
 
-/-- `H_m = V_mᴴ A V_m` is the matrix of the compression of `A` to `𝒦_m` ([saad2003iterative], (6.8),
-Prop 6.5). -/
+/-- Suppose that the full Krylov space of $A$ and $b$ is finite-dimensional, and let $m$ be at most
+the grade of $b$. Then $H_m$ is the matrix, in the orthonormal basis $v_0, \dots, v_{m-1}$ of
+$\mathcal{K}_m$, of the compression $P_{\mathcal{K}_m} A|_{\mathcal{K}_m}$ of $A$ to
+$\mathcal{K}_m$. This is the identity $H_m = V_m^H A V_m$ of equation (6.8) and Proposition 6.5
+of [saad2003iterative].
+
+The basis is `Arnoldi.orthonormalBasis`, and the compression is
+`compression A (Krylov.subspace A b m)`. -/
 theorem hessenbergSq_eq_toMatrix_compression [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) :
     hessenbergSq A b m =
@@ -469,8 +617,15 @@ theorem hessenbergSq_eq_toMatrix_compression [FiniteDimensional 𝕜 (fullSubspa
   ext i j
   simp [hessenbergSq, coeff]
 
-/-- Basis-free form of the Arnoldi relation: `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, hence `‖P_m
-A (1 - P_m)‖`-type identities ([saad2011numerical], Prop 6.6, P-6.1). -/
+/-- The part of $A v_m$ outside $\mathcal{K}_{m+1}$ is a multiple of the next Arnoldi vector: for
+every $m$,
+$$A v_m - P_{\mathcal{K}_{m+1}} A v_m = h_{m+1,m} v_{m+1},$$
+where $P_{\mathcal{K}_{m+1}}$ is the orthogonal projection onto $\mathcal{K}_{m+1}$.
+
+Together with $A v_j \in \mathcal{K}_{m+1}$ for $j < m$, this gives the basis-free form $(I -
+P_{\mathcal{K}_{m+1}}) A P_{\mathcal{K}_{m+1}} = h_{m+1,m} v_{m+1} v_m^H$ of the Arnoldi
+relation, which measures the invariance defect of the Krylov subspace ([saad2011numerical],
+Proposition 6.6 and problem P-6.1). The declaration states only the identity on $v_m$. -/
 theorem starProjection_apply_vec (m : ℕ) :
     A (vec A b m) - (subspace A b (m + 1)).starProjection (A (vec A b m)) =
       coeff A b (m + 1) m • vec A b (m + 1) := by
@@ -481,8 +636,10 @@ theorem starProjection_apply_vec (m : ℕ) :
 
 /-! ### Arnoldi vectors under an intertwining map -/
 
-/-- `v_j` is a nonnegative multiple of `A^j b` up to an element of `𝒦_j`: the leading coefficient of
-an Arnoldi vector in the Krylov sequence is a nonnegative real. -/
+/-- For every $j$ there is a real number $r \ge 0$ such that
+$$v_j - r A^j b \in \mathcal{K}_j.$$
+That is, the leading coefficient of an Arnoldi vector in the Krylov sequence is a nonnegative
+real. -/
 theorem exists_vec_sub_smul_pow_apply_mem (j : ℕ) :
     ∃ r : ℝ, 0 ≤ r ∧ vec A b j - (r : 𝕜) • (A ^ j) b ∈ subspace A b j := by
   set g := InnerProductSpace.gramSchmidt 𝕜 (fun i : ℕ => (A ^ i) b) j
@@ -498,13 +655,16 @@ theorem exists_vec_sub_smul_pow_apply_mem (j : ℕ) :
   rw [hrw]
   exact Submodule.neg_mem _ (Submodule.smul_mem _ _ hmem)
 
-/-- `⟪v_j, A^j b⟫` is the (nonnegative) norm of the unnormalized Gram–Schmidt vector. -/
+/-- For every $j$, $\langle v_j, A^j b \rangle = \|u_j\|$, where $u_j$ is the $j$-th unnormalized
+Gram–Schmidt vector (`InnerProductSpace.gramSchmidt`) of the Krylov sequence
+$b, Ab, A^2 b, \dots$. In particular this inner product is real and nonnegative. -/
 theorem inner_vec_pow_apply_eq_norm_gramSchmidt (j : ℕ) :
     inner 𝕜 (vec A b j) ((A ^ j) b) =
       (‖InnerProductSpace.gramSchmidt 𝕜 (fun i : ℕ => (A ^ i) b) j‖ : 𝕜) :=
   InnerProductSpace.inner_gramSchmidtNormed_self (fun i : ℕ => (A ^ i) b) j
 
-/-- An Arnoldi vector orthogonal to its own Krylov vector is `0` (the process has broken down). -/
+/-- If $\langle v_j, A^j b \rangle = 0$, then $v_j = 0$: an Arnoldi vector orthogonal to its own
+Krylov vector means that the process has broken down. -/
 theorem vec_eq_zero_of_inner_pow_apply_eq_zero {j : ℕ}
     (h : inner 𝕜 (vec A b j) ((A ^ j) b) = 0) : vec A b j = 0 := by
   rw [inner_vec_pow_apply_eq_norm_gramSchmidt, RCLike.ofReal_eq_zero, norm_eq_zero] at h
@@ -517,17 +677,23 @@ section Semiconj
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] {B : E →ₗ[𝕜] E}
   {C : F →ₗ[𝕜] F} {N : E →ₗ[𝕜] F}
 
-/-- If `N ∘ B = C ∘ N` and `N b = C^s c`, then `N` maps the `j`-th Arnoldi vector of `(B, b)` into
-`𝒦_{j+1+s}(C, c)`. -/
+/-- Let $B : E \to E$, $C : F \to F$ and $N : E \to F$ be linear with $N B = C N$, and let $b \in E$
+and $c \in F$ satisfy $N b = C^s c$. Then for every $j$, $N$ maps the $j$-th Arnoldi vector of
+$(B, b)$ into $\mathcal{K}_{j+1+s}(C, c)$. -/
 theorem apply_vec_mem_subspace_of_semiconj (h : Function.Semiconj N B C) {b : E} {c : F} {s : ℕ}
     (hs : N b = (C ^ s) c) (j : ℕ) : N (vec B b j) ∈ subspace C c (j + 1 + s) := by
   have hmem := apply_mem_subspace_of_semiconj h (vec_mem_subspace B b j)
   rw [hs] at hmem
   exact subspace_pow_apply_le C c s (j + 1) hmem
 
-/-- If `N ∘ B = C ∘ N` and `N b = C^s c`, the component of `N v_j(B, b)` along `v_{j+s}(C, c)` is a
-nonnegative real `r`, and `r = 0` only on breakdown of the second process. This is the positivity of
-leading coefficients that makes the two families of the Golub–Kahan process line up. -/
+/-- Let $B : E \to E$, $C : F \to F$ and $N : E \to F$ be linear with $N B = C N$, and let $b \in E$
+and $c \in F$ satisfy $N b = C^s c$. Write $v_j(B, b)$ and $v_j(C, c)$ for the Arnoldi vectors
+of the two processes. Then for every $j$ there is a real number $r \ge 0$ with
+$$\langle v_{j+s}(C, c), N v_j(B, b) \rangle = r,$$
+and $r = 0$ only if $v_{j+s}(C, c) = 0$, that is, only on breakdown of the second process.
+
+This positivity of the leading coefficients makes the two families of vectors of the Golub–Kahan
+process line up. The hypothesis $N B = C N$ is `Function.Semiconj N B C`. -/
 theorem inner_vec_apply_vec_of_semiconj (h : Function.Semiconj N B C) {b : E} {c : F} {s : ℕ}
     (hs : N b = (C ^ s) c) (j : ℕ) :
     ∃ r : ℝ, 0 ≤ r ∧ inner 𝕜 (vec C c (j + s)) (N (vec B b j)) = (r : 𝕜) ∧
@@ -568,8 +734,8 @@ section LinearIsometryEquiv
 
 variable {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] (e : E ≃ₗᵢ[𝕜] E')
 
-/-- The Krylov sequence of the conjugated operator from `e b` is the image of the Krylov sequence
-of `A` from `b`. -/
+/-- For a linear isometry equivalence $e$, $(e A e^{-1})^i (e x) = e (A^i x)$ for all $i$ and $x$.
+-/
 private theorem pow_conj_apply (i : ℕ) (x : E) :
     ((e.toLinearEquiv.conj A) ^ i) (e x) = e ((A ^ i) x) := by
   induction i with
@@ -579,10 +745,14 @@ private theorem pow_conj_apply (i : ℕ) (x : E) :
       Module.End.mul_apply]
     simp
 
-/-- **Naturality of the Arnoldi vectors under isometries**: for a linear isometry equivalence
-`e : E ≃ₗᵢ[𝕜] E'`, the Arnoldi vectors of the conjugated operator `e A e⁻¹` from `e b` are the
-images of those of `A` from `b`. Gram–Schmidt commutes with isometries
-(`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`) and `(e A e⁻¹)^i (e b) = e (A^i b)`. -/
+/-- **Naturality of the Arnoldi vectors under isometries.** Let $e : E \to E'$ be a linear isometry
+equivalence. Then for every $j$ the Arnoldi vectors of $e A e^{-1}$ from $e b$ are the images of
+those of $A$ from $b$:
+$$v_j(e A e^{-1}, e b) = e \, v_j(A, b).$$
+
+The operator $e A e^{-1}$ is `e.toLinearEquiv.conj A`. The proof uses that Gram–Schmidt commutes
+with isometries (`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`) and that
+$(e A e^{-1})^i (e b) = e (A^i b)$. -/
 theorem vec_conj_linearIsometryEquiv (j : ℕ) :
     vec (e.toLinearEquiv.conj A) (e b) j = e (vec A b j) := by
   have hseq : (fun i : ℕ => ((e.toLinearEquiv.conj A) ^ i) (e b)) =
@@ -591,8 +761,11 @@ theorem vec_conj_linearIsometryEquiv (j : ℕ) :
   rw [vec, hseq, InnerProductSpace.gramSchmidtNormed_comp_linearIsometry]
   rfl
 
-/-- **Naturality of the Arnoldi coefficients under isometries**: the conjugated operator `e A e⁻¹`
-from `e b` has the same Hessenberg coefficients as `A` from `b`. -/
+/-- **Naturality of the Arnoldi coefficients under isometries.** Let $e : E \to E'$ be a linear
+isometry equivalence. Then $e A e^{-1}$ from $e b$ has the same Arnoldi coefficients as $A$ from
+$b$: $h_{ij}(e A e^{-1}, e b) = h_{ij}(A, b)$ for all $i$ and $j$.
+
+The operator $e A e^{-1}$ is `e.toLinearEquiv.conj A`. -/
 theorem coeff_conj_linearIsometryEquiv :
     coeff (e.toLinearEquiv.conj A) (e b) = coeff A b := by
   ext i j
@@ -604,12 +777,17 @@ end LinearIsometryEquiv
 
 /-! ### The modified Gram–Schmidt recurrence -/
 
-/-- **Arnoldi with modified Gram–Schmidt** ([saad2003iterative] Alg 6.2, [golub2013matrix]
-Algorithm 10.5.1): `v_0 = b / ‖b‖`, and `v_{j+1} = w / ‖w‖` where `w` is `A v_j` after the
-components along `v_0, …, v_j` have been removed one at a time, each against the current `w`
-(`InnerProductSpace.modifiedGramSchmidtSweep`). The clamp `min i j` is invisible: the sweep reads
-only `v_0, …, v_j` (`Arnoldi.mgsVec_succ`). In exact arithmetic this is `Arnoldi.vec`
-(`Arnoldi.mgsVec_eq_vec`). -/
+/-- The **Arnoldi vectors computed with modified Gram–Schmidt** ([saad2003iterative], Algorithm 6.2;
+[golub2013matrix], Algorithm 10.5.1). Set $q_0 = b / \|b\|$. For $j \ge 0$, start from
+$w^{(0)} = A q_j$, remove the components along $q_0, \dots, q_j$ one at a time, each computed
+against the current vector,
+$$w^{(k+1)} = w^{(k)} - \langle q_k, w^{(k)} \rangle q_k, \qquad k = 0, \dots, j,$$
+and set $q_{j+1} = w^{(j+1)} / \|w^{(j+1)}\|$. A vector of norm $0$ gives $0$.
+
+The loop is `InnerProductSpace.modifiedGramSchmidtSweep`. In the definition the sweep reads the
+earlier vectors through the clamped index $\min(i, j)$, which is needed for termination; the
+clamp has no effect, because the sweep reads only $q_0, \dots, q_j$ (`Arnoldi.mgsVec_succ`). In
+exact arithmetic the vectors are the Arnoldi vectors (`Arnoldi.mgsVec_eq_vec`). -/
 noncomputable def mgsVec (A : E →ₗ[𝕜] E) (b : E) : ℕ → E
   | 0 => (‖b‖⁻¹ : 𝕜) • b
   | j + 1 =>
@@ -619,13 +797,16 @@ noncomputable def mgsVec (A : E →ₗ[𝕜] E) (b : E) : ℕ → E
   termination_by j => j
   decreasing_by exact Nat.lt_succ_of_le (Nat.min_le_right _ _)
 
-/-- Modified Gram–Schmidt Arnoldi starts from the normalized vector `b / ‖b‖`. -/
+/-- Modified Gram–Schmidt Arnoldi starts from the normalized vector: $q_0 = b / \|b\|$. -/
 @[simp]
 theorem mgsVec_zero : mgsVec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
   rw [mgsVec]
 
-/-- The step of `Arnoldi.mgsVec`: `v_{j+1}` is the normalized modified Gram–Schmidt sweep of
-`A v_j` against `v_0, …, v_j`. -/
+/-- The step of `Arnoldi.mgsVec`: for every $j$, the vector $q_{j+1}$ is $w / \|w\|$, where $w$ is
+the result of the modified Gram–Schmidt sweep of $A q_j$ against $q_0, \dots, q_j$.
+
+The statement uses the sequence `Arnoldi.mgsVec A b` itself in the sweep, without the clamped
+index of the definition. -/
 theorem mgsVec_succ (j : ℕ) :
     mgsVec A b (j + 1) =
       (‖InnerProductSpace.modifiedGramSchmidtSweep 𝕜 (mgsVec A b) (A (mgsVec A b j)) (j + 1)‖⁻¹ :
@@ -636,11 +817,14 @@ theorem mgsVec_succ (j : ℕ) :
   rw [InnerProductSpace.modifiedGramSchmidtSweep_congr 𝕜 _
     fun i hi => by rw [Nat.min_eq_left (Nat.lt_succ_iff.1 hi)]]
 
-/-- **The modified Gram–Schmidt recurrence characterizes the Arnoldi vectors**: a sequence `q` with
-`q 0 = b / ‖b‖` and `q (j + 1) = w / ‖w‖`, where `w` is the modified Gram–Schmidt sweep of `A (q j)`
-against `q 0, …, q j`, is `Arnoldi.vec A b`. By induction: once `q` agrees with the orthonormal
-Arnoldi vectors up to `j`, the sweep is the classical `w_j`
-(`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`) and `Arnoldi.vec_succ_eq` applies. -/
+/-- **The modified Gram–Schmidt recurrence characterizes the Arnoldi vectors.** Let
+$(q_j)_{j \ge 0}$ be a sequence in $E$ with $q_0 = b / \|b\|$ and, for every $j$,
+$q_{j+1} = w / \|w\|$, where $w$ is the result of the modified Gram–Schmidt sweep of $A q_j$
+against $q_0, \dots, q_j$. Then $q_j = v_j$ for every $j$.
+
+The proof is by induction: once $q$ agrees with the orthonormal Arnoldi vectors up to $j$, the
+sweep equals the classical $w_j$ (`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`), and
+`Arnoldi.vec_succ_eq` applies. -/
 theorem eq_vec_of_modifiedGramSchmidt {q : ℕ → E} (h0 : q 0 = (‖b‖⁻¹ : 𝕜) • b)
     (hsucc : ∀ j, q (j + 1) =
       (‖InnerProductSpace.modifiedGramSchmidtSweep 𝕜 q (A (q j)) (j + 1)‖⁻¹ : 𝕜) •
@@ -662,13 +846,15 @@ theorem eq_vec_of_modifiedGramSchmidt {q : ℕ → E} (h0 : q 0 = (‖b‖⁻¹ 
         vec_succ_eq]
       rfl
 
-/-- **Modified Gram–Schmidt Arnoldi computes the Arnoldi vectors** in exact arithmetic
-([saad2003iterative] §6.3.2, [golub2013matrix] §10.5.1). -/
+/-- **Modified Gram–Schmidt Arnoldi computes the Arnoldi vectors** in exact arithmetic: $q_j = v_j$
+for every $j$ ([saad2003iterative], §6.3.2; [golub2013matrix], §10.5.1). -/
 theorem mgsVec_eq_vec : mgsVec A b = vec A b :=
   eq_vec_of_modifiedGramSchmidt A b (mgsVec_zero A b) (mgsVec_succ A b)
 
-/-- **Rescaling the starting vector by a positive number does not change the Arnoldi vectors**:
-both sequences satisfy the modified Gram–Schmidt recurrence from `b / ‖b‖`
+/-- **Rescaling the starting vector by a positive number does not change the Arnoldi vectors**: if
+$c > 0$, then $v_j(A, cb) = v_j(A, b)$ for every $j$.
+
+Both sequences satisfy the modified Gram–Schmidt recurrence from $b / \|b\|$
 (`Arnoldi.eq_vec_of_modifiedGramSchmidt`). -/
 theorem vec_smul_of_pos {c : ℝ} (hc : 0 < c) : vec A ((c : 𝕜) • b) = vec A b := by
   refine eq_vec_of_modifiedGramSchmidt A b ?_ fun j => ?_
@@ -683,9 +869,11 @@ theorem vec_smul_of_pos {c : ℝ} (hc : 0 < c) : vec A ((c : 𝕜) • b) = vec 
   · rw [← mgsVec_eq_vec]
     exact mgsVec_succ A ((c : 𝕜) • b) j
 
-/-- The coefficients of the modified Gram–Schmidt loop are the Arnoldi coefficients: `h i j` is also
-the inner product of `v_i` with `A v_j` after the components along `v_0, …, v_{i-1}` have been
-removed. -/
+/-- The Arnoldi coefficients are the coefficients of the modified Gram–Schmidt loop: for all $i$ and
+$j$,
+$$h_{ij} = \langle v_i, w^{(i)} \rangle,$$
+where $w^{(i)}$ is $A v_j$ after the components along $v_0, \dots, v_{i-1}$ have been removed
+one at a time by the modified Gram–Schmidt sweep. -/
 theorem coeff_eq_inner_modifiedGramSchmidtSweep (i j : ℕ) :
     coeff A b i j = inner 𝕜 (vec A b i)
       (InnerProductSpace.modifiedGramSchmidtSweep 𝕜 (vec A b) (A (vec A b j)) i) :=

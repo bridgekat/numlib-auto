@@ -9,71 +9,97 @@ import Numlib.Analysis.Matrix.OperatorNorm
 /-!
 # The Sylvester equation and the separation of two matrices
 
-The Sylvester operator `Matrix.sylvesterMap A B : Matrix m n R →ₗ[R] Matrix m n R`,
-`X ↦ A * X - X * B`, for square `A : Matrix m m R` and `B : Matrix n n R`, and the separation
-`Matrix.sep A B`, the least value of `‖A X - X B‖_F` on the Frobenius unit sphere
-([golub2013matrix] §7.1.5, (7.2.5)).
+Let $A$ be an $m \times m$ matrix and $B$ an $n \times n$ matrix. The **Sylvester operator** is the
+linear map $X \mapsto A X - X B$ on $m \times n$ matrices, and the **Sylvester equation** is
+$A X - X B = C$. The **separation** of $A$ and $B$ is
+$$\operatorname{sep}(A, B) = \min_{\|X\|_F = 1} \|A X - X B\|_F,$$
+the least value of the Frobenius norm of the Sylvester operator on the Frobenius unit sphere. These
+are §7.1.5 and (7.2.5) of [golub2013matrix].
 
-## Unique solvability
+Over any field, the Sylvester operator is bijective when the characteristic polynomials of $A$ and
+$B$ are coprime. Over an algebraically closed field, this holds if and only if $A$ and $B$ have no
+common eigenvalue (Lemma 7.1.5 of [golub2013matrix]). A solution of a Sylvester equation removes the
+off-diagonal block of a block upper triangular matrix by a similarity, and repeating this step gives
+the block diagonal decomposition of Theorem 7.1.6 of [golub2013matrix]. The separation is attained,
+positive exactly when the Sylvester operator is injective, at most the distance between any
+eigenvalue of $A$ and any eigenvalue of $B$, unitarily invariant, 1-Lipschitz in each argument, and
+symmetric: $\operatorname{sep}(A, B) = \operatorname{sep}(B, A)$. For Hermitian $A$ and $B$ it is
+the distance between the spectra.
 
-Over any field the Sylvester operator is injective, hence bijective, as soon as the characteristic
-polynomials of `A` and `B` are coprime (`Matrix.sylvesterMap_injective_of_isCoprime`): from
-`A X = X B` follows `p(A) X = X p(B)` for every polynomial `p`
-(`Matrix.aeval_mul_eq_mul_aeval_of_mul_eq_mul`); for `p = χ_A` the left side vanishes by
-Cayley–Hamilton, and `χ_A(B)` is invertible by a Bézout identity `u χ_A + v χ_B = 1`. Over an
-algebraically closed field coprimality is "no common eigenvalue", and conversely a common
-eigenvalue `λ`, with `A x = λ x` and `yᵀ B = λ yᵀ`, puts `x yᵀ` in the kernel
-(`Matrix.sylvesterMap_vecMulVec_eq_zero`), which gives [golub2013matrix] Lemma 7.1.5 in the form
-`Matrix.sylvesterMap_bijective_iff_disjoint_spectrum`. Real matrices go through their
-complexifications (`Matrix.isCoprime_charpoly_iff_disjoint_spectrum_complexify`).
+## Main definitions
 
-## Block diagonalization
+* `Matrix.sylvesterMap`: the Sylvester operator $X \mapsto A X - X B$.
+* `Matrix.sep`: the separation $\operatorname{sep}(A, B)$ of (7.2.5) of [golub2013matrix].
 
-`fromBlocks 1 Z 0 1` conjugates `fromBlocks T₁₁ T₁₂ 0 T₂₂` to
-`fromBlocks T₁₁ (T₁₁ Z - Z T₂₂ + T₁₂) 0 T₂₂`, so a solution of `T₁₁ Z - Z T₂₂ = -T₁₂` removes the
-corner ([golub2013matrix] Lemma 7.1.5, `Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero`).
-Iterating over the blocks of a block upper triangular matrix whose diagonal blocks have pairwise
-coprime characteristic polynomials (pairwise disjoint spectra over an algebraically closed field)
-gives [golub2013matrix] Theorem 7.1.6: the matrix is similar to its block diagonal part
-(`Matrix.exists_isUnit_conj_eq_blockDiagonalPart`).
+## Main results
 
-## The separation
+* `Matrix.aeval_mul_eq_mul_aeval_of_mul_eq_mul`: if $A X = X B$, then $p(A) X = X p(B)$ for every
+  polynomial $p$.
+* `Matrix.sylvesterMap_injective_of_isCoprime`, `Matrix.existsUnique_sylvesterMap_eq_of_isCoprime`:
+  over any field, if $\chi_A$ and $\chi_B$ are coprime, the Sylvester equation has exactly one
+  solution for every right-hand side.
+* `Matrix.sylvesterMap_bijective_iff_disjoint_spectrum`: over an algebraically closed field, the
+  Sylvester operator is bijective if and only if $A$ and $B$ have disjoint spectra, as in Lemma
+  7.1.5 of [golub2013matrix].
+* `Matrix.isCoprime_charpoly_iff_disjoint_spectrum_complexify`: two real matrices have coprime
+  characteristic polynomials if and only if their complexifications have disjoint spectra.
+* `Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero`: a solution of $T_{11} Z - Z T_{22} = -T_{12}$
+  gives a similarity that removes the off-diagonal block, as in Lemma 7.1.5 of [golub2013matrix].
+* `Matrix.exists_isUnit_conj_eq_blockDiagonalPart`: a block upper triangular matrix whose diagonal
+  blocks have pairwise disjoint spectra is similar to its block diagonal part, as in Theorem 7.1.6
+  of [golub2013matrix].
+* `Matrix.sylvesterMap_diagonal_eq_iff`, `Matrix.apply_eq_of_sylvesterMap_diagonal_eq`: with
+  diagonal coefficients, the Sylvester equation is solved by entrywise division. This is the solve
+  in an eigenvector basis behind the fast Poisson solver of [golub2013matrix] §4.8.4, and the
+  description of Cauchy-like matrices by generators in (12.1.4) of [golub2013matrix].
+* `Matrix.exists_sep_eq`, `Matrix.sep_mul_norm_le`: the minimum in the definition of the separation
+  is attained, and $\operatorname{sep}(A, B) \|X\|_F \le \|A X - X B\|_F$ for every $X$.
+* `Matrix.sep_pos_iff`, `Matrix.sep_pos_iff_disjoint_spectrum`: the separation is positive if and
+  only if the Sylvester operator is injective, and over $\mathbb{C}$ if and only if the spectra are
+  disjoint.
+* `Matrix.frobenius_norm_le_div_sep`: the bound $\|X\|_F \le \|A X - X B\|_F / \operatorname{sep}(A,
+  B)$, (7.3.20) of [golub2013matrix].
+* `Matrix.sep_le_norm_sub`: $\operatorname{sep}(A, B) \le |\alpha - \beta|$ for all eigenvalues
+  $\alpha$ of $A$ and $\beta$ of $B$.
+* `Matrix.sep_unitary_conj`, `Matrix.sep_sub_le_sep_add`: the separation is unitarily invariant and
+  1-Lipschitz in each argument.
+* `Matrix.sep_comm`: the separation is symmetric.
+* `Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`: for Hermitian $A$ and $B$, the separation is
+  $\min_{i,j} |\lambda_i(A) - \lambda_j(B)|$.
+* `Matrix.sep_eq_iInf_colSingularValues`: the separation of a scalar $c$ and a square matrix $T$ is
+  the least singular value of $T - c I$.
 
-`Matrix.sep A B = ⨅ X : {X // ‖X‖_F = 1}, ‖A X - X B‖_F` over `RCLike 𝕜` (the Frobenius norm is
-opened locally, `Matrix.Norms.Frobenius`). The infimum is attained (`Matrix.exists_sep_eq`), it is
-the best constant in `sep A B ‖X‖_F ≤ ‖A X - X B‖_F` (`Matrix.sep_mul_norm_le`), it is positive
-exactly when the Sylvester operator is injective (`Matrix.sep_pos_iff`), it bounds solutions
-(`Matrix.frobenius_norm_le_div_sep`, the book's (7.3.20)), it is at most the distance between any
-eigenvalue of `A` and any eigenvalue of `B` (`Matrix.sep_le_norm_sub`), it is unitarily invariant
-and Lipschitz, and it is symmetric: `Matrix.sep_comm`. The last is the one non-obvious fact. The
-operator `P ↦ P A - B P` that the perturbation theory of invariant subspaces inverts is not the
-Sylvester operator of `(A, B)` but, read through `P ↦ Pᴴ`, minus the adjoint of the one of
-`(Aᴴ, Bᴴ)`; the proof shows that a lower bound `c ‖X‖ ≤ ‖A X - X B‖` passes to the adjoint by
-the Frobenius trace pairing (`Matrix.le_norm_sylvesterMap_conjTranspose_of_le`). For Hermitian
-`A` and `B` the separation is the distance between the spectra
-(`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`, [golub2013matrix] P8.1.9).
+## Proof outline
 
-## Diagonal coefficients
+Assume that $\chi_A$ and $\chi_B$ are coprime, and let $A X = X B$. Then $p(A) X = X p(B)$ for every
+polynomial $p$. For $p = \chi_A$ the left side is zero by the Cayley–Hamilton theorem. A Bézout
+identity $u \chi_A + v \chi_B = 1$ shows that $\chi_A(B)$ is invertible, so $X = 0$. Conversely, a
+common eigenvalue $\lambda$, with $A x = \lambda x$ and $y^T B = \lambda y^T$, puts $x y^T$ in the
+kernel of the Sylvester operator.
 
-`sylvesterMap (diagonal ω) (diagonal ν)` acts entrywise by `X k j ↦ (ω k - ν j) X k j`, so the
-diagonal equation is solved by division (`Matrix.sylvesterMap_diagonal_eq_iff`); with
-`Matrix.sylvesterMap_conj` this is the eigenvector-basis solve behind the fast Poisson solver
-([golub2013matrix] §4.8.4) and the generator description of Cauchy-like matrices
-([golub2013matrix] (12.1.4), `Matrix.apply_eq_of_sylvesterMap_diagonal_eq`).
+The symmetry of the separation is the one result that is not direct. The perturbation theory of
+invariant subspaces inverts the operator $P \mapsto P A - B P$. Through $P \mapsto P^H$, this
+operator is the negative of the adjoint of the Sylvester operator of $(A^H, B^H)$, not the Sylvester
+operator of $(A, B)$. The proof shows with the Frobenius trace pairing that a lower bound
+$c \|X\|_F \le \|A X - X B\|_F$ passes to the adjoint, and then uses $\operatorname{sep}(A^H, B^H) =
+\operatorname{sep}(B, A)$.
 
-## Scope
+## Implementation notes
 
-Everything except `sep` is a statement about the map `X ↦ A ∘ₗ X - X ∘ₗ B` on `F →ₗ[K] E` for
-endomorphisms `A` of `E` and `B` of `F`, of which the matrix map is the coordinate form; over `ℂ`
-it is Rosenblum's theorem `σ(X ↦ A X - X B) ⊆ σ(A) - σ(B)` in any Banach algebra. The operator
-version belongs in `Numlib/LinearAlgebra/` as `LinearMap.sylvesterMap` once a second source needs
-it, with these statements as corollaries. `sep` sits here rather than with the invariant-subspace
-theory because it is a property of the Sylvester operator alone, and all its consumers (invariant
-subspace perturbation, orthogonal iteration, block diagonalization, the conditioning of the
-Sylvester equation) import this module.
-
-Mathlib's `Polynomial.sylvester` is the Sylvester *matrix* of two polynomials, an unrelated
-object.
+* The Sylvester operator is defined over a commutative ring, and the separation over an `RCLike`
+  field. The Frobenius norm comes from the scoped instance `Matrix.Norms.Frobenius`.
+* The separation is an infimum over the unit sphere. Its value is $0$ when $m$ or $n$ is empty,
+  because the infimum of an empty family of reals is $0$.
+* Every result except those on the separation is a statement about the map $X \mapsto A X - X B$ on
+  linear maps $F \to E$, for endomorphisms $A$ of $E$ and $B$ of $F$, and the matrix map is its
+  coordinate form. Over $\mathbb{C}$ the operator version is Rosenblum's theorem $\sigma(X \mapsto A
+  X - X B) \subseteq \sigma(A) - \sigma(B)$, which holds in any Banach algebra.
+* The separation is defined here, and not with the theory of invariant subspaces, because it is a
+  property of the Sylvester operator alone. All its users (perturbation of invariant subspaces,
+  orthogonal iteration, block diagonalization, the conditioning of the Sylvester equation) import
+  this module.
+* Mathlib's `Polynomial.sylvester` is the Sylvester matrix of two polynomials, which is a different
+  object.
 -/
 
 open Polynomial
@@ -86,21 +112,26 @@ section CommRing
 
 variable {R : Type*} [CommRing R]
 
-/-- The **Sylvester operator** `X ↦ A * X - X * B` on `m × n` matrices, for square `A` and `B`
-([golub2013matrix] §7.1.5). -/
+/-- The **Sylvester operator** of a square $m \times m$ matrix $A$ and a square $n \times n$ matrix
+$B$ over a commutative ring: the linear map
+$$X \mapsto A X - X B$$
+on $m \times n$ matrices. This is the operator of the Sylvester equation in [golub2013matrix]
+§7.1.5. -/
 def sylvesterMap (A : Matrix m m R) (B : Matrix n n R) : Matrix m n R →ₗ[R] Matrix m n R where
   toFun X := A * X - X * B
   map_add' X Y := by simp only [Matrix.mul_add, Matrix.add_mul]; abel
   map_smul' c X := by simp [Matrix.mul_smul, Matrix.smul_mul, smul_sub]
 
-/-- The Sylvester operator, unfolded. -/
+/-- The Sylvester operator of $A$ and $B$ maps $X$ to $A X - X B$. -/
 @[simp]
 theorem sylvesterMap_apply (A : Matrix m m R) (B : Matrix n n R) (X : Matrix m n R) :
     sylvesterMap A B X = A * X - X * B :=
   rfl
 
-/-- **Intertwining passes to polynomials**: if `A * X = X * B` then `p(A) * X = X * p(B)` for every
-polynomial `p`. -/
+/-- **Intertwining passes to polynomials.** Let $A$ be an $m \times m$ matrix, $B$ an $n \times n$
+matrix and $X$ an $m \times n$ matrix over a commutative ring. If $A X = X B$, then
+$$p(A) X = X p(B)$$
+for every polynomial $p$. -/
 theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul [DecidableEq m] [DecidableEq n]
     {A : Matrix m m R} {B : Matrix n n R} {X : Matrix m n R} (h : A * X = X * B) (p : R[X]) :
     aeval A p * X = X * aeval B p := by
@@ -113,26 +144,31 @@ theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul [DecidableEq m] [DecidableEq n]
   simp only [aeval_eq_sum_range, Matrix.sum_mul, Matrix.mul_sum, Matrix.smul_mul,
     Matrix.mul_smul, hpow]
 
-/-- The Sylvester operator on a rank-one matrix built from eigenvectors: if `A x = α x` and
-`yᵀ B = β yᵀ` then `A (x yᵀ) - (x yᵀ) B = (α - β) x yᵀ`. -/
+/-- **The Sylvester operator on a rank-one matrix of eigenvectors.** Let $x$ and $y$ be vectors with
+$A x = \alpha x$ and $y^T B = \beta y^T$. Then
+$$A (x y^T) - (x y^T) B = (\alpha - \beta)\, x y^T.$$
+-/
 theorem sylvesterMap_vecMulVec {A : Matrix m m R} {B : Matrix n n R} {x : m → R} {y : n → R}
     {α β : R} (hx : A *ᵥ x = α • x) (hy : y ᵥ* B = β • y) :
     sylvesterMap A B (vecMulVec x y) = (α - β) • vecMulVec x y := by
   rw [sylvesterMap_apply, mul_vecMulVec, vecMulVec_mul, hx, hy, smul_vecMulVec, vecMulVec_smul,
     sub_smul]
 
-/-- A common eigenvalue gives a kernel element of the Sylvester operator: if `A x = c x` and
-`yᵀ B = c yᵀ` then `A (x yᵀ) - (x yᵀ) B = 0` ([golub2013matrix] proof of Lemma 7.1.5, with `yᵀ` in
-place of `yᴴ`). -/
+/-- **A common eigenvalue gives a kernel element of the Sylvester operator.** Let $x$ and $y$ be
+vectors with $A x = c x$ and $y^T B = c y^T$. Then
+$$A (x y^T) - (x y^T) B = 0.$$
+This is a step of the proof of Lemma 7.1.5 of [golub2013matrix], with $y^T$ in place of $y^H$.
+
+The rank-one matrix $x y^T$ is `Matrix.vecMulVec x y`. The vectors may be zero. -/
 theorem sylvesterMap_vecMulVec_eq_zero {A : Matrix m m R} {B : Matrix n n R} {x : m → R}
     {y : n → R} {c : R} (hx : A *ᵥ x = c • x) (hy : y ᵥ* B = c • y) :
     sylvesterMap A B (vecMulVec x y) = 0 := by
   rw [sylvesterMap_vecMulVec hx hy, sub_self, zero_smul]
 
-/-- **Change of bases** ([golub2013matrix] §12.1.6, §12.1.8): conjugating both coefficients
-conjugates the Sylvester operator,
-`sylvesterMap (P F P⁻¹) (Q G Q⁻¹) (P A Q⁻¹) = P (sylvesterMap F G A) Q⁻¹` for invertible `P`,
-`Q`. -/
+/-- **Change of bases.** Let $P$ and $Q$ be invertible square matrices over a commutative ring.
+Conjugating both coefficients conjugates the Sylvester operator:
+$$(P F P^{-1})(P A Q^{-1}) - (P A Q^{-1})(Q G Q^{-1}) = P\, (F A - A G)\, Q^{-1}.$$
+This is used in [golub2013matrix] §12.1.6 and §12.1.8. -/
 theorem sylvesterMap_conj [DecidableEq m] [DecidableEq n] {P : Matrix m m R} {Q : Matrix n n R}
     (hP : IsUnit P) (hQ : IsUnit Q) (F : Matrix m m R) (G : Matrix n n R) (A : Matrix m n R) :
     sylvesterMap (P * F * P⁻¹) (Q * G * Q⁻¹) (P * A * Q⁻¹) = P * sylvesterMap F G A * Q⁻¹ := by
@@ -147,8 +183,10 @@ theorem sylvesterMap_conj [DecidableEq m] [DecidableEq n] {P : Matrix m m R} {Q 
           simp only [Matrix.mul_assoc]
       _ = P * (A * G) * Q⁻¹ := by rw [hQ', Matrix.mul_one, Matrix.mul_assoc P]
 
-/-- **Reindexing** ([golub2013matrix] Algorithm 12.1.2, pivoting of a displacement equation):
-permuting rows and columns commutes with the Sylvester operator. -/
+/-- **Reindexing.** Let $\sigma$ and $\tau$ be bijections of the index sets. Permuting the rows and
+columns of $F$ by $\sigma$, of $G$ by $\tau$, and of $A$ by $\sigma$ and $\tau$ permutes the
+rows and columns of $F A - A G$ in the same way. This is the pivoting of a displacement equation
+in Algorithm 12.1.2 of [golub2013matrix]. -/
 theorem sylvesterMap_submatrix {m' n' : Type*} [Fintype m'] [Fintype n'] (σ : m' ≃ m)
     (τ : n' ≃ n) (F : Matrix m m R) (G : Matrix n n R) (A : Matrix m n R) :
     sylvesterMap (F.submatrix σ σ) (G.submatrix τ τ) (A.submatrix σ τ) =
@@ -156,8 +194,10 @@ theorem sylvesterMap_submatrix {m' n' : Type*} [Fintype m'] [Fintype n'] (σ : m
   rw [sylvesterMap_apply, sylvesterMap_apply, submatrix_mul_equiv, submatrix_mul_equiv]
   rfl
 
-/-- The Sylvester operator with diagonal coefficients acts entrywise:
-`(diagonal ω X - X diagonal ν) k j = (ω k - ν j) X k j`. -/
+/-- With diagonal coefficients the Sylvester operator acts entrywise:
+$$\bigl(\operatorname{diag}(\omega) X - X \operatorname{diag}(\nu)\bigr)_{kj} = (\omega_k -
+  \nu_j)\, x_{kj}.$$
+-/
 theorem sylvesterMap_diagonal_apply [DecidableEq m] [DecidableEq n] (ω : m → R) (ν : n → R)
     (X : Matrix m n R) (k : m) (j : n) :
     sylvesterMap (diagonal ω) (diagonal ν) X k j = (ω k - ν j) * X k j := by
@@ -166,8 +206,12 @@ theorem sylvesterMap_diagonal_apply [DecidableEq m] [DecidableEq n] (ω : m → 
 
 /-! ### The block computation of Lemma 7.1.5 -/
 
-/-- The block computation behind [golub2013matrix] Lemma 7.1.5:
-`[1 -Z; 0 1] [T₁₁ T₁₂; 0 T₂₂] [1 Z; 0 1] = [T₁₁ (T₁₁ Z - Z T₂₂ + T₁₂); 0 T₂₂]`. -/
+/-- **The block computation of Lemma 7.1.5** of [golub2013matrix]. For square blocks $T_{11}$ and
+$T_{22}$ and rectangular blocks $T_{12}$ and $Z$ over a commutative ring,
+$$\begin{bmatrix} I & -Z \\ 0 & I \end{bmatrix} \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22}
+  \end{bmatrix} \begin{bmatrix} I & Z \\ 0 & I \end{bmatrix} = \begin{bmatrix} T_{11} & T_{11}
+  Z - Z T_{22} + T_{12} \\ 0 & T_{22} \end{bmatrix}.$$
+-/
 theorem fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one [DecidableEq m] [DecidableEq n]
     (T₁₁ : Matrix m m R) (T₁₂ : Matrix m n R) (T₂₂ : Matrix n n R) (Z : Matrix m n R) :
     fromBlocks 1 (-Z) 0 1 * fromBlocks T₁₁ T₁₂ 0 T₂₂ * fromBlocks 1 Z 0 1 =
@@ -177,17 +221,22 @@ theorem fromBlocks_one_neg_mul_fromBlocks_mul_fromBlocks_one [DecidableEq m] [De
   congr 1
   abel
 
-/-- `[1 -Z; 0 1]` is the inverse of `[1 Z; 0 1]`. -/
+/-- The block matrix $\begin{bmatrix} I & -Z \\ 0 & I \end{bmatrix}$ is the inverse of
+$\begin{bmatrix} I & Z \\ 0 & I \end{bmatrix}$: their product is $I$. -/
 theorem fromBlocks_one_neg_mul_fromBlocks_one [DecidableEq m] [DecidableEq n]
     (Z : Matrix m n R) :
     fromBlocks (1 : Matrix m m R) (-Z) (0 : Matrix n m R) (1 : Matrix n n R) *
       fromBlocks 1 Z 0 1 = 1 := by
   simp [fromBlocks_multiply, fromBlocks_one]
 
-/-- [golub2013matrix] Lemma 7.1.5, second half: if the Sylvester operator of the diagonal blocks is
-surjective (for instance, if their spectra are disjoint), a solution `Z` of
-`T₁₁ Z - Z T₂₂ = -T₁₂` gives the similarity `Y = [1 Z; 0 1]` that removes the off-diagonal
-block. -/
+/-- **Lemma 7.1.5** of [golub2013matrix], removal of the off-diagonal block. Let $T_{11}$ and
+$T_{22}$ be square matrices over a commutative ring such that the Sylvester operator
+$X \mapsto T_{11} X - X T_{22}$ is surjective, for instance because their spectra are disjoint.
+Then for every $T_{12}$ there is a matrix $Z$ with $T_{11} Z - Z T_{22} = -T_{12}$ such that
+$Y = \begin{bmatrix} I & Z \\ 0 & I \end{bmatrix}$ is invertible and
+$$Y^{-1} \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix} Y = \begin{bmatrix} T_{11}
+  & 0 \\ 0 & T_{22} \end{bmatrix}.$$
+-/
 theorem exists_fromBlocks_conj_eq_fromBlocks_zero [DecidableEq m] [DecidableEq n]
     {T₁₁ : Matrix m m R} {T₂₂ : Matrix n n R} (h : Function.Surjective (sylvesterMap T₁₁ T₂₂))
     (T₁₂ : Matrix m n R) :
@@ -212,8 +261,14 @@ section Field
 
 variable {K : Type*} [Field K] [DecidableEq m] [DecidableEq n]
 
-/-- **Coprime characteristic polynomials make the Sylvester operator injective**, over any field
-([golub2013matrix] Lemma 7.1.5 in its field-independent form). -/
+/-- **Coprime characteristic polynomials make the Sylvester operator injective.** Let $A$ and $B$ be
+square matrices over a field. If the characteristic polynomials $\chi_A$ and $\chi_B$ are
+coprime, then $X \mapsto A X - X B$ is injective. This is Lemma 7.1.5 of [golub2013matrix] in a
+form that holds over any field.
+
+The proof uses `Matrix.aeval_mul_eq_mul_aeval_of_mul_eq_mul` with $p = \chi_A$, the
+Cayley–Hamilton theorem, and a Bézout identity $u \chi_A + v \chi_B = 1$, which makes
+$\chi_A(B)$ invertible. -/
 theorem sylvesterMap_injective_of_isCoprime {A : Matrix m m K} {B : Matrix n n K}
     (h : IsCoprime A.charpoly B.charpoly) : Function.Injective (sylvesterMap A B) := by
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
@@ -230,30 +285,34 @@ theorem sylvesterMap_injective_of_isCoprime {A : Matrix m m K} {B : Matrix n n K
   calc X = X * (aeval B A.charpoly * aeval B u) := by rw [h1, Matrix.mul_one]
     _ = 0 := by rw [← Matrix.mul_assoc, h0, Matrix.zero_mul]
 
-/-- **Coprime characteristic polynomials make the Sylvester operator bijective**: an injective
-endomorphism of a finite-dimensional space is surjective. -/
+/-- Let $A$ and $B$ be square matrices over a field. If $\chi_A$ and $\chi_B$ are coprime, then the
+Sylvester operator $X \mapsto A X - X B$ is bijective.
+
+An injective endomorphism of a finite-dimensional vector space is surjective. -/
 theorem sylvesterMap_bijective_of_isCoprime {A : Matrix m m K} {B : Matrix n n K}
     (h : IsCoprime A.charpoly B.charpoly) : Function.Bijective (sylvesterMap A B) :=
   have hi := sylvesterMap_injective_of_isCoprime h
   ⟨hi, LinearMap.injective_iff_surjective.mp hi⟩
 
-/-- Under coprime characteristic polynomials the Sylvester equation `A X - X B = C` has exactly one
-solution for every `C`, over any field. -/
+/-- Let $A$ and $B$ be square matrices over a field. If $\chi_A$ and $\chi_B$ are coprime, then for
+every $C$ the Sylvester equation
+$$A X - X B = C$$
+has exactly one solution $X$. -/
 theorem existsUnique_sylvesterMap_eq_of_isCoprime {A : Matrix m m K} {B : Matrix n n K}
     (h : IsCoprime A.charpoly B.charpoly) (C : Matrix m n K) :
     ∃! X : Matrix m n K, A * X - X * B = C := by
   simpa only [sylvesterMap_apply] using (sylvesterMap_bijective_of_isCoprime h).existsUnique C
 
-/-- A scalar in the spectrum of a square matrix over a field has a left eigenvector:
-`yᵀ A = μ yᵀ` with `y ≠ 0`. -/
+/-- Let $A$ be a square matrix over a field, and let $\mu$ be in the spectrum of $A$. Then $A$ has a
+left eigenvector for $\mu$: there is a vector $y \neq 0$ with $y^T A = \mu y^T$. -/
 theorem exists_vecMul_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K A) : ∃ y, y ≠ 0 ∧ y ᵥ* A = μ • y := by
   rw [← spectrum_transpose, mem_spectrum_iff_exists_mulVec_eq_smul] at hμ
   obtain ⟨y, hy, hyA⟩ := hμ
   exact ⟨y, hy, by rw [← mulVec_transpose, hyA]⟩
 
-/-- Over an algebraically closed field, two square matrices have coprime characteristic
-polynomials exactly when their spectra are disjoint. -/
+/-- Let $A$ and $B$ be square matrices over an algebraically closed field. Then $\chi_A$ and
+$\chi_B$ are coprime if and only if the spectra of $A$ and $B$ are disjoint. -/
 theorem isCoprime_charpoly_iff_disjoint_spectrum [IsAlgClosed K] (A : Matrix m m K)
     (B : Matrix n n K) :
     IsCoprime A.charpoly B.charpoly ↔ Disjoint (spectrum K A) (spectrum K B) := by
@@ -267,8 +326,14 @@ theorem isCoprime_charpoly_iff_disjoint_spectrum [IsAlgClosed K] (A : Matrix m m
     · exact Or.inr (h ha)
     · exact Or.inl ha
 
-/-- [golub2013matrix] Lemma 7.1.5, first half: over an algebraically closed field the Sylvester
-operator `X ↦ A X - X B` is bijective exactly when `A` and `B` have no common eigenvalue. -/
+/-- **Lemma 7.1.5** of [golub2013matrix], unique solvability. Let $A$ and $B$ be square matrices
+over an algebraically closed field. Then the Sylvester operator $X \mapsto A X - X B$ is
+bijective if and only if $A$ and $B$ have no common eigenvalue:
+$$\sigma(A) \cap \sigma(B) = \emptyset.$$
+
+One direction is `Matrix.sylvesterMap_bijective_of_isCoprime` with
+`Matrix.isCoprime_charpoly_iff_disjoint_spectrum`. For the other direction, a common eigenvalue
+gives the kernel element `Matrix.sylvesterMap_vecMulVec_eq_zero`. -/
 theorem sylvesterMap_bijective_iff_disjoint_spectrum [IsAlgClosed K] {A : Matrix m m K}
     {B : Matrix n n K} :
     Function.Bijective (sylvesterMap A B) ↔ Disjoint (spectrum K A) (spectrum K B) := by
@@ -284,26 +349,30 @@ theorem sylvesterMap_bijective_iff_disjoint_spectrum [IsAlgClosed K] {A : Matrix
   rw [vecMulVec_apply, Matrix.zero_apply] at this
   exact mul_ne_zero hi hj this
 
-/-- The Sylvester equation `A X - X B = C` has exactly one solution for every `C` when `A` and `B`
-have disjoint spectra, over an algebraically closed field. -/
+/-- Let $A$ and $B$ be square matrices over an algebraically closed field with disjoint spectra.
+Then for every $C$ the Sylvester equation
+$$A X - X B = C$$
+has exactly one solution $X$. -/
 theorem existsUnique_sylvesterMap_eq [IsAlgClosed K] {A : Matrix m m K} {B : Matrix n n K}
     (h : Disjoint (spectrum K A) (spectrum K B)) (C : Matrix m n K) :
     ∃! X : Matrix m n K, A * X - X * B = C := by
   simpa only [sylvesterMap_apply] using
     (sylvesterMap_bijective_iff_disjoint_spectrum.mpr h).existsUnique C
 
-/-- **The homogeneous Sylvester equation has only the trivial solution** when the spectra are
-disjoint, over an algebraically closed field: `A X - X B = 0` forces `X = 0`. This is the
-uniqueness half of `Matrix.existsUnique_sylvesterMap_eq`. -/
+/-- Let $A$ and $B$ be square matrices over an algebraically closed field with disjoint spectra. If
+$A X - X B = 0$, then $X = 0$. This is the uniqueness part of
+`Matrix.existsUnique_sylvesterMap_eq`. -/
 theorem eq_zero_of_mul_sub_mul_eq_zero [IsAlgClosed K] {A : Matrix m m K} {B : Matrix n n K}
     (h : Disjoint (spectrum K A) (spectrum K B)) {X : Matrix m n K} (hX : A * X - X * B = 0) :
     X = 0 :=
   (sylvesterMap_bijective_iff_disjoint_spectrum.mpr h).1
     (by rw [sylvesterMap_apply, hX, map_zero])
 
-/-- The diagonal Sylvester equation is solved by entrywise division: if `ω k ≠ ν j` for all `k`,
-`j`, then `diagonal ω X - X diagonal ν = C` exactly when `X k j = C k j / (ω k - ν j)`
-([golub2013matrix] §4.8.4 and (12.1.4)). -/
+/-- **The diagonal Sylvester equation.** Let $\omega$ and $\nu$ be vectors over a field with
+$\omega_k \neq \nu_j$ for all $k$ and $j$. Then
+$$\operatorname{diag}(\omega) X - X \operatorname{diag}(\nu) = C \iff x_{kj} =
+  \frac{c_{kj}}{\omega_k - \nu_j} \text{ for all } k, j.$$
+This is the solve of [golub2013matrix] §4.8.4 and (12.1.4). -/
 theorem sylvesterMap_diagonal_eq_iff {ω : m → K} {ν : n → K} (h : ∀ k j, ω k ≠ ν j)
     {X C : Matrix m n K} :
     sylvesterMap (diagonal ω) (diagonal ν) X = C ↔ X = of fun k j => C k j / (ω k - ν j) := by
@@ -311,9 +380,12 @@ theorem sylvesterMap_diagonal_eq_iff {ω : m → K} {ν : n → K} (h : ∀ k j,
   refine forall_congr' fun k => forall_congr' fun j => ?_
   rw [eq_div_iff (sub_ne_zero.mpr (h k j)), mul_comm, eq_comm]
 
-/-- **Cauchy-like matrices are determined entrywise by their generators** ([golub2013matrix]
-(12.1.4)): if `ω k ≠ ν j` for all `k`, `j`, then `diagonal ω A - A diagonal ν = R Sᵀ` exactly when
-`A k j = (R k ⬝ᵥ S j) / (ω k - ν j)` for all `k`, `j`. -/
+/-- **Cauchy-like matrices are determined by their generators.** Let $\omega$ and $\nu$ be vectors
+over a field with $\omega_k \neq \nu_j$ for all $k$ and $j$, and let $R$ and $S$ be matrices
+with $r$ columns, whose rows are $R_k$ and $S_j$. Then
+$$\operatorname{diag}(\omega) A - A \operatorname{diag}(\nu) = R S^T \iff a_{kj} = \frac{R_k
+  \cdot S_j}{\omega_k - \nu_j} \text{ for all } k, j.$$
+This is (12.1.4) of [golub2013matrix]. -/
 theorem apply_eq_of_sylvesterMap_diagonal_eq {r : Type*} [Fintype r] {ω : m → K} {ν : n → K}
     (h : ∀ k j, ω k ≠ ν j) {A : Matrix m n K} {R : Matrix m r K} {S : Matrix n r K} :
     sylvesterMap (diagonal ω) (diagonal ν) A = R * Sᵀ ↔
@@ -323,10 +395,12 @@ theorem apply_eq_of_sylvesterMap_diagonal_eq {r : Type*} [Fintype r] {ω : m →
 
 end Field
 
-/-- **Real matrices**: `A` and `B` have coprime characteristic polynomials exactly when their
-complexifications have disjoint spectra. Coprimality is preserved and reflected by the field
-extension `ℝ → ℂ`, over which it means "no common root". This is how a real Sylvester equation
-between real Schur blocks is known to be uniquely solvable. -/
+/-- **Real matrices.** Let $A$ and $B$ be real square matrices. Then $\chi_A$ and $\chi_B$ are
+coprime if and only if the complexifications of $A$ and $B$ have disjoint spectra.
+
+Coprimality is preserved and reflected by the field extension $\mathbb{R} \subseteq \mathbb{C}$,
+and over $\mathbb{C}$ it means that the polynomials have no common root. This result shows that
+a real Sylvester equation between blocks of a real Schur form has a unique solution. -/
 theorem isCoprime_charpoly_iff_disjoint_spectrum_complexify [DecidableEq m] [DecidableEq n]
     (A : Matrix m m ℝ) (B : Matrix n n ℝ) :
     IsCoprime A.charpoly B.charpoly ↔
@@ -340,16 +414,19 @@ section BlockDiagonal
 
 variable {K : Type*} [Field K]
 
-/-- Conjugation commutes with a simultaneous reindexing of rows and columns. -/
+/-- Conjugation commutes with a simultaneous reindexing of rows and columns:
+$(Y_e)^{-1} T_e Y_e = (Y^{-1} T Y)_e$, where $M_e$ is $M$ with rows and columns reindexed by
+$e$. -/
 private theorem inv_mul_mul_submatrix_equiv {p : Type*} [Fintype p] [DecidableEq p]
     [DecidableEq n] (e : p ≃ n) (Y T : Matrix n n K) :
     (Y.submatrix e e)⁻¹ * T.submatrix e e * Y.submatrix e e = (Y⁻¹ * T * Y).submatrix e e := by
   rw [inv_submatrix_equiv, submatrix_mul_equiv, submatrix_mul_equiv]
 
-/-- The two-block step of [golub2013matrix] Theorem 7.1.6 on a split `n = {p} ⊕ {¬p}`, combined
-with a conjugation `Y₁` of the leading block: if `T` has no entry from the `¬p` rows into the `p`
-columns and the Sylvester operator of the two diagonal blocks is surjective, then `T` is similar,
-through the split, to `[Y₁⁻¹ T₁₁ Y₁ 0; 0 T₂₂]`. -/
+/-- The two-block step of Theorem 7.1.6 of [golub2013matrix]: if $T$ has no entry from the rows
+outside a set $p$ into the columns in $p$, the Sylvester operator of the two diagonal blocks is
+surjective, and $Y_1$ is invertible, then $T$ is similar, after the split of the indices into
+$p$ and its complement, to $\begin{bmatrix} Y_1^{-1} T_{11} Y_1 & 0 \\ 0 & T_{22}
+\end{bmatrix}$. -/
 private theorem exists_conj_submatrix_sumCompl [DecidableEq n] (p : n → Prop) [DecidablePred p]
     {T : Matrix n n K} (hT : ∀ i j, ¬p i → p j → T i j = 0)
     (hs : Function.Surjective
@@ -391,14 +468,19 @@ private theorem exists_conj_submatrix_sumCompl [DecidableEq n] (p : n → Prop) 
         rw [hconj, hWinv']
         simp [W, fromBlocks_multiply]
 
-/-- [golub2013matrix] Theorem 7.1.6 over any field: a block upper triangular matrix
-(`T.BlockTriangular b`) whose diagonal blocks `T.toSquareBlock b k` have pairwise coprime
-characteristic polynomials is similar to its block diagonal part `Matrix.blockDiagPart b T`.
-Induction on the size: the last
-block is split off by `exists_fromBlocks_conj_eq_fromBlocks_zero` (its characteristic polynomial is
-coprime to the product of the others, which is that of the leading part by
-`Matrix.BlockTriangular.charpoly`), and the leading part is handled by the induction
-hypothesis. -/
+/-- **Theorem 7.1.6** of [golub2013matrix] over any field. Let $T$ be a square matrix over a field
+that is block upper triangular for a labelling $b$ of the indices by a linearly ordered set.
+Assume that the diagonal blocks $T_{kk}$ have pairwise coprime characteristic polynomials. Then
+there is an invertible $Y$ such that
+$$Y^{-1} T Y = \operatorname{diag}(T_{11}, \dots, T_{qq})$$
+is the block diagonal part of $T$.
+
+Block upper triangular is `T.BlockTriangular b`, the diagonal block $T_{kk}$ is
+`T.toSquareBlock b k`, and the block diagonal part is `Matrix.blockDiagPart b T`. The proof is
+an induction on the size. The last block is split off by
+`Matrix.exists_fromBlocks_conj_eq_fromBlocks_zero`: its characteristic polynomial is coprime to
+the product of the others, which is the characteristic polynomial of the leading part by
+`Matrix.BlockTriangular.charpoly`. The induction hypothesis handles the leading part. -/
 theorem exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime [DecidableEq n] {ι : Type*}
     [LinearOrder ι] {b : n → ι} {T : Matrix n n K} (hT : T.BlockTriangular b)
     (hcop : Pairwise fun k l : ι =>
@@ -487,9 +569,14 @@ theorem exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime [DecidableEq n] {ι
   have := congrArg (fun M => M.submatrix (Equiv.sumCompl p).symm (Equiv.sumCompl p).symm) key
   simpa [submatrix_submatrix] using this
 
-/-- [golub2013matrix] Theorem 7.1.6 (block diagonal decomposition): over an algebraically closed
-field, a block upper triangular matrix whose diagonal blocks have pairwise disjoint spectra is
-similar to its block diagonal part, `Y⁻¹ T Y = diag(T₁₁, …, T_qq)`. -/
+/-- **Theorem 7.1.6** of [golub2013matrix] (block diagonal decomposition). Let $T$ be a square
+matrix over an algebraically closed field that is block upper triangular for a labelling $b$ of
+the indices by a linearly ordered set. Assume that the diagonal blocks $T_{kk}$ have pairwise
+disjoint spectra. Then there is an invertible $Y$ with
+$$Y^{-1} T Y = \operatorname{diag}(T_{11}, \dots, T_{qq}).$$
+
+The block diagonal part is `Matrix.blockDiagPart b T`. The proof specializes
+`Matrix.exists_isUnit_conj_eq_blockDiagonalPart_of_isCoprime`. -/
 theorem exists_isUnit_conj_eq_blockDiagonalPart [DecidableEq n] [IsAlgClosed K] {ι : Type*}
     [LinearOrder ι] {b : n → ι} {T : Matrix n n K} (hT : T.BlockTriangular b)
     (hdisj : Pairwise fun k l : ι =>
@@ -508,16 +595,21 @@ open scoped Matrix.Norms.Frobenius
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The **separation** of two square matrices ([golub2013matrix] (7.2.5)):
-`sep A B = min_{‖X‖_F = 1} ‖A X - X B‖_F`, the least value of the Frobenius norm of the Sylvester
-operator on the Frobenius unit sphere of `m × n` matrices. The value is `0` when `m` or `n` is
-empty (an infimum over an empty family). -/
+/-- The **separation** of an $m \times m$ matrix $A$ and an $n \times n$ matrix $B$ over
+$\mathbb{R}$ or $\mathbb{C}$:
+$$\operatorname{sep}(A, B) = \inf_{\|X\|_F = 1} \|A X - X B\|_F,$$
+the infimum of the Frobenius norm of the Sylvester operator on the Frobenius unit sphere of
+$m \times n$ matrices. This is (7.2.5) of [golub2013matrix], where the infimum is written as a
+minimum.
+
+The value is $0$ when $m$ or $n$ is empty, because the infimum of an empty family is $0$. The
+infimum is attained otherwise, by `Matrix.exists_sep_eq`. -/
 noncomputable def sep (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) : ℝ :=
   ⨅ X : {X : Matrix m n 𝕜 // ‖X‖ = 1}, ‖A * X.1 - X.1 * B‖
 
 variable {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
 
-/-- The separation is nonnegative. -/
+/-- The separation is nonnegative: $\operatorname{sep}(A, B) \ge 0$. -/
 theorem sep_nonneg (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) : 0 ≤ sep A B :=
   Real.iInf_nonneg fun _ => norm_nonneg _
 
@@ -525,12 +617,12 @@ private theorem bddBelow_range_sep (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
     BddBelow (Set.range fun X : {X : Matrix m n 𝕜 // ‖X‖ = 1} => ‖A * X.1 - X.1 * B‖) :=
   ⟨0, by rintro _ ⟨X, rfl⟩; exact norm_nonneg _⟩
 
-/-- The separation is at most the value at any unit matrix. -/
+/-- If $\|X\|_F = 1$, then $\operatorname{sep}(A, B) \le \|A X - X B\|_F$. -/
 theorem sep_le_norm {X : Matrix m n 𝕜} (hX : ‖X‖ = 1) : sep A B ≤ ‖A * X - X * B‖ :=
   ciInf_le (bddBelow_range_sep A B) ⟨X, hX⟩
 
-/-- A lower bound of `‖A X - X B‖` on the unit sphere is a lower bound of the separation, when the
-sphere is nonempty. -/
+/-- Let $m, n \ge 1$. If $c \le \|A X - X B\|_F$ for every $X$ with $\|X\|_F = 1$, then
+$c \le \operatorname{sep}(A, B)$. -/
 theorem le_sep {c : ℝ} [Nonempty m] [Nonempty n]
     (h : ∀ X : Matrix m n 𝕜, ‖X‖ = 1 → c ≤ ‖A * X - X * B‖) : c ≤ sep A B := by
   have : Nonempty {X : Matrix m n 𝕜 // ‖X‖ = 1} :=
@@ -538,12 +630,12 @@ theorem le_sep {c : ℝ} [Nonempty m] [Nonempty n]
       ⟨⟨X, mem_sphere_zero_iff_norm.mp hX⟩⟩
   exact le_ciInf fun X => h X.1 X.2
 
-/-- On an empty unit sphere (when `m` or `n` is empty) the separation is `0`. -/
+/-- If the Frobenius unit sphere of $m \times n$ matrices is empty, which happens when $m$ or $n$ is
+$0$, then $\operatorname{sep}(A, B) = 0$. -/
 theorem sep_of_isEmpty [IsEmpty {X : Matrix m n 𝕜 // ‖X‖ = 1}] : sep A B = 0 :=
   Real.iInf_of_isEmpty _
 
-/-- The unit sphere of `m × n` matrices is empty unless both `m` and `n` are nonempty; this is the
-case split behind the statements that need no nonemptiness hypothesis. -/
+/-- The unit sphere of $m \times n$ matrices is empty, or both index types are nonempty. -/
 private theorem isEmpty_or_nonempty_index :
     IsEmpty {X : Matrix m n 𝕜 // ‖X‖ = 1} ∨ (Nonempty m ∧ Nonempty n) := by
   rcases isEmpty_or_nonempty m with hm | hm
@@ -558,8 +650,10 @@ private theorem isEmpty_or_nonempty_index :
       simpa [this] using X.2⟩
   exact Or.inr ⟨hm, hn⟩
 
-/-- **The separation is the best constant** in `sep A B ‖X‖_F ≤ ‖A X - X B‖_F`, the book's
-`min_{X ≠ 0} ‖A X - X B‖_F / ‖X‖_F` form of (7.2.5). -/
+/-- **The separation is the best constant** in the bound
+$$\operatorname{sep}(A, B)\, \|X\|_F \le \|A X - X B\|_F,$$
+which holds for every $m \times n$ matrix $X$. This is the form
+$\min_{X \neq 0} \|A X - X B\|_F / \|X\|_F$ of (7.2.5) of [golub2013matrix]. -/
 theorem sep_mul_norm_le (X : Matrix m n 𝕜) : sep A B * ‖X‖ ≤ ‖A * X - X * B‖ := by
   rcases eq_or_ne X 0 with rfl | hX
   · simp
@@ -572,8 +666,11 @@ theorem sep_mul_norm_le (X : Matrix m n 𝕜) : sep A B * ‖X‖ ≤ ‖A * X -
   calc sep A B * ‖X‖ ≤ ‖X‖⁻¹ * ‖A * X - X * B‖ * ‖X‖ := by gcongr
     _ = ‖A * X - X * B‖ := by field_simp
 
-/-- **The minimum is attained**: for nonempty `m`, `n` some unit matrix realizes the separation
-(the Frobenius unit sphere is compact). -/
+/-- **The minimum is attained.** Let $m, n \ge 1$. Then there is an $m \times n$ matrix $X$ with
+$\|X\|_F = 1$ and
+$$\|A X - X B\|_F = \operatorname{sep}(A, B).$$
+
+The Frobenius unit sphere is compact. -/
 theorem exists_sep_eq [Nonempty m] [Nonempty n] (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
     ∃ X : Matrix m n 𝕜, ‖X‖ = 1 ∧ ‖A * X - X * B‖ = sep A B := by
   have hc : Continuous fun X : Matrix m n 𝕜 => ‖A * X - X * B‖ :=
@@ -584,16 +681,16 @@ theorem exists_sep_eq [Nonempty m] [Nonempty n] (A : Matrix m m 𝕜) (B : Matri
   refine ⟨X, hX, le_antisymm ?_ (sep_le_norm hX)⟩
   exact le_sep fun Y hY => hmin (mem_sphere_zero_iff_norm.mpr hY)
 
-/-- A matrix `X ≠ 0` on which the Sylvester operator acts as the scalar `c` bounds the separation
-by `‖c‖`. -/
+/-- If $X \neq 0$ and $A X - X B = c X$ for a scalar $c$, then $\operatorname{sep}(A, B) \le |c|$.
+-/
 theorem sep_le_norm_of_sylvesterMap_eq_smul {X : Matrix m n 𝕜} (hX : X ≠ 0) {c : 𝕜}
     (h : A * X - X * B = c • X) : sep A B ≤ ‖c‖ := by
   have := sep_mul_norm_le (A := A) (B := B) X
   rw [h, norm_smul] at this
   exact le_of_mul_le_mul_right this (norm_pos_iff.mpr hX)
 
-/-- **Positivity**: for nonempty `m`, `n` the separation is positive exactly when the Sylvester
-operator is injective. -/
+/-- **Positivity of the separation.** Let $m, n \ge 1$. Then $\operatorname{sep}(A, B) > 0$ if and
+only if the Sylvester operator $X \mapsto A X - X B$ is injective. -/
 theorem sep_pos_iff [Nonempty m] [Nonempty n] :
     0 < sep A B ↔ Function.Injective (sylvesterMap A B) := by
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
@@ -608,23 +705,32 @@ theorem sep_pos_iff [Nonempty m] [Nonempty n] :
     rw [← h0, norm_eq_zero, ← sylvesterMap_apply] at hXeq
     simp [h X hXeq] at hX
 
-/-- Over an algebraically closed `RCLike` field (that is, `ℂ`), the separation is positive exactly
-when the spectra are disjoint ([golub2013matrix] §7.2.4). -/
+/-- Let $A$ and $B$ be complex square matrices of orders $m, n \ge 1$. Then
+$\operatorname{sep}(A, B) > 0$ if and only if the spectra of $A$ and $B$ are disjoint. This is
+§7.2.4 of [golub2013matrix].
+
+The field is an `RCLike` field that is algebraically closed, that is, $\mathbb{C}$. -/
 theorem sep_pos_iff_disjoint_spectrum [IsAlgClosed 𝕜] [DecidableEq m] [DecidableEq n]
     [Nonempty m] [Nonempty n] : 0 < sep A B ↔ Disjoint (spectrum 𝕜 A) (spectrum 𝕜 B) := by
   rw [sep_pos_iff, ← sylvesterMap_bijective_iff_disjoint_spectrum]
   exact ⟨fun h => ⟨h, LinearMap.injective_iff_surjective.mp h⟩, fun h => h.1⟩
 
-/-- **The separation bounds solutions** of the Sylvester equation ([golub2013matrix] (7.3.20)):
-`‖X‖_F ≤ ‖A X - X B‖_F / sep A B` when `sep A B > 0`. -/
+/-- **The separation bounds solutions** of the Sylvester equation. If
+$\operatorname{sep}(A, B) > 0$, then for every $m \times n$ matrix $X$
+$$\|X\|_F \le \frac{\|A X - X B\|_F}{\operatorname{sep}(A, B)}.$$
+This is (7.3.20) of [golub2013matrix]. -/
 theorem frobenius_norm_le_div_sep (h : 0 < sep A B) (X : Matrix m n 𝕜) :
     ‖X‖ ≤ ‖A * X - X * B‖ / sep A B := by
   rw [le_div_iff₀ h, mul_comm]
   exact sep_mul_norm_le X
 
-/-- **The separation is at most the distance between eigenvalues** ([golub2013matrix] P7.2.10):
-for `α ∈ σ(A)` and `β ∈ σ(B)`, `sep A B ≤ |α - β|`; the rank-one `X = x yᵀ` built from a right
-eigenvector of `A` and a left eigenvector of `B` has `A X - X B = (α - β) X`. -/
+/-- **The separation is at most the distance between eigenvalues.** If $\alpha$ is an eigenvalue of
+$A$ and $\beta$ is an eigenvalue of $B$, then
+$$\operatorname{sep}(A, B) \le |\alpha - \beta|.$$
+This is P7.2.10 of [golub2013matrix].
+
+The rank-one matrix $X = x y^T$, built from a right eigenvector $x$ of $A$ and a left
+eigenvector $y$ of $B$, satisfies $A X - X B = (\alpha - \beta) X$. -/
 theorem sep_le_norm_sub [DecidableEq m] [DecidableEq n] {α β : 𝕜} (hα : α ∈ spectrum 𝕜 A)
     (hβ : β ∈ spectrum 𝕜 B) : sep A B ≤ ‖α - β‖ := by
   obtain ⟨x, hx, hxA⟩ := (mem_spectrum_iff_exists_mulVec_eq_smul A α).mp hα
@@ -638,8 +744,10 @@ theorem sep_le_norm_sub [DecidableEq m] [DecidableEq n] {α β : 𝕜} (hα : α
   rw [vecMulVec_apply, Matrix.zero_apply] at this
   exact mul_ne_zero hi hj this
 
-/-- **Unitary invariance** of the separation: `sep (Uᴴ A U) (Vᴴ B V) = sep A B` for unitary `U`,
-`V` (`X ↦ U X Vᴴ` is a Frobenius isometry of the unit sphere). -/
+/-- **Unitary invariance of the separation.** If $U$ and $V$ are unitary, then
+$$\operatorname{sep}(U^H A U, V^H B V) = \operatorname{sep}(A, B).$$
+
+The map $X \mapsto U X V^H$ is an isometry of the Frobenius unit sphere. -/
 theorem sep_unitary_conj [DecidableEq m] [DecidableEq n] {U : Matrix m m 𝕜} {V : Matrix n n 𝕜}
     (hU : U ∈ unitaryGroup m 𝕜) (hV : V ∈ unitaryGroup n 𝕜) (A : Matrix m m 𝕜)
     (B : Matrix n n 𝕜) : sep (star U * A * U) (star V * B * V) = sep A B := by
@@ -668,8 +776,10 @@ theorem sep_unitary_conj [DecidableEq m] [DecidableEq n] {U : Matrix m m 𝕜} {
     rw [Matrix.mul_assoc (U * X.1 * star V * B) V (star V), hV', Matrix.mul_one]
   rw [this, frobenius_norm_unitary_mul_mul_unitary hU _ hsV]
 
-/-- **Perturbation**: `sep A B - ‖E‖_F - ‖F‖_F ≤ sep (A + E) (B + F)` — the separation is
-1-Lipschitz in each argument for the Frobenius norm. -/
+/-- **Perturbation of the separation.** For square matrices $A, E$ of order $m$ and $B, F$ of order
+$n$,
+$$\operatorname{sep}(A, B) - \|E\|_F - \|F\|_F \le \operatorname{sep}(A + E, B + F).$$
+So the separation is 1-Lipschitz in each argument for the Frobenius norm. -/
 theorem sep_sub_le_sep_add (A E : Matrix m m 𝕜) (B F : Matrix n n 𝕜) :
     sep A B - ‖E‖ - ‖F‖ ≤ sep (A + E) (B + F) := by
   rcases isEmpty_or_nonempty_index (m := m) (n := n) (𝕜 := 𝕜) with h | ⟨hm, hn⟩
@@ -688,7 +798,11 @@ theorem sep_sub_le_sep_add (A E : Matrix m m 𝕜) (B F : Matrix n n 𝕜) :
 
 /-! ### Symmetry of the separation -/
 
-/-- The Frobenius adjoint of the Sylvester operator: `tr(Yᴴ (A X - X B)) = tr((Aᴴ Y - Y Bᴴ)ᴴ X)`. -/
+/-- **The adjoint of the Sylvester operator** for the Frobenius inner product: for $m \times n$
+matrices $X$ and $Y$,
+$$\operatorname{tr}\bigl(Y^H (A X - X B)\bigr) = \operatorname{tr}\bigl((A^H Y - Y B^H)^H
+  X\bigr).$$
+-/
 theorem trace_conjTranspose_mul_sylvesterMap (A : Matrix m m 𝕜) (B : Matrix n n 𝕜)
     (X Y : Matrix m n 𝕜) :
     trace (Yᴴ * (A * X - X * B)) = trace ((Aᴴ * Y - Y * Bᴴ)ᴴ * X) := by
@@ -696,10 +810,14 @@ theorem trace_conjTranspose_mul_sylvesterMap (A : Matrix m m 𝕜) (B : Matrix n
     Matrix.sub_mul, trace_sub, Matrix.mul_assoc]
   rw [trace_mul_comm B, Matrix.mul_assoc]
 
-/-- **A lower bound passes to the adjoint**: if `c ‖X‖_F ≤ ‖A X - X B‖_F` for every `X`, then
-`c ‖Y‖_F ≤ ‖Aᴴ Y - Y Bᴴ‖_F` for every `Y`. For `c > 0` the Sylvester operator is injective, hence
-onto; writing `Y = A X - X B`, `‖Y‖² = re tr((Aᴴ Y - Y Bᴴ)ᴴ X) ≤ ‖Aᴴ Y - Y Bᴴ‖ ‖X‖` and
-`‖X‖ ≤ ‖Y‖ / c`. -/
+/-- **A lower bound passes to the adjoint.** Let $c$ be real. If $c \|X\|_F \le \|A X - X B\|_F$ for
+every $m \times n$ matrix $X$, then
+$$c \|Y\|_F \le \|A^H Y - Y B^H\|_F$$
+for every $m \times n$ matrix $Y$.
+
+For $c > 0$ the Sylvester operator is injective, hence surjective. Write $Y = A X - X B$. Then
+$\|Y\|_F^2 = \operatorname{Re} \operatorname{tr}\bigl((A^H Y - Y B^H)^H X\bigr) \le \|A^H Y - Y
+B^H\|_F \|X\|_F$ and $\|X\|_F \le \|Y\|_F / c$. -/
 theorem le_norm_sylvesterMap_conjTranspose_of_le {c : ℝ}
     (h : ∀ X : Matrix m n 𝕜, c * ‖X‖ ≤ ‖A * X - X * B‖) (Y : Matrix m n 𝕜) :
     c * ‖Y‖ ≤ ‖Aᴴ * Y - Y * Bᴴ‖ := by
@@ -730,8 +848,11 @@ theorem le_norm_sylvesterMap_conjTranspose_of_le {c : ℝ}
       _ ≤ ‖Aᴴ * Y - Y * Bᴴ‖ * ‖Y‖ := by gcongr
   nlinarith
 
-/-- `sep Aᴴ Bᴴ = sep B A`: `X ↦ Xᴴ` maps the unit sphere of `m × n` matrices onto that of `n × m`
-matrices and `Aᴴ Xᴴ - Xᴴ Bᴴ = -(B X - X A)ᴴ`. -/
+/-- For an $m \times m$ matrix $A$ and an $n \times n$ matrix $B$,
+$$\operatorname{sep}(A^H, B^H) = \operatorname{sep}(B, A).$$
+
+The map $X \mapsto X^H$ maps the unit sphere of $m \times n$ matrices onto the unit sphere of
+$n \times m$ matrices, and $A^H X^H - X^H B^H = -(B X - X A)^H$. -/
 theorem sep_conjTranspose (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) : sep Aᴴ Bᴴ = sep B A := by
   let e : {Z : Matrix n m 𝕜 // ‖Z‖ = 1} ≃ {X : Matrix m n 𝕜 // ‖X‖ = 1} :=
     { toFun := fun Z => ⟨Z.1ᴴ, by rw [frobenius_norm_conjTranspose, Z.2]⟩
@@ -751,17 +872,26 @@ private theorem sep_le_sep_conjTranspose (A : Matrix m m 𝕜) (B : Matrix n n �
   have := le_norm_sylvesterMap_conjTranspose_of_le (A := A) (B := B) sep_mul_norm_le Y
   rwa [hY, mul_one] at this
 
-/-- **The separation is symmetric**: `sep A B = sep B A`. The operator `P ↦ P A - B P`, whose
-inverse the perturbation theory of invariant subspaces bounds, is therefore controlled by the
-book's `sep(A, B)` ([golub2013matrix] (7.2.5) and the proof of Theorem 7.2.4). -/
+/-- **The separation is symmetric:**
+$$\operatorname{sep}(A, B) = \operatorname{sep}(B, A).$$
+
+The perturbation theory of invariant subspaces bounds the inverse of the operator
+$P \mapsto P A - B P$. By this result, the separation $\operatorname{sep}(A, B)$ of (7.2.5) of
+[golub2013matrix] controls that operator, as the proof of Theorem 7.2.4 of [golub2013matrix]
+uses. -/
 theorem sep_comm (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) : sep A B = sep B A :=
   le_antisymm ((sep_le_sep_conjTranspose A B).trans_eq (sep_conjTranspose A B))
     ((sep_le_sep_conjTranspose B A).trans_eq (sep_conjTranspose B A))
 
 /-! ### Diagonal and Hermitian arguments -/
 
-/-- The separation of two diagonal matrices is the least distance between their diagonal
-entries. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $a \in \mathbb{K}^m$ and
+$b \in \mathbb{K}^n$ with $m, n \ge 1$. The separation of the diagonal matrices
+$\operatorname{diag}(a)$ and $\operatorname{diag}(b)$ is the least distance between their
+diagonal entries:
+$$\operatorname{sep}(\operatorname{diag}(a), \operatorname{diag}(b)) = \min_{i, j} |a_i -
+  b_j|.$$
+-/
 theorem sep_diagonal [DecidableEq m] [DecidableEq n] [Nonempty m] [Nonempty n] (a : m → 𝕜)
     (b : n → 𝕜) : sep (diagonal a) (diagonal b) = ⨅ i, ⨅ j, ‖a i - b j‖ := by
   have hbdd : ∀ i, BddBelow (Set.range fun j => ‖a i - b j‖) :=
@@ -798,11 +928,15 @@ theorem sep_diagonal [DecidableEq m] [DecidableEq n] [Nonempty m] [Nonempty n] (
           exact hδle i j
     exact (pow_le_pow_iff_left₀ hδ0 (norm_nonneg _) two_ne_zero).mp hsq
 
-/-- **The separation of two Hermitian matrices is the distance between their spectra**
-([golub2013matrix] P8.1.9, the step of Theorem 8.1.10):
-`sep A B = min_{i,j} |λ_i(A) - λ_j(B)|`. Both are unitarily diagonalizable
-(`Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`), the separation is unitarily invariant,
-and for diagonal matrices it is the least distance between the diagonal entries. -/
+/-- **The separation of two Hermitian matrices is the distance between their spectra.** Let $A$ and
+$B$ be Hermitian of orders $m, n \ge 1$, with eigenvalues $\lambda_i(A)$ and $\lambda_j(B)$.
+Then
+$$\operatorname{sep}(A, B) = \min_{i, j} |\lambda_i(A) - \lambda_j(B)|.$$
+This is P8.1.9 of [golub2013matrix], the step used in Theorem 8.1.10.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. Both matrices are unitarily diagonalizable
+by `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`, the separation is unitarily invariant,
+and `Matrix.sep_diagonal` computes it for diagonal matrices. -/
 theorem IsHermitian.sep_eq_iInf_abs_eigenvalues_sub [DecidableEq m] [DecidableEq n]
     [Nonempty m] [Nonempty n] (hA : A.IsHermitian) (hB : B.IsHermitian) :
     sep A B = ⨅ i, ⨅ j, |hA.eigenvalues i - hB.eigenvalues j| := by
@@ -810,12 +944,17 @@ theorem IsHermitian.sep_eq_iInf_abs_eigenvalues_sub [DecidableEq m] [DecidableEq
     hA.star_eigenvectorUnitary_mul_mul, hB.star_eigenvectorUnitary_mul_mul, sep_diagonal]
   simp only [Function.comp_apply, ← RCLike.ofReal_sub, RCLike.norm_ofReal]
 
-/-- **The separation from a scalar is a least singular value** ([golub2013matrix] proof of
-Corollary 7.2.6): for `c : 𝕜` and `T : Matrix n n 𝕜`, `sep [c] T = σ_min(T - c I)`, the least
-singular value `⨅ i, (T - c • 1).colSingularValues i`. By `Matrix.sep_comm` the unknown is a column
-`x`, on which the Sylvester operator is `x ↦ (T - c I) x` and the Frobenius norm is the Euclidean
-one; the least stretch is `σ_min` (`Matrix.iInf_colSingularValues_eq_iInf_norm`). (Column-indexed on
-purpose: `T - c • 1` is square, and `⨅` over its columns is `σ_min`.) -/
+/-- **The separation from a scalar is a least singular value.** Let $c$ be a scalar and $T$ a square
+matrix of order $n$. Then
+$$\operatorname{sep}([c], T) = \sigma_{\min}(T - c I),$$
+where $[c]$ is the $1 \times 1$ matrix with the entry $c$. This is a step of the proof of
+Corollary 7.2.6 of [golub2013matrix].
+
+The least singular value is `⨅ i, (T - c • 1).colSingularValues i`, the infimum of the singular
+values indexed by the columns. It is $0$ when $n = 0$. By `Matrix.sep_comm` the unknown is a
+column $x$. On a column the Sylvester operator is $x \mapsto (T - c I) x$ and the Frobenius norm
+is the Euclidean norm, so the least stretch is $\sigma_{\min}$ by
+`Matrix.iInf_colSingularValues_eq_iInf_norm`. -/
 theorem sep_eq_iInf_colSingularValues [DecidableEq n] (c : 𝕜) (T : Matrix n n 𝕜) :
     sep (of fun _ _ => c : Matrix Unit Unit 𝕜) T = ⨅ i, (T - c • 1).colSingularValues i := by
   rw [sep_comm, iInf_colSingularValues_eq_iInf_norm, sep]

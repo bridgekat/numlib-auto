@@ -12,40 +12,89 @@ import Numlib.Data.ENNReal.Real
 /-!
 # The trace theorem from a transversal field
 
-The trace theorem from a transversal field — Nečas's proof, decision B7 of
-`notes/boundary/planning-brief.md` — over the abstract `BoundaryData Ω` of `Boundary/Data.lean`
-and the density predicates of `Boundary/Density.lean`; the two concrete instances are the bounded
-`C¹` domains (`Boundary/ContDiffDomain.lean`) and the triangles (`Boundary/PolygonTrace.lean`).
+Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set with boundary data `BoundaryData Ω`: a
+finite surface measure $\sigma$ carried by $\partial\Omega$, an outward unit normal $\nu$, and the
+divergence theorem. A **transversal field** is a compactly supported $C^1$ vector field
+$w : \mathbb{R}^N \to \mathbb{R}^N$ with $\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere.
+From a transversal field, this module constructs the trace operator
+$T : W^{1,p}(\Omega) \to L^p(\sigma)$ for $1 \le p < \infty$ and proves its main properties. The
+construction is Nečas's proof (*Direct Methods in the Theory of Elliptic Equations*, Chapter 2, §4);
+see also Evans, *Partial Differential Equations*, §5.5, Theorem 1, [grisvard2011elliptic] Theorems
+1.5.1.3 and 1.5.3.1, [han2009theoretical] §7.3 and §7.6, and the comments on Chapter 9 of
+[brezis2011functional].
 
-A **transversal field** is a `C¹` compactly supported `w : ℝ^N → ℝ^N` with `⟪w, ν⟫ ≥ 1` `σ`-a.e.
-(`BoundaryData.HasTransversalField`). For `u ∈ C¹_c(ℝ^N)` and `1 ≤ p < ∞` the divergence
-theorem applied to `φ_ε(u) w`, `φ_ε(t) = (t² + ε²)^{p/2} − ε^p` (`Real.rpowReg`), gives
-**Nečas's inequality**
-`∫_{∂Ω} |u|^p dσ ≤ C (∫_Ω |u|^p + ∫_Ω |u|^{p−1} |∇u|)` with `C` depending on `w` and `p` only
-(`BoundaryData.integral_abs_rpow_le_of_contDiff`; the regularization `φ_ε` is what makes `p = 1`
-work, `|t|^p` not being `C¹` there), hence `‖u|_{∂Ω}‖_{L^p(σ)} ≤ C' ‖u‖_{W^{1,p}(Ω)}`
-(`BoundaryData.eLpNorm_le_of_contDiff`). Restriction to `∂Ω` is therefore a bounded linear map on
-the subspace `SobolevEuclidean.smoothRestrictions` of smooth-representable elements
-(`BoundaryData.traceSmoothL`), dense under `HasSmoothDensity` ([brezis2011functional]
-Corollary 9.8 on `C¹` domains, the segment property elsewhere), and `BoundaryData.traceL` is its
-continuous extension (`ContinuousLinearMap.extend`; the density hypothesis enters the lemmas, not
-the definition, as for Mathlib's `extend`). Then: `Tu = ũ|_{∂Ω}` for `ũ` continuous up to the
-boundary (`traceL_ae_eq_of_continuousOn`, under `HasUniformSmoothDensity`), uniqueness
-(`traceL_unique`, `TraceFamily.traceL_eq_of_hasSmoothDensity`), Green's formula
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ Tu Tv νᵢ dσ` at conjugate exponents by density from
-`BoundaryData.integral_fderiv_mul_add_eq` (`green_of_hasSmoothDensity`,
-`green_contDiff_of_hasSmoothDensity`), the assembly `BoundaryData.traceFamily : B.TraceFamily`,
-the sharper inequality for all `u ∈ W^{1,p}` (`integral_abs_traceL_rpow_le`) and with it the
-**compactness** of the trace from Rellich–Kondrachov for `1 < p` (`isCompactOperator_traceL`,
-Atkinson–Han Theorem 7.3.10 (c); at `p = 1` the trace `W^{1,1} → L¹(∂Ω)` is onto, hence not
-compact, so the book's `1 ≤ p` is an erratum).
+The central estimate is **Nečas's inequality**
+$$\int |u|^p \, d\sigma \le C \Big( \int_\Omega |u|^p \, dx + \int_\Omega |u|^{p-1} |\nabla u| \, dx
+  \Big), \qquad u \in C^1(\mathbb{R}^N),$$
+with $C$ depending only on $w$ and $p$. It gives $\|u\|_{L^p(\sigma)} \le C'
+\|u\|_{W^{1,p}(\Omega)}$, so restriction to $\partial\Omega$ is a bounded linear map on the subspace
+of $W^{1,p}(\Omega)$ of restrictions of smooth compactly supported functions, and $T$ is its
+continuous extension. When this subspace is dense, the module proves the trace inequality, the
+identity $Tu = \tilde u$ on $\partial\Omega$ for a representative $\tilde u$ continuous up to the
+boundary, the uniqueness of $T$, Green's formula $\int_\Omega \partial_i u \, v + \int_\Omega u \,
+\partial_i v = \int Tu \, Tv \, \nu_i \, d\sigma$, and the compactness of $T$ for $1 < p < \infty$
+when $W^{1,p}(\Omega) \to L^p(\Omega)$ is compact. The two concrete instances are the bounded $C^1$
+domains (`Numlib.Analysis.Sobolev.Boundary.ContDiffDomain`) and the triangles
+(`Numlib.Analysis.Sobolev.Boundary.PolygonTrace`). The characterization $\ker T = W_0^{1,p}(\Omega)$
+is proved in `Numlib.Analysis.Sobolev.Boundary.Kernel`. The range of $T$, the fractional space
+$W^{1-1/p,p}(\partial\Omega)$, is not treated.
 
-The kernel characterization `ker T = W_0^{1,p}(Ω)` (the hard half) is chart-local and lives in
-`Boundary/Kernel.lean`; the fractional range `W^{1−1/p,p}(∂Ω)` is out of scope.
+## Main definitions
 
-Sources: Nečas, *Direct Methods in the Theory of Elliptic Equations*, Ch. 2 §4; Evans, *PDE*,
-§5.5 Theorem 1; Grisvard, *Elliptic Problems in Nonsmooth Domains*, Theorems 1.5.1.3 and
-1.5.3.1; Atkinson–Han §7.3 and §7.6; [brezis2011functional] Comments on chapter 9.
+* `BoundaryData.HasTransversalField`: there is a compactly supported $C^1$ field $w$ with
+  $\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere.
+* `BoundaryData.traceSmoothL`: restriction to $\partial\Omega$ on the smooth-representable elements
+  of $W^{1,p}(\Omega)$, as a bounded operator into $L^p(\sigma)$.
+* `BoundaryData.traceL`: the trace operator $T : W^{1,p}(\Omega) \to L^p(\sigma)$, the continuous
+  extension of `BoundaryData.traceSmoothL`.
+* `BoundaryData.traceFamily`: the trace operators at all finite exponents with their properties, as
+  a `BoundaryData.TraceFamily`.
+
+## Main results
+
+* `BoundaryData.integral_abs_rpow_le_of_contDiff`: Nečas's inequality for $u \in C^1(\mathbb{R}^N)$.
+* `BoundaryData.eLpNorm_le_of_contDiff`: $\|u\|_{L^p(\sigma)} \le C \|U\|_{W^{1,p}(\Omega)}$ for
+  every $C^1$ representative $u$ of $U \in W^{1,p}(\Omega)$.
+* `BoundaryData.norm_traceL_apply_le`: the trace inequality $\|Tu\|_{L^p(\sigma)} \le C
+  \|u\|_{W^{1,p}(\Omega)}$.
+* `BoundaryData.traceL_ae_eq_of_continuousOn`: the trace of a function continuous up to the boundary
+  is its restriction to $\partial\Omega$.
+* `BoundaryData.traceL_unique`: a bounded operator that restricts the smooth representatives is $T$.
+* `BoundaryData.green_of_hasSmoothDensity`: Green's formula at finite conjugate exponents.
+* `BoundaryData.green_contDiff_of_hasSmoothDensity`: Green's formula against a compactly supported
+  $C^1$ test function, for $1 \le p < \infty$.
+* `BoundaryData.integral_abs_traceL_rpow_le`: Nečas's inequality for $Tu$, $u \in W^{1,p}(\Omega)$.
+* `BoundaryData.isCompactOperator_traceL`: $T$ is compact for $1 < p < \infty$ if the embedding
+  $W^{1,p}(\Omega) \to L^p(\Omega)$ is compact.
+
+## Proof outline
+
+For $u \in C^1(\mathbb{R}^N)$ and $\varepsilon > 0$, apply the divergence theorem to the field
+$\varphi_\varepsilon(u) w$, where $\varphi_\varepsilon(t) = (t^2 + \varepsilon^2)^{p/2} -
+\varepsilon^p$ is a $C^1$ regularization of $|t|^p$. The boundary term dominates
+$\int \varphi_\varepsilon(u) \, d\sigma$ because $\varphi_\varepsilon \ge 0$ and
+$\langle w, \nu \rangle \ge 1$, and the divergence is bounded by the derivative estimates of
+$\varphi_\varepsilon$. The limit $\varepsilon \to 0$ gives Nečas's inequality. The regularization
+makes the case $p = 1$ work, where $|t|^p$ is not $C^1$. The properties of $T$ on $W^{1,p}(\Omega)$
+follow from those on the smooth functions by density and continuity. For compactness, Nečas's
+inequality bounds $\|T(u_n - u_m)\|_{L^p(\sigma)}$ by a quantity that tends to zero with
+$\|u_n - u_m\|_{L^p(\Omega)}$ when $p > 1$ and $u_n - u_m$ stays bounded in $W^{1,p}(\Omega)$.
+
+## Implementation notes
+
+* The existence of a transversal field is a hypothesis of the construction and not a field of
+  `BoundaryData`: a domain made of two triangles that meet at one vertex has no transversal field.
+* `BoundaryData.traceL` is `ContinuousLinearMap.extend` of `BoundaryData.traceSmoothL` along the
+  inclusion of `SobolevEuclidean.smoothRestrictions`. As for Mathlib's `extend`, the density
+  hypothesis `SobolevEuclidean.HasSmoothDensity` enters the lemmas and not the definition. If the
+  subspace is not dense, the extension is the zero operator.
+* Density holds on bounded $C^1$ domains by [brezis2011functional] Corollary 9.8, and on sets with
+  the segment property; see `Numlib.Analysis.Sobolev.Boundary.Density`. The restriction property
+  also needs `SobolevEuclidean.HasUniformSmoothDensity`, approximation in $W^{1,p}(\Omega)$ and at
+  the same time uniformly on $\overline{\Omega}$.
+* [han2009theoretical] Theorem 7.3.10(c) states the compactness of the trace for $1 \le p < \infty$.
+  At $p = 1$ the trace $W^{1,1}(\Omega) \to L^1(\partial\Omega)$ is onto (Gagliardo), so it is not
+  compact. `BoundaryData.isCompactOperator_traceL` assumes $1 < p$.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -53,8 +102,6 @@ open scoped ContDiff ENNReal InnerProductSpace Topology
 
 noncomputable section
 
-
-/-! ### Small general lemmas -/
 
 section General
 
@@ -74,29 +121,37 @@ namespace BoundaryData
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω)
 
-/-- The ambient space `ℝ^N`, locally. -/
+/-- The ambient space $\mathbb{R}^N$, written `𝔼` in this file. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 /-! ### Transversal fields -/
 
-/-- **A transversal field** for the boundary data `B`: a `C¹` compactly supported vector field
-`w : ℝ^N → ℝ^N` pointing strictly outward along `∂Ω`, `⟪w, ν⟫ ≥ 1` `σ`-a.e. (Nečas; the
-normalization `≥ 1` rather than `> 0` costs nothing on a compact boundary and saves a compactness
-argument). Instances: `IsContDiffDomain.hasTransversalField` (`ContDiffDomain.lean`) and the
-triangles (`PolygonTrace.lean`, `w = c (x − x₀)` for an interior point `x₀`). A pinched polygon
-(two triangles meeting at a vertex) has none, which is why this is a hypothesis of the trace
-construction and not a field of `BoundaryData`. -/
+/-- Boundary data `B` of $\Omega$ **have a transversal field** if there is a compactly supported
+vector field $w : \mathbb{R}^N \to \mathbb{R}^N$ of class $C^1$ such that $$\langle w(x), \nu(x)
+\rangle \ge 1$$ for $\sigma$-almost every $x$.
+
+The field points strictly outward along $\partial\Omega$. The normalization $\ge 1$ instead of
+$> 0$ costs nothing on a compact boundary and saves a compactness argument. Bounded $C^1$
+domains have a transversal field (`IsContDiffDomain.hasTransversalField`), and so do triangles
+(`EuclideanSpace.triangle_hasTransversalField`, with $w(x) = c (x - x_0)$ near the triangle for
+an interior point $x_0$). A domain made of two triangles that meet at one vertex has none.
+Therefore the existence of a transversal field is a hypothesis of the trace construction and not
+a field of `BoundaryData`. -/
 def HasTransversalField : Prop :=
   ∃ w : 𝔼 → 𝔼, ContDiff ℝ 1 w ∧ HasCompactSupport w ∧ ∀ᵐ x ∂B.σ, 1 ≤ ⟪w x, B.ν x⟫_ℝ
 
-/-! ### Integrability on `σ` and on `Ω` -/
+/-! ### Integrability for $\sigma$ and on $\Omega$ -/
 
 include B in
-/-- The Lebesgue measure of the bounded `Ω` is finite. -/
+/-- The restriction of Lebesgue measure to the bounded set $\Omega$ is a finite measure. -/
 theorem isFiniteMeasure_volume_restrict : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼)) :=
   MeasureTheory.isFiniteMeasure_restrict.2 B.isBounded.measure_lt_top.ne
 
-/-- A function continuous on `closure Ω` is in every `L^p(σ)`. -/
+/-- Let $G$ be a normed group. A function $f : \mathbb{R}^N \to G$ that is continuous on
+$\overline{\Omega}$ lies in $L^p(\sigma)$ for every $p \in [0, \infty]$.
+
+The set $\overline{\Omega}$ is compact, so $f$ is bounded on it, and $\sigma$ is a finite
+measure carried by $\partial\Omega \subseteq \overline{\Omega}$. -/
 theorem memLp_of_continuousOn {G : Type*} [NormedAddCommGroup G] {f : 𝔼 → G}
     (hf : ContinuousOn f (closure (Ω : Set 𝔼))) (p : ℝ≥0∞) : MemLp f p B.σ := by
   have hae : ∀ᵐ x ∂B.σ, x ∈ closure (Ω : Set 𝔼) :=
@@ -107,25 +162,29 @@ theorem memLp_of_continuousOn {G : Type*} [NormedAddCommGroup G] {f : 𝔼 → G
   obtain ⟨C, hC⟩ := B.isBounded.isCompact_closure.exists_bound_of_continuousOn hf
   exact MemLp.of_bound hm C (hae.mono fun x hx ↦ hC x hx)
 
-/-- A continuous function is in every `L^p(σ)`. -/
+/-- Let $G$ be a normed group. A continuous function $f : \mathbb{R}^N \to G$ lies in $L^p(\sigma)$
+for every $p \in [0, \infty]$. -/
 theorem memLp_of_continuous {G : Type*} [NormedAddCommGroup G] {f : 𝔼 → G} (hf : Continuous f)
     (p : ℝ≥0∞) : MemLp f p B.σ :=
   B.memLp_of_continuousOn hf.continuousOn p
 
-/-- A continuous function is `σ`-integrable. -/
+/-- Let $G$ be a normed group. A continuous function $f : \mathbb{R}^N \to G$ is integrable for
+$\sigma$. -/
 theorem integrable_of_continuous {G : Type*} [NormedAddCommGroup G] {f : 𝔼 → G}
     (hf : Continuous f) : Integrable f B.σ :=
   memLp_one_iff_integrable.1 (B.memLp_of_continuous hf 1)
 
 include B in
-/-- A continuous function is integrable on the bounded `Ω`. -/
+/-- Let $G$ be a normed group. A continuous function $f : \mathbb{R}^N \to G$ is integrable on the
+bounded set $\Omega$ for Lebesgue measure. -/
 theorem integrableOn_of_continuous {G : Type*} [NormedAddCommGroup G]
     {f : 𝔼 → G} (hf : Continuous f) : IntegrableOn f (Ω : Set 𝔼) :=
   B.integrableOn_of_continuousOn hf.continuousOn
 
 /-! ### Bump tests on the boundary -/
 
-/-- A function continuous on `∂Ω` is bounded and measurable for the surface measure. -/
+/-- A function $h : \mathbb{R}^N \to \mathbb{R}$ that is continuous on $\partial\Omega$ lies in
+$L^\infty(\sigma)$. -/
 theorem memLp_top_of_continuousOn_frontier {h : 𝔼 → ℝ}
     (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) : MemLp h ⊤ B.σ := by
   have hm : AEStronglyMeasurable h B.σ := by
@@ -137,12 +196,16 @@ theorem memLp_top_of_continuousOn_frontier {h : 𝔼 → ℝ}
   exact MemLp.of_bound hm C (B.ae_mem_frontier.mono fun x hx ↦ hC x hx)
 
 open Metric in
-/-- **A bump test against a function continuous on the boundary**: if the surface measure charges
-every open set meeting `∂Ω` (as on a bounded `C¹` domain,
-`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), `h` is continuous on `∂Ω` and `h x₀ > c` at a
-boundary point `x₀`, then some smooth compactly supported bump `ψ` with `0 ≤ ψ ≤ 1` satisfies
-`c ∫ ψ dσ < ∫ h ψ dσ`: a `ContDiffBump` supported in a ball around `x₀` on which
-`h > (c + h x₀)/2`, whose integral is positive because the smaller ball has positive measure. -/
+/-- Suppose that $\sigma(U) > 0$ for every open set $U$ that meets $\partial\Omega$. Let
+$h : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\partial\Omega$, let
+$x_0 \in \partial\Omega$, and let $c < h(x_0)$. Then there is a smooth compactly supported
+function $\psi : \mathbb{R}^N \to \mathbb{R}$ with $0 \le \psi \le 1$ and $$c \int \psi \,
+d\sigma < \int h \psi \, d\sigma.$$
+
+The hypothesis on $\sigma$ holds on a bounded $C^1$ domain
+(`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`). The function $\psi$ is a smooth bump
+supported in a ball around $x_0$ on which $h > (c + h(x_0))/2$. Its integral is positive because
+a smaller ball around $x_0$ has positive measure. -/
 theorem exists_bump_lt_integral_mul
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼))) {x₀ : 𝔼}
@@ -189,10 +252,14 @@ theorem exists_bump_lt_integral_mul
   calc c * ∫ x, ψ x ∂B.σ < m * ∫ x, ψ x ∂B.σ := mul_lt_mul_of_pos_right hcm hpsi
     _ ≤ _ := hle
 
-/-- **A function continuous on `∂Ω` whose integrals against all smooth compactly supported
-functions vanish is zero on `∂Ω`**, when the surface measure charges every open set meeting
-`∂Ω`: the sign of `h` at a boundary point survives on a small ball, against whose bump the
-integral would not vanish (`BoundaryData.exists_bump_lt_integral_mul`). -/
+/-- Suppose that $\sigma(U) > 0$ for every open set $U$ that meets $\partial\Omega$. Let
+$h : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\partial\Omega$, with
+$\int h \psi \, d\sigma = 0$ for every smooth compactly supported
+$\psi : \mathbb{R}^N \to \mathbb{R}$. Then $h = 0$ on $\partial\Omega$.
+
+If $h(x_0) \neq 0$ at a point $x_0 \in \partial\Omega$, the sign of $h$ persists on a small ball
+around $x_0$, and the bump of `BoundaryData.exists_bump_lt_integral_mul` has a nonzero integral
+against $h$. -/
 theorem eqOn_zero_frontier_of_forall_integral_mul_eq_zero
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -213,12 +280,20 @@ theorem eqOn_zero_frontier_of_forall_integral_mul_eq_zero
 
 /-! ### Nečas's inequality -/
 
-/-- **The divergence-theorem step of Nečas's inequality at a fixed `ε`**: for a transversal
-field `w` with `‖w‖ ≤ M₀`, `‖Dw‖ ≤ M₁`, and `u ∈ C¹(ℝ^N)`,
-`∫ φ_ε(u) dσ ≤ max (N M₁) (p M₀) (∫_Ω (|u| + ε)^p + ∫_Ω (|u| + ε)^{p−1} ‖∇u‖)`.
-The divergence theorem for `F_ε = φ_ε(u) w`: the boundary term dominates `∫ φ_ε(u) dσ` because
-`φ_ε ≥ 0` and `⟪w, ν⟫ ≥ 1`, and `div F_ε = φ_ε'(u) ⟪∇u, w⟫ + φ_ε(u) div w` is bounded by the
-derivative estimates of `Real.rpowReg`. -/
+/-- Let $w : \mathbb{R}^N \to \mathbb{R}^N$ be a compactly supported $C^1$ field with
+$\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere, and with $\|w(x)\| \le M_0$ and
+$\|Dw(x)\| \le M_1$ for all $x$. Let $p \ge 1$, let $\varepsilon > 0$, and let
+$u : \mathbb{R}^N \to \mathbb{R}$ be of class $C^1$. With $\varphi_\varepsilon(t) = (t^2 +
+\varepsilon^2)^{p/2} - \varepsilon^p$, $$\int \varphi_\varepsilon(u) \, d\sigma \le \max(N M_1,
+p M_0) \Big( \int_\Omega (|u| + \varepsilon)^p \, dx + \int_\Omega (|u| + \varepsilon)^{p-1}
+\|Du\| \, dx \Big).$$
+
+This is the step of Nečas's inequality at a fixed $\varepsilon$. The function
+$\varphi_\varepsilon$ is `Real.rpowReg p ε`, and $\|Du\|$ is the operator norm of
+`fderiv ℝ u x`. The proof applies the divergence theorem to the field
+$\varphi_\varepsilon(u) w$, whose divergence $\varphi_\varepsilon'(u) \langle \nabla u, w
+\rangle + \varphi_\varepsilon(u) \operatorname{div} w$ is bounded by the derivative estimates of
+`Real.rpowReg`. -/
 theorem integral_rpowReg_le {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 1 w) (hwc : HasCompactSupport w)
     (hwν : ∀ᵐ x ∂B.σ, 1 ≤ ⟪w x, B.ν x⟫_ℝ) {M₀ M₁ : ℝ} (hM₀ : ∀ x, ‖w x‖ ≤ M₀)
     (hM₁ : ∀ x, ‖fderiv ℝ w x‖ ≤ M₁) {p : ℝ} (hp : 1 ≤ p) {ε : ℝ} (hε : 0 < ε)
@@ -316,15 +391,18 @@ theorem integral_rpowReg_le {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 1 w) (hwc : H
   rw [hdiv] at h2
   exact h1.trans h2
 
-/-- **Nečas's inequality for `C¹` functions** ([Nečas, *Direct Methods*, Ch. 2 §4]; Evans §5.5
-Theorem 1, step 1, in the transversal-field form): for a transversal field `w` (`C¹`, compactly
-supported, `⟪w, ν⟫ ≥ 1` `σ`-a.e.) with `‖w‖ ≤ M₀` and `‖Dw‖ ≤ M₁` everywhere, `p ≥ 1`, and every
-`u ∈ C¹(ℝ^N)`,
-`∫ |u|^p dσ ≤ max (N M₁) (p M₀) (∫_Ω |u|^p + ∫_Ω |u|^{p−1} ‖∇u‖)`.
-The fixed-`ε` inequality `integral_rpowReg_le` for the regularization
-`φ_ε(t) = (t² + ε²)^{p/2} − ε^p` of `|t|^p`, and `ε = 1/(n+1) → 0` by dominated convergence on
-both sides (`u` and `∇u` are bounded on the compact `closure Ω`, `σ` and `Ω` have finite
-measure). No compact support of `u` is needed: only its values on `closure Ω` enter. -/
+/-- **Nečas's inequality** for $C^1$ functions. Let $w : \mathbb{R}^N \to \mathbb{R}^N$ be a
+compactly supported $C^1$ field with $\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere,
+and with $\|w(x)\| \le M_0$ and $\|Dw(x)\| \le M_1$ for all $x$. Let $p \ge 1$ and let
+$u : \mathbb{R}^N \to \mathbb{R}$ be of class $C^1$. Then $$\int |u|^p \, d\sigma \le \max(N
+M_1, p M_0) \Big( \int_\Omega |u|^p \, dx + \int_\Omega |u|^{p-1} \|Du\| \, dx \Big).$$ This is
+the inequality of Nečas, *Direct Methods in the Theory of Elliptic Equations*, Chapter 2, §4,
+and step 1 of the proof of Theorem 1 in §5.5 of Evans, *Partial Differential Equations*, in the
+form with a transversal field.
+
+The function $u$ need not have compact support, because only its values on $\overline{\Omega}$
+enter. The proof lets $\varepsilon = 1/(n+1) \to 0$ in `BoundaryData.integral_rpowReg_le`, with
+dominated convergence on both sides. -/
 theorem integral_abs_rpow_le_of_contDiff {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 1 w)
     (hwc : HasCompactSupport w) (hwν : ∀ᵐ x ∂B.σ, 1 ≤ ⟪w x, B.ν x⟫_ℝ) {M₀ M₁ : ℝ}
     (hM₀ : ∀ x, ‖w x‖ ≤ M₀) (hM₁ : ∀ x, ‖fderiv ℝ w x‖ ≤ M₁) {p : ℝ} (hp : 1 ≤ p)
@@ -401,12 +479,15 @@ theorem integral_abs_rpow_le_of_contDiff {w : 𝔼 → 𝔼} (hw : ContDiff ℝ 
 
 open SobolevMultiIndex
 
-/-- **The trace inequality on the smooth functions, in the Sobolev norm** (Atkinson–Han Theorem
-7.3.10 (b) on the smooth subspace): for a transversal field and `1 ≤ p < ∞` there is `C` such
-that `‖u‖_{L^p(σ)} ≤ C ‖U‖_{W^{1,p}(Ω)}` for every `U ∈ W^{1,p}(Ω)` with a `C¹` representative
-`u`. Nečas's inequality `integral_abs_rpow_le_of_contDiff` at `p.toReal`, with
-`∫_Ω |u|^p = ‖U‖_p^p ≤ ‖U‖^p`, the crude Young inequality
-`∫_Ω |u|^{p−1} ‖∇u‖ ≤ ∫_Ω |u|^p + ∫_Ω ‖∇u‖^p` and `∫_Ω ‖∇u‖^p ≤ N^p ‖U‖^p`, then `p`-th roots. -/
+/-- **Trace inequality on the smooth functions.** Suppose that the boundary data have a transversal
+field, and let $1 \le p < \infty$. Then there is a constant $C \ge 0$ such that
+$$\|u\|_{L^p(\sigma)} \le C \|U\|_{W^{1,p}(\Omega)}$$ for every $U \in W^{1,p}(\Omega)$ and
+every $C^1$ function $u : \mathbb{R}^N \to \mathbb{R}$ equal to $U$ almost everywhere on
+$\Omega$. This is [han2009theoretical] Theorem 7.3.10(b) on the smooth functions.
+
+The left side is `eLpNorm u p B.σ`. The proof combines Nečas's inequality
+`BoundaryData.integral_abs_rpow_le_of_contDiff` with $\int_\Omega |u|^{p-1} \|Du\| \le
+\int_\Omega |u|^p + \int_\Omega \|Du\|^p$ and $\int_\Omega \|Du\|^p \le N^p \|U\|^p$. -/
 theorem eLpNorm_le_of_contDiff (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (U : SobolevEuclidean N 1 p Ω) (u : 𝔼 → ℝ), ContDiff ℝ 1 u →
@@ -463,9 +544,13 @@ theorem eLpNorm_le_of_contDiff (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fa
 
 /-! ### The trace operator -/
 
-/-- Two representatives of `u ∈ W^{1,p}(Ω)` continuous up to the boundary agree `σ`-a.e.:
-they agree on `closure Ω ⊇ ∂Ω` (`SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn`) and
-`σ` is carried by `∂Ω`. -/
+/-- Let $u \in W^{1,p}(\Omega)$, and let $v_1, v_2 : \mathbb{R}^N \to \mathbb{R}$ be continuous on
+$\overline{\Omega}$ and equal to $u$ almost everywhere on $\Omega$. Then $v_1 = v_2$
+$\sigma$-almost everywhere.
+
+The two functions agree on $\overline{\Omega}$
+(`SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn`), and $\sigma$ is carried by
+$\partial\Omega \subseteq \overline{\Omega}$. -/
 theorem ae_eq_of_ae_eq_of_continuousOn {p : ℝ≥0∞} (u : SobolevEuclidean N 1 p Ω)
     {v₁ v₂ : 𝔼 → ℝ} (h₁ : fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] v₁)
     (h₂ : fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] v₂) (hc₁ : ContinuousOn v₁ (closure (Ω : Set 𝔼)))
@@ -478,9 +563,12 @@ section SmoothTrace
 
 variable (p : ℝ≥0∞)
 
-/-- **Restriction to `∂Ω` on the smooth-representable subspace**, as a linear map
-`smoothRestrictions →ₗ L^p(σ)`: `u ↦ (smoothRep u)|_{∂Ω}`. Well defined and linear because two
-continuous representatives agree `σ`-a.e. (`ae_eq_of_ae_eq_of_continuousOn`). -/
+/-- **Restriction to $\partial\Omega$** on the subspace `SobolevEuclidean.smoothRestrictions` of
+$W^{1,p}(\Omega)$, as a linear map into $L^p(\sigma)$: it maps $u$ to the class in $L^p(\sigma)$
+of its smooth representative `SobolevEuclidean.smoothRep u`.
+
+The map is linear because two representatives that are continuous on $\overline{\Omega}$ agree
+$\sigma$-almost everywhere (`BoundaryData.ae_eq_of_ae_eq_of_continuousOn`). -/
 def traceSmooth : SobolevEuclidean.smoothRestrictions N p Ω →ₗ[ℝ] Lp ℝ p B.σ where
   toFun u := (B.memLp_of_continuous (SobolevEuclidean.continuous_smoothRep u) p).toLp _
   map_add' u v := by
@@ -507,7 +595,8 @@ def traceSmooth : SobolevEuclidean.smoothRestrictions N p Ω →ₗ[ℝ] Lp ℝ 
       ((SobolevEuclidean.continuous_smoothRep u).const_smul c).continuousOn)
     exact (fn_smul _ _).trans ((SobolevEuclidean.fn_ae_eq_smoothRep u).const_smul c)
 
-/-- `traceSmooth u` is the class of the smooth representative of `u`. -/
+/-- The function of `BoundaryData.traceSmooth p u` equals the smooth representative
+`SobolevEuclidean.smoothRep u` $\sigma$-almost everywhere. -/
 theorem coeFn_traceSmooth (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     (B.traceSmooth p u : 𝔼 → ℝ) =ᵐ[B.σ] SobolevEuclidean.smoothRep u :=
   MemLp.coeFn_toLp (B.memLp_of_continuous (SobolevEuclidean.continuous_smoothRep u) p)
@@ -516,25 +605,34 @@ end SmoothTrace
 
 section TraceL
 
-/-- **The constant of the trace inequality** `‖u|_{∂Ω}‖_{L^p(σ)} ≤ C ‖U‖_{W^{1,p}(Ω)}` of
-`eLpNorm_le_of_contDiff`. -/
+/-- **The constant of the trace inequality**: for boundary data with a transversal field and
+$1 \le p < \infty$, a constant $C \ge 0$ with $\|u\|_{L^p(\sigma)} \le C
+\|U\|_{W^{1,p}(\Omega)}$ for every $U \in W^{1,p}(\Omega)$ and every $C^1$ function $u$ equal to
+$U$ almost everywhere on $\Omega$.
+
+It is the constant chosen by `BoundaryData.eLpNorm_le_of_contDiff`, not the best constant. -/
 def traceConst (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) : ℝ :=
   Classical.choose (B.eLpNorm_le_of_contDiff hw p hp)
 
-/-- The trace constant is nonnegative. -/
+/-- The trace constant `BoundaryData.traceConst` is nonnegative. -/
 theorem traceConst_nonneg (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     0 ≤ B.traceConst hw p hp :=
   (Classical.choose_spec (B.eLpNorm_le_of_contDiff hw p hp)).1
 
-/-- The trace inequality with the constant `traceConst`. -/
+/-- Suppose that the boundary data have a transversal field, and let $1 \le p < \infty$. For
+$U \in W^{1,p}(\Omega)$ and a $C^1$ function $u$ equal to $U$ almost everywhere on $\Omega$,
+$\|u\|_{L^p(\sigma)} \le C \|U\|_{W^{1,p}(\Omega)}$ with $C$ the constant
+`BoundaryData.traceConst`. -/
 theorem eLpNorm_le_traceConst_mul (hw : B.HasTransversalField) {p : ℝ≥0∞} [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) (U : SobolevEuclidean N 1 p Ω) {u : 𝔼 → ℝ} (hu : ContDiff ℝ 1 u)
     (hU : fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) :
     eLpNorm u p B.σ ≤ ENNReal.ofReal (B.traceConst hw p hp * ‖U‖) :=
   (Classical.choose_spec (B.eLpNorm_le_of_contDiff hw p hp)).2 U u hu hU
 
-/-- **Restriction to `∂Ω` on the smooth-representable subspace, as a bounded operator**
-`smoothRestrictions →L L^p(σ)`, with norm at most `traceConst`. -/
+/-- **Restriction to $\partial\Omega$** on the subspace `SobolevEuclidean.smoothRestrictions` of
+$W^{1,p}(\Omega)$, as a bounded operator into $L^p(\sigma)$, for boundary data with a
+transversal field and $1 \le p < \infty$. It is the linear map `BoundaryData.traceSmooth`, with
+operator norm at most `BoundaryData.traceConst`. -/
 def traceSmoothL (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     SobolevEuclidean.smoothRestrictions N p Ω →L[ℝ] Lp ℝ p B.σ :=
   (B.traceSmooth p).mkContinuous (B.traceConst hw p hp) fun u ↦ by
@@ -546,32 +644,40 @@ def traceSmoothL (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] 
     rw [ENNReal.toReal_ofReal (mul_nonneg (B.traceConst_nonneg hw p hp) (norm_nonneg _))]
     rfl
 
-/-- `traceSmoothL u` is the class of the smooth representative of `u`. -/
+/-- The function of `BoundaryData.traceSmoothL` applied to $u$ equals the smooth representative
+`SobolevEuclidean.smoothRep u` $\sigma$-almost everywhere. -/
 theorem coeFn_traceSmoothL (hw : B.HasTransversalField) {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     (B.traceSmoothL hw p hp u : 𝔼 → ℝ) =ᵐ[B.σ] SobolevEuclidean.smoothRep u :=
   B.coeFn_traceSmooth p u
 
-/-- The norm of the trace on the smooth subspace is at most `traceConst`. -/
+/-- The operator norm of `BoundaryData.traceSmoothL` is at most `BoundaryData.traceConst`. -/
 theorem norm_traceSmoothL_le (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) : ‖B.traceSmoothL hw p hp‖ ≤ B.traceConst hw p hp :=
   LinearMap.mkContinuous_norm_le _ (B.traceConst_nonneg hw p hp) _
 
-/-- **The trace operator of a domain with a transversal field**, `T : W^{1,p}(Ω) →L L^p(σ)`,
-`1 ≤ p < ∞`: the continuous extension (`ContinuousLinearMap.extend`) of the restriction to `∂Ω`
-from the subspace `smoothRestrictions` of smooth-representable elements. It is the trace wherever
-that subspace is dense — `SobolevEuclidean.HasSmoothDensity N p Ω`, the hypothesis of every
-lemma below — and, as for Mathlib's `extend`, the density hypothesis enters the lemmas rather than
-the definition (`traceL_ae_eq_of_contDiff`, `traceL_ae_eq_of_continuousOn`, `traceL_unique`,
-`norm_traceL_le`). -/
+/-- **The trace operator** $T : W^{1,p}(\Omega) \to L^p(\sigma)$ of boundary data with a transversal
+field, for $1 \le p < \infty$. It is the continuous extension of the restriction to
+$\partial\Omega$, `BoundaryData.traceSmoothL`, from the subspace
+`SobolevEuclidean.smoothRestrictions` to all of $W^{1,p}(\Omega)$.
+
+The extension is `ContinuousLinearMap.extend` along the inclusion of the subspace. It is the
+trace when the subspace is dense, which is `SobolevEuclidean.HasSmoothDensity N p Ω`. If the
+subspace is not dense, the extension is the zero operator. As for Mathlib's `extend`, the
+density hypothesis enters the lemmas (`BoundaryData.traceL_ae_eq_of_contDiff`,
+`BoundaryData.traceL_ae_eq_of_continuousOn`, `BoundaryData.traceL_unique`,
+`BoundaryData.norm_traceL_le`) and not the definition. -/
 def traceL (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ :=
   (B.traceSmoothL hw p hp).extend (SobolevEuclidean.smoothRestrictions N p Ω).subtypeL
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- On the smooth-representable subspace the trace is the restriction of the smooth
-representative. -/
+/-- Suppose that the boundary data have a transversal field, that $1 \le p < \infty$, and that the
+smooth-representable elements are dense in $W^{1,p}(\Omega)$
+(`SobolevEuclidean.HasSmoothDensity`). For $u$ in the subspace
+`SobolevEuclidean.smoothRestrictions`, the trace $Tu$ is `BoundaryData.traceSmoothL` applied to
+$u$, the class of the restriction of its smooth representative. -/
 theorem traceL_apply_of_mem (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) {u : SobolevEuclidean N 1 p Ω}
     (hu : u ∈ SobolevEuclidean.smoothRestrictions N p Ω) :
@@ -579,8 +685,11 @@ theorem traceL_apply_of_mem (hw : B.HasTransversalField) (hp : p ≠ ⊤)
   ContinuousLinearMap.extend_eq (B.traceSmoothL hw p hp) hd.dense_smoothRestrictions.denseRange_val
     isUniformEmbedding_subtype_val.isUniformInducing ⟨u, hu⟩
 
-/-- **The trace of a smooth-representable element is its restriction**: for
-`u ∈ W^{1,p}(Ω)` and `v ∈ C_c^∞(ℝ^N)` with `fn u = v` a.e. on `Ω`, `T u = v` `σ`-a.e. -/
+/-- **The trace of a smooth-representable element is its restriction.** Suppose that the boundary
+data have a transversal field, that $1 \le p < \infty$, and that the smooth-representable
+elements are dense in $W^{1,p}(\Omega)$. Let $u \in W^{1,p}(\Omega)$, and let
+$v : \mathbb{R}^N \to \mathbb{R}$ be smooth with compact support and equal to $u$ almost
+everywhere on $\Omega$. Then $Tu = v$ $\sigma$-almost everywhere. -/
 theorem traceL_ae_eq_of_contDiff (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) (u : SobolevEuclidean N 1 p Ω)
     {v : 𝔼 → ℝ} (hv : ContDiff ℝ ∞ v) (hvc : HasCompactSupport v)
@@ -592,7 +701,10 @@ theorem traceL_ae_eq_of_contDiff (hw : B.HasTransversalField) (hp : p ≠ ⊤)
   exact B.ae_eq_of_ae_eq_of_continuousOn u (SobolevEuclidean.fn_ae_eq_smoothRep ⟨u, hu⟩) huv
     (SobolevEuclidean.continuous_smoothRep _).continuousOn hv.continuous.continuousOn
 
-/-- **The trace is bounded by `traceConst`**: `‖T‖ ≤ C` (Atkinson–Han Theorem 7.3.10 (b)). -/
+/-- **The norm of the trace.** Suppose that the boundary data have a transversal field, that
+$1 \le p < \infty$, and that the smooth-representable elements are dense in $W^{1,p}(\Omega)$.
+Then the trace operator has norm $\|T\| \le C$, with $C$ the constant `BoundaryData.traceConst`.
+This is the bound of [han2009theoretical] Theorem 7.3.10(b). -/
 theorem norm_traceL_le (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) :
     ‖B.traceL hw p hp‖ ≤ B.traceConst hw p hp := by
@@ -602,17 +714,22 @@ theorem norm_traceL_le (hw : B.HasTransversalField) (hp : p ≠ ⊤)
   · rw [NNReal.coe_one, one_mul]
     exact B.norm_traceSmoothL_le hw p hp
 
-/-- **The trace inequality** `‖T u‖_{L^p(σ)} ≤ C ‖u‖_{W^{1,p}(Ω)}` for every `u ∈ W^{1,p}(Ω)`
-(Atkinson–Han Theorem 7.3.10 (b)). -/
+/-- **The trace inequality.** Suppose that the boundary data have a transversal field, that
+$1 \le p < \infty$, and that the smooth-representable elements are dense in $W^{1,p}(\Omega)$.
+Then $$\|Tu\|_{L^p(\sigma)} \le C \|u\|_{W^{1,p}(\Omega)}$$ for every $u \in W^{1,p}(\Omega)$,
+with $C$ the constant `BoundaryData.traceConst`. This is [han2009theoretical] Theorem 7.3.10(b). -/
 theorem norm_traceL_apply_le (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) (u : SobolevEuclidean N 1 p Ω) :
     ‖B.traceL hw p hp u‖ ≤ B.traceConst hw p hp * ‖u‖ :=
   ((B.traceL hw p hp).le_opNorm u).trans
     (mul_le_mul_of_nonneg_right (B.norm_traceL_le hw hp hd) (norm_nonneg _))
 
-/-- **Uniqueness of an operator restricting smooth representatives**: two bounded operators
-`W^{1,p}(Ω) →L L^p(σ)` which both send every smooth-representable element to the restriction of
-its representative agree, when the smooth-representable elements are dense. -/
+/-- **Uniqueness of an operator that restricts the smooth representatives.** Let
+$1 \le p \le \infty$, and suppose that the smooth-representable elements are dense in
+$W^{1,p}(\Omega)$. Let $T, T' : W^{1,p}(\Omega) \to L^p(\sigma)$ be bounded operators with
+$Tu = v$ and $T'u = v$ $\sigma$-almost everywhere whenever $u \in W^{1,p}(\Omega)$,
+$v : \mathbb{R}^N \to \mathbb{R}$ is smooth with compact support, and $u = v$ almost everywhere
+on $\Omega$. Then $T = T'$. -/
 theorem ext_of_forall_ae_eq (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     {T T' : SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ}
     (hT : ∀ (u : SobolevEuclidean N 1 p Ω) (v : 𝔼 → ℝ), ContDiff ℝ ∞ v → HasCompactSupport v →
@@ -624,8 +741,12 @@ theorem ext_of_forall_ae_eq (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     fun u ⟨v, hv, hvc, huv⟩ ↦ Lp.ext ((hT u v hv hvc huv).trans (hT' u v hv hvc huv).symm)
   exact ContinuousLinearMap.ext fun u ↦ congrFun h u
 
-/-- **Uniqueness of the trace**: a bounded operator `T' : W^{1,p}(Ω) →L L^p(σ)` restricting
-every smooth compactly supported representative is `traceL`. -/
+/-- **Uniqueness of the trace.** Suppose that the boundary data have a transversal field, that
+$1 \le p < \infty$, and that the smooth-representable elements are dense in $W^{1,p}(\Omega)$.
+Let $T' : W^{1,p}(\Omega) \to L^p(\sigma)$ be a bounded operator with $T'u = v$ $\sigma$-almost
+everywhere whenever $v : \mathbb{R}^N \to \mathbb{R}$ is smooth with compact support and equal
+to $u \in W^{1,p}(\Omega)$ almost everywhere on $\Omega$. Then $T'$ is the trace operator
+`BoundaryData.traceL`. -/
 theorem traceL_unique (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     {T' : SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ}
@@ -634,21 +755,36 @@ theorem traceL_unique (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     T' = B.traceL hw p hp :=
   B.ext_of_forall_ae_eq hd hT' fun u _ hv hvc huv ↦ B.traceL_ae_eq_of_contDiff hw hp hd u hv hvc huv
 
-/-- **Two trace families over the same boundary data agree** at every exponent with smooth
-density: their `traceL_ae_eq` fields both restrict smooth representatives. In particular the
-two routes to the trace of a convex polygon agree. -/
+/-- **Two trace families agree.** Let $\mathcal{T}$ and $\mathcal{T}'$ be two trace families
+(`BoundaryData.TraceFamily`) over the same boundary data, and let $1 \le p < \infty$ be an
+exponent at which the smooth-representable elements are dense in $W^{1,p}(\Omega)$. Then the
+trace operators of $\mathcal{T}$ and $\mathcal{T}'$ at $p$ are equal.
+
+Both operators restrict the smooth representatives by the field
+`BoundaryData.TraceFamily.traceL_ae_eq`, so `BoundaryData.ext_of_forall_ae_eq` applies. For a
+convex polygon, this shows that the two constructions of the trace agree
+(`Triangulation.traceFamily_of_convex_traceL`). -/
 theorem TraceFamily.traceL_eq_of_hasSmoothDensity (𝒯 𝒯' : B.TraceFamily) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) : 𝒯.traceL p hp = 𝒯'.traceL p hp :=
   B.ext_of_forall_ae_eq hd
     (fun u v hv _ huv ↦ 𝒯.traceL_ae_eq p hp u v huv hv.continuous.continuousOn)
     (fun u v hv _ huv ↦ 𝒯'.traceL_ae_eq p hp u v huv hv.continuous.continuousOn)
 
-/-- **The trace of a function continuous up to the boundary is its restriction** (Evans §5.5
-Theorem 1 (ii), Atkinson–Han Theorem 7.3.10 (a)): under `HasUniformSmoothDensity`, for
-`u ∈ W^{1,p}(Ω)` with a representative `ũ` continuous on `closure Ω`, `T u = ũ` `σ`-a.e. The
-approximants `vₙ` of the uniform density predicate satisfy `T wₙ = vₙ` on `∂Ω`
-(`traceL_ae_eq_of_contDiff`), `T wₙ → T u` in `L^p(σ)` by continuity, and `vₙ → ũ` uniformly on
-`closure Ω ⊇ ∂Ω`, hence in `L^p(σ)` (`σ` finite); limits in `L^p(σ)` are unique. -/
+/-- **The trace of a function continuous up to the boundary is its restriction.** Suppose that the
+boundary data have a transversal field, that $1 \le p < \infty$, that the smooth-representable
+elements are dense in $W^{1,p}(\Omega)$ (`SobolevEuclidean.HasSmoothDensity`), and that every
+element of $W^{1,p}(\Omega)$ with a representative continuous on $\overline{\Omega}$ is a limit
+of smooth functions in $W^{1,p}(\Omega)$ and uniformly on $\overline{\Omega}$
+(`SobolevEuclidean.HasUniformSmoothDensity`). Let $u \in W^{1,p}(\Omega)$, and let
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\overline{\Omega}$ and equal to $u$
+almost everywhere on $\Omega$. Then $Tu = \tilde u$ $\sigma$-almost everywhere. This is Evans,
+*Partial Differential Equations*, §5.5, Theorem 1(ii), and [han2009theoretical] Theorem
+7.3.10(a).
+
+The approximants $v_n$ have the traces $v_n$ (`BoundaryData.traceL_ae_eq_of_contDiff`). These
+traces converge to $Tu$ in $L^p(\sigma)$ because $T$ is continuous, and to $\tilde u$ because
+$v_n \to \tilde u$ uniformly on $\overline{\Omega} \supseteq \partial\Omega$ and $\sigma$ is
+finite. -/
 theorem traceL_ae_eq_of_continuousOn (hw : B.HasTransversalField) (hp : p ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     (hdu : SobolevEuclidean.HasUniformSmoothDensity N p Ω) (u : SobolevEuclidean N 1 p Ω)
@@ -694,9 +830,15 @@ end TraceL
 
 section Green
 
-/-- **Green's formula for smooth-representable elements**: the classical Green formula
-`BoundaryData.integral_fderiv_mul_add_eq` read through the smooth representatives, at any two
-exponents. -/
+/-- **Green's formula for smooth-representable elements.** Suppose that the boundary data have a
+transversal field, that $1 \le p, q < \infty$, and that the smooth-representable elements are
+dense in $W^{1,p}(\Omega)$ and in $W^{1,q}(\Omega)$. Let $u \in W^{1,p}(\Omega)$ and
+$v \in W^{1,q}(\Omega)$ be in the subspaces `SobolevEuclidean.smoothRestrictions`, and let $i$
+be a coordinate index. Then $$\int_\Omega \partial_i u \, v \, dx + \int_\Omega u \, \partial_i
+v \, dx = \int Tu \, Tv \, \nu_i \, d\sigma.$$
+
+The exponents need not be conjugate. The formula is the classical Green formula
+`BoundaryData.integral_fderiv_mul_add_eq` for the smooth representatives. -/
 theorem green_of_mem_smoothRestrictions (hw : B.HasTransversalField) {p q : ℝ≥0∞}
     [Fact (1 ≤ p)] [Fact (1 ≤ q)] (hp : p ≠ ⊤) (hq : q ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) (hd' : SobolevEuclidean.HasSmoothDensity N q Ω)
@@ -732,13 +874,16 @@ theorem green_of_mem_smoothRestrictions (hw : B.HasTransversalField) {p q : ℝ�
   rw [e1, e2, e3]
   exact h
 
-/-- **Green's formula by density** (Atkinson–Han Proposition 7.6.1, (7.6.3); Grisvard Theorem
-1.5.3.1): for conjugate exponents `1 < p, q < ∞` with smooth density, `u ∈ W^{1,p}(Ω)`,
-`v ∈ W^{1,q}(Ω)` and `i`,
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ (Tu)(Tv) νᵢ dσ`.
-Both sides are continuous in `(u, v)` (the `L^p × L^q` pairing `continuous_integral_mul_prod`
-composed with `weakDerivL`, `fnL`, `traceL` and `mulNormalL`), and they agree on the dense set
-of smooth-representable pairs (`green_of_mem_smoothRestrictions`). -/
+/-- **Green's formula.** Suppose that the boundary data have a transversal field, that $p$ and $q$
+are finite conjugate exponents, $1/p + 1/q = 1$ (so $1 < p, q < \infty$), and that the
+smooth-representable elements are dense in $W^{1,p}(\Omega)$ and in $W^{1,q}(\Omega)$. Then for
+$u \in W^{1,p}(\Omega)$, $v \in W^{1,q}(\Omega)$ and each coordinate index $i$, $$\int_\Omega
+\partial_i u \, v \, dx + \int_\Omega u \, \partial_i v \, dx = \int Tu \, Tv \, \nu_i \,
+d\sigma.$$ This is [han2009theoretical] Proposition 7.6.1 and (7.6.3), and
+[grisvard2011elliptic] Theorem 1.5.3.1.
+
+Both sides are continuous in $(u, v)$, and they agree on the dense set of smooth-representable
+pairs (`BoundaryData.green_of_mem_smoothRestrictions`). -/
 theorem green_of_hasSmoothDensity (hw : B.HasTransversalField) (p q : ℝ≥0∞) [Fact (1 ≤ p)]
     [Fact (1 ≤ q)] [p.HolderConjugate q] (hp : p ≠ ⊤) (hq : q ≠ ⊤)
     (hd : SobolevEuclidean.HasSmoothDensity N p Ω) (hd' : SobolevEuclidean.HasSmoothDensity N q Ω)
@@ -780,12 +925,18 @@ theorem green_of_hasSmoothDensity (hw : B.HasTransversalField) (p q : ℝ≥0∞
     rw [hy]
     ring
 
-/-- **Green's formula against a fixed compactly supported `C¹` test function, at every
-`1 ≤ p < ∞`**: for `u ∈ W^{1,p}(Ω)`, `φ ∈ C¹_c(ℝ^N)` and `i`,
-`∫_Ω ∂ᵢu φ + ∫_Ω u ∂ᵢφ = ∫ (Tu) φ νᵢ dσ`.
-The density argument of `green_of_hasSmoothDensity` with only `u` approximated: the fixed bounded
-`φ`, `∂ᵢφ`, `φ νᵢ` lie in `L^{p'}` of the finite measures (`p'` the conjugate exponent, `∞` at
-`p = 1`), so every term is continuous in `u`. -/
+/-- **Green's formula against a $C^1$ test function.** Suppose that the boundary data have a
+transversal field, that $1 \le p < \infty$, and that the smooth-representable elements are dense
+in $W^{1,p}(\Omega)$. Let $u \in W^{1,p}(\Omega)$, let $\varphi : \mathbb{R}^N \to \mathbb{R}$
+be of class $C^1$ with compact support, and let $i$ be a coordinate index. Then $$\int_\Omega
+\partial_i u \, \varphi \, dx + \int_\Omega u \, \partial_i \varphi \, dx = \int Tu \, \varphi
+\, \nu_i \, d\sigma.$$
+
+Unlike `BoundaryData.green_of_hasSmoothDensity`, this holds at $p = 1$. Only $u$ is
+approximated: the bounded functions $\varphi$, $\partial_i \varphi$ and $\varphi \nu_i$ lie in
+$L^{p'}$ of the finite measures, with $p'$ the conjugate exponent ($p' = \infty$ at $p = 1$), so
+every term is continuous in $u$. The derivative $\partial_i \varphi$ is
+`fderiv ℝ φ x (EuclideanSpace.single i 1)`. -/
 theorem green_contDiff_of_hasSmoothDensity (hw : B.HasTransversalField) (p : ℝ≥0∞)
     [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     (u : SobolevEuclidean N 1 p Ω) {φ : 𝔼 → ℝ} (hφ : ContDiff ℝ 1 φ) (hφc : HasCompactSupport φ)
@@ -874,12 +1025,15 @@ end Green
 
 /-! ### The trace family -/
 
-/-- **The trace family of a domain with a transversal field and smooth density at every
-exponent**: `traceL p hp := B.traceL hw p hp`, the restriction property from
-`traceL_ae_eq_of_continuousOn`, Green's formula from `green_of_hasSmoothDensity` and
-`green_contDiff_of_hasSmoothDensity`. The instances `IsContDiffDomain.traceFamily` and
-`EuclideanSpace.triangleTraceFamily` are this constructor with the density theorems of
-`Boundary/Density.lean`. -/
+/-- **The trace family** of boundary data with a transversal field, when at every exponent
+$1 \le p < \infty$ the smooth-representable elements are dense in $W^{1,p}(\Omega)$ and the
+uniform approximation `SobolevEuclidean.HasUniformSmoothDensity` holds. Its trace operator at
+$p$ is `BoundaryData.traceL`, its restriction property is
+`BoundaryData.traceL_ae_eq_of_continuousOn`, and its Green formulas are
+`BoundaryData.green_of_hasSmoothDensity` and `BoundaryData.green_contDiff_of_hasSmoothDensity`.
+
+The trace families `IsContDiffDomain.traceFamily` and `EuclideanSpace.triangleTraceFamily` are
+this construction with the density theorems of `Numlib.Analysis.Sobolev.Boundary.Density`. -/
 def traceFamily (hw : B.HasTransversalField)
     (hd : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → SobolevEuclidean.HasSmoothDensity N p Ω)
     (hdu : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → SobolevEuclidean.HasUniformSmoothDensity N p Ω) :
@@ -891,7 +1045,8 @@ def traceFamily (hw : B.HasTransversalField)
   green_contDiff p _ hp u _ hφ hφc i :=
     B.green_contDiff_of_hasSmoothDensity hw p hp (hd p hp) u hφ hφc i
 
-/-- The trace of the trace family is `traceL`. -/
+/-- The trace operator of `BoundaryData.traceFamily` at the exponent $p$ is `BoundaryData.traceL` at
+$p$. -/
 @[simp]
 theorem traceFamily_traceL (hw : B.HasTransversalField)
     (hd : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → SobolevEuclidean.HasSmoothDensity N p Ω)
@@ -900,17 +1055,23 @@ theorem traceFamily_traceL (hw : B.HasTransversalField)
     (B.traceFamily hw hd hdu).traceL p hp = B.traceL hw p hp :=
   rfl
 
-/-! ### Nečas's inequality for every `W^{1,p}` function, and compactness of the trace -/
+/-! ### Nečas's inequality for every $W^{1,p}$ function, and compactness of the trace -/
 
 section Compact
 
-/-- **Nečas's inequality for every `W^{1,p}` function** (Atkinson–Han Theorem 7.3.10 (c), the
-estimate behind compactness): there is `C` such that for every `u ∈ W^{1,p}(Ω)`,
-`∫ |Tu|^p dσ ≤ C (‖u‖_p^p + ‖u‖_p^{p−1} ‖∇u‖_p)`
-with `‖u‖_p = ‖fnL u‖` and `‖∇u‖_p = gradNorm u`. For smooth-representable `u` it is
-`integral_abs_rpow_le_of_contDiff` after Hölder on the mixed term
-(`integral_norm_rpow_sub_one_mul_norm_le`); both sides are continuous in `u` and the
-smooth-representable elements are dense. -/
+/-- **Nečas's inequality for every $W^{1,p}$ function.** Suppose that the boundary data have a
+transversal field, that $1 \le p < \infty$, and that the smooth-representable elements are dense
+in $W^{1,p}(\Omega)$. Then there is a constant $C \ge 0$ such that $$\int |Tu|^p \, d\sigma \le
+C \big( \|u\|_{L^p(\Omega)}^p + \|u\|_{L^p(\Omega)}^{p-1} \|\nabla u\|_{L^p(\Omega)} \big)$$ for
+every $u \in W^{1,p}(\Omega)$. This is the estimate behind the compactness in
+[han2009theoretical] Theorem 7.3.10(c).
+
+The norm $\|u\|_{L^p(\Omega)}$ is the norm of `SobolevMultiIndex.fnL` applied to $u$, and
+$\|\nabla u\|_{L^p(\Omega)}$ is `SobolevMultiIndex.gradNorm u`, the $\ell^p$ combination of the
+$L^p$ norms of the partial derivatives. For smooth-representable $u$ the inequality is
+`BoundaryData.integral_abs_rpow_le_of_contDiff` with Hölder's inequality on the mixed term
+(`MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le`). Both sides are continuous in $u$, and
+the smooth-representable elements are dense. -/
 theorem integral_abs_traceL_rpow_le (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) (hd : SobolevEuclidean.HasSmoothDensity N p Ω) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevEuclidean N 1 p Ω,
@@ -996,17 +1157,20 @@ theorem integral_abs_traceL_rpow_le (hw : B.HasTransversalField) (p : ℝ≥0∞
   refine isClosed_le hL (continuous_const.mul ((hfnc.rpow_const fun _ ↦ Or.inr hP0.le).add
     ((hfnc.rpow_const fun _ ↦ Or.inr (by linarith)).mul SobolevEuclidean.continuous_gradNorm)))
 
-/-- **Compactness of the trace** (Atkinson–Han Theorem 7.3.10 (c)): for `1 < p < ∞`, if the
-embedding `W^{1,p}(Ω) → L^p(Ω)` is compact (Rellich–Kondrachov,
-`SobolevEuclidean.isCompactEmbedding_fnL` on bounded `C¹` chart domains), the trace
-`T : W^{1,p}(Ω) →L L^p(σ)` is a compact operator. Given a sequence in the unit ball, extract a
-subsequence whose `L^p(Ω)` parts converge; Nečas's inequality `integral_abs_traceL_rpow_le`
-applied to the differences bounds `‖T(uₙ − uₘ)‖` by `(C (t^p + 2 t^{p−1}))^{1/p}` with
-`t = ‖uₙ − uₘ‖_p → 0`, so the traces are Cauchy in the complete `L^p(σ)`.
+/-- **Compactness of the trace.** Suppose that the boundary data have a transversal field, that
+$1 < p < \infty$, that the smooth-representable elements are dense in $W^{1,p}(\Omega)$, and
+that the embedding $W^{1,p}(\Omega) \to L^p(\Omega)$ is compact. Then the trace
+$T : W^{1,p}(\Omega) \to L^p(\sigma)$ is a compact operator. This is [han2009theoretical]
+Theorem 7.3.10(c) for $p > 1$.
 
-The hypothesis `1 < p` is necessary: at `p = 1` the modulus `C (t + 2)` does not vanish at
-`t = 0`, and indeed the trace `W^{1,1}(Ω) → L¹(∂Ω)` is onto (Gagliardo), hence not compact — the
-book's `1 ≤ p` in (c) is an erratum. -/
+The compactness of the embedding is the Rellich–Kondrachov theorem,
+`SobolevEuclidean.isCompactEmbedding_fnL` on bounded $C^1$ chart domains. For a sequence in the
+unit ball, a subsequence converges in $L^p(\Omega)$, and Nečas's inequality
+`BoundaryData.integral_abs_traceL_rpow_le` gives $\|T(u_n - u_m)\| \le (C (t^p + 2
+t^{p-1}))^{1/p}$ with $t = \|u_n - u_m\|_{L^p(\Omega)} \to 0$, so the traces form a Cauchy
+sequence. [han2009theoretical] states (c) for $1 \le p < \infty$, but the hypothesis $p > 1$ is
+necessary: at $p = 1$ the bound $C (t + 2)$ does not tend to zero, and the trace
+$W^{1,1}(\Omega) \to L^1(\partial\Omega)$ is onto (Gagliardo), so it is not compact. -/
 theorem isCompactOperator_traceL (hw : B.HasTransversalField) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) (hp1 : 1 < p) (hd : SobolevEuclidean.HasSmoothDensity N p Ω)
     (hR : IsCompactEmbedding

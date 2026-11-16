@@ -870,60 +870,81 @@ import Numlib.Variational.WeakMinimization
 /-!
 # Numlib
 
-The **backbone** of a formal library of numerical analysis: general mathematics, named for its
-subject and stated at the weakest hypotheses that carry the proof. It is meant to be read and used
-without reference to any particular text, so a doc comment here names its source in full and never
-by number.
+`Numlib` is the backbone of a Lean library of numerical analysis, built on Mathlib. It contains the
+general definitions and the proofs of the library, organized by mathematical subject and not by
+textbook. Each theorem is stated at the weakest hypotheses that its proof uses: a result that a
+textbook proves for $\mathbb{R}^n$ appears here for a Banach space, an inner product space or a
+topological vector space when its proof allows it. One part of the backbone is general mathematics
+that Mathlib does not have, placed under the module path where it would go in Mathlib, such as
+`Numlib.Analysis` or `Numlib.LinearAlgebra`. The other part treats the subjects of numerical
+analysis: conditioning and rounding errors, direct and iterative solvers for linear systems,
+eigenvalue problems, nonlinear equations, optimization, approximation and quadrature, variational
+methods, and discretizations of differential and integral equations.
 
-The other layer is the sibling library `NumlibSurface`, one directory per textbook, aligned to that
-text section by section. A surface proves almost nothing of its own: each declaration instantiates a
-backbone result at the book's own hypotheses, so a surface reads as an integration test of this
-library against a published account of the subject. If a surface result does not specialize
-something, that is a demand on the backbone rather than licence to do new mathematics there.
+The surface library `NumlibSurface` stands on the backbone. It has one library for each of ten
+source texts, and it restates the numbered results of each text in the terms of that text, mostly as
+specializations of backbone results. The backbone and the surface are two separate Lake libraries:
+the surface imports the backbone, and no module of `Numlib` imports a module of `NumlibSurface`.
+This module imports every module of the backbone and adds no declaration.
 
-The two are separate Lake libraries so that the dependency cannot run the wrong way: `Numlib`
-imports no surface, and nothing here may be justified by a book's own numbering.
+## Contents
 
-## The backbone
+| Area | Module prefix | Subject |
+|---|---|---|
+| Algebra | `Numlib.Algebra` | linear recurrences, polynomials and their roots |
+| Analysis | `Numlib.Analysis` | normed spaces, convexity, Fourier analysis, Sobolev spaces, PDE |
+| Combinatorics | `Numlib.Combinatorics` | graph colouring, independent sets, components |
+| Data | `Numlib.Data` | small facts about `Fin`, finite sets, lists and matrices |
+| Geometry | `Numlib.Geometry` | shape of triangles, triangulations of a plane domain |
+| Linear algebra | `Numlib.LinearAlgebra` | matrix factorizations, sparse matrices, tensors |
+| Measure theory | `Numlib.MeasureTheory` | $L^p$ spaces and integrals |
+| Order | `Numlib.Order` | extended real numbers, Galois connections |
+| Ring theory | `Numlib.RingTheory` | Chebyshev polynomials, Horner's scheme |
+| Topology | `Numlib.Topology` | Arzelà–Ascoli, compactness, infinite sums |
+| Conditioning | `Numlib.Conditioning` | condition numbers, stability and convergence |
+| Floating point | `Numlib.FloatingPoint` | the rounding model, rounding error analysis |
+| Direct methods | `Numlib.Direct` | substitution, refinement, structured systems |
+| Stationary methods | `Numlib.Stationary` | splittings, Jacobi, Gauss–Seidel, SOR |
+| Projection methods | `Numlib.Projection` | specifications and optimality |
+| Krylov methods | `Numlib.Krylov` | Arnoldi, Lanczos, CG, MINRES, GMRES |
+| Preconditioning | `Numlib.Preconditioner` | incomplete LU, polynomial, constraint |
+| Multigrid | `Numlib.Multigrid` | two-grid and full multigrid |
+| Domain decomposition | `Numlib.DomainDecomposition` | Schur complements, Schwarz theory |
+| Eigenvalue problems | `Numlib.Eigen` | perturbation, pencils, QR algorithm |
+| Nonlinear equations | `Numlib.Nonlinear` | fixed points, Newton and secant methods |
+| Optimization | `Numlib.Optimization` | descent, trust regions, complexity, constraints |
+| Approximation | `Numlib.Approximation` | interpolation, splines, quadrature |
+| Variational methods | `Numlib.Variational` | Lax–Milgram, Galerkin, variational inequalities |
+| Finite elements | `Numlib.FiniteElement` | Lagrange elements, interpolation errors |
+| Differential equations | `Numlib.ODE` | one-step, multistep, Runge–Kutta methods |
+| Finite differences | `Numlib.FiniteDifference` | difference schemes, Lax equivalence |
+| Integral equations | `Numlib.IntegralEquations` | second-kind equations, Nyström methods |
+| Probability | `Numlib.Probability` | Monte Carlo integration |
 
-The layer is organized by subject, not by book. The **foundations** are Mathlib-shaped material
-that Mathlib lacks, on the paths where each would go if contributed: `Numlib.Analysis` (with the
-general convex analysis `Numlib.Analysis.Convex`, at four levels of generality from a bare real
-vector space to Euclidean space, and the Sobolev, Fourier and wavelet material),
-`Numlib.LinearAlgebra`, `Numlib.RingTheory`, `Numlib.Topology`, `Numlib.Order`, `Numlib.Algebra`,
-`Numlib.Combinatorics` and `Numlib.Geometry`. The **subjects** stand on them: `Numlib.Conditioning`
-for well-posedness, condition numbers, the consistency–stability–convergence vocabulary and the
-perturbation theory of linear systems; `Numlib.FloatingPoint` for the relational rounding model
-and the number systems that instantiate it; then the solvers for `A x = b` in their import order —
-`Numlib.Direct`, `Numlib.Stationary` and `Numlib.Projection` (the specifications every Krylov
-method instantiates), `Numlib.Krylov` for the Krylov spine, and above it `Numlib.Preconditioner`,
-`Numlib.Multigrid` and `Numlib.DomainDecomposition`; `Numlib.Eigen` for eigenvalue bounds and
-algorithms; `Numlib.Nonlinear` for fixed points, rootfinding and Newton's method;
-`Numlib.Optimization` for descent, line-search, quasi-Newton and constrained methods with the
-smooth first- and second-order theory; `Numlib.Approximation` for interpolation, quadrature and
-best approximation; `Numlib.Variational` for sesquilinear forms, Lax–Milgram, Galerkin and
-variational inequalities; `Numlib.ODE` for one-step, multistep and Runge–Kutta methods;
-`Numlib.FiniteDifference` for difference schemes and their stability; `Numlib.IntegralEquations`;
-and `Numlib.Probability` for what Monte Carlo integration needs.
+The first ten rows are general mathematics that extends Mathlib. The other rows are the subjects of
+numerical analysis.
 
-One boundary is worth stating. The *theory* of an extremum problem — optimality conditions,
-duality, existence for convex data — is `Numlib.Analysis.Convex.Extremum`, which sits in the
-middle of the convex library's import graph; iterative *methods* and the smooth nonconvex
-optimality theory are `Numlib.Optimization`. The dictionary between the two vocabularies
-(variational inequalities as normal-cone conditions, best approximation as a proximal map, saddle
-points) is where the older numerical modules and the convex library meet.
+## Conventions
 
-Two conventions run through it. **An iterate is specified by what it optimizes, not by the algorithm
-that computes it**, so a theorem about "MINRES" is a theorem about any sequence satisfying the
-minimal-residual specification, and MINRES, GMRES, CR and MINRES-QLP all inherit it. And **a
-spectral hypothesis is a quadratic-form bound** — `LinearMap.IsSymmetricBoundedBy A lmin lmax`
-rather than a list of eigenvalues — which passes to compressions, so the Chebyshev-type bounds are
-proved in an arbitrary inner product space with no functional calculus and no finite dimension.
+* An iterate is specified by the property that it has, not by the algorithm that computes it. For
+  example, `Krylov.IsMinResidualIterate` says that $x$ minimizes the residual norm $\|b - Ax\|$ over
+  $x_0 + \mathcal{K}_m(A, r_0)$, where $r_0 = b - Ax_0$. A theorem about this specification holds
+  for GMRES, MINRES, the conjugate residual method and every other method whose iterates satisfy it.
+* A spectral hypothesis is a bound on a quadratic form, not a list of eigenvalues.
+  `LinearMap.IsSymmetricBoundedBy A lmin lmax` says that $A$ is symmetric and $l_{\min} \|x\|^2 \le
+  \operatorname{Re} \langle Ax, x \rangle \le l_{\max} \|x\|^2$ for all $x$. Such a bound passes to
+  the compression of $A$ to a subspace, so the Chebyshev-type convergence bounds of
+  `Numlib.Krylov.Convergence.CG` hold in any inner product space, without a functional calculus and
+  without finite dimension.
+* A backbone declaration is named for its mathematical content and has no item label of a source.
+  Where it follows a source, its doc comment cites the source at the end of the statement.
 
-## What stands on it
+## Implementation notes
 
-The four surfaces of `NumlibSurface` — Saad's *Iterative Methods for Sparse Linear Systems*, Fong
-and Saunders' *CG versus MINRES*, Atkinson and Han's *Theoretical Numerical Analysis*, and
-Rockafellar's *Convex Analysis* — are that library's index, and each names its own sources. What a
-backbone module cites, it cites in full, in its own references section.
+* The theory of an extremum problem (optimality conditions, duality, existence for convex data) is
+  in the modules under `Numlib.Analysis.Convex.Extremum`. Iterative methods for optimization and the
+  optimality theory of smooth nonconvex problems are in `Numlib.Optimization`. The correspondence
+  between the two vocabularies (variational inequalities as normal-cone conditions, best
+  approximation as a proximal mapping, saddle points) is in modules such as
+  `Numlib.Variational.Inequality.NormalCone` and `Numlib.Analysis.Convex.Extremum.Projection`.
 -/

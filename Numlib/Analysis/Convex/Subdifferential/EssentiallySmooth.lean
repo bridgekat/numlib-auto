@@ -7,32 +7,38 @@ import Numlib.Analysis.Convex.Subdifferential.Reconstruction
 /-!
 # Essential smoothness
 
-A convex function is *essentially smooth* when the interior `C` of its effective domain is
-non-empty, `f` is differentiable throughout `C`, and `‖∇f xᵢ‖ → ∞` along every sequence in `C`
-approaching a point outside `C`. For a closed proper convex function on a finite-dimensional inner
-product space this happens exactly when the subdifferential is single-valued, and in that case
-`∂f` is the gradient on `C` and empty elsewhere — so the multivalued object `∂f` carries precisely
-the information of the classical gradient mapping. That is what makes the Legendre transformation
-work.
+Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+convex, and let $C = \operatorname{int}(\operatorname{dom} f)$. The function $f$ is **essentially
+smooth** when (a) $C$ is nonempty, (b) $f$ is differentiable at every point of $C$, and (c)
+$\|\nabla f(x_i)\| \to \infty$ for every sequence $(x_i)$ in $C$ that converges to a point outside
+$C$. For a closed proper convex function, this holds exactly when the subdifferential is
+single-valued, that is, when every $\partial f(x)$ has at most one element. In that case
+$\partial f(x) = \{\nabla f(x)\}$ for $x \in C$ and $\partial f(x) = \emptyset$ otherwise, so the
+multivalued map $\partial f$ carries exactly the information of the classical gradient map. This
+makes the Legendre transformation work. The presentation follows [rockafellar1970convex], §26.
+
+## Main definitions
+
+* `ConvexAnalysis.EssentiallySmooth`: conditions (a), (b) and (c).
 
 ## Main results
 
-* `EssentiallySmooth f` — the three conditions above, with the gradient written as
-  `fderiv ℝ (fun z => (f z).toReal)`.
-* `domSubdifferential_eq_interior_convexDom_of_essentiallySmooth` — `dom ∂f = int (dom f)`.
-* `subsingleton_subdifferential_iff_essentiallySmooth` — essential smoothness is exactly
-  single-valuedness of `∂f` ([rockafellar1970convex] Theorem 26.1).
+* `ConvexAnalysis.domSubdifferential_eq_interior_convexDom_of_essentiallySmooth`: for an essentially
+  smooth closed proper convex function, $\operatorname{dom} \partial f =
+  \operatorname{int}(\operatorname{dom} f)$.
+* `ConvexAnalysis.subsingleton_subdifferential_iff_essentiallySmooth`: a closed proper convex
+  function is essentially smooth if and only if its subdifferential is single-valued. This is
+  Theorem 26.1 of [rockafellar1970convex].
 
 ## Implementation notes
 
-Condition (c) is stated at every point outside `C`, where the book states it at boundary points of
-`C`. Since `C` is open the two readings agree, and this one avoids re-deriving boundaryness at
-every use. Gradients are compared through their Riesz representatives, since `∂f x` for the pairing
-`innerₗ E` is a set of vectors while `fderiv` lands in `StrongDual ℝ E`.
-
-## References
-
-* [rockafellar1970convex] §26.
+* Condition (c) is stated at every point outside $C$, while [rockafellar1970convex] states it at the
+  boundary points of $C$. A sequence in $C$ can converge only to a point of the closure of $C$, and
+  $C$ is open, so the two forms agree. The form used here avoids a proof that the point is a
+  boundary point at every use.
+* The gradient is the Fréchet derivative `fderiv ℝ (fun z => (f z).toReal)`, an element of
+  `StrongDual ℝ E`. The subdifferential for the pairing `innerₗ E` is a set of vectors, so gradients
+  are compared with subgradients through the Riesz isomorphism `InnerProductSpace.toDual ℝ E`.
 -/
 
 namespace ConvexAnalysis
@@ -44,22 +50,38 @@ section EssentiallySmooth
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x : E}
 
-/-- Essential smoothness. Writing `C = int (dom f)`: (a) `C` is non-empty, (b) `f` is
-differentiable throughout `C`, and (c) `‖∇f xᵢ‖ → ∞` for every sequence in `C` converging to a
-point outside `C`. A finite differentiable convex function on the whole space is essentially
-smooth, (c) holding vacuously. -/
+/-- **Essential smoothness.** Let $E$ be a finite-dimensional real inner product space, let
+$f : E \to [-\infty, +\infty]$, and let $C = \operatorname{int}(\operatorname{dom} f)$. Then $f$
+is **essentially smooth** if
+
+* (a) $C$ is nonempty;
+* (b) $f$ is differentiable at every point of $C$;
+* (c) for every point $z \notin C$ and every sequence $(z_i)$ in $C$ with $z_i \to z$,
+  $\|\nabla f(z_i)\| \to \infty$.
+
+A convex function that is finite and differentiable on all of $E$ is essentially smooth, since
+then condition (c) holds vacuously.
+
+Condition (c) is stated for all points outside $C$, not only for boundary points of $C$; the two
+forms agree because $C$ is open. The norm in (c) is the operator norm of
+`fderiv ℝ (fun w => (f w).toReal) (zs i)`, and differentiability is
+`ConvexAnalysis.DifferentiableAtFn`. -/
 structure EssentiallySmooth (f : E → EReal) : Prop where
-  /-- (a) The effective domain has non-empty interior. -/
+  /-- Condition (a): the interior of the effective domain is nonempty. -/
   interior_convexDom_nonempty : (interior (convexDom f)).Nonempty
-  /-- (b) `f` is differentiable at every interior point of its effective domain. -/
+  /-- Condition (b): $f$ is differentiable at every interior point of its effective domain. -/
   differentiableAtFn : ∀ ⦃z : E⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z
-  /-- (c) The gradient blows up along every approach to a point outside the interior. -/
+  /-- Condition (c): for every point $z$ outside $\operatorname{int}(\operatorname{dom} f)$ and
+  every sequence $(z_i)$ in $\operatorname{int}(\operatorname{dom} f)$ with $z_i \to z$,
+  $\|\nabla f(z_i)\| \to \infty$. -/
   tendsto_norm_fderiv : ∀ ⦃z : E⦄, z ∉ interior (convexDom f) → ∀ zs : ℕ → E,
     (∀ i, zs i ∈ interior (convexDom f)) → Tendsto zs atTop (𝓝 z) →
       Tendsto (fun i => ‖fderiv ℝ (fun w => (f w).toReal) (zs i)‖) atTop atTop
 
-/-- On the interior of the effective domain, an essentially smooth function has exactly one
-subgradient, namely its gradient. -/
+/-- Let $f$ be convex and essentially smooth, and let
+$x \in \operatorname{int}(\operatorname{dom} f)$. Then the gradient is the only subgradient at
+$x$: $\partial f(x) = \{\nabla f(x)\}$, where $\nabla f(x)$ is the vector that represents the
+Fréchet derivative. -/
 theorem subdifferential_eq_singleton_of_essentiallySmooth (hf : ConvexFn f)
     (hes : EssentiallySmooth f) (hx : x ∈ interior (convexDom f)) :
     subdifferential (innerₗ E) f x
@@ -67,9 +89,11 @@ theorem subdifferential_eq_singleton_of_essentiallySmooth (hf : ConvexFn f)
   subdifferential_innerL_eq_singleton hf
     (DifferentiableAtFn.hasGradientAtFn_fderiv (hes.differentiableAtFn hx))
 
-/-- Off the interior of the effective domain, an essentially smooth closed proper convex function
-has *no* subgradient: a subgradient at `x` would force a sequence of gradients to converge, which
-condition (c) forbids. -/
+/-- Let $f$ be closed, proper, convex and essentially smooth, and let $x \notin
+\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(x) = \emptyset$.
+
+A subgradient at $x$ would give a sequence of gradients that converges, and condition (c)
+excludes this. -/
 theorem subdifferential_eq_empty_of_essentiallySmooth (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (hes : EssentiallySmooth f) (hx : x ∉ interior (convexDom f)) :
     subdifferential (innerₗ E) f x = ∅ := by
@@ -95,8 +119,11 @@ theorem subdifferential_eq_empty_of_essentiallySmooth (hf : ConvexFn f) (hp : Pr
   rw [tendsto_congr hnorm] at htop
   exact not_tendsto_atTop_of_tendsto_nhds (hvs.norm) htop
 
-/-- For an essentially smooth closed proper convex function, `dom ∂f` is exactly the interior of
-the effective domain. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let $f : E \to [-\infty, +\infty]$
+be closed, proper, convex and essentially smooth. Then the domain of the subdifferential is the
+interior of the effective domain:
+$$\operatorname{dom} \partial f = \operatorname{int}(\operatorname{dom} f).$$
+-/
 theorem domSubdifferential_eq_interior_convexDom_of_essentiallySmooth (hf : ConvexFn f)
     (hp : ProperConvex f)
     (hcl : ClosedConvex f) (hes : EssentiallySmooth f) :
@@ -112,7 +139,8 @@ theorem domSubdifferential_eq_interior_convexDom_of_essentiallySmooth (hf : Conv
     rw [subdifferential_eq_singleton_of_essentiallySmooth hf hes hz]
     exact Set.singleton_nonempty _
 
-/-- An essentially smooth closed proper convex function has a single-valued subdifferential. -/
+/-- Let $f$ be closed, proper, convex and essentially smooth. Then $\partial f(x)$ has at most one
+element, for every $x \in E$. -/
 theorem subsingleton_subdifferential_of_essentiallySmooth (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (hes : EssentiallySmooth f) (x : E) :
     (subdifferential (innerₗ E) f x).Subsingleton := by
@@ -122,9 +150,11 @@ theorem subsingleton_subdifferential_of_essentiallySmooth (hf : ConvexFn f) (hp 
   · rw [subdifferential_eq_empty_of_essentiallySmooth hf hp hcl hes hx]
     exact Set.subsingleton_empty
 
-/-- A single-valued subdifferential is a gradient on the relative interior: a subgradient exists
-at every point of `ri (dom f)`, single-valuedness makes it the only one, and a lone subgradient is
-a gradient. -/
+/-- Let $f$ be proper and convex, and let $\partial f(z)$ have at most one element for every $z$.
+Then $f$ is differentiable at every point $x \in \operatorname{ri}(\operatorname{dom} f)$.
+
+A subgradient exists at every point of $\operatorname{ri}(\operatorname{dom} f)$,
+single-valuedness makes it the only one, and a unique subgradient is a gradient. -/
 theorem differentiableAtFn_of_subsingleton_subdifferential (hf : ConvexFn f) (hp : ProperConvex f)
     (h : ∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton) (hx : x ∈ ri (convexDom f)) :
     DifferentiableAtFn f x := by
@@ -132,10 +162,13 @@ theorem differentiableAtFn_of_subsingleton_subdifferential (hf : ConvexFn f) (hp
   exact ⟨_, hasGradientAtFn_toDual_of_subdifferential_eq_singleton hf hp
     (Set.eq_singleton_iff_unique_mem.2 ⟨hv, fun z hz => h x hz hv⟩)⟩
 
-/-- **The substantive half**: a closed proper convex function with a single-valued
-subdifferential is essentially smooth. Conditions (a) and (b) hold because a gradient exists only
-at interior points, forcing `ri (dom f) = int (dom f)`; condition (c) holds because a bounded
-subsequence of gradients would converge to a subgradient at the limit point. -/
+/-- Let $f$ be closed, proper and convex, and let $\partial f(z)$ have at most one element for every
+$z$. Then $f$ is essentially smooth.
+
+Conditions (a) and (b) hold because a gradient exists only at interior points, which forces
+$\operatorname{ri}(\operatorname{dom} f) = \operatorname{int}(\operatorname{dom} f)$. Condition
+(c) holds because a bounded subsequence of gradients would converge to a subgradient at the
+limit point. -/
 theorem essentiallySmooth_of_subsingleton_subdifferential (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (h : ∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton) :
     EssentiallySmooth f := by
@@ -172,8 +205,12 @@ theorem essentiallySmooth_of_subsingleton_subdifferential (hf : ConvexFn f) (hp 
   exact hz (hasGradientAtFn_toDual_of_subdifferential_eq_singleton hf hp
     (Set.eq_singleton_iff_unique_mem.2 ⟨hsub, fun u hu => h z hu hsub⟩)).mem_interior_convexDom
 
-/-- For a closed proper convex function, single-valuedness of the subdifferential and essential
-smoothness are the same thing. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let $f : E \to [-\infty, +\infty]$
+be closed, proper and convex. Then $\partial f$ is single-valued, that is, $\partial f(z)$ has
+at most one element for every $z \in E$, if and only if $f$ is essentially smooth.
+
+This is Theorem 26.1 of [rockafellar1970convex]. The subdifferential is taken for the inner
+product `innerₗ E`. -/
 theorem subsingleton_subdifferential_iff_essentiallySmooth (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) :
     (∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton) ↔ EssentiallySmooth f :=

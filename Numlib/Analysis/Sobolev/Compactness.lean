@@ -17,97 +17,123 @@ import Numlib.Topology.ContinuousMap.ArzelaAscoli
 /-!
 # The Rellich–Kondrachov theorem
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Theorem 9.16:
-for a bounded open `Ω ⊆ ℝ^N` of class `C¹`, the injections `W^{1,p}(Ω) ⊂ L^q(Ω)` for
-`q ∈ [1, p*)` when `p < N`, for `q ∈ [p, ∞)` when `p = N`, and `W^{1,p}(Ω) ⊂ C(Ω̄)` when `p > N`
-are compact; in particular `W^{1,p}(Ω) ⊂ L^p(Ω)` is compact. Compact embeddings are
-`IsCompactEmbedding` of `Numlib/Analysis/Normed/Operator/Embedding.lean`, along the inclusions
-`SobolevMultiIndex.toLpₗ` / `SobolevMultiIndex.toLpₗOn` and the trace map
-`SobolevEuclidean.toContinuousMapL` of `Numlib/Analysis/Sobolev/EmbeddingDomain.lean`.
+Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 \le p < \infty$, and for $p < N$ let $p^*$ be
+the Sobolev exponent, $1/p^* = 1/p - 1/N$. An injection between normed spaces is compact when it is
+a compact embedding: a bounded injective linear map that sends every bounded sequence to a sequence
+with a convergent subsequence. The **Rellich–Kondrachov theorem**, Theorem 9.16 of
+[brezis2011functional], says that for a bounded open set $\Omega$ of class $C^1$ the injections
+$$W^{1,p}(\Omega) \subset L^q(\Omega),\ q \in [1, p^*), \text{ if } p < N, \qquad
+W^{1,p}(\Omega) \subset L^q(\Omega),\ q \in [p, \infty), \text{ if } p = N,$$
+$$W^{1,p}(\Omega) \subset C(\overline{\Omega}) \text{ if } p > N$$
+are compact, and in particular that $W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact. This file
+proves these clauses.
 
-## The proof
+The file also proves several extensions. At $q = p$ no case distinction is needed:
+$W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact for every $1 \le p < \infty$, in every dimension,
+on every extension domain of finite measure. On $W_0^{1,p}(\Omega)$ the clauses of Theorem 9.16 hold
+for an arbitrary open set of finite measure, with no regularity of $\Omega$ (Remark 20 of Chapter 9
+of [brezis2011functional]); this gives the compactness of $H_0^1(\Omega) \subset L^2(\Omega)$ that
+the proofs of Theorems 9.23 and 9.31 use. At higher order, on an extension domain of finite measure,
+the injection $W^{k+1,p}(\Omega) \subset W^{k,p}(\Omega)$ is compact, and $W^{k,p}(\Omega)$ embeds
+compactly in $L^q(\Omega)$ or $C(\overline{\Omega})$ for $k < N/p$, $k = N/p$ and $k > N/p$; these
+are Theorems 7.3.8 and 7.3.9 of [han2009theoretical] under the extension hypothesis. Finally, for
+$p = \infty$, the injection $W^{k,\infty}(\Omega) \subset W^{l,\infty}(\Omega)$ for $l < k$ is
+compact on a bounded $W^{1,\infty}$-extension domain.
 
-The case `p < N` is factored through an abstract lemma on a subspace `S` of `W^{1,p}(Ω)` with an
-extension operator (`HasSobolevExtensionOn S`) and `volume Ω < ∞`
-(`SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`): the image `ℱ = P(ℋ)` of
-the unit ball is bounded in `W^{1,p}(ℝ^N)`, hence in `L^q(ℝ^N)` by Corollary 9.10
-(`HasSobolevExtensionOn.isBounded_image_closedBall`), and uniformly continuous under translation
-in `L^q` by Proposition 9.3 in `L^p` interpolated with the `L^{p*}` bound
-(`SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le`,
-`HasSobolevExtensionOn.uniform_translate_image_closedBall`); the Kolmogorov–M. Riesz–Fréchet
-theorem (`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`,
-`Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz.lean`) makes the restrictions to `Ω`
-relatively compact, and `ℋ = ℱ|_Ω` (`HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM`). For `q < p`
-the case `q = p` is composed with the continuous inclusion `L^p(Ω) ⊆ L^q(Ω)`
-(`MeasureTheory.Lp.monoExponentL` of `Numlib/Analysis/Sobolev/Cutoff.lean`). The instances are
-`S = ⊤` with Theorem 9.7's operator (`SobolevEuclidean.isCompactEmbedding_toLp_of_lt`) and
-`S = W_0^{1,p}(Ω)` with the extension by
-zero of `Numlib/Analysis/Sobolev/Zero.lean` (Remark 20,
-`SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt`).
-At the exponent `q = p` itself no interpolation is needed — `ℱ` is bounded in `L^p(ℝ^N)` by `‖P‖`
-and Proposition 9.3 is its translation modulus — so `S ↪↪ L^p(Ω)` holds for *every* `1 ≤ p < ∞`
-in every dimension (`HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self`); hence
-`W_0^{1,p}(Ω) ↪↪ L^p(Ω)` on any open set of finite measure
-(`SobolevEuclideanZero.isCompactEmbedding_toLp`, `SobolevEuclideanZero.isCompactOperator_fnL`,
-the compactness of `H^1_0(Ω) ⊂ L²(Ω)` that Theorems 9.23 and 9.31 use) and
-`W^{1,p}(Ω) ↪↪ L^p(Ω)` on any extension domain of finite measure
-(`SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain`), including
-`N = 1 = p`.
+## Main definitions
 
-The cases `p ≥ N` for `N ≥ 2` reduce to `p < N`: `W^{1,p}(Ω) ↪ W^{1,r}(Ω)` continuously on the
-finite-measure `Ω` for an `r < N` with `r* > q` (`SobolevMultiIndex.toLowerExponentL`,
-`NNReal.exists_lowerExponent`), and `W^{1,r}(Ω) ↪↪ L^q(Ω)`
-(`SobolevEuclidean.isCompactEmbedding_toLp_of_le`, `…_of_eq`). The case `p > N` into `C(K)` for
-a compact `K ⊇ Ω` is Arzelà–Ascoli (`ContinuousMap.isCompact_closure_of_forall_norm_le`) on the
-uniformly bounded and uniformly Hölder image of the unit ball
-(`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`,
-`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`). The injection `W^{1,p}(Ω) ⊂ L^p(Ω)`
-(`SobolevEuclidean.isCompactEmbedding_toLp_self`, `SobolevEuclidean.isCompactEmbedding_fnL`) is
-covered for `1 ≤ p < ∞` whenever `p < N` or `N ≥ 2`; for `p > N` it also factors through `C(Ω̄)`
-and the continuous extension by zero `C(Ω̄, ℝ) → L^p(Ω)` (`ContinuousMap.extendZeroToLpL`,
-`SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt`), which covers `N = 1 < p`, so that
-`SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` / `isCompactEmbedding_fnL_of_ne_one`
-leave out only `N = 1 = p` (an interval, where the one-dimensional theory applies); the case
-`p = ∞`, `W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` on a bounded `W^{1,∞}`-extension domain, is Arzelà–Ascoli on
-the Lipschitz representatives (`SobolevEuclidean.isCompactEmbedding_fnL_top`).
+* `ContinuousMap.extendZero`: the extension by zero to the whole space of a continuous function on a
+  subset $K$.
+* `ContinuousMap.extendZeroToLpL`: extension by zero as a bounded linear map
+  $C(K, \mathbb{R}) \to L^p(\Omega)$, for a compact $K \supseteq \Omega$ and $\mu(\Omega) < \infty$.
 
-On `W_0^{1,p}(Ω)` the other clauses of Theorem 9.16 hold with no regularity of `Ω` (Remark 20):
-`W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for `N ≤ q < ∞`, `N ≥ 2`, through the inclusion
-`W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)` (`SobolevMultiIndexZero.toLowerExponentL` of
-`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`) and the pull-back lemma
-`SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp` (same file)
-(`SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq`), and `W_0^{1,p}(Ω) ↪↪ C(K)` for `p > N`
-and a compact `K ⊇ Ω` (`SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL`).
+## Main results
 
-The compact embedding between successive orders, `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` along
-`SobolevMultiIndex.toLowerOrderL` (`SobolevEuclidean.isCompactEmbedding_toLower_of_lt`,
-Atkinson–Han's Theorem 7.3.9), is proved by induction on `k` from the case `k = 0` above: the
-inductive step (`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq`, stated with the
-operators as variables) extracts one subsequence along which `u_n` and all `∂_i u_n` converge in
-`W^{k,p}(Ω)` (`IsCompactEmbedding.exists_subseq_forall_tendsto`), so that every component
-`∂^β u_n` converges in `L^p(Ω)` and `u_n` converges in the closed subspace `W^{k+1,p}(Ω)`
-(`SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`).
-`IsSobolevExtensionDomainAll.of_isContDiffChartDomain` (`EmbeddingDomain.lean`) records that
-Theorem 9.7 makes a bounded `C¹` chart domain an extension domain for every exponent, the
-hypothesis of Corollary 9.15.
+* `HasSobolevExtensionOn.isCompactEmbedding_toLpOn_of_le_of_lt`: a subspace $S$ of $W^{1,p}(\Omega)$
+  with an extension operator, on a set of finite measure, embeds compactly in $L^q(\Omega)$ for
+  $p \le q < p^*$.
+* `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`: the same for $1 \le q < p^*$.
+* `HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self`: such a subspace embeds compactly in
+  $L^p(\Omega)$ for every $1 \le p < \infty$ and every $N$.
+* `SobolevEuclidean.isCompactEmbedding_toLp_of_lt`: Theorem 9.16 for $p < N$ and $1 \le q < p^*$.
+* `SobolevEuclidean.isCompactEmbedding_toLp_of_le`,
+  `SobolevEuclidean.isCompactEmbedding_toLp_of_eq`: Theorem 9.16 for $N \ge 2$, $p \ge N$ and every
+  $1 \le q < \infty$.
+* `SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`: Theorem 9.16 for $p > N$, into
+  $C(K)$ for a compact $K \supseteq \Omega$.
+* `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one`,
+  `SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`: $W^{1,p}(\Omega) \subset L^p(\Omega)$ is
+  compact on a bounded $C^1$ domain unless $N = 1 = p$.
+* `SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain`:
+  $W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact on every extension domain of finite measure.
+* `SobolevEuclideanZero.isCompactEmbedding_toLp`, `SobolevEuclideanZero.isCompactOperator_fnL`:
+  $W_0^{1,p}(\Omega) \subset L^p(\Omega)$ is compact on every open set of finite measure.
+* `SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt`,
+  `SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq`,
+  `SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL`: the other clauses of Theorem 9.16 on
+  $W_0^{1,p}(\Omega)$.
+* `SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq`: the inductive step from
+  $W^{k+1,p} \subset W^{k,p}$ to $W^{k+2,p} \subset W^{k+1,p}$.
+* `SobolevEuclidean.isCompactEmbedding_toLower_of_lt`,
+  `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain`,
+  `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt`:
+  $W^{k,p}(\Omega) \subset W^{l,p}(\Omega)$ is compact for $l < k$.
+* `SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt`,
+  `SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq`,
+  `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`: the compact embeddings of
+  $W^{k,p}(\Omega)$ into $L^q(\Omega)$ and $C(K)$ for $k < N/p$, $k = N/p$ and $k > N/p$.
+* `SobolevEuclidean.isCompactEmbedding_fnL_top`,
+  `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt`: the compact embeddings
+  $W^{1,\infty}(\Omega) \subset L^\infty(\Omega)$ and $W^{k,\infty}(\Omega) \subset
+  W^{l,\infty}(\Omega)$, $l < k$.
 
-The last sections are **the Rellich–Kondrachov theorem at every order on an extension domain**:
-`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on any extension domain of finite measure, every `1 ≤ p < ∞`
-(`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain`,
-`…_toLowerOrderL_of_lt`), the compact embeddings of `W^{k,p}(Ω)` into `L^q(Ω)` and `C(K)`
-for `k < N/p`, `k = N/p`, `k > N/p` (`SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt`,
-`…_of_order_of_eq`, `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`),
-Atkinson–Han's Theorems 7.3.8 and 7.3.9 under the extension hypothesis, through the pull-back
-and composition lemmas `SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le`,
-`SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_comp` and the order lowering
-`SobolevEuclidean.exists_continuousLinearMap_orderOne` (`EmbeddingDomain.lean`); and their
-counterparts at `p = ∞`, `W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)` for `l < k`
-(`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt`).
+## Proof outline
 
-## References
+The case $p < N$ is proved for a subspace $S$ of $W^{1,p}(\Omega)$ with an extension operator
+$P : S \to W^{1,p}(\mathbb{R}^N)$, on a set $\Omega$ of finite measure. The family
+$\mathcal{F} = P(B_S)$, the image of the unit ball, is bounded in $L^q(\mathbb{R}^N)$ by Corollary
+9.10 of [brezis2011functional], and it has a uniform modulus of continuity under translation in
+$L^q$: Proposition 9.3 gives it in $L^p$, and interpolation with the $L^{p^*}$ bound gives it in
+$L^q$. The Kolmogorov–M. Riesz–Fréchet theorem then makes the restrictions to $\Omega$ relatively
+compact, and these restrictions are the image of $B_S$. For $q < p$ the case $q = p$ is composed
+with the continuous inclusion $L^p(\Omega) \subset L^q(\Omega)$. At $q = p$ the interpolation is not
+needed, so this case holds for every $p$. The cases $p \ge N$ with $N \ge 2$ reduce to $p < N$
+through a continuous injection $W^{1,p}(\Omega) \subset W^{1,r}(\Omega)$ with $r < N$ and $r^* > q$.
+The case $p > N$ is the Arzelà–Ascoli theorem for the uniformly bounded and uniformly Hölder
+continuous representatives. The higher orders follow by induction on $k$: for a bounded sequence
+$u_n$, one subsequence makes $u_n$ and all $\partial_i u_n$ converge in $W^{k,p}(\Omega)$, so that
+every $\partial^\beta u_n$ converges in $L^p(\Omega)$. The case $p = \infty$ is the Arzelà–Ascoli
+theorem for the Lipschitz representatives.
 
-[brezis2011functional], Theorem 9.16 and its proof, Remark 20; Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorems 7.3.8 and 7.3.9.
+## Implementation notes
+
+* A compact embedding is `IsCompactEmbedding` of `Numlib.Analysis.Normed.Operator.Embedding`. The
+  injections into $L^q(\Omega)$ are `SobolevMultiIndex.toLpₗ` for the whole space and
+  `SobolevMultiIndex.toLpₗOn` for a subspace, and `SobolevMultiIndex.fnL` at $q = p$. The injections
+  into $C(K)$ are `HasSobolevExtensionOn.toContinuousMapOnL` and `SobolevEuclidean.toContinuousMapL`
+  of `Numlib.Analysis.Sobolev.EmbeddingDomain`, which take the continuous representative. The
+  injection $W^{k,p}(\Omega) \to W^{l,p}(\Omega)$ is `SobolevMultiIndex.toLowerOrderL`.
+* Where the membership of $u$ in $L^q(\Omega)$ is not automatic, a statement takes it as a
+  hypothesis or asserts that it holds, because the maps into $L^q(\Omega)$ need it as an argument.
+* The exponents $p$ and $q$ are finite (`ℝ≥0`) with $1 \le p$, except in the statements for
+  $p = \infty$ and in the general lemmas. The Sobolev exponent $p^*$ is a variable `p'` with the
+  hypothesis $1/p' = 1/p - 1/N$.
+* The space $C(\overline{\Omega})$ is $C(K, \mathbb{R})$ for a compact set $K \supseteq \Omega$,
+  typically $K = \overline{\Omega}$.
+* An open set of class $C^1$ is `IsContDiffChartDomain 1` (by local charts), and the dimension of
+  these statements is written $N = d + 1$. A bounded $C^1$ domain is an extension domain by Theorem
+  9.7 of [brezis2011functional] (`IsSobolevExtensionDomain.of_isContDiffChartDomain`). For every
+  exponent at once this is `IsSobolevExtensionDomainAll.of_isContDiffChartDomain`, the hypothesis of
+  Corollary 9.15.
+* On a bounded $C^1$ domain, `SobolevEuclidean.isCompactEmbedding_toLp_self` covers
+  $W^{1,p}(\Omega) \subset L^p(\Omega)$ for $p < N$ or $N \ge 2$, and
+  `SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt` adds $N = 1 < p$ through
+  $C(\overline{\Omega})$ and extension by zero. This leaves out only $N = 1 = p$, where $\Omega$ is
+  a union of intervals and the one-dimensional theory applies.
+  `SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain` covers $N = 1 = p$ on
+  extension domains.
+* The results of [han2009theoretical] are stated on Lipschitz domains. Here they are proved on
+  extension domains, which include the bounded $C^1$ domains.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -124,12 +150,20 @@ open SobolevMultiIndex
 variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- **The uniform translation modulus in `L^q` of a bounded set of `W^{1,p}(ℝ^N)`**, `p ≤ q < p*`:
-for `v ∈ W^{1,p}(ℝ^N)` with `‖v‖ ≤ M`, `‖τ_h v − v‖_q ≤ ‖h‖^θ K` with `θ ∈ (0, 1]` the
-interpolation parameter of `q` between `p` and `p*` and `K` depending only on `M`, `p`, `q`,
-`N` — the estimate of [brezis2011functional] §9.3, proof of Theorem 9.16: Proposition 9.3 in
-`L^p`, `‖τ_h v − v‖_{p*} ≤ 2 ‖v‖_{p*}` and Corollary 9.10 in `L^{p*}`, and the interpolation
-inequality between the two. -/
+/-- **Uniform translation estimate in $L^q$ for a bounded set of $W^{1,p}(\mathbb{R}^N)$.** Let
+$1 \le p < N$, let $p^*$ be given by $1/p^* = 1/p - 1/N$, let $p \le q < p^*$, and let
+$M \in \mathbb{R}$. Then there are $\theta > 0$ and $K < \infty$ such that every
+$v \in W^{1,p}(\mathbb{R}^N)$ with $\|v\| \le M$ satisfies
+$$\|\tau_h v - v\|_{L^q(\mathbb{R}^N)} \le \|h\|^\theta K \qquad \text{for all } h \in
+  \mathbb{R}^N,$$
+where $(\tau_h v)(x) = v(x + h)$.
+
+This is the estimate in the proof of Theorem 9.16 of [brezis2011functional]. Proposition 9.3
+bounds $\|\tau_h v - v\|_p$, Corollary 9.10 gives $\|\tau_h v - v\|_{p^*} \le 2 \|v\|_{p^*}$
+with a bound on $\|v\|_{p^*}$, and the interpolation inequality between $L^p$ and $L^{p^*}$
+combines the two. In the proof $\theta \in (0, 1]$ is the interpolation parameter of $q$ between
+$p$ and $p^*$; the statement asserts only $\theta > 0$. The constant $K$ depends only on $M$,
+$p$, $q$ and $N$. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q < p') (M : ℝ) :
     ∃ (θ : ℝ) (K : ℝ≥0∞), 0 < θ ∧ K ≠ ⊤ ∧ ∀ v : SobolevEuclidean N 1 p ⊤, ‖v‖ ≤ M →
@@ -186,7 +220,8 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le {p' : ℝ≥0
     _ = ‖h‖ₑ ^ θ * (A ^ θ * B ^ (1 - θ)) := by
         rw [ENNReal.mul_rpow_of_nonneg _ _ hθ0, mul_assoc]
 
-/-- For `θ > 0` and `K < ∞`, `‖h‖^θ K` is small for small `‖h‖`. -/
+/-- Let $\theta > 0$, $K < \infty$ and $\varepsilon > 0$. Then there is $\delta > 0$ such that
+$\|h\|^\theta K < \varepsilon$ for every $h \in \mathbb{R}^N$ with $\|h\| < \delta$. -/
 theorem EuclideanSpace.exists_pos_forall_enorm_rpow_mul_lt {θ : ℝ} (hθ : 0 < θ) {K : ℝ≥0∞}
     (hK : K ≠ ⊤) {ε : ℝ≥0∞} (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ h : EuclideanSpace ℝ (Fin N), ‖h‖ < δ → ‖h‖ₑ ^ θ * K < ε := by
@@ -203,8 +238,15 @@ theorem EuclideanSpace.exists_pos_forall_enorm_rpow_mul_lt {θ : ℝ} (hθ : 0 <
   rw [← ofReal_norm]
   exact mul_le_mul' (ENNReal.rpow_le_rpow (ENNReal.ofReal_le_ofReal hh.le) hθ.le) le_rfl
 
-/-- The extension of the unit ball of `S` to `W^{1,p}(ℝ^N)`, read in `L^q(ℝ^N)`: the family `ℱ` of
-[brezis2011functional] §9.3, proof of Theorem 9.16. -/
+/-- Let $S$ be a subspace of $W^{1,p}(\Omega)$ and let $P : S \to W^{1,p}(\mathbb{R}^N)$ be a
+bounded linear map with $Pu = u$ almost everywhere on $\Omega$ for every $u \in S$. Let
+$q \ge 1$, and suppose that every $u \in S$ lies in $L^q(\Omega)$ and every $Pu$ lies in
+$L^q(\mathbb{R}^N)$. Then the image of $u \in S$ in $L^q(\Omega)$ is the restriction to $\Omega$
+of $Pu \in L^q(\mathbb{R}^N)$.
+
+Thus the image of the unit ball of $S$ in $L^q(\Omega)$ is the set of restrictions to $\Omega$
+of the family $\mathcal{F} = P(B_S)$ in the proof of Theorem 9.16 of [brezis2011functional]. The
+restriction is `MeasureTheory.Lp.restrictCLM`. -/
 theorem HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM [Fact (1 ≤ (q : ℝ≥0∞))]
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤)
     (hP : ∀ u : S, fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -220,8 +262,11 @@ theorem HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM [Fact (1 ≤ (q : ℝ≥0
     Filter.EventuallyEq.symm (ae_restrict_of_ae (MemLp.coeFn_toLp (hmem u)))
   exact ((hP u).symm.trans e1).trans (Lp.coeFn_restrictCLM _ _).symm
 
-/-- The family `ℱ = P(unit ball)` is bounded in `L^q(ℝ^N)`, `p ≤ q ≤ p*`
-([brezis2011functional] §9.3, proof of Theorem 9.16, by Corollary 9.10). -/
+/-- Let $S$ be a subspace of $W^{1,p}(\Omega)$, let $P : S \to W^{1,p}(\mathbb{R}^N)$ be a bounded
+linear map, let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Then the
+family $\mathcal{F} = \{Pu : u \in S,\ \|u\| \le 1\}$ is bounded in $L^q(\mathbb{R}^N)$.
+
+This is a step of the proof of Theorem 9.16 of [brezis2011functional], by Corollary 9.10. -/
 theorem HasSobolevExtensionOn.isBounded_image_closedBall [Fact (1 ≤ (q : ℝ≥0∞))]
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
@@ -243,9 +288,16 @@ theorem HasSobolevExtensionOn.isBounded_image_closedBall [Fact (1 ≤ (q : ℝ�
   rw [ENNReal.toReal_ofReal (mul_nonneg hC0 (norm_nonneg _))]
   exact mul_le_mul_of_nonneg_left hPu hC0
 
-/-- The family `ℱ = P(unit ball)` has a uniform translation modulus in `L^q(ℝ^N)`,
-`p ≤ q < p*` — the hypothesis of the Kolmogorov–M. Riesz–Fréchet theorem in
-[brezis2011functional] §9.3, proof of Theorem 9.16. -/
+/-- Let $S$ be a subspace of $W^{1,p}(\Omega)$, let $P : S \to W^{1,p}(\mathbb{R}^N)$ be a bounded
+linear map, let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $p \le q < p^*$. Then the family
+$\mathcal{F} = \{Pu : u \in S,\ \|u\| \le 1\}$, viewed in $L^q(\mathbb{R}^N)$, is uniformly
+continuous under translation: for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$\|\tau_h f - f\|_{L^q(\mathbb{R}^N)} < \varepsilon \qquad \text{for all } f \in \mathcal{F}
+  \text{ and all } h \text{ with } \|h\| < \delta.$$
+
+This is the hypothesis of the Kolmogorov–M. Riesz–Fréchet theorem in the proof of Theorem 9.16
+of [brezis2011functional]. It follows from
+`SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le`. -/
 theorem HasSobolevExtensionOn.uniform_translate_image_closedBall
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q < p') :
@@ -274,14 +326,20 @@ theorem HasSobolevExtensionOn.uniform_translate_image_closedBall
   rw [eLpNorm_congr_ae hae]
   exact (hmod (P u) hPu h).trans_lt (hδ h hh)
 
-/-- **The abstract Rellich–Kondrachov lemma, the case `p ≤ q < p*`**: for a subspace `S` of
-`W^{1,p}(Ω)` with an extension operator (`HasSobolevExtensionOn S`), `volume Ω < ∞`,
-`1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q < p*`, the inclusion `S → L^q(Ω)` is a compact
-embedding. The image of the unit ball is `F|_Ω` where `F = P(unit ball) ⊆ W^{1,p}(ℝ^N)` is bounded
-in `L^q(ℝ^N)` (Corollary 9.10) with a uniform translation modulus in `L^q`
-(`SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le`), so the Kolmogorov–M. Riesz–Fréchet
-theorem `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` makes its
-restriction to `Ω` relatively compact. [brezis2011functional] Theorem 9.16, the case `p < N`. -/
+/-- **The abstract Rellich–Kondrachov lemma for $p \le q < p^*$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open with finite measure, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $p \le q < p^*$. Let $S$ be a subspace of $W^{1,p}(\Omega)$ that
+has a Sobolev extension operator. Then the injection $S \subset L^q(\Omega)$ is a compact
+embedding.
+
+This is the case $p < N$ of Theorem 9.16 of [brezis2011functional], in the generality of its
+proof. The extension operator is `HasSobolevExtensionOn S`. The image of the unit ball is the
+set of restrictions to $\Omega$ of the family $\mathcal{F} = P(B_S) \subseteq
+W^{1,p}(\mathbb{R}^N)$, which is bounded in $L^q(\mathbb{R}^N)$ by Corollary 9.10 and uniformly
+continuous under translation in $L^q$ by
+`SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le`. The Kolmogorov–M. Riesz–Fréchet
+theorem `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` then makes
+the restrictions relatively compact. -/
 theorem HasSobolevExtensionOn.isCompactEmbedding_toLpOn_of_le_of_lt [Fact (1 ≤ (q : ℝ≥0∞))]
     (hS : HasSobolevExtensionOn S) (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q < p') :
@@ -314,7 +372,7 @@ theorem HasSobolevExtensionOn.isCompactEmbedding_toLpOn_of_le_of_lt [Fact (1 ≤
 
 end Rellich
 
-/-! ### Theorem 9.16, case `p < N`, for `1 ≤ q < p*` -/
+/-! ### Theorem 9.16, the case $p < N$, for $1 \le q < p^*$ -/
 
 section RellichLt
 
@@ -323,8 +381,12 @@ open SobolevMultiIndex
 variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- On a set of finite measure, `fn u ∈ L^q(Ω)` for `u ∈ S` and every `q ≤ p*`, `p < N`:
-`L^p(Ω) ⊆ L^q(Ω)` for `q ≤ p`, Corollary 9.14 for `p ≤ q ≤ p*`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open with finite measure, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $q \le p^*$. Let $S$ be a subspace of $W^{1,p}(\Omega)$ that has a
+Sobolev extension operator. Then every $u \in S$ lies in $L^q(\Omega)$.
+
+For $q \le p$ this is the inclusion $L^p(\Omega) \subset L^q(\Omega)$ on a set of finite
+measure, and for $p \le q \le p^*$ it is Corollary 9.14 of [brezis2011functional]. -/
 theorem HasSobolevExtensionOn.memLp_fn_of_le_sobolevConj (hS : HasSobolevExtensionOn S)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q ≤ p') (u : S) :
@@ -338,7 +400,7 @@ theorem HasSobolevExtensionOn.memLp_fn_of_le_sobolevConj (hS : HasSobolevExtensi
       (by exact_mod_cast hqp.le)
 
 omit [Fact (1 ≤ (p : ℝ≥0∞))] in
-/-- The Sobolev conjugate exponent exceeds `p`: `p < p*` for `p < N`. -/
+/-- Let $0 < p < N$ and let $1/p^* = 1/p - 1/N$. Then $p < p^*$. -/
 theorem NNReal.lt_sobolevConj {p' : ℝ≥0} (hp0 : 0 < p) (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) : p < p' := by
   have hN0 : (0 : ℝ) < N := lt_of_le_of_lt (NNReal.coe_nonneg p) (by exact_mod_cast hpN)
@@ -351,12 +413,16 @@ theorem NNReal.lt_sobolevConj {p' : ℝ≥0} (hp0 : 0 < p) (hpN : p < N)
   have := (inv_lt_inv₀ (inv_pos.1 hp'0) (by exact_mod_cast hp0)).1 h
   exact_mod_cast this
 
-/-- **The abstract Rellich–Kondrachov lemma** ([brezis2011functional] Theorem 9.16, the case
-`p < N`, in the generality of its proof): for a subspace `S` of `W^{1,p}(Ω)` with an extension
-operator (`HasSobolevExtensionOn S`), `volume Ω < ∞`, `1 ≤ p < N`, `1/p* = 1/p − 1/N` and
-`1 ≤ q < p*`, the inclusion `S → L^q(Ω)` (along `SobolevMultiIndex.toLpₗOn`) is a compact
-embedding. For `q < p` it is the case `q = p` followed by the continuous inclusion
-`L^p(Ω) ⊆ L^q(Ω)` ("since `Ω` is bounded, we may always assume that `q ≥ p`"). -/
+/-- **The abstract Rellich–Kondrachov lemma.** Let $\Omega \subseteq \mathbb{R}^N$ be open with
+finite measure, let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $1 \le q < p^*$. Let $S$ be
+a subspace of $W^{1,p}(\Omega)$ that has a Sobolev extension operator. Then the injection
+$S \subset L^q(\Omega)$ is a compact embedding.
+
+This is the case $p < N$ of Theorem 9.16 of [brezis2011functional], in the generality of its
+proof. The injection is `SobolevMultiIndex.toLpₗOn`. For $q \ge p$ this is
+`HasSobolevExtensionOn.isCompactEmbedding_toLpOn_of_le_of_lt`. For $q < p$ it is the case
+$q = p$ followed by the continuous inclusion $L^p(\Omega) \subset L^q(\Omega)$, as in the proof
+of the source: "since $\Omega$ is bounded, we may always assume that $q \ge p$". -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn [Fact (1 ≤ (q : ℝ≥0∞))]
     (hS : HasSobolevExtensionOn S) (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q < p') :
@@ -381,7 +447,7 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn [Fact 
 
 end RellichLt
 
-/-! ### Theorem 9.16 on the whole space `W^{1,p}(Ω)` of a bounded `C¹` domain -/
+/-! ### Theorem 9.16 on the whole space $W^{1,p}(\Omega)$ of a bounded $C^1$ domain -/
 
 section RellichTop
 
@@ -389,9 +455,13 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The inclusion of `W^{k,p}(Ω)` into `L^q(Ω)` is the inclusion of the subspace `⊤` composed
-with the identification `W^{k,p}(Ω) ≃ ⊤`; hence compactness of the latter gives compactness of
-the former. -/
+/-- Let $1 \le p, q \le \infty$, and suppose that every $u \in W^{k,p}(\Omega)$ lies in
+$L^q(\Omega)$. If the injection into $L^q(\Omega)$ of the subspace $W^{k,p}(\Omega)$ of itself
+is a compact embedding, then so is the injection $W^{k,p}(\Omega) \subset L^q(\Omega)$.
+
+The two maps differ by the identification of $W^{k,p}(\Omega)$ with its subspace `⊤`. The
+statement holds on an open subset $\Omega$ of a normed space $E$ with a measure $\mu$ and a
+basis $b$, for functions with values in a normed space $F$. -/
 theorem SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top {E F : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [NormedAddCommGroup F]
     [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
@@ -407,11 +477,17 @@ theorem SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top {E F : Type*} [Norme
   exact LinearMap.ext fun u ↦ Lp.ext ((toLpₗ_coeFn h u).trans
     (toLpₗOn_coeFn (S := ⊤) (fun u ↦ h u) ⟨u, Submodule.mem_top⟩).symm)
 
-/-- **Theorem 9.16 (Rellich–Kondrachov), the case `p < N`**: for a bounded open set `Ω ⊆ ℝ^N` of
-class `C¹` (by charts), `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `1 ≤ q < p*`, the injection
-`W^{1,p}(Ω) ⊂ L^q(Ω)` is compact. The abstract lemma with `S = ⊤` and the extension operator of
-Theorem 9.7 (`IsSobolevExtensionDomain.of_isContDiffChartDomain`; a bounded `Ω` has bounded
-frontier and finite measure). [brezis2011functional] Theorem 9.16. -/
+/-- **The Rellich–Kondrachov theorem for $p < N$.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $1 \le q < p^*$. Then the injection
+$W^{1,p}(\Omega) \subset L^q(\Omega)$ is compact. This is Theorem 9.16 of
+[brezis2011functional], the case $p < N$.
+
+The dimension is written $N = d + 1$, and the class $C^1$ is `IsContDiffChartDomain 1`. The
+proof applies `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn` with
+$S = W^{1,p}(\Omega)$ and the extension operator of Theorem 9.7
+(`IsSobolevExtensionDomain.of_isContDiffChartDomain`). A bounded $\Omega$ has a bounded boundary
+and finite measure. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_of_lt {d : ℕ} {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
@@ -430,7 +506,7 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_of_lt {d : ℕ} {p q : ℝ≥0}
 
 end RellichTop
 
-/-! ### Theorem 9.16, case `p > N`: Arzelà–Ascoli -/
+/-! ### Theorem 9.16, the case $p > N$: Arzelà–Ascoli -/
 
 section RellichGt
 
@@ -439,12 +515,16 @@ open SobolevMultiIndex
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- **The abstract Rellich–Kondrachov lemma, case `p > N`**: for a subspace `S` of `W^{1,p}(Ω)`
-with an extension operator, `N < p < ∞`, and a compact `K ⊇ Ω`, the trace map
-`S → C(K, ℝ)` of `HasSobolevExtensionOn.toContinuousMapOnL` is a compact embedding: the image of
-the unit ball is bounded in sup norm and uniformly Hölder, hence equicontinuous, and `K` is
+/-- **The abstract Rellich–Kondrachov lemma for $p > N$.** Let $N < p < \infty$, let $S$ be a
+subspace of $W^{1,p}(\Omega)$ that has a Sobolev extension operator, and let
+$K \supseteq \Omega$ be compact. Then the map $S \to C(K, \mathbb{R})$ that takes the continuous
+representative is a compact embedding.
+
+This is the case $p > N$ of Theorem 9.16 of [brezis2011functional], in the generality of its
+proof. The map is `HasSobolevExtensionOn.toContinuousMapOnL`. The image of the unit ball is
+bounded in the supremum norm and uniformly Hölder continuous, hence equicontinuous, and $K$ is
 compact, so the Arzelà–Ascoli theorem `ContinuousMap.isCompact_closure_of_forall_norm_le`
-applies. [brezis2011functional] Theorem 9.16, the case `p > N`. -/
+applies. -/
 theorem HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL (hS : HasSobolevExtensionOn S)
     (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
     (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
@@ -473,10 +553,14 @@ theorem HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL (hS : HasSob
       calc C₂ * ‖u‖ ≤ C₂ * 1 := mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.1 hu) hC₂0
         _ = C₂ := mul_one _
 
-/-- **Theorem 9.16 (Rellich–Kondrachov), the case `p > N`**: for a bounded open `Ω ⊆ ℝ^N` of
-class `C¹` (by charts), `N < p < ∞` and a compact `K ⊇ Ω` (such as `closure Ω`), the injection
-`W^{1,p}(Ω) ⊂ C(K)` along `SobolevEuclidean.toContinuousMapL` is compact.
-[brezis2011functional] Theorem 9.16, "`W^{1,p}(Ω) ⊂ C(Ω̄)` if `p > N`". -/
+/-- **The Rellich–Kondrachov theorem for $p > N$.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, let $N < p < \infty$, and
+let $K \supseteq \Omega$ be compact, for example $K = \overline{\Omega}$. Then the injection
+$W^{1,p}(\Omega) \subset C(K)$ is compact. This is Theorem 9.16 of [brezis2011functional],
+"$W^{1,p}(\Omega) \subset C(\overline{\Omega})$ if $p > N$".
+
+The dimension is written $N = d + 1$, and the class $C^1$ is `IsContDiffChartDomain 1`. The
+injection is `SobolevEuclidean.toContinuousMapL`, which takes the continuous representative. -/
 theorem SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -495,15 +579,17 @@ theorem SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt {d : ℕ} {p 
 
 end RellichGt
 
-/-! ### Theorem 9.16, the cases `p ≥ N` by lowering the exponent -/
+/-! ### Theorem 9.16, the cases $p \ge N$, by lowering the exponent -/
 
 section RellichGe
 
 open SobolevMultiIndex
 
-/-- The auxiliary exponent `r` of the reduction of the case `p ≥ N` to `p < N`: for `N ≥ 2` and
-`q ≥ N`, the exponent `1/r = 1/N + 1/(2q)` satisfies `1 ≤ r < N` and `q < r* = 2q`
-([brezis2011functional] Theorem 9.16, proof: "the case `p = N` reduces to the case `p < N`"). -/
+/-- Let $N \ge 2$ and $q \ge N$. Then there is $r$ with $1 \le r < N$ and $1/(2q) = 1/r - 1/N$; thus
+the Sobolev exponent of $r$ is $r^* = 2q > q$.
+
+This is the auxiliary exponent by which the proof of Theorem 9.16 of [brezis2011functional]
+reduces the case $p \ge N$ to the case $p < N$: "the case $p = N$ reduces to the case $p < N$". -/
 theorem NNReal.exists_lowerExponent {N : ℕ} (hN : 2 ≤ N) {q : ℝ≥0} (hq : (N : ℝ≥0) ≤ q) :
     ∃ r : ℝ≥0, 1 ≤ r ∧ r < N ∧ ((2 * q : ℝ≥0) : ℝ)⁻¹ = (r : ℝ)⁻¹ - (N : ℝ)⁻¹ ∧ q < 2 * q := by
   have hN0 : (0 : ℝ) < N := by exact_mod_cast (zero_lt_two.trans_le hN)
@@ -527,12 +613,18 @@ theorem NNReal.exists_lowerExponent {N : ℕ} (hN : 2 ≤ N) {q : ℝ≥0} (hq :
     ring
   · exact lt_mul_left hq0' one_lt_two
 
-/-- **Theorem 9.16 (Rellich–Kondrachov), the cases `p ≥ N` with `N ≥ 2`**: for a bounded open
-`Ω ⊆ ℝ^N` of class `C¹` (by charts), `N ≥ 2`, `N ≤ p < ∞` and `1 ≤ q < ∞`, the injection
-`W^{1,p}(Ω) ⊂ L^q(Ω)` is compact: `W^{1,p}(Ω) ↪ W^{1,r}(Ω)` continuously for an `r < N` with
-`r* > q`, and `W^{1,r}(Ω) ↪↪ L^q(Ω)` by the case `p < N`. This covers the book's case `p = N`
-(`q ∈ [N, ∞)`) and, for `p > N`, the injection into `L^p(Ω)` of the last sentence of the theorem.
-[brezis2011functional] Theorem 9.16, "the case `p = N` reduces to the case `p < N`". -/
+/-- **The Rellich–Kondrachov theorem for $p \ge N$, $N \ge 2$.** Let $N \ge 2$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, let $N \le p < \infty$,
+and let $1 \le q < \infty$. Suppose that every $u \in W^{1,p}(\Omega)$ lies in $L^q(\Omega)$.
+Then the injection $W^{1,p}(\Omega) \subset L^q(\Omega)$ is compact.
+
+This covers the case $p = N$, $q \in [N, \infty)$ of Theorem 9.16 of [brezis2011functional], and
+for $p > N$ the compact injection into $L^p(\Omega)$ of the last sentence of the theorem. The
+proof follows the source: "the case $p = N$ reduces to the case $p < N$". The injection
+$W^{1,p}(\Omega) \subset W^{1,r}(\Omega)$ is continuous for an $r < N$ with $r^* > q$
+(`NNReal.exists_lowerExponent`), and $W^{1,r}(\Omega) \subset L^q(\Omega)$ is compact by the
+case $p < N$. The dimension is written $N = d + 1$ with $d \ge 1$, and the membership in
+$L^q(\Omega)$ is the hypothesis `h`, so that the injection is defined. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_of_le {d : ℕ} {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
@@ -561,9 +653,16 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_of_le {d : ℕ} {p q : ℝ≥0}
       hrN hr' hqr.le ⟨v, Submodule.mem_top⟩) _).trans
     (fn_toLowerExponentL hb.measure_lt_top.ne hrp u)).symm
 
-/-- **Theorem 9.16 (Rellich–Kondrachov), the case `p = N`**: for a bounded open `Ω ⊆ ℝ^N` of
-class `C¹` (by charts), `N ≥ 2` and `N ≤ q < ∞`, the injection `W^{1,N}(Ω) ⊂ L^q(Ω)` is
-compact. [brezis2011functional] Theorem 9.16, the second line. -/
+/-- **The Rellich–Kondrachov theorem for $p = N$.** Let $N \ge 2$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let
+$1 \le q < \infty$. Suppose that every $u \in W^{1,N}(\Omega)$ lies in $L^q(\Omega)$. Then the
+injection $W^{1,N}(\Omega) \subset L^q(\Omega)$ is compact. This is Theorem 9.16 of
+[brezis2011functional], the case $p = N$.
+
+The source states the case $p = N$ for $q \in [N, \infty)$. The statement here needs only
+$q \ge 1$, because it is `SobolevEuclidean.isCompactEmbedding_toLp_of_le` at $p = N$. The
+dimension is written $N = d + 1$ with $d \ge 1$, and the membership in $L^q(\Omega)$ is the
+hypothesis `h`. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_of_eq {d : ℕ} {q : ℝ≥0}
     [Fact (1 ≤ (((d + 1 : ℕ) : ℝ≥0) : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
@@ -575,10 +674,15 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_of_eq {d : ℕ} {q : ℝ≥0}
       ((d + 1 : ℕ) : ℝ≥0) Ω volume h) :=
   SobolevEuclidean.isCompactEmbedding_toLp_of_le hΩ hb hd le_rfl h
 
-/-- **Theorem 9.16, "in particular `W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection"**, for a
-bounded open `Ω ⊆ ℝ^N` of class `C¹` (by charts) and `1 ≤ p < ∞`, provided `p < N` or `N ≥ 2`
-(the case `N = 1 ≤ p`, on an interval, is not covered here). [brezis2011functional]
-Theorem 9.16, the last sentence. -/
+/-- **The Rellich–Kondrachov theorem, the injection into $L^p$.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let $1 \le p < \infty$
+with $p < N$ or $N \ge 2$. Then the injection $W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact.
+This is the last sentence of Theorem 9.16 of [brezis2011functional]: "in particular
+$W^{1,p}(\Omega) \subset L^p(\Omega)$ with compact injection".
+
+The case $N = 1 \le p$ is not covered here;
+`SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` covers it for $p > 1$. The dimension
+is written $N = d + 1$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_self {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -599,8 +703,10 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_self {d : ℕ} {p : ℝ≥0}
     · exact absurd hpN (not_le.2 hd)
     · exact SobolevEuclidean.isCompactEmbedding_toLp_of_le hΩ hb hd hpN _
 
-/-- **`W^{1,p}(Ω) ↪↪ L^p(Ω)` along `SobolevMultiIndex.fnL`**, the form of
-`SobolevEuclidean.isCompactEmbedding_toLp_self` on the bundled inclusion. -/
+/-- Let $N \ge 1$, let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let
+$1 \le p < \infty$ with $p < N$ or $N \ge 2$. Then the bounded injection
+$W^{1,p}(\Omega) \to L^p(\Omega)$, `SobolevMultiIndex.fnL`, is a compact embedding. This is
+`SobolevEuclidean.isCompactEmbedding_toLp_self` for the bundled injection. -/
 theorem SobolevEuclidean.isCompactEmbedding_fnL {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -613,7 +719,7 @@ theorem SobolevEuclidean.isCompactEmbedding_fnL {d : ℕ} {p : ℝ≥0}
 
 end RellichGe
 
-/-! ### Extension by zero of a continuous function on a compact set, into `L^p(Ω)` -/
+/-! ### Extension by zero of a continuous function on a compact set, into $L^p(\Omega)$ -/
 
 section ExtendZero
 
@@ -625,17 +731,19 @@ namespace ContinuousMap
 
 open scoped Classical in
 variable (K) in
-/-- The extension by zero of a function on a subset `K` to the whole space. -/
+/-- Let $K \subseteq E$. The **extension by zero** of $f \in C(K, \mathbb{R})$ is the function on
+$E$ that equals $f(x)$ for $x \in K$ and $0$ for $x \notin K$. -/
 def extendZero (f : C(K, ℝ)) : E → ℝ := fun x ↦ if h : x ∈ K then f ⟨x, h⟩ else 0
 
 omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [CompactSpace K] in
-/-- The extension by zero agrees with `f` on `K`. -/
+/-- The extension by zero of $f \in C(K, \mathbb{R})$ takes the value $f(x)$ at every $x \in K$. -/
 theorem extendZero_of_mem (f : C(K, ℝ)) {x : E} (hx : x ∈ K) :
     extendZero K f x = f ⟨x, hx⟩ := by
   simp [extendZero, hx]
 
 omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] in
-/-- The extension by zero is bounded by the sup norm of `f`. -/
+/-- Let $K$ be compact. The extension by zero $\tilde f$ of $f \in C(K, \mathbb{R})$ satisfies
+$|\tilde f(x)| \le \|f\|_\infty$ for every $x \in E$. -/
 theorem norm_extendZero_le (f : C(K, ℝ)) (x : E) : ‖extendZero K f x‖ ≤ ‖f‖ := by
   by_cases hx : x ∈ K
   · rw [extendZero_of_mem f hx]
@@ -643,7 +751,7 @@ theorem norm_extendZero_le (f : C(K, ℝ)) (x : E) : ‖extendZero K f x‖ ≤ 
   · simp [extendZero, hx]
 
 omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [CompactSpace K] in
-/-- The extension by zero is continuous on `K`. -/
+/-- The extension by zero of $f \in C(K, \mathbb{R})$ is continuous on $K$. -/
 theorem continuousOn_extendZero (f : C(K, ℝ)) : ContinuousOn (extendZero K f) K := by
   rw [continuousOn_iff_continuous_domRestrict]
   convert f.continuous using 1
@@ -651,8 +759,8 @@ theorem continuousOn_extendZero (f : C(K, ℝ)) : ContinuousOn (extendZero K f) 
   exact extendZero_of_mem f x.2
 
 omit [NormedSpace ℝ E] [Fact (1 ≤ p)] in
-/-- The extension by zero of a continuous function on `K ⊇ Ω` lies in `L^p(Ω)` when `Ω` is
-measurable of finite measure. -/
+/-- Let $K$ be compact and let $\Omega \subseteq K$ be measurable with $\mu(\Omega) < \infty$. Then
+for every exponent $p$ the extension by zero of $f \in C(K, \mathbb{R})$ lies in $L^p(\Omega)$. -/
 theorem memLp_extendZero (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) :
     MemLp (extendZero K f) p (μ.restrict Ω) := by
   have : IsFiniteMeasure (μ.restrict Ω) := ⟨by simpa [Measure.restrict_apply_univ] using hμ.lt_top⟩
@@ -660,7 +768,11 @@ theorem memLp_extendZero (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : MeasurableSet 
     ‖f‖ (Eventually.of_forall (norm_extendZero_le f))
 
 omit [NormedSpace ℝ E] [Fact (1 ≤ p)] in
-/-- The `L^p(Ω)` norm of the extension by zero is at most `μ(Ω)^{1/p} ‖f‖`. -/
+/-- Let $K$ be compact and let $\Omega \subseteq K$ be measurable. Then for every exponent $p$ the
+extension by zero $\tilde f$ of $f \in C(K, \mathbb{R})$ satisfies
+$$\|\tilde f\|_{L^p(\Omega)} \le \mu(\Omega)^{1/p} \|f\|_\infty.$$
+Here $1/p$ is read as $0$ for $p = 0$ and for $p = \infty$, so that the factor
+$\mu(\Omega)^{1/p}$ is then $1$. -/
 theorem eLpNorm_extendZero_le (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) :
     eLpNorm (extendZero K f) p (μ.restrict Ω) ≤ μ Ω ^ p.toReal⁻¹ * ENNReal.ofReal ‖f‖ := by
   refine (eLpNorm_le_of_ae_bound (C := ‖f‖) ?_ (Eventually.of_forall (norm_extendZero_le f))).trans
@@ -669,12 +781,16 @@ theorem eLpNorm_extendZero_le (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : Measurabl
   · rw [Measure.restrict_apply_univ]
 
 variable (μ K Ω p) in
-/-- **Extension by zero, `C(K, ℝ) → L^p(Ω)`, as a bounded linear map** for a compact `K ⊇ Ω`
-and a measurable `Ω` of finite measure: `f ↦ (f extended by zero)|_Ω`, of norm at most
-`μ(Ω)^{1/p}`. Composed with the trace map `W^{1,p}(Ω) → C(Ω̄, ℝ)` of Morrey's theorem it gives
-the injection `W^{1,p}(Ω) ⊂ L^p(Ω)` through `C(Ω̄)`, the route by which
-[brezis2011functional] Theorem 9.16 reads "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection" for
-`p > N`. -/
+/-- Let $K \subseteq E$ be compact, let $\Omega \subseteq K$ be measurable with
+$\mu(\Omega) < \infty$, and let $1 \le p \le \infty$. **Extension by zero into $L^p(\Omega)$**
+is the bounded linear map $C(K, \mathbb{R}) \to L^p(\Omega)$ that sends $f$ to the restriction
+to $\Omega$ of its extension by zero. Its norm is at most $\mu(\Omega)^{1/p}$.
+
+Composed with the map $W^{1,p}(\Omega) \to C(\overline{\Omega}, \mathbb{R})$ that takes the
+continuous representative (Morrey's theorem), it gives the injection
+$W^{1,p}(\Omega) \subset L^p(\Omega)$ through $C(\overline{\Omega})$. By this route Theorem 9.16
+of [brezis2011functional] gives "$W^{1,p}(\Omega) \subset L^p(\Omega)$ with compact injection"
+for $p > N$. -/
 def extendZeroToLpL (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) :
     C(K, ℝ) →L[ℝ] Lp ℝ p (μ.restrict Ω) :=
   LinearMap.mkContinuous
@@ -695,15 +811,19 @@ def extendZeroToLpL (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ 
       exact eLpNorm_extendZero_le f hΩK hΩ
 
 omit [NormedSpace ℝ E] in
-/-- The extension by zero, as an `L^p(Ω)` element, is `f` almost everywhere on `Ω`. -/
+/-- As an element of $L^p(\Omega)$, the image of $f \in C(K, \mathbb{R})$ under extension by zero
+equals the extension by zero of $f$ almost everywhere on $\Omega$. -/
 theorem coeFn_extendZeroToLpL (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) (f : C(K, ℝ)) :
     extendZeroToLpL μ K Ω p hΩK hΩ hμ f =ᵐ[μ.restrict Ω] extendZero K f :=
   MemLp.coeFn_toLp (memLp_extendZero f hΩK hΩ hμ)
 
 omit [NormedSpace ℝ E] in
-/-- **Extension by zero is injective for `Ω ⊆ K ⊆ closure Ω`**, `Ω` open and `μ` positive on open
-sets: a continuous function on `K` vanishing almost everywhere on `Ω` vanishes on `Ω`, hence on
-its closure. -/
+/-- **Extension by zero is injective.** Let $\Omega \subseteq E$ be open with
+$\mu(\Omega) < \infty$, let $K$ be compact with
+$\Omega \subseteq K \subseteq \overline{\Omega}$, and let $\mu$ be positive on nonempty open
+sets. Then extension by zero $C(K, \mathbb{R}) \to L^p(\Omega)$ is injective: a continuous
+function on $K$ that vanishes almost everywhere on $\Omega$ vanishes on $\Omega$, hence on
+$K \subseteq \overline{\Omega}$. -/
 theorem extendZeroToLpL_injective
     [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω) (hμ : μ Ω ≠ ⊤) :
     Function.Injective (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ) := by
@@ -721,8 +841,9 @@ theorem extendZeroToLpL_injective
   rwa [extendZero_of_mem f hx, extendZero_of_mem g hx] at this
 
 omit [NormedSpace ℝ E] in
-/-- **Extension by zero is a continuous embedding `C(K, ℝ) ↪ L^p(Ω)`** for
-`Ω ⊆ K ⊆ closure Ω`, `Ω` open of finite positive measure. -/
+/-- Let $\Omega \subseteq E$ be open with $\mu(\Omega) < \infty$, let $K$ be compact with
+$\Omega \subseteq K \subseteq \overline{\Omega}$, and let $\mu$ be positive on nonempty open
+sets. Then extension by zero $C(K, \mathbb{R}) \to L^p(\Omega)$ is a continuous embedding. -/
 theorem isContinuousEmbedding_extendZeroToLpL
     [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω)
     (hμ : μ Ω ≠ ⊤) :
@@ -734,16 +855,21 @@ end ContinuousMap
 
 end ExtendZero
 
-/-! ### Theorem 9.16 for `p > N`: `W^{1,p}(Ω) ⊂⊂ L^p(Ω)` through `C(Ω̄)` -/
+/-! ### Theorem 9.16 for $p > N$: the injection into $L^p(\Omega)$ through $C(\overline{\Omega})$ -/
 
 section RellichGtSelf
 
 open SobolevMultiIndex
 
-/-- **The injection `W^{1,p}(Ω) ⊂ L^p(Ω)` factors through `C(Ω̄, ℝ)` for `p > N`**: on an
-extension domain of finite measure, the inclusion `SobolevMultiIndex.toLpₗ` is the extension by
-zero `C(closure Ω, ℝ) → L^p(Ω)` composed with the trace map `SobolevEuclidean.toContinuousMapL`
-of Morrey's representative. -/
+/-- **The injection $W^{1,p}(\Omega) \subset L^p(\Omega)$ factors through $C(\overline{\Omega})$ for
+$p > N$.** Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of finite measure
+with compact closure, and let $N < p < \infty$. Then the injection
+$W^{1,p}(\Omega) \subset L^p(\Omega)$ is the composition of the map $W^{1,p}(\Omega) \to
+C(\overline{\Omega}, \mathbb{R})$ that takes the continuous representative and extension by zero
+$C(\overline{\Omega}, \mathbb{R}) \to L^p(\Omega)$.
+
+The first map is `SobolevEuclidean.toContinuousMapL`, and the second is
+`ContinuousMap.extendZeroToLpL`. -/
 theorem SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL {N : ℕ}
     {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
@@ -765,11 +891,15 @@ theorem SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL {N : �
   rw [ContinuousMap.extendZero_of_mem _ (subset_closure hx)]
   rfl
 
-/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", for `p > N`**: for a bounded
-open `Ω ⊆ ℝ^N` of class `C¹` (by charts) and `N < p < ∞`, the injection `W^{1,p}(Ω) ⊂ L^p(Ω)` is
-compact — it factors through the compact injection `W^{1,p}(Ω) ⊂ C(Ω̄)` and the continuous
-extension by zero `C(Ω̄) → L^p(Ω)`. This covers the case `N = 1 < p` of the last sentence of
-[brezis2011functional] Theorem 9.16, left out of `SobolevEuclidean.isCompactEmbedding_toLp_self`. -/
+/-- **The Rellich–Kondrachov theorem, the injection into $L^p$ for $p > N$.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let $N < p < \infty$.
+Then the injection $W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact.
+
+It is the compact injection $W^{1,p}(\Omega) \subset C(\overline{\Omega})$ followed by the
+continuous extension by zero $C(\overline{\Omega}) \to L^p(\Omega)$. This covers the case
+$N = 1 < p$ of the last sentence of Theorem 9.16 of [brezis2011functional], which
+`SobolevEuclidean.isCompactEmbedding_toLp_self` leaves out. The dimension is written
+$N = d + 1$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -786,11 +916,14 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt {d : ℕ} {p : ℝ�
     |>.comp_isContinuousEmbedding
       (ContinuousMap.isContinuousEmbedding_extendZeroToLpL subset_closure subset_rfl Ω.isOpen _)
 
-/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection"**, for a bounded open
-`Ω ⊆ ℝ^N` of class `C¹` (by charts) and `1 ≤ p < ∞`, provided `p ≠ 1` or `N ≥ 2`: the three
-routes `p < N` (Rellich–Kondrachov), `N ≤ p` with `N ≥ 2` (lowering the exponent) and `p > N`
-(through `C(Ω̄)`) together leave out only `N = 1 = p`. [brezis2011functional] Theorem 9.16, the
-last sentence. -/
+/-- **The Rellich–Kondrachov theorem, the injection into $L^p$.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let $1 \le p < \infty$
+with $p \ne 1$ or $N \ge 2$. Then the injection $W^{1,p}(\Omega) \subset L^p(\Omega)$ is
+compact. This is the last sentence of Theorem 9.16 of [brezis2011functional].
+
+The three cases $p < N$ (`SobolevEuclidean.isCompactEmbedding_toLp_self`), $N \le p$ with
+$N \ge 2$ (lowering the exponent) and $p > N$ (through $C(\overline{\Omega})$) together leave
+out only $N = 1 = p$. The dimension is written $N = d + 1$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -808,9 +941,10 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one {d : ℕ} {p : �
     · exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb (Or.inr hd)
   · exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb (Or.inr hd)
 
-/-- **`W^{1,p}(Ω) ↪↪ L^p(Ω)` along `SobolevMultiIndex.fnL`**, for `1 ≤ p < ∞` with `p ≠ 1` or
-`N ≥ 2`: the form of `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` on the bundled
-inclusion. -/
+/-- Let $N \ge 1$, let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let
+$1 \le p < \infty$ with $p \ne 1$ or $N \ge 2$. Then the bounded injection
+$W^{1,p}(\Omega) \to L^p(\Omega)$, `SobolevMultiIndex.fnL`, is a compact embedding. This is
+`SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` for the bundled injection. -/
 theorem SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one {d : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -823,13 +957,17 @@ theorem SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one {d : ℕ} {p : ℝ≥0
 
 end RellichGtSelf
 
-/-! ### `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`: the compact embedding between successive orders -/
+/-! ### Compact injection $W^{k+1,p}(\Omega) \subset W^{k,p}(\Omega)$ between successive orders -/
 
 section LowerOrder
 
-/-- **A common convergent subsequence for finitely many sequences under a compact embedding**:
-given bounded sequences `u i`, `i` in a finite type, there is one subsequence along which every
-`κ (u i ·)` converges — the images lie in a finite product of compact sets. -/
+/-- **A common convergent subsequence for finitely many sequences.** Let $\kappa : V \to W$ be a
+compact embedding of normed spaces, and let $(u_{i,n})_n$, for $i$ in a finite index set, be
+bounded sequences in $V$. Then there is one strictly increasing
+$\varphi : \mathbb{N} \to \mathbb{N}$ such that $\kappa(u_{i,\varphi(n)})$ converges in $W$ for
+every $i$.
+
+The images lie in a finite product of compact sets. -/
 theorem IsCompactEmbedding.exists_subseq_forall_tendsto {𝕜 : Type*} [NontriviallyNormedField 𝕜]
     {V W : Type*} [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W]
     [NormedSpace 𝕜 W] {κ : V →ₗ[𝕜] W} (h : IsCompactEmbedding κ) {ι : Type*} [Finite ι]
@@ -843,8 +981,10 @@ theorem IsCompactEmbedding.exists_subseq_forall_tendsto {𝕜 : Type*} [Nontrivi
   obtain ⟨a, -, φ, hφ, ha⟩ := (isCompact_univ_pi hK).tendsto_subseq hmem
   exact ⟨φ, hφ, fun i ↦ ⟨a i, tendsto_pi_nhds.1 ha i⟩⟩
 
-/-- **The sequential criterion for a compact embedding**, on a bounded linear map that is a
-continuous embedding: every bounded sequence has a subsequence whose image converges. -/
+/-- **The sequential criterion for a compact embedding.** Let $\iota : V \to W$ be a bounded linear
+map that is a continuous embedding. If every bounded sequence $(u_n)$ in $V$ has a subsequence
+$(u_{\varphi(n)})$ such that $\iota(u_{\varphi(n)})$ converges in $W$, then $\iota$ is a compact
+embedding. -/
 theorem IsCompactEmbedding.of_forall_exists_subseq_tendsto {𝕜 : Type*} [NontriviallyNormedField 𝕜]
     {V W : Type*} [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W]
     [NormedSpace 𝕜 W] {ι : V →L[𝕜] W} (hι : IsContinuousEmbedding ι.toLinearMap)
@@ -858,9 +998,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {Ω : Opens E} {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
 
-/-- **A sequence of `W^{k,p}(Ω)` all of whose weak derivatives converge in `L^p(Ω)` converges in
-`W^{k,p}(Ω)`**: the ambient space is an `ℓ^p` product of `L^p(Ω)` spaces, in which convergence is
-componentwise, and `W^{k,p}(Ω)` is closed in it (`SobolevMultiIndex.isClosed`). -/
+/-- Let $F$ be complete, let $\mu$ be locally finite and finite on compact sets, and let $(x_n)$ be
+a sequence in $W^{k,p}(\Omega)$. If for every multi-index $\alpha$ with $|\alpha| \le k$ the
+weak derivatives $\partial^\alpha x_n$ converge in $L^p(\Omega)$, then $(x_n)$ converges in
+$W^{k,p}(\Omega)$.
+
+The space $W^{k,p}(\Omega)$ is a closed subspace (`SobolevMultiIndex.isClosed`) of an $\ell^p$
+product of copies of $L^p(\Omega)$, and convergence in this product is convergence of each
+component. -/
 theorem SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv
     {x : ℕ → SobolevMultiIndex F b k p Ω μ}
     (h : ∀ α, ∃ L : Lp F p (μ.restrict (Ω : Set E)),
@@ -891,14 +1036,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 namespace SobolevMultiIndex
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- The components of `SobolevMultiIndex.toLowerOrderL u` are those of `u`. -/
+/-- Let $k' \le k$, let $u \in W^{k,p}(\Omega)$, and let $|\alpha| \le k'$. Then the weak derivative
+$\partial^\alpha$ of the image of $u$ under the injection
+$W^{k,p}(\Omega) \to W^{k',p}(\Omega)$, `SobolevMultiIndex.toLowerOrderL`, is
+$\partial^\alpha u$. -/
 theorem weakDeriv_toLowerOrderL {k' : ℕ} (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ)
     (α : MultiIndexLE ι k') :
     weakDeriv (toLowerOrderL F b p Ω μ hk u) α = weakDeriv u ⟨α.1, α.2.trans hk⟩ :=
   rfl
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- The only component of `SobolevMultiIndex.toLowerOrderL u` in `W^{0,p}(Ω)` is the function. -/
+/-- Let $u \in W^{k,p}(\Omega)$. The only component of the image of $u$ in $W^{0,p}(\Omega)$ under
+`SobolevMultiIndex.toLowerOrderL` is the function $u$, as an element of $L^p(\Omega)$
+(`SobolevMultiIndex.fnL`). -/
 theorem weakDeriv_toLowerOrderL_zero (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι 0) :
     weakDeriv (toLowerOrderL F b p Ω μ (Nat.zero_le k) u) α = fnL F b k p Ω μ u := by
   obtain rfl : α = 0 := Subtype.ext (funext fun i ↦ Nat.le_zero.1
@@ -906,20 +1056,24 @@ theorem weakDeriv_toLowerOrderL_zero (u : SobolevMultiIndex F b k p Ω μ) (α :
   rfl
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- The components of `SobolevMultiIndex.partialDerivL i u` are those of `u` at `α + e_i`. -/
+/-- Let $u \in W^{k+1,p}(\Omega)$ and let $|\alpha| \le k$. Then the weak derivative
+$\partial^\alpha$ of the partial derivative $\partial_i u \in W^{k,p}(\Omega)$,
+`SobolevMultiIndex.partialDerivL`, is $\partial^{\alpha + e_i} u$. -/
 theorem weakDeriv_partialDerivL (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ)
     (α : MultiIndexLE ι k) :
     weakDeriv (partialDerivL F b p Ω μ i u) α = weakDeriv u (MultiIndexLE.addSingle i α) :=
   rfl
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- `‖toLowerOrderL u‖ ≤ ‖u‖`. -/
+/-- For $k' \le k$ the injection $W^{k,p}(\Omega) \to W^{k',p}(\Omega)$ does not increase norms:
+$\|u\|_{W^{k',p}(\Omega)} \le \|u\|_{W^{k,p}(\Omega)}$. -/
 theorem norm_toLowerOrderL_apply_le {k' : ℕ} (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
     ‖toLowerOrderL F b p Ω μ hk u‖ ≤ ‖u‖ :=
   norm_toLowerOrder_le hk u
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- `‖partialDerivL i u‖ ≤ ‖u‖`. -/
+/-- The partial derivative $\partial_i : W^{k+1,p}(\Omega) \to W^{k,p}(\Omega)$ does not increase
+norms: $\|\partial_i u\|_{W^{k,p}(\Omega)} \le \|u\|_{W^{k+1,p}(\Omega)}$. -/
 theorem norm_partialDerivL_apply_le (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
     ‖partialDerivL F b p Ω μ i u‖ ≤ ‖u‖ :=
   norm_partialDeriv_le i u
@@ -927,16 +1081,23 @@ theorem norm_partialDerivL_apply_le (i : ι) (u : SobolevMultiIndex F b (k + 1) 
 variable [FiniteDimensional ℝ E] [BorelSpace E]
 
 omit [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- **`W^{k,p}(Ω) ↪ W^{k',p}(Ω)` is a continuous embedding** for `k' ≤ k`, along
-`SobolevMultiIndex.toLowerOrderL`. -/
+/-- Let $E$ be finite-dimensional and $F$ complete. For $k' \le k$ the injection
+$W^{k,p}(\Omega) \to W^{k',p}(\Omega)$, `SobolevMultiIndex.toLowerOrderL`, is a continuous
+embedding. -/
 theorem isContinuousEmbedding_toLowerOrderL {k' : ℕ} (hk : k' ≤ k) :
     IsContinuousEmbedding (toLowerOrderL F b p Ω μ hk).toLinearMap :=
   ⟨toLowerOrderL_injective hk, 1, fun u ↦ by rw [one_mul]; exact norm_toLowerOrder_le hk u⟩
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- **`W^{1,p}(Ω) ⊂⊂ W^{0,p}(Ω)` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`, with the operator as a variable**:
-a continuous embedding `T : W^{1,p}(Ω) → W^{0,p}(Ω)` whose only component is the function is a
-compact embedding as soon as the inclusion `W^{1,p}(Ω) → L^p(Ω)` is one. -/
+/-- **The base case of the compact injection between successive orders.** Let $F$ be complete, let
+$\mu$ be locally finite and finite on compact sets, and let
+$T : W^{1,p}(\Omega) \to W^{0,p}(\Omega)$ be a bounded linear map and a continuous embedding
+whose only component is the function: the component of order $0$ of $Tv$ is $v$, as an element
+of $L^p(\Omega)$. If the injection $W^{1,p}(\Omega) \to L^p(\Omega)$, `SobolevMultiIndex.fnL`,
+is a compact embedding, then so is $T$.
+
+The operator $T$ is a variable, so that the lemma applies to `SobolevMultiIndex.toLowerOrderL`
+without unfolding it. -/
 theorem isCompactEmbedding_of_forall_weakDeriv_eq_fnL
     {T : SobolevMultiIndex F b 1 p Ω μ →L[ℝ] SobolevMultiIndex F b 0 p Ω μ}
     (hTc : ∀ (v : SobolevMultiIndex F b 1 p Ω μ) (α : MultiIndexLE ι 0),
@@ -953,15 +1114,22 @@ theorem isCompactEmbedding_of_forall_weakDeriv_eq_fnL
   exact ⟨φ, y, hφ, hy⟩
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- **The inductive step of `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`, with the operators as variables**:
-given `T : W^{k+2,p}(Ω) → W^{k+1,p}(Ω)` and `T' : W^{k+1,p}(Ω) → W^{k,p}(Ω)` forgetting the top
-components, and `D i : W^{k+2,p}(Ω) → W^{k+1,p}(Ω)` the partial derivatives, all bounded by one,
-if `T'` is a compact embedding then so is `T`. For a bounded sequence `u_n` in `W^{k+2,p}(Ω)`,
-the sequences `T u_n` and `D_i u_n` are bounded in `W^{k+1,p}(Ω)`, so along a common subsequence
-their images under `T'` converge in `W^{k,p}(Ω)`; every component `∂^β u_n`, `|β| ≤ k + 1`, is a
-component of one of them (`∂^β = ∂^{β'} ∂_i` for `|β| = k + 1`), hence converges in `L^p(Ω)`,
-and `T u_n` converges in `W^{k+1,p}(Ω)`
-(`SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`). -/
+/-- **The inductive step of the compact injection between successive orders.** Let $F$ be complete
+and let $\mu$ be locally finite and finite on compact sets. Let
+$$T : W^{k+2,p}(\Omega) \to W^{k+1,p}(\Omega), \qquad T' : W^{k+1,p}(\Omega) \to
+  W^{k,p}(\Omega), \qquad D_i : W^{k+2,p}(\Omega) \to W^{k+1,p}(\Omega)$$
+be bounded linear maps, for $i$ in the index set of the basis, such that $T$ and $T'$ keep the
+components of order at most $k + 1$ and $k$, $D_i$ is the partial derivative, $\partial^\gamma
+(D_i v) = \partial^{\gamma + e_i} v$, and $\|Tv\| \le \|v\|$ and $\|D_i v\| \le \|v\|$ for all
+$v$. If $T$ is a continuous embedding and $T'$ is a compact embedding, then $T$ is a compact
+embedding.
+
+For a bounded sequence $u_n$ in $W^{k+2,p}(\Omega)$, the sequences $Tu_n$ and $D_i u_n$ are
+bounded in $W^{k+1,p}(\Omega)$, so along a common subsequence their images under $T'$ converge
+in $W^{k,p}(\Omega)$. Every component $\partial^\beta u_n$ with $|\beta| \le k + 1$ is a
+component of one of them, because $\partial^\beta = \partial^{\beta'} \partial_i$ when
+$|\beta| = k + 1$. Hence every component converges in $L^p(\Omega)$, and $Tu_n$ converges in
+$W^{k+1,p}(\Omega)$ by `SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`. -/
 theorem isCompactEmbedding_of_forall_weakDeriv_eq
     {T : SobolevMultiIndex F b (k + 1 + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b (k + 1) p Ω μ}
     {T' : SobolevMultiIndex F b (k + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω μ}
@@ -1037,11 +1205,14 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`**: if the map
-`SobolevMultiIndex.fnL` from `W^{1,p}(Ω)` to `L^p(Ω)` is a compact embedding, then so is every
-inclusion `SobolevMultiIndex.toLowerOrderL` of `W^{k+1,p}(Ω)` into `W^{k,p}(Ω)`. Induction on
-`k`, the step being `SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` for the
-operators forgetting the top components and the partial derivatives. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p \le \infty$. If the injection
+$W^{1,p}(\Omega) \to L^p(\Omega)$, `SobolevMultiIndex.fnL`, is a compact embedding, then for
+every $k$ the injection $W^{k+1,p}(\Omega) \to W^{k,p}(\Omega)$,
+`SobolevMultiIndex.toLowerOrderL`, is a compact embedding.
+
+The proof is by induction on $k$. The inductive step is
+`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` for the maps that forget the
+components of highest order and for the partial derivatives. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL
     (hc : IsCompactEmbedding
       (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume).toLinearMap) (k : ℕ) :
@@ -1067,13 +1238,15 @@ open SobolevMultiIndex
 
 variable {d : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`** for a bounded open `Ω ⊆ ℝ^N` of class `C¹` (by charts),
-`1 ≤ p < ∞` with `p ≠ 1` or `N ≥ 2`: the inclusion `SobolevMultiIndex.toLowerOrderL` is a
-compact embedding (Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9, under `C¹`;
-[brezis2011functional] Theorem 9.16 iterated). Induction on `k` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`
-(`SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`), the step being
-`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` for the operators forgetting the
-top components and the partial derivatives. -/
+/-- **The compact injection between successive orders on a $C^1$ domain.** Let $N \ge 1$, let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set of class $C^1$, and let $1 \le p < \infty$
+with $p \ne 1$ or $N \ge 2$. Then for every $k$ the injection
+$W^{k+1,p}(\Omega) \subset W^{k,p}(\Omega)$ is compact. This is Theorem 7.3.9 of
+[han2009theoretical] on a $C^1$ domain, and Theorem 9.16 of [brezis2011functional] iterated.
+
+The injection is `SobolevMultiIndex.toLowerOrderL`, and the dimension is written $N = d + 1$.
+The proof is `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL` with
+the base case `SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hd : p ≠ 1 ∨ 1 ≤ d)
@@ -1085,7 +1258,7 @@ theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
 
 end RellichLower
 
-/-! ### The abstract Rellich–Kondrachov lemma at `q = p`: every `1 ≤ p < ∞`, every `N` -/
+/-! ### The abstract Rellich–Kondrachov lemma at $q = p$: every $1 \le p < \infty$, every $N$ -/
 
 section RellichSelf
 
@@ -1094,7 +1267,9 @@ open SobolevMultiIndex
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- The family `ℱ = P(unit ball)` is bounded in `L^p(ℝ^N)` (by `‖P‖`), for every `p`. -/
+/-- Let $S$ be a subspace of $W^{1,p}(\Omega)$ and let $P : S \to W^{1,p}(\mathbb{R}^N)$ be a
+bounded linear map. Then the family $\mathcal{F} = \{Pu : u \in S,\ \|u\| \le 1\}$ is bounded in
+$L^p(\mathbb{R}^N)$, by $\|P\|$. -/
 theorem HasSobolevExtensionOn.isBounded_image_closedBall_self
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) :
     Bornology.IsBounded ((fun u : S ↦ (SobolevEuclidean.memLp_fn (P u)).toLp _) ''
@@ -1113,10 +1288,16 @@ theorem HasSobolevExtensionOn.isBounded_image_closedBall_self
   rw [ENNReal.toReal_ofReal (norm_nonneg _)]
   exact hPu
 
-/-- The family `ℱ = P(unit ball)` has a uniform translation modulus in `L^p(ℝ^N)`, for every
-`1 ≤ p < ∞`: Proposition 9.3, `‖τ_h v − v‖_p ≤ ‖h‖ ‖∇v‖_p ≤ ‖h‖ N ‖P‖` — the hypothesis of the
-Kolmogorov–M. Riesz–Fréchet theorem in [brezis2011functional] §9.3, proof of Theorem 9.16, at
-`q = p`, where no interpolation is needed. -/
+/-- Let $1 \le p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$, and let
+$P : S \to W^{1,p}(\mathbb{R}^N)$ be a bounded linear map. Then the family
+$\mathcal{F} = \{Pu : u \in S,\ \|u\| \le 1\}$, viewed in $L^p(\mathbb{R}^N)$, is uniformly
+continuous under translation: for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$\|\tau_h f - f\|_{L^p(\mathbb{R}^N)} < \varepsilon \qquad \text{for all } f \in \mathcal{F}
+  \text{ and all } h \text{ with } \|h\| < \delta.$$
+
+This is the hypothesis of the Kolmogorov–M. Riesz–Fréchet theorem in the proof of Theorem 9.16
+of [brezis2011functional] at $q = p$, where no interpolation is needed. Proposition 9.3 gives
+$\|\tau_h v - v\|_p \le \|h\| \|\nabla v\|_p \le \|h\| N \|P\|$. -/
 theorem HasSobolevExtensionOn.uniform_translate_image_closedBall_self
     (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) :
     ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ (fun u : S ↦
@@ -1150,8 +1331,14 @@ theorem HasSobolevExtensionOn.uniform_translate_image_closedBall_self
   refine mul_le_mul' le_rfl ((SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le (P u)).trans ?_)
   exact mul_le_mul' le_rfl (ENNReal.ofReal_le_ofReal hPu)
 
-/-- The inclusion `S → L^p(Ω)` along `fnL` sends `u` to the restriction to `Ω` of `fn (P u)`,
-read in `L^p(ℝ^N)`: the image of the unit ball of `S` is `ℱ|_Ω`, `ℱ = P(unit ball)`. -/
+/-- Let $S$ be a subspace of $W^{1,p}(\Omega)$ and let $P : S \to W^{1,p}(\mathbb{R}^N)$ be a
+bounded linear map with $Pu = u$ almost everywhere on $\Omega$ for every $u \in S$. Then the
+image of $u \in S$ in $L^p(\Omega)$ is the restriction to $\Omega$ of
+$Pu \in L^p(\mathbb{R}^N)$.
+
+Thus the image of the unit ball of $S$ in $L^p(\Omega)$ is the set of restrictions to $\Omega$
+of the family $\mathcal{F} = P(B_S)$. The image in $L^p(\Omega)$ is `SobolevMultiIndex.fnL` on
+the subspace. -/
 theorem HasSobolevExtensionOn.fnL_comp_subtypeL_apply (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤)
     (hP : ∀ u : S, fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       fn (u : SobolevEuclidean N 1 p Ω)) (u : S) :
@@ -1162,10 +1349,14 @@ theorem HasSobolevExtensionOn.fnL_comp_subtypeL_apply (P : S →L[ℝ] SobolevEu
   refine Filter.EventuallyEq.trans (hP u).symm (Filter.EventuallyEq.symm ?_)
   exact ae_restrict_of_ae (MemLp.coeFn_toLp (SobolevEuclidean.memLp_fn (P u)))
 
-/-- **The image of the unit ball of `S` in `L^p(Ω)` has compact closure**, for a subspace `S` of
-`W^{1,p}(Ω)` with an extension operator and `volume Ω < ∞`, every `1 ≤ p < ∞`: it is `ℱ|_Ω` where
-`ℱ = P(unit ball) ⊆ W^{1,p}(ℝ^N)` is bounded in `L^p(ℝ^N)` with a uniform translation modulus
-in `L^p` (Proposition 9.3), so the Kolmogorov–M. Riesz–Fréchet theorem
+/-- Let $1 \le p < \infty$, let $\Omega \subseteq \mathbb{R}^N$ be open with finite measure, and let
+$S$ be a subspace of $W^{1,p}(\Omega)$ that has a Sobolev extension operator. Then the image of
+the unit ball of $S$ in $L^p(\Omega)$ has compact closure.
+
+The image is the set of restrictions to $\Omega$ of the family $\mathcal{F} = P(B_S) \subseteq
+W^{1,p}(\mathbb{R}^N)$. This family is bounded in $L^p(\mathbb{R}^N)$ and uniformly continuous
+under translation in $L^p$ by Proposition 9.3 of [brezis2011functional], so the Kolmogorov–M.
+Riesz–Fréchet theorem
 `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` applies. -/
 theorem HasSobolevExtensionOn.isCompact_closure_image_closedBall_self
     (hS : HasSobolevExtensionOn S)
@@ -1183,13 +1374,16 @@ theorem HasSobolevExtensionOn.isCompact_closure_image_closedBall_self
     (HasSobolevExtensionOn.isBounded_image_closedBall_self P)
     (HasSobolevExtensionOn.uniform_translate_image_closedBall_self P) hΩ
 
-/-- **The abstract Rellich–Kondrachov lemma at `q = p`**: for a subspace `S` of `W^{1,p}(Ω)` with
-an extension operator (`HasSobolevExtensionOn S`), `volume Ω < ∞` and *any* `1 ≤ p < ∞` in *any*
-dimension, the inclusion `S → L^p(Ω)` (along `SobolevMultiIndex.toLpₗOn`) is a compact embedding
-(`HasSobolevExtensionOn.isCompact_closure_image_closedBall_self`). This is the last sentence of
-[brezis2011functional] Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", in the
-generality of its proof, without the case distinction `p < N`, `p = N`, `p > N` (which the proof
-needs only for the exponents `q ≠ p`). -/
+/-- **The abstract Rellich–Kondrachov lemma at $q = p$.** Let $1 \le p < \infty$, let
+$\Omega \subseteq \mathbb{R}^N$ be open with finite measure, in any dimension $N$, and let $S$
+be a subspace of $W^{1,p}(\Omega)$ that has a Sobolev extension operator. Then the injection
+$S \subset L^p(\Omega)$ is a compact embedding.
+
+This is the last sentence of Theorem 9.16 of [brezis2011functional],
+"$W^{1,p}(\Omega) \subset L^p(\Omega)$ with compact injection", in the generality of its proof.
+It needs no case distinction between $p < N$, $p = N$ and $p > N$, which the proof uses only for
+the exponents $q \ne p$. The injection is `SobolevMultiIndex.toLpₗOn`, and the proof is
+`HasSobolevExtensionOn.isCompact_closure_image_closedBall_self`. -/
 theorem HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self (hS : HasSobolevExtensionOn S)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume S
@@ -1199,10 +1393,13 @@ theorem HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self (hS : HasSobolevExt
     (fun _ _ huv ↦ Subtype.ext (fnL_injective huv))
     (hS.isCompact_closure_image_closedBall_self hΩ)
 
-/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", on any extension domain of
-finite measure and for every `1 ≤ p < ∞`** — in particular for `N = 1 = p`, the case left out
-of `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one`. [brezis2011functional]
-Theorem 9.16, the last sentence. -/
+/-- **The Rellich–Kondrachov theorem, the injection into $L^p$, on an extension domain.** Let
+$1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of
+finite measure. Then the injection $W^{1,p}(\Omega) \subset L^p(\Omega)$ is compact. This is the
+last sentence of Theorem 9.16 of [brezis2011functional].
+
+The statement holds in every dimension and for every $p$, including the case $N = 1 = p$ that
+`SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` leaves out. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
@@ -1212,7 +1409,7 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomai
 
 end RellichSelf
 
-/-! ### Remark 20: the compactness clauses on `W_0^{1,p}(Ω)` of an arbitrary open set -/
+/-! ### Remark 20: the compactness clauses on $W_0^{1,p}(\Omega)$ of an arbitrary open set -/
 
 section RellichZero
 
@@ -1222,26 +1419,33 @@ variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (
 
 namespace SobolevEuclideanZero
 
-/-- **Remark 20, the compactness clause: `W_0^{1,p}(Ω) ↪↪ L^p(Ω)` for an arbitrary open set `Ω`
-of finite measure** (in particular a bounded one), with no regularity of `Ω`, for every
-`1 ≤ p < ∞` and every `N`: the abstract lemma `HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self`
-with `S = W_0^{1,p}(Ω)` and the extension by zero `SobolevEuclideanZero.hasSobolevExtensionOn`.
-"Similarly, the conclusion of Theorem 9.16 is true for `W_0^{1,p}(Ω)` with an arbitrary bounded
-open set `Ω`" ([brezis2011functional] Chapter 9, Remark 20); the clauses for the other exponents
-`q` of Theorem 9.16 are `SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt` (`p < N`,
-`1 ≤ q < p*`), `SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq` (`p = N ≥ 2`, `N ≤ q < ∞`)
-and `SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL` (`p > N`, into `C(Ω̄)`). This
-is the compactness of the injection `H^1_0(Ω) ⊂ L²(Ω)` used by the proofs of Theorems 9.23 and
-9.31 (`SobolevEuclideanZero.isCompactOperator_fnL`). -/
+/-- **The compact injection $W_0^{1,p}(\Omega) \subset L^p(\Omega)$ on an arbitrary open set.** Let
+$1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be an open set of finite measure, for
+example a bounded one, with no regularity, in any dimension $N$. Then the injection
+$W_0^{1,p}(\Omega) \subset L^p(\Omega)$ is compact. This is the compactness clause of Remark 20
+in Chapter 9 of [brezis2011functional]: "Similarly, the conclusion of Theorem 9.16 is true for
+$W_0^{1,p}(\Omega)$ with an arbitrary bounded open set $\Omega$".
+
+The proof is `HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self` with $S = W_0^{1,p}(\Omega)$
+and extension by zero (`SobolevEuclideanZero.hasSobolevExtensionOn`). The clauses for the other
+exponents $q$ of Theorem 9.16 are `SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt` ($p < N$,
+$1 \le q < p^*$), `SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq` ($p = N \ge 2$,
+$N \le q < \infty$) and `SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL` ($p > N$,
+into $C(\overline{\Omega})$). This is the compactness of the injection
+$H_0^1(\Omega) \subset L^2(\Omega)$ that the proofs of Theorems 9.23 and 9.31 use
+(`SobolevEuclideanZero.isCompactOperator_fnL`). -/
 theorem isCompactEmbedding_toLp (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
       (SobolevEuclideanZero N 1 p Ω) fun u ↦ memLp (u : SobolevEuclidean N 1 p Ω)) :=
   hasSobolevExtensionOn.isCompactEmbedding_toLpOn_self hΩ
 
 omit [Fact (1 ≤ (p : ℝ≥0∞))] in
-/-- **`W_0^{1,p}(Ω) ↪↪ L^p(Ω)` along `SobolevMultiIndexZero.fnL`**, for an open set of finite
-measure and `1 ≤ p < ∞` (stated for `p : ℝ≥0∞`, `p ≠ ∞`, the form the elliptic theory at `p = 2`
-consumes). [brezis2011functional] Chapter 9, Remark 20. -/
+/-- Let $1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be an open set of finite measure.
+Then the bounded injection $W_0^{1,p}(\Omega) \to L^p(\Omega)$, `SobolevMultiIndexZero.fnL`, is
+a compact embedding. This follows from Remark 20 in Chapter 9 of [brezis2011functional].
+
+The exponent is stated as an element of $[1, \infty]$ with $p \ne \infty$, the form that the
+elliptic theory at $p = 2$ uses. -/
 theorem isCompactEmbedding_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     IsCompactEmbedding (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
@@ -1253,19 +1457,22 @@ theorem isCompactEmbedding_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤
     (μ := volume)] at h
 
 omit [Fact (1 ≤ (p : ℝ≥0∞))] in
-/-- **The inclusion `W_0^{1,p}(Ω) → L^p(Ω)` is a compact operator** for an open set of finite
-measure and `1 ≤ p < ∞`: the form of `SobolevEuclideanZero.isCompactEmbedding_toLp` that the
-Fredholm alternative for the elliptic Dirichlet problem consumes at `p = 2`
-([brezis2011functional] Theorem 9.23, proof: "`T : L² → L²` is a compact operator since `Ω` is
-bounded"). -/
+/-- Let $1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be an open set of finite measure.
+Then the injection $W_0^{1,p}(\Omega) \to L^p(\Omega)$ is a compact operator.
+
+This is the form of `SobolevEuclideanZero.isCompactEmbedding_toLp` that the Fredholm alternative
+for the elliptic Dirichlet problem uses at $p = 2$, as in the proof of Theorem 9.23 of
+[brezis2011functional]: "$T : L^2 \to L^2$ is a compact operator since $\Omega$ is bounded". -/
 theorem isCompactOperator_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     IsCompactOperator (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
       1 p Ω volume) :=
   (isCompactEmbedding_fnL hp hΩ).isCompactOperator
 
-/-- **Remark 20, case `p < N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,p}(Ω)` and
-`1 ≤ q ≤ p*` on an open set of finite measure. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an open set of finite measure, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $q \le p^*$. Then every $u \in W_0^{1,p}(\Omega)$ lies in
+$L^q(\Omega)$. This is the membership for the case $p < N$ of Remark 20 in Chapter 9 of
+[brezis2011functional]. -/
 theorem memLp_fn_of_le_sobolevConj (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q ≤ p')
     (u : SobolevEuclideanZero N 1 p Ω) :
@@ -1273,9 +1480,10 @@ theorem memLp_fn_of_le_sobolevConj (hΩ : volume (Ω : Set (EuclideanSpace ℝ (
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hasSobolevExtensionOn.memLp_fn_of_le_sobolevConj hΩ hpN hp' hqp' u
 
-/-- **Remark 20, the compactness clause, case `p < N`**: `W_0^{1,p}(Ω) ↪↪ L^q(Ω)` for an
-arbitrary open set `Ω` of finite measure, `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `1 ≤ q < p*`
-([brezis2011functional] Remark 20; Theorem 9.16, the first line). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set of finite measure, let
+$1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $1 \le q < p^*$. Then the injection
+$W_0^{1,p}(\Omega) \subset L^q(\Omega)$ is compact. This is Remark 20 in Chapter 9 of
+[brezis2011functional] for the first case of Theorem 9.16. -/
 theorem isCompactEmbedding_toLp_of_lt [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q < p') :
@@ -1284,11 +1492,14 @@ theorem isCompactEmbedding_toLp_of_lt [Fact (1 ≤ (q : ℝ≥0∞))]
   SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn hasSobolevExtensionOn hΩ hpN
     hp' hqp'
 
-/-- **Remark 20, the compactness clause, case `p = N`**: `W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for an
-arbitrary open set `Ω` of finite measure, `N ≥ 2` and `N ≤ q < ∞`: `W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)`
-continuously for an `r < N` with `r* > q` (`SobolevMultiIndexZero.toLowerExponentL`), and
-`W_0^{1,r}(Ω) ↪↪ L^q(Ω)` by the case `p < N` ([brezis2011functional] Remark 20; Theorem 9.16,
-the second line). -/
+/-- Let $N \ge 2$, let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set of finite measure,
+and let $N \le q < \infty$. Then the injection $W_0^{1,N}(\Omega) \subset L^q(\Omega)$ is
+compact. This is Remark 20 in Chapter 9 of [brezis2011functional] for the second case of Theorem
+9.16.
+
+The injection $W_0^{1,N}(\Omega) \subset W_0^{1,r}(\Omega)$ is continuous for an $r < N$ with
+$r^* > q$ (`SobolevMultiIndexZero.toLowerExponentL`), and
+$W_0^{1,r}(\Omega) \subset L^q(\Omega)$ is compact by the case $p < N$. -/
 theorem isCompactEmbedding_toLp_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
     IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 N Ω volume
@@ -1304,11 +1515,13 @@ theorem isCompactEmbedding_toLp_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 �
     (SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn
       (S := SobolevEuclideanZero N 1 r Ω) hasSobolevExtensionOn hΩ hrN hr' hq2) _
 
-/-- **Remark 20, the compactness clause, case `p > N`**: for an arbitrary open set `Ω`,
-`N < p < ∞` and a compact `K ⊇ Ω` (such as `closure Ω` for a bounded `Ω`), the trace
-`W_0^{1,p}(Ω) → C(K)` of the continuous representative (`HasSobolevExtensionOn.toContinuousMapOnL`
-for the extension by zero) is a compact embedding: "`W_0^{1,p}(Ω) ⊂ C(Ω̄)` with compact
-injection" ([brezis2011functional] Remark 20; Theorem 9.16, the third line). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $N < p < \infty$, and let
+$K \supseteq \Omega$ be compact, for example $K = \overline{\Omega}$ for a bounded $\Omega$.
+Then the map $W_0^{1,p}(\Omega) \to C(K)$ that takes the continuous representative is a compact
+embedding. This is Remark 20 in Chapter 9 of [brezis2011functional] for the third case of
+Theorem 9.16: "$W_0^{1,p}(\Omega) \subset C(\overline{\Omega})$ with compact injection".
+
+The map is `HasSobolevExtensionOn.toContinuousMapOnL` for extension by zero. -/
 theorem isCompactEmbedding_toContinuousMapOnL (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))}
     [CompactSpace K] (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
     IsCompactEmbedding
@@ -1319,7 +1532,7 @@ end SobolevEuclideanZero
 
 end RellichZero
 
-/-! ### `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on an extension domain of finite measure -/
+/-! ### Compact injection $W^{k+1,p}(\Omega) \subset W^{k,p}(\Omega)$ on an extension domain -/
 
 section CompactLower
 
@@ -1327,13 +1540,17 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` on an extension domain of finite measure**, for every
-`1 ≤ p < ∞` and every dimension `N` (`[han2009theoretical]` Theorem 7.3.9, the book's Lipschitz
-hypothesis replaced by the extension property): the inclusion `SobolevMultiIndex.toLowerOrderL`
-is a compact embedding. Induction on `k` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`
+/-- **The compact injection between successive orders on an extension domain.** Let
+$1 \le p < \infty$, let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of
+finite measure, in any dimension $N$, and let $k \ge 0$. Then the injection
+$W^{k+1,p}(\Omega) \subset W^{k,p}(\Omega)$ is compact. This is Theorem 7.3.9 of
+[han2009theoretical], with the Lipschitz domain of the source replaced by an extension domain.
+
+The injection is `SobolevMultiIndex.toLowerOrderL`. The proof is by induction on $k$ from the
+compact injection $W^{1,p}(\Omega) \subset L^p(\Omega)$
 (`SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain`, which needs no
-case distinction on `p` and `N`), the step being
-`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` exactly as in
+case distinction on $p$ and $N$), with the inductive step
+`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` as in
 `SobolevEuclidean.isCompactEmbedding_toLower_of_lt`. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain
     (hΩ : IsSobolevExtensionDomain N p Ω)
@@ -1346,7 +1563,7 @@ theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionD
 
 end CompactLower
 
-/-! ### Composition lemmas for the embeddings of `W^{k,p}(Ω)` -/
+/-! ### Composition lemmas for the embeddings of $W^{k,p}(\Omega)$ -/
 
 section Composition
 
@@ -1359,8 +1576,12 @@ namespace SobolevMultiIndex
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
-/-- **`W^{k,p}(Ω) ↪ L^q(Ω)` for `q ≤ p` on a set of finite measure**, by Hölder's inequality
-`‖f‖_q ≤ μ(Ω)^{1/q − 1/p} ‖f‖_p`. -/
+/-- Let $E$ be finite-dimensional, $F$ complete, $\mu(\Omega) < \infty$ and
+$1 \le q \le p \le \infty$, and suppose that every $u \in W^{k,p}(\Omega)$ lies in
+$L^q(\Omega)$. Then the injection $W^{k,p}(\Omega) \subset L^q(\Omega)$ is a continuous
+embedding.
+
+The bound is Hölder's inequality $\|f\|_q \le \mu(\Omega)^{1/q - 1/p} \|f\|_p$. -/
 theorem isContinuousEmbedding_toLpₗ_of_le (hΩ : μ Ω ≠ ⊤) (hqp : q ≤ p)
     (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E))) :
     IsContinuousEmbedding (toLpₗ F b k p Ω μ h) := by
@@ -1387,8 +1608,12 @@ theorem isContinuousEmbedding_toLpₗ_of_le (hΩ : μ Ω ≠ ⊤) (hqp : q ≤ p
         exact mul_le_mul' (eLpNorm_fn_le_ofReal_norm u) le_rfl
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- **A compact embedding `W^{k',r}(Ω) ⊂⊂ L^q(Ω)` pulls back along a continuous embedding
-`T : W^{k,p}(Ω) → W^{k',r}(Ω)` preserving the function**: `W^{k,p}(Ω) ⊂⊂ L^q(Ω)`. -/
+/-- **Pull-back of a compact embedding.** Let $1 \le p, q, r \le \infty$, and let
+$T : W^{k,p}(\Omega) \to W^{k',r}(\Omega)$ be a bounded linear map and a continuous embedding
+with $Tu = u$ almost everywhere on $\Omega$. If every $v \in W^{k',r}(\Omega)$ lies in
+$L^q(\Omega)$ and the injection $W^{k',r}(\Omega) \subset L^q(\Omega)$ is compact, then every
+$u \in W^{k,p}(\Omega)$ lies in $L^q(\Omega)$ and the injection
+$W^{k,p}(\Omega) \subset L^q(\Omega)$ is compact. -/
 theorem isCompactEmbedding_toLpₗ_of_comp {k' : ℕ} {r : ℝ≥0∞} [Fact (1 ≤ r)]
     (T : SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k' r Ω μ)
     (hT : IsContinuousEmbedding T.toLinearMap)
@@ -1415,12 +1640,15 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{1,p}(Ω) ⊂⊂ L^q(Ω)` for `N ≤ p < ∞`, `N ≥ 2`, `1 ≤ q < ∞`, on an extension domain (for
-every exponent) of finite measure**: `W^{1,p}(Ω) ↪ W^{1,r}(Ω)` for an `r < N` with `r* > q`
-and the case `r < N` of the Rellich–Kondrachov theorem
-(`SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`); the generalization of
-`SobolevEuclidean.isCompactEmbedding_toLp_of_le` from `C¹` chart domains to extension
-domains. -/
+/-- Let $N \ge 2$, let $\Omega \subseteq \mathbb{R}^N$ be an extension domain for every exponent
+with finite measure, let $N \le p < \infty$, and let $1 \le q < \infty$. Then every
+$u \in W^{1,p}(\Omega)$ lies in $L^q(\Omega)$, and the injection
+$W^{1,p}(\Omega) \subset L^q(\Omega)$ is compact.
+
+This generalizes `SobolevEuclidean.isCompactEmbedding_toLp_of_le` from $C^1$ chart domains to
+extension domains. The injection $W^{1,p}(\Omega) \subset W^{1,r}(\Omega)$ is continuous for an
+$r < N$ with $r^* > q$, and $W^{1,r}(\Omega) \subset L^q(\Omega)$ is compact by the case $r < N$
+(`SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`). -/
 theorem SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll
     {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll N Ω)
@@ -1440,10 +1668,13 @@ theorem SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDoma
   exact isCompactEmbedding_toLpₗ_of_comp (toLowerExponentL ℝ _ 1 p r volume hμ hrp)
     (isContinuousEmbedding_toLowerExponentL hμ hrp) (fn_toLowerExponentL hμ hrp) hc
 
-/-- **`W^{1,p}(Ω) ⊂⊂ C(K)` for `N < p < ∞` and a compact `K ⊇ Ω`, on an extension domain**, along
-`SobolevEuclidean.toContinuousMapL`: the generalization of
-`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt` from `C¹` chart domains to
-extension domains (Arzelà–Ascoli, `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain, let $N < p < \infty$, and
+let $K \supseteq \Omega$ be compact. Then the map $W^{1,p}(\Omega) \to C(K)$ that takes the
+continuous representative, `SobolevEuclidean.toContinuousMapL`, is a compact embedding.
+
+This generalizes `SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt` from $C^1$ chart
+domains to extension domains. The proof is the Arzelà–Ascoli argument of
+`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`. -/
 theorem SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain
     {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω) (hp : (N : ℝ≥0) < p)
     {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
@@ -1455,12 +1686,15 @@ theorem SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensi
     ⟨fun u v huv ↦ by simpa using congrArg Subtype.val huv, 1, fun u ↦ by simp⟩
   exact hι.comp_isCompactEmbedding hc
 
-/-- **Rellich–Kondrachov at order `k + 1`, the case `k + 1 < N/p`**: on an extension domain (for
-every exponent) of finite measure, `1 ≤ p`, `k + 1 < N/p`, `1/p* = 1/p − (k+1)/N` and
-`1 ≤ q < p*`, the inclusion `W^{k+1,p}(Ω) ⊂ L^q(Ω)` is compact (Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorem 7.3.8 (a), the case `k ≥ 1` on the book's Lipschitz domain being
-an extension domain): `W^{k+1,p}(Ω) ↪ W^{1,r}(Ω)` with `1/r = 1/p − k/N`, and `W^{1,r}(Ω) ⊂⊂ L^q(Ω)`
-for `q < r* = p*`. -/
+/-- **The Rellich–Kondrachov theorem at order $k + 1 < N/p$.** Let $\Omega \subseteq \mathbb{R}^N$
+be an extension domain for every exponent with finite measure, let $1 \le p < \infty$ with
+$k + 1 < N/p$, let $1/p^* = 1/p - (k+1)/N$, and let $1 \le q < p^*$. Then every
+$u \in W^{k+1,p}(\Omega)$ lies in $L^q(\Omega)$, and the injection
+$W^{k+1,p}(\Omega) \subset L^q(\Omega)$ is compact. This is Theorem 7.3.8(a) of
+[han2009theoretical], with the Lipschitz domain of the source replaced by an extension domain.
+
+The injection $W^{k+1,p}(\Omega) \subset W^{1,r}(\Omega)$ with $1/r = 1/p - k/N$ is continuous,
+and $W^{1,r}(\Omega) \subset L^q(\Omega)$ is compact for $q < r^* = p^*$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt (k : ℕ) {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hk : ((k + 1 : ℕ) : ℝ) < N / p)
@@ -1514,11 +1748,15 @@ theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt (k : ℕ) {p 
       (fun u ↦ (hΩ r).memLp_fn_of_le_sobolevConj hμ hrN hp'r hq.le ⟨u, Submodule.mem_top⟩)
       (SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn (hΩ r) hμ hrN hp'r hq))
 
-/-- **Rellich–Kondrachov at order `k + 1`, the case `k + 1 = N/p`**: on an extension domain (for
-every exponent) of finite measure with `N ≥ 2`, `1 ≤ p`, `k + 1 = N/p` and `1 ≤ q < ∞`, the
-inclusion `W^{k+1,p}(Ω) ⊂ L^q(Ω)` is compact (the compact form of Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorem 7.3.8 (b)): `W^{k+1,p}(Ω) ↪ W^{1,N}(Ω)` and
-`SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll`. -/
+/-- **The Rellich–Kondrachov theorem at order $k + 1 = N/p$.** Let $N \ge 2$, let
+$\Omega \subseteq \mathbb{R}^N$ be an extension domain for every exponent with finite measure,
+let $1 \le p < \infty$ with $k + 1 = N/p$, and let $1 \le q < \infty$. Then every
+$u \in W^{k+1,p}(\Omega)$ lies in $L^q(\Omega)$, and the injection
+$W^{k+1,p}(\Omega) \subset L^q(\Omega)$ is compact. This is the compact form of Theorem 7.3.8(b)
+of [han2009theoretical].
+
+The injection $W^{k+1,p}(\Omega) \subset W^{1,N}(\Omega)$ is continuous, and then
+`SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll` applies. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq (k : ℕ) {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hN : 2 ≤ N)
@@ -1552,7 +1790,9 @@ theorem SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq (k : ℕ) {p 
 
 end HigherOrder
 
-/-! ### `W^{k,p}(Ω) ⊂⊂ C(K)` at every order, and `W^{k,p}(Ω) ⊂⊂ W^{l,p}(Ω)` for `l < k` -/
+/-!
+### Compact embeddings of $W^{k,p}(\Omega)$ into $C(K)$, and into $W^{l,p}(\Omega)$ for $l < k$
+-/
 
 section HigherOrderContinuous
 
@@ -1560,13 +1800,19 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{k+1,p}(Ω) ⊂⊂ C(K)` for `k + 1 > N/p` and a compact `K ⊇ Ω`, on an extension domain
-(for every exponent)**, `1 ≤ p < ∞` and `N ≥ 2` or `p > 1`: there is a bounded linear
-`ι : W^{k+1,p}(Ω) → C(K, ℝ)` sending `u` to the restriction of a continuous representative
-of `u`, which is a compact embedding (Atkinson–Han, *Theoretical Numerical Analysis*,
-Theorem 7.3.8 (c) with `β = 0` and `k − [N/p] − 1` replaced by `0`, and Example 7.4.2 at
-`p = 2`): `W^{k+1,p}(Ω) ↪ W^{1,r}(Ω)` for the `r > N` of `NNReal.exists_morrey_exponent`, then
-`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain`. -/
+/-- **The Rellich–Kondrachov theorem at order $k + 1 > N/p$, into $C(K)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be an extension domain for every exponent, let
+$1 \le p < \infty$ with $N \ge 2$ or $p > 1$, let $N/p < k + 1$, and let $K \supseteq \Omega$ be
+compact. Then there is a bounded linear map $\iota : W^{k+1,p}(\Omega) \to C(K, \mathbb{R})$
+with the following properties: every $u$ has a representative $\tilde u$ that is continuous on
+$\mathbb{R}^N$ and equals $u$ almost everywhere on $\Omega$, with $\iota u = \tilde u|_K$; and
+$\iota$ is a compact embedding.
+
+This is Theorem 7.3.8(c) of [han2009theoretical] with $\beta = 0$ and with $k - [N/p] - 1$
+replaced by $0$, and Example 7.4.2 of the same source at $p = 2$. The injection
+$W^{k+1,p}(\Omega) \subset W^{1,r}(\Omega)$ is continuous for the $r > N$ of
+`NNReal.exists_morrey_exponent`, and then
+`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain` applies. -/
 theorem SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order (k : ℕ) {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hk : (N : ℝ) / p < (k + 1 : ℕ)) {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
@@ -1590,10 +1836,14 @@ theorem SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order (k :
     (hT u).symm.trans (SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ r) hNr (T u)),
     fun x ↦ rfl⟩
 
-/-- **`W^{k,p}(Ω) ⊂⊂ W^{l,p}(Ω)` for `l < k` on an extension domain of finite measure**
-(Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9, for `1 ≤ p < ∞`): the
-inclusion `SobolevMultiIndex.toLowerOrderL` is a compact embedding, being
-`W^{k,p}(Ω) ⊂⊂ W^{k−1,p}(Ω) ↪ W^{l,p}(Ω)`. -/
+/-- **The compact injection $W^{k,p}(\Omega) \subset W^{l,p}(\Omega)$ for $l < k$.** Let
+$1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of
+finite measure. Then for $l < k$ the injection $W^{k,p}(\Omega) \subset W^{l,p}(\Omega)$ is
+compact. This is Theorem 7.3.9 of [han2009theoretical] for $1 \le p < \infty$.
+
+The injection is `SobolevMultiIndex.toLowerOrderL`. It is the compact injection
+$W^{k,p}(\Omega) \subset W^{k-1,p}(\Omega)$ followed by the continuous injection
+$W^{k-1,p}(\Omega) \subset W^{l,p}(\Omega)$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {k l : ℕ} (hlk : l < k) :
@@ -1610,14 +1860,14 @@ theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt {p : ℝ≥0}
 
 end HigherOrderContinuous
 
-/-! ### Rellich–Kondrachov at `p = ∞`: `W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` by Arzelà–Ascoli -/
+/-! ### The case $p = \infty$: the injection $W^{1,\infty}(\Omega) \subset L^\infty(\Omega)$ -/
 
 section RellichTop
 
 open SobolevMultiIndex
 
-/-- **The almost-everywhere bound from the `L^∞` norm**: if `‖f‖_{L^∞(μ)} ≤ L` then `‖f x‖ ≤ L`
-almost everywhere. -/
+/-- Let $f$ be almost everywhere strongly measurable and let $L \ge 0$. If
+$\|f\|_{L^\infty(\mu)} \le L$, then $\|f(x)\| \le L$ for almost every $x$. -/
 theorem MeasureTheory.ae_norm_le_of_eLpNorm_top_le {α G : Type*} [MeasurableSpace α]
     {μ : Measure α} [NormedAddCommGroup G] {f : α → G} (hf : AEStronglyMeasurable f μ) {L : ℝ}
     (hL : 0 ≤ L) (h : eLpNorm f ⊤ μ ≤ ENNReal.ofReal L) : ∀ᵐ x ∂μ, ‖f x‖ ≤ L := by
@@ -1626,8 +1876,9 @@ theorem MeasureTheory.ae_norm_le_of_eLpNorm_top_le {α G : Type*} [MeasurableSpa
   rw [← ENNReal.ofReal_le_ofReal_iff hL, ofReal_norm]
   exact hx.trans h
 
-/-- **The `L^∞` distance from a uniform bound on representatives**: if `g₁ = v₁` and `g₂ = v₂`
-almost everywhere and `‖v₁ x − v₂ x‖ ≤ D` almost everywhere, then `dist g₁ g₂ ≤ D` in `L^∞`. -/
+/-- Let $g_1, g_2 \in L^\infty(\mu)$ be real, let $g_1 = v_1$ and $g_2 = v_2$ almost everywhere, and
+let $D \ge 0$. If $|v_1(x) - v_2(x)| \le D$ for almost every $x$, then
+$\operatorname{dist}(g_1, g_2) \le D$ in $L^\infty(\mu)$. -/
 theorem MeasureTheory.Lp.dist_le_of_ae_eq_top {α : Type*} [MeasurableSpace α] {μ : Measure α}
     (g₁ g₂ : Lp ℝ ⊤ μ) {v₁ v₂ : α → ℝ} (h₁ : g₁ =ᵐ[μ] v₁) (h₂ : g₂ =ᵐ[μ] v₂) {D : ℝ}
     (hD : 0 ≤ D) (h : ∀ᵐ x ∂μ, ‖v₁ x - v₂ x‖ ≤ D) : dist g₁ g₂ ≤ D := by
@@ -1643,10 +1894,16 @@ theorem MeasureTheory.Lp.dist_le_of_ae_eq_top {α : Type*} [MeasurableSpace α] 
         ENNReal.toReal_mono ENNReal.ofReal_ne_top this
     _ = D := ENNReal.toReal_ofReal hD
 
-/-- **Arzelà–Ascoli for a uniformly bounded, uniformly Lipschitz sequence**, in the form of a
-uniformly Cauchy subsequence on a compact set: if `‖v_n x‖ ≤ R` and every `v_n` is `L`-Lipschitz,
-then along a subsequence `v_{φ n}` is uniformly Cauchy on the compact `K`
-(`ContinuousMap.isCompact_closure_of_forall_norm_le` on the restrictions to `K`). -/
+/-- **The Arzelà–Ascoli theorem for a uniformly bounded, uniformly Lipschitz sequence.** Let $K$ be
+a compact subset of a pseudometric space $E$, and let $v_n : E \to \mathbb{R}$ be functions that
+are all Lipschitz with the same constant $L$ and satisfy $|v_n(x)| \le R$ for all $n$ and $x$.
+Then there is a strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ such that
+$(v_{\varphi(n)})$ is uniformly Cauchy on $K$: for every $\varepsilon > 0$ there is $n_0$ with
+$$|v_{\varphi(m)}(x) - v_{\varphi(n)}(x)| < \varepsilon \qquad \text{for all } m, n \ge n_0
+  \text{ and } x \in K.$$
+
+The proof applies `ContinuousMap.isCompact_closure_of_forall_norm_le` to the restrictions to
+$K$. -/
 theorem exists_strictMono_forall_dist_lt_of_lipschitzWith {E : Type*}
     [PseudoMetricSpace E] {K : Set E} (hK : IsCompact K) (v : ℕ → E → ℝ) {L : ℝ≥0} {R : ℝ}
     (hvl : ∀ n, LipschitzWith L (v n)) (hvb : ∀ n x, ‖v n x‖ ≤ R) :
@@ -1678,13 +1935,18 @@ theorem exists_strictMono_forall_dist_lt_of_lipschitzWith {E : Type*}
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **The Lipschitz representative of an element of `W^{1,∞}(ℝ^N)`**, with the constants read
-off the norm: for `U ∈ W^{1,∞}(ℝ^N)` with `‖U‖ ≤ R` there is `v` with `U = v` almost everywhere,
-`v` Lipschitz with constant `C_N R` (`C_N` the constant of
-`SobolevMultiIndex.exists_hasWeakFDerivOn_fn`, depending on `N` only) and `‖v x‖ ≤ R` everywhere.
-The Lipschitz representative is Brezis's Remark 7 on the convex set `ℝ^N`
-(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`); the bound holds almost everywhere
-by the `L^∞` norm and everywhere by continuity, Lebesgue measure being positive on open sets. -/
+/-- **The Lipschitz representative of an element of $W^{1,\infty}(\mathbb{R}^N)$.** There is a
+constant $C \ge 0$ with the following property. For every $R \ge 0$ and every
+$U \in W^{1,\infty}(\mathbb{R}^N)$ with $\|U\| \le R$, there is a function $v$ on $\mathbb{R}^N$
+such that $U = v$ almost everywhere, $v$ is Lipschitz with constant $CR$, and $|v(x)| \le R$ for
+every $x$.
+
+The constant $C$ depends only on $N$; it comes from
+`SobolevMultiIndex.exists_hasWeakFDerivOn_fn`. The Lipschitz representative is Remark 7 in
+Chapter 9 of [brezis2011functional] on the convex set $\mathbb{R}^N$
+(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`). The bound $|v| \le R$ holds almost
+everywhere by the $L^\infty$ norm, and everywhere by continuity, because Lebesgue measure is
+positive on nonempty open sets. -/
 theorem SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (R : ℝ), 0 ≤ R → ∀ U : SobolevEuclidean N 1 ⊤ ⊤, ‖U‖ ≤ R →
       ∃ v : EuclideanSpace ℝ (Fin N) → ℝ, fn U =ᵐ[volume] v ∧
@@ -1744,15 +2006,19 @@ theorem SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le :
     hcl.closure_eq.symm.trans (Measure.dense_of_ae hvae).closure_eq
   exact ⟨v, hv, hvl, fun x ↦ eq_univ_iff_forall.1 hset x⟩
 
-/-- **`W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` on a bounded `W^{1,∞}`-extension domain**: the inclusion
-`SobolevMultiIndex.fnL` is a compact embedding. For a bounded sequence `u_n`, the extensions
-`P u_n ∈ W^{1,∞}(ℝ^N)` have Lipschitz representatives `v_n`, uniformly bounded and uniformly
-Lipschitz (`SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le`); on the compact
-`closure Ω` the Arzelà–Ascoli theorem gives a uniformly Cauchy subsequence
-(`exists_strictMono_forall_dist_lt_of_lipschitzWith`), which is Cauchy in
-`L^∞(Ω)` (`MeasureTheory.Lp.dist_le_of_ae_eq_top`), hence convergent. This is the case `p = ∞`
-left out of `Numlib/Analysis/Sobolev/Compactness.lean` (Atkinson–Han, *Theoretical Numerical
-Analysis*, Theorem 7.3.9 at `p = ∞`). -/
+/-- **The compact injection $W^{1,\infty}(\Omega) \subset L^\infty(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded $W^{1,\infty}$-extension domain. Then the injection
+$W^{1,\infty}(\Omega) \to L^\infty(\Omega)$, `SobolevMultiIndex.fnL`, is a compact embedding.
+This is the case $p = \infty$, which the results for $p < \infty$ above do not cover; with
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt` it gives Theorem 7.3.9 of
+[han2009theoretical] at $p = \infty$.
+
+For a bounded sequence $u_n$, the extensions $Pu_n \in W^{1,\infty}(\mathbb{R}^N)$ have
+Lipschitz representatives $v_n$ that are uniformly bounded and uniformly Lipschitz
+(`SobolevEuclidean.exists_lipschitzWith_ae_eq_top_of_norm_le`). On the compact set
+$\overline{\Omega}$ the Arzelà–Ascoli theorem gives a uniformly Cauchy subsequence
+(`exists_strictMono_forall_dist_lt_of_lipschitzWith`). This subsequence is Cauchy in
+$L^\infty(\Omega)$ (`MeasureTheory.Lp.dist_le_of_ae_eq_top`), hence convergent. -/
 theorem SobolevEuclidean.isCompactEmbedding_fnL_top (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) :
     IsCompactEmbedding
@@ -1791,7 +2057,7 @@ theorem SobolevEuclidean.isCompactEmbedding_fnL_top (hΩ : IsSobolevExtensionDom
 
 end RellichTop
 
-/-! ### Rellich–Kondrachov at `p = ∞` and every order: `W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)`, `l < k` -/
+/-! ### The case $p = \infty$ at every order: the injection into $W^{l,\infty}(\Omega)$, $l < k$ -/
 
 section RellichTopHigher
 
@@ -1799,11 +2065,16 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{k+1,∞}(Ω) ⊂⊂ W^{k,∞}(Ω)` on a bounded `W^{1,∞}`-extension domain**: the inclusion
-`SobolevMultiIndex.toLowerOrderL` is a compact embedding. Induction on `k` from
-`W^{1,∞}(Ω) ⊂⊂ L^∞(Ω)` (`SobolevEuclidean.isCompactEmbedding_fnL_top`), the step being
-`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` exactly as in
-`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain` for `p < ∞`. -/
+/-- **The compact injection $W^{k+1,\infty}(\Omega) \subset W^{k,\infty}(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded $W^{1,\infty}$-extension domain. Then for every $k$
+the injection $W^{k+1,\infty}(\Omega) \subset W^{k,\infty}(\Omega)$,
+`SobolevMultiIndex.toLowerOrderL`, is compact.
+
+The proof is by induction on $k$ from the compact injection
+$W^{1,\infty}(\Omega) \subset L^\infty(\Omega)$ (`SobolevEuclidean.isCompactEmbedding_fnL_top`),
+with the inductive step `SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` as in
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain` for
+$p < \infty$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top
     (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (k : ℕ) :
@@ -1812,11 +2083,15 @@ theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top
   SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isCompactEmbedding_fnL
     (SobolevEuclidean.isCompactEmbedding_fnL_top hΩ hb) k
 
-/-- **`W^{k,∞}(Ω) ⊂⊂ W^{l,∞}(Ω)` for `l < k` on a bounded `W^{1,∞}`-extension domain**
-(Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9 at `p = ∞`): the inclusion
-`SobolevMultiIndex.toLowerOrderL` is a compact embedding, being
-`W^{k,∞}(Ω) ⊂⊂ W^{k−1,∞}(Ω) ↪ W^{l,∞}(Ω)`; the counterpart of
-`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt` for `p < ∞`. -/
+/-- **The compact injection $W^{k,\infty}(\Omega) \subset W^{l,\infty}(\Omega)$ for $l < k$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded $W^{1,\infty}$-extension domain. Then for $l < k$
+the injection $W^{k,\infty}(\Omega) \subset W^{l,\infty}(\Omega)$ is compact. This is Theorem
+7.3.9 of [han2009theoretical] at $p = \infty$.
+
+The injection is `SobolevMultiIndex.toLowerOrderL`. It is the compact injection
+$W^{k,\infty}(\Omega) \subset W^{k-1,\infty}(\Omega)$ followed by the continuous injection
+$W^{k-1,\infty}(\Omega) \subset W^{l,\infty}(\Omega)$. This is the counterpart of
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt` for $p < \infty$. -/
 theorem SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt
     (hΩ : IsSobolevExtensionDomain N ⊤ Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) {k l : ℕ} (hlk : l < k) :

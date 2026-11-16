@@ -17,34 +17,49 @@ import Mathlib.Analysis.RCLike.Lemmas
 import Mathlib.Topology.Algebra.Module.Basic
 
 /-!
-# A normed space whose dual is separable is separable
+# A normed space with a separable dual is separable
 
-The two facts of this file are the Hahn–Banach corollaries that a *closed* subspace can be cut out
-by a bounded linear functional, and the theorem that separability passes from the dual `V'` down to
-`V` — never up, `ℓ¹` having the separable predual `c₀` and the inseparable dual `ℓ^∞`.
+Let $E$ be a normed space over $\mathbb{R}$ or $\mathbb{C}$, with dual $E^*$. This module proves two
+consequences of the Hahn–Banach theorem. First, a point outside a closed subspace $M$ is separated
+from $M$ by a functional of norm $1$ that vanishes on $M$. Second, if $E^*$ is separable, then $E$
+is separable. The converse fails: $\ell^1$ is separable, and its dual $\ell^\infty$ is not. In the
+other direction, a separable space $E$ has a countable family of functionals of norm at most $1$
+that determines the norm of $E$ up to the factor $3$. Finally, in a locally convex space, a point
+outside a nonempty closed absolutely convex set $s$ is separated from $s$ by a functional $f$ with
+$|f| \le 1$ on $s$.
 
-## Main statements
+## Main results
 
-* `Submodule.exists_dual_eq_zero_of_notMem` — a point outside a closed subspace is separated from
-  it by a norm-one functional vanishing on the subspace. This is Hahn–Banach applied in the
-  quotient by the subspace, which is a normed space exactly because the subspace is closed.
-* `separableSpace_of_separableSpace_strongDual` — **if `V'` is separable then so is `V`**. Given a
-  dense sequence `fₙ` in `V'`, pick `xₙ` in the closed unit ball with `‖fₙ‖ / 2 ≤ ‖fₙ xₙ‖`; the
-  closed span of the `xₙ` is separable and, were it proper, the previous lemma would produce a
-  norm-one `g` vanishing on it, and an `fₙ` within `1/4` of `g` would then satisfy both
-  `‖fₙ xₙ‖ ≥ 3/8` and `‖fₙ xₙ‖ = ‖(fₙ - g) xₙ‖ ≤ 1/4`.
+* `Submodule.exists_dual_eq_zero_of_notMem`: a point outside a closed subspace is separated from it
+  by a functional of norm $1$ that vanishes on the subspace.
+* `separableSpace_of_separableSpace_strongDual`: if $E^*$ is separable, then $E$ is separable.
+* `exists_seq_strongDual_norming_of_separableSpace`: a separable normed space has a sequence $(f_n)$
+  of functionals with $\|f_n\| \le 1$ such that every $x$ satisfies $\|x\| \le 3 |f_n(x)|$ for some
+  $n$.
+* `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem`: separation of a point from a nonempty
+  closed absolutely convex set, in modulus.
+
+## Proof outline
+
+The separating functional is the Hahn–Banach theorem in the quotient $E / M$, which is a normed
+space because $M$ is closed. For the separability of $E$, let $(f_n)$ be a dense sequence in $E^*$,
+and pick $x_n$ in the closed unit ball with $\|f_n\| / 2 \le |f_n(x_n)|$. The closed span of the
+$x_n$ is separable. If it were a proper subspace, the separation lemma would give a functional $g$
+of norm $1$ that vanishes on it. A functional $f_n$ within $1/4$ of $g$ would then satisfy both
+$|f_n(x_n)| \ge 3/8$ and $|f_n(x_n)| = |(f_n - g)(x_n)| \le 1/4$.
 -/
 
 open Function Metric TopologicalSpace
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **A closed subspace is cut out by a bounded linear functional**: if `z` does not lie in the
-closed subspace `M`, there is a norm-one `f` in the dual vanishing on `M` with `f z ≠ 0`.
+/-- Let $M$ be a closed subspace of a normed space $E$ over $\mathbb{R}$ or $\mathbb{C}$, and let
+$z \notin M$. Then there is $f \in E^*$ with $\|f\| = 1$, $f(y) = 0$ for every $y \in M$, and
+$f(z) \ne 0$.
 
-The quotient `E ⧸ M` is a normed space because `M` is closed, the class of `z` in it is nonzero,
-and Hahn–Banach (`exists_dual_vector`) gives a norming functional there; composing with the
-quotient map and rescaling gives `f`. -/
+The quotient $E / M$ is a normed space because $M$ is closed, and the class of $z$ in it is
+nonzero. The Hahn–Banach theorem (`exists_dual_vector`) gives a norming functional of this
+class. Its composition with the quotient map, rescaled, is $f$. -/
 theorem Submodule.exists_dual_eq_zero_of_notMem (M : Submodule 𝕜 E) (hM : IsClosed (M : Set E))
     {z : E} (hz : z ∉ M) :
     ∃ f : StrongDual 𝕜 E, ‖f‖ = 1 ∧ (∀ y ∈ M, f y = 0) ∧ f z ≠ 0 := by
@@ -69,8 +84,9 @@ theorem Submodule.exists_dual_eq_zero_of_notMem (M : Submodule 𝕜 E) (hM : IsC
       inv_mul_cancel₀ hf₀]
   · simpa using ⟨by simpa using hf₀, hfz⟩
 
-/-- **A normed space with separable dual is separable.** The converse fails: `ℓ¹` is separable and
-its dual `ℓ^∞` is not. -/
+/-- Let $E$ be a normed space over $\mathbb{R}$ or $\mathbb{C}$. If the dual $E^*$ is separable,
+then $E$ is separable. The converse fails: $\ell^1$ is separable, and it is the dual of the
+separable space $c_0$, but its own dual $\ell^\infty$ is not separable. -/
 theorem separableSpace_of_separableSpace_strongDual [SeparableSpace (StrongDual 𝕜 E)] :
     SeparableSpace E := by
   obtain ⟨f, hf⟩ : ∃ f : ℕ → StrongDual 𝕜 E, DenseRange f :=
@@ -114,14 +130,15 @@ theorem separableSpace_of_separableSpace_strongDual [SeparableSpace (StrongDual 
     Submodule.topologicalClosure_coe]
   exact hsep.closure
 
-/-- **A separable normed space has a countable norming family of functionals**: there is a
-sequence `fₙ` in the closed unit ball of the dual such that every `x` satisfies
-`‖x‖ ≤ 3 ‖fₙ x‖` for some `n`. In particular the `fₙ` separate the points of `E`, which is what
-makes a weakly compact subset of a separable space metrizable ([brezis2011functional], Problem 10).
+/-- Let $E$ be a separable normed space over $\mathbb{R}$ or $\mathbb{C}$. Then there is a sequence
+$(f_n)$ in the closed unit ball of $E^*$ such that every $x \in E$ satisfies
+$\|x\| \le 3 |f_n(x)|$ for some $n$. In particular, the $f_n$ separate the points of $E$. This
+is what makes a weakly compact subset of a separable space metrizable ([brezis2011functional],
+Problem 10).
 
-Take a dense sequence `dₙ` and norming functionals `fₙ (dₙ) = ‖dₙ‖`, `‖fₙ‖ ≤ 1`; for `x` and `n`
-with `‖x - dₙ‖ < ‖x‖ / 3`, one has `‖fₙ x‖ ≥ ‖dₙ‖ - ‖x - dₙ‖ ≥ ‖x‖ - 2 ‖x - dₙ‖ > ‖x‖ / 3`.
-The constant `3` is not sharp. -/
+Take a dense sequence $(d_n)$ and functionals with $f_n(d_n) = \|d_n\|$ and $\|f_n\| \le 1$. For
+$x$ and $n$ with $\|x - d_n\| < \|x\| / 3$, one has $|f_n(x)| \ge \|d_n\| - \|x - d_n\| \ge
+\|x\| - 2 \|x - d_n\| > \|x\| / 3$. The constant $3$ is not sharp. -/
 theorem exists_seq_strongDual_norming_of_separableSpace [SeparableSpace E] :
     ∃ f : ℕ → StrongDual 𝕜 E, (∀ n, ‖f n‖ ≤ 1) ∧ ∀ x : E, ∃ n, ‖x‖ ≤ 3 * ‖f n x‖ := by
   obtain ⟨d, hd⟩ : ∃ d : ℕ → E, DenseRange d := ⟨denseSeq E, denseRange_denseSeq E⟩
@@ -146,14 +163,18 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [Module 𝕜 E] [IsScalarTo
   [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul 𝕜 E] [LocallyConvexSpace ℝ E]
 
 open scoped ComplexOrder in
-/-- **Separation from a closed absolutely convex set, in modulus.** In a locally convex space over
-`RCLike 𝕜`, a point `x` outside a nonempty closed absolutely convex set `s` is separated from it
-by a functional `f` with `‖f a‖ ≤ 1` on `s` and `1 < ‖f x‖`. This is the "polar" form of the
-geometric Hahn–Banach theorem `RCLike.geometric_hahn_banach_closed_point`: the real-part bound
-`re (g a) < u` on a balanced set upgrades to `‖g a‖ < u`, by rotating `a` with a unimodular
-scalar that makes `g a` a nonnegative real. Nonemptiness is needed: for `s = ∅` and `x = 0` no
-functional has `1 < ‖f 0‖`. The order on `𝕜` that `AbsConvex 𝕜 s` refers to is the scoped
-`ComplexOrder` one, as in Mathlib's `LinearMap.polar_AbsConvex`. -/
+/-- Separation from a closed absolutely convex set, in modulus. Let $\mathbb{K}$ be $\mathbb{R}$ or
+$\mathbb{C}$, and let $E$ be a topological vector space over $\mathbb{K}$ that is locally convex
+as a real vector space. Let $s \subseteq E$ be nonempty, closed and absolutely convex, and let
+$x \notin s$. Then there is a continuous linear functional $f$ on $E$ with $|f(a)| \le 1$ for
+every $a \in s$ and $|f(x)| > 1$.
+
+This is the polar form of the geometric Hahn–Banach theorem
+`RCLike.geometric_hahn_banach_closed_point`. The bound $\operatorname{Re} g(a) < u$ on a
+balanced set improves to $|g(a)| < u$, by rotating $a$ with a scalar of modulus $1$ that makes
+$g(a)$ a nonnegative real number. The set must be nonempty: for $s = \emptyset$ and $x = 0$, no
+functional has $|f(0)| > 1$. The order on $\mathbb{K}$ that `AbsConvex 𝕜 s` uses is the scoped
+`ComplexOrder`, as in Mathlib's `LinearMap.polar_AbsConvex`. -/
 theorem AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem {s : Set E} (hs : AbsConvex 𝕜 s)
     (hne : s.Nonempty) (hc : IsClosed s) {x : E} (hx : x ∉ s) :
     ∃ f : StrongDual 𝕜 E, (∀ a ∈ s, ‖f a‖ ≤ 1) ∧ 1 < ‖f x‖ := by

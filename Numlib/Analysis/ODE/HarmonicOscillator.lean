@@ -13,23 +13,36 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
-# The harmonic oscillator `a'' = −λ a` on `[0, ∞)`
+# The harmonic oscillator on $[0, \infty)$
 
-The scalar equation `a'' + λ a = 0`, `λ > 0`, in first-order form `a' = b`, `b' = −λ a` within
-`[0, ∞)`: the energy `b² + λ a²` is constant, so a solution with `a(0) = b(0) = 0` vanishes
-(`eq_zero_of_hasDerivWithinAt_oscillator`), and every solution is
-`a(t) = a(0) cos(√λ t) + (b(0)/√λ) sin(√λ t)` (`eq_cos_add_sin_of_hasDerivWithinAt_oscillator`).
-This is the mode equation behind the eigenfunction expansion of the wave equation
-([brezis2011functional] chapter 10, Remark 9): the coefficients `⟪u(t), eₙ⟫` of a solution solve
-it with `λ = λₙ`.
+This file studies the scalar equation $a'' + \lambda a = 0$ with $\lambda > 0$ on $[0, \infty)$, in
+the first-order form $a' = b$, $b' = -\lambda a$. The energy $b^2 + \lambda a^2$ is constant, so a
+solution with $a(0) = b(0) = 0$ vanishes. Every solution is
+$$a(t) = a(0) \cos(\sqrt{\lambda} t) + \frac{b(0)}{\sqrt{\lambda}} \sin(\sqrt{\lambda} t).$$
+This is the mode equation behind the eigenfunction expansion of the wave equation (Chapter 10,
+Remark 9 of [brezis2011functional]): the coefficients $\langle u(t), e_n \rangle$ of a solution
+solve it with $\lambda = \lambda_n$.
+
+## Main results
+
+* `eq_zero_of_hasDerivWithinAt_oscillator`: a solution with $a(0) = b(0) = 0$ vanishes on
+  $[0, \infty)$.
+* `eq_cos_add_sin_of_hasDerivWithinAt_oscillator`: every solution is $a(0) \cos(\sqrt{\lambda} t) +
+  (b(0)/\sqrt{\lambda}) \sin(\sqrt{\lambda} t)$.
+
+## Implementation notes
+
+* Derivatives are taken within $[0, \infty)$, so they are one-sided at $t = 0$.
 -/
 
 open Set
 
 
-/-- **Uniqueness for the harmonic oscillator `a'' = −λ a` on `[0, ∞)`**, first-order form: if
-`a' = b` and `b' = −λ a` within `[0, ∞)`, `λ > 0`, and `a(0) = b(0) = 0`, then `a = 0` on
-`[0, ∞)` — the energy `b² + λ a²` is constant and vanishes at `0`. -/
+/-- **Uniqueness for the harmonic oscillator.** Let $a, b : \mathbb{R} \to \mathbb{R}$ and
+$\lambda > 0$. Assume that $a' = b$ and $b' = -\lambda a$ at every $t \ge 0$, with derivatives
+within $[0, \infty)$, and that $a(0) = b(0) = 0$. Then $a(t) = 0$ for every $t \ge 0$.
+
+The proof shows that the energy $b^2 + \lambda a^2$ is constant. It vanishes at $0$. -/
 theorem eq_zero_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (hlam : 0 < lam)
     (ha : ∀ t, 0 ≤ t → HasDerivWithinAt a (b t) (Ici 0) t)
     (hb : ∀ t, 0 ≤ t → HasDerivWithinAt b (-lam * a t) (Ici 0) t) (ha0 : a 0 = 0)
@@ -51,7 +64,12 @@ theorem eq_zero_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (
   have h3 : a t ^ 2 ≤ 0 := by nlinarith
   exact pow_eq_zero_iff (n := 2) (by norm_num) |>.1 (le_antisymm h3 (sq_nonneg _))
 
-/-- The derivative of `c₀ cos(w t) + (c₁ / w) sin(w t)`. -/
+/-- For all $c_0, c_1, w, t \in \mathbb{R}$, the function
+$t \mapsto c_0 \cos(wt) + (c_1 / w) \sin(wt)$ has at $t$ the derivative
+$$-c_0 w \sin(wt) + \frac{c_1}{w} w \cos(wt).$$
+
+There is no hypothesis $w \neq 0$: at $w = 0$ the quotient $c_1 / w$ is $0$ by the Lean
+convention, and both sides reduce to the derivative of a constant. -/
 theorem hasDerivAt_cos_add_sin (c₀ c₁ w t : ℝ) :
     HasDerivAt (fun t ↦ c₀ * Real.cos (w * t) + c₁ / w * Real.sin (w * t))
       (-(c₀ * w) * Real.sin (w * t) + c₁ / w * w * Real.cos (w * t)) t := by
@@ -61,7 +79,11 @@ theorem hasDerivAt_cos_add_sin (c₀ c₁ w t : ℝ) :
   refine ((h2.const_mul c₀).add (h3.const_mul (c₁ / w))).congr_deriv ?_
   ring
 
-/-- The derivative of `−c₀ w sin(w t) + (c₁ / w) w cos(w t)`. -/
+/-- For all $c_0, c_1, w, t \in \mathbb{R}$, the function $t \mapsto -c_0 w \sin(wt) + (c_1 / w) w
+\cos(wt)$ has at $t$ the derivative
+$$-w^2 \Big(c_0 \cos(wt) + \frac{c_1}{w} \sin(wt)\Big).$$
+Together with `hasDerivAt_cos_add_sin`, this says that $c_0 \cos(wt) + (c_1 / w) \sin(wt)$
+solves $a'' = -w^2 a$. -/
 theorem hasDerivAt_neg_sin_add_cos (c₀ c₁ w t : ℝ) :
     HasDerivAt (fun t ↦ -(c₀ * w) * Real.sin (w * t) + c₁ / w * w * Real.cos (w * t))
       (-(w ^ 2) * (c₀ * Real.cos (w * t) + c₁ / w * Real.sin (w * t))) t := by
@@ -71,8 +93,11 @@ theorem hasDerivAt_neg_sin_add_cos (c₀ c₁ w t : ℝ) :
   refine ((h3.const_mul (-(c₀ * w))).add (h2.const_mul (c₁ / w * w))).congr_deriv ?_
   ring
 
-/-- **The harmonic oscillator on `[0, ∞)`**: if `a' = b` and `b' = −λ a` within `[0, ∞)` with
-`λ > 0`, then `a(t) = a(0) cos(√λ t) + (b(0) / √λ) sin(√λ t)` for `t ≥ 0`. -/
+/-- **Solution of the harmonic oscillator.** Let $a, b : \mathbb{R} \to \mathbb{R}$ and
+$\lambda > 0$. Assume that $a' = b$ and $b' = -\lambda a$ at every $t \ge 0$, with derivatives
+within $[0, \infty)$. Then for every $t \ge 0$,
+$$a(t) = a(0) \cos(\sqrt{\lambda} t) + \frac{b(0)}{\sqrt{\lambda}} \sin(\sqrt{\lambda} t).$$
+-/
 theorem eq_cos_add_sin_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (hlam : 0 < lam)
     (ha : ∀ t, 0 ≤ t → HasDerivWithinAt a (b t) (Ici 0) t)
     (hb : ∀ t, 0 ≤ t → HasDerivWithinAt b (-lam * a t) (Ici 0) t) {t : ℝ} (ht : 0 ≤ t) :

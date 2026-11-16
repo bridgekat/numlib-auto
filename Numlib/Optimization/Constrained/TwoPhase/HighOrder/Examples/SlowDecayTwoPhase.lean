@@ -8,29 +8,43 @@ import Numlib.Optimization.ModelBased.HighOrder.TRqComplexity
 /-!
 # Long two-phase runs with a trust-region inner method
 
-Runs of the two-phase method TPqp-GC ([cartis2022evaluation], Algorithm 14.3.2) whose inner method
-is TRq with a feasible set, on the data of
-`Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.SlowDecay` with `f = 0`:
+This file builds runs of the two-phase method TPqp-GC ([cartis2022evaluation], Algorithm 14.3.2)
+whose inner method is TRq with a feasible set. The data are those of
+`Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.SlowDecay`, with the objective $f = 0$,
+the feasible set $X = \{v : v_1 \ge 1\}$ and $\nu = \tfrac12 \|c\|^2$. There are two cases.
 
-* with the constraint `c(v) = (1, v₁^{-1/8}, v₂)` and `x₀ = (2, 0)`, `‖c‖ ≥ 1` everywhere, so the
-  run ends in Phase 1; its first inner call on `ν = ½ ‖c‖²` with tolerances `ε_j/2` is the long
-  run of `SlowDecay.exists_long_run`
-  (`Constrained.TwoPhaseExample.SlowDecay.exists_isTRqOutputCost`);
-* with `c₂(v) = (v₁^{-1/8}, v₂)` and `x₀ = (256, 0)`, `‖c₂(x₀)‖ = 1/2 = θε₀` for `θ = 1/2`,
-  `ε₀ = 1`, so Phase 2 is entered at once, its target is `t₁ = -√3/2`, and `μ(·, t₁)` differs from
-  `½ ‖c‖²` by a constant on `X`: Phase 2 consists of one inner call, the same long run, followed
-  by termination in case (c)
-  (`Constrained.TwoPhaseExample.SlowDecay.exists_isHighOrderTargetRun`).
+* With the constraint $c(v) = (1, v_1^{-1/8}, v_2)$ and $x_0 = (2, 0)$, $\|c\| \ge 1$ everywhere, so
+  the run ends in Phase 1. Its first inner call on $\nu$, with tolerances $\varepsilon_j/2$, is the
+  long run of `Constrained.TwoPhaseExample.SlowDecay.exists_long_run`.
+* With the constraint $c_2(v) = (v_1^{-1/8}, v_2)$ and $x_0 = (256, 0)$,
+  $\|c_2(x_0)\| = 1/2 = \theta \varepsilon_0$ for $\theta = 1/2$ and $\varepsilon_0 = 1$, so Phase 2
+  is entered at once. Its target is $t_1 = -\sqrt3/2$, and $\mu(\cdot, t_1)$ differs from
+  $\tfrac12 \|c\|^2$ by a constant on $X$. Phase 2 consists of one inner call, the same long run,
+  followed by termination in case (c).
 
-In both cases the call makes at least `2^{22M} - 2^{18M} - 2^{10M}` successful iterations for the
-tolerances `ε₁ = 2^{-10M}`, `ε₂ = 2^{-5M}`, while
-`max[ε₀^{-1}, max_j ε₀^{-j} ε_j^{-(j+1)}] ≤ 2^{20M}` and `|log(ε₀ ε_min)| ≤ 10 M`
-(`SlowDecay.finMax_tol_le`, `SlowDecay.abs_log_tol_le`); so no bound
-`κ (1 + |log(ε₀ ε_min)|) max[ε₀^{-1}, max_j ε₀^{-j} ε_j^{-(j+1)}]` holds for these runs
-(`SlowDecay.not_le_of_count`).
+In both cases the call makes at least $2^{22M} - 2^{18M} - 2^{10M}$ successful iterations for the
+tolerances $\varepsilon_1 = 2^{-10M}$ and $\varepsilon_2 = 2^{-5M}$, while
+$$\max\Bigl[\varepsilon_0^{-1},\ \max_j \varepsilon_0^{-j} \varepsilon_j^{-(j+1)}\Bigr] \le 2^{20M}
+  \quad \text{and} \quad |\log(\varepsilon_0 \varepsilon_{\min})| \le 10M.$$
+Hence no bound of the form $\kappa\,(1 + |\log(\varepsilon_0 \varepsilon_{\min})|)
+\max[\varepsilon_0^{-1}, \max_j \varepsilon_0^{-j} \varepsilon_j^{-(j+1)}]$ holds for these runs.
 
-The smoothness of `ν` on the sublevel set of `x₀` (anchored Lipschitz derivatives) is a
-hypothesis of the two main statements.
+## Main results
+
+* `Constrained.TwoPhaseExample.SlowDecay.exists_isTRqOutputCost`: a terminating TRq call on $\nu$
+  from $(2, 0)$ uses at least $2^{22M} - 2^{18M} - 2^{10M} + 1$ derivative evaluations.
+* `Constrained.TwoPhaseExample.SlowDecay.exists_isHighOrderTargetRun`: a run of Phase 2 from
+  $(256, 0)$ with TRq calls uses at least $2^{22M} - 2^{18M} - 2^{10M} + 1$ derivative evaluations.
+* `Constrained.TwoPhaseExample.SlowDecay.finMax_tol_le` and
+  `Constrained.TwoPhaseExample.SlowDecay.abs_log_tol_le`: the order is at most $2^{20M}$ and the
+  logarithmic term is at most $10M$.
+* `Constrained.TwoPhaseExample.SlowDecay.not_le_of_count`: such a count exceeds every bound
+  $\kappa\,(1 + \Lambda)\,O$ with $\Lambda \le 10M$ and $O \le 2^{20M}$, for $M$ large.
+
+## Implementation notes
+
+* The smoothness of $\nu$ on the sublevel set of $x_0$, in the form of anchored Lipschitz
+  derivatives (`LipschitzDerivsAnchored`), is a hypothesis of the two main statements.
 -/
 
 open Set Metric Filter
@@ -40,12 +54,20 @@ namespace Constrained.TwoPhaseExample.SlowDecay
 
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
-/-- **A long terminating inner call on `ν` from `(2, 0)`.** For `q ≥ 2`, `M ≥ 1` and tolerances
-`ε_j ∈ (0, 1]` with `ε_1 = 2^{-10M}/2`, `ε_2 = 2^{-5M}/2`, if `ν = ½ ‖c‖²` has anchored
-Lipschitz derivatives on the sublevel set of `x₀ = (2, 0)`, then a terminating call of TRq with a
-feasible set (parameters `params`, `ϑ = 1`) on `ν` from `x₀` returns `y ∈ X` and a radius
-`δ ∈ (0, 1]` certifying `(ε, δ)`-approximate optimality, and uses at least
-`2^{22M} - 2^{18M} - 2^{10M} + 1` derivative evaluations. -/
+/-- **A long terminating inner call on $\nu$ from $(2, 0)$.** Let $q \ge 2$ and $M \ge 1$, and let
+the tolerances satisfy $\varepsilon_j \in (0, 1]$ for $j \in [1 : q]$,
+$\varepsilon_1 = 2^{-10M}/2$ and $\varepsilon_2 = 2^{-5M}/2$. Assume that
+$\nu = \tfrac12 \|c\|^2$ satisfies `LipschitzDerivsAnchored` with the open set
+$X_0 = \{v : v_1 > 1/2\}$, the anchors $\{z \in X : \|c(z)\| \le \|c(x_0)\|\}$ for
+$x_0 = (2, 0)$, the orders $1, \dots, q$ and the constants $L$. Then there is a terminating call
+of TRq with a feasible set on $\nu$ from $x_0$, with the parameters
+`Constrained.TwoPhaseExample.SlowDecay.params` and threshold $\vartheta = 1$, that returns a
+point $y \in X$ and a radius $\delta \in (0, 1]$ such that $y$ is
+$(\varepsilon, \delta)$-approximately optimal of order $q$ for $\nu$ on $X$, and that uses
+$$n_D \ge 2^{22M} - 2^{18M} - 2^{10M} + 1$$
+derivative evaluations.
+
+The difference $2^{22M} - 2^{18M} - 2^{10M}$ is in natural numbers. -/
 theorem exists_isTRqOutputCost {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 1 ≤ M) {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (h1 : ε 1 = (1 / 2) ^ (10 * M) / 2)
     (h2 : ε 2 = (1 / 2) ^ (5 * M) / 2) {L : ℕ → ℝ}
@@ -79,13 +101,22 @@ theorem exists_isTRqOutputCost {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 1 ≤ M)
   exact Finset.filter_subset_filter _ (Finset.range_subset_range.2 hkT)
 
 open Classical in
-/-- **A long Phase 2 with one inner call.** For `q ≥ 2`, `M ≥ 2` and tolerances
-`ε ∈ (0, 1]^{q+1}` with `ε₀ = 1`, `ε_1 = 2^{-10M}`, `ε_2 = 2^{-5M}`, if `ν = ½ ‖c‖²` has anchored
-Lipschitz derivatives on the sublevel set of `x₀ = (256, 0)`, there is a run of Phase 2 of a
-high-order target-following method for `f = 0`, the constraint `c₂` and `X`, with
-`θ = β = 1/2`, started at `x₀`, whose inner calls are calls of TRq with a feasible set
-(parameters `params`, `ϑ = 1`, tolerances `β ‖r(x_k, t_k)‖ ε_j`), and every termination index
-`k_ε` of which has at least `2^{22M} - 2^{18M} - 2^{10M} + 1` derivative evaluations. -/
+/-- **A long Phase 2 with one inner call.** Let $q \ge 2$ and $M \ge 2$, and let the tolerances
+satisfy $\varepsilon_j \in (0, 1]$ for $j \in [0 : q]$, $\varepsilon_0 = 1$,
+$\varepsilon_1 = 2^{-10M}$ and $\varepsilon_2 = 2^{-5M}$. Assume that $\nu = \tfrac12 \|c\|^2$
+satisfies `LipschitzDerivsAnchored` with the open set $X_0 = \{v : v_1 > 1/2\}$, the anchors
+$\{z \in X : \|c(z)\| \le \|c(x_0)\|\}$ for $x_0 = (256, 0)$, the orders $1, \dots, q$ and the
+constants $L$. Then there is a run of Phase 2 of a high-order target-following method for the
+objective $f = 0$, the constraint $c_2$ and the feasible set $X$, with $\theta = \beta = 1/2$,
+started at $x_0$, with the following properties:
+
+* every inner call at a reached outer iteration $k \ge 1$ is a call of TRq with a feasible set,
+  with the parameters `Constrained.TwoPhaseExample.SlowDecay.params`, threshold $\vartheta = 1$
+  and tolerances $\beta \|r(x_k, t_k)\| \varepsilon_j$;
+* at every outer iteration $k_\varepsilon$ at which Phase 2 ends, the number of derivative
+  evaluations is at least $2^{22M} - 2^{18M} - 2^{10M} + 1$.
+
+The difference $2^{22M} - 2^{18M} - 2^{10M}$ is in natural numbers. -/
 theorem exists_isHighOrderTargetRun {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 2 ≤ M) {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) (h0 : ε 0 = 1)
     (h1 : ε 1 = (1 / 2) ^ (10 * M)) (h2 : ε 2 = (1 / 2) ^ (5 * M)) {L : ℕ → ℝ}
@@ -245,8 +276,11 @@ theorem exists_isHighOrderTargetRun {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 2 �
     linarith
 
 
-/-- The largest term `max[ε₀^{-1}, max_j ε₀^{-j} ε_j^{-(j+1)}]` at the tolerances `tol M` is at
-most `2^{20M}`. -/
+/-- At the tolerances `Constrained.TwoPhaseExample.SlowDecay.tol M`, the largest term of the order
+is at most $2^{20M}$:
+$$\max\Bigl[\varepsilon_0^{-1},\ \max_{j \in [1 : q]} \varepsilon_0^{1 - (j+1)}
+  \varepsilon_j^{-(j+1)}\Bigr] \le 2^{20M}.$$
+-/
 theorem finMax_tol_le {q : ℕ} (M : ℕ) :
     Optimization.finMax (tol M 0)⁻¹
       (fun j => tol M 0 ^ (1 - ((j : ℝ) + 1)) * tol M j ^ (-((j : ℝ) + 1))) q ≤ 2 ^ (20 * M) := by
@@ -268,7 +302,11 @@ theorem finMax_tol_le {q : ℕ} (M : ℕ) :
     · rw [show tol M j = 1 by simp [tol, hj1', hj2], Real.one_rpow]
       exact h1M
 
-/-- At the tolerances `tol M` (`q ≥ 2`), `|log(ε₀ ε_min)| = 10 M log 2 ≤ 10 M`. -/
+/-- At the tolerances `Constrained.TwoPhaseExample.SlowDecay.tol M`, with $q \ge 2$, the logarithmic
+term satisfies
+$$|\log(\varepsilon_0 \varepsilon_{\min})| \le 10M,$$
+where $\varepsilon_{\min} = \min\{1, \min_{j \in [1 : q]} \varepsilon_j\}$. Its value is
+$10M \log 2$. -/
 theorem abs_log_tol_le {q : ℕ} (hq : 2 ≤ q) (M : ℕ) :
     |Real.log (tol M 0 * Optimization.finMin 1 (tol M) q)| ≤ 10 * M := by
   have h0 : tol M 0 = 1 := by simp [tol]
@@ -289,8 +327,12 @@ theorem abs_log_tol_le {q : ℕ} (hq : 2 ≤ q) (M : ℕ) :
   have : (0 : ℝ) ≤ 10 * M := by positivity
   nlinarith
 
-/-- **A count against a logarithmically weighted order**: for `M > 20|κ| + 20`, `0 ≤ Λ ≤ 10 M`
-and `0 ≤ O ≤ 2^{20M}`, a count `N ≥ 2^{22M} - 2^{18M} - 2^{10M} + 1` exceeds `κ (1 + Λ) O`. -/
+/-- **A count against a logarithmically weighted order.** Let $\kappa \in \mathbb{R}$ and
+$M \in \mathbb{N}$ with $M > 20|\kappa| + 20$, let $0 \le \Lambda \le 10M$ and
+$0 \le O \le 2^{20M}$, and let $N \ge 2^{22M} - 2^{18M} - 2^{10M} + 1$. Then
+$$N > \kappa\,(1 + \Lambda)\,O.$$
+
+The difference $2^{22M} - 2^{18M} - 2^{10M}$ is in natural numbers. -/
 theorem not_le_of_count {κ Λ O N : ℝ} {M : ℕ} (hM : 20 * |κ| + 20 < M) (hΛ0 : 0 ≤ Λ)
     (hΛ : Λ ≤ 10 * M) (hO0 : 0 ≤ O) (hO : O ≤ 2 ^ (20 * M))
     (hN : ((2 ^ (22 * M) - 2 ^ (18 * M) - 2 ^ (10 * M) : ℕ) : ℝ) + 1 ≤ N) :

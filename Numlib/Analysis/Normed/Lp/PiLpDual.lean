@@ -13,36 +13,47 @@ import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.Analysis.Normed.Operator.NNNorm
 
 /-!
-# The dual of a finite `ℓ^p` product
+# The dual of a finite $\ell^p$ product
 
-The continuous linear inclusions of the factors of a finite `ℓ^p` product `PiLp p X` and the
-description of its dual: a functional is the sum of its restrictions to the factors, and its
-norm is the `ℓ^q` norm of the tuple of the norms of those restrictions, `q` the conjugate
-exponent.
+Let $X_i$, $i \in \iota$, be finitely many real normed spaces, and let $1 \le p \le \infty$. This
+module defines the continuous linear inclusions $\iota_i : X_i \to$ `PiLp p X` of the factors into
+the $\ell^p$ product and describes the dual of the product. A continuous linear functional $\Phi$ on
+the product is the sum of its restrictions $\Phi \circ \iota_i$ to the factors. For
+$1 \le p < \infty$ its norm is
+$$\|\Phi\| = \big\| (\|\Phi \circ \iota_i\|)_{i \in \iota} \big\|_q,$$
+the $\ell^q$ norm of the norms of the restrictions, where $q$ is the conjugate exponent. So the dual
+of the $\ell^p$ product is isometrically the $\ell^q$ product of the duals.
 
-## Main definitions and statements
+## Main definitions
 
-* `PiLp.singleL p i : X i →L[ℝ] PiLp p X`, the inclusion of the `i`-th factor, with
-  `PiLp.singleL_apply` (it is `PiLp.single p i`), `PiLp.norm_singleL_apply` (isometric),
-  `PiLp.norm_singleL_le` and `PiLp.sum_singleL_apply` (every element is the sum of its
-  coordinates).
-* `PiLp.strongDual_apply_eq_sum`: `Φ x = ∑ i, (Φ ∘ singleL p i) (x i)` for a functional `Φ` on
-  the product, and `PiLp.norm_strongDual_comp_singleL_le`: `‖Φ ∘ singleL p i‖ ≤ ‖Φ‖`.
-* `PiLp.norm_strongDual_eq`: for `1 ≤ p < ∞` and `q` the conjugate exponent,
-  `‖Φ‖ = ‖(‖Φ ∘ singleL p i‖)_i‖_{ℓ^q}` — the dual of `PiLp p X` is the `ℓ^q` product of the
-  duals, isometrically. The upper bound is Hölder's inequality for finite sums and the lower
-  bound tests `Φ` against almost extremal vectors of the factors.
-* `PiLp.norm_eq_norm_toLp_norm`: the norm of an element of `PiLp q X` is the norm of the real
-  tuple of the norms of its coordinates.
+* `PiLp.singleL`: the inclusion $\iota_i$ of the $i$-th factor, as a continuous linear map.
 
-## Design
+## Main results
 
-The scalar field is `ℝ` throughout: the consumers are the duals of the real Sobolev spaces
-(`W^{-1,p'}(I)` and `W^{-1,p'}(Ω)`, [brezis2011functional] Propositions 8.14 and 9.20, Remark 21
-of chapter 8), where the functional on `W^{1,p}` is extended to a finite `ℓ^p` product of copies
-of `L^p` and represented factor by factor. The extremal argument of `norm_strongDual_eq` uses
-that a real scalar of modulus one makes `Φ x` nonnegative; over `RCLike` the same proof goes
-through with `(Φ x)⁻¹ • |Φ x|`.
+* `PiLp.singleL_apply`, `PiLp.norm_singleL_apply`, `PiLp.norm_singleL_le`: $\iota_i$ is
+  `PiLp.single p i`, it is isometric, and its norm is at most $1$.
+* `PiLp.sum_singleL_apply`: every element is the sum of its coordinates, $x = \sum_i \iota_i(x_i)$.
+* `PiLp.strongDual_apply_eq_sum`, `PiLp.norm_strongDual_comp_singleL_le`:
+  $\Phi(x) = \sum_i (\Phi \circ \iota_i)(x_i)$, and $\|\Phi \circ \iota_i\| \le \|\Phi\|$.
+* `PiLp.norm_strongDual_eq`: for $1 \le p < \infty$,
+  $\|\Phi\| = \| (\|\Phi \circ \iota_i\|)_i \|_q$.
+* `PiLp.norm_eq_norm_toLp_norm`: the norm of an element of the product is the $\ell^p$ norm of the
+  real vector of the norms of its coordinates.
+
+## Proof outline
+
+The upper bound for $\|\Phi\|$ is Hölder's inequality for finite sums. The lower bound tests $\Phi$
+against vectors whose coordinates are almost extremal for the restrictions $\Phi \circ \iota_i$.
+
+## Implementation notes
+
+* The scalar field is $\mathbb{R}$ throughout. The results serve the duals of the real Sobolev
+  spaces, $W^{-1,p'}(I)$ and $W^{-1,p'}(\Omega)$ ([brezis2011functional], Propositions 8.14 and
+  9.20, and Remark 21 of Chapter 8): there a functional on $W^{1,p}$ is extended to a finite
+  $\ell^p$ product of copies of $L^p$ and represented factor by factor.
+* The extremal argument of `PiLp.norm_strongDual_eq` uses that a real scalar of modulus one makes
+  $\Phi(x)$ nonnegative. Over `RCLike` the same proof goes through with the scalar
+  $|\Phi(x)| / \Phi(x)$.
 -/
 
 open scoped ENNReal
@@ -55,26 +66,33 @@ variable {ι : Type*} [DecidableEq ι] {X : ι → Type*} [∀ i, NormedAddCommG
   [∀ i, NormedSpace ℝ (X i)] {p : ℝ≥0∞}
 
 variable (p) in
-/-- The inclusion of the `i`-th factor into the `ℓ^p` product, as a continuous linear map. -/
+/-- The inclusion $\iota_i : X_i \to$ `PiLp p X` of the $i$-th factor into the $\ell^p$ product, as
+a continuous linear map: $\iota_i(b)$ has the coordinate $b$ at $i$ and $0$ at every other
+index. -/
 def singleL (i : ι) : X i →L[ℝ] PiLp p X :=
   (continuousLinearEquiv p ℝ X).symm.toContinuousLinearMap.comp (ContinuousLinearMap.single ℝ X i)
 
-/-- `singleL p i b` is `PiLp.single p i b`. -/
+/-- The inclusion $\iota_i$ of the $i$-th factor maps $b \in X_i$ to `PiLp.single p i b`. -/
 theorem singleL_apply (i : ι) (b : X i) : singleL p i b = single p i b := rfl
 
 variable [Fintype ι] [Fact (1 ≤ p)]
 
-/-- The inclusion of a factor is isometric. -/
+/-- Let the index set be finite and $1 \le p \le \infty$. The inclusion of a factor is isometric:
+$$\|\iota_i(b)\| = \|b\|.$$
+-/
 theorem norm_singleL_apply (i : ι) (b : X i) : ‖singleL p i b‖ = ‖b‖ := by
   rw [singleL_apply, norm_single]
 
-/-- The inclusion of a factor has norm at most `1`. -/
+/-- Let the index set be finite and $1 \le p \le \infty$. The inclusion $\iota_i$ of a factor has
+operator norm $\|\iota_i\| \le 1$. -/
 theorem norm_singleL_le (i : ι) : ‖singleL p (X := X) i‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun b ↦ by
     rw [norm_singleL_apply, one_mul]
 
 omit [Fact (1 ≤ p)] in
-/-- Every element of the product is the sum of its coordinates. -/
+/-- Every element $x$ of a finite $\ell^p$ product is the sum of its coordinates:
+$$x = \sum_i \iota_i(x_i).$$
+-/
 theorem sum_singleL_apply (x : PiLp p X) : ∑ i, singleL p i (x i) = x := by
   refine (continuousLinearEquiv p ℝ X).injective ?_
   rw [map_sum]
@@ -83,25 +101,34 @@ theorem sum_singleL_apply (x : PiLp p X) : ∑ i, singleL p i (x i) = x := by
   exact Finset.univ_sum_single _
 
 omit [Fact (1 ≤ p)] in
-/-- A functional on the product is the sum of its restrictions to the factors. -/
+/-- A continuous linear functional $\Phi$ on a finite $\ell^p$ product is the sum of its
+restrictions to the factors: for every $x$,
+$$\Phi(x) = \sum_i (\Phi \circ \iota_i)(x_i).$$
+-/
 theorem strongDual_apply_eq_sum (Φ : StrongDual ℝ (PiLp p X)) (x : PiLp p X) :
     Φ x = ∑ i, Φ.comp (singleL p i) (x i) := by
   conv_lhs => rw [← sum_singleL_apply x]
   rw [map_sum]
   rfl
 
-/-- The restriction of a functional to a factor has norm at most that of the functional. -/
+/-- Let the index set be finite and $1 \le p \le \infty$. The restriction of a continuous linear
+functional $\Phi$ on the $\ell^p$ product to a factor has no larger norm:
+$$\|\Phi \circ \iota_i\| \le \|\Phi\|.$$
+-/
 theorem norm_strongDual_comp_singleL_le (Φ : StrongDual ℝ (PiLp p X)) (i : ι) :
     ‖Φ.comp (singleL p i)‖ ≤ ‖Φ‖ :=
   (ContinuousLinearMap.opNorm_comp_le _ _).trans
     (by simpa using mul_le_mul_of_nonneg_left (norm_singleL_le (p := p) i) (norm_nonneg Φ))
 
-/-- **The dual of a finite `ℓ^p` product, `1 ≤ p < ∞`**: the norm of a functional `Φ` on
-`PiLp p X` is the `ℓ^q` norm of the tuple of the norms of its restrictions `Φ ∘ single i` to the
-factors, `q` the conjugate exponent — `(∑ ‖Φ ∘ single i‖^q)^{1/q}` for `1 < p < ∞`,
-`max ‖Φ ∘ single i‖` for `p = 1`. The upper bound is Hölder's inequality for finite sums; the
-lower bound tests `Φ` against `(‖Φ ∘ single i‖^{q - 1} y i)_i` with `y i` almost extremal for
-`Φ ∘ single i`. -/
+/-- **The dual of a finite $\ell^p$ product.** Let $X_i$, $i \in \iota$, be finitely many real
+normed spaces, let $1 \le p < \infty$, and let $q$ be the conjugate exponent, $1/p + 1/q = 1$.
+For every continuous linear functional $\Phi$ on `PiLp p X`,
+$$\|\Phi\| = \big\| (\|\Phi \circ \iota_i\|)_{i \in \iota} \big\|_q.$$
+That is, $\|\Phi\| = (\sum_i \|\Phi \circ \iota_i\|^q)^{1/q}$ for $1 < p < \infty$, and
+$\|\Phi\| = \max_i \|\Phi \circ \iota_i\|$ for $p = 1$.
+
+The upper bound is Hölder's inequality for finite sums. The lower bound tests $\Phi$ against
+$(\|\Phi \circ \iota_i\|^{q-1} y_i)_i$, with $y_i$ almost extremal for $\Phi \circ \iota_i$. -/
 theorem norm_strongDual_eq {q : ℝ≥0∞} [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤)
     (Φ : StrongDual ℝ (PiLp p X)) :
     ‖Φ‖ = ‖(WithLp.toLp q fun i ↦ ‖Φ.comp (singleL p i)‖ : PiLp q fun _ : ι ↦ ℝ)‖ := by
@@ -219,8 +246,10 @@ theorem norm_strongDual_eq {q : ℝ≥0∞} [ENNReal.HolderConjugate p q] (hp : 
       exact hSle
 
 omit [DecidableEq ι] [∀ i, NormedSpace ℝ (X i)] in
-/-- The norm of an element of a finite `ℓ^p` product is the norm of the real tuple of the norms
-of its coordinates. -/
+/-- Let $1 \le p \le \infty$. The norm of an element $x$ of a finite $\ell^p$ product is the
+$\ell^p$ norm of the real vector $(\|x_i\|)_i$ of the norms of its coordinates:
+$$\|x\| = \big\| (\|x_i\|)_i \big\|_p.$$
+-/
 theorem norm_eq_norm_toLp_norm (x : PiLp p X) :
     ‖x‖ = ‖(WithLp.toLp p fun i ↦ ‖x i‖ : PiLp p fun _ : ι ↦ ℝ)‖ := by
   rcases eq_or_ne p ⊤ with rfl | hp

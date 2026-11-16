@@ -17,31 +17,50 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 /-!
 # Real powers of the norm away from the origin
 
-Mathlib's `hasFDerivAt_norm_rpow` differentiates `x ↦ ‖x‖ ^ p` on a real inner product space under
-the hypothesis `1 < p`, which is what makes the function differentiable at the origin as well.
-Away from the origin the same formula holds for *every* real exponent, and that is the case a
-radial function with a singularity at the origin needs: the exponent is then typically negative.
+Let $E$ be a real inner product space. Mathlib's `hasFDerivAt_norm_rpow` differentiates
+$x \mapsto \|x\|^p$ under the hypothesis $p > 1$, which makes the function differentiable at the
+origin as well. Away from the origin the same formula
+$$D(\|\cdot\|^p)(x)[h] = p \|x\|^{p-2} \langle x, h \rangle$$
+holds for every real exponent $p$. A radial function with a singularity at the origin needs this
+case, and its exponent is typically negative.
 
-## Main statements
+Off the origin, $x \mapsto \|x\|^\lambda$ is smooth, and its $n$-th derivative is homogeneous of
+degree $\lambda - n$. On a finite-dimensional space it is therefore bounded by
+$C_n \|x\|^{\lambda - n}$. Its values on tuples of one direction are derivatives along lines. The
+radial value is $\lambda(\lambda-1)\cdots(\lambda-n+1) \|x\|^{\lambda-n}$. In a unit direction
+$u \perp x$ the value is $\|x\|^{\lambda-n} h^{(n)}(0)$ for $h(t) = (1 + t^2)^{\lambda/2}$, whose
+even derivatives at $0$ are $h^{(2j)}(0) = \prod_{i<j} (2i + 1)(\lambda - 2i)$. These are nonzero
+unless $\lambda$ is a nonnegative even integer. These values decide for which $\lambda$ the function
+$|x|^\lambda$ lies in the Sobolev space $W^{k,p}$ near the origin, as in Example 7.2.5 of
+[han2009theoretical].
 
-* `hasFDerivAt_norm_rpow_of_ne_zero`: `x ↦ ‖x‖ ^ p` has derivative `h ↦ p ‖x‖^{p-2} ⟪x, h⟫` at
-  every `x ≠ 0`, for every real `p`.
-* `norm_fderiv_norm_rpow_of_ne_zero`: that derivative has operator norm `|p| ‖x‖^{p-1}`, which is
-  the statement `|∇ |x|^p| = |p| |x|^{p-1}` in coordinate-free form.
+## Main results
 
-## The higher derivatives of `|x|^λ`
+* `hasFDerivAt_norm_rpow_of_ne_zero`: for every real $p$ and $x \ne 0$, the derivative of
+  $\|\cdot\|^p$ at $x$ is $h \mapsto p \|x\|^{p-2} \langle x, h \rangle$.
+* `norm_fderiv_norm_rpow_of_ne_zero`: this derivative has operator norm $|p| \|x\|^{p-1}$, the
+  coordinate-free form of $|\nabla |x|^p| = |p| |x|^{p-1}$.
+* `contDiffOn_normRpow`, `iteratedFDeriv_normRpow_smul`, `exists_norm_iteratedFDeriv_normRpow_le`:
+  smoothness off the origin, homogeneity of the derivatives, and the bound
+  $\|D^n(\|\cdot\|^\lambda)(x)\| \le C_n \|x\|^{\lambda - n}$.
+* `iteratedFDeriv_apply_const_eq_iteratedDeriv`: the value of $D^N f(x)$ on $(u, \dots, u)$ is the
+  $N$-th derivative of $t \mapsto f(x + t u)$ at $0$.
+* `iteratedFDeriv_normRpow_apply_unit`: the radial value $\lambda(\lambda-1)\cdots(\lambda-k+1)
+  \|x\|^{\lambda-k}$.
+* `iteratedFDeriv_normRpow_apply_perp`, `iteratedFDeriv_normRpow_apply_cons_perp`: the values in a
+  unit direction orthogonal to $x$, and the mixed values with one radial direction.
+* `iteratedDeriv_one_add_sq_rpow_two_mul`: the even derivatives of $(1 + t^2)^{\lambda/2}$ at $0$.
 
-Off the origin `x ↦ ‖x‖ ^ λ` is smooth (`contDiffOn_normRpow`), its `n`-th derivative is
-homogeneous of degree `λ − n` (`iteratedFDeriv_normRpow_smul`) and hence bounded by
-`C_n ‖x‖^{λ−n}` on a finite-dimensional space (`exists_norm_iteratedFDeriv_normRpow_le`). Its
-values on tuples of one direction are one-dimensional derivatives along lines
-(`iteratedFDeriv_apply_const_eq_iteratedDeriv`): the radial one is
-`λ(λ−1)⋯(λ−n+1) ‖x‖^{λ−n}` (`iteratedFDeriv_normRpow_apply_unit`), and in a unit direction
-`u ⊥ x` it is `‖x‖^{λ−n} h^{(n)}(0)` for `h(t) = (1 + t²)^{λ/2}`
-(`iteratedFDeriv_normRpow_apply_perp`, `iteratedFDeriv_normRpow_apply_cons_perp`), whose even
-derivatives at `0` are `∏_{i<j} (2i + 1)(λ − 2i)` (`iteratedDeriv_one_add_sq_rpow_two_mul`),
-nonzero unless `λ` is a nonnegative even integer. This is what decides for which `λ` the
-function `|x|^λ` lies in `W^{k,p}` near the origin ([han2009theoretical] Example 7.2.5).
+## Notation
+
+* $D^n f(x)[u_1, \dots, u_n]$: the $n$-th derivative `iteratedFDeriv ℝ n f x` of $f$ at $x$, applied
+  to the tuple $(u_1, \dots, u_n)$.
+* $h(t) = (1 + t^2)^{\lambda/2}$, written `fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)`.
+
+## Implementation notes
+
+* The exponent $\lambda$ is written `lam`. The falling factorial
+  $\lambda(\lambda-1)\cdots(\lambda-k+1)$ is `∏ j : Fin k, (lam - j)`.
 -/
 
 open Filter Metric Module Set Topology
@@ -49,11 +68,13 @@ open scoped RealInnerProductSpace
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {x : E}
 
-/-- **The derivative of a real power of the norm away from the origin.** For every real `p` and
-every `x ≠ 0`, the function `x ↦ ‖x‖ ^ p` is differentiable at `x`, with derivative
-`h ↦ p ‖x‖^{p-2} ⟪x, h⟫`. Mathlib's `hasFDerivAt_norm_rpow` is the same formula under the
-hypothesis `1 < p`, which buys differentiability at the origin too; here the exponent is arbitrary
-and the origin is excluded. -/
+/-- Let $x \in E$ with $x \ne 0$ and let $p \in \mathbb{R}$. Then $y \mapsto \|y\|^p$ is
+differentiable at $x$, with derivative
+$$h \mapsto p \|x\|^{p-2} \langle x, h \rangle.$$
+
+Mathlib's `hasFDerivAt_norm_rpow` gives the same formula under the hypothesis $p > 1$, which
+gives differentiability at the origin too. Here the exponent is arbitrary and the origin is
+excluded. -/
 theorem hasFDerivAt_norm_rpow_of_ne_zero (hx : x ≠ 0) (p : ℝ) :
     HasFDerivAt (fun x : E ↦ ‖x‖ ^ p) ((p * ‖x‖ ^ (p - 2)) • innerSL ℝ x) x := by
   apply HasStrictFDerivAt.hasFDerivAt
@@ -61,8 +82,10 @@ theorem hasFDerivAt_norm_rpow_of_ne_zero (hx : x ≠ 0) (p : ℝ) :
   simp_rw [← Real.rpow_natCast_mul (norm_nonneg _), ← Nat.cast_smul_eq_nsmul ℝ, smul_smul]
   ring_nf
 
-/-- Away from the origin the derivative of `x ↦ ‖x‖ ^ p` has operator norm `|p| ‖x‖^{p-1}`: the
-coordinate-free form of `|∇ |x|^p| = |p| |x|^{p-1}`. -/
+/-- Let $x \in E$ with $x \ne 0$ and let $p \in \mathbb{R}$. Then the derivative of
+$y \mapsto \|y\|^p$ at $x$ has operator norm
+$$\|D(\|\cdot\|^p)(x)\| = |p| \|x\|^{p-1}.$$
+This is the coordinate-free form of $|\nabla |x|^p| = |p| |x|^{p-1}$. -/
 theorem norm_fderiv_norm_rpow_of_ne_zero (hx : x ≠ 0) (p : ℝ) :
     ‖fderiv ℝ (fun x : E ↦ ‖x‖ ^ p) x‖ = |p| * ‖x‖ ^ (p - 1) := by
   rw [(hasFDerivAt_norm_rpow_of_ne_zero hx p).fderiv, norm_smul, norm_mul, innerSL_apply_norm,
@@ -71,9 +94,11 @@ theorem norm_fderiv_norm_rpow_of_ne_zero (hx : x ≠ 0) (p : ℝ) :
     ← Real.rpow_add_one (norm_ne_zero_iff.2 hx)]
   ring_nf
 
-/-- **The derivative of the norm away from the origin**: `h ↦ ⟪x, h⟫ / ‖x‖`. This is the case
-`p = 1` of `hasFDerivAt_norm_rpow_of_ne_zero`, and the norm is not differentiable at the origin,
-so the hypothesis `x ≠ 0` cannot be dropped. -/
+/-- Let $x \in E$ with $x \ne 0$. Then the norm is differentiable at $x$, with derivative
+$$h \mapsto \frac{\langle x, h \rangle}{\|x\|}.$$
+
+This is the case $p = 1$ of `hasFDerivAt_norm_rpow_of_ne_zero`. The norm is not differentiable
+at the origin, so the hypothesis $x \ne 0$ cannot be dropped. -/
 theorem hasFDerivAt_norm_of_ne_zero (hx : x ≠ 0) :
     HasFDerivAt (fun y : E ↦ ‖y‖) (‖x‖⁻¹ • innerSL ℝ x) x := by
   have h := hasFDerivAt_norm_rpow_of_ne_zero hx 1
@@ -81,19 +106,26 @@ theorem hasFDerivAt_norm_of_ne_zero (hx : x ≠ 0) :
   convert h using 2
   rw [one_mul, show (1 : ℝ) - 2 = -1 by norm_num, Real.rpow_neg_one]
 
-/-! ### `|x|^λ` off the origin: smoothness, homogeneity and the bound on the derivatives -/
+/-!
+### Smoothness, homogeneity and the bound on the derivatives of $\|x\|^\lambda$ off the origin
+-/
 
 section Derivatives
 
-/-- `|x|^λ` is `C^n` off the origin, for every `n`. -/
+/-- For every $\lambda \in \mathbb{R}$ and $n \in \mathbb{N}$, the function
+$x \mapsto \|x\|^\lambda$ is $n$ times continuously differentiable on $E \setminus \{0\}$. -/
 theorem contDiffOn_normRpow (lam : ℝ) (n : ℕ) :
     ContDiffOn ℝ n (fun x : E ↦ ‖x‖ ^ lam) {0}ᶜ := fun _ hx ↦
   ((contDiffAt_norm (𝕜 := ℝ) hx).rpow_const_of_ne (norm_ne_zero_iff.2 hx)).contDiffWithinAt
 
 variable [FiniteDimensional ℝ E]
 
-/-- **Homogeneity of the derivatives of `|x|^λ`**: `D^n |·|^λ (t x) = t^{λ-n} D^n |·|^λ (x)` for
-`t > 0` and `x ≠ 0`, from `|t x|^λ = t^λ |x|^λ` and the chain rule for the scaling `x ↦ t x`. -/
+/-- **Homogeneity of the derivatives of $\|x\|^\lambda$.** Let $E$ be finite-dimensional, let
+$\lambda \in \mathbb{R}$, $n \in \mathbb{N}$, $t > 0$ and $x \in E$ with $x \ne 0$. Then
+$$D^n(\|\cdot\|^\lambda)(t x) = t^{\lambda - n} D^n(\|\cdot\|^\lambda)(x).$$
+
+The proof uses $\|t x\|^\lambda = t^\lambda \|x\|^\lambda$ and the chain rule for the scaling
+$x \mapsto t x$. -/
 theorem iteratedFDeriv_normRpow_smul (lam : ℝ) (n : ℕ) {t : ℝ} (ht : 0 < t) {x : E}
     (hx : x ≠ 0) :
     iteratedFDeriv ℝ n (fun y : E ↦ ‖y‖ ^ lam) (t • x)
@@ -136,9 +168,12 @@ theorem iteratedFDeriv_normRpow_smul (lam : ℝ) (n : ℕ) {t : ℝ} (ht : 0 < t
     _ = t ^ (lam - n) • iteratedFDeriv ℝ n v x := by
         rw [smul_smul, Real.rpow_sub ht, Real.rpow_natCast, div_eq_inv_mul]
 
-/-- **The derivatives of `|x|^λ` are bounded by `C_n |x|^{λ-n}`** off the origin, with `C_n` the
-maximum of `‖D^n |·|^λ‖` on the unit sphere: homogeneity (`iteratedFDeriv_normRpow_smul`) and
-compactness of the sphere. -/
+/-- Let $E$ be finite-dimensional, let $\lambda \in \mathbb{R}$ and $n \in \mathbb{N}$. Then there
+is a constant $C \ge 0$ such that for every $x \ne 0$,
+$$\|D^n(\|\cdot\|^\lambda)(x)\| \le C \|x\|^{\lambda - n}.$$
+
+The constant $C$ is the maximum of $\|D^n(\|\cdot\|^\lambda)\|$ on the unit sphere. The bound
+follows from homogeneity (`iteratedFDeriv_normRpow_smul`) and the compactness of the sphere. -/
 theorem exists_norm_iteratedFDeriv_normRpow_le (lam : ℝ) (n : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ x : E, x ≠ 0 →
       ‖iteratedFDeriv ℝ n (fun y : E ↦ ‖y‖ ^ lam) x‖ ≤ C * ‖x‖ ^ (lam - n) := by
@@ -169,11 +204,14 @@ theorem exists_norm_iteratedFDeriv_normRpow_le (lam : ℝ) (n : ℕ) :
 
 end Derivatives
 
-/-! ### The iterated derivative along a line, and the radial derivative of `|x|^λ` -/
+/-! ### The iterated derivative along a line, and the radial derivative of $\|x\|^\lambda$ -/
 
 section Radial
 
-/-- The `k`-th derivative of `s ↦ (c + s)^λ` at `t > -c` is `λ(λ-1)⋯(λ-k+1) (c+t)^{λ-k}`. -/
+/-- Let $\lambda, c \in \mathbb{R}$ and $k \in \mathbb{N}$. For every $t > -c$, the $k$-th
+derivative of $s \mapsto (c + s)^\lambda$ at $t$ is
+$$\lambda(\lambda-1)\cdots(\lambda-k+1) (c + t)^{\lambda - k}.$$
+-/
 theorem iteratedDeriv_const_add_rpow (lam c : ℝ) (k : ℕ) :
     ∀ t : ℝ, -c < t →
       iteratedDeriv k (fun s : ℝ ↦ (c + s) ^ lam) t
@@ -197,10 +235,13 @@ theorem iteratedDeriv_const_add_rpow (lam c : ℝ) (k : ℕ) :
     rw [show lam - (k + 1) = lam - k - 1 by ring]
     ring
 
-/-- **The iterated derivative in a single direction is the iterated derivative along the
-line**: for `f` of class `C^N` on an open
-set containing `x`, `D^N f(x)(u, …, u)` is the `N`-th derivative of `t ↦ f(x + t u)` at `t = 0`.
-The chain rule for the affine map `t ↦ x + t u`, restricted to the open preimage of the set. -/
+/-- Let $E$ and $F$ be real normed spaces, let $s \subseteq E$ be open, and let $f : E \to F$ be $N$
+times continuously differentiable on $s$. Then for every $x \in s$ and every direction
+$u \in E$,
+$$D^N f(x)[u, \dots, u] = \frac{d^N}{dt^N} f(x + t u) \Big|_{t = 0}.$$
+
+The proof applies the chain rule to the affine map $t \mapsto x + t u$, restricted to the open
+preimage of $s$. -/
 theorem iteratedFDeriv_apply_const_eq_iteratedDeriv {E F : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] {s : Set E} (hs : IsOpen s)
     {N : ℕ} {f : E → F} (hf : ContDiffOn ℝ N f s) {x : E} (hx : x ∈ s) (u : E) :
@@ -227,8 +268,13 @@ theorem iteratedFDeriv_apply_const_eq_iteratedDeriv {E F : Type*} [NormedAddComm
   rw [← h3]
   rfl
 
-/-- **The radial derivative of `|x|^λ`**: `D^k |·|^λ (x) (u, …, u) = λ(λ-1)⋯(λ-k+1) |x|^{λ-k}` for
-`u = x/|x|`, since along the ray `t ↦ x + t u` the function is `(|x| + t)^λ`. -/
+/-- **The radial derivatives of $\|x\|^\lambda$.** Let $\lambda \in \mathbb{R}$, $k \in \mathbb{N}$
+and $x \in E$ with $x \ne 0$, and let $u = x / \|x\|$. Then
+$$D^k(\|\cdot\|^\lambda)(x)[u, \dots, u] = \lambda(\lambda-1)\cdots(\lambda-k+1)
+  \|x\|^{\lambda - k}.$$
+
+Along the ray $t \mapsto x + t u$ the function is $(\|x\| + t)^\lambda$, and
+`iteratedDeriv_const_add_rpow` gives its derivatives. -/
 theorem iteratedFDeriv_normRpow_apply_unit (lam : ℝ) (k : ℕ) {x : E} (hx : x ≠ 0) :
     iteratedFDeriv ℝ k (fun y : E ↦ ‖y‖ ^ lam) x (fun _ ↦ ‖x‖⁻¹ • x)
       = (∏ j : Fin k, (lam - j)) * ‖x‖ ^ (lam - k) := by
@@ -253,22 +299,27 @@ theorem iteratedFDeriv_normRpow_apply_unit (lam : ℝ) (k : ℕ) {x : E} (hx : x
 
 end Radial
 
-/-! ### The derivatives of `(1 + t²)^{λ/2}` at the origin
+/-!
+### The derivatives of $(1 + t^2)^{\lambda/2}$ at the origin
 
-Along a line through `x ≠ 0` in a unit direction `u ⊥ x`, `|x + t u|^λ = |x|^λ (1 + t²/|x|²)^{λ/2}`,
-so the derivatives of `|·|^λ` in directions orthogonal to `x` are those of `h(t) = (1 + t²)^{λ/2}`
-at `0`; `h` satisfies `(1 + t²) h' = λ t h`, which gives the recursion
-`h^{(n+2)}(0) = (n + 1)(λ - n) h^{(n)}(0)` and hence `h^{(2j)}(0) = ∏_{i<j} (2i + 1)(λ - 2i)`,
-nonzero unless `λ` is a nonnegative even integer. This is what the necessity half of Atkinson–Han's
-Example 7.2.5 needs at the odd integers `λ`, where the radial derivative `λ(λ-1)⋯(λ-k+1)`
-vanishes. -/
+Along a line through $x \ne 0$ in a unit direction $u \perp x$,
+$$\|x + t u\|^\lambda = \|x\|^\lambda \bigl(1 + t^2 / \|x\|^2\bigr)^{\lambda/2}.$$
+So the derivatives of $\|\cdot\|^\lambda$ in directions orthogonal to $x$ are those of
+$h(t) = (1 + t^2)^{\lambda/2}$ at $0$. The function $h$ satisfies $(1 + t^2) h' = \lambda t h$. This
+gives the recursion $h^{(n+2)}(0) = (n + 1)(\lambda - n) h^{(n)}(0)$, and hence $h^{(2j)}(0) =
+\prod_{i<j} (2i + 1)(\lambda - 2i)$, which is nonzero unless $\lambda$ is a nonnegative even
+integer. The necessity half of Example 7.2.5 of [han2009theoretical] needs this at the odd integers
+$\lambda$, where the radial derivative $\lambda(\lambda-1)\cdots(\lambda-k+1)$ vanishes.
+-/
 
-/-- `t ↦ (1 + t²)^{λ/2}` is smooth. -/
+/-- For every $\lambda \in \mathbb{R}$, the function $t \mapsto (1 + t^2)^{\lambda/2}$ is smooth on
+$\mathbb{R}$. -/
 theorem contDiff_one_add_sq_rpow (lam : ℝ) :
     ContDiff ℝ (⊤ : ℕ∞) (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) :=
   (contDiff_const.add (contDiff_id.pow 2)).rpow_const_of_ne fun t ↦ by positivity
 
-/-- The derivative of `t ↦ (1 + t²)^{λ/2}` is `λ t (1 + t²)^{λ/2 - 1}`. -/
+/-- For every $\lambda \in \mathbb{R}$, the derivative of $t \mapsto (1 + t^2)^{\lambda/2}$ is
+$t \mapsto \lambda t (1 + t^2)^{\lambda/2 - 1}$. -/
 theorem deriv_one_add_sq_rpow (lam : ℝ) :
     deriv (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2))
       = fun t ↦ lam * t * (1 + t ^ 2) ^ (lam / 2 - 1) := by
@@ -280,8 +331,9 @@ theorem deriv_one_add_sq_rpow (lam : ℝ) :
   rw [h.deriv, show (2 : ℕ) - 1 = 1 from rfl, pow_one]
   ring
 
-/-- The differential equation `(1 + t²) h' = λ t h` satisfied by `h(t) = (1 + t²)^{λ/2}`, written
-without division. -/
+/-- The function $h(t) = (1 + t^2)^{\lambda/2}$ satisfies the differential equation
+$(1 + t^2) h'(t) = \lambda t h(t)$ for every $t \in \mathbb{R}$, written as
+$h'(t) + t^2 h'(t) = \lambda t h(t)$. -/
 theorem deriv_one_add_sq_rpow_ode (lam : ℝ) :
     (fun t : ℝ ↦ deriv (fun s : ℝ ↦ (1 + s ^ 2) ^ (lam / 2)) t
         + t ^ 2 * deriv (fun s : ℝ ↦ (1 + s ^ 2) ^ (lam / 2)) t)
@@ -292,9 +344,12 @@ theorem deriv_one_add_sq_rpow_ode (lam : ℝ) :
   rw [Real.rpow_sub_one h0]
   field_simp
 
-/-- **The recursion for the derivatives of `(1 + t²)^{λ/2}` at `0`**:
-`h^{(n+2)}(0) = (n + 1)(λ - n) h^{(n)}(0)`, from the differential equation
-`(1 + t²) h' = λ t h` differentiated `n + 1` times by the Leibniz rule and evaluated at `0`. -/
+/-- Let $h(t) = (1 + t^2)^{\lambda/2}$ with $\lambda \in \mathbb{R}$. Then for every
+$n \in \mathbb{N}$,
+$$h^{(n+2)}(0) = (n + 1)(\lambda - n) h^{(n)}(0).$$
+
+The proof differentiates the equation $(1 + t^2) h' = \lambda t h$ $n + 1$ times by the Leibniz
+rule and evaluates at $0$. -/
 theorem iteratedDeriv_one_add_sq_rpow_succ_succ (lam : ℝ) (n : ℕ) :
     iteratedDeriv (n + 2) (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0
       = (n + 1) * (lam - n) * iteratedDeriv n (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0 := by
@@ -337,11 +392,14 @@ theorem iteratedDeriv_one_add_sq_rpow_succ_succ (lam : ℝ) (n : ℕ) :
   rw [hL, hR] at key
   linear_combination key
 
-/-- **The even-order derivatives of `(1 + t²)^{λ/2}` at `0`**:
-`h^{(2j)}(0) = ∏_{i<j} (2i + 1)(λ - 2i)`, by the recursion
-`iteratedDeriv_one_add_sq_rpow_succ_succ`. In particular it is nonzero for every `j` as soon as
-`λ` is not a nonnegative even integer; for `λ = 2i` it vanishes from `j = i + 1` on, `h` being the
-polynomial `(1 + t²)^i` then. -/
+/-- Let $h(t) = (1 + t^2)^{\lambda/2}$ with $\lambda \in \mathbb{R}$. Then for every
+$j \in \mathbb{N}$,
+$$h^{(2j)}(0) = \prod_{i<j} (2i + 1)(\lambda - 2i).$$
+
+The proof is an induction with the recursion `iteratedDeriv_one_add_sq_rpow_succ_succ`. In
+particular $h^{(2j)}(0) \ne 0$ for every $j$ if $\lambda$ is not a nonnegative even integer. For
+$\lambda = 2i$ the value vanishes for $j \ge i + 1$, because $h$ is then the polynomial
+$(1 + t^2)^i$. -/
 theorem iteratedDeriv_one_add_sq_rpow_two_mul (lam : ℝ) (j : ℕ) :
     iteratedDeriv (2 * j) (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0
       = ∏ i : Fin j, ((2 * (i : ℝ) + 1) * (lam - 2 * i)) := by
@@ -354,8 +412,8 @@ theorem iteratedDeriv_one_add_sq_rpow_two_mul (lam : ℝ) (j : ℕ) :
     push_cast
     ring
 
-/-- The even-order derivatives of `(1 + t²)^{λ/2}` at `0` do not vanish when `λ` is not a
-nonnegative even integer. -/
+/-- If $\lambda \ne 2i$ for every $i \in \mathbb{N}$, then the even derivatives $h^{(2j)}(0)$ of
+$h(t) = (1 + t^2)^{\lambda/2}$ are nonzero for every $j \in \mathbb{N}$. -/
 theorem iteratedDeriv_one_add_sq_rpow_two_mul_ne_zero {lam : ℝ} (hlam : ∀ i : ℕ, lam ≠ 2 * i)
     (j : ℕ) :
     iteratedDeriv (2 * j) (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0 ≠ 0 := by
@@ -364,15 +422,17 @@ theorem iteratedDeriv_one_add_sq_rpow_two_mul_ne_zero {lam : ℝ} (hlam : ∀ i 
     mul_ne_zero (by positivity) (sub_ne_zero.2 (hlam i))
 
 
-/-! ### The derivatives of `|x|^λ` in directions orthogonal to `x` -/
+/-! ### The derivatives of $\|x\|^\lambda$ in directions orthogonal to $x$ -/
 
 section Perp
 
 variable [FiniteDimensional ℝ E]
 
 omit [FiniteDimensional ℝ E] in
-/-- Along a line through a unit vector `x` in a unit direction `u ⊥ x`, `|·|^λ` is
-`t ↦ (1 + t²)^{λ/2}`. -/
+/-- Let $x, u \in E$ be unit vectors with $\langle x, u \rangle = 0$. Then along the line
+$t \mapsto x + t u$,
+$$\|x + t u\|^\lambda = (1 + t^2)^{\lambda/2} \quad \text{for every } t \in \mathbb{R}.$$
+-/
 theorem normRpow_add_smul_of_inner_eq_zero (lam : ℝ) {x u : E} (hx : ‖x‖ = 1) (hu : ‖u‖ = 1)
     (hxu : ⟪x, u⟫ = 0) :
     (fun t : ℝ ↦ ‖x + t • u‖ ^ lam) = fun t ↦ (1 + t ^ 2) ^ (lam / 2) := by
@@ -385,9 +445,14 @@ theorem normRpow_add_smul_of_inner_eq_zero (lam : ℝ) {x u : E} (hx : ‖x‖ =
   push_cast
   ring
 
-/-- **The derivative of `|x|^λ` in a direction orthogonal to `x`**: for `x ≠ 0` and a unit vector
-`u ⊥ x`, `D^N |·|^λ (x)(u, …, u) = |x|^{λ-N} h^{(N)}(0)` with `h(t) = (1 + t²)^{λ/2}`. Homogeneity
-reduces to `|x| = 1`, where the line `t ↦ x + t u` gives `|x + t u|^λ = (1 + t²)^{λ/2}`. -/
+/-- **The derivatives of $\|x\|^\lambda$ in a direction orthogonal to $x$.** Let $E$ be
+finite-dimensional, let $\lambda \in \mathbb{R}$ and $N \in \mathbb{N}$, let $x \in E$ with
+$x \ne 0$, and let $u$ be a unit vector with $\langle x, u \rangle = 0$. Then
+$$D^N(\|\cdot\|^\lambda)(x)[u, \dots, u] = \|x\|^{\lambda - N} h^{(N)}(0), \qquad h(t) = (1 +
+  t^2)^{\lambda/2}.$$
+
+Homogeneity reduces the claim to $\|x\| = 1$. There the line $t \mapsto x + t u$ gives
+$\|x + t u\|^\lambda = (1 + t^2)^{\lambda/2}$. -/
 theorem iteratedFDeriv_normRpow_apply_perp (lam : ℝ) (N : ℕ) {x u : E} (hx : x ≠ 0)
     (hu : ‖u‖ = 1) (hxu : ⟪x, u⟫ = 0) :
     iteratedFDeriv ℝ N (fun y : E ↦ ‖y‖ ^ lam) x (fun _ ↦ u)
@@ -411,11 +476,15 @@ theorem iteratedFDeriv_normRpow_apply_perp (lam : ℝ) (N : ℕ) {x u : E} (hx :
       (contDiffOn_normRpow lam N) hv0 u,
     normRpow_add_smul_of_inner_eq_zero lam hv1 hu hvu]
 
-/-- **The mixed derivative of `|x|^λ`, once radially and `N` times orthogonally**: for `x ≠ 0` and
-a unit vector `u ⊥ x`, `D^{N+1} |·|^λ (x)(x/|x|, u, …, u) = (λ - N) |x|^{λ-N-1} h^{(N)}(0)` with
-`h(t) = (1 + t²)^{λ/2}`. The outer derivative is the radial derivative of
-`G = D^N |·|^λ (·)(u, …, u)`, which is homogeneous of degree `λ - N` by
-`iteratedFDeriv_normRpow_smul`. -/
+/-- **The mixed derivatives of $\|x\|^\lambda$, once radially and $N$ times orthogonally.** Let $E$
+be finite-dimensional, let $\lambda \in \mathbb{R}$ and $N \in \mathbb{N}$, let $x \in E$ with
+$x \ne 0$, and let $u$ be a unit vector with $\langle x, u \rangle = 0$. Then
+$$D^{N+1}(\|\cdot\|^\lambda)(x)\Bigl[\frac{x}{\|x\|}, u, \dots, u\Bigr] = (\lambda - N)
+  \|x\|^{\lambda - N - 1} h^{(N)}(0), \qquad h(t) = (1 + t^2)^{\lambda/2}.$$
+
+The radial direction is the first argument (`Fin.cons`). The outer derivative is the radial
+derivative of $G(y) = D^N(\|\cdot\|^\lambda)(y)[u, \dots, u]$, which is homogeneous of degree
+$\lambda - N$ by `iteratedFDeriv_normRpow_smul`. -/
 theorem iteratedFDeriv_normRpow_apply_cons_perp (lam : ℝ) (N : ℕ) {x u : E} (hx : x ≠ 0)
     (hu : ‖u‖ = 1) (hxu : ⟪x, u⟫ = 0) :
     iteratedFDeriv ℝ (N + 1) (fun y : E ↦ ‖y‖ ^ lam) x (Fin.cons (‖x‖⁻¹ • x) fun _ ↦ u)
@@ -483,7 +552,8 @@ theorem iteratedFDeriv_normRpow_apply_cons_perp (lam : ℝ) (N : ℕ) {x u : E} 
   ring
 
 omit [FiniteDimensional ℝ E] in
-/-- In dimension at least two every vector has a unit vector orthogonal to it. -/
+/-- If $E$ has dimension at least $2$, then for every $x \in E$ there is a unit vector $u$ with
+$\langle x, u \rangle = 0$. -/
 theorem exists_norm_eq_one_inner_eq_zero (hd : 2 ≤ finrank ℝ E) (x : E) :
     ∃ u : E, ‖u‖ = 1 ∧ ⟪x, u⟫ = 0 := by
   rcases eq_or_ne x 0 with rfl | hx

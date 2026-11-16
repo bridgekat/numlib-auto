@@ -21,63 +21,118 @@ import Numlib.Topology.Separation.Regular
 /-!
 # Pseudospectra
 
-The `ε`-pseudospectrum of a bounded operator `A`, in its open and its closed form
-([saad2011numerical] Def 3.3; [golub2013matrix] §7.9; L. N. Trefethen and M. Embree, *Spectra and
-Pseudospectra*, 2005):
+Let $A$ be a bounded operator on a normed space $E$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$,
+and let $\varepsilon$ be real. The $\varepsilon$-pseudospectrum of $A$ is the set of scalars $z$ for
+which some unit vector $w$ is an eigenvector to within $\varepsilon$, that is,
+$\|Aw - zw\| < \varepsilon$. The closed $\varepsilon$-pseudospectrum $\Lambda_\varepsilon(A)$ uses
+$\|Aw - zw\| \le \varepsilon$ instead. The open form is the definition of [saad2011numerical],
+Definition 3.3, and of L. N. Trefethen and M. Embree, *Spectra and Pseudospectra* (2005); the closed
+form is the definition of [golub2013matrix], (7.9.5), whose theorems are about it. In finite
+dimension $\Lambda_\varepsilon(A)$ is the intersection of the open pseudospectra of larger radius,
+so "the distinction has no impact in the matrix case", as [golub2013matrix], §7.9.1, says. This
+module proves the standard characterizations and properties of pseudospectra, following
+[golub2013matrix], §7.9, and the matrix examples of [golub2013matrix], §7.9.4.
 
-* `ContinuousLinearMap.pseudospectrum ε A = {z | ∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε}`, Saad's and
-  Trefethen–Embree's strict form;
-* `ContinuousLinearMap.closedPseudospectrum ε A = {z | ∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ ≤ ε}`, the form of
-  [golub2013matrix] (7.9.5), whose theorems are about it ("the distinction has no impact in the
-  matrix case": in finite dimension the closed set is the intersection of the open ones of larger
-  radius, `ContinuousLinearMap.closedPseudospectrum_eq_iInter_pseudospectrum`).
+Write $s(z) = \inf_{\|w\| = 1} \|Aw - zw\|$ for the least residual at $z$; for a matrix it is the
+least singular value $\sigma_{\min}(zI - A)$. If $E$ is finite-dimensional and nonzero,
+$z \in \Lambda_\varepsilon(A)$ holds exactly when $s(z) \le \varepsilon$, exactly when $z$ is an
+eigenvalue or $\|(zI - A)^{-1}\| \ge 1/\varepsilon$ (for $\varepsilon > 0$), and, on an inner
+product space, exactly when $z$ is an eigenvalue of $A + B$ for some $B$ with
+$\|B\| \le \varepsilon$. Moreover $\Lambda_0(A)$ is the spectrum $\sigma(A)$,
+$\Lambda_\varepsilon(A)$ is compact, it transforms affinely under $A \mapsto \alpha I + \beta A$,
+and each of its connected components contains an eigenvalue. The pseudospectral abscissa and radius
+are the largest real part and the largest modulus of a point of $\Lambda_\varepsilon(A)$, and
+bounded powers $\|A^k\| \le M$ force $(\rho_\varepsilon(A) - 1)/\varepsilon \le M$.
 
-Both are defined by approximate eigenvectors rather than by the resolvent norm, so that no
-convention about the resolvent on the spectrum is needed; the equivalences with the other
-definitions are theorems. In finite dimension, for the closed set:
+## Main definitions
 
-* the least value `⨅_{‖w‖ = 1} ‖A w - z w‖` (the book's `σ_min(z I - A)`) is at most `ε`
-  (`ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf`, (7.9.5));
-* `z` is an eigenvalue or `‖(z I - A)⁻¹‖ ≥ 1/ε`, for `ε > 0`
-  (`ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent`, (7.9.6));
-* `z` is an eigenvalue of some `A + B` with `‖B‖ ≤ ε`, on an inner product space
-  (`ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add`, (7.9.7)); the open
-  set has the strict form `ContinuousLinearMap.mem_pseudospectrum_iff` ([saad2011numerical]
-  Prop 3.7).
+* `ContinuousLinearMap.pseudospectrum`: the open $\varepsilon$-pseudospectrum $\{z : \|Aw - zw\| <
+  \varepsilon \text{ for some unit } w\}$.
+* `ContinuousLinearMap.closedPseudospectrum`: the closed $\varepsilon$-pseudospectrum
+  $\Lambda_\varepsilon(A) = \{z : \|Aw - zw\| \le \varepsilon \text{ for some unit } w\}$.
+* `ContinuousLinearMap.pseudospectralAbscissa`: $\alpha_\varepsilon(A) = \sup \{\operatorname{Re} z
+  : z \in \Lambda_\varepsilon(A)\}$, for a complex operator ([golub2013matrix], (7.9.8)).
+* `ContinuousLinearMap.pseudospectralRadius`: $\rho_\varepsilon(A) = \sup \{|z| : z \in
+  \Lambda_\varepsilon(A)\}$, for a complex operator ([golub2013matrix], (7.9.9)).
+* `Matrix.pseudospectralAbscissa` and `Matrix.pseudospectralRadius`: the same quantities for a
+  complex square matrix.
 
-Around them: the closed pseudospectrum of radius `0` is the spectrum, the closed pseudospectrum is
-compact, it transforms affinely under `α + β A` ([golub2013matrix] Theorem 7.9.1), it is the
-conjugate of the one of the adjoint, and every point outside it is at distance at least
-`σ_min(z₀ I - A) - ε` from it (Theorem 7.9.8). Isometric intertwiners carry pseudospectra into
-pseudospectra (`ContinuousLinearMap.closedPseudospectrum_subset_of_intertwine`), and a similarity
-enlarges the radius by at most the condition number
-(`ContinuousLinearMap.closedPseudospectrum_units_conj_subset`, Theorem 7.9.2).
+## Main results
 
-The pseudospectral abscissa and radius (`ContinuousLinearMap.pseudospectralAbscissa`,
-`ContinuousLinearMap.pseudospectralRadius`, (7.9.8)–(7.9.9)) are defined for complex operators and
-are maxima in finite dimension; bounded powers force `(ρ_ε(A) - 1)/ε ≤ sup_k ‖A^k‖`
-(`ContinuousLinearMap.pseudospectralRadius_sub_one_div_le_norm_pow`, (7.9.11)), by the Neumann
-series of the resolvent.
+* `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf`: if $E$ is finite-dimensional and nonzero,
+  $z \in \Lambda_\varepsilon(A)$ if and only if $s(z) \le \varepsilon$ ([golub2013matrix], (7.9.5)).
+* `ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent`: in finite dimension and for
+  $\varepsilon > 0$, $z \in \Lambda_\varepsilon(A)$ if and only if $z \in \sigma(A)$ or
+  $\|(zI - A)^{-1}\| \ge 1/\varepsilon$ ([golub2013matrix], (7.9.6)).
+* `ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add`: on a
+  finite-dimensional inner product space, $z \in \Lambda_\varepsilon(A)$ if and only if
+  $z \in \sigma(A + B)$ for some $B$ with $\|B\| \le \varepsilon$ ([golub2013matrix], (7.9.7)).
+* `ContinuousLinearMap.mem_pseudospectrum_iff`: on an inner product space, $z$ lies in the open
+  $\varepsilon$-pseudospectrum if and only if $z$ is an eigenvalue of $A - B$ for some $B$ with
+  $\|B\| < \varepsilon$ ([saad2011numerical], Proposition 3.7).
+* `ContinuousLinearMap.closedPseudospectrum_zero`: in finite dimension, $\Lambda_0(A) = \sigma(A)$.
+* `ContinuousLinearMap.closedPseudospectrum_eq_iInter_pseudospectrum`: in finite dimension,
+  $\Lambda_\varepsilon(A)$ is the intersection of the open $\delta$-pseudospectra for
+  $\delta > \varepsilon$.
+* `ContinuousLinearMap.isCompact_closedPseudospectrum`: in finite dimension,
+  $\Lambda_\varepsilon(A)$ is compact.
+* `ContinuousLinearMap.closedPseudospectrum_smul_add`: for $\beta \neq 0$, $\Lambda_{\varepsilon
+  |\beta|}(\alpha I + \beta A) = \alpha + \beta \Lambda_\varepsilon(A)$ ([golub2013matrix], Theorem
+  7.9.1).
+* `ContinuousLinearMap.mem_closedPseudospectrum_adjoint_iff`: on a finite-dimensional inner product
+  space, $z \in \Lambda_\varepsilon(A^*)$ if and only if $\bar z \in \Lambda_\varepsilon(A)$.
+* `ContinuousLinearMap.le_infDist_closedPseudospectrum`: every $z_0$ has distance at least
+  $s(z_0) - \varepsilon$ from a nonempty $\Lambda_\varepsilon(A)$ ([golub2013matrix], Theorem
+  7.9.8).
+* `ContinuousLinearMap.closedPseudospectrum_subset_of_intertwine`: an isometric intertwiner carries
+  pseudospectra into pseudospectra.
+* `ContinuousLinearMap.closedPseudospectrum_units_conj_subset`: $\Lambda_\varepsilon(X^{-1} A X)
+  \subseteq \Lambda_{\varepsilon \|X\| \|X^{-1}\|}(A)$ ([golub2013matrix], Theorem 7.9.2).
+* `ContinuousLinearMap.pseudospectralRadius_sub_one_div_le_norm_pow`: if $E$ is finite-dimensional
+  and nonzero and $\|A^k\| \le M$ for all $k$, then $(\rho_\varepsilon(A) - 1)/\varepsilon \le M$
+  for every $\varepsilon > 0$ ([golub2013matrix], (7.9.11)).
+* `ContinuousLinearMap.exists_mem_spectrum_mem_connectedComponentIn`: in finite dimension over
+  $\mathbb{C}$, every connected component of $\Lambda_\varepsilon(A)$ contains an eigenvalue of $A$
+  ([golub2013matrix], §7.9.3).
+* `Matrix.closedPseudospectrum_conj_subset`: $\Lambda_\varepsilon(X^{-1} A X) \subseteq
+  \Lambda_{\varepsilon \kappa_2(X)}(A)$ ([golub2013matrix], Theorem 7.9.2).
+* `Matrix.closedPseudospectrum_unitary_conj`: $\Lambda_\varepsilon(U^H A U) =
+  \Lambda_\varepsilon(A)$ for a unitary $U$ ([golub2013matrix], Corollary 7.9.3).
+* `Matrix.closedPseudospectrum_diagonal`: the closed pseudospectrum of a diagonal matrix is the
+  union of the closed discs of radius $\varepsilon$ about its diagonal entries ([golub2013matrix],
+  Theorem 7.9.4).
+* `Matrix.closedPseudospectrum_of_isStarNormal`: the closed pseudospectrum of a normal complex
+  matrix is the union of the closed discs of radius $\varepsilon$ about its eigenvalues
+  ([golub2013matrix], Corollary 7.9.5).
+* `Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset`: for a block upper triangular $T$,
+  $\Lambda_\varepsilon(T_{11}) \cup \Lambda_\varepsilon(T_{22}) \subseteq \Lambda_\varepsilon(T)$
+  ([golub2013matrix], Theorem 7.9.6).
+* `Matrix.closedPseudospectrum_fromBlocks_diagonal`:
+  $\Lambda_\varepsilon(\operatorname{diag}(T_{11}, T_{22})) = \Lambda_\varepsilon(T_{11}) \cup
+  \Lambda_\varepsilon(T_{22})$ ([golub2013matrix], Corollary 7.9.7).
 
-Every connected component of `Λ_ε(A)` contains an eigenvalue
-(`ContinuousLinearMap.exists_mem_spectrum_mem_connectedComponentIn`, [golub2013matrix] §7.9.3).
-The proof is by continuity of roots rather than by the maximum modulus principle for the resolvent:
-a component missing the spectrum would split `Λ_ε(A)` into two disjoint compact parts, and along
-`t ↦ A + t B` (with `‖B‖ ≤ ε` and `z ∈ σ(A + B)`, the normed-space rank-one construction
-`ContinuousLinearMap.exists_hasEigenvalue_add_of_norm_sub_smul_le`) the number of eigenvalues in
-the part containing `z` would have to jump (`Polynomial.countRootsIn_eq_of_preconnected`).
+## Proof outline
 
-## Matrices
+The bound on the pseudospectral radius comes from the Neumann series of the resolvent. The theorem
+on connected components is proved by continuity of roots, not by the maximum modulus principle for
+the resolvent. A component that misses the spectrum would split $\Lambda_\varepsilon(A)$ into two
+disjoint compact parts. Take $B$ with $\|B\| \le \varepsilon$ and $z \in \sigma(A + B)$, by the
+rank-one construction `ContinuousLinearMap.exists_hasEigenvalue_add_of_norm_sub_smul_le`, which
+works in a normed space. Along $t \mapsto A + tB$ the number of eigenvalues in the part that
+contains $z$ would have to jump (`Polynomial.countRootsIn_eq_of_preconnected`).
 
-A square matrix `A` over `RCLike 𝕜` is read through its Euclidean operator
-`Matrix.toEuclideanCLM A`, whose norm is the spectral norm. The gallery of [golub2013matrix]
-§7.9.4: unitary invariance (`Matrix.closedPseudospectrum_unitary_conj`, Corollary 7.9.3), the
-similarity bound with `κ₂(X)` (`Matrix.closedPseudospectrum_conj_subset`, Theorem 7.9.2), diagonal
-and normal matrices (discs about the eigenvalues, `Matrix.closedPseudospectrum_diagonal`,
-`Matrix.closedPseudospectrum_of_isStarNormal`, Theorem 7.9.4 and Corollary 7.9.5), and block
-triangular and block diagonal matrices (`Matrix.closedPseudospectrum_fromBlocks_zero₂₁_supset`,
-`Matrix.closedPseudospectrum_fromBlocks_diagonal`, Theorem 7.9.6 and Corollary 7.9.7). The matrix
-pseudospectral abscissa and radius are abbreviations for the operator ones.
+## Implementation notes
+
+* Both pseudospectra are defined by approximate eigenvectors, not by the norm of the resolvent. So
+  no convention for the resolvent on the spectrum is needed, and the equivalences with the other
+  definitions are theorems.
+* A square matrix $A$ over $\mathbb{K}$ is read through its Euclidean operator
+  `Matrix.toEuclideanCLM A`, whose norm is the spectral norm. The matrix pseudospectral abscissa and
+  radius are abbreviations for those of this operator.
+* The pseudospectral abscissa and radius are defined only for complex operators. They are suprema in
+  $\mathbb{R}$, with the value $0$ for an empty or unbounded set. On a nonzero finite-dimensional
+  space and for $\varepsilon \ge 0$ they are maxima
+  (`ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius`).
 -/
 
 open Metric Set
@@ -90,55 +145,70 @@ section Normed
 
 variable [NormedSpace 𝕜 E] {ε ε₁ ε₂ : ℝ} {A : E →L[𝕜] E} {z : 𝕜}
 
-/-- The **`ε`-pseudospectrum** of `A` ([saad2011numerical], Def 3.3, in the form of his (3.55)): the
-scalars `z` for which some unit vector is an eigenvector to within `ε`,
-`{z | ∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε}`. Saad defines it by the resolvent, `‖(A - z)⁻¹‖ > ε⁻¹`, with
-the convention that the resolvent norm is infinite on the spectrum; this form needs no such
-convention — an exact eigenvector has residual `0` — and is what the perturbation statements
-consume. `ContinuousLinearMap.mem_pseudospectrum_iff` identifies it with the backward-error form,
-and `ContinuousLinearMap.closedPseudospectrum` is its closed counterpart. -/
+/-- The **$\varepsilon$-pseudospectrum** of a bounded operator $A$ on a normed space $E$: the set of
+scalars $z$ for which some unit vector is an eigenvector to within $\varepsilon$, $$\{z \in
+\mathbb{K} : \|Aw - zw\| < \varepsilon \text{ for some } w \in E \text{ with } \|w\| = 1\}.$$
+This is Definition 3.3 of [saad2011numerical], in the form of its (3.55).
+
+The source defines the pseudospectrum by the resolvent, $\|(A - zI)^{-1}\| > \varepsilon^{-1}$,
+with the convention that the norm of the resolvent is infinite on the spectrum. The form here
+needs no such convention, because an exact eigenvector has residual $0$, and it is the form that
+the perturbation statements use. `ContinuousLinearMap.mem_pseudospectrum_iff` identifies it with
+the backward-error form, and `ContinuousLinearMap.closedPseudospectrum` is the closed
+counterpart. -/
 def pseudospectrum (ε : ℝ) (A : E →L[𝕜] E) : Set 𝕜 :=
   {z | ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε}
 
-/-- The **closed `ε`-pseudospectrum** of `A` ([golub2013matrix] (7.9.5)): the scalars `z` for which
-some unit vector has residual `‖A w - z w‖ ≤ ε`. -/
+/-- The **closed $\varepsilon$-pseudospectrum** $\Lambda_\varepsilon(A)$ of a bounded operator $A$
+on a normed space $E$: the set of scalars $z$ for which some unit vector has a residual of at
+most $\varepsilon$, $$\Lambda_\varepsilon(A) = \{z \in \mathbb{K} : \|Aw - zw\| \le \varepsilon
+\text{ for some } w \in E \text{ with } \|w\| = 1\}.$$ This is the definition (7.9.5) of
+[golub2013matrix]. -/
 def closedPseudospectrum (ε : ℝ) (A : E →L[𝕜] E) : Set 𝕜 :=
   {z | ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ ≤ ε}
 
-/-- Membership in the pseudospectrum, unfolded. -/
+/-- A scalar $z$ lies in the open $\varepsilon$-pseudospectrum of $A$ if and only if
+$\|Aw - zw\| < \varepsilon$ for some unit vector $w$. -/
 theorem mem_pseudospectrum :
     z ∈ pseudospectrum ε A ↔ ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε := Iff.rfl
 
-/-- Membership in the closed pseudospectrum, unfolded. -/
+/-- A scalar $z$ lies in $\Lambda_\varepsilon(A)$ if and only if $\|Aw - zw\| \le \varepsilon$ for
+some unit vector $w$. -/
 theorem mem_closedPseudospectrum :
     z ∈ closedPseudospectrum ε A ↔ ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ ≤ ε := Iff.rfl
 
-/-- The open pseudospectrum is contained in the closed one of the same radius. -/
+/-- The open $\varepsilon$-pseudospectrum of $A$ is contained in $\Lambda_\varepsilon(A)$. -/
 theorem pseudospectrum_subset_closedPseudospectrum :
     pseudospectrum ε A ⊆ closedPseudospectrum ε A :=
   fun _ ⟨w, hw, h⟩ => ⟨w, hw, h.le⟩
 
-/-- The closed pseudospectrum is contained in every open one of larger radius. -/
+/-- If $\varepsilon_1 < \varepsilon_2$, then $\Lambda_{\varepsilon_1}(A)$ is contained in the open
+$\varepsilon_2$-pseudospectrum of $A$. -/
 theorem closedPseudospectrum_subset_pseudospectrum (h : ε₁ < ε₂) :
     closedPseudospectrum ε₁ A ⊆ pseudospectrum ε₂ A :=
   fun _ ⟨w, hw, h'⟩ => ⟨w, hw, h'.trans_lt h⟩
 
-/-- The pseudospectra increase with the radius. -/
+/-- The open pseudospectra increase with the radius: if $\varepsilon_1 \le \varepsilon_2$, then the
+open $\varepsilon_1$-pseudospectrum of $A$ is contained in the open
+$\varepsilon_2$-pseudospectrum. -/
 theorem pseudospectrum_mono (h : ε₁ ≤ ε₂) : pseudospectrum ε₁ A ⊆ pseudospectrum ε₂ A :=
   fun _ ⟨w, hw, h'⟩ => ⟨w, hw, h'.trans_le h⟩
 
-/-- The closed pseudospectra increase with the radius ([golub2013matrix] §7.9.3). -/
+/-- The closed pseudospectra increase with the radius: if $\varepsilon_1 \le \varepsilon_2$, then
+$\Lambda_{\varepsilon_1}(A) \subseteq \Lambda_{\varepsilon_2}(A)$. This is stated in
+[golub2013matrix], §7.9.3. -/
 theorem closedPseudospectrum_mono (h : ε₁ ≤ ε₂) :
     closedPseudospectrum ε₁ A ⊆ closedPseudospectrum ε₂ A :=
   fun _ ⟨w, hw, h'⟩ => ⟨w, hw, h'.trans h⟩
 
-/-- On the zero space there is no unit vector, so the closed pseudospectrum is empty. -/
+/-- On the zero space there is no unit vector, so $\Lambda_\varepsilon(A)$ is empty for every
+$\varepsilon$. -/
 theorem closedPseudospectrum_eq_empty [Subsingleton E] : closedPseudospectrum ε A = ∅ :=
   eq_empty_of_forall_notMem fun _ ⟨w, hw, _⟩ => by
     rw [Subsingleton.elim w 0, norm_zero] at hw
     exact zero_ne_one hw
 
-/-- An eigenvalue has a unit eigenvector. -/
+/-- If $z$ is an eigenvalue of $A$, then $Aw = zw$ for some unit vector $w$. -/
 private theorem exists_norm_eq_one_apply_eq_smul
     (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : ∃ w : E, ‖w‖ = 1 ∧ A w = z • w := by
   obtain ⟨w, hw, hw0⟩ := hz.exists_hasEigenvector
@@ -147,15 +217,18 @@ private theorem exists_norm_eq_one_apply_eq_smul
   · exact norm_smul_inv_norm hw0
   · rw [map_smul, smul_comm z, hval]
 
-/-- Every eigenvalue lies in every pseudospectrum of positive radius: an exact eigenvector has
-residual `0`. This is the inclusion `σ(A) ⊆ Λ_ε(A)`, and the reason the residual form of the
-definition needs no convention about the resolvent norm on the spectrum. -/
+/-- Let $\varepsilon > 0$. Every eigenvalue of $A$ lies in the open $\varepsilon$-pseudospectrum of
+$A$.
+
+An exact eigenvector has residual $0$. This is the inclusion
+$\sigma(A) \subseteq \Lambda_\varepsilon(A)$, and it is the reason why the residual form of the
+definition needs no convention for the norm of the resolvent on the spectrum. -/
 theorem mem_pseudospectrum_of_hasEigenvalue (hε : 0 < ε)
     (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : z ∈ pseudospectrum ε A := by
   obtain ⟨w, hw, hAw⟩ := exists_norm_eq_one_apply_eq_smul hz
   exact ⟨w, hw, by rwa [hAw, sub_self, norm_zero]⟩
 
-/-- Every eigenvalue lies in every closed pseudospectrum of nonnegative radius. -/
+/-- Let $\varepsilon \ge 0$. Every eigenvalue of $A$ lies in $\Lambda_\varepsilon(A)$. -/
 theorem mem_closedPseudospectrum_of_hasEigenvalue (hε : 0 ≤ ε)
     (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : z ∈ closedPseudospectrum ε A := by
   obtain ⟨w, hw, hAw⟩ := exists_norm_eq_one_apply_eq_smul hz
@@ -165,8 +238,9 @@ private theorem bddBelow_range_norm_sub_smul (A : E →L[𝕜] E) (z : 𝕜) :
     BddBelow (range fun w : {w : E // ‖w‖ = 1} => ‖A w - z • (w : E)‖) :=
   ⟨0, by rintro _ ⟨w, rfl⟩; exact norm_nonneg _⟩
 
-/-- The least residual `⨅_{‖w‖ = 1} ‖A w - z w‖` (the book's `σ_min(z I - A)`) is a lower bound
-by homogeneity: `(⨅_{‖w‖ = 1} ‖A w - z w‖) ‖x‖ ≤ ‖A x - z x‖` for every `x`. -/
+/-- The least residual $s(z) = \inf_{\|w\| = 1} \|Aw - zw\|$ is a lower bound by homogeneity: for
+every $x \in E$, $$s(z) \, \|x\| \le \|Ax - zx\|.$$ For a matrix, $s(z)$ is the least singular
+value $\sigma_{\min}(zI - A)$. -/
 theorem iInf_norm_sub_smul_mul_norm_le (A : E →L[𝕜] E) (z : 𝕜) (x : E) :
     (⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z • (w : E)‖) * ‖x‖ ≤ ‖A x - z • x‖ := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -180,7 +254,8 @@ theorem iInf_norm_sub_smul_mul_norm_le (A : E →L[𝕜] E) (z : 𝕜) (x : E) :
       ≤ ‖x‖⁻¹ * ‖A x - z • x‖ * ‖x‖ := by gcongr
     _ = ‖A x - z • x‖ := by field_simp
 
-/-- The least residual `⨅_{‖w‖ = 1} ‖A w - z w‖` is `1`-Lipschitz in `z`. -/
+/-- The least residual $s(z) = \inf_{\|w\| = 1} \|Aw - zw\|$ is $1$-Lipschitz in $z$:
+$s(z) \le s(z') + |z - z'|$ for all scalars $z$ and $z'$. -/
 theorem iInf_norm_sub_smul_le_add (A : E →L[𝕜] E) (z z' : 𝕜) :
     ⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z • (w : E)‖ ≤
       (⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z' • (w : E)‖) + ‖z - z'‖ := by
@@ -195,11 +270,15 @@ theorem iInf_norm_sub_smul_le_add (A : E →L[𝕜] E) (z z' : 𝕜) :
     _ ≤ ‖A w - z' • (w : E)‖ + ‖(z - z') • (w : E)‖ := norm_sub_le _ _
     _ = ‖A w - z' • (w : E)‖ + ‖z - z'‖ := by rw [norm_smul, w.2, mul_one]
 
-/-- [golub2013matrix] Theorem 7.9.8: every point `z₀` is at distance at least
-`σ_min(z₀ I - A) - ε` from a nonempty closed pseudospectrum, where
-`σ_min(z₀ I - A) = ⨅_{‖w‖ = 1} ‖A w - z₀ w‖` (for `z₀ ∉ σ(A)` it is at least
-`1 / ‖(z₀ I - A)⁻¹‖`, `ContinuousLinearMap.inv_norm_inverse_le_norm_sub_smul`, the book's form).
-For `z ∈ Λ_ε(A)` with a unit `w`, `‖A w - z₀ w‖ ≤ ‖A w - z w‖ + |z - z₀| ≤ ε + |z - z₀|`. -/
+/-- Distance to the pseudospectrum. Let $\Lambda_\varepsilon(A)$ be nonempty, and let $z_0$ be a
+scalar. Then the distance from $z_0$ to $\Lambda_\varepsilon(A)$ is at least
+$s(z_0) - \varepsilon$, where $s(z_0) = \inf_{\|w\| = 1} \|Aw - z_0 w\|$ is the least residual,
+the $\sigma_{\min}(z_0 I - A)$ of the source. This is Theorem 7.9.8 of [golub2013matrix].
+
+For $z_0 \notin \sigma(A)$ the least residual is at least $1/\|(z_0 I - A)^{-1}\|$
+(`ContinuousLinearMap.inv_norm_inverse_le_norm_sub_smul`), which is the form of the source. The
+proof: for $z \in \Lambda_\varepsilon(A)$ with a unit vector $w$, $\|Aw - z_0 w\| \le \|Aw -
+zw\| + |z - z_0| \le \varepsilon + |z - z_0|$. -/
 theorem le_infDist_closedPseudospectrum (hne : (closedPseudospectrum ε A).Nonempty) (z₀ : 𝕜) :
     (⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z₀ • (w : E)‖) - ε ≤
       infDist z₀ (closedPseudospectrum ε A) := by
@@ -214,14 +293,17 @@ theorem le_infDist_closedPseudospectrum (hne : (closedPseudospectrum ε A).Nonem
   simp only at h1
   linarith
 
-/-- The affine image of an approximate eigenpair: `(α + β A) w - (α + β z) w = β (A w - z w)`. -/
+/-- For all scalars $\alpha$, $\beta$, $z$ and every $w$, $(\alpha I + \beta A) w - (\alpha + \beta
+z) w = \beta (Aw - zw)$. -/
 private theorem smul_add_apply_sub (α β : 𝕜) (w : E) :
     (α • (1 : E →L[𝕜] E) + β • A) w - (α + β * z) • w = β • (A w - z • w) := by
   simp only [add_apply, smul_apply, one_apply_eq_self, add_smul, mul_smul, smul_sub]
   abel
 
-/-- [golub2013matrix] Theorem 7.9.1: for `β ≠ 0`,
-`Λ_{ε |β|}(α I + β A) = α + β Λ_ε(A)`. -/
+/-- Affine transformation of the pseudospectrum. Let $\alpha$ and $\beta$ be scalars with
+$\beta \neq 0$. Then $$\Lambda_{\varepsilon |\beta|}(\alpha I + \beta A) = \alpha + \beta
+\Lambda_\varepsilon(A) = \{\alpha + \beta z : z \in \Lambda_\varepsilon(A)\}.$$ This is Theorem
+7.9.1 of [golub2013matrix]. -/
 theorem closedPseudospectrum_smul_add (α : 𝕜) {β : 𝕜} (hβ : β ≠ 0) :
     closedPseudospectrum (ε * ‖β‖) (α • 1 + β • A) =
       (fun z => α + β * z) '' closedPseudospectrum ε A := by
@@ -238,8 +320,9 @@ theorem closedPseudospectrum_smul_add (α : 𝕜) {β : 𝕜} (hβ : β ≠ 0) :
     rw [smul_add_apply_sub, norm_smul, mul_comm ε]
     exact mul_le_mul_of_nonneg_left h hβn.le
 
-/-- The open counterpart of `ContinuousLinearMap.closedPseudospectrum_smul_add`: for `β ≠ 0`,
-`Λ^{open}_{ε |β|}(α I + β A) = α + β Λ^{open}_ε(A)`. -/
+/-- The open form of `ContinuousLinearMap.closedPseudospectrum_smul_add`. Let $\beta \neq 0$. Then
+the open $\varepsilon |\beta|$-pseudospectrum of $\alpha I + \beta A$ is the image
+$\{\alpha + \beta z\}$ of the open $\varepsilon$-pseudospectrum of $A$. -/
 theorem pseudospectrum_smul_add (α : 𝕜) {β : 𝕜} (hβ : β ≠ 0) :
     pseudospectrum (ε * ‖β‖) (α • 1 + β • A) =
       (fun z => α + β * z) '' pseudospectrum ε A := by
@@ -256,12 +339,13 @@ theorem pseudospectrum_smul_add (α : 𝕜) {β : 𝕜} (hβ : β ≠ 0) :
     rw [smul_add_apply_sub, norm_smul, mul_comm ε]
     exact mul_lt_mul_of_pos_left h hβn
 
-/-- Outside the spectrum, `z I - A` is invertible. -/
+/-- If $z \notin \sigma(A)$, then $zI - A$ is invertible. -/
 private theorem isUnit_smul_one_sub (hz : z ∉ spectrum 𝕜 A) : IsUnit (z • 1 - A) := by
   rwa [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, not_not] at hz
 
-/-- **The resolvent bounds the residual from below**: for `z ∉ σ(A)` and every `x`,
-`‖x‖ ≤ ‖(z I - A)⁻¹‖ ‖A x - z x‖`. -/
+/-- The resolvent bounds the residual from below. Let $z \notin \sigma(A)$. Then for every
+$x \in E$, $$\|x\| \le \|(zI - A)^{-1}\| \, \|Ax - zx\|.$$
+-/
 theorem norm_le_norm_inverse_mul_norm_sub_smul (hz : z ∉ spectrum 𝕜 A) (x : E) :
     ‖x‖ ≤ ‖Ring.inverse (z • 1 - A)‖ * ‖A x - z • x‖ := by
   have h1 : Ring.inverse (z • 1 - A) * (z • 1 - A) = 1 :=
@@ -272,8 +356,11 @@ theorem norm_le_norm_inverse_mul_norm_sub_smul (hz : z ∉ spectrum 𝕜 A) (x :
     _ = ‖Ring.inverse (z • 1 - A)‖ * ‖A x - z • x‖ := by
         rw [sub_apply, smul_apply, one_apply_eq_self, norm_sub_rev]
 
-/-- For `z ∉ σ(A)`, every unit vector has residual at least `1 / ‖(z I - A)⁻¹‖`; so
-`1 / ‖(z I - A)⁻¹‖ ≤ σ_min(z I - A)`, the book's form of the distance bound of Theorem 7.9.8. -/
+/-- Let $z \notin \sigma(A)$. Then every unit vector $w$ has residual
+$\|Aw - zw\| \ge 1/\|(zI - A)^{-1}\|$.
+
+So $1/\|(zI - A)^{-1}\| \le \sigma_{\min}(zI - A)$, which gives the form of the distance bound
+of [golub2013matrix], Theorem 7.9.8. The inverse is `Ring.inverse`, and $1/0$ means $0$. -/
 theorem inv_norm_inverse_le_norm_sub_smul (hz : z ∉ spectrum 𝕜 A) {w : E} (hw : ‖w‖ = 1) :
     ‖Ring.inverse (z • 1 - A)‖⁻¹ ≤ ‖A w - z • w‖ := by
   have h := norm_le_norm_inverse_mul_norm_sub_smul hz w
@@ -291,7 +378,8 @@ section FiniteDimensional
 
 variable [NormedSpace 𝕜 E] [FiniteDimensional 𝕜 E] {ε : ℝ} {A : E →L[𝕜] E} {z : 𝕜}
 
-/-- In finite dimension the least residual is attained on the unit sphere. -/
+/-- Let $E$ be finite-dimensional and nonzero. Then the least residual is attained on the unit
+sphere: there is a unit vector $w$ with $\|Aw - zw\| = \inf_{\|v\| = 1} \|Av - zv\|$. -/
 theorem exists_norm_sub_smul_eq_iInf [Nontrivial E] (A : E →L[𝕜] E) (z : 𝕜) :
     ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ = ⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z • (w : E)‖ := by
   have := FiniteDimensional.proper_rclike 𝕜 E
@@ -306,8 +394,10 @@ theorem exists_norm_sub_smul_eq_iInf [Nontrivial E] (A : E →L[𝕜] E) (z : �
   refine ⟨w, hw, le_antisymm (le_ciInf fun v => hmin (mem_sphere_zero_iff_norm.mpr v.2))
     (ciInf_le (bddBelow_range_norm_sub_smul A z) ⟨w, hw⟩)⟩
 
-/-- [golub2013matrix] (7.9.5): in finite dimension, `z ∈ Λ_ε(A)` exactly when the least residual
-`σ_min(z I - A) = ⨅_{‖w‖ = 1} ‖A w - z w‖` is at most `ε`. -/
+/-- Let $E$ be finite-dimensional and nonzero. Then $z \in \Lambda_\varepsilon(A)$ if and only if
+the least residual is at most $\varepsilon$: $$\inf_{\|w\| = 1} \|Aw - zw\| \le \varepsilon.$$
+The least residual is the $\sigma_{\min}(zI - A)$ of the source. This is (7.9.5) of
+[golub2013matrix]. -/
 theorem mem_closedPseudospectrum_iff_iInf [Nontrivial E] :
     z ∈ closedPseudospectrum ε A ↔ ⨅ w : {w : E // ‖w‖ = 1}, ‖A w - z • (w : E)‖ ≤ ε := by
   constructor
@@ -317,23 +407,26 @@ theorem mem_closedPseudospectrum_iff_iInf [Nontrivial E] :
     obtain ⟨w, hw, heq⟩ := exists_norm_sub_smul_eq_iInf A z
     exact ⟨w, hw, heq ▸ h⟩
 
-/-- In finite dimension, an eigenvalue of the operator is an eigenvalue of the linear map. -/
+/-- In finite dimension, $z$ is an eigenvalue of $A$ as a linear map if and only if $z$ lies in the
+spectrum of $A$. -/
 private theorem hasEigenvalue_iff_mem_spectrum' :
     Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z ↔ z ∈ spectrum 𝕜 A := by
   have := FiniteDimensional.complete 𝕜 E
   rw [spectrum_eq, Module.End.hasEigenvalue_iff_mem_spectrum]
 
-/-- The spectrum lies in every closed pseudospectrum of nonnegative radius. -/
+/-- Let $E$ be finite-dimensional and $\varepsilon \ge 0$. Then the spectrum of $A$ lies in
+$\Lambda_\varepsilon(A)$. -/
 theorem spectrum_subset_closedPseudospectrum (hε : 0 ≤ ε) :
     spectrum 𝕜 A ⊆ closedPseudospectrum ε A := fun _ hz =>
   mem_closedPseudospectrum_of_hasEigenvalue hε (hasEigenvalue_iff_mem_spectrum'.mpr hz)
 
-/-- The spectrum lies in every pseudospectrum of positive radius. -/
+/-- Let $E$ be finite-dimensional and $\varepsilon > 0$. Then the spectrum of $A$ lies in the open
+$\varepsilon$-pseudospectrum of $A$. -/
 theorem spectrum_subset_pseudospectrum (hε : 0 < ε) : spectrum 𝕜 A ⊆ pseudospectrum ε A :=
   fun _ hz => mem_pseudospectrum_of_hasEigenvalue hε (hasEigenvalue_iff_mem_spectrum'.mpr hz)
 
-/-- `Λ₀(A) = σ(A)` ([golub2013matrix] §7.9.1): in finite dimension the closed pseudospectrum of
-radius `0` is the spectrum. -/
+/-- Let $E$ be finite-dimensional. Then the closed pseudospectrum of radius $0$ is the spectrum:
+$\Lambda_0(A) = \sigma(A)$. This is stated in [golub2013matrix], §7.9.1. -/
 theorem closedPseudospectrum_zero : closedPseudospectrum 0 A = spectrum 𝕜 A := by
   refine Subset.antisymm ?_ (spectrum_subset_closedPseudospectrum le_rfl)
   rintro z ⟨w, hw, h⟩
@@ -342,9 +435,10 @@ theorem closedPseudospectrum_zero : closedPseudospectrum 0 A = spectrum 𝕜 A :
   exact hasEigenvalue_iff_mem_spectrum'.mp (Module.End.hasEigenvalue_of_hasEigenvector
     ⟨Module.End.mem_eigenspace_iff.mpr hAw, hw0⟩)
 
-/-- In finite dimension the closed pseudospectrum is the intersection of the open ones of larger
-radius, `Λ_ε(A) = ⋂_{δ > ε} Λ^{open}_δ(A)`: the book's remark that the strict and the non-strict
-definitions agree for matrices ([golub2013matrix] §7.9.1). -/
+/-- Let $E$ be finite-dimensional. Then the closed pseudospectrum is the intersection of the open
+pseudospectra of larger radius: $$\Lambda_\varepsilon(A) = \bigcap_{\delta > \varepsilon} \{z :
+\|Aw - zw\| < \delta \text{ for some unit } w\}.$$ This is the remark of [golub2013matrix],
+§7.9.1, that the strict and the non-strict definitions agree for matrices. -/
 theorem closedPseudospectrum_eq_iInter_pseudospectrum :
     closedPseudospectrum ε A = ⋂ δ > ε, pseudospectrum δ A := by
   cases subsingleton_or_nontrivial E
@@ -361,10 +455,13 @@ theorem closedPseudospectrum_eq_iInter_pseudospectrum :
   obtain ⟨w, hw, hlt⟩ := mem_iInter₂.mp hz _ h
   exact (ciInf_le (bddBelow_range_norm_sub_smul A z) ⟨w, hw⟩).not_gt hlt
 
-/-- [golub2013matrix] (7.9.6): in finite dimension, for `ε > 0`, `z ∈ Λ_ε(A)` exactly when `z` is
-an eigenvalue or the resolvent is large, `‖(z I - A)⁻¹‖ ≥ 1/ε`. (At `ε = 0` the resolvent form
-degenerates, `1/0 = 0` in Lean; `ContinuousLinearMap.closedPseudospectrum_zero` is the right
-statement there.) -/
+/-- Let $E$ be finite-dimensional and $\varepsilon > 0$. Then $z \in \Lambda_\varepsilon(A)$ if and
+only if $z$ is an eigenvalue of $A$ or the resolvent is large: $$z \in \sigma(A) \quad \text{or}
+\quad \|(zI - A)^{-1}\| \ge 1/\varepsilon.$$ This is (7.9.6) of [golub2013matrix].
+
+At $\varepsilon = 0$ the resolvent form degenerates, because $1/0 = 0$ in Lean;
+`ContinuousLinearMap.closedPseudospectrum_zero` is the statement for that case. The inverse is
+`Ring.inverse`. -/
 theorem mem_closedPseudospectrum_iff_resolvent (hε : 0 < ε) :
     z ∈ closedPseudospectrum ε A ↔
       z ∈ spectrum 𝕜 A ∨ 1 / ε ≤ ‖Ring.inverse (z • 1 - A)‖ := by
@@ -406,8 +503,10 @@ theorem mem_closedPseudospectrum_iff_resolvent (hε : 0 < ε) :
     have : 1 / m < 1 / ε := one_div_lt_one_div_of_lt hε hlt
     linarith
 
-/-- In finite dimension the closed pseudospectrum is compact: it is bounded by `‖A‖ + ε`
-(`|z| = ‖z w‖ ≤ ‖A w‖ + ε`) and closed (the least residual is continuous in `z`). -/
+/-- Let $E$ be finite-dimensional. Then $\Lambda_\varepsilon(A)$ is compact for every $\varepsilon$.
+
+It is bounded by $\|A\| + \varepsilon$, since $|z| = \|zw\| \le \|Aw\| + \varepsilon$ for a unit
+vector $w$, and it is closed, since the least residual is continuous in $z$. -/
 theorem isCompact_closedPseudospectrum (ε : ℝ) (A : E →L[𝕜] E) :
     IsCompact (closedPseudospectrum ε A) := by
   cases subsingleton_or_nontrivial E
@@ -441,17 +540,21 @@ section InnerProduct
 
 variable [InnerProductSpace 𝕜 E] {ε : ℝ}
 
-/-- **The backward-error characterization of the pseudospectrum** ([saad2011numerical], Prop 3.7,
-(iv) ↔ (v)): `z` is in the `ε`-pseudospectrum exactly when it is an eigenvalue of some `A - B` with
-`‖B‖ < ε`.
+/-- The **backward-error characterization of the pseudospectrum**. Let $E$ be an inner product
+space. Then $z$ lies in the open $\varepsilon$-pseudospectrum of $A$ if and only if $z$ is an
+eigenvalue of $A - B$ for some bounded operator $B$ with $\|B\| < \varepsilon$. This is
+[saad2011numerical], Proposition 3.7, (iv) $\Leftrightarrow$ (v), with a strict inequality in
+(v).
 
-Forwards, the perturbation is the rank-one `(A w - z w) wᴴ`, built from the residual of the
-approximate eigenvector; backwards, an eigenvector of `A - B` has residual `B w` for `A`. The book
-states (v) with `‖B‖ ≤ ε`, but its own proof of (v) ⇒ (iv) needs the strict inequality, and with
-`≤` the equivalence is false: for `A = 0` every `z` of modulus `ε` satisfies the right-hand side,
-with the perturbation `B = -z • 1` of norm exactly `ε`, and none satisfies the left, `‖0 - z • w‖`
-being `ε` at every unit `w`. The closed pseudospectrum has the non-strict form,
-`ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add`. -/
+The source states (v) with $\|B\| \le \varepsilon$, but its own proof of (v) $\Rightarrow$ (iv)
+needs the strict inequality, and with $\le$ the equivalence is false. For $A = 0$, every $z$
+with $|z| = \varepsilon$ satisfies the right-hand side with the perturbation $B = -zI$ of norm
+exactly $\varepsilon$, but no such $z$ satisfies the left-hand side, since
+$\|0 - zw\| = \varepsilon$ for every unit vector $w$. The closed pseudospectrum has the
+non-strict form, `ContinuousLinearMap.mem_closedPseudospectrum_iff_exists_mem_spectrum_add`. In
+the forward direction the perturbation is the rank-one operator $(Aw - zw) w^H$, built from the
+residual of the approximate eigenvector; in the backward direction an eigenvector of $A - B$ has
+residual $Bw$ for $A$. -/
 theorem mem_pseudospectrum_iff (A : E →L[𝕜] E) (z : 𝕜) :
     z ∈ pseudospectrum ε A ↔
       ∃ B : E →L[𝕜] E, ‖B‖ < ε ∧ Module.End.HasEigenvalue ((A - B : E →L[𝕜] E) :
@@ -479,10 +582,14 @@ theorem mem_pseudospectrum_iff (A : E →L[𝕜] E) (z : 𝕜) :
       _ = ‖B‖ := by rw [hw, mul_one]
       _ < ε := hB
 
-/-- [golub2013matrix] (7.9.7): on a finite-dimensional inner product space, `z ∈ Λ_ε(A)` exactly
-when `z` is an eigenvalue of some `A + B` with `‖B‖ ≤ ε`. Forwards, `B = -(A w - z w) wᴴ` for a
-unit `w` with small residual; backwards, a unit eigenvector `w` of `A + B` has
-`‖A w - z w‖ = ‖B w‖ ≤ ε`. -/
+/-- Let $E$ be a finite-dimensional inner product space. Then $z \in \Lambda_\varepsilon(A)$ if and
+only if $z$ is an eigenvalue of $A + B$ for some operator $B$ with $\|B\| \le \varepsilon$: $$z
+\in \Lambda_\varepsilon(A) \iff z \in \sigma(A + B) \text{ for some } B \text{ with } \|B\| \le
+\varepsilon.$$ This is (7.9.7) of [golub2013matrix].
+
+In the forward direction $B = -(Aw - zw) w^H$ for a unit vector $w$ with a small residual. In
+the backward direction a unit eigenvector $w$ of $A + B$ has
+$\|Aw - zw\| = \|Bw\| \le \varepsilon$. -/
 theorem mem_closedPseudospectrum_iff_exists_mem_spectrum_add [FiniteDimensional 𝕜 E]
     (A : E →L[𝕜] E) (z : 𝕜) :
     z ∈ closedPseudospectrum ε A ↔ ∃ B : E →L[𝕜] E, ‖B‖ ≤ ε ∧ z ∈ spectrum 𝕜 (A + B) := by
@@ -511,9 +618,12 @@ theorem mem_closedPseudospectrum_iff_exists_mem_spectrum_add [FiniteDimensional 
       _ = ‖B‖ := by rw [hw, mul_one]
       _ ≤ ε := hB
 
-/-- **A lower bound passes to the adjoint** in finite dimension: if `c ‖x‖ ≤ ‖T x‖` for every `x`,
-then `c ‖y‖ ≤ ‖T† y‖` for every `y`. For `c > 0`, `T` is injective, hence onto; writing
-`y = T x`, `‖y‖² = re ⟪T† y, x⟫ ≤ ‖T† y‖ ‖x‖ ≤ ‖T† y‖ ‖y‖ / c`. -/
+/-- A lower bound passes to the adjoint. Let $E$ be a finite-dimensional (hence complete) inner
+product space, let $T$ be an operator on $E$, and let $c$ be real with $c \|x\| \le \|Tx\|$ for
+every $x$. Then $c \|y\| \le \|T^* y\|$ for every $y$.
+
+For $c > 0$, $T$ is injective and hence onto. Writing $y = Tx$, $\|y\|^2 = \operatorname{Re}
+\langle T^* y, x \rangle \le \|T^* y\| \|x\| \le \|T^* y\| \|y\|/c$. -/
 theorem le_norm_adjoint_apply_of_le [FiniteDimensional 𝕜 E] [CompleteSpace E] {T : E →L[𝕜] E}
     {c : ℝ} (h : ∀ x, c * ‖x‖ ≤ ‖T x‖) (y : E) : c * ‖y‖ ≤ ‖adjoint T y‖ := by
   rcases le_or_gt c 0 with hc | hc
@@ -539,9 +649,11 @@ theorem le_norm_adjoint_apply_of_le [FiniteDimensional 𝕜 E] [CompleteSpace E]
       _ ≤ ‖adjoint T (T x)‖ * ‖T x‖ := by gcongr
   nlinarith
 
-/-- On a finite-dimensional inner product space, `z ∈ Λ_ε(A†)` exactly when `z̄ ∈ Λ_ε(A)`: an
-operator and its adjoint have the same least value of `‖T w‖` on the unit sphere
-(`ContinuousLinearMap.le_norm_adjoint_apply_of_le` both ways). -/
+/-- Let $E$ be a finite-dimensional (hence complete) inner product space. Then
+$z \in \Lambda_\varepsilon(A^*)$ if and only if $\bar z \in \Lambda_\varepsilon(A)$.
+
+An operator and its adjoint have the same least value of $\|Tw\|$ on the unit sphere, by
+`ContinuousLinearMap.le_norm_adjoint_apply_of_le` in both directions. -/
 theorem mem_closedPseudospectrum_adjoint_iff [FiniteDimensional 𝕜 E] [CompleteSpace E]
     {A : E →L[𝕜] E} {z : 𝕜} :
     z ∈ closedPseudospectrum ε (adjoint A) ↔ star z ∈ closedPseudospectrum ε A := by
@@ -580,8 +692,8 @@ section Intertwine
 
 variable [NormedSpace 𝕜 E] {ε : ℝ} {A : E →L[𝕜] E} {z : 𝕜}
 
-/-- Outside the closed pseudospectrum every nonzero vector has a large residual:
-`z ∉ Λ_ε(A)` gives `ε ‖x‖ < ‖A x - z x‖` for `x ≠ 0`. -/
+/-- Outside the closed pseudospectrum every nonzero vector has a large residual: if
+$z \notin \Lambda_\varepsilon(A)$ and $x \neq 0$, then $\varepsilon \|x\| < \|Ax - zx\|$. -/
 theorem mul_norm_lt_norm_sub_smul_of_notMem (hz : z ∉ closedPseudospectrum ε A) {x : E}
     (hx : x ≠ 0) : ε * ‖x‖ < ‖A x - z • x‖ := by
   have hn : 0 < ‖x‖ := norm_pos_iff.mpr hx
@@ -592,10 +704,12 @@ theorem mul_norm_lt_norm_sub_smul_of_notMem (hz : z ∉ closedPseudospectrum ε 
     abs_of_pos (inv_pos.mpr hn)] at h
   rwa [← lt_div_iff₀ hn, div_eq_inv_mul]
 
-/-- **Pseudospectra pass along isometric intertwiners**: if `J : F → E` is linear and isometric and
-`A J = J P`, then `Λ_ε(P) ⊆ Λ_ε(A)` — a unit `w` with small residual for `P` gives the unit `J w`
-with the same residual for `A`. This covers restriction to an invariant subspace and unitary
-similarity. -/
+/-- Pseudospectra pass along isometric intertwiners. Let $F$ be a normed space, let $P$ be a bounded
+operator on $F$, and let $J : F \to E$ be a linear isometry with $AJ = JP$. Then
+$\Lambda_\varepsilon(P) \subseteq \Lambda_\varepsilon(A)$.
+
+A unit vector $w$ with a small residual for $P$ gives the unit vector $Jw$ with the same
+residual for $A$. This covers the restriction to an invariant subspace and unitary similarity. -/
 theorem closedPseudospectrum_subset_of_intertwine {F : Type*} [NormedAddCommGroup F]
     [NormedSpace 𝕜 F] {P : F →L[𝕜] F} {J : F →ₗ[𝕜] E} (hJ : ∀ w, ‖J w‖ = ‖w‖)
     (h : ∀ w, A (J w) = J (P w)) : closedPseudospectrum ε P ⊆ closedPseudospectrum ε A := by
@@ -603,10 +717,13 @@ theorem closedPseudospectrum_subset_of_intertwine {F : Type*} [NormedAddCommGrou
   refine ⟨J w, by rw [hJ, hw], ?_⟩
   rwa [h, ← map_smul, ← map_sub, hJ]
 
-/-- [golub2013matrix] Theorem 7.9.2, operator form: for an invertible `X`,
-`Λ_ε(X⁻¹ A X) ⊆ Λ_{ε ‖X‖ ‖X⁻¹‖}(A)`. From a unit `w` with `‖(X⁻¹ A X - z) w‖ ≤ ε`, the unit vector
-`X w / ‖X w‖` has residual `‖X (X⁻¹ A X - z) w‖ / ‖X w‖ ≤ ‖X‖ ε ‖X⁻¹‖`, since
-`1 = ‖X⁻¹ X w‖ ≤ ‖X⁻¹‖ ‖X w‖`. -/
+/-- Let $X$ be an invertible bounded operator on $E$. Then $$\Lambda_\varepsilon(X^{-1} A X)
+\subseteq \Lambda_{\varepsilon \|X\| \|X^{-1}\|}(A).$$ This is Theorem 7.9.2 of
+[golub2013matrix].
+
+From a unit vector $w$ with $\|(X^{-1} A X - zI) w\| \le \varepsilon$, the unit vector
+$Xw/\|Xw\|$ has residual $\|X (X^{-1} A X - zI) w\|/\|Xw\| \le \|X\| \varepsilon \|X^{-1}\|$,
+since $1 = \|X^{-1} X w\| \le \|X^{-1}\| \|Xw\|$. -/
 theorem closedPseudospectrum_units_conj_subset (u : (E →L[𝕜] E)ˣ) (A : E →L[𝕜] E) (ε : ℝ) :
     closedPseudospectrum ε ((↑u⁻¹ : E →L[𝕜] E) * A * (u : E →L[𝕜] E)) ⊆
       closedPseudospectrum (ε * (‖(u : E →L[𝕜] E)‖ * ‖(↑u⁻¹ : E →L[𝕜] E)‖)) A := by
@@ -645,30 +762,41 @@ section Complex
 
 variable [NormedSpace ℂ E]
 
-/-- The **pseudospectral abscissa** ([golub2013matrix] (7.9.8); Trefethen–Embree §14):
-`α_ε(A) = sup {re z | z ∈ Λ_ε(A)}`, the `ε`-analogue of the spectral abscissa. The value is `0`
-when the closed pseudospectrum is empty or unbounded above; in finite dimension it is a maximum
+/-- The **pseudospectral abscissa** of a bounded operator $A$ on a complex normed space, the
+$\varepsilon$-analogue of the spectral abscissa: $$\alpha_\varepsilon(A) = \sup
+\{\operatorname{Re} z : z \in \Lambda_\varepsilon(A)\}.$$ This is (7.9.8) of [golub2013matrix];
+see also Trefethen and Embree, *Spectra and Pseudospectra*, §14.
+
+The value is $0$ when $\Lambda_\varepsilon(A)$ is empty or its real parts are unbounded above.
+On a nonzero finite-dimensional space and for $\varepsilon \ge 0$ the supremum is a maximum
 (`ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius`). -/
 noncomputable def pseudospectralAbscissa (ε : ℝ) (A : E →L[ℂ] E) : ℝ :=
   sSup ((fun z : ℂ => z.re) '' closedPseudospectrum ε A)
 
-/-- The **pseudospectral radius** ([golub2013matrix] (7.9.9)): `ρ_ε(A) = sup {|z| | z ∈ Λ_ε(A)}`,
-the `ε`-analogue of the spectral radius (real-valued: `Λ_ε(A)` is bounded by `‖A‖ + ε`). -/
+/-- The **pseudospectral radius** of a bounded operator $A$ on a complex normed space, the
+$\varepsilon$-analogue of the spectral radius: $$\rho_\varepsilon(A) = \sup \{|z| : z \in
+\Lambda_\varepsilon(A)\}.$$ This is (7.9.9) of [golub2013matrix].
+
+The value is real because $\Lambda_\varepsilon(A)$ is bounded by $\|A\| + \varepsilon$. The
+value is $0$ when $\Lambda_\varepsilon(A)$ is empty. -/
 noncomputable def pseudospectralRadius (ε : ℝ) (A : E →L[ℂ] E) : ℝ :=
   sSup (norm '' closedPseudospectrum ε A)
 
 variable [FiniteDimensional ℂ E] [Nontrivial E] {ε : ℝ}
 
-/-- On a nontrivial finite-dimensional complex space the closed pseudospectrum of nonnegative
-radius is nonempty: it contains the eigenvalues. -/
+/-- Let $E$ be a nonzero finite-dimensional complex normed space and $\varepsilon \ge 0$. Then
+$\Lambda_\varepsilon(A)$ is nonempty, because it contains the eigenvalues of $A$. -/
 theorem closedPseudospectrum_nonempty (hε : 0 ≤ ε) (A : E →L[ℂ] E) :
     (closedPseudospectrum ε A).Nonempty :=
   let ⟨_, hc⟩ := Module.End.exists_eigenvalue (A : E →ₗ[ℂ] E)
   ⟨_, mem_closedPseudospectrum_of_hasEigenvalue hε hc⟩
 
-/-- The maxima in (7.9.8) and (7.9.9) of [golub2013matrix] are attained: on a nontrivial
-finite-dimensional complex space and for `0 ≤ ε`, some `z₁ ∈ Λ_ε(A)` has
-`re z₁ = α_ε(A)` and some `z₂ ∈ Λ_ε(A)` has `|z₂| = ρ_ε(A)` (compactness). -/
+/-- The maxima in (7.9.8) and (7.9.9) of [golub2013matrix] are attained. Let $E$ be a nonzero
+finite-dimensional complex normed space and $\varepsilon \ge 0$. Then some
+$z_1 \in \Lambda_\varepsilon(A)$ has $\operatorname{Re} z_1 = \alpha_\varepsilon(A)$, and some
+$z_2 \in \Lambda_\varepsilon(A)$ has $|z_2| = \rho_\varepsilon(A)$.
+
+The proof uses the compactness of $\Lambda_\varepsilon(A)$. -/
 theorem exists_eq_pseudospectralAbscissa_radius (hε : 0 ≤ ε) (A : E →L[ℂ] E) :
     (∃ z ∈ closedPseudospectrum ε A, z.re = pseudospectralAbscissa ε A) ∧
       ∃ z ∈ closedPseudospectrum ε A, ‖z‖ = pseudospectralRadius ε A := by
@@ -684,11 +812,15 @@ theorem exists_eq_pseudospectralAbscissa_radius (hε : 0 ≤ ε) (A : E →L[ℂ
     rintro _ ⟨v, hv, rfl⟩
     exact hmax hv
 
-/-- **Transient growth** ([golub2013matrix] (7.9.11); Trefethen–Embree pp. 160–161): on a
-nontrivial finite-dimensional complex space, if `‖A ^ k‖ ≤ M` for every `k` then
-`(ρ_ε(A) - 1) / ε ≤ M` for every `ε > 0`, i.e. `sup_k ‖A^k‖ ≥ (ρ_ε(A) - 1)/ε`. Take `z ∈ Λ_ε(A)`
-with `|z| = ρ_ε(A) > 1`; the Neumann series `∑ A^k / z^{k+1}` converges (its terms are at most
-`M / |z|^{k+1}`) to `(z I - A)⁻¹`, so `1/ε ≤ ‖(z I - A)⁻¹‖ ≤ M / (|z| - 1)`. -/
+/-- The **transient growth bound**. Let $E$ be a nonzero finite-dimensional complex normed space,
+and let $\|A^k\| \le M$ for every $k \in \mathbb{N}$. Then for every $\varepsilon > 0$,
+$$\frac{\rho_\varepsilon(A) - 1}{\varepsilon} \le M,$$ that is, $\sup_k \|A^k\| \ge
+(\rho_\varepsilon(A) - 1)/\varepsilon$. This is (7.9.11) of [golub2013matrix]; see also
+Trefethen and Embree, *Spectra and Pseudospectra*, pp. 160–161.
+
+Take $z \in \Lambda_\varepsilon(A)$ with $|z| = \rho_\varepsilon(A) > 1$. The Neumann series
+$\sum_k A^k / z^{k+1}$ converges, since its terms are at most $M/|z|^{k+1}$, and its sum is
+$(zI - A)^{-1}$. So $1/\varepsilon \le \|(zI - A)^{-1}\| \le M/(|z| - 1)$. -/
 theorem pseudospectralRadius_sub_one_div_le_norm_pow (hε : 0 < ε) (A : E →L[ℂ] E) {M : ℝ}
     (hM : ∀ k : ℕ, ‖A ^ k‖ ≤ M) : (pseudospectralRadius ε A - 1) / ε ≤ M := by
   have := FiniteDimensional.complete ℂ E
@@ -749,10 +881,13 @@ namespace ContinuousLinearMap
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] {ε : ℝ}
 
-/-- A unit approximate eigenvector gives a perturbation: if `‖A w - z w‖ ≤ δ` with `‖w‖ = 1`, then
-`z` is an eigenvalue of `A + B` for the rank-one `B = -(A w - z w) g(·)`, `g` a norming functional
-of `w` (Hahn–Banach), with `‖B‖ ≤ δ`. This is the normed-space form of the forward direction of
-[golub2013matrix] (7.9.7). -/
+/-- An approximate eigenvector gives a perturbation. Let $E$ be a complex normed space, let $w$ be a
+unit vector, and let $\|Aw - zw\| \le \delta$. Then $z$ is an eigenvalue of $A + B$ for some
+bounded operator $B$ with $\|B\| \le \delta$.
+
+The perturbation is the rank-one operator $B = -(Aw - zw) \, g(\cdot)$, where $g$ is a norming
+functional of $w$ given by the Hahn–Banach theorem. This is the normed-space form of the forward
+direction of (7.9.7) of [golub2013matrix]. -/
 theorem exists_hasEigenvalue_add_of_norm_sub_smul_le {A : E →L[ℂ] E} {z : ℂ} {w : E}
     (hw : ‖w‖ = 1) {δ : ℝ} (h : ‖A w - z • w‖ ≤ δ) :
     ∃ B : E →L[ℂ] E, ‖B‖ ≤ δ ∧ Module.End.HasEigenvalue ((A + B : E →L[ℂ] E) : E →ₗ[ℂ] E) z := by
@@ -764,7 +899,8 @@ theorem exists_hasEigenvalue_add_of_norm_sub_smul_le {A : E →L[ℂ] E} {z : �
   simp only [coe_coe, add_apply, neg_apply, smulRight_apply, hgw, hw, map_one, one_smul]
   abel
 
-/-- The eigenvalues of `A + t B` lie in `Λ_{|t| ‖B‖}(A)`. -/
+/-- Let $E$ be a complex normed space, and let $A$ and $B$ be bounded operators on $E$. Every
+eigenvalue of $A + B$ lies in $\Lambda_{\|B\|}(A)$. -/
 theorem mem_closedPseudospectrum_of_hasEigenvalue_add {A B : E →L[ℂ] E} {z : ℂ}
     (hz : Module.End.HasEigenvalue ((A + B : E →L[ℂ] E) : E →ₗ[ℂ] E) z) :
     z ∈ closedPseudospectrum ‖B‖ A := by
@@ -789,15 +925,19 @@ private theorem finite_spectrum (A : E →L[ℂ] E) : (spectrum ℂ A).Finite :=
   rw [spectrum_eq]
   exact Module.End.finite_spectrum _
 
-/-- [golub2013matrix] §7.9.3, "each connected component of `Λ_ε(A)` contains at least one eigenvalue
-of `A`": on a finite-dimensional complex normed space, for `ε ≥ 0` and `z ∈ Λ_ε(A)` there is an
-eigenvalue `μ ∈ σ(A)` in the connected component of `z` in `Λ_ε(A)`.
+/-- Every connected component of the closed pseudospectrum contains an eigenvalue,
+[golub2013matrix], §7.9.3: "each connected component of $\Lambda_\varepsilon(A)$ contains at
+least one eigenvalue of $A$". Let $E$ be a finite-dimensional complex normed space, and let
+$z \in \Lambda_\varepsilon(A)$. Then there is an eigenvalue $\mu \in \sigma(A)$ in the connected
+component of $z$ in $\Lambda_\varepsilon(A)$.
 
-Proof by continuity of roots, not by the maximum modulus principle. If the component missed the
-(finite) spectrum, `Λ_ε(A)` would split into disjoint compact parts `C ∋ z` and `D ⊇ σ(A)`. Take `B`
-with `‖B‖ ≤ ε` and `z ∈ σ(A + B)`; along `t ↦ A + t B`, `t ∈ [0, 1]`, all eigenvalues stay in
-`Λ_ε(A) = C ∪ D`, so the number of them in `C` is constant
-(`Polynomial.countRootsIn_eq_of_preconnected`): `0` at `t = 0`, at least `1` at `t = 1`. -/
+The proof uses continuity of roots, not the maximum modulus principle. If the component missed
+the finite spectrum, $\Lambda_\varepsilon(A)$ would split into disjoint compact parts $C \ni z$
+and $D \supseteq \sigma(A)$. Take $B$ with $\|B\| \le \varepsilon$ and $z \in \sigma(A + B)$.
+Along $t \mapsto A + tB$, $t \in [0, 1]$, all eigenvalues stay in
+$\Lambda_\varepsilon(A) = C \cup D$, so the number of eigenvalues in $C$ is constant
+(`Polynomial.countRootsIn_eq_of_preconnected`). But it is $0$ at $t = 0$ and at least $1$ at
+$t = 1$. -/
 theorem exists_mem_spectrum_mem_connectedComponentIn (A : E →L[ℂ] E) {z : ℂ}
     (hz : z ∈ closedPseudospectrum ε A) :
     ∃ μ ∈ spectrum ℂ A, μ ∈ connectedComponentIn (closedPseudospectrum ε A) z := by
@@ -876,18 +1016,26 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 
 open ContinuousLinearMap
 
-/-- The closed pseudospectrum of `Aᴴ` is the conjugate of that of `A`. -/
+/-- Let $A$ be a square matrix over $\mathbb{K}$. The closed pseudospectrum of $A^H$ is the complex
+conjugate of the closed pseudospectrum of $A$: $z \in \Lambda_\varepsilon(A^H)$ if and only if
+$\bar z \in \Lambda_\varepsilon(A)$. -/
 theorem mem_closedPseudospectrum_conjTranspose_iff {A : Matrix n n 𝕜} {ε : ℝ} {z : 𝕜} :
     z ∈ (toEuclideanCLM (n := n) (𝕜 := 𝕜) Aᴴ).closedPseudospectrum ε ↔
       star z ∈ (toEuclideanCLM (n := n) (𝕜 := 𝕜) A).closedPseudospectrum ε := by
   rw [← star_eq_conjTranspose, map_star, star_eq_adjoint]
   exact mem_closedPseudospectrum_adjoint_iff
 
-/-- [golub2013matrix] (7.9.5) for matrices: `z ∈ Λ_ε(A)` exactly when the least singular value of
-`z I - A` is at most `ε`, in the sorted reading `σ_{n-1}(z I - A)` (equivalently
-`⨅ i, (z • 1 - A).colSingularValues i`, `Matrix.sortedSingularValues_eq_iInf_colSingularValues`).
-The operator statement `ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf` with the least
-stretch read as the least singular value (`Matrix.iInf_colSingularValues_eq_iInf_norm`). -/
+/-- Let $A$ be an $n \times n$ matrix over $\mathbb{K}$ with $n \ge 1$. Then
+$z \in \Lambda_\varepsilon(A)$ if and only if the least singular value of $zI - A$ is at most
+$\varepsilon$: $$\sigma_{\min}(zI - A) \le \varepsilon.$$ This is (7.9.5) of [golub2013matrix]
+for matrices.
+
+The least singular value is the last entry of `Matrix.sortedSingularValues`, which lists the
+singular values in nonincreasing order from index $0$, so it is the entry at index $n - 1$. It
+equals the infimum of `Matrix.colSingularValues`
+(`Matrix.sortedSingularValues_eq_iInf_colSingularValues`). The proof is
+`ContinuousLinearMap.mem_closedPseudospectrum_iff_iInf`, with the least residual read as the
+least singular value (`Matrix.iInf_colSingularValues_eq_iInf_norm`). -/
 theorem mem_closedPseudospectrum_iff_iInf_colSingularValues [Nonempty n] {A : Matrix n n 𝕜}
     {ε : ℝ} {z : 𝕜} :
     z ∈ (toEuclideanCLM (n := n) (𝕜 := 𝕜) A).closedPseudospectrum ε ↔
@@ -906,9 +1054,13 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- [golub2013matrix] Theorem 7.9.2: for an invertible `X`,
-`Λ_ε(X⁻¹ A X) ⊆ Λ_{ε κ₂(X)}(A)` with `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`
-(`ContinuousLinearMap.closedPseudospectrum_units_conj_subset` for the Euclidean operators). -/
+/-- Let $X$ be an invertible square matrix and $A$ a square matrix of the same size. Then
+$$\Lambda_\varepsilon(X^{-1} A X) \subseteq \Lambda_{\varepsilon \kappa_2(X)}(A),$$ where
+$\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$ is the condition number in the spectral norm. This is
+Theorem 7.9.2 of [golub2013matrix].
+
+The condition number is `NormedRing.condNumber X` for the spectral norm. The proof is
+`ContinuousLinearMap.closedPseudospectrum_units_conj_subset` for the Euclidean operators. -/
 theorem closedPseudospectrum_conj_subset {X : Matrix n n 𝕜} (hX : IsUnit X) (A : Matrix n n 𝕜)
     (ε : ℝ) :
     (toEuclideanCLM (n := n) (𝕜 := 𝕜) (X⁻¹ * A * X)).closedPseudospectrum ε ⊆
@@ -951,9 +1103,12 @@ private theorem closedPseudospectrum_unitary_conj_subset {V : Matrix n n 𝕜}
   rw [hres, norm_toEuclideanCLM_apply_of_mem_unitaryGroup hV]
   exact h
 
-/-- [golub2013matrix] Corollary 7.9.3: unitary similarity preserves the closed pseudospectrum,
-`Λ_ε(Uᴴ A U) = Λ_ε(A)`: a unitary matrix maps unit vectors with small residual for `Uᴴ A U` to
-unit vectors with the same residual for `A`, and conversely. -/
+/-- Unitary similarity preserves the closed pseudospectrum: for a unitary matrix $U$,
+$$\Lambda_\varepsilon(U^H A U) = \Lambda_\varepsilon(A).$$ This is Corollary 7.9.3 of
+[golub2013matrix].
+
+A unitary matrix maps unit vectors with a small residual for $U^H A U$ to unit vectors with the
+same residual for $A$, and conversely. -/
 theorem closedPseudospectrum_unitary_conj {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜)
     (A : Matrix n n 𝕜) (ε : ℝ) :
     (toEuclideanCLM (n := n) (𝕜 := 𝕜) (star U * A * U)).closedPseudospectrum ε =
@@ -966,15 +1121,19 @@ theorem closedPseudospectrum_unitary_conj {U : Matrix n n 𝕜} (hU : U ∈ unit
   conv_lhs => rw [← hA]
   exact closedPseudospectrum_unitary_conj_subset (Unitary.star_mem hU) _ ε
 
-/-- The residual of a diagonal matrix, entrywise. -/
+/-- For a diagonal matrix $D = \operatorname{diag}(d)$, the residual is computed entrywise:
+$((D - zI) w)_i = (d_i - z) w_i$. -/
 private theorem toEuclideanCLM_diagonal_sub_smul_apply (d : n → 𝕜) (z : 𝕜)
     (w : EuclideanSpace 𝕜 n) (i : n) :
     (toEuclideanCLM (n := n) (𝕜 := 𝕜) (diagonal d) w - z • w) i = (d i - z) * w i := by
   simp [mulVec_diagonal, sub_mul]
 
-/-- [golub2013matrix] Theorem 7.9.4: the closed pseudospectrum of a diagonal matrix is the union of
-the closed discs of radius `ε` about its diagonal entries. For a unit `w`,
-`‖(D - z) w‖² = ∑ |d_i - z|² |w_i|² ≥ min_i |d_i - z|²`, with equality at a coordinate vector. -/
+/-- The closed pseudospectrum of a diagonal matrix $D = \operatorname{diag}(d)$ is the union of the
+closed discs of radius $\varepsilon$ about its diagonal entries: $$\Lambda_\varepsilon(D) =
+\bigcup_i \{z : |z - d_i| \le \varepsilon\}.$$ This is Theorem 7.9.4 of [golub2013matrix].
+
+For a unit vector $w$, $\|(D - zI) w\|^2 = \sum_i |d_i - z|^2 |w_i|^2 \ge \min_i |d_i - z|^2$,
+with equality at a coordinate vector. -/
 theorem closedPseudospectrum_diagonal (d : n → 𝕜) (ε : ℝ) :
     (toEuclideanCLM (n := n) (𝕜 := 𝕜) (diagonal d)).closedPseudospectrum ε =
       ⋃ i, closedBall (d i) ε := by
@@ -1017,9 +1176,14 @@ theorem closedPseudospectrum_diagonal (d : n → 𝕜) (ε : ℝ) :
     rw [this, PiLp.norm_single, ← dist_eq_norm, dist_comm]
     exact hi
 
-/-- [golub2013matrix] Corollary 7.9.5: a normal matrix over an algebraically closed `RCLike` field
-has `Λ_ε(A) = ⋃_{λ ∈ σ(A)} {z | |z - λ| ≤ ε}` (unitary diagonalization,
-`Matrix.closedPseudospectrum_unitary_conj`, `Matrix.closedPseudospectrum_diagonal`). -/
+/-- Let $\mathbb{K}$ be algebraically closed (that is, $\mathbb{K} = \mathbb{C}$), and let $A$ be a
+normal square matrix. Then the closed pseudospectrum of $A$ is the union of the closed discs of
+radius $\varepsilon$ about its eigenvalues: $$\Lambda_\varepsilon(A) = \bigcup_{\lambda \in
+\sigma(A)} \{z : |z - \lambda| \le \varepsilon\}.$$ This is Corollary 7.9.5 of
+[golub2013matrix].
+
+The proof diagonalizes $A$ by a unitary matrix and uses
+`Matrix.closedPseudospectrum_unitary_conj` and `Matrix.closedPseudospectrum_diagonal`. -/
 theorem closedPseudospectrum_of_isStarNormal [IsAlgClosed 𝕜] {A : Matrix n n 𝕜}
     (hA : IsStarNormal A) (ε : ℝ) :
     (toEuclideanCLM (n := n) (𝕜 := 𝕜) A).closedPseudospectrum ε =
@@ -1035,20 +1199,20 @@ theorem closedPseudospectrum_of_isStarNormal [IsAlgClosed 𝕜] {A : Matrix n n 
   rw [hspec, biUnion_range, ← closedPseudospectrum_diagonal, ← hd,
     closedPseudospectrum_unitary_conj hU]
 
-/-- `x ↦ (x, 0)`, isometric. -/
+/-- The isometric embedding $x \mapsto (x, 0)$ of $\mathbb{K}^m$ into $\mathbb{K}^{m + n}$. -/
 private def inlL : EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 (m ⊕ n) where
   toFun x := WithLp.toLp 2 (Sum.elim (WithLp.ofLp x) 0)
   map_add' x y := by ext (i | i) <;> simp
   map_smul' c x := by ext (i | i) <;> simp
 
-/-- `y ↦ (0, y)`, isometric. -/
+/-- The isometric embedding $y \mapsto (0, y)$ of $\mathbb{K}^n$ into $\mathbb{K}^{m + n}$. -/
 private def inrL : EuclideanSpace 𝕜 n →ₗ[𝕜] EuclideanSpace 𝕜 (m ⊕ n) where
   toFun y := WithLp.toLp 2 (Sum.elim 0 (WithLp.ofLp y))
   map_add' x y := by ext (i | i) <;> simp
   map_smul' c x := by ext (i | i) <;> simp
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- The Euclidean norm on `m ⊕ n` splits into the two halves. -/
+/-- The Euclidean norm splits into the two halves: $\|(x, y)\|^2 = \|x\|^2 + \|y\|^2$. -/
 private theorem norm_sq_eq_add (v : EuclideanSpace 𝕜 (m ⊕ n)) :
     ‖v‖ ^ 2 = ‖(WithLp.toLp 2 (WithLp.ofLp v ∘ Sum.inl) : EuclideanSpace 𝕜 m)‖ ^ 2 +
       ‖(WithLp.toLp 2 (WithLp.ofLp v ∘ Sum.inr) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
@@ -1079,10 +1243,13 @@ private theorem norm_inrL (y : EuclideanSpace 𝕜 n) : ‖(inrL (m := m) y)‖ 
   rw [h0, h1, norm_zero] at h
   simpa [sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)] using h
 
-/-- [golub2013matrix] Theorem 7.9.6: for a block upper triangular `T = [T₁₁ T₁₂; 0 T₂₂]`,
-`Λ_ε(T₁₁) ∪ Λ_ε(T₂₂) ⊆ Λ_ε(T)`. `T₁₁` acts on the invariant subspace of vectors `(x, 0)`; for
-`T₂₂` pass to the conjugate transposes (`Matrix.mem_closedPseudospectrum_conjTranspose_iff`), where
-`T₂₂ᴴ` acts on the invariant subspace of vectors `(0, y)` of `Tᴴ`. -/
+/-- Let $T = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$ be block upper triangular.
+Then $$\Lambda_\varepsilon(T_{11}) \cup \Lambda_\varepsilon(T_{22}) \subseteq
+\Lambda_\varepsilon(T).$$ This is Theorem 7.9.6 of [golub2013matrix].
+
+$T_{11}$ acts on the invariant subspace of the vectors $(x, 0)$. For $T_{22}$, the proof passes
+to the conjugate transposes (`Matrix.mem_closedPseudospectrum_conjTranspose_iff`), where
+$T_{22}^H$ acts on the invariant subspace of the vectors $(0, y)$ of $T^H$. -/
 theorem closedPseudospectrum_fromBlocks_zero₂₁_supset (T₁₁ : Matrix m m 𝕜)
     (T₁₂ : Matrix m n 𝕜) (T₂₂ : Matrix n n 𝕜) (ε : ℝ) :
     (toEuclideanCLM (n := m) (𝕜 := 𝕜) T₁₁).closedPseudospectrum ε ∪
@@ -1097,8 +1264,8 @@ theorem closedPseudospectrum_fromBlocks_zero₂₁_supset (T₁₁ : Matrix m m 
     refine closedPseudospectrum_subset_of_intertwine (J := inrL) norm_inrL (fun w => ?_) hz
     ext (i | i) <;> simp [inrL, fromBlocks_mulVec]
 
-/-- Outside `Λ_ε(P)`, the squared residual of any `x` is at least `ε² ‖x‖²`, strictly when
-`x ≠ 0`. -/
+/-- If $z \notin \Lambda_\varepsilon(P)$ and $\varepsilon \ge 0$, then
+$\varepsilon^2 \|x\|^2 \le \|Px - zx\|^2$ for every $x$, with strict inequality for $x \neq 0$. -/
 private theorem sq_mul_norm_sq_le {p : Type*} [Fintype p] [DecidableEq p] {P : Matrix p p 𝕜}
     {ε : ℝ} {z : 𝕜} (hz : z ∉ (toEuclideanCLM (n := p) (𝕜 := 𝕜) P).closedPseudospectrum ε)
     (hε : 0 ≤ ε) (x : EuclideanSpace 𝕜 p) :
@@ -1114,10 +1281,15 @@ private theorem sq_mul_norm_sq_le {p : Type*} [Fintype p] [DecidableEq p] {P : M
   · simp
   · exact (hlt hx).le
 
-/-- [golub2013matrix] Corollary 7.9.7: `Λ_ε(diag(T₁₁, T₂₂)) = Λ_ε(T₁₁) ∪ Λ_ε(T₂₂)`. For `⊆`: a
-unit `(u, w)` has `‖(T - z)(u, w)‖² = ‖(T₁₁ - z) u‖² + ‖(T₂₂ - z) w‖²`; if `z` lay in neither, the
-two terms would exceed `ε² ‖u‖²` and `ε² ‖w‖²` (strictly for a nonzero half), so the sum would
-exceed `ε²`. -/
+/-- The closed pseudospectrum of a block diagonal matrix is the union of the closed pseudospectra of
+its blocks: $$\Lambda_\varepsilon(\operatorname{diag}(T_{11}, T_{22})) =
+\Lambda_\varepsilon(T_{11}) \cup \Lambda_\varepsilon(T_{22}).$$ This is Corollary 7.9.7 of
+[golub2013matrix].
+
+For the inclusion $\subseteq$: a unit vector $(u, w)$ has $\|(T - zI)(u, w)\|^2 = \|(T_{11} -
+zI) u\|^2 + \|(T_{22} - zI) w\|^2$. If $z$ lay in neither pseudospectrum, the two terms would
+exceed $\varepsilon^2 \|u\|^2$ and $\varepsilon^2 \|w\|^2$ (strictly for a nonzero half), so the
+sum would exceed $\varepsilon^2$. -/
 theorem closedPseudospectrum_fromBlocks_diagonal (T₁₁ : Matrix m m 𝕜) (T₂₂ : Matrix n n 𝕜)
     (ε : ℝ) :
     (toEuclideanCLM (n := m ⊕ n) (𝕜 := 𝕜) (fromBlocks T₁₁ 0 0 T₂₂)).closedPseudospectrum ε =
@@ -1153,17 +1325,22 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The pseudospectral abscissa of a matrix ([golub2013matrix] (7.9.8)): that of its Euclidean
-operator. -/
+/-- The **pseudospectral abscissa** $\alpha_\varepsilon(A)$ of a complex square matrix $A$, (7.9.8)
+of [golub2013matrix]: the pseudospectral abscissa of its Euclidean operator, $\sup
+\{\operatorname{Re} z : z \in \Lambda_\varepsilon(A)\}$. -/
 noncomputable abbrev pseudospectralAbscissa (ε : ℝ) (A : Matrix n n ℂ) : ℝ :=
   (toEuclideanCLM (n := n) (𝕜 := ℂ) A).pseudospectralAbscissa ε
 
-/-- The pseudospectral radius of a matrix ([golub2013matrix] (7.9.9)): that of its Euclidean
-operator. -/
+/-- The **pseudospectral radius** $\rho_\varepsilon(A)$ of a complex square matrix $A$, (7.9.9) of
+[golub2013matrix]: the pseudospectral radius of its Euclidean operator,
+$\sup \{|z| : z \in \Lambda_\varepsilon(A)\}$. -/
 noncomputable abbrev pseudospectralRadius (ε : ℝ) (A : Matrix n n ℂ) : ℝ :=
   (toEuclideanCLM (n := n) (𝕜 := ℂ) A).pseudospectralRadius ε
 
-/-- The maxima in (7.9.8) and (7.9.9) of [golub2013matrix] are attained for a matrix. -/
+/-- The maxima in (7.9.8) and (7.9.9) of [golub2013matrix] are attained for a matrix. Let $A$ be a
+complex $n \times n$ matrix with $n \ge 1$, and let $\varepsilon \ge 0$. Then some
+$z_1 \in \Lambda_\varepsilon(A)$ has $\operatorname{Re} z_1 = \alpha_\varepsilon(A)$, and some
+$z_2 \in \Lambda_\varepsilon(A)$ has $|z_2| = \rho_\varepsilon(A)$. -/
 theorem exists_eq_pseudospectralAbscissa_radius [Nonempty n] {ε : ℝ} (hε : 0 ≤ ε)
     (A : Matrix n n ℂ) :
     (∃ z ∈ (toEuclideanCLM (n := n) (𝕜 := ℂ) A).closedPseudospectrum ε,
@@ -1172,8 +1349,9 @@ theorem exists_eq_pseudospectralAbscissa_radius [Nonempty n] {ε : ℝ} (hε : 0
         ‖z‖ = pseudospectralRadius ε A :=
   ContinuousLinearMap.exists_eq_pseudospectralAbscissa_radius hε _
 
-/-- [golub2013matrix] (7.9.11) for a matrix: if `‖A ^ k‖₂ ≤ M` for every `k`, then
-`(ρ_ε(A) - 1) / ε ≤ M` for every `ε > 0`. -/
+/-- Let $A$ be a complex $n \times n$ matrix with $n \ge 1$, and let $\|A^k\|_2 \le M$ for every
+$k \in \mathbb{N}$. Then for every $\varepsilon > 0$, $$\frac{\rho_\varepsilon(A) -
+1}{\varepsilon} \le M.$$ This is (7.9.11) of [golub2013matrix] for matrices. -/
 theorem pseudospectralRadius_sub_one_div_le_norm_pow [Nonempty n] {ε : ℝ} (hε : 0 < ε)
     (A : Matrix n n ℂ) {M : ℝ} (hM : ∀ k : ℕ, ‖A ^ k‖ ≤ M) :
     (pseudospectralRadius ε A - 1) / ε ≤ M :=

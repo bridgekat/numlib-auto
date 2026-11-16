@@ -16,80 +16,94 @@ import Numlib.LinearAlgebra.Matrix.Schur
 /-!
 # Matrix pencils and the generalized eigenvalue problem
 
-A **matrix pencil** `(A, B)` is the family `A - z B`; the **generalized eigenvalue problem** asks
-for `λ` and `x ≠ 0` with `A x = λ B x` ([quarteroni2000numerical] §5.9, display (5.58);
-[golub1989matrix] §7.7; [saad2011numerical] Ch. 9). The pencil with `B = 1` is the standard
-eigenvalue problem, and the pencil `(A, P)` with `P` a preconditioner is what the spectrum of the
-preconditioned matrix `P⁻¹ A` is really about ([quarteroni2000numerical] Remark 4.2).
+Let $A, B$ be square matrices of order $n$. The **matrix pencil** $(A, B)$ is the family $A - zB$ of
+matrices, and the **generalized eigenvalue problem** asks for a scalar $\mu$ and a vector $x \neq 0$
+with $Ax = \mu Bx$. Its finite eigenvalues form the set $\sigma(A, B) = \{\mu \mid \det(A - \mu B) =
+0\}$, the roots of the characteristic polynomial $p_{A,B}(z) = \det(A - zB)$ of degree at most $n$.
+The pencil is **regular** if $p_{A,B} \neq 0$. For $B = I$ the problem is the standard eigenvalue
+problem, and for invertible $B$ it is the standard problem for $B^{-1}A$. The presentation follows
+[quarteroni2000numerical], §5.9 and display (5.58); see also §7.7 of [golub2013matrix] and Chapter 9
+of [saad2011numerical].
+
+The file proves the **generalized Schur decomposition**: over $\mathbb{C}$, a regular pencil has
+unitary $U, Z$ with $U^H A Z$ and $U^H B Z$ upper triangular, and the eigenvalues are the ratios
+$t_{ii} / s_{ii}$ of the diagonal entries with $s_{ii} \neq 0$. A **symmetric-definite** pencil,
+with $A$ Hermitian and $B$ positive definite, is simultaneously diagonalized by a congruence,
+$M^H B M = I$ and $M^H A M$ real diagonal, so its eigenvalues are real. For real symmetric $A$ and
+symmetric positive definite $P$, the eigenvalues of the preconditioned matrix $P^{-1} A$ are the
+eigenvalues of the pencil $(A, P)$; they are real and are enclosed by the bounds of the generalized
+Rayleigh quotient $(Ax, x) / (Px, x)$ ([quarteroni2000numerical], Remark 4.2 and (4.33)).
 
 ## Main definitions
 
-* `Matrix.pencilPoly A B`: the characteristic polynomial `det (A - X B)` of the pencil, over any
+* `Matrix.pencilPoly`: the characteristic polynomial $\det(A - XB)$ of the pencil, over any
   commutative ring.
-* `Matrix.IsRegularPencil A B`: the pencil is *regular* when its characteristic polynomial is not
-  identically zero; otherwise it is *singular*, and every scalar is then an eigenvalue.
-* `Matrix.pencilInftyMultiplicity A B`: the multiplicity `card n - natDegree (pencilPoly A B)` of
-  the eigenvalue `∞` of a regular pencil, zero exactly when `B` is invertible.
-* `Matrix.pencilSpectrum A B`: the finite eigenvalues `{μ | det (A - μ B) = 0}`, over a field.
-* `Matrix.HasPencilEigenvector A B μ x`: the eigenpair `x ≠ 0`, `A x = μ B x`.
+* `Matrix.IsRegularPencil`: the pencil is regular if its characteristic polynomial is not the zero
+  polynomial.
+* `Matrix.pencilInftyMultiplicity`: the multiplicity $n - \deg p_{A,B}$ of the eigenvalue $\infty$.
+* `Matrix.pencilSpectrum`: the set $\sigma(A, B)$ of finite eigenvalues, over a field.
+* `Matrix.HasPencilEigenvector`: $x \neq 0$ and $Ax = \mu Bx$.
+* `Matrix.IsDeflatingSubspace`: a subspace $S$ with $\dim(AS + BS) \le \dim S$ ([golub2013matrix],
+  §7.7.8).
 
 ## Main results
 
-* `Matrix.mem_pencilSpectrum_iff_exists`, `Matrix.mem_pencilSpectrum_iff_isRoot`: the spectrum is
-  the set of eigenvalues with an eigenvector, and the root set of the characteristic polynomial.
-* `Matrix.pencilSpectrum_one` and `Matrix.pencilSpectrum_eq_spectrum_of_isUnit`: the reductions to
-  the standard problem, `σ(A, 1) = σ(A)` and `σ(A, B) = σ(B⁻¹ A)` for invertible `B`.
-* `Matrix.natDegree_pencilPoly_eq_card_iff`: a pencil has `n` finite eigenvalues exactly when `B`
-  is invertible, [quarteroni2000numerical] §5.9.1.
-* `Matrix.exists_unitary_pencil_isUpperTriangular`: the **generalized Schur decomposition**
-  ([quarteroni2000numerical] Property 5.10; [golub1989matrix] Theorem 7.7.1) — a regular pencil
-  over an algebraically closed `RCLike` field is simultaneously triangularized by two unitary
-  matrices, `Uᴴ A Z = T` and `Uᴴ B Z = S`; its eigenvalues are then the ratios `t_ii / s_ii` with
-  `s_ii ≠ 0` (`Matrix.pencilSpectrum_eq_of_isUpperTriangular`).
-* `Matrix.exists_simultaneous_diagonalization`: a **symmetric-definite pencil** — `A` Hermitian,
-  `B` positive definite — is simultaneously diagonalized by an invertible congruence, `Mᴴ B M = 1`
-  and `Mᴴ A M` real diagonal, whose diagonal is the spectrum of the pencil
-  ([quarteroni2000numerical] Theorem 5.7). Its eigenvalues are therefore real
-  (`Matrix.pencilSpectrum_subset_range_ofReal_of_posDef`), positive when `A` is positive definite
-  too (`Matrix.re_pos_of_mem_pencilSpectrum_of_posDef`), and the columns of `M` are
-  `B`-orthonormal eigenvectors (`Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`).
+* `Matrix.mem_pencilSpectrum_iff_exists`, `Matrix.mem_pencilSpectrum_iff_isRoot`:
+  $\mu \in \sigma(A, B)$ if and only if $\mu$ has an eigenvector, and if and only if $\mu$ is a root
+  of $p_{A,B}$.
+* `Matrix.pencilSpectrum_one`, `Matrix.pencilSpectrum_eq_spectrum_of_isUnit`:
+  $\sigma(A, I) = \sigma(A)$, and $\sigma(A, B) = \sigma(B^{-1} A)$ for invertible $B$.
+* `Matrix.natDegree_pencilPoly_eq_card_iff`: $p_{A,B}$ has degree $n$ if and only if $B$ is
+  invertible.
+* `Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil`: every scalar is an eigenvalue of a
+  singular pencil.
+* `Matrix.exists_unitary_pencil_isUpperTriangular`: the generalized Schur decomposition of a regular
+  pencil over $\mathbb{C}$.
+* `Matrix.pencilSpectrum_eq_of_isUpperTriangular`: for upper triangular $T, S$,
+  $\mu \in \sigma(T, S)$ if and only if $t_{ii} = \mu s_{ii}$ for some $i$.
+* `Matrix.spectrum_inv_mul_subset_of_posDef`: if $l_{\min} (Px, x) \le (Ax, x) \le l_{\max} (Px, x)$
+  for all real $x$, the eigenvalues of $P^{-1}A$ are real and lie in $[l_{\min}, l_{\max}]$.
+* `Matrix.spectrum_inv_mul_subset_Icc_div`: $\lambda_{\min}(A) / \lambda_{\max}(P) \le \lambda \le
+  \lambda_{\max}(A) / \lambda_{\min}(P)$ for the eigenvalues $\lambda$ of $P^{-1}A$.
 * `Matrix.hasPencilEigenvector_col_of_conj_diagonal`,
-  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal`: a pencil `(P, Q)` congruent to diagonal
-  forms, `Xᴴ P X = diag a`, `Xᴴ Q X = diag b`, has the columns of `X` as eigenvectors and the
-  ratios `a_k / b_k` as eigenvalues ([golub2013matrix] §8.7.4, the GSVD).
-* `Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul`,
-  `Matrix.spectrum_inv_mul_subset_of_posDef` and `Matrix.spectrum_inv_mul_subset_Icc_div`: the
-  real symmetric-definite pencil `(A, P)` in the preconditioned form `P⁻¹ A`
-  ([quarteroni2000numerical] Remark 4.2 and (4.33)) — the complex eigenvalues of `P⁻¹ A` are the
-  generalized eigenvalues, they are real, they lie in `[lmin, lmax]` when the generalized Rayleigh
-  quotient `(A x, x)/(P x, x)` does, and they are enclosed by
-  `λ_min(A)/λ_max(P) ≤ λ ≤ λ_max(A)/λ_min(P)`.
-* `Matrix.inv_mem_pencilSpectrum_swap`: the nonzero eigenvalues of `(B, A)` are the reciprocals of
-  those of `(A, B)` ([golub2013matrix] §7.7.1).
-* `Matrix.IsDeflatingSubspace A B S`: a **deflating subspace** ([golub2013matrix] §7.7.8), one with
-  `dim (A S + B S) ≤ dim S` — for `B = 1` exactly an invariant subspace
-  (`Matrix.isDeflatingSubspace_one_iff`); the leading columns of the right factor of a
-  generalized Schur decomposition span deflating subspaces
-  (`Matrix.isDeflatingSubspace_span_cols_of_isUpperTriangular`).
+  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal`: if $X^H P X = \operatorname{diag}(a)$ and
+  $X^H Q X = \operatorname{diag}(b)$ with $X$ invertible, the columns of $X$ are eigenvectors of
+  $(P, Q)$ and the eigenvalues are the ratios $a_k / b_k$ ([golub2013matrix], §8.7.4).
+* `Matrix.exists_simultaneous_diagonalization`: a symmetric-definite pencil has an invertible $M$
+  with $M^H B M = I$ and $M^H A M = \operatorname{diag}(d)$, $d$ real, and $\sigma(A, B) = \{d_i\}$
+  ([quarteroni2000numerical], Theorem 5.7).
+* `Matrix.pencilSpectrum_subset_range_ofReal_of_posDef`,
+  `Matrix.re_pos_of_mem_pencilSpectrum_of_posDef`: the eigenvalues of a symmetric-definite pencil
+  are real, and they are positive when $A$ is positive definite too.
+* `Matrix.inv_mem_pencilSpectrum_swap`: if $\mu \neq 0$ is an eigenvalue of $(A, B)$, then
+  $\mu^{-1}$ is an eigenvalue of $(B, A)$ ([golub2013matrix], §7.7.1).
+* `Matrix.isDeflatingSubspace_one_iff`: a deflating subspace of $(A, I)$ is an invariant subspace of
+  $A$.
+* `Matrix.isDeflatingSubspace_span_cols_of_isUpperTriangular`: the leading columns of the right
+  factor of a generalized Schur decomposition span deflating subspaces.
 
-The ordered eigenvalues of a symmetric-definite pencil, their min–max characterization and their
-perturbation theory are in `Numlib/Eigen/SymmetricPencil`.
+## Proof outline
+
+For the generalized Schur decomposition, regularity gives a scalar $\mu_0$ with $A_0 = A - \mu_0 B$
+invertible. A Schur form $A_0^{-1} B = Z T_0 Z^H$ and a QR factorization $A_0 Z = U S_0$ give
+$U^H B Z = S_0 T_0$ and $U^H A Z = S_0 + \mu_0 S_0 T_0$, both upper triangular. For the simultaneous
+diagonalization, the unitary eigenbasis of $B$ scaled by the inverse square roots of the eigenvalues
+of $B$ is a matrix $W$ with $W^H B W = I$, and the spectral theorem for the Hermitian matrix
+$W^H A W$ gives the rest. No Cholesky factor is used. For the real pencil $(A, P)$, an eigenvector
+equation $Ax = \mu Px$ over $\mathbb{C}$ gives $\mu = x^H A x / x^H P x$, the quotient of a real
+number by a positive real number.
 
 ## Implementation notes
 
-The generalized Schur decomposition reduces to the Schur form of one matrix
-(`Numlib/LinearAlgebra/Matrix/Schur`) and one QR factorization (`Numlib/LinearAlgebra/Matrix/QR`):
-with `A₀ = A - μ₀ B` invertible, which regularity provides, triangularize `A₀⁻¹ B = Z T₀ Zᴴ` and
-factor `A₀ Z = U S₀`; then `Uᴴ B Z = S₀ T₀` and `Uᴴ A Z = S₀ + μ₀ S₀ T₀`. The simultaneous
-diagonalization uses no Cholesky factor: the unitary eigenbasis of `B` scaled by the inverse square
-roots of its eigenvalues is a matrix `W` with `Wᴴ B W = 1`
-(`Matrix.PosDef.exists_isUnit_conj_eq_one`), and the spectral theorem for the Hermitian matrix
-`Wᴴ A W` does the rest.
-
-The real statements about `P⁻¹ A` are proved directly from the Hermitian form of the
-complexification (`Matrix.star_dotProduct_complexify_mulVec_of_isHermitian`), without the
-`P`-inner-product operator of `Numlib/Krylov/Preconditioned`: an eigenvector equation
-`A x = μ P x` over `ℂ` gives `μ = (xᴴ A x)/(xᴴ P x)`, a quotient of a real number by a positive one.
+* The generalized Schur decomposition reduces to the Schur form of one matrix
+  (`Numlib.LinearAlgebra.Matrix.Schur`) and to one QR factorization
+  (`Numlib.LinearAlgebra.Matrix.QR`).
+* The statements about $P^{-1} A$ use the Hermitian form of the complexification
+  (`Matrix.star_dotProduct_complexify_mulVec_of_isHermitian`), and not the operator of the $P$-inner
+  product of `Numlib.Krylov.Preconditioned`. The real matrices act on complex vectors through
+  `Matrix.complexify`.
+* The ordered eigenvalues of a symmetric-definite pencil, their min–max characterization and their
+  perturbation theory are in `Numlib.Eigen.SymmetricPencil`.
 -/
 
 open Polynomial
@@ -104,18 +118,21 @@ section Ring
 
 variable {R : Type*} [CommRing R]
 
-/-- The characteristic polynomial `det (A - z B)` of the pencil `(A, B)`,
-[quarteroni2000numerical] §5.9. It is defined over any commutative ring; the pencil is *regular*
-(`Matrix.IsRegularPencil`) when it is not identically zero. -/
+/-- The **characteristic polynomial** of the pencil $(A, B)$ of matrices over a commutative ring $R$
+is $p_{A,B}(X) = \det(A - XB) \in R[X]$ ([quarteroni2000numerical], §5.9).
+
+The matrices are mapped entrywise into $R[X]$ by `Polynomial.C`. -/
 noncomputable def pencilPoly (A B : Matrix n n R) : R[X] :=
   (A.map C - (X : R[X]) • B.map C).det
 
-/-- `pencilPoly` in the form `det (X • A' + B')` of Mathlib's degree and coefficient lemmas. -/
+/-- The characteristic polynomial of the pencil is $\det(X(-B) + A)$, the form that Mathlib's lemmas
+on degrees and coefficients use. -/
 private theorem pencilPoly_eq_det_X_smul_add (A B : Matrix n n R) :
     pencilPoly A B = ((X : R[X]) • (-B).map C + A.map C).det := by
   rw [pencilPoly, Matrix.map_neg _ (map_neg C), smul_neg, ← sub_eq_neg_add]
 
-/-- Evaluating the characteristic polynomial of a pencil at `μ` gives `det (A - μ B)`. -/
+/-- For every $\mu \in R$, the evaluation of the characteristic polynomial of the pencil at $\mu$ is
+$p_{A,B}(\mu) = \det(A - \mu B)$. -/
 theorem pencilPoly_eval (A B : Matrix n n R) (μ : R) :
     (pencilPoly A B).eval μ = (A - μ • B).det := by
   rw [pencilPoly, ← coe_evalRingHom, RingHom.map_det]
@@ -124,8 +141,8 @@ theorem pencilPoly_eval (A B : Matrix n n R) (μ : R) :
   simp only [RingHom.mapMatrix_apply, map_apply, Matrix.sub_apply, Matrix.smul_apply,
     coe_evalRingHom, eval_sub, eval_C, eval_mul, eval_X, smul_eq_mul, Matrix.smul_apply]
 
-/-- For `B = 1` the characteristic polynomial of the pencil is `(-1)^n` times the characteristic
-polynomial of `A`, since `det (A - X) = (-1)^n det (X - A)`. -/
+/-- For $B = I$, the characteristic polynomial of the pencil is $p_{A,I} = (-1)^n \chi_A$, where
+$\chi_A = \det(XI - A)$ is the characteristic polynomial of $A$ and $n$ is the order of $A$. -/
 theorem pencilPoly_one (A : Matrix n n R) :
     pencilPoly A 1 = (-1) ^ Fintype.card n * A.charpoly := by
   rw [charpoly, ← det_neg, pencilPoly]
@@ -133,25 +150,29 @@ theorem pencilPoly_one (A : Matrix n n R) :
   ext i j
   simp [charmatrix_apply, Matrix.one_apply, diagonal_apply]
 
-/-- The characteristic polynomial of a pencil has degree at most `n`. -/
+/-- The characteristic polynomial of a pencil of order $n$ has degree at most $n$. -/
 theorem natDegree_pencilPoly_le (A B : Matrix n n R) :
     (pencilPoly A B).natDegree ≤ Fintype.card n := by
   rw [pencilPoly_eq_det_X_smul_add]
   exact natDegree_det_X_add_C_le _ _
 
-/-- The coefficient of `X ^ n` in the characteristic polynomial of a pencil is `(-1)^n det B`, so
-the pencil has `n` finite eigenvalues exactly when `B` is invertible
+/-- The coefficient of $X^n$ in the characteristic polynomial of a pencil of order $n$ is
+$(-1)^n \det B$.
+
+It follows that $p_{A,B}$ has degree $n$ if and only if $B$ is invertible
 (`Matrix.natDegree_pencilPoly_eq_card_iff`). -/
 theorem coeff_pencilPoly_card (A B : Matrix n n R) :
     (pencilPoly A B).coeff (Fintype.card n) = (-1) ^ Fintype.card n * B.det := by
   rw [pencilPoly_eq_det_X_smul_add, coeff_det_X_add_C_card, det_neg]
 
-/-- A pencil is **regular** when its characteristic polynomial `det (A - z B)` is not identically
-zero, and *singular* otherwise ([quarteroni2000numerical] §5.9). -/
+/-- A pencil $(A, B)$ is **regular** if its characteristic polynomial $\det(A - zB)$ is not the zero
+polynomial, and **singular** otherwise ([quarteroni2000numerical], §5.9). -/
 def IsRegularPencil (A B : Matrix n n R) : Prop := pencilPoly A B ≠ 0
 
-/-- A pencil whose second matrix has a unit determinant is regular: the leading coefficient
-`(-1)^n det B` of its characteristic polynomial is a unit. -/
+/-- Let $R$ be a nontrivial commutative ring. If $\det B$ is a unit of $R$, then the pencil $(A, B)$
+is regular.
+
+The leading coefficient $(-1)^n \det B$ of $p_{A,B}$ is then a unit, so $p_{A,B} \neq 0$. -/
 theorem isRegularPencil_of_isUnit [Nontrivial R] (A : Matrix n n R) {B : Matrix n n R}
     (hB : IsUnit B.det) : IsRegularPencil A B := by
   intro h
@@ -159,13 +180,18 @@ theorem isRegularPencil_of_isUnit [Nontrivial R] (A : Matrix n n R) {B : Matrix 
   rw [h, coeff_zero] at this
   exact hB.ne_zero (by simpa using this.symm)
 
-/-- The standard eigenvalue problem is a regular pencil. -/
+/-- Over a nontrivial commutative ring, the pencil $(A, I)$ of the standard eigenvalue problem is
+regular. -/
 theorem isRegularPencil_one [Nontrivial R] (A : Matrix n n R) : IsRegularPencil A 1 :=
   isRegularPencil_of_isUnit A (by simp)
 
-/-- The multiplicity of the eigenvalue `∞` of a regular pencil, `n - deg p`: the number of finite
-eigenvalues the characteristic polynomial of degree `deg p` lacks
-([quarteroni2000numerical] §5.9). -/
+/-- The **multiplicity of the eigenvalue $\infty$** of the pencil $(A, B)$ of order $n$ is
+$n - \deg p_{A,B}$, the number of roots that the characteristic polynomial lacks to have degree
+$n$ ([quarteroni2000numerical], §5.9).
+
+Over a field, the multiplicity is $0$ if and only if $B$ is invertible
+(`Matrix.natDegree_pencilPoly_eq_card_iff`). The definition applies to every pencil. For a
+singular pencil, $p_{A,B} = 0$ has degree $0$ in Mathlib, so the value is $n$. -/
 noncomputable def pencilInftyMultiplicity (A B : Matrix n n R) : ℕ :=
   Fintype.card n - (pencilPoly A B).natDegree
 
@@ -177,38 +203,43 @@ section Field
 
 variable {K : Type*} [Field K]
 
-/-- The finite generalized eigenvalues `σ(A, B) = {μ | det (A - μ B) = 0}` of the pencil
-`(A, B)`, [quarteroni2000numerical] §5.9. -/
+/-- The **spectrum** of the pencil $(A, B)$ over a field $K$ is the set of its finite generalized
+eigenvalues, $\sigma(A, B) = \{\mu \in K \mid \det(A - \mu B) = 0\}$ ([quarteroni2000numerical],
+§5.9). -/
 def pencilSpectrum (A B : Matrix n n K) : Set K := {μ | (A - μ • B).det = 0}
 
-/-- An eigenvalue/eigenvector pair of the pencil `(A, B)`: `x ≠ 0` with `A x = μ B x`,
-[quarteroni2000numerical] display (5.58). -/
+/-- A scalar $\mu$ and a vector $x$ form an **eigenpair** of the pencil $(A, B)$ if $x \neq 0$ and
+$Ax = \mu Bx$ ([quarteroni2000numerical], display (5.58)). -/
 def HasPencilEigenvector (A B : Matrix n n K) (μ : K) (x : n → K) : Prop :=
   x ≠ 0 ∧ A *ᵥ x = μ • (B *ᵥ x)
 
-/-- Membership in the pencil spectrum, unfolded: `det (A - μ B) = 0`. -/
+/-- $\mu \in \sigma(A, B)$ if and only if $\det(A - \mu B) = 0$. -/
 theorem mem_pencilSpectrum_iff_det {A B : Matrix n n K} {μ : K} :
     μ ∈ pencilSpectrum A B ↔ (A - μ • B).det = 0 := Iff.rfl
 
-/-- A scalar is in the spectrum of a pencil exactly when it has an eigenvector. -/
+/-- $\mu \in \sigma(A, B)$ if and only if there is a vector $x$ such that $(\mu, x)$ is an eigenpair
+of the pencil $(A, B)$, that is, $x \neq 0$ and $Ax = \mu Bx$. -/
 theorem mem_pencilSpectrum_iff_exists (A B : Matrix n n K) (μ : K) :
     μ ∈ pencilSpectrum A B ↔ ∃ x, HasPencilEigenvector A B μ x := by
   rw [mem_pencilSpectrum_iff_det, ← Matrix.exists_mulVec_eq_zero_iff]
   simp only [HasPencilEigenvector, sub_mulVec, smul_mulVec, sub_eq_zero]
 
-/-- The spectrum of a pencil is the root set of its characteristic polynomial. -/
+/-- $\mu \in \sigma(A, B)$ if and only if $\mu$ is a root of the characteristic polynomial
+$p_{A,B}$. -/
 theorem mem_pencilSpectrum_iff_isRoot (A B : Matrix n n K) (μ : K) :
     μ ∈ pencilSpectrum A B ↔ (pencilPoly A B).IsRoot μ := by
   rw [mem_pencilSpectrum_iff_det, IsRoot.def, pencilPoly_eval]
 
-/-- The pencil `(A, 1)` is the standard eigenvalue problem: `σ(A, 1) = σ(A)`. -/
+/-- The spectrum of the pencil $(A, I)$ is the spectrum of $A$: $\sigma(A, I) = \sigma(A)$. -/
 theorem pencilSpectrum_one (A : Matrix n n K) : pencilSpectrum A 1 = spectrum K A := by
   ext μ
   rw [mem_pencilSpectrum_iff_exists, mem_spectrum_iff_exists_mulVec_eq_smul]
   simp [HasPencilEigenvector]
 
-/-- The reduction of a pencil with invertible `B` to the standard problem: `σ(A, B) = σ(B⁻¹ A)`,
-[quarteroni2000numerical] §5.9.1 (their `C x = λ x` with `B C = A`). -/
+/-- If $B$ is invertible, then $\sigma(A, B) = \sigma(B^{-1} A)$ ([quarteroni2000numerical],
+§5.9.1).
+
+The source writes the reduced problem as $Cx = \lambda x$ with $BC = A$. -/
 theorem pencilSpectrum_eq_spectrum_of_isUnit (A : Matrix n n K) {B : Matrix n n K}
     (hB : IsUnit B) : pencilSpectrum A B = spectrum K (B⁻¹ * A) := by
   have hBd := (isUnit_iff_isUnit_det B).mp hB
@@ -219,8 +250,10 @@ theorem pencilSpectrum_eq_spectrum_of_isUnit (A : Matrix n n K) {B : Matrix n n 
   · have h' := congrArg (B *ᵥ ·) h
     simpa [mulVec_mulVec, ← Matrix.mul_assoc, mul_nonsing_inv _ hBd, mulVec_smul] using h'
 
-/-- A pencil has `n` finite eigenvalues — its characteristic polynomial has degree `n` — exactly
-when `B` is nonsingular, [quarteroni2000numerical] §5.9.1. -/
+/-- The characteristic polynomial of a pencil of order $n$ has degree $n$ if and only if $\det B$ is
+a unit, that is, if and only if $B$ is nonsingular ([quarteroni2000numerical], §5.9.1). Over an
+algebraically closed field, the pencil thus has $n$ finite eigenvalues, counted with
+multiplicity, exactly when $B$ is nonsingular. -/
 theorem natDegree_pencilPoly_eq_card_iff (A B : Matrix n n K) :
     (pencilPoly A B).natDegree = Fintype.card n ↔ IsUnit B.det := by
   rw [isUnit_iff_ne_zero]
@@ -240,30 +273,34 @@ theorem natDegree_pencilPoly_eq_card_iff (A B : Matrix n n K) :
     rw [coeff_pencilPoly_card]
     exact mul_ne_zero (pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)) h
 
-/-- A singular pencil has every scalar as an eigenvalue ([quarteroni2000numerical] Example 5.14,
-third pencil). -/
+/-- If the pencil $(A, B)$ is not regular, then every scalar is an eigenvalue: $\sigma(A, B) = K$
+([quarteroni2000numerical], Example 5.14, the third pencil). -/
 theorem pencilSpectrum_eq_univ_of_not_isRegularPencil {A B : Matrix n n K}
     (h : ¬ IsRegularPencil A B) : pencilSpectrum A B = Set.univ := by
   rw [IsRegularPencil, not_not] at h
   ext μ
   simp [mem_pencilSpectrum_iff_isRoot, h]
 
-/-- A regular pencil has finitely many eigenvalues, the roots of a nonzero polynomial. -/
+/-- A regular pencil has only finitely many eigenvalues, because they are the roots of a nonzero
+polynomial. -/
 theorem IsRegularPencil.finite_pencilSpectrum {A B : Matrix n n K} (h : IsRegularPencil A B) :
     (pencilSpectrum A B).Finite := by
   convert finite_setOfPred_isRoot h using 1
   ext μ
   exact mem_pencilSpectrum_iff_isRoot A B μ
 
-/-- Over an infinite field a regular pencil has a non-eigenvalue: some `A - μ₀ B` is invertible.
-This is the first step of the generalized Schur decomposition. -/
+/-- Let $K$ be an infinite field. If the pencil $(A, B)$ is regular, then there is a scalar
+$\mu_0 \in K$ such that $A - \mu_0 B$ is invertible.
+
+This is the first step of the proof of the generalized Schur decomposition
+`Matrix.exists_unitary_pencil_isUpperTriangular`. -/
 theorem IsRegularPencil.exists_isUnit_sub_smul [Infinite K] {A B : Matrix n n K}
     (h : IsRegularPencil A B) : ∃ μ₀ : K, IsUnit (A - μ₀ • B) := by
   obtain ⟨μ₀, hμ₀⟩ := h.finite_pencilSpectrum.exists_notMem
   exact ⟨μ₀, (isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hμ₀)⟩
 
-/-- The spectrum of a pencil is unchanged by an invertible equivalence `(U A Z, U B Z)`:
-`det (U (A - μ B) Z) = det U · det (A - μ B) · det Z`. -/
+/-- If $U$ and $Z$ are invertible, then $\sigma(UAZ, UBZ) = \sigma(A, B)$, because $\det(U(A - \mu
+B)Z) = \det U \cdot \det(A - \mu B) \cdot \det Z$. -/
 theorem pencilSpectrum_mul_mul_of_isUnit (A B : Matrix n n K) {U Z : Matrix n n K}
     (hU : IsUnit U) (hZ : IsUnit Z) :
     pencilSpectrum (U * A * Z) (U * B * Z) = pencilSpectrum A B := by
@@ -276,7 +313,8 @@ theorem pencilSpectrum_mul_mul_of_isUnit (A B : Matrix n n K) {U Z : Matrix n n 
     mul_eq_zero, mul_eq_zero]
   simp [hUd.ne_zero, hZd.ne_zero]
 
-/-- The spectrum of a pencil of two diagonal matrices: `μ` with `d i = μ * e i` for some `i`. -/
+/-- For $d, e \in K^n$, the spectrum of the pencil of the diagonal matrices $\operatorname{diag}(d)$
+and $\operatorname{diag}(e)$ is $\{\mu \mid d_i = \mu e_i \text{ for some } i\}$. -/
 theorem pencilSpectrum_diagonal (d e : n → K) :
     pencilSpectrum (diagonal d) (diagonal e) = {μ | ∃ i, d i = μ * e i} := by
   ext μ
@@ -286,8 +324,10 @@ theorem pencilSpectrum_diagonal (d e : n → K) :
 
 variable [LinearOrder n]
 
-/-- The characteristic polynomial of a pencil of two upper triangular matrices is the product of
-the diagonal pencils `t_ii - X s_ii`. -/
+/-- If $T$ and $S$ are upper triangular, then the characteristic polynomial of the pencil $(T, S)$
+is the product of the diagonal pencils:
+$$p_{T,S}(X) = \prod_i (t_{ii} - X s_{ii}).$$
+-/
 theorem pencilPoly_of_isUpperTriangular {T S : Matrix n n K} (hT : T.IsUpperTriangular)
     (hS : S.IsUpperTriangular) :
     pencilPoly T S = ∏ i, (C (T i i) - X * C (S i i)) := by
@@ -296,10 +336,13 @@ theorem pencilPoly_of_isUpperTriangular {T S : Matrix n n K} (hT : T.IsUpperTria
   · intro i j hij
     simp [hT hij, hS hij]
 
-/-- The eigenvalues of a pencil of upper triangular matrices are read off the diagonals: `μ` is an
-eigenvalue exactly when `t_ii = μ s_ii` for some `i`, that is, `μ = t_ii / s_ii` when `s_ii ≠ 0`;
-a diagonal position with `s_ii = 0` and `t_ii ≠ 0` contributes no finite eigenvalue (it is the
-eigenvalue `∞` of [quarteroni2000numerical] Property 5.10). -/
+/-- Let $T$ and $S$ be upper triangular. Then $\mu \in \sigma(T, S)$ if and only if
+$t_{ii} = \mu s_{ii}$ for some $i$.
+
+Thus each index $i$ with $s_{ii} \neq 0$ gives the eigenvalue $t_{ii} / s_{ii}$. An index with
+$s_{ii} = 0$ and $t_{ii} \neq 0$ gives no finite eigenvalue; it gives the eigenvalue $\infty$ of
+[quarteroni2000numerical], Property 5.10. An index with $s_{ii} = t_{ii} = 0$ makes every scalar
+an eigenvalue. -/
 theorem pencilSpectrum_eq_of_isUpperTriangular {T S : Matrix n n K} (hT : T.IsUpperTriangular)
     (hS : S.IsUpperTriangular) :
     pencilSpectrum T S = {μ | ∃ i, T i i = μ * S i i} := by
@@ -311,15 +354,23 @@ theorem pencilSpectrum_eq_of_isUpperTriangular {T S : Matrix n n K} (hT : T.IsUp
 
 end Field
 
-/-! ### The real symmetric-definite pencil `(A, P)` in the preconditioned form `P⁻¹ A` -/
+/-!
+### The real symmetric-definite pencil in the preconditioned form
+
+For real matrices $A$ and $P$, the eigenvalues of the preconditioned matrix $P^{-1} A$ are the
+eigenvalues of the pencil $(A, P)$.
+-/
 
 section Real
 
 open scoped ComplexOrder
 
-/-- The complex eigenvalues of the preconditioned matrix `P⁻¹ A` are the generalized eigenvalues
-of the pencil `(A, P)`: `μ ∈ σ(P⁻¹ A)` exactly when `A x = μ P x` for some complex `x ≠ 0`
-([quarteroni2000numerical] Remark 4.2, display (4.32)). -/
+/-- Let $A, P \in \mathbb{R}^{n \times n}$ with $P$ invertible, and let $\mu \in \mathbb{C}$. Then
+$\mu$ is an eigenvalue of $P^{-1} A$ if and only if there is a vector $x \in \mathbb{C}^n$ with
+$x \neq 0$ and $Ax = \mu Px$ ([quarteroni2000numerical], Remark 4.2, display (4.32)).
+
+The real matrices act on $\mathbb{C}^n$ through `Matrix.complexify`, and the spectrum is the
+complex spectrum of the complexification of $P^{-1} A$. -/
 theorem mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul (A : Matrix n n ℝ) {P : Matrix n n ℝ}
     (hP : IsUnit P) (μ : ℂ) :
     μ ∈ spectrum ℂ (complexify (P⁻¹ * A)) ↔
@@ -330,10 +381,10 @@ theorem mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul (A : Matrix n n ℝ) {P :
   rfl
 
 omit [DecidableEq n] in
-/-- The generalized Rayleigh quotient of a complex eigenvector of a real symmetric-definite pencil:
-if `A x = μ P x` with `x ≠ 0`, `A` symmetric and `P` positive definite, then `μ` is the real number
-`(a₁ + a₂) / (p₁ + p₂)`, where `a₁, a₂` are the real quadratic form of `A` at the real and imaginary
-parts of `x` and `p₁, p₂` that of `P`, with `0 < p₁ + p₂`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric and $P \in \mathbb{R}^{n \times n}$ be positive
+definite; if $Ax = \mu Px$ for a complex $x \neq 0$, then $\mu = (a_1 + a_2) / (p_1 + p_2)$ is
+real, where $a_1, a_2$ and $p_1, p_2$ are the quadratic forms of $A$ and of $P$ at the real and
+the imaginary parts of $x$, and $p_1 + p_2 > 0$. -/
 private theorem eq_ofReal_div_of_mulVec_eq_smul {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {μ : ℂ} {x : n → ℂ} (hx : x ≠ 0)
     (hμ : complexify A *ᵥ x = μ • (complexify P *ᵥ x)) :
@@ -352,12 +403,16 @@ private theorem eq_ofReal_div_of_mulVec_eq_smul {A P : Matrix n n ℝ} (hA : A.I
   rw [Complex.ofReal_div, hform, smul_eq_mul, mul_div_cancel_right₀]
   exact_mod_cast hpos.ne'
 
-/-- **The spectrum of `P⁻¹ A` is real and bounded by the generalized Rayleigh quotient**: for real
-symmetric `A` and positive definite `P`, if `lmin (P x, x) ≤ (A x, x) ≤ lmax (P x, x)` for every
-real `x`, every complex eigenvalue of `P⁻¹ A` is a real number in `[lmin, lmax]`
-([quarteroni2000numerical] Remark 4.2, in the form Theorem 4.9 consumes). An eigenvector equation
-`A x = μ P x` over `ℂ` gives `μ = (xᴴ A x)/(xᴴ P x)`, and both Hermitian forms are the sums of the
-real quadratic forms at the real and imaginary parts of `x`. -/
+/-- **The spectrum of $P^{-1} A$ is real and bounded by the generalized Rayleigh quotient.** Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, let $P \in \mathbb{R}^{n \times n}$ be positive
+definite, and let $l_{\min}, l_{\max} \in \mathbb{R}$ satisfy
+$$l_{\min} (Px, x) \le (Ax, x) \le l_{\max} (Px, x) \qquad \text{for all } x \in \mathbb{R}^n.$$
+Then every complex eigenvalue of $P^{-1} A$ is a real number in $[l_{\min}, l_{\max}]$
+([quarteroni2000numerical], Remark 4.2, in the form that Theorem 4.9 there uses).
+
+Here $(y, x)$ is the real dot product, written `y ⬝ᵥ x`. An eigenvector equation $Ax = \mu Px$
+over $\mathbb{C}$ gives $\mu = x^H A x / x^H P x$, and each Hermitian form is the sum of the
+real quadratic forms at the real and the imaginary parts of $x$. -/
 theorem spectrum_inv_mul_subset_of_posDef {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {lmin lmax : ℝ}
     (hlo : ∀ x : n → ℝ, lmin * (P *ᵥ x ⬝ᵥ x) ≤ A *ᵥ x ⬝ᵥ x)
@@ -378,10 +433,14 @@ theorem spectrum_inv_mul_subset_of_posDef {A P : Matrix n n ℝ} (hA : A.IsHermi
     simp only [dotProduct_comm _ (P *ᵥ _), dotProduct_comm _ (A *ᵥ _)] at h1 h2 ⊢
     linarith
 
-/-- An attained lower bound of the generalized Rayleigh quotient is an eigenvalue of `P⁻¹ A`: if
-`c (P x, x) ≤ (A x, x)` for every real `x`, with equality at some `x₀ ≠ 0`, then `c ∈ σ(P⁻¹ A)`.
-The quadratic form of the positive semidefinite `A - c P` vanishes at `x₀`, so `(A - c P) x₀ = 0`.
-This is how the endpoint hypotheses of [quarteroni2000numerical] Theorem 4.9 are met. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $P \in \mathbb{R}^{n \times n}$ be
+positive definite, and let $c \in \mathbb{R}$ satisfy $c (Px, x) \le (Ax, x)$ for all
+$x \in \mathbb{R}^n$. If $c (Px_0, x_0) = (Ax_0, x_0)$ for some $x_0 \neq 0$, then $c$ is a real
+eigenvalue of $P^{-1} A$.
+
+The matrix $A - cP$ is positive semidefinite and its quadratic form vanishes at $x_0$, so
+$(A - cP) x_0 = 0$. This is how the hypotheses on the endpoints in [quarteroni2000numerical],
+Theorem 4.9 are met. -/
 theorem mem_spectrum_inv_mul_of_forall_mul_le_of_eq {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {c : ℝ} (hlo : ∀ x : n → ℝ, c * (P *ᵥ x ⬝ᵥ x) ≤ A *ᵥ x ⬝ᵥ x)
     {x₀ : n → ℝ} (hx₀ : x₀ ≠ 0) (heq : c * (P *ᵥ x₀ ⬝ᵥ x₀) = A *ᵥ x₀ ⬝ᵥ x₀) :
@@ -402,8 +461,12 @@ theorem mem_spectrum_inv_mul_of_forall_mul_le_of_eq {A P : Matrix n n ℝ} (hA :
   refine ⟨x₀, hx₀, ?_⟩
   rwa [sub_mulVec, smul_mulVec, sub_eq_zero] at h0
 
-/-- An attained upper bound of the generalized Rayleigh quotient is an eigenvalue of `P⁻¹ A`: the
-twin of `Matrix.mem_spectrum_inv_mul_of_forall_mul_le_of_eq`, through the pencil `(-A, P)`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $P \in \mathbb{R}^{n \times n}$ be
+positive definite, and let $c \in \mathbb{R}$ satisfy $(Ax, x) \le c (Px, x)$ for all
+$x \in \mathbb{R}^n$. If $(Ax_0, x_0) = c (Px_0, x_0)$ for some $x_0 \neq 0$, then $c$ is a real
+eigenvalue of $P^{-1} A$.
+
+This is `Matrix.mem_spectrum_inv_mul_of_forall_mul_le_of_eq` applied to the pencil $(-A, P)$. -/
 theorem mem_spectrum_inv_mul_of_forall_le_mul_of_eq {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {c : ℝ} (hhi : ∀ x : n → ℝ, A *ᵥ x ⬝ᵥ x ≤ c * (P *ᵥ x ⬝ᵥ x))
     {x₀ : n → ℝ} (hx₀ : x₀ ≠ 0) (heq : A *ᵥ x₀ ⬝ᵥ x₀ = c * (P *ᵥ x₀ ⬝ᵥ x₀)) :
@@ -414,12 +477,18 @@ theorem mem_spectrum_inv_mul_of_forall_le_mul_of_eq {A P : Matrix n n ℝ} (hA :
   rw [Matrix.mul_neg, ← spectrum.neg_eq, Set.mem_neg] at h
   simpa using h
 
-/-- **Enclosure of the spectrum of `P⁻¹ A` by the extreme eigenvalues**,
-[quarteroni2000numerical] (4.33): for real symmetric `A` and positive definite `P` with
-`a ‖x‖² ≤ (A x, x) ≤ a' ‖x‖²` and `p ‖x‖² ≤ (P x, x) ≤ p' ‖x‖²`, `0 ≤ a` and `0 < p`, every
-eigenvalue of `P⁻¹ A` is real and lies in `[a / p', a' / p]`. With `a, a'` the extreme eigenvalues
-of `A` and `p, p'` those of `P` this is `λ_min(A)/λ_max(P) ≤ λ ≤ λ_max(A)/λ_min(P)`, as printed;
-`Matrix.spectrum_inv_mul_subset_Icc_min_div_max_div` is the form without the sign hypothesis. -/
+/-- **Enclosure of the spectrum of $P^{-1} A$ by the extreme eigenvalues.** Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $P \in \mathbb{R}^{n \times n}$ be positive
+definite. Let $a, a', p, p' \in \mathbb{R}$ with $0 \le a$, $0 < p$ and $0 < p'$, and suppose
+that for all $x \in \mathbb{R}^n$
+$$a \|x\|^2 \le (Ax, x) \le a' \|x\|^2, \qquad p \|x\|^2 \le (Px, x) \le p' \|x\|^2.$$
+Then every complex eigenvalue of $P^{-1} A$ is a real number in $[a / p', a' / p]$
+([quarteroni2000numerical], (4.33)).
+
+With $a, a'$ the extreme eigenvalues of $A$ and $p, p'$ those of $P$, this is the printed bound
+$\lambda_{\min}(A) / \lambda_{\max}(P) \le \lambda \le \lambda_{\max}(A) / \lambda_{\min}(P)$.
+Here $\|x\|^2$ is `x ⬝ᵥ x`. The form without the hypothesis $0 \le a$ is
+`Matrix.spectrum_inv_mul_subset_Icc_min_div_max_div`. -/
 theorem spectrum_inv_mul_subset_Icc_div {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {a a' p p' : ℝ} (ha : 0 ≤ a) (hp : 0 < p) (hp' : 0 < p')
     (hAlo : ∀ x : n → ℝ, a * (x ⬝ᵥ x) ≤ A *ᵥ x ⬝ᵥ x)
@@ -445,10 +514,15 @@ theorem spectrum_inv_mul_subset_Icc_div {A P : Matrix n n ℝ} (hA : A.IsHermiti
       _ = a' / p * (p * (x ⬝ᵥ x)) := by field_simp
       _ ≤ a' / p * (P *ᵥ x ⬝ᵥ x) := by gcongr; exact hPlo x
 
-/-- The enclosure `Matrix.spectrum_inv_mul_subset_Icc_div` without a sign hypothesis on `a`: the
-spectrum of `P⁻¹ A` lies in `[min (a/p) (a/p'), max (a'/p) (a'/p')]`. For `0 ≤ a ≤ a'` and `p ≤ p'`
-this is `[a/p', a'/p]`; for `a ≤ 0 ≤ a'` it is `[a/p, a'/p]`, and for `a' ≤ 0` it is
-`[a/p, a'/p']`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric and $P \in \mathbb{R}^{n \times n}$ be positive
+definite. Let $a, a', p, p' \in \mathbb{R}$ with $0 < p$ and $0 < p'$, and suppose that
+$a \|x\|^2 \le (Ax, x) \le a' \|x\|^2$ and $p \|x\|^2 \le (Px, x) \le p' \|x\|^2$ for all
+$x \in \mathbb{R}^n$. Then every complex eigenvalue of $P^{-1} A$ is a real number in
+$$\left[\min\{a/p, a/p'\}, \max\{a'/p, a'/p'\}\right].$$
+
+This is `Matrix.spectrum_inv_mul_subset_Icc_div` without a sign hypothesis on $a$. For
+$0 \le a \le a'$ and $p \le p'$ the interval is $[a/p', a'/p]$; for $a \le 0 \le a'$ it is
+$[a/p, a'/p]$; for $a' \le 0$ it is $[a/p, a'/p']$. -/
 theorem spectrum_inv_mul_subset_Icc_min_div_max_div {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {a a' p p' : ℝ} (hp : 0 < p) (hp' : 0 < p')
     (hAlo : ∀ x : n → ℝ, a * (x ⬝ᵥ x) ≤ A *ᵥ x ⬝ᵥ x)
@@ -508,15 +582,16 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 
 variable [IsAlgClosed 𝕜]
 
-/-- **Generalized Schur decomposition** ([quarteroni2000numerical] Property 5.10;
-[golub1989matrix] Theorem 7.7.1): a regular pencil over an algebraically closed `RCLike` field
-(that is, over `ℂ`) is simultaneously triangularized by two unitary matrices, `Uᴴ A Z = T` and
-`Uᴴ B Z = S` with `T`, `S` upper triangular. The eigenvalues are then read off the diagonals by
-`Matrix.pencilSpectrum_eq_of_isUpperTriangular`.
+/-- The **generalized Schur decomposition**. Let $\mathbb{K}$ be an algebraically closed `RCLike`
+field (that is, $\mathbb{C}$), and let $(A, B)$ be a regular pencil over $\mathbb{K}$. Then
+there are unitary matrices $U$ and $Z$ such that $T = U^H A Z$ and $S = U^H B Z$ are both upper
+triangular. This is Property 5.10 of [quarteroni2000numerical]; see also §7.7 of
+[golub2013matrix].
 
-The proof reduces to the Schur form of a single matrix: with `A₀ = A - μ₀ B` invertible,
-triangularize `A₀⁻¹ B = Z T₀ Zᴴ` and QR-factor `A₀ Z = U S₀`; then `Uᴴ B Z = S₀ T₀` and
-`Uᴴ A Z = S₀ + μ₀ S₀ T₀`. -/
+The eigenvalues are then read off the diagonals by
+`Matrix.pencilSpectrum_eq_of_isUpperTriangular`. For the proof, let $A_0 = A - \mu_0 B$ be
+invertible. A Schur form $A_0^{-1} B = Z T_0 Z^H$ and a QR factorization $A_0 Z = U S_0$ give
+$U^H B Z = S_0 T_0$ and $U^H A Z = S_0 + \mu_0 S_0 T_0$. -/
 theorem exists_unitary_pencil_isUpperTriangular [LinearOrder n] {A B : Matrix n n 𝕜}
     (h : IsRegularPencil A B) :
     ∃ U ∈ unitaryGroup n 𝕜, ∃ Z ∈ unitaryGroup n 𝕜,
@@ -550,8 +625,10 @@ section CongruenceDiagonal
 
 variable {K : Type*} [Field K] [StarRing K] {X P Q : Matrix n n K} {a b : n → K}
 
-/-- If `Xᴴ P X = diag a` and `Xᴴ Q X = diag b` with `X` invertible, then `b_i P x_i = a_i Q x_i`
-for every column `x_i` of `X`. -/
+/-- Let $K$ be a field with an involution $\bar{\cdot}$, and let $X, P, Q \in K^{n \times n}$ and
+$a, b \in K^n$. If $X$ is invertible, $X^H P X = \operatorname{diag}(a)$ and
+$X^H Q X = \operatorname{diag}(b)$, then every column $x_i$ of $X$ satisfies
+$b_i P x_i = a_i Q x_i$. -/
 theorem smul_mulVec_col_eq_of_conj_diagonal (hX : IsUnit X) (hP : Xᴴ * P * X = diagonal a)
     (hQ : Xᴴ * Q * X = diagonal b) (i : n) :
     b i • (P *ᵥ X.col i) = a i • (Q *ᵥ X.col i) := by
@@ -574,9 +651,10 @@ theorem smul_mulVec_col_eq_of_conj_diagonal (hX : IsUnit X) (hP : Xᴴ * P * X =
   simp only [Pi.smul_apply, smul_eq_mul, col_apply]
   rw [mul_comm, this, mul_comm]
 
-/-- **The columns of a congruence to diagonal forms are pencil eigenvectors**: if
-`Xᴴ P X = diag a`, `Xᴴ Q X = diag b` with `X` invertible and `b_k ≠ 0`, then `x_k` is an
-eigenvector of the pencil `P − λ Q` for `λ = a_k / b_k`. -/
+/-- **The columns of a congruence to diagonal forms are eigenvectors of the pencil.** Let $X$ be
+invertible with $X^H P X = \operatorname{diag}(a)$ and $X^H Q X = \operatorname{diag}(b)$. If
+$b_k \neq 0$, then $(a_k / b_k, x_k)$ is an eigenpair of the pencil $(P, Q)$, where $x_k$ is the
+column $k$ of $X$. -/
 theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
     (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) {k : n} (hk : b k ≠ 0) :
     HasPencilEigenvector P Q (a k / b k) (X.col k) := by
@@ -584,9 +662,11 @@ theorem hasPencilEigenvector_col_of_conj_diagonal (hX : IsUnit X)
   have h := smul_mulVec_col_eq_of_conj_diagonal hX hP hQ k
   rw [div_eq_inv_mul, mul_smul, ← h, smul_smul, inv_mul_cancel₀ hk, one_smul]
 
-/-- **The spectrum of a pencil congruent to diagonal forms**: if `Xᴴ P X = diag a`,
-`Xᴴ Q X = diag b` with `X` invertible and every `b_k ≠ 0`, then the eigenvalues of the pencil
-`P − λ Q` are exactly the ratios `a_k / b_k`. -/
+/-- **The spectrum of a pencil congruent to diagonal forms.** Let $X$ be invertible with
+$X^H P X = \operatorname{diag}(a)$ and $X^H Q X = \operatorname{diag}(b)$, and let $b_k \neq 0$
+for every $k$. Then the eigenvalues of the pencil $(P, Q)$ are exactly the ratios $a_k / b_k$:
+$$\sigma(P, Q) = \{a_k / b_k \mid k\}.$$
+-/
 theorem pencilSpectrum_eq_range_of_conj_diagonal (hX : IsUnit X)
     (hP : Xᴴ * P * X = diagonal a) (hQ : Xᴴ * Q * X = diagonal b) (hb : ∀ k, b k ≠ 0) :
     pencilSpectrum P Q = Set.range fun k => a k / b k := by
@@ -624,18 +704,21 @@ open scoped ComplexOrder
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The columns of a congruence that carries `(A, B)` to `(diag d, 1)` are eigenvectors of the
-pencil: from `Mᴴ B M = 1` and `Mᴴ A M = diag d` with `M` invertible, `A (M eᵢ) = dᵢ B (M eᵢ)`.
-(They are linearly independent by `Matrix.linearIndependent_cols_iff_isUnit`, and `B`-orthonormal
-by `Matrix.star_col_dotProduct_mulVec_col_of_conj_eq_one`.) -/
+/-- Let $A, B, M \in \mathbb{K}^{n \times n}$ with $M$ invertible, and let $d \in \mathbb{K}^n$. If
+$M^H B M = I$ and $M^H A M = \operatorname{diag}(d)$, then for every $i$ the column $m_i$ of $M$
+satisfies $A m_i = d_i B m_i$ and $m_i \neq 0$: it is an eigenvector of the pencil $(A, B)$ for
+$d_i$.
+
+The columns are linearly independent by `Matrix.linearIndependent_col_iff_isUnit`, and they are
+$B$-orthonormal by `Matrix.star_col_dotProduct_mulVec_col_of_conj_eq_one`. -/
 theorem hasPencilEigenvector_col_of_conj_eq_diagonal {A B M : Matrix n n 𝕜} {d : n → 𝕜}
     (hM : IsUnit M) (hB : star M * B * M = 1) (hA : star M * A * M = diagonal d) (i : n) :
     HasPencilEigenvector A B (d i) (M.col i) := by
   simpa using hasPencilEigenvector_col_of_conj_diagonal (b := fun _ => 1) hM hA
     (by rw [diagonal_one]; exact hB) (k := i) one_ne_zero
 
-/-- The columns of a congruence with `Mᴴ B M = 1` are `B`-orthonormal:
-`(M eᵢ)ᴴ B (M eⱼ) = δᵢⱼ`. -/
+/-- If $M^H B M = I$, then the columns $m_i$ of $M$ are $B$-orthonormal:
+$m_i^H B m_j = \delta_{ij}$. -/
 theorem star_col_dotProduct_mulVec_col_of_conj_eq_one {B M : Matrix n n 𝕜}
     (hB : star M * B * M = 1) (i j : n) :
     star (M.col i) ⬝ᵥ (B *ᵥ M.col j) = if i = j then 1 else 0 := by
@@ -644,16 +727,21 @@ theorem star_col_dotProduct_mulVec_col_of_conj_eq_one {B M : Matrix n n 𝕜}
   rw [← this, dotProduct_mulVec]
   simp [Matrix.mul_apply, vecMul, dotProduct, col, Finset.sum_mul, mul_assoc]
 
-/-- **Simultaneous diagonalization of a symmetric-definite pencil**
-([quarteroni2000numerical] Theorem 5.7; [golub1989matrix] Theorem 8.7.1): for `A` Hermitian and
-`B` positive definite there is an invertible `M` with `Mᴴ B M = 1` and `Mᴴ A M = diag d` with `d`
-real, and the eigenvalues of the pencil `(A, B)` are exactly the `d i`. In the book `M = H⁻¹ Y`
-for the Cholesky factor `H` of `B` and the orthonormal eigenbasis `Y` of `H⁻ᴴ A H⁻¹`; here `H⁻¹`
-is replaced by any `W` with `Wᴴ B W = 1` (`Matrix.PosDef.exists_isUnit_conj_eq_one`). The
-columns of `M` are `B`-orthonormal eigenvectors of the pencil
-(`Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`,
-`Matrix.star_col_dotProduct_mulVec_col_of_conj_eq_one`), linearly independent by
-`Matrix.linearIndependent_cols_iff_isUnit`. -/
+/-- **Simultaneous diagonalization of a symmetric-definite pencil.** Let
+$A \in \mathbb{K}^{n \times n}$ be Hermitian and $B \in \mathbb{K}^{n \times n}$ be positive
+definite. Then there are an invertible matrix $M$ and a real vector $d \in \mathbb{R}^n$ such
+that
+$$M^H B M = I, \qquad M^H A M = \operatorname{diag}(d),$$
+and the eigenvalues of the pencil $(A, B)$ are exactly the $d_i$:
+$\sigma(A, B) = \{d_i \mid i\}$. This is Theorem 5.7 of [quarteroni2000numerical]; see also §8.7
+of [golub2013matrix].
+
+The source takes $M = H^{-1} Y$, with $H$ the Cholesky factor of $B$ and $Y$ an orthonormal
+eigenbasis of $H^{-H} A H^{-1}$. Here $H^{-1}$ is replaced by any $W$ with $W^H B W = I$
+(`Matrix.PosDef.exists_isUnit_conj_eq_one`). The columns of $M$ are $B$-orthonormal eigenvectors
+of the pencil (`Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`,
+`Matrix.star_col_dotProduct_mulVec_col_of_conj_eq_one`), and they are linearly independent by
+`Matrix.linearIndependent_col_iff_isUnit`. -/
 theorem exists_simultaneous_diagonalization {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) :
     ∃ (M : Matrix n n 𝕜) (d : n → ℝ), IsUnit M ∧ star M * B * M = 1 ∧
@@ -680,8 +768,8 @@ theorem exists_simultaneous_diagonalization {A B : Matrix n n 𝕜} (hA : A.IsHe
   ext μ
   simp [eq_comm]
 
-/-- The eigenvalues of a symmetric-definite pencil are real ([quarteroni2000numerical]
-Theorem 5.7). -/
+/-- If $A$ is Hermitian and $B$ is positive definite, then every eigenvalue of the pencil $(A, B)$
+is real ([quarteroni2000numerical], Theorem 5.7). -/
 theorem pencilSpectrum_subset_range_ofReal_of_posDef {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) : pencilSpectrum A B ⊆ Set.range ((↑) : ℝ → 𝕜) := by
   obtain ⟨M, d, -, -, -, hspec⟩ := exists_simultaneous_diagonalization hA hB
@@ -689,10 +777,12 @@ theorem pencilSpectrum_subset_range_ofReal_of_posDef {A B : Matrix n n 𝕜} (hA
   rintro _ ⟨i, rfl⟩
   exact ⟨d i, rfl⟩
 
-/-- The eigenvalues of a pencil of two positive definite matrices are positive: from `A x = μ B x`,
-`μ = (xᴴ A x)/(xᴴ B x)` is a quotient of two positive reals. This is what the stability analysis
-of the θ-method for `M u' + A u = f` with `M`, `A` symmetric positive definite needs
-([quarteroni2000numerical] §13.3.1). -/
+/-- If $A$ and $B$ are both positive definite, then every eigenvalue $\mu$ of the pencil $(A, B)$
+has $\operatorname{Re} \mu > 0$.
+
+From $Ax = \mu Bx$, $\mu = x^H A x / x^H B x$ is the quotient of two positive real numbers. The
+stability analysis of the θ-method for $M u' + A u = f$ with $M$ and $A$ symmetric positive
+definite uses this fact ([quarteroni2000numerical], §13.3.1). -/
 theorem re_pos_of_mem_pencilSpectrum_of_posDef {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) {μ : 𝕜} (hμ : μ ∈ pencilSpectrum A B) : 0 < RCLike.re μ := by
   obtain ⟨x, hx, hμ⟩ := (mem_pencilSpectrum_iff_exists A B μ).mp hμ
@@ -709,9 +799,10 @@ section Deflating
 
 variable {K : Type*} [Field K]
 
-/-- **Reciprocal eigenvalues of the reversed pencil** ([golub2013matrix] §7.7.1): a nonzero
-eigenvalue `μ` of `(A, B)` gives the eigenvalue `μ⁻¹` of `(B, A)`, since
-`B - μ⁻¹ A = -μ⁻¹ (A - μ B)`. -/
+/-- **Reciprocal eigenvalues of the reversed pencil.** If $\mu \neq 0$ and $\mu \in \sigma(A, B)$,
+then $\mu^{-1} \in \sigma(B, A)$ ([golub2013matrix], §7.7.1).
+
+The proof uses $B - \mu^{-1} A = -\mu^{-1} (A - \mu B)$. -/
 theorem inv_mem_pencilSpectrum_swap {A B : Matrix n n K} {μ : K} (hμ : μ ≠ 0)
     (h : μ ∈ pencilSpectrum A B) : μ⁻¹ ∈ pencilSpectrum B A := by
   rw [mem_pencilSpectrum_iff_det] at h ⊢
@@ -720,13 +811,16 @@ theorem inv_mem_pencilSpectrum_swap {A B : Matrix n n K} {μ : K} (hμ : μ ≠ 
     abel
   rw [heq, det_smul, h, mul_zero]
 
-/-- A **deflating subspace** of the pencil `A - λ B` ([golub2013matrix] §7.7.8): a subspace `S`
-such that `{A x + B y | x, y ∈ S} = A S + B S` has dimension at most `dim S`. For `B = 1` it says
-that `S` is `A`-invariant (`Matrix.isDeflatingSubspace_one_iff`). -/
+/-- A subspace $S \subseteq K^n$ is a **deflating subspace** of the pencil $A - \lambda B$ if
+$$\dim(AS + BS) \le \dim S,$$
+where $AS + BS = \{Ax + By \mid x, y \in S\}$ ([golub2013matrix], §7.7.8).
+
+For $B = I$ this says that $S$ is invariant under $A$ (`Matrix.isDeflatingSubspace_one_iff`). -/
 def IsDeflatingSubspace (A B : Matrix n n K) (S : Submodule K (n → K)) : Prop :=
   Module.finrank K ↥(S.map A.mulVecLin ⊔ S.map B.mulVecLin) ≤ Module.finrank K S
 
-/-- A deflating subspace of `A - λ I` is an invariant subspace of `A`. -/
+/-- A subspace $S$ is a deflating subspace of the pencil $A - \lambda I$ if and only if $S$ is
+invariant under $A$. -/
 theorem isDeflatingSubspace_one_iff {A : Matrix n n K} {S : Submodule K (n → K)} :
     IsDeflatingSubspace A 1 S ↔ S ∈ Module.End.invtSubmodule A.mulVecLin := by
   rw [IsDeflatingSubspace, mulVecLin_one, Submodule.map_id, Module.End.mem_invtSubmodule_iff_map_le]
@@ -740,10 +834,18 @@ theorem isDeflatingSubspace_one_iff {A : Matrix n n K} {S : Submodule K (n → K
 
 variable [LinearOrder n]
 
-/-- **The flag of a generalized Schur decomposition is deflating** ([golub2013matrix] §7.7.8): if
-`U`, `Z` are invertible with `U⁻¹ A Z` and `U⁻¹ B Z` upper triangular, then for every `k` the
-images under `A` and `B` of the leading columns `z_j` (`j ≤ k`) of `Z` lie in the span of the
-leading columns `u_j` of `U`, and consequently `span {z_j | j ≤ k}` is a deflating subspace. -/
+/-- **The flag of a generalized Schur decomposition is deflating.** Let $U$ and $Z$ be invertible,
+with $U^{-1} A Z$ and $U^{-1} B Z$ upper triangular, and let $u_j$ and $z_j$ be the columns of
+$U$ and $Z$. Then for every index $k$:
+
+* $A z_j \in \operatorname{span}\{u_i \mid i \le k\}$ for all $j \le k$;
+* $B z_j \in \operatorname{span}\{u_i \mid i \le k\}$ for all $j \le k$;
+* $\operatorname{span}\{z_j \mid j \le k\}$ is a deflating subspace of the pencil
+  $A - \lambda B$.
+
+This is stated in [golub2013matrix], §7.7.8. The first two parts are stated as inclusions of the
+spans of $\{A z_j \mid j \le k\}$ and $\{B z_j \mid j \le k\}$ in
+$\operatorname{span}\{u_i \mid i \le k\}$. -/
 theorem isDeflatingSubspace_span_cols_of_isUpperTriangular {A B U Z : Matrix n n K}
     (hU : IsUnit U) (hZ : IsUnit Z) (hA : (U⁻¹ * A * Z).IsUpperTriangular)
     (hB : (U⁻¹ * B * Z).IsUpperTriangular) (k : n) :

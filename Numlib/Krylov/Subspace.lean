@@ -15,37 +15,71 @@ import Numlib.Algebra.Polynomial.AevalApply
 /-!
 # Krylov subspaces
 
-`Krylov.subspace A v m = span {v, A v, …, A^(m-1) v}` for an endomorphism `A` of a module over a
-commutative ring, the full Krylov space, the polynomial description `𝒦_m = {p(A) v | deg p < m}`,
-and — over a field — the grade of `v` together with its minimal polynomial, the monic generator of
-the annihilator ideal `{p | p(A) v = 0}` ([saad2003iterative] §6.2, Prop 6.1–6.2;
-[saad2011numerical] Prop 6.1–6.3; [choi2006iterative] Def 2.1; [meurant2006lanczos] §2.1).
+Let $A$ be an endomorphism of a module $M$ over a commutative ring $R$, and let $v \in M$. The
+$m$-th **Krylov subspace** is $\mathcal{K}_m(A, v) = \operatorname{span}\{v, Av, \dots, A^{m-1}
+v\}$, and the **full Krylov space** $\mathcal{K}_\infty(A, v)$ is the span of all $A^i v$. This file
+proves the polynomial description $\mathcal{K}_m(A, v) = \{p(A) v : \deg p < m\}$. Over a field it
+defines the **grade** of $v$, the dimension of $\mathcal{K}_\infty(A, v)$, and the **minimal
+polynomial** of $v$, the monic generator of the annihilator ideal $\{p : p(A) v = 0\}$. The
+presentation follows [saad2003iterative], §6.2, Propositions 6.1 and 6.2, together with
+[saad2011numerical], Propositions 6.1 to 6.3, [choi2006iterative], Definition 2.1, and
+[meurant2006lanczos], §2.1.
 
-The full Krylov space is the least `A`-invariant subspace containing `v`
-(`Krylov.fullSubspace_mem_invtSubmodule`, `Krylov.fullSubspace_le_of_mem_invtSubmodule`), so the
-grade is the dimension of that subspace ([golub2013matrix] Theorem 11.3.1). Krylov spaces, full
-Krylov spaces and grades are invariant under shifts `A ↦ A + c` (`Krylov.subspace_add_algebraMap`,
-`Krylov.fullSubspace_add_algebraMap`, `Krylov.grade_add_algebraMap`) and under `A ↦ -A`
-(`Krylov.subspace_neg`). A map intertwining two operators carries the Krylov subspaces of one onto
-those of the other (`Krylov.map_subspace_of_semiconj`), and the vectors of a three-term
-recurrence with nonzero off-diagonal coefficients span the Krylov subspaces
-(`Krylov.span_eq_subspace_of_threeTerm`). The rewriting lemmas `Module.End.aeval_mul_apply`, … for
-`p(T) v` are in `Numlib.Algebra.Polynomial.AevalApply`.
+The full Krylov space is the least $A$-invariant subspace that contains $v$, so the grade is the
+dimension of that subspace ([golub2013matrix], Theorem 11.3.1). Krylov subspaces, full Krylov spaces
+and grades do not change under a shift $A \mapsto A + c$, and Krylov subspaces do not change under
+$A \mapsto -A$. A map $N$ with $N B = C N$ carries the Krylov subspaces of $B$ onto those of $C$.
+The vectors of a three-term recurrence with nonzero off-diagonal coefficients span the Krylov
+subspaces. The rewriting lemmas for $p(T) v$, such as `Module.End.aeval_mul_apply`, are in
+`Numlib.Algebra.Polynomial.AevalApply`.
+
+## Main definitions
+
+* `Krylov.subspace`: the Krylov subspace $\mathcal{K}_m(A, v) = \operatorname{span}\{A^i v : i <
+  m\}$.
+* `Krylov.fullSubspace`: the full Krylov space $\mathcal{K}_\infty(A, v) = \operatorname{span}\{A^i
+  v : i \in \mathbb{N}\}$.
+* `Krylov.polyEval`: the linear map $p \mapsto p(A) v$ from polynomials to $M$.
+* `Krylov.grade`: the dimension of $\mathcal{K}_\infty(A, v)$ over a field.
+* `Krylov.annIdealVec`: the ideal of the polynomials $p$ with $p(A) v = 0$.
+* `Krylov.minpolyVec`: the monic generator of that ideal, the minimal polynomial of $v$.
+
+## Main results
+
+* `Krylov.subspace_eq_map_degreeLT`: $\mathcal{K}_m(A, v) = \{p(A) v : \deg p < m\}$.
+* `Krylov.fullSubspace_mem_invtSubmodule`, `Krylov.fullSubspace_le_of_mem_invtSubmodule`:
+  $\mathcal{K}_\infty(A, v)$ is the least $A$-invariant subspace that contains $v$.
+* `Krylov.subspace_neg`, `Krylov.subspace_add_algebraMap`, `Krylov.grade_add_algebraMap`: the Krylov
+  subspaces of $-A$ and of $A + c$ are those of $A$, and $A + c$ has the same grades as $A$.
+* `Krylov.map_subspace_of_semiconj`: if $N B = C N$, then
+  $N \mathcal{K}_m(B, b) = \mathcal{K}_m(C, Nb)$.
+* `Krylov.subspace_eq_of_pow_apply_mem`: once $A^n v \in \mathcal{K}_n(A, v)$, the Krylov subspaces
+  are constant from step $n$ on.
+* `Krylov.grade_eq_sInf`, `Krylov.grade_le_iff`: the grade is the least $m$ with
+  $A^m v \in \mathcal{K}_m(A, v)$.
+* `Krylov.finrank_subspace`: $\dim \mathcal{K}_m(A, v) = \min\{m, \operatorname{grade}\}$.
+* `Krylov.natDegree_minpolyVec`: the degree of the minimal polynomial of $v$ is the grade of $v$.
+* `Krylov.span_eq_subspace_of_threeTerm`: the vectors of a three-term recurrence with nonzero
+  off-diagonal coefficients span the Krylov subspaces.
 
 ## Notation
 
-`𝒦[A, v] m` is `Krylov.subspace A v m`, the `m`-th Krylov subspace of `A` at `v`. The notation is
-scoped to the `Krylov` namespace.
+* `𝒦[A, v] m`: the Krylov subspace `Krylov.subspace A v m`. The notation is scoped to the namespace
+  `Krylov`.
 
 ## Implementation notes
 
-`Krylov.annIdealVec` and `Krylov.minpolyVec` are, declaration for declaration, the module-element
-analogue of Mathlib's `Polynomial.annIdeal` and `Polynomial.annIdealGenerator`: the same monic
-generator of the same kind of ideal, with the same proofs. They are stated afresh because Mathlib's
-are the annihilator of an *algebra element* `a : A` under `Polynomial.aeval a`, whereas what a
-Krylov method annihilates is a *vector*, `p ↦ p(A) v`. The two would be one if Mathlib's pair were
-generalized to the `𝕜[X]`-module `Module.AEval' A`, where `Krylov.annIdealVec A v` is the
-annihilator of the cyclic submodule generated by `v`.
+* `Krylov.annIdealVec` and `Krylov.minpolyVec` are, declaration for declaration, the analogue for a
+  module element of the Mathlib definitions `Polynomial.annIdeal` and
+  `Polynomial.annIdealGenerator`: the same monic generator of the same kind of ideal, with the same
+  proofs. They are stated again because the Mathlib definitions annihilate an element $a$ of an
+  algebra under `Polynomial.aeval a`, whereas a Krylov method annihilates a vector,
+  $p \mapsto p(A) v$. The two would be one if the Mathlib pair were generalized to the
+  $\mathbb{K}[X]$-module `Module.AEval' A`, in which `Krylov.annIdealVec A v` is the annihilator of
+  the cyclic submodule generated by $v$.
+* The grade is `Module.finrank` of the full Krylov space, so it takes the value $0$ when that space
+  is infinite-dimensional. Results that need a finite grade assume `[FiniteDimensional K
+  (Krylov.fullSubspace A v)]`, which holds when the ambient space is finite-dimensional.
 -/
 
 open Polynomial
@@ -56,25 +90,31 @@ section CommRing
 
 variable {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
 
-/-- The `m`-th Krylov subspace `𝒦_m(A, v) = span {v, A v, …, A^(m-1) v}`. -/
+/-- The $m$-th **Krylov subspace** of $A$ at $v$,
+$$\mathcal{K}_m(A, v) = \operatorname{span}\{v, Av, \dots, A^{m-1} v\}.$$
+
+For $m = 0$ the span is empty, so $\mathcal{K}_0(A, v) = 0$. -/
 def subspace (A : Module.End R M) (v : M) (m : ℕ) : Submodule R M :=
   Submodule.span R (Set.range fun i : Fin m => (A ^ (i : ℕ)) v)
 
-/-- Notation `𝒦[A, v] m` for `Krylov.subspace A v m`. -/
+/-- The notation `𝒦[A, v] m` for the Krylov subspace `Krylov.subspace A v m`. -/
 scoped notation "𝒦[" A ", " v "] " m:max => Krylov.subspace A v m
 
-/-- The full Krylov space `span {A^i v | i : ℕ}`, the smallest `A`-invariant subspace containing
-`v`. -/
+/-- The **full Krylov space** $\mathcal{K}_\infty(A, v) = \operatorname{span}\{A^i v : i \in
+\mathbb{N}\}$, the span of all the Krylov vectors.
+
+It is the smallest $A$-invariant subspace that contains $v$; see
+`Krylov.fullSubspace_mem_invtSubmodule` and `Krylov.fullSubspace_le_of_mem_invtSubmodule`. -/
 def fullSubspace (A : Module.End R M) (v : M) : Submodule R M :=
   Submodule.span R (Set.range fun i : ℕ => (A ^ i) v)
 
-/-- The evaluation map `p ↦ p(A) v`. -/
+/-- The **evaluation map** $p \mapsto p(A) v$, a linear map from the polynomials $R[X]$ to $M$. -/
 noncomputable def polyEval (A : Module.End R M) (v : M) : R[X] →ₗ[R] M where
   toFun p := aeval A p v
   map_add' p q := by simp [map_add]
   map_smul' c p := by simp
 
-/-- `Krylov.polyEval` is evaluation of the polynomial at `A`, applied to `v`. -/
+/-- The evaluation map sends $p$ to $p(A) v$. -/
 @[simp]
 theorem polyEval_apply (A : Module.End R M) (v : M) (p : R[X]) :
     polyEval A v p = aeval A p v := rfl
@@ -84,25 +124,26 @@ variable (A : Module.End R M) (v : M)
 instance (m : ℕ) : Module.Finite R (subspace A v m) :=
   Module.Finite.span_of_finite R (Set.finite_range _)
 
-/-- No steps span nothing: `𝒦_0 = ⊥`. -/
+/-- The Krylov subspace of step $0$ is trivial: $\mathcal{K}_0(A, v) = 0$. -/
 @[simp]
 theorem subspace_zero : subspace A v 0 = ⊥ := by
   simp [subspace]
 
-/-- One step spans the starting direction: `𝒦_1 = R ∙ v`. -/
+/-- The Krylov subspace of step $1$ is the line through $v$: $\mathcal{K}_1(A, v) = R v$. -/
 theorem subspace_one : subspace A v 1 = R ∙ v := by
   simp [subspace, Set.range_unique]
 
-/-- The generators of `𝒦_m`: `A^i v` lies in it for every `i < m`. -/
+/-- Let $i < m$. Then the generator $A^i v$ lies in $\mathcal{K}_m(A, v)$. -/
 theorem pow_apply_mem_subspace {i m : ℕ} (h : i < m) : (A ^ i) v ∈ subspace A v m :=
   Submodule.subset_span ⟨⟨i, h⟩, rfl⟩
 
-/-- The starting vector lies in every nontrivial Krylov subspace. -/
+/-- If $m > 0$, then $v \in \mathcal{K}_m(A, v)$. -/
 theorem self_mem_subspace {m : ℕ} (h : 0 < m) : v ∈ subspace A v m := by
   simpa using pow_apply_mem_subspace A v h
 
-/-- The generating set of `𝒦_m` written as an image of `Set.Iio m`; the form in which it matches
-Mathlib's Gram–Schmidt spans. -/
+/-- The Krylov subspace $\mathcal{K}_m(A, v)$ is the span of the image of
+$\{i \in \mathbb{N} : i < m\}$ under $i \mapsto A^i v$. This is the form of the generating set
+that matches the Gram–Schmidt spans of Mathlib. -/
 theorem subspace_eq_span_image_Iio (m : ℕ) :
     subspace A v m = Submodule.span R ((fun i : ℕ => (A ^ i) v) '' Set.Iio m) := by
   rw [subspace]
@@ -111,20 +152,25 @@ theorem subspace_eq_span_image_Iio (m : ℕ) :
   simp only [Set.mem_range, Set.mem_image, Set.mem_Iio, Fin.exists_iff]
   tauto
 
-/-- The Krylov subspaces grow with the number of steps: `𝒦_m ≤ 𝒦_n` for `m ≤ n`. -/
+/-- The Krylov subspaces increase with the number of steps:
+$\mathcal{K}_m(A, v) \le \mathcal{K}_n(A, v)$ for $m \le n$. -/
 theorem subspace_mono : Monotone (subspace A v) := by
   intro m n h
   simp only [subspace_eq_span_image_Iio]
   exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio h))
 
-/-- `(-A)^i v = (-1)^i (A^i v)`: the generators of the Krylov sequence of `-A` differ from those of
-`A` by a sign only. -/
+/-- For every $i \in \mathbb{N}$,
+$$(-A)^i v = (-1)^i A^i v.$$
+So the Krylov vectors of $-A$ differ from those of $A$ only by signs. -/
 theorem neg_pow_apply (i : ℕ) : ((-A) ^ i) v = (-1 : R) ^ i • (A ^ i) v := by
   rw [← neg_one_smul R A, smul_pow, LinearMap.smul_apply]
 
-/-- **The Krylov subspaces of `-A` are those of `A`**: the generators differ by the signs `(-1)^i`,
-which do not change a span. A method whose iterates live in `𝒦_m(A, v)` therefore runs unchanged on
-`-A`, which is the reduction that turns a bound on a largest eigenvalue into one on a smallest. -/
+/-- The Krylov subspaces of $-A$ are those of $A$: for every $m$,
+$$\mathcal{K}_m(-A, v) = \mathcal{K}_m(A, v).$$
+
+The generators differ by the signs $(-1)^i$, which do not change a span. A method whose iterates
+lie in $\mathcal{K}_m(A, v)$ therefore runs unchanged on $-A$. This reduction turns a bound on a
+largest eigenvalue into a bound on a smallest eigenvalue. -/
 theorem subspace_neg (m : ℕ) : subspace (-A) v m = subspace A v m := by
   refine le_antisymm ?_ ?_ <;> rw [subspace, subspace, Submodule.span_le] <;>
     rintro _ ⟨i, rfl⟩ <;> simp only [SetLike.mem_coe]
@@ -135,18 +181,21 @@ theorem subspace_neg (m : ℕ) : subspace (-A) v m = subspace A v m := by
     rw [h]
     exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
-/-- Every Krylov subspace sits inside the full Krylov space. -/
+/-- Every Krylov subspace lies in the full Krylov space: $\mathcal{K}_m(A, v) \le
+\mathcal{K}_\infty(A, v)$. -/
 theorem subspace_le_fullSubspace (m : ℕ) : subspace A v m ≤ fullSubspace A v :=
   Submodule.span_mono <| by rintro _ ⟨i, rfl⟩; exact ⟨(i : ℕ), rfl⟩
 
-/-- The full Krylov space is the supremum of the finite ones: `𝒦_∞ = ⨆ m, 𝒦_m`. -/
+/-- The full Krylov space is the supremum of the Krylov subspaces: $\mathcal{K}_\infty(A, v) =
+\sup_m \mathcal{K}_m(A, v)$. -/
 theorem iSup_subspace : ⨆ m, subspace A v m = fullSubspace A v := by
   refine le_antisymm (iSup_le fun m => subspace_le_fullSubspace A v m) ?_
   rw [fullSubspace, Submodule.span_le]
   rintro _ ⟨i, rfl⟩
   exact le_iSup (subspace A v) (i + 1) (pow_apply_mem_subspace A v i.lt_succ_self)
 
-/-- One application of `A` costs one step: `A 𝒦_m ≤ 𝒦_{m+1}`. -/
+/-- The image of a Krylov subspace under $A$ lies in the next one: $A \mathcal{K}_m(A, v) \le
+\mathcal{K}_{m+1}(A, v)$. -/
 theorem map_subspace_le (m : ℕ) : (subspace A v m).map A ≤ subspace A v (m + 1) := by
   rw [subspace, Submodule.map_span, Submodule.span_le]
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
@@ -154,8 +203,11 @@ theorem map_subspace_le (m : ℕ) : (subspace A v m).map A ≤ subspace A v (m +
   rw [SetLike.mem_coe, h]
   exact pow_apply_mem_subspace A v (Nat.succ_lt_succ i.2)
 
-/-- The next Krylov subspace is generated by the current nonempty prefix and its image
-under the operator. -/
+/-- Let $m > 0$. The next Krylov subspace is the sum of the current one and its image under $A$:
+$$\mathcal{K}_{m+1}(A, v) = \mathcal{K}_m(A, v) + A \mathcal{K}_m(A, v).$$
+
+The hypothesis $m > 0$ is needed: for $m = 0$ the right side is $0$, while
+$\mathcal{K}_1(A, v) = R v$ is nonzero when $v \neq 0$. -/
 theorem subspace_succ_eq_sup_map {m : ℕ} (hm : 0 < m) :
     subspace A v (m + 1) = subspace A v m ⊔ (subspace A v m).map A := by
   refine le_antisymm ?_ (sup_le (subspace_mono A v (Nat.le_succ m)) (map_subspace_le A v m))
@@ -170,7 +222,8 @@ theorem subspace_succ_eq_sup_map {m : ℕ} (hm : 0 < m) :
     rw [pow_succ', Module.End.mul_apply]
     exact Submodule.mem_sup_right ⟨_, pow_apply_mem_subspace A v (Nat.lt_of_succ_lt_succ hj), rfl⟩
 
-/-- `A^k` maps `𝒦_m` into `𝒦_{m+k}`. -/
+/-- If $x \in \mathcal{K}_m(A, v)$ and $k \in \mathbb{N}$, then $A^k x \in \mathcal{K}_{m+k}(A, v)$.
+-/
 theorem pow_apply_mem_subspace_of_mem {x : M} {m : ℕ} (hx : x ∈ subspace A v m) (k : ℕ) :
     (A ^ k) x ∈ subspace A v (m + k) := by
   induction k with
@@ -180,8 +233,10 @@ theorem pow_apply_mem_subspace_of_mem {x : M} {m : ℕ} (hx : x ∈ subspace A v
     rw [h, ← Nat.add_assoc]
     exact map_subspace_le A v (m + k) ⟨_, ih, rfl⟩
 
-/-- The full Krylov space is `A`-invariant; since it also contains `v`, it is the smallest
-`A`-invariant subspace that does. -/
+/-- The full Krylov space $\mathcal{K}_\infty(A, v)$ is $A$-invariant.
+
+Together with `Krylov.fullSubspace_le_of_mem_invtSubmodule`, this makes
+$\mathcal{K}_\infty(A, v)$ the smallest $A$-invariant subspace that contains $v$. -/
 theorem fullSubspace_mem_invtSubmodule : fullSubspace A v ∈ Module.End.invtSubmodule A := by
   rw [Module.End.mem_invtSubmodule_iff_map_le, fullSubspace, Submodule.map_span, Submodule.span_le]
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
@@ -190,10 +245,11 @@ theorem fullSubspace_mem_invtSubmodule : fullSubspace A v ∈ Module.End.invtSub
   rw [pow_succ']
   rfl
 
-/-- **The full Krylov space is the least invariant subspace containing `v`**: every `A`-invariant
-submodule containing `v` contains every `A^i v`. With `Krylov.fullSubspace_mem_invtSubmodule` this
-makes the grade the dimension of the smallest invariant subspace containing `v`
-([golub2013matrix] Theorem 11.3.1). -/
+/-- The full Krylov space is the least invariant subspace that contains $v$: if $W$ is an
+$A$-invariant submodule of $M$ and $v \in W$, then $\mathcal{K}_\infty(A, v) \le W$.
+
+With `Krylov.fullSubspace_mem_invtSubmodule`, this makes the grade the dimension of the smallest
+$A$-invariant subspace that contains $v$ ([golub2013matrix], Theorem 11.3.1). -/
 theorem fullSubspace_le_of_mem_invtSubmodule {W : Submodule R M}
     (hW : W ∈ Module.End.invtSubmodule A) (hv : v ∈ W) : fullSubspace A v ≤ W := by
   rw [fullSubspace, Submodule.span_le]
@@ -205,15 +261,20 @@ theorem fullSubspace_le_of_mem_invtSubmodule {W : Submodule R M}
     rw [pow_succ', Module.End.mul_apply]
     exact hW ih
 
-/-- The full Krylov space of the zero vector is trivial. -/
+/-- The full Krylov space of the zero vector is trivial: $\mathcal{K}_\infty(A, 0) = 0$. -/
 @[simp]
 theorem fullSubspace_zero : fullSubspace A (0 : M) = ⊥ := by
   rw [fullSubspace, Submodule.span_eq_bot]
   rintro _ ⟨i, rfl⟩
   simp
 
-/-- [saad2003iterative], §6.2: `𝒦_m = {p(A) v | deg p < m}`, "the subspace of all vectors which can
-be written as `x = p(A) v` with `p` of degree not exceeding `m - 1`". -/
+/-- The **polynomial description** of the Krylov subspaces: for every $m$,
+$$\mathcal{K}_m(A, v) = \{p(A) v : p \in R[X], \ \deg p < m\}.$$
+In the words of [saad2003iterative], §6.2, $\mathcal{K}_m$ is "the subspace of all vectors which
+can be written as $x = p(A) v$ with $p$ of degree not exceeding $m - 1$".
+
+The polynomials of degree less than $m$ are the submodule `Polynomial.degreeLT R m`, and the
+right side is its image under `Krylov.polyEval A v`. -/
 theorem subspace_eq_map_degreeLT (m : ℕ) :
     subspace A v m = (degreeLT R m).map (polyEval A v) := by
   refine le_antisymm ?_ ?_
@@ -232,8 +293,8 @@ theorem subspace_eq_map_degreeLT (m : ℕ) :
     rw [LinearMap.smul_apply]
     exact Submodule.smul_mem _ _ (pow_apply_mem_subspace A v (Finset.mem_range.1 hi))
 
-/-- The polynomial description of `𝒦_m` element by element: `x` lies in it exactly when `x = p(A) v`
-for some polynomial `p` of degree `< m`. -/
+/-- A vector $x$ lies in $\mathcal{K}_m(A, v)$ if and only if $x = p(A) v$ for a polynomial $p$ with
+$\deg p < m$. -/
 theorem mem_subspace_iff_exists_aeval {x : M} {m : ℕ} :
     x ∈ subspace A v m ↔ ∃ p : R[X], p.degree < m ∧ aeval A p v = x := by
   rw [subspace_eq_map_degreeLT]
@@ -243,14 +304,14 @@ theorem mem_subspace_iff_exists_aeval {x : M} {m : ℕ} :
   · rintro ⟨p, hp, rfl⟩
     exact ⟨p, mem_degreeLT.2 hp, rfl⟩
 
-/-- Every polynomial of degree `< m` in `A`, applied to `v`, lands in `𝒦_m`. This is the direction
-of the polynomial description that the Krylov methods use. -/
+/-- If $p$ is a polynomial with $\deg p < m$, then $p(A) v \in \mathcal{K}_m(A, v)$. Krylov methods
+use this direction of the polynomial description. -/
 theorem aeval_apply_mem_subspace {p : R[X]} {m : ℕ} (hp : p.degree < m) :
     aeval A p v ∈ subspace A v m :=
   (mem_subspace_iff_exists_aeval A v).2 ⟨p, hp, rfl⟩
 
-/-- One inclusion of `Krylov.subspace_add_algebraMap`: `(A + c)^i v = q(A) v` for
-`q = (X + c)^i`, a polynomial of degree at most `i`. -/
+/-- For every scalar $c$, $\mathcal{K}_m(A + c, v) \le \mathcal{K}_m(A, v)$, because
+$(A + c)^i v = q(A) v$ for $q = (X + c)^i$, a polynomial of degree at most $i$. -/
 private theorem subspace_add_algebraMap_le (c : R) (m : ℕ) :
     subspace (A + algebraMap R (Module.End R M) c) v m ≤ subspace A v m := by
   rw [subspace, Submodule.span_le]
@@ -266,21 +327,28 @@ private theorem subspace_add_algebraMap_le (c : R) (m : ℕ) :
   rw [← happ]
   exact aeval_apply_mem_subspace A v hdeg
 
-/-- **Shift invariance**: the Krylov subspaces of `A + c` are those of `A` for every scalar `c`,
-both being `span {v, A v, …, A^(m-1) v}` — `(A + c)^i v` is a combination of the `A^j v`, `j ≤ i`,
-and conversely with `-c`. A companion of `Krylov.subspace_neg`. -/
+/-- **Shift invariance**: for every scalar $c \in R$ and every $m$,
+$$\mathcal{K}_m(A + c I, v) = \mathcal{K}_m(A, v).$$
+
+Both sides are $\operatorname{span}\{v, Av, \dots, A^{m-1} v\}$: the vector $(A + c)^i v$ is a
+combination of the $A^j v$ with $j \le i$, and conversely with $-c$ in place of $c$. The shift
+$c I$ is `algebraMap R (Module.End R M) c`. This result is a companion of `Krylov.subspace_neg`. -/
 theorem subspace_add_algebraMap (c : R) (m : ℕ) :
     subspace (A + algebraMap R (Module.End R M) c) v m = subspace A v m := by
   refine le_antisymm (subspace_add_algebraMap_le A v c m) ?_
   have h := subspace_add_algebraMap_le (A + algebraMap R (Module.End R M) c) v (-c) m
   rwa [map_neg, add_neg_cancel_right] at h
 
-/-- The full Krylov space is shift invariant: `𝒦_∞(A + c, v) = 𝒦_∞(A, v)`. -/
+/-- The full Krylov space is shift invariant: for every scalar $c$, $\mathcal{K}_\infty(A + c I,
+v) = \mathcal{K}_\infty(A, v)$. -/
 theorem fullSubspace_add_algebraMap (c : R) :
     fullSubspace (A + algebraMap R (Module.End R M) c) v = fullSubspace A v := by
   simp only [← iSup_subspace, subspace_add_algebraMap]
 
-/-- `𝒦_{m+1} = 𝒦_m` iff `A^m v ∈ 𝒦_m` iff `𝒦_m` is `A`-invariant (for `m ≥ 1` or `v = 0`). -/
+/-- The Krylov subspaces stop growing at step $m$ exactly when the next Krylov vector is already in
+the current subspace:
+$$\mathcal{K}_{m+1}(A, v) = \mathcal{K}_m(A, v) \iff A^m v \in \mathcal{K}_m(A, v).$$
+-/
 theorem subspace_succ_eq_iff (m : ℕ) :
     subspace A v (m + 1) = subspace A v m ↔ (A ^ m) v ∈ subspace A v m := by
   constructor
@@ -298,13 +366,15 @@ theorem subspace_succ_eq_iff (m : ℕ) :
       rw [hi]
       exact h
 
-/-- A Krylov subspace that no longer grows is `A`-invariant. -/
+/-- If $\mathcal{K}_{m+1}(A, v) = \mathcal{K}_m(A, v)$, then $\mathcal{K}_m(A, v)$ is $A$-invariant.
+-/
 theorem mem_invtSubmodule_of_subspace_succ_eq {m : ℕ}
     (h : subspace A v (m + 1) = subspace A v m) :
     subspace A v m ∈ Module.End.invtSubmodule A :=
   (Module.End.mem_invtSubmodule_iff_map_le A).2 (h ▸ map_subspace_le A v m)
 
-/-- Once the Krylov sequence closes up at step `n` it stays closed. -/
+/-- If $A^n v \in \mathcal{K}_n(A, v)$ and $n \le m$, then $A^m v \in \mathcal{K}_m(A, v)$: once the
+Krylov sequence closes up, it stays closed. -/
 theorem pow_apply_mem_subspace_of_le {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) {m : ℕ}
     (hm : n ≤ m) : (A ^ m) v ∈ subspace A v m := by
   obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le hm
@@ -313,8 +383,9 @@ theorem pow_apply_mem_subspace_of_le {n : ℕ} (h : (A ^ n) v ∈ subspace A v n
     rw [← Module.End.mul_apply, ← pow_add, Nat.add_comm]
   rwa [hpow] at hk
 
-/-- [saad2003iterative], Prop 6.1: the Krylov subspaces are constant from the first closure onwards.
--/
+/-- If $A^n v \in \mathcal{K}_n(A, v)$, then the Krylov subspaces are constant from step $n$ on:
+$$\mathcal{K}_m(A, v) = \mathcal{K}_n(A, v) \quad \text{for all } m \ge n.$$
+This is Proposition 6.1 of [saad2003iterative]. -/
 theorem subspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) {m : ℕ}
     (hm : n ≤ m) : subspace A v m = subspace A v n := by
   induction m, hm using Nat.le_induction with
@@ -322,8 +393,10 @@ theorem subspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n
   | succ m hm ih =>
     rw [(subspace_succ_eq_iff A v m).2 (pow_apply_mem_subspace_of_le A v h hm), ih]
 
-/-- Once the Krylov sequence closes up at step `n`, that subspace is already everything the sequence
-will ever reach: `𝒦_∞ = 𝒦_n`. -/
+/-- If $A^n v \in \mathcal{K}_n(A, v)$, then the Krylov subspace of step $n$ is the full Krylov
+space:
+$$\mathcal{K}_\infty(A, v) = \mathcal{K}_n(A, v).$$
+-/
 theorem fullSubspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) :
     fullSubspace A v = subspace A v n := by
   refine le_antisymm ?_ (subspace_le_fullSubspace A v n)
@@ -333,13 +406,15 @@ theorem fullSubspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A
   · exact pow_apply_mem_subspace A v hi
   · exact subspace_eq_of_pow_apply_mem A v h hi ▸ pow_apply_mem_subspace_of_le A v h hi
 
-/-- Rescaling the starting vector does not enlarge the Krylov subspace. -/
+/-- Scaling the starting vector does not enlarge the Krylov subspaces:
+$\mathcal{K}_m(A, cv) \le \mathcal{K}_m(A, v)$ for every scalar $c$. -/
 theorem subspace_smul (c : R) (m : ℕ) : subspace A (c • v) m ≤ subspace A v m := by
   rw [subspace, Submodule.span_le]
   rintro _ ⟨i, rfl⟩
   simpa using Submodule.smul_mem _ c (pow_apply_mem_subspace A v i.2)
 
-/-- Rescaling the starting vector does not enlarge the full Krylov subspace. -/
+/-- Scaling the starting vector does not enlarge the full Krylov space: $\mathcal{K}_\infty(A, cv)
+\le \mathcal{K}_\infty(A, v)$ for every scalar $c$. -/
 theorem fullSubspace_smul (c : R) : fullSubspace A (c • v) ≤ fullSubspace A v := by
   rw [fullSubspace, Submodule.span_le]
   rintro _ ⟨i, rfl⟩
@@ -353,7 +428,8 @@ section Semiconj
 variable {M' : Type*} [AddCommGroup M'] [Module R M'] {N : M →ₗ[R] M'} {B : Module.End R M}
   {C : Module.End R M'}
 
-/-- A map intertwining `B` and `C` (`N ∘ B = C ∘ N`) intertwines their powers. -/
+/-- Let $N : M \to M'$ be linear, and let $B$ and $C$ be endomorphisms of $M$ and $M'$ with
+$N B = C N$. Then $N B^i x = C^i N x$ for every $i \in \mathbb{N}$ and every $x \in M$. -/
 theorem pow_apply_of_semiconj (h : Function.Semiconj N B C) (i : ℕ) (x : M) :
     N ((B ^ i) x) = (C ^ i) (N x) := by
   induction i with
@@ -361,10 +437,13 @@ theorem pow_apply_of_semiconj (h : Function.Semiconj N B C) (i : ℕ) (x : M) :
   | succ i ih =>
     rw [pow_succ', pow_succ', Module.End.mul_apply, Module.End.mul_apply, h.eq, ih]
 
-/-- An intertwining map carries Krylov subspaces onto Krylov subspaces: `N 𝒦_m(B, b) = 𝒦_m(C, N b)`
-when `N ∘ B = C ∘ N`. `N` may map between two modules, as `A` does between the Gram operators
-`Aᴴ A` and `A Aᴴ`; `Krylov.map_subspace_comp` is the case `B = B' ∘ N`, `C = N ∘ B'` on one
-module. -/
+/-- Let $N : M \to M'$ be linear, and let $B$ and $C$ be endomorphisms of $M$ and $M'$ with
+$N B = C N$. Then $N$ carries the Krylov subspaces of $B$ onto those of $C$:
+$$N \mathcal{K}_m(B, b) = \mathcal{K}_m(C, Nb) \quad \text{for all } b \in M, \ m \in
+  \mathbb{N}.$$
+
+The map $N$ can go between two different modules, as $A$ does between the Gram operators $A^H A$
+and $A A^H$. The case $B = B' N$, $C = N B'$ on one module is `Krylov.map_subspace_comp`. -/
 theorem map_subspace_of_semiconj (h : Function.Semiconj N B C) (b : M) (m : ℕ) :
     (subspace B b m).map N = subspace C (N b) m := by
   rw [subspace, subspace, Submodule.map_span]
@@ -377,12 +456,14 @@ theorem map_subspace_of_semiconj (h : Function.Semiconj N B C) (b : M) (m : ℕ)
   · rintro ⟨i, rfl⟩
     exact ⟨(B ^ (i : ℕ)) b, ⟨i, rfl⟩, pow_apply_of_semiconj h i b⟩
 
-/-- Membership form of `Krylov.map_subspace_of_semiconj`. -/
+/-- Let $N B = C N$. If $x \in \mathcal{K}_m(B, b)$, then $N x \in \mathcal{K}_m(C, Nb)$. This is
+the membership form of `Krylov.map_subspace_of_semiconj`. -/
 theorem apply_mem_subspace_of_semiconj (h : Function.Semiconj N B C) {b x : M} {m : ℕ}
     (hx : x ∈ subspace B b m) : N x ∈ subspace C (N b) m :=
   map_subspace_of_semiconj h b m ▸ Submodule.mem_map_of_mem hx
 
-/-- Starting `s` steps later costs `s` steps: `𝒦_m(C, C^s c) ≤ 𝒦_{m+s}(C, c)`. -/
+/-- Starting $s$ steps later costs $s$ steps: $\mathcal{K}_m(C, C^s c) \le \mathcal{K}_{m+s}(C, c)$.
+-/
 theorem subspace_pow_apply_le (C : Module.End R M') (c : M') (s m : ℕ) :
     subspace C ((C ^ s) c) m ≤ subspace C c (m + s) := by
   rw [subspace, Submodule.span_le]
@@ -391,8 +472,8 @@ theorem subspace_pow_apply_le (C : Module.End R M') (c : M') (s m : ℕ) :
   rw [← Module.End.mul_apply, ← pow_add]
   exact pow_apply_mem_subspace C c (by have := i.isLt; omega)
 
-/-- The full Krylov space version of `Krylov.map_subspace_of_semiconj`:
-`N 𝒦_∞(B, b) = 𝒦_∞(C, N b)` when `N ∘ B = C ∘ N`. -/
+/-- Let $N B = C N$. Then $N$ carries the full Krylov space of $B$ onto that of $C$: $N
+\mathcal{K}_\infty(B, b) = \mathcal{K}_\infty(C, Nb)$. -/
 theorem map_fullSubspace_of_semiconj (h : Function.Semiconj N B C) (b : M) :
     (fullSubspace B b).map N = fullSubspace C (N b) := by
   rw [fullSubspace, fullSubspace, Submodule.map_span, ← Set.range_comp]
@@ -402,18 +483,26 @@ theorem map_fullSubspace_of_semiconj (h : Function.Semiconj N B C) (b : M) :
 
 end Semiconj
 
-/-- Swapping a composition through one of its factors: `N ((A N)^i v) = (N A)^i (N v)`, the case
-`N ∘ (B N) = (N B) ∘ N` of `Krylov.pow_apply_of_semiconj`. -/
+/-- Let $B : M' \to M$ and $N : M \to M'$ be linear. Then for every $i \in \mathbb{N}$ and
+$u \in M$,
+$$N (B N)^i u = (N B)^i N u.$$
+
+This is the case $N (B N) = (N B) N$ of `Krylov.pow_apply_of_semiconj`. -/
 theorem pow_comp_apply {M' : Type*} [AddCommGroup M'] [Module R M'] (B : M' →ₗ[R] M)
     (N : M →ₗ[R] M') (i : ℕ) (u : M) :
     N (((B ∘ₗ N) ^ i) u) = ((N ∘ₗ B) ^ i) (N u) :=
   pow_apply_of_semiconj (N := N) (B := B ∘ₗ N) (C := N ∘ₗ B) (fun _ => rfl) i u
 
-/-- `N` carries the Krylov space of `B N` to the Krylov space of `N B`: `N 𝒦_m(B N, v) = 𝒦_m(N B, N
-v)`.  This is the identity behind every "change of variables" in a Krylov method — CGNE's `x = Aᴴ
-u`, right preconditioning's `x = M⁻¹ u` — which is why the two variants search the same affine
-space. `N` and `B` may map between two modules (`N = Aᴴ`, `B = A` for a rectangular `A`). It is the
-case `N ∘ (B N) = (N B) ∘ N` of `Krylov.map_subspace_of_semiconj`. -/
+/-- Let $B : M' \to M$ and $N : M \to M'$ be linear. Then $N$ carries the Krylov subspaces of $B N$
+onto those of $N B$:
+$$N \mathcal{K}_m(B N, u) = \mathcal{K}_m(N B, N u) \quad \text{for all } u \in M, \ m \in
+  \mathbb{N}.$$
+
+This identity is behind every change of variables in a Krylov method, such as $x = A^H u$ in
+CGNE and $x = M^{-1} u$ in right preconditioning, and it is the reason why the two forms of such
+a method search the same affine space. The maps can go between two modules, for example
+$N = A^H$ and $B = A$ for a rectangular $A$. This is the case $N (B N) = (N B) N$ of
+`Krylov.map_subspace_of_semiconj`. -/
 theorem map_subspace_comp {M' : Type*} [AddCommGroup M'] [Module R M'] (B : M' →ₗ[R] M)
     (N : M →ₗ[R] M') (u : M) (m : ℕ) :
     (subspace (B ∘ₗ N) u m).map N = subspace (N ∘ₗ B) (N u) m :=
@@ -427,16 +516,21 @@ variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
 variable (A : Module.End K V) (v : V)
 
-/-- The grade of `v` w.r.t. `A`: the dimension of the cyclic subspace `𝒦_∞(A, v)` — equivalently the
-least `m` with `A^m v ∈ 𝒦_m` (`grade_eq_sInf`) and the degree of the minimal polynomial of `v`
-([saad2003iterative], §6.2; Liesen–Strakoš, *Krylov Subspace Methods: Principles and Analysis*).
-Junk value `0` when the cyclic subspace is infinite-dimensional (Mathlib's `finrank` convention);
-the finite-grade hypothesis is `[FiniteDimensional K (fullSubspace A v)]`, automatic when `V` is
-finite-dimensional. -/
+/-- The **grade** of $v$ with respect to $A$: the dimension of the full Krylov space
+$\mathcal{K}_\infty(A, v)$.
+
+Equivalently, the grade is the least $m$ with $A^m v \in \mathcal{K}_m(A, v)$
+(`Krylov.grade_eq_sInf`), and the degree of the minimal polynomial of $v$
+(`Krylov.natDegree_minpolyVec`). This is the definition of [saad2003iterative], §6.2, and of
+Liesen and Strakoš, *Krylov Subspace Methods: Principles and Analysis*.
+
+The grade is `Module.finrank`, so it is $0$ when $\mathcal{K}_\infty(A, v)$ is
+infinite-dimensional. Results that need a finite grade assume `[FiniteDimensional K
+(Krylov.fullSubspace A v)]`, which holds when $V$ is finite-dimensional. -/
 noncomputable def grade : ℕ := Module.finrank K (fullSubspace A v)
 
-/-- The Krylov vectors `v, A v, …, A^(m-1) v` are linearly independent exactly when no earlier power
-of `A` has already fallen into its own Krylov subspace. -/
+/-- The Krylov vectors $v, Av, \dots, A^{m-1} v$ are linearly independent if and only if
+$A^k v \notin \mathcal{K}_k(A, v)$ for every $k < m$. -/
 theorem linearIndependent_iff_forall_pow_notMem {m : ℕ} :
     LinearIndependent K (fun i : Fin m => (A ^ (i : ℕ)) v) ↔
       ∀ k < m, (A ^ k) v ∉ subspace A v k := by
@@ -454,7 +548,8 @@ theorem linearIndependent_iff_forall_pow_notMem {m : ℕ} :
     · intro h
       exact ⟨fun k hk => h k (hk.trans m.lt_succ_self), h m m.lt_succ_self⟩
 
-/-- The Krylov sequence stabilizes iff the cyclic subspace is finite-dimensional. -/
+/-- The full Krylov space $\mathcal{K}_\infty(A, v)$ is finite-dimensional if and only if
+$A^m v \in \mathcal{K}_m(A, v)$ for some $m \in \mathbb{N}$. -/
 theorem finiteDimensional_fullSubspace_iff :
     FiniteDimensional K (fullSubspace A v) ↔ ∃ m, (A ^ m) v ∈ subspace A v m := by
   constructor
@@ -474,8 +569,11 @@ theorem finiteDimensional_fullSubspace_iff :
     rw [fullSubspace_eq_of_pow_apply_mem A v hm]
     infer_instance
 
-/-- `A^m v ∈ 𝒦_m` iff `v` is annihilated by a monic polynomial of degree `m` ([saad2003iterative],
-§6.2 defines the grade through the minimal polynomial of `v`). -/
+/-- For every $m \in \mathbb{N}$, $A^m v \in \mathcal{K}_m(A, v)$ if and only if some monic
+polynomial $p$ of degree $m$ satisfies $p(A) v = 0$.
+
+This links the two definitions of the grade: [saad2003iterative], §6.2 defines the grade through
+the minimal polynomial of $v$. -/
 theorem pow_apply_mem_subspace_iff_exists_monic (m : ℕ) :
     (A ^ m) v ∈ subspace A v m ↔ ∃ p : K[X], p.Monic ∧ p.natDegree = m ∧ aeval A p v = 0 := by
   rw [mem_subspace_iff_exists_aeval]
@@ -493,9 +591,10 @@ theorem pow_apply_mem_subspace_iff_exists_monic (m : ℕ) :
 
 /-! ### The minimal polynomial of a vector -/
 
-/-- The annihilator ideal of `v`: the polynomials `p` with `p(A) v = 0`.  It is an ideal of `K[X]`
-and not merely a `K`-subspace, because it is the annihilator of `v` for the `K[X]`-module structure
-that `A` puts on `V` (Mathlib's `Module.AEval'`). -/
+/-- The **annihilator ideal** of $v$: the ideal of the polynomials $p \in K[X]$ with $p(A) v = 0$.
+
+It is an ideal of $K[X]$, and not only a $K$-subspace, because it is the annihilator of $v$ for
+the $K[X]$-module structure that $A$ puts on $V$ (`Module.AEval'` in Mathlib). -/
 def annIdealVec : Ideal K[X] where
   carrier := {p | aeval A p v = 0}
   add_mem' {p q} (hp : aeval A p v = 0) (hq : aeval A q v = 0) := by
@@ -508,26 +607,30 @@ def annIdealVec : Ideal K[X] where
     change aeval A (c • p) v = 0
     rw [smul_eq_mul, map_mul, Module.End.mul_apply, hp, map_zero]
 
-/-- Membership in the annihilator ideal of `v` is annihilation of `v`. -/
+/-- A polynomial $p$ lies in the annihilator ideal of $v$ if and only if $p(A) v = 0$. -/
 @[simp]
 theorem mem_annIdealVec {p : K[X]} : p ∈ annIdealVec A v ↔ aeval A p v = 0 := Iff.rfl
 
-/-- The minimal polynomial of `v` with respect to `A`: the monic generator of the annihilator ideal
-`{p | p(A) v = 0}`, and `0` when that ideal is trivial, which happens exactly when the cyclic
-subspace `𝒦_∞(A, v)` is infinite-dimensional.  Its degree is the grade of `v`
-(`natDegree_minpolyVec`), which is how [saad2003iterative], §6.2 defines the grade. -/
+/-- The **minimal polynomial** of $v$ with respect to $A$: the monic generator of the annihilator
+ideal $\{p : p(A) v = 0\}$.
+
+If the ideal is $0$, the minimal polynomial is $0$. This happens exactly when
+$\mathcal{K}_\infty(A, v)$ is infinite-dimensional. Otherwise the degree of the minimal
+polynomial is the grade of $v$ (`Krylov.natDegree_minpolyVec`), and [saad2003iterative], §6.2
+defines the grade in this way. The definition takes a generator $g$ of the principal ideal and
+divides it by its leading coefficient. -/
 noncomputable def minpolyVec : K[X] :=
   let g := Submodule.IsPrincipal.generator (annIdealVec A v)
   g * C g.leadingCoeff⁻¹
 
-/-- The minimal polynomial of `v` vanishes exactly when nothing but `0` annihilates `v`, that is,
-when the cyclic subspace is infinite-dimensional. -/
+/-- The minimal polynomial of $v$ is $0$ if and only if the annihilator ideal of $v$ is $0$, that
+is, if and only if no nonzero polynomial annihilates $v$. -/
 @[simp]
 theorem minpolyVec_eq_zero_iff : minpolyVec A v = 0 ↔ annIdealVec A v = ⊥ := by
   simp only [minpolyVec, mul_eq_zero, Submodule.IsPrincipal.eq_bot_iff_generator_eq_zero,
     C_eq_zero, inv_eq_zero, leadingCoeff_eq_zero, or_self_iff]
 
-/-- `minpolyVec` generates the annihilator ideal. -/
+/-- The minimal polynomial of $v$ generates the annihilator ideal of $v$. -/
 @[simp]
 theorem span_singleton_minpolyVec : Ideal.span {minpolyVec A v} = annIdealVec A v := by
   by_cases h : minpolyVec A v = 0
@@ -536,41 +639,41 @@ theorem span_singleton_minpolyVec : Ideal.span {minpolyVec A v} = annIdealVec A 
     exact isUnit_C.2 (IsUnit.mk0 _ (inv_eq_zero.not.2
       (leadingCoeff_eq_zero.not.2 (mul_ne_zero_iff.1 h).1)))
 
-/-- The minimal polynomial of `v` belongs to the annihilator ideal it generates. -/
+/-- The minimal polynomial of $v$ lies in the annihilator ideal of $v$. -/
 theorem minpolyVec_mem : minpolyVec A v ∈ annIdealVec A v :=
   Ideal.mul_mem_right _ _ (Submodule.IsPrincipal.generator_mem _)
 
-/-- The minimal polynomial of `v` annihilates `v`. -/
+/-- The minimal polynomial $p$ of $v$ satisfies $p(A) v = 0$. -/
 theorem aeval_minpolyVec : aeval A (minpolyVec A v) v = 0 := minpolyVec_mem A v
 
-/-- The defining property of the minimal polynomial of a vector: it divides exactly the polynomials
-that annihilate `v`. -/
+/-- The minimal polynomial of $v$ divides a polynomial $p$ if and only if $p(A) v = 0$. -/
 theorem minpolyVec_dvd_iff {p : K[X]} : minpolyVec A v ∣ p ↔ aeval A p v = 0 := by
   rw [← Ideal.mem_span_singleton, span_singleton_minpolyVec, mem_annIdealVec]
 
-/-- The minimal polynomial of `v` is monic whenever it is nonzero, that is, whenever `v` has finite
-grade (`minpolyVec_ne_zero`). -/
+/-- If the minimal polynomial of $v$ is nonzero, then it is monic. It is nonzero when $v$ has finite
+grade (`Krylov.minpolyVec_ne_zero`). -/
 theorem minpolyVec_monic (h : minpolyVec A v ≠ 0) : (minpolyVec A v).Monic :=
   monic_mul_leadingCoeff_inv (mul_ne_zero_iff.1 h).1
 
-/-- The grade of a vector never exceeds the dimension of the ambient space, so a Krylov method in
-finite dimension terminates in at most `dim V` steps. -/
+/-- If $V$ is finite-dimensional, then the grade of $v$ is at most $\dim V$. So a Krylov method in
+finite dimension terminates in at most $\dim V$ steps. -/
 theorem grade_le_finrank [FiniteDimensional K V] : grade A v ≤ Module.finrank K V :=
   Submodule.finrank_le _
 
-/-- The grade is shift invariant: `grade (A + c) v = grade A v`, the full Krylov spaces being
-equal (`Krylov.fullSubspace_add_algebraMap`). -/
+/-- The grade is shift invariant: for every scalar $c$,
+$$\operatorname{grade}(A + c I, v) = \operatorname{grade}(A, v).$$
+The reason is that the two full Krylov spaces are equal (`Krylov.fullSubspace_add_algebraMap`). -/
 theorem grade_add_algebraMap (c : K) :
     grade (A + algebraMap K (Module.End K V) c) v = grade A v := by
   rw [grade, grade, fullSubspace_add_algebraMap]
 
-/-- The zero vector has grade `0`. -/
+/-- The zero vector has grade $0$. -/
 @[simp]
 theorem grade_zero : grade A 0 = 0 := by
   rw [grade, fullSubspace_zero, finrank_bot]
 
-/-- The grade vanishes only in the two degenerate cases: `v = 0`, and the junk value taken when the
-cyclic subspace is infinite-dimensional. -/
+/-- The grade of $v$ is $0$ if and only if $v = 0$ or $\mathcal{K}_\infty(A, v)$ is
+infinite-dimensional. In the second case $0$ is the value that `Module.finrank` takes. -/
 theorem grade_eq_zero_iff :
     grade A v = 0 ↔ v = 0 ∨ ¬FiniteDimensional K (fullSubspace A v) := by
   by_cases h : FiniteDimensional K (fullSubspace A v)
@@ -584,24 +687,24 @@ theorem grade_eq_zero_iff :
       exact fullSubspace_zero A
   · simp [h, grade, Module.finrank_of_not_finite h]
 
-/-- Rescaling the starting vector by a nonzero scalar does not change the Krylov subspaces. -/
+/-- If $c \neq 0$, then $\mathcal{K}_m(A, cv) = \mathcal{K}_m(A, v)$ for every $m$. -/
 theorem subspace_smul_of_ne_zero {c : K} (hc : c ≠ 0) (m : ℕ) :
     subspace A (c • v) m = subspace A v m := by
   refine le_antisymm (subspace_smul A v c m) ?_
   simpa [inv_smul_smul₀ hc] using subspace_smul A (c • v) c⁻¹ m
 
-/-- Rescaling the starting vector by a nonzero scalar does not change the full Krylov subspace. -/
+/-- If $c \neq 0$, then $\mathcal{K}_\infty(A, cv) = \mathcal{K}_\infty(A, v)$. -/
 theorem fullSubspace_smul_of_ne_zero {c : K} (hc : c ≠ 0) :
     fullSubspace A (c • v) = fullSubspace A v := by
   refine le_antisymm (fullSubspace_smul A v c) ?_
   simpa [inv_smul_smul₀ hc] using fullSubspace_smul A (c • v) c⁻¹
 
-/-- Rescaling the starting vector by a nonzero scalar does not change its grade. -/
+/-- If $c \neq 0$, then $cv$ has the same grade as $v$. -/
 theorem grade_smul {c : K} (hc : c ≠ 0) : grade A (c • v) = grade A v := by
   rw [grade, grade, fullSubspace_smul_of_ne_zero A v hc]
 
-/-- A nonzero vector of finite grade has positive grade: the Krylov process takes at least one
-step. -/
+/-- If $\mathcal{K}_\infty(A, v)$ is finite-dimensional and $v \neq 0$, then the grade of $v$ is
+positive. -/
 theorem grade_pos_of_ne_zero [FiniteDimensional K (fullSubspace A v)] (hv : v ≠ 0) :
     0 < grade A v :=
   Nat.pos_of_ne_zero fun h => ((grade_eq_zero_iff A v).1 h).elim hv (· inferInstance)
@@ -613,8 +716,10 @@ variable [FiniteDimensional K (fullSubspace A v)]
 private theorem exists_pow_apply_mem : {m | (A ^ m) v ∈ subspace A v m}.Nonempty :=
   (finiteDimensional_fullSubspace_iff A v).1 ‹_›
 
-/-- The grade is the least `m` with `A^m v ∈ 𝒦_m` (the definition used by [saad2003iterative],
-§6.2). -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. Then the grade of $v$ is the least $m$
+with $A^m v \in \mathcal{K}_m(A, v)$:
+$$\operatorname{grade}(A, v) = \min\{m \in \mathbb{N} : A^m v \in \mathcal{K}_m(A, v)\}.$$
+This is the definition of the grade in [saad2003iterative], §6.2. -/
 theorem grade_eq_sInf : grade A v = sInf {m | (A ^ m) v ∈ subspace A v m} := by
   set n := sInf {m | (A ^ m) v ∈ subspace A v m} with hn
   have hmem : (A ^ n) v ∈ subspace A v n := Nat.sInf_mem (exists_pow_apply_mem A v)
@@ -624,44 +729,58 @@ theorem grade_eq_sInf : grade A v = sInf {m | (A ^ m) v ∈ subspace A v m} := b
   rw [grade, fullSubspace_eq_of_pow_apply_mem A v hmem, subspace]
   simpa using finrank_span_eq_card hli
 
-/-- At the grade the Krylov sequence closes up: `A^grade v ∈ 𝒦_grade`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional, and let $d$ be the grade of $v$. Then
+$A^d v \in \mathcal{K}_d(A, v)$. -/
 theorem pow_grade_apply_mem : (A ^ grade A v) v ∈ subspace A v (grade A v) := by
   rw [grade_eq_sInf]
   exact Nat.sInf_mem (exists_pow_apply_mem A v)
 
-/-- The grade is the exact point at which the Krylov sequence stops growing: `grade ≤ m` iff `A^m v`
-has already fallen into `𝒦_m`. The working form of `grade_eq_sInf`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. Then for every $m \in \mathbb{N}$,
+$$\operatorname{grade}(A, v) \le m \iff A^m v \in \mathcal{K}_m(A, v).$$
+So the grade is the exact step at which the Krylov sequence stops growing. This is the form of
+`Krylov.grade_eq_sInf` that the proofs use. -/
 theorem grade_le_iff {m : ℕ} : grade A v ≤ m ↔ (A ^ m) v ∈ subspace A v m :=
   ⟨fun h => pow_apply_mem_subspace_of_le A v (pow_grade_apply_mem A v) h, fun h => by
     rw [grade_eq_sInf]; exact Nat.sInf_le h⟩
 
-/-- Below the grade the Krylov sequence still grows: `A^m v ∉ 𝒦_m` for `m < grade`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. If $m$ is less than the grade of $v$, then
+$A^m v \notin \mathcal{K}_m(A, v)$. -/
 theorem pow_apply_notMem_subspace_of_lt_grade {m : ℕ} (h : m < grade A v) :
     (A ^ m) v ∉ subspace A v m := fun hm => absurd ((grade_le_iff A v).2 hm) (not_le.2 h)
 
-/-- [saad2003iterative], Prop 6.1: `𝒦_m = 𝒦_grade` for `m ≥ grade`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional, and let $d$ be the grade of $v$. Then
+$$\mathcal{K}_m(A, v) = \mathcal{K}_d(A, v) \quad \text{for all } m \ge d.$$
+This is Proposition 6.1 of [saad2003iterative]. -/
 theorem subspace_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
     subspace A v m = subspace A v (grade A v) :=
   subspace_eq_of_pow_apply_mem A v (pow_grade_apply_mem A v) h
 
-/-- `grade` steps already exhaust the cyclic subspace: `𝒦_grade = 𝒦_∞`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional, and let $d$ be the grade of $v$. Then $d$
+steps exhaust the full Krylov space:
+$$\mathcal{K}_d(A, v) = \mathcal{K}_\infty(A, v).$$
+-/
 theorem subspace_grade_eq_fullSubspace : subspace A v (grade A v) = fullSubspace A v :=
   (fullSubspace_eq_of_pow_apply_mem A v (pow_grade_apply_mem A v)).symm
 
-/-- `𝒦_grade` is `A`-invariant: the invariant subspace a Krylov method has built by the time it
-terminates. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional, and let $d$ be the grade of $v$. Then
+$\mathcal{K}_d(A, v)$ is $A$-invariant. It is the invariant subspace that a Krylov method has
+built when it terminates. -/
 theorem subspace_grade_mem_invtSubmodule :
     subspace A v (grade A v) ∈ Module.End.invtSubmodule A :=
   mem_invtSubmodule_of_subspace_succ_eq A v
     ((subspace_succ_eq_iff A v _).2 (pow_grade_apply_mem A v))
 
-/-- The Krylov vectors `v, A v, …, A^(m-1) v` are linearly independent for `m ≤ grade`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. If $m$ is at most the grade of $v$, then
+the Krylov vectors $v, Av, \dots, A^{m-1} v$ are linearly independent. -/
 theorem linearIndependent_of_le_grade {m : ℕ} (h : m ≤ grade A v) :
     LinearIndependent K (fun i : Fin m => (A ^ (i : ℕ)) v) :=
   (linearIndependent_iff_forall_pow_notMem A v).2 fun _ hk =>
     pow_apply_notMem_subspace_of_lt_grade A v (hk.trans_le h)
 
-/-- [saad2003iterative], Prop 6.2: `dim 𝒦_m = min m (grade)`. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional, and let $d$ be the grade of $v$. Then for
+every $m \in \mathbb{N}$,
+$$\dim \mathcal{K}_m(A, v) = \min\{m, d\}.$$
+This is Proposition 6.2 of [saad2003iterative]. -/
 theorem finrank_subspace (m : ℕ) : Module.finrank K (subspace A v m) = min m (grade A v) := by
   rcases le_total m (grade A v) with h | h
   · rw [min_eq_left h, subspace]
@@ -669,16 +788,17 @@ theorem finrank_subspace (m : ℕ) : Module.finrank K (subspace A v m) = min m (
   · rw [min_eq_right h, subspace_eq_of_grade_le A v h, subspace]
     simpa using finrank_span_eq_card (linearIndependent_of_le_grade A v le_rfl)
 
-/-- A vector of finite grade has a nonzero minimal polynomial: the monic annihilator of degree
-`grade A v` supplied by `pow_apply_mem_subspace_iff_exists_monic` is a nonzero member of the
-annihilator ideal. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. Then the minimal polynomial of $v$ is
+nonzero. The reason is that `Krylov.pow_apply_mem_subspace_iff_exists_monic` gives a monic
+annihilator of degree equal to the grade. -/
 theorem minpolyVec_ne_zero : minpolyVec A v ≠ 0 := by
   obtain ⟨p, hp, -, hpv⟩ :=
     (pow_apply_mem_subspace_iff_exists_monic A v (grade A v)).1 (pow_grade_apply_mem A v)
   intro h
   exact hp.ne_zero (Ideal.mem_bot.1 (((minpolyVec_eq_zero_iff A v).1 h) ▸ hpv))
 
-/-- [saad2003iterative], §6.2: the grade of `v` is the degree of its minimal polynomial. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. Then the degree of the minimal polynomial
+of $v$ is the grade of $v$. This is the definition of the grade in [saad2003iterative], §6.2. -/
 theorem natDegree_minpolyVec : (minpolyVec A v).natDegree = grade A v := by
   refine le_antisymm ?_ ?_
   · obtain ⟨p, hp, hpd, hpv⟩ :=
@@ -687,7 +807,8 @@ theorem natDegree_minpolyVec : (minpolyVec A v).natDegree = grade A v := by
   · exact (grade_le_iff A v).2 ((pow_apply_mem_subspace_iff_exists_monic A v _).2
       ⟨minpolyVec A v, minpolyVec_monic A v (minpolyVec_ne_zero A v), rfl, aeval_minpolyVec A v⟩)
 
-/-- Below the grade each step enlarges the Krylov subspace strictly. -/
+/-- Let $\mathcal{K}_\infty(A, v)$ be finite-dimensional. If $m + 1$ is at most the grade of $v$,
+then $\mathcal{K}_m(A, v)$ is a proper subspace of $\mathcal{K}_{m+1}(A, v)$. -/
 theorem subspace_strictMono_of_le_grade {m : ℕ} (h : m + 1 ≤ grade A v) :
     subspace A v m < subspace A v (m + 1) :=
   lt_of_le_of_ne (subspace_mono A v m.le_succ) fun he =>
@@ -698,11 +819,20 @@ end FiniteGrade
 
 /-! ### Three-term recurrences span Krylov subspaces -/
 
-/-- **A three-term recurrence spans the Krylov subspaces.** If `u_0` is a nonzero multiple of `w`
-and `B u_a = c₁_a u_{a−1} + c₂_a u_a + c₃_{a+1} u_{a+1}` (with `u_{−1} = 0`) with `c₃_{a+1} ≠ 0`
-for `a + 1 < k`, then `span {u_0, …, u_{j−1}} = 𝒦_j(B, w)` for every `j ≤ k`. This is how the
-vectors of a Lanczos-type process (symmetric or two-sided, with any normalization) are identified
-with a Krylov basis without appeal to orthogonality. -/
+/-- **A three-term recurrence spans the Krylov subspaces.** Let $B$ be an endomorphism of $V$, let
+$w \in V$, $k \in \mathbb{N}$, and let $u_0, u_1, \dots \in V$. Let scalars $c$ and $c^{(1)}_a$,
+$c^{(2)}_a$, $c^{(3)}_a$ be given, and assume the following:
+
+* if $k > 0$, then $u_0 = c w$ and $c \neq 0$;
+* $B u_a = c^{(1)}_a u_{a-1} + c^{(2)}_a u_a + c^{(3)}_{a+1} u_{a+1}$ for every $a$ with
+  $a + 1 < k$, where $u_{-1} = 0$;
+* $c^{(3)}_a \neq 0$ for every $a < k$.
+
+Then for every $j \le k$,
+$$\operatorname{span}\{u_0, \dots, u_{j-1}\} = \mathcal{K}_j(B, w).$$
+
+This identifies the vectors of a Lanczos-type process, symmetric or two-sided and with any
+normalization, with a Krylov basis without an appeal to orthogonality. -/
 theorem span_eq_subspace_of_threeTerm (B : Module.End K V) (u : ℕ → V) (w : V) (k : ℕ) (c : K)
     (c₁ c₂ c₃ : ℕ → K) (h0 : 0 < k → u 0 = c • w ∧ c ≠ 0)
     (hrel : ∀ a, a + 1 < k → B (u a) =

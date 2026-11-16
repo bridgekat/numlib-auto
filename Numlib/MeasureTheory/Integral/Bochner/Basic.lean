@@ -14,18 +14,34 @@ import Mathlib.MeasureTheory.Integral.Bochner.Basic
 /-!
 # The Bochner integral of a power of a norm as a lower Lebesgue integral
 
-`∫ ‖f‖^P = (∫⁻ ‖f‖ₑ^P).toReal` for `0 ≤ P` and `f` almost everywhere strongly measurable
-(`MeasureTheory.integral_norm_rpow_eq_toReal_lintegral`): the integrand is nonnegative, so the
-Bochner integral is the `toReal` of the lower Lebesgue integral. It is how an `ℝ≥0∞`-valued
-estimate (Hölder, a Poincaré inequality in `ℝ≥0∞` form) is read back as an inequality of Bochner
-integrals.
+Let $f$ be an almost everywhere strongly measurable function with values in a normed group, and let
+$P \ge 0$. The integrand $\|f\|^P$ is nonnegative, so its Bochner integral is the real part of its
+lower Lebesgue integral:
+$$\int \|f\|^P \, d\mu = \Big(\int^- \|f\|^P \, d\mu\Big)_{\mathbb{R}}.$$
+This identity reads an estimate in $[0, \infty]$, such as Hölder's inequality or a Poincaré
+inequality in that form, as an inequality between Bochner integrals.
+
+## Main results
+
+* `MeasureTheory.integral_norm_rpow_eq_toReal_lintegral`: the identity above.
+
+## Implementation notes
+
+* The real part of $a \in [0, \infty]$ is `ENNReal.toReal a`, which is $0$ for $a = \infty$. When
+  the lower integral is infinite, both sides are $0$.
 -/
 
 open scoped ENNReal
 
 namespace MeasureTheory
 
-/-- `∫ ‖f‖^P = (∫⁻ ‖f‖ₑ^P).toReal` for `0 ≤ P` and `f` almost everywhere strongly measurable. -/
+/-- Let $\mu$ be a measure, let $G$ be a normed group, let $f \colon \alpha \to G$ be almost
+everywhere strongly measurable, and let $P \ge 0$ be real. Then
+$$\int \|f(x)\|^P \, d\mu(x) = \Big(\int^- \|f(x)\|^P \, d\mu(x)\Big)_{\mathbb{R}},$$
+where the right side is the lower Lebesgue integral converted to a real number.
+
+The conversion is `ENNReal.toReal`, which sends $\infty$ to $0$. The integrand on the right is
+the `ℝ≥0∞`-valued norm `‖f x‖ₑ ^ P`. -/
 theorem integral_norm_rpow_eq_toReal_lintegral {α G : Type*} [MeasurableSpace α]
     {μ : Measure α} [NormedAddCommGroup G] {f : α → G} (hf : AEStronglyMeasurable f μ) {P : ℝ}
     (hP : 0 ≤ P) : ∫ x, ‖f x‖ ^ P ∂μ = (∫⁻ x, ‖f x‖ₑ ^ P ∂μ).toReal := by

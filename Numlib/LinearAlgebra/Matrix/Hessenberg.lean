@@ -14,85 +14,107 @@ import Numlib.LinearAlgebra.Matrix.Band
 /-!
 # Hessenberg, tridiagonal and bidiagonal matrices
 
-The named shapes of band width one, on a matrix indexed by a linearly ordered type.
+This file defines the named matrix shapes of band width one, for a square matrix $A$ indexed by a
+linearly ordered type: **upper Hessenberg** ($a_{ij} = 0$ for $i > j + 1$), **lower Hessenberg**
+($a_{ij} = 0$ for $j > i + 1$), **tridiagonal** (both), and **upper** and **lower bidiagonal**
+(nonzero entries only on the diagonal and on the first superdiagonal or subdiagonal). It relates
+each shape to the lower and upper bandwidths of `Numlib.LinearAlgebra.Matrix.Band`, shows that a
+symmetric or Hermitian upper Hessenberg matrix is tridiagonal, and shows that products with upper
+triangular matrices and shifts by multiples of the identity keep the upper Hessenberg shape, as in
+the QR iteration of [quarteroni2000numerical], §5.6.
+
+The file also defines the tridiagonal matrix $\operatorname{tridiag}(b, d, c)$ with given
+subdiagonal, diagonal and superdiagonal, with its three-term product formula, and the invariant
+"upper Hessenberg in the first $k$ columns" of the Householder reductions to Hessenberg form. The
+last result says that the moments $(T^j)_{00}$, $j \le 2m$, of a tridiagonal matrix $T$ of order
+$m + 1$ do not depend on its last diagonal entry.
 
 ## Main definitions
 
-* `Matrix.IsUpperHessenberg`, `Matrix.IsLowerHessenberg`, `Matrix.IsTridiagonal`: zero below the
-  first subdiagonal, zero above the first superdiagonal (the transpose,
-  `Matrix.isUpperHessenberg_transpose_iff`), and zero outside the three central diagonals (both,
-  `Matrix.isTridiagonal_iff_isUpperHessenberg_and_isLowerHessenberg`). All three are stated over a
-  bare `LinearOrder` on the index type, as "no index lies strictly between the two", which on
-  `Fin n` is the usual condition on the difference of the indices
-  (`Matrix.isUpperHessenberg_iff_fin`, `Matrix.isLowerHessenberg_iff_fin`,
-  `Matrix.isTridiagonal_iff_fin`; on `ℕ`, `Matrix.isUpperHessenberg_iff_nat`).
-* `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
-  the matrix `H̄ₘ` of the Arnoldi process; it is an abbreviation for lower bandwidth `1` in the
-  rectangular vocabulary of `Numlib/LinearAlgebra/Matrix/Band`.
-* `Matrix.IsUpperHessenbergInCols A k`: `A` on `Fin N` vanishes below the first subdiagonal in
-  the columns `j < k`, the invariant of the Householder reductions to Hessenberg form.
-* `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal`: the two bidiagonal shapes, the shape of
-  the Golub–Kahan bidiagonalization and of the factors of a tridiagonal matrix.
-* `Matrix.tridiagonalOf b d c`: the tridiagonal matrix `tridiag(b, d, c)` with the given
-  subdiagonal, diagonal and superdiagonal, on `Fin (N + 1)`, with its three-term product formula
-  `Matrix.tridiagonalOf_mulVec`.
+* `Matrix.IsUpperHessenberg`: $a_{ij} = 0$ whenever some index lies strictly between $j$ and $i$.
+* `Matrix.IsLowerHessenberg`: $a_{ij} = 0$ whenever some index lies strictly between $i$ and $j$.
+* `Matrix.IsTridiagonal`: upper and lower Hessenberg at the same time.
+* `Matrix.IsUpperHessenbergRect`: the rectangular $(m + 1) \times m$ upper Hessenberg shape, as in
+  the matrix $\bar H_m$ of the Arnoldi process.
+* `Matrix.IsUpperHessenbergInCols`: a matrix on `Fin N` is zero below the first subdiagonal in the
+  columns $j < k$.
+* `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal`: the two bidiagonal shapes.
+* `Matrix.tridiagonalOf`: the tridiagonal matrix $\operatorname{tridiag}(b, d, c)$ of order $N + 1$.
 
 ## Main results
 
-* The shapes in the band vocabulary of `Numlib/LinearAlgebra/Matrix/Band`: upper Hessenberg is
-  lower bandwidth `1` (`Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one`), lower Hessenberg is
-  upper bandwidth `1` (`Matrix.isLowerHessenberg_iff_hasUpperBandwidth_one`), tridiagonal is both
-  bandwidths `1` (`Matrix.isTridiagonal_iff_hasBandwidth_one`), and the bidiagonal shapes have
-  bandwidths `1` and `0` (`Matrix.IsLowerBidiagonal.hasBandwidth`); since products add bands, an
-  upper triangular matrix times an upper Hessenberg one is upper Hessenberg
-  (`Matrix.IsUpperTriangular.mul_isUpperHessenberg`), the `R Q` of the QR iteration.
+* `Matrix.isUpperHessenberg_iff_hasLowerBandwidth_one`: upper Hessenberg is lower bandwidth $1$.
+* `Matrix.isTridiagonal_iff_hasBandwidth_one`: tridiagonal is lower and upper bandwidth $1$.
+* `Matrix.isUpperHessenberg_iff_fin`, `Matrix.isTridiagonal_iff_fin`,
+  `Matrix.isUpperHessenberg_iff_nat`: the shapes on `Fin N` and on `ℕ` as conditions on the
+  difference of the indices.
 * `Matrix.IsUpperHessenberg.isTridiagonal_of_isHermitian`: a Hermitian upper Hessenberg matrix is
   tridiagonal.
-* `Matrix.isUnit_tridiagonalOf_one_zero`, `Matrix.isUnit_tridiagonalOf_zero`: the unit lower and
-  the upper bidiagonal `tridiagonalOf` with unit diagonal are units over any ring.
-* `Matrix.pow_apply_zero_zero_eq_of_isTridiagonal`: the moments `(T^j)₀₀`, `j ≤ 2m`, of a
-  tridiagonal `T` on `Fin (m + 1)` do not see its last diagonal entry.
+* `Matrix.IsUpperTriangular.mul_isUpperHessenberg`: an upper triangular matrix times an upper
+  Hessenberg matrix is upper Hessenberg.
+* `Matrix.IsUpperHessenberg.sub_smul_one`: $H - \mu I$ is upper Hessenberg if $H$ is.
+* `Matrix.tridiagonalOf_mulVec`: $(Tx)_i = b_{i-1} x_{i-1} + d_i x_i + c_i x_{i+1}$ for
+  $T = \operatorname{tridiag}(b, d, c)$.
+* `Matrix.isUnit_tridiagonalOf_one_zero`, `Matrix.isUnit_tridiagonalOf_zero`: a unit lower
+  bidiagonal matrix, and an upper bidiagonal matrix with invertible diagonal entries, are invertible
+  over any ring.
+* `Matrix.pow_apply_zero_zero_eq_of_isTridiagonal`: the entries $(T^j)_{00}$, $j \le 2m$, of a
+  tridiagonal $T$ of order $m + 1$ do not depend on $t_{mm}$.
 
-The triangular vocabulary (the triangular parts `Matrix.strictLower`, `Matrix.strictUpper`,
-`Matrix.diagPart` and the unit triangular matrices) is in `Numlib/LinearAlgebra/Matrix/Triangular`,
-the bandwidths in `Numlib/LinearAlgebra/Matrix/Band`, the block product rules in
-`Numlib/LinearAlgebra/Matrix/Block`, and the rectangular bidiagonal shapes in
-`Numlib/LinearAlgebra/Matrix/Bidiagonal`.
+## Implementation notes
+
+* The shapes are stated over a bare `LinearOrder` on the index type. "Below the first subdiagonal"
+  is spelled as "some index lies strictly between the column and the row", which needs no arithmetic
+  on the index type. On `Fin n` and on `ℕ` it is the usual condition $j + 1 < i$.
+* `Matrix.IsUpperHessenbergRect` is an abbreviation for `Matrix.HasLowerBandwidthRect` with
+  bandwidth $1$.
+* The triangular parts and the unit triangular matrices are in
+  `Numlib.LinearAlgebra.Matrix.Triangular`, the bandwidths in `Numlib.LinearAlgebra.Matrix.Band`,
+  the block product rules in `Numlib.LinearAlgebra.Matrix.Block`, and the rectangular bidiagonal
+  shapes in `Numlib.LinearAlgebra.Matrix.Bidiagonal`.
 -/
 
 namespace Matrix
 
 variable {n R : Type*} [LinearOrder n]
 
-/-- Upper Hessenberg: zero below the first subdiagonal. "Below the first subdiagonal" is spelled
-as "some index lies strictly between the column and the row", which needs no arithmetic on the
-index type and is the usual condition `j + 1 < i` on `Fin n`. -/
+/-- A square matrix $H$ indexed by a linearly ordered type is **upper Hessenberg** if it is zero
+below the first subdiagonal: $h_{ij} = 0$ whenever some index $k$ satisfies $j < k < i$.
+
+This condition needs no arithmetic on the index type. On `Fin n` it is the usual condition
+$h_{ij} = 0$ for $j + 1 < i$ (`Matrix.isUpperHessenberg_iff_fin`). -/
 def IsUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) → H i j = 0
 
-/-- Lower Hessenberg: zero above the first superdiagonal, the transpose of
-`Matrix.IsUpperHessenberg` ("some index lies strictly between the row and the column"; on `Fin n`,
-`i + 1 < j`). -/
+/-- A square matrix $H$ is **lower Hessenberg** if it is zero above the first superdiagonal:
+$h_{ij} = 0$ whenever some index $k$ satisfies $i < k < j$. On `Fin n` this is $h_{ij} = 0$ for
+$i + 1 < j$. It is the transpose of the upper Hessenberg shape. -/
 def IsLowerHessenberg [Zero R] (H : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, i < k ∧ k < j) → H i j = 0
 
-/-- Transposition exchanges the two Hessenberg shapes. -/
+/-- $H^T$ is lower Hessenberg if and only if $H$ is upper Hessenberg. -/
 theorem isLowerHessenberg_transpose_iff [Zero R] {H : Matrix n n R} :
     Hᵀ.IsLowerHessenberg ↔ H.IsUpperHessenberg :=
   ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
 
-/-- Transposition exchanges the two Hessenberg shapes. -/
+/-- $H^T$ is upper Hessenberg if and only if $H$ is lower Hessenberg. -/
 theorem isUpperHessenberg_transpose_iff [Zero R] {H : Matrix n n R} :
     Hᵀ.IsUpperHessenberg ↔ H.IsLowerHessenberg :=
   ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
 
-/-- Tridiagonal: zero outside the three central diagonals, that is, upper Hessenberg together with
-its mirror image above the first superdiagonal. -/
+/-- A square matrix $T$ is **tridiagonal** if it is zero outside the three central diagonals:
+$t_{ij} = 0$ whenever some index lies strictly between $j$ and $i$, or strictly between $i$ and
+$j$.
+
+This is the upper Hessenberg condition together with its mirror image above the first
+superdiagonal (`Matrix.isTridiagonal_iff_isUpperHessenberg_and_isLowerHessenberg`). -/
 def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) ∨ (∃ k, i < k ∧ k < j) → T i j = 0
 
-/-- A tridiagonal matrix is upper Hessenberg: tridiagonality is the Hessenberg condition together
-with its mirror image above the first superdiagonal, so it is the stronger of the two. -/
+/-- A tridiagonal matrix is upper Hessenberg.
+
+The tridiagonal condition is the upper Hessenberg condition together with its mirror image, so
+it is the stronger of the two. -/
 theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
     T.IsUpperHessenberg := fun i j h => hT i j (Or.inl h)
 
@@ -100,22 +122,24 @@ theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTr
 theorem IsTridiagonal.isLowerHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
     T.IsLowerHessenberg := fun i j h => hT i j (Or.inr h)
 
-/-- A matrix is tridiagonal exactly when it is both upper and lower Hessenberg. -/
+/-- A matrix is tridiagonal if and only if it is both upper and lower Hessenberg. -/
 theorem isTridiagonal_iff_isUpperHessenberg_and_isLowerHessenberg [Zero R] {T : Matrix n n R} :
     T.IsTridiagonal ↔ T.IsUpperHessenberg ∧ T.IsLowerHessenberg :=
   ⟨fun h => ⟨h.isUpperHessenberg, h.isLowerHessenberg⟩,
     fun h i j hij => hij.elim (h.1 i j) (h.2 i j)⟩
 
-/-- A submatrix of an upper Hessenberg matrix along a strictly monotone reindexing is upper
-Hessenberg. -/
+/-- Let $H$ be upper Hessenberg and let $f$ be a strictly monotone map of index types. Then the
+submatrix $(h_{f(i) f(j)})_{i,j}$ is upper Hessenberg. -/
 theorem IsUpperHessenberg.submatrix_of_strictMono {m : Type*} [LinearOrder m] [Zero R]
     {H : Matrix n n R} (hH : H.IsUpperHessenberg) {f : m → n} (hf : StrictMono f) :
     (H.submatrix f f).IsUpperHessenberg :=
   fun _ _ ⟨c, hjc, hci⟩ => hH _ _ ⟨f c, hf hjc, hf hci⟩
 
-/-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`): `H i j = 0` whenever
-`i > j + 1`, that is lower bandwidth `1` in the rectangular vocabulary of [golub2013matrix]
-§1.2.1, of which this is an abbreviation. -/
+/-- A rectangular $(m + 1) \times m$ matrix $H$ is **upper Hessenberg** if $h_{ij} = 0$ whenever
+$i > j + 1$. This is the shape of the matrix $\bar H_m$ of the Arnoldi process.
+
+The definition is an abbreviation for lower bandwidth $1$ in the rectangular sense of
+[golub2013matrix], §1.2.1, that is, `Matrix.HasLowerBandwidthRect H 1`. -/
 abbrev IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
   H.HasLowerBandwidthRect 1
 
@@ -123,15 +147,22 @@ section Bidiagonal
 
 variable [Zero R]
 
-/-- Upper bidiagonal: zero off the diagonal and the first superdiagonal. As in
-`Matrix.IsTridiagonal`, "on the first superdiagonal" is spelled as "no index lies strictly between
-the row and the column". This is the shape of the Golub–Kahan bidiagonalization
-([quarteroni2000numerical] (5.57)) and of the `U` factor of a tridiagonal matrix. -/
+/-- A square matrix $B$ is **upper bidiagonal** if its only nonzero entries are on the diagonal and
+on the first superdiagonal: $b_{ij} = 0$ whenever $j < i$, or some index lies strictly between
+$i$ and $j$.
+
+This is the shape of the Golub–Kahan bidiagonalization ([quarteroni2000numerical], (5.57)) and
+of the factor $U$ in the LU factorization of a tridiagonal matrix. As in `Matrix.IsTridiagonal`,
+"on the first superdiagonal" is spelled as "no index lies strictly between the row and the
+column". -/
 def IsUpperBidiagonal (B : Matrix n n R) : Prop :=
   ∀ i j, j < i ∨ (∃ k, i < k ∧ k < j) → B i j = 0
 
-/-- Lower bidiagonal: zero off the diagonal and the first subdiagonal, the shape of the `L` factor
-of a tridiagonal matrix. -/
+/-- A square matrix $B$ is **lower bidiagonal** if its only nonzero entries are on the diagonal and
+on the first subdiagonal: $b_{ij} = 0$ whenever $i < j$, or some index lies strictly between $j$
+and $i$.
+
+This is the shape of the factor $L$ in the LU factorization of a tridiagonal matrix. -/
 def IsLowerBidiagonal (B : Matrix n n R) : Prop :=
   ∀ i j, i < j ∨ (∃ k, j < k ∧ k < i) → B i j = 0
 
@@ -161,12 +192,12 @@ theorem IsLowerBidiagonal.isTridiagonal {B : Matrix n n R} (hB : B.IsLowerBidiag
 theorem IsLowerBidiagonal.isUpperHessenberg {B : Matrix n n R} (hB : B.IsLowerBidiagonal) :
     B.IsUpperHessenberg := hB.isTridiagonal.isUpperHessenberg
 
-/-- Transposition exchanges the two bidiagonal shapes. -/
+/-- $B^T$ is lower bidiagonal if and only if $B$ is upper bidiagonal. -/
 theorem isLowerBidiagonal_transpose_iff {B : Matrix n n R} :
     Bᵀ.IsLowerBidiagonal ↔ B.IsUpperBidiagonal :=
   ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
 
-/-- Transposition exchanges the two bidiagonal shapes. -/
+/-- $B^T$ is upper bidiagonal if and only if $B$ is lower bidiagonal. -/
 theorem isUpperBidiagonal_transpose_iff {B : Matrix n n R} :
     Bᵀ.IsUpperBidiagonal ↔ B.IsLowerBidiagonal :=
   ⟨fun h i j hij => h j i hij, fun h i j hij => h j i hij⟩
@@ -175,9 +206,11 @@ end Bidiagonal
 
 section Hermitian
 
-/-- A symmetric upper Hessenberg matrix is tridiagonal: an entry above the first superdiagonal is
-the mirror image of one below the first subdiagonal, which is zero ([quarteroni2000numerical]
-Remark 5.4). -/
+/-- Let $H$ be a square matrix indexed by a linearly ordered type. If $H$ is upper Hessenberg and
+symmetric, $H^T = H$, then $H$ is tridiagonal.
+
+An entry above the first superdiagonal is the mirror image of an entry below the first
+subdiagonal, which is zero. This is Remark 5.4 of [quarteroni2000numerical]. -/
 theorem IsUpperHessenberg.isTridiagonal_of_isSymm [Zero R] {H : Matrix n n R}
     (hH : H.IsUpperHessenberg) (hs : H.IsSymm) : H.IsTridiagonal := fun i j h => by
   rcases h with h | h
@@ -185,7 +218,12 @@ theorem IsUpperHessenberg.isTridiagonal_of_isSymm [Zero R] {H : Matrix n n R}
   · rw [← hs.apply i j]
     exact hH j i h
 
-/-- A Hermitian upper Hessenberg matrix is tridiagonal ([quarteroni2000numerical] Remark 5.4). -/
+/-- Let $H$ be a square matrix indexed by a linearly ordered type, with entries in an additive
+monoid with a star operation. If $H$ is upper Hessenberg and Hermitian, $H^* = H$, then $H$ is
+tridiagonal.
+
+This is Remark 5.4 of [quarteroni2000numerical]. The proof is the same as for
+`Matrix.IsUpperHessenberg.isTridiagonal_of_isSymm`, since the star of zero is zero. -/
 theorem IsUpperHessenberg.isTridiagonal_of_isHermitian [AddMonoid R] [StarAddMonoid R]
     {H : Matrix n n R} (hH : H.IsUpperHessenberg) (hs : H.IsHermitian) : H.IsTridiagonal :=
   fun i j h => by
@@ -201,61 +239,74 @@ section Bandwidth
 
 variable [Fintype n] [Zero R] {A : Matrix n n R}
 
-/-- Lower bandwidth `1` is the upper Hessenberg shape. -/
+/-- Let $A$ be a square matrix indexed by a finite linearly ordered type. Then $A$ is upper
+Hessenberg if and only if $A$ has lower bandwidth $1$ in the sense of
+`Matrix.HasLowerBandwidth`. -/
 theorem isUpperHessenberg_iff_hasLowerBandwidth_one :
     A.IsUpperHessenberg ↔ A.HasLowerBandwidth 1 := by
   simp only [HasLowerBandwidth, one_lt_card_filter_le_lt_iff]
   rfl
 
-/-- On `Fin N`, upper Hessenberg is the condition `A i j = 0` for `j + 1 < i`. -/
+/-- Let $A$ be a square matrix indexed by `Fin N`. Then $A$ is upper Hessenberg if and only if
+$a_{ij} = 0$ for all $i, j$ with $j + 1 < i$. -/
 theorem isUpperHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsUpperHessenberg ↔ ∀ i j : Fin N, (j : ℕ) + 1 < (i : ℕ) → A i j = 0 := by
   rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasLowerBandwidth_iff_fin]
 
-/-- On `ℕ`, upper Hessenberg is the condition `H i j = 0` for `j + 1 < i`: the form in which the
-`ℕ`-indexed coefficient arrays of the Krylov methods state it. -/
+/-- Let $H$ be a matrix indexed by $\mathbb{N} \times \mathbb{N}$. Then $H$ is upper Hessenberg if
+and only if $h_{ij} = 0$ for all $i, j$ with $j + 1 < i$.
+
+This is the form in which the $\mathbb{N}$-indexed coefficient arrays of the Krylov methods
+state the shape. -/
 theorem isUpperHessenberg_iff_nat {H : Matrix ℕ ℕ R} :
     H.IsUpperHessenberg ↔ ∀ i j : ℕ, j + 1 < i → H i j = 0 :=
   forall₂_congr fun i j => imp_congr_left
     ⟨fun ⟨k, hjk, hki⟩ => by omega, fun h => ⟨j + 1, by omega, h⟩⟩
 
-/-- An upper Hessenberg array on `ℕ` vanishes at `(i, j)` whenever `j + 1 < i`. -/
+/-- Let $H$ be an upper Hessenberg matrix indexed by $\mathbb{N} \times \mathbb{N}$. Then
+$h_{ij} = 0$ for all $i, j \in \mathbb{N}$ with $j + 1 < i$. -/
 theorem IsUpperHessenberg.eq_zero_of_add_one_lt {H : Matrix ℕ ℕ R} (hH : H.IsUpperHessenberg)
     (i j : ℕ) (h : j + 1 < i) : H i j = 0 :=
   isUpperHessenberg_iff_nat.1 hH i j h
 
-/-- Upper bandwidth `1` is the lower Hessenberg shape. -/
+/-- A square matrix $A$ indexed by a finite linearly ordered type is lower Hessenberg if and only if
+it has upper bandwidth $1$. -/
 theorem isLowerHessenberg_iff_hasUpperBandwidth_one :
     A.IsLowerHessenberg ↔ A.HasUpperBandwidth 1 := by
   simp only [HasUpperBandwidth, one_lt_card_filter_le_lt_iff]
   rfl
 
-/-- On `Fin N`, lower Hessenberg is the condition `A i j = 0` for `i + 1 < j`. -/
+/-- A square matrix $A$ indexed by `Fin N` is lower Hessenberg if and only if $a_{ij} = 0$ for all
+$i, j$ with $i + 1 < j$. -/
 theorem isLowerHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsLowerHessenberg ↔ ∀ i j : Fin N, (i : ℕ) + 1 < (j : ℕ) → A i j = 0 := by
   rw [isLowerHessenberg_iff_hasUpperBandwidth_one, hasUpperBandwidth_iff_fin]
 
-/-- Tridiagonal means both bandwidths are `1` ([quarteroni2000numerical] §1.6.3). -/
+/-- Let $A$ be a square matrix indexed by a finite linearly ordered type. Then $A$ is tridiagonal if
+and only if $A$ has lower bandwidth $1$ and upper bandwidth $1$.
+
+This is the definition of a tridiagonal matrix in [quarteroni2000numerical], §1.6.3. -/
 theorem isTridiagonal_iff_hasBandwidth_one :
     A.IsTridiagonal ↔ A.HasLowerBandwidth 1 ∧ A.HasUpperBandwidth 1 := by
   simp only [HasLowerBandwidth, HasUpperBandwidth, one_lt_card_filter_le_lt_iff]
   exact ⟨fun h => ⟨fun i j hij => h i j (Or.inl hij), fun i j hij => h i j (Or.inr hij)⟩,
     fun h i j hij => hij.elim (h.1 i j) (h.2 i j)⟩
 
-/-- On `Fin N`, tridiagonal is the condition `A i j = 0` for `j + 1 < i` or `i + 1 < j`. -/
+/-- Let $A$ be a square matrix indexed by `Fin N`. Then $A$ is tridiagonal if and only if
+$a_{ij} = 0$ for all $i, j$ with $j + 1 < i$ or $i + 1 < j$. -/
 theorem isTridiagonal_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
     A.IsTridiagonal ↔ ∀ i j : Fin N, (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j → A i j = 0 := by
   rw [isTridiagonal_iff_hasBandwidth_one, hasLowerBandwidth_iff_fin, hasUpperBandwidth_iff_fin]
   exact ⟨fun h i j hij => hij.elim (h.1 i j) (h.2 i j),
     fun h => ⟨fun i j hij => h i j (Or.inl hij), fun i j hij => h i j (Or.inr hij)⟩⟩
 
-/-- A lower bidiagonal matrix has bandwidths `1` and `0`. -/
+/-- A lower bidiagonal matrix has lower bandwidth $1$ and upper bandwidth $0$. -/
 theorem IsLowerBidiagonal.hasBandwidth (hB : A.IsLowerBidiagonal) :
     A.HasLowerBandwidth 1 ∧ A.HasUpperBandwidth 0 :=
   ⟨(isTridiagonal_iff_hasBandwidth_one.1 hB.isTridiagonal).1,
     hasUpperBandwidth_zero_iff.2 hB.isLowerTriangular⟩
 
-/-- An upper bidiagonal matrix has bandwidths `0` and `1`. -/
+/-- An upper bidiagonal matrix has lower bandwidth $0$ and upper bandwidth $1$. -/
 theorem IsUpperBidiagonal.hasBandwidth (hB : A.IsUpperBidiagonal) :
     A.HasLowerBandwidth 0 ∧ A.HasUpperBandwidth 1 :=
   ⟨hasLowerBandwidth_zero_iff.2 hB.isUpperTriangular,
@@ -269,25 +320,32 @@ section InCols
 
 variable {N : ℕ}
 
-/-- A square matrix over `Fin N` is **upper Hessenberg in its first `k` columns** when it vanishes
-below the first subdiagonal in the columns `j < k`. It is the loop invariant of the Householder
-reductions to Hessenberg and to tridiagonal form, which reach `Matrix.IsUpperHessenberg` at
-`k = N - 2` (`Matrix.IsUpperHessenbergInCols.isUpperHessenberg`). -/
+/-- A square matrix $A$ indexed by `Fin N` is **upper Hessenberg in its first $k$ columns** if it is
+zero below the first subdiagonal in the columns $j < k$: $a_{ij} = 0$ whenever $j < k$ and
+$j + 1 < i$.
+
+This is the loop invariant of the Householder reductions to Hessenberg and to tridiagonal form.
+At $k = N - 2$ it is the upper Hessenberg condition
+(`Matrix.IsUpperHessenbergInCols.isUpperHessenberg`). -/
 def IsUpperHessenbergInCols [Zero R] (A : Matrix (Fin N) (Fin N) R) (k : ℕ) : Prop :=
   ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0
 
-/-- Upper Hessenberg in the first `k` columns, unfolded. -/
+/-- A square matrix $A$ indexed by `Fin N` is upper Hessenberg in its first $k$ columns if and only
+if $a_{ij} = 0$ for all $i, j$ with $j < k$ and $j + 1 < i$. -/
 theorem isUpperHessenbergInCols_iff [Zero R] {A : Matrix (Fin N) (Fin N) R} {k : ℕ} :
     A.IsUpperHessenbergInCols k ↔ ∀ i j : Fin N, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → A i j = 0 :=
   Iff.rfl
 
-/-- Every matrix is upper Hessenberg in its first `0` columns. -/
+/-- Every square matrix indexed by `Fin N` is upper Hessenberg in its first $0$ columns. -/
 theorem isUpperHessenbergInCols_zero [Zero R] (A : Matrix (Fin N) (Fin N) R) :
     A.IsUpperHessenbergInCols 0 :=
   fun _ _ hj => absurd hj (Nat.not_lt_zero _)
 
-/-- Upper Hessenberg in the first `N - 2` columns (or more) is upper Hessenberg: the columns
-`N - 2` and `N - 1` have no entry below the first subdiagonal. -/
+/-- Let $A$ be a square matrix indexed by `Fin N` that is upper Hessenberg in its first $k$ columns,
+with $N - 2 \le k$. Then $A$ is upper Hessenberg.
+
+The difference $N - 2$ is truncated at $0$. The columns $N - 2$ and $N - 1$ have no entry below
+the first subdiagonal, so they need no condition. -/
 theorem IsUpperHessenbergInCols.isUpperHessenberg [Zero R] {A : Matrix (Fin N) (Fin N) R} {k : ℕ}
     (h : A.IsUpperHessenbergInCols k) (hk : N - 2 ≤ k) : A.IsUpperHessenberg :=
   fun i j ⟨l, hjl, hli⟩ => h i j (by omega) (by omega)
@@ -298,17 +356,22 @@ section Products
 
 variable [Fintype n] [NonUnitalNonAssocSemiring R]
 
-/-- An upper triangular matrix times an upper Hessenberg matrix is upper Hessenberg
-([quarteroni2000numerical] §5.6.4, `R Q` in the QR iteration): bandwidths `0` and `1` add up to
-`1`. -/
+/-- Let $T$ and $H$ be square matrices indexed by a finite linearly ordered type. If $T$ is upper
+triangular and $H$ is upper Hessenberg, then $TH$ is upper Hessenberg.
+
+This is the product $RQ$ of the QR iteration, [quarteroni2000numerical], §5.6.4. The bandwidths
+$0$ and $1$ of the two factors add up to the lower bandwidth $1$ of the product. -/
 theorem IsUpperTriangular.mul_isUpperHessenberg {T H : Matrix n n R} (hT : T.IsUpperTriangular)
     (hH : H.IsUpperHessenberg) : (T * H).IsUpperHessenberg :=
   isUpperHessenberg_iff_hasLowerBandwidth_one.2 <| by
     simpa using (hasLowerBandwidth_zero_iff.2 hT).mul
       (isUpperHessenberg_iff_hasLowerBandwidth_one.1 hH)
 
-/-- An upper Hessenberg matrix times an upper triangular matrix is upper Hessenberg
-([quarteroni2000numerical] §5.6.3, `Q = H R⁻¹`). -/
+/-- Let $H$ and $T$ be square matrices indexed by a finite linearly ordered type. If $H$ is upper
+Hessenberg and $T$ is upper triangular, then $HT$ is upper Hessenberg.
+
+This is the factor $Q = H R^{-1}$ of the QR factorization of an upper Hessenberg matrix,
+[quarteroni2000numerical], §5.6.3. -/
 theorem IsUpperHessenberg.mul_isUpperTriangular {H T : Matrix n n R} (hH : H.IsUpperHessenberg)
     (hT : T.IsUpperTriangular) : (H * T).IsUpperHessenberg :=
   isUpperHessenberg_iff_hasLowerBandwidth_one.2 <| by
@@ -321,8 +384,10 @@ section Shift
 
 variable [DecidableEq n]
 
-/-- Adding a multiple of the identity preserves upper Hessenberg form (the `+ μ I` of a shifted
-QR step, [quarteroni2000numerical] (5.52)). -/
+/-- Let $H$ be an upper Hessenberg square matrix and let $\mu$ be a scalar. Then $H + \mu I$ is
+upper Hessenberg.
+
+This is the shift $+ \mu I$ of a shifted QR step, [quarteroni2000numerical], (5.52). -/
 theorem IsUpperHessenberg.add_smul_one [NonAssocSemiring R] {H : Matrix n n R}
     (hH : H.IsUpperHessenberg) (μ : R) : (H + μ • 1).IsUpperHessenberg := by
   intro i j h
@@ -331,8 +396,10 @@ theorem IsUpperHessenberg.add_smul_one [NonAssocSemiring R] {H : Matrix n n R}
   rw [Matrix.add_apply, Matrix.smul_apply, one_apply_ne hij, smul_zero, add_zero]
   exact hH i j ⟨k, hjk, hki⟩
 
-/-- Subtracting a multiple of the identity preserves upper Hessenberg form (the `- μ I` of a
-shifted QR step, [quarteroni2000numerical] (5.52)). -/
+/-- Let $H$ be an upper Hessenberg square matrix over a ring and let $\mu$ be a scalar. Then
+$H - \mu I$ is upper Hessenberg.
+
+This is the shift $- \mu I$ of a shifted QR step, [quarteroni2000numerical], (5.52). -/
 theorem IsUpperHessenberg.sub_smul_one [NonAssocRing R] {H : Matrix n n R}
     (hH : H.IsUpperHessenberg) (μ : R) : (H - μ • 1).IsUpperHessenberg := by
   intro i j h
@@ -349,10 +416,12 @@ open Finset
 
 variable {S : Type*} [Zero R] {N : ℕ}
 
-/-- The tridiagonal matrix `tridiag(b, d, c)` of [quarteroni2000numerical] §1.6.3: `d` on the
-diagonal, `b` on the subdiagonal (`b i` at `(i + 1, i)`) and `c` on the superdiagonal (`c i` at
-`(i, i + 1)`), zero elsewhere. The book's `b₁, …, b_{n-1}`, `d₁, …, d_n` are `0`-indexed here, on
-`Fin (N + 1)`. -/
+/-- The **tridiagonal matrix** $\operatorname{tridiag}(b, d, c)$ of [quarteroni2000numerical],
+§1.6.3: for $b, c \in R^N$ and $d \in R^{N+1}$, the $(N + 1) \times (N + 1)$ matrix with $d_i$
+at $(i, i)$, $b_i$ at $(i + 1, i)$, $c_i$ at $(i, i + 1)$, and zero elsewhere.
+
+The book writes $b_1, \dots, b_{n-1}$ and $d_1, \dots, d_n$. Here all indices start at $0$, and
+the matrix is indexed by `Fin (N + 1)`. -/
 def tridiagonalOf (b : Fin N → R) (d : Fin (N + 1) → R) (c : Fin N → R) :
     Matrix (Fin (N + 1)) (Fin (N + 1)) R :=
   Matrix.of fun i j =>
@@ -363,42 +432,48 @@ def tridiagonalOf (b : Fin N → R) (d : Fin (N + 1) → R) (c : Fin N → R) :
 
 variable (b : Fin N → R) (d : Fin (N + 1) → R) (c : Fin N → R)
 
-/-- The diagonal of `tridiag(b, d, c)`. -/
+/-- The entry $(i, i)$ of $\operatorname{tridiag}(b, d, c)$ is $d_i$. -/
 @[simp]
 theorem tridiagonalOf_apply_self (i : Fin (N + 1)) : tridiagonalOf b d c i i = d i := by
   simp [tridiagonalOf]
 
-/-- The subdiagonal of `tridiag(b, d, c)`. -/
+/-- The entry $(i + 1, i)$ of $\operatorname{tridiag}(b, d, c)$ is $b_i$. -/
 @[simp]
 theorem tridiagonalOf_apply_succ_castSucc (i : Fin N) :
     tridiagonalOf b d c i.succ i.castSucc = b i := by
   simp [tridiagonalOf]
 
-/-- The superdiagonal of `tridiag(b, d, c)`. -/
+/-- The entry $(i, i + 1)$ of $\operatorname{tridiag}(b, d, c)$ is $c_i$. -/
 @[simp]
 theorem tridiagonalOf_apply_castSucc_succ (i : Fin N) :
     tridiagonalOf b d c i.castSucc i.succ = c i := by
   have h : (i : ℕ) ≠ i + 1 + 1 := by omega
   simp [tridiagonalOf, h]
 
-/-- Away from the three central diagonals, `tridiag(b, d, c)` vanishes. -/
+/-- The entry $(i, j)$ of $\operatorname{tridiag}(b, d, c)$ is zero if $i \ne j$, $i \ne j + 1$ and
+$j \ne i + 1$. -/
 theorem tridiagonalOf_apply_of_ne {i j : Fin (N + 1)} (hij : (i : ℕ) ≠ j)
     (h₁ : (i : ℕ) ≠ j + 1) (h₂ : (j : ℕ) ≠ i + 1) : tridiagonalOf b d c i j = 0 := by
   simp [tridiagonalOf, hij, h₁, h₂]
 
-/-- `tridiag(b, d, c)` is tridiagonal. -/
+/-- For all $b, c \in R^N$ and $d \in R^{N+1}$, the matrix $\operatorname{tridiag}(b, d, c)$ is
+tridiagonal. -/
 theorem isTridiagonal_tridiagonalOf : (tridiagonalOf b d c).IsTridiagonal := by
   intro i j h
   refine tridiagonalOf_apply_of_ne b d c ?_ ?_ ?_ <;>
     rcases h with ⟨k, hk⟩ | ⟨k, hk⟩ <;> simp only [Fin.lt_def] at hk <;> omega
 
-/-- Transposition exchanges the two off-diagonals. -/
+/-- For all $b, c \in R^N$ and $d \in R^{N+1}$, the transpose exchanges the two off-diagonals:
+$$\operatorname{tridiag}(b, d, c)^T = \operatorname{tridiag}(c, d, b).$$
+-/
 theorem tridiagonalOf_transpose : (tridiagonalOf b d c)ᵀ = tridiagonalOf c d b := by
   ext i j
   simp only [transpose_apply, tridiagonalOf, of_apply]
   split_ifs <;> first | rfl | omega | exact congrArg d (Fin.ext (by omega))
 
-/-- Each term of `(tridiag(b, d, c) * x) i`, split into its three possible contributions. -/
+/-- Let $T = \operatorname{tridiag}(b, d, c)$ and $x \in S^{N+1}$. Each term $t_{ij} x_j$ of
+$(Tx)_i$ is the sum of three terms: $d_i x_i$ if $j = i$, $b_j x_j$ if $j + 1 = i$, and
+$c_i x_j$ if $j = i + 1$, each term being zero when its condition fails. -/
 theorem tridiagonalOf_apply_mul_eq [NonUnitalNonAssocSemiring S]
     (b : Fin N → S) (d : Fin (N + 1) → S) (c : Fin N → S) (x : Fin (N + 1) → S)
     (i j : Fin (N + 1)) :
@@ -413,7 +488,9 @@ theorem tridiagonalOf_apply_mul_eq [NonUnitalNonAssocSemiring S]
     simp only [tridiagonalOf, of_apply, hij', ite_false, Ne.symm hij]
     split_ifs <;> first | omega | simp
 
-/-- A sum over `Fin M` supported at the predecessor of `i`. -/
+/-- Let $M \in \mathbb{N}$, $i < M$, and let $f(j)$ be defined for the indices $j < M$ with
+$j + 1 = i$. Then the sum over $j < M$ of $f(j)$ for $j + 1 = i$, and of $0$ otherwise, is
+$f(i - 1)$ if $i > 0$, and $0$ if $i = 0$. -/
 theorem sum_dite_val_add_one_eq {S : Type*} [AddCommMonoid S] {M : ℕ} (i : Fin M)
     (f : (j : Fin M) → (j : ℕ) + 1 = i → S) :
     ∑ j : Fin M, (if h : (j : ℕ) + 1 = i then f j h else 0) =
@@ -430,7 +507,9 @@ theorem sum_dite_val_add_one_eq {S : Type*} [AddCommMonoid S] {M : ℕ} (i : Fin
     have h' : ¬ ((j : ℕ) + 1 = i) := by omega
     simp only [h', dite_false]
 
-/-- A sum over `Fin M` supported at the successor of `i`. -/
+/-- Let $M \in \mathbb{N}$, $i < M$, and let $f(j)$ be defined for the indices $j < M$ with
+$j = i + 1$. Then the sum over $j < M$ of $f(j)$ for $j = i + 1$, and of $0$ otherwise, is
+$f(i + 1)$ if $i + 1 < M$, and $0$ otherwise. -/
 theorem sum_dite_val_eq_add_one {S : Type*} [AddCommMonoid S] {M : ℕ} (i : Fin M)
     (f : (j : Fin M) → (j : ℕ) = i + 1 → S) :
     ∑ j : Fin M, (if h : (j : ℕ) = i + 1 then f j h else 0) =
@@ -446,8 +525,11 @@ theorem sum_dite_val_eq_add_one {S : Type*} [AddCommMonoid S] {M : ℕ} (i : Fin
     have h' : ¬ ((j : ℕ) = i + 1) := by omega
     simp only [h', dite_false]
 
-/-- The three-term formula `(T x)ᵢ = bᵢ₋₁ xᵢ₋₁ + dᵢ xᵢ + cᵢ xᵢ₊₁` for `T = tridiag(b, d, c)`, with
-the boundary terms absent at `i = 0` and `i = N`. -/
+/-- Let $S$ be a (not necessarily associative or unital) semiring, $b, c \in S^N$,
+$d, x \in S^{N+1}$, and $T = \operatorname{tridiag}(b, d, c)$. Then for every
+$i \in \{0, \dots, N\}$,
+$$(Tx)_i = b_{i-1} x_{i-1} + d_i x_i + c_i x_{i+1},$$
+where the first term is absent for $i = 0$ and the last term is absent for $i = N$. -/
 theorem tridiagonalOf_mulVec [NonUnitalNonAssocSemiring S]
     (b : Fin N → S) (d : Fin (N + 1) → S) (c : Fin N → S) (x : Fin (N + 1) → S)
     (i : Fin (N + 1)) :
@@ -460,7 +542,9 @@ theorem tridiagonalOf_mulVec [NonUnitalNonAssocSemiring S]
     sum_dite_val_eq_add_one]
   split_ifs <;> first | omega | abel
 
-/-- A unit lower bidiagonal matrix over any ring is a unit. -/
+/-- Let $S$ be a ring and $\ell \in S^N$. The unit lower bidiagonal matrix
+$\operatorname{tridiag}(\ell, 1, 0)$, with ones on the diagonal and $\ell$ on the subdiagonal,
+is invertible. -/
 theorem isUnit_tridiagonalOf_one_zero [Ring S] (L : Fin N → S) :
     IsUnit (tridiagonalOf L 1 0) := by
   have h : tridiagonalOf L 1 0 = 1 + tridiagonalOf L 0 0 := by
@@ -474,7 +558,9 @@ theorem isUnit_tridiagonalOf_one_zero [Ring S] (L : Fin N → S) :
   simp only [tridiagonalOf, of_apply, Pi.zero_apply]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- An upper bidiagonal matrix over any ring with unit diagonal entries is a unit. -/
+/-- Let $S$ be a ring, $u \in S^{N+1}$ and $f \in S^N$, and assume that every $u_i$ is invertible.
+Then the upper bidiagonal matrix $\operatorname{tridiag}(0, u, f)$, with $u$ on the diagonal and
+$f$ on the superdiagonal, is invertible. -/
 theorem isUnit_tridiagonalOf_zero [Ring S] (U : Fin (N + 1) → S) (F : Fin N → S)
     (hU : ∀ i, IsUnit (U i)) : IsUnit (tridiagonalOf 0 U F) := by
   have hdiag : IsUnit (diagonal U) := by
@@ -539,11 +625,16 @@ private theorem pow_mulVec_single_zero_eq {M M' : Matrix (Fin (m + 1)) (Fin (m +
           Fin.lt_def.2 (by simp; omega)⟩), zero_mul]
       · rw [ih2 j (by omega), mul_zero]
 
-/-- **Low moments do not see the last diagonal entry.** If `M` is tridiagonal and `M'` agrees with
-`M` except possibly at the entry `(m, m)`, then `(M^j)₀₀ = (M'^j)₀₀` for every `j ≤ 2m`: the vector
-`M^i e₀` for `i ≤ m` is supported on the first `i + 1` coordinates and computed from the columns
-`0, …, i − 1` only, and likewise for the row `e₀ᵀ M^i`. This is the moment argument behind the
-Gauss–Radau rule of [golub2013matrix] §10.2.5. -/
+/-- **Low moments do not see the last diagonal entry.** Let $S$ be a commutative ring and let
+$M, M'$ be square matrices of order $m + 1$ over $S$, indexed by $\{0, \dots, m\}$. Assume that
+$M$ is tridiagonal and that $M$ and $M'$ agree at every entry except possibly at $(m, m)$. Then
+for every $j \le 2m$,
+$$(M^j)_{00} = (M'^j)_{00}.$$
+
+For $i \le m$ the vector $M^i e_0$ is supported on the first $i + 1$ coordinates, and it is
+computed from the columns $0, \dots, i - 1$ only; the same holds for the row $e_0^T M^i$. Then
+$(M^j)_{00} = e_0^T M^{i} M^{j - i} e_0$ with $i, j - i \le m$. This is the moment argument
+behind the Gauss–Radau rule of [golub2013matrix], §10.2.5. -/
 theorem pow_apply_zero_zero_eq_of_isTridiagonal {M M' : Matrix (Fin (m + 1)) (Fin (m + 1)) S}
     (hM : M.IsTridiagonal)
     (heq : ∀ i j, ¬(i = Fin.last m ∧ j = Fin.last m) → M i j = M' i j) {j : ℕ} (hj : j ≤ 2 * m) :

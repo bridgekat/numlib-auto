@@ -10,20 +10,30 @@ import Mathlib.Topology.Algebra.Polynomial
 /-!
 # Powers at zero: big-O comparisons and the vanishing of low-order terms
 
-Mathlib's `Asymptotics.isLittleO_pow_pow` says `x ^ n = o(x ^ m)` at `0` for `m < n`. This module
-adds its non-strict companion `Asymptotics.isBigO_pow_pow` and the two consequences that the
-order conditions of numerical methods for ODEs use, each a statement that a quantity of a given
-order in the step `h` which is also of a higher order must vanish:
+Mathlib's `Asymptotics.isLittleO_pow_pow` says that $x^n = o(x^m)$ as $x \to 0$ when $m < n$. This
+module adds the non-strict companion, $x^n = O(x^m)$ as $x \to 0$ when $m \le n$, and two
+consequences of the form "a quantity of a given order in the step $h$ that is also of a higher order
+vanishes". A real coefficient $c$ with $c h^m = O(h^{m+1})$ as $h \to 0^+$ is zero. A complex
+polynomial $p$ of degree at most $n$ with $p(h) = O(h^{n+1})$ as the real number $h$ tends to $0^+$
+is zero.
 
-* `eq_zero_of_isBigO_pow_succ` — a coefficient `c` with `c h ^ m = O(h ^ (m + 1))` as `h → 0⁺` is
-  zero, since otherwise `h ^ m = o(h ^ m)`;
-* `Polynomial.eq_zero_of_isBigO_pow_succ` — a complex polynomial of degree at most `n` whose values
-  along real `h → 0⁺` are `O(h ^ (n + 1))` is zero, by induction on `n`: the constant term is the
-  value at `0`, hence zero, and `p / X` is `O(h ^ n)`.
+The order conditions of numerical methods for ordinary differential equations use these facts. The
+truncation error of a method of order $q$, tested on a polynomial solution, is a polynomial or a
+monomial in $h$. The lemmas turn the statement "the error is $O(h^q)$" into equations on its
+coefficients, which are the algebraic order conditions.
 
-The truncation error of a method of order `q` tested on a polynomial solution is a polynomial (or a
-monomial) in `h`; these lemmas turn "it is `O(h ^ q)`" into equations on its coefficients, the
-algebraic order conditions.
+## Main results
+
+* `Asymptotics.isBigO_pow_pow`: $x^n = O(x^m)$ as $x \to 0$ for $m \le n$.
+* `eq_zero_of_isBigO_pow_succ`: if $c h^m = O(h^{m+1})$ as $h \to 0^+$, then $c = 0$.
+* `Polynomial.eq_zero_of_isBigO_pow_succ`: a complex polynomial of degree at most $n$ that is
+  $O(h^{n+1})$ as the real number $h$ tends to $0^+$ is zero.
+
+## Proof outline
+
+If $c \neq 0$, then $h^m = c^{-1} (c h^m)$ is $O(h^{m+1})$, hence $o(h^m)$, which is false. The
+statement on polynomials follows by induction on $n$: the constant term of $p$ is the limit of
+$p(h)$ at $0$, hence zero, and then $p / X$ is $O(h^n)$.
 -/
 
 open Filter Topology Asymptotics
@@ -32,8 +42,9 @@ namespace Asymptotics
 
 variable {𝕜 : Type*} [NormedDivisionRing 𝕜]
 
-/-- `x ^ n = O(x ^ m)` as `x → 0` for `m ≤ n`: the non-strict companion of Mathlib's
-`isLittleO_pow_pow`. -/
+/-- Let $\mathbb{K}$ be a normed division ring and let $m \le n$ be natural numbers. Then
+$x^n = O(x^m)$ as $x \to 0$ in $\mathbb{K}$. This is the non-strict companion of
+`Asymptotics.isLittleO_pow_pow`. -/
 theorem isBigO_pow_pow {m n : ℕ} (h : m ≤ n) :
     (fun x : 𝕜 => x ^ n) =O[𝓝 0] fun x => x ^ m := by
   rcases h.lt_or_eq with hlt | rfl
@@ -42,8 +53,12 @@ theorem isBigO_pow_pow {m n : ℕ} (h : m ≤ n) :
 
 end Asymptotics
 
-/-- A coefficient `c` with `c h ^ m = O(h ^ (m + 1))` as `h → 0⁺` vanishes: otherwise
-`h ^ m = c⁻¹ (c h ^ m)` would be `O(h ^ (m + 1)) = o(h ^ m)`. -/
+/-- Let $c \in \mathbb{R}$ and $m \in \mathbb{N}$. If
+$$c h^m = O(h^{m+1}) \qquad \text{as } h \to 0^+,$$
+then $c = 0$.
+
+If $c \neq 0$, then $h^m = c^{-1} (c h^m)$ would be $O(h^{m+1}) = o(h^m)$. The limit $h \to 0^+$
+is the filter `nhdsWithin 0 (Set.Ioi 0)` on $\mathbb{R}$. -/
 theorem eq_zero_of_isBigO_pow_succ {c : ℝ} {m : ℕ}
     (h : (fun h : ℝ => c * h ^ m) =O[𝓝[>] 0] fun h => h ^ (m + 1)) : c = 0 := by
   by_contra hc
@@ -55,10 +70,15 @@ theorem eq_zero_of_isBigO_pow_succ {c : ℝ} {m : ℕ}
     eventually_mem_nhdsWithin.mono fun x hx => pow_ne_zero m (ne_of_gt hx)
   exact hne.frequently
 
-/-- **A complex polynomial of degree at most `n` that is `O(h ^ (n + 1))` along real `h → 0⁺`
-vanishes.** By induction on `n`: a constant is the case `m = 0` of `eq_zero_of_isBigO_pow_succ`
-applied to its norm; in general the constant term is the limit at `0`, hence zero, and `p / X` is
-`O(h ^ n)`. -/
+/-- Let $n \in \mathbb{N}$ and let $p$ be a polynomial with complex coefficients of degree at most
+$n$. If
+$$p(h) = O(h^{n+1}) \qquad \text{as the real number } h \text{ tends to } 0^+,$$
+then $p = 0$.
+
+The degree is `Polynomial.natDegree`, and $p$ is evaluated at the complex number $h$. The proof
+is by induction on $n$. For a constant polynomial it is the case $m = 0$ of
+`eq_zero_of_isBigO_pow_succ`, applied to the norm. In general the constant term is the limit of
+$p(h)$ at $0$, hence zero, and $p / X$ is $O(h^n)$. -/
 theorem Polynomial.eq_zero_of_isBigO_pow_succ :
     ∀ (n : ℕ) (p : Polynomial ℂ), p.natDegree ≤ n →
       (fun h : ℝ => p.eval (h : ℂ)) =O[𝓝[>] 0] (fun h => h ^ (n + 1)) → p = 0 := by

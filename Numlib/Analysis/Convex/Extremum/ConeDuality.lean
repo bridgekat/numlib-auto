@@ -10,40 +10,50 @@ import Numlib.Analysis.Convex.Extremum.Fenchel
 /-!
 # Duality between a co-finite function and a closed convex cone
 
-Let `h` be convex, finite everywhere and *co-finite*, let `K` be a nonempty closed convex cone and
-let `K* = -K°`. Then for every `z` and `z*`
+Let $E$ and $F$ be finite-dimensional real normed spaces in duality through a pairing
+$\langle x, y \rangle$. Let $h$ be a convex function on $E$ that is finite everywhere and co-finite,
+let $K \subseteq E$ be a nonempty closed convex cone, and let $K^* = -K^\circ = \{y : \langle x, y
+\rangle \ge 0 \text{ for all } x \in K\}$. Then for every $z \in E$ and $z^* \in F$,
+$$\inf_{x \in K} \bigl\{ h(z + x) - \langle x, z^* \rangle \bigr\} + \inf_{x^* \in K^*} \bigl\{
+  h^*(z^* + x^*) - \langle z, x^* \rangle \bigr\} = \langle z, z^* \rangle,$$
+and both infima are finite and attained. This is a duality between $h$ and $h^*$ with one parameter
+in each space. It is Corollary 31.4.3 of [rockafellar1970convex], and the proof uses the conjugacy
+theory of §§12, 13 and 31 there.
 
-```
-inf_{x ∈ K} {h (z + x) - ⟨z*, x⟩} + inf_{x* ∈ K*} {h* (z* + x*) - ⟨z, x*⟩} = ⟨z, z*⟩,
-```
-
-with both infima finite and attained: a duality between `h` and `h*` parametrised by a point of
-each space.
-
-The proof runs through the auxiliary function `f = h (z + ·) - ⟨·, z*⟩`, whose conjugate is the
-dual objective shifted down by the constant `⟨z, z*⟩`. Finiteness of `h` gives `dom f = E` and
-co-finiteness of `h` gives `dom f* = F`; those are the two constraint qualifications for duality
-between a convex function and a cone, each in its strongest form.
+The proof uses the auxiliary function $f(x) = h(z + x) - \langle x, z^* \rangle$. Its conjugate is
+the dual objective minus the constant $\langle z, z^* \rangle$. Since $h$ is finite everywhere,
+$\operatorname{dom} f = E$, and since $h$ is co-finite, $\operatorname{dom} f^* = F$. These are the
+two constraint qualifications for the duality between a convex function and a cone, each in its
+strongest form.
 
 ## Main results
 
-* `iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing` — the identity
-  ([rockafellar1970convex] Corollary 31.4.3).
-* `exists_iInf_mem_eq_of_cofinite`, `exists_iInf_mem_neg_polarCone_eq_of_cofinite` — both infima
-  are attained.
-* `exists_iInf_mem_eq_coe_of_cofinite`, `exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite` — both
-  infima are finite.
+* `ConvexAnalysis.iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing`: the duality identity above. This
+  is Corollary 31.4.3 of [rockafellar1970convex].
+* `ConvexAnalysis.exists_iInf_mem_eq_of_cofinite`,
+  `ConvexAnalysis.exists_iInf_mem_neg_polarCone_eq_of_cofinite`: both infima are attained.
+* `ConvexAnalysis.exists_iInf_mem_eq_coe_of_cofinite`,
+  `ConvexAnalysis.exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite`: both infima are finite.
+
+## Notation
+
+* $K^\circ$: the polar cone `ConvexAnalysis.polarCone B K`, the set of $y$ with
+  $\langle x, y \rangle \le 0$ for all $x \in K$. The dual cone $K^*$ is `-(polarCone B K)`.
+* $\delta(\cdot \mid K)$: the indicator function `ConvexAnalysis.indicatorFn K`, which is $0$ on $K$
+  and $+\infty$ off $K$.
 
 ## Implementation notes
 
-Closedness of `K` is used only for attainment of the *primal* infimum, whose proof runs through the
-bipolar `K** = K`; the identity, finiteness of both infima and attainment of the dual infimum need
-only that `K` is a nonempty convex cone. Finite-dimensionality enters only through continuity of a
-convex function that is finite everywhere, and the everywhere-finite conjugate of a co-finite one.
-
-## References
-
-* [rockafellar1970convex] §§12, 13, 31.
+* The pairing is `B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ`, and both `B` and `B.flip` are
+  `ConvexAnalysis.IsCompatiblePairing`. The point $z^*$ is `z'`.
+* A cone is `ConvexAnalysis.IsCone`, a set closed under multiplication by positive scalars.
+  Co-finiteness is `ConvexAnalysis.Cofinite`: $h$ is closed, proper and convex, and its recession
+  function is $+\infty$ in every nonzero direction.
+* The closedness of $K$ is used only for the attainment of the primal infimum, whose proof uses the
+  bipolar identity $K^{\circ\circ} = K$. The identity, the finiteness of both infima and the
+  attainment of the dual infimum need only that $K$ is a nonempty convex cone.
+* Finite dimension is used only for two facts: a convex function that is finite everywhere is
+  continuous, and a co-finite function has a conjugate that is finite everywhere.
 -/
 
 open Set Pointwise
@@ -57,14 +67,16 @@ section Shift
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {h : E → EReal}
 
-/-- `f = h (z + ·) - ⟨·, z*⟩` rewritten as `h (z + ·)` plus a real-valued linear term. -/
+/-- Let $h : E \to [-\infty, +\infty]$, $z \in E$ and $z^* \in F$. Then $h(z + x) - \langle x, z^*
+\rangle = h(z + x) + r$ with the real number $r = -\langle x, z^* \rangle$, for every $x \in E$. -/
 theorem comp_add_sub_pairing_eq_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal) (z : E) (z' : F) :
     (fun x => h (z + x) - ((B x z' : ℝ) : EReal))
       = fun x => h (z + x) + ((-(B x z') : ℝ) : EReal) := by
   funext x
   rw [EReal.coe_neg, ← sub_eq_add_neg]
 
-/-- `f` is convex: a translate of `h` plus a linear term. -/
+/-- If $h$ is convex, then $f(x) = h(z + x) - \langle x, z^* \rangle$ is convex, since it is a
+translate of $h$ plus a linear function. -/
 theorem convexFn_comp_add_sub_pairing (hh : ConvexFn h) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (z : E) (z' : F) :
     ConvexFn (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) := by
   rw [comp_add_sub_pairing_eq_add_coe]
@@ -72,7 +84,8 @@ theorem convexFn_comp_add_sub_pairing (hh : ConvexFn h) (B : E →ₗ[ℝ] F →
   simp only [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul]
   ring
 
-/-- When `h` is finite everywhere so is `f`: the tilt is real. -/
+/-- If $h$ is proper and finite everywhere, then $f(x) = h(z + x) - \langle x, z^* \rangle$ is a
+real number for every $x \in E$. -/
 theorem exists_comp_add_sub_pairing_eq_coe (hp : ProperConvex h) (hdom : convexDom h = univ)
     (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (z : E) (z' : F) (x : E) :
     ∃ r : ℝ, h (z + x) - ((B x z' : ℝ) : EReal) = (r : EReal) := by
@@ -80,7 +93,8 @@ theorem exists_comp_add_sub_pairing_eq_coe (hp : ProperConvex h) (hdom : convexD
     (by rw [← mem_convexDom, hdom]; trivial)
   exact ⟨p - B x z', by rw [hp', ← EReal.coe_sub]⟩
 
-/-- `f` is proper whenever `h` is finite everywhere. -/
+/-- If $h$ is proper and finite everywhere, then $f(x) = h(z + x) - \langle x, z^* \rangle$ is
+proper. -/
 theorem properConvex_comp_add_sub_pairing (hp : ProperConvex h) (hdom : convexDom h = univ)
     (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (z : E) (z' : F) :
     ProperConvex (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) := by
@@ -92,7 +106,8 @@ theorem properConvex_comp_add_sub_pairing (hp : ProperConvex h) (hdom : convexDo
     rw [hr]
     exact EReal.coe_ne_bot r
 
-/-- `f` is finite everywhere whenever `h` is. -/
+/-- If $h$ is proper and finite everywhere, then $f(x) = h(z + x) - \langle x, z^* \rangle$ is
+finite everywhere: $\operatorname{dom} f = E$. -/
 theorem convexDom_comp_add_sub_pairing_eq_univ (hp : ProperConvex h) (hdom : convexDom h = univ)
     (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (z : E) (z' : F) :
     convexDom (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) = univ := by
@@ -101,16 +116,20 @@ theorem convexDom_comp_add_sub_pairing_eq_univ (hp : ProperConvex h) (hdom : con
   rw [mem_convexDom, hr]
   exact EReal.coe_lt_top r
 
-/-- `f*` is the dual objective shifted down by the constant `⟨z, z*⟩`, with the two subtractions
-collected into a single real summand. -/
+/-- Let $f(x) = h(z + x) - \langle x, z^* \rangle$. Then the conjugate of $f$ is the dual objective
+minus the constant $\langle z, z^* \rangle$: for every $w \in F$,
+$$f^*(w) = \bigl( h^*(z^* + w) - \langle z, w \rangle \bigr) - \langle z, z^* \rangle.$$
+-/
 theorem convexConj_comp_add_sub_pairing_eq_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal) (z : E)
     (z' : F) (w : F) :
     convexConj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) w
       = (convexConj B h (z' + w) - ((B z w : ℝ) : EReal)) + ((-(B z z') : ℝ) : EReal) := by
   rw [convexConj_comp_add_sub_pairing, EReal.coe_neg, ← sub_eq_add_neg]
 
-/-- The infimum of `f*` over `K*` is the dual infimum for `h` shifted down by `⟨z, z*⟩`; the shift
-is a real constant, so it slides out of the infimum. -/
+/-- Let $f(x) = h(z + x) - \langle x, z^* \rangle$ and $K^* = -K^\circ$. Then
+$$\inf_{w \in K^*} f^*(w) = \inf_{w \in K^*} \bigl\{ h^*(z^* + w) - \langle z, w \rangle
+  \bigr\} - \langle z, z^* \rangle.$$
+The shift is a real constant, so it moves out of the infimum. -/
 theorem iInf_mem_neg_polarCone_convexConj_eq (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal) (K : Set E)
     (z : E) (z' : F) :
     (⨅ w ∈ -(polarCone B K), convexConj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) w)
@@ -133,7 +152,8 @@ variable {E F : Type*}
   {h : E → EReal} {K : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- The dual objective is finite at every point: `h*` is finite everywhere, and the tilt is real. -/
+/-- If $h$ is co-finite, then $h^*(z^* + w) - \langle z, w \rangle$ is a real number for all
+$z \in E$ and $z^*, w \in F$, since $h^*$ is finite everywhere. -/
 theorem exists_convexConj_comp_add_sub_pairing_eq_coe (hcof : Cofinite h) (z : E) (z' : F) (w : F) :
     ∃ r : ℝ, convexConj B h (z' + w) - ((B z w : ℝ) : EReal) = (r : EReal) := by
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
@@ -142,7 +162,8 @@ theorem exists_convexConj_comp_add_sub_pairing_eq_coe (hcof : Cofinite h) (z : E
   exact ⟨s - B z w, by rw [hs, ← EReal.coe_sub]⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- `f*` is finite everywhere, because the conjugate of a co-finite function is. -/
+/-- If $h$ is co-finite, then the conjugate of $f(x) = h(z + x) - \langle x, z^* \rangle$ is finite
+everywhere: $\operatorname{dom} f^* = F$. -/
 theorem convexDom_convexConj_comp_add_sub_pairing_eq_univ (hcof : Cofinite h) (z : E) (z' : F) :
     convexDom (convexConj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal))) = univ := by
   refine eq_univ_of_forall fun w => ?_
@@ -151,8 +172,13 @@ theorem convexDom_convexConj_comp_add_sub_pairing_eq_univ (hcof : Cofinite h) (z
   exact EReal.coe_lt_top _
 
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
-/-- `f` is finite everywhere, hence continuous, so it adds exactly to `δ(·|K)`: the constraint
-qualification on the primal side. -/
+/-- Let $h$ be co-finite and finite everywhere, and let $K$ be nonempty and convex. Then
+$f(x) = h(z + x) - \langle x, z^* \rangle$ and the indicator function $\delta(\cdot \mid K)$ add
+exactly: the conjugate of $f + \delta(\cdot \mid K)$ is the infimal convolution of their
+conjugates, and the infimal convolution is attained.
+
+The function $f$ is finite everywhere and hence continuous. This is the constraint qualification
+on the primal side. Exact addition is `ConvexAnalysis.IsExactSum`. -/
 theorem isExactSum_comp_add_sub_pairing_indicatorFn (hcof : Cofinite h) (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hne : K.Nonempty) (z : E) (z' : F) :
     IsExactSum B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) (indicatorFn K) := by
@@ -166,8 +192,12 @@ theorem isExactSum_comp_add_sub_pairing_indicatorFn (hcof : Cofinite h) (hdom : 
   exact (hconvf.continuous_of_convexDom_eq_univ hpf hdomf).continuousAt
 
 omit [FiniteDimensional ℝ E] in
-/-- `f*` is finite everywhere too, so it adds exactly to `δ(·|K*)`: the constraint qualification on
-the dual side, which is what co-finiteness of `h` supplies. -/
+/-- Let $h$ be co-finite and finite everywhere. Then the conjugate $f^*$ of
+$f(x) = h(z + x) - \langle x, z^* \rangle$ and the indicator function $\delta(\cdot \mid K^*)$
+of $K^* = -K^\circ$ add exactly, for the flipped pairing.
+
+The function $f^*$ is finite everywhere because $h$ is co-finite. This is the constraint
+qualification on the dual side. -/
 theorem isExactSum_convexConj_comp_add_sub_pairing_indicatorFn (hcof : Cofinite h)
     (hdom : convexDom h = univ)
     (z : E) (z' : F) :
@@ -186,7 +216,9 @@ theorem isExactSum_convexConj_comp_add_sub_pairing_indicatorFn (hcof : Cofinite 
   exact ((convexFn_convexConj B _).continuous_of_convexDom_eq_univ hpc hdomc).continuousAt
 
 omit [FiniteDimensional ℝ E] in
-/-- The dual infimum is not `⊤`: the origin lies in `K*`, where the value is finite. -/
+/-- If $h$ is co-finite, then $\inf_{w \in K^*} f^*(w) < +\infty$, where
+$f(x) = h(z + x) - \langle x, z^* \rangle$ and $K^* = -K^\circ$. The origin lies in $K^*$, and
+$f^*(0)$ is finite. -/
 theorem iInf_mem_neg_polarCone_convexConj_ne_top (hcof : Cofinite h) (z : E) (z' : F) :
     (⨅ w ∈ -(polarCone B K),
       convexConj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) w) ≠ ⊤ := by
@@ -200,8 +232,9 @@ theorem iInf_mem_neg_polarCone_convexConj_ne_top (hcof : Cofinite h) (z : E) (z'
   exact (lt_of_le_of_lt hge hlt).ne
 
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
-/-- The dual infimum is not `⊥`: its negative is the primal infimum, which is bounded above by a
-finite value. -/
+/-- Let $h$ be co-finite and finite everywhere, and let $K$ be a nonempty convex cone. Then
+$\inf_{w \in K^*} f^*(w) > -\infty$, where $f(x) = h(z + x) - \langle x, z^* \rangle$ and
+$K^* = -K^\circ$. Its negative is the primal infimum, which is at most a finite value. -/
 theorem iInf_mem_neg_polarCone_convexConj_ne_bot (hcof : Cofinite h) (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     (⨅ w ∈ -(polarCone B K),
@@ -217,9 +250,16 @@ theorem iInf_mem_neg_polarCone_convexConj_ne_bot (hcof : Cofinite h) (hdom : con
   rw [hP, hr] at hle
   exact EReal.coe_ne_top r (top_le_iff.1 hle)
 
-/-- **Cone duality.** For `h` convex, finite everywhere and co-finite and `K` a nonempty convex
-cone, the primal infimum over `K` and the dual infimum over `K* = -K°` add to `⟨z, z*⟩`. Closedness
-of `K` is not needed for the identity. -/
+/-- **Cone duality.** Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing that
+is compatible with both topologies. Let $h : E \to [-\infty, +\infty]$ be co-finite and finite
+everywhere, let $K \subseteq E$ be a nonempty convex cone, and let $K^* = -K^\circ$. Then for
+every $z \in E$ and $z^* \in F$,
+$$\inf_{x \in K} \bigl\{ h(z + x) - \langle x, z^* \rangle \bigr\} + \inf_{w \in K^*} \bigl\{
+  h^*(z^* + w) - \langle z, w \rangle \bigr\} = \langle z, z^* \rangle.$$
+
+This is Corollary 31.4.3 of [rockafellar1970convex]. The identity does not need the closedness
+of $K$. Co-finiteness is `ConvexAnalysis.Cofinite h`, and the condition that $h$ is finite
+everywhere is `ConvexAnalysis.convexDom h = Set.univ`. -/
 theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing (hcof : Cofinite h)
     (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
@@ -243,7 +283,13 @@ theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing (hcof : Cofinite h)
   rw [hback, hzero, zero_add]
 
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
-/-- The dual infimum is attained. Only finiteness of `h` is used here, not co-finiteness. -/
+/-- **The dual infimum is attained.** Let $E$ be a finite-dimensional real normed space with a
+compatible pairing, let $h$ be co-finite and finite everywhere, and let $K$ be a nonempty convex
+cone. Then for all $z \in E$ and $z^* \in F$ there is $w \in K^* = -K^\circ$ with
+$$h^*(z^* + w) - \langle z, w \rangle = \inf_{v \in K^*} \bigl\{ h^*(z^* + v) - \langle z, v
+  \rangle \bigr\}.$$
+
+The proof uses that $h$ is finite everywhere, and not that $h$ is co-finite. -/
 theorem exists_iInf_mem_neg_polarCone_eq_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     ∃ w ∈ -(polarCone B K), convexConj B h (z' + w) - ((B z w : ℝ) : EReal)
@@ -253,7 +299,11 @@ theorem exists_iInf_mem_neg_polarCone_eq_of_cofinite (hcof : Cofinite h) (hdom :
   rw [convexConj_comp_add_sub_pairing_eq_add_coe, iInf_mem_neg_polarCone_convexConj_eq] at hval
   exact ⟨w, hw, EReal.add_coe_right_cancel hval⟩
 
-/-- The dual infimum is finite, being attained where the objective is. -/
+/-- **The dual infimum is finite.** Under the hypotheses of
+`ConvexAnalysis.iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing`, the infimum $\inf_{w \in K^*}
+\{h^*(z^* + w) - \langle z, w \rangle\}$ is a real number.
+
+The infimum is attained, and the objective is finite. -/
 theorem exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (hcof : Cofinite h)
     (hdom : convexDom h = univ) (hconv : Convex ℝ K) (hK : IsCone K)
     (hne : K.Nonempty) (z : E) (z' : F) :
@@ -264,8 +314,11 @@ theorem exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (hcof : Cofinite h)
   obtain ⟨r, hr⟩ := exists_convexConj_comp_add_sub_pairing_eq_coe (B := B) hcof z z' w
   exact ⟨r, by rw [← hval, hr]⟩
 
-/-- The primal infimum is finite, being the negative of the dual infimum up to the constant
-`⟨z, z*⟩`. -/
+/-- **The primal infimum is finite.** Under the hypotheses of
+`ConvexAnalysis.iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing`, the infimum $\inf_{x \in K}
+\{h(z + x) - \langle x, z^* \rangle\}$ is a real number.
+
+By the duality identity it is $\langle z, z^* \rangle$ minus the dual infimum, which is finite. -/
 theorem exists_iInf_mem_eq_coe_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (z : E) (z' : F) :
     ∃ s : ℝ, (⨅ x ∈ K, (h (z + x) - ((B x z' : ℝ) : EReal))) = (s : EReal) := by
@@ -276,8 +329,13 @@ theorem exists_iInf_mem_eq_coe_of_cofinite (hcof : Cofinite h) (hdom : convexDom
   rw [iInf_mem_neg_polarCone_convexConj_eq, hr, ← EReal.coe_add] at hP
   exact ⟨-(r + -(B z z')), by rw [hP, ← EReal.coe_neg]⟩
 
-/-- The primal infimum is attained; this is where co-finiteness of `h` and closedness of `K` are
-used. -/
+/-- **The primal infimum is attained.** Under the hypotheses of
+`ConvexAnalysis.iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing`, and if moreover $K$ is closed,
+there is $x \in K$ with
+$$h(z + x) - \langle x, z^* \rangle = \inf_{u \in K} \bigl\{ h(z + u) - \langle u, z^* \rangle
+  \bigr\}.$$
+
+The proof of this result uses the co-finiteness of $h$ and the closedness of $K$. -/
 theorem exists_iInf_mem_eq_of_cofinite (hcof : Cofinite h) (hdom : convexDom h = univ)
     (hconv : Convex ℝ K) (hK : IsCone K) (hne : K.Nonempty) (hcl : IsClosed K)
     (z : E) (z' : F) :

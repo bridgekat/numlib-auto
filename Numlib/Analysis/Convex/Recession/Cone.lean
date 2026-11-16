@@ -10,47 +10,67 @@ import Mathlib.Geometry.Convex.Cone.Pointed
 /-!
 # Recession cones and lineality spaces
 
-The *recession cone* `0⁺C` of a set `C` collects the directions in which `C` recedes: the `y` such
-that every half-line `{x + a • y | a ≥ 0}` issuing from a point of `C` stays inside `C`. The
-*lineality space* is the largest subspace it contains, `0⁺C ∩ (-0⁺C)`, the directions in which `C`
-is linear. Most of the theory is algebraic; closedness of `0⁺C` and the limit descriptions need
-only a real topological vector space, and finite dimensionality enters only for boundedness.
+Let $E$ be a real vector space and $C \subseteq E$. The **recession cone** $0^+C$ is the set of
+$y \in E$ such that $x + ay \in C$ for every $x \in C$ and every $a \ge 0$: the directions in which
+$C$ recedes. The **lineality space** $\operatorname{lin} C = 0^+C \cap (-0^+C)$ is the largest
+subspace inside $0^+C$, the set of directions in which $C$ is linear. The presentation follows §8 of
+[rockafellar1970convex]. The last result is the recession hypothesis of Helly's theorem, from §21 of
+[rockafellar1970convex].
+
+Most of the theory is algebraic. The closedness of $0^+C$ and its description by limits of sequences
+need only a real topological vector space. Finite dimension is used only in the criteria for
+boundedness.
 
 ## Main definitions
 
-* `recessionCone C`, `recessionPointedCone C` — `0⁺C`, bare and as a `PointedCone ℝ E`.
-* `linealitySpace C`, `linealitySubmodule C`, `lineality C` — the lineality space, bare, as a
-  `Submodule ℝ E`, and its dimension.
+* `ConvexAnalysis.recessionCone`: the recession cone $0^+C$.
+* `ConvexAnalysis.recessionPointedCone`: $0^+C$ as a `PointedCone ℝ E`; for every set $C$ it is a
+  convex cone that contains $0$.
+* `ConvexAnalysis.linealitySpace`: the lineality space $\operatorname{lin} C = 0^+C \cap (-0^+C)$.
+* `ConvexAnalysis.linealitySubmodule`: the lineality space as a submodule of $E$.
+* `ConvexAnalysis.lineality`: the dimension of $\operatorname{lin} C$.
 
 ## Main results
 
-* `recessionCone_eq_add_subset` — for convex `C`, `0⁺C = {y | C + y ⊆ C}`. That `0⁺C` is a convex
-  cone containing the origin needs no hypothesis (`recessionPointedCone`).
-* `recessionCone_setOf_forall_le` — the recession cone of a system of weak linear inequalities is
-  the homogeneous system; `recessionCone_coe_affineSubspace` does the same for affine sets.
-* `eq_add_inter_of_isCompl` — the decomposition `C = L + (C ∩ L')` for a complement `L'` of `L`.
-* `isClosed_recessionCone` — `0⁺C` is closed as soon as `C` is; no convexity, no nonemptiness.
-* `mem_recessionCone_iff_exists_tendsto` — for nonempty closed convex `C`, `0⁺C` is the set of
-  limits of sequences `lᵢ • xᵢ` with `xᵢ ∈ C` and `lᵢ ↓ 0` ([rockafellar1970convex] Theorem 8.2).
-* `mem_recessionCone_of_exists_ray` — one half-line in the direction `y` inside a closed convex
-  `C` forces all of them ([rockafellar1970convex] Theorem 8.3); `recessionCone_iInter` and
-  `recessionCone_preimage` carry that to intersections and preimages, and `recessionCone_prod`,
-  `recessionCone_pi` say that a nonempty product recedes coordinatewise.
-* `isBounded_iff_recessionCone_eq_zero` — a nonempty closed convex set is bounded exactly when it
-  recedes in no direction, and `isBounded_inter_of_direction_eq` moves that along parallel slices.
-* `iInter_recessionCone_eq_zero_iff_exists_isBounded` — the recession hypothesis of Helly's
-  theorem: for closed convex sets with the finite-intersection property, "no common direction of
-  recession" holds exactly when some finite subfamily is bounded.
+* `ConvexAnalysis.recessionCone_eq_add_subset`: for convex $C$,
+  $0^+C = \{y \mid C + y \subseteq C\}$.
+* `ConvexAnalysis.eq_add_inter_of_isCompl`: if $L'$ is a complement of $L = \operatorname{lin} C$,
+  then $C = L + (C \cap L')$.
+* `ConvexAnalysis.recessionCone_coe_affineSubspace`: the recession cone of a nonempty affine set is
+  the subspace parallel to it.
+* `ConvexAnalysis.recessionCone_setOf_forall_le`: the recession cone of the nonempty solution set of
+  a system of weak linear inequalities $b_i(x) \ge \beta_i$ is the solution set of the homogeneous
+  system $b_i(y) \ge 0$.
+* `ConvexAnalysis.recessionCone_prod`, `ConvexAnalysis.recessionCone_pi`: the recession cone of a
+  product of nonempty sets is the product of the recession cones.
+* `ConvexAnalysis.isClosed_recessionCone`: $0^+C$ is closed when $C$ is closed; no convexity and no
+  nonemptiness are needed.
+* `ConvexAnalysis.mem_recessionCone_iff_exists_tendsto`: for a nonempty closed convex $C$, $0^+C$ is
+  the set of limits of sequences $\lambda_i x_i$ with $x_i \in C$, $\lambda_i > 0$ and
+  $\lambda_i \to 0$ (Theorem 8.2 of [rockafellar1970convex]).
+* `ConvexAnalysis.mem_recessionCone_of_exists_ray`: if a closed convex set $C$ contains one
+  half-line in the direction $y$, then $y \in 0^+C$ (Theorem 8.3 of [rockafellar1970convex]).
+* `ConvexAnalysis.recessionCone_iInter`, `ConvexAnalysis.recessionCone_preimage`: the recession cone
+  of an intersection of closed convex sets with a common point is the intersection of the recession
+  cones, and the recession cone of a nonempty preimage $A^{-1}D$ of a closed convex set $D$ is
+  $A^{-1}(0^+D)$.
+* `ConvexAnalysis.isBounded_iff_recessionCone_eq_zero`: in finite dimension, a nonempty closed
+  convex set $C$ is bounded if and only if $0^+C = \{0\}$.
+* `ConvexAnalysis.isBounded_inter_of_direction_eq`: if an affine set meets a closed convex set $C$
+  in a nonempty bounded set, then every parallel affine set meets $C$ in a bounded set.
+* `ConvexAnalysis.iInter_recessionCone_eq_zero_iff_exists_isBounded`: for closed convex sets of
+  which every finite subfamily has a common point, the recession cones have only $0$ in common if
+  and only if some finite subfamily has a bounded intersection.
 
 ## Implementation notes
 
-Mathlib's `asymptoticCone ℝ C` is not `0⁺C`: it is always closed and is empty for `C = ∅`, and
-what it computes is `0⁺(cl C)` (`recessionCone_closure_eq_asymptoticCone`; the two agree for
-nonempty closed convex sets). `0⁺C` itself is algebraic, and is used where there is no topology.
-
-## References
-
-* [rockafellar1970convex] §8 and §21.
+* The recession cone of the empty set is the whole space. For this reason the results on products,
+  intersections and preimages assume that the sets are nonempty.
+* Mathlib's `asymptoticCone ℝ C` is not $0^+C$: it is always closed, and it is empty for
+  $C = \emptyset$. For a nonempty convex $C$ it is $0^+(\operatorname{cl} C)$
+  (`ConvexAnalysis.recessionCone_closure_eq_asymptoticCone`), so the two agree for nonempty closed
+  convex sets. The recession cone $0^+C$ is defined algebraically, so it is available where $E$ has
+  no topology.
 -/
 
 open Bornology Filter Pointwise Set Topology
@@ -63,67 +83,80 @@ section Defs
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E} {x y z : E} {a : ℝ}
 
-/-- The recession cone `0⁺C`: the directions in which `C` recedes.
+/-- The **recession cone** $0^+C$ of a set $C \subseteq E$ is the set of $y \in E$ such that
+$x + ay \in C$ for every $x \in C$ and every real $a \ge 0$.
 
-`y ∈ 0⁺C` when every half-line `{x + a • y | a ≥ 0}` issuing from a point `x` of `C` is contained
-in `C`. The classical definition excludes `y = 0`, which has no direction; including it is what
-makes `0⁺C` a cone. -/
+A direction of recession in the classical sense is a nonzero element of $0^+C$. The set $0^+C$
+also contains $y = 0$, and this makes it a cone. For $C = \emptyset$ the condition is vacuous,
+so $0^+\emptyset = E$. -/
 def recessionCone (C : Set E) : Set E := {y | ∀ x ∈ C, ∀ a : ℝ, 0 ≤ a → x + a • y ∈ C}
 
-/-- Membership in the recession cone, unfolded. -/
+/-- Membership in the recession cone: $y \in 0^+C$ if and only if $x + ay \in C$ for every $x \in C$
+and every $a \ge 0$. -/
 theorem mem_recessionCone : y ∈ recessionCone C ↔ ∀ x ∈ C, ∀ a : ℝ, 0 ≤ a → x + a • y ∈ C :=
   Iff.rfl
 
-/-- The defining property of a direction of recession. -/
+/-- If $y \in 0^+C$, $x \in C$ and $a \ge 0$, then $x + ay \in C$. -/
 theorem add_smul_mem_of_mem_recessionCone (hy : y ∈ recessionCone C) (hx : x ∈ C) (ha : 0 ≤ a) :
     x + a • y ∈ C := hy x hx a ha
 
-/-- A direction of recession may be added to any point of `C`. -/
+/-- If $y \in 0^+C$ and $x \in C$, then $x + y \in C$. -/
 theorem add_mem_of_mem_recessionCone (hy : y ∈ recessionCone C) (hx : x ∈ C) : x + y ∈ C := by
   simpa using hy x hx 1 zero_le_one
 
+/-- The origin lies in the recession cone of every set. -/
 @[simp]
 theorem zero_mem_recessionCone (C : Set E) : (0 : E) ∈ recessionCone C := fun x hx _ _ => by
   simpa using hx
 
+/-- The recession cone is closed under multiplication by scalars $a \ge 0$. -/
 theorem smul_mem_recessionCone (ha : 0 ≤ a) (hy : y ∈ recessionCone C) :
     a • y ∈ recessionCone C := fun x hx b hb => by
   rw [smul_smul]
   exact hy x hx (b * a) (mul_nonneg hb ha)
 
+/-- The recession cone is closed under addition: if $y, z \in 0^+C$, then $y + z \in 0^+C$. -/
 theorem add_mem_recessionCone (hy : y ∈ recessionCone C) (hz : z ∈ recessionCone C) :
     y + z ∈ recessionCone C := fun x hx a ha => by
   rw [smul_add, ← add_assoc]
   exact hz _ (hy x hx a ha) a ha
 
-/-- **`0⁺C` is a convex cone containing the origin**, bundled as a Mathlib `PointedCone`. No
-hypothesis on `C` is needed; convexity enters only in `recessionCone_eq_add_subset`, the
-description of `0⁺C` by a single step. -/
+/-- The recession cone $0^+C$ as a Mathlib `PointedCone ℝ E`: for every set $C$, $0^+C$ is a convex
+cone that contains the origin.
+
+No hypothesis on $C$ is needed. Convexity of $C$ is used only in
+`ConvexAnalysis.recessionCone_eq_add_subset`, which tests the recession condition with a single
+step. -/
 def recessionPointedCone (C : Set E) : PointedCone ℝ E where
   carrier := recessionCone C
   zero_mem' := zero_mem_recessionCone C
   add_mem' := add_mem_recessionCone
   smul_mem' c _ hy := smul_mem_recessionCone c.2 hy
 
+/-- The underlying set of `ConvexAnalysis.recessionPointedCone C` is $0^+C$. -/
 @[simp]
 theorem coe_recessionPointedCone (C : Set E) :
     (recessionPointedCone C : Set E) = recessionCone C := rfl
 
+/-- Membership in `ConvexAnalysis.recessionPointedCone C` is membership in $0^+C$. -/
 @[simp]
 theorem mem_recessionPointedCone : y ∈ recessionPointedCone C ↔ y ∈ recessionCone C := Iff.rfl
 
+/-- The recession cone of every set is convex. -/
 theorem convex_recessionCone (C : Set E) : Convex ℝ (recessionCone C) :=
   ((recessionPointedCone C : ConvexCone ℝ E)).convex
 
-/-- Every direction recedes from the empty set, vacuously. -/
+/-- The recession cone of the empty set is the whole space, because the condition is vacuous. -/
 @[simp]
 theorem recessionCone_empty : recessionCone (∅ : Set E) = univ := by
   ext y; simp [recessionCone]
 
+/-- The recession cone of the whole space is the whole space. -/
 @[simp]
 theorem recessionCone_univ : recessionCone (univ : Set E) = univ := by
   ext y; simp [recessionCone]
 
+/-- The recession cone of a singleton $\{x\}$ is $\{0\}$. -/
 @[simp]
 theorem recessionCone_singleton (x : E) : recessionCone ({x} : Set E) = {0} := by
   ext y
@@ -134,26 +167,32 @@ theorem recessionCone_singleton (x : E) : recessionCone ({x} : Set E) = {0} := b
   · rintro rfl
     exact zero_mem_recessionCone _
 
-/-- The recession cone as an intersection of preimages of `C`. This is what makes it closed
-whenever `C` is; see `isClosed_recessionCone`. For `a > 0` the `a`-th preimage is
-`a⁻¹ • (C - x)`, which is the form Rockafellar's argument uses. -/
+/-- The recession cone is an intersection of preimages of $C$:
+$$0^+C = \bigcap_{x \in C} \bigcap_{a \ge 0} \{y \mid x + ay \in C\}.$$
+
+This is why $0^+C$ is closed when $C$ is closed (`ConvexAnalysis.isClosed_recessionCone`). For
+$a > 0$ the set $\{y \mid x + ay \in C\}$ is $a^{-1}(C - x)$, the form that the argument of
+[rockafellar1970convex] uses. -/
 theorem recessionCone_eq_iInter (C : Set E) :
     recessionCone C = ⋂ x ∈ C, ⋂ a ∈ Ici (0 : ℝ), (fun y => x + a • y) ⁻¹' C := by
   ext y; simp [recessionCone]
 
-/-- Directions of recession of every member of a family recede from the intersection. The reverse
-inclusion needs closedness and convexity; it is `recessionCone_iInter`. -/
+/-- For a family of sets $C_i$, $\bigcap_i 0^+C_i \subseteq 0^+\bigl(\bigcap_i C_i\bigr)$. The
+reverse inclusion holds for closed convex sets with a common point; it is
+`ConvexAnalysis.recessionCone_iInter`. -/
 theorem iInter_recessionCone_subset {ι : Sort*} (C : ι → Set E) :
     ⋂ i, recessionCone (C i) ⊆ recessionCone (⋂ i, C i) := by
   intro y hy x hx a ha
   exact mem_iInter.2 fun i => (mem_iInter.1 hy i) x (mem_iInter.1 hx i) a ha
 
+/-- For all sets $C$ and $D$, $0^+C \cap 0^+D \subseteq 0^+(C \cap D)$. -/
 theorem inter_recessionCone_subset (C D : Set E) :
     recessionCone C ∩ recessionCone D ⊆ recessionCone (C ∩ D) := by
   rintro y ⟨hyC, hyD⟩ x ⟨hxC, hxD⟩ a ha
   exact ⟨hyC x hxC a ha, hyD x hxD a ha⟩
 
-/-- For a convex set it is enough to test the recession condition at `a = 1`. -/
+/-- If $C$ is convex, then $y \in 0^+C$ if and only if $x + y \in C$ for every $x \in C$: it is
+enough to test the recession condition at $a = 1$. -/
 theorem mem_recessionCone_iff_forall_add_mem (hC : Convex ℝ C) :
     y ∈ recessionCone C ↔ ∀ x ∈ C, x + y ∈ C := by
   refine ⟨fun hy x hx => add_mem_of_mem_recessionCone hy hx, fun hy x hx a ha => ?_⟩
@@ -178,19 +217,24 @@ theorem mem_recessionCone_iff_forall_add_mem (hC : Convex ℝ C) :
       show 1 - a / (n : ℝ) + a / (n : ℝ) = 1 by ring, one_smul] at h
 
 omit [Module ℝ E] in
-/-- The condition `C + y ⊆ C`, spelled out. -/
+/-- In an additive group, $C + \{y\} \subseteq C$ if and only if $x + y \in C$ for every $x \in C$.
+-/
 theorem add_singleton_subset_iff_forall (C : Set E) (y : E) :
     C + {y} ⊆ C ↔ ∀ x ∈ C, x + y ∈ C := by
   rw [Set.add_singleton, Set.image_subset_iff]
   exact ⟨fun h x hx => h hx, fun h _ hx => h _ hx⟩
 
-/-- The recession cone of a convex set is the set of `y` with `C + y ⊆ C`. -/
+/-- Let $C$ be a convex subset of a real vector space $E$. Then
+$$0^+C = \{y \in E \mid C + y \subseteq C\}.$$
+
+The set $C + y$ is written `C + {y}`. -/
 theorem recessionCone_eq_add_subset (hC : Convex ℝ C) :
     recessionCone C = {y | C + {y} ⊆ C} := by
   ext y
   rw [mem_recessionCone_iff_forall_add_mem hC]
   exact (add_singleton_subset_iff_forall C y).symm
 
+/-- For every set $C$, $0^+(-C) = -0^+C$. -/
 theorem recessionCone_neg (C : Set E) : recessionCone (-C) = -recessionCone C := by
   ext v
   simp only [Set.mem_neg, mem_recessionCone]
@@ -205,38 +249,54 @@ theorem recessionCone_neg (C : Set E) : recessionCone (-C) = -recessionCone C :=
     have heq : -x + a • (-v) = -(x + a • v) := by module
     rwa [heq] at hstep
 
-/-- The lineality space of `C`: the directions in which `C` is linear. -/
+/-- The **lineality space** of a set $C$ is
+$$\operatorname{lin} C = 0^+C \cap (-0^+C),$$
+the set of $y$ such that both $y$ and $-y$ lie in the recession cone of $C$. It is the set of
+directions in which $C$ is linear.
+
+It is a subspace (`ConvexAnalysis.linealitySubmodule`), and it is the largest subspace inside
+$0^+C$ (`ConvexAnalysis.linealitySubmodule_isGreatest`). -/
 def linealitySpace (C : Set E) : Set E := recessionCone C ∩ (-recessionCone C)
 
+/-- $y \in \operatorname{lin} C$ if and only if $y \in 0^+C$ and $-y \in 0^+C$. -/
 theorem mem_linealitySpace :
     y ∈ linealitySpace C ↔ y ∈ recessionCone C ∧ -y ∈ recessionCone C := by
   simp [linealitySpace]
 
+/-- The origin lies in the lineality space of every set. -/
 @[simp] theorem zero_mem_linealitySpace (C : Set E) : (0 : E) ∈ linealitySpace C :=
   mem_linealitySpace.2 ⟨zero_mem_recessionCone C, by
     rw [neg_zero]; exact zero_mem_recessionCone C⟩
 
+/-- The lineality space is contained in the recession cone. -/
 theorem linealitySpace_subset_recessionCone (C : Set E) :
     linealitySpace C ⊆ recessionCone C := inter_subset_left
 
-/-- The lineality space is a subspace, bundled as a `Submodule ℝ E`. It is Mathlib's
-`PointedCone.lineal` of `recessionPointedCone`. -/
+/-- The lineality space $\operatorname{lin} C$ as a `Submodule ℝ E`: for every set $C$,
+$\operatorname{lin} C$ is a linear subspace of $E$.
+
+It is defined as Mathlib's `PointedCone.lineal` of `ConvexAnalysis.recessionPointedCone C`, the
+largest submodule inside that cone. -/
 noncomputable def linealitySubmodule (C : Set E) : Submodule ℝ E :=
   (recessionPointedCone C).lineal
 
+/-- The underlying set of `ConvexAnalysis.linealitySubmodule C` is $\operatorname{lin} C$. -/
 @[simp]
 theorem coe_linealitySubmodule (C : Set E) :
     (linealitySubmodule C : Set E) = linealitySpace C := by
   ext y; simp [linealitySubmodule, linealitySpace]
 
+/-- Membership in `ConvexAnalysis.linealitySubmodule C` is membership in $\operatorname{lin} C$. -/
 @[simp]
 theorem mem_linealitySubmodule : y ∈ linealitySubmodule C ↔ y ∈ linealitySpace C := by
   rw [← SetLike.mem_coe, coe_linealitySubmodule]
 
+/-- The lineality space of every set is convex. -/
 theorem convex_linealitySpace (C : Set E) : Convex ℝ (linealitySpace C) := by
   simpa using (linealitySubmodule C).convex
 
-/-- The lineality space is the largest subspace inside `0⁺C`. -/
+/-- The lineality space is the largest subspace inside the recession cone: it is contained in
+$0^+C$, and it contains every subspace $L$ with $L \subseteq 0^+C$. -/
 theorem linealitySubmodule_isGreatest (C : Set E) :
     IsGreatest {L : Submodule ℝ E | (L : Set E) ⊆ recessionCone C} (linealitySubmodule C) := by
   constructor
@@ -247,8 +307,8 @@ theorem linealitySubmodule_isGreatest (C : Set E) :
   · intro L hL y hy
     exact mem_linealitySubmodule.2 (mem_linealitySpace.2 ⟨hL hy, hL (L.neg_mem hy)⟩)
 
-/-- The lineality space of a convex set consists of the `y` with `C + y = C`, in contrast with
-`C + y ⊆ C` for the recession cone. -/
+/-- If $C$ is convex, then $\operatorname{lin} C = \{y \mid C + y = C\}$. For the recession cone the
+condition is $C + y \subseteq C$ instead (`ConvexAnalysis.recessionCone_eq_add_subset`). -/
 theorem linealitySpace_eq_add_eq (hC : Convex ℝ C) :
     linealitySpace C = {y | C + {y} = C} := by
   ext y
@@ -267,9 +327,12 @@ theorem linealitySpace_eq_add_eq (hC : Convex ℝ C) :
     have hxw : x + -y = w := by rw [← hwv', hv]; abel
     exact hxw ▸ hw
 
-/-- **The direct-sum decomposition**, for an arbitrary subspace `N` of the lineality space: if `M`
-is a complement of `N`, then `C = N + (C ∩ M)`. Only `N ⊆ lin C` is used, and that extra room is
-what the closed-image theorem needs, where the relevant subspace is `lin C ∩ ker A`. -/
+/-- Let $N$ and $M$ be complementary subspaces of $E$ with $N \subseteq \operatorname{lin} C$. Then
+$C = N + (C \cap M)$.
+
+This generalizes `ConvexAnalysis.eq_add_inter_of_isCompl`, which takes
+$N = \operatorname{lin} C$. The closedness theorem for linear images needs the general form,
+with a subspace $N$ of $\operatorname{lin} C \cap \ker A$. No convexity of $C$ is needed. -/
 theorem eq_add_inter_of_isCompl_of_le {N M : Submodule ℝ E}
     (hN : (N : Set E) ⊆ linealitySpace C) (h : IsCompl N M) :
     C = (N : Set E) + (C ∩ (M : Set E)) := by
@@ -285,14 +348,18 @@ theorem eq_add_inter_of_isCompl_of_le {N M : Submodule ℝ E}
     have hpC : p ∈ recessionCone C := (mem_linealitySpace.1 (hN hp)).1
     simpa [add_comm] using add_mem_of_mem_recessionCone hpC hqC
 
-/-- **The direct-sum decomposition**: if `L'` is any complement of the lineality space `L` of `C`,
-then `C = L + (C ∩ L')`. The classical statement takes `L' = Lᗮ` in an inner-product space; that
-is the special case. -/
+/-- Let $C$ be a subset of a real vector space $E$, let $L = \operatorname{lin} C$, and let $L'$ be
+a subspace of $E$ complementary to $L$. Then
+$$C = L + (C \cap L').$$
+
+The classical statement takes $L' = L^\perp$ in an inner product space; that is a special case.
+No convexity of $C$ is needed. The complement is given as `IsCompl (linealitySubmodule C) L`. -/
 theorem eq_add_inter_of_isCompl {L : Submodule ℝ E} (h : IsCompl (linealitySubmodule C) L) :
     C = (linealitySubmodule C : Set E) + (C ∩ (L : Set E)) :=
   eq_add_inter_of_isCompl_of_le (coe_linealitySubmodule C).subset h
 
-/-- Convexity is preserved by the change of variables `z ↦ x + c • z`. -/
+/-- If $C$ is convex, then $\{z \mid x + cz \in C\}$ is convex for every $x \in E$ and every real
+$c$. -/
 theorem convex_preimage_affine_smul (hC : Convex ℝ C) (x : E) (c : ℝ) :
     Convex ℝ {z | x + c • z ∈ C} := by
   intro z₁ h₁ z₂ h₂ a b ha hb hab
@@ -306,9 +373,12 @@ theorem convex_preimage_affine_smul (hC : Convex ℝ C) (x : E) (c : ℝ) :
   rw [heq]
   exact hC h₁ h₂ ha hb hab
 
-/-- **The recession cone is invariant under `z ↦ x + c • z` for `c > 0`.** Directions of recession
-do not see translations, and positive rescaling permutes the rays of a cone. This is the change of
-variables that turns "`C` recedes in the direction `v`" into a *decreasing* family of sets. -/
+/-- Let $c > 0$ and $x \in E$. Then the set $\{z \mid x + cz \in C\}$ has the same recession cone as
+$C$.
+
+The recession cone does not change under translation, and multiplication by $c > 0$ maps each
+ray from the origin onto itself. This change of variables turns the statement that $C$ recedes
+in a direction $v$ into a statement about a decreasing family of sets. -/
 theorem recessionCone_preimage_affine {c : ℝ} (hc : 0 < c) (x : E) (C : Set E) :
     recessionCone {z | x + c • z ∈ C} = recessionCone C := by
   ext w
@@ -331,7 +401,10 @@ theorem recessionCone_preimage_affine {c : ℝ} (hc : 0 < c) (x : E) (C : Set E)
     rwa [heq]
 
 
-/-- The *lineality of `C`*: the dimension of its lineality space. -/
+/-- The **lineality** of a set $C$ is the dimension of its lineality space $\operatorname{lin} C$.
+
+The dimension is `Module.finrank`, so the lineality is $0$ when $\operatorname{lin} C$ has
+infinite dimension. -/
 noncomputable def lineality (C : Set E) : ℕ := Module.finrank ℝ (linealitySubmodule C)
 
 end Defs
@@ -342,23 +415,27 @@ section Examples
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- A subspace is its own recession cone. -/
+/-- A subspace $M$ is its own recession cone: $0^+M = M$. -/
 @[simp] theorem recessionCone_coe_submodule (M : Submodule ℝ E) :
     recessionCone (M : Set E) = M := by
   refine Set.Subset.antisymm (fun y hy => ?_) (fun y hy z hz a ha => ?_)
   · simpa using hy 0 M.zero_mem 1 zero_le_one
   · exact M.add_mem hz (M.smul_mem a hy)
 
-/-- **A pointed convex cone is its own recession cone.** This is what makes the sum rule for
-cones a special case of the sum rule for sets: for cones the recession hypothesis is a hypothesis
-about the cones themselves. -/
+/-- A pointed convex cone $K$ is its own recession cone: $0^+K = K$.
+
+For this reason the sum rule for cones is a special case of the sum rule for sets: for cones,
+the recession hypothesis is a hypothesis about the cones themselves. -/
 @[simp] theorem recessionCone_coe_pointedCone (K : PointedCone ℝ E) :
     recessionCone (K : Set E) = K := by
   refine Set.Subset.antisymm (fun y hy => ?_) (fun y hy z hz a ha => ?_)
   · simpa using hy 0 K.zero_mem 1 zero_le_one
   · exact K.add_mem hz (K.smul_mem ha hy)
 
-/-- The recession cone of a nonempty affine set is the subspace parallel to it. -/
+/-- Let $M$ be a nonempty affine subset of a real vector space $E$. Then $0^+M$ is the subspace
+parallel to $M$.
+
+The parallel subspace is `AffineSubspace.direction`. -/
 theorem recessionCone_coe_affineSubspace {s : AffineSubspace ℝ E} (hs : (s : Set E).Nonempty) :
     recessionCone (s : Set E) = s.direction := by
   obtain ⟨x, hx⟩ := hs
@@ -369,15 +446,21 @@ theorem recessionCone_coe_affineSubspace {s : AffineSubspace ℝ E} (hs : (s : S
   · have h : a • y ∈ s.direction := s.direction.smul_mem a hy
     simpa [vadd_eq_add, add_comm] using AffineSubspace.vadd_mem_of_mem_direction h hz
 
-/-- The lineality space of a nonempty affine set is the subspace parallel to it. -/
+/-- Let $M$ be a nonempty affine subset of a real vector space $E$. Then $\operatorname{lin} M$ is
+the subspace parallel to $M$.
+
+The parallel subspace is `AffineSubspace.direction`. -/
 theorem linealitySpace_coe_affineSubspace {s : AffineSubspace ℝ E} (hs : (s : Set E).Nonempty) :
     linealitySpace (s : Set E) = s.direction := by
   ext y
   rw [mem_linealitySpace, recessionCone_coe_affineSubspace hs]
   exact ⟨fun h => h.1, fun h => ⟨h, s.direction.neg_mem h⟩⟩
 
-/-- The recession cone of the solution set of a system of weak linear inequalities is the solution
-set of the corresponding homogeneous system. -/
+/-- Let $E$ be a real vector space, let $(b_i)_{i \in I}$ be a family of linear functionals on $E$,
+and let $(\beta_i)_{i \in I}$ be real numbers, where the index set $I$ is arbitrary. If the set
+$C = \{x \in E \mid \beta_i \le b_i(x) \text{ for all } i\}$ is nonempty, then
+$$0^+C = \{y \in E \mid 0 \le b_i(y) \text{ for all } i\}.$$
+-/
 theorem recessionCone_setOf_forall_le {ι : Type*} (b : ι → E →ₗ[ℝ] ℝ) (β : ι → ℝ)
     (h : {x : E | ∀ i, β i ≤ b i x}.Nonempty) :
     recessionCone {x : E | ∀ i, β i ≤ b i x} = {y : E | ∀ i, 0 ≤ b i y} := by
@@ -401,8 +484,11 @@ theorem recessionCone_setOf_forall_le {ι : Type*} (b : ι → E →ₗ[ℝ] ℝ
     have : (0 : ℝ) ≤ a * b i y := mul_nonneg ha (hyi i)
     linarith [hxi i]
 
-/-- The lineality space of the solution set of a system of weak linear inequalities is given by
-the corresponding system of equations. -/
+/-- Let $E$ be a real vector space, let $(b_i)_{i \in I}$ be a family of linear functionals on $E$,
+and let $(\beta_i)_{i \in I}$ be real numbers, where the index set $I$ is arbitrary. If the set
+$C = \{x \in E \mid \beta_i \le b_i(x) \text{ for all } i\}$ is nonempty, then
+$$\operatorname{lin} C = \{y \in E \mid b_i(y) = 0 \text{ for all } i\}.$$
+-/
 theorem linealitySpace_setOf_forall_le {ι : Type*} (b : ι → E →ₗ[ℝ] ℝ) (β : ι → ℝ)
     (h : {x : E | ∀ i, β i ≤ b i x}.Nonempty) :
     linealitySpace {x : E | ∀ i, β i ≤ b i x} = {y : E | ∀ i, b i y = 0} := by
@@ -428,13 +514,19 @@ section Prod
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {C : Set E} {D : Set F}
 
+/-- For all sets $C \subseteq E$ and $D \subseteq F$, $0^+C \times 0^+D \subseteq 0^+(C \times D)$.
+-/
 theorem prod_recessionCone_subset (C : Set E) (D : Set F) :
     recessionCone C ×ˢ recessionCone D ⊆ recessionCone (C ×ˢ D) := by
   rintro ⟨y₁, y₂⟩ ⟨hy₁, hy₂⟩ ⟨x₁, x₂⟩ hx a ha
   exact ⟨hy₁ x₁ hx.1 a ha, hy₂ x₂ hx.2 a ha⟩
 
-/-- **The recession cone of a product is the product of the recession cones.** Both factors must be
-nonempty: `0⁺(C ×ˢ ∅) = 0⁺ ∅ = univ`, which is not `0⁺C ×ˢ univ` unless `0⁺C` is everything. -/
+/-- Let $E$ and $F$ be real vector spaces, and let $C \subseteq E$ and $D \subseteq F$ be nonempty.
+Then
+$$0^+(C \times D) = 0^+C \times 0^+D.$$
+
+Both factors must be nonempty: $0^+(C \times \emptyset) = 0^+\emptyset$ is all of $E \times F$,
+which is not $0^+C \times F$ unless $0^+C = E$. -/
 theorem recessionCone_prod (hC : C.Nonempty) (hD : D.Nonempty) :
     recessionCone (C ×ˢ D) = recessionCone C ×ˢ recessionCone D := by
   refine Set.Subset.antisymm (fun y hy => ⟨fun x hx a ha => ?_, fun x hx a ha => ?_⟩)
@@ -444,7 +536,10 @@ theorem recessionCone_prod (hC : C.Nonempty) (hD : D.Nonempty) :
   · obtain ⟨w, hw⟩ := hC
     exact (hy (w, x) ⟨hw, hx⟩ a ha).2
 
-/-- **The lineality space of a product is the product of the lineality spaces.** -/
+/-- Let $E$ and $F$ be real vector spaces, and let $C \subseteq E$ and $D \subseteq F$ be nonempty.
+Then
+$$\operatorname{lin}(C \times D) = \operatorname{lin} C \times \operatorname{lin} D.$$
+-/
 theorem linealitySpace_prod (hC : C.Nonempty) (hD : D.Nonempty) :
     linealitySpace (C ×ˢ D) = linealitySpace C ×ˢ linealitySpace D := by
   ext ⟨y₁, y₂⟩
@@ -458,16 +553,26 @@ section Pi
 variable {ι : Type*} {E : ι → Type*} [∀ i, AddCommGroup (E i)] [∀ i, Module ℝ (E i)]
   {s : Set ι} {C : ∀ i, Set (E i)}
 
-/-- A family of recession directions is a recession direction of the product set. Unconditional,
-and the `Set.pi` form of `prod_recessionCone_subset`. -/
+/-- Let $s$ be a set of indices and let $C_i \subseteq E_i$ for each index $i$. Then the product
+over $s$ of the recession cones is contained in the recession cone of the product over $s$ of
+the sets. A product over $s$ (`Set.pi s`) puts no condition on the coordinates outside $s$.
+
+No hypothesis is needed. This is the `Set.pi` form of
+`ConvexAnalysis.prod_recessionCone_subset`. -/
 theorem pi_recessionCone_subset (s : Set ι) (C : ∀ i, Set (E i)) :
     s.pi (fun i => recessionCone (C i)) ⊆ recessionCone (s.pi C) := by
   intro y hy x hx a ha i hi
   exact hy i hi (x i) (hx i hi) a ha
 
-/-- **The recession cone of a product set is the product of the recession cones.** The `Set.pi`
-form of `recessionCone_prod`; the nonemptiness hypothesis is there for the same reason, that
-testing one coordinate needs a witness in all the others. -/
+/-- Let $(E_i)$ be a family of real vector spaces, let $s$ be a set of indices, let
+$C_i \subseteq E_i$ for each $i$, and let
+$$P = \{x \mid x_i \in C_i \text{ for all } i \in s\}.$$
+If $P$ is nonempty, then
+$$0^+P = \{y \mid y_i \in 0^+C_i \text{ for all } i \in s\}.$$
+
+This is the `Set.pi` form of `ConvexAnalysis.recessionCone_prod`. The nonemptiness hypothesis is
+needed for the same reason: to test one coordinate, the proof needs a point in all the other
+coordinates. -/
 theorem recessionCone_pi (hC : (s.pi C).Nonempty) :
     recessionCone (s.pi C) = s.pi (fun i => recessionCone (C i)) := by
   classical
@@ -483,7 +588,11 @@ theorem recessionCone_pi (hC : (s.pi C).Nonempty) :
   have hmem := hy (Function.update w i x) hupd a ha i hi
   rwa [Pi.add_apply, Pi.smul_apply, Function.update_self] at hmem
 
-/-- **The lineality space of a product set is the product of the lineality spaces.** -/
+/-- Let $(E_i)$ be a family of real vector spaces, let $s$ be a set of indices, let
+$C_i \subseteq E_i$ for each $i$, and let $P = \{x \mid x_i \in C_i \text{ for all } i \in s\}$.
+If $P$ is nonempty, then
+$$\operatorname{lin} P = \{y \mid y_i \in \operatorname{lin} C_i \text{ for all } i \in s\}.$$
+-/
 theorem linealitySpace_pi (hC : (s.pi C).Nonempty) :
     linealitySpace (s.pi C) = s.pi (fun i => linealitySpace (C i)) := by
   ext y
@@ -495,7 +604,8 @@ section PreimageDefs
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- One inclusion of the preimage rule, valid with no hypothesis at all. -/
+/-- For a linear map $A : E \to F$ and a set $D \subseteq F$, $A^{-1}(0^+D) \subseteq 0^+(A^{-1}D)$.
+No hypothesis is needed. -/
 theorem preimage_recessionCone_subset (A : E →ₗ[ℝ] F) (D : Set F) :
     A ⁻¹' recessionCone D ⊆ recessionCone (A ⁻¹' D) := by
   intro y hy x hx a ha
@@ -511,29 +621,38 @@ section Topological
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsTopologicalAddGroup E]
   [ContinuousSMul ℝ E] {C D : Set E} {y : E}
 
-/-- The sequence `(n+1)⁻¹` tends to `0`. Mathlib states this as `1 / (n + 1)`. -/
+/-- The sequence $(n + 1)^{-1}$ tends to $0$ as $n \to \infty$. Mathlib states this with
+`1 / (n + 1)` in place of `(n + 1)⁻¹`. -/
 theorem tendsto_inv_nat_add_one_atTop_nhds_zero :
     Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹) atTop (𝓝 0) := by
   simpa only [one_div] using tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)
 
-/-- **The closure of a pointed convex cone is its own recession cone.** `PointedCone.closure`
-supplies the cone structure on `cl K`; `recessionCone_coe_pointedCone` then applies verbatim. -/
+/-- The closure of a pointed convex cone $K$ is its own recession cone:
+$0^+(\operatorname{cl} K) = \operatorname{cl} K$.
+
+Mathlib's `PointedCone.closure` makes $\operatorname{cl} K$ a pointed convex cone, and then
+`ConvexAnalysis.recessionCone_coe_pointedCone` applies. -/
 theorem recessionCone_closure_coe_pointedCone (K : PointedCone ℝ E) :
     recessionCone (closure (K : Set E)) = closure (K : Set E) := by
   rw [← PointedCone.coe_closure]
   exact recessionCone_coe_pointedCone K.closure
 
-/-- The recession cone of a closed set is closed. No convexity, no nonemptiness and no local
-compactness are needed: by `recessionCone_eq_iInter`, `0⁺C` is an intersection of preimages of `C`
-under the continuous maps `y ↦ x + a • y`. -/
+/-- Let $E$ be a real topological vector space and $C \subseteq E$ a closed set. Then $0^+C$ is
+closed.
+
+No convexity, no nonemptiness and no local compactness are needed: by
+`ConvexAnalysis.recessionCone_eq_iInter`, $0^+C$ is an intersection of preimages of $C$ under
+the continuous maps $y \mapsto x + ay$. -/
 theorem isClosed_recessionCone (hC : IsClosed C) : IsClosed (recessionCone C) := by
   rw [recessionCone_eq_iInter]
   exact isClosed_biInter fun x _ => isClosed_biInter fun a _ => hC.preimage (by fun_prop)
 
 omit [ContinuousSMul ℝ E] in
-/-- Directions of recession survive taking the closure. The reverse inclusion is false: for
-`C = {(s, t) | s > 0, t > 0} ∪ {0}` in `ℝ²`, `0⁺(cl C)` is the closed quadrant while `0⁺C` is `C`
-itself. -/
+/-- Let $E$ be a real vector space with a topology in which addition is continuous. Then
+$0^+C \subseteq 0^+(\operatorname{cl} C)$ for every set $C$.
+
+The reverse inclusion is false: for $C = \{(s, t) \mid s > 0,\ t > 0\} \cup \{0\}$ in
+$\mathbb{R}^2$, $0^+(\operatorname{cl} C)$ is the closed quadrant, while $0^+C = C$. -/
 theorem recessionCone_subset_recessionCone_closure (C : Set E) :
     recessionCone C ⊆ recessionCone (closure C) := by
   intro y hy x hx a ha
@@ -544,8 +663,8 @@ theorem recessionCone_subset_recessionCone_closure (C : Set E) :
   obtain ⟨w, hw, rfl⟩ := hz
   exact hy w hw a ha
 
-/-- The sequence `(n+1)⁻¹ • (x + (n+1) • y)` converges to `y`: the witness for the easy half of
-the sequential description, and what makes one half-line enough. -/
+/-- For $x, y \in E$, the sequence $(n + 1)^{-1}(x + (n + 1)y)$ converges to $y$. It is the sequence
+that `ConvexAnalysis.exists_tendsto_of_mem_recessionCone` uses. -/
 theorem tendsto_inv_smul_ray (x y : E) :
     Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹ • (x + ((n : ℝ) + 1) • y)) atTop (𝓝 y) := by
   have hfun : (fun n : ℕ => ((n : ℝ) + 1)⁻¹ • (x + ((n : ℝ) + 1) • y))
@@ -558,9 +677,13 @@ theorem tendsto_inv_smul_ray (x y : E) :
   rw [hfun]
   simpa using hsum
 
-/-- **The hard half of the sequential description**: a limit of `lᵢ • xᵢ` with `xᵢ ∈ C` and
-`lᵢ ↓ 0` is a direction of recession of a closed convex `C`. Finite-dimensionality is not needed:
-`(1 - a lᵢ) • x + (a lᵢ) • xᵢ` lies in `C` once `a lᵢ ≤ 1`, and converges to `x + a • y`. -/
+/-- Let $C$ be a closed convex subset of a real topological vector space, and let $x_i \in C$ and
+$\lambda_i > 0$ be sequences with $\lambda_i \to 0$ and $\lambda_i x_i \to y$. Then
+$y \in 0^+C$.
+
+Finite dimension is not needed. For $x \in C$ and $a \ge 0$, the point
+$(1 - a\lambda_i)x + a\lambda_i x_i$ lies in $C$ once $a\lambda_i \le 1$, and it converges to
+$x + ay$. The sequence $(\lambda_i)$ need not be decreasing. -/
 theorem mem_recessionCone_of_tendsto (hC : Convex ℝ C) (hC' : IsClosed C) {l : ℕ → ℝ} {u : ℕ → E}
     (hu : ∀ n, u n ∈ C) (hl : ∀ n, 0 < l n) (hl0 : Tendsto l atTop (𝓝 0))
     (hly : Tendsto (fun n => l n • u n) atTop (𝓝 y)) : y ∈ recessionCone C := by
@@ -578,8 +701,8 @@ theorem mem_recessionCone_of_tendsto (hC : Convex ℝ C) (hC' : IsClosed C) {l :
     simpa [mul_smul] using hly.const_smul a
   exact hC'.mem_of_tendsto (h1.add h2) hmem
 
-/-- **The easy half**: every direction of recession of a nonempty set is a limit of `lᵢ • xᵢ`
-with `xᵢ ∈ C` and `lᵢ ↓ 0`. -/
+/-- Let $C$ be nonempty and $y \in 0^+C$. Then there are sequences $x_i \in C$ and $\lambda_i > 0$
+with $\lambda_i \to 0$ and $\lambda_i x_i \to y$. -/
 theorem exists_tendsto_of_mem_recessionCone (hne : C.Nonempty) (hy : y ∈ recessionCone C) :
     ∃ (l : ℕ → ℝ) (u : ℕ → E), (∀ n, u n ∈ C) ∧ (∀ n, 0 < l n) ∧
       Tendsto l atTop (𝓝 0) ∧ Tendsto (fun n => l n • u n) atTop (𝓝 y) := by
@@ -588,8 +711,14 @@ theorem exists_tendsto_of_mem_recessionCone (hne : C.Nonempty) (hy : y ∈ reces
     fun n => hy x hx _ (by positivity), fun n => by positivity,
     tendsto_inv_nat_add_one_atTop_nhds_zero, tendsto_inv_smul_ray x y⟩
 
-/-- For a nonempty closed convex set, `0⁺C` is exactly the set of limits of sequences `lᵢ • xᵢ`
-with `xᵢ ∈ C` and `lᵢ ↓ 0`. -/
+/-- Let $E$ be a real topological vector space and $C \subseteq E$ a nonempty closed convex set.
+Then $y \in 0^+C$ if and only if there are sequences $x_i \in C$ and $\lambda_i > 0$ with
+$$\lambda_i \to 0, \qquad \lambda_i x_i \to y.$$
+This is Theorem 8.2 of [rockafellar1970convex].
+
+The sequences are indexed by $\mathbb{N}$, and $(\lambda_i)$ need not be decreasing. The two
+directions are `ConvexAnalysis.exists_tendsto_of_mem_recessionCone` and
+`ConvexAnalysis.mem_recessionCone_of_tendsto`. -/
 theorem mem_recessionCone_iff_exists_tendsto (hC : Convex ℝ C) (hC' : IsClosed C)
     (hne : C.Nonempty) :
     y ∈ recessionCone C ↔ ∃ (l : ℕ → ℝ) (u : ℕ → E), (∀ n, u n ∈ C) ∧ (∀ n, 0 < l n) ∧
@@ -597,8 +726,12 @@ theorem mem_recessionCone_iff_exists_tendsto (hC : Convex ℝ C) (hC' : IsClosed
   ⟨exists_tendsto_of_mem_recessionCone hne, fun ⟨_, _, hu, hl, hl0, hly⟩ =>
     mem_recessionCone_of_tendsto hC hC' hu hl hl0 hly⟩
 
-/-- **One half-line is enough**: if a closed convex set `C` contains even one half-line in the
-direction `y`, it contains every half-line in that direction issuing from a point of `C`. -/
+/-- Let $E$ be a real topological vector space, $C \subseteq E$ a closed convex set and $y \in E$.
+If there is a point $x$ with $x + ay \in C$ for every $a \ge 0$, then $y \in 0^+C$. So if $C$
+contains one half-line in the direction $y$, then it contains every half-line in the direction
+$y$ that starts at a point of $C$. This is Theorem 8.3 of [rockafellar1970convex].
+
+The hypothesis does not require $x \in C$ separately; it follows by taking $a = 0$. -/
 theorem mem_recessionCone_of_exists_ray (hC : Convex ℝ C) (hC' : IsClosed C)
     (h : ∃ x, ∀ a : ℝ, 0 ≤ a → x + a • y ∈ C) : y ∈ recessionCone C := by
   obtain ⟨x, hx⟩ := h
@@ -606,7 +739,8 @@ theorem mem_recessionCone_of_exists_ray (hC : Convex ℝ C) (hC' : IsClosed C)
     (fun n => hx ((n : ℝ) + 1) (by positivity)) (fun n => by positivity)
     tendsto_inv_nat_add_one_atTop_nhds_zero (tendsto_inv_smul_ray x y)
 
-/-- For a closed convex set containing the origin, `0⁺C = ⋂_{ε > 0} ε • C`. -/
+/-- If $C$ is closed, convex and contains $0$, then
+$0^+C = \bigcap_{\varepsilon > 0} \varepsilon C$. -/
 theorem recessionCone_eq_iInter_smul (hC : Convex ℝ C) (hC' : IsClosed C) (h0 : (0 : E) ∈ C) :
     recessionCone C = ⋂ ε ∈ Ioi (0 : ℝ), ε • C := by
   refine Set.Subset.antisymm (fun y hy => mem_iInter₂.2 fun ε hε => ?_) (fun y hy => ?_)
@@ -627,8 +761,10 @@ theorem recessionCone_eq_iInter_smul (hC : Convex ℝ C) (hC' : IsClosed C) (h0 
     rw [hconst]
     exact tendsto_const_nhds
 
-/-- The recession cone of an intersection of closed convex sets with a common point is the
-intersection of the recession cones. -/
+/-- Let $(C_i)_{i \in I}$ be a family of closed convex subsets of a real topological vector space
+whose intersection is nonempty. Then
+$$0^+\Bigl(\bigcap_i C_i\Bigr) = \bigcap_i 0^+C_i.$$
+-/
 theorem recessionCone_iInter {ι : Sort*} {C : ι → Set E} (hconv : ∀ i, Convex ℝ (C i))
     (hclosed : ∀ i, IsClosed (C i)) (hne : (⋂ i, C i).Nonempty) :
     recessionCone (⋂ i, C i) = ⋂ i, recessionCone (C i) := by
@@ -638,9 +774,12 @@ theorem recessionCone_iInter {ι : Sort*} {C : ι → Set E} (hconv : ∀ i, Con
   exact mem_recessionCone_of_exists_ray (hconv i) (hclosed i)
     ⟨x, fun a ha => mem_iInter.1 (hy x hx a ha) i⟩
 
-/-- The same over a *sub*family: the recession cone of `⋂ i ∈ s, C i` is
-`⋂ i ∈ s, 0⁺Cᵢ`. Stated with a bare predicate rather than a `Set` or a `Finset`, so that it applies
-to either spelling of the bounded intersection. -/
+/-- Let $p$ be a predicate on the indices, let $C_i$ be a closed convex set for each $i$ with
+$p(i)$, and suppose that $\bigcap_{p(i)} C_i$ is nonempty. Then the recession cone of
+$\bigcap_{p(i)} C_i$ is $\bigcap_{p(i)} 0^+C_i$.
+
+The subfamily is given by a predicate and not by a `Set` or a `Finset`, so that the result
+applies to both forms of a bounded intersection. -/
 theorem recessionCone_iInter₂ {ι : Sort*} {p : ι → Prop} {C : ∀ i, p i → Set E}
     (hconv : ∀ i h, Convex ℝ (C i h)) (hclosed : ∀ i h, IsClosed (C i h))
     (hne : (⋂ i, ⋂ h, C i h).Nonempty) :
@@ -651,7 +790,8 @@ theorem recessionCone_iInter₂ {ι : Sort*} {p : ι → Prop} {C : ∀ i, p i �
   exact iInter_congr fun i =>
     recessionCone_iInter (hconv i) (hclosed i) ⟨x, mem_iInter.1 hx i⟩
 
-/-- The binary form: `0⁺(C ∩ D) = 0⁺C ∩ 0⁺D` for closed convex sets that meet. -/
+/-- If $C$ and $D$ are closed convex sets with a common point, then
+$0^+(C \cap D) = 0^+C \cap 0^+D$. -/
 theorem recessionCone_inter (hC : Convex ℝ C) (hC' : IsClosed C) (hD : Convex ℝ D)
     (hD' : IsClosed D) (hne : (C ∩ D).Nonempty) :
     recessionCone (C ∩ D) = recessionCone C ∩ recessionCone D := by
@@ -660,8 +800,9 @@ theorem recessionCone_inter (hC : Convex ℝ C) (hC' : IsClosed C) (hD : Convex 
   · exact mem_recessionCone_of_exists_ray hC hC' ⟨x, fun a ha => (hy x ⟨hxC, hxD⟩ a ha).1⟩
   · exact mem_recessionCone_of_exists_ray hD hD' ⟨x, fun a ha => (hy x ⟨hxC, hxD⟩ a ha).2⟩
 
-/-- A convex set with nonempty interior has the same directions of recession as its interior and
-as its closure. The classical statement uses the relative interior in place of `interior`. -/
+/-- If $C$ is convex and its interior is nonempty, then $0^+(\operatorname{int} C) =
+0^+(\operatorname{cl} C)$. The classical statement uses the relative interior in place of the
+interior. -/
 theorem recessionCone_interior_eq_recessionCone_closure (hC : Convex ℝ C)
     (hne : (interior C).Nonempty) :
     recessionCone (interior C) = recessionCone (closure C) := by
@@ -678,9 +819,10 @@ theorem recessionCone_interior_eq_recessionCone_closure (hC : Convex ℝ C)
       norm_num
     rwa [heq] at hcombo
 
-/-! #### The bridge to Mathlib's `asymptoticCone` -/
+/-! ### The relation to Mathlib's `asymptoticCone` -/
 
-/-- Every direction of recession of a nonempty set lies in Mathlib's `asymptoticCone`. -/
+/-- If $C$ is nonempty, then $0^+C$ is contained in Mathlib's asymptotic cone `asymptoticCone ℝ C`.
+-/
 theorem recessionCone_subset_asymptoticCone (hne : C.Nonempty) :
     recessionCone C ⊆ asymptoticCone ℝ C := by
   obtain ⟨x, hx⟩ := hne
@@ -691,20 +833,21 @@ theorem recessionCone_subset_asymptoticCone (hne : C.Nonempty) :
   filter_upwards [eventually_ge_atTop (0 : ℝ)] with c hc
   simpa [vadd_eq_add, add_comm] using hy x hx c hc
 
-/-- For a closed convex set, Mathlib's `asymptoticCone` is contained in the recession cone. -/
+/-- If $C$ is closed and convex, then `asymptoticCone ℝ C` is contained in $0^+C$. -/
 theorem asymptoticCone_subset_recessionCone (hC : Convex ℝ C) (hC' : IsClosed C) :
     asymptoticCone ℝ C ⊆ recessionCone C := fun y hy x hx a ha => by
   simpa [vadd_eq_add, add_comm] using
     hC.smul_vadd_mem_of_isClosed_of_mem_asymptoticCone hC' ha hy hx
 
-/-- For a nonempty closed convex set, `0⁺C` is Mathlib's `asymptoticCone ℝ C`. -/
+/-- If $C$ is nonempty, closed and convex, then $0^+C$ is `asymptoticCone ℝ C`. -/
 theorem recessionCone_eq_asymptoticCone (hC : Convex ℝ C) (hC' : IsClosed C) (hne : C.Nonempty) :
     recessionCone C = asymptoticCone ℝ C :=
   Set.Subset.antisymm (recessionCone_subset_asymptoticCone hne)
     (asymptoticCone_subset_recessionCone hC hC')
 
-/-- In general Mathlib's `asymptoticCone ℝ C` is the recession cone of the *closure* of `C` — the
-"asymptotic cone" of the older literature. -/
+/-- If $C$ is nonempty and convex, then `asymptoticCone ℝ C` is $0^+(\operatorname{cl} C)$. So
+Mathlib's asymptotic cone is the recession cone of the closure, which the older literature calls
+the asymptotic cone. -/
 theorem recessionCone_closure_eq_asymptoticCone (hC : Convex ℝ C) (hne : C.Nonempty) :
     recessionCone (closure C) = asymptoticCone ℝ C := by
   rw [recessionCone_eq_asymptoticCone hC.closure isClosed_closure hne.closure,
@@ -719,9 +862,12 @@ section Preimage
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   [TopologicalSpace F] [IsTopologicalAddGroup F] [ContinuousSMul ℝ F] {D : Set F}
 
-/-- `0⁺(A⁻¹ D) = A⁻¹ (0⁺D)` for a closed convex `D` with nonempty preimage. Continuity of `A` is
-*not* needed — one half-line is enough inside `D`, not inside `A ⁻¹' D` — so the domain `E`
-carries no topology. -/
+/-- Let $E$ be a real vector space, $F$ a real topological vector space, $A : E \to F$ a linear map,
+and $D \subseteq F$ a closed convex set with $A^{-1}D$ nonempty. Then
+$$0^+(A^{-1}D) = A^{-1}(0^+D).$$
+
+Continuity of $A$ is not needed, and $E$ carries no topology: the proof uses
+`ConvexAnalysis.mem_recessionCone_of_exists_ray` inside $D$, not inside $A^{-1}D$. -/
 theorem recessionCone_preimage (A : E →ₗ[ℝ] F) (hD : Convex ℝ D) (hD' : IsClosed D)
     (hne : (A ⁻¹' D).Nonempty) :
     recessionCone (A ⁻¹' D) = A ⁻¹' recessionCone D := by
@@ -738,8 +884,8 @@ section Normed
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {C : Set E}
 
-/-- **A nonempty bounded set recedes in no direction.** Neither closedness, nor convexity, nor
-finite-dimensionality is needed. -/
+/-- In a real normed space, a nonempty bounded set $C$ has $0^+C = \{0\}$. Closedness, convexity and
+finite dimension are not needed. -/
 theorem recessionCone_eq_zero_of_isBounded (hne : C.Nonempty) (h : IsBounded C) :
     recessionCone C = {0} := by
   refine Set.Subset.antisymm (fun y hy => ?_) (by simp)
@@ -761,15 +907,19 @@ theorem recessionCone_eq_zero_of_isBounded (hne : C.Nonempty) (h : IsBounded C) 
   rw [hnorm] at hsplit
   linarith
 
-/-- The recession cone of a closed ball is trivial. -/
+/-- For $\varepsilon \ge 0$, the recession cone of the closed ball $\bar B(x, \varepsilon)$ is
+$\{0\}$. -/
 theorem recessionCone_closedBall (x : E) {ε : ℝ} (hε : 0 ≤ ε) :
     recessionCone (Metric.closedBall x ε) = {0} :=
   recessionCone_eq_zero_of_isBounded ⟨x, Metric.mem_closedBall_self hε⟩ Metric.isBounded_closedBall
 
 variable {G : Type*} [AddCommGroup G] [Module ℝ G]
 
-/-- The recession cone of `A ⁻¹' (closedBall x ε)` is the kernel of `A`. This is the computation
-the closed-image theorem runs on, and it needs no topology on the domain. -/
+/-- Let $A : G \to E$ be a linear map from a real vector space $G$ to a real normed space $E$, let
+$x \in E$ and $\varepsilon \ge 0$, and suppose that $A^{-1}\bar B(x, \varepsilon)$ is nonempty.
+Then $0^+\bigl(A^{-1}\bar B(x, \varepsilon)\bigr) = \ker A$.
+
+The closedness theorem for linear images uses this computation. It needs no topology on $G$. -/
 theorem recessionCone_preimage_closedBall (A : G →ₗ[ℝ] E) (x : E) {ε : ℝ} (hε : 0 ≤ ε)
     (hne : (A ⁻¹' Metric.closedBall x ε).Nonempty) :
     recessionCone (A ⁻¹' Metric.closedBall x ε) = LinearMap.ker A := by
@@ -786,16 +936,21 @@ section FiniteDimensional
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] {C : Set E}
 
-/-- **A nonempty closed convex set is bounded exactly when it recedes in no direction.** This is
-the one place in this file where finite-dimensionality is used, and it enters through Mathlib's
-`isBounded_iff_asymptoticCone_subset_singleton`. -/
+/-- Let $E$ be a finite-dimensional real normed space and $C \subseteq E$ a nonempty closed convex
+set. Then $C$ is bounded if and only if $0^+C = \{0\}$.
+
+Finite dimension enters here through Mathlib's `isBounded_iff_asymptoticCone_subset_singleton`.
+The other boundedness results of this module use this criterion, and
+`ConvexAnalysis.exists_finset_iInter₂_recessionCone_eq_zero` also uses the compactness of the
+unit sphere. -/
 theorem isBounded_iff_recessionCone_eq_zero (hC : Convex ℝ C) (hC' : IsClosed C)
     (hne : C.Nonempty) : IsBounded C ↔ recessionCone C = {0} := by
   rw [recessionCone_eq_asymptoticCone hC hC' hne, isBounded_iff_asymptoticCone_subset_singleton]
   refine ⟨fun h => Set.Subset.antisymm h ?_, fun h => h.subset⟩
   simpa using zero_mem_asymptoticCone.2 hne
 
-/-- Contrapositive form: an unbounded closed convex set recedes in some nonzero direction. -/
+/-- In a finite-dimensional real normed space, an unbounded nonempty closed convex set $C$ has a
+nonzero $y \in 0^+C$. -/
 theorem exists_ne_zero_mem_recessionCone_of_not_isBounded (hC : Convex ℝ C) (hC' : IsClosed C)
     (hne : C.Nonempty) (hub : ¬ IsBounded C) : ∃ y ∈ recessionCone C, y ≠ 0 := by
   by_contra hcon
@@ -804,14 +959,16 @@ theorem exists_ne_zero_mem_recessionCone_of_not_isBounded (hC : Convex ℝ C) (h
   refine Set.Subset.antisymm (fun y hy => ?_) (by simp)
   simpa using hcon y hy
 
-/-- A nonempty closed convex set is compact exactly when it recedes in no direction. -/
+/-- In a finite-dimensional real normed space, a nonempty closed convex set $C$ is compact if and
+only if $0^+C = \{0\}$. -/
 theorem isCompact_iff_recessionCone_eq_zero (hC : Convex ℝ C) (hC' : IsClosed C)
     (hne : C.Nonempty) : IsCompact C ↔ recessionCone C = {0} := by
   rw [← isBounded_iff_recessionCone_eq_zero hC hC' hne]
   exact ⟨fun h => h.isBounded, fun h => Metric.isCompact_of_isClosed_isBounded hC' h⟩
 
-/-- If `M ∩ C` is nonempty and bounded for a closed convex `C` and an affine set `M`, then
-`N ∩ C` is bounded for every affine set `N` parallel to `M`. -/
+/-- Let $E$ be a finite-dimensional real normed space, $C \subseteq E$ a closed convex set, and $M$,
+$N$ affine subsets of $E$ that are parallel, that is, have the same direction. If $M \cap C$ is
+nonempty and bounded, then $N \cap C$ is bounded. -/
 theorem isBounded_inter_of_direction_eq (hC : Convex ℝ C) (hC' : IsClosed C)
     {M N : AffineSubspace ℝ E} (hMN : M.direction = N.direction)
     (hM : ((M : Set E) ∩ C).Nonempty) (hb : IsBounded ((M : Set E) ∩ C)) :
@@ -828,9 +985,12 @@ theorem isBounded_inter_of_direction_eq (hC : Convex ℝ C) (hC' : IsClosed C)
   rw [isBounded_iff_recessionCone_eq_zero (N.convex.inter hC) (hNcl.inter hC') hN, key]
   exact (isBounded_iff_recessionCone_eq_zero (M.convex.inter hC) (hMcl.inter hC') hM).1 hb
 
-/-- A family of closed sets whose recession cones meet only at the origin has a **finite**
-subfamily whose recession cones already meet only at the origin. Convexity is not used: `0⁺C` is a
-closed cone, so the unit sphere is covered by the complements of finitely many of them. -/
+/-- In a finite-dimensional real normed space, let $(C_i)_{i \in I}$ be closed sets with
+$\bigcap_i 0^+C_i = \{0\}$. Then there is a finite set $S \subseteq I$ with
+$\bigcap_{i \in S} 0^+C_i = \{0\}$.
+
+Convexity is not used. Each $0^+C_i$ is a closed cone, so the unit sphere is covered by the
+complements of finitely many of them. -/
 theorem exists_finset_iInter₂_recessionCone_eq_zero {ι : Type*} {C : ι → Set E}
     (hcl : ∀ i, IsClosed (C i)) (h : ⋂ i, recessionCone (C i) = {0}) :
     ∃ S : Finset ι, ⋂ i ∈ S, recessionCone (C i) = {0} := by
@@ -853,12 +1013,17 @@ theorem exists_finset_iInter₂_recessionCone_eq_zero {ι : Type*} {C : ι → S
   rw [hS] at hmem
   exact hmem
 
-/-- **The recession hypothesis of Helly's theorem**: for a family of closed convex sets *every
-finite subfamily of which has a common point*, having no common direction of recession holds **if
-and only if** some finite subfamily has a bounded intersection. Neither direction needs the
-recession cone of the *whole* intersection: `⇒` applies the boundedness criterion to a finite
-subfamily produced by compactness of the unit sphere, and `⇐` reads it backwards through the
-recession cone of an intersection. -/
+/-- Let $E$ be a finite-dimensional real normed space, and let $(C_i)_{i \in I}$ be a family of
+closed convex subsets of $E$ such that every finite subfamily has a common point. Then
+$$\bigcap_i 0^+C_i = \{0\} \iff \bigcap_{i \in S} C_i \text{ is bounded for some finite } S
+  \subseteq I.$$
+This is the recession hypothesis of Helly's theorem.
+
+Neither direction uses the recession cone of the whole intersection. The forward direction
+applies `ConvexAnalysis.isBounded_iff_recessionCone_eq_zero` to a finite subfamily that
+`ConvexAnalysis.exists_finset_iInter₂_recessionCone_eq_zero` gives by compactness of the unit
+sphere. The reverse direction applies the same criterion to the finite intersection, whose
+recession cone is the intersection of the recession cones. -/
 theorem iInter_recessionCone_eq_zero_iff_exists_isBounded {ι : Type*} {C : ι → Set E}
     (hconv : ∀ i, Convex ℝ (C i)) (hcl : ∀ i, IsClosed (C i))
     (hne : ∀ S : Finset ι, (⋂ i ∈ S, C i).Nonempty) :

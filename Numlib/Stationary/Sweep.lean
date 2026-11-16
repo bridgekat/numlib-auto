@@ -8,42 +8,61 @@ import Numlib.Stationary.Splitting
 /-!
 # The classical stationary iterations as sweeps on vectors
 
-The splitting `A = P - N` of `Numlib/Stationary/Splitting` is the object the convergence theory is
-about; what a textbook writes down is the *sweep*, the map `x ↦ x_{new}` on `n → 𝕜` that a
-program executes.  This module defines the sweeps and proves each equal to the step of its
-splitting, which is the one lemma every consumer needs before it can quote a convergence theorem
-about a componentwise formula.
+Let $A = P - N$ be a splitting of a square matrix $A$ over a field (`Stationary.Splitting`, in
+`Numlib.Stationary.Splitting`). The convergence theory is about the splitting, but a textbook writes
+the method as a **sweep**: a map $x \mapsto x_{\mathrm{new}}$ on vectors, given by a componentwise
+formula that a program executes. This module defines the sweeps of the classical methods and proves
+that each sweep is the step $x \mapsto P^{-1}(N x + b)$ of its splitting ([quarteroni2000numerical],
+(4.6); [saad2003iterative], (4.28)). A user needs this identification before a convergence theorem
+about the splitting applies to a componentwise formula.
 
-* `Stationary.Splitting.mulVecStep s b x = s.m⁻¹ *ᵥ (s.n *ᵥ x + b)` is one step of `P x_{k+1} =
-  N x_k + b` ([quarteroni2000numerical] (4.6); [saad2003iterative] (4.28)), in its three forms:
-  the update form `x + P⁻¹ (b - A x)` ((4.7)), the affine form `B x + P⁻¹ b`, and — over an
-  `RCLike` field, under `WithLp.toLp 2` — `Stationary.step` of the operator `toEuclideanCLM B`,
-  through which the theory of `Numlib/Stationary/Basic` applies.  Its fixed points are the
-  solutions of `A x = b` (consistency, [quarteroni2000numerical] Definition 4.1).
-* `Matrix.jorSweep` is the componentwise JOR formula ([quarteroni2000numerical], the display after
-  (4.11); `ω = 1` is Jacobi, (4.10)); `Matrix.sorSweep` and `Matrix.backwardSorSweep` are the SOR
-  and backward SOR sweeps ([quarteroni2000numerical] (4.16) multiplied through by `D`, and §4.2.6),
-  with `ω = 1` the two Gauss–Seidel sweeps; the componentwise recursion (4.15) of the SOR sweep is
-  the theorem `Matrix.sorSweep_apply`, and (4.13) is its case `ω = 1`.
-* `Matrix.jorSweep_eq_mulVecStep`, `Matrix.sorSweep_eq_mulVecStep` and
-  `Matrix.backwardSorSweep_eq_mulVecStep` identify the sweeps with the steps of
-  `Matrix.jorSplitting`, `Matrix.sorSplitting`, `Matrix.backwardSorSplitting`, and
-  `Matrix.ssorSweep_eq_mulVecStep` says
-  that a forward SOR sweep followed by a backward one is the step of `Matrix.ssorSplitting`
-  ([quarteroni2000numerical] §4.2.6, the elimination of `x^{(k+1/2)}`; at `ω = 1` the symmetric
-  Gauss–Seidel method (4.21)).
-* `Matrix.foldl_sorRelax_eq_sorSweep`: the loop that relaxes the unknowns one at a time
-  (`Matrix.sorRelax`), in the natural order of `Fin m`, is the SOR sweep.
+With $A = D + L + U$, where $D$ is the diagonal part, $L$ the strictly lower triangular part and $U$
+the strictly upper triangular part of $A$, the SOR sweep with parameter $\omega$ is
+$$x \mapsto (D + \omega L)^{-1} \bigl(((1 - \omega) D - \omega U) x + \omega b\bigr).$$
+Read row by row, it is the recursion $y_i = \frac{\omega}{a_{ii}} \bigl(b_i - \sum_{j < i} a_{ij}
+y_j - \sum_{j > i} a_{ij} x_j\bigr) + (1 - \omega) x_i$, and also the loop that relaxes the unknowns
+one at a time. The case $\omega = 1$ is Gauss–Seidel. The JOR sweep (Jacobi at $\omega = 1$) and the
+backward SOR sweep are treated in the same way, and a forward SOR sweep followed by a backward one
+is the step of the SSOR splitting.
 
-## Design
+## Main definitions
 
-A sweep is *defined* by its matrix formula (`sorSweep A ω b x = (D + ωL)⁻¹ *ᵥ (((1 - ω) D - ωU)
-*ᵥ x + ω b)`) and the componentwise recursion is a *theorem* about it, obtained by reading the
-triangular system row by row along the linear order of `n`.  This keeps the definitions total and
-index-type-agnostic and puts the induction where it belongs; the JOR sweep, whose components are
-independent, is defined componentwise.  Everything is stated for `Matrix n n 𝕜` over a field with
-`[LinearOrder n]` (the sweep order) and vectors `n → 𝕜`; no analysis enters except in the
-`EuclideanSpace` transport `Stationary.Splitting.toLp_mulVecStep`.
+* `Stationary.Splitting.mulVecStep`: the step $x \mapsto P^{-1}(N x + b)$ of a splitting.
+* `Matrix.jorSweep`: the componentwise JOR formula, which is the Jacobi formula at $\omega = 1$.
+* `Matrix.sorSweep`, `Matrix.backwardSorSweep`: the SOR and the backward SOR sweeps, which are the
+  two Gauss–Seidel sweeps at $\omega = 1$.
+* `Matrix.sorRelax`: the relaxation of one unknown in an SOR sweep.
+
+## Main results
+
+* `Stationary.Splitting.mulVecStep_eq_add_inv_mulVec`: the update form $x + P^{-1}(b - A x)$ of the
+  step.
+* `Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add`: the affine form
+  $G x + P^{-1} b$ of the step.
+* `Stationary.Splitting.mulVecStep_fixed_iff`: consistency, the fixed points of the step are the
+  solutions of $A x = b$.
+* `Stationary.Splitting.toLp_mulVecStep`: over `RCLike` scalars, the step is `Stationary.step` of
+  the operator of $G$ on `EuclideanSpace`.
+* `Matrix.sorSweep_apply`: the componentwise SOR recursion.
+* `Matrix.jorSweep_eq_mulVecStep`, `Matrix.sorSweep_eq_mulVecStep`,
+  `Matrix.backwardSorSweep_eq_mulVecStep`: each sweep is the step of `Matrix.jorSplitting`,
+  `Matrix.sorSplitting` or `Matrix.backwardSorSplitting`.
+* `Matrix.ssorSweep_eq_mulVecStep`: a forward SOR sweep followed by a backward one is the step of
+  `Matrix.ssorSplitting`.
+* `Matrix.foldl_sorRelax_eq_sorSweep`: the loop of relaxations over `Fin m`, in the natural order,
+  is the SOR sweep.
+
+## Implementation notes
+
+* The SOR sweeps are defined by their matrix formula, and the componentwise recursion is a theorem
+  about them. The recursion follows by reading the triangular system row by row along the linear
+  order of the index type. This keeps the definitions total and independent of the index type. The
+  components of the JOR sweep do not depend on each other, so the JOR sweep is defined
+  componentwise.
+* All statements are for `Matrix n n 𝕜` over a field, with vectors `n → 𝕜`. The linear order
+  `[LinearOrder n]` is the order of the sweep. No analysis enters, except in the transport
+  `Stationary.Splitting.toLp_mulVecStep` to `EuclideanSpace`, through which the theory of
+  `Numlib.Stationary.Basic` applies.
 -/
 
 open Finset
@@ -54,41 +73,54 @@ variable {n : Type*} [Fintype n] [DecidableEq n] {𝕜 : Type*} [Field 𝕜] {A 
 
 open Matrix
 
-/-- One step of the splitting iteration `P x_{k+1} = N x_k + b` on `n → 𝕜`: `mulVecStep s b x =
-P⁻¹ (N x + b)` ([quarteroni2000numerical] (4.6); [saad2003iterative] (4.28)). -/
+/-- One **step of a splitting iteration**. For a splitting $A = P - N$ of a square matrix over a
+field and vectors $b$, $x$,
+$$\mathrm{step}(x) = P^{-1}(N x + b),$$
+so that $x_{k+1} = \mathrm{step}(x_k)$ solves $P x_{k+1} = N x_k + b$
+([quarteroni2000numerical], (4.6); [saad2003iterative], (4.28)).
+
+The matrix $P$ is the part `m` of the splitting, $N$ is `Stationary.Splitting.n`, and $P^{-1}$
+is the matrix inverse. -/
 noncomputable def mulVecStep (s : Splitting A) (b x : n → 𝕜) : n → 𝕜 :=
   s.m⁻¹ *ᵥ (s.n *ᵥ x + b)
 
 variable (s : Splitting A) (b x : n → 𝕜)
 
-/-- The update form of the step: `x_{k+1} = x_k + P⁻¹ r_k` with the residual `r_k = b - A x_k`
-([quarteroni2000numerical] (4.7)–(4.8)). -/
+/-- The update form of the step of a splitting $A = P - N$:
+$$\mathrm{step}(x) = x + P^{-1}(b - A x),$$
+so that $x_{k+1} = x_k + P^{-1} r_k$ with the residual $r_k = b - A x_k$
+([quarteroni2000numerical], (4.7)–(4.8)). -/
 theorem mulVecStep_eq_add_inv_mulVec : mulVecStep s b x = x + s.m⁻¹ *ᵥ (b - A *ᵥ x) := by
   have hn : s.n = s.m - A := rfl
   rw [mulVecStep, hn, sub_mulVec, show s.m *ᵥ x - A *ᵥ x + b = s.m *ᵥ x + (b - A *ᵥ x) by abel,
     mulVec_add, nonsing_inv_mulVec_mulVec s.isUnit]
 
-/-- The step multiplied through by `P`: `P (x_{k+1} - x_k) = b - A x_k`. -/
+/-- For the step of a splitting $A = P - N$, $P(\mathrm{step}(x) - x) = b - A x$. -/
 theorem mulVec_mulVecStep_sub : s.m *ᵥ (mulVecStep s b x - x) = b - A *ᵥ x := by
   rw [mulVecStep_eq_add_inv_mulVec, add_sub_cancel_left, mulVec_nonsing_inv_mulVec s.isUnit]
 
-/-- The step is characterized by `P (y - x) = b - A x`: whatever solves the update system is the
-step.  This is how a componentwise sweep is identified with the step of its splitting. -/
+/-- Let $A = P - N$ be a splitting, and let $x$, $y$, $b$ be vectors with $P(y - x) = b - A x$. Then
+$y$ is the step of the splitting from $x$.
+
+This is how a componentwise sweep is identified with the step of its splitting. -/
 theorem mulVecStep_eq_of_mulVec_sub_eq {y : n → 𝕜} (h : s.m *ᵥ (y - x) = b - A *ᵥ x) :
     mulVecStep s b x = y := by
   rw [mulVecStep_eq_add_inv_mulVec, nonsing_inv_mulVec_eq s.isUnit h]
   abel
 
-/-- The affine form of the step: `x_{k+1} = B x_k + f` with the iteration matrix `B = P⁻¹ N` and
-`f = P⁻¹ b` ([quarteroni2000numerical], the sentence after (4.6)). -/
+/-- The affine form of the step of a splitting $A = P - N$:
+$$\mathrm{step}(x) = G x + P^{-1} b,$$
+with the iteration matrix $G = P^{-1} N$ ([quarteroni2000numerical], the sentence after (4.6)). -/
 theorem mulVecStep_eq_iterationOperator_mulVec_add :
     mulVecStep s b x = s.iterationOperator *ᵥ x + s.m⁻¹ *ᵥ b := by
   rw [mulVecStep, mulVec_add, Splitting.iterationOperator_eq, ← nonsing_inv_eq_ringInverse,
     ← mulVec_mulVec]
 
-/-- **Consistency** of the splitting iteration: `x` is a fixed point of the step iff it solves
-`A x = b` ([quarteroni2000numerical] Definition 4.1 for the method (4.6); [saad2003iterative]
-(4.29)). -/
+/-- **Consistency** of the splitting iteration. For a splitting $A = P - N$ and vectors $x$, $b$,
+the vector $x$ is a fixed point of the step if and only if $A x = b$.
+
+This is Definition 4.1 of [quarteroni2000numerical] for the method (4.6), and (4.29) of
+[saad2003iterative]. -/
 theorem mulVecStep_fixed_iff : mulVecStep s b x = x ↔ A *ᵥ x = b := by
   rw [mulVecStep_eq_add_inv_mulVec, add_eq_left]
   constructor
@@ -99,10 +131,15 @@ theorem mulVecStep_fixed_iff : mulVecStep s b x = x ↔ A *ᵥ x = b := by
   · intro h
     rw [h, sub_self, mulVec_zero]
 
-/-- **Two steps compose into one**: if `t.m⁻¹ = m₂⁻¹ (m₁ + m₂ - A) m₁⁻¹`, one step of the splitting
-`m₁` followed by one step of the splitting `m₂` is one step of `t`
-(`Stationary.Splitting.iterationOperator_eq_mul_of_inverse_m_eq` for the linear part and
-`Stationary.Splitting.inverse_m_eq_iterationOperator_mul_inverse_add` for the constant term). -/
+/-- **Two steps compose into one.** Let $A = P_1 - N_1$, $A = P_2 - N_2$ and $A = P_t - N_t$ be
+splittings of $A$ with
+$$P_t^{-1} = P_2^{-1} (P_1 + P_2 - A) P_1^{-1}.$$
+Then one step of the first splitting followed by one step of the second is one step of the
+third: $\mathrm{step}_2(\mathrm{step}_1(x)) = \mathrm{step}_t(x)$.
+
+The linear part is `Stationary.Splitting.iterationOperator_eq_mul_of_inverse_m_eq`, and the
+constant term is `Stationary.Splitting.inverse_m_eq_iterationOperator_mul_inverse_add`. The
+inverses in the hypothesis are `Ring.inverse`. -/
 theorem mulVecStep_mulVecStep (s₁ s₂ t : Splitting A)
     (ht : Ring.inverse t.m = Ring.inverse s₂.m * (s₁.m + s₂.m - A) * Ring.inverse s₁.m) :
     mulVecStep s₂ b (mulVecStep s₁ b x) = mulVecStep t b x := by
@@ -115,10 +152,14 @@ section EuclideanSpace
 
 variable {𝕜 : Type*} [RCLike 𝕜] {A : Matrix n n 𝕜}
 
-/-- Under `WithLp.toLp 2`, the step of a splitting is the affine step `Stationary.step` of the
-operator `toEuclideanCLM B` on `EuclideanSpace 𝕜 n`, with `f = P⁻¹ b`: the transport through which
-the theory of `Numlib/Stationary/Basic` — error propagation, convergence factors, the a priori and
-a posteriori bounds — applies to a matrix iteration. -/
+/-- Let $A = P - N$ be a splitting of a square matrix over an `RCLike` field, with iteration matrix
+$G$. The step of the splitting from $x$, viewed in `EuclideanSpace`, is the affine step
+$x \mapsto G x + f$ of `Stationary.step`, with $G$ acting as the operator
+`Matrix.toEuclideanCLM` of $G$ and $f = P^{-1} b$.
+
+Through this transport, the theory of `Numlib.Stationary.Basic` applies to a matrix iteration:
+the propagation of the error, the convergence factors, and the a priori and a posteriori bounds.
+The vectors are moved by `WithLp.toLp 2`. -/
 theorem toLp_mulVecStep (s : Splitting A) (b x : n → 𝕜) :
     (WithLp.toLp 2 (mulVecStep s b x) : EuclideanSpace 𝕜 n) =
       Stationary.step (toEuclideanCLM (n := n) (𝕜 := 𝕜) s.iterationOperator)
@@ -139,15 +180,22 @@ variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n] {𝕜 : Type*} 
 /-! ### The JOR and Jacobi sweeps -/
 
 omit [LinearOrder n] in
-/-- The JOR sweep: `x_i ↦ (ω / a_ii) (b_i - ∑_{j ≠ i} a_ij x_j) + (1 - ω) x_i`
-([quarteroni2000numerical], the display after (4.11)).  At `ω = 1` it is the Jacobi formula
-(4.10).  Every component depends on the old vector only, so it is defined componentwise. -/
+/-- The **JOR sweep** with parameter $\omega$ for a square matrix $A$ and a right-hand side $b$: the
+vector $x$ goes to the vector $y$ with
+$$y_i = \frac{\omega}{a_{ii}} \Bigl(b_i - \sum_{j \neq i} a_{ij} x_j\Bigr) + (1 - \omega) x_i.$$
+
+This is the display after (4.11) of [quarteroni2000numerical]. At $\omega = 1$ it is the Jacobi
+formula (4.10). Each component depends only on the old vector, so the sweep is defined
+componentwise. -/
 noncomputable def jorSweep (A : Matrix n n 𝕜) (ω : 𝕜) (b x : n → 𝕜) : n → 𝕜 := fun i =>
   ω / A i i * (b i - ∑ j ∈ univ.erase i, A i j * x j) + (1 - ω) * x i
 
 omit [LinearOrder n] in
-/-- The JOR sweep is the step of the JOR splitting `M = ω⁻¹ D` (`Matrix.jorSplitting`): row `i` of
-`ω⁻¹ D (y - x) = b - A x` is the sweep formula. -/
+/-- Let $A$ be a square matrix with invertible diagonal part $D$, and let $\omega \neq 0$. The JOR
+sweep with parameter $\omega$ is the step of the JOR splitting $P = \omega^{-1} D$
+(`Matrix.jorSplitting`).
+
+Row $i$ of the equation $\omega^{-1} D (y - x) = b - A x$ is the formula of the sweep. -/
 theorem jorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0)
     (b : n → 𝕜) : jorSweep A ω b = Splitting.mulVecStep (jorSplitting A h hω) b := by
   have hd := (isUnit_diagPart_iff A).mp h
@@ -162,46 +210,65 @@ theorem jorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {
   ring
 
 omit [LinearOrder n] in
-/-- The Jacobi sweep is the step of the Jacobi splitting `M = D` ([quarteroni2000numerical] (4.10)
-and (4.11)). -/
+/-- Let $A$ be a square matrix with invertible diagonal part $D$. The Jacobi sweep, which is the JOR
+sweep with $\omega = 1$, is the step of the Jacobi splitting $P = D$ ([quarteroni2000numerical],
+(4.10) and (4.11)). -/
 theorem jorSweep_one_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (b : n → 𝕜) :
     jorSweep A 1 b = Splitting.mulVecStep (jacobiSplitting A h) b := by
   rw [jorSweep_eq_mulVecStep A h one_ne_zero, jorSplitting_one]
 
 /-! ### The SOR and Gauss–Seidel sweeps -/
 
-/-- The SOR sweep as a function on vectors: `x ↦ (D + ωL)⁻¹ (((1 - ω) D - ωU) x + ω b)`, that is
-[quarteroni2000numerical] (4.16) multiplied through by `D`, in the letters `D = diagPart A`,
-`L = strictLower A`, `U = strictUpper A`.  At `ω = 1` it is the Gauss–Seidel sweep (4.13). -/
+/-- The **SOR sweep** with parameter $\omega$ for a square matrix $A = D + L + U$ and a right-hand
+side $b$:
+$$x \mapsto (D + \omega L)^{-1} \bigl(((1 - \omega) D - \omega U) x + \omega b\bigr),$$
+where $D$, $L$ and $U$ are the diagonal, the strictly lower triangular and the strictly upper
+triangular parts of $A$.
+
+This is (4.16) of [quarteroni2000numerical] multiplied through by $D$. At $\omega = 1$ it is the
+Gauss–Seidel sweep (4.13). The inverse is the matrix inverse. -/
 noncomputable def sorSweep (A : Matrix n n 𝕜) (ω : 𝕜) (b x : n → 𝕜) : n → 𝕜 :=
   (diagPart A + ω • strictLower A)⁻¹ *ᵥ (((1 - ω) • diagPart A - ω • strictUpper A) *ᵥ x + ω • b)
 
-/-- The backward SOR sweep: `x ↦ (D + ωU)⁻¹ (((1 - ω) D - ωL) x + ω b)`, the method
-`(D - ωF) x_{k+1} = [ωE + (1 - ω) D] x_k + ω b` of [quarteroni2000numerical] §4.2.6.  At `ω = 1`
-it is the backward Gauss–Seidel sweep. -/
+/-- The **backward SOR sweep** with parameter $\omega$ for a square matrix $A = D + L + U$ and a
+right-hand side $b$:
+$$x \mapsto (D + \omega U)^{-1} \bigl(((1 - \omega) D - \omega L) x + \omega b\bigr).$$
+
+This is the method $(D - \omega F) x_{k+1} = [\omega E + (1 - \omega) D] x_k + \omega b$ of
+[quarteroni2000numerical], §4.2.6, with $E = -L$ and $F = -U$. At $\omega = 1$ it is the
+backward Gauss–Seidel sweep. -/
 noncomputable def backwardSorSweep (A : Matrix n n 𝕜) (ω : 𝕜) (b x : n → 𝕜) : n → 𝕜 :=
   (diagPart A + ω • strictUpper A)⁻¹ *ᵥ (((1 - ω) • diagPart A - ω • strictLower A) *ᵥ x + ω • b)
 
-/-- The SOR sweep solves the triangular system `(D + ωL) y = ((1 - ω) D - ωU) x + ω b`. -/
+/-- Let $A$ be a square matrix with invertible diagonal part $D$. For every $\omega$, the SOR sweep
+$y$ from $x$ solves the triangular system
+$$(D + \omega L) y = ((1 - \omega) D - \omega U) x + \omega b.$$
+-/
 theorem diagPart_add_smul_strictLower_mulVec_sorSweep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (ω : 𝕜) (b x : n → 𝕜) :
     (diagPart A + ω • strictLower A) *ᵥ sorSweep A ω b x =
       ((1 - ω) • diagPart A - ω • strictUpper A) *ᵥ x + ω • b :=
   mulVec_nonsing_inv_mulVec (isUnit_diagPart_add_smul_strictLower h ω) _
 
-/-- The backward SOR sweep solves the triangular system `(D + ωU) y = ((1 - ω) D - ωL) x + ω b`. -/
+/-- Let $A$ be a square matrix with invertible diagonal part $D$. For every $\omega$, the backward
+SOR sweep $y$ from $x$ solves the triangular system
+$$(D + \omega U) y = ((1 - \omega) D - \omega L) x + \omega b.$$
+-/
 theorem diagPart_add_smul_strictUpper_mulVec_backwardSorSweep (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) (ω : 𝕜) (b x : n → 𝕜) :
     (diagPart A + ω • strictUpper A) *ᵥ backwardSorSweep A ω b x =
       ((1 - ω) • diagPart A - ω • strictLower A) *ᵥ x + ω • b :=
   mulVec_nonsing_inv_mulVec (isUnit_diagPart_add_smul_strictUpper h ω) _
 
-/-- **The componentwise SOR recursion** ([quarteroni2000numerical] (4.15)): with `y` the SOR sweep
-from `x`,
-`y_i = (ω / a_ii) (b_i - ∑_{j < i} a_ij y_j - ∑_{j > i} a_ij x_j) + (1 - ω) x_i`,
-the already updated components entering for `j < i` and the old ones for `j > i`.  It is row `i` of
-`(D + ωL) y = ((1 - ω) D - ωU) x + ω b`, read as a recursion along the linear order of `n`; at
-`ω = 1` it is the Gauss–Seidel recursion (4.13). -/
+/-- **The componentwise SOR recursion.** Let $A$ be a square matrix with invertible diagonal, let
+$\omega$ be a scalar, and let $y$ be the SOR sweep from $x$. Then for every index $i$,
+$$y_i = \frac{\omega}{a_{ii}} \Bigl(b_i - \sum_{j < i} a_{ij} y_j - \sum_{j > i} a_{ij}
+  x_j\Bigr) + (1 - \omega) x_i.$$
+The updated components enter for $j < i$, and the old ones for $j > i$.
+
+This is (4.15) of [quarteroni2000numerical], and at $\omega = 1$ it is the Gauss–Seidel
+recursion (4.13). It is row $i$ of $(D + \omega L) y = ((1 - \omega) D - \omega U) x + \omega
+b$, read as a recursion along the linear order of the index type. -/
 theorem sorSweep_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (ω : 𝕜) (b x : n → 𝕜)
     (i : n) :
     sorSweep A ω b x i =
@@ -216,8 +283,13 @@ theorem sorSweep_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (ω : �
   field_simp
   linear_combination hrow
 
-/-- **The componentwise backward SOR recursion**: the mirror image of `Matrix.sorSweep_apply`, the
-updated components entering for `j > i`. -/
+/-- **The componentwise backward SOR recursion.** Let $A$ be a square matrix with invertible
+diagonal, let $\omega$ be a scalar, and let $y$ be the backward SOR sweep from $x$. Then for
+every index $i$,
+$$y_i = \frac{\omega}{a_{ii}} \Bigl(b_i - \sum_{j > i} a_{ij} y_j - \sum_{j < i} a_{ij}
+  x_j\Bigr) + (1 - \omega) x_i.$$
+
+This is the mirror image of `Matrix.sorSweep_apply`: the updated components enter for $j > i$. -/
 theorem backwardSorSweep_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (ω : 𝕜)
     (b x : n → 𝕜) (i : n) :
     backwardSorSweep A ω b x i =
@@ -232,7 +304,10 @@ theorem backwardSorSweep_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (
   field_simp
   linear_combination hrow
 
-/-- The residual form of the SOR sweep: `(D + ωL) (y - x) = ω (b - A x)`. -/
+/-- The residual form of the SOR sweep. Let $A$ be a square matrix with invertible diagonal part
+$D$, and let $y$ be the SOR sweep from $x$ with parameter $\omega$. Then
+$$(D + \omega L)(y - x) = \omega (b - A x).$$
+-/
 theorem diagPart_add_smul_strictLower_mulVec_sorSweep_sub (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) (ω : 𝕜) (b x : n → 𝕜) :
     (diagPart A + ω • strictLower A) *ᵥ (sorSweep A ω b x - x) = ω • (b - A *ᵥ x) := by
@@ -243,7 +318,10 @@ theorem diagPart_add_smul_strictLower_mulVec_sorSweep_sub (A : Matrix n n 𝕜)
   simp only [add_mulVec, sub_mulVec, smul_mulVec, sub_smul, one_smul, smul_sub, smul_add]
   abel
 
-/-- The residual form of the backward SOR sweep: `(D + ωU) (y - x) = ω (b - A x)`. -/
+/-- The residual form of the backward SOR sweep. Let $A$ be a square matrix with invertible diagonal
+part $D$, and let $y$ be the backward SOR sweep from $x$ with parameter $\omega$. Then
+$$(D + \omega U)(y - x) = \omega (b - A x).$$
+-/
 theorem diagPart_add_smul_strictUpper_mulVec_backwardSorSweep_sub (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) (ω : 𝕜) (b x : n → 𝕜) :
     (diagPart A + ω • strictUpper A) *ᵥ (backwardSorSweep A ω b x - x) = ω • (b - A *ᵥ x) := by
@@ -254,9 +332,13 @@ theorem diagPart_add_smul_strictUpper_mulVec_backwardSorSweep_sub (A : Matrix n 
   simp only [add_mulVec, sub_mulVec, smul_mulVec, sub_smul, one_smul, smul_sub, smul_add]
   abel
 
-/-- **The SOR sweep is the step of the SOR splitting** `M = ω⁻¹ (D - ωE)` (`Matrix.sorSplitting`),
-so it is `x ↦ x + (ω⁻¹ D - E)⁻¹ (b - A x)`, the display after [quarteroni2000numerical] (4.17):
-scale the residual form `(D + ωL) (y - x) = ω (b - A x)` by `ω⁻¹`. -/
+/-- **The SOR sweep is the step of the SOR splitting.** Let $A$ be a square matrix with invertible
+diagonal part $D$, and let $\omega \neq 0$. Then the SOR sweep with parameter $\omega$ is the
+step of the SOR splitting $P = \omega^{-1} D + L$ (`Matrix.sorSplitting`). So the sweep is $x
+\mapsto x + (\omega^{-1} D + L)^{-1}(b - A x)$, which is the display after (4.17) of
+[quarteroni2000numerical], with $L = -E$.
+
+The proof scales the residual form $(D + \omega L)(y - x) = \omega (b - A x)$ by $\omega^{-1}$. -/
 theorem sorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0)
     (b : n → 𝕜) : sorSweep A ω b = Splitting.mulVecStep (sorSplitting A h hω) b := by
   funext x
@@ -267,13 +349,16 @@ theorem sorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {
   rw [hm, smul_mulVec, diagPart_add_smul_strictLower_mulVec_sorSweep_sub A h, smul_smul,
     inv_mul_cancel₀ hω, one_smul]
 
-/-- **The Gauss–Seidel sweep is the step of the Gauss–Seidel splitting** `M = D - E`
-([quarteroni2000numerical] (4.13)–(4.14)). -/
+/-- **The Gauss–Seidel sweep is the step of the Gauss–Seidel splitting.** Let $A$ be a square matrix
+with invertible diagonal part $D$. The SOR sweep with $\omega = 1$ is the step of the
+Gauss–Seidel splitting $P = D + L$ ([quarteroni2000numerical], (4.13)–(4.14)). -/
 theorem sorSweep_one_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) (b : n → 𝕜) :
     sorSweep A 1 b = Splitting.mulVecStep (gaussSeidelSplitting A h) b := by
   rw [sorSweep_eq_mulVecStep A h one_ne_zero, sorSplitting_one]
 
-/-- **The backward SOR sweep is the step of the backward SOR splitting** `M = ω⁻¹ (D - ωF)`
+/-- **The backward SOR sweep is the step of the backward SOR splitting.** Let $A$ be a square matrix
+with invertible diagonal part $D$, and let $\omega \neq 0$. Then the backward SOR sweep with
+parameter $\omega$ is the step of the backward SOR splitting $P = \omega^{-1} D + U$
 (`Matrix.backwardSorSplitting`). -/
 theorem backwardSorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜}
     (hω : ω ≠ 0) (b : n → 𝕜) :
@@ -286,17 +371,23 @@ theorem backwardSorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPa
   rw [hm, smul_mulVec, diagPart_add_smul_strictUpper_mulVec_backwardSorSweep_sub A h, smul_smul,
     inv_mul_cancel₀ hω, one_smul]
 
-/-- **The backward Gauss–Seidel sweep is the step of the backward Gauss–Seidel splitting**
-`M = D - F` ([quarteroni2000numerical] §4.2.6). -/
+/-- **The backward Gauss–Seidel sweep is the step of the backward Gauss–Seidel splitting.** Let $A$
+be a square matrix with invertible diagonal part $D$. The backward SOR sweep with $\omega = 1$
+is the step of the backward Gauss–Seidel splitting $P = D + U$ ([quarteroni2000numerical],
+§4.2.6). -/
 theorem backwardSorSweep_one_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (b : n → 𝕜) :
     backwardSorSweep A 1 b = Splitting.mulVecStep (backwardGaussSeidelSplitting A h) b := by
   rw [backwardSorSweep_eq_mulVecStep A h one_ne_zero, backwardSorSplitting_one]
 
-/-- **One SSOR step is a forward SOR sweep followed by a backward one**: the composite is the step
-of the SSOR splitting `Matrix.ssorSplitting` ([quarteroni2000numerical] §4.2.6, the elimination of
-the half-step `x^{(k+1/2)}`; at `ω = 1` the symmetric Gauss–Seidel method with `B_SGS`, `b_SGS` of
-(4.21); [saad2003iterative] (4.13)–(4.14)). -/
+/-- **One SSOR step is a forward SOR sweep followed by a backward one.** Let $A$ be a square matrix
+with invertible diagonal part $D$, and let $\omega \notin \{0, 2\}$. For every $b$ and $x$, the
+backward SOR sweep applied to the SOR sweep from $x$ is the step from $x$ of the SSOR splitting
+(`Matrix.ssorSplitting`).
+
+This is the elimination of the half-step $x^{(k+1/2)}$ in §4.2.6 of [quarteroni2000numerical].
+At $\omega = 1$ it is the symmetric Gauss–Seidel method with $B_{SGS}$ and $b_{SGS}$ of (4.21)
+there; see also [saad2003iterative], (4.13)–(4.14). -/
 theorem ssorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0)
     (hω2 : ω ≠ 2) (b x : n → 𝕜) :
     backwardSorSweep A ω b (sorSweep A ω b x) =
@@ -304,22 +395,29 @@ theorem ssorSweep_eq_mulVecStep (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) 
   rw [sorSweep_eq_mulVecStep A h hω, backwardSorSweep_eq_mulVecStep A h hω]
   exact Splitting.mulVecStep_mulVecStep b x _ _ _ (ringInverse_ssorSplitting_m A h hω hω2)
 
-/-! ### The SOR sweep as a loop of relaxations
+/-!
+### The SOR sweep as a loop of relaxations
 
-What a program executes is a loop over the unknowns, each relaxed once from the current vector.
-Over `Fin m`, in the natural order, that loop is the sweep `Matrix.sorSweep`. -/
+A program executes a loop over the unknowns, and relaxes each unknown once from the current vector.
+Over `Fin m`, in the natural order, this loop is the sweep `Matrix.sorSweep`.
+-/
 
 section Relaxation
 
 variable {m : ℕ} {𝕜 : Type*} [Field 𝕜] (A : Matrix (Fin m) (Fin m) 𝕜) (ω : 𝕜) (b : Fin m → 𝕜)
 
-/-- One relaxation of the `i`-th unknown in an SOR sweep: the `i`-th entry of `x` moves by `ω`
-times the `i`-th residual over `a_ii`, and every other entry is kept
-([quarteroni2000numerical] (4.15), [saad2003iterative] (4.12), one inner iteration). -/
+/-- The **relaxation of the $i$-th unknown** in an SOR sweep, for a matrix $A$ indexed by `Fin m`, a
+parameter $\omega$ and a right-hand side $b$: the vector $x$ goes to the vector that has the
+$i$-th entry
+$$x_i + \frac{\omega\, (b - A x)_i}{a_{ii}}$$
+and the other entries of $x$.
+
+This is one inner iteration of (4.15) of [quarteroni2000numerical] and of (4.12) of
+[saad2003iterative]. -/
 def sorRelax (i : Fin m) (x : Fin m → 𝕜) : Fin m → 𝕜 :=
   Function.update x i (x i + ω * (b - A *ᵥ x) i / A i i)
 
-/-- The first `k` relaxations of the loop. -/
+/-- The vector after the first $k$ relaxations of the loop, in the order $0, 1, \dots, k - 1$. -/
 private def sorRelaxPartial (k : ℕ) (x : Fin m → 𝕜) : Fin m → 𝕜 :=
   ((List.finRange m).take k).foldl (fun y i => sorRelax A ω b i y) x
 
@@ -331,7 +429,7 @@ private theorem sorRelaxPartial_succ {k : ℕ} (hk : k < m) (x : Fin m → 𝕜)
     List.getElem?_eq_getElem (by simpa using hk), List.foldl_append]
   simp
 
-/-- Entries from `k` on are untouched by the first `k` relaxations. -/
+/-- The first $k$ relaxations do not change the entries with index at least $k$. -/
 private theorem sorRelaxPartial_of_le (x : Fin m → 𝕜) :
     ∀ k : ℕ, k ≤ m → ∀ j : Fin m, k ≤ (j : ℕ) → sorRelaxPartial A ω b k x j = x j := by
   intro k
@@ -345,7 +443,8 @@ private theorem sorRelaxPartial_of_le (x : Fin m → 𝕜) :
       omega
     rw [sorRelaxPartial_succ hkm, sorRelax, Function.update_of_ne hne, ih hkm.le j (by omega)]
 
-/-- Entries below `k` are frozen once the first `k` relaxations are done. -/
+/-- After the first $k$ relaxations, further relaxations do not change the entries with index less
+than $k$. -/
 private theorem sorRelaxPartial_stable (x : Fin m → 𝕜) :
     ∀ l : ℕ, l ≤ m → ∀ k : ℕ, k ≤ l → ∀ j : Fin m, (j : ℕ) < k →
       sorRelaxPartial A ω b l x j = sorRelaxPartial A ω b k x j := by
@@ -363,10 +462,14 @@ private theorem sorRelaxPartial_stable (x : Fin m → 𝕜) :
     rw [sorRelaxPartial_succ hlm, sorRelax, Function.update_of_ne hne,
       ih hlm.le k (by omega) j hj]
 
-/-- **The SOR sweep is its loop of relaxations**: relaxing the unknowns one at a time in the order
-`0, 1, …, m - 1`, each from the current vector, is the sweep `Matrix.sorSweep`, the solution of
-`(D + ωL) y = ((1 - ω) D - ωU) x + ω b` ([quarteroni2000numerical] (4.15)–(4.16)).  No condition
-on `ω` is needed, only nonzero pivots. -/
+/-- **The SOR sweep is its loop of relaxations.** Let $A$ be a square matrix indexed by `Fin m` with
+invertible diagonal, and let $\omega$ be any scalar. Relaxing the unknowns one at a time in the
+order $0, 1, \dots, m - 1$, each from the current vector, gives the SOR sweep from $x$, that is,
+the solution $y$ of
+$$(D + \omega L) y = ((1 - \omega) D - \omega U) x + \omega b.$$
+
+This is (4.15)–(4.16) of [quarteroni2000numerical]. No condition on $\omega$ is needed, only
+nonzero diagonal entries. -/
 theorem foldl_sorRelax_eq_sorSweep (h : IsUnit (diagPart A)) (x : Fin m → 𝕜) :
     (List.finRange m).foldl (fun y i => sorRelax A ω b i y) x = sorSweep A ω b x := by
   set y := (List.finRange m).foldl (fun y i => sorRelax A ω b i y) x with hy

@@ -11,47 +11,65 @@ import Numlib.Optimization.ModelBased.TaylorModel
 /-!
 # Slow-convergence examples of arbitrary order
 
-One-dimensional data for the sharpness ("slow convergence") results of [cartis2022evaluation]
-Chapter 12 (and Theorems 3.3.6, 3.3.10, 4.1.6), generalizing the data families of
-`Numlib.Optimization.Complexity.SlowExample.Basic` to arbitrary orders. In each family the jets
-at the iterates have a single nonzero derivative of positive order (`Optimization.spikeJet`); the
-Hermite consistency condition (A.32) then reduces to three scalar inequalities
-(`Optimization.hermite_consistency_spike`), and Theorem A.9.2
-(`Hermite.exists_contDiff_interpolating_jets_bounded`) gives an interpolant whose derivatives are
-bounded and whose top derivative is Lipschitz, with constants independent of `ε`.
+This module gives the one-dimensional data for the sharpness ("slow convergence") results of Chapter
+12 of [cartis2022evaluation], and of its Theorems 3.3.6, 3.3.10 and 4.1.6. It generalizes the data
+families of `Numlib.Optimization.Complexity.SlowExample.Basic` to arbitrary orders. In each family,
+the jet at each iterate has a single nonzero derivative of positive order. For such jets the Hermite
+consistency condition (A.32) reduces to three scalar inequalities, and Theorem A.9.2
+(`Hermite.exists_contDiff_interpolating_jets_bounded`) then gives an interpolant
+$G \colon \mathbb{R} \to \mathbb{R}$ whose derivatives are bounded and whose top derivative is
+Lipschitz, with constants that do not depend on the tolerance $\varepsilon$.
 
-## Main definitions and results
+The module also treats the regularized monomial model $m(t) = -a t^q/q! + \sigma |t|^{p+1}/(p+1)!$
+of (12.2.69)–(12.2.70): its global minimizer, its minimum value and its derivatives at the
+minimizer. For the linear model of Example 12.1.3 ($q = 1$) and for the top-order model ($q = p$),
+the Taylor measures at the minimizer vanish for small enough radii.
 
-* `Optimization.IsSpikeJetOf p G q a α`: `G^{(q)}(a) = -α`, the other derivatives of orders
-  `1, …, p` vanish; `Optimization.IsSpikeJetOf.const_mul`, `Optimization.IsSpikeJetOf.mono`.
+## Main definitions
 
-* `Optimization.exists_slowTaylorOrder_interpolant` — the data of Theorem 12.2.15 with a free
-  scale `c > 0` (steps `s_k = (c (ε + ω_k))^{1/(p-q+1)}`), also used for Theorems 3.3.6, 3.3.10 and
-  4.1.6.
-* `Optimization.exists_slowTRq_interpolant` — the data of the trust-region example of
-  Theorem 12.2.6 (Appendix B).
-* `Optimization.exists_slowARqpSmooth_interpolant` — the data of Theorem 12.2.17, for any
-  regularization weight `σ > 0`.
-* `Optimization.taylorMeasure_linearRegModel_eq_zero` — Example 12.1.3 in one variable: the
-  Taylor measures of `-β t + σ |t|^{p+1}/(p+1)!` vanish at its minimizer for radii up to
-  `3 t*/(p-1)`.
-* `Optimization.exists_slowGradSpike_interpolant` — the data of Theorem 12.2.17 with `r = p`
-  followed by a point where all derivatives vanish, and
-  `Optimization.exists_contDiff_isSpikeJetOf_one` — a bounded profile with a single gradient
-  spike (the two profiles of the slit example, `Numlib.Optimization.Complexity.SlowExample.Slit`).
+* `Optimization.spikeJet`: the jet with a prescribed value, one prescribed derivative of order $m$,
+  and all other derivatives $0$.
+* `Optimization.IsSpikeJetOf`: $G^{(q)}(a) = -\alpha$, and the other derivatives of $G$ of orders
+  $1, \dots, p$ vanish at $a$.
+* `Optimization.negMonomialRegModel`: the regularized monomial model
+  $m(t) = -a t^q/q! + \sigma |t|^{p+1}/(p+1)!$.
+
+## Main results
+
+* `Optimization.hermite_consistency_spike`: the consistency condition (A.32) for spike jets follows
+  from three scalar inequalities.
+* `Optimization.exists_slowTRq_interpolant`: the data of the trust-region example of Theorem 12.2.6
+  (Appendix B).
+* `Optimization.exists_slowTaylorOrder_interpolant`: the data of Theorem 12.2.15, with a free scale
+  $c > 0$ in the steps $s_k = (c (\varepsilon + \omega_k))^{1/(p-q+1)}$; these are also the data of
+  Theorems 3.3.6, 3.3.10 and 4.1.6.
+* `Optimization.exists_slowARqpSmooth_interpolant`: the data of Theorem 12.2.17, for every
+  regularization weight $\sigma > 0$.
+* `Optimization.exists_slowGradSpike_interpolant`: the data of Theorem 12.2.17 with $r = p$,
+  followed by a point where all derivatives of orders $1, \dots, p$ vanish.
+* `Optimization.exists_contDiff_isSpikeJetOf_one`: a profile with bounded derivatives and a single
+  gradient spike $H'(0) = -1$; it gives the two profiles of the slit example in
+  `Numlib.Optimization.Complexity.SlowExample.Slit`.
+* `Optimization.isMinOn_neg_monomial_add_regularization`: the global minimizer, the minimum value
+  and the derivatives at the minimizer of the regularized monomial model.
+* `Optimization.taylorMeasure_linearRegModel_eq_zero`: Example 12.1.3 in one variable; the Taylor
+  measures of $-\beta t + \sigma |t|^{p+1}/(p+1)!$ vanish at its minimizer $t^*$ for radii up to
+  $3 t^*/(p-1)$.
+* `Optimization.taylorMeasure_topMonomialRegModel_eq_zero`: the Taylor measures of the top-order
+  monomial model vanish at its minimizer for small radii.
 
 ## Implementation notes
 
-The function values are not prescribed: the statements give the decrease
-`G (x (k+1)) = G (x k) - …` between consecutive iterates, which is all the algorithms see (the
-initial value is `0` in the construction). Facts about the data used below:
-
-* in the ARqp example ((12.2.78)), the `q`-th order residual
-  `|f^{(q)}_{k+1} - T^{(q)}_{f,p}(x_k, s_k)|` is `ω_k - ω_{k+1} = ε / k_ε`, which satisfies (A.32);
-* in the TRq example ((B.12.5)–(B.12.8)), the decrease `f_{k+1} = f_k - ε^{q+1} c_k` is the Taylor
-  decrease, so that `f_{k+1} = T_{f,q}(x_k, s_k)`; the abscissae are `x_k = k ε`, the number of
-  iterations satisfies `ε^{q+1} k_ε ≤ 2`, and the residuals at orders `1 ≤ j < q` are
-  `2 q!/(q-j)! s_k^{q-j+1}`.
+* The function values are not prescribed. The statements give the decrease
+  $G(x_{k+1}) = G(x_k) - \dots$ between consecutive iterates, which is all that the algorithms see.
+  The construction takes the initial value $0$.
+* In the ARqp example ((12.2.78)), the residual of order $q$,
+  $|f^{(q)}_{k+1} - T^{(q)}_{f,p}(x_k, s_k)|$, is $\omega_k - \omega_{k+1} = \varepsilon /
+  k_\varepsilon$, which satisfies (A.32).
+* In the TRq example ((B.12.5)–(B.12.8)), the decrease $f_{k+1} = f_k - \varepsilon^{q+1} c_k$ is
+  the Taylor decrease, so that $f_{k+1} = T_{f,q}(x_k, s_k)$. The abscissae of the book are
+  $x_k = k \varepsilon$, the number of iterations satisfies $\varepsilon^{q+1} k_\varepsilon \le 2$,
+  and the residuals at the orders $1 \le j < q$ are $2\, q!/(q-j)!\, s_k^{q-j+1}$.
 -/
 
 open Set
@@ -61,22 +79,32 @@ namespace Optimization
 
 /-! ### Jets with one nonzero derivative -/
 
-/-- The jet at the `k`-th node with value `f k`, `m`-th derivative `d k` and all other
-derivatives `0`. -/
+/-- Let $f, d \colon \mathbb{N} \to \mathbb{R}$ and $m \in \mathbb{N}$. The **spike jet** at the
+$k$-th node has the entries
+$$J_{k,j} = \begin{cases} f_k & j = 0, \\ d_k & j = m \ne 0, \\ 0 & \text{otherwise},
+  \end{cases}$$
+that is, the value $f_k$, the derivative $d_k$ of order $m$, and all other derivatives $0$. -/
 def spikeJet (f d : ℕ → ℝ) (m k j : ℕ) : ℝ :=
   if j = 0 then f k else if j = m then d k else 0
 
+/-- The entry of order $0$ of the spike jet at the $k$-th node is $f_k$. -/
 theorem spikeJet_zero (f d : ℕ → ℝ) (m k : ℕ) : spikeJet f d m k 0 = f k := by
   simp [spikeJet]
 
+/-- If $m \ne 0$, the entry of order $m$ of the spike jet at the $k$-th node is $d_k$. -/
 theorem spikeJet_self (f d : ℕ → ℝ) {m : ℕ} (hm : m ≠ 0) (k : ℕ) : spikeJet f d m k m = d k := by
   simp [spikeJet, hm]
 
+/-- If $j \ne 0$ and $j \ne m$, the entry of order $j$ of the spike jet is $0$. -/
 theorem spikeJet_of_ne (f d : ℕ → ℝ) {m j : ℕ} (hj : j ≠ 0) (hjm : j ≠ m) (k : ℕ) :
     spikeJet f d m k j = 0 := by
   simp [spikeJet, hj, hjm]
 
-/-- The Taylor sum of a spike jet. -/
+/-- Let $1 \le m \le n$, $k \in \mathbb{N}$ and $s \in \mathbb{R}$. The Taylor sum of order $n$,
+from the order $j$, of the spike jet at the $k$-th node is
+$$\sum_{i=j}^n J_{k,i} \frac{s^{i-j}}{(i-j)!} = [j = 0]\, f_k + [j \le m]\, d_k
+  \frac{s^{m-j}}{(m-j)!},$$
+where $[\cdot]$ is $1$ if the condition holds and $0$ otherwise. -/
 theorem sum_Icc_spikeJet (f d : ℕ → ℝ) {m n j : ℕ} (hm : m ≠ 0) (hmn : m ≤ n) (k : ℕ) (s : ℝ) :
     ∑ i ∈ Finset.Icc j n, spikeJet f d m k i * s ^ (i - j) / (i - j).factorial =
       (if j = 0 then f k else 0) +
@@ -102,11 +130,16 @@ theorem sum_Icc_spikeJet (f d : ℕ → ℝ) {m n j : ℕ} (hm : m ≠ 0) (hmn :
     · simp [hj, Finset.mem_Icc, hmn]
     · simp [hj, Finset.mem_Icc]
 
-/-- **Hermite consistency for spike jets.** For jets with value `f k` and a single nonzero
-derivative `d k` of order `1 ≤ m ≤ n`, the consistency condition (A.32) of order `n` with constant
-`κ ≥ 0` at a step `s ≥ 0` follows from: the value residual
-`|f (k+1) - f k - d k s^m/m!| ≤ κ s^{n+1}`, the bound `|d k| ≤ κ s^{n-m+1}` (needed only if
-`m > 1`), and `|d (k+1) - d k| ≤ κ s^{n-m+1}`. -/
+/-- **Hermite consistency for spike jets.** Let $1 \le m \le n$, let
+$f, d \colon \mathbb{N} \to \mathbb{R}$, let $k \in \mathbb{N}$, and let $s \ge 0$ and
+$\kappa \ge 0$. Assume that
+$$\Bigl|f_{k+1} - f_k - d_k \frac{s^m}{m!}\Bigr| \le \kappa s^{n+1}, \qquad |d_{k+1} - d_k| \le
+  \kappa s^{n-m+1},$$
+and, if $m > 1$, also $|d_k| \le \kappa s^{n-m+1}$. Then the spike jets $J$ of $(f, d)$ with the
+nonzero derivative of order $m$ satisfy the consistency condition (A.32) of order $n$ with the
+constant $\kappa$ at the step $s$: for every $j \le n$,
+$$\Bigl|J_{k+1,j} - \sum_{i=j}^n J_{k,i} \frac{s^{i-j}}{(i-j)!}\Bigr| \le \kappa s^{n-j+1}.$$
+-/
 theorem hermite_consistency_spike {n m : ℕ} (hm : 1 ≤ m) (hmn : m ≤ n) {f d : ℕ → ℝ} {k : ℕ}
     {s κ : ℝ} (hs : 0 ≤ s) (hκ : 0 ≤ κ)
     (h0 : |f (k + 1) - (f k + d k * s ^ m / m.factorial)| ≤ κ * s ^ (n + 1))
@@ -140,26 +173,39 @@ theorem hermite_consistency_spike {n m : ℕ} (hm : 1 ≤ m) (hmn : m ≤ n) {f 
   · rw [spikeJet_of_ne f d hj0' hjm.ne', ite_eq_right (by omega), sub_zero, abs_zero]
     positivity
 
-/-- One-dimensional jets with a single nonzero derivative of order in `[1, p]`: the `q`-th
-derivative is `-α`, the other derivatives of orders `1, …, p` vanish. -/
+/-- Let $p, q \in \mathbb{N}$, $G \colon \mathbb{R} \to \mathbb{R}$ and $a, \alpha \in \mathbb{R}$.
+The function $G$ has a **spike jet** at $a$ of order $p$, with the spike $-\alpha$ at the order
+$q$, if
+$$G^{(q)}(a) = -\alpha \quad \text{and} \quad G^{(j)}(a) = 0 \quad \text{for } 1 \le j \le p,\ j
+  \ne q.$$
+
+In the applications $1 \le q \le p$, so that the jet of $G$ at $a$ up to the order $p$ has a
+single nonzero derivative of positive order. With $q = 1$ it is a gradient spike
+$G'(a) = -\alpha$. -/
 def IsSpikeJetOf (p : ℕ) (G : ℝ → ℝ) (q : ℕ) (a α : ℝ) : Prop :=
   iteratedDeriv q G a = -α ∧ ∀ j, 1 ≤ j → j ≤ p → j ≠ q → iteratedDeriv j G a = 0
 
-/-- A spike jet of order `p` is a spike jet of every order `j ≤ p`. -/
+/-- A spike jet of order $p$ is a spike jet of every order $j \le p$. -/
 theorem IsSpikeJetOf.mono {p j q : ℕ} {G : ℝ → ℝ} {a α : ℝ} (hd : IsSpikeJetOf p G q a α)
     (hj : j ≤ p) : IsSpikeJetOf j G q a α :=
   ⟨hd.1, fun i hi1 hij hiq => hd.2 i hi1 (hij.trans hj) hiq⟩
 
+/-- If $G$ has a spike jet at $a$ with the spike $-\alpha$ at the order $q$, then
+$G^{(q)}(a) = -\alpha$. -/
 theorem IsSpikeJetOf.iteratedDeriv_eq {p q : ℕ} {G : ℝ → ℝ} {a α : ℝ}
     (hd : IsSpikeJetOf p G q a α) : iteratedDeriv q G a = -α :=
   hd.1
 
+/-- If $G$ has a spike jet at $a$ of order $p$ with the spike at the order $q$, then
+$G^{(j)}(a) = 0$ for $1 \le j \le p$ with $j \ne q$. -/
 theorem IsSpikeJetOf.iteratedDeriv_eq_zero {p q j : ℕ} {G : ℝ → ℝ} {a α : ℝ}
     (hd : IsSpikeJetOf p G q a α) (hj1 : 1 ≤ j) (hjp : j ≤ p) (hjq : j ≠ q) :
     iteratedDeriv j G a = 0 :=
   hd.2 j hj1 hjp hjq
 
-/-- Scaling a function scales its spike jets. -/
+/-- Let $G$ have a spike jet at $a$ of order $p$ with the spike $-\alpha$ at the order $q$, and let
+$c \in \mathbb{R}$. Then $t \mapsto c\, G(t)$ has a spike jet at $a$ of order $p$ with the spike
+$-c \alpha$ at the order $q$. -/
 theorem IsSpikeJetOf.const_mul {p q : ℕ} {G : ℝ → ℝ} {a α : ℝ} (hd : IsSpikeJetOf p G q a α)
     (c : ℝ) : IsSpikeJetOf p (fun t => c * G t) q a (c * α) := by
   refine ⟨?_, fun j hj1 hjp hjq => ?_⟩
@@ -168,7 +214,8 @@ theorem IsSpikeJetOf.const_mul {p q : ℕ} {G : ℝ → ℝ} {a α : ℝ} (hd : 
 
 /-! ### Counting facts -/
 
-/-- With `k_ε = ⌈ε^{-e}⌉₊`, `0 < ε ≤ 1`, `e ≥ 0`: `k_ε ≥ 1` and `k_ε ε^e ≤ 2`. -/
+/-- Let $0 < \varepsilon \le 1$, $e \ge 0$ and $k_\varepsilon = \lceil \varepsilon^{-e} \rceil$.
+Then $k_\varepsilon \ge 1$ and $k_\varepsilon \varepsilon^e \le 2$. -/
 theorem one_le_ceil_rpow_neg_and_mul_le {ε e : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (he : 0 ≤ e) :
     1 ≤ ⌈ε ^ (-e)⌉₊ ∧ (⌈ε ^ (-e)⌉₊ : ℝ) * ε ^ e ≤ 2 := by
   have hpos : 0 < ε ^ (-e) := Real.rpow_pos_of_pos hε _
@@ -182,7 +229,8 @@ theorem one_le_ceil_rpow_neg_and_mul_le {ε e : ℝ} (hε : 0 < ε) (hε1 : ε �
   rw [add_mul, hinv, one_mul] at this
   linarith
 
-/-- Partial sums of a nonnegative sequence bounded termwise by `M` over `K` terms. -/
+/-- Let $u_i \in [0, M]$ for $i < K$, and let $K M \le T$. Then $|\sum_{i < k} u_i| \le T$ for every
+$k \le K$. -/
 theorem abs_sum_range_le_of_le {u : ℕ → ℝ} {M T : ℝ} {K : ℕ} (hu : ∀ i < K, 0 ≤ u i ∧ u i ≤ M)
     (hKM : (K : ℝ) * M ≤ T) {k : ℕ} (hk : k ≤ K) : |∑ i ∈ Finset.range k, u i| ≤ T := by
   have h0 : 0 ≤ ∑ i ∈ Finset.range k, u i :=
@@ -198,7 +246,12 @@ theorem abs_sum_range_le_of_le {u : ℕ → ℝ} {M T : ℝ} {K : ℕ} (hu : ∀
     _ ≤ K * M := mul_le_mul_of_nonneg_right (by exact_mod_cast hk) hM
     _ ≤ T := hKM
 
-/-- Reading off the interpolation conditions for spike jets. -/
+/-- Let $1 \le m \le n$, and let $G \colon \mathbb{R} \to \mathbb{R}$ satisfy
+$G^{(j)}(x_k) = J_{k,j}$ for all $k \le K$ and $j \le n$, where $J$ are the spike jets of
+$(f, d)$ with the nonzero derivative of order $m$. Then for every $k \le K$,
+$$G(x_k) = f_k, \qquad G^{(m)}(x_k) = d_k, \qquad G^{(j)}(x_k) = 0 \quad (1 \le j \le n,\ j \ne
+  m).$$
+-/
 theorem iteratedDeriv_eq_of_spikeJet {G : ℝ → ℝ} {f d : ℕ → ℝ} {m n : ℕ} {x : ℕ → ℝ} {K : ℕ}
     (hm : m ≠ 0) (hmn : m ≤ n)
     (hG : ∀ k ≤ K, ∀ j ≤ n, iteratedDeriv j G (x k) = spikeJet f d m k j) {k : ℕ} (hk : k ≤ K) :
@@ -209,15 +262,25 @@ theorem iteratedDeriv_eq_of_spikeJet {G : ℝ → ℝ} {f d : ℕ → ℝ} {m n 
   · rw [hG k hk m hmn, spikeJet_self f d hm]
   · rw [hG k hk j hjn, spikeJet_of_ne f d (by omega) hjm]
 
-/-! ### The trust-region example of order `q` (Theorem 12.2.6) -/
+/-! ### The trust-region example of order $q$ (Theorem 12.2.6) -/
 
-/-- **TRq slow example** ([cartis2022evaluation], Appendix B, proof of Theorem 12.2.6,
-(B.12.4)–(B.12.9)). For `q ≥ 1` there are `L, B ≥ 0` depending only on `q` such that:
-for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-(q+1)}⌉₊`, `c_k = 2 - k/k_ε` and `x_{k+1} = x_k + ε`, there
-is a `C^q` function `G : ℝ → ℝ` with `L`-Lipschitz `q`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ q`),
-`G^{(j)}(x_k) = 0` for `1 ≤ j < q` and `G^{(q)}(x_k) = -ε c_k q!` (`k ≤ k_ε`), and
-`G (x_{k+1}) = G (x_k) - ε^{q+1} c_k` (`k < k_ε`): the decrease equals the decrease
-`T_{G,q}(x_k, 0) - T_{G,q}(x_k, ε)` of the Taylor model. -/
+/-- **The data of the slow TRq example** (proof of Theorem 12.2.6 of [cartis2022evaluation],
+Appendix B, (B.12.4)–(B.12.9)). Let $q \ge 1$. There are $L, B \ge 0$, which depend only on $q$,
+with the following property. Let $0 < \varepsilon \le 1$, let $k_\varepsilon = \lceil
+\varepsilon^{-(q+1)} \rceil$ and $c_k = 2 - k/k_\varepsilon$, and let
+$x \colon \mathbb{N} \to \mathbb{R}$ satisfy $x_{k+1} = x_k + \varepsilon$ for
+$k < k_\varepsilon$. Then there is a function $G \colon \mathbb{R} \to \mathbb{R}$ of class
+$C^q$ such that
+
+* $|G^{(q)}(s) - G^{(q)}(t)| \le L |s - t|$ for all $s, t$;
+* $|G^{(j)}(t)| \le B$ for all $j \le q$ and all $t$;
+* $G^{(j)}(x_k) = 0$ for $1 \le j < q$, and $G^{(q)}(x_k) = -\varepsilon c_k\, q!$, for
+  $k \le k_\varepsilon$;
+* $G(x_{k+1}) = G(x_k) - \varepsilon^{q+1} c_k$ for $k < k_\varepsilon$.
+
+The decrease $G(x_k) - G(x_{k+1})$ equals the decrease
+$T_{G,q}(x_k, 0) - T_{G,q}(x_k, \varepsilon)$ of the Taylor model. The proof applies
+`Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le` to the spike jets. -/
 theorem exists_slowTRq_interpolant {q : ℕ} (hq : 1 ≤ q) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < ⌈(ε ^ (q + 1))⁻¹⌉₊, x (k + 1) = x k + ε) →
@@ -328,17 +391,27 @@ theorem exists_slowTRq_interpolant {q : ℕ} (hq : 1 ≤ q) :
     obtain ⟨h0', -, -⟩ := iteratedDeriv_eq_of_spikeJet hq0 le_rfl hGj (k := k + 1) hk
     rw [h0, h0', hfs, hc]
 
-/-! ### The data of Theorem 12.2.15 (Taylor models of order `p`, criticality order `q`) -/
+/-! ### The data of Theorem 12.2.15 (Taylor models of order $p$, criticality order $q$) -/
 
-/-- **Slow example for `q`-th order criticality with `p`-th order models**
-([cartis2022evaluation], proof of Theorem 12.2.15, (12.2.67)–(12.2.79); with a scale `c > 0` also
-the data of Theorems 3.3.6, 3.3.10 and 4.1.6). Let `1 ≤ q ≤ p`, `c > 0` and `R = p - q + 1`. There
-are `L, B ≥ 0` depending only on `p, q, c` such that: for every `ε ∈ (0, 1]`, with
-`k_ε = ⌈ε^{-(p+1)/R}⌉₊`, `ω_k = ε (k_ε - k)/k_ε` and steps `x_{k+1} - x_k = (c (ε + ω_k))^{1/R}`,
-there is a `C^p` function `G : ℝ → ℝ` with `L`-Lipschitz `p`-th derivative, `|G^{(j)}| ≤ B`
-(`j ≤ p`), `G^{(q)}(x_k) = -(ε + ω_k)` and `G^{(j)}(x_k) = 0` for `j ∈ [1, p]`, `j ≠ q`
-(`k ≤ k_ε`), and `G (x_{k+1}) = G (x_k) - (ε + ω_k) s_k^q / q!` (`k < k_ε`), i.e. the value at
-`x_{k+1}` is the value of the Taylor polynomial of order `p` at `x_k`. -/
+/-- **The data of the slow example for criticality of order $q$ with models of order $p$** (proof of
+Theorem 12.2.15 of [cartis2022evaluation], (12.2.67)–(12.2.79)). Let $1 \le q \le p$, let
+$c > 0$, and let $R = p - q + 1$. There are $L, B \ge 0$, which depend only on $p$, $q$ and $c$,
+with the following property. Let $0 < \varepsilon \le 1$, let $k_\varepsilon = \lceil
+\varepsilon^{-(p+1)/R} \rceil$ and $\omega_k = \varepsilon (k_\varepsilon - k)/k_\varepsilon$,
+and let $x \colon \mathbb{N} \to \mathbb{R}$ satisfy
+$$x_{k+1} - x_k = s_k = \bigl(c (\varepsilon + \omega_k)\bigr)^{1/R} \quad (k <
+  k_\varepsilon).$$
+Then there is a function $G \colon \mathbb{R} \to \mathbb{R}$ of class $C^p$ such that
+
+* $|G^{(p)}(s) - G^{(p)}(t)| \le L |s - t|$ for all $s, t$;
+* $|G^{(j)}(t)| \le B$ for all $j \le p$ and all $t$;
+* $G^{(q)}(x_k) = -(\varepsilon + \omega_k)$, and $G^{(j)}(x_k) = 0$ for $j \in [1, p]$ with
+  $j \ne q$, for $k \le k_\varepsilon$;
+* $G(x_{k+1}) = G(x_k) - (\varepsilon + \omega_k) s_k^q / q!$ for $k < k_\varepsilon$.
+
+The last condition says that the value at $x_{k+1}$ is the value of the Taylor polynomial of
+order $p$ of $G$ at $x_k$. With a scale $c > 0$ these are also the data of Theorems 3.3.6,
+3.3.10 and 4.1.6 of [cartis2022evaluation]. -/
 theorem exists_slowTaylorOrder_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {c : ℝ}
     (hc : 0 < c) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (kε : ℕ) (x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
@@ -495,15 +568,27 @@ theorem exists_slowTaylorOrder_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q �
 
 /-! ### The data of Theorem 12.2.17 (smoother functions do not help) -/
 
-/-- **Slow example for regularization methods on smoother functions** ([cartis2022evaluation],
-proof of Theorem 12.2.17, (12.2.80)–(12.2.96)). Let `1 ≤ q ≤ p ≤ r` and `σ > 0` (the book takes
-the weight (12.2.85)). There are `L, B ≥ 0` depending only on `p, q, r, σ` such that: for every
-`ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-q(p+1)/p}⌉₊`, `ω_k = ε^{qr/p} (k_ε - k)/k_ε` (the book's
-`ε^{q+γ}`, `γ = q(r/p - 1)`), `β_k = (ε^q + ω_k)/q!` and steps
-`x_{k+1} - x_k = s_k = (p! β_k/σ)^{1/p}` (12.2.88), there is a `C^r` function `G : ℝ → ℝ` with
-`L`-Lipschitz `r`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ r`), `G'(x_k) = -β_k` and `G^{(j)}(x_k) = 0`
-for `2 ≤ j ≤ r` (`k ≤ k_ε`), and `G (x_{k+1}) = G (x_k) - β_k s_k` (`k < k_ε`), the value of the
-Taylor polynomial at `x_{k+1}` ((12.2.90)–(12.2.91)). -/
+/-- **The data of the slow example for regularization methods on smoother functions** (proof of
+Theorem 12.2.17 of [cartis2022evaluation], (12.2.80)–(12.2.96)). Let $1 \le q \le p \le r$ and
+$\sigma > 0$. There are $L, B \ge 0$, which depend only on $p$, $q$, $r$ and $\sigma$, with the
+following property. Let $0 < \varepsilon \le 1$, let $k_\varepsilon = \lceil
+\varepsilon^{-q(p+1)/p} \rceil$, $\omega_k = \varepsilon^{qr/p} (k_\varepsilon -
+k)/k_\varepsilon$ and $\beta_k = (\varepsilon^q + \omega_k)/q!$, and let
+$x \colon \mathbb{N} \to \mathbb{R}$ satisfy
+$$x_{k+1} - x_k = s_k = \Bigl(\frac{p!\, \beta_k}{\sigma}\Bigr)^{1/p} \quad (k <
+  k_\varepsilon),$$
+as in (12.2.88). Then there is a function $G \colon \mathbb{R} \to \mathbb{R}$ of class $C^r$
+such that
+
+* $|G^{(r)}(s) - G^{(r)}(t)| \le L |s - t|$ for all $s, t$;
+* $|G^{(j)}(t)| \le B$ for all $j \le r$ and all $t$;
+* $G'(x_k) = -\beta_k$, and $G^{(j)}(x_k) = 0$ for $2 \le j \le r$, for $k \le k_\varepsilon$;
+* $G(x_{k+1}) = G(x_k) - \beta_k s_k$ for $k < k_\varepsilon$.
+
+The last condition says that the value at $x_{k+1}$ is the value of the Taylor polynomial at
+$x_k$ ((12.2.90)–(12.2.91)). The book takes the weight $\sigma$ of (12.2.85); here $\sigma > 0$
+is arbitrary. The book writes $\omega_k$ with the exponent $q + \gamma$, $\gamma = q(r/p - 1)$,
+which is $qr/p$. -/
 theorem exists_slowARqpSmooth_interpolant {p q r : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) (hpr : p ≤ r)
     {σ : ℝ} (hσ : 0 < σ) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (kε : ℕ) (x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
@@ -702,14 +787,24 @@ section GradSpike
 
 open scoped Nat
 
-/-- **The slow gradient interpolant with a flat endpoint** (the data of Theorem 12.2.17 of
-[cartis2022evaluation] with `r = p`, followed by one more point). For `1 ≤ q ≤ p` and `σ > 0`
-there are `L, B ≥ 0` depending only on `p, q, σ` such that: for every `ε ∈ (0, 1]`, with
-`k_ε = ⌈ε^{-q(p+1)/p}⌉₊`, `β_k = (ε^q + ε^q (k_ε - k)/k_ε)/q!` and points
-`ξ_{k+1} = ξ_k + (p! β_k/σ)^{1/p}` (`k ≤ k_ε`), there is a `C^p` function `G` with
-`L`-Lipschitz `p`-th derivative, `|G^{(j)}| ≤ B` (`j ≤ p`), gradient spikes `G'(ξ_k) = -β_k`
-(other derivatives of orders `2, …, p` zero) for `k ≤ k_ε`, all derivatives of orders `1, …, p`
-zero at `ξ_{k_ε+1}`, and `G(ξ_{k+1}) = G(ξ_k) - β_k (ξ_{k+1} - ξ_k)` for `k ≤ k_ε`. -/
+/-- **The slow gradient interpolant with a flat endpoint**: the data of Theorem 12.2.17 of
+[cartis2022evaluation] with $r = p$, followed by one more point. Let $1 \le q \le p$ and
+$\sigma > 0$. There are $L, B \ge 0$, which depend only on $p$, $q$ and $\sigma$, with the
+following property. Let $0 < \varepsilon \le 1$, let $k_\varepsilon = \lceil
+\varepsilon^{-q(p+1)/p} \rceil$ and $\beta_k = (\varepsilon^q + \varepsilon^q (k_\varepsilon -
+k)/k_\varepsilon)/q!$ for all $k$, and let $\xi \colon \mathbb{N} \to \mathbb{R}$ satisfy
+$\xi_{k+1} = \xi_k + (p!\, \beta_k/\sigma)^{1/p}$ for $k \le k_\varepsilon$. Then there is a
+function $G \colon \mathbb{R} \to \mathbb{R}$ of class $C^p$ such that
+
+* $|G^{(p)}(s) - G^{(p)}(t)| \le L |s - t|$ for all $s, t$;
+* $|G^{(j)}(t)| \le B$ for all $j \le p$ and all $t$;
+* for $k \le k_\varepsilon$, $G'(\xi_k) = -\beta_k$ and $G^{(j)}(\xi_k) = 0$ for
+  $2 \le j \le p$;
+* $G^{(j)}(\xi_{k_\varepsilon + 1}) = 0$ for $1 \le j \le p$;
+* $G(\xi_{k+1}) = G(\xi_k) - \beta_k (\xi_{k+1} - \xi_k)$ for $k \le k_\varepsilon$.
+
+The gradient spikes are `Optimization.IsSpikeJetOf p G 1 (ξ k) (β k)`, and the flat endpoint is
+`Optimization.IsSpikeJetOf p G 1 (ξ (κ + 1)) 0`, where the Lean variable `κ` is $k_\varepsilon$. -/
 theorem exists_slowGradSpike_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {σ : ℝ}
     (hσ : 0 < σ) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (κ : ℕ) (ξ β : ℕ → ℝ), 0 < ε → ε ≤ 1 →
@@ -862,9 +957,12 @@ theorem exists_slowGradSpike_interpolant {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤
     rw [h0, h0', hfs, hgap k hk]
     simp only [β', ite_eq_left hk]
 
-/-- **A bounded gradient spike**: a `C^p` function `H` with Lipschitz `p`-th derivative and
-bounded derivatives (constants depending only on `p`) with `H'(0) = -1` and `H^{(j)}(0) = 0` for
-`2 ≤ j ≤ p`. -/
+/-- **A bounded gradient spike.** Let $p \ge 1$. There are $L, B \ge 0$, which depend only on $p$,
+and a function $H \colon \mathbb{R} \to \mathbb{R}$ of class $C^p$ such that
+$|H^{(p)}(s) - H^{(p)}(t)| \le L |s - t|$ for all $s, t$, $|H^{(j)}(t)| \le B$ for all $j \le p$
+and all $t$,
+$$H'(0) = -1 \quad \text{and} \quad H^{(j)}(0) = 0 \quad (2 \le j \le p).$$
+-/
 theorem exists_contDiff_isSpikeJetOf_one (p : ℕ) (hp : 1 ≤ p) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∃ H : ℝ → ℝ, ContDiff ℝ p H ∧
       (∀ s t, |iteratedDeriv p H s - iteratedDeriv p H t| ≤ L * |s - t|) ∧
@@ -893,17 +991,21 @@ end GradSpike
 
 /-! ### The monomial model (12.2.69)–(12.2.70) -/
 
-/-- The regularized monomial model of [cartis2022evaluation] (12.2.69)–(12.2.70) in one variable:
-`m t = -a t^q/q! + σ |t|^{p+1}/(p+1)!` (the book's weight is `σ = p!/(q-1)!`). -/
+/-- The **regularized monomial model** of (12.2.69)–(12.2.70) of [cartis2022evaluation] in one
+variable: for $p, q \in \mathbb{N}$ and $\sigma, a \in \mathbb{R}$,
+$$m(t) = -\frac{a t^q}{q!} + \frac{\sigma |t|^{p+1}}{(p+1)!}.$$
+The book takes the weight $\sigma = p!/(q-1)!$. -/
 noncomputable def negMonomialRegModel (p q : ℕ) (σ a t : ℝ) : ℝ :=
   -a * t ^ q / q.factorial + σ * |t| ^ (p + 1) / (p + 1).factorial
 
+/-- The regularized monomial model at $t$ is $-a t^q/q! + \sigma |t|^{p+1}/(p+1)!$. -/
 theorem negMonomialRegModel_def (p q : ℕ) (σ a t : ℝ) :
     negMonomialRegModel p q σ a t =
       -a * t ^ q / q.factorial + σ * |t| ^ (p + 1) / (p + 1).factorial :=
   rfl
 
-/-- The polynomial that agrees with `negMonomialRegModel` for `t ≥ 0`. -/
+/-- The polynomial $-a X^q/q! + \sigma X^{p+1}/(p+1)!$, which agrees with the regularized monomial
+model for $t \ge 0$. -/
 private noncomputable def negMonomialPoly (p q : ℕ) (σ a : ℝ) : ℝ[X] :=
   Polynomial.C (-a / q.factorial) * Polynomial.X ^ q +
     Polynomial.C (σ / (p + 1).factorial) * Polynomial.X ^ (p + 1)
@@ -914,7 +1016,8 @@ private theorem eval_negMonomialPoly (p q : ℕ) (σ a t : ℝ) :
   simp [negMonomialPoly]
   ring
 
-/-- `(n.descFactorial j : ℝ) / n! = 1/(n-j)!` if `j ≤ n` and `0` otherwise. -/
+/-- For $j, n \in \mathbb{N}$, the descending factorial satisfies
+$n (n-1) \cdots (n-j+1) / n! = 1/(n-j)!$ if $j \le n$, and $0$ otherwise. -/
 private theorem descFactorial_div_factorial (n j : ℕ) :
     (n.descFactorial j : ℝ) / n.factorial = if j ≤ n then (1 : ℝ) / (n - j).factorial else 0 := by
   split_ifs with h
@@ -929,11 +1032,19 @@ private theorem descFactorial_div_factorial (n j : ℕ) :
   · rw [Nat.descFactorial_eq_zero_iff_lt.2 (by omega)]
     simp
 
-/-- **The monomial model** ([cartis2022evaluation] (12.2.69)–(12.2.70) and the display after it),
-for any weight `σ > 0`. For `1 ≤ q ≤ p`, `a > 0`, `R = p - q + 1` and `λ = σ (q-1)!/p!`, the
-model `m t = -a t^q/q! + σ |t|^{p+1}/(p+1)!` attains its global minimum at
-`t* = (a/λ)^{1/R}`, with value `m t* = -R/((p+1) q!) a t*^q`, and its derivatives at `t*` are
-`m^{(j)}(t*) = -a t*^{q-j}/(q-j)! [j ≤ q] + σ t*^{p+1-j}/(p+1-j)! [j ≤ p+1]`. -/
+/-- **The minimizer of the regularized monomial model** ((12.2.69)–(12.2.70) of
+[cartis2022evaluation] and the display after it), for every weight $\sigma > 0$. Let
+$1 \le q \le p$, $\sigma > 0$ and $a > 0$, and let $R = p - q + 1$ and
+$\lambda = \sigma (q-1)!/p!$. The model $m(t) = -a t^q/q! + \sigma |t|^{p+1}/(p+1)!$ attains its
+global minimum over $\mathbb{R}$ at
+$$t^* = (a/\lambda)^{1/R},$$
+with the value $m(t^*) = -\dfrac{R}{(p+1)\, q!}\, a\, (t^*)^q$. For every $j \in \mathbb{N}$,
+its derivative of order $j$ at $t^*$ is
+$$m^{(j)}(t^*) = -[j \le q]\, \frac{a (t^*)^{q-j}}{(q-j)!} + [j \le p+1]\, \frac{\sigma
+  (t^*)^{p+1-j}}{(p+1-j)!},$$
+where $[\cdot]$ is $1$ if the condition holds and $0$ otherwise.
+
+The model is `Optimization.negMonomialRegModel p q σ a`. -/
 theorem isMinOn_neg_monomial_add_regularization {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {σ a : ℝ}
     (hσ : 0 < σ) (ha : 0 < a) :
     IsMinOn (negMonomialRegModel p q σ a) univ
@@ -1074,9 +1185,10 @@ theorem isMinOn_neg_monomial_add_regularization {p q : ℕ} (hq : 1 ≤ q) (hqp 
     · split_ifs <;> ring
     · split_ifs <;> ring
 
-/-- The monomial model with the book's weight `σ = p!/(q-1)!` ((12.2.69)–(12.2.70)): the global
-minimizer is `t* = a^{1/(p-q+1)}` and the minimum value is
-`-(p-q+1)/((p+1) q!) a^{(p+1)/(p-q+1)}`. -/
+/-- The regularized monomial model with the book's weight $\sigma = p!/(q-1)!$ ((12.2.69)–(12.2.70)
+of [cartis2022evaluation]). Let $1 \le q \le p$ and $a > 0$. Then the model attains its global
+minimum at $t^* = a^{1/(p-q+1)}$, and the minimum value is
+$-\dfrac{p-q+1}{(p+1)\, q!}\, a^{(p+1)/(p-q+1)}$. -/
 theorem isMinOn_neg_monomial_add_regularization_book {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
     {a : ℝ} (ha : 0 < a) :
     IsMinOn (negMonomialRegModel p q (p.factorial / (q - 1).factorial) a) univ
@@ -1110,8 +1222,8 @@ theorem isMinOn_neg_monomial_add_regularization_book {p q : ℕ} (hq : 1 ≤ q) 
 
 /-! ### The linear regularized model of Example 12.1.3 -/
 
-/-- A sum `∑_{i=1}^j u_i` is nonnegative if `u_1 = 0`, the even terms are nonnegative and the
-consecutive pairs `u_{2k} + u_{2k+1}` (`k ≥ 1`) are nonnegative. -/
+/-- A sum $\sum_{i=1}^j u_i$ is nonnegative if $u_1 = 0$, the terms $u_i$ with $i \ge 2$ even are
+nonnegative, and the pair sums $u_{2k} + u_{2k+1}$ with $k \ge 1$ are nonnegative. -/
 private theorem sum_Icc_one_nonneg_of_pairs {u : ℕ → ℝ} (h1 : u 1 = 0) :
     ∀ j : ℕ, (∀ i ≤ j, 2 ≤ i → Even i → 0 ≤ u i) →
       (∀ k, 1 ≤ k → 2 * k + 1 ≤ j → 0 ≤ u (2 * k) + u (2 * k + 1)) →
@@ -1132,12 +1244,19 @@ private theorem sum_Icc_one_nonneg_of_pairs {u : ℕ → ℝ} (h1 : u 1 = 0) :
       rw [show 2 * (k + 1) = j + 1 by omega] at this
       linarith
 
-/-- **Example 12.1.3 in one variable** ([cartis2022evaluation], (12.1.18)–(12.1.21)). Let
-`p ≥ 1`, `β, σ > 0` and `m t = -β t + σ |t|^{p+1}/(p+1)!` on `ℝ`, with global minimizer
-`t* = (β p!/σ)^{1/p}`. For `j ∈ [1, p]` and every radius `δ` with `(p - 1) δ ≤ 3 t*` (no restriction
-when `j ≤ 2`), the `j`-th order Taylor measure of `m` at `t*` vanishes: `φ^δ_{m,j}(t*) = 0`.
-Along `d = α t*` the Taylor decrease is `-σ t*^{p+1} ∑_{ℓ=2}^{j} α^ℓ/(ℓ!(p+1-ℓ)!)`, and the terms
-of orders `2k, 2k+1` have a nonnegative sum when `|α| ≤ 3/(p-1)`. -/
+/-- **Example 12.1.3 in one variable** ((12.1.18)–(12.1.21) of [cartis2022evaluation]). Let
+$\beta, \sigma > 0$, let $j, p \in \mathbb{N}$ with $1 \le j \le p$, and let
+$$m(t) = -\beta t + \frac{\sigma |t|^{p+1}}{(p+1)!},$$
+with the global minimizer $t^* = (\beta\, p!/\sigma)^{1/p}$. Let $\delta$ be a radius with
+$j \le 2$ or $(p - 1) \delta \le 3 t^*$. Then the Taylor measure of order $j$ of $m$ at $t^*$
+vanishes:
+$$\varphi^\delta_{m,j}(t^*) = \sup_{|d| \le \delta} \bigl(T_{m,j}(t^*, 0) - T_{m,j}(t^*,
+  d)\bigr) = 0.$$
+
+The measure is `Optimization.taylorMeasure` over all of $\mathbb{R}$. Along $d = \alpha t^*$ the
+Taylor decrease is $-\sigma (t^*)^{p+1} \sum_{\ell=2}^{j} \alpha^\ell/(\ell!\,(p+1-\ell)!)$, and
+the terms of the orders $2k$ and $2k+1$ have a nonnegative sum when $|\alpha| \le 3/(p-1)$. The
+proof specializes `Optimization.isMinOn_neg_monomial_add_regularization` with $q = 1$. -/
 theorem taylorMeasure_linearRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {β σ δ : ℝ}
     (hβ : 0 < β) (hσ : 0 < σ)
     (hδ : j ≤ 2 ∨ ((p : ℝ) - 1) * δ ≤ 3 * (β * p.factorial / σ) ^ (1 / (p : ℝ))) :
@@ -1215,12 +1334,18 @@ theorem taylorMeasure_linearRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {�
     exact mul_nonneg hA hkey
 
 
-/-- **The top-order monomial model is approximately critical at its minimizer**
-([cartis2022evaluation], (12.2.69)–(12.2.70) with `q = p`). For `p ≥ 1`, `a > 0` and
-`m t = -a t^p/p! + p |t|^{p+1}/(p+1)!` (weight `σ = p!/(p-1)! = p`), whose global minimizer is
-`t* = a`, the Taylor measures of `m` at `a` of every order `j ∈ [1, p]` vanish for radii `δ` with
-`(p - 1) δ ≤ a`: the derivatives are `m^{(i)}(a) = (i-1) a^{p+1-i}/(p+1-i)!`, and the terms of
-orders `2k, 2k+1` of the decrease have a nonnegative sum on `[-δ, δ]`. -/
+/-- **The top-order monomial model is approximately critical at its minimizer** ((12.2.69)–(12.2.70)
+of [cartis2022evaluation] with $q = p$). Let $1 \le j \le p$, $a > 0$, and let $\delta$ satisfy
+$(p - 1) \delta \le a$. Let
+$$m(t) = -\frac{a t^p}{p!} + \frac{p\, |t|^{p+1}}{(p+1)!},$$
+the regularized monomial model with the weight $\sigma = p!/(p-1)! = p$, whose global minimizer
+is $t^* = a$. Then the Taylor measure of order $j$ of $m$ at $a$, over all of $\mathbb{R}$ with
+the radius $\delta$, vanishes.
+
+The model is `Optimization.negMonomialRegModel p p p a`, and the measure is
+`Optimization.taylorMeasure`. The derivatives of $m$ at $a$ are
+$m^{(i)}(a) = (i-1)\, a^{p+1-i}/(p+1-i)!$, and the terms of the orders $2k$ and $2k+1$ of the
+decrease have a nonnegative sum on $[-\delta, \delta]$. -/
 theorem taylorMeasure_topMonomialRegModel_eq_zero {p j : ℕ} (hj : j ∈ Icc 1 p) {a δ : ℝ}
     (ha : 0 < a) (hδ : ((p : ℝ) - 1) * δ ≤ a) :
     taylorMeasure (ftaylorSeries ℝ (negMonomialRegModel p p p a) a) j δ univ = 0 := by
@@ -1314,14 +1439,17 @@ section OneDim
 open Metric
 open scoped Nat
 
-/-- The derivative tensors of a function of one variable along `d`:
-`∇^i G(y)[d]^i = G^{(i)}(y) d^i`. -/
+/-- For $G \colon \mathbb{R} \to \mathbb{R}$, $y, d \in \mathbb{R}$ and $i \in \mathbb{N}$, the term
+of order $i$ of the jet of $G$ at $y$ in the direction $d$ is
+$\nabla^i G(y)[d]^i = G^{(i)}(y)\, d^i$. -/
 theorem ftaylorSeries_real_apply (G : ℝ → ℝ) (y : ℝ) (i : ℕ) (d : ℝ) :
     ftaylorSeries ℝ G y i (fun _ => d) = iteratedDeriv i G y * d ^ i := by
   simp [ftaylorSeries, iteratedFDeriv_apply_eq_iteratedDeriv_mul_prod, mul_comm]
 
-/-- The Taylor decrement of a function of one variable:
-`ΔT_{G,j}(y, d) = -∑_{i=1}^j G^{(i)}(y) d^i/i!`. -/
+/-- For $G \colon \mathbb{R} \to \mathbb{R}$, $y, d \in \mathbb{R}$ and $j \in \mathbb{N}$, the
+Taylor decrement of order $j$ of $G$ at $y$ is
+$$T_{G,j}(y, 0) - T_{G,j}(y, d) = -\sum_{i=1}^j \frac{G^{(i)}(y)\, d^i}{i!}.$$
+-/
 theorem taylorDecrement_real (G : ℝ → ℝ) (y : ℝ) (j : ℕ) (d : ℝ) :
     (ftaylorSeries ℝ G y).taylorDecrement j d =
       -∑ i ∈ Finset.Icc 1 j, iteratedDeriv i G y * d ^ i / i ! := by
@@ -1331,23 +1459,26 @@ theorem taylorDecrement_real (G : ℝ → ℝ) (y : ℝ) (j : ℕ) (d : ℝ) :
   rw [ftaylorSeries_real_apply]
   ring
 
-/-- If the derivatives of orders `1, …, j` vanish at `y`, the Taylor decrement of order `j`
-vanishes. -/
+/-- If $G^{(i)}(y) = 0$ for $1 \le i \le j$, then the Taylor decrement of order $j$ of $G$ at $y$
+vanishes in every direction $d$. -/
 theorem taylorDecrement_real_eq_zero {G : ℝ → ℝ} {y : ℝ} {j : ℕ}
     (h0 : ∀ i ∈ Finset.Icc 1 j, iteratedDeriv i G y = 0) (d : ℝ) :
     (ftaylorSeries ℝ G y).taylorDecrement j d = 0 := by
   rw [taylorDecrement_real, Finset.sum_eq_zero fun i hi => by rw [h0 i hi, zero_mul, zero_div],
     neg_zero]
 
-/-- If, among the orders `1, …, j`, only the derivative of order `m` may be nonzero at `y`, then
-`ΔT_{G,j}(y, d) = -G^{(m)}(y) d^m/m!`. -/
+/-- Let $1 \le m \le j$. If $G^{(i)}(y) = 0$ for every $i \in [1, j]$ with $i \ne m$, then the
+Taylor decrement of order $j$ of $G$ at $y$ is $-G^{(m)}(y)\, d^m/m!$ for every
+$d \in \mathbb{R}$. -/
 theorem taylorDecrement_real_spike {G : ℝ → ℝ} {y : ℝ} {j m : ℕ} (hm : m ∈ Finset.Icc 1 j)
     (h0 : ∀ i ∈ Finset.Icc 1 j, i ≠ m → iteratedDeriv i G y = 0) (d : ℝ) :
     (ftaylorSeries ℝ G y).taylorDecrement j d = -(iteratedDeriv m G y * d ^ m / m !) := by
   rw [taylorDecrement_real, Finset.sum_eq_single_of_mem m hm fun i hi him => by
     rw [h0 i hi him, zero_mul, zero_div]]
 
-/-- The measure of a decrement of the form `a d^m` (`a ≥ 0`) over `[-δ, δ]` is `a δ^m`. -/
+/-- Let $D$ be data on $\mathbb{R}$, let $a \ge 0$ and $\delta \ge 0$. If the Taylor decrement of
+order $j$ of $D$ is $d \mapsto a d^m$, then the measure of this decrement over
+$[-\delta, \delta]$ is $a \delta^m$. -/
 theorem taylorMeasure_real_monomial {D : FormalMultilinearSeries ℝ ℝ ℝ} {j m : ℕ} {a δ : ℝ}
     (ha : 0 ≤ a) (hδ : 0 ≤ δ) (hD : ∀ d, D.taylorDecrement j d = a * d ^ m) :
     taylorMeasure D j δ univ = a * δ ^ m := by
@@ -1362,17 +1493,22 @@ theorem taylorMeasure_real_monomial {D : FormalMultilinearSeries ℝ ℝ ℝ} {j
       ⟨mem_closedBall_zero_iff.2 (by rw [Real.norm_eq_abs, abs_of_nonneg hδ]), mem_univ _⟩
     rwa [hD] at this
 
-/-- The derivative tensors of a function of one variable have the norms of the derivatives:
-`‖∇^i G(s) - ∇^i G(t)‖ = |G^{(i)}(s) - G^{(i)}(t)|`. -/
+/-- For $G \colon \mathbb{R} \to \mathbb{R}$, $i \in \mathbb{N}$ and $s, t \in \mathbb{R}$, the
+derivative tensors of $G$ have the norms of the derivatives: $\|\nabla^i G(s) - \nabla^i
+G(t)\| = |G^{(i)}(s) - G^{(i)}(t)|$. -/
 theorem norm_iteratedFDeriv_sub_real (G : ℝ → ℝ) (i : ℕ) (s t : ℝ) :
     ‖iteratedFDeriv ℝ i G s - iteratedFDeriv ℝ i G t‖ =
       |iteratedDeriv i G s - iteratedDeriv i G t| := by
   rw [iteratedFDeriv_eq_equiv_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
     LinearIsometryEquiv.norm_map, Real.norm_eq_abs]
 
-/-- A derivative of order `j < q` of a `C^q` function of one variable whose next derivative is
-bounded by `B` is `B`-Lipschitz (the mean value inequality
-`Convex.norm_image_sub_le_of_norm_deriv_le` for `iteratedDeriv j g`). -/
+/-- Let $g \colon \mathbb{R} \to \mathbb{R}$ be of class $C^q$, let $j < q$, and let
+$B \in \mathbb{R}$ satisfy $|g^{(j+1)}(t)| \le B$ for every $t$. Then $g^{(j)}$ is
+$B$-Lipschitz:
+$$|g^{(j)}(s) - g^{(j)}(t)| \le B\, |s - t| \quad \text{for all } s, t \in \mathbb{R}.$$
+
+The proof is the mean value inequality `Convex.norm_image_sub_le_of_norm_deriv_le` for
+$g^{(j)}$. -/
 theorem abs_iteratedDeriv_sub_le {g : ℝ → ℝ} {q j : ℕ} (hg : ContDiff ℝ q g)
     (hjq : j < q) {B : ℝ} (hB : ∀ t, |iteratedDeriv (j + 1) g t| ≤ B) (s t : ℝ) :
     |iteratedDeriv j g s - iteratedDeriv j g t| ≤ B * |s - t| := by
@@ -1383,15 +1519,19 @@ theorem abs_iteratedDeriv_sub_le {g : ℝ → ℝ} {q j : ℕ} (hg : ContDiff �
     (mem_univ s)
   simpa only [Real.norm_eq_abs] using this
 
-/-- A function of one variable with `|G| ≤ B` is bounded below by `-B`. -/
+/-- If $|G(t)| \le B$ for every $t$, then $G(t) \ge -B$ for every $t$. -/
 theorem neg_le_of_abs_iteratedDeriv_zero_le {G : ℝ → ℝ} {B : ℝ}
     (hB : ∀ t, |iteratedDeriv 0 G t| ≤ B) (t : ℝ) : -B ≤ G t := by
   have := hB t
   rw [iteratedDeriv_zero] at this
   exact (abs_le.1 this).1
 
-/-- The ARqp model of one-variable data whose only nonzero derivative of order `1, …, p` at `y`
-is the one of order `m`: `m(t) = G(y) + G^{(m)}(y) t^m/m! + σ |t|^{p+1}/(p+1)!`. -/
+/-- Let $1 \le m \le p$, and let $G^{(i)}(y) = 0$ for every $i \in [1, p]$ with $i \ne m$. Then for
+all $\sigma, t \in \mathbb{R}$ the regularized Taylor model of order $p$ and weight $\sigma$ of
+$G$ at $y$ is
+$$m(t) = G(y) + \frac{G^{(m)}(y)\, t^m}{m!} + \frac{\sigma |t|^{p+1}}{(p+1)!}.$$
+
+The model is `Optimization.regularizedModel`. -/
 theorem regularizedModel_real_spike {G : ℝ → ℝ} {y : ℝ} {p m : ℕ} (hm : m ∈ Finset.Icc 1 p)
     (h0 : ∀ i ∈ Finset.Icc 1 p, i ≠ m → iteratedDeriv i G y = 0) (σ t : ℝ) :
     regularizedModel (ftaylorSeries ℝ G y) p σ t =
@@ -1404,7 +1544,9 @@ theorem regularizedModel_real_spike {G : ℝ → ℝ} {y : ℝ} {p m : ℕ} (hm 
     FormalMultilinearSeries.taylorSum_zero_right, h00, Real.norm_eq_abs]
   ring
 
-/-- Adding a constant does not change the Taylor measures (of positive order). -/
+/-- Adding a constant to a function of one variable does not change its Taylor measures: for
+$c \in \mathbb{R}$, every order $j$, every radius $\delta$ and every set $S$ of displacements,
+the measures of $t \mapsto c + g(t)$ and of $g$ at $y$ are equal. -/
 theorem taylorMeasure_real_const_add (c : ℝ) (g : ℝ → ℝ) (y : ℝ) (j : ℕ) (δ : ℝ) (S : Set ℝ) :
     taylorMeasure (ftaylorSeries ℝ (fun t => c + g t) y) j δ S =
       taylorMeasure (ftaylorSeries ℝ g y) j δ S := by
@@ -1416,9 +1558,10 @@ theorem taylorMeasure_real_const_add (c : ℝ) (g : ℝ → ℝ) (y : ℝ) (j : 
   refine Finset.sum_congr rfl fun i hi => ?_
   rw [iteratedDeriv_const_add (Finset.mem_Icc.1 hi).1 c]
 
-/-- The global minimizer of the linear regularized model of Example 12.1.3 in one variable:
-for `p ≥ 1`, `β, σ > 0`, `t ↦ -β t + σ |t|^{p+1}/(p+1)!` is globally minimized at
-`t* = (β p!/σ)^{1/p} > 0`, with a negative minimal value. -/
+/-- The global minimizer of the linear regularized model of Example 12.1.3 of [cartis2022evaluation]
+in one variable. Let $p \ge 1$ and $\beta, \sigma > 0$. Then
+$t \mapsto -\beta t + \sigma |t|^{p+1}/(p+1)!$ attains its global minimum over $\mathbb{R}$ at
+$t^* = (\beta\, p!/\sigma)^{1/p}$, and its minimum value is negative. -/
 theorem isMinOn_linearRegModel {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ) :
     IsMinOn (fun t : ℝ => -β * t + σ * |t| ^ (p + 1) / (p + 1)!) univ
         ((β * p ! / σ) ^ (1 / (p : ℝ))) ∧

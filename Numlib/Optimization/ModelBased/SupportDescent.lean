@@ -6,7 +6,31 @@ import Numlib.Analysis.InnerProductSpace.ConvexProjection
 import Numlib.Analysis.Convex.Duality.Support
 import Mathlib.Tactic.Linarith
 
-/-! # Descent directions of a support function -/
+/-!
+# Descent directions of a support function
+
+Let $K$ be a nonempty closed convex subset of a real Hilbert space $E$, and let $\sigma_K(d) =
+\sup_{x \in K} \langle x, d \rangle$ be its support function. Let $p = P_K(0)$ be the point of $K$
+nearest to the origin, so that $\|p\|$ is the distance from $0$ to $K$. This file shows that the
+least value of $\sigma_K$ on the closed unit ball is $-\|p\|$, and that the direction $-p / \|p\|$
+attains it. Thus the steepest descent direction of a set-valued first-order model is found by a
+projection.
+
+## Main definitions
+
+* `Optimization.negativeUnit`: the vector $-g / \|g\|$, with value $0$ at $g = 0$.
+
+## Main results
+
+* `Optimization.supportFn_negativeUnit_bestApprox`: $\sigma_K(-p / \|p\|) = -\|p\|$.
+* `Optimization.supportFn_isLeast_closedBall`: $-\|p\|$ is the least value of $\sigma_K$ on the
+  closed unit ball.
+
+## Implementation notes
+
+* The support function is `ConvexAnalysis.supportFn (innerₗ E) K`, with values in `EReal`, and the
+  nearest point $P_K(0)$ is `bestApprox K 0`.
+-/
 
 open Metric ConvexAnalysis
 open scoped RealInnerProductSpace
@@ -15,10 +39,12 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The negative unit vector along a vector, with value zero at zero. -/
+/-- The **negative unit vector** of $g \in E$ is $-g / \|g\|$. It is $0$ for $g = 0$, because
+$\|0\|^{-1} = 0$ in Lean. -/
 noncomputable def negativeUnit (g : E) : E :=
   (-‖g‖⁻¹) • g
 
+/-- For every $g \in E$, the negative unit vector $-g / \|g\|$ has norm at most $1$. -/
 theorem norm_negativeUnit_le_one (g : E) : ‖negativeUnit g‖ ≤ 1 := by
   by_cases hg : g = 0
   · simp [hg, negativeUnit]
@@ -32,6 +58,9 @@ variable [CompleteSpace E] {K : Set E} (hne : K.Nonempty) (hclosed : IsClosed K)
   (hconv : Convex ℝ K)
 include hne hclosed hconv
 
+/-- Let $K$ be a nonempty closed convex subset of a real Hilbert space $E$, and let $d \in E$ with
+$\|d\| \le 1$. Then $\sigma_K(d) \ge -\|P_K(0)\|$, where $\sigma_K$ is the support function of
+$K$ and $P_K(0)$ is the point of $K$ nearest to $0$. -/
 theorem neg_norm_bestApprox_le_supportFn {d : E} (hd : ‖d‖ ≤ 1) :
     ((-‖bestApprox K 0‖ : ℝ) : EReal) ≤ supportFn (innerₗ E) K d := by
   let g := bestApprox K 0
@@ -42,7 +71,13 @@ theorem neg_norm_bestApprox_le_supportFn {d : E} (hd : ‖d‖ ≤ 1) :
     ((abs_real_inner_le_norm g d).trans (mul_le_of_le_one_right (norm_nonneg g) hd))
   linarith
 
-/-- The direction opposite the nearest point to zero attains the sharp support bound. -/
+/-- Let $K$ be a nonempty closed convex subset of a real Hilbert space $E$, and let $p = P_K(0)$ be
+the point of $K$ nearest to $0$. The direction opposite to $p$ attains the lower bound of the
+support function $\sigma_K$ on the unit ball:
+$$\sigma_K\left(-\frac{p}{\|p\|}\right) = -\|p\|.$$
+
+If $0 \in K$, then $p = 0$, the direction is $0$ (see `Optimization.negativeUnit`), and both
+sides are $0$. -/
 theorem supportFn_negativeUnit_bestApprox :
     supportFn (innerₗ E) K (negativeUnit (bestApprox K 0)) =
       ((-‖bestApprox K 0‖ : ℝ) : EReal) := by
@@ -65,7 +100,14 @@ theorem supportFn_negativeUnit_bestApprox :
       mul_le_mul_of_nonpos_left hr (neg_nonpos.mpr (inv_nonneg.mpr hpos.le))
     _ = _ := by rw [pow_two, ← mul_assoc, neg_mul, inv_mul_cancel₀ hpos.ne', neg_one_mul]
 
-/-- The least support value over the closed unit ball is minus the distance to the set. -/
+/-- Let $K$ be a nonempty closed convex subset of a real Hilbert space $E$, and let $p = P_K(0)$ be
+the point of $K$ nearest to $0$. Then $-\|p\|$, which is minus the distance from $0$ to $K$, is
+the least value of the support function $\sigma_K$ on the closed unit ball:
+$$\min_{\|d\| \le 1} \sigma_K(d) = -\|p\|.$$
+
+The minimum is attained at $d = -p / \|p\|$, by
+`Optimization.supportFn_negativeUnit_bestApprox`. The values of the support function are in
+`EReal`. -/
 theorem supportFn_isLeast_closedBall :
     IsLeast (supportFn (innerₗ E) K '' closedBall 0 1) ((-‖bestApprox K 0‖ : ℝ) : EReal) := by
   refine ⟨?_, ?_⟩

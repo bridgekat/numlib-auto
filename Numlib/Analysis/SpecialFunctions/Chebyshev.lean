@@ -13,50 +13,72 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 /-!
 # The roots of the Vieta–Lucas polynomials
 
-`Polynomial.Chebyshev.C R n` is the *rescaled* Chebyshev polynomial of the first kind, the
-Vieta–Lucas polynomial, characterized by `C_n(2x) = 2 T_n(x)`. Mathlib has the degree, the leading
-coefficient and the real roots of `T` but nothing about those of `C`, and the factorization of `C`
-into linear factors is what a cyclic-reduction argument needs: the polynomial `C_{2^r}` evaluated at
-a matrix is a product of `2^r` shifted copies of it, so one solve with `C_{2^r}(B)` is `2^r` solves
-with tridiagonal matrices.
+The Vieta–Lucas polynomial $C_n$ is the rescaled Chebyshev polynomial of the first kind,
+characterized by $C_n(2x) = 2 T_n(x)$. In Mathlib it is `Polynomial.Chebyshev.C`. For $n \ge 1$ the
+polynomial $C_n$ is monic of degree $n$, unlike $T_n$, whose leading coefficient is $2^{n-1}$. The
+identity $C_n(2 \cos \theta) = 2 \cos(n \theta)$ puts its $n$ roots at
+$$x_k = 2 \cos \frac{(2k + 1)\pi}{2n}, \qquad k = 0, \dots, n - 1.$$
+These roots lie in $(-2, 2)$ and are simple, so $C_n = \prod_{k < n} (X - x_k)$.
 
-`C_n` is monic of degree `n` for `n ≥ 1` — unlike `T_n`, whose leading coefficient is `2^{n-1}` —
-and `C_n(2 cos θ) = 2 cos(n θ)` puts its `n` roots at `2 cos((2k+1)π/(2n))`, `k = 0, …, n - 1`, all
-in `(-2, 2)` and all simple.
+The factorization of $C_n$ into linear factors is what a cyclic-reduction argument needs: the
+polynomial $C_{2^r}$ evaluated at a matrix $B$ is a product of $2^r$ shifted copies of $B$, so one
+solve with $C_{2^r}(B)$ is $2^r$ solves with tridiagonal matrices.
+
+## Main definitions
+
+* `Polynomial.Chebyshev.rootNode`: the number $2 \cos((2k + 1)\pi / (2n))$, the $k$-th root of
+  $C_n$.
 
 ## Main results
 
-* `Polynomial.Chebyshev.natDegree_C_natCast` and `Polynomial.Chebyshev.monic_C_natCast`.
-* `Polynomial.Chebyshev.roots_C_real`: the roots as a multiset.
-* `Polynomial.Chebyshev.C_natCast_eq_prod`: `C_n = ∏_{k<n} (X - 2 cos((2k+1)π/(2n)))`.
+* `Polynomial.Chebyshev.natDegree_C_natCast`: $C_n$ has degree $n$.
+* `Polynomial.Chebyshev.monic_C_natCast`: $C_n$ is monic for $n \ge 1$.
+* `Polynomial.Chebyshev.injOn_rootNode`: the $n$ roots $x_0, \dots, x_{n-1}$ are pairwise distinct.
+* `Polynomial.Chebyshev.roots_C_real`: the real roots of $C_n$, as a multiset, are
+  $x_0, \dots, x_{n-1}$, each with multiplicity one.
+* `Polynomial.Chebyshev.C_natCast_eq_prod`: $C_n = \prod_{k < n} (X - x_k)$ for $n \ge 1$.
+
+## Implementation notes
+
+* Mathlib has the degree, the leading coefficient and the real roots of $T_n$, but not those of
+  $C_n$.
+* Mathlib's `Polynomial.Chebyshev.node` is a different family: the extremal points $\cos(k\pi/n)$ of
+  $T_n$.
 -/
 
 open Real
 
 namespace Polynomial.Chebyshev
 
-/-- The `k`-th root `2 cos((2k+1)π/(2n))` of the Vieta–Lucas polynomial `C_n`.  Mathlib's
-`Polynomial.Chebyshev.node` is a different family, the *extremal* points `cos(kπ/n)` of `T_n`. -/
+/-- For natural numbers $n$ and $k$, the **$k$-th root node** of the Vieta–Lucas polynomial $C_n$ is
+the real number
+$$x_k = 2 \cos \frac{(2k + 1)\pi}{2n}.$$
+
+Mathlib's `Polynomial.Chebyshev.node` is a different family, the extremal points $\cos(k\pi/n)$
+of $T_n$. With the Lean convention $x/0 = 0$, the value at $n = 0$ is $2$. -/
 noncomputable def rootNode (n k : ℕ) : ℝ := 2 * Real.cos ((2 * k + 1) * π / (2 * n))
 
-/-- `2 * X` has degree one, which is what makes `C_n ↦ C_n ∘ (2X)` degree-preserving. -/
+/-- The polynomial $2X$ has degree one. -/
 private theorem natDegree_two_mul_X : ((2 : ℝ[X]) * X).natDegree = 1 := by
   rw [← C_ofNat, natDegree_C_mul two_ne_zero, natDegree_X]
 
-/-- The leading coefficient of `2 * X`. -/
+/-- The polynomial $2X$ has leading coefficient $2$. -/
 private theorem leadingCoeff_two_mul_X : ((2 : ℝ[X]) * X).leadingCoeff = 2 := by
   rw [← C_ofNat, leadingCoeff_mul, leadingCoeff_C, leadingCoeff_X, mul_one]
 
-/-- The Vieta–Lucas polynomial `C_n` has degree `n`: composing with `2X` neither raises nor lowers
-a degree, and `C_n ∘ (2X) = 2 T_n`. -/
+/-- For every natural number $n$, the Vieta–Lucas polynomial $C_n$ over $\mathbb{R}$ has degree $n$.
+
+The proof uses $C_n(2X) = 2 T_n$ and the fact that composition with $2X$ preserves the degree. -/
 @[simp] theorem natDegree_C_natCast (n : ℕ) : (C ℝ (n : ℤ)).natDegree = n := by
   have h := natDegree_comp (p := C ℝ (n : ℤ)) (q := (2 : ℝ[X]) * X)
   rw [C_comp_two_mul_X, natDegree_two_mul_X, mul_one, ← C_ofNat,
     natDegree_C_mul two_ne_zero, natDegree_T] at h
   simpa using h.symm
 
-/-- The Vieta–Lucas polynomial `C_n` is **monic** for `n ≥ 1`: the leading coefficient `2^{n-1}` of
-`T_n` is rescaled to `2 · 2^{n-1} / 2^n = 1`. -/
+/-- For every natural number $n \ge 1$, the Vieta–Lucas polynomial $C_n$ over $\mathbb{R}$ is
+**monic**.
+
+The leading coefficient $2^{n-1}$ of $T_n$ is rescaled to $2 \cdot 2^{n-1} / 2^n = 1$. -/
 theorem monic_C_natCast {n : ℕ} (hn : n ≠ 0) : (C ℝ (n : ℤ)).Monic := by
   have h := leadingCoeff_comp (p := C ℝ (n : ℤ)) (q := (2 : ℝ[X]) * X)
     (by rw [natDegree_two_mul_X]; norm_num)
@@ -73,8 +95,11 @@ theorem monic_C_natCast {n : ℕ} (hn : n ≠ 0) : (C ℝ (n : ℤ)).Monic := by
     mul_right_cancel₀ hne (by rw [one_mul]; exact h.symm)
   exact hlc
 
-/-- The nodes of `C_n` are pairwise distinct: they are `2` times the nodes of `T_n`, which Mathlib
-records as `Polynomial.Chebyshev.roots_T_real_nodup`. -/
+/-- For every natural number $n$, the root nodes $x_k = 2 \cos((2k + 1)\pi / (2n))$,
+$k = 0, \dots, n - 1$, are pairwise distinct.
+
+The nodes are $2$ times the roots of $T_n$, which are distinct by
+`Polynomial.Chebyshev.roots_T_real_nodup`. -/
 theorem injOn_rootNode (n : ℕ) : Set.InjOn (rootNode n) (Finset.range n) := by
   have h := (Finset.range n).nodup_map_iff_injOn.mp (roots_T_real_nodup n)
   intro a ha b hb hab
@@ -82,8 +107,12 @@ theorem injOn_rootNode (n : ℕ) : Set.InjOn (rootNode n) (Finset.range n) := by
   simp only [rootNode] at hab
   linarith
 
-/-- The **roots of the Vieta–Lucas polynomial** `C_n` over `ℝ`: the `n` distinct reals
-`2 cos((2k+1)π/(2n))`, `k = 0, …, n - 1`. -/
+/-- The **roots of the Vieta–Lucas polynomial**: for every natural number $n$, the multiset of real
+roots of $C_n$ consists of the $n$ distinct numbers
+$$x_k = 2 \cos \frac{(2k + 1)\pi}{2n}, \qquad k = 0, \dots, n - 1,$$
+each with multiplicity one.
+
+For $n = 0$ both sides are empty, since $C_0 = 2$ has no roots. -/
 theorem roots_C_real (n : ℕ) :
     (C ℝ (n : ℤ)).roots = ((Finset.range n).image (rootNode n)).val := by
   rcases eq_or_ne n 0 with rfl | hn
@@ -102,9 +131,11 @@ theorem roots_C_real (n : ℕ) :
   · rw [Finset.card_image_of_injOn (injOn_rootNode n), Finset.card_range,
       Polynomial.degree_eq_natDegree hmonic.ne_zero, natDegree_C_natCast]
 
-/-- **The Vieta–Lucas polynomial splits into its linear factors**:
-`C_n = ∏_{k<n} (X - 2 cos((2k+1)π/(2n)))` for `n ≥ 1`. Being monic of degree `n` with `n` distinct
-real roots, it is the product of the corresponding monic linear factors. -/
+/-- The **Vieta–Lucas polynomial splits into linear factors**: for every natural number $n \ge 1$,
+$$C_n = \prod_{k=0}^{n-1} \left(X - 2 \cos \frac{(2k + 1)\pi}{2n}\right).$$
+
+The polynomial $C_n$ is monic of degree $n$ with $n$ distinct real roots, so it is the product
+of the corresponding monic linear factors. -/
 theorem C_natCast_eq_prod {n : ℕ} (hn : n ≠ 0) :
     C ℝ (n : ℤ) = ∏ k ∈ Finset.range n, (X - Polynomial.C (rootNode n k)) := by
   have hcard : Multiset.card (C ℝ (n : ℤ)).roots = (C ℝ (n : ℤ)).natDegree := by

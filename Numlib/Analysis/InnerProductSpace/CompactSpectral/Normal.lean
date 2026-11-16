@@ -20,41 +20,68 @@ import Numlib.Analysis.Normed.Algebra.Spectrum
 /-!
 # The spectral theorem for compact normal operators
 
-A compact normal operator `T` on a complex Hilbert space has a Hilbert basis of eigenvectors —
-[brezis2011functional] Proposition 11.36 — with the closure of its numerical range equal to the
-closed convex hull of its spectrum (Remark 2 of §11.4). The proof is Mathlib's proof of the
-compact *self-adjoint* case (`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`
-in `Mathlib.Analysis.InnerProductSpace.Spectrum`) with the normal analogues of its three
-ingredients, all over `RCLike 𝕜`:
+Let $T$ be a compact normal operator on a complex Hilbert space $H$, so that $T T^* = T^* T$. Then
+$H$ has a Hilbert basis of eigenvectors of $T$, which is Proposition 11.36 of
+[brezis2011functional], and the closure of the numerical range $W(T) = \{\langle u, Tu \rangle /
+\langle u, u \rangle : u \neq 0\}$ is the convex hull of the spectrum, which is Remark 2 of §11.4 of
+[brezis2011functional]. The proof follows Mathlib's proof of the compact self-adjoint case
+(`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` in
+`Mathlib.Analysis.InnerProductSpace.Spectrum`), with normal analogues of its ingredients, which hold
+over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$: the adjoint of a normal operator has the conjugate
+eigenvalues with the same eigenvectors, the eigenspaces are pairwise orthogonal, the orthogonal
+complement of their span is invariant under $T$ and $T^*$, and the restriction of $T$ to it is
+normal.
 
-* the adjoint of a normal operator has the conjugate eigenvalues with the same eigenvectors
-  (`ContinuousLinearMap.IsStarNormal.eigenspace_adjoint`, from Mathlib's
-  `IsStarNormal.ker_adjoint_eq_ker` applied to `T - μ • 1`);
-* the eigenspaces are pairwise orthogonal (`IsStarNormal.orthogonalFamily_eigenspaces`);
-* the orthogonal complement of their span is invariant under `T` and `T†`
-  (`IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant`, `…_invariant_adjoint`), and
-  the restriction of `T` to it is normal (`IsStarNormal.restrict`, through
-  `ContinuousLinearMap.adjoint_restrict`);
+## Main results
 
-and, in place of the self-adjoint spectral radius formula, the C⋆-algebra identity
-`IsStarNormal.spectralRadius_eq_nnnorm` on `H →L[ℂ] H` — the one step that needs `ℂ`: on a real
-Hilbert space a rotation of the plane is a compact normal operator without eigenvectors, as the
-book notes. `IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot` is the core, and the
-Hilbert basis is assembled by
-`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`
-(`Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis`), shared with the self-adjoint
-Theorem 6.11; as there, no separability is assumed and the index set is a set of vectors.
+* `ContinuousLinearMap.IsStarNormal.eigenspace_adjoint`: $\ker(T^* - \bar\mu I) = \ker(T - \mu I)$
+  for a normal $T$.
+* `ContinuousLinearMap.IsStarNormal.orthogonalFamily_eigenspaces`: the eigenspaces of a normal
+  operator are pairwise orthogonal.
+* `ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant` and
+  `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_invariant_adjoint`: the orthogonal
+  complement of the span of the eigenspaces is invariant under $T$ and under $T^*$.
+* `ContinuousLinearMap.IsStarNormal.restrict`: the restriction of a normal operator to a closed
+  subspace invariant under $T$ and $T^*$ is normal.
+* `ContinuousLinearMap.IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero`: a compact normal
+  operator on a complex Hilbert space is zero if and only if all its eigenvalues are zero.
+* `ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot`: the eigenspaces
+  of a compact normal operator on a complex Hilbert space span a dense subspace.
+* `ContinuousLinearMap.IsStarNormal.exists_hilbertBasis_eigenvector`: a compact normal operator on a
+  complex Hilbert space has a Hilbert basis of eigenvectors (Proposition 11.36 of
+  [brezis2011functional]).
+* `ContinuousLinearMap.IsStarNormal.closure_numericalRange_eq_convexHull_spectrum`: for such an
+  operator, $\overline{W(T)} = \operatorname{conv} \sigma(T)$ (Remark 2 of §11.4 of
+  [brezis2011functional]).
 
-Remark 2, `closure W(T) = conv σ(T)`, is
-`IsStarNormal.closure_numericalRange_eq_convexHull_spectrum`: `σ(T) ⊆ closure W(T)`
-holds for every operator (`ContinuousLinearMap.spectrum_subset_closure_numericalRange`) and the
-closure of the numerical range is convex (`LinearMap.convex_numericalRange`); conversely
-`⟪u, T u⟫ = ∑ λᵢ |⟪eᵢ, u⟫|²` in the eigenbasis is an infinite convex combination of eigenvalues,
-and a point outside the closed convex hull is separated from it by a real functional
-(`geometric_hahn_banach_closed_point`), which cannot exceed its bound on such a combination.
-The closure on the right is dropped because the convex hull of a compact subset of a
-finite-dimensional space is compact (`IsCompact.convexHull` of
-`Numlib.Analysis.Convex.Caratheodory`; Mathlib has only the finite-set version).
+## Proof outline
+
+The restriction $T_0$ of $T$ to the orthogonal complement of the span of the eigenspaces is compact
+and normal and has no eigenvalue. In place of the spectral radius formula of the self-adjoint case,
+the C⋆-algebra identity `IsStarNormal.spectralRadius_eq_nnnorm` on $H \to H$ shows that $T_0 = 0$,
+so the complement lies in $\ker T$ and is trivial. This is the one step that needs $\mathbb{C}$: on
+a real Hilbert space a rotation of the plane is a compact normal operator without eigenvectors, as
+[brezis2011functional] notes. The Hilbert basis is then assembled by
+`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily` of
+`Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis`, which the self-adjoint Theorem 6.11 also
+uses.
+
+For the numerical range, $\sigma(T) \subseteq \overline{W(T)}$ holds for every operator
+(`ContinuousLinearMap.spectrum_subset_closure_numericalRange`), and $\overline{W(T)}$ is convex
+(`LinearMap.convex_numericalRange`). Conversely, in the eigenbasis $\langle u, Tu \rangle = \sum_i
+\lambda_i |\langle e_i, u \rangle|^2$ is an infinite convex combination of eigenvalues times
+$\|u\|^2$. A point outside the closed convex hull of the spectrum is separated from it by a real
+functional (`geometric_hahn_banach_closed_point`), which cannot exceed its bound on such a
+combination.
+
+## Implementation notes
+
+* As in Theorem 6.11, no separability is assumed, and the index set of the basis is a set of
+  vectors.
+* The closure of the convex hull can be dropped, because the convex hull of a compact subset of a
+  finite-dimensional space is compact (`IsCompact.convexHull` of
+  `Numlib.Analysis.Convex.Caratheodory`; Mathlib has only the version for finite sets).
+* The numerical range is `LinearMap.numericalRange`.
 -/
 
 open Module.End Filter Topology RCLike
@@ -73,8 +100,11 @@ section RCLike
 variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H]
   {T : H →L[𝕜] H}
 
-/-- A scalar shift of a normal operator is normal: `star (T - μ • 1) = T† - conj μ • 1`, and
-scalar multiples of the identity commute with everything. -/
+/-- Let $T$ be a normal bounded operator on a Hilbert space $H$ and let $\mu \in \mathbb{K}$. Then
+$T - \mu I$ is normal.
+
+The adjoint is $(T - \mu I)^* = T^* - \bar\mu I$, and scalar multiples of the identity commute
+with every operator. -/
 theorem IsStarNormal.sub_smul_one (hT : IsStarNormal T) (μ : 𝕜) :
     IsStarNormal (T - μ • (1 : H →L[𝕜] H)) := by
   have hc : ∀ (c : 𝕜) (X : H →L[𝕜] H), Commute (c • (1 : H →L[𝕜] H)) X := fun c X => by
@@ -86,10 +116,13 @@ theorem IsStarNormal.sub_smul_one (hT : IsStarNormal T) (μ : 𝕜) :
   rw [hstar]
   exact Commute.sub_left (hT.star_comm_self.sub_right (hc μ (star T)).symm) (hc _ _)
 
-/-- **The adjoint of a normal operator has the conjugate eigenvalues with the same
-eigenvectors**: `N(T† - μ̄) = N(T - μ)` ([brezis2011functional] Proposition 11.36, the first
-step of the proof). Mathlib's `IsStarNormal.ker_adjoint_eq_ker` applied to the normal operator
-`T - μ • 1`, whose adjoint is `T† - μ̄ • 1`. -/
+/-- **The adjoint of a normal operator has the conjugate eigenvalues with the same eigenvectors.**
+Let $T$ be a normal bounded operator on a Hilbert space $H$ and let $\mu \in \mathbb{K}$. Then
+$$\ker(T^* - \bar\mu I) = \ker(T - \mu I).$$
+This is the first step of the proof of Proposition 11.36 of [brezis2011functional].
+
+The proof applies Mathlib's `ContinuousLinearMap.IsStarNormal.ker_adjoint_eq_ker` to the normal
+operator $T - \mu I$, whose adjoint is $T^* - \bar\mu I$. -/
 theorem IsStarNormal.eigenspace_adjoint (hT : IsStarNormal T) (μ : 𝕜) :
     eigenspace (adjoint T : Module.End 𝕜 H) (conj μ) = eigenspace (T : Module.End 𝕜 H) μ := by
   ext x
@@ -99,16 +132,22 @@ theorem IsStarNormal.eigenspace_adjoint (hT : IsStarNormal T) (μ : 𝕜) :
   rw [← star_eq_adjoint, star_sub, star_smul, star_one, star_eq_adjoint, ← starRingEnd_apply] at h
   simpa only [sub_apply, smul_apply, one_apply_eq_self] using h
 
-/-- A vector in the `μ`-eigenspace of a normal operator is a `μ̄`-eigenvector of the adjoint. -/
+/-- Let $T$ be a normal bounded operator on a Hilbert space $H$. If $Tx = \mu x$, then
+$T^* x = \bar\mu x$. -/
 theorem IsStarNormal.adjoint_apply_eq_of_mem_eigenspace (hT : IsStarNormal T) {μ : 𝕜} {x : H}
     (hx : x ∈ eigenspace (T : Module.End 𝕜 H) μ) : adjoint T x = conj μ • x := by
   rw [← hT.eigenspace_adjoint] at hx
   exact mem_eigenspace_iff.1 hx
 
-/-- **The eigenspaces of a normal operator are pairwise orthogonal** ([brezis2011functional]
-Proposition 11.36): for `T x = μ x` and `T y = ν y`,
-`ν ⟪x, y⟫ = ⟪x, T y⟫ = ⟪T† x, y⟫ = μ ⟪x, y⟫`, so `⟪x, y⟫ = 0` when `μ ≠ ν`. The shape is that
-of Mathlib's `LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`. -/
+/-- **The eigenspaces of a normal operator are pairwise orthogonal.** Let $T$ be a normal bounded
+operator on a Hilbert space $H$. Then the eigenspaces $\ker(T - \mu I)$, $\mu \in \mathbb{K}$,
+form an orthogonal family of subspaces. This is part of the proof of Proposition 11.36 of
+[brezis2011functional].
+
+For $Tx = \mu x$ and $Ty = \nu y$, $\nu \langle x, y \rangle = \langle x, Ty \rangle = \langle
+T^* x, y \rangle = \mu \langle x, y \rangle$, so $\langle x, y \rangle = 0$ when $\mu \neq \nu$.
+The form of the statement is that of Mathlib's
+`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`. -/
 theorem IsStarNormal.orthogonalFamily_eigenspaces (hT : IsStarNormal T) :
     OrthogonalFamily 𝕜 (fun μ => eigenspace (T : Module.End 𝕜 H) μ)
       fun μ => (eigenspace (T : Module.End 𝕜 H) μ).subtypeₗᵢ := by
@@ -122,8 +161,10 @@ theorem IsStarNormal.orthogonalFamily_eigenspaces (hT : IsStarNormal T) :
   have h' : (ν - μ) * ⟪v, w⟫_𝕜 = 0 := by rw [sub_mul, h, sub_self]
   exact (mul_eq_zero.1 h').resolve_left (sub_ne_zero.2 hμν.symm)
 
-/-- If a closed subspace is invariant under the adjoint of `S`, its orthogonal complement is
-invariant under `S`: `⟪u, S v⟫ = ⟪S† u, v⟫ = 0` for `u ∈ K`, `v ∈ Kᗮ`. -/
+/-- Let $S$ be a bounded operator on a Hilbert space $H$ and let $K$ be a subspace with
+$S^* K \subseteq K$. Then $S K^\perp \subseteq K^\perp$.
+
+For $u \in K$ and $v \in K^\perp$, $\langle u, Sv \rangle = \langle S^* u, v \rangle = 0$. -/
 theorem orthogonal_invariant_of_adjoint (S : H →L[𝕜] H) {K : Submodule 𝕜 H}
     (hK : ∀ x ∈ K, adjoint S x ∈ K) : ∀ v ∈ Kᗮ, S v ∈ Kᗮ := fun v hv =>
   (Submodule.mem_orthogonal K _).2 fun u hu => by
@@ -131,9 +172,13 @@ theorem orthogonal_invariant_of_adjoint (S : H →L[𝕜] H) {K : Submodule 𝕜
     exact (Submodule.mem_orthogonal K v).1 hv _ (hK u hu)
 
 /-- **The orthogonal complement of the span of the eigenspaces of a normal operator is invariant
-under the operator** ([brezis2011functional] Proposition 11.36): each eigenspace is invariant
-under `T†` (`IsStarNormal.eigenspace_adjoint`), so each `(N(T - μ))ᗮ` is invariant under `T`,
-and their intersection is `(⨆ μ, N(T - μ))ᗮ`. Mathlib's
+under the operator.** Let $T$ be a normal bounded operator on a Hilbert space $H$ and let $W =
+\bigl(\bigvee_\mu \ker(T - \mu I)\bigr)^\perp$. Then $TW \subseteq W$. This is part of the proof
+of Proposition 11.36 of [brezis2011functional].
+
+Each eigenspace is invariant under $T^*$
+(`ContinuousLinearMap.IsStarNormal.eigenspace_adjoint`), so each $\ker(T - \mu I)^\perp$ is
+invariant under $T$, and their intersection is $W$. Mathlib's
 `LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_invariant` is the self-adjoint
 case. -/
 theorem IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant (hT : IsStarNormal T) :
@@ -146,10 +191,13 @@ theorem IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant (hT : IsSta
     rw [hT.adjoint_apply_eq_of_mem_eigenspace hx]
     exact Submodule.smul_mem _ _ hx
 
-/-- **The orthogonal complement of the span of the eigenspaces of any operator is invariant
-under the adjoint** ([brezis2011functional] Proposition 11.36, for a normal `T`; normality is not
-needed): each eigenspace is invariant under `T = T††`, so each `(N(T - μ))ᗮ` is invariant under
-`T†`. -/
+/-- **The orthogonal complement of the span of the eigenspaces of an operator is invariant under the
+adjoint.** Let $T$ be a bounded operator on a Hilbert space $H$ and let $W = \bigl(\bigvee_\mu
+\ker(T - \mu I)\bigr)^\perp$. Then $T^* W \subseteq W$. This is part of the proof of Proposition
+11.36 of [brezis2011functional], where $T$ is normal; normality is not needed.
+
+Each eigenspace is invariant under $T = T^{**}$, so each $\ker(T - \mu I)^\perp$ is invariant
+under $T^*$. -/
 theorem orthogonalComplement_iSup_eigenspaces_invariant_adjoint (T : H →L[𝕜] H) :
     ∀ v ∈ (⨆ μ, eigenspace (T : Module.End 𝕜 H) μ)ᗮ,
       adjoint T v ∈ (⨆ μ, eigenspace (T : Module.End 𝕜 H) μ)ᗮ := by
@@ -161,8 +209,11 @@ theorem orthogonalComplement_iSup_eigenspaces_invariant_adjoint (T : H →L[𝕜
   rw [adjoint_adjoint, hx']
   exact Submodule.smul_mem _ _ hx
 
-/-- **The adjoint of a restriction is the restriction of the adjoint**: for a complete subspace
-`W` invariant under `S` and `S†`, `(S|_W)† = S†|_W`, since `⟪S† x, y⟫ = ⟪x, S y⟫` on `W`. -/
+/-- **The adjoint of a restriction is the restriction of the adjoint.** Let $S$ be a bounded
+operator on a Hilbert space $H$ and let $W$ be a complete subspace with $SW \subseteq W$ and
+$S^* W \subseteq W$. Then $(S|_W)^* = S^*|_W$.
+
+On $W$, $\langle S^* x, y \rangle = \langle x, Sy \rangle$. -/
 theorem adjoint_restrict (S : H →L[𝕜] H) {W : Submodule 𝕜 H} [CompleteSpace W]
     (hW : ∀ x ∈ W, S x ∈ W) (hW' : ∀ x ∈ W, adjoint S x ∈ W) :
     adjoint (S.restrict hW) = (adjoint S).restrict hW' := by
@@ -172,11 +223,15 @@ theorem adjoint_restrict (S : H →L[𝕜] H) {W : Submodule 𝕜 H} [CompleteSp
   rw [Submodule.coe_inner, Submodule.coe_inner, coe_restrict_apply, coe_restrict_apply,
     adjoint_inner_left]
 
-/-- **The restriction of a normal operator to a closed subspace invariant under `T` and `T†` is
-normal** ([brezis2011functional] Proposition 11.36, "we obtain a compact normal operator `T₀`
-on `Fᗮ`"): the adjoint of the restriction is the restriction of the adjoint
-(`adjoint_restrict`), so `‖T₀ x‖ = ‖T x‖ = ‖T† x‖ = ‖T₀† x‖` and
-`isStarNormal_iff_norm_eq_adjoint` applies. -/
+/-- **The restriction of a normal operator to an invariant subspace is normal.** Let $T$ be a normal
+bounded operator on a Hilbert space $H$ and let $W$ be a complete subspace with $TW \subseteq W$
+and $T^* W \subseteq W$. Then the restriction $T|_W$ is normal. This is the step "we obtain a
+compact normal operator $T_0$ on $F^\perp$" of the proof of Proposition 11.36 of
+[brezis2011functional].
+
+The adjoint of the restriction is the restriction of the adjoint
+(`ContinuousLinearMap.adjoint_restrict`), so $\|T_0 x\| = \|Tx\| = \|T^* x\| = \|T_0^* x\|$, and
+`ContinuousLinearMap.isStarNormal_iff_norm_eq_adjoint` applies. -/
 theorem IsStarNormal.restrict (hT : IsStarNormal T) {W : Submodule 𝕜 H} [CompleteSpace W]
     (hW : ∀ x ∈ W, T x ∈ W) (hW' : ∀ x ∈ W, adjoint T x ∈ W) :
     IsStarNormal (T.restrict hW) := by
@@ -185,9 +240,13 @@ theorem IsStarNormal.restrict (hT : IsStarNormal T) {W : Submodule 𝕜 H} [Comp
   exact isStarNormal_iff_norm_eq_adjoint.1 hT v
 
 omit [CompleteSpace H] in
-/-- The restriction of `T` to the orthogonal complement of the span of its eigenspaces has no
-eigenvalue: an eigenvector of the restriction is an eigenvector of `T`, hence lies in the span
-and in its orthogonal complement. Holds for every operator, without normality. -/
+/-- Let $T$ be a bounded operator on an inner product space $H$ and let $W = \bigl(\bigvee_\mu
+\ker(T - \mu I)\bigr)^\perp$, with $TW \subseteq W$. Then the restriction of $T$ to $W$ has no
+eigenvalue: $\ker(T|_W - \mu I) = \{0\}$ for every $\mu \in \mathbb{K}$. Normality is not
+needed.
+
+An eigenvector of the restriction is an eigenvector of $T$, so it lies both in the span of the
+eigenspaces and in its orthogonal complement. -/
 theorem eigenspace_restrict_orthogonalComplement_iSup_eigenspaces_eq_bot (T : H →L[𝕜] H)
     (hW : ∀ v ∈ (⨆ μ, eigenspace (T : Module.End 𝕜 H) μ)ᗮ,
       T v ∈ (⨆ μ, eigenspace (T : Module.End 𝕜 H) μ)ᗮ) (μ : 𝕜) :
@@ -202,11 +261,15 @@ section Complex
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
   {T : H →L[ℂ] H}
 
-/-- **A compact normal operator on a complex Hilbert space with no nonzero eigenvalue is zero**
-([brezis2011functional] Proposition 11.35 in the form the proof of Proposition 11.36 uses): its
-spectrum is `{0}` or empty (`IsCompactOperator.hasEigenvalue_iff_mem_spectrum`), so its spectral
-radius vanishes, and for a normal element of the C⋆-algebra `H →L[ℂ] H` the spectral radius is
-the norm (`IsStarNormal.spectralRadius_eq_nnnorm`). This is the only step that needs `ℂ`. -/
+/-- **A compact normal operator with no nonzero eigenvalue is zero.** Let $T$ be a compact normal
+operator on a complex Hilbert space $H$. Then every eigenvalue of $T$ is $0$ if and only if
+$T = 0$. This is Proposition 11.35 of [brezis2011functional], in the form that the proof of
+Proposition 11.36 uses.
+
+The spectrum of $T$ is then $\{0\}$ or empty
+(`IsCompactOperator.hasEigenvalue_iff_mem_spectrum`), so its spectral radius vanishes. For a
+normal element of the C⋆-algebra of bounded operators on $H$, the spectral radius is the norm
+(`IsStarNormal.spectralRadius_eq_nnnorm`). This is the only step that needs $\mathbb{C}$. -/
 theorem IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero (hT : IsStarNormal T)
     (hK : IsCompactOperator T) :
     (∀ μ, HasEigenvalue (T : Module.End ℂ H) μ → μ = 0) ↔ T = 0 := by
@@ -217,11 +280,15 @@ theorem IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero (hT : IsStarNormal 
   apply exists_congr
   simp +contextual [hK.hasEigenvalue_iff_mem_spectrum]
 
-/-- **The core of [brezis2011functional] Proposition 11.36**: the eigenvectors of a compact
-normal operator on a complex Hilbert space span a dense subspace,
-`(⨆ μ, N(T - μ))ᗮ = ⊥`. The restriction `T₀` of `T` to `W = (⨆ μ, N(T - μ))ᗮ` is compact and
-normal and has no eigenvalue, so it is zero (`IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero`,
-the book's Proposition 11.35); thus `W ≤ N(T)`, which lies in the span, and `W = ⊥`. This is
+/-- **The eigenvectors of a compact normal operator span a dense subspace.** Let $T$ be a compact
+normal operator on a complex Hilbert space $H$. Then
+$$\Bigl(\bigvee_\mu \ker(T - \mu I)\Bigr)^\perp = \{0\}.$$
+This is the core of Proposition 11.36 of [brezis2011functional].
+
+The restriction $T_0$ of $T$ to $W = \bigl(\bigvee_\mu \ker(T - \mu I)\bigr)^\perp$ is compact
+and normal and has no eigenvalue, so it is zero by
+`ContinuousLinearMap.IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero`, which is Proposition
+11.35 of the source. Thus $W \subseteq \ker T$, which lies in the span, and $W = \{0\}$. This is
 Mathlib's proof of the self-adjoint case
 `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` with the normal ingredients. -/
 theorem IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot (hT : IsStarNormal T)
@@ -241,11 +308,15 @@ theorem IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot (hT : IsStarNo
   by_contra! hV
   simpa [h] using hS 0
 
-/-- **The spectral theorem for compact normal operators** ([brezis2011functional]
-Proposition 11.36): a compact normal operator on a complex Hilbert space has a Hilbert basis of
-eigenvectors, indexed by a set of vectors as in Mathlib's `exists_hilbertBasis`; the eigenvalues
-need not be real. No separability is assumed. Assembled from the orthogonality of the
-eigenspaces and the density of their span by
+/-- The **spectral theorem for compact normal operators**. Let $T$ be a compact normal operator on a
+complex Hilbert space $H$. Then there are a set $w \subseteq H$ and a Hilbert basis of $H$
+indexed by $w$, whose vectors are the elements of $w$, such that every $i \in w$ is an
+eigenvector of $T$: $Ti = \mu i$ for some $\mu \in \mathbb{C}$. This is Proposition 11.36 of
+[brezis2011functional].
+
+The eigenvalues need not be real. No separability is assumed, and the index set is a set of
+vectors as in Mathlib's `exists_hilbertBasis`. The basis is assembled from the orthogonality of
+the eigenspaces and the density of their span by
 `ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`. -/
 theorem IsStarNormal.exists_hilbertBasis_eigenvector (hT : IsStarNormal T)
     (hK : IsCompactOperator T) :
@@ -254,19 +325,30 @@ theorem IsStarNormal.exists_hilbertBasis_eigenvector (hT : IsStarNormal T)
   exists_hilbertBasis_eigenvectors_of_orthogonalFamily hT.orthogonalFamily_eigenspaces
     (hT.orthogonalComplement_iSup_eigenspaces_eq_bot hK)
 
-/-! ### Remark 2: the closure of the numerical range is the closed convex hull of the spectrum -/
+/-!
+### The closure of the numerical range and the convex hull of the spectrum
 
-/-- The closed convex hull of the spectrum lies in the closure of the numerical range, for
-every bounded operator on a complex Hilbert space: `σ(T) ⊆ closure W(T)`
-(`spectrum_subset_closure_numericalRange`) and the closure of the numerical range is convex
-(`LinearMap.convex_numericalRange`, the Toeplitz–Hausdorff theorem). -/
+This is Remark 2 of §11.4 of [brezis2011functional].
+-/
+
+/-- Let $T$ be a bounded operator on a complex Hilbert space $H$. Then the closed convex hull of the
+spectrum lies in the closure of the numerical range:
+$$\overline{\operatorname{conv} \sigma(T)} \subseteq \overline{W(T)}.$$
+
+The spectrum satisfies $\sigma(T) \subseteq \overline{W(T)}$
+(`ContinuousLinearMap.spectrum_subset_closure_numericalRange`), and the closure of the numerical
+range is convex (`LinearMap.convex_numericalRange`, the Toeplitz–Hausdorff theorem). -/
 theorem closure_convexHull_spectrum_subset_closure_numericalRange (T : H →L[ℂ] H) :
     closure (convexHull ℝ (spectrum ℂ T)) ⊆ closure (T : H →ₗ[ℂ] H).numericalRange :=
   closure_minimal (convexHull_min (spectrum_subset_closure_numericalRange T)
     (LinearMap.convex_numericalRange _).closure) isClosed_closure
 
-/-- In an eigenbasis `b` of `T` with eigenvalues `λ`, `⟪u, T u⟫ = ∑ λᵢ ‖⟪bᵢ, u⟫‖²`
-([brezis2011functional] §11.4, Remark 2, the computation `(T u, u) = ∑ λᵢ |uᵢ|²`). -/
+/-- Let $T$ be a normal bounded operator on a complex Hilbert space $H$, and let
+$(b_i)_{i \in \iota}$ be a Hilbert basis of $H$ with $T b_i = \lambda_i b_i$ for all $i$. Then
+for every $u \in H$
+$$\langle u, Tu \rangle = \sum_i \lambda_i |\langle b_i, u \rangle|^2,$$
+where the series converges unconditionally. This is the computation
+$(Tu, u) = \sum \lambda_i |u_i|^2$ in Remark 2 of §11.4 of [brezis2011functional]. -/
 theorem hasSum_eigenvalue_mul_norm_sq_inner {ι : Type*} (b : HilbertBasis ι ℂ H) {lam : ι → ℂ}
     (hb : ∀ i, T (b i) = lam i • b i) (hT : IsStarNormal T) (u : H) :
     HasSum (fun i => lam i * ((‖⟪b i, u⟫_ℂ‖ ^ 2 : ℝ) : ℂ)) ⟪u, T u⟫_ℂ := by
@@ -278,16 +360,20 @@ theorem hasSum_eigenvalue_mul_norm_sq_inner {ι : Type*} (b : HilbertBasis ι �
     Complex.ofReal_pow, ← Complex.conj_mul']
   ring
 
-/-- **[brezis2011functional] §11.4, Remark 2**: for a compact normal operator on a complex
-Hilbert space, the closure of the numerical range is the closed convex hull of the spectrum,
-`closure W(T) = closure (conv σ(T))` (the book writes `conv` for the closed convex hull).
+/-- Let $T$ be a compact normal operator on a complex Hilbert space $H$. Then the closure of the
+numerical range is the closed convex hull of the spectrum:
+$$\overline{W(T)} = \overline{\operatorname{conv} \sigma(T)}.$$
+This is Remark 2 of §11.4 of [brezis2011functional], where $\operatorname{conv}$ denotes the
+closed convex hull.
 
-`⊇` is `closure_convexHull_spectrum_subset_closure_numericalRange`, valid for every operator.
-For `⊆`, a point `z = ⟪u, T u⟫ / ⟪u, u⟫` of `W(T)` outside the closed convex hull `C` of the
-spectrum would be separated from `C` by a real functional `φ` with `φ ≤ c` on `C` and
-`c < φ z` (`geometric_hahn_banach_closed_point`); but in an eigenbasis `⟪u, T u⟫ = ∑ λᵢ |uᵢ|²`
-with `∑ |uᵢ|² = ‖u‖²` and every eigenvalue `λᵢ` in `σ(T) ⊆ C`, so
-`φ z = ‖u‖⁻² ∑ |uᵢ|² φ(λᵢ) ≤ c`. -/
+The inclusion $\supseteq$ is
+`ContinuousLinearMap.closure_convexHull_spectrum_subset_closure_numericalRange`, valid for every
+operator. For $\subseteq$, suppose that a point $z = \langle u, Tu \rangle / \langle u, u
+\rangle$ of $W(T)$ lies outside the closed convex hull $C$ of the spectrum. Then a real
+functional $\varphi$ separates it from $C$: $\varphi \le c$ on $C$ and $c < \varphi(z)$
+(`geometric_hahn_banach_closed_point`). But in an eigenbasis $\langle u, Tu \rangle = \sum_i
+\lambda_i |u_i|^2$ with $\sum_i |u_i|^2 = \|u\|^2$ and every eigenvalue $\lambda_i$ in
+$\sigma(T) \subseteq C$, so $\varphi(z) = \|u\|^{-2} \sum_i |u_i|^2 \varphi(\lambda_i) \le c$. -/
 theorem IsStarNormal.closure_numericalRange_eq_closure_convexHull_spectrum (hT : IsStarNormal T)
     (hK : IsCompactOperator T) :
     closure (T : H →ₗ[ℂ] H).numericalRange = closure (convexHull ℝ (spectrum ℂ T)) := by
@@ -344,10 +430,13 @@ theorem IsStarNormal.closure_numericalRange_eq_closure_convexHull_spectrum (hT :
       _ = c := by field_simp
   exact absurd hφ (not_le.2 hcz)
 
-/-- **[brezis2011functional] §11.4, Remark 2**, with the closure on the right dropped: for a
-compact normal operator on a complex Hilbert space, `closure W(T) = conv σ(T)`, the plain convex
-hull — the spectrum is compact and the convex hull of a compact subset of `ℂ` is compact
-(`IsCompact.convexHull`, `Numlib.Analysis.Convex.Caratheodory`), hence closed. -/
+/-- Let $T$ be a compact normal operator on a complex Hilbert space $H$. Then the closure of the
+numerical range is the convex hull of the spectrum:
+$$\overline{W(T)} = \operatorname{conv} \sigma(T).$$
+This is Remark 2 of §11.4 of [brezis2011functional], with the closure on the right dropped.
+
+The spectrum is compact, and the convex hull of a compact subset of $\mathbb{C}$ is compact
+(`IsCompact.convexHull` of `Numlib.Analysis.Convex.Caratheodory`), hence closed. -/
 theorem IsStarNormal.closure_numericalRange_eq_convexHull_spectrum (hT : IsStarNormal T)
     (hK : IsCompactOperator T) :
     closure (T : H →ₗ[ℂ] H).numericalRange = convexHull ℝ (spectrum ℂ T) := by

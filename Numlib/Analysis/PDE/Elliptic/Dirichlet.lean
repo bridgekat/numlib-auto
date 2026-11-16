@@ -14,72 +14,126 @@ import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Inequality.Basic
 
 /-!
-# The variational formulation of second-order elliptic boundary value problems
+# Variational formulation of second-order elliptic boundary value problems
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.5: the weak
-theory of the Dirichlet and Neumann problems for `-Δu + u = f` and for the general second-order
-operator `-∑ ∂_j (a_ij ∂_i u) + ∑ a_i ∂_i u + a_0 u` on an open set `Ω ⊆ ℝ^N`, in the Hilbert
-spaces `H^1(Ω) = SobolevEuclidean N 1 2 Ω` and `H^1_0(Ω) = SobolevEuclideanZero N 1 2 Ω` of
-`Numlib/Analysis/Sobolev/MultiIndex.lean`.
+This file develops the weak theory of the Dirichlet and Neumann problems for second-order elliptic
+equations on an open set $\Omega \subseteq \mathbb{R}^N$, following [brezis2011functional], §9.5.
+The equations are $-\Delta u + u = f$ and the general equation $-\sum_{i,j} \partial_j (a_{ij}
+\partial_i u) + \sum_i a_i \partial_i u + a_0 u = f$, with $f \in L^2(\Omega)$. The function spaces
+are the Hilbert spaces $H^1(\Omega)$ and $H^1_0(\Omega)$ of `Numlib.Analysis.Sobolev.MultiIndex`.
+For $u \in H^1(\Omega)$, $\partial_i u \in L^2(\Omega)$ is the weak partial derivative, $\|u\|_2$ is
+the norm of $u$ in $L^2(\Omega)$, and $\|u\|$ is the norm of $H^1(\Omega)$, so that $\|u\|^2 =
+\|u\|_2^2 + \sum_i \|\partial_i u\|_2^2$. The load of $f$ is the functional
+$v \mapsto \int_\Omega f v$.
 
-## The forms
+Every form of the file is a bounded bilinear form on $H^1(\Omega)$ that is a sum of pairings $(u, v)
+\mapsto \langle T \partial^\alpha u, \partial^\beta v \rangle_{L^2(\Omega)}$, where $T$ is the
+identity or the multiplication by a coefficient in $L^\infty(\Omega)$. The three forms are the
+Dirichlet form $\int_\Omega \nabla u \cdot \nabla v$, the form $\int_\Omega \nabla u \cdot \nabla
+v + \int_\Omega u v$ of $-\Delta + 1$, and the general form (41)
+$$a(u, v) = \sum_{i,j} \int_\Omega a_{ij} \, \partial_i u \, \partial_j v + \sum_i \int_\Omega a_i
+  \, \partial_i u \, v + \int_\Omega a_0 u v.$$
+The form of $-\Delta + 1$ is the inner product of $H^1(\Omega)$, so its existence theorems are the
+Riesz representation theorem and need no boundedness of $\Omega$. A weak solution of the Dirichlet
+problem is a $u \in H^1_0(\Omega)$ with $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$;
+the Neumann problem has $H^1(\Omega)$ in place of $H^1_0(\Omega)$. The file proves existence and
+uniqueness of weak solutions, Dirichlet's principle, the passage between classical and weak
+solutions, and the Fredholm alternative for the general form.
 
-A bilinear form is a `SesqForm ℝ (H^1(Ω))` assembled, as `EllipticInterval.form` is on `H^1(a, b)`,
-from `L²(Ω)`-pairings `(u, v) ↦ ⟪T (∂^α u), ∂^β v⟫` of weak derivatives through a bounded operator
-`T` on `L²(Ω)` — the identity, or multiplication by an `L^∞(Ω)` coefficient (`Elliptic.mulL`):
+## Main definitions
 
-* `Elliptic.dirichletForm Ω`, the Dirichlet form `∫_Ω ∇u · ∇v`;
-* `Elliptic.laplaceForm Ω`, the form `∫_Ω ∇u · ∇v + ∫_Ω u v` of `-Δ + 1`, which **is the inner
-  product of `H^1(Ω)`** (`Elliptic.laplaceForm_eq_innerSL`), so that the existence theorems for
-  it are the Riesz representation theorem and need no boundedness of `Ω`;
-* `Elliptic.generalForm Ω A a₁ a₀`, the form (41) of the general operator with `L^∞` coefficients,
-  with the ellipticity condition `Elliptic.IsUniformlyElliptic`, Gårding's inequality
-  (`Elliptic.generalForm_garding`, with an explicit shift) and its coercivity on `H^1_0(Ω)` of a
-  bounded `Ω` when `a₁ = 0` and `a₀ ≥ 0` (Poincaré's inequality).
-
-A weak problem is `IsGalerkinSolution a (load Ω f) K u` of `Numlib/Variational/Galerkin.lean`
-with `K = H^1_0(Ω)` (Dirichlet) or `K = ⊤` (Neumann); nothing distinguishes the continuous problem
-from a Galerkin discretization.
+* `Elliptic.mulL`: the multiplication by a coefficient in $L^\infty(\Omega)$, as a bounded operator
+  on $L^2(\Omega)$.
+* `Elliptic.pairing`: the bilinear form $(u, v) \mapsto \langle T \partial^\alpha u, \partial^\beta
+  v \rangle_{L^2(\Omega)}$ on $H^1(\Omega)$.
+* `Elliptic.dirichletForm`: the Dirichlet form $\int_\Omega \nabla u \cdot \nabla v$.
+* `Elliptic.laplaceForm`: the form $\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v$ of
+  $-\Delta + 1$.
+* `Elliptic.load`: the functional $v \mapsto \int_\Omega f v$ on $H^1(\Omega)$.
+* `Elliptic.admissibleSet`: the affine set $\{v \in H^1(\Omega) : v - \tilde g \in H^1_0(\Omega)\}$
+  of the inhomogeneous Dirichlet problem.
+* `Elliptic.IsUniformlyElliptic`: the ellipticity condition (36) for coefficients in
+  $L^\infty(\Omega)$, almost everywhere on $\Omega$.
+* `Elliptic.generalForm`: the general second-order form (41).
+* `Elliptic.solutionOperator`: the solution operator $T \colon L^2(\Omega) \to L^2(\Omega)$ of the
+  weak Dirichlet problem for a form that is coercive on $H^1_0(\Omega)$.
+* `Elliptic.homogeneousKernel`: the space of weak solutions in $H^1_0(\Omega)$ of the homogeneous
+  Dirichlet problem.
 
 ## Main results
 
-* `Elliptic.existsUnique_isGalerkinSolution_laplace` and
-  `Elliptic.isMinOn_energy_iff_isGalerkinSolution_laplace`: **Theorem 9.21** (Dirichlet's
-  principle);
-* `Elliptic.isGalerkinSolution_laplace_of_classical` and
-  `Elliptic.laplacian_ae_eq_of_isGalerkinSolution`: Steps A and D of Example 1, a classical
-  solution is a weak solution and a `C²` weak solution satisfies the equation — the interior
-  half of Step A, without the boundary condition, is
-  `Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical` (what Example 2 uses);
-* `Elliptic.existsUnique_isWeakSolution_inhomogeneous`: **Proposition 9.22** (inhomogeneous
-  Dirichlet data, on the affine set `Elliptic.admissibleSet`);
-* `Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg`: Example 3;
-* `Elliptic.existsUnique_isGalerkinSolution_neumann`: **Proposition 9.24** (Neumann);
-* `Elliptic.solutionOperator`, the solution operator `T : L²(Ω) → L²(Ω)` of a form coercive on
-  `H^1_0(Ω)`, compact when `Ω` has finite measure (`Elliptic.solutionOperator_isCompactOperator`,
-  by the Rellich–Kondrachov theorem on `W_0^{1,p}(Ω)` of Remark 20,
-  `Numlib/Analysis/Sobolev/Compactness.lean`), and the Fredholm alternative of **Theorem 9.23**
-  first for a compact `T` (`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`,
-  `Elliptic.exists_orthogonality_iff_exists_solution_of_isCompactOperator`), then for the general
-  form (41) on an open set of finite measure (`Elliptic.finiteDimensional_ker_general`,
-  `Elliptic.exists_orthogonality_iff_exists_solution`), with **Remark 23**
-  (`Elliptic.existsUnique_of_ker_eq_bot`).
+* `Elliptic.laplaceForm_eq_innerSL`: the form of $-\Delta + 1$ is the inner product of
+  $H^1(\Omega)$.
+* `Elliptic.existsUnique_isGalerkinSolution_laplace`: the Dirichlet problem for $-\Delta u + u = f$
+  has exactly one weak solution in $H^1_0(\Omega)$ (Theorem 9.21).
+* `Elliptic.isMinOn_energy_iff_isGalerkinSolution_laplace`: the weak solution is the minimizer over
+  $H^1_0(\Omega)$ of $\frac12 \int_\Omega (|\nabla v|^2 + v^2) - \int_\Omega f v$ (Dirichlet's
+  principle, Theorem 9.21).
+* `Elliptic.existsUnique_isWeakSolution_inhomogeneous`: the Dirichlet problem with the boundary
+  values of $\tilde g \in H^1(\Omega)$ has exactly one weak solution in $\tilde g + H^1_0(\Omega)$
+  (Proposition 9.22).
+* `Elliptic.existsUnique_isGalerkinSolution_neumann`: the Neumann problem for $-\Delta u + u = f$
+  has exactly one weak solution in $H^1(\Omega)$ (Proposition 9.24).
+* `Elliptic.generalForm_garding`: Gårding's inequality for the general form, with an explicit shift.
+* `Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg`: on a bounded $\Omega$, with
+  ellipticity, $a_i = 0$ and $a_0 \ge 0$, the Dirichlet problem for the general form has exactly one
+  weak solution (Example 3).
+* `Elliptic.isGalerkinSolution_laplace_of_classical`: a classical solution of the Dirichlet problem
+  for $-\Delta u + u = f$ is a weak solution (Example 1, Step A).
+* `Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical`: the interior half of Step A,
+  without the boundary condition, as used by Example 2.
+* `Elliptic.laplacian_ae_eq_of_isGalerkinSolution`: a weak solution that is $C^2$ in $\Omega$
+  satisfies $-\Delta u + u = f$ almost everywhere (Example 1, Step D).
+* `Elliptic.isGalerkinSolution_general_of_classical`: a classical solution of the Dirichlet problem
+  for the general equation is a weak solution (Example 3, Step A).
+* `Elliptic.solutionOperator_isCompactOperator`: the solution operator is compact when $\Omega$ has
+  finite measure.
+* `Elliptic.finiteDimensional_ker_general`: the homogeneous Dirichlet problem for the general form
+  has a finite-dimensional space of weak solutions (Theorem 9.23, first half).
+* `Elliptic.exists_orthogonality_iff_exists_solution`: the Dirichlet problem for the general form is
+  solvable if and only if $f$ is orthogonal to a subspace of the same dimension (Theorem 9.23,
+  second half).
+* `Elliptic.existsUnique_of_ker_eq_bot`: if the homogeneous problem has only the zero solution,
+  every problem has exactly one weak solution (Remark 23).
 
-## Conventions
+## Proof outline
 
-Coefficients live in `Lp ℝ ⊤ (volume.restrict Ω)`, so the book's `C^1(Ω̄)` coefficients enter as
-`L^∞` classes on a bounded `Ω` and the ellipticity condition is stated almost everywhere. The
-Laplacian of a classical solution is Mathlib's `Δ` (`InnerProductSpace.instLaplacian`, computed in
-coordinates by `laplacian_eq_iteratedFDeriv_orthonormalBasis`). The book's `u ∈ C²(Ω̄)` of a
-classical solution is `ContDiffOnClosure ℝ 2 u Ω` (`Numlib/Analysis/Calculus/ContDiffOnClosure`:
-`C²` on `Ω` with derivatives of order `≤ 2` extending continuously to `Ω̄`, footnote 16 of
-[brezis2011functional] §9.3), together with `ContinuousOn u (closure Ω)` where boundary values
-are read; Mathlib's stronger `ContDiffOn ℝ 2 u (closure Ω)` implies both.
+The existence theorems apply the Lax–Milgram theorem on $H^1_0(\Omega)$ or on $H^1(\Omega)$. For the
+general form on a bounded $\Omega$ with $a_i = 0$ and $a_0 \ge 0$, Poincaré's inequality gives
+coercivity on $H^1_0(\Omega)$. For the Fredholm alternative, Gårding's inequality gives a $\lambda$
+for which $a + \lambda \langle \cdot, \cdot \rangle_{L^2}$ is coercive on $H^1_0(\Omega)$. Its
+solution operator $T$ is compact by the Rellich–Kondrachov theorem, and $u$ is a weak solution if
+and only if $u = T(f + \lambda u)$, so the Riesz–Fredholm theory of the compact operator $T$ on
+$L^2(\Omega)$ applies. A classical solution is a weak solution by integration by parts against test
+functions and density of the test functions in $H^1_0(\Omega)$.
 
-## References
+## Implementation notes
 
-[brezis2011functional], §9.5: Examples 1–4, Theorem 9.21, Proposition 9.22, Theorem 9.23,
-Remark 23, Proposition 9.24.
+* A weak problem is `IsGalerkinSolution a (Elliptic.load Ω f) K u` of `Numlib.Variational.Galerkin`,
+  with `K = SobolevEuclideanZero N 1 2 Ω` for the Dirichlet problem and `K = ⊤` for the Neumann
+  problem. Nothing distinguishes the continuous problem from a Galerkin discretization.
+* The space $H^1(\Omega)$ is `SobolevEuclidean N 1 2 Ω`, and its closed subspace $H^1_0(\Omega)$
+  is `SobolevEuclideanZero N 1 2 Ω`.
+* The weak derivative $\partial^\alpha u$ is `SobolevMultiIndex.weakDeriv u α`. The derivative
+  $\partial_i u$ is the case `α = MultiIndexLE.single i`, and the case `α = 0` is the class of $u$
+  in $L^2(\Omega)$, also written `SobolevMultiIndex.fn u` or `SobolevMultiIndex.fnL`.
+* Coefficients are elements of `Lp ℝ ⊤ (volume.restrict Ω)`. The coefficients
+  $a_{ij} \in C^1(\bar\Omega)$ and $a_0 \in C(\bar\Omega)$ of the source enter as $L^\infty$ classes
+  on a bounded $\Omega$, and the ellipticity condition is stated almost everywhere.
+* The Laplacian of a classical solution is Mathlib's $\Delta$ (`InnerProductSpace.instLaplacian`),
+  computed in coordinates by `InnerProductSpace.laplacian_eq_iteratedFDeriv_orthonormalBasis`.
+* The hypothesis $u \in C^2(\bar\Omega)$ on a classical solution is `ContDiffOnClosure ℝ 2 u Ω` of
+  `Numlib.Analysis.Calculus.ContDiffOnClosure`: $u$ is $C^2$ on $\Omega$ and its derivatives of
+  order at most $2$ extend continuously to $\bar\Omega$, as in footnote 16 of
+  [brezis2011functional], §9.3. Where boundary values are read, `ContinuousOn u (closure Ω)` is
+  assumed in addition. Mathlib's stronger `ContDiffOn ℝ 2 u (closure Ω)` implies both.
+* Proposition 9.24 holds here for every open $\Omega$. The source assumes $\Omega$ bounded and of
+  class $C^1$, which is needed only for the passage between the classical and the weak formulations.
+* Theorem 9.23 and Remark 23 hold here for every open $\Omega$ of finite measure. The source assumes
+  $\Omega$ bounded.
+* The second clause of Remark 23, that $a_0 \ge 0$ alone forces the trivial kernel, is the general
+  case of Proposition 9.29, which the source cites from Gilbarg and Trudinger. It is not proved
+  here.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -91,25 +145,28 @@ namespace Elliptic
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-! ### Multiplication by an `L^∞` coefficient, and the pairings -/
+/-! ### Multiplication by an $L^\infty$ coefficient, and the pairings -/
 
-/-- Multiplication by an `L^∞(Ω)` coefficient, as a continuous linear map on `L²(Ω)`: Mathlib's
-Hölder product at the exponents `(2, ∞, 2)`. The same construction as `EllipticInterval.mulL`,
-on an open subset of `ℝ^N`. -/
+/-- Let $a \in L^\infty(\Omega)$. The **multiplication operator** of $a$ is the bounded linear
+operator $f \mapsto a f$ on $L^2(\Omega)$.
+
+It is Mathlib's Hölder product at the exponents $(2, \infty, 2)$, and the analogue on an open
+subset of $\mathbb{R}^N$ of `EllipticInterval.mulL`. -/
 def mulL (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   ((ContinuousLinearMap.mul ℝ ℝ).holderL (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
     2 ⊤ 2).flip a
 
-/-- `Elliptic.mulL a f` is the pointwise product `a f` almost everywhere. -/
+/-- For $a \in L^\infty(\Omega)$ and $f \in L^2(\Omega)$, the class `Elliptic.mulL Ω a f` is the
+pointwise product $x \mapsto a(x) f(x)$, almost everywhere on $\Omega$. -/
 theorem coeFn_mulL (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     mulL Ω a f =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fun x ↦ a x * f x := by
   refine ((ContinuousLinearMap.mul ℝ ℝ).coeFn_holder f a).trans (Eventually.of_forall fun x ↦ ?_)
   simp [mul_comm]
 
-/-- `‖a f‖_{L²} ≤ ‖a‖_∞ ‖f‖_{L²}`. -/
+/-- For $a \in L^\infty(\Omega)$ and $f \in L^2(\Omega)$, $\|a f\|_2 \le \|a\|_\infty \|f\|_2$. -/
 theorem norm_mulL_apply_le (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ‖mulL Ω a f‖ ≤ ‖a‖ * ‖f‖ := by
@@ -118,12 +175,14 @@ theorem norm_mulL_apply_le (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (Euclidean
         gcongr; exact ContinuousLinearMap.opNorm_mul_le ℝ ℝ
     _ = ‖a‖ * ‖f‖ := by ring
 
-/-- `‖mulL a‖ ≤ ‖a‖_∞`. -/
+/-- For $a \in L^\infty(\Omega)$, the operator norm of the multiplication by $a$ on $L^2(\Omega)$ is
+at most $\|a\|_\infty$. -/
 theorem norm_mulL_le (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ‖mulL Ω a‖ ≤ ‖a‖ :=
   ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) (norm_mulL_apply_le Ω a)
 
-/-- `⟪a f, g⟫_{L²} = ∫_Ω a f g`. -/
+/-- For $a \in L^\infty(\Omega)$ and $f, g \in L^2(\Omega)$, $\langle a f, g \rangle_{L^2(\Omega)} =
+\int_\Omega a f g$. -/
 theorem inner_mulL_eq_integral (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ⟪mulL Ω a f, g⟫_ℝ = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), a x * f x * g x := by
@@ -132,7 +191,8 @@ theorem inner_mulL_eq_integral (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (Eucli
   simp only [hx, RCLike.inner_apply, conj_trivial]
   ring
 
-/-- The product of an `L^∞` coefficient and two `L²` functions is integrable on `Ω`. -/
+/-- For $a \in L^\infty(\Omega)$ and $f, g \in L^2(\Omega)$, the function $a f g$ is integrable on
+$\Omega$. -/
 theorem integrable_mul_mul (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     Integrable (fun x ↦ a x * f x * g x)
@@ -142,10 +202,14 @@ theorem integrable_mul_mul (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (Euclidean
   simp only [hx, RCLike.inner_apply, conj_trivial]
   ring
 
-/-- The pairing `(u, v) ↦ ⟪T (∂^α u), ∂^β v⟫_{L²(Ω)}` of two weak derivatives of elements of
-`H^1(Ω)` through a bounded operator `T` on `L²(Ω)`, as a bounded bilinear form on `H^1(Ω)`
-(`SobolevMultiIndex.weakDerivL` is the weak derivative as a continuous linear map). Every form of
-this file is a finite sum of pairings. -/
+/-- Let $T$ be a bounded linear operator on $L^2(\Omega)$, and let $\alpha, \beta$ be multi-indices
+of order at most $1$. The **pairing** of $T$, $\alpha$ and $\beta$ is the bounded bilinear form
+$$(u, v) \mapsto \langle T \partial^\alpha u, \partial^\beta v \rangle_{L^2(\Omega)}$$
+on $H^1(\Omega)$. Every form of this module is a finite sum of pairings.
+
+The weak derivatives enter through the continuous linear map `SobolevMultiIndex.weakDerivL`. The
+forms of this module are assembled from pairings in the same way as `EllipticInterval.form` on
+$H^1(a, b)$. -/
 def pairing (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α β : MultiIndexLE (Fin N) 1) : SesqForm ℝ (SobolevEuclidean N 1 2 Ω) :=
@@ -154,7 +218,8 @@ def pairing (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)
       (SobolevMultiIndex.weakDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
         volume β)).flip
 
-/-- `Elliptic.pairing` is the inner product it was built from. -/
+/-- For $u, v \in H^1(\Omega)$, the pairing of $T$, $\alpha$ and $\beta$ at $(u, v)$ is $\langle T
+\partial^\alpha u, \partial^\beta v \rangle_{L^2(\Omega)}$. -/
 theorem pairing_apply (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α β : MultiIndexLE (Fin N) 1) (u v : SobolevEuclidean N 1 2 Ω) :
@@ -162,7 +227,9 @@ theorem pairing_apply (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace �
       = ⟪T (SobolevMultiIndex.weakDeriv u α), SobolevMultiIndex.weakDeriv v β⟫_ℝ :=
   rfl
 
-/-- `|pairing T α β u v| ≤ ‖T‖ ‖∂^α u‖₂ ‖∂^β v‖₂`. -/
+/-- For $u, v \in H^1(\Omega)$, the pairing of $T$, $\alpha$ and $\beta$ satisfies $|\langle T
+\partial^\alpha u, \partial^\beta v \rangle| \le \|T\| \, \|\partial^\alpha u\|_2 \,
+\|\partial^\beta v\|_2$. -/
 theorem abs_pairing_le (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α β : MultiIndexLE (Fin N) 1) (u v : SobolevEuclidean N 1 2 Ω) :
@@ -171,7 +238,9 @@ theorem abs_pairing_le (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace 
   rw [pairing_apply]
   exact (abs_real_inner_le_norm _ _).trans (by gcongr; exact T.le_opNorm _)
 
-/-- `|pairing T α β u v| ≤ ‖T‖ ‖u‖ ‖v‖` in the `H^1` norm. -/
+/-- For $u, v \in H^1(\Omega)$, the pairing of $T$, $\alpha$ and $\beta$ satisfies $|\langle T
+\partial^\alpha u, \partial^\beta v \rangle| \le \|T\| \, \|u\| \, \|v\|$, with the norm of
+$H^1(\Omega)$. -/
 theorem abs_pairing_le' (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α β : MultiIndexLE (Fin N) 1) (u v : SobolevEuclidean N 1 2 Ω) :
@@ -181,30 +250,38 @@ theorem abs_pairing_le' (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace
     · exact SobolevMultiIndex.norm_weakDeriv_le u α
     · exact SobolevMultiIndex.norm_weakDeriv_le v β)
 
-/-- A pairing through the identity is symmetric in `(u, α)` and `(v, β)`. -/
+/-- A pairing through the identity is symmetric: $\langle \partial^\alpha u, \partial^\beta v
+\rangle_{L^2(\Omega)} = \langle \partial^\beta v, \partial^\alpha u \rangle_{L^2(\Omega)}$ for
+$u, v \in H^1(\Omega)$. -/
 theorem pairing_id_comm (α β : MultiIndexLE (Fin N) 1) (u v : SobolevEuclidean N 1 2 Ω) :
     pairing Ω (ContinuousLinearMap.id ℝ _) α β u v
       = pairing Ω (ContinuousLinearMap.id ℝ _) β α v u := by
   simp only [pairing_apply, ContinuousLinearMap.id_apply]
   exact real_inner_comm _ _
 
-/-! ### The Dirichlet form and the form of `-Δ + 1` -/
+/-! ### The Dirichlet form and the form of $-\Delta + 1$ -/
 
-/-- **The Dirichlet form** `a₀(u, v) = ∫_Ω ∇u · ∇v = ∑ᵢ ∫_Ω ∂ᵢu ∂ᵢv` on `H^1(Ω)`
-([brezis2011functional] Corollary 9.19, the scalar product of `H^1_0(Ω)`; Theorem 9.31). -/
+/-- The **Dirichlet form** is the bilinear form on $H^1(\Omega)$
+$$(u, v) \mapsto \int_\Omega \nabla u \cdot \nabla v = \sum_{i=1}^N \int_\Omega \partial_i u \,
+  \partial_i v.$$
+It is the scalar product of $H^1_0(\Omega)$ in Corollary 9.19 of [brezis2011functional], and it
+appears in Theorem 9.31.
+
+It is the sum over $i$ of the pairings through the identity with $\alpha = \beta = e_i$. -/
 def dirichletForm : SesqForm ℝ (SobolevEuclidean N 1 2 Ω) :=
   ∑ i : Fin N,
     pairing Ω (ContinuousLinearMap.id ℝ _) (MultiIndexLE.single i) (MultiIndexLE.single i)
 
-/-- The Dirichlet form as a sum of `L²` inner products of the partial derivatives. -/
+/-- For $u, v \in H^1(\Omega)$, the Dirichlet form is $\sum_i \langle \partial_i u, \partial_i v
+\rangle_{L^2(\Omega)}$. -/
 theorem dirichletForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω u v = ∑ i : Fin N, ⟪SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i),
       SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)⟫_ℝ := by
   simp only [dirichletForm, sum_apply, pairing_apply,
     ContinuousLinearMap.id_apply]
 
-/-- **The Dirichlet form is the integral `∫_Ω ∇u · ∇v`**:
-`dirichletForm Ω u v = ∫ x in Ω, ∑ i, ∂ᵢu x * ∂ᵢv x`. -/
+/-- For $u, v \in H^1(\Omega)$, the Dirichlet form is the integral $\int_\Omega \sum_i \partial_i
+u(x) \, \partial_i v(x) \, dx$. -/
 theorem dirichletForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω u v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       ∑ i : Fin N, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
@@ -220,31 +297,38 @@ theorem dirichletForm_isHermitian : (dirichletForm Ω).IsHermitian := fun u v �
   rw [dirichletForm_apply_inner, dirichletForm_apply_inner, conj_trivial]
   exact Finset.sum_congr rfl fun i _ ↦ real_inner_comm _ _
 
-/-- The Dirichlet form is additive in its first argument. -/
+/-- The Dirichlet form is additive in its first argument: its value at $(u + v, w)$ is the sum of
+its values at $(u, w)$ and $(v, w)$. -/
 theorem dirichletForm_add_left (u v w : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω (u + v) w = dirichletForm Ω u w + dirichletForm Ω v w :=
   ContinuousLinearMap.map_add₂ _ u v w
 
-/-- The Dirichlet form is homogeneous in its first argument. -/
+/-- The Dirichlet form is homogeneous in its first argument: its value at $(c u, w)$ is $c$ times
+its value at $(u, w)$. -/
 theorem dirichletForm_smul_left (c : ℝ) (u w : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω (c • u) w = c * dirichletForm Ω u w := by
   rw [map_smulₛₗ, smul_apply, smul_eq_mul, conj_trivial]
 
-/-- The diagonal of the Dirichlet form is `∫_Ω |∇v|² = ∑ᵢ ‖∂ᵢv‖₂²`. -/
+/-- For $v \in H^1(\Omega)$, the Dirichlet form at $(v, v)$ is $\int_\Omega |\nabla v|^2 = \sum_i
+\|\partial_i v\|_2^2$. -/
 theorem dirichletForm_self_eq (v : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω v v
       = ∑ i : Fin N, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ 2 := by
   rw [dirichletForm_apply_inner]
   exact Finset.sum_congr rfl fun i _ ↦ real_inner_self_eq_norm_sq _
 
-/-- The gradient norm is `√(∑ᵢ ‖∂ᵢv‖₂²)` at `p = 2`. -/
+/-- For $v \in H^1(\Omega)$, the gradient norm is $\|\nabla v\|_2 = \sqrt{\sum_i \|\partial_i
+v\|_2^2}$.
+
+The gradient norm is `SobolevMultiIndex.gradNorm` at $p = 2$. -/
 theorem gradNorm_eq_sqrt (v : SobolevEuclidean N 1 2 Ω) :
     SobolevMultiIndex.gradNorm v
       = √(∑ i : Fin N, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ 2) := by
   rw [SobolevMultiIndex.gradNorm_eq_sum (p := 2) (by norm_num), Real.sqrt_eq_rpow]
   simp only [ENNReal.toReal_ofNat, Real.rpow_two]
 
-/-- The squared `H^1` norm is `‖v‖₂² + ∑ᵢ ‖∂ᵢv‖₂²`. -/
+/-- For $v \in H^1(\Omega)$, the squared norm of $H^1(\Omega)$ is $\|v\|^2 = \|v\|_2^2 + \sum_i
+\|\partial_i v\|_2^2$. -/
 theorem norm_sq_eq (v : SobolevEuclidean N 1 2 Ω) :
     ‖v‖ ^ 2 = ‖SobolevMultiIndex.weakDeriv v 0‖ ^ 2
       + ∑ i : Fin N, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ 2 := by
@@ -253,25 +337,28 @@ theorem norm_sq_eq (v : SobolevEuclidean N 1 2 Ω) :
   rw [← Real.sqrt_eq_rpow, Real.sq_sqrt (Finset.sum_nonneg fun α _ ↦ sq_nonneg _),
     MultiIndexLE.sum_univ_one]
 
-/-- The diagonal of the Dirichlet form is the square of the gradient norm `‖∇v‖_{L²(Ω)}` of
-`Numlib/Analysis/Sobolev/MultiIndex.lean`. -/
+/-- For $v \in H^1(\Omega)$, the Dirichlet form at $(v, v)$ is $\|\nabla v\|_2^2$, the square of the
+gradient norm `SobolevMultiIndex.gradNorm` of `Numlib.Analysis.Sobolev.MultiIndex`. -/
 theorem dirichletForm_self_eq_gradNorm_sq (v : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω v v = SobolevMultiIndex.gradNorm v ^ 2 := by
   rw [dirichletForm_self_eq, gradNorm_eq_sqrt,
     Real.sq_sqrt (Finset.sum_nonneg fun i _ ↦ sq_nonneg _)]
 
-/-- The Dirichlet form is positive: `0 ≤ ∫_Ω |∇v|²`. -/
+/-- The Dirichlet form is positive: $\int_\Omega |\nabla v|^2 \ge 0$ for $v \in H^1(\Omega)$. -/
 theorem dirichletForm_self_nonneg (v : SobolevEuclidean N 1 2 Ω) : 0 ≤ dirichletForm Ω v v := by
   rw [dirichletForm_self_eq]
   exact Finset.sum_nonneg fun i _ ↦ sq_nonneg _
 
-/-- `dirichletForm Ω v v ≤ ‖v‖²` in the `H^1` norm: the `H^1` norm squared is `‖v‖₂² + ∫ |∇v|²`. -/
+/-- For $v \in H^1(\Omega)$, $\int_\Omega |\nabla v|^2 \le \|v\|^2$, because
+$\|v\|^2 = \|v\|_2^2 + \int_\Omega |\nabla v|^2$. -/
 theorem dirichletForm_self_le (v : SobolevEuclidean N 1 2 Ω) : dirichletForm Ω v v ≤ ‖v‖ ^ 2 := by
   rw [dirichletForm_self_eq, norm_sq_eq]
   exact le_add_of_nonneg_left (sq_nonneg _)
 
-/-- **The Dirichlet form is bounded by the gradient norms**: `|∫_Ω ∇u · ∇v| ≤ ‖∇u‖₂ ‖∇v‖₂`, by
-Cauchy–Schwarz in `L²(Ω)` and in `ℓ²(Fin N)`. -/
+/-- The Dirichlet form is bounded by the gradient norms: for $u, v \in H^1(\Omega)$,
+$$\left| \int_\Omega \nabla u \cdot \nabla v \right| \le \|\nabla u\|_2 \, \|\nabla v\|_2.$$
+
+The proof is the Cauchy–Schwarz inequality in $L^2(\Omega)$ and in $\mathbb{R}^N$. -/
 theorem abs_dirichletForm_le (u v : SobolevEuclidean N 1 2 Ω) :
     |dirichletForm Ω u v| ≤ SobolevMultiIndex.gradNorm u * SobolevMultiIndex.gradNorm v := by
   rw [dirichletForm_apply_inner, gradNorm_eq_sqrt, gradNorm_eq_sqrt]
@@ -279,8 +366,9 @@ theorem abs_dirichletForm_le (u v : SobolevEuclidean N 1 2 Ω) :
   refine (Finset.sum_le_sum fun i _ ↦ abs_real_inner_le_norm _ _).trans ?_
   exact Real.sum_mul_le_sqrt_mul_sqrt _ _ _
 
-/-- **The Dirichlet form is bounded with constant `1`**: `|∫_Ω ∇u · ∇v| ≤ ‖u‖ ‖v‖` in the `H^1`
-norm, the gradient norm being bounded by the norm of `H^1(Ω)`. -/
+/-- The Dirichlet form is bounded with constant $1$: $\left| \int_\Omega \nabla u \cdot \nabla v
+\right| \le \|u\| \, \|v\|$ for $u, v \in H^1(\Omega)$, because the gradient norm is bounded by
+the norm of $H^1(\Omega)$. -/
 theorem dirichletForm_isBoundedWith : (dirichletForm Ω).IsBoundedWith 1 := fun u v ↦ by
   rw [Real.norm_eq_abs, one_mul]
   refine (abs_dirichletForm_le Ω u v).trans ?_
@@ -293,10 +381,13 @@ section Poincare
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **Poincaré's inequality for the Dirichlet form**: `‖u‖²_{H¹} ≤ (1 + (2R)²) ∫_Ω |∇u|²` for
-`u ∈ H¹₀(Ω)` and `Ω ⊆ B(0, R)` (`SobolevEuclideanZero.norm_le_gradNorm` at `p = 2`); the
-coercivity of the Dirichlet form on `H¹₀(Ω)`, `Elliptic.dirichletForm_restrict_isCoerciveWith` of
-`Numlib/Analysis/PDE/Elliptic/Spectral.lean`, is its restatement. -/
+/-- **Poincaré's inequality** for the Dirichlet form. Let $N = d + 1 \ge 1$, let $R \ge 0$, and let
+$\Omega \subseteq B(0, R)$. Every $u \in H^1_0(\Omega)$ satisfies
+$$\|u\|^2 \le (1 + (2R)^2) \int_\Omega |\nabla u|^2.$$
+
+This is `SobolevEuclideanZero.norm_le_gradNorm` at $p = 2$. The coercivity of the Dirichlet form
+on $H^1_0(\Omega)$, `Elliptic.dirichletForm_restrict_isCoerciveWith` of
+`Numlib.Analysis.PDE.Elliptic.Spectral`, restates it. -/
 theorem norm_sq_le_dirichletForm_self {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
@@ -311,13 +402,17 @@ theorem norm_sq_le_dirichletForm_self {R : ℝ} (hR : 0 ≤ R)
 
 end Poincare
 
-/-- **The form of `-Δ + 1`**: `a(u, v) = ∫_Ω ∇u · ∇v + ∫_Ω u v` on `H^1(Ω)`, the bilinear form of
-[brezis2011functional] Theorem 9.21, Proposition 9.22, Proposition 9.24, Theorem 9.25,
-Theorem 9.27 and Corollary 9.28. -/
+/-- The **form of $-\Delta + 1$** is the bilinear form on $H^1(\Omega)$
+$$a(u, v) = \int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v.$$
+It is the form of Theorem 9.21, Proposition 9.22, Proposition 9.24, Theorem 9.25, Theorem 9.27
+and Corollary 9.28 of [brezis2011functional].
+
+It is the Dirichlet form plus the pairing through the identity with $\alpha = \beta = 0$. -/
 def laplaceForm : SesqForm ℝ (SobolevEuclidean N 1 2 Ω) :=
   dirichletForm Ω + pairing Ω (ContinuousLinearMap.id ℝ _) 0 0
 
-/-- The form of `-Δ + 1` as inner products: `∑ᵢ ⟪∂ᵢu, ∂ᵢv⟫ + ⟪u, v⟫`. -/
+/-- For $u, v \in H^1(\Omega)$, the form of $-\Delta + 1$ is $a(u, v) = \sum_i \langle \partial_i u,
+\partial_i v \rangle_{L^2(\Omega)} + \langle u, v \rangle_{L^2(\Omega)}$. -/
 theorem laplaceForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω u v = (∑ i : Fin N, ⟪SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i),
       SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)⟫_ℝ)
@@ -325,8 +420,9 @@ theorem laplaceForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
   rw [laplaceForm, add_apply, add_apply,
     dirichletForm_apply_inner, pairing_apply, ContinuousLinearMap.id_apply]
 
-/-- The form of `-Δ + 1` is the Dirichlet form plus the `L²` inner product of the functions:
-`laplaceForm Ω U V = dirichletForm Ω U V + ⟪U, V⟫_{L²}`. -/
+/-- For $U, V \in H^1(\Omega)$, the form of $-\Delta + 1$ is the Dirichlet form plus
+$\langle U, V \rangle_{L^2(\Omega)}$, with the classes in $L^2(\Omega)$ written through
+`SobolevMultiIndex.fnL`. -/
 theorem laplaceForm_apply_eq_dirichletForm_add (U V : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω U V = dirichletForm Ω U V
       + ⟪SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
@@ -334,15 +430,20 @@ theorem laplaceForm_apply_eq_dirichletForm_add (U V : SobolevEuclidean N 1 2 Ω)
   rw [laplaceForm, add_apply, add_apply, pairing_apply, ContinuousLinearMap.id_apply]
   rfl
 
-/-- `laplaceForm_apply_eq_dirichletForm_add` with the `L²` functions written as the zeroth weak
-derivatives (the two spellings are definitionally equal). -/
+/-- For $u, v \in H^1(\Omega)$, the form of $-\Delta + 1$ is the Dirichlet form plus
+$\langle u, v \rangle_{L^2(\Omega)}$, with the classes in $L^2(\Omega)$ written as the weak
+derivatives of order $0$.
+
+This is `Elliptic.laplaceForm_apply_eq_dirichletForm_add` in another spelling; the two spellings
+are definitionally equal. -/
 theorem laplaceForm_apply_eq_dirichletForm_add_weakDeriv (u v : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω u v = dirichletForm Ω u v
       + ⟪SobolevMultiIndex.weakDeriv u 0, SobolevMultiIndex.weakDeriv v 0⟫_ℝ := by
   rw [laplaceForm_apply_inner, dirichletForm_apply_inner]
 
-/-- **The form of `-Δ + 1` is the integral (32)**:
-`laplaceForm Ω u v = ∫_Ω (∇u · ∇v + u v)`. -/
+/-- For $u, v \in H^1(\Omega)$, the form of $-\Delta + 1$ is the integral (32):
+$$a(u, v) = \int_\Omega (\nabla u \cdot \nabla v + u v).$$
+-/
 theorem laplaceForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω u v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       ((∑ i : Fin N, SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
@@ -360,111 +461,134 @@ theorem laplaceForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
       (SobolevMultiIndex.weakDeriv v 0)).congr
       (Eventually.of_forall fun x ↦ by simp [RCLike.inner_apply, mul_comm])
 
-/-- **The form of `-Δ + 1` is the inner product of `H^1(Ω)`**: `laplaceForm Ω = innerSL ℝ`. The
-inner product of the `ℓ²` product of `L²(Ω)` spaces is the sum of the inner products of the
-components, indexed by the multi-indices `0` and `e_i` (`MultiIndexLE.sum_univ_one`). This is why
-Theorem 9.21 and Proposition 9.24 cost nothing: Lax–Milgram for the inner product is the Riesz
-representation theorem, and no boundedness of `Ω` is needed. -/
+/-- The form of $-\Delta + 1$ is the inner product of $H^1(\Omega)$:
+$a(u, v) = \langle u, v \rangle_{H^1(\Omega)}$ for all $u, v \in H^1(\Omega)$.
+
+The equation is `Elliptic.laplaceForm Ω = innerSL ℝ`. The inner product of $H^1(\Omega)$ is the
+sum of the inner products in $L^2(\Omega)$ of the components indexed by the multi-indices $0$
+and $e_i$ (`MultiIndexLE.sum_univ_one`). For this reason the Lax–Milgram theorem for this form
+is the Riesz representation theorem, and Theorem 9.21 and Proposition 9.24 need no boundedness
+of $\Omega$. -/
 theorem laplaceForm_eq_innerSL : laplaceForm Ω = innerSL ℝ := by
   ext u v
   rw [laplaceForm_apply_inner, innerSL_apply_apply, Submodule.coe_inner, PiLp.inner_apply,
     MultiIndexLE.sum_univ_one, add_comm]
   rfl
 
-/-- `laplaceForm Ω u v = ⟪u, v⟫_{H^1(Ω)}`. -/
+/-- For $u, v \in H^1(\Omega)$, the form of $-\Delta + 1$ is
+$a(u, v) = \langle u, v \rangle_{H^1(\Omega)}$. -/
 theorem laplaceForm_apply_eq_inner (u v : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω u v = ⟪u, v⟫_ℝ := by
   rw [laplaceForm_eq_innerSL]
   rfl
 
-/-- The form of `-Δ + 1` is coercive with constant `1`: `a(v, v) = ‖v‖²`. -/
+/-- The form of $-\Delta + 1$ is coercive with constant $1$: $\|v\|^2 \le a(v, v)$ for
+$v \in H^1(\Omega)$, and in fact $a(v, v) = \|v\|^2$. -/
 theorem laplaceForm_isCoerciveWith_one : (laplaceForm Ω).IsCoerciveWith 1 := by
   rw [laplaceForm_eq_innerSL]
   exact SesqForm.innerSL_isCoerciveWith
 
-/-- The form of `-Δ + 1` is symmetric. -/
+/-- The form of $-\Delta + 1$ is symmetric. -/
 theorem laplaceForm_isHermitian : (laplaceForm Ω).IsHermitian := by
   rw [laplaceForm_eq_innerSL]
   exact SesqForm.innerSL_isHermitian
 
-/-- The form of `-Δ + 1` is bounded with constant `1`. -/
+/-- The form of $-\Delta + 1$ is bounded with constant $1$: $|a(u, v)| \le \|u\| \, \|v\|$ for
+$u, v \in H^1(\Omega)$. -/
 theorem laplaceForm_isBoundedWith_one : (laplaceForm Ω).IsBoundedWith 1 := fun u v ↦ by
   rw [laplaceForm_apply_eq_inner, one_mul]
   exact norm_inner_le_norm u v
 
 /-! ### The load functional -/
 
-/-- **The load functional** `v ↦ ∫_Ω f v = ⟪f, v⟫_{L²(Ω)}` for `f ∈ L²(Ω)`, as a continuous linear
-functional on `H^1(Ω)`; the twin of `EllipticInterval.load`. -/
+/-- Let $f \in L^2(\Omega)$. The **load functional** of $f$ is the bounded linear functional on
+$H^1(\Omega)$
+$$v \mapsto \int_\Omega f v = \langle f, v \rangle_{L^2(\Omega)}.$$
+
+It is the analogue of `EllipticInterval.load`. -/
 def load (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ :=
   (innerSL ℝ f).comp
     (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume)
 
-/-- The load functional is the `L²` inner product with `f`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1(\Omega)$, the load functional of $f$ at $v$ is the inner
+product in $L^2(\Omega)$ of $f$ with the class of $v$. -/
 theorem load_apply_inner (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) : load Ω f v = ⟪f, SobolevMultiIndex.weakDeriv v 0⟫_ℝ :=
   rfl
 
-/-- The load functional is the integral `∫_Ω f v`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1(\Omega)$, the load functional of $f$ at $v$ is the
+integral $\int_\Omega f v$. -/
 theorem load_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) :
     load Ω f v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * SobolevMultiIndex.fn v x := by
   rw [load_apply_inner, L2.inner_eq_integral_mul]
   rfl
 
-/-- `|∫_Ω f v| ≤ ‖f‖₂ ‖v‖₂`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1(\Omega)$, $\left| \int_\Omega f v \right| \le \|f\|_2 \,
+\|v\|_2$. -/
 theorem abs_load_le (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) :
     |load Ω f v| ≤ ‖f‖ * ‖SobolevMultiIndex.weakDeriv v 0‖ := by
   rw [load_apply_inner]
   exact abs_real_inner_le_norm _ _
 
-/-- The load functional has norm at most `‖f‖₂`. -/
+/-- For $f \in L^2(\Omega)$, the load functional of $f$ has norm at most $\|f\|_2$ on $H^1(\Omega)$.
+-/
 theorem norm_load_le (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ‖load Ω f‖ ≤ ‖f‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v ↦ ?_
   rw [Real.norm_eq_abs]
   exact (abs_load_le Ω f v).trans (by gcongr; exact SobolevMultiIndex.norm_weakDeriv_le v 0)
 
-/-- The load functional is additive in the datum. -/
+/-- The load functional is additive in the datum: the load of $f + g$ at $v$ is the sum of the loads
+of $f$ and $g$ at $v$. -/
 theorem load_add (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) : load Ω (f + g) v = load Ω f v + load Ω g v := by
   simp only [load_apply_inner, inner_add_left]
 
-/-- The load functional is homogeneous in the datum. -/
+/-- The load functional is homogeneous in the datum: the load of $c f$ at $v$ is $c$ times the load
+of $f$ at $v$. -/
 theorem load_smul (c : ℝ)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) : load Ω (c • f) v = c * load Ω f v := by
   simp only [load_apply_inner, real_inner_smul_left]
 
-/-- The load functional of a difference. -/
+/-- The load of $f - g$ at $v$ is the load of $f$ at $v$ minus the load of $g$ at $v$. -/
 theorem load_sub (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) : load Ω (f - g) v = load Ω f v - load Ω g v := by
   simp only [load_apply_inner, inner_sub_left]
 
 variable {Ω} in
-/-- **A weak solution with test space `V`** of the problem with form `a` and datum `f`: `u ∈ H^1(Ω)`
-with `a(u, φ) = ∫_Ω f φ` for every `φ ∈ V`. For `a = laplaceForm Ω` and `V = H^1_0(Ω)` this is the
-weak Dirichlet problem for `-Δu + u = f` ([brezis2011functional] §9.5, (34)), for
-`a = dirichletForm Ω` the one for `-Δu = f`; a boundary condition, if any, is a separate
-hypothesis on `u`. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$, let $V$ be a subspace of $H^1(\Omega)$, and
+let $f \in L^2(\Omega)$. An element $u \in H^1(\Omega)$ is a **weak solution with test space
+$V$** if
+$$a(u, \varphi) = \int_\Omega f \varphi \quad \text{for all } \varphi \in V.$$
+For $a$ the form of $-\Delta + 1$ and $V = H^1_0(\Omega)$, this is the weak Dirichlet problem
+(34) for $-\Delta u + u = f$ of [brezis2011functional], §9.5. For $a$ the Dirichlet form, it is
+the weak problem for $-\Delta u = f$.
+
+The definition does not require $u \in V$. A boundary condition, if any, is a separate
+hypothesis on $u$. -/
 def IsWeakSolution (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
     (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) (u : SobolevEuclidean N 1 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop :=
   ∀ φ ∈ V, a u φ = load Ω f φ
 
 variable {Ω} in
-/-- `IsWeakSolution` unfolded. -/
+/-- `Elliptic.IsWeakSolution a V u f` holds if and only if $a(u, \varphi) = \int_\Omega f \varphi$
+for every $\varphi \in V$. -/
 theorem isWeakSolution_iff {a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)}
     {V : Submodule ℝ (SobolevEuclidean N 1 2 Ω)} {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} :
     IsWeakSolution a V u f ↔ ∀ φ ∈ V, a u φ = load Ω f φ :=
   Iff.rfl
 
-/-- **The load restricted to a subspace `K` of `H^1(Ω)`, as a continuous linear map of `f`**:
-`loadL Ω K f v = ∫_Ω f v` for `v ∈ K`. It is what makes the solution operator of the weak
-Dirichlet problem a continuous linear map of `f`. -/
+/-- Let $K$ be a subspace of $H^1(\Omega)$. The **restricted load map** of $K$ is the bounded linear
+map from $L^2(\Omega)$ to the dual of $K$ that sends $f$ to the functional
+$v \mapsto \int_\Omega f v$ on $K$.
+
+It makes the solution map of the weak Dirichlet problem a continuous linear map of $f$. -/
 def loadL (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) :
     Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ] (K →L[ℝ] ℝ) :=
   ((ContinuousLinearMap.compL ℝ K
@@ -472,13 +596,15 @@ def loadL (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) :
     ((SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume).comp
       K.subtypeL)).comp (innerSL ℝ)
 
-/-- `loadL Ω K f v = ⟪f, v⟫_{L²(Ω)}`. -/
+/-- For a subspace $K$ of $H^1(\Omega)$, $f \in L^2(\Omega)$ and $v \in K$, the restricted load map
+of $K$ sends $f$ to the functional with value $\langle f, v \rangle_{L^2(\Omega)}$ at $v$. -/
 theorem loadL_apply (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (v : K) :
     loadL Ω K f v = ⟪f, SobolevMultiIndex.weakDeriv (v : SobolevEuclidean N 1 2 Ω) 0⟫_ℝ :=
   rfl
 
-/-- `loadL Ω K f` is the restriction of `load Ω f` to `K`. -/
+/-- For a subspace $K$ of $H^1(\Omega)$ and $f \in L^2(\Omega)$, the restricted load map of $K$
+sends $f$ to the restriction to $K$ of `Elliptic.load Ω f`. -/
 theorem loadL_eq (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     loadL Ω K f = (load Ω f).comp K.subtypeL :=
@@ -487,20 +613,28 @@ theorem loadL_eq (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
 
 /-! ### Theorem 9.21 (Dirichlet's principle) and Proposition 9.24 (the Neumann problem) -/
 
-/-- **Theorem 9.21 (Dirichlet, Riemann, Poincaré, Hilbert): existence and uniqueness of the weak
-solution of the Dirichlet problem** `-Δu + u = f` in `Ω`, `u = 0` on `∂Ω`, for every open
-`Ω ⊆ ℝ^N` and every `f ∈ L²(Ω)`: exactly one `u ∈ H^1_0(Ω)` satisfies
-`∫_Ω ∇u · ∇v + ∫_Ω u v = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` (the weak formulation (32)). Lax–Milgram
-on `H^1_0(Ω)` for the form of `-Δ + 1`, which is the inner product of `H^1(Ω)`; no boundedness of
-`Ω` is needed, which is what Example 5 (a), (b) use ([brezis2011functional] Theorem 9.21). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $f \in L^2(\Omega)$. There is exactly one
+$u \in H^1_0(\Omega)$ with
+$$\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v = \int_\Omega f v \quad \text{for all }
+  v \in H^1_0(\Omega).$$
+This is the existence and uniqueness of the weak solution, in the weak formulation (32), of the
+Dirichlet problem $-\Delta u + u = f$ in $\Omega$, $u = 0$ on $\partial\Omega$. It is **Theorem
+9.21** of [brezis2011functional] (Dirichlet, Riemann, Poincaré, Hilbert).
+
+The proof is the Lax–Milgram theorem on $H^1_0(\Omega)$ for the form of $-\Delta + 1$, which is
+the inner product of $H^1(\Omega)$. No boundedness of $\Omega$ is needed; Example 5 (a) and (b)
+of the source use this. -/
 theorem existsUnique_isGalerkinSolution_laplace
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ∃! u, IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u :=
   IsGalerkinSolution.existsUnique one_pos (laplaceForm_isCoerciveWith_one Ω)
 
-/-- **The stability estimate `‖u‖_{H^1(Ω)} ≤ ‖f‖_{L²(Ω)}`** for a weak solution of the Dirichlet
-problem for `-Δ + 1` in any subspace `K` (in particular `H^1_0(Ω)`), which the proof of
-[brezis2011functional] Theorem 9.25 quotes as "`‖u‖_{H^1} ≤ ‖f‖_{L²}` by (48)". -/
+/-- The **stability estimate** for $-\Delta + 1$. Let $K$ be a subspace of $H^1(\Omega)$ and let
+$f \in L^2(\Omega)$. If $u \in K$ and $a(u, v) = \int_\Omega f v$ for all $v \in K$, where $a$
+is the form of $-\Delta + 1$, then $\|u\| \le \|f\|_2$.
+
+The main case is $K = H^1_0(\Omega)$. The proof of Theorem 9.25 of [brezis2011functional] quotes
+this estimate as "$\|u\|_{H^1} \le \|f\|_{L^2}$ by (48)". -/
 theorem norm_le_of_isGalerkinSolution_laplace
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)} {u : SobolevEuclidean N 1 2 Ω}
@@ -518,8 +652,13 @@ theorem norm_le_of_isGalerkinSolution_laplace
           (norm_nonneg _)
     _ = ‖f‖ := mul_one _
 
-/-- **The energy of the Dirichlet problem** for `-Δ + 1`:
-`E(v) = ½ ∫_Ω (|∇v|² + v²) - ∫_Ω f v`, the functional of [brezis2011functional] Theorem 9.21. -/
+/-- Let $f \in L^2(\Omega)$. For $v \in H^1(\Omega)$, the **energy** of the Dirichlet problem for
+$-\Delta + 1$ with datum $f$ is
+$$E(v) = \frac12 \int_\Omega (|\nabla v|^2 + v^2) - \int_\Omega f v.$$
+This is the functional of Theorem 9.21 of [brezis2011functional].
+
+The energy is `SesqForm.energy`, the function $v \mapsto \frac12 a(v, v) - \ell(v)$ for the form
+of $-\Delta + 1$ and the load of $f$. -/
 theorem energy_laplace_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclidean N 1 2 Ω) :
     (laplaceForm Ω).energy (load Ω f) v
@@ -531,11 +670,13 @@ theorem energy_laplace_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (Euclidean
   rw [SesqForm.energy, laplaceForm_apply, load_apply]
   simp only [RCLike.re_to_real]
 
-/-- **Theorem 9.21, Dirichlet's principle**: `u ∈ H^1_0(Ω)` is the weak solution of the Dirichlet
-problem for `-Δ + 1` if and only if it minimizes the energy
-`E(v) = ½ ∫_Ω (|∇v|² + v²) - ∫_Ω f v` over `H^1_0(Ω)` (`Elliptic.energy_laplace_apply`). The
-form is symmetric and coercive, so this is `SesqForm.isMinOn_energy_iff`
-([brezis2011functional] Theorem 9.21, second half). -/
+/-- **Dirichlet's principle**. Let $f \in L^2(\Omega)$ and $u \in H^1_0(\Omega)$. Then $u$ minimizes
+the energy $E(v) = \frac12 \int_\Omega (|\nabla v|^2 + v^2) - \int_\Omega f v$ over
+$H^1_0(\Omega)$ if and only if $u$ is the weak solution of the Dirichlet problem for
+$-\Delta + 1$ with datum $f$. This is the second half of Theorem 9.21 of [brezis2011functional].
+
+The energy is computed by `Elliptic.energy_laplace_apply`. The form is symmetric and coercive,
+so the statement is `SesqForm.isMinOn_energy_iff`. -/
 theorem isMinOn_energy_iff_isGalerkinSolution_laplace
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω) :
@@ -545,28 +686,35 @@ theorem isMinOn_energy_iff_isGalerkinSolution_laplace
     (laplaceForm_isCoerciveWith_one Ω) _ hu]
   exact ⟨fun h ↦ ⟨hu, h⟩, fun h ↦ h.2⟩
 
-/-- `H^1(Ω)`, as the top submodule of itself, is complete: the trial space of the Neumann
-problem. -/
+/-- The space $H^1(\Omega)$, as the top subspace of itself, is complete. It is the trial space of
+the Neumann problem. -/
 theorem completeSpace_top : CompleteSpace (⊤ : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) :=
   (isClosed_univ (X := SobolevEuclidean N 1 2 Ω)).completeSpace_coe
 
-/-- **Proposition 9.24 (the homogeneous Neumann problem): existence and uniqueness of the weak
-solution** of `-Δu + u = f` in `Ω`, `∂u/∂n = 0` on `∂Ω`, for every open `Ω ⊆ ℝ^N` and
-`f ∈ L²(Ω)`: exactly one `u ∈ H^1(Ω)` satisfies `∫_Ω ∇u · ∇v + ∫_Ω u v = ∫_Ω f v` for all
-`v ∈ H^1(Ω)` (the weak formulation (45)). Lax–Milgram on `H^1(Ω)`; since the form is the inner
-product this is the Riesz representation of the load. The book's hypothesis "`Ω` bounded of
-class `C^1`" is needed only for the passage between the classical and the weak formulations
-(Green's formula), not for this proposition ([brezis2011functional] Proposition 9.24; Example 5
-(a) and (c) are the cases `Ω = ℝ^N` and `Ω = ℝ^N_+`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $f \in L^2(\Omega)$. There is exactly one
+$u \in H^1(\Omega)$ with
+$$\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v = \int_\Omega f v \quad \text{for all }
+  v \in H^1(\Omega).$$
+This is the existence and uniqueness of the weak solution, in the weak formulation (45), of the
+homogeneous Neumann problem $-\Delta u + u = f$ in $\Omega$, $\partial u / \partial n = 0$ on
+$\partial\Omega$. It is **Proposition 9.24** of [brezis2011functional].
+
+The source assumes that $\Omega$ is bounded and of class $C^1$. This hypothesis is needed only
+for the passage between the classical and the weak formulations (Green's formula), not for this
+statement. Example 5 (a) and (c) of the source are the cases $\Omega = \mathbb{R}^N$ and
+$\Omega = \mathbb{R}^N_+$. The proof is the Lax–Milgram theorem on $H^1(\Omega)$; since the form
+is the inner product, it is the Riesz representation of the load. -/
 theorem existsUnique_isGalerkinSolution_neumann
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ∃! u, IsGalerkinSolution (laplaceForm Ω) (load Ω f) ⊤ u :=
   haveI := completeSpace_top Ω
   IsGalerkinSolution.existsUnique one_pos (laplaceForm_isCoerciveWith_one Ω)
 
-/-- **Proposition 9.24, Dirichlet's principle for the Neumann problem**: `u ∈ H^1(Ω)` is the weak
-solution of the Neumann problem for `-Δ + 1` if and only if it minimizes the energy
-`E(v) = ½ ∫_Ω (|∇v|² + v²) - ∫_Ω f v` over `H^1(Ω)`. -/
+/-- **Dirichlet's principle for the Neumann problem**. Let $f \in L^2(\Omega)$ and
+$u \in H^1(\Omega)$. Then $u$ minimizes the energy $E(v) = \frac12 \int_\Omega (|\nabla v|^2 +
+v^2) - \int_\Omega f v$ over $H^1(\Omega)$ if and only if $u$ is the weak solution of the
+Neumann problem for $-\Delta + 1$ with datum $f$. This is part of Proposition 9.24 of
+[brezis2011functional]. -/
 theorem isMinOn_energy_iff_isGalerkinSolution_neumann
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (u : SobolevEuclidean N 1 2 Ω) :
@@ -580,31 +728,34 @@ theorem isMinOn_energy_iff_isGalerkinSolution_neumann
 
 /-! ### Proposition 9.22: inhomogeneous Dirichlet data -/
 
-/-- **The admissible set of the inhomogeneous Dirichlet problem**,
-`K = {v ∈ H^1(Ω) : v − g̃ ∈ H^1_0(Ω)}` of [brezis2011functional] §9.5, Example 2: the functions of
-`H^1(Ω)` with the boundary values of `g̃`. -/
+/-- Let $\tilde g \in H^1(\Omega)$. The **admissible set** of the inhomogeneous Dirichlet problem is
+$$K = \{v \in H^1(\Omega) : v - \tilde g \in H^1_0(\Omega)\},$$
+the set of functions of $H^1(\Omega)$ with the boundary values of $\tilde g$. This is the set
+$K$ of Example 2 in §9.5 of [brezis2011functional]. -/
 def admissibleSet (g : SobolevEuclidean N 1 2 Ω) : Set (SobolevEuclidean N 1 2 Ω) :=
   {v | v - g ∈ SobolevEuclideanZero N 1 2 Ω}
 
-/-- Membership of the admissible set, unfolded. -/
+/-- An element $v \in H^1(\Omega)$ lies in the admissible set $K$ of $\tilde g$ if and only if
+$v - \tilde g \in H^1_0(\Omega)$. -/
 theorem mem_admissibleSet_iff {g v : SobolevEuclidean N 1 2 Ω} :
     v ∈ admissibleSet Ω g ↔ v - g ∈ SobolevEuclideanZero N 1 2 Ω :=
   Iff.rfl
 
-/-- `g̃ ∈ K`. -/
+/-- The function $\tilde g$ lies in its admissible set $K$. -/
 theorem self_mem_admissibleSet (g : SobolevEuclidean N 1 2 Ω) : g ∈ admissibleSet Ω g := by
   rw [mem_admissibleSet_iff, sub_self]
   exact Submodule.zero_mem _
 
-/-- `K` is nonempty. -/
+/-- The admissible set $K$ of $\tilde g$ is nonempty. -/
 theorem admissibleSet_nonempty (g : SobolevEuclidean N 1 2 Ω) : (admissibleSet Ω g).Nonempty :=
   ⟨g, self_mem_admissibleSet Ω g⟩
 
-/-- `K` is closed: the preimage of the closed subspace `H^1_0(Ω)` under `v ↦ v − g̃`. -/
+/-- The admissible set $K$ of $\tilde g$ is closed in $H^1(\Omega)$, as the preimage of the closed
+subspace $H^1_0(\Omega)$ under $v \mapsto v - \tilde g$. -/
 theorem isClosed_admissibleSet (g : SobolevEuclidean N 1 2 Ω) : IsClosed (admissibleSet Ω g) :=
   SobolevMultiIndexZero.isClosed.preimage (continuous_id.sub continuous_const)
 
-/-- `K` is convex: a translate of a subspace. -/
+/-- The admissible set $K$ of $\tilde g$ is convex, as a translate of a subspace. -/
 theorem convex_admissibleSet (g : SobolevEuclidean N 1 2 Ω) : Convex ℝ (admissibleSet Ω g) := by
   intro u hu v hv a b ha hb hab
   rw [mem_admissibleSet_iff] at hu hv ⊢
@@ -613,10 +764,13 @@ theorem convex_admissibleSet (g : SobolevEuclidean N 1 2 Ω) : Convex ℝ (admis
   rw [this]
   exact Submodule.add_mem _ (Submodule.smul_mem _ _ hu) (Submodule.smul_mem _ _ hv)
 
-/-- **`K` depends only on the boundary values of `g̃`**: two extensions `g̃`, `g̃'` whose
-difference lies in `H^1_0(Ω)` define the same admissible set ("`K` is independent of the choice of
-`g̃`", [brezis2011functional] §9.5, Example 2; that `g̃ − g̃' ∈ H^1_0(Ω)` when both are continuous
-on `closure Ω` and agree on `∂Ω` is Theorem 9.17). -/
+/-- Let $\tilde g, \tilde g' \in H^1(\Omega)$ with $\tilde g - \tilde g' \in H^1_0(\Omega)$. Then
+the admissible sets of $\tilde g$ and $\tilde g'$ are equal. So the admissible set depends only
+on the boundary values of $\tilde g$: "$K$ is independent of the choice of $\tilde g$", Example
+2 in §9.5 of [brezis2011functional].
+
+When $\tilde g$ and $\tilde g'$ are continuous on $\bar\Omega$ and agree on $\partial\Omega$,
+the condition $\tilde g - \tilde g' \in H^1_0(\Omega)$ is Theorem 9.17 of the source. -/
 theorem admissibleSet_eq_of_sub_mem {g g' : SobolevEuclidean N 1 2 Ω}
     (h : g - g' ∈ SobolevEuclideanZero N 1 2 Ω) : admissibleSet Ω g = admissibleSet Ω g' := by
   ext v
@@ -629,11 +783,16 @@ theorem admissibleSet_eq_of_sub_mem {g g' : SobolevEuclidean N 1 2 Ω}
     have := Submodule.sub_mem _ hv h
     rwa [sub_sub_sub_cancel_right] at this
 
-/-- **The weak formulation (34) of the inhomogeneous Dirichlet problem is the variational
-inequality (35)**, [brezis2011functional] §9.5, proof of Proposition 9.22: for `u ∈ K`,
-`a(u, v) = ⟨f, v⟩` for all `v ∈ H^1_0(Ω)` if and only if `⟨f, v − u⟩ ≤ a(u, v − u)` for all
-`v ∈ K`. One direction is the equality; conversely `v = u ± w` with `w ∈ H^1_0(Ω)` gives (34).
-Stated for any bilinear form `a` and functional `ℓ`. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$, let $\ell$ be a bounded linear functional
+on $H^1(\Omega)$, let $\tilde g \in H^1(\Omega)$, and let $u$ be in the admissible set $K$ of
+$\tilde g$. Then
+$$a(u, v) = \ell(v) \text{ for all } v \in H^1_0(\Omega) \iff \ell(v - u) \le a(u, v - u) \text{
+  for all } v \in K.$$
+So the weak formulation (34) of the inhomogeneous Dirichlet problem is equivalent to the
+variational inequality (35), as in the proof of Proposition 9.22 of [brezis2011functional].
+
+In one direction, the equality holds at $v - u \in H^1_0(\Omega)$. In the other direction,
+$v = u \pm w$ with $w \in H^1_0(\Omega)$ gives (34). -/
 theorem isWeakSolution_inhomogeneous_iff_forall_le (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
     (ℓ : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ) {g u : SobolevEuclidean N 1 2 Ω}
     (hu : u ∈ admissibleSet Ω g) :
@@ -658,13 +817,19 @@ theorem isWeakSolution_inhomogeneous_iff_forall_le (a : SesqForm ℝ (SobolevEuc
     rw [sub_sub_cancel_left, map_neg, map_neg, neg_le_neg_iff] at h2
     exact le_antisymm h2 h1
 
-/-- **Proposition 9.22 (inhomogeneous Dirichlet condition): existence and uniqueness.** For
-`Ω ⊆ ℝ^N` open, `g̃ ∈ H^1(Ω)` and `f ∈ L²(Ω)` there is exactly one `u ∈ K = g̃ + H^1_0(Ω)` with
-`∫_Ω ∇u · ∇v + ∫_Ω u v = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` (the weak formulation (34)). The book
-argues through the variational inequality (35) and Stampacchia's theorem; the short proof is
-`u = g̃ + w` with `w ∈ H^1_0(Ω)` the Galerkin solution for the load `⟨f, ·⟩ − a(g̃, ·)`, and
-uniqueness is the coercivity of the form on the difference of two solutions, which lies in
-`H^1_0(Ω)` ([brezis2011functional] Proposition 9.22). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $\tilde g \in H^1(\Omega)$ and let
+$f \in L^2(\Omega)$. There is exactly one $u \in H^1(\Omega)$ with
+$u - \tilde g \in H^1_0(\Omega)$ and
+$$\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v = \int_\Omega f v \quad \text{for all }
+  v \in H^1_0(\Omega).$$
+This is the existence and uniqueness of the weak solution, in the weak formulation (34), of the
+Dirichlet problem with the inhomogeneous boundary condition of $\tilde g$. It is **Proposition
+9.22** of [brezis2011functional].
+
+The source argues through the variational inequality (35) and Stampacchia's theorem. The proof
+here writes $u = \tilde g + w$, where $w \in H^1_0(\Omega)$ is the Galerkin solution for the
+load $v \mapsto \int_\Omega f v - a(\tilde g, v)$, and uniqueness is the coercivity of the form
+on the difference of two solutions, which lies in $H^1_0(\Omega)$. -/
 theorem existsUnique_isWeakSolution_inhomogeneous (g : SobolevEuclidean N 1 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ∃! u, u ∈ admissibleSet Ω g ∧
@@ -693,9 +858,14 @@ theorem existsUnique_isWeakSolution_inhomogeneous (g : SobolevEuclidean N 1 2 Ω
       sub_eq_zero] at h0
     exact h0
 
-/-- **Proposition 9.22, the minimization**: `u ∈ K` is the weak solution of the inhomogeneous
-Dirichlet problem if and only if it minimizes `E(v) = ½ ∫_Ω (|∇v|² + v²) − ∫_Ω f v` over `K`
-(`SesqForm.isMinOn_energy_iff_forall_le` on the convex set `K` and the equivalence (34) ⇔ (35)). -/
+/-- Let $f \in L^2(\Omega)$, let $\tilde g \in H^1(\Omega)$, and let $u$ be in the admissible set
+$K$ of $\tilde g$. Then $u$ minimizes the energy $E(v) = \frac12 \int_\Omega (|\nabla v|^2 +
+v^2) - \int_\Omega f v$ over $K$ if and only if $\int_\Omega \nabla u \cdot \nabla v +
+\int_\Omega u v = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$. This is the minimization of
+Proposition 9.22 of [brezis2011functional].
+
+The proof applies `SesqForm.isMinOn_energy_iff_forall_le` on the convex set $K$ and the
+equivalence of (34) and (35), `Elliptic.isWeakSolution_inhomogeneous_iff_forall_le`. -/
 theorem isMinOn_energy_iff_isWeakSolution_inhomogeneous
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {g u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ admissibleSet Ω g) :
@@ -706,22 +876,32 @@ theorem isMinOn_energy_iff_isWeakSolution_inhomogeneous
     isWeakSolution_inhomogeneous_iff_forall_le Ω (laplaceForm Ω) (load Ω f) hu]
 
 
-/-! ### The general second-order form (41) with `L^∞` coefficients -/
+/-! ### The general second-order form (41) with $L^\infty$ coefficients -/
 
-/-- **The ellipticity condition (36)** of [brezis2011functional] §9.5, Example 3, for `L^∞`
-coefficients `A i j`: `0 < α`, and for almost every `x ∈ Ω`, `α ‖ξ‖² ≤ ∑ᵢⱼ A i j x ξᵢ ξⱼ` for every
-`ξ ∈ ℝ^N`. Stated almost everywhere because the coefficients are classes; for coefficients
-continuous on `Ω` the pointwise condition implies it. -/
+/-- Let $a_{ij} \in L^\infty(\Omega)$ for $i, j = 1, \dots, N$, and let $\alpha \in \mathbb{R}$. The
+coefficients are **uniformly elliptic** with constant $\alpha$ if $\alpha > 0$ and, for almost
+every $x \in \Omega$,
+$$\sum_{i,j} a_{ij}(x) \xi_i \xi_j \ge \alpha |\xi|^2 \quad \text{for all } \xi \in
+  \mathbb{R}^N.$$
+This is the ellipticity condition (36) of Example 3 in §9.5 of [brezis2011functional].
+
+The condition is stated almost everywhere because the coefficients are classes of functions. The
+pointwise condition of the source implies it, by `Elliptic.isUniformlyElliptic_of_forall_mem`. -/
 def IsUniformlyElliptic
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α : ℝ) : Prop :=
   0 < α ∧ ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
     ∀ ξ : EuclideanSpace ℝ (Fin N), α * ‖ξ‖ ^ 2 ≤ ∑ i, ∑ j, A i j x * ξ i * ξ j
 
-/-- **The general second-order form (41)** of [brezis2011functional] §9.5:
-`a(u, v) = ∑ᵢⱼ ∫_Ω a_ij ∂ᵢu ∂ⱼv + ∑ᵢ ∫_Ω a_i ∂ᵢu v + ∫_Ω a₀ u v` on `H^1(Ω)`, for `L^∞(Ω)`
-coefficients `A i j = a_ij`, `a₁ i = a_i`, `a₀`. The form (38) of the symmetric problem (37) is
-the case `a₁ = 0`. -/
+/-- Let $a_{ij}, a_i, a_0 \in L^\infty(\Omega)$ for $i, j = 1, \dots, N$. The **general second-order
+form** on $H^1(\Omega)$ is
+$$a(u, v) = \sum_{i,j} \int_\Omega a_{ij} \, \partial_i u \, \partial_j v + \sum_i \int_\Omega
+  a_i \, \partial_i u \, v + \int_\Omega a_0 u v.$$
+This is the form (41) of [brezis2011functional], §9.5. The form (38) of the symmetric problem
+(37) is the case $a_i = 0$.
+
+The coefficient $a_{ij}$ is `A i j`, $a_i$ is `a₁ i`, and $a_0$ is `a₀`. The form is a sum of
+pairings through `Elliptic.mulL`. -/
 def generalForm
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -738,7 +918,9 @@ variable (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (Euclide
   (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
   (a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
 
-/-- The general form as a sum of `L²` inner products. -/
+/-- For $u, v \in H^1(\Omega)$, the general form is $a(u, v) = \sum_{i,j} \langle a_{ij} \partial_i
+u, \partial_j v \rangle_{L^2} + \sum_i \langle a_i \partial_i u, v \rangle_{L^2} + \langle a_0
+u, v \rangle_{L^2}$. -/
 theorem generalForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
     generalForm Ω A a₁ a₀ u v
       = (∑ i : Fin N, ∑ j : Fin N, ⟪mulL Ω (A i j) (SobolevMultiIndex.weakDeriv u
@@ -748,8 +930,10 @@ theorem generalForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
         + ⟪mulL Ω a₀ (SobolevMultiIndex.weakDeriv u 0), SobolevMultiIndex.weakDeriv v 0⟫_ℝ := by
   simp only [generalForm, add_apply, sum_apply, pairing_apply]
 
-/-- **The general form is the integral (41)**:
-`a(u, v) = ∫_Ω (∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∑ᵢ a_i ∂ᵢu v + a₀ u v)`. -/
+/-- For $u, v \in H^1(\Omega)$, the general form is the integral (41):
+$$a(u, v) = \int_\Omega \Bigl( \sum_{i,j} a_{ij} \, \partial_i u \, \partial_j v + \sum_i a_i \,
+  \partial_i u \, v + a_0 u v \Bigr).$$
+-/
 theorem generalForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
     generalForm Ω A a₁ a₀ u v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       ((∑ i : Fin N, ∑ j : Fin N, A i j x * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
@@ -823,10 +1007,13 @@ theorem generalForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
   rw [e2, e3, e4, e5]
   rfl
 
-/-- **The general form as three integrals**, the left-hand side of (40) in [brezis2011functional]
-§9.5: `a(u, v) = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫_Ω ∑ᵢ a_i ∂ᵢu v + ∫_Ω a₀ u v` (`generalForm_apply` writes
-one integral); each summand is integrable, being the product of an `L^∞` coefficient and two
-`L²` functions. -/
+/-- For $u, v \in H^1(\Omega)$, the general form is the sum of three integrals, the left-hand side
+of (40) in §9.5 of [brezis2011functional]:
+$$a(u, v) = \int_\Omega \sum_{i,j} a_{ij} \, \partial_i u \, \partial_j v + \int_\Omega \sum_i
+  a_i \, \partial_i u \, v + \int_\Omega a_0 u v.$$
+
+Each integrand is integrable, as a product of a coefficient in $L^\infty(\Omega)$ and two
+functions in $L^2(\Omega)$. `Elliptic.generalForm_apply` writes the same value as one integral. -/
 theorem generalForm_apply_three (u v : SobolevEuclidean N 1 2 Ω) :
     generalForm Ω A a₁ a₀ u v
       = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ∑ i, ∑ j, A i j x
@@ -857,8 +1044,10 @@ theorem generalForm_apply_three (u v : SobolevEuclidean N 1 2 Ω) :
     h1.add h2
   rw [generalForm_apply, integral_add h12 h3, integral_add h1 h2]
 
-/-- **The general form without drift**: `generalForm Ω A 0 a₀ u v = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv
-+ ∫_Ω a₀ u v`, the left-hand side of (78) of [brezis2011functional] §9.7 with `a_i = 0`. -/
+/-- For $u, v \in H^1(\Omega)$, the general form with $a_i = 0$ is
+$$a(u, v) = \int_\Omega \sum_{i,j} a_{ij} \, \partial_i u \, \partial_j v + \int_\Omega a_0 u
+  v.$$
+This is the left-hand side of (78) in §9.7 of [brezis2011functional] with $a_i = 0$. -/
 theorem generalForm_zero_drift_apply (u v : SobolevEuclidean N 1 2 Ω) :
     generalForm Ω A 0 a₀ u v
       = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ∑ i, ∑ j, A i j x
@@ -882,10 +1071,12 @@ theorem generalForm_zero_drift_apply (u v : SobolevEuclidean N 1 2 Ω) :
       Finset.sum_const_zero])
   rw [e2, integral_zero, add_zero]
 
-/-- **The pointwise ellipticity condition gives the almost-everywhere one**: if
-`α ‖ξ‖² ≤ ∑ᵢⱼ a_ij(x) ξᵢ ξⱼ` for every `x ∈ Ω` and `ξ` (the condition (36) of
-[brezis2011functional] §9.5 on functions `a_ij`), with `α > 0`, then the `L^∞(Ω)` classes
-`A i j` equal to `a_ij` almost everywhere on `Ω` are uniformly elliptic with constant `α`. -/
+/-- Let $a_{ij} \colon \mathbb{R}^N \to \mathbb{R}$ be functions and let $\alpha > 0$ with $\alpha
+|\xi|^2 \le \sum_{i,j} a_{ij}(x) \xi_i \xi_j$ for every $x \in \Omega$ and every
+$\xi \in \mathbb{R}^N$. If the classes $A_{ij} \in L^\infty(\Omega)$ agree with $a_{ij}$ almost
+everywhere on $\Omega$, then the $A_{ij}$ are uniformly elliptic with constant $\alpha$. So the
+pointwise ellipticity condition (36) of [brezis2011functional], §9.5, gives the condition almost
+everywhere. -/
 theorem isUniformlyElliptic_of_forall_mem {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     {α : ℝ} (hα : 0 < α)
     (h : ∀ x ∈ Ω, ∀ ξ : EuclideanSpace ℝ (Fin N), α * ‖ξ‖ ^ 2 ≤ ∑ i, ∑ j, a i j x * ξ i * ξ j)
@@ -901,7 +1092,8 @@ theorem isUniformlyElliptic_of_forall_mem {a : Fin N → Fin N → EuclideanSpac
   exact h x hxΩ ξ
 
 
-/-- **The general form is bounded**, with constant `∑ᵢⱼ ‖a_ij‖_∞ + ∑ᵢ ‖a_i‖_∞ + ‖a₀‖_∞`. -/
+/-- The general form is bounded with constant $M = \sum_{i,j} \|a_{ij}\|_\infty + \sum_i
+\|a_i\|_\infty + \|a_0\|_\infty$: $|a(u, v)| \le M \|u\| \, \|v\|$ for $u, v \in H^1(\Omega)$. -/
 theorem generalForm_isBoundedWith :
     (generalForm Ω A a₁ a₀).IsBoundedWith ((∑ i, ∑ j, ‖A i j‖) + ∑ i, ‖a₁ i‖ + ‖a₀‖) := by
   intro u v
@@ -934,7 +1126,7 @@ theorem generalForm_isBoundedWith :
         congr 2
         exact Finset.sum_congr rfl fun i _ ↦ by rw [Finset.sum_mul, Finset.sum_mul]
 
-/-- Multiplication by the zero coefficient is the zero operator. -/
+/-- The multiplication by the zero coefficient is the zero operator on $L^2(\Omega)$. -/
 @[simp]
 theorem mulL_zero : mulL Ω 0 = 0 := map_zero _
 
@@ -945,7 +1137,8 @@ theorem pairing_zero (α β : MultiIndexLE (Fin N) 1) : pairing Ω 0 α β = 0 :
     rw [pairing_apply]
     simp
 
-/-- The symmetric-problem form (38) is symmetric when the matrix `a_ij` is. -/
+/-- If $a_{ij} = a_{ji}$ for all $i, j$, then the form (38), the general form with $a_i = 0$, is
+symmetric. -/
 theorem generalForm_isHermitian_of_symm (hA : ∀ i j, A i j = A j i) :
     (generalForm Ω A 0 a₀).IsHermitian := fun u v ↦ by
   rw [conj_trivial, generalForm_apply_inner, generalForm_apply_inner]
@@ -964,12 +1157,15 @@ end GeneralForm
 
 /-! ### Lax–Milgram on a subspace -/
 
-/-- **Existence and uniqueness of the Galerkin solution when the form is coercive on the trial
-space only**: the variant of `IsGalerkinSolution.existsUnique` whose coercivity hypothesis is on
-the restriction `a.restrict K` of the form to the complete subspace `K` rather than on the whole
-space, which is the situation of a form coercive on `H^1_0(Ω)` by Poincaré's inequality but not
-on `H^1(Ω)`. Belongs beside `IsGalerkinSolution.existsUnique` in
-`Numlib/Variational/Galerkin.lean`. -/
+/-- Let $V$ be a real inner product space, let $a$ be a bounded bilinear form on $V$, let $\ell$ be
+a bounded linear functional on $V$, and let $K$ be a complete subspace of $V$. If $c > 0$ and
+$c \|v\|^2 \le a(v, v)$ for all $v \in K$, then there is exactly one $u \in K$ with
+$a(u, v) = \ell(v)$ for all $v \in K$.
+
+This is the variant of `IsGalerkinSolution.existsUnique` whose coercivity hypothesis is on the
+restriction `a.restrict K` of the form, not on the whole space. It covers a form that is
+coercive on $H^1_0(\Omega)$ by Poincaré's inequality but not on $H^1(\Omega)$. Its natural place
+is beside `IsGalerkinSolution.existsUnique` in `Numlib.Variational.Galerkin`. -/
 theorem _root_.IsGalerkinSolution.existsUnique_of_restrict {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] {a : SesqForm ℝ V} {ℓ : V →L[ℝ] ℝ} {K : Submodule ℝ V} {c : ℝ}
     (hc : 0 < c) (ha : (a.restrict K).IsCoerciveWith c) [CompleteSpace K] :
@@ -979,11 +1175,15 @@ theorem _root_.IsGalerkinSolution.existsUnique_of_restrict {V : Type*} [NormedAd
   rintro y ⟨hyK, hy⟩
   exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z ↦ hy (z : V) z.2)
 
-/-- **Dirichlet's principle on a subspace when the form is coercive on that subspace only**: for
-a form `a` whose restriction to the complete subspace `K` is Hermitian and coercive, `u ∈ K`
-minimizes the energy `a.energy ℓ` over `K` if and only if `a u v = ℓ v` for all `v ∈ K`. The
-variant of `SesqForm.isMinOn_energy_iff` with hypotheses on `a.restrict K`; belongs beside it in
-`Numlib/Variational/LaxMilgram.lean`. -/
+/-- **Dirichlet's principle on a subspace**. Let $V$ be a real inner product space, let $a$ be a
+bounded bilinear form on $V$, let $\ell$ be a bounded linear functional on $V$, and let $K$ be a
+subspace of $V$. Suppose that the restriction of $a$ to $K$ is symmetric and that
+$c \|v\|^2 \le a(v, v)$ for all $v \in K$, with $c > 0$. Then $u \in K$ minimizes the energy
+$v \mapsto \frac12 a(v, v) - \ell(v)$ over $K$ if and only if $a(u, v) = \ell(v)$ for all
+$v \in K$.
+
+This is the variant of `SesqForm.isMinOn_energy_iff` with its hypotheses on `a.restrict K`. Its
+natural place is beside that lemma in `Numlib.Variational.LaxMilgram`. -/
 theorem _root_.SesqForm.isMinOn_energy_iff_of_restrict {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] {a : SesqForm ℝ V} (ℓ : V →L[ℝ] ℝ) {K : Submodule ℝ V}
     (ha : (a.restrict K).IsHermitian) {c : ℝ} (hc : 0 < c)
@@ -1002,7 +1202,7 @@ theorem _root_.SesqForm.isMinOn_energy_iff_of_restrict {V : Type*} [NormedAddCom
   · intro h w hw
     exact key.2 (fun v _ ↦ h v v.2) ⟨w, hw⟩ (mem_univ _)
 
-/-! ### Ellipticity, Gårding's inequality and coercivity on `H^1_0(Ω)` -/
+/-! ### Ellipticity, Gårding's inequality and coercivity on $H^1_0(\Omega)$ -/
 
 section Ellipticity
 
@@ -1010,9 +1210,12 @@ variable {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (Euclide
   {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
 
-/-- **The principal part of the form is bounded below by `α ∫_Ω |∇v|²`** under the ellipticity
-condition (36): `∑ᵢⱼ ∫_Ω a_ij ∂ᵢv ∂ⱼv ≥ α ∑ᵢ ‖∂ᵢv‖₂²`, the pointwise inequality applied to
-`ξ = ∇v(x)` under the integral. -/
+/-- Let the coefficients $a_{ij}$ be uniformly elliptic with constant $\alpha$. Then the principal
+part of the general form satisfies, for $v \in H^1(\Omega)$,
+$$\sum_{i,j} \int_\Omega a_{ij} \, \partial_i v \, \partial_j v \ge \alpha \sum_i \|\partial_i
+  v\|_2^2.$$
+
+The proof applies the ellipticity condition to $\xi = \nabla v(x)$ under the integral. -/
 theorem sum_inner_mulL_ge (hA : IsUniformlyElliptic Ω A α) (v : SobolevEuclidean N 1 2 Ω) :
     α * ∑ i : Fin N, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ 2
       ≤ ∑ i : Fin N, ∑ j : Fin N, ⟪mulL Ω (A i j) (SobolevMultiIndex.weakDeriv v
@@ -1045,8 +1248,11 @@ theorem sum_inner_mulL_ge (hA : IsUniformlyElliptic Ω A α) (v : SobolevEuclide
   rw [EuclideanSpace.real_norm_sq_eq] at h
   simpa [sq] using h
 
-/-- **The lower bound of the general form on the diagonal** under the ellipticity condition (36):
-`a(v, v) ≥ α ∑ᵢ ‖∂ᵢv‖₂² − (∑ᵢ ‖a_i‖_∞ ‖∂ᵢv‖₂) ‖v‖₂ − ‖a₀‖_∞ ‖v‖₂²`. -/
+/-- Let the coefficients $a_{ij}$ be uniformly elliptic with constant $\alpha$. Then the general
+form satisfies, for $v \in H^1(\Omega)$,
+$$a(v, v) \ge \alpha \sum_i \|\partial_i v\|_2^2 - \Bigl( \sum_i \|a_i\|_\infty \|\partial_i
+  v\|_2 \Bigr) \|v\|_2 - \|a_0\|_\infty \|v\|_2^2.$$
+-/
 theorem generalForm_self_ge (hA : IsUniformlyElliptic Ω A α) (v : SobolevEuclidean N 1 2 Ω) :
     α * (∑ i : Fin N, ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖ ^ 2)
       - (∑ i : Fin N, ‖a₁ i‖ * ‖SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i)‖)
@@ -1075,13 +1281,20 @@ theorem generalForm_self_ge (hA : IsUniformlyElliptic Ω A α) (v : SobolevEucli
     exact mul_le_mul_of_nonneg_right (norm_mulL_apply_le Ω _ _) (norm_nonneg _)
   linarith
 
-/-- **Gårding's inequality** for the form (41) with `L^∞` coefficients: under the ellipticity
-condition (36) with constant `α`, the form `a(u, v) + λ ∫_Ω u v` is coercive on `H^1(Ω)` with
-constant `α / 2` for the explicit shift `λ = (∑ᵢ ‖a_i‖_∞)² / (2α) + ‖a₀‖_∞ + α / 2`:
-`(α/2) ‖v‖²_{H^1} ≤ a(v, v) + λ ‖v‖₂²`. From `Elliptic.generalForm_self_ge` and
-`c √D ‖v‖₂ ≤ (α/2) D + (c²/(2α)) ‖v‖₂²` with `D = ∑ᵢ ‖∂ᵢv‖₂²`. This is the "fix `λ > 0` large enough
-that `a(u, v) + λ ∫ uv` is coercive" of the proof of [brezis2011functional] Theorem 9.23, made
-explicit; no Poincaré inequality and no boundedness of `Ω` enters. -/
+/-- **Gårding's inequality** for the general form (41). Let the coefficients $a_{ij}$ be uniformly
+elliptic with constant $\alpha$, let $a_i, a_0 \in L^\infty(\Omega)$, and let
+$$\lambda = \frac{\bigl( \sum_i \|a_i\|_\infty \bigr)^2}{2 \alpha} + \|a_0\|_\infty +
+  \frac{\alpha}{2}.$$
+Then the form $a(u, v) + \lambda \int_\Omega u v$ is coercive on $H^1(\Omega)$ with constant
+$\alpha / 2$:
+$$\frac{\alpha}{2} \|v\|^2 \le a(v, v) + \lambda \|v\|_2^2 \quad \text{for all } v \in
+  H^1(\Omega).$$
+
+This makes explicit the step "fix $\lambda > 0$ large enough that $a(u, v) + \lambda \int u v$
+is coercive" of the proof of Theorem 9.23 of [brezis2011functional]. No Poincaré inequality and
+no boundedness of $\Omega$ enter. The proof combines `Elliptic.generalForm_self_ge` with $c
+\sqrt{D} \, \|v\|_2 \le \frac{\alpha}{2} D + \frac{c^2}{2 \alpha} \|v\|_2^2$, where
+$D = \sum_i \|\partial_i v\|_2^2$. -/
 theorem generalForm_garding (hA : IsUniformlyElliptic Ω A α) :
     (generalForm Ω A a₁ a₀ + ((∑ i, ‖a₁ i‖) ^ 2 / (2 * α) + ‖a₀‖ + α / 2)
       • pairing Ω (ContinuousLinearMap.id ℝ _) 0 0).IsCoerciveWith (α / 2) := by
@@ -1131,13 +1344,18 @@ variable {d : ℕ} {Ω' : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     Lp ℝ ⊤ (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {a₀ : Lp ℝ ⊤ (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))))} {α : ℝ}
 
-/-- **Coercivity of the symmetric-problem form (38) on `H^1_0(Ω)`** for a bounded `Ω ⊆ B(0, R)`,
-under the ellipticity condition (36) and `a₀ ≥ 0` ([brezis2011functional] §9.5, Example 3): the
-restriction of `generalForm Ω A 0 a₀` to `H^1_0(Ω)` is coercive with constant
-`α / (1 + (2R)²)`. For `v ∈ H^1_0(Ω)`, `a(v, v) ≥ α ∑ᵢ ‖∂ᵢv‖₂² + ∫_Ω a₀ v² ≥ α ∑ᵢ ‖∂ᵢv‖₂²`, and
-Poincaré's inequality (Corollary 9.19, `SobolevEuclideanZero.norm_le_gradNorm`) gives
-`‖v‖²_{H^1} ≤ (1 + (2R)²) ∑ᵢ ‖∂ᵢv‖₂²`. The book's coefficients `a_ij ∈ C^1(Ω̄)`, `a₀ ∈ C(Ω̄)`
-enter as `L^∞` classes. -/
+/-- Let $N = d + 1 \ge 1$, let $R \ge 0$ and $\Omega \subseteq B(0, R)$, let the coefficients
+$a_{ij}$ be uniformly elliptic with constant $\alpha$, and let $a_0 \ge 0$ almost everywhere.
+Then the form (38), the general form with $a_i = 0$, is coercive on $H^1_0(\Omega)$ with
+constant $\alpha / (1 + (2R)^2)$:
+$$\frac{\alpha}{1 + (2R)^2} \|v\|^2 \le a(v, v) \quad \text{for all } v \in H^1_0(\Omega).$$
+This is the coercivity of Example 3 in §9.5 of [brezis2011functional].
+
+For $v \in H^1_0(\Omega)$, $a(v, v) \ge \alpha \sum_i \|\partial_i v\|_2^2 + \int_\Omega a_0 v^2
+\ge \alpha \sum_i \|\partial_i v\|_2^2$, and Poincaré's inequality (Corollary 9.19 of the
+source, `SobolevEuclideanZero.norm_le_gradNorm`) gives $\|v\|^2 \le (1 + (2R)^2) \sum_i
+\|\partial_i v\|_2^2$. The coefficients $a_{ij} \in C^1(\bar\Omega)$ and $a_0 \in C(\bar\Omega)$
+of the source enter as $L^\infty$ classes. -/
 theorem generalForm_isCoerciveWith_of_nonneg {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) (hA : IsUniformlyElliptic Ω' A α)
     (ha₀ : 0 ≤ a₀) :
@@ -1177,12 +1395,17 @@ theorem generalForm_isCoerciveWith_of_nonneg {R : ℝ} (hR : 0 ≤ R)
         field_simp
     _ ≤ _ := by linarith
 
-/-- **Example 3 of [brezis2011functional] §9.5: existence and uniqueness for the symmetric
-problem (37)** on a bounded `Ω ⊆ B(0, R)`, under the ellipticity condition (36) and `a₀ ≥ 0`:
-every `f ∈ L²(Ω)` has exactly one weak solution `u ∈ H^1_0(Ω)`, i.e. one `u` with
-`∑ᵢⱼ ∫_Ω a_ij ∂ᵢu ∂ⱼv + ∫_Ω a₀ u v = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` — Lax–Milgram with the
-coercivity of `Elliptic.generalForm_isCoerciveWith_of_nonneg`. No symmetry of `a_ij` is needed
-for existence, as the book notes. -/
+/-- Let $N = d + 1 \ge 1$, let $R \ge 0$ and $\Omega \subseteq B(0, R)$, let the coefficients
+$a_{ij}$ be uniformly elliptic with constant $\alpha$, and let $a_0 \ge 0$ almost everywhere.
+For every $f \in L^2(\Omega)$ there is exactly one $u \in H^1_0(\Omega)$ with
+$$\sum_{i,j} \int_\Omega a_{ij} \, \partial_i u \, \partial_j v + \int_\Omega a_0 u v =
+  \int_\Omega f v \quad \text{for all } v \in H^1_0(\Omega).$$
+This is the existence and uniqueness of the weak solution of the symmetric problem (37) in
+Example 3 of §9.5 of [brezis2011functional].
+
+The proof is the Lax–Milgram theorem with the coercivity of
+`Elliptic.generalForm_isCoerciveWith_of_nonneg`. As the source notes, existence needs no
+symmetry of $a_{ij}$. -/
 theorem existsUnique_isGalerkinSolution_general_of_nonneg {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) (hA : IsUniformlyElliptic Ω' A α)
     (ha₀ : 0 ≤ a₀) (f : Lp ℝ 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -1192,9 +1415,16 @@ theorem existsUnique_isGalerkinSolution_general_of_nonneg {R : ℝ} (hR : 0 ≤ 
   have hcoer := generalForm_isCoerciveWith_of_nonneg hR hΩ hA ha₀
   exact IsGalerkinSolution.existsUnique_of_restrict (ℓ := load Ω' f) hc hcoer
 
-/-- **Example 3, the minimization**: when the matrix `a_ij` is symmetric, the weak solution of the
-symmetric problem (37) is the minimizer of `½ ∫_Ω (∑ᵢⱼ a_ij ∂ᵢv ∂ⱼv + a₀ v²) − ∫_Ω f v` over
-`H^1_0(Ω)` (`SesqForm.isMinOn_energy_iff` for the Hermitian form, coercive on `H^1_0(Ω)`). -/
+/-- Let $N = d + 1 \ge 1$, let $R \ge 0$ and $\Omega \subseteq B(0, R)$, let the coefficients
+$a_{ij}$ be uniformly elliptic with constant $\alpha$ and symmetric ($a_{ij} = a_{ji}$), let
+$a_0 \ge 0$ almost everywhere, and let $f \in L^2(\Omega)$. Then $u \in H^1_0(\Omega)$ minimizes
+$$v \mapsto \frac12 \int_\Omega \Bigl( \sum_{i,j} a_{ij} \, \partial_i v \, \partial_j v + a_0
+  v^2 \Bigr) - \int_\Omega f v$$
+over $H^1_0(\Omega)$ if and only if $u$ is the weak solution of the symmetric problem (37). This
+is the minimization of Example 3 in §9.5 of [brezis2011functional].
+
+The form is symmetric and coercive on $H^1_0(\Omega)$, and the proof applies
+`SesqForm.isMinOn_energy_iff_of_restrict`. -/
 theorem isMinOn_energy_iff_isGalerkinSolution_general_of_symm {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω' : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) (hA : IsUniformlyElliptic Ω' A α)
     (hsymm : ∀ i j, A i j = A j i) (ha₀ : 0 ≤ a₀)
@@ -1213,12 +1443,15 @@ theorem isMinOn_energy_iff_isGalerkinSolution_general_of_symm {R : ℝ} (hR : 0 
 end Example3
 
 
-/-! ### The solution operator on `L²(Ω)` -/
+/-! ### The solution operator on $L^2(\Omega)$ -/
 
 section SolutionOperator
 
-/-- A form coercive in the sense of `SesqForm.IsCoercive` is coercive in Mathlib's sense
-(`IsCoercive`): the bridge to Mathlib's Lax–Milgram equivalence
+/-- Let $V$ be a real inner product space. A bounded bilinear form $a$ on $V$ that is coercive in
+the sense of `SesqForm.IsCoercive` (there is $c > 0$ with $c \|v\|^2 \le a(v, v)$ for all $v$)
+is coercive in the sense of Mathlib's `IsCoercive`.
+
+This connects the forms of this library to Mathlib's Lax–Milgram equivalence
 `IsCoercive.continuousLinearEquivOfBilin`. -/
 theorem _root_.SesqForm.IsCoercive.isCoercive {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] {a : SesqForm ℝ V} (ha : a.IsCoercive) :
@@ -1226,14 +1459,18 @@ theorem _root_.SesqForm.IsCoercive.isCoercive {V : Type*} [NormedAddCommGroup V]
   let ⟨c, hc, h⟩ := ha
   ⟨c, hc, fun u ↦ by rw [mul_assoc, ← sq]; exact h u⟩
 
-/-- The Riesz representation `(K →L[ℝ] ℝ) ≃L[ℝ] K` of a real Hilbert space `K`, as a real
-continuous linear equivalence: Mathlib's `InnerProductSpace.toDual` is conjugate-linear, and over
-`ℝ` the ascription makes it a `≃L[ℝ]`. -/
+/-- Let $K$ be a real Hilbert space. The **Riesz representation** is the continuous linear
+equivalence from the dual of $K$ to $K$ that sends $\ell$ to the unique $w \in K$ with
+$\langle w, v \rangle = \ell(v)$ for all $v \in K$.
+
+Mathlib's `InnerProductSpace.toDual` is conjugate-linear; over $\mathbb{R}$ the type ascription
+makes its inverse a real continuous linear equivalence. -/
 def rieszEquiv (K : Type*) [NormedAddCommGroup K] [InnerProductSpace ℝ K] [CompleteSpace K] :
     (K →L[ℝ] ℝ) ≃L[ℝ] K :=
   (InnerProductSpace.toDual ℝ K).symm.toContinuousLinearEquiv
 
-/-- `⟪rieszEquiv K ℓ, v⟫ = ℓ v`. -/
+/-- For a real Hilbert space $K$, a bounded linear functional $\ell$ on $K$ and $v \in K$, the Riesz
+representative $w$ of $\ell$ satisfies $\langle w, v \rangle = \ell(v)$. -/
 theorem inner_rieszEquiv_apply {K : Type*} [NormedAddCommGroup K] [InnerProductSpace ℝ K]
     [CompleteSpace K] (ℓ : K →L[ℝ] ℝ) (v : K) : ⟪rieszEquiv K ℓ, v⟫_ℝ = ℓ v :=
   InnerProductSpace.toDual_symm_apply
@@ -1241,10 +1478,13 @@ theorem inner_rieszEquiv_apply {K : Type*} [NormedAddCommGroup K] [InnerProductS
 variable (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
   (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
 
-/-- **The solution map `f ↦ u ∈ H^1_0(Ω)`** of the weak Dirichlet problem `a(u, v) = ⟨f, v⟩` for
-all `v ∈ H^1_0(Ω)`, for a form `a` coercive on `H^1_0(Ω)`, as a continuous linear map
-`L²(Ω) → H^1_0(Ω)`: the Riesz representative of the load, pulled back through Mathlib's
-Lax–Milgram equivalence `IsCoercive.continuousLinearEquivOfBilin` of the restricted form. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ whose restriction to $H^1_0(\Omega)$ is
+coercive. The **solution map** of $a$ is the bounded linear map $L^2(\Omega) \to H^1_0(\Omega)$
+that sends $f$ to the unique $u \in H^1_0(\Omega)$ with
+$$a(u, v) = \int_\Omega f v \quad \text{for all } v \in H^1_0(\Omega).$$
+
+It is the Riesz representative of the restricted load, pulled back through Mathlib's Lax–Milgram
+equivalence `IsCoercive.continuousLinearEquivOfBilin` of the restricted form. -/
 def solutionMap : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
     SobolevEuclideanZero N 1 2 Ω :=
   (((IsCoercive.continuousLinearEquivOfBilin ha.isCoercive).symm :
@@ -1253,23 +1493,28 @@ def solutionMap : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N
       (SobolevEuclideanZero N 1 2 Ω →L[ℝ] ℝ) →L[ℝ] SobolevEuclideanZero N 1 2 Ω)) ∘L
     loadL Ω (SobolevEuclideanZero N 1 2 Ω)
 
-/-- **The solution operator `T : L²(Ω) → L²(Ω)`** of the weak Dirichlet problem for a form `a`
-coercive on `H^1_0(Ω)`: `T f` is the function of the unique `u ∈ H^1_0(Ω)` with `a(u, v) = ⟨f, v⟩`
-for all `v ∈ H^1_0(Ω)` (`Elliptic.solutionMap`), read in `L²(Ω)`. This is the operator `T` of the
-proofs of [brezis2011functional] Theorem 9.23 and Theorem 9.31. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ whose restriction to $H^1_0(\Omega)$ is
+coercive. The **solution operator** of $a$ is the bounded linear operator
+$T \colon L^2(\Omega) \to L^2(\Omega)$ that sends $f$ to the class in $L^2(\Omega)$ of the
+unique $u \in H^1_0(\Omega)$ with $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$.
+This is the operator $T$ of the proofs of Theorem 9.23 and Theorem 9.31 of
+[brezis2011functional].
+
+The element $u$ is the value of `Elliptic.solutionMap`. -/
 def solutionOperator : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
     Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume ∘L
     solutionMap Ω a ha
 
-/-- `T f` is the function of the solution `u ∈ H^1_0(Ω)`. -/
+/-- For $f \in L^2(\Omega)$, $T f$ is the class in $L^2(\Omega)$ of the value of the solution map at
+$f$. -/
 theorem solutionOperator_apply
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     solutionOperator Ω a ha f = SobolevMultiIndexZero.fnL ℝ _ 1 2 Ω volume (solutionMap Ω a ha f) :=
   rfl
 
-/-- **The solution map solves the weak problem**: `a(u, v) = ⟨f, v⟩_{L²}` for every
-`v ∈ H^1_0(Ω)`, `u = solutionMap Ω a ha f`. -/
+/-- The solution map solves the weak problem: for $f \in L^2(\Omega)$ and $v \in H^1_0(\Omega)$, the
+value $u$ of the solution map at $f$ satisfies $a(u, v) = \int_\Omega f v$. -/
 theorem restrict_apply_solutionMap
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclideanZero N 1 2 Ω) :
@@ -1281,14 +1526,16 @@ theorem restrict_apply_solutionMap
     ContinuousLinearEquiv.apply_symm_apply]
   exact inner_rieszEquiv_apply _ _
 
-/-- **The solution map gives the Galerkin solution** in `H^1_0(Ω)`:
-`IsGalerkinSolution a (load Ω f) (H^1_0(Ω)) (solutionMap Ω a ha f)`. -/
+/-- For $f \in L^2(\Omega)$, the value $u$ of the solution map at $f$ is the Galerkin solution in
+$H^1_0(\Omega)$: $u \in H^1_0(\Omega)$ and $a(u, v) = \int_\Omega f v$ for all
+$v \in H^1_0(\Omega)$. -/
 theorem isGalerkinSolution_solutionMap
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     IsGalerkinSolution a (load Ω f) (SobolevEuclideanZero N 1 2 Ω) (solutionMap Ω a ha f) :=
   ⟨(solutionMap Ω a ha f).2, fun v hv ↦ restrict_apply_solutionMap Ω a ha f ⟨v, hv⟩⟩
 
-/-- **Uniqueness**: every Galerkin solution in `H^1_0(Ω)` is the value of the solution map. -/
+/-- Uniqueness: let $f \in L^2(\Omega)$. If $u \in H^1_0(\Omega)$ and $a(u, v) = \int_\Omega f v$
+for all $v \in H^1_0(\Omega)$, then $u$ is the value of the solution map at $f$. -/
 theorem eq_solutionMap_of_isGalerkinSolution
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1298,8 +1545,9 @@ theorem eq_solutionMap_of_isGalerkinSolution
   obtain ⟨w, -, hw⟩ := IsGalerkinSolution.existsUnique_of_restrict (ℓ := load Ω f) hc hcoer
   rw [hw u hu, hw _ (isGalerkinSolution_solutionMap Ω a ha f)]
 
-/-- **Uniqueness, on the solution operator**: the function of any Galerkin solution `u ∈ H^1_0(Ω)`
-of `a(u, v) = ⟨f, v⟩` is `T f`. -/
+/-- Uniqueness for the solution operator: let $f \in L^2(\Omega)$. If $u \in H^1_0(\Omega)$ and
+$a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$, then the class of $u$ in
+$L^2(\Omega)$ is $T f$. -/
 theorem solutionOperator_eq_of_isGalerkinSolution
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1308,8 +1556,8 @@ theorem solutionOperator_eq_of_isGalerkinSolution
   rw [solutionOperator_apply, SobolevMultiIndexZero.fnL_eq,
     ← eq_solutionMap_of_isGalerkinSolution Ω a ha hu]
 
-/-- **The solution operator, specified**: `T f` is the function of some `u ∈ H^1_0(Ω)` with
-`a(u, v) = ⟨f, v⟩` for all `v ∈ H^1_0(Ω)`. -/
+/-- For $f \in L^2(\Omega)$, there is $u \in H^1_0(\Omega)$ whose class in $L^2(\Omega)$ is $T f$
+and with $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$. -/
 theorem solutionOperator_spec (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ∃ u ∈ SobolevEuclideanZero N 1 2 Ω,
       SobolevMultiIndex.fnL ℝ _ 1 2 Ω volume u = solutionOperator Ω a ha f ∧
@@ -1317,8 +1565,9 @@ theorem solutionOperator_spec (f : Lp ℝ 2 (volume.restrict (Ω : Set (Euclidea
   ⟨solutionMap Ω a ha f, (solutionMap Ω a ha f).2, rfl,
     (isGalerkinSolution_solutionMap Ω a ha f).2⟩
 
-/-- **The stability bound of the solution map**, `‖u‖_{H^1(Ω)} ≤ ‖f‖₂ / c` for a coercivity
-constant `c` of the form on `H^1_0(Ω)`. -/
+/-- The stability bound of the solution map: if $c > 0$ and $c \|v\|^2 \le a(v, v)$ for all
+$v \in H^1_0(\Omega)$, then the value $u$ of the solution map at $f \in L^2(\Omega)$ satisfies
+$\|u\| \le \|f\|_2 / c$. -/
 theorem norm_solutionMap_le {c : ℝ} (hc : 0 < c)
     (hcoer : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoerciveWith c)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -1333,7 +1582,8 @@ theorem norm_solutionMap_le {c : ℝ} (hc : 0 < c)
           (norm_nonneg _)
     _ = ‖f‖ := mul_one _
 
-/-- **The stability bound of the solution operator**, `‖T f‖₂ ≤ ‖f‖₂ / c`. -/
+/-- The stability bound of the solution operator: if $c > 0$ and $c \|v\|^2 \le a(v, v)$ for all
+$v \in H^1_0(\Omega)$, then $\|T f\|_2 \le \|f\|_2 / c$ for $f \in L^2(\Omega)$. -/
 theorem norm_solutionOperator_apply_le {c : ℝ} (hc : 0 < c)
     (hcoer : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoerciveWith c)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -1351,10 +1601,13 @@ open Laplacian
 
 variable {u : EuclideanSpace ℝ (Fin N) → ℝ}
 
-/-- The Laplacian is the sum of the second derivatives `D²u(eᵢ, eᵢ)` in the standard basis, at
-every point (no differentiability assumed: both sides are `0` where `u` is not twice
-differentiable). This is `Elliptic.laplacian_eq_sum_fderiv_fderiv` without the `C²` hypothesis
-and with the inner derivative left uncurried. -/
+/-- For every function $u \colon \mathbb{R}^N \to \mathbb{R}$ and every $x \in \mathbb{R}^N$, the
+Laplacian is the sum of second derivatives in the standard basis:
+$\Delta u(x) = \sum_i D^2 u(x)(e_i, e_i)$.
+
+No differentiability is assumed: both sides are $0$ where $u$ is not twice differentiable. This
+is `Elliptic.laplacian_eq_sum_fderiv_fderiv` without the $C^2$ hypothesis, and with the inner
+derivative left uncurried. -/
 theorem _root_.EuclideanSpace.laplacian_eq_sum_fderiv_fderiv_single
     (u : EuclideanSpace ℝ (Fin N) → ℝ) (x : EuclideanSpace ℝ (Fin N)) :
     Δ u x
@@ -1363,9 +1616,11 @@ theorem _root_.EuclideanSpace.laplacian_eq_sum_fderiv_fderiv_single
     (EuclideanSpace.basisFun (Fin N) ℝ)]
   simp [iteratedFDeriv_two_apply]
 
-/-- **The Laplacian of a `C²` function on an open set, in coordinates**: at `x ∈ Ω`,
-`Δ u x = ∑ᵢ ∂ᵢ(∂ᵢu)(x)`, with `∂ᵢu = fderiv u · e_i`
-(`laplacian_eq_iteratedFDeriv_orthonormalBasis` and `fderiv_clm_apply`). -/
+/-- Let $u$ be $C^2$ on the open set $\Omega$. For $x \in \Omega$, $\Delta u(x) = \sum_i \partial_i
+(\partial_i u)(x)$, where $\partial_i u(y) = D u(y) e_i$.
+
+The proof uses `InnerProductSpace.laplacian_eq_iteratedFDeriv_orthonormalBasis` and
+`fderiv_clm_apply`. -/
 theorem laplacian_eq_sum_fderiv_fderiv (hu : ContDiffOn ℝ 2 u Ω)
     {x : EuclideanSpace ℝ (Fin N)} (hx : x ∈ Ω) :
     Δ u x = ∑ i : Fin N, fderiv ℝ (fun y ↦ fderiv ℝ u y (EuclideanSpace.single i 1)) x
@@ -1379,7 +1634,7 @@ theorem laplacian_eq_sum_fderiv_fderiv (hu : ContDiffOn ℝ 2 u Ω)
   rw [iteratedFDeriv_two_apply, fderiv_clm_apply hd (differentiableAt_const _)]
   simp
 
-/-- The Laplacian of a `C²` function is continuous on the open set. -/
+/-- If $u$ is $C^2$ on the open set $\Omega$, then $\Delta u$ is continuous on $\Omega$. -/
 theorem continuousOn_laplacian (hu : ContDiffOn ℝ 2 u Ω) : ContinuousOn (Δ u) Ω := by
   refine ContinuousOn.congr (continuousOn_finsetSum Finset.univ fun i _ ↦ ?_)
     fun x hx ↦ laplacian_eq_sum_fderiv_fderiv Ω hu hx
@@ -1387,8 +1642,9 @@ theorem continuousOn_laplacian (hu : ContDiffOn ℝ 2 u Ω) : ContinuousOn (Δ u
     (hu.fderiv_of_isOpen Ω.isOpen le_rfl).clm_apply contDiffOn_const
   exact (hg.continuousOn_fderiv_of_isOpen Ω.isOpen le_rfl).clm_apply continuousOn_const
 
-/-- The partial derivatives of an element `U` of `H^1(Ω)` whose function is a `C^1` function `u`
-on `Ω` are the classical ones, almost everywhere on `Ω`. -/
+/-- Let $u$ be $C^1$ on $\Omega$, and let $U \in H^1(\Omega)$ have a function that agrees with $u$
+almost everywhere on $\Omega$. Then the weak partial derivatives of $U$ are the classical ones:
+$\partial_i U = D u(\cdot) e_i$ almost everywhere on $\Omega$. -/
 theorem weakDeriv_single_ae_eq_fderiv_of_contDiffOn (hu : ContDiffOn ℝ 1 u Ω)
     {U : SobolevEuclidean N 1 2 Ω}
     (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
@@ -1398,10 +1654,14 @@ theorem weakDeriv_single_ae_eq_fderiv_of_contDiffOn (hu : ContDiffOn ℝ 1 u Ω)
         fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1) :=
   SobolevEuclidean.weakDeriv_single_ae_eq U hU (hu.hasWeakIteratedLineDerivOn_single Ω i)
 
-/-- **The form of `-Δ + 1` against a test function, for a `C²` function**: if `U ∈ H^1(Ω)` has the
-`C²` function `u` on `Ω` as its function and `V` has the test function `φ` as its function, then
-`laplaceForm Ω U V = ∫_Ω (-Δu + u) φ`. Integration by parts of `∂ᵢu` (a `C^1` function on `Ω`)
-against `φ`, summed over `i` (`Elliptic.laplacian_eq_sum_fderiv_fderiv`). -/
+/-- Let $u$ be $C^2$ on $\Omega$, let $U \in H^1(\Omega)$ have a function that agrees with $u$
+almost everywhere on $\Omega$, and let $V \in H^1(\Omega)$ have a function that agrees almost
+everywhere on $\Omega$ with a test function $\varphi$ on $\Omega$. Then the form $a$ of
+$-\Delta + 1$ satisfies
+$$a(U, V) = \int_\Omega (-\Delta u + u) \varphi.$$
+
+The proof integrates the $C^1$ function $\partial_i u$ by parts against $\varphi$ and sums over
+$i$, with `Elliptic.laplacian_eq_sum_fderiv_fderiv`. -/
 theorem laplaceForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
     {U : SobolevEuclidean N 1 2 Ω}
     (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
@@ -1483,10 +1743,14 @@ theorem laplaceForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
   congr 1
   exact Finset.sum_congr rfl fun i _ ↦ by rw [e1, hibp]
 
-/-- **Integration by parts against a test function**: for `U ∈ H¹(Ω)` whose function is `C²` on
-`Ω` and `V ∈ H¹(Ω)` whose function is a test function `φ`, `∫_Ω ∇U · ∇V = ∫_Ω (−Δu) φ`.  The
-Dirichlet form is the form of `−Δ + 1` minus the `L²` product
-(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`). -/
+/-- **Integration by parts against a test function**. Let $u$ be $C^2$ on $\Omega$, let
+$U \in H^1(\Omega)$ have a function that agrees with $u$ almost everywhere on $\Omega$, and let
+$V \in H^1(\Omega)$ have a function that agrees almost everywhere on $\Omega$ with a test
+function $\varphi$ on $\Omega$. Then
+$$\int_\Omega \nabla U \cdot \nabla V = \int_\Omega (-\Delta u) \varphi.$$
+
+The Dirichlet form is the form of $-\Delta + 1$ minus the product in $L^2(\Omega)$, so this
+follows from `Elliptic.laplaceForm_eq_integral_of_contDiffOn`. -/
 theorem dirichletForm_eq_integral_neg_laplacian_mul (hu : ContDiffOn ℝ 2 u Ω)
     {U : SobolevEuclidean N 1 2 Ω}
     (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
@@ -1513,20 +1777,22 @@ theorem dirichletForm_eq_integral_neg_laplacian_mul (hu : ContDiffOn ℝ 2 u Ω)
     exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
   linarith
 
-/-- **The interior half of Step A of Example 1**: let `Ω ⊆ ℝ^N` be open and bounded,
-`u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`: `C²` on `Ω` with derivatives of order `≤ 2` extending
-continuously to `Ω̄`), and `f ∈ L²(Ω)` with `-Δu + u = f` on `Ω`. Then `u` is the function of
-some `U ∈ H^1(Ω)` with `a(U, v) = ∫_Ω f v` for every `v ∈ H^1_0(Ω)`, where `a` is the form of
-`-Δ + 1`. No boundary condition enters: this is what the inhomogeneous Dirichlet problem
-([brezis2011functional] §9.5, Example 2, "as above, any classical solution is a weak solution")
-uses, the homogeneous problem adding `U ∈ H^1_0(Ω)` by Theorem 9.17
-(`Elliptic.isGalerkinSolution_laplace_of_classical`).
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and bounded, let $u \in C^2(\bar\Omega)$, and let
+$f \colon \mathbb{R}^N \to \mathbb{R}$ be in $L^2(\Omega)$ with $-\Delta u + u = f$ at every
+point of $\Omega$. Then there is $U \in H^1(\Omega)$ whose function agrees with $u$ almost
+everywhere on $\Omega$ and with
+$$\int_\Omega \nabla U \cdot \nabla v + \int_\Omega U v = \int_\Omega f v \quad \text{for all }
+  v \in H^1_0(\Omega).$$
+This is the interior half of Step A of Example 1 in §9.5 of [brezis2011functional].
 
-Proof ([brezis2011functional] §9.5, Example 1, Step A): `u ∈ W^{1,2}(Ω)` with its classical
-gradient as weak gradient (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`), hence the
-function of some `U ∈ H^1(Ω)`; for a test function `v`, `a(U, v) = ∫_Ω (-Δu + u) v = ∫_Ω f v`
-(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`), and the identity extends to `H^1_0(Ω)` by
-density, both sides being continuous in `v`
+No boundary condition enters. Example 2 of the source uses this ("as above, any classical
+solution is a weak solution"), and the homogeneous problem adds $U \in H^1_0(\Omega)$ by Theorem
+9.17 (`Elliptic.isGalerkinSolution_laplace_of_classical`). The hypothesis
+$u \in C^2(\bar\Omega)$ is `ContDiffOnClosure ℝ 2 u Ω`, and the class of $f$ in $L^2(\Omega)$ is
+`hf.toLp f`. In the proof, $u \in W^{1,2}(\Omega)$ with its classical gradient as weak gradient
+(`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`); for a test function $v$ the identity is
+$\int_\Omega (-\Delta u + u) v = \int_\Omega f v$
+(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`), and it extends to $H^1_0(\Omega)$ by density
 (`SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions`). -/
 theorem exists_sobolev_forall_laplaceForm_eq_load_of_classical
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -1547,20 +1813,20 @@ theorem exists_sobolev_forall_laplaceForm_eq_load_of_classical
   filter_upwards [ae_restrict_mem hΩm, hf.coeFn_toLp, hV] with x hx hfx hVx
   rw [heq x hx, hfx, hVx]
 
-/-- **Step A of Example 1: a classical solution is a weak solution.** Let `Ω ⊆ ℝ^N` be open and
-bounded, `u ∈ C²(Ω̄)` — `ContDiffOnClosure ℝ 2 u Ω` (footnote 16 of [brezis2011functional]
-§9.3: `C²` on `Ω` with derivatives of order `≤ 2` extending continuously to `Ω̄`) and `u` itself
-continuous on `closure Ω`, so that its boundary values are meaningful — with `u = 0` on `∂Ω`,
-and `f ∈ L²(Ω)` with `-Δu + u = f` on `Ω`. Then `u` is the function of some `U ∈ H^1_0(Ω)`, and
-`U` is the weak solution: `IsGalerkinSolution (laplaceForm Ω) (load Ω f) (H^1_0(Ω)) U`.
-Mathlib's `ContDiffOn ℝ 2 u (closure Ω)` gives both hypotheses on `u`
-(`ContDiffOn.contDiffOnClosure`, `ContDiffOn.continuousOn`).
+/-- **A classical solution is a weak solution**. Let $\Omega \subseteq \mathbb{R}^N$ be open and
+bounded, let $u \in C^2(\bar\Omega)$ be continuous on $\bar\Omega$ with $u = 0$ on
+$\partial\Omega$, and let $f \colon \mathbb{R}^N \to \mathbb{R}$ be in $L^2(\Omega)$ with
+$-\Delta u + u = f$ at every point of $\Omega$. Then there is $U \in H^1_0(\Omega)$ whose
+function agrees with $u$ almost everywhere on $\Omega$, and $U$ is the weak solution of the
+Dirichlet problem for $-\Delta + 1$ with datum $f$. This is Step A of Example 1 in §9.5 of
+[brezis2011functional].
 
-Proof ([brezis2011functional] §9.5, Example 1, Step A): `u` is the function of some `U ∈ H^1(Ω)`
-satisfying the weak identity on `H^1_0(Ω)`
-(`Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical`); `u` is continuous on
-`closure Ω` and vanishes on `∂Ω`, so `U ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which holds for
-every open `Ω` (Remark 19). -/
+The hypothesis $u \in C^2(\bar\Omega)$ is `ContDiffOnClosure ℝ 2 u Ω` (footnote 16 of §9.3 of
+the source), and the continuity of $u$ on $\bar\Omega$ makes its boundary values meaningful.
+Mathlib's `ContDiffOn ℝ 2 u (closure Ω)` gives both hypotheses (`ContDiffOn.contDiffOnClosure`,
+`ContDiffOn.continuousOn`). The identity on $H^1_0(\Omega)$ is
+`Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical`, and $U \in H^1_0(\Omega)$ by
+Theorem 9.17 (i) ⇒ (ii) of the source, which holds for every open $\Omega$ (Remark 19). -/
 theorem isGalerkinSolution_laplace_of_classical
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ 2 u Ω)
@@ -1577,13 +1843,15 @@ theorem isGalerkinSolution_laplace_of_classical
     SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier (by norm_num) U hU huc h0
   exact ⟨U, hU0, hU, hU0, hUw⟩
 
-/-- **Step D of Example 1: a `C²` weak solution satisfies the equation almost everywhere.** If
-`U ∈ H^1(Ω)` satisfies `a(U, v) = ⟨f, v⟩` for every test function `v` and its function is a `C²`
-function `u` on `Ω`, then `-Δu + u = f` almost everywhere on `Ω`: the weak identity reads
-`∫_Ω (-Δu + u - f) v = 0` for every test function `v`
-(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`), and Corollary 4.24 is Mathlib's
-`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` ([brezis2011functional] §9.5, Example 1,
-Step D). -/
+/-- Let $U \in H^1(\Omega)$ and $f \in L^2(\Omega)$ satisfy $\int_\Omega \nabla U \cdot \nabla V +
+\int_\Omega U V = \int_\Omega f V$ for every $V$ in the image of the test functions in
+$H^1(\Omega)$, and let the function of $U$ agree almost everywhere on $\Omega$ with a function
+$u$ that is $C^2$ on $\Omega$. Then $-\Delta u + u = f$ almost everywhere on $\Omega$. This is
+Step D of Example 1 in §9.5 of [brezis2011functional].
+
+The weak identity reads $\int_\Omega (-\Delta u + u - f) v = 0$ for every test function $v$
+(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`). Corollary 4.24 of the source is Mathlib's
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. -/
 theorem laplacian_ae_eq_of_forall_testFunction {U : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (hUw : ∀ V ∈ SobolevMultiIndex.testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
@@ -1636,9 +1904,10 @@ theorem laplacian_ae_eq_of_forall_testFunction {U : SobolevEuclidean N 1 2 Ω}
   filter_upwards [(ae_restrict_iff' hΩm).2 key] with x hx
   exact sub_eq_zero.1 hx
 
-/-- **Step D, for a Galerkin solution**: if `U` is the weak solution of the Dirichlet problem for
-`-Δ + 1` with datum `f` and its function is a `C²` function `u` on `Ω`, then `-Δu + u = f`
-almost everywhere on `Ω`. -/
+/-- Let $U$ be the weak solution in $H^1_0(\Omega)$ of the Dirichlet problem for $-\Delta + 1$ with
+datum $f \in L^2(\Omega)$, and let the function of $U$ agree almost everywhere on $\Omega$ with
+a function $u$ that is $C^2$ on $\Omega$. Then $-\Delta u + u = f$ almost everywhere on
+$\Omega$. This is Step D of Example 1 in §9.5 of [brezis2011functional]. -/
 theorem laplacian_ae_eq_of_isGalerkinSolution {U : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (hUw : IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) U)
@@ -1648,11 +1917,16 @@ theorem laplacian_ae_eq_of_isGalerkinSolution {U : SobolevEuclidean N 1 2 Ω}
   laplacian_ae_eq_of_forall_testFunction Ω
     (fun V hV ↦ hUw.2 V (SobolevMultiIndexZero.testFunctions_le hV)) hu hU
 
-/-- **Step D, everywhere for a continuous datum**: if moreover `f` agrees almost everywhere on
-`Ω` with a function `g` continuous on `Ω`, then `-Δu + u = g` at every point of `Ω`: two
-functions continuous on the open set `Ω` that agree almost everywhere agree everywhere
-(`Measure.eqOn_open_of_ae_eq`). The book's "`-Δu + u = f` everywhere on `Ω`, since
-`u ∈ C²(Ω)`" presumes such a continuous representative of `f`. -/
+/-- Let $U$ be the weak solution in $H^1_0(\Omega)$ of the Dirichlet problem for $-\Delta + 1$ with
+datum $f \in L^2(\Omega)$, and let the function of $U$ agree almost everywhere on $\Omega$ with
+a function $u$ that is $C^2$ on $\Omega$. If $f$ agrees almost everywhere on $\Omega$ with a
+function $g$ that is continuous on $\Omega$, then $-\Delta u(x) + u(x) = g(x)$ for every
+$x \in \Omega$.
+
+Two functions that are continuous on the open set $\Omega$ and agree almost everywhere agree
+everywhere (`MeasureTheory.Measure.eqOn_open_of_ae_eq`). The statement of Step D in the source,
+"$-\Delta u + u = f$ everywhere on $\Omega$, since $u \in C^2(\Omega)$", presumes such a
+continuous representative of $f$. -/
 theorem laplacian_eq_of_isGalerkinSolution_of_continuousOn {U : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (hUw : IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) U)
@@ -1668,14 +1942,20 @@ theorem laplacian_eq_of_isGalerkinSolution_of_continuousOn {U : SobolevEuclidean
 
 /-! ### Step A of Example 3: a classical solution of the general equation is a weak solution -/
 
-/-- **The general form against a test function, for a `C²` function and `C¹` coefficients**: if
-`U ∈ H^1(Ω)` has the `C²` function `u` on `Ω` as its function, the `L^∞` coefficients `A i j`,
-`a₁ i`, `a₀` agree almost everywhere on `Ω` with functions `a i j` (of class `C¹` on `Ω`), `b i`
-and `c`, and `V` has the test function `φ` as its function, then
-`generalForm Ω A a₁ a₀ U V = ∫_Ω (-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u) φ`, where
-`∂ⱼ(a_ij ∂ᵢu)(x) = D(a_ij ∂ᵢu)(x) e_j`. Integration by parts of the `C^1` function `a_ij ∂ᵢu`
-against `φ` along `e_j` (`ContDiffOn.hasWeakIteratedLineDerivOn_single`) for each pair `(i, j)`;
-the first- and zeroth-order terms are read off almost everywhere. -/
+/-- Let $u$ be $C^2$ on $\Omega$, let $a_{ij}$ be $C^1$ on $\Omega$, and let
+$b_i, c \colon \mathbb{R}^N \to \mathbb{R}$. Let the coefficients $A_{ij}$, $a_i$, $a_0$ in
+$L^\infty(\Omega)$ agree almost everywhere on $\Omega$ with $a_{ij}$, $b_i$ and $c$. Let
+$U \in H^1(\Omega)$ have a function that agrees with $u$ almost everywhere on $\Omega$, and let
+$V \in H^1(\Omega)$ have a function that agrees almost everywhere on $\Omega$ with a test
+function $\varphi$ on $\Omega$. Then the general form $a$ of the coefficients $A_{ij}$, $a_i$,
+$a_0$ satisfies
+$$a(U, V) = \int_\Omega \Bigl( -\sum_{i,j} \partial_j (a_{ij} \partial_i u) + \sum_i b_i \,
+  \partial_i u + c u \Bigr) \varphi,$$
+where $\partial_j (a_{ij} \partial_i u)(x) = D(a_{ij} \partial_i u)(x) e_j$.
+
+The proof integrates the $C^1$ function $a_{ij} \partial_i u$ by parts against $\varphi$ along
+$e_j$ (`ContDiffOn.hasWeakIteratedLineDerivOn_single`) for each pair $(i, j)$, and reads off the
+terms of order one and zero almost everywhere. -/
 theorem generalForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
     {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -1811,19 +2091,24 @@ theorem generalForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
   · exact Finset.sum_congr rfl fun i _ ↦ Finset.sum_congr rfl fun j _ ↦ by rw [e2, hibp]
   · exact Finset.sum_congr rfl fun i _ ↦ e1 i
 
-/-- **The interior half of Step A of Example 3**: let `Ω ⊆ ℝ^N` be open and bounded,
-`u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`), `a_ij ∈ C¹(Ω)`, and let the `L^∞` coefficients `A i j`,
-`a₁ i`, `a₀` agree almost everywhere on `Ω` with `a_ij`, `b_i`, `c`. If `f ∈ L²(Ω)` and
-`-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u = f` on `Ω`, then `u` is the function of some
-`U ∈ H^1(Ω)` with `a(U, v) = ∫_Ω f v` for every `v ∈ H^1_0(Ω)`, `a` being the form (41)
-`generalForm Ω A a₁ a₀`. No boundary condition enters; the homogeneous Dirichlet problem adds
-`U ∈ H^1_0(Ω)` by Theorem 9.17 (`Elliptic.isGalerkinSolution_general_of_classical`).
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and bounded, let $u \in C^2(\bar\Omega)$, let
+$a_{ij}$ be $C^1$ on $\Omega$, and let $b_i, c \colon \mathbb{R}^N \to \mathbb{R}$. Let the
+coefficients $A_{ij}$, $a_i$, $a_0$ in $L^\infty(\Omega)$ agree almost everywhere on $\Omega$
+with $a_{ij}$, $b_i$ and $c$. Let $f \colon \mathbb{R}^N \to \mathbb{R}$ be in $L^2(\Omega)$
+with
+$$-\sum_{i,j} \partial_j (a_{ij} \partial_i u) + \sum_i b_i \, \partial_i u + c u = f$$
+at every point of $\Omega$. Then there is $U \in H^1(\Omega)$ whose function agrees with $u$
+almost everywhere on $\Omega$ and with $a(U, v) = \int_\Omega f v$ for every
+$v \in H^1_0(\Omega)$, where $a$ is the general form (41) of $A_{ij}$, $a_i$, $a_0$. This is the
+interior half of Step A of Example 3 in §9.5 of [brezis2011functional] ("as above, any classical
+solution is a weak solution").
 
-Proof ([brezis2011functional] §9.5, Example 3, "as above, any classical solution is a weak
-solution"): `u ∈ W^{1,2}(Ω)` (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`), hence the
-function of some `U ∈ H^1(Ω)`; for a test function `v`, `a(U, v) = ∫_Ω f v` is the integration by
-parts `Elliptic.generalForm_eq_integral_of_contDiffOn`, and the identity extends to `H^1_0(Ω)`
-by density (`SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions`). -/
+No boundary condition enters; the homogeneous Dirichlet problem adds $U \in H^1_0(\Omega)$ by
+Theorem 9.17 (`Elliptic.isGalerkinSolution_general_of_classical`). The hypothesis
+$u \in C^2(\bar\Omega)$ is `ContDiffOnClosure ℝ 2 u Ω`. In the proof, $u \in W^{1,2}(\Omega)$
+(`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`); for a test function the identity is the
+integration by parts `Elliptic.generalForm_eq_integral_of_contDiffOn`, and it extends to
+$H^1_0(\Omega)$ by density (`SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions`). -/
 theorem exists_sobolev_forall_generalForm_eq_load_of_classical
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ 2 u Ω)
@@ -1859,18 +2144,23 @@ theorem exists_sobolev_forall_generalForm_eq_load_of_classical
   filter_upwards [ae_restrict_mem hΩm, hf.coeFn_toLp, hV] with x hx hfx hVx
   rw [heq x hx, hfx, hVx]
 
-/-- **Step A of Example 3: a classical solution of the general second-order equation is a weak
-solution.** Let `Ω ⊆ ℝ^N` be open and bounded, `u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`,
-continuous on `closure Ω`) with `u = 0` on `∂Ω`, let `a_ij ∈ C¹(Ω)`, and let the `L^∞`
-coefficients `A i j`, `a₁ i`, `a₀` agree almost everywhere on `Ω` with `a_ij`, `b_i`, `c`. If
-`f ∈ L²(Ω)` and `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u = f` on `Ω`, then `u` is the function of
-some `U ∈ H^1_0(Ω)`, and `U` is the weak solution:
-`IsGalerkinSolution (generalForm Ω A a₁ a₀) (load Ω f) (H^1_0(Ω)) U`. The book's (37) is the case
-`a₁ = 0`, `b = 0`, with `a_ij ∈ C¹(Ω̄)` and `a₀ ∈ C(Ω̄)` supplying the `L^∞` classes
-([brezis2011functional] §9.5, Example 3, "as above, any classical solution is a weak solution").
+/-- **A classical solution of the general second-order equation is a weak solution**. Let
+$\Omega \subseteq \mathbb{R}^N$ be open and bounded, let $u \in C^2(\bar\Omega)$ be continuous
+on $\bar\Omega$ with $u = 0$ on $\partial\Omega$, let $a_{ij}$ be $C^1$ on $\Omega$, and let
+$b_i, c \colon \mathbb{R}^N \to \mathbb{R}$. Let the coefficients $A_{ij}$, $a_i$, $a_0$ in
+$L^\infty(\Omega)$ agree almost everywhere on $\Omega$ with $a_{ij}$, $b_i$ and $c$. Let
+$f \colon \mathbb{R}^N \to \mathbb{R}$ be in $L^2(\Omega)$ with
+$$-\sum_{i,j} \partial_j (a_{ij} \partial_i u) + \sum_i b_i \, \partial_i u + c u = f$$
+at every point of $\Omega$. Then there is $U \in H^1_0(\Omega)$ whose function agrees with $u$
+almost everywhere on $\Omega$, and $U$ is the weak solution of the Dirichlet problem for the
+general form (41) of $A_{ij}$, $a_i$, $a_0$ with datum $f$. This is Step A of Example 3 in §9.5
+of [brezis2011functional] ("as above, any classical solution is a weak solution").
 
-Proof: the interior identity is `Elliptic.exists_sobolev_forall_generalForm_eq_load_of_classical`,
-and `U ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which needs no regularity of `Ω`. -/
+The problem (37) of the source is the case $a_i = 0$ and $b_i = 0$, with
+$a_{ij} \in C^1(\bar\Omega)$ and $a_0 \in C(\bar\Omega)$ supplying the $L^\infty$ classes. The
+identity on $H^1_0(\Omega)$ is
+`Elliptic.exists_sobolev_forall_generalForm_eq_load_of_classical`, and $U \in H^1_0(\Omega)$ by
+Theorem 9.17 (i) ⇒ (ii) of the source, which needs no regularity of $\Omega$. -/
 theorem isGalerkinSolution_general_of_classical
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ 2 u Ω)
@@ -1905,19 +2195,26 @@ theorem isGalerkinSolution_general_of_classical
 
 end Classical
 
-/-! ### The weak Laplacian of an `H²` weak solution -/
+/-! ### The weak Laplacian of an $H^2$ weak solution -/
 
 section WeakLaplacian
 
 variable {Ω}
 
-/-- The standard basis of `ℝ^N`, locally. -/
+/-- The standard basis of $\mathbb{R}^N$, as a local notation. -/
 local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
-/-- **The form of `−Δ + 1` on an `H²` function against a test function is the integral of
-`(−Δ_w u + u) φ`**, where `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)` is the weak Laplacian (the twin of
-`Elliptic.laplaceForm_eq_integral_of_contDiffOn` for `u ∈ H²(Ω)` rather than `u ∈ C²(Ω)`):
-integration by parts of `∂ᵢu ∈ H¹(Ω)` against `φ`. -/
+/-- Let $u \in H^2(\Omega)$, and let $V \in H^1(\Omega)$ have a function that agrees almost
+everywhere on $\Omega$ with a test function $\varphi$ on $\Omega$. Then the form $a$ of
+$-\Delta + 1$, at $u$ viewed in $H^1(\Omega)$, satisfies
+$$a(u, V) = \int_\Omega (-\Delta_w u + u) \varphi,$$
+where $\Delta_w u = \sum_i \partial_i (\partial_i u)$ is the weak Laplacian.
+
+This is the analogue of `Elliptic.laplaceForm_eq_integral_of_contDiffOn` for $u \in H^2(\Omega)$
+instead of $u \in C^2(\Omega)$. The space $H^2(\Omega)$ is `SobolevEuclidean N 2 2 Ω`, the
+inclusion into $H^1(\Omega)$ is `SobolevMultiIndex.toLowerOrderL`, and
+$\partial_i u \in H^1(\Omega)$ is `SobolevMultiIndex.partialDerivL`. The proof integrates
+$\partial_i u \in H^1(\Omega)$ by parts against $\varphi$. -/
 theorem laplaceForm_toLowerOrderL_eq_integral (u : SobolevEuclidean N 2 2 Ω)
     {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
     (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
@@ -2000,10 +2297,15 @@ theorem laplaceForm_toLowerOrderL_eq_integral (u : SobolevEuclidean N 2 2 Ω)
   rw [e2, e3, integral_add hIneg hI2, integral_neg, integral_finsetSum _ fun i _ ↦ hI1 i]
   simp only [Finset.sum_neg_distrib]
 
-/-- **An `H²` weak solution of `−Δu + u = f` satisfies the equation almost everywhere**, with the
-weak Laplacian `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu)`: if `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for every test
-function `φ`, then `−Δ_w u + u = f` a.e. on `Ω` (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`
-on the residual, which lies in `L²(Ω)`). -/
+/-- Let $u \in H^2(\Omega)$ and $f \in L^2(\Omega)$. If $\int_\Omega \nabla u \cdot \nabla \varphi +
+\int_\Omega u \varphi = \int_\Omega f \varphi$ for every $\varphi$ in the image of the test
+functions in $H^1(\Omega)$, then
+$$-\Delta_w u + u = f$$
+almost everywhere on $\Omega$, where $\Delta_w u = \sum_i \partial_i (\partial_i u)$ is the weak
+Laplacian.
+
+The proof applies `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` to the residual, which
+lies in $L^2(\Omega)$. -/
 theorem neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq (u : SobolevEuclidean N 2 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (hu : ∀ φ ∈ SobolevMultiIndex.testFunctions ℝ 𝔅 1 2 Ω volume, laplaceForm Ω
@@ -2080,17 +2382,23 @@ section Abstract
 variable {X : Type*} [NormedAddCommGroup X] [InnerProductSpace ℝ X] [CompleteSpace X]
 
 omit [CompleteSpace X] in
-/-- `(1 • 1 - μ • T) v = v - μ T v`. -/
+/-- Let $X$ be a real inner product space, $T$ a bounded operator on $X$ and $\mu \in \mathbb{R}$.
+Then $(1 \cdot I - \mu T) v = v - \mu T v$ for $v \in X$. -/
 theorem one_smul_one_sub_smul_apply (T : X →L[ℝ] X) (μ : ℝ) (v : X) :
     ((1 : ℝ) • (1 : X →L[ℝ] X) - μ • T) v = v - μ • T v := by
   simp
 
-/-- **The Fredholm alternative for a solvability predicate**: if `P f` holds exactly when
-`f ∈ range (μ • 1 - K)`, for a compact `K` on a real Hilbert space and `μ ≠ 0`, then there is a
-finite-dimensional subspace `F`, of the dimension of `ker (μ • 1 - K)`, such that `P f` holds iff
-`f ⊥ F`: `F = ker (μ • 1 - K†)`, by `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint`
-and `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` ([brezis2011functional]
-Theorem 6.6 (b), (d), in Hilbert space). -/
+/-- The **Fredholm alternative** for a solvability predicate. Let $X$ be a real Hilbert space, let
+$K$ be a compact operator on $X$, let $\mu \neq 0$, and let $P$ be a property of elements of $X$
+such that $P(f)$ holds if and only if $f$ is in the range of $\mu I - K$. Then there is a
+finite-dimensional subspace $F$ of $X$ with $\dim F = \dim \ker (\mu I - K)$ such that, for
+every $f \in X$,
+$$P(f) \iff \langle f, v \rangle = 0 \text{ for all } v \in F.$$
+
+The subspace is $F = \ker (\mu I - K^*)$, by
+`IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` and
+`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`. This is Theorem 6.6 (b) and (d) of
+[brezis2011functional], in Hilbert space. -/
 theorem exists_finiteDimensional_forall_iff_inner_eq_zero {K : X →L[ℝ] X}
     (hK : IsCompactOperator K) {μ : ℝ} (hμ : μ ≠ 0) {P : X → Prop}
     (hP : ∀ f, P f ↔ f ∈ (μ • (1 : X →L[ℝ] X) - K).range) :
@@ -2106,9 +2414,11 @@ theorem exists_finiteDimensional_forall_iff_inner_eq_zero {K : X →L[ℝ] X}
   · rw [hP, hK.range_smul_sub_eq_orthogonal_ker_adjoint hμ, Submodule.mem_orthogonal]
     exact forall₂_congr fun v _ ↦ by rw [real_inner_comm]
 
-/-- **The Fredholm alternative, existence from uniqueness**: a compact perturbation `μ • 1 - K`
-of a nonzero multiple of the identity with trivial kernel is surjective
-(`IsCompactOperator.injective_iff_surjective_smul_one_sub`). -/
+/-- The **Fredholm alternative**, existence from uniqueness. Let $X$ be a real Hilbert space, let
+$K$ be a compact operator on $X$, and let $\mu \neq 0$. If $\ker (\mu I - K) = \{0\}$, then
+$\mu I - K$ is surjective.
+
+This is `IsCompactOperator.injective_iff_surjective_smul_one_sub`. -/
 theorem surjective_smul_one_sub_of_ker_eq_bot {K : X →L[ℝ] X} (hK : IsCompactOperator K) {μ : ℝ}
     (hμ : μ ≠ 0) (h : (μ • (1 : X →L[ℝ] X) - K).ker = ⊥) :
     Function.Surjective (μ • (1 : X →L[ℝ] X) - K) :=
@@ -2116,15 +2426,17 @@ theorem surjective_smul_one_sub_of_ker_eq_bot {K : X →L[ℝ] X} (hK : IsCompac
 
 end Abstract
 
-/-! ### Theorem 9.23: the Fredholm alternative for (40), modulo compactness of `T` -/
+/-! ### Theorem 9.23: the Fredholm alternative for (40), modulo compactness of $T$ -/
 
 section Fredholm
 
 variable (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
 
-/-- **The space of weak solutions of the homogeneous problem (40)**,
-`{u ∈ H^1_0(Ω) | ∀ v ∈ H^1_0(Ω), a(u, v) = 0}`, as a subspace of `H^1(Ω)`
-([brezis2011functional] Theorem 9.23, "the space `N` of solutions of (40) with `f = 0`"). -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$. The **space of homogeneous solutions** of
+$a$ is the subspace of $H^1(\Omega)$
+$$N = \{u \in H^1_0(\Omega) : a(u, v) = 0 \text{ for all } v \in H^1_0(\Omega)\}.$$
+This is the space $N$ of solutions of (40) with $f = 0$ in Theorem 9.23 of
+[brezis2011functional]. -/
 def homogeneousKernel : Submodule ℝ (SobolevEuclidean N 1 2 Ω) where
   carrier := {u | u ∈ SobolevEuclideanZero N 1 2 Ω ∧
     ∀ v ∈ SobolevEuclideanZero N 1 2 Ω, a u v = 0}
@@ -2136,29 +2448,34 @@ def homogeneousKernel : Submodule ℝ (SobolevEuclidean N 1 2 Ω) where
     have e : a (c • u) = c • a u := by rw [map_smulₛₗ, conj_trivial]
     rw [e, smul_apply, hu.2 v hv, smul_zero]⟩
 
-/-- Membership of `Elliptic.homogeneousKernel`, unfolded. -/
+/-- An element $u \in H^1(\Omega)$ lies in the space $N$ of homogeneous solutions of $a$ if and only
+if $u \in H^1_0(\Omega)$ and $a(u, v) = 0$ for all $v \in H^1_0(\Omega)$. -/
 theorem mem_homogeneousKernel_iff {u : SobolevEuclidean N 1 2 Ω} :
     u ∈ homogeneousKernel Ω a ↔ u ∈ SobolevEuclideanZero N 1 2 Ω ∧
       ∀ v ∈ SobolevEuclideanZero N 1 2 Ω, a u v = 0 :=
   Iff.rfl
 
-/-- The homogeneous solutions lie in `H^1_0(Ω)`. -/
+/-- The space of homogeneous solutions of $a$ is contained in $H^1_0(\Omega)$. -/
 theorem homogeneousKernel_le : homogeneousKernel Ω a ≤ SobolevEuclideanZero N 1 2 Ω :=
   fun _ hu ↦ hu.1
 
-/-- The homogeneous solutions are the Galerkin solutions with datum `0`. -/
+/-- An element $u \in H^1(\Omega)$ lies in the space of homogeneous solutions of $a$ if and only if
+it is the Galerkin solution in $H^1_0(\Omega)$ of the problem with form $a$ and datum $0$. -/
 theorem mem_homogeneousKernel_iff_isGalerkinSolution {u : SobolevEuclidean N 1 2 Ω} :
     u ∈ homogeneousKernel Ω a ↔
       IsGalerkinSolution a (load Ω 0) (SobolevEuclideanZero N 1 2 Ω) u := by
   simp only [mem_homogeneousKernel_iff, IsGalerkinSolution, load_apply_inner, inner_zero_left]
 
-/-- The shifted form `a_μ = a + μ ⟪·, ·⟫_{L²}`, applied. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$. The shifted form
+$a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ satisfies $a_\mu(u, v) = a(u, v) +
+\mu \langle u, v \rangle_{L^2(\Omega)}$ for $u, v \in H^1(\Omega)$. -/
 theorem add_smul_pairing_apply (μ : ℝ) (u v : SobolevEuclidean N 1 2 Ω) :
     (a + μ • pairing Ω (ContinuousLinearMap.id ℝ _) 0 0) u v
       = a u v + μ * ⟪SobolevMultiIndex.weakDeriv u 0, SobolevMultiIndex.weakDeriv v 0⟫_ℝ := by
   simp only [add_apply, smul_apply, pairing_apply, ContinuousLinearMap.id_apply, smul_eq_mul]
 
-/-- The load of `f + μ g`. -/
+/-- For $f, g \in L^2(\Omega)$, $\mu \in \mathbb{R}$ and $v \in H^1(\Omega)$, the load of
+$f + \mu g$ at $v$ is $\int_\Omega f v + \mu \int_\Omega g v$. -/
 theorem load_add_smul (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (μ : ℝ) (v : SobolevEuclidean N 1 2 Ω) :
     load Ω (f + μ • g) v = load Ω f v + μ * load Ω g v := by
@@ -2168,11 +2485,17 @@ variable {μ : ℝ}
   (ha : ((a + μ • pairing Ω (ContinuousLinearMap.id ℝ _) 0 0).restrict
     (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
 
-/-- **(40) is a fixed-point equation for the shifted solution map**: `u ∈ H^1_0(Ω)` is a weak
-solution of `a(u, v) = ⟨f, v⟩` for all `v ∈ H^1_0(Ω)` iff `u = T_μ (f + μ u)`, where `T_μ` is the
-solution map of the coercive shifted form `a_μ = a + μ ⟪·, ·⟫_{L²}`: the sentence
-"`u` is a solution of (40) iff `u = T(f + λu)`" of the proof of [brezis2011functional]
-Theorem 9.23. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such that the
+shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive on
+$H^1_0(\Omega)$, and let $S_\mu \colon L^2(\Omega) \to H^1_0(\Omega)$ be the solution map of
+$a_\mu$. For $f \in L^2(\Omega)$ and $u \in H^1(\Omega)$, $u$ is a weak solution in
+$H^1_0(\Omega)$ of $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$ if and only if
+$$u = S_\mu (f + \mu u).$$
+This is the sentence "$u$ is a solution of (40) if and only if $u = T(f + \lambda u)$" of the
+proof of Theorem 9.23 of [brezis2011functional].
+
+On the right-hand side, $u$ is its class in $L^2(\Omega)$, and $S_\mu$ is
+`Elliptic.solutionMap`. -/
 theorem isGalerkinSolution_iff_eq_solutionMap
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u : SobolevEuclidean N 1 2 Ω) :
@@ -2195,8 +2518,9 @@ theorem isGalerkinSolution_iff_eq_solutionMap
       (f + μ • SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume u)
     rwa [← h] at this
 
-/-- **The homogeneous solutions are the fixed points of `μ T_μ` in `L²(Ω)`**: `u ∈ H^1(Ω)` lies in
-`homogeneousKernel Ω a` iff `u = T_μ (μ u)`. -/
+/-- Under the hypotheses of `Elliptic.isGalerkinSolution_iff_eq_solutionMap`, an element
+$u \in H^1(\Omega)$ lies in the space of homogeneous solutions of $a$ if and only if
+$u = S_\mu(\mu u)$, where $S_\mu$ is the solution map of the shifted form. -/
 theorem mem_homogeneousKernel_iff_eq_solutionMap (u : SobolevEuclidean N 1 2 Ω) :
     u ∈ homogeneousKernel Ω a ↔
       u = solutionMap Ω _ ha
@@ -2205,28 +2529,32 @@ theorem mem_homogeneousKernel_iff_eq_solutionMap (u : SobolevEuclidean N 1 2 Ω)
   rw [mem_homogeneousKernel_iff_isGalerkinSolution, isGalerkinSolution_iff_eq_solutionMap Ω a ha,
     zero_add]
 
-/-- **The homogeneous solutions, read in `L²(Ω)`**: the linear map
-`homogeneousKernel Ω a → L²(Ω)`, `u ↦ u`. -/
+/-- The linear map from the space of homogeneous solutions of $a$ to $L^2(\Omega)$ that sends $u$ to
+its class in $L^2(\Omega)$. -/
 def homogeneousKernelToLp :
     homogeneousKernel Ω a →ₗ[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume :
     SobolevEuclidean N 1 2 Ω →ₗ[ℝ] _) ∘ₗ (homogeneousKernel Ω a).subtype
 
-/-- `homogeneousKernelToLp Ω a u` is the function of `u`. -/
+/-- The map from the space of homogeneous solutions to $L^2(\Omega)$ sends $u$ to its class in
+$L^2(\Omega)$. -/
 theorem homogeneousKernelToLp_apply (u : homogeneousKernel Ω a) :
     homogeneousKernelToLp Ω a u
       = SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume u :=
   rfl
 
-/-- The map `homogeneousKernel Ω a → L²(Ω)` is injective: an element of `H^1(Ω)` is determined by
-its function (`SobolevMultiIndex.fnL_injective`). -/
+/-- The map from the space of homogeneous solutions to $L^2(\Omega)$ is injective, because an
+element of $H^1(\Omega)$ is determined by its class in $L^2(\Omega)$
+(`SobolevMultiIndex.fnL_injective`). -/
 theorem homogeneousKernelToLp_injective : Function.Injective (homogeneousKernelToLp Ω a) :=
   fun _ _ h ↦ Subtype.ext (SobolevMultiIndex.fnL_injective h)
 
-/-- **The homogeneous solutions, in `L²(Ω)`, are the kernel of `1 - μ T_μ`**: the range of
-`homogeneousKernelToLp Ω a` is `ker (1 • 1 - μ • solutionOperator Ω a_μ _)`. So the space of
-solutions of the homogeneous problem (40) is isomorphic to `N(I - λT)` of the proof of
-[brezis2011functional] Theorem 9.23. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such that the
+shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive on
+$H^1_0(\Omega)$, and let $T_\mu$ be the solution operator of $a_\mu$. The image in $L^2(\Omega)$
+of the space of homogeneous solutions of $a$ is $\ker (I - \mu T_\mu)$. So the space of
+solutions of the homogeneous problem (40) is isomorphic to the space $N(I - \lambda T)$ of the
+proof of Theorem 9.23 of [brezis2011functional]. -/
 theorem range_homogeneousKernelToLp :
     LinearMap.range (homogeneousKernelToLp Ω a)
       = ((1 : ℝ) • (1 : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
@@ -2248,13 +2576,18 @@ theorem range_homogeneousKernelToLp :
     refine ⟨⟨solutionMap Ω _ ha (μ • w), ?_⟩, hT⟩
     rw [mem_homogeneousKernel_iff_eq_solutionMap Ω a ha, hT]
 
-/-- **The first half of Theorem 9.23, modulo compactness of `T_μ`**: if the solution operator
-`T_μ : L²(Ω) → L²(Ω)` of the coercive shifted form is compact, then the space of solutions of the
-homogeneous problem (40) is finite-dimensional. It is isomorphic to `ker (1 - μ T_μ)`
-(`Elliptic.range_homogeneousKernelToLp`), which is finite-dimensional by the Riesz theory
-(`IsCompactOperator.finiteDimensional_ker_pow`). The compactness hypothesis is
-`Elliptic.solutionOperator_isCompactOperator`, for `Ω` bounded ([brezis2011functional]
-Theorem 9.23, proof, and Theorem 6.6 (a)). -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such that the
+shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive on
+$H^1_0(\Omega)$. If the solution operator $T_\mu \colon L^2(\Omega) \to L^2(\Omega)$ of $a_\mu$
+is compact, then the space of solutions of the homogeneous problem (40) is finite-dimensional.
+This is the first half of Theorem 9.23 of [brezis2011functional], with the compactness of
+$T_\mu$ as a hypothesis.
+
+The space is isomorphic to $\ker (I - \mu T_\mu)$ (`Elliptic.range_homogeneousKernelToLp`),
+which is finite-dimensional by the Riesz theory of compact operators
+(`IsCompactOperator.finiteDimensional_ker_pow`; Theorem 6.6 (a) of the source). The compactness
+hypothesis holds when $\Omega$ has finite measure, by
+`Elliptic.solutionOperator_isCompactOperator`. -/
 theorem finiteDimensional_homogeneousKernel_of_isCompactOperator
     (hT : IsCompactOperator (solutionOperator Ω _ ha)) :
     FiniteDimensional ℝ (homogeneousKernel Ω a) := by
@@ -2266,7 +2599,8 @@ theorem finiteDimensional_homogeneousKernel_of_isCompactOperator
     exact h1
   exact (LinearEquiv.ofInjective _ (homogeneousKernelToLp_injective Ω a)).symm.finiteDimensional
 
-/-- The dimension of the space of homogeneous solutions is that of `ker (1 - μ T_μ)`. -/
+/-- Under the hypotheses of `Elliptic.range_homogeneousKernelToLp`, the dimension of the space of
+homogeneous solutions of $a$ is the dimension of $\ker (I - \mu T_\mu)$. -/
 theorem finrank_homogeneousKernel :
     finrank ℝ (homogeneousKernel Ω a)
       = finrank ℝ (((1 : ℝ) • (1 : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -2275,10 +2609,15 @@ theorem finrank_homogeneousKernel :
   rw [← range_homogeneousKernelToLp Ω a ha]
   exact (LinearEquiv.ofInjective _ (homogeneousKernelToLp_injective Ω a)).finrank_eq
 
-/-- **(40) is solvable iff `f ∈ range (1 - μ T_μ)`**: the weak problem `a(u, v) = ⟨f, v⟩` for all
-`v ∈ H^1_0(Ω)` has a solution `u ∈ H^1_0(Ω)` iff `v - μ T_μ v = f` has a solution `v ∈ L²(Ω)`
-(then `u = T_μ v`; conversely `v = f + μ u`): the reduction of the proof of
-[brezis2011functional] Theorem 9.23. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such that the
+shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive on
+$H^1_0(\Omega)$, and let $T_\mu$ be the solution operator of $a_\mu$. For $f \in L^2(\Omega)$,
+the weak problem $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$ has a solution
+$u \in H^1_0(\Omega)$ if and only if $f$ is in the range of $I - \mu T_\mu$. This is the
+reduction of the proof of Theorem 9.23 of [brezis2011functional].
+
+If $w - \mu T_\mu w = f$, then the value of the solution map of $a_\mu$ at $w$ solves the
+problem. Conversely, a solution $u$ gives $w = f + \mu u$. -/
 theorem exists_isGalerkinSolution_iff_mem_range
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     (∃ u, IsGalerkinSolution a (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u) ↔
@@ -2299,14 +2638,20 @@ theorem exists_isGalerkinSolution_iff_mem_range
     refine ⟨solutionMap Ω _ ha v, ?_⟩
     rw [isGalerkinSolution_iff_eq_solutionMap Ω a ha, ← hv]
 
-/-- **The second half of Theorem 9.23, modulo compactness of `T_μ`** (the Fredholm alternative
-for (40)): if the solution operator `T_μ` of the coercive shifted form is compact, there is a
-finite-dimensional subspace `F ⊆ L²(Ω)` of the same dimension as the space of homogeneous
-solutions such that, for every `f ∈ L²(Ω)`, the problem (40) has a solution iff `f ⊥ F`:
-`F = ker (1 - μ T_μ†)`, by the solvability criterion
+/-- The **Fredholm alternative** for (40), with the compactness of the solution operator as a
+hypothesis. Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such
+that the shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive
+on $H^1_0(\Omega)$ and its solution operator $T_\mu$ is compact. Then there is a
+finite-dimensional subspace $F \subseteq L^2(\Omega)$, of the same dimension as the space of
+homogeneous solutions of $a$, such that for every $f \in L^2(\Omega)$ the weak problem
+$a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$ has a solution $u \in H^1_0(\Omega)$
+if and only if $f$ is orthogonal to $F$ in $L^2(\Omega)$. This is the second half of Theorem
+9.23 of [brezis2011functional].
+
+The subspace is $F = \ker (I - \mu T_\mu^*)$, by the solvability criterion
 `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` and the index formula
-`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` on the Hilbert space `L²(Ω)`
-([brezis2011functional] Theorem 9.23, proof, and Theorem 6.6 (b), (d)). -/
+`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` on the Hilbert space $L^2(\Omega)$
+(Theorem 6.6 (b) and (d) of the source). -/
 theorem exists_orthogonality_iff_exists_solution_of_isCompactOperator
     (hT : IsCompactOperator (solutionOperator Ω _ ha)) :
     ∃ F : Submodule ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))),
@@ -2317,13 +2662,17 @@ theorem exists_orthogonality_iff_exists_solution_of_isCompactOperator
     one_ne_zero (exists_isGalerkinSolution_iff_mem_range Ω a ha)
   exact ⟨F, h1, h2.trans (finrank_homogeneousKernel Ω a ha).symm, h3⟩
 
-/-- **Remark 23, first clause, modulo compactness of `T_μ`**: if the solution operator `T_μ` of
-the coercive shifted form is compact and the homogeneous problem (40) has only the zero solution,
-then (40) has exactly one weak solution for every `f ∈ L²(Ω)`. Existence is the Fredholm
-alternative `IsCompactOperator.injective_iff_surjective_smul_one_sub` for `1 - μ T_μ`, whose
-kernel is the image of the homogeneous solutions; uniqueness is that the difference of two
-solutions is a homogeneous solution ([brezis2011functional] Chapter 9, Remark 23, and
-Theorem 6.6 (c)). -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ and $\mu \in \mathbb{R}$, such that the
+shifted form $a_\mu = a + \mu \langle \cdot, \cdot \rangle_{L^2(\Omega)}$ is coercive on
+$H^1_0(\Omega)$ and its solution operator $T_\mu$ is compact. If the homogeneous problem (40)
+has only the zero solution, then for every $f \in L^2(\Omega)$ there is exactly one
+$u \in H^1_0(\Omega)$ with $a(u, v) = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$. This is
+the first clause of Remark 23 in Chapter 9 of [brezis2011functional], with the compactness of
+$T_\mu$ as a hypothesis.
+
+Existence is the Fredholm alternative `IsCompactOperator.injective_iff_surjective_smul_one_sub`
+for $I - \mu T_\mu$, whose kernel is the image of the homogeneous solutions (Theorem 6.6 (c) of
+the source). Uniqueness holds because the difference of two solutions is a homogeneous solution. -/
 theorem existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator
     (hT : IsCompactOperator (solutionOperator Ω _ ha)) (h : homogeneousKernel Ω a = ⊥)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -2350,13 +2699,18 @@ theorem existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator
 
 end Fredholm
 
-/-! ### Compactness of the solution operator, reduced to the embedding `H^1_0(Ω) ↪ L²(Ω)` -/
+/-!
+### The solution operator is compact if $H^1_0(\Omega) \hookrightarrow L^2(\Omega)$ is compact
+-/
 
-/-- **The solution operator is compact as soon as the inclusion `H^1_0(Ω) → L²(Ω)` is**: `T`
-factors as `fnL ∘ solutionMap`, and a compact operator composed with a bounded one is compact
-(`IsCompactOperator.comp_clm`). With the Rellich–Kondrachov theorem in the `W_0^{1,p}` form of
-[brezis2011functional] Remark 20 (compactness of `H^1_0(Ω) ↪ L²(Ω)` for `Ω` bounded), this is
-`Elliptic.solutionOperator_isCompactOperator`. -/
+/-- Let $a$ be a bounded bilinear form on $H^1(\Omega)$ whose restriction to $H^1_0(\Omega)$ is
+coercive. If the inclusion $H^1_0(\Omega) \to L^2(\Omega)$ is a compact operator, then the
+solution operator $T \colon L^2(\Omega) \to L^2(\Omega)$ of $a$ is compact.
+
+The operator $T$ is the inclusion composed with the bounded solution map, and a compact operator
+composed with a bounded one is compact (`IsCompactOperator.comp_clm`). With the
+Rellich–Kondrachov theorem in the $W^{1,p}_0$ form of Remark 20 of [brezis2011functional], this
+gives `Elliptic.solutionOperator_isCompactOperator`. -/
 theorem solutionOperator_isCompactOperator_of_isCompactOperator_fnL
     (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
     (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
@@ -2375,25 +2729,28 @@ variable {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (Euclide
   {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
 
-/-- **Gårding's inequality on `H^1_0(Ω)`**: under the ellipticity condition (36), the shifted form
-`a(u, v) + λ ∫_Ω u v` with the shift `λ` of `Elliptic.generalForm_garding` is coercive on
-`H^1_0(Ω)`, so that its solution operator `Elliptic.solutionOperator` exists — the `T` of the
-proof of [brezis2011functional] Theorem 9.23. -/
+/-- **Gårding's inequality on $H^1_0(\Omega)$**. Let the coefficients $a_{ij}$ be uniformly elliptic
+with constant $\alpha$. Then the shifted form $a(u, v) + \lambda \int_\Omega u v$, with the
+shift $\lambda$ of `Elliptic.generalForm_garding`, is coercive on $H^1_0(\Omega)$. So its
+solution operator `Elliptic.solutionOperator` exists; it is the operator $T$ of the proof of
+Theorem 9.23 of [brezis2011functional]. -/
 theorem generalForm_garding_restrict_isCoercive (hA : IsUniformlyElliptic Ω A α) :
     ((generalForm Ω A a₁ a₀ + ((∑ i, ‖a₁ i‖) ^ 2 / (2 * α) + ‖a₀‖ + α / 2)
       • pairing Ω (ContinuousLinearMap.id ℝ _) 0 0).restrict
         (SobolevEuclideanZero N 1 2 Ω)).IsCoercive :=
   SesqForm.IsCoercive.restrict ⟨α / 2, half_pos hA.1, generalForm_garding Ω hA⟩ _
 
-/-- **The solution operator is compact** for an open set `Ω` of finite measure (in particular a
-bounded one), for every form `a` coercive on `H^1_0(Ω)`: `T = fnL ∘ solutionMap` factors through
-the inclusion `H^1_0(Ω) → L²(Ω)`, which is compact by the Rellich–Kondrachov theorem in the
-`W_0^{1,p}` form of [brezis2011functional] Remark 20
-(`SobolevEuclideanZero.isCompactOperator_fnL`, no regularity of `Ω`), and a compact operator
-composed with a bounded one is compact. This is the sentence "`T : L² → L²` is a compact linear
-operator (since `Ω` is bounded, the injection `H^1_0 ⊂ L²` is compact; see Theorem 9.16 and
-Remark 20)" of the proof of Theorem 9.23, and the compactness of `T` in the proof of
-Theorem 9.31. -/
+/-- Let $\Omega$ be an open set of finite Lebesgue measure, and let $a$ be a bounded bilinear form
+on $H^1(\Omega)$ whose restriction to $H^1_0(\Omega)$ is coercive. Then the solution operator
+$T \colon L^2(\Omega) \to L^2(\Omega)$ of $a$ is compact. This is the sentence
+"$T : L^2 \to L^2$ is a compact linear operator (since $\Omega$ is bounded, the injection
+$H^1_0 \subset L^2$ is compact; see Theorem 9.16 and Remark 20)" of the proof of Theorem 9.23 of
+[brezis2011functional], and the compactness of $T$ in the proof of Theorem 9.31.
+
+The source assumes $\Omega$ bounded. The operator $T$ factors through the inclusion
+$H^1_0(\Omega) \to L^2(\Omega)$, which is compact by the Rellich–Kondrachov theorem in the
+$W^{1,p}_0$ form of Remark 20 of the source (`SobolevEuclideanZero.isCompactOperator_fnL`, with
+no regularity of $\Omega$), and a compact operator composed with a bounded one is compact. -/
 theorem solutionOperator_isCompactOperator
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
@@ -2402,29 +2759,39 @@ theorem solutionOperator_isCompactOperator
   solutionOperator_isCompactOperator_of_isCompactOperator_fnL Ω a ha
     (SobolevEuclideanZero.isCompactOperator_fnL ENNReal.ofNat_ne_top hΩ)
 
-/-- **[brezis2011functional] Theorem 9.23, first half.** Let `Ω` be an open set of finite
-measure (the book: bounded), `A`, `a₁`, `a₀` be `L^∞(Ω)` coefficients with the ellipticity
-condition (36), `IsUniformlyElliptic Ω A α`, and `a = generalForm Ω A a₁ a₀` the form (41). The
-space `N = {u ∈ H^1_0(Ω) | ∀ v ∈ H^1_0(Ω), a(u, v) = 0}` of weak solutions of the homogeneous
-problem (40) (`Elliptic.homogeneousKernel`) is finite-dimensional. Proof: with `λ` from Gårding's
-inequality (`Elliptic.generalForm_garding`), `T = solutionOperator` of the coercive shifted form
-is compact (`Elliptic.solutionOperator_isCompactOperator`), and `u ∈ N` iff `u = λ T u` in
-`L²(Ω)`, so `N ≅ ker (1 − λ T)` is finite-dimensional by the Riesz theory
-(`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`). -/
+/-- Let $\Omega$ be an open set of finite measure, let $a_{ij}, a_i, a_0 \in L^\infty(\Omega)$ with
+$a_{ij}$ uniformly elliptic with constant $\alpha$, and let $a$ be the general form (41). Then
+the space
+$$N = \{u \in H^1_0(\Omega) : a(u, v) = 0 \text{ for all } v \in H^1_0(\Omega)\}$$
+of weak solutions of the homogeneous problem (40) is finite-dimensional. This is the first half
+of **Theorem 9.23** of [brezis2011functional].
+
+The source assumes $\Omega$ bounded. In the proof, Gårding's inequality
+(`Elliptic.generalForm_garding`) gives a $\lambda$ for which the shifted form is coercive on
+$H^1_0(\Omega)$; its solution operator $T$ is compact
+(`Elliptic.solutionOperator_isCompactOperator`), and $u \in N$ if and only if $u = \lambda T u$
+in $L^2(\Omega)$. So $N$ is isomorphic to $\ker (I - \lambda T)$, which is finite-dimensional by
+the Riesz theory (`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`). -/
 theorem finiteDimensional_ker_general (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     (hA : IsUniformlyElliptic Ω A α) :
     FiniteDimensional ℝ (homogeneousKernel Ω (generalForm Ω A a₁ a₀)) :=
   finiteDimensional_homogeneousKernel_of_isCompactOperator Ω _
     (generalForm_garding_restrict_isCoercive Ω hA) (solutionOperator_isCompactOperator Ω hΩ _ _)
 
-/-- **[brezis2011functional] Theorem 9.23, second half (the Fredholm alternative for (40)).**
-Under the hypotheses of `Elliptic.finiteDimensional_ker_general` there is a finite-dimensional
-subspace `F ⊆ L²(Ω)` with `dim F = dim N` (`N` the space of homogeneous solutions) such that,
-for every `f ∈ L²(Ω)`, the weak problem `a(u, v) = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` has a solution
-`u ∈ H^1_0(Ω)` iff `f ⊥ F`: `F = ker (1 − λ T†)`, by the Hilbert-space Fredholm alternative
+/-- **The Fredholm alternative** for (40). Let $\Omega$ be an open set of finite measure, let
+$a_{ij}, a_i, a_0 \in L^\infty(\Omega)$ with $a_{ij}$ uniformly elliptic with constant $\alpha$,
+and let $a$ be the general form (41). Then there is a finite-dimensional subspace
+$F \subseteq L^2(\Omega)$ with $\dim F = \dim N$, where $N$ is the space of homogeneous
+solutions, such that for every $f \in L^2(\Omega)$ the weak problem $a(u, v) = \int_\Omega f v$
+for all $v \in H^1_0(\Omega)$ has a solution $u \in H^1_0(\Omega)$ if and only if $f$ is
+orthogonal to $F$ in $L^2(\Omega)$. This is the second half of Theorem 9.23 of
+[brezis2011functional].
+
+The source assumes $\Omega$ bounded and argues through its Theorem 6.6. Here
+$F = \ker (I - \lambda T^*)$ for the compact solution operator $T$ of the shifted form, by the
+Fredholm alternative in Hilbert space
 (`IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint`,
-`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`) for the compact solution operator `T`
-of the shifted form; the book routes through its Theorem 6.6. -/
+`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`). -/
 theorem exists_orthogonality_iff_exists_solution
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hA : IsUniformlyElliptic Ω A α) :
     ∃ F : Submodule ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))),
@@ -2435,14 +2802,18 @@ theorem exists_orthogonality_iff_exists_solution
   exists_orthogonality_iff_exists_solution_of_isCompactOperator Ω _
     (generalForm_garding_restrict_isCoercive Ω hA) (solutionOperator_isCompactOperator Ω hΩ _ _)
 
-/-- **[brezis2011functional] Chapter 9, Remark 23, first clause**: under the hypotheses of
-Theorem 9.23, if the homogeneous problem (40) has only the zero solution
-(`homogeneousKernel Ω a = ⊥`), then for every `f ∈ L²(Ω)` the weak problem (40) has exactly one
-solution `u ∈ H^1_0(Ω)`. Existence is the Fredholm alternative
-(`IsCompactOperator.injective_iff_surjective_smul_one_sub` for `1 − λ T`), uniqueness that the
-difference of two solutions is a homogeneous solution. The remark's second clause — that
-`a₀ ≥ 0` alone forces the trivial kernel — is the general case of Proposition 9.29, cited from
-Gilbarg–Trudinger, and is not proved here. -/
+/-- Let $\Omega$ be an open set of finite measure, let $a_{ij}, a_i, a_0 \in L^\infty(\Omega)$ with
+$a_{ij}$ uniformly elliptic with constant $\alpha$, and let $a$ be the general form (41). If the
+homogeneous problem (40) has only the zero solution, then for every $f \in L^2(\Omega)$ there is
+exactly one $u \in H^1_0(\Omega)$ with $a(u, v) = \int_\Omega f v$ for all
+$v \in H^1_0(\Omega)$. This is the first clause of Remark 23 in Chapter 9 of
+[brezis2011functional].
+
+The source assumes $\Omega$ bounded. Existence is the Fredholm alternative
+(`IsCompactOperator.injective_iff_surjective_smul_one_sub` for $I - \lambda T$), and uniqueness
+holds because the difference of two solutions is a homogeneous solution. The second clause of
+the remark, that $a_0 \ge 0$ alone forces the trivial kernel, is the general case of Proposition
+9.29, which the source cites from Gilbarg and Trudinger; it is not proved here. -/
 theorem existsUnique_of_ker_eq_bot (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     (hA : IsUniformlyElliptic Ω A α) (h : homogeneousKernel Ω (generalForm Ω A a₁ a₀) = ⊥)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :

@@ -9,38 +9,61 @@ import Mathlib.Geometry.Euclidean.Triangle
 /-!
 # The shape of a triangle: diameter, inradius and angles
 
-The ratio `h_K / ρ_K` of the diameter of a triangle to the diameter of its inscribed circle is
-bounded exactly when the angles of the triangle are bounded away from `0`. This file proves the
-two quantitative halves of that equivalence, for a triangle in an arbitrary Euclidean space.
+Let $K$ be a triangle with vertices $p_0, p_1, p_2$ in a Euclidean affine space of any dimension,
+with the indices read modulo $3$. Write $\theta_i$ for the angle of $K$ at $p_i$, $h_i$ for the
+height of $K$ at $p_i$ (the distance from $p_i$ to the line through the other two vertices), $r_K$
+for the inradius, and $h_K = \operatorname{diam} K$ for the diameter, which is the longest side. In
+the finite element method the shape of $K$ is measured by the ratio $h_K / \rho_K$, where
+$\rho_K = 2 r_K$ is the diameter of the inscribed circle. This ratio is bounded exactly when the
+angles of $K$ are bounded away from $0$. This module proves the two quantitative halves of that
+equivalence: $r_K \le h_K \sin\theta_i$ for every $i$, and $h_K \sin^2\alpha \le 3 r_K$ when every
+angle is at least $\alpha \in (0, \pi/2]$.
 
-The engine is one identity, `Affine.Simplex.height_eq_dist_mul_sin_angle`: the height of a simplex
-at a vertex `i` is `dist (p i) (p k) sin θ_k` for any other vertex `k`, `θ_k` the angle there. Two
-consequences of it carry everything:
-
-* the two heights at the ends of a side satisfy `h_i sin θ_i = h_j sin θ_j`, so no two heights of a
-  triangle can differ by more than a factor `1 / sin θ_min`;
-* the height at an end of the *longest* side is `diam · sin θ`, so some height is at least
-  `diam sin θ_min`.
-
-Together with `1 / ρ = ∑_i 1 / h_i`, which is Mathlib's incenter formula
-`Affine.Simplex.inradius_eq_abs_inv_sum` read through `Affine.Simplex.excenterWeightsUnnorm`, these
-bound the inradius above and below by multiples of the diameter.
+For a simplex of any dimension $n \ge 1$, the module also proves $1/r = \sum_i 1/h_i$ and the two
+inequalities that follow from it: $r \le h_i$ for every $i$, and $m \le (n + 1) r$ when every height
+is at least $m > 0$.
 
 ## Main definitions
 
-* `Affine.Simplex.triangleAngle s i` — the angle of the triangle `s` at its `i`-th vertex.
+* `Affine.Simplex.triangleAngle`: the angle $\theta_i = \angle p_{i+1} p_i p_{i+2}$ of a triangle at
+  its vertex $p_i$.
 
 ## Main results
 
-* `Affine.Simplex.inv_inradius_eq_sum_inv_height` — `1 / ρ = ∑_i 1 / h_i`, with
-  `Affine.Simplex.inradius_le_height` and `Affine.Simplex.le_card_mul_inradius` the two
-  inequalities it gives.
-* `Affine.Simplex.height_eq_dist_mul_sin_angle` — the height at a vertex through the sine of an
-  angle at another one.
-* `Affine.Simplex.inradius_le_diam_mul_sin_triangleAngle` — `ρ ≤ h_K sin θ_i` for every angle,
-  the half that turns a bound on `h_K / ρ_K` into a bound on the angles.
-* `Affine.Simplex.diam_mul_sin_sq_le` — `h_K sin² α ≤ 3 ρ`, the half that turns a bound on the
-  angles into a bound on `h_K / ρ_K`.
+* `Affine.Simplex.inv_inradius_eq_sum_inv_height`: for a simplex, $1/r = \sum_i 1/h_i$.
+* `Affine.Simplex.inradius_le_height`: for a simplex, $r \le h_i$ for every $i$.
+* `Affine.Simplex.le_card_mul_inradius`: for an $n$-simplex whose heights are all at least $m > 0$,
+  $m \le (n + 1) r$.
+* `Affine.Simplex.height_eq_dist_mul_sin_angle`: in a triangle with vertices $p_i, p_j, p_k$,
+  $h_i = |p_i p_k| \sin \angle p_j p_k p_i$.
+* `Affine.Simplex.height_mul_sin_triangleAngle_eq`: in a triangle,
+  $h_i \sin\theta_i = h_j \sin\theta_j$ for all $i$ and $j$.
+* `Affine.Simplex.exists_dist_eq_diam`: the diameter of a triangle is the length of one of its
+  sides.
+* `Affine.Simplex.inradius_le_diam_mul_sin_triangleAngle`: $r_K \le h_K \sin\theta_i$ for every
+  angle $\theta_i$.
+* `Affine.Simplex.diam_mul_sin_sq_le`: if every angle is at least $\alpha \in (0, \pi/2]$, then
+  $h_K \sin^2\alpha \le 3 r_K$.
+
+## Proof outline
+
+Everything rests on the identity $h_i = |p_i p_k| \sin \angle p_j p_k p_i$, where $j$ and $k$ are
+the other two vertices. It has two consequences. First, the heights at the two ends of a side
+satisfy $h_i \sin\theta_i = h_j \sin\theta_j$, so no two heights differ by more than a factor
+$1/\sin\theta_{\min}$. Second, the height at an end of the longest side is $h_K \sin\theta$ for the
+angle $\theta$ at the other end of that side, so some height is at least $h_K \sin\theta_{\min}$.
+Together with $1/r = \sum_i 1/h_i$, these bound the inradius above and below by multiples of the
+diameter.
+
+## Implementation notes
+
+* The triangle is an `Affine.Simplex ℝ P 2`. The height $h_i$ is Mathlib's `Affine.Simplex.height`,
+  the inradius $r$ is `Affine.Simplex.inradius`, and the diameter $h_K$ is
+  `Metric.diam (Set.range s.points)`.
+* The formula $1/r = \sum_i 1/h_i$ is Mathlib's `Affine.Simplex.inradius_eq_abs_inv_sum`, with the
+  weights `Affine.Simplex.excenterWeightsUnnorm` written out.
+* The results are stated with the inradius $r_K$, not with the diameter $\rho_K = 2 r_K$ of the
+  inscribed circle.
 -/
 
 open EuclideanGeometry Finset
@@ -49,7 +72,8 @@ open scoped Real
 
 namespace Real
 
-/-- On `[α, π − α]` the sine is at least `sin α`. -/
+/-- Let $0 < \alpha \le \pi/2$. If $\alpha \le \theta \le \pi - \alpha$, then
+$\sin\alpha \le \sin\theta$. -/
 theorem le_sin_of_le_of_le_pi_sub {α θ : ℝ} (hα : 0 < α) (hα2 : α ≤ π / 2) (h1 : α ≤ θ)
     (h2 : θ ≤ π - α) : Real.sin α ≤ Real.sin θ := by
   rcases le_total θ (π / 2) with h | h
@@ -66,8 +90,13 @@ variable {V P : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [MetricS
 
 /-! ### The inradius against the heights -/
 
-/-- **The reciprocal of the inradius is the sum of the reciprocals of the heights.** This is
-Mathlib's `inradius_eq_abs_inv_sum` with the weights `excenterWeightsUnnorm ∅` spelled out. -/
+/-- Let $s$ be an $n$-simplex with $n \ge 1$ in a Euclidean affine space, with heights
+$h_0, \dots, h_n$ and inradius $r$. Then
+$$\frac{1}{r} = \sum_{i=0}^{n} \frac{1}{h_i}.$$
+
+Here $h_i$ is `Affine.Simplex.height`, the distance from the vertex $p_i$ to the affine span of
+the other vertices. The proof is Mathlib's `Affine.Simplex.inradius_eq_abs_inv_sum`, with the
+weights `Affine.Simplex.excenterWeightsUnnorm ∅` written out. -/
 theorem inv_inradius_eq_sum_inv_height {n : ℕ} [NeZero n] (s : Simplex ℝ P n) :
     (s.inradius)⁻¹ = ∑ i, (s.height i)⁻¹ := by
   have hpos : 0 < ∑ i, (s.height i)⁻¹ :=
@@ -76,7 +105,8 @@ theorem inv_inradius_eq_sum_inv_height {n : ℕ} [NeZero n] (s : Simplex ℝ P n
     Finset.sum_congr rfl fun i _ => by simp [Affine.Simplex.excenterWeightsUnnorm]
   rw [s.inradius_eq_abs_inv_sum, hw, abs_of_pos (inv_pos.2 hpos), inv_inv]
 
-/-- The inradius is at most every height. -/
+/-- Let $s$ be an $n$-simplex with $n \ge 1$ in a Euclidean affine space, with heights
+$h_0, \dots, h_n$ and inradius $r$. Then $r \le h_i$ for every $i$. -/
 theorem inradius_le_height {n : ℕ} [NeZero n] (s : Simplex ℝ P n) (i : Fin (n + 1)) :
     s.inradius ≤ s.height i := by
   have hle : (s.height i)⁻¹ ≤ (s.inradius)⁻¹ := by
@@ -84,8 +114,9 @@ theorem inradius_le_height {n : ℕ} [NeZero n] (s : Simplex ℝ P n) (i : Fin (
     exact Finset.single_le_sum (fun j _ => (inv_pos.2 (s.height_pos j)).le) (Finset.mem_univ i)
   exact (inv_le_inv₀ (s.height_pos i) s.inradius_pos).1 hle
 
-/-- A lower bound on every height gives a lower bound on the inradius: `ρ ≥ m / (n + 1)` when every
-height is at least `m`. -/
+/-- Let $s$ be an $n$-simplex with $n \ge 1$ in a Euclidean affine space, with heights
+$h_0, \dots, h_n$ and inradius $r$, and let $m > 0$. If $m \le h_i$ for every $i$, then
+$m \le (n + 1) r$. -/
 theorem le_card_mul_inradius {n : ℕ} [NeZero n] (s : Simplex ℝ P n) {m : ℝ} (hm : 0 < m)
     (h : ∀ i, m ≤ s.height i) : m ≤ (n + 1) * s.inradius := by
   have hr := s.inradius_pos
@@ -102,10 +133,15 @@ theorem le_card_mul_inradius {n : ℕ} [NeZero n] (s : Simplex ℝ P n) {m : ℝ
 
 /-! ### The height of a triangle through an angle -/
 
-/-- **The height of a simplex at a vertex through an angle at another vertex**: with `j` and `k` the
-two other vertices of a triangle, `h_i = dist (p i) (p k) sin (∠ p j p k p i)`. The foot of the
-altitude lies on the line `p j p k`, so the angle it makes at `p k` with `p i` is the angle of the
-triangle there or its supplement, and the two have the same sine. -/
+/-- Let $s$ be a triangle in a Euclidean affine space, and let $i, j, k$ be its three vertex
+indices, so that $j$ and $k$ are the two indices other than $i$. Then the height of $s$ at $p_i$
+is
+$$h_i = |p_i p_k| \sin \angle p_j p_k p_i.$$
+
+The foot of the altitude from $p_i$ lies on the line through $p_j$ and $p_k$. The angle at $p_k$
+between this line and $p_i$ is therefore the angle of the triangle at $p_k$ or its supplement,
+and the two have the same sine. In Lean the indices are given by $i \ne j$, $i \ne k$ and
+$\{i\}^c = \{j, k\}$. -/
 theorem height_eq_dist_mul_sin_angle (s : Simplex ℝ P 2) {i j k : Fin 3} (hij : i ≠ j)
     (hik : i ≠ k) (hcompl : ({i}ᶜ : Set (Fin 3)) = {j, k}) :
     s.height i
@@ -148,29 +184,32 @@ theorem height_eq_dist_mul_sin_angle (s : Simplex ℝ P 2) {i j k : Fin 3} (hij 
 
 /-! ### The angles of a triangle -/
 
-/-- The angle of the triangle `s` at its `i`-th vertex. -/
+/-- The **angle** $\theta_i = \angle p_{i+1} p_i p_{i+2}$ of a triangle $s$ with vertices
+$p_0, p_1, p_2$ at its vertex $p_i$, with the indices read modulo $3$.
+
+It is the unoriented angle `EuclideanGeometry.angle`, with values in $[0, \pi]$. -/
 noncomputable def triangleAngle (s : Simplex ℝ P 2) (i : Fin 3) : ℝ :=
   ∠ (s.points (i + 1)) (s.points i) (s.points (i + 2))
 
-/-- An angle of a triangle is nonnegative. -/
+/-- An angle of a triangle is nonnegative: $0 \le \theta_i$. -/
 theorem triangleAngle_nonneg (s : Simplex ℝ P 2) (i : Fin 3) : 0 ≤ s.triangleAngle i :=
   EuclideanGeometry.angle_nonneg _ _ _
 
-/-- An angle of a triangle is at most `π`. -/
+/-- An angle of a triangle is at most $\pi$: $\theta_i \le \pi$. -/
 theorem triangleAngle_le_pi (s : Simplex ℝ P 2) (i : Fin 3) : s.triangleAngle i ≤ π :=
   EuclideanGeometry.angle_le_pi _ _ _
 
-/-- The sine of an angle of a triangle is nonnegative. -/
+/-- The sine of an angle of a triangle is nonnegative: $0 \le \sin\theta_i$. -/
 theorem sin_triangleAngle_nonneg (s : Simplex ℝ P 2) (i : Fin 3) :
     0 ≤ Real.sin (s.triangleAngle i) :=
   Real.sin_nonneg_of_nonneg_of_le_pi (s.triangleAngle_nonneg i) (s.triangleAngle_le_pi i)
 
-/-- The sine of an angle of a triangle is at most one. -/
+/-- The sine of an angle of a triangle is at most $1$: $\sin\theta_i \le 1$. -/
 theorem sin_triangleAngle_le_one (s : Simplex ℝ P 2) (i : Fin 3) :
     Real.sin (s.triangleAngle i) ≤ 1 :=
   Real.sin_le_one _
 
-/-- The angles of a triangle sum to `π`. -/
+/-- The angles of a triangle sum to $\pi$: $\theta_0 + \theta_1 + \theta_2 = \pi$. -/
 theorem sum_triangleAngle (s : Simplex ℝ P 2) :
     s.triangleAngle 0 + s.triangleAngle 1 + s.triangleAngle 2 = π := by
   have hne : s.points 0 ≠ s.points 1 := fun h =>
@@ -185,19 +224,22 @@ theorem sum_triangleAngle (s : Simplex ℝ P 2) :
     EuclideanGeometry.angle_comm (s.points 2) (s.points 1) (s.points 0)]
   linarith [h]
 
-/-- Index arithmetic on the three vertices: `i + 1 + 1 = i + 2`. -/
+/-- In $\mathbb{Z}/3$, $i + 1 + 1 = i + 2$ for every index $i$ of `Fin 3`. -/
 theorem finAdd_one_one (i : Fin 3) : i + 1 + 1 = i + 2 := by revert i; decide
 
-/-- Index arithmetic on the three vertices: `i + 1 + 2 = i`. -/
+/-- In $\mathbb{Z}/3$, $i + 1 + 2 = i$ for every index $i$ of `Fin 3`. -/
 theorem finAdd_one_two (i : Fin 3) : i + 1 + 2 = i := by revert i; decide
 
-/-- Index arithmetic on the three vertices: `i + 2 + 1 = i`. -/
+/-- In $\mathbb{Z}/3$, $i + 2 + 1 = i$ for every index $i$ of `Fin 3`. -/
 theorem finAdd_two_one (i : Fin 3) : i + 2 + 1 = i := by revert i; decide
 
-/-- Index arithmetic on the three vertices: `i + 2 + 2 = i + 1`. -/
+/-- In $\mathbb{Z}/3$, $i + 2 + 2 = i + 1$ for every index $i$ of `Fin 3`. -/
 theorem finAdd_two_two (i : Fin 3) : i + 2 + 2 = i + 1 := by revert i; decide
 
-/-- The height at a vertex of a triangle, through the angle at the next vertex. -/
+/-- In a triangle with vertices $p_0, p_1, p_2$, the height at $p_i$ is given by the angle at the
+next vertex:
+$$h_i = |p_i p_{i+1}| \sin\theta_{i+1}.$$
+-/
 theorem height_eq_dist_mul_sin_triangleAngle_succ (s : Simplex ℝ P 2) (i : Fin 3) :
     s.height i = dist (s.points i) (s.points (i + 1)) * Real.sin (s.triangleAngle (i + 1)) := by
   have hcompl : ({i}ᶜ : Set (Fin 3)) = {i + 2, i + 1} := by
@@ -206,7 +248,10 @@ theorem height_eq_dist_mul_sin_triangleAngle_succ (s : Simplex ℝ P 2) (i : Fin
     (by fin_cases i <;> decide) (by fin_cases i <;> decide) hcompl
   rw [h, triangleAngle, finAdd_one_one, finAdd_one_two]
 
-/-- The height at a vertex of a triangle, through the angle at the previous vertex. -/
+/-- In a triangle with vertices $p_0, p_1, p_2$, the height at $p_i$ is given by the angle at the
+previous vertex:
+$$h_i = |p_i p_{i+2}| \sin\theta_{i+2}.$$
+-/
 theorem height_eq_dist_mul_sin_triangleAngle_succ_succ (s : Simplex ℝ P 2) (i : Fin 3) :
     s.height i = dist (s.points i) (s.points (i + 2)) * Real.sin (s.triangleAngle (i + 2)) := by
   have hcompl : ({i}ᶜ : Set (Fin 3)) = {i + 1, i + 2} := by
@@ -216,7 +261,10 @@ theorem height_eq_dist_mul_sin_triangleAngle_succ_succ (s : Simplex ℝ P 2) (i 
   rw [h, triangleAngle, finAdd_two_one, finAdd_two_two, EuclideanGeometry.angle_comm]
 
 /-- **The heights at the two ends of a side are inversely proportional to the sines of the angles
-there.** Both products are `dist (p i) (p (i + 1)) sin θ_i sin θ_{i+1}`. -/
+there.** In a triangle with vertices $p_0, p_1, p_2$, for every $i$,
+$$h_i \sin\theta_i = h_{i+1} \sin\theta_{i+1}.$$
+
+Both products equal $|p_i p_{i+1}| \sin\theta_i \sin\theta_{i+1}$. -/
 theorem height_mul_sin_triangleAngle_comm (s : Simplex ℝ P 2) (i : Fin 3) :
     s.height i * Real.sin (s.triangleAngle i)
       = s.height (i + 1) * Real.sin (s.triangleAngle (i + 1)) := by
@@ -225,7 +273,9 @@ theorem height_mul_sin_triangleAngle_comm (s : Simplex ℝ P 2) (i : Fin 3) :
     dist_comm (s.points (i + 1)) (s.points i)]
   ring
 
-/-- Any two heights of a triangle satisfy `h_i sin θ_i = h_j sin θ_j`. -/
+/-- In a triangle with vertices $p_0, p_1, p_2$, any two heights satisfy
+$$h_i \sin\theta_i = h_j \sin\theta_j.$$
+-/
 theorem height_mul_sin_triangleAngle_eq (s : Simplex ℝ P 2) (i j : Fin 3) :
     s.height i * Real.sin (s.triangleAngle i)
       = s.height j * Real.sin (s.triangleAngle j) := by
@@ -244,18 +294,20 @@ theorem height_mul_sin_triangleAngle_eq (s : Simplex ℝ P 2) (i j : Fin 3) :
 
 /-! ### The diameter of a triangle -/
 
-/-- A side of a triangle is at most its diameter. -/
+/-- Every side of a triangle is at most its diameter: $|p_i p_j| \le \operatorname{diam}\{p_0, p_1,
+p_2\}$. -/
 theorem dist_le_diam (s : Simplex ℝ P 2) (i j : Fin 3) :
     dist (s.points i) (s.points j) ≤ Metric.diam (Set.range s.points) :=
   Metric.dist_le_diam_of_mem (Set.finite_range s.points).isBounded ⟨i, rfl⟩ ⟨j, rfl⟩
 
-/-- A triangle has positive diameter: its vertices are distinct. -/
+/-- A triangle has positive diameter, because its vertices are distinct. -/
 theorem diam_pos (s : Simplex ℝ P 2) : 0 < Metric.diam (Set.range s.points) := by
   refine lt_of_lt_of_le ?_ (s.dist_le_diam 0 1)
   refine dist_pos.2 fun h => ?_
   exact (by decide : (0 : Fin 3) ≠ 1) (s.independent.injective h)
 
-/-- The diameter of a triangle is one of its three sides. -/
+/-- The diameter of a triangle is the length of one of its sides: there is an $i$ with $|p_i
+p_{i+1}| = \operatorname{diam}\{p_0, p_1, p_2\}$. -/
 theorem exists_dist_eq_diam (s : Simplex ℝ P 2) :
     ∃ i : Fin 3, dist (s.points i) (s.points (i + 1)) = Metric.diam (Set.range s.points) := by
   set M := max (dist (s.points 0) (s.points 1))
@@ -294,8 +346,13 @@ theorem exists_dist_eq_diam (s : Simplex ℝ P 2) :
 
 /-! ### The two halves of the shape equivalence -/
 
-/-- **The inradius is at most the diameter times the sine of every angle.** Bounding the ratio
-`h_K / ρ_K` therefore bounds every `sin θ_i` from below. -/
+/-- **The inradius is at most the diameter times the sine of every angle.** Let $K$ be a triangle
+with diameter $h_K$, inradius $r_K$ and angles $\theta_0, \theta_1, \theta_2$. Then for every
+$i$,
+$$r_K \le h_K \sin\theta_i.$$
+
+Thus an upper bound on the ratio $h_K / r_K$ gives a lower bound on every $\sin\theta_i$. The
+proof bounds $r_K$ by the height $h_{i+2} = |p_{i+2} p_i| \sin\theta_i$. -/
 theorem inradius_le_diam_mul_sin_triangleAngle (s : Simplex ℝ P 2) (i : Fin 3) :
     s.inradius ≤ Metric.diam (Set.range s.points) * Real.sin (s.triangleAngle i) := by
   have h := s.height_eq_dist_mul_sin_triangleAngle_succ (i + 2)
@@ -305,8 +362,14 @@ theorem inradius_le_diam_mul_sin_triangleAngle (s : Simplex ℝ P 2) (i : Fin 3)
     _ ≤ Metric.diam (Set.range s.points) * Real.sin (s.triangleAngle i) :=
         mul_le_mul_of_nonneg_right (s.dist_le_diam _ _) (s.sin_triangleAngle_nonneg i)
 
-/-- **A lower bound on the angles bounds the ratio `h_K / ρ_K`**: if every angle of a triangle is at
-least `α ∈ (0, π/2]`, then `h_K sin² α ≤ 3 ρ_K`. -/
+/-- **A lower bound on the angles bounds the ratio of the diameter to the inradius.** Let $K$ be a
+triangle with diameter $h_K$ and inradius $r_K$, and let $0 < \alpha \le \pi/2$. If every angle
+of $K$ is at least $\alpha$, then
+$$h_K \sin^2\alpha \le 3 r_K.$$
+
+The height at an end of the longest side is at least $h_K \sin\alpha$. By
+`Affine.Simplex.height_mul_sin_triangleAngle_eq`, every height is then at least
+$h_K \sin^2\alpha$, and `Affine.Simplex.le_card_mul_inradius` gives the bound. -/
 theorem diam_mul_sin_sq_le (s : Simplex ℝ P 2) {α : ℝ} (hα : 0 < α) (hα2 : α ≤ π / 2)
     (h : ∀ i, α ≤ s.triangleAngle i) :
     Metric.diam (Set.range s.points) * Real.sin α ^ 2 ≤ 3 * s.inradius := by

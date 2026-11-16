@@ -17,46 +17,63 @@ import Mathlib.Topology.Order.Compact
 /-!
 # Kernel polynomials
 
-The least-squares counterpart of the Chebyshev min–max problem of
-`Numlib/RingTheory/Polynomial/ChebyshevMinimax`. Both minimize over `{p : deg p ≤ k, p γ = 1}`;
-Chebyshev minimizes the sup norm on an interval, the kernel polynomial minimizes the quadratic form
-of a symmetric bilinear form `B` on `ℝ[X]`.
+Let $B$ be a bilinear form on $\mathbb{R}[X]$, let $\gamma \in \mathbb{R}$ and $k \in \mathbb{N}$,
+and let $q_0, q_1, \dots$ be polynomials with $\deg q_i = i$ that are orthonormal for $B$, so that
+$q_0, \dots, q_k$ is a basis of the polynomials of degree at most $k$. The **kernel polynomial**
+$$K_k(\gamma) = \Bigl(\sum_{i=0}^{k} q_i(\gamma)^2\Bigr)^{-1} \sum_{i=0}^{k} q_i(\gamma)\, q_i$$
+minimizes $B(p, p)$ over the polynomials $p$ with $\deg p \le k$ and $p(\gamma) = 1$, and the
+minimum value is $\bigl(\sum_{i \le k} q_i(\gamma)^2\bigr)^{-1}$. This is the least-squares
+counterpart of the Chebyshev min–max problem of `Numlib.RingTheory.Polynomial.ChebyshevMinimax`:
+both problems minimize over the same set of polynomials, but the Chebyshev problem minimizes the
+supremum norm on an interval. The presentation follows [saad2003iterative], §12.3.3.
 
-Everything is stated for a family `q : ℕ → ℝ[X]` with `deg (q i) = i` which is orthonormal for `B`
-(`LinearMap.BilinForm.IsOrthonormal`), so that `q 0, …, q k` is a basis of the polynomials of
-degree at most `k`. No measure theory appears: the weighted form `B p r = ∫ p r w` is one
-instance, but nothing in the proofs uses the integral, and the discrete forms arising from a
-spectral measure are covered by the same statements.
-Positive semidefiniteness is not assumed: on the polynomials of degree at most `k` it is a
-consequence of orthonormality (`Polynomial.bilinForm_self_nonneg_of_degree_le`).
+The mathematical content is the Cauchy–Schwarz inequality. In an inner product space, the least norm
+of a point $x$ on the affine hyperplane $\langle y, x \rangle = 1$ is $1 / \|y\|$, attained at
+$x = \|y\|^{-2} y$. With $y$ the vector of values $q_i(\gamma)$, this is the kernel polynomial
+formula. The module also proves the normal equations of the problem at $\gamma = 0$, and a geometric
+decay of the minimum value for a form supported on an interval $[\alpha, \beta]$ with
+$0 < \alpha < \beta$.
 
-The mathematical content is Cauchy–Schwarz: minimizing `‖x‖` over the affine hyperplane `{⟪y, x⟫ =
-1}` of an inner product space gives `x = ‖y‖⁻² • y` and the value `1 / ‖y‖`
-(`isLeast_of_inner_eq_one`). With `y` the vector of values `q i γ`, that is the kernel polynomial
-formula.
+## Main definitions
+
+* `LinearMap.BilinForm.IsOrthonormal`: a family $(v_i)$ with $B(v_i, v_j) = 1$ for $i = j$ and $0$
+  otherwise.
+* `Polynomial.kernelPolynomial`: the kernel polynomial $K_k(\gamma)$ of a family $(q_i)$.
 
 ## Main results
 
-* `isLeast_of_inner_eq_one`: the minimum-norm point of an affine hyperplane.
-* `LinearMap.BilinForm.IsOrthonormal`: `B (v i) (v j) = if i = j then 1 else 0`, and on the span
-  of such a family `B` is the dot product of the coefficients
-  (`LinearMap.BilinForm.IsOrthonormal.apply_sum_smul_sum_smul`).
-* `Polynomial.kernelPolynomial`: `(∑_{i ≤ k} q i γ ^ 2)⁻¹ • ∑_{i ≤ k} q i γ • q i`.
-* `Polynomial.bilinForm_kernelPolynomial_le`: it minimizes `B p p` over the admissible `p`.
-* `Polynomial.bilinForm_kernelPolynomial_mul_X`: the residual polynomials are orthogonal for the
-  form `(p, r) ↦ B (X * p) r`.
-* `Polynomial.bilinForm_kernelPolynomial_le_pow`: geometric decay of the minimum value for a form
-  supported on `[α, β]` with `0 < α < β`.
+* `isLeast_of_inner_eq_one`: the least norm on the affine hyperplane $\langle y, x \rangle = 1$ is
+  $1 / \|y\|$.
+* `LinearMap.BilinForm.IsOrthonormal.apply_sum_smul_sum_smul`: on the span of an orthonormal family,
+  $B$ is the dot product of the coefficients.
+* `Polynomial.bilinForm_kernelPolynomial_le`: the kernel polynomial minimizes $B(p, p)$ over the
+  polynomials of degree at most $k$ with value $1$ at $\gamma$, with minimum value
+  $\bigl(\sum_{i \le k} q_i(\gamma)^2\bigr)^{-1}$.
+* `Polynomial.bilinForm_kernelPolynomial_mul_X`: for symmetric $B$, $B(X p, K_k(0)) = 0$ for every
+  $p$ of degree less than $k$.
+* `Polynomial.bilinForm_kernelPolynomial_le_pow`: for a form supported on $[\alpha, \beta]$ with
+  $0 < \alpha < \beta$, $B(K_k(0), K_k(0)) \le \bigl((\beta - \alpha)/(\beta + \alpha)\bigr)^{2k}
+  B(1, 1)$.
 
-The material follows [saad2003iterative], §12.3.3. [saad2003iterative] explicit Jacobi-weight
-formula and the Gamma-function evaluation of the minimum are not here: they need Jacobi polynomials.
+## Implementation notes
+
+* No measure theory appears. The weighted form $B(p, r) = \int p r w$ is one instance, but the
+  proofs do not use the integral, so the discrete forms that come from a spectral measure are
+  covered by the same statements.
+* Positive semidefiniteness of $B$ is not assumed. On the polynomials of degree at most $k$, it
+  follows from the orthonormality of $(q_i)$ (`Polynomial.bilinForm_self_nonneg_of_degree_le`).
+* The explicit formula of [saad2003iterative] for Jacobi weights and the evaluation of the minimum
+  by the Gamma function are not here, because they need Jacobi polynomials.
 -/
 
 open Polynomial
 
-/-- The minimum-norm point of the affine hyperplane `{x : ⟪y, x⟫ = 1}` of an inner product space:
-the least norm of such an `x` is `1 / ‖y‖`, attained at `x = ‖y‖⁻² • y`. Cauchy–Schwarz gives the
-bound and a direct computation gives the witness. -/
+/-- The **least norm on an affine hyperplane**. Let $E$ be an inner product space over $\mathbb{R}$
+or $\mathbb{C}$ and let $y \in E$ be nonzero. Then $1 / \|y\|$ is the least element of the set
+of norms $\|x\|$ of the points $x \in E$ with $\langle y, x \rangle = 1$.
+
+The Cauchy–Schwarz inequality gives the lower bound, and the point $x = \|y\|^{-2} y$ attains
+it. -/
 theorem isLeast_of_inner_eq_one {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] {y : E} (hy : y ≠ 0) :
     IsLeast {r : ℝ | ∃ x : E, inner 𝕜 y x = 1 ∧ ‖x‖ = r} (1 / ‖y‖) := by
@@ -77,13 +94,16 @@ namespace LinearMap.BilinForm
 
 variable {R M ι : Type*} [CommSemiring R] [AddCommMonoid M] [Module R M] [DecidableEq ι]
 
-/-- A family `v` is **orthonormal** for a bilinear form `B`: `B (v i) (v j)` is `1` for `i = j`
-and `0` otherwise. For the inner product of a real inner product space this is Mathlib's
-`Orthonormal` (`orthonormal_iff_ite`); here `B` need not be positive or symmetric. -/
+/-- A family $(v_i)_{i \in \iota}$ in a module $M$ is **orthonormal** for a bilinear form $B$ on $M$
+if $B(v_i, v_j) = 1$ for $i = j$ and $B(v_i, v_j) = 0$ for $i \neq j$.
+
+For the inner product of a real inner product space, this is Mathlib's `Orthonormal` (see
+`orthonormal_iff_ite`). Here $B$ need not be positive or symmetric. -/
 def IsOrthonormal (B : LinearMap.BilinForm R M) (v : ι → M) : Prop :=
   ∀ i j, B (v i) (v j) = if i = j then 1 else 0
 
-/-- `IsOrthonormal` unfolded. -/
+/-- A family $(v_i)$ is orthonormal for $B$ if and only if $B(v_i, v_j)$ is $1$ for $i = j$ and $0$
+otherwise, for all $i$, $j$. -/
 theorem isOrthonormal_iff {B : LinearMap.BilinForm R M} {v : ι → M} :
     B.IsOrthonormal v ↔ ∀ i j, B (v i) (v j) = if i = j then 1 else 0 :=
   Iff.rfl
@@ -92,11 +112,15 @@ namespace IsOrthonormal
 
 variable {B : LinearMap.BilinForm R M} {v : ι → M}
 
-/-- The values of `B` on an orthonormal family. -/
+/-- If $(v_i)$ is orthonormal for $B$, then $B(v_i, v_j)$ is $1$ for $i = j$ and $0$ otherwise. -/
 theorem apply (h : B.IsOrthonormal v) (i j : ι) : B (v i) (v j) = if i = j then 1 else 0 :=
   h i j
 
-/-- On the span of an orthonormal family the form is the dot product of the coefficients. -/
+/-- On the span of an orthonormal family, the form is the dot product of the coefficients: if
+$(v_i)$ is orthonormal for $B$, then for every finite set $s$ of indices and all coefficients
+$c_i$, $d_i$,
+$$B\Bigl(\sum_{i \in s} c_i v_i, \sum_{j \in s} d_j v_j\Bigr) = \sum_{i \in s} c_i d_i.$$
+-/
 theorem apply_sum_smul_sum_smul (h : B.IsOrthonormal v) (s : Finset ι) (c d : ι → R) :
     B (∑ i ∈ s, c i • v i) (∑ j ∈ s, d j • v j) = ∑ i ∈ s, c i * d i := by
   simp only [map_sum, map_smul, LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul, h.apply,
@@ -109,11 +133,14 @@ end LinearMap.BilinForm
 
 namespace Polynomial
 
-/-! ### A family of polynomials with all degrees spans -/
+/-! ### Spanning by a family with one polynomial of each degree -/
 
-/-- A family of polynomials with `deg (q i) = i` spans the polynomials of degree at most `k`: every
-such `p` is a linear combination of `q 0, …, q k`. This is what makes an orthonormal family of that
-shape a basis of the competitors in the minimization problems below. -/
+/-- Let $K$ be a field and let $q_0, q_1, \dots \in K[X]$ satisfy $\deg q_i = i$ for every $i$. Then
+for every $k \in \mathbb{N}$, every polynomial $p$ of degree at most $k$ is a linear combination
+$p = \sum_{i=0}^{k} c_i q_i$.
+
+Thus an orthonormal family with $\deg q_i = i$ is a basis of the competitors in the minimization
+problems below. -/
 theorem exists_sum_smul_of_degree_le {K : Type*} [Field K] {q : ℕ → K[X]}
     (hdeg : ∀ i, (q i).degree = i) :
     ∀ (k : ℕ) {p : K[X]}, p.degree ≤ k →
@@ -163,8 +190,15 @@ theorem exists_sum_smul_of_degree_le {K : Type*} [Field K] {q : ℕ → K[X]}
 
 /-! ### The kernel polynomial -/
 
-/-- The kernel polynomial `(∑_{i ≤ k} q i γ ^ 2)⁻¹ • ∑_{i ≤ k} q i γ • q i` of a family `q`
-orthonormal for a bilinear form, normalized to `1` at `γ`. It is the least-squares analogue of the
+/-- The **kernel polynomial** of a family $q_0, q_1, \dots \in \mathbb{R}[X]$ at
+$\gamma \in \mathbb{R}$ and of degree $k$:
+$$K_k(\gamma) = \Bigl(\sum_{i=0}^{k} q_i(\gamma)^2\Bigr)^{-1} \sum_{i=0}^{k} q_i(\gamma)\,
+  q_i.$$
+If the normalizing sum $\sum_{i \le k} q_i(\gamma)^2$ is $0$, the inverse is $0$ and
+$K_k(\gamma) = 0$.
+
+For a family that is orthonormal for a bilinear form, $K_k(\gamma)$ is normalized to the value
+$1$ at $\gamma$ (`Polynomial.kernelPolynomial_eval`). It is the least-squares analogue of the
 shifted Chebyshev polynomial `Polynomial.Chebyshev.shifted`. -/
 noncomputable def kernelPolynomial (q : ℕ → ℝ[X]) (γ : ℝ) (k : ℕ) : ℝ[X] :=
   (∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2)⁻¹ •
@@ -174,15 +208,18 @@ section Bilin
 
 variable {B : LinearMap.BilinForm ℝ ℝ[X]} {q : ℕ → ℝ[X]}
 
-/-- Evaluating a combination of the family. -/
+/-- A combination $\sum_{i \le k} c_i q_i$ takes the value $\sum_{i \le k} c_i q_i(\gamma)$ at
+$\gamma$. -/
 private theorem eval_sum_smul (γ : ℝ) (k : ℕ) (c : ℕ → ℝ) :
     (∑ i ∈ Finset.range (k + 1), c i • q i).eval γ =
       ∑ i ∈ Finset.range (k + 1), c i * (q i).eval γ := by
   simp [eval_finsetSum]
 
-/-- On the polynomials of degree at most `k`, orthonormality of `q 0, …, q k` already makes `B`
-positive semidefinite: the quadratic form is a sum of squares. This is why no positivity hypothesis
-on `B` appears anywhere in this file. -/
+/-- If $(q_i)$ is orthonormal for $B$ and $\deg q_i = i$ for every $i$, then $B(p, p) \ge 0$ for
+every polynomial $p$ of degree at most $k$.
+
+The quadratic form on these polynomials is a sum of squares of coefficients. For this reason no
+positivity hypothesis on $B$ appears in this module. -/
 theorem bilinForm_self_nonneg_of_degree_le
     (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} {p : ℝ[X]} (hp : p.degree ≤ k) : 0 ≤ B p p := by
@@ -190,7 +227,8 @@ theorem bilinForm_self_nonneg_of_degree_le
   rw [horth.apply_sum_smul_sum_smul]
   exact Finset.sum_nonneg fun i _ => mul_self_nonneg (c i)
 
-/-- The kernel polynomial written as a combination of `q 0, …, q k`. -/
+/-- The kernel polynomial $K_k(\gamma)$ is the combination of $q_0, \dots, q_k$ with coefficients
+$\bigl(\sum_{j \le k} q_j(\gamma)^2\bigr)^{-1} q_i(\gamma)$. -/
 private theorem kernelPolynomial_eq (q : ℕ → ℝ[X]) (γ : ℝ) (k : ℕ) :
     kernelPolynomial q γ k =
       ∑ i ∈ Finset.range (k + 1),
@@ -211,8 +249,8 @@ private theorem sum_inv_mul_self {S : ℝ} {k : ℕ} {y : ℕ → ℝ}
   rw [Finset.sum_congr rfl fun i _ => (by ring : S⁻¹ * y i * y i = S⁻¹ * y i ^ 2),
     ← Finset.mul_sum, hy, inv_mul_cancel₀ hS]
 
-/-- The kernel polynomial has degree at most `k`, one of the two conditions making it an admissible
-competitor. -/
+/-- If $\deg q_i = i$ for every $i$, then the kernel polynomial $K_k(\gamma)$ has degree at most
+$k$. This is one of the two conditions that make it an admissible competitor. -/
 theorem kernelPolynomial_degree_le (hdeg : ∀ i, (q i).degree = i) (γ : ℝ) (k : ℕ) :
     (kernelPolynomial q γ k).degree ≤ k := by
   refine (degree_smul_le _ _).trans ((degree_sum_le _ _).trans (Finset.sup_le fun i hi => ?_))
@@ -220,17 +258,18 @@ theorem kernelPolynomial_degree_le (hdeg : ∀ i, (q i).degree = i) (γ : ℝ) (
   rw [hdeg i]
   exact_mod_cast Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
 
-/-- The kernel polynomial takes the value `1` at `γ`, the other condition making it admissible. The
-normalizing sum must be nonzero, which says exactly that some `q i` with `i ≤ k` does not vanish at
-`γ`. -/
+/-- If $\sum_{i \le k} q_i(\gamma)^2 \neq 0$, then the kernel polynomial satisfies
+$K_k(\gamma)(\gamma) = 1$. This is the other condition that makes it admissible. The hypothesis
+says that $q_i(\gamma) \neq 0$ for some $i \le k$. -/
 theorem kernelPolynomial_eval {γ : ℝ} {k : ℕ}
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
     (kernelPolynomial q γ k).eval γ = 1 := by
   rw [kernelPolynomial_eq, eval_sum_smul]
   exact sum_inv_mul_self rfl hS
 
-/-- The quadratic form at the kernel polynomial is the reciprocal of the normalizing sum, which is
-[saad2003iterative] minimum value. -/
+/-- If $(q_i)$ is orthonormal for $B$ and $S = \sum_{i \le k} q_i(\gamma)^2 \neq 0$, then the kernel
+polynomial satisfies $B(K_k(\gamma), K_k(\gamma)) = S^{-1}$. This is the minimum value in
+[saad2003iterative], §12.3.3. -/
 theorem bilinForm_kernelPolynomial_self
     (horth : B.IsOrthonormal q) {γ : ℝ} {k : ℕ}
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
@@ -252,10 +291,18 @@ private theorem inner_toLp {n : ℕ} (f g : ℕ → ℝ) :
   rw [PiLp.inner_apply, ← Fin.sum_univ_eq_sum_range (fun i => g i * f i) n]
   exact Finset.sum_congr rfl fun i _ => by simp [RCLike.inner_apply]
 
-/-- [saad2003iterative] optimality claim for the kernel polynomial: among the polynomials of degree
-at most `k` taking the value `1` at `γ`, it minimizes the quadratic form of `B`, and the minimum
-value is `(∑_{i ≤ k} q i γ ^ 2)⁻¹`. Expand a competitor in the orthonormal family and apply
-`isLeast_of_inner_eq_one` to the vector of values `q i γ`. -/
+/-- The **optimality of the kernel polynomial**. Let $B$ be a bilinear form on $\mathbb{R}[X]$, let
+$(q_i)$ be orthonormal for $B$ with $\deg q_i = i$ for every $i$, let $\gamma \in \mathbb{R}$
+and $k \in \mathbb{N}$, and suppose that $S = \sum_{i=0}^{k} q_i(\gamma)^2 \neq 0$. Then
+$S^{-1}$ is the least value of $B(p, p)$ over the polynomials $p$ with $\deg p \le k$ and
+$p(\gamma) = 1$:
+$$\min \{ B(p, p) : \deg p \le k,\ p(\gamma) = 1 \} = \Bigl(\sum_{i=0}^{k}
+  q_i(\gamma)^2\Bigr)^{-1}.$$
+
+This is the optimality claim of [saad2003iterative], §12.3.3. The minimum is attained at
+`Polynomial.kernelPolynomial q γ k` (see `Polynomial.bilinForm_kernelPolynomial_self`). The
+proof expands a competitor in the orthonormal family and applies `isLeast_of_inner_eq_one` to
+the vector of values $q_i(\gamma)$. -/
 theorem bilinForm_kernelPolynomial_le
     (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {γ : ℝ} {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
@@ -288,10 +335,16 @@ theorem bilinForm_kernelPolynomial_le
 
 /-! ### The normal equations -/
 
-/-- The residual polynomials are orthogonal for the shifted form: with `R = kernelPolynomial q 0 k`,
-`B (X * p) R = 0` for every `p` of degree less than `k`. These are the normal equations of the
-least-squares problem, read off the optimality of `R` by varying along the admissible directions `X
-* p`, which are exactly the directions preserving both `deg ≤ k` and the value `1` at `0`. -/
+/-- The **normal equations of the least-squares problem**. Let $B$ be a symmetric bilinear form on
+$\mathbb{R}[X]$, let $(q_i)$ be orthonormal for $B$ with $\deg q_i = i$ for every $i$, let
+$k \in \mathbb{N}$ with $\sum_{i=0}^{k} q_i(0)^2 \neq 0$, and let $R = K_k(0)$ be the kernel
+polynomial at $0$. Then
+$$B(X p, R) = 0$$
+for every polynomial $p$ of degree less than $k$.
+
+Thus the residual polynomials are orthogonal for the shifted form $(p, r) \mapsto B(X p, r)$.
+The proof varies $R$ along the directions $X p$, which are the directions that keep both the
+bound $\deg \le k$ and the value $1$ at $0$. -/
 theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
     (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0)
@@ -333,11 +386,20 @@ theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
 
 /-! ### The geometric bound -/
 
-/-- The geometric bound of [saad2003iterative] §12.3.3 for `0 < α < β`. A form "supported on `[α,
-β]`" — meaning `B p p ≤ (sup_{[α,β]} |p|) ^ 2 * B 1 1`, which the weighted form `B p r = ∫_α^β p r
-w` with `w ≥ 0` satisfies by monotonicity of the integral — makes the least-squares residual
-polynomial decay geometrically, because `(1 - X / θ) ^ k` with `θ = (α + β) / 2` is an admissible
-competitor whose sup on `[α, β]` is at most `((β - α) / (β + α)) ^ k`. -/
+/-- The **geometric bound for the kernel polynomial**. Let $B$ be a bilinear form on
+$\mathbb{R}[X]$, let $(q_i)$ be orthonormal for $B$ with $\deg q_i = i$ for every $i$, and let
+$0 < \alpha < \beta$. Suppose that $B$ is supported on $[\alpha, \beta]$ in the sense that
+$$B(p, p) \le \Bigl(\sup_{t \in [\alpha, \beta]} |p(t)|\Bigr)^2 B(1, 1) \quad \text{for every }
+  p \in \mathbb{R}[X].$$
+Let $k \in \mathbb{N}$ with $\sum_{i=0}^{k} q_i(0)^2 \neq 0$, and let $R = K_k(0)$ be the kernel
+polynomial at $0$. Then
+$$B(R, R) \le \Bigl(\frac{\beta - \alpha}{\beta + \alpha}\Bigr)^{2k} B(1, 1).$$
+
+This is the geometric bound of [saad2003iterative], §12.3.3. The weighted form
+$B(p, r) = \int_\alpha^\beta p r w$ with $w \ge 0$ satisfies the hypothesis by monotonicity of
+the integral. The proof compares $R$ with the admissible competitor $(1 - X/\theta)^k$,
+$\theta = (\alpha + \beta)/2$, whose supremum on $[\alpha, \beta]$ is at most $\bigl((\beta -
+\alpha)/(\beta + \alpha)\bigr)^k$. -/
 theorem bilinForm_kernelPolynomial_le_pow
     (horth : B.IsOrthonormal q) (hdeg : ∀ i, (q i).degree = i)
     {α β : ℝ} (hα : 0 < α) (hαβ : α < β)

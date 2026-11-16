@@ -6,38 +6,58 @@ import Numlib.Optimization.ModelBased.HighOrder.MeasureTest
 import Mathlib.Basic.Real.Sign
 
 /-!
-# Sparse linear minimization over an `ℓ∞` ball
+# Sparse linear minimization over an $\ell_\infty$ ball
 
-Minimizing a linear function `ℓ(d) = ∑ g_i d_i` over the `ℓ∞` ball of radius `δ` intersected with
-the sparsity set `{d | ‖x + d‖₀ ≤ n_nz}` ([cartis2022evaluation], §14.2.2.2, Lemma 14.2.5): the
-subproblem that makes sparsity constraints *simple* for first-order trust-region and
-regularization methods. The space is `Fin n → ℝ` with Mathlib's sup norm, so
-`Metric.closedBall 0 δ` is the book's `ℓ∞` ball and `Optimization.taylorMeasure` on this space is
-the measure (14.2.17).
+Let $x, g \in \mathbb{R}^n$, $\delta \ge 0$ and $n_{nz} \in \mathbb{N}$, and write $\|y\|_0$ for the
+number of nonzero components of $y$. This file solves the problem of minimizing the linear function
+$\ell(d) = \sum_i g_i d_i$ over the displacements $d$ with $\|d\|_\infty \le \delta$ and
+$\|x + d\|_0 \le n_{nz}$. This is the subproblem of §14.2.2.2 and Lemma 14.2.5 of
+[cartis2022evaluation] that makes sparsity constraints simple for first-order trust-region and
+regularization methods. Let $\mathcal{A}_\delta(x) = \{i : |x_i| > \delta\}$ be the set of
+components that no feasible displacement can make zero. A minimizer moves each component in
+$\mathcal{A}_\delta(x)$ to the face $-\delta \operatorname{sign}(g_i)$ of the ball, and for each
+other component chooses between this face and the value $x_i + d_i = 0$. The choice is a 0-1
+knapsack problem (14.2.21), and the optimal value of the subproblem is
+$$\min \ell = -\delta \sum_{i \in \mathcal{A}_\delta(x)} |g_i| - \sum_{i \notin
+  \mathcal{A}_\delta(x)} x_i g_i - \kappa,$$
+where $\kappa$ is the optimal value of the knapsack problem.
 
-The subproblem (14.2.18)–(14.2.19) is the minimization of `ℓ(d)`, as the measure requires
-(`φ = f(x) - min T_{f,1}(x, ·) = -min ℓ`); its solution (14.2.20) is a minimizer. Lemma 14.2.5 is
-stated for any optimal selection `τ` of the 0-1 knapsack (14.2.21); such a selection exists since
-there are finitely many.
+As a consequence, the first-order criticality measure (14.2.17) of the sparsity-constrained problem,
+which is $-\min \ell$, has a closed form that needs no evaluation of the objective function beyond
+its gradient.
 
 ## Main definitions
 
-* `Subproblem.sparseSet n nnz = {x | ‖x‖₀ ≤ nnz}` ((14.2.14)), with the support
-  `Subproblem.nzSet x` ((14.2.15)) and the set `Subproblem.activeSet x δ = {i | |x_i| > δ}`;
-* `Subproblem.sparseLinearStep x g δ τ`, the step (14.2.20);
-* `Subproblem.knapsackValue`, `Subproblem.KnapsackFeasible`, `Subproblem.knapsackOpt`: objective,
-  constraint and optimal value of (14.2.21).
+* `Subproblem.sparseSet`: the sparsity set $\{x : \|x\|_0 \le n_{nz}\}$ of (14.2.14).
+* `Subproblem.nzSet`: the support $\mathcal{A}(x) = \{i : x_i \neq 0\}$ of (14.2.15).
+* `Subproblem.activeSet`: the set $\mathcal{A}_\delta(x) = \{i : |x_i| > \delta\}$.
+* `Subproblem.sparseLinearStep`: the step (14.2.20).
+* `Subproblem.knapsackValue`, `Subproblem.KnapsackFeasible`, `Subproblem.knapsackOpt`: the
+  objective, the constraint and the optimal value of the knapsack problem (14.2.21).
 
 ## Main results
 
-* `Subproblem.isMinOn_sparseLinearStep`: Lemma 14.2.5 (minimization form) for an optimal knapsack
-  selection, with the optimal value `Subproblem.sum_mul_sparseLinearStep`;
+* `Subproblem.isMinOn_sparseLinearStep`: Lemma 14.2.5, as a minimization: for an optimal knapsack
+  selection, the step (14.2.20) minimizes $\ell$ over the feasible displacements. Its value is
+  `Subproblem.sum_mul_sparseLinearStep`.
 * `Subproblem.exists_knapsackFeasible_opt`, `Subproblem.exists_isMinOn_sparseLinearStep`,
-  `Subproblem.exists_isMinOn_sparse`: existence of optimal selections and steps;
+  `Subproblem.exists_isMinOn_sparse`: optimal selections and minimizing steps exist when $x$ is
+  sparse.
 * `Subproblem.isApproxMeasureStep_sparseLinearStep`: the step is an approximate optimality
-  displacement in the sense of `Optimization.IsApproxMeasureStep`;
-* `Subproblem.taylorMeasure_sparse_eq`: the measure (14.2.17) in closed form, computable without
-  evaluating `f`.
+  displacement in the sense of `Optimization.IsApproxMeasureStep`.
+* `Subproblem.taylorMeasure_sparse_eq`: the measure (14.2.17) in closed form.
+
+## Implementation notes
+
+* The space is `Fin n → ℝ` with the sup norm of Mathlib, so that `Metric.closedBall 0 δ` is the
+  $\ell_\infty$ ball of the source and `Optimization.taylorMeasure` on this space is the measure
+  (14.2.17).
+* The subproblem (14.2.18)–(14.2.19) is stated as the minimization of $\ell$, as the measure
+  requires: $\varphi = f(x) - \min T_{f,1}(x, \cdot) = -\min \ell$. Its solution (14.2.20) is a
+  minimizer.
+* Lemma 14.2.5 is stated for any optimal selection $\tau$ of the knapsack problem (14.2.21). Such a
+  selection exists because there are finitely many selections.
+* A selection is a function `Fin n → Bool`; the value `true` stands for $\tau_i = 1$.
 -/
 
 open Set Metric Finset
@@ -49,21 +69,27 @@ variable {n nnz : ℕ}
 
 /-! ### The sparsity set -/
 
-/-- The support `𝒜(x) = {i | x_i ≠ 0}` of `x` ([cartis2022evaluation], (14.2.15)). -/
+/-- The **support** $\mathcal{A}(x) = \{i : x_i \neq 0\}$ of $x \in \mathbb{R}^n$, as in (14.2.15)
+of [cartis2022evaluation]. Its cardinality is $\|x\|_0$. -/
 noncomputable def nzSet (x : Fin n → ℝ) : Finset (Fin n) := Finset.univ.filter (fun i => x i ≠ 0)
 
-/-- The sparsity set `{x | ‖x‖₀ ≤ nnz}` ([cartis2022evaluation], (14.2.14)). -/
+/-- The **sparsity set** $\{x \in \mathbb{R}^n : \|x\|_0 \le n_{nz}\}$ of the vectors with at most
+$n_{nz}$ nonzero components, where $\|x\|_0$ is the cardinality of the support
+`Subproblem.nzSet`. This is (14.2.14) of [cartis2022evaluation]. -/
 def sparseSet (n nnz : ℕ) : Set (Fin n → ℝ) := {x | (nzSet x).card ≤ nnz}
 
+/-- A vector $x$ lies in the sparsity set if and only if its support has at most $n_{nz}$ elements.
+-/
 theorem mem_sparseSet {x : Fin n → ℝ} : x ∈ sparseSet n nnz ↔ (nzSet x).card ≤ nnz := Iff.rfl
 
+/-- An index $i$ lies in the support of $x$ if and only if $x_i \neq 0$. -/
 theorem mem_nzSet {x : Fin n → ℝ} {i : Fin n} : i ∈ nzSet x ↔ x i ≠ 0 := by simp [nzSet]
 
-/-- `0` is sparse. -/
+/-- The zero vector lies in the sparsity set. -/
 theorem zero_mem_sparseSet : (0 : Fin n → ℝ) ∈ sparseSet n nnz := by
   simp [mem_sparseSet, nzSet]
 
-/-- The sparsity set is closed (the support can only grow near a point). -/
+/-- The sparsity set is closed. Near a point, the support can only grow. -/
 theorem isClosed_sparseSet : IsClosed (sparseSet n nnz) := by
   rw [← isOpen_compl_iff]
   refine isOpen_iff_mem_nhds.2 fun x hx => ?_
@@ -75,7 +101,7 @@ theorem isClosed_sparseSet : IsClosed (sparseSet n nnz) := by
   simp only [mem_compl_iff, mem_sparseSet, not_le] at hx ⊢
   exact hx.trans_le (Finset.card_le_card hsub)
 
-/-- The sparsity constraint is void iff `n ≤ nnz`. -/
+/-- The sparsity set is all of $\mathbb{R}^n$ if and only if $n \le n_{nz}$. -/
 theorem sparseSet_eq_univ_iff : sparseSet n nnz = univ ↔ n ≤ nnz := by
   constructor
   · intro h
@@ -85,8 +111,8 @@ theorem sparseSet_eq_univ_iff : sparseSet n nnz = univ ↔ n ≤ nnz := by
     refine eq_univ_of_forall fun x => ?_
     exact (card_le_univ _).trans (by simpa using h)
 
-/-- The sparsity set is not convex in general: `{x ∈ ℝ² | ‖x‖₀ ≤ 1}` contains `e₁`, `e₂` but not
-their midpoint. -/
+/-- The sparsity set is not convex in general: the set $\{x \in \mathbb{R}^2 : \|x\|_0 \le 1\}$
+contains $e_1$ and $e_2$ but not their midpoint. -/
 theorem not_convex_sparseSet : ¬ Convex ℝ (sparseSet 2 1) := by
   intro h
   have h0 : (Pi.single 0 1 : Fin 2 → ℝ) ∈ sparseSet 2 1 := by
@@ -113,34 +139,46 @@ theorem not_convex_sparseSet : ¬ Convex ℝ (sparseSet 2 1) := by
 
 /-! ### The step (14.2.20) -/
 
-/-- The large components `𝒜_δ(x) = {i | |x_i| > δ}`, which no feasible displacement of `ℓ∞`
-length `δ` can zero. -/
+/-- The set $\mathcal{A}_\delta(x) = \{i : |x_i| > \delta\}$ of the large components of $x$. No
+displacement $d$ with $\|d\|_\infty \le \delta$ can make such a component of $x + d$ zero. -/
 noncomputable def activeSet (x : Fin n → ℝ) (δ : ℝ) : Finset (Fin n) :=
   Finset.univ.filter (fun i => δ < |x i|)
 
+/-- An index $i$ lies in $\mathcal{A}_\delta(x)$ if and only if $|x_i| > \delta$. -/
 theorem mem_activeSet {x : Fin n → ℝ} {δ : ℝ} {i : Fin n} : i ∈ activeSet x δ ↔ δ < |x i| := by
   simp [activeSet]
 
-/-- The step of Lemma 14.2.5 ([cartis2022evaluation], (14.2.20)): on `𝒜_δ(x)` move to the far face
-`-δ sign(g_i)`; on the complement either zero the coordinate (`τ_i = false`, `x_i + d_i = 0`) or
-move to the far face (`τ_i = true`). (Equal to (14.2.20) after simplifying
-`-x_i - τ_i (δ sign g_i - x_i)`.) -/
+/-- The **step of Lemma 14.2.5** of [cartis2022evaluation], (14.2.20). For a selection
+$\tau \in \{0, 1\}^n$, its components are
+$$d_i = \begin{cases} -\delta \operatorname{sign}(g_i), & i \in \mathcal{A}_\delta(x), \\
+  -\delta \operatorname{sign}(g_i), & i \notin \mathcal{A}_\delta(x), \ \tau_i = 1, \\ -x_i, & i
+  \notin \mathcal{A}_\delta(x), \ \tau_i = 0. \end{cases}$$
+On $\mathcal{A}_\delta(x)$ the step moves to the far face of the ball; on the complement it
+either makes the component of $x + d$ zero or moves to the far face.
+
+The source writes the components off $\mathcal{A}_\delta(x)$ as $-x_i - \tau_i (\delta
+\operatorname{sign}(g_i) - x_i)$, which simplifies to the two cases above. The selection is a
+function `Fin n → Bool`. The sign function is `Real.sign`. -/
 noncomputable def sparseLinearStep (x g : Fin n → ℝ) (δ : ℝ) (τ : Fin n → Bool) :
     Fin n → ℝ :=
   fun i => if δ < |x i| then -δ * Real.sign (g i) else if τ i then -δ * Real.sign (g i) else -x i
 
-/-- The objective of the knapsack problem (14.2.21):
-`∑_{i ∉ 𝒜_δ(x)} τ_i (δ |g_i| - x_i g_i)`. -/
+/-- The objective of the knapsack problem (14.2.21) of [cartis2022evaluation]:
+$$\sum_{i \notin \mathcal{A}_\delta(x)} \tau_i \bigl(\delta |g_i| - x_i g_i\bigr).$$
+-/
 noncomputable def knapsackValue (x g : Fin n → ℝ) (δ : ℝ) (τ : Fin n → Bool) : ℝ :=
   ∑ i ∈ (activeSet x δ)ᶜ, if τ i then δ * |g i| - x i * g i else 0
 
-/-- The constraint of the knapsack problem (14.2.21), `∑_{i ∉ 𝒜_δ(x)} τ_i ≤ nnz - |𝒜_δ(x)|`,
-written without truncated subtraction as `|𝒜_δ(x)| + ∑_{i ∉ 𝒜_δ(x)} τ_i ≤ nnz`. -/
+/-- The constraint of the knapsack problem (14.2.21) of [cartis2022evaluation]: $\sum_{i \notin
+\mathcal{A}_\delta(x)} \tau_i \le n_{nz} - |\mathcal{A}_\delta(x)|$. It is written without
+truncated subtraction as $|\mathcal{A}_\delta(x)| + \sum_{i \notin \mathcal{A}_\delta(x)} \tau_i
+\le n_{nz}$. -/
 def KnapsackFeasible (x : Fin n → ℝ) (δ : ℝ) (nnz : ℕ) (τ : Fin n → Bool) : Prop :=
   (activeSet x δ).card + ((activeSet x δ)ᶜ.filter (fun i => τ i = true)).card ≤ nnz
 
-/-- The optimal value of the knapsack problem (14.2.21) (the maximum of `knapsackValue` over the
-finitely many feasible selections; `0` if there is none). -/
+/-- The optimal value of the knapsack problem (14.2.21) of [cartis2022evaluation]: the maximum of
+`Subproblem.knapsackValue` over the finitely many feasible selections. If no selection is
+feasible, the value is $0$, by the Lean convention for `sSup` on $\mathbb{R}$. -/
 noncomputable def knapsackOpt (x g : Fin n → ℝ) (δ : ℝ) (nnz : ℕ) : ℝ :=
   sSup (knapsackValue x g δ '' {τ | KnapsackFeasible x δ nnz τ})
 
@@ -156,15 +194,18 @@ private theorem abs_sign_le_one (r : ℝ) : |Real.sign r| ≤ 1 := by
   · simp
   · simp [Real.sign_of_pos h]
 
-/-- `g_i d_i ≥ -δ |g_i|` whenever `|d_i| ≤ δ`. -/
+/-- If $|d| \le \delta$, then $g d \ge -\delta |g|$. -/
 private theorem neg_mul_abs_le (g d δ : ℝ) (hd : |d| ≤ δ) : -(δ * |g|) ≤ g * d := by
   have : |g * d| ≤ δ * |g| := by rw [abs_mul, mul_comm]; gcongr
   linarith [neg_abs_le (g * d)]
 
 variable {x g : Fin n → ℝ} {δ : ℝ} {τ : Fin n → Bool}
 
-/-- The value of the linear function at the step (14.2.20):
-`ℓ(d⋆) = -δ ∑_{i ∈ 𝒜_δ} |g_i| - ∑_{i ∉ 𝒜_δ} x_i g_i - ∑_{i ∉ 𝒜_δ} τ_i (δ |g_i| - x_i g_i)`. -/
+/-- The value of the linear function at the step $d^\star$ of (14.2.20):
+$$\sum_i g_i d^\star_i = -\delta \sum_{i \in \mathcal{A}_\delta(x)} |g_i| - \sum_{i \notin
+  \mathcal{A}_\delta(x)} x_i g_i - \sum_{i \notin \mathcal{A}_\delta(x)} \tau_i \bigl(\delta
+  |g_i| - x_i g_i\bigr).$$
+-/
 theorem sum_mul_sparseLinearStep :
     ∑ i, g i * sparseLinearStep x g δ τ i =
       -(δ * ∑ i ∈ activeSet x δ, |g i|) - ∑ i ∈ (activeSet x δ)ᶜ, x i * g i -
@@ -183,7 +224,8 @@ theorem sum_mul_sparseLinearStep :
     · simp; ring
     · simp only [ite_true, mul_left_comm (g i), mul_sign_eq_abs]; ring
 
-/-- The step lies in the `ℓ∞` ball of radius `δ ≥ 0`. -/
+/-- For $\delta \ge 0$, the step lies in the $\ell_\infty$ ball of radius $\delta$:
+$\|d^\star\|_\infty \le \delta$. -/
 theorem norm_sparseLinearStep_le (hδ : 0 ≤ δ) : ‖sparseLinearStep x g δ τ‖ ≤ δ := by
   refine (pi_norm_le_iff_of_nonneg hδ).2 fun i => ?_
   rw [Real.norm_eq_abs]
@@ -196,7 +238,8 @@ theorem norm_sparseLinearStep_le (hδ : 0 ≤ δ) : ‖sparseLinearStep x g δ �
   · exact hfar
   · rw [abs_neg]; exact not_lt.1 h1
 
-/-- The support of `x + d⋆` is contained in `𝒜_δ(x)` together with the selected indices. -/
+/-- The support of $x + d^\star$ is contained in the union of $\mathcal{A}_\delta(x)$ and the set of
+selected indices $\{i \notin \mathcal{A}_\delta(x) : \tau_i = 1\}$. -/
 theorem nzSet_add_sparseLinearStep_subset :
     nzSet (x + sparseLinearStep x g δ τ) ⊆
       activeSet x δ ∪ (activeSet x δ)ᶜ.filter (fun i => τ i = true) := by
@@ -210,18 +253,22 @@ theorem nzSet_add_sparseLinearStep_subset :
     apply hi
     simp [sparseLinearStep, h1, h2]
 
-/-- `|𝒜_δ(x)| ≤ |𝒜(x)|` for `δ ≥ 0`. -/
+/-- For $\delta \ge 0$, $\mathcal{A}_\delta(x) \subseteq \mathcal{A}(x)$. -/
 theorem activeSet_subset_nzSet (hδ : 0 ≤ δ) : activeSet x δ ⊆ nzSet x := fun i hi =>
   mem_nzSet.2 fun h0 => by
     have := mem_activeSet.1 hi
     rw [h0, abs_zero] at this
     linarith
 
-/-- **Lemma 14.2.5 of [cartis2022evaluation]** (as a minimization). Let `δ ≥ 0` and let
-`τ` solve the knapsack problem (14.2.21): it is feasible and has maximal value
-among feasible selections. Then `d⋆ = sparseLinearStep x g δ τ` satisfies `‖d⋆‖∞ ≤ δ`, `x + d⋆` is
-sparse, and `d⋆` minimizes `ℓ(d) = ∑ g_i d_i` over `{d | ‖d‖∞ ≤ δ, ‖x + d‖₀ ≤ nnz}`; its value is
-`sum_mul_sparseLinearStep`. -/
+/-- **Lemma 14.2.5** of [cartis2022evaluation], as a minimization. Let $x, g \in \mathbb{R}^n$ and
+$\delta \ge 0$, and let the selection $\tau$ solve the knapsack problem (14.2.21): $\tau$ is
+feasible, and its value is at least the value of every feasible selection. Let $d^\star$ be the
+step (14.2.20). Then $\|d^\star\|_\infty \le \delta$, $\|x + d^\star\|_0 \le n_{nz}$, and
+$d^\star$ minimizes $\ell(d) = \sum_i g_i d_i$ over
+$$\{d \in \mathbb{R}^n : \|d\|_\infty \le \delta, \ \|x + d\|_0 \le n_{nz}\}.$$
+
+The value of $\ell$ at $d^\star$ is given by `Subproblem.sum_mul_sparseLinearStep`. The step is
+`Subproblem.sparseLinearStep x g δ τ`, and the ball is `Metric.closedBall 0 δ` for the sup norm. -/
 theorem isMinOn_sparseLinearStep (hδ : 0 ≤ δ)
     (hτ : KnapsackFeasible x δ nnz τ)
     (hopt : ∀ τ', KnapsackFeasible x δ nnz τ' → knapsackValue x g δ τ' ≤ knapsackValue x g δ τ) :
@@ -271,8 +318,9 @@ theorem isMinOn_sparseLinearStep (hδ : 0 ≤ δ)
   rw [sum_mul_sparseLinearStep]
   linarith [hopt τ' hτ']
 
-/-- The knapsack problem (14.2.21) has an optimal selection when `x` is sparse (finitely many
-selections, `τ = false` is feasible since `|𝒜_δ(x)| ≤ |𝒜(x)| ≤ nnz`). -/
+/-- If $x$ is sparse and $\delta \ge 0$, the knapsack problem (14.2.21) has an optimal selection.
+There are finitely many selections, and the empty selection is feasible because
+$|\mathcal{A}_\delta(x)| \le |\mathcal{A}(x)| \le n_{nz}$. -/
 theorem exists_knapsackFeasible_opt (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ) :
     ∃ τ, KnapsackFeasible x δ nnz τ ∧
       ∀ τ', KnapsackFeasible x δ nnz τ' → knapsackValue x g δ τ' ≤ knapsackValue x g δ τ := by
@@ -284,7 +332,8 @@ theorem exists_knapsackFeasible_opt (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ
   obtain ⟨τ, hτ, hmax⟩ := Finset.exists_max_image _ (knapsackValue x g δ) hne
   exact ⟨τ, (mem_filter.1 hτ).2, fun τ' hτ' => hmax τ' (mem_filter.2 ⟨mem_univ _, hτ'⟩)⟩
 
-/-- An optimal knapsack selection attains `knapsackOpt`. -/
+/-- The value of an optimal feasible knapsack selection is the optimal value
+`Subproblem.knapsackOpt`. -/
 theorem knapsackValue_eq_knapsackOpt (hτ : KnapsackFeasible x δ nnz τ)
     (hopt : ∀ τ', KnapsackFeasible x δ nnz τ' → knapsackValue x g δ τ' ≤ knapsackValue x g δ τ) :
     knapsackValue x g δ τ = knapsackOpt x g δ nnz := by
@@ -292,8 +341,10 @@ theorem knapsackValue_eq_knapsackOpt (hτ : KnapsackFeasible x δ nnz τ)
       (knapsackValue x g δ τ) := ⟨⟨τ, hτ, rfl⟩, Set.forall_mem_image.2 hopt⟩
   exact this.csSup_eq.symm
 
-/-- Lemma 14.2.5 with the existence of the knapsack solution: for sparse `x` and `δ ≥ 0` there is
-an optimal selection `τ` whose step `sparseLinearStep x g δ τ` solves the sparse linear problem. -/
+/-- Lemma 14.2.5 of [cartis2022evaluation] together with the existence of a solution of the knapsack
+problem. If $x$ is sparse and $\delta \ge 0$, there is an optimal feasible selection $\tau$, and
+for it the step (14.2.20) lies in the ball, keeps $x + d^\star$ sparse, and minimizes $\ell$
+over the feasible displacements. -/
 theorem exists_isMinOn_sparseLinearStep (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ) :
     ∃ τ, KnapsackFeasible x δ nnz τ ∧
       (∀ τ', KnapsackFeasible x δ nnz τ' → knapsackValue x g δ τ' ≤ knapsackValue x g δ τ) ∧
@@ -303,25 +354,31 @@ theorem exists_isMinOn_sparseLinearStep (hx : x ∈ sparseSet n nnz) (hδ : 0 �
   obtain ⟨τ, hτ, hopt⟩ := exists_knapsackFeasible_opt (g := g) hx hδ
   exact ⟨τ, hτ, hopt, isMinOn_sparseLinearStep hδ hτ hopt⟩
 
-/-- The sparse linear problem (14.2.18) (as a minimization) has a solution for sparse `x` and
-`δ ≥ 0`. -/
+/-- If $x$ is sparse and $\delta \ge 0$, the sparse linear problem (14.2.18), as a minimization, has
+a solution: some $d$ with $\|d\|_\infty \le \delta$ and $\|x + d\|_0 \le n_{nz}$ minimizes
+$\ell$ over all such displacements. -/
 theorem exists_isMinOn_sparse (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ) :
     ∃ d ∈ closedBall 0 δ ∩ {d | x + d ∈ sparseSet n nnz},
       IsMinOn (fun d => ∑ i, g i * d i) (closedBall 0 δ ∩ {d | x + d ∈ sparseSet n nnz}) d := by
   obtain ⟨τ, -, -, hn, hS, hmin⟩ := exists_isMinOn_sparseLinearStep (g := g) hx hδ
   exact ⟨_, ⟨mem_closedBall_zero_iff.2 hn, hS⟩, hmin⟩
 
-/-- The feasible displacements `{d | x + d ∈ sparseSet n nnz}` form a closed set. -/
+/-- The set of feasible displacements $\{d : \|x + d\|_0 \le n_{nz}\}$ is closed. -/
 theorem isClosed_shift_sparseSet (x : Fin n → ℝ) :
     IsClosed {d : Fin n → ℝ | x + d ∈ sparseSet n nnz} :=
   isClosed_sparseSet.preimage (continuous_const.add continuous_id)
 
-/-- `0` is a feasible displacement at a sparse point. -/
+/-- If $x$ is sparse, the zero displacement is feasible: $\|x + 0\|_0 \le n_{nz}$. -/
 theorem zero_mem_shift_sparseSet (hx : x ∈ sparseSet n nnz) :
     (0 : Fin n → ℝ) ∈ {d : Fin n → ℝ | x + d ∈ sparseSet n nnz} := by
   simpa using hx
 
-/-- At an optimal knapsack selection, the Taylor decrease along `d⋆` is the sparse measure. -/
+/-- Let $D$ be a formal multilinear series whose first-order term acts as $D_1[d] = \sum_i g_i d_i$,
+let $\delta \ge 0$, and let $\tau$ be an optimal feasible knapsack selection. Then the decrease
+of the first-order Taylor sum along the step $d^\star$ equals the measure:
+$\Delta T_1(d^\star) = \varphi^\delta_1$, where $\varphi^\delta_1$ is
+`Optimization.taylorMeasure` of $D$ of order $1$ over the feasible displacements
+$\{d : \|x + d\|_0 \le n_{nz}\}$. -/
 theorem taylorDecrement_sparseLinearStep_eq (D : FormalMultilinearSeries ℝ (Fin n → ℝ) ℝ)
     (hg : ∀ d, D 1 (fun _ => d) = ∑ i, g i * d i) (hδ : 0 ≤ δ)
     (hτ : KnapsackFeasible x δ nnz τ)
@@ -342,8 +399,13 @@ theorem taylorDecrement_sparseLinearStep_eq (D : FormalMultilinearSeries ℝ (Fi
     linarith
   exact hG.csSup_eq.symm
 
-/-- The optimal sparse step is an approximate optimality displacement for every `ς ≤ 1`
-(bridge to `Optimization.IsApproxMeasureStep`, Step 1 of TR1-SP / AR1-SP). -/
+/-- Let $D$ be a formal multilinear series whose first-order term acts as $D_1[d] = \sum_i g_i d_i$,
+let $x$ be sparse, let $\delta \ge 0$, and let $\tau$ be an optimal feasible knapsack selection.
+Then for every $\varsigma \le 1$ the step $d^\star$ is an approximate optimality displacement
+(`Optimization.IsApproxMeasureStep`) for the first-order Taylor decrease, the radius $\delta$,
+the feasible displacements $\{d : \|x + d\|_0 \le n_{nz}\}$ and the fraction $\varsigma$.
+
+This connects the step to Step 1 of the methods TR1-SP and AR1-SP of [cartis2022evaluation]. -/
 theorem isApproxMeasureStep_sparseLinearStep (D : FormalMultilinearSeries ℝ (Fin n → ℝ) ℝ)
     (hg : ∀ d, D 1 (fun _ => d) = ∑ i, g i * d i) (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ)
     (hτ : KnapsackFeasible x δ nnz τ)
@@ -359,10 +421,16 @@ theorem isApproxMeasureStep_sparseLinearStep (D : FormalMultilinearSeries ℝ (F
   rw [heq]
   exact mul_le_of_le_one_left hM hς
 
-/-- **The sparse measure** ([cartis2022evaluation], (14.2.17), Lemma 14.2.5): if the first-order
-data act as `D₁[d] = ∑ g_i d_i` (`g` the gradient), `x` is sparse and `δ ≥ 0`, the measure over
-`{d | ‖d‖∞ ≤ δ, ‖x + d‖₀ ≤ nnz}` is `δ ∑_{𝒜_δ} |g_i| + ∑_{𝒜_δ^c} x_i g_i + knapsackOpt`,
-computable without further evaluations of `f`. -/
+/-- **The sparse measure** of (14.2.17) of [cartis2022evaluation], in closed form. Let $D$ be a
+formal multilinear series whose first-order term acts as $D_1[d] = \sum_i g_i d_i$, where $g$ is
+the gradient, let $x$ be sparse, and let $\delta \ge 0$. Then the first-order measure over $\{d
+: \|d\|_\infty \le \delta, \ \|x + d\|_0 \le n_{nz}\}$ is
+$$\varphi^\delta_1 = \delta \sum_{i \in \mathcal{A}_\delta(x)} |g_i| + \sum_{i \notin
+  \mathcal{A}_\delta(x)} x_i g_i + \kappa,$$
+where $\kappa$ is the optimal value `Subproblem.knapsackOpt` of the knapsack problem (14.2.21).
+This is a consequence of Lemma 14.2.5 there.
+
+The formula needs no evaluation of the objective function beyond its gradient. -/
 theorem taylorMeasure_sparse_eq (D : FormalMultilinearSeries ℝ (Fin n → ℝ) ℝ)
     (hg : ∀ d, D 1 (fun _ => d) = ∑ i, g i * d i) (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ) :
     Optimization.taylorMeasure D 1 δ {d | x + d ∈ sparseSet n nnz} =
@@ -373,9 +441,18 @@ theorem taylorMeasure_sparse_eq (D : FormalMultilinearSeries ℝ (Fin n → ℝ)
     sum_mul_sparseLinearStep, knapsackValue_eq_knapsackOpt hτ hopt]
   ring
 
-/-- The sparse measure for a function on `Fin n → ℝ`: with `g_i = ∇f(x)[e_i]`,
-`φ^δ_{f,X(x),1}(x) = δ ∑_{𝒜_δ} |g_i| + ∑_{𝒜_δ^c} x_i g_i + knapsackOpt` ((14.2.17),
-Lemma 14.2.5). -/
+/-- The sparse measure for a function $f : \mathbb{R}^n \to \mathbb{R}$. Let $x$ be sparse, let
+$\delta \ge 0$, and let $g_i = \nabla f(x)[e_i]$. Then the first-order measure
+$\varphi^\delta_{f,X(x),1}(x)$ of (14.2.17) of [cartis2022evaluation], over the feasible
+displacements, is
+$$\delta \sum_{i \in \mathcal{A}_\delta(x)} |g_i| + \sum_{i \notin \mathcal{A}_\delta(x)} x_i
+  g_i + \kappa,$$
+where $\kappa$ is the optimal value of the knapsack problem (14.2.21) for this $g$. The measure
+uses the Taylor series `ftaylorSeries ℝ f x`, and $g_i$ is `fderiv ℝ f x (Pi.single i 1)`. This
+follows from Lemma 14.2.5 there.
+
+No differentiability of $f$ is assumed: if $f$ is not differentiable at $x$, then `fderiv ℝ f x`
+is $0$, and the formula holds with $g = 0$. -/
 theorem taylorMeasure_ftaylorSeries_sparse_eq (f : (Fin n → ℝ) → ℝ)
     (hx : x ∈ sparseSet n nnz) (hδ : 0 ≤ δ) :
     Optimization.taylorMeasure (ftaylorSeries ℝ f x) 1 δ {d | x + d ∈ sparseSet n nnz} =

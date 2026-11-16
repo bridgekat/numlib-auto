@@ -13,49 +13,64 @@ import Numlib.Optimization.Optimality.ConstrainedMeasure
 /-!
 # The target reformulation of an equality-constrained problem
 
-For `f : E → ℝ`, `c : E → F` (`F` a real inner product space, the book's `ℝᵐ`) and a target
-`t ∈ ℝ`, the two-phase methods of [cartis2022evaluation] (§7.2 and §14.3) minimize the norm of the
-residual `r(x, t) = (c(x), f(x) - t)` ((7.2.4)–(7.2.6)):
-`‖r(x,t)‖ = √(‖c x‖² + (f x - t)²)` and `μ₂(x,t) = ½ ‖r(x,t)‖²`. The pair `r(x, t)` is never
-formed as an element of a product space (Mathlib's `F × ℝ` carries the sup norm); the Euclidean
-norm is defined directly.
+Let $f : E \to \mathbb{R}$ and $c : E \to F$, where $F$ is a real inner product space (the space
+$\mathbb{R}^m$ of the source), and let $t \in \mathbb{R}$ be a target. The two-phase methods of
+[cartis2022evaluation], §7.2 and §14.3, minimize the norm of the residual
+$r(x, t) = (c(x), f(x) - t)$, by (7.2.4)–(7.2.6):
+$$\|r(x, t)\| = \sqrt{\|c(x)\|^2 + (f(x) - t)^2}, \qquad \mu_2(x, t) = \tfrac12 \|r(x, t)\|^2.$$
+This file defines these functions and the multiplier estimate $y = -c(x) / (f(x) - t)$. It computes
+the derivatives of $\mu_2(\cdot, t)$ up to order three, and it relates the derivatives, the Taylor
+decrements and the Taylor measures of $\mu_2(\cdot, t)$ to those of the Lagrangian $\mathcal{L}(z,
+y) = f(z) - \langle y, c(z) \rangle$, as in the proofs of Lemmas 7.2.1 and 14.3.5. It also proves
+Theorem 7.1.1 and Lemma B.7.1 of [cartis2022evaluation].
 
 ## Main definitions
 
-* `Constrained.targetResidual f c t x`: the residual norm `‖r(x,t)‖`;
-* `Constrained.targetMerit f c t x`: the merit function `μ₂(x,t) = ½ ‖r(x,t)‖²`;
-* `Constrained.targetMultiplier f c t x`: the multiplier estimate `y = -c(x)/(f(x) - t)` of
-  (7.2.22) and (14.3.53);
-* `Constrained.targetSublevel f c X t`: the set `{x ∈ X | ‖r(x, t)‖ ≤ 1}`.
+* `Constrained.targetResidual`: the residual norm $\|r(x, t)\|$.
+* `Constrained.targetMerit`: the merit function $\mu_2(x, t) = \frac12 \|r(x, t)\|^2$.
+* `Constrained.targetMultiplier`: the multiplier estimate $y = -c(x) / (f(x) - t)$ of (7.2.22) and
+  (14.3.53).
+* `Constrained.targetSublevel`: the set $\{x \in X : \|r(x, t)\| \le 1\}$.
 
 ## Main results
 
-* `Constrained.fderiv_targetMerit`: `∇ₓμ₂ = (f - t)∇f + (Dc)* c`, and the diagonal second and
-  third derivatives (14.3.38)–(14.3.39) (`Constrained.iteratedFDeriv_two_targetMerit_apply`,
-  `Constrained.iteratedFDeriv_three_targetMerit_apply`);
-* `Constrained.fderiv_targetMerit_eq_smul_lagrangian`: with `y = targetMultiplier f c t x`,
-  `∇ₓμ₂ = (f(x) - t) ∇ₓℒ(x, y)` for the Lagrangian `ℒ(z, y) = f(z) - ⟨y, c(z)⟩`, together with
-  `‖r(x,t)‖/(f(x) - t) = ‖(y, 1)‖` and the corresponding identities between Taylor measures and
-  criticality measures (the proofs of Lemmas 7.2.1 and 14.3.5);
+* `Constrained.fderiv_targetMerit`: $\nabla_x \mu_2 = (f - t) \nabla f + (Dc)^* c$; the diagonal
+  second and third derivatives (14.3.38)–(14.3.39) are
+  `Constrained.iteratedFDeriv_two_targetMerit_apply` and
+  `Constrained.iteratedFDeriv_three_targetMerit_apply`.
+* `Constrained.fderiv_targetMerit_eq_smul_lagrangian`: with $y$ the multiplier estimate, $\nabla_x
+  \mu_2 = (f(x) - t) \nabla_x \mathcal{L}(x, y)$. Together with
+  `Constrained.targetResidual_div_eq_sqrt`, which gives $\|r(x, t)\| / (f(x) - t) = \|(y, 1)\|$, and
+  the corresponding identities between Taylor measures and criticality measures, this is the core of
+  the proofs of Lemmas 7.2.1 and 14.3.5.
 * `Constrained.taylorMeasure_lagrangian_two_le`, `Constrained.taylorMeasure_lagrangian_three_le`:
   the second- and third-order measure relations of the proof of Lemma 14.3.5, with the extra term
-  `(∇f(x)[d])²/(2(f(x) - t))`;
-* `Constrained.iteratedFDerivHolderOn_targetMerit_of_mem_Icc`: the derivatives of `μ₂(·, t)` have
-  Hölder (Lipschitz) constants uniform over an interval of targets (the core of Lemma 7.2.5), since
-  `μ₂` is affine in `t` up to an additive constant;
-* `neg_add_sqrt_sq_sub_sq_ge`: the inequality of Lemma B.7.1;
-* `Constrained.isMinOn_of_isMinOn_sub_inner`: sufficiency of the Lagrangian (Theorem 7.1.1).
+  $(\nabla f(x)[d])^2 / (2(f(x) - t))$.
+* `Constrained.iteratedFDerivHolderOn_targetMerit_of_mem_Icc`: the derivatives of $\mu_2(\cdot, t)$
+  have Hölder (or Lipschitz) constants that are uniform over an interval of targets, the core of
+  Lemma 7.2.5.
+* `neg_add_sqrt_sq_sub_sq_ge`: the inequality of Lemma B.7.1.
+* `Constrained.isMinOn_of_isMinOn_sub_inner`: sufficiency of the Lagrangian, Theorem 7.1.1.
+
+## Notation
+
+* $\Delta T_{\phi, j}(d)$: the Taylor decrement $T_{\phi,j}(x, 0) - T_{\phi,j}(x, d)$ of order $j$
+  of $\phi$ at $x$, which is `FormalMultilinearSeries.taylorDecrement` of `ftaylorSeries ℝ φ x`.
+* $\varphi^\delta_{\phi, S, j}$: the Taylor measure `Optimization.taylorMeasure` of order $j$ of
+  $\phi$ at $x$, the supremum of $\Delta T_{\phi, j}(d)$ over $\|d\| \le \delta$, $d \in S$.
 
 ## Implementation notes
 
-The book's Lagrangian `ℒ(x, y) = f(x) - ⟨y, c(x)⟩` is `Constrained.innerLagrangian f c y`, a
-reducible abbreviation of `fun z => f z - ⟪y, c z⟫`, which is the form the statements below are
-written in. Its multipliers enter with the sign opposite to that of `Constrained.lagrangian`
-(`Constrained.innerLagrangian_apply_eq_lagrangian`).
-
-On `T(x) = ker ∇c(x)` the derivative of the Lagrangian is `∇ₓℒ(x,y)[d] = ∇f(x)[d]`, and the
-second- and third-order relations ((14.3.43), (14.3.46)) contain the extra term
-`(∇f(x)[d])²/(2(f(x) - t))`, which the statements below carry explicitly.
+* The pair $r(x, t)$ is never formed as an element of a product space, because the Mathlib product
+  `F × ℝ` carries the sup norm. The Euclidean norm is defined directly.
+* The Lagrangian $\mathcal{L}(x, y) = f(x) - \langle y, c(x) \rangle$ of the source is
+  `Constrained.innerLagrangian f c y`, a reducible abbreviation of `fun z => f z - ⟪y, c z⟫`; the
+  statements below are written in this form. Its multipliers enter with the sign opposite to that of
+  `Constrained.lagrangian` (`Constrained.innerLagrangian_apply_eq_lagrangian`).
+* On $T(x) = \ker \nabla c(x)$ the derivative of the Lagrangian is
+  $\nabla_x \mathcal{L}(x, y)[d] = \nabla f(x)[d]$. The second- and third-order relations (14.3.43)
+  and (14.3.46) therefore contain the extra term $(\nabla f(x)[d])^2 / (2(f(x) - t))$, and the
+  statements below carry this term explicitly.
 -/
 
 open Set Metric Filter Finset
@@ -63,10 +78,14 @@ open scoped Topology RealInnerProductSpace Nat
 
 /-! ### Lemma B.7.1 -/
 
-/-- **Lemma B.7.1** of [cartis2022evaluation]: for `0 ≤ ω ≤ ε` and reals `u, v` with
-`u² + v² ≤ ω²`, `ε - ω ≤ -u + √(ε² - v²)`; that is, the minimum of `ψ(u, v) = -u + √(ε² - v²)`
-over the disc `u² + v² ≤ ω²` is `ε - ω` (attained at `(ω, 0)`). The proof uses
-`u ≤ √(ω² - v²)` and `√(ε² - v²) - √(ω² - v²) ≥ ε - ω` instead of the KKT conditions. -/
+/-- **Lemma B.7.1** of [cartis2022evaluation]. Let $0 \le \omega \le \varepsilon$, and let
+$u, v \in \mathbb{R}$ with $u^2 + v^2 \le \omega^2$. Then
+$$\varepsilon - \omega \le -u + \sqrt{\varepsilon^2 - v^2}.$$
+That is, the minimum of $\psi(u, v) = -u + \sqrt{\varepsilon^2 - v^2}$ over the disc
+$u^2 + v^2 \le \omega^2$ is $\varepsilon - \omega$, attained at $(\omega, 0)$.
+
+The proof uses $u \le \sqrt{\omega^2 - v^2}$ and $\sqrt{\varepsilon^2 - v^2} - \sqrt{\omega^2 -
+v^2} \ge \varepsilon - \omega$ instead of the Karush–Kuhn–Tucker conditions. -/
 theorem neg_add_sqrt_sq_sub_sq_ge {ω ε u v : ℝ} (hω : 0 ≤ ω) (hωε : ω ≤ ε)
     (huv : u ^ 2 + v ^ 2 ≤ ω ^ 2) : ε - ω ≤ -u + √(ε ^ 2 - v ^ 2) := by
   set b := √(ω ^ 2 - v ^ 2) with hb
@@ -82,7 +101,8 @@ theorem neg_add_sqrt_sq_sub_sq_ge {ω ε u v : ℝ} (hω : 0 ≤ ω) (hωε : ω
     nlinarith
   linarith
 
-/-- The value of Lemma B.7.1 at the minimizer `(ω, 0)`: `-ω + √(ε² - 0²) = ε - ω` for `ε ≥ 0`. -/
+/-- The value in Lemma B.7.1 of [cartis2022evaluation] at the minimizer $(\omega, 0)$: for
+$\varepsilon \ge 0$, $-\omega + \sqrt{\varepsilon^2 - 0^2} = \varepsilon - \omega$. -/
 theorem neg_add_sqrt_sq_sub_zero_sq {ω ε : ℝ} (hε : 0 ≤ ε) :
     -ω + √(ε ^ 2 - 0 ^ 2) = ε - ω := by
   rw [zero_pow two_ne_zero, sub_zero, Real.sqrt_sq hε]
@@ -92,9 +112,13 @@ namespace Constrained
 
 /-! ### Theorem 7.1.1 -/
 
-/-- **Sufficiency of the Lagrangian** ([cartis2022evaluation], Theorem 7.1.1): if `c x = 0` and
-`x` minimizes the Lagrangian `z ↦ f z - ⟪y, c z⟫` over `S`, then `x` minimizes `f` over the
-feasible part `{z ∈ S | c z = 0}` of `S`. (`S` need not be closed.) -/
+/-- **Theorem 7.1.1** of [cartis2022evaluation] (sufficiency of the Lagrangian). Let $F$ be a real
+inner product space, let $f : E \to \mathbb{R}$, $c : E \to F$, $S \subseteq E$, $x \in E$ and
+$y \in F$. If $c(x) = 0$ and $x$ minimizes the Lagrangian
+$z \mapsto f(z) - \langle y, c(z) \rangle$ over $S$, then $x$ minimizes $f$ over the feasible
+part $\{z \in S : c(z) = 0\}$ of $S$.
+
+The set $S$ need not be closed. -/
 theorem isMinOn_of_isMinOn_sub_inner {E F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {f : E → ℝ} {c : E → F} {S : Set E} {x : E} {y : F}
     (hcx : c x = 0) (hmin : IsMinOn (fun z => f z - ⟪y, c z⟫) S x) :
@@ -110,97 +134,112 @@ section Defs
 
 variable {E F : Type*} [NormedAddCommGroup F]
 
-/-- The target residual norm `‖r(x,t)‖ = √(‖c(x)‖² + (f(x) - t)²)` of [cartis2022evaluation],
-(7.2.4), the Euclidean norm of `r(x, t) = (c(x), f(x) - t)`. -/
+/-- The **target residual norm** of [cartis2022evaluation], (7.2.4):
+$$\|r(x, t)\| = \sqrt{\|c(x)\|^2 + (f(x) - t)^2},$$
+the Euclidean norm of the pair $r(x, t) = (c(x), f(x) - t)$. -/
 noncomputable def targetResidual (f : E → ℝ) (c : E → F) (t : ℝ) (x : E) : ℝ :=
   √(‖c x‖ ^ 2 + (f x - t) ^ 2)
 
-/-- The target merit function `μ₂(x,t) = ½ ‖r(x,t)‖² = ½ (‖c(x)‖² + (f(x) - t)²)` of
-[cartis2022evaluation], (7.2.5) (the `μ(x, t)` of (14.3.30)). -/
+/-- The **target merit function** of [cartis2022evaluation], (7.2.5):
+$$\mu_2(x, t) = \tfrac12 \|r(x, t)\|^2 = \tfrac12 (\|c(x)\|^2 + (f(x) - t)^2).$$
+It is also the function $\mu(x, t)$ of (14.3.30). -/
 noncomputable def targetMerit (f : E → ℝ) (c : E → F) (t : ℝ) (x : E) : ℝ :=
   (‖c x‖ ^ 2 + (f x - t) ^ 2) / 2
 
 variable {f : E → ℝ} {c : E → F} {t t' : ℝ} {x x' : E}
 
+/-- The target residual norm is $\|r(x, t)\| = \sqrt{\|c(x)\|^2 + (f(x) - t)^2}$. -/
 theorem targetResidual_def :
     targetResidual f c t x = √(‖c x‖ ^ 2 + (f x - t) ^ 2) := rfl
 
+/-- The target merit function is $\mu_2(x, t) = (\|c(x)\|^2 + (f(x) - t)^2) / 2$. -/
 theorem targetMerit_def : targetMerit f c t x = (‖c x‖ ^ 2 + (f x - t) ^ 2) / 2 := rfl
 
+/-- The target residual norm is nonnegative. -/
 theorem targetResidual_nonneg : 0 ≤ targetResidual f c t x := Real.sqrt_nonneg _
 
+/-- The square of the target residual norm is $\|r(x, t)\|^2 = \|c(x)\|^2 + (f(x) - t)^2$. -/
 theorem targetResidual_sq : targetResidual f c t x ^ 2 = ‖c x‖ ^ 2 + (f x - t) ^ 2 :=
   Real.sq_sqrt (by positivity)
 
-/-- `μ₂ = ½ ‖r‖²`. -/
+/-- The merit function is half the square of the residual norm:
+$\mu_2(x, t) = \frac12 \|r(x, t)\|^2$. -/
 theorem targetMerit_eq : targetMerit f c t x = targetResidual f c t x ^ 2 / 2 := by
   rw [targetResidual_sq, targetMerit_def]
 
+/-- The target merit function is nonnegative. -/
 theorem targetMerit_nonneg : 0 ≤ targetMerit f c t x := by
   rw [targetMerit_eq]
   positivity
 
-/-- `‖c(x)‖ ≤ ‖r(x,t)‖`. -/
+/-- The constraint violation is at most the residual norm: $\|c(x)\| \le \|r(x, t)\|$. -/
 theorem norm_le_targetResidual : ‖c x‖ ≤ targetResidual f c t x :=
   Real.le_sqrt_of_sq_le (by nlinarith [sq_nonneg (f x - t)])
 
-/-- `|f(x) - t| ≤ ‖r(x,t)‖`. -/
+/-- The distance to the target is at most the residual norm: $|f(x) - t| \le \|r(x, t)\|$. -/
 theorem abs_sub_le_targetResidual : |f x - t| ≤ targetResidual f c t x :=
   Real.abs_le_sqrt (by nlinarith [sq_nonneg ‖c x‖])
 
-/-- `f(x) - t ≤ ‖r(x,t)‖`. -/
+/-- The excess over the target is at most the residual norm: $f(x) - t \le \|r(x, t)\|$. -/
 theorem sub_le_targetResidual : f x - t ≤ targetResidual f c t x :=
   (le_abs_self _).trans abs_sub_le_targetResidual
 
-/-- The residual only depends on `|f(x) - t|`: reflecting the target through `f(x)` does not
-change it ([cartis2022evaluation], (7.2.18)–(7.2.19)). -/
+/-- The residual depends on $t$ only through $|f(x) - t|$: reflecting the target through $f(x)$ does
+not change it, $\|r(x, 2 f(x) - t)\| = \|r(x, t)\|$. This is used in (7.2.18)–(7.2.19) of
+[cartis2022evaluation]. -/
 theorem targetResidual_two_mul_sub :
     targetResidual f c (2 * f x - t) x = targetResidual f c t x := by
   simp only [targetResidual_def]
   congr 1
   ring
 
-/-- Resetting the target to `t = f(x) - √(ε² - ‖c(x)‖²)` gives residual `ε`
-([cartis2022evaluation], (7.2.11), (7.2.27)). -/
+/-- Let $\varepsilon \ge 0$ and $\|c(x)\| \le \varepsilon$. Resetting the target to
+$t = f(x) - \sqrt{\varepsilon^2 - \|c(x)\|^2}$ gives the residual norm
+$\|r(x, t)\| = \varepsilon$. This is the target update of (7.2.11) and (7.2.27) of
+[cartis2022evaluation]. -/
 theorem targetResidual_sub_sqrt {ε : ℝ} (hε : 0 ≤ ε) (hc : ‖c x‖ ≤ ε) :
     targetResidual f c (f x - √(ε ^ 2 - ‖c x‖ ^ 2)) x = ε := by
   have h : 0 ≤ ε ^ 2 - ‖c x‖ ^ 2 := by nlinarith [norm_nonneg (c x)]
   rw [targetResidual_def, sub_sub_cancel, Real.sq_sqrt h, add_sub_cancel, Real.sqrt_sq hε]
 
-/-- At the target `t = f(x)` the residual is the constraint violation `‖c(x)‖`. -/
+/-- At the target $t = f(x)$ the residual norm is the constraint violation:
+$\|r(x, f(x))\| = \|c(x)\|$. -/
 @[simp]
 theorem targetResidual_self : targetResidual f c (f x) x = ‖c x‖ := by
   simp [targetResidual_def, Real.sqrt_sq (norm_nonneg _)]
 
-/-- At the target `t = f(x)` the merit function is `Φ₂(x) = ½ ‖c(x)‖²`. -/
+/-- At the target $t = f(x)$ the merit function is $\Phi_2(x) = \frac12 \|c(x)\|^2$. -/
 @[simp]
 theorem targetMerit_self : targetMerit f c (f x) x = ‖c x‖ ^ 2 / 2 := by
   simp [targetMerit_def]
 
-/-- Comparing merit values is comparing residuals. -/
+/-- Comparing merit values is comparing residual norms: $\mu_2(x, t) \le \mu_2(x', t')$ if and only
+if $\|r(x, t)\| \le \|r(x', t')\|$. -/
 theorem targetMerit_le_targetMerit_iff :
     targetMerit f c t x ≤ targetMerit f c t' x' ↔
       targetResidual f c t x ≤ targetResidual f c t' x' := by
   rw [targetMerit_eq, targetMerit_eq, div_le_div_iff_of_pos_right two_pos,
     pow_le_pow_iff_left₀ targetResidual_nonneg targetResidual_nonneg two_ne_zero]
 
-/-- Comparing merit values is comparing residuals (strict form). -/
+/-- Comparing merit values is comparing residual norms, strict form: $\mu_2(x, t) < \mu_2(x', t')$
+if and only if $\|r(x, t)\| < \|r(x', t')\|$. -/
 theorem targetMerit_lt_targetMerit_iff :
     targetMerit f c t x < targetMerit f c t' x' ↔
       targetResidual f c t x < targetResidual f c t' x' := by
   rw [← not_le, targetMerit_le_targetMerit_iff, not_le]
 
-/-- `μ₂` is affine in the target up to a constant:
-`μ₂(x,t) = μ₂(x,0) - t f(x) + t²/2`. -/
+/-- The merit function is affine in the target up to a quadratic term in $t$ alone:
+$\mu_2(x, t) = \mu_2(x, 0) - t f(x) + t^2 / 2$. -/
 theorem targetMerit_eq_sub : targetMerit f c t x = targetMerit f c 0 x - t * f x + t ^ 2 / 2 := by
   simp only [targetMerit_def]
   ring
 
-/-- The set `{x ∈ X | ‖r(x, t)‖ ≤ 1}` on which the merit function `μ(·, t)` is controlled
-(Lemma 14.3.6 (ii) of [cartis2022evaluation]). -/
+/-- The **target sublevel set** $\{x \in X : \|r(x, t)\| \le 1\}$, on which the merit function
+$\mu(\cdot, t)$ is controlled in Lemma 14.3.6(ii) of [cartis2022evaluation]. -/
 def targetSublevel (f : E → ℝ) (c : E → F) (X : Set E) (t : ℝ) : Set E :=
   {x ∈ X | targetResidual f c t x ≤ 1}
 
+/-- A point $x$ is in the target sublevel set if and only if $x \in X$ and $\|r(x, t)\| \le 1$. -/
 theorem mem_targetSublevel {X : Set E} :
     x ∈ targetSublevel f c X t ↔ x ∈ X ∧ targetResidual f c t x ≤ 1 := Iff.rfl
 
@@ -209,13 +248,16 @@ end Defs
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [InnerProductSpace ℝ F]
 
-/-- The multiplier estimate `y = -c(x)/(f(x) - t)` of [cartis2022evaluation], (7.2.22) and
-(14.3.53). It is meaningful only when `f(x) ≠ t`; for `f(x) = t` it takes the junk value `0`
-(`0⁻¹ = 0`). -/
+/-- The **multiplier estimate** $y = -c(x) / (f(x) - t)$ of [cartis2022evaluation], (7.2.22) and
+(14.3.53).
+
+It is meaningful only when $f(x) \neq t$. For $f(x) = t$ it has the value $0$, by the convention
+$0^{-1} = 0$. -/
 noncomputable def targetMultiplier (f : E → ℝ) (c : E → F) (t : ℝ) (x : E) : F :=
   -(f x - t)⁻¹ • c x
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- The multiplier estimate is $y = -(f(x) - t)^{-1} c(x)$. -/
 theorem targetMultiplier_def {f : E → ℝ} {c : E → F} {t : ℝ} {x : E} :
     targetMultiplier f c t x = -(f x - t)⁻¹ • c x := rfl
 
@@ -225,15 +267,18 @@ section Deriv
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E}
 
-/-- `μ₂(·, t)` is `C^n` at `x` when `f` and `c` are. -/
+/-- If $f$ and $c$ are $C^n$ at $x$, then $\mu_2(\cdot, t)$ is $C^n$ at $x$. -/
 theorem contDiffAt_targetMerit {n : WithTop ℕ∞} (hf : ContDiffAt ℝ n f x)
     (hc : ContDiffAt ℝ n c x) : ContDiffAt ℝ n (targetMerit f c t) x := by
   have : targetMerit f c t = fun z => (‖c z‖ ^ 2 + (f z - t) ^ 2) / 2 := rfl
   rw [this]
   exact ((hc.norm_sq ℝ).add ((hf.sub contDiffAt_const).pow 2)).div_const _
 
-/-- The derivative of the merit function ([cartis2022evaluation], proof of Lemma 7.2.1, (14.3.37)):
-`∇ₓμ₂(x,t) = (f(x) - t) ∇f(x) + (Dc(x))* c(x)`. -/
+/-- **The derivative of the merit function.** Let $f$ and $c$ have the derivatives $f'$ and $c'$ at
+$x$. Then $\mu_2(\cdot, t)$ has the derivative
+$$\nabla_x \mu_2(x, t) = (f(x) - t) f' + (c')^* c(x)$$
+at $x$, where $(c')^* c(x)$ is the functional $d \mapsto \langle c(x), c' d \rangle$. This is
+used in the proof of Lemma 7.2.1 and in (14.3.37) of [cartis2022evaluation]. -/
 theorem hasFDerivAt_targetMerit {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ] F} (hf : HasFDerivAt f f' x)
     (hc : HasFDerivAt c c' x) :
     HasFDerivAt (targetMerit f c t) ((f x - t) • f' + (innerSL ℝ (c x)).comp c') x := by
@@ -253,15 +298,19 @@ theorem hasFDerivAt_targetMerit {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ] F} (hf 
   simp
   ring
 
-/-- The derivative of the merit function ([cartis2022evaluation], proof of Lemma 7.2.1, (14.3.37)):
-`∇ₓμ₂(x,t) = (f(x) - t) ∇f(x) + (Dc(x))* c(x)`. -/
+/-- **The derivative of the merit function.** Let $f$ and $c$ be differentiable at $x$. Then
+$$\nabla_x \mu_2(x, t) = (f(x) - t) \nabla f(x) + (Dc(x))^* c(x),$$
+where $(Dc(x))^* c(x)$ is the functional $d \mapsto \langle c(x), Dc(x)[d] \rangle$. This is
+used in the proof of Lemma 7.2.1 and in (14.3.37) of [cartis2022evaluation]. -/
 theorem fderiv_targetMerit (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x) :
     fderiv ℝ (targetMerit f c t) x =
       (f x - t) • fderiv ℝ f x + (innerSL ℝ (c x)).comp (fderiv ℝ c x) :=
   (hasFDerivAt_targetMerit hf.hasFDerivAt hc.hasFDerivAt).fderiv
 
-/-- The first-order Taylor decrement of the merit function:
-`-∇ₓμ₂(x, t)[d] = -((f(x) - t) ∇f(x)[d] + ⟪c(x), Dc(x)[d]⟫)`. -/
+/-- **The first-order Taylor decrement of the merit function.** Let $f$ and $c$ have the derivatives
+$f'$ and $c'$ at $x$. Then for every direction $d$,
+$$\Delta T_{\mu, 1}(d) = -\big((f(x) - t) f'(d) + \langle c(x), c'(d) \rangle\big).$$
+-/
 theorem taylorDecrement_one_targetMerit {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ] F}
     (hf : HasFDerivAt f f' x) (hc : HasFDerivAt c c' x) (d : E) :
     (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 1 d =
@@ -270,8 +319,9 @@ theorem taylorDecrement_one_targetMerit {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ]
   simp only [ftaylorSeries, iteratedFDeriv_one_apply, (hasFDerivAt_targetMerit hf hc).fderiv]
   simp
 
-/-- At the target `t = f(x)` the derivative of `μ₂(·, t)` is that of `Φ₂ = ½ ‖c‖²`
-([cartis2022evaluation], proof of Lemma 7.2.1, case `f(x_ε) = t_ε`). -/
+/-- Let $f$ and $c$ be differentiable at $x$, and let $f(x) = t$. Then the derivative of
+$\mu_2(\cdot, t)$ at $x$ is the derivative of $\Phi_2 = \frac12 \|c\|^2$ at $x$. This is the
+case $f(x_\varepsilon) = t_\varepsilon$ in the proof of Lemma 7.2.1 of [cartis2022evaluation]. -/
 theorem fderiv_targetMerit_of_eq (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
     (ht : f x = t) :
     fderiv ℝ (targetMerit f c t) x = fderiv ℝ (fun z => ‖c z‖ ^ 2 / 2) x := by
@@ -290,8 +340,8 @@ theorem fderiv_targetMerit_of_eq (hf : DifferentiableAt ℝ f x) (hc : Different
     innerSL_apply_apply]
   simp
 
-/-- The dependence of the derivatives of `μ₂(·, t)` on the target: for `j ≥ 1`,
-`∇ʲμ₂(x,t) = ∇ʲμ₂(x,0) - t ∇ʲf(x)`. -/
+/-- The dependence of the derivatives of $\mu_2(\cdot, t)$ on the target: let $j \ge 1$, and let $f$
+and $c$ be $C^j$ at $x$. Then $\nabla^j \mu_2(x, t) = \nabla^j \mu_2(x, 0) - t \nabla^j f(x)$. -/
 theorem iteratedFDeriv_targetMerit_eq_sub {j : ℕ} (hj : j ≠ 0) (hf : ContDiffAt ℝ j f x)
     (hc : ContDiffAt ℝ j c x) :
     iteratedFDeriv ℝ j (targetMerit f c t) x =
@@ -318,16 +368,20 @@ section Multiplier
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E}
 
-/-- The derivative of the Lagrangian `z ↦ f(z) - ⟪y, c(z)⟫` of [cartis2022evaluation], (1.1.1):
-`∇f - (Dc)* y`. -/
+/-- **The derivative of the Lagrangian** $z \mapsto f(z) - \langle y, c(z) \rangle$ of
+[cartis2022evaluation], (1.1.1). Let $f$ and $c$ have the derivatives $f'$ and $c'$ at $x$, and
+let $y \in F$. Then the Lagrangian has the derivative $f' - (c')^* y$ at $x$, where $(c')^* y$
+is the functional $d \mapsto \langle y, c' d \rangle$. -/
 theorem hasFDerivAt_sub_inner {f' : E →L[ℝ] ℝ} {c' : E →L[ℝ] F} (y : F) (hf : HasFDerivAt f f' x)
     (hc : HasFDerivAt c c' x) :
     HasFDerivAt (fun z => f z - ⟪y, c z⟫) (f' - (innerSL ℝ y).comp c') x :=
   hf.sub ((innerSL ℝ y).hasFDerivAt.comp x hc)
 
-/-- **The multiplier identity** ([cartis2022evaluation], (7.2.22) and the proof of Lemma 7.2.1;
-(14.3.53)–(14.3.54)): if `f(x) ≠ t` and `y = -c(x)/(f(x) - t)`, then
-`∇ₓμ₂(x,t) = (f(x) - t) ∇ₓℒ(x,y)` for the Lagrangian `ℒ(z, y) = f(z) - ⟪y, c(z)⟫`. -/
+/-- **The multiplier identity.** Let $f$ and $c$ be differentiable at $x$, let $f(x) \neq t$, and
+let $y = -c(x) / (f(x) - t)$ be the multiplier estimate. Then
+$$\nabla_x \mu_2(x, t) = (f(x) - t) \nabla_x \mathcal{L}(x, y)$$
+for the Lagrangian $\mathcal{L}(z, y) = f(z) - \langle y, c(z) \rangle$. This is (7.2.22) with
+the proof of Lemma 7.2.1, and (14.3.53)–(14.3.54), of [cartis2022evaluation]. -/
 theorem fderiv_targetMerit_eq_smul_lagrangian (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (ht : f x ≠ t) :
     fderiv ℝ (targetMerit f c t) x =
@@ -343,9 +397,11 @@ theorem fderiv_targetMerit_eq_smul_lagrangian (hf : DifferentiableAt ℝ f x)
   ring
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The scaling of the approximate KKT condition (7.1.4) ([cartis2022evaluation], proof of
-Lemma 7.2.1): if `t < f(x)` and `y = -c(x)/(f(x) - t)`, then
-`‖r(x,t)‖ / (f(x) - t) = ‖(y, 1)‖ = √(‖y‖² + 1)`. -/
+/-- **The scaling of the approximate Karush–Kuhn–Tucker condition** (7.1.4), from the proof of Lemma
+7.2.1 of [cartis2022evaluation]. Let $t < f(x)$ and let $y = -c(x) / (f(x) - t)$ be the
+multiplier estimate. Then
+$$\frac{\|r(x, t)\|}{f(x) - t} = \|(y, 1)\| = \sqrt{\|y\|^2 + 1}.$$
+-/
 theorem targetResidual_div_eq_sqrt (ht : t < f x) :
     targetResidual f c t x / (f x - t) = √(‖targetMultiplier f c t x‖ ^ 2 + 1) := by
   have hτ : 0 < f x - t := sub_pos.2 ht
@@ -355,21 +411,25 @@ theorem targetResidual_div_eq_sqrt (ht : t < f x) :
   rw [h, Real.sqrt_div (by positivity), Real.sqrt_sq hτ.le, targetResidual_def]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- `⟪y, c(x)⟫ = -‖c(x)‖²/(f(x) - t)` for the multiplier estimate ([cartis2022evaluation], remark
-after the proof of Lemma 14.3.5). -/
+/-- For the multiplier estimate $y$, $\langle y, c(x) \rangle = -\|c(x)\|^2 / (f(x) - t)$. This is
+the remark after the proof of Lemma 14.3.5 of [cartis2022evaluation].
+
+For $f(x) = t$ both sides are $0$. -/
 theorem inner_targetMultiplier :
     ⟪targetMultiplier f c t x, c x⟫ = -(‖c x‖ ^ 2 / (f x - t)) := by
   rw [targetMultiplier_def, real_inner_smul_left, real_inner_self_eq_norm_sq]
   ring
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- `⟪y, c(x)⟫ ≤ 0` when `t ≤ f(x)` ([cartis2022evaluation], remark after the proof of
-Lemma 14.3.5). -/
+/-- If $t \le f(x)$, the multiplier estimate $y$ satisfies $\langle y, c(x) \rangle \le 0$. This is
+the remark after the proof of Lemma 14.3.5 of [cartis2022evaluation]. -/
 theorem inner_targetMultiplier_nonpos (ht : t ≤ f x) : ⟪targetMultiplier f c t x, c x⟫ ≤ 0 := by
   rw [inner_targetMultiplier, neg_nonpos]
   exact div_nonneg (sq_nonneg _) (sub_nonneg.2 ht)
 
-/-- The first derivative tensors: `∇ₓμ₂(x,t) = (f(x) - t) ∇ₓℒ(x,y)` as `1`-linear maps. -/
+/-- Let $f$ and $c$ be differentiable at $x$, let $f(x) \neq t$, and let $y$ be the multiplier
+estimate. Then the first derivatives, as $1$-linear maps, satisfy $\nabla_x \mu_2(x, t) =
+(f(x) - t) \nabla_x \mathcal{L}(x, y)$. -/
 theorem iteratedFDeriv_one_targetMerit_eq_smul (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (ht : f x ≠ t) :
     iteratedFDeriv ℝ 1 (targetMerit f c t) x =
@@ -378,9 +438,15 @@ theorem iteratedFDeriv_one_targetMerit_eq_smul (hf : DifferentiableAt ℝ f x)
   rw [smul_apply, iteratedFDeriv_one_apply, iteratedFDeriv_one_apply,
     fderiv_targetMerit_eq_smul_lagrangian hf hc ht, smul_apply]
 
-/-- **First-order measures of `μ₂` and of the Lagrangian** ([cartis2022evaluation], proof of
-Lemma 7.2.1): if `t < f(x)` and `y = -c(x)/(f(x) - t)`, the criticality measures (7.1.2) over
-any set `T` of admissible displacements satisfy `ω_{μ₂}(x,t) = (f(x) - t) ω_ℒ(x, y)`. -/
+/-- **First-order criticality measures of $\mu_2$ and of the Lagrangian**, from the proof of Lemma
+7.2.1 of [cartis2022evaluation]. Let $f$ and $c$ be differentiable at $x$, let $t < f(x)$, and
+let $y = -c(x) / (f(x) - t)$ be the multiplier estimate. Then for every set $T$ of admissible
+displacements, the criticality measures (7.1.2) satisfy
+$$\omega_{\mu_2}(x, t) = (f(x) - t)\, \omega_{\mathcal{L}}(x, y).$$
+
+The criticality measure of a $j$-linear form $A$ over $T$ is `Optimization.formCriticality`, the
+supremum of $-A[d]^j$ over $d \in T$ with $\|d\| \le 1$; here $j = 1$ and $A$ is the first
+derivative. -/
 theorem formCriticality_targetMerit_eq_mul (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (ht : t < f x) (T : Set E) :
     Optimization.formCriticality (iteratedFDeriv ℝ 1 (targetMerit f c t) x) T =
@@ -389,10 +455,13 @@ theorem formCriticality_targetMerit_eq_mul (hf : DifferentiableAt ℝ f x)
   rw [iteratedFDeriv_one_targetMerit_eq_smul hf hc ht.ne',
     Optimization.formCriticality_smul _ (sub_nonneg.2 ht.le)]
 
-/-- **First-order Taylor measures of `μ₂` and of the Lagrangian** ([cartis2022evaluation],
-(14.3.53)–(14.3.54), Lemma 14.3.5 for `j = 1`): if `t < f(x)` and `y = -c(x)/(f(x) - t)`, then
-for every radius `δ` and feasible set `S`,
-`φ^δ_{ℒ,S,1}(x, y) = φ^δ_{μ,S,1}(x, t) / (f(x) - t)`. -/
+/-- **First-order Taylor measures of $\mu_2$ and of the Lagrangian**, (14.3.53)–(14.3.54) and Lemma
+14.3.5 for $j = 1$ of [cartis2022evaluation]. Let $f$ and $c$ be differentiable at $x$, let
+$t < f(x)$, and let $y = -c(x) / (f(x) - t)$ be the multiplier estimate. Then for every radius
+$\delta$ and every set $S$ of directions,
+$$\varphi^\delta_{\mathcal{L}, S, 1}(x, y) = \frac{\varphi^\delta_{\mu, S, 1}(x, t)}{f(x) -
+  t}.$$
+-/
 theorem taylorMeasure_lagrangian_one_eq (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (ht : t < f x) (δ : ℝ) (S : Set E) :
     Optimization.taylorMeasure
@@ -417,8 +486,11 @@ section Holder
 variable {f : E → ℝ} {c : E → F}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [InnerProductSpace ℝ F] in
-/-- `μ₂(·, t)` for `t ∈ [t₁, t₂]` is a convex combination of `μ₂(·, t₁)` and `μ₂(·, t₂)` plus a
-constant. -/
+/-- Let $t_1 < t_2$ and $t \in \mathbb{R}$, and let $\theta = (t - t_1) / (t_2 - t_1)$. Then
+$$\mu_2(\cdot, t) = (1 - \theta) \mu_2(\cdot, t_1) + \theta \mu_2(\cdot, t_2) + \tfrac12
+  \big(t^2 - (1 - \theta) t_1^2 - \theta t_2^2\big).$$
+For $t \in [t_1, t_2]$ this is a convex combination of $\mu_2(\cdot, t_1)$ and
+$\mu_2(\cdot, t_2)$ plus a constant. -/
 theorem targetMerit_eq_lineMap {t₁ t₂ t : ℝ} (h₁₂ : t₁ < t₂) :
     targetMerit f c t = fun x => (1 - (t - t₁) / (t₂ - t₁)) • targetMerit f c t₁ x +
       ((t - t₁) / (t₂ - t₁)) • targetMerit f c t₂ x +
@@ -431,12 +503,19 @@ theorem targetMerit_eq_lineMap {t₁ t₂ t : ℝ} (h₁₂ : t₁ < t₂) :
   ring
 
 omit [InnerProductSpace ℝ F] in
-/-- **Uniform Hölder constants over an interval of targets** (the core of Lemma 7.2.5 of
-[cartis2022evaluation]): if `p ≥ 1`, `t₁ ≤ t ≤ t₂`, and for `i = 1, 2` the merit function
-`μ₂(·, tᵢ)` is `C^p` at every point of `C` with `(Hᵢ, β)`-Hölder `p`-th derivative on `C`, then the
-`p`-th derivative of `μ₂(·, t)` is `(max H₁ H₂, β)`-Hölder on `C`. The proof uses that `μ₂` is
-affine in `t` up to an additive constant (continuity in `t` alone would not give a uniform
-constant). -/
+/-- **Uniform Hölder constants over an interval of targets**, the core of Lemma 7.2.5 of
+[cartis2022evaluation]. Let $F$ be a normed additive commutative group, let $p \ge 1$,
+$t_1 \le t \le t_2$ and $C \subseteq E$. For $i = 1, 2$, let $\mu_2(\cdot, t_i)$ be $C^p$ at
+every point of $C$, and let its $p$-th derivative be Hölder continuous on $C$ with constant
+$H_i$ and exponent $\beta$:
+$$\|\nabla^p \mu_2(x, t_i) - \nabla^p \mu_2(z, t_i)\| \le H_i \|x - z\|^\beta \quad \text{for }
+  x, z \in C.$$
+Then the $p$-th derivative of $\mu_2(\cdot, t)$ is Hölder continuous on $C$ with constant
+$\max\{H_1, H_2\}$ and exponent $\beta$.
+
+The Hölder condition is `IteratedFDerivHolderOn`. The proof uses that $\mu_2$ is affine in $t$
+up to an additive constant (`Constrained.targetMerit_eq_lineMap`); continuity in $t$ alone would
+not give a uniform constant. -/
 theorem iteratedFDerivHolderOn_targetMerit_of_mem_Icc {p : ℕ} {t₁ t₂ t H₁ H₂ β : ℝ} {C : Set E}
     (hp : p ≠ 0) (ht : t ∈ Icc t₁ t₂)
     (hμ₁ : ∀ x ∈ C, ContDiffAt ℝ p (targetMerit f c t₁) x)
@@ -466,8 +545,11 @@ section HigherOrder
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E}
 
-/-- The diagonal second derivative of the merit function ([cartis2022evaluation], (14.3.38)):
-`∇²μ₂(x,t)[d]² = ‖∇c(x)[d]‖² + ⟪c(x), ∇²c(x)[d]²⟫ + (∇f(x)[d])² + (f(x) - t) ∇²f(x)[d]²`. -/
+/-- **The diagonal second derivative of the merit function**, (14.3.38) of [cartis2022evaluation].
+Let $f$ and $c$ be $C^2$ at $x$. Then for every direction $d$,
+$$\nabla^2 \mu_2(x, t)[d]^2 = \|\nabla c(x)[d]\|^2 + \langle c(x), \nabla^2 c(x)[d]^2 \rangle +
+  (\nabla f(x)[d])^2 + (f(x) - t) \nabla^2 f(x)[d]^2.$$
+-/
 theorem iteratedFDeriv_two_targetMerit_apply (hf : ContDiffAt ℝ 2 f x) (hc : ContDiffAt ℝ 2 c x)
     (d : E) :
     iteratedFDeriv ℝ 2 (targetMerit f c t) x (fun _ => d) =
@@ -485,9 +567,12 @@ theorem iteratedFDeriv_two_targetMerit_apply (hf : ContDiffAt ℝ 2 f x) (hc : C
     fderiv_sub_const, Real.norm_eq_abs, sq_abs, RCLike.inner_apply, conj_trivial]
   ring
 
-/-- The diagonal third derivative of the merit function ([cartis2022evaluation], (14.3.39)):
-`∇³μ₂(x,t)[d]³ = 3 ⟪∇²c(x)[d]², ∇c(x)[d]⟫ + ⟪c(x), ∇³c(x)[d]³⟫ + 3 ∇²f(x)[d]² ∇f(x)[d] +
-(f(x) - t) ∇³f(x)[d]³`. -/
+/-- **The diagonal third derivative of the merit function**, (14.3.39) of [cartis2022evaluation].
+Let $f$ and $c$ be $C^3$ at $x$. Then for every direction $d$,
+$$\nabla^3 \mu_2(x, t)[d]^3 = 3 \langle \nabla^2 c(x)[d]^2, \nabla c(x)[d] \rangle + \langle
+  c(x), \nabla^3 c(x)[d]^3 \rangle + 3 \nabla^2 f(x)[d]^2 \, \nabla f(x)[d] + (f(x) - t)
+  \nabla^3 f(x)[d]^3.$$
+-/
 theorem iteratedFDeriv_three_targetMerit_apply (hf : ContDiffAt ℝ 3 f x)
     (hc : ContDiffAt ℝ 3 c x) (d : E) :
     iteratedFDeriv ℝ 3 (targetMerit f c t) x (fun _ => d) =
@@ -510,10 +595,14 @@ theorem iteratedFDeriv_three_targetMerit_apply (hf : ContDiffAt ℝ 3 f x)
     real_inner_comm (fderiv ℝ c x d)]
   ring
 
-/-- The decomposition behind (14.3.55) and (14.3.58) of [cartis2022evaluation]: with
-`τ = f(x) - t ≠ 0`, `y = -c(x)/τ` and `ℒ(z) = f(z) - ⟪y, c(z)⟫`,
-`μ₂(z, t) = τ ℒ(z) + ½ ‖c(z) - c(x)‖² + ½ (f(z) - f(x))² + const`, hence for `n ≥ 1`
-`∇ⁿμ₂(x,t) = τ ∇ⁿℒ(x) + ∇ⁿ(½ ‖c - c(x)‖²)(x) + ∇ⁿ(½ (f - f(x))²)(x)`. -/
+/-- The decomposition behind (14.3.55) and (14.3.58) of [cartis2022evaluation]. Let $n \ge 1$, let
+$f$ and $c$ be $C^n$ at $x$, let $\tau = f(x) - t \neq 0$, let $y = -c(x) / \tau$, and let
+$\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$. Then
+$$\nabla^n \mu_2(x, t) = \tau \nabla^n \mathcal{L}(x) + \nabla^n \big(\tfrac12 \|c -
+  c(x)\|^2\big)(x) + \nabla^n \big(\tfrac12 (f - f(x))^2\big)(x).$$
+
+This follows from $\mu_2(z, t) = \tau \mathcal{L}(z) + \frac12 \|c(z) - c(x)\|^2 + \frac12
+(f(z) - f(x))^2 + \text{const}$. -/
 theorem iteratedFDeriv_targetMerit_eq_lagrangian {n : ℕ} (hn : n ≠ 0) (hf : ContDiffAt ℝ n f x)
     (hc : ContDiffAt ℝ n c x) (ht : f x ≠ t) :
     iteratedFDeriv ℝ n (targetMerit f c t) x =
@@ -546,9 +635,12 @@ theorem iteratedFDeriv_targetMerit_eq_lagrangian {n : ℕ} (hn : n ≠ 0) (hf : 
 
 variable {d : E}
 
-/-- `(14.3.55)` of [cartis2022evaluation] in decrement form: if `τ = f(x) - t ≠ 0` and
-`∇c(x)[d] = 0`, the second-order Taylor decrements of `μ₂(·, t)` and of the Lagrangian satisfy
-`ΔT_{μ,2}(d) = τ ΔT_{ℒ,2}(d) - ½ (∇f(x)[d])²`. -/
+/-- (14.3.55) of [cartis2022evaluation] in decrement form. Let $f$ and $c$ be $C^2$ at $x$, let
+$\tau = f(x) - t \neq 0$, let $y = -c(x) / \tau$ and $\mathcal{L}(z) = f(z) - \langle y, c(z)
+\rangle$, and let $d$ satisfy $\nabla c(x)[d] = 0$. Then the second-order Taylor decrements
+satisfy
+$$\Delta T_{\mu, 2}(d) = \tau \, \Delta T_{\mathcal{L}, 2}(d) - \tfrac12 (\nabla f(x)[d])^2.$$
+-/
 theorem taylorDecrement_two_targetMerit (hf : ContDiffAt ℝ 2 f x) (hc : ContDiffAt ℝ 2 c x)
     (ht : f x ≠ t) (hd : fderiv ℝ c x d = 0) :
     (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 2 d =
@@ -570,9 +662,13 @@ theorem taylorDecrement_two_targetMerit (hf : ContDiffAt ℝ 2 f x) (hc : ContDi
     sq_abs]
   ring
 
-/-- `(14.3.58)` of [cartis2022evaluation] in decrement form: if `τ = f(x) - t ≠ 0` and
-`∇c(x)[d] = 0`, the third-order Taylor decrements satisfy
-`ΔT_{μ,3}(d) = τ ΔT_{ℒ,3}(d) - ½ (∇f(x)[d])² - ½ ∇f(x)[d] ∇²f(x)[d]²`. -/
+/-- (14.3.58) of [cartis2022evaluation] in decrement form. Let $f$ and $c$ be $C^3$ at $x$, let
+$\tau = f(x) - t \neq 0$, let $y = -c(x) / \tau$ and $\mathcal{L}(z) = f(z) - \langle y, c(z)
+\rangle$, and let $d$ satisfy $\nabla c(x)[d] = 0$. Then the third-order Taylor decrements
+satisfy
+$$\Delta T_{\mu, 3}(d) = \tau \, \Delta T_{\mathcal{L}, 3}(d) - \tfrac12 (\nabla f(x)[d])^2 -
+  \tfrac12 \nabla f(x)[d] \, \nabla^2 f(x)[d]^2.$$
+-/
 theorem taylorDecrement_three_targetMerit (hf : ContDiffAt ℝ 3 f x) (hc : ContDiffAt ℝ 3 c x)
     (ht : f x ≠ t) (hd : fderiv ℝ c x d = 0) :
     (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 3 d =
@@ -603,7 +699,7 @@ theorem taylorDecrement_three_targetMerit (hf : ContDiffAt ℝ 3 f x) (hc : Cont
 
 end HigherOrder
 
-/-! ### Measure relations between `μ₂` and the Lagrangian (Lemma 14.3.5) -/
+/-! ### Measure relations between $\mu_2$ and the Lagrangian (Lemma 14.3.5) -/
 
 section MeasureRelations
 
@@ -611,12 +707,17 @@ open Optimization
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E} {δ : ℝ} {S : Set E}
 
-/-- **Second-order measure relation** ((14.3.43) of [cartis2022evaluation]). Let
-`τ = f(x) - t > 0`, `y = -c(x)/τ`, `ℒ(z) = f(z) - ⟪y, c(z)⟫`, `0 ∈ S`, `δ ≥ 0`, and
-`T = S ∩ ker ∇c(x)`. If `|∇f(x)[d]| ≤ G` for every `d ∈ T` with `‖d‖ ≤ δ` (e.g.
-`G = ‖∇f(x)‖ δ`), then `φ^δ_{ℒ,T,2}(x) ≤ (φ^δ_{μ,S,2}(x,t) + G²/2) / τ`. On `T`,
-`ΔT_{ℒ,2}(d) = (ΔT_{μ,2}(d) + ½ (∇f(x)[d])²)/τ` ((14.3.55)); since `∇ℒ(x)[d] = ∇f(x)[d]` on `T`,
-the extra term is not controlled by `φ^δ_{ℒ,1}`. -/
+/-- **Second-order measure relation**, (14.3.43) of [cartis2022evaluation]. Let $f$ and $c$ be $C^2$
+at $x$, let $\tau = f(x) - t > 0$, let $y = -c(x) / \tau$ and $\mathcal{L}(z) = f(z) - \langle
+y, c(z) \rangle$. Let $0 \in S$, $\delta \ge 0$, and $T = S \cap \ker \nabla c(x)$. Suppose that
+$|\nabla f(x)[d]| \le G$ for every $d \in T$ with $\|d\| \le \delta$; for example
+$G = \|\nabla f(x)\| \delta$. Then
+$$\varphi^\delta_{\mathcal{L}, T, 2}(x) \le \frac{\varphi^\delta_{\mu, S, 2}(x, t) + G^2 /
+  2}{\tau}.$$
+
+On $T$, $\Delta T_{\mathcal{L}, 2}(d) = (\Delta T_{\mu, 2}(d) + \frac12 (\nabla f(x)[d])^2) /
+\tau$ by (14.3.55). Since $\nabla \mathcal{L}(x)[d] = \nabla f(x)[d]$ on $T$, the extra term is
+not controlled by $\varphi^\delta_{\mathcal{L}, 1}$. -/
 theorem taylorMeasure_lagrangian_two_le (hf : ContDiffAt ℝ 2 f x) (hc : ContDiffAt ℝ 2 c x)
     (ht : t < f x) (hδ : 0 ≤ δ) (hS : (0 : E) ∈ S) {G : ℝ}
     (hG : ∀ d ∈ closedBall (0 : E) δ ∩ (S ∩ {d | fderiv ℝ c x d = 0}), |fderiv ℝ f x d| ≤ G) :
@@ -635,9 +736,12 @@ theorem taylorMeasure_lagrangian_two_le (hf : ContDiffAt ℝ 2 f x) (hc : ContDi
   rw [le_inv_mul_iff₀ hτ]
   linarith
 
-/-- **Second-order measure relation on `ker ∇f(x)`** ((14.3.44) of [cartis2022evaluation]): with
-the notation of `taylorMeasure_lagrangian_two_le` and `M = S ∩ ker ∇c(x) ∩ ker ∇f(x)`,
-`φ^δ_{ℒ,M,2}(x) ≤ φ^δ_{μ,S,2}(x,t) / τ`. -/
+/-- **Second-order measure relation on $\ker \nabla f(x)$**, (14.3.44) of [cartis2022evaluation].
+Let $f$ and $c$ be $C^2$ at $x$, let $\tau = f(x) - t > 0$, let $y = -c(x) / \tau$ and
+$\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$. Let $0 \in S$, $\delta \ge 0$, and $M = S
+\cap \ker \nabla c(x) \cap \ker \nabla f(x)$. Then
+$$\varphi^\delta_{\mathcal{L}, M, 2}(x) \le \frac{\varphi^\delta_{\mu, S, 2}(x, t)}{\tau}.$$
+-/
 theorem taylorMeasure_lagrangian_two_le_of_ker (hf : ContDiffAt ℝ 2 f x)
     (hc : ContDiffAt ℝ 2 c x) (ht : t < f x) (hδ : 0 ≤ δ) (hS : (0 : E) ∈ S) :
     taylorMeasure (ftaylorSeries ℝ (fun z => f z - ⟪targetMultiplier f c t x, c z⟫) x) 2 δ
@@ -654,11 +758,16 @@ theorem taylorMeasure_lagrangian_two_le_of_ker (hf : ContDiffAt ℝ 2 f x)
   rw [le_inv_mul_iff₀ hτ]
   linarith
 
-/-- **Third-order measure relation** ((14.3.46) of [cartis2022evaluation]). With the
-notation of `taylorMeasure_lagrangian_two_le` and `C³` data, if `|∇f(x)[d]| ≤ G` and
-`|∇²f(x)[d]²| ≤ H` for every `d ∈ T` with `‖d‖ ≤ δ`, then
-`φ^δ_{ℒ,T,3}(x) ≤ (φ^δ_{μ,S,3}(x,t) + (G + H) G/2) / τ`. On `T`,
-`ΔT_{ℒ,3}(d) = (ΔT_{μ,3}(d) + ½ (∇f(x)[d])² + ½ ∇f(x)[d] ∇²f(x)[d]²)/τ` ((14.3.58)). -/
+/-- **Third-order measure relation**, (14.3.46) of [cartis2022evaluation]. Let $f$ and $c$ be $C^3$
+at $x$, let $\tau = f(x) - t > 0$, let $y = -c(x) / \tau$ and $\mathcal{L}(z) = f(z) - \langle
+y, c(z) \rangle$. Let $0 \in S$, $\delta \ge 0$, and $T = S \cap \ker \nabla c(x)$. Suppose that
+$|\nabla f(x)[d]| \le G$ and $|\nabla^2 f(x)[d]^2| \le H$ for every $d \in T$ with
+$\|d\| \le \delta$. Then
+$$\varphi^\delta_{\mathcal{L}, T, 3}(x) \le \frac{\varphi^\delta_{\mu, S, 3}(x, t) + (G + H) G /
+  2}{\tau}.$$
+
+On $T$, $\Delta T_{\mathcal{L}, 3}(d) = (\Delta T_{\mu, 3}(d) + \frac12 (\nabla f(x)[d])^2 +
+\frac12 \nabla f(x)[d] \, \nabla^2 f(x)[d]^2) / \tau$ by (14.3.58). -/
 theorem taylorMeasure_lagrangian_three_le (hf : ContDiffAt ℝ 3 f x) (hc : ContDiffAt ℝ 3 c x)
     (ht : t < f x) (hδ : 0 ≤ δ) (hS : (0 : E) ∈ S) {G H : ℝ}
     (hG : ∀ d ∈ closedBall (0 : E) δ ∩ (S ∩ {d | fderiv ℝ c x d = 0}), |fderiv ℝ f x d| ≤ G)
@@ -685,8 +794,12 @@ theorem taylorMeasure_lagrangian_three_le (hf : ContDiffAt ℝ 3 f x) (hc : Cont
   rw [le_inv_mul_iff₀ hτ]
   nlinarith
 
-/-- **Third-order measure relation on `ker ∇f(x)`** ((14.3.47) of [cartis2022evaluation]): with
-`M = S ∩ ker ∇c(x) ∩ ker ∇f(x)`, `φ^δ_{ℒ,M,3}(x) ≤ φ^δ_{μ,S,3}(x,t) / τ`. -/
+/-- **Third-order measure relation on $\ker \nabla f(x)$**, (14.3.47) of [cartis2022evaluation]. Let
+$f$ and $c$ be $C^3$ at $x$, let $\tau = f(x) - t > 0$, let $y = -c(x) / \tau$ and
+$\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$. Let $0 \in S$, $\delta \ge 0$, and $M = S
+\cap \ker \nabla c(x) \cap \ker \nabla f(x)$. Then
+$$\varphi^\delta_{\mathcal{L}, M, 3}(x) \le \frac{\varphi^\delta_{\mu, S, 3}(x, t)}{\tau}.$$
+-/
 theorem taylorMeasure_lagrangian_three_le_of_ker (hf : ContDiffAt ℝ 3 f x)
     (hc : ContDiffAt ℝ 3 c x) (ht : t < f x) (hδ : 0 ≤ δ) (hS : (0 : E) ∈ S) :
     taylorMeasure (ftaylorSeries ℝ (fun z => f z - ⟪targetMultiplier f c t x, c z⟫) x) 3 δ

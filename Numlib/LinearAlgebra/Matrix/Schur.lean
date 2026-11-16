@@ -25,55 +25,75 @@ import Numlib.LinearAlgebra.Matrix.Similar
 /-!
 # The Schur triangulation
 
-**Schur's theorem**: an operator on a finite-dimensional inner product space over an algebraically
-closed field is upper triangular in some *orthonormal* basis, and a square matrix over such a field
-is therefore unitarily similar to an upper triangular matrix, `A = Q R Qᴴ` with `Q` unitary. The
-diagonal of `R` then carries the eigenvalues of `A` with their multiplicities, since the
-characteristic polynomial of a triangular matrix is the product of `X - r_ii` and conjugation does
-not change it.
+**Schur's theorem** states that a linear operator on a finite-dimensional inner product space over
+an algebraically closed field is upper triangular in some *orthonormal* basis. Hence a square
+complex matrix $A$ is unitarily similar to an upper triangular matrix: $A = Q R Q^H$ with $Q$
+unitary and $R$ upper triangular. The diagonal of $R$ lists the eigenvalues of $A$ with their
+algebraic multiplicities, because conjugation does not change the characteristic polynomial and the
+characteristic polynomial of a triangular matrix is $\prod_i (X - r_{ii})$. The hypothesis that the
+field is algebraically closed is needed: over $\mathbb{R}$ the statement is false, as a plane
+rotation shows. This is the triangulation of [saad2003iterative], Theorem 1.9, and
+[saad2011numerical], Theorem 1.5, and its basis vectors are the *Schur vectors* that deflation
+techniques for non-normal matrices use.
 
-This is the classical triangulation of [saad2003iterative] (Theorem 1.9) and [saad2011numerical]
-(Theorem 1.5), the source of the *Schur vectors* that deflation techniques for non-normal matrices
-work with.
+The file also proves the Schur form with the eigenvalues in a prescribed order along the diagonal,
+the reduction to block triangular form from a known invariant subspace, the characterization of
+normal matrices as those with a diagonal Schur form, the splitting of a Hermitian matrix by an
+invariant subspace, and the computation of an eigenvector of a triangular matrix by one triangular
+solve.
+
+## Main definitions
+
+* `Matrix.IsUpperTriangular.schurEigenvector`: the vector $(-(T_{11} - \lambda I)^{-1} v, 1, 0)$
+  built from an upper triangular matrix $T$ and a diagonal entry $\lambda = t_{kk}$, as in
+  [quarteroni2000numerical], §5.8.2, (5.56).
 
 ## Main results
 
 * `LinearMap.exists_orthonormalBasis_upperTriangular`: the operator form, an orthonormal basis in
-  which the matrix of `A` is `Matrix.IsUpperTriangular`.
-* `LinearMap.exists_orthonormalBasis_forall_mem_span`: the same basis described by its flag, each
-  initial segment spanning an `A`-invariant subspace.
-* `Matrix.exists_unitary_conj_upperTriangular`: the matrix form, `star Q * A * Q` upper triangular
-  for a unitary `Q`, with the diagonal of the triangular factor listing the roots of the
-  characteristic polynomial.
+  which the matrix of the operator is upper triangular.
+* `LinearMap.exists_orthonormalBasis_forall_mem_span`: the same basis described by its flag: each
+  initial segment of the basis spans an invariant subspace.
+* `Matrix.exists_unitary_conj_upperTriangular`: the matrix form, $Q^H A Q$ upper triangular for a
+  unitary $Q$, with the characteristic polynomial of $A$ equal to the product of the
+  $X - (Q^H A Q)_{ii}$.
 * `Matrix.exists_unitary_conj_upperTriangular_diag_eq`: the Schur form with the eigenvalues in any
-  prescribed order along the diagonal ([golub2013matrix] Theorem 7.1.3).
-* `Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`: the reduction to block triangular form
-  from a known invariant subspace ([golub2013matrix] Lemma 7.1.2).
-* `Matrix.isStarNormal_iff_strictUpper_eq_zero`: normality is diagonality of the Schur form
-  ([golub2013matrix] §9.3.2), from `Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` (with
-  its lower twin) and the unitary invariance `Matrix.isStarNormal_star_mul_mul_iff`.
+  prescribed order along the diagonal ([golub2013matrix], Theorem 7.1.3).
+* `Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`: the reduction to block upper triangular
+  form from a known invariant subspace ([golub2013matrix], Lemma 7.1.2).
+* `Matrix.isStarNormal_iff_strictUpper_eq_zero`: a matrix is normal if and only if its Schur form is
+  diagonal ([golub2013matrix], §9.3.2). It follows from
+  `Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` and the unitary invariance
+  `Matrix.isStarNormal_star_mul_mul_iff`.
 * `Matrix.IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks` and
   `Matrix.IsHermitian.charpoly_eq_mul_of_mul_eq_mul`: an invariant subspace of a Hermitian matrix
-  splits it into two diagonal blocks, and splits its spectrum ([golub2013matrix] Theorem 8.1.9).
-* `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`: similarity moves eigenvectors, which is how
-  an eigenvector of the triangular factor is carried back to `A`.
-* `Matrix.IsUpperTriangular.schurEigenvector` and
-  `Matrix.IsUpperTriangular.mulVec_schurEigenvector`: the eigenvector of an upper triangular
-  matrix for a simple diagonal entry, by one triangular solve ([quarteroni2000numerical] §5.8.2,
-  (5.56)).
+  splits it into two diagonal blocks, and splits its spectrum ([golub2013matrix], Theorem 8.1.9).
+* `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`: a unitary similarity carries eigenvectors to
+  eigenvectors, which carries an eigenvector of the triangular factor back to $A$.
+* `Matrix.IsUpperTriangular.mulVec_schurEigenvector`: the vector
+  `Matrix.IsUpperTriangular.schurEigenvector` is an eigenvector of $T$ when $\lambda$ is not a
+  diagonal entry above row $k$.
+
+## Proof outline
+
+The proof of Schur's theorem is an induction on the dimension. It passes to the orthogonal
+complement of an eigenvector of the **adjoint**: if $A^* w = \nu w$, then $w^\perp$ is invariant
+under $A$, because $\langle w, Ay \rangle = \langle A^* w, y \rangle = \bar\nu \langle w, y
+\rangle$. The complement of an eigenvector of $A$ itself is in general not invariant. The new basis
+vector is put at the end of the basis, which is where an invariant hyperplane puts it.
 
 ## Implementation notes
 
-The induction is on the dimension, and it descends through the orthogonal complement of an
-eigenvector **of the adjoint**: if `A† w = ν w` then `(𝕜 ∙ w)ᗮ` is invariant under `A`, because `⟪w,
-A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫`. Descending through an eigenvector of `A` itself would leave a
-complement that is *not* invariant, and would force the compression `P A|_W` and its orthogonal
-projector into the induction. With the adjoint the inductive step needs only `LinearMap.restrict`,
-and the new basis vector is appended at the *end* by `Fin.snoc`, which is where an invariant
-hyperplane puts it.
-
-Only `Module.End.exists_eigenvalue` uses `[IsAlgClosed 𝕜]`; over `ℝ` the statement is false, as a
-plane rotation shows.
+* The field is an `RCLike` field with `[IsAlgClosed 𝕜]`, which in practice means $\mathbb{C}$. Only
+  the existence of an eigenvalue, `Module.End.exists_eigenvalue`, uses that the field is
+  algebraically closed. The prescribed-order form
+  `Matrix.exists_unitary_conj_upperTriangular_diag_eq` instead assumes that the characteristic
+  polynomial splits, and so also holds over $\mathbb{R}$.
+* The inductive step restricts the operator with `LinearMap.restrict` and appends the new basis
+  vector with `Fin.snoc`. With an eigenvector of $A$ itself the complement would not be invariant,
+  and the induction would have to carry the compression of $A$ to the complement and its orthogonal
+  projection.
+* The Schur form is written `star Q * A * Q` with `Q ∈ Matrix.unitaryGroup n 𝕜`.
 -/
 
 open Module Submodule
@@ -83,16 +103,20 @@ namespace LinearMap
 variable {𝕜 : Type*} [RCLike 𝕜] {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E]
 
-/-- The orthogonal complement of an eigenvector of the adjoint is invariant under the operator: `⟪w,
-A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫` vanishes with `⟪w, y⟫`. -/
+/-- Let $A$ be a linear operator on a finite-dimensional inner product space $E$, and let $w \in E$
+satisfy $A^* w = \nu w$. If $y$ is orthogonal to $w$, then $Ay$ is orthogonal to $w$. That is,
+the orthogonal complement of an eigenvector of the adjoint is invariant under $A$.
+
+The reason is that $\langle w, Ay \rangle = \langle A^* w, y \rangle = \bar\nu \langle w, y
+\rangle = 0$. -/
 theorem mem_orthogonal_singleton_of_adjoint_apply_eq_smul {A : E →ₗ[𝕜] E} {w : E} {ν : 𝕜}
     (hw : A.adjoint w = ν • w) {y : E} (hy : y ∈ (𝕜 ∙ w)ᗮ) : A y ∈ (𝕜 ∙ w)ᗮ := by
   rw [Submodule.mem_orthogonal_singleton_iff_inner_right] at hy ⊢
   rw [← LinearMap.adjoint_inner_left A y w, hw, inner_smul_left, hy, mul_zero]
 
-/-- Schur's theorem in the form the induction produces: an orthonormal basis in which the matrix
-entries of `A` below the diagonal, `⟪b i, A (b j)⟫` for `j < i`, all vanish. The space is quantified
-inside the statement because the induction descends to a hyperplane of it. -/
+/-- Schur's theorem in the form that the induction produces: for every operator $A$ on an
+$n$-dimensional space there is an orthonormal basis $b$ with $\langle b_i, A b_j \rangle = 0$
+for all $j < i$. -/
 private theorem exists_orthonormalBasis_forall_inner_eq_zero (𝕜 : Type*) [RCLike 𝕜]
     [IsAlgClosed 𝕜] (n : ℕ) :
     ∀ {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E],
@@ -172,10 +196,15 @@ private theorem exists_orthonormalBasis_forall_inner_eq_zero (𝕜 : Type*) [RCL
 
 variable [IsAlgClosed 𝕜]
 
-/-- **Schur's theorem**, operator form: an operator on a finite-dimensional inner product space over
-an algebraically closed field has an orthonormal basis in which its matrix is upper triangular. The
-proof is an induction on the dimension through the orthogonal complement of an eigenvector of the
-adjoint, which is an invariant hyperplane. -/
+/-- **Schur's theorem**, operator form. Let $E$ be an inner product space of finite dimension $n$
+over an algebraically closed field $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, and let
+$A : E \to E$ be linear. Then there is an orthonormal basis $b_0, \dots, b_{n-1}$ of $E$ in
+which the matrix of $A$ is upper triangular.
+
+The proof is an induction on the dimension through the orthogonal complement of an eigenvector
+of the adjoint, which is an invariant hyperplane
+(`LinearMap.mem_orthogonal_singleton_of_adjoint_apply_eq_smul`). This is Theorem 1.9 of
+[saad2003iterative]. -/
 theorem exists_orthonormalBasis_upperTriangular {n : ℕ} (hn : finrank 𝕜 E = n) (A : E →ₗ[𝕜] E) :
     ∃ b : OrthonormalBasis (Fin n) 𝕜 E,
       (LinearMap.toMatrix b.toBasis b.toBasis A).IsUpperTriangular := by
@@ -185,9 +214,12 @@ theorem exists_orthonormalBasis_upperTriangular {n : ℕ} (hn : finrank 𝕜 E =
     OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
   exact hb i j hji
 
-/-- The Schur basis described by its flag: each initial segment `b 0, …, b j` spans an `A`-invariant
-subspace, which is what makes the matrix of `A` upper triangular. These are the *Schur vectors* of
-`A`. -/
+/-- Let $E$ be an inner product space of finite dimension $n$ over an algebraically closed field
+$\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, and let $A : E \to E$ be linear. Then there is an
+orthonormal basis $b_0, \dots, b_{n-1}$ of $E$ such that
+$$A b_j \in \operatorname{span}\{b_0, \dots, b_j\} \qquad \text{for every } j.$$
+Each initial segment of the basis therefore spans an $A$-invariant subspace. These vectors are
+the **Schur vectors** of $A$. -/
 theorem exists_orthonormalBasis_forall_mem_span {n : ℕ} (hn : finrank 𝕜 E = n) (A : E →ₗ[𝕜] E) :
     ∃ b : OrthonormalBasis (Fin n) 𝕜 E,
       ∀ j : Fin n, A (b j) ∈ Submodule.span 𝕜 (b '' Set.Iic j) := by
@@ -213,12 +245,17 @@ variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n] {𝕜 : Type*} 
   [IsAlgClosed 𝕜]
 
 open Polynomial in
-/-- **Schur's theorem**, matrix form: a square matrix over an algebraically closed `RCLike` field —
-that is, over `Complex` — is unitarily similar to an upper triangular matrix, `star Q * A * Q = R`
-with `Q` unitary and `R` upper triangular. The diagonal of `R` lists the eigenvalues of `A` with
-their multiplicities, in the sense that the characteristic polynomial of `A` is the product of the
-`X - r_ii`: conjugation leaves the characteristic polynomial alone, and that of a triangular matrix
-is read off its diagonal. -/
+/-- **Schur's theorem**, matrix form. Let $A \in \mathbb{K}^{n \times n}$, where
+$\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$ is algebraically closed, that is,
+$\mathbb{K} = \mathbb{C}$. Then there is a unitary $Q$ such that $R = Q^H A Q$ is upper
+triangular and
+$$\chi_A(X) = \prod_i (X - r_{ii}).$$
+The diagonal of $R$ thus lists the eigenvalues of $A$ with their algebraic multiplicities.
+
+The index type `n` has a linear order, which defines "upper triangular". The second claim holds
+because conjugation does not change the characteristic polynomial, and the characteristic
+polynomial of a triangular matrix is the product of $X - r_{ii}$. This is Theorem 1.9 of
+[saad2003iterative] and Theorem 1.5 of [saad2011numerical]. -/
 theorem exists_unitary_conj_upperTriangular (A : Matrix n n 𝕜) :
     ∃ Q ∈ unitaryGroup n 𝕜, (star Q * A * Q).IsUpperTriangular ∧
       A.charpoly = ∏ i, (X - C ((star Q * A * Q) i i)) := by
@@ -271,16 +308,21 @@ section Conj
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **Similarity moves eigenvectors** ([quarteroni2000numerical] Exercise 5.9): if `A x = μ x` and
-`U` is nonsingular then `(U⁻¹ A U)(U⁻¹ x) = μ (U⁻¹ x)`. -/
+/-- **Similarity moves eigenvectors.** Let $A, U \in R^{n \times n}$ over a commutative ring $R$,
+with $U$ invertible. If $Ax = \mu x$, then
+$$(U^{-1} A U)(U^{-1} x) = \mu \, U^{-1} x.$$
+This is Exercise 5.9 of [quarteroni2000numerical]. -/
 theorem mulVec_conj_eq_smul_of_mulVec_eq_smul {R : Type*} [CommRing R] {A U : Matrix n n R}
     (hU : IsUnit U) {μ : R} {x : n → R} (hx : A *ᵥ x = μ • x) :
     (U⁻¹ * A * U) *ᵥ (U⁻¹ *ᵥ x) = μ • (U⁻¹ *ᵥ x) :=
   IsSimilar.mulVec_eq_smul hU rfl hx
 
-/-- The unitary form of `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`: if `A x = μ x` and `U` is
-unitary then `(Uᴴ A U)(Uᴴ x) = μ (Uᴴ x)`. This is how an eigenvector of the Hessenberg or Schur
-form of `A` is carried back to `A`, `x = U y`. -/
+/-- Let $A, U \in R^{n \times n}$ over a commutative ring $R$ with an involution, with $U$ unitary.
+If $Ax = \mu x$, then
+$$(U^H A U)(U^H x) = \mu \, U^H x.$$
+
+This is the unitary form of `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`. It carries an
+eigenvector $y$ of the Hessenberg or Schur form of $A$ back to the eigenvector $x = U y$ of $A$. -/
 theorem mulVec_star_conj_eq_smul_of_mulVec_eq_smul {R : Type*} [CommRing R] [StarRing R]
     {A U : Matrix n n R} (hU : U ∈ unitaryGroup n R) {μ : R} {x : n → R} (hx : A *ᵥ x = μ • x) :
     (star U * A * U) *ᵥ (star U *ᵥ x) = μ • (star U *ᵥ x) := by
@@ -297,11 +339,18 @@ variable {K : Type*} [Field K] {N : ℕ}
 
 namespace IsUpperTriangular
 
-/-- The eigenvector of an upper triangular matrix `T` for a *simple* diagonal entry `λ = T k k`,
-read off the Schur form as in [quarteroni2000numerical] §5.8.2, (5.56): with `T` partitioned around
-row `k` as `[T₁₁ v T₁₃; 0 λ wᵀ; 0 0 T₃₃]`, the vector is `(-(T₁₁ - λ I)⁻¹ v, 1, 0)`. It is defined
-for every `T` and `k` through `Matrix.inv`, and is an eigenvector when `λ` is not a diagonal
-entry of `T₁₁` (`Matrix.IsUpperTriangular.mulVec_schurEigenvector`). -/
+/-- Let $T \in K^{N \times N}$ over a field $K$ and let $0 \le k < N$, with $\lambda = t_{kk}$.
+Partition $T$ around row and column $k$ as
+$$T = \begin{bmatrix} T_{11} & v & T_{13} \\ * & \lambda & w^T \\ * & * & T_{33} \end{bmatrix},
+  \qquad T_{11} \in K^{k \times k}.$$
+The **Schur eigenvector** of $T$ for $k$ is
+$$y = \begin{bmatrix} -(T_{11} - \lambda I)^{-1} v \\ 1 \\ 0 \end{bmatrix}.$$
+
+This is the eigenvector of [quarteroni2000numerical], §5.8.2, (5.56). The definition applies to
+every $T$ and $k$, because the inverse is `Matrix.inv`, which is $0$ for a singular matrix; then
+the first $k$ entries are $0$. The vector is an eigenvector when $T$ is upper triangular and
+$\lambda$ is not a diagonal entry of $T_{11}$
+(`Matrix.IsUpperTriangular.mulVec_schurEigenvector`). -/
 noncomputable def schurEigenvector (T : Matrix (Fin N) (Fin N) K) (k : Fin N) : Fin N → K :=
   fun i =>
     if h : (i : ℕ) < k then
@@ -309,24 +358,28 @@ noncomputable def schurEigenvector (T : Matrix (Fin N) (Fin N) K) (k : Fin N) : 
         *ᵥ fun j => T (Fin.castLE k.isLt.le j) k) ⟨i, h⟩)
     else if i = k then 1 else 0
 
-/-- The `k`-th entry of the Schur eigenvector is `1`. -/
+/-- The entry $k$ of the Schur eigenvector `Matrix.IsUpperTriangular.schurEigenvector T k` is $1$.
+-/
 @[simp]
 theorem schurEigenvector_apply_self (T : Matrix (Fin N) (Fin N) K) (k : Fin N) :
     schurEigenvector T k k = 1 := by
   simp [schurEigenvector]
 
-/-- The Schur eigenvector vanishes below the row `k`. -/
+/-- For $k < i$, the entry $i$ of the Schur eigenvector
+`Matrix.IsUpperTriangular.schurEigenvector T k` is $0$. -/
 theorem schurEigenvector_apply_of_lt (T : Matrix (Fin N) (Fin N) K) {k i : Fin N} (h : k < i) :
     schurEigenvector T k i = 0 := by
   have h1 : ¬ ((i : ℕ) < k) := not_lt.2 (Fin.le_def.1 h.le)
   rw [schurEigenvector, dite_eq_right h1, ite_eq_right h.ne']
 
-/-- The Schur eigenvector is nonzero, its `k`-th entry being `1`. -/
+/-- The Schur eigenvector `Matrix.IsUpperTriangular.schurEigenvector T k` is nonzero, because its
+entry $k$ is $1$. -/
 theorem schurEigenvector_ne_zero (T : Matrix (Fin N) (Fin N) K) (k : Fin N) :
     schurEigenvector T k ≠ 0 := fun h => by
   simpa using congrFun h k
 
-/-- The leading block of an upper triangular matrix, shifted by a scalar, is upper triangular. -/
+/-- For upper triangular $T$, $k \le N$ and a scalar $c$, the leading $k \times k$ block of $T$
+minus $cI$ is upper triangular. -/
 private theorem isUpperTriangular_submatrix_castLE_sub {T : Matrix (Fin N) (Fin N) K}
     (hT : T.IsUpperTriangular) {k : ℕ} (hk : k ≤ N) (c : K) :
     (T.submatrix (Fin.castLE hk) (Fin.castLE hk) - c • 1).IsUpperTriangular := by
@@ -335,13 +388,17 @@ private theorem isUpperTriangular_submatrix_castLE_sub {T : Matrix (Fin N) (Fin 
     ite_eq_right (fun h : i = j => absurd h (ne_of_gt hji)), smul_zero, sub_zero]
   exact hT (Fin.lt_def.2 (by simp only [id, Fin.val_castLE]; exact Fin.lt_def.1 hji))
 
-/-- **The Schur eigenvector is an eigenvector** ([quarteroni2000numerical] §5.8.2, (5.56)): for
-`T` upper triangular and a diagonal entry `λ = T k k` that is not repeated above row `k`,
-`T y = λ y` for `y = schurEigenvector T k`. Rows below `k` vanish on both sides, row `k` reads
-`λ · 1`, and the rows above `k` are the triangular system `(T₁₁ - λ I) y₁ = -v` that defines `y₁`.
-Together with `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul` and
-`Matrix.exists_unitary_conj_upperTriangular` this computes an eigenvector `x = Q y` of `A` for each
-simple eigenvalue from its Schur form. -/
+/-- **The Schur eigenvector is an eigenvector.** Let $T \in K^{N \times N}$ be upper triangular over
+a field $K$, and let $0 \le k < N$ with $t_{ii} \neq t_{kk}$ for all $i < k$. Then $y$ =
+`Matrix.IsUpperTriangular.schurEigenvector T k` satisfies
+$$T y = t_{kk} \, y.$$
+
+This is (5.56) of [quarteroni2000numerical], §5.8.2. Only the diagonal entries above row $k$
+must differ from $t_{kk}$. Rows below $k$ vanish on both sides, row $k$ reads $\lambda \cdot 1$,
+and the rows above $k$ are the triangular system $(T_{11} - \lambda I) y_1 = -v$ that defines
+$y_1$. Together with `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul` and
+`Matrix.exists_unitary_conj_upperTriangular`, this gives an eigenvector $x = Q y$ of $A$ for
+each simple eigenvalue from its Schur form. -/
 theorem mulVec_schurEigenvector {T : Matrix (Fin N) (Fin N) K}
     (hT : T.IsUpperTriangular) {k : Fin N} (hk : ∀ i, i < k → T i i ≠ T k k) :
     T *ᵥ schurEigenvector T k = T k k • schurEigenvector T k := by
@@ -422,9 +479,13 @@ section Normal
 
 variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n] {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **A normal upper triangular matrix is diagonal.** By strong induction along the order of `n`,
-compare the `(i, i)` entries of `Tᴴ T = T Tᴴ`: `∑_{k ≤ i} |t_ki|² = ∑_{k ≥ i} |t_ik|²`, and the
-entries above row `i` in column `i` vanish by induction, so `∑_{k > i} |t_ik|² = 0`. -/
+/-- **A normal upper triangular matrix is diagonal.** Let $T \in \mathbb{K}^{n \times n}$ over
+$\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$ be upper triangular and normal, $T^H T = T T^H$.
+Then $T = \operatorname{diag}(t_{11}, \dots, t_{nn})$.
+
+The proof is a strong induction along the order of the index type. The $(i, i)$ entries of
+$T^H T = T T^H$ give $\sum_{k \le i} |t_{ki}|^2 = \sum_{k \ge i} |t_{ik}|^2$. The entries above
+row $i$ in column $i$ vanish by induction, so $\sum_{k > i} |t_{ik}|^2 = 0$. -/
 theorem IsUpperTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
     (hT : T.IsUpperTriangular) (hN : IsStarNormal T) : T = diagonal fun i => T i i := by
   have hcomm : star T * T = T * star T := hN.star_comm_self.eq
@@ -458,8 +519,11 @@ theorem IsUpperTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
   · rw [diagonal_apply_eq]
   · rw [hT h, diagonal_apply_ne _ h.ne']
 
-/-- A lower triangular normal matrix is diagonal: its adjoint is upper triangular and normal
-(`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal`). -/
+/-- Let $T \in \mathbb{K}^{n \times n}$ over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$ be lower
+triangular and normal. Then $T$ is diagonal, $T = \operatorname{diag}(t_{11}, \dots, t_{nn})$.
+
+The conjugate transpose $T^H$ is upper triangular and normal, so
+`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal` applies. -/
 theorem IsLowerTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
     (hT : T.IsLowerTriangular) (hN : IsStarNormal T) : T = diagonal fun i => T i i := by
   have hU : (star T).IsUpperTriangular := fun i j hij => by
@@ -473,8 +537,11 @@ theorem IsLowerTriangular.eq_diagonal_of_isStarNormal {T : Matrix n n 𝕜}
   simp
 
 omit [LinearOrder n] in
-/-- Normality is invariant under unitary similarity: conjugation by a unitary is a
-`⋆`-automorphism (`Unitary.conjStarAlgAut`), and `⋆`-homomorphisms preserve normality. -/
+/-- Let $A, Q \in \mathbb{K}^{n \times n}$ over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, with
+$Q$ unitary. Then $Q^H A Q$ is normal if and only if $A$ is normal.
+
+Conjugation by a unitary matrix is a $*$-automorphism (`Unitary.conjStarAlgAut`), and
+$*$-homomorphisms preserve normality. -/
 theorem isStarNormal_star_mul_mul_iff {A Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜) :
     IsStarNormal (star Q * A * Q) ↔ IsStarNormal A := by
   have key : ∀ {B P : Matrix n n 𝕜}, P ∈ unitaryGroup n 𝕜 → IsStarNormal B →
@@ -485,12 +552,17 @@ theorem isStarNormal_star_mul_mul_iff {A Q : Matrix n n 𝕜} (hQ : Q ∈ unitar
   rwa [star_star, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ,
     Matrix.one_mul, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ, Matrix.mul_one] at this
 
-/-- **Normality is diagonality of the Schur form** ([golub2013matrix] §9.3.2 and P7.1.1): if
-`T = Qᴴ A Q` is upper triangular with `Q` unitary, then `A` is normal iff `T` is diagonal, that is
-iff the strictly upper triangular part of `T` vanishes. `←`: a diagonal matrix is normal, and
-normality is a unitary invariant (`Matrix.isStarNormal_star_mul_mul_iff`); `→`:
-`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal`. Elementary: no spectral theorem and no
-Frobenius norm. -/
+/-- **Normality is diagonality of the Schur form.** Let $A, Q \in \mathbb{K}^{n \times n}$ over
+$\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, with $Q$ unitary and $T = Q^H A Q$ upper
+triangular. Then $A$ is normal if and only if $T$ is diagonal:
+$$A^H A = A A^H \iff T = \operatorname{diag}(t_{11}, \dots, t_{nn}).$$
+Equivalently, $A$ is normal if and only if the strictly upper triangular part of $T$ vanishes.
+This is [golub2013matrix], §9.3.2 and Problem P7.1.1.
+
+The direction from right to left holds because a diagonal matrix is normal and normality is a
+unitary invariant (`Matrix.isStarNormal_star_mul_mul_iff`). The direction from left to right is
+`Matrix.IsUpperTriangular.eq_diagonal_of_isStarNormal`. The proof is elementary: it uses neither
+the spectral theorem nor the Frobenius norm. -/
 theorem isStarNormal_iff_strictUpper_eq_zero {A Q : Matrix n n 𝕜} (hQ : Q ∈ unitaryGroup n 𝕜)
     (hT : (star Q * A * Q).IsUpperTriangular) :
     IsStarNormal A ↔ star Q * A * Q = diagonal fun i => (star Q * A * Q) i i := by
@@ -511,11 +583,17 @@ variable {n r s : Type*} [Fintype n] [Fintype r] [Fintype s] [DecidableEq n] [De
   [DecidableEq s] {𝕜 : Type*} [RCLike 𝕜]
 
 omit [Fintype s] [DecidableEq n] in
-/-- **An invariant subspace of a Hermitian matrix splits it** ([golub2013matrix] Theorem 8.1.9 and
-(8.1.1); the Hermitian counterpart of Lemma 7.1.2): if `Q = [Q₁ Q₂]` has orthonormal columns and
-the columns of `Q₁` span an `A`-invariant subspace, `A Q₁ = Q₁ M`, then
-`Qᴴ A Q = diag(Q₁ᴴ A Q₁, Q₂ᴴ A Q₂)`. The block `Q₂ᴴ A Q₁ = Q₂ᴴ Q₁ M` vanishes by orthogonality,
-and `Q₁ᴴ A Q₂` is its conjugate transpose — the matrix form of Mathlib's
+/-- **An invariant subspace of a Hermitian matrix splits it.** Let $A \in \mathbb{K}^{n \times n}$
+be Hermitian, over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$. Let $Q = [Q_1 \; Q_2]$ with
+$Q_1 \in \mathbb{K}^{n \times r}$ and $Q_2 \in \mathbb{K}^{n \times s}$ have orthonormal
+columns, $Q^H Q = I$, and suppose that $A Q_1 = Q_1 M$ for some $M \in \mathbb{K}^{r \times r}$.
+Then
+$$Q^H A Q = \begin{bmatrix} Q_1^H A Q_1 & 0 \\ 0 & Q_2^H A Q_2 \end{bmatrix}.$$
+This is [golub2013matrix], Theorem 8.1.9 and (8.1.1), and the Hermitian counterpart of Lemma
+7.1.2.
+
+The block $Q_2^H A Q_1 = Q_2^H Q_1 M$ vanishes by orthogonality, and $Q_1^H A Q_2$ is its
+conjugate transpose. This is the matrix form of
 `LinearMap.IsSymmetric.orthogonalComplement_mem_invtSubmodule`. -/
 theorem IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {Q₁ : Matrix n r 𝕜} {Q₂ : Matrix n s 𝕜}
@@ -533,11 +611,17 @@ theorem IsHermitian.conjTranspose_mul_mul_fromCols_eq_fromBlocks {A : Matrix n n
   rw [conjTranspose_fromCols_eq_fromRows_conjTranspose, fromRows_mul, fromRows_mul_fromCols, h12,
     h21]
 
-/-- **The spectrum of a Hermitian matrix split by an invariant subspace** ([golub2013matrix]
-Theorem 8.1.9): if moreover `Q = [Q₁ Q₂]` is square (`Q Qᴴ = 1`), the characteristic polynomial of
-`A` is the product of those of `Q₁ᴴ A Q₁` and `Q₂ᴴ A Q₂`, so the eigenvalues with multiplicities are
-the union. Similarity across the index types `n` and `r ⊕ s` is `Matrix.charpoly_mul_comm'`, the
-two index types having the same size because `Q` has full rank both ways. -/
+/-- **The spectrum of a Hermitian matrix split by an invariant subspace.** Let
+$A \in \mathbb{K}^{n \times n}$ be Hermitian, over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$.
+Let $Q = [Q_1 \; Q_2]$ with $Q_1 \in \mathbb{K}^{n \times r}$ and
+$Q_2 \in \mathbb{K}^{n \times s}$ be unitary, $Q^H Q = I$ and $Q Q^H = I$, and suppose that
+$A Q_1 = Q_1 M$ for some $M \in \mathbb{K}^{r \times r}$. Then
+$$\chi_A = \chi_{Q_1^H A Q_1} \, \chi_{Q_2^H A Q_2}.$$
+The eigenvalues of $A$, with multiplicities, are therefore those of the two blocks together.
+This is [golub2013matrix], Theorem 8.1.9.
+
+The similarity between matrices indexed by `n` and by `r ⊕ s` is `Matrix.charpoly_mul_comm'`.
+The two index types have the same size because $Q$ has full rank as a map in both directions. -/
 theorem IsHermitian.charpoly_eq_mul_of_mul_eq_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {Q₁ : Matrix n r 𝕜} {Q₂ : Matrix n s 𝕜} (hQ : (fromCols Q₁ Q₂)ᴴ * fromCols Q₁ Q₂ = 1)
     (hQ' : fromCols Q₁ Q₂ * (fromCols Q₁ Q₂)ᴴ = 1) {M : Matrix r r 𝕜} (hAQ : A * Q₁ = Q₁ * M) :
@@ -568,13 +652,20 @@ section InvariantBlock
 
 variable {𝕜 : Type*} [RCLike 𝕜] {p q : ℕ}
 
-/-- **[golub2013matrix] Lemma 7.1.2**: if the `p` independent columns of `X` span an invariant
-subspace of `A`, `A X = X B` with `rank X = p`, then a unitary similarity puts `A` in block upper
-triangular form `[T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` similar to `B` (so the eigenvalues of `B` are
-eigenvalues of `A`). Take a unitary `P` with `P X = [R₁; 0]` upper triangular
-(`Matrix.exists_unitary_mul_upperTriangular`) and `Q = Pᴴ`; then `T = Qᴴ A Q` satisfies
-`T [R₁; 0] = [R₁; 0] B`, that is `T₂₁ R₁ = 0` and `T₁₁ R₁ = R₁ B`, and `R₁` is nonsingular because
-`X` has full column rank. The blocks are read through `finSumFinEquiv`. -/
+/-- Let $A \in \mathbb{K}^{(p+q) \times (p+q)}$, $B \in \mathbb{K}^{p \times p}$ and
+$X \in \mathbb{K}^{(p+q) \times p}$ over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, with
+$AX = XB$ and $\operatorname{rank} X = p$. Then there are a unitary $Q$ and blocks
+$T_{11} \in \mathbb{K}^{p \times p}$, $T_{12} \in \mathbb{K}^{p \times q}$,
+$T_{22} \in \mathbb{K}^{q \times q}$ such that
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$$
+and $T_{11}$ is similar to $B$. In particular the eigenvalues of $B$ are eigenvalues of $A$.
+This is Lemma 7.1.2 of [golub2013matrix].
+
+The blocks of $Q^H A Q$ are read through `finSumFinEquiv`. The proof takes a unitary $P$ with
+$PX = \begin{bmatrix} R_1 \\ 0 \end{bmatrix}$ and $R_1$ upper triangular
+(`Matrix.exists_unitary_mul_upperTriangular`), and sets $Q = P^H$. Then $T = Q^H A Q$ satisfies
+$T_{21} R_1 = 0$ and $T_{11} R_1 = R_1 B$, and $R_1$ is nonsingular because $X$ has full column
+rank. -/
 theorem exists_unitary_conj_fromBlocks_of_mul_eq_mul {A : Matrix (Fin (p + q)) (Fin (p + q)) 𝕜}
     {B : Matrix (Fin p) (Fin p) 𝕜} {X : Matrix (Fin (p + q)) (Fin p) 𝕜} (hAX : A * X = X * B)
     (hX : X.rank = p) :
@@ -655,14 +746,21 @@ section PrescribedOrder
 variable {𝕜 : Type*} [RCLike 𝕜]
 
 open Polynomial in
-/-- **Schur's theorem with the eigenvalues in any prescribed order** ([golub2013matrix] Theorem
-7.1.3: "`Q` can be chosen so that the eigenvalues `λ_i` appear in any order along the diagonal"):
-for `A` of order `N` over `ℝ` or `ℂ` whose characteristic polynomial splits, and any listing `μ` of
-its eigenvalues with multiplicity, `A.charpoly = ∏ i, (X - μ i)`, there is a unitary `Q` with
-`Qᴴ A Q` upper triangular and `(Qᴴ A Q) i i = μ i`. Induction on `N`: an eigenvector for `μ 0`
-spans an invariant line, which Lemma 7.1.2 (`Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul`)
-splits off as the block `[μ 0]`; the characteristic polynomial of the trailing block is the rest of
-the product, and the induction hypothesis orders its diagonal. -/
+/-- **Schur's theorem with the eigenvalues in a prescribed order.** Let
+$A \in \mathbb{K}^{N \times N}$ over $\mathbb{K} \in \{\mathbb{R}, \mathbb{C}\}$, and let
+$\mu_0, \dots, \mu_{N-1} \in \mathbb{K}$ be its eigenvalues with multiplicity in any order, in
+the sense that
+$$\chi_A(X) = \prod_{i} (X - \mu_i).$$
+Then there is a unitary $Q$ such that $Q^H A Q$ is upper triangular with
+$(Q^H A Q)_{ii} = \mu_i$ for every $i$. This is Theorem 7.1.3 of [golub2013matrix], which says
+that "$Q$ can be chosen so that the eigenvalues $\lambda_i$ appear in any order along the
+diagonal".
+
+Over $\mathbb{R}$ the hypothesis says that the characteristic polynomial splits. The proof is an
+induction on $N$. An eigenvector for $\mu_0$ spans an invariant line, which
+`Matrix.exists_unitary_conj_fromBlocks_of_mul_eq_mul` splits off as the block $[\mu_0]$. The
+characteristic polynomial of the trailing block is the rest of the product, and the induction
+hypothesis orders its diagonal. -/
 theorem exists_unitary_conj_upperTriangular_diag_eq {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜)
     (μ : Fin N → 𝕜) (hμ : A.charpoly = ∏ i, (X - C (μ i))) :
     ∃ Q ∈ unitaryGroup (Fin N) 𝕜, (star Q * A * Q).IsUpperTriangular ∧

@@ -9,21 +9,50 @@ import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.WeakDeriv
 
 /-!
-# Operations on test functions: the `L²` class and the negative Laplacian
+# Operations on test functions: the $L^2$ class and the negative Laplacian
 
-Three constructions on the test functions `𝓓(Ω, ℝ)` of an open set `Ω ⊆ ℝ^N`: a test function
-on `Ω'` read as a test function on a larger `Ω` (`TestFunction.ofLE`), the class of a test
-function in `L²(Ω)` (`TestFunction.toL2`) and its negative Laplacian `−∑ᵢ ∂ᵢ∂ᵢφ`, again a test
-function (`TestFunction.negLaplacian`), from the smoothness and support properties of the
-second derivatives of a smooth compactly supported function (`Elliptic.laplacianRep_props`).
-These are the tools by which the test functions are shown to lie in every `D(A^ℓ)` of the
-Dirichlet Laplacian (`Numlib/Analysis/PDE/DirichletLaplacian`).
+Let $\Omega \subseteq \mathbb{R}^N$ be open, and let $\mathcal{D}(\Omega)$ be the space of real test
+functions on $\Omega$, the smooth functions with compact support in $\Omega$. This file gives three
+constructions on test functions. A test function on an open $\Omega' \subseteq \Omega$ is a test
+function on $\Omega$ (`TestFunction.ofLE`). A test function has a class in $L^2(\Omega)$
+(`TestFunction.toL2`). The negative Laplacian $-\Delta \varphi = -\sum_i \partial_i \partial_i
+\varphi$ of a test function is again a test function (`TestFunction.negLaplacian`). The last
+construction rests on the fact that the Laplacian of a smooth compactly supported function is
+smooth, has compact support, and has its support inside the support of the function
+(`Elliptic.laplacianRep_props`). With these tools, `Numlib.Analysis.PDE.DirichletLaplacian` shows
+that the test functions lie in every domain $D(A^\ell)$ of the Dirichlet Laplacian $A$.
 
-The last section is the fundamental lemma of the calculus of variations for a function `g`
-continuous on `Ω`: `∫_Ω g φ ≥ 0` for every nonnegative test function forces `g ≥ 0` on `Ω`
-(`nonneg_on_of_forall_integral_mul_testFunction_nonneg`), and `∫_Ω g φ = 0` for every test
-function supported in an open `U ⊆ Ω` forces `g = 0` on `U`
-(`eqOn_zero_of_forall_integral_mul_testFunction_eq_zero`).
+The last section proves the fundamental lemma of the calculus of variations for a function $g$ that
+is continuous on $\Omega$. If $\int_\Omega g \varphi \ge 0$ for every nonnegative test function
+$\varphi$, then $g \ge 0$ on $\Omega$. If $\int_\Omega g \varphi = 0$ for every test function
+$\varphi$ with support in an open $U \subseteq \Omega$, then $g = 0$ on $U$.
+
+## Main definitions
+
+* `TestFunction.ofLE`: a test function on $\Omega'$, read as a test function on an open
+  $\Omega \supseteq \Omega'$.
+* `TestFunction.toL2`: the class of a test function in $L^2(\Omega)$.
+* `TestFunction.negLaplacian`: the negative Laplacian $-\sum_i \partial_i \partial_i \varphi$ of a
+  test function, as a test function.
+
+## Main results
+
+* `Elliptic.laplacianRep_props`: the Laplacian of a smooth compactly supported function is smooth
+  and compactly supported, with support inside the support of the function.
+* `nonneg_on_of_forall_integral_mul_testFunction_nonneg`: a continuous $g$ with
+  $\int_\Omega g \varphi \ge 0$ for all nonnegative test functions $\varphi$ is nonnegative on
+  $\Omega$.
+* `eqOn_zero_of_forall_integral_mul_testFunction_eq_zero`: a continuous $g$ with
+  $\int_\Omega g \varphi = 0$ for all test functions supported in an open $U \subseteq \Omega$
+  vanishes on $U$.
+
+## Implementation notes
+
+* The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin N)`, and $\mathcal{D}(\Omega)$ is Mathlib's
+  `𝓓(Ω, ℝ)` for `Ω : Opens (EuclideanSpace ℝ (Fin N))`.
+* The second partial derivative $\partial_i \partial_i \theta(x)$ is written `fderiv ℝ (fun z ↦
+  fderiv ℝ θ z (EuclideanSpace.single i 1)) x (EuclideanSpace.single i 1)`.
+* The space $L^2(\Omega)$ is `Lp ℝ 2 (volume.restrict Ω)`.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace
@@ -35,7 +64,10 @@ namespace Elliptic
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The second derivative `∂_y ∂_y θ` of a smooth function, as a function. -/
+/-- Let $E$ be a real normed space, let $\theta : E \to \mathbb{R}$ be smooth, and let $y \in E$.
+Then the second directional derivative $x \mapsto \partial_y \partial_y \theta(x)$ is smooth.
+
+The derivative $\partial_y \partial_y \theta(x)$ is `fderiv ℝ (fun z ↦ fderiv ℝ θ z y) x y`. -/
 theorem contDiff_fderiv_fderiv_apply {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ) (y : E) :
     ContDiff ℝ ∞ fun x ↦ fderiv ℝ (fun z ↦ fderiv ℝ θ z y) x y :=
   (((hθ.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const).fderiv_right (m := ∞)
@@ -43,7 +75,12 @@ theorem contDiff_fderiv_fderiv_apply {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ
 
 variable {N : ℕ}
 
-/-- The support of the Laplacian `∑ᵢ ∂ᵢ∂ᵢθ` of a function `θ` lies in the support of `θ`. -/
+/-- For every function $\theta : \mathbb{R}^N \to \mathbb{R}$, the topological support of the
+Laplacian $\Delta \theta = \sum_i \partial_i \partial_i \theta$ is contained in the topological
+support of $\theta$.
+
+The lemma has no hypothesis on $\theta$. The derivatives are Mathlib's `fderiv`, which is $0$ at
+a point where the function is not differentiable. -/
 theorem tsupport_laplacianRep_subset {θ : EuclideanSpace ℝ (Fin N) → ℝ} :
     tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
       (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
@@ -51,8 +88,11 @@ theorem tsupport_laplacianRep_subset {θ : EuclideanSpace ℝ (Fin N) → ℝ} :
   refine Set.iUnion₂_subset fun i _ ↦ subset_closure.trans ?_
   exact (tsupport_fderiv_apply_subset ℝ _).trans (tsupport_fderiv_apply_subset ℝ _)
 
-/-- The Laplacian `Δθ = ∑ᵢ ∂ᵢ∂ᵢθ` of a smooth compactly supported `θ` is smooth, compactly
-supported, with support inside the support of `θ`. -/
+/-- Let $\theta : \mathbb{R}^N \to \mathbb{R}$ be smooth with compact support. Then its Laplacian
+$\Delta \theta = \sum_i \partial_i \partial_i \theta$ is smooth, has compact support, and its
+topological support is contained in the topological support of $\theta$.
+
+This is the fact from which `TestFunction.negLaplacian` is built. -/
 theorem laplacianRep_props {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ ∞ θ)
     (hθc : HasCompactSupport θ) :
     ContDiff ℝ ∞ (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
@@ -69,7 +109,10 @@ end Elliptic
 
 open Elliptic
 
-/-- A test function on `Ω'` is a test function on any larger open set. -/
+/-- Let $\Omega' \subseteq \Omega$ be open subsets of a real normed space. A test function $\psi$ on
+$\Omega'$ is a test function on $\Omega$, with the same values.
+
+The hypothesis $\Omega' \subseteq \Omega$ is `h : Ω' ≤ Ω` in `Opens E`. -/
 def TestFunction.ofLE {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {Ω Ω' : Opens E}
     (ψ : 𝓓(Ω', ℝ)) (h : Ω' ≤ Ω) : 𝓓(Ω, ℝ) where
   toFun := ψ
@@ -77,7 +120,8 @@ def TestFunction.ofLE {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {Ω
   hasCompactSupport' := ψ.hasCompactSupport
   tsupport_subset' := ψ.tsupport_subset.trans h
 
-/-- The function of the test function read on the larger set is the function. -/
+/-- The test function `TestFunction.ofLE ψ h` on the larger set has the same underlying function as
+$\psi$. -/
 @[simp]
 theorem TestFunction.ofLE_coe {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {Ω Ω' : Opens E} (ψ : 𝓓(Ω', ℝ)) (h : Ω' ≤ Ω) : (ψ.ofLE h : E → ℝ) = ψ :=
@@ -85,17 +129,27 @@ theorem TestFunction.ofLE_coe {E : Type*} [NormedAddCommGroup E] [NormedSpace �
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The `L²(Ω)` class of a test function. -/
+/-- The class in $L^2(\Omega)$ of a test function $\varphi$ on an open
+$\Omega \subseteq \mathbb{R}^N$.
+
+Here $L^2(\Omega)$ is `Lp ℝ 2 (volume.restrict Ω)`, the space of square-integrable functions for
+the Lebesgue measure restricted to $\Omega$. -/
 def TestFunction.toL2 (φ : 𝓓(Ω, ℝ)) :
     Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   (φ.memLp 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toLp φ
 
-/-- The `L²(Ω)` class of a test function is the function. -/
+/-- The class `TestFunction.toL2 φ` agrees with $\varphi$ almost everywhere on $\Omega$. -/
 theorem TestFunction.coeFn_toL2 (φ : 𝓓(Ω, ℝ)) :
     ⇑φ.toL2 =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ :=
   MemLp.coeFn_toLp _
 
-/-- **The negative Laplacian of a test function**, `−∑ᵢ ∂ᵢ∂ᵢ φ`, is a test function. -/
+/-- The **negative Laplacian** of a test function $\varphi$ on an open
+$\Omega \subseteq \mathbb{R}^N$ is the test function
+$$-\Delta \varphi = -\sum_{i=1}^N \partial_i \partial_i \varphi$$
+on $\Omega$.
+
+That $-\Delta \varphi$ is smooth, has compact support, and has its support in $\Omega$ follows
+from `Elliptic.laplacianRep_props`. -/
 def TestFunction.negLaplacian (φ : 𝓓(Ω, ℝ)) : 𝓓(Ω, ℝ) where
   toFun x := -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ φ z (EuclideanSpace.single i 1)) x
     (EuclideanSpace.single i 1)
@@ -106,7 +160,8 @@ def TestFunction.negLaplacian (φ : 𝓓(Ω, ℝ)) : 𝓓(Ω, ℝ) where
       φ.tsupport_subset)
     exact (tsupport_neg _).subset
 
-/-- The negative Laplacian of a test function, as a function. -/
+/-- The values of the negative Laplacian: `TestFunction.negLaplacian φ` is the function $x \mapsto
+-\sum_i \partial_i \partial_i \varphi(x)$. -/
 theorem TestFunction.negLaplacian_coe (φ : 𝓓(Ω, ℝ)) :
     (φ.negLaplacian : EuclideanSpace ℝ (Fin N) → ℝ)
       = fun x ↦ -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ φ z (EuclideanSpace.single i 1)) x
@@ -117,10 +172,15 @@ theorem TestFunction.negLaplacian_coe (φ : 𝓓(Ω, ℝ)) :
 
 section FundamentalLemma
 
-/-- **The fundamental lemma of the calculus of variations, inequality form**: a function `g`
-continuous on an open `Ω ⊆ ℝ^N` with `∫_Ω g φ ≥ 0` for every nonnegative test function `φ` is
-nonnegative on `Ω`.  Where `g(x₀) < 0`, a bump at `x₀` supported in `{g < g(x₀)/2}` gives a
-negative integral. -/
+/-- The **fundamental lemma of the calculus of variations**, inequality form. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, and let $g : \mathbb{R}^N \to \mathbb{R}$ be continuous
+on $\Omega$. If
+$$\int_\Omega g \varphi \, dx \ge 0$$
+for every test function $\varphi$ on $\Omega$ with $\varphi \ge 0$, then $g(x) \ge 0$ for every
+$x \in \Omega$.
+
+The idea of the proof: if $g(x_0) < 0$, then a nonnegative bump function at $x_0$ with support
+in the set where $g < g(x_0)/2$ gives a negative integral. -/
 theorem nonneg_on_of_forall_integral_mul_testFunction_nonneg {g : EuclideanSpace ℝ (Fin N) → ℝ}
     (hg : ContinuousOn g Ω)
     (h : ∀ φ : 𝓓(Ω, ℝ), (∀ x, 0 ≤ φ x) →
@@ -178,9 +238,15 @@ theorem nonneg_on_of_forall_integral_mul_testFunction_nonneg {g : EuclideanSpace
   rw [integral_neg] at hlt
   linarith [h φ hφ0]
 
-/-- **The fundamental lemma on an open subset**: a function `g` continuous on `Ω` with
-`∫_Ω g φ = 0` for every test function supported in an open `U ⊆ Ω` vanishes on `U`
-(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` and continuity). -/
+/-- The **fundamental lemma of the calculus of variations** on an open subset. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $g : \mathbb{R}^N \to \mathbb{R}$ be continuous on
+$\Omega$, and let $U \subseteq \Omega$ be open. If
+$$\int_\Omega g \varphi \, dx = 0$$
+for every test function $\varphi$ on $\Omega$ whose topological support is contained in $U$,
+then $g(x) = 0$ for every $x \in U$.
+
+The proof applies Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`, which gives
+$g = 0$ almost everywhere on $U$, and then the continuity of $g$. -/
 theorem eqOn_zero_of_forall_integral_mul_testFunction_eq_zero {g : EuclideanSpace ℝ (Fin N) → ℝ}
     (hg : ContinuousOn g Ω) {U : Set (EuclideanSpace ℝ (Fin N))} (hU : IsOpen U)
     (hUΩ : U ⊆ Ω)

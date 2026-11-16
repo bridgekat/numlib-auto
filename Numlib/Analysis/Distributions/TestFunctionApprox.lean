@@ -9,21 +9,45 @@ import Numlib.Analysis.Normed.Lp.SmoothApprox
 /-!
 # Uniform approximation by test functions
 
-A function `f` continuous on the closure of an open set `Ω ⊆ E` (`E` finite-dimensional),
-vanishing on `frontier Ω` and tending to `0` at infinity along `Ω` — the class `C(Ω̄)` with
-`f = 0` on `Γ` of [brezis2011functional] Corollary 10.5 and its footnote 6 — is the uniform limit
-on `Ω` of test functions `φ n ∈ 𝓓(Ω, ℝ)` (`exists_testFunction_tendsto_of_continuousOn`). The
-steps: `f` is small off a compact `K ⊆ Ω` (`exists_isCompact_subset_abs_lt`); a smooth cut-off
-`η` equal to `1` on `K` and supported in `Ω` makes `η f` (extended by `0`) continuous with
-compact support in `Ω` (`continuous_indicator_mul_of_tsupport_subset`); and a mollification
-approximates such a function uniformly (`exists_testFunction_abs_sub_le_of_hasCompactSupport`).
+Let $E$ be a finite-dimensional real normed space and let $\Omega \subseteq E$ be open. Let $f$ be
+continuous on $\overline{\Omega}$, with $f = 0$ on the boundary $\partial \Omega$ and $f(x) \to 0$
+as $x \to \infty$ in $\Omega$. This is the class of functions $u_0 \in C(\overline{\Omega})$ with
+$u_0 = 0$ on $\Gamma$ in Corollary 10.5 of [brezis2011functional] and its footnote 6. This module
+proves that such an $f$ is the uniform limit on $\Omega$ of a sequence of test functions
+$\varphi_n \in \mathcal{D}(\Omega)$, the approximation that the proof of that corollary calls easily
+established.
 
-For a bounded `Ω` of a proper space the condition at infinity is void, the filter
-`cocompact E ⊓ 𝓟 Ω` being trivial (`Bornology.IsBounded.cocompact_inf_principal_eq_bot`).
+When $\Omega$ is bounded and $E$ is proper, the condition at infinity holds for every function,
+because the filter of the points of $\Omega$ that tend to infinity is trivial.
 
-## References
+## Main results
 
-[brezis2011functional], Corollary 10.5 (the "easily established" approximation `u_{0n} → u₀`).
+* `Bornology.IsBounded.cocompact_inf_principal_eq_bot` and
+  `Bornology.IsBounded.tendsto_cocompact_inf_principal`: on a bounded set of a proper space, the
+  filter at infinity along the set is trivial, so every function tends to every limit there.
+* `exists_isCompact_subset_abs_lt`: for every $\varepsilon > 0$ there is a compact
+  $K \subseteq \Omega$ with $|f| < \varepsilon$ on $\Omega \setminus K$.
+* `continuous_indicator_mul_of_tsupport_subset`: for a continuous cut-off $\eta$ with support in
+  $\Omega$, the function $\eta f$, extended by $0$ outside $\Omega$, is continuous.
+* `exists_testFunction_abs_sub_le_of_hasCompactSupport`: a continuous function with compact support
+  in $\Omega$ is uniformly approximated by test functions of $\Omega$.
+* `exists_testFunction_abs_sub_le`: for every $\varepsilon > 0$ there is
+  $\varphi \in \mathcal{D}(\Omega)$ with $|\varphi - f| \le \varepsilon$ on $\Omega$.
+* `exists_testFunction_tendsto_of_continuousOn`: there is a sequence
+  $\varphi_n \in \mathcal{D}(\Omega)$ with $\varphi_n \to f$ uniformly on $\Omega$.
+
+## Proof outline
+
+First, $|f|$ is small outside a compact set $K \subseteq \Omega$. A smooth cut-off $\eta$ that is
+equal to $1$ on $K$ and has support in $\Omega$ makes $\eta f$, extended by $0$, a continuous
+function with compact support in $\Omega$ that is close to $f$ on $\Omega$. A mollification of
+$\eta f$ approximates it uniformly.
+
+## Implementation notes
+
+* The condition at infinity is `Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)`, the boundary is `frontier Ω`,
+  and a test function of $\Omega$ is an element of Mathlib's `𝓓(Ω, ℝ)`, for $\Omega$ given as an
+  element of `TopologicalSpace.Opens E`.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace
@@ -31,16 +55,17 @@ open scoped ContDiff Convolution Distributions Topology
 
 noncomputable section
 
-/-- **The filter "at infinity along a bounded set" is trivial** in a proper space:
-`cocompact E ⊓ 𝓟 s = ⊥` for a bounded `s`, since `s` and the complement of the compact
-`closure s` are disjoint. -/
+/-- Let $E$ be a proper pseudometric space and let $s \subseteq E$ be bounded. Then the filter at
+infinity along $s$ is trivial: `cocompact E ⊓ 𝓟 s = ⊥`. The reason is that $s$ is disjoint from
+the complement of the compact set $\overline{s}$. -/
 theorem Bornology.IsBounded.cocompact_inf_principal_eq_bot {E : Type*} [PseudoMetricSpace E]
     [ProperSpace E] {s : Set E} (hs : Bornology.IsBounded s) : cocompact E ⊓ 𝓟 s = ⊥ :=
   Filter.inf_eq_bot_iff.2 ⟨(closure s)ᶜ, hs.isCompact_closure.compl_mem_cocompact, s,
     mem_principal_self _, Set.eq_empty_iff_forall_notMem.2 fun _ hx ↦ hx.1 (subset_closure hx.2)⟩
 
-/-- On a bounded set of a proper space every function tends to `0` at infinity along the set:
-the filter `cocompact E ⊓ 𝓟 s` is trivial. -/
+/-- Let $E$ be a proper pseudometric space, let $s \subseteq E$ be bounded, and let
+$f \colon E \to F$ be any function into a topological space. Then for every $y \in F$,
+$f(x) \to y$ as $x \to \infty$ along $s$, because the filter `cocompact E ⊓ 𝓟 s` is trivial. -/
 theorem Bornology.IsBounded.tendsto_cocompact_inf_principal {E F : Type*} [PseudoMetricSpace E]
     [ProperSpace E] [TopologicalSpace F] {s : Set E} (hs : Bornology.IsBounded s) (f : E → F)
     (y : F) : Tendsto f (cocompact E ⊓ 𝓟 s) (𝓝 y) := by
@@ -51,11 +76,16 @@ section Approximation
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- **A continuous function on `closure Ω` vanishing on `frontier Ω` and at infinity is small off
-a compact subset of `Ω`**: for every `ε > 0` there is a compact `K ⊆ Ω` with `|f| < ε` on
-`Ω \ K`. The tail is the hypothesis at infinity; near the boundary, `{|f| < ε}` is relatively
-open in `closure Ω` and contains `frontier Ω`, so its complement in a compact set is a compact
-subset of `Ω`. -/
+/-- Let $E$ be a normed group, let $\Omega \subseteq E$ be open, and let $f \colon E \to \mathbb{R}$
+be continuous on $\overline{\Omega}$, with $f = 0$ on $\partial \Omega$ and $f(x) \to 0$ as
+$x \to \infty$ along $\Omega$. Then for every $\varepsilon > 0$ there is a compact set
+$K \subseteq \Omega$ such that
+$$|f(x)| < \varepsilon \quad \text{for all } x \in \Omega \setminus K.$$
+
+Far from the origin, this is the hypothesis at infinity. Near the boundary, the set
+$\{|f| < \varepsilon\}$ is relatively open in $\overline{\Omega}$ and contains
+$\partial \Omega$, so its complement in a compact set is a compact subset of $\Omega$. The
+boundary is `frontier Ω`, and the limit at infinity is along the filter `cocompact E ⊓ 𝓟 Ω`. -/
 theorem exists_isCompact_subset_abs_lt {Ω : Set E} (hΩ : IsOpen Ω) {f : E → ℝ}
     (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
     (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
@@ -89,9 +119,11 @@ theorem exists_isCompact_subset_abs_lt {Ω : Set E} (hΩ : IsOpen Ω) {f : E →
       simpa [dist_eq_norm] using this.1
     · simpa [dist_eq_norm] using hCf hxC hxΩ
 
-/-- **The cut-off of `f` to a compact subset of `Ω` is continuous**: for `η` continuous with
-`tsupport η ⊆ Ω` and `f` continuous on `Ω`, the function equal to `η f` on `Ω` and to `0`
-outside is continuous on the whole space. -/
+/-- Let $\Omega \subseteq E$ be open, let $f \colon E \to \mathbb{R}$ be continuous on $\Omega$, and
+let $\eta \colon E \to \mathbb{R}$ be continuous with
+$\operatorname{supp} \eta \subseteq \Omega$, where $\operatorname{supp}$ is the closed support.
+Then the function equal to $\eta f$ on $\Omega$ and to $0$ outside $\Omega$ is continuous on
+$E$. -/
 theorem continuous_indicator_mul_of_tsupport_subset {Ω : Set E} (hΩ : IsOpen Ω) {f η : E → ℝ}
     (hf : ContinuousOn f Ω) (hη : Continuous η) (hηΩ : tsupport η ⊆ Ω) :
     Continuous (Ω.indicator fun x ↦ η x * f x) := by
@@ -113,11 +145,15 @@ theorem continuous_indicator_mul_of_tsupport_subset {Ω : Set E} (hΩ : IsOpen �
 
 variable [NormedSpace ℝ E] [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
-/-- **Mollification approximates a continuous compactly supported function uniformly** by test
-functions of `Ω`: for `g` continuous with `tsupport g ⊆ Ω` compact and `ε > 0` there is
-`φ ∈ 𝓓(Ω, ℝ)` with `|φ − g| ≤ ε` everywhere. The mollification `ρ_δ ⋆ g` at a scale `δ` below
-the distance from `tsupport g` to `Ωᶜ` and below the modulus of uniform continuity of `g` at
-`ε` does it (`ContDiffBump.dist_normed_convolution_le`). -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\Omega \subseteq E$ be open, and let
+$g \colon E \to \mathbb{R}$ be continuous with compact support
+$\operatorname{supp} g \subseteq \Omega$. Then for every $\varepsilon > 0$ there is a test
+function $\varphi \in \mathcal{D}(\Omega)$ with
+$$|\varphi(x) - g(x)| \le \varepsilon \quad \text{for all } x \in E.$$
+
+The test function is a mollification $\rho_\delta \star g$, at a scale $\delta$ smaller than the
+distance from $\operatorname{supp} g$ to the complement of $\Omega$ and smaller than the modulus
+of uniform continuity of $g$ at $\varepsilon$ (`ContDiffBump.dist_normed_convolution_le`). -/
 theorem exists_testFunction_abs_sub_le_of_hasCompactSupport {Ω : Opens E} {g : E → ℝ}
     (hg : Continuous g) (hgc : HasCompactSupport g) (hgΩ : tsupport g ⊆ Ω) {ε : ℝ}
     (hε : 0 < ε) : ∃ φ : 𝓓(Ω, ℝ), ∀ x, |φ x - g x| ≤ ε := by
@@ -146,15 +182,19 @@ theorem exists_testFunction_abs_sub_le_of_hasCompactSupport {Ω : Opens E} {g : 
   refine ρ.dist_normed_convolution_le hg.aestronglyMeasurable fun y hy ↦ (hδ₂g ?_).le
   exact (mem_ball.1 hy).trans_le (min_le_right _ _)
 
-/-- **Uniform approximation of continuous data vanishing on the boundary by test functions**
-(the approximation [brezis2011functional] calls "easily established" in the proof of
-Corollary 10.5): if `f` is continuous on `closure Ω`, vanishes on `frontier Ω` and tends to `0`
-at infinity along `Ω` (automatic for bounded `Ω`), then for every `ε > 0` there is a test
-function `φ ∈ 𝓓(Ω, ℝ)` with `|φ − f| ≤ ε` on `Ω`. Proof: `|f| ≤ ε/2` off a compact `K ⊆ Ω`
-(`exists_isCompact_subset_abs_lt`); a smooth cut-off `η`, equal to `1` on `K` and supported in
-`Ω`, makes `η f` (extended by `0`) continuous with compact support in `Ω` and `ε/2`-close to `f`
-on `Ω`; a mollification of it is `ε/2`-close uniformly
-(`exists_testFunction_abs_sub_le_of_hasCompactSupport`). -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\Omega \subseteq E$ be open, and let
+$f \colon E \to \mathbb{R}$ be continuous on $\overline{\Omega}$, with $f = 0$ on
+$\partial \Omega$ and $f(x) \to 0$ as $x \to \infty$ along $\Omega$. Then for every
+$\varepsilon > 0$ there is a test function $\varphi \in \mathcal{D}(\Omega)$ with
+$$|\varphi(x) - f(x)| \le \varepsilon \quad \text{for all } x \in \Omega.$$
+
+This is the approximation that [brezis2011functional] calls easily established in the proof of
+Corollary 10.5. The condition at infinity holds for every bounded $\Omega$. By
+`exists_isCompact_subset_abs_lt`, $|f| \le \varepsilon / 2$ outside a compact
+$K \subseteq \Omega$. A smooth cut-off $\eta$, equal to $1$ on $K$ and with support in $\Omega$,
+makes $\eta f$, extended by $0$, continuous with compact support in $\Omega$ and
+$\varepsilon/2$-close to $f$ on $\Omega$. A mollification of $\eta f$ is $\varepsilon/2$-close
+to it everywhere (`exists_testFunction_abs_sub_le_of_hasCompactSupport`). -/
 theorem exists_testFunction_abs_sub_le {Ω : Opens E} {f : E → ℝ}
     (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
     (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
@@ -194,13 +234,17 @@ theorem exists_testFunction_abs_sub_le {Ω : Opens E} {f : E → ℝ}
     _ ≤ ε / 2 + ε / 2 := add_le_add (hφ x) hgf
     _ = ε := add_halves ε
 
-/-- **A sequence of test functions converging uniformly on `Ω` to continuous data vanishing on
-the boundary** ([brezis2011functional], proof of Corollary 10.5, the approximants `u_{0n}`): if
-`f` is continuous on `closure Ω`, vanishes on `frontier Ω` and tends to `0` at infinity along `Ω`
-(footnote 6; automatic for bounded `Ω`), there are `φ n ∈ 𝓓(Ω, ℝ)` with `φ n → f` uniformly on
-`Ω` (`exists_testFunction_abs_sub_le` at `ε = 1/(n+1)`). The book also asks `φ n → f` in
-`L²(Ω)`; Corollary 10.5 does not need it, the semigroup being an `L^∞`-contraction
-(`Heat.IsSolution.eLpNorm_top_le`). -/
+/-- Let $E$ be a finite-dimensional real normed space, let $\Omega \subseteq E$ be open, and let
+$f \colon E \to \mathbb{R}$ be continuous on $\overline{\Omega}$, with $f = 0$ on
+$\partial \Omega$ and $f(x) \to 0$ as $x \to \infty$ along $\Omega$. Then there is a sequence of
+test functions $\varphi_n \in \mathcal{D}(\Omega)$ such that $\varphi_n \to f$ uniformly on
+$\Omega$.
+
+These are the approximants $u_{0n}$ in the proof of Corollary 10.5 of [brezis2011functional],
+and the condition at infinity is its footnote 6. The condition holds for every bounded $\Omega$.
+The proof applies `exists_testFunction_abs_sub_le` with $\varepsilon = 1/(n+1)$. The source also
+asks that $\varphi_n \to f$ in $L^2(\Omega)$. Corollary 10.5 does not need this, because the
+heat semigroup is a contraction in $L^\infty$ (`Heat.IsSolution.eLpNorm_top_le`). -/
 theorem exists_testFunction_tendsto_of_continuousOn {Ω : Opens E} {f : E → ℝ}
     (hf : ContinuousOn f (closure Ω)) (hf0 : ∀ x ∈ frontier Ω, f x = 0)
     (hft : Tendsto f (cocompact E ⊓ 𝓟 Ω) (𝓝 0)) :

@@ -6,31 +6,44 @@ import Mathlib.Analysis.Normed.Module.HahnBanach
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 
 /-!
-# The Lagrange multiplier of a variational inequality with an `L¹` functional
+# The Lagrange multiplier of a variational inequality with an $L^1$ term
 
-For a real vector space `V`, a linear map `T : V → L^p(μ)` (`1 ≤ p`, `μ` finite), linear
-functionals `A` and `ℓ` on `V` and `g > 0`, consider the variational inequality of the second
-kind with the functional `j(v) = g ∫ |T v| dμ`:
+Let $V$ be a real vector space, $\mu$ a finite measure, $T : V \to L^p(\mu)$ a linear map with
+$1 \le p$, $A$ and $\ell$ linear functionals on $V$, and $g > 0$. Consider the variational
+inequality of the second kind with the functional $j(v) = g \int |Tv| \, d\mu$:
+$$\ell(v - u) \le A(v - u) + j(v) - j(u) \quad \text{for all } v \in V.$$
+It holds if and only if there is a **Lagrange multiplier** $\lambda \in L^\infty(\mu)$ with
+$|\lambda| \le 1$ almost everywhere,
+$$A(v) + g \int \lambda \, Tv \, d\mu = \ell(v) \quad \text{for all } v \in V,
+  \qquad \lambda \, Tu = |Tu| \quad \text{almost everywhere}.$$
+The model is the simplified friction problem of elasticity, with $T$ the trace
+$H^1(\Omega) \to L^2(\partial\Omega)$, $A = a(u, \cdot)$ and $\ell$ the load. This is Theorem 11.4.5
+of [han2009theoretical].
 
-  `ℓ(v − u) ≤ A(v − u) + j(v) − j(u)`  for every `v ∈ V`.
+## Main results
 
-It holds exactly when there is a *Lagrange multiplier* `λ ∈ L^∞(μ)` with `|λ| ≤ 1` a.e.,
+* `MeasureTheory.Lp.ae_abs_le_of_norm_le`: an element of $L^\infty(\mu)$ of norm at most $g$ is
+  bounded by $g$ almost everywhere.
+* `exists_multiplier_of_forall_abs_le`: a linear functional $F$ on $V$ with
+  $|F(w)| \le g \int |Tw| \, d\mu$ has the form $F(w) = \int \bar\lambda \, Tw \, d\mu$ with
+  $\|\bar\lambda\|_\infty \le g$.
+* `forall_le_add_integral_abs_iff_exists_multiplier`: the variational inequality holds if and only
+  if a Lagrange multiplier exists.
 
-  `A v + g ∫ λ T v dμ = ℓ v`  for every `v`,  and  `λ T u = |T u|`  a.e.
+## Proof outline
 
-(`forall_le_add_integral_abs_iff_exists_multiplier`). The model is the simplified friction problem
-of elasticity, with `T` the trace `H¹(Ω) → L²(∂Ω)`, `A = a(u, ·)` and `ℓ` the load.
+A linear functional $F$ on $V$ with $|F(w)| \le g \|Tw\|_{L^1}$ depends on $Tw$ only. It is
+therefore a functional on the range of $T$, bounded in the $L^1(\mu)$ norm. The Hahn–Banach theorem
+extends it to $L^1(\mu)$ with norm at most $g$, and the Riesz representation $(L^1)' = L^\infty$
+writes it as $h \mapsto \int \bar\lambda \, h \, d\mu$ with $\|\bar\lambda\|_\infty \le g$. The
+multiplier is $\lambda = \bar\lambda / g$.
 
-The multiplier comes from `exists_multiplier_of_forall_abs_le`: a linear functional `F` on `V`
-with `|F w| ≤ g ‖T w‖_{L¹}` depends on `T w` only, as a functional bounded in the `L¹(μ)` norm on
-the range of `T`; the Hahn–Banach theorem (`exists_extension_norm_eq`) extends it to `L¹(μ)` with
-norm at most `g`, and the Riesz representation `(L¹)' = L^∞`
-(`MeasureTheory.Lp.toDual_surjective`) makes it `h ↦ ∫ λ̄ h dμ` with `‖λ̄‖_∞ ≤ g`.
+## Implementation notes
 
-## References
-
-[han2009theoretical], Theorem 11.4.5 (with no fractional trace space: the functional is extended
-from the range of `T` in `L¹`, not from `H^{1/2}(Γ)`).
+* The proof uses no fractional trace space: the functional is extended from the range of $T$ in
+  $L^1(\mu)$, and not from $H^{1/2}(\Gamma)$.
+* $L^\infty(\mu)$ is `Lp ℝ ⊤ μ`. The extension uses `exists_extension_norm_eq` and the
+  representation uses `MeasureTheory.Lp.toDual_surjective`.
 -/
 
 open MeasureTheory
@@ -42,7 +55,8 @@ namespace MeasureTheory.Lp
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
-/-- An element of `L^∞(μ)` of norm at most `g` is bounded by `g` almost everywhere. -/
+/-- Let $k \in L^\infty(\mu)$ with $\|k\|_\infty \le g$. Then $|k(x)| \le g$ for $\mu$-almost every
+$x$. -/
 theorem ae_abs_le_of_norm_le {k : Lp ℝ ⊤ μ} {g : ℝ} (hk : ‖k‖ ≤ g) :
     ∀ᵐ x ∂μ, |k x| ≤ g := by
   have h1 : eLpNormEssSup k μ ≠ ⊤ := by
@@ -64,8 +78,8 @@ section Multiplier
 variable {V : Type*} [AddCommGroup V] [Module ℝ V] {α : Type*} [MeasurableSpace α]
   {μ : Measure α} [IsFiniteMeasure μ] {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The inclusion `L^p(μ) → L¹(μ)` of a finite measure, as a linear map whose function is the
-function of its argument. -/
+/-- The inclusion $L^p(\mu) \to L^1(\mu)$ for a finite measure $\mu$ and $p \ge 1$, as a linear map
+that keeps the function of its argument. -/
 private def toL1 : Lp ℝ p μ →ₗ[ℝ] Lp ℝ 1 μ where
   toFun k := ⟨(k : α →ₘ[μ] ℝ), Lp.antitone (Fact.out : 1 ≤ p) k.2⟩
   map_add' _ _ := rfl
@@ -73,18 +87,23 @@ private def toL1 : Lp ℝ p μ →ₗ[ℝ] Lp ℝ 1 μ where
 
 private theorem coeFn_toL1 (k : Lp ℝ p μ) : ((toL1 k : Lp ℝ 1 μ) : α → ℝ) = k := rfl
 
-/-- `∫ |k| dμ` is the `L¹` norm of `k ∈ L^p(μ)`. -/
+/-- For $k \in L^p(\mu)$, the integral $\int |k| \, d\mu$ is the $L^1$ norm of $k$. -/
 private theorem integral_abs_eq_norm_toL1 (k : Lp ℝ p μ) :
     ∫ x, |k x| ∂μ = ‖toL1 k‖ := by
   rw [L1.norm_eq_integral_norm, coeFn_toL1]
   simp only [Real.norm_eq_abs]
 
-/-- **The Lagrange multiplier by Hahn–Banach and `(L¹)' = L^∞`**: a linear functional `F` on `V`
-with `|F w| ≤ g ∫ |T w| dμ` is `F w = ∫ λ̄ T w dμ` for some `λ̄ ∈ L^∞(μ)` with `‖λ̄‖_∞ ≤ g`. The
-functional is transported to the range of `T` in `L¹(μ)` through the quotient by `ker T`
-(`LinearMap.quotKerEquivRange`), extended to `L¹(μ)` by Hahn–Banach (`exists_extension_norm_eq`)
-and represented by the Riesz representation `(L¹)' = L^∞` (`MeasureTheory.Lp.toDual_surjective`).
--/
+/-- **The Lagrange multiplier by the Hahn–Banach theorem.** Let $V$ be a real vector space, $\mu$ a
+finite measure, $1 \le p \le \infty$, and $T : V \to L^p(\mu)$ linear. Let $g \ge 0$, and let
+$F$ be a linear functional on $V$ with
+$$|F(w)| \le g \int |Tw| \, d\mu \quad \text{for all } w \in V.$$
+Then there is $\bar\lambda \in L^\infty(\mu)$ with $\|\bar\lambda\|_\infty \le g$ and
+$$F(w) = \int \bar\lambda \, Tw \, d\mu \quad \text{for all } w \in V.$$
+
+The functional is moved to the range of $T$ in $L^1(\mu)$ through the quotient by $\ker T$
+(`LinearMap.quotKerEquivRange`), extended to $L^1(\mu)$ by the Hahn–Banach theorem
+(`exists_extension_norm_eq`), and represented by the Riesz representation $(L^1)' = L^\infty$
+(`MeasureTheory.Lp.toDual_surjective`). -/
 theorem exists_multiplier_of_forall_abs_le {g : ℝ} (hg : 0 ≤ g) (T : V →ₗ[ℝ] Lp ℝ p μ)
     (F : V →ₗ[ℝ] ℝ) (hF : ∀ w, |F w| ≤ g * ∫ x, |T w x| ∂μ) :
     ∃ l : Lp ℝ ⊤ μ, ‖l‖ ≤ g ∧ ∀ w, F w = ∫ x, l x * T w x ∂μ := by
@@ -126,18 +145,23 @@ theorem exists_multiplier_of_forall_abs_le {g : ℝ} (hg : 0 ≤ g) (T : V →�
       rw [LinearMap.mkContinuous_apply, hF']
     exact h2.symm.trans h1.symm
 
-/-- **The Lagrange multiplier of a variational inequality with an `L¹` functional**
-([han2009theoretical] Theorem 11.4.5, for the simplified friction problem): for `g > 0`, `u`
-satisfies `ℓ(v − u) ≤ A(v − u) + g ∫ |T v| dμ − g ∫ |T u| dμ` for every `v` if and only if there
-is `λ ∈ L^∞(μ)` with `|λ| ≤ 1` a.e., `A v + g ∫ λ T v dμ = ℓ v` for every `v` and `λ T u = |T u|`
-a.e.
+/-- **The Lagrange multiplier of a variational inequality with an $L^1$ term.** Let $V$ be a real
+vector space, $\mu$ a finite measure, $1 \le p \le \infty$, $T : V \to L^p(\mu)$ linear, $A$ and
+$\ell$ linear functionals on $V$, $g > 0$ and $u \in V$. Then
+$$\ell(v - u) \le A(v - u) + g \int |Tv| \, d\mu - g \int |Tu| \, d\mu \quad \text{for all } v
+  \in V$$
+if and only if there is $\lambda \in L^\infty(\mu)$ with $|\lambda| \le 1$ almost everywhere,
+$$A(v) + g \int \lambda \, Tv \, d\mu = \ell(v) \quad \text{for all } v \in V,$$
+and $\lambda \, Tu = |Tu|$ almost everywhere. This is Theorem 11.4.5 of [han2009theoretical],
+for the simplified friction problem.
 
-From the inequality: `v = 0` and `v = 2u` give `A u + j(u) = ℓ(u)`, and `v = u ± w` with the
-subadditivity and evenness of `j` give `|ℓ(w) − A(w)| ≤ j(w)`, so `ℓ − A` is represented on the
-range of `T` by an `L^∞(μ)` function of norm at most `g` (`exists_multiplier_of_forall_abs_le`),
-`λ` is its quotient by `g`, and `λ T u = |T u|` follows at `v = u`, the integrand
-`|T u| − λ T u` being nonnegative with zero integral. Conversely the multiplier identity at
-`v − u`, with `λ T v ≤ |T v|` and `λ T u = |T u|`, is the inequality. -/
+Write $j(v) = g \int |Tv| \, d\mu$. From the inequality, the tests $v = 0$ and $v = 2u$ give
+$A(u) + j(u) = \ell(u)$, and the tests $v = u \pm w$ with the subadditivity and evenness of $j$
+give $|\ell(w) - A(w)| \le j(w)$. So `exists_multiplier_of_forall_abs_le` represents $\ell - A$
+by some $\bar\lambda$ with $\|\bar\lambda\|_\infty \le g$, and $\lambda = \bar\lambda / g$. The
+relation $\lambda \, Tu = |Tu|$ holds because $|Tu| - \lambda \, Tu$ is nonnegative with
+integral zero. Conversely, the multiplier identity at $v - u$, together with
+$\lambda \, Tv \le |Tv|$ and $\lambda \, Tu = |Tu|$, gives the inequality. -/
 theorem forall_le_add_integral_abs_iff_exists_multiplier {g : ℝ} (hg : 0 < g)
     (T : V →ₗ[ℝ] Lp ℝ p μ) (A ℓ : V →ₗ[ℝ] ℝ) (u : V) :
     (∀ v, ℓ (v - u) ≤ A (v - u) + g * ∫ x, |T v x| ∂μ - g * ∫ x, |T u x| ∂μ) ↔

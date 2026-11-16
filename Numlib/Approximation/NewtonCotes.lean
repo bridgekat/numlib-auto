@@ -13,195 +13,228 @@ import Numlib.Topology.Order.IntermediateValue
 /-!
 # Newton–Cotes quadrature
 
-The interpolatory quadrature rules at equispaced nodes: the *closed* rules with nodes
-`x_i = a + i h`, `h = (b - a)/n`, `i = 0, …, n`, and the *open* rules with nodes
-`x_i = a + (i + 1) h`, `h = (b - a)/(n + 2)`. Their weights are `h w_i`, where the `w_i` are the
-integrals over `[0, n]` (closed) or `[-1, n + 1]` (open) of the *cardinal polynomials*
-`φ_i(t) = ∏_{k ≠ i} (t - k)/(i - k)` at the integer nodes — numbers that depend on `n` alone.
-The midpoint, trapezoidal and Simpson rules are the cases `n = 0` (open), `n = 1` and `n = 2`.
+The Newton–Cotes rules are the interpolatory quadrature rules at equispaced nodes
+([quarteroni2000numerical], §9.2–9.5 and §9.7). On $[a, b]$, the *closed* rule with $n + 1$ nodes
+uses the nodes $x_i = a + ih$, $h = (b - a)/n$, $i = 0, \dots, n$, and the *open* rule uses the
+interior nodes $x_i = a + (i + 1)h$, $h = (b - a)/(n + 2)$. Both rules have the form
+$h \sum_{i=0}^n w_i f(x_i)$. The weights $w_i$ are the integrals over $[0, n]$ (closed) or
+$[-1, n + 1]$ (open) of the *cardinal polynomials* $\varphi_i(t) = \prod_{k \neq i} (t - k)/(i - k)$
+of the integer nodes $0, \dots, n$, so they depend on $n$ alone. The midpoint rule is the open rule
+with $n = 0$, and the trapezoidal and Simpson rules are the closed rules with $n = 1$ and $n = 2$.
+
+Write $\pi_{n+1}(t) = \prod_{i=0}^n (t - i)$ for the nodal polynomial of the integer nodes, $I_n(f)$
+and $\tilde I_n(f)$ for the closed and the open rule, and $I_{n,m}(f)$ for the composite closed rule
+on $m$ panels of width $H = (b - a)/m$. The closed rule is exact to degree $n$, and to degree
+$n + 1$ when $n$ is even. For even $n$ its error is
+$$\int_a^b f - I_n(f) = \frac{M_n}{(n + 2)!} h^{n+3} f^{(n+2)}(\xi), \qquad M_n = \int_0^n t \,
+  \pi_{n+1}(t) \, dt < 0,$$
+and the open rule with even $n$ has the same formula with $\tilde M_n = \int_{-1}^{n+1} t \,
+\pi_{n+1}(t) \, dt > 0$ and $h = (b - a)/(n + 2)$. For odd $n$ the module proves that the error at
+$x^{n+1}$ is $h^{n+2} K_n \neq 0$, with $K_n = \int_0^n \pi_{n+1}(t) \, dt$, and an error bound of
+order $h^{n+2}$. The module also treats the composite rules, Hermite quadrature, the corrected
+trapezoidal rule, and the a posteriori error estimate of adaptive Simpson quadrature.
 
 ## Main definitions
 
-* `Quadrature.midpointRule`, `Quadrature.midpointSum` — the midpoint rule and its composite form,
-  in the style of `Quadrature.trapezoidSum` of `Numlib/Approximation/CompositeQuadrature`.
-* `Quadrature.intNode`, `Quadrature.cardinalPoly`, `Quadrature.intNodal` — the integer nodes
-  `0, …, n`, the cardinal polynomials `φ_i` and the nodal polynomial `π_{n+1}(t) = ∏ (t - i)`.
-* `Quadrature.newtonCotesWeight`, `Quadrature.openNewtonCotesWeight` — the weights `w_i`.
-* `Quadrature.closedNewtonCotes`, `Quadrature.openNewtonCotes`, `Quadrature.compositeNewtonCotes`
-  — the rules, as real functions of the integrand and the endpoints.
-* `Quadrature.newtonCotesM`, `Quadrature.newtonCotesK` (and the open versions) — the constants
-  `M_n = ∫_0^n t π_{n+1}`, `K_n = ∫_0^n π_{n+1}` of the error formulae.
-* `Quadrature.hermiteBasisL`, `Quadrature.hermiteBasisM`, `Quadrature.hermiteQuadrature`,
-  `Quadrature.correctedTrapezoid`, `Quadrature.correctedTrapezoidSum` — Hermite quadrature and
-  the corrected trapezoidal rule.
+* `Quadrature.midpointRule`: the midpoint rule $(b - a) f((a + b)/2)$.
+* `Quadrature.midpointSum`: the composite midpoint rule $H \sum_{k < m} g(a + (k + 1/2) H)$.
+* `Quadrature.intNode`: the integer nodes $0, 1, \dots, n$.
+* `Quadrature.cardinalPoly`: the cardinal polynomials $\varphi_i$ of the integer nodes.
+* `Quadrature.intNodal`: the nodal polynomial $\pi_{n+1}$ of the integer nodes.
+* `Quadrature.newtonCotesWeight`: the closed weights $w_i = \int_0^n \varphi_i$.
+* `Quadrature.openNewtonCotesWeight`: the open weights $\tilde w_i = \int_{-1}^{n+1} \varphi_i$.
+* `Quadrature.closedNewtonCotes`: the closed rule $I_n(f) = h \sum_i w_i f(a + ih)$.
+* `Quadrature.openNewtonCotes`: the open rule $\tilde I_n(f) = h \sum_i \tilde w_i f(a + (i + 1)h)$.
+* `Quadrature.compositeNewtonCotes`: the composite closed rule $I_{n,m}(f)$.
+* `Quadrature.newtonCotesM`, `Quadrature.newtonCotesK`: the constants
+  $M_n = \int_0^n t \, \pi_{n+1}$ and $K_n = \int_0^n \pi_{n+1}$ of the error formulas.
+* `Quadrature.openNewtonCotesM`, `Quadrature.openNewtonCotesK`: the constants
+  $\tilde M_n = \int_{-1}^{n+1} t \, \pi_{n+1}$ and $\tilde K_n = \int_{-1}^{n+1} \pi_{n+1}$ of the
+  open rules.
+* `Quadrature.hermiteBasisL`, `Quadrature.hermiteBasisM`: the Hermite cardinal polynomials
+  $\mathcal{L}_k$ and $\mathcal{M}_k$.
+* `Quadrature.hermiteQuadrature`: the Hermite quadrature rule $\sum_k \alpha_k f(x_k) + \sum_k
+  \beta_k f'(x_k)$.
+* `Quadrature.correctedTrapezoid`, `Quadrature.correctedTrapezoidSum`: the corrected trapezoidal
+  rule and its composite form.
 
 ## Main results
 
-* `Quadrature.exists_sub_midpoint_eq`, `Quadrature.sub_composite_midpoint_eq`,
-  `Quadrature.tendsto_midpointSum` — the midpoint error `h³ f''(ξ)/3`, its composite form
-  `(b - a) H² f''(ξ)/24`, and convergence for continuous integrands.
-* `Quadrature.newtonCotesWeight_symm`, `Quadrature.sum_newtonCotesWeight`,
-  `Quadrature.closedNewtonCotes_eq_sum_integral_basis` — the weights are symmetric, sum to the
-  length of the reference interval, and do not depend on `[a, b]`: the closed rule *is* the
-  Lagrange quadrature formula at the equispaced nodes.
-* `Quadrature.integral_eq_closedNewtonCotes_of_degree_le`,
-  `Quadrature.integral_eq_closedNewtonCotes_of_even`, `Quadrature.isExactOn_closedNewtonCotes` —
-  exactness to degree `n`, to degree `n + 1` for even `n` (by symmetry alone), and the bridge to
-  `Quadrature.IsExactOn`/`Quadrature.IsInterpolatory` on `C([a, b], ℝ)`.
-* `Quadrature.integral_intNodal_pos_of_even`, `Quadrature.newtonCotesM_neg` — the sign facts
-  behind the sharp error formula: `W(x) = ∫_0^x π_{n+1} > 0` on `(0, n)` and `M_n < 0` for even
-  `n`.
-* `Quadrature.exists_sub_closedNewtonCotes_eq_of_even` — **the error of the closed rules with
-  even `n`**, `∫_a^b f - I_n(f) = M_n/(n + 2)! h^{n+3} f^{(n+2)}(ξ)`, and
-  `Quadrature.not_integral_eq_closedNewtonCotes_of_even`, the exactness of the degree `n + 1`.
-* `Quadrature.integral_sub_closedNewtonCotes_pow_eq`,
-  `Quadrature.not_integral_eq_closedNewtonCotes_of_odd`,
-  `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn` — for odd `n`, where the sharp error
-  formula is not in the library (see *The sharp error formula for odd `n`* below): the error at
-  `x^{n+1}` is exactly `h^{n+2} K_n ≠ 0`, so the degree of exactness is `n`, and the `O(h^{n+2})`
-  bound that the interpolation error gives for every `n`.
-* `Quadrature.openNewtonCotesM_pos`, `Quadrature.integral_intNodal_neg_one_mul_nonneg`,
-  `Quadrature.exists_sub_openNewtonCotes_eq_of_even` — the same for the *open* rules with even
-  `n`: `W̃(x) = ∫_{-1}^x π_{n+1} ≤ 0` on `[-1, n + 1]` with `M̃_n > 0`, and the error
-  `∫_a^b f - Ĩ_n(f) = M̃_n/(n + 2)! h^{n+3} f^{(n+2)}(ξ)`, `h = (b - a)/(n + 2)`, which for
-  `n = 0` is the midpoint formula.
-* `Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`,
-  `Quadrature.abs_sub_compositeNewtonCotes_le`,
-  `Quadrature.abs_sub_compositeNewtonCotes_le_of_contDiffOn`,
-  `Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn` — the composite error, the Riemann-sum
-  bound for rules with nonnegative weights, and the `O(H^{n+1})` bound and convergence for a
-  `C^{n+1}` integrand, which need no sign hypothesis on the weights.
-* `Quadrature.integral_eq_hermiteQuadrature_of_degree_le`,
-  `Quadrature.exists_sub_correctedTrapezoid_eq`, `Quadrature.sub_correctedTrapezoidSum_eq` — the
-  degree `2n + 1` of Hermite quadrature and the corrected trapezoidal error `h⁵ f⁗(ξ)/720`.
-* `Quadrature.abs_sub_simpson_add_estimate_le` — the a posteriori error estimate of adaptive
-  Simpson quadrature, with an explicit remainder.
+* `Quadrature.exists_sub_midpoint_eq`: the midpoint error is $((b - a)/2)^3 g''(\xi)/3$.
+* `Quadrature.sub_composite_midpoint_eq`: the composite midpoint error is $(b - a) H^2 g''(\xi)/24$.
+* `Quadrature.tendsto_midpointSum`: the composite midpoint rule converges for every continuous
+  integrand.
+* `Quadrature.newtonCotesWeight_symm`: the closed weights are symmetric, $w_{n-i} = w_i$.
+* `Quadrature.sum_newtonCotesWeight`: the closed weights sum to $n$.
+* `Quadrature.closedNewtonCotes_eq_sum_integral_basis`: the closed rule is the Lagrange quadrature
+  formula at the equispaced nodes of $[a, b]$.
+* `Quadrature.integral_eq_closedNewtonCotes_of_degree_le`: the closed rule is exact to degree $n$.
+* `Quadrature.integral_eq_closedNewtonCotes_of_even`: for even $n$, the closed rule is exact to
+  degree $n + 1$.
+* `Quadrature.isExactOn_closedNewtonCotes`: the closed rule is exact to degree $n$ in the sense of
+  `Quadrature.IsExactOn`.
+* `Quadrature.integral_intNodal_pos_of_even`: for even $n$, $W(x) = \int_0^x \pi_{n+1} > 0$ on
+  $(0, n)$.
+* `Quadrature.newtonCotesM_neg`: for even $n > 0$, $M_n < 0$.
+* `Quadrature.exists_sub_closedNewtonCotes_eq_of_even`: the error formula of the closed rules with
+  even $n$.
+* `Quadrature.not_integral_eq_closedNewtonCotes_of_even`: for even $n$, the degree of exactness of
+  the closed rule is exactly $n + 1$.
+* `Quadrature.integral_sub_closedNewtonCotes_pow_eq`: the error of the closed rule at $x^{n+1}$ is
+  $h^{n+2} K_n$.
+* `Quadrature.not_integral_eq_closedNewtonCotes_of_odd`: for odd $n$, the degree of exactness of the
+  closed rule is exactly $n$.
+* `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn`: for every $n \ge 1$, the error of the
+  closed rule is $O(h^{n+2})$ for a $C^{n+1}$ integrand.
+* `Quadrature.integral_intNodal_neg_one_mul_nonneg`: $(-1)^{n+1} \tilde W(x) \ge 0$ on
+  $[-1, n + 1]$, where $\tilde W(x) = \int_{-1}^x \pi_{n+1}$.
+* `Quadrature.openNewtonCotesM_pos`: for even $n$, $\tilde M_n > 0$.
+* `Quadrature.exists_sub_openNewtonCotes_eq_of_even`: the error formula of the open rules with even
+  $n$.
+* `Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`: the error formula of the composite closed
+  rules with even $n$.
+* `Quadrature.abs_sub_compositeNewtonCotes_le`: the Riemann-sum error bound of the composite rules
+  with nonnegative weights.
+* `Quadrature.abs_sub_compositeNewtonCotes_le_of_contDiffOn`: the $O(H^{n+1})$ error bound of the
+  composite closed rules for a $C^{n+1}$ integrand.
+* `Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`: the composite closed rules converge for a
+  $C^{n+1}$ integrand, with no sign condition on the weights.
+* `Quadrature.integral_eq_hermiteQuadrature_of_degree_le`: Hermite quadrature at $n + 1$ nodes is
+  exact to degree $2n + 1$.
+* `Quadrature.exists_sub_correctedTrapezoid_eq`: the corrected trapezoidal error is
+  $(b - a)^5 g^{(4)}(\xi)/720$.
+* `Quadrature.sub_correctedTrapezoidSum_eq`: the composite corrected trapezoidal error is
+  $(b - a) H^4 g^{(4)}(\xi)/720$.
+* `Quadrature.abs_sub_simpson_add_estimate_le`: the a posteriori error estimate of adaptive Simpson
+  quadrature, with an explicit remainder.
 
-## The route to the error formula
+## Proof outline
 
-The error of the closed rule is `∫_a^b (f - Π_n f)`, and `f - Π_n f = φ ω` with
-`ω = ∏ (X - x_i)` the nodal polynomial and `φ(x) = f[x_0, …, x_n, x]` the divided difference with
-`x` appended. Integrating by parts against `W(x) = ∫_a^x ω`, which vanishes at both endpoints
-because `ω` is odd about the midpoint when `n` is even, gives `-∫_a^b W φ'`; the derivative
-`φ'(x) = f[x_0, …, x_n, x, x]` is the leading coefficient of a Hermite interpolant of `f`, so it
-lies between the extreme values of `f^{(n+2)}/(n+2)!`, and `W > 0` inside `(a, b)` makes the
-intermediate value theorem applicable. The function `φ` is made smooth across the nodes as the
-iterated `dslope` of `f - Π_n f` at the nodes (Hadamard's lemma,
-`Numlib/Analysis/Calculus/RootMultiplicity`), and `φ'` is identified with the Hermite coefficient
-away from the nodes by `DividedDifference.hasDerivAt_newton_snoc`. The positivity of `W` is the
-fact that the unit-panel integrals of `π_{n+1}` alternate in sign with decreasing modulus up to the
-midpoint, through the identity `π_{n+1}(t + 1)(t - n) = π_{n+1}(t)(t + 1)`.
+The error of the closed rule is $\int_a^b (f - \Pi_n f)$, and $f - \Pi_n f = \phi \, \omega$, where
+$\omega = \prod_i (x - x_i)$ is the nodal polynomial and $\phi(x) = f[x_0, \dots, x_n, x]$ is the
+divided difference with $x$ appended. Integration by parts against $W(x) = \int_a^x \omega$ gives
+$-\int_a^b W \phi'$, because $W$ vanishes at both endpoints when $n$ is even ($\omega$ is odd about
+the midpoint). The derivative $\phi'(x) = f[x_0, \dots, x_n, x, x]$ is the leading coefficient of a
+Hermite interpolant of $f$, so it lies between the extreme values of $f^{(n+2)}/(n + 2)!$. Since
+$W > 0$ inside $(a, b)$, the intermediate value theorem applies. The function $\phi$ is smooth
+across the nodes, because it is the iterated `dslope` of $f - \Pi_n f$ at the nodes (Hadamard's
+lemma, `Numlib.Analysis.Calculus.RootMultiplicity`), and `DividedDifference.hasDerivAt_newton_snoc`
+identifies $\phi'$ with the Hermite coefficient away from the nodes. The positivity of $W$ says that
+the integrals of $\pi_{n+1}$ over the unit panels alternate in sign with decreasing modulus up to
+the midpoint. This follows from the identity $\pi_{n+1}(t + 1)(t - n) = \pi_{n+1}(t)(t + 1)$. The
+sign argument is that of [isaacson1994analysis], pp. 308–314.
 
-## The sharp error formula for odd `n`, and why it is not here
+The sign of the error, with the Peano kernel of order $n + 1$, then gives the mean value form: if
+the kernel changed sign, an integrand whose derivative $f^{(n+2)}$ is a bump concentrated where the
+kernel has the wrong sign would contradict the sign of the error.
 
-For odd `n` the sharp error of the closed rule is [quarteroni2000numerical] (9.20),
-`∫_a^b f - I_n(f) = K_n/(n + 1)! h^{n+2} f^{(n+1)}(η)` for some `η ∈ (a, b)`, `h = (b - a)/n`,
-with the open analogue at `K̃_n > 0` and `h = (b - a)/(n + 2)` and the composite form (9.27); the
-book states all three without proof. They are not in this module, and deliberately not in its plan
-either: the statements are true, but no proof of them is within reach of the library, and this
-section is the record of exactly what is missing. Everything the book draws from (9.20) is proved
-without it — `integral_sub_closedNewtonCotes_pow_eq` pins the error at `x^{n+1}` to `h^{n+2} K_n`,
-so the degree of exactness is exactly `n` (`not_integral_eq_closedNewtonCotes_of_odd`);
-`abs_sub_closedNewtonCotes_le_of_contDiffOn` and `abs_sub_compositeNewtonCotes_le_of_contDiffOn`
-give the orders `O(h^{n+2})` and `O(H^{n+1})` with a non-sharp constant; and
-`tendsto_compositeNewtonCotes_of_contDiffOn` gives the convergence. Only the sharp constant is
-missing.
+## Implementation notes
 
-**The reduction.** Peano's theorem at order `n` applies (exactness to degree `n` is
-`integral_eq_closedNewtonCotes_of_degree_le`) and the mean value lemma
-`exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos` finishes, so the whole of (9.20) is the
-constant sign of the order-`n` Peano kernel. On the reference interval `[0, n]` with nodes
-`0, …, n` and weights `w_i = newtonCotesWeight n i` that kernel is `-Φ/n!`, where
-
-  `Φ(t) = ∑_i w_i (t - i)_+^n - t^{n+1}/(n + 1)`,
-
-so (9.20) *is* the inequality `Φ ≥ 0` on `[0, n]`. `Φ` is symmetric about `n/2` (for odd `n` the
-rule annihilates `(x - t)^n`), vanishes to order exactly `n` at each endpoint
-(`Φ(t) = w_0 t^n - t^{n+1}/(n + 1)` near `0`, and `w_0 > 0`), and `Φ^{(n)} = n! D` where
-
-  `D(s) = (∑_{i ≤ s} w_i) - s`
-
-is the sawtooth of the *partial sums of the weights*: it falls with slope `-1` on each panel and
-jumps by `w_i` at each node, and the moment equations say `D ⊥ 𝒫_{n-1}` on `[0, n]`. The open
-rules differ only in the nodes and the reference interval, and the composite case (9.27) is the
-routine summation of the panel formulae.
-
-**The statement is true.** For every odd `n ≤ 31`, `Φ ≥ 0` is *certified* — not sampled — by exact
-rational arithmetic: the Bernstein coefficients of each panel polynomial of `Φ`, subdivided until
-all of them are nonnegative. The same computation certifies `Φ(n/2) > 0` and `Φ' ≥ 0` on
-`[0, n/2]`, that is, that `Φ` is unimodal.
-
-**Three routes, and where each stops.**
-
-*Integration by parts.* For odd `n`, `W(x) = ∫_0^x π_{n+1}` does not vanish at the right endpoint
-(`W(n) = K_n < 0`, `newtonCotesK_neg`) and `π_{n+1}` is even about the midpoint, so
-`W(x) + W(n - x) = W(n)`. Integrating the divided-difference form of the error by parts against
-`W ≤ 0`, or against `W - W(n) ≥ 0`, proves `∫_a^b f - I_n(f) ≤ 0` exactly on the cone of `f` whose
-`f^{(n+1)}` is nonnegative *and monotone*. That cone contains no bump, so the contradiction
-argument of `peanoKernel_closedNewtonCotes_nonpos_of_even` cannot start; testing against the cone
-yields only `∫_0^s Φ ≥ 0` and `∫_s^n Φ ≥ 0` for every `s`.
-
-*Iterated Steffensen on the half interval.* Let `D_j` be the `j`-th primitive of `D` vanishing to
-order `j` at `0`, so that `D_j = Φ^{(n-j)}/n!` and Taylor's formula with integral remainder reads
-
-  `Φ(t) = (n!/(n - j - 1)!) ∫_0^t D_j(u) (t - u)^{n-j-1} du`.
-
-For *even* `j` the weight `(t - u)^{n-j-1}` is nonnegative, so `D_j ≥ 0` on `[0, n/2]` would give
-`Φ ≥ 0` there and the symmetry of `Φ` would finish. Even `j` is also the only parity worth trying:
-`D_j` is antisymmetric about `n/2` for even `j`, while for odd `j` it is symmetric, and then
-`D_j ≥ 0` on the half interval forces `D_j ≥ 0` on all of `[0, n]`, hence `D_{j+1} ≡ 0` — which is
-why Steffensen's criterion `D_1 ≥ 0` fails for every `n ≥ 2`, and with it every odd `j ≤ n - 2`.
-But exact computation kills the even family too: `D_j ≥ 0` on `[0, n/2]` fails for every even
-`j ≤ n - 3` — already at `j = 2`, the inequality `∑_i w_i (t - i)_+^2 ≥ t^3/3` on `[0, n/2]`, which
-fails at `n = 5` — and holds only at `j = n - 1`, where it is the unimodality `Φ' ≥ 0`, a statement
-of the same strength as the theorem itself.
-
-*Rolle, with the symmetry.* `Φ` has a zero of multiplicity exactly `n` at each endpoint, so if it
-has `Z` zeros in `(0, n)` counted with multiplicity then `Φ^{(n)} = n! D` has at least `n + Z` sign
-changes; writing `sc(n)` for the number of sign changes of `D` on `(0, n)`, this is
-
-  `Z ≤ sc(n) - n`.
-
-If `Φ(n/2) > 0` and `Φ` were negative somewhere, its negative set would be symmetric about `n/2`
-and would avoid `n/2`, so `Φ` would have two sign changes in `(0, n/2)` and two in `(n/2, n)`, that
-is `Z ≥ 4`. Hence, `sc(n)` being odd,
-
-  **`sc(n) ≤ n + 2` together with `Φ(n/2) > 0` proves (9.20) for that `n`.**
-
-Exact computation of the weights gives `sc(n) = 5, 9, 13, 13, 13, 13, 17, 17, 21, 21, …` at
-`n = 3, 5, 7, 9, 11, 13, 15, …`, and `sc(n) = n` for `n ≡ 1 (mod 4)`, `n + 2` for `n ≡ 3 (mod 4)`,
-throughout `11 ≤ n ≤ 61`. So the criterion holds at `n = 3` and at every odd `n` with
-`11 ≤ n ≤ 61`, and fails exactly at `n = 5, 7, 9`, three finite cases that the certificate above
-settles. (An earlier record of this obstruction said that `D` has `2n - 1` sign changes; that is
-true only for `n ≤ 7`. From `n = 9` on the weights oscillate, `D` loses sign changes, and the count
-comes within one of closing the theorem — the rule is *easier* the worse its weights behave.)
-
-**What is left.** `D` changes sign inside panel `k` exactly when `d_k := (∑_{i ≤ k} w_i) - k` lies
-in `(0, 1)`, and at the node `k + 1` exactly when `d_k - 1` and `d_{k+1}` have opposite signs.
-There are `n` panels and `n - 1` interior nodes, so `sc(n) ≤ n + 2` follows from
-
-  **`(∑_{i ≤ k} w_i) ∉ (k, k + 1)` for every `k ∈ {1, …, n - 2}` with `k ≠ (n - 1)/2`,**
-
-and that is the whole of what is missing. The three exceptional indices are forced and harmless:
-`d_0 = w_0 ∈ (0, 1)`, `d_{(n-1)/2} = 1/2` by `newtonCotesWeight_symm` and `sum_newtonCotesWeight`,
-and `d_{n-1} = 1 - w_n ∈ (0, 1)`. The displayed condition holds for every odd `n` with
-`13 ≤ n ≤ 61` — there `d_k ∈ (0, 1)` at those three indices and nowhere else — and fails only for
-`n ≤ 11`, where the weights are still positive and small enough that every partial sum lies in its
-own panel; those `n` are covered by the certificate. A proof for general `n` therefore needs the
-sign pattern of the partial sums of the Newton–Cotes weights, uniformly in `n`, that is
-asymptotics of the weights, of which only the first panel is elementary: `w_0 ≥ 1/(n + 1)` because
-`log (1 - x/j)` is concave, so `∏_{j=2}^n (1 - x/j) ≥ n^{-x}` on `[0, 1]` and
-`∫_0^1 (1 - x) n^{-x} dx = (1/λ)(1 - (1 - 1/n)/λ)`, `λ = log n`, exceeds `1/(n + 1)` for `n ≥ 1`.
-It also needs `Φ(n/2) > 0` for general `n`, and an iterated Rolle count with multiplicities for a
-`C^{n-1}` piecewise polynomial, which Mathlib does not have. That is a research paper with several
-hundred lines of Lean on top of it, so the three nodes were removed from the plan rather than left
-open.
-
-## References
-
-[quarteroni2000numerical] §9.2–9.5 and §9.7; the sign argument is that of Isaacson–Keller,
-*Analysis of Numerical Methods*, pp. 308–314; the one-variable Hadamard lemma is the route to the
-smoothness of the divided difference across the nodes.
+* The rules are real functions of the integrand and the endpoints.
+  `Quadrature.isExactOn_closedNewtonCotes` and `Quadrature.isInterpolatory_closedNewtonCotes`
+  restate the closed rule in the vocabulary of `Numlib.Approximation.Quadrature`, on $C([a, b])$
+  with the functional `ContinuousMap.integralIccCLM`. `Quadrature.midpointSum` follows the style of
+  `Quadrature.trapezoidSum` of `Numlib.Approximation.CompositeQuadrature`.
+* `Quadrature.closedNewtonCotes` is meaningful for $n \ge 1$. For $n = 0$ it has the value $0$,
+  because Lean gives $(b - a)/0 = 0$.
+* The constants $M_n$, $K_n$, $\tilde M_n$ and $\tilde K_n$ correspond to (9.19) and (9.20) of
+  [quarteroni2000numerical], where Theorem 9.2 states the sign facts $M_n < 0$, $K_n < 0$,
+  $\tilde M_n > 0$ and $\tilde K_n > 0$. The book states $K_n < 0$ and $\tilde M_n > 0$ without
+  proof, and for $M_n < 0$ it cites the positivity of $W$ from p. 309 of [isaacson1994analysis]. All
+  four signs are proved here.
+* Comparison with [quarteroni2000numerical]. The composite error (9.26) prints $M_n/(n + 2)^{n+3}$;
+  the correct constant is $M_n/n^{n+3}$ (`Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`).
+  The Riemann-sum bound of Property 9.1 holds with the constant $1$ in place of $2$
+  (`Quadrature.abs_sub_compositeNewtonCotes_le`). The composite corrected trapezoidal rule (9.32)
+  prints $(b - a)^2/12$, which should read $H^2/12$, as in Program 75 of the book
+  (`Quadrature.correctedTrapezoidSum`). The adaptive Simpson estimate
+  $|I - S_2| \simeq |S - S_2|/15$ holds with the sign $I - S_2 \approx -(S - S_2)/15$
+  (`Quadrature.abs_sub_simpson_add_estimate_le`).
+* **The sharp error formula for odd $n$ is not formalized.** For odd $n$, (9.20) of
+  [quarteroni2000numerical] states $\int_a^b f - I_n(f) = K_n h^{n+2} f^{(n+1)}(\eta)/(n + 1)!$ for
+  some $\eta \in (a, b)$, $h = (b - a)/n$, together with the open analogue with $\tilde K_n > 0$ and
+  $h = (b - a)/(n + 2)$, and the composite form (9.27). The book states all three without proof. The
+  statements are true, but no proof of them is within reach of the library. Everything that the book
+  draws from (9.20) is proved without it: `Quadrature.integral_sub_closedNewtonCotes_pow_eq` gives
+  the error $h^{n+2} K_n$ at $x^{n+1}$, so the degree of exactness is exactly $n$
+  (`Quadrature.not_integral_eq_closedNewtonCotes_of_odd`);
+  `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn` and
+  `Quadrature.abs_sub_compositeNewtonCotes_le_of_contDiffOn` give the orders $O(h^{n+2})$ and
+  $O(H^{n+1})$ with a constant that is not sharp; and
+  `Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn` gives the convergence. Only the sharp
+  constant is missing. The following items record what a proof needs.
+* *The reduction.* Peano's theorem at order $n$ applies, because the rule is exact to degree $n$
+  (`Quadrature.integral_eq_closedNewtonCotes_of_degree_le`), and the mean value lemma
+  `intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos` finishes. So (9.20) is
+  equivalent to the constant sign of the Peano kernel of order $n$. On the reference interval
+  $[0, n]$ with the nodes $0, \dots, n$ and the weights $w_i$, this kernel is $-\Phi/n!$ with
+  $\Phi(t) = \sum_i w_i (t - i)_+^n - t^{n+1}/(n + 1)$, so (9.20) is the inequality $\Phi \ge 0$ on
+  $[0, n]$. The function $\Phi$ is symmetric about $n/2$ (for odd $n$ the rule annihilates
+  $(x - t)^n$). It vanishes to order exactly $n$ at each endpoint, since
+  $\Phi(t) = w_0 t^n - t^{n+1}/(n + 1)$ near $0$ and $w_0 > 0$. Its derivative of order $n$ is
+  $\Phi^{(n)} = n! \, D$ with $D(s) = \sum_{i \le s} w_i - s$, the sawtooth of the partial sums of
+  the weights: $D$ falls with slope $-1$ on each panel and jumps by $w_i$ at each node, and the
+  moment equations say that $D$ is orthogonal to the polynomials of degree at most $n - 1$ on
+  $[0, n]$. The open rules differ only in the nodes and the reference interval, and the composite
+  case (9.27) is the routine sum of the panel formulas.
+* *The statement is true.* For every odd $n \le 31$, the inequality $\Phi \ge 0$ is verified, not
+  sampled, by exact rational arithmetic: the Bernstein coefficients of each panel polynomial of
+  $\Phi$, subdivided until all of them are nonnegative. The same computation verifies
+  $\Phi(n/2) > 0$ and $\Phi' \ge 0$ on $[0, n/2]$, that is, that $\Phi$ is unimodal.
+* *First route, integration by parts.* For odd $n$, $W(x) = \int_0^x \pi_{n+1}$ does not vanish at
+  the right endpoint ($W(n) = K_n < 0$, `Quadrature.newtonCotesK_neg`), and $\pi_{n+1}$ is even
+  about the midpoint, so $W(x) + W(n - x) = W(n)$. Integration by parts of the divided-difference
+  form of the error against $W \le 0$, or against $W - W(n) \ge 0$, proves
+  $\int_a^b f - I_n(f) \le 0$ only on the cone of the $f$ whose derivative $f^{(n+1)}$ is
+  nonnegative *and monotone*. This cone contains no bump, so the contradiction argument of
+  `Quadrature.peanoKernel_closedNewtonCotes_nonpos_of_even` cannot start. Testing against the cone
+  gives only $\int_0^s \Phi \ge 0$ and $\int_s^n \Phi \ge 0$ for every $s$.
+* *Second route, iterated Steffensen on the half interval.* Let $D_j$ be the $j$-th primitive of $D$
+  that vanishes to order $j$ at $0$, so that $D_j = \Phi^{(n-j)}/n!$ and Taylor's formula with
+  integral remainder reads $\Phi(t) = \frac{n!}{(n - j - 1)!} \int_0^t D_j(u) (t - u)^{n-j-1} \,
+  du$. For even $j$ the weight $(t - u)^{n-j-1}$ is nonnegative, so $D_j \ge 0$ on $[0, n/2]$ would
+  give $\Phi \ge 0$ there, and the symmetry of $\Phi$ would finish. Even $j$ is also the only parity
+  worth trying: $D_j$ is antisymmetric about $n/2$ for even $j$ and symmetric for odd $j$, and for
+  odd $j$ the inequality $D_j \ge 0$ on the half interval forces $D_j \ge 0$ on all of $[0, n]$,
+  hence $D_{j+1} \equiv 0$. This is why Steffensen's criterion $D_1 \ge 0$ fails for every
+  $n \ge 2$, and with it every odd $j \le n - 2$. Exact computation excludes the even $j$ too:
+  $D_j \ge 0$ on $[0, n/2]$ fails for every even $j \le n - 3$. It fails already at $j = 2$, where
+  it is the inequality $\sum_i w_i (t - i)_+^2 \ge t^3/3$ on $[0, n/2]$, which fails at $n = 5$. It
+  holds only at $j = n - 1$, where it is the unimodality $\Phi' \ge 0$, a statement as strong as the
+  theorem itself.
+* *Third route, Rolle's theorem with the symmetry.* $\Phi$ has a zero of multiplicity exactly $n$ at
+  each endpoint. So if $\Phi$ has $Z$ zeros in $(0, n)$, counted with multiplicity, then
+  $\Phi^{(n)} = n! \, D$ has at least $n + Z$ sign changes. With $\mathrm{sc}(n)$ the number of sign
+  changes of $D$ on $(0, n)$, this is $Z \le \mathrm{sc}(n) - n$. If $\Phi(n/2) > 0$ and $\Phi$ were
+  negative somewhere, its negative set would be symmetric about $n/2$ and would avoid $n/2$, so
+  $\Phi$ would have two sign changes in $(0, n/2)$ and two in $(n/2, n)$, that is, $Z \ge 4$. Since
+  $\mathrm{sc}(n)$ is odd, **$\mathrm{sc}(n) \le n + 2$ together with $\Phi(n/2) > 0$ proves (9.20)
+  for that $n$.** Exact computation of the weights gives $\mathrm{sc}(n) = 5, 9, 13, 13, 13, 13, 17,
+  17, 21, 21, \dots$ at $n = 3, 5, 7, 9, 11, 13, 15, \dots$, and, throughout $11 \le n \le 61$,
+  $\mathrm{sc}(n) = n$ for $n \equiv 1 \pmod 4$ and $\mathrm{sc}(n) = n + 2$ for
+  $n \equiv 3 \pmod 4$. So the criterion holds at $n = 3$ and at every odd $n$ with
+  $11 \le n \le 61$. It fails exactly at $n = 5, 7, 9$, three finite cases that the exact
+  computation above settles. The count $\mathrm{sc}(n) = 2n - 1$ holds only for $n \le 7$: from
+  $n = 9$ on the weights oscillate, $D$ loses sign changes, and the count comes within one of
+  closing the theorem, so the rule is *easier* to analyse the worse its weights behave.
+* *What is left.* $D$ changes sign inside the panel $k$ exactly when $d_k = \sum_{i \le k} w_i - k$
+  lies in $(0, 1)$, and at the node $k + 1$ exactly when $d_k - 1$ and $d_{k+1}$ have opposite
+  signs. There are $n$ panels and $n - 1$ interior nodes, so $\mathrm{sc}(n) \le n + 2$ follows from
+  the condition **$\sum_{i \le k} w_i \notin (k, k + 1)$ for every $k \in \{1, \dots, n - 2\}$ with
+  $k \neq (n - 1)/2$**, and this condition is all that is missing. The three excluded indices are
+  forced and harmless: $d_0 = w_0 \in (0, 1)$, $d_{(n-1)/2} = 1/2$ by
+  `Quadrature.newtonCotesWeight_symm` and `Quadrature.sum_newtonCotesWeight`, and
+  $d_{n-1} = 1 - w_n \in (0, 1)$. The condition holds for every odd $n$ with $13 \le n \le 61$,
+  where $d_k \in (0, 1)$ holds at those three indices and nowhere else. It fails only for
+  $n \le 11$, where the weights are still positive and small enough that every partial sum lies in
+  its own panel; these $n$ are covered by the exact computation. A proof for general $n$ therefore
+  needs the sign pattern of the partial sums of the Newton–Cotes weights, uniformly in $n$, that is,
+  asymptotics of the weights. Only the first panel is elementary: $w_0 \ge 1/(n + 1)$, because
+  $\log(1 - x/j)$ is concave, so $\prod_{j=2}^n (1 - x/j) \ge n^{-x}$ on $[0, 1]$, and $\int_0^1
+  (1 - x) n^{-x} \, dx = (1/\lambda)(1 - (1 - 1/n)/\lambda)$ with $\lambda = \log n$ exceeds
+  $1/(n + 1)$ for $n \ge 1$. A proof also needs $\Phi(n/2) > 0$ for general $n$, and an iterated
+  Rolle count with multiplicities for a $C^{n-1}$ piecewise polynomial, which Mathlib does not have.
+  This is a research problem, so the three statements are not formalized.
 -/
 
 open Filter Polynomial Set Topology intervalIntegral
@@ -215,9 +248,13 @@ section MeanValue
 
 variable {a b : ℝ} {K f : ℝ → ℝ}
 
-/-- **Collecting panel errors.** If each of `m` panel errors is `c * u (ξ j)` with `ξ j ∈ [a, b]`
-and `u` continuous, their sum is `m * c * u ξ` for one `ξ ∈ [a, b]`: the discrete mean value
-theorem `ContinuousOn.exists_sum_mul_eq_mul_sum` with unit weights. -/
+/-- **Collecting panel errors.** Let $a \le b$, let $u$ be continuous on $[a, b]$, let
+$m \in \mathbb{N}$, let $\xi_0, \dots, \xi_{m-1} \in [a, b]$ and $c \in \mathbb{R}$. Then there
+is $\eta \in [a, b]$ with
+$$\sum_{j < m} c \, u(\xi_j) = m \, c \, u(\eta).$$
+
+This is the discrete mean value theorem `ContinuousOn.exists_sum_mul_eq_mul_sum` with unit
+weights. -/
 theorem exists_sum_mul_eq_of_forall_mem (hab : a ≤ b) {u : ℝ → ℝ} (hu : ContinuousOn u (Icc a b))
     {m : ℕ} {ξ : ℕ → ℝ} (hξ : ∀ j < m, ξ j ∈ Icc a b) (c : ℝ) :
     ∃ η ∈ Icc a b, ∑ j ∈ Finset.range m, c * u (ξ j) = m * c * u η := by
@@ -237,26 +274,28 @@ section Midpoint
 
 variable {a b : ℝ} {g g' g'' : ℝ → ℝ}
 
-/-- **The midpoint (rectangle) rule** `(b - a) f((a + b)/2)`: the integral of the constant
-interpolant at the midpoint.
-
-Reference: [quarteroni2000numerical], (9.5). -/
+/-- The **midpoint rule** (rectangle rule) on $[a, b]$ is $(b - a) f((a + b)/2)$, the integral of
+the constant interpolant of $f$ at the midpoint. This is (9.5) of [quarteroni2000numerical]. -/
 noncomputable def midpointRule (f : ℝ → ℝ) (a b : ℝ) : ℝ := (b - a) * f ((a + b) / 2)
 
-/-- **The composite midpoint sum** on the uniform mesh of `m` panels of width `H`,
-`H ∑_{k < m} g(a + (k + 1/2) H)`.
-
-Reference: [quarteroni2000numerical], (9.7). -/
+/-- The **composite midpoint rule** on the uniform mesh of $m$ panels of width $H$ starting at $a$
+is
+$$H \sum_{k < m} g(a + (k + 1/2) H).$$
+This is (9.7) of [quarteroni2000numerical]. -/
 noncomputable def midpointSum (g : ℝ → ℝ) (a H : ℝ) (m : ℕ) : ℝ :=
   ∑ k ∈ Finset.range m, H * g (a + (k + 1 / 2) * H)
 
-/-- **The Peano kernel of the midpoint rule** on `[α, β]`: `(t - α)²/2` on the left half of the
-panel and `(β - t)²/2` on the right half. It is continuous, nonnegative, and integrates to
-`(β - α)³/24`. -/
+/-- The **Peano kernel of the midpoint rule** on $[\alpha, \beta]$ is $K(t) = (t - \alpha)^2/2$ for
+$t \le (\alpha + \beta)/2$ and $K(t) = (\beta - t)^2/2$ otherwise.
+
+The kernel is continuous (`Quadrature.continuous_midpointKernel`) and nonnegative
+(`Quadrature.midpointKernel_nonneg`), and for $\alpha \le \beta$ it integrates to
+$(\beta - \alpha)^3/24$ over $[\alpha, \beta]$ (`Quadrature.integral_midpointKernel`). -/
 noncomputable def midpointKernel (α β t : ℝ) : ℝ :=
   if t ≤ (α + β) / 2 then (t - α) ^ 2 / 2 else (β - t) ^ 2 / 2
 
-/-- The midpoint kernel is continuous: its two branches agree at the midpoint. -/
+/-- The midpoint kernel on $[\alpha, \beta]$ is continuous on $\mathbb{R}$: its two branches agree
+at the midpoint. -/
 theorem continuous_midpointKernel (α β : ℝ) : Continuous (midpointKernel α β) := by
   unfold midpointKernel
   refine Continuous.if_le (by fun_prop) (by fun_prop) continuous_id continuous_const
@@ -265,17 +304,17 @@ theorem continuous_midpointKernel (α β : ℝ) : Continuous (midpointKernel α 
   rw [ht']
   ring
 
-/-- The midpoint kernel is nonnegative. -/
+/-- The midpoint kernel is nonnegative at every $t \in \mathbb{R}$. -/
 theorem midpointKernel_nonneg (α β t : ℝ) : 0 ≤ midpointKernel α β t := by
   unfold midpointKernel
   split_ifs <;> positivity
 
-/-- The midpoint kernel on the left half of the panel. -/
+/-- For $t \le (\alpha + \beta)/2$, the midpoint kernel at $t$ is $(t - \alpha)^2/2$. -/
 theorem midpointKernel_of_le {α β t : ℝ} (ht : t ≤ (α + β) / 2) :
     midpointKernel α β t = (t - α) ^ 2 / 2 := by
   simp [midpointKernel, ht]
 
-/-- The midpoint kernel on the right half of the panel. -/
+/-- For $t \ge (\alpha + \beta)/2$, the midpoint kernel at $t$ is $(\beta - t)^2/2$. -/
 theorem midpointKernel_of_ge {α β t : ℝ} (ht : (α + β) / 2 ≤ t) :
     midpointKernel α β t = (β - t) ^ 2 / 2 := by
   rcases eq_or_lt_of_le ht with h | h
@@ -283,8 +322,8 @@ theorem midpointKernel_of_ge {α β t : ℝ} (ht : (α + β) / 2 ≤ t) :
     ring
   · simp [midpointKernel, not_le.2 h]
 
-/-- The telescoping identity behind a second order Peano kernel: if `p'' = 1`, then
-`p g'' - g` is the derivative of `p g' - p' g`. -/
+/-- If $p'' = 1$, then $\int_u^v p g'' - \int_u^v g = \bigl[p g' - p' g\bigr]_u^v$, because
+$p g'' - g$ is the derivative of $p g' - p' g$. -/
 private theorem integral_quadratic_kernel_sub {p p₁ : ℝ → ℝ} {u v : ℝ}
     (hp : ∀ x : ℝ, HasDerivAt p (p₁ x) x) (hp₁ : ∀ x : ℝ, HasDerivAt p₁ 1 x)
     (hg : ∀ x ∈ uIcc u v, HasDerivAt g (g' x) x)
@@ -305,12 +344,17 @@ private theorem integral_quadratic_kernel_sub {p p₁ : ℝ → ℝ} {u v : ℝ}
   rw [← integral_sub hpg hgi]
   exact integral_eq_sub_of_hasDerivAt hΦ (hpg.sub hgi)
 
-/-- **The Peano identity for the midpoint rule on one panel**: for `α ≤ β`,
-`∫_α^β g - (β - α) g((α + β)/2) = ∫_α^β K(t) g''(t) dt` with `K` the midpoint kernel. One
-telescoping identity on each half panel; the boundary terms at the midpoint cancel because the
-two branches of the kernel agree there to first order with opposite first derivatives.
+/-- **Peano's formula for the midpoint rule on one panel.** Let $\alpha \le \beta$, let $g$ have the
+derivative $g'$ and $g'$ the derivative $g''$ at every point of $[\alpha, \beta]$, and let $g''$
+be integrable on $[\alpha, \beta]$. Then
+$$\int_\alpha^\beta g - (\beta - \alpha) g\Bigl(\frac{\alpha + \beta}{2}\Bigr) =
+  \int_\alpha^\beta K(t) g''(t) \, dt,$$
+where $K$ is the midpoint kernel `Quadrature.midpointKernel`. This is the computation of §9.2.1
+of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], §9.2.1. -/
+The proof applies one integration-by-parts identity on each half panel. The boundary terms at
+the midpoint cancel, because the two branches of the kernel agree there and have opposite first
+derivatives. -/
 theorem sub_midpoint_eq_integral_peanoKernel {α β : ℝ} (hαβ : α ≤ β)
     (hg : ∀ x ∈ Icc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Icc α β, HasDerivAt g' (g'' x) x)
@@ -367,7 +411,8 @@ theorem sub_midpoint_eq_integral_peanoKernel {α β : ℝ} (hαβ : α ≤ β)
   have hsq : (c - α) ^ 2 = (β - c) ^ 2 := by rw [hcα]
   linear_combination -hL - hR - (g' c / 2) * hsq
 
-/-- **The midpoint kernel integrates to `(β - α)³/24`** over the panel. -/
+/-- For $\alpha \le \beta$, the midpoint kernel integrates to $(\beta - \alpha)^3/24$ over
+$[\alpha, \beta]$. -/
 theorem integral_midpointKernel {α β : ℝ} (hαβ : α ≤ β) :
     (∫ t in α..β, midpointKernel α β t) = (β - α) ^ 3 / 24 := by
   set c := (α + β) / 2 with hc
@@ -400,12 +445,14 @@ theorem integral_midpointKernel {α β : ℝ} (hαβ : α ≤ β) :
   rw [eL, eR, vL, vR, hc]
   ring
 
-/-- **The midpoint error in mean value form**: for `a < b` and `g` twice differentiable with
-continuous second derivative on `[a, b]`,
-`∫_a^b g - (b - a) g((a + b)/2) = ((b - a)/2)³/3 · g''(ξ)` for some `ξ ∈ [a, b]`. The kernel is
-nonnegative and integrates to `(b - a)³/24 = h³/3` with `h = (b - a)/2`.
+/-- **The midpoint error in mean value form.** Let $a \le b$, let $g$ have the derivative $g'$ and
+$g'$ the derivative $g''$ at every point of $[a, b]$, and let $g''$ be continuous on $[a, b]$.
+Then there is $\xi \in [a, b]$ with
+$$\int_a^b g - (b - a) g\Bigl(\frac{a + b}{2}\Bigr) = \frac{h^3}{3} g''(\xi), \qquad h =
+  \frac{b - a}{2}.$$
+This is (9.6) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], (9.6). -/
+The proof uses that the midpoint kernel is nonnegative and integrates to $(b - a)^3/24 = h^3/3$. -/
 theorem exists_sub_midpoint_eq (hab : a ≤ b) (hg : ∀ x ∈ Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Icc a b, HasDerivAt g' (g'' x) x) (hg'' : ContinuousOn g'' (Icc a b)) :
     ∃ ξ ∈ Icc a b, (∫ t in a..b, g t) - midpointRule g a b = ((b - a) / 2) ^ 3 / 3 * g'' ξ := by
@@ -416,12 +463,14 @@ theorem exists_sub_midpoint_eq (hab : a ≤ b) (hg : ∀ x ∈ Icc a b, HasDeriv
   rw [h, integral_midpointKernel hab]
   ring
 
-/-- **The composite midpoint error in mean value form**: for `a < b`, `0 < m`, `H = (b - a)/m`
-and `g` of class `C²` on `[a, b]`,
-`∫_a^b g - midpointSum g a H m = (b - a) H² g''(ξ)/24` for some `ξ ∈ [a, b]`. The panel errors
-`H³ g''(ξ_k)/24` are collected by the discrete mean value theorem.
+/-- **The composite midpoint error in mean value form.** Let $a < b$, $m \ge 1$ and $H = (b - a)/m$.
+Let $g$ have the derivative $g'$ and $g'$ the derivative $g''$ at every point of $[a, b]$, and
+let $g''$ be continuous on $[a, b]$. Then there is $\xi \in [a, b]$ with
+$$\int_a^b g - H \sum_{k < m} g(a + (k + 1/2) H) = \frac{b - a}{24} H^2 g''(\xi).$$
+This is (9.8) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], (9.8). -/
+The panel errors $H^3 g''(\xi_k)/24$ are collected by the discrete mean value theorem
+`Quadrature.exists_sum_mul_eq_of_forall_mem`. -/
 theorem sub_composite_midpoint_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {H : ℝ}
     (hH : H = (b - a) / m) (hg : ∀ x ∈ Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Icc a b, HasDerivAt g' (g'' x) x) (hg'' : ContinuousOn g'' (Icc a b)) :
@@ -480,11 +529,13 @@ theorem sub_composite_midpoint_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {H : ℝ}
   calc (m : ℝ) * (H ^ 3 / 24) * g'' η = (m * H) * H ^ 2 / 24 * g'' η := by ring
     _ = (b - a) / 24 * H ^ 2 * g'' η := by rw [hmH]; ring
 
-/-- **The composite midpoint rule converges** for every continuous integrand as the mesh of the
-uniform partitions tends to zero: an instance of the Riemann sum theorem
-`Quadrature.tendsto_compositeSum` with the one-node panel rule at the panel midpoint.
+/-- **Convergence of the composite midpoint rule.** Let $a \le b$ and let $g$ be continuous on
+$[a, b]$. Let $N_k \ge 1$ be numbers of panels with mesh widths $h_k = (b - a)/N_k$ that tend to
+$0$ as $k \to \infty$. Then the composite midpoint rules with $N_k$ panels of width $h_k$
+converge to $\int_a^b g$. This is Property 9.1 of [quarteroni2000numerical] for $n = 0$.
 
-Reference: [quarteroni2000numerical], Property 9.1 for `n = 0`. -/
+The proof is an instance of the Riemann sum theorem `Quadrature.tendsto_compositeSum`, with the
+one-node panel rule at the midpoint of each panel. -/
 theorem tendsto_midpointSum {N : ℕ → ℕ} {hs : ℕ → ℝ} (hab : a ≤ b)
     (hg : ContinuousOn g (Icc a b)) (hN : ∀ n, 0 < N n) (hhs : ∀ n, hs n = (b - a) / N n)
     (hlim : Tendsto hs atTop (𝓝 0)) :
@@ -505,17 +556,20 @@ section Nodes
 
 variable {n : ℕ}
 
-/-- **The integer nodes** `0, 1, …, n`, the reference nodes of every Newton–Cotes rule. -/
+/-- The **integer nodes** $0, 1, \dots, n$, the reference nodes of every Newton–Cotes rule: the node
+with index $i$ is the real number $i$. -/
 def intNode (n : ℕ) (i : Fin (n + 1)) : ℝ := (i : ℕ)
 
+/-- The integer node with index $i$ is the natural number $i$, cast to $\mathbb{R}$. -/
 @[simp]
 theorem intNode_apply (i : Fin (n + 1)) : intNode n i = (i : ℕ) := rfl
 
-/-- The integer nodes are distinct. -/
+/-- The integer nodes $0, \dots, n$ are distinct. -/
 theorem intNode_injective (n : ℕ) : Function.Injective (intNode n) := fun _ _ h =>
   Fin.ext (Nat.cast_injective (R := ℝ) h)
 
-/-- The reflected node: `intNode n (Fin.rev i) = n - intNode n i`. -/
+/-- The reflection of the indices $i \mapsto n - i$ (`Fin.rev`) reflects the integer nodes: the node
+with index $n - i$ is $n - i$. -/
 theorem intNode_rev (i : Fin (n + 1)) : intNode n (Fin.rev i) = n - intNode n i := by
   simp only [intNode_apply, Fin.val_rev]
   have hi : (i : ℕ) + 1 ≤ n + 1 := i.2
@@ -523,25 +577,29 @@ theorem intNode_rev (i : Fin (n + 1)) : intNode n (Fin.rev i) = n - intNode n i 
   push_cast
   ring
 
-/-- **The cardinal polynomials** at the integer nodes,
-`φ_i(t) = ∏_{k ≠ i} (t - k)/(i - k)`: the Lagrange basis polynomials of `0, …, n`. -/
+/-- The **cardinal polynomials** of the integer nodes $0, \dots, n$ are the Lagrange basis
+polynomials
+$$\varphi_i(t) = \prod_{k \neq i} \frac{t - k}{i - k}, \qquad i = 0, \dots, n.$$
+-/
 noncomputable def cardinalPoly (n : ℕ) (i : Fin (n + 1)) : ℝ[X] :=
   Lagrange.basis Finset.univ (intNode n) i
 
-/-- The cardinal polynomial has degree at most `n`. -/
+/-- The cardinal polynomial $\varphi_i$ has degree at most $n$. -/
 theorem degree_cardinalPoly_lt (i : Fin (n + 1)) : (cardinalPoly n i).degree < n + 1 := by
   rw [cardinalPoly, Lagrange.degree_basis (intNode_injective n).injOn (Finset.mem_univ i)]
   simp only [Finset.card_univ, Fintype.card_fin, Nat.add_sub_cancel]
   exact_mod_cast Nat.lt_succ_self n
 
-/-- The cardinal polynomial `φ_i` takes the value `1` at `i` and `0` at the other integer nodes. -/
+/-- The cardinal polynomial $\varphi_i$ takes the value $1$ at the node $i$ and the value $0$ at the
+other integer nodes. -/
 theorem cardinalPoly_eval_intNode (i j : Fin (n + 1)) :
     (cardinalPoly n i).eval (intNode n j) = if j = i then 1 else 0 := by
   split_ifs with h
   · rw [h, cardinalPoly, Lagrange.eval_basis_self (intNode_injective n).injOn (Finset.mem_univ i)]
   · rw [cardinalPoly, Lagrange.eval_basis_of_ne (Ne.symm h) (Finset.mem_univ j)]
 
-/-- The reflection `t ↦ n - t` carries `φ_i` to `φ_{n-i}`. -/
+/-- The reflection $t \mapsto n - t$ carries $\varphi_i$ to $\varphi_{n-i}$:
+$\varphi_i(n - X) = \varphi_{n-i}$ as polynomials. -/
 theorem cardinalPoly_comp_sub (i : Fin (n + 1)) :
     (cardinalPoly n i).comp (C (n : ℝ) - X) = cardinalPoly n (Fin.rev i) := by
   refine Lagrange.eq_basis_of_eval (intNode_injective n).injOn ?_ (Finset.mem_univ _)
@@ -559,40 +617,42 @@ theorem cardinalPoly_comp_sub (i : Fin (n + 1)) :
       ← intNode_rev, cardinalPoly_eval_intNode]
     simp only [Fin.rev_eq_iff]
 
-/-- The value of `φ_i` at `n - t` is the value of `φ_{n-i}` at `t`. -/
+/-- For every $t \in \mathbb{R}$, $\varphi_i(n - t) = \varphi_{n-i}(t)$. -/
 theorem cardinalPoly_eval_sub (i : Fin (n + 1)) (t : ℝ) :
     (cardinalPoly n i).eval (n - t) = (cardinalPoly n (Fin.rev i)).eval t := by
   rw [← cardinalPoly_comp_sub, Polynomial.eval_comp]
   simp
 
-/-- The cardinal polynomials sum to `1`. -/
+/-- The cardinal polynomials of the integer nodes sum to the constant polynomial $1$. -/
 theorem sum_cardinalPoly (n : ℕ) : ∑ i, cardinalPoly n i = 1 :=
   Lagrange.sum_basis (intNode_injective n).injOn Finset.univ_nonempty
 
-/-- **The nodal polynomial at the integer nodes**, `π_{n+1}(t) = ∏_{i ≤ n} (t - i)`. -/
+/-- The **nodal polynomial of the integer nodes** is $\pi_{n+1}(t) = \prod_{i=0}^n (t - i)$. -/
 noncomputable def intNodal (n : ℕ) : ℝ[X] := ∏ i : Fin (n + 1), (X - C (intNode n i))
 
-/-- The nodal polynomial as a product of real factors. -/
+/-- The value of $\pi_{n+1}$ at $t$ is the product $\prod_{i=0}^n (t - i)$ over the indices in
+`Fin (n + 1)`. -/
 theorem intNodal_eval (t : ℝ) : (intNodal n).eval t = ∏ i : Fin (n + 1), (t - (i : ℕ)) := by
   simp [intNodal, Polynomial.eval_prod]
 
-/-- The nodal polynomial as a product over `Finset.range (n + 1)`. -/
+/-- The value of $\pi_{n+1}$ at $t$ is the product $\prod_{i=0}^n (t - i)$ over the indices in
+`Finset.range (n + 1)`. -/
 theorem intNodal_eval_eq_prod_range (t : ℝ) :
     (intNodal n).eval t = ∏ i ∈ Finset.range (n + 1), (t - (i : ℕ)) := by
   rw [intNodal_eval, Finset.prod_range]
 
-/-- The nodal polynomial vanishes at the integer nodes. -/
+/-- The nodal polynomial $\pi_{n+1}$ vanishes at every integer node. -/
 theorem intNodal_eval_intNode (i : Fin (n + 1)) : (intNodal n).eval (intNode n i) = 0 := by
   rw [intNodal_eval]
   exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
 
-/-- The nodal polynomial vanishes at every natural number `k ≤ n`. -/
+/-- The nodal polynomial $\pi_{n+1}$ vanishes at every natural number $k \le n$. -/
 theorem intNodal_eval_natCast {k : ℕ} (hk : k ≤ n) : (intNodal n).eval (k : ℝ) = 0 :=
   intNodal_eval_intNode ⟨k, Nat.lt_succ_of_le hk⟩
 
-/-- **Antisymmetry of the nodal polynomial about the midpoint** `n/2`:
-`π_{n+1}(n - t) = (-1)^{n+1} π_{n+1}(t)`; for even `n` it is odd about the midpoint, for odd `n`
-even. -/
+/-- **Symmetry of the nodal polynomial about the midpoint** $n/2$: for every $t \in \mathbb{R}$,
+$$\pi_{n+1}(n - t) = (-1)^{n+1} \pi_{n+1}(t).$$
+So $\pi_{n+1}$ is odd about the midpoint for even $n$ and even about the midpoint for odd $n$. -/
 theorem intNodal_comp_sub (t : ℝ) :
     (intNodal n).eval (n - t) = (-1) ^ (n + 1) * (intNodal n).eval t := by
   rw [intNodal_eval, intNodal_eval]
@@ -605,8 +665,9 @@ theorem intNodal_comp_sub (t : ℝ) :
   congr 1
   exact Equiv.prod_comp Fin.revPerm (fun i : Fin (n + 1) => t - (i : ℕ))
 
-/-- **The shift identity** `π_{n+1}(t + 1) (t - n) = π_{n+1}(t) (t + 1)`: shifting the
-argument by one moves the factor `t + 1` in and the factor `t - n` out. -/
+/-- **The shift identity** of the nodal polynomial: for every $t \in \mathbb{R}$,
+$$\pi_{n+1}(t + 1)(t - n) = \pi_{n+1}(t)(t + 1).$$
+The shift by one moves the factor $t + 1$ in and the factor $t - n$ out. -/
 theorem intNodal_eval_add_one_mul (t : ℝ) :
     (intNodal n).eval (t + 1) * (t - n) = (intNodal n).eval t * (t + 1) := by
   rw [intNodal_eval, intNodal_eval, Fin.prod_univ_succ, Fin.prod_univ_castSucc]
@@ -624,20 +685,22 @@ section Weights
 
 variable {n : ℕ}
 
-/-- **The closed Newton–Cotes weights** `w_i = ∫_0^n φ_i(t) dt`.
-
-Reference: [quarteroni2000numerical], §9.3 (Table 9.2, left). -/
+/-- The **closed Newton–Cotes weights** are $w_i = \int_0^n \varphi_i(t) \, dt$, $i = 0, \dots, n$,
+where $\varphi_i$ are the cardinal polynomials of the integer nodes. They are tabulated in Table
+9.2 (left) of §9.3 of [quarteroni2000numerical]. -/
 noncomputable def newtonCotesWeight (n : ℕ) (i : Fin (n + 1)) : ℝ :=
   ∫ t in (0 : ℝ)..n, (cardinalPoly n i).eval t
 
-/-- **The open Newton–Cotes weights** `w_i = ∫_{-1}^{n+1} φ_i(t) dt`.
-
-Reference: [quarteroni2000numerical], §9.3 (Table 9.2, right). -/
+/-- The **open Newton–Cotes weights** are $\tilde w_i = \int_{-1}^{n+1} \varphi_i(t) \, dt$,
+$i = 0, \dots, n$, where $\varphi_i$ are the cardinal polynomials of the integer nodes. They are
+tabulated in Table 9.2 (right) of §9.3 of [quarteroni2000numerical]. -/
 noncomputable def openNewtonCotesWeight (n : ℕ) (i : Fin (n + 1)) : ℝ :=
   ∫ t in (-1 : ℝ)..(n + 1), (cardinalPoly n i).eval t
 
-/-- **Symmetry of the closed weights**, `w_{n-i} = w_i`: the substitution `t ↦ n - t` carries
-`φ_i` to `φ_{n-i}` and `[0, n]` to itself. -/
+/-- **Symmetry of the closed weights**: $w_{n-i} = w_i$ for $i = 0, \dots, n$.
+
+The substitution $t \mapsto n - t$ carries $\varphi_i$ to $\varphi_{n-i}$ and $[0, n]$ to
+itself. -/
 theorem newtonCotesWeight_symm (i : Fin (n + 1)) :
     newtonCotesWeight n (Fin.rev i) = newtonCotesWeight n i := by
   unfold newtonCotesWeight
@@ -646,7 +709,7 @@ theorem newtonCotesWeight_symm (i : Fin (n + 1)) :
   rw [← h]
   exact integral_congr fun t _ => (cardinalPoly_eval_sub i t).symm
 
-/-- **Symmetry of the open weights**, `w_{n-i} = w_i`. -/
+/-- **Symmetry of the open weights**: $\tilde w_{n-i} = \tilde w_i$ for $i = 0, \dots, n$. -/
 theorem openNewtonCotesWeight_symm (i : Fin (n + 1)) :
     openNewtonCotesWeight n (Fin.rev i) = openNewtonCotesWeight n i := by
   unfold openNewtonCotesWeight
@@ -656,7 +719,8 @@ theorem openNewtonCotesWeight_symm (i : Fin (n + 1)) :
   rw [← h]
   exact integral_congr fun t _ => (cardinalPoly_eval_sub i t).symm
 
-/-- The sum of the cardinal polynomials integrates to the length of the interval. -/
+/-- For all $u, v$, the integrals $\int_u^v \varphi_i$ of the cardinal polynomials sum to $v - u$.
+-/
 private theorem sum_integral_cardinalPoly (n : ℕ) (u v : ℝ) :
     ∑ i, ∫ t in u..v, (cardinalPoly n i).eval t = v - u := by
   rw [← integral_finsetSum fun i _ => (Polynomial.continuous _).intervalIntegrable _ _]
@@ -665,12 +729,13 @@ private theorem sum_integral_cardinalPoly (n : ℕ) (u v : ℝ) :
     rw [← Polynomial.eval_finsetSum, sum_cardinalPoly, Polynomial.eval_one]
   simp [e]
 
-/-- **The closed weights sum to `n`**: the cardinal polynomials sum to `1`. -/
+/-- The closed weights sum to $n$: $\sum_{i=0}^n w_i = n$, because the cardinal polynomials sum to
+$1$. -/
 theorem sum_newtonCotesWeight (n : ℕ) : ∑ i, newtonCotesWeight n i = n := by
   unfold newtonCotesWeight
   rw [sum_integral_cardinalPoly, sub_zero]
 
-/-- **The open weights sum to `n + 2`**. -/
+/-- The open weights sum to $n + 2$: $\sum_{i=0}^n \tilde w_i = n + 2$. -/
 theorem sum_openNewtonCotesWeight (n : ℕ) : ∑ i, openNewtonCotesWeight n i = n + 2 := by
   unfold openNewtonCotesWeight
   rw [sum_integral_cardinalPoly]
@@ -684,32 +749,33 @@ section Rules
 
 variable {n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- **The closed Newton–Cotes rule** with `n + 1` nodes on `[a, b]`,
-`h ∑_{i ≤ n} w_i f(a + i h)`, `h = (b - a)/n`. It is meaningful for `n ≥ 1`; for `n = 0` it is
-the junk value `0`.
+/-- The **closed Newton–Cotes rule** with $n + 1$ nodes on $[a, b]$ is
+$$I_n(f) = h \sum_{i=0}^n w_i f(a + ih), \qquad h = \frac{b - a}{n},$$
+with the closed weights $w_i$ of `Quadrature.newtonCotesWeight`. This is the rule of §9.3 of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], §9.3. -/
+The rule is meaningful for $n \ge 1$. For $n = 0$ its value is $0$, because Lean gives
+$(b - a)/0 = 0$. -/
 noncomputable def closedNewtonCotes (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) : ℝ :=
   (b - a) / n * ∑ i : Fin (n + 1), newtonCotesWeight n i * f (a + i * ((b - a) / n))
 
-/-- **The open Newton–Cotes rule** with `n + 1` interior nodes on `[a, b]`,
-`h ∑_{i ≤ n} w_i f(a + (i + 1) h)`, `h = (b - a)/(n + 2)`.
-
-Reference: [quarteroni2000numerical], §9.3. -/
+/-- The **open Newton–Cotes rule** with $n + 1$ interior nodes on $[a, b]$ is
+$$\tilde I_n(f) = h \sum_{i=0}^n \tilde w_i f(a + (i + 1)h), \qquad h = \frac{b - a}{n + 2},$$
+with the open weights $\tilde w_i$ of `Quadrature.openNewtonCotesWeight`. This is the rule of
+§9.3 of [quarteroni2000numerical]. -/
 noncomputable def openNewtonCotes (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) : ℝ :=
   (b - a) / (n + 2) * ∑ i : Fin (n + 1),
     openNewtonCotesWeight n i * f (a + (i + 1) * ((b - a) / (n + 2)))
 
-/-- **The composite closed Newton–Cotes rule** on `m` panels of `[a, b]`: the closed rule applied
-on each panel `[a + j H, a + (j + 1) H]`, `H = (b - a)/m`.
-
-Reference: [quarteroni2000numerical], (9.25). -/
+/-- The **composite closed Newton–Cotes rule** on $m$ panels of $[a, b]$ is
+$$I_{n,m}(f) = \sum_{j < m} I_n(f; [a + jH, a + (j + 1)H]), \qquad H = \frac{b - a}{m},$$
+the closed rule applied on each panel. This is (9.25) of [quarteroni2000numerical]. -/
 noncomputable def compositeNewtonCotes (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) : ℝ :=
   ∑ j ∈ Finset.range m,
     closedNewtonCotes n f (a + j * ((b - a) / m)) (a + (j + 1) * ((b - a) / m))
 
-/-- The integral over `[a, b]` of a Lagrange basis polynomial at the equispaced nodes
-`a + i h`, `h = (b - a)/n`, is `h` times the closed Newton–Cotes weight. -/
+/-- Let $n \ge 1$, $a < b$, $h = (b - a)/n$, and let $\ell_i$ be the Lagrange basis polynomials of
+the equispaced nodes $a + kh$, $k = 0, \dots, n$. Then $\int_a^b \ell_i = h w_i$ for every $i$. -/
 theorem integral_basis_eq_mul_newtonCotesWeight (hn : 0 < n) (hab : a < b) (i : Fin (n + 1)) :
     (∫ t in a..b,
         (Lagrange.basis Finset.univ (fun k : Fin (n + 1) => a + k * ((b - a) / n)) i).eval t)
@@ -738,12 +804,12 @@ theorem integral_basis_eq_mul_newtonCotesWeight (hn : 0 < n) (hab : a < b) (i : 
       integral_congr fun t _ => by simp [Polynomial.eval_comp]]
   rw [hcov, ← mul_assoc, mul_inv_cancel₀ hpos.ne', one_mul]
 
-/-- **The closed rule is the Lagrange quadrature formula at the equispaced nodes**: for `0 < n`
-and `a < b`, `closedNewtonCotes n f a b = ∑ i, (∫_a^b l_i) f(x_i)` with `x_i = a + i h` and
-`l_i` the Lagrange basis polynomials of the `x_i`. The weights `∫ l_i = h w_i` depend on the
-interval only through the factor `h`.
-
-Reference: [quarteroni2000numerical], §9.3, the unnumbered display for `α_i`. -/
+/-- **The closed rule is the Lagrange quadrature formula at the equispaced nodes.** Let $n \ge 1$,
+$a < b$, $h = (b - a)/n$, $x_i = a + ih$, and let $\ell_i$ be the Lagrange basis polynomials of
+the nodes $x_0, \dots, x_n$. Then for every $f$,
+$$I_n(f) = \sum_{i=0}^n \Bigl(\int_a^b \ell_i\Bigr) f(x_i).$$
+The weights $\int_a^b \ell_i = h w_i$ depend on the interval only through the factor $h$. This
+is the unnumbered display for the weights $\alpha_i$ in §9.3 of [quarteroni2000numerical]. -/
 theorem closedNewtonCotes_eq_sum_integral_basis (hn : 0 < n) (hab : a < b) (f : ℝ → ℝ) :
     closedNewtonCotes n f a b
       = ∑ i : Fin (n + 1), (∫ t in a..b,
@@ -753,8 +819,9 @@ theorem closedNewtonCotes_eq_sum_integral_basis (hn : 0 < n) (hab : a < b) (f : 
   exact Finset.sum_congr rfl fun i _ => by
     rw [integral_basis_eq_mul_newtonCotesWeight hn hab i]; ring
 
-/-- The integral over `[a, b]` of a Lagrange basis polynomial at the open equispaced nodes
-`a + (i + 1) h`, `h = (b - a)/(n + 2)`, is `h` times the open Newton–Cotes weight. -/
+/-- Let $a < b$, $h = (b - a)/(n + 2)$, and let $\ell_i$ be the Lagrange basis polynomials of the
+equispaced nodes $a + (k + 1)h$, $k = 0, \dots, n$. Then $\int_a^b \ell_i = h \tilde w_i$ for
+every $i$. -/
 theorem integral_basis_eq_mul_openNewtonCotesWeight (hab : a < b) (i : Fin (n + 1)) :
     (∫ t in a..b, (Lagrange.basis Finset.univ
         (fun k : Fin (n + 1) => a + (k + 1) * ((b - a) / (n + 2))) i).eval t)
@@ -786,7 +853,11 @@ theorem integral_basis_eq_mul_openNewtonCotesWeight (hab : a < b) (i : Fin (n + 
       integral_congr fun t _ => by simp [Polynomial.eval_comp]]
   rw [hcov, ← mul_assoc, mul_inv_cancel₀ hpos.ne', one_mul]
 
-/-- **The open rule is the Lagrange quadrature formula at the interior equispaced nodes.** -/
+/-- **The open rule is the Lagrange quadrature formula at the interior equispaced nodes.** Let
+$a < b$, $h = (b - a)/(n + 2)$, $x_i = a + (i + 1)h$, and let $\ell_i$ be the Lagrange basis
+polynomials of the nodes $x_0, \dots, x_n$. Then for every $f$,
+$$\tilde I_n(f) = \sum_{i=0}^n \Bigl(\int_a^b \ell_i\Bigr) f(x_i).$$
+-/
 theorem openNewtonCotes_eq_sum_integral_basis (hab : a < b) (f : ℝ → ℝ) :
     openNewtonCotes n f a b
       = ∑ i : Fin (n + 1), (∫ t in a..b, (Lagrange.basis Finset.univ
@@ -796,8 +867,9 @@ theorem openNewtonCotes_eq_sum_integral_basis (hab : a < b) (f : ℝ → ℝ) :
   exact Finset.sum_congr rfl fun i _ => by
     rw [integral_basis_eq_mul_openNewtonCotesWeight hab i]; ring
 
-/-- The integral of a Lagrange interpolant is the rule whose weights are the integrals of the
-basis polynomials: `∫_u^w Π r = ∑ᵢ (∫_u^w ℓᵢ) r i`. -/
+/-- Let $v_0, \dots, v_n$ be nodes, let $r_0, \dots, r_n$ be values, and let $\ell_i$ be the
+Lagrange basis polynomials of the nodes. Then the Lagrange interpolant $\Pi$ of the values $r_i$
+at the nodes $v_i$ satisfies $\int_u^w \Pi = \sum_i (\int_u^w \ell_i) r_i$ for all $u, w$. -/
 theorem integral_eval_interpolate (v r : Fin (n + 1) → ℝ) (u w : ℝ) :
     (∫ t in u..w, (Lagrange.interpolate Finset.univ v r).eval t)
       = ∑ i, (∫ t in u..w, (Lagrange.basis Finset.univ v i).eval t) * r i := by
@@ -807,8 +879,12 @@ theorem integral_eval_interpolate (v r : Fin (n + 1) → ℝ) (u w : ℝ) :
     ((Polynomial.continuous _).const_mul _).intervalIntegrable _ _]
   exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
 
-/-- A Lagrange quadrature formula integrates the polynomials of degree at most `n` exactly: such a
-polynomial is its own interpolant. -/
+/-- A Lagrange quadrature formula is exact to degree $n$. Let $v_0, \dots, v_n$ be distinct nodes
+with Lagrange basis polynomials $\ell_i$, let $u, w \in \mathbb{R}$, and let $p$ be a polynomial
+of degree at most $n$. Then
+$$\int_u^w p = \sum_{i=0}^n \Bigl(\int_u^w \ell_i\Bigr) p(v_i).$$
+
+The polynomial $p$ is its own interpolant. -/
 theorem integral_eq_sum_integral_basis_mul {v : Fin (n + 1) → ℝ} (hv : Function.Injective v)
     (u w : ℝ) {p : ℝ[X]} (hp : p.degree ≤ n) :
     (∫ t in u..w, p.eval t)
@@ -820,10 +896,9 @@ theorem integral_eq_sum_integral_basis_mul {v : Fin (n + 1) → ℝ} (hv : Funct
   conv_lhs => rw [heq]
   exact integral_eval_interpolate v _ u w
 
-/-- **Exactness of the closed rule to degree `n`**: for `0 < n`, `a < b` and a polynomial `p` of
-degree at most `n`, `∫_a^b p = closedNewtonCotes n p a b`.
-
-Reference: [quarteroni2000numerical], §9.1 and §9.3. -/
+/-- **The closed rule is exact to degree $n$.** Let $n \ge 1$, $a < b$, and let $p$ be a polynomial
+of degree at most $n$. Then $\int_a^b p = I_n(p)$. This is stated in §9.1 and §9.3 of
+[quarteroni2000numerical]. -/
 theorem integral_eq_closedNewtonCotes_of_degree_le (hn : 0 < n) (hab : a < b) {p : ℝ[X]}
     (hp : p.degree ≤ n) :
     (∫ t in a..b, p.eval t) = closedNewtonCotes n (fun t => p.eval t) a b := by
@@ -838,7 +913,8 @@ theorem integral_eq_closedNewtonCotes_of_degree_le (hn : 0 < n) (hab : a < b) {p
   rw [closedNewtonCotes_eq_sum_integral_basis hn hab]
   exact integral_eq_sum_integral_basis_mul hinj a b hp
 
-/-- **Exactness of the open rule to degree `n`**. -/
+/-- **The open rule is exact to degree $n$.** Let $a < b$ and let $p$ be a polynomial of degree at
+most $n$. Then $\int_a^b p = \tilde I_n(p)$. -/
 theorem integral_eq_openNewtonCotes_of_degree_le (hab : a < b) {p : ℝ[X]} (hp : p.degree ≤ n) :
     (∫ t in a..b, p.eval t) = openNewtonCotes n (fun t => p.eval t) a b := by
   have hinj : Function.Injective fun k : Fin (n + 1) => a + (k + 1) * ((b - a) / (n + 2)) := by
@@ -852,8 +928,10 @@ theorem integral_eq_openNewtonCotes_of_degree_le (hab : a < b) {p : ℝ[X]} (hp 
   rw [openNewtonCotes_eq_sum_integral_basis hab]
   exact integral_eq_sum_integral_basis_mul hinj a b hp
 
-/-- **Exactness on the reference interval**: `∫_0^n p = ∑ w_i p(i)` for `p` of degree at most
-`n` — the closed weights are the solution of the moment equations. -/
+/-- **The moment equations of the closed weights, polynomial form.** Let $n \ge 1$ and let $p$ be a
+polynomial of degree at most $n$. Then
+$$\int_0^n p = \sum_{i=0}^n w_i \, p(i).$$
+So the closed weights solve the moment equations on the reference interval $[0, n]$. -/
 theorem integral_eq_sum_newtonCotesWeight_mul (hn : 0 < n) {p : ℝ[X]} (hp : p.degree ≤ n) :
     (∫ t in (0 : ℝ)..n, p.eval t)
       = ∑ i : Fin (n + 1), newtonCotesWeight n i * p.eval (intNode n i) := by
@@ -861,8 +939,10 @@ theorem integral_eq_sum_newtonCotesWeight_mul (hn : 0 < n) {p : ℝ[X]} (hp : p.
   rw [integral_eq_closedNewtonCotes_of_degree_le hn hnR hp, closedNewtonCotes]
   simp only [sub_zero, div_self hnR.ne', one_mul, mul_one, zero_add, intNode_apply]
 
-/-- **Exactness on the reference interval, open rules**: `∫_{-1}^{n+1} p = ∑ w_i p(i)` for `p`
-of degree at most `n`. -/
+/-- **The moment equations of the open weights, polynomial form.** Let $p$ be a polynomial of degree
+at most $n$. Then
+$$\int_{-1}^{n+1} p = \sum_{i=0}^n \tilde w_i \, p(i).$$
+-/
 theorem integral_eq_sum_openNewtonCotesWeight_mul {p : ℝ[X]} (hp : p.degree ≤ n) :
     (∫ t in (-1 : ℝ)..(n + 1), p.eval t)
       = ∑ i : Fin (n + 1), openNewtonCotesWeight n i * p.eval (intNode n i) := by
@@ -873,21 +953,23 @@ theorem integral_eq_sum_openNewtonCotesWeight_mul {p : ℝ[X]} (hp : p.degree �
   congr 2
   ring
 
-/-- The rule is linear in the integrand. -/
+/-- The closed rule is linear in the integrand: $I_n(f + cg) = I_n(f) + c I_n(g)$ for all $f$, $g$,
+$c$, $a$, $b$. -/
 theorem closedNewtonCotes_add_mul (f g : ℝ → ℝ) (c a b : ℝ) :
     closedNewtonCotes n (fun t => f t + c * g t) a b
       = closedNewtonCotes n f a b + c * closedNewtonCotes n g a b := by
   simp only [closedNewtonCotes, Finset.mul_sum, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- The open rule is linear in the integrand. -/
+/-- The open rule is linear in the integrand: $\tilde I_n(f + cg) = \tilde I_n(f) + c \tilde I_n(g)$
+for all $f$, $g$, $c$, $a$, $b$. -/
 theorem openNewtonCotes_add_mul (f g : ℝ → ℝ) (c a b : ℝ) :
     openNewtonCotes n (fun t => f t + c * g t) a b
       = openNewtonCotes n f a b + c * openNewtonCotes n g a b := by
   simp only [openNewtonCotes, Finset.mul_sum, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- The nodes of the closed rule lie in `[a, b]`. -/
+/-- For $n \ge 1$ and $a \le b$, the nodes $a + i(b - a)/n$ of the closed rule lie in $[a, b]$. -/
 theorem closedNewtonCotes_node_mem (hn : 0 < n) (hab : a ≤ b) (i : Fin (n + 1)) :
     a + i * ((b - a) / n) ∈ Icc a b := by
   have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
@@ -899,7 +981,8 @@ theorem closedNewtonCotes_node_mem (hn : 0 < n) (hab : a ≤ b) (i : Fin (n + 1)
   rw [mul_div_cancel₀ _ hnR.ne'] at this
   linarith
 
-/-- The nodes of the closed rule are distinct. -/
+/-- For $n \ge 1$ and $a < b$, the nodes $a + i(b - a)/n$, $i = 0, \dots, n$, of the closed rule are
+distinct. -/
 theorem closedNewtonCotes_node_injective (hn : 0 < n) (hab : a < b) :
     Function.Injective fun k : Fin (n + 1) => a + k * ((b - a) / n) := by
   intro k l hkl
@@ -910,9 +993,12 @@ theorem closedNewtonCotes_node_injective (hn : 0 < n) (hab : a < b) :
     exact mul_right_cancel₀ hne (by linarith)
   exact Fin.ext (by exact_mod_cast this)
 
-/-- **The closed rule in the functional vocabulary of `Numlib/Approximation/Quadrature`**: on
-`X = [a, b]` with the integral functional `ContinuousMap.integralIccCLM`, the weights `h w_i` at
-the nodes `a + i h` are exact to degree `n`, `Quadrature.IsExactOn`. -/
+/-- **The closed rule is exact to degree $n$ on $C([a, b])$.** Let $n \ge 1$ and $a < b$. The rule
+with the weights $h w_i$ at the nodes $a + ih \in [a, b]$, $h = (b - a)/n$, is exact to degree
+$n$ for the integral functional on $C([a, b])$.
+
+This is the statement `Quadrature.IsExactOn` of `Numlib.Approximation.Quadrature`, with the
+integral functional `ContinuousMap.integralIccCLM`. -/
 theorem isExactOn_closedNewtonCotes (hn : 0 < n) (hab : a < b) :
     IsExactOn (ContinuousMap.integralIccCLM hab.le b)
       (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
@@ -931,9 +1017,12 @@ theorem isExactOn_closedNewtonCotes (hn : 0 < n) (hab : a < b) :
   rw [uIcc_of_le hab.le] at ht
   rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab.le _ ht, hqp]
 
-/-- **The closed rule is interpolatory**, `Quadrature.IsInterpolatory`, for the integral
-functional on `C([a, b], ℝ)`: its weights are the integrals of the Lagrange basis functions of
-its nodes. -/
+/-- **The closed rule is interpolatory on $C([a, b])$.** Let $n \ge 1$ and $a < b$. The weights
+$h w_i$ of the closed rule are the integrals over $[a, b]$ of the Lagrange basis functions of
+its nodes $a + ih$, $h = (b - a)/n$.
+
+This is the statement `Quadrature.IsInterpolatory` for the integral functional
+`ContinuousMap.integralIccCLM`. -/
 theorem isInterpolatory_closedNewtonCotes (hn : 0 < n) (hab : a < b) :
     IsInterpolatory (ContinuousMap.integralIccCLM hab.le b)
       (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
@@ -944,7 +1033,7 @@ theorem isInterpolatory_closedNewtonCotes (hn : 0 < n) (hab : a < b) :
     fun i j h => closedNewtonCotes_node_injective hn hab (congrArg Subtype.val h)
   exact (isInterpolatory_iff_isExactOn hinj).2 (isExactOn_closedNewtonCotes hn hab)
 
-/-- The nodes of the open rule lie in `[a, b]`. -/
+/-- For $a \le b$, the nodes $a + (i + 1)(b - a)/(n + 2)$ of the open rule lie in $[a, b]$. -/
 theorem openNewtonCotes_node_mem (hab : a ≤ b) (i : Fin (n + 1)) :
     a + ((i : ℕ) + 1) * ((b - a) / (n + 2)) ∈ Icc a b := by
   have hnR : (0 : ℝ) < (n : ℝ) + 2 := by positivity
@@ -958,7 +1047,8 @@ theorem openNewtonCotes_node_mem (hab : a ≤ b) (i : Fin (n + 1)) :
   rw [mul_div_cancel₀ _ hnR.ne'] at h1
   linarith
 
-/-- The nodes of the open rule are distinct. -/
+/-- For $a < b$, the nodes $a + (i + 1)(b - a)/(n + 2)$, $i = 0, \dots, n$, of the open rule are
+distinct. -/
 theorem openNewtonCotes_node_injective (hab : a < b) :
     Function.Injective fun k : Fin (n + 1) => a + ((k : ℕ) + 1) * ((b - a) / (n + 2)) := by
   intro k l hkl
@@ -968,20 +1058,21 @@ theorem openNewtonCotes_node_injective (hab : a < b) :
   have : ((k : ℕ) : ℝ) + 1 = ((l : ℕ) : ℝ) + 1 := mul_right_cancel₀ hne (by linarith)
   exact Fin.ext (by exact_mod_cast (by linarith : ((k : ℕ) : ℝ) = ((l : ℕ) : ℝ)))
 
-/-- An odd power about the midpoint of `[a, b]` integrates to zero over `[a, b]`. -/
+/-- For odd $k$ and all $a, b \in \mathbb{R}$, $\int_a^b (t - (a + b)/2)^k \, dt = 0$. -/
 theorem integral_pow_sub_midpoint_of_odd {k : ℕ} (hk : Odd k) (a b : ℝ) :
     (∫ t in a..b, (t - (a + b) / 2) ^ k) = 0 := by
   rw [integral_comp_sub_right (fun t => t ^ k), integral_pow]
   have hab : a - (a + b) / 2 = -(b - (a + b) / 2) := by ring
   rw [hab, Even.neg_pow (hk.add_one), sub_self, zero_div]
 
-/-- **Even `n`: the closed rule is exact to degree `n + 1`**, by symmetry alone. A polynomial of
-degree at most `n + 1` is one of degree at most `n` plus a multiple of `(x - (a + b)/2)^{n+1}`,
-an odd power about the midpoint, which integrates to zero and which the rule also sends to zero
-because its nodes are symmetric about the midpoint and its weights satisfy
-`newtonCotesWeight_symm`.
+/-- **For even $n$, the closed rule is exact to degree $n + 1$.** Let $n \ge 1$ be even, let
+$a < b$, and let $p$ be a polynomial of degree at most $n + 1$. Then $\int_a^b p = I_n(p)$. This
+is the degree of exactness $n + 1$ in Theorem 9.2 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], Theorem 9.2 (the degree of exactness `n + 1`). -/
+The proof uses only symmetry. A polynomial of degree at most $n + 1$ is a polynomial of degree
+at most $n$ plus a multiple of $(x - (a + b)/2)^{n+1}$. This odd power about the midpoint
+integrates to zero, and the rule also sends it to zero, because the nodes are symmetric about
+the midpoint and the weights are symmetric (`Quadrature.newtonCotesWeight_symm`). -/
 theorem integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     {p : ℝ[X]} (hp : p.degree ≤ n + 1) :
     (∫ t in a..b, p.eval t) = closedNewtonCotes n (fun t => p.eval t) a b := by
@@ -1041,14 +1132,14 @@ theorem integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab :
       (((Polynomial.continuous _).const_mul _).intervalIntegrable _ _),
     integral_const_mul, hrint, mul_zero, add_zero]
 
-/-- **Even `n`: the open rule is exact to degree `n + 1`**, by symmetry alone, exactly as
-`Quadrature.integral_eq_closedNewtonCotes_of_even`: a polynomial of degree at most `n + 1` is one
-of degree at most `n` plus a multiple of `(x - (a + b)/2)^{n+1}`, an odd power about the midpoint,
-which integrates to zero and which the rule sends to zero because its nodes `a + (i + 1) h`,
-`h = (b - a)/(n + 2)`, are symmetric about the midpoint and its weights satisfy
-`Quadrature.openNewtonCotesWeight_symm`.
+/-- **For even $n$, the open rule is exact to degree $n + 1$.** Let $n$ be even, let $a < b$, and
+let $p$ be a polynomial of degree at most $n + 1$. Then $\int_a^b p = \tilde I_n(p)$. This is
+the degree of exactness $n + 1$ in Theorem 9.2 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], Theorem 9.2 (the degree of exactness `n + 1`). -/
+The proof is the same as that of `Quadrature.integral_eq_closedNewtonCotes_of_even`. The power
+$(x - (a + b)/2)^{n+1}$ integrates to zero, and the rule sends it to zero, because the nodes
+$a + (i + 1)h$, $h = (b - a)/(n + 2)$, are symmetric about the midpoint and the weights are
+symmetric (`Quadrature.openNewtonCotesWeight_symm`). -/
 theorem integral_eq_openNewtonCotes_of_even (hn : Even n) (hab : a < b) {p : ℝ[X]}
     (hp : p.degree ≤ n + 1) :
     (∫ t in a..b, p.eval t) = openNewtonCotes n (fun t => p.eval t) a b := by
@@ -1112,7 +1203,9 @@ theorem integral_eq_openNewtonCotes_of_even (hn : Even n) (hab : a < b) {p : ℝ
       (((Polynomial.continuous _).const_mul _).intervalIntegrable _ _),
     integral_const_mul, hrint, mul_zero, add_zero]
 
-/-- **The moment equations of the closed weights**: `∑ w_i i^k = n^{k+1}/(k + 1)` for `k ≤ n`. -/
+/-- **The moment equations of the closed weights.** Let $n \ge 1$ and $k \le n$. Then
+$$\sum_{i=0}^n w_i \, i^k = \frac{n^{k+1}}{k + 1}.$$
+-/
 theorem sum_newtonCotesWeight_mul_pow (hn : 0 < n) {k : ℕ} (hk : k ≤ n) :
     ∑ i : Fin (n + 1), newtonCotesWeight n i * ((i : ℕ) : ℝ) ^ k = (n : ℝ) ^ (k + 1) / (k + 1) := by
   have h := integral_eq_sum_newtonCotesWeight_mul hn (p := X ^ k)
@@ -1120,8 +1213,9 @@ theorem sum_newtonCotesWeight_mul_pow (hn : 0 < n) {k : ℕ} (hk : k ≤ n) :
   simp only [eval_pow, eval_X, intNode_apply] at h
   rw [← h, integral_pow, zero_pow (Nat.succ_ne_zero k), sub_zero]
 
-/-- **The moment equations of the open weights**:
-`∑ w_i i^k = ((n + 1)^{k+1} - (-1)^{k+1})/(k + 1)` for `k ≤ n`. -/
+/-- **The moment equations of the open weights.** Let $k \le n$. Then
+$$\sum_{i=0}^n \tilde w_i \, i^k = \frac{(n + 1)^{k+1} - (-1)^{k+1}}{k + 1}.$$
+-/
 theorem sum_openNewtonCotesWeight_mul_pow {k : ℕ} (hk : k ≤ n) :
     ∑ i : Fin (n + 1), openNewtonCotesWeight n i * ((i : ℕ) : ℝ) ^ k
       = (((n : ℝ) + 1) ^ (k + 1) - (-1) ^ (k + 1)) / (k + 1) := by
@@ -1130,7 +1224,8 @@ theorem sum_openNewtonCotesWeight_mul_pow {k : ℕ} (hk : k ≤ n) :
   simp only [eval_pow, eval_X, intNode_apply] at h
   rw [← h, integral_pow]
 
-/-- **Table 9.2, the trapezoidal weights**: `newtonCotesWeight 1 = ![1/2, 1/2]`. -/
+/-- The closed weights for $n = 1$ are $(1/2, 1/2)$, the weights of the trapezoidal rule. This is an
+entry of Table 9.2 of [quarteroni2000numerical]. -/
 theorem newtonCotesWeight_one : newtonCotesWeight 1 = ![1 / 2, 1 / 2] := by
   have h0 := sum_newtonCotesWeight_mul_pow (n := 1) one_pos (k := 0) (by norm_num)
   change ∑ i : Fin 2, newtonCotesWeight 1 i * ((i : ℕ) : ℝ) ^ 0 = _ at h0
@@ -1140,7 +1235,8 @@ theorem newtonCotesWeight_one : newtonCotesWeight 1 = ![1 / 2, 1 / 2] := by
   funext i
   fin_cases i <;> simp <;> linarith
 
-/-- **Table 9.2, Simpson's weights**: `newtonCotesWeight 2 = ![1/3, 4/3, 1/3]`. -/
+/-- The closed weights for $n = 2$ are $(1/3, 4/3, 1/3)$, the weights of Simpson's rule. This is an
+entry of Table 9.2 of [quarteroni2000numerical]. -/
 theorem newtonCotesWeight_two : newtonCotesWeight 2 = ![1 / 3, 4 / 3, 1 / 3] := by
   have h0 := sum_newtonCotesWeight_mul_pow (n := 2) two_pos (k := 0) (by norm_num)
   change ∑ i : Fin 3, newtonCotesWeight 2 i * ((i : ℕ) : ℝ) ^ 0 = _ at h0
@@ -1152,7 +1248,8 @@ theorem newtonCotesWeight_two : newtonCotesWeight 2 = ![1 / 3, 4 / 3, 1 / 3] := 
   funext i
   fin_cases i <;> simp <;> linarith
 
-/-- **Table 9.2, the `3/8` rule**: `newtonCotesWeight 3 = ![3/8, 9/8, 9/8, 3/8]`. -/
+/-- The closed weights for $n = 3$ are $(3/8, 9/8, 9/8, 3/8)$, the weights of the $3/8$ rule. This
+is an entry of Table 9.2 of [quarteroni2000numerical]. -/
 theorem newtonCotesWeight_three : newtonCotesWeight 3 = ![3 / 8, 9 / 8, 9 / 8, 3 / 8] := by
   have h0 := sum_newtonCotesWeight_mul_pow (n := 3) three_pos (k := 0) (by norm_num)
   change ∑ i : Fin 4, newtonCotesWeight 3 i * ((i : ℕ) : ℝ) ^ 0 = _ at h0
@@ -1166,7 +1263,8 @@ theorem newtonCotesWeight_three : newtonCotesWeight 3 = ![3 / 8, 9 / 8, 9 / 8, 3
   funext i
   fin_cases i <;> simp <;> linarith
 
-/-- **Table 9.2, the midpoint weight**: `openNewtonCotesWeight 0 = ![2]`. -/
+/-- The open weight for $n = 0$ is $2$, the weight of the midpoint rule. This is an entry of Table
+9.2 of [quarteroni2000numerical]. -/
 theorem openNewtonCotesWeight_zero : openNewtonCotesWeight 0 = ![2] := by
   have h0 := sum_openNewtonCotesWeight_mul_pow (n := 0) (k := 0) le_rfl
   change ∑ i : Fin 1, openNewtonCotesWeight 0 i * ((i : ℕ) : ℝ) ^ 0 = _ at h0
@@ -1175,8 +1273,8 @@ theorem openNewtonCotesWeight_zero : openNewtonCotesWeight 0 = ![2] := by
   fin_cases i
   simpa using h0
 
-/-- **Table 9.2, the open rule with three nodes**: `openNewtonCotesWeight 2 = ![8/3, -4/3, 8/3]`,
-the first Newton–Cotes rule with a negative weight. -/
+/-- The open weights for $n = 2$ are $(8/3, -4/3, 8/3)$. This is the first Newton–Cotes rule with a
+negative weight. This is an entry of Table 9.2 of [quarteroni2000numerical]. -/
 theorem openNewtonCotesWeight_two : openNewtonCotesWeight 2 = ![8 / 3, -4 / 3, 8 / 3] := by
   have h0 := sum_openNewtonCotesWeight_mul_pow (n := 2) (k := 0) (by norm_num)
   change ∑ i : Fin 3, openNewtonCotesWeight 2 i * ((i : ℕ) : ℝ) ^ 0 = _ at h0
@@ -1188,39 +1286,39 @@ theorem openNewtonCotesWeight_two : openNewtonCotesWeight 2 = ![8 / 3, -4 / 3, 8
   funext i
   fin_cases i <;> simp <;> linarith
 
-/-- **The closed rule with `n = 1` is the trapezoidal rule**, `(b - a)/2 (f(a) + f(b))`.
-
-Reference: [quarteroni2000numerical], (9.11). -/
+/-- **The closed rule with $n = 1$ is the trapezoidal rule**:
+$I_1(f) = \frac{b - a}{2} (f(a) + f(b))$ for all $f$, $a$, $b$. This is (9.11) of
+[quarteroni2000numerical]. -/
 theorem closedNewtonCotes_one (f : ℝ → ℝ) (a b : ℝ) :
     closedNewtonCotes 1 f a b = (b - a) / 2 * (f a + f b) := by
   simp [closedNewtonCotes, newtonCotesWeight_one, Fin.sum_univ_succ]
   ring_nf
 
-/-- The closed rule with `n = 1` is the one-panel trapezoidal sum. -/
+/-- The closed rule with $n = 1$ on $[a, b]$ is the composite trapezoidal sum
+`Quadrature.trapezoidSum` with one panel of width $b - a$. -/
 theorem closedNewtonCotes_one_eq_trapezoidSum (f : ℝ → ℝ) (a b : ℝ) :
     closedNewtonCotes 1 f a b = trapezoidSum f a (b - a) 1 := by
   rw [closedNewtonCotes_one, trapezoidSum, Finset.sum_range_one]
   simp
 
-/-- **The closed rule with `n = 2` is Simpson's rule**,
-`(b - a)/6 (f(a) + 4 f((a + b)/2) + f(b))`.
-
-Reference: [quarteroni2000numerical], (9.15). -/
+/-- **The closed rule with $n = 2$ is Simpson's rule**: $I_2(f) = \frac{b - a}{6} \bigl(f(a) + 4
+f((a + b)/2) + f(b)\bigr)$ for all $f$, $a$, $b$. This is (9.15) of [quarteroni2000numerical]. -/
 theorem closedNewtonCotes_two (f : ℝ → ℝ) (a b : ℝ) :
     closedNewtonCotes 2 f a b = (b - a) / 6 * (f a + 4 * f ((a + b) / 2) + f b) := by
   simp [closedNewtonCotes, newtonCotesWeight_two, Fin.sum_univ_succ]
   ring_nf
 
-/-- The closed rule with `n = 2` is the one-panel Simpson sum. -/
+/-- The closed rule with $n = 2$ on $[a, b]$ is the composite Simpson sum `Quadrature.simpsonSum`
+with one panel of width $b - a$. -/
 theorem closedNewtonCotes_two_eq_simpsonSum (f : ℝ → ℝ) (a b : ℝ) :
     closedNewtonCotes 2 f a b = simpsonSum f a (b - a) 1 := by
   rw [closedNewtonCotes_two, simpsonSum, Finset.sum_range_one]
   simp only [Nat.cast_zero, zero_mul, add_zero, zero_add, one_mul]
   ring_nf
 
-/-- **The open rule with `n = 0` is the midpoint rule.**
-
-Reference: [quarteroni2000numerical], §9.3 (`w_0 = 2`). -/
+/-- **The open rule with $n = 0$ is the midpoint rule**: $\tilde I_0(f) = (b - a) f((a + b)/2)$ for
+all $f$, $a$, $b$. This corresponds to the weight $\tilde w_0 = 2$ of §9.3 of
+[quarteroni2000numerical]. -/
 theorem openNewtonCotes_zero (f : ℝ → ℝ) (a b : ℝ) :
     openNewtonCotes 0 f a b = midpointRule f a b := by
   simp [openNewtonCotes, openNewtonCotesWeight_zero, midpointRule]
@@ -1232,40 +1330,35 @@ end Rules
 
 section Constants
 
-/-- **The constant `M_n = ∫_0^n t π_{n+1}(t) dt`** of the error formula of the closed rules with
-even `n`.
-
-Reference: [quarteroni2000numerical], (9.19). -/
+/-- The constant $M_n = \int_0^n t \, \pi_{n+1}(t) \, dt$ of the error formula of the closed rules
+with even $n$. This is the constant of (9.19) of [quarteroni2000numerical]. -/
 noncomputable def newtonCotesM (n : ℕ) : ℝ := ∫ t in (0 : ℝ)..n, t * (intNodal n).eval t
 
-/-- **The constant `K_n = ∫_0^n π_{n+1}(t) dt`** of the error formula of the closed rules with
-odd `n`.
-
-Reference: [quarteroni2000numerical], (9.20). -/
+/-- The constant $K_n = \int_0^n \pi_{n+1}(t) \, dt$ of the error formula of the closed rules with
+odd $n$. This is the constant of (9.20) of [quarteroni2000numerical]. -/
 noncomputable def newtonCotesK (n : ℕ) : ℝ := ∫ t in (0 : ℝ)..n, (intNodal n).eval t
 
-/-- **The constant `M_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt`** of the error formula of the open rules
-with even `n`.
-
-Reference: [quarteroni2000numerical], (9.19). -/
+/-- The constant $\tilde M_n = \int_{-1}^{n+1} t \, \pi_{n+1}(t) \, dt$ of the error formula of the
+open rules with even $n$. This is the constant of (9.19) of [quarteroni2000numerical] for the
+open rules. -/
 noncomputable def openNewtonCotesM (n : ℕ) : ℝ :=
   ∫ t in (-1 : ℝ)..(n + 1), t * (intNodal n).eval t
 
-/-- **The constant `K_n = ∫_{-1}^{n+1} π_{n+1}(t) dt`** of the error formula of the open rules
-with odd `n`.
-
-Reference: [quarteroni2000numerical], (9.20). -/
+/-- The constant $\tilde K_n = \int_{-1}^{n+1} \pi_{n+1}(t) \, dt$ of the error formula of the open
+rules with odd $n$. This is the constant of (9.20) of [quarteroni2000numerical] for the open
+rules. -/
 noncomputable def openNewtonCotesK (n : ℕ) : ℝ := ∫ t in (-1 : ℝ)..(n + 1), (intNodal n).eval t
 
 end Constants
 
-/-! ### The sign of the nodal polynomial, and the positivity of `W` -/
+/-! ### The sign of the nodal polynomial, and the positivity of $W$ -/
 
 section Sign
 
 variable {n : ℕ}
 
-/-- The nodal polynomial with one more node: `π_{n+2}(t) = π_{n+1}(t) (t - (n + 1))`. -/
+/-- The nodal polynomial with one more node: $\pi_{n+2}(t) = \pi_{n+1}(t)(t - (n + 1))$ for every
+$t \in \mathbb{R}$. -/
 theorem intNodal_succ_eval (n : ℕ) (t : ℝ) :
     (intNodal (n + 1)).eval t = (intNodal n).eval t * (t - (n + 1)) := by
   rw [intNodal_eval, intNodal_eval, Fin.prod_univ_castSucc]
@@ -1273,15 +1366,17 @@ theorem intNodal_succ_eval (n : ℕ) (t : ℝ) :
   push_cast
   ring
 
-/-- The nodal polynomial is positive beyond its last node. -/
+/-- The nodal polynomial is positive beyond its last node: $\pi_{n+1}(t) > 0$ for $t > n$. -/
 theorem intNodal_eval_pos_of_lt {t : ℝ} (ht : (n : ℝ) < t) : 0 < (intNodal n).eval t := by
   rw [intNodal_eval]
   refine Finset.prod_pos fun i _ => ?_
   have hi : ((i : ℕ) : ℝ) ≤ n := by exact_mod_cast Nat.lt_succ_iff.mp i.2
   linarith
 
-/-- **The sign of the nodal polynomial between two nodes**: on `(k, k + 1)` with `k ≤ n` it is
-`(-1)^{n-k}`, the number of nodes to the right. -/
+/-- **The sign of the nodal polynomial between two nodes.** For natural numbers $k \le n$ and
+$t \in (k, k + 1)$,
+$$(-1)^{n-k} \pi_{n+1}(t) > 0.$$
+The exponent $n - k$ is the number of nodes to the right of $t$. -/
 theorem intNodal_eval_mul_neg_one_pow_pos :
     ∀ (n k : ℕ), k ≤ n → ∀ t : ℝ, (k : ℝ) < t → t < k + 1 →
       0 < (-1) ^ (n - k) * (intNodal n).eval t := by
@@ -1309,14 +1404,14 @@ theorem intNodal_eval_mul_neg_one_pow_pos :
       have := intNodal_eval_pos_of_lt (n := n) (t := t) (by linarith)
       nlinarith
 
-/-- For even `n`, the nodal polynomial is positive on `(k, k + 1)` for even `k ≤ n`. -/
+/-- For even $n$, even $k \le n$ and $t \in (k, k + 1)$, $\pi_{n+1}(t) > 0$. -/
 theorem intNodal_eval_pos_of_even (hn : Even n) {k : ℕ} (hk : k ≤ n) (hke : Even k) {t : ℝ}
     (hkt : (k : ℝ) < t) (htk : t < k + 1) : 0 < (intNodal n).eval t := by
   have h := intNodal_eval_mul_neg_one_pow_pos n k hk t hkt htk
   have he : Even (n - k) := (Nat.even_sub hk).2 ⟨fun _ => hke, fun _ => hn⟩
   rwa [he.neg_one_pow, one_mul] at h
 
-/-- For even `n`, the nodal polynomial is negative on `(k, k + 1)` for odd `k ≤ n`. -/
+/-- For even $n$, odd $k \le n$ and $t \in (k, k + 1)$, $\pi_{n+1}(t) < 0$. -/
 theorem intNodal_eval_neg_of_even (hn : Even n) {k : ℕ} (hk : k ≤ n) (hko : Odd k) {t : ℝ}
     (hkt : (k : ℝ) < t) (htk : t < k + 1) : (intNodal n).eval t < 0 := by
   have h := intNodal_eval_mul_neg_one_pow_pos n k hk t hkt htk
@@ -1327,9 +1422,12 @@ theorem intNodal_eval_neg_of_even (hn : Even n) {k : ℕ} (hk : k ≤ n) (hko : 
   rw [ho.neg_one_pow] at h
   linarith
 
-/-- **The modulus of the nodal polynomial decreases under a unit shift** on the left half of
-`[0, n]`: for `t ∈ (k, k + 1)` with `2t + 1 < n`, `|π_{n+1}(t + 1)| < |π_{n+1}(t)|`. From the shift
-identity `π(t + 1)(t - n) = π(t)(t + 1)`, since `t + 1 < n - t`. -/
+/-- **The modulus of the nodal polynomial decreases under a unit shift on the left half of
+$[0, n]$.** Let $t > -1$ with $2t + 1 < n$ and $\pi_{n+1}(t) \neq 0$. Then
+$$|\pi_{n+1}(t + 1)| < |\pi_{n+1}(t)|.$$
+
+This follows from the shift identity $\pi_{n+1}(t + 1)(t - n) = \pi_{n+1}(t)(t + 1)$, since
+$0 < t + 1 < n - t$. -/
 theorem abs_intNodal_eval_add_one_lt {t : ℝ} (ht0 : -1 < t) (ht : 2 * t + 1 < n)
     (hne : (intNodal n).eval t ≠ 0) :
     |(intNodal n).eval (t + 1)| < |(intNodal n).eval t| := by
@@ -1347,13 +1445,15 @@ theorem abs_intNodal_eval_add_one_lt {t : ℝ} (ht0 : -1 < t) (ht : 2 * t + 1 < 
     mul_le_mul_of_nonneg_right hle hnt.le
   nlinarith
 
-/-- The nodal polynomial is continuous, hence interval integrable. -/
+/-- The nodal polynomial $\pi_{n+1}$ is integrable on every interval $[u, v]$, because it is
+continuous. -/
 theorem intervalIntegrable_intNodal (n : ℕ) (u v : ℝ) :
     IntervalIntegrable (fun t => (intNodal n).eval t) volume u v :=
   (Polynomial.continuous _).intervalIntegrable u v
 
-/-- On an even unit panel `(2l, 2l + 1)` with `4l + 4 ≤ n`, the sum `π(t) + π(t + 1)` is
-positive: `π(t) > 0` there and `|π(t + 1)| < π(t)`. -/
+/-- Let $n$ be even, let $l \in \mathbb{N}$ with $4l + 4 \le n$, and let $t \in (2l, 2l + 1)$. Then
+$\pi_{n+1}(t) + \pi_{n+1}(t + 1) > 0$, because $\pi_{n+1}(t) > 0$ there and
+$|\pi_{n+1}(t + 1)| < \pi_{n+1}(t)$. -/
 theorem intNodal_eval_add_eval_add_one_pos (hn : Even n) {l : ℕ} (hl : 4 * l + 4 ≤ n) {t : ℝ}
     (hlt : (2 * l : ℕ) < t) (htl : t < (2 * l : ℕ) + 1) :
     0 < (intNodal n).eval t + (intNodal n).eval (t + 1) := by
@@ -1369,14 +1469,14 @@ theorem intNodal_eval_add_eval_add_one_pos (hn : Even n) {l : ℕ} (hl : 4 * l +
   rw [abs_of_pos hpos] at hlt'
   linarith [neg_abs_le ((intNodal n).eval (t + 1))]
 
-/-- The integral of the nodal polynomial over an even unit panel `[k, k + 1]`, `k < n` even, is
+/-- For even $n$ and even $k < n$, the integral of $\pi_{n+1}$ over the unit panel $[k, k + 1]$ is
 positive. -/
 theorem integral_intNodal_panel_pos (hn : Even n) {k : ℕ} (hk : k < n) (hke : Even k) :
     0 < ∫ t in (k : ℝ)..(k + 1), (intNodal n).eval t :=
   intervalIntegral_pos_of_pos_on (intervalIntegrable_intNodal n _ _)
     (fun t ht => intNodal_eval_pos_of_even hn hk.le hke ht.1 ht.2) (by linarith)
 
-/-- The integral of the nodal polynomial over an odd unit panel `[k, k + 1]`, `k < n` odd, is
+/-- For even $n$ and odd $k < n$, the integral of $\pi_{n+1}$ over the unit panel $[k, k + 1]$ is
 negative. -/
 theorem integral_intNodal_panel_neg (hn : Even n) {k : ℕ} (hk : k < n) (hko : Odd k) :
     (∫ t in (k : ℝ)..(k + 1), (intNodal n).eval t) < 0 := by
@@ -1387,8 +1487,11 @@ theorem integral_intNodal_panel_neg (hn : Even n) {k : ℕ} (hk : k < n) (hko : 
   rw [integral_neg] at h
   linarith
 
-/-- The integral of the nodal polynomial over a double panel `[2l, 2l + 2]` with `4l + 4 ≤ n` is
-positive: the two unit panels combine into one integral of `π(t) + π(t + 1)`. -/
+/-- For even $n$ and $l \in \mathbb{N}$ with $4l + 4 \le n$, the integral of $\pi_{n+1}$ over the
+double panel $[2l, 2l + 2]$ is positive.
+
+The two unit panels combine into one integral of $\pi_{n+1}(t) + \pi_{n+1}(t + 1)$ over
+$[2l, 2l + 1]$. -/
 theorem integral_intNodal_double_panel_pos (hn : Even n) {l : ℕ} (hl : 4 * l + 4 ≤ n) :
     0 < ∫ t in ((2 * l : ℕ) : ℝ)..((2 * l : ℕ) + 2), (intNodal n).eval t := by
   have hsplit := integral_add_adjacent_intervals (intervalIntegrable_intNodal n ((2 * l : ℕ) : ℝ)
@@ -1407,8 +1510,11 @@ theorem integral_intNodal_double_panel_pos (hn : Even n) {l : ℕ} (hl : 4 * l +
       |>.intervalIntegrable _ _)
     (fun t ht => intNodal_eval_add_eval_add_one_pos hn hl ht.1 ht.2) (by linarith)
 
-/-- `W(k) = ∫_0^k π_{n+1} ≥ 0` for `2k ≤ n`, and `> 0` for `1 ≤ k` with `2k ≤ n`: the
-partial sums of the alternating panel integrals with decreasing moduli. -/
+/-- Let $n$ be even and $W(x) = \int_0^x \pi_{n+1}$. For every natural number $k$ with $2k \le n$,
+$W(k) \ge 0$, and $W(k) > 0$ if moreover $k \ge 1$.
+
+The values $W(k)$ are the partial sums of the integrals over the unit panels, which alternate in
+sign with decreasing modulus. -/
 theorem integral_intNodal_natCast_pos (hn : Even n) :
     ∀ k : ℕ, 2 * k ≤ n →
       0 ≤ (∫ t in (0 : ℝ)..k, (intNodal n).eval t) ∧
@@ -1443,9 +1549,10 @@ theorem integral_intNodal_natCast_pos (hn : Even n) :
     rw [hcast, ← hsplit]
     exact ⟨by linarith [h2l.1], fun _ => by linarith [h2l.1]⟩
 
-/-- `W(x) = ∫_0^x π_{n+1} > 0` for `0 < x` with `2x ≤ n`: between two consecutive nodes `W` is
-monotone, so its value lies between two values at integers, both nonnegative and at least one
-positive. -/
+/-- Let $n$ be even. For $0 < x$ with $2x \le n$, $\int_0^x \pi_{n+1} > 0$.
+
+Between two consecutive integers, $W(x) = \int_0^x \pi_{n+1}$ is monotone, so its value lies
+between its values at two integers, which are both nonnegative and not both zero. -/
 theorem integral_intNodal_pos_of_le_half (hn : Even n) {x : ℝ} (hx0 : 0 < x) (hxn : 2 * x ≤ n) :
     0 < ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   set k := ⌊x⌋₊ with hk
@@ -1499,8 +1606,11 @@ theorem integral_intNodal_pos_of_le_half (hn : Even n) {x : ℝ} (hx0 : 0 < x) (
       push_cast at hW
       linarith
 
-/-- **The symmetry `W(n - x) = W(x)`** of `W(x) = ∫_0^x π_{n+1}` for even `n`: the nodal
-polynomial is odd about the midpoint, so `W(n) = 0` and `∫_x^n π = -W(n - x)`. -/
+/-- **The symmetry of $W$ for even $n$.** Let $n$ be even and $W(x) = \int_0^x \pi_{n+1}$. Then
+$W(n - x) = W(x)$ for every $x \in \mathbb{R}$.
+
+The nodal polynomial is odd about the midpoint, so $W(n) = 0$ and
+$\int_x^n \pi_{n+1} = -W(n - x)$. -/
 theorem integral_intNodal_sub_eq (hn : Even n) (x : ℝ) :
     (∫ t in (0 : ℝ)..(n - x), (intNodal n).eval t) = ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   have hodd : ∀ t : ℝ, (intNodal n).eval (n - t) = -(intNodal n).eval t := by
@@ -1523,14 +1633,16 @@ theorem integral_intNodal_sub_eq (hn : Even n) (x : ℝ) :
   rw [sub_self] at h
   linarith
 
-/-- **Positivity of `W`** ([quarteroni2000numerical] Theorem 9.2, the fact cited from
-Isaacson–Keller p. 309): for even `n > 0` and `0 < x < n`,
-`W(x) = ∫_0^x π_{n+1}(t) dt > 0`.
+/-- **Positivity of $W$.** Let $n$ be even and let $0 < x < n$. Then
+$$W(x) = \int_0^x \pi_{n+1}(t) \, dt > 0.$$
+This is the fact that Theorem 9.2 of [quarteroni2000numerical] cites from p. 309 of
+[isaacson1994analysis].
 
-The unit-panel integrals of `π_{n+1}` alternate in sign, starting positive, with strictly
-decreasing modulus up to the midpoint `n/2` (`abs_intNodal_eval_add_one_lt`), so `W` is positive
-at the integers `1, …, n/2`; `W` is monotone between consecutive integers, which gives positivity
-on `(0, n/2]`; and the antisymmetry of `π_{n+1}` about the midpoint gives `W(n - x) = W(x)`. -/
+The integrals of $\pi_{n+1}$ over the unit panels alternate in sign, starting with a positive
+one, and their moduli decrease strictly up to the midpoint $n/2$
+(`Quadrature.abs_intNodal_eval_add_one_lt`). So $W$ is positive at the integers $1, \dots, n/2$.
+Since $W$ is monotone between consecutive integers, it is positive on $(0, n/2]$, and the
+symmetry $W(n - x) = W(x)$ gives the rest. -/
 theorem integral_intNodal_pos_of_even (hn : Even n) {x : ℝ} (hx0 : 0 < x) (hxn : x < n) :
     0 < ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   rcases le_or_gt (2 * x) n with h | h
@@ -1538,7 +1650,7 @@ theorem integral_intNodal_pos_of_even (hn : Even n) {x : ℝ} (hx0 : 0 < x) (hxn
   · rw [← integral_intNodal_sub_eq hn]
     exact integral_intNodal_pos_of_le_half hn (by linarith) (by linarith)
 
-/-- `W(x) = ∫_0^x π_{n+1}` is nonnegative on `[0, n]` for even `n`. -/
+/-- For even $n$ and $0 \le x \le n$, $\int_0^x \pi_{n+1} \ge 0$. -/
 theorem integral_intNodal_nonneg_of_even (hn : Even n) {x : ℝ} (hx0 : 0 ≤ x) (hxn : x ≤ n) :
     0 ≤ ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   rcases eq_or_lt_of_le hx0 with rfl | hx0'
@@ -1548,9 +1660,12 @@ theorem integral_intNodal_nonneg_of_even (hn : Even n) {x : ℝ} (hx0 : 0 ≤ x)
     simp
   · exact (integral_intNodal_pos_of_even hn hx0' hxn').le
 
-/-- **`M_n < 0` for even `n > 0`** ([quarteroni2000numerical] Theorem 9.2): integrating by parts,
-`M_n = ∫_0^n t π_{n+1}(t) dt = [t W(t)]_0^n - ∫_0^n W = -∫_0^n W`, since `W(n) = 0`, and `W > 0`
-inside `(0, n)`. -/
+/-- **$M_n < 0$ for even $n \ge 2$.** Let $n \ge 1$ be even. Then
+$M_n = \int_0^n t \, \pi_{n+1}(t) \, dt < 0$. This is the sign fact of Theorem 9.2 of
+[quarteroni2000numerical].
+
+Integration by parts gives $M_n = [t W(t)]_0^n - \int_0^n W = -\int_0^n W$, since $W(n) = 0$,
+and $W > 0$ inside $(0, n)$. -/
 theorem newtonCotesM_neg (hn : Even n) (hn0 : 0 < n) : newtonCotesM n < 0 := by
   have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
   set W : ℝ → ℝ := fun x => ∫ t in (0 : ℝ)..x, (intNodal n).eval t with hW
@@ -1573,15 +1688,19 @@ theorem newtonCotesM_neg (hn : Even n) (hn0 : 0 < n) : newtonCotesM n < 0 := by
     ⟨by positivity, by linarith⟩ ?_
   exact integral_intNodal_pos_of_even hn (by positivity) (by linarith)
 
-/-- **`K_n = 0` for even `n`**: the nodal polynomial is odd about the midpoint. -/
+/-- For even $n$, $K_n = \int_0^n \pi_{n+1} = 0$, because the nodal polynomial is odd about the
+midpoint. -/
 theorem newtonCotesK_eq_zero_of_even (hn : Even n) : newtonCotesK n = 0 := by
   have h := integral_intNodal_sub_eq hn (n : ℝ)
   rw [sub_self, integral_same] at h
   exact h.symm
 
-/-- **The sign of the nodal polynomial to the left of its first node**: `(-1)^{n+1} π_{n+1}(t) > 0`
-for `t < 0`, since all `n + 1` factors `t - i` are negative there. This is the panel `(-1, 0)` of
-the open rules, which the `ℕ`-indexed `intNodal_eval_mul_neg_one_pow_pos` does not reach. -/
+/-- **The sign of the nodal polynomial to the left of its first node.** For $t < 0$,
+$(-1)^{n+1} \pi_{n+1}(t) > 0$, since all $n + 1$ factors $t - i$ are negative.
+
+This covers the panel $(-1, 0)$ of the open rules, which
+`Quadrature.intNodal_eval_mul_neg_one_pow_pos` does not reach because its panel index is a
+natural number. -/
 theorem intNodal_eval_mul_neg_one_pow_pos_of_neg {t : ℝ} (ht : t < 0) :
     0 < (-1) ^ (n + 1) * (intNodal n).eval t := by
   have hcard : ((-1 : ℝ)) ^ (n + 1) = ∏ _i : Fin (n + 1), (-1 : ℝ) := by
@@ -1590,8 +1709,8 @@ theorem intNodal_eval_mul_neg_one_pow_pos_of_neg {t : ℝ} (ht : t < 0) :
   refine Finset.prod_pos fun i _ => ?_
   nlinarith
 
-/-- `W(x) = ∫_0^x π_{n+1} > 0` beyond the last node, for even `n`: `W(n) = 0` and the integrand is
-positive on `(n, x)`. -/
+/-- For even $n$ and $x > n$, $\int_0^x \pi_{n+1} > 0$, because $\int_0^n \pi_{n+1} = 0$ and
+$\pi_{n+1} > 0$ on $(n, x)$. -/
 theorem integral_intNodal_pos_of_even_of_lt (hn : Even n) {x : ℝ} (hx : (n : ℝ) < x) :
     0 < ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   have hsplit := integral_add_adjacent_intervals (intervalIntegrable_intNodal n 0 (n : ℝ))
@@ -1605,20 +1724,18 @@ theorem integral_intNodal_pos_of_even_of_lt (hn : Even n) {x : ℝ} (hx : (n : �
   rw [← hsplit, h0]
   linarith
 
-/-- `W(x) = ∫_0^x π_{n+1} ≥ 0` on the whole half-line, for even `n`. -/
+/-- For even $n$ and every $x \ge 0$, $\int_0^x \pi_{n+1} \ge 0$. -/
 theorem integral_intNodal_nonneg_of_even' (hn : Even n) {x : ℝ} (hx : 0 ≤ x) :
     0 ≤ ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
   rcases le_or_gt x n with h | h
   · exact integral_intNodal_nonneg_of_even hn hx h
   · exact (integral_intNodal_pos_of_even_of_lt hn h).le
 
-/-- **The recursion for the primitive of the nodal polynomial**: integrating
-`π_{n+2}(t) = π_{n+1}(t) (t - (n + 1))` by parts against the primitive `V(t) = ∫_u^t π_{n+1}`,
-
-  `∫_u^x π_{n+2} = (x - (n + 1)) V(x) - ∫_u^x V`,
-
-with no boundary term at `u` because `V(u) = 0`. Both the open and the closed sign analyses come
-from this identity: for `x ≤ n + 1` the two terms on the right have the sign of `-V`. -/
+/-- **The recursion for the primitive of the nodal polynomial**: with $V(t) = \int_u^t \pi_{p+1}$,
+$$\int_u^x \pi_{p+2} = (x - (p + 1)) V(x) - \int_u^x V.$$
+It comes from integration by parts of $\pi_{p+2}(t) = \pi_{p+1}(t)(t - (p + 1))$, with no
+boundary term at $u$ because $V(u) = 0$; for $x \le p + 1$ both terms on the right have the sign
+of $-V$. -/
 private theorem integral_intNodal_succ_eq (p : ℕ) (u x : ℝ) :
     (∫ t in u..x, (intNodal (p + 1)).eval t)
       = (x - ((p : ℝ) + 1)) * (∫ t in u..x, (intNodal p).eval t)
@@ -1636,10 +1753,13 @@ private theorem integral_intNodal_succ_eq (p : ℕ) (u x : ℝ) :
     fun t _ => by rw [intNodal_succ_eval]; ring]
   rw [hparts]
 
-/-- **`W(x) = ∫_0^x π_{n+1} ≤ 0` on `[0, n]` for odd `n`**, the odd-`n` companion of
-`integral_intNodal_nonneg_of_even`: writing `n = p + 1` with `p` even and integrating by parts
-(`integral_intNodal_succ_eq`), both terms are nonpositive because the primitive of `π_{p+1}` is
-nonnegative and `x ≤ p + 1`. -/
+/-- **$W \le 0$ on $[0, n]$ for odd $n$.** Let $n$ be odd and $0 \le x \le n$. Then
+$\int_0^x \pi_{n+1} \le 0$. This is the companion of
+`Quadrature.integral_intNodal_nonneg_of_even` for odd $n$.
+
+Write $n = p + 1$ with $p$ even. In the integration by parts of
+$\pi_{p+2} = \pi_{p+1}(t - (p + 1))$, both terms are nonpositive, because the primitive of
+$\pi_{p+1}$ is nonnegative and $x \le p + 1$. -/
 theorem integral_intNodal_nonpos_of_odd (hn : Odd n) {x : ℝ} (hx0 : 0 ≤ x) (hxn : x ≤ n) :
     (∫ t in (0 : ℝ)..x, (intNodal n).eval t) ≤ 0 := by
   obtain ⟨m, rfl⟩ := hn
@@ -1654,10 +1774,11 @@ theorem integral_intNodal_nonpos_of_odd (hn : Odd n) {x : ℝ} (hx0 : 0 ≤ x) (
     integral_nonneg hx0 fun t ht => integral_intNodal_nonneg_of_even' hpe ht.1
   linarith
 
-/-- **`K_n < 0` for odd `n`** ([quarteroni2000numerical] Theorem 9.2, (9.20), stated there without
-proof): `K_n = ∫_0^n π_{n+1}(t) dt` is negative. With `n = p + 1` and `p` even, integration by parts
-(`integral_intNodal_succ_eq`) gives `K_n = -∫_0^{p+1} W_p` with `W_p(x) = ∫_0^x π_{p+1} ≥ 0`, and
-`W_p` is positive at `p + 1/2`. -/
+/-- **$K_n < 0$ for odd $n$.** Let $n$ be odd. Then $K_n = \int_0^n \pi_{n+1}(t) \, dt < 0$. Theorem
+9.2 and (9.20) of [quarteroni2000numerical] state this sign without proof.
+
+Write $n = p + 1$ with $p$ even. Integration by parts gives $K_n = -\int_0^{p+1} W_p$ with
+$W_p(x) = \int_0^x \pi_{p+1} \ge 0$, and $W_p$ is positive at $p + 1/2$. -/
 theorem newtonCotesK_neg (hn : Odd n) : newtonCotesK n < 0 := by
   obtain ⟨m, rfl⟩ := hn
   have hpe : Even (2 * m) := even_two_mul m
@@ -1672,8 +1793,8 @@ theorem newtonCotesK_neg (hn : Odd n) : newtonCotesK n < 0 := by
     ⟨by positivity, by linarith⟩ ?_
   exact integral_intNodal_pos_of_even_of_lt hpe (by linarith)
 
-/-- For even `n` the nodal polynomial integrates to zero over the interval `[-1, n+1]` of the open
-rules: it is odd about the midpoint `n/2`, which is also the midpoint of `[-1, n + 1]`. -/
+/-- For even $n$, $\int_{-1}^{n+1} \pi_{n+1} = 0$: the nodal polynomial is odd about $n/2$, which is
+also the midpoint of the interval $[-1, n + 1]$ of the open rules. -/
 theorem integral_intNodal_neg_one_eq_zero_of_even (hn : Even n) :
     (∫ t in (-1 : ℝ)..((n : ℝ) + 1), (intNodal n).eval t) = 0 := by
   have h := integral_intNodal_sub_eq hn ((n : ℝ) + 1)
@@ -1685,13 +1806,16 @@ theorem integral_intNodal_neg_one_eq_zero_of_even (hn : Even n) :
   rw [← hsplit, hsym, h]
   ring
 
-/-- **The sign of `W̃(x) = ∫_{-1}^x π_{n+1}` on `[-1, n + 1]`**, the interval of the open
-Newton–Cotes rules: `(-1)^{n+1} W̃ ≥ 0`, that is, `W̃ ≤ 0` for even `n` and `W̃ ≥ 0` for odd `n`.
+/-- **The sign of $\tilde W$ on the interval of the open rules.** For every $n \in \mathbb{N}$ and
+$x \in [-1, n + 1]$,
+$$(-1)^{n+1} \tilde W(x) \ge 0, \qquad \tilde W(x) = \int_{-1}^x \pi_{n+1}(t) \, dt.$$
+So $\tilde W \le 0$ for even $n$ and $\tilde W \ge 0$ for odd $n$.
 
-The proof is an induction on `n` through `integral_intNodal_succ_eq`: on `[-1, n + 1]` the two
-terms of that identity both carry the sign opposite to the previous `W̃`, and the last panel
-`[n + 1, n + 2]` is handled by the positivity of `π_{n+2}` beyond its last node when `n + 1` is
-odd, and by `integral_intNodal_neg_one_eq_zero_of_even` when `n + 1` is even. -/
+The proof is an induction on $n$ through the recursion for the primitive of the nodal
+polynomial. On $[-1, n + 1]$, the two terms of the recursion have the sign opposite to that of
+the previous $\tilde W$. The last panel $[n + 1, n + 2]$ is handled by the positivity of
+$\pi_{n+2}$ beyond its last node when $n + 1$ is odd, and by
+`Quadrature.integral_intNodal_neg_one_eq_zero_of_even` when $n + 1$ is even. -/
 theorem integral_intNodal_neg_one_mul_nonneg :
     ∀ (n : ℕ) (x : ℝ), -1 ≤ x → x ≤ (n : ℝ) + 1 →
       0 ≤ (-1) ^ (n + 1) * ∫ t in (-1 : ℝ)..x, (intNodal n).eval t := by
@@ -1765,11 +1889,14 @@ theorem integral_intNodal_neg_one_mul_nonneg :
         rw [← hsplit, mul_add]
         exact add_nonneg hhead (mul_nonneg hsign htail)
 
-/-- **`M̃_n > 0` for even `n`** ([quarteroni2000numerical] Theorem 9.2, (9.19), stated there without
-proof): the constant `M̃_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt` of the open rules with even `n` is
-positive. Integrating by parts, `M̃_n = -∫_{-1}^{n+1} W̃` because `W̃(-1) = 0` and
-`W̃(n + 1) = 0` (`integral_intNodal_neg_one_eq_zero_of_even`), and `W̃ ≤ 0` by
-`integral_intNodal_neg_one_mul_nonneg`, strictly on the first panel. -/
+/-- **$\tilde M_n > 0$ for even $n$.** Let $n$ be even. Then $\tilde M_n = \int_{-1}^{n+1} t \,
+\pi_{n+1}(t) \, dt > 0$. Theorem 9.2 and (9.19) of [quarteroni2000numerical] state this sign
+without proof.
+
+Integration by parts gives $\tilde M_n = -\int_{-1}^{n+1} \tilde W$, because $\tilde W(-1) = 0$
+and $\tilde W(n + 1) = 0$ (`Quadrature.integral_intNodal_neg_one_eq_zero_of_even`). Then
+$\tilde W \le 0$ by `Quadrature.integral_intNodal_neg_one_mul_nonneg`, strictly on the first
+panel. -/
 theorem openNewtonCotesM_pos (hn : Even n) : 0 < openNewtonCotesM n := by
   set W : ℝ → ℝ := fun y => ∫ s in (-1 : ℝ)..y, (intNodal n).eval s with hW
   have hWd : ∀ t : ℝ, HasDerivAt W ((intNodal n).eval t) t := fun t =>
@@ -1806,10 +1933,13 @@ theorem openNewtonCotesM_pos (hn : Even n) : 0 < openNewtonCotesM n := by
   rw [openNewtonCotesM, hparts, hWtop, hWbot, hone]
   linarith
 
-/-- **`K̃_n > 0` for odd `n`** ([quarteroni2000numerical] Theorem 9.2, (9.20)): the constant
-`K̃_n = ∫_{-1}^{n+1} π_{n+1}(t) dt` of the open rules with odd `n` is positive. The integral over
-`[-1, n]` is nonnegative by `integral_intNodal_neg_one_mul_nonneg`, and the last panel `[n, n + 1]`
-contributes a positive amount because `π_{n+1} > 0` beyond its last node. -/
+/-- **$\tilde K_n > 0$ for odd $n$.** Let $n$ be odd. Then $\tilde K_n = \int_{-1}^{n+1}
+\pi_{n+1}(t) \, dt > 0$. This is the sign fact of Theorem 9.2 and (9.20) of
+[quarteroni2000numerical] for the open rules.
+
+The integral over $[-1, n]$ is nonnegative by `Quadrature.integral_intNodal_neg_one_mul_nonneg`,
+and the last panel $[n, n + 1]$ contributes a positive amount, because $\pi_{n+1} > 0$ beyond
+its last node. -/
 theorem openNewtonCotesK_pos (hn : Odd n) : 0 < openNewtonCotesK n := by
   have hhead : 0 ≤ ∫ t in (-1 : ℝ)..(n : ℝ), (intNodal n).eval t := by
     have h := integral_intNodal_neg_one_mul_nonneg n (n : ℝ) (by linarith) (by linarith)
@@ -1824,13 +1954,15 @@ theorem openNewtonCotesK_pos (hn : Odd n) : 0 < openNewtonCotesK n := by
 
 end Sign
 
-/-! ### The error of the closed rules with even `n` -/
+/-! ### The error of the closed rules with even $n$ -/
 
 section Error
 
 variable {n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- A continuous function is the `k`-th derivative of a `C^k` function: integrate it `k` times. -/
+/-- Every continuous function $\psi : \mathbb{R} \to \mathbb{R}$ is the $k$-th derivative of a
+function of class $C^k$: there is $g \in C^k(\mathbb{R})$ with $g^{(k)} = \psi$. The function
+$g$ is a $k$-fold primitive of $\psi$. -/
 theorem exists_contDiff_iteratedDeriv_eq (k : ℕ) {ψ : ℝ → ℝ} (hψ : Continuous ψ) :
     ∃ g : ℝ → ℝ, ContDiff ℝ k g ∧ iteratedDeriv k g = ψ := by
   induction k with
@@ -1850,25 +1982,29 @@ theorem exists_contDiff_iteratedDeriv_eq (k : ℕ) {ψ : ℝ → ℝ} (hψ : Con
         ((hgc.integral_hasStrictDerivAt 0 x).hasDerivAt).deriv
       rw [hderiv, hgψ]
 
-/-- The nodes of the closed rule, `ℕ`-indexed, are distinct. -/
+/-- For $n \ge 1$ and $a < b$, the equality $a + j(b - a)/n = a + k(b - a)/n$ of two nodes with
+natural indices $j, k$ implies $j = k$. -/
 private theorem node_injective (hn : 0 < n) (hab : a < b) {j k : ℕ}
     (h : a + j * ((b - a) / n) = a + k * ((b - a) / n)) : j = k := by
   have hpos : (b - a) / n ≠ 0 := by positivity
   exact_mod_cast mul_right_cancel₀ hpos (by linarith : (j : ℝ) * ((b - a) / n) = k * ((b - a) / n))
 
-/-- **The sign of the integral of an interpolation error.** Let `x 0, …, x n` be distinct nodes in
-`[a, b]`, `ω(t) = ∏_{j ≤ n} (t - x_j)` their nodal polynomial, and suppose its primitive
-`W(t) = ∫_a^t ω` vanishes at `b` and has the sign `σ` on `[a, b]` (`0 ≤ σ W`). For `f` of class
-`C^{n+2}` with `f^{(n+2)} ≥ 0` the integral of the interpolation error `f - Π_n f` then has the
-opposite sign: `σ ∫_a^b (f - Π_n f) ≤ 0`.
+/-- **The sign of the integral of an interpolation error.** Let $a < b$ and let $x_0, x_1, \dots$ be
+an injective sequence of real numbers with $x_0, \dots, x_n \in [a, b]$. Let
+$\omega(t) = \prod_{j=0}^n (t - x_j)$ and $W(t) = \int_a^t \omega$, and let
+$\sigma \in \mathbb{R}$ with $W(b) = 0$ and $\sigma W(t) \ge 0$ for all $t \in [a, b]$. Let
+$f \in C^{n+2}(\mathbb{R})$ with $f^{(n+2)} \ge 0$ everywhere, and let $\Pi_n f$ be the Lagrange
+interpolant of $f$ at $x_0, \dots, x_n$. Then
+$$\sigma \int_a^b (f - \Pi_n f) \le 0.$$
 
-This is the divided-difference route of Steffensen: `f - Π_n f = φ ω` with
-`φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the nodes as an iterated `dslope`; integrating by
-parts against `W`, which vanishes at both endpoints, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and
-`φ'(x) = f[x_0, …, x_n, x, x]` is the leading coefficient of a Hermite interpolant of `f`, hence a
-value of `f^{(n+2)}/(n+2)!` by Rolle's theorem with multiplicities. It is the common core of
-`sub_closedNewtonCotes_nonpos_of_even` (`σ = 1`) and `sub_openNewtonCotes_nonneg_of_even`
-(`σ = -1`). -/
+This is Steffensen's divided-difference argument. Write $f - \Pi_n f = \phi \, \omega$ with
+$\phi(x) = f[x_0, \dots, x_n, x]$, made $C^1$ across the nodes as an iterated `dslope`.
+Integration by parts against $W$, which vanishes at both endpoints, gives
+$\int_a^b (f - \Pi_n f) = -\int_a^b \phi' W$. The derivative
+$\phi'(x) = f[x_0, \dots, x_n, x, x]$ is the leading coefficient of a Hermite interpolant of
+$f$, hence a value of $f^{(n+2)}/(n + 2)!$ by Rolle's theorem with multiplicities. The theorem
+is the common core of `Quadrature.sub_closedNewtonCotes_nonpos_of_even` ($\sigma = 1$) and
+`Quadrature.sub_openNewtonCotes_nonneg_of_even` ($\sigma = -1$). -/
 theorem mul_integral_sub_interpolate_nonpos (hab : a < b)
     (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t)
     {x : ℕ → ℝ} (hx : Function.Injective x) (hxmem : ∀ k ≤ n, x k ∈ Icc a b) {σ : ℝ}
@@ -2025,14 +2161,13 @@ theorem mul_integral_sub_interpolate_nonpos (hab : a < b)
   rw [integral_congr fun t _ => hφω t, hparts, hWa, hWb']
   nlinarith [hint]
 
-/-- **The error of the closed rule with even `n` is nonpositive for an integrand with
-nonnegative `(n+2)`-nd derivative.** This is the sign half of the error formula, proved on the
-divided-difference route: `f - Π_n f = φ ω` with `φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the
-nodes as an iterated `dslope`; integrating by parts against `W(x) = ∫_a^x ω ≥ 0`, which vanishes
-at both endpoints, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and `φ'(x) = f[x_0, …, x_n, x, x]`
-is the leading coefficient of a Hermite interpolant of `f`, hence a value of `f^{(n+2)}/(n+2)!`
-by Rolle's theorem with multiplicities; this is `Quadrature.mul_integral_sub_interpolate_nonpos`
-with `σ = 1`, `W ≥ 0` being `Quadrature.integral_intNodal_nonneg_of_even`. -/
+/-- **The sign of the error of the closed rule with even $n$.** Let $n \ge 1$ be even, let $a < b$,
+and let $f \in C^{n+2}(\mathbb{R})$ with $f^{(n+2)} \ge 0$ everywhere. Then
+$$\int_a^b f - I_n(f) \le 0.$$
+This is the sign half of the error formula.
+
+The proof is `Quadrature.mul_integral_sub_interpolate_nonpos` with $\sigma = 1$; the hypothesis
+$W \ge 0$ comes from `Quadrature.integral_intNodal_nonneg_of_even`. -/
 theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t) :
     (∫ t in a..b, f t) - closedNewtonCotes n f a b ≤ 0 := by
@@ -2104,8 +2239,9 @@ theorem sub_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : 
   rw [hE]
   linarith
 
-/-- The Peano kernel of the closed rule with even `n`, at order `n + 1`: the notation for the
-next three statements. -/
+/-- For even $n \ge 1$ and $a < b$, the closed rule with the weights $h w_i$ at the nodes $a + ih$,
+$h = (b - a)/n$, integrates every polynomial of degree at most $n + 1$ exactly; this is the form
+of exactness that Peano's theorem takes as a hypothesis. -/
 private theorem closedNewtonCotes_exact_aux (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
     ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
       (∫ t in a..b, p.eval t) = ∑ i : Fin (n + 1),
@@ -2115,13 +2251,16 @@ private theorem closedNewtonCotes_exact_aux (hn : Even n) (hn0 : 0 < n) (hab : a
     Finset.mul_sum]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- **Sign constancy of the Peano kernel of the closed rule with even `n`** (Steffensen): with the
-weights `h w_i`, the nodes `a + i h` and the order `n + 1`, `K_{n+1}(t) ≤ 0` on `[a, b]`.
+/-- **The Peano kernel of the closed rule with even $n$ has constant sign** (Steffensen). Let
+$n \ge 1$ be even, let $a < b$, $h = (b - a)/n$, and let $K_{n+1}$ be the Peano kernel of order
+$n + 1$ on $[a, b]$ of the rule with the weights $h w_i$ at the nodes $a + ih$. Then
+$K_{n+1}(t) \le 0$ for every $t \in [a, b]$.
 
-If `K_{n+1}(t₀) > 0` at an interior point, then for a `C^{n+2}` integrand whose `(n+2)`-nd
-derivative is a bump concentrated where `K_{n+1} > 0`, Peano's theorem gives a positive error, while
-`sub_closedNewtonCotes_nonpos_of_even` gives a nonpositive one. The endpoints follow by
-continuity. -/
+The kernel is `Quadrature.peanoKernel`. Suppose that $K_{n+1}(t_0) > 0$ at an interior point.
+For a $C^{n+2}$ integrand whose derivative $f^{(n+2)}$ is a bump concentrated where
+$K_{n+1} > 0$, Peano's theorem gives a positive error, while
+`Quadrature.sub_closedNewtonCotes_nonpos_of_even` gives a nonpositive one. The endpoints follow
+by continuity. -/
 theorem peanoKernel_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     {t : ℝ} (ht : t ∈ Icc a b) :
     peanoKernel a b (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
@@ -2189,12 +2328,17 @@ theorem peanoKernel_closedNewtonCotes_nonpos_of_even (hn : Even n) (hn0 : 0 < n)
     exact le_of_tendsto hlim (eventually_nhdsWithin_of_forall hIoo)
   exact hIoo t ⟨hta, htb⟩
 
-/-- **The kernel integral of a rule exact to degree `n + 1` is its error at `x^{n+2}/(n+2)!`**:
-`∫_a^b K_{n+1} = ((n + 2)!)⁻¹ ∫_a^b ω(t) (t - b) dt` with `ω = ∏ᵢ (X - zᵢ)` the nodal polynomial,
-by Peano's theorem at `x^{n+2}/(n+2)!`: `x^{n+2} - ω(x)(x - b)` has degree at most `n + 1`, so the
-rule integrates it exactly, and `ω` vanishes at the nodes. The common step of
-`integral_peanoKernel_closedNewtonCotes_of_even` and `integral_peanoKernel_openNewtonCotes_of_even`.
--/
+/-- **The integral of the Peano kernel of a rule exact to degree $n + 1$.** Let $a \le b$, let
+$z_0, \dots, z_n \in [a, b]$ be nodes and $w_0, \dots, w_n$ weights such that
+$\int_a^b p = \sum_i w_i p(z_i)$ for every polynomial $p$ of degree at most $n + 1$, and let
+$\omega = \prod_i (X - z_i)$. Then the Peano kernel $K_{n+1}$ of order $n + 1$ of the rule
+satisfies
+$$\int_a^b K_{n+1} = \frac{1}{(n + 2)!} \int_a^b \omega(t)(t - b) \, dt.$$
+
+The proof is Peano's theorem at $x^{n+2}/(n + 2)!$: the polynomial $x^{n+2} - \omega(x)(x - b)$
+has degree at most $n + 1$, so the rule integrates it exactly, and $\omega$ vanishes at the
+nodes. This is the common step of `Quadrature.integral_peanoKernel_closedNewtonCotes_of_even`
+and `Quadrature.integral_peanoKernel_openNewtonCotes_of_even`. -/
 theorem integral_peanoKernel_eq_integral_nodal_mul (hab : a ≤ b) {w z : Fin (n + 1) → ℝ}
     (hzmem : ∀ i, z i ∈ Icc a b)
     (hexact : ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
@@ -2266,14 +2410,15 @@ theorem integral_peanoKernel_eq_integral_nodal_mul (hab : a ≤ b) {w z : Fin (n
     ring
   exact hlhs
 
-/-- **The kernel integral is the error at one monomial**: for even `n > 0`,
-`∫_a^b K_{n+1} = M_n/(n + 2)! · h^{n+3}`, `h = (b - a)/n`. Peano's theorem at
-`x^{n+2}/(n+2)!` identifies `∫ K_{n+1}` with the error at that monomial; since the rule is exact to
-degree `n + 1` and `x^{n+2} = ω_{n+1}(x)(x - b) + (\text{degree} ≤ n + 1)`, that error is
-`∫_a^b ω_{n+1}(x)(x - b) dx`, which the substitution `x = a + τ h`, `t = n - τ` turns into
-`h^{n+3} ∫_0^n t π_{n+1}(t) dt`.
+/-- **The integral of the Peano kernel of the closed rule with even $n$.** Let $n \ge 1$ be even,
+let $a < b$ and $h = (b - a)/n$. Then the Peano kernel $K_{n+1}$ of order $n + 1$ of the closed
+rule satisfies
+$$\int_a^b K_{n+1} = \frac{M_n}{(n + 2)!} h^{n+3}.$$
+This is the computation after (9.23) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], the computation after (9.23). -/
+By `Quadrature.integral_peanoKernel_eq_integral_nodal_mul`, the integral is $\frac{1}{(n + 2)!}
+\int_a^b \omega_{n+1}(x)(x - b) \, dx$, and the substitution $x = a + \tau h$, $t = n - \tau$
+turns this into $h^{n+3} \int_0^n t \, \pi_{n+1}(t) \, dt / (n + 2)!$. -/
 theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
     (∫ t in a..b, peanoKernel a b (fun i : Fin (n + 1) => (b - a) / n * newtonCotesWeight n i)
         (fun i : Fin (n + 1) => a + i * ((b - a) / n)) (n + 1) t)
@@ -2325,14 +2470,15 @@ theorem integral_peanoKernel_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < 
   rw [hint, hc]
   ring
 
-/-- **The error of the closed Newton–Cotes rules with even `n`** ([quarteroni2000numerical]
-Theorem 9.2, (9.19)): for even `n > 0`, `a < b` and `f` of class `C^{n+2}` on an open set
-containing `[a, b]`,
-`∫_a^b f - I_n(f) = M_n/(n + 2)! · h^{n+3} · f^{(n+2)}(ξ)` for some `ξ ∈ (a, b)`, with
-`h = (b - a)/n` and `M_n = ∫_0^n t π_{n+1}(t) dt < 0` (`newtonCotesM_neg`).
+/-- **The error of the closed Newton–Cotes rules with even $n$.** Let $n \ge 1$ be even, let
+$a < b$, $h = (b - a)/n$, and let $f$ be of class $C^{n+2}$ on an open set $U \supseteq [a, b]$.
+Then there is $\xi \in (a, b)$ with
+$$\int_a^b f - I_n(f) = \frac{M_n}{(n + 2)!} h^{n+3} f^{(n+2)}(\xi),$$
+where $M_n = \int_0^n t \, \pi_{n+1}(t) \, dt < 0$ (`Quadrature.newtonCotesM_neg`). This is
+Theorem 9.2 and (9.19) of [quarteroni2000numerical].
 
-Peano's theorem at order `n + 1` (the rule is exact to degree `n + 1`), the sign constancy of the
-kernel, its integral, and the weighted mean value theorem for integrals. -/
+The proof combines Peano's theorem at order $n + 1$ (the rule is exact to degree $n + 1$), the
+constant sign of the kernel, its integral, and the weighted mean value theorem for integrals. -/
 theorem exists_sub_closedNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     {U : Set ℝ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
@@ -2370,12 +2516,12 @@ theorem exists_sub_closedNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (hab
   rw [hpeano, hξval, hKint]
   ring
 
-/-- **The degree of exactness of the closed rule with even `n` is exactly `n + 1`**: the rule is
-not exact on the monomial `x^{n+2}`, whose `(n+2)`-nd derivative is the nonzero constant
-`(n+2)!`, while `M_n ≠ 0`.
+/-- **For even $n$, the degree of exactness of the closed rule is exactly $n + 1$.** Let $n \ge 1$
+be even and $a < b$. Then $\int_a^b t^{n+2} \, dt \neq I_n(t^{n+2})$. This is the statement "the
+degree of exactness is equal to $n + 1$" of Theorem 9.2 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], Theorem 9.2 ("the degree of exactness is equal to
-`n + 1`"). -/
+The derivative of order $n + 2$ of $x^{n+2}$ is the nonzero constant $(n + 2)!$, and
+$M_n \neq 0$. -/
 theorem not_integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 2)) ≠ closedNewtonCotes n (fun t => t ^ (n + 2)) a b := by
   have hcd : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) (fun t : ℝ => t ^ (n + 2)) univ :=
@@ -2398,12 +2544,13 @@ theorem not_integral_eq_closedNewtonCotes_of_even (hn : Even n) (hn0 : 0 < n) (h
   rw [this] at hξ
   exact absurd hξ.symm (mul_neg_of_neg_of_pos hM hpow).ne
 
-/-- **The error of the closed rule at the monomial `x^{n+1}`**: for `0 < n` and `a < b`,
-`∫_a^b x^{n+1} - I_n(x^{n+1}) = h^{n+2} K_n`, `h = (b - a)/n`.
+/-- **The error of the closed rule at $x^{n+1}$.** Let $n \ge 1$, $a < b$ and $h = (b - a)/n$. Then
+$$\int_a^b t^{n+1} \, dt - I_n(t^{n+1}) = h^{n+2} K_n.$$
 
-The rule is exact to degree `n` and `x^{n+1} = ω_{n+1}(x) + (\text{degree} ≤ n)` with `ω_{n+1}` the
-nodal polynomial, which the rule annihilates; so the error is `∫_a^b ω_{n+1}`, which the
-substitution `x = a + τ h` turns into `h^{n+2} ∫_0^n π_{n+1}`. -/
+The rule is exact to degree $n$, and $x^{n+1} = \omega_{n+1}(x) + q(x)$ with $q$ of degree at
+most $n$, where $\omega_{n+1}$ is the nodal polynomial of the nodes of the rule, which the rule
+annihilates. So the error is $\int_a^b \omega_{n+1}$, and the substitution $x = a + \tau h$
+turns it into $h^{n+2} \int_0^n \pi_{n+1}$. -/
 theorem integral_sub_closedNewtonCotes_pow_eq (hn : 0 < n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 1)) - closedNewtonCotes n (fun t => t ^ (n + 1)) a b
       = ((b - a) / n) ^ (n + 2) * newtonCotesK n := by
@@ -2471,12 +2618,11 @@ theorem integral_sub_closedNewtonCotes_pow_eq (hn : 0 < n) (hab : a < b) :
     _ = h * (h ^ (n + 1) * newtonCotesK n) := by rw [← hcov]
     _ = _ := by ring
 
-/-- **The degree of exactness of the closed rule with odd `n` is exactly `n`**: the rule is not
-exact on the monomial `x^{n+1}`, whose error is `h^{n+2} K_n` with `K_n < 0`
-(`Quadrature.newtonCotesK_neg`).
+/-- **For odd $n$, the degree of exactness of the closed rule is exactly $n$.** Let $n$ be odd and
+$a < b$. Then $\int_a^b t^{n+1} \, dt \neq I_n(t^{n+1})$. This is the statement "the degree of
+exactness is thus equal to $n$" of Theorem 9.2 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], Theorem 9.2 ("the degree of exactness is thus equal to
-`n`"). -/
+The error at $x^{n+1}$ is $h^{n+2} K_n$ with $K_n < 0$ (`Quadrature.newtonCotesK_neg`). -/
 theorem not_integral_eq_closedNewtonCotes_of_odd (hn : Odd n) (hab : a < b) :
     (∫ t in a..b, t ^ (n + 1)) ≠ closedNewtonCotes n (fun t => t ^ (n + 1)) a b := by
   have hn0 : 0 < n := hn.pos
@@ -2488,16 +2634,17 @@ theorem not_integral_eq_closedNewtonCotes_of_odd (hn : Odd n) (hab : a < b) :
   rw [heq, sub_self] at h
   exact absurd h.symm (mul_neg_of_pos_of_neg hpow hK).ne
 
-/-- **The `O(h^{n+2})` error bound of the closed rules**, for every `n ≥ 1` and every integrand of
-class `C^{n+1}`: with `h = (b - a)/n` and `|f^{(n+1)}| ≤ M` on `[a, b]`,
+/-- **The error bound of order $h^{n+2}$ of the closed rules.** Let $n \ge 1$, $a < b$,
+$h = (b - a)/n$, let $f$ be of class $C^{n+1}$ on an open set $U \supseteq [a, b]$, and let
+$|f^{(n+1)}| \le M$ on $[a, b]$. Then
+$$\Bigl|\int_a^b f - I_n(f)\Bigr| \le \frac{M}{(n + 1)!} h^{n+2} \int_0^n |\pi_{n+1}(s)| \,
+  ds.$$
 
-  `|∫_a^b f - I_n(f)| ≤ M/(n + 1)! · h^{n+2} · ∫_0^n |π_{n+1}|`.
-
-The error is the integral of the interpolation error `f - Π_n f`, which the Lagrange error formula
-bounds by `M/(n+1)! |ω_{n+1}|`; the substitution `x = a + τ h` scales `∫_a^b |ω_{n+1}|` to
-`h^{n+2} ∫_0^n |π_{n+1}|`. For odd `n` this is the order of infinitesimal `n + 2` of the error;
-the sharp constant `K_n/(n + 1)!` of [quarteroni2000numerical] (9.20) is not in the library, for
-the reason recorded in the module doc comment. -/
+The error is the integral of the interpolation error $f - \Pi_n f$, which the Lagrange error
+formula bounds by $M |\omega_{n+1}|/(n + 1)!$. The substitution $x = a + \tau h$ scales
+$\int_a^b |\omega_{n+1}|$ to $h^{n+2} \int_0^n |\pi_{n+1}|$. For odd $n$ this is the order
+$n + 2$ of the error. The sharp constant $K_n/(n + 1)!$ of (9.20) of [quarteroni2000numerical]
+is not formalized; the module doc comment explains why. -/
 theorem abs_sub_closedNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {U : Set ℝ}
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}
@@ -2573,14 +2720,14 @@ theorem abs_sub_closedNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {U
 
 end Error
 
-/-! ### The error of the open rules with even `n` -/
+/-! ### The error of the open rules with even $n$ -/
 
 section OpenError
 
 variable {n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- The `ℕ`-indexed nodes of the open rule, `a + (j + 1) h` with `h = (b - a)/(n + 2)`, are
-distinct. -/
+/-- For $a < b$, the equality $a + (j + 1)(b - a)/(n + 2) = a + (k + 1)(b - a)/(n + 2)$ of two open
+nodes with natural indices $j, k$ implies $j = k$. -/
 private theorem open_node_injective (hab : a < b) {j k : ℕ}
     (h : a + ((j : ℝ) + 1) * ((b - a) / (n + 2)) = a + ((k : ℝ) + 1) * ((b - a) / (n + 2))) :
     j = k := by
@@ -2590,17 +2737,16 @@ private theorem open_node_injective (hab : a < b) {j k : ℕ}
   have h2 := mul_right_cancel₀ hne h1
   exact_mod_cast (by linarith : (j : ℝ) = (k : ℝ))
 
-/-- **The error of the open rule with even `n` is nonnegative for an integrand with nonnegative
-`(n+2)`-nd derivative**, the open counterpart of
-`Quadrature.sub_closedNewtonCotes_nonpos_of_even` and the sign half of the error formula.
+/-- **The sign of the error of the open rule with even $n$.** Let $n$ be even, let $a < b$, and let
+$f \in C^{n+2}(\mathbb{R})$ with $f^{(n+2)} \ge 0$ everywhere. Then
+$$\int_a^b f - \tilde I_n(f) \ge 0.$$
+This is the open counterpart of `Quadrature.sub_closedNewtonCotes_nonpos_of_even` and the sign
+half of the error formula.
 
-The route is the same: `f - Π_n f = φ ω` with `φ(x) = f[x_0, …, x_n, x]`, made `C¹` across the
-nodes as an iterated `dslope`; integrating by parts against `W(x) = ∫_a^x ω`, which vanishes at
-both endpoints of `[a, b]` because the nodal polynomial of the open rule is odd about the
-midpoint for even `n`, gives `∫_a^b (f - Π_n f) = -∫_a^b φ' W`; and `φ'(x) = f[x_0, …, x_n, x, x]`
-is a value of `f^{(n+2)}/(n+2)!` — `Quadrature.mul_integral_sub_interpolate_nonpos` with
-`σ = -1`. The sign is opposite to the closed case because here `W ≤ 0`
-(`Quadrature.integral_intNodal_neg_one_mul_nonneg`). -/
+The proof is `Quadrature.mul_integral_sub_interpolate_nonpos` with $\sigma = -1$. The function
+$W(x) = \int_a^x \omega$ vanishes at both endpoints of $[a, b]$, because the nodal polynomial of
+the open rule is odd about the midpoint for even $n$. The sign is opposite to that of the closed
+case because here $W \le 0$ (`Quadrature.integral_intNodal_neg_one_mul_nonneg`). -/
 theorem sub_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b)
     (hf : ContDiff ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f) (hf' : ∀ t, 0 ≤ iteratedDeriv (n + 2) f t) :
     0 ≤ (∫ t in a..b, f t) - openNewtonCotes n f a b := by
@@ -2678,8 +2824,9 @@ theorem sub_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b)
   rw [hE]
   linarith
 
-/-- The exactness of the open rule with even `n` to degree `n + 1`, in the summation form that
-Peano's theorem takes as a hypothesis. -/
+/-- For even $n$ and $a < b$, the open rule with the weights $h \tilde w_i$ at the nodes
+$a + (i + 1)h$, $h = (b - a)/(n + 2)$, integrates every polynomial of degree at most $n + 1$
+exactly; this is the form of exactness that Peano's theorem takes as a hypothesis. -/
 private theorem openNewtonCotes_exact_aux (hn : Even n) (hab : a < b) :
     ∀ p : ℝ[X], p.degree ≤ ((n + 1 : ℕ) : WithBot ℕ) →
       (∫ t in a..b, p.eval t) = ∑ i : Fin (n + 1),
@@ -2690,13 +2837,15 @@ private theorem openNewtonCotes_exact_aux (hn : Even n) (hab : a < b) :
     Finset.mul_sum]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- **Sign constancy of the Peano kernel of the open rule with even `n`** (Steffensen): with the
-weights `h w_i`, the nodes `a + (i + 1) h`, `h = (b - a)/(n + 2)`, and the order `n + 1`,
-`K_{n+1}(t) ≥ 0` on `[a, b]`.
+/-- **The Peano kernel of the open rule with even $n$ has constant sign** (Steffensen). Let $n$ be
+even, let $a < b$, $h = (b - a)/(n + 2)$, and let $K_{n+1}$ be the Peano kernel of order $n + 1$
+on $[a, b]$ of the rule with the weights $h \tilde w_i$ at the nodes $a + (i + 1)h$. Then
+$K_{n+1}(t) \ge 0$ for every $t \in [a, b]$.
 
-If `K_{n+1}(t₀) < 0` at an interior point, then for a `C^{n+2}` integrand whose `(n+2)`-nd
-derivative is a bump concentrated where `K_{n+1} < 0`, Peano's theorem gives a negative error,
-while `sub_openNewtonCotes_nonneg_of_even` gives a nonnegative one. The endpoints follow by
+The kernel is `Quadrature.peanoKernel`. Suppose that $K_{n+1}(t_0) < 0$ at an interior point.
+For a $C^{n+2}$ integrand whose derivative $f^{(n+2)}$ is a bump concentrated where
+$K_{n+1} < 0$, Peano's theorem gives a negative error, while
+`Quadrature.sub_openNewtonCotes_nonneg_of_even` gives a nonnegative one. The endpoints follow by
 continuity. -/
 theorem peanoKernel_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b) {t : ℝ}
     (ht : t ∈ Icc a b) :
@@ -2766,15 +2915,16 @@ theorem peanoKernel_openNewtonCotes_nonneg_of_even (hn : Even n) (hab : a < b) {
     exact ge_of_tendsto hlim (eventually_nhdsWithin_of_forall hIoo)
   exact hIoo t ⟨hta, htb⟩
 
-/-- **The kernel integral is the error at one monomial**: for even `n`,
-`∫_a^b K_{n+1} = M̃_n/(n + 2)! · h^{n+3}`, `h = (b - a)/(n + 2)`. Peano's theorem at
-`x^{n+2}/(n+2)!` identifies `∫ K_{n+1}` with the error at that monomial; since the rule is exact
-to degree `n + 1` and `x^{n+2} = ω_{n+1}(x)(x - b) + (\text{degree} ≤ n + 1)`, that error is
-`∫_a^b ω_{n+1}(x)(x - b) dx`, which the substitution `x = a + (τ + 1) h` turns into
-`h^{n+3} ∫_{-1}^{n+1} π_{n+1}(τ)(τ - (n + 1)) dτ`, and that is `M̃_n` because `π_{n+1}` integrates
-to zero over `[-1, n + 1]` for even `n`.
+/-- **The integral of the Peano kernel of the open rule with even $n$.** Let $n$ be even, let
+$a < b$ and $h = (b - a)/(n + 2)$. Then the Peano kernel $K_{n+1}$ of order $n + 1$ of the open
+rule satisfies
+$$\int_a^b K_{n+1} = \frac{\tilde M_n}{(n + 2)!} h^{n+3}.$$
+This is the computation after (9.23) of [quarteroni2000numerical], in the open case.
 
-Reference: [quarteroni2000numerical], the computation after (9.23), in the open case. -/
+By `Quadrature.integral_peanoKernel_eq_integral_nodal_mul`, the integral is $\frac{1}{(n + 2)!}
+\int_a^b \omega_{n+1}(x)(x - b) \, dx$. The substitution $x = a + (\tau + 1)h$ turns this
+integral into $h^{n+3} \int_{-1}^{n+1} \pi_{n+1}(\tau)(\tau - (n + 1)) \, d\tau$, which is
+$h^{n+3} \tilde M_n$ because $\pi_{n+1}$ integrates to zero over $[-1, n + 1]$ for even $n$. -/
 theorem integral_peanoKernel_openNewtonCotes_of_even (hn : Even n) (hab : a < b) :
     (∫ t in a..b, peanoKernel a b
         (fun i : Fin (n + 1) => (b - a) / (n + 2) * openNewtonCotesWeight n i)
@@ -2834,15 +2984,16 @@ theorem integral_peanoKernel_openNewtonCotes_of_even (hn : Even n) (hab : a < b)
   rw [hint, hc]
   ring
 
-/-- **The error of the open Newton–Cotes rules with even `n`** ([quarteroni2000numerical]
-Theorem 9.2, (9.19)): for even `n`, `a < b` and `f` of class `C^{n+2}` on an open set containing
-`[a, b]`, `∫_a^b f - I_n(f) = M̃_n/(n + 2)! · h^{n+3} · f^{(n+2)}(ξ)` for some `ξ ∈ (a, b)`, with
-`h = (b - a)/(n + 2)` and `M̃_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt > 0`
-(`Quadrature.openNewtonCotesM_pos`). For `n = 0` this is the midpoint error
-`Quadrature.exists_sub_midpoint_eq`.
+/-- **The error of the open Newton–Cotes rules with even $n$.** Let $n$ be even, let $a < b$,
+$h = (b - a)/(n + 2)$, and let $f$ be of class $C^{n+2}$ on an open set $U \supseteq [a, b]$.
+Then there is $\xi \in (a, b)$ with
+$$\int_a^b f - \tilde I_n(f) = \frac{\tilde M_n}{(n + 2)!} h^{n+3} f^{(n+2)}(\xi),$$
+where $\tilde M_n = \int_{-1}^{n+1} t \, \pi_{n+1}(t) \, dt > 0$
+(`Quadrature.openNewtonCotesM_pos`). This is Theorem 9.2 and (9.19) of [quarteroni2000numerical]
+for the open rules. For $n = 0$ it is the midpoint error `Quadrature.exists_sub_midpoint_eq`.
 
-Peano's theorem at order `n + 1` (the rule is exact to degree `n + 1`), the sign constancy of the
-kernel, its integral, and the weighted mean value theorem for integrals. -/
+The proof combines Peano's theorem at order $n + 1$ (the rule is exact to degree $n + 1$), the
+constant sign of the kernel, its integral, and the weighted mean value theorem for integrals. -/
 theorem exists_sub_openNewtonCotes_eq_of_even (hn : Even n) (hab : a < b) {U : Set ℝ}
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
@@ -2888,7 +3039,7 @@ section Composite
 
 variable {n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- The uniform mesh `x_j = a + j H`, `H = (b - a)/m`, lies in `[a, b]`. -/
+/-- For $a \le b$, $m \ge 1$ and $j \le m$, the mesh point $a + j(b - a)/m$ lies in $[a, b]$. -/
 private theorem mesh_mem (hab : a ≤ b) {m : ℕ} (hm : 0 < m) {j : ℕ} (hj : j ≤ m) :
     a + j * ((b - a) / m) ∈ Icc a b := by
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
@@ -2900,15 +3051,17 @@ private theorem mesh_mem (hab : a ≤ b) {m : ℕ} (hm : 0 < m) {j : ℕ} (hj : 
   rw [mul_div_cancel₀ _ hmR.ne'] at this
   linarith
 
-/-- **The composite Newton–Cotes error, even `n`** ([quarteroni2000numerical] Theorem 9.3,
-(9.26), with the constant corrected). For even `n > 0`, `a < b`, `0 < m`, `H = (b - a)/m` and `f`
-of class `C^{n+2}` on an open set containing `[a, b]`,
-`∫_a^b f - I_{n,m}(f) = (b - a)/(n + 2)! · M_n/n^{n+3} · H^{n+2} · f^{(n+2)}(ξ)`
-for some `ξ ∈ [a, b]`.
+/-- **The error of the composite closed Newton–Cotes rules with even $n$.** Let $n \ge 1$ be even,
+let $a < b$, $m \ge 1$, $H = (b - a)/m$, and let $f$ be of class $C^{n+2}$ on an open set
+$U \supseteq [a, b]$. Then there is $\xi \in [a, b]$ with
+$$\int_a^b f - I_{n,m}(f) = \frac{b - a}{(n + 2)!} \cdot \frac{M_n}{n^{n+3}} \, H^{n+2}
+  f^{(n+2)}(\xi).$$
+This is Theorem 9.3 and (9.26) of [quarteroni2000numerical], with a corrected constant.
 
-The book prints `M_n/(n + 2)^{n+3}`; the panel spacing of the closed rule is `h = H/n`, so the
-panel errors are `M_n/(n + 2)! (H/n)^{n+3} f^{(n+2)}(ξ_j)`, and `n = 2` must return the composite
-Simpson constant `-(b - a) H⁴/2880`. The `m` panel values are collected by the discrete mean
+[quarteroni2000numerical] prints $M_n/(n + 2)^{n+3}$ in place of $M_n/n^{n+3}$. The node spacing
+of the closed rule on a panel is $h = H/n$, so the panel errors are
+$M_n (H/n)^{n+3} f^{(n+2)}(\xi_j)/(n + 2)!$, and for $n = 2$ the formula must give the composite
+Simpson constant $-(b - a) H^4/2880$. The $m$ panel errors are collected by the discrete mean
 value theorem. -/
 theorem exists_sub_compositeNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (hab : a < b)
     {m : ℕ} (hm : 0 < m) {U : Set ℝ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
@@ -2963,12 +3116,15 @@ theorem exists_sub_compositeNewtonCotes_eq_of_even (hn : Even n) (hn0 : 0 < n) (
   field_simp
   ring
 
-/-- **The Riemann-sum bound for composite Newton–Cotes rules with nonnegative weights**
-([quarteroni2000numerical] Property 9.1, with the constant `1` in place of the book's `2`). For
-`0 < n` with nonnegative weights `w_i`, `f` continuous on `[a, b]`, `0 < m`, `H = (b - a)/m` and
-`ε` bounding the oscillation of `f` over distances at most `H`,
-`|∫_a^b f - I_{n,m}(f)| ≤ (b - a) ε`. An instance of `Quadrature.abs_sub_compositeSum_le` with the
-panel weights `w_i/n`. -/
+/-- **The Riemann-sum bound for composite Newton–Cotes rules with nonnegative weights.** Let
+$n \ge 1$ with $w_i \ge 0$ for all $i$, let $a \le b$, let $f$ be continuous on $[a, b]$, let
+$m \ge 1$, and let $\varepsilon$ satisfy $|f(u) - f(v)| \le \varepsilon$ for all
+$u, v \in [a, b]$ with $|u - v| \le (b - a)/m$. Then
+$$\Bigl|\int_a^b f - I_{n,m}(f)\Bigr| \le (b - a) \varepsilon.$$
+This is Property 9.1 of [quarteroni2000numerical], with the constant $1$ in place of the
+constant $2$ of the book.
+
+The proof is an instance of `Quadrature.abs_sub_compositeSum_le` with the panel weights $w_i/n$. -/
 theorem abs_sub_compositeNewtonCotes_le (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCotesWeight n i)
     (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) {m : ℕ} (hm : 0 < m) {ε : ℝ}
     (hosc : ∀ u ∈ Icc a b, ∀ v ∈ Icc a b, |u - v| ≤ (b - a) / m → |f u - f v| ≤ ε) :
@@ -3003,9 +3159,12 @@ theorem abs_sub_compositeNewtonCotes_le (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCo
     push_cast
     linarith
 
-/-- **Convergence of the composite Newton–Cotes rules with nonnegative weights**
-([quarteroni2000numerical] Property 9.1): for `0 < n`, `w_i ≥ 0`, `a ≤ b` and `f` continuous on
-`[a, b]`, `I_{n,m}(f) → ∫_a^b f` as `m → ∞`. An instance of `Quadrature.tendsto_uniformMesh`. -/
+/-- **Convergence of the composite Newton–Cotes rules with nonnegative weights.** Let $n \ge 1$ with
+$w_i \ge 0$ for all $i$, let $a \le b$, and let $f$ be continuous on $[a, b]$. Then
+$I_{n,m}(f) \to \int_a^b f$ as $m \to \infty$. This is Property 9.1 of
+[quarteroni2000numerical].
+
+The proof is an instance of `Quadrature.tendsto_uniformMesh`. -/
 theorem tendsto_compositeNewtonCotes (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCotesWeight n i)
     (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) :
     Tendsto (fun m => compositeNewtonCotes n f a b m) atTop (𝓝 (∫ t in a..b, f t)) := by
@@ -3033,15 +3192,15 @@ theorem tendsto_compositeNewtonCotes (hn : 0 < n) (hw : ∀ i, 0 ≤ newtonCotes
   rw [e]
   ring_nf
 
-/-- **The `O(H^{n+1})` error bound of the composite closed rules**, for every `n ≥ 1` and every
-integrand of class `C^{n+1}`, with no sign hypothesis on the weights: with `H = (b - a)/m` and
-`|f^{(n+1)}| ≤ M` on `[a, b]`,
+/-- **The error bound of order $H^{n+1}$ of the composite closed rules.** Let $n \ge 1$, $a < b$,
+$m \ge 1$, $H = (b - a)/m$, let $f$ be of class $C^{n+1}$ on an open set $U \supseteq [a, b]$,
+and let $|f^{(n+1)}| \le M$ on $[a, b]$. Then
+$$\Bigl|\int_a^b f - I_{n,m}(f)\Bigr| \le \frac{b - a}{n} \cdot \frac{M}{(n + 1)!}
+  \Bigl(\frac{H}{n}\Bigr)^{n+1} \int_0^n |\pi_{n+1}(s)| \, ds.$$
 
-  `|∫_a^b f - I_{n,m}(f)| ≤ (b - a)/n · M/(n + 1)! · (H/n)^{n+1} · ∫_0^n |π_{n+1}|`.
-
-The `m` panel errors are bounded by `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn` and
-added. Unlike `Quadrature.abs_sub_compositeNewtonCotes_le`, this needs no nonnegativity of the
-weights — which fails from `n = 8` on — but asks for a smooth integrand. -/
+The $m$ panel errors are bounded by `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn` and
+added. Unlike `Quadrature.abs_sub_compositeNewtonCotes_le`, this bound needs no sign condition
+on the weights, which fails from $n = 8$ on, but it needs a smooth integrand. -/
 theorem abs_sub_compositeNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {m : ℕ}
     (hm : 0 < m) {U : Set ℝ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}
@@ -3105,12 +3264,13 @@ theorem abs_sub_compositeNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b)
     field_simp
   rw [hmul, hmH, hH]
 
-/-- **Convergence of the composite closed rules for a smooth integrand**: for `0 < n`, `a < b` and
-`f` of class `C^{n+1}` on an open set containing `[a, b]`, `I_{n,m}(f) → ∫_a^b f` as `m → ∞`.
+/-- **Convergence of the composite closed rules for a smooth integrand.** Let $n \ge 1$, $a < b$,
+and let $f$ be of class $C^{n+1}$ on an open set $U \supseteq [a, b]$. Then
+$I_{n,m}(f) \to \int_a^b f$ as $m \to \infty$.
 
-The bound of `Quadrature.abs_sub_compositeNewtonCotes_le_of_contDiffOn` is `O(m^{-(n+1)})`. This
-complements `Quadrature.tendsto_compositeNewtonCotes`, which asks only for continuity of `f` but
-needs nonnegative weights. -/
+The bound of `Quadrature.abs_sub_compositeNewtonCotes_le_of_contDiffOn` is $O(m^{-(n+1)})$. This
+complements `Quadrature.tendsto_compositeNewtonCotes`, which needs only the continuity of $f$
+but needs nonnegative weights. -/
 theorem tendsto_compositeNewtonCotes_of_contDiffOn (hn : 0 < n) (hab : a < b) {U : Set ℝ}
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
@@ -3147,25 +3307,29 @@ section Hermite
 
 variable {n : ℕ} {a b : ℝ}
 
-/-- **The Hermite cardinal polynomials `𝓛_k`** of the nodes `x`:
-`𝓛_k = (1 - (ω''(x_k)/ω'(x_k)) (X - x_k)) l_k²`, with `l_k` the Lagrange basis polynomial and `ω`
-the nodal polynomial. They take the value `1` at `x_k`, `0` at the other nodes, and have vanishing
-derivative at every node.
+/-- The **Hermite cardinal polynomials** $\mathcal{L}_k$ of the nodes $x_0, \dots, x_n$ are
+$$\mathcal{L}_k = \Bigl(1 - \frac{\omega''(x_k)}{\omega'(x_k)} (X - x_k)\Bigr) \ell_k^2,$$
+where $\ell_k$ is the Lagrange basis polynomial and $\omega$ the nodal polynomial of the nodes.
+This is (9.28) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], (9.28). -/
+For distinct nodes, $\mathcal{L}_k$ takes the value $1$ at $x_k$ and $0$ at the other nodes, and
+its derivative vanishes at every node. If $\omega'(x_k) = 0$, the quotient has the value $0$ in
+Lean. -/
 noncomputable def hermiteBasisL (x : Fin (n + 1) → ℝ) (k : Fin (n + 1)) : ℝ[X] :=
   (1 - C ((derivative (derivative (Lagrange.nodal Finset.univ x))).eval (x k)
       / (derivative (Lagrange.nodal Finset.univ x)).eval (x k)) * (X - C (x k)))
     * Lagrange.basis Finset.univ x k ^ 2
 
-/-- **The Hermite cardinal polynomials `𝓜_k`** of the nodes `x`: `𝓜_k = (X - x_k) l_k²`. They
-vanish at every node, and their derivative is `1` at `x_k` and `0` at the other nodes.
+/-- The **Hermite cardinal polynomials** $\mathcal{M}_k$ of the nodes $x_0, \dots, x_n$ are
+$\mathcal{M}_k = (X - x_k) \ell_k^2$, where $\ell_k$ is the Lagrange basis polynomial of the
+nodes. This is (9.28) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], (9.28). -/
+The polynomial $\mathcal{M}_k$ vanishes at every node, and for distinct nodes its derivative is
+$1$ at $x_k$ and $0$ at the other nodes. -/
 noncomputable def hermiteBasisM (x : Fin (n + 1) → ℝ) (k : Fin (n + 1)) : ℝ[X] :=
   (X - C (x k)) * Lagrange.basis Finset.univ x k ^ 2
 
-/-- **`𝓛_k` at the nodes**: `𝓛_k(x_j) = δ_{jk}`. -/
+/-- For distinct nodes $x_0, \dots, x_n$, $\mathcal{L}_k(x_j) = \delta_{jk}$. -/
 theorem hermiteBasisL_eval_node {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k j : Fin (n + 1)) : (hermiteBasisL x k).eval (x j) = if j = k then 1 else 0 := by
   simp only [hermiteBasisL, eval_mul, eval_sub, eval_one, eval_C, eval_X, eval_pow]
@@ -3175,7 +3339,7 @@ theorem hermiteBasisL_eval_node {x : Fin (n + 1) → ℝ} (hx : Function.Injecti
   · rw [Lagrange.eval_basis_of_ne (Ne.symm h) (Finset.mem_univ j)]
     ring
 
-/-- **`𝓛_k'` at the nodes**: `𝓛_k'(x_j) = 0`. -/
+/-- For distinct nodes $x_0, \dots, x_n$, $\mathcal{L}_k'(x_j) = 0$ for all $j, k$. -/
 theorem eval_derivative_hermiteBasisL {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k j : Fin (n + 1)) : (derivative (hermiteBasisL x k)).eval (x j) = 0 := by
   have hnodal_ne : (derivative (Lagrange.nodal Finset.univ x)).eval (x k) ≠ 0 := by
@@ -3193,7 +3357,7 @@ theorem eval_derivative_hermiteBasisL {x : Fin (n + 1) → ℝ} (hx : Function.I
   · rw [Lagrange.eval_basis_of_ne (Ne.symm h) (Finset.mem_univ j)]
     ring
 
-/-- **`𝓜_k` at the nodes**: `𝓜_k(x_j) = 0`. -/
+/-- For all nodes $x_0, \dots, x_n$, $\mathcal{M}_k(x_j) = 0$ for all $j, k$. -/
 theorem hermiteBasisM_eval_node (x : Fin (n + 1) → ℝ) (k j : Fin (n + 1)) :
     (hermiteBasisM x k).eval (x j) = 0 := by
   simp only [hermiteBasisM, eval_mul, eval_sub, eval_X, eval_C, eval_pow]
@@ -3202,7 +3366,7 @@ theorem hermiteBasisM_eval_node (x : Fin (n + 1) → ℝ) (k j : Fin (n + 1)) :
   · rw [Lagrange.eval_basis_of_ne (Ne.symm h) (Finset.mem_univ j)]
     ring
 
-/-- **`𝓜_k'` at the nodes**: `𝓜_k'(x_j) = δ_{jk}`. -/
+/-- For distinct nodes $x_0, \dots, x_n$, $\mathcal{M}_k'(x_j) = \delta_{jk}$. -/
 theorem eval_derivative_hermiteBasisM {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k j : Fin (n + 1)) : (derivative (hermiteBasisM x k)).eval (x j) = if j = k then 1 else 0 := by
   simp only [hermiteBasisM, derivative_mul, derivative_X_sub_C, one_mul, derivative_pow,
@@ -3213,7 +3377,8 @@ theorem eval_derivative_hermiteBasisM {x : Fin (n + 1) → ℝ} (hx : Function.I
   · rw [Lagrange.eval_basis_of_ne (Ne.symm h) (Finset.mem_univ j)]
     ring
 
-/-- The Hermite cardinal polynomials have degree at most `2n + 1`. -/
+/-- For distinct nodes $x_0, \dots, x_n$, the Hermite cardinal polynomial $\mathcal{L}_k$ has degree
+at most $2n + 1$. -/
 theorem natDegree_hermiteBasisL_le {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k : Fin (n + 1)) : (hermiteBasisL x k).natDegree ≤ 2 * n + 1 := by
   have hb : (Lagrange.basis Finset.univ x k ^ 2).natDegree ≤ 2 * n := by
@@ -3225,7 +3390,8 @@ theorem natDegree_hermiteBasisL_le {x : Fin (n + 1) → ℝ} (hx : Function.Inje
     exact (natDegree_C_mul_le _ _).trans (natDegree_X_sub_C_le _)
   exact (natDegree_mul_le).trans (by omega)
 
-/-- The Hermite cardinal polynomials have degree at most `2n + 1`. -/
+/-- For distinct nodes $x_0, \dots, x_n$, the Hermite cardinal polynomial $\mathcal{M}_k$ has degree
+at most $2n + 1$. -/
 theorem natDegree_hermiteBasisM_le {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k : Fin (n + 1)) : (hermiteBasisM x k).natDegree ≤ 2 * n + 1 := by
   have hb : (Lagrange.basis Finset.univ x k ^ 2).natDegree ≤ 2 * n := by
@@ -3233,18 +3399,25 @@ theorem natDegree_hermiteBasisM_le {x : Fin (n + 1) → ℝ} (hx : Function.Inje
     simp
   exact (natDegree_mul_le).trans (by linarith [natDegree_X_sub_C_le (x k)])
 
-/-- **The Hermite quadrature rule** at the nodes `x`,
-`∑_k α_k f(x_k) + ∑_k β_k f'(x_k)` with `α_k = ∫_a^b 𝓛_k` and `β_k = ∫_a^b 𝓜_k`: the integral of
-the Hermite interpolant of `f` at the nodes.
+/-- The **Hermite quadrature rule** at the nodes $x_0, \dots, x_n$ for the interval $[a, b]$,
+applied to a function $f$ with derivative values $f'$, is
+$$\sum_{k=0}^n \alpha_k f(x_k) + \sum_{k=0}^n \beta_k f'(x_k), \qquad \alpha_k = \int_a^b
+  \mathcal{L}_k, \quad \beta_k = \int_a^b \mathcal{M}_k.$$
+It is the integral of the Hermite interpolant of $f$ at the nodes. This is (9.29) of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], (9.29). -/
+The derivative values are a separate function argument `f'`, and the nodes need not lie in
+$[a, b]$. -/
 noncomputable def hermiteQuadrature (x : Fin (n + 1) → ℝ) (a b : ℝ) (f f' : ℝ → ℝ) : ℝ :=
   ∑ k, (∫ t in a..b, (hermiteBasisL x k).eval t) * f (x k)
     + ∑ k, (∫ t in a..b, (hermiteBasisM x k).eval t) * f' (x k)
 
-/-- **A polynomial of degree at most `2n + 1` is its own Hermite interpolant**:
-`p = ∑ p(x_k) 𝓛_k + ∑ p'(x_k) 𝓜_k`. Both sides have degree at most `2n + 1` and agree with
-multiplicity two at every node, so both are the Hermite interpolant of `p`. -/
+/-- **A polynomial of degree at most $2n + 1$ is its own Hermite interpolant.** Let
+$x_0, \dots, x_n$ be distinct and let $p$ be a polynomial of degree at most $2n + 1$. Then
+$$p = \sum_{k=0}^n p(x_k) \mathcal{L}_k + \sum_{k=0}^n p'(x_k) \mathcal{M}_k.$$
+
+Both sides have degree at most $2n + 1$ and agree with multiplicity two at every node, so both
+are the Hermite interpolant of $p$. -/
 theorem eq_sum_hermiteBasis_of_degree_le {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {p : ℝ[X]} (hp : p.degree ≤ (2 * n + 1 : ℕ)) :
     p = ∑ k, C (p.eval (x k)) * hermiteBasisL x k
@@ -3282,9 +3455,10 @@ theorem eq_sum_hermiteBasis_of_degree_le {x : Fin (n + 1) → ℝ} (hx : Functio
           Finset.sum_const_zero, mul_ite, mul_one, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
   rw [hp', hq']
 
-/-- **Hermite quadrature has degree of exactness `2n + 1`** ([quarteroni2000numerical] §9.5):
-for distinct nodes and a polynomial `p` of degree at most `2n + 1`,
-`∫_a^b p = hermiteQuadrature x a b p p'`. -/
+/-- **Hermite quadrature is exact to degree $2n + 1$.** Let $x_0, \dots, x_n$ be distinct, let
+$a, b \in \mathbb{R}$, and let $p$ be a polynomial of degree at most $2n + 1$. Then $\int_a^b p$
+equals the Hermite quadrature rule applied to $p$ with the derivative values $p'$. This is the
+degree of exactness stated in §9.5 of [quarteroni2000numerical]. -/
 theorem integral_eq_hermiteQuadrature_of_degree_le {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (a b : ℝ) {p : ℝ[X]} (hp : p.degree ≤ (2 * n + 1 : ℕ)) :
     (∫ t in a..b, p.eval t)
@@ -3303,25 +3477,31 @@ theorem integral_eq_hermiteQuadrature_of_degree_le {x : Fin (n + 1) → ℝ}
   simp only [integral_const_mul]
   congr 1 <;> exact Finset.sum_congr rfl fun k _ => mul_comm _ _
 
-/-- **The corrected trapezoidal rule**
-`(b - a)/2 (f(a) + f(b)) + (b - a)²/12 (f'(a) - f'(b))`: the Hermite rule at the two nodes `a, b`.
-
-Reference: [quarteroni2000numerical], (9.30). -/
+/-- The **corrected trapezoidal rule** on $[a, b]$, applied to $f$ with derivative values $f'$, is
+$$\frac{b - a}{2} (f(a) + f(b)) + \frac{(b - a)^2}{12} (f'(a) - f'(b)).$$
+It is the Hermite rule at the two nodes $a, b$
+(`Quadrature.hermiteQuadrature_two_eq_correctedTrapezoid`). This is (9.30) of
+[quarteroni2000numerical]. -/
 noncomputable def correctedTrapezoid (f f' : ℝ → ℝ) (a b : ℝ) : ℝ :=
   (b - a) / 2 * (f a + f b) + (b - a) ^ 2 / 12 * (f' a - f' b)
 
-/-- **The composite corrected trapezoidal rule** on `m` panels of width `H = (b - a)/m`:
-the composite trapezoidal sum plus the end correction `H²/12 (f'(a) - f'(b))`; the corrections at
-the interior nodes cancel (`correctedTrapezoidSum_eq_sum`).
+/-- The **composite corrected trapezoidal rule** on $m$ panels of width $H = (b - a)/m$ is the
+composite trapezoidal sum plus the end correction $H^2 (f'(a) - f'(b))/12$. The corrections at
+the interior nodes cancel (`Quadrature.correctedTrapezoidSum_eq_sum`). This is (9.32) of
+[quarteroni2000numerical], corrected.
 
-Reference: [quarteroni2000numerical], (9.32) (whose printed `(b - a)²/12` should read `H²/12`,
-as in the book's Program 75). -/
+[quarteroni2000numerical] prints the factor $(b - a)^2/12$ in (9.32). It should read $H^2/12$,
+as in Program 75 of the book. -/
 noncomputable def correctedTrapezoidSum (f f' : ℝ → ℝ) (a b : ℝ) (m : ℕ) : ℝ :=
   trapezoidSum f a ((b - a) / m) m + ((b - a) / m) ^ 2 / 12 * (f' a - f' b)
 
-/-- **The Hermite rule at the two nodes `a, b` is the corrected trapezoidal rule**: its weights are
-`α_0 = α_1 = (b - a)/2`, `β_0 = -β_1 = (b - a)²/12`. They are read off the moment equations of
-the rule, which is exact to degree `3`, at the polynomials `(x - a)^k`, `k ≤ 3`. -/
+/-- **The Hermite rule at the two nodes $a, b$ is the corrected trapezoidal rule.** Let $a \neq b$.
+Then for all $f$ and $f'$, the Hermite quadrature rule on $[a, b]$ at the nodes $a, b$ equals
+the corrected trapezoidal rule. Its weights are $\alpha_0 = \alpha_1 = (b - a)/2$ and
+$\beta_0 = -\beta_1 = (b - a)^2/12$.
+
+The weights are read off the moment equations of the rule, which is exact to degree $3$, at the
+polynomials $(x - a)^k$, $k \le 3$. -/
 theorem hermiteQuadrature_two_eq_correctedTrapezoid (hab : a ≠ b) (f f' : ℝ → ℝ) :
     hermiteQuadrature ![a, b] a b f f' = correctedTrapezoid f f' a b := by
   have hinj : Function.Injective ![a, b] := by
@@ -3390,13 +3570,18 @@ theorem hermiteQuadrature_two_eq_correctedTrapezoid (hab : a ≠ b) (f f' : ℝ 
   rw [hrule, hA'', hB', hC', hD', correctedTrapezoid, hh]
   ring
 
-/-- **The corrected trapezoidal error** ([quarteroni2000numerical] (9.31)): for `a ≤ b` and `g`
-of class `C⁴` on `[a, b]` (a chain of derivatives `g', g'', g₃, g₄`, the last continuous),
-`∫_a^b g - correctedTrapezoid g g' a b = (b - a)⁵/720 · g⁗(ξ)` for some `ξ ∈ [a, b]`.
+/-- **The error of the corrected trapezoidal rule.** Let $a \le b$, and let $g$ be of class $C^4$ on
+$[a, b]$ in the following sense: $g, g', g'', g_3$ have the derivatives $g', g'', g_3, g_4$ at
+every point of $[a, b]$, and $g_4$ is continuous on $[a, b]$. Then there is $\xi \in [a, b]$
+with
+$$\int_a^b g - \Bigl(\frac{b - a}{2} (g(a) + g(b)) + \frac{(b - a)^2}{12} (g'(a) -
+  g'(b))\Bigr) = \frac{(b - a)^5}{720} g_4(\xi).$$
+This is (9.31) of [quarteroni2000numerical].
 
-`Quadrature.integral_peanoKernel_mul_eq` writes the trapezoidal error as
-`-((b - a)²/12)(g'(b) - g'(a)) + ∫ (t - a)²(t - b)² g⁗(t)/24 dt`, so the corrected trapezoidal
-error is the last integral; its kernel is nonnegative and integrates to `(b - a)⁵/720`. -/
+`Quadrature.integral_peanoKernel_mul_eq` writes the trapezoidal error as $-\frac{(b -
+a)^2}{12}(g'(b) - g'(a)) + \int_a^b (t - a)^2 (t - b)^2 g_4(t) \, dt / 24$. So the corrected
+trapezoidal error is the last integral, whose kernel is nonnegative and integrates to
+$(b - a)^5/720$. -/
 theorem exists_sub_correctedTrapezoid_eq (hab : a ≤ b) {g g' g'' g₃ g₄ : ℝ → ℝ}
     (hg : ∀ x ∈ Icc a b, HasDerivAt g (g' x) x) (hg' : ∀ x ∈ Icc a b, HasDerivAt g' (g'' x) x)
     (hg'' : ∀ x ∈ Icc a b, HasDerivAt g'' (g₃ x) x)
@@ -3419,10 +3604,12 @@ theorem exists_sub_correctedTrapezoid_eq (hab : a ≤ b) {g g' g'' g₃ g₄ : �
   rw [integral_peanoKernel_sq] at hξval
   linarith
 
-/-- **The composite corrected trapezoidal rule is the sum of the panel rules**: the derivative
-corrections at the interior nodes telescope away.
+/-- **The composite corrected trapezoidal rule is the sum of the panel rules.** For all $f$, $f'$,
+$a$, $b$ and $m$, the composite corrected trapezoidal rule on $m$ panels equals the sum over
+$j < m$ of the corrected trapezoidal rule on the panel $[a + jH, a + (j + 1)H]$,
+$H = (b - a)/m$. This is the remark after (9.32) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], the remark after (9.32). -/
+The derivative corrections at the interior nodes telescope. -/
 theorem correctedTrapezoidSum_eq_sum (f f' : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     correctedTrapezoidSum f f' a b m
       = ∑ j ∈ Finset.range m,
@@ -3441,10 +3628,14 @@ theorem correctedTrapezoidSum_eq_sum (f f' : ℝ → ℝ) (a b : ℝ) (m : ℕ) 
   rw [Finset.sum_add_distrib, ← Finset.mul_sum (Finset.range m) _ (H ^ 2 / 12), htel,
     correctedTrapezoidSum, trapezoidSum]
 
-/-- **The composite corrected trapezoidal error in mean value form**: for `a < b`, `0 < m`,
-`H = (b - a)/m` and `g` of class `C⁴` on `[a, b]`,
-`∫_a^b g - correctedTrapezoidSum g g' a b m = (b - a) H⁴/720 · g⁗(ξ)` for some `ξ ∈ [a, b]` —
-the order `4` behaviour observed in [quarteroni2000numerical] Example 9.5. -/
+/-- **The composite corrected trapezoidal error in mean value form.** Let $a < b$, $m \ge 1$ and
+$H = (b - a)/m$, and let $g$ be of class $C^4$ on $[a, b]$ in the sense of
+`Quadrature.exists_sub_correctedTrapezoid_eq`, with the chain of derivatives
+$g', g'', g_3, g_4$. Then there is $\xi \in [a, b]$ with
+$$\int_a^b g - C_m(g) = \frac{(b - a) H^4}{720} g_4(\xi),$$
+where $C_m(g)$ is the composite corrected trapezoidal rule `Quadrature.correctedTrapezoidSum` on
+$m$ panels, applied to $g$ with the derivative $g'$. This is the order $4$ observed in Example
+9.5 of [quarteroni2000numerical]. -/
 theorem sub_correctedTrapezoidSum_eq (hab : a < b) {m : ℕ} (hm : 0 < m) {g g' g'' g₃ g₄ : ℝ → ℝ}
     (hg : ∀ x ∈ Icc a b, HasDerivAt g (g' x) x) (hg' : ∀ x ∈ Icc a b, HasDerivAt g' (g'' x) x)
     (hg'' : ∀ x ∈ Icc a b, HasDerivAt g'' (g₃ x) x)
@@ -3505,15 +3696,22 @@ section Adaptive
 
 variable {α β : ℝ} {g g' g'' g₃ g₄ : ℝ → ℝ}
 
-/-- **The adaptive Simpson error estimator, made rigorous** ([quarteroni2000numerical]
-(9.42)–(9.44)). For `α < β`, `h₀ = (β - α)/2`, `g` of class `C⁴` on `[α, β]` with
-`|g⁗(u) - g⁗(v)| ≤ ω` for all `u, v ∈ [α, β]`, the one-panel Simpson value `S` and the two-panel
-value `S₂` satisfy `|(∫_α^β g - S₂) + (S - S₂)/15| ≤ h₀⁵ ω/1350`.
+/-- **The a posteriori error estimate of adaptive Simpson quadrature.** Let $\alpha < \beta$ and
+$h_0 = (\beta - \alpha)/2$. Let $g$ be of class $C^4$ on $[\alpha, \beta]$, with the chain of
+derivatives $g', g'', g_3, g_4$ on $[\alpha, \beta]$ and $g_4$ continuous there, and let
+$|g_4(u) - g_4(v)| \le \omega$ for all $u, v \in [\alpha, \beta]$. Let $S$ be Simpson's rule on
+$[\alpha, \beta]$ with one panel and $S_2$ the composite Simpson rule with two panels of width
+$h_0$. Then
+$$\Bigl|\Bigl(\int_\alpha^\beta g - S_2\Bigr) + \frac{S - S_2}{15}\Bigr| \le \frac{h_0^5}{1350}
+  \omega.$$
+This makes the estimator (9.42)–(9.44) of [quarteroni2000numerical] rigorous.
 
-From the two mean value formulae `∫ g - S = -(2h₀)⁵/2880 · g⁗(ξ)` and
-`∫ g - S₂ = -(2h₀)⁵/(16 · 2880) · g⁗(ξ₂)`, the combination is `(2h₀)⁵ (g⁗(ξ) - g⁗(ξ₂))/43200`.
-The book's `|I - S₂| ≃ |S - S₂|/15` is this with `ω` neglected; note the sign,
-`I - S₂ ≈ -(S - S₂)/15`. -/
+The two mean value formulas $\int g - S = -(2h_0)^5 g_4(\xi)/2880$ and $\int g - S_2 = -(2h_0)^5
+g_4(\xi_2)/(16 \cdot 2880)$ show that the combination is
+$(2h_0)^5 (g_4(\xi) - g_4(\xi_2))/43200$. The estimate $|I - S_2| \simeq |S - S_2|/15$ of the
+book is this bound with $\omega$ neglected. Note the sign: $I - S_2 \approx -(S - S_2)/15$. The
+rules are `Quadrature.simpsonSum` with one panel of width $\beta - \alpha$ and with two panels
+of width $h_0$. -/
 theorem abs_sub_simpson_add_estimate_le (hαβ : α < β)
     (hg : ∀ x ∈ Icc α β, HasDerivAt g (g' x) x) (hg' : ∀ x ∈ Icc α β, HasDerivAt g' (g'' x) x)
     (hg'' : ∀ x ∈ Icc α β, HasDerivAt g'' (g₃ x) x)

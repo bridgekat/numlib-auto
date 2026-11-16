@@ -7,36 +7,37 @@ import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
-# The Fourier truncation projection on `L²` of the circle
+# The Fourier truncation projection on $L^2$ of the circle
 
-The truncation of a Fourier series to the frequencies of absolute value at most `n` is the
-orthogonal projection of `L²(AddCircle T)` onto the trigonometric polynomials of that degree. This
-file packages it as a bounded operator, so that it can be fed to the projection method framework:
-it is idempotent, of norm at most one, and it converges pointwise to the identity.
+Let $T > 0$ and let $L^2(\mathbb{T}_T)$ be the real $L^2$ space of the circle of circumference $T$
+with its Haar probability measure. The truncation $P_n$ of a Fourier series to the frequencies of
+absolute value at most $n$ is the orthogonal projection of $L^2(\mathbb{T}_T)$ onto the
+trigonometric polynomials of degree at most $n$. This module defines $P_n$ as a bounded operator, so
+that it can be used in the framework of projection methods. It proves that $P_n$ is idempotent, that
+$\|P_n\| \le 1$, and that $P_n f \to f$ for every $f$.
 
-The Fourier–Galerkin method for an integral equation on the circle is the projection method for
-this family, and the two facts a projection method asks for — uniform boundedness of the
-projections and their pointwise convergence — are exactly the last two results below.
+The Fourier–Galerkin method for an integral equation on the circle is the projection method for the
+family $(P_n)$. The two facts that a projection method needs, the uniform boundedness of the
+projections and their pointwise convergence, are the last two results below. The $L^2$ convergence
+of Fourier series is Example 1.3.15 of [han2009theoretical], and the projection method that uses
+these facts is in §12.2.4 and §13.3.1 of [han2009theoretical].
 
 ## Main definitions
 
-* `trigPolyLp T n` is the subspace of `L²` spanned by the members of the real trigonometric system
-  of index at most `n` in absolute value; it is the image in `L²` of the space `trigPolyLE T n` of
+* `trigPolyLp`: the subspace of $L^2(\mathbb{T}_T)$ spanned by the members $t_m$ of the real
+  trigonometric system with $|m| \le n$. It is the image in $L^2$ of the space `trigPolyLE T n` of
   continuous trigonometric polynomials.
-* `trigProjCLM T n` is the orthogonal projection onto it, the Fourier truncation `P_n`.
+* `trigProjCLM`: the orthogonal projection $P_n$ onto this subspace, the Fourier truncation.
 
 ## Main results
 
-* `isIdempotentElem_trigProjCLM` and `norm_trigProjCLM_le_one`: `P_n` is a projection of norm at
-  most one, so the family is uniformly bounded — with no Lebesgue constant, unlike the truncation
-  read on the *continuous* functions, whose norm grows like `log n`.
-* `tendsto_trigProjCLM`: `P_n f → f` in `L²` for every `f`, which is Parseval's identity read
+* `isIdempotentElem_trigProjCLM`: $P_n^2 = P_n$.
+* `norm_trigProjCLM_le_one`: $\|P_n\| \le 1$, so the family $(P_n)$ is uniformly bounded. There is
+  no Lebesgue constant, unlike for the truncation on the continuous functions, whose norm grows like
+  $\log n$.
+* `tendsto_norm_sub_trigPartialSum`: the $L^2$ error of the Fourier partial sum tends to $0$.
+* `tendsto_trigProjCLM`: $P_n f \to f$ in $L^2$ for every $f$, which is Parseval's identity read
   along the symmetric blocks of frequencies.
-
-## References
-
-The `L²` convergence of Fourier series is [han2009theoretical] Example 1.3.15, and the projection
-method that consumes these facts is [han2009theoretical] §12.2.4 and §13.3.1.
 -/
 
 open AddCircle Filter MeasureTheory Submodule Topology
@@ -45,9 +46,11 @@ open scoped Real
 
 variable {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
 
-/-- **The trigonometric polynomials of degree at most `n` in `L²`**: the span of the members
-`trigLp T m` of the real trigonometric system with `|m| ≤ n`. It is the `L²` counterpart of
-`trigPolyLE`, and is `2 n + 1`-dimensional. -/
+/-- The **trigonometric polynomials of degree at most $n$ in $L^2$**: for $T > 0$ and
+$n \in \mathbb{N}$, the subspace of $L^2(\mathbb{T}_T)$ spanned by the members $t_m$ of the real
+trigonometric system with $|m| \le n$.
+
+It is the $L^2$ counterpart of `trigPolyLE`, and it has dimension $2n + 1$. -/
 noncomputable def trigPolyLp (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
     Submodule ℝ (Lp ℝ 2 (@haarAddCircle T hT)) :=
   span ℝ (trigLp T '' Set.Icc (-(n : ℤ)) n)
@@ -58,39 +61,48 @@ instance : FiniteDimensional ℝ (trigPolyLp T n) :=
 instance : (trigPolyLp T n).HasOrthogonalProjection :=
   HasOrthogonalProjection.ofCompleteSpace _
 
-/-- Each member of the real trigonometric system of index at most `n` in absolute value is a
-trigonometric polynomial of degree at most `n`. -/
+/-- For $m \in \mathbb{Z}$ with $-n \le m \le n$, the member $t_m$ of the real trigonometric system
+lies in the subspace `trigPolyLp T n`. -/
 theorem trigLp_mem_trigPolyLp {m : ℤ} (hm : m ∈ Finset.Icc (-(n : ℤ)) n) :
     trigLp T m ∈ trigPolyLp T n :=
   subset_span ⟨m, Set.mem_Icc.2 (Finset.mem_Icc.1 hm), rfl⟩
 
-/-- The Fourier partial sum of an `L²` function is a trigonometric polynomial of degree at most
-`n`. -/
+/-- For $f \in L^2(\mathbb{T}_T)$ and $n \in \mathbb{N}$, the Fourier partial sum
+$S_n f = \sum_{|m| \le n} r_m(f) \, t_m$ lies in the subspace of trigonometric polynomials of
+degree at most $n$. -/
 theorem trigPartialSum_mem_trigPolyLp (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     trigPartialSum n f ∈ trigPolyLp T n :=
   sum_mem fun _ hm => Submodule.smul_mem _ _ (trigLp_mem_trigPolyLp hm)
 
-/-- **The Fourier truncation `P_n` on `L²` of the circle**: the orthogonal projection onto the
-trigonometric polynomials of degree at most `n`.  It agrees with the partial sum
-`trigPartialSum n`, which is what makes it computable from the Fourier coefficients; what is used
-below is only that it is an orthogonal projection onto a space containing that partial sum. -/
+/-- The **Fourier truncation** $P_n$ on $L^2(\mathbb{T}_T)$, for $T > 0$ and $n \in \mathbb{N}$: the
+orthogonal projection onto the subspace of trigonometric polynomials of degree at most $n$, as a
+bounded linear operator.
+
+The operator agrees with the partial sum $S_n$ (`trigPartialSum n`), and this makes it
+computable from the Fourier coefficients. The results below use only that $P_n$ is an orthogonal
+projection onto a subspace that contains $S_n f$. -/
 noncomputable def trigProjCLM (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
     Lp ℝ 2 (@haarAddCircle T hT) →L[ℝ] Lp ℝ 2 (@haarAddCircle T hT) :=
   (trigPolyLp T n).starProjection
 
-/-- The Fourier truncation is a projection. -/
+/-- The Fourier truncation is a projection: $P_n^2 = P_n$ for every $T > 0$ and $n \in \mathbb{N}$.
+-/
 theorem isIdempotentElem_trigProjCLM (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
     IsIdempotentElem (trigProjCLM T n) :=
   isIdempotentElem_starProjection _
 
-/-- **The Fourier truncation has norm at most one on `L²`.**  It is an orthogonal projection, so
-the family `P_n` is uniformly bounded for free — in contrast with the same truncation read on the
-continuous periodic functions, whose norm is the Lebesgue constant `O(log n)`. -/
+/-- **The Fourier truncation has norm at most one on $L^2$**: for every $T > 0$ and
+$n \in \mathbb{N}$, $\|P_n\| \le 1$.
+
+The operator $P_n$ is an orthogonal projection, so the family $(P_n)$ is uniformly bounded. In
+contrast, the same truncation on the continuous periodic functions has as its norm the Lebesgue
+constant, which grows like $\log n$. -/
 theorem norm_trigProjCLM_le_one (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) : ‖trigProjCLM T n‖ ≤ 1 :=
   starProjection_norm_le _
 
-/-- The `L²` error of the Fourier partial sum tends to zero: this is Parseval's identity read along
-the symmetric blocks of frequencies. -/
+/-- For $f \in L^2(\mathbb{T}_T)$, the $L^2$ error of the Fourier partial sum tends to zero:
+$$\|f - S_n f\| \to 0 \quad \text{as } n \to \infty.$$
+This is Parseval's identity read along the symmetric blocks of frequencies $|m| \le n$. -/
 theorem tendsto_norm_sub_trigPartialSum (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     Tendsto (fun n => ‖f - trigPartialSum n f‖) atTop (𝓝 0) := by
   have hpart : Tendsto (fun n : ℕ => ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
@@ -103,11 +115,15 @@ theorem tendsto_norm_sub_trigPartialSum (f : Lp ℝ 2 (@haarAddCircle T hT)) :
   simpa [Function.comp_def, Real.sqrt_sq (norm_nonneg _)] using
     (Real.continuous_sqrt.tendsto 0).comp hsq
 
-/-- **The Fourier truncations converge pointwise to the identity on `L²`.**  Together with
-`norm_trigProjCLM_le_one` this is everything a projection method asks of the family `P_n`.
+/-- **The Fourier truncations converge pointwise to the identity on $L^2$**: for every
+$f \in L^2(\mathbb{T}_T)$,
+$$P_n f \to f \quad \text{in } L^2 \text{ as } n \to \infty.$$
+Together with `norm_trigProjCLM_le_one`, this is everything that a projection method needs from
+the family $(P_n)$.
 
-The orthogonal projection is at least as good as the partial sum, which lies in the same subspace,
-so the bound is the `L²` truncation error of the Fourier series. -/
+The orthogonal projection is at least as good an approximation as the partial sum $S_n f$, which
+lies in the same subspace. So $\|f - P_n f\| \le \|f - S_n f\|$, and the bound tends to $0$ by
+`tendsto_norm_sub_trigPartialSum`. -/
 theorem tendsto_trigProjCLM (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     Tendsto (fun n => trigProjCLM T n f) atTop (𝓝 f) := by
   rw [tendsto_iff_norm_sub_tendsto_zero]

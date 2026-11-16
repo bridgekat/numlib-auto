@@ -7,45 +7,54 @@ import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 /-!
 # Richardson extrapolation and Romberg integration
 
-A quantity `𝒜(h)` with an asymptotic expansion `α₀ + α₁ h + ⋯ + α_k h^k + R(h)`,
-`|R(h)| ≤ C h^{k+1}`, is sampled at the geometric sequence `h_m = δ^m h`, `0 < δ < 1`. The
-combination `(𝒜(δ h) - δ^p 𝒜(h))/(1 - δ^p)` kills the `h^p` term and keeps an expansion of the
-same shape;
-iterating gives the triangular *extrapolation table* whose `q`-th column converges at order
-`q + 1` ([quarteroni2000numerical] §9.6, Property 9.2). *Romberg integration* is the table built
-on the composite trapezoidal sums with `2^m` panels, whose expansion in `h²` is the
-Euler–Maclaurin formula of `Numlib/Analysis/SpecialFunctions/EulerMaclaurin`; its first column
-is the composite Simpson rule.
-
-Everything is stated for the *sampled* sequence `A : ℕ → ℝ`, `A m = 𝒜(δ^m h)`, which is what the
-algorithm consumes and which lets Romberg's parameter `η = h_m² = (1/4)^m (b - a)²` be an instance
-without a square root: `Richardson.HasExpansion A δ h α k C` says
-`|A m - ∑_{i ≤ k} α i (δ^m h)^i| ≤ C (δ^m h)^{k+1}` for every `m`. The constants are explicit
-and independent of `m`, so the `O(·)` of the book is a genuine bound.
+Let a quantity $\mathcal{A}(h)$ have an asymptotic expansion $\mathcal{A}(h) = \alpha_0 + \alpha_1
+h + \dots + \alpha_k h^k + R(h)$ with $|R(h)| \le C h^{k+1}$, and sample it on the geometric
+sequence $h_m = \delta^m h$, $0 < \delta < 1$. The combination
+$$\frac{\mathcal{A}(\delta h) - \delta^p \mathcal{A}(h)}{1 - \delta^p}$$
+removes the term in $h^p$ and keeps an expansion of the same form. **Richardson extrapolation**
+iterates this step. It gives a triangular extrapolation table whose $q$-th column converges to
+$\alpha_0$ at the order $q + 1$ (Property 9.2 of [quarteroni2000numerical]). **Romberg integration**
+is the table built on the composite trapezoidal sums with $2^m$ panels. Their expansion in $h^2$ is
+the Euler–Maclaurin formula of `Numlib.Analysis.SpecialFunctions.EulerMaclaurin`, and the first
+extrapolated column is the composite Simpson rule. The presentation follows §9.6 and §9.7 of
+[quarteroni2000numerical] and §9.5 of [kress1998numerical].
 
 ## Main definitions
 
-* `Richardson.HasExpansion`, `Richardson.step`, `Richardson.table` — the expansion, one
-  extrapolation step of order `p`, and the table (9.34).
-* `Romberg.table` — the Romberg table, `Richardson.table` at `δ = 1/4` on the trapezoidal sums.
+* `Richardson.HasExpansion`: a sampled sequence $A_m = \mathcal{A}(\delta^m h)$ has an expansion of
+  order $k$ with an explicit constant.
+* `Richardson.step`: one extrapolation step of order $p$.
+* `Richardson.table`: the extrapolation table (9.34) of [quarteroni2000numerical].
+* `Romberg.table`: the Romberg table, which is `Richardson.table` with $\delta = 1/4$ on the
+  composite trapezoidal sums.
+* `Romberg.eulerMaclaurinCoeff`: the coefficients of the Euler–Maclaurin expansion of the
+  trapezoidal rule in $h^2$.
 
 ## Main results
 
-* `Richardson.hasExpansion_step` — one step kills the `h^p` term and keeps an expansion with the
-  coefficients `α_i (δ^i - δ^p)/(1 - δ^p)`.
-* `Richardson.hasExpansion_table`, `Richardson.exists_abs_table_sub_le` — the `q`-th column has
-  an expansion with `α₀` unchanged and `α_1, …, α_q` zero, hence
-  `|A_{m,q} - α₀| ≤ C_q (δ^m h)^{q+1}` for `q ≤ m` (Property 9.2).
-* `Richardson.abs_sub_sub_estimate_le` — the two-term a posteriori estimator behind (9.40).
-* `Romberg.table_succ`, `Romberg.table_one_eq_simpsonSum` — the `4^{q+1}` recursion (9.37) and
-  the identification of the first column with composite Simpson.
-* `Romberg.hasExpansion_trapezoidSum`, `Romberg.exists_abs_table_sub_integral_le` — the
-  Euler–Maclaurin expansion as a `HasExpansion`, and the convergence of Romberg's table at order
-  `2(q + 1)` in the mesh.
+* `Richardson.hasExpansion_step`: one step removes the term in $h^p$ and keeps an expansion, with
+  the coefficients $\alpha_i (\delta^i - \delta^p)/(1 - \delta^p)$.
+* `Richardson.hasExpansion_table`: the $q$-th column has an expansion with the same $\alpha_0$ and
+  with $\alpha_1 = \dots = \alpha_q = 0$.
+* `Richardson.exists_abs_table_sub_le`: $|A_{m,q} - \alpha_0| \le C_q (\delta^m h)^{q+1}$ for
+  $q \le m$.
+* `Richardson.abs_sub_sub_estimate_le`: the a posteriori error estimate behind (9.40) of
+  [quarteroni2000numerical].
+* `Romberg.table_succ`: the Romberg recursion $A_{m,q+1} = (4^{q+1} A_{m,q} - A_{m-1,q})/(4^{q+1} -
+  1)$.
+* `Romberg.table_one_eq_simpsonSum`: the first extrapolated column is the composite Simpson rule.
+* `Romberg.hasExpansion_trapezoidSum`: the Euler–Maclaurin formula as an expansion in the sense of
+  `Richardson.HasExpansion`.
+* `Romberg.exists_abs_table_sub_integral_le`: the $q$-th Romberg column converges to the integral at
+  the order $2(q + 1)$ in the mesh.
 
-## References
+## Implementation notes
 
-[quarteroni2000numerical] §9.6–9.7; [kress1998numerical] §9.5.
+* All results are about the sampled sequence $A_m = \mathcal{A}(\delta^m h)$, given as `A : ℕ → ℝ`,
+  which is what the algorithm uses. Then Romberg's parameter $\eta_m = h_m^2 = (1/4)^m (b - a)^2$ is
+  a case of the general theory without a square root.
+* The constants in the expansions are explicit and independent of $m$. So the $O(\cdot)$ of
+  [quarteroni2000numerical] is a bound with a constant.
 -/
 
 open Filter Set Topology intervalIntegral
@@ -53,45 +62,49 @@ open scoped Nat
 
 namespace Richardson
 
-/-- **An asymptotic expansion, sampled geometrically**: `A m = 𝒜(δ^m h)` satisfies
-`|A m - ∑_{i ≤ k} α i (δ^m h)^i| ≤ C (δ^m h)^{k+1}` for every `m`.
-
-Reference: [quarteroni2000numerical], (9.33). -/
+/-- **An asymptotic expansion, sampled on a geometric sequence.** Let $A_0, A_1, \dots$ be real
+numbers, let $\delta, h, C \in \mathbb{R}$, let $\alpha_0, \alpha_1, \dots$ be real coefficients
+and let $k \in \mathbb{N}$. The sequence $A$ has the **expansion** $(\alpha, k, C)$ in the
+parameter $\delta^m h$ if for every $m$,
+$$\Bigl| A_m - \sum_{i=0}^{k} \alpha_i (\delta^m h)^i \Bigr| \le C (\delta^m h)^{k+1}.$$
+This is (9.33) of [quarteroni2000numerical], with $A_m = \mathcal{A}(\delta^m h)$. -/
 def HasExpansion (A : ℕ → ℝ) (δ h : ℝ) (α : ℕ → ℝ) (k : ℕ) (C : ℝ) : Prop :=
   ∀ m, |A m - ∑ i ∈ Finset.range (k + 1), α i * (δ ^ m * h) ^ i| ≤ C * (δ ^ m * h) ^ (k + 1)
 
-/-- **One extrapolation step of order `p`**, `(A (m + 1) - δ^p A m)/(1 - δ^p)`: the book's
-`ℬ(h) = (𝒜(δ h) - δ^p 𝒜(h))/(1 - δ^p)` at `h = δ^m h`.
-
-Reference: [quarteroni2000numerical], §9.6. -/
+/-- **One extrapolation step of order $p$:**
+$$B_m = \frac{A_{m+1} - \delta^p A_m}{1 - \delta^p}.$$
+This is $\mathcal{B}(h) = (\mathcal{A}(\delta h) - \delta^p \mathcal{A}(h))/(1 - \delta^p)$ of
+§9.6 of [quarteroni2000numerical], at the parameter $\delta^m h$. -/
 noncomputable def step (A : ℕ → ℝ) (δ : ℝ) (p : ℕ) (m : ℕ) : ℝ :=
   (A (m + 1) - δ ^ p * A m) / (1 - δ ^ p)
 
-/-- **The extrapolation table**: `table A δ m 0 = A m` and
-`table A δ m (q + 1) = (table A δ m q - δ^{q+1} table A δ (m - 1) q)/(1 - δ^{q+1})`. Entries with
-`m < q` are junk, as `m - 1` truncates.
+/-- **The extrapolation table** (9.34) of [quarteroni2000numerical]: $A_{m,0} = A_m$ and
+$$A_{m,q+1} = \frac{A_{m,q} - \delta^{q+1} A_{m-1,q}}{1 - \delta^{q+1}}.$$
 
-Reference: [quarteroni2000numerical], (9.34). -/
+The entries with $m < q$ have no meaning, because $m - 1$ is truncated at $0$ in `ℕ`. -/
 noncomputable def table (A : ℕ → ℝ) (δ : ℝ) : ℕ → ℕ → ℝ
   | m, 0 => A m
   | m, q + 1 => (table A δ m q - δ ^ (q + 1) * table A δ (m - 1) q) / (1 - δ ^ (q + 1))
 
-/-- The first column of the table is the sampled sequence. -/
+/-- The column $0$ of the extrapolation table is the sampled sequence: $A_{m,0} = A_m$. -/
 @[simp]
 theorem table_zero (A : ℕ → ℝ) (δ : ℝ) (m : ℕ) : table A δ m 0 = A m := rfl
 
-/-- **The next column is one step applied to the previous one**:
-`table A δ (m + 1) (q + 1) = step (fun m => table A δ m q) δ (q + 1) m`. -/
+/-- **The next column is one step applied to the previous column.** The entry $A_{m+1,q+1}$ is the
+extrapolation step of order $q + 1$, at index $m$, applied to the column $m \mapsto A_{m,q}$. -/
 theorem table_succ (A : ℕ → ℝ) (δ : ℝ) (m q : ℕ) :
     table A δ (m + 1) (q + 1) = step (fun m => table A δ m q) δ (q + 1) m := by
   simp [table, step]
 
-/-- **One step kills the `h^p` term and keeps the expansion.** If `HasExpansion A δ h α k C` with
-`0 < δ < 1`, `0 < h` and `0 < p` (in use, `p ≤ k`), then the stepped sequence has the expansion
-with coefficients `α̃_i = α_i (δ^i - δ^p)/(1 - δ^p)` — so `α̃_0 = α_0`, `α̃_p = 0` — and the
-constant `C (δ^{k+1} + δ^p)/(1 - δ^p)`.
+/-- **One step removes the term in $h^p$ and keeps the expansion.** Let $0 < \delta < 1$, $h > 0$
+and $p > 0$, and let $A$ have the expansion $(\alpha, k, C)$ in the parameter $\delta^m h$. Then
+the sequence of one extrapolation step of order $p$ has the expansion with the coefficients
+$$\tilde\alpha_i = \alpha_i \frac{\delta^i - \delta^p}{1 - \delta^p},$$
+the same order $k$ and the constant $C (\delta^{k+1} + \delta^p)/(1 - \delta^p)$. In particular
+$\tilde\alpha_0 = \alpha_0$ and $\tilde\alpha_p = 0$. This is the display after (9.33) in §9.6
+of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], §9.6, the display after (9.33). -/
+In applications $p \le k$, but the result does not need it. -/
 theorem hasExpansion_step {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k : ℕ} {C : ℝ}
     (hA : HasExpansion A δ h α k C) (hδ0 : 0 < δ) (hδ1 : δ < 1) (hh : 0 < h) {p : ℕ}
     (hp : 0 < p) :
@@ -136,10 +149,15 @@ theorem hasExpansion_step {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k :
     _ ≤ C * δ ^ (k + 1) * u ^ (k + 1) + δ ^ p * (C * u ^ (k + 1)) := by gcongr
     _ = C * (δ ^ (k + 1) + δ ^ p) * u ^ (k + 1) := by ring
 
-/-- **The `q`-th column has an expansion with `α₀` unchanged and `α_1, …, α_q` zero**, in the
-parameter `δ^m h` of its first ingredient: for `q ≤ k` there are `α'` and `C'` with `α' 0 = α 0`,
-`α' i = 0` for `1 ≤ i ≤ q`, and `HasExpansion (fun m => table A δ (m + q) q) δ h α' k C'`.
-Induction on `q` through `table_succ` and `hasExpansion_step`. -/
+/-- **The $q$-th column has an expansion with the same $\alpha_0$ and with
+$\alpha_1, \dots, \alpha_q$ zero.** Let $0 < \delta < 1$, $h > 0$ and $q \le k$, and let $A$
+have the expansion $(\alpha, k, C)$ in the parameter $\delta^m h$. Then there are coefficients
+$\alpha'$ and a constant $C'$ with $\alpha'_0 = \alpha_0$ and $\alpha'_i = 0$ for
+$1 \le i \le q$, such that the sequence $m \mapsto A_{m+q,q}$ has the expansion
+$(\alpha', k, C')$ in the parameter $\delta^m h$.
+
+The proof is an induction on $q$ with `Richardson.table_succ` and
+`Richardson.hasExpansion_step`. -/
 theorem hasExpansion_table {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k : ℕ} {C : ℝ}
     (hA : HasExpansion A δ h α k C) (hδ0 : 0 < δ) (hδ1 : δ < 1) (hh : 0 < h) {q : ℕ}
     (hqk : q ≤ k) :
@@ -175,8 +193,8 @@ theorem hasExpansion_table {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k 
       rw [e]
       exact this m
 
-/-- The powers of `u ∈ [0, 1 + h]` beyond `q + 1` are bounded by `(1 + h)^{k+1} u^{q+1}`, for
-`j ≤ k + 1`. -/
+/-- For $0 \le u \le 1 + h$, $h > 0$ and $q + 1 \le j \le k + 1$, we have
+$u^j \le (1 + h)^{k+1} u^{q+1}$. -/
 private theorem pow_le_of_le {u h : ℝ} (hu : 0 ≤ u) (huh : u ≤ 1 + h) (hh : 0 < h) {q j k : ℕ}
     (hqj : q + 1 ≤ j) (hjk : j ≤ k + 1) : u ^ j ≤ (1 + h) ^ (k + 1) * u ^ (q + 1) := by
   obtain ⟨d, rfl⟩ : ∃ d, j = q + 1 + d := ⟨j - (q + 1), by omega⟩
@@ -185,8 +203,11 @@ private theorem pow_le_of_le {u h : ℝ} (hu : 0 ≤ u) (huh : u ≤ 1 + h) (hh 
   calc u ^ d ≤ (1 + h) ^ d := pow_le_pow_left₀ hu huh _
     _ ≤ (1 + h) ^ (k + 1) := pow_le_pow_right₀ (by linarith) (by omega)
 
-/-- An expansion whose coefficients `α 1, …, α q` vanish converges to `α 0` at order `q + 1`,
-with an explicit constant. -/
+/-- Let $0 < \delta \le 1$, $h > 0$ and $q \le k$, and let $B$ have the expansion $(\alpha, k, C)$
+in the parameter $\delta^m h$, with $\alpha_i = 0$ for $1 \le i \le q$. Then for every $m$,
+$$|B_m - \alpha_0| \le \Bigl( \sum_{i=0}^{k} |\alpha_i| + |C| \Bigr) (1 + h)^{k+1} (\delta^m
+  h)^{q+1}.$$
+-/
 theorem abs_sub_le_of_hasExpansion {B : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k : ℕ} {C : ℝ}
     (hB : HasExpansion B δ h α k C) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) (hh : 0 < h) {q : ℕ}
     (hqk : q ≤ k) (hzero : ∀ i, 1 ≤ i → i ≤ q → α i = 0) (m : ℕ) :
@@ -239,11 +260,13 @@ theorem abs_sub_le_of_hasExpansion {B : ℕ → ℝ} {δ h : ℝ} {α : ℕ → 
         exact mul_le_mul_of_nonneg_right (le_add_of_nonneg_right (abs_nonneg _)) hM
     _ = _ := by ring
 
-/-- **Property 9.2** ([quarteroni2000numerical] (9.35)), in the reading
-`A_{m,q} = α₀ + O((δ^m h)^{q+1})` for `q ≤ m`: if `HasExpansion A δ h α k C` with `0 < δ < 1`,
-`0 < h` and `q ≤ k`, there is `C'` with `|table A δ m q - α 0| ≤ C' (δ^m h)^{q+1}` for all
-`m ≥ q`, `C'` independent of `m`. The book indexes (9.35) as `A_{m,n}` for `m = 0, …, n`, which
-(9.34) does not define; this is the intended statement. -/
+/-- **Property 9.2** of [quarteroni2000numerical], (9.35). Let $0 < \delta < 1$, $h > 0$ and
+$q \le k$, and let $A$ have the expansion $(\alpha, k, C)$ in the parameter $\delta^m h$. Then
+there is a constant $C'$, independent of $m$, with
+$$|A_{m,q} - \alpha_0| \le C' (\delta^m h)^{q+1} \qquad \text{for all } m \ge q.$$
+
+The source writes (9.35) for $A_{m,n}$ with $m = 0, \dots, n$, which (9.34) does not define. The
+statement here is the reading $A_{m,q} = \alpha_0 + O((\delta^m h)^{q+1})$ for $q \le m$. -/
 theorem exists_abs_table_sub_le {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k : ℕ} {C : ℝ}
     (hA : HasExpansion A δ h α k C) (hδ0 : 0 < δ) (hδ1 : δ < 1) (hh : 0 < h) {q : ℕ}
     (hqk : q ≤ k) :
@@ -261,12 +284,14 @@ theorem exists_abs_table_sub_le {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ
   rw [e]
   field_simp
 
-/-- **The a posteriori estimator** behind [quarteroni2000numerical] (9.40): if
-`|A m - α₀ - c (δ^m h)^p| ≤ C (δ^m h)^q` for all `m`, with `0 < p` and `0 < δ < 1` (in use,
-`p < q`), then
-`|α₀ - A (m + 1) - δ^p/(1 - δ^p) (A (m + 1) - A m)| ≤ C (δ^q + δ^p)/(1 - δ^p) (δ^m h)^q`
-for every `m`: with `δ = 1/2` this is `α₀ - A(2m) ≈ (A(2m) - A(m))/(2^p - 1)`, and the neglected
-term is of the next order. -/
+/-- **The a posteriori error estimate** behind (9.40) of [quarteroni2000numerical]. Let
+$0 < \delta < 1$ and $p > 0$, and let $A$ satisfy $|A_m - \alpha_0 - c (\delta^m h)^p| \le C
+(\delta^m h)^q$ for all $m$. Then for every $m$,
+$$\Bigl| \alpha_0 - A_{m+1} - \frac{\delta^p}{1 - \delta^p} (A_{m+1} - A_m) \Bigr| \le C
+  \frac{\delta^q + \delta^p}{1 - \delta^p} (\delta^m h)^q.$$
+
+In applications $p < q$. With $\delta = 1/2$ the estimate is $\alpha_0 - A(2m) \approx (A(2m) -
+A(m))/(2^p - 1)$, and the neglected term is of the next order. -/
 theorem abs_sub_sub_estimate_le {A : ℕ → ℝ} {δ h α₀ c C : ℝ} {p q : ℕ} (hδ0 : 0 < δ)
     (hδ1 : δ < 1) (hp : 0 < p)
     (hA : ∀ m, |A m - α₀ - c * (δ ^ m * h) ^ p| ≤ C * (δ ^ m * h) ^ q) (m : ℕ) :
@@ -305,20 +330,23 @@ namespace Romberg
 
 open Quadrature
 
-/-- **The Romberg table**: Richardson extrapolation with `δ = 1/4` of the composite trapezoidal
-sums on `2^m` panels, that is, `𝒜(η) = T(√η)` sampled at `η = (b - a)²/4^m`.
-
-Reference: [quarteroni2000numerical], §9.6.1. -/
+/-- **The Romberg table** of $f$ on $[a, b]$: Richardson extrapolation with $\delta = 1/4$ of the
+composite trapezoidal sums $T_{2^m}$ with $2^m$ panels of length $(b - a)/2^m$. This is
+$\mathcal{A}(\eta) = T(\sqrt{\eta})$ sampled at $\eta = (b - a)^2/4^m$, as in §9.6.1 of
+[quarteroni2000numerical]. -/
 noncomputable def table (f : ℝ → ℝ) (a b : ℝ) : ℕ → ℕ → ℝ :=
   Richardson.table (fun m => trapezoidSum f a ((b - a) / 2 ^ m) (2 ^ m)) (1 / 4)
 
-/-- The first column of the Romberg table is the composite trapezoidal rule. -/
+/-- The column $0$ of the Romberg table is the composite trapezoidal rule: $A_{m,0} = T_{2^m}$, with
+$2^m$ panels of length $(b - a)/2^m$. -/
 @[simp]
 theorem table_zero (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     table f a b m 0 = trapezoidSum f a ((b - a) / 2 ^ m) (2 ^ m) := rfl
 
-/-- **The Romberg recursion** ([quarteroni2000numerical], the display after (9.37)):
-`A_{m,q+1} = (4^{q+1} A_{m,q} - A_{m-1,q})/(4^{q+1} - 1)`. -/
+/-- **The Romberg recursion**, the display after (9.37) of [quarteroni2000numerical]: for all $m$
+and $q$,
+$$A_{m,q+1} = \frac{4^{q+1} A_{m,q} - A_{m-1,q}}{4^{q+1} - 1}.$$
+-/
 theorem table_succ (f : ℝ → ℝ) (a b : ℝ) (m q : ℕ) :
     table f a b m (q + 1)
       = (4 ^ (q + 1) * table f a b m q - table f a b (m - 1) q) / (4 ^ (q + 1) - 1) := by
@@ -329,11 +357,12 @@ theorem table_succ (f : ℝ → ℝ) (a b : ℝ) (m q : ℕ) :
   simp only [table, Richardson.table, one_div_pow]
   field_simp
 
-/-- **The first extrapolated column is composite Simpson**:
-`A_{m+1,1} = S_{2^m}`, i.e. `(4 T_{2N} - T_N)/3 = S_N`, by reindexing the `2N`-panel trapezoidal
-sum by parity.
+/-- **The first extrapolated column is the composite Simpson rule.** For every $m$,
+$A_{m+1,1} = S_{2^m}$, the composite Simpson sum with $2^m$ panels of length $(b - a)/2^m$. This
+is stated in §9.6.1 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], §9.6.1 ("`T_1` is Simpson"). -/
+The identity is $(4 T_{2N} - T_N)/3 = S_N$, which follows by writing the trapezoidal sum with
+$2N$ panels as a sum over even and odd indices. -/
 theorem table_one_eq_simpsonSum (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     table f a b (m + 1) 1 = simpsonSum f a ((b - a) / 2 ^ m) (2 ^ m) := by
   rw [table_succ, Nat.add_sub_cancel, table_zero, table_zero, zero_add, pow_one,
@@ -342,19 +371,23 @@ theorem table_one_eq_simpsonSum (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
   rw [h2, show (2 : ℕ) ^ (m + 1) = 2 * 2 ^ m by ring]
   norm_num
 
-/-- The Euler–Maclaurin coefficients of the trapezoidal rule as a Richardson expansion in `h²`:
-`α 0 = ∫_a^b f` and `α i = B_{2i}/(2i)! (f^{(2i-1)}(b) - f^{(2i-1)}(a))` for `i ≥ 1`. -/
+/-- The coefficients of the Euler–Maclaurin expansion of the trapezoidal rule, as an expansion in
+$h^2$: $\alpha_0 = \int_a^b f$ and, for $i \ge 1$,
+$$\alpha_i = \frac{B_{2i}}{(2i)!} \bigl(f^{(2i-1)}(b) - f^{(2i-1)}(a)\bigr),$$
+where $B_{2i}$ is a Bernoulli number. -/
 noncomputable def eulerMaclaurinCoeff (f : ℝ → ℝ) (a b : ℝ) (i : ℕ) : ℝ :=
   if i = 0 then ∫ t in a..b, f t
   else ((bernoulli (2 * i) : ℚ) : ℝ) / (2 * i)! * (iteratedDeriv (2 * i - 1) f b
     - iteratedDeriv (2 * i - 1) f a)
 
-/-- **Euler–Maclaurin as a Richardson expansion.** For `a < b` and `f` of class `C^{2k+2}` on an
-open set containing `[a, b]`, the trapezoidal sums on `2^m` panels have the expansion
-`HasExpansion (fun m => T_{2^m}) (1/4) ((b - a)²) (eulerMaclaurinCoeff f a b) k C` with
-`C = |B_{2k+2}|/(2k+2)! (b - a) sup|f^{(2k+2)}|`: the parameter is `h_m² = (1/4)^m (b - a)²`.
+/-- **The Euler–Maclaurin formula as a Richardson expansion.** Let $a < b$, let $U$ be an open set
+that contains $[a, b]$, and let $f$ be of class $C^{2k+2}$ on $U$. Then the composite
+trapezoidal sums $T_{2^m}$ with $2^m$ panels have the expansion $(\alpha, k, C)$ in the
+parameter $(1/4)^m (b - a)^2 = h_m^2$, for some constant $C$, where $\alpha$ is
+`Romberg.eulerMaclaurinCoeff f a b`. This is in §9.6.1 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical], §9.6.1. -/
+The proof takes $C = |B_{2k+2}| (b - a) M / (2k + 2)!$, where $M$ bounds $|f^{(2k+2)}|$ on
+$[a, b]$. -/
 theorem hasExpansion_trapezoidSum {a b : ℝ} (hab : a < b) {k : ℕ} {f : ℝ → ℝ} {U : Set ℝ}
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) :
@@ -407,9 +440,12 @@ theorem hasExpansion_trapezoidSum {a b : ℝ} (hab : a < b) {k : ℕ} {f : ℝ �
         gcongr
     _ = _ := by ring
 
-/-- **Convergence of Romberg integration** ([quarteroni2000numerical] §9.6.1): for `a < b` and
-`f` of class `C^{2q+2}` on an open set containing `[a, b]`, there is `C` with
-`|A_{m,q} - ∫_a^b f| ≤ C ((b - a)/2^m)^{2(q+1)}` for all `m ≥ q`. -/
+/-- **Convergence of Romberg integration**, §9.6.1 of [quarteroni2000numerical]. Let $a < b$, let
+$U$ be an open set that contains $[a, b]$, and let $f$ be of class $C^{2q+2}$ on $U$. Then there
+is a constant $C$ with
+$$\Bigl| A_{m,q} - \int_a^b f \Bigr| \le C \Bigl(\frac{b - a}{2^m}\Bigr)^{2(q+1)} \qquad
+  \text{for all } m \ge q.$$
+-/
 theorem exists_abs_table_sub_integral_le {a b : ℝ} (hab : a < b) {q : ℕ} {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * q + 2 : ℕ) : WithTop ℕ∞) f U) :

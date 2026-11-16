@@ -7,18 +7,27 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Basic
 /-!
 # Taylor polynomials of linear compositions and of finite sums
 
-For the Taylor polynomial `T_{f,p}(x, s) = taylorPolynomial f p x s` of
-`Numlib.Analysis.Calculus.MultivariateTaylor.Basic`:
+Let $E$, $F$ and $G$ be real normed spaces. For $f \colon E \to F$ and a point $x \in E$, the Taylor
+polynomial of degree $p$ of $f$ at $x$ is $T_{f,p}(x, s) = \sum_{i=0}^{p} \frac{1}{i!} \nabla^i
+f(x)[s]^i$ (`taylorPolynomial`, from `Numlib.Analysis.Calculus.MultivariateTaylor.Basic`). This
+module shows that the Taylor polynomial commutes with composition on the right by a continuous
+linear map, with multiplication by a fixed vector, and with finite sums. Only smoothness at the base
+point is assumed.
 
-* `taylorPolynomial_comp_continuousLinearMap`: `T_{g ∘ U, p}(x, s) = T_{g, p}(U x, U s)` for a
-  continuous linear map `U`;
-* `taylorPolynomial_smul_const`: `T_{g v, p}(x, s) = T_{g, p}(x, s) v` for scalar `g`;
-* `taylorPolynomial_finset_sum`: `T_{∑ᵢ fᵢ, p}(x, s) = ∑ᵢ T_{fᵢ, p}(x, s)`;
-* `taylorPolynomial_finset_sum_comp_continuousLinearMap`: the combination below.
+Together these rules give the Taylor models of a partially separable function
+$f = \sum_i f_i \circ U_i$:
+$$T_{f,p}(x, s) = \sum_i T_{f_i,p}(U_i x, U_i s),$$
+as in (5.2.2) of [cartis2022evaluation].
 
-Together they give the Taylor models of partially separable functions `f = ∑ᵢ fᵢ ∘ Uᵢ`,
-`T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)` ([cartis2022evaluation], (5.2.2)). Only smoothness at the
-base point is assumed.
+## Main results
+
+* `taylorPolynomial_comp_continuousLinearMap`: $T_{g \circ U, p}(x, s) = T_{g, p}(Ux, Us)$ for a
+  continuous linear map $U$.
+* `taylorPolynomial_smul_const`: $T_{g v, p}(x, s) = T_{g, p}(x, s) \, v$ for a real-valued $g$ and
+  a fixed vector $v$.
+* `taylorPolynomial_finset_sum`: $T_{\sum_i f_i, p}(x, s) = \sum_i T_{f_i, p}(x, s)$.
+* `taylorPolynomial_finset_sum_comp_continuousLinearMap`: the Taylor model of a partially separable
+  function.
 -/
 
 open Finset Filter
@@ -27,9 +36,11 @@ open scoped Nat Topology
 variable {E F G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] [NormedAddCommGroup G] [NormedSpace ℝ G]
 
-/-- The iterated derivative of `g ∘ U` at `x`, for `U` continuous linear and `g` of class `C^n`
-at `U x`: `∇^i (g ∘ U)(x) = ∇^i g(U x) ∘ (U, …, U)` for `i ≤ n`. (A pointwise version of
-`ContinuousLinearMap.iteratedFDeriv_comp_right`.) -/
+/-- Let $U \colon E \to F$ be a continuous linear map, let $x \in E$, and let $g \colon F \to G$ be
+of class $C^n$ at $Ux$. Then for every $i \le n$,
+$$\nabla^i (g \circ U)(x) = \nabla^i g(Ux) \circ (U, \dots, U).$$
+
+This is a pointwise version of `ContinuousLinearMap.iteratedFDeriv_comp_right`. -/
 theorem ContDiffAt.iteratedFDeriv_comp_continuousLinearMap {g : F → G} (U : E →L[ℝ] F) {x : E}
     {n : ℕ} (hg : ContDiffAt ℝ n g (U x)) {i : ℕ} (hi : i ≤ n) :
     iteratedFDeriv ℝ i (g ∘ U) x =
@@ -42,8 +53,12 @@ theorem ContDiffAt.iteratedFDeriv_comp_continuousLinearMap {g : F → G} (U : E 
   rwa [iteratedFDerivWithin_of_isOpen i hpre (show x ∈ U ⁻¹' t from hxt),
     iteratedFDerivWithin_of_isOpen i ht hxt] at h
 
-/-- **Taylor polynomial of a linear composition** ([cartis2022evaluation], (5.2.2)): if `g` is
-`C^p` at `U x`, then `T_{g ∘ U, p}(x, s) = T_{g, p}(U x, U s)`. -/
+/-- **Taylor polynomial of a linear composition.** Let $U \colon E \to F$ be a continuous linear
+map, let $x \in E$, and let $g \colon F \to G$ be of class $C^p$ at $Ux$. Then for every
+$s \in E$,
+$$T_{g \circ U, p}(x, s) = T_{g, p}(Ux, Us).$$
+
+This is one ingredient of (5.2.2) of [cartis2022evaluation]. -/
 theorem taylorPolynomial_comp_continuousLinearMap {g : F → G} (U : E →L[ℝ] F) {p : ℕ} {x : E}
     (hg : ContDiffAt ℝ p g (U x)) (s : E) :
     taylorPolynomial (g ∘ U) p x s = taylorPolynomial g p (U x) (U s) := by
@@ -52,8 +67,10 @@ theorem taylorPolynomial_comp_continuousLinearMap {g : F → G} (U : E →L[ℝ]
   rw [hg.iteratedFDeriv_comp_continuousLinearMap U (Nat.lt_succ_iff.1 (mem_range.1 hi)),
     ContinuousMultilinearMap.compContinuousLinearMap_apply]
 
-/-- **Taylor polynomial of a scalar function times a fixed vector**: if `g : E → ℝ` is `C^p` at
-`x`, then `T_{g v, p}(x, s) = T_{g, p}(x, s) v`. -/
+/-- **Taylor polynomial of a scalar function times a fixed vector.** Let $g \colon E \to \mathbb{R}$
+be of class $C^p$ at $x$, and let $v \in F$. Then for every $s \in E$,
+$$T_{y \mapsto g(y) v, \, p}(x, s) = T_{g, p}(x, s) \, v.$$
+-/
 theorem taylorPolynomial_smul_const {g : E → ℝ} {p : ℕ} {x : E} (hg : ContDiffAt ℝ p g x) (v : F)
     (s : E) : taylorPolynomial (fun y => g y • v) p x s = taylorPolynomial g p x s • v := by
   have hcomp : (fun y => g y • v) =
@@ -66,8 +83,11 @@ theorem taylorPolynomial_smul_const {g : E → ℝ} {p : ℕ} {x : E} (hg : Cont
     (by exact_mod_cast Nat.lt_succ_iff.1 (mem_range.1 hi))]
   simp [smul_smul]
 
-/-- **Taylor polynomial of a finite sum** ([cartis2022evaluation], (5.2.2)): if every `f i` is
-`C^p` at `x`, then `T_{∑ᵢ fᵢ, p}(x, s) = ∑ᵢ T_{fᵢ, p}(x, s)`. -/
+/-- **Taylor polynomial of a finite sum.** Let $t$ be a finite index set, and let
+$f_i \colon E \to F$ be of class $C^p$ at $x$ for every $i \in t$. Then for every $s \in E$,
+$$T_{\sum_{i \in t} f_i, \, p}(x, s) = \sum_{i \in t} T_{f_i, p}(x, s).$$
+
+This is one ingredient of (5.2.2) of [cartis2022evaluation]. -/
 theorem taylorPolynomial_finset_sum {ι : Type*} {f : ι → E → F} {t : Finset ι} {p : ℕ} {x : E}
     (hf : ∀ i ∈ t, ContDiffAt ℝ p (f i) x) (s : E) :
     taylorPolynomial (fun y => ∑ i ∈ t, f i y) p x s = ∑ i ∈ t, taylorPolynomial (f i) p x s := by
@@ -78,9 +98,13 @@ theorem taylorPolynomial_finset_sum {ι : Type*} {f : ι → E → F} {t : Finse
   rw [iteratedFDeriv_fun_sum_apply fun i hi => (hf i hi).of_le hk', ← smul_sum,
     _root_.sum_apply]
 
-/-- **Taylor models of partially separable functions** ([cartis2022evaluation], (5.2.2)): for
-`f = ∑ᵢ fᵢ ∘ Uᵢ` with `Uᵢ` continuous linear and each `fᵢ` of class `C^p` at `Uᵢ x`,
-`T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)`. -/
+/-- **Taylor models of partially separable functions.** Let $t$ be a finite index set. For
+$i \in t$, let $G_i$ be a real normed space, let $U_i \colon E \to G_i$ be a continuous linear
+map, and let $f_i \colon G_i \to F$ be of class $C^p$ at $U_i x$. Let
+$f = \sum_{i \in t} f_i \circ U_i$. Then for every $s \in E$,
+$$T_{f,p}(x, s) = \sum_{i \in t} T_{f_i,p}(U_i x, U_i s).$$
+
+This is (5.2.2) of [cartis2022evaluation]. -/
 theorem taylorPolynomial_finset_sum_comp_continuousLinearMap {ι : Type*} {G : ι → Type*}
     [∀ i, NormedAddCommGroup (G i)] [∀ i, NormedSpace ℝ (G i)] {f : ∀ i, G i → F}
     (U : ∀ i, E →L[ℝ] G i) {t : Finset ι} {p : ℕ} {x : E}

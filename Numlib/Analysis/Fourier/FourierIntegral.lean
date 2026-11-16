@@ -16,50 +16,80 @@ import Mathlib.Analysis.Fourier.LpSpace
 /-!
 # Elementary properties of the Fourier integral
 
-Facts about the Fourier integral `𝓕 f ν = ∫ f t exp (-2πi ν t) dt` of an integrable function that
-Mathlib's `Mathlib/Analysis/Fourier/{FourierTransform, Inversion, Convolution}.lean` do not state
-in the form a textbook uses ([quarteroni2000numerical] §10.11.1, Property 10.3 and the properties
-numbered 1–5 after it):
+Let $V$ be a finite-dimensional real inner product space with its Lebesgue measure, and let $E$ be a
+complex normed space. The Fourier transform of an integrable $f : V \to E$ and the inverse transform
+of an integrable $g : V \to E$ are
+$$\mathcal{F} f(w) = \int_V e^{-2\pi i \langle v, w \rangle} f(v) \, dv, \qquad \mathcal{F}^{-1}
+  g(v) = \int_V e^{2\pi i \langle v, w \rangle} g(w) \, dw.$$
+This file proves facts about the Fourier integral that Mathlib
+(`Mathlib.Analysis.Fourier.FourierTransform`, `Mathlib.Analysis.Fourier.Inversion`,
+`Mathlib.Analysis.Fourier.Convolution`) does not state in the form that a textbook uses. They are
+Property 10.3 of [quarteroni2000numerical], §10.11.1, and the properties numbered 1–5 after it. The
+transform and the inverse transform of an integrable function are continuous. If $f$ and
+$\mathcal{F} f$ are integrable, then $f = \mathcal{F}^{-1} \mathcal{F} f$ almost everywhere. The
+file proves the rules for a constant multiple, a translation, a modulation and a scaling, and the
+rules of parity for a real function. The transform of a product is the convolution of the
+transforms. On $L^1 \cap L^2$, the $L^2$ transform of Mathlib agrees with the Fourier integral, so
+that Plancherel's identity holds there with the integrals written out.
 
-* `Real.continuous_fourierIntegral`, `Real.continuous_fourierIntegralInv` — the transform and the
-  inverse transform of an integrable function are continuous; a specialization of
-  `VectorFourier.fourierIntegral_continuous`.
-* `Real.ae_eq_fourierInv_fourier` — **almost-everywhere Fourier inversion**: for `f` and `𝓕 f`
-  integrable, `f = 𝓕⁻ (𝓕 f)` almost everywhere, with no continuity hypothesis. Mathlib's
-  `MeasureTheory.Integrable.fourierInv_fourier_eq` gives the pointwise identity at continuity
-  points only. The proof here is by duality rather than by the Gaussian regularization of
-  Mathlib's proof: for every smooth compactly supported test function `φ`, the multiplication
-  formula `∫ (𝓕 F) φ = ∫ F (𝓕 φ)` (`VectorFourier.integral_bilin_fourierIntegral_eq_flip`) applied
-  twice gives `∫ φ • 𝓕⁻ (𝓕 f) = ∫ (𝓕 (𝓕⁻ φ)) • f = ∫ φ • f`, using the continuous inversion
-  formula for the Schwartz function `φ`; two locally integrable functions with the same integrals
-  against all test functions agree almost everywhere
-  (`ae_eq_of_integral_contDiff_smul_eq`).
-* `Real.fourierIntegral_const_smul`, `Real.fourierIntegral_comp_add_right`,
-  `Real.fourierIntegral_comp_sub_right`, `Real.fourierIntegral_fourierChar_mul`,
-  `Real.fourierIntegral_comp_mul_left` — the transform of a constant multiple, the translation
-  rule `𝓕 (f (· − a)) ν = 𝐞 (−a ν) • 𝓕 f ν`, the modulation rule
-  `𝓕 (𝐞 (−(· a)) • f) ν = 𝓕 f (ν + a)`, and the scaling rule `𝓕 (f (a ·)) ν = |a|⁻¹ 𝓕 f (ν / a)`.
-* `Real.fourierIntegral_even_eq_integral_cos`, `Real.fourierIntegral_even_real`,
-  `Real.fourierIntegral_odd_eq_integral_sin`, `Real.fourierIntegral_odd_real` — the parity
-  rules: the transform of a real even function is the cosine transform, real and even; that of a
-  real odd function is `-i` times the sine transform, purely imaginary and odd.
-* `Real.fourier_mul_eq_convolution` — the transform of a product is the convolution of the
-  transforms, `𝓕 (f g) = 𝓕 f ⋆ 𝓕 g`, for `f, g ∈ L¹` with `𝓕 g ∈ L¹`. Mathlib has the dual
-  statement `Real.fourier_mul_convolution_eq` (`𝓕 (f ⋆ g) = 𝓕 f · 𝓕 g`) and the Schwartz-class
-  form `SchwartzMap.fourier_convolution`. The proof is Fubini after writing `g` as the inverse
-  transform of `𝓕 g` almost everywhere, which is where `ae_eq_fourierInv_fourier` enters; the
-  textbook states the identity for `f, g ∈ L¹` alone, where the right side need not exist.
-* `Real.coeFn_fourier_toLp`, `Real.integral_conj_fourier_mul_fourier` — **the `L²` transform on
-  `L¹ ∩ L²`**: Mathlib's unitary `MeasureTheory.Lp.fourierTransformₗᵢ` on `L²`, defined by
-  extension from the Schwartz space, agrees almost everywhere with the Fourier integral of an
-  `L¹ ∩ L²` function, and therefore Plancherel's identity `∫ conj (𝓕 f) 𝓕 g = ∫ conj f · g` holds
-  for `f, g ∈ L¹ ∩ L²` with the integrals written out. The identification again goes through
-  tempered distributions: the two transforms of `f` define the same distribution
-  (`MeasureTheory.Lp.fourier_toTemperedDistribution_eq` and the multiplication formula), and both
-  are locally integrable.
+## Main results
 
-The statements that do not use the order of `ℝ` are given on a finite-dimensional real inner
-product space `V`, the setting of Mathlib's `𝓕`; the scaling and parity rules are on `ℝ`.
+* `Real.continuous_fourierIntegral` and `Real.continuous_fourierIntegralInv`: the transform and the
+  inverse transform of an integrable function are continuous.
+* `Real.ae_eq_fourierInv_fourier`: **Fourier inversion almost everywhere**,
+  $f = \mathcal{F}^{-1} \mathcal{F} f$ a.e. for integrable $f$ and $\mathcal{F} f$.
+* `Real.fourierIntegral_comp_sub_right`: the translation rule $\mathcal{F}(f(\cdot - a))(\nu) =
+  e^{-2\pi i a \nu} \mathcal{F} f(\nu)$.
+* `Real.fourierIntegral_fourierChar_mul`: the modulation rule $\mathcal{F}(e^{-2\pi i a \cdot}
+  f)(\nu) = \mathcal{F} f(\nu + a)$.
+* `Real.fourierIntegral_comp_mul_left`: the scaling rule $\mathcal{F}(f(a \cdot))(\nu) = |a|^{-1}
+  \mathcal{F} f(\nu/a)$.
+* `Real.fourierIntegral_even_eq_integral_cos` and `Real.fourierIntegral_even_real`: the transform of
+  a real even function is its cosine transform, and it is real and even.
+* `Real.fourierIntegral_odd_eq_integral_sin` and `Real.fourierIntegral_odd_real`: the transform of a
+  real odd function is $-i$ times its sine transform, and it is purely imaginary and odd.
+* `Real.fourier_mul_eq_convolution`: $\mathcal{F}(fg) = \mathcal{F} f \star \mathcal{F} g$ for
+  $f, g, \mathcal{F} g \in L^1$.
+* `Real.coeFn_fourier_toLp`: on $L^1 \cap L^2$, the $L^2$ transform is the Fourier integral almost
+  everywhere.
+* `Real.integral_conj_fourier_mul_fourier`: Plancherel's identity $\int \overline{\mathcal{F} f} \,
+  \mathcal{F} g = \int \bar f g$ for $f, g \in L^1 \cap L^2$.
+
+## Proof outline
+
+The inversion almost everywhere is proved by duality, not by the Gaussian regularization of
+Mathlib's proof. Let $\varphi$ be a smooth function with compact support. The multiplication formula
+$\int (\mathcal{F} F) \varphi = \int F (\mathcal{F} \varphi)$
+(`VectorFourier.integral_bilin_fourierIntegral_eq_flip`), applied twice, gives $\int \varphi \,
+\mathcal{F}^{-1} \mathcal{F} f = \int \mathcal{F}(\mathcal{F}^{-1} \varphi) \, f = \int \varphi f$.
+The last step is the inversion formula for the Schwartz function $\varphi$. Two locally integrable
+functions with the same integrals against all such $\varphi$ agree almost everywhere
+(`ae_eq_of_integral_contDiff_smul_eq`).
+
+The convolution identity is Fubini's theorem, after $g$ is replaced almost everywhere by
+$\mathcal{F}^{-1} \mathcal{F} g$. The identification of the two transforms on $L^1 \cap L^2$ again
+goes through tempered distributions: the two transforms of $f$ define the same tempered distribution
+(`MeasureTheory.Lp.fourier_toTemperedDistribution_eq` and the multiplication formula), and both are
+locally integrable.
+
+## Notation
+
+* `𝓕 f` and `𝓕⁻ f`: the Fourier transform $\mathcal{F} f$ and the inverse transform
+  $\mathcal{F}^{-1} f$ of Mathlib.
+* `𝐞 x`: Mathlib's `Real.fourierChar`, the character $e^{2\pi i x}$.
+
+## Implementation notes
+
+* The statements that do not use the order of $\mathbb{R}$ are stated on a finite-dimensional real
+  inner product space $V$, the setting of Mathlib's `𝓕`. The translation, modulation, scaling and
+  parity rules on the line are stated on $\mathbb{R}$.
+* Mathlib's `MeasureTheory.Integrable.fourierInv_fourier_eq` gives the inversion formula at the
+  points of continuity only.
+* Mathlib has the dual convolution statement `Real.fourier_mul_convolution_eq`, $\mathcal{F}(f \star
+  g) = \mathcal{F} f \cdot \mathcal{F} g$, and the form `SchwartzMap.fourier_convolution` for the
+  Schwartz class.
+* The $L^2$ transform is Mathlib's unitary `MeasureTheory.Lp.fourierTransformₗᵢ`, defined by
+  extension from the Schwartz space.
 -/
 
 open MeasureTheory Filter Topology Complex
@@ -73,25 +103,31 @@ variable {V E : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [Measura
 
 /-! ### Continuity -/
 
-/-- The Fourier transform of an integrable function is continuous. -/
+/-- The Fourier transform $\mathcal{F} f$ of an integrable function $f : V \to E$ is continuous.
+
+This is a special case of Mathlib's `VectorFourier.fourierIntegral_continuous`. -/
 theorem continuous_fourierIntegral {f : V → E} (hf : Integrable f) : Continuous (𝓕 f) :=
   VectorFourier.fourierIntegral_continuous Real.continuous_fourierChar (innerSL ℝ).continuous₂ hf
 
-/-- The inverse Fourier transform of an integrable function is continuous. -/
+/-- The inverse Fourier transform $\mathcal{F}^{-1} f$ of an integrable function $f : V \to E$ is
+continuous. -/
 theorem continuous_fourierIntegralInv {f : V → E} (hf : Integrable f) : Continuous (𝓕⁻ f) := by
   rw [fourierInv_eq_fourier_comp_neg]
   exact continuous_fourierIntegral hf.comp_neg
 
-/-! ### Almost-everywhere inversion -/
+/-! ### Fourier inversion almost everywhere -/
 
-/-- **Almost-everywhere Fourier inversion** ([quarteroni2000numerical] Property 10.3): if `f` and
-`𝓕 f` are integrable then `f = 𝓕⁻ (𝓕 f)` almost everywhere. No continuity of `f` is assumed; at
-a continuity point the identity holds pointwise, which is Mathlib's
-`MeasureTheory.Integrable.fourierInv_fourier_eq`.
+/-- **Fourier inversion almost everywhere.** Let $E$ be a complex Banach space, and let
+$f : V \to E$ be integrable with $\mathcal{F} f$ integrable. Then
+$$f = \mathcal{F}^{-1}(\mathcal{F} f) \quad \text{almost everywhere.}$$
+No continuity of $f$ is assumed. This is Property 10.3 of [quarteroni2000numerical].
 
-The proof tests both sides against a smooth compactly supported `φ`: by the multiplication formula
-applied twice, `∫ φ • 𝓕⁻ (𝓕 f) = ∫ (𝓕⁻ φ) • 𝓕 f = ∫ (𝓕 (𝓕⁻ φ)) • f = ∫ φ • f`, the last step by
-the continuous inversion formula for the Schwartz function `φ`. -/
+At a point of continuity of $f$ the identity holds pointwise, which is Mathlib's
+`MeasureTheory.Integrable.fourierInv_fourier_eq`. The idea of the proof: test both sides against
+a smooth compactly supported $\varphi$. The multiplication formula, applied twice, gives $\int
+\varphi \, \mathcal{F}^{-1} \mathcal{F} f = \int (\mathcal{F}^{-1} \varphi) \, \mathcal{F} f =
+\int \mathcal{F}(\mathcal{F}^{-1} \varphi) \, f = \int \varphi f$, where the last step is the
+inversion formula for the Schwartz function $\varphi$. -/
 theorem ae_eq_fourierInv_fourier [CompleteSpace E] {f : V → E} (hf : Integrable f)
     (h'f : Integrable (𝓕 f)) : f =ᵐ[volume] 𝓕⁻ (𝓕 f) := by
   refine ae_eq_of_integral_contDiff_smul_eq hf.locallyIntegrable
@@ -137,21 +173,29 @@ theorem ae_eq_fourierInv_fourier [CompleteSpace E] {f : V → E} (hf : Integrabl
     exact this
   rw [h1, h2, hinv]
 
-/-! ### Linearity, modulation and scaling -/
+/-! ### Linearity, translation, modulation and scaling -/
 
-/-- The Fourier transform of a constant multiple, pointwise: `𝓕 (c • f) ν = c • 𝓕 f ν`. -/
+/-- The Fourier transform of a constant multiple: for $c \in \mathbb{C}$, $f : V \to E$ and
+$\nu \in V$, $\mathcal{F}(c f)(\nu) = c \, \mathcal{F} f(\nu)$.
+
+No integrability of $f$ is needed: Mathlib's integral of a function that is not integrable is
+$0$. -/
 theorem fourierIntegral_const_smul (c : ℂ) (f : V → E) (ν : V) :
     𝓕 (fun t => c • f t) ν = c • 𝓕 f ν :=
   congrFun (VectorFourier.fourierIntegral_const_smul 𝐞 volume (innerₗ V) f c) ν
 
-/-- **The translation rule**, pointwise: `𝓕 (fun v => f (v + v₀)) w = 𝐞 ⟪v₀, w⟫ • 𝓕 f w`,
-Mathlib's `VectorFourier.fourierIntegral_comp_add_right` for `𝓕`. -/
+/-- **The translation rule** on $V$: for $f : V \to E$ and $v_0, w \in V$,
+$$\mathcal{F}\bigl(f(\cdot + v_0)\bigr)(w) = e^{2\pi i \langle v_0, w \rangle} \, \mathcal{F}
+  f(w).$$
+
+This is Mathlib's `VectorFourier.fourierIntegral_comp_add_right`, stated for `𝓕`. -/
 theorem fourierIntegral_comp_add_right (f : V → E) (v₀ w : V) :
     𝓕 (fun v => f (v + v₀)) w = 𝐞 ⟪v₀, w⟫ • 𝓕 f w :=
   congrFun (VectorFourier.fourierIntegral_comp_add_right 𝐞 volume (innerₗ V) f v₀) w
 
-/-- **The translation rule** on the line: `𝓕 (fun t => f (t - a)) ν = 𝐞 (-(a ν)) • 𝓕 f ν`, that
-is, a delay by `a` multiplies the transform by the phase `e^{-2πiaν}`. -/
+/-- **The translation rule** on the line: for $f : \mathbb{R} \to E$ and $a, \nu \in \mathbb{R}$,
+$$\mathcal{F}\bigl(f(\cdot - a)\bigr)(\nu) = e^{-2\pi i a \nu} \, \mathcal{F} f(\nu).$$
+So a delay by $a$ multiplies the transform by the phase $e^{-2\pi i a \nu}$. -/
 theorem fourierIntegral_comp_sub_right (f : ℝ → E) (a ν : ℝ) :
     𝓕 (fun t => f (t - a)) ν = 𝐞 (-(a * ν)) • 𝓕 f ν := by
   have := fourierIntegral_comp_add_right f (-a) ν
@@ -160,8 +204,9 @@ theorem fourierIntegral_comp_sub_right (f : ℝ → E) (a ν : ℝ) :
   congr 2
   simp [mul_comm]
 
-/-- **The modulation rule**: multiplying by the character `t ↦ 𝐞 (-(t a))` translates the
-transform by `a`, `𝓕 (fun t => 𝐞 (-(t a)) • f t) ν = 𝓕 f (ν + a)`. -/
+/-- **The modulation rule**: for $f : \mathbb{R} \to E$ and $a, \nu \in \mathbb{R}$,
+$$\mathcal{F}\bigl(t \mapsto e^{-2\pi i t a} f(t)\bigr)(\nu) = \mathcal{F} f(\nu + a).$$
+So multiplication by the character $t \mapsto e^{-2\pi i t a}$ translates the transform by $a$. -/
 theorem fourierIntegral_fourierChar_mul (f : ℝ → E) (a ν : ℝ) :
     𝓕 (fun t => (𝐞 (-(t * a)) : ℂ) • f t) ν = 𝓕 f (ν + a) := by
   rw [Real.fourier_real_eq, Real.fourier_real_eq]
@@ -171,9 +216,12 @@ theorem fourierIntegral_fourierChar_mul (f : ℝ → E) (a ν : ℝ) :
   congr 3
   ring
 
-/-- **The scaling rule** ([quarteroni2000numerical] §10.11.1, property 2): for `a ≠ 0`,
-`𝓕 (fun t => f (a * t)) ν = |a|⁻¹ • 𝓕 f (ν / a)`. The change of variables `t ↦ a t` in the
-defining integral, `MeasureTheory.Measure.integral_comp_mul_left`, which needs no integrability. -/
+/-- **The scaling rule** (property 2 of [quarteroni2000numerical], §10.11.1). For $a \in \mathbb{R}$
+with $a \ne 0$, $f : \mathbb{R} \to E$ and $\nu \in \mathbb{R}$,
+$$\mathcal{F}\bigl(f(a \cdot)\bigr)(\nu) = |a|^{-1} \, \mathcal{F} f(\nu/a).$$
+
+The proof is the change of variables $t \mapsto at$ in the defining integral
+(`MeasureTheory.Measure.integral_comp_mul_left`), which needs no integrability. -/
 theorem fourierIntegral_comp_mul_left {a : ℝ} (ha : a ≠ 0) (f : ℝ → E) (ν : ℝ) :
     𝓕 (fun t => f (a * t)) ν = |a|⁻¹ • 𝓕 f (ν / a) := by
   rw [Real.fourier_real_eq_integral_exp_smul, Real.fourier_real_eq_integral_exp_smul]
@@ -188,9 +236,10 @@ theorem fourierIntegral_comp_mul_left {a : ℝ} (ha : a ≠ 0) (f : ℝ → E) (
 
 /-! ### Parity -/
 
-/-- **The transform of a real function in real form**: for `f : ℝ → ℝ` integrable,
-`𝓕 f ν = ∫ f t cos (2 π ν t) dt - i ∫ f t sin (2 π ν t) dt`, by
-`e^{-2πiνt} = cos (2πνt) - i sin (2πνt)`. -/
+/-- **The transform of a real function in real form.** For an integrable
+$f : \mathbb{R} \to \mathbb{R}$ and $\nu \in \mathbb{R}$,
+$$\mathcal{F} f(\nu) = \int f(t) \cos(2\pi \nu t) \, dt - i \int f(t) \sin(2\pi \nu t) \, dt,$$
+because $e^{-2\pi i \nu t} = \cos(2\pi \nu t) - i \sin(2\pi \nu t)$. -/
 theorem fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin {f : ℝ → ℝ} (hf : Integrable f)
     (ν : ℝ) :
     𝓕 (fun t => (f t : ℂ)) ν = ((∫ t, f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ)
@@ -216,9 +265,11 @@ theorem fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin {f : ℝ → ℝ
   rw [integral_sub hcosC (hsinC.const_mul I), integral_const_mul, integral_complex_ofReal,
     integral_complex_ofReal]
 
-/-- **The transform of a real even function is its cosine transform**: for `f : ℝ → ℝ` integrable
-and even, `𝓕 f ν = ∫ f t cos (2 π ν t) dt`. Expanding `e^{-2πiνt} = cos (2πνt) - i sin (2πνt)`,
-the sine term integrates to zero because its integrand is odd. -/
+/-- **The transform of a real even function is its cosine transform.** For an integrable
+$f : \mathbb{R} \to \mathbb{R}$ with $f(-t) = f(t)$ for all $t$, and $\nu \in \mathbb{R}$,
+$$\mathcal{F} f(\nu) = \int f(t) \cos(2\pi \nu t) \, dt.$$
+The sine term of `Real.fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin` is $0$, because
+its integrand is odd. -/
 theorem fourierIntegral_even_eq_integral_cos {f : ℝ → ℝ} (hf : Integrable f)
     (heven : ∀ t, f (-t) = f t) (ν : ℝ) :
     𝓕 (fun t => (f t : ℂ)) ν = ((∫ t, f t * Real.cos (2 * π * ν * t) : ℝ) : ℂ) := by
@@ -233,8 +284,9 @@ theorem fourierIntegral_even_eq_integral_cos {f : ℝ → ℝ} (hf : Integrable 
   rw [fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin hf, hodd]
   simp
 
-/-- **Parity, even case** ([quarteroni2000numerical] §10.11.1, property 4): the Fourier transform
-of a real-valued, integrable, even function is real-valued and even. -/
+/-- **Parity, even case** (property 4 of [quarteroni2000numerical], §10.11.1). Let
+$f : \mathbb{R} \to \mathbb{R}$ be integrable and even. Then for every $\nu \in \mathbb{R}$,
+$\mathcal{F} f(\nu)$ is real and $\mathcal{F} f(-\nu) = \mathcal{F} f(\nu)$. -/
 theorem fourierIntegral_even_real {f : ℝ → ℝ} (hf : Integrable f) (heven : ∀ t, f (-t) = f t)
     (ν : ℝ) :
     (𝓕 (fun t => (f t : ℂ)) ν).im = 0 ∧
@@ -247,8 +299,10 @@ theorem fourierIntegral_even_real {f : ℝ → ℝ} (hf : Integrable f) (heven :
     funext t
     rw [show 2 * π * -ν * t = -(2 * π * ν * t) by ring, Real.cos_neg]
 
-/-- **The transform of a real odd function is `-i` times its sine transform**: for `f : ℝ → ℝ`
-integrable and odd, `𝓕 f ν = -i ∫ f t sin (2 π ν t) dt`; the cosine term integrates to zero. -/
+/-- **The transform of a real odd function is $-i$ times its sine transform.** For an integrable
+$f : \mathbb{R} \to \mathbb{R}$ with $f(-t) = -f(t)$ for all $t$, and $\nu \in \mathbb{R}$,
+$$\mathcal{F} f(\nu) = -i \int f(t) \sin(2\pi \nu t) \, dt.$$
+The cosine term is $0$, because its integrand is odd. -/
 theorem fourierIntegral_odd_eq_integral_sin {f : ℝ → ℝ} (hf : Integrable f)
     (hodd : ∀ t, f (-t) = -f t) (ν : ℝ) :
     𝓕 (fun t => (f t : ℂ)) ν = -I * ((∫ t, f t * Real.sin (2 * π * ν * t) : ℝ) : ℂ) := by
@@ -263,8 +317,9 @@ theorem fourierIntegral_odd_eq_integral_sin {f : ℝ → ℝ} (hf : Integrable f
   rw [fourierIntegral_ofReal_eq_integral_cos_sub_integral_sin hf, hzero]
   simp
 
-/-- **Parity, odd case** ([quarteroni2000numerical] §10.11.1, property 4): the Fourier transform
-of a real-valued, integrable, odd function is purely imaginary and odd. -/
+/-- **Parity, odd case** (property 4 of [quarteroni2000numerical], §10.11.1). Let
+$f : \mathbb{R} \to \mathbb{R}$ be integrable and odd. Then for every $\nu \in \mathbb{R}$,
+$\mathcal{F} f(\nu)$ is purely imaginary and $\mathcal{F} f(-\nu) = -\mathcal{F} f(\nu)$. -/
 theorem fourierIntegral_odd_real {f : ℝ → ℝ} (hf : Integrable f) (hodd : ∀ t, f (-t) = -f t)
     (ν : ℝ) :
     (𝓕 (fun t => (f t : ℂ)) ν).re = 0 ∧
@@ -285,12 +340,17 @@ theorem fourierIntegral_odd_real {f : ℝ → ℝ} (hf : Integrable f) (hodd : �
 /-! ### The transform of a product -/
 
 open scoped Convolution in
-/-- **The transform of a product is the convolution of the transforms**
-([quarteroni2000numerical] (10.76), second identity): for `f, g` integrable with `𝓕 g`
-integrable, `𝓕 (f g) = 𝓕 f ⋆ 𝓕 g`, where `(F ⋆ G) ξ = ∫ F (ξ - η) G η dη` is Mathlib's
-`MeasureTheory.convolution` with the multiplication of `ℂ`. Fubini, after replacing `g` almost
-everywhere by `𝓕⁻ (𝓕 g)` (`ae_eq_fourierInv_fourier`); the textbook states the identity for
-`f, g ∈ L¹` alone, where the convolution of the transforms need not exist. -/
+/-- **The transform of a product is the convolution of the transforms** ((10.76) of
+[quarteroni2000numerical], second identity). Let $f, g : V \to \mathbb{C}$ be integrable, with
+$\mathcal{F} g$ integrable. Then
+$$\mathcal{F}(fg) = \mathcal{F} f \star \mathcal{F} g, \qquad (F \star G)(\xi) = \int_V F(\eta)
+  \, G(\xi - \eta) \, d\eta.$$
+
+The convolution is Mathlib's `MeasureTheory.convolution` with the multiplication of
+$\mathbb{C}$. The proof is Fubini's theorem, after $g$ is replaced almost everywhere by
+$\mathcal{F}^{-1} \mathcal{F} g$ (`Real.ae_eq_fourierInv_fourier`). The textbook states the
+identity for $f, g \in L^1$ alone, where the convolution of the transforms need not exist; the
+hypothesis that $\mathcal{F} g$ is integrable is added here. -/
 theorem fourier_mul_eq_convolution {f g : V → ℂ} (hf : Integrable f) (hg : Integrable g)
     (hg' : Integrable (𝓕 g)) :
     𝓕 (f * g) = 𝓕 f ⋆[ContinuousLinearMap.mul ℂ ℂ] 𝓕 g := by
@@ -341,17 +401,21 @@ theorem fourier_mul_eq_convolution {f g : V → ℂ} (hf : Integrable f) (hg : I
         rw [← hchar t η]
         ring
 
-/-! ### The `L²` transform on `L¹ ∩ L²` -/
+/-! ### The $L^2$ transform on $L^1 \cap L^2$ -/
 
 section L2
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
 
-/-- **The `L²` Fourier transform agrees with the Fourier integral on `L¹ ∩ L²`**: for `f` in
-`L¹ ∩ L²`, Mathlib's unitary transform `MeasureTheory.Lp.fourierTransformₗᵢ` of the `L²` class of
-`f` is, almost everywhere, the Fourier integral `𝓕 f`. Both define the same tempered distribution —
-the `L²` transform by `MeasureTheory.Lp.fourier_toTemperedDistribution_eq`, the integral by the
-multiplication formula `∫ (𝓕 φ) • f = ∫ φ • 𝓕 f` — and both are locally integrable. -/
+/-- **The $L^2$ Fourier transform agrees with the Fourier integral on $L^1 \cap L^2$.** Let $F$ be a
+complex Hilbert space, and let $f : V \to F$ be in $L^1 \cap L^2$. Then the $L^2$ transform of
+the class of $f$ in $L^2$ is equal to the Fourier integral $\mathcal{F} f$ almost everywhere.
+
+The $L^2$ transform is Mathlib's unitary `MeasureTheory.Lp.fourierTransformₗᵢ`. The idea of the
+proof: both functions define the same tempered distribution (the $L^2$ transform by
+`MeasureTheory.Lp.fourier_toTemperedDistribution_eq`, the integral by the multiplication formula
+$\int (\mathcal{F} \varphi) f = \int \varphi \, \mathcal{F} f$), and both are locally
+integrable. -/
 theorem coeFn_fourier_toLp {f : V → F} (hf1 : MemLp f 1) (hf2 : MemLp f 2) :
     ⇑(𝓕 (hf2.toLp f) : Lp F 2 volume) =ᵐ[volume] 𝓕 f := by
   have key := Lp.fourier_toTemperedDistribution_eq (hf2.toLp f)
@@ -383,10 +447,13 @@ theorem coeFn_fourier_toLp {f : V → F} (hf1 : MemLp f 1) (hf2 : MemLp f 2) :
         rfl
     _ = ∫ x, (g x : ℂ) • 𝓕 f x := hmul
 
-/-- **Plancherel's identity on `L¹ ∩ L²`**: for `f, g ∈ L¹ ∩ L²`,
-`∫ conj (𝓕 f) · 𝓕 g = ∫ conj f · g`, the inner product `⟪𝓕 f, 𝓕 g⟫ = ⟪f, g⟫` of `L²` written as
-integrals of the pointwise transforms. Mathlib's `MeasureTheory.Lp.inner_fourier_eq` read through
-`coeFn_fourier_toLp`. -/
+/-- **Plancherel's identity on $L^1 \cap L^2$.** For $f, g : V \to \mathbb{C}$ in $L^1 \cap L^2$,
+$$\int_V \overline{\mathcal{F} f(x)} \, \mathcal{F} g(x) \, dx = \int_V \overline{f(x)} \, g(x)
+  \, dx.$$
+This is the identity $\langle \mathcal{F} f, \mathcal{F} g \rangle = \langle f, g \rangle$ of
+$L^2$, written as integrals of the pointwise transforms.
+
+The proof reads Mathlib's `MeasureTheory.Lp.inner_fourier_eq` through `Real.coeFn_fourier_toLp`. -/
 theorem integral_conj_fourier_mul_fourier {f g : V → ℂ} (hf1 : MemLp f 1) (hf2 : MemLp f 2)
     (hg1 : MemLp g 1) (hg2 : MemLp g 2) :
     ∫ x, conj (𝓕 f x) * 𝓕 g x = ∫ x, conj (f x) * g x := by

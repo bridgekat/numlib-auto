@@ -20,74 +20,110 @@ import Numlib.Approximation.MvPolynomial
 /-!
 # The Deny–Lions norm equivalences
 
-Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
-edition, §7.3.5 (`[han2009theoretical]` Theorems 7.3.12, 7.3.13 and 7.3.14): on a bounded
-extension domain `Ω ⊆ ℝ^N`, `k ≥ 1` and `1 ≤ p < ∞`, for seminorms `f_j` on `W^{k,p}(Ω)`
-bounded by the norm (H1) and vanishing simultaneously only on `0` among the polynomials of
-degree `< k` (H2), the quantities
+Let $\Omega$ be an open set in a real normed space $E$ with a basis $b = (b_i)_{i \in \iota}$, and
+let $W^{k,p}(\Omega)$ be the Sobolev space with the norm $\|u\|_{k,p,\Omega} = \bigl(\sum_{|\alpha|
+\le k} \|\partial^\alpha u\|_{L^p(\Omega)}^p\bigr)^{1/p}$. The **top-order seminorm** is
+$|u|_{k,p,\Omega} = \bigl(\sum_{|\alpha| = k} \|\partial^\alpha u\|_{L^p(\Omega)}^p\bigr)^{1/p}$.
+This file proves the norm equivalences of §7.3.5 of [han2009theoretical] (Theorems 7.3.12, 7.3.13
+and 7.3.14): on a suitable domain $\Omega \subseteq \mathbb{R}^N$, with $k \ge 1$ and
+$1 \le p < \infty$, let $f_1, \dots, f_J$ be seminorms on $W^{k,p}(\Omega)$ with (H1)
+$f_j(v) \le c \|v\|_{k,p,\Omega}$, and (H2) if $v$ is a polynomial of degree $< k$ and $f_j(v) = 0$
+for all $j$, then $v = 0$. Then the two quantities
+$$|v|_{k,p,\Omega} + \sum_j f_j(v) \quad (7.3.3) \qquad \text{and} \qquad
+  \Bigl(|v|_{k,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p} \quad (7.3.4)$$
+are norms on $W^{k,p}(\Omega)$ equivalent to $\|v\|_{k,p,\Omega}$. The consequences are the
+Poincaré–Friedrichs inequalities and the Bramble–Hilbert lemma.
 
-`|v|_{k,p,Ω} + ∑_j f_j(v)` (7.3.3) and `(|v|_{k,p,Ω}^p + ∑_j f_j(v)^p)^{1/p}` (7.3.4)
-
-are norms on `W^{k,p}(Ω)` equivalent to `‖v‖_{k,p,Ω}`, where
-`|v|_{k,p,Ω} = (∑_{|α| = k} ‖∂^α v‖_{L^p(Ω)}^p)^{1/p}` is the top-order seminorm. The
-consequences are the Poincaré–Friedrichs inequalities and the Bramble–Hilbert lemma.
+The polynomial step is the classical fact that a function on a connected open set whose weak
+derivatives of order $k$ all vanish is a polynomial of degree $< k$. The file also proves Theorem
+7.3.17 of [han2009theoretical]: on a connected bounded domain, the quotient norm of
+$W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$ is equivalent to $|v|_{k+1,p,\Omega}$, where
+$\mathbb{P}_k(\Omega)$ is the space of polynomials of degree at most $k$. For a polynomial $q$ in
+the coordinates of $b$, $q \circ b^{-1}$ denotes the polynomial function
+$x \mapsto q(x_1, \dots, x_n)$ on $E$, where $b^{-1} : E \to \mathbb{R}^\iota$ is the coordinate map
+of $b$.
 
 ## Main definitions
 
-* `SobolevMultiIndex.topDeriv`, `SobolevMultiIndex.topSeminorm`: the tuple of the weak
-  derivatives of top order `|α| = k` of `u ∈ W^{k,p}(Ω)`, and its `ℓ^p` norm, the seminorm
-  `|u|_{k,p,Ω}` of the book, bundled as a `Seminorm`.
+* `SobolevMultiIndex.topDeriv`: the tuple $(\partial^\alpha u)_{|\alpha| = k}$ of the weak
+  derivatives of top order of $u \in W^{k,p}(\Omega)$.
+* `SobolevMultiIndex.topSeminorm`: the top-order seminorm $|u|_{k,p,\Omega}$, the $\ell^p$ norm of
+  this tuple.
+* `MvPolynomial.gradientAntideriv`: a polynomial $Q$ with $\partial_i Q = q_i$ for a compatible
+  family $(q_i)$.
+* `MvPolynomial.evalBasis`: the polynomial function $x \mapsto q(x_1, \dots, x_n)$ on $E$, in the
+  coordinates of the basis $b$.
+* `absIntegralSeminorm`: the seminorm $v \mapsto \int_s |Lv| \, d\sigma$ of a bounded linear map $L$
+  into the $L^q$ space of a finite measure, such as the boundary seminorm
+  $\int_\Gamma |\gamma v| \, ds$.
+* `SobolevEuclidean.polynomialSubmodule`: the finite-dimensional subspace $\mathbb{P}_k(\Omega)$ of
+  $W^{k+1,p}(\Omega)$ for a bounded $\Omega \subseteq \mathbb{R}^N$.
 
 ## Main results
 
-* `SobolevMultiIndex.norm_rpow_eq_norm_toLowerOrder_rpow_add`: `‖u‖^p = ‖u‖_{k−1,p}^p + |u|_{k,p}^p`
-  for `p < ∞`, the splitting of the norm into its lower-order part and the top seminorm.
-* `MvPolynomial.hasFDerivAt_eval`: the derivative of the polynomial function `x ↦ eval x q`
-  in the direction `e_i` is `eval x (pderiv i q)`.
-* `MvPolynomial.exists_forall_pderiv_eq`: **the Poincaré lemma for polynomials**: a family
-  `q_i` with `∂_j q_i = ∂_i q_j` is a gradient, `q_i = ∂_i Q`, with `Q` of degree one more.
-* `SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero`: **on a connected
-  open set, `|u|_{k,p,Ω} = 0` forces `u` to be a polynomial of degree `< k`** almost everywhere
-  (the sentence preceding Theorem 7.3.12 of `[han2009theoretical]`), by induction on `k` from
-  the first-order case `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`.
-* `SobolevMultiIndex.exists_norm_le_topSeminorm_add_sum_of_isCompactEmbedding`: **the abstract
-  Deny–Lions theorem**: with the compact embedding `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` as a
-  hypothesis, seminorms satisfying (H1) and (H2)′ — `|v|_{k+1,p} = 0` and all `f_j(v) = 0`
-  force `v = 0` — give `‖v‖ ≤ c (|v|_{k+1,p} + ∑_j f_j(v))`; the book's compactness
-  contradiction.
-* `absIntegralSeminorm L s`, the seminorm `v ↦ ∫_s |L v| dσ` of a bounded map `L` into the `L^q`
-  space of a finite measure, with its bound `exists_absIntegralSeminorm_le` — the boundary
-  seminorms `∫_Γ |γ v| ds` to which the theorem below is applied.
-* `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`,
-  `…_of_isPreconnected`, `…_of_iSup`: the theorem on a bounded extension domain of `ℝ^N` under
-  (H2)′ (`[han2009theoretical]` Theorem 7.3.13), under (H2) on a connected domain (Theorem
-  7.3.12) and under (H2) on a disjoint union of connected open sets (Theorem 7.3.14), for the
-  norm (7.3.3); `SobolevEuclidean.exists_norm_le_lp_topSeminorm_sum_of_forall_eq_zero` and
-  its companions for the norm (7.3.4), and `SobolevMultiIndex.topSeminorm_add_sum_le_norm` for
-  the reverse inequality.
-* `SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected` and `…_sum_abs_…`: the
-  theorem with the seminorms `|ℓ_j(v)|` of bounded linear functionals, and
-  `Seminorm.le_ciInf_norm_add_smul`, `Seminorm.ciInf_norm_add_smul_le_mul`: the quotient norm
-  `inf_α ‖v + α • w‖` is equivalent to a seminorm `N` with `N w = 0` under the Deny–Lions
-  inequality for `N` and one functional `ℓ` with `ℓ w ≠ 0` (Lemma 8.4.1 of `[han2009theoretical]`).
-* `SobolevEuclidean.polynomialSubmodule`: **`ℙ_k(Ω)` inside `W^{k+1,p}(Ω)`**, the elements whose
-  function is a polynomial of degree at most `k` (bounded `Ω`), finite-dimensional; the top
-  seminorm vanishes exactly on it for connected `Ω`
-  (`SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule`, from
-  `MvPolynomial.iteratedFDeriv_evalBasis_eq_zero`), and
-  `SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm` is **Theorem 7.3.17 of
-  `[han2009theoretical]`**: the quotient norm of `W^{k+1,p}(Ω)/ℙ_k(Ω)` is bounded by
-  `C |v|_{k+1,p,Ω}` (Hahn–Banach extensions of the coordinate functionals of a basis of `ℙ_k(Ω)`,
-  through `Seminorm.ciInf_norm_add_le_mul`).
-* `SobolevMultiIndex.topSeminorm_one_eq_gradNorm`: at order one the top seminorm is the gradient
-  norm, which connects the Poincaré inequality of `Numlib/Analysis/Sobolev/Poincare.lean` with
-  the Deny–Lions vocabulary.
+* `SobolevMultiIndex.norm_rpow_eq_norm_toLowerOrder_rpow_add`: for $p < \infty$,
+  $\|u\|_{k+1,p,\Omega}^p = \|u\|_{k,p,\Omega}^p + |u|_{k+1,p,\Omega}^p$.
+* `MvPolynomial.pderiv_gradientAntideriv`: the **Poincaré lemma for polynomials**: a family of
+  polynomials $(q_i)$ with $\partial_j q_i = \partial_i q_j$ is the gradient of a polynomial.
+* `SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero`: on a connected open
+  set, $|u|_{k,p,\Omega} = 0$ implies that $u$ is almost everywhere a polynomial of degree $< k$.
+* `SobolevMultiIndex.exists_norm_le_topSeminorm_add_sum_of_isCompactEmbedding`: the **abstract
+  Deny–Lions theorem**: if $W^{k+1,p}(\Omega)$ embeds compactly in $W^{k,p}(\Omega)$ and
+  $|v|_{k+1,p,\Omega} = 0$ and $f_j(v) = 0$ for all $j$ force $v = 0$, then $\|v\|_{k+1,p,\Omega}
+  \le C (|v|_{k+1,p,\Omega} + \sum_j f_j(v))$.
+* `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`: Theorem 7.3.13 of
+  [han2009theoretical] for the norm (7.3.3).
+* `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected`: Theorem 7.3.12 of
+  [han2009theoretical] for the norm (7.3.3).
+* `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup`: Theorem 7.3.14 of
+  [han2009theoretical] for the norm (7.3.3).
+* `SobolevEuclidean.exists_norm_le_lp_topSeminorm_sum_of_forall_eq_zero`: Theorem 7.3.13 of
+  [han2009theoretical] for the norm (7.3.4).
+* `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_abs_of_isPreconnected` and
+  `SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected`: Theorem 7.3.12 with the
+  seminorms $|\ell_j(v)|$ of bounded linear functionals.
+* `SobolevMultiIndex.topSeminorm_add_sum_le_norm`: the reverse inequality $|v|_{k,p,\Omega} + \sum_j
+  f_j(v) \le (1 + Jc) \|v\|_{k,p,\Omega}$.
+* `SobolevMultiIndex.norm_equiv_of_exists_norm_le_topSeminorm_add_sum`: the inequality of the
+  theorems makes both (7.3.3) and (7.3.4) norms equivalent to $\|\cdot\|_{k,p,\Omega}$.
+* `Seminorm.le_ciInf_norm_add_smul` and `Seminorm.ciInf_norm_add_smul_le_mul`: the quotient norm
+  $\inf_\alpha \|v + \alpha w\|$ is equivalent to a seminorm $N$ with $N(w) = 0$, as in Lemma 8.4.1
+  of [han2009theoretical].
+* `SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule`: on a connected bounded open
+  set, $|v|_{k+1,p,\Omega} = 0$ if and only if $v \in \mathbb{P}_k(\Omega)$.
+* `SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm`: Theorem 7.3.17 of
+  [han2009theoretical], $\inf_{q \in \mathbb{P}_k(\Omega)} \|v + q\|_{k+1,p,\Omega} \le C
+  |v|_{k+1,p,\Omega}$.
+* `SobolevMultiIndex.topSeminorm_one_eq_gradNorm`: at order one the top-order seminorm is the
+  gradient norm $\|\nabla u\|_{L^p(\Omega)}$.
 
-## References
+## Proof outline
 
-`[han2009theoretical]` §7.3.5; the polynomial step is the classical fact that a distribution
-all of whose derivatives of order `k` vanish on a connected open set is a polynomial of degree
-`< k`.
+The abstract theorem is the compactness argument of [han2009theoretical]. If the inequality fails,
+there is a sequence with $\|v_n\| = 1$ and $|v_n| + \sum_j f_j(v_n) \le 1/n$. A subsequence
+converges in $W^{k,p}(\Omega)$ by the compact embedding. Since the top-order seminorms tend to zero,
+the subsequence is a Cauchy sequence in $W^{k+1,p}(\Omega)$, and its limit $v$ has $\|v\| = 1$,
+$|v| = 0$ and $f_j(v) = 0$, which contradicts (H2)′.
+
+The polynomial step is an induction on $k$. The partial derivatives $\partial_i u$ are polynomials
+$q_i$ by the induction hypothesis. They satisfy $\partial_j q_i = \partial_i q_j$, so they are the
+gradient of a polynomial $Q$. Then $u - Q$ has weak gradient zero, and it is constant on the
+connected set $\Omega$.
+
+## Implementation notes
+
+* The Euclidean theorems write the order as $k + 1$ with $k \ge 0$. The order $k \ge 1$ of
+  [han2009theoretical] is $k + 1$ here, and the book's $\mathbb{P}_{k-1}$ is
+  `MvPolynomial.restrictTotalDegree (Fin N) ℝ k`.
+* The book states the theorems on a bounded Lipschitz domain. Here the domain is a
+  $W^{1,p}$-extension domain (`IsSobolevExtensionDomain`) of finite measure, which is the hypothesis
+  that the compact embedding needs.
+* The exponent of the Euclidean theorems is `p : ℝ≥0` with `1 ≤ (p : ℝ≥0∞)`, so $1 \le p < \infty$
+  holds by the type.
+* At $p = \infty$ the top-order seminorm is $\max_{|\alpha| = k} \|\partial^\alpha
+  u\|_{L^\infty(\Omega)}$.
+* `SobolevMultiIndex.topSeminorm_one_eq_gradNorm` connects the Poincaré inequality of
+  `Numlib.Analysis.Sobolev.Poincare` with the top-order seminorm.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -95,7 +131,7 @@ open scoped ContDiff Distributions ENNReal NNReal Topology
 
 noncomputable section
 
-/-! ### The top-order seminorm `|u|_{k,p,Ω}` -/
+/-! ### The top-order seminorm $|u|_{k,p,\Omega}$ -/
 
 section TopSeminorm
 
@@ -106,34 +142,39 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- **The top-order derivatives of `u ∈ W^{k,p}(Ω)`**, the tuple `(∂^α u)_{|α| = k}` of its weak
-derivatives of order exactly `k`, as an element of the `ℓ^p` product of copies of `L^p(Ω)`
-indexed by `MultiIndexEq ι k`. -/
+/-- The **top-order derivatives** of $u \in W^{k,p}(\Omega)$: the tuple
+$(\partial^\alpha u)_{|\alpha| = k}$ of the weak derivatives of order exactly $k$, as an element
+of the $\ell^p$ product of copies of $L^p(\Omega)$ indexed by the multi-indices of order $k$.
+
+The index type is `MultiIndexEq ι k`, and the product is `PiLp p`. -/
 def topDeriv (u : SobolevMultiIndex F b k p Ω μ) :
     PiLp p fun _ : MultiIndexEq ι k ↦ Lp F p (μ.restrict (Ω : Set E)) :=
   WithLp.toLp p fun α ↦ weakDeriv u α.1
 
 omit [Fact (1 ≤ p)] in
-/-- The entry at `α` of the top-order tuple is `∂^α u`. -/
+/-- The entry at $\alpha$ of the top-order tuple of $u$ is $\partial^\alpha u$. -/
 @[simp]
 theorem topDeriv_apply (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexEq ι k) :
     topDeriv u α = weakDeriv u α.1 :=
   rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The top-order tuple is additive. -/
+/-- The top-order tuple is additive: the tuple of $u + v$ is the sum of the tuples of $u$ and $v$.
+-/
 theorem topDeriv_add (u v : SobolevMultiIndex F b k p Ω μ) :
     topDeriv (u + v) = topDeriv u + topDeriv v :=
   rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The top-order tuple commutes with scalar multiplication. -/
+/-- The top-order tuple commutes with scalar multiplication: the tuple of $cu$ is $c$ times the
+tuple of $u$. -/
 theorem topDeriv_smul (c : ℝ) (u : SobolevMultiIndex F b k p Ω μ) :
     topDeriv (c • u) = c • topDeriv u :=
   rfl
 
 variable (F b k p Ω μ) in
-/-- The top-order derivatives as a linear map `W^{k,p}(Ω) →ₗ ℓ^p(L^p(Ω))`. -/
+/-- The top-order tuple $u \mapsto (\partial^\alpha u)_{|\alpha| = k}$ as a linear map from
+$W^{k,p}(\Omega)$ to the $\ell^p$ product of copies of $L^p(\Omega)$. -/
 def topDerivₗ : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ]
     PiLp p fun _ : MultiIndexEq ι k ↦ Lp F p (μ.restrict (Ω : Set E)) where
   toFun := topDeriv
@@ -141,38 +182,48 @@ def topDerivₗ : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ]
   map_smul' := topDeriv_smul
 
 variable (F b k p Ω μ) in
-/-- **The top-order seminorm `|u|_{k,p,Ω}` on `W^{k,p}(Ω)`** of `[han2009theoretical]` §7.3.5:
-`|u|_{k,p,Ω} = (∑_{|α| = k} ‖∂^α u‖_{L^p(Ω)}^p)^{1/p}` for `p < ∞` (`topSeminorm_eq_sum`), and
-`⨆_{|α| = k} ‖∂^α u‖_{L^∞(Ω)}` at `p = ∞`. It is the norm of the top-order tuple
-`SobolevMultiIndex.topDeriv u` in the `ℓ^p` product of copies of `L^p(Ω)`, bundled as a
-`Seminorm`, and it is bounded by the norm of `W^{k,p}(Ω)` (`topSeminorm_le_norm`); at `k = 1` it
-is the gradient norm `SobolevMultiIndex.gradNorm`. -/
+/-- The **top-order seminorm** on $W^{k,p}(\Omega)$ of §7.3.5 of [han2009theoretical]: for
+$p < \infty$,
+$$|u|_{k,p,\Omega}
+  = \Bigl(\sum_{|\alpha| = k} \|\partial^\alpha u\|_{L^p(\Omega)}^p\Bigr)^{1/p},$$
+and at $p = \infty$, $|u|_{k,\infty,\Omega} = \max_{|\alpha| = k} \|\partial^\alpha
+u\|_{L^\infty(\Omega)}$.
+
+The seminorm is the norm of the tuple `SobolevMultiIndex.topDeriv u` in the $\ell^p$ product,
+bundled as a `Seminorm`. The formula for finite $p$ is `SobolevMultiIndex.topSeminorm_eq_sum`.
+The seminorm is bounded by the norm (`SobolevMultiIndex.topSeminorm_le_norm`), and at $k = 1$ it
+is the gradient norm `SobolevMultiIndex.gradNorm`
+(`SobolevMultiIndex.topSeminorm_one_eq_gradNorm`). -/
 def topSeminorm : Seminorm ℝ (SobolevMultiIndex F b k p Ω μ) :=
   (normSeminorm ℝ (PiLp p fun _ : MultiIndexEq ι k ↦ Lp F p (μ.restrict (Ω : Set E)))).comp
     (topDerivₗ F b k p Ω μ)
 
-/-- The top-order seminorm is the norm of the top-order tuple. -/
+/-- The top-order seminorm of $u$ is the norm of the top-order tuple of $u$. -/
 theorem topSeminorm_apply (u : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ u = ‖topDeriv u‖ :=
   rfl
 
-/-- **The top-order seminorm for `p < ∞`**: `|u|_{k,p,Ω} = (∑_{|α| = k} ‖∂^α u‖_p^p)^{1/p}`. -/
+/-- For $p < \infty$ and $u \in W^{k,p}(\Omega)$, the top-order seminorm is
+$$|u|_{k,p,\Omega}
+  = \Bigl(\sum_{|\alpha| = k} \|\partial^\alpha u\|_{L^p(\Omega)}^p\Bigr)^{1/p}.$$ -/
 theorem topSeminorm_eq_sum (hp : p ≠ ⊤) (u : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ u
       = (∑ α : MultiIndexEq ι k, ‖weakDeriv u α.1‖ ^ p.toReal) ^ (1 / p.toReal) := by
   rw [topSeminorm_apply, topDeriv, PiLp.norm_eq_sum
     (ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp)]
 
-/-- **The top-order seminorm vanishes exactly when every top-order derivative does.** -/
+/-- For $u \in W^{k,p}(\Omega)$, $|u|_{k,p,\Omega} = 0$ if and only if $\partial^\alpha u = 0$ for
+every multi-index $\alpha$ with $|\alpha| = k$. -/
 theorem topSeminorm_eq_zero_iff (u : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ u = 0 ↔ ∀ α : MultiIndexEq ι k, weakDeriv u α.1 = 0 := by
   rw [topSeminorm_apply, norm_eq_zero, topDeriv, WithLp.ext_iff, WithLp.ofLp_toLp,
     WithLp.ofLp_zero, funext_iff]
   rfl
 
-/-- **The top-order seminorm is bounded by the norm**: `|u|_{k,p,Ω} ≤ ‖u‖_{k,p,Ω}`, the sum
-over the multi-indices of order exactly `k` being part of the sum over those of order at
-most `k`. -/
+/-- For $u \in W^{k,p}(\Omega)$, the top-order seminorm is bounded by the norm:
+$$|u|_{k,p,\Omega} \le \|u\|_{k,p,\Omega}.$$
+
+The reason is that the multi-indices of order exactly $k$ are among those of order at most $k$. -/
 theorem topSeminorm_le_norm (u : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ u ≤ ‖u‖ := by
   classical
@@ -195,19 +246,23 @@ theorem topSeminorm_le_norm (u : SobolevMultiIndex F b k p Ω μ) :
           Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
             fun _ _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
 
-/-- The top-order seminorm is `1`-Lipschitz for the norm. -/
+/-- The top-order seminorm is $1$-Lipschitz: $\bigl| |u|_{k,p,\Omega} - |v|_{k,p,\Omega} \bigr| \le
+\|u - v\|_{k,p,\Omega}$. -/
 theorem abs_topSeminorm_sub_le (u v : SobolevMultiIndex F b k p Ω μ) :
     |topSeminorm F b k p Ω μ u - topSeminorm F b k p Ω μ v| ≤ ‖u - v‖ :=
   (abs_sub_map_le_sub _ u v).trans (topSeminorm_le_norm _)
 
-/-- The top-order seminorm is continuous. -/
+/-- The top-order seminorm $u \mapsto |u|_{k,p,\Omega}$ is continuous on $W^{k,p}(\Omega)$. -/
 theorem continuous_topSeminorm : Continuous (topSeminorm F b k p Ω μ) :=
   Seminorm.continuous_of_le (q := normSeminorm ℝ (SobolevMultiIndex F b k p Ω μ)) continuous_norm
     (Seminorm.le_def.2 fun u ↦ by simpa using topSeminorm_le_norm u)
 
 omit [LinearOrder ι] in
-/-- **A sum over the multi-indices of order at most `k + 1` splits** into the sum over those of
-order at most `k` and the sum over those of order exactly `k + 1`. -/
+/-- Let $M$ be an additive commutative monoid and let $f$ be a function on the multi-indices of
+order at most $k + 1$ with values in $M$. Then the sum of $f$ splits into the sum over the
+multi-indices of order at most $k$ and the sum over those of order exactly $k + 1$:
+$$\sum_{|\alpha| \le k + 1} f(\alpha)
+  = \sum_{|\alpha| \le k} f(\alpha) + \sum_{|\alpha| = k + 1} f(\alpha).$$ -/
 theorem _root_.MultiIndexLE.sum_univ_succ {M : Type*} [AddCommMonoid M]
     (f : MultiIndexLE ι (k + 1) → M) :
     ∑ α, f α = ∑ α : MultiIndexLE ι k, f ⟨α.1, α.2.trans (Nat.le_succ k)⟩
@@ -232,8 +287,12 @@ theorem _root_.MultiIndexLE.sum_univ_succ {M : Type*} [AddCommMonoid M]
   · exact Finset.sum_subtype (p := fun α : MultiIndexLE ι (k + 1) ↦ ∑ i, α.1 i = k + 1) _
       (fun _ ↦ by simp) f
 
-/-- **The splitting of the norm of `W^{k+1,p}(Ω)`, `p < ∞`**: `‖u‖^p = ‖u‖_{k,p}^p + |u|_{k+1,p}^p`,
-the lower-order part being `SobolevMultiIndex.toLowerOrder u` and the top part the seminorm. -/
+/-- Let $p < \infty$ and $u \in W^{k+1,p}(\Omega)$. Then the norm splits into a lower-order part and
+the top-order seminorm:
+$$\|u\|_{k+1,p,\Omega}^p = \|u\|_{k,p,\Omega}^p + |u|_{k+1,p,\Omega}^p.$$
+
+The lower-order part is the norm of `SobolevMultiIndex.toLowerOrder F b p Ω μ (Nat.le_succ k)
+u`, which is $u$ read as an element of $W^{k,p}(\Omega)$. -/
 theorem norm_rpow_eq_norm_toLowerOrder_rpow_add (hp : p ≠ ⊤)
     (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
     ‖u‖ ^ p.toReal = ‖toLowerOrder F b p Ω μ (Nat.le_succ k) u‖ ^ p.toReal
@@ -262,20 +321,25 @@ namespace MvPolynomial
 
 variable {ι : Type*} [Fintype ι]
 
-/-- Evaluating `∑ i, c i • proj i` at `v` gives `∑ i, c i * v i`. -/
+/-- Let $c, v \in \mathbb{R}^\iota$. The continuous linear map $\sum_i c_i \pi_i$, where $\pi_i$ is
+the projection on the coordinate $i$, takes the value $\sum_i c_i v_i$ at $v$. -/
 theorem _root_.ContinuousLinearMap.sum_smul_proj_apply (c : ι → ℝ) (v : ι → ℝ) :
     (∑ i, c i • ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι ↦ ℝ) i) v = ∑ i, c i * v i := by
   simp
 
-/-- The polynomial function `x ↦ eval x q` on `ι → ℝ` is smooth. -/
+/-- For a polynomial $q$ in the variables $(x_i)_{i \in \iota}$, the polynomial function
+$x \mapsto q(x)$ on $\mathbb{R}^\iota$ is smooth. -/
 theorem contDiff_eval (q : MvPolynomial ι ℝ) : ContDiff ℝ ∞ (fun x : ι → ℝ ↦ eval x q) := by
   induction q using MvPolynomial.induction_on with
   | C a => simpa using contDiff_const (c := a)
   | add p q hp hq => simpa [map_add] using hp.add hq
   | mul_X p i hp => simpa [map_mul, eval_X] using hp.mul (contDiff_apply ℝ (fun _ => ℝ) i)
 
-/-- **The derivative of a polynomial function**: `D(eval · q)(x) = ∑ i, eval x (∂_i q) • proj i`,
-so that the derivative in the direction `e_i` is `eval x (pderiv i q)`. -/
+/-- Let $q$ be a polynomial in the variables $(x_i)_{i \in \iota}$ and $x \in \mathbb{R}^\iota$. The
+function $y \mapsto q(y)$ has at $x$ the derivative
+$$Dq(x) = \sum_i (\partial_i q)(x) \, \pi_i,$$
+where $\pi_i$ is the projection on the coordinate $i$. So the derivative in the direction $e_i$
+is $(\partial_i q)(x)$. -/
 theorem hasFDerivAt_eval (q : MvPolynomial ι ℝ) (x : ι → ℝ) :
     HasFDerivAt (fun y : ι → ℝ ↦ eval y q)
       (∑ i, eval x (pderiv i q) • ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι ↦ ℝ) i) x := by
@@ -311,7 +375,9 @@ theorem hasFDerivAt_eval (q : MvPolynomial ι ℝ) (x : ι → ℝ) :
       exact Finset.sum_congr rfl fun j _ ↦ by ring
 
 omit [Fintype ι] in
-/-- The derivative of `eval · q` in the direction `Pi.single i 1` is `eval x (pderiv i q)`. -/
+/-- Let $q$ be a polynomial in the variables $(x_i)_{i \in \iota}$, with $\iota$ finite. The
+derivative of $y \mapsto q(y)$ at $x$ in the direction of the unit vector $e_i$ is
+$(\partial_i q)(x)$. -/
 theorem fderiv_eval_single [Finite ι] [DecidableEq ι] (q : MvPolynomial ι ℝ) (x : ι → ℝ)
     (i : ι) :
     fderiv ℝ (fun y : ι → ℝ ↦ eval y q) x (Pi.single i 1) = eval x (pderiv i q) := by
@@ -329,18 +395,24 @@ namespace MvPolynomial
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- The coefficient of `X^n` in the polynomial antiderivative of a compatible family
-`q_i`: `(∑_j coeff_{n − e_j}(q_j) n_j) / (∑_j n_j²)`. Every `j` with `n_j ≥ 1` gives the same
-quotient `coeff_{n − e_j}(q_j) / n_j` when the family is compatible, and this symmetric average
-avoids choosing one. -/
+/-- The coefficient at the monomial $x^n$ of the polynomial antiderivative of a family
+$(q_j)_{j \in \iota}$ of polynomials:
+$$\frac{\sum_j \operatorname{coeff}_{n - e_j}(q_j) \, n_j}{\sum_j n_j^2}.$$
+
+If the family is compatible, every $j$ with $n_j \ge 1$ gives the same quotient
+$\operatorname{coeff}_{n - e_j}(q_j) / n_j$, and this symmetric average avoids the choice of one
+$j$. At $n = 0$ the denominator is zero and the value is $0$. The subtraction $n - e_j$ is
+truncated, but a term with $n_j = 0$ has the factor $n_j = 0$. -/
 def gradientCoeff (q : ι → MvPolynomial ι ℝ) (n : ι →₀ ℕ) : ℝ :=
   (∑ j, (q j).coeff (n - Finsupp.single j 1) * (n j : ℝ)) / ∑ j, (n j : ℝ) ^ 2
 
-/-- The candidate support of the antiderivative: the monomials `m + e_j` for `m` in the support
-of `q_j`. -/
+/-- The candidate support of the polynomial antiderivative of a family $(q_j)$: the set of the
+monomials $m + e_j$ for $j \in \iota$ and $m$ in the support of $q_j$. -/
 def gradientSupport (q : ι → MvPolynomial ι ℝ) : Finset (ι →₀ ℕ) :=
   Finset.univ.biUnion fun j ↦ (q j).support.image (· + Finsupp.single j 1)
 
+/-- If the coefficient `MvPolynomial.gradientCoeff q n` is nonzero, then $n$ is in the candidate
+support `MvPolynomial.gradientSupport q`. -/
 theorem gradientCoeff_ne_zero {q : ι → MvPolynomial ι ℝ} {n : ι →₀ ℕ}
     (h : gradientCoeff q n ≠ 0) : n ∈ gradientSupport q := by
   classical
@@ -352,22 +424,28 @@ theorem gradientCoeff_ne_zero {q : ι → MvPolynomial ι ℝ} {n : ι →₀ �
     ⟨n - Finsupp.single j 1, mem_support_iff.2 hj.1, ?_⟩⟩
   exact tsub_add_cancel_of_le (Finsupp.single_le_iff.2 hnj)
 
-/-- **The polynomial antiderivative of a compatible family** `q_i`, `i : ι`, of polynomials: the
-polynomial whose coefficient at `n` is `gradientCoeff q n`. -/
+/-- The **polynomial antiderivative** of a family $(q_i)_{i \in \iota}$ of polynomials in the
+variables $(x_i)_{i \in \iota}$: the polynomial whose coefficient at $x^n$ is
+`MvPolynomial.gradientCoeff q n`. For a compatible family it is a polynomial $Q$ with
+$\partial_i Q = q_i$ (`MvPolynomial.pderiv_gradientAntideriv`). -/
 def gradientAntideriv (q : ι → MvPolynomial ι ℝ) : MvPolynomial ι ℝ :=
   AddMonoidAlgebra.ofCoeff
     (Finsupp.onFinset (gradientSupport q) (gradientCoeff q) fun _ ↦ gradientCoeff_ne_zero)
 
+/-- The coefficient at $x^n$ of the polynomial antiderivative is `MvPolynomial.gradientCoeff q n`.
+-/
 theorem coeff_gradientAntideriv (q : ι → MvPolynomial ι ℝ) (n : ι →₀ ℕ) :
     (gradientAntideriv q).coeff n = gradientCoeff q n :=
   rfl
 
+/-- The support of the polynomial antiderivative is contained in the candidate support
+`MvPolynomial.gradientSupport q`. -/
 theorem support_gradientAntideriv_subset (q : ι → MvPolynomial ι ℝ) :
     (gradientAntideriv q).support ⊆ gradientSupport q :=
   Finsupp.support_onFinset_subset (hf := fun _ ↦ gradientCoeff_ne_zero)
 
-/-- The degree of every monomial of the antiderivative is one more than the degree of a monomial
-of one of the `q_j`. -/
+/-- If every monomial of every $q_j$ has degree at most $D$, then every monomial of the polynomial
+antiderivative has degree at most $D + 1$. -/
 theorem degree_le_of_mem_support_gradientAntideriv {q : ι → MvPolynomial ι ℝ} {D : ℕ}
     (hq : ∀ j, ∀ m ∈ (q j).support, m.degree ≤ D) {n : ι →₀ ℕ}
     (hn : n ∈ (gradientAntideriv q).support) : n.degree ≤ D + 1 := by
@@ -379,8 +457,11 @@ theorem degree_le_of_mem_support_gradientAntideriv {q : ι → MvPolynomial ι �
   omega
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- The compatibility `∂_j q_i = ∂_i q_j` read on coefficients, at a multi-index `n` with
-`n_i ≥ 1` and `n_j ≥ 1`: `coeff_{n − e_j}(q_j) · n_i = coeff_{n − e_i}(q_i) · n_j`. -/
+/-- Let $(q_i)$ be a family of polynomials with $\partial_j q_i = \partial_i q_j$ for all $i, j$,
+and let $n$ be a multi-index with $n_i \ge 1$ and $n_j \ge 1$. Then the compatibility holds on
+the coefficients:
+$$\operatorname{coeff}_{n - e_j}(q_j) \, n_i = \operatorname{coeff}_{n - e_i}(q_i) \, n_j.$$
+-/
 theorem coeff_sub_single_mul_eq_of_pderiv_eq {q : ι → MvPolynomial ι ℝ}
     (hq : ∀ i j, pderiv j (q i) = pderiv i (q j)) {n : ι →₀ ℕ} {i j : ι} (hi : 1 ≤ n i)
     (hj : 1 ≤ n j) :
@@ -418,9 +499,15 @@ theorem coeff_sub_single_mul_eq_of_pderiv_eq {q : ι → MvPolynomial ι ℝ}
   rw [e1, e2, e3, e4] at key
   exact key.symm
 
-/-- **The Poincaré lemma for polynomials**: a family `q_i`, `i : ι`, of polynomials with
-`∂_j q_i = ∂_i q_j` for all `i, j` is the gradient of a polynomial, `q_i = ∂_i Q`; the monomials
-of `Q` are the `m + e_j` for `m` a monomial of `q_j`, so `deg Q ≤ max_j deg q_j + 1`. -/
+/-- The **Poincaré lemma for polynomials**. Let $(q_i)_{i \in \iota}$ be a family of real
+polynomials in the variables $(x_i)_{i \in \iota}$, with $\iota$ finite, such that
+$\partial_j q_i = \partial_i q_j$ for all $i, j$. Then the polynomial antiderivative $Q$
+(`MvPolynomial.gradientAntideriv`) satisfies
+$$\partial_i Q = q_i \qquad \text{for all } i.$$
+
+The monomials of $Q$ are among the $m + e_j$ for $m$ a monomial of $q_j$, so
+$\deg Q \le \max_j \deg q_j + 1$; this bound is
+`MvPolynomial.degree_le_of_mem_support_gradientAntideriv`. -/
 theorem pderiv_gradientAntideriv {q : ι → MvPolynomial ι ℝ}
     (hq : ∀ i j, pderiv j (q i) = pderiv i (q j)) (i : ι) :
     pderiv i (gradientAntideriv q) = q i := by
@@ -447,14 +534,14 @@ theorem pderiv_gradientAntideriv {q : ι → MvPolynomial ι ℝ}
   rw [← Finset.mul_sum]
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- A polynomial with no monomial of degree `< 0` is zero. -/
+/-- A polynomial whose monomials all have degree $< 0$ is zero. -/
 theorem eq_zero_of_forall_degree_lt_zero {q : MvPolynomial ι ℝ}
     (h : ∀ m ∈ q.support, m.degree < 0) : q = 0 := by
   rw [← MvPolynomial.support_eq_empty, Finset.eq_empty_iff_forall_notMem]
   exact fun m hm ↦ absurd (h m hm) (Nat.not_lt_zero _)
 
-/-- The monomials of the polynomial antiderivative have degree `< k + 1` when those of the
-family have degree `< k`. -/
+/-- If every monomial of every $q_j$ has degree $< k$, then every monomial of the polynomial
+antiderivative has degree $< k + 1$. -/
 theorem degree_lt_of_mem_support_gradientAntideriv
     {q : ι → MvPolynomial ι ℝ} {k : ℕ} (hq : ∀ j, ∀ m ∈ (q j).support, m.degree < k)
     {n : ι →₀ ℕ} (hn : n ∈ (gradientAntideriv q).support) : n.degree < k + 1 := by
@@ -476,38 +563,47 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι : Type*} [Fi
 
 namespace MvPolynomial
 
-/-- **The polynomial function on `E` of a polynomial in the coordinates of a basis `b`**:
-`x ↦ q(b.repr x)`. On `ℝ^N` with its standard basis this is `x ↦ eval x q`; the polynomials of
-degree at most `k` on an open set `Ω` (`ℙ_k(Ω)` of Atkinson–Han) are the restrictions to `Ω`
-of the `evalBasis b q` with `q` of total degree at most `k`. -/
+/-- The **polynomial function** on $E$ of a polynomial $q$ in the coordinates of a basis
+$b = (b_i)_{i \in \iota}$: the function $x \mapsto q(x_1, \dots, x_n)$, where $(x_i)$ are the
+coordinates of $x$ in the basis $b$.
+
+On $\mathbb{R}^N$ with its standard basis this is $x \mapsto q(x)$
+(`MvPolynomial.evalBasis_basisFun`). The polynomials of degree at most $k$ on an open set
+$\Omega$ (the space $\mathbb{P}_k(\Omega)$ of [han2009theoretical]) are the restrictions to
+$\Omega$ of the functions `MvPolynomial.evalBasis b q` with $q$ of total degree at most $k$. -/
 def evalBasis (b : Basis ι ℝ E) (q : MvPolynomial ι ℝ) (x : E) : ℝ :=
   eval (b.equivFun x) q
 
 variable (b : Basis ι ℝ E)
 
+/-- The polynomial function of $q + r$ is the sum of the polynomial functions of $q$ and $r$. -/
 @[simp]
 theorem evalBasis_add (q r : MvPolynomial ι ℝ) :
     evalBasis b (q + r) = evalBasis b q + evalBasis b r := by
   funext x
   simp [evalBasis]
 
+/-- The polynomial function of $q - r$ is the difference of the polynomial functions of $q$ and $r$.
+-/
 @[simp]
 theorem evalBasis_sub (q r : MvPolynomial ι ℝ) :
     evalBasis b (q - r) = evalBasis b q - evalBasis b r := by
   funext x
   simp [evalBasis]
 
+/-- The polynomial function of the zero polynomial is zero. -/
 @[simp]
 theorem evalBasis_zero : evalBasis b (0 : MvPolynomial ι ℝ) = 0 := by
   funext x
   simp [evalBasis]
 
+/-- The polynomial function of the constant polynomial $c$ is the constant function $c$. -/
 @[simp]
 theorem evalBasis_C (c : ℝ) (x : E) : evalBasis b (C c) x = c := by
   simp [evalBasis]
 
 omit [Fintype ι] in
-/-- The coordinates of a basis vector are `Pi.single i 1`. -/
+/-- The coordinates of the basis vector $b_i$ in the basis $b$ are the unit vector $e_i$. -/
 theorem _root_.Module.Basis.equivFunL_self [Finite ι] [DecidableEq ι] (i : ι) :
     b.equivFunL (b i) = Pi.single i 1 := by
   funext j
@@ -517,11 +613,14 @@ theorem _root_.Module.Basis.equivFunL_self [Finite ι] [DecidableEq ι] (i : ι)
     simp
   · simp [h, Ne.symm h]
 
-/-- A polynomial function is smooth. -/
+/-- The polynomial function $x \mapsto q(x_1, \dots, x_n)$ in the coordinates of a basis is smooth.
+-/
 theorem contDiff_evalBasis (q : MvPolynomial ι ℝ) : ContDiff ℝ ∞ (evalBasis b q) :=
   (contDiff_eval q).comp b.equivFunL.contDiff
 
-/-- The derivative of a polynomial function. -/
+/-- The polynomial function $x \mapsto q(x_1, \dots, x_n)$ in the coordinates of a basis $b$ has at
+$x$ the derivative $\sum_i (\partial_i q)(x_1, \dots, x_n) \, b_i^*$, where $b_i^*$ is the
+coordinate functional of $b_i$. -/
 theorem hasFDerivAt_evalBasis (q : MvPolynomial ι ℝ) (x : E) :
     HasFDerivAt (evalBasis b q)
       ((∑ i, eval (b.equivFun x) (pderiv i q) •
@@ -529,9 +628,10 @@ theorem hasFDerivAt_evalBasis (q : MvPolynomial ι ℝ) (x : E) :
           (b.equivFunL : E →L[ℝ] (ι → ℝ))) x :=
   (hasFDerivAt_eval q (b.equivFun x)).comp x b.equivFunL.hasFDerivAt
 
-/-- **The derivative of a polynomial function in the direction of a basis vector** is the
-polynomial function of the partial derivative:
-`D(evalBasis b q)(x)(b i) = evalBasis b (∂_i q) x`. -/
+/-- The derivative of a polynomial function in the direction of a basis vector is the polynomial
+function of the partial derivative: for every $x \in E$ and $i \in \iota$,
+$$D(q \circ b^{-1})(x)(b_i) = (\partial_i q \circ b^{-1})(x),$$
+where $q \circ b^{-1}$ denotes `MvPolynomial.evalBasis b q`. -/
 theorem fderiv_evalBasis_apply_basis (q : MvPolynomial ι ℝ) (x : E) (i : ι) :
     fderiv ℝ (evalBasis b q) x (b i) = evalBasis b (pderiv i q) x := by
   classical
@@ -539,9 +639,13 @@ theorem fderiv_evalBasis_apply_basis (q : MvPolynomial ι ℝ) (x : E) (i : ι) 
     ContinuousLinearEquiv.coe_coe, Basis.equivFunL_self, ContinuousLinearMap.sum_smul_proj_apply]
   simp [evalBasis, Pi.single_apply]
 
-/-- **Two polynomials whose functions agree almost everywhere on a nonempty open set are equal.**
-The functions are continuous, so they agree on the open set, whose image under the coordinate
-map has nonempty interior. -/
+/-- Let $\mu$ be a measure on $E$ that is positive on nonempty open sets, and let
+$\Omega \subseteq E$ be a nonempty open set. If the polynomial functions of two polynomials $q$
+and $r$ agree $\mu$-almost everywhere on $\Omega$, then $q = r$.
+
+The functions are continuous, so they agree on $\Omega$. The image of $\Omega$ under the
+coordinate map has nonempty interior, and a polynomial that vanishes on a set with nonempty
+interior is zero. -/
 theorem eq_of_evalBasis_ae_eq [MeasurableSpace E] {μ : Measure E}
     [μ.IsOpenPosMeasure] {Ω : Opens E} (hΩ : (Ω : Set E).Nonempty) {q r : MvPolynomial ι ℝ}
     (h : evalBasis b q =ᵐ[μ.restrict (Ω : Set E)] evalBasis b r) : q = r := by
@@ -575,9 +679,12 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 namespace SobolevMultiIndex
 
 omit [μ.IsAddHaarMeasure] in
-/-- **The first-order weak derivative tensor of `u ∈ W^{k+1,p}(Ω)`** has the partial
-derivatives `∂_i u` as its components in the basis `b`:
-`SobolevMultiIndex.exists_hasWeakFDerivOn_fn` read on `W^{k+1,p}(Ω) ⊆ W^{1,p}(Ω)`. -/
+/-- Let $E$ be finite-dimensional and let $u \in W^{k+1,p}(\Omega)$ be real-valued. Then $u$ has a
+first-order weak derivative $w$ on $\Omega$ whose components in the basis $b$ are the partial
+derivatives of $u$: $w(x)(b_i) = \partial_i u(x)$ for almost every $x \in \Omega$ and every $i$.
+
+This is `SobolevMultiIndex.exists_hasWeakFDerivOn_fn` read on
+$W^{k+1,p}(\Omega) \subseteq W^{1,p}(\Omega)$. -/
 theorem exists_hasWeakFDerivOn_fn_of_succ {k : ℕ} (u : SobolevMultiIndex ℝ b (k + 1) p Ω μ) :
     ∃ w : E → E →L[ℝ] ℝ, HasWeakFDerivOn (fn u) w Ω μ ∧
       ∀ i, (fun x ↦ w x (b i)) =ᵐ[μ.restrict (Ω : Set E)]
@@ -586,8 +693,10 @@ theorem exists_hasWeakFDerivOn_fn_of_succ {k : ℕ} (u : SobolevMultiIndex ℝ b
     exists_hasWeakFDerivOn_fn (toLowerOrder ℝ b p Ω μ (Nat.succ_le_succ (Nat.zero_le k)) u)
   exact ⟨w, hw, hwi⟩
 
-/-- **A Sobolev function whose partial derivatives are those of a smooth function is, on a
-connected open set, that function plus a constant** almost everywhere. -/
+/-- Let $E$ be finite-dimensional with a Haar measure $\mu$, let $\Omega$ be a connected open set,
+and let $u \in W^{k+1,p}(\Omega)$ be real-valued. Let $g : E \to \mathbb{R}$ be smooth with
+$Dg(x)(b_i) = \partial_i u(x)$ for almost every $x \in \Omega$ and every $i$. Then there is a
+constant $c$ with $u = g + c$ almost everywhere on $\Omega$. -/
 theorem exists_ae_eq_add_const_of_forall_fderiv_apply_ae_eq {k : ℕ}
     (hΩ : IsPreconnected (Ω : Set E)) (u : SobolevMultiIndex ℝ b (k + 1) p Ω μ) {g : E → ℝ}
     (hg : ContDiff ℝ ∞ g)
@@ -611,26 +720,32 @@ theorem exists_ae_eq_add_const_of_forall_fderiv_apply_ae_eq {k : ℕ}
   rw [Pi.sub_apply] at hx
   linarith
 
-/-- The order of `α + e_i` is `|α| + 1`. -/
+/-- The order of the multi-index $\alpha + e_i$ is $|\alpha| + 1$. -/
 theorem _root_.MultiIndexLE.sum_addSingle {k : ℕ} (i : ι) (α : MultiIndexLE ι k) :
     ∑ j, ((MultiIndexLE.addSingle i α : MultiIndexLE ι (k + 1)) : ι → ℕ) j = ∑ j, α.1 j + 1 := by
   simp [MultiIndexLE.coe_addSingle, Finset.sum_add_distrib]
 
-/-- `e_i + e_j = e_j + e_i` as multi-indices of order at most `k + 2`. -/
+/-- As multi-indices of order at most $k + 2$, $e_i + e_j = e_j + e_i$. -/
 theorem _root_.MultiIndexLE.addSingle_singleLE_comm {k : ℕ} (i j : ι) :
     (MultiIndexLE.addSingle j (MultiIndexLE.singleLE i : MultiIndexLE ι (k + 1)) :
         MultiIndexLE ι (k + 1 + 1))
       = MultiIndexLE.addSingle i (MultiIndexLE.singleLE j) :=
   Subtype.ext (add_comm _ _)
 
-/-- **On a connected open set, a function of `W^{k,p}(Ω)` all of whose weak derivatives of
-order `k` vanish is almost everywhere a polynomial of degree `< k`** (the sentence preceding
-`[han2009theoretical]` Theorem 7.3.12): there is `q : MvPolynomial ι ℝ`, every monomial of which
-has degree `< k`, with `u = q(b.repr ·)` almost everywhere on `Ω`. Induction on `k`: the partial
-derivatives `∂_i u ∈ W^{k−1,p}(Ω)` are polynomials `q_i` by the inductive hypothesis, compatible
-(`∂_j q_i = ∂_i q_j`, both being the weak derivative `∂_i ∂_j u`), hence the gradient of a
-polynomial `Q` (`MvPolynomial.pderiv_gradientAntideriv`); `u − Q` has vanishing weak gradient, so
-it is constant on the connected `Ω` (`HasWeakFDerivOn.ae_eq_const_of_isPreconnected`). -/
+/-- Let $E$ be finite-dimensional with a Haar measure $\mu$ and a basis $b$, and let
+$\Omega \subseteq E$ be a connected open set. Let $k \ge 0$ and let $u \in W^{k,p}(\Omega)$ be
+real-valued with $\partial^\alpha u = 0$ for every multi-index $\alpha$ with $|\alpha| = k$.
+Then there is a polynomial $q$, all of whose monomials have degree $< k$, such that
+$$u(x) = q(x_1, \dots, x_n) \qquad \text{for almost every } x \in \Omega,$$
+where $(x_i)$ are the coordinates of $x$ in the basis $b$. This is the sentence before Theorem
+7.3.12 of [han2009theoretical].
+
+At $k = 0$ the polynomial is $0$. The proof is an induction on $k$. The partial derivatives
+$\partial_i u \in W^{k-1,p}(\Omega)$ are polynomials $q_i$ by the induction hypothesis. They
+satisfy $\partial_j q_i = \partial_i q_j$, since both are the weak derivative
+$\partial_i \partial_j u$, so they are the gradient of a polynomial $Q$
+(`MvPolynomial.pderiv_gradientAntideriv`). Then $u - Q$ has weak gradient zero, and it is
+constant on the connected set $\Omega$ (`HasWeakFDerivOn.ae_eq_const_of_isPreconnected`). -/
 theorem exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero (hΩ : IsPreconnected (Ω : Set E)) :
     ∀ (k : ℕ) (u : SobolevMultiIndex ℝ b k p Ω μ),
       (∀ α : MultiIndexEq ι k, weakDeriv u α.1 = 0) →
@@ -720,7 +835,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {Ω : Opens E} {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
 
-/-- A seminorm bounded by a multiple of the norm is continuous. -/
+/-- Let $V$ be a real normed space. A seminorm $f$ on $V$ with $f(v) \le c \|v\|$ for all $v$ is
+continuous. -/
 theorem Seminorm.continuous_of_forall_le_mul_norm {V : Type*} [NormedAddCommGroup V]
     [NormedSpace ℝ V] (f : Seminorm ℝ V) {c : ℝ} (hf : ∀ v, f v ≤ c * ‖v‖) : Continuous f := by
   refine Seminorm.continuous_of_le (q := c.toNNReal • normSeminorm ℝ V) ?_ (Seminorm.le_def.2
@@ -736,8 +852,9 @@ theorem Seminorm.continuous_of_forall_le_mul_norm {V : Type*} [NormedAddCommGrou
 namespace SobolevMultiIndex
 
 omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
-/-- `‖u‖ ≤ ‖u‖_{k,p} + |u|_{k+1,p}` for `u ∈ W^{k+1,p}(Ω)`, `p < ∞`: the `ℓ^p` sum is at most the
-sum. -/
+/-- Let $p < \infty$ and $u \in W^{k+1,p}(\Omega)$. Then
+$$\|u\|_{k+1,p,\Omega} \le \|u\|_{k,p,\Omega} + |u|_{k+1,p,\Omega},$$
+because the $\ell^p$ norm of two numbers is at most their sum. -/
 theorem norm_le_norm_toLowerOrder_add_topSeminorm (hp : p ≠ ⊤)
     (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
     ‖u‖ ≤ ‖toLowerOrder F b p Ω μ (Nat.le_succ k) u‖ + topSeminorm F b (k + 1) p Ω μ u := by
@@ -749,15 +866,24 @@ theorem norm_le_norm_toLowerOrder_add_topSeminorm (hp : p ≠ ⊤)
     (zero_lt_one.trans_le hP), h]
   exact Real.add_rpow_le_rpow_add (norm_nonneg _) (apply_nonneg _ _) hP
 
-/-- **The abstract Deny–Lions theorem** (`[han2009theoretical]` Theorem 7.3.13, the proof of
-Theorem 7.3.12): let `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` be compact (`1 ≤ p < ∞`), and let
-`f_j`, `j : J` finite, be continuous seminorms on `W^{k+1,p}(Ω)` such that `|v|_{k+1,p,Ω} = 0`
-and `f_j(v) = 0` for all `j` force `v = 0` ((H2)′). Then
-`‖v‖_{k+1,p,Ω} ≤ C (|v|_{k+1,p,Ω} + ∑_j f_j(v))` for some `C > 0` and all `v`. The book's
-argument by contradiction: a sequence with `‖v_n‖ = 1` and `|v_n| + ∑_j f_j(v_n) ≤ 1/n` is
-bounded, so a subsequence converges in `W^{k,p}(Ω)`; the top seminorms tend to zero, so the
-subsequence is Cauchy in `W^{k+1,p}(Ω)` (`norm_le_norm_toLowerOrder_add_topSeminorm`) and
-converges to some `v` with `‖v‖ = 1`, `|v| = 0` and `f_j(v) = 0` — impossible by (H2)′. -/
+/-- The **abstract Deny–Lions theorem**. Let $F$ be a Banach space, let $\mu$ be locally finite and
+finite on compact sets, and let $1 \le p < \infty$. Assume that the inclusion of
+$W^{k+1,p}(\Omega)$ in $W^{k,p}(\Omega)$ is a compact embedding. Let $f_j$, for $j$ in a finite
+set $J$, be continuous seminorms on $W^{k+1,p}(\Omega)$ such that
+
+(H2)′ if $|v|_{k+1,p,\Omega} = 0$ and $f_j(v) = 0$ for all $j$, then $v = 0$.
+
+Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega} + \sum_j f_j(v)\Bigr).$$
+This is Theorem 7.3.13 of [han2009theoretical] in abstract form, and the argument of the proof
+of Theorem 7.3.12.
+
+The compact embedding is `IsCompactEmbedding` of `SobolevMultiIndex.toLowerOrderL`. The proof is
+the book's argument by contradiction: a sequence with $\|v_n\| = 1$ and
+$|v_n| + \sum_j f_j(v_n) \le 1/n$ has a subsequence that converges in $W^{k,p}(\Omega)$. The
+top-order seminorms tend to zero, so the subsequence is a Cauchy sequence in $W^{k+1,p}(\Omega)$
+(`SobolevMultiIndex.norm_le_norm_toLowerOrder_add_topSeminorm`). Its limit $v$ has $\|v\| = 1$,
+$|v| = 0$ and $f_j(v) = 0$ for all $j$, which contradicts (H2)′. -/
 theorem exists_norm_le_topSeminorm_add_sum_of_isCompactEmbedding (hp : p ≠ ⊤)
     (hc : IsCompactEmbedding (toLowerOrderL F b p Ω μ (Nat.le_succ k)).toLinearMap)
     {J : Type*} [Fintype J] (f : J → Seminorm ℝ (SobolevMultiIndex F b (k + 1) p Ω μ))
@@ -854,17 +980,22 @@ end SobolevMultiIndex
 
 end Abstract
 
-/-! ### The seminorm `v ↦ ∫_s |L v| dσ` of a bounded map into `L^q` of a finite measure -/
+/-!
+### The seminorm $v \mapsto \int_s |Lv| \, d\sigma$ of a bounded map into $L^q$ of a finite measure
+-/
 
 section AbsIntegralSeminorm
 
 variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] {X : Type*} [MeasurableSpace X]
   {σ : Measure X} [IsFiniteMeasure σ] {q : ℝ≥0∞} [Fact (1 ≤ q)]
 
-/-- **The seminorm `v ↦ ∫_s |L v| dσ`** on `W`, for a bounded linear `L : W → L^q(σ)` into the
-`L^q` space of a finite measure (so that `L^q(σ) ⊆ L¹(σ)`). With `L` a trace operator it is the
-boundary seminorm `f(v) = ∫_Γ |γ v| ds` that the Deny–Lions norm equivalences are applied to
-([han2009theoretical] Examples 7.3.15 and 7.3.16). -/
+/-- The **seminorm** $v \mapsto \int_s |(Lv)(x)| \, d\sigma(x)$ on a real normed space $W$, for a
+bounded linear map $L : W \to L^q(\sigma)$ into the $L^q$ space of a finite measure $\sigma$,
+with $1 \le q$, and a set $s$. The finite measure gives $L^q(\sigma) \subseteq L^1(\sigma)$.
+
+With $L$ a trace operator, this is the boundary seminorm $f(v) = \int_\Gamma |\gamma v| \, ds$
+to which the Deny–Lions norm equivalences are applied in Examples 7.3.15 and 7.3.16 of
+[han2009theoretical]. -/
 def absIntegralSeminorm (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) : Seminorm ℝ W where
   toFun v := ∫ x in s, |(L v : X → ℝ) x| ∂σ
   map_zero' := by
@@ -892,14 +1023,17 @@ def absIntegralSeminorm (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) : Seminorm ℝ
     filter_upwards [ae_restrict_of_ae (Lp.coeFn_smul c (L v))] with x hx
     rw [hx, Pi.smul_apply, smul_eq_mul, abs_mul]
 
-/-- The seminorm `absIntegralSeminorm L s` is `v ↦ ∫_s |L v| dσ`. -/
+/-- The value of `absIntegralSeminorm L s` at $v$ is $\int_s |(Lv)(x)| \, d\sigma(x)$. -/
 theorem absIntegralSeminorm_apply (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) (v : W) :
     absIntegralSeminorm L s v = ∫ x in s, |(L v : X → ℝ) x| ∂σ :=
   rfl
 
-/-- **The hypothesis (H1) for the seminorm `∫_s |L v| dσ`**: it is bounded by a multiple of `‖v‖`,
-through the inclusion `L^q(σ) ⊆ L¹(σ)` of the finite measure (`MeasureTheory.Lp.monoExponentL`).
-With `Seminorm.continuous_of_forall_le_mul_norm` it is therefore continuous. -/
+/-- The seminorm $v \mapsto \int_s |Lv| \, d\sigma$ satisfies the hypothesis (H1): there is $c$ with
+$\int_s |Lv| \, d\sigma \le c \|v\|$ for all $v \in W$.
+
+The bound comes from the inclusion $L^q(\sigma) \subseteq L^1(\sigma)$ for the finite measure
+$\sigma$ (`MeasureTheory.Lp.monoExponentL`). With `Seminorm.continuous_of_forall_le_mul_norm`
+the seminorm is therefore continuous. -/
 theorem exists_absIntegralSeminorm_le (L : W →L[ℝ] Lp ℝ q σ) (s : Set X) :
     ∃ c : ℝ, ∀ v, absIntegralSeminorm L s v ≤ c * ‖v‖ := by
   refine ⟨‖(Lp.monoExponentL ℝ σ q 1 Fact.out).comp L‖, fun v ↦ ?_⟩
@@ -922,7 +1056,10 @@ end AbsIntegralSeminorm
 
 section TwoNorms
 
-/-- For a nonnegative vector, `(∑ i, z i ^ p)^{1/p} ≤ ∑ i, z i` when `1 ≤ p < ∞`. -/
+/-- Let $z \in \mathbb{R}^\iota$ have nonnegative entries, with $\iota$ finite, and let
+$1 \le p < \infty$. Then
+$$\Bigl(\sum_i z_i^p\Bigr)^{1/p} \le \sum_i z_i.$$
+-/
 theorem Real.rpow_sum_rpow_le_sum {ι : Type*} [Fintype ι] {z : ι → ℝ} (hz : ∀ i, 0 ≤ z i)
     {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     (∑ i, z i ^ p.toReal) ^ (1 / p.toReal) ≤ ∑ i, z i := by
@@ -935,7 +1072,10 @@ theorem Real.rpow_sum_rpow_le_sum {ι : Type*} [Fintype ι] {z : ι → ℝ} (hz
     exact Finset.sum_congr rfl fun i _ ↦ by simp [Real.norm_eq_abs, abs_of_nonneg (hz i)]
   · exact Finset.sum_congr rfl fun i _ ↦ by simp [Real.norm_eq_abs, abs_of_nonneg (hz i)]
 
-/-- For a nonnegative vector, `∑ i, z i ≤ card ι * (∑ i, z i ^ p)^{1/p}` when `1 ≤ p < ∞`. -/
+/-- Let $z \in \mathbb{R}^\iota$ have nonnegative entries, with $\iota$ finite of cardinality $n$,
+and let $1 \le p < \infty$. Then
+$$\sum_i z_i \le n \Bigl(\sum_i z_i^p\Bigr)^{1/p}.$$
+-/
 theorem Real.sum_le_card_mul_rpow_sum_rpow {ι : Type*} [Fintype ι] {z : ι → ℝ}
     (hz : ∀ i, 0 ≤ z i) {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     ∑ i, z i ≤ Fintype.card ι * (∑ i, z i ^ p.toReal) ^ (1 / p.toReal) := by
@@ -964,8 +1104,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- **The easy half of the Deny–Lions equivalences**: for seminorms `f_j` with
-`f_j(v) ≤ c ‖v‖` ((H1)), `|v|_{k,p,Ω} + ∑_j f_j(v) ≤ (1 + J c) ‖v‖`. -/
+/-- The easy half of the Deny–Lions equivalences. Let $f_j$, for $j$ in a finite set $J$ of
+cardinality $|J|$, be seminorms on $W^{k,p}(\Omega)$ with $f_j(v) \le c \|v\|_{k,p,\Omega}$ for
+all $j$ and $v$ (the hypothesis (H1)). Then for all $v \in W^{k,p}(\Omega)$,
+$$|v|_{k,p,\Omega} + \sum_j f_j(v) \le (1 + |J| c) \|v\|_{k,p,\Omega}.$$
+-/
 theorem topSeminorm_add_sum_le_norm {J : Type*} [Fintype J]
     (f : J → Seminorm ℝ (SobolevMultiIndex F b k p Ω μ)) {c : ℝ} (hf : ∀ j v, f j v ≤ c * ‖v‖)
     (v : SobolevMultiIndex F b k p Ω μ) :
@@ -976,7 +1119,10 @@ theorem topSeminorm_add_sum_le_norm {J : Type*} [Fintype J]
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
         ring
 
-/-- The vector `(|v|_{k,p,Ω}, f_j(v))_j` whose `ℓ^p` norm is the quantity (7.3.4). -/
+/-- The quantity (7.3.4) is the $\ell^p$ norm of the vector
+$(|v|_{k,p,\Omega}, f_1(v), \dots, f_J(v))$, indexed by `Option J`:
+$$\Bigl(|v|_{k,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p} = \Bigl(\sum_{o} z_o^p\Bigr)^{1/p},$$
+where $z_{\mathrm{none}} = |v|_{k,p,\Omega}$ and $z_j = f_j(v)$. -/
 theorem lp_topSeminorm_sum_eq {J : Type*} [Fintype J]
     (f : J → Seminorm ℝ (SobolevMultiIndex F b k p Ω μ)) (v : SobolevMultiIndex F b k p Ω μ) :
     (topSeminorm F b k p Ω μ v ^ p.toReal + ∑ j, f j v ^ p.toReal) ^ (1 / p.toReal)
@@ -985,8 +1131,10 @@ theorem lp_topSeminorm_sum_eq {J : Type*} [Fintype J]
   rw [Fintype.sum_option]
   rfl
 
-/-- **The quantity (7.3.4) is at most the quantity (7.3.3)**:
-`(|v|^p + ∑_j f_j(v)^p)^{1/p} ≤ |v| + ∑_j f_j(v)` for `1 ≤ p < ∞`. -/
+/-- For $1 \le p < \infty$, seminorms $f_j$ on $W^{k,p}(\Omega)$ indexed by a finite set $J$, and
+$v \in W^{k,p}(\Omega)$, the quantity (7.3.4) is at most the quantity (7.3.3):
+$$\Bigl(|v|_{k,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p} \le |v|_{k,p,\Omega} + \sum_j f_j(v).$$
+-/
 theorem lp_topSeminorm_sum_le_add (hp : p ≠ ⊤) {J : Type*} [Fintype J]
     (f : J → Seminorm ℝ (SobolevMultiIndex F b k p Ω μ)) (v : SobolevMultiIndex F b k p Ω μ) :
     (topSeminorm F b k p Ω μ v ^ p.toReal + ∑ j, f j v ^ p.toReal) ^ (1 / p.toReal)
@@ -997,8 +1145,12 @@ theorem lp_topSeminorm_sum_le_add (hp : p ≠ ⊤) {J : Type*} [Fintype J]
   · rw [Fintype.sum_option]
     rfl
 
-/-- **The quantity (7.3.3) is at most `(J + 1)` times the quantity (7.3.4)**:
-`|v| + ∑_j f_j(v) ≤ (J + 1) (|v|^p + ∑_j f_j(v)^p)^{1/p}` for `1 ≤ p < ∞`. -/
+/-- For $1 \le p < \infty$, seminorms $f_j$ on $W^{k,p}(\Omega)$ indexed by a finite set $J$ of
+cardinality $|J|$, and $v \in W^{k,p}(\Omega)$, the quantity (7.3.3) is at most $|J| + 1$ times
+the quantity (7.3.4):
+$$|v|_{k,p,\Omega} + \sum_j f_j(v)
+  \le (|J| + 1) \Bigl(|v|_{k,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p}.$$
+-/
 theorem add_le_card_mul_lp_topSeminorm_sum (hp : p ≠ ⊤) {J : Type*} [Fintype J]
     (f : J → Seminorm ℝ (SobolevMultiIndex F b k p Ω μ)) (v : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ v + ∑ j, f j v
@@ -1016,7 +1168,7 @@ end SobolevMultiIndex
 
 end Reverse
 
-/-! ### The Deny–Lions theorems on an extension domain of `ℝ^N` -/
+/-! ### The Deny–Lions theorems on an extension domain of $\mathbb{R}^N$ -/
 
 section Euclidean
 
@@ -1024,23 +1176,25 @@ open MvPolynomial SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))} {k : ℕ}
 
-/-- The polynomial function of the standard basis of `ℝ^N` is `x ↦ q(x)`. -/
+/-- For the standard basis of $\mathbb{R}^N$, the polynomial function `MvPolynomial.evalBasis` of
+$q$ is $x \mapsto q(x_1, \dots, x_N)$. -/
 theorem MvPolynomial.evalBasis_basisFun (q : MvPolynomial (Fin N) ℝ)
     (x : EuclideanSpace ℝ (Fin N)) :
     evalBasis (EuclideanSpace.basisFun (Fin N) ℝ).toBasis q x = eval (fun i ↦ x i) q := by
   unfold evalBasis
   congr 1
 
-/-- A polynomial all of whose monomials have degree `< k + 1` has total degree at most `k`. -/
+/-- A polynomial all of whose monomials have degree $< k + 1$ has total degree at most $k$. -/
 theorem MvPolynomial.mem_restrictTotalDegree_of_forall_degree_lt {ι : Type*}
     {q : MvPolynomial ι ℝ} (h : ∀ m ∈ q.support, m.degree < k + 1) :
     q ∈ restrictTotalDegree ι ℝ k := by
   rw [mem_restrictTotalDegree, totalDegree]
   exact Finset.sup_le fun m hm ↦ Nat.lt_succ_iff.1 (h m hm)
 
-/-- **`|v|_{k+1,p,Ω} = 0` on a connected open set means `v ∈ ℙ_k(Ω)`** (the sentence preceding
-`[han2009theoretical]` Theorem 7.3.12, on `ℝ^N`): `v` agrees almost everywhere on `Ω` with a
-polynomial of total degree at most `k`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected open set and let $v \in W^{k+1,p}(\Omega)$
+with $|v|_{k+1,p,\Omega} = 0$. Then $v \in \mathbb{P}_k(\Omega)$: there is a polynomial $q$ of
+total degree at most $k$ with $v(x) = q(x)$ for almost every $x \in \Omega$. This is the
+sentence before Theorem 7.3.12 of [han2009theoretical], on $\mathbb{R}^N$. -/
 theorem SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero
     (hΩ : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {v : SobolevEuclidean N (k + 1) p Ω}
@@ -1053,12 +1207,23 @@ theorem SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_
   refine ⟨q, mem_restrictTotalDegree_of_forall_degree_lt hq, hvq.trans ?_⟩
   exact Eventually.of_forall fun x ↦ evalBasis_basisFun q x
 
-/-- **Theorem 7.3.13 of `[han2009theoretical]`, the norm (7.3.3)**: on an extension domain
-`Ω ⊆ ℝ^N` of finite measure (the book's bounded Lipschitz domain), `k ≥ 1` and `1 ≤ p < ∞`,
-for seminorms `f_j` on `W^{k,p}(Ω)` with (H1) `f_j(v) ≤ c ‖v‖` and (H2)′ "`|v|_{k,p,Ω} = 0` and
-all `f_j(v) = 0` force `v = 0`", there is `C > 0` with `‖v‖_{k,p,Ω} ≤ C (|v|_{k,p,Ω} + ∑_j f_j(v))`
-for all `v`; with `SobolevMultiIndex.topSeminorm_add_sum_le_norm` this is the equivalence of the
-norm (7.3.3) with `‖·‖_{k,p,Ω}`. The order is written `k + 1`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of finite measure, let
+$k \ge 0$ and $1 \le p < \infty$. Let $f_j$, for $j$ in a finite set $J$, be seminorms on
+$W^{k+1,p}(\Omega)$ such that
+
+(H1) $f_j(v) \le c \|v\|_{k+1,p,\Omega}$ for all $j$ and $v$, and
+
+(H2)′ if $|v|_{k+1,p,\Omega} = 0$ and $f_j(v) = 0$ for all $j$, then $v = 0$.
+
+Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega} + \sum_j f_j(v)\Bigr).$$
+This is Theorem 7.3.13 of [han2009theoretical] for the norm (7.3.3). With
+`SobolevMultiIndex.topSeminorm_add_sum_le_norm` it gives the equivalence of the norm (7.3.3)
+with $\|\cdot\|_{k+1,p,\Omega}$.
+
+The book takes a bounded Lipschitz domain and the order $k \ge 1$; here the order is written
+$k + 1$. The extension domain is `IsSobolevExtensionDomain N p Ω`. The proof specializes
+`SobolevMultiIndex.exists_norm_le_topSeminorm_add_sum_of_isCompactEmbedding`. -/
 theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {J : Type*} [Fintype J]
@@ -1073,13 +1238,25 @@ theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero
     (SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain hΩ hμ k) f
     (fun j ↦ (f j).continuous_of_forall_le_mul_norm (hf j)) h2
 
-/-- **Theorem 7.3.12 of `[han2009theoretical]`, the norm (7.3.3)**: on a connected extension
-domain `Ω ⊆ ℝ^N` of finite measure (the book's Lipschitz domain), `k ≥ 1` and `1 ≤ p < ∞`, for
-seminorms `f_j` on `W^{k,p}(Ω)` with (H1) `f_j(v) ≤ c ‖v‖` and (H2) "`v ∈ ℙ_{k−1}(Ω)` and all
-`f_j(v) = 0` force `v = 0`", there is `C > 0` with `‖v‖_{k,p,Ω} ≤ C (|v|_{k,p,Ω} + ∑_j f_j(v))`
-for all `v`. (H2) gives (H2)′ because `|v|_{k,p,Ω} = 0` forces `v ∈ ℙ_{k−1}(Ω)` on a connected
-`Ω` (`SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero`). The
-order is written `k + 1`, so `ℙ_{k−1}` is `MvPolynomial.restrictTotalDegree (Fin N) ℝ k`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected $W^{1,p}$-extension domain of finite measure,
+let $k \ge 0$ and $1 \le p < \infty$. Let $f_j$, for $j$ in a finite set $J$, be seminorms on
+$W^{k+1,p}(\Omega)$ such that
+
+(H1) $f_j(v) \le c \|v\|_{k+1,p,\Omega}$ for all $j$ and $v$, and
+
+(H2) if $v \in \mathbb{P}_k(\Omega)$ and $f_j(v) = 0$ for all $j$, then $v = 0$.
+
+Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega} + \sum_j f_j(v)\Bigr).$$
+This is Theorem 7.3.12 of [han2009theoretical] for the norm (7.3.3).
+
+The book takes a Lipschitz domain, the order $k \ge 1$ and the polynomials $\mathbb{P}_{k-1}$;
+here the order is written $k + 1$, and $\mathbb{P}_k$ is
+`MvPolynomial.restrictTotalDegree (Fin N) ℝ k`. The statement $v \in \mathbb{P}_k(\Omega)$ means
+that $v$ agrees almost everywhere on $\Omega$ with a polynomial of total degree at most $k$.
+(H2) gives (H2)′ of Theorem 7.3.13, because $|v|_{k+1,p,\Omega} = 0$ implies
+$v \in \mathbb{P}_k(\Omega)$ on a connected $\Omega$
+(`SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero`). -/
 theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
@@ -1095,11 +1272,17 @@ theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected
   SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero hΩ hμ f hf fun v hv hfv ↦
     h2 v (SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero hΩc hv) hfv
 
-/-- **Theorem 7.3.12 of `[han2009theoretical]` with the seminorms `f_j(v) = |ℓ_j(v)|` of bounded
-linear functionals `ℓ_j`** (the form in which the theorem enters the Bramble–Hilbert lemma and
-Lemma 8.4.1 of the book): on a connected extension domain of finite measure, if `v ∈ ℙ_k(Ω)` and
-`ℓ_j(v) = 0` for all `j` force `v = 0`, then `‖v‖_{k+1,p,Ω} ≤ C (|v|_{k+1,p,Ω} + ∑_j |ℓ_j(v)|)`
-for some `C > 0`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected $W^{1,p}$-extension domain of finite measure,
+let $k \ge 0$ and $1 \le p < \infty$. Let $\ell_j$, for $j$ in a finite set $J$, be bounded
+linear functionals on $W^{k+1,p}(\Omega)$ such that if $v \in \mathbb{P}_k(\Omega)$ and
+$\ell_j(v) = 0$ for all $j$, then $v = 0$. Then there is $C > 0$ such that for all
+$v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega} + \sum_j |\ell_j(v)|\Bigr).$$
+This is Theorem 7.3.12 of [han2009theoretical] with the seminorms $f_j(v) = |\ell_j(v)|$, the
+form in which the theorem enters the Bramble–Hilbert lemma and Lemma 8.4.1 of the book.
+
+The order is written $k + 1$, as in
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected`, which this specializes. -/
 theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_abs_of_isPreconnected
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
@@ -1124,9 +1307,13 @@ theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_abs_of_isPreconnecte
   simpa only [Seminorm.comp_apply, coe_normSeminorm, ContinuousLinearMap.coe_coe,
     Real.norm_eq_abs] using hle v
 
-/-- **Theorem 7.3.12 of `[han2009theoretical]` with one bounded linear functional `ℓ`**: on a
-connected extension domain of finite measure, if `v ∈ ℙ_k(Ω)` and `ℓ(v) = 0` force `v = 0`, then
-`‖v‖_{k+1,p,Ω} ≤ C (|v|_{k+1,p,Ω} + |ℓ(v)|)` for some `C > 0`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected $W^{1,p}$-extension domain of finite measure,
+let $k \ge 0$ and $1 \le p < \infty$. Let $\ell$ be a bounded linear functional on
+$W^{k+1,p}(\Omega)$ such that if $v \in \mathbb{P}_k(\Omega)$ and $\ell(v) = 0$, then $v = 0$.
+Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \bigl(|v|_{k+1,p,\Omega} + |\ell(v)|\bigr).$$
+This is Theorem 7.3.12 of [han2009theoretical] with one seminorm $f(v) = |\ell(v)|$, as in the
+proof of Lemma 8.4.1 of the book. -/
 theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
@@ -1143,8 +1330,9 @@ theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected
     hΩ hμ hΩc (fun _ : Unit ↦ ℓ) fun v hv hℓ ↦ h2 v hv (hℓ ())
   exact ⟨C, hC, fun v ↦ by simpa only [Fintype.sum_unique] using hle v⟩
 
-/-- The restriction to an open subset of an element with vanishing top-order derivatives has
-vanishing top-order derivatives. -/
+/-- Let $\Omega' \subseteq \Omega$ be open sets and let $v \in W^{k,p}(\Omega)$ with
+$|v|_{k,p,\Omega} = 0$. Then the restriction of $v$ to $\Omega'$, as an element of
+$W^{k,p}(\Omega')$, also has top-order seminorm zero. -/
 theorem SobolevMultiIndex.topSeminorm_restrictL_eq_zero {E F : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [NormedAddCommGroup F]
     [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
@@ -1159,12 +1347,24 @@ theorem SobolevMultiIndex.topSeminorm_restrictL_eq_zero {E F : Type*} [NormedAdd
     (Lp.coeFn_zero F p (μ.restrict (Ω : Set E)))) ?_
   exact (Lp.coeFn_zero F p _).symm
 
-/-- **Theorem 7.3.14 of `[han2009theoretical]`, the norm (7.3.3)**: on an extension domain
-`Ω ⊆ ℝ^N` of finite measure which is the union `Ω = ⋃_λ Ω_λ` of connected open sets (the book's
-disjoint union of Lipschitz domains — disjointness is not needed), `k ≥ 1` and `1 ≤ p < ∞`, for
-seminorms `f_j` on `W^{k,p}(Ω)` with (H1) `f_j(v) ≤ c ‖v‖` and (H2) "`v|_{Ω_λ} ∈ ℙ_{k−1}(Ω_λ)` for
-every `λ` and all `f_j(v) = 0` force `v = 0`", there is `C > 0` with
-`‖v‖_{k,p,Ω} ≤ C (|v|_{k,p,Ω} + ∑_j f_j(v))` for all `v`. The order is written `k + 1`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of finite measure, and let
+$\Omega = \bigcup_{\lambda \in \Lambda} \Omega_\lambda$ be a union of connected open sets. Let
+$k \ge 0$ and $1 \le p < \infty$. Let $f_j$, for $j$ in a finite set $J$, be seminorms on
+$W^{k+1,p}(\Omega)$ such that
+
+(H1) $f_j(v) \le c \|v\|_{k+1,p,\Omega}$ for all $j$ and $v$, and
+
+(H2) if $v|_{\Omega_\lambda} \in \mathbb{P}_k(\Omega_\lambda)$ for every $\lambda$ and
+$f_j(v) = 0$ for all $j$, then $v = 0$.
+
+Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega} + \sum_j f_j(v)\Bigr).$$
+This is Theorem 7.3.14 of [han2009theoretical] for the norm (7.3.3).
+
+The book takes a disjoint union of Lipschitz domains and the order $k \ge 1$. Disjointness is
+not needed here, and the index set $\Lambda$ is arbitrary. The order is written $k + 1$. The
+condition $v|_{\Omega_\lambda} \in \mathbb{P}_k(\Omega_\lambda)$ means that $v$ agrees almost
+everywhere on $\Omega_\lambda$ with a polynomial of total degree at most $k$. -/
 theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {Λ : Type*}
@@ -1187,9 +1387,17 @@ theorem SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup
       (SobolevMultiIndex.topSeminorm_restrictL_eq_zero hle hv)
   exact ⟨q, hq, (fn_restrictL hle v).symm.trans hvq⟩
 
-/-- **Theorem 7.3.13 of `[han2009theoretical]`, the norm (7.3.4)**: under the hypotheses of
-`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`,
-`‖v‖_{k,p,Ω} ≤ C (|v|_{k,p,Ω}^p + ∑_j f_j(v)^p)^{1/p}` for some `C > 0`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{1,p}$-extension domain of finite measure, let
+$k \ge 0$ and $1 \le p < \infty$. Let $f_j$, for $j$ in a finite set $J$, be seminorms on
+$W^{k+1,p}(\Omega)$ with (H1) $f_j(v) \le c \|v\|_{k+1,p,\Omega}$ and (H2)′: if
+$|v|_{k+1,p,\Omega} = 0$ and $f_j(v) = 0$ for all $j$, then $v = 0$. Then there is $C > 0$ such
+that for all $v \in W^{k+1,p}(\Omega)$,
+$$\|v\|_{k+1,p,\Omega} \le C \Bigl(|v|_{k+1,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p}.$$
+This is Theorem 7.3.13 of [han2009theoretical] for the norm (7.3.4).
+
+The hypotheses are those of
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`, and the order is
+written $k + 1$. -/
 theorem SobolevEuclidean.exists_norm_le_lp_topSeminorm_sum_of_forall_eq_zero
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {J : Type*} [Fintype J]
@@ -1217,7 +1425,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {Ω : Opens E} {μ : Measure E}
 
-/-- The multi-indices of order exactly one are the `e_i`. -/
+/-- The map $i \mapsto e_i$ from $\iota$ to the multi-indices of order exactly one is a bijection.
+-/
 theorem MultiIndexLE.single_bijective :
     Function.Bijective fun i : ι ↦ (⟨MultiIndexLE.single i, by simp⟩ : MultiIndexEq ι 1) := by
   refine ⟨fun i j h ↦ MultiIndexLE.single_injective (Subtype.mk.inj h), fun α ↦ ?_⟩
@@ -1229,7 +1438,11 @@ theorem MultiIndexLE.single_bijective :
 
 namespace SobolevMultiIndex
 
-/-- **The top-order seminorm of `W^{1,p}(Ω)` is the gradient norm**: `|u|_{1,p,Ω} = ‖∇u‖_p`. -/
+/-- The top-order seminorm of $W^{1,p}(\Omega)$ is the gradient norm: for $u \in W^{1,p}(\Omega)$,
+$$|u|_{1,p,\Omega} = \|\nabla u\|_{L^p(\Omega)}.$$
+
+The gradient norm is `SobolevMultiIndex.gradNorm`, the $\ell^p$ norm of the tuple
+$(\partial_i u)_i$. -/
 theorem topSeminorm_one_eq_gradNorm (u : SobolevMultiIndex F b 1 p Ω μ) :
     topSeminorm F b 1 p Ω μ u = gradNorm u := by
   rw [topSeminorm_apply, gradNorm]
@@ -1256,11 +1469,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- **The two Deny–Lions norms, from the one inequality**: if `‖v‖ ≤ C (|v|_{k,p} + ∑_j f_j(v))`
-for some `C > 0` and `f_j(v) ≤ c ‖v‖` for all `j`, then both `|v|_{k,p} + ∑_j f_j(v)` (the
-quantity (7.3.3) of Atkinson–Han) and `(|v|_{k,p}^p + ∑_j f_j(v)^p)^{1/p}` (their (7.3.4)) vanish
-only at `v = 0` and are bounded above and below by positive multiples of `‖v‖`: they are norms on
-`W^{k,p}(Ω)` equivalent to its norm. -/
+/-- Let $1 \le p < \infty$, and let $f_j$, for $j$ in a finite set $J$, be seminorms on
+$W^{k,p}(\Omega)$ with $f_j(v) \le c \|v\|_{k,p,\Omega}$ for all $j$ and $v$. Assume that there
+is $C > 0$ with $\|v\|_{k,p,\Omega} \le C (|v|_{k,p,\Omega} + \sum_j f_j(v))$ for all $v$. Then
+each of the two quantities
+$$|v|_{k,p,\Omega} + \sum_j f_j(v) \quad (7.3.3) \qquad \text{and} \qquad
+  \Bigl(|v|_{k,p,\Omega}^p + \sum_j f_j(v)^p\Bigr)^{1/p} \quad (7.3.4)$$
+of [han2009theoretical] vanishes only at $v = 0$, and there are $c_1, c_2 > 0$ with $c_1
+\|v\|_{k,p,\Omega} \le (\text{quantity}) \le c_2 \|v\|_{k,p,\Omega}$ for all $v$. So both are
+norms on $W^{k,p}(\Omega)$ that are equivalent to its norm. -/
 theorem norm_equiv_of_exists_norm_le_topSeminorm_add_sum (hp' : p ≠ ⊤) {J : Type*} [Fintype J]
     {f : J → Seminorm ℝ (SobolevMultiIndex F b k p Ω μ)} {c : ℝ} (hf : ∀ j v, f j v ≤ c * ‖v‖)
     (h : ∃ C : ℝ, 0 < C ∧ ∀ v : SobolevMultiIndex F b k p Ω μ,
@@ -1306,18 +1523,22 @@ end SobolevMultiIndex
 
 end Conclusion
 
-/-! ### The quotient norm
+/-!
+### The quotient norm
 
-The norm of `V/ℝw` at a class `[v]` is `inf_α ‖v + α • w‖`. A seminorm `N ≤ ‖·‖` with `N w = 0`
-is bounded by it, and it is bounded by `C N v` when `‖v‖ ≤ C (N v + |ℓ v|)` for a linear
-functional `ℓ` with `ℓ w ≠ 0` (Lemma 8.4.1 of `[han2009theoretical]`, `V = H¹(Ω)`, `w = 1`,
-`N = |·|_{1,Ω}` and `ℓ v = ∫_Ω v`). -/
+The norm of $V/\mathbb{R}w$ at a class $[v]$ is $\inf_\alpha \|v + \alpha w\|$. A seminorm
+$N \le \|\cdot\|$ with $N(w) = 0$ is bounded by it. The quotient norm is bounded by $C N(v)$ when
+$\|v\| \le C (N(v) + |\ell(v)|)$ for a linear functional $\ell$ with $\ell(w) \ne 0$. This is Lemma
+8.4.1 of [han2009theoretical], with $V = H^1(\Omega)$, $w = 1$, $N = |\cdot|_{1,\Omega}$ and
+$\ell(v) = \int_\Omega v$.
+-/
 
 section Quotient
 
 namespace Seminorm
 
-/-- A seminorm does not see a vector on which it vanishes: `N (v + α w) = N v` when `N w = 0`. -/
+/-- Let $N$ be a seminorm on a real vector space $V$ and let $w \in V$ with $N(w) = 0$. Then
+$N(v + \alpha w) = N(v)$ for all $v \in V$ and $\alpha \in \mathbb{R}$. -/
 theorem apply_add_smul_of_eq_zero {V : Type*} [AddCommGroup V] [Module ℝ V]
     (N : Seminorm ℝ V) {w : V} (hw : N w = 0) (v : V) (α : ℝ) : N (v + α • w) = N v := by
   refine le_antisymm ?_ ?_
@@ -1330,15 +1551,21 @@ theorem apply_add_smul_of_eq_zero {V : Type*} [AddCommGroup V] [Module ℝ V]
 
 variable {V : Type*} [SeminormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- **A seminorm bounded by the norm and vanishing at `w` is bounded by the quotient norm**:
-`N v ≤ inf_α ‖v + α • w‖` when `N ≤ ‖·‖` and `N w = 0`. -/
+/-- Let $V$ be a real seminormed space, let $N$ be a seminorm on $V$ with $N(v) \le \|v\|$ for all
+$v$, and let $w \in V$ with $N(w) = 0$. Then for all $v \in V$,
+$$N(v) \le \inf_{\alpha \in \mathbb{R}} \|v + \alpha w\|.$$
+This is the lower bound of Lemma 8.4.1 of [han2009theoretical]. -/
 theorem le_ciInf_norm_add_smul (N : Seminorm ℝ V) (hN : ∀ v, N v ≤ ‖v‖) {w : V} (hw : N w = 0)
     (v : V) : N v ≤ ⨅ α : ℝ, ‖v + α • w‖ :=
   le_ciInf fun α ↦ (N.apply_add_smul_of_eq_zero hw v α).symm.trans_le (hN _)
 
-/-- **The quotient norm is bounded by a seminorm `N` with `N w = 0`** as soon as
-`‖v‖ ≤ C (N v + |ℓ v|)` for a bounded linear functional `ℓ` with `ℓ w ≠ 0`: the representative
-`v + α • w` with `α = -ℓ v / ℓ w` has `ℓ (v + α • w) = 0`, so `inf_α ‖v + α • w‖ ≤ C N v`. -/
+/-- Let $V$ be a real seminormed space, let $N$ be a seminorm on $V$, let $w \in V$ with $N(w) = 0$,
+and let $\ell$ be a bounded linear functional on $V$ with $\ell(w) \ne 0$. Assume that
+$\|v\| \le C (N(v) + |\ell(v)|)$ for all $v$. Then for all $v \in V$,
+$$\inf_{\alpha \in \mathbb{R}} \|v + \alpha w\| \le C N(v).$$
+This is the upper bound of Lemma 8.4.1 of [han2009theoretical].
+
+The representative $v + \alpha w$ with $\alpha = -\ell(v)/\ell(w)$ has $\ell(v + \alpha w) = 0$. -/
 theorem ciInf_norm_add_smul_le_mul (N : Seminorm ℝ V) (ℓ : V →L[ℝ] ℝ) {w : V} (hw : N w = 0)
     (hℓw : ℓ w ≠ 0) {C : ℝ} (hle : ∀ v, ‖v‖ ≤ C * (N v + |ℓ v|)) (v : V) :
     ⨅ α : ℝ, ‖v + α • w‖ ≤ C * N v := by
@@ -1362,21 +1589,31 @@ namespace Seminorm
 
 variable {V : Type*} [SeminormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- A seminorm does not see a vector on which it vanishes: `N (v + q) = N v` when `N q = 0`. -/
+/-- Let $N$ be a seminorm on a real seminormed space $V$ and let $q \in V$ with $N(q) = 0$. Then
+$N(v + q) = N(v)$ for all $v \in V$. -/
 theorem apply_add_of_eq_zero (N : Seminorm ℝ V) {q : V} (hq : N q = 0) (v : V) :
     N (v + q) = N v := by
   simpa using N.apply_add_smul_of_eq_zero hq v 1
 
-/-- **A seminorm bounded by the norm and vanishing on a subspace `P` is bounded by the quotient
-norm of `V/P`**: `N v ≤ inf_{q ∈ P} ‖v + q‖` when `N ≤ ‖·‖` and `N` vanishes on `P`. -/
+/-- Let $V$ be a real seminormed space, let $N$ be a seminorm on $V$ with $N(v) \le \|v\|$ for all
+$v$, and let $P$ be a subspace of $V$ on which $N$ vanishes. Then for all $v \in V$, $N$ is
+bounded by the quotient norm of $V/P$:
+$$N(v) \le \inf_{q \in P} \|v + q\|.$$
+This is the first inequality of the proof of Theorem 7.3.17 of [han2009theoretical]. -/
 theorem le_ciInf_norm_add (N : Seminorm ℝ V) (hN : ∀ v, N v ≤ ‖v‖) (P : Submodule ℝ V)
     (hP : ∀ q ∈ P, N q = 0) (v : V) : N v ≤ ⨅ q : P, ‖v + q‖ :=
   le_ciInf fun q ↦ (N.apply_add_of_eq_zero (hP q q.2) v).symm.trans_le (hN _)
 
-/-- **The quotient norm of `V/P` is bounded by a seminorm `N` vanishing on `P`** under the
-Deny–Lions inequality `‖v‖ ≤ C (N v + ∑_j |ℓ_j v|)` for functionals `ℓ_j` extending the
-coordinate functionals of a basis `b` of `P`: the representative `v + q` with
-`q = -∑_j ℓ_j(v) b_j` has all `ℓ_j (v + q) = 0`, so `inf_{q ∈ P} ‖v + q‖ ≤ C N v`. -/
+/-- Let $V$ be a real seminormed space, let $P$ be a subspace of $V$ with a finite basis
+$(b_j)_{j \in J}$, and let $N$ be a seminorm on $V$ that vanishes on $P$. Let $\ell_j$, for
+$j \in J$, be bounded linear functionals on $V$ that extend the coordinate functionals of the
+basis $(b_j)$. Assume that $\|v\| \le C (N(v) + \sum_j |\ell_j(v)|)$ for all $v$. Then for all
+$v \in V$, the quotient norm of $V/P$ is bounded by $N$:
+$$\inf_{q \in P} \|v + q\| \le C N(v).$$
+This is the last step of the first proof of Theorem 7.3.17 of [han2009theoretical], after the
+coordinate functionals have been extended by the Hahn–Banach theorem.
+
+The representative $v + q$ with $q = -\sum_j \ell_j(v) b_j$ has $\ell_j(v + q) = 0$ for all $j$. -/
 theorem ciInf_norm_add_le_mul (N : Seminorm ℝ V) (P : Submodule ℝ V) (hP : ∀ q ∈ P, N q = 0)
     {J : Type*} [Fintype J] (b : Basis J ℝ P) {ℓ : J → V →L[ℝ] ℝ}
     (hℓ : ∀ j (x : P), ℓ j x = b.coord j x) {C : ℝ}
@@ -1399,8 +1636,11 @@ namespace Submodule
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- **The coordinate functionals of a basis of a finite-dimensional subspace extend to bounded
-linear functionals on the whole space** (the Hahn–Banach theorem). -/
+/-- Let $V$ be a real normed space and let $P$ be a finite-dimensional subspace with a basis
+$(b_j)_{j \in J}$. Then the coordinate functionals of the basis extend to bounded linear
+functionals $\ell_j$ on $V$: $\ell_j(x) = b_j^*(x)$ for all $x \in P$. This follows from the
+Hahn–Banach theorem, and it gives the extended functionals of the first proof of Theorem 7.3.17
+of [han2009theoretical]. -/
 theorem exists_continuousLinearMap_forall_apply_eq_coord (P : Submodule ℝ V)
     [FiniteDimensional ℝ P] {J : Type*} (b : Basis J ℝ P) :
     ∃ ℓ : J → V →L[ℝ] ℝ, ∀ j (x : P), ℓ j x = b.coord j x := by
@@ -1410,8 +1650,9 @@ theorem exists_continuousLinearMap_forall_apply_eq_coord (P : Submodule ℝ V)
   choose ℓ hℓ using h
   exact ⟨ℓ, hℓ⟩
 
-/-- A vector of `P` on which functionals extending the coordinate functionals of a basis of `P`
-all vanish is zero. -/
+/-- Let $P$ be a subspace of a real normed space $V$ with a basis $(b_j)_{j \in J}$, and let
+$\ell_j$ be linear functionals on $V$ that extend the coordinate functionals of this basis. If
+$q \in P$ and $\ell_j(q) = 0$ for all $j$, then $q = 0$. -/
 theorem eq_zero_of_forall_apply_eq_zero {P : Submodule ℝ V} {J : Type*} (b : Basis J ℝ P)
     {ℓ : J → V →L[ℝ] ℝ} (hℓ : ∀ j (x : P), ℓ j x = b.coord j x) {q : V} (hq : q ∈ P)
     (h : ∀ j, ℓ j q = 0) : q = 0 := by
@@ -1432,8 +1673,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι : Type*} [Fi
 namespace MvPolynomial
 
 omit [Fintype ι] in
-/-- The monomials of `∂_i q` come from those of `q`: `m ∈ supp (∂_i q)` gives
-`m + e_i ∈ supp q`. -/
+/-- The monomials of $\partial_i q$ come from those of $q$: if $m$ is in the support of
+$\partial_i q$, then $m + e_i$ is in the support of $q$. -/
 theorem add_single_mem_support_of_mem_support_pderiv {q : MvPolynomial ι ℝ} {i : ι}
     {m : ι →₀ ℕ} (hm : m ∈ (pderiv i q).support) : m + Finsupp.single i 1 ∈ q.support := by
   rw [mem_support_iff] at hm ⊢
@@ -1441,8 +1682,8 @@ theorem add_single_mem_support_of_mem_support_pderiv {q : MvPolynomial ι ℝ} {
   exact left_ne_zero_of_mul hm
 
 omit [Fintype ι] in
-/-- The monomials of `∂_i q` have degree at most `k` when those of `q` have degree at most
-`k + 1`. -/
+/-- If every monomial of $q$ has degree at most $k + 1$, then every monomial of $\partial_i q$ has
+degree at most $k$. -/
 theorem degree_le_of_mem_support_pderiv {q : MvPolynomial ι ℝ} {k : ℕ}
     (hq : ∀ m ∈ q.support, m.degree ≤ k + 1) {i : ι} {m : ι →₀ ℕ}
     (hm : m ∈ (pderiv i q).support) : m.degree ≤ k := by
@@ -1452,8 +1693,10 @@ theorem degree_le_of_mem_support_pderiv {q : MvPolynomial ι ℝ} {k : ℕ}
 
 variable (b : Basis ι ℝ E)
 
-/-- The derivative of a polynomial function, as a function: `∑ i, evalBasis b (∂_i q) • e_i^*`,
-with `e_i^*` the coordinate functionals of the basis. -/
+/-- The derivative of the polynomial function $q \circ b^{-1}$ (`MvPolynomial.evalBasis b q`), as a
+function of the point:
+$$D(q \circ b^{-1})(x) = \sum_i (\partial_i q \circ b^{-1})(x) \, b_i^*,$$
+where $b_i^*$ is the coordinate functional of the basis vector $b_i$. -/
 theorem fderiv_evalBasis (q : MvPolynomial ι ℝ) :
     fderiv ℝ (evalBasis b q) = fun x ↦ ∑ i, evalBasis b (pderiv i q) x •
       (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι ↦ ℝ) i).comp
@@ -1463,7 +1706,8 @@ theorem fderiv_evalBasis (q : MvPolynomial ι ℝ) :
   simp only [ContinuousLinearMap.smul_comp, evalBasis]
 
 omit [Fintype ι] in
-/-- The `n`-th derivative of `g • c`, `c` a constant vector, vanishes with that of `g`. -/
+/-- Let $g : E \to \mathbb{R}$ be smooth with $D^n g = 0$, and let $c$ be a vector of a real normed
+space. Then the function $y \mapsto g(y) c$ also has $n$-th derivative zero. -/
 theorem _root_.iteratedFDeriv_smul_const_eq_zero {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {g : E → ℝ} {n : ℕ} (hg : ContDiff ℝ ∞ g)
     (h : iteratedFDeriv ℝ n g = 0) (c : F) : iteratedFDeriv ℝ n (fun y ↦ g y • c) = 0 := by
@@ -1476,7 +1720,9 @@ theorem _root_.iteratedFDeriv_smul_const_eq_zero {F : Type*} [NormedAddCommGroup
   ext m
   simp
 
-/-- **The `(k+1)`-st derivative of a polynomial function of degree at most `k` vanishes.** -/
+/-- Let $q$ be a polynomial all of whose monomials have degree at most $k$. Then the $(k+1)$-st
+derivative of the polynomial function $q \circ b^{-1}$ (`MvPolynomial.evalBasis b q`) vanishes
+identically. -/
 theorem iteratedFDeriv_evalBasis_eq_zero {k : ℕ} :
     ∀ q : MvPolynomial ι ℝ, (∀ m ∈ q.support, m.degree ≤ k) →
       iteratedFDeriv ℝ (k + 1) (evalBasis b q) = 0 := by
@@ -1508,8 +1754,9 @@ theorem iteratedFDeriv_evalBasis_eq_zero {k : ℕ} :
     rw [iteratedFDeriv_succ_eq_comp_right, Function.comp_apply, hf0, Pi.zero_apply, map_zero,
       Pi.zero_apply]
 
-/-- The `n`-th derivative of a polynomial function of degree at most `k` vanishes for every
-`n ≥ k + 1`. -/
+/-- Let $q$ be a polynomial all of whose monomials have degree at most $k$, and let $n \ge k + 1$.
+Then the $n$-th derivative of the polynomial function $q \circ b^{-1}$
+(`MvPolynomial.evalBasis b q`) vanishes identically. -/
 theorem iteratedFDeriv_evalBasis_eq_zero_of_le {k : ℕ} {q : MvPolynomial ι ℝ}
     (hq : ∀ m ∈ q.support, m.degree ≤ k) {n : ℕ} (hn : k + 1 ≤ n) :
     iteratedFDeriv ℝ n (evalBasis b q) = 0 := by
@@ -1536,9 +1783,10 @@ namespace SobolevMultiIndex
 
 open MvPolynomial
 
-/-- **The top seminorm vanishes on the polynomials of degree at most `k`**: an element of
-`W^{k+1,p}(Ω)` whose function is a polynomial of degree at most `k` almost everywhere has
-vanishing weak derivatives of order `k + 1`. -/
+/-- Let $E$ be finite-dimensional with a Haar measure $\mu$, let $u \in W^{k+1,p}(\Omega)$ be
+real-valued, and let $q$ be a polynomial all of whose monomials have degree at most $k$. If
+$u = q \circ b^{-1}$ almost everywhere on $\Omega$, then $|u|_{k+1,p,\Omega} = 0$: the weak
+derivatives of $u$ of order $k + 1$ vanish. -/
 theorem topSeminorm_eq_zero_of_fn_ae_eq_evalBasis [FiniteDimensional ℝ E] [BorelSpace E]
     [μ.IsAddHaarMeasure] (u : SobolevMultiIndex ℝ b (k + 1) p Ω μ) {q : MvPolynomial ι ℝ}
     (hq : ∀ m ∈ q.support, m.degree ≤ k)
@@ -1555,7 +1803,9 @@ end SobolevMultiIndex
 
 end TopPolynomial
 
-/-! ### The polynomials of degree at most `k` inside `W^{k+1,p}(Ω)`, and the Sobolev quotient -/
+/-!
+### The polynomials of degree at most $k$ inside $W^{k+1,p}(\Omega)$, and the Sobolev quotient
+-/
 
 section SobolevQuotient
 
@@ -1566,8 +1816,9 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 namespace SobolevEuclidean
 
 omit [Fact (1 ≤ p)] in
-/-- The polynomial function `x ↦ q(x)` is the function of an element of `W^{k,p}(Ω)`, `Ω`
-bounded. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set and let $q$ be a polynomial in $N$
+variables. Then there is $u \in W^{k,p}(\Omega)$ with $u(x) = q(x)$ for almost every
+$x \in \Omega$. -/
 theorem exists_fn_ae_eq_eval (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q : MvPolynomial (Fin N) ℝ) :
     ∃ u : SobolevEuclidean N k p Ω,
@@ -1579,14 +1830,19 @@ theorem exists_fn_ae_eq_eval (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace
   rw [h]
   exact exists_fn_ae_eq_of_contDiff hb (contDiff_evalBasis _ q)
 
-/-- **The polynomial `q` as an element of `W^{k,p}(Ω)`**, `Ω` bounded: an element whose
-function is `x ↦ q(x)` almost everywhere on `Ω`. -/
+/-- The polynomial $q$ as an element of $W^{k,p}(\Omega)$, for a bounded open set
+$\Omega \subseteq \mathbb{R}^N$: an element whose function is $x \mapsto q(x)$ almost everywhere
+on $\Omega$.
+
+The element is chosen by `SobolevEuclidean.exists_fn_ae_eq_eval`. Its function is
+`SobolevEuclidean.fn_ofPolynomial`. -/
 def ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q : MvPolynomial (Fin N) ℝ) : SobolevEuclidean N k p Ω :=
   (exists_fn_ae_eq_eval (k := k) (p := p) hb q).choose
 
 omit [Fact (1 ≤ p)] in
-/-- The function of `ofPolynomial hb q` is `x ↦ q(x)` almost everywhere on `Ω`. -/
+/-- The function of `SobolevEuclidean.ofPolynomial hb q` is $x \mapsto q(x)$ almost everywhere on
+$\Omega$. -/
 theorem fn_ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q : MvPolynomial (Fin N) ℝ) :
     fn (ofPolynomial (k := k) (p := p) hb q)
@@ -1594,7 +1850,9 @@ theorem fn_ofPolynomial (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ 
   (exists_fn_ae_eq_eval (k := k) (p := p) hb q).choose_spec
 
 omit [Fact (1 ≤ p)] in
-/-- `ofPolynomial` is additive: the elements are determined by their functions. -/
+/-- The map `SobolevEuclidean.ofPolynomial` is additive: the element of $q + r$ is the sum of the
+elements of $q$ and $r$. The reason is that an element of $W^{k,p}(\Omega)$ is determined by its
+function. -/
 theorem ofPolynomial_add (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (q r : MvPolynomial (Fin N) ℝ) :
     ofPolynomial (k := k) (p := p) hb (q + r)
@@ -1607,7 +1865,8 @@ theorem ofPolynomial_add (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ
     rw [h1, h4, Pi.add_apply, h2, h3, map_add]
 
 omit [Fact (1 ≤ p)] in
-/-- `ofPolynomial` is homogeneous. -/
+/-- The map `SobolevEuclidean.ofPolynomial` is homogeneous: the element of $cq$ is $c$ times the
+element of $q$. -/
 theorem ofPolynomial_smul (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (c : ℝ) (q : MvPolynomial (Fin N) ℝ) :
     ofPolynomial (k := k) (p := p) hb (c • q) = c • ofPolynomial (k := k) (p := p) hb q :=
@@ -1617,31 +1876,40 @@ theorem ofPolynomial_smul (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace �
       fn_smul c (ofPolynomial (k := k) (p := p) hb q)] with x h1 h2 h3
     rw [h1, h3, Pi.smul_apply, h2, smul_eval, smul_eq_mul]
 
-/-- **`ℙ_k → W^{k+1,p}(Ω)`**, the linear map sending a polynomial of degree at most `k` to its
-polynomial function on the bounded open set `Ω`. -/
+/-- The linear map from $\mathbb{P}_k$ to $W^{k+1,p}(\Omega)$, for a bounded open set
+$\Omega \subseteq \mathbb{R}^N$, that sends a polynomial of total degree at most $k$ to its
+polynomial function on $\Omega$.
+
+The domain $\mathbb{P}_k$ is `MvPolynomial.restrictTotalDegree (Fin N) ℝ k`. -/
 def polynomialToSobolevₗ (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) :
     restrictTotalDegree (Fin N) ℝ k →ₗ[ℝ] SobolevEuclidean N (k + 1) p Ω where
   toFun q := ofPolynomial (k := k + 1) (p := p) hb q.1
   map_add' q r := ofPolynomial_add (k := k + 1) (p := p) hb q.1 r.1
   map_smul' c q := ofPolynomial_smul (k := k + 1) (p := p) hb c q.1
 
-/-- **`ℙ_k(Ω)` inside `W^{k+1,p}(Ω)`**: the subspace of the elements whose function is a
-polynomial of degree at most `k` almost everywhere on the bounded open set `Ω`, the range of
-`polynomialToSobolevₗ`; the quotient `W^{k+1,p}(Ω)/ℙ_k(Ω)` of §7.3.6 of `[han2009theoretical]` is
-the quotient by it. -/
+/-- The subspace $\mathbb{P}_k(\Omega)$ of $W^{k+1,p}(\Omega)$, for a bounded open set
+$\Omega \subseteq \mathbb{R}^N$: the elements whose function agrees almost everywhere on
+$\Omega$ with a polynomial of total degree at most $k$. The quotient
+$W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$ of §7.3.6 of [han2009theoretical] is the quotient by
+this subspace.
+
+The subspace is the range of `SobolevEuclidean.polynomialToSobolevₗ`. Membership is
+`SobolevEuclidean.mem_polynomialSubmodule_iff`. -/
 def polynomialSubmodule (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) :
     Submodule ℝ (SobolevEuclidean N (k + 1) p Ω) :=
   LinearMap.range (polynomialToSobolevₗ (k := k) (p := p) hb)
 
-/-- `ℙ_k(Ω)` is finite-dimensional, as the image of `ℙ_k`. -/
+/-- The subspace $\mathbb{P}_k(\Omega)$ of $W^{k+1,p}(\Omega)$ is finite-dimensional, as the image
+of the finite-dimensional space $\mathbb{P}_k$. -/
 instance instFiniteDimensionalPolynomialSubmodule
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) :
     FiniteDimensional ℝ (polynomialSubmodule (k := k) (p := p) hb) :=
   Module.Finite.range _
 
 omit [Fact (1 ≤ p)] in
-/-- **Membership in `ℙ_k(Ω)`**: the function is a polynomial of degree at most `k` almost
-everywhere on `Ω`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set. An element $u$ of $W^{k+1,p}(\Omega)$
+lies in $\mathbb{P}_k(\Omega)$ if and only if there is a polynomial $q$ of total degree at most
+$k$ with $u(x) = q(x)$ for almost every $x \in \Omega$. -/
 theorem mem_polynomialSubmodule_iff
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {u : SobolevEuclidean N (k + 1) p Ω} :
@@ -1655,7 +1923,8 @@ theorem mem_polynomialSubmodule_iff
     exact ⟨⟨q, hq⟩,
       ext_of_fn_ae_eq ((fn_ofPolynomial (k := k + 1) (p := p) hb q).trans hu.symm)⟩
 
-/-- The top seminorm `|·|_{k+1,p,Ω}` vanishes on `ℙ_k(Ω)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set. If $u \in \mathbb{P}_k(\Omega)$, then
+$|u|_{k+1,p,\Omega} = 0$. -/
 theorem topSeminorm_eq_zero_of_mem_polynomialSubmodule
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {u : SobolevEuclidean N (k + 1) p Ω} (hu : u ∈ polynomialSubmodule hb) :
@@ -1665,7 +1934,9 @@ theorem topSeminorm_eq_zero_of_mem_polynomialSubmodule
     (hu.trans (Eventually.of_forall fun x ↦ (evalBasis_basisFun q x).symm))
   exact (le_totalDegree hm).trans ((mem_restrictTotalDegree _ _ _).1 hq)
 
-/-- The top seminorm is constant on the classes of `W^{k+1,p}(Ω)/ℙ_k(Ω)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set. The top-order seminorm is constant on
+the classes of $W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$: if $q \in \mathbb{P}_k(\Omega)$, then
+$|v + q|_{k+1,p,\Omega} = |v|_{k+1,p,\Omega}$. -/
 theorem topSeminorm_add_of_mem_polynomialSubmodule
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (v : SobolevEuclidean N (k + 1) p Ω) {q : SobolevEuclidean N (k + 1) p Ω}
@@ -1676,8 +1947,11 @@ theorem topSeminorm_add_of_mem_polynomialSubmodule
     (topSeminorm ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (k + 1) p Ω volume)
     (topSeminorm_eq_zero_of_mem_polynomialSubmodule hb hq) v
 
-/-- **The top seminorm is bounded by the quotient norm**: `|v|_{k+1,p,Ω} ≤ inf_{q ∈ ℙ_k} ‖v + q‖`
-(the first inequality in the proof of `[han2009theoretical]` Theorem 7.3.17). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set. The top-order seminorm is bounded by
+the quotient norm of $W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$: for all
+$v \in W^{k+1,p}(\Omega)$,
+$$|v|_{k+1,p,\Omega} \le \inf_{q \in \mathbb{P}_k(\Omega)} \|v + q\|_{k+1,p,\Omega}.$$
+This is the first inequality of the proof of Theorem 7.3.17 of [han2009theoretical]. -/
 theorem topSeminorm_le_ciInf_norm_add
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (v : SobolevEuclidean N (k + 1) p Ω) :
@@ -1697,9 +1971,10 @@ open MvPolynomial SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))} {k : ℕ}
 
-/-- **`|v|_{k+1,p,Ω} = 0` exactly on `ℙ_k(Ω)`** for a connected bounded `Ω`: the top seminorm
-descends to a norm on the quotient `W^{k+1,p}(Ω)/ℙ_k(Ω)` (`[han2009theoretical]`, Theorem
-7.3.17, "is a norm on `V`"). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected bounded open set and $1 \le p < \infty$. For
+$u \in W^{k+1,p}(\Omega)$, $|u|_{k+1,p,\Omega} = 0$ if and only if $u \in \mathbb{P}_k(\Omega)$.
+So the top-order seminorm is a norm on the quotient $W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$, as
+Theorem 7.3.17 of [han2009theoretical] states. -/
 theorem SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hΩc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -1710,14 +1985,18 @@ theorem SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule
     (SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero hΩc h),
     SobolevEuclidean.topSeminorm_eq_zero_of_mem_polynomialSubmodule hb⟩
 
-/-- **Theorem 7.3.17 of `[han2009theoretical]`, the inequality (7.3.13)**: on a connected
-bounded extension domain `Ω ⊆ ℝ^N` (the book's Lipschitz domain) and for `1 ≤ p < ∞`, the
-quotient norm of `W^{k+1,p}(Ω)/ℙ_k(Ω)` is bounded by the top seminorm,
-`inf_{q ∈ ℙ_k} ‖v + q‖_{k+1,p,Ω} ≤ C |v|_{k+1,p,Ω}`; with
-`SobolevEuclidean.topSeminorm_le_ciInf_norm_add` this is the equivalence of the two. The book's
-first proof: the coordinate functionals of a basis of `ℙ_k(Ω)` extend by Hahn–Banach to bounded
-functionals `ℓ_j` on `W^{k+1,p}(Ω)`, the seminorms `|ℓ_j|` satisfy (H2) of Theorem 7.3.12, and
-the representative `v + q` with all `ℓ_j(v + q) = 0` gives the bound. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a connected bounded $W^{1,p}$-extension domain and let
+$1 \le p < \infty$. Then there is $C > 0$ such that for all $v \in W^{k+1,p}(\Omega)$,
+$$\inf_{q \in \mathbb{P}_k(\Omega)} \|v + q\|_{k+1,p,\Omega} \le C |v|_{k+1,p,\Omega}.$$
+This is the inequality (7.3.13) of Theorem 7.3.17 of [han2009theoretical]. With
+`SobolevEuclidean.topSeminorm_le_ciInf_norm_add` it gives the equivalence of the quotient norm
+of $W^{k+1,p}(\Omega)/\mathbb{P}_k(\Omega)$ with the top-order seminorm.
+
+The book takes a Lipschitz domain. The proof is the book's first proof: the coordinate
+functionals of a basis of $\mathbb{P}_k(\Omega)$ extend by the Hahn–Banach theorem to bounded
+linear functionals $\ell_j$ on $W^{k+1,p}(\Omega)$, the seminorms $|\ell_j|$ satisfy (H2) of
+Theorem 7.3.12, and the representative $v + q$ with $\ell_j(v + q) = 0$ for all $j$ gives the
+bound. -/
 theorem SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))

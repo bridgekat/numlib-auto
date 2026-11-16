@@ -14,44 +14,67 @@ import Numlib.LinearAlgebra.Matrix.QR
 /-!
 # Constrained least squares
 
-Least squares with a quadratic inequality constraint (LSQI, `min ‖Ax − b‖` subject to
-`‖Bx − d‖ ≤ α`) and with linear equality constraints (LSE, `min ‖Ax − b‖` subject to `Bx = d`)
-([golub2013matrix] §6.2).
+Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, $B \in \mathbb{K}^{p \times n}$ and
+$d \in \mathbb{K}^p$, with $\mathbb{K}$ either $\mathbb{R}$ or $\mathbb{C}$. This module studies two
+constrained least-squares problems of [golub2013matrix], §6.2: least squares with a quadratic
+inequality constraint (LSQI), $\min \|Ax - b\|$ subject to $\|Bx - d\| \le \alpha$, and least
+squares with linear equality constraints (LSE), $\min \|Ax - b\|$ subject to $Bx = d$. LSE is LSQI
+with $\alpha = 0$.
+
+For the sphere problem $\|x\| \le \alpha$, a feasible least-squares solution solves LSQI. Otherwise
+every solution lies on the sphere $\|x\| = \alpha$, and the ridge solution
+$x(\lambda) = (A^H A + \lambda I)^{-1} A^H b$ of norm $\alpha$ is a solution; the secular equation
+$\|x(\lambda)\| = \alpha$ has exactly one positive root. No Lagrange multiplier theorem is used: the
+inequality $\|Ay - b\|^2 + \lambda \|y\|^2 \ge \|Ax(\lambda) - b\|^2 + \lambda \alpha^2$ does the
+work. For LSE, the module proves existence and uniqueness, the solution through a QR factorization
+of $B^H$, the augmented system, the solution through the generalized singular value decomposition
+(GSVD), and the convergence of the method of weighting.
 
 ## Main definitions
 
-* `Matrix.IsLSQISolution A b B d α x` and `Matrix.IsLSESolution A b B d x`: the two problems, as
-  specifications in the style of `Matrix.IsLeastSquaresSolution`; LSE is LSQI with `α = 0`
-  (`Matrix.isLSQISolution_zero_iff`).
-* `Matrix.augmentedLSE A B`: the symmetric indefinite matrix `[0 Aᴴ Bᴴ; A I 0; B 0 0]` of
-  [golub2013matrix] (6.2.10).
-* `Matrix.penaltyLSE A B b d λ`: the method of weighting, the solution
-  `(AᴴA + λBᴴB)⁻¹(Aᴴb + λBᴴd)` of the stacked problem (6.2.13).
+* `Matrix.IsLSQISolution`: $x$ minimizes $\|Ax - b\|$ subject to $\|Bx - d\| \le \alpha$.
+* `Matrix.IsLSESolution`: $x$ minimizes $\|Ax - b\|$ subject to $Bx = d$.
+* `Matrix.augmentedLSE`: the symmetric indefinite matrix $\begin{bmatrix} 0 & A^H & B^H \\ A & I & 0
+  \\ B & 0 & 0 \end{bmatrix}$ of (6.2.10).
+* `Matrix.penaltyLSE`: the solution $(A^H A + \lambda B^H B)^{-1} (A^H b + \lambda B^H d)$ of the
+  method of weighting, (6.2.13).
 
 ## Main results
 
-* The sphere problem (6.2.1): a feasible least-squares solution solves it
-  (`Matrix.isLSQISolution_of_isLeastSquaresSolution`); otherwise every solution lies on the sphere
-  (`Matrix.IsLSQISolution.norm_eq_of_lt`), the ridge solution of norm `α` solves it
-  (`Matrix.isLSQISolution_tikhonov`), and the secular equation `‖x(λ)‖ = α` has exactly one
-  positive root (`Matrix.existsUnique_norm_toEuclideanLin_tikhonov_eq`). No Lagrange multiplier
-  appears: `‖Ay − b‖² + λ‖y‖² ≥ ‖Ax(λ) − b‖² + λα²` does the work.
-* LSE: through the QR factorization of `Bᴴ` (`Matrix.isLSESolution_of_isQR`, the derivation of
-  Algorithm 6.2.2), existence and uniqueness (`Matrix.existsUnique_isLSESolution`), the augmented
-  system (`Matrix.isLSESolution_of_augmented`, `Matrix.isUnit_augmentedLSE`), the GSVD
-  (`Matrix.isLSQISolution_iff_of_isGSVD`, `Matrix.isLSESolution_sum_of_isGSVD`) and the method
-  of weighting (`Matrix.penaltyLSE_sub_eq_sum_of_isGSVD`, `Matrix.tendsto_penaltyLSE`).
+* `Matrix.isLSQISolution_zero_iff`: LSE is LSQI with $\alpha = 0$.
+* `Matrix.isLSQISolution_of_isLeastSquaresSolution`: a feasible least-squares solution solves LSQI.
+* `Matrix.IsLSQISolution.norm_eq_of_lt`: if $\alpha < \|A^+ b\|$, every solution of the sphere
+  problem has $\|x\| = \alpha$.
+* `Matrix.isLSQISolution_tikhonov`: a ridge solution $x(\lambda)$ with $\lambda > 0$ and
+  $\|x(\lambda)\| = \alpha$ solves the sphere problem.
+* `Matrix.existsUnique_norm_toEuclideanLin_tikhonov_eq`: for $0 < \alpha < \|A^+ b\|$, exactly one
+  $\lambda > 0$ has $\|x(\lambda)\| = \alpha$.
+* `Matrix.existsUnique_isLSESolution`: a consistent LSE problem has a solution, and it is unique if
+  $\ker A \cap \ker B = 0$.
+* `Matrix.isLSESolution_of_augmented`: a solution of the augmented system (6.2.10) gives an LSE
+  solution.
+* `Matrix.isUnit_augmentedLSE`: the augmented matrix is nonsingular if $A$ has full column rank and
+  $B$ has full row rank.
+* `Matrix.isLSESolution_of_isQR`: the LSE solution through the QR factorization of $B^H$, the
+  derivation of Algorithm 6.2.2.
+* `Matrix.isLSQISolution_iff_of_isGSVD`: LSQI in GSVD coordinates, (6.2.6).
+* `Matrix.isLSESolution_sum_of_isGSVD`: the LSE solution as a combination of the columns of the GSVD
+  factor $X$, (6.2.12).
+* `Matrix.penaltyLSE_sub_eq_sum_of_isGSVD`: the error of the method of weighting in GSVD
+  coordinates, (6.2.14).
+* `Matrix.tendsto_penaltyLSE`: the method of weighting converges to the LSE solution as
+  $\lambda \to \infty$.
 
 ## Implementation notes
 
-Vectors live in `EuclideanSpace` and matrices act through `Matrix.toEuclideanLin`, as in
-`Numlib/LinearAlgebra/Matrix/LeastSquares`. The GSVD statements are in the block order of
-Theorem 6.1.1 (`Matrix.IsGSVD`); the book's (6.2.12) and (6.2.14) are printed in the third
-edition's order, and (6.2.14) has `λ²` for `λ`.
-
-## References
-
-* [golub2013matrix] §6.2.
+* Vectors are elements of `EuclideanSpace`, and matrices act through `Matrix.toEuclideanLin`, as in
+  `Numlib.LinearAlgebra.Matrix.LeastSquares`. The two problems are specifications in the style of
+  `Matrix.IsLeastSquaresSolution`.
+* The regularization parameter $\lambda$ is the Lean variable `μ`, because `λ` is a Lean keyword.
+  The ridge solution $x(\lambda)$ is `Matrix.tikhonov A μ` applied to $b$.
+* The GSVD statements use the block order of Theorem 6.1.1 of [golub2013matrix] (`Matrix.IsGSVD`).
+  The source prints (6.2.12) and (6.2.14) in the block order of its third edition, and (6.2.14) has
+  $\lambda^2$ where $\lambda$ is correct.
 -/
 
 open Filter Topology
@@ -60,33 +83,42 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
+/-! ### The two problems -/
+
 section Defs
 
 variable {m n p : Type*} [Fintype m] [Fintype n] [Fintype p] [DecidableEq n]
 
-/-- **Least squares with a quadratic inequality constraint** ([golub2013matrix] (6.2.1),
-(6.2.5)): `x` is feasible, `‖Bx − d‖ ≤ α`, and at least as good as every feasible point. The sphere
-problem (6.2.1) is `B = 1`, `d = 0`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, $B \in \mathbb{K}^{p \times n}$,
+$d \in \mathbb{K}^p$ and $\alpha \in \mathbb{R}$. A vector $x \in \mathbb{K}^n$ is a solution of
+**least squares with a quadratic inequality constraint** if $\|Bx - d\| \le \alpha$ and
+$$\|Ax - b\| \le \|Ay - b\| \quad \text{for every } y \text{ with } \|By - d\| \le \alpha.$$
+This is problem (6.2.5) of [golub2013matrix]. The sphere problem (6.2.1) is the case $B = I$,
+$d = 0$. -/
 structure IsLSQISolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) (B : Matrix p n 𝕜)
     (d : EuclideanSpace 𝕜 p) (α : ℝ) (x : EuclideanSpace 𝕜 n) : Prop where
-  /-- The solution is feasible. -/
+  /-- The solution is feasible: $\|Bx - d\| \le \alpha$. -/
   feasible : ‖toEuclideanLin B x - d‖ ≤ α
-  /-- The solution is optimal among feasible points. -/
+  /-- The solution is optimal: $\|Ax - b\| \le \|Ay - b\|$ for every feasible $y$. -/
   le : ∀ y, ‖toEuclideanLin B y - d‖ ≤ α → ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖
 
-/-- **Least squares with linear equality constraints** ([golub2013matrix] (6.2.9)): `Bx = d` and
-`x` is at least as good as every `y` with `By = d`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, $B \in \mathbb{K}^{p \times n}$ and
+$d \in \mathbb{K}^p$. A vector $x \in \mathbb{K}^n$ is a solution of **least squares with linear
+equality constraints** if $Bx = d$ and
+$$\|Ax - b\| \le \|Ay - b\| \quad \text{for every } y \text{ with } By = d.$$
+This is problem (6.2.9) of [golub2013matrix]. -/
 structure IsLSESolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) (B : Matrix p n 𝕜)
     (d : EuclideanSpace 𝕜 p) (x : EuclideanSpace 𝕜 n) : Prop where
-  /-- The solution is feasible. -/
+  /-- The solution is feasible: $Bx = d$. -/
   feasible : toEuclideanLin B x = d
-  /-- The solution is optimal among feasible points. -/
+  /-- The solution is optimal: $\|Ax - b\| \le \|Ay - b\|$ for every $y$ with $By = d$. -/
   le : ∀ y, toEuclideanLin B y = d → ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖
 
 variable {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {B : Matrix p n 𝕜} {d : EuclideanSpace 𝕜 p}
   {x : EuclideanSpace 𝕜 n}
 
-/-- **LSE is LSQI with `α = 0`** ([golub2013matrix] §6.2.3). -/
+/-- A vector $x$ solves the LSQI problem with $\alpha = 0$ if and only if it solves the LSE problem
+with the same data. This is stated in §6.2.3 of [golub2013matrix]. -/
 theorem isLSQISolution_zero_iff : IsLSQISolution A b B d 0 x ↔ IsLSESolution A b B d x := by
   constructor
   · rintro ⟨hf, hle⟩
@@ -96,15 +128,17 @@ theorem isLSQISolution_zero_iff : IsLSQISolution A b B d 0 x ↔ IsLSESolution A
     exact ⟨by rw [hf, sub_self, norm_zero],
       fun y hy => hle y (sub_eq_zero.1 (norm_le_zero_iff.1 hy))⟩
 
-/-- **A feasible least-squares solution solves LSQI** ([golub2013matrix] §6.2.1, "if … `x_LS`
-satisfies `‖x_LS‖₂ ≤ α`, then it obviously solves (6.2.1)"). -/
+/-- If $x$ is a least-squares solution of $Ax = b$ and $\|Bx - d\| \le \alpha$, then $x$ solves the
+LSQI problem. This is the remark of §6.2.1 of [golub2013matrix] that a least-squares solution
+$x_{LS}$ with $\|x_{LS}\|_2 \le \alpha$ solves (6.2.1). -/
 theorem isLSQISolution_of_isLeastSquaresSolution (h : IsLeastSquaresSolution A b x) {α : ℝ}
     (hx : ‖toEuclideanLin B x - d‖ ≤ α) : IsLSQISolution A b B d α x :=
   ⟨hx, fun y _ => h y⟩
 
 omit [Fintype p] in
-/-- **Non-uniqueness** ([golub2013matrix] §6.2.3, "if `null(A) ∩ null(B) ≠ {0}` … the LSE solution
-is not unique"): adding a common null vector of `A` and `B` to an LSE solution gives another. -/
+/-- Let $x$ solve the LSE problem, and let $z \in \ker A \cap \ker B$. Then $x + z$ also solves the
+LSE problem. Hence the LSE solution is not unique if $\ker A \cap \ker B \ne 0$, as stated in
+§6.2.3 of [golub2013matrix]. -/
 theorem IsLSESolution.add_of_mem (h : IsLSESolution A b B d x) {z : EuclideanSpace 𝕜 n}
     (hz : z ∈ LinearMap.ker (toEuclideanLin A) ⊓ LinearMap.ker (toEuclideanLin B)) :
     IsLSESolution A b B d (x + z) := by
@@ -115,9 +149,10 @@ theorem IsLSESolution.add_of_mem (h : IsLSESolution A b B d x) {z : EuclideanSpa
   exact h.le y hy
 
 omit [Fintype p] in
-/-- **Uniqueness of the LSE solution**: two LSE solutions differ by a common null vector of `A`
-and `B` (by the parallelogram law, the midpoint would otherwise do better), so they agree when
-`ker A ⊓ ker B = ⊥`. -/
+/-- If $x$ and $x'$ solve the same LSE problem and $\ker A \cap \ker B = 0$, then $x' = x$.
+
+Two LSE solutions differ by an element of $\ker A \cap \ker B$: otherwise, by the parallelogram
+law, their midpoint would have a smaller residual. -/
 theorem IsLSESolution.eq_of_ker_inf_ker_eq_bot {x x' : EuclideanSpace 𝕜 n}
     (hsol : IsLSESolution A b B d x) (hx' : IsLSESolution A b B d x')
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) : x' = x := by
@@ -166,14 +201,14 @@ section Sphere
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n] [DecidableEq m]
   {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
 
-/-- The sphere problem's constraint `‖1 x − 0‖ ≤ α` is `‖x‖ ≤ α`. -/
+/-- The constraint $\|Ix - 0\| \le \alpha$ of the sphere problem is $\|x\| \le \alpha$. -/
 private theorem norm_one_sub_zero (y : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin (1 : Matrix n n 𝕜) y - 0‖ = ‖y‖ := by
   rw [toEuclideanLin_one_apply, sub_zero]
 
 omit [DecidableEq m] in
-/-- A local minimizer of `‖Ay − b‖` in the interior of the ball is a global one: the objective is
-convex (`IsMinOn.of_isLocalMin_of_convex_univ`). -/
+/-- If $\|x\| < \alpha$ and $x$ minimizes $\|Ay - b\|$ over the ball $\|y\| \le \alpha$, then $x$ is
+a least-squares solution, because the objective is convex. -/
 private theorem isLeastSquaresSolution_of_forall_norm_le {α : ℝ} (hx : ‖x‖ < α)
     (h : ∀ y : EuclideanSpace 𝕜 n, ‖y‖ ≤ α → ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖) :
     IsLeastSquaresSolution A b x := by
@@ -193,10 +228,14 @@ private theorem isLeastSquaresSolution_of_forall_norm_le {α : ℝ} (hx : ‖x�
       linarith [norm_sub_norm_le y x])
   exact IsMinOn.of_isLocalMin_of_convex_univ hloc hconv
 
-/-- **The LSQI solution lies on the sphere** ([golub2013matrix] (6.2.3), "it follows that the
-solution to (6.2.1) is on the boundary of the constraint sphere"): if `α < ‖A⁺ b‖` then every
-solution of the sphere problem has `‖x‖ = α`. Otherwise it would minimize the convex objective
-near `x`, hence globally, and a least-squares solution has norm at least `‖A⁺ b‖`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$ and $\alpha < \|A^+ b\|$. If $x$
+solves the sphere problem $\min \|Ax - b\|$ subject to $\|x\| \le \alpha$, then
+$$\|x\| = \alpha.$$
+This is the statement after (6.2.3) of [golub2013matrix] that the solution of (6.2.1) is on the
+boundary of the constraint sphere.
+
+If $\|x\| < \alpha$, then $x$ minimizes the convex objective near $x$, hence everywhere, and
+every least-squares solution has norm at least $\|A^+ b\|$. -/
 theorem IsLSQISolution.norm_eq_of_lt {α : ℝ} (hα : α < ‖toEuclideanLin A.pinv b‖)
     (h : IsLSQISolution A b (1 : Matrix n n 𝕜) 0 α x) : ‖x‖ = α := by
   have hxα : ‖x‖ ≤ α := by simpa [norm_one_sub_zero] using h.feasible
@@ -206,11 +245,16 @@ theorem IsLSQISolution.norm_eq_of_lt {α : ℝ} (hα : α < ‖toEuclideanLin A.
   have := A.norm_pinv_le_of_normalEquations b (isLeastSquaresSolution_iff_normalEquations.1 hls)
   linarith
 
-/-- **A ridge solution of norm `α` solves the sphere problem** ([golub2013matrix] §6.2.1, "It
-follows that `x(λ₊)` solves (6.2.1)"): for feasible `y`,
-`‖Ay − b‖² ≥ ‖Ax − b‖² + λ(α² − ‖y‖²) ≥ ‖Ax − b‖²`
-(`Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn`) —
-the sufficiency half of the Lagrange conditions, without the multiplier theorem. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$ and $\lambda > 0$, and let
+$x(\lambda) = (A^H A + \lambda I)^{-1} A^H b$ be the ridge solution. If
+$\|x(\lambda)\| = \alpha$, then $x(\lambda)$ solves the sphere problem $\min \|Ax - b\|$ subject
+to $\|x\| \le \alpha$. This is the statement of §6.2.1 of [golub2013matrix] that $x(\lambda_+)$
+solves (6.2.1).
+
+For feasible $y$, `Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn` gives $\|Ay - b\|^2 \ge
+\|Ax(\lambda) - b\|^2 + \lambda (\alpha^2 - \|y\|^2) \ge \|Ax(\lambda) - b\|^2$. This is the
+sufficient half of the Lagrange conditions, proved without the multiplier theorem. The ridge
+solution is `Matrix.tikhonov A μ` applied to $b$. -/
 theorem isLSQISolution_tikhonov {μ : ℝ} (hμ : 0 < μ) {α : ℝ}
     (hn : ‖toEuclideanLin (A.tikhonov μ) b‖ = α) :
     IsLSQISolution A b (1 : Matrix n n 𝕜) 0 α (toEuclideanLin (A.tikhonov μ) b) := by
@@ -222,10 +266,14 @@ theorem isLSQISolution_tikhonov {μ : ℝ} (hμ : 0 < μ) {α : ℝ}
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
   nlinarith
 
-/-- **The secular equation has a unique positive root** ([golub2013matrix] §6.2.1: "`f(0) > 0` …
-`f'(λ) < 0` for `λ ≥ 0` … `f` has a unique positive root `λ₊`"): for `0 < α < ‖A⁺ b‖` there is
-exactly one `λ > 0` with `‖x(λ)‖ = α`. The norm decreases strictly and continuously from `‖A⁺ b‖`
-at `0⁺` to `0` at `∞` (`existsUnique_pos_eq_of_strictAntiOn_Ioi`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$ and $0 < \alpha < \|A^+ b\|$. Then
+exactly one $\lambda > 0$ satisfies the secular equation
+$$\|x(\lambda)\| = \alpha, \qquad x(\lambda) = (A^H A + \lambda I)^{-1} A^H b.$$
+This is the statement of §6.2.1 of [golub2013matrix] that the secular function has a unique
+positive root $\lambda_+$.
+
+The norm $\|x(\lambda)\|$ decreases strictly and continuously from $\|A^+ b\|$ at $0^+$ to $0$
+at $\infty$, so `existsUnique_pos_eq_of_strictAntiOn_Ioi` applies. -/
 theorem existsUnique_norm_toEuclideanLin_tikhonov_eq {α : ℝ} (hα0 : 0 < α)
     (hα : α < ‖toEuclideanLin A.pinv b‖) :
     ∃! μ : ℝ, 0 < μ ∧ ‖toEuclideanLin (A.tikhonov μ) b‖ = α := by
@@ -258,12 +306,15 @@ variable {m n p : Type*} [Fintype m] [Fintype n] [Fintype p] [DecidableEq n] [De
   {d : EuclideanSpace 𝕜 p}
 
 omit [Fintype p] [DecidableEq m] [DecidableEq p] in
-/-- **Existence and uniqueness of the LSE solution** ([golub2013matrix] §6.2.3–6.2.5): if the
-constraint `Bx = d` is consistent, an LSE solution exists, and if moreover
-`ker A ⊓ ker B = ⊥` it is unique. Existence: with `B x₀ = d` and `N = 1 − B⁺B` (whose range is
-`ker B`), the feasible points are `x₀ + N z`, so a least-squares solution `z₀` of
-`(A N) z ≈ b − A x₀` gives the solution `x₀ + N z₀`. Uniqueness: for two solutions the
-parallelogram law makes `A (x − x')` vanish. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, $B \in \mathbb{K}^{p \times n}$ and
+$d \in \mathbb{K}^p$, and let $d$ lie in the range of $B$. Then the LSE problem
+$\min \|Ax - b\|$ subject to $Bx = d$ has a solution. If in addition $\ker A \cap \ker B = 0$,
+the solution is unique. This is discussed in §6.2.3–6.2.5 of [golub2013matrix].
+
+For existence, let $B x_0 = d$ and $N = I - B^+ B$, whose range is $\ker B$. The feasible points
+are the $x_0 + Nz$, so a least-squares solution $z_0$ of $(AN) z \approx b - A x_0$ gives the
+solution $x_0 + N z_0$. For uniqueness, the parallelogram law shows that $A(x - x') = 0$ for two
+solutions $x$ and $x'$. -/
 theorem existsUnique_isLSESolution [Finite p]
     (hd : d ∈ LinearMap.range (toEuclideanLin B)) :
     (∃ x, IsLSESolution A b B d x) ∧
@@ -297,13 +348,20 @@ theorem existsUnique_isLSESolution [Finite p]
     exact hz₀ _
   exact ⟨⟨x, hsol⟩, fun hAB => ⟨x, hsol, fun x' hx' => hsol.eq_of_ker_inf_ker_eq_bot hx' hAB⟩⟩
 
-/-- **The augmented matrix of the LSE problem** ([golub2013matrix] (6.2.10)): the symmetric
-indefinite matrix `[0 Aᴴ Bᴴ; A I 0; B 0 0]` on `n ⊕ (m ⊕ p)`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $B \in \mathbb{K}^{p \times n}$. The **augmented matrix
+of the LSE problem** is the symmetric indefinite matrix
+$$\begin{bmatrix} 0 & A^H & B^H \\ A & I & 0 \\ B & 0 & 0 \end{bmatrix}$$
+of (6.2.10) of [golub2013matrix].
+
+It is indexed by `n ⊕ (m ⊕ p)`. -/
 def augmentedLSE (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) : Matrix (n ⊕ (m ⊕ p)) (n ⊕ (m ⊕ p)) 𝕜 :=
   fromBlocks 0 (fromCols Aᴴ Bᴴ) (fromRows A B) (fromBlocks 1 0 0 0)
 
 omit [DecidableEq n] [DecidableEq p] in
-/-- The three block rows of the augmented system: `Aᴴr + Bᴴλ`, `Ax + r`, `Bx`. -/
+/-- The augmented matrix acts by
+$$\begin{bmatrix} 0 & A^H & B^H \\ A & I & 0 \\ B & 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ r
+  \\ l \end{bmatrix} = \begin{bmatrix} A^H r + B^H l \\ Ax + r \\ Bx \end{bmatrix}.$$
+-/
 theorem augmentedLSE_mulVec (x : n → 𝕜) (r : m → 𝕜) (l : p → 𝕜) :
     augmentedLSE A B *ᵥ Sum.elim x (Sum.elim r l)
       = Sum.elim (Aᴴ *ᵥ r + Bᴴ *ᵥ l) (Sum.elim (A *ᵥ x + r) (B *ᵥ x)) := by
@@ -313,7 +371,7 @@ theorem augmentedLSE_mulVec (x : n → 𝕜) (r : m → 𝕜) (l : p → 𝕜) :
   ext (_ | _ | _) <;> simp
 
 omit [DecidableEq m] [DecidableEq p] in
-/-- `⟪r, A w⟫ = 0` when `Aᴴ r = −Bᴴ l` and `B w = 0`. -/
+/-- If $A^H r = -B^H l$ and $Bw = 0$, then $\langle r, Aw \rangle = 0$. -/
 private theorem inner_mulVec_eq_zero {r : m → 𝕜} {l : p → 𝕜} {w : n → 𝕜}
     (h : Aᴴ *ᵥ r + Bᴴ *ᵥ l = 0) (hw : B *ᵥ w = 0) :
     inner 𝕜 (WithLp.toLp 2 r : EuclideanSpace 𝕜 m) (toEuclideanLin A (WithLp.toLp 2 w)) = 0 := by
@@ -324,10 +382,15 @@ private theorem inner_mulVec_eq_zero {r : m → 𝕜} {l : p → 𝕜} {w : n �
     inner_zero_right, neg_zero]
 
 omit [DecidableEq p] in
-/-- **The augmented system solves LSE** ([golub2013matrix] §6.2.4, (6.2.10)): if
-`[0 Aᴴ Bᴴ; A I 0; B 0 0] [x; r; λ] = [0; b; d]` then `x` solves LSE. For feasible `y`,
-`Ay − b = A(y − x) − r` and `⟪r, A(y − x)⟫ = −⟪λ, B(y − x)⟫ = 0`, so
-`‖Ay − b‖² = ‖r‖² + ‖A(y − x)‖²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{p \times n}$, $b \in \mathbb{K}^m$ and
+$d \in \mathbb{K}^p$. If $x$, $r$ and $l$ satisfy
+$$\begin{bmatrix} 0 & A^H & B^H \\ A & I & 0 \\ B & 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ r
+  \\ l \end{bmatrix} = \begin{bmatrix} 0 \\ b \\ d \end{bmatrix},$$
+then $x$ solves the LSE problem $\min \|Ax - b\|$ subject to $Bx = d$. This is the augmented
+system (6.2.10) of [golub2013matrix], §6.2.4.
+
+For feasible $y$, $Ay - b = A(y - x) - r$ and $\langle r, A(y - x) \rangle = -\langle l, B(y -
+x) \rangle = 0$, so $\|Ay - b\|^2 = \|r\|^2 + \|A(y - x)\|^2$. -/
 theorem isLSESolution_of_augmented {x : n → 𝕜} {r : m → 𝕜} {l : p → 𝕜} {b' : m → 𝕜}
     {d' : p → 𝕜}
     (h : augmentedLSE A B *ᵥ Sum.elim x (Sum.elim r l) = Sum.elim (0 : n → 𝕜) (Sum.elim b' d')) :
@@ -356,10 +419,13 @@ theorem isLSESolution_of_augmented {x : n → 𝕜} {r : m → 𝕜} {l : p → 
   simp only [map_zero, neg_zero, mul_zero, add_zero]
   nlinarith [sq_nonneg ‖toEuclideanLin A (WithLp.toLp 2 w)‖]
 
-/-- **The augmented system is nonsingular for full-rank data** ([golub2013matrix] §6.2.4, "This
-system is nonsingular if both `A` and `B` have full rank"): if `A` has independent columns and
-`B` independent rows. Kernel argument: `Aᴴr + Bᴴλ = 0`, `Ax + r = 0`, `Bx = 0` give
-`‖r‖² = −⟪r, Ax⟫ = 0`, so `r = 0`, `x = 0` and then `Bᴴλ = 0`, `λ = 0`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns, and let
+$B \in \mathbb{K}^{p \times n}$ have linearly independent rows. Then the augmented matrix of the
+LSE problem is nonsingular. This is the statement of §6.2.4 of [golub2013matrix] that the system
+is nonsingular if both $A$ and $B$ have full rank.
+
+If $A^H r + B^H l = 0$, $Ax + r = 0$ and $Bx = 0$, then $\|r\|^2 = -\langle r, Ax \rangle = 0$.
+So $r = 0$ and $x = 0$, and then $B^H l = 0$ gives $l = 0$. -/
 theorem isUnit_augmentedLSE (hA : LinearIndependent 𝕜 Aᵀ) (hB : LinearIndependent 𝕜 B) :
     IsUnit (augmentedLSE A B) := by
   have hAi : Function.Injective A.mulVec := mulVec_injective_iff.2 hA
@@ -402,19 +468,25 @@ theorem isUnit_augmentedLSE (hA : LinearIndependent 𝕜 Aᵀ) (hB : LinearIndep
 
 end LSE
 
-/-! ### LSE through the QR factorization of `Bᴴ` -/
+/-! ### LSE through the QR factorization of $B^H$ -/
 
 section QR
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {p n : ℕ}
 
 omit [DecidableEq m] in
-/-- **LSE through the QR factorization of `Bᴴ`** ([golub2013matrix] §6.2.3, the derivation of
-Algorithm 6.2.2): let `B` have independent rows, `Bᴴ = Q R` a QR factorization, `Q = [Q₁ Q₂]` split
-`p | n − p` and `R₁` the leading `p × p` block of `R`. Put `y = (R₁ᴴ)⁻¹ d` and let `z` be any
-least-squares solution of `(A Q₂) z ≈ b − A Q₁ y`. Then `Q₁ y + Q₂ z` solves LSE. Since
-`B Q = Rᴴ = [R₁ᴴ 0]`, the feasible points are exactly the `Q₁ y + Q₂ z'`, where the objective is
-`‖A Q₂ z' − (b − A Q₁ y)‖`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, and let
+$B \in \mathbb{K}^{p \times n}$ with $p \le n$ have linearly independent rows. Let $B^H = QR$ be
+a full QR factorization, let $Q = [Q_1 \; Q_2]$ with $Q_1$ the first $p$ columns and $Q_2$ the
+last $n - p$ columns, and let $R_1$ be the leading $p \times p$ block of $R$. Put
+$y = (R_1^H)^{-1} d$, and let $z$ be a least-squares solution of
+$$(A Q_2) z \approx b - A Q_1 y.$$
+Then $Q_1 y + Q_2 z$ solves the LSE problem $\min \|Ax - b\|$ subject to $Bx = d$. This is the
+derivation of Algorithm 6.2.2 of [golub2013matrix], §6.2.3.
+
+Since $BQ = R^H = [R_1^H \; 0]$, the feasible points are exactly the $Q_1 y + Q_2 z'$, and there
+the objective is $\|A Q_2 z' - (b - A Q_1 y)\|$. The blocks are `Q.firstColumns hpn`,
+`Q.lastColumns (Nat.sub_le n p)` and `R.firstRows hpn`. -/
 theorem isLSESolution_of_isQR {A : Matrix m (Fin n) 𝕜} {b : EuclideanSpace 𝕜 m}
     {B : Matrix (Fin p) (Fin n) 𝕜} {d : EuclideanSpace 𝕜 (Fin p)} (hpn : p ≤ n)
     (hB : LinearIndependent 𝕜 B) {Q : Matrix (Fin n) (Fin n) 𝕜} {R : Matrix (Fin n) (Fin p) 𝕜}
@@ -494,8 +566,7 @@ end QR
 
 section GSVD
 
-/-- A unitary change of coordinates on the left and an invertible one on the right: the residual
-of `Uᴴ M X` at `y` against `Uᴴ c` has the norm of the residual of `M` at `X y` against `c`. -/
+/-- For unitary $U$ and every $X$, $\|U^H M X y - U^H c\| = \|M(Xy) - c\|$. -/
 private theorem norm_unitary_mul_mul_sub {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
     [DecidableEq n] {U : Matrix m m 𝕜} (hU : U ∈ unitaryGroup m 𝕜) (M : Matrix m n 𝕜)
     (X : Matrix n n 𝕜) (c : EuclideanSpace 𝕜 m) (y : EuclideanSpace 𝕜 n) :
@@ -504,8 +575,10 @@ private theorem norm_unitary_mul_mul_sub {m n : Type*} [Fintype m] [Fintype n] [
   rw [toEuclideanLin_mul_apply, toEuclideanLin_mul_apply, ← map_sub,
     norm_toEuclideanLin_apply_of_mem_unitaryGroup (Unitary.star_mem hU)]
 
-/-- LSQI is invariant under unitary changes of the residual coordinates and an invertible change of
-the variable: `y` solves the transformed problem iff `X y` solves the original one. -/
+/-- Let $U_1 \in \mathbb{K}^{m \times m}$ and $U_2 \in \mathbb{K}^{q \times q}$ be unitary, and let
+$X \in \mathbb{K}^{n \times n}$ be invertible. Then $y$ solves the LSQI problem with the data
+$(U_1^H A X, U_1^H b, U_2^H B X, U_2^H d, \alpha)$ if and only if $Xy$ solves the LSQI problem
+with the data $(A, b, B, d, \alpha)$. -/
 theorem isLSQISolution_unitary_mul_mul_iff {m n q : Type*} [Fintype m] [Fintype n] [Fintype q]
     [DecidableEq m] [DecidableEq n] [DecidableEq q] {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m}
     {B : Matrix q n 𝕜} {d : EuclideanSpace 𝕜 q} {α : ℝ} {U₁ : Matrix m m 𝕜}
@@ -530,9 +603,16 @@ variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (F
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α' β' : ℕ → ℝ}
 
-/-- **LSQI in GSVD coordinates** ([golub2013matrix] (6.2.6), and (6.2.11) at `α = 0`): with a
-GSVD `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B`, `x` solves `min ‖Ax − b‖, ‖Bx − d‖ ≤ α` iff `X⁻¹ x` solves
-`min ‖D_A y − b̃‖, ‖D_B y − d̃‖ ≤ α` with `b̃ = U₁ᴴ b`, `d̃ = U₂ᴴ d`. -/
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$ and $B \in \mathbb{K}^{m_2 \times n}$ have the GSVD
+$U_1^H A X = D_A$, $U_2^H B X = D_B$, and let $b \in \mathbb{K}^{m_1}$, $d \in \mathbb{K}^{m_2}$
+and $\alpha \in \mathbb{R}$. Then $x$ solves $\min \|Ax - b\|$ subject to
+$\|Bx - d\| \le \alpha$ if and only if $X^{-1} x$ solves
+$$\min \|D_A y - \tilde b\| \quad \text{subject to} \quad \|D_B y - \tilde d\| \le \alpha,
+  \qquad \tilde b = U_1^H b, \quad \tilde d = U_2^H d.$$
+This is (6.2.6) of [golub2013matrix], and (6.2.11) for $\alpha = 0$.
+
+The GSVD is `Matrix.IsGSVD`. The transformed matrices appear as `star U₁ * A * X` and
+`star U₂ * B * X`. -/
 theorem isLSQISolution_iff_of_isGSVD (h : IsGSVD A B U₁ U₂ X α' β') {b : EuclideanSpace 𝕜 (Fin m₁)}
     {d : EuclideanSpace 𝕜 (Fin m₂)} {α : ℝ} {x : EuclideanSpace 𝕜 (Fin n)} :
     IsLSQISolution A b B d α x ↔
@@ -545,11 +625,21 @@ theorem isLSQISolution_iff_of_isGSVD (h : IsGSVD A B U₁ U₂ X α' β') {b : E
 
 end GSVD
 
+/-! ### The LSE solution and the method of weighting in GSVD coordinates -/
+
 section GSVDLSE
 
-/-- The coefficients of the LSE solution in GSVD coordinates ([golub2013matrix] (6.2.12), in
-Theorem 6.1.1's block order): `b̃_i` on the first `n − p` columns (pure `A`, `α_i = 1`), and
-`d̃_{i − (n − p)} / β_i` on the last `p`. -/
+/-- Let $n \le m_1$, $\tilde b \in \mathbb{K}^{m_1}$, $\tilde d \in \mathbb{K}^p$ and
+$\beta \colon \mathbb{N} \to \mathbb{R}$. The **coefficients of the LSE solution in GSVD
+coordinates** are, for $i = 1, \dots, n$,
+$$c_i = \tilde b_i \quad (i \le n - p), \qquad c_i = \tilde d_{i - (n - p)} / \beta_i \quad (i >
+  n - p).$$
+These are the coefficients of (6.2.12) of [golub2013matrix], in the block order of Theorem
+6.1.1: the first $n - p$ columns belong to $A$ alone ($\alpha_i = 1$), and the last $p$ columns
+are shared.
+
+Lean indices start at $0$, so the first case is `i < n - p`. If $\beta_i = 0$, the quotient is
+$0$. -/
 noncomputable def lseGSVDCoeff {m₁ p n : ℕ} (hnm : n ≤ m₁) (bt : Fin m₁ → 𝕜) (dt : Fin p → 𝕜)
     (β : ℕ → ℝ) (i : Fin n) : 𝕜 :=
   if h : (i : ℕ) < n - p then bt ⟨i, lt_of_lt_of_le i.isLt hnm⟩
@@ -559,20 +649,27 @@ variable {m₁ p n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (Fin 
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin p) (Fin p) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
 
-/-- `∑ yᵢ xᵢ = X y` over the columns `xᵢ` of `X` (`Matrix.mulVec_eq_sum`). -/
+/-- For $X \in \mathbb{K}^{n \times n}$ with columns $x_i$, $\sum_i y_i x_i = Xy$. -/
 private theorem sum_smul_col_eq_mulVec {n : ℕ} (X : Matrix (Fin n) (Fin n) 𝕜) (y : Fin n → 𝕜) :
     ∑ i, y i • X.col i = X *ᵥ y := by
   simp only [mulVec_eq_sum, op_smul_eq_smul]
   rfl
 
-/-- **LSE through the GSVD** ([golub2013matrix] (6.2.12), restated in Theorem 6.1.1's block
-order): if `B` has full row rank, `ker A ⊓ ker B = ⊥` and `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B` is a
-GSVD, then `x = ∑_{i < n−p} b̃_i x_i + ∑_{n−p ≤ i < n} (d̃_{i−(n−p)} / β_i) x_i` solves LSE, with
-`b̃ = U₁ᴴ b`, `d̃ = U₂ᴴ d`, `x_i` the columns of `X` (`Matrix.lseGSVDCoeff`); it is the unique
-solution (`Matrix.IsLSESolution.eq_of_ker_inf_ker_eq_bot`). The book's
-`∑_{i ≤ m₂} (d̃_i/β_i) x_i + ∑_{i > m₂} (b̃_i/α_i) x_i` is the third edition's block order; here
-the pure-`A` columns have `α_i = 1`. In GSVD coordinates the constraint fixes the coordinates on
-the mixed columns and the objective is minimized by `y_i = b̃_i` on the pure ones. -/
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$ with $n \le m_1$, and let $B \in \mathbb{K}^{p \times n}$
+have linearly independent rows, with $\ker A \cap \ker B = 0$. Let $U_1^H A X = D_A$,
+$U_2^H B X = D_B$ be a GSVD with the numbers $\alpha_i$, $\beta_i$, let $x_1, \dots, x_n$ be the
+columns of $X$, and let $\tilde b = U_1^H b$ and $\tilde d = U_2^H d$. Then
+$$x = \sum_{i = 1}^{n - p} \tilde b_i x_i + \sum_{i = n - p + 1}^{n} \frac{\tilde d_{i - (n -
+  p)}}{\beta_i} x_i$$
+solves the LSE problem $\min \|Ax - b\|$ subject to $Bx = d$. This is (6.2.12) of
+[golub2013matrix], in the block order of Theorem 6.1.1.
+
+The source prints $\sum_{i \le m_2} (\tilde d_i / \beta_i) x_i + \sum_{i > m_2} (\tilde b_i /
+\alpha_i) x_i$, in the block order of its third edition; here the columns of $A$ alone have
+$\alpha_i = 1$. The solution is unique by `Matrix.IsLSESolution.eq_of_ker_inf_ker_eq_bot`. In
+GSVD coordinates the constraint fixes the coordinates on the shared columns, and
+$y_i = \tilde b_i$ minimizes the objective on the others. The coefficients are
+`Matrix.lseGSVDCoeff`, and Lean indices start at $0$. -/
 theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁)
     (hB : LinearIndependent 𝕜 B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
@@ -636,18 +733,31 @@ theorem isLSESolution_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n 
   · rw [rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin),
       rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin)]
 
-/-- **The method of weighting** ([golub2013matrix] §6.2.6): the solution
-`(AᴴA + λBᴴB)⁻¹(Aᴴb + λBᴴd)` of the stacked least-squares problem (6.2.13),
-`min ‖Ax − b‖² + λ‖Bx − d‖²` (`Matrix.isLeastSquaresSolution_fromRows_iff`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{q \times n}$, $b \in \mathbb{K}^m$,
+$d \in \mathbb{K}^q$ and $\lambda \in \mathbb{R}$. The **method of weighting** gives the vector
+$$x(\lambda) = (A^H A + \lambda B^H B)^{-1} (A^H b + \lambda B^H d).$$
+It solves the normal equations of the weighted problem
+$\min \|Ax - b\|^2 + \lambda \|Bx - d\|^2$, which is the stacked least-squares problem (6.2.13)
+of [golub2013matrix], §6.2.6 (`Matrix.isLeastSquaresSolution_fromRows_iff`).
+
+If $A^H A + \lambda B^H B$ is singular, the Lean inverse is $0$ and $x(\lambda) = 0$. -/
 noncomputable def penaltyLSE {m n q : Type*} [Fintype m] [Fintype n] [Fintype q] [DecidableEq n]
     [DecidableEq m] [DecidableEq q] (A : Matrix m n 𝕜) (B : Matrix q n 𝕜)
     (b : EuclideanSpace 𝕜 m) (d : EuclideanSpace 𝕜 q) (μ : ℝ) : EuclideanSpace 𝕜 n :=
   toEuclideanLin (Aᴴ * A + (μ : 𝕜) • (Bᴴ * B))⁻¹
     (toEuclideanLin Aᴴ b + (μ : 𝕜) • toEuclideanLin Bᴴ d)
 
-/-- The coefficients of the error of the method of weighting in GSVD coordinates
-([golub2013matrix] (6.2.14), corrected): `0` on the first `n − p` columns and
-`α_i (β_i b̃_i − α_i d̃_{i−(n−p)}) / (β_i (α_i² + λ β_i²))` on the last `p`. -/
+/-- Let $n \le m_1$, $\tilde b \in \mathbb{K}^{m_1}$, $\tilde d \in \mathbb{K}^p$,
+$\alpha, \beta \colon \mathbb{N} \to \mathbb{R}$ and $\lambda \in \mathbb{R}$. The
+**coefficients of the error of the method of weighting** are, for $i = 1, \dots, n$, $e_i = 0$
+if $i \le n - p$, and
+$$e_i = \frac{\alpha_i (\beta_i \tilde b_i - \alpha_i \tilde d_{i - (n - p)})}{\beta_i
+  (\alpha_i^2 + \lambda \beta_i^2)} \quad \text{if } i > n - p.$$
+These are the coefficients of (6.2.14) of [golub2013matrix], with $\lambda$ in place of the
+printed $\lambda^2$.
+
+Lean indices start at $0$, so the first case is `i < n - p`. A quotient with zero denominator is
+$0$. -/
 noncomputable def penaltyGSVDCoeff {m₁ p n : ℕ} (hnm : n ≤ m₁) (bt : Fin m₁ → 𝕜) (dt : Fin p → 𝕜)
     (α β : ℕ → ℝ) (μ : ℝ) (i : Fin n) : 𝕜 :=
   if h : (i : ℕ) < n - p then 0
@@ -655,13 +765,18 @@ noncomputable def penaltyGSVDCoeff {m₁ p n : ℕ} (hnm : n ≤ m₁) (bt : Fin
       - (α i : 𝕜) * dt ⟨(i : ℕ) - (n - p), by have := i.isLt; omega⟩)
     / ((β i : 𝕜) * ((α i : 𝕜) ^ 2 + (μ : 𝕜) * (β i : 𝕜) ^ 2))
 
-/-- **The error of the method of weighting** ([golub2013matrix] (6.2.14), corrected): in the
-setting of `Matrix.isLSESolution_sum_of_isGSVD`, for `0 < λ`,
-`x(λ) − x = ∑_{n−p ≤ i < n} α_i (β_i b̃_i − α_i d̃_{i−(n−p)}) / (β_i (α_i² + λ β_i²)) x_i`
-(`Matrix.penaltyGSVDCoeff`). The book prints `λ²` for `λ`, `u_iᵀb`, `v_iᵀd` for `b̃_i`, `d̃_i`,
-and sums to `p` in the third edition's block order. In GSVD coordinates
-`y_i(λ) = (α_i b̃_i + λ β_i d̃_{i−(n−p)}) / (α_i² + λβ_i²)` on the mixed columns and `b̃_i` on the
-pure ones (`Matrix.IsGSVD.inv_gram_add_smul_gram_eq`). -/
+/-- Let $A$, $B$, the GSVD and $x$ be as in `Matrix.isLSESolution_sum_of_isGSVD`, and let
+$\lambda > 0$. Then the vector $x(\lambda)$ of the method of weighting satisfies
+$$x(\lambda) - x = \sum_{i = n - p + 1}^{n} \frac{\alpha_i (\beta_i \tilde b_i - \alpha_i \tilde
+  d_{i - (n - p)})}{\beta_i (\alpha_i^2 + \lambda \beta_i^2)} x_i.$$
+This is (6.2.14) of [golub2013matrix].
+
+The source prints $\lambda^2$ where $\lambda$ is correct, writes $u_i^T b$ and $v_i^T d$ for
+$\tilde b_i$ and $\tilde d_i$, and sums to $p$ in the block order of its third edition. In GSVD
+coordinates, $y_i(\lambda) = (\alpha_i \tilde b_i + \lambda \beta_i \tilde d_{i - (n - p)}) /
+(\alpha_i^2 + \lambda \beta_i^2)$ on the shared columns and $y_i(\lambda) = \tilde b_i$ on the
+others (`Matrix.IsGSVD.inv_gram_add_smul_gram_eq`). The coefficients are
+`Matrix.penaltyGSVDCoeff`. -/
 theorem penaltyLSE_sub_eq_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁)
     (hB : LinearIndependent 𝕜 B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
@@ -707,11 +822,16 @@ theorem penaltyLSE_sub_eq_sum_of_isGSVD (h : IsGSVD A B U₁ U₂ X α β) (hnm 
     field_simp
     ring
 
-/-- **The method of weighting converges** ([golub2013matrix] §6.2.6, "`x(λ) → x` as `λ → ∞`"):
-if `n ≤ m₁`, `B` has full row rank, `ker A ⊓ ker B = ⊥` and `x` solves LSE, then
-`penaltyLSE A B b d λ → x`. From a GSVD (`Matrix.exists_isGSVD`), `x` is the solution of
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$ with $n \le m_1$, and let $B \in \mathbb{K}^{p \times n}$
+have linearly independent rows, with $\ker A \cap \ker B = 0$. If $x$ solves the LSE problem
+$\min \|Ax - b\|$ subject to $Bx = d$, then the vectors $x(\lambda)$ of the method of weighting
+converge to $x$:
+$$x(\lambda) \to x \quad \text{as } \lambda \to \infty.$$
+This is stated in §6.2.6 of [golub2013matrix].
+
+A GSVD exists (`Matrix.exists_isGSVD`), $x$ is the solution of
 `Matrix.isLSESolution_sum_of_isGSVD`, and the coefficients of
-`Matrix.penaltyLSE_sub_eq_sum_of_isGSVD` are `O(1/λ)`. -/
+`Matrix.penaltyLSE_sub_eq_sum_of_isGSVD` are $O(1/\lambda)$. -/
 theorem tendsto_penaltyLSE (hnm : n ≤ m₁) (hB : LinearIndependent 𝕜 B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
     {b : EuclideanSpace 𝕜 (Fin m₁)} {d : EuclideanSpace 𝕜 (Fin p)} {x : EuclideanSpace 𝕜 (Fin n)}

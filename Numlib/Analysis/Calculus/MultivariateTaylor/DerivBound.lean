@@ -8,26 +8,38 @@ import Numlib.Analysis.SpecialFunctions.FactorialSum
 /-!
 # Norm bounds for the derivatives of a Taylor sum
 
-For arbitrary (not necessarily symmetric) derivative data `D : FormalMultilinearSeries ℝ E F`, the
-`ℓ`-th derivative of the Taylor sum `s ↦ D.taylorSum p s = ∑_{i ≤ p} (1/i!) D_i[s]^i` satisfies
-`‖∇^ℓ_s T_p(s)‖ ≤ ∑_{i=ℓ}^p ‖D_i‖ ‖s‖^{i-ℓ} / (i-ℓ)!`
-(`FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`). For symmetric data this follows from
-the exact formula (A.11) of [cartis2022evaluation]; the bound itself needs no symmetry. Since the
-derivative is linear in the data (`FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub`), the
-bound applies to differences of jets, as in the inexact-model estimates (13.1.48)–(13.1.50) and in
-the proof of Lemma 12.2.7 of [cartis2022evaluation].
+Let $E$ and $F$ be real normed spaces, and let $D = (D_0, D_1, \dots)$ be a sequence of continuous
+multilinear maps, where $D_i$ is $i$-linear from $E$ to $F$. The maps $D_i$ need not be symmetric.
+Write $[s]^i$ for the tuple $(s, \dots, s)$ with $i$ entries. The **Taylor sum** of degree $p$ is
+$T_p(s) = \sum_{i=0}^{p} \frac{1}{i!} D_i [s]^i$. This module proves that its $\ell$-th derivative
+satisfies
+$$\|\nabla^\ell T_p(s)\| \le \sum_{i=\ell}^{p} \frac{\|D_i\| \, \|s\|^{i-\ell}}{(i-\ell)!}.$$
+For symmetric data this follows from the exact formula (A.11) of [cartis2022evaluation], but the
+bound needs no symmetry.
+
+The derivative of $T_p$ is linear in the data $D$. Hence the bound also applies to the difference of
+two Taylor sums, as in the estimates (13.1.48)–(13.1.50) for inexact models and in the proof of
+Lemma 12.2.7 of [cartis2022evaluation].
 
 ## Main results
 
-* `ContinuousMultilinearMap.norm_iteratedFDeriv_comp_diagonal_le`: for an `n`-multilinear map `A`,
-  `‖∇^ℓ (y ↦ A[y]^n)(s)‖ ≤ n (n-1) ⋯ (n-ℓ+1) ‖A‖ ‖s‖^{n-ℓ}`;
-* `FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub`: linearity in the data;
-* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`: the bound above, and its quadratic
-  case on a ball `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_two_le`;
-* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le_three_mul`: `‖∇^ℓ T_p(s)‖ ≤ 3 L` on the
-  unit ball when `‖D_i‖ ≤ L` for `i ≥ ℓ` (proof of Lemma 12.2.7);
+* `ContinuousMultilinearMap.norm_iteratedFDeriv_comp_diagonal_le`: for an $n$-linear map $A$,
+  $\|\nabla^\ell (y \mapsto A[y]^n)(s)\| \le n(n-1)\cdots(n-\ell+1) \, \|A\| \, \|s\|^{n-\ell}$.
+* `FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub`: the derivatives of the Taylor sum are
+  linear in the data.
+* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le`: the bound above.
+* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_two_le`: for $p = 2$,
+  $\|\nabla^m T_2(s)\| \le 3\kappa(1 + \rho)^2$ when $\|D_i\| \le \kappa$ and $\|s\| \le \rho$.
+* `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le_three_mul`:
+  $\|\nabla^\ell T_p(s)\| \le 3L$ for $\|s\| \le 1$ when $\|D_i\| \le L$ for $\ell \le i \le p$.
 * `FormalMultilinearSeries.taylorSum_add_eq_taylorPolynomial`: a Taylor sum is its own Taylor
-  polynomial at every point (no symmetry needed).
+  polynomial at every point.
+
+## Implementation notes
+
+* The data $D$ is a `FormalMultilinearSeries ℝ E F`, and $T_p$ is
+  `FormalMultilinearSeries.taylorSum`. Derivatives are `iteratedFDeriv`, with Mathlib's operator
+  norm on continuous multilinear maps.
 -/
 
 open Finset
@@ -36,16 +48,22 @@ open scoped Nat
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- The diagonal embedding `y ↦ (y, …, y)` has norm at most one. -/
+/-- The diagonal embedding $y \mapsto (y, \dots, y)$ of $E$ into $E^n$ has operator norm at most
+$1$. -/
 theorem ContinuousLinearMap.norm_pi_id_le_one (n : ℕ) :
     ‖ContinuousLinearMap.pi (fun _ : Fin n => ContinuousLinearMap.id ℝ E)‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun y => by
     rw [one_mul]
     exact (pi_norm_le_iff_of_nonneg (norm_nonneg y)).2 fun _ => le_rfl
 
-/-- **Derivatives of a multilinear map on the diagonal.** For `A` an `n`-multilinear map, the
-`ℓ`-th derivative of `y ↦ A (y, …, y)` at `s` has norm at most
-`n (n-1) ⋯ (n-ℓ+1) ‖A‖ ‖s‖^{n-ℓ}` (and vanishes for `ℓ > n`). No symmetry of `A` is needed. -/
+/-- **Derivatives of a multilinear map on the diagonal.** Let $A \colon E^n \to F$ be a continuous
+$n$-linear map, let $\ell \in \mathbb{N}$ and let $s \in E$. Then the $\ell$-th derivative of
+$y \mapsto A(y, \dots, y)$ at $s$ satisfies
+$$\|\nabla^\ell (y \mapsto A[y]^n)(s)\| \le n(n-1)\cdots(n-\ell+1) \, \|A\| \, \|s\|^{n-\ell}.$$
+
+The map $A$ need not be symmetric. The factor $n(n-1)\cdots(n-\ell+1)$ is
+`Nat.descFactorial n ℓ`, which is $0$ for $\ell > n$; then the derivative vanishes. The exponent
+$n - \ell$ is truncated subtraction of natural numbers. -/
 theorem ContinuousMultilinearMap.norm_iteratedFDeriv_comp_diagonal_le {n : ℕ}
     (A : E [×n]→L[ℝ] F) (ℓ : ℕ) (s : E) :
     ‖iteratedFDeriv ℝ ℓ (fun y => A (fun _ => y)) s‖ ≤
@@ -68,8 +86,13 @@ namespace FormalMultilinearSeries
 
 variable (D D' : FormalMultilinearSeries ℝ E F) (p : ℕ)
 
-/-- The derivatives of the Taylor sum are linear in the data:
-`∇^ℓ (D - D').taylorSum p = ∇^ℓ D.taylorSum p - ∇^ℓ D'.taylorSum p`. -/
+/-- The derivatives of a Taylor sum are linear in the data: for two data sequences $D$ and $D'$,
+every $\ell$ and every $s \in E$,
+$$\nabla^\ell T_p^{D - D'}(s) = \nabla^\ell T_p^{D}(s) - \nabla^\ell T_p^{D'}(s),$$
+where $T_p^D$ is the Taylor sum of degree $p$ of $D$.
+
+This lets the bound `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le` estimate the
+difference of two Taylor models. -/
 theorem iteratedFDeriv_taylorSum_sub (ℓ : ℕ) (s : E) :
     iteratedFDeriv ℝ ℓ ((D - D').taylorSum p) s =
       iteratedFDeriv ℝ ℓ (D.taylorSum p) s - iteratedFDeriv ℝ ℓ (D'.taylorSum p) s := by
@@ -78,9 +101,13 @@ theorem iteratedFDeriv_taylorSum_sub (ℓ : ℕ) (s : E) :
   rw [h, iteratedFDeriv_sub_apply (D.contDiff_taylorSum p).contDiffAt
     (D'.contDiff_taylorSum p).contDiffAt]
 
-/-- **Derivative bound for Taylor sums** ([cartis2022evaluation], (A.11), proofs of Lemma 12.2.7
-and (13.1.48)). For arbitrary data `D`,
-`‖∇^ℓ_s T_p(s)‖ ≤ ∑_{i=ℓ}^p ‖D_i‖ ‖s‖^{i-ℓ} / (i-ℓ)!`. -/
+/-- **Derivative bound for Taylor sums.** Let $D$ be any data sequence, not necessarily symmetric,
+and let $p, \ell \in \mathbb{N}$ and $s \in E$. Then
+$$\|\nabla^\ell T_p(s)\| \le \sum_{i=\ell}^{p} \frac{\|D_i\| \, \|s\|^{i-\ell}}{(i-\ell)!}.$$
+
+For symmetric data the bound follows from formula (A.11) of [cartis2022evaluation]. It is used
+in the proof of Lemma 12.2.7 and in (13.1.48) of [cartis2022evaluation]. The sum is empty, so
+the bound is $0$, when $\ell > p$. -/
 theorem norm_iteratedFDeriv_taylorSum_le (ℓ : ℕ) (s : E) :
     ‖iteratedFDeriv ℝ ℓ (D.taylorSum p) s‖ ≤
       ∑ i ∈ Icc ℓ p, ‖D i‖ * ‖s‖ ^ (i - ℓ) / ((i - ℓ)! : ℝ) := by
@@ -112,8 +139,11 @@ theorem norm_iteratedFDeriv_taylorSum_le (ℓ : ℕ) (s : E) :
   omega
 
 
-/-- **Quadratic Taylor sums on a ball**: if `‖D_i‖ ≤ κ` for `i ≤ 2` and `‖s‖ ≤ ρ`, then
-`‖∇^m T_2(s)‖ ≤ 3 κ (1 + ρ)²` for every `m`. -/
+/-- **Quadratic Taylor sums on a ball.** Let $\kappa, \rho \ge 0$, and suppose that
+$\|D_i\| \le \kappa$ for $i \le 2$. Then for every $m \in \mathbb{N}$ and every $s$ with
+$\|s\| \le \rho$,
+$$\|\nabla^m T_2(s)\| \le 3\kappa(1 + \rho)^2.$$
+-/
 theorem norm_iteratedFDeriv_taylorSum_two_le {κ ρ : ℝ} (hκ : 0 ≤ κ) (hρ : 0 ≤ ρ)
     (hD : ∀ i ≤ 2, ‖D i‖ ≤ κ) (m : ℕ) {s : E} (hs : ‖s‖ ≤ ρ) :
     ‖iteratedFDeriv ℝ m (D.taylorSum 2) s‖ ≤ 3 * κ * (1 + ρ) ^ 2 := by
@@ -135,7 +165,8 @@ theorem norm_iteratedFDeriv_taylorSum_two_le {κ ρ : ℝ} (hκ : 0 ≤ κ) (hρ
   have : 0 ≤ κ * (1 + ρ) ^ 2 := by positivity
   nlinarith
 
-/-- The `p`-th derivative of a Taylor sum of degree `p` is constant, hence `0`-Lipschitz. -/
+/-- The $p$-th derivative of a Taylor sum of degree $p$ is constant on $E$, so it is Lipschitz
+continuous on $E$ with constant $0$ (`IteratedFDerivLipschitzOn`). -/
 theorem iteratedFDerivLipschitzOn_taylorSum (p : ℕ) :
     IteratedFDerivLipschitzOn (D.taylorSum p) p 0 Set.univ :=
   iteratedFDerivLipschitzOn_of_norm_le convex_univ
@@ -143,9 +174,10 @@ theorem iteratedFDerivLipschitzOn_taylorSum (p : ℕ) :
       refine (D.norm_iteratedFDeriv_taylorSum_le p (p + 1) x).trans_eq ?_
       rw [Icc_eq_empty (by omega), sum_empty]
 
-/-- **A Taylor sum is its own Taylor polynomial**: `T_p(s + d) = T_{T_p,p}(s, d)` for all `s, d`
-(the expansion of a polynomial of degree `p` at any point is exact). No symmetry of `D` is
-needed. -/
+/-- **A Taylor sum is its own Taylor polynomial.** For all $s, d \in E$,
+$$T_p(s + d) = T_{T_p, p}(s, d),$$
+where $T_{T_p,p}(s, \cdot)$ is the Taylor polynomial (`taylorPolynomial`) of degree $p$ of the
+function $T_p$ at $s$. The data $D$ need not be symmetric. -/
 theorem taylorSum_add_eq_taylorPolynomial (p : ℕ) (s d : E) :
     D.taylorSum p (s + d) = taylorPolynomial (D.taylorSum p) p s d := by
   have h := norm_sub_taylorPolynomial_le_of_lipschitz convex_univ
@@ -154,9 +186,13 @@ theorem taylorSum_add_eq_taylorPolynomial (p : ℕ) (s d : E) :
   rw [zero_div, zero_mul] at h
   exact sub_eq_zero.1 (norm_le_zero_iff.1 h)
 
-/-- **Derivatives of a Taylor sum on the unit ball** (proof of [cartis2022evaluation],
-Lemma 12.2.7, with (A.33)): if `‖D_i‖ ≤ L` for `i = ℓ, …, p` and `‖s‖ ≤ 1`, then
-`‖∇^ℓ T_p(s)‖ ≤ 3 L`. -/
+/-- **Derivatives of a Taylor sum on the unit ball.** Let $\ell, p \in \mathbb{N}$ and $L \ge 0$,
+and suppose that $\|D_i\| \le L$ for $\ell \le i \le p$. Then for every $s$ with $\|s\| \le 1$,
+$$\|\nabla^\ell T_p(s)\| \le 3L.$$
+
+This is the estimate in the proof of Lemma 12.2.7 of [cartis2022evaluation], together with
+(A.33). It follows from `FormalMultilinearSeries.norm_iteratedFDeriv_taylorSum_le` and the bound
+$\sum_{k=0}^{N} \|s\|^k / k! \le 1 + 2\|s\|$ for $\|s\| \le 1$. -/
 theorem norm_iteratedFDeriv_taylorSum_le_three_mul {ℓ p : ℕ} {L : ℝ} (hL : 0 ≤ L)
     (hD : ∀ i ∈ Icc ℓ p, ‖D i‖ ≤ L) {s : E} (hs : ‖s‖ ≤ 1) :
     ‖iteratedFDeriv ℝ ℓ (D.taylorSum p) s‖ ≤ 3 * L := by

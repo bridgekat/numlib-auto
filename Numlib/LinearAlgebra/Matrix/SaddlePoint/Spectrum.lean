@@ -10,11 +10,50 @@ import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 
 /-!
-# Spectral bounds for saddle point matrices
+# Spectral bounds for saddle-point matrices
 
-We bound the spectrum of symmetric saddle point matrices and the real parts of the
-eigenvalues of their sign-flipped counterparts. A quantitative comparison with the
-Schur complement forces the sign-flipped spectrum to be real.
+This file bounds the eigenvalues of two kinds of saddle-point matrices. The first is the symmetric
+matrix
+$$\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$$
+with $A \in \mathbb{R}^{n \times n}$ symmetric positive definite and $B \in \mathbb{R}^{m \times n}$
+of full row rank. If the eigenvalues of $A$ lie in $[a, b]$ with $a > 0$, and
+$\sigma_{\min} \|y\| \le \|B^T y\|$ and $\|Bx\| \le \sigma_{\max} \|x\|$ for all vectors $x$ and
+$y$, then its spectrum lies in the union of two intervals, one on each side of $0$ (the bounds of
+Rusten and Winther). The second is the sign-flipped matrix
+$$\begin{bmatrix} A & D \\ -D^H & C \end{bmatrix}$$
+with complex blocks. Its Hermitian part is $\operatorname{diag}(H, C)$, where $H = (A + A^H)/2$, so
+its eigenvalues have nonnegative real part when $H$ and $C$ are positive semidefinite, and positive
+real part when moreover $H$ is positive definite and $D$ is injective. When $C = 0$ and $D = B^H$ is
+injective for some $B \in \mathbb{C}^{m \times n}$, $A$ is positive definite, and
+$a \|x\|^2 \le x^H A x$ for all $x$ with $a \ge 4 \|B A^{-1} B^H\|_2$, all eigenvalues of the
+sign-flipped matrix are real. These results give Theorems 3.5–3.7 of [benzi2005numerical].
+
+## Main results
+
+* `Matrix.hermitianPart_fromBlocks_neg_conjTranspose`: the Hermitian part of the sign-flipped matrix
+  is $\operatorname{diag}(H, C)$ when $C$ is Hermitian.
+* `Matrix.re_nonneg_of_mem_spectrum_fromBlocks_neg_conjTranspose`: if $H$ and $C$ are positive
+  semidefinite, every eigenvalue of the sign-flipped matrix has nonnegative real part.
+* `Matrix.re_pos_of_mem_spectrum_fromBlocks_neg_conjTranspose`: if moreover $H$ is positive definite
+  and $D$ is injective, every eigenvalue has positive real part.
+* `Matrix.PosDef.norm_sq_mulVec_le_l2_opNorm_mul_re_dotProduct`:
+  $\|Bx\|^2 \le \|B A^{-1} B^H\|_2 \, x^H A x$ for positive definite $A$.
+* `Matrix.im_eq_zero_of_mem_spectrum_fromBlocks_neg_conjTranspose_zero`: the spectrum of the
+  sign-flipped matrix with $C = 0$ is real under the bound above.
+* `Matrix.spectrum_fromBlocks_transpose_zero_subset`: the interval bounds of Rusten and Winther for
+  the symmetric matrix.
+
+## Implementation notes
+
+* Block matrices are `Matrix.fromBlocks`, indexed by `n ⊕ m`. The Hermitian part is
+  `Matrix.hermitianPart`.
+* The norm $\|\cdot\|_2$ of a matrix is the operator norm induced by the Euclidean norm, from the
+  scope `Matrix.Norms.L2Operator`. Vector norms are norms in `EuclideanSpace`, written `‖toLp 2 v‖`.
+* The bounds on the eigenvalues of $A$ in `Matrix.spectrum_fromBlocks_transpose_zero_subset` are
+  stated in the positive semidefinite order, as $A - aI \succeq 0$ and $bI - A \succeq 0$. The
+  results `Matrix.IsHermitian.posSemidef_sub_smul_one_of_le_eigenvalues` and
+  `Matrix.IsHermitian.posSemidef_smul_one_sub_of_eigenvalues_le` convert bounds on the eigenvalues
+  to this form.
 -/
 
 open WithLp
@@ -24,8 +63,14 @@ namespace Matrix
 
 variable {n m : Type*}
 
-/-- Changing the sign of the lower off-diagonal block cancels both off-diagonal
-blocks in the Hermitian part. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$, $D \in \mathbb{K}^{n \times m}$ and a Hermitian
+$C \in \mathbb{K}^{m \times m}$, over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then the
+Hermitian part of the sign-flipped block matrix has no off-diagonal blocks:
+$$\operatorname{herm}\begin{bmatrix} A & D \\ -D^H & C \end{bmatrix}
+  = \begin{bmatrix} \operatorname{herm}(A) & 0 \\ 0 & C \end{bmatrix},$$
+where $\operatorname{herm}(M) = (M + M^H)/2$.
+
+The Hermitian part is `Matrix.hermitianPart`. -/
 theorem hermitianPart_fromBlocks_neg_conjTranspose {𝕜 : Type*} [RCLike 𝕜]
     (A : Matrix n n 𝕜) (D : Matrix n m 𝕜) {C : Matrix m m 𝕜}
     (hC : C.IsHermitian) :
@@ -55,8 +100,12 @@ private theorem fromBlocks_mulVec_eq_smul_components {K : Type*} [Semiring K]
   rw [fromBlocks_mulVec] at hv
   exact ⟨funext fun i => congrFun hv (Sum.inl i), funext fun i => congrFun hv (Sum.inr i)⟩
 
-/-- Positive semidefiniteness of the top Hermitian part and lower diagonal block implies
-nonnegativity of the real quadratic form of the sign-flipped matrix. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times m}$. Suppose that the symmetric part $(A + A^T)/2$ of $A$ and the
+matrix $C$ are positive semidefinite. Then for every $v \in \mathbb{R}^{n + m}$,
+$$v^T \begin{bmatrix} A & B^T \\ -B & C \end{bmatrix} v \ge 0.$$
+
+The symmetric part is `Matrix.hermitianPart A`. -/
 theorem dotProduct_fromBlocks_neg_transpose_mulVec_nonneg
     {A : Matrix n n ℝ} (B : Matrix m n ℝ) {C : Matrix m m ℝ}
     (hA : (hermitianPart A).PosSemidef) (hC : C.PosSemidef) (v : n ⊕ m → ℝ) :
@@ -82,8 +131,11 @@ private theorem re_mul_norm_sq_eq_star_dotProduct_hermitianPart_mulVec
 
 variable [DecidableEq n] [DecidableEq m]
 
-/-- The spectrum of a matrix with positive semidefinite Hermitian part is contained
-in the closed right half-plane. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have positive semidefinite Hermitian part $(A + A^H)/2$.
+Then every eigenvalue $\mu$ of $A$ satisfies $\operatorname{Re} \mu \ge 0$.
+
+For an eigenvector $v$, $\operatorname{Re} \mu \, \|v\|^2 = v^H \operatorname{herm}(A) v$. The
+Hermitian part is `Matrix.hermitianPart A`. -/
 theorem re_nonneg_of_mem_spectrum_of_posSemidef_hermitianPart
     {A : Matrix n n ℂ} (hA : (hermitianPart A).PosSemidef) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     0 ≤ μ.re := by
@@ -92,8 +144,16 @@ theorem re_nonneg_of_mem_spectrum_of_posSemidef_hermitianPart
   rw [← re_mul_norm_sq_eq_star_dotProduct_hermitianPart_mulVec A v hv] at h
   exact nonneg_of_mul_nonneg_left h (pow_pos (norm_pos_iff.2 (by simpa using hv0)) _)
 
-/-- The sign-flipped saddle point matrix has no eigenvalues in the open left
-half-plane if its two diagonal Hermitian parts are positive semidefinite. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$, $D \in \mathbb{C}^{n \times m}$ and
+$C \in \mathbb{C}^{m \times m}$. Suppose that the Hermitian part $(A + A^H)/2$ of $A$ and the
+matrix $C$ are positive semidefinite. Then every eigenvalue $\mu$ of
+$$\begin{bmatrix} A & D \\ -D^H & C \end{bmatrix}$$
+satisfies $\operatorname{Re} \mu \ge 0$.
+
+The Hermitian part of the block matrix is $\operatorname{diag}(\operatorname{herm}(A), C)$ by
+`Matrix.hermitianPart_fromBlocks_neg_conjTranspose`, and the result follows from
+`Matrix.re_nonneg_of_mem_spectrum_of_posSemidef_hermitianPart`. Positive semidefinite is
+`Matrix.PosSemidef`, which includes the condition that $C$ is Hermitian. -/
 theorem re_nonneg_of_mem_spectrum_fromBlocks_neg_conjTranspose
     {A : Matrix n n ℂ} (D : Matrix n m ℂ) {C : Matrix m m ℂ}
     (hA : (hermitianPart A).PosSemidef) (hC : C.PosSemidef) {μ : ℂ}
@@ -107,8 +167,16 @@ theorem re_nonneg_of_mem_spectrum_fromBlocks_neg_conjTranspose
   · rw [star_dotProduct_fromBlocks_diagonal_mulVec]
     exact add_nonneg (hA.dotProduct_mulVec_nonneg _) (hC.dotProduct_mulVec_nonneg _)
 
-/-- If the top Hermitian part is positive definite and the upper off-diagonal block is
-injective, the spectrum of the sign-flipped matrix lies in the open right half-plane. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$, $D \in \mathbb{C}^{n \times m}$ and
+$C \in \mathbb{C}^{m \times m}$. Suppose that the Hermitian part $(A + A^H)/2$ of $A$ is
+positive definite, that $C$ is positive semidefinite, and that $D$ is injective. Then every
+eigenvalue $\mu$ of
+$$\begin{bmatrix} A & D \\ -D^H & C \end{bmatrix}$$
+satisfies $\operatorname{Re} \mu > 0$.
+
+The Hermitian part is `Matrix.hermitianPart A`. For an eigenvector $(x, y)$, the component $x$
+is nonzero, because $x = 0$ gives $Dy = 0$ and then $y = 0$. Hence $\operatorname{Re} \mu \,
+\|(x, y)\|^2 = x^H \operatorname{herm}(A) x + y^H C y > 0$. -/
 theorem re_pos_of_mem_spectrum_fromBlocks_neg_conjTranspose
     {A : Matrix n n ℂ} {D : Matrix n m ℂ} {C : Matrix m m ℂ}
     (hA : (hermitianPart A).PosDef) (hC : C.PosSemidef) (hD : Function.Injective D.mulVec)
@@ -135,8 +203,12 @@ theorem re_pos_of_mem_spectrum_fromBlocks_neg_conjTranspose
   exact pos_of_mul_pos_left (hq ▸ add_pos_of_pos_of_nonneg h1 h2) (sq_nonneg _)
 
 open scoped MatrixOrder in
-/-- A weighted norm bound for a rectangular matrix: the Schur complement norm
-bounds the square of the image norm in terms of the positive definite energy. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ be Hermitian positive definite and let
+$B \in \mathbb{C}^{m \times n}$. Then for every $x \in \mathbb{C}^n$,
+$$\|Bx\|^2 \le \|B A^{-1} B^H\|_2 \, \operatorname{Re}(x^H A x).$$
+
+The norm of $B A^{-1} B^H$ is the operator norm induced by the Euclidean norm. Since $A$ is
+Hermitian, $x^H A x$ is real, and the statement takes its real part. -/
 theorem PosDef.norm_sq_mulVec_le_l2_opNorm_mul_re_dotProduct
     {A : Matrix n n ℂ} (hA : A.PosDef) (B : Matrix m n ℂ) (x : n → ℂ) :
     ‖toLp 2 (B *ᵥ x)‖ ^ 2 ≤ ‖B * A⁻¹ * Bᴴ‖ * (star x ⬝ᵥ (A *ᵥ x)).re := by
@@ -203,8 +275,18 @@ private theorem im_eq_zero_of_quadratic_of_nonneg_discriminant {μ : ℂ}
   have hpos : 0 < 4 * s * s * μ.im ^ 2 := by positivity
   nlinarith only [hpos, hdisc]
 
-/-- If a lower bound on the top energy is at least four times the Schur complement
-norm, the sign-flipped saddle point matrix with zero bottom diagonal has real spectrum. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ be Hermitian positive definite and let
+$B \in \mathbb{C}^{m \times n}$ have injective conjugate transpose $B^H$. Let $a \in \mathbb{R}$
+satisfy $a \|x\|^2 \le \operatorname{Re}(x^H A x)$ for all $x \in \mathbb{C}^n$, and suppose
+that
+$$4 \|B A^{-1} B^H\|_2 \le a.$$
+Then every eigenvalue $\mu$ of
+$$\begin{bmatrix} A & B^H \\ -B & 0 \end{bmatrix}$$
+is real.
+
+The norm of $B A^{-1} B^H$ is the operator norm induced by the Euclidean norm. The proof shows
+that $\mu$ is a root of a real quadratic with nonnegative discriminant, using
+`Matrix.PosDef.norm_sq_mulVec_le_l2_opNorm_mul_re_dotProduct`. -/
 theorem im_eq_zero_of_mem_spectrum_fromBlocks_neg_conjTranspose_zero
     {A : Matrix n n ℂ} {B : Matrix m n ℂ} (hA : A.PosDef)
     (hB : Function.Injective Bᴴ.mulVec) {a : ℝ}
@@ -253,8 +335,11 @@ theorem im_eq_zero_of_mem_spectrum_fromBlocks_neg_conjTranspose_zero
     _ ≤ (a * s) * q := by gcongr
     _ ≤ q ^ 2 := by rw [pow_two]; exact mul_le_mul_of_nonneg_right (ha x) hq
 
-/-- An affine function of a real symmetric matrix is positive semidefinite when
-it is nonnegative at each eigenvalue of that matrix. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric with eigenvalues $\lambda_i$, and let
+$c, d \in \mathbb{R}$. If $c \lambda_i + d \ge 0$ for every $i$, then $cA + dI$ is positive
+semidefinite.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.posSemidef_smul_add_smul_one {A : Matrix n n ℝ} (hA : A.IsHermitian)
     (c d : ℝ) (h : ∀ i, 0 ≤ c * hA.eigenvalues i + d) :
     (c • A + d • 1).PosSemidef := by
@@ -274,16 +359,20 @@ theorem IsHermitian.posSemidef_smul_add_smul_one {A : Matrix n n ℝ} (hA : A.Is
   rw [← hscale, hdiag]
   exact (PosSemidef.diagonal h).mul_mul_conjTranspose_same U
 
-/-- A lower bound on the eigenvalues of a real symmetric matrix is a lower
-bound in the positive semidefinite order. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, and let $a \in \mathbb{R}$ be at most every
+eigenvalue of $A$. Then $A - aI$ is positive semidefinite.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.posSemidef_sub_smul_one_of_le_eigenvalues {A : Matrix n n ℝ}
     (hA : A.IsHermitian) {a : ℝ} (h : ∀ i, a ≤ hA.eigenvalues i) :
     (A - a • 1).PosSemidef := by
   simpa [sub_eq_add_neg, neg_smul] using hA.posSemidef_smul_add_smul_one 1 (-a)
     (fun i => by linarith [h i])
 
-/-- An upper bound on the eigenvalues of a real symmetric matrix is an upper
-bound in the positive semidefinite order. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, and let $b \in \mathbb{R}$ be at least every
+eigenvalue of $A$. Then $bI - A$ is positive semidefinite.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.posSemidef_smul_one_sub_of_eigenvalues_le {A : Matrix n n ℝ}
     (hA : A.IsHermitian) {b : ℝ} (h : ∀ i, hA.eigenvalues i ≤ b) :
     (b • 1 - A).PosSemidef := by
@@ -351,9 +440,22 @@ private theorem lower_sq_stretch_of_negative_eigenpair
   have hres := le_of_mul_le_mul_right (hstretch.trans hbound) hyy
   nlinarith only [hres]
 
-/-- Rusten–Winther interval bounds for a symmetric saddle point matrix with a
-zero bottom diagonal block, expressed using bounds on the energies and stretches
-of its blocks. -/
+/-- The **bounds of Rusten and Winther.** Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive
+definite and let $B \in \mathbb{R}^{m \times n}$ have injective transpose $B^T$. Let $a, b,
+\sigma_{\min}, \sigma_{\max} \in \mathbb{R}$ with $a > 0$ and $\sigma_{\min} \ge 0$. Suppose
+that $A - aI$ and $bI - A$ are positive semidefinite, that $\sigma_{\min} \|y\| \le \|B^T y\|$
+for all $y \in \mathbb{R}^m$, and that $\|Bx\| \le \sigma_{\max} \|x\|$ for all
+$x \in \mathbb{R}^n$. Then every real eigenvalue of
+$$\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$$
+lies in
+$$\left[\frac{a - \sqrt{a^2 + 4 \sigma_{\max}^2}}{2},
+  \frac{b - \sqrt{b^2 + 4 \sigma_{\min}^2}}{2}\right]
+  \cup \left[a, \frac{b + \sqrt{b^2 + 4 \sigma_{\max}^2}}{2}\right].$$
+
+The conclusion is about `spectrum ℝ`, the real spectrum of the real matrix; the matrix is
+symmetric, so all its eigenvalues are real. This gives Theorem 3.5 of [benzi2005numerical],
+where $a$ and $b$ are the extreme eigenvalues of $A$ and $\sigma_{\min}$ and $\sigma_{\max}$ are
+the extreme singular values of $B$. -/
 theorem spectrum_fromBlocks_transpose_zero_subset
     {A : Matrix n n ℝ} (B : Matrix m n ℝ) (hA : A.PosDef)
     (hB : Function.Injective Bᵀ.mulVec)

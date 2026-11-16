@@ -8,40 +8,41 @@ import Numlib.LinearAlgebra.Matrix.Sylvester
 /-!
 # The fast Poisson solver framework
 
-The discretized Poisson equation on a rectangle, and every separable problem of the same shape, is
-a linear system with a Kronecker-sum matrix, `(I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}) vec U = vec B`
-([golub2013matrix] §4.8.3–4.8.7; Van Loan, *Computational Frameworks for the Fast Fourier
-Transform*, §4.3–4.5). When `A₁ = V diag(ν) V⁻¹` and `A₂ = W diag(μ) W⁻¹`, the system decouples in
-the eigenvector bases: with `Ũ = V⁻¹ U W⁻ᵀ` and `B̃ = V⁻¹ B W⁻ᵀ` it reads
-`diag(ν) Ũ + Ũ diag(μ) = B̃`, solved entrywise by `ũ_ij = b̃_ij / (ν_i + μ_j)`
-(`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`). This is the specification that the fast Poisson
-solvers of the surface (Algorithm 4.8.2 and its variants) are proved against; the fast transforms
-that apply `V`, `W` and their inverses are what makes them fast, and the operation counts are not
-formalized.
+The discretized Poisson equation on a rectangle, and every separable problem of the same shape, is a
+linear system with a Kronecker-sum matrix,
+$$(I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}) \operatorname{vec}(U) = \operatorname{vec}(B),$$
+as in [golub2013matrix], §4.8.3–4.8.7, and in Van Loan, *Computational Frameworks for the Fast
+Fourier Transform*, §4.3–4.5. Suppose that $A_1 = V \operatorname{diag}(\nu) V^{-1}$ and
+$A_2 = W \operatorname{diag}(\mu) W^{-1}$. In the eigenvector bases the system decouples: with
+$\tilde U = V^{-1} U W^{-T}$ and $\tilde B = V^{-1} B W^{-T}$ it reads $\operatorname{diag}(\nu)
+\tilde U + \tilde U \operatorname{diag}(\mu) = \tilde B$, and it is solved entrywise by $\tilde
+u_{ij} = \tilde b_{ij} / (\nu_i + \mu_j)$.
 
-## Design
+This is the specification against which the fast Poisson solvers (Algorithm 4.8.2 of
+[golub2013matrix] and its variants) are proved. These solvers are fast because fast transforms apply
+$V$, $W$ and their inverses. The operation counts are not formalized.
 
-Nothing is re-derived here. The Kronecker sum `A₂ ⊕ₖ A₁` acting on Mathlib's column-major
-`Matrix.vec` is the Sylvester-type map `U ↦ A₁ U + U A₂ᵀ` (`Matrix.kroneckerSum_mulVec_vec`); the
-change of basis is `Matrix.sylvesterMap_conj`, and the diagonal solve is
-`Matrix.sylvesterMap_diagonal_eq_iff`, both of `Numlib.LinearAlgebra.Matrix.Sylvester`.
+## Main results
 
-The second-difference matrices `𝒯^{(DD)}`, `𝒯^{(DN)}`, `𝒯^{(NN)}`, `𝒯^{(P)}` that make up the model
-problems, and their eigensystems (the sine and cosine transforms, the discrete Fourier transform),
-are backbone matrix vocabulary: `Matrix.symmTridiagonalToeplitz`, `Matrix.secondDifferenceDN`,
-`Matrix.secondDifferenceNN`, `Matrix.secondDifferencePeriodic` in
-`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, the transforms `Matrix.dst1`, `Matrix.dst2`,
-`Matrix.dct1` in `Numlib.Analysis.Fourier.SineCosineTransform` and the circulant diagonalization in
-`Numlib.Analysis.Fourier.Circulant`.
+* `FastPoisson.kroneckerSum_mulVec_vec_eq_iff`: if $\nu_i + \mu_j \neq 0$ for all $i, j$, the
+  solution of the Kronecker-sum system is $U = V \tilde U W^T$ with $\tilde u_{ij} = (V^{-1} B
+  W^{-T})_{ij} / (\nu_i + \mu_j)$.
+* `FastPoisson.isUnit_kroneckerSum`: under the same hypotheses the Kronecker sum is nonsingular.
 
-## Main statements
+## Implementation notes
 
-* `FastPoisson.kroneckerSum_mulVec_vec_eq_iff`: the solution formula.
-* `FastPoisson.isUnit_kroneckerSum`: the Kronecker sum is then nonsingular.
-
-## References
-
-* [golub2013matrix] §4.8.
+* Nothing is derived again here. The Kronecker sum `A₂ ⊕ₖ A₁` acting on Mathlib's column-major
+  `Matrix.vec` is the Sylvester-type map $U \mapsto A_1 U + U A_2^T$, by
+  `Matrix.kroneckerSum_mulVec_vec`. The change of basis is `Matrix.sylvesterMap_conj`, and the
+  diagonal solve is `Matrix.sylvesterMap_diagonal_eq_iff`, both of
+  `Numlib.LinearAlgebra.Matrix.Sylvester`.
+* The second-difference matrices $\mathcal{T}^{(DD)}$, $\mathcal{T}^{(DN)}$, $\mathcal{T}^{(NN)}$
+  and $\mathcal{T}^{(P)}$ of the model problems are `Matrix.symmTridiagonalToeplitz`,
+  `Matrix.secondDifferenceDN`, `Matrix.secondDifferenceNN` and `Matrix.secondDifferencePeriodic` of
+  `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`. Their eigensystems are the sine and cosine
+  transforms `Matrix.dst1`, `Matrix.dst2` and `Matrix.dct1` of
+  `Numlib.Analysis.Fourier.SineCosineTransform`, and the diagonalization of circulant matrices by
+  the discrete Fourier transform in `Numlib.Analysis.Fourier.Circulant`.
 -/
 
 open scoped Kronecker
@@ -53,8 +54,10 @@ open Matrix
 variable {K : Type*} [Field K] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
 
-/-- The eigenvector change of basis turns `A₁ U + U A₂ᵀ` into the diagonal Sylvester operator:
-`V⁻¹ (A₁ U + U A₂ᵀ) W⁻ᵀ = diag(ν) Ũ + Ũ diag(μ)` with `Ũ = V⁻¹ U W⁻ᵀ`. -/
+/-- The eigenvector change of basis turns $A_1 U + U A_2^T$ into the diagonal Sylvester operator: if
+$V^{-1} A_1 V = \operatorname{diag}(\nu)$ and $W^{-1} A_2 W = \operatorname{diag}(\mu)$, then
+$V^{-1} (A_1 U + U A_2^T) W^{-T} = \operatorname{diag}(\nu) \tilde U + \tilde U
+\operatorname{diag}(\mu)$ with $\tilde U = V^{-1} U W^{-T}$. -/
 private theorem sylvesterMap_diagonal_conj {A₁ : Matrix m m K} {A₂ : Matrix n n K}
     {V : Matrix m m K} {W : Matrix n n K} (hV : IsUnit V) (hW : IsUnit W) {ν : m → K}
     {μ : n → K} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -73,10 +76,20 @@ private theorem sylvesterMap_diagonal_conj {A₁ : Matrix m m K} {A₂ : Matrix 
   rw [h2] at key
   rw [key, sylvesterMap_apply, Matrix.mul_neg, sub_neg_eq_add]
 
-/-- **The fast Poisson solver framework** ([golub2013matrix] §4.8.4, the specification of
-Algorithm 4.8.2). Let `V`, `W` be nonsingular with `V⁻¹ A₁ V = diag(ν)` and `W⁻¹ A₂ W = diag(μ)`
-((4.8.13)–(4.8.14)), and `ν i + μ j ≠ 0` for all `i`, `j`. Then
-`(A₂ ⊕ₖ A₁) vec U = vec B` iff `U = V Ũ Wᵀ` with `ũ_ij = (V⁻¹ B W⁻ᵀ)_ij / (ν_i + μ_j)`. -/
+/-- The **fast Poisson solver framework**. Let $K$ be a field, let $A_1 \in K^{m \times m}$ and
+$A_2 \in K^{n \times n}$, and let $V \in K^{m \times m}$ and $W \in K^{n \times n}$ be
+nonsingular with
+$$V^{-1} A_1 V = \operatorname{diag}(\nu), \qquad W^{-1} A_2 W = \operatorname{diag}(\mu)$$
+for some $\nu \in K^m$ and $\mu \in K^n$. Suppose that $\nu_i + \mu_j \neq 0$ for all $i$ and
+$j$. Then for all $U, B \in K^{m \times n}$,
+$$(I_n \otimes A_1 + A_2 \otimes I_m) \operatorname{vec}(U) = \operatorname{vec}(B) \iff U = V
+  \tilde U W^T, \quad \tilde u_{ij} = \frac{(V^{-1} B W^{-T})_{ij}}{\nu_i + \mu_j}.$$
+This is the specification of Algorithm 4.8.2 of [golub2013matrix], §4.8.4, with the
+diagonalizations (4.8.13)–(4.8.14).
+
+The map $\operatorname{vec}$ is Mathlib's column-major `Matrix.vec`. The matrix
+$I_n \otimes A_1 + A_2 \otimes I_m$ is the Kronecker sum `A₂ ⊕ₖ A₁`, that is,
+`Matrix.kroneckerSum A₂ A₁`. -/
 theorem kroneckerSum_mulVec_vec_eq_iff {A₁ : Matrix m m K} {A₂ : Matrix n n K}
     {V : Matrix m m K} {W : Matrix n n K} (hV : IsUnit V) (hW : IsUnit W) {ν : m → K}
     {μ : n → K} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -105,8 +118,11 @@ theorem kroneckerSum_mulVec_vec_eq_iff {A₁ : Matrix m m K} {A₂ : Matrix n n 
   rw [hU]
   simp only [Pi.neg_apply, sub_neg_eq_add]
 
-/-- Under the hypotheses of `FastPoisson.kroneckerSum_mulVec_vec_eq_iff` the Kronecker sum
-`A₂ ⊕ₖ A₁` is nonsingular: every `vec B` is attained. -/
+/-- Let $K$ be a field, and let $A_1$, $A_2$, $V$, $W$, $\nu$ and $\mu$ satisfy the hypotheses of
+`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`: $V$ and $W$ are nonsingular,
+$V^{-1} A_1 V = \operatorname{diag}(\nu)$, $W^{-1} A_2 W = \operatorname{diag}(\mu)$, and
+$\nu_i + \mu_j \neq 0$ for all $i$ and $j$. Then the Kronecker sum
+$I_n \otimes A_1 + A_2 \otimes I_m$ is nonsingular. -/
 theorem isUnit_kroneckerSum {A₁ : Matrix m m K} {A₂ : Matrix n n K}
     {V : Matrix m m K} {W : Matrix n n K} (hV : IsUnit V) (hW : IsUnit W) {ν : m → K}
     {μ : n → K} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)

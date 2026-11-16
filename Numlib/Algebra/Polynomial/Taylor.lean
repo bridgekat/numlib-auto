@@ -13,17 +13,26 @@ import Mathlib.Algebra.Polynomial.Taylor
 /-!
 # Taylor expansion of a rescaled polynomial
 
-`Polynomial.taylor_comp_C_mul_X`: expanding `q(s X)` about `l` is expanding `q` about `s l` and
-rescaling, `taylor l (q.comp (C s * X)) = (taylor (s * l) q).comp (C s * X)`. It is the
-coefficient identity behind the rescaling `f(s a)` of the primary functional calculus.
+Let $q$ be a polynomial over a commutative semiring, and let $s, l$ be scalars. The Taylor expansion
+of $q(sX)$ about $l$ is the Taylor expansion of $q$ about $sl$, rescaled by $X \mapsto sX$. This is
+the coefficient identity behind the rescaling $f(sa)$ of the primary functional calculus.
+
+## Main results
+
+* `Polynomial.taylor_comp_C_mul_X`: the Taylor expansion of $q(sX)$ about $l$ is the Taylor
+  expansion of $q$ about $sl$, evaluated at $sX$.
 -/
 
 namespace Polynomial
 
 variable {R : Type*} [CommSemiring R]
 
-/-- **Taylor expansion of a rescaled polynomial**: the expansion of `q(s X)` about `l` is the
-expansion of `q` about `s l`, rescaled. -/
+/-- **Taylor expansion of a rescaled polynomial**. Let $R$ be a commutative semiring, let
+$q \in R[X]$ and $s, l \in R$. Then the Taylor expansion of $q(sX)$ about $l$ is the Taylor
+expansion of $q$ about $sl$, with $X$ replaced by $sX$:
+$$q\bigl(s(X + l)\bigr) = \bigl(q(X + sl)\bigr)\big|_{X = sX}.$$
+
+The Taylor expansion of $p$ about $l$ is `Polynomial.taylor l p`, the polynomial $p(X + l)$. -/
 theorem taylor_comp_C_mul_X (q : R[X]) (s l : R) :
     taylor l (q.comp (C s * X)) = (taylor (s * l) q).comp (C s * X) := by
   simp only [taylor_apply, comp_assoc, mul_comp, C_comp, X_comp, add_comp]

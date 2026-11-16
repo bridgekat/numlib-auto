@@ -8,43 +8,73 @@ import Numlib.FloatingPoint.Householder
 /-!
 # Rounding errors of Givens rotations
 
-The computed cosine–sine pair of a Givens rotation and its application to a vector, to two rows
-or to two columns of a matrix, in the relational rounding model of `Numlib/FloatingPoint/Model`
-and in the style of `Numlib/FloatingPoint/Householder` ([higham2002accuracy] §19.6, Lemmas
-19.7–19.8; [golub2013matrix] §5.1.8–§5.1.12). Every statement quantifies over all admissible
-roundings at once.
+This module analyzes the rounding errors of Givens rotations over $\mathbb{R}$, in the rounding
+model of `Numlib.FloatingPoint.Model`: the computation of the cosine–sine pair $(c, s)$ from
+$(a, b)$, and the application of a rotation to a vector, to two rows of a matrix or to two columns
+of a matrix. It follows [higham2002accuracy], §19.6, Lemmas 19.7 and 19.8, and [golub2013matrix],
+§5.1.8–§5.1.12. A value $\hat x$ is a relative perturbation of order $k$ of $x$ if
+$\hat x = x (1 + \theta)$ with $|\theta| \le \gamma_k = ku / (1 - ku)$, where $u$ is the unit
+roundoff. The computed pair is a relative perturbation of an exact rotation that annihilates $b$. A
+computed update with such data differs from the exact rotation by at most
+$\sqrt{2}\, \gamma_{n+2} \|x\|_2$ in the Euclidean norm, where $n$ is the order of the perturbation
+of the pair; the matrix updates satisfy the same bound columnwise, rowwise and in the Frobenius
+norm. The computed rotation matrix is within $\gamma_n$ of the exact one in the spectral norm, so it
+is orthogonal to working precision.
 
-**Sign convention.** The numerical sources ([golub2013matrix] (5.1.7), [higham2002accuracy]
-§19.6, [quarteroni2000numerical] (5.43)) write the rotation as `G(i, k, θ)` with `g_ii = g_kk = c`,
-`g_ik = s`, `g_ki = -s`, and apply `G(i, k, θ)ᵀ`: `y_i = c x_i - s x_k`, `y_k = s x_i + c x_k`.
-The backbone's `Matrix.planeRotation j k c s` has the Jacobi convention (rows `(c, -s)`, `(s, c)`),
-so the exact rotation here is always `Matrix.planeRotation j k c (-s)`. The relations mirror the
-numerical convention **with the signs inside the rounded expressions** (`Rounds (-a / b) τ`,
-`Rounds (p - q) y`): the relational model does not know that rounding commutes with negation, so a
-relation in the Jacobi convention could not be reached from a run of a book algorithm.
+The numerical sources ([golub2013matrix] (5.1.7), [higham2002accuracy] §19.6,
+[quarteroni2000numerical] (5.43)) write the rotation as $G(i, k, \theta)$, with
+$g_{ii} = g_{kk} = c$, $g_{ik} = s$ and $g_{ki} = -s$, and apply $G(i, k, \theta)^T$:
+$y_i = c x_i - s x_k$ and $y_k = s x_i + c x_k$. Below, $G(j, k)$ denotes this matrix for given $c$
+and $s$.
 
-**What is rounded.**
+## Main definitions
 
-* `FloatingPoint.RoundsGivensPair m a b ĉ ŝ` is [golub2013matrix] Algorithm 5.1.3 (the
-  `τ`-formula); `FloatingPoint.RoundsGivensPairDirect m a b ĉ ŝ` is the direct formula
-  [golub2013matrix] (5.1.8), `ĉ = fl(a / r)`, `ŝ = fl(-b / r)`, `r = fl(√fl(fl(a²) + fl(b²)))`.
-* `FloatingPoint.RoundsGivensApply m c s j k x y` is the two-entry update of [golub2013matrix]
-  §5.1.9 on a vector, `y_j = fl(fl(c x_j) - fl(s x_k))`, `y_k = fl(fl(s x_j) + fl(c x_k))`;
-  `RoundsGivensRowUpdate` (rows `j, k` of `A`, that is `Gᵀ A`) and `RoundsGivensColUpdate`
-  (columns `j, k`, that is `A G`) apply it to every column, respectively every row.
+* `FloatingPoint.RoundsGivensPair`: the computed pair $(\hat c, \hat s)$ of the $\tau$-formula of
+  [golub2013matrix], Algorithm 5.1.3.
+* `FloatingPoint.RoundsGivensPairDirect`: the computed pair of the direct formula
+  $c = a / \sqrt{a^2 + b^2}$, $s = -b / \sqrt{a^2 + b^2}$ of [golub2013matrix] (5.1.8).
+* `FloatingPoint.RoundsGivensApply`: the computed rotation $y_j = \mathrm{fl}(\mathrm{fl}(c x_j) -
+  \mathrm{fl}(s x_k))$, $y_k = \mathrm{fl}(\mathrm{fl}(s x_j) + \mathrm{fl}(c x_k))$ of two entries
+  of a vector.
+* `FloatingPoint.RoundsGivensRowUpdate` and `FloatingPoint.RoundsGivensColUpdate`: the computed
+  updates $G^T A$ of two rows and $A G$ of two columns of a matrix.
 
-**What is proved.** The computed pair is a relative perturbation of an exact rotation that does the
-job (`RoundsGivensPair.exists_isRelPert`, order `13`; the direct formula has order `7`); an update
-with such data is the exact rotation up to `√2 γ_{n+2}` in the 2-norm
-(`norm_sub_le_of_roundsGivensApply`, the normwise form of [higham2002accuracy] Lemma 19.8), hence
-columnwise, rowwise and in the Frobenius norm for the matrix updates; the computed rotation matrix
-is within `γ_n` of the exact one in the 2-norm (`l2_opNorm_planeRotation_sub_le`) and so
-"orthogonal to working precision" ([golub2013matrix] §5.1.12) through
-`l2_opNorm_transpose_mul_self_sub_one_le`. Sequences of rotations are Lemma 19.3 of
-`Numlib/FloatingPoint/Householder` (`exists_eq_prodRev_mul_add`,
-`exists_eq_prodRev_mul_add_mul_prodFwd_rect`); the loop bookkeeping of a Givens QR factorization
-is the book's algorithm and lives on the surface. The constants are those of the relational
-calculus, looser than Higham's `γ₄`/`γ₆` and rigorous. Everything is over `ℝ`.
+## Main results
+
+* `FloatingPoint.RoundsGivensPair.exists_isRelPert`: the computed pair of the $\tau$-formula is a
+  relative perturbation of order $13$ of an exact rotation with $sa + cb = 0$.
+* `FloatingPoint.RoundsGivensPairDirect.isRelPert`: the computed pair of the direct formula is a
+  relative perturbation of order $7$ of the exact pair.
+* `FloatingPoint.abs_sub_le_of_roundsGivensApply`: the componentwise form of Lemma 19.8 of
+  [higham2002accuracy].
+* `FloatingPoint.norm_sub_le_of_roundsGivensApply`: $\|y - G(j, k)^T x\|_2 \le \sqrt{2}\,
+  \gamma_{n+2} \|x\|_2$.
+* `FloatingPoint.RoundsGivensRowUpdate.frobenius_norm_sub_le` and
+  `FloatingPoint.RoundsGivensColUpdate.frobenius_norm_sub_le`: the same bound for the matrix updates
+  in the Frobenius norm.
+* `FloatingPoint.l2_opNorm_planeRotation_sub_le`: the computed rotation matrix is within $\gamma_n$
+  of the exact one in the spectral norm.
+* `FloatingPoint.l2_opNorm_transpose_mul_self_sub_one_le`: if $\|\hat Q - Q\|_2 \le \varepsilon$ for
+  an orthogonal $Q$, then $\|\hat Q^T \hat Q - I\|_2 \le 2 \varepsilon + \varepsilon^2$.
+
+## Implementation notes
+
+* `Matrix.planeRotation j k c s` has the rows $(c, -s)$ and $(s, c)$ in the columns $j, k$ (the
+  Jacobi convention). Therefore the exact rotation $G(j, k)$ of the numerical sources is
+  `Matrix.planeRotation j k c (-s)`. The relations keep the signs of the numerical convention inside
+  the rounded expressions, for example `Rounds (-a / b) τ` and `Rounds (p - q) y`. The rounding
+  model does not assume that rounding commutes with negation, so a relation in the Jacobi convention
+  would not describe a run of the algorithms of the sources.
+* The rounding relation is not a function. Every statement holds for all admissible roundings at
+  once.
+* The constants come from the calculus of relative perturbations of `Numlib.FloatingPoint.Model`.
+  They are larger than the constants $\gamma_4$ and $\gamma_6$ of [higham2002accuracy], but they are
+  proved without approximation.
+* Sequences of rotations are covered by the accumulation lemmas of
+  `Numlib.FloatingPoint.Householder` (Lemma 19.3 of [higham2002accuracy]),
+  `FloatingPoint.exists_eq_prodRev_mul_add` and
+  `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`. The loop of a Givens QR factorization
+  is an algorithm of the sources, so it is not stated in this module.
 -/
 
 open Matrix WithLp
@@ -53,10 +83,18 @@ namespace FloatingPoint
 
 /-! ### The computed cosine–sine pair -/
 
-/-- **The computed cosine–sine pair of [golub2013matrix] Algorithm 5.1.3** (the `τ`-formula), as a
-relation on `(a, b, ĉ, ŝ)`: `b = 0` gives `(1, 0)`; `|a| < |b|` gives `τ = fl(-a / b)`,
-`ŝ = fl(1 / fl(√fl(1 + fl(τ²))))`, `ĉ = fl(ŝ τ)`; otherwise the same with the roles of `a, b` and
-of `c, s` exchanged. The comparisons act on the inputs, which are exact data of the relation. -/
+/-- The computed cosine–sine pair of the $\tau$-formula of [golub2013matrix], Algorithm 5.1.3. For
+$a, b \in \mathbb{R}$, a pair $(\hat c, \hat s)$ is a computed pair if one of three cases holds:
+
+* $b = 0$, $\hat c = 1$ and $\hat s = 0$;
+* $|a| < |b|$, $\hat\tau = \mathrm{fl}(-a / b)$, $\hat s = \mathrm{fl}\bigl(1 /
+  \mathrm{fl}(\sqrt{\mathrm{fl}(1 + \mathrm{fl}(\hat\tau^2))})\bigr)$ and
+  $\hat c = \mathrm{fl}(\hat s \hat\tau)$;
+* $b \neq 0$, $|b| \le |a|$, $\hat\tau = \mathrm{fl}(-b / a)$, $\hat c = \mathrm{fl}\bigl(1 /
+  \mathrm{fl}(\sqrt{\mathrm{fl}(1 + \mathrm{fl}(\hat\tau^2))})\bigr)$ and
+  $\hat s = \mathrm{fl}(\hat c \hat\tau)$.
+
+The comparisons act on the exact inputs $a$ and $b$. -/
 def RoundsGivensPair (m : RoundingModel ℝ) (a b chat shat : ℝ) : Prop :=
   (b = 0 ∧ chat = 1 ∧ shat = 0) ∨
   (|a| < |b| ∧ ∃ τ t₁ t₂ r : ℝ, m.Rounds (-a / b) τ ∧ m.Rounds (τ * τ) t₁ ∧
@@ -64,9 +102,11 @@ def RoundsGivensPair (m : RoundingModel ℝ) (a b chat shat : ℝ) : Prop :=
   (b ≠ 0 ∧ |b| ≤ |a| ∧ ∃ τ t₁ t₂ r : ℝ, m.Rounds (-b / a) τ ∧ m.Rounds (τ * τ) t₁ ∧
       m.Rounds (1 + t₁) t₂ ∧ m.Rounds (√t₂) r ∧ m.Rounds (1 / r) chat ∧ m.Rounds (chat * τ) shat)
 
-/-- The common core of the two branches of the `τ`-formula: if `τ̂` is a relative perturbation of
-order one of `τ`, then `fl(1 / fl(√fl(1 + fl(τ̂²))))` is one of order `11` of `1 / √(1 + τ²)`
-and its product with `τ̂`, rounded, one of order `13` of `τ / √(1 + τ²)`. -/
+/-- The common part of the two branches of the $\tau$-formula: if $\hat\tau$ is a relative
+perturbation of order $1$ of $\tau$ and $13u < 1$, then $\mathrm{fl}(1 /
+\mathrm{fl}(\sqrt{\mathrm{fl}(1 + \mathrm{fl}(\hat\tau^2))}))$ is a relative perturbation of
+order $13$ of $1 / \sqrt{1 + \tau^2}$, and its rounded product with $\hat\tau$ is one of order
+$13$ of $\tau / \sqrt{1 + \tau^2}$. -/
 private theorem isRelPert_givens_branch {m : RoundingModel ℝ} (hu : ((13 : ℕ) : ℝ) * m.u < 1)
     {τ τh t₁ t₂ r x y : ℝ} (hτ : IsRelPert m.u 1 τ τh) (h₁ : m.Rounds (τh * τh) t₁)
     (h₂ : m.Rounds (1 + t₁) t₂) (hr : m.Rounds (√t₂) r) (hx : m.Rounds (1 / r) x)
@@ -97,17 +137,22 @@ private theorem isRelPert_givens_branch {m : RoundingModel ℝ} (hu : ((13 : ℕ
     (hx'.mul hu0 (k := 11) (j := 1) (hlt 12 (by omega)) hτ).rounds (hlt 13 le_rfl) hy
   exact ⟨hx'.mono hu0 (by omega) hu, hy'⟩
 
-/-- `(1 / √(1 + τ²))² (1 + τ²) = 1`. -/
+/-- $(1 / \sqrt{1 + \tau^2})^2 (1 + \tau^2) = 1$. -/
 private theorem one_div_sqrt_one_add_mul_self_sq (τ : ℝ) :
     (1 / √(1 + τ * τ)) ^ 2 * (1 + τ * τ) = 1 := by
   have h : 0 < 1 + τ * τ := add_pos_of_pos_of_nonneg one_pos (mul_self_nonneg τ)
   rw [div_pow, Real.sq_sqrt h.le]
   field_simp
 
-/-- **[higham2002accuracy] Lemma 19.7 for the `τ`-formula of [golub2013matrix] Algorithm 5.1.3.**
-If `13 u < 1` and `RoundsGivensPair m a b ĉ ŝ`, there is an exact rotation doing the job,
-`[c s; -s c]ᵀ [a; b] = [r; 0]` (that is `s a + c b = 0`), whose cosine and sine the computed ones
-perturb to order `13`: the exact `(c, s)` is the exact output of the same branch. -/
+/-- Let $13u < 1$, and let $(\hat c, \hat s)$ be a computed pair of the $\tau$-formula for $(a, b)$.
+Then there are $c, s \in \mathbb{R}$ with
+$$c^2 + s^2 = 1, \qquad sa + cb = 0,$$
+such that $\hat c$ and $\hat s$ are relative perturbations of order $13$ of $c$ and $s$. The
+condition $sa + cb = 0$ says that the second entry of $\begin{bmatrix} c & s \\ -s & c
+\end{bmatrix}^T \begin{bmatrix} a \\ b \end{bmatrix}$ is $0$. This is Lemma 19.7 of
+[higham2002accuracy] for the $\tau$-formula of [golub2013matrix], Algorithm 5.1.3.
+
+The exact pair $(c, s)$ is the exact output of the same branch of the formula. -/
 theorem RoundsGivensPair.exists_isRelPert {m : RoundingModel ℝ}
     (hu : ((13 : ℕ) : ℝ) * m.u < 1) {a b chat shat : ℝ} (h : RoundsGivensPair m a b chat shat) :
     ∃ c s : ℝ, c ^ 2 + s ^ 2 = 1 ∧ s * a + c * b = 0 ∧
@@ -138,18 +183,24 @@ theorem RoundsGivensPair.exists_isRelPert {m : RoundingModel ℝ}
     · have : -b / a * a = -b := div_mul_cancel₀ _ ha
       linear_combination (1 / √(1 + -b / a * (-b / a))) * this
 
-/-- **The computed pair of the direct formula** [golub2013matrix] (5.1.8)
-(`c = a / √(a² + b²)`, `s = -b / √(a² + b²)`): `r = fl(√fl(fl(a²) + fl(b²)))`, `ĉ = fl(a / r)`,
-`ŝ = fl(-b / r)`. [quarteroni2000numerical] (5.51) and [higham2002accuracy] §19.6 write the same
-formula. -/
+/-- The computed pair of the direct formula (5.1.8) of [golub2013matrix], $c = a / \sqrt{a^2 + b^2}$
+and $s = -b / \sqrt{a^2 + b^2}$. For $a, b \in \mathbb{R}$, a pair $(\hat c, \hat s)$ is a
+computed pair if
+$$\hat r = \mathrm{fl}\bigl(\sqrt{\mathrm{fl}(\mathrm{fl}(a^2) + \mathrm{fl}(b^2))}\bigr),
+  \qquad \hat c = \mathrm{fl}(a / \hat r), \qquad \hat s = \mathrm{fl}(-b / \hat r).$$
+[quarteroni2000numerical] (5.51) and [higham2002accuracy], §19.6, use the same formula. -/
 def RoundsGivensPairDirect (m : RoundingModel ℝ) (a b chat shat : ℝ) : Prop :=
   ∃ p q t r : ℝ, m.Rounds (a * a) p ∧ m.Rounds (b * b) q ∧ m.Rounds (p + q) t ∧
     m.Rounds (√t) r ∧ m.Rounds (a / r) chat ∧ m.Rounds (-b / r) shat
 
-/-- **The direct formula to order `7`**: if `7 u < 1` and `RoundsGivensPairDirect m a b ĉ ŝ`, then
-`ĉ` and `ŝ` are relative perturbations of order `7` of `a / √(a² + b²)` and `-b / √(a² + b²)`
-(squares `1`, their sum `1`, rounded `2`, the square root `2`, rounded `3`, the quotients
-`0 + 2 · 3 = 6`, rounded `7`). No hypothesis `(a, b) ≠ 0` is needed. -/
+/-- Let $7u < 1$. If $(\hat c, \hat s)$ is a computed pair of the direct formula for $(a, b)$, then
+$\hat c$ and $\hat s$ are relative perturbations of order $7$ of
+$$\frac{a}{\sqrt{a^2 + b^2}} \quad \text{and} \quad \frac{-b}{\sqrt{a^2 + b^2}}.$$
+The hypothesis $(a, b) \neq 0$ is not needed.
+
+At $(a, b) = (0, 0)$, both exact values are $0$ by the Lean convention $x / 0 = 0$. The order
+$7$ counts the roundings: the rounded square root of the rounded sum of squares has order $3$,
+the quotients have order $6$, and their roundings order $7$. -/
 theorem RoundsGivensPairDirect.isRelPert {m : RoundingModel ℝ} (hu : ((7 : ℕ) : ℝ) * m.u < 1)
     {a b chat shat : ℝ} (h : RoundsGivensPairDirect m a b chat shat) :
     IsRelPert m.u 7 (a / √(a ^ 2 + b ^ 2)) chat ∧ IsRelPert m.u 7 (-b / √(a ^ 2 + b ^ 2)) shat := by
@@ -178,18 +229,21 @@ theorem RoundsGivensPairDirect.isRelPert {m : RoundingModel ℝ} (hu : ((7 : ℕ
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- **One computed rotation of the coordinates `j, k` of a vector** ([golub2013matrix] §5.1.9,
-[higham2002accuracy] §19.6), with the computed data `(c, s)`:
-`y_j = fl(fl(c x_j) - fl(s x_k))`, `y_k = fl(fl(s x_j) + fl(c x_k))`, every other entry kept. The
-exact counterpart is `(planeRotation j k c (-s))ᵀ *ᵥ x` (see the module doc on signs). -/
+/-- One computed rotation of the coordinates $j, k$ of a vector ([golub2013matrix] §5.1.9,
+[higham2002accuracy] §19.6). For $c, s \in \mathbb{R}$ and $x \in \mathbb{R}^\iota$, a vector
+$y$ is a computed rotation of $x$ if
+$$y_j = \mathrm{fl}\bigl(\mathrm{fl}(c x_j) - \mathrm{fl}(s x_k)\bigr), \qquad y_k =
+  \mathrm{fl}\bigl(\mathrm{fl}(s x_j) + \mathrm{fl}(c x_k)\bigr),$$
+and $y_i = x_i$ for every $i \neq j, k$.
+
+The exact counterpart is $G(j, k)^T x$, that is `(Matrix.planeRotation j k c (-s))ᵀ *ᵥ x`. -/
 def RoundsGivensApply (m : RoundingModel ℝ) (c s : ℝ) (j k : ι) (x y : ι → ℝ) : Prop :=
   (∃ p q : ℝ, m.Rounds (c * x j) p ∧ m.Rounds (s * x k) q ∧ m.Rounds (p - q) (y j)) ∧
   (∃ p q : ℝ, m.Rounds (s * x j) p ∧ m.Rounds (c * x k) q ∧ m.Rounds (p + q) (y k)) ∧
   ∀ i, i ≠ j → i ≠ k → y i = x i
 
-/-- A rounded sum of two rounded products of perturbed factors: if `p` and `q` are relative
-perturbations of order `n + 1` of `X` and `Y`, then `|fl(p + q) - (X + Y)| ≤ γ_{n+2} (|X| + |Y|)`.
--/
+/-- If $(n + 2) u < 1$ and $p$ and $q$ are relative perturbations of order $n + 1$ of $X$ and $Y$,
+then $|\mathrm{fl}(p + q) - (X + Y)| \le \gamma_{n+2} (|X| + |Y|)$. -/
 private theorem abs_rounds_add_sub_le {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {X Y p q y : ℝ} (hp : IsRelPert m.u (n + 1) X p)
     (hq : IsRelPert m.u (n + 1) Y q) (hy : m.Rounds (p + q) y) :
@@ -232,10 +286,13 @@ private theorem abs_rounds_add_sub_le {m : RoundingModel ℝ} {n : ℕ}
     _ ≤ gamma m.u (n + 2) * (|X| + |Y|) := mul_le_mul_of_nonneg_right hstep hXY
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- **The componentwise form of [higham2002accuracy] Lemma 19.8**: if `(n + 2) u < 1` and the
-computed `(ĉ, ŝ)` are relative perturbations of order `n` of `(c, s)`, a computed rotation
-`RoundsGivensApply m ĉ ŝ j k x y` has `|y_j - (c x_j - s x_k)| ≤ γ_{n+2} (|c| |x_j| + |s| |x_k|)`,
-`|y_k - (s x_j + c x_k)| ≤ γ_{n+2} (|s| |x_j| + |c| |x_k|)`, and `y_i = x_i` elsewhere. -/
+/-- Let $(n + 2) u < 1$, and let $\hat c$ and $\hat s$ be relative perturbations of order $n$ of $c$
+and $s$. If $y$ is a computed rotation of the coordinates $j, k$ of $x$ with the data
+$(\hat c, \hat s)$, then
+$$|y_j - (c x_j - s x_k)| \le \gamma_{n+2} (|c| |x_j| + |s| |x_k|), \qquad |y_k - (s x_j + c
+  x_k)| \le \gamma_{n+2} (|s| |x_j| + |c| |x_k|),$$
+and $y_i = x_i$ for every $i \neq j, k$. This is the componentwise form of Lemma 19.8 of
+[higham2002accuracy]. -/
 theorem abs_sub_le_of_roundsGivensApply {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {c s chat shat : ℝ} (hc : IsRelPert m.u n c chat)
     (hs : IsRelPert m.u n s shat) {j k : ι} {x y : ι → ℝ}
@@ -265,7 +322,8 @@ theorem abs_sub_le_of_roundsGivensApply {m : RoundingModel ℝ} {n : ℕ}
     rwa [abs_mul, abs_mul] at this
 
 omit [DecidableEq ι] in
-/-- A vector vanishing off `{j, k}` has squared Euclidean norm `d_j² + d_k²`. -/
+/-- A vector $d$ that vanishes off two distinct coordinates $j, k$ has the squared Euclidean norm
+$d_j^2 + d_k^2$. -/
 private theorem norm_toLp_sq_of_eq_zero {j k : ι} (hjk : j ≠ k) {d : ι → ℝ}
     (h : ∀ i, i ≠ j → i ≠ k → d i = 0) :
     ‖(toLp 2 d : EuclideanSpace ℝ ι)‖ ^ 2 = d j ^ 2 + d k ^ 2 := by
@@ -280,7 +338,8 @@ private theorem norm_toLp_sq_of_eq_zero {j k : ι} (hjk : j ≠ k) {d : ι → �
   rw [hsum, Finset.sum_pair hjk]
 
 omit [DecidableEq ι] in
-/-- Two distinct coordinates bound the Euclidean norm: `x_j² + x_k² ≤ ‖x‖₂²`. -/
+/-- For two distinct coordinates $j \neq k$ of $x \in \mathbb{R}^\iota$,
+$x_j^2 + x_k^2 \le \|x\|_2^2$. -/
 theorem sq_add_sq_le_norm_toLp_sq {j k : ι} (hjk : j ≠ k) (x : ι → ℝ) :
     x j ^ 2 + x k ^ 2 ≤ ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ ^ 2 := by
   classical
@@ -289,12 +348,16 @@ theorem sq_add_sq_le_norm_toLp_sq {j k : ι} (hjk : j ≠ k) (x : ι → ℝ) :
   rw [← Finset.sum_pair (f := fun i => x i ^ 2) hjk]
   exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => sq_nonneg _
 
-/-- **[higham2002accuracy] Lemma 19.8 (normwise), [golub2013matrix] §5.1.10.** If
-`(n + 2) u < 1`, `c² + s² = 1`, `j ≠ k` and the computed `(ĉ, ŝ)` are relative perturbations of
-order `n` of `(c, s)`, a computed rotation satisfies
-`‖y - G(j, k)ᵀ x‖₂ ≤ √2 γ_{n+2} ‖x‖₂` for the exact `G(j, k) = planeRotation j k c (-s)`: each of
-the two changed entries is within `γ_{n+2} (|c| |x_j| + |s| |x_k|)`, which Cauchy–Schwarz bounds by
-`γ_{n+2} √(x_j² + x_k²)`. -/
+/-- Let $(n + 2) u < 1$, let $j \neq k$, let $c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be
+relative perturbations of order $n$ of $c$ and $s$. If $y$ is a computed rotation of the
+coordinates $j, k$ of $x$ with the data $(\hat c, \hat s)$, then
+$$\|y - G(j, k)^T x\|_2 \le \sqrt{2}\, \gamma_{n+2} \|x\|_2,$$
+where $G(j, k)$ is the exact rotation `Matrix.planeRotation j k c (-s)`. This is the normwise
+form of Lemma 19.8 of [higham2002accuracy], and the analysis of [golub2013matrix], §5.1.10.
+
+Each of the two changed entries has an error of at most $\gamma_{n+2} (|c| |x_j| + |s| |x_k|)$
+or $\gamma_{n+2} (|s| |x_j| + |c| |x_k|)$, and the Cauchy–Schwarz inequality bounds both by
+$\gamma_{n+2} \sqrt{x_j^2 + x_k^2}$. -/
 theorem norm_sub_le_of_roundsGivensApply {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {j k : ι} (hjk : j ≠ k) {c s chat shat : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert m.u n c chat) (hs : IsRelPert m.u n s shat)
@@ -346,26 +409,34 @@ theorem norm_sub_le_of_roundsGivensApply {m : RoundingModel ℝ} {n : ℕ}
 
 variable {κ : Type*} [Fintype κ]
 
-/-- **The computed row update** `A([j, k], :) = [c s; -s c]ᵀ A([j, k], :)` of [golub2013matrix]
-§5.1.9: every column of `B` is a computed rotation of the corresponding column of `A`. The exact
-counterpart is `(planeRotation j k c (-s))ᵀ * A`. -/
+/-- The computed row update $A([j, k], :) = \begin{bmatrix} c & s \\ -s & c \end{bmatrix}^T A([j,
+k], :)$ of [golub2013matrix], §5.1.9. A matrix $B$ is a computed row update of $A$ if every
+column of $B$ is a computed rotation (`FloatingPoint.RoundsGivensApply`) of the corresponding
+column of $A$.
+
+The exact counterpart is $G(j, k)^T A$, that is `(Matrix.planeRotation j k c (-s))ᵀ * A`. -/
 def RoundsGivensRowUpdate (m : RoundingModel ℝ) (c s : ℝ) (j k : ι) (A B : Matrix ι κ ℝ) :
     Prop :=
   ∀ q, RoundsGivensApply m c s j k (fun i => A i q) (fun i => B i q)
 
-/-- **The computed column update** `A(:, [j, k]) = A(:, [j, k]) [c s; -s c]` of [golub2013matrix]
-§5.1.9: every row of `B` is a computed rotation of the corresponding row of `A` (the book's loop
-computes `A(r, j) = c τ₁ - s τ₂`, `A(r, k) = s τ₁ + c τ₂`). The exact counterpart is
-`A * planeRotation j k c (-s)`. -/
+/-- The computed column update $A(:, [j, k]) = A(:, [j, k]) \begin{bmatrix} c & s \\ -s & c
+\end{bmatrix}$ of [golub2013matrix], §5.1.9. A matrix $B$ is a computed column update of $A$ if
+every row of $B$ is a computed rotation (`FloatingPoint.RoundsGivensApply`) of the corresponding
+row of $A$. In the loop of the source, this is $A(r, j) = c \tau_1 - s \tau_2$ and
+$A(r, k) = s \tau_1 + c \tau_2$.
+
+The exact counterpart is $A G(j, k)$, that is `A * Matrix.planeRotation j k c (-s)`. -/
 def RoundsGivensColUpdate (m : RoundingModel ℝ) (c s : ℝ) (j k : ι) (A B : Matrix κ ι ℝ) :
     Prop :=
   ∀ r, RoundsGivensApply m c s j k (A r) (B r)
 
 omit [Fintype κ] in
-/-- **The row update, columnwise**: under the hypotheses of `norm_sub_le_of_roundsGivensApply`,
-every column `q` of a computed row update satisfies
-`‖(B - G(j, k)ᵀ A)_q‖₂ ≤ √2 γ_{n+2} ‖a_q‖₂` — the hypothesis shape of
-`exists_eq_prodRev_mul_add` ([higham2002accuracy] Lemma 19.3, columnwise). -/
+/-- Let $(n + 2) u < 1$, let $j \neq k$, let $c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be
+relative perturbations of order $n$ of $c$ and $s$. If $B$ is a computed row update of $A$ with
+the data $(\hat c, \hat s)$, then every column $q$ satisfies
+$$\|(B - G(j, k)^T A)_{:, q}\|_2 \le \sqrt{2}\, \gamma_{n+2} \|A_{:, q}\|_2.$$
+This is the hypothesis of the columnwise accumulation lemma
+`FloatingPoint.exists_eq_prodRev_mul_add` (Lemma 19.3 of [higham2002accuracy]). -/
 theorem RoundsGivensRowUpdate.col_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {j k : ι} (hjk : j ≠ k) {c s chat shat : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert m.u n c chat) (hs : IsRelPert m.u n s shat)
@@ -376,9 +447,11 @@ theorem RoundsGivensRowUpdate.col_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
   exact norm_sub_le_of_roundsGivensApply hn hjk hcs hc hs (h q)
 
 omit [Fintype κ] in
-/-- **The column update, rowwise**: under the hypotheses of `norm_sub_le_of_roundsGivensApply`,
-every row `r` of a computed column update satisfies
-`‖(B - A G(j, k))_r‖₂ ≤ √2 γ_{n+2} ‖a_r‖₂`: row `r` of `A G` is `Gᵀ` applied to row `r` of `A`. -/
+/-- Let $(n + 2) u < 1$, let $j \neq k$, let $c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be
+relative perturbations of order $n$ of $c$ and $s$. If $B$ is a computed column update of $A$
+with the data $(\hat c, \hat s)$, then every row $r$ satisfies
+$$\|(B - A G(j, k))_{r, :}\|_2 \le \sqrt{2}\, \gamma_{n+2} \|A_{r, :}\|_2.$$
+Row $r$ of $A G(j, k)$ is $G(j, k)^T$ applied to row $r$ of $A$. -/
 theorem RoundsGivensColUpdate.row_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {j k : ι} (hjk : j ≠ k) {c s chat shat : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert m.u n c chat) (hs : IsRelPert m.u n s shat)
@@ -389,9 +462,12 @@ theorem RoundsGivensColUpdate.row_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
   exact norm_sub_le_of_roundsGivensApply hn hjk hcs hc hs (h r)
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The row update in the Frobenius norm**: `‖B - G(j, k)ᵀ A‖_F ≤ √2 γ_{n+2} ‖A‖_F`, the per-step
-hypothesis of the two-sided accumulation `exists_eq_prodRev_mul_add_mul_prodFwd_rect` with right
-factor `1`. -/
+/-- Let $(n + 2) u < 1$, let $j \neq k$, let $c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be
+relative perturbations of order $n$ of $c$ and $s$. If $B$ is a computed row update of $A$ with
+the data $(\hat c, \hat s)$, then
+$$\|B - G(j, k)^T A\|_F \le \sqrt{2}\, \gamma_{n+2} \|A\|_F.$$
+This is the hypothesis on one step of the two-sided accumulation lemma
+`FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`, with the right factor $I$. -/
 theorem RoundsGivensRowUpdate.frobenius_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {j k : ι} (hjk : j ≠ k) {c s chat shat : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert m.u n c chat) (hs : IsRelPert m.u n s shat)
@@ -401,8 +477,12 @@ theorem RoundsGivensRowUpdate.frobenius_norm_sub_le {m : RoundingModel ℝ} {n :
     (h.col_norm_sub_le hn hjk hcs hc hs)
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The column update in the Frobenius norm**: `‖B - A G(j, k)‖_F ≤ √2 γ_{n+2} ‖A‖_F`, the
-right-hand per-step hypothesis of the two-sided accumulation. -/
+/-- Let $(n + 2) u < 1$, let $j \neq k$, let $c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be
+relative perturbations of order $n$ of $c$ and $s$. If $B$ is a computed column update of $A$
+with the data $(\hat c, \hat s)$, then
+$$\|B - A G(j, k)\|_F \le \sqrt{2}\, \gamma_{n+2} \|A\|_F.$$
+This is the hypothesis on the right factor of one step of the two-sided accumulation lemma
+`FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`. -/
 theorem RoundsGivensColUpdate.frobenius_norm_sub_le {m : RoundingModel ℝ} {n : ℕ}
     (hn : ((n + 2 : ℕ) : ℝ) * m.u < 1) {j k : ι} (hjk : j ≠ k) {c s chat shat : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert m.u n c chat) (hs : IsRelPert m.u n s shat)
@@ -417,11 +497,16 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **The computed rotation matrix is close to the exact one** (the Givens half of
-[golub2013matrix] §5.1.12, "orthogonal to working precision"): if `(ĉ, ŝ)` are relative
-perturbations of order `n` of `(c, s)` with `c² + s² = 1`, then
-`‖G(ĉ, ŝ) - G(c, s)‖₂ ≤ γ_n` for the rotations `planeRotation j k · (-·)` of the `(j, k)`-plane.
-The difference acts on the plane as `√(δc² + δs²)` times a rotation. -/
+/-- Let $u \in \mathbb{R}$ and $n \in \mathbb{N}$ with $\gamma_n \ge 0$, let $j \neq k$, let
+$c^2 + s^2 = 1$, and let $\hat c$ and $\hat s$ be relative perturbations of order $n$ of $c$ and
+$s$. Then
+$$\|G(\hat c, \hat s) - G(c, s)\|_2 \le \gamma_n,$$
+where $G(c, s)$ is the rotation `Matrix.planeRotation j k c (-s)` of the $(j, k)$-plane and
+$\|\cdot\|_2$ is the spectral norm. This is the part of [golub2013matrix], §5.1.12, about Givens
+rotations: the computed rotation matrix is orthogonal to working precision.
+
+On the $(j, k)$-plane, the difference is $\sqrt{(\hat c - c)^2 + (\hat s - s)^2}$ times a
+rotation, and it vanishes off the plane. -/
 theorem l2_opNorm_planeRotation_sub_le {u : ℝ} {n : ℕ} (hγ : 0 ≤ gamma u n) {j k : ι}
     (hjk : j ≠ k) {c s chat shat : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert u n c chat)
     (hs : IsRelPert u n s shat) :
@@ -463,9 +548,14 @@ theorem l2_opNorm_planeRotation_sub_le {u : ℝ} {n : ℕ} (hγ : 0 ≤ gamma u 
     exact mul_le_mul h2 h3 (by positivity) (sq_nonneg _)
   exact le_of_sq_le_sq hsq (by positivity)
 
-/-- **"Orthogonal to working precision" gives near-orthogonality** ([golub2013matrix] §5.1.12):
-if `Q` is orthogonal and `‖Q̂ - Q‖₂ ≤ ε`, then `‖Q̂ᵀ Q̂ - 1‖₂ ≤ 2 ε + ε²`: with `Q̂ = Q + E`,
-`Q̂ᵀ Q̂ - 1 = Qᵀ E + Eᵀ Q + Eᵀ E` and the unitary invariance of the 2-norm. -/
+/-- Let $Q$ be an orthogonal matrix, and let $\hat Q$ be a matrix with
+$\|\hat Q - Q\|_2 \le \varepsilon$ in the spectral norm. Then
+$$\|\hat Q^T \hat Q - I\|_2 \le 2 \varepsilon + \varepsilon^2.$$
+This is how [golub2013matrix], §5.1.12, passes from "orthogonal to working precision" to
+near-orthogonality.
+
+With $\hat Q = Q + E$, the identity $\hat Q^T \hat Q - I = Q^T E + E^T Q + E^T E$ and the
+invariance of the spectral norm under orthogonal transformations give the bound. -/
 theorem l2_opNorm_transpose_mul_self_sub_one_le {Q Qhat : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) {ε : ℝ} (h : ‖Qhat - Q‖ ≤ ε) :
     ‖Qhatᵀ * Qhat - 1‖ ≤ 2 * ε + ε ^ 2 := by

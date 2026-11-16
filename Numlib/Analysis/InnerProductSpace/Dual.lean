@@ -14,24 +14,41 @@ import Mathlib.Analysis.Normed.Module.HahnBanach
 /-!
 # Functionals dominated through an injective map into a Hilbert space
 
-A continuous linear functional `T` on a normed space `V` that is dominated by the norm of an
-injective bounded linear map `ι : V → H` into a real Hilbert space, `|T v| ≤ C ‖ι v‖`, factors
-through `ι` as an inner product: `T v = ⟪h, ι v⟫` for some `h ∈ H` with `‖h‖ ≤ C`
-(`exists_inner_of_forall_abs_le`). The functional `T ∘ ι⁻¹` on the range of `ι` is bounded by
-`C`, the Hahn–Banach theorem extends it to `H` with the same norm, and the Riesz representation
-theorem produces `h`.
+Let $V$ be a real normed space, let $H$ be a real Hilbert space, and let $\iota : V \to H$ be an
+injective bounded linear map. A continuous linear functional $T$ on $V$ with
+$|Tv| \le C \|\iota v\|$ for all $v$ factors through $\iota$ as an inner product:
+$Tv = \langle h, \iota v \rangle$ for some $h \in H$ with $\|h\| \le C$. This is how a functional on
+a Sobolev space $H^1_0(\Omega)$ that is bounded by the $L^2$ norm is recognized as
+$\Phi \mapsto \int_\Omega h \Phi$ with $h \in L^2(\Omega)$, as in the regularity of the obstacle
+problem in `Numlib.Analysis.PDE.Elliptic.Obstacle`. The module also gives the Riesz map of a real
+Hilbert space as a real-linear isometry.
 
-This is how a functional on a Sobolev space `H¹₀(Ω)` bounded by the `L²` norm is recognized as
-`Φ ↦ ∫_Ω h Φ` with `h ∈ L²(Ω)` (the regularity of the obstacle problem,
-`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`).
+## Main definitions
+
+* `InnerProductSpace.toDualReal`: the Riesz map $E \to E^*$ of a real Hilbert space, as a linear
+  isometry equivalence.
+
+## Main results
+
+* `exists_inner_of_forall_abs_le`: a functional dominated through an injective map into a Hilbert
+  space is an inner product.
+
+## Proof outline
+
+The functional $T \circ \iota^{-1}$ on the range of $\iota$ is bounded by $C$. The Hahn–Banach
+theorem extends it to $H$ with the same norm, and the Riesz representation theorem gives $h$.
 -/
 
 open scoped InnerProductSpace
 
-/-- **A functional dominated by an `L²`-type seminorm through an injective map into a Hilbert
-space is an inner product**: if `T : V → ℝ` is continuous linear with `|T v| ≤ C ‖ι v‖` for an
-injective `ι : V → H`, `H` a real Hilbert space, then `T v = ⟪h, ι v⟫` for some `h ∈ H` with
-`‖h‖ ≤ C` — the Hahn–Banach theorem on the range of `ι` and the Riesz representation. -/
+/-- **A dominated functional is an inner product.** Let $V$ be a real normed space, let $H$ be a
+real Hilbert space, let $\iota : V \to H$ be an injective bounded linear map, and let $T$ be a
+continuous linear functional on $V$. Let $C \ge 0$ satisfy $|Tv| \le C \|\iota v\|$ for all
+$v \in V$. Then there is $h \in H$ with $\|h\| \le C$ and
+$$Tv = \langle h, \iota v \rangle \quad \text{for all } v \in V.$$
+
+The proof extends $T \circ \iota^{-1}$ from the range of $\iota$ by the Hahn–Banach theorem and
+applies the Riesz representation theorem. -/
 theorem exists_inner_of_forall_abs_le {V H : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H] (ι : V →L[ℝ] H)
     (hι : Function.Injective ι) (T : V →L[ℝ] ℝ) {C : ℝ} (hC : 0 ≤ C)
@@ -68,12 +85,15 @@ section ToDualReal
 
 variable (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
-/-- **The Riesz isometry of a real Hilbert space as a real-linear isometry equivalence**:
-`InnerProductSpace.toDual ℝ E` is typed as conjugate-linear (`≃ₗᵢ⋆[ℝ]`), which over `ℝ` is the
-same map; this is that map with the linear type, so that the calculus lemmas stated for
-`≃ₗᵢ[𝕜]` (`LinearIsometryEquiv.comp_fderiv`, `contDiff`, `differentiableAt`) apply. Its inverse
-is `(toDual ℝ E).symm`, so `gradient f x = (toDualReal E).symm (fderiv ℝ f x)` definitionally
-(`gradient_eq_toDualReal_symm` of `Numlib/Analysis/Calculus/Gradient.lean`). -/
+/-- The **Riesz isometry** $E \to E^*$ of a real Hilbert space $E$,
+$x \mapsto \langle x, \cdot \rangle$, as a real-linear isometry equivalence.
+
+Mathlib's `InnerProductSpace.toDual ℝ E` has the conjugate-linear type `≃ₗᵢ⋆[ℝ]`, which over
+$\mathbb{R}$ is the same map. This definition gives that map the linear type, so that the
+calculus lemmas stated for `≃ₗᵢ[𝕜]`, such as `LinearIsometryEquiv.comp_fderiv` and the lemmas on
+smoothness and differentiability, apply. Its inverse is `(InnerProductSpace.toDual ℝ E).symm`,
+so `gradient f x = (InnerProductSpace.toDualReal E).symm (fderiv ℝ f x)` holds by definition
+(`gradient_eq_toDualReal_symm` of `Numlib.Analysis.Calculus.Gradient`). -/
 noncomputable def InnerProductSpace.toDualReal : E ≃ₗᵢ[ℝ] StrongDual ℝ E where
   toFun := InnerProductSpace.toDual ℝ E
   invFun := (InnerProductSpace.toDual ℝ E).symm
@@ -87,12 +107,15 @@ noncomputable def InnerProductSpace.toDualReal : E ≃ₗᵢ[ℝ] StrongDual ℝ
 
 variable {E}
 
-/-- `toDualReal` is `toDual`. -/
+/-- The map `InnerProductSpace.toDualReal E` sends $x$ to the functional
+`InnerProductSpace.toDual ℝ E x`, that is, $y \mapsto \langle x, y \rangle$. -/
 @[simp]
 theorem InnerProductSpace.toDualReal_apply (x : E) :
     InnerProductSpace.toDualReal E x = InnerProductSpace.toDual ℝ E x := rfl
 
-/-- The inverse of `toDualReal` is the inverse of `toDual`. -/
+/-- The inverse of `InnerProductSpace.toDualReal E` is the inverse of
+`InnerProductSpace.toDual ℝ E`: it sends a functional $\varphi$ to the vector $x$ with
+$\varphi = \langle x, \cdot \rangle$. -/
 @[simp]
 theorem InnerProductSpace.toDualReal_symm_apply (φ : StrongDual ℝ E) :
     (InnerProductSpace.toDualReal E).symm φ = (InnerProductSpace.toDual ℝ E).symm φ := rfl

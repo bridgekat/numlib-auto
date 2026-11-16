@@ -9,48 +9,91 @@ import Numlib.Approximation.MarkovInequality
 /-!
 # Interpolation and projection in the broken polynomial space
 
-The approximation tools of the error analysis of Galerkin methods on the broken polynomial space
-`BrokenPolynomial x r` of a partition `x 0 < ⋯ < x n` (`Numlib/Approximation/BrokenPolynomial`),
-the trial space of the continuous and discontinuous Galerkin methods for the transport equation
-([quarteroni2000numerical] §13.10, `Numlib/Variational/Evolution`,
-`Numlib/Variational/SpaceTimeGalerkin`).
+This file gives the approximation tools for the error analysis of Galerkin methods on the broken
+polynomial space `BrokenPolynomial x r` of a partition $x_0 < \dots < x_n$
+(`Numlib.Approximation.BrokenPolynomial`). This space is the trial space of the continuous and
+discontinuous Galerkin methods for the transport equation (§13.10 of [quarteroni2000numerical],
+formalized in `Numlib.Variational.Evolution` and `Numlib.Variational.SpaceTimeGalerkin`). Write
+$I_i = [x_i, x_{i+1}]$ for the panels, $v_i$ for the polynomial of a broken polynomial $v$ on $I_i$,
+and $h$ and $h_{\min}$ for an upper and a lower bound of the panel lengths.
 
-* **Panel sums.** The `L²(x 0, x n)` norm of a function that is only defined panel by panel is
-  the panel sum `∑ᵢ ∫_{x i}^{x (i+1)} …`; `integral_eq_sum_panels` identifies it with the
-  integral over `[x 0, x n]`, and `sum_integral_mul_le_sqrt_mul_sqrt`,
-  `sqrt_sum_integral_add_sq_le` are the Cauchy–Schwarz and Minkowski inequalities for such sums.
-* **The pairing** `BrokenPolynomial.pairing g v = ∑ᵢ ∫_{Iᵢ} g vᵢ` of a function with a broken
-  polynomial is the source functional of a Galerkin method with datum `g`; it is bounded by the
-  `L²` norm of `g` (`abs_pairing_le`, `norm_pairingL_le`), and the triangle inequality
-  `sqrt_sum_integral_sub_sq_le` compares the distance of `g` to two broken polynomials.
-* **Nodal interpolation.** A node system (`BrokenPolynomial.IsNodes`) gives `r + 1` distinct
-  nodes per panel, and `BrokenPolynomial.interp` is the panelwise Lagrange interpolant, linear in
-  the function through `BrokenPolynomial.ofValuesₗ` (interpolation from nodal values, a linear
-  map on the finite-dimensional space of nodal values — which is what makes the interpolant of a
-  time-dependent function differentiable in time with the interpolant of the time derivative as
-  derivative). A Lagrange node system (`BrokenPolynomial.IsLagrangeNodes`, both panel endpoints
-  among the nodes) gives a continuous interpolant (`interp_mem_continuous`) with the interpolated
-  values at the breakpoints (`traceRight_interp`, `traceLeft_interp_succ`).
-* **The interpolation estimates** in the broken norms, with constant `1`
-  ([quarteroni2000numerical] Theorem 8.3): `sum_integral_sq_iteratedDeriv_sub_interp_le` for a
-  `C^r` function whose `r`-th derivative is the integral of a square integrable `g`, and over
-  `H^{r+1}(x 0, x n)` of `Numlib/Analysis/Sobolev/Interval` the `L²` estimate
-  `sum_integral_sq_sub_interp_le_seminorm` (`h^{r+1} |u|_{H^{r+1}}`) and the estimate for the
-  weak derivative `sum_integral_sq_deriv_sub_interp_le_seminorm` (`h^r |u|_{H^{r+1}}`, every
-  `r ≥ 0`). These are the panel estimates of `Numlib/Approximation/SobolevInterpolation`, summed
-  over the `Fin n`-indexed panels of a broken space.
-* **The Markov inequality on a panel** (`integral_derivative_sq_le_panel`,
-  `sum_integral_sq_derivative_le`): `‖p'‖_{L²(I)} ≤ 2 r (r + 1) |I|⁻¹ ‖p‖_{L²(I)}` for `p ∈ ℙ_r`,
-  the `[-1, 1]` inequality of `Numlib/Approximation/MarkovInequality` transported to the panel.
-* **The `L²` projection** `BrokenPolynomial.proj` onto the broken space (the Riesz representative
-  of the pairing), its orthogonality (`sum_integral_sub_proj_mul_eval_eq_zero`, panelwise
-  `integral_sub_proj_mul_eq_zero`), the best-approximation property (`sum_integral_sq_sub_proj_le`)
-  and, over `H^{r+1}`, its `L²` error `h^{r+1} |u|` (`sqrt_sum_integral_sq_sub_proj_le_seminorm`)
-  and `H¹` error `h^r (1 + 4 r (r + 1) h/h_min) |u|`
-  (`sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm`, through the interpolant and the Markov
-  inequality); `sum_mul_sq_sub_eval_le` is the trace
-  inequality `sq_le_of_sub_eq_integral` summed over the panels, which turns these into the
-  `h^{r+1/2}` bound on the error at the nodes that the discontinuous Galerkin estimate needs.
+The $L^2(x_0, x_n)$ norm of a function that is defined panel by panel is the panel sum
+$\bigl(\sum_i \int_{I_i} \cdots\bigr)^{1/2}$. The file proves the Cauchy–Schwarz and Minkowski
+inequalities for such sums. It defines the pairing $\langle g, v \rangle = \sum_i \int_{I_i} g\,
+v_i$ of a function with a broken polynomial, the panelwise Lagrange interpolant $\Pi_h f$ at a node
+system, and the $L^2$ projection $P g$ onto the broken space. For $U \in H^{r+1}(x_0, x_n)$ it
+proves the interpolation estimates $h^{r+1} |U|_{H^{r+1}}$ in $L^2$ and $h^r |U|_{H^{r+1}}$ for the
+derivative, the same $L^2$ estimate for the projection, and the derivative estimate $h^r (1 + 4 r
+(r + 1) h / h_{\min}) |U|_{H^{r+1}}$ for the projection. A trace inequality summed over the panels
+turns these into the $h^{r+1/2}$ bound on the error at the nodes that the error estimate of the
+discontinuous Galerkin method needs.
+
+## Main definitions
+
+* `BrokenPolynomial.pairing`, `BrokenPolynomial.pairingL`: the pairing $\langle g, v \rangle$, which
+  is the source functional of a Galerkin method with datum $g$, and the pairing as a continuous
+  linear functional.
+* `BrokenPolynomial.IsNodes`, `BrokenPolynomial.IsLagrangeNodes`: a node system ($r + 1$ distinct
+  nodes in each panel), and a node system that contains both endpoints of each panel.
+* `BrokenPolynomial.ofValuesₗ`: the broken polynomial that interpolates given nodal values, as a
+  linear map in the values.
+* `BrokenPolynomial.interp`: the panelwise Lagrange interpolant $\Pi_h f$.
+* `BrokenPolynomial.proj`: the $L^2(x_0, x_n)$ projection $P g$ onto the broken space.
+
+## Main results
+
+* `BrokenPolynomial.integral_eq_sum_panels`: an integral over $[x_0, x_n]$ is the sum of the panel
+  integrals.
+* `BrokenPolynomial.sum_integral_mul_le_sqrt_mul_sqrt`,
+  `BrokenPolynomial.sqrt_sum_integral_add_sq_le`: the Cauchy–Schwarz and Minkowski inequalities for
+  panel sums.
+* `BrokenPolynomial.abs_pairing_le`, `BrokenPolynomial.norm_pairingL_le`: the pairing is bounded by
+  the $L^2$ norm of $g$.
+* `BrokenPolynomial.sqrt_sum_integral_sub_sq_le`: the triangle inequality between a function and two
+  broken polynomials.
+* `BrokenPolynomial.interp_mem_continuous`, `BrokenPolynomial.traceRight_interp`,
+  `BrokenPolynomial.traceLeft_interp_succ`: at a Lagrange node system, the interpolant is continuous
+  and takes the interpolated values at the nodes of the partition.
+* `BrokenPolynomial.sum_integral_sq_iteratedDeriv_sub_interp_le`: the interpolation estimate with
+  constant $1$, for a $C^r$ function whose $r$-th derivative is the integral of a square integrable
+  function.
+* `BrokenPolynomial.sum_integral_sq_sub_interp_le_seminorm`,
+  `BrokenPolynomial.sum_integral_sq_deriv_sub_interp_le_seminorm`: the interpolation estimates
+  $h^{r+1} |U|_{H^{r+1}}$ in $L^2$ and $h^r |U|_{H^{r+1}}$ for the weak derivative, for every
+  $r \ge 0$.
+* `BrokenPolynomial.integral_derivative_sq_le_panel`,
+  `BrokenPolynomial.sum_integral_sq_derivative_le`: the Markov inequality $\|p'\|_{L^2(I)} \le 2 r
+  (r + 1) |I|^{-1} \|p\|_{L^2(I)}$ for a polynomial $p$ of degree at most $r$ on a panel $I$, and
+  its broken form.
+* `BrokenPolynomial.sum_integral_sub_proj_mul_eval_eq_zero`,
+  `BrokenPolynomial.integral_sub_proj_mul_eq_zero`: the projection error is orthogonal to the broken
+  space, and on each panel to the polynomials of degree at most $r$.
+* `BrokenPolynomial.sum_integral_sq_sub_proj_le`: the projection is the best approximation in the
+  broken space.
+* `BrokenPolynomial.sqrt_sum_integral_sq_sub_proj_le_seminorm`,
+  `BrokenPolynomial.sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm`: the $L^2$ error
+  $h^{r+1} |U|_{H^{r+1}}$ and the derivative error $h^r (1 + 4 r (r + 1) h / h_{\min})
+  |U|_{H^{r+1}}$ of the projection.
+* `BrokenPolynomial.sum_mul_sq_sub_eval_le`: the trace inequality `sq_le_of_sub_eq_integral` summed
+  over the panels, which gives the bound on the error at the nodes.
+
+## Implementation notes
+
+* The interpolant is linear in the function through `BrokenPolynomial.ofValuesₗ`, a linear map on
+  the finite-dimensional space of nodal values. This is what makes the interpolant of a
+  time-dependent function differentiable in time, with the interpolant of the time derivative as its
+  derivative.
+* The interpolation estimates are the panel estimates of
+  `Numlib.Approximation.SobolevInterpolation`, summed over the panels of a broken space, which are
+  indexed by `Fin n`. The Markov inequality on a panel is the inequality on $[-1, 1]$ of
+  `Numlib.Approximation.MarkovInequality`, transported to the panel.
+* The projection `BrokenPolynomial.proj` is the Riesz representative of the pairing. For a function
+  that is not integrable on $[x_0, x_n]$ it is $0$.
+* A function in $H^{r+1}(x_0, x_n)$ is an element `U` of
+  `SobolevInterval (r + 1) (x 0) (x (Fin.last n))`, given together with a representative `f` that is
+  continuous on $[x_0, x_n]$: `SobolevInterval.fn U` equals `f` almost everywhere on $(x_0, x_n)$.
+  The seminorm $|U|_{H^{r+1}}$ is `SobolevInterval.seminorm`, and the weak derivative $U'$ is
+  `SobolevInterval.deriv U 1`.
 -/
 
 open Polynomial MeasureTheory intervalIntegral Set
@@ -64,41 +107,43 @@ variable {n : ℕ} {x : Fin (n + 1) → ℝ} {r : ℕ}
 
 /-! ### Panels of a monotone partition -/
 
-/-- A panel `[x i, x (i+1)]` of a monotone partition lies in `[x 0, x n]`. -/
+/-- For a nondecreasing partition, the closed interval between $x_i$ and $x_{i+1}$ lies in the
+closed interval between $x_0$ and $x_n$. -/
 theorem uIcc_panel_subset (hx : Monotone x) (i : Fin n) :
     [[x i.castSucc, x i.succ]] ⊆ [[x 0, x (Fin.last n)]] := by
   rw [uIcc_of_le (hx (Fin.castSucc_lt_succ (i := i)).le), uIcc_of_le (hx (Fin.zero_le _))]
   exact Icc_subset_Icc (hx (Fin.zero_le _)) (hx (Fin.le_last _))
 
-/-- A closed panel lies in `[x 0, x n]`. -/
+/-- For a nondecreasing partition, the closed panel $[x_i, x_{i+1}]$ lies in $[x_0, x_n]$. -/
 theorem Icc_panel_subset (hx : Monotone x) (i : Fin n) :
     Icc (x i.castSucc) (x i.succ) ⊆ Icc (x 0) (x (Fin.last n)) :=
   Icc_subset_Icc (hx (Fin.zero_le _)) (hx (Fin.le_last _))
 
-/-- A function interval integrable on `[x 0, x n]` is interval integrable on every panel. -/
+/-- For a nondecreasing partition, a function that is integrable on $[x_0, x_n]$ is integrable on
+every panel. -/
 theorem intervalIntegrable_panel (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (i : Fin n) :
     IntervalIntegrable g volume (x i.castSucc) (x i.succ) :=
   hg.mono_set (uIcc_panel_subset hx i)
 
-/-- The product of a function interval integrable on `[x 0, x n]` with the piece `vᵢ` of a broken
-polynomial is interval integrable on the panel `Iᵢ`. -/
+/-- For a nondecreasing partition, a function $g$ integrable on $[x_0, x_n]$ and a broken polynomial
+$v$, the product $g\, v_i$ is integrable on the panel $I_i$. -/
 theorem intervalIntegrable_mul_eval_panel (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r)
     (i : Fin n) :
     IntervalIntegrable (fun s => g s * (v i).eval s) volume (x i.castSucc) (x i.succ) :=
   (intervalIntegrable_panel hx hg i).mul_continuousOn (v i).continuous.continuousOn
 
-/-- The difference of a function interval integrable on `[x 0, x n]` and the piece `vᵢ` of a
-broken polynomial is interval integrable on the panel `Iᵢ`. -/
+/-- For a nondecreasing partition, a function $g$ integrable on $[x_0, x_n]$ and a broken polynomial
+$v$, the difference $g - v_i$ is integrable on the panel $I_i$. -/
 theorem intervalIntegrable_sub_eval_panel (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r)
     (i : Fin n) :
     IntervalIntegrable (fun s => g s - (v i).eval s) volume (x i.castSucc) (x i.succ) :=
   (intervalIntegrable_panel hx hg i).sub ((v i).continuous.intervalIntegrable _ _)
 
-/-- For `g` and `g²` interval integrable on `[x 0, x n]`, `(g - vᵢ)²` is interval integrable on
-the panel `Iᵢ`. -/
+/-- For a nondecreasing partition, a function $g$ with $g$ and $g^2$ integrable on $[x_0, x_n]$, and
+a broken polynomial $v$, the function $(g - v_i)^2$ is integrable on the panel $I_i$. -/
 theorem intervalIntegrable_sub_eval_sq_panel (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -112,7 +157,10 @@ theorem intervalIntegrable_sub_eval_sq_panel (hx : Monotone x) {g : ℝ → ℝ}
     ((intervalIntegrable_mul_eval_panel hx hg v i).const_mul 2)).add
     (((v i).continuous.pow 2).intervalIntegrable _ _)
 
-/-- **An integral over `[x 0, x n]` is the sum of the panel integrals.** -/
+/-- **An integral over $[x_0, x_n]$ is the sum of the panel integrals**: for a nondecreasing
+partition and a function $g$ integrable on $[x_0, x_n]$,
+$$\int_{x_0}^{x_n} g = \sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} g.$$
+-/
 theorem integral_eq_sum_panels (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) :
     ∫ s in x 0..x (Fin.last n), g s = ∑ i : Fin n, ∫ s in x i.castSucc..x i.succ, g s := by
@@ -137,8 +185,12 @@ theorem integral_eq_sum_panels (hx : Monotone x) {g : ℝ → ℝ}
 
 /-! ### Cauchy–Schwarz and Minkowski for panel sums -/
 
-/-- **Cauchy–Schwarz for panel sums**: for panelwise square integrable families `f i`, `g i`,
-`∑ᵢ ∫_{Iᵢ} fᵢ gᵢ ≤ √(∑ᵢ ∫ fᵢ²) √(∑ᵢ ∫ gᵢ²)`. Cauchy–Schwarz on each panel, then the discrete
+/-- **The Cauchy–Schwarz inequality for panel sums.** Let the partition be nondecreasing, and let
+$f_i, g_i : \mathbb{R} \to \mathbb{R}$, $i = 0, \dots, n - 1$, be functions such that $f_i$,
+$f_i^2$, $g_i$ and $g_i^2$ are integrable on $I_i$. Then
+$$\sum_{i=0}^{n-1} \int_{I_i} f_i\, g_i \le \Bigl(\sum_{i=0}^{n-1} \int_{I_i} f_i^2\Bigr)^{1/2}
+  \Bigl(\sum_{i=0}^{n-1} \int_{I_i} g_i^2\Bigr)^{1/2}.$$
+The proof applies the Cauchy–Schwarz inequality on each panel, and then the discrete
 Cauchy–Schwarz inequality over the panels. -/
 theorem sum_integral_mul_le_sqrt_mul_sqrt (hx : Monotone x) {f g : Fin n → ℝ → ℝ}
     (hf : ∀ i, IntervalIntegrable (f i) volume (x i.castSucc) (x i.succ))
@@ -165,8 +217,12 @@ theorem sum_integral_mul_le_sqrt_mul_sqrt (hx : Monotone x) {f g : Fin n → ℝ
           * √(∑ i, ∫ s in x i.castSucc..x i.succ, g i s ^ 2) := by
         simp only [Real.sq_sqrt (hF _), Real.sq_sqrt (hG _)]
 
-/-- **Minkowski's inequality for panel sums**: `√(∑ᵢ ∫ (fᵢ + gᵢ)²) ≤ √(∑ᵢ ∫ fᵢ²) + √(∑ᵢ ∫ gᵢ²)`
-for panelwise square integrable families. -/
+/-- **Minkowski's inequality for panel sums.** Let the partition be nondecreasing, and let
+$f_i, g_i : \mathbb{R} \to \mathbb{R}$, $i = 0, \dots, n - 1$, be functions such that $f_i$,
+$f_i^2$, $g_i$ and $g_i^2$ are integrable on $I_i$. Then
+$$\Bigl(\sum_{i=0}^{n-1} \int_{I_i} (f_i + g_i)^2\Bigr)^{1/2} \le \Bigl(\sum_{i=0}^{n-1}
+  \int_{I_i} f_i^2\Bigr)^{1/2} + \Bigl(\sum_{i=0}^{n-1} \int_{I_i} g_i^2\Bigr)^{1/2}.$$
+-/
 theorem sqrt_sum_integral_add_sq_le (hx : Monotone x) {f g : Fin n → ℝ → ℝ}
     (hf : ∀ i, IntervalIntegrable (f i) volume (x i.castSucc) (x i.succ))
     (hf2 : ∀ i, IntervalIntegrable (fun s => f i s ^ 2) volume (x i.castSucc) (x i.succ))
@@ -200,15 +256,21 @@ theorem sqrt_sum_integral_add_sq_le (hx : Monotone x) {f g : Fin n → ℝ → �
 
 /-! ### The pairing with a function -/
 
-/-- **The pairing** `⟪g, v⟫ = ∑ᵢ ∫_{Iᵢ} g vᵢ` of a function `g` with a broken polynomial `v`: the
-`L²(x 0, x n)` inner product of `g` with the step function of `v`, and the value at `v` of the
-source functional of a Galerkin method with datum `g`. -/
+/-- **The pairing** of a function $g : \mathbb{R} \to \mathbb{R}$ with a broken polynomial $v$:
+$$\langle g, v \rangle = \sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} g\, v_i.$$
+It is the value at $v$ of the source functional of a Galerkin method with datum $g$. For a
+strictly increasing partition, it is the $L^2(x_0, x_n)$ inner product of $g$ with the step
+function of $v$. -/
 def pairing (g : ℝ → ℝ) (v : BrokenPolynomial x r) : ℝ :=
   ∑ i, ∫ s in x i.castSucc..x i.succ, g s * (v i).eval s
 
+/-- The pairing $\langle g, v \rangle$ is $\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} g\, v_i$. -/
 theorem pairing_def (g : ℝ → ℝ) (v : BrokenPolynomial x r) :
     pairing g v = ∑ i, ∫ s in x i.castSucc..x i.succ, g s * (v i).eval s := rfl
 
+/-- For a nondecreasing partition and a function $g$ integrable on $[x_0, x_n]$, the pairing is
+additive in the broken polynomial: $\langle g, v + w \rangle = \langle g, v \rangle + \langle g,
+w \rangle$. -/
 theorem pairing_add (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v w : BrokenPolynomial x r) :
     pairing g (v + w) = pairing g v + pairing g w := by
@@ -217,21 +279,29 @@ theorem pairing_add (hx : Monotone x) {g : ℝ → ℝ}
   exact integral_add (intervalIntegrable_mul_eval_panel hx hg v i)
     (intervalIntegrable_mul_eval_panel hx hg w i)
 
+/-- The pairing is homogeneous in the broken polynomial: $\langle g, c v \rangle = c \langle g, v
+\rangle$. -/
 theorem pairing_smul (g : ℝ → ℝ) (c : ℝ) (v : BrokenPolynomial x r) :
     pairing g (c • v) = c * pairing g v := by
   simp only [pairing_def, smul_apply, eval_smul, smul_eq_mul, Finset.mul_sum,
     ← intervalIntegral.integral_const_mul]
   exact Finset.sum_congr rfl fun i _ => integral_congr fun s _ => by ring
 
+/-- The pairing changes sign with the broken polynomial:
+$\langle g, -v \rangle = -\langle g, v \rangle$. -/
 theorem pairing_neg (g : ℝ → ℝ) (v : BrokenPolynomial x r) : pairing g (-v) = -pairing g v := by
   simp only [pairing_def, neg_apply, eval_neg, mul_neg, intervalIntegral.integral_neg,
     Finset.sum_neg_distrib]
 
+/-- For a nondecreasing partition and a function $g$ integrable on $[x_0, x_n]$, $\langle g, v - w
+\rangle = \langle g, v \rangle - \langle g, w \rangle$. -/
 theorem pairing_sub (hx : Monotone x) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v w : BrokenPolynomial x r) :
     pairing g (v - w) = pairing g v - pairing g w := by
   rw [sub_eq_add_neg, pairing_add hx hg, pairing_neg, sub_eq_add_neg]
 
+/-- For a nondecreasing partition and functions $g_1$, $g_2$ integrable on $[x_0, x_n]$, $\langle
+g_1 + g_2, v \rangle = \langle g_1, v \rangle + \langle g_2, v \rangle$. -/
 theorem pairing_add_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     (hg₁ : IntervalIntegrable g₁ volume (x 0) (x (Fin.last n)))
     (hg₂ : IntervalIntegrable g₂ volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r) :
@@ -241,6 +311,8 @@ theorem pairing_add_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
   exact integral_add (intervalIntegrable_mul_eval_panel hx hg₁ v i)
     (intervalIntegrable_mul_eval_panel hx hg₂ v i)
 
+/-- For a nondecreasing partition and functions $g_1$, $g_2$ integrable on $[x_0, x_n]$, $\langle
+g_1 - g_2, v \rangle = \langle g_1, v \rangle - \langle g_2, v \rangle$. -/
 theorem pairing_sub_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     (hg₁ : IntervalIntegrable g₁ volume (x 0) (x (Fin.last n)))
     (hg₂ : IntervalIntegrable g₂ volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r) :
@@ -250,6 +322,8 @@ theorem pairing_sub_left (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
   exact integral_sub (intervalIntegrable_mul_eval_panel hx hg₁ v i)
     (intervalIntegrable_mul_eval_panel hx hg₂ v i)
 
+/-- The pairing is homogeneous in the function: $\langle c g, v \rangle = c \langle g, v \rangle$.
+-/
 theorem pairing_smul_left (g : ℝ → ℝ) (c : ℝ) (v : BrokenPolynomial x r) :
     pairing (fun s => c * g s) v = c * pairing g v := by
   simp only [pairing_def, Finset.mul_sum, ← intervalIntegral.integral_const_mul]
@@ -259,7 +333,10 @@ section StrictMono
 
 variable [hx : Fact (StrictMono x)]
 
-/-- **Cauchy–Schwarz for the pairing**: `⟪g, v⟫ ≤ √(∑ᵢ ∫ g²) ‖v‖` for a square integrable `g`. -/
+/-- **The Cauchy–Schwarz inequality for the pairing**: for a strictly increasing partition and a
+function $g$ with $g$ and $g^2$ integrable on $[x_0, x_n]$,
+$$\langle g, v \rangle \le \Bigl(\sum_{i=0}^{n-1} \int_{I_i} g^2\Bigr)^{1/2} \|v\|$$
+for every broken polynomial $v$. -/
 theorem pairing_le_sqrt_mul_norm {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -273,7 +350,9 @@ theorem pairing_le_sqrt_mul_norm {g : ℝ → ℝ}
   rw [← norm_sq_eq, Real.sqrt_sq (norm_nonneg _)] at h
   exact h
 
-/-- `|⟪g, v⟫| ≤ √(∑ᵢ ∫ g²) ‖v‖`. -/
+/-- For a strictly increasing partition and a function $g$ with $g$ and $g^2$ integrable on
+$[x_0, x_n]$, every broken polynomial $v$ satisfies $|\langle g, v \rangle| \le \bigl(\sum_i
+\int_{I_i} g^2\bigr)^{1/2} \|v\|$. -/
 theorem abs_pairing_le {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -286,8 +365,9 @@ theorem abs_pairing_le {g : ℝ → ℝ}
   linarith
 
 variable (x r) in
-/-- **The pairing as a continuous linear functional** `v ↦ ⟪g, v⟫` on the broken polynomial
-space, for `g` integrable on `[x 0, x n]`. -/
+/-- **The pairing as a continuous linear functional** $v \mapsto \langle g, v \rangle$ on the broken
+polynomial space, for a strictly increasing partition and a function $g$ integrable on
+$[x_0, x_n]$. -/
 def pairingL {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) :
     BrokenPolynomial x r →L[ℝ] ℝ :=
   LinearMap.toContinuousLinearMap
@@ -295,11 +375,14 @@ def pairingL {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 0) (x (Fin.l
       map_add' := pairing_add hx.out.monotone hg
       map_smul' := fun c v => by simp [pairing_smul] }
 
+/-- The functional `BrokenPolynomial.pairingL x r hg` sends $v$ to $\langle g, v \rangle$. -/
 @[simp]
 theorem pairingL_apply {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (v : BrokenPolynomial x r) : pairingL x r hg v = pairing g v := rfl
 
-/-- The norm of the pairing functional is at most the `L²` norm of `g`. -/
+/-- For a strictly increasing partition and a function $g$ with $g$ and $g^2$ integrable on
+$[x_0, x_n]$, the operator norm of the pairing functional $v \mapsto \langle g, v \rangle$ is at
+most the $L^2$ norm $\bigl(\sum_i \int_{I_i} g^2\bigr)^{1/2}$ of $g$. -/
 theorem norm_pairingL_le {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n))) :
     ‖pairingL x r hg‖ ≤ √(∑ i : Fin n, ∫ s in x i.castSucc..x i.succ, g s ^ 2) :=
@@ -307,8 +390,12 @@ theorem norm_pairingL_le {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 
     rw [pairingL_apply, Real.norm_eq_abs]
     exact abs_pairing_le hg hg2 v
 
-/-- **The triangle inequality between a function and two broken polynomials**:
-`‖g - v‖ ≤ ‖g - w‖ + ‖w - v‖`, the first two norms being panel sums. -/
+/-- **The triangle inequality between a function and two broken polynomials.** For a strictly
+increasing partition, a function $g$ with $g$ and $g^2$ integrable on $[x_0, x_n]$, and broken
+polynomials $v$ and $w$,
+$$\Bigl(\sum_{i=0}^{n-1} \int_{I_i} (g - v_i)^2\Bigr)^{1/2} \le \Bigl(\sum_{i=0}^{n-1}
+  \int_{I_i} (g - w_i)^2\Bigr)^{1/2} + \|w - v\|.$$
+-/
 theorem sqrt_sum_integral_sub_sq_le {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -335,25 +422,28 @@ end StrictMono
 
 /-! ### Nodal interpolation -/
 
-/-- **A node system of degree `r`** on the partition: `r + 1` distinct interpolation nodes in
-each panel `[x i, x (i+1)]`. -/
+/-- **A node system of degree $r$** on the partition: points $\xi_{i,j}$, $i = 0, \dots, n - 1$,
+$j = 0, \dots, r$, such that the $r + 1$ nodes $\xi_{i,0}, \dots, \xi_{i,r}$ of each panel lie
+in the panel $[x_i, x_{i+1}]$ and are distinct. -/
 structure IsNodes (x : Fin (n + 1) → ℝ) (r : ℕ) (node : Fin n → Fin (r + 1) → ℝ) : Prop where
-  /-- The nodes of a panel lie in that panel. -/
+  /-- The nodes $\xi_{i,j}$ of the panel $i$ lie in $[x_i, x_{i+1}]$. -/
   mem : ∀ i j, node i j ∈ Icc (x i.castSucc) (x i.succ)
-  /-- The nodes of a panel are distinct. -/
+  /-- The nodes of each panel are distinct. -/
   injective : ∀ i, Function.Injective (node i)
 
-/-- **A Lagrange node system**: a node system whose first and last nodes are the endpoints of
-the panel, so that the interpolant is continuous across the nodes and takes the interpolated
-values at `x 0, …, x n`. -/
+/-- **A Lagrange node system**: a node system of degree $r$ whose first and last nodes in each panel
+are the endpoints of the panel, $\xi_{i,0} = x_i$ and $\xi_{i,r} = x_{i+1}$. At such nodes the
+interpolant is continuous across the nodes of the partition and takes the interpolated values at
+$x_0, \dots, x_n$. -/
 structure IsLagrangeNodes (x : Fin (n + 1) → ℝ) (r : ℕ) (node : Fin n → Fin (r + 1) → ℝ) :
     Prop extends IsNodes x r node where
-  /-- The first node of a panel is its left endpoint. -/
+  /-- The first node of each panel is its left endpoint: $\xi_{i,0} = x_i$. -/
   node_zero : ∀ i, node i 0 = x i.castSucc
-  /-- The last node of a panel is its right endpoint. -/
+  /-- The last node of each panel is its right endpoint: $\xi_{i,r} = x_{i+1}$. -/
   node_last : ∀ i, node i (Fin.last r) = x i.succ
 
-/-- The Lagrange interpolant at `r + 1` distinct nodes has degree at most `r`. -/
+/-- The Lagrange interpolating polynomial of any values at $r + 1$ distinct nodes has degree at most
+$r$. -/
 theorem natDegree_interpolate_le {node : Fin (r + 1) → ℝ} (hnode : Function.Injective node)
     (c : Fin (r + 1) → ℝ) :
     (Lagrange.interpolate Finset.univ node c).natDegree ≤ r := by
@@ -361,8 +451,10 @@ theorem natDegree_interpolate_le {node : Fin (r + 1) → ℝ} (hnode : Function.
   simp
 
 variable (x r) in
-/-- **Interpolation from nodal values**: the broken polynomial whose panel `i` is the Lagrange
-interpolant at the nodes `node i` of the values `c i`, as a linear map in the values. -/
+/-- **Interpolation from nodal values**: for nodes $\xi_{i,j}$ that are distinct in each panel, the
+linear map that sends values $c_{i,j}$ to the broken polynomial whose piece on the panel $i$ is
+the Lagrange interpolating polynomial of the values $c_{i,0}, \dots, c_{i,r}$ at the nodes
+$\xi_{i,0}, \dots, \xi_{i,r}$. -/
 def ofValuesₗ (node : Fin n → Fin (r + 1) → ℝ) (hnode : ∀ i, Function.Injective (node i)) :
     (Fin n → Fin (r + 1) → ℝ) →ₗ[ℝ] BrokenPolynomial x r where
   toFun c := mk x (fun i => Lagrange.interpolate Finset.univ (node i) (c i))
@@ -372,6 +464,9 @@ def ofValuesₗ (node : Fin n → Fin (r + 1) → ℝ) (hnode : ∀ i, Function.
   map_smul' a c := BrokenPolynomial.ext fun i => by
     simp only [mk_apply, smul_apply, Pi.smul_apply, map_smul, RingHom.id_apply]
 
+/-- The piece on the panel $i$ of the broken polynomial interpolating the values $c$ is the Lagrange
+interpolating polynomial of $c_{i,0}, \dots, c_{i,r}$ at the nodes
+$\xi_{i,0}, \dots, \xi_{i,r}$. -/
 @[simp]
 theorem ofValuesₗ_apply (node : Fin n → Fin (r + 1) → ℝ) (hnode : ∀ i, Function.Injective (node i))
     (c : Fin n → Fin (r + 1) → ℝ) (i : Fin n) :
@@ -379,33 +474,41 @@ theorem ofValuesₗ_apply (node : Fin n → Fin (r + 1) → ℝ) (hnode : ∀ i,
 
 variable {node : Fin n → Fin (r + 1) → ℝ}
 
-/-- **The nodal interpolant** of a function in the broken polynomial space: on each panel, the
-Lagrange interpolant of `f` at the nodes of that panel. -/
+/-- **The nodal interpolant** $\Pi_h f$ of a function $f : \mathbb{R} \to \mathbb{R}$ at a node
+system: the broken polynomial whose piece on each panel is the Lagrange interpolating polynomial
+of $f$ at the nodes of that panel. -/
 def interp (hnode : IsNodes x r node) (f : ℝ → ℝ) : BrokenPolynomial x r :=
   ofValuesₗ x r node hnode.injective fun i j => f (node i j)
 
+/-- The piece of $\Pi_h f$ on the panel $i$ is the Lagrange interpolating polynomial of the values
+$f(\xi_{i,0}), \dots, f(\xi_{i,r})$ at the nodes $\xi_{i,0}, \dots, \xi_{i,r}$. -/
 theorem interp_apply (hnode : IsNodes x r node) (f : ℝ → ℝ) (i : Fin n) :
     interp hnode f i = Lagrange.interpolate Finset.univ (node i) fun j => f (node i j) := rfl
 
-/-- The interpolant takes the values of `f` at the nodes. -/
+/-- The interpolant takes the values of $f$ at the nodes: $(\Pi_h f)_i(\xi_{i,j}) = f(\xi_{i,j})$
+for all $i$ and $j$. -/
 theorem eval_interp_node (hnode : IsNodes x r node) (f : ℝ → ℝ) (i : Fin n) (j : Fin (r + 1)) :
     (interp hnode f i).eval (node i j) = f (node i j) := by
   rw [interp_apply]
   exact Lagrange.eval_interpolate_at_node _ (hnode.injective i).injOn (Finset.mem_univ j)
 
+/-- The interpolant is additive: $\Pi_h(f + g) = \Pi_h f + \Pi_h g$. -/
 theorem interp_add (hnode : IsNodes x r node) (f g : ℝ → ℝ) :
     interp hnode (fun s => f s + g s) = interp hnode f + interp hnode g :=
   (ofValuesₗ x r node hnode.injective).map_add _ _
 
+/-- The interpolant of a difference: $\Pi_h(f - g) = \Pi_h f - \Pi_h g$. -/
 theorem interp_sub (hnode : IsNodes x r node) (f g : ℝ → ℝ) :
     interp hnode (fun s => f s - g s) = interp hnode f - interp hnode g :=
   (ofValuesₗ x r node hnode.injective).map_sub _ _
 
+/-- The interpolant is homogeneous: $\Pi_h(c f) = c\, \Pi_h f$. -/
 theorem interp_smul (hnode : IsNodes x r node) (c : ℝ) (f : ℝ → ℝ) :
     interp hnode (fun s => c * f s) = c • interp hnode f :=
   (ofValuesₗ x r node hnode.injective).map_smul c _
 
-/-- Two functions agreeing on `[x 0, x n]` have the same interpolant. -/
+/-- For a nondecreasing partition, two functions that agree on $[x_0, x_n]$ have the same
+interpolant. -/
 theorem interp_congr (hx : Monotone x) (hnode : IsNodes x r node) {f g : ℝ → ℝ}
     (hfg : EqOn f g (Icc (x 0) (x (Fin.last n)))) : interp hnode f = interp hnode g := by
   unfold interp
@@ -413,7 +516,8 @@ theorem interp_congr (hx : Monotone x) (hnode : IsNodes x r node) {f g : ℝ →
   funext i j
   exact hfg (Icc_panel_subset hx i (hnode.mem i j))
 
-/-- A broken polynomial is its own interpolant, panel by panel. -/
+/-- A broken polynomial is its own interpolant, panel by panel: the piece on the panel $i$ of the
+interpolant of the function $s \mapsto v_i(s)$ is $v_i$. -/
 theorem interp_eval (hnode : IsNodes x r node) (v : BrokenPolynomial x r) (i : Fin n) :
     (interp hnode fun s => (v i).eval s) i = v i := by
   rw [interp_apply]
@@ -428,17 +532,20 @@ section Lagrange
 variable (hnode : IsLagrangeNodes x r node)
 include hnode
 
-/-- The right trace of the interpolant at `x i` is `f (x i)`. -/
+/-- At a Lagrange node system, the right trace of the interpolant at $x_i$ is $f(x_i)$, for
+$i = 0, \dots, n - 1$. -/
 theorem traceRight_interp (f : ℝ → ℝ) (i : Fin n) :
     traceRight (interp hnode.toIsNodes f) i = f (x i.castSucc) := by
   rw [traceRight_apply, ← hnode.node_zero i, eval_interp_node]
 
-/-- The left trace of the interpolant at `x (i+1)` is `f (x (i+1))`. -/
+/-- At a Lagrange node system, the left trace of the interpolant at $x_{i+1}$ is $f(x_{i+1})$, for
+$i = 0, \dots, n - 1$. -/
 theorem traceLeft_interp_succ (f : ℝ → ℝ) (i : Fin n) :
     traceLeft (interp hnode.toIsNodes f) i.succ = f (x i.succ) := by
   rw [traceLeft_succ, ← hnode.node_last i, eval_interp_node]
 
-/-- The interpolant at Lagrange nodes has no interior jumps. -/
+/-- At a Lagrange node system, the interpolant of every function lies in the continuous subspace:
+its jumps at the interior nodes vanish. -/
 theorem interp_mem_continuous (f : ℝ → ℝ) : interp hnode.toIsNodes f ∈ continuous x r := by
   intro i hi
   obtain ⟨j, hj⟩ : ∃ j : Fin n, i.castSucc = j.succ :=
@@ -449,11 +556,16 @@ end Lagrange
 
 /-! ### The interpolation estimates -/
 
-/-- **The interpolation estimate in broken form, constant `1`** ([quarteroni2000numerical]
-Theorem 8.3 for a node system of degree `r`): on a partition of mesh at most `h`, for `f` of
-class `C^r` with `f^{(r)}(t) - f^{(r)}(s) = ∫_s^t g` on `[x 0, x n]`, `g` square integrable, and
-`m ≤ r`, `∑ᵢ ∫_{Iᵢ} |f^{(m)} - (Π_h f)^{(m)}|² ≤ h^{2(r+1-m)} ∫_{x 0}^{x n} g²`. The panel estimate
-`integral_sq_iteratedDeriv_sub_le`, summed. -/
+/-- **The interpolation estimate in broken form, with constant $1$.** Let the partition be strictly
+increasing with panel lengths at most $h$, and let $\xi$ be a node system of degree $r$. Let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^r$, and let $g$ be a function such that $g$ and
+$g^2$ are integrable on $[x_0, x_n]$ and $f^{(r)}(t) - f^{(r)}(s) = \int_s^t g$ for all
+$s, t \in [x_0, x_n]$. Then for every $m \le r$
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} \bigl(f^{(m)} - (\Pi_h f)_i^{(m)}\bigr)^2 \le
+  h^{2(r+1-m)} \int_{x_0}^{x_n} g^2.$$
+
+This is the estimate of Theorem 8.3 of [quarteroni2000numerical] for a node system of degree
+$r$. The proof sums the panel estimate `integral_sq_iteratedDeriv_sub_le` over the panels. -/
 theorem sum_integral_sq_iteratedDeriv_sub_interp_le (hx : StrictMono x) (hnode : IsNodes x r node)
     {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h) {f g : ℝ → ℝ}
     (hf : ContDiff ℝ r f) (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
@@ -474,10 +586,15 @@ theorem sum_integral_sq_iteratedDeriv_sub_interp_le (hx : StrictMono x) (hnode :
     (fun j => eval_interp_node hnode f i j) hm
 
 open SobolevInterval in
-/-- **The interpolation estimate over `H^{r+1}(x 0, x n)`**: for `U ∈ H^{r+1}(x 0, x n)` with a
-representative `f` continuous on `[x 0, x n]`, a node system of degree `r` of mesh at most `h`
-and `m ≤ r`, `∑ᵢ ∫_{Iᵢ} |f^{(m)} - (Π_h f)^{(m)}|² ≤ h^{2(r+1-m)} |U|²_{H^{r+1}}`; for `m ≥ 1` the
-derivative `f^{(m)}` is taken inside the open panels, where `f` is the `C^r` representative. -/
+/-- **The interpolation estimate over $H^{r+1}(x_0, x_n)$.** Let the partition be strictly
+increasing with $n \ge 1$ panels of length at most $h$, and let $\xi$ be a node system of degree
+$r$. Let $U \in H^{r+1}(x_0, x_n)$, and let $f$ be a representative of $U$ that is continuous on
+$[x_0, x_n]$. Then for every $m \le r$
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} \bigl(f^{(m)} - (\Pi_h f)_i^{(m)}\bigr)^2 \le
+  h^{2(r+1-m)} |U|_{H^{r+1}}^2.$$
+
+Here $f^{(m)}$ is the classical derivative `iteratedDeriv m f`. For $m \ge 1$ only its values
+inside the open panels matter, and there $f$ is the $C^r$ representative of $U$. -/
 theorem sum_integral_sq_iteratedDeriv_sub_interp_le_seminorm (hx : StrictMono x) (hn : 0 < n)
     (hnode : IsNodes x r node) {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
     (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
@@ -504,8 +621,13 @@ theorem sum_integral_sq_iteratedDeriv_sub_interp_le_seminorm (hx : StrictMono x)
   rw [hev.iteratedDeriv_eq m]
 
 open SobolevInterval in
-/-- The interpolation estimate over `H^{r+1}(x 0, x n)` in `L²`: `∑ᵢ ∫_{Iᵢ} |f - Π_h f|² ≤
-h^{2(r+1)} |U|²_{H^{r+1}}`. -/
+/-- **The interpolation estimate over $H^{r+1}(x_0, x_n)$ in $L^2$.** Let the partition be strictly
+increasing with $n \ge 1$ panels of length at most $h$, and let $\xi$ be a node system of degree
+$r$. Let $U \in H^{r+1}(x_0, x_n)$, and let $f$ be a representative of $U$ that is continuous on
+$[x_0, x_n]$. Then
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} \bigl(f - (\Pi_h f)_i\bigr)^2 \le h^{2(r+1)}
+  |U|_{H^{r+1}}^2.$$
+-/
 theorem sum_integral_sq_sub_interp_le_seminorm (hx : StrictMono x) (hn : 0 < n)
     (hnode : IsNodes x r node) {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
     (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
@@ -518,12 +640,17 @@ theorem sum_integral_sq_sub_interp_le_seminorm (hx : StrictMono x) (hn : 0 < n)
   simpa only [iteratedDeriv_zero, Function.iterate_zero, id_eq, Nat.sub_zero] using this
 
 open SobolevInterval in
-/-- **The interpolation estimate for the weak derivative**: for `U ∈ H^{r+1}(x 0, x n)` with
-continuous representative `f`, `∑ᵢ ∫_{Iᵢ} |U' - (Π_h f)'|² ≤ h^{2r} |U|²_{H^{r+1}}`, where `U'` is
-the weak derivative `SobolevInterval.deriv U 1`. For `r = 0` the interpolant is piecewise constant
-and the statement is `‖U'‖² = |U|²_{H¹}`; for `r ≥ 1` the weak derivative is the derivative of the
-`C^r` representative and the statement is the case `m = 1` of
-`sum_integral_sq_iteratedDeriv_sub_interp_le_seminorm`. -/
+/-- **The interpolation estimate for the weak derivative.** Let the partition be strictly increasing
+with $n \ge 1$ panels of length at most $h$, and let $\xi$ be a node system of degree $r$. Let
+$U \in H^{r+1}(x_0, x_n)$ with weak derivative $U'$, and let $f$ be a representative of $U$ that
+is continuous on $[x_0, x_n]$. Then
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} \bigl(U' - (\Pi_h f)_i'\bigr)^2 \le h^{2r}
+  |U|_{H^{r+1}}^2.$$
+
+The weak derivative is `SobolevInterval.deriv U 1`. For $r = 0$ the interpolant is piecewise
+constant, and the statement is $\|U'\|^2 \le |U|_{H^1}^2$, which holds with equality. For
+$r \ge 1$ the weak derivative is the derivative of the $C^r$ representative, and the statement
+is the case $m = 1$ of `BrokenPolynomial.sum_integral_sq_iteratedDeriv_sub_interp_le_seminorm`. -/
 theorem sum_integral_sq_deriv_sub_interp_le_seminorm (hx : StrictMono x) (hn : 0 < n)
     (hnode : IsNodes x r node) {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
     (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
@@ -564,7 +691,8 @@ theorem sum_integral_sq_deriv_sub_interp_le_seminorm (hx : StrictMono x) (hn : 0
 
 /-! ### Traces of differences, and the interpolant at the endpoints -/
 
-/-- The pairing only depends on the values on `[x 0, x n]`. -/
+/-- For a nondecreasing partition, the pairing $\langle g, v \rangle$ depends only on the values of
+$g$ on $[x_0, x_n]$. -/
 theorem pairing_congr (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
     (hg : EqOn g₁ g₂ (Icc (x 0) (x (Fin.last n)))) (v : BrokenPolynomial x r) :
     pairing g₁ v = pairing g₂ v := by
@@ -573,26 +701,31 @@ theorem pairing_congr (hx : Monotone x) {g₁ g₂ : ℝ → ℝ}
   rw [uIcc_of_le (hx (Fin.castSucc_lt_succ (i := i)).le)] at hs
   rw [hg (Icc_panel_subset hx i hs)]
 
+/-- The left trace of a difference: $(v - w)^-(x_i) = v^-(x_i) - w^-(x_i)$. -/
 theorem traceLeft_sub (v w : BrokenPolynomial x r) (i : Fin (n + 1)) :
     traceLeft (v - w) i = traceLeft v i - traceLeft w i := by
   rw [← traceLeftₗ_apply, map_sub, traceLeftₗ_apply, traceLeftₗ_apply]
 
+/-- The right trace of a difference: $(v - w)^+(x_i) = v^+(x_i) - w^+(x_i)$. -/
 theorem traceRight_sub (v w : BrokenPolynomial x r) (i : Fin n) :
     traceRight (v - w) i = traceRight v i - traceRight w i :=
   (traceRightₗ x r i).map_sub v w
 
+/-- The jump of a difference: $[v - w]_i = [v]_i - [w]_i$. -/
 theorem jump_sub (v w : BrokenPolynomial x r) (i : Fin n) :
     jump (v - w) i = jump v i - jump w i := by
   rw [← jumpₗ_apply, map_sub, jumpₗ_apply, jumpₗ_apply]
 
-/-- The left trace of the interpolant at `x n` is `f (x n)`. -/
+/-- At a Lagrange node system on a partition with $n \ge 1$ panels, the left trace of the
+interpolant at $x_n$ is $f(x_n)$. -/
 theorem traceLeft_interp_last {node : Fin n → Fin (r + 1) → ℝ} (hnode : IsLagrangeNodes x r node)
     (hn : 0 < n) (f : ℝ → ℝ) :
     traceLeft (interp hnode.toIsNodes f) (Fin.last n) = f (x (Fin.last n)) := by
   have h : Fin.last n = (⟨n - 1, by omega⟩ : Fin n).succ := Fin.ext (by simp; omega)
   rw [h, traceLeft_interp_succ hnode]
 
-/-- The right trace of the interpolant at `x 0` is `f (x 0)`. -/
+/-- At a Lagrange node system on a partition with $n \ge 1$ panels, the right trace of the
+interpolant at $x_0$ is $f(x_0)$. -/
 theorem traceRight_interp_zero {node : Fin n → Fin (r + 1) → ℝ}
     (hnode : IsLagrangeNodes x r node) (hn : 0 < n) (f : ℝ → ℝ) :
     traceRight (interp hnode.toIsNodes f) ⟨0, hn⟩ = f (x 0) :=
@@ -602,8 +735,12 @@ section StrictMono
 
 variable [hx : Fact (StrictMono x)]
 
-/-- **The triangle inequality between two broken polynomials through a function**:
-`‖v - w‖ ≤ ‖g - v‖ + ‖g - w‖`, the last two norms being panel sums. -/
+/-- **The triangle inequality between two broken polynomials through a function.** For a strictly
+increasing partition, a function $g$ with $g$ and $g^2$ integrable on $[x_0, x_n]$, and broken
+polynomials $v$ and $w$,
+$$\|v - w\| \le \Bigl(\sum_{i=0}^{n-1} \int_{I_i} (g - v_i)^2\Bigr)^{1/2} +
+  \Bigl(\sum_{i=0}^{n-1} \int_{I_i} (g - w_i)^2\Bigr)^{1/2}.$$
+-/
 theorem norm_sub_le_sqrt_add_sqrt {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -634,8 +771,12 @@ theorem norm_sub_le_sqrt_add_sqrt {g : ℝ → ℝ}
   rw [e1, e2, Real.sqrt_sq (norm_nonneg _), add_comm] at h
   exact h
 
-/-- Cauchy–Schwarz for a panel sum against a broken polynomial:
-`|∑ᵢ ∫ ηᵢ vᵢ| ≤ √(∑ᵢ ∫ ηᵢ²) ‖v‖`. -/
+/-- The Cauchy–Schwarz inequality for a panel sum against a broken polynomial: for a strictly
+increasing partition, functions $\eta_i$ with $\eta_i$ and $\eta_i^2$ integrable on $I_i$, and a
+broken polynomial $v$,
+$$\Bigl|\sum_{i=0}^{n-1} \int_{I_i} \eta_i\, v_i\Bigr| \le \Bigl(\sum_{i=0}^{n-1} \int_{I_i}
+  \eta_i^2\Bigr)^{1/2} \|v\|.$$
+-/
 theorem abs_sum_integral_mul_eval_le {η : Fin n → ℝ → ℝ}
     (hη : ∀ i, IntervalIntegrable (η i) volume (x i.castSucc) (x i.succ))
     (hη2 : ∀ i, IntervalIntegrable (fun s => η i s ^ 2) volume (x i.castSucc) (x i.succ))
@@ -656,8 +797,13 @@ theorem abs_sum_integral_mul_eval_le {η : Fin n → ℝ → ℝ}
     norm_neg] at h
   linarith
 
-/-- Cauchy–Schwarz for a panel sum with a bounded coefficient:
-`|∑ᵢ ∫ c ηᵢ vᵢ| ≤ C √(∑ᵢ ∫ ηᵢ²) ‖v‖` when `|c| ≤ C` on `[x 0, x n]`. -/
+/-- The Cauchy–Schwarz inequality for a panel sum with a bounded coefficient: let the partition be
+strictly increasing, let $c$ be integrable on $[x_0, x_n]$ with $|c| \le C$ on $[x_0, x_n]$ for
+a constant $C \ge 0$, and let $\eta_i$ be functions with $\eta_i$ and $\eta_i^2$ integrable on
+$I_i$. Then for every broken polynomial $v$
+$$\Bigl|\sum_{i=0}^{n-1} \int_{I_i} c\, \eta_i\, v_i\Bigr| \le C \Bigl(\sum_{i=0}^{n-1}
+  \int_{I_i} \eta_i^2\Bigr)^{1/2} \|v\|.$$
+-/
 theorem abs_sum_integral_mul_mul_eval_le {c : ℝ → ℝ}
     (hc : IntervalIntegrable c volume (x 0) (x (Fin.last n))) {C : ℝ} (hC : 0 ≤ C)
     (hcC : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |c s| ≤ C) {η : Fin n → ℝ → ℝ}
@@ -715,10 +861,13 @@ end StrictMono
 
 /-! ### The Markov inequality on a panel -/
 
-/-- **The `L²` Markov inequality on a panel** `[u, w]`: for a polynomial `p` of degree at most
-`r`, `∫_u^w p'² ≤ (2 r (r + 1) / (w - u))² ∫_u^w p²`. The inequality on `[-1, 1]`
-(`Polynomial.integral_derivative_sq_le`, `Numlib/Approximation/MarkovInequality`), transported by
-the affine map `τ ↦ m + k τ`, `m = (u + w)/2`, `k = (w - u)/2`. -/
+/-- **The $L^2$ Markov inequality on a panel.** For $u < w$ and a real polynomial $p$ of degree at
+most $r$,
+$$\int_u^w p'^2 \le \Bigl(\frac{2 r (r + 1)}{w - u}\Bigr)^2 \int_u^w p^2.$$
+
+The proof transports the inequality on $[-1, 1]$ (`Polynomial.integral_derivative_sq_le` of
+`Numlib.Approximation.MarkovInequality`) to the panel by the affine map
+$\tau \mapsto m + k \tau$, with $m = (u + w)/2$ and $k = (w - u)/2$. -/
 theorem integral_derivative_sq_le_panel {u w : ℝ} (huw : u < w) {p : ℝ[X]} (hp : p.natDegree ≤ r) :
     ∫ s in u..w, (derivative p).eval s ^ 2
       ≤ (2 * r * (r + 1) / (w - u)) ^ 2 * ∫ s in u..w, p.eval s ^ 2 := by
@@ -768,9 +917,10 @@ theorem integral_derivative_sq_le_panel {u w : ℝ} (huw : u < w) {p : ℝ[X]} (
         mul_le_mul_of_nonneg_left hM (inv_pos.2 hk0).le
     _ = ((r : ℝ) * (r + 1)) ^ 2 * k⁻¹ * k⁻¹ * ∫ s in u..w, p.eval s ^ 2 := by ring
 
-/-- **The Markov inequality in the broken norm**: on a partition whose panels have length at
-least `hmin > 0`, `∑ᵢ ∫ vᵢ'² ≤ (2 r (r + 1) / hmin)² ‖v‖²` for every broken polynomial of degree
-`r`. -/
+/-- **The Markov inequality in the broken norm.** For a strictly increasing partition whose panels
+have length at least $h_{\min} > 0$, every broken polynomial $v$ of degree $r$ satisfies
+$$\sum_{i=0}^{n-1} \int_{I_i} v_i'^2 \le \Bigl(\frac{2 r (r + 1)}{h_{\min}}\Bigr)^2 \|v\|^2.$$
+-/
 theorem sum_integral_sq_derivative_le [hx : Fact (StrictMono x)] {hmin : ℝ} (h0 : 0 < hmin)
     (hle : ∀ i : Fin n, hmin ≤ x i.succ - x i.castSucc) (v : BrokenPolynomial x r) :
     ∑ i, ∫ s in x i.castSucc..x i.succ, (derivative (v i)).eval s ^ 2
@@ -784,23 +934,29 @@ theorem sum_integral_sq_derivative_le [hx : Fact (StrictMono x)] {hmin : ℝ} (h
   exact div_le_div_of_nonneg_left (by positivity) h0 (hle i)
 
 
-/-! ### The `L²` projection onto the broken space -/
+/-! ### The $L^2$ projection onto the broken space -/
 
 variable (x r) in
-/-- The broken polynomial equal to `q` on the panel `i` and to `0` elsewhere. -/
+/-- The broken polynomial equal to $q$ on the panel $i$ and to $0$ on the other panels, for a real
+polynomial $q$ of degree at most $r$. -/
 def single (i : Fin n) (q : ℝ[X]) (hq : q.natDegree ≤ r) : BrokenPolynomial x r :=
   mk x (Pi.single i q) fun j => by
     rcases eq_or_ne j i with rfl | h
     · simpa using hq
     · simp [h]
 
+/-- The broken polynomial `BrokenPolynomial.single x r i q hq` has the piece $q$ on the panel $i$.
+-/
 theorem single_apply_self (i : Fin n) (q : ℝ[X]) (hq : q.natDegree ≤ r) :
     single x r i q hq i = q := by simp [single]
 
+/-- The broken polynomial `BrokenPolynomial.single x r i q hq` has the piece $0$ on every panel
+$j \neq i$. -/
 theorem single_apply_of_ne {i j : Fin n} (hij : j ≠ i) (q : ℝ[X]) (hq : q.natDegree ≤ r) :
     single x r i q hq j = 0 := by simp [single, hij]
 
-/-- The pairing with a single-panel polynomial is the panel integral. -/
+/-- The pairing of $g$ with the broken polynomial equal to $q$ on the panel $i$ and to $0$ elsewhere
+is the panel integral $\int_{x_i}^{x_{i+1}} g\, q$. -/
 theorem pairing_single (g : ℝ → ℝ) (i : Fin n) (q : ℝ[X]) (hq : q.natDegree ≤ r) :
     pairing g (single x r i q hq) = ∫ s in x i.castSucc..x i.succ, g s * q.eval s := by
   rw [pairing_def, Finset.sum_eq_single i]
@@ -818,19 +974,27 @@ instance : CompleteSpace (BrokenPolynomial x r) := FiniteDimensional.complete �
 
 open scoped Classical in
 variable (x r) in
-/-- **The `L²(x 0, x n)` projection** of a function onto the broken polynomial space: the unique
-broken polynomial `P` with `⟪P, v⟫ = ∑ᵢ ∫ g vᵢ` for every `v` (the Riesz representative of the
-pairing), and `0` for a function that is not integrable on `[x 0, x n]`. -/
+/-- **The $L^2(x_0, x_n)$ projection** $P g$ of a function $g$ onto the broken polynomial space, for
+a strictly increasing partition. If $g$ is integrable on $[x_0, x_n]$, then $P g$ is the unique
+broken polynomial with
+$$\langle P g, v \rangle = \sum_{i=0}^{n-1} \int_{I_i} g\, v_i$$
+for every broken polynomial $v$, that is, the Riesz representative of the pairing. If $g$ is not
+integrable on $[x_0, x_n]$, then $P g = 0$. -/
 def proj (g : ℝ → ℝ) : BrokenPolynomial x r :=
   if hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)) then
     (InnerProductSpace.toDual ℝ (BrokenPolynomial x r)).symm (pairingL x r hg) else 0
 
-/-- The defining property of the projection: `⟪P g, v⟫ = ∑ᵢ ∫ g vᵢ`. -/
+/-- The defining property of the projection: for a strictly increasing partition and a function $g$
+integrable on $[x_0, x_n]$, the inner product of $P g$ with every broken polynomial $v$ is the
+pairing $\langle g, v \rangle$. -/
 theorem inner_proj {g : ℝ → ℝ} (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (v : BrokenPolynomial x r) : ⟪proj x r g, v⟫ = pairing g v := by
   simp only [proj, hg, ↓reduceDIte, InnerProductSpace.toDual_symm_apply, pairingL_apply]
 
-/-- **Orthogonality of the projection error**: `∑ᵢ ∫ (g - (P g)ᵢ) vᵢ = 0` for every `v`. -/
+/-- **Orthogonality of the projection error**: for a strictly increasing partition and a function
+$g$ integrable on $[x_0, x_n]$,
+$$\sum_{i=0}^{n-1} \int_{I_i} \bigl(g - (P g)_i\bigr)\, v_i = 0$$
+for every broken polynomial $v$. -/
 theorem sum_integral_sub_proj_mul_eval_eq_zero {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (v : BrokenPolynomial x r) :
     ∑ i, ∫ s in x i.castSucc..x i.succ, (g s - (proj x r g i).eval s) * (v i).eval s = 0 := by
@@ -843,8 +1007,11 @@ theorem sum_integral_sub_proj_mul_eval_eq_zero {g : ℝ → ℝ}
   rw [← integral_sub (intervalIntegrable_mul_eval_panel hm hg v i) (hc.intervalIntegrable _ _)]
   exact integral_congr fun s _ => by ring
 
-/-- **Panelwise orthogonality**: `∫_{Iᵢ} (g - (P g)ᵢ) q = 0` for every polynomial `q` of degree at
-most `r`. -/
+/-- **Panelwise orthogonality of the projection error**: for a strictly increasing partition, a
+function $g$ integrable on $[x_0, x_n]$, a panel $i$ and a real polynomial $q$ of degree at most
+$r$,
+$$\int_{I_i} \bigl(g - (P g)_i\bigr)\, q = 0.$$
+-/
 theorem integral_sub_proj_mul_eq_zero {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n))) (i : Fin n) {q : ℝ[X]}
     (hq : q.natDegree ≤ r) :
@@ -857,7 +1024,11 @@ theorem integral_sub_proj_mul_eq_zero {g : ℝ → ℝ}
   · intro h
     exact absurd (Finset.mem_univ i) h
 
-/-- The expansion of a panel sum of squares: `∑ᵢ ∫ (ηᵢ + dᵢ)² = ∑ᵢ ∫ ηᵢ² + 2 ∑ᵢ ∫ ηᵢ dᵢ + ‖d‖²`. -/
+/-- The expansion of a panel sum of squares: for a strictly increasing partition, functions $\eta_i$
+with $\eta_i$ and $\eta_i^2$ integrable on $I_i$, and a broken polynomial $d$,
+$$\sum_{i=0}^{n-1} \int_{I_i} (\eta_i + d_i)^2 = \sum_{i=0}^{n-1} \int_{I_i} \eta_i^2 + 2
+  \sum_{i=0}^{n-1} \int_{I_i} \eta_i\, d_i + \|d\|^2.$$
+-/
 theorem sum_integral_add_eval_sq_eq {η : Fin n → ℝ → ℝ}
     (hη : ∀ i, IntervalIntegrable (η i) volume (x i.castSucc) (x i.succ))
     (hη2 : ∀ i, IntervalIntegrable (fun s => η i s ^ 2) volume (x i.castSucc) (x i.succ))
@@ -875,8 +1046,12 @@ theorem sum_integral_add_eval_sq_eq {η : Fin n → ℝ → ℝ}
     ← integral_add ((hη2 i).add (h1.const_mul 2)) h2]
   exact integral_congr fun s _ => by ring
 
-/-- **The projection is the best approximation**: `∑ᵢ ∫ (g - (P g)ᵢ)² ≤ ∑ᵢ ∫ (g - wᵢ)²` for every
-broken polynomial `w`. Pythagoras, from the orthogonality of the error. -/
+/-- **The projection is the best approximation**: for a strictly increasing partition and a function
+$g$ with $g$ and $g^2$ integrable on $[x_0, x_n]$,
+$$\sum_{i=0}^{n-1} \int_{I_i} \bigl(g - (P g)_i\bigr)^2 \le \sum_{i=0}^{n-1} \int_{I_i} (g -
+  w_i)^2$$
+for every broken polynomial $w$. The proof is Pythagoras' theorem, from the orthogonality of the
+error. -/
 theorem sum_integral_sq_sub_proj_le {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))
@@ -903,11 +1078,16 @@ theorem sum_integral_sq_sub_proj_le {g : ℝ → ℝ}
 
 end Proj
 
-/-! ### The continuous representative of `H^{r+1}(x 0, x n)` is absolutely continuous -/
+/-! ### The continuous representative of a Sobolev function is absolutely continuous -/
 
 open SobolevInterval in
-/-- A function continuous on `[a, b]` representing `U ∈ H^{k+1}(a, b)` is the integral of the weak
-derivative `U'`: `f t - f s = ∫_s^t U'` for `s, t ∈ [a, b]`. -/
+/-- Let $a < b$ and $U \in H^{k+1}(a, b)$ with weak derivative $U'$, and let $f$ be a representative
+of $U$ that is continuous on $[a, b]$. Then $f$ is the integral of $U'$:
+$$f(t) - f(s) = \int_s^t U'$$
+for all $s, t \in [a, b]$.
+
+The weak derivative $U'$ is `SobolevInterval.deriv U 1`. The hypothesis that $f$ represents $U$
+is that `SobolevInterval.fn U` equals $f$ almost everywhere on $(a, b)$. -/
 theorem _root_.SobolevInterval.sub_eq_integral_deriv_one {a b : ℝ} (hab : a < b) {k : ℕ}
     (U : SobolevInterval (k + 1) a b) {f : ℝ → ℝ} (hf : ContinuousOn f (Icc a b))
     (hU : fn U =ᵐ[volume.restrict (Ioo a b)] f) {s t : ℝ} (hs : s ∈ Icc a b) (ht : t ∈ Icc a b) :
@@ -921,15 +1101,18 @@ theorem _root_.SobolevInterval.sub_eq_integral_deriv_one {a b : ℝ} (hab : a < 
   rw [hfg hs, hfg ht]
   exact hgint s hs t ht
 
-/-! ### The projection error in `L²`, in `H¹` and at the nodes -/
+/-! ### The projection error in $L^2$, in $H^1$ and at the nodes -/
 
 section ProjEstimates
 
 variable [hx : Fact (StrictMono x)] {node : Fin n → Fin (r + 1) → ℝ}
 
 open SobolevInterval in
-/-- The square-root form of `sum_integral_sq_sub_interp_le_seminorm`:
-`√(∑ᵢ ∫ (f - (I f)ᵢ)²) ≤ h^{r+1} |U|_{H^{r+1}}`. -/
+/-- Let the partition be strictly increasing with $n \ge 1$ panels of length at most $h$, let $\xi$
+be a node system of degree $r$, let $U \in H^{r+1}(x_0, x_n)$, and let $f$ be a representative
+of $U$ that is continuous on $[x_0, x_n]$. Then $\bigl(\sum_i \int_{I_i} (f - (\Pi_h
+f)_i)^2\bigr)^{1/2} \le h^{r+1} |U|_{H^{r+1}}$. This is the square-root form of
+`BrokenPolynomial.sum_integral_sq_sub_interp_le_seminorm`. -/
 theorem sqrt_sum_integral_sq_sub_interp_le_seminorm (hn : 0 < n) (hnode : IsNodes x r node)
     {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
     (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
@@ -947,8 +1130,11 @@ theorem sqrt_sum_integral_sq_sub_interp_le_seminorm (hn : 0 < n) (hnode : IsNode
           Real.sqrt_sq (apply_nonneg _ _)]
 
 open SobolevInterval in
-/-- The square-root form of `sum_integral_sq_deriv_sub_interp_le_seminorm`:
-`√(∑ᵢ ∫ (U' - (I f)ᵢ')²) ≤ h^r |U|_{H^{r+1}}`. -/
+/-- Let the partition be strictly increasing with $n \ge 1$ panels of length at most $h$, let $\xi$
+be a node system of degree $r$, let $U \in H^{r+1}(x_0, x_n)$ with weak derivative $U'$, and let
+$f$ be a representative of $U$ that is continuous on $[x_0, x_n]$. Then $\bigl(\sum_i \int_{I_i}
+(U' - (\Pi_h f)_i')^2\bigr)^{1/2} \le h^r |U|_{H^{r+1}}$. This is the square-root form of
+`BrokenPolynomial.sum_integral_sq_deriv_sub_interp_le_seminorm`. -/
 theorem sqrt_sum_integral_sq_deriv_sub_interp_le_seminorm (hn : 0 < n)
     (hnode : IsNodes x r node) {h : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
     (U : SobolevInterval (r + 1) (x 0) (x (Fin.last n))) {f : ℝ → ℝ}
@@ -969,9 +1155,15 @@ theorem sqrt_sum_integral_sq_deriv_sub_interp_le_seminorm (hn : 0 < n)
           Real.sqrt_sq (apply_nonneg _ _)]
 
 open SobolevInterval in
-/-- **The `L²` estimate of the projection error**: for `U ∈ H^{r+1}(x 0, x n)` with continuous
-representative `f` and a partition of mesh at most `h` carrying a node system of degree `r`,
-`√(∑ᵢ ∫ (f - (P f)ᵢ)²) ≤ h^{r+1} |U|_{H^{r+1}}`: the projection is at least as good as the
+/-- **The $L^2$ estimate of the projection error.** Let the partition be strictly increasing with
+$n \ge 1$ panels of length at most $h$, and let it carry a node system of degree $r$. Let
+$U \in H^{r+1}(x_0, x_n)$, and let $f$ be a representative of $U$ that is continuous on
+$[x_0, x_n]$. Then
+$$\Bigl(\sum_{i=0}^{n-1} \int_{I_i} \bigl(f - (P f)_i\bigr)^2\Bigr)^{1/2} \le h^{r+1}
+  |U|_{H^{r+1}}.$$
+
+The projection is at least as good as the interpolant, by
+`BrokenPolynomial.sum_integral_sq_sub_proj_le`. The node system enters only through the
 interpolant. -/
 theorem sqrt_sum_integral_sq_sub_proj_le_seminorm (hn : 0 < n) (hnode : IsNodes x r node) {h : ℝ}
     (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
@@ -989,11 +1181,16 @@ theorem sqrt_sum_integral_sq_sub_proj_le_seminorm (hn : 0 < n) (hnode : IsNodes 
     (sqrt_sum_integral_sq_sub_interp_le_seminorm hn hnode hmesh U hf hU)
 
 open SobolevInterval in
-/-- **The `H¹` estimate of the projection error**: on a partition with `hmin ≤ h_i ≤ h`,
-`√(∑ᵢ ∫ (U' - (P f)ᵢ')²) ≤ h^r (1 + 4 r (r + 1) (h / hmin)) |U|_{H^{r+1}}`. Triangle inequality
-through the interpolant, whose derivative error is `h^r |U|`, and the Markov inequality for the
-difference of the interpolant and the projection, which is at most twice the `L²` error of the
-interpolant. -/
+/-- **The $H^1$ estimate of the projection error.** Let the partition be strictly increasing with
+$n \ge 1$ panels whose lengths satisfy $h_{\min} \le x_{i+1} - x_i \le h$, where $h_{\min} > 0$,
+and let it carry a node system of degree $r$. Let $U \in H^{r+1}(x_0, x_n)$ with weak derivative
+$U'$, and let $f$ be a representative of $U$ that is continuous on $[x_0, x_n]$. Then
+$$\Bigl(\sum_{i=0}^{n-1} \int_{I_i} \bigl(U' - (P f)_i'\bigr)^2\Bigr)^{1/2} \le h^r \Bigl(1 + 4
+  r (r + 1) \frac{h}{h_{\min}}\Bigr) |U|_{H^{r+1}}.$$
+
+The proof uses the triangle inequality through the interpolant, whose derivative error is at
+most $h^r |U|_{H^{r+1}}$, and the Markov inequality for the difference of the interpolant and
+the projection, whose $L^2$ norm is at most twice the $L^2$ error of the interpolant. -/
 theorem sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm (hn : 0 < n) (hnode : IsNodes x r node)
     {h hmin : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h) (h0 : 0 < hmin)
     (hminle : ∀ i : Fin n, hmin ≤ x i.succ - x i.castSucc)
@@ -1062,11 +1259,15 @@ theorem sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm (hn : 0 < n) (hnode : Is
     _ = h ^ r * (1 + 4 * r * (r + 1) * (h / hmin)) * S := by
         rw [pow_succ]; field_simp; ring
 
-/-- **The trace estimate for a panelwise error**: for `f` with `f t - f s = ∫_s^t g` on
-`[x 0, x n]`, `g` square integrable, any broken polynomial `P`, points `y i` in the panels and
-weights `c i ≤ C` with `C ≥ 0`, on a partition with `hmin ≤ h_i ≤ h`,
-`∑ᵢ c i (f (y i) - Pᵢ(y i))² ≤ C (2 hmin⁻¹ ∑ᵢ ∫ (f - Pᵢ)² + 2 h ∑ᵢ ∫ (g - Pᵢ')²)`. The panel trace
-inequality `sq_le_of_sub_eq_integral`, summed. -/
+/-- **The trace estimate for a panelwise error.** Let the partition be strictly increasing, with
+panel lengths $h_{\min} \le x_{i+1} - x_i \le h$, where $h_{\min} > 0$. Let $f$ be continuous on
+$[x_0, x_n]$, and let $g$ be a function such that $g$ and $g^2$ are integrable on $[x_0, x_n]$
+and $f(t) - f(s) = \int_s^t g$ for all $s, t \in [x_0, x_n]$. Let $P$ be a broken polynomial,
+let $y_i \in I_i$ for each $i$, and let $c_i \le C$ for each $i$, where $C \ge 0$. Then
+$$\sum_{i=0}^{n-1} c_i \bigl(f(y_i) - P_i(y_i)\bigr)^2 \le C \Bigl(\frac{2}{h_{\min}}
+  \sum_{i=0}^{n-1} \int_{I_i} (f - P_i)^2 + 2 h \sum_{i=0}^{n-1} \int_{I_i} (g -
+  P_i')^2\Bigr).$$
+The proof sums the panel trace inequality `sq_le_of_sub_eq_integral` over the panels. -/
 theorem sum_mul_sq_sub_eval_le {f g : ℝ → ℝ} (hf : ContinuousOn f (Icc (x 0) (x (Fin.last n))))
     (hg : IntervalIntegrable g volume (x 0) (x (Fin.last n)))
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume (x 0) (x (Fin.last n)))

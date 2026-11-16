@@ -15,44 +15,52 @@ import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.Topology.ContinuousMap.StoneWeierstrass
 
 /-!
-# The half-range cosine system as a Hilbert basis of `L²(0, π)`
+# The half-range cosine system as a Hilbert basis of $L^2(0, \pi)$
 
-The system
-
-`e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` for `k ≥ 1`
-
-is orthonormal and complete in `L²(0, π)`. It is the cosine half of the trigonometric system of
-`Numlib.Analysis.Fourier.TrigonometricBasis`, and it is what a cosine series on a half period
-expands in; [han2009theoretical] state it as Example 1.3.14.
-
-The classical proof extends a function of `L²(0, π)` evenly to `L²(-π, π)` and reads off the
-completeness from the full trigonometric system. The proof here is the other classical one, and is
-shorter in this setting: the span of `{x ↦ cos (k x)}` is a *subalgebra* of `C([0, π], ℝ)`, by the
-product-to-sum formula alone, and it separates the points of `[0, π]` because `cos` is injective
-there (`Real.injOn_cos`). Stone–Weierstrass then makes it dense in `C([0, π], ℝ)`, and continuous
-functions are dense in `L²`. No even-extension isometry and no Chebyshev expansion of `cosᵏ` is
-needed.
+The half-range cosine system is
+$$e_0(x) = \frac{1}{\sqrt{\pi}}, \qquad e_k(x) = \sqrt{\frac{2}{\pi}} \cos(kx) \quad (k \ge 1).$$
+This file proves that it is orthonormal and complete in $L^2(0, \pi)$, so that it is a Hilbert basis
+of $L^2(0, \pi)$. This is Example 1.3.14 of [han2009theoretical]. The system is the cosine half of
+the trigonometric system of `Numlib.Analysis.Fourier.TrigonometricBasis`, and a cosine series on a
+half period is an expansion in it. The file also proves the orthogonality relations of the sines on
+$[0, \pi]$, and the orthogonality of the cosines $\cos(m\pi x)$ on $[0, 1]$.
 
 ## Main definitions
 
-* `halfRangeMeasure`, Lebesgue measure on `[0, π]` read on the subtype, the measure of `L²(0, π)`;
-* `cosMap k : C([0, π], ℝ)`, the raw system `x ↦ cos (k x)`;
-* `cosNorm k` and `cosFun k`, the normalizing constants `1/√π`, `√(2/π)` and the normalized system;
-* `cosLp k : Lp ℝ 2 halfRangeMeasure`, the system inside `L²(0, π)`;
-* `cosSubalgebra`, the span of the raw system as a subalgebra of `C([0, π], ℝ)`;
-* `cosBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 halfRangeMeasure)`.
+* `halfRangeMeasure`: the Lebesgue measure on $[0, \pi]$, as a measure on the subtype, which is the
+  measure of $L^2(0, \pi)$.
+* `cosMap`: the functions $x \mapsto \cos(kx)$ in $C([0, \pi], \mathbb{R})$.
+* `cosNorm`: the normalizing constants $1/\sqrt{\pi}$ for $k = 0$ and $\sqrt{2/\pi}$ for $k \ge 1$.
+* `cosFun`: the normalized system $e_k$, as continuous functions.
+* `cosLp`: the normalized system $e_k$, as elements of $L^2(0, \pi)$.
+* `cosSubalgebra`: the span of the functions $\cos(kx)$, as a subalgebra of
+  $C([0, \pi], \mathbb{R})$.
+* `cosBasis`: the Hilbert basis $(e_k)_{k \in \mathbb{N}}$ of $L^2(0, \pi)$.
 
-## Main statements
+## Main results
 
-* `integral_cos_nat_mul_cos_nat_mul`, the orthogonality relations on `[0, π]`, and
-  `integral_sin_nat_mul_sin_nat_mul`, the sine relations that come with them;
-* `orthonormal_cosLp`, the system is orthonormal;
-* `dense_span_cosMap`, Stone–Weierstrass for the cosine polynomials on `[0, π]`;
-* `orthogonal_span_cosLp_eq_bot`, the completeness, and `cosBasis` assembling the two.
+* `integral_cos_nat_mul_cos_nat_mul`: the orthogonality relations of the cosines on $[0, \pi]$.
+* `integral_sin_nat_mul_sin_nat_mul`: the orthogonality relations of the sines on $[0, \pi]$.
+* `orthonormal_cosLp`: the system $(e_k)$ is orthonormal in $L^2(0, \pi)$.
+* `dense_span_cosMap`: the cosine polynomials are dense in $C([0, \pi], \mathbb{R})$.
+* `orthogonal_span_cosLp_eq_bot`: the system $(e_k)$ is complete in $L^2(0, \pi)$.
+* `integral_cos_mul_cos_unit`: $\int_0^1 \cos(m\pi x) \cos(n\pi x) \, dx = \delta_{mn}/2$ for
+  $m, n \ge 1$.
 
-## References
+## Proof outline
 
-[han2009theoretical], Example 1.3.14.
+The classical proof extends a function of $L^2(0, \pi)$ to an even function in $L^2(-\pi, \pi)$, and
+deduces the completeness from the completeness of the full trigonometric system. The proof here is
+another classical one, and it is shorter in this setting. The span of the functions $\cos(kx)$ is a
+subalgebra of $C([0, \pi], \mathbb{R})$, by the product-to-sum formula alone. It separates the
+points of $[0, \pi]$, because $\cos$ is injective on $[0, \pi]$ (`Real.injOn_cos`). So the
+Stone–Weierstrass theorem makes it dense in $C([0, \pi], \mathbb{R})$, and the continuous functions
+are dense in $L^2(0, \pi)$. The proof needs no isometry of even extension and no expansion of
+$\cos^k x$ in Chebyshev polynomials.
+
+## Implementation notes
+
+* The space $L^2(0, \pi)$ is `Lp ℝ 2 halfRangeMeasure`, on the subtype `Icc 0 π` of $\mathbb{R}$.
 -/
 
 
@@ -60,7 +68,8 @@ open MeasureTheory Set Submodule
 
 open scoped ENNReal Real
 
-/-- Lebesgue measure on `[0, π]`, read on the subtype: the measure of `L²(0, π)`. -/
+/-- The Lebesgue measure on $[0, \pi]$, as a measure on the subtype `Icc 0 π`: the pullback of the
+Lebesgue measure along the inclusion. This is the measure of $L^2(0, \pi)$. -/
 noncomputable def halfRangeMeasure : Measure (Icc (0 : ℝ) π) := Measure.comap Subtype.val volume
 
 instance : IsFiniteMeasure halfRangeMeasure where
@@ -72,13 +81,19 @@ instance : IsFiniteMeasure halfRangeMeasure where
     rw [h, Measure.restrict_apply_univ, Real.volume_Icc]
     exact ENNReal.ofReal_lt_top
 
-/-- An integral over the subtype `[0, π]` is an interval integral. -/
+/-- An integral over the subtype $[0, \pi]$ is an interval integral: for
+$f : \mathbb{R} \to \mathbb{R}$,
+$$\int_{[0, \pi]} f(x) \, d\mu(x) = \int_0^\pi f(x) \, dx,$$
+where $\mu$ is `halfRangeMeasure`. -/
 theorem integral_halfRangeMeasure (f : ℝ → ℝ) :
     ∫ x : Icc (0 : ℝ) π, f x ∂halfRangeMeasure = ∫ x in (0 : ℝ)..π, f x := by
   rw [halfRangeMeasure, integral_subtype_comap measurableSet_Icc, integral_Icc_eq_integral_Ioc,
     ← intervalIntegral.integral_of_le Real.pi_pos.le]
 
-/-- `∫_0^π cos (m x) dx` is `π` at `m = 0` and `0` at every other integer frequency. -/
+/-- For an integer $m$,
+$$\int_0^\pi \cos(mx) \, dx = \begin{cases} \pi & \text{if } m = 0, \\ 0 & \text{otherwise.}
+  \end{cases}$$
+-/
 theorem integral_cos_int_mul (m : ℤ) :
     ∫ x in (0 : ℝ)..π, Real.cos (m * x) = if m = 0 then π else 0 := by
   by_cases hm : m = 0
@@ -87,20 +102,24 @@ theorem integral_cos_int_mul (m : ℤ) :
     rw [intervalIntegral.integral_comp_mul_left (fun x => Real.cos x) hm0, integral_cos]
     simp [Real.sin_int_mul_pi, hm]
 
-/-- `∫_0^π cos ((j + k) x) dx` is `π` at `j = k = 0` and `0` otherwise. -/
+/-- For natural numbers $j, k$, $\int_0^\pi \cos((j + k)x) \, dx$ is $\pi$ if $j = k = 0$ and $0$
+otherwise. -/
 private theorem integral_cos_nat_add_nat_mul (j k : ℕ) :
     ∫ x in (0 : ℝ)..π, Real.cos (((j : ℤ) + k : ℤ) * x) = if j = 0 ∧ k = 0 then π else 0 := by
   rw [integral_cos_int_mul]
   exact if_congr (by omega) rfl rfl
 
-/-- `∫_0^π cos ((j - k) x) dx` is `π` at `j = k` and `0` otherwise. -/
+/-- For natural numbers $j, k$, $\int_0^\pi \cos((j - k)x) \, dx$ is $\pi$ if $j = k$ and $0$
+otherwise. -/
 private theorem integral_cos_nat_sub_nat_mul (j k : ℕ) :
     ∫ x in (0 : ℝ)..π, Real.cos (((j : ℤ) - k : ℤ) * x) = if j = k then π else 0 := by
   rw [integral_cos_int_mul]
   exact if_congr (by omega) rfl rfl
 
-/-- **The half-range cosine system is orthogonal on `[0, π]`**, with `π` and `π/2` as the squared
-norms of the constant and of the higher cosines. -/
+/-- **The half-range cosine system is orthogonal on $[0, \pi]$.** For natural numbers $j, k$,
+$$\int_0^\pi \cos(jx) \cos(kx) \, dx = \begin{cases} \pi & \text{if } j = k = 0, \\ \pi/2 &
+  \text{if } j = k \ne 0, \\ 0 & \text{if } j \ne k. \end{cases}$$
+-/
 theorem integral_cos_nat_mul_cos_nat_mul (j k : ℕ) :
     ∫ x in (0 : ℝ)..π, Real.cos (j * x) * Real.cos (k * x)
       = if j = k then (if j = 0 then π else π / 2) else 0 := by
@@ -127,10 +146,13 @@ theorem integral_cos_nat_mul_cos_nat_mul (j k : ℕ) :
     · simp [hj]
   · simp [hjk, show ¬(j = 0 ∧ k = 0) by omega]
 
-/-- **The half-range sine system is orthogonal on `[0, π]`**, with `π/2` for the squared norm of
-every sine of nonzero frequency; the frequency `0` contributes the zero function. It rests on the
-same `integral_cos_int_mul` as the cosine relations, through
-`sin A sin B = (cos (A - B) - cos (A + B)) / 2`. -/
+/-- **The half-range sine system is orthogonal on $[0, \pi]$.** For natural numbers $j, k$,
+$$\int_0^\pi \sin(jx) \sin(kx) \, dx = \begin{cases} \pi/2 & \text{if } j = k \ne 0, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+The case $j = k = 0$ gives $0$, because $\sin(0x)$ is the zero function.
+
+The proof uses `integral_cos_int_mul`, as for the cosines, through
+$\sin A \sin B = (\cos(A - B) - \cos(A + B))/2$. -/
 theorem integral_sin_nat_mul_sin_nat_mul (j k : ℕ) :
     ∫ x in (0 : ℝ)..π, Real.sin (j * x) * Real.sin (k * x)
       = if j = k then (if j = 0 then 0 else π / 2) else 0 := by
@@ -157,38 +179,42 @@ theorem integral_sin_nat_mul_sin_nat_mul (j k : ℕ) :
     · simp [hj]
   · simp [hjk, show ¬(j = 0 ∧ k = 0) by omega]
 
-/-- The raw cosine system `x ↦ cos (k x)` on `[0, π]`. -/
+/-- The cosine function $x \mapsto \cos(kx)$ of frequency $k \in \mathbb{N}$, as an element of
+$C([0, \pi], \mathbb{R})$. These functions are the system before normalization. -/
 noncomputable def cosMap (k : ℕ) : C(Icc (0 : ℝ) π, ℝ) := ⟨fun x => Real.cos (k * x), by fun_prop⟩
 
-/-- The normalizing constants of the half-range cosine system: `1/√π` for the constant term and
-`√(2/π)` for the rest. -/
+/-- The normalizing constants of the half-range cosine system: $1/\sqrt{\pi}$ for $k = 0$, and
+$\sqrt{2/\pi}$ for $k \ge 1$. -/
 noncomputable def cosNorm (k : ℕ) : ℝ := if k = 0 then 1 / √π else √(2 / π)
 
-/-- The constant term of the system is normalized by `1/√π`. -/
+/-- The normalizing constant of the constant function is $1/\sqrt{\pi}$. -/
 theorem cosNorm_zero : cosNorm 0 = 1 / √π := by simp [cosNorm]
 
-/-- Every cosine of positive frequency is normalized by `√(2/π)`. -/
+/-- For $k \ne 0$, the normalizing constant is $\sqrt{2/\pi}$. -/
 theorem cosNorm_of_ne_zero {k : ℕ} (hk : k ≠ 0) : cosNorm k = √(2 / π) := by simp [cosNorm, hk]
 
-/-- The normalizing constants are nonzero, so `cosFun` and `cosMap` span the same space. -/
+/-- The normalizing constants are nonzero. So `cosFun` and `cosMap` span the same space. -/
 theorem cosNorm_ne_zero (k : ℕ) : cosNorm k ≠ 0 := by
   rcases eq_or_ne k 0 with hk | hk
   · subst hk; rw [cosNorm_zero]; positivity
   · rw [cosNorm_of_ne_zero hk]; positivity
 
-/-- The half-range cosine system, as continuous functions on `[0, π]`. -/
+/-- The half-range cosine system $e_k = c_k \cos(kx)$, as continuous functions on $[0, \pi]$, where
+$c_k$ is the normalizing constant `cosNorm k`. -/
 noncomputable def cosFun (k : ℕ) : C(Icc (0 : ℝ) π, ℝ) := cosNorm k • cosMap k
 
-/-- The half-range cosine system as an orthonormal family in `L²(0, π)`. -/
+/-- The half-range cosine system $e_k$, as elements of $L^2(0, \pi)$. -/
 noncomputable def cosLp (k : ℕ) : Lp ℝ 2 halfRangeMeasure :=
   ContinuousMap.toLp 2 halfRangeMeasure ℝ (cosFun k)
 
-/-- The normalized system is a nonzero multiple of the raw one, inside `L²(0, π)`. -/
+/-- In $L^2(0, \pi)$, $e_k$ is the normalizing constant `cosNorm k` times the class of $\cos(kx)$.
+-/
 theorem cosLp_eq_smul (k : ℕ) :
     cosLp k = cosNorm k • ContinuousMap.toLp 2 halfRangeMeasure ℝ (cosMap k) := by
   rw [cosLp, cosFun, map_smul]
 
-/-- The inner products of the half-range cosine system: it is orthonormal. -/
+/-- The inner products of the half-range cosine system in $L^2(0, \pi)$:
+$\langle e_j, e_k \rangle = 1$ if $j = k$, and $0$ otherwise. -/
 theorem inner_cosLp (j k : ℕ) : inner ℝ (cosLp j) (cosLp k) = if j = k then 1 else 0 := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   have hae : ∀ m : ℕ, (cosLp m : Icc (0 : ℝ) π → ℝ) =ᵐ[halfRangeMeasure] cosFun m :=
@@ -226,10 +252,14 @@ theorem inner_cosLp (j k : ℕ) : inner ℝ (cosLp j) (cosLp k) = if j = k then 
       field_simp
   · simp [hjk]
 
-/-- **The half-range cosine system is orthonormal in `L²(0, π)`.** -/
+/-- **The half-range cosine system $(e_k)_{k \in \mathbb{N}}$ is orthonormal in $L^2(0, \pi)$.** -/
 theorem orthonormal_cosLp : Orthonormal ℝ cosLp := orthonormal_iff_ite.2 inner_cosLp
 
-/-- The product-to-sum formula: the span of the cosine system is closed under multiplication. -/
+/-- **The product-to-sum formula.** For natural numbers $m, n$, as functions on $[0, \pi]$,
+$$\cos(mx) \cos(nx) = \frac{1}{2} \bigl(\cos((m + n)x) + \cos(|m - n| x)\bigr).$$
+So the span of the functions $\cos(kx)$ is closed under multiplication.
+
+The frequency $|m - n|$ is written `max m n - min m n`, a difference of natural numbers. -/
 theorem cosMap_mul (m n : ℕ) :
     cosMap m * cosMap n = (2 : ℝ)⁻¹ • (cosMap (m + n) + cosMap (max m n - min m n)) := by
   ext x
@@ -246,13 +276,15 @@ theorem cosMap_mul (m n : ℕ) :
     rw [hadd, hsub, Real.cos_add, Real.cos_sub]
     ring
 
-/-- The constant function is the `k = 0` member of the raw cosine system. -/
+/-- The constant function $1$ is the function $\cos(0x)$, so it lies in the span of the functions
+$\cos(kx)$. -/
 theorem one_mem_span_cosMap : (1 : C(Icc (0 : ℝ) π, ℝ)) ∈ span ℝ (Set.range cosMap) := by
   have h : cosMap 0 = 1 := by ext x; simp [cosMap]
   rw [← h]
   exact subset_span ⟨0, rfl⟩
 
-/-- The span of the raw cosine system is closed under multiplication. -/
+/-- The span of the functions $\cos(kx)$ in $C([0, \pi], \mathbb{R})$ is closed under
+multiplication. -/
 theorem mul_mem_span_cosMap {f g : C(Icc (0 : ℝ) π, ℝ)} (hf : f ∈ span ℝ (Set.range cosMap))
     (hg : g ∈ span ℝ (Set.range cosMap)) : f * g ∈ span ℝ (Set.range cosMap) := by
   have hgen : ∀ m : ℕ, ∀ y ∈ span ℝ (Set.range cosMap),
@@ -273,12 +305,14 @@ theorem mul_mem_span_cosMap {f g : C(Icc (0 : ℝ) π, ℝ)} (hf : f ∈ span �
   | add a b _ _ ha hb => rw [add_mul]; exact Submodule.add_mem _ ha hb
   | smul c a _ ha => rw [smul_mul_assoc]; exact Submodule.smul_mem _ _ ha
 
-/-- The span of the cosine system, as a subalgebra of `C([0, π], ℝ)`. -/
+/-- The span of the functions $\cos(kx)$, $k \in \mathbb{N}$, as a subalgebra of
+$C([0, \pi], \mathbb{R})$: the algebra of the cosine polynomials. -/
 noncomputable def cosSubalgebra : Subalgebra ℝ C(Icc (0 : ℝ) π, ℝ) :=
   (span ℝ (Set.range cosMap)).toSubalgebra one_mem_span_cosMap
     fun _ _ hx hy => mul_mem_span_cosMap hx hy
 
-/-- The cosine polynomials separate the points of `[0, π]`, because `cos` is injective there. -/
+/-- The cosine polynomials separate the points of $[0, \pi]$, because $\cos$ is injective on
+$[0, \pi]$. -/
 theorem separatesPoints_cosSubalgebra : cosSubalgebra.SeparatesPoints := by
   intro x y hxy
   refine ⟨_, ⟨cosMap 1, subset_span ⟨1, rfl⟩, rfl⟩, ?_⟩
@@ -286,8 +320,12 @@ theorem separatesPoints_cosSubalgebra : cosSubalgebra.SeparatesPoints := by
   intro h
   exact hxy (Subtype.ext (Real.injOn_cos x.2 y.2 h))
 
-/-- **Stone–Weierstrass on `[0, π]`**: the cosine polynomials are dense in `C([0, π], ℝ)`, because
-they form a subalgebra containing the constants, and `cos` is injective on `[0, π]`. -/
+/-- **The Stone–Weierstrass theorem on $[0, \pi]$** for cosine polynomials: the span of the
+functions $\cos(kx)$, $k \in \mathbb{N}$, is dense in $C([0, \pi], \mathbb{R})$ for the uniform
+norm.
+
+The span is a subalgebra that contains the constants, and it separates points because $\cos$ is
+injective on $[0, \pi]$. -/
 theorem dense_span_cosMap :
     Dense ((span ℝ (Set.range cosMap) : Submodule ℝ C(Icc (0 : ℝ) π, ℝ)) :
       Set C(Icc (0 : ℝ) π, ℝ)) := by
@@ -300,8 +338,11 @@ theorem dense_span_cosMap :
   rw [dense_iff_closure_eq]
   exact h2
 
-/-- **The half-range cosine system is complete in `L²(0, π)`**: a function orthogonal to every
-member is orthogonal to every continuous function, hence to everything, hence zero. -/
+/-- **The half-range cosine system is complete in $L^2(0, \pi)$**: the orthogonal complement of the
+span of $(e_k)_{k \in \mathbb{N}}$ is $\{0\}$.
+
+The idea of the proof: a function orthogonal to every $e_k$ is orthogonal to every continuous
+function by `dense_span_cosMap`, hence to every element of $L^2(0, \pi)$, hence it is zero. -/
 theorem orthogonal_span_cosLp_eq_bot : (span ℝ (Set.range cosLp))ᗮ = ⊥ := by
   rw [Submodule.eq_bot_iff]
   intro f hf
@@ -335,24 +376,27 @@ theorem orthogonal_span_cosLp_eq_bot : (span ℝ (Set.range cosLp))ᗮ = ⊥ := 
     exact hL0 y
   exact inner_self_eq_zero.mp (hall f)
 
-/-- **The half-range cosine system is a Hilbert basis of `L²(0, π)`.** -/
+/-- **The half-range cosine system is a Hilbert basis of $L^2(0, \pi)$** ([han2009theoretical],
+Example 1.3.14): the Hilbert basis indexed by $\mathbb{N}$ whose members are the functions
+$e_k$. -/
 noncomputable def cosBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 halfRangeMeasure) :=
   HilbertBasis.mkOfOrthogonalEqBot orthonormal_cosLp orthogonal_span_cosLp_eq_bot
 
-/-- The Hilbert basis `cosBasis` is the half-range cosine system. -/
+/-- The members of the Hilbert basis `cosBasis` are the functions $e_k$ of `cosLp`. -/
 @[simp]
 theorem coe_cosBasis : ⇑cosBasis = cosLp := HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- The span of the half-range cosine system is dense in `L²(0, π)`. -/
+/-- The span of the half-range cosine system is dense in $L^2(0, \pi)$: its closure is the whole
+space. -/
 theorem dense_span_cosLp : (span ℝ (Set.range cosLp)).topologicalClosure = ⊤ := by
   have h := cosBasis.dense_span
   rwa [coe_cosBasis] at h
 
-/-- The constant member of the system is `1/√π`. -/
+/-- The constant member of the system is $e_0(x) = 1/\sqrt{\pi}$. -/
 theorem cosFun_zero_apply (x : Icc (0 : ℝ) π) : cosFun 0 x = 1 / √π := by
   simp [cosFun, cosMap, cosNorm]
 
-/-- The member of frequency `k ≥ 1` is `√(2/π) cos (k x)`. -/
+/-- For $k \ge 1$, the member of frequency $k$ is $e_k(x) = \sqrt{2/\pi} \cos(kx)$. -/
 theorem cosFun_apply_of_ne_zero {k : ℕ} (hk : k ≠ 0) (x : Icc (0 : ℝ) π) :
     cosFun k x = √(2 / π) * Real.cos (k * (x : ℝ)) := by
   simp [cosFun, cosMap, cosNorm_of_ne_zero hk]
@@ -361,7 +405,9 @@ theorem cosFun_apply_of_ne_zero {k : ℕ} (hk : k ≠ 0) (x : Icc (0 : ℝ) π) 
 
 section UnitInterval
 
-/-- `∫₀¹ cos (c x) dx = sin c / c` for `c ≠ 0`. -/
+/-- For a real $c \ne 0$,
+$$\int_0^1 \cos(cx) \, dx = \frac{\sin c}{c}.$$
+-/
 theorem integral_cos_mul_unit {c : ℝ} (hc : c ≠ 0) :
     ∫ x in (0 : ℝ)..1, Real.cos (c * x) = Real.sin c / c := by
   have hd : ∀ x ∈ uIcc (0 : ℝ) 1,
@@ -376,7 +422,10 @@ theorem integral_cos_mul_unit {c : ℝ} (hc : c ≠ 0) :
     ((Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _)]
   simp
 
-/-- `∫₀¹ cos (k π x) dx` is `1` for `k = 0` and `0` otherwise. -/
+/-- For an integer $k$,
+$$\int_0^1 \cos(k\pi x) \, dx = \begin{cases} 1 & \text{if } k = 0, \\ 0 & \text{otherwise.}
+  \end{cases}$$
+-/
 theorem integral_cos_intMul_pi_unit (k : ℤ) :
     ∫ x in (0 : ℝ)..1, Real.cos ((k : ℝ) * π * x) = if k = 0 then 1 else 0 := by
   rcases eq_or_ne k 0 with rfl | hk
@@ -384,8 +433,10 @@ theorem integral_cos_intMul_pi_unit (k : ℤ) :
   · have hc : ((k : ℝ) * π) ≠ 0 := mul_ne_zero (Int.cast_ne_zero.2 hk) Real.pi_ne_zero
     rw [ite_eq_right hk, integral_cos_mul_unit hc, Real.sin_int_mul_pi k, zero_div]
 
-/-- **Orthogonality of the cosines** on `(0, 1)`:
-`∫₀¹ cos (m π x) cos (n π x) dx = δ_{mn} / 2` for positive integers `m` and `n`. -/
+/-- **Orthogonality of the cosines on $(0, 1)$.** For positive integers $m$ and $n$,
+$$\int_0^1 \cos(m\pi x) \cos(n\pi x) \, dx = \begin{cases} 1/2 & \text{if } m = n, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+-/
 theorem integral_cos_mul_cos_unit {m n : ℕ} (hm : 0 < m) (hn : 0 < n) :
     ∫ x in (0 : ℝ)..1, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
       = if m = n then 1 / 2 else 0 := by

@@ -9,47 +9,77 @@ import Numlib.Optimization.ModelBased.HighOrder.TRqComplexity
 # TRq runs as inner solvers
 
 A run of the trust-region method TRq ([cartis2022evaluation], Algorithm 12.2.1) with the exact
-Taylor data of `f` on a closed feasible set `X` (TRq-SC of §14.2) is the inner solver INNER of
-trust-region type of the two-phase method TPqp-GC (§14.3). Each call starts afresh from the radius
-`Δ₀` at a point given by the outer method, and is cut either at its own termination or earlier by
-a test of the outer method. This file collects what an outer analysis needs about one call, with
-constants that depend on `f` only through Lipschitz constants `L` of its derivatives and a bound
-`M` on its derivatives of orders `1, …, q` at the start of the call, so that they are uniform over
-all calls.
+Taylor data of $f$ on a closed feasible set $X$ (TRq-SC of §14.2) serves as the inner solver INNER
+of trust-region type of the two-phase method TPqp-GC (§14.3). Each call starts afresh from the
+radius $\Delta_0$ at a point given by the outer method, and is cut either at its own termination or
+earlier by a test of the outer method. This file collects what an outer analysis needs about one
+call. The constants depend on $f$ only through the Lipschitz constants $L_j$ of its derivatives and
+a bound $M$ on its derivatives of orders $1, \dots, q$ at the start of the call, so they are uniform
+over all calls.
+
+The main facts about a call are: unsuccessful iterations do not move; the radii stay above
+$\kappa_\rho\varepsilon_{\min}$; every successful iteration decreases $f$ by at least
+$\kappa_{\mathrm{decr}}\varepsilon_{\min}^{q+1}$; and the number of iterations is at most
+$\kappa_{\mathrm{uns}}(|\mathcal{S}| + 1) +
+|\log(\kappa_\rho\varepsilon_{\min}/\Delta_0)|/|\log\gamma_2|$, where $\mathcal{S}$ is the set of
+successful iterations. Here $\varepsilon_{\min} = \min_j \varepsilon_j$.
 
 ## Main definitions
 
-* `Optimization.trqCallKappaDelta`, `trqCallKappaRad`, `trqCallKappaDecr`, `trqKappaUns`,
-  `trqCallKappaS`, `trqCallKappaA`, `trqCallKappaC`: the constants of Lemmas 12.2.3, 12.2.4,
-  2.3.1 and Theorem 12.2.5 with the derivative bound `M` in place of the derivatives at the start;
-* `Optimization.IsTRqCallOut`: a call cut at any iteration up to its termination, with its
-  iterates, successful iterations and returned radii `min(Δ_e, ϑ)`;
+* `Optimization.trqCallKappaDelta`, `Optimization.trqCallKappaRad`, `Optimization.trqCallKappaDecr`,
+  `Optimization.trqKappaUns`, `Optimization.trqCallKappaS`, `Optimization.trqCallKappaA`,
+  `Optimization.trqCallKappaC`: the constants of Lemmas 12.2.3, 12.2.4 and 2.3.1 and of Theorem
+  12.2.5, with the derivative bound $M$ in place of the derivatives at the start.
+* `Optimization.IsTRqCallOut`: a call cut at any iteration up to its termination, with its iterates,
+  its successful iterations and its returned radii $\min(\Delta_e, \vartheta)$.
 * `Optimization.IsTRqOutputCost`: a terminating call with its evaluation counts.
 
 ## Main results
 
-* `Optimization.trqCallKappaDelta_le_trqKappaDelta` and the comparisons
-  `kappaSTRq_le_trqCallKappaS`, `kappaATRq_le_trqCallKappaA`, `kappaCTRq_le_trqCallKappaC`;
-* `Optimization.IsTRqRun.trqCallKappaRad_mul_le`: the radii stay above `κ_ρ ε_min` up to
-  termination (Lemma 12.2.3 with (12.2.9));
-* `Optimization.IsTRqCallOut.eq_of_not_succ`, `IsTRqCallOut.le_count`, `IsTRqCallOut.decrease`,
-  `IsTRqCallOut.radius_ge`: unsuccessful iterations do not move; the number of iterations of a call
-  is at most `κ_uns (|𝒮| + 1) + |log(κ_ρ ε_min/Δ₀)|/|log γ₂|` (Lemma 2.3.1); every successful
-  iteration decreases `f` by at least `κ_decr ε_min^{q+1}` (Lemma 12.2.4); the returned radii are
-  at least `κ_ρ ε_min`;
-* `Optimization.IsTRqOutputCost.cost_le`: the evaluation counts of a terminating call
-  (Theorem 12.2.5);
-* `Optimization.exists_isTRqRun_feasible`: runs with a closed feasible set exist;
-* `Optimization.exists_isTRqCallOut_of_stop`: calls stopped at the first iterate satisfying an
+* `Optimization.trqCallKappaDelta_le_trqKappaDelta`, with the comparisons
+  `Optimization.kappaSTRq_le_trqCallKappaS`, `Optimization.kappaATRq_le_trqCallKappaA` and
+  `Optimization.kappaCTRq_le_trqCallKappaC`: the constants of a call bound the constants of Theorem
+  12.2.5.
+* `Optimization.IsTRqRun.trqCallKappaRad_mul_le`: the radii stay above
+  $\kappa_\rho\varepsilon_{\min}$ up to termination (Lemma 12.2.3 with (12.2.9)).
+* `Optimization.IsTRqCallOut.eq_of_not_succ`: unsuccessful iterations do not move.
+* `Optimization.IsTRqCallOut.le_count`: the number of iterations of a call is at most
+  $\kappa_{\mathrm{uns}}(|\mathcal{S}| + 1) +
+|\log(\kappa_\rho\varepsilon_{\min}/\Delta_0)|/|\log\gamma_2|$ (Lemma 2.3.1).
+* `Optimization.IsTRqCallOut.decrease`: every successful iteration decreases $f$ by at least
+  $\kappa_{\mathrm{decr}}\varepsilon_{\min}^{q+1}$ (Lemma 12.2.4).
+* `Optimization.IsTRqCallOut.radius_ge`: the returned radii are at least
+  $\kappa_\rho\varepsilon_{\min}$.
+* `Optimization.IsTRqOutputCost.cost_le`: the evaluation counts of a terminating call (Theorem
+  12.2.5).
+* `Optimization.exists_isTRqRun_feasible`: runs with a closed feasible set exist.
+* `Optimization.exists_isTRqCallOut_of_stop`: calls stopped at the first iterate that satisfies an
   external test, or at termination, exist.
 
-## Design notes
+## Notation
 
-The constants of Theorem 12.2.5 (`trqKappaDelta`, `kappaSTRq`, …) depend on the starting point
-through `max_i ‖∇^i f(x₀)‖`. Their call counterparts take a bound `M` instead and are compared
-with them through the antitonicity of `trqKappa` in `M` (`trqKappa_anti`). Because every call
-restarts from the radius `Δ₀`, the count of a call carries the term `|log(κ_ρ ε_min/Δ₀)|`, which
-an outer method multiplies by its number of calls.
+* `𝒥 f x` (local): the exact Taylor data `fun k => ftaylorSeries ℝ f (x k)` of $f$ along the
+  iterates.
+* `𝒳 X x` (local): the feasible displacements $\{e : x_k + e \in X\}$ at the iterates, as a function
+  of $k$.
+
+## Implementation notes
+
+* The constants of Theorem 12.2.5 (`Optimization.trqKappaDelta`, `Optimization.kappaSTRq`, …) depend
+  on the starting point through $\max_i\|\nabla^i f(x_0)\|$. Their call counterparts take a bound
+  $M$ instead. They are compared through the antitonicity of `Optimization.trqKappa` in $M$
+  (`Optimization.trqKappa_anti`).
+* Because every call restarts from the radius $\Delta_0$, the iteration count of a call carries the
+  term $|\log(\kappa_\rho\varepsilon_{\min}/\Delta_0)|$, which an outer method multiplies by its
+  number of calls.
+* $\varepsilon_{\min}$ is `Optimization.finMin 1 ε q`
+  $= \min(1, \min_{1 \le j \le q}\varepsilon_j)$, and $L_f = \max(1, \max_j L_j)$ is
+  `Optimization.finMax 1 L q`. The derivative bound at a point $y$ is the hypothesis
+  `Optimization.finMax 0 (fun i => ‖iteratedFDeriv ℝ i f y‖) q ≤ M`, that is, $\max(0, \max_{1 \le i
+  \le q}\|\nabla^i f(y)\|) \le M$.
+* The anchored assumption is `LipschitzDerivsAnchored f C A 1 q L`: $C$ is open and convex,
+  $A \subseteq C$, $f$ is of class $C^q$ near every point of $C$, and $\|\nabla^j f(a) - \nabla^j
+  f(y)\| \le L_j\|a - y\|$ for $a \in A$, $y \in C$ and $j = 1, \dots, q$.
 -/
 
 open Set
@@ -57,14 +87,18 @@ open scoped Nat
 
 namespace Optimization
 
-/-- The exact Taylor data `k ↦ ftaylorSeries ℝ f (x k)` along the iterates. -/
+/-- The exact Taylor data of $f$ along the iterates: the jet `ftaylorSeries ℝ f (x k)` of $f$ at
+$x_k$, for each $k$. -/
 local notation "𝒥" f:max x:max => fun k : ℕ => ftaylorSeries ℝ f (x k)
 
-/-- The feasible displacements `k ↦ {e | x k + e ∈ X}`. -/
+/-- The feasible displacements at the iterates: the set $\{e : x_k + e \in X\}$, for each $k$. -/
 local notation "𝒳" X:max x:max => fun k : ℕ => Set.ofPred fun e => x k + e ∈ X
 
-/-- `|𝒮_e| ≤ |{i < e | succ i}| + 1`: the success set up to `e` (which includes `e`) has at most
-one more element than the set of successful iterations before `e`. -/
+/-- Let $\mathrm{succ}$ be a predicate on iterations and $e \in \mathbb{N}$. The success set
+$\mathcal{S}_e = \{i \le e : \mathrm{succ}(i)\}$, which can include $e$ itself, has at most one
+more element than the set of successful iterations before $e$:
+$$|\mathcal{S}_e| \le |\{i < e : \mathrm{succ}(i)\}| + 1.$$
+-/
 theorem card_successSet_le_card_filter_add_one (succ : ℕ → Prop) [DecidablePred succ] (e : ℕ) :
     ((successSet succ e).card : ℝ) ≤ ((Finset.range e).filter succ).card + 1 := by
   rw [successSet_eq_filter, Finset.range_add_one, Finset.filter_insert]
@@ -78,58 +112,72 @@ section Constants
 
 variable (P : TRqParams) (L : ℕ → ℝ) (ϑ M : ℝ) (q : ℕ)
 
-/-- The lower bound `κ_Δ(M) = γ₁ (1 - η₂)/L_f · min(ϑ, Δ₀ δ₀^q/(2 q! M))` of the constant `κ_Δ`
-of (12.2.14) of [cartis2022evaluation] (`trqKappaDelta`), for a bound `M` on the derivatives of
-orders `1, …, q` at the starting point and `L_f = max(1, max_j L_j)`. -/
+/-- The constant
+$$\kappa_\Delta(M) = \frac{\gamma_1(1 - \eta_2)}{L_f}\min\left(\vartheta,
+  \frac{\Delta_0\delta_0^q}{2\,q!\,M}\right), \qquad \delta_0 = \min(\Delta_0, \vartheta),\
+  L_f = \max(1, \max_{1 \le j \le q} L_j).$$
+It is the constant $\kappa_\Delta$ of (12.2.14) of [cartis2022evaluation]
+(`Optimization.trqKappaDelta`) with a bound $M$ on the derivatives of orders $1, \dots, q$ at
+the starting point in place of their maximum norm. For such a bound it is a lower bound of
+$\kappa_\Delta$ (`Optimization.trqCallKappaDelta_le_trqKappaDelta`). -/
 noncomputable def trqCallKappaDelta : ℝ :=
   trqKappa P (finMax 1 L q) ϑ M q
 
-/-- The radius constant `κ_ρ = min(γ₁ ϑ, ς κ_Δ(M), Δ₀)`: the trust-region radii up to
-termination, and the optimality radii `min(Δ_k, ϑ)`, are at least `κ_ρ ε_min`
-(Lemma 12.2.3 of [cartis2022evaluation] with (12.2.9)). -/
+/-- The radius constant $\kappa_\rho = \min(\gamma_1\vartheta, \varsigma\kappa_\Delta(M),
+\Delta_0)$. The trust-region radii up to termination, and the optimality radii
+$\min(\Delta_k, \vartheta)$, are at least $\kappa_\rho\varepsilon_{\min}$ (Lemma 12.2.3 of
+[cartis2022evaluation] with (12.2.9); see `Optimization.IsTRqRun.trqCallKappaRad_mul_le`). -/
 noncomputable def trqCallKappaRad : ℝ :=
   min (min (P.γ₁ * ϑ) (trqCallKappaDelta P L ϑ M q * P.ς)) P.Δ₀
 
-/-- The decrease constant `κ_decr = η₁ (ς κ_Δ(M))^{q+1}/q!` of Lemma 12.2.4 of
-[cartis2022evaluation]: a successful iteration decreases the objective by at least
-`κ_decr ε_min^{q+1}`. -/
+/-- The decrease constant $\kappa_{\mathrm{decr}} = \eta_1(\varsigma\kappa_\Delta(M))^{q+1}/q!$ of
+Lemma 12.2.4 of [cartis2022evaluation]. A successful iteration decreases the objective by at
+least $\kappa_{\mathrm{decr}}\varepsilon_{\min}^{q+1}$ (`Optimization.IsTRqCallOut.decrease`). -/
 noncomputable def trqCallKappaDecr : ℝ :=
   P.η₁ * ((P.ς * trqCallKappaDelta P L ϑ M q) ^ (q + 1) / q !)
 
-/-- The constant `κ_uns = 1 + log γ₃/|log γ₂|` of Lemma 2.3.1 of [cartis2022evaluation]. -/
+/-- The constant $\kappa_{\mathrm{uns}} = 1 + \log\gamma_3/|\log\gamma_2|$ of Lemma 2.3.1 of
+[cartis2022evaluation]. -/
 noncomputable def trqKappaUns : ℝ :=
   1 + Real.log P.γ₃ / |Real.log P.γ₂|
 
-/-- The constant `κ^S = q!/(η₁ (ς κ_Δ(M))^{q+1})` of Theorem 12.2.5 of [cartis2022evaluation]
-with `κ_Δ(M)` in place of `κ_Δ`. -/
+/-- The constant $\kappa^S(M) = q!/(\eta_1(\varsigma\kappa_\Delta(M))^{q+1})$, which is $\kappa^S$
+of Theorem 12.2.5 of [cartis2022evaluation] with $\kappa_\Delta(M)$ in place of $\kappa_\Delta$. -/
 noncomputable def trqCallKappaS : ℝ :=
   q ! / (P.η₁ * (P.ς * trqCallKappaDelta P L ϑ M q) ^ (q + 1))
 
-/-- The constant `κ^A = κ^S κ_uns` of Theorem 12.2.5 of [cartis2022evaluation] with `κ_Δ(M)` in
-place of `κ_Δ`. -/
+/-- The constant $\kappa^A(M) = \kappa^S(M)\,\kappa_{\mathrm{uns}}$, which is $\kappa^A$ of Theorem
+12.2.5 of [cartis2022evaluation] with $\kappa_\Delta(M)$ in place of $\kappa_\Delta$. -/
 noncomputable def trqCallKappaA : ℝ :=
   trqCallKappaS P L ϑ M q * trqKappaUns P
 
-/-- An upper bound `(|log ς| + |log κ_Δ(M)| + |log Δ₀|)/|log γ₂| + 1` for the constant
-`κ^C = |log(ς κ_Δ/Δ₀)|/|log γ₂| + 1` of Theorem 12.2.5 of [cartis2022evaluation]. -/
+/-- The constant $\kappa^C(M) = (|\log\varsigma| + |\log\kappa_\Delta(M)| +
+|\log\Delta_0|)/|\log\gamma_2| + 1$. It is an upper bound for the constant $\kappa^C =
+|\log(\varsigma\kappa_\Delta/\Delta_0)|/|\log\gamma_2| + 1$ of Theorem 12.2.5 of
+[cartis2022evaluation] (`Optimization.kappaCTRq_le_trqCallKappaC`). -/
 noncomputable def trqCallKappaC : ℝ :=
   (|Real.log P.ς| + |Real.log (trqCallKappaDelta P L ϑ M q)| + |Real.log P.Δ₀|) /
     |Real.log P.γ₂| + 1
 
 variable {P L ϑ M q}
 
+/-- For $\vartheta > 0$ and $M > 0$, $\kappa_\Delta(M) > 0$. -/
 theorem trqCallKappaDelta_pos (hϑ : 0 < ϑ) (hM : 0 < M) : 0 < trqCallKappaDelta P L ϑ M q :=
   trqKappa_pos (zero_lt_one.trans_le one_le_finMax) hϑ hM
 
+/-- For $\vartheta \le 1$, $\kappa_\Delta(M) < 1$. -/
 theorem trqCallKappaDelta_lt_one (hϑ1 : ϑ ≤ 1) : trqCallKappaDelta P L ϑ M q < 1 :=
   trqKappa_lt_one one_le_finMax hϑ1
 
+/-- For $\vartheta > 0$ and $M > 0$, $\kappa_\rho > 0$. -/
 theorem trqCallKappaRad_pos (hϑ : 0 < ϑ) (hM : 0 < M) : 0 < trqCallKappaRad P L ϑ M q :=
   lt_min (lt_min (mul_pos P.γ₁_pos hϑ) (mul_pos (trqCallKappaDelta_pos hϑ hM) P.ς_pos)) P.Δ₀_pos
 
+/-- $\kappa_\rho \le \gamma_1\vartheta$. -/
 theorem trqCallKappaRad_le_γ₁ : trqCallKappaRad P L ϑ M q ≤ P.γ₁ * ϑ :=
   (min_le_left _ _).trans (min_le_left _ _)
 
+/-- For $\vartheta > 0$ and $M > 0$, $\kappa_{\mathrm{decr}} > 0$. -/
 theorem trqCallKappaDecr_pos (hϑ : 0 < ϑ) (hM : 0 < M) : 0 < trqCallKappaDecr P L ϑ M q := by
   have := trqCallKappaDelta_pos (P := P) (L := L) (q := q) hϑ hM
   have := P.ς_pos
@@ -137,12 +185,14 @@ theorem trqCallKappaDecr_pos (hϑ : 0 < ϑ) (hM : 0 < M) : 0 < trqCallKappaDecr 
   unfold trqCallKappaDecr
   positivity
 
+/-- $\kappa_{\mathrm{uns}} \ge 1$. -/
 theorem one_le_trqKappaUns : 1 ≤ trqKappaUns P := by
   unfold trqKappaUns
   have : 0 ≤ Real.log P.γ₃ / |Real.log P.γ₂| :=
     div_nonneg (Real.log_nonneg P.one_le_γ₃) (abs_nonneg _)
   linarith
 
+/-- For $\vartheta > 0$ and $M > 0$, $\kappa^S(M) \ge 0$. -/
 theorem trqCallKappaS_nonneg (hϑ : 0 < ϑ) (hM : 0 < M) : 0 ≤ trqCallKappaS P L ϑ M q := by
   have := trqCallKappaDelta_pos (P := P) (L := L) (q := q) hϑ hM
   have := P.ς_pos
@@ -150,16 +200,23 @@ theorem trqCallKappaS_nonneg (hϑ : 0 < ϑ) (hM : 0 < M) : 0 ≤ trqCallKappaS P
   unfold trqCallKappaS
   positivity
 
+/-- For $\vartheta > 0$ and $M > 0$, $\kappa^A(M) \ge 0$. -/
 theorem trqCallKappaA_nonneg (hϑ : 0 < ϑ) (hM : 0 < M) : 0 ≤ trqCallKappaA P L ϑ M q :=
   mul_nonneg (trqCallKappaS_nonneg hϑ hM) (zero_le_one.trans one_le_trqKappaUns)
 
+/-- $\kappa^C(M) \ge 1$. -/
 theorem one_le_trqCallKappaC : 1 ≤ trqCallKappaC P L ϑ M q := by
   unfold trqCallKappaC
   have : 0 ≤ (|Real.log P.ς| + |Real.log (trqCallKappaDelta P L ϑ M q)| + |Real.log P.Δ₀|) /
     |Real.log P.γ₂| := by positivity
   linarith
 
-/-- `κ_Δ(M) = trqKappa P L' ϑ M q` is antitone in the derivative bound `M`. -/
+/-- The constant $\kappa_\Delta(M)$ is antitone in the derivative bound $M$. Let $L' > 0$,
+$\vartheta \ge 0$ and $0 < M \le M'$. Then
+$$\frac{\gamma_1(1 - \eta_2)}{L'}\min\left(\vartheta,
+  \frac{\Delta_0\delta_0^q}{2\,q!\,M'}\right) \le \frac{\gamma_1(1 -
+  \eta_2)}{L'}\min\left(\vartheta, \frac{\Delta_0\delta_0^q}{2\,q!\,M}\right),$$
+with $\delta_0 = \min(\Delta_0, \vartheta)$; both sides are `Optimization.trqKappa`. -/
 theorem trqKappa_anti {L' ϑ M M' : ℝ} (hL : 0 < L') (hϑ : 0 ≤ ϑ) (hM : 0 < M) (hMM : M ≤ M') :
     trqKappa P L' ϑ M' q ≤ trqKappa P L' ϑ M q := by
   unfold trqKappa
@@ -174,9 +231,13 @@ theorem trqKappa_anti {L' ϑ M M' : ℝ} (hL : 0 < L') (hϑ : 0 ≤ ϑ) (hM : 0 
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → ℝ} {y : E}
 
-/-- **The constant `κ_Δ` of (12.2.14) is at least `κ_Δ(M)`** at a point `y` where it is positive
-(which holds when a run from `y` does not stop at once) and the derivatives of orders `1, …, q`
-are bounded by `M`. -/
+/-- **The constant $\kappa_\Delta$ of (12.2.14) is at least $\kappa_\Delta(M)$.** Let $y \in E$ with
+$\kappa_\Delta > 0$ at $y$, let $\max(0, \max_{1 \le i \le q}\|\nabla^i f(y)\|) \le M$, and let
+$\vartheta \ge 0$. Then $\kappa_\Delta(M)$ is at most the constant $\kappa_\Delta$ of (12.2.14)
+of [cartis2022evaluation] at $y$.
+
+The constant $\kappa_\Delta$ at $y$ is `Optimization.trqKappaDelta f P q L ϑ y`. It is positive
+when a run from $y$ does not stop at once. -/
 theorem trqCallKappaDelta_le_trqKappaDelta (hpos : 0 < trqKappaDelta f P q L ϑ y)
     (hM : finMax 0 (fun i => ‖iteratedFDeriv ℝ i f y‖) q ≤ M) (hϑ : 0 ≤ ϑ) :
     trqCallKappaDelta P L ϑ M q ≤ trqKappaDelta f P q L ϑ y := by
@@ -198,7 +259,8 @@ theorem trqCallKappaDelta_le_trqKappaDelta (hpos : 0 < trqKappaDelta f P q L ϑ 
       exact absurd hpos (not_lt.2 (mul_nonpos_of_nonneg_of_nonpos (by positivity) h0))
   exact trqKappa_anti hL hϑ hM₀0 hM
 
-/-- `κ^S_{TRq} ≤ κ^S(M)` under the hypotheses of `trqCallKappaDelta_le_trqKappaDelta`. -/
+/-- Under the hypotheses of `Optimization.trqCallKappaDelta_le_trqKappaDelta`, with $\vartheta > 0$
+and $M > 0$, the constant $\kappa^S_{\mathrm{TRq}}$ at $y$ is at most $\kappa^S(M)$. -/
 theorem kappaSTRq_le_trqCallKappaS (hpos : 0 < trqKappaDelta f P q L ϑ y)
     (hM : finMax 0 (fun i => ‖iteratedFDeriv ℝ i f y‖) q ≤ M) (hϑ : 0 < ϑ) (hM0 : 0 < M) :
     kappaSTRq f P q L ϑ y ≤ trqCallKappaS P L ϑ M q := by
@@ -212,14 +274,17 @@ theorem kappaSTRq_le_trqCallKappaS (hpos : 0 < trqKappaDelta f P q L ϑ y)
   exact div_le_div_of_nonneg_left (Nat.cast_nonneg _) (mul_pos P.η₁_pos (pow_pos hp1 _))
     (mul_le_mul_of_nonneg_left hpow P.η₁_pos.le)
 
-/-- `κ^A_{TRq} ≤ κ^A(M)` under the hypotheses of `trqCallKappaDelta_le_trqKappaDelta`. -/
+/-- Under the hypotheses of `Optimization.trqCallKappaDelta_le_trqKappaDelta`, with $\vartheta > 0$
+and $M > 0$, the constant $\kappa^A_{\mathrm{TRq}}$ at $y$ is at most $\kappa^A(M)$. -/
 theorem kappaATRq_le_trqCallKappaA (hpos : 0 < trqKappaDelta f P q L ϑ y)
     (hM : finMax 0 (fun i => ‖iteratedFDeriv ℝ i f y‖) q ≤ M) (hϑ : 0 < ϑ) (hM0 : 0 < M) :
     kappaATRq f P q L ϑ y ≤ trqCallKappaA P L ϑ M q :=
   mul_le_mul_of_nonneg_right (kappaSTRq_le_trqCallKappaS hpos hM hϑ hM0)
     (zero_le_one.trans one_le_trqKappaUns)
 
-/-- `κ^C_{TRq} ≤ κ^C(M)` under the hypotheses of `trqCallKappaDelta_le_trqKappaDelta`, `ϑ ≤ 1`. -/
+/-- Under the hypotheses of `Optimization.trqCallKappaDelta_le_trqKappaDelta`, with
+$0 < \vartheta \le 1$ and $M > 0$, the constant $\kappa^C_{\mathrm{TRq}}$ at $y$ is at most
+$\kappa^C(M)$. -/
 theorem kappaCTRq_le_trqCallKappaC (hpos : 0 < trqKappaDelta f P q L ϑ y)
     (hM : finMax 0 (fun i => ‖iteratedFDeriv ℝ i f y‖) q ≤ M) (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1)
     (hM0 : 0 < M) : kappaCTRq f P q L ϑ y ≤ trqCallKappaC P L ϑ M q := by
@@ -251,10 +316,16 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 variable {f : E → ℝ} {X : Set E} {P : TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → E}
   {Δ : ℕ → ℝ} {jk : ℕ → ℕ} {d : ℕ → ℕ → E} {L : ℕ → ℝ} {M : ℝ}
 
-/-- **Runs of TRq with a feasible set exist** ([cartis2022evaluation], Algorithm 12.2.1 with
-feasible displacements `{d | y + d ∈ X}`, as used in §14.2): in finite dimension, for a closed `X`,
-`ϑ ≥ 0` and every `x₀ ∈ X` (from `exists_isTRqRun`; the iterates stay in `X` up to
-termination). -/
+/-- **Runs of TRq with a feasible set exist.** Let $E$ be finite-dimensional, $X \subseteq E$
+closed, $\vartheta \ge 0$ and $x_0 \in X$. Then for every $f$, every choice of the constants
+$P$, every order $q$ and all tolerances $\varepsilon$, there is a run of TRq with exact data on
+$X$ that starts at $x_0$. This is the well-posedness of Algorithm 12.2.1 of
+[cartis2022evaluation] with the feasible displacements $\{d : x_k + d \in X\}$, as used in
+§14.2.
+
+The run is `Optimization.IsTRqRun f (𝒥 f x) (𝒳 X x) P q ε ϑ x s Δ jk d`. The proof specializes
+`Optimization.exists_isTRqRun`. The iterates stay in $X$ up to termination
+(`Optimization.IsTRqRun.mem_of_feasible`). -/
 theorem exists_isTRqRun_feasible [FiniteDimensional ℝ E] (hX : IsClosed X) (f : E → ℝ)
     (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (hϑ : 0 ≤ ϑ) {x₀ : E} (hx₀ : x₀ ∈ X) :
     ∃ (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E), x 0 = x₀ ∧
@@ -305,8 +376,11 @@ theorem exists_isTRqRun_feasible [FiniteDimensional ℝ E] (hX : IsClosed X) (f 
     have h2 := hS k hk
     exact h2 ▸ h1
 
-/-- With exact data, `f` does not increase along a TRq run before termination (for any data `D`
-and feasible sets `S`, `ε ≥ 0`, `ϑ ≥ 0`): a step has a positive predicted decrease. -/
+/-- Let a run of TRq have any data $D_k$ and any feasible sets $S_k$, with the objective $f$, and
+let $\varepsilon_j \ge 0$ for $j \in [1, q]$ and $\vartheta \ge 0$. If the termination test
+fails at all $i \le k$, then $f(x_{k+1}) \le f(x_k)$.
+
+A step has a positive predicted decrease, so an accepted step does not increase $f$. -/
 theorem IsTRqRun.apply_succ_le {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {S : ℕ → Set E}
     (h : IsTRqRun f D S P q ε ϑ x s Δ jk d) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) (hϑ : 0 ≤ ϑ)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ trqTest D P q ε ϑ Δ d i) : f (x (k + 1)) ≤ f (x k) := by
@@ -318,10 +392,14 @@ theorem IsTRqRun.apply_succ_le {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {
       (pow_nonneg hδ _)) (Nat.cast_nonneg _)
   exact (h.accept k hk).le trqRatio_eq hpos
 
-/-- **The radius bound of a call** (Lemma 12.2.3 of [cartis2022evaluation] with (12.2.9) and
-`κ_Δ ≥ κ_Δ(M)`): up to and including termination, `Δ_e ≥ κ_ρ ε_min`, for a run with exact data on
-`X ⊆ C` under `LipschitzDerivsAnchored f C A 1 q L` with `A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`, the
-derivatives at `x₀` bounded by `M`, `ε_j > 0` and `0 < ϑ ≤ 1`. -/
+/-- **The radius bound of a call.** Let a run of TRq with exact data on $X$ start at $x_0 \in X$.
+Let $f$ satisfy the anchored assumption `LipschitzDerivsAnchored f C A 1 q L` with
+$X \subseteq C$ and $\{y \in X : f(y) \le f(x_0)\} \subseteq A$, let $\max(0, \max_{1 \le i \le
+q}\|\nabla^i f(x_0)\|) \le M$, $\varepsilon_j > 0$ for $j \in [1, q]$, and
+$0 < \vartheta \le 1$. If the termination test fails at all $i < e$, then
+$$\Delta_e \ge \kappa_\rho\varepsilon_{\min}.$$
+So the bound holds up to and including termination. This is Lemma 12.2.3 of
+[cartis2022evaluation] with (12.2.9) and $\kappa_\Delta \ge \kappa_\Delta(M)$. -/
 theorem IsTRqRun.trqCallKappaRad_mul_le {C A : Set E}
     (hr : IsTRqRun f (𝒥 f x) (𝒳 X x) P q ε ϑ x s Δ jk d)
     (hf : LipschitzDerivsAnchored f C A 1 q L) (hXC : X ⊆ C)
@@ -357,13 +435,21 @@ theorem IsTRqRun.trqCallKappaRad_mul_le {C A : Set E}
 
 /-! ### Calls cut before termination -/
 
-/-- **A call of TRq with a feasible set** ([cartis2022evaluation], Algorithm 12.2.1 used as INNER,
-e.g. in Algorithm 14.3.2): the points `xi 0, …, xi e` are the first `e + 1` iterates of a run of
-TRq with exact data on `f` with feasible displacements `{d | x_i + d ∈ X}`, tolerances `ε` and
-threshold `ϑ`, whose first termination index `k_ε` is at least `e` (the call may be cut before
-termination); `succ i` holds for `i < e` exactly when iteration `i` of the run is successful, and
-the returned radii are the optimality radii `δ_j = min(Δ_e, ϑ)`, `j ∈ [1, q]`, at the last iterate
-(at termination these certify `(ε, δ)`-approximate optimality, `IsTRqRun.complexity`). -/
+/-- A **call of TRq with a feasible set**, cut at iteration $e$, with iterates
+$\xi_0, \dots, \xi_e$, a predicate $\mathrm{succ}$ on iterations and returned radii
+$\delta^{\mathrm{o}}$. There is a run of TRq with exact data on $f$, feasible displacements
+$\{d : x_i + d \in X\}$, tolerances $\varepsilon$ and threshold $\vartheta$, such that:
+* the run terminates, and its first termination index $k_\varepsilon$ satisfies
+  $e \le k_\varepsilon$;
+* $\xi_i = x_i$ for $i \le e$;
+* for $i < e$, $\mathrm{succ}(i)$ holds exactly when iteration $i$ of the run is successful,
+  $\rho_i \ge \eta_1$;
+* the returned radii are the optimality radii $\delta^{\mathrm{o}}_j = \min(\Delta_e,
+  \vartheta)$ at the last iterate, for $j \in [1, q]$.
+
+This is Algorithm 12.2.1 of [cartis2022evaluation] used as INNER, for example in Algorithm
+14.3.2. The call may be cut before termination. At termination the returned radii certify
+$(\varepsilon, \delta)$-approximate optimality (`Optimization.IsTRqRun.complexity`). -/
 def IsTRqCallOut (f : E → ℝ) (X : Set E) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ)
     (xi : ℕ → E) (e : ℕ) (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   ∃ (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E) (kε : ℕ),
@@ -377,7 +463,8 @@ namespace IsTRqCallOut
 
 variable {xi : ℕ → E} {e : ℕ} {succ : ℕ → Prop} {δo : ℕ → ℝ}
 
-/-- Unsuccessful iterations of a call do not move. -/
+/-- In a call cut at iteration $e$, an iteration $i < e$ that is not successful does not move:
+$\xi_{i+1} = \xi_i$. -/
 theorem eq_of_not_succ (h : IsTRqCallOut f X P q ε ϑ xi e succ δo) :
     ∀ i < e, ¬ succ i → xi (i + 1) = xi i := by
   obtain ⟨x, s, Δ, jk, d, kε, hr, hhit, he, hxi, hsucc, -⟩ := h
@@ -388,10 +475,16 @@ theorem eq_of_not_succ (h : IsTRqCallOut f X P q ε ϑ xi e succ δo) :
 
 variable {C A : Set E}
 
-/-- **The radius bound of a call**: `Δ_e ≥ κ_ρ ε_min` at the last iterate
-(`IsTRqRun.trqCallKappaRad_mul_le`), for an objective satisfying `LipschitzDerivsAnchored` on the
-sublevel set of the start with derivatives bounded there by `M > 0`, `ε ∈ (0, 1]^q` and
-`ε_min ≤ ϑ ≤ 1`; hence the returned radii `min(Δ_e, ϑ)` are at least `κ_ρ ε_min`. -/
+/-- **The radius bound of a call.** Let a call with iterates $\xi_i$ be cut at iteration $e$, with
+$\xi_0 \in X$. Let $f$ satisfy the anchored assumption `LipschitzDerivsAnchored f C A 1 q L`
+with $X \subseteq C$ and $\{y \in X : f(y) \le f(\xi_0)\} \subseteq A$, let $\max(0, \max_{1 \le
+i \le q}\|\nabla^i f(\xi_0)\|) \le M$, $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$, and
+$\varepsilon_{\min} \le \vartheta \le 1$. Then the returned radii satisfy
+$$\delta^{\mathrm{o}}_j \ge \kappa_\rho\varepsilon_{\min} \quad \text{for } j \in [1, q].$$
+
+The proof uses $\Delta_e \ge \kappa_\rho\varepsilon_{\min}$
+(`Optimization.IsTRqRun.trqCallKappaRad_mul_le`) and $\kappa_\rho\varepsilon_{\min} \le
+\gamma_1\vartheta \le \vartheta$. -/
 theorem radius_ge (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A 1 q L) (hXC : X ⊆ C)
     (hA : ∀ y ∈ X, f y ≤ f (xi 0) → y ∈ A) (hx0 : xi 0 ∈ X)
@@ -413,9 +506,12 @@ theorem radius_ge (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
     _ ≤ ϑ := by nlinarith [P.γ₁_le_one]
 
 open Classical in
-/-- **The number of iterations of a call** ([cartis2022evaluation], Lemma 2.3.1 with the radius
-bound of Lemma 12.2.3): `e ≤ κ_uns (|𝒮| + 1) + |log(κ_ρ ε_min/Δ₀)|/|log γ₂|`, `𝒮` the
-successful iterations of the call, under the hypotheses of `IsTRqCallOut.radius_ge`. -/
+/-- **The number of iterations of a call.** Under the hypotheses of
+`Optimization.IsTRqCallOut.radius_ge`, and with $M > 0$,
+$$e \le \kappa_{\mathrm{uns}}|\mathcal{S}| + \kappa_{\mathrm{uns}} +
+  \frac{|\log(\kappa_\rho\varepsilon_{\min}/\Delta_0)|}{|\log\gamma_2|},$$
+where $\mathcal{S} = \{i < e : \mathrm{succ}(i)\}$ is the set of successful iterations of the
+call. This is Lemma 2.3.1 of [cartis2022evaluation] with the radius bound of Lemma 12.2.3. -/
 theorem le_count (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A 1 q L) (hXC : X ⊆ C)
     (hA : ∀ y ∈ X, f y ≤ f (xi 0) → y ∈ A) (hx0 : xi 0 ∈ X)
@@ -443,9 +539,11 @@ theorem le_count (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
   unfold trqKappaUns at hu this ⊢
   linarith
 
-/-- **The decrease of a call** ([cartis2022evaluation], Lemma 12.2.4 with `κ_Δ ≥ κ_Δ(M)`, the
-TRq-SC row of Lemma 14.2.2): every successful iteration decreases `f` by at least
-`κ_decr ε_min^{q+1}`, under the hypotheses of `IsTRqCallOut.le_count`. -/
+/-- **The decrease of a call.** Under the hypotheses of `Optimization.IsTRqCallOut.radius_ge`, and
+with $M > 0$, every successful iteration $i < e$ decreases $f$ by at least
+$$f(\xi_i) - f(\xi_{i+1}) \ge \kappa_{\mathrm{decr}}\varepsilon_{\min}^{q+1}.$$
+This is Lemma 12.2.4 of [cartis2022evaluation] with $\kappa_\Delta \ge \kappa_\Delta(M)$, the
+TRq-SC row of Lemma 14.2.2. -/
 theorem decrease (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A 1 q L) (hXC : X ⊆ C)
     (hA : ∀ y ∈ X, f y ≤ f (xi 0) → y ∈ A) (hx0 : xi 0 ∈ X)
@@ -480,14 +578,23 @@ theorem decrease (h : IsTRqCallOut f X P q ε ϑ xi e succ δo)
 end IsTRqCallOut
 
 open Classical in
-/-- **Calls stopped by an external test exist**: in finite dimension, for a closed `X`, `f ≥ f_low`
-on `X`, `LipschitzDerivsAnchored f C A 1 q L` with `X ⊆ C` and `A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`,
-`ε ∈ (0, 1]^q`, `ε_min ≤ ϑ ≤ 1` and any test `stop` on points, there is a call from `x₀`
-(`IsTRqCallOut`) cut at the first iterate satisfying `stop` or at the termination of the run
-(which terminates, `IsTRqRun.complexity`), whichever comes first. Its iterates do not increase
-`f` and stay in `X`, the returned radii are a common `δ ∈ (0, 1]`, and at the last iterate either
-`stop` holds or the run has terminated with an `(ε, δ)`-approximate `q`-th order minimizer on
-`X`. -/
+/-- **Calls stopped by an external test exist.** Let $E$ be finite-dimensional, $X \subseteq E$
+closed, $f \ge f_{\mathrm{low}}$ on $X$, and $x_0 \in X$. Let $f$ satisfy the anchored
+assumption `LipschitzDerivsAnchored f C A 1 q L` with $X \subseteq C$ and
+$\{y \in X : f(y) \le f(x_0)\} \subseteq A$. Let $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$,
+$\varepsilon_{\min} \le \vartheta \le 1$, let $P$ be the constants of TRq and let
+$\mathrm{stop}$ be a test on points. Then there is a call from $x_0$, cut at some iteration $e$,
+with iterates $\xi_i$, a predicate $\mathrm{succ}$ and a common returned radius
+$\delta \in (0, 1]$, such that:
+* $\xi_e \in X$, $f(\xi_{i+1}) \le f(\xi_i)$ for $i < e$, and $f(\xi_e) \le f(x_0)$;
+* $\mathrm{stop}(\xi_i)$ fails for $i < e$;
+* either $\mathrm{stop}(\xi_e)$ holds, or $\xi_e$ is an $(\varepsilon, \delta)$-approximate
+  minimizer of order $q$ on $X$: $\phi^{\delta}_{f,j}(\xi_e) \le \varepsilon_j\delta^j/j!$ for
+  $1 \le j \le q$, over the feasible displacements $\{d : \xi_e + d \in X\}$.
+
+The call is cut at the first iterate that satisfies $\mathrm{stop}$, or at the termination of
+the run, whichever comes first; the run terminates by `Optimization.IsTRqRun.complexity`. The
+certificate is `Optimization.IsEpsDeltaApprox`. -/
 theorem exists_isTRqCallOut_of_stop [FiniteDimensional ℝ E] {C A : Set E} {flow : ℝ}
     (hX : IsClosed X) (hb : ∀ y ∈ X, flow ≤ f y) (hf : LipschitzDerivsAnchored f C A 1 q L)
     (hXC : X ⊆ C) {x₀ : E} (hx₀ : x₀ ∈ X) (hA : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -525,11 +632,14 @@ theorem exists_isTRqCallOut_of_stop [FiniteDimensional ℝ E] {C A : Set E} {flo
 
 /-! ### Terminating calls and their cost -/
 
-/-- `(y, δ)` is the output of a terminating call of TRq with a feasible set from `x^S` that uses
-`nF` evaluations of `f` and `nD` evaluations of its derivatives: a run with exact data on `X` from
-`x^S` terminating first at `k_ε` with `x_{k_ε} = y`, returned radii `δ_j = min(Δ_{k_ε}, ϑ)`,
-`nF = k_ε + 1` (`funEvalCount`) and `nD` the number of successful iterations plus one
-(`derivEvalCount`). -/
+/-- The pair $(y, \delta)$ is the **output of a terminating call** of TRq with a feasible set from
+$x^S$ that uses $n_F$ evaluations of $f$ and $n_D$ evaluations of its derivatives. That is,
+there is a run of TRq with exact data on $X$ from $x_0 = x^S$ that terminates first at
+$k_\varepsilon$, with $x_{k_\varepsilon} = y$, returned radii $\delta_j =
+\min(\Delta_{k_\varepsilon}, \vartheta)$ for $j \in [1, q]$, $n_F = k_\varepsilon + 1$, and
+$n_D$ equal to the number of successful iterations before $k_\varepsilon$ plus one.
+
+The counts are `Optimization.funEvalCount` and `Optimization.derivEvalCount`. -/
 def IsTRqOutputCost (f : E → ℝ) (X : Set E) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ)
     (xS y : E) (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   ∃ (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E) (kε : ℕ),
@@ -539,12 +649,18 @@ def IsTRqOutputCost (f : E → ℝ) (X : Set E) (P : TRqParams) (q : ℕ) (ε : 
     nF = funEvalCount kε ∧
     nD = derivEvalCount (fun k => P.η₁ ≤ trqRatio f (𝒥 f x) x s jk k) kε
 
-/-- **The cost of a terminating call** ([cartis2022evaluation], Theorem 12.2.5 with a feasible set,
-the TRq-SC row of Theorem 14.2.4, with `κ_Δ ≥ κ_Δ(M)`): for `f ≥ f_low` on `X`,
-`LipschitzDerivsAnchored f C A 1 q L` with `X ⊆ C` and `A ⊇ {z ∈ X | f(z) ≤ f(x^S)}`, the
-derivatives at `x^S` bounded by `M > 0`, `ε ∈ (0, 1]^q` and `ε_min ≤ ϑ ≤ 1`, the call uses at most
-`κ^A (f(x^S) - f_low)/ε_min^{q+1} + κ^B |log ε_min| + κ^C` evaluations of `f` and
-`κ^S (f(x^S) - f_low)/ε_min^{q+1} + 1` derivative evaluations, with the constants of the call. -/
+/-- **The cost of a terminating call.** Let $(y, \delta)$ be the output of a terminating call from
+$x^S \in X$ with $n_F$ evaluations of $f$ and $n_D$ evaluations of the derivatives. Let
+$f \ge f_{\mathrm{low}}$ on $X$, let $f$ satisfy the anchored assumption
+`LipschitzDerivsAnchored f C A 1 q L` with $X \subseteq C$ and
+$\{z \in X : f(z) \le f(x^S)\} \subseteq A$, let $\max(0, \max_{1 \le i \le q}\|\nabla^i
+f(x^S)\|) \le M$ with $M > 0$, $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$, and
+$\varepsilon_{\min} \le \vartheta \le 1$. Then
+$$n_F \le \kappa^A(M)\frac{f(x^S) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} +
+\kappa^B_{\mathrm{TRq}}|\log\varepsilon_{\min}| + \kappa^C(M), \qquad n_D \le
+\kappa^S(M)\frac{f(x^S) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + 1.$$
+This is Theorem 12.2.5 of [cartis2022evaluation] with a feasible set, the TRq-SC row of Theorem
+14.2.4, with $\kappa_\Delta \ge \kappa_\Delta(M)$. -/
 theorem IsTRqOutputCost.cost_le {C A : Set E} {flow : ℝ} {xS y : E} {δ : ℕ → ℝ} {nF nD : ℕ}
     (h : IsTRqOutputCost f X P q ε ϑ xS y δ nF nD) (hb : ∀ z ∈ X, flow ≤ f z)
     (hf : LipschitzDerivsAnchored f C A 1 q L) (hXC : X ⊆ C)

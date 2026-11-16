@@ -9,41 +9,86 @@ import Numlib.Krylov.Hessenberg
 /-!
 # Quasi-minimal residual methods
 
-What a Krylov method can still prove when the basis in which it expands the residual is **not**
-orthonormal.
+This module studies what a Krylov method can still prove when the basis in which it expands the
+residual is not orthonormal. Throughout, an iterate basis $z_0, z_1, \dots$ and a residual basis
+$v_0, v_1, \dots$ are tied by the two-family Hessenberg relation
+$A z_j = \sum_{i \le j+1} h_{ij} v_i$ (`Krylov.HessenbergRelation₂`). If $b - A x_0 = \beta v_0$,
+the residual of $x_0 + \sum_{j<m} y_j z_j$ has the coordinates $\beta e_1 - \bar H_m y$ in the
+residual basis. The **quasi-residual** is the Euclidean norm $\|\beta e_1 - \bar H_m y\|_2$ of these
+coordinates, and a **quasi-minimal-residual iterate** is $x_0 + \sum_j y_j z_j$ with $y$ a minimizer
+of the quasi-residual. QMR ([freund1991qmr]; Algorithm 7.4 of [saad2003iterative]), TFQMR (Algorithm
+7.8), QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all produce such
+iterates, each for its own $z$, $v$ and $h$.
 
-Throughout, the iterate basis `z` and the residual basis `v` are tied by the two-family Hessenberg
-relation `Krylov.HessenbergRelation₂ A z v h` of `Numlib/Krylov/Hessenberg`, whose residual formulas
-`Krylov.HessenbergRelation₂.residual_eq` and `residual_eq_of_mulVec_eq` hold at this generality.
+For the Arnoldi basis the quasi-minimal-residual iterate is the minimal-residual iterate. In general
+it minimizes something else, and the module bounds the difference: the true residual is at most
+$C |\gamma_m|$ when $\|\sum_i w_i v_i\| \le C \|w\|_2$, and at most $C/c$ times the residual of any
+other point of the same affine space when also $c \|w\|_2 \le \|\sum_i w_i v_i\|$. The module also
+proves the harmonic relations between the quasi-residual norms and the Galerkin norms, stated
+through the Givens rotations alone, and the smoothing identity
+$x^Q_{m+1} = |s_m|^2 x^Q_m + |c_m|^2 x^F_{m+1}$ ([saad2003iterative], (7.29)–(7.30) and (6.58);
+[zhou1994residual]).
 
-* `Krylov.quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, and the specification
-  `Krylov.IsQuasiMinResidualIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
-  quasi-residual": QMR ([freund1991qmr]; [saad2003iterative] Algorithm 7.4), TFQMR (Algorithm 7.8),
-  QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its
-  own `z`, `v` and `h`. It is `Krylov.IsMinResidualIterate` when the residual basis is the Arnoldi
-  one (`Krylov.isQuasiMinResidualIterate_iff_isMinResidualIterate`); in general it minimizes
-  something else, and three theorems say by how much:
-  * `Krylov.IsQuasiMinResidualIterate.norm_residual_le`: `‖b - A x‖ ≤ C ‖γ_m‖` whenever
-    `‖∑ w_i v_i‖ ≤ C ‖w‖₂` ([saad2003iterative] Proposition 7.3, (6.51), (7.83); `C = √(m+1)` for
-    unit vectors by `Krylov.norm_sum_smul_le_sqrt_mul`);
-  * `Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`: `‖r^Q_m‖ ≤ (C/c) ‖b - A x'‖` for every
-    `x'` of the same affine space, when also `c ‖w‖₂ ≤ ‖∑ w_i v_i‖` — [saad2003iterative] Theorem
-    7.4 and Theorem 6.11, with `C/c` the conditioning of the residual basis;
-  * `Krylov.IsQuasiMinResidualIterate.isMinOn_norm_residual`: with an orthonormal residual basis and
-    an arbitrary `z`, the iterate genuinely minimizes `‖b - A x‖` over `x₀ + span {z_0, …, z_{m-1}}`
-    ([saad2003iterative] Proposition 9.2, the optimality of FGMRES).
-* The harmonic relations between successive quasi-residual norms, in their pure Givens form as
-  statements about `Krylov.gamma` and `Krylov.givensC` alone: `Krylov.inv_sq_norm_gamma`,
-  `Krylov.inv_sq_norm_gamma_eq_sum` and `Krylov.exists_norm_gamma_div_givensC_le` are
-  [saad2003iterative] (7.23), (7.24) and Proposition 7.5, as `Krylov.inv_sq_norm_residual_minRes`
-  and `Krylov.exists_norm_residual_galerkin_le` are (6.65) and Proposition 6.15 for true residuals.
-* `Krylov.IsQuasiMinResidualIterate.eq_combination`: successive quasi-minimal-residual iterates are
-  the smoothing combinations `x^Q_{m+1} = |s_m|² x^Q_m + |c_m|² x^F_{m+1}` of the previous
-  quasi-minimal-residual iterate and the Galerkin iterate at the current step ([saad2003iterative]
-  (7.29)–(7.30), (6.58); [zhou1994residual]).
+## Main definitions
 
-Indices are `0`-based, as in the rest of the Krylov layer: `ρ^Q_k = ‖γ_k‖` is the quasi-residual
-norm after `k` steps and `ρ^F_k = ρ^Q_k / |c_{k-1}|` the Galerkin one.
+* `Krylov.quasiResidual`: the quasi-residual $\|\beta e_1 - \bar H_m y\|_2$.
+* `Krylov.IsQuasiMinResidualIterate`: $x = x_0 + \sum_{j<m} y_j z_j$ with $y$ a minimizer of the
+  quasi-residual.
+
+## Main results
+
+* `Krylov.quasiResidual_isMinOn_iff`: $y$ minimizes the quasi-residual if and only if
+  $R_m y = (g_0, \dots, g_{m-1})$.
+* `Krylov.quasiResidual_eq_norm_gamma`: the minimum of the quasi-residual is $|\gamma_m|$.
+* `Krylov.IsQuasiMinResidualIterate.norm_residual_le`: if $\|\sum_i w_i v_i\| \le C \|w\|_2$, then
+  $\|b - A x\| \le C |\gamma_m|$ ([saad2003iterative], Proposition 7.3).
+* `Krylov.norm_sum_smul_le_sqrt_mul`: for vectors of norm at most $1$, the constant $C = \sqrt{m+1}$
+  works.
+* `Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`: if
+  $c \|w\|_2 \le \|\sum_i w_i v_i\| \le C \|w\|_2$ with $c > 0$, the residual of $x$ is at most
+  $C/c$ times the residual of every point of the same affine space ([saad2003iterative], Theorems
+  6.11 and 7.4).
+* `Krylov.IsQuasiMinResidualIterate.isMinOn_norm_residual`: with an orthonormal residual basis, $x$
+  minimizes $\|b - A x\|$ over $x_0 + \operatorname{span}\{z_0, \dots, z_{m-1}\}$
+  ([saad2003iterative], Proposition 9.2).
+* `Krylov.isQuasiMinResidualIterate_iff_isMinResidualIterate`: for the Arnoldi basis, the
+  quasi-minimal-residual iterates are the minimal-residual iterates.
+* `Krylov.inv_sq_norm_gamma` and `Krylov.inv_sq_norm_gamma_eq_sum`: $1/(\rho^Q_{m+1})^2 =
+  1/(\rho^Q_m)^2 + 1/(\rho^F_{m+1})^2$ and $1/(\rho^Q_m)^2 = \sum_{i \le m} 1/(\rho^F_i)^2$
+  ([saad2003iterative], (7.23) and (7.24)).
+* `Krylov.exists_norm_gamma_div_givensC_le`: $\min_{i \le m} \rho^F_i \le \sqrt{m+1} \, \rho^Q_m$
+  ([saad2003iterative], Proposition 7.5).
+* `Krylov.IsQuasiMinResidualIterate.eq_combination` and
+  `Krylov.IsQuasiMinResidualIterate.residual_eq_combination`:
+  $x^Q_{m+1} = |s_m|^2 x^Q_m + |c_m|^2 x^F_{m+1}$, and the same combination for the residuals.
+
+## Notation
+
+* $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$, and $(h_{ij})_{i, j \ge 0}$ are scalars in
+  $\mathbb{K}$.
+* $\bar H_m = (h_{ij})_{i \le m, j < m}$ is the $(m+1) \times m$ Hessenberg matrix, and
+  $H_m = (h_{ij})_{i, j < m}$ is the square Hessenberg matrix. In Lean they are
+  `Krylov.hessenbergOf h m` and `Krylov.hessenbergSqOf h m`.
+* $\beta e_1 \in \mathbb{K}^{m+1}$ is the vector `Krylov.firstVec β (m + 1)`.
+* $c_k$, $s_k$ and $\rho_k$ are the parameters of the $k$-th Givens rotation of $\bar H_m$
+  (`Krylov.givensC`, `Krylov.givensS`, `Krylov.givensRho`), $R_m$ is the upper triangular matrix
+  after the first $m$ rotations, and $g_k = \bar c_k \gamma_k$ (`Krylov.gvec`) with
+  $\gamma_0 = \beta$ and $\gamma_{k+1} = -s_k \gamma_k$ (`Krylov.gamma`).
+* $\rho^Q_k = |\gamma_k|$ is the quasi-residual norm after $k$ steps, and
+  $\rho^F_k = \rho^Q_k / |c_{k-1}|$ for $k \ge 1$, with $\rho^F_0 = |\beta|$, is the Galerkin norm.
+  Where $c_{k-1} = 0$, the division gives $\rho^F_k = 0$, and the term $1/(\rho^F_k)^2$ is $0$.
+* $x^Q_m$ is the quasi-minimal-residual iterate and $x^F_m$ the Galerkin iterate after $m$ steps.
+  Indices start at $0$, as in the rest of the Krylov library.
+
+## Implementation notes
+
+* The residual formulas `Krylov.HessenbergRelation₂.residual_eq` and
+  `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` of `Numlib.Krylov.Hessenberg` hold for two
+  families $z$, $v$. All results of this module use them at this generality.
+* The harmonic relations are stated for $\gamma_k$ and $c_k$ alone, with no basis. They are the
+  Givens forms of `Krylov.inv_sq_norm_residual_minRes` and
+  `Krylov.exists_norm_residual_galerkin_le`, which are (6.65) and Proposition 6.15 of
+  [saad2003iterative] for true residuals.
 -/
 
 open Krylov Finset
@@ -54,29 +99,44 @@ namespace Krylov
 
 /-! ### The quasi-residual -/
 
-/-- The quasi-residual `‖β e₁ - H̄_m y‖₂` ([saad2003iterative], §7.3.2): the Euclidean norm of the
-coefficient vector, in the residual basis, of the residual of `x₀ + Z_m y`. It is the true residual
-norm exactly when that basis is orthonormal. -/
+/-- Let $(h_{ij})_{i, j \ge 0}$ be scalars, $\beta \in \mathbb{K}$ and $m \in \mathbb{N}$. The
+**quasi-residual** of $y \in \mathbb{K}^m$ is the Euclidean norm
+$$\|\beta e_1 - \bar H_m y\|_2$$
+in $\mathbb{K}^{m+1}$ ([saad2003iterative], §7.3.2).
+
+Under a two-family Hessenberg relation with $b - A x_0 = \beta v_0$, the vector
+$\beta e_1 - \bar H_m y$ holds the coordinates, in the residual basis $v_0, \dots, v_m$, of the
+residual of $x_0 + \sum_{j<m} y_j z_j$. The quasi-residual is the true residual norm when this
+basis is orthonormal. -/
 noncomputable def quasiResidual (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) : ℝ :=
   ‖(WithLp.toLp 2 (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) :
     EuclideanSpace 𝕜 (Fin (m + 1)))‖
 
-/-- `Krylov.quasiResidual` unfolded, for rewriting. -/
+/-- The quasi-residual of $y$ is the Euclidean norm of
+$\beta e_1 - \bar H_m y \in \mathbb{K}^{m+1}$. -/
 theorem quasiResidual_def (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) :
     quasiResidual h β m y =
       ‖(WithLp.toLp 2 (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) :
         EuclideanSpace 𝕜 (Fin (m + 1)))‖ := rfl
 
-/-- The quasi-residual is a norm, hence nonnegative. -/
+/-- The quasi-residual is nonnegative. -/
 theorem quasiResidual_nonneg (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) :
     0 ≤ quasiResidual h β m y := norm_nonneg _
 
 namespace HessenbergRelation₂
 
-/-- [saad2003iterative], Proposition 7.3 and (6.51): if the residual basis satisfies `‖∑ w_i v_i‖ ≤
-C ‖w‖₂` then the true residual of `x₀ + Z_m y` is at most `C` times its quasi-residual — for *every*
-`y`, with no Givens hypothesis. The quasi-minimal-residual iterate specializes it at the minimizer,
-where the quasi-residual is `‖γ_m‖` (`Krylov.IsQuasiMinResidualIterate.norm_residual_le`). -/
+/-- Let $A$ be a linear operator on an inner product space $E$ over $\mathbb{K}$, and let sequences
+$z$, $v$ in $E$ and scalars $h_{ij}$ satisfy the two-family Hessenberg relation
+$A z_j = \sum_{i \le j+1} h_{ij} v_i$. Let $b, x_0 \in E$ and $\beta \in \mathbb{K}$ with
+$b - A x_0 = \beta v_0$, and let $C \in \mathbb{R}$ with
+$\|\sum_{i=0}^{m} w_i v_i\| \le C \|w\|_2$ for all $w \in \mathbb{K}^{m+1}$. Then for every
+$y \in \mathbb{K}^m$
+$$\Big\| b - A \Big( x_0 + \sum_{j<m} y_j z_j \Big) \Big\| \le C \, \|\beta e_1 - \bar H_m
+  y\|_2.$$
+This is Proposition 7.3 and (6.51) of [saad2003iterative].
+
+The bound holds for every $y$ and needs no hypothesis on the Givens rotations. At a minimizer of
+the quasi-residual it gives `Krylov.IsQuasiMinResidualIterate.norm_residual_le`. -/
 theorem norm_residual_le {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜}
     (hv : HessenbergRelation₂ A z v h) {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     {C : ℝ} (hC : ∀ w : Fin (m + 1) → 𝕜,
@@ -92,8 +152,14 @@ section QuasiResidual
 
 variable (h : ℕ → ℕ → 𝕜)
 
-/-- The minimizers of the quasi-residual are exactly the solutions of the rotated triangular system
-`R_m y = g_m` ([saad2003iterative], (6.41)–(6.43)). -/
+/-- Let $(h_{ij})$ be upper Hessenberg, let $m \in \mathbb{N}$ with $\rho_k \neq 0$ for all $k < m$,
+and let $\beta \in \mathbb{K}$. Then $y \in \mathbb{K}^m$ minimizes the quasi-residual
+$\|\beta e_1 - \bar H_m y\|_2$ over $\mathbb{K}^m$ if and only if
+$$R_m y = (g_0, \dots, g_{m-1}),$$
+where $R_m$ is the upper triangular $m \times m$ matrix after the first $m$ Givens rotations and
+$g_k = \bar c_k \gamma_k$ ([saad2003iterative], (6.41)–(6.43)).
+
+Here $R_m$ is `Krylov.hessenbergSqOf (Krylov.rotated h m) m` and $g_k$ is `Krylov.gvec h β k`. -/
 theorem quasiResidual_isMinOn_iff (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) (y : Fin m → 𝕜) :
     IsMinOn (quasiResidual h β m) Set.univ y ↔
@@ -129,8 +195,13 @@ theorem quasiResidual_isMinOn_iff (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {
     have h3 := quasiResidual_nonneg h β m w
     nlinarith
 
-/-- [saad2003iterative], (7.18) and (6.42): the minimum value of the quasi-residual is `‖γ_m‖`,
-which by `Krylov.norm_gamma_eq_prod` is `|s_0 ⋯ s_{m-1}| ‖β‖`. No basis is involved. -/
+/-- Let $(h_{ij})$ be upper Hessenberg, let $m \in \mathbb{N}$ with $\rho_k \neq 0$ for all $k < m$,
+and let $\beta \in \mathbb{K}$. If $y \in \mathbb{K}^m$ minimizes the quasi-residual, then
+$$\|\beta e_1 - \bar H_m y\|_2 = |\gamma_m|.$$
+By `Krylov.norm_gamma_eq_prod`, this value is $|s_0 \cdots s_{m-1}| \, |\beta|$
+([saad2003iterative], (7.18) and (6.42)).
+
+No basis enters the statement. -/
 theorem quasiResidual_eq_norm_gamma (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) {y : Fin m → 𝕜}
     (hy : IsMinOn (quasiResidual h β m) Set.univ y) :
@@ -147,17 +218,28 @@ end QuasiResidual
 
 /-! ### The quasi-minimal-residual specification -/
 
-/-- The quasi-minimal-residual specification: `x = x₀ + Z_m y` with `y` minimizing the
-quasi-residual `‖β e₁ - H̄_m y‖₂`. QMR ([saad2003iterative], Algorithm 7.4), TFQMR (Algorithm 7.8),
-QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its
-own `z`, `v` and `h`. -/
+/-- Let $z$ be a sequence in $E$, let $(h_{ij})$ be scalars, and let $\beta \in \mathbb{K}$,
+$x_0 \in E$ and $m \in \mathbb{N}$. A point $x \in E$ is a **quasi-minimal-residual iterate** at
+step $m$ if
+$$x = x_0 + \sum_{j<m} y_j z_j$$
+for some $y \in \mathbb{K}^m$ that minimizes the quasi-residual $\|\beta e_1 - \bar H_m y\|_2$
+over $\mathbb{K}^m$.
+
+QMR (Algorithm 7.4 of [saad2003iterative]), TFQMR (Algorithm 7.8), QGMRES and DQGMRES
+(Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all produce such iterates, each for its own
+$z$, $v$ and $h$. The residual basis $v$ does not enter the definition. It enters the theorems
+through the hypothesis `Krylov.HessenbergRelation₂ A z v h`. -/
 def IsQuasiMinResidualIterate (z : ℕ → E) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
   ∃ y : Fin m → 𝕜, IsMinOn (quasiResidual h β m) Set.univ y ∧ x = x₀ + ∑ j, y j • z j
 
-/-- Cauchy–Schwarz: a combination of vectors of norm at most `1` obeys `‖∑ w_i v_i‖ ≤ √n ‖w‖₂`
-([saad2003iterative], (6.51) and (7.83): `‖V_{m+1}‖₂ ≤ √(m+1)` for unit basis vectors). This is the
-constant `C` of `Krylov.IsQuasiMinResidualIterate.norm_residual_le` in the normalization the book
-uses. -/
+/-- Let $v_0, v_1, \dots$ be vectors with $\|v_i\| \le 1$ for all $i$. Then for every
+$n \in \mathbb{N}$ and $w \in \mathbb{K}^n$
+$$\Big\| \sum_{i<n} w_i v_i \Big\| \le \sqrt{n} \, \|w\|_2.$$
+For unit basis vectors this is the bound $\|V_{m+1}\|_2 \le \sqrt{m+1}$ of (6.51) and (7.83) in
+[saad2003iterative].
+
+The proof is the Cauchy–Schwarz inequality. The bound gives the constant $C$ of
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le` in the normalization of the source. -/
 theorem norm_sum_smul_le_sqrt_mul {n : ℕ} {v : ℕ → E} (hv : ∀ i, ‖v i‖ ≤ 1) (w : Fin n → 𝕜) :
     ‖∑ i, w i • v i‖ ≤ Real.sqrt n * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin n))‖ := by
   have h1 : ‖∑ i, w i • v i‖ ≤ ∑ i, ‖w i‖ := by
@@ -185,9 +267,15 @@ namespace IsQuasiMinResidualIterate
 
 variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ x : E} {β : 𝕜} {m : ℕ}
 
-/-- [saad2003iterative], Proposition 7.3, (6.51) and (7.83): if the residual basis satisfies `‖∑ w_i
-v_i‖ ≤ C ‖w‖₂` then the residual of a quasi-minimal-residual iterate is at most `C ‖γ_m‖`, the
-quasi-residual norm times the conditioning of that basis. -/
+/-- Let $A$, $z$, $v$ and $h$ satisfy the two-family Hessenberg relation
+$A z_j = \sum_{i \le j+1} h_{ij} v_i$, let $b - A x_0 = \beta v_0$, and let $\rho_k \neq 0$ for
+all $k < m$. Let $C \in \mathbb{R}$ with $\|\sum_{i=0}^{m} w_i v_i\| \le C \|w\|_2$ for all
+$w \in \mathbb{K}^{m+1}$. If $x$ is a quasi-minimal-residual iterate at step $m$, then
+$$\|b - A x\| \le C \, |\gamma_m|.$$
+This is Proposition 7.3 of [saad2003iterative], with (6.51) and (7.83).
+
+The constant $C$ measures how far the residual basis is from an orthonormal one. For vectors of
+norm at most $1$, `Krylov.norm_sum_smul_le_sqrt_mul` gives $C = \sqrt{m+1}$. -/
 theorem norm_residual_le (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0)
     (hρ : ∀ k < m, givensRho h k ≠ 0) {C : ℝ}
     (hC : ∀ w : Fin (m + 1) → 𝕜,
@@ -197,11 +285,19 @@ theorem norm_residual_le (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ =
   refine (hv.norm_residual_le hr hC y).trans_eq ?_
   rw [quasiResidual_eq_norm_gamma h hv.isUpperHessenberg hρ β hy]
 
-/-- [saad2003iterative], Theorem 7.4 (and Theorem 6.11): if the residual basis satisfies `c ‖w‖₂ ≤
-‖∑ w_i v_i‖ ≤ C ‖w‖₂` with `0 < c` then the quasi-minimal-residual iterate is within the
-conditioning `C / c` of *every* point of the same affine space; taking that point to be the
-minimal-residual iterate, `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖`. Neither a factorization of the residual
-basis nor its full rank is needed. -/
+/-- Let $A$, $z$, $v$ and $h$ satisfy the two-family Hessenberg relation
+$A z_j = \sum_{i \le j+1} h_{ij} v_i$, and let $b - A x_0 = \beta v_0$. Let $0 < c$ and $C$ be
+real numbers with
+$$c \|w\|_2 \le \Big\| \sum_{i=0}^{m} w_i v_i \Big\| \le C \|w\|_2 \qquad (w \in
+  \mathbb{K}^{m+1}).$$
+If $x$ is a quasi-minimal-residual iterate at step $m$, then for every $w \in \mathbb{K}^m$
+$$\|b - A x\| \le \frac{C}{c} \, \Big\| b - A \Big( x_0 + \sum_{j<m} w_j z_j \Big) \Big\|.$$
+This is Theorem 7.4 of [saad2003iterative] and Theorem 6.11. When the other point is the
+minimal-residual iterate, it gives $\|r^Q_m\| \le \kappa_2(V_{m+1}) \|r^G_m\|$.
+
+The ratio $C/c$ plays the part of the condition number of the residual basis. The proof needs
+neither a factorization of the residual basis nor its full rank, and it makes no assumption on
+the Givens rotations. -/
 theorem norm_residual_le_mul (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0)
     {c C : ℝ} (hc0 : 0 < c)
     (hc : ∀ w : Fin (m + 1) → 𝕜,
@@ -242,9 +338,16 @@ theorem norm_residual_le_mul (hv : HessenbergRelation₂ A z v h) (hr : b - A x�
   rw [h9]
   exact mul_le_mul_of_nonneg_left (hc _) (div_nonneg hC0 hc0.le)
 
-/-- [saad2003iterative], Proposition 9.2 (the optimality of FGMRES): with an orthonormal residual
-basis `v` — the iterate basis `z` staying arbitrary — the quasi-residual *is* the residual norm, so
-a quasi-minimal-residual iterate minimizes `‖b - A x‖` over `x₀ + span {z_0, …, z_{m-1}}`. -/
+/-- Let $A$, $z$, $v$ and $h$ satisfy the two-family Hessenberg relation
+$A z_j = \sum_{i \le j+1} h_{ij} v_i$, let $b - A x_0 = \beta v_0$, and let $v_0, \dots, v_m$ be
+orthonormal; the iterate basis $z$ is arbitrary. If $x$ is a quasi-minimal-residual iterate at
+step $m$, then $x$ is a minimal-residual point of $x_0 + \operatorname{span}\{z_0, \dots,
+z_{m-1}\}$: $x - x_0$ lies in this span, and $\|b - A x\| \le \|b - A x'\|$ for every $x'$ of
+$x_0 + \operatorname{span}\{z_0, \dots, z_{m-1}\}$. This is Proposition 9.2 of
+[saad2003iterative], the optimality of FGMRES.
+
+With an orthonormal residual basis the quasi-residual is the residual norm. The conclusion is
+`IsMinResidual` for the span. -/
 theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0)
     (hon : Orthonormal 𝕜 fun i : Fin (m + 1) => v (i : ℕ))
     (hx : IsQuasiMinResidualIterate z h β x₀ m x) :
@@ -268,11 +371,19 @@ theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x
 
 end IsQuasiMinResidualIterate
 
-/-- For the Arnoldi basis — `z = v` orthonormal, `h = Arnoldi.coeff`, `m ≤ grade` — the
-quasi-minimal-residual specification *is* the minimal-residual specification. This is the book's
-"QGMRES coincides with GMRES when the orthogonalization is complete" ([saad2003iterative], §6.5.6),
-and it is what makes `Krylov.IsQuasiMinResidualIterate` a generalization of
-`Krylov.IsMinResidualIterate` rather than a new object. -/
+/-- Let $A$ be a linear operator on $E$, let $b, x_0 \in E$, and let $r_0 = b - A x_0$ have a
+finite-dimensional Krylov space $\mathcal{K}(A, r_0)$. Let $m \le \operatorname{grade}(A, r_0)$.
+Take the Arnoldi vectors of $A$ and $r_0$ as the iterate basis, the Arnoldi coefficients as $h$,
+and $\beta = \|r_0\|$. Then $x$ is a quasi-minimal-residual iterate at step $m$ if and only if
+$x$ is a minimal-residual iterate at step $m$, that is, $x$ minimizes $\|b - A x\|$ over
+$x_0 + \mathcal{K}_m(A, r_0)$.
+
+This is the statement of [saad2003iterative], §6.5.6, that QGMRES coincides with GMRES when the
+orthogonalization is complete. It shows that `Krylov.IsQuasiMinResidualIterate` generalizes
+`Krylov.IsMinResidualIterate`.
+
+The Arnoldi vectors are `Arnoldi.vec A (b - A x₀)`, the coefficients are
+`Arnoldi.coeff A (b - A x₀)`, and the Krylov space is `Krylov.fullSubspace A (b - A x₀)`. -/
 theorem isQuasiMinResidualIterate_iff_isMinResidualIterate {A : E →ₗ[𝕜] E} {b x₀ : E}
     [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (x : E) :
@@ -299,11 +410,13 @@ section Harmonic
 
 variable (h : ℕ → ℕ → 𝕜)
 
-/-- A nonzero subdiagonal coefficient makes rotation `k` nondegenerate: `ρ_k ≠ 0`. This is how the
-hypothesis `∀ k < m, givensRho h k ≠ 0` of `Krylov.quasiResidual_eq_norm_gamma` and of the residual
-bounds is met in practice — for the Arnoldi coefficients it is `Krylov.givensRho_arnoldi_ne_zero`.
-Its natural home is `Numlib/Krylov/Hessenberg`, beside
-`Krylov.givensRho_ne_zero_of_rotated_ne_zero`. -/
+/-- Let $(h_{ij})$ be scalars and $k \in \mathbb{N}$. If the subdiagonal entry $h_{k+1,k}$ is
+nonzero, then the $k$-th Givens rotation is nondegenerate: $\rho_k \neq 0$.
+
+This is how the hypothesis $\rho_k \neq 0$ for all $k < m$ of
+`Krylov.quasiResidual_eq_norm_gamma` and of the residual bounds is met in practice. For the
+Arnoldi coefficients it is `Krylov.givensRho_arnoldi_ne_zero`. The result is the companion of
+`Krylov.givensRho_ne_zero_of_rotated_ne_zero` in `Numlib.Krylov.Hessenberg`. -/
 theorem givensRho_ne_zero_of_subdiag_ne_zero {k : ℕ} (hk : h (k + 1) k ≠ 0) :
     givensRho h k ≠ 0 := by
   intro h0
@@ -311,7 +424,7 @@ theorem givensRho_ne_zero_of_subdiag_ne_zero {k : ℕ} (hk : h (k + 1) k ≠ 0) 
   rw [rotated_eq_of_le h k (k + 1) k le_rfl] at hd
   exact hk hd
 
-/-- The harmonic identity behind `Krylov.inv_sq_norm_gamma`, over the reals. -/
+/-- For real $S, G \neq 0$ and $C$ with $C^2 + S^2 = 1$, $1/(SG)^2 = 1/G^2 + C^2/(SG)^2$. -/
 private theorem inv_sq_harmonic {S G C : ℝ} (hS : S ≠ 0) (hG : G ≠ 0)
     (hCS : C ^ 2 + S ^ 2 = 1) : 1 / (S * G) ^ 2 = 1 / G ^ 2 + C ^ 2 / (S * G) ^ 2 := by
   have h1 : S ^ 2 / (S * G) ^ 2 = 1 / G ^ 2 := by
@@ -319,9 +432,14 @@ private theorem inv_sq_harmonic {S G C : ℝ} (hS : S ≠ 0) (hG : G ≠ 0)
     field_simp
   rw [← h1, ← add_div, show S ^ 2 + C ^ 2 = 1 by linarith]
 
-/-- [saad2003iterative], (7.23) and (6.65), in pure Givens form: with `ρ^Q_k = ‖γ_k‖` the
-quasi-residual norm and `ρ^F_{k+1} = ρ^Q_{k+1} / |c_k|` the Galerkin one, `1/(ρ^Q_{m+1})² =
-1/(ρ^Q_m)² + 1/(ρ^F_{m+1})²`. It is `|c_m|² + |s_m|² = 1` together with `Krylov.gamma_succ`. -/
+/-- Let $(h_{ij})$ be scalars, $\beta \in \mathbb{K}$ and $m \in \mathbb{N}$, with
+$\gamma_{m+1} \neq 0$. Then
+$$\frac{1}{|\gamma_{m+1}|^2} = \frac{1}{|\gamma_m|^2} + \frac{1}{(|\gamma_{m+1}| / |c_m|)^2},$$
+that is, $1/(\rho^Q_{m+1})^2 = 1/(\rho^Q_m)^2 + 1/(\rho^F_{m+1})^2$. This is (7.23) of
+[saad2003iterative], and the Givens form of (6.65).
+
+If $c_m = 0$, the last term is $0$ by the convention $t / 0 = 0$. The proof is
+$|c_m|^2 + |s_m|^2 = 1$ together with $\gamma_{m+1} = -s_m \gamma_m$ (`Krylov.gamma_succ`). -/
 theorem inv_sq_norm_gamma (β : 𝕜) {m : ℕ} (h0 : gamma h β (m + 1) ≠ 0) :
     1 / ‖gamma h β (m + 1)‖ ^ 2 =
       1 / ‖gamma h β m‖ ^ 2 + 1 / (‖gamma h β (m + 1)‖ / ‖givensC h m‖) ^ 2 := by
@@ -340,9 +458,14 @@ theorem inv_sq_norm_gamma (β : 𝕜) {m : ℕ} (h0 : gamma h β (m + 1) ≠ 0) 
   rw [hns, hkey]
   exact inv_sq_harmonic hs0 hγ0 hcs
 
-/-- [saad2003iterative], (7.24) and Corollary 6.14: the quasi-residual norm is the harmonic average
-`1/(ρ^Q_m)² = ∑_{i ≤ m} 1/(ρ^F_i)²` of the Galerkin ones, where `ρ^F_0 = ‖β‖` and `ρ^F_{k+1} =
-‖γ_{k+1}‖ / |c_k|`. -/
+/-- Let $(h_{ij})$ be scalars and $\beta \in \mathbb{K}$, and let $\rho^F_0, \rho^F_1, \dots$ be the
+real numbers with $\rho^F_0 = |\beta|$ and $\rho^F_{k+1} = |\gamma_{k+1}| / |c_k|$. If
+$\gamma_m \neq 0$, then
+$$\frac{1}{|\gamma_m|^2} = \sum_{i=0}^{m} \frac{1}{(\rho^F_i)^2}.$$
+So the quasi-residual norm is a harmonic average of the Galerkin norms. This is (7.24) of
+[saad2003iterative], and the Givens form of Corollary 6.14.
+
+A term with $c_{i-1} = 0$ is $0$, by the convention $t / 0 = 0$. -/
 theorem inv_sq_norm_gamma_eq_sum (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 = ‖β‖)
     (hρF : ∀ k, ρF (k + 1) = ‖gamma h β (k + 1)‖ / ‖givensC h k‖) {m : ℕ}
     (h0 : gamma h β m ≠ 0) :
@@ -353,15 +476,22 @@ theorem inv_sq_norm_gamma_eq_sum (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 
       have hn : gamma h β n ≠ 0 := fun hc => by rw [gamma_succ h β n, hc] at h0; simp at h0
       rw [Finset.sum_range_succ, ← ih hn, hρF n, inv_sq_norm_gamma h β h0]
 
-/-- The Galerkin norms `ρ^F` of `Krylov.inv_sq_norm_gamma_eq_sum` are nonnegative. -/
+/-- The numbers $\rho^F_i$ of `Krylov.inv_sq_norm_gamma_eq_sum` are nonnegative. -/
 private theorem rhoF_nonneg (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 = ‖β‖)
     (hρF : ∀ k, ρF (k + 1) = ‖gamma h β (k + 1)‖ / ‖givensC h k‖) (i : ℕ) : 0 ≤ ρF i := by
   cases i with
   | zero => rw [hρF0]; exact norm_nonneg _
   | succ n => rw [hρF n]; positivity
 
-/-- [saad2003iterative], Proposition 7.5, first half: `ρ^Q_m ≤ ρ^F_i` for every `i ≤ m` at which the
-Galerkin iterate exists (`ρ^F_i ≠ 0`, that is `c_{i-1} ≠ 0`). -/
+/-- Let $(h_{ij})$ be scalars and $\beta \in \mathbb{K}$, and let $\rho^F_0 = |\beta|$ and
+$\rho^F_{k+1} = |\gamma_{k+1}| / |c_k|$. Let $i \le m$, with $\gamma_m \neq 0$ and
+$\rho^F_i \neq 0$. Then
+$$|\gamma_m| \le \rho^F_i.$$
+This is the first half of Proposition 7.5 of [saad2003iterative]: the quasi-residual norm is at
+most the Galerkin norm at every step $i \le m$ where the Galerkin iterate exists.
+
+For $i \ge 1$ and $\gamma_m \neq 0$, the hypothesis $\rho^F_i \neq 0$ says that
+$c_{i-1} \neq 0$. -/
 theorem norm_gamma_le (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 = ‖β‖)
     (hρF : ∀ k, ρF (k + 1) = ‖gamma h β (k + 1)‖ / ‖givensC h k‖) {m i : ℕ} (hi : i ≤ m)
     (h0 : gamma h β m ≠ 0) (hρi : ρF i ≠ 0) : ‖gamma h β m‖ ≤ ρF i := by
@@ -378,9 +508,16 @@ theorem norm_gamma_le (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 = ‖β‖)
     linarith
   nlinarith
 
-/-- [saad2003iterative], Proposition 7.5 (the analogue of Proposition 6.15): `min_{i ≤ m} ρ^F_i ≤
-√(m+1) ρ^Q_m`, from `Krylov.inv_sq_norm_gamma_eq_sum` by bounding a sum of `m + 1` terms below by `m
-+ 1` times its smallest. -/
+/-- Let $(h_{ij})$ be scalars and $\beta \in \mathbb{K}$, and let $\rho^F_0 = |\beta|$ and
+$\rho^F_{k+1} = |\gamma_{k+1}| / |c_k|$, with $t / 0 = 0$. Then for every $m \in \mathbb{N}$
+there is an $i \le m$ with
+$$\rho^F_i \le \sqrt{m+1} \, |\gamma_m|,$$
+that is, $\min_{i \le m} \rho^F_i \le \sqrt{m+1} \, \rho^Q_m$. This is Proposition 7.5 of
+[saad2003iterative], the analogue of Proposition 6.15.
+
+The statement has no hypothesis: if $\gamma_m = 0$, then $i = m$ works. Otherwise the result
+follows from `Krylov.inv_sq_norm_gamma_eq_sum`, because a sum of $m + 1$ terms is at most
+$m + 1$ times its largest term. -/
 theorem exists_norm_gamma_div_givensC_le (β : 𝕜) {ρF : ℕ → ℝ} (hρF0 : ρF 0 = ‖β‖)
     (hρF : ∀ k, ρF (k + 1) = ‖gamma h β (k + 1)‖ / ‖givensC h k‖) (m : ℕ) :
     ∃ i ≤ m, ρF i ≤ Real.sqrt (m + 1) * ‖gamma h β m‖ := by
@@ -402,8 +539,8 @@ section Smoothing
 
 variable (h : ℕ → ℕ → 𝕜)
 
-/-- The Galerkin system in rotated coordinates: if `H_{m+1} y = β e₁` then `R̃_{m+1} y` is the
-truncated rotated right-hand side `(g_0, …, g_{m-1}, γ_m)`. -/
+/-- If $H_{m+1} w = \beta e_1$, then the rotated matrix $\tilde R_{m+1}$ maps $w$ to the truncated
+rotated right-hand side $(g_0, \dots, g_{m-1}, \gamma_m)$. -/
 private theorem rotated_mulVec_of_mulVec_eq
     (hh : Matrix.IsUpperHessenberg (n := ℕ) h) (β : 𝕜) {m : ℕ}
     {w : Fin (m + 1) → 𝕜} (hw : (hessenbergSqOf h (m + 1)).mulVec w = firstVec β (m + 1))
@@ -420,9 +557,9 @@ private theorem rotated_mulVec_of_mulVec_eq
     sub_zero]
   rfl
 
-/-- The coordinate form of [saad2003iterative], (7.29): the quasi-minimal-residual coordinates at
-step `m + 1` are `|s_m|²` times the padded coordinates at step `m` plus `|c_m|²` times the Galerkin
-coordinates. -/
+/-- The coordinate form of (7.29) of [saad2003iterative]: the quasi-minimal-residual coordinates at
+step $m + 1$ are $|s_m|^2$ times the coordinates at step $m$, padded with a zero, plus $|c_m|^2$
+times the Galerkin coordinates. -/
 private theorem coeff_eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h) {m : ℕ}
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) (β : 𝕜) {y u w : Fin (m + 1) → 𝕜} {y' : Fin m → 𝕜}
     (hy : (hessenbergSqOf (rotated h (m + 1)) (m + 1)).mulVec y =
@@ -504,10 +641,17 @@ namespace IsQuasiMinResidualIterate
 
 variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {b x₀ x x' xF : E} {β : 𝕜} {m : ℕ}
 
-/-- [saad2003iterative], (7.29) and (6.58): successive quasi-minimal-residual iterates are the
-smoothing combinations `x^Q_{m+1} = |s_m|² x^Q_m + |c_m|² x^F_{m+1}` of the previous
-quasi-minimal-residual iterate and the Galerkin iterate at the current step — the identity that lets
-QMR be implemented as quasi-minimal residual smoothing of BCG. -/
+/-- Let $(h_{ij})$ be upper Hessenberg with $\rho_k \neq 0$ for all $k \le m$, let $z$ be a sequence
+in $E$, and let $\beta \in \mathbb{K}$ and $x_0 \in E$. Let $x$ and $x'$ be
+quasi-minimal-residual iterates at the steps $m + 1$ and $m$. Let $w \in \mathbb{K}^{m+1}$ solve
+the Galerkin system $H_{m+1} w = \beta e_1$, and let $x^F = x_0 + \sum_{j \le m} w_j z_j$. Then
+$$x = |s_m|^2 \, x' + |c_m|^2 \, x^F.$$
+This is (7.29) of [saad2003iterative] and (6.58): the quasi-minimal-residual iterate at step
+$m + 1$ is a combination of the one at step $m$ and the Galerkin iterate at step $m + 1$. This
+identity lets QMR be implemented as quasi-minimal residual smoothing of BCG.
+
+The statement uses neither the operator nor a residual basis. Here $H_{m+1}$ is
+`Krylov.hessenbergSqOf h (m + 1)`. -/
 theorem eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
     (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x)
@@ -539,8 +683,11 @@ theorem eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
   conv_lhs => rw [← hx0]
   module
 
-/-- The residual form of `Krylov.IsQuasiMinResidualIterate.eq_combination` ([saad2003iterative],
-(7.30) and (6.58)): `r^Q_{m+1} = |s_m|² r^Q_m + |c_m|² r^F_{m+1}`. -/
+/-- Under the hypotheses of `Krylov.IsQuasiMinResidualIterate.eq_combination`, for every linear
+operator $A$ and every $b \in E$,
+$$b - A x = |s_m|^2 \, (b - A x') + |c_m|^2 \, (b - A x^F),$$
+that is, $r^Q_{m+1} = |s_m|^2 r^Q_m + |c_m|^2 r^F_{m+1}$. This is (7.30) of [saad2003iterative]
+and (6.58). -/
 theorem residual_eq_combination (hh : Matrix.IsUpperHessenberg (n := ℕ) h)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
     (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x)

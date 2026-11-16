@@ -13,43 +13,61 @@ import Numlib.Analysis.Calculus.Taylor
 /-!
 # The spectral form of a secular function
 
-For a finite family of poles `-μ i` and weights `w i`, this file studies the real function
-`secularSum μ w x = ∑ i, w i / (x + μ i) ^ 2` on the half-line
-`secularDomain μ = {x | ∀ i, 0 < x + μ i}` to the right of every pole. With `μ` the eigenvalues
-of a symmetric operator `H` and `w i = ⟪bᵢ, g⟫²` the squared coordinates of a vector `g` in an
-orthonormal eigenbasis, `secularSum μ w λ` is the secular function `π(λ) = ‖(H + λ)⁻¹ g‖²` of the
-trust-region and regularization subproblems (Cartis–Gould–Toint, *Evaluation complexity of
-algorithms for nonconvex optimization*, §8.2, (8.2.7)); nothing here mentions operators, so the
-results apply equally to tridiagonal (Lanczos) and scaled problems.
+Let $\iota$ be a finite index set, and let $\mu_i \in \mathbb{R}$ and $w_i \in \mathbb{R}$ for
+$i \in \iota$. This file studies the real function
+$$\pi(x) = \sum_i \frac{w_i}{(x + \mu_i)^2}$$
+on the half-line $\{x : x + \mu_i > 0 \text{ for all } i\}$ to the right of every pole $-\mu_i$,
+together with the moments $M_m(x) = \sum_i w_i / (x + \mu_i)^m$. When the $\mu_i$ are the
+eigenvalues of a symmetric operator $H$ and $w_i = \langle b_i, g \rangle^2$ are the squared
+coordinates of a vector $g$ in an orthonormal eigenbasis $(b_i)$, $\pi(\lambda)$ is the secular
+function $\|(H + \lambda)^{-1} g\|^2$ of the trust-region and regularization subproblems, in the
+spectral form (8.2.7) of [cartis2022evaluation], §8.2. The results do not mention operators, so they
+apply equally to tridiagonal (Lanczos) and scaled problems.
+
+For nonnegative weights that are not all zero, $\pi$ is positive, strictly decreasing and strictly
+convex, its Taylor polynomials bound it from above or from below according to the parity of their
+order, and the transformed function $\pi^\beta$ is convex and decreasing for $\beta > 0$ and concave
+and increasing for $\beta \in [-1/2, 0)$. The concavity rests on a Cauchy–Schwarz inequality between
+the moments $M_2$, $M_3$ and $M_4$.
+
+## Main definitions
+
+* `Subproblem.secularSum`: the function $\pi(x) = \sum_i w_i / (x + \mu_i)^2$.
+* `Subproblem.secularMoment`: the moment $M_m(x) = \sum_i w_i / (x + \mu_i)^m$.
+* `Subproblem.secularDomain`: the half-line $\{x : x + \mu_i > 0 \text{ for all } i\}$.
+* `Subproblem.SinglePole`: all nonzero weights sit at a single pole.
+* `Subproblem.newtonFactor`: the factor $(1 - m^\beta) / \beta$ of the Newton step on the
+  transformed secular equation, with the value $-\log m$ at $\beta = 0$.
 
 ## Main results
 
-* `iteratedDeriv_secularSum`: the closed form of every derivative,
-  `π⁽ʲ⁾(x) = (-1)ʲ (j + 1)! ∑ wᵢ / (x + μᵢ)^(j+2)` (book (B.8.8)), written with the moments
-  `secularMoment μ w m x = ∑ wᵢ / (x + μᵢ)^m`.
-* `secularSum_strictAntiOn` and companions: with nonnegative, not all zero weights, `secularSum`
-  is positive, continuous, strictly decreasing and strictly convex on `secularDomain μ` and tends
-  to `0` at `+∞`.
-* `secularSum_taylor_bounds`, `secularSum_taylor_bounds_strict`: the signed Taylor bounds of every
-  order (Theorem 8.2.2).
-* `secularSum_curvature`, `secularSum_curvature_eq_iff`: the Cauchy–Schwarz inequality
-  `(β - 1) p'² + p p'' ≥ 4 (β + 1/2) c²` behind Lemma 8.2.3, with its equality case
-  `SinglePole μ w` (all positive weight sits at a single pole).
-* `secularSum_rpow_deriv_sign`, `secularSum_rpow_shape`, `secularSum_rpow_tangent`: the
-  transformed secular function `x ↦ secularSum μ w x ^ β` (Lemma 8.2.3, Corollary 8.2.4,
-  Theorem 8.2.5).
-* `newtonFactor`, `antitone_newtonFactor`: the factor `(1 - μ^β)/β` of the Newton step on the
-  transformed secular equation is antitone in `β` (Lemma B.8.2).
+* `Subproblem.iteratedDeriv_secularSum`: away from the poles,
+  $\pi^{(j)}(x) = (-1)^j (j + 1)! \, M_{j+2}(x)$, which is (B.8.8) of [cartis2022evaluation].
+* `Subproblem.secularSum_strictAntiOn`: for nonnegative weights that are not all zero, $\pi$ is
+  strictly decreasing on the domain.
+* `Subproblem.secularSum_taylor_bounds`: the signed Taylor bounds of every order, which are Theorem
+  8.2.2 of [cartis2022evaluation].
+* `Subproblem.secularSum_curvature`: the inequality $(\beta - 1) \pi'(x)^2 + \pi(x) \pi''(x) \ge 4
+  (\beta + 1/2) M_3(x)^2$ behind Lemma 8.2.3 of [cartis2022evaluation].
+* `Subproblem.secularSum_rpow_deriv_sign`: the signs of the first two derivatives of $\pi^\beta$,
+  which are Lemma 8.2.3 of [cartis2022evaluation].
+* `Subproblem.secularSum_rpow_shape`: the monotonicity, convexity and limit of $\pi^\beta$, which
+  are Corollary 8.2.4 of [cartis2022evaluation].
+* `Subproblem.secularSum_rpow_tangent`: the first-order Taylor estimates of $\pi^\beta$, which are
+  Theorem 8.2.5 of [cartis2022evaluation].
+* `Subproblem.antitone_newtonFactor`: the Newton factor decreases in $\beta$, which is Lemma B.8.2
+  of [cartis2022evaluation].
 
-## Strictness
+## Implementation notes
 
-The inequalities of Lemma 8.2.3 (ii), Corollary 8.2.4 (concavity) and Theorem 8.2.5 are strict
-for `g ≠ 0`, except for `β = -1/2` when all the positive weight sits at a single pole (`g` in one
-eigenspace of `H`): then `secularSum μ w x ^ (-1/2)` is affine on `secularDomain μ` (for `n = 1`,
-`H = 0`, `g = 1`, it is `x ↦ x`), the second derivative vanishes and the first-order Taylor
-estimate is exact. Here strictness is stated under `β ≠ -1/2 ∨ ¬ SinglePole μ w`, and the
-exceptional case is proved to give equality. The strict Taylor estimates of Theorem 8.2.5 also
-need `δ ≠ 0`.
+* The inequalities of Lemma 8.2.3(ii), Corollary 8.2.4 (concavity) and Theorem 8.2.5 of
+  [cartis2022evaluation] are strict for $g \neq 0$, except at $\beta = -1/2$ when all the positive
+  weight sits at a single pole, that is, when $g$ lies in one eigenspace of $H$. Then $\pi^{-1/2}$
+  is affine on the domain (for $n = 1$, $H = 0$ and $g = 1$ it is $x \mapsto x$), its second
+  derivative vanishes and the first-order Taylor estimate is exact. Therefore the strict forms here
+  assume $\beta \neq -1/2$ or `¬ Subproblem.SinglePole μ w`, and the exceptional case is proved to
+  give equality. The strict Taylor estimates of Theorem 8.2.5 also need $\delta \neq 0$.
+* The domain `Subproblem.secularDomain μ` is all of $\mathbb{R}$ when $\iota$ is empty.
 -/
 
 open Set Filter Topology
@@ -66,21 +84,26 @@ section Defs
 
 variable [Fintype ι]
 
-/-- The secular function in spectral form, `∑ i, w i / (x + μ i) ^ 2` (book (8.2.7)). -/
+/-- The **secular function in spectral form**:
+$$\pi(x) = \sum_i \frac{w_i}{(x + \mu_i)^2}.$$
+This is (8.2.7) of [cartis2022evaluation].
+
+At a pole $x = -\mu_i$, the term $w_i / 0$ is $0$ by the Lean convention for division. -/
 noncomputable def secularSum (x : ℝ) : ℝ := ∑ i, w i / (x + μ i) ^ 2
 
-/-- The moments `∑ i, w i / (x + μ i) ^ m`; `secularSum` is the moment of order `2`, and the
-derivatives of `secularSum` are multiples of the higher moments. -/
+/-- The **moment** of order $m$: $M_m(x) = \sum_i w_i / (x + \mu_i)^m$. The secular function is the
+moment of order $2$, and its derivatives are multiples of the higher moments. -/
 noncomputable def secularMoment (m : ℕ) (x : ℝ) : ℝ := ∑ i, w i / (x + μ i) ^ m
 
 end Defs
 
-/-- The half-line to the right of every pole, `{x | ∀ i, 0 < x + μ i}` (all of `ℝ` if `ι` is
-empty). -/
+/-- The **domain** of the secular function: the half-line $\{x : x + \mu_i > 0 \text{ for all } i\}$
+to the right of every pole. It is all of $\mathbb{R}$ if the index set is empty. -/
 def secularDomain : Set ℝ := {x | ∀ i, 0 < x + μ i}
 
-/-- All the nonzero weights sit at a single pole: `μ i = μ j` whenever `w i ≠ 0` and `w j ≠ 0`.
-This is the equality case of the curvature inequality `secularSum_curvature`. -/
+/-- The weights $w$ have a **single pole** if $\mu_i = \mu_j$ whenever $w_i \neq 0$ and
+$w_j \neq 0$. This is the equality case of the curvature inequality
+`Subproblem.secularSum_curvature`. -/
 def SinglePole : Prop := ∀ i j, w i ≠ 0 → w j ≠ 0 → μ i = μ j
 
 variable {μ w}
@@ -89,24 +112,30 @@ variable {μ w}
 
 section Domain
 
+/-- A point $x$ lies in the domain if and only if $x + \mu_i > 0$ for all $i$. -/
 @[simp]
 theorem mem_secularDomain {x : ℝ} : x ∈ secularDomain μ ↔ ∀ i, 0 < x + μ i := Iff.rfl
 
+/-- A point $x$ of the domain is not a pole: $x + \mu_i \neq 0$ for every $i$. -/
 theorem add_ne_zero_of_mem_secularDomain {x : ℝ} (hx : x ∈ secularDomain μ) (i : ι) :
     x + μ i ≠ 0 :=
   (hx i).ne'
 
+/-- The domain is closed under moving to the right: if $x$ lies in the domain and $\delta \ge 0$,
+then $x + \delta$ lies in the domain. -/
 theorem add_mem_secularDomain {x δ : ℝ} (hx : x ∈ secularDomain μ) (hδ : 0 ≤ δ) :
     x + δ ∈ secularDomain μ := fun i => by have := hx i; linarith
 
+/-- The domain is the intersection of the half-lines $(-\mu_i, \infty)$. -/
 theorem secularDomain_eq_iInter : secularDomain μ = ⋂ i, Ioi (-μ i) := by
   ext x; simp [neg_lt_iff_pos_add]
 
+/-- The domain is convex. -/
 theorem convex_secularDomain : Convex ℝ (secularDomain μ) := by
   rw [secularDomain_eq_iInter]
   exact convex_iInter fun _ => convex_Ioi _
 
-/-- Weights are nonnegative and not all zero exactly when some weight is positive. -/
+/-- If the weights are nonnegative and not all zero, then some weight is positive. -/
 theorem exists_pos_of_ne_zero (hw : 0 ≤ w) (hw0 : w ≠ 0) : ∃ i, 0 < w i := by
   by_contra h
   push Not at h
@@ -114,18 +143,22 @@ theorem exists_pos_of_ne_zero (hw : 0 ≤ w) (hw0 : w ≠ 0) : ∃ i, 0 < w i :=
 
 variable [Finite ι]
 
+/-- For a finite index set, the domain is open. -/
 theorem isOpen_secularDomain : IsOpen (secularDomain μ) := by
   rw [secularDomain_eq_iInter]
   exact isOpen_iInter_of_finite fun _ => isOpen_Ioi
 
+/-- For a finite index set, every sufficiently large $x$ lies in the domain. -/
 theorem eventually_mem_secularDomain : ∀ᶠ x in atTop, x ∈ secularDomain μ := by
   simp only [mem_secularDomain]
   exact eventually_all.2 fun i => (eventually_gt_atTop (-μ i)).mono fun x hx => by linarith
 
+/-- For a finite index set, the domain is a neighbourhood of each of its points. -/
 theorem secularDomain_mem_nhds {x : ℝ} (hx : x ∈ secularDomain μ) : secularDomain μ ∈ 𝓝 x :=
   isOpen_secularDomain.mem_nhds hx
 
-/-- The set where no pole is hit is open. -/
+/-- For a finite index set, the set $\{x : x + \mu_i \neq 0 \text{ for all } i\}$ of points that are
+not poles is open. -/
 theorem isOpen_setOf_add_ne_zero : IsOpen {x : ℝ | ∀ i, x + μ i ≠ 0} := by
   have : {x : ℝ | ∀ i, x + μ i ≠ 0} = ⋂ i, {x | x + μ i ≠ 0} := by ext; simp
   rw [this]
@@ -137,34 +170,43 @@ end Domain
 
 variable [Fintype ι]
 
+/-- The secular function is the moment of order $2$: $\pi = M_2$. -/
 theorem secularSum_eq_secularMoment : secularSum μ w = secularMoment μ w 2 := rfl
 
+/-- The value of the secular function: $\pi(x) = \sum_i w_i / (x + \mu_i)^2$. -/
 theorem secularSum_apply (x : ℝ) : secularSum μ w x = ∑ i, w i / (x + μ i) ^ 2 := rfl
 
+/-- The value of the moment: $M_m(x) = \sum_i w_i / (x + \mu_i)^m$. -/
 theorem secularMoment_apply (m : ℕ) (x : ℝ) :
     secularMoment μ w m x = ∑ i, w i / (x + μ i) ^ m := rfl
 
+/-- For nonnegative weights and $x$ in the domain, every moment is nonnegative: $M_m(x) \ge 0$. -/
 theorem secularMoment_nonneg (hw : 0 ≤ w) {x : ℝ} (hx : x ∈ secularDomain μ) (m : ℕ) :
     0 ≤ secularMoment μ w m x :=
   Finset.sum_nonneg fun i _ => div_nonneg (hw i) (pow_nonneg (hx i).le m)
 
+/-- For nonnegative weights that are not all zero and $x$ in the domain, every moment is positive:
+$M_m(x) > 0$. -/
 theorem secularMoment_pos (hw : 0 ≤ w) (hw0 : w ≠ 0) {x : ℝ} (hx : x ∈ secularDomain μ)
     (m : ℕ) : 0 < secularMoment μ w m x := by
   obtain ⟨i, hi⟩ := exists_pos_of_ne_zero hw hw0
   exact Finset.sum_pos' (fun j _ => div_nonneg (hw j) (pow_nonneg (hx j).le m))
     ⟨i, Finset.mem_univ _, div_pos hi (pow_pos (hx i) m)⟩
 
+/-- For nonnegative weights and $x$ in the domain, $\pi(x) \ge 0$. -/
 theorem secularSum_nonneg (hw : 0 ≤ w) {x : ℝ} (hx : x ∈ secularDomain μ) :
     0 ≤ secularSum μ w x :=
   secularMoment_nonneg hw hx 2
 
+/-- For nonnegative weights that are not all zero and $x$ in the domain, $\pi(x) > 0$. -/
 theorem secularSum_pos (hw : 0 ≤ w) (hw0 : w ≠ 0) {x : ℝ} (hx : x ∈ secularDomain μ) :
     0 < secularSum μ w x :=
   secularMoment_pos hw hw0 hx 2
 
 /-! ### Derivatives -/
 
-/-- The derivative of one term `c / (x + a) ^ m`. -/
+/-- For $c, a \in \mathbb{R}$, $m \in \mathbb{N}$ and $x + a \neq 0$, the function
+$y \mapsto c / (y + a)^m$ has the derivative $-m c / (x + a)^{m+1}$ at $x$. -/
 theorem hasDerivAt_div_add_pow (c a : ℝ) (m : ℕ) {x : ℝ} (hx : x + a ≠ 0) :
     HasDerivAt (fun y => c / (y + a) ^ m) (-(m * (c / (x + a) ^ (m + 1)))) x := by
   have h1 : HasDerivAt (fun y => (y + a) ^ m) (m * (x + a) ^ (m - 1)) x := by
@@ -178,6 +220,8 @@ theorem hasDerivAt_div_add_pow (c a : ℝ) (m : ℕ) {x : ℝ} (hx : x + a ≠ 0
     push_cast
     ring
 
+/-- At a point $x$ that is not a pole, the moment $M_m$ has the derivative
+$M_m'(x) = -m \, M_{m+1}(x)$. -/
 theorem hasDerivAt_secularMoment (m : ℕ) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     HasDerivAt (secularMoment μ w m) (-(m * secularMoment μ w (m + 1) x)) x := by
   have := HasDerivAt.fun_sum (u := Finset.univ) fun i _ =>
@@ -186,6 +230,8 @@ theorem hasDerivAt_secularMoment (m : ℕ) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0
   · ext y; simp [secularMoment]
   · simp [secularMoment, Finset.mul_sum]
 
+/-- At a point that is not a pole, every moment is of class $C^n$ for every $n$, including
+$n = \infty$ and $n = \omega$ (analytic). -/
 theorem contDiffAt_secularMoment (m : ℕ) {n : WithTop ℕ∞} {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     ContDiffAt ℝ n (secularMoment μ w m) x := by
   have : secularMoment μ w m = fun y => ∑ i, w i / (y + μ i) ^ m := rfl
@@ -193,15 +239,24 @@ theorem contDiffAt_secularMoment (m : ℕ) {n : WithTop ℕ∞} {x : ℝ} (hx : 
   exact ContDiffAt.sum fun i _ =>
     contDiffAt_const.div ((contDiffAt_id.add contDiffAt_const).pow m) (pow_ne_zero m (hx i))
 
+/-- The secular function is of class $C^n$ on the domain for every $n$, including $n = \infty$ and
+$n = \omega$ (analytic). -/
 theorem contDiffOn_secularSum {n : WithTop ℕ∞} :
     ContDiffOn ℝ n (secularSum μ w) (secularDomain μ) := fun _ hx =>
   (contDiffAt_secularMoment 2 (add_ne_zero_of_mem_secularDomain hx)).contDiffWithinAt
 
+/-- The secular function is continuous on the domain. -/
 theorem continuousOn_secularSum : ContinuousOn (secularSum μ w) (secularDomain μ) :=
   contDiffOn_secularSum (n := 0).continuousOn
 
-/-- The derivatives of `secularSum` in closed form (book (B.8.8)): away from the poles,
-`iteratedDeriv j (secularSum μ w) x = (-1) ^ j * (j + 1)! * ∑ i, w i / (x + μ i) ^ (j + 2)`. -/
+/-- The **derivatives of the secular function in closed form**. Let $x$ be a point with
+$x + \mu_i \neq 0$ for all $i$. Then for every $j \in \mathbb{N}$,
+$$\pi^{(j)}(x) = (-1)^j (j + 1)! \sum_i \frac{w_i}{(x + \mu_i)^{j+2}} = (-1)^j (j + 1)! \,
+  M_{j+2}(x).$$
+This is (B.8.8) of [cartis2022evaluation].
+
+The derivative $\pi^{(j)}$ is `iteratedDeriv j (Subproblem.secularSum μ w)`, and $M_{j+2}$ is
+`Subproblem.secularMoment μ w (j + 2)`. -/
 theorem iteratedDeriv_secularSum (j : ℕ) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     iteratedDeriv j (secularSum μ w) x = (-1) ^ j * (j + 1)! * secularMoment μ w (j + 2) x := by
   induction j generalizing x with
@@ -215,26 +270,33 @@ theorem iteratedDeriv_secularSum (j : ℕ) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0
     push_cast [Nat.factorial_succ]
     ring
 
+/-- At a point that is not a pole, $\pi'(x) = -2 M_3(x)$. -/
 theorem deriv_secularSum {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     deriv (secularSum μ w) x = -2 * secularMoment μ w 3 x := by
   rw [← iteratedDeriv_one, iteratedDeriv_secularSum 1 hx]
   norm_num
 
+/-- At a point that is not a pole, $\pi''(x) = 6 M_4(x)$. -/
 theorem iteratedDeriv_two_secularSum {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     iteratedDeriv 2 (secularSum μ w) x = 6 * secularMoment μ w 4 x := by
   rw [iteratedDeriv_secularSum 2 hx]
   norm_num [Nat.factorial]
 
+/-- At a point that is not a pole, $\pi$ has the derivative $-2 M_3(x)$ at $x$. -/
 theorem hasDerivAt_secularSum {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     HasDerivAt (secularSum μ w) (-2 * secularMoment μ w 3 x) x := by
   simpa [secularSum_eq_secularMoment] using hasDerivAt_secularMoment (μ := μ) (w := w) 2 hx
 
 /-! ### Shape -/
 
-/-- `secularSum` is continuous, strictly decreasing and strictly convex on `secularDomain μ`
-when the weights are nonnegative and not all zero; see also `secularSum_pos`,
-`secularSum_strictConvexOn` and `tendsto_secularSum_atTop`. (With all weights zero it is
-identically `0`.) -/
+/-- **The secular function is strictly decreasing.** Let the weights be nonnegative and not all
+zero. Then $\pi$ is strictly decreasing on the domain
+$\{x : x + \mu_i > 0 \text{ for all } i\}$.
+
+The companion results are `Subproblem.continuousOn_secularSum` (continuity),
+`Subproblem.secularSum_pos` (positivity), `Subproblem.secularSum_strictConvexOn` (strict
+convexity) and `Subproblem.tendsto_secularSum_atTop` (the limit $0$ at $+\infty$). If all
+weights are zero, $\pi$ is identically $0$. -/
 theorem secularSum_strictAntiOn (hw : 0 ≤ w) (hw0 : w ≠ 0) :
     StrictAntiOn (secularSum μ w) (secularDomain μ) := by
   refine strictAntiOn_of_deriv_neg convex_secularDomain continuousOn_secularSum fun x hx => ?_
@@ -243,6 +305,7 @@ theorem secularSum_strictAntiOn (hw : 0 ≤ w) (hw0 : w ≠ 0) :
   have := secularMoment_pos hw hw0 hx 3
   linarith
 
+/-- For nonnegative weights that are not all zero, $\pi$ is strictly convex on the domain. -/
 theorem secularSum_strictConvexOn (hw : 0 ≤ w) (hw0 : w ≠ 0) :
     StrictConvexOn ℝ (secularDomain μ) (secularSum μ w) := by
   refine strictConvexOn_of_deriv2_pos convex_secularDomain continuousOn_secularSum fun x hx => ?_
@@ -252,6 +315,7 @@ theorem secularSum_strictConvexOn (hw : 0 ≤ w) (hw0 : w ≠ 0) :
   have := secularMoment_pos hw hw0 hx 4
   linarith
 
+/-- For any weights, $\pi(x) \to 0$ as $x \to +\infty$. -/
 theorem tendsto_secularSum_atTop : Tendsto (secularSum μ w) atTop (𝓝 0) := by
   have : Tendsto (fun x => ∑ i, w i / (x + μ i) ^ 2) atTop (𝓝 (∑ _i : ι, (0 : ℝ))) :=
     tendsto_finsetSum _ fun i _ => tendsto_const_nhds.div_atTop
@@ -261,9 +325,11 @@ theorem tendsto_secularSum_atTop : Tendsto (secularSum μ w) atTop (𝓝 0) := b
 
 /-! ### Taylor expansions -/
 
-/-- The Lagrange form of the Taylor remainder of `secularSum` (book (B.8.9)): for `x` and
-`x + δ` in `secularDomain μ` there is `ξ ∈ secularDomain μ` with
-`secularSum μ w (x + δ) = tₖ(δ) + (k + 2) M_{k+3}(ξ) (-δ) ^ (k + 1)`. -/
+/-- The **Lagrange form of the Taylor remainder** of the secular function. Let $x$ and $x + \delta$
+lie in the domain, let $k \in \mathbb{N}$, and let $t_k(\delta) = \sum_{j \le k} \pi^{(j)}(x)
+\delta^j / j!$. Then there is a point $\xi$ of the domain with
+$$\pi(x + \delta) = t_k(\delta) + (k + 2) \, M_{k+3}(\xi) \, (-\delta)^{k+1}.$$
+This is (B.8.9) of [cartis2022evaluation]. -/
 theorem secularSum_add_eq_sum_taylor_add {x δ : ℝ} (hx : x ∈ secularDomain μ)
     (hxδ : x + δ ∈ secularDomain μ) (k : ℕ) :
     ∃ ξ ∈ secularDomain μ, secularSum μ w (x + δ) =
@@ -279,8 +345,9 @@ theorem secularSum_add_eq_sum_taylor_add {x δ : ℝ} (hx : x ∈ secularDomain 
   field_simp
   ring
 
-/-- Consecutive Taylor polynomials of `secularSum` differ by
-`tₖ₊₁(δ) - tₖ(δ) = (k + 2) M_{k+3}(x) (-δ) ^ (k + 1)`. -/
+/-- At a point $x$ that is not a pole, two consecutive Taylor polynomials of the secular function
+differ by $t_{k+1}(\delta) - t_k(\delta) = (k + 2) \, M_{k+3}(x) \, (-\delta)^{k+1}$, for every
+$k \in \mathbb{N}$ and $\delta \in \mathbb{R}$. -/
 theorem sum_taylor_succ_secularSum {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) (k : ℕ) (δ : ℝ) :
     ∑ j ∈ range (k + 2), iteratedDeriv j (secularSum μ w) x / j ! * δ ^ j =
       ∑ j ∈ range (k + 1), iteratedDeriv j (secularSum μ w) x / j ! * δ ^ j
@@ -292,22 +359,32 @@ theorem sum_taylor_succ_secularSum {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) (k : �
   field_simp
   ring
 
-/-- The sign of `(-δ) ^ (k + 1)` for `δ > 0`: negative for even `k`. -/
+/-- For $\delta > 0$ and even $k$, $(-\delta)^{k+1} < 0$. -/
 private theorem neg_pow_succ_neg_of_even {δ : ℝ} (hδ : 0 < δ) {k : ℕ} (hk : Even k) :
     (-δ) ^ (k + 1) < 0 :=
   hk.add_one.pow_neg (by linarith)
 
-/-- The sign of `(-δ) ^ (k + 1)` for `δ > 0`: positive for odd `k`. -/
+/-- For $\delta > 0$ and odd $k$, $(-\delta)^{k+1} > 0$. -/
 private theorem neg_pow_succ_pos_of_odd {δ : ℝ} (hδ : 0 < δ) {k : ℕ} (hk : Odd k) :
     0 < (-δ) ^ (k + 1) :=
   hk.add_one.pow_pos (by linarith)
 
-/-- **Signed Taylor bounds** (Cartis–Gould–Toint, Theorem 8.2.2, in spectral form). Let `w ≥ 0`,
-`x ∈ secularDomain μ` and `tₖ(δ) = ∑ j ≤ k, π⁽ʲ⁾(x) / j! δʲ` the Taylor polynomials of
-`π = secularSum μ w` at `x`. For `δ > 0`, `π(x + δ) ≤ tₖ(δ)` for even `k` and `π(x + δ) ≥ tₖ(δ)`
-for odd `k`; for `δ < 0` with `x + δ ∈ secularDomain μ`, `tₖ(δ) ≤ tₖ₊₁(δ) ≤ π(x + δ)` for every
-`k`, including `k = 0`. The strict forms are
-`secularSum_taylor_bounds_strict`. -/
+/-- **Signed Taylor bounds** for the secular function. Let the weights be nonnegative, let $x$ lie
+in the domain, let $k \in \mathbb{N}$, and let
+$$t_k(\delta) = \sum_{j=0}^{k} \frac{\pi^{(j)}(x)}{j!} \delta^j$$
+be the Taylor polynomial of order $k$ of $\pi$ at $x$. Then:
+
+* for every $\delta > 0$, $\pi(x + \delta) \le t_k(\delta)$ if $k$ is even, and
+  $t_k(\delta) \le \pi(x + \delta)$ if $k$ is odd;
+* for every $\delta < 0$ with $x + \delta$ in the domain, $t_k(\delta) \le t_{k+1}(\delta) \le
+  \pi(x + \delta)$.
+
+This is Theorem 8.2.2 of [cartis2022evaluation], in spectral form. The second case holds for
+every $k$, including $k = 0$.
+
+The strict forms are `Subproblem.secularSum_taylor_bounds_strict`. The proof uses the Lagrange
+remainder `Subproblem.secularSum_add_eq_sum_taylor_add`, whose sign is the sign of
+$(-\delta)^{k+1}$. -/
 theorem secularSum_taylor_bounds (hw : 0 ≤ w) {x : ℝ} (hx : x ∈ secularDomain μ) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularSum μ w (x + δ) ≤
         ∑ j ∈ range (k + 1), iteratedDeriv j (secularSum μ w) x / j ! * δ ^ j) ∧
@@ -341,8 +418,9 @@ theorem secularSum_taylor_bounds (hw : 0 ≤ w) {x : ℝ} (hx : x ∈ secularDom
     push_cast at h h2
     constructor <;> linarith
 
-/-- **Strict signed Taylor bounds** (Theorem 8.2.2, strict part): when the weights are
-nonnegative and not all zero, the inequalities of `secularSum_taylor_bounds` are strict. -/
+/-- **Strict signed Taylor bounds** for the secular function: if the weights are nonnegative and not
+all zero, then the inequalities of `Subproblem.secularSum_taylor_bounds` are strict. This is the
+strict part of Theorem 8.2.2 of [cartis2022evaluation]. -/
 theorem secularSum_taylor_bounds_strict (hw : 0 ≤ w) (hw0 : w ≠ 0) {x : ℝ}
     (hx : x ∈ secularDomain μ) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularSum μ w (x + δ) <
@@ -378,8 +456,10 @@ theorem secularSum_taylor_bounds_strict (hw : 0 ≤ w) (hw0 : w ≠ 0) {x : ℝ}
 
 /-! ### The curvature inequality -/
 
-/-- Lagrange's identity for the moments of orders `2`, `3`, `4`: with `uᵢ = (x + μ i)⁻¹`,
-`2 (M₂ M₄ - M₃²) = ∑ᵢ ∑ⱼ wᵢ wⱼ (uᵢ uⱼ)² (uᵢ - uⱼ)²`. -/
+/-- **Lagrange's identity** for the moments of orders $2$, $3$ and $4$: for every $x$, with
+$u_i = (x + \mu_i)^{-1}$,
+$$2 \bigl(M_2(x) M_4(x) - M_3(x)^2\bigr) = \sum_i \sum_j w_i w_j (u_i u_j)^2 (u_i - u_j)^2.$$
+-/
 theorem two_mul_secularMoment_sub_sq (x : ℝ) :
     2 * (secularMoment μ w 2 x * secularMoment μ w 4 x - secularMoment μ w 3 x ^ 2) =
       ∑ i, ∑ j, w i * w j * ((x + μ i)⁻¹ * (x + μ j)⁻¹) ^ 2 *
@@ -400,7 +480,8 @@ theorem two_mul_secularMoment_sub_sq (x : ℝ) :
   rw [hexp, hcomm]
   ring
 
-/-- The Cauchy–Schwarz inequality `M₃² ≤ M₂ M₄` for nonnegative weights. -/
+/-- The **Cauchy–Schwarz inequality** for the moments: for nonnegative weights and every $x$,
+$M_3(x)^2 \le M_2(x) M_4(x)$. -/
 theorem secularMoment_three_sq_le (hw : 0 ≤ w) (x : ℝ) :
     secularMoment μ w 3 x ^ 2 ≤ secularMoment μ w 2 x * secularMoment μ w 4 x := by
   have := two_mul_secularMoment_sub_sq (μ := μ) (w := w) x
@@ -410,8 +491,9 @@ theorem secularMoment_three_sq_le (hw : 0 ≤ w) (x : ℝ) :
       mul_nonneg (mul_nonneg (mul_nonneg (hw i) (hw j)) (sq_nonneg _)) (sq_nonneg _)
   linarith
 
-/-- The equality case of `secularMoment_three_sq_le`: away from the poles, `M₃² = M₂ M₄` exactly
-when all the nonzero weights sit at a single pole. -/
+/-- The equality case of `Subproblem.secularMoment_three_sq_le`. For nonnegative weights and a point
+$x$ that is not a pole, $M_3(x)^2 = M_2(x) M_4(x)$ if and only if all nonzero weights sit at a
+single pole (`Subproblem.SinglePole`). -/
 theorem secularMoment_three_sq_eq_iff (hw : 0 ≤ w) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) :
     secularMoment μ w 3 x ^ 2 = secularMoment μ w 2 x * secularMoment μ w 4 x ↔
       SinglePole μ w := by
@@ -444,10 +526,14 @@ theorem secularMoment_three_sq_eq_iff (hw : 0 ≤ w) {x : ℝ} (hx : ∀ i, x + 
       simp [hs i j hi hj]
     linarith
 
-/-- **The curvature inequality** (proof of Cartis–Gould–Toint, Lemma 8.2.3). Let `w ≥ 0`, `p` the
-function `secularSum μ w`, and `c = ∑ i, w i / (x + μ i) ^ 3` at a point `x` away from the poles.
-Then for every real `β`, `(β - 1) p'(x)² + p(x) p''(x) ≥ 4 (β + 1/2) c²`. Equality is
-characterized by `secularSum_curvature_eq_iff`. -/
+/-- **The curvature inequality** for the secular function. Let the weights be nonnegative, let $x$
+be a point with $x + \mu_i \neq 0$ for all $i$, and let
+$c = M_3(x) = \sum_i w_i / (x + \mu_i)^3$. Then for every $\beta \in \mathbb{R}$,
+$$(\beta - 1) \, \pi'(x)^2 + \pi(x) \, \pi''(x) \ge 4 \left(\beta + \tfrac12\right) c^2.$$
+
+This inequality is the core of the proof of Lemma 8.2.3 of [cartis2022evaluation]. The equality
+case is `Subproblem.secularSum_curvature_eq_iff`. The proof substitutes $\pi' = -2 M_3$ and
+$\pi'' = 6 M_4$ and applies `Subproblem.secularMoment_three_sq_le`. -/
 theorem secularSum_curvature (hw : 0 ≤ w) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) (β : ℝ) :
     4 * (β + 1 / 2) * secularMoment μ w 3 x ^ 2 ≤
       (β - 1) * deriv (secularSum μ w) x ^ 2 +
@@ -455,8 +541,10 @@ theorem secularSum_curvature (hw : 0 ≤ w) {x : ℝ} (hx : ∀ i, x + μ i ≠ 
   rw [deriv_secularSum hx, iteratedDeriv_two_secularSum hx, secularSum_eq_secularMoment]
   nlinarith [secularMoment_three_sq_le (μ := μ) hw x]
 
-/-- The equality case of `secularSum_curvature`: it is independent of `β` and holds exactly when
-all the nonzero weights sit at a single pole. -/
+/-- The equality case of `Subproblem.secularSum_curvature`. For nonnegative weights, a point $x$
+that is not a pole, and every $\beta \in \mathbb{R}$, the equality $(\beta - 1) \pi'(x)^2 +
+\pi(x) \pi''(x) = 4 (\beta + 1/2) M_3(x)^2$ holds if and only if all nonzero weights sit at a
+single pole. The condition does not depend on $\beta$. -/
 theorem secularSum_curvature_eq_iff (hw : 0 ≤ w) {x : ℝ} (hx : ∀ i, x + μ i ≠ 0) (β : ℝ) :
     (β - 1) * deriv (secularSum μ w) x ^ 2 +
         secularSum μ w x * iteratedDeriv 2 (secularSum μ w) x =
@@ -472,8 +560,9 @@ section Rpow
 variable (hw : 0 ≤ w) (hw0 : w ≠ 0) (β : ℝ)
 include hw hw0
 
-/-- The first derivative of the transformed secular function `p ^ β`, `p = secularSum μ w`
-(book (8.2.18)): `(p ^ β)' = β p ^ (β - 1) p'`. -/
+/-- For nonnegative weights that are not all zero, every $\beta \in \mathbb{R}$ and $x$ in the
+domain, the transformed secular function $\pi^\beta$ has the derivative $(\pi^\beta)'(x) = \beta
+\, \pi(x)^{\beta - 1} \pi'(x)$. This is (8.2.18) of [cartis2022evaluation]. -/
 theorem hasDerivAt_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ) :
     HasDerivAt (fun y => secularSum μ w y ^ β)
       (β * secularSum μ w x ^ (β - 1) * deriv (secularSum μ w) x) x := by
@@ -482,13 +571,18 @@ theorem hasDerivAt_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ) :
   rw [hp.deriv]
   ring
 
+/-- For nonnegative weights that are not all zero, every $\beta \in \mathbb{R}$ and $x$ in the
+domain, $(\pi^\beta)'(x) = \beta \, \pi(x)^{\beta - 1} \pi'(x)$. -/
 theorem deriv_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ) :
     deriv (fun y => secularSum μ w y ^ β) x =
       β * secularSum μ w x ^ (β - 1) * deriv (secularSum μ w) x :=
   (hasDerivAt_secularSum_rpow hw hw0 β hx).deriv
 
-/-- The derivative of `(p ^ β)'` (book (8.2.19)):
-`(p ^ β)'' = β p ^ (β - 1) p'' + β (β - 1) p ^ (β - 2) p'²`. -/
+/-- For nonnegative weights that are not all zero, every $\beta \in \mathbb{R}$ and $x$ in the
+domain, the derivative $(\pi^\beta)'$ has the derivative
+$$(\pi^\beta)''(x) = \beta \, \pi(x)^{\beta - 1} \pi''(x) + \beta (\beta - 1) \, \pi(x)^{\beta -
+  2} \pi'(x)^2$$
+at $x$. This is (8.2.19) of [cartis2022evaluation]. -/
 theorem hasDerivAt_deriv_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ) :
     HasDerivAt (deriv fun y => secularSum μ w y ^ β)
       (β * secularSum μ w x ^ (β - 1) * iteratedDeriv 2 (secularSum μ w) x +
@@ -506,6 +600,9 @@ theorem hasDerivAt_deriv_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ)
   push_cast
   ring
 
+/-- For nonnegative weights that are not all zero, every $\beta \in \mathbb{R}$ and $x$ in the
+domain, $(\pi^\beta)''(x) = \beta \, \pi(x)^{\beta - 1} \pi''(x) + \beta (\beta - 1) \,
+\pi(x)^{\beta - 2} \pi'(x)^2$. -/
 theorem iteratedDeriv_two_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ) :
     iteratedDeriv 2 (fun y => secularSum μ w y ^ β) x =
       β * secularSum μ w x ^ (β - 1) * iteratedDeriv 2 (secularSum μ w) x +
@@ -513,8 +610,12 @@ theorem iteratedDeriv_two_secularSum_rpow {x : ℝ} (hx : x ∈ secularDomain μ
   rw [iteratedDeriv_succ, iteratedDeriv_one]
   exact (hasDerivAt_deriv_secularSum_rpow hw hw0 β hx).deriv
 
-/-- The second derivative of `p ^ β` factored through the curvature expression:
-`(p ^ β)'' = β p ^ (β - 2) ((β - 1) p'² + p p'')`. -/
+/-- For nonnegative weights that are not all zero, every $\beta \in \mathbb{R}$ and $x$ in the
+domain, the second derivative of $\pi^\beta$ factors through the curvature expression of
+`Subproblem.secularSum_curvature`:
+$$(\pi^\beta)''(x) = \beta \, \pi(x)^{\beta - 2} \bigl((\beta - 1) \pi'(x)^2 + \pi(x)
+  \pi''(x)\bigr).$$
+-/
 theorem iteratedDeriv_two_secularSum_rpow_eq_mul {x : ℝ} (hx : x ∈ secularDomain μ) :
     iteratedDeriv 2 (fun y => secularSum μ w y ^ β) x =
       β * secularSum μ w x ^ (β - 2) * ((β - 1) * deriv (secularSum μ w) x ^ 2 +
@@ -525,12 +626,22 @@ theorem iteratedDeriv_two_secularSum_rpow_eq_mul {x : ℝ} (hx : x ∈ secularDo
   rw [iteratedDeriv_two_secularSum_rpow hw hw0 β hx, this]
   ring
 
-/-- **Derivatives of the transformed secular function** (Cartis–Gould–Toint, Lemma 8.2.3, in
-spectral form). Let the weights be nonnegative and not all zero, `x ∈ secularDomain μ` and
-`q = fun y => secularSum μ w y ^ β`. Then
-(i) `q'(x) < 0` for `β > 0` and `q'(x) > 0` for `β < 0`;
-(ii) `q''(x) > 0` for `β > 0`, and `q''(x) ≤ 0` for `β ∈ [-1/2, 0)`, strictly unless `β = -1/2`
-and the nonzero weights sit at a single pole, in which case `q''(x) = 0`. -/
+/-- **Derivatives of the transformed secular function.** Let the weights be nonnegative and not all
+zero, let $\beta \in \mathbb{R}$, let $x$ lie in the domain, and let $q(y) = \pi(y)^\beta$.
+Then:
+
+* if $\beta > 0$, then $q'(x) < 0$, and if $\beta < 0$, then $q'(x) > 0$;
+* if $\beta > 0$, then $q''(x) > 0$;
+* if $\beta \in [-1/2, 0)$, then $q''(x) \le 0$, and $q''(x) < 0$ unless $\beta = -1/2$ and all
+  nonzero weights sit at a single pole;
+* if $\beta = -1/2$ and all nonzero weights sit at a single pole, then $q''(x) = 0$.
+
+This is Lemma 8.2.3 of [cartis2022evaluation], in spectral form; the first item is its part (i),
+and the last three items are its part (ii).
+
+The single-pole condition is `Subproblem.SinglePole μ w`. The sign of $q''$ comes from
+`Subproblem.iteratedDeriv_two_secularSum_rpow_eq_mul` and the curvature inequality
+`Subproblem.secularSum_curvature`. -/
 theorem secularSum_rpow_deriv_sign {x : ℝ} (hx : x ∈ secularDomain μ) :
     (0 < β → deriv (fun y => secularSum μ w y ^ β) x < 0) ∧
     (β < 0 → 0 < deriv (fun y => secularSum μ w y ^ β) x) ∧
@@ -573,18 +684,24 @@ theorem secularSum_rpow_deriv_sign {x : ℝ} (hx : x ∈ secularDomain μ) :
   · have hK : K = 0 := by rw [hcurv_iff.2 hs, hβ]; ring
     rw [hK, mul_zero]
 
+/-- For nonnegative weights that are not all zero and every $\beta \in \mathbb{R}$, the transformed
+secular function $\pi^\beta$ is continuous on the domain. -/
 theorem continuousOn_secularSum_rpow :
     ContinuousOn (fun y => secularSum μ w y ^ β) (secularDomain μ) :=
   continuousOn_secularSum.rpow_const fun _ hx => Or.inl (secularSum_pos hw hw0 hx).ne'
 
+/-- For nonnegative weights that are not all zero and every $\beta \in \mathbb{R}$, the transformed
+secular function $\pi^\beta$ is of class $C^n$ on the domain for every $n$, including
+$n = \infty$ and $n = \omega$ (analytic). -/
 theorem contDiffOn_secularSum_rpow {n : WithTop ℕ∞} :
     ContDiffOn ℝ n (fun y => secularSum μ w y ^ β) (secularDomain μ) := fun _ hx =>
   ((contDiffAt_secularMoment 2 (add_ne_zero_of_mem_secularDomain hx)).rpow_const_of_ne
     (secularSum_pos hw hw0 hx).ne').contDiffWithinAt
 
-/-- The transformed secular function is strictly concave on `secularDomain μ` for
-`β ∈ [-1/2, 0)`, except when `β = -1/2` and the nonzero weights sit at a single pole (then it is
-affine, see `secularSum_rpow_tangent`). -/
+/-- For nonnegative weights that are not all zero and $\beta \in [-1/2, 0)$, the transformed secular
+function $\pi^\beta$ is strictly concave on the domain, provided that $\beta \neq -1/2$ or the
+nonzero weights do not sit at a single pole. In the excluded case $\pi^{-1/2}$ is affine (see
+`Subproblem.secularSum_rpow_tangent`). -/
 theorem secularSum_rpow_strictConcaveOn (hβ : β ∈ Ico (-1 / 2) 0)
     (hne : β ≠ -1 / 2 ∨ ¬ SinglePole μ w) :
     StrictConcaveOn ℝ (secularDomain μ) (fun y => secularSum μ w y ^ β) := by
@@ -594,12 +711,19 @@ theorem secularSum_rpow_strictConcaveOn (hβ : β ∈ Ico (-1 / 2) 0)
   rw [← iteratedDeriv_eq_iterate]
   exact (secularSum_rpow_deriv_sign hw hw0 β hx).2.2.2.2.1 hβ hne
 
-/-- **Monotonicity of the transformed secular function** (Cartis–Gould–Toint, Corollary 8.2.4,
-in spectral form). Let the weights be nonnegative and not all zero. On `secularDomain μ`, the
-function `q = fun y => secularSum μ w y ^ β` is, for `β > 0`, strictly decreasing and strictly
-convex with limit `0` at `+∞`; for `β ∈ [-1/2, 0)` it is strictly increasing and concave with
-limit `+∞` at `+∞`. Strict concavity holds except in the single-pole case at `β = -1/2`
-(`secularSum_rpow_strictConcaveOn`). -/
+/-- **Monotonicity and convexity of the transformed secular function.** Let the weights be
+nonnegative and not all zero, let $\beta \in \mathbb{R}$, and let $q(y) = \pi(y)^\beta$ on the
+domain. Then:
+
+* if $\beta > 0$, then $q$ is strictly decreasing and strictly convex on the domain, and
+  $q(y) \to 0$ as $y \to +\infty$;
+* if $\beta \in [-1/2, 0)$, then $q$ is strictly increasing and concave on the domain, and
+  $q(y) \to +\infty$ as $y \to +\infty$.
+
+This is Corollary 8.2.4 of [cartis2022evaluation], in spectral form.
+
+Strict concavity holds except in the single-pole case at $\beta = -1/2$; see
+`Subproblem.secularSum_rpow_strictConcaveOn`. -/
 theorem secularSum_rpow_shape :
     (0 < β → StrictAntiOn (fun y => secularSum μ w y ^ β) (secularDomain μ) ∧
       StrictConvexOn ℝ (secularDomain μ) (fun y => secularSum μ w y ^ β) ∧
@@ -632,8 +756,12 @@ theorem secularSum_rpow_shape :
         eventually_mem_secularDomain.mono fun x hx => secularSum_pos hw hw0 hx⟩
     exact (tendsto_rpow_neg_nhdsGT_zero hβ.2).comp hp
 
-/-- The first-order Taylor expansion of the transformed secular function with Lagrange
-remainder: `q(x + δ) = q(x) + q'(x) δ + q''(ξ) δ² / 2` for some `ξ ∈ secularDomain μ`. -/
+/-- The first-order Taylor expansion of the transformed secular function with Lagrange remainder.
+For nonnegative weights that are not all zero, $\beta \in \mathbb{R}$, and $x$ and $x + \delta$
+in the domain, there is a point $\xi$ of the domain with
+$$q(x + \delta) = q(x) + q'(x) \, \delta + \tfrac12 q''(\xi) \, \delta^2, \qquad q(y) =
+  \pi(y)^\beta.$$
+-/
 theorem secularSum_rpow_add_eq {x δ : ℝ} (hx : x ∈ secularDomain μ)
     (hxδ : x + δ ∈ secularDomain μ) :
     ∃ ξ ∈ secularDomain μ, secularSum μ w (x + δ) ^ β = secularSum μ w x ^ β +
@@ -645,12 +773,17 @@ theorem secularSum_rpow_add_eq {x δ : ℝ} (hx : x ∈ secularDomain μ)
   rw [h]
   simp [Finset.sum_range_succ]
 
-/-- **First-order Taylor estimates of the transformed secular function** (Cartis–Gould–Toint,
-Theorem 8.2.5, in spectral form). Let the weights be nonnegative and not all zero, `x` and
-`x + δ` in `secularDomain μ`, `q = fun y => secularSum μ w y ^ β` and `t₁ = q x + q'(x) δ`.
-For `β > 0`, `q (x + δ) ≥ t₁`; for `β ∈ [-1/2, 0)`, `q (x + δ) ≤ t₁`. Both are strict when
-`δ ≠ 0`, except when `β = -1/2` and the nonzero weights sit at a single pole: then
-`q (x + δ) = t₁` (`q` is affine). -/
+/-- **First-order Taylor estimates of the transformed secular function.** Let the weights be
+nonnegative and not all zero, let $\beta \in \mathbb{R}$, let $x$ and $x + \delta$ lie in the
+domain, let $q(y) = \pi(y)^\beta$, and let $t_1 = q(x) + q'(x) \, \delta$. Then:
+
+* if $\beta > 0$, then $t_1 \le q(x + \delta)$, and $t_1 < q(x + \delta)$ when $\delta \neq 0$;
+* if $\beta \in [-1/2, 0)$, then $q(x + \delta) \le t_1$, and $q(x + \delta) < t_1$ when
+  $\delta \neq 0$, unless $\beta = -1/2$ and all nonzero weights sit at a single pole;
+* if $\beta = -1/2$ and all nonzero weights sit at a single pole, then $q(x + \delta) = t_1$,
+  because $q$ is affine.
+
+This is Theorem 8.2.5 of [cartis2022evaluation], in spectral form. -/
 theorem secularSum_rpow_tangent {x δ : ℝ} (hx : x ∈ secularDomain μ)
     (hxδ : x + δ ∈ secularDomain μ) :
     (0 < β → secularSum μ w x ^ β + deriv (fun y => secularSum μ w y ^ β) x * δ ≤
@@ -684,27 +817,42 @@ end Rpow
 
 /-! ### The Newton factor -/
 
-/-- The `β`-dependent factor `(1 - μ ^ β) / β` of the Newton step for the transformed secular
-equation `π(λ) ^ β = Δ ^ (2 β)` (book (B.8.7), and (8.2.26) with `ω = 0`), extended to `β = 0` by
-its limit `-log μ`. Here `μ = Δ² / π(λ)` is a positive real number. -/
+/-- The **Newton factor** of the transformed secular equation: for $m, \beta \in \mathbb{R}$,
+$$\operatorname{newtonFactor}(m, \beta) = \begin{cases} (1 - m^\beta) / \beta, & \beta \neq 0,
+  \\ -\log m, & \beta = 0. \end{cases}$$
+It is the factor that depends on $\beta$ in the Newton step for
+$\pi(\lambda)^\beta = \Delta^{2\beta}$, with $m = \Delta^2 / \pi(\lambda)$; see (B.8.7) of
+[cartis2022evaluation], and (8.2.26) there with $\omega = 0$.
+
+The value at $\beta = 0$ is the limit of $(1 - m^\beta)/\beta$ as $\beta \to 0$ for $m > 0$. The
+first argument $m$ is named `μ` in the Lean code; it is not related to the poles $\mu_i$. The
+power $m^\beta$ is `Real.rpow`. -/
 noncomputable def newtonFactor (μ β : ℝ) : ℝ :=
   if β = 0 then -Real.log μ else (1 - μ ^ β) / β
 
+/-- At $\beta = 0$, the Newton factor is $-\log m$. -/
 theorem newtonFactor_zero (μ : ℝ) : newtonFactor μ 0 = -Real.log μ := by simp [newtonFactor]
 
+/-- For $\beta \neq 0$, the Newton factor is $(1 - m^\beta) / \beta$. -/
 theorem newtonFactor_of_ne_zero (μ : ℝ) {β : ℝ} (hβ : β ≠ 0) :
     newtonFactor μ β = (1 - μ ^ β) / β := by simp [newtonFactor, hβ]
 
-/-- `newtonFactor μ β` is minus the slope of `b ↦ μ ^ b` between `0` and `β`. -/
+/-- For $\beta \neq 0$, the Newton factor is minus the slope of $b \mapsto m^b$ between $0$ and
+$\beta$. -/
 private theorem newtonFactor_eq_neg_slope {m β : ℝ} (hβ : β ≠ 0) :
     newtonFactor m β = -slope (fun b => m ^ b) 0 β := by
   rw [newtonFactor_of_ne_zero m hβ, slope_def_field, Real.rpow_zero, sub_zero]
   ring
 
-/-- **Monotonicity of the transformed secular Newton step** (Cartis–Gould–Toint, Lemma B.8.2):
-for `μ > 0`, `β ↦ newtonFactor μ β = (1 - μ ^ β) / β` is antitone on `ℝ`. Hence the Newton
-correction `-(π / π') (1 - μ^β)/β` for `π(λ) ^ β = Δ ^ (2 β)` from `λc` (with `π' < 0`) decreases
-as `β` increases. (No hypothesis on the root `λ*` is needed.) -/
+/-- **Monotonicity of the Newton factor.** For $m > 0$, the function $\beta \mapsto
+\operatorname{newtonFactor}(m, \beta)$, which is $(1 - m^\beta)/\beta$ for $\beta \neq 0$ and
+$-\log m$ at $\beta = 0$, is antitone on $\mathbb{R}$. This is Lemma B.8.2 of
+[cartis2022evaluation].
+
+Consequently, the Newton correction $-(\pi / \pi') (1 - m^\beta)/\beta$ for
+$\pi(\lambda)^\beta = \Delta^{2\beta}$ from $\lambda_c$, where $\pi' < 0$, decreases as $\beta$
+increases. No hypothesis on the root $\lambda_*$ is needed. The proof uses that $b \mapsto m^b$
+is convex, so that its slopes from $0$ increase. -/
 theorem antitone_newtonFactor {μ : ℝ} (hμ : 0 < μ) : Antitone (newtonFactor μ) := by
   have hconv := convexOn_rpow_left hμ
   have hmono := hconv.slope_mono (Set.mem_univ 0)

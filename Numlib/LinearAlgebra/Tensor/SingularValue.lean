@@ -20,36 +20,58 @@ import Numlib.LinearAlgebra.Tensor.Unfolding
 /-!
 # Variational singular values of tensors
 
-The multilinear form `𝒜(u₁, …, u_d) = ∑_a 𝒜(a) ∏ᵢ uᵢ(aᵢ)` of a tensor and its Rayleigh quotient
-`ψ_𝒜(u) = 𝒜(u₁, …, u_d) / ∏ ‖uᵢ‖` ([golub2013matrix] §12.5.6–12.5.7; Lim 2005, Qi 2005). The
-critical points of `ψ_𝒜` are characterized by the equations `𝒜_(k) (⊗_{j ≠ k} u_j) = ψ u_k` at
-unit vectors, which the book takes as the definition of a tensor singular value
-(`Tensor.IsSingularValue`). All modal unfoldings of a symmetric tensor agree
-(`Tensor.IsSymm.modeUnfold_eq`).
+Let $\mathcal{A}$ be a real tensor of order $d$ with finite index types. Its multilinear form and
+its multilinear Rayleigh quotient are
+$$\mathcal{A}(u_1, \dots, u_d) = \sum_a \mathcal{A}(a) \prod_i u_i(a_i), \qquad
+  \psi_{\mathcal{A}}(u) = \frac{\mathcal{A}(u_1, \dots, u_d)}{\prod_i \|u_i\|}$$
+([golub2013matrix], §12.5.6–12.5.7, after Lim and Qi). This module computes the partial derivatives
+of $\psi_{\mathcal{A}}$ and proves that its critical points are characterized by the equations
+$$\mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k} \hat u_j\Bigr) = \psi_{\mathcal{A}}(u) \, \hat u_k
+  \quad \text{for every mode } k, \qquad \hat u_i = u_i / \|u_i\|.$$
+The book takes these equations at unit vectors as the definition of a singular value of a tensor.
+For a symmetric tensor $\mathcal{C}$, all modal unfoldings agree, and the critical points of
+$\varphi_{\mathcal{C}}(x) = \mathcal{C}(x, \dots, x) / \|x\|^d$ are its eigenvectors. For a matrix,
+$\psi_A$ is the bilinear Rayleigh quotient $\langle u, Av \rangle / (\|u\| \|v\|)$, and the absolute
+value of each of its stationary values is a singular value of $A$.
 
 ## Main definitions
 
-* `Tensor.multilinearForm`, `Tensor.multilinearRayleigh`, `Tensor.symmetricRayleigh`.
-* `Tensor.IsSingularValue`.
+* `Tensor.multilinearForm`: the multilinear form $\mathcal{A}(u_1, \dots, u_d)$.
+* `Tensor.multilinearRayleigh`: the multilinear Rayleigh quotient $\psi_{\mathcal{A}}$.
+* `Tensor.IsSingularValue`: a singular value of a tensor, with unit singular vectors.
+* `Tensor.symmetricRayleigh`: the Rayleigh quotient $\varphi_{\mathcal{C}}$ of a symmetric tensor.
+* `Matrix.bilinearRayleigh`: the bilinear Rayleigh quotient $\psi_A$ of a real matrix.
 
-## Main statements
+## Main results
 
-* `Tensor.multilinearForm_eq_modeUnfold`: the book's `u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)`, typed.
+* `Tensor.multilinearForm_eq_modeUnfold`: $\mathcal{A}(u) = u_k^T \mathcal{A}_{(k)} (\bigotimes_{j
+  \neq k} u_j)$, the typed form of $u_1^T \mathcal{A}_{(1)} (u_3 \otimes u_2)$ in [golub2013matrix].
 * `Tensor.IsSymm.modeUnfold_eq`: the modal unfoldings of a symmetric tensor agree.
-* `Tensor.fderiv_multilinearRayleigh_single`: the partial derivatives of `ψ_𝒜`, computed along
-  the line `t ↦ u + t e_k w`, on which the numerator is affine and one norm varies.
-* `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the critical points of `ψ_𝒜` are the
-  singular vectors (normalized).
-* `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`: the critical points of `φ_𝒞` for a symmetric
-  `𝒞` are its eigenvectors; `φ_𝒞 = ψ_𝒞 ∘ diag` and the `d` partial derivatives agree by symmetry.
-* `Matrix.bilinearRayleigh_eq_multilinearRayleigh`: the order-two case is the bilinear Rayleigh
-  quotient `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of a matrix ([golub2013matrix] (12.5.22)), whose
-  critical points (`Matrix.fderiv_bilinearRayleigh_eq_zero_iff`) are the singular triples
-  (`Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`).
+* `Tensor.fderiv_multilinearRayleigh_single`: the partial derivatives of $\psi_{\mathcal{A}}$.
+* `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the critical points of $\psi_{\mathcal{A}}$
+  are the points whose normalized vectors are singular vectors.
+* `Tensor.hasFDerivAt_symmetricRayleigh_eq_zero_iff`: the critical points of $\varphi_{\mathcal{C}}$
+  for a symmetric $\mathcal{C}$ are its eigenvectors.
+* `Matrix.bilinearRayleigh_eq_multilinearRayleigh`: for a matrix, $\psi_A$ is the multilinear
+  Rayleigh quotient of $A$ as a tensor of order two ([golub2013matrix], (12.5.22)).
+* `Matrix.fderiv_bilinearRayleigh_eq_zero_iff`: the critical points of $\psi_A$ are the pairs with
+  $A \hat v = \psi \hat u$ and $A^T \hat u = \psi \hat v$.
+* `Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`: the absolute value of $\psi_A$ at a
+  critical point is a singular value of $A$.
 
-## References
+## Proof outline
 
-* [golub2013matrix], §12.5.6–12.5.7.
+The partial derivative of $\psi_{\mathcal{A}}$ in the $k$-th vector is computed along the line
+$t \mapsto u + t e_k w$, on which the numerator is affine and only the $k$-th norm varies. For a
+symmetric tensor, $\varphi_{\mathcal{C}}$ is $\psi_{\mathcal{C}}$ composed with the diagonal map
+$x \mapsto (x, \dots, x)$, and the $d$ partial derivatives of $\psi_{\mathcal{C}}$ at a diagonal
+point agree by symmetry.
+
+## Implementation notes
+
+* The vectors $u_i$ are elements of `EuclideanSpace ℝ (κ i)`, so that $\|u_i\|$ is the Euclidean
+  norm.
+* The quotients are divisions in `ℝ`, so they are $0$ where a vector in the denominator is $0$.
 -/
 
 universe u v w
@@ -64,13 +86,18 @@ section Form
 
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)] [CommSemiring R]
 
-/-- The multilinear form of a tensor ([golub2013matrix] §12.5.6, the numerator of `ψ_𝒜`):
-`𝒜(u₁, …, u_d) = ∑_a 𝒜(a) ∏ᵢ uᵢ(aᵢ)`. -/
+/-- The **multilinear form** of a tensor $\mathcal{A}$ over a commutative semiring
+([golub2013matrix], §12.5.6, the numerator of $\psi_{\mathcal{A}}$):
+$$\mathcal{A}(u_1, \dots, u_d) = \sum_a \mathcal{A}(a) \prod_i u_i(a_i).$$
+-/
 def multilinearForm (A : Tensor κ R) (u : ∀ i, κ i → R) : R :=
   ∑ a, A a * ∏ i, u i (a i)
 
-/-- The multilinear form through the mode-`k` unfolding ([golub2013matrix] §12.5.6, the book's
-`u₁ᵀ 𝒜_(1) (u₃ ⊗ u₂)` and its two siblings, typed): `𝒜(u) = u_kᵀ 𝒜_(k) (⊗_{j ≠ k} u_j)`. -/
+/-- The multilinear form through the mode-$k$ unfolding ([golub2013matrix], §12.5.6, the typed form
+of $u_1^T \mathcal{A}_{(1)} (u_3 \otimes u_2)$ and its two analogues): for every mode $k$,
+$$\mathcal{A}(u_1, \dots, u_d) = u_k^T \mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k}
+  u_j\Bigr),$$
+where $\bigotimes_{j \neq k} u_j$ is the rank-one tensor of the vectors $u_j$ with $j \neq k$. -/
 theorem multilinearForm_eq_modeUnfold (A : Tensor κ R) (u : ∀ i, κ i → R) (k : ι) :
     multilinearForm A u
       = u k ⬝ᵥ (A.modeUnfold k *ᵥ rankOne fun j : {j // j ≠ k} => u j) := by
@@ -82,8 +109,8 @@ theorem multilinearForm_eq_modeUnfold (A : Tensor κ R) (u : ∀ i, κ i → R) 
   rw [Finset.prod_congr rfl fun j _ => by rw [dite_eq_right j.2]]
   ring
 
-/-- For a matrix, the multilinear form is the bilinear form `uᵀ M v`
-([golub2013matrix] (12.5.22)). -/
+/-- For a matrix $M$ read as an order-2 tensor, the multilinear form is the bilinear form
+$u_0^T M u_1$ ([golub2013matrix], (12.5.22)). -/
 theorem multilinearForm_ofMatrix {κ : Fin 2 → Type v} [∀ i, Fintype (κ i)]
     (M : Matrix (κ 0) (κ 1) R) (u : ∀ i, κ i → R) :
     multilinearForm (ofMatrix M) u = u 0 ⬝ᵥ (M *ᵥ u 1) := by
@@ -98,19 +125,26 @@ section Real
 
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
 
-/-- The multilinear Rayleigh quotient ([golub2013matrix] §12.5.6):
-`ψ_𝒜(u) = 𝒜(u₁, …, u_d) / ∏ ‖uᵢ‖` on Euclidean vectors. -/
+/-- The **multilinear Rayleigh quotient** of a real tensor ([golub2013matrix], §12.5.6): for
+Euclidean vectors $u_i \in \mathbb{R}^{\kappa_i}$,
+$$\psi_{\mathcal{A}}(u) = \frac{\mathcal{A}(u_1, \dots, u_d)}{\prod_i \|u_i\|}.$$
+If some $u_i$ is $0$, the value is $0$. -/
 noncomputable def multilinearRayleigh (A : Tensor κ ℝ) (u : ∀ i, EuclideanSpace ℝ (κ i)) : ℝ :=
   multilinearForm A (fun i => (u i).ofLp) / ∏ i, ‖u i‖
 
-/-- A tensor singular value ([golub2013matrix] §12.5.6, "we will call `ψ_𝒜(u₁, u₂, u₃)` a
-singular value of the tensor"): `σ` with unit vectors `u` such that
-`𝒜_(k) (⊗_{j ≠ k} u_j) = σ u_k` for every mode `k`. -/
+/-- A **singular value of a tensor** ([golub2013matrix], §12.5.6, "we will call
+$\psi_{\mathcal{A}}(u_1, u_2, u_3)$ a singular value of the tensor"). A real number $\sigma$ is
+a singular value of the real tensor $\mathcal{A}$ if there are unit vectors
+$u_i \in \mathbb{R}^{\kappa_i}$ such that for every mode $k$,
+$$\mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k} u_j\Bigr) = \sigma u_k.$$
+-/
 def IsSingularValue (A : Tensor κ ℝ) (σ : ℝ) : Prop :=
   ∃ u : ∀ i, EuclideanSpace ℝ (κ i), (∀ i, ‖u i‖ = 1) ∧
     ∀ k, A.modeUnfold k *ᵥ (rankOne fun j : {j // j ≠ k} => (u j).ofLp) = σ • (u k).ofLp
 
-/-- A tensor singular value is the value of the Rayleigh quotient at its singular vectors. -/
+/-- If the set of modes is nonempty, then a singular value $\sigma$ of a tensor is the value of the
+Rayleigh quotient at unit singular vectors: $\sigma = \psi_{\mathcal{A}}(u)$ for some unit
+vectors $u_i$. -/
 theorem IsSingularValue.exists_eq_multilinearRayleigh [Nonempty ι] {A : Tensor κ ℝ} {σ : ℝ}
     (h : A.IsSingularValue σ) :
     ∃ u : ∀ i, EuclideanSpace ℝ (κ i), (∀ i, ‖u i‖ = 1) ∧ σ = multilinearRayleigh A u := by
@@ -133,14 +167,18 @@ section Symm
 
 variable [DecidableEq ι] {ν : Type v}
 
-/-- The equivalence of the column tuples of the mode-`k` and mode-`l` unfoldings of a tensor with
-equal mode index types, induced by the transposition of `k` and `l`. -/
+/-- The bijection between the column tuples of the mode-$k$ unfolding and the column tuples of the
+mode-$l$ unfolding of a tensor whose modes all have the index type $\nu$. It is induced by the
+transposition of the modes $k$ and $l$. -/
 def swapColEquiv (k l : ι) : ({j // j ≠ k} → ν) ≃ ({j // j ≠ l} → ν) :=
   Equiv.arrowCongr ((Equiv.swap k l).subtypeEquiv fun j => by
     rw [ne_eq, ne_eq, Equiv.swap_apply_eq_iff, Equiv.swap_apply_right]) (Equiv.refl ν)
 
-/-- All modal unfoldings of a symmetric tensor agree ([golub2013matrix] §12.5.7): up to the
-relabelling of the column tuples induced by the transposition of the two modes. -/
+/-- All modal unfoldings of a symmetric tensor agree ([golub2013matrix], §12.5.7). Let $\mathcal{C}$
+be a symmetric tensor whose modes all have the index type $\nu$. Then for all modes $k$ and $l$,
+$$\mathcal{C}_{(l)} = \mathcal{C}_{(k)},$$
+up to the relabelling `Tensor.swapColEquiv` of the column tuples, which is induced by the
+transposition of the modes $k$ and $l$. -/
 theorem IsSymm.modeUnfold_eq {C : Tensor (fun _ : ι => ν) R} (hC : C.IsSymm) (k l : ι) :
     C.modeUnfold l = (C.modeUnfold k).submatrix id (swapColEquiv k l).symm := by
   ext x c
@@ -167,23 +205,28 @@ section Critical
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
 
 /-- The multilinear form of a real tensor as a continuous multilinear map on the Euclidean spaces
-of its modes. -/
+$\mathbb{R}^{\kappa_i}$ of its modes. -/
 noncomputable def multilinearFormL (A : Tensor κ ℝ) :
     ContinuousMultilinearMap ℝ (fun i => EuclideanSpace ℝ (κ i)) ℝ :=
   ∑ a : ∀ i, κ i, A a • (ContinuousMultilinearMap.mkPiAlgebra ℝ ι ℝ).compContinuousLinearMap
     fun i => EuclideanSpace.proj (a i)
 
+/-- The continuous multilinear map `Tensor.multilinearFormL A` evaluates the multilinear form
+$\mathcal{A}(u_1, \dots, u_d)$. -/
 theorem multilinearFormL_apply (A : Tensor κ ℝ) (u : ∀ i, EuclideanSpace ℝ (κ i)) :
     multilinearFormL A u = multilinearForm A fun i => (u i).ofLp := by
   simp [multilinearFormL, multilinearForm, ContinuousMultilinearMap.compContinuousLinearMap_apply,
     ContinuousMultilinearMap.mkPiAlgebra_apply]
 
+/-- The multilinear Rayleigh quotient is $u \mapsto \mathcal{A}(u_1, \dots, u_d) / \prod_i \|u_i\|$,
+with the numerator written through `Tensor.multilinearFormL`. -/
 theorem multilinearRayleigh_eq (A : Tensor κ ℝ) :
     multilinearRayleigh A = fun u => multilinearFormL A u / ∏ i, ‖u i‖ := by
   funext u
   rw [multilinearRayleigh, multilinearFormL_apply]
 
-/-- The multilinear Rayleigh quotient is differentiable where no vector vanishes. -/
+/-- The multilinear Rayleigh quotient is differentiable at every $u$ with $u_i \neq 0$ for all $i$.
+-/
 theorem differentiableAt_multilinearRayleigh (A : Tensor κ ℝ) {u : ∀ i, EuclideanSpace ℝ (κ i)}
     (hu : ∀ i, u i ≠ 0) : DifferentiableAt ℝ (multilinearRayleigh A) u := by
   have e : multilinearRayleigh A = fun u => multilinearFormL A u * (∏ i, ‖u i‖)⁻¹ := by
@@ -195,7 +238,8 @@ theorem differentiableAt_multilinearRayleigh (A : Tensor κ ℝ) {u : ∀ i, Euc
       ((differentiableAt_apply i u).norm ℝ (hu i)).hasFDerivAt).differentiableAt.fun_inv
       (Finset.prod_ne_zero_iff.2 fun i _ => norm_ne_zero_iff.2 (hu i)))
 
-/-- The multilinear form with the `k`-th vector replaced by `v` is `vᵀ 𝒜_(k) (⊗_{j ≠ k} u_j)`. -/
+/-- The multilinear form with the $k$-th vector replaced by $v$ is $v^T \mathcal{A}_{(k)}
+(\bigotimes_{j \neq k} u_j)$. -/
 private theorem multilinearForm_update (A : Tensor κ ℝ) (u : ∀ i, EuclideanSpace ℝ (κ i)) (k : ι)
     (v : EuclideanSpace ℝ (κ k)) :
     multilinearForm A (fun i => (Function.update u k v i).ofLp)
@@ -206,10 +250,15 @@ private theorem multilinearForm_update (A : Tensor κ ℝ) (u : ∀ i, Euclidean
   rw [multilinearForm_eq_modeUnfold _ _ k]
   simp only [Function.update_self, h]
 
-/-- **The partial derivatives of the multilinear Rayleigh quotient** ([golub2013matrix] §12.5.6):
-in the direction `w` of the `k`-th vector, the derivative of `ψ_𝒜` at `u` (no `u i` zero) is
-`wᵀ 𝒜_(k) (⊗_{j ≠ k} u_j) / ∏ ‖u_i‖ − ψ_𝒜(u) ⟪u_k, w⟫ / ‖u_k‖²`. Along the line
-`t ↦ u + t e_k w` the numerator is affine and only the `k`-th norm varies. -/
+/-- **The partial derivatives of the multilinear Rayleigh quotient** ([golub2013matrix], §12.5.6).
+Let $\mathcal{A}$ be a real tensor with finite index types, and let $u_i \neq 0$ for every mode
+$i$. Then for every mode $k$ and every $w \in \mathbb{R}^{\kappa_k}$, the derivative of
+$\psi_{\mathcal{A}}$ at $u$ in the direction that is $w$ in the $k$-th vector and $0$ in the
+other vectors is
+$$\frac{w^T \mathcal{A}_{(k)} (\bigotimes_{j \neq k} u_j)}{\prod_i \|u_i\|} -
+  \psi_{\mathcal{A}}(u) \frac{\langle u_k, w \rangle}{\|u_k\|^2}.$$
+
+Along the line $t \mapsto u + t e_k w$, the numerator is affine and only the $k$-th norm varies. -/
 theorem fderiv_multilinearRayleigh_single (A : Tensor κ ℝ) {u : ∀ i, EuclideanSpace ℝ (κ i)}
     (hu : ∀ i, u i ≠ 0) (k : ι) (w : EuclideanSpace ℝ (κ k)) :
     fderiv ℝ (multilinearRayleigh A) u (Pi.single k w)
@@ -264,8 +313,13 @@ theorem fderiv_multilinearRayleigh_single (A : Tensor κ ℝ) {u : ∀ i, Euclid
   simp only [id_eq, zero_smul, add_zero, zero_mul, one_mul]
   field_simp
 
-/-- The partial derivative of `ψ_𝒜` in the `k`-th vector vanishes iff the `k`-th equation of a
-tensor singular value holds at the normalized vectors `û_i = u_i / ‖u_i‖`. -/
+/-- Let $\mathcal{A}$ be a real tensor with finite index types, and let $u_i \neq 0$ for every mode
+$i$. The partial derivative of $\psi_{\mathcal{A}}$ at $u$ in the $k$-th vector vanishes in
+every direction if and only if the $k$-th equation of a singular value holds at the normalized
+vectors $\hat u_i = u_i / \|u_i\|$:
+$$\mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k} \hat u_j\Bigr) = \psi_{\mathcal{A}}(u) \, \hat
+  u_k.$$
+-/
 theorem forall_fderiv_multilinearRayleigh_single_eq_zero_iff (A : Tensor κ ℝ)
     {u : ∀ i, EuclideanSpace ℝ (κ i)} (hu : ∀ i, u i ≠ 0) (k : ι) :
     (∀ w, fderiv ℝ (multilinearRayleigh A) u (Pi.single k w) = 0) ↔
@@ -299,12 +353,16 @@ theorem forall_fderiv_multilinearRayleigh_single_eq_zero_iff (A : Tensor κ ℝ)
   · intro h w
     rw [h, dotProduct_zero]
 
-/-- **The critical points of the multilinear Rayleigh quotient** ([golub2013matrix] §12.5.6,
-"the equation `∇ψ_𝒜 = 0`"): for `u` with no `u i` zero, the Fréchet derivative of
-`ψ_𝒜(u) = 𝒜(u₁, …, u_d) / ∏ ‖u_i‖` vanishes at `u` iff, with `û_i = u_i / ‖u_i‖`,
-`𝒜_(k) (⊗_{j ≠ k} û_j) = ψ_𝒜(u) û_k` for every mode `k`: the normalized vectors are singular
-vectors in the sense of `Tensor.IsSingularValue`. The partial derivatives are
-`Tensor.fderiv_multilinearRayleigh_single`. -/
+/-- **The critical points of the multilinear Rayleigh quotient** ([golub2013matrix], §12.5.6, "the
+equation $\nabla \psi_{\mathcal{A}} = 0$"). Let $\mathcal{A}$ be a real tensor with finite index
+types, and let $u_i \neq 0$ for every mode $i$. Then the Fréchet derivative of
+$\psi_{\mathcal{A}}$ at $u$ is $0$ if and only if, with $\hat u_i = u_i / \|u_i\|$,
+$$\mathcal{A}_{(k)} \Bigl(\bigotimes_{j \neq k} \hat u_j\Bigr) = \psi_{\mathcal{A}}(u) \, \hat
+  u_k \quad \text{for every mode } k.$$
+That is, the normalized vectors are singular vectors in the sense of `Tensor.IsSingularValue`,
+with the singular value $\psi_{\mathcal{A}}(u)$.
+
+The partial derivatives are given by `Tensor.fderiv_multilinearRayleigh_single`. -/
 theorem hasFDerivAt_multilinearRayleigh_eq_zero_iff (A : Tensor κ ℝ)
     {u : ∀ i, EuclideanSpace ℝ (κ i)} (hu : ∀ i, u i ≠ 0) :
     HasFDerivAt (multilinearRayleigh A) (0 : (∀ i, EuclideanSpace ℝ (κ i)) →L[ℝ] ℝ) u ↔
@@ -323,17 +381,25 @@ theorem hasFDerivAt_multilinearRayleigh_eq_zero_iff (A : Tensor κ ℝ)
 
 variable {ν : Type*} [Fintype ν]
 
-/-- The Rayleigh quotient of a symmetric tensor ([golub2013matrix] (12.5.24)):
-`φ_𝒞(x) = 𝒞(x, …, x) / ‖x‖ ^ d`. -/
+/-- The **Rayleigh quotient of a symmetric tensor** ([golub2013matrix], (12.5.24)). For a real
+tensor $\mathcal{C}$ of order $d$ whose modes all have the index type $\nu$, and for
+$x \in \mathbb{R}^\nu$,
+$$\varphi_{\mathcal{C}}(x) = \frac{\mathcal{C}(x, \dots, x)}{\|x\|^d}.$$
+If $x = 0$ and $d \ge 1$, the value is $0$. The definition does not assume that $\mathcal{C}$ is
+symmetric. -/
 noncomputable def symmetricRayleigh (C : Tensor (fun _ : ι => ν) ℝ) (x : EuclideanSpace ℝ ν) :
     ℝ :=
   multilinearForm C (fun _ => x.ofLp) / ‖x‖ ^ Fintype.card ι
 
+/-- The Rayleigh quotient $\varphi_{\mathcal{C}}$ is the multilinear Rayleigh quotient on the
+diagonal: $\varphi_{\mathcal{C}}(x) = \psi_{\mathcal{C}}(x, \dots, x)$. -/
 theorem symmetricRayleigh_eq (C : Tensor (fun _ : ι => ν) ℝ) (x : EuclideanSpace ℝ ν) :
     symmetricRayleigh C x = multilinearRayleigh C fun _ => x := by
   rw [symmetricRayleigh, multilinearRayleigh, Finset.prod_const, Finset.card_univ]
 
-/-- The unfoldings of a symmetric tensor agree on the rank-one tensors of a repeated vector. -/
+/-- The unfoldings of a symmetric tensor agree on the rank-one tensors of a repeated vector:
+$\mathcal{C}_{(l)} (z \otimes \cdots \otimes z) = \mathcal{C}_{(k)} (z \otimes \cdots \otimes
+z)$. -/
 private theorem IsSymm.modeUnfold_mulVec_rankOne {C : Tensor (fun _ : ι => ν) ℝ} (hC : C.IsSymm)
     (k l : ι) (z : ν → ℝ) :
     C.modeUnfold l *ᵥ rankOne (fun _ : {j // j ≠ l} => z)
@@ -346,13 +412,19 @@ private theorem IsSymm.modeUnfold_mulVec_rankOne {C : Tensor (fun _ : ι => ν) 
     Equiv.refl_symm, Equiv.coe_refl, Function.comp_apply, id_eq]
   exact (Equiv.prod_comp _ fun j => z (c j)).symm
 
-/-- **The critical points of the Rayleigh quotient of a symmetric tensor** ([golub2013matrix]
-(12.5.23)–(12.5.24)): for a symmetric `𝒞` with a mode `k` and `x ≠ 0`, the Fréchet derivative of
-`φ_𝒞(x) = 𝒞(x, …, x) / ‖x‖ ^ d` vanishes at `x` iff, with `x̂ = x / ‖x‖`,
-`𝒞_(k) (x̂ ⊗ ⋯ ⊗ x̂) = φ_𝒞(x) x̂` (all unfoldings agree, `Tensor.IsSymm.modeUnfold_eq`). The
-derivative of `φ_𝒞 = ψ_𝒞 ∘ diag` in the direction `w` is the sum of the `d` partial derivatives
-of `ψ_𝒞` in the direction `w`, which by symmetry are equal. (The book's gradient omits the factor
-`d`, harmless at zero.) -/
+/-- **The critical points of the Rayleigh quotient of a symmetric tensor** ([golub2013matrix],
+(12.5.23)–(12.5.24)). Let $\mathcal{C}$ be a real symmetric tensor of order $d$ whose modes all
+have the finite index type $\nu$, let $k$ be a mode, and let $x \in \mathbb{R}^\nu$ with
+$x \neq 0$. Then the Fréchet derivative of $\varphi_{\mathcal{C}}$ at $x$ is $0$ if and only if,
+with $\hat x = x / \|x\|$,
+$$\mathcal{C}_{(k)} (\hat x \otimes \cdots \otimes \hat x) = \varphi_{\mathcal{C}}(x) \, \hat
+  x.$$
+The choice of $k$ does not matter, because all unfoldings agree (`Tensor.IsSymm.modeUnfold_eq`).
+
+The derivative of $\varphi_{\mathcal{C}} = \psi_{\mathcal{C}} \circ \operatorname{diag}$ in the
+direction $w$ is the sum of the $d$ partial derivatives of $\psi_{\mathcal{C}}$ in the direction
+$w$, which are equal by symmetry. The gradient printed in the book omits the factor $d$; this
+does not change where the gradient is zero. -/
 theorem hasFDerivAt_symmetricRayleigh_eq_zero_iff {C : Tensor (fun _ : ι => ν) ℝ}
     (hC : C.IsSymm) {x : EuclideanSpace ℝ ν} (hx : x ≠ 0) (k : ι) :
     HasFDerivAt (symmetricRayleigh C) (0 : EuclideanSpace ℝ ν →L[ℝ] ℝ) x ↔
@@ -395,13 +467,16 @@ end Critical
 
 end Tensor
 
-/-! ### Matrices: the bilinear Rayleigh quotient
+/-!
+### Matrices: the bilinear Rayleigh quotient
 
-A matrix is a tensor of order two (`Tensor.ofMatrix`), and its multilinear Rayleigh quotient is
-the bilinear one `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of [golub2013matrix] (12.5.22)
-(`Matrix.bilinearRayleigh_eq_multilinearRayleigh`). Its critical points are therefore read off
-`Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the two modal equations are
-`A v̂ = ψ û` and `Aᵀ û = ψ v̂`, and `|ψ|` is a singular value. -/
+A matrix is a tensor of order two (`Tensor.ofMatrix`), and its multilinear Rayleigh quotient is the
+bilinear Rayleigh quotient $\psi_A(u, v) = \langle u, Av \rangle / (\|u\| \|v\|)$ of
+[golub2013matrix], (12.5.22) (`Matrix.bilinearRayleigh_eq_multilinearRayleigh`). Its critical points
+therefore follow from `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff`: the two modal equations
+are $A \hat v = \psi \hat u$ and $A^T \hat u = \psi \hat v$, and $|\psi|$ is a singular value of
+$A$.
+-/
 
 namespace Matrix
 
@@ -414,11 +489,16 @@ vector fixed to `2` so that every occurrence elaborates to the same term. -/
 set_option hygiene false in
 local notation "κmn" => (![m, n] : Fin 2 → Type v)
 
-/-- The **bilinear Rayleigh quotient** `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)` of a real matrix
-([golub2013matrix] (12.5.22)), on `EuclideanSpace ℝ m × EuclideanSpace ℝ n`. It is the multilinear
-Rayleigh quotient of `A` as a tensor (`Matrix.bilinearRayleigh_eq_multilinearRayleigh`), and its
-stationary values are the singular values
-(`Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`). -/
+/-- The **bilinear Rayleigh quotient** of a real matrix $A \in \mathbb{R}^{m \times n}$
+([golub2013matrix], (12.5.22)): for $u \in \mathbb{R}^m$ and $v \in \mathbb{R}^n$,
+$$\psi_A(u, v) = \frac{\langle u, Av \rangle}{\|u\| \|v\|}.$$
+If $u = 0$ or $v = 0$, the value is $0$.
+
+It is the multilinear Rayleigh quotient of $A$ as a tensor
+(`Matrix.bilinearRayleigh_eq_multilinearRayleigh`), and the absolute value of each of its
+stationary values is a singular value of $A$
+(`Matrix.abs_critical_bilinearRayleigh_mem_colSingularValues`). The pair $(u, v)$ is an element
+of `EuclideanSpace ℝ m × EuclideanSpace ℝ n`. -/
 noncomputable def bilinearRayleigh (A : Matrix m n ℝ)
     (x : EuclideanSpace ℝ m × EuclideanSpace ℝ n) : ℝ :=
   inner ℝ x.1 (toEuclideanLin A x.2) / (‖x.1‖ * ‖x.2‖)
@@ -426,16 +506,17 @@ noncomputable def bilinearRayleigh (A : Matrix m n ℝ)
 variable (A : Matrix m n ℝ)
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- The multilinear form of a real matrix read as a tensor of order two is `uᵀ A v`, the
-`ℝ`-instance form of `Tensor.multilinearForm_ofMatrix`. -/
+/-- The multilinear form of a real matrix $A$ read as an order-2 tensor is $u_0^T A u_1$. -/
 private theorem multilinearForm_ofMatrix_real (u : ∀ i : Fin 2, κmn i → ℝ) :
     Tensor.multilinearForm (Tensor.ofMatrix (κ := κmn) A) u = u 0 ⬝ᵥ (A *ᵥ u 1) :=
   Tensor.multilinearForm_ofMatrix A u
 
 omit [DecidableEq m] in
-/-- **The bilinear Rayleigh quotient is the multilinear one of the matrix as a tensor**
-([golub2013matrix] (12.5.22)): `ψ_A(u, v) = ψ_𝒜(u, v)` for `𝒜 = ofMatrix A`, the pair read as a
-tuple over `Fin 2`. -/
+/-- **The bilinear Rayleigh quotient is the multilinear Rayleigh quotient of the matrix as a
+tensor** ([golub2013matrix], (12.5.22)). For a real matrix $A$ and the order-2 tensor
+$\mathcal{A}$ of $A$, $\psi_A(u, v) = \psi_{\mathcal{A}}(u, v)$ for all $u$ and $v$.
+
+The pair $(u, v)$ is read as a tuple over `Fin 2` through `ContinuousLinearEquiv.piFinTwo`. -/
 theorem bilinearRayleigh_eq_multilinearRayleigh :
     bilinearRayleigh A = Tensor.multilinearRayleigh (Tensor.ofMatrix (κ := κmn) A) ∘
       (ContinuousLinearEquiv.piFinTwo ℝ fun i => EuclideanSpace ℝ (κmn i)).symm := by
@@ -449,8 +530,8 @@ theorem bilinearRayleigh_eq_multilinearRayleigh :
     rfl
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- The mode-`0` unfolding of a matrix acts on the rank-one tensors of the other mode as the
-matrix itself. -/
+/-- The mode-$0$ unfolding of a matrix $A$, read as an order-2 tensor, maps the rank-one tensor of a
+vector $z_1$ of the other mode to $A z_1$. -/
 private theorem modeUnfold_zero_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → ℝ) :
     (Tensor.ofMatrix (κ := κmn) A).modeUnfold 0 *ᵥ
       Tensor.rankOne (fun j : {j // j ≠ (0 : Fin 2)} => z j) = A *ᵥ z 1 := by
@@ -466,8 +547,8 @@ private theorem modeUnfold_zero_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → �
   exact h.symm
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- The mode-`1` unfolding of a matrix acts on the rank-one tensors of the other mode as the
-transpose. -/
+/-- The mode-$1$ unfolding of a matrix $A$, read as an order-2 tensor, maps the rank-one tensor of a
+vector $z_0$ of the other mode to $A^T z_0$. -/
 private theorem modeUnfold_one_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → ℝ) :
     (Tensor.ofMatrix (κ := κmn) A).modeUnfold 1 *ᵥ
       Tensor.rankOne (fun j : {j // j ≠ (1 : Fin 2)} => z j) = Aᵀ *ᵥ z 0 := by
@@ -484,11 +565,14 @@ private theorem modeUnfold_one_ofMatrix_mulVec (z : ∀ i : Fin 2, κmn i → �
     rw [dotProduct_mulVec, dotProduct_single_one, mulVec_transpose]
   exact key (z 0) x
 
-/-- **The critical points of the bilinear Rayleigh quotient** ([golub2013matrix] (12.5.22) and the
-gradient display after it): at nonzero `(u, v)`, with `û = u / ‖u‖`, `v̂ = v / ‖v‖` and
-`ψ = ψ_A(u, v)`, the derivative of `ψ_A` vanishes if and only if `A v̂ = ψ û` and `Aᵀ û = ψ v̂`.
+/-- **The critical points of the bilinear Rayleigh quotient** ([golub2013matrix], (12.5.22) and the
+gradient display after it). Let $A \in \mathbb{R}^{m \times n}$, and let $u \in \mathbb{R}^m$
+and $v \in \mathbb{R}^n$ be nonzero. With $\hat u = u / \|u\|$, $\hat v = v / \|v\|$ and
+$\psi = \psi_A(u, v)$, the derivative of $\psi_A$ at $(u, v)$ is $0$ if and only if
+$$A \hat v = \psi \hat u \quad \text{and} \quad A^T \hat u = \psi \hat v.$$
+
 These are the two modal equations of `Tensor.hasFDerivAt_multilinearRayleigh_eq_zero_iff` for
-`A` as a tensor. -/
+$A$ as a tensor. -/
 theorem fderiv_bilinearRayleigh_eq_zero_iff {u : EuclideanSpace ℝ m} {v : EuclideanSpace ℝ n}
     (hu : u ≠ 0) (hv : v ≠ 0) :
     fderiv ℝ (bilinearRayleigh A) (u, v) = 0 ↔
@@ -528,10 +612,13 @@ theorem fderiv_bilinearRayleigh_eq_zero_iff {u : EuclideanSpace ℝ m} {v : Eucl
 
 omit [DecidableEq m] in
 /-- **Singular values are the stationary values of the bilinear Rayleigh quotient**
-([golub2013matrix] (12.5.22)): at a critical point `(u, v)` of `ψ_A(u, v) = ⟪u, A v⟫ / (‖u‖ ‖v‖)`
-with `u, v ≠ 0`, `|ψ_A(u, v)|` is a singular value of `A` (column-indexed,
-`Matrix.colSingularValues`): the critical-point equations `A v̂ = ψ û`, `Aᵀ û = ψ v̂` give
-`Aᵀ A v̂ = ψ² v̂`. Conversely every singular triple is a critical point, by
+([golub2013matrix], (12.5.22)). Let $A \in \mathbb{R}^{m \times n}$, and let
+$u \in \mathbb{R}^m$ and $v \in \mathbb{R}^n$ be nonzero. If $(u, v)$ is a critical point of
+$\psi_A$, then $|\psi_A(u, v)|$ is a singular value of $A$: it equals
+`Matrix.colSingularValues A i` for some column index $i$.
+
+The equations $A \hat v = \psi \hat u$ and $A^T \hat u = \psi \hat v$ at a critical point give
+$A^T A \hat v = \psi^2 \hat v$. Conversely, every singular triple is a critical point, by
 `Matrix.fderiv_bilinearRayleigh_eq_zero_iff`. -/
 theorem abs_critical_bilinearRayleigh_mem_colSingularValues {u : EuclideanSpace ℝ m}
     {v : EuclideanSpace ℝ n} (hu : u ≠ 0) (hv : v ≠ 0)

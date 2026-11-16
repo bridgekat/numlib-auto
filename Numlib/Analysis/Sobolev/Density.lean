@@ -16,89 +16,86 @@ import Numlib.Analysis.Sobolev.Mollification
 /-!
 # Density of smooth functions in Sobolev spaces
 
-Two density theorems, both for `1 ≤ p < ∞`.
+This file proves two density theorems for $W^{k,p}$, both for $1 \le p < \infty$. Write $D^n g$ for
+the classical derivative of order $n$ of a smooth function $g$, $\partial^n f$ for the chosen weak
+derivative of order $n$ of $f$ on $\Omega$ (`weakIteratedFDeriv`), and $\|f\|_{k,p,\Omega} =
+(\sum_{n=0}^k \|\partial^n f\|_{L^p(\Omega)}^p)^{1/p}$ for the Sobolev norm (`sobolevNorm`). On the
+**whole space** $E$, mollification smooths a function with no restriction on the position, because
+there is no boundary to keep away from. So one mollification approximates a function of $W^{k,p}(E)$
+together with all its weak derivatives of order at most $k$. To cut the result off outside a large
+ball costs, by the Leibniz bound, only a constant times the $L^p$ mass of the derivatives far from
+the origin, which tends to $0$. This gives the density of $C_c^\infty(E)$ in $W^{k,p}(E)$, Theorem
+7.3.4 of [han2009theoretical].
 
-On the **whole space**, mollification smooths a function at no cost in position — there is no
-boundary to keep away from — so a single mollification approximates a function of `W^{k,p}(ℝ^d)`
-together with all its weak derivatives of order at most `k`. Cutting the result off outside a
-large ball costs, by the Leibniz bound, only a constant times the `L^p` mass of the derivatives
-far from the origin, which tends to `0`. That is the density of `C_0^∞(ℝ^d)` in `W^{k,p}(ℝ^d)`.
-
-On an **arbitrary open set** `Ω` a fixed mollification radius is unavailable near the boundary,
-and the classical remedy is to exhaust `Ω` by relatively compact opens, to take a smooth partition
-of unity subordinate to the exhaustion, and to mollify each piece at its own radius. The sum of
-the pieces is smooth on `Ω` because the partition of unity is locally finite, and it approximates
-`f` because each piece does. That is the theorem of Meyers and Serrin, `H = W`.
-
-For the classical statements see N. G. Meyers and J. Serrin, *H = W*, Proceedings of the National
-Academy of Sciences of the United States of America **51** (1964), 1055–1056; R. A. Adams and
-J. J. F. Fournier, *Sobolev Spaces*, 2nd edition, Academic Press, 2003, Theorems 3.17 and 3.22; or
-H. Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Springer,
-2011, §9.1. They are Theorems 7.3.1 and 7.3.4 of Kendall Atkinson and Weimin Han, *Theoretical
-Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+On an **arbitrary open set** $\Omega$, a fixed mollification radius is not available near the
+boundary. The classical remedy is to exhaust $\Omega$ by relatively compact open sets, to take a
+smooth partition of unity subordinate to the exhaustion, and to mollify each piece at its own
+radius. The sum of the pieces is smooth on $\Omega$ because the partition of unity is locally
+finite, and it approximates $f$ because each piece does. This is the theorem of Meyers and Serrin,
+"$H = W$" (Proc. Nat. Acad. Sci. USA 51 (1964), 1055–1056), Theorem 7.3.1 of [han2009theoretical].
+See also §9.1 of [brezis2011functional], and Theorems 3.17 and 3.22 of Adams and Fournier, *Sobolev
+Spaces*, 2nd edition.
 
 ## Main results
 
-* `sobolevNorm_le_of_forall_eLpNorm_le` and `eLpNorm_weakIteratedFDeriv_le_sobolevNorm`: the
-  Sobolev norm is bounded by, and bounds, the `L^p(Ω)` norms of the weak derivatives of the orders
-  `n ≤ k`, up to the factor `k + 1`.
-* `MemSobolev.tendsto_sobolevNorm_convolution_sub`: **mollification approximates in
-  `W^{k,p}(ℝ^d)`**, the mollifications of `f` converging to `f` in the Sobolev norm of the whole
-  space as the radii tend to `0`.
-* `MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball`: the `L^p` mass of a function outside
-  a large ball tends to `0`.
+* `sobolevNorm_le_of_forall_eLpNorm_le` and `eLpNorm_weakIteratedFDeriv_le_sobolevNorm`: the Sobolev
+  norm is bounded by $k + 1$ times the largest of the $L^p(\Omega)$ norms of the weak derivatives of
+  the orders $n \le k$, and it bounds each of them.
+* `MemSobolev.tendsto_sobolevNorm_convolution_sub`: **mollification approximates in $W^{k,p}(E)$**:
+  the mollifications of $f$ converge to $f$ in the Sobolev norm of the whole space as the radii tend
+  to $0$.
+* `MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball`: the $L^p$ mass of a function outside a
+  large ball tends to $0$.
 * `exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub`: **truncation approximates in
-  `W^{k,p}(ℝ^d)`**, for a function all of whose classical derivatives of order at most `k` lie in
-  `L^p`.
-* `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`: **`C_0^∞(ℝ^d)` is dense in
-  `W^{k,p}(ℝ^d)`**.
+  $W^{k,p}(E)$**, for a smooth function all of whose classical derivatives of order at most $k$ lie
+  in $L^p$.
+* `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`: **$C_c^\infty(E)$ is dense in
+  $W^{k,p}(E)$**.
 * `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one` and `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`:
-  **the weak derivative is closed under `L^1` limits**, and under `L^p` limits for any `p`.
-* `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`: **local approximation in `W^{k,p}(Ω)`**, at
-  all orders at once, on a relatively compact open subset of `Ω`.
-* `TopologicalSpace.Opens.exists_partitionOfUnity`: **a smooth partition of unity subordinate to
-  an exhaustion** of an open set, telescoping and locally finite in a strong sense.
-* `eLpNorm_iteratedFDeriv_smul_sub_le` and `eLpNorm_iteratedFDeriv_sub_patch_le`: the `L^p`
-  Leibniz estimate for one piece, and the patching estimate that adds the pieces up.
-* `MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm`: **the Meyers–Serrin theorem `H = W`**,
-  that `C^∞(Ω) ∩ W^{k,p}(Ω)` is dense in `W^{k,p}(Ω)` for any open `Ω`.
+  **the weak derivative is closed under $L^1$ limits**, and under $L^p$ limits for any $p \ge 1$
+  when $\mu$ is finite on the compact subsets of $\Omega$.
+* `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`: **local approximation in $W^{k,p}(\Omega)$**, at
+  all orders at once, on a relatively compact open subset of $\Omega$.
+* `TopologicalSpace.Opens.exists_partitionOfUnity`: **a smooth partition of unity subordinate to an
+  exhaustion** of an open set, telescoping and locally finite in a strong sense.
+* `eLpNorm_iteratedFDeriv_smul_sub_le` and `eLpNorm_iteratedFDeriv_sub_patch_le`: the $L^p$ Leibniz
+  estimate for one piece, and the estimate that adds the pieces up.
+* `MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm`: **the Meyers–Serrin theorem**:
+  $C^\infty(\Omega) \cap W^{k,p}(\Omega)$ is dense in $W^{k,p}(\Omega)$ for any open set $\Omega$.
+
+## Proof outline
+
+Neither theorem uses a Leibniz rule for weak derivatives. The usual account of Meyers–Serrin proves
+$\psi_j f \in W^{k,p}(\Omega)$ for each member $\psi_j$ of the partition of unity, and this is the
+product rule of order $n$ for a weak derivative against a smooth factor. Here the patched function
+$v = \sum_j \psi_j g_j$ is compared not with $f$ but with a *single* smooth approximation $G$ of $f$
+on a relatively compact open set. Since the $\psi_j$ sum to $1$ there,
+$$D^n v - D^n G = \sum_j D^n (\psi_j (g_j - G))$$
+is an identity between classical derivatives of smooth functions, and only the Leibniz *bound*
+`norm_iteratedFDeriv_smul_le` is used to estimate it. When $G$ runs through a sequence that
+approximates $f$, the theorem follows. The same device gives the whole-space theorem, where the two
+approximation steps are taken in the order "mollify, then truncate", so that the truncated function
+is already smooth.
 
 ## Implementation notes
 
-**No Leibniz rule for weak derivatives is needed anywhere**, in either theorem, and that is what
-keeps the development to one file. The received account of Meyers–Serrin has one prove
-`ψ_j f ∈ W^{k,p}(Ω)` for each member `ψ_j` of the partition of unity, which is the order-`n`
-product rule for a weak derivative against a smooth factor and is genuinely hard. It is avoided
-here by comparing the patched function `v = ∑_j ψ_j g_j` not with `f` but with a *single* smooth
-approximation `G` of `f` on a relatively compact open set: since the `ψ_j` sum to `1` there,
-
-`∂^n v - ∂^n G = ∑_j ∂^n (ψ_j (g_j - G))`
-
-is an identity between classical derivatives of smooth functions, and only the Leibniz *bound*
-`norm_iteratedFDeriv_smul_le` is used to estimate it. Letting `G` run through a sequence
-approximating `f` gives the theorem. The same device settles the whole-space theorem, where the
-two approximation steps are taken in the order mollify-then-truncate so that the function being
-truncated is already smooth.
-
-The cut-off of the whole-space theorem is `x ↦ η (R⁻¹ • x)` for one fixed `η` that is `1` on the
-closed unit ball and supported in the ball of radius `2`. Its derivatives are bounded uniformly in
-`R ≥ 1` by `iteratedFDeriv_comp_const_smul`, which contributes a factor `R ^ (-i)`; the point of
-fixing `η` once and scaling it, rather than taking a family of bumps of growing radius, is exactly
-that this factor stays visible.
-
-The partition of unity is the telescoping one, `ψ_j = χ_j - χ_{j-1}` for smooth Urysohn functions
-`χ_j` attached to an exhaustion `U 0 ⊆ U 1 ⊆ …`. Its local finiteness comes in the strongest
-possible form — on `U N` every `ψ_j` with `j > N` vanishes *identically*, and `ψ_0, …, ψ_N` already
-sum to `1` — so the patched function is a *finite* sum on each `U N` and no theory of locally
-finite sums is needed: a `tsum` that is finitely supported at each point, and
-`Filter.EventuallyEq.iteratedFDeriv`, do everything.
-
-`MeasureTheory.eLpNorm_add_le_of_norm`, `MeasureTheory.eLpNorm_sum_le_of_norm` and
-`MeasureTheory.MemLp.add_of_norm` are Mathlib lemmas restated for a `NormedAddCommGroup`. Mathlib
-states them over an `ESeminormedAddMonoid`, and resolving that class for `E [×n]→L[ℝ] F` with `n`
-a variable costs more than the whole default heartbeat budget; restating them once with the group
-abstract makes every use in this file cheap. Anyone extending this file should reach for the
-restatements rather than the originals.
+* The cut-off of the whole-space theorem is $x \mapsto \eta(x / R)$ for one fixed $\eta$ that is $1$
+  on the closed unit ball and supported in the ball of radius $2$. Its derivatives are bounded
+  uniformly in $R \ge 1$ by `iteratedFDeriv_comp_const_smul`, which gives a factor $R^{-i}$. One
+  $\eta$ is fixed and scaled, instead of a family of bump functions of growing radius, so that this
+  factor stays visible.
+* The partition of unity is the telescoping one, $\psi_j = \chi_j - \chi_{j-1}$, for smooth Urysohn
+  functions $\chi_j$ attached to an exhaustion $U_0 \subseteq U_1 \subseteq \dots$. It is locally
+  finite in the strongest form: on $U_N$ every $\psi_j$ with $j > N$ vanishes *identically*, and
+  $\psi_0, \dots, \psi_N$ already sum to $1$. So the patched function is a *finite* sum on each
+  $U_N$, and no theory of locally finite sums is needed: a `tsum` that is finitely supported at each
+  point, and `Filter.EventuallyEq.iteratedFDeriv`, are enough.
+* `MeasureTheory.eLpNorm_add_le_of_norm`, `MeasureTheory.eLpNorm_sum_le_of_norm` and
+  `MeasureTheory.MemLp.add_of_norm` are Mathlib lemmas restated for a `NormedAddCommGroup`. Mathlib
+  states them over an `ESeminormedAddMonoid`, and to resolve that class for `E [×n]→L[ℝ] F` with a
+  variable `n` costs more than the whole default heartbeat budget. With the group abstract, the
+  restatements make every use in this file cheap. Code that extends this file should use the
+  restatements, not the originals.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace
@@ -116,8 +113,9 @@ section Norm
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
-/-- The `L^p(Ω)` norm of the chosen weak derivative of order `n` of `f` is the `L^p(Ω)` norm of
-any weak derivative of order `n` of `f`. -/
+/-- Let $E$ be finite-dimensional with its Borel $\sigma$-algebra, and let $F$ be complete. If $w$
+is a weak derivative of order $n$ of $f$ on $\Omega$, then $\|\partial^n f\|_{L^p(\Omega)} =
+\|w\|_{L^p(\Omega)}$, where $\partial^n f$ is the chosen weak derivative. -/
 theorem HasWeakIteratedFDerivOn.eLpNorm_weakIteratedFDeriv {w : E → E [×n]→L[ℝ] F}
     (h : HasWeakIteratedFDerivOn n f w Ω μ) :
     eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E))
@@ -125,14 +123,16 @@ theorem HasWeakIteratedFDerivOn.eLpNorm_weakIteratedFDeriv {w : E → E [×n]→
   eLpNorm_congr_ae <| (ae_restrict_iff' Ω.isOpen.measurableSet).2 h.weakIteratedFDeriv_ae_eq
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- The chosen weak derivative of order `n ≤ k` of a function of `W^{k,p}(Ω)` is one. -/
+/-- If $f \in W^{k,p}(\Omega)$ and $n \le k$, then the chosen weak derivative $\partial^n f$ is a
+weak derivative of order $n$ of $f$ on $\Omega$. -/
 theorem MemSobolev.hasWeakIteratedFDerivOn (h : MemSobolev f k p Ω μ) (hn : n ≤ k) :
     HasWeakIteratedFDerivOn n f (weakIteratedFDeriv n f Ω μ) Ω μ := by
   obtain ⟨w, hw, -⟩ := h.exists_hasWeakIteratedFDerivOn (n := n) (Nat.cast_le.2 hn)
   exact hw.hasWeakIteratedFDerivOn_weakIteratedFDeriv
 
-/-- The chosen weak derivative of order `n ≤ k` of a function of `W^{k,p}(Ω)` lies in
-`L^p(Ω)`. -/
+/-- Let $E$ be finite-dimensional with its Borel $\sigma$-algebra, and let $F$ be complete. If
+$f \in W^{k,p}(\Omega)$ and $n \le k$, then the chosen weak derivative $\partial^n f$ lies in
+$L^p(\Omega)$. -/
 theorem MemSobolev.memLp_weakIteratedFDeriv (h : MemSobolev f k p Ω μ) (hn : n ≤ k) :
     MemLp (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E)) := by
   obtain ⟨w, hw, hwp⟩ := h.exists_hasWeakIteratedFDerivOn (n := n) (Nat.cast_le.2 hn)
@@ -142,9 +142,10 @@ theorem MemSobolev.memLp_weakIteratedFDeriv (h : MemSobolev f k p Ω μ) (hn : n
 
 end Norm
 
-/-- A bound on the `L^p(Ω)` norms of the chosen weak derivatives of all orders `n ≤ k` bounds the
-Sobolev norm, at the cost of the factor `k + 1`: the norm is an `ℓ^p` sum of `k + 1` terms, and
-`(k + 1) ^ (1 / p) ≤ k + 1`. -/
+/-- Let $1 \le p < \infty$ and $c \in [0, \infty]$. If $\|\partial^n f\|_{L^p(\Omega)} \le c$ for
+every $n \le k$, then
+$$\|f\|_{k,p,\Omega} \le (k + 1)\, c.$$
+The norm is an $\ell^p$ sum of $k + 1$ terms, and $(k + 1)^{1/p} \le k + 1$. -/
 theorem sobolevNorm_le_of_forall_eLpNorm_le (hp : 1 ≤ p) (hp' : p ≠ ⊤) {c : ℝ≥0∞}
     (h : ∀ n ≤ k, eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E)) ≤ c) :
     sobolevNorm f k p Ω μ ≤ (k + 1) * c := by
@@ -170,16 +171,20 @@ theorem sobolevNorm_le_of_forall_eLpNorm_le (hp : 1 ≤ p) (hp' : p ≠ ⊤) {c 
           exact ENNReal.toReal_mono hp' hp
         exact mul_le_mul' hle le_rfl
 
-/-! ### Elementary tools
+/-!
+### Elementary tools
 
 A dyadic budget, a uniform bound on the derivatives of a smooth compactly supported function, the
 crude form of the Leibniz bound that both density theorems use, and three Mathlib lemmas restated
-for a normed group to keep the instance search cheap (see the implementation notes). -/
+for a normed group to keep the instance search cheap (see the implementation notes).
+-/
 
 section Tools
 
 omit [MeasurableSpace E] [NormedSpace ℝ F] in
-/-- A dyadic budget: the partial sums of `a / 2 ^ (j + 1)` never exceed `a`. -/
+/-- A dyadic budget: for $a \in [0, \infty]$ and every $M$,
+$$\sum_{j < M} \frac{a}{2^{j+1}} + \frac{a}{2^M} = a.$$
+-/
 theorem ENNReal.sum_range_div_two_pow_succ_add (a : ℝ≥0∞) (M : ℕ) :
     (∑ j ∈ Finset.range M, a / 2 ^ (j + 1)) + a / 2 ^ M = a := by
   induction M with
@@ -191,14 +196,14 @@ theorem ENNReal.sum_range_div_two_pow_succ_add (a : ℝ≥0∞) (M : ℕ) :
     rw [Finset.sum_range_succ, add_assoc, hhalf, ENNReal.add_halves, ih]
 
 omit [MeasurableSpace E] [NormedSpace ℝ F] in
-/-- The partial sums of the dyadic budget are bounded by `a`. -/
+/-- For $a \in [0, \infty]$ and every $M$, $\sum_{j < M} a / 2^{j+1} \le a$. -/
 theorem ENNReal.sum_range_div_two_pow_succ_le (a : ℝ≥0∞) (M : ℕ) :
     (∑ j ∈ Finset.range M, a / 2 ^ (j + 1)) ≤ a :=
   le_self_add.trans (le_of_eq (ENNReal.sum_range_div_two_pow_succ_add a M))
 
 omit [MeasurableSpace E] in
-/-- A uniform bound on the derivatives of order at most `k` of a smooth compactly supported
-function. -/
+/-- Let $\psi : E \to \mathbb{R}$ be of class $C^\infty$ with compact support. For every $k$ there
+is $M \ge 0$ with $\|D^r \psi(x)\| \le M$ for all $r \le k$ and all $x$. -/
 theorem exists_bound_norm_iteratedFDeriv {ψ : E → ℝ} (hψ : ContDiff ℝ ∞ ψ)
     (hψc : HasCompactSupport ψ) (k : ℕ) :
     ∃ M : ℝ, 0 ≤ M ∧ ∀ r ≤ k, ∀ x, ‖iteratedFDeriv ℝ r ψ x‖ ≤ M := by
@@ -212,11 +217,12 @@ theorem exists_bound_norm_iteratedFDeriv {ψ : E → ℝ} (hψ : ContDiff ℝ �
     (Finset.mem_range.2 (Nat.lt_succ_of_le hr)))
 
 omit [MeasurableSpace E] in
-/-- **The Leibniz bound in a crude uniform form.** If every derivative of order at most `k` of the
-smooth scalar `ψ` is bounded by `M`, then for `h` smooth and `m ≤ k` the derivative of order `m` of
-`ψ h` is bounded by `(k + 1) 2^k M` times the sum of the derivatives of `h` of order at most `k`.
+/-- **The Leibniz bound in a crude uniform form.** Let $\psi : E \to \mathbb{R}$ be of class
+$C^\infty$ with $\|D^r \psi(x)\| \le M$ for all $r \le k$ and all $x$, and let $h : E \to F$ be
+of class $C^\infty$. Then for $m \le k$ and every $x$,
+$$\|D^m(\psi h)(x)\| \le (k + 1)\, 2^k M \sum_{s=0}^{k} \|D^s h(x)\|.$$
 
-The point of the crude form is that the constant does not depend on `m` or on `h`. -/
+The point of the crude form is that the constant does not depend on $m$ or on $h$. -/
 theorem norm_iteratedFDeriv_smul_le_const_mul_sum {ψ : E → ℝ} (hψ : ContDiff ℝ ∞ ψ) {h : E → F}
     (hh : ContDiff ℝ ∞ h) {M : ℝ} (hM : ∀ r ≤ k, ∀ x, ‖iteratedFDeriv ℝ r ψ x‖ ≤ M) {m : ℕ}
     (hm : m ≤ k) (x : E) :
@@ -252,19 +258,22 @@ theorem norm_iteratedFDeriv_smul_le_const_mul_sum {ψ : E → ℝ} (hψ : ContDi
     _ = ((k + 1) * 2 ^ k * M) * H := by ring
 
 omit [MeasurableSpace E] [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- Minkowski's inequality for a normed group, stated so that the instance search does not go
-through `ESeminormedAddMonoid`. Mathlib's `MeasureTheory.eLpNorm_add_le` is stated over an
-`ESeminormedAddMonoid`, and resolving that class for a `ContinuousMultilinearMap` type whose arity
-is a variable costs more than the default heartbeat budget; specializing once, with the group
-abstract, makes every later use cheap. -/
+/-- **Minkowski's inequality** for functions with values in a normed group: for $p \ge 1$, $\|a +
+b\|_{L^p(\nu)} \le \|a\|_{L^p(\nu)} + \|b\|_{L^p(\nu)}$.
+
+Mathlib's `MeasureTheory.eLpNorm_add_le` is stated over an `ESeminormedAddMonoid`, and to
+resolve that class for a `ContinuousMultilinearMap` type of variable arity costs more than the
+default heartbeat budget. This restatement, with the group abstract, makes every later use
+cheap. -/
 theorem MeasureTheory.eLpNorm_add_le_of_norm {X G : Type*} [MeasurableSpace X] {ν : Measure X}
     [NormedAddCommGroup G] {a b : X → G} (hp : 1 ≤ p) :
     eLpNorm (a + b) p ν ≤ eLpNorm a p ν + eLpNorm b p ν :=
   eLpNorm_add_le hp
 
 omit [MeasurableSpace E] [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- Minkowski's inequality for a finite sum in a normed group, stated so that the instance search
-does not go through `ESeminormedAddCommMonoid`; see
+/-- **Minkowski's inequality for a finite sum** of functions with values in a normed group: for
+$p \ge 1$, $\|\sum_{i \in s} a_i\|_{L^p(\nu)} \le \sum_{i \in s} \|a_i\|_{L^p(\nu)}$. The
+restatement avoids the instance search through `ESeminormedAddCommMonoid`; see
 `MeasureTheory.eLpNorm_add_le_of_norm`. -/
 theorem MeasureTheory.eLpNorm_sum_le_of_norm {X G ι : Type*} [MeasurableSpace X] {ν : Measure X}
     [NormedAddCommGroup G] {a : ι → X → G} {s : Finset ι} (hp : 1 ≤ p) :
@@ -272,8 +281,8 @@ theorem MeasureTheory.eLpNorm_sum_le_of_norm {X G ι : Type*} [MeasurableSpace X
   eLpNorm_sum_le hp
 
 omit [MeasurableSpace E] [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- `L^p` membership is closed under addition, stated for a normed group so that the instance
-search does not go through the `ENorm` hierarchy; see
+/-- If $a, b \in L^p(\nu)$ have values in a normed group, then $a + b \in L^p(\nu)$. The restatement
+avoids the instance search through the `ENorm` hierarchy; see
 `MeasureTheory.eLpNorm_add_le_of_norm`. -/
 theorem MeasureTheory.MemLp.add_of_norm {X G : Type*} [MeasurableSpace X] {ν : Measure X}
     [NormedAddCommGroup G] {a b : X → G} (ha : MemLp a p ν) (hb : MemLp b p ν) :
@@ -282,11 +291,13 @@ theorem MeasureTheory.MemLp.add_of_norm {X G : Type*} [MeasurableSpace X] {ν : 
 
 end Tools
 
-/-! ### Mollification on the whole space
+/-!
+### Mollification on the whole space
 
-On the whole space every mollification is available at every point, so the commutation of the weak
-derivative with mollification holds everywhere and the mollifications of a function of
-`W^{k,p}(ℝ^d)` converge to it in the Sobolev norm. -/
+On the whole space every mollification is available at every point. So the weak derivative commutes
+with mollification everywhere, and the mollifications of a function of $W^{k,p}(E)$ converge to it
+in the Sobolev norm.
+-/
 
 section Mollify
 
@@ -296,27 +307,32 @@ variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaa
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] [FiniteDimensional ℝ E] [BorelSpace E]
   [CompleteSpace F] in
-/-- The measure restricted to the whole space, read as the top open set, is the measure. -/
+/-- The measure $\mu$ restricted to the whole space, read as the largest open set, is $\mu$. -/
 theorem MeasureTheory.Measure.restrict_coe_top (μ : Measure E) :
     μ.restrict ((⊤ : Opens E) : Set E) = μ := by
   simp
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- A function of `W^{k,p}(ℝ^d)` lies in `L^p` of the whole space. -/
+/-- A function of $W^{k,p}(E)$ lies in $L^p(\mu)$. -/
 theorem MemSobolev.memLp_top (h : MemSobolev f k p ⊤ μ) : MemLp f p μ := by
   simpa [Measure.restrict_coe_top] using h.memLp
 
 omit [CompleteSpace F] in
-/-- The mollification of a function that is locally integrable on the whole space is smooth. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure $\mu$. If $f$ is locally integrable
+on $E$ and $\rho$ is the normalized bump function of a `ContDiffBump` centred at $0$, then the
+mollification $\rho \star f$ is of class $C^\infty$. -/
 theorem MeasureTheory.LocallyIntegrable.contDiff_convolution_normed
     (hf : LocallyIntegrable f μ) (φ : ContDiffBump (0 : E)) :
     ContDiff ℝ ∞ (φ.normed μ ⋆[lsmul ℝ ℝ, μ] f) :=
   φ.hasCompactSupport_normed.contDiff_convolution_left _ φ.contDiff_normed hf
 
 omit [CompleteSpace F] in
-/-- **The weak derivative commutes with mollification on the whole space**: the classical
-derivative of order `n ≤ k` of the mollification of `f ∈ W^{k,p}(ℝ^d)` is the mollification of the
-weak derivative of order `n` of `f`, at every point. -/
+/-- **The weak derivative commutes with mollification on the whole space.** Let $E$ be
+finite-dimensional with an additive Haar measure $\mu$. Let $f \in W^{k,p}(E)$, let $\rho$ be
+the normalized bump function of a `ContDiffBump` centred at $0$, and let $n \le k$. Then at
+every point $x$,
+$$D^n(\rho \star f)(x) = (\rho \star \partial^n f)(x).$$
+-/
 theorem MemSobolev.iteratedFDeriv_convolution_normed (hf : MemSobolev f k p ⊤ μ)
     (φ : ContDiffBump (0 : E)) (hn : n ≤ k) (x : E) :
     iteratedFDeriv ℝ n (φ.normed μ ⋆[lsmul ℝ ℝ, μ] f) x
@@ -324,7 +340,9 @@ theorem MemSobolev.iteratedFDeriv_convolution_normed (hf : MemSobolev f k p ⊤ 
   (hf.hasWeakIteratedFDerivOn hn).iteratedFDeriv_convolution φ.contDiff_normed
     (le_of_eq (φ.tsupport_normed_eq (μ := μ))) (by simp)
 
-/-- The mollification of a function of `W^{k,p}(ℝ^d)` lies in `W^{k,p}(ℝ^d)` and is smooth. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure, let $F$ be complete, and let
+$p \ge 1$. If $f \in W^{k,p}(E)$ and $\rho$ is the normalized bump function of a `ContDiffBump`
+centred at $0$, then $\rho \star f \in W^{k,p}(E)$. -/
 theorem MemSobolev.convolution_normed (hf : MemSobolev f k p ⊤ μ) (hp : 1 ≤ p)
     (φ : ContDiffBump (0 : E)) : MemSobolev (φ.normed μ ⋆[lsmul ℝ ℝ, μ] f) k p ⊤ μ := by
   have hloc : LocallyIntegrable f μ := hf.memLp_top.locallyIntegrable hp
@@ -340,14 +358,16 @@ theorem MemSobolev.convolution_normed (hf : MemSobolev f k p ⊤ μ) (hp : 1 ≤
     (hf.iteratedFDeriv_convolution_normed φ hm' x).symm) ?_
   simpa [Measure.restrict_coe_top] using MemLp.convolution hp hφ1 hwp
 
-/-- **Mollification approximates in `W^{k,p}(ℝ^d)`.** For `f ∈ W^{k,p}(ℝ^d)` with `1 ≤ p < ∞` and
-a family of bump functions whose outer radii tend to `0`, the mollifications of `f` tend to `f` in
-the Sobolev norm of order `k`.
+/-- **Mollification approximates in $W^{k,p}(E)$.** Let $E$ be finite-dimensional with an additive
+Haar measure, let $F$ be complete, and let $1 \le p < \infty$. Let $f \in W^{k,p}(E)$, and let
+$(\varphi_i)$ be a family of bump functions centred at $0$ whose outer radii tend to $0$ along a
+filter, with normalized functions $\rho_i$. Then $\|\rho_i \star f - f\|_{k,p,E} \to 0$ along
+the filter.
 
-On the whole space there is no boundary to keep away from, so the commutation of the weak
-derivative with mollification holds at every point and the statement reduces to the `L^p`
-convergence of mollification, `ContDiffBump.tendsto_eLpNorm_convolution_sub`, applied to each of
-the `k + 1` weak derivatives at once. -/
+On the whole space there is no boundary to keep away from. So the weak derivative commutes with
+mollification at every point, and the statement reduces to the $L^p$ convergence of
+mollification, `ContDiffBump.tendsto_eLpNorm_convolution_sub`, applied to each of the $k + 1$
+weak derivatives. -/
 theorem MemSobolev.tendsto_sobolevNorm_convolution_sub {ι : Type*} {l : Filter ι}
     {φ : ι → ContDiffBump (0 : E)} (hφ : Tendsto (fun i ↦ (φ i).rOut) l (𝓝 0))
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hf : MemSobolev f k p ⊤ μ) :
@@ -389,23 +409,26 @@ theorem MemSobolev.tendsto_sobolevNorm_convolution_sub {ι : Type*} {l : Filter 
 
 end Mollify
 
-/-! ### Truncation on the whole space
+/-!
+### Truncation on the whole space
 
-A smooth function all of whose derivatives of order at most `k` lie in `L^p` is approximated in
-`W^{k,p}` by its products with the cut-offs `x ↦ η (R⁻¹ x)`, because the Leibniz *bound* pays for
-each derivative of the cut-off with a factor `R^{-i} ≤ 1`, and what is left is the `L^p` mass of
-the derivatives of the function outside the ball of radius `R`. -/
+A smooth function all of whose derivatives of order at most $k$ lie in $L^p$ is approximated in
+$W^{k,p}$ by its products with the cut-offs $x \mapsto \eta(x / R)$. The Leibniz *bound* pays for
+each derivative of the cut-off with a factor $R^{-i} \le 1$, and what is left is the $L^p$ mass of
+the derivatives of the function outside the ball of radius $R$.
+-/
 
 section Truncate
 
 variable [FiniteDimensional ℝ E] [BorelSpace E]
 
-/-- **The `L^p` mass outside a large ball tends to `0`.** For `f ∈ L^p(μ)` with `p ≠ ∞` and radii
-tending to infinity, the `L^p` norm of `f` restricted to the complement of the ball of that radius
-tends to `0`.
+/-- **The $L^p$ mass outside a large ball tends to $0$.** Let $E$ be finite-dimensional with an
+additive Haar measure $\mu$, let $p \ne \infty$, and let $f \in L^p(\mu)$. If $r_j \to \infty$,
+then
+$$\|\mathbf{1}_{E \setminus B(0, r_j)}\, f\|_{L^p(\mu)} \to 0.$$
 
-The proof replaces `f` by a compactly supported approximation, which the complement of a large
-enough ball does not see at all. -/
+The proof replaces $f$ by a compactly supported approximation, which the complement of a large
+enough ball does not see. -/
 theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball [μ.IsAddHaarMeasure]
     (hp' : p ≠ ⊤) (hf : MemLp f p μ) {r : ℕ → ℝ} (hr : Tendsto r atTop atTop) :
     Tendsto (fun j ↦ eLpNorm ((Metric.ball (0 : E) (r j))ᶜ.indicator f) p μ) atTop (𝓝 0) := by
@@ -431,8 +454,9 @@ theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball [μ.IsAddHaarMe
   rw [heq]
   exact (eLpNorm_indicator_le _ measurableSet_ball.compl.nullMeasurableSet).trans hule
 
-/-- A smooth cut-off on a finite-dimensional real normed space: a function equal to `1` on the
-closed unit ball, supported in the ball of radius `2`, with values in `[0, 1]`. -/
+/-- A smooth cut-off on a finite-dimensional real normed space $E$: there is $\eta : E \to [0, 1]$
+of class $C^\infty$ with $\eta = 1$ on the closed unit ball and with support contained in the
+open ball $B(0, 2)$. -/
 theorem exists_contDiff_eqOn_one_closedBall_one (E : Type*) [NormedAddCommGroup E]
     [NormedSpace ℝ E] [FiniteDimensional ℝ E] :
     ∃ η : E → ℝ, ContDiff ℝ ∞ η ∧ EqOn η 1 (closedBall 0 1) ∧ tsupport η ⊆ ball 0 2 ∧
@@ -442,15 +466,16 @@ theorem exists_contDiff_eqOn_one_closedBall_one (E : Type*) [NormedAddCommGroup 
 
 variable [CompleteSpace F] [μ.IsAddHaarMeasure]
 
-/-- **Truncation approximates in `W^{k,p}(ℝ^d)`.** If `g` is smooth and all its classical
-derivatives of order at most `k` lie in `L^p`, then `g` is the `W^{k,p}(ℝ^d)` limit of a sequence
-of smooth functions with compact support, namely the products of `g` with the cut-offs
-`x ↦ η (R⁻¹ x)` as `R → ∞`.
+/-- **Truncation approximates in $W^{k,p}(E)$.** Let $E$ be finite-dimensional with an additive Haar
+measure, let $F$ be complete, and let $1 \le p < \infty$. If $g : E \to F$ is of class
+$C^\infty$ and $D^m g \in L^p$ for every $m \le k$, then there are functions $v_j$ of class
+$C^\infty$ with compact support such that $\|v_j - g\|_{k,p,E} \to 0$. The $v_j$ are the
+products of $g$ with the cut-offs $x \mapsto \eta(x / R)$ as $R \to \infty$.
 
-Only the Leibniz *bound* `norm_iteratedFDeriv_smul_le` is needed, because both factors are smooth:
-the derivatives of the cut-off carry a factor `R^{-i} ≤ 1` and vanish inside the ball of radius
-`R`, so the whole difference is bounded there by a fixed multiple of the sum of the derivatives of
-`g`, whose `L^p` mass outside a large ball tends to `0`. -/
+Only the Leibniz *bound* `norm_iteratedFDeriv_smul_le` is needed, because both factors are
+smooth. The derivatives of the cut-off carry a factor $R^{-i} \le 1$ and vanish inside the ball
+of radius $R$. So the whole difference is bounded by a fixed multiple of the sum of the
+derivatives of $g$ outside that ball, whose $L^p$ mass tends to $0$. -/
 theorem exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {g : E → F} (hg : ContDiff ℝ ∞ g) (hgp : ∀ m ≤ k, MemLp (iteratedFDeriv ℝ m g) p μ) :
     ∃ v : ℕ → E → F, (∀ j, ContDiff ℝ ∞ (v j)) ∧ (∀ j, HasCompactSupport (v j)) ∧
@@ -551,15 +576,16 @@ theorem exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub (hp : 1 �
 
 end Truncate
 
-/-! ### `C_0^∞(ℝ^d)` is dense in `W^{k,p}(ℝ^d)` -/
+/-! ### $C_c^\infty(E)$ is dense in $W^{k,p}(E)$ -/
 
 section Density
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- One weak derivative is measured by the Sobolev norm: the `L^p(Ω)` norm of the chosen weak
-derivative of order `n ≤ k` is at most `‖f‖_{k,p,Ω}`. -/
+/-- Let $1 \le p < \infty$ and $n \le k$. Then the $L^p(\Omega)$ norm of the chosen weak derivative
+of order $n$ is bounded by the Sobolev norm: $\|\partial^n f\|_{L^p(\Omega)} \le
+\|f\|_{k,p,\Omega}$. -/
 theorem eLpNorm_weakIteratedFDeriv_le_sobolevNorm (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hn : n ≤ k) :
     eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E)) ≤ sobolevNorm f k p Ω μ := by
   have hp₀ : p ≠ 0 := (lt_of_lt_of_le zero_lt_one hp).ne'
@@ -579,8 +605,9 @@ theorem eLpNorm_weakIteratedFDeriv_le_sobolevNorm (hp : 1 ≤ p) (hp' : p ≠ �
     _ ≤ (∑ i, a i ^ p.toReal) ^ (1 / p.toReal) := ENNReal.rpow_le_rpow h1 (by positivity)
 
 omit [μ.IsAddHaarMeasure] in
-/-- On the whole space, the `L^p` norm of any weak derivative of order `n ≤ k` is at most the
-Sobolev norm. -/
+/-- Let $E$ be finite-dimensional with its Borel $\sigma$-algebra, let $F$ be complete, and let
+$1 \le p < \infty$. If $w$ is a weak derivative of order $n \le k$ of $f$ on the whole space,
+then $\|w\|_{L^p(\mu)} \le \|f\|_{k,p,E}$. -/
 theorem HasWeakIteratedFDerivOn.eLpNorm_le_sobolevNorm_top {w : E → E [×n]→L[ℝ] F}
     (h : HasWeakIteratedFDerivOn n f w ⊤ μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hn : n ≤ k) :
     eLpNorm w p μ ≤ sobolevNorm f k p ⊤ μ := by
@@ -590,15 +617,17 @@ theorem HasWeakIteratedFDerivOn.eLpNorm_le_sobolevNorm_top {w : E → E [×n]→
   rw [h1]
   exact eLpNorm_weakIteratedFDeriv_le_sobolevNorm hp hp' hn
 
-/-- The classical derivatives of order `n ≤ k` of a smooth function of `W^{k,p}(Ω)` lie in
-`L^p(Ω)`. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure, and let $F$ be complete. If
+$f \in W^{k,p}(\Omega)$ is of class $C^\infty$ on $\Omega$ and $n \le k$, then the classical
+derivative $D^n f$ lies in $L^p(\Omega)$. -/
 theorem MemSobolev.memLp_iteratedFDeriv (h : MemSobolev f k p Ω μ) (hf : ContDiffOn ℝ ∞ f Ω)
     (hn : n ≤ k) : MemLp (iteratedFDeriv ℝ n f) p (μ.restrict (Ω : Set E)) := by
   refine (h.memLp_weakIteratedFDeriv hn).ae_eq ?_
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2
     ((ContDiffOn.hasWeakIteratedFDerivOn hf (by simp)).weakIteratedFDeriv_ae_eq (μ := μ))
 
-/-- A sequence of bump functions centred at the origin whose outer radii tend to `0`. -/
+/-- There is a sequence of bump functions (`ContDiffBump`) centred at the origin whose outer radii
+tend to $0$. -/
 theorem exists_seq_contDiffBump_tendsto_rOut_zero (E : Type*) [NormedAddCommGroup E] :
     ∃ φ : ℕ → ContDiffBump (0 : E), Tendsto (fun j ↦ (φ j).rOut) atTop (𝓝 0) := by
   refine ⟨fun j ↦ ⟨1 / (2 * (j + 2)), 1 / (j + 2), by positivity, ?_⟩, ?_⟩
@@ -607,11 +636,13 @@ theorem exists_seq_contDiffBump_tendsto_rOut_zero (E : Type*) [NormedAddCommGrou
   · exact tendsto_const_nhds.div_atTop
       (tendsto_atTop_add_const_right _ 2 tendsto_natCast_atTop_atTop)
 
-/-- **`C_0^∞(ℝ^d)` approximates in `W^{k,p}(ℝ^d)`**, in the form with an explicit tolerance: for
-`f ∈ W^{k,p}(ℝ^d)` with `1 ≤ p < ∞` and any `ε ≠ 0` there is a smooth compactly supported `v` with
-`‖v - f‖_{k,p} ≤ ε`.
+/-- **$C_c^\infty(E)$ approximates in $W^{k,p}(E)$**, with an explicit tolerance. Let $E$ be
+finite-dimensional with an additive Haar measure, let $F$ be complete, and let
+$1 \le p < \infty$. For $f \in W^{k,p}(E)$ and $\varepsilon \in (0, \infty]$ there is a function
+$v$ of class $C^\infty$ with compact support such that $\|v - f\|_{k,p,E} \le \varepsilon$.
 
-Mollify to within `ε / (2(k+1))`, then truncate the mollification to within the same, and add. -/
+The proof mollifies to within $\varepsilon / (2(k + 1))$, truncates the mollification to within
+the same, and adds. -/
 theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     (hf : MemSobolev f k p ⊤ μ) {ε : ℝ≥0∞} (hε : ε ≠ 0) :
     ∃ v : E → F, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧ sobolevNorm (v - f) k p ⊤ μ ≤ ε := by
@@ -666,15 +697,14 @@ theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_le (hp : 1 
       _ = ε := ENNReal.mul_div_cancel' (fun h ↦ absurd h hne0) (fun h ↦ absurd h hnetop)
       _ ≤ ε := le_rfl
 
-/-- **`C_0^∞(ℝ^d)` is dense in `W^{k,p}(ℝ^d)`** for `1 ≤ p < ∞`: every function of the Sobolev
-space of the whole space is the limit, in the Sobolev norm of order `k`, of a sequence of smooth
-functions with compact support.
+/-- **$C_c^\infty(E)$ is dense in $W^{k,p}(E)$.** Let $E$ be finite-dimensional with an additive
+Haar measure, let $F$ be complete, and let $1 \le p < \infty$. For every $f \in W^{k,p}(E)$
+there are functions $v_i$ of class $C^\infty$ with compact support such that
+$\|v_i - f\|_{k,p,E} \to 0$. This is Theorem 7.3.4 of [han2009theoretical]; see also Theorem
+3.22 of Adams and Fournier, *Sobolev Spaces*, 2nd edition.
 
-This is Theorem 7.3.4 of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework*, 3rd edition, Springer, 2009; see also R. A. Adams and
-J. J. F. Fournier, *Sobolev Spaces*, 2nd edition, Academic Press, 2003, Theorem 3.22. The whole
-space is exactly the case in which no partition of unity is needed: one mollification serves at
-every point at once, and the passage to compact support is a truncation. -/
+The whole space is the case in which no partition of unity is needed: one mollification serves
+at every point, and the passage to compact support is a truncation. -/
 theorem MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     (hf : MemSobolev f k p ⊤ μ) :
     ∃ v : ℕ → E → F, (∀ i, ContDiff ℝ ∞ (v i)) ∧ (∀ i, HasCompactSupport (v i)) ∧
@@ -688,16 +718,20 @@ theorem MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm (hp : 1 ≤ 
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
     ENNReal.tendsto_inv_nat_nhds_zero (fun _ ↦ zero_le) (fun i ↦ hV3 _ (hne i))
 
-/-! #### Mollification of a compactly supported `W^{1,p}` function, with a uniform clause -/
+/-! ### Mollification of a compactly supported function of $W^{1,p}$, with a uniform clause -/
 
 section Mollify
 
-/-- **Mollification of a compactly supported `W^{1,p}(ℝ^N)` function**: for `G ∈ W^{1,p}(ℝ^N)`
-with compact support, `1 ≤ p < ∞`, `η > 0` and `ε > 0`, there is a smooth compactly supported
-`v` with `‖v − G‖_{W^{1,p}(ℝ^N)} < η` and, if `G` is continuous, `|v − G| < ε` everywhere: a
-mollification `ρ_δ ⋆ G` for `δ` small
-(`MemSobolev.tendsto_sobolevNorm_convolution_sub`, `ContDiffBump.dist_normed_convolution_le` with
-the uniform continuity of `G`). -/
+/-- **Mollification of a compactly supported function of $W^{1,p}(E)$.** Let $E$ be
+finite-dimensional with an additive Haar measure, and let $1 \le p < \infty$. Let
+$G \in W^{1,p}(E)$ be real with compact support, and let $\eta \in (0, \infty]$ and
+$\varepsilon > 0$. Then there is a function $v$ of class $C^\infty$ with compact support such
+that $\|v - G\|_{1,p,E} < \eta$ and, if $G$ is continuous, $|v(x) - G(x)| < \varepsilon$ for
+every $x$.
+
+The function $v$ is a mollification $\rho_\delta \star G$ for a small $\delta$
+(`MemSobolev.tendsto_sobolevNorm_convolution_sub`, and `ContDiffBump.dist_normed_convolution_le`
+with the uniform continuity of $G$). -/
 theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt {G : E → ℝ}
     (hG : MemSobolev G 1 p ⊤ μ) (hGc : HasCompactSupport G) (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {η : ℝ≥0∞} (hη : 0 < η) {ε : ℝ} (hε : 0 < ε) :
@@ -732,21 +766,24 @@ end Mollify
 
 end Density
 
-/-! ### The weak derivative is closed under `L^1` limits
+/-!
+### The weak derivative is closed under $L^1$ limits
 
-An identity between integrals against a fixed test function passes to an `L^1` limit, so a
-function that is the `L^1` limit of functions with weak derivatives, whose weak derivatives
-converge in `L^1` as well, has the limit as its weak derivative. This is what replaces the Leibniz
-formula below: the weak derivative of a product `ψ f` is obtained as a limit of the classical
-derivatives of `ψ g` for smooth `g` approximating `f`, and never written down. -/
+An identity between integrals against a fixed test function passes to an $L^1$ limit. So if
+functions with weak derivatives converge in $L^1$ and their weak derivatives converge in $L^1$ as
+well, then the limit of the derivatives is the weak derivative of the limit. This replaces the
+Leibniz formula below: the weak derivative of a product $\psi f$ is obtained as a limit of the
+classical derivatives of $\psi g$ for smooth $g$ that approximate $f$, and it is never written down.
+-/
 
 section Closed
 
 variable [OpensMeasurableSpace E]
 
 omit [OpensMeasurableSpace E] in
-/-- Composing with a continuous linear map multiplies the `L^p` norm by at most its operator
-norm, for every exponent. -/
+/-- Composition with a continuous linear map $\Lambda$ multiplies the $L^p$ norm by at most
+$\|\Lambda\|$, for every exponent $p$: $\|\Lambda \circ h\|_{L^p(\nu)} \le \|\Lambda\|\,
+\|h\|_{L^p(\nu)}$. -/
 theorem MeasureTheory.eLpNorm_comp_continuousLinearMap_le {X G G' : Type*}
     [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [NormedAddCommGroup G'] [NormedSpace ℝ G'] (Λ : G →L[ℝ] G') (h : X → G) (p : ℝ≥0∞) :
@@ -762,21 +799,22 @@ theorem MeasureTheory.eLpNorm_comp_continuousLinearMap_le {X G G' : Type*}
       exact le_top
 
 omit [OpensMeasurableSpace E] in
-/-- Composing with a continuous linear map multiplies the `L^1` norm by at most its operator
-norm. -/
+/-- Composition with a continuous linear map $\Lambda$ multiplies the $L^1$ norm by at most
+$\|\Lambda\|$: $\|\Lambda \circ h\|_{L^1(\nu)} \le \|\Lambda\|\, \|h\|_{L^1(\nu)}$. -/
 theorem MeasureTheory.eLpNorm_one_comp_continuousLinearMap_le {X G G' : Type*}
     [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [NormedAddCommGroup G'] [NormedSpace ℝ G'] (Λ : G →L[ℝ] G') (h : X → G) :
     eLpNorm (fun x ↦ Λ (h x)) 1 ν ≤ ‖Λ‖ₑ * eLpNorm h 1 ν :=
   eLpNorm_comp_continuousLinearMap_le Λ h 1
 
-/-- **The weak derivative is closed under `L^1` limits**: if `u i` is a weak derivative of order
-`n` of `g i` on `Ω` for every `i`, and `g i → f` and `u i → w` in `L^1(Ω)`, then `w` is a weak
-derivative of order `n` of `f` on `Ω`.
+/-- **The weak derivative is closed under $L^1$ limits.** Let $u_i$ be a weak derivative of order
+$n$ of $g_i$ on $\Omega$ for every $i$, and let $f$ and $w$ be locally integrable on $\Omega$.
+If $g_i \to f$ and $u_i \to w$ in $L^1(\Omega)$, then $w$ is a weak derivative of order $n$ of
+$f$ on $\Omega$.
 
-The local integrability of `f` and of `w` has to be assumed: `L^1(Ω)` convergence does not by
-itself place the limit in `L^1_loc(Ω)` when `μ Ω = ∞`, and in the applications it is known
-anyway. -/
+The local integrability of $f$ and of $w$ has to be assumed: convergence in $L^1(\Omega)$ does
+not by itself place the limit in $L^1_{\mathrm{loc}}(\Omega)$ when $\mu(\Omega) = \infty$, and
+in the applications it is known anyway. -/
 theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one {g : ℕ → E → F}
     {u : ℕ → E → E [×n]→L[ℝ] F} {w : E → E [×n]→L[ℝ] F}
     (hg : ∀ i, HasWeakIteratedFDerivOn n (g i) (u i) Ω μ)
@@ -846,9 +884,9 @@ theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one {g : ℕ → E → F}
       simpa only [hax, hAB] using hA
     exact tendsto_nhds_unique hA' (hB.const_smul ((-1 : ℝ) ^ n))
 
-/-- A test function on `Ω` lies in every `L^q(Ω, μ)` as soon as `μ` is finite on the compact
-subsets of `Ω` — expressed, as Mathlib's `TestFunction.integrable` does, by the local
-integrability of the constant `1` on `Ω`. -/
+/-- If the constant function $1$ is locally integrable on $\Omega$, that is, $\mu$ is finite on the
+compact subsets of $\Omega$, then every test function on $\Omega$ lies in $L^q(\Omega)$ for
+every $q$. The hypothesis has the form that Mathlib's `TestFunction.integrable` uses. -/
 theorem TestFunction.memLp_restrict_of_locallyIntegrableOn_one
     (hμ : LocallyIntegrableOn (fun _ : E ↦ (1 : ℝ)) Ω μ) (φ : 𝓓(Ω, ℝ)) (q : ℝ≥0∞) :
     MemLp φ q (μ.restrict (Ω : Set E)) := by
@@ -860,9 +898,11 @@ theorem TestFunction.memLp_restrict_of_locallyIntegrableOn_one
     (fun x hx ↦ image_eq_zero_of_notMem_tsupport hx) hfin le_top).restrict _
 
 omit [OpensMeasurableSpace E] in
-/-- **Hölder's inequality for a pairing**: the integral of `a • h` is bounded by
-`‖a‖_{L^p} ‖h‖_{L^q}` for conjugate exponents, with no measurability hypothesis (the right-hand
-side is `∞` when one is missing, unless the other factor vanishes). -/
+/-- **Hölder's inequality for a pairing.** Let $p$ and $q$ be conjugate exponents, $1/p + 1/q = 1$.
+For $a : X \to \mathbb{R}$ and $h$ with values in a real normed space,
+$$\Big\|\int_X a\, h \, d\nu\Big\| \le \|a\|_{L^p(\nu)}\, \|h\|_{L^q(\nu)}.$$
+No measurability is assumed: the right-hand side is $\infty$ when one factor is not measurable,
+unless the other factor vanishes. -/
 theorem MeasureTheory.enorm_integral_smul_le_eLpNorm_mul_eLpNorm {X G : Type*} [MeasurableSpace X]
     {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G] {a : X → ℝ} {h : X → G}
     {p q : ℝ≥0∞} [ENNReal.HolderConjugate p q] :
@@ -871,19 +911,21 @@ theorem MeasureTheory.enorm_integral_smul_le_eLpNorm_mul_eLpNorm {X G : Type*} [
     (lintegral_enorm_le_eLpNorm_one (f := fun x ↦ a x • h x)).trans <|
       eLpNorm_smul_le_mul_eLpNorm_of_pos (φ := a) (f := h) one_pos
 
-/-- **The weak derivative is closed under `L^p(Ω)` limits**, for any `1 ≤ p ≤ ∞`: if `u i` is a
-weak derivative of order `n` of `g i` on `Ω` for every `i`, `g i → f` and `u i → w` in `L^p(Ω)`,
-and `f`, `w` are locally integrable on `Ω`, then `w` is a weak derivative of order `n` of `f`.
-This is the closedness clause of [brezis2011functional] Chapter 9, Remark 4 (i) (and of the proof
-of its Proposition 8.1).
+/-- **The weak derivative is closed under $L^p(\Omega)$ limits**, for any $1 \le p \le \infty$. Let
+$\mu$ be finite on the compact subsets of $\Omega$, in the form that the constant $1$ is locally
+integrable on $\Omega$. Let $u_i$ be a weak derivative of order $n$ of $g_i$ on $\Omega$ for
+every $i$, and let $f$ and $w$ be locally integrable on $\Omega$. If $g_i \to f$ and $u_i \to w$
+in $L^p(\Omega)$, then $w$ is a weak derivative of order $n$ of $f$ on $\Omega$. This is the
+closedness clause of Remark 4 (i) in Chapter 9 of [brezis2011functional], and of the proof of
+its Proposition 8.1.
 
-The pairing against a fixed test function is continuous on `L^p(Ω)` by Hölder's inequality, which
-needs the test function to lie in `L^{p'}(Ω)`: hence the hypothesis that `μ` be finite on the
-compact subsets of `Ω`, in the form `LocallyIntegrableOn 1 Ω μ` that Mathlib's
-`TestFunction.integrable` uses. It cannot be dropped for `p > 1`: on a set of infinite measure
-inside `Ω`, functions spread ever thinner converge to `0` in `L^p` while their integrals against a
-bounded test function stay put. The case `p = 1` needs no such hypothesis,
-`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`. -/
+The pairing against a fixed test function is continuous on $L^p(\Omega)$ by Hölder's inequality,
+which needs the test function to lie in $L^{p'}(\Omega)$. This is why $\mu$ must be finite on
+the compact subsets of $\Omega$, in the form `LocallyIntegrableOn 1 Ω μ` that Mathlib's
+`TestFunction.integrable` uses. The hypothesis cannot be dropped for $p > 1$: on a set of
+infinite measure inside $\Omega$, functions that spread ever thinner converge to $0$ in $L^p$
+while their integrals against a bounded test function do not change. The case $p = 1$ needs no
+such hypothesis (`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`). -/
 theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm
     (hμ : LocallyIntegrableOn (fun _ : E ↦ (1 : ℝ)) Ω μ) (hp : 1 ≤ p) {g : ℕ → E → F}
     {u : ℕ → E → E [×n]→L[ℝ] F} {w : E → E [×n]→L[ℝ] F}
@@ -959,13 +1001,15 @@ theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm
 
 end Closed
 
-/-! ### Local approximation in `W^{k,p}`, at all orders at once
+/-!
+### Local approximation in $W^{k,p}$, at all orders at once
 
-The mollifications of a function of `W^{k,p}(Ω)` approximate it, together with *every* weak
-derivative of order at most `k`, in `L^p` of a relatively compact open subset of `Ω`. This is the
-bundled form of `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`, which fixes one
-tuple of directions; the point of the bundled form is that a single sequence of smooth functions
-serves all the orders at once, which is what a Leibniz estimate needs. -/
+The mollifications of a function of $W^{k,p}(\Omega)$ approximate it, together with *every* weak
+derivative of order at most $k$, in $L^p$ of a relatively compact open subset of $\Omega$. This is
+the bundled form of `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`, which fixes
+one tuple of directions. In the bundled form one sequence of smooth functions serves all the orders
+at once, and a Leibniz estimate needs this.
+-/
 
 section LocalApprox
 
@@ -973,13 +1017,17 @@ open ContinuousLinearMap
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
 
-/-- **Local approximation in `W^{k,p}`**: for `f ∈ W^{k,p}(Ω)` with `1 ≤ p < ∞` and `V` an open
-set whose closure is a compact subset of `Ω`, there are globally smooth `g 0, g 1, …` with
-`∂^m (g i) → ∂^m f` in `L^p(V)` for every order `m ≤ k` at once.
+/-- **Local approximation in $W^{k,p}$.** Let $E$ be finite-dimensional with an additive Haar
+measure, let $F$ be complete, and let $1 \le p < \infty$. Let $f \in W^{k,p}(\Omega)$, and let
+$V$ be an open set whose closure is a compact subset of $\Omega$. Then there are functions
+$g_0, g_1, \dots$ of class $C^\infty$ on $E$ such that
+$$\|g_i - f\|_{L^p(V)} \to 0 \quad\text{and}\quad \|D^m g_i - \partial^m f\|_{L^p(V)} \to 0
+  \text{ for every } m \le k,$$
+where $\partial^m f$ is the chosen weak derivative on $\Omega$.
 
-The `g i` are the mollifications of the truncation of `f` to a compact neighbourhood of
-`closure V` in `Ω`; the identification of `∂^m (g i)` on `V` with the mollification of the weak
-derivative is `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`, and the convergence is
+The $g_i$ are the mollifications of the truncation of $f$ to a compact neighbourhood of
+$\overline{V}$ in $\Omega$. The identification of $D^m g_i$ on $V$ with the mollification of the
+weak derivative is `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`, and the convergence is
 `ContDiffBump.tendsto_eLpNorm_convolution_sub`. -/
 theorem MemSobolev.exists_seq_contDiff_tendsto_eLpNorm (hf : MemSobolev f k p Ω μ) (hp : 1 ≤ p)
     (hp' : p ≠ ⊤) {V : Set E} (hVo : IsOpen V) (hVc : IsCompact (closure V))
@@ -1049,20 +1097,23 @@ theorem MemSobolev.exists_seq_contDiff_tendsto_eLpNorm (hf : MemSobolev f k p Ω
 
 end LocalApprox
 
-/-! ### The telescoping partition of unity of an exhaustion
+/-!
+### The telescoping partition of unity of an exhaustion
 
-An open set is exhausted by relatively compact opens `U 0 ⊆ U 1 ⊆ …`; taking smooth Urysohn
-functions `χ_j` that are `1` on `closure (U j)` and supported in `U (j+1)`, the differences
-`ψ_j = χ_j - χ_{j-1}` form a smooth partition of unity on `Ω` whose partial sums telescope. It is
-locally finite in the strongest possible sense: on `U N` all but the first `N + 1` of the `ψ_j`
-vanish identically, and the first `N + 1` already sum to `1` there. -/
+An open set is exhausted by relatively compact open sets $U_0 \subseteq U_1 \subseteq \dots$. With
+smooth Urysohn functions $\chi_j$ that are $1$ on $\overline{U_j}$ and supported in $U_{j+1}$, the
+differences $\psi_j = \chi_j - \chi_{j-1}$ form a smooth partition of unity on $\Omega$ whose
+partial sums telescope. It is locally finite in the strongest sense: on $U_N$ all but the first
+$N + 1$ of the $\psi_j$ vanish identically, and the first $N + 1$ already sum to $1$ there.
+-/
 
 section PartitionOfUnity
 
 variable [FiniteDimensional ℝ E]
 
 omit [MeasurableSpace E] in
-/-- The support of a difference is contained in the union of the supports, in the closed form. -/
+/-- The closed support of a difference is contained in the union of the closed supports:
+$\operatorname{supp}(a - b) \subseteq \operatorname{supp} a \cup \operatorname{supp} b$. -/
 theorem tsupport_sub_subset {X : Type*} [TopologicalSpace X] {G : Type*} [SubtractionMonoid G]
     (a b : X → G) : tsupport (a - b) ⊆ tsupport a ∪ tsupport b := by
   have hs : Function.support (a - b) ⊆ Function.support a ∪ Function.support b := by
@@ -1074,14 +1125,18 @@ theorem tsupport_sub_subset {X : Type*} [TopologicalSpace X] {G : Type*} [Subtra
     _ = tsupport a ∪ tsupport b := closure_union
 
 omit [MeasurableSpace E] in
-/-- **A smooth partition of unity subordinate to an exhaustion of an open set.** There is an
-exhaustion `U 0 ⊆ U 1 ⊆ …` of `Ω` by relatively compact open sets and a sequence `ψ 0, ψ 1, …` of
-smooth compactly supported functions with `tsupport (ψ j) ⊆ U (j + 1)` such that, on `U N`, the
-functions `ψ 0, …, ψ N` sum to `1` and every later one vanishes.
+/-- **A smooth partition of unity subordinate to an exhaustion of an open set.** Let $E$ be
+finite-dimensional and let $\Omega \subseteq E$ be open. There are open sets $U_0, U_1, \dots$
+and functions $\psi_0, \psi_1, \dots : E \to \mathbb{R}$ such that:
+* each $\overline{U_j}$ is compact and $\overline{U_j} \subseteq U_{j+1}$;
+* $\bigcup_j U_j = \Omega$;
+* each $\psi_j$ is of class $C^\infty$ with compact support contained in $U_{j+1}$;
+* on $U_N$, $\sum_{j=0}^{N} \psi_j = 1$;
+* on $U_N$, $\psi_j = 0$ for every $j > N$.
 
-This is the telescoping construction `ψ_j = χ_j - χ_{j-1}` from the smooth Urysohn lemma
-`IsCompact.exists_contDiff_eqOn_one`; the local finiteness it gives is the strong form above,
-which is what makes the sums below finite on each `U N` rather than merely locally finite. -/
+This is the telescoping construction $\psi_j = \chi_j - \chi_{j-1}$ from the smooth Urysohn
+lemma `IsCompact.exists_contDiff_eqOn_one`. Its local finiteness is the strong form above, which
+makes the sums below finite on each $U_N$ and not only locally finite. -/
 theorem TopologicalSpace.Opens.exists_partitionOfUnity (Ω : Opens E) :
     ∃ (U : ℕ → Opens E) (ψ : ℕ → E → ℝ),
       (∀ j, IsCompact (closure (U j : Set E))) ∧ (∀ j, closure (U j : Set E) ⊆ U (j + 1)) ∧
@@ -1137,20 +1192,22 @@ theorem TopologicalSpace.Opens.exists_partitionOfUnity (Ω : Opens E) :
 
 end PartitionOfUnity
 
-/-! ### The `L^p` Leibniz estimate for one piece of a partition of unity -/
+/-! ### The $L^p$ Leibniz estimate for one piece of a partition of unity -/
 
 section Piece
 
 variable [FiniteDimensional ℝ E] [BorelSpace E]
 
-/-- **The `L^p` Leibniz estimate.** For `ψ` smooth, supported in an open set `V`, with every
-derivative of order at most `k` bounded by `M`, and `a`, `b` smooth, the `L^p` norm of the
-derivative of order `n ≤ k` of `ψ (a - b)` is at most `(k+1) 2^k M` times the sum, over the orders
-`s ≤ k`, of the `L^p(V)` distances between the derivatives of `a` and of `b`.
+/-- **The $L^p$ Leibniz estimate.** Let $E$ be finite-dimensional with its Borel $\sigma$-algebra,
+let $V$ be open, and let $W$ be any set. Let $\psi : E \to \mathbb{R}$ be of class $C^\infty$
+with support contained in $V$ and with $\|D^r \psi(x)\| \le M$ for all $r \le k$ and all $x$.
+Let $a, b : E \to F$ be of class $C^\infty$, let $p \ge 1$, and let $m \le k$. Then
+$$\|D^m(\psi (a - b))\|_{L^p(W)} \le (k + 1)\, 2^k M \sum_{s=0}^{k} \|D^s a - D^s
+  b\|_{L^p(V)}.$$
 
-Only the classical Leibniz *bound* is used, both factors being smooth. Note that the measure on
-the left is arbitrary: the derivative of `ψ (a - b)` vanishes outside `V`, so the estimate is
-really an estimate over `V`. -/
+Only the classical Leibniz *bound* is used, both factors being smooth. The set $W$ on the left
+is arbitrary: the derivative of $\psi (a - b)$ vanishes outside $V$, so the estimate is an
+estimate over $V$. The constant on the right is $\max((k + 1) 2^k M, 0)$ in `ENNReal`. -/
 theorem eLpNorm_iteratedFDeriv_smul_sub_le {V W : Set E} (hV : IsOpen V) {ψ : E → ℝ}
     (hψ : ContDiff ℝ ∞ ψ) (hψsupp : tsupport ψ ⊆ V) {M : ℝ}
     (hM : ∀ r ≤ k, ∀ x, ‖iteratedFDeriv ℝ r ψ x‖ ≤ M) {a b : E → F} (ha : ContDiff ℝ ∞ a)
@@ -1225,13 +1282,15 @@ theorem eLpNorm_iteratedFDeriv_smul_sub_le {V W : Set E} (hV : IsOpen V) {ψ : E
 
 end Piece
 
-/-! ### The patching estimate
+/-!
+### The patching estimate
 
-The step of the Meyers–Serrin argument in which the pieces are put together: on `U N`, where the
-first `N + 1` members of the partition of unity already sum to `1`, the patched function `v` and
-any smooth `G` differ by `∑_{j ≤ N} ψ j (g j - G)`, so their derivatives of order `n ≤ k` differ
-in `L^p(U N)` by at most the sum of the Leibniz estimates for the pieces. Everything here is a
-classical derivative of a smooth function. -/
+The step of the Meyers–Serrin argument in which the pieces are put together. On $U_N$, where the
+first $N + 1$ members of the partition of unity already sum to $1$, the patched function $v$ and any
+smooth $G$ differ by $\sum_{j \le N} \psi_j (g_j - G)$. So their derivatives of order $n \le k$
+differ in $L^p(U_N)$ by at most the sum of the Leibniz estimates for the pieces. Everything here is
+a classical derivative of a smooth function.
+-/
 
 section Patch
 
@@ -1240,11 +1299,20 @@ open ContinuousLinearMap
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
 
 omit [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- **The patching estimate of the Meyers–Serrin argument.** With `ψ` a partition of unity
-subordinate to an exhaustion `U`, `g j` a smooth function attached to the piece `ψ j`, `v` the
-patched function `∑ j, ψ j (g j)` and `G` any smooth function, the `L^p(U N)` distance between
-`∂^n v` and `∂^n G` is bounded by the pieces' Leibniz estimates against the `L^p` distances from
-`∂^s (g j)` and `∂^s G` to the weak derivative `∂^s f`. -/
+/-- **The patching estimate of the Meyers–Serrin argument.** Let $E$ be finite-dimensional with its
+Borel $\sigma$-algebra, let $p \ge 1$, and let $n \le k$. Let
+$U_0 \subseteq U_1 \subseteq \dots$ be open sets, and let $\psi_j$ be functions of class
+$C^\infty$ with support in $U_{j+1}$ such that $\sum_{j=0}^{N} \psi_j = 1$ on $U_N$. Let
+$\|D^r \psi_j(x)\| \le M_j$ for all $r \le k$ and all $x$, and put $D_j = (k + 1)\, 2^k M_j$.
+Let $g_j$ and $G$ be of class $C^\infty$ with
+$$\sum_{s=0}^{k} \|D^s g_j - \partial^s f\|_{L^p(U_{j+1})} \le \delta_j$$
+for every $j$, and let $v$ satisfy $D^m v = \sum_{j=0}^{N} D^m(\psi_j g_j)$ on $U_N$ for every
+$m$. Then
+$$\|D^n v - D^n G\|_{L^p(U_N)} \le \sum_{j=0}^{N} D_j \Big(\delta_j + \sum_{s=0}^{k} \|D^s G -
+  \partial^s f\|_{L^p(U_{N+1})}\Big).$$
+
+Here $\partial^s f$ is the chosen weak derivative of $f$ on $\Omega$. In the application, $v$ is
+the patched function $\sum_j \psi_j g_j$. -/
 theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → E → ℝ} {M D : ℕ → ℝ}
     {g : ℕ → E → F} {G v : E → F} {δ : ℕ → ℝ≥0∞} {N n : ℕ}
     (hp : 1 ≤ p) (hn : n ≤ k)
@@ -1330,7 +1398,7 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
 
 end Patch
 
-/-! ### Meyers–Serrin: `C^∞(Ω) ∩ W^{k,p}(Ω)` is dense in `W^{k,p}(Ω)` -/
+/-! ### Meyers–Serrin: $C^\infty(\Omega) \cap W^{k,p}(\Omega)$ is dense in $W^{k,p}(\Omega)$ -/
 
 section MeyersSerrin
 
@@ -1340,8 +1408,8 @@ variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaa
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E]
   [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- An `L^p` bound on every member of a directed family of sets is an `L^p` bound on their
-union. -/
+/-- Let $(s_N)$ be a directed family of sets and let $0 < p < \infty$. If $\|F'\|_{L^p(s_N)} \le c$
+for every $N$, then $\|F'\|_{L^p(\bigcup_N s_N)} \le c$. -/
 theorem MeasureTheory.eLpNorm_restrict_iUnion_le {G : Type*} [NormedAddCommGroup G] {F' : E → G}
     {s : ℕ → Set E} (hd : Directed (· ⊆ ·) s) (hp₀ : p ≠ 0) (hp' : p ≠ ⊤) {c : ℝ≥0∞}
     (h : ∀ N, eLpNorm F' p (μ.restrict (s N)) ≤ c) :
@@ -1361,20 +1429,20 @@ theorem MeasureTheory.eLpNorm_restrict_iUnion_le {G : Type*} [NormedAddCommGroup
           rw [eLpNorm_of_not_aestronglyMeasurable hN]; exact le_top
       _ ≤ c := h N
 
-/-- **The Meyers–Serrin theorem, with an explicit tolerance.** For `f ∈ W^{k,p}(Ω)` with
-`1 ≤ p < ∞` and `0 ≠ ε ≠ ∞` there is a `v ∈ C^∞(Ω) ∩ W^{k,p}(Ω)` with `‖v - f‖_{k,p,Ω} ≤ ε`.
+/-- **The Meyers–Serrin theorem, with an explicit tolerance.** Let $E$ be finite-dimensional with an
+additive Haar measure, let $F$ be complete, and let $1 \le p < \infty$. For
+$f \in W^{k,p}(\Omega)$ and $0 < \varepsilon < \infty$ there is $v \in W^{k,p}(\Omega)$ of class
+$C^\infty$ on $\Omega$ with $\|v - f\|_{k,p,\Omega} \le \varepsilon$.
 
-The construction is the classical one: an exhaustion `U 0 ⊆ U 1 ⊆ …` of `Ω` with a telescoping
-smooth partition of unity `ψ 0, ψ 1, …` subordinate to it, and `v = ∑ j, ψ j (g j)` for
-mollifications `g j` of `f` chosen fine enough on the piece `U (j+1)` that carries `ψ j`. The sum
-is finite on each `U N`, so `v` is smooth on `Ω`.
-
-The estimate compares `v` not with `f` but with a *single* smooth approximation `G i` of `f` on
-`U (N+1)`: since `∑_{j ≤ N} ψ j = 1` there, `∂^n v - ∂^n (G i) = ∑_{j ≤ N} ∂^n (ψ j (g j - G i))`
-on `U N`, an identity between *classical* derivatives of smooth functions. So only the Leibniz
-bound `norm_iteratedFDeriv_smul_le` is used, and no product rule for weak derivatives is needed
-anywhere — which is what makes the proof of the size it is. Letting `i → ∞` and then `N → ∞`
-finishes. -/
+The construction is the classical one: an exhaustion $U_0 \subseteq U_1 \subseteq \dots$ of
+$\Omega$ with a telescoping smooth partition of unity $\psi_0, \psi_1, \dots$ subordinate to it,
+and $v = \sum_j \psi_j g_j$ for mollifications $g_j$ of $f$ chosen fine enough on the set
+$U_{j+1}$ that carries $\psi_j$. The sum is finite on each $U_N$, so $v$ is smooth on $\Omega$.
+The estimate compares $v$ not with $f$ but with a *single* smooth approximation $G_i$ of $f$ on
+$U_{N+1}$. Since $\sum_{j \le N} \psi_j = 1$ there, $D^n v - D^n G_i = \sum_{j \le N} D^n(\psi_j
+(g_j - G_i))$ on $U_N$, an identity between *classical* derivatives of smooth functions. So only
+the Leibniz bound `norm_iteratedFDeriv_smul_le` is used, and no product rule for weak
+derivatives is needed. The limits $i \to \infty$ and then $N \to \infty$ finish the proof. -/
 theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     (hf : MemSobolev f k p Ω μ) {ε : ℝ≥0∞} (hε : ε ≠ 0) (hεtop : ε ≠ ⊤) :
     ∃ v : E → F, ContDiffOn ℝ ∞ v (Ω : Set E) ∧ MemSobolev v k p Ω μ ∧
@@ -1572,15 +1640,15 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
   · rw [hε₁def]
     exact le_of_eq (ENNReal.mul_div_cancel' (fun h ↦ by simp at h) (fun h ↦ by simp at h))
 
-/-- **The Meyers–Serrin theorem, `H = W`.** For `1 ≤ p < ∞`, every function of `W^{k,p}(Ω)` is the
-limit, in the Sobolev norm of order `k`, of a sequence of functions that are smooth on `Ω` and lie
-in `W^{k,p}(Ω)`; that is, `C^∞(Ω) ∩ W^{k,p}(Ω)` is dense in `W^{k,p}(Ω)`.
+/-- **The Meyers–Serrin theorem, $H = W$.** Let $E$ be finite-dimensional with an additive Haar
+measure, let $F$ be complete, and let $1 \le p < \infty$. For every $f \in W^{k,p}(\Omega)$
+there are functions $v_i \in W^{k,p}(\Omega)$ of class $C^\infty$ on $\Omega$ such that
+$\|v_i - f\|_{k,p,\Omega} \to 0$. That is, $C^\infty(\Omega) \cap W^{k,p}(\Omega)$ is dense in
+$W^{k,p}(\Omega)$. This is Theorem 7.3.1 of [han2009theoretical], first proved by Meyers and
+Serrin ("$H = W$", Proc. Nat. Acad. Sci. USA 51 (1964)).
 
-This is the theorem of N. G. Meyers and J. Serrin, *H = W*, Proceedings of the National Academy of
-Sciences of the United States of America **51** (1964), 1055–1056; it is Theorem 7.3.1 of Kendall
-Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
-edition, Springer, 2009. No regularity of the boundary of `Ω` is assumed, and none is available:
-the approximating functions are smooth in the interior only. -/
+No regularity of the boundary of $\Omega$ is assumed, and none is available: the approximating
+functions are smooth in the interior only. -/
 theorem MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     (hf : MemSobolev f k p Ω μ) :
     ∃ v : ℕ → E → F, (∀ i, ContDiffOn ℝ ∞ (v i) (Ω : Set E)) ∧ (∀ i, MemSobolev (v i) k p Ω μ) ∧

@@ -7,46 +7,59 @@ import Numlib.Analysis.Sobolev.Operators
 /-!
 # Translations of Sobolev functions on an invariant open set
 
-For an open set `Ω` of a normed space `E` invariant under the translation by `h`
-(`IsTranslationInvariant Ω h`: `x + h ∈ Ω ↔ x ∈ Ω`) and a right-invariant measure `μ`, the
-translation `u ↦ u(· + h)` is an isometry of `L^p(Ω)` and of `W^{k,p}(Ω)` that commutes with
-the weak derivatives and preserves `W_0^{k,p}(Ω)`. This is the machinery behind the method of
-translations of L. Nirenberg for the regularity of elliptic equations
-([brezis2011functional] §9.6, on the whole space and on the half space `{x_N > 0}`, invariant
-under the tangential translations), and behind the translation invariance of the whole-line
-problems of [brezis2011functional] §8.4.
+Let $\Omega$ be an open subset of a normed space $E$ that is invariant under the translation by $h$,
+that is, $x + h \in \Omega$ if and only if $x \in \Omega$, and let $\mu$ be a right-invariant
+measure on $E$. This module shows that the translation $\tau_h u = u(\cdot + h)$ is a linear
+isometry of $L^p(\Omega)$ and of $W^{k,p}(\Omega)$, that it commutes with the weak derivatives, and
+that it preserves $W_0^{k,p}(\Omega)$. This is the machinery behind the method of translations of L.
+Nirenberg for the regularity of elliptic equations ([brezis2011functional], §9.6, on the whole space
+and on the half space $\{x_N > 0\}$, which is invariant under the tangential translations). It is
+also behind the translation invariance of the whole-line problems of [brezis2011functional], §8.4.
 
-## Main definitions and statements
+A last section treats a general open set $\Omega$ and the translated domain
+$\Omega - h = \{x : x + h \in \Omega\}$: the translation carries functions on $\Omega$, their weak
+derivatives and their integrals against test functions to $\Omega - h$.
 
-* `IsTranslationInvariant Ω h` and its API (`neg`, `add`, `zero`, `univ`, `smul_mem`,
-  `IsTranslationInvariant.measurePreserving`: the translation preserves `μ.restrict Ω`).
-* `LocallyIntegrableOn.comp_add_right`, `MeasureTheory.MemLp.comp_add_right`: the translate of
-  a locally integrable, respectively `L^p(Ω)`, function is one.
-* `TestFunction.compAddRightOn`: the translate of a test function on `Ω` is a test function on
-  `Ω`; `integral_smul_comp_add_right`: the change of variables `x ↦ x + h` in an integral over
-  `Ω` against a test function.
-* `HasWeakIteratedLineDerivOn.comp_add_right`: **translation commutes with the weak
-  derivative**.
-* `MeasureTheory.Lp.translate F p hΩ : Lp F p (μ.restrict Ω) →ₗᵢ[ℝ] Lp F p (μ.restrict Ω)`, the
-  translation `u ↦ u(· + h)` on `L^p(Ω)`, with `Lp.coeFn_translate`, `Lp.translate_neg_translate`
-  (`τ_{−h} ∘ τ_h = 1`) and the adjointness `Lp.inner_translate` in `L²(Ω)`. Note the sign: the
-  whole-space translation `MeasureTheory.Lp.translateₗᵢ` of `Numlib.Analysis.Convolution.Bochner`
-  is `g ↦ g(· − y)`, the convention of harmonic analysis, so `Lp.translateₗᵢ 𝕜 F p (−h)` is this
-  `Lp.translate` on `Ω = ⊤`.
-* `SobolevMultiIndex.translateL F b k p μ hΩ : W^{k,p}(Ω) →ₗᵢ[ℝ] W^{k,p}(Ω)`, the translation on
-  `W^{k,p}(Ω)`, with `weakDeriv_translateL` (the weak derivatives of the translate are the
-  translates of the weak derivatives), `fn_translateL`, and `translateL_mem_zero`:
-  **`W_0^{k,p}(Ω)` is invariant under the translations that leave `Ω` invariant**
-  ([brezis2011functional] §9.6, (54)).
+## Main definitions
 
-## Design
+* `IsTranslationInvariant`: the set $\Omega$ is invariant under the translation by $h$.
+* `TestFunction.compAddRightOn`: the translate $\varphi(\cdot + h)$ of a test function on an
+  invariant open set $\Omega$, as a test function on $\Omega$.
+* `MeasureTheory.Lp.translate`: the translation $\tau_h$ as a linear isometry of $L^p(\Omega)$.
+* `SobolevMultiIndex.translateL`: the translation $\tau_h$ as a linear isometry of
+  $W^{k,p}(\Omega)$.
 
-Everything is stated for a general normed space `E` (finite-dimensional where `W^{k,p}(Ω)` is
-involved), a general target `F` and a right-invariant measure `μ`, with the invariance of `Ω`
-as an explicit hypothesis rather than a property of a named domain; the half space and the
-whole space are instances. The difference quotients `D_h = (τ_h − 1)/|h|` built on these
-isometries, being the tool of one proof, live with it in
-`Numlib/Analysis/PDE/Elliptic/Regularity.lean`.
+## Main results
+
+* `IsTranslationInvariant.measurePreserving`: the translation by $h$ preserves the restriction of
+  $\mu$ to an invariant open set $\Omega$.
+* `LocallyIntegrableOn.comp_add_right` and `MeasureTheory.MemLp.comp_add_right`: the translate of a
+  function that is locally integrable on $\Omega$, or in $L^p(\Omega)$, is again one.
+* `integral_smul_comp_add_right`: the change of variables $\int_\Omega \psi(x) u(x + h) \, dx =
+  \int_\Omega \psi(x - h) u(x) \, dx$ against a test function $\psi$.
+* `HasWeakIteratedLineDerivOn.comp_add_right`: translation commutes with the weak derivative.
+* `MeasureTheory.Lp.translate_neg_translate` and `MeasureTheory.Lp.inner_translate`:
+  $\tau_{-h} \tau_h = 1$ on $L^p(\Omega)$, and $\langle \tau_h u, v \rangle = \langle u, \tau_{-h} v
+  \rangle$ in $L^2(\Omega)$.
+* `SobolevMultiIndex.weakDeriv_translateL`: the weak derivatives of $\tau_h u$ are the translates of
+  the weak derivatives of $u$.
+* `SobolevMultiIndex.translateL_mem_zero`: $W_0^{k,p}(\Omega)$ is invariant under the translations
+  that leave $\Omega$ invariant ([brezis2011functional], §9.6, (54)).
+* `HasWeakIteratedLineDerivOn.comp_add_right_of_preimage`: the translation carries a weak derivative
+  on $\Omega$ to a weak derivative on $\Omega - h$.
+
+## Implementation notes
+
+* Everything is stated for a general normed space $E$ (proper, hence finite-dimensional, where
+  $W^{k,p}(\Omega)$ or local integrability is involved), a general target $F$ and a right-invariant
+  measure $\mu$. The invariance of $\Omega$ is an explicit hypothesis, not a property of a named
+  domain; the half space and the whole space are instances.
+* The sign of the translation is $\tau_h u = u(\cdot + h)$. The whole-space translation
+  `MeasureTheory.Lp.translateₗᵢ` of `Numlib.Analysis.Convolution.Bochner` is
+  $g \mapsto g(\cdot - y)$, the convention of harmonic analysis, so
+  `MeasureTheory.Lp.translateₗᵢ 𝕜 F p (-h)` is `MeasureTheory.Lp.translate` on $\Omega = E$.
+* The difference quotients $D_h = (\tau_h - 1)/|h|$ built on these isometries are the tool of one
+  proof, and they are defined with it in `Numlib.Analysis.PDE.Elliptic.Regularity`.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -60,24 +73,28 @@ section Invariant
 
 variable {E : Type*} [AddGroup E]
 
-/-- `IsTranslationInvariant Ω h` says that the set `Ω` is invariant under the translation by `h`:
-`x + h ∈ Ω ↔ x ∈ Ω`. The whole space is invariant under every translation, and the half space
-`{x_N > 0}` under the tangential ones (`h_N = 0`); this is what the method of translations of
-[brezis2011functional] §9.6 needs of the domain. -/
+/-- Let $E$ be an additive group. A set $\Omega \subseteq E$ is **invariant under the translation
+by** $h \in E$ if $x + h \in \Omega$ if and only if $x \in \Omega$, for every $x \in E$. The
+whole space is invariant under every translation, and the half space $\{x_N > 0\}$ is invariant
+under the tangential translations, those with $h_N = 0$. This is what the method of translations
+of [brezis2011functional], §9.6, needs of the domain. -/
 def IsTranslationInvariant (Ω : Set E) (h : E) : Prop := ∀ x, x + h ∈ Ω ↔ x ∈ Ω
 
 namespace IsTranslationInvariant
 
 variable {Ω : Set E} {h : E}
 
-/-- The translate of a point of an invariant set lies in the set. -/
+/-- If $\Omega$ is invariant under the translation by $h$ and $x \in \Omega$, then
+$x + h \in \Omega$. -/
 theorem mem (hΩ : IsTranslationInvariant Ω h) {x : E} (hx : x ∈ Ω) : x + h ∈ Ω := (hΩ x).2 hx
 
-/-- The preimage of an invariant set under the translation is the set. -/
+/-- If $\Omega$ is invariant under the translation by $h$, then the preimage of $\Omega$ under
+$x \mapsto x + h$ is $\Omega$. -/
 theorem preimage_eq (hΩ : IsTranslationInvariant Ω h) : (· + h) ⁻¹' Ω = Ω :=
   Set.ext fun x ↦ hΩ x
 
-/-- A set invariant under the translation by `h` is invariant under the translation by `-h`. -/
+/-- A set that is invariant under the translation by $h$ is invariant under the translation by $-h$.
+-/
 theorem neg (hΩ : IsTranslationInvariant Ω h) : IsTranslationInvariant Ω (-h) := fun x ↦ by
   have := hΩ (x + -h)
   rw [neg_add_cancel_right] at this
@@ -86,10 +103,11 @@ theorem neg (hΩ : IsTranslationInvariant Ω h) : IsTranslationInvariant Ω (-h)
 /-- The whole space is invariant under every translation. -/
 theorem univ (h : E) : IsTranslationInvariant (univ : Set E) h := fun _ ↦ Iff.rfl
 
-/-- Every set is invariant under the translation by `0`. -/
+/-- Every set is invariant under the translation by $0$. -/
 theorem zero (Ω : Set E) : IsTranslationInvariant Ω 0 := fun x ↦ by rw [add_zero]
 
-/-- A set invariant under two translations is invariant under their sum. -/
+/-- A set that is invariant under the translations by $h$ and by $h'$ is invariant under the
+translation by $h + h'$. -/
 theorem add {h' : E} (hΩ : IsTranslationInvariant Ω h) (hΩ' : IsTranslationInvariant Ω h') :
     IsTranslationInvariant Ω (h + h') := fun x ↦ by
   rw [← add_assoc, hΩ', hΩ]
@@ -102,8 +120,10 @@ section InvariantSmul
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- A set invariant under all the translations `t • y` contains the lines `x + ℝ y` through its
-points. -/
+/-- Let $E$ be a real normed space, let $\Omega \subseteq E$ and let $y \in E$. If $\Omega$ is
+invariant under the translation by $t y$ for every $t \in \mathbb{R}$, then $x + t y \in \Omega$
+for every $x \in \Omega$ and every $t \in \mathbb{R}$. So $\Omega$ contains the lines through
+its points in the direction $y$. -/
 theorem IsTranslationInvariant.smul_mem {Ω : Set E} {y : E}
     (hΩ : ∀ t : ℝ, IsTranslationInvariant Ω (t • y)) {x : E} (hx : x ∈ Ω) (t : ℝ) :
     x + t • y ∈ Ω :=
@@ -120,7 +140,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω : Opens E} {h : E}
 
 omit [NormedSpace ℝ E] in
-/-- The translation by `h` preserves `μ.restrict Ω` when `Ω` is invariant under it. -/
+/-- Let $E$ have its Borel σ-algebra, let $\mu$ be a right-invariant measure on $E$, and let
+$\Omega \subseteq E$ be open and invariant under the translation by $h$. Then the map
+$x \mapsto x + h$ preserves the restriction $\mu|_\Omega$. -/
 theorem IsTranslationInvariant.measurePreserving [μ.IsAddRightInvariant]
     (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     MeasurePreserving (· + h) (μ.restrict (Ω : Set E)) (μ.restrict (Ω : Set E)) := by
@@ -128,7 +150,9 @@ theorem IsTranslationInvariant.measurePreserving [μ.IsAddRightInvariant]
   rwa [hΩ.preimage_eq] at this
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- The translate of a function locally integrable on `Ω` is locally integrable on `Ω − h`. -/
+/-- Let $E$ be proper with its Borel σ-algebra, let $\mu$ be right-invariant, and let $\Omega$ and
+$\Omega'$ be open sets with $\Omega' = \{x : x + h \in \Omega\} = \Omega - h$. If $u$ is locally
+integrable on $\Omega$, then $x \mapsto u(x + h)$ is locally integrable on $\Omega'$. -/
 theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] [ProperSpace E]
     {Ω' : Opens E} {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
     (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
@@ -146,23 +170,28 @@ theorem LocallyIntegrableOn.comp_add_right_of_preimage [μ.IsAddRightInvariant] 
     (MeasurableEquiv.addRight h).measurableEmbedding).1 this
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- A translate of a locally integrable function on an invariant open set is locally integrable
-there. -/
+/-- Let $E$ be proper with its Borel σ-algebra, let $\mu$ be right-invariant, and let $\Omega$ be
+open and invariant under the translation by $h$. If $u$ is locally integrable on $\Omega$, then
+$x \mapsto u(x + h)$ is locally integrable on $\Omega$. -/
 theorem LocallyIntegrableOn.comp_add_right [μ.IsAddRightInvariant] [ProperSpace E] {u : E → F}
     (hu : LocallyIntegrableOn u Ω μ) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     LocallyIntegrableOn (fun x ↦ u (x + h)) Ω μ :=
   LocallyIntegrableOn.comp_add_right_of_preimage hu hΩ.preimage_eq.symm
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- A translate of an `L^p(Ω)` function on an invariant open set is in `L^p(Ω)`, with the same
-norm. -/
+/-- Let $E$ have its Borel σ-algebra, let $\mu$ be right-invariant, let $\Omega$ be open and
+invariant under the translation by $h$, and let $p \in [0, \infty]$. If $u \in L^p(\Omega)$,
+then $x \mapsto u(x + h)$ lies in $L^p(\Omega)$.
+
+The two norms are equal, because the translation preserves the measure; the isometry is
+`MeasureTheory.Lp.translate`. -/
 theorem MeasureTheory.MemLp.comp_add_right [μ.IsAddRightInvariant] {u : E → F} {p : ℝ≥0∞}
     (hu : MemLp u p (μ.restrict (Ω : Set E))) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     MemLp (fun x ↦ u (x + h)) p (μ.restrict (Ω : Set E)) :=
   hu.comp_measurePreserving hΩ.measurePreserving
 
-/-- The translate `x ↦ φ (x + h)` of a test function on an open set invariant under the
-translation by `h`, as a test function on the same set. -/
+/-- Let $\Omega$ be open and invariant under the translation by $h$. For a test function $\varphi$
+on $\Omega$, this is the translate $x \mapsto \varphi(x + h)$, as a test function on $\Omega$. -/
 def TestFunction.compAddRightOn (φ : 𝓓(Ω, F)) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     𝓓(Ω, F) where
   toFun x := φ (x + h)
@@ -177,15 +206,19 @@ def TestFunction.compAddRightOn (φ : 𝓓(Ω, F)) (hΩ : IsTranslationInvariant
     exact (hΩ x).1 (φ.tsupport_subset hx)
 
 omit [MeasurableSpace E] [BorelSpace E] in
+/-- As a function, the translate `TestFunction.compAddRightOn φ hΩ` is $x \mapsto \varphi(x + h)$.
+-/
 @[simp]
 theorem TestFunction.compAddRightOn_coe (φ : 𝓓(Ω, F))
     (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     (φ.compAddRightOn hΩ : E → F) = fun x ↦ φ (x + h) :=
   rfl
 
-/-- The change of variables `x ↦ x + h` in an integral over an invariant open set, for an
-integrand that is the product of a test function and a locally integrable function:
-`∫_Ω ψ(x) u(x + h) dx = ∫_Ω ψ(x − h) u(x) dx`. -/
+/-- Let $\mu$ be right-invariant, let $\Omega$ be open and invariant under the translation by $h$,
+let $u : E \to F$, and let $\psi$ be a real test function on $\Omega$. Then the change of
+variables $x \mapsto x + h$ gives
+$$\int_\Omega \psi(x) \, u(x + h) \, d\mu(x) = \int_\Omega \psi(x - h) \, u(x) \, d\mu(x).$$
+No integrability of $u$ is assumed. -/
 theorem integral_smul_comp_add_right [μ.IsAddRightInvariant] (u : E → F)
     (hΩ : IsTranslationInvariant (Ω : Set E) h) (ψ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set E), ψ x • u (x + h) ∂μ = ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ := by
@@ -210,9 +243,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [BorelSpace E] [ProperSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
   [μ.IsAddRightInvariant] {Ω : Opens E} {h : E}
 
-/-- **Translation commutes with the weak derivative** on an invariant open set: if `w` is a weak
-derivative of `u` along the tuple `y` on `Ω`, then `w(· + h)` is one of `u(· + h)`. The test
-function `φ` is traded for its translate `φ(· − h)`, a test function on `Ω` again. -/
+/-- **Translation commutes with the weak derivative.** Let $E$ be a proper real normed space with
+its Borel σ-algebra, let $\mu$ be right-invariant, and let $\Omega$ be open and invariant under
+the translation by $h$. If $w$ is a weak derivative of $u$ along the tuple $y \in E^n$ of
+directions on $\Omega$, then $x \mapsto w(x + h)$ is a weak derivative of $x \mapsto u(x + h)$
+along $y$ on $\Omega$.
+
+The proof replaces the test function $\varphi$ by its translate $\varphi(\cdot - h)$, which is
+again a test function on $\Omega$. -/
 theorem HasWeakIteratedLineDerivOn.comp_add_right {n : ℕ} {y : Fin n → E} {u w : E → F}
     (hu : HasWeakIteratedLineDerivOn y u w Ω μ) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     HasWeakIteratedLineDerivOn y (fun x ↦ u (x + h)) (fun x ↦ w (x + h)) Ω μ where
@@ -238,7 +276,7 @@ theorem HasWeakIteratedLineDerivOn.comp_add_right {n : ℕ} {y : Fin n → E} {u
 
 end WeakDerivTranslate
 
-/-! ### Translations on `L^p(Ω)` -/
+/-! ### Translations on $L^p(\Omega)$ -/
 
 namespace MeasureTheory.Lp
 
@@ -247,20 +285,25 @@ variable {E F : Type*} [NormedAddCommGroup E] [MeasurableSpace E]
   {Ω : Opens E} {h : E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 variable (F p) in
-/-- **Translation by `h` on `L^p(Ω)`**, `u ↦ u(· + h)`, for an open set `Ω` invariant under the
-translation: a linear isometry, by the translation invariance of the measure
-(`MeasureTheory.Lp.compMeasurePreservingₗᵢ`). -/
+/-- Let $p \ge 1$, let $E$ have its Borel σ-algebra, let $\mu$ be right-invariant, and let $\Omega$
+be open and invariant under the translation by $h$. The **translation** by $h$ on $L^p(\Omega)$
+is the map $\tau_h u = u(\cdot + h)$. It is a linear isometry of $L^p(\Omega)$, by the
+translation invariance of the measure.
+
+The map is `MeasureTheory.Lp.compMeasurePreservingₗᵢ` for $x \mapsto x + h$. -/
 def translate (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     Lp F p (μ.restrict (Ω : Set E)) →ₗᵢ[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
   Lp.compMeasurePreservingₗᵢ ℝ (· + h) hΩ.measurePreserving
 
-/-- `translate hΩ u` is `u(· + h)` almost everywhere on `Ω`. -/
+/-- For $u \in L^p(\Omega)$, the translate $\tau_h u$ equals $x \mapsto u(x + h)$ almost everywhere
+on $\Omega$. -/
 theorem coeFn_translate (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     translate F p hΩ u =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ u (x + h) :=
   Lp.coeFn_compMeasurePreserving u hΩ.measurePreserving
 
-/-- Translating by `h` and then by `−h` is the identity on `L^p(Ω)`. -/
+/-- Translating by $h$ and then by $-h$ is the identity on $L^p(\Omega)$: $\tau_{-h}(\tau_h u) = u$.
+-/
 theorem translate_neg_translate (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     translate F p hΩ.neg (translate F p hΩ u) = u := by
@@ -270,8 +313,9 @@ theorem translate_neg_translate (hΩ : IsTranslationInvariant (Ω : Set E) h)
   refine h1.trans (h2.trans (Eventually.of_forall fun x ↦ ?_))
   simp
 
-/-- **Adjointness of the translations in `L²(Ω)`**: `⟪τ_h u, v⟫ = ⟪u, τ_{−h} v⟫`, by the change of
-variables `x ↦ x − h`. -/
+/-- **Adjointness of the translations** in $L^2(\Omega)$. For real functions $u, v \in L^2(\Omega)$,
+$$\langle \tau_h u, v \rangle = \langle u, \tau_{-h} v \rangle.$$
+The proof is the change of variables $x \mapsto x - h$. -/
 theorem inner_translate (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u v : Lp ℝ 2 (μ.restrict (Ω : Set E))) :
     ⟪translate ℝ 2 hΩ u, v⟫_ℝ = ⟪u, translate ℝ 2 hΩ.neg v⟫_ℝ := by
@@ -290,7 +334,7 @@ theorem inner_translate (hΩ : IsTranslationInvariant (Ω : Set E) h)
 
 end MeasureTheory.Lp
 
-/-! ### Translations on `W^{k,p}(Ω)` -/
+/-! ### Translations on $W^{k,p}(\Omega)$ -/
 
 namespace SobolevMultiIndex
 
@@ -300,13 +344,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω : Opens E} {μ : Measure E} [μ.IsAddRightInvariant] {h : E}
 
 variable (F b k p μ) in
-/-- The family of the translates of the weak derivatives of `u ∈ W^{k,p}(Ω)`, as an element of
-the ambient `ℓ^p` product. -/
+/-- For $u \in W^{k,p}(\Omega)$, the family $(\tau_h \partial^\alpha u)_{|\alpha| \le k}$ of the
+translates of its weak derivatives, as an element of the ambient $\ell^p$ product
+`SobolevMultiIndexTuple F ι k p Ω μ`. -/
 def translateTuple (hΩ : IsTranslationInvariant (Ω : Set E) h) (u : SobolevMultiIndex F b k p Ω μ) :
     SobolevMultiIndexTuple F ι k p Ω μ :=
   WithLp.toLp p fun α ↦ Lp.translate F p hΩ (weakDeriv u α)
 
-/-- The translated family lies in `W^{k,p}(Ω)`: translation commutes with the weak derivatives
+/-- For $u \in W^{k,p}(\Omega)$, the family of the translates of its weak derivatives lies in
+$W^{k,p}(\Omega)$, because translation commutes with the weak derivatives
 (`HasWeakIteratedLineDerivOn.comp_add_right`). -/
 theorem translateTuple_mem (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) :
@@ -315,11 +361,17 @@ theorem translateTuple_mem (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (Lp.coeFn_translate hΩ (weakDeriv u 0)).symm (Lp.coeFn_translate hΩ (weakDeriv u α)).symm
 
 variable (F b k p μ) in
-/-- **Translation by `h` as a linear isometry of `W^{k,p}(Ω)`**, for an open set `Ω` invariant
-under the translation: every weak derivative is translated
-(`HasWeakIteratedLineDerivOn.comp_add_right`), and each `L^p(Ω)` norm is preserved. This is the
-map `u ↦ τ_h u` of [brezis2011functional] §9.6, and the invariance of `H^1_0(ℝ^N_+)` under the
-tangential translations is `SobolevMultiIndex.translateL_mem_zero`. -/
+/-- Let $p \ge 1$, let $E$ be a proper real normed space with its Borel σ-algebra and a basis $b$
+indexed by a finite linearly ordered type, let $\mu$ be right-invariant, and let $\Omega$ be
+open and invariant under the translation by $h$. The **translation** by $h$ on $W^{k,p}(\Omega)$
+is the linear isometry $\tau_h$ that maps $u$, with weak derivatives $\partial^\alpha u$ for
+$|\alpha| \le k$, to the element with weak derivatives $\tau_h \partial^\alpha u$. This is the
+map $u \mapsto \tau_h u$ of [brezis2011functional], §9.6.
+
+The space $W^{k,p}(\Omega)$ is `SobolevMultiIndex F b k p Ω μ`. Every weak derivative is
+translated by `HasWeakIteratedLineDerivOn.comp_add_right`, and each $L^p(\Omega)$ norm is
+preserved. The invariance of $H^1_0(\mathbb{R}^N_+)$ under the tangential translations is
+`SobolevMultiIndex.translateL_mem_zero`. -/
 def translateL (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     SobolevMultiIndex F b k p Ω μ →ₗᵢ[ℝ] SobolevMultiIndex F b k p Ω μ where
   toLinearMap :=
@@ -335,23 +387,29 @@ def translateL (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     · exact (LinearIsometry.norm_map _ _).le
     · exact (LinearIsometry.norm_map _ _).symm.le
 
-/-- The weak derivatives of the translate are the translates of the weak derivatives, as elements
-of `L^p(Ω)`. -/
+/-- For $u \in W^{k,p}(\Omega)$ and each multi-index $\alpha$ with $|\alpha| \le k$, the weak
+derivative of the translate is the translate of the weak derivative: $\partial^\alpha(\tau_h
+u) = \tau_h \partial^\alpha u$ in $L^p(\Omega)$. -/
 theorem weakDeriv_translateL (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
     weakDeriv (translateL F b k p μ hΩ u) α = Lp.translate F p hΩ (weakDeriv u α) :=
   rfl
 
-/-- The function of the translate is the translate of the function, almost everywhere on `Ω`. -/
+/-- For $u \in W^{k,p}(\Omega)$, the function of $\tau_h u$ equals $x \mapsto v(x + h)$ almost
+everywhere on $\Omega$, where $v$ is the function of $u$. -/
 theorem fn_translateL (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) :
     fn (translateL F b k p μ hΩ u) =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ fn u (x + h) :=
   Lp.coeFn_translate hΩ (weakDeriv u 0)
 
-/-- **`W_0^{k,p}(Ω)` is invariant under the translations that leave `Ω` invariant**
-([brezis2011functional] §9.6, (54): "`H^1_0(Ω)` is invariant under tangential translations"):
-the translate of a test function on `Ω` is a test function on `Ω`, and the translation is
-continuous on `W^{k,p}(Ω)`, so it preserves the closure of the test functions. -/
+/-- **$W_0^{k,p}(\Omega)$ is invariant under the translations that leave $\Omega$ invariant**: if
+$u \in W_0^{k,p}(\Omega)$, then $\tau_h u \in W_0^{k,p}(\Omega)$. For $W^{1,2}$ this is
+[brezis2011functional], §9.6, (54): "$H^1_0(\Omega)$ is invariant under tangential
+translations".
+
+The translate of a test function on $\Omega$ is a test function on $\Omega$, and the translation
+is continuous on $W^{k,p}(\Omega)$, so it preserves the closure
+`SobolevMultiIndexZero F b k p Ω μ` of the test functions. -/
 theorem translateL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
     {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
     translateL F b k p μ hΩ u ∈ SobolevMultiIndexZero F b k p Ω μ := by
@@ -371,12 +429,14 @@ theorem translateL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
 
 end SobolevMultiIndex
 
-/-! ### Translation to a translated domain
+/-!
+### Translation to a translated domain
 
-The translation `u ↦ u(· + h)` carries `W^{1,p}(Ω)` to `W^{1,p}(Ω − h)`, with the weak
-derivatives translated. The sections above treat an open set invariant under the translation;
-this one is the version for `Ω' = (· + h) ⁻¹' Ω`, the translated domain, which the density of
-smooth functions on a segment-property domain needs. -/
+The translation $u \mapsto u(\cdot + h)$ carries $W^{1,p}(\Omega)$ to $W^{1,p}(\Omega - h)$, with
+the weak derivatives translated. The sections above treat an open set that is invariant under the
+translation. This section treats the translated domain $\Omega' = \Omega - h$, which is
+`(· + h) ⁻¹' Ω`; the density of smooth functions on a domain with the segment property needs it.
+-/
 
 section TranslatePreimage
 
@@ -384,8 +444,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
   {Ω Ω' : Opens E} {h : E}
 
-/-- The translate `x ↦ φ (x - h)` of a test function on `Ω' = Ω − h`, as a test function on
-`Ω`. -/
+/-- Let $\Omega$ and $\Omega'$ be open sets with $\Omega' = \{x : x + h \in \Omega\} = \Omega - h$.
+For a test function $\varphi$ on $\Omega'$, this is the translate $x \mapsto \varphi(x - h)$, as
+a test function on $\Omega$. -/
 def TestFunction.compSubRightOfPreimage (φ : 𝓓(Ω', F))
     (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) : 𝓓(Ω, F) where
   toFun x := φ (x - h)
@@ -402,7 +463,8 @@ def TestFunction.compSubRightOfPreimage (φ : 𝓓(Ω', F))
     simpa using this
 
 omit [NormedSpace ℝ E] in
-/-- The translation `x ↦ x + h` carries `μ.restrict (Ω − h)` to `μ.restrict Ω`. -/
+/-- Let $E$ have its Borel σ-algebra, let $\mu$ be right-invariant, and let $\Omega' = \Omega - h$.
+The map $x \mapsto x + h$ is measure preserving from $\mu|_{\Omega'}$ to $\mu|_\Omega$. -/
 theorem measurePreserving_add_right_restrict_of_preimage [μ.IsAddRightInvariant]
     (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
     MeasurePreserving (· + h) (μ.restrict (Ω' : Set E)) (μ.restrict (Ω : Set E)) := by
@@ -410,15 +472,19 @@ theorem measurePreserving_add_right_restrict_of_preimage [μ.IsAddRightInvariant
   rwa [← hΩ'] at this
 
 omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- The translate of an `L^p(Ω)` function lies in `L^p(Ω − h)`. -/
+/-- Let $E$ have its Borel σ-algebra, let $\mu$ be right-invariant, let $\Omega' = \Omega - h$, and
+let $p \in [0, \infty]$. If $u \in L^p(\Omega)$, then $x \mapsto u(x + h)$ lies in
+$L^p(\Omega')$. -/
 theorem MeasureTheory.MemLp.comp_add_right_of_preimage [μ.IsAddRightInvariant] {u : E → F}
     {p : ℝ≥0∞} (hu : MemLp u p (μ.restrict (Ω : Set E)))
     (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) :
     MemLp (fun x ↦ u (x + h)) p (μ.restrict (Ω' : Set E)) :=
   hu.comp_measurePreserving (measurePreserving_add_right_restrict_of_preimage hΩ')
 
-/-- The change of variables `x ↦ x + h` from `Ω − h` to `Ω`, against a test function on `Ω − h`:
-`∫_{Ω − h} ψ(x) u(x + h) dx = ∫_Ω ψ(x − h) u(x) dx`. -/
+/-- Let $\mu$ be right-invariant, let $\Omega' = \Omega - h$, let $u : E \to F$, and let $\psi$ be a
+real test function on $\Omega'$. Then the change of variables $x \mapsto x + h$ gives
+$$\int_{\Omega'} \psi(x) \, u(x + h) \, d\mu(x) = \int_\Omega \psi(x - h) \, u(x) \, d\mu(x).$$
+-/
 theorem integral_smul_comp_add_right_of_preimage [μ.IsAddRightInvariant] (u : E → F)
     (hΩ' : (Ω' : Set E) = (fun x ↦ x + h) ⁻¹' Ω) (ψ : 𝓓(Ω', ℝ)) :
     ∫ x in (Ω' : Set E), ψ x • u (x + h) ∂μ = ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ := by
@@ -432,10 +498,14 @@ theorem integral_smul_comp_add_right_of_preimage [μ.IsAddRightInvariant] (u : E
   rw [e1, e2, ← integral_add_right_eq_self (fun x ↦ ψ (x - h) • u x) h]
   simp only [add_sub_cancel_right]
 
-/-- **Translation commutes with the weak derivative, from `Ω` to `Ω − h`**: if `w` is a weak
-derivative of `u` along the tuple `y` on `Ω`, then `w(· + h)` is one of `u(· + h)` on `Ω − h`.
-The test function `φ` on `Ω − h` is traded for its translate `φ(· − h)`, a test function on
-`Ω`. -/
+/-- **Translation commutes with the weak derivative, from $\Omega$ to $\Omega - h$.** Let $E$ be a
+proper real normed space with its Borel σ-algebra, let $\mu$ be right-invariant, and let
+$\Omega' = \Omega - h$. If $w$ is a weak derivative of $u$ along the tuple $y \in E^n$ of
+directions on $\Omega$, then $x \mapsto w(x + h)$ is a weak derivative of $x \mapsto u(x + h)$
+along $y$ on $\Omega'$.
+
+The proof replaces a test function $\varphi$ on $\Omega'$ by its translate $\varphi(\cdot - h)$,
+which is a test function on $\Omega$. -/
 theorem HasWeakIteratedLineDerivOn.comp_add_right_of_preimage [μ.IsAddRightInvariant]
     [ProperSpace E] {n : ℕ} {y : Fin n → E} {u w : E → F}
     (hu : HasWeakIteratedLineDerivOn y u w Ω μ)
@@ -464,7 +534,9 @@ theorem HasWeakIteratedLineDerivOn.comp_add_right_of_preimage [μ.IsAddRightInva
 end TranslatePreimage
 
 
-/-- The support of `x ↦ θ (x + h)` lies in the translate of the support of `θ`. -/
+/-- Let $E$ be a normed additive group, $\theta : E \to \mathbb{R}$ and $h \in E$. The topological
+support of $x \mapsto \theta(x + h)$ is contained in the preimage of the topological support of
+$\theta$ under $x \mapsto x + h$. -/
 theorem tsupport_comp_add_right_subset {E : Type*} [NormedAddCommGroup E] {θ : E → ℝ} (h : E) :
     tsupport (fun x ↦ θ (x + h)) ⊆ (fun x ↦ x + h) ⁻¹' tsupport θ :=
   closure_minimal (fun y hy ↦ subset_closure (by simpa [Function.support] using hy))

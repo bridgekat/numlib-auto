@@ -9,62 +9,97 @@ import Numlib.LinearAlgebra.Matrix.Toeplitz
 /-!
 # The Levinson–Durbin–Trench theory of Toeplitz systems
 
-Symmetric positive definite Toeplitz systems ([golub2013matrix] §4.7; Durbin 1960, Levinson 1947,
-Trench 1964, Cybenko 1980). With `T_k = Matrix.symmToeplitz k r` (`r 0 = 1`), the Yule–Walker
-system `T_k y = −(r₁, …, r_k)` is solved order by order by **Durbin's recurrence** ((4.7.1)): from
-`y^{(k)}`, with `β_k = 1 + rᵀ y^{(k)}` and `α_k = −(r_{k+1} + rᵀ ℰ_k y^{(k)})/β_k`,
-`y^{(k+1)} = (y^{(k)} + α_k ℰ_k y^{(k)}, α_k)`.
+This module formalizes the theory of symmetric positive definite Toeplitz systems in
+[golub2013matrix], §4.7, after Levinson (1947), Durbin (1960), Trench (1964) and Cybenko (1980). Let
+$K$ be a field and let $r_0 = 1, r_1, r_2, \dots \in K$. The symmetric Toeplitz matrix of order $k$
+is $T_k = (r_{|i-j|})_{0 \le i, j < k}$. The Yule–Walker system $T_k y = -(r_1, \dots, r_k)^T$ is
+solved order by order by **Durbin's recurrence** (4.7.1): from the solution $y^{(k)}$ of order $k$,
+put
+$$\beta_k = 1 + r^T y^{(k)}, \qquad \alpha_k = -\frac{r_{k+1} + r^T \mathcal{E}_k y^{(k)}}{\beta_k},
+  \qquad y^{(k+1)} = \begin{bmatrix} y^{(k)} + \alpha_k \mathcal{E}_k y^{(k)} \\ \alpha_k
+  \end{bmatrix},$$
+where $r = (r_1, \dots, r_k)^T$ and $\mathcal{E}_k$ is the exchange matrix that reverses the order
+of the entries.
 
-* `Durbin.sol`, `Durbin.beta`, `Durbin.alpha`: the recurrence, `ℕ`-indexed;
-  `Durbin.symmToeplitz_mulVec_sol`: it solves the Yule–Walker systems.
-* `Durbin.beta_succ`, `Durbin.det_symmToeplitz_succ`, `Durbin.beta_pos`,
-  `Durbin.abs_alpha_lt_one`: `β_{k+1} = (1 − α_k²) β_k`, `det T_{k+1} = β_k det T_k`, and for a
-  positive definite `T_n` the `β_k` are positive and the reflection coefficients satisfy
-  `|α_k| < 1`; conversely `T_n` is positive definite when every `β_k` is positive
-  (`Durbin.posDef_symmToeplitz_iff`).
-* `Durbin.transpose_mul_mul_eq_diagonal`, `Durbin.inv_symmToeplitz_eq_mul`: `Uᵀ T U = diag(β)`
-  and `T⁻¹ = U diag(β)⁻¹ Uᵀ`, `U` the unit upper triangular matrix of the reversed solutions
-  (`Durbin.unitUpper`).
-* `Durbin.sum_sol_add_one`, `Durbin.sum_abs_sol_eq`: the sums of the solutions ((4.7.7));
-  `Durbin.max_inv_prod_le_lpOpNorm_one_inv` and `Durbin.lpOpNorm_one_inv_le`: the lower and upper
-  bounds of (4.7.6) for `‖T_n⁻¹‖₁`, the upper one (Cybenko's, quoted without proof in the book)
-  through the Szegő recursion `p_{k+1}^* = z p_k^* + α_k p_k` of the columns of `U`
-  (`Durbin.revSol_succ`), which bounds the row sums of `U` (`Durbin.sum_abs_revSol_le`).
-* `Levinson.sol`, `Levinson.symmToeplitz_mulVec_sol`: Levinson's recurrence (4.7.2)–(4.7.3) for a
-  general right-hand side; `Levinson.bordered_solve_toeplitz`: the unsymmetric bordering of
-  §4.7.8.
+The module proves that the recurrence solves the Yule–Walker systems, that
+$\beta_{k+1} = (1 - \alpha_k^2) \beta_k$ and $\det T_{k+1} = \beta_k \det T_k$, and that $T_n$ is
+positive definite if and only if every $\beta_k$ is positive, in which case $|\alpha_k| < 1$. With
+the unit upper triangular matrix $U$ of the reversed solutions,
+$U^T T_n U = \operatorname{diag}(\beta)$ and $T_n^{-1} = U \operatorname{diag}(\beta)^{-1} U^T$. It
+also proves Levinson's recurrence for a general right-hand side, Trench's description of $T_n^{-1}$,
+the sums of the solutions (4.7.7), and the lower and upper bounds (4.7.6) on $\|T_n^{-1}\|_1$. The
+upper bound is Cybenko's, which the book quotes without proof; its proof goes through the Szegő
+recursion $p_{k+1}^* = z p_k^* + \alpha_k p_k$ of the columns of $U$.
+
+## Main definitions
+
+* `Durbin.sol`, `Durbin.beta`, `Durbin.alpha`: Durbin's recurrence and its numbers $\beta_k$ and
+  $\alpha_k$.
+* `Durbin.revSol`, `Durbin.unitUpper`: the reversed solutions $(\mathcal{E}_k y^{(k)}, 1)$ and the
+  unit upper triangular matrix $U$ whose columns they are.
+* `Durbin.fwdSol`: the coefficients of the Szegő polynomial $p_k$.
+* `Levinson.sol`, `Levinson.mu`: Levinson's recurrence (4.7.2)–(4.7.3) for a general right-hand
+  side.
+* `Trench.gamma`, `Trench.lastCol`: the last column $(v, \gamma)$ of $T_{m+1}^{-1}$.
+
+## Main results
+
+* `Durbin.symmToeplitz_mulVec_sol`: Durbin's recurrence solves the Yule–Walker systems.
+* `Durbin.beta_succ`, `Durbin.det_symmToeplitz_succ`: $\beta_{k+1} = (1 - \alpha_k^2) \beta_k$ and
+  $\det T_{k+1} = \beta_k \det T_k$.
+* `Durbin.beta_pos`, `Durbin.abs_alpha_lt_one`, `Durbin.posDef_symmToeplitz_iff`: for a positive
+  definite $T_n$ the $\beta_k$ are positive and $|\alpha_k| < 1$; conversely $T_n$ is positive
+  definite when every $\beta_k$ is positive.
+* `Durbin.transpose_mul_mul_eq_diagonal`, `Durbin.inv_symmToeplitz_eq_mul`:
+  $U^T T U = \operatorname{diag}(\beta)$ and $T^{-1} = U \operatorname{diag}(\beta)^{-1} U^T$.
+* `Durbin.sum_sol_add_one`, `Durbin.sum_abs_sol_eq`: the sums of the solutions, (4.7.7).
+* `Durbin.revSol_succ`: the Szegő recursion $p_{k+1}^* = z p_k^* + \alpha_k p_k$.
+* `Durbin.sum_abs_revSol_le`: the bound on the row sums of $U$.
+* `Durbin.max_inv_prod_le_lpOpNorm_one_inv`, `Durbin.lpOpNorm_one_inv_le`: the lower and upper
+  bounds (4.7.6) on $\|T_n^{-1}\|_1$.
+* `Levinson.symmToeplitz_mulVec_sol`: Levinson's recurrence solves $T_k x = b$.
+* `Levinson.bordered_solve_toeplitz`: the bordering of an unsymmetric Toeplitz matrix, §4.7.8.
 * `Trench.inv_symmToeplitz_last`, `Trench.inv_symmToeplitz_eq`,
-  `Trench.inv_symmToeplitz_apply_succ`: Trench's description of `T_n⁻¹` ((4.7.4)–(4.7.5)).
+  `Trench.inv_symmToeplitz_apply_succ`: Trench's description of $T_n^{-1}$, (4.7.4)–(4.7.5).
 
-## Design
+## Proof outline
 
-The growing solution vectors are `ℕ`-indexed functions, zero from index `k` on: `Durbin.sol r k`
-is `y^{(k)}`, and everything is 0-based, so the book's `y^{(k)} = (y_1, …, y_k)` is
-`(sol r k 0, …, sol r k (k − 1))`. The recurrence starts at `k = 0` with the empty solution, so
-that the book's `β_k`, `α_k` of (4.7.1) are `Durbin.beta r k`, `Durbin.alpha r k` (`β₀ = 1`,
-`α₀ = −r₁`), and Cybenko's reflection coefficients `α_j = y^{(j)}_j` of (4.7.6)–(4.7.7) are
-`Durbin.alpha r (j − 1)`. Statements read the solutions on `Fin k` through
-`fun i : Fin k => Durbin.sol r k i`; proofs work with the `ℕ`-indexed sums of
-`Matrix.symmToeplitz_mulVec_apply`. Where the book's lower bounds of (4.7.6) carry a factor
-`1 / (n − 1)`, the statement here omits it (stronger).
+All the recurrences rest on one computation, the bordering step of a Toeplitz matrix
+(`Levinson.toeplitz_bordered_sum`): if $T_k^T y = -r$, then
+$$T_{k+1} \begin{bmatrix} x + \mu \mathcal{E} y \\ \mu \end{bmatrix} = \begin{bmatrix} T_k x \\ p^T
+  \mathcal{E} x + \mu (1 + p^T y) \end{bmatrix}.$$
+It uses the persymmetry $T_k \mathcal{E} = \mathcal{E} T_k^T$ and no invertibility. The symmetric
+case (`Levinson.bordered_sum`) and the transposed case are instances.
 
-The one computation behind all the recurrences is the bordering step of a Toeplitz matrix
-(`Levinson.toeplitz_bordered_sum`): `T_{k+1} (x + μ ℰ y, μ) = (T_k x, pᵀ ℰ x + μ (1 + pᵀ y))` when
-`T_kᵀ y = −r`. It uses the persymmetry of `T_k` (`T_k ℰ = ℰ T_kᵀ`) and no invertibility; the
-symmetric case (`Levinson.bordered_sum`) and the transposed one are instances.
+## Notation
 
-Each recurrence computes its new coefficient by one formula evaluated at the current vector
-(`Durbin.betaOf`, `Durbin.alphaOf`, `Levinson.muOf`); `Durbin.beta`, `Durbin.alpha` and
-`Levinson.mu` are these formulas at the solutions. The file runs in dependency order: the bordering
-step, Durbin's recurrence over a field (with `Uᵀ T U = diag(β)` and the Szegő recursion), Levinson's
-recurrence, Trench's inverse, the sums of the solutions over an ordered field, and the positive
-definite real case with the bounds of (4.7.6).
+* $T_k$: `Matrix.symmToeplitz k r`, with the entries $r_{|i-j|}$, and in the unsymmetric case
+  `Matrix.toeplitz ρ`, with the entries $\rho_{j-i}$.
+* $\mathcal{E}_k$: the exchange matrix `Matrix.exchange k`, with $(\mathcal{E}_k y)_i = y_{k-1-i}$.
+* $(v, c)$: the vector $v$ with the entry $c$ appended, `Fin.snoc v c`.
 
-The secular function of §4.7.7 is `Matrix.borderedSecularFunction` of `Numlib.Eigen.DivideConquer`.
+## Implementation notes
 
-## References
-
-* [golub2013matrix] §4.7.
+* The growing solution vectors are functions on $\mathbb{N}$ that vanish from index $k$ on:
+  `Durbin.sol r k` is $y^{(k)}$. Everything is indexed from $0$, so the book's
+  $y^{(k)} = (y_1, \dots, y_k)$ is `(Durbin.sol r k 0, …, Durbin.sol r k (k - 1))`. The statements
+  read the solutions on `Fin k` through `fun i : Fin k => Durbin.sol r k i`; the proofs work with
+  the sums over $\mathbb{N}$ of `Matrix.symmToeplitz_mulVec_apply`.
+* The recurrence starts at $k = 0$ with the empty solution, so that the $\beta_k$ and $\alpha_k$ of
+  the book's (4.7.1) are `Durbin.beta r k` and `Durbin.alpha r k`, with $\beta_0 = 1$ and
+  $\alpha_0 = -r_1$. Cybenko's reflection coefficients $\alpha_j = y^{(j)}_j$ of (4.7.6)–(4.7.7) are
+  `Durbin.alpha r (j - 1)`.
+* Each recurrence computes its new number by one formula evaluated at the current vector
+  (`Durbin.betaOf`, `Durbin.alphaOf`, `Levinson.muOf`). The numbers `Durbin.beta`, `Durbin.alpha`
+  and `Levinson.mu` are these formulas at the solutions.
+* The book's lower bounds in (4.7.6) carry a factor $1 / (n - 1)$; the statement here omits it,
+  which makes it stronger.
+* The file is in the order of the dependencies: the bordering step, Durbin's recurrence over a field
+  (with $U^T T U = \operatorname{diag}(\beta)$ and the Szegő recursion), Levinson's recurrence,
+  Trench's inverse, the sums of the solutions over an ordered field, and the positive definite real
+  case with the bounds of (4.7.6).
+* The secular function of [golub2013matrix], §4.7.7, is `Matrix.borderedSecularFunction` of
+  `Numlib.Eigen.DivideConquer`.
 -/
 
 open Matrix Finset
@@ -73,7 +108,8 @@ section Sums
 
 variable {K : Type*} [CommRing K] {k : ℕ}
 
-/-- Reversing a sum over `range k`. -/
+/-- Reversing the order of summation: $\sum_{j < k} f_j \, g_{k-1-j} = \sum_{j < k} f_{k-1-j} \,
+g_j$. -/
 private theorem sum_range_mul_reflect (f g : ℕ → K) :
     ∑ j ∈ range k, f j * g (k - 1 - j) = ∑ j ∈ range k, f (k - 1 - j) * g j := by
   rw [← sum_range_reflect (fun j => f (k - 1 - j) * g j) k]
@@ -81,7 +117,7 @@ private theorem sum_range_mul_reflect (f g : ℕ → K) :
   rw [mem_range] at hj
   rw [show k - 1 - (k - 1 - j) = j by omega]
 
-/-- A vector given on `Fin k`, extended by zero to `ℕ`. -/
+/-- The extension by zero of a vector on $\{0, \dots, k - 1\}$ to a function on $\mathbb{N}$. -/
 private def ofFin (y : Fin k → K) (j : ℕ) : K := if h : j < k then y ⟨j, h⟩ else 0
 
 private theorem ofFin_coe (y : Fin k → K) : (fun j : Fin k => ofFin y j) = y := by
@@ -101,10 +137,20 @@ namespace Levinson
 
 variable {K : Type*} [Field K] {k : ℕ}
 
-/-- **The bordering step of a Toeplitz matrix** ([golub2013matrix] §4.7.3, §4.7.8), `ℕ`-indexed,
-with `T_k = toeplitz ρ`, `ρ 0 = 1`: if `T_kᵀ y = −(ρ 1, …, ρ k)`, `T_k x = b` and
-`μ (1 + pᵀ y) = b_k − pᵀ ℰ x` (`p_j = ρ (−(j + 1))`), then `T_{k+1} (x + μ ℰ y, μ) = (b₀, …, b_k)`.
-The persymmetry of `T_k` replaces any invertibility. -/
+/-- **The bordering step of a Toeplitz matrix** ([golub2013matrix], §4.7.3 and §4.7.8), for vectors
+indexed by $\mathbb{N}$. Let $\rho : \mathbb{Z} \to K$ with $\rho_0 = 1$, and let
+$T_k = (\rho_{j-i})_{0 \le i, j < k}$. Let $x, y, b : \mathbb{N} \to K$ satisfy
+$$\sum_{j < k} \rho_{l-j} y_j = -\rho_{l+1} \quad (l < k), \qquad \sum_{j < k} \rho_{j-i} x_j =
+  b_i \quad (i < k),$$
+that is, $T_k^T y = -(\rho_1, \dots, \rho_k)^T$ and $T_k x = (b_0, \dots, b_{k-1})^T$. Let
+$\mu \in K$ satisfy
+$$\mu \Bigl(1 + \sum_{j < k} \rho_{-(j+1)} y_j\Bigr) = b_k - \sum_{j < k} \rho_{j-k} x_j.$$
+Then the vector $z$ with $z_j = x_j + \mu y_{k-1-j}$ for $j < k$ and $z_k = \mu$ satisfies
+$T_{k+1} z = (b_0, \dots, b_k)^T$.
+
+With $p_j = \rho_{-(j+1)}$, the condition on $\mu$ is
+$\mu (1 + p^T y) = b_k - p^T \mathcal{E} x$, and $z = (x + \mu \mathcal{E} y, \mu)$. The
+persymmetry of $T_k$ replaces any invertibility. -/
 theorem toeplitz_bordered_sum {ρ : ℤ → K} (hρ : ρ 0 = 1) {y x b : ℕ → K}
     (hy : ∀ l < k, ∑ j ∈ range k, ρ ((l : ℤ) - j) * y j = -ρ (l + 1))
     (hx : ∀ i < k, ∑ j ∈ range k, ρ ((j : ℤ) - i) * x j = b i) (μ : K)
@@ -140,9 +186,14 @@ theorem toeplitz_bordered_sum {ρ : ℤ → K} (hρ : ρ 0 = 1) {y x b : ℕ →
     rw [h2, sub_self, hρ]
     linear_combination hμ
 
-/-- **The symmetric bordering step** ([golub2013matrix] §4.7.3), `ℕ`-indexed: if
-`T_k y = −(r₁, …, r_k)`, `T_k x = b` and `μ β = b_k − ∑ r_{k−j} x_j` with `β = 1 + ∑ r_{j+1} y_j`,
-then `T_{k+1} (x + μ ℰ y, μ) = (b₀, …, b_k)`, `T_k = symmToeplitz k r`, `r 0 = 1`. -/
+/-- **The symmetric bordering step** ([golub2013matrix], §4.7.3), for vectors indexed by
+$\mathbb{N}$. Let $r : \mathbb{N} \to K$ with $r_0 = 1$, and let
+$T_k = (r_{|i-j|})_{0 \le i, j < k}$. Let $x, y, b : \mathbb{N} \to K$ satisfy
+$T_k y = -(r_1, \dots, r_k)^T$ and $T_k x = (b_0, \dots, b_{k-1})^T$, and let $\mu \in K$
+satisfy
+$$\mu \beta = b_k - \sum_{j < k} r_{k-j} x_j, \qquad \beta = 1 + \sum_{j < k} r_{j+1} y_j.$$
+Then the vector $z$ with $z_j = x_j + \mu y_{k-1-j}$ for $j < k$ and $z_k = \mu$, that is,
+$z = (x + \mu \mathcal{E} y, \mu)$, satisfies $T_{k+1} z = (b_0, \dots, b_k)^T$. -/
 theorem bordered_sum {r : ℕ → K} (hr : r 0 = 1) {y x b : ℕ → K}
     (hy : ∀ i < k, ∑ j ∈ range k, r ((i : ℤ) - j).natAbs * y j = -r (i + 1))
     (hx : ∀ i < k, ∑ j ∈ range k, r ((i : ℤ) - j).natAbs * x j = b i) (μ : K)
@@ -163,7 +214,8 @@ theorem bordered_sum {r : ℕ → K} (hr : r 0 = 1) {y x b : ℕ → K}
   rw [← h i hi]
   exact sum_congr rfl fun j _ => by rw [hcomm]
 
-/-- The vector `(x + μ ℰ_k y, μ)` of the bordering step, read on `ℕ`. -/
+/-- The vector $(x + \mu \mathcal{E}_k y, \mu)$ of the bordering step, read as a function of the
+indices in $\mathbb{N}$. -/
 private theorem snoc_eq {y x : Fin k → K} (μ : K) :
     Fin.snoc (α := fun _ => K) (x + μ • (exchange k *ᵥ y)) μ = fun j : Fin (k + 1) =>
       (if (j : ℕ) < k then ofFin x j + μ * ofFin y (k - 1 - j) else if (j : ℕ) = k then μ
@@ -186,9 +238,15 @@ private theorem snoc_apply_eq (b : Fin k → K) (b' : K) (i : Fin (k + 1)) :
   | last => simp
   | cast i => simp [Fin.snoc_castSucc, i.isLt]
 
-/-- **The bordering step of a Toeplitz matrix** ([golub2013matrix] §4.7.8), `T_k = toeplitz ρ`,
-`ρ 0 = 1`: if `T_kᵀ y = −(ρ 1, …, ρ k)`, `T_k x = b` and `μ (1 + pᵀ y) = b' − pᵀ ℰ_k x` with
-`p_i = ρ (−(i + 1))`, then `T_{k+1} (x + μ ℰ_k y, μ) = (b, b')`. -/
+/-- **The bordering step of a Toeplitz matrix** ([golub2013matrix], §4.7.8). Let
+$\rho : \mathbb{Z} \to K$ with $\rho_0 = 1$, and let $T_k$ be the Toeplitz matrix with the
+entries $\rho_{j-i}$. Let $x, y, b \in K^k$ and $b' \in K$ with
+$T_k^T y = -(\rho_1, \dots, \rho_k)^T$ and $T_k x = b$, and let $\mu \in K$ satisfy
+$$\mu (1 + p^T y) = b' - p^T \mathcal{E}_k x, \qquad p_i = \rho_{-(i+1)}.$$
+Then
+$$T_{k+1} \begin{bmatrix} x + \mu \mathcal{E}_k y \\ \mu \end{bmatrix} = \begin{bmatrix} b \\ b'
+  \end{bmatrix}.$$
+-/
 theorem toeplitz_bordered_solve {ρ : ℤ → K} (hρ : ρ 0 = 1) {y x b : Fin k → K} (b' : K)
     (hy : (toeplitz ρ : Matrix (Fin k) (Fin k) K)ᵀ *ᵥ y = fun l : Fin k => -ρ (((l : ℕ) : ℤ) + 1))
     (hx : (toeplitz ρ : Matrix (Fin k) (Fin k) K) *ᵥ x = b) (μ : K)
@@ -218,10 +276,14 @@ theorem toeplitz_bordered_solve {ρ : ℤ → K} (hρ : ρ 0 = 1) {y x b : Fin k
     if j < k then ofFin x j + μ * ofFin y (k - 1 - j) else if j = k then μ else 0), h i i.isLt,
     snoc_apply_eq]
 
-/-- **Levinson's bordering step** ([golub2013matrix] (4.7.2)–(4.7.3)): with
-`T_k = symmToeplitz k r`, `r 0 = 1`, if `T_k y = −(r₁, …, r_k)`, `T_k x = b` and
-`μ (1 + rᵀ y) = b' − rᵀ ℰ_k x`, then `T_{k+1} (x + μ ℰ_k y, μ) = (b, b')`. No invertibility of
-`T_k` is used. -/
+/-- **Levinson's bordering step** ([golub2013matrix] (4.7.2)–(4.7.3)). Let $r : \mathbb{N} \to K$
+with $r_0 = 1$, and let $T_k = (r_{|i-j|})$. Let $x, y, b \in K^k$ and $b' \in K$ with
+$T_k y = -(r_1, \dots, r_k)^T$ and $T_k x = b$, and let $\mu \in K$ satisfy
+$$\mu (1 + r^T y) = b' - r^T \mathcal{E}_k x, \qquad r = (r_1, \dots, r_k)^T.$$
+Then
+$$T_{k+1} \begin{bmatrix} x + \mu \mathcal{E}_k y \\ \mu \end{bmatrix} = \begin{bmatrix} b \\ b'
+  \end{bmatrix}.$$
+No invertibility of $T_k$ is used. -/
 theorem bordered_solve {r : ℕ → K} (hr : r 0 = 1) {y x b : Fin k → K} (b' : K)
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin k => -r ((i : ℕ) + 1))
     (hx : symmToeplitz k r *ᵥ x = b) (μ : K)
@@ -249,20 +311,28 @@ namespace Durbin
 
 variable {K : Type*} [Field K]
 
-/-- The denominator `1 + rᵀ y` of Durbin's recurrence at a vector `y` of order `k`
-(`Durbin.beta r k` is its value at `y^{(k)}`). -/
+/-- The denominator of Durbin's recurrence at a vector $y$ of order $k$: $\beta(y) = 1 + \sum_{i <
+k} r_{i+1} y_i = 1 + r^T y$. Its value at $y^{(k)}$ is `Durbin.beta r k`. -/
 def betaOf (r : ℕ → K) (k : ℕ) (y : ℕ → K) : K :=
   1 + ∑ i ∈ range k, r (i + 1) * y i
 
-/-- The reflection coefficient `−(r_{k+1} + rᵀ ℰ_k y) / (1 + rᵀ y)` of Durbin's recurrence at a
-vector `y` of order `k` (`Durbin.alpha r k` is its value at `y^{(k)}`). -/
+/-- The reflection coefficient of Durbin's recurrence at a vector $y$ of order $k$:
+$$\alpha(y) = -\frac{r_{k+1} + \sum_{i < k} r_{k-i} y_i}{1 + \sum_{i < k} r_{i+1} y_i} =
+  -\frac{r_{k+1} + r^T \mathcal{E}_k y}{1 + r^T y},$$
+with the value $0$ when the denominator is $0$. Its value at $y^{(k)}$ is `Durbin.alpha r k`. -/
 def alphaOf (r : ℕ → K) (k : ℕ) (y : ℕ → K) : K :=
   -(r (k + 1) + ∑ i ∈ range k, r (k - i) * y i) / betaOf r k y
 
-/-- **Durbin's recurrence** ([golub2013matrix] (4.7.1)), `ℕ`-indexed: `sol r k` is the solution
-`y^{(k)}` of the Yule–Walker system of order `k`, zero from index `k` on; `sol r 0 = 0` and
-`y^{(k+1)} = (y^{(k)} + α_k ℰ_k y^{(k)}, α_k)` with `α_k = Durbin.alpha r k` and the denominator
-`β_k = Durbin.beta r k`. -/
+/-- **Durbin's recurrence** ([golub2013matrix] (4.7.1)), for vectors indexed by $\mathbb{N}$. The
+solution $y^{(k)}$ of the Yule–Walker system of order $k$ is defined by $y^{(0)} = 0$ and
+$$y^{(k+1)}_i = \begin{cases} y^{(k)}_i + \alpha_k \, y^{(k)}_{k-1-i}, & i < k, \\ \alpha_k, &
+  i = k, \\ 0, & i > k, \end{cases}$$
+that is, $y^{(k+1)} = (y^{(k)} + \alpha_k \mathcal{E}_k y^{(k)}, \alpha_k)$, where the
+reflection coefficient $\alpha_k$ is `Durbin.alpha r k` and its denominator $\beta_k$ is
+`Durbin.beta r k`.
+
+The vector $y^{(k)}$ is zero from index $k$ on. The recurrence is correct when no $\beta_j$
+vanishes, by `Durbin.symmToeplitz_mulVec_sol`. -/
 def sol (r : ℕ → K) : ℕ → ℕ → K
   | 0 => fun _ => 0
   | k + 1 =>
@@ -270,14 +340,18 @@ def sol (r : ℕ → K) : ℕ → ℕ → K
     fun i => if i < k then y i + alphaOf r k y * y (k - 1 - i) else if i = k then alphaOf r k y
       else 0
 
-/-- The denominators `β_k = 1 + rᵀ y^{(k)}` of Durbin's recurrence. -/
+/-- The denominators of Durbin's recurrence, $\beta_k = 1 + \sum_{i < k} r_{i+1} y^{(k)}_i = 1 + r^T
+y^{(k)}$. -/
 def beta (r : ℕ → K) (k : ℕ) : K := betaOf r k (sol r k)
 
-/-- The reflection coefficients `α_k = −(r_{k+1} + rᵀ ℰ_k y^{(k)}) / β_k` of Durbin's
-recurrence. -/
+/-- The reflection coefficients of Durbin's recurrence,
+$$\alpha_k = -\frac{r_{k+1} + \sum_{i < k} r_{k-i} y^{(k)}_i}{\beta_k} = -\frac{r_{k+1} + r^T
+  \mathcal{E}_k y^{(k)}}{\beta_k},$$
+with the value $0$ when $\beta_k = 0$. -/
 def alpha (r : ℕ → K) (k : ℕ) : K := alphaOf r k (sol r k)
 
-/-- Durbin's recurrence up to order `k` reads only `r₁, …, r_k`. -/
+/-- Durbin's recurrence up to order $k$ reads only $r_1, \dots, r_k$: if $r_j = r'_j$ for
+$1 \le j \le k$, then the two recurrences give the same $y^{(k)}$. -/
 theorem sol_congr {r r' : ℕ → K} :
     ∀ k, (∀ j, 1 ≤ j → j ≤ k → r j = r' j) → sol r k = sol r' k
   | 0, _ => rfl
@@ -298,7 +372,8 @@ theorem sol_congr {r r' : ℕ → K} :
     funext i
     simp only [sol, ih, ha]
 
-/-- Durbin's `β_k` reads only `r₁, …, r_k`. -/
+/-- Durbin's $\beta_k$ reads only $r_1, \dots, r_k$: if $r_j = r'_j$ for $1 \le j \le k$, then the
+two recurrences give the same $\beta_k$. -/
 theorem beta_congr {r r' : ℕ → K} {k : ℕ} (h : ∀ j, 1 ≤ j → j ≤ k → r j = r' j) :
     beta r k = beta r' k := by
   unfold beta betaOf
@@ -308,38 +383,44 @@ theorem beta_congr {r r' : ℕ → K} {k : ℕ} (h : ∀ j, 1 ≤ j → j ≤ k 
 
 variable (r : ℕ → K)
 
-/-- The empty solution `y^{(0)} = 0`. -/
+/-- The empty solution: $y^{(0)} = 0$. -/
 @[simp]
 theorem sol_zero (i : ℕ) : sol r 0 i = 0 := rfl
 
-/-- One step of Durbin's recurrence: `y^{(k+1)} = (y^{(k)} + α_k ℰ_k y^{(k)}, α_k)`. -/
+/-- One step of Durbin's recurrence: $y^{(k+1)}_i = y^{(k)}_i + \alpha_k y^{(k)}_{k-1-i}$ for
+$i < k$, $y^{(k+1)}_k = \alpha_k$, and $y^{(k+1)}_i = 0$ for $i > k$. That is, $y^{(k+1)} =
+(y^{(k)} + \alpha_k \mathcal{E}_k y^{(k)}, \alpha_k)$. -/
 theorem sol_succ (k i : ℕ) :
     sol r (k + 1) i =
       if i < k then sol r k i + alpha r k * sol r k (k - 1 - i) else if i = k then alpha r k
       else 0 := rfl
 
-/-- `β₀ = 1`. -/
+/-- The first denominator is $\beta_0 = 1$. -/
 @[simp]
 theorem beta_zero : beta r 0 = 1 := by simp [beta, betaOf]
 
-/-- `sol r k` vanishes from index `k` on. -/
+/-- The solution $y^{(k)}$ vanishes from index $k$ on: $y^{(k)}_i = 0$ for $i \ge k$. -/
 theorem sol_of_le {k i : ℕ} (h : k ≤ i) : sol r k i = 0 := by
   cases k with
   | zero => rfl
   | succ k => rw [sol_succ, ite_eq_right (by omega), ite_eq_right (by omega)]
 
-/-- The last entry of `y^{(k+1)}` is `α_k`. -/
+/-- The last entry of $y^{(k+1)}$ is $y^{(k+1)}_k = \alpha_k$. -/
 theorem sol_succ_self (k : ℕ) : sol r (k + 1) k = alpha r k := by
   rw [sol_succ, ite_eq_right (lt_irrefl k), ite_eq_left rfl]
 
-/-- The defining relation `α_k β_k = −(r_{k+1} + rᵀ ℰ_k y^{(k)})` when `β_k ≠ 0`. -/
+/-- If $\beta_k \neq 0$, the reflection coefficient satisfies its defining relation $\alpha_k
+\beta_k = -(r_{k+1} + \sum_{i < k} r_{k-i} y^{(k)}_i)$. -/
 theorem alpha_mul_beta {k : ℕ} (h : beta r k ≠ 0) :
     alpha r k * beta r k = -(r (k + 1) + ∑ i ∈ range k, r (k - i) * sol r k i) :=
   div_mul_cancel₀ _ h
 
 variable {r}
 
-/-- The Yule–Walker equations of every order, `ℕ`-indexed. -/
+/-- The Yule–Walker equations of every order, for vectors indexed by $\mathbb{N}$. Let $r_0 = 1$,
+and let $\beta_j \neq 0$ for every $j < k$. Then for every $i < k$,
+$$\sum_{j < k} r_{|i-j|} \, y^{(k)}_j = -r_{i+1}.$$
+-/
 theorem sum_symmToeplitz_sol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     ∀ i < k, ∑ j ∈ range k, r ((i : ℤ) - j).natAbs * sol r k j = -r (i + 1) := by
   induction k with
@@ -354,16 +435,21 @@ theorem sum_symmToeplitz_sol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j
     rw [← h i hi]
     rfl
 
-/-- **Correctness of Durbin's recurrence** ([golub2013matrix] (4.7.1)): if `r 0 = 1` and
-`β_j ≠ 0` for `j < k`, then `T_k y^{(k)} = −(r₁, …, r_k)`. -/
+/-- **Correctness of Durbin's recurrence** ([golub2013matrix] (4.7.1)). Let $K$ be a field, let
+$r : \mathbb{N} \to K$ with $r_0 = 1$, and let $\beta_j \neq 0$ for every $j < k$. Then the
+vector $y^{(k)}$ of `Durbin.sol` solves the Yule–Walker system
+$$T_k y^{(k)} = -(r_1, \dots, r_k)^T.$$
+-/
 theorem symmToeplitz_mulVec_sol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     symmToeplitz k r *ᵥ (fun i : Fin k => sol r k i) = fun i : Fin k => -r ((i : ℕ) + 1) := by
   funext i
   rw [symmToeplitz_mulVec_apply]
   exact sum_symmToeplitz_sol hr hβ i i.isLt
 
-/-- **`β_{k+1} = (1 − α_k²) β_k`** ([golub2013matrix] §4.7.3), pure algebra from the
-recurrence. -/
+/-- **The recurrence $\beta_{k+1} = (1 - \alpha_k^2) \beta_k$** ([golub2013matrix], §4.7.3). Let
+$\beta_k \neq 0$. Then
+$$\beta_{k+1} = (1 - \alpha_k^2) \, \beta_k.$$
+The proof is algebra from the recurrence; it does not need $r_0 = 1$. -/
 theorem beta_succ {k : ℕ} (h : beta r k ≠ 0) :
     beta r (k + 1) = (1 - alpha r k ^ 2) * beta r k := by
   have hαβ := alpha_mul_beta r h
@@ -389,7 +475,7 @@ theorem beta_succ {k : ℕ} (h : beta r k ≠ 0) :
   rw [beta, betaOf] at hαβ
   linear_combination (alpha r k) * hαβ
 
-/-- `β_k = ∏_{j<k} (1 − α_j²)` when no `β_j` vanishes. -/
+/-- If $\beta_j \neq 0$ for every $j < k$, then $\beta_k = \prod_{j < k} (1 - \alpha_j^2)$. -/
 theorem beta_eq_prod {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     beta r k = ∏ j ∈ range k, (1 - alpha r j ^ 2) := by
   induction k with
@@ -397,28 +483,38 @@ theorem beta_eq_prod {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
   | succ k ih =>
     rw [beta_succ (hβ k (by omega)), ih fun j hj => hβ j (by omega), prod_range_succ, mul_comm]
 
-/-- The book's `(ℰ_k y^{(k)}, 1)`, `ℕ`-indexed: the `k`-th column of the unit upper triangular
-factor `U` of `Uᵀ T U = diag(β)` (`Durbin.unitUpper`), and (scaled by `1 / β_k`) the last column
-of `T_{k+1}⁻¹`. -/
+/-- The vector $(\mathcal{E}_k y^{(k)}, 1)$ of the book, indexed by $\mathbb{N}$: its entry $j$ is
+$y^{(k)}_{k-1-j}$ for $j < k$, $1$ for $j = k$, and $0$ for $j > k$.
+
+It is the column $k$ of the unit upper triangular factor $U$ of
+$U^T T U = \operatorname{diag}(\beta)$ (`Durbin.unitUpper`). Multiplied by $1 / \beta_k$, it is
+the last column of $T_{k+1}^{-1}$. It is also the coefficient vector of the reversed Szegő
+polynomial $p_k^*$. -/
 def revSol (r : ℕ → K) (k : ℕ) (j : ℕ) : K :=
   if j < k then sol r k (k - 1 - j) else if j = k then 1 else 0
 
-/-- `(ℰ_k y^{(k)}, 1)` vanishes beyond index `k`. -/
+/-- The vector $(\mathcal{E}_k y^{(k)}, 1)$ vanishes beyond index $k$. -/
 theorem revSol_of_lt {k j : ℕ} (h : k < j) : revSol r k j = 0 := by
   rw [revSol, ite_eq_right (by omega), ite_eq_right (by omega)]
 
-/-- The entry `k` of `(ℰ_k y^{(k)}, 1)` is `1`. -/
+/-- The entry $k$ of $(\mathcal{E}_k y^{(k)}, 1)$ is $1$. -/
 @[simp]
 theorem revSol_self (k : ℕ) : revSol r k k = 1 := by
   rw [revSol, ite_eq_right (lt_irrefl k), ite_eq_left rfl]
 
-/-- A sum against `revSol r k` only sees the indices up to `k`. -/
+/-- For $k < m$ and every $f : \mathbb{N} \to K$, a sum against $(\mathcal{E}_k y^{(k)}, 1)$ sees
+only the indices up to $k$: $\sum_{j < m} f_j \, v_j = \sum_{j \le k} f_j \, v_j$ for this
+vector $v$. -/
 theorem sum_mul_revSol {k m : ℕ} (h : k < m) (f : ℕ → K) :
     ∑ j ∈ range m, f j * revSol r k j = ∑ j ∈ range (k + 1), f j * revSol r k j := by
   refine (sum_subset (range_subset_range.mpr (by omega)) fun j hj hj' => ?_).symm
   rw [revSol_of_lt (by simp only [mem_range] at hj'; omega), mul_zero]
 
-/-- **`T_{k+1} (ℰ_k y^{(k)}, 1) = β_k e_k`** ([golub2013matrix] §4.7.3–4.7.4). -/
+/-- **The equation $T_{k+1} (\mathcal{E}_k y^{(k)}, 1) = \beta_k e_k$** ([golub2013matrix],
+§4.7.3–4.7.4). Let $r_0 = 1$, and let $\beta_j \neq 0$ for every $j < k$. Then for
+$v = (\mathcal{E}_k y^{(k)}, 1)$ and every $i \le k$,
+$$\sum_{j \le k} r_{|i-j|} \, v_j = \begin{cases} \beta_k, & i = k, \\ 0, & i < k. \end{cases}$$
+-/
 theorem sum_symmToeplitz_revSol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     ∀ i ≤ k, ∑ j ∈ range (k + 1), r ((i : ℤ) - j).natAbs * revSol r k j =
       if i = k then beta r k else 0 := by
@@ -445,8 +541,12 @@ theorem sum_symmToeplitz_revSol (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta 
     exact sum_congr rfl fun j hj => by
       rw [show ((i : ℤ) - ((i - 1 - j : ℕ) : ℤ)).natAbs = j + 1 by have := mem_range.mp hj; omega]
 
-/-- **`det T_{k+1} = β_k det T_k`** ([golub2013matrix] §4.7.3, the congruence
-`[I ℰy; 0 1]ᵀ T_{k+1} [I ℰy; 0 1] = diag(T_k, β_k)`), when `r 0 = 1` and `β_j ≠ 0` for `j < k`. -/
+/-- **The determinant recurrence** $\det T_{k+1} = \beta_k \det T_k$ ([golub2013matrix], §4.7.3).
+Let $r_0 = 1$, and let $\beta_j \neq 0$ for every $j < k$. Then
+$$\det T_{k+1} = \beta_k \det T_k.$$
+The proof uses the congruence $\begin{bmatrix} I & \mathcal{E} y \\ 0 & 1 \end{bmatrix}^T
+T_{k+1} \begin{bmatrix} I & \mathcal{E} y \\ 0 & 1 \end{bmatrix} = \operatorname{diag}(T_k,
+\beta_k)$. -/
 theorem det_symmToeplitz_succ (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     det (symmToeplitz (k + 1) r) = beta r k * det (symmToeplitz k r) := by
   set T := symmToeplitz (k + 1) r
@@ -483,7 +583,8 @@ theorem det_symmToeplitz_succ (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r 
     rw [hcol, ite_eq_right (fun h => hi (Fin.ext (by simpa using h))), mul_zero, zero_mul]
   · simp
 
-/-- `det T_k = β₀ ⋯ β_{k−1}` when `r 0 = 1` and no `β_j` vanishes. -/
+/-- If $r_0 = 1$ and $\beta_j \neq 0$ for every $j < k$, then
+$\det T_k = \beta_0 \beta_1 \cdots \beta_{k-1}$. -/
 theorem det_symmToeplitz (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠ 0) :
     det (symmToeplitz k r) = ∏ j ∈ range k, beta r j := by
   induction k with
@@ -492,12 +593,14 @@ theorem det_symmToeplitz (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < k, beta r j ≠
     rw [det_symmToeplitz_succ hr fun j hj => hβ j (by omega), ih fun j hj => hβ j (by omega),
       prod_range_succ, mul_comm]
 
-/-- The unit upper triangular matrix `U` of [golub2013matrix] P4.7.2 whose `k`-th column is
-`(ℰ_k y^{(k)}, 1, 0, …, 0)`. -/
+/-- The unit upper triangular matrix $U \in K^{n \times n}$ of [golub2013matrix] P4.7.2 whose column
+$k$ is $(\mathcal{E}_k y^{(k)}, 1, 0, \dots, 0)$: its entry $(i, k)$ is $y^{(k)}_{k-1-i}$ for
+$i < k$, $1$ for $i = k$, and $0$ for $i > k$. -/
 def unitUpper (r : ℕ → K) (n : ℕ) : Matrix (Fin n) (Fin n) K :=
   of fun i k => revSol r k i
 
-/-- The columns of `T U`: entry `i ≤ k` of `T_n (ℰ_k y^{(k)}, 1, 0, …)` is `β_k δ_ik`. -/
+/-- The columns of $T_n U$: for $i \le k$, the entry $(i, k)$ of $T_n U$ is $\beta_k$ if $i = k$ and
+$0$ otherwise. -/
 private theorem symmToeplitz_mul_unitUpper_apply (hr : r 0 = 1) {n : ℕ}
     (hβ : ∀ j, j + 1 < n → beta r j ≠ 0) (i k : Fin n) (hik : (i : ℕ) ≤ k) :
     (symmToeplitz n r * unitUpper r n) i k = if (i : ℕ) = k then beta r k else 0 := by
@@ -507,9 +610,13 @@ private theorem symmToeplitz_mul_unitUpper_apply (hr : r 0 = 1) {n : ℕ}
     sum_mul_revSol k.isLt]
   exact sum_symmToeplitz_revSol hr (fun j hj => hβ j (by omega)) i hik
 
-/-- **`Uᵀ T U = diag(β)`** ([golub2013matrix] P4.7.2, cited for the bounds of §4.7.6): with `U` the
-unit upper triangular matrix of the reversed Yule–Walker solutions (`Durbin.unitUpper`), under the
-hypotheses of `Durbin.symmToeplitz_mulVec_sol`. Hence `T_n⁻¹ = U diag(β)⁻¹ Uᵀ`. -/
+/-- **The congruence $U^T T U = \operatorname{diag}(\beta)$** ([golub2013matrix] P4.7.2, which
+§4.7.6 cites for its bounds). Let $K$ be a field, let $r : \mathbb{N} \to K$ with $r_0 = 1$, and
+let $\beta_j \neq 0$ for every $j$ with $j + 1 < n$. Then the unit upper triangular matrix $U$
+of the reversed Yule–Walker solutions (`Durbin.unitUpper`) satisfies
+$$U^T T_n U = \operatorname{diag}(\beta_0, \dots, \beta_{n-1}).$$
+Hence $T_n^{-1} = U \operatorname{diag}(\beta)^{-1} U^T$, which is
+`Durbin.inv_symmToeplitz_eq_mul`. -/
 theorem transpose_mul_mul_eq_diagonal (hr : r 0 = 1) {n : ℕ}
     (hβ : ∀ j, j + 1 < n → beta r j ≠ 0) :
     (unitUpper r n)ᵀ * symmToeplitz n r * unitUpper r n = diagonal fun k : Fin n => beta r k := by
@@ -547,8 +654,10 @@ theorem transpose_mul_mul_eq_diagonal (hr : r 0 = 1) {n : ℕ}
     · subst hkl; rfl
     · rw [ite_eq_right hkl, ite_eq_right (Ne.symm hkl)]
 
-/-- **The sum of the Yule–Walker solution** ([golub2013matrix] §4.7.6):
-`1 + ∑_i y^{(k)}_i = ∏_{j<k} (1 + α_j)`. Pure recurrence, no definiteness. -/
+/-- **The sum of the Yule–Walker solution** ([golub2013matrix], §4.7.6). For every $k$,
+$$1 + \sum_{i < k} y^{(k)}_i = \prod_{j < k} (1 + \alpha_j).$$
+The proof uses only the recurrence; no definiteness and no condition on the $\beta_j$ are
+needed. -/
 theorem sum_sol_add_one (k : ℕ) :
     1 + ∑ i ∈ range k, sol r k i = ∏ j ∈ range k, (1 + alpha r j) := by
   induction k with
@@ -562,9 +671,13 @@ theorem sum_sol_add_one (k : ℕ) :
     rw [this, sum_range_reflect (sol r k) k]
     ring
 
-/-- **The Yule–Walker bordering step** ([golub2013matrix] §4.7.3): if `T_k y = −(r₁, …, r_k)`,
-`r 0 = 1` and `α (1 + rᵀ y) = −(r_{k+1} + rᵀ ℰ_k y)`, then
-`T_{k+1} (y + α ℰ_k y, α) = −(r₁, …, r_{k+1})`. No invertibility of `T_k` is used. -/
+/-- **The Yule–Walker bordering step** ([golub2013matrix], §4.7.3). Let $r : \mathbb{N} \to K$ with
+$r_0 = 1$, let $y \in K^k$ with $T_k y = -(r_1, \dots, r_k)^T$, and let $\alpha \in K$ satisfy
+$$\alpha (1 + r^T y) = -(r_{k+1} + r^T \mathcal{E}_k y), \qquad r = (r_1, \dots, r_k)^T.$$
+Then
+$$T_{k+1} \begin{bmatrix} y + \alpha \mathcal{E}_k y \\ \alpha \end{bmatrix} = -(r_1, \dots,
+  r_{k+1})^T.$$
+No invertibility of $T_k$ is used. -/
 theorem bordered_solve (hr : r 0 = 1) {k : ℕ} {y : Fin k → K}
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin k => -r ((i : ℕ) + 1)) (α : K)
     (hα : α * (1 + ∑ i : Fin k, r ((i : ℕ) + 1) * y i) =
@@ -577,11 +690,15 @@ theorem bordered_solve (hr : r 0 = 1) {k : ℕ} {y : Fin k → K}
   | last => simp
   | cast i => simp
 
-/-- The coefficients `(1, y^{(k)}_0, …, y^{(k)}_{k−1})` of the Szegő polynomial `p_k`, of which
-`Durbin.revSol r k` is the reversal `p_k^*`. -/
+/-- The coefficients $(1, y^{(k)}_0, \dots, y^{(k)}_{k-1})$ of the Szegő polynomial
+$p_k(z) = 1 + \sum_{m=1}^{k} y^{(k)}_{m-1} z^m$: the coefficient of $z^m$ is $1$ for $m = 0$ and
+$y^{(k)}_{m-1}$ for $m \ge 1$. The reversed polynomial $p_k^*$ has the coefficients
+`Durbin.revSol r k`. -/
 def fwdSol (r : ℕ → K) (k m : ℕ) : K := if m = 0 then 1 else sol r k (m - 1)
 
-/-- **The Szegő recursion** `p_{k+1}^* = z p_k^* + α_k p_k`, coefficientwise. -/
+/-- **The Szegő recursion** $p_{k+1}^* = z \, p_k^* + \alpha_k \, p_k$, coefficient by coefficient:
+the coefficient of $z^l$ in $p_{k+1}^*$ is the coefficient of $z^{l-1}$ in $p_k^*$ (zero for
+$l = 0$) plus $\alpha_k$ times the coefficient of $z^l$ in $p_k$. -/
 theorem revSol_succ (k l : ℕ) :
     revSol r (k + 1) l = (if l = 0 then 0 else revSol r k (l - 1)) + alpha r k * fwdSol r k l := by
   rcases Nat.eq_zero_or_pos l with rfl | hl
@@ -596,19 +713,23 @@ theorem revSol_succ (k l : ℕ) :
       add_zero]
   · rw [revSol_of_lt h, revSol_of_lt (by omega), sol_of_le r (by omega), mul_zero, add_zero]
 
-/-- The coefficients of `p_k` vanish beyond degree `k`. -/
+/-- The coefficients of $p_k$ vanish beyond degree $k$. -/
 theorem fwdSol_of_lt {k m : ℕ} (h : k < m) : fwdSol r k m = 0 := by
   rw [fwdSol, ite_eq_right (by omega), sol_of_le r (by omega)]
 
-/-- `U` is unit upper triangular, so `det U = 1`. -/
+/-- The matrix $U$ of `Durbin.unitUpper` is unit upper triangular, so $\det U = 1$. -/
 theorem det_unitUpper (r : ℕ → K) (n : ℕ) : (unitUpper r n).det = 1 := by
   rw [det_of_isUpperTriangular]
   · simp [unitUpper]
   · intro i k hik
     exact revSol_of_lt hik
 
-/-- **`T_n⁻¹ = U diag(β)⁻¹ Uᵀ`** ([golub2013matrix] §4.7.6, P4.7.2), from
-`Durbin.transpose_mul_mul_eq_diagonal`, over any field. -/
+/-- **The factorization $T_n^{-1} = U \operatorname{diag}(\beta)^{-1} U^T$** ([golub2013matrix],
+§4.7.6, P4.7.2). Let $K$ be a field, let $r : \mathbb{N} \to K$ with $r_0 = 1$, and let
+$\beta_j \neq 0$ for every $j < n$. Then
+$$T_n^{-1} = U \operatorname{diag}(\beta_0^{-1}, \dots, \beta_{n-1}^{-1}) \, U^T,$$
+where $U$ is the matrix of `Durbin.unitUpper`. This follows from
+`Durbin.transpose_mul_mul_eq_diagonal`. -/
 theorem inv_symmToeplitz_eq_mul (hr : r 0 = 1) {n : ℕ}
     (hβ : ∀ j < n, beta r j ≠ 0) :
     (symmToeplitz n r)⁻¹ =
@@ -644,14 +765,19 @@ namespace Levinson
 
 variable {K : Type*} [Field K]
 
-/-- The new last entry `(b_k − rᵀ ℰ_k x) / β_k` of Levinson's recurrence at a vector `x` of order
-`k` (`Levinson.mu r b k` is its value at `x^{(k)}`). -/
+/-- The new last entry of Levinson's recurrence at a vector $x$ of order $k$: $\mu(x) = (b_k -
+\sum_{i < k} r_{k-i} x_i) / \beta_k = (b_k - r^T \mathcal{E}_k x) / \beta_k$, with the value $0$
+when $\beta_k = 0$. Its value at $x^{(k)}$ is `Levinson.mu r b k`. -/
 def muOf (r b : ℕ → K) (k : ℕ) (x : ℕ → K) : K :=
   (b k - ∑ i ∈ range k, r (k - i) * x i) / Durbin.beta r k
 
-/-- **Levinson's recurrence** ([golub2013matrix] (4.7.2)–(4.7.3), the specification of
-Algorithm 4.7.2), `ℕ`-indexed like `Durbin.sol`: `sol r b k` solves `T_k x = (b₀, …, b_{k−1})`,
-with `x^{(k+1)} = (x^{(k)} + μ_k ℰ_k y^{(k)}, μ_k)`, `μ_k = Levinson.mu r b k`. -/
+/-- **Levinson's recurrence** ([golub2013matrix] (4.7.2)–(4.7.3), the specification of Algorithm
+4.7.2), for vectors indexed by $\mathbb{N}$ as in `Durbin.sol`. The solution $x^{(k)}$ of
+$T_k x = (b_0, \dots, b_{k-1})^T$ is defined by $x^{(0)} = 0$ and
+$$x^{(k+1)} = \begin{bmatrix} x^{(k)} + \mu_k \mathcal{E}_k y^{(k)} \\ \mu_k \end{bmatrix},
+  \qquad \mu_k = \frac{b_k - r^T \mathcal{E}_k x^{(k)}}{\beta_k},$$
+where $y^{(k)}$ and $\beta_k$ are those of Durbin's recurrence and $\mu_k$ is
+`Levinson.mu r b k`. The vector $x^{(k)}$ is zero from index $k$ on. -/
 def sol (r b : ℕ → K) : ℕ → ℕ → K
   | 0 => fun _ => 0
   | k + 1 =>
@@ -659,10 +785,12 @@ def sol (r b : ℕ → K) : ℕ → ℕ → K
     fun i => if i < k then x i + muOf r b k x * Durbin.sol r k (k - 1 - i)
       else if i = k then muOf r b k x else 0
 
-/-- The last entry `μ_k = (b_k − rᵀ ℰ_k x^{(k)}) / β_k` of Levinson's recurrence. -/
+/-- The last entries $\mu_k = (b_k - \sum_{i < k} r_{k-i} x^{(k)}_i) / \beta_k$ of Levinson's
+recurrence, with the value $0$ when $\beta_k = 0$. -/
 def mu (r b : ℕ → K) (k : ℕ) : K := muOf r b k (sol r b k)
 
-/-- One step of Levinson's recurrence: `x^{(k+1)} = (x^{(k)} + μ_k ℰ_k y^{(k)}, μ_k)`. -/
+/-- One step of Levinson's recurrence: $x^{(k+1)}_i = x^{(k)}_i + \mu_k y^{(k)}_{k-1-i}$ for
+$i < k$, $x^{(k+1)}_k = \mu_k$, and $x^{(k+1)}_i = 0$ for $i > k$. -/
 theorem sol_succ (r b : ℕ → K) (k i : ℕ) :
     sol r b (k + 1) i =
       if i < k then sol r b k i + mu r b k * Durbin.sol r k (k - 1 - i) else if i = k then mu r b k
@@ -670,7 +798,10 @@ theorem sol_succ (r b : ℕ → K) (k i : ℕ) :
 
 variable {r : ℕ → K}
 
-/-- Levinson's recurrence solves the systems of every order, `ℕ`-indexed. -/
+/-- Levinson's recurrence solves the systems of every order, for vectors indexed by $\mathbb{N}$.
+Let $r_0 = 1$, and let $\beta_j \neq 0$ for every $j < k$. Then for every $i < k$,
+$$\sum_{j < k} r_{|i-j|} \, x^{(k)}_j = b_i.$$
+-/
 theorem sum_symmToeplitz_sol (hr : r 0 = 1) (b : ℕ → K) {k : ℕ}
     (hβ : ∀ j < k, Durbin.beta r j ≠ 0) :
     ∀ i < k, ∑ j ∈ range k, r ((i : ℤ) - j).natAbs * sol r b k j = b i := by
@@ -683,8 +814,11 @@ theorem sum_symmToeplitz_sol (hr : r 0 = 1) (b : ℕ → K) {k : ℕ}
     rw [← h i hi]
     rfl
 
-/-- **Correctness of Levinson's recurrence** ([golub2013matrix] §4.7.3): if `r 0 = 1` and
-`β_j ≠ 0` for `j < k`, then `T_k x^{(k)} = (b₀, …, b_{k−1})`. -/
+/-- **Correctness of Levinson's recurrence** ([golub2013matrix], §4.7.3). Let $K$ be a field, let
+$r : \mathbb{N} \to K$ with $r_0 = 1$, let $b : \mathbb{N} \to K$, and let $\beta_j \neq 0$ for
+every $j < k$. Then the vector $x^{(k)}$ of `Levinson.sol` satisfies
+$$T_k x^{(k)} = (b_0, \dots, b_{k-1})^T.$$
+-/
 theorem symmToeplitz_mulVec_sol (hr : r 0 = 1) (b : ℕ → K) {k : ℕ}
     (hβ : ∀ j < k, Durbin.beta r j ≠ 0) :
     symmToeplitz k r *ᵥ (fun i : Fin k => sol r b k i) = fun i : Fin k => b i := by
@@ -692,13 +826,22 @@ theorem symmToeplitz_mulVec_sol (hr : r 0 = 1) (b : ℕ → K) {k : ℕ}
   rw [symmToeplitz_mulVec_apply]
   exact sum_symmToeplitz_sol hr b hβ i i.isLt
 
-/-- **The unsymmetric bordering** ([golub2013matrix] (4.7.12)→(4.7.13); the book leaves the formulas
-to P4.7.11). Let `T_{k+1} = toeplitz ρ` on `Fin (k + 1)` with `ρ 0 = 1`, `r_j = ρ j`,
-`p_j = ρ (−j)`, so that `T_{k+1} = [T_k, ℰ r; pᵀ ℰ, 1]`. Given `T_kᵀ y = −r`, `T_k w = −p`,
-`T_k x = b`: with `α (1 + rᵀ w) = −(r_{k+1} + rᵀ ℰ y)`, `ν (1 + pᵀ y) = −(p_{k+1} + pᵀ ℰ w)` and
-`μ (1 + pᵀ y) = b_{k+1} − pᵀ ℰ x`,
-`T_{k+1}ᵀ (y + α ℰ w, α) = −(r₁, …, r_{k+1})`, `T_{k+1} (w + ν ℰ y, ν) = −(p₁, …, p_{k+1})` and
-`T_{k+1} (x + μ ℰ y, μ) = (b, b_{k+1})`. -/
+/-- **The bordering of an unsymmetric Toeplitz matrix** ([golub2013matrix], (4.7.12) to (4.7.13);
+the book leaves the formulas to P4.7.11). Let $\rho : \mathbb{Z} \to K$ with $\rho_0 = 1$, let
+$T_k$ be the Toeplitz matrix with the entries $\rho_{j-i}$, and put $r_j = \rho_j$ and
+$p_j = \rho_{-j}$, so that
+$$T_{k+1} = \begin{bmatrix} T_k & \mathcal{E} r \\ p^T \mathcal{E} & 1 \end{bmatrix}, \qquad r =
+  (r_1, \dots, r_k)^T, \quad p = (p_1, \dots, p_k)^T.$$
+Let $y, w, x, b \in K^k$ and $b' \in K$ with $T_k^T y = -r$, $T_k w = -p$ and $T_k x = b$, and
+let $\alpha, \nu, \mu \in K$ satisfy
+$$\alpha (1 + r^T w) = -(r_{k+1} + r^T \mathcal{E} y), \qquad \nu (1 + p^T y) = -(p_{k+1} + p^T
+  \mathcal{E} w), \qquad \mu (1 + p^T y) = b' - p^T \mathcal{E} x.$$
+Then
+$$T_{k+1}^T \begin{bmatrix} y + \alpha \mathcal{E} w \\ \alpha \end{bmatrix} = -(r_1, \dots,
+  r_{k+1})^T, \qquad T_{k+1} \begin{bmatrix} w + \nu \mathcal{E} y \\ \nu \end{bmatrix} = -(p_1,
+  \dots, p_{k+1})^T, \qquad T_{k+1} \begin{bmatrix} x + \mu \mathcal{E} y \\ \mu \end{bmatrix} =
+  \begin{bmatrix} b \\ b' \end{bmatrix}.$$
+-/
 theorem bordered_solve_toeplitz {ρ : ℤ → K} (hρ : ρ 0 = 1) {k : ℕ} {y w x b : Fin k → K}
     (b' : K)
     (hy : (toeplitz ρ : Matrix (Fin k) (Fin k) K)ᵀ *ᵥ y = fun i : Fin k => -ρ (((i : ℕ) : ℤ) + 1))
@@ -751,11 +894,12 @@ open Durbin
 
 variable {K : Type*} [Field K] {r : ℕ → K}
 
-/-- The last entry `γ = 1 / β_m = 1 / (1 + rᵀ y^{(m)})` of `T_{m+1}⁻¹`
-([golub2013matrix] (4.7.4)). -/
+/-- The last entry $\gamma = 1 / \beta_m = 1 / (1 + r^T y^{(m)})$ of $T_{m+1}^{-1}$
+([golub2013matrix] (4.7.4)), with the value $0$ when $\beta_m = 0$. -/
 def gamma (r : ℕ → K) (m : ℕ) : K := 1 / beta r m
 
-/-- The rest `v = γ ℰ_m y^{(m)}` of the last column of `T_{m+1}⁻¹` ([golub2013matrix] (4.7.4)). -/
+/-- The other entries $v = \gamma \, \mathcal{E}_m y^{(m)} \in K^m$ of the last column of
+$T_{m+1}^{-1}$ ([golub2013matrix] (4.7.4)). -/
 def lastCol (r : ℕ → K) (m : ℕ) : Fin m → K :=
   gamma r m • (exchange m *ᵥ fun i : Fin m => sol r m i)
 
@@ -764,9 +908,12 @@ private theorem isUnit_det_symmToeplitz (hr : r 0 = 1) {k : ℕ} (hβ : ∀ j < 
   rw [det_symmToeplitz hr hβ]
   exact (prod_ne_zero_iff.mpr fun j hj => hβ j (mem_range.mp hj)).isUnit
 
-/-- **The last column of `T_{m+1}⁻¹`** ([golub2013matrix] (4.7.4)): if `r 0 = 1` and no `β_j`,
-`j ≤ m`, vanishes, the last column of `(symmToeplitz (m + 1) r)⁻¹` is `(v, γ)` with
-`γ = 1 / β_m` and `v = γ ℰ_m y^{(m)}` (and so is its last row, by symmetry). -/
+/-- **The last column of $T_{m+1}^{-1}$** ([golub2013matrix] (4.7.4)). Let $K$ be a field, let
+$r : \mathbb{N} \to K$ with $r_0 = 1$, and let $\beta_j \neq 0$ for every $j \le m$. Then the
+last column of $T_{m+1}^{-1}$ is
+$$\begin{bmatrix} v \\ \gamma \end{bmatrix}, \qquad \gamma = \frac{1}{\beta_m}, \quad v = \gamma
+  \, \mathcal{E}_m y^{(m)}.$$
+By symmetry this is also the last row. -/
 theorem inv_symmToeplitz_last (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta r j ≠ 0) :
     (fun i => (symmToeplitz (m + 1) r)⁻¹ i (Fin.last m)) =
       Fin.snoc (α := fun _ => K) (lastCol r m) (gamma r m) := by
@@ -802,9 +949,12 @@ theorem inv_symmToeplitz_last (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, bet
           Fin.snoc (α := fun _ => K) (lastCol r m) (gamma r m)) := by rw [hTw]
     _ = _ := by rw [mulVec_mulVec, nonsing_inv_mul _ hdet, one_mulVec]
 
-/-- **Trench's formula for the leading block of `T_{m+1}⁻¹`** ([golub2013matrix] (4.7.4),
-`B = A⁻¹ + v vᵀ / γ`): under the hypotheses of `Trench.inv_symmToeplitz_last`, the leading
-`m × m` block of `(symmToeplitz (m + 1) r)⁻¹` is `(symmToeplitz m r)⁻¹ + γ⁻¹ v vᵀ`. -/
+/-- **Trench's formula for the leading block of $T_{m+1}^{-1}$** ([golub2013matrix] (4.7.4),
+$B = A^{-1} + v v^T / \gamma$). Let $K$ be a field, let $r : \mathbb{N} \to K$ with $r_0 = 1$,
+and let $\beta_j \neq 0$ for every $j \le m$. Then the leading $m \times m$ block of
+$T_{m+1}^{-1}$ is
+$$T_m^{-1} + \frac{1}{\gamma} \, v v^T,$$
+with $\gamma$ and $v$ as in `Trench.inv_symmToeplitz_last`. -/
 theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta r j ≠ 0) :
     (symmToeplitz (m + 1) r)⁻¹.submatrix Fin.castSucc Fin.castSucc =
       (symmToeplitz m r)⁻¹ + (gamma r m)⁻¹ • vecMulVec (lastCol r m) (lastCol r m) := by
@@ -869,10 +1019,15 @@ theorem inv_symmToeplitz_eq (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta 
     Pi.smul_apply, smul_eq_mul]
   ring
 
-/-- **(4.7.5)** ([golub2013matrix] §4.7.4): the entries of `T_{m+1}⁻¹` above its last row are
-determined by those further down its persymmetric image,
-`b_ij = b_{rev j, rev i} + (v_i v_j − v_{rev j} v_{rev i}) / γ` (0-based: the book's
-`b_{n−j, n−i}` is `B (rev j) (rev i)`). -/
+/-- **Equation (4.7.5)** of [golub2013matrix], §4.7.4. Let $K$ be a field, let
+$r : \mathbb{N} \to K$ with $r_0 = 1$, let $\beta_j \neq 0$ for every $j \le m$, and let
+$B = T_{m+1}^{-1}$. For an index $i < m$ write $\bar i = m - 1 - i$. Then for all $i, j < m$,
+$$b_{ij} = b_{\bar j \bar i} + \frac{v_i v_j - v_{\bar j} v_{\bar i}}{\gamma},$$
+with $\gamma$ and $v$ as in `Trench.inv_symmToeplitz_last`. So the entries of $T_{m+1}^{-1}$
+above its last row are determined by the entries further down its persymmetric image.
+
+Indices start at $0$: the book's $b_{n-j, n-i}$ is the entry $(\bar j, \bar i)$ here, and
+$\bar i$ is `Fin.rev i`. -/
 theorem inv_symmToeplitz_apply_succ (hr : r 0 = 1) {m : ℕ} (hβ : ∀ j < m + 1, beta r j ≠ 0)
     (i j : Fin m) :
     (symmToeplitz (m + 1) r)⁻¹ (Fin.castSucc i) (Fin.castSucc j) =
@@ -896,8 +1051,10 @@ namespace Durbin
 
 variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {r : ℕ → K}
 
-/-- The triangle-inequality companion of `Durbin.sum_sol_add_one`:
-`1 + ∑_i |y^{(k)}_i| ≤ ∏_{j<k} (1 + |α_j|)`. -/
+/-- Over a linearly ordered field, the triangle inequality gives the companion of
+`Durbin.sum_sol_add_one`: for every $k$,
+$$1 + \sum_{i < k} |y^{(k)}_i| \le \prod_{j < k} (1 + |\alpha_j|).$$
+-/
 theorem one_add_sum_abs_sol_le (k : ℕ) :
     1 + ∑ i ∈ range k, |sol r k i| ≤ ∏ j ∈ range k, (1 + |alpha r j|) := by
   induction k with
@@ -919,8 +1076,10 @@ theorem one_add_sum_abs_sol_le (k : ℕ) :
       _ ≤ (∏ j ∈ range k, (1 + |alpha r j|)) * (1 + |alpha r k|) :=
         mul_le_mul_of_nonneg_right ih (by positivity)
 
-/-- **(4.7.7)** ([golub2013matrix] §4.7.6): if the reflection coefficients `α_0, …, α_{k−1}` are
-nonnegative, then `∑_i |y^{(k)}_i| = ∏_{j<k} (1 + α_j) − 1`. -/
+/-- **Equation (4.7.7)** of [golub2013matrix], §4.7.6. Let $K$ be a linearly ordered field. If the
+reflection coefficients $\alpha_0, \dots, \alpha_{k-1}$ are nonnegative, then
+$$\sum_{i < k} |y^{(k)}_i| = \prod_{j < k} (1 + \alpha_j) - 1.$$
+-/
 theorem sum_abs_sol_eq {k : ℕ} (h : ∀ j < k, 0 ≤ alpha r j) :
     ∑ i ∈ range k, |sol r k i| = ∏ j ∈ range k, (1 + alpha r j) - 1 := by
   have hnn : ∀ i, 0 ≤ sol r k i := by
@@ -947,9 +1106,13 @@ open Trench
 
 variable {r : ℕ → ℝ}
 
-/-- **The `β_k` of a positive definite Toeplitz matrix are positive** ([golub2013matrix] §4.7.3,
-"the denominator is positive because `T_{k+1}` is positive definite"): `β_k` is the value of the
-quadratic form of `T_n` at `(ℰ_k y^{(k)}, 1, 0, …, 0)`. -/
+/-- **The $\beta_k$ of a positive definite Toeplitz matrix are positive** ([golub2013matrix],
+§4.7.3). Let $r : \mathbb{N} \to \mathbb{R}$ with $r_0 = 1$, and let $T_n$ be positive definite.
+Then $\beta_k > 0$ for every $k < n$.
+
+The book says "the denominator is positive because $T_{k+1}$ is positive definite". The number
+$\beta_k$ is the value of the quadratic form of $T_n$ at
+$(\mathcal{E}_k y^{(k)}, 1, 0, \dots, 0)$. -/
 theorem beta_pos (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) :
     ∀ k < n, 0 < beta r k := by
   intro k
@@ -977,8 +1140,11 @@ theorem beta_pos (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) :
   rw [← hq]
   exact hT.dotProduct_mulVec_pos hx
 
-/-- **The reflection coefficients of a positive definite Toeplitz matrix** ([golub2013matrix]
-§4.7.6, "in exact arithmetic these scalars satisfy `|α_k| < 1`"): `|α_k| < 1` for `k + 1 < n`. -/
+/-- **The reflection coefficients of a positive definite Toeplitz matrix** ([golub2013matrix],
+§4.7.6). Let $r : \mathbb{N} \to \mathbb{R}$ with $r_0 = 1$, and let $T_n$ be positive definite.
+Then $|\alpha_k| < 1$ for every $k$ with $k + 1 < n$.
+
+The book says "in exact arithmetic these scalars satisfy $|\alpha_k| < 1$". -/
 theorem abs_alpha_lt_one (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDef) {k : ℕ}
     (hk : k + 1 < n) : |alpha r k| < 1 := by
   have h0 := beta_pos hr hT k (by omega)
@@ -988,9 +1154,11 @@ theorem abs_alpha_lt_one (hr : r 0 = 1) {n : ℕ} (hT : (symmToeplitz n r).PosDe
   rw [← sq_lt_one_iff_abs_lt_one]
   linarith
 
-/-- **Positive definiteness of a symmetric Toeplitz matrix through Durbin's recurrence**
-([golub2013matrix] §4.7.3 and §4.7.7): with `r 0 = 1`, `T_n` is positive definite iff
-`β_k > 0` for every `k < n` — the congruence `Uᵀ T_n U = diag(β)` with `U` unit upper
+/-- **Positive definiteness of a symmetric Toeplitz matrix by Durbin's recurrence**
+([golub2013matrix], §4.7.3 and §4.7.7). Let $r : \mathbb{N} \to \mathbb{R}$ with $r_0 = 1$. Then
+$T_n$ is positive definite if and only if $\beta_k > 0$ for every $k < n$.
+
+The proof uses the congruence $U^T T_n U = \operatorname{diag}(\beta)$ with $U$ unit upper
 triangular. -/
 theorem posDef_symmToeplitz_iff (hr : r 0 = 1) {n : ℕ} :
     (symmToeplitz n r).PosDef ↔ ∀ k < n, 0 < beta r k := by
@@ -1002,12 +1170,17 @@ theorem posDef_symmToeplitz_iff (hr : r 0 = 1) {n : ℕ} :
     transpose_mul_mul_eq_diagonal hr fun j hj => (h j (by omega)).ne', posDef_diagonal_iff]
   exact fun k => h k k.isLt
 
-/-- **The lower bounds of (4.7.6)** ([golub2013matrix] §4.7.6): for a positive definite
-`T_{m+1} = symmToeplitz (m + 1) r`, `r 0 = 1`, with reflection coefficients `α_j`,
-`max (1 / ∏_{j<m} (1 − α_j²)) (1 / ∏_{j<m} (1 − α_j)) ≤ ‖T_{m+1}⁻¹‖₁`. The last column of
-`T_{m+1}⁻¹` is `γ (ℰ y, 1)` with `γ = 1 / ∏ (1 − α_j²)`, and its absolute sum is at least `γ` and
-at least `γ |1 + ∑ y_i| = γ ∏ (1 + α_j)`. The book prints both bounds with an extra factor
-`1 / (n − 1)`; the statement here is stronger. -/
+/-- **The lower bounds of (4.7.6)** of [golub2013matrix], §4.7.6. Let
+$r : \mathbb{N} \to \mathbb{R}$ with $r_0 = 1$, let $T_{m+1}$ be positive definite, and let
+$\alpha_j$ be its reflection coefficients. Then
+$$\max\Bigl\{\frac{1}{\prod_{j < m} (1 - \alpha_j^2)}, \frac{1}{\prod_{j < m} (1 -
+  \alpha_j)}\Bigr\} \le \|T_{m+1}^{-1}\|_1.$$
+
+The book prints both bounds with an extra factor $1 / (n - 1)$; the statement here is stronger.
+The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`, the norm induced by the vector $1$-norm. The last
+column of $T_{m+1}^{-1}$ is $\gamma (\mathcal{E} y, 1)$ with
+$\gamma = 1 / \prod_j (1 - \alpha_j^2)$, and its absolute sum is at least $\gamma$ and at least
+$\gamma \, |1 + \sum_i y_i| = \gamma \prod_j (1 + \alpha_j)$. -/
 theorem max_inv_prod_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) :
     max (1 / ∏ j ∈ range m, (1 - alpha r j ^ 2)) (1 / ∏ j ∈ range m, (1 - alpha r j)) ≤
@@ -1054,8 +1227,9 @@ theorem max_inv_prod_le_lpOpNorm_one_inv (hr : r 0 = 1) {m : ℕ}
 
 /-! ### Cybenko's upper bound -/
 
-/-- The `ℓ¹` norm of `p_k`: `∑_m |[z^m] p_k| = 1 + ∑_i |y^{(k)}_i|`, over any range containing the
-degree. -/
+/-- The truncated $\ell^1$ norms of $p_k$ are bounded: for all $k$ and $l$,
+$$\sum_{m \le l} |[z^m] \, p_k| \le \prod_{j < k} (1 + |\alpha_j|),$$
+where $[z^m] \, p_k$ is the coefficient of $z^m$ in the Szegő polynomial $p_k$. -/
 theorem sum_abs_fwdSol_le (k l : ℕ) :
     ∑ m ∈ range (l + 1), |fwdSol r k m| ≤ ∏ j ∈ range k, (1 + |alpha r j|) := by
   calc ∑ m ∈ range (l + 1), |fwdSol r k m|
@@ -1069,7 +1243,9 @@ theorem sum_abs_fwdSol_le (k l : ℕ) :
         congr 1
     _ ≤ _ := one_add_sum_abs_sol_le k
 
-/-- The row sums of the matrix of reversed solutions, in the form the induction needs. -/
+/-- The row sums of the matrix of reversed solutions in the form that the induction needs: $\sum_{k
+\le N} |v^{(k)}_l| \le 1 + \sum_{j < N} |\alpha_j| \sum_{m \le l} |[z^m] \, p_j|$, where
+$v^{(k)} = (\mathcal{E}_k y^{(k)}, 1)$. -/
 private theorem sum_abs_revSol_le_aux (N l : ℕ) :
     ∑ k ∈ range (N + 1), |revSol r k l| ≤
       1 + ∑ j ∈ range N, |alpha r j| * ∑ m ∈ range (l + 1), |fwdSol r j m| := by
@@ -1108,8 +1284,10 @@ private theorem sum_abs_revSol_le_aux (N l : ℕ) :
       rw [hsplit]
       linarith
 
-/-- **The row sums of `U`** (the key estimate behind Cybenko's bound): the entries `l` of the
-reversed solutions `(ℰ_k y^{(k)}, 1)`, `k ≤ N`, have absolute sum at most `∏_{j<N} (1 + |α_j|)`. -/
+/-- **The row sums of $U$**, the main estimate behind Cybenko's bound. For all $N$ and $l$, the
+entries $l$ of the reversed solutions $v^{(k)} = (\mathcal{E}_k y^{(k)}, 1)$, $k \le N$, satisfy
+$$\sum_{k \le N} |v^{(k)}_l| \le \prod_{j < N} (1 + |\alpha_j|).$$
+-/
 theorem sum_abs_revSol_le (N l : ℕ) :
     ∑ k ∈ range (N + 1), |revSol r k l| ≤ ∏ j ∈ range N, (1 + |alpha r j|) := by
   refine (sum_abs_revSol_le_aux N l).trans ?_
@@ -1121,7 +1299,9 @@ theorem sum_abs_revSol_le (N l : ℕ) :
     omega]
   exact sum_abs_fwdSol_le j l
 
-/-- The column sums of `U`: `1 + ∑_i |y^{(k)}_i| ≤ ∏_{j<k} (1 + |α_j|)`, read on `revSol`. -/
+/-- The column sums of $U$: for $k < n$, $\sum_{i < n} |v^{(k)}_i| \le \prod_{j < k} (1 +
+|\alpha_j|)$, where $v^{(k)} = (\mathcal{E}_k y^{(k)}, 1)$.
+-/
 private theorem sum_abs_revSol_col_le {k n : ℕ} (hk : k < n) :
     ∑ i ∈ range n, |revSol r k i| ≤ ∏ j ∈ range k, (1 + |alpha r j|) := by
   have h1 : ∑ i ∈ range n, |revSol r k i| = ∑ i ∈ range (k + 1), |revSol r k i| := by
@@ -1134,13 +1314,17 @@ private theorem sum_abs_revSol_col_le {k n : ℕ} (hk : k < n) :
   rw [h2, add_comm]
   exact one_add_sum_abs_sol_le k
 
-/-- **Cybenko's upper bound (4.7.6)** ([golub2013matrix] §4.7.6, quoted there without proof; Cybenko
-1980): for a positive definite `T_{m+1} = symmToeplitz (m + 1) r`, `r 0 = 1`, with reflection
-coefficients `α_j`, `‖T_{m+1}⁻¹‖₁ ≤ ∏_{j<m} (1 + |α_j|) / (1 − |α_j|)`. Through
-`T⁻¹ = U diag(β)⁻¹ Uᵀ` (`Durbin.inv_symmToeplitz_eq_mul`): the columns of `U` have absolute
-sums at most `∏_{j<k} (1 + |α_j|)` and its rows at most `∏_{j<m} (1 + |α_j|)`
-(`Durbin.sum_abs_revSol_le`, from the Szegő recursion `Durbin.revSol_succ`), and
-`∏_{j<k} (1 + |α_j|) / β_k ≤ ∏_{j<m} 1 / (1 − |α_j|)`. -/
+/-- **Cybenko's upper bound (4.7.6)** ([golub2013matrix], §4.7.6, where it is quoted without proof;
+Cybenko 1980). Let $r : \mathbb{N} \to \mathbb{R}$ with $r_0 = 1$, let $T_{m+1}$ be positive
+definite, and let $\alpha_j$ be its reflection coefficients. Then
+$$\|T_{m+1}^{-1}\|_1 \le \prod_{j < m} \frac{1 + |\alpha_j|}{1 - |\alpha_j|}.$$
+
+The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`. The proof uses
+$T^{-1} = U \operatorname{diag}(\beta)^{-1} U^T$ (`Durbin.inv_symmToeplitz_eq_mul`). The columns
+of $U$ have absolute sums at most $\prod_{j < k} (1 + |\alpha_j|)$, and its rows at most
+$\prod_{j < m} (1 + |\alpha_j|)$ (`Durbin.sum_abs_revSol_le`, from the Szegő recursion
+`Durbin.revSol_succ`). Finally $\prod_{j < k} (1 + |\alpha_j|) / \beta_k \le \prod_{j < m} 1 /
+(1 - |\alpha_j|)$. -/
 theorem lpOpNorm_one_inv_le (hr : r 0 = 1) {m : ℕ} (hT : (symmToeplitz (m + 1) r).PosDef) :
     lpOpNorm 1 (symmToeplitz (m + 1) r)⁻¹ ≤
       ∏ j ∈ range m, (1 + |alpha r j|) / (1 - |alpha r j|) := by

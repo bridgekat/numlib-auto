@@ -9,48 +9,56 @@ import Numlib.RingTheory.MvPolynomial.TotalDegree
 /-!
 # The Logan–Shepp ridge polynomials on the unit disk
 
-A *ridge* polynomial in the plane is a one-variable polynomial of a linear form `x cos θ + y sin θ`.
-Taking the one-variable polynomial to be the Chebyshev polynomial `U_n` of the second kind and
-normalizing gives
+A ridge polynomial in the plane is a polynomial in one variable composed with a linear form
+$x\cos\theta + y\sin\theta$. This module takes the Chebyshev polynomial $U_n$ of the second kind and
+normalizes it, which gives
+$$R_{n,\theta}(x, y) = \frac{1}{\sqrt{\pi}}\, U_n(x\cos\theta + y\sin\theta),$$
+a polynomial of total degree at most $n$ with $L^2$ norm $1$ on the closed unit disk $\mathbb{B}_2$.
+These are the polynomials of L. A. Shepp and S. Ridgway, "Fourier reconstruction of a head section"
+(1974), and of B. F. Logan and L. A. Shepp, "Optimal reconstruction of a function from its
+projections" (1975). The main computation of the module is the inner product
+$$\int_{\mathbb{B}_2} U_n(x\cos\theta + y\sin\theta)\, U_m(x\cos\varphi + y\sin\varphi)\,d(x, y) =
+  \delta_{nm}\, \frac{\pi}{n+1}\, U_n(\cos(\theta - \varphi)).$$
 
-`ridgePoly n θ = (1 / √π) U_n (x cos θ + y sin θ)`,
-
-a polynomial of total degree `n` whose `L²` norm on the closed unit disk is one. These are the
-polynomials of L. A. Shepp and S. Ridgway, "Fourier reconstruction of a head section" (1974), and
-B. F. Logan and L. A. Shepp, "Optimal reconstruction of a function from its projections" (1975).
-
-The one computation this file makes is their inner product,
-
-`∫_{𝔹₂} U_n(x · u_θ) U_m(x · u_φ) dx = δ_{nm} π U_n(cos (θ − φ)) / (n + 1)`,
-
-which is `setIntegral_diskProd_eval_U_ridge_mul`. Its proof is the Radon, or chord, decomposition:
-a rotation moves one of the two directions onto the first axis
-(`Quadrature.setIntegral_diskProd_rotate`), the disk is cut into the vertical chords
-(`Quadrature.setIntegral_diskProd_eq_chords`), the integral along a chord is
-`Polynomial.Chebyshev.integral_eval_U_ridge_chord`, and what is left over `[-1, 1]` is the
-orthogonality of `U_n` for the weight `√(1 - t²)`.
-
-Polar coordinates do **not** prove this: `U_n (r cos β)` has no closed form for `r < 1`, so the
-angular integral does not separate.
-
-Because `U_n(1) = n + 1`, the value on the diagonal is `π`, and because
-`U_n(cos γ) sin γ = sin ((n + 1) γ)` the value vanishes at `γ = k π / (n + 1)` for
-`0 < |k| ≤ n`. So the `n + 1` ridge polynomials in the equispaced directions
-`θ_k = k π / (n + 1)`, `k = 0, …, n`, are orthonormal on the disk, and orthogonal to every ridge
-polynomial of a different degree: `integral_unitDisk_ridgePoly_mul_angle`.
+Since $U_n(1) = n + 1$, the value at $n = m$ and $\theta = \varphi$ is $\pi$. Since
+$U_n(\cos\gamma)\sin\gamma = \sin((n+1)\gamma)$, the value is $0$ at $\theta - \varphi = k\pi/(n+1)$
+for $0 < |k| \le n$. Hence the $n + 1$ ridge polynomials of degree $n$ in the equispaced directions
+$\theta_k = k\pi/(n+1)$, $k = 0, \dots, n$, are orthonormal in $L^2(\mathbb{B}_2)$, and they are
+orthogonal to every ridge polynomial of a different degree.
 
 ## Main definitions
 
-* `Approximation.ridgePoly n θ` — the normalized ridge polynomial `(1/√π) U_n(x cos θ + y sin θ)`.
+* `Approximation.ridgeForm`: the linear form $x\cos\theta + y\sin\theta$, as a polynomial in two
+  variables.
+* `Approximation.ridgePoly`: the normalized ridge polynomial $R_{n,\theta} = \pi^{-1/2}\,
+  U_n(x\cos\theta + y\sin\theta)$.
 
-## Main statements
+## Main results
 
-* `Approximation.setIntegral_diskProd_eval_U_ridge_mul` — the ridge inner product on the disk.
-* `Approximation.totalDegree_ridgePoly_le` — the ridge polynomial has total degree at most `n`.
-* `Approximation.integral_unitDisk_ridgePoly_mul` — the same inner product, for `ridgePoly` and the
-  unit disk of `Fin 2 → ℝ`.
-* `Approximation.integral_unitDisk_ridgePoly_mul_angle` — orthonormality at the `n + 1` equispaced
-  directions.
+* `Approximation.setIntegral_diskProd_eval_U_ridge_mul`: the integral over the closed unit disk of
+  $U_n(x\cos\theta + y\sin\theta)\, U_m(x\cos\varphi + y\sin\varphi)$ is $\delta_{nm}\, \pi\,
+  U_n(\cos(\theta - \varphi))/(n+1)$.
+* `Approximation.totalDegree_ridgePoly_le`: $R_{n,\theta}$ has total degree at most $n$.
+* `Approximation.integral_unitDisk_ridgePoly_mul`: the $L^2$ inner product of $R_{n,\theta}$ and
+  $R_{m,\varphi}$ on the closed unit disk is $\delta_{nm}\, U_n(\cos(\theta - \varphi))/(n+1)$.
+* `Approximation.integral_unitDisk_ridgePoly_mul_angle`: the ridge polynomials of degree $n$ in the
+  directions $k\pi/(n+1)$, $k = 0, \dots, n$, are orthonormal.
+
+## Proof outline
+
+The inner product is computed by the Radon, or chord, decomposition. A rotation moves one of the two
+directions onto the first axis (`Quadrature.setIntegral_diskProd_rotate`). The disk is then cut into
+vertical chords (`Quadrature.setIntegral_diskProd_eq_chords`), and the integral along one chord is
+`Polynomial.Chebyshev.integral_eval_U_ridge_chord`. The remaining integral over $[-1, 1]$ is the
+orthogonality of the $U_n$ for the weight $\sqrt{1 - t^2}$. Polar coordinates do not give this
+result: $U_n(r\cos\beta)$ has no closed form for $r < 1$, so the angular integral does not separate.
+
+## Implementation notes
+
+* The closed unit disk has two forms. `Quadrature.diskProd` is the disk in `ℝ × ℝ`.
+  `Quadrature.unitDisk` is the disk in `Fin 2 → ℝ`, where the polynomials `MvPolynomial (Fin 2) ℝ`
+  are evaluated.
+* $U_n$ is `Polynomial.Chebyshev.U ℝ n`.
 -/
 
 open MeasureTheory Polynomial.Chebyshev Set
@@ -61,13 +69,18 @@ namespace Approximation
 
 /-! ### The ridge inner product on the disk -/
 
-/-- **The inner product of two ridge Chebyshev polynomials on the closed unit disk**:
-`∫_{𝔹₂} U_n(x cos θ + y sin θ) U_m(x cos φ + y sin φ) = δ_{nm} π U_n(cos (θ − φ)) / (n + 1)`.
+/-- Let $n, m \in \mathbb{N}$ and $\theta, \varphi \in \mathbb{R}$, and let $U_n$ be the Chebyshev
+polynomial of the second kind. On the closed unit disk
+$\mathbb{B}_2 = \{(x, y) : x^2 + y^2 \le 1\}$,
+$$\int_{\mathbb{B}_2} U_n(x\cos\theta + y\sin\theta)\, U_m(x\cos\varphi + y\sin\varphi)\,d(x,
+  y) = \begin{cases} \frac{\pi}{n+1}\, U_n(\cos(\theta - \varphi)) & \text{if } n = m, \\ 0 &
+  \text{if } n \ne m. \end{cases}$$
 
-The proof rotates by `φ`, so that the second direction becomes the first axis and the first becomes
-`θ − φ`; cuts the disk into vertical chords; integrates along a chord by
-`Polynomial.Chebyshev.integral_eval_U_ridge_chord`; and closes with the orthogonality of the
-Chebyshev polynomials of the second kind for the weight `√(1 - t²)`. -/
+The disk is `Quadrature.diskProd` in `ℝ × ℝ`. The proof rotates by $\varphi$, so that the second
+direction becomes the first axis and the first direction has the angle $\theta - \varphi$. It
+then cuts the disk into vertical chords, integrates along each chord by
+`Polynomial.Chebyshev.integral_eval_U_ridge_chord`, and ends with the orthogonality of the $U_n$
+for the weight $\sqrt{1 - t^2}$ on $[-1, 1]$. -/
 theorem setIntegral_diskProd_eval_U_ridge_mul (n m : ℕ) (θ φ : ℝ) :
     ∫ q in Quadrature.diskProd,
         (U ℝ (n : ℤ)).eval (q.1 * Real.cos θ + q.2 * Real.sin θ)
@@ -116,27 +129,36 @@ theorem setIntegral_diskProd_eval_U_ridge_mul (n m : ℕ) (θ φ : ℝ) :
 
 /-! ### The ridge polynomials -/
 
-/-- The linear form `x cos θ + y sin θ` of the plane, as a polynomial. -/
+/-- The linear form $(x_0, x_1) \mapsto x_0\cos\theta + x_1\sin\theta$ of the plane, as the
+polynomial $\cos\theta\, X_0 + \sin\theta\, X_1$ in two variables with real coefficients. -/
 noncomputable def ridgeForm (θ : ℝ) : MvPolynomial (Fin 2) ℝ :=
   MvPolynomial.C (Real.cos θ) * MvPolynomial.X 0 + MvPolynomial.C (Real.sin θ) * MvPolynomial.X 1
 
-/-- The linear form evaluates to the inner product of `x` with the unit vector of angle `θ`. -/
+/-- The linear form of angle $\theta$ takes at $x \in \mathbb{R}^2$ the value
+$x_0\cos\theta + x_1\sin\theta$, which is the inner product of $x$ with the unit vector
+$(\cos\theta, \sin\theta)$. -/
 @[simp]
 theorem eval_ridgeForm (θ : ℝ) (x : Fin 2 → ℝ) :
     MvPolynomial.eval x (ridgeForm θ) = x 0 * Real.cos θ + x 1 * Real.sin θ := by
   simp [ridgeForm, mul_comm]
 
-/-- The linear form has total degree at most one. -/
+/-- The linear form of angle $\theta$ has total degree at most $1$. -/
 theorem totalDegree_ridgeForm_le (θ : ℝ) : (ridgeForm θ).totalDegree ≤ 1 := by
   refine le_trans (MvPolynomial.totalDegree_add _ _) (max_le ?_ ?_) <;>
     exact le_trans (MvPolynomial.totalDegree_mul _ _) (by simp)
 
-/-- **The Logan–Shepp ridge polynomial** `(1 / √π) U_n(x cos θ + y sin θ)`: the Chebyshev polynomial
-of the second kind of a linear form, normalized to have `L²` norm one on the closed unit disk. -/
+/-- The **Logan–Shepp ridge polynomial** of degree $n$ and angle $\theta$ is the polynomial in two
+variables
+$$R_{n,\theta}(x_0, x_1) = \frac{1}{\sqrt{\pi}}\, U_n(x_0\cos\theta + x_1\sin\theta),$$
+where $U_n$ is the Chebyshev polynomial of the second kind. The factor $1/\sqrt{\pi}$ gives it
+the $L^2$ norm $1$ on the closed unit disk (`Approximation.integral_unitDisk_ridgePoly_mul`).
+
+The polynomial is $U_n$ composed with `Approximation.ridgeForm θ` by `Polynomial.aeval`. -/
 noncomputable def ridgePoly (n : ℕ) (θ : ℝ) : MvPolynomial (Fin 2) ℝ :=
   MvPolynomial.C (√π)⁻¹ * Polynomial.aeval (ridgeForm θ) (U ℝ (n : ℤ))
 
-/-- The ridge polynomial evaluates to `(1/√π) U_n(x cos θ + y sin θ)`. -/
+/-- The ridge polynomial $R_{n,\theta}$ takes at $x \in \mathbb{R}^2$ the value $\pi^{-1/2}\,
+U_n(x_0\cos\theta + x_1\sin\theta)$. -/
 @[simp]
 theorem eval_ridgePoly (n : ℕ) (θ : ℝ) (x : Fin 2 → ℝ) :
     MvPolynomial.eval x (ridgePoly n θ)
@@ -147,17 +169,24 @@ theorem eval_ridgePoly (n : ℕ) (θ : ℝ) (x : Fin 2 → ℝ) :
   rw [ridgePoly, map_mul, MvPolynomial.eval_C, Polynomial.aeval_def, Polynomial.hom_eval₂, hcomp,
     Polynomial.eval₂_id, eval_ridgeForm]
 
-/-- A ridge polynomial of degree `n` has total degree at most `n`: the substituted form is linear,
-and `U_n` has degree `n`. -/
+/-- The ridge polynomial $R_{n,\theta}$ has total degree at most $n$, because it is $U_n$, of degree
+$n$, composed with a linear form. -/
 theorem totalDegree_ridgePoly_le (n : ℕ) (θ : ℝ) : (ridgePoly n θ).totalDegree ≤ n := by
   refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
   rw [MvPolynomial.totalDegree_C, zero_add]
   refine le_trans (MvPolynomial.totalDegree_aeval_le (totalDegree_ridgeForm_le θ) _) ?_
   rw [one_mul, natDegree_U_natCast]
 
-/-- **The inner product of two ridge polynomials in `L²` of the closed unit disk**:
-`(φ_{n,θ}, φ_{m,ψ}) = δ_{nm} U_n(cos (θ − ψ)) / (n + 1)`. On the diagonal `n = m`, `θ = ψ` it is
-`1`, which is what the normalization `1/√π` is for. -/
+/-- Let $n, m \in \mathbb{N}$ and $\theta, \varphi \in \mathbb{R}$. On the closed unit disk
+$\mathbb{B}_2$, the ridge polynomials $R_{n,\theta}$ and $R_{m,\varphi}$ have the $L^2$ inner
+product
+$$\int_{\mathbb{B}_2} R_{n,\theta}(x)\, R_{m,\varphi}(x)\,dx = \begin{cases} \frac{1}{n+1}\,
+  U_n(\cos(\theta - \varphi)) & \text{if } n = m, \\ 0 & \text{if } n \ne m. \end{cases}$$
+For $n = m$ and $\theta = \varphi$ the value is $U_n(1)/(n+1) = 1$, which is the purpose of the
+factor $1/\sqrt{\pi}$.
+
+The disk is `Quadrature.unitDisk` in `Fin 2 → ℝ`. The result is
+`Approximation.setIntegral_diskProd_eval_U_ridge_mul` divided by $\pi$. -/
 theorem integral_unitDisk_ridgePoly_mul (n m : ℕ) (θ φ : ℝ) :
     ∫ x in Quadrature.unitDisk,
         MvPolynomial.eval x (ridgePoly n θ) * MvPolynomial.eval x (ridgePoly m φ)
@@ -180,10 +209,16 @@ theorem integral_unitDisk_ridgePoly_mul (n m : ℕ) (θ φ : ℝ) :
     rw [Real.sq_sqrt hπ.le]
   · rw [mul_zero]
 
-/-- **The Logan–Shepp orthonormal system.** At the `n + 1` equispaced directions
-`θ_k = k π / (n + 1)`, `k = 0, …, n`, the ridge polynomials of degree `n` are orthonormal in `L²` of
-the closed unit disk: `U_n(cos γ) sin γ = sin ((n + 1) γ)` vanishes at `γ = (j − k) π / (n + 1)`
-while `sin γ` does not, and `U_n(1) = n + 1`. -/
+/-- The **Logan–Shepp orthonormal system**. Let $n \in \mathbb{N}$ and $\theta_k = k\pi/(n+1)$. For
+$j, k \le n$,
+$$\int_{\mathbb{B}_2} R_{n,\theta_j}(x)\, R_{n,\theta_k}(x)\,dx = \begin{cases} 1 & \text{if }
+  j = k, \\ 0 & \text{if } j \ne k. \end{cases}$$
+So the $n + 1$ ridge polynomials $R_{n,\theta_0}, \dots, R_{n,\theta_n}$ are orthonormal in
+$L^2$ of the closed unit disk.
+
+By `Approximation.integral_unitDisk_ridgePoly_mul` the integral is $U_n(\cos\gamma)/(n+1)$ with
+$\gamma = (j - k)\pi/(n+1)$. For $j \ne k$, $U_n(\cos\gamma)\sin\gamma = \sin((n+1)\gamma) = 0$
+while $\sin\gamma \ne 0$. For $j = k$, $U_n(1) = n + 1$. -/
 theorem integral_unitDisk_ridgePoly_mul_angle {n j k : ℕ} (hj : j ≤ n) (hk : k ≤ n) :
     ∫ x in Quadrature.unitDisk,
         MvPolynomial.eval x (ridgePoly n (j * (π / (n + 1))))

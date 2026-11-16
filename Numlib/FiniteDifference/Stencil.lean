@@ -12,57 +12,90 @@ import Numlib.FiniteDifference.TwoLevel
 /-!
 # Constant-coefficient difference schemes on the integer grid
 
-A **stencil** is a finitely supported family of real weights `c : ℤ →₀ ℝ`, acting on grid functions
-`u : ℤ → M` (for any real module `M`) by the finite convolution
+A **stencil** is a finitely supported family $(c_s)_{s \in \mathbb{Z}}$ of real weights. It acts on
+grid functions $u \colon \mathbb{Z} \to M$, for any real vector space $M$, by the finite convolution
+$$(cu)_j = \sum_s c_s u_{j-s},$$
+so $c_s$ is the weight of the neighbour $s$ steps to the left. The three-point stencils
+$(cu)_j = c_- u_{j-1} + c_0 u_j + c_+ u_{j+1}$ cover every explicit scheme of
+[quarteroni2000numerical], §13.7. The conservative form $u_j - \lambda (h(u_j, u_{j+1}) - h(u_{j-1},
+u_j))$ of their (13.36), with a linear numerical flux $h(u, v) = \alpha u + \beta v$, is a
+three-point stencil. The **discrete norms** $\|v\|_{\Delta, p} = \Delta x^{1/p} \|v\|_{\ell^p}$ of
+[quarteroni2000numerical], (13.47), and the **stability of a family of schemes** over every finite
+horizon, $\|Q^n\| \le C_T$ for $n \Delta t \le T$ and small steps ([quarteroni2000numerical],
+(13.46), and Definition 6.3.1 of [han2009theoretical]), complete the setting.
 
-  `(c u) j = ∑_s c s • u (j - s)`,
+Three facts carry the theory. First, **finite speed of propagation**: if every $s$ in the support
+has $|s| \le r$, then $(c^n u)_j$ depends only on the values of $u$ within distance $nr$ of $j$.
+This is the numerical domain of dependence, and it is the source of the necessary
+Courant–Friedrichs–Lewy condition of [quarteroni2000numerical], §13.8.3. Second, a **monotone**
+stencil, with $c_s \ge 0$ and $\sum_s c_s = 1$, takes convex averages of neighbouring values. It
+therefore satisfies the discrete maximum principle, and it is nonexpansive in every $\ell^p$. The
+upwind and Lax–Friedrichs schemes are monotone exactly under the CFL condition. Third, a stencil is
+a bounded operator on $\ell^p(\mathbb{Z})$ with norm at most $\sum_s |c_s|$ (Young's inequality for
+a finitely supported kernel), because it is a weighted sum of shift isometries. For $p = 2$ the
+sharp bound is the supremum of the modulus of the **symbol**
+$\sigma(\varphi) = \sum_s c_s e^{-is\varphi}$, the amplification factor of the mode
+$j \mapsto e^{ij\varphi}$. This $\ell^2$ bound is the whole-line counterpart of the periodic von
+Neumann analysis of `Numlib.FiniteDifference.VonNeumann`.
 
-so that `c s` is the weight of the neighbour `s` steps to the *left* (`FiniteDifference.Stencil`,
-`FiniteDifference.Stencil.apply`). The three-point stencils `Stencil.threePoint cm c0 cp`, sending
-`u` to `j ↦ cm u_{j-1} + c0 u_j + cp u_{j+1}`, cover every explicit scheme of
-[quarteroni2000numerical] §13.7, and the conservative form `u_j - λ (h(u_j, u_{j+1}) - h(u_{j-1},
-u_j))` of their (13.36) with a linear numerical flux `h(u, v) = α u + β v` is `Stencil.ofFlux λ α β`
-(`FiniteDifference.IsConservativeForm`, `Stencil.isConservativeForm_iff`).
+## Main definitions
 
-Three facts carry the theory.
+* `lp.compEquivₗᵢ`: reindexing of $\ell^p$ along a bijection of the index set, as a linear isometry.
+* `lp.shiftₗᵢ`: the translation $u \mapsto (j \mapsto u_{j-s})$ on $\ell^p(\mathbb{Z})$.
+* `FiniteDifference.Stencil`: a finitely supported family of real weights on $\mathbb{Z}$.
+* `FiniteDifference.Stencil.apply`: the action $(cu)_j = \sum_s c_s u_{j-s}$ of a stencil.
+* `FiniteDifference.Stencil.threePoint`: the stencil $(cu)_j = c_- u_{j-1} + c_0 u_j + c_+ u_{j+1}$.
+* `FiniteDifference.Stencil.ofFlux`: the stencil of the conservative form with the linear flux
+  $h(u, v) = \alpha u + \beta v$.
+* `FiniteDifference.IsConservativeForm`: a step of the form $u_j - \lambda (h(u_j, u_{j+1}) -
+  h(u_{j-1}, u_j))$.
+* `FiniteDifference.Stencil.IsMonotone`: nonnegative weights with sum $1$.
+* `FiniteDifference.Stencil.lpCLM`: a stencil as a bounded operator on $\ell^p(\mathbb{Z})$.
+* `FiniteDifference.Stencil.symbol`: the symbol $\sigma(\varphi) = \sum_s c_s e^{-is\varphi}$.
+* `FiniteDifference.discreteNorm`: the discrete norm $\|v\|_{\Delta, p} = \Delta x^{1/p}
+  \|v\|_{\ell^p}$.
+* `FiniteDifference.IsStableFamily`: stability of a family of schemes over every finite horizon.
 
-* **Finite speed of propagation** (`Stencil.iterate_apply_congr_of_eqOn`): `(cⁿ u) j` depends only
-  on `u` within `n r` of `j` when the stencil has radius `r`. This is the numerical domain of
-  dependence, and the source of the Courant–Friedrichs–Lewy necessary condition of
-  [quarteroni2000numerical] §13.8.3.
-* **Monotone stencils** (`Stencil.IsMonotone`: `c ≥ 0`, `∑ c = 1`) are convex averages of
-  neighbouring values, hence satisfy the discrete maximum principle
-  (`Stencil.IsMonotone.apply_le_iSup`, `Stencil.IsMonotone.iInf_le_apply`, their iterates) and are
-  nonexpansive in every `ℓ^p` (`Stencil.IsMonotone.norm_lpCLM_le_one`). The upwind and
-  Lax–Friedrichs schemes are monotone exactly under the CFL condition.
-* **The `ℓ^p` operator bound** `‖c‖_{ℓ^p → ℓ^p} ≤ ∑_s |c s|` (`Stencil.norm_lpCLM_le`), Young's
-  inequality on `ℤ` for a finitely supported kernel: the stencil is the finite sum of the shift
-  isometries `lp.shiftₗᵢ` weighted by its coefficients. The shifts are built from the general
-  reindexing isometry `lp.compEquivₗᵢ` along a bijection of the index set, which Mathlib does not
-  have. For `p = 2` the sharp bound is the supremum of the **symbol** `∑_s c s e^{-isφ}`
-  (`Stencil.symbol`), the amplification factor of the mode `j ↦ e^{ijφ}`
-  (`Stencil.apply_exp_eq_symbol_smul`); the `ℓ²` bound through the symbol is the whole-line
-  counterpart of the periodic von Neumann analysis of `Numlib.FiniteDifference.VonNeumann`.
+## Main results
 
-The **discrete norms** `‖v‖_{Δ,p} = Δx^{1/p} ‖v‖_p` of [quarteroni2000numerical] (13.47) are
-`FiniteDifference.discreteNorm`, and **stability of a family of schemes** over every finite horizon
-— `‖Qⁿ‖ ≤ C_T` for `n Δt ≤ T` and small steps, their (13.46) and Definition 6.3.1 of
-[han2009theoretical] — is `FiniteDifference.IsStableFamily`, stated over a *dependent* family of
-normed spaces so that periodic grids `Fin N` and the line `ℤ` are both instances; the error
-accumulation theorem `FiniteDifference.norm_sub_le_of_stable` applies to each member of a stable
-family (`IsStableFamily.exists_norm_sub_le`).
+* `FiniteDifference.Stencil.isConservativeForm_iff`: a step is in conservative form with a linear
+  flux if and only if it is the action of `FiniteDifference.Stencil.ofFlux`.
+* `FiniteDifference.Stencil.iterate_apply_congr_of_eqOn`: finite speed of propagation.
+* `FiniteDifference.Stencil.IsMonotone.apply_le_iSup` and
+  `FiniteDifference.Stencil.IsMonotone.iInf_le_apply`: the discrete maximum principle
+  $\inf_i u_i \le (cu)_j \le \sup_i u_i$ for a monotone stencil.
+* `FiniteDifference.Stencil.norm_lpCLM_le`: the operator norm on $\ell^p(\mathbb{Z})$ is at most
+  $\sum_s |c_s|$.
+* `FiniteDifference.Stencil.IsMonotone.norm_lpCLM_le_one`: a monotone stencil has operator norm at
+  most $1$ on every $\ell^p(\mathbb{Z})$.
+* `FiniteDifference.Stencil.apply_exp_eq_symbol_smul`: the mode $j \mapsto e^{ij\varphi}$ is an
+  eigenvector with eigenvalue $\sigma(\varphi)$.
+* `FiniteDifference.Stencil.norm_lpCLM_two_le_of_symbol_le`: the operator norm on
+  $\ell^2(\mathbb{Z})$ is at most $\sup_\varphi |\sigma(\varphi)|$.
+* `FiniteDifference.IsStableFamily.exists_norm_sub_le`: every member of a stable family satisfies
+  the error bound of `FiniteDifference.norm_sub_le_of_stable` with a common constant.
+
+## Implementation notes
+
+* A stencil is `ℤ →₀ ℝ`. Its action is defined on grid functions with values in any real vector
+  space, so that it also acts on the complex Fourier modes.
+* Mathlib has no reindexing isometry of `lp` along a bijection of the index set. It is built here as
+  `lp.compEquivₗᵢ`, and the shifts are the case of the bijection $j \mapsto j - s$ of $\mathbb{Z}$.
+* `FiniteDifference.IsStableFamily` is stated for a family of normed spaces that depends on the
+  index of the scheme, so that the periodic grids `Fin N` and the line `ℤ` are both instances.
 -/
 
 open Set Filter Topology Finset Function
 open scoped ENNReal
 
-/-! ### Reindexing and shifting `ℓ^p` -/
+/-! ### Reindexing and shifting $\ell^p$ -/
 
 namespace Memℓp
 
 variable {α β E : Type*} [NormedAddCommGroup E] {p : ℝ≥0∞}
 
-/-- `Memℓp` is invariant under reindexing along a bijection: `f ∘ e ∈ ℓ^p` when `f ∈ ℓ^p`. -/
+/-- Let $E$ be a normed group, let $p \in [0, \infty]$, and let $e \colon \alpha \to \beta$ be a
+bijection. If $f \colon \beta \to E$ is in $\ell^p$, then $f \circ e$ is in $\ell^p$. -/
 theorem comp_equiv {f : β → E} (hf : Memℓp f p) (e : α ≃ β) : Memℓp (f ∘ e) p := by
   rcases p.trichotomy with rfl | rfl | hp
   · exact memℓp_zero ((memℓp_zero_iff.1 hf).preimage e.injective.injOn)
@@ -78,9 +111,13 @@ namespace lp
 variable {α β E : Type*} [NormedAddCommGroup E] {𝕜 : Type*} [NormedField 𝕜] [NormedSpace 𝕜 E]
   {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **Reindexing `ℓ^p` along a bijection of the index set** is a linear isometry:
-`(compEquivₗᵢ e f) a = f (e a)`. The `ℓ^p` norm is a sum or a supremum over the index set, and both
-are invariant under bijections. -/
+/-- **Reindexing $\ell^p$ along a bijection.** Let $E$ be a normed space over a normed field
+$\mathbb{K}$, let $p \ge 1$, and let $e \colon \alpha \to \beta$ be a bijection. The map
+$f \mapsto f \circ e$, that is $(f \circ e)(a) = f(e(a))$, is a linear isometric equivalence
+from $\ell^p(\beta, E)$ onto $\ell^p(\alpha, E)$.
+
+The $\ell^p$ norm is a sum or a supremum over the index set, and both are invariant under
+bijections. -/
 noncomputable def compEquivₗᵢ (e : α ≃ β) :
     lp (fun _ : β => E) p ≃ₗᵢ[𝕜] lp (fun _ : α => E) p where
   toFun f := ⟨(f : β → E) ∘ e, (lp.memℓp f).comp_equiv e⟩
@@ -99,17 +136,22 @@ noncomputable def compEquivₗᵢ (e : α ≃ β) :
       congr 1
       exact e.tsum_eq fun b => ‖f b‖ ^ p.toReal
 
-/-- The reindexing isometry acts by precomposition. -/
+/-- The reindexing isometry `lp.compEquivₗᵢ` acts by precomposition: its value at $f$ is
+$a \mapsto f(e(a))$. -/
 @[simp]
 theorem compEquivₗᵢ_apply (e : α ≃ β) (f : lp (fun _ : β => E) p) (a : α) :
     compEquivₗᵢ (𝕜 := 𝕜) e f a = f (e a) := rfl
 
-/-- **Translation on `ℓ^p(ℤ)`**: `(shiftₗᵢ p s u) j = u (j - s)`, a linear isometry. -/
+/-- **Translation on $\ell^p(\mathbb{Z})$.** Let $E$ be a normed space, let $p \ge 1$, and let
+$s \in \mathbb{Z}$. The shift $S_s$ with $(S_s u)_j = u_{j-s}$ is a linear isometric equivalence
+of $\ell^p(\mathbb{Z}, E)$.
+
+It is `lp.compEquivₗᵢ` for the bijection $j \mapsto j - s$ of $\mathbb{Z}$. -/
 noncomputable def shiftₗᵢ (p : ℝ≥0∞) [Fact (1 ≤ p)] (s : ℤ) :
     lp (fun _ : ℤ => E) p ≃ₗᵢ[𝕜] lp (fun _ : ℤ => E) p :=
   compEquivₗᵢ (Equiv.subRight s)
 
-/-- The shift acts by translation: `(shiftₗᵢ p s u) j = u (j - s)`. -/
+/-- The shift acts by translation: $(S_s u)_j = u_{j-s}$. -/
 @[simp]
 theorem shiftₗᵢ_apply (s : ℤ) (u : lp (fun _ : ℤ => E) p) (j : ℤ) :
     shiftₗᵢ (𝕜 := 𝕜) p s u j = u (j - s) := rfl
@@ -120,55 +162,66 @@ namespace FiniteDifference
 
 /-! ### Stencils and their action -/
 
-/-- A **stencil**: a finitely supported family of real weights on the integer grid. `c s` is the
-weight of the neighbour `s` steps to the left in `Stencil.apply`. -/
+/-- A **stencil** is a finitely supported family $(c_s)_{s \in \mathbb{Z}}$ of real weights on the
+integer grid. The weight $c_s$ belongs to the neighbour $s$ steps to the left in the action
+`FiniteDifference.Stencil.apply`. -/
 abbrev Stencil := ℤ →₀ ℝ
 
 namespace Stencil
 
 variable {M : Type*} [AddCommMonoid M] [Module ℝ M]
 
-/-- The action of a stencil on a grid function, `(c u) j = ∑_s c s • u (j - s)`: a finite
-convolution on `ℤ`. -/
+/-- The **action of a stencil** $c$ on a grid function $u \colon \mathbb{Z} \to M$, where $M$ is a
+real vector space, is the finite convolution
+$$(cu)_j = \sum_s c_s u_{j-s}.$$
+-/
 noncomputable def apply (c : Stencil) (u : ℤ → M) : ℤ → M :=
   fun j => c.sum fun s a => a • u (j - s)
 
-/-- The action of a stencil, as a finite sum over its support. -/
+/-- The action of a stencil is the finite sum $(cu)_j = \sum_{s \in \operatorname{supp} c} c_s
+u_{j-s}$ over its support. -/
 theorem apply_apply (c : Stencil) (u : ℤ → M) (j : ℤ) :
     apply c u j = ∑ s ∈ c.support, c s • u (j - s) := rfl
 
-/-- The action of a stencil is additive. -/
+/-- The action of a stencil is additive: $c(u + v) = cu + cv$. -/
 theorem apply_add (c : Stencil) (u v : ℤ → M) : apply c (u + v) = apply c u + apply c v := by
   ext j
   simp [apply_apply, smul_add, Finset.sum_add_distrib]
 
-/-- The action of a stencil commutes with scalars. -/
+/-- The action of a stencil commutes with real scalars: $c(ru) = r (cu)$. -/
 theorem apply_smul (c : Stencil) (r : ℝ) (u : ℤ → M) : apply c (r • u) = r • apply c u := by
   ext j
   simp [apply_apply, Finset.smul_sum, smul_comm r]
 
-/-- The action of a stencil as a linear map on grid functions. -/
+/-- The action of a stencil $c$ as a real linear map $u \mapsto cu$ on the grid functions
+$\mathbb{Z} \to M$. -/
 noncomputable def applyₗ (c : Stencil) : (ℤ → M) →ₗ[ℝ] (ℤ → M) where
   toFun := apply c
   map_add' := apply_add c
   map_smul' := apply_smul c
 
-/-- The linear map of a stencil acts by `Stencil.apply`. -/
+/-- The linear map `FiniteDifference.Stencil.applyₗ` of a stencil acts by
+`FiniteDifference.Stencil.apply`. -/
 @[simp]
 theorem applyₗ_apply (c : Stencil) (u : ℤ → M) : applyₗ c u = apply c u := rfl
 
-/-- The action of a stencil on a grid function reads it only within the support: two grid
-functions agreeing on `{i | i - j ∈ c.support}` have the same image at `j`. -/
+/-- The action of a stencil reads a grid function only through the support. Let $c$ be a stencil,
+let $j \in \mathbb{Z}$, and let $u, v \colon \mathbb{Z} \to M$ satisfy $u_{j-s} = v_{j-s}$ for
+every $s$ in the support of $c$. Then $(cu)_j = (cv)_j$. -/
 theorem apply_congr {c : Stencil} {u v : ℤ → M} {j : ℤ}
     (h : ∀ s ∈ c.support, u (j - s) = v (j - s)) : apply c u j = apply c v j :=
   Finset.sum_congr rfl fun s hs => by dsimp only; rw [h s hs]
 
-/-- The three-point stencil `j ↦ cm u_{j-1} + c0 u_j + cp u_{j+1}`. -/
+/-- The **three-point stencil** with weights $c_-, c_0, c_+ \in \mathbb{R}$: the stencil with
+$c_1 = c_-$, $c_0 = c_0$ and $c_{-1} = c_+$, which sends $u$ to
+$j \mapsto c_- u_{j-1} + c_0 u_j + c_+ u_{j+1}$. -/
 noncomputable def threePoint (cm c0 cp : ℝ) : Stencil :=
   Finsupp.single 1 cm + Finsupp.single 0 c0 + Finsupp.single (-1) cp
 
-/-- The action of the three-point stencil:
-`(c u) j = cm • u (j - 1) + c0 • u j + cp • u (j + 1)`. -/
+/-- The action of the three-point stencil: for $c_-, c_0, c_+ \in \mathbb{R}$, every grid function
+$u$ and every $j \in \mathbb{Z}$,
+$$(cu)_j = c_- u_{j-1} + c_0 u_j + c_+ u_{j+1}.$$
+-/
 theorem threePoint_apply (cm c0 cp : ℝ) (u : ℤ → M) (j : ℤ) :
     apply (threePoint cm c0 cp) u j = cm • u (j - 1) + c0 • u j + cp • u (j + 1) := by
   simp only [apply, threePoint]
@@ -181,14 +234,14 @@ theorem threePoint_apply (cm c0 cp : ℝ) (u : ℤ → M) (j : ℤ) :
     Finsupp.sum_single_index (h := fun s a => a • u (j - s)) (zero_smul ℝ _), sub_zero,
     sub_neg_eq_add]
 
-/-- The support of a three-point stencil lies in `{-1, 0, 1}`. -/
+/-- The support of a three-point stencil lies in $\{-1, 0, 1\}$. -/
 theorem support_threePoint_subset (cm c0 cp : ℝ) :
     (threePoint cm c0 cp).support ⊆ {1, 0, -1} := by
   refine (Finsupp.support_add.trans (union_subset_union Finsupp.support_add le_rfl)).trans ?_
   refine union_subset (union_subset ?_ ?_) ?_ <;>
     exact Finsupp.support_single_subset.trans (by simp)
 
-/-- The sum of the weights of a three-point stencil. -/
+/-- The weights of the three-point stencil with weights $c_-, c_0, c_+$ sum to $c_- + c_0 + c_+$. -/
 theorem threePoint_sum (cm c0 cp : ℝ) :
     (threePoint cm c0 cp).sum (fun _ a => a) = cm + c0 + cp := by
   simp only [threePoint]
@@ -200,14 +253,22 @@ theorem threePoint_sum (cm c0 cp : ℝ) :
 
 /-! ### Conservative form -/
 
-/-- The **conservative form** of a linear numerical flux `h(u, v) = α u + β v`:
-`Stencil.ofFlux lam α β` sends `u` to `j ↦ u_j - lam ((α u_j + β u_{j+1}) - (α u_{j-1} + β u_j))`
-([quarteroni2000numerical] (13.36)). -/
+/-- The **conservative form** of a linear numerical flux. For
+$\lambda, \alpha, \beta \in \mathbb{R}$, `FiniteDifference.Stencil.ofFlux` is the three-point
+stencil with weights $c_- = \lambda \alpha$, $c_0 = 1 - \lambda (\alpha - \beta)$ and
+$c_+ = -\lambda \beta$. It sends $u$ to
+$$j \mapsto u_j - \lambda \bigl( h(u_j, u_{j+1}) - h(u_{j-1}, u_j) \bigr), \qquad h(u, v) =
+  \alpha u + \beta v,$$
+which is the conservative form (13.36) of [quarteroni2000numerical]. -/
 noncomputable def ofFlux (lam α β : ℝ) : Stencil :=
   threePoint (lam * α) (1 - lam * (α - β)) (-(lam * β))
 
-/-- The action of `Stencil.ofFlux`, in the conservative form of [quarteroni2000numerical]
-(13.36). -/
+/-- The action of `FiniteDifference.Stencil.ofFlux` is the conservative form (13.36) of
+[quarteroni2000numerical]: for $\lambda, \alpha, \beta \in \mathbb{R}$ and
+$u \colon \mathbb{Z} \to \mathbb{R}$,
+$$(cu)_j = u_j - \lambda \bigl( (\alpha u_j + \beta u_{j+1}) - (\alpha u_{j-1} + \beta u_j)
+  \bigr).$$
+-/
 theorem ofFlux_apply (lam α β : ℝ) (u : ℤ → ℝ) (j : ℤ) :
     apply (ofFlux lam α β) u j
       = u j - lam * ((α * u j + β * u (j + 1)) - (α * u (j - 1) + β * u j)) := by
@@ -217,17 +278,24 @@ theorem ofFlux_apply (lam α β : ℝ) (u : ℤ → ℝ) (j : ℤ) :
 
 end Stencil
 
-/-- **A step in conservative form** ([quarteroni2000numerical] (13.36)): the scheme advances by
-the difference of a numerical flux `h` across the two half-cells,
-`(step u) j = u j - lam (h (u j) (u (j+1)) - h (u (j-1)) (u j))`. Every explicit scheme for a
-conservation law `u_t + f(u)_x = 0` has this form. -/
+/-- **A step in conservative form** ([quarteroni2000numerical], (13.36)). Let
+$\lambda \in \mathbb{R}$ and let $h \colon \mathbb{R} \times \mathbb{R} \to \mathbb{R}$ be a
+numerical flux. A map $Q$ on real grid functions is in **conservative form** with $\lambda$ and
+$h$ if, for every $u$ and every $j$,
+$$(Qu)_j = u_j - \lambda \bigl( h(u_j, u_{j+1}) - h(u_{j-1}, u_j) \bigr).$$
+
+The scheme advances by the difference of the numerical flux across the two half-cells.
+[quarteroni2000numerical] write every explicit scheme for a conservation law $u_t + f(u)_x = 0$
+in this form. -/
 def IsConservativeForm (lam : ℝ) (h : ℝ → ℝ → ℝ) (step : (ℤ → ℝ) → (ℤ → ℝ)) : Prop :=
   ∀ u j, step u j = u j - lam * (h (u j) (u (j + 1)) - h (u (j - 1)) (u j))
 
 namespace Stencil
 
-/-- A step is in conservative form with the linear flux `h(u, v) = α u + β v` if and only if it is
-the action of `Stencil.ofFlux lam α β`. -/
+/-- Let $\lambda, \alpha, \beta \in \mathbb{R}$. A map $Q$ on real grid functions is in conservative
+form with $\lambda$ and the linear flux $h(u, v) = \alpha u + \beta v$ if and only if $Q$ is the
+action of the stencil `FiniteDifference.Stencil.ofFlux` with parameters
+$\lambda, \alpha, \beta$. -/
 theorem isConservativeForm_iff {lam α β : ℝ} {step : (ℤ → ℝ) → (ℤ → ℝ)} :
     IsConservativeForm lam (fun u v => α * u + β * v) step ↔ step = apply (ofFlux lam α β) := by
   constructor
@@ -237,7 +305,8 @@ theorem isConservativeForm_iff {lam α β : ℝ} {step : (ℤ → ℝ) → (ℤ 
   · rintro rfl u j
     exact ofFlux_apply lam α β u j
 
-/-- `Stencil.ofFlux lam α β` is in conservative form with the flux `α u + β v`. -/
+/-- For $\lambda, \alpha, \beta \in \mathbb{R}$, the action of `FiniteDifference.Stencil.ofFlux` is
+in conservative form with $\lambda$ and the flux $h(u, v) = \alpha u + \beta v$. -/
 theorem isConservativeForm_ofFlux (lam α β : ℝ) :
     IsConservativeForm lam (fun u v => α * u + β * v) (apply (ofFlux lam α β)) :=
   isConservativeForm_iff.2 rfl
@@ -246,9 +315,13 @@ theorem isConservativeForm_ofFlux (lam α β : ℝ) :
 
 variable {M : Type*} [AddCommMonoid M] [Module ℝ M]
 
-/-- **Finite speed of propagation** (the numerical domain of dependence,
-[quarteroni2000numerical] §13.8.3): if the stencil has radius `r`, `|s| ≤ r` on its support, and two
-grid functions agree within `n r` of `j`, then their `n`-th iterates agree at `j`. -/
+/-- **Finite speed of propagation**, the numerical domain of dependence ([quarteroni2000numerical],
+§13.8.3). Let $c$ be a stencil and let $r \in \mathbb{Z}$ with $|s| \le r$ for every $s$ in the
+support of $c$. Let $n \in \mathbb{N}$, let $j \in \mathbb{Z}$, and let the grid functions
+$u, v \colon \mathbb{Z} \to M$ satisfy $u_i = v_i$ whenever $|i - j| \le nr$. Then the $n$-fold
+applications of $c$ agree at $j$:
+$$(c^n u)_j = (c^n v)_j.$$
+-/
 theorem iterate_apply_congr_of_eqOn {c : Stencil} {r : ℤ} (hr : ∀ s ∈ c.support, |s| ≤ r)
     (n : ℕ) {u v : ℤ → M} {j : ℤ} (huv : ∀ i, |i - j| ≤ n * r → u i = v i) :
     (apply c)^[n] u j = (apply c)^[n] v j := by
@@ -267,18 +340,19 @@ theorem iterate_apply_congr_of_eqOn {c : Stencil} {r : ℤ} (hr : ∀ s ∈ c.su
 
 /-! ### Monotone stencils and the discrete maximum principle -/
 
-/-- A **monotone stencil**: nonnegative weights summing to `1`, so that the scheme is a convex
-average of neighbouring values. -/
+/-- A **monotone stencil** has nonnegative weights with sum $1$: $c_s \ge 0$ for every $s$, and
+$\sum_s c_s = 1$. Each value of the scheme is then a convex average of neighbouring values. -/
 def IsMonotone (c : Stencil) : Prop := (∀ s, 0 ≤ c s) ∧ c.sum (fun _ a => a) = 1
 
-/-- The weights of a monotone stencil are nonnegative. -/
+/-- The weights of a monotone stencil are nonnegative: $c_s \ge 0$. -/
 theorem IsMonotone.nonneg {c : Stencil} (hc : c.IsMonotone) (s : ℤ) : 0 ≤ c s := hc.1 s
 
-/-- The weights of a monotone stencil sum to `1`. -/
+/-- The weights of a monotone stencil sum to $1$: $\sum_{s \in \operatorname{supp} c} c_s = 1$. -/
 theorem IsMonotone.sum_eq_one {c : Stencil} (hc : c.IsMonotone) : ∑ s ∈ c.support, c s = 1 := hc.2
 
-/-- **The discrete maximum principle**, upper half: a monotone stencil does not exceed an upper
-bound of its input. -/
+/-- **The discrete maximum principle**, upper bound. Let $c$ be a monotone stencil, let
+$B \in \mathbb{R}$, and let $u \colon \mathbb{Z} \to \mathbb{R}$ satisfy $u_i \le B$ for every
+$i$. Then $(cu)_j \le B$ for every $j \in \mathbb{Z}$. -/
 theorem IsMonotone.apply_le {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} {B : ℝ}
     (hu : ∀ i, u i ≤ B) (j : ℤ) : apply c u j ≤ B := by
   rw [apply_apply]
@@ -286,8 +360,9 @@ theorem IsMonotone.apply_le {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} 
         Finset.sum_le_sum fun s _ => mul_le_mul_of_nonneg_left (hu _) (hc.nonneg s)
     _ = B := by rw [← Finset.sum_mul, hc.sum_eq_one, one_mul]
 
-/-- **The discrete maximum principle**, lower half: a monotone stencil does not go below a lower
-bound of its input. -/
+/-- **The discrete maximum principle**, lower bound. Let $c$ be a monotone stencil, let
+$B \in \mathbb{R}$, and let $u \colon \mathbb{Z} \to \mathbb{R}$ satisfy $B \le u_i$ for every
+$i$. Then $B \le (cu)_j$ for every $j \in \mathbb{Z}$. -/
 theorem IsMonotone.le_apply {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} {B : ℝ}
     (hu : ∀ i, B ≤ u i) (j : ℤ) : B ≤ apply c u j := by
   rw [apply_apply]
@@ -295,58 +370,79 @@ theorem IsMonotone.le_apply {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} 
     _ ≤ ∑ s ∈ c.support, c s • u (j - s) :=
         Finset.sum_le_sum fun s _ => mul_le_mul_of_nonneg_left (hu _) (hc.nonneg s)
 
-/-- Iterating a monotone stencil keeps an upper bound. -/
+/-- Iteration of a monotone stencil keeps an upper bound. Let $c$ be a monotone stencil, let
+$B \in \mathbb{R}$, and let $u \colon \mathbb{Z} \to \mathbb{R}$ satisfy $u_i \le B$ for every
+$i$. Then $(c^n u)_j \le B$ for every $n \in \mathbb{N}$ and every $j \in \mathbb{Z}$. -/
 theorem IsMonotone.iterate_apply_le {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} {B : ℝ}
     (hu : ∀ i, u i ≤ B) (n : ℕ) (j : ℤ) : (apply c)^[n] u j ≤ B := by
   induction n generalizing j with
   | zero => exact hu j
   | succ n ih => rw [iterate_succ_apply']; exact hc.apply_le ih j
 
-/-- Iterating a monotone stencil keeps a lower bound. -/
+/-- Iteration of a monotone stencil keeps a lower bound. Let $c$ be a monotone stencil, let
+$B \in \mathbb{R}$, and let $u \colon \mathbb{Z} \to \mathbb{R}$ satisfy $B \le u_i$ for every
+$i$. Then $B \le (c^n u)_j$ for every $n \in \mathbb{N}$ and every $j \in \mathbb{Z}$. -/
 theorem IsMonotone.le_iterate_apply {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ} {B : ℝ}
     (hu : ∀ i, B ≤ u i) (n : ℕ) (j : ℤ) : B ≤ (apply c)^[n] u j := by
   induction n generalizing j with
   | zero => exact hu j
   | succ n ih => rw [iterate_succ_apply']; exact hc.le_apply ih j
 
-/-- **The discrete maximum principle** ([quarteroni2000numerical] (13.53)): for a monotone stencil
-and a grid function bounded above, `(c u) j ≤ ⨆ i, u i`. -/
+/-- **The discrete maximum principle** ([quarteroni2000numerical], (13.53)). Let $c$ be a monotone
+stencil and let $u \colon \mathbb{Z} \to \mathbb{R}$ be bounded above. Then for every
+$j \in \mathbb{Z}$,
+$$(cu)_j \le \sup_i u_i.$$
+-/
 theorem IsMonotone.apply_le_iSup {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ}
     (hu : BddAbove (range u)) (j : ℤ) : apply c u j ≤ ⨆ i, u i :=
   hc.apply_le (fun i => le_ciSup hu i) j
 
-/-- **The discrete maximum principle**, lower half: `⨅ i, u i ≤ (c u) j` for a grid function
-bounded below. -/
+/-- **The discrete maximum principle**, lower half. Let $c$ be a monotone stencil and let
+$u \colon \mathbb{Z} \to \mathbb{R}$ be bounded below. Then for every $j \in \mathbb{Z}$,
+$$\inf_i u_i \le (cu)_j.$$
+-/
 theorem IsMonotone.iInf_le_apply {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ}
     (hu : BddBelow (range u)) (j : ℤ) : ⨅ i, u i ≤ apply c u j :=
   hc.le_apply (fun i => ciInf_le hu i) j
 
-/-- The iterated discrete maximum principle: `(cⁿ u) j ≤ ⨆ i, u i`, so the supremum norm of the
-solution of a monotone scheme never increases. -/
+/-- The iterated discrete maximum principle. Let $c$ be a monotone stencil and let
+$u \colon \mathbb{Z} \to \mathbb{R}$ be bounded above. Then for every $n \in \mathbb{N}$ and
+every $j \in \mathbb{Z}$,
+$$(c^n u)_j \le \sup_i u_i.$$
+
+Together with the lower half, this says that the supremum norm of the solution of a monotone
+scheme never increases. -/
 theorem IsMonotone.iterate_apply_le_iSup {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ}
     (hu : BddAbove (range u)) (n : ℕ) (j : ℤ) : (apply c)^[n] u j ≤ ⨆ i, u i :=
   hc.iterate_apply_le (fun i => le_ciSup hu i) n j
 
-/-- The iterated discrete maximum principle, lower half: `⨅ i, u i ≤ (cⁿ u) j`. -/
+/-- The iterated discrete maximum principle, lower half. Let $c$ be a monotone stencil and let
+$u \colon \mathbb{Z} \to \mathbb{R}$ be bounded below. Then for every $n \in \mathbb{N}$ and
+every $j \in \mathbb{Z}$,
+$$\inf_i u_i \le (c^n u)_j.$$
+-/
 theorem IsMonotone.iInf_le_iterate_apply {c : Stencil} (hc : c.IsMonotone) {u : ℤ → ℝ}
     (hu : BddBelow (range u)) (n : ℕ) (j : ℤ) : ⨅ i, u i ≤ (apply c)^[n] u j :=
   hc.le_iterate_apply (fun i => ciInf_le hu i) n j
 
-/-! ### The stencil as a bounded operator on `ℓ^p(ℤ)` -/
+/-! ### The stencil as a bounded operator on $\ell^p(\mathbb{Z})$ -/
 
 section Lp
 
 variable {p : ℝ≥0∞}
 
-/-- The action of a stencil on a grid function, as the finite sum of the shifted grid functions
-weighted by the coefficients. -/
+/-- The action of a stencil is the finite sum of the shifted grid functions, weighted by the
+coefficients: $cu = \sum_{s \in \operatorname{supp} c} c_s \, u(\cdot - s)$. -/
 theorem apply_eq_sum (c : Stencil) (u : ℤ → M) :
     apply c u = fun j => ∑ s ∈ c.support, (c s • (u ∘ Equiv.subRight s)) j := by
   ext j
   rw [apply_apply]
   rfl
 
-/-- A stencil maps `ℓ^p` to `ℓ^p`, for every `p`: a finite linear combination of shifts. -/
+/-- A stencil maps $\ell^p$ to $\ell^p$. Let $c$ be a stencil, let $p \in [0, \infty]$, and let
+$u \colon \mathbb{Z} \to \mathbb{R}$ be in $\ell^p$. Then $cu$ is in $\ell^p$.
+
+The proof writes $cu$ as a finite linear combination of shifts of $u$. -/
 theorem memℓp_apply (c : Stencil) {u : ℤ → ℝ} (hu : Memℓp u p) : Memℓp (apply c u) p := by
   rw [apply_eq_sum]
   exact Memℓp.finsetSum c.support (f := fun s => c s • (u ∘ Equiv.subRight s))
@@ -354,12 +450,18 @@ theorem memℓp_apply (c : Stencil) {u : ℤ → ℝ} (hu : Memℓp u p) : Mem�
 
 variable [Fact (1 ≤ p)]
 
-/-- **The stencil as a bounded operator on `ℓ^p(ℤ)`**: `lpCLM c p = ∑_s c s • shiftₗᵢ p s`. -/
+/-- **The stencil as a bounded operator on $\ell^p(\mathbb{Z})$.** For a stencil $c$ and $p \ge 1$,
+`FiniteDifference.Stencil.lpCLM` is the continuous linear operator
+$$\sum_{s \in \operatorname{supp} c} c_s S_s$$
+on the real space $\ell^p(\mathbb{Z})$, where $S_s$ is the shift `lp.shiftₗᵢ` with
+$(S_s u)_j = u_{j-s}$. -/
 noncomputable def lpCLM (c : Stencil) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
     lp (fun _ : ℤ => ℝ) p →L[ℝ] lp (fun _ : ℤ => ℝ) p :=
   ∑ s ∈ c.support, c s • (lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) p s).toLinearIsometry.toContinuousLinearMap
 
-/-- The bounded operator of a stencil acts by `Stencil.apply`. -/
+/-- **The operator of a stencil acts by the stencil.** For a stencil $c$, $p \ge 1$ and
+$u \in \ell^p(\mathbb{Z})$, the image of $u$ under `FiniteDifference.Stencil.lpCLM` is the grid
+function $cu$. -/
 theorem coeFn_lpCLM (c : Stencil) (u : lp (fun _ : ℤ => ℝ) p) : ⇑(lpCLM c p u) = apply c u := by
   ext j
   rw [lpCLM, _root_.sum_apply, lp.coeFn_sum, Finset.sum_apply, apply_apply]
@@ -367,28 +469,37 @@ theorem coeFn_lpCLM (c : Stencil) (u : lp (fun _ : ℤ => ℝ) p) : ⇑(lpCLM c 
   rw [smul_apply, lp.coeFn_smul, Pi.smul_apply, LinearIsometry.coe_toContinuousLinearMap,
     LinearIsometryEquiv.coe_toLinearIsometry, lp.shiftₗᵢ_apply]
 
-/-- The bounded operator of a stencil acts by `Stencil.apply`, pointwise. -/
+/-- The operator of a stencil acts by the stencil at each point: the image of $u$ under
+`FiniteDifference.Stencil.lpCLM` has the value $(cu)_j$ at $j$. -/
 theorem lpCLM_apply (c : Stencil) (u : lp (fun _ : ℤ => ℝ) p) (j : ℤ) :
     lpCLM c p u j = apply c u j := by
   rw [coeFn_lpCLM]
 
-/-- **Young's inequality for a finitely supported kernel on `ℤ`**:
-`‖lpCLM c p‖ ≤ ∑_s |c s|`, the triangle inequality plus the isometry of each shift. -/
+/-- **Young's inequality for a finitely supported kernel on $\mathbb{Z}$.** For a stencil $c$ and
+$p \ge 1$, the operator norm of $c$ on $\ell^p(\mathbb{Z})$ satisfies
+$$\|c\|_{\ell^p \to \ell^p} \le \sum_{s \in \operatorname{supp} c} |c_s|.$$
+
+The proof is the triangle inequality for the sum of shifts, each of which is an isometry. -/
 theorem norm_lpCLM_le (c : Stencil) : ‖lpCLM c p‖ ≤ ∑ s ∈ c.support, |c s| := by
   refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun s _ => ?_)
   rw [norm_smul, Real.norm_eq_abs]
   exact mul_le_of_le_one_right (abs_nonneg _)
     (lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) p s).toLinearIsometry.norm_toContinuousLinearMap_le
 
-/-- **Monotone stencils are nonexpansive in every `ℓ^p`**: `‖lpCLM c p‖ ≤ 1`. This is the
-`‖·‖_{Δ,1}` stability of the upwind and Lax–Friedrichs schemes under the CFL condition of
-[quarteroni2000numerical] §13.8.3, with constant `1`. -/
+/-- **Monotone stencils are nonexpansive in every $\ell^p$.** For a monotone stencil $c$ and
+$p \ge 1$, the operator norm of $c$ on $\ell^p(\mathbb{Z})$ is at most $1$.
+
+This is the $\|\cdot\|_{\Delta, 1}$ stability of the upwind and Lax–Friedrichs schemes under the
+CFL condition of [quarteroni2000numerical], §13.8.3, with constant $1$. -/
 theorem IsMonotone.norm_lpCLM_le_one {c : Stencil} (hc : c.IsMonotone) : ‖lpCLM c p‖ ≤ 1 := by
   refine (norm_lpCLM_le c).trans (le_of_eq ?_)
   rw [Finset.sum_congr rfl fun s _ => abs_of_nonneg (hc.nonneg s)]
   exact hc.sum_eq_one
 
-/-- The bounded operator of a monotone stencil is nonexpansive: `‖lpCLM c p u‖ ≤ ‖u‖`. -/
+/-- **Monotone stencils are nonexpansive.** For a monotone stencil $c$, $p \ge 1$ and
+$u \in \ell^p(\mathbb{Z})$,
+$$\|cu\|_{\ell^p} \le \|u\|_{\ell^p}.$$
+-/
 theorem IsMonotone.norm_lpCLM_apply_le {c : Stencil} (hc : c.IsMonotone)
     (u : lp (fun _ : ℤ => ℝ) p) : ‖lpCLM c p u‖ ≤ ‖u‖ := by
   have := (lpCLM c p).le_of_opNorm_le hc.norm_lpCLM_le_one u
@@ -402,13 +513,17 @@ section Symbol
 
 open Complex
 
-/-- **The symbol of a stencil**, `σ(φ) = ∑_s c s e^{-isφ}`: the amplification factor of the Fourier
-mode `j ↦ e^{ijφ}` under the stencil. -/
+/-- **The symbol of a stencil.** For a stencil $c$ and $\varphi \in \mathbb{R}$, the symbol is
+$$\sigma(\varphi) = \sum_{s \in \operatorname{supp} c} c_s e^{-is\varphi} \in \mathbb{C}.$$
+It is the amplification factor of the Fourier mode $j \mapsto e^{ij\varphi}$ under the stencil. -/
 noncomputable def symbol (c : Stencil) (φ : ℝ) : ℂ :=
   ∑ s ∈ c.support, (c s : ℂ) * exp (-(I * s * φ))
 
-/-- The Fourier modes are eigenvectors of every stencil, with eigenvalue the symbol:
-`c (j ↦ e^{ijφ}) = σ(φ) • (j ↦ e^{ijφ})`. -/
+/-- **The Fourier modes are eigenvectors of every stencil.** For a stencil $c$ and
+$\varphi \in \mathbb{R}$, the complex grid function $e_\varphi \colon j \mapsto e^{ij\varphi}$
+satisfies
+$$c e_\varphi = \sigma(\varphi) e_\varphi,$$
+where $\sigma$ is the symbol of $c$. -/
 theorem apply_exp_eq_symbol_smul (c : Stencil) (φ : ℝ) :
     apply c (fun j : ℤ => exp (I * j * φ)) = symbol c φ • fun j : ℤ => exp (I * j * φ) := by
   ext j
@@ -419,7 +534,7 @@ theorem apply_exp_eq_symbol_smul (c : Stencil) (φ : ℝ) :
   push_cast
   ring
 
-/-- The symbol is `2π`-periodic. -/
+/-- The symbol of a stencil is $2\pi$-periodic: $\sigma(\varphi + 2\pi) = \sigma(\varphi)$. -/
 theorem symbol_add_two_pi (c : Stencil) (φ : ℝ) : symbol c (φ + 2 * Real.pi) = symbol c φ := by
   unfold symbol
   refine Finset.sum_congr rfl fun s _ => ?_
@@ -427,7 +542,9 @@ theorem symbol_add_two_pi (c : Stencil) (φ : ℝ) : symbol c (φ + 2 * Real.pi)
   rw [show -(I * s * ((φ + 2 * Real.pi : ℝ) : ℂ)) = -(I * s * φ) + (-s : ℤ) * (2 * Real.pi * I) by
     push_cast; ring, Complex.exp_add, Complex.exp_int_mul_two_pi_mul_I, mul_one]
 
-/-- The symbol of a three-point stencil: `σ(φ) = c0 + cm e^{-iφ} + cp e^{iφ}`. -/
+/-- The symbol of the three-point stencil with weights $c_-, c_0, c_+$ is
+$$\sigma(\varphi) = c_0 + c_- e^{-i\varphi} + c_+ e^{i\varphi}.$$
+-/
 theorem symbol_threePoint (cm c0 cp : ℝ) (φ : ℝ) :
     symbol (threePoint cm c0 cp) φ = c0 + cm * exp (-(I * φ)) + cp * exp (I * φ) := by
   have h := congrFun (apply_exp_eq_symbol_smul (threePoint cm c0 cp) φ) 0
@@ -439,23 +556,24 @@ theorem symbol_threePoint (cm c0 cp : ℝ) (φ : ℝ) :
 
 end Symbol
 
-/-! ### The `ℓ²` bound from the symbol
+/-!
+### The $\ell^2$ bound from the symbol
 
-The operator norm of a stencil on `ℓ²(ℤ)` is at most the supremum of the modulus of its symbol —
-the whole-line counterpart of the von Neumann analysis on a periodic grid. The proof is Parseval's
-identity on `ℤ` for trigonometric polynomials (`integral_norm_sq_trigPoly`), which needs nothing
-but the orthogonality of the exponentials over one period (`∫_0^{2π} e^{ikφ} dφ = 2π δ_{k0}`,
-`integral_exp_I_int_mul`, a finite computation), together
-with the fact that the symbol of a convolution is the product of the symbols. The bound for a
-finitely supported grid function extends to all of `ℓ²` by summing over larger and larger finite
-sets of indices. -/
+The operator norm of a stencil on $\ell^2(\mathbb{Z})$ is at most the supremum of the modulus of its
+symbol. This is the whole-line counterpart of the von Neumann analysis on a periodic grid. The proof
+is Parseval's identity on $\mathbb{Z}$ for trigonometric polynomials (`integral_norm_sq_trigPoly`).
+That identity needs only the orthogonality of the exponentials over one period, $\int_0^{2\pi}
+e^{ik\varphi} \, d\varphi = 2\pi \delta_{k0}$ (`integral_exp_I_int_mul`), together with the fact
+that the symbol of a convolution is the product of the symbols. The bound for a finitely supported
+grid function extends to all of $\ell^2$ by summing over larger and larger finite sets of indices.
+-/
 
 section SymbolLTwo
 
 open Complex
 
-/-- Reindexing a sum of the shifted coefficients: `∑_{j ∈ A} w(j - s) e^{-ijφ}` equals
-`∑_{t ∈ supp w} w(t) e^{-i(s+t)φ}` as soon as `A` contains `s + supp w`. -/
+/-- Reindexing of a shifted sum: if $A$ contains $s + \operatorname{supp} w$, then $\sum_{j \in A}
+w_{j-s} e^{-ij\varphi} = \sum_{t \in \operatorname{supp} w} w_t e^{-i(s+t)\varphi}$. -/
 private theorem sum_shift_eq (s : ℤ) (A : Finset ℤ) (w : ℤ →₀ ℝ)
     (hA : ∀ t ∈ w.support, s + t ∈ A) (φ : ℝ) :
     (∑ j ∈ A, ((w (j - s) : ℝ) : ℂ) * exp (-(I * j * φ)))
@@ -481,8 +599,8 @@ private theorem sum_shift_eq (s : ℤ) (A : Finset ℤ) (w : ℤ →₀ ℝ)
     rw [hw]
     simp
 
-/-- **The symbol of a convolution is the product of the symbols**, in the form needed below: the
-trigonometric polynomial of `c ⋆ w` is `symbol c φ` times that of `w`. -/
+/-- The symbol of a convolution is the product of the symbols: the trigonometric polynomial of $cw$
+is $\sigma(\varphi)$ times the trigonometric polynomial of $w$. -/
 private theorem sum_apply_mul_exp (c : Stencil) (w : ℤ →₀ ℝ) (A : Finset ℤ)
     (hA : ∀ s ∈ c.support, ∀ t ∈ w.support, s + t ∈ A) (φ : ℝ) :
     (∑ j ∈ A, ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ) * exp (-(I * j * φ)))
@@ -504,8 +622,8 @@ private theorem sum_apply_mul_exp (c : Stencil) (w : ℤ →₀ ℝ) (A : Finset
   rw [show (-(I * ((s : ℂ) + t) * φ)) = -(I * s * φ) + -(I * t * φ) by ring, Complex.exp_add]
   ring
 
-/-- **The `ℓ²` bound for a finitely supported grid function**: `∑_j |(c ⋆ w)_j|² ≤ ρ² ∑_t |w_t|²`
-whenever the symbol is bounded by `ρ`, by Parseval on both sides. -/
+/-- The $\ell^2$ bound for a finitely supported grid function $w$: if $|\sigma(\varphi)| \le \rho$
+for every $\varphi$, then $\sum_{j \in A} (cw)_j^2 \le \rho^2 \sum_t w_t^2$. -/
 private theorem sum_sq_apply_le (c : Stencil) {ρ : ℝ} (hρ : ∀ φ : ℝ, ‖symbol c φ‖ ≤ ρ)
     (w : ℤ →₀ ℝ) (A : Finset ℤ) (hA : ∀ s ∈ c.support, ∀ t ∈ w.support, s + t ∈ A) :
     (∑ j ∈ A, apply c (w : ℤ → ℝ) j ^ 2) ≤ ρ ^ 2 * ∑ t ∈ w.support, w t ^ 2 := by
@@ -532,15 +650,17 @@ private theorem sum_sq_apply_le (c : Stencil) {ρ : ℝ} (hρ : ∀ φ : ℝ, �
   simp only [hcast] at hmono
   nlinarith [hmono, Real.pi_pos]
 
-/-- **The `ℓ²` operator norm of a stencil is bounded by the supremum of its symbol**: if
-`‖symbol c φ‖ ≤ ρ` for every `φ`, then `‖lpCLM c 2‖ ≤ ρ`.
+/-- **The $\ell^2$ operator norm of a stencil is bounded by the supremum of its symbol.** Let $c$ be
+a stencil and let $\rho \in \mathbb{R}$ with $|\sigma(\varphi)| \le \rho$ for every
+$\varphi \in \mathbb{R}$. Then the operator norm of $c$ on $\ell^2(\mathbb{Z})$ satisfies
+$$\|c\|_{\ell^2 \to \ell^2} \le \rho.$$
 
-This is the sharp `ℓ²` bound, replacing the crude `∑_s |c s|` of `Stencil.norm_lpCLM_le`, and is
-the whole-line counterpart of the periodic von Neumann criterion of
-`Numlib.FiniteDifference.VonNeumann`. The proof is Parseval's identity for trigonometric
-polynomials (`∫_0^{2π} |∑_s v_s e^{-isφ}|² = 2π ∑_s |v_s|²`, from the orthogonality of the
-exponentials over one period), applied to a finitely supported truncation of the grid function and
-to its image, followed by a passage to the limit over the finite sets of indices. -/
+This sharp $\ell^2$ bound replaces the bound $\sum_s |c_s|$ of
+`FiniteDifference.Stencil.norm_lpCLM_le`. It is the whole-line counterpart of the periodic von
+Neumann criterion of `Numlib.FiniteDifference.VonNeumann`. The proof applies Parseval's identity
+$\int_0^{2\pi} |\sum_s v_s e^{-is\varphi}|^2 \, d\varphi = 2\pi \sum_s |v_s|^2$ for
+trigonometric polynomials to a finitely supported truncation of the grid function and to its
+image, and then passes to the limit over the finite sets of indices. -/
 theorem norm_lpCLM_two_le_of_symbol_le (c : Stencil) {ρ : ℝ} (hρ : ∀ φ : ℝ, ‖symbol c φ‖ ≤ ρ) :
     ‖lpCLM c 2‖ ≤ ρ := by
   classical
@@ -612,17 +732,25 @@ end Stencil
 
 /-! ### Discrete norms and stable families -/
 
-/-- **The discrete `L^p` norms** of [quarteroni2000numerical] (13.47):
-`‖v‖_{Δ,p} = Δx^{1/p} ‖v‖_{ℓ^p}`, which is `(Δx ∑_j |v_j|^p)^{1/p}` for finite `p` and
-`sup_j |v_j|` for `p = ∞`. -/
+/-- **The discrete $L^p$ norms** of [quarteroni2000numerical], (13.47). For $p \in [0, \infty]$, a
+mesh size $\Delta x$ and $v \in \ell^p(\mathbb{Z})$,
+$$\|v\|_{\Delta, p} = \Delta x^{1/p} \|v\|_{\ell^p}.$$
+For $0 < p < \infty$ and $\Delta x \ge 0$ this is $(\Delta x \sum_j |v_j|^p)^{1/p}$, and for
+$p = \infty$ it is $\sup_j |v_j|$.
+
+The exponent is $1/p$ as a real number, which is $0$ for $p = \infty$ and for $p = 0$, so the
+factor is then $1$. For $p = 0$ the value is the Mathlib norm of `lp` at $p = 0$, the number of
+nonzero entries of $v$. -/
 noncomputable def discreteNorm (p : ℝ≥0∞) (Δx : ℝ) (v : lp (fun _ : ℤ => ℝ) p) : ℝ :=
   Δx ^ (1 / p).toReal * ‖v‖
 
-/-- The discrete maximum norm is the supremum norm. -/
+/-- The discrete maximum norm is the supremum norm: $\|v\|_{\Delta, \infty} = \|v\|_{\ell^\infty}$
+for every $\Delta x$. -/
 theorem discreteNorm_top (Δx : ℝ) (v : lp (fun _ : ℤ => ℝ) ∞) : discreteNorm ∞ Δx v = ‖v‖ := by
   simp [discreteNorm]
 
-/-- The discrete `L²` norm: `‖v‖_{Δ,2} = √(Δx ∑_j v_j²)`. -/
+/-- The discrete $L^2$ norm: for $\Delta x \ge 0$ and $v \in \ell^2(\mathbb{Z})$, $\|v\|_{\Delta,
+2} = \sqrt{\Delta x \sum_j v_j^2}$. -/
 theorem discreteNorm_two_eq_sqrt {Δx : ℝ} (hΔx : 0 ≤ Δx) (v : lp (fun _ : ℤ => ℝ) 2) :
     discreteNorm 2 Δx v = √(Δx * ∑' j, v j ^ 2) := by
   have h2 : (0 : ℝ) < (2 : ℝ≥0∞).toReal := by norm_num
@@ -632,19 +760,27 @@ theorem discreteNorm_two_eq_sqrt {Δx : ℝ} (hΔx : 0 ≤ Δx) (v : lp (fun _ :
   simp only [ENNReal.toReal_ofNat, one_div, ENNReal.toReal_inv, hsum]
   rw [← Real.mul_rpow hΔx (tsum_nonneg fun j => sq_nonneg _)]
 
-/-- The discrete `L¹` norm: `‖v‖_{Δ,1} = Δx ∑_j |v_j|`. -/
+/-- The discrete $L^1$ norm: for every $\Delta x$ and $v \in \ell^1(\mathbb{Z})$,
+$\|v\|_{\Delta, 1} = \Delta x \sum_j |v_j|$. -/
 theorem discreteNorm_one (Δx : ℝ) (v : lp (fun _ : ℤ => ℝ) 1) :
     discreteNorm 1 Δx v = Δx * ∑' j, |v j| := by
   have h1 : (0 : ℝ) < (1 : ℝ≥0∞).toReal := by norm_num
   rw [discreteNorm, lp.norm_eq_tsum_rpow h1]
   simp [Real.norm_eq_abs]
 
-/-- **Stability of a family of schemes** ([quarteroni2000numerical] (13.46); the fixed-space form
-is Definition 6.3.1 of [han2009theoretical]): for every horizon `T > 0` there are `C` and `δ₀ > 0`
-such that `‖Q i ^ n‖ ≤ C` whenever the steps `Δt i`, `Δx i` lie in `(0, δ₀]` and `n Δt i ≤ T`. The
-family of spaces `E i` is dependent so that periodic grids and the whole line are both instances;
-with `E i` a space of grid functions and the discrete norm a constant multiple of the `ℓ^p` norm,
-`‖Q i ^ n‖ ≤ C` is `‖uⁿ‖_Δ ≤ C ‖u⁰‖_Δ`. -/
+/-- **Stability of a family of schemes** ([quarteroni2000numerical], (13.46)). Let
+$(E_i)_{i \in \iota}$ be a family of real normed spaces, and for each $i$ let
+$\Delta t_i, \Delta x_i \in \mathbb{R}$ be the steps and $Q_i \colon E_i \to E_i$ a continuous
+linear map. The family is **stable** if for every horizon $T > 0$ there are $C \in \mathbb{R}$
+and $\delta_0 > 0$ such that
+$$\|Q_i^n\| \le C$$
+for every $i$ with $0 < \Delta t_i \le \delta_0$ and $0 < \Delta x_i \le \delta_0$, and every
+$n \in \mathbb{N}$ with $n \Delta t_i \le T$.
+
+The form on a fixed space is Definition 6.3.1 of [han2009theoretical]. The spaces $E_i$ depend
+on $i$, so that periodic grids and the whole line are both instances. When $E_i$ is a space of
+grid functions and the discrete norm is a constant multiple of the $\ell^p$ norm, the bound
+$\|Q_i^n\| \le C$ is $\|u^n\|_\Delta \le C \|u^0\|_\Delta$. -/
 def IsStableFamily {ι : Type*} {E : ι → Type*} [∀ i, NormedAddCommGroup (E i)]
     [∀ i, NormedSpace ℝ (E i)] (Δt Δx : ι → ℝ) (Q : ∀ i, E i →L[ℝ] E i) : Prop :=
   ∀ T : ℝ, 0 < T → ∃ C δ₀ : ℝ, 0 < δ₀ ∧ ∀ i, 0 < Δt i → Δt i ≤ δ₀ → 0 < Δx i → Δx i ≤ δ₀ →
@@ -655,7 +791,10 @@ namespace IsStableFamily
 variable {ι : Type*} {E : ι → Type*} [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace ℝ (E i)]
   {Δt Δx : ι → ℝ} {Q : ∀ i, E i →L[ℝ] E i}
 
-/-- A stable family satisfies `‖(Q i ^ n) u‖ ≤ C ‖u‖` for `n Δt i ≤ T` and small steps. -/
+/-- A stable family satisfies a pointwise bound. If the family $(Q_i)$ is stable and $T > 0$, there
+are $C \in \mathbb{R}$ and $\delta_0 > 0$ such that $\|Q_i^n u\| \le C \|u\|$ for every $i$ with
+$0 < \Delta t_i \le \delta_0$ and $0 < \Delta x_i \le \delta_0$, every $n \in \mathbb{N}$ with
+$n \Delta t_i \le T$, and every $u \in E_i$. -/
 theorem norm_le_of_isStableFamily (h : IsStableFamily Δt Δx Q) {T : ℝ} (hT : 0 < T) :
     ∃ C δ₀ : ℝ, 0 < δ₀ ∧ ∀ i, 0 < Δt i → Δt i ≤ δ₀ → 0 < Δx i → Δx i ≤ δ₀ →
       ∀ n : ℕ, (n : ℝ) * Δt i ≤ T → ∀ u : E i, ‖(Q i ^ n) u‖ ≤ C * ‖u‖ := by
@@ -663,10 +802,17 @@ theorem norm_le_of_isStableFamily (h : IsStableFamily Δt Δx Q) {T : ℝ} (hT :
   exact ⟨C, δ₀, hδ₀, fun i h1 h2 h3 h4 n hn u =>
     (Q i ^ n).le_of_opNorm_le (hC i h1 h2 h3 h4 n hn) u⟩
 
-/-- **Convergence of each member of a stable family**: the error accumulation theorem
-`FiniteDifference.norm_sub_le_of_stable` applies to every scheme of a stable family with `M₀ = C`,
-so a two-level recursion whose exact values carry local truncation errors of size `δ` has error at
-most `C T δ` over the horizon `T`. -/
+/-- **Convergence of each member of a stable family.** Let the family $(Q_i)$ with steps
+$\Delta t_i, \Delta x_i$ be stable, and let $T > 0$. Then there are $C \in \mathbb{R}$ and
+$\delta_0 > 0$ with the following property. Let $i$ satisfy $0 < \Delta t_i \le \delta_0$ and
+$0 < \Delta x_i \le \delta_0$, let $\delta \ge 0$, and let $N \in \mathbb{N}$ with
+$N \Delta t_i \le T$. Let the sequences $u, v, g, \tau$ in $E_i$ satisfy
+$v^{m+1} = Q_i v^m + \Delta t_i g^m$ and $u^{m+1} = Q_i u^m + \Delta t_i g^m + \Delta t_i
+\tau^m$ for $m < N$, with $u^0 = v^0$ and $\|\tau^m\| \le \delta$ for $m < N$. Then
+$$\|u^m - v^m\| \le C T \delta \quad \text{for every } m \le N.$$
+
+This is the error accumulation theorem `FiniteDifference.norm_sub_le_of_stable`, with $M_0 = C$,
+applied to each member of the family. -/
 theorem exists_norm_sub_le (h : IsStableFamily Δt Δx Q) {T : ℝ} (hT : 0 < T) :
     ∃ C δ₀ : ℝ, 0 < δ₀ ∧ ∀ i, 0 < Δt i → Δt i ≤ δ₀ → 0 < Δx i → Δx i ≤ δ₀ →
       ∀ {u v g τ : ℕ → E i} {δ : ℝ} {N : ℕ}, 0 ≤ δ → (N : ℝ) * Δt i ≤ T →

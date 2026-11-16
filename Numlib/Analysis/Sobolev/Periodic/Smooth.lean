@@ -9,39 +9,55 @@ import Numlib.Analysis.Sobolev.Periodic
 /-!
 # Smooth periodic functions and their Fourier coefficients
 
-The periodic Sobolev space `PeriodicSobolev s` of `Numlib/Analysis/Sobolev/Periodic` is a space of
-coefficient sequences. This file is the bridge from the *function* side: a `2π`-periodic function
-`f : ℝ → ℂ` of class `C^s` has Fourier coefficients
-`f̂_n = (1/2π) ∫_0^{2π} f(x) e^{-inx} dx` — Mathlib's `fourierCoeff` of the lift `hf.lift` of `f` to
-`AddCircle (2π)` — and
+The periodic Sobolev space $H^s$ of `Numlib.Analysis.Sobolev.Periodic` is a space of coefficient
+sequences. This module connects it with functions. A $2\pi$-periodic function
+$f : \mathbb{R} \to \mathbb{C}$ has the Fourier coefficients
+$$\hat f_n = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-inx} \, dx, \qquad n \in \mathbb{Z}.$$
+If $f$ is of class $C^s$, then for every $k \le s$
+$$\sum_{n \in \mathbb{Z}} |n|^{2k} |\hat f_n|^2 = \frac{1}{2\pi} \|f^{(k)}\|_{L^2(0, 2\pi)}^2,$$
+because differentiation multiplies $\hat f_n$ by $in$ and Parseval's identity holds for the
+continuous function $f^{(k)}$. Hence the coefficient sequence of $f$ lies in $H^s$. This element is
+`PeriodicSobolev.ofSmooth`. For $s \ge 1$ the sum of its series is $f$, and its norm is at most
+$(2\pi)^{-1/2} \|f\|_s$ for the classical norm $\|f\|_s^2 = \sum_{k \le s} \|f^{(k)}\|_{L^2(0,
+2\pi)}^2$.
 
-`∑_n |n|^{2k} |f̂_n|² = (1/2π) ‖f^{(k)}‖²_{L²(0,2π)}` for every `k ≤ s`
+With `PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le`, this gives the spectral accuracy
+of the trapezoidal rule for smooth periodic functions. With the aliasing bounds of
+`Numlib.Analysis.Fourier.Aliasing`, it gives the error estimates for trigonometric interpolation in
+the classical norm of [quarteroni2000numerical], §10.9. The expression of the classical norm through
+the Fourier coefficients is Theorem 7.5.2 of [han2009theoretical].
 
-(`hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq`), because differentiation multiplies `f̂_n` by
-`i n` (`fourierCoeff_lift_deriv`, from Mathlib's `fourierCoeffOn_of_hasDerivAt` and the
-periodicity `f(2π) = f(0)`) and Parseval's identity holds for the continuous function `f^{(k)}`.
-Hence the coefficient sequence lies in `PeriodicSobolev s`: that element is
-`PeriodicSobolev.ofSmooth hf hd`, and its two properties are
+## Main definitions
 
-* `PeriodicSobolev.eval_ofSmooth`: the sum of its series is `f` (for `s ≥ 1`), and
-* `PeriodicSobolev.norm_ofSmooth_le`: `‖φ‖ ≤ (2π)^{-1/2} ‖f‖_s` with the classical norm
-  `‖f‖²_s = ∑_{k ≤ s} ‖f^{(k)}‖²_{L²(0,2π)}` (`PeriodicSobolev.derivNormSq`).
+* `PeriodicSobolev.derivNormSq`: the square $\|f\|_s^2 = \sum_{k \le s} \|f^{(k)}\|_{L^2(0,
+  2\pi)}^2$ of the classical periodic Sobolev norm.
+* `PeriodicSobolev.ofSmooth`: the coefficient sequence of a $2\pi$-periodic $C^s$ function, as an
+  element of $H^s$.
 
-Together with `PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le` this gives the spectral
-accuracy of the trapezoidal rule, and with the aliasing bounds of `Numlib/Analysis/Fourier/Aliasing`
-the error estimates for trigonometric interpolation, in the classical norm of
-[quarteroni2000numerical] §10.9. The identification of the coefficient norm with the classical
-norm is [han2009theoretical] Theorem 7.5.2, here in the form
-`hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq`.
+## Main results
 
-The period is fixed at `2π`, the period of both books; the general period `T` only changes the
-constants (`f̂'_n = (2π i n / T) f̂_n`).
+* `fourierCoeff_lift_deriv`: for a $2\pi$-periodic $C^1$ function, $\widehat{f'}_n = in \hat f_n$.
+* `fourierCoeff_lift_iteratedDeriv`: for a $2\pi$-periodic $C^s$ function and $k \le s$,
+  $\widehat{f^{(k)}}_n = (in)^k \hat f_n$.
+* `PeriodicSobolev.hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq`: Parseval's identity for the $k$-th
+  derivative, $\sum_n |n|^{2k} |\hat f_n|^2 = (2\pi)^{-1} \|f^{(k)}\|_{L^2(0, 2\pi)}^2$.
+* `PeriodicSobolev.hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq`: the classical norm through the
+  Fourier coefficients, Theorem 7.5.2 of [han2009theoretical].
+* `PeriodicSobolev.eval_ofSmooth`: for $s \ge 1$, the sum of the Fourier series of $f$ is $f$.
+* `PeriodicSobolev.norm_ofSmooth_le`: for $s \ge 1$, the norm of the coefficient sequence in $H^s$
+  is at most $(2\pi)^{-1/2} \|f\|_s$.
+
+## Implementation notes
+
+* The Fourier coefficients $\hat f_n$ are Mathlib's `fourierCoeff` of the lift `hf.lift` of $f$ to
+  `AddCircle (2 * π)`.
+* The period is fixed at $2\pi$, the period of both [quarteroni2000numerical] and
+  [han2009theoretical]. A general period $T$ changes only the constants:
+  $\widehat{f'}_n = (2\pi i n / T) \hat f_n$.
 -/
 
 open AddCircle Complex MeasureTheory
 open scoped Real
-
-/-! ### Derivatives of periodic functions -/
 
 /-! ### The Fourier coefficients of the derivatives -/
 
@@ -49,10 +65,15 @@ section Deriv
 
 variable {f : ℝ → ℂ}
 
-/-- **Differentiation multiplies the `n`-th Fourier coefficient by `i n`**: for a `2π`-periodic
-`C¹` function, `(f')^_n = i n f̂_n`. At `n ≠ 0` this is Mathlib's `fourierCoeffOn_of_hasDerivAt`
-with the boundary term killed by `f(2π) = f(0)`; at `n = 0` it is the fundamental theorem of
-calculus over one period. -/
+/-- **Differentiation multiplies the $n$-th Fourier coefficient by $in$.** Let
+$f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^1$. Then for every
+$n \in \mathbb{Z}$,
+$$\widehat{f'}_n = i n \, \hat f_n,$$
+where $\hat f_n$ is the $n$-th Fourier coefficient of the lift of $f$ to the circle of
+circumference $2\pi$.
+
+For $n \ne 0$ this is Mathlib's `fourierCoeffOn_of_hasDerivAt`, where the boundary term vanishes
+because $f(2\pi) = f(0)$. For $n = 0$ it is the fundamental theorem of calculus over one period. -/
 theorem fourierCoeff_lift_deriv (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ 1 f)
     (n : ℤ) :
     fourierCoeff hf.deriv.lift n = (I * n) * fourierCoeff hf.lift n := by
@@ -78,7 +99,10 @@ theorem fourierCoeff_lift_deriv (hf : Function.Periodic f (2 * π)) (hd : ContDi
     field_simp
     ring
 
-/-- The `k`-th derivative multiplies the `n`-th Fourier coefficient by `(i n)^k`. -/
+/-- Let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^s$, and let $k \le s$.
+Then for every $n \in \mathbb{Z}$,
+$$\widehat{f^{(k)}}_n = (i n)^k \, \hat f_n.$$
+-/
 theorem fourierCoeff_lift_iteratedDeriv (hf : Function.Periodic f (2 * π)) {s : ℕ}
     (hd : ContDiff ℝ s f) {k : ℕ} (hk : k ≤ s) (n : ℤ) :
     fourierCoeff (hf.iteratedDeriv k).lift n = (I * n) ^ k * fourierCoeff hf.lift n := by
@@ -102,18 +126,21 @@ variable {f : ℝ → ℂ}
 
 /-! ### The classical norm -/
 
-/-- The classical periodic Sobolev norm, squared: `‖f‖²_s = ∑_{k ≤ s} ‖f^{(k)}‖²_{L²(0,2π)}`, the
-norm `‖·‖_s` of [quarteroni2000numerical] §10.9 and the `‖·‖_{H^k}` of [han2009theoretical]
-Theorem 7.5.2. -/
+/-- The square of the **classical periodic Sobolev norm** of order $s \in \mathbb{N}$:
+$$\|f\|_s^2 = \sum_{k=0}^{s} \int_0^{2\pi} |f^{(k)}(x)|^2 \, dx.$$
+This is the norm $\|\cdot\|_s$ of [quarteroni2000numerical], §10.9, and the norm
+$\|\cdot\|_{H^k}$ of Theorem 7.5.2 of [han2009theoretical].
+
+The definition assumes no regularity of $f$. The derivatives are Mathlib's `iteratedDeriv`. -/
 noncomputable def derivNormSq (s : ℕ) (f : ℝ → ℂ) : ℝ :=
   ∑ k ∈ Finset.range (s + 1), ∫ x in (0 : ℝ)..2 * π, ‖iteratedDeriv k f x‖ ^ 2
 
-/-- The classical norm squared is nonnegative. -/
+/-- For every $s$ and $f$, $\|f\|_s^2 \ge 0$. -/
 theorem derivNormSq_nonneg (s : ℕ) (f : ℝ → ℂ) : 0 ≤ derivNormSq s f :=
   Finset.sum_nonneg fun _ _ => intervalIntegral.integral_nonneg Real.two_pi_pos.le fun x _ => by
     positivity
 
-/-- Each derivative's `L²` norm is at most the classical norm. -/
+/-- For $k \le s$, $\int_0^{2\pi} |f^{(k)}(x)|^2 \, dx \le \|f\|_s^2$. -/
 theorem intervalIntegral_norm_iteratedDeriv_sq_le_derivNormSq {s k : ℕ} (hk : k ≤ s)
     (f : ℝ → ℂ) :
     ∫ x in (0 : ℝ)..2 * π, ‖iteratedDeriv k f x‖ ^ 2 ≤ derivNormSq s f :=
@@ -123,8 +150,11 @@ theorem intervalIntegral_norm_iteratedDeriv_sq_le_derivNormSq {s k : ℕ} (hk : 
 
 /-! ### Parseval for the derivatives -/
 
-/-- **Parseval for the `k`-th derivative**: `∑_n |n|^{2k} |f̂_n|² = (1/2π) ‖f^{(k)}‖²_{L²(0,2π)}`
-for a `2π`-periodic `f` of class `C^s` and `k ≤ s`. -/
+/-- **Parseval's identity for the $k$-th derivative.** Let $f : \mathbb{R} \to \mathbb{C}$ be
+$2\pi$-periodic and of class $C^s$, and let $k \le s$. Then
+$$\sum_{n \in \mathbb{Z}} |n|^{2k} |\hat f_n|^2 = \frac{1}{2\pi} \int_0^{2\pi} |f^{(k)}(x)|^2 \,
+  dx.$$
+-/
 theorem hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f (2 * π)) {s : ℕ}
     (hd : ContDiff ℝ s f) {k : ℕ} (hk : k ≤ s) :
     HasSum (fun n : ℤ => |(n : ℝ)| ^ (2 * k) * ‖fourierCoeff hf.lift n‖ ^ 2)
@@ -140,8 +170,11 @@ theorem hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f (
   rw [fourierCoeff_lift_iteratedDeriv hf hd hk, norm_mul, norm_pow, norm_mul, Complex.norm_I,
     one_mul, Complex.norm_intCast, mul_pow, ← pow_mul, mul_comm k 2]
 
-/-- **The classical norm on the Fourier side** ([han2009theoretical] Theorem 7.5.2):
-`(1/2π) ‖f‖²_s = ∑_n (∑_{k ≤ s} |n|^{2k}) |f̂_n|²`. -/
+/-- **The classical norm through the Fourier coefficients.** Let $f : \mathbb{R} \to \mathbb{C}$ be
+$2\pi$-periodic and of class $C^s$. Then
+$$\sum_{n \in \mathbb{Z}} \Big( \sum_{k=0}^{s} |n|^{2k} \Big) |\hat f_n|^2 = \frac{1}{2\pi}
+  \|f\|_s^2.$$
+This is Theorem 7.5.2 of [han2009theoretical]. -/
 theorem hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f (2 * π))
     {s : ℕ} (hd : ContDiff ℝ s f) :
     HasSum (fun n : ℤ =>
@@ -152,10 +185,10 @@ theorem hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic
     (Nat.lt_succ_iff.mp (Finset.mem_range.mp hk))).congr_fun fun n => ?_
   rw [Finset.sum_mul]
 
-/-! ### The coefficient sequence as an element of `PeriodicSobolev s` -/
+/-! ### The coefficient sequence as an element of $H^s$ -/
 
-/-- The weight squared is dominated by `1 + |m|^{2s}`, so the weighted norm is dominated by the
-`L²` norms of `f` and of `f^{(s)}`. -/
+/-- The square of the weight satisfies $(w_s(m) |a|)^2 \le |a|^2 + |m|^{2s} |a|^2$, so the weighted
+norm is bounded by the $L^2$ norms of $f$ and of $f^{(s)}$. -/
 private theorem weight_mul_norm_sq_le (s : ℕ) (m : ℤ) (a : ℂ) :
     (periodicSobolevWeight s m * ‖a‖) ^ 2 ≤ ‖a‖ ^ 2 + |(m : ℝ)| ^ (2 * s) * ‖a‖ ^ 2 := by
   rcases eq_or_ne m 0 with rfl | hm
@@ -165,8 +198,12 @@ private theorem weight_mul_norm_sq_le (s : ℕ) (m : ℤ) (a : ℂ) :
       show (2 : ℝ) * (s : ℝ) = ((2 * s : ℕ) : ℝ) by push_cast; ring, Real.rpow_natCast]
     nlinarith [sq_nonneg ‖a‖]
 
-/-- The weighted coefficient family of a `C^s` function is square summable: the weight squared is
-at most `1 + |m|^{2s}`, and Parseval at orders `0` and `s` sums both parts. -/
+/-- Let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^s$. Then the series
+$\sum_{m \in \mathbb{Z}} (w_s(m) |\hat f_m|)^2$ converges, where $w_s$ is
+`periodicSobolevWeight`.
+
+The square of the weight is at most $1 + |m|^{2s}$, and Parseval's identity at the orders $0$
+and $s$ sums both parts. -/
 theorem summable_weight_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f (2 * π)) {s : ℕ}
     (hd : ContDiff ℝ s f) :
     Summable fun m : ℤ => (periodicSobolevWeight s m * ‖fourierCoeff hf.lift m‖) ^ 2 := by
@@ -176,23 +213,31 @@ theorem summable_weight_mul_norm_fourierCoeff_lift_sq (hf : Function.Periodic f 
   exact Summable.of_nonneg_of_le (fun m => by positivity)
     (fun m => weight_mul_norm_sq_le s m _) (h0.summable.add hs.summable)
 
-/-- **The coefficient sequence of a smooth periodic function.** A `2π`-periodic `f` of class `C^s`
-has Fourier coefficients in `PeriodicSobolev s`; this is the bridge from the function side to the
-coefficient side, with `eval_ofSmooth` and `norm_ofSmooth_le` as its two properties. -/
+/-- **The coefficient sequence of a smooth periodic function.** Let $f : \mathbb{R} \to \mathbb{C}$
+be $2\pi$-periodic and of class $C^s$. This is the element of $H^s$ whose coefficients are the
+Fourier coefficients $\hat f_m$ of $f$.
+
+It connects the functions with the coefficient sequences. Its two properties are
+`PeriodicSobolev.eval_ofSmooth` and `PeriodicSobolev.norm_ofSmooth_le`. -/
 noncomputable def ofSmooth (hf : Function.Periodic f (2 * π)) {s : ℕ} (hd : ContDiff ℝ s f) :
     PeriodicSobolev s :=
   ofCoeff s (fourierCoeff hf.lift) (memℓp_two_iff.2
     ((summable_weight_mul_norm_fourierCoeff_lift_sq hf hd).congr fun m => by
       rw [norm_mul, Complex.norm_real, Real.norm_of_nonneg (periodicSobolevWeight_pos _ m).le]))
 
-/-- The coefficients of `ofSmooth hf hd` are the Fourier coefficients of `f`. -/
+/-- The coefficients of the element of $H^s$ given by a $2\pi$-periodic $C^s$ function $f$ are the
+Fourier coefficients $\hat f_m$. -/
 @[simp]
 theorem coeff_ofSmooth (hf : Function.Periodic f (2 * π)) {s : ℕ} (hd : ContDiff ℝ s f) :
     coeff (ofSmooth hf hd) = fourierCoeff hf.lift :=
   coeff_ofCoeff _ _ _
 
-/-- `‖φ‖² ≤ (1/2π) (‖f‖²_{L²} + ‖f^{(s)}‖²_{L²})` for the coefficient sequence of a `C^s`
-function: the weight `w_s(m)²` is at most `1 + |m|^{2s}`. -/
+/-- Let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^s$, and let
+$\varphi \in H^s$ be its coefficient sequence. Then
+$$\|\varphi\|^2 \le \frac{1}{2\pi} \Big( \int_0^{2\pi} |f(x)|^2 \, dx + \int_0^{2\pi}
+  |f^{(s)}(x)|^2 \, dx \Big).$$
+
+The square of the weight $w_s(m)$ is at most $1 + |m|^{2s}$. -/
 theorem norm_ofSmooth_sq_le (hf : Function.Periodic f (2 * π)) {s : ℕ} (hd : ContDiff ℝ s f) :
     ‖ofSmooth hf hd‖ ^ 2 ≤ (2 * π)⁻¹ * ((∫ x in (0 : ℝ)..2 * π, ‖f x‖ ^ 2)
       + ∫ x in (0 : ℝ)..2 * π, ‖iteratedDeriv s f x‖ ^ 2) := by
@@ -204,8 +249,11 @@ theorem norm_ofSmooth_sq_le (hf : Function.Periodic f (2 * π)) {s : ℕ} (hd : 
   rw [mul_add]
   exact hasSum_le (fun m => weight_mul_norm_sq_le s m _) hn (h0.add hs)
 
-/-- **The bridge to the classical norm**: `‖φ‖ ≤ (2π)^{-1/2} ‖f‖_s` with
-`‖f‖²_s = ∑_{k ≤ s} ‖f^{(k)}‖²_{L²(0,2π)}`, for `s ≥ 1`. -/
+/-- Let $s \ge 1$, let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^s$, and
+let $\varphi \in H^s$ be its coefficient sequence. Then
+$$\|\varphi\| \le (2\pi)^{-1/2} \|f\|_s, \qquad \|f\|_s^2 = \sum_{k=0}^{s} \|f^{(k)}\|_{L^2(0,
+  2\pi)}^2.$$
+-/
 theorem norm_ofSmooth_le (hf : Function.Periodic f (2 * π)) {s : ℕ} (hs : 1 ≤ s)
     (hd : ContDiff ℝ s f) :
     ‖ofSmooth hf hd‖ ≤ (√(2 * π))⁻¹ * √(derivNormSq s f) := by
@@ -220,9 +268,12 @@ theorem norm_ofSmooth_le (hf : Function.Periodic f (2 * π)) {s : ℕ} (hs : 1 �
   rw [← Real.sqrt_sq (norm_nonneg _), ← Real.sqrt_inv, ← Real.sqrt_mul (by positivity)]
   exact Real.sqrt_le_sqrt hsq
 
-/-- The sum of the Fourier series of a `C^s` function, `s ≥ 1`, is the function itself: the series
-converges absolutely (`PeriodicSobolev.summable_coeff` at `s > 1/2`), hence pointwise to `f` by
-`has_pointwise_sum_fourier_series_of_summable`. -/
+/-- Let $s \ge 1$ and let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^s$.
+Then the sum of the Fourier series of $f$, read with period $2\pi$, is $f$:
+$$\sum_{m \in \mathbb{Z}} \hat f_m e^{imx} = f(x) \quad \text{for every } x \in \mathbb{R}.$$
+
+The series converges absolutely because $s > 1/2$ (`PeriodicSobolev.summable_coeff`), so it
+converges pointwise to $f$ by `has_pointwise_sum_fourier_series_of_summable`. -/
 theorem eval_ofSmooth (hf : Function.Periodic f (2 * π)) {s : ℕ} (hs : 1 ≤ s)
     (hd : ContDiff ℝ s f) : eval (2 * π) (ofSmooth hf hd) = f := by
   have hsum : Summable (fourierCoeff hf.lift) := by

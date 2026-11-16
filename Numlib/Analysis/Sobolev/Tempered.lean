@@ -18,67 +18,96 @@ import Numlib.Analysis.Sobolev.MultiIndex
 /-!
 # Weak derivatives and tempered distributions on the whole space
 
-There are two ways to differentiate a locally integrable function on `ℝ^d` in the sense of
-distributions, and they use different classes of test functions. Atkinson and Han, *Theoretical
-Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009
-[han2009theoretical], Definition 7.1.3 tests against `C_0^∞`, the compactly supported smooth
-functions, which is `HasWeakIteratedLineDerivOn` of `Numlib/Analysis/Sobolev/WeakDeriv.lean` and
-makes sense on any open set. Mathlib's `TemperedDistribution` tests against the Schwartz class,
-which needs the whole space but supports the Fourier transform. This file shows that on the whole
-space the two agree for `L^p` functions, and draws the consequence that the Sobolev space of
-integer order `k` cut out by the weak derivatives is Mathlib's Bessel potential space `H^k`.
+There are two ways to differentiate a locally integrable function on a finite-dimensional real space
+$E$ in the sense of distributions, and they use different classes of test functions. Definition
+7.1.3 of [han2009theoretical] tests against $C_0^\infty$, the compactly supported smooth functions;
+this is `HasWeakIteratedLineDerivOn` of `Numlib.Analysis.Sobolev.WeakDeriv`, and it makes sense on
+any open set. Mathlib's `TemperedDistribution` tests against the Schwartz class, which needs the
+whole space but supports the Fourier transform. This module shows that on the whole space the two
+derivatives agree for $L^p$ functions. It concludes that the Sobolev space of integer order $k$
+defined by the weak derivatives is Mathlib's Bessel potential space $H^k$.
 
-## Main statements
+Below, $\partial^m = \partial_{m_0} \cdots \partial_{m_{n-1}}$ is the iterated directional
+derivative along a tuple $m \in E^n$, with $\partial_{m_0}$ outermost. For $u \in L^p(\mu)$, $T_u$
+is the tempered distribution $g \mapsto \int g u \, d\mu$. For $s \in \mathbb{R}$ and $p \ge 1$,
+$H^{s,p}$ is the Bessel potential space of the tempered distributions $f$ for which
+$\mathcal{F}^{-1} (1 + |\xi|^2)^{s/2} \mathcal{F} f$ is an $L^p$ function
+(`TemperedDistribution.MemSobolev s p`), and $H^s = H^{s,2}$. The module also computes the Fourier
+transform of a weak derivative and gives the continuous representative of an $L^2$ function with
+integrable Fourier transform.
 
-* `MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn`: **the bridge.** For
-  `L^p` functions `u` and `v` on `E`, the distributional derivative `∂^{m} u` of the tempered
-  distribution attached to `u` is `v` exactly when `v` is a weak derivative of `u` along the tuple
-  `m` of directions in the sense of integration by parts against `C_0^∞(E)`.
-  One direction is free, a test function being a Schwartz function; the other,
-  `HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz`, multiplies a Schwartz function `g` by the
-  cut-offs `χ(·/(N+1))` — so that `χ(·/(N+1)) g` is a test function — and passes to the limit by
-  dominated convergence. The derivatives of the cut-offs are bounded uniformly in `N` because
-  rescaling by a factor at most `1` does not increase them, and the resulting bound is integrable
-  against an `L^p` function because the derivatives of a Schwartz function are bounded and
-  integrable, hence lie in every `L^q`.
-* `TemperedDistribution.MemSobolev.of_iteratedLineDerivOp`: if every iterated directional
-  derivative of a tempered distribution of order at most `k` is an `L²` function, the distribution
-  lies in `H^k`. This is the converse of Mathlib's `TemperedDistribution.MemSobolev.lineDerivOp`,
-  and rests on the multiplier identity
-  `(1 + |ξ|²)^{1/2} = (1 + |ξ|²)^{-1/2} + |ξ|² (1 + |ξ|²)^{-1/2}`, the second summand being, up to
-  the constant that Mathlib's convention for the Fourier transform contributes, the symbol of the
-  Laplacian: `TemperedDistribution.besselPotential_one_eq`.
+## Main definitions
+
+* `LineDeriv.listLineDerivOp`: the iterated line derivative along a list of directions, the head of
+  the list outermost.
+* `lineSymbol`: the symbol $\sigma_m(\xi) = \prod_j \langle \xi, m_j \rangle$ of $\partial^m$.
+
+## Main results
+
+* `SchwartzMap.iteratedLineDerivOp_congr_perm` and
+  `TemperedDistribution.iteratedLineDerivOp_congr_perm`: the iterated directional derivative of a
+  Schwartz function or a tempered distribution does not change when its directions are permuted.
+* `HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz`: if $f$ and its weak derivative $w$ along
+  $m$ lie in $L^p$, then $\int (\partial^m g) f = (-1)^n \int g w$ for every Schwartz function $g$.
+* `MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn`: for $u, v \in L^p$,
+  $\partial^m T_u = T_v$ if and only if $v$ is a weak derivative of $u$ along $m$ in the sense of
+  integration by parts against $C_0^\infty(E)$.
+* `TemperedDistribution.MemSobolev.of_iteratedLineDerivOp`: if every iterated directional derivative
+  of order at most $k$ of a tempered distribution is an $L^2$ function, then the distribution lies
+  in $H^k$.
 * `TemperedDistribution.memSobolev_iff_memSobolevMultiIndex`, with its two halves
   `TemperedDistribution.MemSobolev.memSobolevMultiIndex` and
-  `TemperedDistribution.MemSobolev.of_memSobolevMultiIndex`: **the two descriptions of `H^k(ℝ^d)`
-  agree.** An `L²` function lies in the Sobolev space `W^{k,2}(ℝ^d)` of
-  `Numlib/Analysis/Sobolev/MultiIndex.lean`, cut out by the weak derivatives `∂^α` of order
-  `|α| ≤ k`, exactly when it lies in Mathlib's Bessel potential space `H^k(ℝ^d)`.
-* `memSobolevMultiIndex_ofReal_iff`: a real function lies in `W^{k,p}(Ω)` exactly when its
+  `TemperedDistribution.MemSobolev.of_memSobolevMultiIndex`: an $L^2$ function lies in the Sobolev
+  space $W^{k,2}(\mathbb{R}^d)$ of `Numlib.Analysis.Sobolev.MultiIndex`, defined by the weak
+  derivatives $\partial^\alpha$ with $|\alpha| \le k$, if and only if it lies in Mathlib's Bessel
+  potential space $H^k(\mathbb{R}^d)$.
+* `memSobolevMultiIndex_ofReal_iff`: a real function lies in $W^{k,p}(\Omega)$ if and only if its
   complexification does.
+* `fourier_weakDeriv_aeEq`: the Fourier transform of a weak derivative $\partial^m v$ of an $L^2$
+  function $v$ is $(2\pi i)^n \sigma_m \mathcal{F} v$.
+* `exists_continuous_ae_eq_of_integrable_fourier`: an $L^2$ function $v$ with integrable Fourier
+  transform has a continuous representative bounded by $\int |\mathcal{F} v|$.
+
+## Proof outline
+
+One direction of the equivalence of the two derivatives is immediate, because a test function is a
+Schwartz function. For the other, `HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz` multiplies
+a Schwartz function $g$ by the cut-offs $\chi(\cdot/(N+1))$, so that $\chi(\cdot/(N+1)) g$ is a test
+function, and passes to the limit by dominated convergence. The derivatives of the cut-offs are
+bounded uniformly in $N$, because rescaling by a factor at most $1$ does not increase them. The
+resulting bound is integrable against an $L^p$ function, because the derivatives of a Schwartz
+function are bounded and integrable and hence lie in every $L^q$.
+
+The converse `TemperedDistribution.MemSobolev.of_iteratedLineDerivOp` of Mathlib's
+`TemperedDistribution.MemSobolev.lineDerivOp` goes by induction on $k$. It rests on the multiplier
+identity
+$$(1 + |\xi|^2)^{1/2} = (1 + |\xi|^2)^{-1/2} + |\xi|^2 (1 + |\xi|^2)^{-1/2},$$
+in which the second summand is, up to the constant that Mathlib's convention for the Fourier
+transform contributes, the symbol of the Laplacian (`TemperedDistribution.besselPotential_one_eq`).
 
 ## Implementation notes
 
-### Why the derivatives have to be allowed to commute
-
-The two descriptions are indexed differently: `MemSobolevMultiIndex` names a derivative by a
-multi-index `α`, which `multiIndexDirections` reads as the list of basis vectors `b i` repeated
-`α i` times *in increasing order of `i`*, while the induction that builds `H^k` out of `H^0` peels
-one derivative off the front and so produces the basis vectors in an arbitrary order. Matching the
-two needs the invariance of `∂_{m_1} ⋯ ∂_{m_n}` under permutations of the directions. That is
-proved here from scratch: `SchwartzMap.lineDerivOp_comm` is the symmetry of the second derivative
-of a smooth function, `Mathlib`'s `second_derivative_symmetric`, and
-`LineDeriv.listLineDerivOp_congr_perm` propagates it along a `List.Perm` — whose `swap`
-constructor is exactly a transposition of two adjacent directions. Mathlib has the symmetry of
-`iteratedFDeriv` only at order two, or at every order for analytic functions, so the route through
-lists is what makes the general order available for Schwartz functions and hence for tempered
-distributions.
-
-### Scope
-
-Everything here is on the whole space and for the Lebesgue-like measures that support the Schwartz
-theory (`Measure.HasTemperateGrowth`). Nothing is claimed on a proper open subset, where the
-Schwartz class is not available and the comparison has no meaning.
+* The two descriptions of $H^k$ are indexed differently, and matching them needs the derivatives to
+  commute. `MemSobolevMultiIndex` names a derivative by a multi-index $\alpha$, which
+  `multiIndexDirections` reads as the list of basis vectors $b_i$, each repeated $\alpha_i$ times,
+  in increasing order of $i$. The induction that builds $H^k$ out of $H^0$ takes one derivative off
+  the front, and so produces the basis vectors in an arbitrary order. Matching the two needs the
+  invariance of $\partial_{m_1} \cdots \partial_{m_n}$ under permutations of the directions, which
+  is proved here from scratch. `SchwartzMap.lineDerivOp_comm` is the symmetry of the second
+  derivative of a smooth function, Mathlib's `second_derivative_symmetric`, and
+  `LineDeriv.listLineDerivOp_congr_perm` propagates it along a `List.Perm`, whose `swap` constructor
+  is exactly a transposition of two adjacent directions. Mathlib has the symmetry of
+  `iteratedFDeriv` only at order two, or at every order for analytic functions, so the route through
+  lists is what makes the general order available for Schwartz functions and hence for tempered
+  distributions.
+* Everything here is on the whole space and for the measures that support the Schwartz theory
+  (`MeasureTheory.Measure.HasTemperateGrowth`). Nothing is claimed on a proper open subset, where
+  the Schwartz class is not available and the comparison has no meaning.
+* The Bessel potential `TemperedDistribution.besselPotential E F s` is the Fourier multiplier with
+  symbol $(1 + |\xi|^2)^{s/2}$. With Mathlib's convention for the Fourier transform, the symbol of
+  the Laplacian is $-(2\pi)^2 |\xi|^2$, not $-|\xi|^2$.
+* The equivalence of $W^{k,2}(\mathbb{R}^d)$ and $H^k(\mathbb{R}^d)$ is proved for membership only;
+  the norms are not compared.
 -/
 
 open Filter FourierTransform LineDeriv Metric MeasureTheory Set TemperedDistribution
@@ -87,14 +116,15 @@ open Filter FourierTransform LineDeriv Metric MeasureTheory Set TemperedDistribu
 open scoped ContDiff Distributions ENNReal Laplacian Real SchwartzMap Topology
 
 
-/-! ### Preliminaries on `L^p` spaces -/
+/-! ### Preliminaries on $L^p$ spaces -/
 
 namespace MeasureTheory
 
 variable {α G : Type*} [MeasurableSpace α] {μ : Measure α} [NormedAddCommGroup G]
 
-/-- An integrable function that is also bounded lies in every `L^q` with `1 ≤ q`: the pointwise
-bound turns `‖f‖^q` into a constant multiple of `‖f‖`. -/
+/-- Let $f$ be integrable with $\|f(x)\| \le C$ for almost every $x$. Then $f \in L^q$ for every $q$
+with $1 \le q \le \infty$, because the pointwise bound makes $\|f\|^q$ at most a constant
+multiple of $\|f\|$. -/
 theorem Integrable.memLp_of_bound {f : α → G} (hf : Integrable f μ) {C : ℝ}
     (hC : ∀ᵐ x ∂μ, ‖f x‖ ≤ C) {q : ℝ≥0∞} (hq : 1 ≤ q) : MemLp f q μ := by
   rcases eq_or_ne q ∞ with rfl | hq'
@@ -128,21 +158,26 @@ namespace LineDeriv
 
 variable {V X : Type*} [LineDeriv V X X]
 
-/-- The iterated line derivative along a *list* of directions: `∂_{v₁} ⋯ ∂_{vₙ} x` for
-`l = [v₁, …, vₙ]`, the head of the list being the outermost derivative. This is the same operation
-as `LineDeriv.iteratedLineDerivOp`, indexed by a list rather than by a tuple, which is what makes
-`List.Perm` available as an induction principle. -/
+/-- Let $X$ carry line derivatives $\partial_v$ along the directions $v \in V$. The **iterated line
+derivative along a list** $l = [v_1, \dots, v_n]$ of directions is
+$$\partial_l x = \partial_{v_1} \cdots \partial_{v_n} x,$$
+in which the head of the list is the outermost derivative.
+
+This is the operation `LineDeriv.iteratedLineDerivOp` indexed by a list instead of a tuple (see
+`LineDeriv.iteratedLineDerivOp_eq_listLineDerivOp`). The list makes `List.Perm` available as an
+induction principle. -/
 def listLineDerivOp (l : List V) (x : X) : X := l.foldr (fun v y ↦ ∂_{v} y) x
 
-/-- Differentiating along the empty list does nothing. -/
+/-- The iterated line derivative along the empty list is the identity. -/
 @[simp] theorem listLineDerivOp_nil (x : X) : listLineDerivOp ([] : List V) x = x := rfl
 
-/-- The head of the list is the outermost derivative. -/
+/-- The head of the list is the outermost derivative: $\partial_{v :: l} x = \partial_v (\partial_l
+x)$. -/
 @[simp] theorem listLineDerivOp_cons (v : V) (l : List V) (x : X) :
     listLineDerivOp (v :: l) x = ∂_{v} (listLineDerivOp l x) := rfl
 
-/-- Differentiating along a tuple of directions is differentiating along the list of its
-entries. -/
+/-- For a tuple $m \in V^n$, the iterated line derivative $\partial^m x$ is the iterated line
+derivative along the list $[m_0, \dots, m_{n-1}]$ of its entries. -/
 theorem iteratedLineDerivOp_eq_listLineDerivOp {n : ℕ} (m : Fin n → V) (x : X) :
     ∂^{m} x = listLineDerivOp (List.ofFn m) x := by
   induction n with
@@ -153,9 +188,12 @@ variable (hcomm : ∀ (a b : V) (x : X), ∂_{a} (∂_{b} x) = ∂_{b} (∂_{a} 
 
 include hcomm
 
-/-- **Iterated line derivatives along a list only see the list up to a permutation**, as soon as
-any two line derivatives commute. The induction is on `List.Perm`, whose `swap` constructor is
-exactly the transposition of the two outermost derivatives. -/
+/-- Assume that any two line derivatives commute: $\partial_a \partial_b x = \partial_b \partial_a
+x$ for all $a, b \in V$ and $x \in X$. If the list $l_1$ is a permutation of the list $l_2$,
+then $\partial_{l_1} x = \partial_{l_2} x$ for every $x \in X$.
+
+The proof is an induction on `List.Perm`, whose `swap` constructor is exactly the transposition
+of the two outermost derivatives. -/
 theorem listLineDerivOp_congr_perm {l₁ l₂ : List V} (h : l₁.Perm l₂) (x : X) :
     listLineDerivOp l₁ x = listLineDerivOp l₂ x := by
   induction h with
@@ -165,15 +203,16 @@ theorem listLineDerivOp_congr_perm {l₁ l₂ : List V} (h : l₁.Perm l₂) (x 
       listLineDerivOp_cons, hcomm]
   | trans _ _ ih₁ ih₂ => rw [ih₁, ih₂]
 
-/-- **Iterated line derivatives along a tuple only see the tuple up to a permutation**, as soon as
-any two line derivatives commute. -/
+/-- Assume that any two line derivatives commute. If $m_1 \in V^{n_1}$ and $m_2 \in V^{n_2}$ are
+tuples whose lists of entries are permutations of each other, then
+$\partial^{m_1} x = \partial^{m_2} x$ for every $x \in X$. -/
 theorem iteratedLineDerivOp_congr_perm {n₁ n₂ : ℕ} {m₁ : Fin n₁ → V} {m₂ : Fin n₂ → V}
     (h : (List.ofFn m₁).Perm (List.ofFn m₂)) (x : X) : ∂^{m₁} x = ∂^{m₂} x := by
   rw [iteratedLineDerivOp_eq_listLineDerivOp, iteratedLineDerivOp_eq_listLineDerivOp,
     listLineDerivOp_congr_perm hcomm h]
 
-/-- One more line derivative may be taken before or after an iterated one, as soon as any two line
-derivatives commute. -/
+/-- Assume that any two line derivatives commute. Then $\partial_a (\partial^m x) = \partial^m
+(\partial_a x)$ for every tuple $m \in V^n$, every $a \in V$ and every $x \in X$. -/
 theorem lineDerivOp_iteratedLineDerivOp {n : ℕ} (m : Fin n → V) (a : V) (x : X) :
     ∂_{a} (∂^{m} x) = ∂^{m} (∂_{a} x) := by
   induction n with
@@ -187,8 +226,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 namespace SchwartzMap
 
-/-- **Line derivatives of a Schwartz function commute**: this is the symmetry of the second
-derivative of a smooth function, `second_derivative_symmetric`. -/
+/-- Line derivatives of a Schwartz function commute: for a Schwartz function $f : E \to F$ and
+$a, b \in E$, $\partial_a \partial_b f = \partial_b \partial_a f$. This is the symmetry of the
+second derivative of a smooth function, `second_derivative_symmetric`. -/
 theorem lineDerivOp_comm (a b : E) (f : 𝓢(E, F)) : ∂_{a} (∂_{b} f) = ∂_{b} (∂_{a} f) := by
   ext x
   have hd : ∀ y : E, HasFDerivAt (f : E → F) (fderiv ℝ (f : E → F) y) y := fun y ↦ f.hasFDerivAt y
@@ -207,10 +247,14 @@ theorem lineDerivOp_comm (a b : E) (f : 𝓢(E, F)) : ∂_{a} (∂_{b} f) = ∂_
     rfl
   rw [e, e, second_derivative_symmetric hd hd2 a b]
 
-/-- **The iterated line derivative of a Schwartz function is symmetric in its directions.** Through
-`SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv` this says that `iteratedFDeriv ℝ n f x` is a
-symmetric multilinear map for `f` a Schwartz function, which Mathlib has only at order two
-(`ContDiffAt.isSymmSndFDerivAt`) or for analytic functions. -/
+/-- The iterated line derivative of a Schwartz function is symmetric in its directions: if
+$f : E \to F$ is a Schwartz function and $m_1 \in E^{n_1}$ and $m_2 \in E^{n_2}$ are tuples
+whose lists of entries are permutations of each other, then
+$\partial^{m_1} f = \partial^{m_2} f$.
+
+Through `SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv`, this says that the $n$-th
+derivative of a Schwartz function at a point is a symmetric multilinear map. Mathlib has this
+only at order two (`ContDiffAt.isSymmSndFDerivAt`) or for analytic functions. -/
 theorem iteratedLineDerivOp_congr_perm {n₁ n₂ : ℕ} {m₁ : Fin n₁ → E} {m₂ : Fin n₂ → E}
     (h : (List.ofFn m₁).Perm (List.ofFn m₂)) (f : 𝓢(E, F)) : ∂^{m₁} f = ∂^{m₂} f :=
   LineDeriv.iteratedLineDerivOp_congr_perm (fun a b x ↦ lineDerivOp_comm a b x) h f
@@ -222,22 +266,27 @@ namespace TemperedDistribution
 variable [NormedSpace ℂ F]
 
 omit [NormedSpace ℝ F] in
-/-- **Line derivatives of a tempered distribution commute**, because they are defined by
-precomposition with the line derivatives of the Schwartz functions they are tested against, and
-those commute. -/
+/-- Line derivatives of a tempered distribution commute: for a tempered distribution $T$ with values
+in a complex normed space and $a, b \in E$, $\partial_a \partial_b T = \partial_b \partial_a T$.
+The line derivatives of $T$ are defined by composition with the line derivatives of the Schwartz
+functions that $T$ is tested against, and those commute. -/
 theorem lineDerivOp_comm (a b : E) (T : 𝓢'(E, F)) : ∂_{a} (∂_{b} T) = ∂_{b} (∂_{a} T) := by
   ext g
   simp only [lineDerivOp_apply_apply, map_neg, neg_neg, SchwartzMap.lineDerivOp_comm]
 
 omit [NormedSpace ℝ F] in
-/-- **The iterated line derivative of a tempered distribution is symmetric in its directions.** -/
+/-- The iterated line derivative of a tempered distribution is symmetric in its directions: if
+$m_1 \in E^{n_1}$ and $m_2 \in E^{n_2}$ are tuples whose lists of entries are permutations of
+each other, then $\partial^{m_1} T = \partial^{m_2} T$ for every tempered distribution $T$. -/
 theorem iteratedLineDerivOp_congr_perm {n₁ n₂ : ℕ} {m₁ : Fin n₁ → E} {m₂ : Fin n₂ → E}
     (h : (List.ofFn m₁).Perm (List.ofFn m₂)) (T : 𝓢'(E, F)) : ∂^{m₁} T = ∂^{m₂} T :=
   LineDeriv.iteratedLineDerivOp_congr_perm (fun a b x ↦ lineDerivOp_comm a b x) h T
 
 omit [NormedSpace ℝ F] in
-/-- **Integration by parts for a tempered distribution**: the iterated line derivative of `T`
-tested against `g` is `(-1)^n` times `T` tested against the iterated line derivative of `g`. -/
+/-- **Integration by parts for a tempered distribution.** For a tempered distribution $T$, a tuple
+$m \in E^n$ and a complex Schwartz function $g$,
+$$(\partial^m T)(g) = (-1)^n \, T(\partial^m g).$$
+-/
 theorem iteratedLineDerivOp_apply {n : ℕ} (m : Fin n → E) (T : 𝓢'(E, F)) (g : 𝓢(E, ℂ)) :
     (∂^{m} T) g = (-1 : ℂ) ^ n • T (∂^{m} g) := by
   induction n generalizing g with
@@ -259,16 +308,16 @@ section Cutoff
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
-/-- A fixed smooth cut-off on `E`: it is `1` on the closed unit ball and vanishes outside the ball
-of radius `2`. -/
+/-- A fixed smooth cut-off $\chi$ on $E$, equal to $1$ on the closed unit ball and $0$ outside the
+ball of radius $2$. -/
 private noncomputable def bump (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] :
     ContDiffBump (0 : E) := ⟨1, 2, one_pos, one_lt_two⟩
 
-/-- The rescaled cut-offs `x ↦ χ (x / (N + 1))`: they are `1` on the ball of radius `N + 1` and
-vanish outside the ball of radius `2 (N + 1)`. -/
+/-- The rescaled cut-off $x \mapsto \chi(x/(N + 1))$, equal to $1$ on the ball of radius $N + 1$ and
+$0$ outside the ball of radius $2(N + 1)$. -/
 private noncomputable def bumpScaled (N : ℕ) (x : E) : ℝ := bump E (((N : ℝ) + 1)⁻¹ • x)
 
-/-- The fixed cut-off as a Schwartz function, used only to name a bound for its derivatives. -/
+/-- The cut-off $\chi$ as a Schwartz function, used only to name a bound for its derivatives. -/
 private noncomputable def bumpSchwartz (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] : 𝓢(E, ℝ) :=
   (bump E).hasCompactSupport.toSchwartzMap (bump E).contDiff
@@ -283,12 +332,12 @@ private theorem hasCompactSupport_bumpScaled (N : ℕ) :
   have hne : (((N : ℝ) + 1)⁻¹) ≠ 0 := by positivity
   exact (bump E).hasCompactSupport.comp_homeomorph (Homeomorph.smulOfNeZero _ hne)
 
-/-- The rescaled cut-offs are at most `1`. -/
+/-- The rescaled cut-offs are at most $1$. -/
 private theorem bumpScaled_le_one (N : ℕ) (x : E) : bumpScaled N x ≤ 1 := (bump E).le_one
 /-- The rescaled cut-offs are nonnegative. -/
 private theorem bumpScaled_nonneg (N : ℕ) (x : E) : 0 ≤ bumpScaled N x := (bump E).nonneg
 
-/-- Near any fixed point, all but finitely many of the rescaled cut-offs are identically `1`. -/
+/-- Near any fixed point, all but finitely many of the rescaled cut-offs are identically $1$. -/
 private theorem bumpScaled_eventuallyEq_one (x : E) :
     ∀ᶠ N : ℕ in atTop, bumpScaled (E := E) N =ᶠ[𝓝 x] 1 := by
   filter_upwards [Filter.eventually_gt_atTop ⌈‖x‖⌉₊] with N hN
@@ -304,8 +353,8 @@ private theorem bumpScaled_eventuallyEq_one (x : E) :
   exact (bump E).one_of_mem_closedBall
     (by simpa [mem_closedBall, dist_zero_right, bump] using hy.le)
 
-/-- A bound, uniform in `N`, for the derivatives of the rescaled cut-offs: rescaling by a factor
-at most `1` does not increase the norm of a derivative. -/
+/-- The derivatives of the rescaled cut-offs are bounded uniformly in $N$ by the Schwartz seminorms
+of $\chi$, because rescaling by a factor at most $1$ does not increase the norm of a derivative. -/
 private theorem norm_iteratedFDeriv_bumpScaled_le (i N : ℕ) (x : E) :
     ‖iteratedFDeriv ℝ i (bumpScaled (E := E) N) x‖
       ≤ SchwartzMap.seminorm ℝ 0 i (bumpSchwartz E) := by
@@ -329,7 +378,7 @@ private theorem norm_iteratedFDeriv_bumpScaled_le (i N : ℕ) (x : E) :
 
 end Cutoff
 
-/-! ### Pairing Schwartz derivatives with `L^p` functions -/
+/-! ### Pairing Schwartz derivatives with $L^p$ functions -/
 
 section Pairing
 
@@ -338,9 +387,12 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [NormedAddCommGroup F] {μ : Measure E} [μ.HasTemperateGrowth]
   {p : ℝ≥0∞} [hp : Fact (1 ≤ p)]
 
-/-- The derivatives of a Schwartz function pair with every `L^p` function: the norm of the `j`-th
-derivative of a Schwartz function is bounded and integrable, hence in every `L^q`, and Hölder's
-inequality applies. -/
+/-- Let $E$ be finite-dimensional with its Borel σ-algebra, let $\mu$ be a measure with temperate
+growth, and let $p \ge 1$. For a Schwartz function $g : E \to V$, an order $j \in \mathbb{N}$
+and $f \in L^p(\mu)$, the function $x \mapsto \|D^j g(x)\| \, \|f(x)\|$ is integrable.
+
+The norm of the $j$-th derivative of a Schwartz function is bounded and integrable, hence in
+every $L^q$, and Hölder's inequality applies. -/
 theorem SchwartzMap.integrable_norm_iteratedFDeriv_mul_norm {V : Type*} [NormedAddCommGroup V]
     [NormedSpace ℝ V] (g : 𝓢(E, V)) (j : ℕ) {f : E → F} (hf : MemLp f p μ) :
     Integrable (fun x ↦ ‖iteratedFDeriv ℝ j (g : E → V) x‖ * ‖f x‖) μ := by
@@ -368,7 +420,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 
 omit [MeasurableSpace E] [T2Space E] in
-/-- The `n`-th derivative of `c φ` for a real function `φ` and a complex constant `c`. -/
+/-- For a smooth real function $\varphi$ and $c \in \mathbb{C}$, the $n$-th derivative of
+$c \varphi$ is $c$ times the $n$-th derivative of $\varphi$. -/
 private theorem iteratedFDeriv_const_mul_ofReal {φ : E → ℝ} (hs : ContDiff ℝ ∞ φ) (c : ℂ)
     (x : E) (y : Fin n → E) :
     iteratedFDeriv ℝ n (fun z ↦ c * ((φ z : ℝ) : ℂ)) x y
@@ -383,9 +436,9 @@ private theorem iteratedFDeriv_const_mul_ofReal {φ : E → ℝ} (hs : ContDiff 
   simp
 
 omit [OpensMeasurableSpace E] [T2Space E] [CompleteSpace F] in
-/-- **Complex test functions in the weak-derivative identity.** If `w` is the weak derivative of
-`f` along `m` on the whole space and `φ` is a real test function, the integration by parts formula
-holds after multiplying `φ` by a complex constant. -/
+/-- If $w$ is a weak derivative of $f$ along $m$ on the whole space, then the integration by parts
+formula holds against $c \varphi$ for every smooth compactly supported real function $\varphi$
+and every $c \in \mathbb{C}$. -/
 private theorem HasWeakIteratedLineDerivOn.integral_smul_eq_const_mul
     (h : HasWeakIteratedLineDerivOn m f w ⊤ μ) {φ : E → ℝ} (hs : ContDiff ℝ ∞ φ)
     (hc : HasCompactSupport φ) (c : ℂ) :
@@ -411,11 +464,15 @@ private theorem HasWeakIteratedLineDerivOn.integral_smul_eq_const_mul
         exact congrArg _ (integral_congr_ae (Filter.Eventually.of_forall fun x ↦ (e1 _ _).symm))
 
 omit [T2Space E] [CompleteSpace F] in
-/-- **The integration by parts formula of the weak derivative, against complex test functions.**
-If `w` is a weak derivative of `f` along the tuple `m` of directions on the whole space, the
-identity `∫ (∂^m ψ) • f = (-1)^{|m|} ∫ ψ • w` holds for every smooth, compactly supported
-complex-valued `ψ`, and not only for the real-valued test functions of the definition: split `ψ`
-into its real and imaginary parts. -/
+/-- **The integration by parts formula of the weak derivative against complex test functions.** Let
+$E$ be a real normed space whose open sets are measurable, and let $F$ be a complex normed
+space. If $w$ is a weak derivative of $f : E \to F$ along the tuple $m \in E^n$ of directions on
+the whole space $E$, then
+$$\int D^n \psi(x)(m) \, f(x) \, d\mu(x) = (-1)^n \int \psi(x) \, w(x) \, d\mu(x)$$
+for every smooth compactly supported $\psi : E \to \mathbb{C}$, not only for the real test
+functions of the definition.
+
+The proof splits $\psi$ into its real and imaginary parts. -/
 theorem HasWeakIteratedLineDerivOn.integral_smul_eq_complex
     (h : HasWeakIteratedLineDerivOn m f w ⊤ μ) {ψ : E → ℂ} (hs : ContDiff ℝ ∞ ψ)
     (hc : HasCompactSupport ψ) :
@@ -508,13 +565,17 @@ set_option maxHeartbeats 1000000 in
 -- elaborating the bound needs more than the default budget
 omit [CompleteSpace F] in
 /-- **The integration by parts formula of the weak derivative holds against Schwartz functions.**
-If `w` is a weak derivative of `f` along the tuple `m` of directions on the whole space and both
-`f` and `w` lie in `L^p`, then `∫ (∂^m g) • f = (-1)^{|m|} ∫ g • w` for every Schwartz function
-`g`, and not only for the compactly supported test functions of the definition.
+Let $E$ be finite-dimensional with its Borel σ-algebra, let $\mu$ be a measure with temperate
+growth, let $p \ge 1$, and let $F$ be a complex normed space. If $w$ is a weak derivative of
+$f : E \to F$ along the tuple $m \in E^n$ of directions on the whole space and
+$f, w \in L^p(\mu)$, then
+$$\int D^n g(x)(m) \, f(x) \, d\mu(x) = (-1)^n \int g(x) \, w(x) \, d\mu(x)$$
+for every complex Schwartz function $g$, not only for the compactly supported test functions of
+the definition.
 
-The proof multiplies `g` by the cut-offs `χ(·/(N+1))`, so that `χ(·/(N+1)) g` is a test function,
-and passes to the limit by dominated convergence; the derivatives of the cut-offs are bounded
-uniformly in `N` because rescaling by a factor at most `1` does not increase them. -/
+The proof multiplies $g$ by the cut-offs $\chi(\cdot/(N+1))$, so that $\chi(\cdot/(N+1)) g$ is a
+test function, and passes to the limit by dominated convergence. The derivatives of the cut-offs
+are bounded uniformly in $N$, because rescaling by a factor at most $1$ does not increase them. -/
 theorem HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz
     (h : HasWeakIteratedLineDerivOn m f w ⊤ μ) (hf : MemLp f p μ) (hw : MemLp w p μ)
     (g : 𝓢(E, ℂ)) :
@@ -622,7 +683,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   {μ : Measure E} [μ.HasTemperateGrowth] [IsLocallyFiniteMeasure μ]
   {p : ℝ≥0∞} [Fact (1 ≤ p)] {n : ℕ} {m : Fin n → E}
 
-/-- The two signs `(-1)^n`, one a complex scalar and one a real one, cancel. -/
+/-- For $y$ in a complex normed space, $(-1)^n \big((-1)^n y\big) = y$, where the first sign is a
+complex scalar and the second a real one. -/
 private theorem neg_one_pow_smul_neg_one_pow_smul {G : Type*} [NormedAddCommGroup G]
     [NormedSpace ℂ G] (n : ℕ) (y : G) : ((-1 : ℂ) ^ n) • (((-1 : ℝ) ^ n) • y) = y := by
   rw [← Complex.coe_smul, smul_smul]
@@ -631,8 +693,13 @@ private theorem neg_one_pow_smul_neg_one_pow_smul {G : Type*} [NormedAddCommGrou
   norm_num
 
 omit [FiniteDimensional ℝ E] in
-/-- **A distributional derivative of an `L^p` function is a weak derivative.** This is the
-direction of the bridge that is free: a test function is a Schwartz function. -/
+/-- **A distributional derivative of an $L^p$ function is a weak derivative.** Let $E$ have its
+Borel σ-algebra, let $\mu$ be a locally finite measure with temperate growth, let $p \ge 1$, and
+let $F$ be a complex Banach space. For $u, v \in L^p(\mu; F)$ and a tuple $m \in E^n$, if
+$\partial^m T_u = T_v$, then $v$ is a weak derivative of $u$ along $m$ on the whole space.
+
+This direction is immediate, because a test function is a Schwartz function. The distribution
+$T_u$ is the coercion of $u$ to `𝓢'(E, F)`. -/
 theorem MeasureTheory.Lp.hasWeakIteratedLineDerivOn_of_iteratedLineDerivOp_eq
     {u v : Lp F p μ} (h : ∂^{m} (u : 𝓢'(E, F)) = (v : 𝓢'(E, F))) :
     HasWeakIteratedLineDerivOn m (u : E → F) (v : E → F) ⊤ μ where
@@ -672,8 +739,14 @@ theorem MeasureTheory.Lp.hasWeakIteratedLineDerivOn_of_iteratedLineDerivOp_eq
     rw [hres, hres, ← happ, smul_comm, neg_one_pow_smul_neg_one_pow_smul]
 
 omit [IsLocallyFiniteMeasure μ] in
-/-- **A weak derivative of an `L^p` function is a distributional derivative.** This is the
-truncation direction of the bridge. -/
+/-- **A weak derivative of an $L^p$ function is a distributional derivative.** Let $E$ be
+finite-dimensional with its Borel σ-algebra, let $\mu$ be a measure with temperate growth, let
+$p \ge 1$, and let $F$ be a complex Banach space. For $u, v \in L^p(\mu; F)$ and a tuple
+$m \in E^n$, if $v$ is a weak derivative of $u$ along $m$ on the whole space, then
+$\partial^m T_u = T_v$.
+
+This is the direction that needs the truncation argument of
+`HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz`. -/
 theorem MeasureTheory.Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn
     {u v : Lp F p μ} (h : HasWeakIteratedLineDerivOn m (u : E → F) (v : E → F) ⊤ μ) :
     ∂^{m} (u : 𝓢'(E, F)) = (v : 𝓢'(E, F)) := by
@@ -689,10 +762,17 @@ theorem MeasureTheory.Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn
       rw [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv])
   rw [e1, hsch, neg_one_pow_smul_neg_one_pow_smul]
 
-/-- **The bridge between the two readings of the derivative on the whole space.** For `L^p`
-functions `u` and `v`, the distributional derivative `∂^{m} u` of the tempered distribution
-attached to `u`, which is tested against Schwartz functions, equals `v` exactly when `v` is a weak
-derivative of `u` along `m` in the sense of integration by parts against `C_0^∞` test functions. -/
+/-- **The weak and the distributional derivative agree on the whole space.** Let $E$ be
+finite-dimensional with its Borel σ-algebra, let $\mu$ be a locally finite measure with
+temperate growth, let $p \ge 1$, and let $F$ be a complex Banach space. For
+$u, v \in L^p(\mu; F)$ and a tuple $m \in E^n$,
+$$\partial^m T_u = T_v
+  \iff v \text{ is a weak derivative of } u \text{ along } m \text{ on } E.$$
+The left side is the derivative of the tempered distribution $T_u$, tested against Schwartz
+functions. The right side is the weak derivative of Definition 7.1.3 of [han2009theoretical],
+defined by integration by parts against $C_0^\infty(E)$.
+
+The weak derivative is `HasWeakIteratedLineDerivOn` with $\Omega = E$. -/
 theorem MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn
     (u v : Lp F p μ) (m : Fin n → E) :
     ∂^{m} (u : 𝓢'(E, F)) = (v : 𝓢'(E, F)) ↔
@@ -717,9 +797,10 @@ section normed
 
 variable [NormedSpace ℂ F]
 
-/-- The scalar identity behind the splitting of the Bessel potential of order `1`, namely
-`(1 + r) ^ (1 / 2) = (1 + r) ^ (-1 / 2) + r * (1 + r) ^ (-1 / 2)`, which after factoring out
-`(1 + r) ^ (-1 / 2)` on the right is `(1 + r) ^ (1 / 2) = (1 + r) ^ (-1 / 2) * (1 + r)`. -/
+/-- For $r \ge 0$,
+$$(1 + r)^{1/2} = (1 + r)^{-1/2} + r (1 + r)^{-1/2}.$$
+This is the scalar identity behind the splitting of the Bessel potential of order $1$. After
+factoring out $(1 + r)^{-1/2}$ on the right, it says $(1 + r)^{1/2} = (1 + r)^{-1/2} (1 + r)$. -/
 theorem one_add_rpow_half_eq_add {r : ℝ} (hr : 0 ≤ r) :
     (1 + r) ^ (1 / 2 : ℝ) = (1 + r) ^ (-1 / 2 : ℝ) + r * (1 + r) ^ (-1 / 2 : ℝ) := by
   have hp : (0 : ℝ) < 1 + r := by linarith
@@ -729,20 +810,24 @@ theorem one_add_rpow_half_eq_add {r : ℝ} (hr : 0 ≤ r) :
   rw [h, ← Real.rpow_add hp]
   norm_num
 
-/-- The Fourier multiplier operator is additive in its symbol. -/
+/-- The Fourier multiplier operator on tempered distributions is additive in its symbol: for
+functions $g_1, g_2 : E \to \mathbb{C}$ of temperate growth, the multiplier with symbol
+$g_1 + g_2$ is the sum of the multipliers with symbols $g_1$ and $g_2$. -/
 theorem fourierMultiplierCLM_add {g₁ g₂ : E → ℂ} (hg₁ : g₁.HasTemperateGrowth)
     (hg₂ : g₂.HasTemperateGrowth) (f : 𝓢'(E, F)) :
     fourierMultiplierCLM F (g₁ + g₂) f =
       fourierMultiplierCLM F g₁ f + fourierMultiplierCLM F g₂ f := by
   simp [fourierMultiplierCLM_apply, smulLeftCLM_add hg₁ hg₂]
 
-/-- The Bessel potential of order `-1` applied to the Laplacian is the Fourier multiplier with
-symbol `-(2 * π) ^ 2 * (‖x‖ ^ 2 * (1 + ‖x‖ ^ 2) ^ (-1 / 2))`.
+/-- For a tempered distribution $f$, the Bessel potential of order $-1$ of the Laplacian of $f$ is
+$$\mathcal{B}_{-1}(\Delta f) = -(2\pi)^2 \, M_\sigma f,
+  \qquad \sigma(\xi) = |\xi|^2 (1 + |\xi|^2)^{-1/2},$$
+where $\mathcal{B}_s$ is `TemperedDistribution.besselPotential E F s` and $M_\sigma$ is the
+Fourier multiplier with symbol $\sigma$.
 
-The factor `-(2 * π) ^ 2` is the one in
-`TemperedDistribution.laplacian_eq_fourierMultiplierCLM`; it reflects the convention used in
-Mathlib for the Fourier transform, for which the symbol of the Laplacian is
-`-(2 * π) ^ 2 * ‖x‖ ^ 2` rather than `-‖x‖ ^ 2`. -/
+The factor $-(2\pi)^2$ is the one in `TemperedDistribution.laplacian_eq_fourierMultiplierCLM`.
+It reflects the convention that Mathlib uses for the Fourier transform, for which the symbol of
+the Laplacian is $-(2\pi)^2 |\xi|^2$ and not $-|\xi|^2$. -/
 theorem besselPotential_neg_one_laplacian_eq (f : 𝓢'(E, F)) :
     besselPotential E F (-1) (Δ f) = (-(2 * π) ^ 2 : ℂ) •
       fourierMultiplierCLM F
@@ -754,14 +839,13 @@ theorem besselPotential_neg_one_laplacian_eq (f : 𝓢'(E, F)) :
   push_cast
   congr
 
-/-- The Bessel potential of order `1` splits as the Bessel potential of order `-1` minus
-`((2 * π) ^ 2)⁻¹` times the Bessel potential of order `-1` of the Laplacian. The minus sign is
-there because the symbol of `Δ` is `-(2 * π) ^ 2 * ‖x‖ ^ 2`, so that subtracting it adds
-`‖x‖ ^ 2`.
+/-- For a tempered distribution $f$, the Bessel potential of order $1$ splits as
+$$\mathcal{B}_1 f = \mathcal{B}_{-1} f - (2\pi)^{-2} \, \mathcal{B}_{-1}(\Delta f).$$
+The minus sign is there because the symbol of $\Delta$ is $-(2\pi)^2 |\xi|^2$, so that
+subtracting the second term adds $|\xi|^2$ to the symbol.
 
-On the Fourier side this is the identity
-`(1 + ‖x‖ ^ 2) ^ (1 / 2) = (1 + ‖x‖ ^ 2) ^ (-1 / 2) + ‖x‖ ^ 2 * (1 + ‖x‖ ^ 2) ^ (-1 / 2)`
-of `TemperedDistribution.one_add_rpow_half_eq_add`. -/
+On the Fourier side this is the identity $(1 + |\xi|^2)^{1/2} = (1 + |\xi|^2)^{-1/2} + |\xi|^2
+(1 + |\xi|^2)^{-1/2}$ of `TemperedDistribution.one_add_rpow_half_eq_add`. -/
 theorem besselPotential_one_eq (f : 𝓢'(E, F)) :
     besselPotential E F 1 f =
       besselPotential E F (-1) f - (((2 * π) ^ 2 : ℝ)⁻¹ : ℂ) • besselPotential E F (-1) (Δ f) := by
@@ -784,8 +868,8 @@ theorem besselPotential_one_eq (f : 𝓢'(E, F)) :
 
 variable [CompleteSpace F]
 
-/-- A finite sum of Sobolev functions of order `s` and exponent `p` is again a Sobolev function
-of order `s` and exponent `p`. -/
+/-- Let $F$ be a complex Banach space, $s \in \mathbb{R}$ and $p \ge 1$. A finite sum of tempered
+distributions in $H^{s,p}$ lies in $H^{s,p}$. -/
 theorem MemSobolev.sum {s : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {t : Finset ι} {g : ι → 𝓢'(E, F)}
     (h : ∀ i ∈ t, MemSobolev s p (g i)) : MemSobolev s p (∑ i ∈ t, g i) := by
   classical
@@ -801,22 +885,24 @@ section inner
 
 variable [InnerProductSpace ℂ F] [CompleteSpace F]
 
-/-- If all the directional derivatives of `f` along an orthonormal basis lie in `H ^ s`, then
-`Δ f` lies in `H ^ {s - 1}`.
+/-- Let $F$ be a complex Hilbert space, let $b$ be an orthonormal basis of $E$ indexed by a finite
+type, and let $s \in \mathbb{R}$. If $f$ is a tempered distribution with
+$\partial_{b_i} f \in H^s$ for every $i$, then $\Delta f \in H^{s-1}$.
 
 This refines `TemperedDistribution.MemSobolev.laplacian`, which concludes only
-`Δ f ∈ H ^ {s - 2}` from `f ∈ H ^ s`; here the hypothesis is one derivative stronger. -/
+$\Delta f \in H^{s-2}$ from $f \in H^s$; here the hypothesis is one derivative stronger. -/
 theorem MemSobolev.laplacian_of_lineDerivOp [Fintype ι] (b : OrthonormalBasis ι ℝ E) {s : ℝ}
     {f : 𝓢'(E, F)} (hd : ∀ i, MemSobolev s 2 (∂_{b i} f)) : MemSobolev (s - 1) 2 (Δ f) := by
   rw [laplacian_eq_sum b]
   exact MemSobolev.sum fun i _ ↦ (hd i).lineDerivOp
 
-/-- If `f` lies in `H ^ s` and all its directional derivatives along an orthonormal basis lie in
-`H ^ s`, then `f` lies in `H ^ {s + 1}`.
+/-- Let $F$ be a complex Hilbert space, let $b$ be an orthonormal basis of $E$ indexed by a finite
+type, and let $s \in \mathbb{R}$. If a tempered distribution $f$ lies in $H^s$ and
+$\partial_{b_i} f \in H^s$ for every $i$, then $f \in H^{s+1}$.
 
-This is the converse of `TemperedDistribution.MemSobolev.lineDerivOp`, and is the inductive step
-in the identification of `H ^ k` with the space of tempered distributions whose derivatives of
-order at most `k` are square integrable; see W. McLean, *Strongly Elliptic Systems and Boundary
+This is the converse of `TemperedDistribution.MemSobolev.lineDerivOp`. It is the inductive step
+in the identification of $H^k$ with the space of tempered distributions whose derivatives of
+order at most $k$ are square integrable; see W. McLean, *Strongly Elliptic Systems and Boundary
 Integral Equations*, Cambridge University Press, 2000, Chapter 3. -/
 theorem MemSobolev.of_lineDerivOp [Fintype ι] (b : OrthonormalBasis ι ℝ E) {s : ℝ} {f : 𝓢'(E, F)}
     (hf : MemSobolev s 2 f) (hd : ∀ i, MemSobolev s 2 (∂_{b i} f)) : MemSobolev (s + 1) 2 f := by
@@ -831,9 +917,12 @@ theorem MemSobolev.of_lineDerivOp [Fintype ι] (b : OrthonormalBasis ι ℝ E) {
     exact h₁.sub (h₂.smul _)
   rwa [memSobolev_besselPotential_iff, add_comm] at h
 
-/-- **The iterated directional derivative lowers the Sobolev order by the number of derivatives**:
-if `f` lies in `H ^ s` then `∂_{m_1} ⋯ ∂_{m_n} f` lies in `H ^ {s - n}`. This is
-`TemperedDistribution.MemSobolev.lineDerivOp`, iterated. -/
+/-- **The iterated directional derivative lowers the Sobolev order by the number of derivatives.**
+Let $F$ be a complex Hilbert space and $s \in \mathbb{R}$. If a tempered distribution $f$ lies
+in $H^s$, then $\partial^m f \in H^{s-n}$ for every $n \in \mathbb{N}$ and every tuple
+$m \in E^n$.
+
+This is `TemperedDistribution.MemSobolev.lineDerivOp`, iterated. -/
 theorem MemSobolev.iteratedLineDerivOp {s : ℝ} {f : 𝓢'(E, F)} (hf : MemSobolev s 2 f) :
     ∀ (n : ℕ) (m : Fin n → E), MemSobolev (s - n) 2 (∂^{m} f) := by
   intro n
@@ -845,14 +934,14 @@ theorem MemSobolev.iteratedLineDerivOp {s : ℝ} {f : 𝓢'(E, F)} (hf : MemSobo
       show s - ((n + 1 : ℕ) : ℝ) = s - (n : ℝ) - 1 by push_cast; ring]
     exact (ih (Fin.tail m)).lineDerivOp
 
-/-- If every iterated directional derivative of `f` of order at most `k`, taken in arbitrary
-directions, can be represented by a square integrable function, then `f` lies in `H ^ k`.
+/-- Let $F$ be a complex Hilbert space and $k \in \mathbb{N}$. If $f$ is a tempered distribution
+such that, for every $n \le k$ and every tuple $m \in E^n$ of directions, $\partial^m f$ is an
+$L^2$ function (that is, lies in $H^0$), then $f \in H^k$.
 
-Together with `TemperedDistribution.MemSobolev.lineDerivOp`, which gives the converse, this is
-the identification of the Bessel potential space of integer order `k` with the Sobolev space
-defined by square integrability of the weak derivatives of order at most `k`; see W. McLean,
-*Strongly Elliptic Systems and Boundary Integral Equations*, Cambridge University Press, 2000,
-Chapter 3. -/
+Together with `TemperedDistribution.MemSobolev.lineDerivOp`, which gives the converse, this
+identifies the Bessel potential space of integer order $k$ with the Sobolev space defined by the
+square integrability of the weak derivatives of order at most $k$; see W. McLean, *Strongly
+Elliptic Systems and Boundary Integral Equations*, Cambridge University Press, 2000, Chapter 3. -/
 theorem MemSobolev.of_iteratedLineDerivOp {k : ℕ} {f : 𝓢'(E, F)}
     (h : ∀ n ≤ k, ∀ m : Fin n → E, MemSobolev 0 2 (∂^{m} f)) :
     MemSobolev (k : ℝ) 2 f := by
@@ -875,10 +964,11 @@ end TemperedDistribution
 
 end Bessel
 
-/-! ### The complexification of an `L^p` function -/
+/-! ### The complexification of an $L^p$ function -/
 
-/-- A real function lies in `L^p` exactly when its complexification does: the embedding `ℝ → ℂ` is
-a continuous linear map, and so is the real part, which inverts it on real scalars. -/
+/-- Let $f$ be a real function on a measurable space. Then $x \mapsto f(x) \in \mathbb{C}$ lies in
+$L^p$ if and only if $f$ does. The embedding $\mathbb{R} \to \mathbb{C}$ is a continuous linear
+map, and so is the real part, which inverts it on real scalars. -/
 theorem MeasureTheory.memLp_ofReal_iff {X : Type*} [MeasurableSpace X] {f : X → ℝ} {p : ℝ≥0∞}
     {μ : Measure X} : MemLp (fun x ↦ ((f x : ℝ) : ℂ)) p μ ↔ MemLp f p μ :=
   ⟨fun h ↦ by simpa [Function.comp_def] using Complex.reCLM.comp_memLp' h, fun h ↦ h.ofReal⟩
@@ -895,8 +985,12 @@ variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteS
 
 open TemperedDistribution in
 omit [LinearOrder ι] in
-/-- **A tempered distribution whose iterated directional derivatives along the vectors of an
-orthonormal basis, in any order and of order at most `k`, are `L²` functions lies in `H^k`.**
+/-- Let $F$ be a complex Hilbert space, let $b$ be an orthonormal basis of $E$ indexed by a finite
+type $\iota$, and let $k \in \mathbb{N}$. If $f$ is a tempered distribution such that, for every
+$n \le k$ and every $m : \{0, \dots, n-1\} \to \iota$, the derivative $\partial_{b_{m_0}} \cdots
+\partial_{b_{m_{n-1}}} f$ along basis vectors, in any order, is an $L^2$ function, then
+$f \in H^k$.
+
 This is the basis-indexed form of `TemperedDistribution.MemSobolev.of_iteratedLineDerivOp`. -/
 theorem TemperedDistribution.MemSobolev.of_iteratedLineDerivOp_basis (b : OrthonormalBasis ι ℝ E)
     {k : ℕ} {f : 𝓢'(E, F)}
@@ -921,7 +1015,7 @@ theorem TemperedDistribution.MemSobolev.of_iteratedLineDerivOp_basis (b : Orthon
 
 end Transfer
 
-/-! ### The two descriptions of `H^k(ℝ^d)` agree -/
+/-! ### The two descriptions of $H^k(\mathbb{R}^d)$ agree -/
 
 section Agree
 
@@ -931,8 +1025,11 @@ variable {ι E : Type*} [Fintype ι] [LinearOrder ι]
 
 open TemperedDistribution
 
-/-- **An `L²` function whose weak derivatives up to order `k` are `L²` lies in the Bessel
-potential space `H^k`.** -/
+/-- Let $E$ be a finite-dimensional real inner product space with its Borel σ-algebra and Lebesgue
+measure, let $b$ be an orthonormal basis of $E$ indexed by a finite linearly ordered type, let
+$k \in \mathbb{N}$, and let $u \in L^2(E; \mathbb{C})$. If $u$ has weak derivatives
+$\partial^\alpha u \in L^2(E)$ on $E$ for all multi-indices $\alpha$ with $|\alpha| \le k$,
+taken with respect to $b$, then $T_u \in H^k$. -/
 theorem TemperedDistribution.MemSobolev.of_memSobolevMultiIndex (b : OrthonormalBasis ι ℝ E)
     {k : ℕ} {u : Lp ℂ 2 (volume : Measure E)}
     (h : MemSobolevMultiIndex b.toBasis (u : E → ℂ) k 2 ⊤ volume) :
@@ -957,8 +1054,11 @@ theorem TemperedDistribution.MemSobolev.of_memSobolevMultiIndex (b : Orthonormal
     MeasureTheory.Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn hw']
   exact memSobolev_zero_iff.2 ⟨_, rfl⟩
 
-/-- **An `L²` function in the Bessel potential space `H^k` has all its weak derivatives up to
-order `k` in `L²`.** -/
+/-- Let $E$ be a finite-dimensional real inner product space with its Borel σ-algebra and Lebesgue
+measure, let $b$ be an orthonormal basis of $E$ indexed by a finite linearly ordered type, let
+$k \in \mathbb{N}$, and let $u \in L^2(E; \mathbb{C})$. If $T_u \in H^k$, then $u$ has weak
+derivatives $\partial^\alpha u \in L^2(E)$ on $E$ for all multi-indices $\alpha$ with
+$|\alpha| \le k$, taken with respect to $b$. -/
 theorem TemperedDistribution.MemSobolev.memSobolevMultiIndex (b : OrthonormalBasis ι ℝ E) {k : ℕ}
     {u : Lp ℂ 2 (volume : Measure E)} (h : MemSobolev (k : ℝ) 2 (u : 𝓢'(E, ℂ))) :
     MemSobolevMultiIndex b.toBasis (u : E → ℂ) k 2 ⊤ volume := by
@@ -973,12 +1073,17 @@ theorem TemperedDistribution.MemSobolev.memSobolevMultiIndex (b : OrthonormalBas
   simpa only [OrthonormalBasis.coe_toBasis] using
     MeasureTheory.Lp.hasWeakIteratedLineDerivOn_of_iteratedLineDerivOp_eq hwL
 
-/-- **The Sobolev space of integer order on the whole space, cut out by the weak derivatives, is
-Mathlib's Bessel potential space.** An `L²` function has all its weak derivatives `∂^α` of order
-`|α| ≤ k` in `L²(E)` exactly when it lies in `H^k(E)`. This is the statement Atkinson and Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009,
-Theorem 7.4.1 makes when its `H^k(ℝ^d)` is unfolded on both sides; the *norms* are not compared
-here. -/
+/-- **The Sobolev space of integer order on the whole space, defined by the weak derivatives, is
+Mathlib's Bessel potential space.** Let $E$ be a finite-dimensional real inner product space
+with its Borel σ-algebra and Lebesgue measure, let $b$ be an orthonormal basis of $E$ indexed by
+a finite linearly ordered type, let $k \in \mathbb{N}$, and let $u \in L^2(E; \mathbb{C})$. Then
+$T_u \in H^k(E)$ if and only if $u$ has weak derivatives $\partial^\alpha u \in L^2(E)$ for all
+multi-indices $\alpha$ with $|\alpha| \le k$, taken with respect to $b$. This is the statement
+of Theorem 7.4.1 of [han2009theoretical] when its $H^k(\mathbb{R}^d)$ is unfolded on both sides;
+the norms are not compared here.
+
+The weak-derivative side is `MemSobolevMultiIndex b.toBasis u k 2 ⊤ volume`, with $\Omega = E$
+and the Lebesgue measure `volume`. -/
 theorem TemperedDistribution.memSobolev_iff_memSobolevMultiIndex (b : OrthonormalBasis ι ℝ E)
     {k : ℕ} {u : Lp ℂ 2 (volume : Measure E)} :
     MemSobolev (k : ℝ) 2 (u : 𝓢'(E, ℂ)) ↔
@@ -995,9 +1100,13 @@ section Complexify
 variable {ι E : Type*} [Fintype ι] [LinearOrder ι]
   [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
 
-/-- **A real function lies in `W^{k,p}(Ω)` exactly when its complexification does.** Composing
-with the embedding `ℝ → ℂ` and with the real part, both continuous `ℝ`-linear maps, takes each
-statement to the other. -/
+/-- **A real function lies in $W^{k,p}(\Omega)$ if and only if its complexification does.** Let $E$
+be a real normed space whose open sets are measurable, with a basis $b$ indexed by a finite
+linearly ordered type, and let $f : E \to \mathbb{R}$. Then $x \mapsto f(x) \in \mathbb{C}$
+satisfies `MemSobolevMultiIndex` for $b$, $k$, $p$, $\Omega$ and $\mu$ if and only if $f$ does.
+
+The embedding $\mathbb{R} \to \mathbb{C}$ and the real part are continuous $\mathbb{R}$-linear
+maps, and composing with them takes each statement to the other. -/
 theorem memSobolevMultiIndex_ofReal_iff {b : Module.Basis ι ℝ E} {f : E → ℝ} {k : ℕ} {p : ℝ≥0∞}
     {Ω : Opens E} {μ : Measure E} :
     MemSobolevMultiIndex b (fun x ↦ ((f x : ℝ) : ℂ)) k p Ω μ ↔
@@ -1016,16 +1125,16 @@ theorem memSobolevMultiIndex_ofReal_iff {b : Module.Basis ι ℝ E} {f : E → �
 
 end Complexify
 
-/-! ### Multiplying an `L²` function by a symbol -/
+/-! ### Multiplying an $L^2$ function by a symbol -/
 
 section SmulLeft
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E]
 
-/-- Multiplying an `L^2` function by a function of temperate growth is, on tempered distributions,
-`TemperedDistribution.smulLeftCLM`: if `w` agrees almost everywhere with `g · u`, then `w` and
-`g · u` are the same distribution. -/
+/-- Let $g : E \to \mathbb{C}$ have temperate growth, and let $u, w \in L^2(E; \mathbb{C})$. If
+$w = g u$ almost everywhere, then $T_w$ is the product of the tempered distribution $T_u$ with
+$g$, `TemperedDistribution.smulLeftCLM ℂ g`. -/
 theorem toTemperedDistribution_eq_smulLeftCLM {g : E → ℂ} (hg : g.HasTemperateGrowth)
     {u w : Lp ℂ 2 (volume : Measure E)}
     (h : (w : E → ℂ) =ᵐ[volume] fun ξ ↦ g ξ * (u : E → ℂ) ξ) :
@@ -1046,28 +1155,33 @@ section Symbol
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The symbol of the iterated directional derivative along the tuple `m`: `ξ ↦ ∏_j ⟪ξ, m j⟫`, so
-that the Fourier transform of `∂^{m}` is multiplication by `(2πi)^n` times this. -/
+/-- The **symbol** of the iterated directional derivative $\partial^m$ along the tuple $m \in E^n$:
+the function
+$$\sigma_m(\xi) = \prod_{j} \langle \xi, m_j \rangle,$$
+with values in $\mathbb{C}$. The Fourier transform of $\partial^m f$ is $(2\pi i)^n \sigma_m$
+times the Fourier transform of $f$ (`fourier_iteratedLineDerivOp_eq`). -/
 def lineSymbol {n : ℕ} (m : Fin n → E) : E → ℂ := fun ξ ↦ ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ)
 
-/-- The symbol of `∂^{m}` evaluated at a point. -/
+/-- The symbol of $\partial^m$ at $\xi$ is $\sigma_m(\xi) = \prod_j \langle \xi, m_j \rangle$. -/
 @[simp]
 theorem lineSymbol_apply {n : ℕ} (m : Fin n → E) (ξ : E) :
     lineSymbol m ξ = ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ) := rfl
 
-/-- The symbol of `∂^{m}` splits off its first factor. -/
+/-- The symbol of $\partial^m$ for $m \in E^{n+1}$ splits off its first factor: $\sigma_m(\xi) =
+\langle \xi, m_0 \rangle \, \sigma_{m'}(\xi)$, where $m' = (m_1, \dots, m_n)$. -/
 theorem lineSymbol_succ {n : ℕ} (m : Fin (n + 1) → E) :
     lineSymbol m = (fun ξ : E ↦ ((inner ℝ ξ (m 0) : ℝ) : ℂ)) * lineSymbol (Fin.tail m) := by
   funext ξ
   rw [lineSymbol_apply, Pi.mul_apply, lineSymbol_apply, Fin.prod_univ_succ]
   rfl
 
-/-- The symbol of the empty tuple of directions is `1`. -/
+/-- The symbol of the empty tuple of directions is the constant $1$. -/
 theorem lineSymbol_zero (m : Fin 0 → E) : lineSymbol m = fun _ : E ↦ (1 : ℂ) := by
   funext ξ
   simp
 
-/-- The symbol of `∂^{m}` has temperate growth, being a product of linear forms. -/
+/-- The symbol $\sigma_m$ of $\partial^m$ has temperate growth, because it is a product of linear
+forms. -/
 theorem hasTemperateGrowth_lineSymbol {n : ℕ} (m : Fin n → E) :
     (lineSymbol m).HasTemperateGrowth := by
   induction n with
@@ -1083,9 +1197,12 @@ section FourierDeriv
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℂ F]
 
-/-- **The Fourier transform of an iterated directional derivative of a tempered distribution** is
-multiplication by `(2πi)^n ∏_j ⟪ξ, m j⟫`: Mathlib's `TemperedDistribution.fourier_lineDerivOp_eq`
-iterated. -/
+/-- **The Fourier transform of an iterated directional derivative of a tempered distribution.** Let
+$E$ be a finite-dimensional real inner product space with its Borel σ-algebra, and let $F$ be a
+complex normed space. For a tempered distribution $f$ and a tuple $m \in E^n$,
+$$\mathcal{F}(\partial^m f) = (2\pi i)^n \, \sigma_m \, \mathcal{F} f,$$
+where the product with $\sigma_m$ is `TemperedDistribution.smulLeftCLM`. This is Mathlib's
+`TemperedDistribution.fourier_lineDerivOp_eq`, iterated. -/
 theorem fourier_iteratedLineDerivOp_eq {n : ℕ} (m : Fin n → E) (f : 𝓢'(E, F)) :
     𝓕 (∂^{m} f) = ((2 * (Real.pi : ℂ) * Complex.I) ^ n) •
       smulLeftCLM F (lineSymbol m) (𝓕 f) := by
@@ -1101,11 +1218,16 @@ theorem fourier_iteratedLineDerivOp_eq {n : ℕ} (m : Fin n → E) (f : 𝓢'(E,
     congr 1
     ring
 
-/-- **The Fourier transform of a weak derivative on the whole space.** If the `L²` function `w` is
-the weak derivative `∂^{m} v` of the `L²` function `v` — read distributionally, which by
-`MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn` is the weak derivative of
-Definition 7.1.3 — and the product of the symbol with `ℱv` is again `L²`, then
-`ℱw = (2πi)^n (∏_j ⟪ξ, m j⟫) ℱv` almost everywhere. -/
+/-- **The Fourier transform of a weak derivative on the whole space.** Let $E$ be a
+finite-dimensional real inner product space with its Borel σ-algebra and Lebesgue measure, let
+$m \in E^n$, and let $v, w \in L^2(E; \mathbb{C})$ with $\partial^m T_v = T_w$. By
+`MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn`, this says that $w$ is
+the weak derivative $\partial^m v$ of Definition 7.1.3 of [han2009theoretical]. If the function
+$\xi \mapsto \sigma_m(\xi) \, \mathcal{F} v(\xi)$ lies in $L^2$, then
+$$\mathcal{F} w(\xi) = (2\pi i)^n \, \sigma_m(\xi) \, \mathcal{F} v(\xi)$$
+for almost every $\xi$.
+
+Here $\mathcal{F}$ is the Fourier transform on $L^2$. -/
 theorem fourier_weakDeriv_aeEq {n : ℕ} (m : Fin n → E)
     {v w : Lp ℂ 2 (volume : Measure E)}
     (hvw : ∂^{m} (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ)))
@@ -1139,9 +1261,9 @@ section FourierRepresentation
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E]
 
-/-- Two `L^p` functions (for possibly different exponents) defining the same tempered
-distribution agree almost everywhere: they have the same integrals against every compactly
-supported smooth function. -/
+/-- Let $p, q \ge 1$, and let $f \in L^p(E; \mathbb{C})$ and $g \in L^q(E; \mathbb{C})$ for the
+Lebesgue measure. If $T_f = T_g$, then $f = g$ almost everywhere. The two functions have the
+same integrals against every compactly supported smooth function. -/
 theorem ae_eq_of_toTemperedDistribution_eq {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     (f : Lp ℂ p (volume : Measure E)) (g : Lp ℂ q (volume : Measure E))
     (h : (f : 𝓢'(E, ℂ)) = (g : 𝓢'(E, ℂ))) : (f : E → ℂ) =ᵐ[volume] g := by
@@ -1157,11 +1279,13 @@ theorem ae_eq_of_toTemperedDistribution_eq {p q : ℝ≥0∞} [Fact (1 ≤ p)] [
   simp only [Complex.real_smul]
   exact this
 
-/-- **The inverse Fourier integral of an integrable function representing the `L²` Fourier
-transform of `v` is `v`**: if `g ∈ L¹` and `g = ℱv` as tempered distributions, then the pointwise
-inverse Fourier integral `𝓕⁻ g` is almost everywhere equal to `v`. Against a Schwartz test
-function `Φ`, `∫ Φ 𝓕⁻g = ∫ (𝓕⁻Φ) g` (Fubini), which is `(ℱv)(𝓕⁻Φ) = (𝓕⁻ ℱ v)(Φ) = v(Φ)` in the
-sense of distributions. -/
+/-- Let $v \in L^2(E; \mathbb{C})$ and $g \in L^1(E; \mathbb{C})$, and assume that the $L^2$ Fourier
+transform $\mathcal{F} v$ and $g$ are the same tempered distribution. Then the pointwise inverse
+Fourier integral $\mathcal{F}^{-1} g$ equals $v$ almost everywhere.
+
+Against a Schwartz function $\Phi$, Fubini's theorem gives $\int \Phi \, \mathcal{F}^{-1} g =
+\int (\mathcal{F}^{-1} \Phi) \, g$, which is $(\mathcal{F} v)(\mathcal{F}^{-1} \Phi) =
+(\mathcal{F}^{-1} \mathcal{F} v)(\Phi) = v(\Phi)$ in the sense of distributions. -/
 theorem fourierInv_ae_eq_of_toTemperedDistribution_eq (v : Lp ℂ 2 (volume : Measure E))
     (g : Lp ℂ 1 (volume : Measure E))
     (h : ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) = (g : 𝓢'(E, ℂ))) :
@@ -1206,10 +1330,15 @@ theorem fourierInv_ae_eq_of_toTemperedDistribution_eq (v : Lp ℂ 2 (volume : Me
         change Φ x • (v : E → ℂ) x = φ x • (v : E → ℂ) x
         rw [hΦφ, Complex.real_smul, smul_eq_mul]
 
-/-- **The continuous representative of an `L²` function with integrable Fourier transform**,
-bounded by `∫ |ℱv|`: the pointwise inverse Fourier integral of `ℱv`. This is Step 1 of
-[han2009theoretical] Examples 7.4.2 and 7.4.3, `|v(x)| ≤ c ∫ |ℱv(ξ)| dξ` (with `c = 1` for
-Mathlib's normalization of the Fourier transform). -/
+/-- **The continuous representative of an $L^2$ function with integrable Fourier transform.** Let
+$v \in L^2(E; \mathbb{C})$, and assume that its $L^2$ Fourier transform $\mathcal{F} v$ is
+integrable. Then there is a continuous function $v'$ with $v = v'$ almost everywhere and
+$$|v'(x)| \le \int |\mathcal{F} v(\xi)| \, d\xi \quad \text{for every } x \in E.$$
+
+The function $v'$ is the pointwise inverse Fourier integral of $\mathcal{F} v$. This is Step 1
+of Examples 7.4.2 and 7.4.3 of [han2009theoretical],
+$|v(x)| \le c \int |\mathcal{F} v(\xi)| \, d\xi$, with $c = 1$ for Mathlib's normalization of
+the Fourier transform. -/
 theorem exists_continuous_ae_eq_of_integrable_fourier (v : Lp ℂ 2 (volume : Measure E))
     (hF : Integrable ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : E → ℂ)) :
     ∃ v' : E → ℂ, Continuous v' ∧ (v : E → ℂ) =ᵐ[volume] v' ∧

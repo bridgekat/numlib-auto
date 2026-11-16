@@ -7,31 +7,41 @@ import Numlib.Optimization.Optimality.Approximate
 /-!
 # Approximate evaluation of criticality measures and the termination test
 
-High-order methods ([cartis2022evaluation], §12.1.6, Step 1 of Algorithms 12.2.1 and 12.2.2,
-Step 1 of Algorithm 14.1.1 and of the Chapter 13 methods) never compute the measure
-`φ = decrementMeasure Δ δ S` (a global optimization problem). They compute a displacement
-`d ∈ B_δ ∩ S` with `ς φ ≤ Δ d` for a fixed `ς ∈ (0, 1]` (an *approximate optimality
-displacement*, (12.1.32)) and compare `Δ d` with `ς ε_j δ_j^j / j!`. Passing the comparison at all
-orders `j ≤ q` certifies the `(ε, δ)`-approximate optimality (12.1.25) / (14.1.9); failing it at
-some order certifies a large measure there.
+Let $\Delta : E \to \mathbb{R}$ be a decrement, let $\delta \ge 0$ be a radius and let
+$S \subseteq E$ be a set of feasible displacements. The criticality measure is $\phi = \sup
+\{\Delta(d) : \|d\| \le \delta,\ d \in S\}$, which is `Optimization.decrementMeasure Δ δ S`.
+Computing $\phi$ is a global optimization problem, so the high-order methods of
+[cartis2022evaluation] (§12.1.6, Step 1 of Algorithms 12.2.1, 12.2.2 and 14.1.1, and the methods of
+Chapter 13) never compute it. Instead they compute an **approximate optimality displacement**
+(12.1.32): a feasible $d$ with $\|d\| \le \delta$ and $\varsigma \phi \le \Delta(d)$, for a fixed
+$\varsigma \in (0, 1]$. At each order $j \le q$ they compare $\Delta_j(d_j)$ with
+$\varsigma \varepsilon_j \delta_j^j / j!$. If the comparison passes at all orders, the point is
+$(\varepsilon, \delta)$-approximately optimal in the sense of (12.1.25) and (14.1.9). If it fails at
+some order, the measure at that order is large.
 
-Everything is stated for an arbitrary decrement `Δ : E → ℝ`, so that exact Taylor data
-(`Δ = D.taylorDecrement j`), inexact data (Chapter 13), model data at a trial step and the
-composite decrements of Chapter 14 share one interface.
+All results hold for an arbitrary decrement $\Delta$. Exact Taylor data ($\Delta = \Delta T_j$, the
+decrement `D.taylorDecrement j`), the inexact data of Chapter 13, model data at a trial step, and
+the composite decrements of Chapter 14 therefore use the same definitions.
 
 ## Main definitions
 
-* `Optimization.IsApproxMeasureStep Δ δ S ς d`: `d ∈ B_δ ∩ S` and `ς φ ≤ Δ d`;
-* `Optimization.MeasureTestPasses Δ q ς ε δ d`: `Δ_j(d_j) ≤ ς ε_j δ_j^j / j!` for `1 ≤ j ≤ q`.
+* `Optimization.IsApproxMeasureStep`: $d$ is feasible, $\|d\| \le \delta$, and
+  $\varsigma \phi \le \Delta(d)$.
+* `Optimization.MeasureTestPasses`: $\Delta_j(d_j) \le \varsigma \varepsilon_j \delta_j^j / j!$ for
+  $1 \le j \le q$.
 
 ## Main results
 
-* `Optimization.exists_isApproxMeasureStep`: existence in finite dimension (with refinements);
-* `Optimization.IsApproxMeasureStep.mono_set`: restriction to a smaller feasible set;
-* `Optimization.isEpsDeltaApprox_of_measureTestPasses`: passing the test certifies the bounds on
-  the measures, `Optimization.MeasureTestPasses.isEpsDeltaApprox` for Taylor data;
-* `Optimization.exists_lt_of_not_measureTestPasses`: failing the test gives a
-  (least) order with a large decrement.
+* `Optimization.exists_isApproxMeasureStep`: in finite dimension, approximate optimality
+  displacements exist.
+* `Optimization.IsApproxMeasureStep.mono_set`: an approximate optimality displacement over a set of
+  displacements is one over every smaller set that contains it.
+* `Optimization.isEpsDeltaApprox_of_measureTestPasses`: passing the test bounds the measures by
+  $\varepsilon_j \delta_j^j / j!$.
+* `Optimization.MeasureTestPasses.isEpsDeltaApprox`: for Taylor data, passing the test gives
+  $(\varepsilon, \delta)$-approximate optimality.
+* `Optimization.exists_lt_of_not_measureTestPasses`: if the test fails, there is a least order at
+  which it fails.
 -/
 
 open Set Metric Finset
@@ -41,44 +51,62 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E]
 
+/-! ### Approximate optimality displacements -/
+
 section ApproxStep
 
 variable {Δ : E → ℝ} {δ ς : ℝ} {S : Set E} {d : E}
 
-/-- An *approximate optimality displacement* ([cartis2022evaluation], (12.1.32); the `d_{k,j}` of
-(12.2.1), (12.2.26), (13.1.13), (13.1.52), (14.1.10)): a feasible displacement `d ∈ B_δ ∩ S` whose
-decrease is at least the fraction `ς` of the measure `decrementMeasure Δ δ S`. -/
+/-- An **approximate optimality displacement** of (12.1.32) of [cartis2022evaluation]. Let
+$\Delta : E \to \mathbb{R}$, $\delta, \varsigma \in \mathbb{R}$ and $S \subseteq E$. A
+displacement $d \in E$ is an approximate optimality displacement if
+$$\|d\| \le \delta, \qquad d \in S, \qquad \varsigma \phi \le \Delta(d),$$
+where $\phi = \sup \{\Delta(e) : \|e\| \le \delta,\ e \in S\}$ is the criticality measure.
+
+These displacements are the $d_{k,j}$ of (12.2.1), (12.2.26), (13.1.13), (13.1.52) and (14.1.10)
+of the source. The measure is `Optimization.decrementMeasure Δ δ S`, a supremum `sSup` in
+$\mathbb{R}$, which has the value $0$ when the set of decreases is empty or not bounded above. -/
 def IsApproxMeasureStep (Δ : E → ℝ) (δ : ℝ) (S : Set E) (ς : ℝ) (d : E) : Prop :=
   d ∈ closedBall 0 δ ∩ S ∧ ς * decrementMeasure Δ δ S ≤ Δ d
 
-/-- Unfolding lemma for `IsApproxMeasureStep`. -/
+/-- The displacement $d$ is an approximate optimality displacement if and only if
+$\|d\| \le \delta$, $d \in S$ and $\varsigma \phi \le \Delta(d)$. -/
 theorem isApproxMeasureStep_iff :
     IsApproxMeasureStep Δ δ S ς d ↔ d ∈ closedBall 0 δ ∩ S ∧ ς * decrementMeasure Δ δ S ≤ Δ d :=
   Iff.rfl
 
-/-- An approximate optimality displacement has length at most `δ`. -/
+/-- An approximate optimality displacement $d$ for the radius $\delta$ satisfies $\|d\| \le \delta$.
+-/
 theorem IsApproxMeasureStep.norm_le (h : IsApproxMeasureStep Δ δ S ς d) : ‖d‖ ≤ δ :=
   mem_closedBall_zero_iff.1 h.1.1
 
-/-- An approximate optimality displacement is feasible. -/
+/-- An approximate optimality displacement for the set $S$ lies in $S$. -/
 theorem IsApproxMeasureStep.mem (h : IsApproxMeasureStep Δ δ S ς d) : d ∈ S := h.1.2
 
-/-- An approximate optimality displacement over a set `S'` of displacements (with decreases
-bounded above on `B_δ ∩ S'`) is one over every smaller set `S ⊆ S'` containing it. -/
+/-- Let $S \subseteq S' \subseteq E$, let $\varsigma \ge 0$, and assume that the decreases
+$\Delta(e)$ over $\|e\| \le \delta$, $e \in S'$ are bounded above. If $d$ is an approximate
+optimality displacement for $\Delta$, $\delta$, $S'$ and $\varsigma$, and $d \in S$, then $d$ is
+an approximate optimality displacement for $\Delta$, $\delta$, $S$ and $\varsigma$.
+
+The measure over $S$ is at most the measure over $S'$, because the decreases are bounded above
+on the larger set. -/
 theorem IsApproxMeasureStep.mono_set {S' : Set E} (h : IsApproxMeasureStep Δ δ S' ς d)
     (hς : 0 ≤ ς) (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S'))) (hSS' : S ⊆ S') (hd : d ∈ S) :
     IsApproxMeasureStep Δ δ S ς d :=
   ⟨⟨h.1.1, hd⟩, (mul_le_mul_of_nonneg_left (decrementMeasure_mono_set ⟨d, h.1.1, hd⟩ hbdd hSS')
     hς).trans h.2⟩
 
-/-- The decrease along an approximate optimality displacement is at most the measure. -/
+/-- If the decreases $\Delta(e)$ over $\|e\| \le \delta$, $e \in S$ are bounded above, then an
+approximate optimality displacement $d$ satisfies $\Delta(d) \le \phi$. -/
 theorem IsApproxMeasureStep.le_decrementMeasure (h : IsApproxMeasureStep Δ δ S ς d)
     (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S))) : Δ d ≤ decrementMeasure Δ δ S :=
   Optimization.le_decrementMeasure hbdd h.1
 
-/-- Without compactness: an approximate optimality displacement exists for `ς < 1` as soon as the
-decreases are bounded above, `0` is feasible and `Δ 0 = 0` (an approximate supremum, or `d = 0`
-when the measure vanishes). -/
+/-- Existence without compactness. Assume that the decreases $\Delta(e)$ over $\|e\| \le \delta$,
+$e \in S$ are bounded above, that $0 \in S$, $\delta \ge 0$, $\Delta(0) = 0$ and
+$\varsigma < 1$. Then an approximate optimality displacement exists.
+
+The displacement is a near-maximizer of $\Delta$, or $d = 0$ when $\phi = 0$. -/
 theorem exists_isApproxMeasureStep_of_lt_one (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S)))
     (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) (hΔ0 : Δ 0 = 0) (hς : ς < 1) :
     ∃ d, IsApproxMeasureStep Δ δ S ς d := by
@@ -91,11 +119,18 @@ theorem exists_isApproxMeasureStep_of_lt_one (hbdd : BddAbove (Δ '' (closedBall
         rw [← decrementMeasure_def]; nlinarith)
     exact ⟨d, hd, hlt.le⟩
 
+/-! ### Existence in finite dimension -/
+
 variable [NormedSpace ℝ E]
 
-/-- **Existence of approximate optimality displacements** ([cartis2022evaluation], §12.1.6). In
-finite dimension, with `S` closed, `0 ∈ S`, `δ ≥ 0`, `ς ≤ 1` and `Δ` continuous on the feasible
-ball with `Δ 0 = 0`, an exact maximizer is such a displacement. -/
+/-- **Existence of approximate optimality displacements**, as in §12.1.6 of [cartis2022evaluation].
+Let $E$ be a finite-dimensional real normed space, let $S \subseteq E$ be closed with $0 \in S$,
+let $\delta \ge 0$ and $\varsigma \le 1$, and let $\Delta$ be continuous on
+$\{e \in S : \|e\| \le \delta\}$ with $\Delta(0) = 0$. Then there is an approximate optimality
+displacement for $\Delta$, $\delta$, $S$ and $\varsigma$.
+
+The displacement is an exact maximizer of $\Delta$ on the compact set
+$\{e \in S : \|e\| \le \delta\}$. -/
 theorem exists_isApproxMeasureStep [FiniteDimensional ℝ E] (hS : IsClosed S) (h0 : (0 : E) ∈ S)
     (hδ : 0 ≤ δ) (hΔ : ContinuousOn Δ (closedBall 0 δ ∩ S)) (hΔ0 : Δ 0 = 0) (hς : ς ≤ 1) :
     ∃ d, IsApproxMeasureStep Δ δ S ς d := by
@@ -105,9 +140,13 @@ theorem exists_isApproxMeasureStep [FiniteDimensional ℝ E] (hS : IsClosed S) (
   have hM := decrementMeasure_nonneg (hK.bddAbove_image hΔ) h0 hδ hΔ0
   exact ⟨d, hd, by rw [hdM]; exact mul_le_of_le_one_left hM hς⟩
 
-/-- Refinement of `exists_isApproxMeasureStep` for feasible sets star-shaped about `0`: for
-`ς ∈ [0, 1]` there is a displacement with `Δ d = ς φ` exactly (used by the sharpness
-examples). -/
+/-- A refinement of `Optimization.exists_isApproxMeasureStep` for a set $S$ that is star-shaped
+about $0$. Let $E$ be finite-dimensional, let $S$ be closed and star-shaped about $0$ with
+$0 \in S$, let $\delta \ge 0$ and $\varsigma \in [0, 1]$, and let $\Delta$ be continuous on
+$\{e \in S : \|e\| \le \delta\}$ with $\Delta(0) = 0$. Then there is an approximate optimality
+displacement $d$ with $\Delta(d) = \varsigma \phi$ exactly.
+
+The sharpness examples use this form. -/
 theorem exists_isApproxMeasureStep_eq [FiniteDimensional ℝ E] (hS : IsClosed S)
     (h0 : (0 : E) ∈ S) (hstar : StarConvex ℝ 0 S) (hδ : 0 ≤ δ)
     (hΔ : ContinuousOn Δ (closedBall 0 δ ∩ S)) (hΔ0 : Δ 0 = 0) (hς : ς ∈ Icc (0 : ℝ) 1) :
@@ -115,8 +154,10 @@ theorem exists_isApproxMeasureStep_eq [FiniteDimensional ℝ E] (hS : IsClosed S
   obtain ⟨d, hd, hdeq⟩ := exists_decrementMeasure_mul_eq hS h0 hstar hδ hΔ hΔ0 hς
   exact ⟨d, ⟨hd, hdeq.ge⟩, hdeq⟩
 
-/-- Existence of approximate optimality displacements for Taylor decrements (finite dimension,
-`S` closed, `0 ∈ S`). -/
+/-- Let $E$ be finite-dimensional, let $D$ be a formal multilinear series on $E$, let
+$j \in \mathbb{N}$, let $S$ be closed with $0 \in S$, and let $\delta \ge 0$ and
+$\varsigma \le 1$. Then there is an approximate optimality displacement for the Taylor decrement
+$\Delta T_j$ of $D$, the radius $\delta$, the set $S$ and the fraction $\varsigma$. -/
 theorem exists_isApproxMeasureStep_taylorDecrement [FiniteDimensional ℝ E]
     (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (hS : IsClosed S) (h0 : (0 : E) ∈ S)
     (hδ : 0 ≤ δ) (hς : ς ≤ 1) : ∃ d, IsApproxMeasureStep (D.taylorDecrement j) δ S ς d :=
@@ -125,27 +166,40 @@ theorem exists_isApproxMeasureStep_taylorDecrement [FiniteDimensional ℝ E]
 
 end ApproxStep
 
+/-! ### The termination test -/
+
 section Test
 
 variable {Δ : ℕ → E → ℝ} {q : ℕ} {ς : ℝ} {ε δ : ℕ → ℝ} {d : ℕ → E} {S : Set E}
 
-/-- The Step-1 termination test of the high-order methods ([cartis2022evaluation], Algorithms
-12.2.1 and 12.2.2, Step 1; (14.1.10)): at every order `1 ≤ j ≤ q`, the decrease along the
-displacement `d j` is at most `ς ε_j δ_j^j / j!`. Here `Δ j` is the order-`j` decrement, e.g.
-`fun j => D.taylorDecrement j`. (The Chapter 13 tests use `ς / 2` in place of `ς`.) -/
+/-- The **termination test** of Step 1 of the high-order methods of [cartis2022evaluation]
+(Algorithms 12.2.1 and 12.2.2, Step 1, and (14.1.10)). Let $\Delta_j : E \to \mathbb{R}$ be the
+decrement of order $j$, let $d_j \in E$ be displacements, and let $\varsigma \in \mathbb{R}$ and
+$\varepsilon_j, \delta_j \in \mathbb{R}$. The test **passes** if
+$$\Delta_j(d_j) \le \frac{\varsigma \varepsilon_j \delta_j^j}{j!} \qquad \text{for } 1 \le j \le
+  q.$$
+
+For exact Taylor data, $\Delta_j$ is `fun j => D.taylorDecrement j`. The tests of Chapter 13 use
+$\varsigma / 2$ in place of $\varsigma$. -/
 def MeasureTestPasses (Δ : ℕ → E → ℝ) (q : ℕ) (ς : ℝ) (ε δ : ℕ → ℝ) (d : ℕ → E) : Prop :=
   ∀ j ∈ Finset.Icc 1 q, Δ j (d j) ≤ ς * ε j * δ j ^ j / j !
 
 omit [NormedAddCommGroup E] in
-/-- Unfolding lemma for `MeasureTestPasses`. -/
+/-- The test passes if and only if $\Delta_j(d_j) \le \varsigma \varepsilon_j \delta_j^j / j!$ for
+$1 \le j \le q$. -/
 theorem measureTestPasses_iff :
     MeasureTestPasses Δ q ς ε δ d ↔ ∀ j ∈ Finset.Icc 1 q, Δ j (d j) ≤ ς * ε j * δ j ^ j / j ! :=
   Iff.rfl
 
-/-- **Certification** ([cartis2022evaluation], §12.1.6, the inequalities after (12.1.32)). If
-`0 < ς`, every `d j` is an approximate optimality displacement for `Δ j` and the test passes, then
-`decrementMeasure (Δ j) (δ j) S ≤ ε_j δ_j^j / j!` for `1 ≤ j ≤ q`: divide
-`ς φ_j ≤ Δ_j(d_j) ≤ ς ε_j δ_j^j / j!` by `ς`. -/
+/-- **Certification** by the test, as in the inequalities after (12.1.32) of [cartis2022evaluation].
+Let $\varsigma > 0$. Assume that for $1 \le j \le q$ the displacement $d_j$ is an approximate
+optimality displacement for $\Delta_j$, the radius $\delta_j$, the set $S$ and the fraction
+$\varsigma$, and that the termination test passes. Then for $1 \le j \le q$ the measure
+$\phi_j = \sup \{\Delta_j(e) : \|e\| \le \delta_j,\ e \in S\}$ satisfies
+$$\phi_j \le \frac{\varepsilon_j \delta_j^j}{j!}.$$
+
+The proof divides $\varsigma \phi_j \le \Delta_j(d_j) \le \varsigma \varepsilon_j \delta_j^j /
+j!$ by $\varsigma$. -/
 theorem isEpsDeltaApprox_of_measureTestPasses (hς : 0 < ς)
     (hd : ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep (Δ j) (δ j) S ς (d j))
     (htest : MeasureTestPasses Δ q ς ε δ d) :
@@ -157,8 +211,12 @@ theorem isEpsDeltaApprox_of_measureTestPasses (hς : 0 < ς)
 
 variable [NormedSpace ℝ E]
 
-/-- Certification for Taylor data: passing the test with approximate optimality displacements
-certifies `IsEpsDeltaApprox D S q ε δ` ((12.1.25)). -/
+/-- Certification for Taylor data. Let $D$ be a formal multilinear series and let $\varsigma > 0$.
+Assume that for $1 \le j \le q$ the displacement $d_j$ is an approximate optimality displacement
+for the Taylor decrement $\Delta T_j$ of $D$, the radius $\delta_j$, the set $S$ and the
+fraction $\varsigma$, and that the termination test passes for these decrements. Then $D$ is
+$(\varepsilon, \delta)$-approximately optimal on $S$ in the sense of (12.1.25) of
+[cartis2022evaluation], that is, `Optimization.IsEpsDeltaApprox D S q ε δ` holds. -/
 theorem MeasureTestPasses.isEpsDeltaApprox {D : FormalMultilinearSeries ℝ E ℝ} (hς : 0 < ς)
     (hd : ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep (D.taylorDecrement j) (δ j) S ς (d j))
     (htest : MeasureTestPasses (fun j => D.taylorDecrement j) q ς ε δ d) :
@@ -167,14 +225,20 @@ theorem MeasureTestPasses.isEpsDeltaApprox {D : FormalMultilinearSeries ℝ E �
 
 end Test
 
+/-! ### Failure of the test -/
+
 section Failure
 
 variable {Δ : ℕ → E → ℝ} {q : ℕ} {ς : ℝ} {ε δ : ℕ → ℝ} {d : ℕ → E} {S : Set E}
 
 omit [NormedAddCommGroup E] in
-/-- **Failure of the test** ([cartis2022evaluation], Algorithm 12.2.1 Step 1.2). If the test fails,
-there is a *least* order `j ∈ [1, q]` at which `ς ε_j δ_j^j / j! < Δ_j(d_j)`; all lower orders
-pass. (This least order is the book's `j_k`.) -/
+/-- **Failure of the test**, as in Step 1.2 of Algorithm 12.2.1 of [cartis2022evaluation]. If the
+termination test does not pass, then there is a least order $j$ with $1 \le j \le q$ at which it
+fails:
+$$\frac{\varsigma \varepsilon_j \delta_j^j}{j!} < \Delta_j(d_j), \qquad \Delta_i(d_i) \le
+  \frac{\varsigma \varepsilon_i \delta_i^i}{i!} \quad \text{for } 1 \le i < j.$$
+
+This least order is the $j_k$ of the source. -/
 theorem exists_lt_of_not_measureTestPasses
     (h : ¬ MeasureTestPasses Δ q ς ε δ d) :
     ∃ j ∈ Finset.Icc 1 q, ς * ε j * δ j ^ j / j ! < Δ j (d j) ∧
@@ -186,16 +250,19 @@ theorem exists_lt_of_not_measureTestPasses
   by_contra hc
   exact Nat.find_min hex hlt ⟨hi, not_le.1 hc⟩
 
-/-- A large decrease at a feasible displacement is a large measure: if
-`ς ε_j δ_j^j / j! < Δ_j(d_j)` and `d_j ∈ B_{δ_j} ∩ S` (decreases bounded above) then
-`ς ε_j δ_j^j / j! < decrementMeasure (Δ j) (δ j) S`. -/
+/-- A large decrease at a feasible displacement gives a large measure. Assume that the decreases
+$\Delta_j(e)$ over $\|e\| \le \delta_j$, $e \in S$ are bounded above, that
+$\|d_j\| \le \delta_j$ and $d_j \in S$, and that $\varsigma \varepsilon_j \delta_j^j / j! <
+\Delta_j(d_j)$. Then $\varsigma \varepsilon_j \delta_j^j / j! < \phi_j$. -/
 theorem lt_decrementMeasure_of_lt {j : ℕ} (hbdd : BddAbove (Δ j '' (closedBall 0 (δ j) ∩ S)))
     (hd : d j ∈ closedBall 0 (δ j) ∩ S) (hlt : ς * ε j * δ j ^ j / j ! < Δ j (d j)) :
     ς * ε j * δ j ^ j / j ! < decrementMeasure (Δ j) (δ j) S :=
   hlt.trans_le (le_decrementMeasure hbdd hd)
 
-/-- Failure of the test with feasible displacements: some order `j ∈ [1, q]` has a large measure,
-`ς ε_j δ_j^j / j! < decrementMeasure (Δ j) (δ j) S`. -/
+/-- Assume that the termination test does not pass, and that for $1 \le j \le q$ the decreases
+$\Delta_j(e)$ over $\|e\| \le \delta_j$, $e \in S$ are bounded above, $\|d_j\| \le \delta_j$ and
+$d_j \in S$. Then some order $j$ with $1 \le j \le q$ has a large measure: $\varsigma
+\varepsilon_j \delta_j^j / j! < \phi_j$. -/
 theorem exists_lt_decrementMeasure_of_not_measureTestPasses
     (h : ¬ MeasureTestPasses Δ q ς ε δ d)
     (hbdd : ∀ j ∈ Finset.Icc 1 q, BddAbove (Δ j '' (closedBall 0 (δ j) ∩ S)))

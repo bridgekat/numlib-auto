@@ -11,54 +11,55 @@ import Numlib.Approximation.TrapezoidExactness
 /-!
 # A product quadrature rule on the unit disk
 
-Gauss–Legendre in the radius and the periodic trapezoidal rule in the angle give a product rule on
-the closed unit disk of the plane,
+Let $\mathbb{B}_2 = \{(x, y) : x^2 + y^2 \le 1\}$ be the closed unit disk of the plane. The
+Gauss–Legendre rule in the radius and the periodic trapezoidal rule in the angle give the product
+rule
+$$\int_{\mathbb{B}_2} f \approx \frac{2\pi}{2n + 1} \sum_{l=0}^{n} \sum_{m=0}^{2n} \omega_l r_l \,
+  f(r_l \cos \theta_m, r_l \sin \theta_m), \qquad \theta_m = \frac{2\pi m}{2n + 1},$$
+where $(r_l, \omega_l)$ is the $(n + 1)$-point Gauss–Legendre rule on $[0, 1]$. This is the rule
+(14.3.1) of [han2009theoretical]. Its nodes lie in the open disk, its weights are positive, and it
+is exact for every polynomial of total degree at most $2n$. This exactness is what
+hyperinterpolation of degree $n$ needs. The source claims one degree more; see the implementation
+notes.
 
-`∫_{𝔹₂} f ≈ (2 π / (2 n + 1)) ∑_{l ≤ n} ∑_{m ≤ 2 n} ω_l r_l f (r_l cos θ_m, r_l sin θ_m)`,
-`θ_m = 2 π m / (2 n + 1)`,
-
-with `(r_l, ω_l)` the `(n + 1)`-point Gauss–Legendre rule on `[0, 1]`. Its nodes lie in the open
-disk, its weights are positive, and it is exact on every polynomial of total degree at most `2 n` —
-which is what `Approximation.IsExactOn` names, and what hyperinterpolation of degree `n` consumes.
-
-The proof is the change of variables to polar coordinates, `setIntegral_diskProd_eq_polar`, after
-which a monomial `x^a y^b` factors as `r^{a + b + 1} cos^a θ sin^b θ` and the two factors are
-handled by the two one-dimensional rules: Gauss–Legendre reproduces `∫_0^1 r^{a+b+1}` because
-`a + b + 1 ≤ 2 n + 1`, and the trapezoidal rule reproduces `∫_0^{2π} cos^a θ sin^b θ` because
-`a + b < 2 n + 1`, by `Quadrature.trapezoid_eq_integral_cos_pow_mul_sin_pow`.
+The proof changes to polar coordinates. A monomial $x^a y^b$ becomes
+$r^{a+b+1} \cos^a \theta \sin^b \theta$, and each one-dimensional rule handles one factor. The
+Gauss–Legendre rule integrates $r^{a+b+1}$ on $[0, 1]$ exactly because $a + b + 1 \le 2n + 1$. The
+trapezoidal rule integrates $\cos^a \theta \sin^b \theta$ on $[0, 2\pi]$ exactly because
+$a + b < 2n + 1$ (`Quadrature.trapezoid_eq_integral_cos_pow_mul_sin_pow`).
 
 ## Main definitions
 
-* `Quadrature.diskProd` and `Quadrature.unitDisk` — the closed unit disk, as a subset of `ℝ × ℝ`
-  and of `Fin 2 → ℝ`.
-* `Quadrature.unitIntervalMeasure` — Lebesgue measure on `(0, 1)`, the weight of the radial rule.
+* `Quadrature.diskProd` and `Quadrature.unitDisk`: the closed unit disk, as a subset of `ℝ × ℝ` and
+  of `Fin 2 → ℝ`.
+* `Quadrature.unitIntervalMeasure`: Lebesgue measure on $(0, 1)$, the weight of the radial rule.
 
 ## Main results
 
-* `Quadrature.setIntegral_diskProd_eq_polar` — the polar change of variables on the disk.
-* `Quadrature.setIntegral_diskProd_eq_chords` — the Radon, or chord, decomposition of the disk
-  integral into the vertical chords `|s| ≤ √(1 − t²)`, and
-  `Quadrature.setIntegral_diskProd_rotate`, the invariance of the disk integral under a rotation
-  of the plane. Neither is used by the quadrature rule below; they are the disk geometry that a
-  ridge-polynomial computation needs, and they sit here beside the polar change of variables.
-* `Quadrature.isMvWeight_unitDisk` — Lebesgue measure on the disk is a polynomial weight.
-* `Quadrature.node_mem_Ioo` — the nodes of a positive-weight rule exact to degree `2 m − 1` on
-  `(0, 1)` lie in `(0, 1)`. This is what makes the product weights positive.
-* `Quadrature.exists_diskRule` — the rule itself, with positive weights, nodes in the open disk,
-  and exactness on the polynomials of total degree at most `2 n`.
+* `Quadrature.setIntegral_diskProd_eq_polar`: the change of variables to polar coordinates on the
+  disk.
+* `Quadrature.setIntegral_diskProd_eq_chords`: the integral over the disk as an iterated integral
+  over the vertical chords $|s| \le \sqrt{1 - t^2}$.
+* `Quadrature.setIntegral_diskProd_rotate`: the integral over the disk is invariant under a rotation
+  of the plane.
+* `Quadrature.isMvWeight_unitDisk`: Lebesgue measure on the disk is a weight for multivariate
+  polynomials.
+* `Quadrature.node_mem_Ioo`: the nodes of a rule with positive weights that is exact to degree
+  $2m - 1$ on $(0, 1)$ lie in $(0, 1)$.
+* `Quadrature.exists_diskRule`: the product rule has nodes in the open disk and positive weights,
+  and it is exact for the polynomials of total degree at most $2n$.
 
-## The degree of exactness
+## Implementation notes
 
-[han2009theoretical] assert after (14.3.1) that the rule is exact on `Π_{2n+1}^2`. **That is one
-degree too many**, and the statement here is exactness on `Π_{2n}^2`. A monomial `x^a y^b` of odd
-total degree `d` integrates to zero over the disk, and its angular factor `cos^a θ sin^b θ` is a
-trigonometric polynomial carrying only the frequencies of the parity of `d` and of modulus at most
-`d`; the `N = 2 n + 1` equispaced angles annihilate a frequency `k` unless `N ∣ k`, so for `d < N`
-the quadrature also gives zero, but for `d = N = 2 n + 1` the two extreme frequencies `± N` survive
-with total weight `2 N Re c_N ≠ 0` whenever `a` is odd. The smallest instance is `n = 1`, `f = x³`:
-the integral is `0` while the rule returns `(2π/3) (∑_l ω_l r_l⁴) (3/4) ≈ 0.3055`. Nothing in the
-book depends on the discarded degree: (14.3.3) needs only exactness on `Π_{2n}^2`, since it applies
-the rule to products of two elements of `Π_n^2`.
+* After (14.3.1), [han2009theoretical] states that the rule is exact on $\Pi_{2n+1}^2$, the
+  polynomials of total degree at most $2n + 1$. This is one degree too many, and
+  `Quadrature.exists_diskRule` states exactness on $\Pi_{2n}^2$. The smallest counterexample is
+  $n = 1$ and $f = x^3$: the integral is $0$, but the rule gives $\tfrac{2\pi}{3} \bigl(\sum_l
+  \omega_l r_l^4\bigr) \tfrac34 \approx 0.3055$. The use of the rule in (14.3.3) of the source needs
+  only exactness on $\Pi_{2n}^2$, because it applies the rule to products of two elements of
+  $\Pi_n^2$.
+* The chord decomposition and the rotation invariance are not used by the quadrature rule. They are
+  the geometry of the disk that a computation with ridge polynomials needs.
 -/
 
 open Finset MeasureTheory OrthogonalPolynomial Polynomial Set
@@ -67,18 +68,19 @@ open scoped Real
 
 namespace Quadrature
 
-/-! ### The radial rule: Gauss–Legendre on `(0, 1)` -/
+/-! ### The radial rule: Gauss–Legendre on $(0, 1)$ -/
 
-/-- Lebesgue measure on `(0, 1)`, the weight of the Gauss–Legendre rule on the unit interval. -/
+/-- Lebesgue measure restricted to $(0, 1)$, the weight of the Gauss–Legendre rule on the unit
+interval. -/
 noncomputable def unitIntervalMeasure : Measure ℝ := volume.restrict (Set.Ioo (0 : ℝ) 1)
 
-/-- Lebesgue measure on `(0, 1)` has finite moments and infinite support, so Gauss quadrature
-applies to it. -/
+/-- Lebesgue measure on $(0, 1)$ is a weight in the sense of `OrthogonalPolynomial.IsWeight`: all
+its moments are finite and it is not carried by a finite set. So Gauss quadrature applies to it. -/
 theorem isWeight_unitIntervalMeasure : IsWeight unitIntervalMeasure :=
   isWeight_volume_restrict_Ioo zero_lt_one
 
-/-- If a polynomial is nonnegative on `(0, 1)` and its integral there vanishes, it vanishes almost
-everywhere on `(0, 1)`. -/
+/-- Let $p$ be a real polynomial with $p \ge 0$ on $(0, 1)$ and $\int_0^1 p = 0$. Then $p = 0$
+almost everywhere on $(0, 1)$. -/
 theorem ae_eq_zero_of_integral_eq_zero {p : ℝ[X]} (hnn : ∀ x ∈ Set.Ioo (0 : ℝ) 1, 0 ≤ p.eval x)
     (h : ∫ x, p.eval x ∂unitIntervalMeasure = 0) :
     (fun x => p.eval x) =ᵐ[unitIntervalMeasure] 0 := by
@@ -87,9 +89,14 @@ theorem ae_eq_zero_of_integral_eq_zero {p : ℝ[X]} (hnn : ∀ x ∈ Set.Ioo (0 
   rw [unitIntervalMeasure]
   filter_upwards [ae_restrict_mem measurableSet_Ioo] with x hx using hnn x hx
 
-/-- The nodes of a rule with positive weights that is exact to degree `2 m − 1` for the weight on
-`(0, 1)` lie in `(0, 1)`. Testing the rule against `t ∏_{j ≠ l} (t − ρ_j)²` and against
-`(1 − t) ∏_{j ≠ l} (t − ρ_j)²` isolates the `l`-th node and pins its sign. -/
+/-- Let $\rho_0, \dots, \rho_{m-1}$ be distinct real numbers and
+$\omega_0, \dots, \omega_{m-1} > 0$. Suppose that
+$$\sum_l \omega_l \, p(\rho_l) = \int_0^1 p(t) \, dt$$
+for every real polynomial $p$ of degree less than $2m$. Then $\rho_l \in (0, 1)$ for every $l$.
+
+The rule applied to $t \prod_{j \neq l} (t - \rho_j)^2$ and to
+$(1 - t) \prod_{j \neq l} (t - \rho_j)^2$ isolates the node $\rho_l$ and gives the signs of
+$\rho_l$ and $1 - \rho_l$. -/
 theorem node_mem_Ioo {m : ℕ} {ρ ω : Fin m → ℝ} (hinj : Function.Injective ρ)
     (hω : ∀ l, 0 < ω l)
     (hex : ∀ p : ℝ[X], p.degree < ((2 * m : ℕ) : WithBot ℕ) →
@@ -175,18 +182,18 @@ theorem node_mem_Ioo {m : ℕ} {ρ ω : Fin m → ℝ} (hinj : Function.Injectiv
 
 /-! ### The unit disk and its polar parametrization -/
 
-/-- The closed unit disk of the plane, as a subset of `ℝ × ℝ`. -/
+/-- The closed unit disk $\{(x, y) : x^2 + y^2 \le 1\}$ of the plane, as a subset of `ℝ × ℝ`. -/
 def diskProd : Set (ℝ × ℝ) := {q | q.1 ^ 2 + q.2 ^ 2 ≤ 1}
 
-/-- The closed unit disk of the plane, as a subset of `Fin 2 → ℝ`. -/
+/-- The closed unit disk $\{y : y_0^2 + y_1^2 \le 1\}$ of the plane, as a subset of `Fin 2 → ℝ`. -/
 def unitDisk : Set (Fin 2 → ℝ) := {y | y 0 ^ 2 + y 1 ^ 2 ≤ 1}
 
 /-- The closed unit disk of `ℝ × ℝ` is measurable. -/
 theorem measurableSet_diskProd : MeasurableSet diskProd :=
   measurableSet_le (by fun_prop) measurable_const
 
-/-- The closed unit disk of `Fin 2 → ℝ` is compact: it is closed and contained in the unit ball of
-the supremum norm. -/
+/-- The closed unit disk of `Fin 2 → ℝ` is compact, because it is closed and contained in the unit
+ball of the sup norm. -/
 theorem isCompact_unitDisk : IsCompact unitDisk := by
   refine Metric.isCompact_of_isClosed_isBounded
     (isClosed_le (by fun_prop) continuous_const) ?_
@@ -202,9 +209,12 @@ theorem isCompact_unitDisk : IsCompact unitDisk := by
 theorem measurableSet_unitDisk : MeasurableSet unitDisk :=
   measurableSet_le (by fun_prop) measurable_const
 
-/-- Lebesgue measure on the closed unit disk is a weight for multivariate polynomials, so that the
-rule below is one the hyperinterpolation results of `Numlib.Approximation.Hyperinterpolation`
-accept. -/
+/-- Lebesgue measure on the closed unit disk is a weight for multivariate polynomials in the sense
+of `Approximation.IsMvWeight`: every polynomial is square integrable, and no nonzero polynomial
+vanishes almost everywhere.
+
+The hyperinterpolation results of `Numlib.Approximation.Hyperinterpolation` then accept the disk
+rule. -/
 theorem isMvWeight_unitDisk : Approximation.IsMvWeight (volume.restrict unitDisk) := by
   refine Approximation.isMvWeight_restrict isCompact_unitDisk measurableSet_unitDisk
     isCompact_unitDisk.measure_lt_top.ne ?_
@@ -216,8 +226,11 @@ theorem isMvWeight_unitDisk : Approximation.IsMvWeight (volume.restrict unitDisk
     interior_maximal hsub hopen
   exact ⟨0, hsubint (by simp)⟩
 
-/-- **The integral over the unit disk in polar coordinates**: for a continuous integrand,
-`∫_{𝔹₂} G = ∫_0^1 ∫_{-π}^{π} r G (r cos θ, r sin θ) dθ dr`. -/
+/-- **The integral over the unit disk in polar coordinates.** For a continuous
+$G \colon \mathbb{R}^2 \to \mathbb{R}$,
+$$\int_{\mathbb{B}_2} G = \int_0^1 \int_{-\pi}^{\pi} r \, G(r \cos \theta, r \sin \theta) \,
+  d\theta \, dr.$$
+-/
 theorem setIntegral_diskProd_eq_polar {G : ℝ × ℝ → ℝ} (hG : Continuous G) :
     ∫ q in diskProd, G q
       = ∫ r in Ioc (0 : ℝ) 1, ∫ θ in Ioo (-π) π, r * G (r * Real.cos θ, r * Real.sin θ) := by
@@ -260,7 +273,8 @@ theorem setIntegral_diskProd_eq_polar {G : ℝ × ℝ → ℝ} (hG : Continuous 
   rw [Measure.volume_eq_prod] at hInt ⊢
   rw [MeasureTheory.setIntegral_prod F hInt]
 
-/-- The unit disk of `Fin 2 → ℝ` and the unit disk of `ℝ × ℝ` carry the same integrals. -/
+/-- For every $G \colon \mathbb{R}^2 \to \mathbb{R}$, the integral of $G(y_0, y_1)$ over the disk in
+`Fin 2 → ℝ` equals the integral of $G$ over the disk in `ℝ × ℝ`. -/
 theorem setIntegral_unitDisk_eq (G : ℝ × ℝ → ℝ) :
     ∫ y in unitDisk, G (y 0, y 1) = ∫ q in diskProd, G q := by
   have h := (MeasureTheory.volume_preserving_finTwoArrow ℝ).setIntegral_preimage_emb
@@ -270,8 +284,8 @@ theorem setIntegral_unitDisk_eq (G : ℝ × ℝ → ℝ) :
 
 /-! ### The chord decomposition, and rotation invariance -/
 
-/-- The chord of the closed unit disk at abscissa `t`, for `|t| ≤ 1`: the segment
-`|s| ≤ √(1 - t²)`. -/
+/-- For $|t| \le 1$, the chord of the closed unit disk at the abscissa $t$ is the segment
+$\{s : |s| \le \sqrt{1 - t^2}\}$. -/
 theorem preimage_mk_diskProd_of_abs_le {t : ℝ} (ht : |t| ≤ 1) :
     Prod.mk t ⁻¹' diskProd = Icc (-√(1 - t ^ 2)) (√(1 - t ^ 2)) := by
   have ht2 : t ^ 2 ≤ 1 := by nlinarith [abs_nonneg t, sq_abs t]
@@ -289,7 +303,7 @@ theorem preimage_mk_diskProd_of_abs_le {t : ℝ} (ht : |t| ≤ 1) :
   · rintro ⟨h1, h2⟩
     nlinarith
 
-/-- Beyond `|t| = 1` the disk has no chord. -/
+/-- For $|t| > 1$, the closed unit disk has no point with the abscissa $t$. -/
 theorem preimage_mk_diskProd_of_one_lt {t : ℝ} (ht : 1 < |t|) :
     Prod.mk t ⁻¹' diskProd = ∅ := by
   have ht2 : 1 < t ^ 2 := by nlinarith [abs_nonneg t, sq_abs t]
@@ -309,10 +323,14 @@ theorem isCompact_diskProd : IsCompact diskProd := by
   exact ⟨abs_le_one_iff_mul_self_le_one.2 (by nlinarith),
     abs_le_one_iff_mul_self_le_one.2 (by nlinarith)⟩
 
-/-- **The integral over the unit disk as an iterated integral over vertical chords** — the Radon,
-or chord, decomposition: for a continuous integrand,
-`∫_{𝔹₂} F = ∫_{-1}^{1} ∫_{-√(1 - t²)}^{√(1 - t²)} F (t, s) ds dt`.
-It is Fubini's theorem applied to the indicator of the disk, whose section at `t` is the chord. -/
+/-- **The integral over the unit disk as an iterated integral over vertical chords.** For a
+continuous $F \colon \mathbb{R}^2 \to \mathbb{R}$,
+$$\int_{\mathbb{B}_2} F = \int_{-1}^{1} \int_{-\sqrt{1 - t^2}}^{\sqrt{1 - t^2}} F(t, s) \, ds \,
+  dt.$$
+This is also called the Radon, or chord, decomposition.
+
+The proof is Fubini's theorem for the indicator function of the disk, whose section at $t$ is
+the chord. -/
 theorem setIntegral_diskProd_eq_chords {F : ℝ × ℝ → ℝ} (hF : Continuous F) :
     ∫ q in diskProd, F q
       = ∫ t in (-1 : ℝ)..1, ∫ s in (-√(1 - t ^ 2))..√(1 - t ^ 2), F (t, s) := by
@@ -346,9 +364,13 @@ theorem setIntegral_diskProd_eq_chords {F : ℝ × ℝ → ℝ} (hF : Continuous
     intervalIntegral.integral_of_le (by norm_num : (-1 : ℝ) ≤ 1),
     MeasureTheory.integral_Icc_eq_integral_Ioc]
 
-/-- **The integral over the unit disk is invariant under a rotation of the plane.** In polar
-coordinates a rotation is a translation of the angle, and the angular integrand is `2π`-periodic,
-so the angular integral over one period does not move. -/
+/-- **The integral over the unit disk is invariant under a rotation of the plane.** For a continuous
+$F \colon \mathbb{R}^2 \to \mathbb{R}$ and every angle $\varphi$,
+$$\int_{\mathbb{B}_2} F(x \cos \varphi - y \sin \varphi, \; x \sin \varphi + y \cos \varphi) \,
+  d(x, y) = \int_{\mathbb{B}_2} F.$$
+
+In polar coordinates a rotation is a translation of the angle. The angular integrand is
+$2\pi$-periodic, so its integral over one period does not change. -/
 theorem setIntegral_diskProd_rotate {F : ℝ × ℝ → ℝ} (hF : Continuous F) (φ : ℝ) :
     ∫ q in diskProd, F (q.1 * Real.cos φ - q.2 * Real.sin φ, q.1 * Real.sin φ + q.2 * Real.cos φ)
       = ∫ q in diskProd, F q := by
@@ -382,13 +404,17 @@ theorem setIntegral_diskProd_rotate {F : ℝ × ℝ → ℝ} (hF : Continuous F)
 
 /-! ### The product rule -/
 
-/-- The angular factor of a monomial is `2 π`-periodic. -/
+/-- For $a, b \in \mathbb{N}$, the function $\theta \mapsto \cos^a \theta \sin^b \theta$ is
+$2\pi$-periodic. -/
 theorem periodic_cos_pow_mul_sin_pow (a b : ℕ) :
     Function.Periodic (fun θ : ℝ => Real.cos θ ^ a * Real.sin θ ^ b) (2 * π) := by
   intro θ
   simp [Real.cos_add_two_pi, Real.sin_add_two_pi]
 
-/-- The angular integral over `(−π, π)` is the integral over one period from `0`. -/
+/-- For $a, b \in \mathbb{N}$,
+$$\int_{(-\pi, \pi)} \cos^a \theta \sin^b \theta \, d\theta = \int_0^{2\pi} \cos^a \theta \sin^b
+  \theta \, d\theta.$$
+-/
 theorem integral_Ioo_cos_pow_mul_sin_pow (a b : ℕ) :
     ∫ θ in Ioo (-π) π, Real.cos θ ^ a * Real.sin θ ^ b
       = ∫ θ in (0 : ℝ)..(2 * π), Real.cos θ ^ a * Real.sin θ ^ b := by
@@ -398,9 +424,26 @@ theorem integral_Ioo_cos_pow_mul_sin_pow (a b : ℕ) :
   rw [show -π + 2 * π = π by ring, show (0 : ℝ) + 2 * π = 2 * π by ring] at h
   exact h
 
-/-- **The disk rule (14.3.1)**: with `(ρ, ω)` the `(n + 1)`-point Gauss–Legendre rule on `[0, 1]`
-and `2 n + 1` equispaced angles, the product rule has nodes in the open unit disk, positive weights,
-and integrates every polynomial of total degree at most `2 n` over the closed unit disk exactly. -/
+/-- **The disk rule (14.3.1)** of [han2009theoretical]. For every $n \in \mathbb{N}$ there are
+$\rho_0, \dots, \rho_n \in (0, 1)$ and $\omega_0, \dots, \omega_n > 0$ such that the rule with
+the weights and nodes
+$$\frac{2\pi}{2n + 1} \omega_l \rho_l, \qquad (\rho_l \cos \theta_m, \rho_l \sin \theta_m),
+  \qquad \theta_m = \frac{2\pi m}{2n + 1},$$
+for $l = 0, \dots, n$ and $m = 0, \dots, 2n$, integrates every polynomial of total degree at
+most $2n$ over the closed unit disk exactly. In particular the nodes lie in the open disk and
+the weights are positive.
+
+The source states exactness for total degree $2n + 1$, which is false. A monomial $x^a y^b$ of
+odd total degree $d$ has the integral $0$ over the disk. Its angular factor
+$\cos^a \theta \sin^b \theta$ is a trigonometric polynomial with frequencies of the parity of
+$d$ and modulus at most $d$. The $N = 2n + 1$ equally spaced angles annihilate a frequency $k$
+unless $N$ divides $k$. So for $d < N$ the rule also gives $0$. For $d = N$ the two extreme
+frequencies $\pm N$ remain, with the total weight $2N \operatorname{Re} c_N \neq 0$ when $a$ is
+odd. The smallest case is $n = 1$, $f = x^3$, where the rule gives about $0.3055$.
+
+The proof takes for $(\rho, \omega)$ the $(n + 1)$-point Gauss–Legendre rule on $[0, 1]$. The
+exactness is `Approximation.IsExactOn` for Lebesgue measure on `Quadrature.unitDisk`, and the
+angles are `Quadrature.angleNode`. -/
 theorem exists_diskRule (n : ℕ) :
     ∃ ρ ω : Fin (n + 1) → ℝ, (∀ l, ρ l ∈ Ioo (0 : ℝ) 1) ∧ (∀ l, 0 < ω l) ∧
       Approximation.IsExactOn (volume.restrict unitDisk)

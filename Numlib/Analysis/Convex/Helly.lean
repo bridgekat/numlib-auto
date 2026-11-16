@@ -13,61 +13,74 @@ import Numlib.Analysis.Convex.RelativeInterior
 /-!
 # Systems of convex inequalities: theorems of the alternative
 
-The engine of the section is this: for proper convex functions `f₁, …, f_m` that are finite on
-`ri C`, either the strict system `fᵢ(x) < 0` has a solution in `C`, or some non-trivial
-non-negative combination `λ₁f₁ + ⋯ + λ_mf_m` is non-negative on all of `C`. It is the existence
-workhorse behind the Lagrange multiplier theorems.
+Let $E$ be a real normed space of finite dimension $n$, let $C \subseteq E$ be convex, and let $f_1,
+\dots, f_m \colon E \to (-\infty, +\infty]$ be proper convex functions that are finite on
+$\operatorname{ri} C$. The central result of this module is a theorem of the alternative
+([rockafellar1970convex], Theorem 21.1): either the strict system $f_i(x) < 0$, $i = 1, \dots, m$,
+has a solution $x \in C$, or there are multipliers $\lambda_i \ge 0$, not all zero, such that
+$\lambda_1 f_1 + \dots + \lambda_m f_m \ge 0$ on all of $C$. The two alternatives exclude each
+other. This theorem gives the existence of Lagrange multipliers. The module also proves Helly's
+theorem and its corollaries for finite systems, and the alternative for weak inequalities
+$f_i(x) \le 0$ over an arbitrary index set, under a hypothesis on the common directions of recession
+([rockafellar1970convex], Theorem 21.3). The presentation follows [rockafellar1970convex], §21.
 
-The hypothesis `ri C ⊆ dom fᵢ` is not decoration. On `ℝ` take `f₁ x = -√x` for `x ≥ 0` and `+∞`
-otherwise, `f₂ x = x`, `C = ℝ`; neither alternative holds.
-
-The refinements that weaken the recession hypothesis of the infinite-system alternative are in
-`Numlib/Analysis/Convex/HellyRefined.lean`; they share this file's tail, since
-`exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot` is the half of it that does not mention
-recession at all.
+The hypothesis $\operatorname{ri} C \subseteq \operatorname{dom} f_i$ is necessary. On $\mathbb{R}$,
+take $f_1(x) = -\sqrt{x}$ for $x \ge 0$ and $f_1(x) = +\infty$ otherwise, $f_2(x) = x$ and
+$C = \mathbb{R}$. Then neither alternative holds.
 
 ## Main results
 
-* `alternative_of_convex_system` — the substantial half of the alternative for a finite strict
-  system ([rockafellar1970convex] Theorem 21.1); `not_exists_forall_neg_of_forall_zero_le_weighted`
-  is the easy half, that the two alternatives exclude each other.
-* `alternative_of_convex_system_affine` — the refinement that keeps affine constraints apart and
-  so sharpens alternative (b) to "not all of the `λᵢ` on the *convex* constraints vanish".
-* `helly_finite` — **Helly's theorem** for finite collections (Mathlib's `Convex.helly_theorem'`).
-* `exists_mem_of_forall_subsystem`, `exists_mem_of_forall_subsystem_lt` — a finite mixed system of
-  convex inequalities is solvable as soon as every subsystem of at most `n + 1` of them is.
-* `sparse_alternative_of_convex_system` — the multipliers may be taken supported on at most `n + 1`
-  indices.
-* `alternative_infinite_system_univ`, `alternative_infinite_system` — the alternative for *weak*
-  inequalities over an arbitrary index set ([rockafellar1970convex] Theorem 21.3).
-* `exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot` — its multiplier half, with `k(0) = -∞`
-  as a hypothesis rather than a consequence of the recession assumption.
-* `exists_forall_le_zero_of_forall_subsystem` — the solvability criterion for an infinite system,
-  where the subsystems need only be solvable to within an arbitrary tolerance.
-* `helly_of_no_common_recession` — **Helly's theorem** for an infinite family of closed convex sets
-  with no common direction of recession.
-* `helly_of_exists_isBounded_biInter` — when every finite subfamily has a common point, that
-  recession hypothesis may be replaced by "some finite subfamily has a bounded intersection".
-* `finrank_eq_of_isCompatiblePairing` — the bookkeeping lemma that lets the multiplier count be
-  stated as `dim E + 1` although Carathéodory is applied in `F`.
+* `ConvexAnalysis.alternative_of_convex_system`: the alternative for a finite system of strict
+  convex inequalities.
+* `ConvexAnalysis.not_exists_forall_neg_of_forall_zero_le_weighted`: the two alternatives exclude
+  each other.
+* `ConvexAnalysis.alternative_of_convex_system_affine`: the refinement that keeps affine constraints
+  separate, so that the multipliers of the convex constraints are not all zero.
+* `ConvexAnalysis.helly_finite`: **Helly's theorem** for finite collections of convex sets.
+* `ConvexAnalysis.exists_mem_of_forall_subsystem`,
+  `ConvexAnalysis.exists_mem_of_forall_subsystem_lt`: a finite system of convex inequalities is
+  solvable if every subsystem of at most $n + 1$ of them is solvable.
+* `ConvexAnalysis.sparse_alternative_of_convex_system`: the multipliers can be chosen with at most
+  $n + 1$ of them nonzero.
+* `ConvexAnalysis.alternative_infinite_system_univ`, `ConvexAnalysis.alternative_infinite_system`:
+  the alternative for weak inequalities over an arbitrary index set.
+* `ConvexAnalysis.exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot`: the multiplier half of
+  this alternative, with the hypothesis $k(0) = -\infty$ on the positively homogeneous function $k$
+  generated by the conjugates in place of the hypothesis on recession.
+* `ConvexAnalysis.exists_forall_le_zero_of_forall_subsystem`: an infinite system of weak
+  inequalities is solvable if every subsystem of at most $n + 1$ inequalities is solvable within
+  every tolerance $\delta > 0$.
+* `ConvexAnalysis.helly_of_no_common_recession`: **Helly's theorem** for an infinite family of
+  closed convex sets with no common direction of recession.
+* `ConvexAnalysis.helly_of_exists_isBounded_biInter`: if every finite subfamily has a common point,
+  the hypothesis on recession can be replaced by the existence of a finite subfamily with bounded
+  intersection.
+* `ConvexAnalysis.finrank_eq_of_isCompatiblePairing`: a pairing of finite-dimensional spaces that is
+  compatible in both directions forces equal dimensions, so the number of multipliers can be stated
+  as $\dim E + 1$.
 
 ## Implementation notes
 
-The weighted sum is read in `EReal` with the convention `0 · ∞ = 0`: `∑ i, (l i : EReal) * f i x`
-is exactly `λ₁f₁(x) + ⋯ + λ_mf_m(x)`, and a vanishing multiplier silently drops its constraint.
-Multipliers are *not* normalised to sum to `1`; alternative (b) is `∑ λᵢ fᵢ(x) ≥ ε` with the `λᵢ`
-unnormalised, and that is what is proved.
-
-The affine refinement keeps the affine constraints in a separate index type — the convex
-constraints in `ι`, the affine ones in `κ`, and the separating space `(ι ⊕ κ) → ℝ`. They enter as
-*equations* `aⱼ(x) = z(inr j)` rather than inequalities, which is what makes the non-containment
-clause of polyhedral separation usable, and they are modelled as `E →ᵃ[ℝ] ℝ` rather than as
-`EReal`-valued convex functions. The unrefined alternative is the case `κ = Empty` but is proved
-independently, needing only proper separation where the refinement needs the polyhedral form.
-
-## References
-
-* [rockafellar1970convex] §21.
+* The weighted sum is taken in $[-\infty, +\infty]$ with the convention $0 \cdot (\pm\infty) = 0$.
+  Thus `∑ i, (l i : EReal) * f i x` is $\lambda_1 f_1(x) + \dots + \lambda_m f_m(x)$, and a
+  multiplier $0$ removes its constraint.
+* The multipliers are not normalized to sum to $1$. The second alternative of the infinite system is
+  $\sum_i \lambda_i f_i(x) \ge \varepsilon$ with unnormalized $\lambda_i$, and this is what is
+  proved.
+* In the affine refinement, the convex constraints are indexed by $\iota$, the affine constraints by
+  $\kappa$, and the separating space is $\mathbb{R}^{\iota \sqcup \kappa}$. The affine constraints
+  enter the proof as equations $a_j(x) = z_j$ and not as inequalities, which makes the
+  non-containment clause of polyhedral separation usable. They are affine maps `E →ᵃ[ℝ] ℝ` and not
+  convex functions with values in $[-\infty, +\infty]$. The alternative without affine constraints
+  is the case $\kappa = \emptyset$, but it is proved independently: it needs only proper separation,
+  and the refinement needs polyhedral separation.
+* The theorems about infinite systems take a pairing $B \colon E \times F \to \mathbb{R}$ with a
+  finite-dimensional real normed space $F$, compatible in both directions. The proofs use the
+  conjugates with respect to $B$. Such a pairing exists for every finite-dimensional $E$.
+* The refinements in `Numlib.Analysis.Convex.HellyRefined` weaken the hypothesis on recession of the
+  infinite alternative. They reuse
+  `ConvexAnalysis.exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot`, the half of the proof
+  that does not mention recession.
 -/
 
 open Set Filter Topology
@@ -78,9 +91,14 @@ section Exclusive
 
 variable {E : Type*} {ι : Type*} [Fintype ι] {C : Set E} {f : ι → E → EReal}
 
-/-- **The two alternatives exclude each other**: a point of `C` at which every `fᵢ` is negative
-makes every term of `λ₁f₁ + ⋯ + λ_mf_m` non-positive, and the terms with `λᵢ ≠ 0` strictly
-negative. -/
+/-- **The two alternatives exclude each other.** Let $C$ be a set, let
+$f_i \colon E \to [-\infty, +\infty]$ for $i$ in a finite index set, and let $\lambda_i \ge 0$,
+not all zero, with
+$$0 \le \sum_i \lambda_i f_i(x) \quad \text{for all } x \in C.$$
+Then there is no $x \in C$ with $f_i(x) < 0$ for all $i$.
+
+At such a point every term $\lambda_i f_i(x)$ would be nonpositive, and the terms with
+$\lambda_i \neq 0$ would be negative. -/
 theorem not_exists_forall_neg_of_forall_zero_le_weighted {l : ι → ℝ} (hl : ∀ i, 0 ≤ l i)
     (hl0 : l ≠ 0) (h : ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x) :
     ¬ ∃ x ∈ C, ∀ i, f i x < 0 := by
@@ -122,11 +140,18 @@ section Alternative
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 variable {ι : Type*} [Fintype ι] {C : Set E} {f : ι → E → EReal}
 
-/-- **The alternative for a finite system of strict convex inequalities.** For proper convex
-functions finite on `ri C`, exactly one of the two alternatives holds: either the strict system
-`fᵢ(x) < 0` is solvable in `C`, or a non-trivial non-negative combination of the `fᵢ` is
-non-negative throughout `C`. This is the half with content; exclusivity is
-`not_exists_forall_neg_of_forall_zero_le_weighted`. -/
+/-- **The alternative for a finite system of strict convex inequalities.** Let $E$ be a
+finite-dimensional real normed space, let $C \subseteq E$ be convex, and let $f_1, \dots, f_m$,
+$m \ge 1$, be proper convex functions with $\operatorname{ri} C \subseteq \operatorname{dom}
+f_i$ for every $i$. Then one of the following holds:
+
+* there is $x \in C$ with $f_i(x) < 0$ for all $i$;
+* there are $\lambda_1, \dots, \lambda_m \ge 0$, not all zero, with
+  $\sum_i \lambda_i f_i(x) \ge 0$ for all $x \in C$.
+
+This is Theorem 21.1 of [rockafellar1970convex]. It is the half with content. The two
+alternatives exclude each other by
+`ConvexAnalysis.not_exists_forall_neg_of_forall_zero_le_weighted`. -/
 theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
@@ -336,7 +361,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 variable {κ : Type*} [Fintype κ] {C : Set E} {a : κ → (E →ᵃ[ℝ] ℝ)}
 
 omit [FiniteDimensional ℝ E] in
-/-- A finite real combination of affine functions is affine along segments. -/
+/-- For affine maps $a_j \colon E \to \mathbb{R}$, real $\mu_j$, and $s + t = 1$, the combination
+$\sum_j \mu_j a_j$ is affine along segments: $\sum_j \mu_j a_j(sx + ty) = s \sum_j \mu_j
+a_j(x) + t \sum_j \mu_j a_j(y)$. -/
 theorem combo_affine_sum (μ : κ → ℝ) {s t : ℝ} (hst : s + t = 1) (x y : E) :
     (∑ j, μ j * a j (s • x + t • y)) = s * (∑ j, μ j * a j x) + t * (∑ j, μ j * a j y) := by
   rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
@@ -346,7 +373,9 @@ theorem combo_affine_sum (μ : κ → ℝ) {s t : ℝ} (hst : s + t = 1) (x y : 
   ring
 
 omit [FiniteDimensional ℝ E] in
-/-- Such a combination, read in `EReal`, is convex — it is in fact affine. -/
+/-- For affine maps $a_j \colon E \to \mathbb{R}$ and real $\mu_j$, the function
+$x \mapsto \sum_j \mu_j a_j(x)$, with values in $[-\infty, +\infty]$, is convex. It is in fact
+affine. -/
 theorem convexFn_coe_affine_sum (μ : κ → ℝ) :
     ConvexFn (fun x => ((∑ j, μ j * a j x : ℝ) : EReal)) := by
   refine convexFn_of_epi_combo fun x y p q hx hy s t hs ht hst => ?_
@@ -355,10 +384,13 @@ theorem convexFn_coe_affine_sum (μ : κ → ℝ) :
   nlinarith [mul_le_mul_of_nonneg_left hx hs, mul_le_mul_of_nonneg_left hy ht]
 
 omit [FiniteDimensional ℝ E] in
-/-- The affine step: a combination of affine functions that is non-negative on a convex set `C` and
-non-positive at a relative interior point of `C` vanishes on all of `C`. This is the affine
-analogue of `eq_zero_of_nonpos_of_mem_relint`, and the reason the multipliers on the convex
-constraints cannot all vanish. -/
+/-- Let $a_j \colon E \to \mathbb{R}$ be affine and $\mu_j$ real, and let
+$z \in \operatorname{ri} C$. If $\sum_j \mu_j a_j \ge 0$ on $C$ and $\sum_j \mu_j a_j(z) \le 0$,
+then $\sum_j \mu_j a_j = 0$ on all of $C$.
+
+This is the affine analogue of `ConvexAnalysis.eq_zero_of_nonpos_of_mem_relint`. It is the
+reason why the multipliers of the convex constraints cannot all vanish in
+`ConvexAnalysis.alternative_of_convex_system_affine`. -/
 theorem eq_zero_of_nonneg_of_mem_relint_affine_sum (μ : κ → ℝ) {z : E} (hz : z ∈ ri C)
     (hnonneg : ∀ x ∈ C, 0 ≤ ∑ j, μ j * a j x) (hz0 : (∑ j, μ j * a j z) ≤ 0) :
     ∀ x ∈ C, (∑ j, μ j * a j x) = 0 := by
@@ -376,8 +408,8 @@ end AffineSum
 
 section Orthant
 
-/-- The non-positive orthant of `σ → ℝ` is polyhedral: it is cut out by the coordinate
-projections. -/
+/-- For a finite type $\sigma$, the nonpositive orthant $\{z \in \mathbb{R}^\sigma \mid z_s \le 0
+\text{ for all } s\}$ is polyhedral: it is cut out by the coordinate projections. -/
 theorem polyhedral_nonpos_orthant (σ : Type*) [Finite σ] :
     Polyhedral {z : σ → ℝ | ∀ s, z s ≤ 0} := by
   classical
@@ -400,12 +432,20 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 variable {ι κ : Type*} [Fintype ι] [Fintype κ] {C : Set E} {f : ι → E → EReal}
 variable {a : κ → (E →ᵃ[ℝ] ℝ)}
 
-/-- **The alternative with affine constraints treated separately.** If the affine system
-`a_j x ≤ 0` is solvable in `ri C`, then either the mixed system `f_i x < 0`, `a_j x ≤ 0` is
-solvable in `C`, or there are non-negative multipliers — *not all of the `λ_i` zero* — making the
-combined function non-negative on `C`. The unrefined alternative is the case `κ = Empty`; what the
-affine constraints buy is the sharper conclusion `l ≠ 0`, at the price of needing polyhedral
-separation rather than proper separation. -/
+/-- **The alternative with affine constraints treated separately.** Let $E$ be a finite-dimensional
+real normed space and let $C \subseteq E$ be convex. Let $f_i$, $i \in \iota$, be finitely many
+proper convex functions with $\operatorname{ri} C \subseteq \operatorname{dom} f_i$, and let
+$a_j \colon E \to \mathbb{R}$, $j \in \kappa$, be finitely many affine maps. Suppose that some
+$x \in \operatorname{ri} C$ satisfies $a_j(x) \le 0$ for all $j$. Then one of the following
+holds:
+
+* there is $x \in C$ with $f_i(x) < 0$ for all $i$ and $a_j(x) \le 0$ for all $j$;
+* there are $\lambda_i \ge 0$, not all zero, and $\mu_j \ge 0$ with
+$$0 \le \sum_i \lambda_i f_i(x) + \sum_j \mu_j a_j(x) \quad \text{for all } x \in C.$$
+
+The alternative without affine constraints is the case $\kappa = \emptyset$. The affine
+constraints give the sharper conclusion that the $\lambda_i$ are not all zero, at the price of
+polyhedral separation in place of proper separation. -/
 theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i))
     (hfeas : ∃ x ∈ ri C, ∀ j, a j x ≤ 0) :
@@ -642,19 +682,30 @@ section Finite
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 variable {ι κ : Type*} {C : Set E} {f : ι → E → EReal} {g : κ → E → EReal}
 
-/-- **Helly's theorem** for finite collections: a finite collection of convex sets in an
-`n`-dimensional space has a common point as soon as every `n + 1` of them do. No closedness and no
-recession hypothesis is needed — that is what distinguishes it from the infinite version
-`helly_of_no_common_recession`. This is Mathlib's `Convex.helly_theorem'`, restated. -/
+/-- **Helly's theorem** for finite collections. Let $E$ be a real normed space of finite dimension
+$n$, and let $F_i$, $i \in s$, be a finite collection of convex subsets of $E$. If every
+subcollection of at most $n + 1$ of the sets has a common point, then
+$$\bigcap_{i \in s} F_i \neq \emptyset.$$
+
+No closedness and no hypothesis on recession is needed. This distinguishes it from the infinite
+version `ConvexAnalysis.helly_of_no_common_recession`. This is Mathlib's
+`Convex.helly_theorem'`, restated. -/
 theorem helly_finite {F : ι → Set E} {s : Finset ι} (hconv : ∀ i ∈ s, Convex ℝ (F i))
     (hinter : ∀ I ⊆ s, I.card ≤ Module.finrank ℝ E + 1 → (⋂ i ∈ I, F i).Nonempty) :
     (⋂ i ∈ s, F i).Nonempty :=
   Convex.helly_theorem' hconv hinter
 
-/-- **A finite system of convex inequalities** — some strict, some weak — is solvable in a convex
-set `C` as soon as every subsystem of at most `n + 1` inequalities is solvable in `C`. Counting is
-the only fiddly point: a subcollection of at most `n + 1` of the sets `C`, `{fᵢ < 0}`, `{gⱼ ≤ 0}`
-uses at most `n + 1` of the inequalities whether or not it also uses `C`. -/
+/-- **A finite system of convex inequalities**, some strict and some weak, is solvable if all its
+small subsystems are solvable. Let $E$ be a real normed space of finite dimension $n$, let
+$C \subseteq E$ be convex, and let $f_i$, $i \in \iota$, and $g_j$, $j \in \kappa$, be finitely
+many convex functions. Suppose that for all $S \subseteq \iota$ and $T \subseteq \kappa$ with
+$|S| + |T| \le n + 1$ there is $x \in C$ with $f_i(x) < 0$ for $i \in S$ and $g_j(x) \le 0$ for
+$j \in T$. Then there is $x \in C$ with
+$$f_i(x) < 0 \text{ for all } i \quad \text{and} \quad g_j(x) \le 0 \text{ for all } j.$$
+
+The proof applies Helly's theorem to the sets $C$, $\{f_i < 0\}$ and $\{g_j \le 0\}$. A
+subcollection of at most $n + 1$ of these sets uses at most $n + 1$ of the inequalities, whether
+or not it contains $C$. -/
 theorem exists_mem_of_forall_subsystem [Finite ι] [Finite κ] (hC : Convex ℝ C)
     (hf : ∀ i, ConvexFn (f i)) (hg : ∀ j, ConvexFn (g j))
     (hsub : ∀ (S : Finset ι) (T : Finset κ), S.card + T.card ≤ Module.finrank ℝ E + 1 →
@@ -713,7 +764,13 @@ theorem exists_mem_of_forall_subsystem [Finite ι] [Finite κ] (hC : Convex ℝ 
   exact ⟨x, hx none (Finset.mem_univ _), fun i => hx (some (Sum.inl i)) (Finset.mem_univ _),
     fun j => hx (some (Sum.inr j)) (Finset.mem_univ _)⟩
 
-/-- The same for a system of strict inequalities only — the form the sparse alternative uses. -/
+/-- Let $E$ be a real normed space of finite dimension $n$, let $C \subseteq E$ be convex, and let
+$f_i$, $i \in \iota$, be finitely many convex functions. If for every $S \subseteq \iota$ with
+$|S| \le n + 1$ there is $x \in C$ with $f_i(x) < 0$ for all $i \in S$, then there is $x \in C$
+with $f_i(x) < 0$ for all $i$.
+
+This is the form with strict inequalities only, which
+`ConvexAnalysis.sparse_alternative_of_convex_system` uses. -/
 theorem exists_mem_of_forall_subsystem_lt [Finite ι] (hC : Convex ℝ C)
     (hf : ∀ i, ConvexFn (f i))
     (hsub : ∀ S : Finset ι, S.card ≤ Module.finrank ℝ E + 1 → ∃ x ∈ C, ∀ i ∈ S, f i x < 0) :
@@ -727,10 +784,18 @@ theorem exists_mem_of_forall_subsystem_lt [Finite ι] (hC : Convex ℝ C)
 
 variable [Fintype ι]
 
-/-- **The multipliers can be chosen supported on at most `n + 1` indices**: if alternative (a)
-fails, it already fails for a subsystem of at most `n + 1` inequalities, and the multipliers the
-alternative produces for that subsystem extend by zero — harmless in `EReal` because
-`0 · (+∞) = 0`. -/
+/-- **The multipliers can be chosen with at most $n + 1$ of them nonzero.** Let $E$ be a real normed
+space of finite dimension $n$, let $C \subseteq E$ be convex, and let $f_1, \dots, f_m$,
+$m \ge 1$, be proper convex functions with $\operatorname{ri} C \subseteq \operatorname{dom}
+f_i$. Then one of the following holds:
+
+* there is $x \in C$ with $f_i(x) < 0$ for all $i$;
+* there are a set $S$ of at most $n + 1$ indices and $\lambda_i \ge 0$, not all zero, with
+  $\lambda_i = 0$ for $i \notin S$ and $\sum_i \lambda_i f_i(x) \ge 0$ for all $x \in C$.
+
+If the first alternative fails, it already fails for a subsystem of at most $n + 1$
+inequalities. The multipliers for this subsystem are extended by zero, which is harmless because
+$0 \cdot (+\infty) = 0$. -/
 theorem sparse_alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C)
     (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i)) (hdom : ∀ i, ri C ⊆ convexDom (f i)) :
     (∃ x ∈ C, ∀ i, f i x < 0) ∨
@@ -802,11 +867,15 @@ theorem sparse_alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C)
 
 end Finite
 
-/-! ### Weak inequalities over an arbitrary index set
+/-!
+### Weak inequalities over an arbitrary index set
 
-The proof runs on two prerequisites: `convexCl_posHomGen` identifies the conjugate of the positively
-homogeneous convex function `k` generated by `h = conv {fᵢ* | i ∈ I}`, and
-`exists_affineIndependent_of_convFn_lt` extracts finitely many multipliers from `h(0) < 0`. -/
+The proof uses two results. `ConvexAnalysis.convexCl_posHomGen` identifies the conjugate of the
+positively homogeneous convex function $k$ generated by
+$h = \operatorname{conv} \{f_i^* \mid i \in I\}$, and
+`ConvexAnalysis.exists_affineIndependent_of_convFn_lt` extracts finitely many multipliers from
+$h(0) < 0$.
+-/
 
 section Infinite
 
@@ -815,10 +884,14 @@ variable {E F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι : Type*} {f : ι → E → EReal} {C : Set E}
 
-/-- In finite dimensions a **compatible pairing forces the two spaces to have equal dimension**:
-`evalCLM B` and `evalCLM B.flip` are surjective onto the two continuous duals, which in finite
-dimensions have the dimension of the space. This is what lets the multiplier count be stated as
-`n + 1` with `n = dim E`, although Carathéodory is applied in `F`. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces, and let
+$B \colon E \times F \to \mathbb{R}$ be a pairing that is compatible in both directions. Then
+$\dim F = \dim E$.
+
+The maps `evalCLM B` and `evalCLM B.flip` are surjective onto the two continuous duals, and in
+finite dimension the dual of a space has the dimension of the space. This lets the number of
+multipliers be stated as $n + 1$ with $n = \dim E$, although Carathéodory's theorem is applied
+in $F$. -/
 theorem finrank_eq_of_isCompatiblePairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
     [IsCompatiblePairing B] [IsCompatiblePairing B.flip] :
     Module.finrank ℝ F = Module.finrank ℝ E := by
@@ -836,11 +909,22 @@ theorem finrank_eq_of_isCompatiblePairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
     (IsCompatiblePairing.surjective_eval B.flip)
   omega
 
-/-- **The multiplier half of the infinite alternative**, isolated from the recession hypothesis.
-Once the positively homogeneous convex function `k` generated by `conv {fᵢ*}` has `k(0) = -∞`, the
-multipliers come out directly. `alternative_infinite_system` gets `k(0) = -∞` from a recession
-hypothesis; the refinement in `HellyRefined.lean` gets it from a polyhedral subfamily instead
-(`apply_zero_eq_bot_of_le_of_le`), and that is the *only* difference between the two. -/
+/-- **The multiplier half of the infinite alternative.** Let $E$ be a real normed space of finite
+dimension $n$, let $F$ be a finite-dimensional real normed space, and let
+$B \colon E \times F \to \mathbb{R}$ be a pairing that is compatible in both directions. Let
+$f_i$, $i \in I$, be closed proper convex functions on $E$, indexed by an arbitrary set $I$. Let
+$k$ be the positively homogeneous convex function generated by
+$\operatorname{conv} \{f_i^* \mid i \in I\}$, with conjugates taken with respect to $B$, and
+suppose that $k(0) = -\infty$. Then there are a finite set $t \subseteq I$ with $|t| \le n + 1$,
+multipliers $\lambda_i \ge 0$ with $\lambda_i = 0$ for $i \notin t$, and $\varepsilon > 0$ with
+$$\varepsilon \le \sum_{i \in t} \lambda_i f_i(x) \quad \text{for all } x \in E.$$
+
+This result does not use any hypothesis on recession.
+`ConvexAnalysis.alternative_infinite_system` gets $k(0) = -\infty$ from a hypothesis on
+recession. The refinement in `Numlib.Analysis.Convex.HellyRefined` gets it from a polyhedral
+subfamily (`ConvexAnalysis.apply_zero_eq_bot_of_le_of_le`). This is the only difference between
+the two. The function $k$ is `ConvexAnalysis.posHomGen (ConvexAnalysis.convFn fun i =>
+ConvexAnalysis.convexConj B (f i))`. -/
 theorem exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ∀ i, ClosedProperConvexFn (f i))
     (hk0 : posHomGen (convFn fun i => convexConj B (f i)) (0 : F) = ⊥) :
@@ -922,16 +1006,27 @@ theorem exists_multipliers_of_posHomGen_convFn_convexConj_eq_bot [IsCompatiblePa
     exact le_of_le_of_eq hsum hlval
 
 
-/-- **The infinite alternative over the whole space.** Either the weak system `fᵢ(x) ≤ 0` is
-solvable, or finitely many non-negative multipliers — at most `n + 1` of them non-zero — make
-`∑ λᵢ fᵢ` bounded away from `0` from above.
+/-- **The infinite alternative on the whole space.** Let $E$ be a real normed space of finite
+dimension $n$, and let there be a pairing $B \colon E \times F \to \mathbb{R}$ with a
+finite-dimensional real normed space $F$, compatible in both directions. Let $f_i$, $i \in I$,
+be closed proper convex functions on $E$, indexed by an arbitrary set $I$, with no common
+direction of recession: if $(f_i 0^+)(y) \le 0$ for all $i$, then $y = 0$. Then one of the
+following holds:
 
-With `h = conv {fᵢ*}` and `k` the positively homogeneous convex function it generates, `cl k` is
-the support function of `{x | ∀ i, fᵢ(x) ≤ 0}`, which is empty when (a) fails, so `(cl k)(0) = -∞`;
-the recession hypothesis puts `0` in `ri (dom k)`, so `k(0) = -∞`; and that turns into the
-multipliers. The final step is not the textbook's: the inequality `∑ λᵢ fᵢ(x) ≥ -∑ λᵢ fᵢ*(yᵢ)` is
-**Fenchel's inequality** summed termwise, using only `∑ λᵢ yᵢ = 0`, so no infimal convolution is
-needed. -/
+* there is $x \in E$ with $f_i(x) \le 0$ for all $i$;
+* there are a finite set $t \subseteq I$ with $|t| \le n + 1$, multipliers $\lambda_i \ge 0$
+  with $\lambda_i = 0$ for $i \notin t$, and $\varepsilon > 0$ with $\sum_{i \in t} \lambda_i
+  f_i(x) \ge \varepsilon$ for all $x \in E$.
+
+Let $h = \operatorname{conv} \{f_i^*\}$, and let $k$ be the positively homogeneous convex
+function that $h$ generates. Then $\operatorname{cl} k$ is the support function of
+$\{x \mid f_i(x) \le 0 \text{ for all } i\}$. This set is empty when the first alternative
+fails, so $(\operatorname{cl} k)(0) = -\infty$. The hypothesis on recession puts $0$ in
+$\operatorname{ri}(\operatorname{dom} k)$, so $k(0) = -\infty$, and this gives the multipliers.
+The last step differs from the proof of Rockafellar: the inequality $\sum_i \lambda_i f_i(x) \ge
+-\sum_i \lambda_i f_i^*(y_i)$ is **Fenchel's inequality** summed term by term, and it uses only
+$\sum_i \lambda_i y_i = 0$, so no infimal convolution is needed. The pairing $B$ is used only in
+the proof. -/
 theorem alternative_infinite_system_univ [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ∀ i, ClosedProperConvexFn (f i))
     (hrec : ∀ y : E, (∀ i, recessionFn (f i) y ≤ 0) → y = 0) :
@@ -997,14 +1092,25 @@ theorem alternative_infinite_system_univ [IsCompatiblePairing B] [IsCompatiblePa
   rw [← (convexFn_posHomGen _).convexCl_eq_of_mem_relint_convexDom hri]
   exact hclk
 
-/-- **The alternative for an infinite system of weak convex inequalities.** For a collection of
-closed proper convex functions indexed by an *arbitrary* set and a non-empty closed convex set `C`,
-exactly one of the following holds: the weak system `fᵢ(x) ≤ 0` is solvable in `C`, or there are
-non-negative multipliers — only finitely many non-zero, and at most `n + 1` of them — with
-`∑ λᵢ fᵢ ≥ ε > 0` throughout `C`. The hypothesis is that the `fᵢ` have no common direction of
-recession which is also a direction of recession of `C`; a family built from two hyperbolas shows
-it cannot be dropped. `C` is folded into the collection as its indicator function, which is why the
-index type of the auxiliary system is `Option ι`. -/
+/-- **The alternative for an infinite system of weak convex inequalities.** Let $E$ be a real normed
+space of finite dimension $n$, and let there be a pairing $B \colon E \times F \to \mathbb{R}$
+with a finite-dimensional real normed space $F$, compatible in both directions. Let $f_i$,
+$i \in I$, be closed proper convex functions on $E$, indexed by an arbitrary set $I$, and let
+$C \subseteq E$ be nonempty, closed and convex. Suppose that the $f_i$ have no common direction
+of recession that is also a direction of recession of $C$: if $(f_i 0^+)(y) \le 0$ for all $i$
+and $y \in 0^+ C$, then $y = 0$. Then one of the following holds:
+
+* there is $x \in C$ with $f_i(x) \le 0$ for all $i$;
+* there are a finite set $t \subseteq I$ with $|t| \le n + 1$, multipliers $\lambda_i \ge 0$
+  with $\lambda_i = 0$ for $i \notin t$, and $\varepsilon > 0$ with $\sum_{i \in t} \lambda_i
+  f_i(x) \ge \varepsilon$ for all $x \in C$.
+
+The two alternatives clearly exclude each other. This is Theorem 21.3 of
+[rockafellar1970convex]. A family built from two hyperbolas shows that the hypothesis on
+recession cannot be dropped.
+
+The set $C$ is added to the collection as its indicator function, so the auxiliary system is
+indexed by `Option ι`. The pairing $B$ is used only in the proof. -/
 theorem alternative_infinite_system [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ∀ i, ClosedProperConvexFn (f i)) (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hrec : ∀ y : E, (∀ i, recessionFn (f i) y ≤ 0) → y ∈ recessionCone C → y = 0) :
@@ -1064,11 +1170,17 @@ theorem alternative_infinite_system [IsCompatiblePairing B] [IsCompatiblePairing
             exact Finset.sum_congr rfl fun i _ => rfl
 
 omit [FiniteDimensional ℝ E] in
-/-- **Multipliers are incompatible with approximate solvability of every subsystem.** Multipliers
-that keep `∑ λᵢ fᵢ` at least `ε > 0` on `C` cannot coexist with subsystems solvable to within
-`ε / (2 ∑ λᵢ)`. Rockafellar normalises the multipliers to sum to `1` and argues with a strict
-inequality; halving the tolerance instead makes every step non-strict, which matters because
-`EReal` is not a cancellative ordered monoid and strict sums do not add. -/
+/-- **Multipliers are incompatible with approximate solvability of every subsystem.** Let $E$ be a
+real normed space and $n = \dim E$, let $C \subseteq E$ be nonempty, let $t$ be a finite set of
+indices with $|t| \le n + 1$, let $\lambda_i \ge 0$, and let $\varepsilon > 0$. Suppose that for
+every $\delta > 0$ and every set $S$ of at most $n + 1$ indices there is $x \in C$ with
+$f_i(x) < \delta$ for all $i \in S$. Then it is not true that $\sum_{i \in t} \lambda_i f_i(x)
+\ge \varepsilon$ for all $x \in C$.
+
+The proof uses the tolerance $\delta = \varepsilon / (2 \sum_i \lambda_i)$. Rockafellar
+normalizes the multipliers to sum to $1$ and argues with a strict inequality. Halving the
+tolerance instead makes every step nonstrict. This matters because $[-\infty, +\infty]$ is not a
+cancellative ordered monoid, and strict inequalities do not add. -/
 theorem not_forall_le_weighted_of_forall_subsystem {t : Finset ι} {l : ι → ℝ} {ε : ℝ}
     (hCne : C.Nonempty) (hl0 : ∀ i, 0 ≤ l i) (hε : 0 < ε)
     (hcard : t.card ≤ Module.finrank ℝ E + 1)
@@ -1108,9 +1220,13 @@ theorem not_forall_le_weighted_of_forall_subsystem {t : Finset ι} {l : ι → �
   have hfin' : ε ≤ ε / 2 := by exact_mod_cast hfin
   linarith
 
-/-- Under the same recession hypothesis, an infinite system of weak convex inequalities is solvable
-in `C` as soon as every subsystem of at most `n + 1` of the inequalities is solvable in `C` to
-within an arbitrarily small tolerance. -/
+/-- Let $E$, the pairing $B$, the closed proper convex functions $f_i$, $i \in I$, and the nonempty
+closed convex set $C$ satisfy the hypotheses of `ConvexAnalysis.alternative_infinite_system`.
+Suppose that for every $\delta > 0$ and every set $S$ of at most $n + 1$ indices there is
+$x \in C$ with $f_i(x) < \delta$ for all $i \in S$. Then there is $x \in C$ with
+$$f_i(x) \le 0 \quad \text{for all } i \in I.$$
+Thus an infinite system of weak convex inequalities is solvable in $C$ if every subsystem of at
+most $n + 1$ inequalities is solvable in $C$ within every tolerance. -/
 theorem exists_forall_le_zero_of_forall_subsystem [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip]
     (hf : ∀ i, ClosedProperConvexFn (f i)) (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
@@ -1123,11 +1239,18 @@ theorem exists_forall_le_zero_of_forall_subsystem [IsCompatiblePairing B]
   · exact hgood
   exact absurd hineq (not_forall_le_weighted_of_forall_subsystem hCne hl0 hε hcard hsub)
 
-/-- **Helly's theorem for an *infinite* family.** A family of non-empty closed convex sets with
-**no common direction of recession** has a common point as soon as every `n + 1` of them do. The
-recession hypothesis cannot be dropped: a family built from two hyperbolas has the
-`(n+1)`-intersection property and empty total intersection. Compare `helly_finite`, where the
-family is finite and neither closedness nor a recession hypothesis is needed. -/
+/-- **Helly's theorem for an infinite family.** Let $E$ be a real normed space of finite dimension
+$n$, and let there be a pairing $B \colon E \times F \to \mathbb{R}$ with a finite-dimensional
+real normed space $F$, compatible in both directions. Let $K_i$, $i \in I$, be nonempty closed
+convex subsets of $E$, indexed by an arbitrary set $I$, with no common direction of recession:
+$\bigcap_i 0^+ K_i = \{0\}$. If every subfamily of at most $n + 1$ of the sets has a common
+point, then
+$$\bigcap_{i \in I} K_i \neq \emptyset.$$
+
+The hypothesis on recession cannot be dropped: a family built from two hyperbolas has a common
+point in every $n + 1$ of its sets, but its total intersection is empty. Compare
+`ConvexAnalysis.helly_finite`, where the family is finite and neither closedness nor a
+hypothesis on recession is needed. The pairing $B$ is used only in the proof. -/
 theorem helly_of_no_common_recession [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     {K : ι → Set E} (hconv : ∀ i, Convex ℝ (K i)) (hcl : ∀ i, IsClosed (K i))
     (hne : ∀ i, (K i).Nonempty)
@@ -1162,12 +1285,17 @@ theorem helly_of_no_common_recession [IsCompatiblePairing B] [IsCompatiblePairin
   rw [indicatorFn_of_notMem hcon] at h0
   exact absurd h0 (by simp)
 
-/-- **Helly's theorem with a bounded subfamily in place of the recession hypothesis.** A family of
-closed convex sets *every finite subfamily of which has a common point* has a common point
-outright, as soon as **some** finite subfamily has a bounded intersection. Under that standing
-hypothesis the recession and the bounded-subfamily hypotheses are equivalent
-(`iInter_recessionCone_eq_zero_iff_exists_isBounded`), and the bounded subfamily is in practice a
-single bounded `K i`. -/
+/-- **Helly's theorem with a bounded subfamily in place of the hypothesis on recession.** Let $E$ be
+a finite-dimensional real normed space, and let there be a pairing
+$B \colon E \times F \to \mathbb{R}$ with a finite-dimensional real normed space $F$, compatible
+in both directions. Let $K_i$, $i \in I$, be closed convex subsets of $E$ such that every finite
+subfamily has a common point. If some finite subfamily has a bounded intersection, then
+$$\bigcap_{i \in I} K_i \neq \emptyset.$$
+
+Under the hypothesis that every finite subfamily has a common point, the hypothesis on recession
+of `ConvexAnalysis.helly_of_no_common_recession` and the hypothesis on a bounded subfamily are
+equivalent (`ConvexAnalysis.iInter_recessionCone_eq_zero_iff_exists_isBounded`). In practice the
+bounded subfamily is a single bounded set $K_i$. The pairing $B$ is used only in the proof. -/
 theorem helly_of_exists_isBounded_biInter [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     {K : ι → Set E} (hconv : ∀ i, Convex ℝ (K i)) (hcl : ∀ i, IsClosed (K i))
     (hne : ∀ S : Finset ι, (⋂ i ∈ S, K i).Nonempty)

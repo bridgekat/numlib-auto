@@ -9,72 +9,84 @@ import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel
 
 /-!
-# The `L²` projections onto the piecewise linear functions
+# The $L^2$ projections onto the piecewise linear functions
 
-The piecewise linear functions of a partition `a = x₀ < x₁ < ⋯ < x_{n+1} = b`, seen inside `L²(a,
-b)`, form a finite-dimensional subspace, and the orthogonal projection onto it is the **Galerkin
-projection** of the partition: the best `L²` approximation by piecewise linear functions.  It is
-what a Galerkin method for an equation of the second kind discretizes with, and it is cheaper to
-control than the interpolation projection of `Numlib/Approximation/Interpolation`, because an
-orthogonal projection has norm one whatever the mesh.
+Let $a = x_0 < x_1 < \dots < x_{n+1} = b$ be a partition of $[a, b]$. The piecewise linear functions
+of the partition, as elements of $L^2(a, b)$, form a finite-dimensional subspace. The orthogonal
+projection $P_n$ onto it is the **Galerkin projection** of the partition: it gives the best $L^2$
+approximation by piecewise linear functions. A Galerkin method for an integral equation of the
+second kind discretizes with this projection. It is easier to control than the interpolation
+projection of `Numlib.Approximation.Interpolation`, because an orthogonal projection has norm at
+most $1$ for every mesh. The presentation follows [han2009theoretical], §12.2.3, equations (12.2.18)
+and (12.2.19), for the continuous projection, and §12.3.1 and Example 12.3.2 for the discontinuous
+projection and for the operator estimate $\|K(I - P_n)\| = O(h^2)$, which the book states there
+without proof.
 
-Two trial spaces are built here, differing only in whether continuity at the breakpoints is
-imposed: `piecewiseLinearLp` is spanned by the constant function and the clamped ramps of the
-subintervals, and `discPiecewiseLinearLp` is spanned by the constant and the coordinate function
-restricted to each panel separately, so that it contains the first.  The
-point of the discontinuous space is that it is an orthogonal direct sum over the panels, so that
-its Galerkin matrix is block diagonal; the point of the continuous one is that it is half the size.
-
-Both facts a projection method asks for come from interpolation, through one lemma,
-`norm_sub_starProjection_le_of_iccToLp_mem`: the orthogonal projection onto a subspace of
-`L²(a, b)` is at least as good as *any* continuous function whose class lies in that subspace, and
-a uniform bound is an `L²` bound (`IntegralOperator.norm_iccToLp_le`).  Applied to the continuous
-piecewise linear interpolant, which lies in both spaces, it gives
-
-* `‖f - P_n f‖_{L²} ≤ √(b - a) ‖f - I_n f‖_∞` for either projection;
-* hence `P_n → 1` pointwise on the continuous functions, and, the projections having norm one and
-  the continuous functions being dense in `L²`, on the whole of `L²(a, b)`.
-
-The last section turns the first of these into an operator estimate: for a kernel operator `K` on
-`L²(a, b)` and a self-adjoint `Q`, `‖K Q‖ ≤ √(b - a) sup_x ‖Q k(x, ·)‖`, because
-`K Q v (x) = ⟪Q k(x, ·), v⟫`.  With `Q = I - P_n` and a kernel twice continuously differentiable in
-its second variable this reads `‖K (I - P_n)‖ = 𝒪(h²)`, which is what a superconvergence argument
-for an iterated Galerkin method needs.
+The module builds two trial spaces. The continuous space `piecewiseLinearLp` is spanned by the
+constant function and the clamped ramps of the subintervals. The discontinuous space
+`discPiecewiseLinearLp` is spanned by the constant function and the coordinate function, each
+restricted to one panel, and it contains the continuous space. The discontinuous space is an
+orthogonal direct sum over the panels, so its Galerkin matrix is block diagonal; the continuous
+space has about half its dimension. For either projection,
+$$\|f - P_n f\|_{L^2} \le \sqrt{b - a}\, \|f - I_n f\|_\infty,$$
+where $I_n$ is piecewise linear interpolation, and $P_n \to I$ pointwise on $L^2(a, b)$ when the
+mesh tends to $0$. For a kernel operator $K$ on $L^2(a, b)$ and a self-adjoint $Q$, $\|KQ\| \le
+\sqrt{b - a}\, \sup_x \|Q k(x, \cdot)\|$. With $Q = I - P_n$ and a kernel that is twice continuously
+differentiable in its second variable, this gives $\|K(I - P_n)\| = O(h^2)$, which a
+superconvergence argument for an iterated Galerkin method needs.
 
 ## Main definitions
 
-* `IntegralOperator.iccIndicatorLp a b hs g` — the class in `L²(a, b)` of a continuous function cut
-  down to a measurable set, the building block of a discontinuous trial space.
-* `meshPanel x i` — the half-open panel `[x i, x (i + 1))` of a partition; the panels of
-  `x 0, …, x (n + 1)` partition `[a, b)` up to a null set, which is `sum_iccIndicatorLp_meshPanel`.
-* `piecewiseLinearLp a b n x` — the continuous trial space: the span, inside `L²(a, b)`, of the
-  constant function and the clamped ramps `piecewiseLinearRamp` of the subintervals, which is the
-  image of the range of `piecewiseLinearInterpCLM`.
-* `discPiecewiseLinearLp a b n x` — the discontinuous trial space: the span of the constant and the
-  coordinate function restricted to each panel.
-* `piecewiseLinearProjCLM a b n x` and `discPiecewiseLinearProjCLM a b n x` — the orthogonal
-  projections onto them.
+* `IntegralOperator.iccIndicatorLp`: the class in $L^2(a, b)$ of a continuous function multiplied by
+  the indicator of a measurable set.
+* `meshPanel`: the half-open panel $[x_i, x_{i+1})$ of a partition.
+* `piecewiseLinearLp`: the continuous trial space, spanned in $L^2(a, b)$ by the constant function
+  and the clamped ramps of the subintervals.
+* `discPiecewiseLinearLp`: the discontinuous trial space, spanned by the constant function and the
+  coordinate function, each restricted to a panel.
+* `piecewiseLinearProjCLM`, `discPiecewiseLinearProjCLM`: the orthogonal projections onto the two
+  trial spaces.
 
-## Main statements
+## Main results
 
-* `isIdempotentElem_piecewiseLinearProjCLM`, `norm_piecewiseLinearProjCLM_le_one` and their
-  discontinuous twins, together with `isSelfAdjoint_discPiecewiseLinearProjCLM` — each is a
-  projection of norm at most one, self-adjoint because orthogonal.
-* `norm_sub_piecewiseLinearProjCLM_le` and `norm_sub_discPiecewiseLinearProjCLM_le` —
-  `‖f - P_n f‖_{L²} ≤ √(b - a) ‖f - I_n f‖_∞`, the approximation property of either projection.
-* `tendsto_piecewiseLinearProjCLM` and `tendsto_discPiecewiseLinearProjCLM` — for a sequence of
-  partitions of vanishing mesh the projections converge pointwise to the identity on the whole of
-  `L²(a, b)`; both are instances of `tendsto_starProjection_of_piecewiseLinearInterpCLM_mem`.
-* `norm_l2KernelCLM_comp_le` — `‖K Q‖ ≤ √(b - a) sup_x ‖Q k(x, ·)‖` for a self-adjoint `Q`, and
-  `norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le`, its consequence
-  `‖K (I - P_n)‖ ≤ (b - a) h² ‖∂²_y k‖ / 8` for the discontinuous Galerkin projection.
+* `norm_sub_starProjection_le_of_iccToLp_mem`: the orthogonal projection $P$ onto a subspace $V$ of
+  $L^2(a, b)$ satisfies $\|f - Pf\|_{L^2} \le \sqrt{b - a}\, \|f - g\|_\infty$ for every continuous
+  $g$ with $[g] \in V$.
+* `isIdempotentElem_piecewiseLinearProjCLM`, `norm_piecewiseLinearProjCLM_le_one`,
+  `isIdempotentElem_discPiecewiseLinearProjCLM`, `isSelfAdjoint_discPiecewiseLinearProjCLM`,
+  `norm_discPiecewiseLinearProjCLM_le_one`: each Galerkin projection is a projection of norm at most
+  $1$, and the discontinuous one is self-adjoint.
+* `norm_sub_piecewiseLinearProjCLM_le`, `norm_sub_discPiecewiseLinearProjCLM_le`: $\|f - P_n
+  f\|_{L^2} \le \sqrt{b - a}\, \|f - I_n f\|_\infty$ for either projection.
+* `tendsto_starProjection_of_piecewiseLinearInterpCLM_mem`, `tendsto_piecewiseLinearProjCLM`,
+  `tendsto_discPiecewiseLinearProjCLM`: for partitions whose mesh tends to $0$, the projections
+  converge pointwise to the identity on $L^2(a, b)$.
+* `norm_l2KernelCLM_comp_le`: $\|KQ\| \le \sqrt{b - a}\, \sup_x \|Q k(x, \cdot)\|$ for a
+  self-adjoint $Q$.
+* `norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le`:
+  $\|K(I - P_n)\| \le (b - a)\, h^2 M / 8$ for the discontinuous Galerkin projection, where $M$
+  bounds $|\partial_y^2 k|$.
 
-## References
+## Proof outline
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009 ([han2009theoretical]), §12.2.3, equations (12.2.18) and
-(12.2.19), for the continuous projection; §12.3.1 and Example 12.3.2 for the discontinuous one and
-for the operator estimate `‖K (I - P_n)‖ = 𝒪(h²)`, which the book states there without proof.
+Both approximation results come from one lemma, `norm_sub_starProjection_le_of_iccToLp_mem`: an
+orthogonal projection onto a subspace of $L^2(a, b)$ approximates at least as well as any continuous
+function whose class lies in the subspace, and a uniform bound is an $L^2$ bound
+(`IntegralOperator.norm_iccToLp_le`). The continuous piecewise linear interpolant lies in both trial
+spaces. Pointwise convergence on $L^2(a, b)$ follows from convergence on the dense set of continuous
+functions and the bound $\|P_n\| \le 1$. The kernel estimate rests on the identity
+$(KQv)(x) = \langle Q k(x, \cdot), v \rangle$ for a self-adjoint $Q$.
+
+## Implementation notes
+
+* $L^2(a, b)$ is `Lp ℝ 2 (IntegralOperator.iccMeasure a b)`, on the subtype `Set.Icc a b`. A
+  continuous function enters it through `IntegralOperator.iccToLp`.
+* The nodes are a sequence `x : ℕ → Set.Icc a b`, of which $x_0, \dots, x_{n+1}$ are used: the trial
+  spaces with parameter $n$ have $n + 1$ panels.
+* The panels are half-open, so that the panels of an increasing partition are disjoint and cover
+  $[a, b)$. The remaining point $b$ is a null set.
+* The dimension $2(n + 1)$ of the discontinuous space is not proved. Only the membership results
+  that the approximation theory uses are proved.
 -/
 
 open Filter MeasureTheory Topology
@@ -85,40 +97,45 @@ variable {a b : ℝ}
 
 namespace IntegralOperator
 
-/-! ### Continuous functions and their indicators inside `L²(a, b)` -/
+/-! ### Continuous functions and their indicators inside $L^2(a, b)$ -/
 
-/-- The class in `L²(a, b)` of a continuous function is, almost everywhere, that function. -/
+/-- The class in $L^2(a, b)$ of a continuous function $g$ on $[a, b]$ agrees with $g$ almost
+everywhere. -/
 theorem coeFn_iccToLp (g : C(Set.Icc a b, ℝ)) :
     iccToLp a b g =ᵐ[iccMeasure a b] (g : Set.Icc a b → ℝ) :=
   ContinuousMap.coeFn_toLp (𝕜 := ℝ) (iccMeasure a b) g
 
-/-- A continuous function on a compact interval is square-integrable for Lebesgue measure. -/
+/-- A continuous function on the compact interval $[a, b]$ is square-integrable for Lebesgue
+measure. -/
 theorem memLp_iccToLp (g : C(Set.Icc a b, ℝ)) :
     MemLp (g : Set.Icc a b → ℝ) 2 (iccMeasure a b) :=
   (Lp.memLp (iccToLp a b g)).ae_eq (coeFn_iccToLp g)
 
-/-- A continuous kernel on the compact square is square-integrable for the product of Lebesgue
-measures, which is the hypothesis of `IntegralOperator.l2KernelCLM`. -/
+/-- A continuous kernel $k$ on the square $[a, b]^2$ is square-integrable for the product of the
+Lebesgue measures. This is the hypothesis of `IntegralOperator.l2KernelCLM`. -/
 theorem memLp_prod_iccMeasure (k : C(Set.Icc a b × Set.Icc a b, ℝ)) :
     MemLp k 2 ((iccMeasure a b).prod (iccMeasure a b)) :=
   MemLp.of_bound (map_continuous k).aestronglyMeasurable ‖k‖
     (Filter.Eventually.of_forall fun z => k.norm_coe_le_norm z)
 
-/-- **A continuous function cut down to a measurable set, as an element of `L²(a, b)`.**  A
-discontinuous trial space is spanned by such classes: the pieces of a piecewise polynomial are
-continuous, and it is the cutting alone that makes the whole discontinuous. -/
+/-- For a measurable set $s \subseteq [a, b]$ and a continuous function $g$ on $[a, b]$, the class
+in $L^2(a, b)$ of the function $\mathbf{1}_s\, g$, which equals $g$ on $s$ and $0$ elsewhere.
+
+A discontinuous trial space is spanned by such classes: each piece of a piecewise polynomial is
+continuous, and only the restriction to a panel makes the whole function discontinuous. -/
 noncomputable def iccIndicatorLp (a b : ℝ) {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
     (g : C(Set.Icc a b, ℝ)) : Lp ℝ 2 (iccMeasure a b) :=
   ((memLp_iccToLp g).indicator hs.nullMeasurableSet).toLp _
 
-/-- The defining formula of `IntegralOperator.iccIndicatorLp`, almost everywhere. -/
+/-- The class `IntegralOperator.iccIndicatorLp a b hs g` agrees almost everywhere with the function
+$\mathbf{1}_s\, g$. -/
 theorem coeFn_iccIndicatorLp {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
     (g : C(Set.Icc a b, ℝ)) :
     iccIndicatorLp a b hs g =ᵐ[iccMeasure a b] s.indicator (g : Set.Icc a b → ℝ) :=
   MemLp.coeFn_toLp _
 
-/-- Only the values on the set matter: two continuous functions agreeing on `s` have the same
-indicator class. -/
+/-- If two continuous functions $g_1$ and $g_2$ agree on the measurable set $s$, then
+$\mathbf{1}_s\, g_1$ and $\mathbf{1}_s\, g_2$ have the same class in $L^2(a, b)$. -/
 theorem iccIndicatorLp_congr {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
     {g₁ g₂ : C(Set.Icc a b, ℝ)} (h : ∀ t ∈ s, g₁ t = g₂ t) :
     iccIndicatorLp a b hs g₁ = iccIndicatorLp a b hs g₂ := by
@@ -129,7 +146,8 @@ theorem iccIndicatorLp_congr {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
   · simp [Set.indicator_of_mem ht, h t ht]
   · simp [Set.indicator_of_notMem ht]
 
-/-- `IntegralOperator.iccIndicatorLp` is additive in the function. -/
+/-- The class of $\mathbf{1}_s\, g$ is additive in $g$: $[\mathbf{1}_s (g_1 + g_2)] =
+[\mathbf{1}_s\, g_1] + [\mathbf{1}_s\, g_2]$. -/
 theorem iccIndicatorLp_add {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
     (g₁ g₂ : C(Set.Icc a b, ℝ)) :
     iccIndicatorLp a b hs (g₁ + g₂) = iccIndicatorLp a b hs g₁ + iccIndicatorLp a b hs g₂ := by
@@ -140,7 +158,8 @@ theorem iccIndicatorLp_add {s : Set (Set.Icc a b)} (hs : MeasurableSet s)
   rw [h3, Pi.add_apply, h0, h1, h2]
   by_cases ht : t ∈ s <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, ht]
 
-/-- `IntegralOperator.iccIndicatorLp` is homogeneous in the function. -/
+/-- The class of $\mathbf{1}_s\, g$ is homogeneous in $g$:
+$[\mathbf{1}_s (cg)] = c\, [\mathbf{1}_s\, g]$ for $c \in \mathbb{R}$. -/
 theorem iccIndicatorLp_smul {s : Set (Set.Icc a b)} (hs : MeasurableSet s) (c : ℝ)
     (g : C(Set.Icc a b, ℝ)) :
     iccIndicatorLp a b hs (c • g) = c • iccIndicatorLp a b hs g := by
@@ -152,17 +171,18 @@ theorem iccIndicatorLp_smul {s : Set (Set.Icc a b)} (hs : MeasurableSet s) (c : 
 
 end IntegralOperator
 
-/-! ### Best approximation in `L²(a, b)` by a continuous element of the subspace -/
+/-! ### Best approximation in $L^2(a, b)$ by a continuous element of the subspace -/
 
-/-- **An orthogonal projection of `L²(a, b)` is at least as good as any continuous function whose
-class lies in the subspace**, and a uniform bound is an `L²` bound, so
+/-- Let $a \le b$, let $V$ be a subspace of $L^2(a, b)$ with an orthogonal projection $P$, and let
+$f$ and $g$ be continuous functions on $[a, b]$ with $[g] \in V$. Then
+$$\|f - Pf\|_{L^2} \le \|f - g\|_{L^2} \le \sqrt{b - a}\, \|f - g\|_\infty.$$
+So every theorem on uniform approximation gives an $L^2$ bound for the orthogonal projection
+onto a subspace that contains the approximant, with one factor $\sqrt{b - a}$. This is the
+argument of [han2009theoretical], §12.2.3, equation (12.2.18).
 
-`‖f - P f‖_{L²} ≤ ‖f - g‖_{L²} ≤ √(b - a) ‖f - g‖_∞`  whenever `[g] ∈ V`.
-
-Every uniform-norm approximation theorem therefore becomes an `L²` bound on the orthogonal
-projection onto a subspace containing the approximant, at the cost of one factor `√(b - a)`.  This
-is the only approximation-theoretic input either Galerkin projection of this file needs;
-[han2009theoretical], §12.2.3, equation (12.2.18). -/
+This is the only input from approximation theory that the two Galerkin projections of this
+module need. The projection is `Submodule.starProjection`, and $[g]$ is
+`IntegralOperator.iccToLp a b g`. -/
 theorem norm_sub_starProjection_le_of_iccToLp_mem (hab : a ≤ b)
     (V : Submodule ℝ (Lp ℝ 2 (IntegralOperator.iccMeasure a b))) [V.HasOrthogonalProjection]
     (f : C(Set.Icc a b, ℝ)) {g : C(Set.Icc a b, ℝ)} (hg : iccToLp a b g ∈ V) :
@@ -173,9 +193,15 @@ theorem norm_sub_starProjection_le_of_iccToLp_mem (hab : a ≤ b)
 
 /-! ### The continuous piecewise linear functions -/
 
-/-- **The continuous piecewise linear functions of the partition, inside `L²(a, b)`.**  The span of
-the images of the constant `1` and of the clamped ramps of the subintervals, which is exactly the
-image under `iccToLp` of the range of `piecewiseLinearInterpCLM`. -/
+/-- The **continuous piecewise linear functions** of the nodes $x_0, \dots, x_{n+1}$, as a subspace
+of $L^2(a, b)$: the span of the classes of the constant function $1$ and of the clamped ramps of
+the subintervals $[x_i, x_{i+1}]$, $i = 0, \dots, n$. The clamped ramp of $[u, v]$ is
+`piecewiseLinearRamp`: it is $0$ below $u$, rises with slope $1$ on $[u, v]$, and equals $v - u$
+above $v$.
+
+The space contains the class of every piecewise linear interpolant
+`piecewiseLinearInterpCLM n x f` (`iccToLp_piecewiseLinearInterpCLM_mem`). The definition puts
+no condition on the nodes. -/
 noncomputable def piecewiseLinearLp (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     Submodule ℝ (Lp ℝ 2 (IntegralOperator.iccMeasure a b)) :=
   Submodule.span ℝ (iccToLp a b '' insert (1 : C(Set.Icc a b, ℝ))
@@ -188,25 +214,27 @@ instance (n : ℕ) (x : ℕ → Set.Icc a b) : FiniteDimensional ℝ (piecewiseL
 instance (n : ℕ) (x : ℕ → Set.Icc a b) : (piecewiseLinearLp a b n x).HasOrthogonalProjection :=
   Submodule.HasOrthogonalProjection.ofCompleteSpace _
 
-/-- **The `L²`-orthogonal projection onto the piecewise linear functions of the partition**: the
-Galerkin projection of the partition, the `P_n` of [han2009theoretical], §12.2.3. -/
+/-- The **Galerkin projection** of the nodes $x_0, \dots, x_{n+1}$: the orthogonal projection of
+$L^2(a, b)$ onto the continuous piecewise linear functions `piecewiseLinearLp a b n x`. It is
+the projection $P_n$ of [han2009theoretical], §12.2.3. -/
 noncomputable def piecewiseLinearProjCLM (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     Lp ℝ 2 (IntegralOperator.iccMeasure a b) →L[ℝ] Lp ℝ 2 (IntegralOperator.iccMeasure a b) :=
   (piecewiseLinearLp a b n x).starProjection
 
-/-- The Galerkin projection is a projection. -/
+/-- The Galerkin projection is idempotent: $P_n^2 = P_n$. -/
 theorem isIdempotentElem_piecewiseLinearProjCLM (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     IsIdempotentElem (piecewiseLinearProjCLM a b n x) :=
   Submodule.isIdempotentElem_starProjection _
 
-/-- **An orthogonal projection has norm at most one**, which is where the Galerkin projection is
-cheaper than the interpolation projection `piecewiseLinearInterpCLM`: no Lebesgue constant
-enters. -/
+/-- The Galerkin projection has the operator norm $\|P_n\| \le 1$, because it is an orthogonal
+projection. In this it is better than the interpolation projection `piecewiseLinearInterpCLM`:
+no Lebesgue constant enters. -/
 theorem norm_piecewiseLinearProjCLM_le_one (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     ‖piecewiseLinearProjCLM a b n x‖ ≤ 1 :=
   Submodule.starProjection_norm_le _
 
-/-- The image of a piecewise linear interpolant lies in the trial space. -/
+/-- For every continuous function $f$ on $[a, b]$, the class of the piecewise linear interpolant
+$I_n f$ (`piecewiseLinearInterpCLM n x f`) lies in the trial space `piecewiseLinearLp a b n x`. -/
 theorem iccToLp_piecewiseLinearInterpCLM_mem (n : ℕ) (x : ℕ → Set.Icc a b)
     (f : C(Set.Icc a b, ℝ)) :
     iccToLp a b (piecewiseLinearInterpCLM n x f) ∈ piecewiseLinearLp a b n x := by
@@ -231,14 +259,14 @@ theorem iccToLp_piecewiseLinearInterpCLM_mem (n : ℕ) (x : ℕ → Set.Icc a b)
   rw [map_smul]
   exact Submodule.smul_mem _ _ (hramp i hi)
 
-/-- **The approximation property of the Galerkin projection**: the orthogonal projection is at
-least as good as the interpolant, and a uniform bound is an `L²` bound, so
+/-- The **approximation property of the Galerkin projection**. Let $a \le b$ and let $f$ be
+continuous on $[a, b]$. Then
+$$\|f - P_n f\|_{L^2} \le \sqrt{b - a}\, \|f - I_n f\|_\infty,$$
+where $I_n f$ is the piecewise linear interpolant of $f$. So every uniform bound on piecewise
+linear interpolation gives an $L^2$ bound for the Galerkin projection, with one factor
+$\sqrt{b - a}$; see [han2009theoretical], §12.2.3, equation (12.2.18).
 
-`‖f - P_n f‖_{L²} ≤ ‖f - I_n f‖_{L²} ≤ √(b - a) ‖f - I_n f‖_∞`.
-
-Every uniform-norm bound on piecewise linear interpolation therefore becomes an `L²` bound on the
-Galerkin projection, at the cost of one factor `√(b - a)`; [han2009theoretical], §12.2.3,
-equation (12.2.18). -/
+The proof is `norm_sub_starProjection_le_of_iccToLp_mem` with $g = I_n f$. -/
 theorem norm_sub_piecewiseLinearProjCLM_le (hab : a ≤ b) (n : ℕ) (x : ℕ → Set.Icc a b)
     (f : C(Set.Icc a b, ℝ)) :
     ‖iccToLp a b f - piecewiseLinearProjCLM a b n x (iccToLp a b f)‖
@@ -248,23 +276,25 @@ theorem norm_sub_piecewiseLinearProjCLM_le (hab : a ≤ b) (n : ℕ) (x : ℕ �
 
 /-! ### The panels of a partition -/
 
-/-- **The `i`-th panel of a partition**, the half-open subinterval `[x i, x (i + 1))` read inside
-`Set.Icc a b`.  Half-open rather than closed so that the panels of an increasing partition are
-pairwise disjoint on the nose, and so cover `[a, b)` exactly once. -/
+/-- The $i$-th **panel** of the nodes $x$: the half-open interval $[x_i, x_{i+1})$, as a subset of
+$[a, b]$. The panels are half-open so that the panels of an increasing partition are pairwise
+disjoint and cover $[a, b)$ exactly once. -/
 def meshPanel (x : ℕ → Set.Icc a b) (i : ℕ) : Set (Set.Icc a b) :=
   Subtype.val ⁻¹' Set.Ico (x i : ℝ) (x (i + 1) : ℝ)
 
-/-- Membership in a panel, unfolded. -/
+/-- A point $t$ lies in the $i$-th panel if and only if $x_i \le t < x_{i+1}$. -/
 theorem mem_meshPanel {x : ℕ → Set.Icc a b} {i : ℕ} {t : Set.Icc a b} :
     t ∈ meshPanel x i ↔ (x i : ℝ) ≤ (t : ℝ) ∧ (t : ℝ) < (x (i + 1) : ℝ) := Iff.rfl
 
-/-- A panel is measurable, being the preimage of an interval under the inclusion. -/
+/-- Each panel is a measurable subset of $[a, b]$, as the preimage of an interval under the
+inclusion. -/
 theorem measurableSet_meshPanel (x : ℕ → Set.Icc a b) (i : ℕ) :
     MeasurableSet (meshPanel x i) :=
   measurableSet_Ico.preimage measurable_subtype_coe
 
-/-- **Every point of `[a, b)` lies in a panel.**  The endpoint `b` lies in none of them, which is
-why the statement excludes it; it is a null set, so nothing is lost in `L²`. -/
+/-- Let $x_0, \dots, x_{n+1}$ be a partition of $[a, b]$. Every $t \in [a, b]$ with $t \ne b$ lies
+in a panel $[x_j, x_{j+1})$ with $j \le n$. The point $b$ lies in no panel; it is a null set, so
+nothing is lost in $L^2$. -/
 theorem exists_mem_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {t : Set.Icc a b} (ht : (t : ℝ) ≠ b) :
     ∃ j ≤ n, t ∈ meshPanel x j := by
@@ -277,7 +307,8 @@ theorem exists_mem_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
       exact ht (by rw [h, hx.last])
     exact ⟨j + 1, by omega, ⟨h.ge, h ▸ hstep (j + 1) (by omega)⟩⟩
 
-/-- **The panels of an increasing partition are pairwise disjoint.** -/
+/-- Let $x_0 < x_1 < \dots < x_{n+1}$. For $i, j \le n$ with $i \ne j$, the panels $[x_i, x_{i+1})$
+and $[x_j, x_{j+1})$ are disjoint. -/
 theorem notMem_meshPanel_of_mem {n : ℕ} {x : ℕ → Set.Icc a b}
     (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) {i j : ℕ} (hi : i ≤ n) (hj : j ≤ n)
     (hij : i ≠ j) {t : Set.Icc a b} (htj : t ∈ meshPanel x j) : t ∉ meshPanel x i := by
@@ -290,10 +321,11 @@ theorem notMem_meshPanel_of_mem {n : ℕ} {x : ℕ → Set.Icc a b}
       (htj.2.trans_le ((piecewiseLinearInterpCLM.le_node_of_le hstep h (by omega)).trans hti.1))
       (lt_irrefl _)
 
-/-- **`L²(a, b)` splits over the panels**: the pieces of a continuous function on the panels of a
-partition sum back to the function, because the panels are disjoint and cover `[a, b)`, whose
-complement in `[a, b]` is a null set.  This is what makes a panel-by-panel trial space contain the
-global objects built from it. -/
+/-- Let $x_0, \dots, x_{n+1}$ be a partition of $[a, b]$, and let $g$ be continuous on $[a, b]$.
+Then
+$$\sum_{i=0}^{n} [\mathbf{1}_{[x_i, x_{i+1})}\, g] = [g] \quad \text{in } L^2(a, b),$$
+because the panels are disjoint and cover $[a, b)$, and $\{b\}$ is a null set. By this identity,
+a trial space built panel by panel contains the global functions built from its pieces. -/
 theorem sum_iccIndicatorLp_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (g : C(Set.Icc a b, ℝ)) :
     ∑ i ∈ Finset.range (n + 1), iccIndicatorLp a b (measurableSet_meshPanel x i) g
@@ -318,24 +350,26 @@ theorem sum_iccIndicatorLp_meshPanel {n : ℕ} {x : ℕ → Set.Icc a b}
 
 /-! ### The discontinuous piecewise linear functions -/
 
-/-- The coordinate function of `Set.Icc a b`, whose restrictions to the panels are, together with
-the restrictions of the constant `1`, the natural basis of the discontinuous piecewise linear
+/-- The coordinate function $t \mapsto t$ on $[a, b]$, as a continuous function. Its restrictions to
+the panels, together with those of the constant $1$, span the discontinuous piecewise linear
 functions. -/
 def iccCoord (a b : ℝ) : C(Set.Icc a b, ℝ) := ⟨Subtype.val, continuous_subtype_val⟩
 
+/-- The coordinate function on $[a, b]$ maps $t$ to $t$. -/
 @[simp]
 theorem iccCoord_apply (a b : ℝ) (t : Set.Icc a b) : iccCoord a b t = (t : ℝ) := rfl
 
-/-- **The discontinuous piecewise linear functions of the partition, inside `L²(a, b)`.**  The span
-of the restrictions to each panel of the constant `1` and of the coordinate function: a function of
-this space is affine on every panel, with no continuity imposed across the breakpoints, so the
-space is, for a strictly increasing partition, the direct sum of the two-dimensional spaces of the
-`n + 1` panels, of dimension `2 (n + 1)`; that count is not proved here, only the membership
-statements the approximation theory uses.
+/-- The **discontinuous piecewise linear functions** of the nodes $x_0, \dots, x_{n+1}$, as a
+subspace of $L^2(a, b)$: the span of the classes $[\mathbf{1}_{[x_i, x_{i+1})}]$ and
+$[\mathbf{1}_{[x_i, x_{i+1})}\, t]$ for $i = 0, \dots, n$. A function of this space is affine on
+every panel, and it need not be continuous at the nodes. For a strictly increasing partition the
+space is the direct sum of the two-dimensional spaces of the $n + 1$ panels, so it has dimension
+$2(n + 1)$; this count is not proved here.
 
 This is the trial space of the discontinuous piecewise linear Galerkin method of
-[han2009theoretical], §12.3.1, Example 12.3.2, where a mesh of `n` subintervals of `[0, 1]` gives
-dimension `2 n`, twice that of the continuous piecewise linear space of §12.2.3. -/
+[han2009theoretical], §12.3.1, Example 12.3.2. There a mesh of $n$ subintervals of $[0, 1]$
+gives the dimension $2n$, about twice the dimension of the continuous piecewise linear space of
+§12.2.3. -/
 noncomputable def discPiecewiseLinearLp (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     Submodule ℝ (Lp ℝ 2 (IntegralOperator.iccMeasure a b)) :=
   Submodule.span ℝ (⋃ i ∈ Set.Iic n,
@@ -352,8 +386,9 @@ instance (n : ℕ) (x : ℕ → Set.Icc a b) :
     (discPiecewiseLinearLp a b n x).HasOrthogonalProjection :=
   Submodule.HasOrthogonalProjection.ofCompleteSpace _
 
-/-- **A function that is affine on one panel belongs, once cut down to that panel, to the
-discontinuous trial space.** -/
+/-- Let $i \le n$, and let $g$ be a continuous function on $[a, b]$ with $g(t) = c + dt$ on the
+panel $[x_i, x_{i+1})$. Then $[\mathbf{1}_{[x_i, x_{i+1})}\, g]$ lies in the discontinuous trial
+space `discPiecewiseLinearLp a b n x`. -/
 theorem iccIndicatorLp_mem_discPiecewiseLinearLp {n : ℕ} {x : ℕ → Set.Icc a b} {i : ℕ}
     (hi : i ≤ n) {c d : ℝ} {g : C(Set.Icc a b, ℝ)}
     (hg : ∀ t ∈ meshPanel x i, g t = c + d * (t : ℝ)) :
@@ -372,9 +407,10 @@ theorem iccIndicatorLp_mem_discPiecewiseLinearLp {n : ℕ} {x : ℕ → Set.Icc 
   exact Submodule.add_mem _ (Submodule.smul_mem _ _ (hgen _ (Set.mem_insert _ _)))
     (Submodule.smul_mem _ _ (hgen _ (Set.mem_insert_of_mem _ rfl)))
 
-/-- **The image of a continuous piecewise linear interpolant lies in the discontinuous trial
-space**, which is the inclusion of the continuous piecewise linear functions in the discontinuous
-ones: on each panel the interpolant is the affine function through the two node values. -/
+/-- Let $x_0, \dots, x_{n+1}$ be a partition of $[a, b]$, and let $f$ be continuous on $[a, b]$.
+Then the class of the piecewise linear interpolant $I_n f$ lies in the discontinuous trial
+space. So the continuous piecewise linear functions lie in the discontinuous ones: on each panel
+the interpolant is the affine function through its two node values. -/
 theorem iccToLp_piecewiseLinearInterpCLM_mem_disc {n : ℕ} {x : ℕ → Set.Icc a b}
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
     iccToLp a b (piecewiseLinearInterpCLM n x f) ∈ discPiecewiseLinearLp a b n x := by
@@ -390,41 +426,42 @@ theorem iccToLp_piecewiseLinearInterpCLM_mem_disc {n : ℕ} {x : ℕ → Set.Icc
   field_simp
   ring
 
-/-- **The `L²`-orthogonal projection onto the discontinuous piecewise linear functions of the
-partition**: the Galerkin projection of the discontinuous piecewise linear method of
-[han2009theoretical], §12.3.1, Example 12.3.2.  Because the trial space is the orthogonal direct
-sum of the panel spaces, this projection acts panel by panel. -/
+/-- The **discontinuous Galerkin projection**: the orthogonal projection of $L^2(a, b)$ onto the
+discontinuous piecewise linear functions `discPiecewiseLinearLp a b n x`. It is the projection
+of the discontinuous piecewise linear Galerkin method of [han2009theoretical], §12.3.1, Example
+12.3.2. Because the trial space is the orthogonal direct sum of the panel spaces, the projection
+acts panel by panel. -/
 noncomputable def discPiecewiseLinearProjCLM (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     Lp ℝ 2 (IntegralOperator.iccMeasure a b) →L[ℝ] Lp ℝ 2 (IntegralOperator.iccMeasure a b) :=
   (discPiecewiseLinearLp a b n x).starProjection
 
-/-- The discontinuous Galerkin projection is a projection. -/
+/-- The discontinuous Galerkin projection is idempotent: $P_n^2 = P_n$. -/
 theorem isIdempotentElem_discPiecewiseLinearProjCLM (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     IsIdempotentElem (discPiecewiseLinearProjCLM a b n x) :=
   Submodule.isIdempotentElem_starProjection _
 
-/-- **The discontinuous Galerkin projection is self-adjoint**, being orthogonal.  This is what
-turns `‖K (I - P_n)‖` into `‖(I - P_n) K*‖` in a superconvergence argument;
+/-- The discontinuous Galerkin projection is self-adjoint, because it is an orthogonal projection.
+In a superconvergence argument this turns $\|K(I - P_n)\|$ into $\|(I - P_n)K^*\|$; see
 [han2009theoretical], §12.3.1, equation (12.3.13). -/
 theorem isSelfAdjoint_discPiecewiseLinearProjCLM (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     IsSelfAdjoint (discPiecewiseLinearProjCLM a b n x) :=
   isSelfAdjoint_starProjection _
 
-/-- **An orthogonal projection has norm at most one**, whatever the mesh: no Lebesgue constant
-enters. -/
+/-- The discontinuous Galerkin projection has the operator norm $\|P_n\| \le 1$ for every mesh,
+because it is an orthogonal projection: no Lebesgue constant enters. -/
 theorem norm_discPiecewiseLinearProjCLM_le_one (a b : ℝ) (n : ℕ) (x : ℕ → Set.Icc a b) :
     ‖discPiecewiseLinearProjCLM a b n x‖ ≤ 1 :=
   Submodule.starProjection_norm_le _
 
-/-- **The approximation property of the discontinuous Galerkin projection**, of the same shape as
-`norm_sub_piecewiseLinearProjCLM_le` and with the same constant: the discontinuous trial space
-contains the continuous piecewise linear interpolant, so the projection onto it is at least as
-good,
+/-- The **approximation property of the discontinuous Galerkin projection**. Let $a \le b$, let
+$x_0, \dots, x_{n+1}$ be a partition of $[a, b]$, and let $f$ be continuous on $[a, b]$. Then
+$$\|f - P_n f\|_{L^2} \le \sqrt{b - a}\, \|f - I_n f\|_\infty,$$
+where $P_n$ is the discontinuous Galerkin projection and $I_n f$ is the continuous piecewise
+linear interpolant. The constant is the same as in `norm_sub_piecewiseLinearProjCLM_le`, because
+the discontinuous trial space contains the interpolant.
 
-`‖f - P_n f‖_{L²} ≤ √(b - a) ‖f - I_n f‖_∞`.
-
-With `norm_sub_piecewiseLinearInterpCLM_le` this is the `𝒪(h²)` order on `C²[a, b]` that
-[han2009theoretical], §12.3.1, Example 12.3.2 asserts for the discontinuous piecewise linear
+With `norm_sub_piecewiseLinearInterpCLM_le`, this gives the order $O(h^2)$ on $C^2[a, b]$ that
+[han2009theoretical], §12.3.1, Example 12.3.2, states for the discontinuous piecewise linear
 Galerkin method. -/
 theorem norm_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) {n : ℕ} {x : ℕ → Set.Icc a b}
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
@@ -435,16 +472,22 @@ theorem norm_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) {n : ℕ} {x : �
 
 /-! ### Pointwise convergence -/
 
-/-- **A sequence of orthogonal projections of `L²(a, b)` whose subspaces contain the piecewise
-linear interpolants of a sequence of partitions of vanishing mesh converges pointwise to the
-identity on the whole of `L²(a, b)`**: it does so on the continuous functions by
-`norm_sub_starProjection_le_of_iccToLp_mem` and the convergence of piecewise linear interpolation,
-the projections have norm at most one, and the continuous functions are dense in `L²`.
+/-- Let $a \le b$. For each $m$, let $y^{(m)}_0, \dots, y^{(m)}_{N_m + 1}$ be a partition of
+$[a, b]$ with mesh at most $h_m$, where $h_m \to 0$. Let $V_m$ be a subspace of $L^2(a, b)$ with
+an orthogonal projection $P_m$, and suppose that $V_m$ contains the class of the piecewise
+linear interpolant at the nodes $y^{(m)}$ of every continuous function. Then $P_m u \to u$ for
+every $u \in L^2(a, b)$.
 
-This is the pointwise convergence that a projection method for an equation of the second kind
-needs, and it is stated for an arbitrary family of subspaces because both the continuous and the
-discontinuous piecewise linear spaces of this file satisfy the membership hypothesis;
-[han2009theoretical], §12.2.3, the paragraph following equation (12.2.18). -/
+The convergence holds on the continuous functions by `norm_sub_starProjection_le_of_iccToLp_mem`
+and the convergence of piecewise linear interpolation. The projections have norm at most $1$,
+and the continuous functions are dense in $L^2(a, b)$. The result is stated for an arbitrary
+family of subspaces because both trial spaces of this module satisfy its hypothesis. It is the
+pointwise convergence that a projection method for an equation of the second kind needs; see
+[han2009theoretical], §12.2.3, the paragraph after equation (12.2.18).
+
+The partition is given by the conditions $y^{(m)}_i < y^{(m)}_{i+1}$ for $i \le N_m$,
+$y^{(m)}_0 = a$ and $y^{(m)}_{N_m + 1} = b$, and the mesh bound is
+$y^{(m)}_{i+1} - y^{(m)}_i \le h_m$ for $i \le N_m$. -/
 theorem tendsto_starProjection_of_piecewiseLinearInterpCLM_mem (hab : a ≤ b)
     {V : ℕ → Submodule ℝ (Lp ℝ 2 (IntegralOperator.iccMeasure a b))}
     [∀ m, (V m).HasOrthogonalProjection] {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
@@ -511,11 +554,15 @@ theorem tendsto_starProjection_of_piecewiseLinearInterpCLM_mem (hab : a ≤ b)
         + ‖u - iccToLp a b v‖ := by gcongr; exact norm_sub_le _ _
     _ < ε := by linarith
 
-/-- **The Galerkin projections of a sequence of partitions of vanishing mesh converge pointwise to
-the identity on the whole of `L²(a, b)`.**
+/-- Let $a \le b$. For each $m$, let $y^{(m)}_0, \dots, y^{(m)}_{N_m + 1}$ be a partition of
+$[a, b]$ with mesh at most $h_m$, where $h_m \to 0$. Then the Galerkin projections $P_m$ onto
+the continuous piecewise linear functions of these partitions satisfy $P_m u \to u$ for every
+$u \in L^2(a, b)$.
 
 This is the pointwise convergence that a projection method for an equation of the second kind
-needs; [han2009theoretical], §12.2.3, the paragraph following equation (12.2.18). -/
+needs; see [han2009theoretical], §12.2.3, the paragraph after equation (12.2.18). It is
+`tendsto_starProjection_of_piecewiseLinearInterpCLM_mem` with the continuous trial spaces
+`piecewiseLinearLp` as $V_m$. -/
 theorem tendsto_piecewiseLinearProjCLM (hab : a ≤ b) {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b}
     {h : ℕ → ℝ} (hstep : ∀ n, ∀ i ≤ N n, (y n i : ℝ) < (y n (i + 1) : ℝ))
     (hfirst : ∀ n, (y n 0 : ℝ) = a) (hlast : ∀ n, (y n (N n + 1) : ℝ) = b)
@@ -525,10 +572,13 @@ theorem tendsto_piecewiseLinearProjCLM (hab : a ≤ b) {N : ℕ → ℕ} {y : �
   tendsto_starProjection_of_piecewiseLinearInterpCLM_mem hab
     (fun m f => iccToLp_piecewiseLinearInterpCLM_mem (N m) (y m) f) hstep hfirst hlast hmesh hh u
 
-/-- **The discontinuous Galerkin projections of a sequence of partitions of vanishing mesh converge
-pointwise to the identity on the whole of `L²(a, b)`**, by the same argument as
-`tendsto_piecewiseLinearProjCLM`: the discontinuous trial space contains the continuous piecewise
-linear interpolants; [han2009theoretical], §12.3.1. -/
+/-- Let $a \le b$. For each $m$, let $y^{(m)}_0, \dots, y^{(m)}_{N_m + 1}$ be a partition of
+$[a, b]$ with mesh at most $h_m$, where $h_m \to 0$. Then the discontinuous Galerkin projections
+$P_m$ of these partitions satisfy $P_m u \to u$ for every $u \in L^2(a, b)$; see
+[han2009theoretical], §12.3.1.
+
+The proof is the same as for `tendsto_piecewiseLinearProjCLM`, because the discontinuous trial
+space contains the continuous piecewise linear interpolants. -/
 theorem tendsto_discPiecewiseLinearProjCLM (hab : a ≤ b) {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b}
     {h : ℕ → ℝ} (hstep : ∀ n, ∀ i ≤ N n, (y n i : ℝ) < (y n (i + 1) : ℝ))
     (hfirst : ∀ n, (y n 0 : ℝ) = a) (hlast : ∀ n, (y n (N n + 1) : ℝ) = b)
@@ -542,17 +592,18 @@ theorem tendsto_discPiecewiseLinearProjCLM (hab : a ≤ b) {N : ℕ → ℕ} {y 
 
 /-! ### Kernel operators against a projection -/
 
-/-- **The operator norm of a kernel operator composed with a self-adjoint operator is controlled by
-what that operator does to the rows of the kernel**:
+/-- Let $a \le b$, let $k$ be a continuous kernel on $[a, b]^2$ with integral operator $K$ on
+$L^2(a, b)$, and let $Q$ be a bounded self-adjoint operator on $L^2(a, b)$. If
+$\varepsilon \ge 0$ and $\|Q k(z, \cdot)\|_{L^2} \le \varepsilon$ for every $z \in [a, b]$, then
+$$\|KQ\| \le \sqrt{b - a}\, \varepsilon.$$
+For $Q = I - P_n$ with a projection $P_n$, this is the estimate that an iterated projection
+method needs: $\|K(I - P_n)\|$ is small when $I - P_n$ is uniformly small on the rows of the
+kernel; see [han2009theoretical], §12.3.1, the paragraph that contains equation (12.3.17).
 
-`‖K Q‖ ≤ √(b - a) · sup_x ‖Q k(x, ·)‖`.
-
-The proof is the identity `K (Q v) (x) = ⟪k(x, ·), Q v⟫ = ⟪Q k(x, ·), v⟫`, which bounds `K (Q v)`
-pointwise by `ε ‖v‖`, and a pointwise bound is an `L²` bound with the factor `√(b - a)`.
-
-Applied to `Q = I - P_n` for a projection `P_n`, this is the estimate an iterated projection
-method needs: `‖K (I - P_n)‖` is small as soon as `I - P_n` is uniformly small on the rows of the
-kernel; [han2009theoretical], §12.3.1, the paragraph containing equation (12.3.17). -/
+The proof uses the identity $(KQv)(x) = \langle k(x, \cdot), Qv \rangle = \langle Q k(x, \cdot),
+v \rangle$, which bounds $KQv$ pointwise by $\varepsilon \|v\|$, and a pointwise bound is an
+$L^2$ bound with the factor $\sqrt{b - a}$. In Lean, the row $k(z, \cdot)$ is `k.curry z` and
+the operator $K$ is `IntegralOperator.l2KernelCLM hk`. -/
 theorem norm_l2KernelCLM_comp_le (hab : a ≤ b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)}
     (hk : MemLp k 2 ((iccMeasure a b).prod (iccMeasure a b)))
     {Q : Lp ℝ 2 (IntegralOperator.iccMeasure a b) →L[ℝ] Lp ℝ 2 (IntegralOperator.iccMeasure a b)}
@@ -585,20 +636,20 @@ theorem norm_l2KernelCLM_comp_le (hab : a ≤ b) {k : C(Set.Icc a b × Set.Icc a
   rw [← mul_assoc]
   norm_num [hmu, Real.sqrt_eq_rpow]
 
-/-- **`‖K (I - P_n)‖ = 𝒪(h²)` for the discontinuous piecewise linear Galerkin projection.**  For a
-kernel whose rows `k(z, ·)` are twice continuously differentiable with `|∂²_y k| ≤ M` on `[a, b]`,
+/-- Let $a \le b$, let $x_0, \dots, x_{n+1}$ be a partition of $[a, b]$ with mesh at most $h$, and
+let $P_n$ be its discontinuous Galerkin projection. Let $k$ be a continuous kernel on $[a, b]^2$
+with integral operator $K$, such that every row is $k(z, t) = G_z(t)$ for a function $G_z$ of
+class $C^2$ on $\mathbb{R}$ with $|G_z''(t)| \le M$ for $t \in [a, b]$. Then
+$$\|K(I - P_n)\| \le \frac{(b - a)\, h^2 M}{8}.$$
 
-`‖K (I - P_n)‖ ≤ (b - a) h² M / 8`,
+[han2009theoretical], §12.3.1, Example 12.3.2, states without proof that "it is straightforward
+to show $\|(I - P_n)K^*\| = O(h^2)$". The two forms agree because $P_n$ is self-adjoint
+(`isSelfAdjoint_discPiecewiseLinearProjCLM`) and an operator and its adjoint have the same norm,
+which is equation (12.3.13) there.
 
-where `h` bounds the mesh of the partition.  The rows are handled uniformly by
-`norm_sub_discPiecewiseLinearProjCLM_le` and `norm_sub_piecewiseLinearInterpCLM_le`, and the two
-factors `√(b - a)` — one from the pointwise-to-`L²` step of `norm_l2KernelCLM_comp_le`, one from
-the approximation property — combine into `b - a`.
-
-This is the estimate that [han2009theoretical], §12.3.1, Example 12.3.2 states without proof as
-"it is straightforward to show `‖(I - P_n) K*‖ = 𝒪(h²)`"; the two forms agree because `P_n` is
-self-adjoint (`isSelfAdjoint_discPiecewiseLinearProjCLM`) and an operator and its adjoint have the
-same norm, which is equation (12.3.13) there. -/
+The rows are handled uniformly by `norm_sub_discPiecewiseLinearProjCLM_le` and
+`norm_sub_piecewiseLinearInterpCLM_le`. The two factors $\sqrt{b - a}$, one from
+`norm_l2KernelCLM_comp_le` and one from the approximation property, combine into $b - a$. -/
 theorem norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (hab : a ≤ b) {n : ℕ}
     {x : ℕ → Set.Icc a b} (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ))
     {k : C(Set.Icc a b × Set.Icc a b, ℝ)}

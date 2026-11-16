@@ -10,19 +10,49 @@ import Numlib.Analysis.Matrix.Function.Sign
 /-!
 # The principal square root of a matrix
 
-The principal square root ([golub2013matrix] §9.4.2; Higham, *Functions of Matrices*, Ch. 6)
-`A^{1/2} = pfc Complex.sqrt A`, with Mathlib's principal branch `Complex.sqrt z = z ^ (1/2)` (cut
-along `(-∞, 0]`, analytic on `Complex.slitPlane`). For `A` with no eigenvalue on `(-∞, 0]` it is the
-unique square root whose eigenvalues have positive real part (`Matrix.existsUnique_sq_eq_of_re_pos`)
-— the book's definition of `A^{1/2}`, whose existence and uniqueness it leaves implicit.
+Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$. The **principal square
+root** of $A$ is $A^{1/2} = f(A)$ for the principal branch $f(z) = z^{1/2}$ of the complex square
+root, in the primary functional calculus. It is the unique square root of $A$ whose eigenvalues have
+positive real part. This is the definition of $A^{1/2}$ in [golub2013matrix], §9.4.2, which leaves
+its existence and uniqueness implicit. The presentation also follows N. J. Higham, *Functions of
+Matrices*, Chapter 6.
 
-Newton's iteration (9.4.7) `X_{k+1} = (X_k + X_k⁻¹ A)/2` is the sign iteration in disguise:
-`X_k = A^{1/2} S_k` with `S_k` the Newton sign iterates of `A^{1/2}`
-(`Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate`), whence convergence. The Denman–Beavers
-iteration (9.4.8) is the sign iteration of the block matrix `[0 A; I 0]`
-(`Matrix.newtonSignIterate_fromBlocks`), whose sign is `[0 A^{1/2}; A^{-1/2} 0]`
-(`Matrix.matrixSign_fromBlocks_zero_one`), whence `X_k → A^{1/2}` and `Y_k → A^{-1/2}`
-(`Matrix.tendsto_denmanBeavers_fst`, `Matrix.tendsto_denmanBeavers_snd`).
+Newton's iteration (9.4.7) of [golub2013matrix], $X_{k+1} = (X_k + X_k^{-1} A)/2$, is the sign
+iteration in disguise: $X_k = A^{1/2} S_k$, where $S_k$ are the Newton sign iterates of $A^{1/2}$,
+and so $X_k \to A^{1/2}$. The Denman–Beavers iteration (9.4.8) is the sign iteration of the block
+matrix $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$, whose sign is $\begin{bmatrix} 0 & A^{1/2} \\
+A^{-1/2} & 0 \end{bmatrix}$. So its two components converge to $A^{1/2}$ and $A^{-1/2}$.
+
+## Main definitions
+
+* `Matrix.principalSqrt`: the principal square root $A^{1/2}$.
+* `Matrix.newtonSqrtIterate`: Newton's iteration (9.4.7) for the square root.
+* `Matrix.denmanBeavers`: the Denman–Beavers iteration (9.4.8).
+
+## Main results
+
+* `Matrix.principalSqrt_sq`: $(A^{1/2})^2 = A$, and every eigenvalue of $A^{1/2}$ has positive real
+  part.
+* `Matrix.existsUnique_sq_eq_of_re_pos`: $A$ has exactly one square root whose eigenvalues have
+  positive real part.
+* `Matrix.newtonSqrtIterate_eq_mul_newtonSignIterate`: $X_k = A^{1/2} S_k$ for the Newton sign
+  iterates $S_k$ of $A^{1/2}$.
+* `Matrix.tendsto_newtonSqrtIterate`: Newton's iterates converge to $A^{1/2}$.
+* `Matrix.newtonSignIterate_fromBlocks`: the Newton sign iterates of
+  $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$ are $\begin{bmatrix} 0 & X_k \\ Y_k & 0
+  \end{bmatrix}$ for the Denman–Beavers iterates $(X_k, Y_k)$.
+* `Matrix.tendsto_denmanBeavers_fst`, `Matrix.tendsto_denmanBeavers_snd`: $X_k \to A^{1/2}$ and
+  $Y_k \to A^{-1/2}$.
+* `Matrix.matrixSign_fromBlocks_zero_one`: the sign of
+  $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$ is $\begin{bmatrix} 0 & A^{1/2} \\ A^{-1/2} & 0
+  \end{bmatrix}$.
+
+## Implementation notes
+
+* The square root is Mathlib's `Complex.sqrt`, the principal branch $z^{1/2}$ with the branch cut
+  along $(-\infty, 0]$. It is analytic on `Complex.slitPlane`, the complement of $(-\infty, 0]$. The
+  hypothesis that $A$ has no eigenvalue on $(-\infty, 0]$ is `spectrum ℂ A ⊆ Complex.slitPlane`.
+* The inverses in the iterations are Mathlib matrix inverses, which are $0$ at a singular matrix.
 -/
 
 open Polynomial Filter Topology Complex
@@ -31,16 +61,21 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The principal square root** ([golub2013matrix] §9.4.2's `A^{1/2}`):
-`pfc Complex.sqrt A`, `Complex.sqrt z = z ^ (1/2)` the principal branch. -/
+/-- The **principal square root** of $A \in \mathbb{C}^{n \times n}$: $A^{1/2} = f(A)$ for the
+principal branch $f(z) = z^{1/2}$ of the square root, in the primary functional calculus `pfc`.
+This is $A^{1/2}$ of [golub2013matrix], §9.4.2.
+
+The square root is `Complex.sqrt`. The definition gives a value for every $A$; the theorems
+about it assume that $A$ has no eigenvalue on $(-\infty, 0]$. -/
 noncomputable def principalSqrt (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc Complex.sqrt A
 
-/-- The square root is analytic on the slit plane. -/
+/-- The complex square root is analytic at every point of the slit plane. -/
 private theorem contDiffAt_sqrt {z : ℂ} (hz : z ∈ slitPlane) : ContDiffAt ℂ ⊤ Complex.sqrt z :=
   (analyticAt_id.cpow analyticAt_const hz).contDiffAt
 
-/-- The principal square root of a point of the slit plane has positive real part. -/
+/-- For $z$ in the slit plane $\mathbb{C} \setminus (-\infty, 0]$, the principal square root
+$z^{1/2}$ has positive real part. -/
 theorem _root_.Complex.re_sqrt_pos {z : ℂ} (hz : z ∈ slitPlane) : 0 < (Complex.sqrt z).re := by
   rw [Complex.sqrt, cpow_inv_two_re]
   refine Real.sqrt_pos.mpr (half_pos ?_)
@@ -49,14 +84,17 @@ theorem _root_.Complex.re_sqrt_pos {z : ℂ} (hz : z ∈ slitPlane) : 0 < (Compl
   · have := Complex.abs_re_lt_norm.mpr h
     linarith [neg_abs_le z.re]
 
-/-- The principal square root maps the slit plane into itself (into the right half-plane). -/
+/-- The principal square root maps the slit plane $\mathbb{C} \setminus (-\infty, 0]$ into itself,
+because its values there have positive real part. -/
 theorem _root_.Complex.sqrt_mem_slitPlane {z : ℂ} (hz : z ∈ slitPlane) :
     Complex.sqrt z ∈ slitPlane :=
   mem_slitPlane_iff.mpr (Or.inl (Complex.re_sqrt_pos hz))
 
-/-- **The principal square root is a square root** ([golub2013matrix] §9.4.2): with no eigenvalue
-on `(-∞, 0]`, `(A^{1/2})² = A`, `A^{1/2}` commutes with `A`, and its eigenvalues have positive real
-part. -/
+/-- **The principal square root is a square root.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$. Then
+$$(A^{1/2})^2 = A,$$
+$A^{1/2}$ commutes with $A$, and every eigenvalue of $A^{1/2}$ has positive real part. This is
+in [golub2013matrix], §9.4.2. -/
 theorem principalSqrt_sq {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     principalSqrt A ^ 2 = A ∧ Commute A (principalSqrt A) ∧
       ∀ μ ∈ spectrum ℂ (principalSqrt A), 0 < μ.re := by
@@ -75,11 +113,16 @@ theorem principalSqrt_sq {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane
     rintro _ ⟨μ, hμ, rfl⟩
     exact Complex.re_sqrt_pos (hA hμ)
 
-/-- **Existence and uniqueness of the principal square root** ([golub2013matrix] §9.4.2): with no
-eigenvalue on `(-∞, 0]`, `A^{1/2}` is the only square root of `A` with eigenvalues in the open right
-half-plane. Uniqueness (after Higham, *Functions of Matrices*, Theorem 1.29, without simultaneous
-triangularization): `G = A^{1/2}` is a polynomial `q(F)` in any such root `F`, with `q(μ) = μ` on
-the spectrum of `F`, so `F + G` has eigenvalues `2μ ≠ 0`, and `(F - G)(F + G) = F² - G² = 0`. -/
+/-- **Existence and uniqueness of the principal square root.** Let $A \in \mathbb{C}^{n \times n}$
+have no eigenvalue on $(-\infty, 0]$. Then there is exactly one matrix
+$F \in \mathbb{C}^{n \times n}$ with $F^2 = A$ whose eigenvalues all have positive real part.
+This is the characterization of $A^{1/2}$ in [golub2013matrix], §9.4.2. By
+`Matrix.principalSqrt_sq`, this matrix is $A^{1/2}$.
+
+The uniqueness proof follows Theorem 1.29 of N. J. Higham, *Functions of Matrices*, without
+simultaneous triangularization. The matrix $G = A^{1/2}$ is a polynomial $q(F)$ in any such root
+$F$, with $q(\mu) = \mu$ on the spectrum of $F$. So $F + G$ has the eigenvalues $2\mu \neq 0$,
+and $(F - G)(F + G) = F^2 - G^2 = 0$. -/
 theorem existsUnique_sq_eq_of_re_pos {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     ∃! F : Matrix n n ℂ, F ^ 2 = A ∧ ∀ μ ∈ spectrum ℂ F, 0 < μ.re := by
   classical
@@ -122,14 +165,20 @@ theorem existsUnique_sq_eq_of_re_pos {A : Matrix n n ℂ} (hA : spectrum ℂ A �
 
 /-! ### Newton's iteration -/
 
-/-- **Newton's iteration for the square root** ([golub2013matrix] (9.4.7)): `X₀ = A`,
-`X_{k+1} = (X_k + X_k⁻¹ A)/2`. -/
+/-- **Newton's iteration for the square root**: for $A \in \mathbb{C}^{n \times n}$,
+$$X_0 = A, \qquad X_{k+1} = \tfrac12 (X_k + X_k^{-1} A).$$
+This is (9.4.7) of [golub2013matrix].
+
+The inverse is the Mathlib matrix inverse, which is $0$ at a singular matrix. -/
 noncomputable def newtonSqrtIterate (A : Matrix n n ℂ) : ℕ → Matrix n n ℂ
   | 0 => A
   | k + 1 => (2 : ℂ)⁻¹ • (newtonSqrtIterate A k + (newtonSqrtIterate A k)⁻¹ * A)
 
-/-- **Newton's square root iteration is the sign iteration** ([golub2013matrix] §9.4.2): with no
-eigenvalue on `(-∞, 0]`, `X_k = A^{1/2} S_k` for the Newton sign iterates `S_k` of `A^{1/2}`. -/
+/-- **Newton's square root iteration is the sign iteration.** Let $A \in \mathbb{C}^{n \times n}$
+have no eigenvalue on $(-\infty, 0]$, and let $X_k$ be the iterates of Newton's square root
+iteration. Then for every $k$,
+$$X_k = A^{1/2} S_k,$$
+where $S_k$ are the Newton sign iterates of $A^{1/2}$. This is in [golub2013matrix], §9.4.2. -/
 theorem newtonSqrtIterate_eq_mul_newtonSignIterate {A : Matrix n n ℂ}
     (hA : spectrum ℂ A ⊆ slitPlane) (k : ℕ) :
     newtonSqrtIterate A k = principalSqrt A * newtonSignIterate (principalSqrt A) k := by
@@ -154,8 +203,11 @@ theorem newtonSqrtIterate_eq_mul_newtonSignIterate {A : Matrix n n ℂ}
     rw [mul_assoc, ← mul_assoc R⁻¹, nonsing_inv_mul _ hRdet, one_mul,
       (commute_nonsing_inv_right hc).symm.eq]
 
-/-- **Convergence of Newton's square root iteration** ([golub2013matrix] §9.4.2): with no eigenvalue
-on `(-∞, 0]`, `X_k → A^{1/2}`, since `S_k → sign(A^{1/2}) = 1`. -/
+/-- **Convergence of Newton's square root iteration.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$, and let $X_k$ be the iterates of Newton's square root iteration.
+Then $X_k \to A^{1/2}$ as $k \to \infty$. This is in [golub2013matrix], §9.4.2.
+
+The proof uses $X_k = A^{1/2} S_k$ and $S_k \to \operatorname{sign}(A^{1/2}) = I$. -/
 theorem tendsto_newtonSqrtIterate {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     Tendsto (newtonSqrtIterate A) atTop (𝓝 (principalSqrt A)) := by
   obtain ⟨-, -, hre⟩ := principalSqrt_sq hA
@@ -166,22 +218,29 @@ theorem tendsto_newtonSqrtIterate {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ 
 
 /-! ### The Denman–Beavers iteration -/
 
-/-- **The Denman–Beavers iteration** ([golub2013matrix] (9.4.8)): `(X₀, Y₀) = (A, 1)`,
-`X_{k+1} = (X_k + Y_k⁻¹)/2`, `Y_{k+1} = (Y_k + X_k⁻¹)/2`. -/
+/-- **The Denman–Beavers iteration**: for $A \in \mathbb{C}^{n \times n}$, the pairs $(X_k, Y_k)$
+with
+$$X_0 = A, \quad Y_0 = I, \qquad X_{k+1} = \tfrac12 (X_k + Y_k^{-1}), \quad
+  Y_{k+1} = \tfrac12 (Y_k + X_k^{-1}).$$
+This is (9.4.8) of [golub2013matrix].
+
+$X_k$ and $Y_k$ are the two components of the pair. The inverses are Mathlib matrix inverses,
+which are $0$ at a singular matrix. -/
 noncomputable def denmanBeavers (A : Matrix n n ℂ) : ℕ → Matrix n n ℂ × Matrix n n ℂ
   | 0 => (A, 1)
   | k + 1 => ((2 : ℂ)⁻¹ • ((denmanBeavers A k).1 + (denmanBeavers A k).2⁻¹),
       (2 : ℂ)⁻¹ • ((denmanBeavers A k).2 + (denmanBeavers A k).1⁻¹))
 
-/-- The inverse of a block antidiagonal matrix. -/
+/-- For nonsingular $X$ and $Y$, $\begin{bmatrix} 0 & X \\ Y & 0 \end{bmatrix} \begin{bmatrix} 0 &
+Y^{-1} \\ X^{-1} & 0 \end{bmatrix} = I$. -/
 private theorem fromBlocks_antidiag_mul {X Y : Matrix n n ℂ} (hX : IsUnit X) (hY : IsUnit Y) :
     fromBlocks 0 X Y 0 * fromBlocks 0 Y⁻¹ X⁻¹ 0 = 1 := by
   rw [fromBlocks_multiply]
   simp [mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hX),
     mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hY), fromBlocks_one]
 
-/-- The spectrum of `[0 A; I 0]` avoids the imaginary axis when that of `A` avoids `(-∞, 0]`: its
-square is `diag(A, A)`. -/
+/-- If $A$ has no eigenvalue on $(-\infty, 0]$, then $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$
+has no eigenvalue on the imaginary axis, because its square is $\operatorname{diag}(A, A)$. -/
 private theorem re_ne_zero_of_mem_spectrum_fromBlocks {A : Matrix n n ℂ}
     (hA : spectrum ℂ A ⊆ slitPlane) :
     ∀ μ ∈ spectrum ℂ (fromBlocks 0 A (1 : Matrix n n ℂ) 0), μ.re ≠ 0 := by
@@ -211,9 +270,12 @@ private theorem re_ne_zero_of_mem_spectrum_fromBlocks {A : Matrix n n ℂ}
   rw [hneg, ofReal_mem_slitPlane] at this
   nlinarith [sq_nonneg μ.im]
 
-/-- **The Denman–Beavers iteration is the sign iteration of `[0 A; I 0]`**
-([golub2013matrix] §9.4.2): with no eigenvalue of `A` on `(-∞, 0]`, the Newton sign iterates of
-`Ã = [0 A; I 0]` are `[0 X_k; Y_k 0]`, all `X_k`, `Y_k` invertible. -/
+/-- **The Denman–Beavers iteration is the sign iteration of
+$\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$, and let $(X_k, Y_k)$ be the Denman–Beavers iterates of $A$. Then
+for every $k$, the Newton sign iterate of $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$ is
+$$S_k = \begin{bmatrix} 0 & X_k \\ Y_k & 0 \end{bmatrix},$$
+and $X_k$ and $Y_k$ are nonsingular. This is in [golub2013matrix], §9.4.2. -/
 theorem newtonSignIterate_fromBlocks {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) (k : ℕ) :
     newtonSignIterate (fromBlocks 0 A 1 0) k =
         fromBlocks 0 (denmanBeavers A k).1 (denmanBeavers A k).2 0 ∧
@@ -246,8 +308,9 @@ theorem newtonSignIterate_fromBlocks {A : Matrix n n ℂ} (hA : spectrum ℂ A �
     rw [← hS]
     exact (isUnit_newtonSignIterate hT (k + 1)).1
 
-/-- **[golub2013matrix] (9.4.9)–(9.4.10)**: `X_k = A Y_k`, and `X_k` is Newton's square root
-iterate. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $(X_k, Y_k)$
+be the Denman–Beavers iterates of $A$. Then for every $k$, $X_k = A Y_k$, and $X_k$ is the
+$k$-th iterate of Newton's square root iteration. This is (9.4.9)–(9.4.10) of [golub2013matrix]. -/
 theorem denmanBeavers_fst_eq_mul_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane)
     (k : ℕ) : (denmanBeavers A k).1 = A * (denmanBeavers A k).2 ∧
       (denmanBeavers A k).1 = newtonSqrtIterate A k := by
@@ -281,14 +344,18 @@ theorem denmanBeavers_fst_eq_mul_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A �
         (2 : ℂ)⁻¹ • (newtonSqrtIterate A k + (newtonSqrtIterate A k)⁻¹ * A)
       rw [← h2, hinv, mul_assoc, nonsing_inv_mul _ hAdet, mul_one]
 
-/-- **The Denman–Beavers iteration converges to the square root** ([golub2013matrix] §9.4.2):
-with no eigenvalue of `A` on `(-∞, 0]`, `X_k → A^{1/2}`. -/
+/-- **The Denman–Beavers iteration converges to the square root.** Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $(X_k, Y_k)$ be
+the Denman–Beavers iterates of $A$. Then $X_k \to A^{1/2}$ as $k \to \infty$. This is in
+[golub2013matrix], §9.4.2. -/
 theorem tendsto_denmanBeavers_fst {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     Tendsto (fun k => (denmanBeavers A k).1) atTop (𝓝 (principalSqrt A)) :=
   (tendsto_newtonSqrtIterate hA).congr fun k => ((denmanBeavers_fst_eq_mul_snd hA k).2).symm
 
-/-- **The Denman–Beavers iteration converges to the inverse square root** ([golub2013matrix]
-§9.4.2): with no eigenvalue of `A` on `(-∞, 0]`, `Y_k → A^{-1/2}`. -/
+/-- **The Denman–Beavers iteration converges to the inverse square root.** Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $(X_k, Y_k)$ be
+the Denman–Beavers iterates of $A$. Then $Y_k \to A^{-1/2} = (A^{1/2})^{-1}$ as $k \to \infty$.
+This is in [golub2013matrix], §9.4.2. -/
 theorem tendsto_denmanBeavers_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     Tendsto (fun k => (denmanBeavers A k).2) atTop (𝓝 (principalSqrt A)⁻¹) := by
   obtain ⟨hsq, -, -⟩ := principalSqrt_sq hA
@@ -309,10 +376,15 @@ theorem tendsto_denmanBeavers_snd {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ 
   refine h.congr fun k => ?_
   rw [(denmanBeavers_fst_eq_mul_snd hA k).1, ← mul_assoc, nonsing_inv_mul _ hAdet, one_mul]
 
-/-- **The sign of `[0 A; I 0]`** ([golub2013matrix] §9.4.2): with no eigenvalue of `A` on
-`(-∞, 0]`, `sign([0 A; I 0]) = [0 A^{1/2}; A^{-1/2} 0]`, the limit of the Newton sign iteration,
-whose iterates are the Denman–Beavers pairs (`Matrix.tendsto_denmanBeavers_fst`,
-`Matrix.tendsto_denmanBeavers_snd`). -/
+/-- **The sign of $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$.** Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$. Then
+$$\operatorname{sign} \begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}
+  = \begin{bmatrix} 0 & A^{1/2} \\ A^{-1/2} & 0 \end{bmatrix}.$$
+This is in [golub2013matrix], §9.4.2.
+
+The sign is the limit of the Newton sign iteration, whose iterates are the Denman–Beavers pairs
+by `Matrix.newtonSignIterate_fromBlocks`. The limits of the two components are
+`Matrix.tendsto_denmanBeavers_fst` and `Matrix.tendsto_denmanBeavers_snd`. -/
 theorem matrixSign_fromBlocks_zero_one {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     matrixSign (fromBlocks 0 A 1 0) = fromBlocks 0 (principalSqrt A) (principalSqrt A)⁻¹ 0 := by
   have hX := tendsto_denmanBeavers_fst hA

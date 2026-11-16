@@ -16,40 +16,50 @@ import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.Analysis.Sobolev.Chart
 
 /-!
-# The Gram determinant of a linear map `ℝ^d → ℝ^N`
+# The Gram determinant of a linear map $\mathbb{R}^d \to \mathbb{R}^N$
 
-The Gram determinant of a linear map `L : ℝ^d → ℝ^N`, `gramDet L = det (Lᵀ L)`, and its square
-root `gram L`, the `d`-dimensional volume scaling of `L`. It is the density with which a `C¹`
-parametrization `Φ : ℝ^d ⊇ D → ℝ^N` transports Lebesgue measure to a surface measure,
-`∫ f dσ = ∫_D f (Φ x') gram (DΦ x') dx'`, and the three identities proved here are what make that
-transport independent of the parametrization: `gram (L ∘ A) = gram L · |det A|` for a square `A`
-(so two parametrizations related by a `C¹` transition give the same measure, through Mathlib's
-change of variables `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul`),
-`gram (U ∘ L) = gram L` for an isometry `U` (rigid motions do not change it), and
-`gram (v ↦ (v, ℓ v)) = √(1 + ‖ℓ‖²)` for the graph map of a linear form `ℓ`, the classical
-`√(1 + |∇g|²)`. Kept apart from `Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean` so that a
-later chart-based (Brezis-style) surface measure can reuse it (decision B2 of
-`notes/boundary/planning-brief.md`).
-
-Matrices are taken with respect to the standard orthonormal bases
-`(EuclideanSpace.basisFun (Fin d) ℝ).toBasis` and `(EuclideanSpace.basisFun (Fin N) ℝ).toBasis`
-through `LinearMap.toMatrix` (`EuclideanSpace.stdMatrix`), so that `Lᵀ L` is the matrix of inner
-products `⟪L eᵢ, L eⱼ⟫` (`gramDet_eq_det_of_inner`), which is the form every identity is proved
-through.
+Let $L : \mathbb{R}^d \to \mathbb{R}^N$ be linear, with matrix $M \in \mathbb{R}^{N \times d}$ in
+the standard bases. Its **Gram determinant** is $\det(M^T M)$, and its square root
+$\sqrt{\det(M^T M)}$ is the factor by which $L$ scales $d$-dimensional volume. It is the density
+with which a $C^1$ parametrization $\Phi : D \to \mathbb{R}^N$, $D \subseteq \mathbb{R}^d$, carries
+Lebesgue measure to a surface measure,
+$$\int f \, d\sigma = \int_D f(\Phi(x')) \sqrt{\det\bigl(D\Phi(x')^T D\Phi(x')\bigr)} \, dx'.$$
+This file proves the three identities that make this measure independent of the parametrization. For
+a square matrix $A$, the factor of $L A$ is the factor of $L$ times $|\det A|$; with Mathlib's
+change of variables `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul`, two
+parametrizations related by a $C^1$ transition then give the same measure. A linear isometry $U$ of
+$\mathbb{R}^N$ does not change the factor, so rigid motions do not change the measure. For the graph
+map $v \mapsto (v, \ell v)$ of a linear form $\ell$ the factor is $\sqrt{1 + \|\ell\|^2}$, the
+classical surface element $\sqrt{1 + |\nabla g|^2}$. This file is separate from
+`Numlib.Analysis.Sobolev.Boundary.GraphMeasure` so that a surface measure built from charts can also
+use it.
 
 ## Main definitions
 
-* `EuclideanSpace.stdMatrix L`, the matrix of `L : ℝ^d →L[ℝ] ℝ^N` in the standard bases;
-* `EuclideanSpace.gramDet L = det (Mᵀ M)` and `EuclideanSpace.gram L = √(gramDet L)`;
-* `EuclideanSpace.snocLastL ℓ`, the graph map `v ↦ (v, ℓ v)` of a linear form as a continuous
-  linear map `ℝ^d →L[ℝ] ℝ^{d+1}`.
+* `EuclideanSpace.stdMatrix`: the matrix of a linear map $\mathbb{R}^d \to \mathbb{R}^N$ in the
+  standard bases.
+* `EuclideanSpace.gramDet`: the Gram determinant $\det(M^T M)$.
+* `EuclideanSpace.gram`: the volume scaling factor $\sqrt{\det(M^T M)}$.
+* `EuclideanSpace.snocLastL`: the graph map $v \mapsto (v, \ell v)$ of a linear form $\ell$, as a
+  continuous linear map $\mathbb{R}^d \to \mathbb{R}^{d+1}$.
 
-## Main statements
+## Main results
 
-* `EuclideanSpace.gramDet_nonneg`: `Mᵀ M` is positive semidefinite;
-* `EuclideanSpace.gram_comp`: `gram (L ∘L A) = gram L * |det A|`;
-* `EuclideanSpace.gram_isometry_comp`: `gram (U ∘L L) = gram L` for a linear isometry `U`;
-* `EuclideanSpace.gram_snocLastL`: `gram (snocLastL ℓ) = √(1 + ‖ℓ‖²)`.
+* `EuclideanSpace.gramDet_nonneg`: the Gram determinant is nonnegative.
+* `EuclideanSpace.gram_comp`: $\operatorname{gram}(L \circ A) = \operatorname{gram}(L) \, |\det A|$
+  for $A : \mathbb{R}^d \to \mathbb{R}^d$.
+* `EuclideanSpace.gram_isometry_comp`: $\operatorname{gram}(U \circ L) = \operatorname{gram}(L)$ for
+  a linear isometry $U$ of $\mathbb{R}^N$.
+* `EuclideanSpace.gram_snocLastL`: the graph map of $\ell$ has
+  $\operatorname{gram} = \sqrt{1 + \|\ell\|^2}$.
+
+## Implementation notes
+
+* Matrices are taken with respect to the standard orthonormal bases
+  `(EuclideanSpace.basisFun (Fin d) ℝ).toBasis` and `(EuclideanSpace.basisFun (Fin N) ℝ).toBasis`
+  through `LinearMap.toMatrix`. Then $M^T M$ is the matrix of inner products
+  $\langle L e_i, L e_j \rangle$ (`EuclideanSpace.gramDet_eq_det_of_inner`), and every identity is
+  proved in this form.
 -/
 
 open Matrix
@@ -63,28 +73,33 @@ variable {d N : ℕ}
 
 /-! ### The matrix of a linear map in the standard bases -/
 
-/-- The matrix of `L : ℝ^d →L[ℝ] ℝ^N` with respect to the standard orthonormal bases: the
-`Matrix (Fin N) (Fin d) ℝ` whose `j`-th column is `L e_j`. -/
+/-- **The standard matrix** of a continuous linear map $L : \mathbb{R}^d \to \mathbb{R}^N$: the
+matrix $M \in \mathbb{R}^{N \times d}$ of $L$ with respect to the standard orthonormal bases,
+whose $j$-th column is $L e_j$. -/
 def stdMatrix (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     Matrix (Fin N) (Fin d) ℝ :=
   LinearMap.toMatrix (EuclideanSpace.basisFun (Fin d) ℝ).toBasis
     (EuclideanSpace.basisFun (Fin N) ℝ).toBasis L
 
-/-- The entries of the standard matrix are the coordinates of the images of the basis vectors. -/
+/-- The entries of the standard matrix are the coordinates of the images of the basis vectors:
+$M_{ij} = (L e_j)_i$. -/
 theorem stdMatrix_apply (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N))
     (i : Fin N) (j : Fin d) : stdMatrix L i j = L (single j 1) i := by
   rw [stdMatrix, LinearMap.toMatrix_apply, OrthonormalBasis.coe_toBasis_repr_apply,
     basisFun_repr, OrthonormalBasis.coe_toBasis, basisFun_apply]
   rfl
 
-/-- The standard matrix of a composite is the product of the standard matrices. -/
+/-- The standard matrix of a composition is the product of the standard matrices: for
+$L : \mathbb{R}^d \to \mathbb{R}^N$ and $A : \mathbb{R}^d \to \mathbb{R}^d$, the matrix of
+$L \circ A$ is the matrix of $L$ times the matrix of $A$. -/
 theorem stdMatrix_comp (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N))
     (A : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)) :
     stdMatrix (L ∘L A) = stdMatrix L * stdMatrix A := by
   rw [stdMatrix, stdMatrix, stdMatrix, ContinuousLinearMap.toLinearMap_comp,
     LinearMap.toMatrix_comp _ (EuclideanSpace.basisFun (Fin d) ℝ).toBasis]
 
-/-- The determinant of the standard matrix of an endomorphism is its determinant. -/
+/-- For a linear map $A : \mathbb{R}^d \to \mathbb{R}^d$, the determinant of the standard matrix of
+$A$ is the determinant of $A$. -/
 theorem det_stdMatrix (A : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)) :
     (stdMatrix A).det
       = LinearMap.det (A : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] EuclideanSpace ℝ (Fin d)) :=
@@ -92,15 +107,19 @@ theorem det_stdMatrix (A : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace �
 
 /-! ### The Gram determinant -/
 
-/-- **The Gram determinant** of `L : ℝ^d →L[ℝ] ℝ^N`: the determinant of the Gram matrix `Mᵀ * M`
-of the standard matrix `M := stdMatrix L`, that is of the matrix `(⟪L eᵢ, L eⱼ⟫)ᵢⱼ` of inner
-products of the images of the basis vectors (`gramDet_eq_det_of_inner`). Its square root
-`EuclideanSpace.gram L` is the `d`-dimensional volume scaling factor of `L`. -/
+/-- **The Gram determinant** of a continuous linear map $L : \mathbb{R}^d \to \mathbb{R}^N$: the
+number $\det(M^T M)$, where $M$ is the standard matrix of $L$.
+
+The matrix $M^T M$ is the matrix $(\langle L e_i, L e_j \rangle)_{ij}$ of inner products of the
+images of the basis vectors (`EuclideanSpace.gramDet_eq_det_of_inner`). Its square root
+`EuclideanSpace.gram L` is the $d$-dimensional volume scaling factor of $L$. -/
 def gramDet (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) : ℝ :=
   ((stdMatrix L)ᵀ * stdMatrix L).det
 
-/-- The Gram determinant is the determinant of the matrix of inner products
-`⟪L eᵢ, L eⱼ⟫` of the images of the standard basis vectors. -/
+/-- The Gram determinant of $L : \mathbb{R}^d \to \mathbb{R}^N$ is the determinant of the matrix of
+inner products of the images of the standard basis vectors:
+$$\operatorname{gramDet} L = \det\bigl(\langle L e_i, L e_j \rangle\bigr)_{i,j=1}^d.$$
+-/
 theorem gramDet_eq_det_of_inner (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     gramDet L = (Matrix.of fun i j ↦ ⟪L (single i 1), L (single j 1)⟫_ℝ).det := by
   unfold gramDet
@@ -110,16 +129,19 @@ theorem gramDet_eq_det_of_inner (L : EuclideanSpace ℝ (Fin d) →L[ℝ] Euclid
     inner_eq_star_dotProduct, dotProduct, star_trivial]
   exact Finset.sum_congr rfl fun k _ ↦ mul_comm _ _
 
-/-- The Gram determinant is nonnegative: `Mᵀ * M` is positive semidefinite. -/
+/-- The Gram determinant is nonnegative: $\det(M^T M) \ge 0$, because $M^T M$ is positive
+semidefinite. -/
 theorem gramDet_nonneg (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     0 ≤ gramDet L := by
   have h := Matrix.posSemidef_conjTranspose_mul_self (stdMatrix L)
   rw [Matrix.conjTranspose_eq_transpose_of_trivial] at h
   exact h.det_nonneg
 
-/-- **The Gram determinant of a composite with a square map**:
-`gramDet (L ∘L A) = gramDet L * (det A)²` for `A : ℝ^d →L[ℝ] ℝ^d`, since the Gram matrix of
-`L ∘L A` is `Aᵀ (Mᵀ M) A`. -/
+/-- **The Gram determinant of a composition with a square map.** For
+$L : \mathbb{R}^d \to \mathbb{R}^N$ and $A : \mathbb{R}^d \to \mathbb{R}^d$,
+$$\operatorname{gramDet}(L \circ A) = \operatorname{gramDet}(L) \, (\det A)^2.$$
+
+The Gram matrix of $L \circ A$ is $A^T (M^T M) A$. -/
 theorem gramDet_comp (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N))
     (A : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)) :
     gramDet (L ∘L A) = gramDet L * LinearMap.det (A : EuclideanSpace ℝ (Fin d) →ₗ[ℝ]
@@ -129,8 +151,10 @@ theorem gramDet_comp (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace �
     Matrix.det_mul, Matrix.det_mul, Matrix.det_transpose, det_stdMatrix]
   ring
 
-/-- **A linear isometry of the target does not change the Gram determinant**: the inner products
-`⟪U (L eᵢ), U (L eⱼ)⟫` are the `⟪L eᵢ, L eⱼ⟫`. -/
+/-- **A linear isometry of the target does not change the Gram determinant.** For a linear isometric
+equivalence $U$ of $\mathbb{R}^N$ and $L : \mathbb{R}^d \to \mathbb{R}^N$,
+$\operatorname{gramDet}(U \circ L) = \operatorname{gramDet}(L)$, because $\langle U L e_i, U L
+e_j \rangle = \langle L e_i, L e_j \rangle$. -/
 theorem gramDet_isometry_comp (U : EuclideanSpace ℝ (Fin N) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin N))
     (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     gramDet ((U.toContinuousLinearEquiv : EuclideanSpace ℝ (Fin N) →L[ℝ]
@@ -142,23 +166,31 @@ theorem gramDet_isometry_comp (U : EuclideanSpace ℝ (Fin N) ≃ₗᵢ[ℝ] Euc
 
 /-! ### The graph map of a linear form -/
 
-/-- **The graph map of a linear form** `ℓ : ℝ^d →L[ℝ] ℝ` as a continuous linear map
-`ℝ^d →L[ℝ] ℝ^{d+1}`: `v ↦ snocLast v (ℓ v) = (v, ℓ v)`. It is the derivative of the graph
-parametrization `x' ↦ (x', g x')` at a point where `g` has derivative `ℓ`
-(`EuclideanSpace.hasFDerivAt_graphParam` in `Boundary/GraphMeasure.lean`). -/
+/-- **The graph map of a linear form** $\ell : \mathbb{R}^d \to \mathbb{R}$: the continuous linear
+map $\mathbb{R}^d \to \mathbb{R}^{d+1}$, $v \mapsto (v, \ell v)$, with $\ell v$ as the last
+coordinate.
+
+It is the derivative of the graph parametrization $x' \mapsto (x', g(x'))$ at a point where $g$
+has derivative $\ell$ (`EuclideanSpace.hasFDerivAt_graphParam` in
+`Numlib.Analysis.Sobolev.Boundary.GraphMeasure`). -/
 def snocLastL (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
     EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin (d + 1)) :=
   ((lastInitL d).symm : ℝ × EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin (d + 1))) ∘L
     ℓ.prod (ContinuousLinearMap.id ℝ _)
 
+/-- The graph map of $\ell$ sends $v$ to $(v, \ell v)$, that is `EuclideanSpace.snocLast v (ℓ v)`.
+-/
 @[simp]
 theorem snocLastL_apply (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) (v : EuclideanSpace ℝ (Fin d)) :
     snocLastL ℓ v = snocLast v (ℓ v) :=
   rfl
 
-/-- **The Gram determinant of a graph map**: `gramDet (snocLastL ℓ) = 1 + ∑ i, (ℓ eᵢ)²`. The
-Gram matrix is `1 + u uᵀ` with `u i = ℓ eᵢ`, and the matrix determinant lemma
-`Matrix.det_one_add_replicateCol_mul_replicateRow` gives `1 + u ⬝ᵥ u`. -/
+/-- **The Gram determinant of a graph map.** For a linear form $\ell : \mathbb{R}^d \to \mathbb{R}$,
+the graph map $v \mapsto (v, \ell v)$ has
+$$\operatorname{gramDet} = 1 + \sum_{i=1}^d (\ell e_i)^2.$$
+
+The Gram matrix is $I + u u^T$ with $u_i = \ell e_i$, and the matrix determinant lemma
+`Matrix.det_one_add_replicateCol_mul_replicateRow` gives $1 + u^T u$. -/
 theorem gramDet_snocLastL (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
     gramDet (snocLastL ℓ) = 1 + ∑ i, (ℓ (single i 1)) ^ 2 := by
   rw [gramDet_eq_det_of_inner]
@@ -172,9 +204,13 @@ theorem gramDet_snocLastL (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
   rw [h, det_one_add_replicateCol_mul_replicateRow]
   simp [dotProduct, sq]
 
-/-- **The Gram determinant of a graph map is `1 + ‖ℓ‖²`**: the sum `∑ i, (ℓ eᵢ)²` is the squared
-norm of the Riesz representative of `ℓ`, which is `‖ℓ‖`. For `ℓ = fderiv ℝ g x` this is
-`1 + ‖gradient g x‖ ^ 2`, since `gradient g x = (toDual ℝ _).symm (fderiv ℝ g x)`. -/
+/-- **The Gram determinant of a graph map is $1 + \|\ell\|^2$.** For a continuous linear form
+$\ell : \mathbb{R}^d \to \mathbb{R}$ with operator norm $\|\ell\|$, the graph map
+$v \mapsto (v, \ell v)$ has $\operatorname{gramDet} = 1 + \|\ell\|^2$.
+
+The sum $\sum_i (\ell e_i)^2$ is the squared norm of the Riesz representative of $\ell$, and the
+norm of that representative is $\|\ell\|$. For $\ell = Dg(x)$ this is $1 + \|\nabla g(x)\|^2$,
+since `gradient g x` is `(InnerProductSpace.toDual ℝ _).symm (fderiv ℝ g x)`. -/
 theorem gramDet_snocLastL_eq_one_add_norm_sq (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
     gramDet (snocLastL ℓ) = 1 + ‖ℓ‖ ^ 2 := by
   rw [gramDet_snocLastL]
@@ -187,39 +223,51 @@ theorem gramDet_snocLastL_eq_one_add_norm_sq (ℓ : EuclideanSpace ℝ (Fin d) �
     simp
   simp only [h1, h2, EuclideanSpace.real_norm_sq_eq]
 
-/-! ### The volume scaling factor `gram L = √(gramDet L)` -/
+/-! ### The volume scaling factor $\sqrt{\det(M^T M)}$ -/
 
-/-- **The `d`-dimensional volume scaling factor** `gram L = √(gramDet L)` of `L : ℝ^d →L[ℝ] ℝ^N`:
-the density with which a parametrization with derivative `L` transports `d`-dimensional Lebesgue
-measure. -/
+/-- **The $d$-dimensional volume scaling factor** of a continuous linear map
+$L : \mathbb{R}^d \to \mathbb{R}^N$: the square root $\operatorname{gram} L =
+\sqrt{\operatorname{gramDet} L}$ of its Gram determinant. It is the density with which a
+parametrization with derivative $L$ carries $d$-dimensional Lebesgue measure to a surface. -/
 def gram (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) : ℝ :=
   Real.sqrt (gramDet L)
 
+/-- The volume scaling factor is nonnegative: $\operatorname{gram} L \ge 0$. -/
 theorem gram_nonneg (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) : 0 ≤ gram L :=
   Real.sqrt_nonneg _
 
+/-- The square of the volume scaling factor is the Gram determinant: $(\operatorname{gram} L)^2 =
+\operatorname{gramDet} L$. -/
 theorem gram_sq (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     gram L ^ 2 = gramDet L :=
   Real.sq_sqrt (gramDet_nonneg L)
 
-/-- **The change-of-parameters identity** at a single point: `gram (L ∘L A) = gram L * |det A|`
-for `A : ℝ^d →L[ℝ] ℝ^d` — the identity `gram (Φ ∘ ψ) = (gram Φ ∘ ψ) · |det Dψ|` of decision B2 of
-`notes/boundary/planning-brief.md`, applied in `EuclideanSpace.graphDensity_graphTransition`. -/
+/-- **The change-of-parameters identity at one point.** For $L : \mathbb{R}^d \to \mathbb{R}^N$ and
+$A : \mathbb{R}^d \to \mathbb{R}^d$,
+$$\operatorname{gram}(L \circ A) = \operatorname{gram}(L) \, |\det A|.$$
+
+Applied to the derivatives of parametrizations, it gives $\operatorname{gram} D(\Phi \circ
+\psi) = (\operatorname{gram} D\Phi \circ \psi) \, |\det D\psi|$ for a change of parameters
+$\psi$; it is used in this form in `EuclideanSpace.graphDensity_graphTransition`. -/
 theorem gram_comp (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N))
     (A : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)) :
     gram (L ∘L A) = gram L * |LinearMap.det (A : EuclideanSpace ℝ (Fin d) →ₗ[ℝ]
       EuclideanSpace ℝ (Fin d))| := by
   rw [gram, gram, gramDet_comp, Real.sqrt_mul (gramDet_nonneg L), Real.sqrt_sq_eq_abs]
 
-/-- A linear isometry of the target does not change the volume scaling factor. -/
+/-- A linear isometry of the target does not change the volume scaling factor: for a linear
+isometric equivalence $U$ of $\mathbb{R}^N$ and $L : \mathbb{R}^d \to \mathbb{R}^N$,
+$\operatorname{gram}(U \circ L) = \operatorname{gram}(L)$. -/
 theorem gram_isometry_comp (U : EuclideanSpace ℝ (Fin N) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin N))
     (L : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin N)) :
     gram ((U.toContinuousLinearEquiv : EuclideanSpace ℝ (Fin N) →L[ℝ]
       EuclideanSpace ℝ (Fin N)) ∘L L) = gram L := by
   rw [gram, gram, gramDet_isometry_comp]
 
-/-- **The surface element of a graph**: `gram (snocLastL ℓ) = √(1 + ‖ℓ‖²)`, the classical
-`√(1 + |∇g|²)` for `ℓ = fderiv ℝ g x`. -/
+/-- **The surface element of a graph.** For a continuous linear form
+$\ell : \mathbb{R}^d \to \mathbb{R}$, the graph map $v \mapsto (v, \ell v)$ has
+$$\operatorname{gram} = \sqrt{1 + \|\ell\|^2}.$$
+For $\ell = Dg(x)$ this is the classical surface element $\sqrt{1 + |\nabla g(x)|^2}$. -/
 theorem gram_snocLastL (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
     gram (snocLastL ℓ) = Real.sqrt (1 + ‖ℓ‖ ^ 2) := by
   rw [gram, gramDet_snocLastL_eq_one_add_norm_sq]

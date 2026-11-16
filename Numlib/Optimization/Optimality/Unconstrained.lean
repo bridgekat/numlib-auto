@@ -10,38 +10,53 @@ import Mathlib.Analysis.Calculus.LocalExtr.Basic
 /-!
 # Unconstrained optimality conditions
 
-Necessary and sufficient optimality conditions for the unconstrained minimization of a function
-`f : E → ℝ` on a real normed space, in the `iteratedFDeriv` vocabulary of the complexity theory
-(`∇^j f(x)[d]^j = iteratedFDeriv ℝ j f x (fun _ => d)`), following [cartis2022evaluation],
-Theorem 1.1.1.
+Let $E$ be a real normed space and $f : E \to \mathbb{R}$. This file proves the necessary and
+sufficient optimality conditions of Theorem 1.1.1 of [cartis2022evaluation] for the unconstrained
+minimization of $f$. A derivative applied on the diagonal is written $\nabla^j f(x)[d]^j$. The key
+tool is the ray lemma: if $x$ minimizes $f$ along the ray $t \mapsto x + t d$, $t \ge 0$, then the
+first nonvanishing directional derivative $\nabla^m f(x)[d]^m$ is nonnegative. At an unconstrained
+local minimizer this gives $\nabla^2 f(x)[d]^2 \ge 0$, and $\nabla^3 f(x)[d]^3 = 0$ when
+$\nabla^2 f(x)[d]^2 = 0$. Conversely, in finite dimension, $\nabla f(x) = 0$ and a positive definite
+$\nabla^2 f(x)$ make $x$ a strict local minimizer.
 
 ## Main definitions
 
-* `Optimization.IsStrictLocalMinOn f S x`: `x` is a strict (strong) local minimizer of `f` on `S`,
-  `f x < f y` for all `y ∈ S \ {x}` near `x`; `Optimization.IsStrictLocalMin f x` for `S = univ`.
+* `Optimization.IsStrictLocalMinOn`: $x$ is a strict (strong) local minimizer of $f$ on $S$, that
+  is, $f(x) < f(y)$ for all $y \in S \setminus \{x\}$ near $x$; `Optimization.IsStrictLocalMin` is
+  the case $S = E$.
 
 ## Main results
 
-* `Optimization.iteratedFDeriv_apply_nonneg_of_ray`: along a ray `t ↦ x + t d`, `t ≥ 0`, on which
-  `x` is a local minimizer, the first non-vanishing directional derivative `∇^m f(x)[d]^m` is
-  nonnegative (Taylor's theorem with Peano remainder);
-  `Optimization.IsLocalMinOn.iteratedDeriv_nonneg_of_ray` is its one-dimensional form, and
-  `Optimization.IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd` the two-sided form (an odd first
-  non-vanishing derivative vanishes);
-* `Optimization.IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg`,
-  `Optimization.IsLocalMin.iteratedFDeriv_three_eq_zero`: the second- and third-order necessary
-  conditions of Theorem 1.1.1 (the first-order one is Mathlib's `IsLocalMin.fderiv_eq_zero`; the
-  second-order one in the form `∇²f(x)[d]² ≥ 0` is the Hessian test
-  `IsLocalMin.iteratedFDeriv_two_apply_self_nonneg` of `Numlib.Analysis.Calculus.DerivativeTest`);
-* `Optimization.isStrictLocalMin_of_fderiv_eq_zero_of_posDef`: the second-order sufficient
-  condition of Theorem 1.1.1.
+* `Optimization.iteratedFDeriv_apply_nonneg_of_ray`: along a ray on which $x$ is a local minimizer,
+  the first nonvanishing directional derivative $\nabla^m f(x)[d]^m$ is nonnegative.
+* `Optimization.IsLocalMinOn.iteratedDeriv_nonneg_of_ray`: the one-dimensional form of the ray
+  lemma.
+* `Optimization.IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd`: at an unconstrained local
+  minimizer, a first nonvanishing directional derivative of odd order vanishes.
+* `Optimization.IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg`: the second-order necessary
+  condition $\lambda_{\min}[\nabla^2 f(x)] \ge 0$ of Theorem 1.1.1.
+* `Optimization.IsLocalMin.iteratedFDeriv_three_eq_zero`: the third-order necessary condition of
+  Theorem 1.1.1.
+* `Optimization.isStrictLocalMin_of_fderiv_eq_zero_of_posDef`: the second-order sufficient condition
+  of Theorem 1.1.1.
 
-The directional-limit lemmas `Optimization.tendsto_sub_div_of_hasFDerivAt` and
-`Optimization.tendsto_sub_div_sq_of_contDiffAt` (first- and second-order expansions along a family
-`x + w a` with `w a / r a → z`) together with `Optimization.exists_seq_of_not_isStrictLocalMinOn`
-(a violating sequence with converging unit directions, in finite dimension) are the common engine
-of all sufficiency proofs here and in `Numlib.Optimization.Optimality.ConvexSet` and
-`Numlib.Optimization.Constrained.SecondOrder`.
+## Proof outline
+
+The ray lemma follows from Taylor's theorem with Peano remainder: $(f(x + t d) - f(x)) / t^m \to
+\nabla^m f(x)[d]^m / m!$ as $t \to 0^+$. The sufficient conditions in this file, in
+`Numlib.Optimization.Optimality.ConvexSet` and in `Numlib.Optimization.Constrained.SecondOrder`
+share one argument. If $x$ is not a strict local minimizer, there is a sequence $y_n \to x$ with
+$f(y_n) \le f(x)$ whose unit directions converge
+(`Optimization.exists_seq_of_not_isStrictLocalMinOn`). The first- and second-order expansions along
+such a sequence (`Optimization.tendsto_sub_div_of_hasFDerivAt`,
+`Optimization.tendsto_sub_div_sq_of_contDiffAt`) then contradict the hypotheses.
+
+## Implementation notes
+
+* The derivative $\nabla^j f(x)[d]^j$ is `iteratedFDeriv ℝ j f x (fun _ => d)`.
+* The first-order necessary condition $\nabla f(x) = 0$ is Mathlib's `IsLocalMin.fderiv_eq_zero`.
+  The second-order condition in the form $\nabla^2 f(x)[d]^2 \ge 0$ for all $d$ is
+  `IsLocalMin.iteratedFDeriv_two_apply_self_nonneg` of `Numlib.Analysis.Calculus.DerivativeTest`.
 -/
 
 open Filter Set Topology Asymptotics Metric
@@ -55,23 +70,30 @@ section Strict
 
 variable {α β : Type*} [TopologicalSpace α] [Preorder β]
 
-/-- `x` is a *strict* (or *strong*) local minimizer of `f` on `S`: `f x < f y` for every `y ∈ S`,
-`y ≠ x`, close enough to `x` ([cartis2022evaluation], Section 1.1.2.2). `S = univ` is the
-unconstrained case. The membership `x ∈ S` is not required. -/
+/-- The point $x$ is a **strict** (or **strong**) **local minimizer** of $f$ on $S$ if $f(x) < f(y)$
+for every $y \in S$ with $y \neq x$ close enough to $x$. See Section 1.1.2.2 of
+[cartis2022evaluation].
+
+The case $S = E$ is the unconstrained case `Optimization.IsStrictLocalMin`. The definition does
+not require $x \in S$. It is stated with the filter `𝓝[S \ {x}] x`, for a function from a
+topological space to a preorder. -/
 def IsStrictLocalMinOn (f : α → β) (S : Set α) (x : α) : Prop :=
   ∀ᶠ y in 𝓝[S \ {x}] x, f x < f y
 
-/-- `IsStrictLocalMinOn` in terms of the neighbourhood filter of `x`. -/
+/-- The point $x$ is a strict local minimizer of $f$ on $S$ if and only if, for all $y$ in a
+neighborhood of $x$, $y \in S$ and $y \neq x$ imply $f(x) < f(y)$. -/
 theorem isStrictLocalMinOn_iff_eventually {f : α → β} {S : Set α} {x : α} :
     IsStrictLocalMinOn f S x ↔ ∀ᶠ y in 𝓝 x, y ∈ S → y ≠ x → f x < f y := by
   simp only [IsStrictLocalMinOn, eventually_nhdsWithin_iff, Set.mem_sdiff, mem_singleton_iff]
   exact eventually_congr (Eventually.of_forall fun y => ⟨fun h hS hne => h ⟨hS, hne⟩,
     fun h hy => h hy.1 hy.2⟩)
 
-/-- `x` is a strict local minimizer of `f` (on the whole space). -/
+/-- The point $x$ is a **strict local minimizer** of $f$ if $f(x) < f(y)$ for every $y \neq x$ close
+enough to $x$. This is `Optimization.IsStrictLocalMinOn` on the whole space; see Section 1.1.2.2
+of [cartis2022evaluation]. -/
 abbrev IsStrictLocalMin (f : α → β) (x : α) : Prop := IsStrictLocalMinOn f univ x
 
-/-- A strict local minimizer is a local minimizer. -/
+/-- A strict local minimizer of $f$ on $S$ is a local minimizer of $f$ on $S$. -/
 theorem IsStrictLocalMinOn.isLocalMinOn {f : α → β} {S : Set α} {x : α}
     (h : IsStrictLocalMinOn f S x) : IsLocalMinOn f S x := by
   rw [isStrictLocalMinOn_iff_eventually] at h
@@ -82,15 +104,17 @@ theorem IsStrictLocalMinOn.isLocalMinOn {f : α → β} {S : Set α} {x : α}
   · rw [hyx]
   · exact (hy hyS hyx).le
 
-/-- A strict local minimizer on a larger set is one on a smaller set. -/
+/-- If $S \subseteq T$ and $x$ is a strict local minimizer of $f$ on $T$, then $x$ is a strict local
+minimizer of $f$ on $S$. -/
 theorem IsStrictLocalMinOn.mono {f : α → β} {S T : Set α} {x : α} (h : IsStrictLocalMinOn f T x)
     (hST : S ⊆ T) : IsStrictLocalMinOn f S x :=
   h.filter_mono (nhdsWithin_mono _ (sdiff_subset_sdiff_left hST))
 
 end Strict
 
-/-- Metric form of `IsStrictLocalMinOn`: there is `ε > 0` with `f x < f y` for every `y ∈ S`,
-`y ≠ x`, `dist y x < ε`. -/
+/-- In a pseudometric space, $x$ is a strict local minimizer of $f$ on $S$ if and only if there is
+$\varepsilon > 0$ with $f(x) < f(y)$ for every $y \in S$ with $y \neq x$ and
+$\operatorname{dist}(y, x) < \varepsilon$. -/
 theorem isStrictLocalMinOn_iff {α β : Type*} [PseudoMetricSpace α] [Preorder β] {f : α → β}
     {S : Set α} {x : α} :
     IsStrictLocalMinOn f S x ↔ ∃ ε > 0, ∀ y ∈ S, dist y x < ε → y ≠ x → f x < f y := by
@@ -102,8 +126,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### Diagonal values of multilinear maps and low-order Taylor polynomials -/
 
-/-- The second-order Taylor polynomial:
-`T_{f,2}(x, h) = f(x) + ∇f(x)[h] + ½ ∇²f(x)[h]²`. -/
+/-- The second-order Taylor polynomial of $f$ at $x$ is
+$$T_{f,2}(x, h) = f(x) + \nabla f(x)[h] + \tfrac{1}{2} \nabla^2 f(x)[h]^2.$$
+-/
 theorem taylorPolynomial_two_apply (f : E → ℝ) (x h : E) :
     taylorPolynomial f 2 x h =
       f x + fderiv ℝ f x h + iteratedFDeriv ℝ 2 f x (fun _ => h) / 2 := by
@@ -112,8 +137,10 @@ theorem taylorPolynomial_two_apply (f : E → ℝ) (x h : E) :
     smul_eq_mul, Nat.factorial]
   ring
 
-/-- A Taylor polynomial whose intermediate terms vanish in the direction `d`:
-`T_{f,m}(x, t d) = f(x) + (t^m / m!) ∇^m f(x)[d]^m`. -/
+/-- Let $m \ge 1$, and suppose that $\nabla^i f(x)[d]^i = 0$ for $0 < i < m$. Then for every
+$t \in \mathbb{R}$, the Taylor polynomial of order $m$ is
+$$T_{f,m}(x, t d) = f(x) + \frac{t^m}{m!} \nabla^m f(x)[d]^m.$$
+-/
 theorem taylorPolynomial_smul_of_forall_eq_zero {f : E → ℝ} {x d : E} {m : ℕ} (hm : m ≠ 0)
     (hzero : ∀ i, 0 < i → i < m → iteratedFDeriv ℝ i f x (fun _ => d) = 0) (t : ℝ) :
     taylorPolynomial f m x (t • d) =
@@ -131,10 +158,14 @@ theorem taylorPolynomial_smul_of_forall_eq_zero {f : E → ℝ} {x d : E} {m : �
 
 /-! ### The ray lemma -/
 
-/-- **First non-vanishing derivative along a ray.** If `f` is `C^m` at `x` (`m ≥ 1`),
-`f x ≤ f (x + t d)` for all small `t > 0`, and `∇^i f(x)[d]^i = 0` for `1 ≤ i < m`, then
-`∇^m f(x)[d]^m ≥ 0`. Proof: by Taylor's theorem with Peano remainder,
-`(f(x + t d) - f(x)) / t^m → ∇^m f(x)[d]^m / m!` as `t → 0⁺`. -/
+/-- **First nonvanishing derivative along a ray.** Let $m \ge 1$, let $f$ be $m$ times continuously
+differentiable at $x$, and suppose that $f(x) \le f(x + t d)$ for all sufficiently small $t > 0$
+and that $\nabla^i f(x)[d]^i = 0$ for $0 < i < m$. Then
+$$\nabla^m f(x)[d]^m \ge 0.$$
+This underlies Theorems 1.1.1 and 1.1.2 of [cartis2022evaluation].
+
+By Taylor's theorem with Peano remainder, $(f(x + t d) - f(x)) / t^m \to \nabla^m f(x)[d]^m /
+m!$ as $t \to 0^+$. -/
 theorem iteratedFDeriv_apply_nonneg_of_ray {f : E → ℝ} {x d : E} {m : ℕ} (hm : m ≠ 0)
     (hf : ContDiffAt ℝ m f x) (hmin : ∀ᶠ t in 𝓝[>] (0 : ℝ), f x ≤ f (x + t • d))
     (hzero : ∀ i, 0 < i → i < m → iteratedFDeriv ℝ i f x (fun _ => d) = 0) :
@@ -168,8 +199,9 @@ theorem iteratedFDeriv_apply_nonneg_of_ray {f : E → ℝ} {x d : E} {m : ℕ} (
   have hfac : (0 : ℝ) < (m ! : ℝ)⁻¹ := inv_pos.2 (by exact_mod_cast Nat.factorial_pos m)
   exact (mul_nonneg_iff_of_pos_left hfac).1 hnn
 
-/-- **One-dimensional ray lemma.** Let `ψ : ℝ → ℝ` be `C^m` at `a` (`m ≥ 1`), with `a` a local
-minimizer of `ψ` on `[a, ∞)` and `ψ^{(i)}(a) = 0` for `1 ≤ i < m`. Then `ψ^{(m)}(a) ≥ 0`. -/
+/-- **One-dimensional ray lemma.** Let $m \ge 1$, let $\psi : \mathbb{R} \to \mathbb{R}$ be $m$
+times continuously differentiable at $a$, let $a$ be a local minimizer of $\psi$ on
+$[a, \infty)$, and let $\psi^{(i)}(a) = 0$ for $0 < i < m$. Then $\psi^{(m)}(a) \ge 0$. -/
 theorem IsLocalMinOn.iteratedDeriv_nonneg_of_ray {ψ : ℝ → ℝ} {a : ℝ} {m : ℕ} (hm : m ≠ 0)
     (hψ : ContDiffAt ℝ m ψ a) (hmin : IsLocalMinOn ψ (Ici a) a)
     (hzero : ∀ i, 0 < i → i < m → iteratedDeriv i ψ a = 0) :
@@ -186,7 +218,8 @@ theorem IsLocalMinOn.iteratedDeriv_nonneg_of_ray {ψ : ℝ → ℝ} {a : ℝ} {m
       exact le_add_of_nonneg_right (le_of_lt ht)
   exact ht.eventually hmin
 
-/-- Local minimality propagates along every ray: `f x ≤ f (x + t d)` for small `t > 0`. -/
+/-- If $x$ is a local minimizer of $f$, then for every direction $d$, $f(x) \le f(x + t d)$ for all
+sufficiently small $t > 0$. -/
 theorem IsLocalMin.eventually_le_add_smul {f : E → ℝ} {x : E} (hmin : IsLocalMin f x) (d : E) :
     ∀ᶠ t in 𝓝[>] (0 : ℝ), f x ≤ f (x + t • d) := by
   have : Tendsto (fun t : ℝ => x + t • d) (𝓝 0) (𝓝 (x + (0 : ℝ) • d)) :=
@@ -194,9 +227,12 @@ theorem IsLocalMin.eventually_le_add_smul {f : E → ℝ} {x : E} (hmin : IsLoca
   rw [zero_smul, add_zero] at this
   exact (this.mono_left nhdsWithin_le_nhds).eventually hmin
 
-/-- At an unconstrained local minimizer, an odd-order first non-vanishing directional derivative
-vanishes: if `m` is odd and `∇^i f(x)[d]^i = 0` for `1 ≤ i < m`, then `∇^m f(x)[d]^m = 0` (the
-ray lemma applied to `d` and `-d`). -/
+/-- Let $x$ be a local minimizer of $f$, let $m$ be odd, let $f$ be $m$ times continuously
+differentiable at $x$, and suppose that $\nabla^i f(x)[d]^i = 0$ for $0 < i < m$. Then
+$\nabla^m f(x)[d]^m = 0$. This is the odd-order case of Theorem 1.1.1 of [cartis2022evaluation].
+
+The proof applies the ray lemma `Optimization.iteratedFDeriv_apply_nonneg_of_ray` to $d$ and to
+$-d$. -/
 theorem IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd {f : E → ℝ} {x d : E} {m : ℕ}
     (hmin : IsLocalMin f x) (hm : Odd m) (hf : ContDiffAt ℝ m f x)
     (hzero : ∀ i, 0 < i → i < m → iteratedFDeriv ℝ i f x (fun _ => d) = 0) :
@@ -215,18 +251,25 @@ theorem IsLocalMin.iteratedFDeriv_apply_eq_zero_of_odd {f : E → ℝ} {x d : E}
 
 /-! ### Theorem 1.1.1: necessary conditions -/
 
-/-- **Second-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1, (1.1.5)) as
-`λ_min[∇²f(x)] ≥ 0`: the Hessian test `_root_.IsLocalMin.iteratedFDeriv_two_apply_self_nonneg`
-(`∇²f(x)[d]² ≥ 0` for every `d`) of `Numlib.Analysis.Calculus.DerivativeTest`. -/
+/-- **Second-order necessary condition**, (1.1.5) of Theorem 1.1.1 of [cartis2022evaluation]. Let
+$x$ be a local minimizer of $f$ and let $f$ be twice continuously differentiable at $x$. Then
+$$\lambda_{\min}[\nabla^2 f(x)] \ge 0.$$
+
+Here $\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d]^2$ is `Optimization.minCurvature`. The statement
+follows from the Hessian test `IsLocalMin.iteratedFDeriv_two_apply_self_nonneg` of
+`Numlib.Analysis.Calculus.DerivativeTest`, which gives $\nabla^2 f(x)[d]^2 \ge 0$ for every $d$. -/
 theorem IsLocalMin.minCurvature_iteratedFDeriv_two_nonneg {f : E → ℝ} {x : E}
     (hmin : IsLocalMin f x) (hf : ContDiffAt ℝ 2 f x) :
     0 ≤ minCurvature (iteratedFDeriv ℝ 2 f x) :=
   minCurvature_nonneg_iff.2 (_root_.IsLocalMin.iteratedFDeriv_two_apply_self_nonneg hmin hf)
 
-/-- **Third-order necessary condition** ([cartis2022evaluation], Theorem 1.1.1): at a local
-minimizer `x` of a function `C³` at `x`, `∇³f(x)[d]³ = 0` for every `d` with `∇²f(x)[d]² = 0`.
-At a local minimizer the Hessian is positive semidefinite, so the hypothesis is equivalent to
-`∇²f(x) d = 0`. -/
+/-- **Third-order necessary condition** of Theorem 1.1.1 of [cartis2022evaluation]. Let $x$ be a
+local minimizer of $f$ and let $f$ be three times continuously differentiable at $x$. If
+$\nabla^2 f(x)[d]^2 = 0$, then
+$$\nabla^3 f(x)[d]^3 = 0.$$
+
+At a local minimizer the Hessian is positive semidefinite, so the hypothesis
+$\nabla^2 f(x)[d]^2 = 0$ is equivalent to $\nabla^2 f(x) d = 0$. -/
 theorem IsLocalMin.iteratedFDeriv_three_eq_zero {f : E → ℝ} {x d : E} (hmin : IsLocalMin f x)
     (hf : ContDiffAt ℝ 3 f x) (hd : iteratedFDeriv ℝ 2 f x (fun _ => d) = 0) :
     iteratedFDeriv ℝ 3 f x (fun _ => d) = 0 := by
@@ -237,7 +280,8 @@ theorem IsLocalMin.iteratedFDeriv_three_eq_zero {f : E → ℝ} {x d : E} (hmin 
 
 /-! ### Directional limits along converging directions -/
 
-/-- If `w a / r a → z` with `r a > 0` eventually, then `w = O(r)`. -/
+/-- Let $l$ be a filter, and let $r$ and $w$ be functions with $r(a) > 0$ eventually and
+$w(a) / r(a) \to z$ along $l$. Then $w = O(r)$ along $l$. -/
 theorem isBigO_of_tendsto_inv_smul {α : Type*} {l : Filter α} {r : α → ℝ} {w : α → E} {z : E}
     (hr : ∀ᶠ a in l, 0 < r a) (hwz : Tendsto (fun a => (r a)⁻¹ • w a) l (𝓝 z)) :
     w =O[l] r := by
@@ -250,8 +294,11 @@ theorem isBigO_of_tendsto_inv_smul {α : Type*} {l : Filter α} {r : α → ℝ}
   rw [inv_mul_lt_iff₀ ha] at hb
   linarith
 
-/-- **First-order directional limit.** If `L` has derivative `L'` at `x`, `r a > 0` eventually,
-`w a → 0` and `w a / r a → z`, then `(L(x + w a) - L(x)) / r a → L' z`. -/
+/-- **First-order directional limit.** Let $L : E \to \mathbb{R}$ have the derivative $L'$ at $x$,
+and let $r$ and $w$ be functions on a filter $l$ with $r(a) > 0$ eventually, $w(a) \to 0$ and
+$w(a) / r(a) \to z$. Then
+$$\frac{L(x + w(a)) - L(x)}{r(a)} \to L' z.$$
+-/
 theorem tendsto_sub_div_of_hasFDerivAt {L : E → ℝ} {L' : E →L[ℝ] ℝ} {x z : E}
     (hL : HasFDerivAt L L' x) {α : Type*} {l : Filter α} {r : α → ℝ} {w : α → E}
     (hr : ∀ᶠ a in l, 0 < r a) (hw : Tendsto w l (𝓝 0))
@@ -272,9 +319,12 @@ theorem tendsto_sub_div_of_hasFDerivAt {L : E → ℝ} {L' : E →L[ℝ] ℝ} {x
   field_simp
   ring
 
-/-- **Second-order directional limit.** If `L` is `C²` at `x`, `r a > 0` eventually, `w a → 0` and
-`w a / r a → z`, then `(L(x + w a) - L(x) - ∇L(x)[w a]) / r a² → ½ ∇²L(x)[z]²` (Taylor's theorem
-with Peano remainder). -/
+/-- **Second-order directional limit.** Let $L : E \to \mathbb{R}$ be twice continuously
+differentiable at $x$, and let $r$ and $w$ be functions on a filter $l$ with $r(a) > 0$
+eventually, $w(a) \to 0$ and $w(a) / r(a) \to z$. Then
+$$\frac{L(x + w(a)) - L(x) - \nabla L(x)[w(a)]}{r(a)^2} \to \tfrac{1}{2} \nabla^2 L(x)[z]^2.$$
+
+The proof uses Taylor's theorem with Peano remainder. -/
 theorem tendsto_sub_div_sq_of_contDiffAt {L : E → ℝ} {x z : E} (hL : ContDiffAt ℝ 2 L x)
     {α : Type*} {l : Filter α} {r : α → ℝ} {w : α → E} (hr : ∀ᶠ a in l, 0 < r a)
     (hw : Tendsto w l (𝓝 0)) (hwz : Tendsto (fun a => (r a)⁻¹ • w a) l (𝓝 z)) :
@@ -299,9 +349,11 @@ theorem tendsto_sub_div_sq_of_contDiffAt {L : E → ℝ} {x z : E} (hL : ContDif
   field_simp
   ring
 
-/-- If `x` is not a strict local minimizer of `f` on `S` (`E` finite-dimensional), there is a
-sequence `y n ∈ S \ {x}`, `y n → x`, with `f (y n) ≤ f x`, whose unit directions
-`(y n - x) / ‖y n - x‖` converge to a unit vector `z`. -/
+/-- Let $E$ be finite-dimensional. If $x$ is not a strict local minimizer of $f$ on $S$, then there
+are a sequence $(y_n)$ and a unit vector $z$ such that, for every $n$, $y_n \in S$, $y_n \neq x$
+and $f(y_n) \le f(x)$, and
+$$y_n \to x, \qquad \frac{y_n - x}{\|y_n - x\|} \to z.$$
+-/
 theorem exists_seq_of_not_isStrictLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {S : Set E}
     {x : E} (h : ¬ IsStrictLocalMinOn f S x) :
     ∃ (y : ℕ → E) (z : E), (∀ n, y n ∈ S ∧ y n ≠ x ∧ f (y n) ≤ f x) ∧
@@ -326,9 +378,10 @@ theorem exists_seq_of_not_isStrictLocalMinOn [FiniteDimensional ℝ E] {f : E �
 
 /-! ### Theorem 1.1.1: sufficient condition -/
 
-/-- **Second-order sufficient condition** ([cartis2022evaluation], Theorem 1.1.1, converse): in
-finite dimension, if `f` is `C²` at `x`, `∇f(x) = 0` and `∇²f(x)` is positive definite
-(`∇²f(x)[d]² > 0` for `d ≠ 0`), then `x` is a strict local minimizer of `f`. -/
+/-- **Second-order sufficient condition**, the converse part of Theorem 1.1.1 of
+[cartis2022evaluation]. Let $E$ be finite-dimensional, and let $f$ be twice continuously
+differentiable at $x$. If $\nabla f(x) = 0$ and $\nabla^2 f(x)$ is positive definite, that is,
+$\nabla^2 f(x)[d]^2 > 0$ for every $d \neq 0$, then $x$ is a strict local minimizer of $f$. -/
 theorem isStrictLocalMin_of_fderiv_eq_zero_of_posDef [FiniteDimensional ℝ E] {f : E → ℝ} {x : E}
     (hf : ContDiffAt ℝ 2 f x) (hcrit : fderiv ℝ f x = 0)
     (hpos : ∀ d, d ≠ 0 → 0 < iteratedFDeriv ℝ 2 f x (fun _ => d)) :

@@ -12,36 +12,50 @@ import Numlib.Optimization.Optimality.Approximate
 /-!
 # Forward-difference gradients and Hessians
 
-Forward differences on `EuclideanSpace ℝ (Fin n)` approximate the gradient of a function from
-`n + 1` function values, and the derivative of a map (e.g. the Hessian as the derivative of the
-gradient) from `n + 1` values of the map ([cartis2022evaluation], §13.2):
-`[∇̄f(x)]_i = (f(x + h e_i) - f(x)) / h` and `[∇̄²f(x)]_{·,j} = (∇f(x + h e_j) - ∇f(x)) / h`.
-If the next derivative is `L`-Lipschitz, the error is at most `√n L h / 2`, a bound of the
-"dynamic accuracy" form `‖approximation - exact‖ ≤ κ h` of (13.1.2) with the difference step `h`
-as the requested accuracy. Hence these schemes produce inexact jets in the sense of
-`Optimization.JetApprox`, which shows that the inexact-derivative framework of Chapter 13 is
-realized by oracles of degree `0` (for gradients) and `1` (for Hessians).
+Let $f : \mathbb{R}^n \to \mathbb{R}$, let $e_1, \dots, e_n$ be the unit vectors and let $h > 0$.
+The forward-difference gradient approximates $\nabla f(x)$ from $n + 1$ values of $f$, and the
+forward-difference Hessian approximates $\nabla^2 f(x)$ from $n + 1$ values of $\nabla f$
+([cartis2022evaluation], §13.2):
+$$[\overline\nabla f(x)]_i = \frac{f(x + h e_i) - f(x)}{h},
+  \qquad [\overline\nabla^2 f(x)]_{\cdot, j} = \frac{\nabla f(x + h e_j) - \nabla f(x)}{h}.$$
+More generally, the forward-difference derivative of a map $g : \mathbb{R}^n \to F$ has the columns
+$(g(x + h e_j) - g(x))/h$. If the derivative that is approximated is Lipschitz continuous with
+constant $L$, the error is at most $\sqrt n\, L h/2$. This bound has the "dynamic accuracy" form
+$\|\text{approximation} - \text{exact}\| \le \kappa h$ of (13.1.2) in [cartis2022evaluation], with
+the difference step $h$ as the requested accuracy. Hence these schemes produce inexact jets in the
+sense of `Optimization.JetApprox`: the inexact-derivative framework of Chapter 13 is realized by
+oracles of degree $0$ (for gradients) and $1$ (for Hessians).
+
+General stencils ((13.2.1) in [cartis2022evaluation]) are in `Numlib.FiniteDifference.MixedPartial`,
+and interpolation models ((13.2.2)–(13.2.4)) are in `Numlib.Approximation.MvLagrange`.
 
 ## Main definitions
 
-* `FiniteDifference.fdGradient f h x`: the forward-difference gradient;
-* `FiniteDifference.fdFDeriv g h x`: the forward-difference derivative of a map `g`;
-* `FiniteDifference.fdHessian f h x = fdFDeriv (gradient f) h x`: the forward-difference Hessian.
-
-The inexact jets are `Optimization.gradientJet` and `Optimization.hessianJet`
-(`ModelBased/InexactTaylor`).
+* `FiniteDifference.fdGradient`: the forward-difference gradient $\overline\nabla f(x)$.
+* `FiniteDifference.fdFDeriv`: the forward-difference derivative of a map $g$.
+* `FiniteDifference.fdHessian`: the forward-difference Hessian, the forward-difference derivative of
+  $\nabla f$.
 
 ## Main results
 
-* `FiniteDifference.norm_fdGradient_sub_gradient_le_of_convex` (on a convex set) and
-  `FiniteDifference.norm_fdGradient_sub_gradient_le` (global),
-  `FiniteDifference.jetApprox_fdGradient`;
-* `FiniteDifference.norm_fdFDeriv_sub_le_of_convex`, `FiniteDifference.norm_fdFDeriv_sub_le` (any
-  map), and for the Hessian `FiniteDifference.norm_fdHessian_sub_hessianOperator_le`,
-  `FiniteDifference.jetApprox_fdHessian`.
+* `FiniteDifference.norm_fdGradient_sub_gradient_le_of_convex`,
+  `FiniteDifference.norm_fdGradient_sub_gradient_le`: $\|\overline\nabla f(x) - \nabla f(x)\| \le
+  \sqrt n\, L h/2$, on a convex set and globally.
+* `FiniteDifference.norm_fdFDeriv_sub_le_of_convex`, `FiniteDifference.norm_fdFDeriv_sub_le`: the
+  same bound for the forward-difference derivative of any map.
+* `FiniteDifference.norm_fdHessian_sub_hessianOperator_le`: $\|\overline\nabla^2 f(x) - \nabla^2
+  f(x)\| \le \sqrt n\, L h/2$.
+* `FiniteDifference.jetApprox_fdGradient`, `FiniteDifference.jetApprox_fdHessian`: the
+  forward-difference gradient and Hessian give inexact jets.
 
-General stencils ((13.2.1)) are in `Numlib.FiniteDifference.MixedPartial`, interpolation models
-((13.2.2)–(13.2.4)) in `Numlib.Approximation.MvLagrange`.
+## Implementation notes
+
+* The space $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)` with the Euclidean norm, and $e_i$ is
+  `EuclideanSpace.single i 1`. The forward-difference derivative and Hessian are continuous linear
+  maps, and their errors are measured in the operator norm.
+* The inexact jets are `Optimization.gradientJet` and `Optimization.hessianJet` of
+  `Numlib.Optimization.ModelBased.InexactTaylor`. The Hessian of $f$ is
+  `Optimization.hessianOperator f x`, the derivative of the gradient.
 -/
 
 open Finset
@@ -58,8 +72,10 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- A vector whose coordinates are bounded by `c` has norm at most `√n c`
-(`PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`). -/
+/-- If every coordinate of $w \in \mathbb{R}^n$ satisfies $|w_i| \le c$, then
+$\|w\| \le \sqrt n\, c$.
+
+This follows from `PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`. -/
 theorem norm_le_sqrt_card_mul_of_forall_abs_le {w : 𝔼} {c : ℝ} (h : ∀ i, |w i| ≤ c) :
     ‖w‖ ≤ √n * c := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -72,13 +88,16 @@ theorem norm_le_sqrt_card_mul_of_forall_abs_le {w : 𝔼} {c : ℝ} (h : ∀ i, 
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   exact ciSup_le fun i => by simpa using h i
 
-/-- `∑ᵢ |vᵢ| ≤ √n ‖v‖` (`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`). -/
+/-- For $v \in \mathbb{R}^n$, $\sum_i |v_i| \le \sqrt n\, \|v\|$.
+
+This follows from `PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`. -/
 theorem sum_abs_le_sqrt_card_mul_norm (v : 𝔼) : ∑ i, |v i| ≤ √n * ‖v‖ := by
   have := PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two (β := fun _ : Fin n => ℝ)
     (WithLp.ofLp v)
   simpa [PiLp.norm_eq_of_L1, Real.norm_eq_abs] using this
 
-/-- A vector is the sum of its coordinates times the unit vectors. -/
+/-- A vector $v \in \mathbb{R}^n$ is the sum $\sum_j v_j e_j$ of its coordinates times the unit
+vectors. -/
 theorem sum_smul_single (v : 𝔼) : ∑ j, v j • EuclideanSpace.single j (1 : ℝ) = v := by
   ext i
   simp [Pi.single_apply]
@@ -93,19 +112,28 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- The forward-difference gradient ([cartis2022evaluation], §13.2):
-`[∇̄f(x)]_i = (f(x + h e_i) - f(x)) / h`. -/
+/-- The **forward-difference gradient** ([cartis2022evaluation], §13.2). For
+$f : \mathbb{R}^n \to \mathbb{R}$, a step $h$ and a point $x$, it is the vector with the
+coordinates
+$$[\overline\nabla f(x)]_i = \frac{f(x + h e_i) - f(x)}{h}, \qquad i = 1, \dots, n.$$
+It is $0$ at $h = 0$. -/
 noncomputable def fdGradient (f : 𝔼 → ℝ) (h : ℝ) (x : 𝔼) : 𝔼 :=
   WithLp.toLp 2 fun i => (f (x + h • EuclideanSpace.single i 1) - f x) / h
 
+/-- The $i$-th coordinate of the forward-difference gradient is $(f(x + h e_i) - f(x))/h$. -/
 @[simp]
 theorem fdGradient_apply (f : 𝔼 → ℝ) (h : ℝ) (x : 𝔼) (i : Fin n) :
     fdGradient f h x i = (f (x + h • EuclideanSpace.single i 1) - f x) / h :=
   rfl
 
-/-- **Forward-difference gradient error on a convex set**: if `f` is `C¹` at every point of the
-convex set `C`, `f'` is `L`-Lipschitz on `C`, `x ∈ C`, `x + h e_i ∈ C` for all `i` and `h > 0`,
-then `‖∇̄f(x) - ∇f(x)‖ ≤ √n L h / 2`. -/
+/-- **Forward-difference gradient error on a convex set.** Let $C \subseteq \mathbb{R}^n$ be convex,
+let $f : \mathbb{R}^n \to \mathbb{R}$ be continuously differentiable at every point of $C$, and
+let its derivative satisfy $\|f'(y) - f'(z)\| \le L \|y - z\|$ for $y, z \in C$. Let $h > 0$,
+$x \in C$ and $x + h e_i \in C$ for every $i$. Then
+$$\|\overline\nabla f(x) - \nabla f(x)\| \le \frac{\sqrt n\, L h}{2}.$$
+
+The Lipschitz condition is `IteratedFDerivLipschitzOn f 1 L C`, a condition on the first
+iterated derivative. -/
 theorem norm_fdGradient_sub_gradient_le_of_convex {f : 𝔼 → ℝ} {L h : ℝ} {C : Set 𝔼} {x : 𝔼}
     (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ 1 f y) (hL : IteratedFDerivLipschitzOn f 1 L C)
     (hx : x ∈ C) (hxe : ∀ i, x + h • EuclideanSpace.single i (1 : ℝ) ∈ C) (hh : 0 < h) :
@@ -124,8 +152,11 @@ theorem norm_fdGradient_sub_gradient_le_of_convex {f : 𝔼 → ℝ} {L h : ℝ}
   calc _ ≤ L / 2 * h ^ 2 := hb
     _ = L / 2 * h * h := by ring
 
-/-- **Forward-difference gradient error** ([cartis2022evaluation], §13.2, first display): if `f`
-is `C¹` with `L`-Lipschitz derivative and `h > 0`, then `‖∇̄f(x) - ∇f(x)‖ ≤ √n L h / 2`. -/
+/-- **Forward-difference gradient error** ([cartis2022evaluation], §13.2, first display). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be continuously differentiable with
+$\|f'(y) - f'(z)\| \le L \|y - z\|$ for all $y, z$, and let $h > 0$. Then for every $x$,
+$$\|\overline\nabla f(x) - \nabla f(x)\| \le \frac{\sqrt n\, L h}{2}.$$
+-/
 theorem norm_fdGradient_sub_gradient_le {f : 𝔼 → ℝ} {L h : ℝ} (hf : ContDiff ℝ 1 f)
     (hL : ∀ y z, ‖fderiv ℝ f y - fderiv ℝ f z‖ ≤ L * ‖y - z‖) (hh : 0 < h) (x : 𝔼) :
     ‖fdGradient f h x - gradient f x‖ ≤ √n * L / 2 * h :=
@@ -144,27 +175,39 @@ variable {n : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- The forward-difference derivative of a map `g : ℝⁿ → F` ([cartis2022evaluation], §13.2):
-the linear map whose `j`-th column is `(g(x + h e_j) - g(x)) / h`. For `g = gradient f` this is
-the forward-difference Hessian `fdHessian`. -/
+/-- The **forward-difference derivative** of a map $g : \mathbb{R}^n \to F$ into a normed space
+([cartis2022evaluation], §13.2). For a step $h$ and a point $x$, it is the linear map
+$\mathbb{R}^n \to F$ whose $j$-th column is
+$$\frac{g(x + h e_j) - g(x)}{h},$$
+that is, $v \mapsto \sum_j v_j\, h^{-1} (g(x + h e_j) - g(x))$. It is $0$ at $h = 0$.
+
+For $g = \nabla f$ this is the forward-difference Hessian `FiniteDifference.fdHessian`. -/
 noncomputable def fdFDeriv (g : 𝔼 → F) (h : ℝ) (x : 𝔼) : 𝔼 →L[ℝ] F :=
   ∑ j, (EuclideanSpace.proj j : 𝔼 →L[ℝ] ℝ).smulRight
     (h⁻¹ • (g (x + h • EuclideanSpace.single j 1) - g x))
 
+/-- The forward-difference derivative maps $v$ to $\sum_j v_j\, h^{-1} (g(x + h e_j) - g(x))$. -/
 theorem fdFDeriv_apply (g : 𝔼 → F) (h : ℝ) (x v : 𝔼) :
     fdFDeriv g h x v = ∑ j, v j • h⁻¹ • (g (x + h • EuclideanSpace.single j 1) - g x) := by
   simp [fdFDeriv]
 
-/-- The columns of the forward-difference derivative. -/
+/-- The $j$-th column of the forward-difference derivative is $h^{-1} (g(x + h e_j) - g(x))$. -/
 theorem fdFDeriv_apply_single (g : 𝔼 → F) (h : ℝ) (x : 𝔼) (j : Fin n) :
     fdFDeriv g h x (EuclideanSpace.single j 1) =
       h⁻¹ • (g (x + h • EuclideanSpace.single j 1) - g x) := by
   rw [fdFDeriv_apply]
   simp
 
-/-- **Forward-difference derivative error on a convex set**: if `g` is `C¹` at every point of the
-convex set `C`, `g'` is `L`-Lipschitz on `C`, `x ∈ C`, `x + h e_j ∈ C` for all `j` and `h > 0`, then
-`‖∇̄g(x) - g'(x)‖ ≤ √n L h / 2`. -/
+/-- **Forward-difference derivative error on a convex set.** Let $F$ be a real normed space, let
+$C \subseteq \mathbb{R}^n$ be convex, let $g : \mathbb{R}^n \to F$ be continuously
+differentiable at every point of $C$, and let its derivative satisfy
+$\|g'(y) - g'(z)\| \le L \|y - z\|$ for $y, z \in C$. Let $h > 0$, $x \in C$ and
+$x + h e_j \in C$ for every $j$. Then, with $\overline\nabla g(x)$ the forward-difference
+derivative,
+$$\|\overline\nabla g(x) - g'(x)\| \le \frac{\sqrt n\, L h}{2}.$$
+
+The Lipschitz condition is `IteratedFDerivLipschitzOn g 1 L C`, and the norm on the left is the
+operator norm. -/
 theorem norm_fdFDeriv_sub_le_of_convex {g : 𝔼 → F} {L h : ℝ} {C : Set 𝔼} {x : 𝔼}
     (hC : Convex ℝ C) (hg : ∀ y ∈ C, ContDiffAt ℝ 1 g y) (hL : IteratedFDerivLipschitzOn g 1 L C)
     (hx : x ∈ C) (hxe : ∀ j, x + h • EuclideanSpace.single j (1 : ℝ) ∈ C) (hh : 0 < h) :
@@ -207,8 +250,12 @@ theorem norm_fdFDeriv_sub_le_of_convex {g : 𝔼 → F} {L h : ℝ} {C : Set �
     _ ≤ √n * ‖v‖ * (L / 2 * h) := by gcongr; exact sum_abs_le_sqrt_card_mul_norm v
     _ = √n * L / 2 * h * ‖v‖ := by ring
 
-/-- **Forward-difference derivative error**: if `g` is `C¹` with `L`-Lipschitz derivative and
-`h > 0`, then `‖∇̄g(x) - g'(x)‖ ≤ √n L h / 2`. -/
+/-- **Forward-difference derivative error.** Let $F$ be a real normed space, let
+$g : \mathbb{R}^n \to F$ be continuously differentiable with $\|g'(y) - g'(z)\| \le L \|y - z\|$
+for all $y, z$, and let $h > 0$. Then for every $x$, with $\overline\nabla g(x)$ the
+forward-difference derivative,
+$$\|\overline\nabla g(x) - g'(x)\| \le \frac{\sqrt n\, L h}{2}.$$
+-/
 theorem norm_fdFDeriv_sub_le {g : 𝔼 → F} {L h : ℝ} (hg : ContDiff ℝ 1 g)
     (hL : ∀ y z, ‖fderiv ℝ g y - fderiv ℝ g z‖ ≤ L * ‖y - z‖) (hh : 0 < h) (x : 𝔼) :
     ‖fdFDeriv g h x - fderiv ℝ g x‖ ≤ √n * L / 2 * h :=
@@ -216,19 +263,27 @@ theorem norm_fdFDeriv_sub_le {g : 𝔼 → F} {L h : ℝ} (hg : ContDiff ℝ 1 g
     (iteratedFDerivLipschitzOn_one_iff.2 fun y _ z _ => hL y z) (Set.mem_univ x)
     (fun _ => Set.mem_univ _) hh
 
-/-- The forward-difference Hessian ([cartis2022evaluation], §13.2, fourth display):
-`[∇̄²f(x)]_{i,j} = ([∇f(x + h e_j)]_i - [∇f(x)]_i) / h`, the forward-difference derivative of the
-gradient. -/
+/-- The **forward-difference Hessian** ([cartis2022evaluation], §13.2, fourth display). For
+$f : \mathbb{R}^n \to \mathbb{R}$, a step $h$ and a point $x$, it is the linear map
+$\overline\nabla^2 f(x)$ on $\mathbb{R}^n$ with the entries
+$$[\overline\nabla^2 f(x)]_{i,j} = \frac{[\nabla f(x + h e_j)]_i - [\nabla f(x)]_i}{h},$$
+the forward-difference derivative of the gradient. -/
 noncomputable def fdHessian (f : 𝔼 → ℝ) (h : ℝ) (x : 𝔼) : 𝔼 →L[ℝ] 𝔼 :=
   fdFDeriv (gradient f) h x
 
+/-- The forward-difference Hessian is the forward-difference derivative of the gradient $\nabla f$.
+-/
 theorem fdHessian_eq (f : 𝔼 → ℝ) (h : ℝ) (x : 𝔼) :
     fdHessian f h x = fdFDeriv (gradient f) h x :=
   rfl
 
-/-- **Forward-difference Hessian error** ([cartis2022evaluation], §13.2, fourth display): if `f` is
-`C²` with `L`-Lipschitz Hessian and `h > 0`, then
-`‖∇̄²f(x) - ∇²f(x)‖ ≤ √n L h / 2` for the forward-difference Hessian `fdHessian f h x`. -/
+/-- **Forward-difference Hessian error** ([cartis2022evaluation], §13.2, fourth display). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be of class $C^2$, let its Hessian satisfy $\|\nabla^2 f(y) -
+\nabla^2 f(z)\| \le L \|y - z\|$ for all $y, z$, and let $h > 0$. Then for every $x$,
+$$\|\overline\nabla^2 f(x) - \nabla^2 f(x)\| \le \frac{\sqrt n\, L h}{2}.$$
+
+The Hessian $\nabla^2 f(y)$ is `Optimization.hessianOperator f y`, and the norms are operator
+norms. -/
 theorem norm_fdHessian_sub_hessianOperator_le {f : 𝔼 → ℝ} {L h : ℝ} (hf : ContDiff ℝ 2 f)
     (hL : ∀ y z, ‖Optimization.hessianOperator f y - Optimization.hessianOperator f z‖ ≤
       L * ‖y - z‖) (hh : 0 < h) (x : 𝔼) :
@@ -239,10 +294,15 @@ theorem norm_fdHessian_sub_hessianOperator_le {f : 𝔼 → ℝ} {L h : ℝ} (hf
       (hf.fderiv_right (m := 1) (by norm_num))
   exact norm_fdFDeriv_sub_le hg hL hh x
 
-/-- The forward-difference Hessian gives an inexact jet of order `2` ((13.1.2) with `o = 1`): under
-the hypotheses of `norm_fdHessian_sub_hessianOperator_le`, the Taylor jet of `f` at `x` with its
-second-order term replaced by `fdHessian f h x` approximates the exact one with error
-`√n L h / 2` at order `2` and `0` at order `1`. -/
+/-- The forward-difference Hessian gives an **inexact jet of order $2$** ((13.1.2) of
+[cartis2022evaluation] with $o = 1$). Under the hypotheses of
+`FiniteDifference.norm_fdHessian_sub_hessianOperator_le`, let $D$ be the Taylor jet of $f$ at
+$x$ and let $\overline D$ be $D$ with its second-order term replaced by the bilinear form $(u,
+w) \mapsto \langle u, \overline\nabla^2 f(x)\, w \rangle$. Then $\overline D$ approximates $D$
+up to order $2$ with error $0$ at order $1$ and error $\sqrt n\, L h/2$ at order $2$:
+$$\|\overline D_1 - D_1\| \le 0, \qquad \|\overline D_2 - D_2\| \le \frac{\sqrt n\, L h}{2}.$$
+
+The modified jet is `Optimization.hessianJet`. The jet $D$ is `ftaylorSeries ℝ f x`. -/
 theorem jetApprox_fdHessian {f : 𝔼 → ℝ} {L h : ℝ} (hf : ContDiff ℝ 2 f)
     (hL : ∀ y z, ‖Optimization.hessianOperator f y - Optimization.hessianOperator f z‖ ≤
       L * ‖y - z‖) (hh : 0 < h) (x : 𝔼) :
@@ -259,10 +319,15 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- The forward-difference gradient gives an inexact jet of order `1` ((13.1.2) with `o = 0`):
-under the hypotheses of `norm_fdGradient_sub_gradient_le`, the Taylor jet of `f` at `x` with its
-first-order term replaced by `⟪fdGradient f h x, ·⟫` approximates the exact one with error
-`√n L h / 2`. -/
+/-- The forward-difference gradient gives an **inexact jet of order $1$** ((13.1.2) of
+[cartis2022evaluation] with $o = 0$). Under the hypotheses of
+`FiniteDifference.norm_fdGradient_sub_gradient_le`, let $D$ be the Taylor jet of $f$ at $x$ and
+let $\overline D$ be $D$ with its first-order term replaced by the linear form $v \mapsto
+\langle \overline\nabla f(x), v \rangle$. Then
+$$\|\overline D_1 - D_1\| \le \frac{\sqrt n\, L h}{2}.$$
+
+The modified jet is `Optimization.gradientJet`, and the approximation is `Optimization.JetApprox`
+with the constant error $\sqrt n\, L h/2$. The jet $D$ is `ftaylorSeries ℝ f x`. -/
 theorem jetApprox_fdGradient {f : 𝔼 → ℝ} {L h : ℝ} (hf : ContDiff ℝ 1 f)
     (hL : ∀ y z, ‖fderiv ℝ f y - fderiv ℝ f z‖ ≤ L * ‖y - z‖) (hh : 0 < h) (x : 𝔼) :
     Optimization.JetApprox (ftaylorSeries ℝ f x)

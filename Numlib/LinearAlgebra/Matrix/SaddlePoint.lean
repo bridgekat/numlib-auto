@@ -9,18 +9,46 @@ import Numlib.LinearAlgebra.Matrix.HermitianPart
 /-!
 # Solvability of saddle-point block matrices
 
-For a real matrix `[A, Bᵀ; B, -C]` with positive semidefinite symmetric part of `A` and
-positive semidefinite `C`, the null space is governed by the quadratic forms of the two
-diagonal blocks. When `A` is itself symmetric, this gives a complete nonsingularity
-criterion in terms of two kernel intersections.
+This file studies the real saddle-point matrix
+$$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & -C \end{bmatrix}$$
+with $A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times m}$. Let $H = (A + A^T)/2$ be the symmetric part of $A$. When $H$ and
+$C$ are positive semidefinite, a vector $(x, y)$ is in the null space of $\mathcal{A}$ exactly when
+$Ax + B^T y = 0$, $Hx = 0$, $Bx = 0$ and $Cy = 0$. For symmetric positive semidefinite $A$ this
+gives a complete criterion: $\mathcal{A}$ is nonsingular if and only if $\ker A \cap \ker B = \{0\}$
+and $\ker C \cap \ker B^T = \{0\}$. These results give Theorems 3.1–3.4 of [benzi2005numerical].
+
+## Main results
+
+* `Matrix.mulVec_injective_iff_rank_eq_card`: a matrix over a field is injective on column vectors
+  if and only if its rank equals its number of columns.
+* `Matrix.fromBlocks_transpose_neg_mulVec_eq_zero_iff`: if $H$ and $C$ are positive semidefinite,
+  then $\mathcal{A}(x, y) = 0$ if and only if $Ax + B^T y = 0$, $Hx = 0$, $Bx = 0$ and $Cy = 0$.
+* `Matrix.isUnit_fromBlocks_transpose_neg_iff`: if $A$ and $C$ are positive semidefinite, then
+  $\mathcal{A}$ is nonsingular if and only if $\ker A \cap \ker B = \{0\}$ and
+  $\ker C \cap \ker B^T = \{0\}$.
+* `Matrix.isUnit_fromBlocks_transpose_neg_of_hermitianPart`: if $H$ and $C$ are positive
+  semidefinite, $B$ has full row rank and $\ker H \cap \ker B = \{0\}$, then $\mathcal{A}$ is
+  nonsingular.
+* `Matrix.ker_inter_eq_bot_of_isUnit_fromBlocks`: if a block matrix
+  $\begin{bmatrix} A & D \\ B & C \end{bmatrix}$ is nonsingular, then $\ker A \cap \ker B = \{0\}$.
+* `Matrix.ranks_of_isUnit_fromBlocks_transpose_zero`: if $\begin{bmatrix} A & B_1^T \\ B_2 & 0
+  \end{bmatrix}$ is nonsingular, then $B_1$ has rank $m$ and
+  $\begin{bmatrix} A \\ B_2 \end{bmatrix}$ has rank $n$.
+
+## Implementation notes
+
+* Block matrices are `Matrix.fromBlocks`, indexed by `n ⊕ m`, and the vector $(x, y)$ is
+  `Sum.elim x y`. The symmetric part $H$ is `Matrix.hermitianPart A`.
+* Kernels are kernels of `Matrix.mulVecLin`, and a trivial intersection is written `⊓ … = ⊥`.
 -/
 
 namespace Matrix
 
 variable {n m K : Type*}
 
-/-- A rectangular matrix over a field has injective multiplication on column vectors
-exactly when its rank equals its number of columns. -/
+/-- Let $M \in K^{m \times n}$ be a matrix over a field $K$. The map $x \mapsto Mx$ is injective if
+and only if $\operatorname{rank} M = n$. -/
 theorem mulVec_injective_iff_rank_eq_card [Fintype n] [Field K] {M : Matrix m n K} :
     Function.Injective M.mulVec ↔ M.rank = Fintype.card n := by
   rw [mulVec_injective_iff, M.rank_eq_finrank_span_cols,
@@ -33,7 +61,11 @@ private theorem sumElim_zero [Zero K] :
 
 variable [Fintype n] [Fintype m]
 
-/-- A real matrix of full row rank has an injective adjoint over the complex numbers. -/
+/-- Let $B \in \mathbb{R}^{m \times n}$ have rank $m$. Then the conjugate transpose
+$B^H \in \mathbb{C}^{n \times m}$ of $B$, viewed as a complex matrix, is injective: $B^H y = 0$
+implies $y = 0$ for $y \in \mathbb{C}^m$.
+
+The complex matrix is `B.map Complex.ofReal`. -/
 theorem mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank {B : Matrix m n ℝ}
     (hB : B.rank = Fintype.card m) : Function.Injective (B.map Complex.ofReal)ᴴ.mulVec := by
   have hBr : Function.Injective Bᵀ.mulVec :=
@@ -53,8 +85,11 @@ theorem mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank {B : Matrix m n
   · exact congrFun (hBr hre) i
   · exact congrFun (hBr him) i
 
-/-- Multiplication by a block matrix kills a vector exactly when both block equations
-vanish. -/
+/-- Let $A \in K^{n \times n}$, $D \in K^{n \times m}$, $B \in K^{m \times n}$ and
+$C \in K^{m \times m}$ over a semiring $K$. Then
+$$\begin{bmatrix} A & D \\ B & C \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = 0
+  \iff Ax + Dy = 0 \text{ and } Bx + Cy = 0.$$
+-/
 theorem fromBlocks_mulVec_sumElim_eq_zero_iff [Semiring K]
     (A : Matrix n n K) (D : Matrix n m K) (B : Matrix m n K) (C : Matrix m m K)
     (x : n → K) (y : m → K) :
@@ -62,9 +97,15 @@ theorem fromBlocks_mulVec_sumElim_eq_zero_iff [Semiring K]
       A *ᵥ x + D *ᵥ y = 0 ∧ B *ᵥ x + C *ᵥ y = 0 := by
   rw [fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, ← sumElim_zero, Sum.elim_eq_iff]
 
-/-- With positive semidefinite symmetric part of `A` and positive semidefinite `C`,
-a null vector of `[A, Bᵀ; B, -C]` satisfies the top block equation, and its components
-are separately killed by the symmetric part of `A`, by `B`, and by `C` as indicated. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times m}$. Suppose that the symmetric part $H = (A + A^T)/2$ of $A$ and
+the matrix $C$ are positive semidefinite. Then for $x \in \mathbb{R}^n$ and
+$y \in \mathbb{R}^m$,
+$$\begin{bmatrix} A & B^T \\ B & -C \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = 0
+  \iff Ax + B^T y = 0,\ Hx = 0,\ Bx = 0 \text{ and } Cy = 0.$$
+
+The symmetric part is `Matrix.hermitianPart A`. The proof combines the two block equations into
+$x^T H x + y^T C y = 0$, where both terms are nonnegative. -/
 theorem fromBlocks_transpose_neg_mulVec_eq_zero_iff
     {A : Matrix n n ℝ} (B : Matrix m n ℝ) {C : Matrix m m ℝ}
     (hA : (hermitianPart A).PosSemidef) (hC : C.PosSemidef)
@@ -88,8 +129,8 @@ theorem fromBlocks_transpose_neg_mulVec_eq_zero_iff
   · rintro ⟨htop, _, hBx, hCy⟩
     exact ⟨htop, hBx.trans hCy.symm⟩
 
-/-- A square matrix on a direct sum is nonsingular exactly when its homogeneous
-equation forces both components to vanish. -/
+/-- Let $M$ be a square matrix over a field, indexed by $n \sqcup m$. Then $M$ is nonsingular if and
+only if, for all $x \in K^n$ and $y \in K^m$, $M (x, y) = 0$ implies $x = 0$ and $y = 0$. -/
 theorem isUnit_iff_mulVec_sumElim [Field K] [DecidableEq n] [DecidableEq m]
     {M : Matrix (n ⊕ m) (n ⊕ m) K} :
     IsUnit M ↔ ∀ (x : n → K) (y : m → K), M *ᵥ Sum.elim x y = 0 → x = 0 ∧ y = 0 := by
@@ -106,8 +147,14 @@ theorem isUnit_iff_mulVec_sumElim [Field K] [DecidableEq n] [DecidableEq m]
 
 variable [DecidableEq n] [DecidableEq m]
 
-/-- If both diagonal data blocks are positive semidefinite, nonsingularity of the
-saddle-point matrix is equivalent to triviality of both kernel intersections. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ and $C \in \mathbb{R}^{m \times m}$ be symmetric positive
+semidefinite, and let $B \in \mathbb{R}^{m \times n}$. Then the saddle-point matrix is
+nonsingular if and only if both kernel intersections are trivial:
+$$\begin{bmatrix} A & B^T \\ B & -C \end{bmatrix} \text{ is nonsingular} \iff
+  \ker A \cap \ker B = \{0\} \text{ and } \ker C \cap \ker B^T = \{0\}.$$
+
+This gives Theorems 3.1 and 3.2 of [benzi2005numerical]. Positive semidefinite is
+`Matrix.PosSemidef`, which includes symmetry. -/
 theorem isUnit_fromBlocks_transpose_neg_iff
     {A : Matrix n n ℝ} (B : Matrix m n ℝ) {C : Matrix m m ℝ}
     (hA : A.PosSemidef) (hC : C.PosSemidef) :
@@ -126,9 +173,15 @@ theorem isUnit_fromBlocks_transpose_neg_iff
   · rintro ⟨hx, hy⟩ x y ⟨htop, hxA, hxB, hyC⟩
     exact ⟨hx x ⟨hxA, hxB⟩, hy y ⟨hyC, by simpa [hxA] using htop⟩⟩
 
-/-- A saddle-point matrix with positive semidefinite symmetric part of `A` and
-positive semidefinite `C` is nonsingular if the symmetric part of `A` and `B`
-have trivial common kernel and `B` has full row rank. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times m}$. Suppose that the symmetric part $H = (A + A^T)/2$ of $A$ and
+the matrix $C$ are positive semidefinite, that $B^T$ is injective (that is, $B$ has full row
+rank), and that $\ker H \cap \ker B = \{0\}$. Then
+$$\begin{bmatrix} A & B^T \\ B & -C \end{bmatrix}$$
+is nonsingular.
+
+This is the sufficient condition of Theorem 3.4 of [benzi2005numerical]. The symmetric part is
+`Matrix.hermitianPart A`. -/
 theorem isUnit_fromBlocks_transpose_neg_of_hermitianPart
     {A : Matrix n n ℝ} {B : Matrix m n ℝ} {C : Matrix m m ℝ}
     (hA : (hermitianPart A).PosSemidef) (hC : C.PosSemidef)
@@ -142,7 +195,13 @@ theorem isUnit_fromBlocks_transpose_neg_of_hermitianPart
   refine ⟨hx, hB ?_⟩
   simpa [hx] using htop
 
-/-- Nonsingularity of a block matrix forces the first block column to have trivial kernel. -/
+/-- Let $A \in K^{n \times n}$, $D \in K^{n \times m}$, $B \in K^{m \times n}$ and
+$C \in K^{m \times m}$ over a field $K$. If the block matrix
+$$\begin{bmatrix} A & D \\ B & C \end{bmatrix}$$
+is nonsingular, then $\ker A \cap \ker B = \{0\}$.
+
+The reason is that a common null vector $x$ of $A$ and $B$ gives the null vector $(x, 0)$ of the
+block matrix. -/
 theorem ker_inter_eq_bot_of_isUnit_fromBlocks
     [Field K] {A : Matrix n n K} {B : Matrix m n K} {D : Matrix n m K}
     {C : Matrix m m K} (h : IsUnit (fromBlocks A D B C)) :
@@ -154,8 +213,12 @@ theorem ker_inter_eq_bot_of_isUnit_fromBlocks
     ((fromBlocks_mulVec_sumElim_eq_zero_iff A D B C x 0).2
       (by simpa using And.intro hxA hxB))).1
 
-/-- If `[A, B₁ᵀ; B₂, 0]` is nonsingular, `B₁` has full row rank and the stack of
-`A` above `B₂` has full column rank. -/
+/-- Let $A \in K^{n \times n}$ and $B_1, B_2 \in K^{m \times n}$ over a field $K$. If
+$$\begin{bmatrix} A & B_1^T \\ B_2 & 0 \end{bmatrix}$$
+is nonsingular, then $\operatorname{rank} B_1 = m$ and
+$$\operatorname{rank} \begin{bmatrix} A \\ B_2 \end{bmatrix} = n.$$
+
+This gives Theorem 3.3 of [benzi2005numerical]. The stacked matrix is `Matrix.fromRows A B₂`. -/
 theorem ranks_of_isUnit_fromBlocks_transpose_zero
     [Field K] {A : Matrix n n K} {B₁ B₂ : Matrix m n K}
     (h : IsUnit (fromBlocks A B₁ᵀ B₂ (0 : Matrix m m K))) :

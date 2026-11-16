@@ -18,71 +18,103 @@ import Numlib.Analysis.Normed.Module.BestApprox
 /-!
 # Best uniform approximation and equioscillation
 
-Best uniform approximation of a continuous function on a compact subset of the line by polynomials
-of degree at most `n`, and the alternation (equioscillation) that characterizes it. The material is
-[han2009theoretical] Thm 3.3.19 and [kress1998numerical] §8.2.
+Let $X \subseteq \mathbb{R}$ be compact, and let $\mathcal{P}_n \subseteq C(X)$ be the space of the
+restrictions to $X$ of the real polynomials of degree at most $n$. A best uniform approximation of
+$f \in C(X)$ from $\mathcal{P}_n$ is a $p \in \mathcal{P}_n$ that minimizes the sup norm
+$\|f - p\|$. The error $f - p$ **equioscillates** at $m$ points if there are points
+$x_0 < \dots < x_{m-1}$ of $X$ and a sign $\sigma = \pm 1$ with
+$(f - p)(x_i) = \sigma (-1)^i \|f - p\|$. This module proves **Chebyshev's equioscillation
+theorem**: on an infinite $X$, $p$ is a best uniform approximation if and only if $f - p$
+equioscillates at $n + 2$ points. It also proves that the best approximation exists and is unique.
+The presentation follows Theorem 3.3.19 of [han2009theoretical] and §8.2 of [kress1998numerical].
+
+The same results hold on the circle $\mathbb{R}/T\mathbb{Z}$ for the space $\mathcal{T}_n$ of real
+trigonometric polynomials of degree at most $n$, which has dimension $2n + 1$. There the alternation
+has $2n + 2$ points of one period. The existence and uniqueness on the circle is Theorem 3.3.20 of
+[han2009theoretical]. The common tool is the **Haar condition**: a subspace satisfies it in
+dimension $d$ if no nonzero element vanishes at $d$ distinct points.
 
 ## Main definitions
 
-* `polyLE X n` is the subspace of `C(X, ℝ)` of the restrictions of the real polynomials of degree at
-  most `n`.
-* `HaarCondition V d` says that no nonzero element of `V` vanishes at `d` distinct points of `X`. It
-  is what the alternation arguments use about polynomials, and it holds for `polyLE X n` with `d = n
-  + 1` (`haarCondition_polyLE`), as it does for the trigonometric polynomials of degree at most `n`
-  on a circle. The dimension is carried as a parameter rather than read off as `Module.finrank`, so
-  that no rank computation is needed at a use site.
-* `Equioscillates g m` says that `g` attains `± ‖g‖` with alternating signs at `m` increasing points
-  of `X`.
+* `polyLE`: the subspace $\mathcal{P}_n$ of $C(X)$.
+* `HaarCondition`: no nonzero element of a subspace $V \subseteq C(X)$ vanishes at $d$ distinct
+  points of $X$.
+* `Equioscillates`: a function $g \in C(X)$ takes the values $\pm \|g\|$ with alternating signs at
+  $m$ increasing points of $X$.
+* `EquioscillatesCircle`: a function $g$ on the circle takes the values $\pm \|g\|$ with alternating
+  signs at $m$ increasing points of one half-open period.
 
 ## Main results
 
-* `le_infDist_of_alternates` is the de la Vallée-Poussin lower bound: an alternation of length `n +
-  2` for the error of *any* competitor bounds the distance to `polyLE X n` from below. Its immediate
-  consequence `isBestApprox_of_equioscillates` is the sufficiency half of Chebyshev's
-  equioscillation theorem.
-* `IsBestApprox.exists_card_eq_of_interpolation` is the half with content in the other direction:
-  the error of a best approximation attains its maximum modulus at `d` distinct points, because
-  otherwise an element of the subspace interpolating the error at the extreme points gives a
-  direction of improvement. Its hypothesis, that the subspace takes prescribed values at fewer than
-  `d` points, holds for `polyLE X n` by Lagrange's formula (`IsBestApprox.exists_card_eq_of_polyLE`)
-  and for a `d`-dimensional Haar subspace by `HaarCondition.exists_mem_forall_eq`, the interpolation
-  property of a Haar system.
-* `IsBestApprox.unique_of_polyLE` and `IsBestApprox.unique_of_haarCondition`, the uniqueness of the
-  best uniform approximation, follow from it and the Haar condition through the midpoint of two best
-  approximations.
-* `isBestApprox_iff_equioscillates` is **Chebyshev's equioscillation theorem** itself, of which
-  `IsBestApprox.equioscillates_of_polyLE` is the direction with content: the exchange argument
-  builds, out of a maximal alternation shorter than `n + 2`, a polynomial that
-  `IsBestApprox.exists_mul_nonpos` — Kolmogorov's criterion — forbids.
-* `card_le_two_mul_of_forall_trigFun_eq_zero` is the Haar condition for the trigonometric
-  polynomials: a nonzero one of degree at most `n` has at most `2 n` zeros in a period. Packaged as
-  `haarCondition_trigPolyLE` it gives `IsBestApprox.unique_of_trigPolyLE` and, with the
-  finite-dimensionality of the subspace, `existsUnique_isBestApprox_trigPolyLE`;
-  `existsUnique_isBestApprox_polyLE` is the polynomial counterpart.
-* `EquioscillatesCircle` is the alternation on the circle, at `2 n + 2` points of a period, and
-  `le_infDist_of_alternates_trig`, `isBestApprox_of_equioscillatesCircle` are the de la
-  Vallée-Poussin bound and the sufficiency half of the equioscillation theorem there.
-* `isBestApprox_trig_iff_equioscillates` is the equioscillation theorem on the circle, of which
-  `IsBestApprox.equioscillatesCircle_of_trigPolyLE` is the direction with content. Its exchange
-  argument is *cyclic*: no endpoint anchors the sign pattern, so the circle is cut at a point where
-  `|f - p| < ‖f - p‖` and the linear separators of `exists_separators_of_not_equioscillates` are
-  read off there; adjoining the cut point when their number is odd makes it even, which is what
-  `sinProd` — the circle's analogue of a monic polynomial with prescribed zeros — needs.
+* `le_infDist_of_alternates`: the **de la Vallée-Poussin bound**. If $f - q$ alternates in sign at
+  $n + 2$ increasing points with modulus at least $\varepsilon$, for some $q \in \mathcal{P}_n$,
+  then $\operatorname{dist}(f, \mathcal{P}_n) \ge \varepsilon$.
+* `isBestApprox_of_equioscillates`: if $f - p$ equioscillates at $n + 2$ points, then $p$ is a best
+  approximation of $f$ from $\mathcal{P}_n$.
+* `IsBestApprox.exists_card_eq_of_interpolation`: if a subspace can take prescribed values at any
+  fewer than $d$ points, the error of a best approximation from it attains its sup norm at $d$
+  distinct points.
+* `IsBestApprox.unique_of_haarCondition` and `IsBestApprox.unique_of_polyLE`: the best uniform
+  approximation from a $d$-dimensional Haar subspace, and from $\mathcal{P}_n$, is unique.
+* `IsBestApprox.exists_mul_nonpos`: **Kolmogorov's criterion**. At a best approximation $p$, every
+  $q$ in the subspace satisfies $(f - p)(t) q(t) \le 0$ at some point $t$ where $|f - p|$ attains
+  its maximum.
+* `isBestApprox_iff_equioscillates`: **Chebyshev's equioscillation theorem** on a compact infinite
+  subset of the line.
+* `card_le_two_mul_of_forall_trigFun_eq_zero`: a nonzero real trigonometric polynomial of degree at
+  most $n$ has at most $2n$ zeros in a period.
+* `existsUnique_isBestApprox_polyLE` and `existsUnique_isBestApprox_trigPolyLE`: the best uniform
+  approximation from $\mathcal{P}_n$, and from $\mathcal{T}_n$, exists and is unique.
+* `isBestApprox_trig_iff_equioscillates`: the equioscillation theorem on the circle, with $2n + 2$
+  points.
 
-The interpolation and uniqueness arguments — everything but the alternation itself, which is stated
-for a subset of the line because it speaks of increasing points — hold on an arbitrary compact
-space, which is what lets the trigonometric case on a circle reuse them verbatim.
+## Proof outline
+
+Sufficiency of the alternation is the de la Vallée-Poussin bound. If some $p$ were closer to $f$
+than $\varepsilon$, then $p - q$ would alternate in sign at $n + 2$ points. By the intermediate
+value theorem it would have $n + 1$ zeros, so it would vanish by the Haar condition. This
+contradicts the alternation.
+
+Necessity is the exchange argument. Suppose that $g = f - p$ alternates at most $m \le n + 1$ times.
+Take an alternation $z_0 < \dots < z_{m-1}$ of maximal length, and among these one with the least
+sum $\sum_i z_i$. Between consecutive points $z_j$ and $z_{j+1}$, a point $y_j$ separates the last
+extreme point of the sign of $z_j$ from $z_{j+1}$. Then a constant multiple of $\prod_j (y_j - x)$,
+a polynomial of degree at most $n$, has the sign of $g$ at every extreme point of $g$. Kolmogorov's
+criterion forbids this. On the circle the argument is cyclic. The circle is cut at a point $a$ where
+$|g| < \|g\|$; if there is no such point, $|g|$ is constant, and then a constant function already
+improves $g$. The linear argument on $[a, a + T]$ gives at most $2n$ separators. If their number is
+odd, the cut point $a$ is added, which only changes the sign. The product
+$\prod_j \sin(\pi (x - y_j) / T)$ over an even number of separators is a trigonometric polynomial
+(`sinProd`), and it has the same sign as $\prod_j (y_j - x)$ on the period.
+
+Uniqueness uses the midpoint of two best approximations. The midpoint is also a best approximation,
+so its error attains the minimal distance at $d$ points. At each of these points the two best
+approximations agree, and the Haar condition then makes them equal.
+
+## Implementation notes
+
+* A best approximation is `IsBestApprox` of `Numlib.Analysis.Normed.Module.BestApprox`, for the sup
+  norm of $C(X)$. The space $\mathcal{T}_n$ is `trigPolyLE T n`, and its basis functions are
+  `trigFun T m` of `Numlib.Analysis.Fourier.TrigonometricBasis`.
+* `HaarCondition` takes the dimension $d$ as a parameter, and does not read it off as
+  `Module.finrank`. Then a use site needs no rank computation. The results that need the dimension
+  take `Module.finrank ℝ V = d` as a hypothesis.
+* The interpolation and uniqueness results hold on an arbitrary compact space. Only the alternation
+  itself needs a subset of the line, because it speaks of increasing points. This lets the
+  trigonometric case on the circle use the same results.
 -/
 
 open scoped Polynomial Real
 
-/-- The subspace of `C(X, ℝ)` of the restrictions to `X` of the real polynomial functions of degree
-at most `n`. -/
+/-- The subspace $\mathcal{P}_n$ of $C(X)$, for $X \subseteq \mathbb{R}$: the restrictions to $X$ of
+the real polynomial functions of degree at most $n$.
+
+It is the image of `Polynomial.degreeLE ℝ n` under `Polynomial.toContinuousMapOnAlgHom X`. -/
 noncomputable def polyLE (X : Set ℝ) (n : ℕ) : Submodule ℝ C(X, ℝ) :=
   (Polynomial.degreeLE ℝ n).map (Polynomial.toContinuousMapOnAlgHom X).toLinearMap
 
-/-- An element of `polyLE X n` is exactly a continuous function on `X` given by a polynomial of
-degree at most `n`. -/
+/-- A function $g \in C(X)$ is in $\mathcal{P}_n$ if and only if there is a real polynomial $P$ of
+degree at most $n$ with $g(t) = P(t)$ for all $t \in X$. -/
 theorem mem_polyLE_iff {X : Set ℝ} {n : ℕ} {g : C(X, ℝ)} :
     g ∈ polyLE X n ↔ ∃ P : ℝ[X], P.degree ≤ n ∧ ∀ t : X, g t = P.eval (t : ℝ) := by
   constructor
@@ -93,8 +125,8 @@ theorem mem_polyLE_iff {X : Set ℝ} {n : ℕ} {g : C(X, ℝ)} :
     ext t
     simpa using (hg t).symm
 
-/-- The polynomials of degree at most `n` on `X` form a finite-dimensional subspace of `C(X, ℝ)`,
-being the image of the space of polynomials of degree `< n + 1`. -/
+/-- The space $\mathcal{P}_n$ is finite-dimensional, because it is the image of the space of
+polynomials of degree less than $n + 1$. -/
 instance instFiniteDimensionalPolyLE (X : Set ℝ) (n : ℕ) :
     FiniteDimensional ℝ (polyLE X n) := by
   have h : polyLE X n =
@@ -103,8 +135,8 @@ instance instFiniteDimensionalPolyLE (X : Set ℝ) (n : ℕ) :
   rw [h]
   infer_instance
 
-/-- The restriction of polynomial functions to an infinite set is injective: a nonzero polynomial
-has finitely many roots. -/
+/-- Let $X \subseteq \mathbb{R}$ be infinite. Then the map that takes a real polynomial to its
+restriction in $C(X)$ is injective, because a nonzero polynomial has finitely many roots. -/
 theorem Polynomial.toContinuousMapOnAlgHom_injective {X : Set ℝ} (hX : X.Infinite) :
     Function.Injective (Polynomial.toContinuousMapOnAlgHom X) := by
   intro p q hpq
@@ -115,8 +147,10 @@ theorem Polynomial.toContinuousMapOnAlgHom_injective {X : Set ℝ} (hX : X.Infin
     Polynomial.toContinuousMap_apply] at this
   simp [Polynomial.IsRoot, this]
 
-/-- **The dimension of the polynomials of degree at most `n`** on an infinite subset of the line
-is `n + 1`: the restriction of `Polynomial.degreeLT ℝ (n + 1)` is injective there. -/
+/-- Let $X \subseteq \mathbb{R}$ be infinite. Then $\dim \mathcal{P}_n = n + 1$.
+
+The proof shows that the restriction map is injective on the polynomials of degree less than
+$n + 1$. -/
 theorem finrank_polyLE {X : Set ℝ} (hX : X.Infinite) (n : ℕ) :
     Module.finrank ℝ (polyLE X n) = n + 1 := by
   have h : polyLE X n
@@ -126,15 +160,17 @@ theorem finrank_polyLE {X : Set ℝ} (hX : X.Infinite) (n : ℕ) :
       (Submodule.equivMapOfInjective _ (Polynomial.toContinuousMapOnAlgHom_injective hX) _).symm,
     LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv ℝ (n + 1)), Module.finrank_fin_fun]
 
-/-- A subspace `V` of `C(X, ℝ)` satisfies the **Haar condition in dimension `d`** when no nonzero
-element of `V` vanishes at `d` distinct points of `X`. For a `d`-dimensional space this is the
-classical Haar condition; carrying `d` as a parameter keeps every use site free of a rank
-computation. -/
+/-- Let $X$ be a topological space, let $V$ be a subspace of $C(X)$, and let $d \in \mathbb{N}$.
+Then $V$ satisfies the **Haar condition in dimension $d$** if every nonzero $g \in V$ vanishes
+at fewer than $d$ distinct points of $X$.
+
+For a $d$-dimensional space $V$, this is the classical Haar condition. The dimension is a
+parameter, so that a use site needs no rank computation. -/
 def HaarCondition {X : Type*} [TopologicalSpace X] (V : Submodule ℝ C(X, ℝ)) (d : ℕ) : Prop :=
   ∀ g ∈ V, g ≠ 0 → ∀ s : Finset X, (∀ t ∈ s, g t = 0) → s.card < d
 
-/-- The polynomials of degree at most `n` satisfy the Haar condition in dimension `n + 1`: a nonzero
-polynomial of degree at most `n` has at most `n` roots. -/
+/-- The space $\mathcal{P}_n$ satisfies the Haar condition in dimension $n + 1$: a nonzero
+polynomial of degree at most $n$ has at most $n$ roots. -/
 theorem haarCondition_polyLE (X : Set ℝ) (n : ℕ) : HaarCondition (polyLE X n) (n + 1) := by
   intro g hg hg0 s hs
   by_contra hcard
@@ -154,9 +190,13 @@ theorem haarCondition_polyLE (X : Set ℝ) (n : ℕ) : HaarCondition (polyLE X n
   ext t
   simp [hgP t, hP0]
 
-/-- **A Haar system interpolates.** A subspace of dimension `d` satisfying the Haar condition in
-dimension `d` takes prescribed values at any `d` distinct points: the evaluation map into `Fin d →
-ℝ` is injective by the Haar condition, hence surjective because the dimensions agree. -/
+/-- **A Haar system interpolates.** Let $X$ be a topological space, and let $V \subseteq C(X)$ be a
+subspace of finite dimension $d$ that satisfies the Haar condition in dimension $d$. Then for
+distinct points $x_0, \dots, x_{d-1} \in X$ and values $y_0, \dots, y_{d-1} \in \mathbb{R}$,
+there is $g \in V$ with $g(x_i) = y_i$ for all $i$.
+
+The evaluation map $V \to \mathbb{R}^d$ is injective by the Haar condition. It is surjective
+because the two dimensions are equal. -/
 theorem HaarCondition.exists_forall_apply_eq {X : Type*} [TopologicalSpace X]
     {V : Submodule ℝ C(X, ℝ)} {d : ℕ} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
     (hdim : Module.finrank ℝ V = d) {x : Fin d → X} (hx : Function.Injective x)
@@ -185,8 +225,13 @@ theorem HaarCondition.exists_forall_apply_eq {X : Type*} [TopologicalSpace X]
   obtain ⟨g, hg⟩ := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hrank).mp hinj y
   exact ⟨g, g.2, fun i => by rw [← hevapp g i, hg]⟩
 
-/-- The interpolation property of a Haar system in the form the exchange argument uses: fewer than
-`d` points can be prescribed arbitrarily, by padding them out to `d` distinct points. -/
+/-- Let $X$ be an infinite topological space, and let $V \subseteq C(X)$ be a subspace of finite
+dimension $d$ that satisfies the Haar condition in dimension $d$. Then for every finite set
+$S \subseteq X$ with fewer than $d$ points and every function $y \colon X \to \mathbb{R}$, there
+is $q \in V$ with $q(t) = y(t)$ for all $t \in S$.
+
+This is the interpolation property in the form that the exchange argument uses. The proof adds
+points to $S$ until it has $d$ points. -/
 theorem HaarCondition.exists_mem_forall_eq {X : Type*} [TopologicalSpace X] [Infinite X]
     {V : Submodule ℝ C(X, ℝ)} {d : ℕ} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
     (hdim : Module.finrank ℝ V = d) (S : Finset X) (hS : S.card < d) (y : X → ℝ) :
@@ -208,22 +253,28 @@ theorem HaarCondition.exists_mem_forall_eq {X : Type*} [TopologicalSpace X] [Inf
   have hval := hgval (e ⟨t, Finset.mem_union_left _ ht⟩)
   simpa [hx] using hval
 
-/-- `Equioscillates g m`: the function `g` attains `± ‖g‖` with alternating signs at `m` increasing
-points of `X`, the alternation condition in Chebyshev's characterization of a best uniform
-approximation. -/
+/-- Let $X \subseteq \mathbb{R}$ be compact, let $g \in C(X)$ and let $m \in \mathbb{N}$. Then $g$
+**equioscillates at $m$ points** if there are a sign $\sigma \in \{1, -1\}$ and points
+$x_0 < x_1 < \dots < x_{m-1}$ of $X$ with
+$$g(x_i) = \sigma (-1)^i \|g\| \qquad (i = 0, \dots, m - 1).$$
+
+This is the alternation condition of Chebyshev's characterization of the best uniform
+approximation. The norm $\|g\|$ is the sup norm on $X$. -/
 def Equioscillates {X : Set ℝ} [CompactSpace X] (g : C(X, ℝ)) (m : ℕ) : Prop :=
   ∃ (σ : ℝ) (x : Fin m → X), (σ = 1 ∨ σ = -1) ∧ StrictMono (fun i => (x i : ℝ)) ∧
     ∀ i : Fin m, g (x i) = σ * (-1) ^ (i : ℕ) * ‖g‖
 
-/-- **De la Vallée-Poussin's lower bound.** If the error `f - q` of some competitor `q` of degree at
-most `n` alternates in sign at `n + 2` increasing points of `X` with values of modulus at least `ε`,
-then no polynomial of degree at most `n` approximates `f` better than `ε`.
+/-- **De la Vallée-Poussin's lower bound.** Let $X \subseteq \mathbb{R}$ be compact, let
+$f \in C(X)$, let $q \in \mathcal{P}_n$, let $\varepsilon \in \mathbb{R}$ and let
+$\sigma \in \{1, -1\}$. Let $x_0 < x_1 < \dots < x_{n+1}$ be points of $X$ with
+$$\varepsilon \le \sigma (-1)^i \bigl(f(x_i) - q(x_i)\bigr) \qquad (i = 0, \dots, n + 1).$$
+Then $\varepsilon \le \operatorname{dist}(f, \mathcal{P}_n)$. This is part of Theorem 3.3.19 of
+[han2009theoretical].
 
-The proof is the Haar condition for `polyLE X n`: were some `p` closer than `ε`, the difference `p -
-q` would inherit the alternation, hence have `n + 1` roots by the intermediate value theorem, hence
-vanish — contradicting the alternation itself.
-
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+The proof uses the Haar condition for $\mathcal{P}_n$. If some $p \in \mathcal{P}_n$ had
+$\|f - p\| < \varepsilon$, then $p - q$ would alternate in sign at the $n + 2$ points. By the
+intermediate value theorem it would have $n + 1$ roots, so it would vanish, which contradicts
+the alternation. The distance is `Metric.infDist`. -/
 theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q : C(X, ℝ)}
     (hq : q ∈ polyLE X n) {ε σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {x : Fin (n + 2) → X}
     (hmono : StrictMono fun i => (x i : ℝ))
@@ -294,10 +345,12 @@ theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q :
   rw [hR0] at this
   simp at this
 
-/-- The sufficiency half of Chebyshev's equioscillation theorem: a polynomial whose error
-equioscillates at `n + 2` points is a best uniform approximation.
+/-- **Chebyshev's equioscillation theorem, sufficiency.** Let $X \subseteq \mathbb{R}$ be compact,
+let $f \in C(X)$ and let $p \in \mathcal{P}_n$. If $f - p$ equioscillates at $n + 2$ points,
+then $p$ is a best uniform approximation of $f$ from $\mathcal{P}_n$. This is part of Theorem
+3.3.19 of [han2009theoretical].
 
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+The proof applies `le_infDist_of_alternates` with $q = p$ and $\varepsilon = \|f - p\|$. -/
 theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f p : C(X, ℝ)}
     (hp : p ∈ polyLE X n) (h : Equioscillates (f - p) (n + 2)) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
@@ -318,10 +371,8 @@ theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} 
 
 /-! ### The extreme set of a best approximation, and uniqueness -/
 
-/-- **A direction of improvement.** If some `q` has the same strict sign as `g` at every point where
-`|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all small `λ
-> 0`: away from the extreme set there is room to spare, and at the extreme set the correction has
-the right sign. -/
+/-- If $0 < \|g\|$ and $g(t) q(t) > 0$ at every point $t$ where $|g(t)| = \|g\|$, then
+$\|g - \lambda q\| < \|g\|$ for some $\lambda > 0$. -/
 private theorem exists_norm_sub_smul_lt {X : Type*} [TopologicalSpace X] [CompactSpace X]
     [Nonempty X]
     {g q : C(X, ℝ)} (hE : 0 < ‖g‖) (hsign : ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t) :
@@ -379,17 +430,19 @@ private theorem exists_norm_sub_smul_lt {X : Type*} [TopologicalSpace X] [Compac
       · nlinarith [neg_abs_le (g t)]
       · nlinarith
 
-/-- **The error of a best uniform approximation from an interpolating subspace attains its maximum
-modulus at `d` points.** This is the half of the Chebyshev characterization that has content: if the
-error attained its maximum modulus at fewer than `d` points, then an element `q` of the subspace
-interpolating the error at those points makes `p + c q` a strictly better approximation once `c > 0`
-is small enough.
+/-- **The extreme set of a best approximation.** Let $X$ be an infinite compact space, let $V$ be a
+subspace of $C(X)$, and let $d \in \mathbb{N}$. Suppose that for every finite set
+$S \subseteq X$ with fewer than $d$ points and every $y \colon X \to \mathbb{R}$, some $q \in V$
+satisfies $q = y$ on $S$. If $p$ is a best uniform approximation of $f \in C(X)$ from $V$, then
+there is a set $S$ of exactly $d$ points of $X$ with
+$$|(f - p)(t)| = \|f - p\| \qquad (t \in S).$$
+This is part of Theorem 3.3.19 of [han2009theoretical].
 
-The hypothesis is what a Haar system of dimension `d` supplies
-(`HaarCondition.exists_mem_forall_eq`), and what Lagrange interpolation supplies for the polynomials
-of degree at most `n`, with `d = n + 1`.
-
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+If the error attained its sup norm at fewer than $d$ points, an element $q \in V$ that
+interpolates the error at these points would make $p + cq$ a strictly better approximation for
+small $c > 0$. The hypothesis holds for a $d$-dimensional Haar subspace
+(`HaarCondition.exists_mem_forall_eq`), and for $\mathcal{P}_n$ with $d = n + 1$ by Lagrange
+interpolation. -/
 theorem IsBestApprox.exists_card_eq_of_interpolation {X : Type*} [TopologicalSpace X]
     [CompactSpace X] [Infinite X]
     {d : ℕ} {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)}
@@ -447,11 +500,12 @@ theorem IsBestApprox.exists_card_eq_of_interpolation {X : Type*} [TopologicalSpa
   rw [heq] at hbetter
   exact absurd hbetter (not_le.mpr hlt)
 
-/-- **The error of a best uniform approximation attains its maximum modulus at `n + 1` distinct
-points.** The polynomial case of `IsBestApprox.exists_card_eq_of_interpolation`, whose interpolation
-hypothesis is Lagrange's formula at the extreme points.
+/-- Let $X \subseteq \mathbb{R}$ be compact and infinite. If $p$ is a best uniform approximation of
+$f \in C(X)$ from $\mathcal{P}_n$, then $|f - p|$ attains its maximum $\|f - p\|$ at $n + 1$
+distinct points of $X$. This is part of Theorem 3.3.19 of [han2009theoretical].
 
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+This is the case $V = \mathcal{P}_n$ of `IsBestApprox.exists_card_eq_of_interpolation`. Lagrange
+interpolation at the extreme points gives its hypothesis. -/
 theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
     ∃ S : Finset X, S.card = n + 1 ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
@@ -467,10 +521,8 @@ theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [In
   refine ⟨Q.toContinuousMapOn X, mem_polyLE_iff.mpr ⟨Q, hQdeg, fun t => rfl⟩, fun t ht => ?_⟩
   exact Lagrange.eval_interpolate_at_node _ hinj ht
 
-/-- **Two best approximations agree wherever the error of their midpoint is extreme.** The two
-errors have the common minimal norm `ρ`, so each has modulus at most `ρ` everywhere; where their
-average has modulus exactly `ρ` neither can fall short, and both have the same sign. This is the
-step both uniqueness theorems below take. -/
+/-- If $p_1$, $p_2$ and their midpoint are best approximations of $f$ from the same set, then
+$p_1(t) = p_2(t)$ at every point $t$ where the error of the midpoint attains its sup norm. -/
 private theorem eq_of_abs_sub_midpoint_eq {X : Type*} [TopologicalSpace X] [CompactSpace X]
     {K : Set C(X, ℝ)}
     {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox K f p₁) (h₂ : IsBestApprox K f p₂)
@@ -499,15 +551,15 @@ private theorem eq_of_abs_sub_midpoint_eq {X : Type*} [TopologicalSpace X] [Comp
   rcases abs_cases ((2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t)) with
     ⟨he, -⟩ | ⟨he, -⟩ <;> rw [he] at hmax <;> linarith
 
-/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Two best approximations
-of the same function by elements of a `d`-dimensional subspace satisfying the Haar condition in
-dimension `d` agree.
+/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Let $X$ be an infinite
+compact space, and let $V \subseteq C(X)$ be a subspace of finite dimension $d$ that satisfies
+the Haar condition in dimension $d$. If $p_1$ and $p_2$ are best uniform approximations of the
+same $f \in C(X)$ from $V$, then $p_1 = p_2$. This is part of Theorem 3.3.19 of
+[han2009theoretical], and it is in §8.2 of [kress1998numerical].
 
-Their midpoint is a best approximation too, its error attains the common minimal norm at `d` points,
-and at each of those the two errors must agree; the Haar condition then forces the two elements to
-be equal.
-
-Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
+The midpoint of $p_1$ and $p_2$ is also a best approximation, and its error attains the minimal
+distance at $d$ points. At each of these points $p_1$ and $p_2$ agree, and the Haar condition
+then gives $p_1 = p_2$. -/
 theorem IsBestApprox.unique_of_haarCondition {X : Type*} [TopologicalSpace X] [CompactSpace X]
     [Infinite X] {d : ℕ}
     {V : Submodule ℝ C(X, ℝ)} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
@@ -527,14 +579,14 @@ theorem IsBestApprox.unique_of_haarCondition {X : Type*} [TopologicalSpace X] [C
     omega
   exact sub_eq_zero.mp hzero
 
-/-- **Uniqueness of the best uniform approximation** by polynomials of degree at most `n` on a
-compact infinite subset of the line: two best approximations of the same function agree.
+/-- **Uniqueness of the best uniform polynomial approximation.** Let $X \subseteq \mathbb{R}$ be
+compact and infinite. If $p_1$ and $p_2$ are best uniform approximations of the same
+$f \in C(X)$ from $\mathcal{P}_n$, then $p_1 = p_2$. This is part of Theorem 3.3.19 of
+[han2009theoretical].
 
-Their midpoint is a best approximation too, its error attains the common minimal norm at `n + 1`
-points, and at each of those the two errors must agree; the Haar condition then forces the two
-polynomials to be equal.
-
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+The midpoint of $p_1$ and $p_2$ is also a best approximation, and its error attains the minimal
+distance at $n + 1$ points. At each of these points $p_1$ and $p_2$ agree, and the Haar
+condition then gives $p_1 = p_2$. -/
 theorem IsBestApprox.unique_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₁)
     (h₂ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₂) : p₁ = p₂ := by
@@ -555,7 +607,8 @@ theorem IsBestApprox.unique_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X
 
 /-! ### Kolmogorov's improvement criterion -/
 
-/-- An alternation of length `m` contains one of every shorter length. -/
+/-- If $g \in C(X)$ equioscillates at $m$ points and $k \le m$, then $g$ equioscillates at $k$
+points. -/
 theorem Equioscillates.mono {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m k : ℕ}
     (h : Equioscillates g m) (hk : k ≤ m) : Equioscillates g k := by
   obtain ⟨σ, x, hσ, hmono, hval⟩ := h
@@ -566,14 +619,16 @@ theorem Equioscillates.mono {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m k 
   · change g (x (Fin.castLE hk i)) = σ * (-1) ^ (i : ℕ) * ‖g‖
     rw [hval (Fin.castLE hk i), Fin.val_castLE]
 
-/-- **Kolmogorov's criterion, the half with content.** At a best approximation no element of the
-subspace has the same strict sign as the error at every point of the extreme set: such an element
-would be a direction of improvement.
+/-- **Kolmogorov's criterion, necessity.** Let $X$ be a nonempty compact space, let $V$ be a
+subspace of $C(X)$, and let $p$ be a best uniform approximation of $f \in C(X)$ from $V$ with
+$\|f - p\| > 0$. Then for every $q \in V$ there is a point $t \in X$ with
+$$|(f - p)(t)| = \|f - p\| \quad \text{and} \quad (f - p)(t) \, q(t) \le 0.$$
+This is part of Theorem 3.3.19 of [han2009theoretical], and it is in §8.2 of
+[kress1998numerical].
 
-It is the analytic half of Chebyshev's equioscillation theorem — the other half is the combinatorial
-construction of such an element out of a short alternation.
-
-Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
+An element $q$ with the strict sign of the error at every extreme point would give a direction
+of improvement. This is the analytic half of Chebyshev's equioscillation theorem. The other half
+constructs such an element from a short alternation. -/
 theorem IsBestApprox.exists_mul_nonpos {X : Type*} [TopologicalSpace X] [CompactSpace X]
     [Nonempty X] {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)} (hp : IsBestApprox (V : Set C(X, ℝ)) f p)
     (hE : 0 < ‖f - p‖) {q : C(X, ℝ)} (hq : q ∈ V) :
@@ -587,8 +642,8 @@ theorem IsBestApprox.exists_mul_nonpos {X : Type*} [TopologicalSpace X] [Compact
 
 /-! ### Chebyshev's equioscillation theorem -/
 
-/-- An alternation written with a single constant: `g` takes the values `± c` alternately, with `|c|
-= ‖g‖`. This is the form the construction below produces, and it is an alternation. -/
+/-- If $|c| = \|g\|$ and $g(w_i) = (-1)^i c$ at increasing points $w_0 < \dots < w_{m-1}$, then $g$
+equioscillates at $m$ points. -/
 private theorem equioscillates_of_alternating {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m : ℕ}
     {w : Fin m → X} (hmono : StrictMono fun i => (w i : ℝ)) {c : ℝ} (hc : |c| = ‖g‖)
     (hval : ∀ i, g (w i) = (-1) ^ (i : ℕ) * c) : Equioscillates g m := by
@@ -606,7 +661,8 @@ private theorem equioscillates_of_alternating {X : Set ℝ} [CompactSpace X] {g 
     · rw [hval i]
       field_simp
 
-/-- Prepending a point to the left of an alternation, with the opposite sign, lengthens it. -/
+/-- An alternation $g(w_i) = (-1)^i c$ at $m$ points, with $|c| = \|g\|$, and a point $t$ to the
+left of all $w_i$ with $g(t) = -c$ give an alternation at $m + 1$ points. -/
 private theorem equioscillates_succ_of_forall_lt {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)}
     {m : ℕ} {w : Fin m → X} (hmono : StrictMono fun i => (w i : ℝ)) {c : ℝ} (hc : |c| = ‖g‖)
     (hval : ∀ i, g (w i) = (-1) ^ (i : ℕ) * c) {t : X} (hlt : ∀ i, (t : ℝ) < (w i : ℝ))
@@ -632,7 +688,8 @@ private theorem equioscillates_succ_of_forall_lt {X : Set ℝ} [CompactSpace X] 
       rw [hval i']
       ring
 
-/-- Appending a point to the right of an alternation, with the opposite sign, lengthens it. -/
+/-- An alternation $g(w_i) = (-1)^i c$ at $m$ points, with $|c| = \|g\|$, and a point $t$ to the
+right of all $w_i$ with $g(t) = (-1)^m c$ give an alternation at $m + 1$ points. -/
 private theorem equioscillates_succ_of_forall_gt {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)}
     {m : ℕ} {w : Fin m → X} (hmono : StrictMono fun i => (w i : ℝ)) {c : ℝ} (hc : |c| = ‖g‖)
     (hval : ∀ i, g (w i) = (-1) ^ (i : ℕ) * c) {t : X} (hgt : ∀ i, (w i : ℝ) < (t : ℝ))
@@ -656,21 +713,20 @@ private theorem equioscillates_succ_of_forall_gt {X : Set ℝ} [CompactSpace X] 
 
 /-! ### The Haar condition for trigonometric polynomials -/
 
-/-- **A nonzero real trigonometric polynomial of degree at most `n` has at most `2 n` zeros in a
-period.** This is the Haar condition for the trigonometric polynomials — the analogue of
-`haarCondition_polyLE`, in the dimension `2 n + 1` of that space — and it is what the trigonometric
-equioscillation theorem and trigonometric interpolation rest on.
+/-- **A nonzero real trigonometric polynomial of degree at most $n$ has at most $2n$ zeros in a
+period.** Let $T \neq 0$, let $c \colon \mathbb{Z} \to \mathbb{R}$, and let
+$$f = \sum_{m = -n}^{n} c_m \, \tau_m$$
+be a nonzero function on the circle $\mathbb{R}/T\mathbb{Z}$, where $\tau_m$ is the real
+trigonometric system `trigFun T m`. If $f$ vanishes at every point of a finite set $s$ of the
+circle, then $s$ has at most $2n$ points. This is used in Theorem 3.3.20 of
+[han2009theoretical].
 
-The proof is the substitution `z = exp (2 π i x / T)`, which is injective on a period: under it a
-real trigonometric polynomial of degree at most `n` becomes `z ^ (-n)` times an algebraic polynomial
-of degree at most `2 n` evaluated at `z`, and a nonzero polynomial has no more roots than its
-degree.
-
-The hypothesis is stated as an explicit combination of the real trigonometric system rather than as
-membership in a subspace of trigonometric polynomials, so that this file needs nothing from the
-Fourier layer beyond `Numlib/Analysis/Fourier/TrigonometricBasis`'s system itself.
-
-Reference: [han2009theoretical], Theorem 3.3.20. -/
+This is the Haar condition for the trigonometric polynomials, in their dimension $2n + 1$. It is
+the analogue of `haarCondition_polyLE`. The proof substitutes $z = e^{2 \pi i x / T}$, which is
+injective on a period. Then $f$ becomes $z^{-n}$ times a polynomial in $z$ of degree at most
+$2n$. The hypothesis is an explicit combination of the functions `trigFun T m`, not the
+membership in `trigPolyLE T n`. Then this result needs only the trigonometric system of
+`Numlib.Analysis.Fourier.TrigonometricBasis`. -/
 theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : ℕ}
     {f : C(AddCircle T, ℝ)} {c : ℤ → ℝ}
     (hf : f = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, c m • trigFun T m) (hne : f ≠ 0)
@@ -776,11 +832,13 @@ theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : 
     _ ≤ Q.natDegree := Polynomial.card_roots' Q
     _ ≤ 2 * n := hQdeg
 
-/-- **The trigonometric polynomials of degree at most `n` satisfy the Haar condition in dimension
-`2 n + 1`**, which is their dimension (`finrank_trigPolyLE`): a nonzero one has at most `2 n` zeros
-in a period, by `card_le_two_mul_of_forall_trigFun_eq_zero`.
+/-- Let $T \neq 0$. The space $\mathcal{T}_n$ of real trigonometric polynomials of degree at most
+$n$ on the circle $\mathbb{R}/T\mathbb{Z}$ satisfies the Haar condition in dimension $2n + 1$: a
+nonzero element has at most $2n$ zeros in a period. This is used in Theorem 3.3.20 of
+[han2009theoretical].
 
-Reference: [han2009theoretical], Theorem 3.3.20. -/
+The dimension of $\mathcal{T}_n$ is $2n + 1$ by `finrank_trigPolyLE`. The proof is
+`card_le_two_mul_of_forall_trigFun_eq_zero`. -/
 theorem haarCondition_trigPolyLE {T : ℝ} (hT : T ≠ 0) (n : ℕ) :
     HaarCondition (trigPolyLE T n) (2 * n + 1) := by
   intro g hg hg0 s hs
@@ -788,11 +846,13 @@ theorem haarCondition_trigPolyLE {T : ℝ} (hT : T ≠ 0) (n : ℕ) :
   have := card_le_two_mul_of_forall_trigFun_eq_zero hT hc hg0 hs
   omega
 
-/-- **Uniqueness of the best uniform approximation by trigonometric polynomials** of degree at most
-`n` on the circle of circumference `T`: the Haar condition `haarCondition_trigPolyLE` fed to
-`IsBestApprox.unique_of_haarCondition`.
+/-- **Uniqueness of the best uniform trigonometric approximation.** Let $T > 0$. If $p_1$ and $p_2$
+are best uniform approximations of the same continuous function $f$ on the circle
+$\mathbb{R}/T\mathbb{Z}$ from $\mathcal{T}_n$, then $p_1 = p_2$. This is part of Theorem 3.3.20
+of [han2009theoretical].
 
-Reference: [han2009theoretical], Theorem 3.3.20. -/
+The proof applies `IsBestApprox.unique_of_haarCondition` with the Haar condition
+`haarCondition_trigPolyLE`. -/
 theorem IsBestApprox.unique_of_trigPolyLE {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
     {f p₁ p₂ : C(AddCircle T, ℝ)}
     (h₁ : IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p₁)
@@ -800,45 +860,50 @@ theorem IsBestApprox.unique_of_trigPolyLE {T : ℝ} [hT : Fact (0 < T)] {n : ℕ
   IsBestApprox.unique_of_haarCondition (haarCondition_trigPolyLE hT.out.ne' n)
     (finrank_trigPolyLE T n) h₁ h₂
 
-/-- **Existence and uniqueness of the best uniform trigonometric approximation** of a continuous
-periodic function by trigonometric polynomials of degree at most `n`: the subspace is
-finite-dimensional, so a best approximation exists, and it is unique by the Haar condition.
+/-- **Existence and uniqueness of the best uniform trigonometric approximation.** Let $T > 0$. Every
+continuous function $f$ on the circle $\mathbb{R}/T\mathbb{Z}$ has exactly one best uniform
+approximation from $\mathcal{T}_n$. This is Theorem 3.3.20 of [han2009theoretical].
 
-Reference: [han2009theoretical], Theorem 3.3.20. -/
+A best approximation exists because $\mathcal{T}_n$ is finite-dimensional. It is unique by
+`IsBestApprox.unique_of_trigPolyLE`. -/
 theorem existsUnique_isBestApprox_trigPolyLE {T : ℝ} [Fact (0 < T)] (n : ℕ)
     (f : C(AddCircle T, ℝ)) :
     ∃! p : C(AddCircle T, ℝ), IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p := by
   obtain ⟨p, hp⟩ := exists_isBestApprox_of_finiteDimensional (trigPolyLE T n) f
   exact ⟨p, hp, fun q hq => IsBestApprox.unique_of_trigPolyLE hq hp⟩
 
-/-- **Existence and uniqueness of the best uniform polynomial approximation** of degree at most `n`
-on a compact infinite subset of the line.
-
-Reference: [han2009theoretical], Theorem 3.3.19. -/
+/-- **Existence and uniqueness of the best uniform polynomial approximation.** Let
+$X \subseteq \mathbb{R}$ be compact and infinite. Every $f \in C(X)$ has exactly one best
+uniform approximation from $\mathcal{P}_n$. This is part of Theorem 3.3.19 of
+[han2009theoretical]. -/
 theorem existsUnique_isBestApprox_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] (n : ℕ)
     (f : C(X, ℝ)) : ∃! p : C(X, ℝ), IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
   obtain ⟨p, hp⟩ := exists_isBestApprox_of_finiteDimensional (polyLE X n) f
   exact ⟨p, hp, fun q hq => hq.unique_of_polyLE hp⟩
 
-/-! ### Equioscillation on the circle
+/-!
+### Equioscillation on the circle
 
-The trigonometric analogue of `Equioscillates` and of the de la Vallée-Poussin bound. The
-alternation count is `2 n + 2`, one more than the dimension `2 n + 1` of `trigPolyLE T n`, exactly
-as `n + 2` is one more than the dimension `n + 1` of `polyLE X n`.
+These are the trigonometric analogues of `Equioscillates` and of the de la Vallée-Poussin bound. The
+alternation has $2n + 2$ points, one more than the dimension $2n + 1$ of $\mathcal{T}_n$, in the
+same way as $n + 2$ is one more than the dimension $n + 1$ of $\mathcal{P}_n$.
 -/
 
-/-- `EquioscillatesCircle g m`: the function `g` on the circle of circumference `T` attains `± ‖g‖`
-with alternating signs at `m` points of one period, listed by increasing real representatives in a
-half-open period `[a, a + T)`.
+/-- Let $T > 0$, let $g$ be a continuous function on the circle $\mathbb{R}/T\mathbb{Z}$, and let
+$m \in \mathbb{N}$. Then $g$ **equioscillates at $m$ points of a period** if there are a sign
+$\sigma \in \{1, -1\}$, a real number $a$ and real numbers
+$a \le x_0 < x_1 < \dots < x_{m-1} < a + T$ with
+$$g(x_i) = \sigma (-1)^i \|g\| \qquad (i = 0, \dots, m - 1).$$
 
-This is `Equioscillates` transported to the circle. The period is taken half-open because its two
-endpoints are the same point of the circle, and the base point `a` is existentially quantified
-because the circle has no distinguished one. -/
+This is `Equioscillates` on the circle. The period $[a, a + T)$ is half-open because its two
+endpoints are the same point of the circle. The base point $a$ is existentially quantified
+because the circle has no distinguished point. -/
 def EquioscillatesCircle {T : ℝ} [Fact (0 < T)] (g : C(AddCircle T, ℝ)) (m : ℕ) : Prop :=
   ∃ (σ a : ℝ) (x : Fin m → ℝ), (σ = 1 ∨ σ = -1) ∧ StrictMono x ∧
     (∀ i, x i ∈ Set.Ico a (a + T)) ∧ ∀ i : Fin m, g ↑(x i) = σ * (-1) ^ (i : ℕ) * ‖g‖
 
-/-- Distinct points of a half-open period stay distinct on the circle. -/
+/-- Let $T > 0$ and $a \in \mathbb{R}$. The quotient map $\mathbb{R} \to \mathbb{R}/T\mathbb{Z}$ is
+injective on the half-open period $[a, a + T)$. -/
 theorem injOn_coe_Ico {T : ℝ} [hT : Fact (0 < T)] {a : ℝ} :
     Set.InjOn (fun t : ℝ => (t : AddCircle T)) (Set.Ico a (a + T)) := by
   intro u hu v hv huv
@@ -846,14 +911,17 @@ theorem injOn_coe_Ico {T : ℝ} [hT : Fact (0 < T)] {a : ℝ} :
   rw [AddCircle.equivIco_coe_eq hu, AddCircle.equivIco_coe_eq hv] at h
   exact congrArg Subtype.val h
 
-/-- **De la Vallée-Poussin's lower bound for trigonometric approximation.** If the error `f - q` of
-some competitor `q ∈ 𝕋ₙ` alternates in sign at `2 n + 2` increasing points of one period with values
-of modulus at least `ε`, then no trigonometric polynomial of degree at most `n` approximates `f`
-better than `ε`.
+/-- **De la Vallée-Poussin's lower bound for trigonometric approximation.** Let $T > 0$, let $f$ be
+a continuous function on the circle $\mathbb{R}/T\mathbb{Z}$, let $q \in \mathcal{T}_n$, let
+$\varepsilon \in \mathbb{R}$ and let $\sigma \in \{1, -1\}$. Let
+$a \le x_0 < x_1 < \dots < x_{2n+1} < a + T$ be real numbers with
+$$\varepsilon \le \sigma (-1)^i \bigl(f(x_i) - q(x_i)\bigr) \qquad (i = 0, \dots, 2n + 1).$$
+Then $\varepsilon \le \operatorname{dist}(f, \mathcal{T}_n)$.
 
-The proof is the Haar condition `haarCondition_trigPolyLE`: were some `p` closer than `ε`, the
-difference `p - q` would inherit the alternation, hence have `2 n + 1` distinct zeros in a period by
-the intermediate value theorem, hence vanish — contradicting the alternation itself. -/
+The proof uses the Haar condition `haarCondition_trigPolyLE`. If some $p \in \mathcal{T}_n$ had
+$\|f - p\| < \varepsilon$, then $p - q$ would alternate in sign at the $2n + 2$ points. By the
+intermediate value theorem it would have $2n + 1$ distinct zeros in a period, so it would
+vanish, which contradicts the alternation. -/
 theorem le_infDist_of_alternates_trig {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
     {f q : C(AddCircle T, ℝ)} (hq : q ∈ trigPolyLE T n) {ε σ a : ℝ} (hσ : σ = 1 ∨ σ = -1)
     {x : Fin (2 * n + 2) → ℝ} (hmono : StrictMono x) (hx : ∀ i, x i ∈ Set.Ico a (a + T))
@@ -927,9 +995,10 @@ theorem le_infDist_of_alternates_trig {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
       exact hz0 i)
   omega
 
-/-- **The sufficiency half of the trigonometric equioscillation theorem**: a trigonometric
-polynomial of degree at most `n` whose error equioscillates at `2 n + 2` points of a period is a
-best uniform approximation.
+/-- **The trigonometric equioscillation theorem, sufficiency.** Let $T > 0$, let $f$ be a continuous
+function on the circle $\mathbb{R}/T\mathbb{Z}$, and let $p \in \mathcal{T}_n$. If $f - p$
+equioscillates at $2n + 2$ points of a period, then $p$ is a best uniform approximation of $f$
+from $\mathcal{T}_n$.
 
 The converse is `IsBestApprox.equioscillatesCircle_of_trigPolyLE`, and the two together are
 `isBestApprox_trig_iff_equioscillates`. -/
@@ -952,9 +1021,8 @@ theorem isBestApprox_of_equioscillatesCircle {T : ℝ} [hT : Fact (0 < T)] {n : 
   rw [isBestApprox_iff_norm_sub_eq_infDist hp]
   exact le_antisymm hle (by rw [← dist_eq_norm]; exact Metric.infDist_le_dist_of_mem hp)
 
-/-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a point
-of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length `m` at
-which it alternates, and `1 ≤ m ≤ n + 1`. -/
+/-- If $X$ is nonempty and $g \in C(X)$ does not equioscillate at $n + 2$ points, then there is a
+greatest $m$ with $1 \le m \le n + 1$ at which $g$ equioscillates. -/
 private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X] {n : ℕ}
     {g : C(X, ℝ)} (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ m : ℕ, 1 ≤ m ∧ m ≤ n + 1 ∧ Equioscillates g m ∧ ∀ k, m < k → ¬ Equioscillates g k := by
@@ -975,21 +1043,9 @@ private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [No
   · exact hcon (hk'.mono (by omega))
   · exact Nat.findGreatest_is_greatest hk h hk'
 
-/-- **The exchange argument, in the form of its separators.** If `g` does not alternate `n + 2`
-times, then at most `n` points `y 0, …, y (k - 1)` separate the extreme set of `g` into blocks of
-constant sign, in the strong sense that the sign of `∏ (y j - t)`, corrected by a constant `c`, is
-the sign of `g t` at every extreme point `t`. Each separator lies strictly between two points of
-`X`, so it lies in the interior of the convex hull of `X`.
-
-The separators are built from an alternation `z` of the greatest possible length `m ≤ n + 1`, chosen
-among those of length `m` to minimize `∑ z i`, and `k = m - 1`. Minimality says that no extreme
-point of the sign of `z j` lies strictly between `z (j-1)` and `z j`; maximality says that the
-alternation cannot be extended at either end. Between consecutive `z j` the last extreme point of
-the sign of `z j` is separated from `z (j+1)` by the point `y j`.
-
-`exists_improving_of_not_equioscillates` turns the separators into a polynomial and
-`exists_improving_trig_of_not_equioscillates` into a trigonometric one, which is why the
-combinatorial core is stated separately from either. -/
+/-- If $\|g\| > 0$ and $g$ does not equioscillate at $n + 2$ points, then there are $k \le n$ points
+$y_0, \dots, y_{k-1}$, each strictly between two points of $X$, and a constant $c$ with
+$g(t) \cdot c \prod_{j < k} (y_j - t) > 0$ at every point $t$ where $|g(t)| = \|g\|$. -/
 private theorem exists_separators_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ (k : ℕ) (y : ℕ → ℝ) (c : ℝ), k ≤ n ∧ (∀ j < k, ∃ u v : X, (u : ℝ) < y j ∧ y j < (v : ℝ)) ∧
@@ -1351,10 +1407,8 @@ private theorem exists_separators_of_not_equioscillates {X : Set ℝ} [CompactSp
   exact ⟨m - 1, y, g (zz 0), by omega,
     fun j hj => ⟨a j, zz (j + 1), hyl j (by omega), hyr j (by omega)⟩, hmain⟩
 
-/-- **The exchange argument.** If the error of a best approximation does not alternate `n + 2`
-times, then a polynomial of degree at most `n` has the sign of the error at every extreme point,
-which `IsBestApprox.exists_mul_nonpos` forbids. The polynomial is `∏ (y j - x)`, over the separators
-of `exists_separators_of_not_equioscillates`, scaled by the constant they come with. -/
+/-- If $\|g\| > 0$ and $g$ does not equioscillate at $n + 2$ points, then some $q \in \mathcal{P}_n$
+satisfies $g(t) q(t) > 0$ at every point $t$ where $|g(t)| = \|g\|$. -/
 private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ q ∈ polyLE X n, ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
@@ -1385,11 +1439,14 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
   rw [happ, hQeval t]
   exact hmain t htabs
 
-/-- **Chebyshev's equioscillation theorem, the direction with content**: the error of a best uniform
-approximation of degree at most `n` attains `± ‖f - p‖` with alternating signs at `n + 2` increasing
-points.
+/-- **Chebyshev's equioscillation theorem, necessity.** Let $X \subseteq \mathbb{R}$ be compact and
+infinite. If $p$ is a best uniform approximation of $f \in C(X)$ from $\mathcal{P}_n$, then
+$f - p$ equioscillates at $n + 2$ points: there are $\sigma \in \{1, -1\}$ and points
+$x_0 < \dots < x_{n+1}$ of $X$ with $(f - p)(x_i) = \sigma (-1)^i \|f - p\|$. This is part of
+Theorem 3.3.19 of [han2009theoretical], and it is in §8.2 of [kress1998numerical].
 
-Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
+The proof is the exchange argument against Kolmogorov's criterion
+`IsBestApprox.exists_mul_nonpos`. -/
 theorem IsBestApprox.equioscillates_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
     Equioscillates (f - p) (n + 2) := by
@@ -1405,14 +1462,15 @@ theorem IsBestApprox.equioscillates_of_polyLE {X : Set ℝ} [CompactSpace X] [In
     obtain ⟨t, ht, hle⟩ := hp.exists_mul_nonpos hE hq
     exact absurd (hsign t ht) (not_lt.mpr hle)
 
-/-- **Chebyshev's equioscillation theorem.** A polynomial of degree at most `n` is a best uniform
-approximation of `f` on a compact infinite subset of the line exactly when its error attains `± ‖f -
-p‖` with alternating signs at `n + 2` increasing points.
+/-- **Chebyshev's equioscillation theorem.** Let $X \subseteq \mathbb{R}$ be compact and infinite,
+let $f \in C(X)$ and let $p \in \mathcal{P}_n$. Then $p$ is a best uniform approximation of $f$
+from $\mathcal{P}_n$ if and only if $f - p$ equioscillates at $n + 2$ points: there are
+$\sigma \in \{1, -1\}$ and points $x_0 < \dots < x_{n+1}$ of $X$ with
+$$(f - p)(x_i) = \sigma (-1)^i \|f - p\| \qquad (i = 0, \dots, n + 1).$$
+This is Theorem 3.3.19 of [han2009theoretical], and it is in §8.2 of [kress1998numerical].
 
-Sufficiency is `isBestApprox_of_equioscillates`, from de la Vallée-Poussin's bound; necessity is
-`IsBestApprox.equioscillates_of_polyLE`, the exchange argument.
-
-Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
+Sufficiency is `isBestApprox_of_equioscillates`, from the de la Vallée-Poussin bound. Necessity
+is `IsBestApprox.equioscillates_of_polyLE`, from the exchange argument. -/
 theorem isBestApprox_iff_equioscillates {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : p ∈ polyLE X n) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) :=
@@ -1420,9 +1478,8 @@ theorem isBestApprox_iff_equioscillates {X : Set ℝ} [CompactSpace X] [Infinite
 
 /-! ### The cyclic exchange argument -/
 
-/-- **A constant error is improvable.** If the modulus of a nonzero continuous function on a
-connected space is constant, then so is its sign, by the intermediate value theorem; the constant
-of that sign then has the sign of the function everywhere. -/
+/-- If $X$ is compact and connected, $\|g\| > 0$ and $|g| = \|g\|$ everywhere, then $g(w) g(w') > 0$
+for all $w, w' \in X$. -/
 private theorem mul_pos_of_forall_abs_eq_norm {X : Type*} [TopologicalSpace X] [CompactSpace X]
     [PreconnectedSpace X] {g : C(X, ℝ)} (hE : 0 < ‖g‖) (habs : ∀ w : X, |g w| = ‖g‖)
     (w w' : X) : 0 < g w * g w' := by
@@ -1442,20 +1499,8 @@ private theorem mul_pos_of_forall_abs_eq_norm {X : Type*} [TopologicalSpace X] [
   · exact absurd h0 (mul_ne_zero (hne w) (hne w'))
   · exact hgt
 
-/-- **The cyclic exchange argument.** If a nonzero `g` on the circle does not alternate `2 n + 2`
-times on a period, then a trigonometric polynomial of degree at most `n` has the sign of `g` at
-every point where `|g|` attains its maximum. Fed to `IsBestApprox.exists_mul_nonpos` this is the
-necessity half of the trigonometric equioscillation theorem.
-
-The circle is cut at a point `a` where `|g| < ‖g‖` — one exists unless `|g|` is constant, and then
-the constants already improve `g`. On the compact interval `[a, a + T]` the *linear* argument
-`exists_separators_of_not_equioscillates` applies and produces at most `2 n` separators `y j`,
-strictly inside the interval, whose product `∏ (y j - x)` carries the sign of `g`. The number of
-separators is made even by adjoining the cut point `a` itself, which lies to the left of every
-extreme point and so only flips the sign; an even number of separators is exactly what
-`sinProd`, the circle's analogue of a monic polynomial with prescribed zeros, needs. Its factor
-`sin (π (x - y j) / T)` has the same sign as `x - y j` for `x` and `y j` in one period, so the
-sine product carries the same sign as `∏ (y j - x)` did. -/
+/-- Let $T > 0$. If $\|g\| > 0$ and $g$ does not equioscillate at $2n + 2$ points of a period, then
+some $q \in \mathcal{T}_n$ satisfies $g(w) q(w) > 0$ at every point $w$ where $|g(w)| = \|g\|$. -/
 private theorem exists_improving_trig_of_not_equioscillates {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
     {g : C(AddCircle T, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ EquioscillatesCircle g (2 * n + 2)) :
     ∃ q ∈ trigPolyLE T n, ∀ w : AddCircle T, |g w| = ‖g‖ → 0 < g w * q w := by
@@ -1597,12 +1642,12 @@ private theorem exists_improving_trig_of_not_equioscillates {T : ℝ} [hT : Fact
   · exact h
   · exact absurd h (not_lt.mpr (sq_nonneg Pl))
 
-/-- **The trigonometric equioscillation theorem, the direction with content**: the error of a best
-uniform approximation by trigonometric polynomials of degree at most `n` attains `± ‖f - p‖` with
-alternating signs at `2 n + 2` points of a period.
+/-- **The trigonometric equioscillation theorem, necessity.** Let $T > 0$. If $p$ is a best uniform
+approximation of a continuous function $f$ on the circle $\mathbb{R}/T\mathbb{Z}$ from
+$\mathcal{T}_n$, then $f - p$ equioscillates at $2n + 2$ points of a period.
 
-It is `exists_improving_trig_of_not_equioscillates`, the cyclic exchange argument, against
-`IsBestApprox.exists_mul_nonpos`, Kolmogorov's criterion. -/
+The proof is the cyclic exchange argument against Kolmogorov's criterion
+`IsBestApprox.exists_mul_nonpos`. -/
 theorem IsBestApprox.equioscillatesCircle_of_trigPolyLE {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
     {f p : C(AddCircle T, ℝ)}
     (hp : IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p) :
@@ -1631,18 +1676,18 @@ theorem IsBestApprox.equioscillatesCircle_of_trigPolyLE {T : ℝ} [hT : Fact (0 
     obtain ⟨w, hw, hle⟩ := hp.exists_mul_nonpos hE hq
     exact absurd (hsign w hw) (not_lt.mpr hle)
 
-/-- **The trigonometric equioscillation theorem.** A trigonometric polynomial of degree at most `n`
-is a best uniform approximation of a continuous function on the circle of circumference `T` exactly
-when its error attains `± ‖f - p‖` with alternating signs at `2 n + 2` points of a period.
+/-- **The trigonometric equioscillation theorem.** Let $T > 0$, let $f$ be a continuous function on
+the circle $\mathbb{R}/T\mathbb{Z}$, and let $p \in \mathcal{T}_n$. Then $p$ is a best uniform
+approximation of $f$ from $\mathcal{T}_n$ if and only if $f - p$ equioscillates at $2n + 2$
+points of a period: there are $\sigma \in \{1, -1\}$, $a \in \mathbb{R}$ and
+$a \le x_0 < \dots < x_{2n+1} < a + T$ with
+$$(f - p)(x_i) = \sigma (-1)^i \|f - p\| \qquad (i = 0, \dots, 2n + 1).$$
 
-Sufficiency is `isBestApprox_of_equioscillatesCircle`, from de la Vallée-Poussin's bound; necessity
-is `IsBestApprox.equioscillatesCircle_of_trigPolyLE`, the cyclic exchange argument. The alternation
-count `2 n + 2` is one more than the dimension `2 n + 1` of `trigPolyLE T n`, exactly as `n + 2` is
-one more than the dimension `n + 1` of `polyLE X n` in `isBestApprox_iff_equioscillates`.
-
-Reference: [han2009theoretical], Theorem 3.3.20, which states only the existence and uniqueness
-(`existsUnique_isBestApprox_trigPolyLE`); the characterization is the circle analogue of their
-Theorem 3.3.19. -/
+Sufficiency is `isBestApprox_of_equioscillatesCircle`, from the de la Vallée-Poussin bound.
+Necessity is `IsBestApprox.equioscillatesCircle_of_trigPolyLE`, from the cyclic exchange
+argument. Theorem 3.3.20 of [han2009theoretical] states only the existence and uniqueness
+(`existsUnique_isBestApprox_trigPolyLE`). This characterization is the analogue on the circle of
+their Theorem 3.3.19. -/
 theorem isBestApprox_trig_iff_equioscillates {T : ℝ} [Fact (0 < T)] {n : ℕ}
     {f p : C(AddCircle T, ℝ)} (hp : p ∈ trigPolyLE T n) :
     IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p ↔

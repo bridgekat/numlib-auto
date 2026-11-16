@@ -18,61 +18,101 @@ import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # The Lanczos process as orthogonal polynomials
 
-For an endomorphism `A` and a vector `v`, the form `⟪p, q⟫_v = ⟪p(A) v, q(A) v⟫`
-(`Krylov.polyInner`) is a sesquilinear form on `𝕜[X]`, and it is an inner product on the polynomials
-of degree below the grade of `v`: such a polynomial annihilates `v` only if it is zero
-(`Krylov.polyInner_nondegenerate`, which rests on the general fact
-`Krylov.aeval_eq_zero_iff_of_degree_lt_grade`). For symmetric `A` the Lanczos vectors are the
-orthonormal polynomials of that form evaluated at `A`: `Lanczos.poly A v j` is the polynomial of
-degree `j` with `p_j(A) v = v_j` (`Lanczos.aeval_poly`, `Lanczos.poly_degree`), obtained from the
-three-term recurrence `β_{j+1} p_{j+2} = (X - α_{j+1}) p_{j+1} - β_j p_j` that the Lanczos process
-itself runs, and `Lanczos.polyInner_poly` is its orthonormality ([meurant2006lanczos] §2.2,
-[saad2003iterative] §6.6.2). As everywhere in this library the recurrence is run past breakdown with
-no hypothesis, the inverse of the vanishing `β` being `0`, so that `Lanczos.aeval_poly` holds at
-every index.
+Let $A$ be a linear operator on an inner product space $E$ over $\mathbb{K}$, and let $v \in E$. The
+form $\langle p, q \rangle_v = \langle p(A) v, q(A) v \rangle$ is a sesquilinear form on the
+polynomials $\mathbb{K}[X]$, and it is an inner product on the polynomials of degree less than the
+grade of $v$, because such a polynomial annihilates $v$ only if it is zero. For symmetric $A$ the
+Lanczos vectors are the orthonormal polynomials of this form evaluated at $A$: the Lanczos
+polynomial $p_j$ has degree $j$ and satisfies $p_j(A) v = v_j$. It comes from the three-term
+recurrence $\beta_{j+1} p_{j+2} = (X - \alpha_{j+1}) p_{j+1} - \beta_j p_j$ that the Lanczos process
+runs ([meurant2006lanczos], §2.2; [saad2003iterative], §6.6.2). Two consequences follow for
+$m \le \operatorname{grade}(A, v)$: the characteristic polynomial of the tridiagonal matrix $T_m$ is
+the monic multiple of $p_m$, and the Ritz values of $A$ on $\mathcal{K}_m(A, v)$ are the eigenvalues
+of $T_m$ and the roots of $p_m$.
 
-Two consequences follow, both for `m ≤ grade A v`.
+In finite dimension the form is an integral against the discrete spectral measure $\mu = \sum_l
+|\langle u_l, v \rangle|^2 \delta_{\lambda_l}$ of $(A, v)$, so the Lanczos polynomials are the
+orthonormal polynomials of $\mu$. The $m$-point Gauss rule of $\mu$ is the spectral measure of the
+compressed pair: it integrates every polynomial of degree at most $2m - 1$ exactly, its nodes are
+the Ritz values, and its weights are $\|v\|^2$ times the squared first components of the
+eigenvectors of $T_m$ ([meurant2006lanczos], Theorem 1). For $f(\lambda) = \lambda^{-1}$ the error
+of this rule is the conjugate gradient error, which is the Dahlquist–Golub–Nash identity
+([meurant2006lanczos], Theorem 9). The module ends with two results that belong to this subject but
+not to the Lanczos process itself: the Christoffel–Darboux identity for any polynomials that obey a
+three-term recurrence ([han2009theoretical], Theorem 3.7.3), and the persistence theorem of Paige
+for Ritz values ([meurant2006lanczos], Theorem 5).
 
-* The characteristic polynomial of the tridiagonal matrix `T_m` is the monic multiple of `p_m`:
-  `Lanczos.aeval_charpoly_tridiag` evaluates it at `A` on `v` and gets `‖v‖ β_0 ⋯ β_{m-1} v_m`, and
-  `Lanczos.charpoly_tridiag_eq` is the identity of polynomials below the grade. It is
-  `Arnoldi.aeval_charpoly_mem_orthogonal` of `Numlib.Eigen.RayleighRitz` — Cayley–Hamilton on the
-  compression — together with `Lanczos.inner_vec_pow_apply`, which is the only place the scalar `‖v‖
-  β_0 ⋯ β_{m-1}` is computed.
-* The Ritz values of `A` on `𝒦_m(A, v)`, that is the eigenvalues of the compression of `A` to that
-  subspace, are exactly the eigenvalues of `T_m`
-  (`Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`), and they are exactly the roots of
-  the Lanczos polynomial `p_m` (`Lanczos.hasEigenvalue_compression_iff_isRoot_poly`). The first is
-  `Lanczos.hessenbergSq_eq_map_tridiag` read through `Arnoldi.hessenbergSq_eq_toMatrix_compression`;
-  the second is the same charpoly identity again.
+## Main definitions
 
-In finite dimension the form is an integral. `Krylov.spectralMeasure` is the discrete measure `∑_l
-|⟪u_l, v⟫|² δ_{λ_l}` over an eigenbasis of the symmetric `A`, and `Krylov.polyInner_eq_integral`
-identifies `⟪p, q⟫_v` with `∫ p q` against it, so the Lanczos polynomials are the orthonormal
-polynomials of that measure and `Krylov.inner_aeval_eq_integral` reads its moments off `(A, v)`. The
-Gauss rule of the measure is then the spectral measure of the *compressed* pair:
-`Lanczos.gauss_quadrature` states that the two integrate every polynomial of degree at most `2m - 1`
-alike, and `Lanczos.gauss_quadrature_eq_sum` writes the rule out with its `m` nodes and weights. The
-nodes are the Ritz values by the second point above, and the weights are `‖v‖²` times the squared
-first components of the eigenvectors of `T_m`.
+* `Krylov.polyInner`: the form $\langle p, q \rangle_v = \langle p(A) v, q(A) v \rangle$ on
+  $\mathbb{K}[X]$.
+* `Krylov.spectralMeasure`: the measure $\sum_l |\langle u_l, v \rangle|^2 \delta_{\lambda_l}$ over
+  an orthonormal eigenbasis $(u_l)$ of a symmetric $A$.
+* `Lanczos.poly`: the Lanczos polynomials, $p_0 = 1/\|v\|$ and $\beta_{j+1} p_{j+2} = (X -
+  \alpha_{j+1}) p_{j+1} - \beta_j p_j$.
+* `Lanczos.tridiagInvFirst`: the number $(T_m^{-1} e_1, e_1)$.
 
-The Gauss rule for `f(λ) = λ⁻¹` is the conjugate gradient error itself, which is the
-Dahlquist–Golub–Nash identity `CG.energyNorm_error_sq_eq_sub_inner_inv`
-([meurant2006lanczos] Thm 9): for symmetric coercive `A`,
-`‖x* - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))` with `n = grade A r₀`, the two terms
-being `Lanczos.tridiagInvFirst` at `n` and at `k`. What makes the statement meaningful rather than
-vacuous — `Matrix.inv` being junk-valued at a singular matrix — is `Lanczos.isUnit_tridiag`: for a
-coercive operator the Galerkin iterate over `𝒦_m` exists and is unique, which by
-`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` is nonsingularity of `H_m = T_m`.
+## Main results
 
-Two results that belong to this circle but not to the Lanczos process itself close the module.
-`Polynomial.christoffel_darboux` is the Christoffel–Darboux identity for *any* sequence of
-polynomials obeying a three-term recurrence with the orthonormal normalization `c_n a_{n-1} = a_n`
-([han2009theoretical] Thm 3.7.3); it is stated division-free, so that it holds over a commutative
-ring and at `x = t`, with the quotient form and the confluent form beside it. `Lanczos.persistence`
-is the persistence theorem of Paige ([meurant2006lanczos] Thm 5): a Ritz value of `T_{m+1}` whose
-normalized eigenvector has a small last component `z_m` is approximated to within `β_m |z_m|` by a
-Ritz value of every later `T_k`.
+* `Krylov.aeval_eq_zero_iff_of_degree_lt_grade`: a polynomial of degree less than the grade of $v$
+  annihilates $v$ only if it is zero.
+* `Krylov.polyInner_nondegenerate`: below the grade, $\langle p, p \rangle_v = 0$ only for $p = 0$.
+* `Krylov.polyInner_eq_integral`: $\langle p, q \rangle_v = \int p q \, d\mu$ for real polynomials
+  $p$, $q$.
+* `Lanczos.aeval_poly`: $p_j(A) v = v_j$ for symmetric $A$ and every $j$.
+* `Lanczos.poly_degree` and `Lanczos.polyInner_poly`: below the grade, $p_j$ has degree $j$, and the
+  $p_j$ are orthonormal for $\langle \cdot, \cdot \rangle_v$.
+* `Lanczos.aeval_charpoly_tridiag`: $\chi_{T_m}(A) v = \|v\| \beta_0 \cdots \beta_{m-1} v_m$.
+* `Lanczos.charpoly_tridiag_eq`: $\chi_{T_m} = \|v\| \beta_0 \cdots \beta_{m-1} \, p_m$ for
+  $m < \operatorname{grade}(A, v)$.
+* `Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`: the Ritz values of $A$ on
+  $\mathcal{K}_m$ are the eigenvalues of $T_m$.
+* `Lanczos.hasEigenvalue_compression_iff_isRoot_poly`: the Ritz values of $A$ on $\mathcal{K}_m$ are
+  the roots of $p_m$.
+* `Lanczos.gauss_quadrature` and `Lanczos.gauss_quadrature_eq_sum`: the $m$-point Gauss rule of
+  $\mu$ integrates the polynomials of degree at most $2m - 1$ exactly.
+* `Polynomial.christoffel_darboux`: the Christoffel–Darboux identity in a form without division,
+  with the quotient forms and the confluent forms beside it.
+* `Lanczos.persistence`: a Ritz value $\theta$ of $T_{m+1}$ with unit eigenvector $z$ is within
+  $\beta_m |z_m|$ of a Ritz value of every later $T_k$.
+* `Lanczos.isUnit_tridiag`: for a symmetric coercive operator, $T_m$ is nonsingular for
+  $m \le \operatorname{grade}$.
+* `CG.energyNorm_error_sq_eq_sub_inner_inv`: $\|x^* - x_k\|_A^2 = \|r_0\|^2 \big( (T_n^{-1} e_1,
+  e_1) - (T_k^{-1} e_1, e_1) \big)$ with $n = \operatorname{grade}(A, r_0)$.
+
+## Proof outline
+
+The identity for $\chi_{T_m}(A) v$ is the Cayley–Hamilton theorem for the compression of $A$ to
+$\mathcal{K}_m$ (`Arnoldi.aeval_charpoly_mem_orthogonal`), together with
+`Lanczos.inner_vec_pow_apply`, the only place where the scalar $\|v\| \beta_0 \cdots \beta_{m-1}$ is
+computed. The Ritz values are the eigenvalues of $T_m$ because $T_m$ is the matrix of the
+compression in the Lanczos basis (`Arnoldi.hessenbergSq_eq_toMatrix_compression` and
+`Lanczos.hessenbergSq_eq_map_tridiag`). They are the roots of $p_m$ by the identity of
+characteristic polynomials.
+
+## Notation
+
+* $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. The Lanczos vectors $v_j$ are the Arnoldi vectors
+  `Arnoldi.vec A v j`.
+* The Lanczos coefficients are $\alpha_j = \operatorname{Re} \langle v_j, A v_j \rangle$ and
+  $\beta_j = \|w_j\|$, where $w_j$ is the unnormalized next vector of the process. In Lean they
+  are `Lanczos.alpha A v j` and `Lanczos.beta A v j`.
+* $T_m$ is the real symmetric tridiagonal Lanczos matrix `Lanczos.tridiag A v m`, and
+  $\mathcal{K}_m = \mathcal{K}_m(A, v)$ is `Krylov.subspace A v m`.
+* A Ritz value of $A$ on $\mathcal{K}_m$ is an eigenvalue of the compression
+  $P_{\mathcal{K}_m} A|_{\mathcal{K}_m}$, which is `compression A (Krylov.subspace A v m)`.
+
+## Implementation notes
+
+* As everywhere in this library, the recurrence of the Lanczos polynomials runs past breakdown with
+  no hypothesis: the inverse of a vanishing $\beta$ is $0$. So `Lanczos.aeval_poly` holds at every
+  index.
+* `Lanczos.tridiagInvFirst` uses `Matrix.inv`, which is $0$ at a singular matrix. The nonsingularity
+  `Lanczos.isUnit_tridiag` makes the Dahlquist–Golub–Nash identity meaningful. For a coercive
+  operator the Galerkin iterate over $\mathcal{K}_m$ exists and is unique, and by
+  `Krylov.existsUnique_isGalerkinIterate_iff_isUnit` this is the nonsingularity of $H_m = T_m$.
+* The Christoffel–Darboux identity is stated without division, so that it holds over a commutative
+  ring and at $x = t$.
 -/
 
 open Polynomial
@@ -87,9 +127,14 @@ section Field
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-/-- Below the grade a polynomial in `A` annihilates `v` only if it is zero: `p ↦ p(A) v` is
-injective on `Polynomial.degreeLT K (grade A v)`, which is what makes `Krylov.polyInner` an inner
-product there. -/
+/-- Let $A$ be a linear operator on a vector space $V$ over a field $K$, and let $v \in V$ have a
+finite-dimensional Krylov space $\mathcal{K}(A, v)$. If a polynomial $p \in K[X]$ has degree
+less than $\operatorname{grade}(A, v)$, then
+$$p(A) v = 0 \iff p = 0.$$
+So the map $p \mapsto p(A) v$ is injective on the polynomials of degree less than the grade, and
+`Krylov.polyInner` is an inner product there.
+
+The Krylov space is `Krylov.fullSubspace A v`. -/
 theorem aeval_eq_zero_iff_of_degree_lt_grade (A : Module.End K V) (v : V)
     [FiniteDimensional K (fullSubspace A v)] {p : K[X]} (hp : p.degree < grade A v) :
     aeval A p v = 0 ↔ p = 0 := by
@@ -107,54 +152,67 @@ end Field
 
 variable (A : E →ₗ[𝕜] E) (v : E)
 
-/-- The inner product of the Krylov pair `(A, v)` on polynomials: `⟪p, q⟫_v = ⟪p(A) v, q(A) v⟫`
-([saad2003iterative], (6.85); [meurant2006lanczos], (2.4)). It is sesquilinear on all of `𝕜[X]` —
-conjugate-linear in the first argument and linear in the second, as `inner` is — and positive
-semidefinite, but it is definite only below the grade of `v` (`Krylov.polyInner_nondegenerate`);
-above the grade its kernel is the ideal generated by the minimal polynomial of `v`. -/
+/-- Let $A$ be a linear operator on an inner product space $E$ over $\mathbb{K}$, and let $v \in E$.
+The **polynomial inner product** of the Krylov pair $(A, v)$ is the form
+$$\langle p, q \rangle_v = \langle p(A) v, q(A) v \rangle \qquad (p, q \in \mathbb{K}[X])$$
+([saad2003iterative], (6.85); [meurant2006lanczos], (2.4)).
+
+The form is sesquilinear on all of $\mathbb{K}[X]$: it is conjugate-linear in the first argument
+and linear in the second, as the inner product of $E$ is. It is positive semidefinite, and it is
+definite only below the grade of $v$ (`Krylov.polyInner_nondegenerate`). On all of
+$\mathbb{K}[X]$ its kernel is the ideal generated by the minimal polynomial of $v$. -/
 noncomputable def polyInner (p q : 𝕜[X]) : 𝕜 := inner 𝕜 (aeval A p v) (aeval A q v)
 
-/-- The form is the inner product of `E` pulled back along the evaluation map `Krylov.polyEval`,
-which is where its bilinearity comes from. -/
+/-- The form is the inner product of $E$ pulled back along the evaluation map $p \mapsto p(A) v$
+(`Krylov.polyEval`): $\langle p, q \rangle_v = \langle p(A) v, q(A) v \rangle$. Its
+sesquilinearity comes from this. -/
 theorem polyInner_eq_inner_polyEval (p q : 𝕜[X]) :
     polyInner A v p q = inner 𝕜 (polyEval A v p) (polyEval A v q) := rfl
 
-/-- The form is additive in its first argument. -/
+/-- The form is additive in its first argument: $\langle p + q, r \rangle_v = \langle p, r
+\rangle_v + \langle q, r \rangle_v$. -/
 theorem polyInner_add_left (p q r : 𝕜[X]) :
     polyInner A v (p + q) r = polyInner A v p r + polyInner A v q r := by
   simp [polyInner, inner_add_left]
 
-/-- The form is additive in its second argument. -/
+/-- The form is additive in its second argument: $\langle p, q + r \rangle_v = \langle p, q
+\rangle_v + \langle p, r \rangle_v$. -/
 theorem polyInner_add_right (p q r : 𝕜[X]) :
     polyInner A v p (q + r) = polyInner A v p q + polyInner A v p r := by
   simp [polyInner, inner_add_right]
 
-/-- The form is conjugate-homogeneous in its first argument. -/
+/-- The form is conjugate-homogeneous in its first argument: $\langle c p, q \rangle_v = \bar c
+\langle p, q \rangle_v$. -/
 theorem polyInner_smul_left (c : 𝕜) (p q : 𝕜[X]) :
     polyInner A v (c • p) q = starRingEnd 𝕜 c * polyInner A v p q := by
   simp [polyInner, inner_smul_left]
 
-/-- The form is homogeneous in its second argument. -/
+/-- The form is homogeneous in its second argument: $\langle p, c q \rangle_v = c \langle p, q
+\rangle_v$. -/
 theorem polyInner_smul_right (c : 𝕜) (p q : 𝕜[X]) :
     polyInner A v p (c • q) = c * polyInner A v p q := by
   simp [polyInner, inner_smul_right]
 
-/-- The form is Hermitian: `⟪q, p⟫_v = conj ⟪p, q⟫_v`. -/
+/-- The form is Hermitian: $\overline{\langle p, q \rangle_v} = \langle q, p \rangle_v$. -/
 theorem polyInner_conj_symm (p q : 𝕜[X]) :
     starRingEnd 𝕜 (polyInner A v p q) = polyInner A v q p :=
   inner_conj_symm _ _
 
-/-- The quadratic form of `Krylov.polyInner` is the squared norm of `p(A) v`; in particular it is
-real and nonnegative. -/
+/-- The quadratic form is $\langle p, p \rangle_v = \|p(A) v\|^2$. In particular it is real and
+nonnegative. -/
 theorem polyInner_self (p : 𝕜[X]) : polyInner A v p p = ((‖aeval A p v‖ : ℝ) : 𝕜) ^ 2 :=
   inner_self_eq_norm_sq_to_K _
 
-/-- The form degenerates exactly on the polynomials that annihilate `v`. -/
+/-- For every polynomial $p$, $\langle p, p \rangle_v = 0$ if and only if $p(A) v = 0$. So the form
+degenerates exactly on the polynomials that annihilate $v$. -/
 theorem polyInner_self_eq_zero_iff (p : 𝕜[X]) : polyInner A v p p = 0 ↔ aeval A p v = 0 :=
   inner_self_eq_zero
 
-/-- `Krylov.polyInner` is an inner product on the polynomials of degree below the grade of `v`:
-there it is definite ([meurant2006lanczos], §2.2). -/
+/-- Let $v$ have a finite-dimensional Krylov space $\mathcal{K}(A, v)$. If $p \in \mathbb{K}[X]$ has
+degree less than $\operatorname{grade}(A, v)$, then
+$$\langle p, p \rangle_v = 0 \iff p = 0.$$
+So `Krylov.polyInner` is an inner product on the polynomials of degree less than the grade
+([meurant2006lanczos], §2.2). -/
 theorem polyInner_nondegenerate [FiniteDimensional 𝕜 (fullSubspace A v)] {p : 𝕜[X]}
     (hp : p.degree < grade A v) : polyInner A v p p = 0 ↔ p = 0 := by
   rw [polyInner_self_eq_zero_iff, aeval_eq_zero_iff_of_degree_lt_grade A v hp]
@@ -167,22 +225,28 @@ open MeasureTheory
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- The discrete spectral measure of the pair `(A, v)` for a symmetric `A` in finite dimension
-([meurant2006lanczos], §2.2): the measure `∑_l ω_l δ_{λ_l}` on `ℝ` carried by the eigenvalues of
-`A`, with the weight `ω_l = |⟪u_l, v⟫|²` at the eigenvector `u_l`. Its total mass is `‖v‖²`, and the
-inner product `Krylov.polyInner A v` of two real polynomials is the integral of their product
-against it (`Krylov.polyInner_eq_integral`), so the Lanczos polynomials of `Numlib.Krylov`'s
-`Lanczos.poly` are the orthonormal polynomials of this measure.
+/-- Let $E$ be a finite-dimensional inner product space of dimension $n$, let $A$ be a symmetric
+operator on $E$, and let $v \in E$. Let $(u_l)_{l < n}$ be the orthonormal eigenbasis of $A$
+that Mathlib chooses, with $A u_l = \lambda_l u_l$. The **discrete spectral measure** of
+$(A, v)$ is the measure
+$$\mu = \sum_{l<n} |\langle u_l, v \rangle|^2 \, \delta_{\lambda_l}$$
+on $\mathbb{R}$ ([meurant2006lanczos], §2.2). Its total mass is $\|v\|^2$. The form
+`Krylov.polyInner A v` of two real polynomials is the integral of their product against $\mu$
+(`Krylov.polyInner_eq_integral`), so the Lanczos polynomials `Lanczos.poly` are the orthonormal
+polynomials of $\mu$.
 
-The measure is defined from Mathlib's eigenvector basis `hA.eigenvectorBasis hn`, so it takes the
-symmetry of `A` and the dimension of `E` as arguments rather than just `A` and `v`; grouping the
-weights by eigenvalue would make it a function of `(A, v)` alone. -/
+The measure is defined from the eigenvector basis `LinearMap.IsSymmetric.eigenvectorBasis`, so
+it takes the symmetry of $A$ and the dimension of $E$ as arguments, not only $A$ and $v$.
+Grouping the weights by eigenvalue would make it a function of $(A, v)$ alone. -/
 noncomputable def spectralMeasure {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) : Measure ℝ :=
   ∑ i : Fin n, ENNReal.ofReal (‖inner 𝕜 (hA.eigenvectorBasis hn i) v‖ ^ 2) •
     Measure.dirac (hA.eigenvalues hn i)
 
-/-- Integration against the spectral measure is the weighted sum over the eigenvalues. -/
+/-- Integration against the spectral measure is the weighted sum over the eigenvalues: for every
+$f : \mathbb{R} \to \mathbb{R}$,
+$$\int f \, d\mu = \sum_{l<n} |\langle u_l, v \rangle|^2 f(\lambda_l).$$
+-/
 theorem integral_spectralMeasure {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) (f : ℝ → ℝ) :
     ∫ x, f x ∂(spectralMeasure hA hn v)
@@ -192,11 +256,16 @@ theorem integral_spectralMeasure {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymm
   exact Finset.sum_congr rfl fun i _ => by
     rw [integral_smul_measure, integral_dirac, ENNReal.toReal_ofReal (by positivity), smul_eq_mul]
 
-/-- [meurant2006lanczos], (2.4): the polynomial inner product of `(A, v)` is the integral against
-the discrete spectral measure. Both sides are the sum over the eigenbasis of `p(λ_l) q(λ_l) |⟪u_l,
-v⟫|²`, on the left because `p(A)` acts diagonally in that basis
-(`LinearMap.IsSymmetric.repr_aeval_apply`) and on the right by `Krylov.integral_spectralMeasure`.
--/
+/-- Let $E$ have dimension $n$, let $A$ be symmetric, and let $v \in E$. For real polynomials $p$
+and $q$,
+$$\langle p, q \rangle_v = \int p(\lambda) q(\lambda) \, d\mu(\lambda),$$
+where $\mu$ is the discrete spectral measure of $(A, v)$ and $p$, $q$ are read as polynomials
+over $\mathbb{K}$ ([meurant2006lanczos], (2.4)).
+
+Both sides are the sum of $p(\lambda_l) q(\lambda_l) |\langle u_l, v \rangle|^2$ over the
+eigenbasis: on the left because $p(A)$ acts diagonally in this basis
+(`LinearMap.IsSymmetric.repr_aeval_apply`), and on the right by
+`Krylov.integral_spectralMeasure`. -/
 theorem polyInner_eq_integral {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) (p q : ℝ[X]) :
     polyInner A v (p.map (algebraMap ℝ 𝕜)) (q.map (algebraMap ℝ 𝕜))
@@ -220,8 +289,11 @@ theorem polyInner_eq_integral {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetr
   rw [hconj, hrepr, hrepr, map_mul, RCLike.conj_ofReal, ← hcc]
   ring
 
-/-- The moments of the spectral measure are the moments of `(A, v)`: `∫ f dμ = ⟪v, f(A) v⟫`. It is
-`Krylov.polyInner_eq_integral` at `p = 1`, and the form in which the measure is used. -/
+/-- Let $E$ have dimension $n$, let $A$ be symmetric, and let $v \in E$. The moments of the spectral
+measure are the moments of $(A, v)$: for every real polynomial $f$,
+$$\langle v, f(A) v \rangle = \int f \, d\mu.$$
+It is `Krylov.polyInner_eq_integral` at $p = 1$, and it is the form in which the measure is
+used. -/
 theorem inner_aeval_eq_integral {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) (f : ℝ[X]) :
     inner 𝕜 v (aeval A (f.map (algebraMap ℝ 𝕜)) v)
@@ -239,9 +311,8 @@ namespace Lanczos
 
 /-! ### The Lanczos polynomials -/
 
-/-- The pair `(p_j, p_{j+1})` of consecutive Lanczos polynomials: the two-step recurrence of
-`Lanczos.poly` written as a one-step recursion, so that the equations of `Lanczos.poly` hold by
-`rfl`. -/
+/-- The pair $(p_j, p_{j+1})$ of consecutive Lanczos polynomials, defined by a one-step recursion so
+that the equations of `Lanczos.poly` hold by definition. -/
 private noncomputable def polyPair (A : E →ₗ[𝕜] E) (v : E) : ℕ → 𝕜[X] × 𝕜[X]
   | 0 => (C ((‖v‖ : 𝕜))⁻¹,
       C ((beta A v 0 : 𝕜))⁻¹ * ((X - C (alpha A v 0 : 𝕜)) * C ((‖v‖ : 𝕜))⁻¹))
@@ -250,39 +321,50 @@ private noncomputable def polyPair (A : E →ₗ[𝕜] E) (v : E) : ℕ → 𝕜
         ((X - C (alpha A v (j + 1) : 𝕜)) * (polyPair A v j).2 -
           C (beta A v j : 𝕜) * (polyPair A v j).1))
 
-/-- The Lanczos polynomials of the pair `(A, v)`: `p_0 = 1/‖v‖` and
+/-- Let $A$ be a linear operator on $E$ and $v \in E$, with Lanczos coefficients $\alpha_j$ and
+$\beta_j$. The **Lanczos polynomials** of $(A, v)$ are given by $p_0 = 1/\|v\|$,
+$p_1 = \beta_0^{-1} (X - \alpha_0) p_0$ and
+$$p_{j+2} = \beta_{j+1}^{-1} \big( (X - \alpha_{j+1}) p_{j+1} - \beta_j p_j \big),$$
+with $0^{-1} = 0$. This is the three-term recurrence $\beta_{j+1} p_{j+2} = (X - \alpha_{j+1})
+p_{j+1} - \beta_j p_j$ that the Lanczos process runs ([meurant2006lanczos], §2.2;
+[saad2003iterative], §6.6.2).
 
-`β_{j+1} p_{j+2} = (X - α_{j+1}) p_{j+1} - β_j p_j`,
+For symmetric $A$ these are the polynomials that produce the Lanczos vectors, $p_j(A) v = v_j$
+(`Lanczos.aeval_poly`). So below the grade they are the orthonormal polynomials of
+`Krylov.polyInner A v` (`Lanczos.polyInner_poly`), and $p_j$ has degree $j$
+(`Lanczos.poly_degree`).
 
-the three-term recurrence the Lanczos process runs ([meurant2006lanczos], §2.2; [saad2003iterative],
-§6.6.2). For symmetric `A` they are exactly the polynomials that produce the Lanczos vectors,
-`p_j(A) v = v_j` (`Lanczos.aeval_poly`), so below the grade they are the orthonormal polynomials of
-`Krylov.polyInner A v` (`Lanczos.polyInner_poly`) and `p_j` has degree `j` (`Lanczos.poly_degree`).
-The recurrence is divided by `β_{j+1}` rather than multiplied out, which makes it hold at every
-index: from the grade onwards the vanishing `β` inverts to `0` and both `p_j` and `v_j` are `0`. -/
+The recurrence is divided by $\beta_{j+1}$, not multiplied out, so that it holds at every index:
+from the grade onwards the vanishing $\beta$ inverts to $0$, and both $p_j$ and $v_j$ are $0$. -/
 noncomputable def poly (A : E →ₗ[𝕜] E) (v : E) (j : ℕ) : 𝕜[X] := (polyPair A v j).1
 
 variable (A : E →ₗ[𝕜] E) (v : E)
 
-/-- The Lanczos process starts from the normalized vector: `p_0 = 1/‖v‖`. -/
+/-- The first Lanczos polynomial is the constant $p_0 = 1/\|v\|$: the Lanczos process starts from
+the normalized vector. -/
 theorem poly_zero : poly A v 0 = C ((‖v‖ : 𝕜))⁻¹ := rfl
 
-/-- First step of the recurrence: `β_0 p_1 = (X - α_0) p_0`. -/
+/-- The first step of the recurrence: $p_1 = \beta_0^{-1} (X - \alpha_0) p_0$, that is,
+$\beta_0 p_1 = (X - \alpha_0) p_0$ when $\beta_0 \neq 0$. -/
 theorem poly_one :
     poly A v 1 = C ((beta A v 0 : 𝕜))⁻¹ * ((X - C (alpha A v 0 : 𝕜)) * poly A v 0) := rfl
 
-/-- The three-term recurrence `β_{j+1} p_{j+2} = (X - α_{j+1}) p_{j+1} - β_j p_j`, in the divided
-form that survives breakdown. -/
+/-- The three-term recurrence: for every $j$,
+$$p_{j+2} = \beta_{j+1}^{-1} \big( (X - \alpha_{j+1}) p_{j+1} - \beta_j p_j \big),$$
+with $0^{-1} = 0$. This is $\beta_{j+1} p_{j+2} = (X - \alpha_{j+1}) p_{j+1} - \beta_j p_j$ in a
+divided form that holds also after breakdown. -/
 theorem poly_add_two (j : ℕ) :
     poly A v (j + 2) = C ((beta A v (j + 1) : 𝕜))⁻¹ *
       ((X - C (alpha A v (j + 1) : 𝕜)) * poly A v (j + 1) - C (beta A v j : 𝕜) * poly A v j) :=
   rfl
 
-/-! #### The recurrence step: evaluated, bounded, and read in its top coefficient
+/-!
+### The recurrence step: evaluation, degree and leading coefficient
 
-Three computations on the shape `C c * ((X - C a) * p - C b * q)` of the recurrence; each of the
-three inductions below uses one of them at both of its base cases (with `b = 0` and `q = 0`) and at
-its step. -/
+Three computations on the shape $c \, ((X - a) p - b q)$ of the recurrence. Each of the three
+inductions below uses one of them at both of its base cases, with $b = 0$ and $q = 0$, and at its
+step.
+-/
 
 private theorem aeval_recur (c a b : 𝕜) (p q : 𝕜[X]) :
     aeval A (C c * ((X - C a) * p - C b * q)) v =
@@ -311,14 +393,15 @@ private theorem coeff_recur (c a b : 𝕜) {p q : 𝕜[X]} {n : ℕ} (hp : p.nat
     coeff_eq_zero_of_natDegree_lt (n := n + 1) (by omega),
     coeff_eq_zero_of_natDegree_lt (n := n + 1) (by omega), mul_zero, mul_zero, sub_zero, sub_zero]
 
-/-- The `j = 1` case of the recurrence, in the shape the three helpers above accept. -/
+/-- The case $j = 1$ of the recurrence, in the shape $c \, ((X - a) p - b q)$ with $b = 0$ and
+$q = 0$. -/
 private theorem poly_one' :
     poly A v 1 = C ((beta A v 0 : 𝕜))⁻¹ *
       ((X - C (alpha A v 0 : 𝕜)) * poly A v 0 - C (0 : 𝕜) * 0) := by
   rw [mul_zero, sub_zero]
   exact poly_one A v
 
-/-! #### The Lanczos polynomials produce the Lanczos vectors -/
+/-! ### The Lanczos polynomials produce the Lanczos vectors -/
 
 private theorem aeval_poly_zero : aeval A (poly A v 0) v = Arnoldi.vec A v 0 := by
   rw [poly_zero, aeval_C, Module.algebraMap_end_apply]
@@ -326,20 +409,24 @@ private theorem aeval_poly_zero : aeval A (poly A v 0) v = Arnoldi.vec A v 0 := 
   · rw [(Arnoldi.vec_eq_zero_iff_pow_apply_mem A 0 0).2 (by simp), smul_zero]
   · rw [Arnoldi.vec_zero A v hv]
 
-/-- `v_{j+1} = β_j⁻¹ w_j`, the normalization step of the Lanczos process written with `β`. -/
+/-- The normalization step of the Lanczos process: $v_{j+1} = \beta_j^{-1} w_j$. -/
 private theorem vec_succ_eq_beta (j : ℕ) :
     Arnoldi.vec A v (j + 1) = ((beta A v j : 𝕜))⁻¹ • Arnoldi.w A v j := by
   have hb : beta A v j = ‖Arnoldi.w A v j‖ := rfl
   rw [Arnoldi.vec_succ_eq, ← hb]
 
-/-- The first step of the process: `w_0 = A v_0 - α_0 v_0`. -/
+/-- For symmetric $A$, the first unnormalized vector is $w_0 = A v_0 - \alpha_0 v_0$. -/
 private theorem w_zero_eq {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) :
     Arnoldi.w A v 0 = A (Arnoldi.vec A v 0) - (alpha A v 0 : 𝕜) • Arnoldi.vec A v 0 := by
   rw [Arnoldi.w, Finset.sum_range_one, coe_alpha v hA 0]
 
-/-- The Lanczos polynomials evaluated at `A` produce the Lanczos vectors: `p_j(A) v = v_j`
-([meurant2006lanczos], §2.2; [saad2003iterative], §6.6.2). No hypothesis on the grade is needed:
-past breakdown both sides are `0`. -/
+/-- Let $A$ be a symmetric operator on $E$ and $v \in E$. The Lanczos polynomials evaluated at $A$
+produce the Lanczos vectors: for every $j \in \mathbb{N}$,
+$$p_j(A) v = v_j$$
+([meurant2006lanczos], §2.2; [saad2003iterative], §6.6.2).
+
+No hypothesis on the grade is needed: after breakdown both sides are $0$. The Lanczos vector
+$v_j$ is the Arnoldi vector `Arnoldi.vec A v j`. -/
 theorem aeval_poly {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) (j : ℕ) :
     aeval A (poly A v j) v = Arnoldi.vec A v j := by
   induction j using Nat.twoStepInduction with
@@ -350,9 +437,9 @@ theorem aeval_poly {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) (j : ℕ)
   | more j ih1 ih2 =>
     rw [poly_add_two, aeval_recur, ih1, ih2, ← w_succ_eq v hA j, vec_succ_eq_beta]
 
-/-! #### Degree and orthonormality -/
+/-! ### Degree and orthonormality -/
 
-/-- The `j`-th Lanczos polynomial has degree at most `j`; it has degree exactly `j` below the grade
+/-- The $j$-th Lanczos polynomial has degree at most $j$. Below the grade it has degree exactly $j$
 (`Lanczos.poly_degree`). -/
 theorem poly_natDegree_le (j : ℕ) : (poly A v j).natDegree ≤ j := by
   induction j using Nat.twoStepInduction with
@@ -362,8 +449,9 @@ theorem poly_natDegree_le (j : ℕ) : (poly A v j).natDegree ≤ j := by
     exact natDegree_recur _ _ _ (by rw [poly_zero]; exact le_of_eq (natDegree_C _)) (by simp)
   | more j _ ih2 => exact poly_add_two A v j ▸ natDegree_recur _ _ _ ih2 (by omega)
 
-/-- The leading coefficient of the `j`-th Lanczos polynomial is `1/(‖v‖ β_0 ⋯ β_{j-1})`, the
-reciprocal of the scalar of `Lanczos.aeval_charpoly_tridiag`. -/
+/-- The coefficient of $X^j$ in the $j$-th Lanczos polynomial is
+$1/(\|v\| \beta_0 \cdots \beta_{j-1})$, with $1/0 = 0$. It is the reciprocal of the scalar of
+`Lanczos.aeval_charpoly_tridiag`. -/
 theorem poly_coeff_self (j : ℕ) :
     (poly A v j).coeff j = (((‖v‖ * ∏ i ∈ Finset.range j, beta A v i)⁻¹ : ℝ) : 𝕜) := by
   induction j using Nat.twoStepInduction with
@@ -381,8 +469,8 @@ theorem poly_coeff_self (j : ℕ) :
     push_cast
     ring
 
-/-- The scalar `‖v‖ β_0 ⋯ β_{j-1}` is nonzero exactly as long as the Lanczos process has not broken
-down. -/
+/-- If $j < \operatorname{grade}(A, v)$, then $\|v\| \beta_0 \cdots \beta_{j-1} \neq 0$: the scalar
+is nonzero as long as the Lanczos process has not broken down. -/
 theorem norm_mul_prod_beta_ne_zero [FiniteDimensional 𝕜 (fullSubspace A v)] {j : ℕ}
     (hj : j < grade A v) : (‖v‖ * ∏ i ∈ Finset.range j, beta A v i) ≠ 0 := by
   have hv : v ≠ 0 := fun h => by
@@ -395,8 +483,12 @@ theorem norm_mul_prod_beta_ne_zero [FiniteDimensional 𝕜 (fullSubspace A v)] {
   have := (Arnoldi.coeff_succ_self_eq_zero_iff A v i).1 hc
   omega
 
-/-- Below the grade the `j`-th Lanczos polynomial has degree exactly `j`, so `p_0, …, p_{m-1}` is a
-basis of the polynomials of degree `< m` for every `m ≤ grade A v`. -/
+/-- Let $v$ have a finite-dimensional Krylov space $\mathcal{K}(A, v)$. If
+$j < \operatorname{grade}(A, v)$, the $j$-th Lanczos polynomial has degree exactly $j$. So
+$p_0, \dots, p_{m-1}$ is a basis of the polynomials of degree less than $m$ for every
+$m \le \operatorname{grade}(A, v)$.
+
+The statement needs no symmetry of $A$. -/
 theorem poly_degree [FiniteDimensional 𝕜 (fullSubspace A v)] {j : ℕ} (hj : j < grade A v) :
     (poly A v j).degree = j := by
   refine degree_eq_of_le_of_coeff_ne_zero (natDegree_le_iff_degree_le.1 (poly_natDegree_le A v j))
@@ -406,9 +498,14 @@ theorem poly_degree [FiniteDimensional 𝕜 (fullSubspace A v)] {j : ℕ} (hj : 
 
 -- Only the diagonal case needs a bound, and there the two indices are equal.
 set_option linter.unusedVariables false in
-/-- The Lanczos polynomials are orthonormal for `Krylov.polyInner A v` below the grade
-([meurant2006lanczos], §2.2): they are the orthonormal polynomials of the pair `(A, v)`, which is
-what `Arnoldi.orthonormal` says once the Lanczos vectors are read as `p_j(A) v`. -/
+/-- Let $A$ be a symmetric operator on $E$, and let $v \in E$ have a finite-dimensional Krylov space
+$\mathcal{K}(A, v)$. For $i, j < \operatorname{grade}(A, v)$,
+$$\langle p_i, p_j \rangle_v = \delta_{ij}.$$
+So the Lanczos polynomials are the orthonormal polynomials of the pair $(A, v)$
+([meurant2006lanczos], §2.2).
+
+This is the orthonormality of the Arnoldi vectors (`Arnoldi.orthonormal`), read through
+$v_j = p_j(A) v$. -/
 theorem polyInner_poly {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {i j : ℕ} (hi : i < grade A v)
     (hj : j < grade A v) :
@@ -421,13 +518,18 @@ theorem polyInner_poly {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E)
 
 /-! ### The characteristic polynomial of the tridiagonal matrix -/
 
-/-- The Arnoldi coefficients, unfolded. -/
+/-- The Arnoldi coefficient is $h_{ij} = \langle v_i, A v_j \rangle$. -/
 private theorem inner_vec_apply_vec (i j : ℕ) :
     inner 𝕜 (Arnoldi.vec A v i) (A (Arnoldi.vec A v j)) = Arnoldi.coeff A v i j := rfl
 
-/-- The scalar of `Lanczos.aeval_charpoly_tridiag`, computed: the component of `A^m v` along the
-`m`-th Lanczos vector is `‖v‖ β_0 ⋯ β_{m-1}`. Each step of the Lanczos process multiplies it by the
-new `β`, because `v_{m+1}` is orthogonal to `𝒦_{m+1}` and `⟪v_{m+1}, A v_m⟫ = β_m`. -/
+/-- Let $A$ be a linear operator on $E$ and $v \in E$. For every $m \in \mathbb{N}$, the component
+of $A^m v$ along the $m$-th Lanczos vector is
+$$\langle v_m, A^m v \rangle = \|v\| \beta_0 \cdots \beta_{m-1}.$$
+This is the scalar of `Lanczos.aeval_charpoly_tridiag`.
+
+Each step of the Lanczos process multiplies the scalar by the new $\beta$, because $v_{m+1}$ is
+orthogonal to $\mathcal{K}_{m+1}$ and $\langle v_{m+1}, A v_m \rangle = \beta_m$. The statement
+needs no symmetry of $A$. -/
 theorem inner_vec_pow_apply (m : ℕ) :
     inner 𝕜 (Arnoldi.vec A v m) ((A ^ m) v)
       = ((‖v‖ * ∏ i ∈ Finset.range m, beta A v i : ℝ) : 𝕜) := by
@@ -456,9 +558,11 @@ theorem inner_vec_pow_apply (m : ℕ) :
 
 variable {A}
 
-/-- `T_m` is the matrix of the compression of `A` to `𝒦_m` in the Lanczos basis
-(`Arnoldi.hessenbergSq_eq_toMatrix_compression`, `Lanczos.hessenbergSq_eq_map_tridiag`), so its
-characteristic polynomial, read in `𝕜`, is the characteristic polynomial of that compression. -/
+/-- Let $A$ be symmetric, let $v$ have a finite-dimensional Krylov space, and let
+$m \le \operatorname{grade}(A, v)$. Then the characteristic polynomial of $T_m$, read over
+$\mathbb{K}$, is the characteristic polynomial of the compression of $A$ to $\mathcal{K}_m$. The
+reason is that $T_m$ is the matrix of this compression in the Lanczos basis
+(`Arnoldi.hessenbergSq_eq_toMatrix_compression` and `Lanczos.hessenbergSq_eq_map_tridiag`). -/
 theorem charpoly_tridiag_map (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {m : ℕ} (hm : m ≤ grade A v) :
     (tridiag A v m).charpoly.map (algebraMap ℝ 𝕜)
@@ -466,15 +570,19 @@ theorem charpoly_tridiag_map (hA : A.IsSymmetric) (v : E)
   rw [← Matrix.charpoly_map, ← hessenbergSq_eq_map_tridiag v hA m,
     Arnoldi.hessenbergSq_eq_toMatrix_compression A v hm, LinearMap.charpoly_toMatrix]
 
-/-- [saad2003iterative], §6.6.2 (e); [meurant2006lanczos], (2.6): the characteristic polynomial of
-the tridiagonal matrix `T_m`, evaluated at `A` on `v`, is `‖v‖ β_0 ⋯ β_{m-1} v_m`. It is therefore
-the monic multiple of the `m`-th Lanczos polynomial, and its roots are the Ritz values of `A` on
-`𝒦_m(A, v)` (`Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`).
+/-- Let $A$ be symmetric, let $v$ have a finite-dimensional Krylov space, and let
+$m \le \operatorname{grade}(A, v)$. The characteristic polynomial $\chi_{T_m}$ of the
+tridiagonal matrix $T_m$, evaluated at $A$ and applied to $v$, is
+$$\chi_{T_m}(A) v = \|v\| \beta_0 \cdots \beta_{m-1} \, v_m$$
+([saad2003iterative], §6.6.2 (e); [meurant2006lanczos], (2.6)). So $\chi_{T_m}$ is the monic
+multiple of the $m$-th Lanczos polynomial, and its roots are the Ritz values of $A$ on
+$\mathcal{K}_m(A, v)$ (`Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`).
 
-The proof is Cayley–Hamilton on the compression of `A` to `𝒦_m`
-(`Arnoldi.aeval_charpoly_mem_orthogonal`), which puts the vector in `𝒦_{m+1} ∩ 𝒦_mᗮ` — a line
-spanned by `v_m` — together with `Lanczos.inner_vec_pow_apply` for the scalar, the two lower-order
-terms of the characteristic polynomial contributing nothing to it. -/
+The proof is the Cayley–Hamilton theorem for the compression of $A$ to $\mathcal{K}_m$
+(`Arnoldi.aeval_charpoly_mem_orthogonal`). It puts the vector in
+$\mathcal{K}_{m+1} \cap \mathcal{K}_m^\perp$, which is the line spanned by $v_m$. The scalar is
+`Lanczos.inner_vec_pow_apply`, because the terms of lower order of the characteristic polynomial
+contribute nothing to it. -/
 theorem aeval_charpoly_tridiag (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {m : ℕ} (hm : m ≤ grade A v) :
     aeval A ((tridiag A v m).charpoly.map (algebraMap ℝ 𝕜)) v =
@@ -504,13 +612,18 @@ theorem aeval_charpoly_tridiag (hA : A.IsSymmetric) (v : E)
 
 /-! ### The Ritz values are the eigenvalues of the tridiagonal matrix -/
 
-/-- [meurant2006lanczos], §2.3: the Ritz values of `A` on `𝒦_m(A, v)` — the eigenvalues of the
-compression of `A` to that subspace, by `Krylov.isRitzPair_iff_hasEigenvector` — are exactly the
-eigenvalues of the Lanczos matrix `T_m`. The Lanczos vectors are an orthonormal basis of `𝒦_m` below
-the grade and `T_m` is the matrix of the compression in that basis
-(`Arnoldi.hessenbergSq_eq_toMatrix_compression`, `Lanczos.hessenbergSq_eq_map_tridiag`), so the two
-spectra correspond; that both are real spectra of a real matrix and of an operator on a `𝕜`-space
-costs one step through the characteristic polynomial. -/
+/-- Let $A$ be symmetric, let $v$ have a finite-dimensional Krylov space, let
+$m \le \operatorname{grade}(A, v)$, and let $\theta \in \mathbb{R}$. Then $\theta$ is an
+eigenvalue of the compression of $A$ to $\mathcal{K}_m(A, v)$ if and only if $\theta$ is an
+eigenvalue of the Lanczos matrix $T_m$ ([meurant2006lanczos], §2.3). In other words, the Ritz
+values of $A$ on $\mathcal{K}_m(A, v)$ are the eigenvalues of $T_m$.
+
+The Ritz values are the eigenvalues of the compression by
+`Krylov.isRitzPair_iff_hasEigenvector`. Below the grade the Lanczos vectors are an orthonormal
+basis of $\mathcal{K}_m$, and $T_m$ is the matrix of the compression in this basis
+(`Arnoldi.hessenbergSq_eq_toMatrix_compression` and `Lanczos.hessenbergSq_eq_map_tridiag`). The
+proof goes through the characteristic polynomial, because the spectrum of the real matrix $T_m$
+is compared with the spectrum of an operator on a space over $\mathbb{K}$. -/
 theorem hasEigenvalue_compression_iff_mem_spectrum_tridiag (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {m : ℕ} (hm : m ≤ grade A v) (θ : ℝ) :
     Module.End.HasEigenvalue (compression A (subspace A v m)) (θ : 𝕜) ↔
@@ -523,11 +636,16 @@ theorem hasEigenvalue_compression_iff_mem_spectrum_tridiag (hA : A.IsSymmetric) 
   simp only [IsRoot.def, ← RCLike.algebraMap_eq_ofReal, eval_map, eval₂_hom]
   exact map_eq_zero_iff _ (algebraMap ℝ 𝕜).injective
 
-/-- Strictly below the grade the characteristic polynomial of `T_m` is the monic multiple of the
-`m`-th Lanczos polynomial: `p_{T_m} = ‖v‖ β_0 ⋯ β_{m-1} p_m` ([meurant2006lanczos], (2.6)). Both
-sides have degree `m` and the same leading coefficient, and both annihilate `v` after subtraction,
-so they agree by `Krylov.aeval_eq_zero_iff_of_degree_lt_grade`. At `m = grade A v` the statement
-fails and is not merely unproved: there `p_m = 0` while the characteristic polynomial is monic. -/
+/-- Let $A$ be symmetric, let $v$ have a finite-dimensional Krylov space, and let
+$m < \operatorname{grade}(A, v)$. The characteristic polynomial of $T_m$ is the monic multiple
+of the $m$-th Lanczos polynomial:
+$$\chi_{T_m} = \|v\| \beta_0 \cdots \beta_{m-1} \, p_m$$
+([meurant2006lanczos], (2.6)).
+
+Both sides have degree $m$ and the same leading coefficient, and their difference annihilates
+$v$, so they agree by `Krylov.aeval_eq_zero_iff_of_degree_lt_grade`. At
+$m = \operatorname{grade}(A, v)$ the statement is false: there $p_m = 0$, while the
+characteristic polynomial is monic. -/
 theorem charpoly_tridiag_eq (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {m : ℕ} (hm : m < grade A v) :
     (tridiag A v m).charpoly.map (algebraMap ℝ 𝕜)
@@ -558,11 +676,15 @@ theorem charpoly_tridiag_eq (hA : A.IsSymmetric) (v : E)
     LinearMap.sub_apply, aeval_charpoly_tridiag hA v hm.le, map_mul, Module.End.mul_apply,
     aeval_C, Module.algebraMap_end_apply, aeval_poly hA, sub_self]
 
-/-- The Ritz values of `A` on `𝒦_m(A, v)` are the roots of the `m`-th Lanczos polynomial: `p_m` is,
-up to the factor of `Lanczos.charpoly_tridiag_eq`, the characteristic polynomial of `T_m`. This is
-the orthogonal-polynomial reading of `Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`
-and, with it, the statement that the nodes of the `m`-point Gauss rule of the pair `(A, v)` are the
-Ritz values. -/
+/-- Let $A$ be symmetric, let $v$ have a finite-dimensional Krylov space, let
+$m < \operatorname{grade}(A, v)$, and let $\theta \in \mathbb{R}$. Then $\theta$ is an
+eigenvalue of the compression of $A$ to $\mathcal{K}_m(A, v)$ if and only if $p_m(\theta) = 0$.
+So the Ritz values of $A$ on $\mathcal{K}_m(A, v)$ are the roots of the $m$-th Lanczos
+polynomial.
+
+This is `Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag` read through
+`Lanczos.charpoly_tridiag_eq`. With `Lanczos.gauss_quadrature_eq_sum`, it says that the nodes of
+the $m$-point Gauss rule of $(A, v)$ are the Ritz values. -/
 theorem hasEigenvalue_compression_iff_isRoot_poly (hA : A.IsSymmetric) (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {m : ℕ} (hm : m < grade A v) (θ : ℝ) :
     Module.End.HasEigenvalue (compression A (subspace A v m)) (θ : 𝕜) ↔
@@ -591,24 +713,29 @@ open MeasureTheory
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- [meurant2006lanczos], Thm 1: the `m`-point Gauss quadrature rule of the spectral measure of `(A,
-v)` is exact on the polynomials of degree at most `2m - 1`.
+/-- Let $E$ have dimension $n$, let $A$ be symmetric, let $v \in E$, and let $m \ge 1$ with
+$\dim \mathcal{K}_m(A, v) = m$. Let $\mu$ be the spectral measure of $(A, v)$, and let $\mu_m$
+be the spectral measure of the compression $A_m$ of $A$ to $\mathcal{K}_m(A, v)$ and of the same
+vector $v$. Then for every real polynomial $f$ of degree at most $2m - 1$,
+$$\int f \, d\mu = \int f \, d\mu_m.$$
+This is Theorem 1 of [meurant2006lanczos]: $\mu_m$ is the $m$-point Gauss quadrature rule of
+$\mu$.
 
-The rule is the spectral measure of the *compression* of `A` to `𝒦_m(A, v)` and of the same vector
-`v`, that is `∑_j ω_j δ_{θ_j}` over an orthonormal eigenbasis `(θ_j, y_j)` of the compression with
-`ω_j = |⟪y_j, v⟫|²` — so it has `m` nodes, its nodes are the Ritz values, which are the eigenvalues
-of `T_m` (`Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`) and the roots of the `m`-th
-Lanczos polynomial (`Lanczos.hasEigenvalue_compression_iff_isRoot_poly`), and its weights are `‖v‖²`
-times the squared first components of the eigenvectors of `T_m`, since `v = ‖v‖ v_0` and `(y_j)` is
-expanded in the Lanczos basis.
+The rule is $\mu_m = \sum_{j<m} |\langle y_j, v \rangle|^2 \delta_{\theta_j}$ over an
+orthonormal eigenbasis $(\theta_j, y_j)$ of $A_m$. So it has $m$ nodes, and its nodes are the
+Ritz values. These are the eigenvalues of $T_m$
+(`Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag`) and the roots of $p_m$
+(`Lanczos.hasEigenvalue_compression_iff_isRoot_poly`). Its weights are $\|v\|^2$ times the
+squared first components of the eigenvectors of $T_m$, since $v = \|v\| v_0$ and $y_j$ is
+expanded in the Lanczos basis. The hypothesis $\dim \mathcal{K}_m = m$ means
+$m \le \operatorname{grade}(A, v)$: the process has not yet terminated.
 
-The proof divides `f` by the characteristic polynomial `p` of `T_m`, which is monic of degree `m`:
-`f = r + p s` with both `r` and `s` of degree below `m`. The remainder `r` is integrated identically
-by the two measures because `r(A) v = r(A_m) v`, the Krylov sequence of `v` staying inside `𝒦_m` for
-that many steps. The quotient term contributes nothing on either side: against the spectral measure
-of `(A, v)` because `p(A) v` is orthogonal to `𝒦_m ∋ s(A) v` (`Lanczos.aeval_charpoly_tridiag`), and
-against the rule because `p(A_m) = 0` by Cayley–Hamilton. The hypothesis `Module.finrank 𝕜 𝒦_m = m`
-is `m ≤ grade A v`, the condition that the process has not yet terminated. -/
+The proof divides $f$ by the characteristic polynomial $\chi$ of $T_m$, which is monic of degree
+$m$: $f = r + \chi s$ with $r$ and $s$ of degree less than $m$. The two measures integrate $r$
+in the same way because $r(A) v = r(A_m) v$. The term $\chi s$ contributes nothing to either
+side: against $\mu$ because $\chi(A) v$ is orthogonal to $\mathcal{K}_m$, which contains
+$s(A) v$ (`Lanczos.aeval_charpoly_tridiag`), and against $\mu_m$ because $\chi(A_m) = 0$ by the
+Cayley–Hamilton theorem. -/
 theorem gauss_quadrature {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ} (hm : 0 < m)
     (hmk : Module.finrank 𝕜 (subspace A v m) = m) {f : ℝ[X]} (hf : f.natDegree < 2 * m) :
@@ -670,12 +797,16 @@ theorem gauss_quadrature {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     rw [hzeroA, hzeroB, inner_zero_right, add_zero, add_zero, Submodule.coe_inner, hr]
   exact_mod_cast key
 
-/-- `Lanczos.gauss_quadrature` written out as a quadrature rule: the integral of a polynomial of
-degree at most `2m - 1` against the spectral measure of `(A, v)` is the `m`-term sum over the
-eigenpairs `(θ_j, y_j)` of the compression of `A` to `𝒦_m(A, v)`, with nodes `θ_j` — the Ritz
-values, that is the eigenvalues of `T_m` — and weights `|⟪y_j, v⟫|²`. Writing `y_j` in the Lanczos
-basis and `v = ‖v‖ v_0`, the weight is `‖v‖²` times the squared first component of the corresponding
-eigenvector of `T_m`, which is the form the rule is usually stated in. -/
+/-- Under the hypotheses of `Lanczos.gauss_quadrature`, the Gauss rule written out as a sum: for
+every real polynomial $f$ of degree at most $2m - 1$,
+$$\int f \, d\mu = \sum_{j<m} |\langle y_j, v \rangle|^2 \, f(\theta_j),$$
+where $(\theta_j, y_j)$ is an orthonormal eigenbasis of the compression of $A$ to
+$\mathcal{K}_m(A, v)$. The nodes $\theta_j$ are the Ritz values, that is, the eigenvalues of
+$T_m$.
+
+When $y_j$ is written in the Lanczos basis and $v = \|v\| v_0$, the weight
+$|\langle y_j, v \rangle|^2$ is $\|v\|^2$ times the squared first component of the corresponding
+eigenvector of $T_m$. This is the usual form of the rule. -/
 theorem gauss_quadrature_eq_sum {n : ℕ} {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ} (hm : 0 < m)
     (hmk : Module.finrank 𝕜 (subspace A v m) = m) {f : ℝ[X]} (hf : f.natDegree < 2 * m) :
@@ -700,15 +831,17 @@ variable {K : Type*} [CommRing K] {p : ℕ → K[X]} {a b c : ℕ → K}
   (hac : ∀ n, c (n + 1) * a n = a (n + 1))
 include hp₁ hrec hac
 
-/-- **Christoffel–Darboux identity**, division-free form ([han2009theoretical], Thm 3.7.3). For a
-sequence of polynomials obeying the three-term recurrence `p_{n+1} = (a_n X + b_n) p_n - c_n
-p_{n-1}` with the orthonormal normalization `c_n a_{n-1} = a_n` (and `p_{-1} = 0`, i.e. `p_1 = (a_0
-X + b_0) p_0`),
+/-- The **Christoffel–Darboux identity**, in a form without division ([han2009theoretical], Theorem
+3.7.3). Let $K$ be a commutative ring, and let polynomials $p_0, p_1, \dots \in K[X]$ and
+scalars $a_n, b_n, c_n \in K$ satisfy
+$$p_1 = (a_0 X + b_0) p_0, \qquad p_{n+2} = (a_{n+1} X + b_{n+1}) p_{n+1} - c_{n+1} p_n,$$
+with the normalization $c_{n+1} a_n = a_{n+1}$ of orthonormal polynomials. Then for every
+$N \in \mathbb{N}$ and $x, t \in K$
+$$a_N (x - t) \sum_{n=0}^{N} p_n(x) p_n(t) = p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t).$$
 
-`a_N (x - t) ∑_{n ≤ N} p_n(x) p_n(t) = p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t)`.
-
-Multiplying through by `a_N (x - t)` keeps the statement valid over any commutative ring and at `x =
-t`; `Polynomial.christoffel_darboux_div` is the usual quotient form. -/
+The condition on $p_1$ is the recurrence with $p_{-1} = 0$. Because the identity is multiplied
+through by $a_N (x - t)$, it holds over any commutative ring and at $x = t$.
+`Polynomial.christoffel_darboux_div` is the usual quotient form. -/
 theorem christoffel_darboux (N : ℕ) (x t : K) :
     a N * (x - t) * ∑ n ∈ Finset.range (N + 1), (p n).eval x * (p n).eval t =
       (p (N + 1)).eval x * (p N).eval t - (p N).eval x * (p (N + 1)).eval t := by
@@ -722,13 +855,11 @@ theorem christoffel_darboux (N : ℕ) (x t : K) :
     simp only [eval_mul, eval_add, eval_sub, eval_C, eval_X]
     linear_combination c (N + 1) * ih
 
-/-- **Christoffel–Darboux identity, confluent form** ([han2009theoretical], Thm 3.7.3). The limit of
-`Polynomial.christoffel_darboux` as `t → x` is an identity of polynomials, with the Wronskian of two
-consecutive members on the right:
-
-`a_N ∑_{n ≤ N} p_n² = p'_{N+1} p_N - p'_N p_{N+1}`.
-
-The hypotheses are those of `Polynomial.christoffel_darboux`. -/
+/-- The **Christoffel–Darboux identity, confluent form** ([han2009theoretical], Theorem 3.7.3).
+Under the hypotheses of `Polynomial.christoffel_darboux`, for every $N \in \mathbb{N}$,
+$$a_N \sum_{n=0}^{N} p_n^2 = p_{N+1}' p_N - p_N' p_{N+1}$$
+as an identity of polynomials. It is the limit of `Polynomial.christoffel_darboux` as $t \to x$,
+with the Wronskian of two consecutive polynomials on the right. -/
 theorem christoffel_darboux_confluent (N : ℕ) :
     C (a N) * ∑ n ∈ Finset.range (N + 1), p n ^ 2 =
       derivative (p (N + 1)) * p N - derivative (p N) * p (N + 1) := by
@@ -752,12 +883,11 @@ variable {K : Type*} [Field K] {p : ℕ → K[X]} {a b c : ℕ → K}
   (hac : ∀ n, c (n + 1) * a n = a (n + 1))
 include hp₁ hrec hac
 
-/-- **Christoffel–Darboux identity**, quotient form ([han2009theoretical], Thm 3.7.3): for `x ≠ t`
-and `a_N ≠ 0`,
-
-`∑_{n ≤ N} p_n(x) p_n(t) = (p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t)) / (a_N (x - t))`.
-
-The hypotheses on `p` are those of `Polynomial.christoffel_darboux`. -/
+/-- The **Christoffel–Darboux identity**, quotient form ([han2009theoretical], Theorem 3.7.3). Let
+$K$ be a field, and let $p_n$, $a_n$, $b_n$, $c_n$ satisfy the hypotheses of
+`Polynomial.christoffel_darboux`. If $a_N \neq 0$ and $x \neq t$, then
+$$\sum_{n=0}^{N} p_n(x) p_n(t) = \frac{p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t)}{a_N (x - t)}.$$
+-/
 theorem christoffel_darboux_div (N : ℕ) {x t : K} (ha : a N ≠ 0) (hxt : x ≠ t) :
     ∑ n ∈ Finset.range (N + 1), (p n).eval x * (p n).eval t =
       ((p (N + 1)).eval x * (p N).eval t - (p N).eval x * (p (N + 1)).eval t) /
@@ -765,12 +895,11 @@ theorem christoffel_darboux_div (N : ℕ) {x t : K} (ha : a N ≠ 0) (hxt : x �
   rw [eq_div_iff (mul_ne_zero ha (sub_ne_zero.2 hxt))]
   linear_combination christoffel_darboux hp₁ hrec hac N x t
 
-/-- **Christoffel–Darboux identity, confluent quotient form** ([han2009theoretical], Thm 3.7.3): for
-`a_N ≠ 0`,
-
-`∑_{n ≤ N} p_n(x)² = (p'_{N+1}(x) p_N(x) - p'_N(x) p_{N+1}(x)) / a_N`.
-
-The hypotheses on `p` are those of `Polynomial.christoffel_darboux`. -/
+/-- The **Christoffel–Darboux identity**, confluent quotient form ([han2009theoretical], Theorem
+3.7.3). Let $K$ be a field, and let $p_n$, $a_n$, $b_n$, $c_n$ satisfy the hypotheses of
+`Polynomial.christoffel_darboux`. If $a_N \neq 0$, then for every $x \in K$
+$$\sum_{n=0}^{N} p_n(x)^2 = \frac{p_{N+1}'(x) p_N(x) - p_N'(x) p_{N+1}(x)}{a_N}.$$
+-/
 theorem christoffel_darboux_confluent_div (N : ℕ) (x : K) (ha : a N ≠ 0) :
     ∑ n ∈ Finset.range (N + 1), (p n).eval x ^ 2 =
       ((derivative (p (N + 1))).eval x * (p N).eval x -
@@ -793,8 +922,8 @@ variable (A : E →ₗ[𝕜] E) (b : E) {m k : ℕ}
 
 section Padded
 
-/-- The leading `(m+1) × (m+1)` block of `T_k` is `T_{m+1}`: the entries depend only on the
-underlying natural numbers. -/
+/-- The leading $(m+1) \times (m+1)$ block of $T_k$ is $T_{m+1}$, because the entries depend only on
+the indices. -/
 private theorem tridiag_castLE (h : m + 1 ≤ k) (i j : Fin (m + 1)) :
     tridiag A b k (Fin.castLE h i) (Fin.castLE h j) = tridiag A b (m + 1) i j := by
   rw [tridiag_apply, tridiag_apply, Fin.val_castLE, Fin.val_castLE]
@@ -804,15 +933,15 @@ variable (h : m + 1 ≤ k) {y : Fin k → ℝ} {z : Fin (m + 1) → ℝ}
   (hy0 : ∀ i : Fin k, m + 1 ≤ (i : ℕ) → y i = 0)
 include hy hy0
 
-/-- On the first `m + 1` rows the padded vector sees only the leading block, so `T_k ŷ` agrees there
-with `T_{m+1} z`. -/
+/-- If $\hat y$ is $z$ padded with zeros, the first $m + 1$ entries of $T_k \hat y$ are the entries
+of $T_{m+1} z$. -/
 private theorem mulVec_castLE (i : Fin (m + 1)) :
     (tridiag A b k).mulVec y (Fin.castLE h i) = (tridiag A b (m + 1)).mulVec z i := by
   simp only [Matrix.mulVec, dotProduct]
   rw [Fin.sum_eq_sum_castLE_of_forall_le h _ fun j hj => by rw [hy0 j hj, mul_zero]]
   exact Finset.sum_congr rfl fun j _ => by rw [tridiag_castLE, hy]
 
-/-- Row `m + 1` of `T_k` sees the padding through the single entry `β_m`. -/
+/-- If $\hat y$ is $z$ padded with zeros, entry $m + 1$ of $T_k \hat y$ is $\beta_m z_m$. -/
 private theorem mulVec_of_val_eq {i : Fin k} (hi : (i : ℕ) = m + 1) :
     (tridiag A b k).mulVec y i = beta A b m * z (Fin.last m) := by
   simp only [Matrix.mulVec, dotProduct]
@@ -829,7 +958,7 @@ private theorem mulVec_of_val_eq {i : Fin k} (hi : (i : ℕ) = m + 1) :
     exact absurd (Finset.mem_univ _) hc
 
 omit hy in
-/-- Below row `m + 1` the padded vector is annihilated by `T_k`. -/
+/-- If $\hat y$ is $z$ padded with zeros, the entries of $T_k \hat y$ below row $m + 1$ are $0$. -/
 private theorem mulVec_of_lt_val {i : Fin k} (hi : m + 1 < (i : ℕ)) :
     (tridiag A b k).mulVec y i = 0 := by
   simp only [Matrix.mulVec, dotProduct]
@@ -839,8 +968,8 @@ private theorem mulVec_of_lt_val {i : Fin k} (hi : m + 1 < (i : ℕ)) :
   · rw [tridiag_apply, ite_eq_right (by omega), ite_eq_right (by omega),
       ite_eq_right (by omega), zero_mul]
 
-/-- The residual of the padded eigenvector: `T_k ŷ - θ ŷ` is supported on row `m + 1`, where it
-equals `β_m z_m`. -/
+/-- If $T_{m+1} z = \theta z$ and $\hat y$ is $z$ padded with zeros, then
+$T_k \hat y - \theta \hat y$ is $0$ except in entry $m + 1$, where it is $\beta_m z_m$. -/
 private theorem mulVec_sub_smul {θ : ℝ} (hθ : (tridiag A b (m + 1)).mulVec z = θ • z)
     (i : Fin k) :
     (tridiag A b k).mulVec y i - θ * y i =
@@ -854,8 +983,8 @@ private theorem mulVec_sub_smul {θ : ℝ} (hθ : (tridiag A b (m + 1)).mulVec z
 
 end Padded
 
-/-- A sum of squares over `Fin k` supported on the single value `m + 1` is at most `w ^ 2`: there is
-at most one index with that value. -/
+/-- A sum of squares over $i < k$ whose terms vanish except at $i = m + 1$, where the term is $w^2$,
+is at most $w^2$. -/
 private theorem sum_ite_sq_le (h : m + 1 ≤ k) (w : ℝ) :
     ∑ i : Fin k, (if (i : ℕ) = m + 1 then w else 0) ^ 2 ≤ w ^ 2 := by
   rcases eq_or_lt_of_le h with heq | hlt
@@ -871,16 +1000,19 @@ private theorem sum_ite_sq_le (h : m + 1 ≤ k) (w : ℝ) :
     · intro hc
       exact absurd (Finset.mem_univ _) hc
 
-/-- **Persistence of Ritz values** (Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate
-gradient algorithms in finite precision arithmetic*, Acta Numerica 15 (2006), Thm 5; Chris C. Paige,
-*Accuracy and effectiveness of the Lanczos algorithm for the symmetric eigenproblem*, Linear Algebra
-and its Applications 34 (1980), 235–258). If `θ` is a Ritz value at step `m + 1`, that is an
-eigenvalue of the Lanczos matrix `T_{m+1}` with unit eigenvector `z`, then every later step `k ≥ m +
-1` has a Ritz value `μ` with `|μ - θ| ≤ β_m |z_m|`: a Ritz value whose eigenvector has a small last
-component is approximated at every later step.
+/-- **Persistence of Ritz values** ([meurant2006lanczos], Theorem 5, after Paige). Let $A$ be a
+linear operator on $E$ and $b \in E$, and let $m + 1 \le k$. Let $\theta \in \mathbb{R}$ be an
+eigenvalue of the Lanczos matrix $T_{m+1}$ with an eigenvector $z \in \mathbb{R}^{m+1}$ of
+Euclidean norm $1$. Then $T_k$ has an eigenvalue $\mu$ with
+$$|\mu - \theta| \le \beta_m |z_m|.$$
+So a Ritz value whose eigenvector has a small last component is approximated at every later
+step.
 
-Indices are `0`-based, so `β_m = (T_k)_{m+1, m}` is the entry of `T_k` that first sees the padding
-of `z` by zeros, and `z_m` is the last component of `z`. -/
+The original result is C. C. Paige, *Accuracy and effectiveness of the Lanczos algorithm for the
+symmetric eigenproblem*, Linear Algebra and its Applications 34 (1980), 235–258. Indices start
+at $0$: $\beta_m = (T_k)_{m+1, m}$ is the entry of $T_k$ that first meets the zeros that pad
+$z$, and $z_m$ is the last component of $z$. The statement needs no symmetry of $A$, because
+$T_k$ is real symmetric by construction. -/
 theorem persistence (h : m + 1 ≤ k) {θ : ℝ} {z : EuclideanSpace ℝ (Fin (m + 1))}
     (hz : ‖z‖ = 1) (hθ : Matrix.toEuclideanLin (tridiag A b (m + 1)) z = θ • z) :
     ∃ μ : ℝ, μ ∈ spectrum ℝ (tridiag A b k) ∧
@@ -945,29 +1077,45 @@ variable {A : E →ₗ[𝕜] E} {b x₀ : E}
 
 namespace Lanczos
 
-/-- The **Gauss quadrature estimate** `(T_m⁻¹ e₁, e₁)` of the first inverse moment `∫ λ⁻¹ dα(λ)`
-of the spectral measure, written as a bilinear expression so that it is `0` for `m = 0`.  It is
-the quantity through which the Lanczos process sees the energy norm of the conjugate gradient
-error ([meurant2006lanczos], Thm 9). -/
+/-- Let $A$ be a linear operator on $E$, $r \in E$ and $m \in \mathbb{N}$. The **Gauss quadrature
+estimate** of the first inverse moment $\int \lambda^{-1} \, d\mu(\lambda)$ of the spectral
+measure is the number
+$$(T_m^{-1} e_1, e_1),$$
+where $T_m$ is the Lanczos matrix of $(A, r)$ and $e_1 \in \mathbb{R}^m$ is the first unit
+vector. It is the quantity through which the Lanczos process sees the energy norm of the
+conjugate gradient error ([meurant2006lanczos], Theorem 9).
+
+The number is written as a bilinear expression, so that it is $0$ for $m = 0$. The inverse is
+`Matrix.inv`, which is $0$ at a singular matrix; `Lanczos.isUnit_tridiag` gives nonsingularity
+in the case of interest. -/
 noncomputable def tridiagInvFirst (A : E →ₗ[𝕜] E) (r : E) (m : ℕ) : ℝ :=
   ((tridiag A r m)⁻¹).mulVec (Krylov.firstVec (1 : ℝ) m) ⬝ᵥ Krylov.firstVec (1 : ℝ) m
 
+/-- For $m = 0$ the Gauss quadrature estimate $(T_0^{-1} e_1, e_1)$ is $0$. -/
 @[simp]
 theorem tridiagInvFirst_zero (A : E →ₗ[𝕜] E) (r : E) : tridiagInvFirst A r 0 = 0 := by
   simp [tridiagInvFirst, dotProduct]
 
-/-- **The Hessenberg matrix of a coercive operator is nonsingular** up to the grade: for a coercive
-operator the Galerkin iterate over `𝒦_m` exists and is unique, and that is exactly nonsingularity
-of `H_m` (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). -/
+/-- Let $A$ be a coercive operator on $E$, let $b, x_0 \in E$, and let $r_0 = b - A x_0$ have a
+finite-dimensional Krylov space. For $m \le \operatorname{grade}(A, r_0)$, the square Hessenberg
+matrix $H_m$ of the Arnoldi process for $(A, r_0)$ is nonsingular.
+
+For a coercive operator the Galerkin iterate over $\mathcal{K}_m$ exists and is unique, and this
+is the nonsingularity of $H_m$ (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). The matrix
+$H_m$ is `Arnoldi.hessenbergSq A (b - A x₀) m`. -/
 theorem isUnit_hessenbergSq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hA : A.IsCoercive) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
     IsUnit (Arnoldi.hessenbergSq A (b - A x₀) m) :=
   (existsUnique_isGalerkinIterate_iff_isUnit hm).1
     (existsUnique_isGalerkinIterate_of_isCoercive hA b x₀ m)
 
-/-- **The Lanczos tridiagonal matrix of a symmetric coercive operator is nonsingular** up to the
-grade: it is the Hessenberg matrix of a symmetric operator, entry by entry the image of the real
-`T_m` under `algebraMap ℝ 𝕜`, and that map is injective. -/
+/-- Let $A$ be a symmetric coercive operator on $E$, let $b, x_0 \in E$, and let $r_0 = b - A x_0$
+have a finite-dimensional Krylov space. For $m \le \operatorname{grade}(A, r_0)$, the Lanczos
+tridiagonal matrix $T_m$ of $(A, r_0)$ is nonsingular.
+
+For symmetric $A$ the Hessenberg matrix $H_m$ is, entry by entry, the image of the real matrix
+$T_m$ in $\mathbb{K}$, and this map is injective. So the result follows from
+`Lanczos.isUnit_hessenbergSq`. -/
 theorem isUnit_tridiag [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hA : A.IsSymmetricCoercive) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
     IsUnit (tridiag A (b - A x₀) m) := by
@@ -988,7 +1136,8 @@ open Lanczos
 
 variable [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
 
-/-- Orthonormality reads a coefficient off a combination of Arnoldi vectors. -/
+/-- Below the grade, $\langle v_i, \sum_j y_j v_j \rangle = y_i$ by the orthonormality of the
+Arnoldi vectors. -/
 private theorem inner_vec_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) (i : Fin m) :
     inner 𝕜 (Arnoldi.vec A (b - A x₀) (i : ℕ))
         (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)) = y i := by
@@ -1003,7 +1152,8 @@ private theorem inner_vec_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : F
     exact absurd (Finset.mem_univ _) hc
 
 omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
-/-- The `m`-th Arnoldi vector is orthogonal to `𝒦_m`. -/
+/-- The $m$-th Arnoldi vector is orthogonal to $\mathcal{K}_m$:
+$\langle v_m, \sum_{j<m} y_j v_j \rangle = 0$. -/
 private theorem inner_vec_last_sum {m : ℕ} (y : Fin m → 𝕜) :
     inner 𝕜 (Arnoldi.vec A (b - A x₀) m) (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)) = 0 := by
   rw [inner_sum]
@@ -1011,7 +1161,8 @@ private theorem inner_vec_last_sum {m : ℕ} (y : Fin m → 𝕜) :
   rw [inner_smul_right,
     Arnoldi.inner_vec_eq_zero A _ (fun hc => absurd hc.symm (Nat.ne_of_lt j.isLt)), mul_zero]
 
-/-- `⟪A V_m y, V_m y⟫ = (H_m y)ᴴ y`: the quadratic form of `A` on `𝒦_m` in Arnoldi coordinates. -/
+/-- The quadratic form of $A$ on $\mathcal{K}_m$ in Arnoldi coordinates: $\langle A V_m y, V_m y
+\rangle = \sum_j \overline{(H_m y)_j} \, y_j$. -/
 private theorem inner_apply_sum_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     inner 𝕜 (A (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)))
         (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))
@@ -1031,7 +1182,8 @@ private theorem inner_apply_sum_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) 
       = (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y j := rfl
   rw [hval, inner_vec_sum hm y j, hval2]
 
-/-- `⟪r₀, V_m y⟫ = (β e₁)ᴴ y`. -/
+/-- With $\beta = \|r_0\|$, $\langle r_0, V_m y \rangle = \sum_j \overline{(\beta e_1)_j} \, y_j$.
+-/
 private theorem inner_residual_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     inner 𝕜 (b - A x₀) (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))
       = ∑ j, (starRingEnd 𝕜) (Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m j) * y j := by
@@ -1055,8 +1207,8 @@ private theorem inner_residual_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (
   · rw [Arnoldi.inner_vec_eq_zero A _ (Ne.symm hj), Krylov.firstVec, ite_eq_right hj, map_zero,
       mul_zero, zero_mul, mul_zero]
 
-/-- The energy-norm error of the Galerkin iterate `x₀ + V_m y`: the cross terms and the quadratic
-term collapse because `H_m y = β e₁`. -/
+/-- If $A$ is symmetric coercive, $A x^* = b$ and $H_m y = \|r_0\| e_1$, then $\|x^* - (x_0 + V_m
+y)\|_A^2 = \|x^* - x_0\|_A^2 - \operatorname{Re} \langle A (x^* - x_0), V_m y \rangle$. -/
 private theorem energyNorm_error_sq_eq_sub (hA : A.IsSymmetricCoercive) {xstar : E}
     (hstar : A xstar = b) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {y : Fin m → 𝕜}
     (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y
@@ -1084,16 +1236,15 @@ private theorem energyNorm_error_sq_eq_sub (hA : A.IsSymmetricCoercive) {xstar :
   have hsub : xstar - (x₀ + S) = e - S := by rw [he]; abel
   rw [hsub, hA.energyNorm_sq, hA.energyNorm_sq, hexp, map_sub, RCLike.conj_re]
 
-/-- `e₁` scaled: `firstVec β m = β • firstVec 1 m`. -/
+/-- The vector $\beta e_1$ is $\beta$ times $e_1$. -/
 private theorem firstVec_eq_smul (β : ℝ) (m : ℕ) :
     Krylov.firstVec β m = β • Krylov.firstVec (1 : ℝ) m := by
   funext i
   rw [Pi.smul_apply, Krylov.firstVec, Krylov.firstVec, smul_eq_mul]
   split <;> simp
 
-/-- **The first inverse moment in coordinates**: `⟪r₀, V_m y⟫ = ‖r₀‖² (T_m⁻¹ e₁, e₁)` for the
-Galerkin coordinates `y`.  The coordinates are the image of the real solution of `T_m y' = β e₁`,
-because `H_m` is the image of `T_m` and both systems are uniquely solvable. -/
+/-- For the Galerkin coordinates $y$, $\operatorname{Re} \langle r_0, V_m y \rangle = \|r_0\|^2
+(T_m^{-1} e_1, e_1)$. -/
 private theorem re_inner_residual_sum_eq (hA : A.IsSymmetricCoercive) {m : ℕ}
     (hm : m ≤ grade A (b - A x₀)) {y : Fin m → 𝕜}
     (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y
@@ -1135,18 +1286,22 @@ private theorem re_inner_residual_sum_eq (hA : A.IsSymmetricCoercive) {m : ℕ}
   simp only [smul_eq_mul]
   ring
 
-/-- **[meurant2006lanczos], Thm 9 (Dahlquist–Golub–Nash)**: the energy norm of the conjugate
-gradient error is the *Gauss quadrature remainder* for `f(λ) = λ⁻¹`,
+/-- The **Dahlquist–Golub–Nash identity** ([meurant2006lanczos], Theorem 9). Let $A$ be a symmetric
+coercive operator on $E$, let $b, x_0, x^* \in E$ with $A x^* = b$, and let $r_0 = b - A x_0$
+have a finite-dimensional Krylov space. Let $n = \operatorname{grade}(A, r_0)$, and let $x_k$ be
+the conjugate gradient iterate after $k \le n$ steps. Then
+$$\|x^* - x_k\|_A^2 = \|r_0\|^2 \big( (T_n^{-1} e_1, e_1) - (T_k^{-1} e_1, e_1) \big).$$
+So the energy norm of the conjugate gradient error is the error of the Gauss quadrature rule for
+$f(\lambda) = \lambda^{-1}$.
 
-`‖x* - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))`, `n = grade A r₀`.
-
-Each step of the identity is elementary once the Galerkin coordinates are in hand: the error
-expands as `‖x* - x₀‖_A² - ⟪r₀, V_k y_k⟫`, the cross term and the quadratic term cancelling
-because `T_k y_k = ‖r₀‖ e₁`, and that inner product is `‖r₀‖² (T_k⁻¹ e₁, e₁)`.  The first term is
-the same expression at `k = n`, where the iterate is exact.
-
-The tridiagonal matrices are nonsingular up to the grade (`Lanczos.isUnit_tridiag`), which is what
-makes the statement about `T_k⁻¹` meaningful rather than vacuous. -/
+Each step is elementary once the Galerkin coordinates $y_k$ are known. The error expands as
+$\|x^* - x_0\|_A^2 - \langle r_0, V_k y_k \rangle$, because the cross term and the quadratic
+term cancel by $T_k y_k = \|r_0\| e_1$, and this inner product is
+$\|r_0\|^2 (T_k^{-1} e_1, e_1)$. The first term is the same expression at $k = n$, where the
+iterate is exact. The tridiagonal matrices are nonsingular up to the grade
+(`Lanczos.isUnit_tridiag`), so the statement about $T_k^{-1}$ is not vacuous. The iterate $x_k$
+is `(CG.iterate A b x₀ k).x`, the energy norm is `energyNorm`, and $(T_m^{-1} e_1, e_1)$ is
+`Lanczos.tridiagInvFirst`. -/
 theorem energyNorm_error_sq_eq_sub_inner_inv (hA : A.IsSymmetricCoercive) {xstar : E}
     (hstar : A xstar = b) {k : ℕ} (hk : k ≤ grade A (b - A x₀)) :
     energyNorm A (xstar - (CG.iterate A b x₀ k).x) ^ 2

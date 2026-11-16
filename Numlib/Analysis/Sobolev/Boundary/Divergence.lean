@@ -13,71 +13,87 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # The divergence theorem on the region above a graph
 
-The analytic heart of the boundary round (decision B4 of `notes/boundary/planning-brief.md`): for
-a field `F : ℝ^{d+1} → ℝ^{d+1}` of class `C¹(Ω̄)` with compact support, on the epigraph
-`Ω = {y : y_N > g y'}` of a `C¹` function `g : ℝ^d → ℝ`,
+Let $g : \mathbb{R}^d \to \mathbb{R}$ be of class $C^1$, and let $\Omega = \{y \in \mathbb{R}^{d+1}
+: y_{d+1} > g(y')\}$ be the region above its graph, where $y' = (y_1, \dots, y_d)$. For a vector
+field $F : \mathbb{R}^{d+1} \to \mathbb{R}^{d+1}$ of class $C^1(\overline{\Omega})$ with compact
+support, this file proves
+$$\int_\Omega \operatorname{div} F \, dy = \int_{\mathbb{R}^d} \bigl\langle F(x', g(x')), (\nabla
+  g(x'), -1) \bigr\rangle \, dx'.$$
+The right-hand side is $\int_{\partial\Omega} \langle F, \nu \rangle \, d\sigma$ for the surface
+measure with density $\sqrt{1 + |\nabla g|^2}$ and the outward normal
+$\nu = (\nabla g, -1) / \sqrt{1 + |\nabla g|^2}$ of `Numlib.Analysis.Sobolev.Boundary.GraphMeasure`,
+because the two square roots cancel. The results here are stated with the explicit integrals over
+$\mathbb{R}^d$, so that this file does not depend on that module. The formula is then transported to
+the region above a graph after a rigid motion $T$, and to a graph chart $(T, g)$ of a domain for a
+field supported in the chart ball. These are the inputs of the divergence theorem on a bounded $C^1$
+domain, `IsContDiffDomain.integral_div_eq` in `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain`. The
+result is Theorem 1.5.3.1 of [grisvard2011elliptic] in this setting; see also Evans, *Partial
+Differential Equations*, Appendix C.2, [han2009theoretical] §7.6, and [brezis2011functional] §9.5,
+Example 4.
 
-  `∫_Ω div F = ∫ ⟪F (x', g x'), (∇g x', −1)⟫ dx'`  (`EuclideanSpace.integral_div_epigraph`),
+## Main results
 
-which is `∫_{∂Ω} ⟪F, ν⟫ dσ` for the surface measure with density `√(1 + |∇g|²)` and the outward
-normal `ν = (∇g, −1)/√(1 + |∇g|²)` of `Boundary/GraphMeasure.lean`: the two square roots cancel,
-and this module states its conclusions as the explicit integrals over `ℝ^d` so that it is
-independent of that module. The transport to a rotated epigraph `T ⁻¹' epigraph g`
-(`integral_div_graphEpigraph`) and to a graph chart `(T, g)` of a domain, for a field supported in
-the chart ball (`IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset`), are the inputs of the
-assembly `IsContDiffDomain.integral_div_eq` in `Boundary/ContDiffDomain.lean`.
+* `EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport`: the integral of the divergence of a
+  differentiable compactly supported field with integrable derivative is zero. It follows from the
+  same fact for a directional derivative, `integral_fderiv_apply_eq_zero_of_hasCompactSupport` in
+  `Numlib.Analysis.Calculus.LineDeriv.IntegrationByParts`.
+* `EuclideanSpace.integral_epigraph_eq`: Fubini's theorem on $\Omega$, $\int_\Omega h =
+  \int_{\mathbb{R}^d} \int_{g(x')}^\infty h(x', t) \, dt \, dx'$.
+* `EuclideanSpace.integral_fderiv_last_epigraph`: $\int_\Omega \partial_{d+1} f =
+  -\int_{\mathbb{R}^d} f(x', g(x')) \, dx'$.
+* `EuclideanSpace.integral_fderiv_castSucc_epigraph`: $\int_\Omega \partial_i f =
+  \int_{\mathbb{R}^d} f(x', g(x')) \, \partial_i g(x') \, dx'$ for $i \le d$.
+* `EuclideanSpace.integral_div_epigraph`: the divergence theorem on $\Omega$.
+* `EuclideanSpace.integral_div_graphEpigraph`: the divergence theorem on the region above a graph
+  after a rigid motion.
+* `IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset`: the divergence theorem in a graph chart of
+  a domain, for a field supported in the chart ball.
 
-No Piola identity, no area formula, no Hausdorff measure. The proof is Fubini along the last
-coordinate (`EuclideanSpace.integral_lastInit`), the fundamental theorem of calculus on the
-vertical lines for the last component (`integral_fderiv_last_epigraph`), and, for a horizontal
-component `∂ᵢ`, **Leibniz's rule with the moving lower limit**
-(`integral_fderiv_castSucc_epigraph`): the function `H(x') = ∫_0^∞ f(x', g x' + s) ds` is
-differentiable with compact support by Mathlib's dominated differentiation
-`hasFDerivAt_integral_of_dominated_of_fderiv_le` — the substitution `t = g x' + s` straightens
-the lower limit — so `∫ ∂ᵢH = 0`
-(`integral_fderiv_apply_eq_zero_of_hasCompactSupport`), and
-`∂ᵢH = ∫_{t > g x'} ∂ᵢf(x', t) dt + ∂ᵢg(x') ∫_{t > g x'} ∂_N f(x', t) dt`, the second integral
-being `−f(x', g x')` by the fundamental theorem of calculus.
+## Proof outline
 
-Regularity: the hypotheses are `HasCompactSupport f`, `ContinuousOn f (closure (epigraph g))` and
-`ContDiffOnClosure ℝ 1 f (epigraph g)` — "`f ∈ C¹(Ω̄)`" in the library's sense — which the
-one-dimensional FTC (`intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`: continuity on
-`Icc`, derivative on `Ioo`) and the dominated differentiation (derivative bounded on the support,
-`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`) absorb at no cost. This is why the
-books' `C¹(Ω̄)` Green formulas are reachable without a `C¹(Ω̄) → C¹(ℝ^N)` extension theorem. The
-class is local on the support (`ContDiffOnClosure.congr_set_of_tsupport_subset`), which moves a
-field supported in a chart ball from `Ω` to the global rotated epigraph.
+The proof uses no Piola identity, no area formula and no Hausdorff measure. It applies Fubini's
+theorem along the last coordinate. For the last component of $F$, it applies the fundamental theorem
+of calculus on each vertical line. For a horizontal derivative $\partial_i$, it applies **Leibniz's
+rule with a moving lower limit**. The substitution $t = g(x') + s$ straightens the lower limit: the
+function $H(x') = \int_0^\infty f(x', g(x') + s) \, ds$ is differentiable by dominated
+differentiation, because the derivative of the integrand is bounded by $M (1 + \|Dg\|)$ on $[0, R]$
+and vanishes beyond, uniformly in $x'$. Its derivative is
+$$\partial_i H(x') = \int_{g(x')}^\infty \partial_i f(x', t) \, dt + \partial_i g(x')
+  \int_{g(x')}^\infty \partial_{d+1} f(x', t) \, dt.$$
+The function $H$ has compact support, so $\int \partial_i H = 0$. The first term integrates over
+$x'$ to $\int_\Omega \partial_i f$, and the second integral is $-f(x', g(x'))$ by the fundamental
+theorem of calculus.
 
-## Main statements
+## Notation
 
-* `integral_fderiv_apply_eq_zero_of_hasCompactSupport`: `∫ ∂_v f = 0` for a differentiable `f`
-  with compact support and integrable `∂_v f` (and
-  `EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport` for the divergence);
-* `EuclideanSpace.integral_epigraph_eq`: Fubini on the epigraph;
-* `EuclideanSpace.integral_fderiv_last_epigraph`,
-  `EuclideanSpace.integral_fderiv_castSucc_epigraph`: the vertical and the horizontal components;
-* `EuclideanSpace.integral_div_epigraph`, `EuclideanSpace.integral_div_graphEpigraph`,
-  `IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset`: the divergence theorem on an epigraph,
-  a rotated epigraph, and a graph chart of a domain.
+* `EuclideanSpace.snocLast x' t`: the point $(x', t) \in \mathbb{R}^{d+1}$ with first coordinates
+  $x' \in \mathbb{R}^d$ and last coordinate $t$; `EuclideanSpace.init y` is $y'$.
+* `EuclideanSpace.epigraph g`: the region $\Omega$ above the graph of $g$.
+* `EuclideanSpace.single (Fin.last d) 1` is the last basis vector $e_{d+1}$, and
+  `EuclideanSpace.single i.castSucc 1` for `i : Fin d` is the horizontal basis vector $e_i$. The
+  derivative $\partial_i f(y)$ is `fderiv ℝ f y` applied to $e_i$.
 
-Conventions: `E := EuclideanSpace ℝ (Fin (d + 1))`, `E' := EuclideanSpace ℝ (Fin d)`,
-`snocLast x' t = (x', t)`, `eN := EuclideanSpace.single (Fin.last d) 1`,
-`e i := EuclideanSpace.single i.castSucc 1` for `i : Fin d`. The sign of the normal: `Ω` is
-*above* the graph, so the outward normal is `(∇g, −1)/√(1 + |∇g|²)` (erratum E1 of
-`notes/boundary/plan-report.md`).
+## Implementation notes
 
-## References
-
-Grisvard, *Elliptic Problems in Nonsmooth Domains*, §1.5.3 (Theorem 1.5.3.1); Evans, *Partial
-Differential Equations*, Appendix C.2; Atkinson–Han §7.6; [brezis2011functional] §9.5 Example 4.
+* The regularity hypotheses are `HasCompactSupport f`, `ContinuousOn f (closure (epigraph g))` and
+  `ContDiffOnClosure ℝ 1 f (epigraph g)`, which together say that $f \in C^1(\overline{\Omega})$ has
+  compact support. These suffice because the one-dimensional fundamental theorem of calculus needs
+  only continuity on the closed interval and a derivative on the open interval, and dominated
+  differentiation needs only a bound on the derivative over the support
+  (`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`). So the Green formulas of the
+  textbooks for $C^1(\overline{\Omega})$ follow without an extension theorem from
+  $C^1(\overline{\Omega})$ to $C^1(\mathbb{R}^{d+1})$.
+* The class $C^1(\overline{\Omega})$ is local on the support
+  (`ContDiffOnClosure.congr_set_of_tsupport_subset`). This moves a field supported in a chart ball
+  from $\Omega$ to the region above the graph in the whole space.
+* The region $\Omega$ lies *above* the graph, so the outward normal is
+  $(\nabla g, -1) / \sqrt{1 + |\nabla g|^2}$, with last component negative.
 -/
 
 open Filter MeasureTheory Set Topology
 open scoped ENNReal InnerProductSpace
 
 noncomputable section
-
-/-! ### Integrability helpers -/
 
 section Integrability
 
@@ -94,8 +110,11 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 
 end IntegralFDeriv
 
-/-- **The integral of the divergence of a compactly supported field vanishes**: for
-`F : ℝ^N → ℝ^N` differentiable with compact support and integrable derivative, `∫ div F = 0`. -/
+/-- **The integral of the divergence of a compactly supported field vanishes.** Let
+$F : \mathbb{R}^N \to \mathbb{R}^N$ be differentiable with compact support, and let its
+derivative $DF$ be integrable. Then
+$$\int_{\mathbb{R}^N} \operatorname{div} F \, dx = 0,$$
+where $\operatorname{div} F = \sum_i \partial_i F_i$ is `EuclideanSpace.div F`. -/
 theorem EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport {N : ℕ}
     {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} (hF : Differentiable ℝ F)
     (hFc : HasCompactSupport F) (hF' : Integrable (fderiv ℝ F)) : ∫ x, div F x = 0 := by
@@ -125,7 +144,11 @@ variable {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
 
 /-! ### Fubini on the epigraph -/
 
-/-- **Fubini on the epigraph**: `∫_{y_N > g y'} h = ∫ x' ∫_{t > g x'} h (x', t) dt dx'`. -/
+/-- **Fubini's theorem on the region above a graph.** Let $g : \mathbb{R}^d \to \mathbb{R}$ be
+continuous, let $G$ be a real normed space, and let $h : \mathbb{R}^{d+1} \to G$ be integrable
+on $\Omega = \{y : y_{d+1} > g(y')\}$. Then
+$$\int_\Omega h(y) \, dy = \int_{\mathbb{R}^d} \int_{g(x')}^\infty h(x', t) \, dt \, dx'.$$
+-/
 theorem integral_epigraph_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     (hg : Continuous g) {h : EuclideanSpace ℝ (Fin (d + 1)) → G}
     (hh : IntegrableOn h (epigraph g)) :
@@ -140,7 +163,11 @@ theorem integral_epigraph_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ
   rw [← epigraph_preimage_snocLast x']
   exact (Set.indicator_comp_right (fun t ↦ snocLast x' t) (g := h)).symm
 
-/-- Fubini on the epigraph, for the Lebesgue integral. -/
+/-- **Fubini's theorem on the region above a graph, for the Lebesgue integral.** Let
+$g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let $h : \mathbb{R}^{d+1} \to [0, \infty]$
+be almost everywhere measurable on $\Omega = \{y : y_{d+1} > g(y')\}$. Then
+$$\int_\Omega h(y) \, dy = \int_{\mathbb{R}^d} \int_{g(x')}^\infty h(x', t) \, dt \, dx'.$$
+-/
 theorem lintegral_epigraph_eq (hg : Continuous g) {h : EuclideanSpace ℝ (Fin (d + 1)) → ℝ≥0∞}
     (hh : AEMeasurable h (volume.restrict (epigraph g))) :
     ∫⁻ y in epigraph g, h y = ∫⁻ x', ∫⁻ t in Ioi (g x'), h (snocLast x' t) := by
@@ -155,9 +182,14 @@ theorem lintegral_epigraph_eq (hg : Continuous g) {h : EuclideanSpace ℝ (Fin (
 
 variable {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
 
-/-- A directional derivative of a compactly supported function of class `C¹(Ω̄)` is integrable on
-the epigraph: bounded there (`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`),
-continuous on the open epigraph, and zero off the compact support. -/
+/-- Let $g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let
+$f : \mathbb{R}^{d+1} \to \mathbb{R}$ be of class $C^1(\overline{\Omega})$ with compact support,
+where $\Omega = \{y : y_{d+1} > g(y')\}$. Then for every $w \in \mathbb{R}^{d+1}$ the
+directional derivative $y \mapsto Df(y) w$ is integrable on $\Omega$.
+
+The derivative is bounded on $\Omega$
+(`ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`), continuous on the open set
+$\Omega$, and zero outside the compact support. -/
 theorem integrableOn_fderiv_apply_epigraph (hg : Continuous g) (hfc : HasCompactSupport f)
     (hf₁ : ContDiffOnClosure ℝ 1 f (epigraph g)) (w : EuclideanSpace ℝ (Fin (d + 1))) :
     IntegrableOn (fun y ↦ fderiv ℝ f y w) (epigraph g) := by
@@ -169,8 +201,9 @@ theorem integrableOn_fderiv_apply_epigraph (hg : Continuous g) (hfc : HasCompact
   · exact (ContinuousLinearMap.le_opNorm _ _).trans (by gcongr; exact hM y hy)
   · rw [fderiv_of_notMem_tsupport ℝ hy]; rfl
 
-/-- The composition of a compactly supported function on `ℝ^{d+1}` with the graph map
-`x' ↦ (x', g x')` has compact support. -/
+/-- Let $G$ be a normed group and let $f : \mathbb{R}^{d+1} \to G$ have compact support. Then for
+every function $g : \mathbb{R}^d \to \mathbb{R}$, the composition $x' \mapsto f(x', g(x'))$ with
+the graph map has compact support. -/
 theorem hasCompactSupport_comp_snocLast_graph {G : Type*} [NormedAddCommGroup G]
     {f : EuclideanSpace ℝ (Fin (d + 1)) → G} (hfc : HasCompactSupport f) :
     HasCompactSupport fun x' ↦ f (snocLast x' (g x')) := by
@@ -184,11 +217,16 @@ theorem hasCompactSupport_comp_snocLast_graph {G : Type*} [NormedAddCommGroup G]
 
 /-! ### The vertical component: the fundamental theorem of calculus on the vertical lines -/
 
-/-- **The fundamental theorem of calculus on a vertical line** through the epigraph: for `f` of
-class `C¹(Ω̄)` with compact support, `∫_{t > g x'} ∂_N f (x', t) dt = −f (x', g x')`. The
-integrand vanishes beyond the support, `t ↦ f (x', t)` is continuous on `[g x', R]` (the closed
-half-line lies in the closure of the epigraph) and differentiable on `(g x', R)`, so
-`intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le` applies. -/
+/-- **The fundamental theorem of calculus on a vertical line.** Let
+$g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let $f : \mathbb{R}^{d+1} \to \mathbb{R}$
+have compact support, be continuous on $\overline{\Omega}$ and be of class
+$C^1(\overline{\Omega})$, where $\Omega = \{y : y_{d+1} > g(y')\}$. Let $M$ be a bound with
+$\|Df(y)\| \le M$ for all $y \in \Omega$. Then for every $x' \in \mathbb{R}^d$,
+$$\int_{g(x')}^\infty \partial_{d+1} f(x', t) \, dt = -f(x', g(x')).$$
+
+The integrand vanishes beyond the support. The function $t \mapsto f(x', t)$ is continuous on
+$[g(x'), R]$, because the closed half-line lies in $\overline{\Omega}$, and differentiable on
+$(g(x'), R)$, so `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le` applies. -/
 theorem integral_Ioi_fderiv_last_eq (hg : Continuous g) (hfc : HasCompactSupport f)
     (hf₀ : ContinuousOn f (closure (epigraph g))) (hf₁ : ContDiffOnClosure ℝ 1 f (epigraph g))
     {M : ℝ} (hM : ∀ y ∈ epigraph g, ‖fderiv ℝ f y‖ ≤ M) (x' : EuclideanSpace ℝ (Fin d)) :
@@ -249,10 +287,14 @@ theorem integral_Ioi_fderiv_last_eq (hg : Continuous g) (hfc : HasCompactSupport
   rw [intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le hgR hcont hderiv hint,
     image_eq_zero_of_notMem_tsupport (hout R le_rfl), zero_sub]
 
-/-- **The vertical component of the divergence theorem**: for `ContDiff ℝ 1 g` and `f` of class
-`C¹(Ω̄)` with compact support on the epigraph,
-`∫_{y_N > g y'} ∂_N f = −∫ f (x', g x') dx'`. Fubini (`integral_epigraph_eq`) and the fundamental
-theorem of calculus on each vertical line (`integral_Ioi_fderiv_last_eq`). -/
+/-- **The vertical component of the divergence theorem.** Let $g : \mathbb{R}^d \to \mathbb{R}$ be
+of class $C^1$, and let $f : \mathbb{R}^{d+1} \to \mathbb{R}$ have compact support, be
+continuous on $\overline{\Omega}$ and be of class $C^1(\overline{\Omega})$, where
+$\Omega = \{y : y_{d+1} > g(y')\}$. Then
+$$\int_\Omega \partial_{d+1} f(y) \, dy = -\int_{\mathbb{R}^d} f(x', g(x')) \, dx'.$$
+
+The proof is Fubini's theorem (`EuclideanSpace.integral_epigraph_eq`) and the fundamental
+theorem of calculus on each vertical line (`EuclideanSpace.integral_Ioi_fderiv_last_eq`). -/
 theorem integral_fderiv_last_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasCompactSupport f)
     (hf₀ : ContinuousOn f (closure (epigraph g))) (hf₁ : ContDiffOnClosure ℝ 1 f (epigraph g)) :
     ∫ y in epigraph g, fderiv ℝ f y (EuclideanSpace.single (Fin.last d) 1)
@@ -264,19 +306,19 @@ theorem integral_fderiv_last_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasCompactS
     integral_Ioi_fderiv_last_eq hg.continuous hfc hf₀ hf₁ hM x')
 
 /-! ### The horizontal components: Leibniz's rule with the moving lower limit -/
-/-- **A horizontal component of the divergence theorem — Leibniz's rule with the moving lower
-limit**: for `ContDiff ℝ 1 g`, `i : Fin d`, and `f` of class `C¹(Ω̄)` with compact support on the
-epigraph, `∫_{y_N > g y'} ∂ᵢ f = ∫ f (x', g x') ∂ᵢg (x') dx'`.
+/-- **A horizontal component of the divergence theorem.** Let $g : \mathbb{R}^d \to \mathbb{R}$ be
+of class $C^1$, let $1 \le i \le d$, and let $f : \mathbb{R}^{d+1} \to \mathbb{R}$ have compact
+support, be continuous on $\overline{\Omega}$ and be of class $C^1(\overline{\Omega})$, where
+$\Omega = \{y : y_{d+1} > g(y')\}$. Then
+$$\int_\Omega \partial_i f(y) \, dy = \int_{\mathbb{R}^d} f(x', g(x')) \, \partial_i g(x') \,
+  dx'.$$
 
-Proof (decision B4): `H x' := ∫_0^∞ f (x', g x' + s) ds` — the substitution `t = g x' + s`
-straightens the moving lower limit — is differentiable at every `x'` by Mathlib's dominated
-differentiation `hasFDerivAt_integral_of_dominated_of_fderiv_le` (the derivative of the integrand
-is bounded by `M (1 + ‖Dg‖)` on `[0, R]` and vanishes beyond, uniformly in `x'`), with
-`∂ᵢH x' = ∫_0^∞ ∂ᵢf (x', g x' + s) + ∂ᵢg (x') ∂_N f (x', g x' + s) ds`; `H` has compact support,
-so `∫ ∂ᵢH = 0` (`integral_fderiv_apply_eq_zero_of_hasCompactSupport`); the first summand
-integrates over `x'` to `∫_{y_N > g y'} ∂ᵢf` (translation and Fubini) and the second is
-`−∂ᵢg (x') f (x', g x')` by the fundamental theorem of calculus on the line
-(`integral_Ioi_fderiv_last_eq`). -/
+The proof is Leibniz's rule with the moving lower limit for
+$H(x') = \int_0^\infty f(x', g(x') + s) \, ds$, as described in the proof outline of the module.
+The differentiation under the integral is Mathlib's
+`hasFDerivAt_integral_of_dominated_of_fderiv_le`, the vanishing of $\int \partial_i H$ is
+`integral_fderiv_apply_eq_zero_of_hasCompactSupport`, and the vertical integral is
+`EuclideanSpace.integral_Ioi_fderiv_last_eq`. -/
 theorem integral_fderiv_castSucc_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasCompactSupport f)
     (hf₀ : ContinuousOn f (closure (epigraph g))) (hf₁ : ContDiffOnClosure ℝ 1 f (epigraph g))
     (i : Fin d) :
@@ -499,20 +541,28 @@ theorem integral_fderiv_castSucc_epigraph (hg : ContDiff ℝ 1 g) (hfc : HasComp
 
 /-! ### The divergence theorem on an epigraph -/
 
-/-- The inner product with `(w, −1)`, in coordinates. -/
+/-- For $v \in \mathbb{R}^{d+1}$ and $w \in \mathbb{R}^d$,
+$$\langle v, (w, -1) \rangle = \sum_{i=1}^d v_i w_i - v_{d+1}.$$
+-/
 theorem inner_snocLast_neg_one (v : EuclideanSpace ℝ (Fin (d + 1)))
     (w : EuclideanSpace ℝ (Fin d)) :
     ⟪v, snocLast w (-1)⟫_ℝ = ∑ i : Fin d, v i.castSucc * w i + -v (Fin.last d) := by
   simp only [PiLp.inner_apply, RCLike.inner_apply, conj_trivial, Fin.sum_univ_castSucc,
     snocLast_apply_castSucc, snocLast_apply_last, neg_mul, one_mul, mul_comm]
 
-/-- **The divergence theorem on an epigraph**: for `ContDiff ℝ 1 g` and a field `F` of class
-`C¹(Ω̄)` with compact support on `Ω = {y : y_N > g y'}`,
-`∫_Ω div F = ∫ ⟪F (x', g x'), (∇g x', −1)⟫ dx'`. The right-hand side is `∫_{∂Ω} ⟪F, ν⟫ dσ` for
-the graph measure with density `√(1 + |∇g|²)` and the outward normal `(∇g, −1)/√(1 + |∇g|²)`
-of `Boundary/GraphMeasure.lean`: the two square roots cancel. Sum of
-`integral_fderiv_castSucc_epigraph` over the first `d` coordinate functions and
-`integral_fderiv_last_epigraph` for the last one. -/
+/-- **The divergence theorem on the region above a graph.** Let $g : \mathbb{R}^d \to \mathbb{R}$ be
+of class $C^1$, let $\Omega = \{y : y_{d+1} > g(y')\}$, and let
+$F : \mathbb{R}^{d+1} \to \mathbb{R}^{d+1}$ have compact support, be continuous on
+$\overline{\Omega}$ and be of class $C^1(\overline{\Omega})$. Then
+$$\int_\Omega \operatorname{div} F(y) \, dy = \int_{\mathbb{R}^d} \bigl\langle F(x', g(x')),
+  (\nabla g(x'), -1) \bigr\rangle \, dx'.$$
+
+The right-hand side is $\int_{\partial\Omega} \langle F, \nu \rangle \, d\sigma$ for the surface
+measure with density $\sqrt{1 + |\nabla g|^2}$ and the outward normal
+$(\nabla g, -1) / \sqrt{1 + |\nabla g|^2}$ of `Numlib.Analysis.Sobolev.Boundary.GraphMeasure`:
+the two square roots cancel. The proof sums `EuclideanSpace.integral_fderiv_castSucc_epigraph`
+over the first $d$ components of $F$ and adds `EuclideanSpace.integral_fderiv_last_epigraph` for
+the last one. -/
 theorem integral_div_epigraph (hg : ContDiff ℝ 1 g)
     {F : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1))}
     (hFc : HasCompactSupport F) (hF₀ : ContinuousOn F (closure (epigraph g)))
@@ -566,12 +616,20 @@ theorem integral_div_epigraph (hg : ContDiff ℝ 1 g)
 
 /-! ### The rotated epigraph, and a graph chart of a domain -/
 
-/-- **The divergence theorem on a rotated epigraph**: for a rigid motion `T`, `ContDiff ℝ 1 g` and
-a field `F` of class `C¹(Ω̄)` with compact support on `Ω = T ⁻¹' epigraph g`,
-`∫_Ω div F = ∫ ⟪F (T⁻¹ (x', g x')), T.linear⁻¹ (∇g x', −1)⟫ dx'`. Conjugate by `T`: the field
-`G = T.linear ∘ F ∘ T⁻¹` is of class `C¹` on the closure of the epigraph with compact support,
-`div G ∘ T = div F` (`div_comp_affineIsometryEquiv`), `T` preserves Lebesgue measure, and
-`integral_div_epigraph` applies to `G`. -/
+/-- **The divergence theorem on the region above a graph after a rigid motion.** Let $T$ be a rigid
+motion of $\mathbb{R}^{d+1}$ with linear part $L$, let $g : \mathbb{R}^d \to \mathbb{R}$ be of
+class $C^1$, let $\Omega = T^{-1}(\{y : y_{d+1} > g(y')\})$, and let
+$F : \mathbb{R}^{d+1} \to \mathbb{R}^{d+1}$ have compact support, be continuous on
+$\overline{\Omega}$ and be of class $C^1(\overline{\Omega})$. Then
+$$\int_\Omega \operatorname{div} F(y) \, dy = \int_{\mathbb{R}^d} \bigl\langle F(T^{-1}(x',
+  g(x'))), L^{-1}(\nabla g(x'), -1) \bigr\rangle \, dx'.$$
+
+The rigid motion is `T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))`,
+and $L^{-1}$ is `T.linearIsometryEquiv.symm`. The proof conjugates by $T$: the field
+$G = L \circ F \circ T^{-1}$ is of class $C^1$ on the closure of the unrotated region with
+compact support, $\operatorname{div} G \circ T = \operatorname{div} F$
+(`EuclideanSpace.div_comp_affineIsometryEquiv`), $T$ preserves Lebesgue measure, and
+`EuclideanSpace.integral_div_epigraph` applies to $G$. -/
 theorem integral_div_graphEpigraph
     (T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)))
     (hg : ContDiff ℝ 1 g)
@@ -616,17 +674,26 @@ theorem integral_div_graphEpigraph
 
 end EuclideanSpace
 
-/-- **The divergence theorem on a graph chart of a domain**: for an open `Ω ⊆ ℝ^{d+1}`, a graph
-chart `(T, g)` at `(x₀, r)` — `ContDiff ℝ 1 g` and
-`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`, the clause of `IsBoundaryGraphAt` — and a field
-`F` of class `C¹(Ω̄)` with `tsupport F ⊆ B(x₀, r)`,
-`∫_Ω div F = ∫ ⟪F (T⁻¹ (x', g x')), T.linear⁻¹ (∇g x', −1)⟫ dx'`. The right-hand side is read in
-`Boundary/ContDiffDomain.lean` as
-`∫ ⟪F, graphNormal T g⟫ d(graphMeasure T g (graphDomain T g x₀ r))`; it vanishes where `F` does,
-so no localization appears here. `div F` vanishes off the ball, so
-both `∫_Ω` and the integral over the global rotated epigraph reduce to `Ω ∩ B(x₀, r)`; `F` is of
-class `C¹` on the closure of the rotated epigraph by
-`ContDiffOnClosure.congr_set_of_tsupport_subset`, and `integral_div_graphEpigraph` applies. -/
+/-- **The divergence theorem in a graph chart of a domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be open, let $x_0 \in \mathbb{R}^{d+1}$ and $r \in \mathbb{R}$, let $T$ be a rigid motion of
+$\mathbb{R}^{d+1}$ with linear part $L$, and let $g : \mathbb{R}^d \to \mathbb{R}$ be of class
+$C^1$ with
+$$\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y : y_{d+1} > g(y')\}),$$
+which is the condition of `IsBoundaryGraphAt`. Let $F : \mathbb{R}^{d+1} \to \mathbb{R}^{d+1}$
+have support in $B(x_0, r)$, be continuous on $\overline{\Omega}$ and be of class
+$C^1(\overline{\Omega})$. Then
+$$\int_\Omega \operatorname{div} F(y) \, dy = \int_{\mathbb{R}^d} \bigl\langle F(T^{-1}(x',
+  g(x'))), L^{-1}(\nabla g(x'), -1) \bigr\rangle \, dx'.$$
+
+The support condition is `tsupport F ⊆ Metric.ball x₀ r`, on the closed support. The module
+`Numlib.Analysis.Sobolev.Boundary.ContDiffDomain` reads the right-hand side as
+$\int \langle F, \nu \rangle \, d\sigma$ for `EuclideanSpace.graphNormal T g` and
+`EuclideanSpace.graphMeasure T g (EuclideanSpace.graphDomain T g x₀ r)`. It vanishes where $F$
+does, so no localization appears here. In the proof, $\operatorname{div} F$ vanishes outside the
+ball, so both integrals over $\Omega$ and over the rotated region reduce to
+$\Omega \cap B(x_0, r)$. The field $F$ is of class $C^1$ on the closure of the rotated region by
+`ContDiffOnClosure.congr_set_of_tsupport_subset`, and
+`EuclideanSpace.integral_div_graphEpigraph` applies. -/
 theorem IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset {d : ℕ}
     {g : EuclideanSpace ℝ (Fin d) → ℝ} {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsOpen Ω) {x₀ : EuclideanSpace ℝ (Fin (d + 1))} {r : ℝ}

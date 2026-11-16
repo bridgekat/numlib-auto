@@ -15,66 +15,67 @@ import Numlib.Variational.Minimization
 /-!
 # Existence of minimizers by weak sequential compactness
 
-The direct method of the calculus of variations: a functional that is lower semicontinuous *for the
-weak topology* attains its infimum on a set that is bounded and closed *for the weak topology*.
-Norm-closed bounded sets are almost never norm-compact in infinite dimensions, so the
-finite-dimensional argument of `Numlib.Variational.Minimization` does not carry over; what replaces
-compactness is the extraction of a weakly convergent subsequence from a bounded sequence.
+This file proves the direct method of the calculus of variations in a real normed space $V$ in which
+every bounded sequence has a weakly convergent subsequence. A functional that is lower
+semicontinuous along weakly convergent sequences attains its infimum on a nonempty set that is
+closed under weak sequential limits, if the set is bounded or the functional is coercive on it. In
+infinite dimensions a norm-closed bounded set is almost never norm-compact, so the
+finite-dimensional argument of `Numlib.Variational.Minimization` does not carry over; the extraction
+of a weakly convergent subsequence from a bounded sequence replaces compactness. Mazur's lemma makes
+convexity a substitute for the weak hypotheses: a closed convex set is weakly sequentially closed,
+and a lower semicontinuous convex functional is weakly sequentially lower semicontinuous. The
+presentation follows [han2009theoretical], §3.3, Theorems 3.3.8, 3.3.10, 3.3.11, 3.3.12 and 3.3.14.
 
-## The standing hypothesis on the space
-
-The classical hypothesis is that the space is a **reflexive** Banach space. What the argument uses
-is not reflexivity itself but its sequential consequence, that every norm-bounded sequence has a
-weakly convergent subsequence — the Eberlein–Šmulian and Kakutani theorems make the two equivalent
-for a Banach space, and it is in this equivalent form that [han2009theoretical] state reflexivity
-(their Thm 2.7.5) before using it. So the hypothesis is carried here by the class
-`WeaklySeqCompactSpace`, which says exactly that, and the theorems below are the classical ones
-with reflexivity replaced by its characterization.
-
-Reflexivity itself is `NormedSpace.IsReflexive` of `Numlib.Analysis.Normed.Module.Reflexive`, and
-`WeaklySeqCompactSpace.of_isReflexive` below derives this class from it, so the direct method
-applies to **every reflexive real Banach space**: that instance is the easy half of the equivalence,
-`NormedSpace.exists_subseq_forall_dual_tendsto`, read through `WeakSeqTendsto`; the converse,
-`WeaklySeqCompactSpace.isReflexive`, is the Eberlein–Šmulian theorem of
-`Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian`, so the class is reflexivity itself. In
-particular every Hilbert space is covered, by `NormedSpace.instIsReflexiveOfInnerProductSpace`, and
-`Lᵖ` for `1 < p < ∞` (`MeasureTheory.Lp.instIsReflexive`) and every uniformly convex Banach space
-(`NormedSpace.isReflexive_of_uniformConvexSpace`, Milman–Pettis) are reflexive too.
+A sequence $(u_n)$ in $V$ converges weakly to $w$, written $u_n \rightharpoonup w$, if
+$\ell(u_n) \to \ell(w)$ for every bounded linear functional $\ell$ on $V$.
 
 ## Main definitions
 
-* `WeakSeqTendsto u w` — weak sequential convergence `uₙ ⇀ w`, spelled out as `ℓ (uₙ) → ℓ w` for
-  every bounded linear functional; `weakSeqTendsto_iff_tendsto_toWeakSpace` identifies it with
-  convergence in Mathlib's `WeakSpace`.
-* `WeaklySeqCompactSpace V` — every norm-bounded sequence in `V` has a weakly convergent
-  subsequence.
-* `IsWeakSeqClosed K` — `K` contains the weak limit of every weakly convergent sequence of its
+* `WeakSeqTendsto`: weak sequential convergence $u_n \rightharpoonup w$.
+* `WeaklySeqCompactSpace`: every norm-bounded sequence in $V$ has a weakly convergent subsequence.
+* `IsWeakSeqClosed`: a set contains the weak limit of every weakly convergent sequence of its
   points.
-* `WeakSeqLowerSemicontinuousOn f K` — `f` is lower semicontinuous along weakly convergent sequences
-  of `K`, in the same `∀ y < f w, ∀ᶠ n, y < f (uₙ)` form as Mathlib's
-  `LowerSemicontinuousWithinAt`.
+* `WeakSeqLowerSemicontinuousOn`: a functional is lower semicontinuous along the weakly convergent
+  sequences of a set, in the form of Mathlib's `LowerSemicontinuousWithinAt`.
 
-## Main statements
+## Main results
 
-* `WeaklySeqCompactSpace.of_isReflexive` — every reflexive real normed space satisfies the standing
-  hypothesis, so every theorem below applies to it; `WeaklySeqCompactSpace.isReflexive` is the
+* `WeaklySeqCompactSpace.of_isReflexive`: every reflexive real normed space is weakly sequentially
+  compact, so every theorem of this file applies to it; `WeaklySeqCompactSpace.isReflexive` is the
   converse (Eberlein–Šmulian).
-* `exists_seq_convexCombination_tendsto` — **Mazur's lemma**: from a weakly convergent sequence one
+* `exists_seq_convexCombination_tendsto`: **Mazur's lemma**; from a weakly convergent sequence one
   can form convex combinations of its tails that converge in norm.
-* `Convex.isWeakSeqClosed`, `ConvexOn.weakSeqLowerSemicontinuousOn` — the two corollaries of Mazur's
-  lemma that make convexity a substitute for weak hypotheses: a closed convex set is weakly
+* `Convex.isWeakSeqClosed`, `ConvexOn.weakSeqLowerSemicontinuousOn`: a closed convex set is weakly
   sequentially closed, and a lower semicontinuous convex functional is weakly sequentially lower
   semicontinuous.
-* `exists_isMinOn_of_isWeakSeqClosed` — the direct method on a bounded set.
-* `exists_isMinOn_of_isCoerciveFunctionalOn` — the same for an unbounded set and a coercive
+* `exists_isMinOn_of_isWeakSeqClosed`: the direct method on a bounded set.
+* `exists_isMinOn_of_isCoerciveFunctionalOn`: the direct method on an unbounded set for a coercive
   functional.
-* `exists_isMinOn_of_convexOn` — the convex form, whose hypotheses are on the norm topology alone.
-* `exists_isBestApprox_of_convex` — every point has a best approximation from a nonempty closed
+* `exists_isMinOn_of_convexOn`: the convex form, whose hypotheses are on the norm topology alone.
+* `exists_isBestApprox_of_convex`: every point has a best approximation from a nonempty closed
   convex set.
 
-## References
+## Implementation notes
 
-[han2009theoretical], §3.3: Theorems 3.3.8, 3.3.10, 3.3.11, 3.3.12 and 3.3.14.
+* The classical hypothesis on the space is that it is a reflexive Banach space. The proofs use only
+  the sequential consequence of reflexivity, that every norm-bounded sequence has a weakly
+  convergent subsequence. For a Banach space the two are equivalent by the theorems of
+  Eberlein–Šmulian and Kakutani, and Theorem 2.7.5 of [han2009theoretical] states reflexivity in
+  this form before it is used. The hypothesis of the theorems is therefore the class
+  `WeaklySeqCompactSpace`, and the theorems are the classical ones with reflexivity replaced by this
+  characterization.
+* The class is reflexivity itself. Reflexivity is `NormedSpace.IsReflexive` of
+  `Numlib.Analysis.Normed.Module.Reflexive`. The instance `WeaklySeqCompactSpace.of_isReflexive`
+  derives the class from it; this is the easy half of the equivalence,
+  `NormedSpace.exists_subseq_forall_dual_tendsto` read through `WeakSeqTendsto`. The converse
+  `WeaklySeqCompactSpace.isReflexive` is the Eberlein–Šmulian theorem of
+  `Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian`.
+* The direct method therefore applies to every reflexive real Banach space: to every Hilbert space
+  by `NormedSpace.instIsReflexiveOfInnerProductSpace`, to $L^p$ for $1 < p < \infty$ by
+  `MeasureTheory.Lp.instIsReflexive`, and to every uniformly convex Banach space by
+  `NormedSpace.isReflexive_of_uniformConvexSpace` (Milman–Pettis).
+* Weak sequential convergence is stated pointwise on the dual, not as convergence in Mathlib's
+  `WeakSpace`; `weakSeqTendsto_iff_tendsto_toWeakSpace` shows that the two agree.
 -/
 
 open Bornology Filter Topology
@@ -83,34 +84,38 @@ section Defs
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- **Weak sequential convergence** `uₙ ⇀ w`: `ℓ (uₙ) → ℓ w` for every bounded linear functional
-`ℓ`.
+/-- **Weak sequential convergence**. A sequence $(u_n)$ in a real normed space $V$ converges weakly
+to $w \in V$, written $u_n \rightharpoonup w$, if $\ell(u_n) \to \ell(w)$ for every bounded
+linear functional $\ell$ on $V$.
 
-Mathlib carries the weak *topology* as `WeakSpace ℝ V`, and `weakSeqTendsto_iff_tendsto_toWeakSpace`
-says the two agree; the pointwise form is the one in which the hypotheses of the direct method are
-stated and verified. -/
+Mathlib has the weak topology as `WeakSpace ℝ V`, and `weakSeqTendsto_iff_tendsto_toWeakSpace`
+shows that the two notions of convergence agree. The hypotheses of the direct method are stated
+and verified in the pointwise form. -/
 def WeakSeqTendsto (u : ℕ → V) (w : V) : Prop :=
   ∀ ℓ : StrongDual ℝ V, Tendsto (fun n => ℓ (u n)) atTop (𝓝 (ℓ w))
 
-/-- Weak sequential convergence is convergence in Mathlib's `WeakSpace` topology. -/
+/-- A sequence converges weakly, $u_n \rightharpoonup w$, if and only if it converges to $w$ in the
+weak topology of $V$, which is Mathlib's `WeakSpace ℝ V`. -/
 theorem weakSeqTendsto_iff_tendsto_toWeakSpace {u : ℕ → V} {w : V} :
     WeakSeqTendsto u w ↔
       Tendsto (fun n => toWeakSpace ℝ V (u n)) atTop (𝓝 (toWeakSpace ℝ V w)) :=
   tendsto_toWeakSpace_iff.symm
 
-/-- A subsequence of a weakly convergent sequence converges weakly to the same limit. -/
+/-- If $u_n \rightharpoonup w$ and $\sigma : \mathbb{N} \to \mathbb{N}$ is strictly increasing, then
+$u_{\sigma(n)} \rightharpoonup w$. -/
 theorem WeakSeqTendsto.comp {u : ℕ → V} {w : V} (h : WeakSeqTendsto u w) {σ : ℕ → ℕ}
     (hσ : StrictMono σ) : WeakSeqTendsto (u ∘ σ) w :=
   fun ℓ => (h ℓ).comp hσ.tendsto_atTop
 
-/-- A norm-convergent sequence converges weakly to the same limit. -/
+/-- If $u_n \to w$ in norm, then $u_n \rightharpoonup w$. -/
 theorem WeakSeqTendsto.of_tendsto {u : ℕ → V} {w : V} (h : Tendsto u atTop (𝓝 w)) :
     WeakSeqTendsto u w :=
   fun ℓ => (ℓ.continuous.tendsto w).comp h
 
-/-- In a real Hilbert space weak sequential convergence is convergence of the inner products
-against every fixed vector: every bounded functional is `⟪·, y⟫` for some `y`, by the Riesz
-representation theorem (`InnerProductSpace.toDual`). -/
+/-- Let $H$ be a real Hilbert space. Then $u_n \rightharpoonup w$ if and only if
+$\langle u_n, y\rangle \to \langle w, y\rangle$ for every $y \in H$. The proof uses the Riesz
+representation theorem `InnerProductSpace.toDual`: every bounded linear functional on $H$ is
+$\langle \cdot, y\rangle$ for some $y \in H$. -/
 theorem weakSeqTendsto_iff_forall_tendsto_inner {H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace ℝ H] [CompleteSpace H] {u : ℕ → H} {w : H} :
     WeakSeqTendsto u w ↔
@@ -122,36 +127,45 @@ theorem weakSeqTendsto_iff_forall_tendsto_inner {H : Type*} [NormedAddCommGroup 
       InnerProductSpace.toDual_symm_apply] at this
     exact this
 
-/-- **Bounded sequences have weakly convergent subsequences.** This is the property that the direct
-method of the calculus of variations needs of the underlying space, and, for a Banach space, it is
-equivalent to reflexivity by the theorems of Eberlein–Šmulian and Kakutani; it is the form in which
-[han2009theoretical] Thm 2.7.5 states reflexivity.
+/-- A real normed space $V$ is **weakly sequentially compact** if every norm-bounded sequence in $V$
+has a weakly convergent subsequence: for every sequence $(u_n)$ with $\|u_n\| \le C$ for all
+$n$, there are a strictly increasing $\sigma : \mathbb{N} \to \mathbb{N}$ and $w \in V$ with
+$u_{\sigma(n)} \rightharpoonup w$. For a Banach space this property is equivalent to reflexivity
+by the theorems of Eberlein–Šmulian and Kakutani, and Theorem 2.7.5 of [han2009theoretical]
+states reflexivity in this form.
 
-The class is the hypothesis of the theorems below rather than reflexivity itself because it is what
-their proofs use; every reflexive space is an instance, by `WeaklySeqCompactSpace.of_isReflexive`,
-and conversely every instance is reflexive, by `WeaklySeqCompactSpace.isReflexive`. -/
+The class is the hypothesis of the theorems of `Numlib.Variational.WeakMinimization` instead of
+reflexivity, because it is what their proofs use. Every reflexive space is an instance by
+`WeaklySeqCompactSpace.of_isReflexive`, and every instance is reflexive by
+`WeaklySeqCompactSpace.isReflexive`. -/
 class WeaklySeqCompactSpace (V : Type*) [NormedAddCommGroup V] [NormedSpace ℝ V] : Prop where
   /-- Every norm-bounded sequence has a weakly convergent subsequence. -/
   exists_subseq_weakSeqTendsto : ∀ (u : ℕ → V) (C : ℝ), (∀ n, ‖u n‖ ≤ C) →
     ∃ (σ : ℕ → ℕ) (w : V), StrictMono σ ∧ WeakSeqTendsto (u ∘ σ) w
 
-/-- A set is **weakly sequentially closed** when it contains the weak limit of every weakly
-convergent sequence of its points. It is the hypothesis on the constraint set in the direct method;
-`Convex.isWeakSeqClosed` is the source of examples. -/
+/-- A set $K$ in a real normed space is **weakly sequentially closed** if it contains the weak limit
+of every weakly convergent sequence of its points: if $u_n \in K$ for all $n$ and
+$u_n \rightharpoonup w$, then $w \in K$.
+
+It is the hypothesis on the constraint set in Theorem 3.3.8 of [han2009theoretical].
+`Convex.isWeakSeqClosed` gives the main examples. -/
 def IsWeakSeqClosed (K : Set V) : Prop :=
   ∀ (u : ℕ → V) (w : V), (∀ n, u n ∈ K) → WeakSeqTendsto u w → w ∈ K
 
-/-- A functional is **weakly sequentially lower semicontinuous on a set** when it is lower
-semicontinuous along the weakly convergent sequences of that set, in the same form as Mathlib's
-`LowerSemicontinuousWithinAt`: no value strictly below `f w` bounds `f (uₙ)` from above eventually.
+/-- A functional $f : V \to \mathbb{R}$ is **weakly sequentially lower semicontinuous on** a set $K$
+if, for every sequence $(u_n)$ in $K$ that converges weakly to a point $w \in K$ and every
+$y < f(w)$, eventually $y < f(u_n)$. This is the form of Mathlib's
+`LowerSemicontinuousWithinAt`; in the extended reals it says $f(w) \le \liminf_n f(u_n)$.
 
-Stated this way rather than as `f w ≤ liminf f (uₙ)` because a real `liminf` is junk when the
-sequence is unbounded below, which is exactly the case the existence proof must rule out. -/
+The definition avoids $\liminf$ because a real-valued $\liminf$ has a junk value when the
+sequence $f(u_n)$ is unbounded below, and this is exactly the case that the existence proof must
+rule out. -/
 def WeakSeqLowerSemicontinuousOn (f : V → ℝ) (K : Set V) : Prop :=
   ∀ (u : ℕ → V) (w : V), (∀ n, u n ∈ K) → w ∈ K → WeakSeqTendsto u w →
     ∀ y < f w, ∀ᶠ n in atTop, y < f (u n)
 
-/-- Weak sequential lower semicontinuity is inherited by subsets. -/
+/-- If $f$ is weakly sequentially lower semicontinuous on $K$ and $K' \subseteq K$, then $f$ is
+weakly sequentially lower semicontinuous on $K'$. -/
 theorem WeakSeqLowerSemicontinuousOn.mono {f : V → ℝ} {K K' : Set V}
     (h : WeakSeqLowerSemicontinuousOn f K) (hKK : K' ⊆ K) :
     WeakSeqLowerSemicontinuousOn f K' :=
@@ -161,25 +175,30 @@ end Defs
 
 /-! ### Reflexive spaces are weakly sequentially compact -/
 
-/-- **Every reflexive real normed space is weakly sequentially compact on bounded sets.** This is
-the easy half of the classical equivalence, `NormedSpace.exists_subseq_forall_dual_tendsto`, whose
-conclusion is `WeakSeqTendsto` with the quantifier over the dual moved outside; the converse, that
-weak sequential compactness forces reflexivity, is `WeaklySeqCompactSpace.isReflexive`.
+/-- **Every reflexive real normed space is weakly sequentially compact**: if $V$ is reflexive, then
+every norm-bounded sequence in $V$ has a weakly convergent subsequence. This is the easy half of
+the classical equivalence; the converse is `WeaklySeqCompactSpace.isReflexive`.
 
-Through `NormedSpace.instIsReflexiveOfInnerProductSpace` this covers every Hilbert space, so it
-subsumes the direct route through the Riesz representation and `exists_subseq_weak_tendsto`. It is
-the only instance of the class, so its priority is the default one; it is stated for `ℝ` because
-`WeakSeqTendsto` is, the direct method being an argument about real-valued functionals. -/
+The proof is `NormedSpace.exists_subseq_forall_dual_tendsto`, whose conclusion is
+`WeakSeqTendsto` with the quantifier over the dual moved outside. Through
+`NormedSpace.instIsReflexiveOfInnerProductSpace` the instance covers every Hilbert space, so it
+subsumes the direct route through the Riesz representation and `exists_subseq_weak_tendsto`. It
+is the only instance of the class, so it has the default priority. It is stated over
+$\mathbb{R}$ because `WeakSeqTendsto` is, since the direct method concerns real-valued
+functionals. -/
 instance WeaklySeqCompactSpace.of_isReflexive {V : Type*} [NormedAddCommGroup V]
     [NormedSpace ℝ V] [NormedSpace.IsReflexive ℝ V] : WeaklySeqCompactSpace V where
   exists_subseq_weakSeqTendsto u C hC := by
     obtain ⟨w, σ, hσ, h⟩ := NormedSpace.exists_subseq_forall_dual_tendsto (𝕜 := ℝ) hC
     exact ⟨σ, w, hσ, h⟩
 
-/-- **A weakly sequentially compact real normed space is reflexive**: the converse of
-`WeaklySeqCompactSpace.of_isReflexive`, by the Eberlein–Šmulian theorem
-(`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`). Completeness is not
-assumed, being a consequence. -/
+/-- **A weakly sequentially compact real normed space is reflexive**: if every norm-bounded sequence
+in $V$ has a weakly convergent subsequence, then $V$ is reflexive. This is the converse of
+`WeaklySeqCompactSpace.of_isReflexive`.
+
+The proof is the Eberlein–Šmulian theorem
+`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`. Completeness of $V$ is
+not assumed, because it is a consequence. -/
 theorem WeaklySeqCompactSpace.isReflexive (V : Type*) [NormedAddCommGroup V] [NormedSpace ℝ V]
     [WeaklySeqCompactSpace V] : NormedSpace.IsReflexive ℝ V :=
   NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto fun v C h ↦
@@ -192,12 +211,14 @@ section Mazur
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **Mazur's lemma**, one tail at a time: if `vₙ ⇀ u` then, for every `n` and every `ε > 0`, some
-convex combination of `vₙ, …, v_N` lies within `ε` of `u` in norm.
+/-- **Mazur's lemma** for one tail. Let $E$ be a real normed space and let $v_n \rightharpoonup u$
+in $E$. For every $n$ and every $\varepsilon > 0$ there are $N \ge n$ and weights
+$\lambda_i \ge 0$ with $\sum_{i=n}^N \lambda_i = 1$ and
+$$\Bigl\| \sum_{i=n}^N \lambda_i v_i - u \Bigr\| < \varepsilon.$$
 
-The tail `{vᵢ : i ≥ n}` still converges weakly to `u`, so `u` lies in the closed convex hull of the
-tail (`mem_of_weak_tendsto_of_convex`), and a point of a convex hull is a finite convex combination
-of points of the set. -/
+The tail $(v_i)_{i \ge n}$ still converges weakly to $u$, so $u$ lies in the closed convex hull
+of the tail by `mem_of_weak_tendsto_of_convex`, and a point of a convex hull is a finite convex
+combination of points of the set. -/
 theorem exists_convexCombination_norm_sub_lt {v : ℕ → E} {u : E} (h : WeakSeqTendsto v u) (n : ℕ)
     {ε : ℝ} (hε : 0 < ε) :
     ∃ (N : ℕ) (lam : ℕ → ℝ), n ≤ N ∧ (∀ i, 0 ≤ lam i) ∧
@@ -248,8 +269,12 @@ theorem exists_convexCombination_norm_sub_lt {v : ℕ → E} {u : E} (h : WeakSe
     rw [hpad, hcomb, ← norm_neg, neg_sub]
     simpa [dist_eq_norm] using hbu
 
-/-- **Mazur's lemma** ([han2009theoretical], Thm 3.3.11). If `vₙ ⇀ u` weakly then there are convex
-combinations `uₙ = ∑_{i = n}^{N(n)} λᵢ⁽ⁿ⁾ vᵢ` of the tails of the sequence with `uₙ → u` in norm. -/
+/-- **Mazur's lemma**. Let $E$ be a real normed space and let $v_n \rightharpoonup u$ in $E$. Then
+there are indices $N(n) \ge n$ and weights $\lambda^{(n)}_i \ge 0$ with
+$\sum_{i=n}^{N(n)} \lambda^{(n)}_i = 1$ such that the convex combinations
+$$u_n = \sum_{i=n}^{N(n)} \lambda^{(n)}_i v_i$$
+of the tails of the sequence converge to $u$ in norm. This is Theorem 3.3.11 of
+[han2009theoretical]. -/
 theorem exists_seq_convexCombination_tendsto {v : ℕ → E} {u : E} (h : WeakSeqTendsto v u) :
     ∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧
       (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧
@@ -261,19 +286,23 @@ theorem exists_seq_convexCombination_tendsto {v : ℕ → E} {u : E} (h : WeakSe
   refine squeeze_zero (fun n => norm_nonneg _) (fun n => (hlt n).le) ?_
   exact tendsto_one_div_add_atTop_nhds_zero_nat
 
-/-- **A closed convex set is weakly sequentially closed** — the first corollary of Mazur's lemma
-([han2009theoretical], after Thm 3.3.11). -/
+/-- **A closed convex set is weakly sequentially closed**: if $K$ is a convex and norm-closed subset
+of a real normed space, then $K$ contains the weak limit of every weakly convergent sequence of
+points of $K$. This is the first corollary of Mazur's lemma after Theorem 3.3.11 of
+[han2009theoretical]. -/
 theorem Convex.isWeakSeqClosed {K : Set E} (hconv : Convex ℝ K) (hcl : IsClosed K) :
     IsWeakSeqClosed K :=
   fun _ _ hu hw => mem_of_weak_tendsto_of_convex hconv hcl hu hw
 
-/-- **A lower semicontinuous convex functional is weakly sequentially lower semicontinuous** — the
-second corollary of Mazur's lemma ([han2009theoretical], after Thm 3.3.11).
+/-- **A lower semicontinuous convex functional is weakly sequentially lower semicontinuous**: if $K$
+is a convex subset of a real normed space and $f$ is convex and lower semicontinuous on $K$,
+then $f$ is weakly sequentially lower semicontinuous on $K$. This is the second corollary of
+Mazur's lemma after Theorem 3.3.11 of [han2009theoretical].
 
-The sublevel set `S = {x ∈ K | f x ≤ y}` is convex, so its closure is a closed convex set and
-contains the weak limit `w`; lower semicontinuity along `K` at `w` then forbids `f w > y`, because
-every neighbourhood of `w` meets `S`, where `f ≤ y`. Nothing is asked of `K` itself: the closure is
-taken of the sublevel set, not of `K`. -/
+The sublevel set $S = \{x \in K : f(x) \le y\}$ is convex, so its closure is a closed convex set
+and contains the weak limit $w$. Lower semicontinuity of $f$ along $K$ at $w$ then excludes
+$f(w) > y$, because every neighbourhood of $w$ meets $S$, where $f \le y$. The proof takes the
+closure of the sublevel set, not of $K$, so $K$ need not be closed. -/
 theorem ConvexOn.weakSeqLowerSemicontinuousOn {f : E → ℝ} {K : Set E}
     (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K) :
     WeakSeqLowerSemicontinuousOn f K := by
@@ -299,8 +328,9 @@ section DirectMethod
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [WeaklySeqCompactSpace V]
 
-/-- The compactness step of the direct method: a sequence in a bounded, weakly sequentially closed
-set has a subsequence converging weakly to a point of the set. -/
+/-- The compactness step of the direct method. Let $V$ be a weakly sequentially compact real normed
+space, and let $K \subseteq V$ be bounded and weakly sequentially closed. Then every sequence
+$(u_n)$ in $K$ has a subsequence $(u_{\sigma(n)})$ that converges weakly to a point $w \in K$. -/
 theorem IsWeakSeqClosed.exists_subseq_weakSeqTendsto {K : Set V} (hbd : IsBounded K)
     (hKc : IsWeakSeqClosed K) {u : ℕ → V} (hu : ∀ n, u n ∈ K) :
     ∃ (σ : ℕ → ℕ) (w : V), StrictMono σ ∧ w ∈ K ∧ WeakSeqTendsto (u ∘ σ) w := by
@@ -309,14 +339,16 @@ theorem IsWeakSeqClosed.exists_subseq_weakSeqTendsto {K : Set V} (hbd : IsBounde
     WeaklySeqCompactSpace.exists_subseq_weakSeqTendsto u C fun n => hC _ (hu n)
   exact ⟨σ, w, hσ, hKc _ w (fun k => hu (σ k)) hlim, hlim⟩
 
-/-- **Existence of a minimizer on a bounded set** ([han2009theoretical], Thm 3.3.8): a weakly
-sequentially lower semicontinuous functional on a nonempty bounded weakly sequentially closed set
-attains its minimum.
+/-- **Existence of a minimizer on a bounded set**. Let $V$ be a weakly sequentially compact real
+normed space, let $K \subseteq V$ be nonempty, bounded and weakly sequentially closed, and let
+$f : V \to \mathbb{R}$ be weakly sequentially lower semicontinuous on $K$. Then $f$ attains its
+minimum on $K$: there is $u \in K$ with $f(u) \le f(v)$ for all $v \in K$. This is Theorem 3.3.8
+of [han2009theoretical].
 
-A minimizing sequence has a weakly convergent subsequence, whose limit stays in `K` and at which
-lower semicontinuity forces the value to be no larger than the infimum. That the infimum is finite
-is part of the argument: a sequence on which `f` tended to `-∞` would have a weak limit point in `K`
-at which lower semicontinuity fails. -/
+A minimizing sequence has a weakly convergent subsequence. Its limit lies in $K$, and lower
+semicontinuity forces the value there to be at most the infimum. The finiteness of the infimum
+is part of the argument: a sequence on which $f$ tends to $-\infty$ would have a weak limit
+point in $K$ at which lower semicontinuity fails. -/
 theorem exists_isMinOn_of_isWeakSeqClosed {K : Set V} {f : V → ℝ} (hne : K.Nonempty)
     (hbd : IsBounded K) (hKc : IsWeakSeqClosed K) (hf : WeakSeqLowerSemicontinuousOn f K) :
     ∃ u ∈ K, IsMinOn f K u := by
@@ -370,11 +402,16 @@ theorem exists_isMinOn_of_isWeakSeqClosed {K : Set V} {f : V → ℝ} (hne : K.N
   obtain ⟨k, hk1, hk2⟩ := (h1.and h2).exists
   exact absurd hk1 (not_lt.2 hk2.le)
 
-/-- **Existence of a minimizer of a coercive functional** ([han2009theoretical], Thm 3.3.10): the
-set need not be bounded if the functional grows at infinity along it.
+/-- **Existence of a minimizer of a coercive functional**. Let $V$ be a weakly sequentially compact
+real normed space, let $K \subseteq V$ be nonempty and weakly sequentially closed, and let
+$f : V \to \mathbb{R}$ be weakly sequentially lower semicontinuous on $K$ and coercive on $K$:
+for every $M$ there is $R$ with $f(x) \ge M$ for all $x \in K$ with $\|x\| \ge R$. Then $f$
+attains its minimum on $K$. This is Theorem 3.3.10 of [han2009theoretical]; the set $K$ need not
+be bounded.
 
-The sublevel set below the value at any one point of `K` is bounded by coercivity, weakly
-sequentially closed by lower semicontinuity, and a minimizer there is a minimizer on `K`. -/
+Coercivity is `IsCoerciveFunctionalOn`. The sublevel set of $f$ in $K$ below the value at any
+point of $K$ is bounded by coercivity and weakly sequentially closed by lower semicontinuity,
+and a minimizer on it is a minimizer on $K$. -/
 theorem exists_isMinOn_of_isCoerciveFunctionalOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty)
     (hKc : IsWeakSeqClosed K) (hf : WeakSeqLowerSemicontinuousOn f K)
     (hcoer : IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u := by
@@ -404,12 +441,17 @@ theorem exists_isMinOn_of_isCoerciveFunctionalOn {K : Set V} {f : V → ℝ} (hn
   · exact isMinOn_iff.1 hmin x ⟨hx, hfx⟩
   · exact le_trans (isMinOn_iff.1 hmin v₀ ⟨hv₀, le_rfl⟩) (not_le.1 hfx).le
 
-/-- **Existence of a minimizer of a convex functional** ([han2009theoretical], Thm 3.3.12): on a
-nonempty closed convex set, a lower semicontinuous convex functional attains its minimum as soon as
-the set is bounded or the functional is coercive. Every hypothesis is for the norm topology; the two
-corollaries of Mazur's lemma turn them into the weak hypotheses of Theorems 3.3.8 and 3.3.10.
+/-- **Existence of a minimizer of a convex functional**. Let $V$ be a weakly sequentially compact
+real normed space, let $K \subseteq V$ be nonempty, closed and convex, and let
+$f : V \to \mathbb{R}$ be convex and lower semicontinuous on $K$. If $K$ is bounded or $f$ is
+coercive on $K$, then $f$ attains its minimum on $K$. This is Theorem 3.3.12 of
+[han2009theoretical].
 
-Uniqueness under strict convexity is `IsMinOn.eq_of_strictConvexOn`. -/
+Every hypothesis is for the norm topology. The two corollaries of Mazur's lemma,
+`Convex.isWeakSeqClosed` and `ConvexOn.weakSeqLowerSemicontinuousOn`, turn them into the weak
+hypotheses of Theorems 3.3.8 and 3.3.10, which are `exists_isMinOn_of_isWeakSeqClosed` and
+`exists_isMinOn_of_isCoerciveFunctionalOn`. Uniqueness under strict convexity is
+`IsMinOn.eq_of_strictConvexOn`. -/
 theorem exists_isMinOn_of_convexOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K)
     (h : IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
@@ -420,9 +462,10 @@ theorem exists_isMinOn_of_convexOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty
       (hf.weakSeqLowerSemicontinuousOn hlsc) hcoer)
 
 /-- **Existence of a maximizer of a concave functional**, the mirror of
-`exists_isMinOn_of_convexOn`: on a nonempty closed convex subset of a reflexive space, an upper
-semicontinuous concave functional attains its maximum as soon as the set is bounded or the
-negated functional is coercive. -/
+`exists_isMinOn_of_convexOn`. Let $V$ be a weakly sequentially compact real normed space, let
+$K \subseteq V$ be nonempty, closed and convex, and let $f : V \to \mathbb{R}$ be concave and
+upper semicontinuous on $K$. If $K$ is bounded or $-f$ is coercive on $K$, then $f$ attains its
+maximum on $K$. -/
 theorem exists_isMaxOn_of_concaveOn {K : Set V} {f : V → ℝ} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (hf : ConcaveOn ℝ K f) (husc : UpperSemicontinuousOn f K)
     (h : IsBounded K ∨ IsCoerciveFunctionalOn (-f) K) : ∃ u ∈ K, IsMaxOn f K u := by
@@ -431,12 +474,15 @@ theorem exists_isMaxOn_of_concaveOn {K : Set V} {f : V → ℝ} (hne : K.Nonempt
   obtain ⟨u, hu, hmin⟩ := exists_isMinOn_of_convexOn hne hcl hconv hf.neg hlsc h
   exact ⟨u, hu, isMaxOn_iff.2 fun x hx => neg_le_neg_iff.1 (isMinOn_iff.1 hmin x hx)⟩
 
-/-- **Existence of a best approximation from a closed convex set** ([han2009theoretical],
-Thm 3.3.14). The distance to `u` is convex, continuous and coercive, so this is the coercive case of
-`exists_isMinOn_of_convexOn`.
+/-- **Existence of a best approximation from a closed convex set**. Let $V$ be a weakly sequentially
+compact real normed space, and let $K \subseteq V$ be nonempty, closed and convex. Then every
+$u \in V$ has a best approximation from $K$: there is $v \in K$ with $\|u - v\| \le \|u - w\|$
+for all $w \in K$. This is Theorem 3.3.14 of [han2009theoretical].
 
-No completeness or inner product is needed beyond the weak sequential compactness of bounded
-sequences; in a Hilbert space this is the projection theorem. -/
+A best approximation is `IsBestApprox`. The distance to $u$ is convex, continuous and coercive,
+so this is the coercive case of `exists_isMinOn_of_convexOn`. No completeness or inner product
+is needed beyond the weak sequential compactness of bounded sequences. In a Hilbert space this
+is the projection theorem. -/
 theorem exists_isBestApprox_of_convex {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (u : V) : ∃ v, IsBestApprox K u v := by
   set f : V → ℝ := fun v => ‖u - v‖ with hf

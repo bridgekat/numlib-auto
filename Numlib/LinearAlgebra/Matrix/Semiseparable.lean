@@ -20,79 +20,120 @@ import Numlib.LinearAlgebra.Matrix.Similar
 /-!
 # Semiseparable and quasiseparable matrices
 
-Structured-rank matrices ([golub2013matrix] §12.2; Vandebril–Van Barel–Mastronardi 2008): square
-matrices whose blocks below (above) the diagonal have rank at most one, their generator and
-quasiseparable representations, and the facts about inverses and factorizations that make `O(n)`
-algorithms possible.
+Let $K$ be a field and $A$ a square matrix over $K$ with finite, totally ordered indices. The matrix
+$A$ is **semiseparable** if every block of $A$ that lies on or below the diagonal, and every block
+that lies on or above it, has rank at most one. It is **quasiseparable** if every block strictly
+below or strictly above the diagonal has rank at most one. This module follows [golub2013matrix]
+§12.2 and Vandebril, Van Barel and Mastronardi (2008). It defines the two classes and their
+generator and quasiseparable representations, and it proves the facts about inverses and
+factorizations that make $O(n)$ algorithms possible: inverses of tridiagonal, quasiseparable and
+diagonal-plus-semiseparable matrices, the LU and QR factorizations of semiseparable matrices, and
+the product form and the odd–even factorization of an orthogonal upper Hessenberg matrix. The
+statements about inverses all come from the nullity theorem `Matrix.rank_toBlock_inv_add_card`.
+
+The central objects are the unit upper bidiagonal matrix $B(r)$, with $1$ on the diagonal and $-r_i$
+at $(i, i + 1)$, and the quasiseparable representation $\mathbf{S}(u, v, t, d, p, q, r)$ of
+[golub2013matrix] (12.2.8), with the entries
+$$a_{ij} = \begin{cases} u_i \, t_j \cdots t_{i-1} \, v_j & i > j, \\ d_i & i = j, \\
+  p_i \, r_i \cdots r_{j-1} \, q_j & i < j. \end{cases}$$
+The source claims in §12.2.3 that every quasiseparable matrix has such a representation. This is
+false: for $n \ge 3$ and $r_0, r_1 \neq 0$, the matrix $B(r)$ is quasiseparable but has none
+(`Matrix.unitBidiagonal_ne_quasiseparableOf`). The representation
+$\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$ of Eidelman and Gohberg, with one transfer factor
+fewer, represents every quasiseparable matrix (`Matrix.exists_quasiseparableRep`).
 
 ## Main definitions
 
-* `Matrix.IsSemiseparable A`: every block that does not cross the diagonal has rank `≤ 1`
-  ([golub2013matrix] (12.2.1)); `Matrix.IsQuasiseparable A`: the same for the blocks strictly
-  below or above the diagonal ((12.2.5)).
-* `Matrix.unitBidiagonal n r`: the unit upper bidiagonal `B(r)` of (12.2.2).
-* `Matrix.quasiseparableOf u v t d p q r`: the quasiseparable representation `𝐒(u,v,t,d,p,q,r)`
-  of (12.2.8).
-* `Matrix.IsGeneratorRepresentableOfOrder A p q`: the `{p, q}`-generator representable matrices
-  of §12.2.8.
-* `Matrix.givensChain M`: the product `M₀ M₁ ⋯` of `2 × 2` blocks embedded in consecutive
-  coordinate planes ((12.2.4), (12.2.12)), its factors being the adjacent embeddings
-  `Matrix.adjacentEmbed` (`Matrix.givensFactor_eq_adjacentEmbed`); the `2 × 2` reflections
-  `Matrix.planeReflector φ` of §12.2.10 are in `Numlib/LinearAlgebra/Matrix/PlaneRotation`.
+* `Matrix.IsSemiseparable`: every block on or below the diagonal and every block on or above it has
+  rank at most one ([golub2013matrix] (12.2.1)).
+* `Matrix.IsQuasiseparable`: every block strictly below or strictly above the diagonal has rank at
+  most one ([golub2013matrix] (12.2.5)).
+* `Matrix.unitBidiagonal`: the unit upper bidiagonal matrix $B(r)$ of (12.2.2).
+* `Matrix.quasiseparableOf`: the quasiseparable representation $\mathbf{S}(u, v, t, d, p, q, r)$ of
+  (12.2.8).
+* `Matrix.quasiseparableRep`: the corrected representation
+  $\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$, with the transfer factors strictly between the row
+  and the column.
+* `Matrix.IsGeneratorRepresentableOfOrder`: the $\{p, q\}$-generator representable matrices of
+  §12.2.8.
+* `Matrix.givensFactor`, `Matrix.givensChain`: the product $G_0 G_1 \cdots G_{N-1}$ of $2 \times 2$
+  blocks embedded in consecutive coordinate planes ((12.2.4), (12.2.12)).
+* `Matrix.reflectorFactor`: the factors of the product form (12.2.18) of an orthogonal upper
+  Hessenberg matrix.
+* `Matrix.oddEvenHalfSum`, `Matrix.oddEvenHalfDiff`: the matrices $C = (H_o + H_e)/2$ and
+  $S = (H_o - H_e)/2$ of Fact 2 of §12.2.10.
 
 ## Main results
 
-* `Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le`: the book's formulation by index
+* `Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le`,
+  `Matrix.isQuasiseparable_iff_forall_rank_toBlock_Icc_le`: the formulations of the source by index
   intervals.
-* `Matrix.inv_unitBidiagonal`: the entries of `B(r)⁻¹` ((12.2.3)); it is semiseparable.
-* `Matrix.isQuasiseparable_quasiseparableOf`, `Matrix.isSemiseparable_quasiseparableOf`,
-  `Matrix.transpose_quasiseparableOf`: the representation and its specializations.
-* `Matrix.IsTridiagonal.isSemiseparable_inv`, `Matrix.IsQuasiseparable.inv`,
-  `Matrix.IsGeneratorRepresentableOfOrder.hasBandwidth_inv`: Facts 1–2 of §12.2.3 and the banded
-  inverse of §12.2.8, all from the nullity theorem `Matrix.rank_toBlock_inv_add_card`.
-* `Matrix.isLU_quasiseparableOf`: the closed-form LU factorization of a semiseparable matrix
-  (the exact content of [golub2013matrix] Algorithm 12.2.1); `Matrix.IsLU.isSemiseparable_upper`,
-  `Matrix.IsLU.isSemiseparable_lower`: the factors of a semiseparable matrix are semiseparable
-  (§12.2.5).
-* `Matrix.inv_diagonal_add_eq_add`: Fact 3 of §12.2.3, through the nullity theorem for the bordered
-  matrix `[[T, 1], [1, −1]]`; `Matrix.IsTridiagonal.inv_eq_generatorRep`: the second half of
-  Fact 1.
-* `Matrix.unitBidiagonal_ne_quasiseparableOf`: `B(r)` is quasiseparable but has no representation
-  (12.2.8), so the book's claim that every quasiseparable matrix has one is false; the corrected
-  representation `Matrix.quasiseparableRep` (one transfer factor fewer) represents every
-  quasiseparable matrix (`Matrix.exists_quasiseparableRep`), and triangular semiseparable matrices
-  do have representations (12.2.8) (`Matrix.exists_lower_semiseparable_rep`, §12.2.4).
-* `Matrix.givensChain_apply`: the entries (12.2.4) of a chain of `2 × 2` blocks in consecutive
-  planes, which is upper Hessenberg and quasiseparable; `Matrix.exists_givensVector_rep` (12.2.11)
-  and `Matrix.givensChain_mul_strictLower_add_diagPart` (12.2.14), the QR factorization of
-  a semiseparable matrix.
-* `Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector` (12.2.18),
-  `Matrix.orthogonalHessenberg_isQuasiseparable`, and Fact 1 of §12.2.10,
-  `Matrix.isSimilar_prod_planeReflector_oddEven`, from the general reordering
-  `Matrix.isSimilar_prodFwd_evenOdd` of a product of generators of a path. The product (12.2.18)
-  is orthogonal, with determinant `(−1)^{N+1}`
-  (`Matrix.prodFwd_reflectorFactor_mem_orthogonalGroup`, `Matrix.det_prodFwd_reflectorFactor`,
-  `Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`).
-* Fact 2 of §12.2.10: `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` (`Matrix.oddEvenHalfSum`,
-  `Matrix.oddEvenHalfDiff`) are symmetric tridiagonal (`Matrix.isTridiagonal_oddEvenHalfSum`,
-  `Matrix.isTridiagonal_oddEvenHalfDiff`, from
-  `Matrix.prodFwd_eq_one_add_sum_sub_one` of `Numlib.LinearAlgebra.Matrix.Products`: a product
-  of disjointly supported factors is the identity plus the sum of their departures), with
-  eigenvalues `± cos(θ_k/2)` and `± sin(θ_k/2)` (`Matrix.charpoly_oddEven_half_sum`). The spectral
-  half is the general `Matrix.charpoly_half_add_of_involutive` of
-  `Numlib.LinearAlgebra.Matrix.Charpoly`, for two symmetric involutions of trace zero.
+* `Matrix.inv_unitBidiagonal`, `Matrix.isSemiseparable_inv_unitBidiagonal`: the entries (12.2.3) of
+  $B(r)^{-1}$, which is semiseparable.
+* `Matrix.quasiseparableOf_eq`, `Matrix.isQuasiseparable_quasiseparableOf`,
+  `Matrix.isSemiseparable_quasiseparableOf`, `Matrix.transpose_quasiseparableOf`: the representation
+  (12.2.8) in terms of $B(t)$ and $B(r)$, its class, and its transpose.
+* `Matrix.IsTridiagonal.isSemiseparable_inv`, `Matrix.IsTridiagonal.inv_eq_generatorRep`: Fact 1 of
+  §12.2.3, the inverse of a tridiagonal matrix is semiseparable, and generator representable when
+  the off-diagonal entries are nonzero.
+* `Matrix.IsQuasiseparable.inv`: Fact 2 of §12.2.3, the inverse of a quasiseparable matrix is
+  quasiseparable.
+* `Matrix.inv_diagonal_add_eq_add`: Fact 3 of §12.2.3, the inverse of a diagonal-plus-semiseparable
+  matrix is diagonal-plus-semiseparable.
+* `Matrix.IsGeneratorRepresentableOfOrder.hasBandwidth_inv`: the inverse of a $\{p, q\}$-generator
+  representable matrix has lower bandwidth $p$ and upper bandwidth $q$ (§12.2.8).
+* `Matrix.isLU_quasiseparableOf`: the closed-form LU factorization of a semiseparable matrix, the
+  content of [golub2013matrix] Algorithm 12.2.1.
+* `Matrix.IsLU.isSemiseparable_upper`, `Matrix.IsLU.isSemiseparable_lower`: the LU factors of a
+  semiseparable matrix are semiseparable (§12.2.5).
+* `Matrix.unitBidiagonal_ne_quasiseparableOf`, `Matrix.exists_quasiseparableRep`: $B(r)$ has no
+  representation (12.2.8), and every quasiseparable matrix has a corrected representation.
+* `Matrix.exists_lower_semiseparable_rep`, `Matrix.exists_upper_semiseparable_rep`: triangular
+  semiseparable matrices have representations (12.2.8) (§12.2.4).
+* `Matrix.givensChain_apply`, `Matrix.givensChain_isUpperHessenberg`,
+  `Matrix.givensChain_isQuasiseparable`: the entries (12.2.4) of a chain of $2 \times 2$ blocks in
+  consecutive planes, which is upper Hessenberg and quasiseparable.
+* `Matrix.exists_givensVector_rep`, `Matrix.givensChain_mul_strictLower_add_diagPart`: the
+  Givens-vector representation (12.2.11) of a lower triangular semiseparable matrix, and its QR
+  factorization (12.2.14).
+* `Matrix.orthogonalHessenberg_isQuasiseparable`,
+  `Matrix.exists_orthogonalHessenberg_eq_prod_planeReflector`: an orthogonal upper Hessenberg matrix
+  is quasiseparable and has the product form (12.2.18).
+* `Matrix.prodFwd_reflectorFactor_mem_orthogonalGroup`, `Matrix.det_prodFwd_reflectorFactor`,
+  `Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`: the product (12.2.18) is orthogonal
+  with determinant $(-1)^{N+1}$.
+* `Matrix.isSimilar_prodFwd_evenOdd`, `Matrix.isSimilar_prod_planeReflector_oddEven`: a product of
+  the generators of a path is similar to the product of its even-indexed factors times the product
+  of its odd-indexed factors, which gives Fact 1 of §12.2.10.
+* `Matrix.isTridiagonal_oddEvenHalfSum`, `Matrix.isTridiagonal_oddEvenHalfDiff`,
+  `Matrix.charpoly_oddEven_half_sum`: Fact 2 of §12.2.10, $C$ and $S$ are symmetric tridiagonal with
+  the eigenvalues $\pm \cos(\theta_k/2)$ and $\pm \sin(\theta_k/2)$.
+
+## Notation
+
+* $B(r)$: the unit upper bidiagonal matrix `Matrix.unitBidiagonal n r`, and
+  $B(r)^{-T} = (B(r)^{-1})^T$.
+* $\mathbf{S}(u, v, t, d, p, q, r)$: `Matrix.quasiseparableOf u v t d p q r`.
+* $\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$: `Matrix.quasiseparableRep u v t d p q r`.
+* $X \circ Y$: the Hadamard (entrywise) product `X ⊙ Y`, written `X .* Y` in the source; $u \circ v$
+  is also the entrywise product of two vectors.
+* $\operatorname{tril}(X, -1)$ and $\operatorname{triu}(X, 1)$: the strictly lower and strictly
+  upper parts `Matrix.strictLower X` and `Matrix.strictUpper X`.
+* $A[\{i \ge k\}, \{j \le k\}]$: the block of $A$ on the rows $i \ge k$ and the columns $j \le k$,
+  `A.toBlock (k ≤ ·) (· ≤ k)`.
 
 ## Implementation notes
 
-The predicates are stated on `[Fintype n] [LinearOrder n]` through the *maximal* blocks
-`A.toBlock (k ≤ ·) (· ≤ k)` and `A.toBlock (· ≤ k) (k ≤ ·)` (strict `<` for the quasiseparable
-case): every block of the book's form is a sub-block of one of them, and the maximal blocks are
-the ones the nullity theorem speaks to. Index arithmetic is on `Fin n`, with the `n − 1`-vectors
-`t`, `r` of the book taken as `ℕ → K` and products running over `Finset.Ico j i`.
-
-## References
-
-* [golub2013matrix] §12.2.
+* The predicates are stated through the *maximal* blocks $A[\{i \ge k\}, \{j \le k\}]$ and
+  $A[\{i \le k\}, \{j \ge k\}]$, with strict inequalities $i > k$ and $j > k$ in the quasiseparable
+  case. Every block of the form in the source is a sub-block of one of them, and the nullity theorem
+  speaks about the maximal blocks.
+* Index arithmetic is on `Fin n`, with indices starting at $0$. The vectors $t$ and $r$ of length
+  $n - 1$ in the source are sequences `ℕ → K`, and the products $t_j \cdots t_{i-1}$ run over
+  `Finset.Ico j i`.
+* The $2 \times 2$ reflections `Matrix.planeReflector φ` of §12.2.10 are in
+  `Numlib.LinearAlgebra.Matrix.PlaneRotation`. The products are `prodFwd`, `prodFwdEven` and
+  `prodFwdOdd` of `Numlib.LinearAlgebra.Matrix.Products`.
 -/
 
 open Finset
@@ -107,15 +148,25 @@ section Classes
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- A matrix is **semiseparable** when every block that does not cross the diagonal has rank at
-most one ([golub2013matrix] (12.2.1)). It suffices to ask it of the maximal such blocks, the rows
-`≥ k` against the columns `≤ k` and the rows `≤ k` against the columns `≥ k`
+/-- Let $K$ be a field and $A$ a square matrix over $K$ whose index set $n$ is finite and totally
+ordered. The matrix $A$ is **semiseparable** if for every index $k$ the two blocks
+$$A[\{i \ge k\}, \{j \le k\}] \quad \text{and} \quad A[\{i \le k\}, \{j \ge k\}]$$
+have rank at most one.
+
+These are the maximal blocks that do not cross the diagonal. The condition (12.2.1) of
+[golub2013matrix], that every such block has rank at most one, is equivalent
 (`Matrix.isSemiseparable_iff_forall_rank_toBlock_Icc_le`). -/
 def IsSemiseparable (A : Matrix n n K) : Prop :=
   ∀ k, (A.toBlock (k ≤ ·) (· ≤ k)).rank ≤ 1 ∧ (A.toBlock (· ≤ k) (k ≤ ·)).rank ≤ 1
 
-/-- A matrix is **quasiseparable** when every block strictly below or strictly above the diagonal
-has rank at most one ([golub2013matrix] (12.2.5)), asked of the maximal such blocks. -/
+/-- Let $K$ be a field and $A$ a square matrix over $K$ whose index set $n$ is finite and totally
+ordered. The matrix $A$ is **quasiseparable** if for every index $k$ the two blocks
+$$A[\{i > k\}, \{j \le k\}] \quad \text{and} \quad A[\{i \le k\}, \{j > k\}]$$
+have rank at most one.
+
+These are the maximal blocks strictly below and strictly above the diagonal. The condition
+(12.2.5) of [golub2013matrix], that every such block has rank at most one, is equivalent
+(`Matrix.isQuasiseparable_iff_forall_rank_toBlock_Icc_le`). -/
 def IsQuasiseparable (A : Matrix n n K) : Prop :=
   ∀ k, (A.toBlock (k < ·) (· ≤ k)).rank ≤ 1 ∧ (A.toBlock (· ≤ k) (k < ·)).rank ≤ 1
 
@@ -126,8 +177,12 @@ private theorem exists_top_bot [Finite n] (k : n) : ∃ t b : n, ∀ i, i ≤ t 
   obtain ⟨b, hb⟩ := Finite.exists_min (id : n → n)
   exact ⟨t, b, fun i => ⟨ht i, hb i⟩⟩
 
-/-- **The book's formulation** ([golub2013matrix] (12.2.1)): `A` is semiseparable exactly when
-every block `A(i₁:i₂, j₁:j₂)` with `j₂ ≤ i₁` or `i₂ ≤ j₁` has rank at most one. -/
+/-- A square matrix $A$ over $K$ is semiseparable if and only if every block
+$A(i_1{:}i_2, j_1{:}j_2)$ with $j_2 \le i_1$ or $i_2 \le j_1$ has rank at most one. This is the
+formulation (12.2.1) of [golub2013matrix].
+
+The block $A(i_1{:}i_2, j_1{:}j_2)$ consists of the rows $i$ with $i_1 \le i \le i_2$ and the
+columns $j$ with $j_1 \le j \le j_2$. -/
 theorem isSemiseparable_iff_forall_rank_toBlock_Icc_le {A : Matrix n n K} :
     A.IsSemiseparable ↔ ∀ i₁ i₂ j₁ j₂ : n, j₂ ≤ i₁ ∨ i₂ ≤ j₁ →
       (A.toBlock (· ∈ Set.Icc i₁ i₂) (· ∈ Set.Icc j₁ j₂)).rank ≤ 1 := by
@@ -141,8 +196,12 @@ theorem isSemiseparable_iff_forall_rank_toBlock_Icc_le {A : Matrix n n K} :
       (rank_toBlock_mono A (fun i hi => ⟨(htb i).2, hi⟩) fun j hj => ⟨hj, (htb j).1⟩).trans
         (h b k k t (Or.inr le_rfl))⟩
 
-/-- **The book's formulation** ([golub2013matrix] (12.2.5)): `A` is quasiseparable exactly when
-every block `A(i₁:i₂, j₁:j₂)` with `j₂ < i₁` or `i₂ < j₁` has rank at most one. -/
+/-- A square matrix $A$ over $K$ is quasiseparable if and only if every block
+$A(i_1{:}i_2, j_1{:}j_2)$ with $j_2 < i_1$ or $i_2 < j_1$ has rank at most one. This is the
+formulation (12.2.5) of [golub2013matrix].
+
+The block $A(i_1{:}i_2, j_1{:}j_2)$ consists of the rows $i$ with $i_1 \le i \le i_2$ and the
+columns $j$ with $j_1 \le j \le j_2$. -/
 theorem isQuasiseparable_iff_forall_rank_toBlock_Icc_le {A : Matrix n n K} :
     A.IsQuasiseparable ↔ ∀ i₁ i₂ j₁ j₂ : n, j₂ < i₁ ∨ i₂ < j₁ →
       (A.toBlock (· ∈ Set.Icc i₁ i₂) (· ∈ Set.Icc j₁ j₂)).rank ≤ 1 := by
@@ -169,26 +228,28 @@ theorem isQuasiseparable_iff_forall_rank_toBlock_Icc_le {A : Matrix n n K} :
       simp only [Fintype.card_eq_zero_iff]
       exact ⟨fun j => hne ⟨j, by simpa using j.2⟩⟩
 
-/-- Semiseparable matrices are quasiseparable ([golub2013matrix] §12.2.2): a block strictly below
-the diagonal is a block of the maximal block that includes the diagonal. -/
+/-- Every semiseparable matrix is quasiseparable, as noted in [golub2013matrix] §12.2.2.
+
+A block strictly below the diagonal is a sub-block of a maximal block that includes the
+diagonal. -/
 theorem IsSemiseparable.isQuasiseparable {A : Matrix n n K} (h : A.IsSemiseparable) :
     A.IsQuasiseparable := fun k =>
   ⟨(rank_toBlock_mono A (fun _ hi => le_of_lt hi) fun _ hj => hj).trans (h k).1,
     (rank_toBlock_mono A (fun _ hi => hi) fun _ hj => le_of_lt hj).trans (h k).2⟩
 
-/-- The transpose of a semiseparable matrix is semiseparable. -/
+/-- If $A$ is semiseparable, then $A^T$ is semiseparable. -/
 theorem IsSemiseparable.transpose {A : Matrix n n K} (h : A.IsSemiseparable) :
     Aᵀ.IsSemiseparable := fun k => by
   rw [rank_toBlock_transpose, rank_toBlock_transpose]
   exact (h k).symm
 
-/-- The transpose of a quasiseparable matrix is quasiseparable. -/
+/-- If $A$ is quasiseparable, then $A^T$ is quasiseparable. -/
 theorem IsQuasiseparable.transpose {A : Matrix n n K} (h : A.IsQuasiseparable) :
     Aᵀ.IsQuasiseparable := fun k => by
   rw [rank_toBlock_transpose, rank_toBlock_transpose]
   exact (h k).symm
 
-/-- Scaling rows and columns does not increase the rank of a block. -/
+/-- Scaling the rows and the columns of a matrix does not increase the rank of any of its blocks. -/
 private theorem rank_toBlock_diagonal_mul_mul_diagonal_le (A : Matrix n n K) (a b : n → K)
     (p q : n → Prop) [DecidablePred q] :
     ((diagonal a * A * diagonal b).toBlock p q).rank ≤ (A.toBlock p q).rank := by
@@ -201,20 +262,22 @@ private theorem rank_toBlock_diagonal_mul_mul_diagonal_le (A : Matrix n n K) (a 
   rw [this]
   exact (rank_mul_le_left _ _).trans (rank_mul_le_right _ _)
 
-/-- Row and column scalings of a semiseparable matrix are semiseparable. -/
+/-- If $A$ is semiseparable and $a, b \in K^n$, then $\operatorname{diag}(a) \, A
+\operatorname{diag}(b)$ is semiseparable. -/
 theorem IsSemiseparable.diagonal_mul_mul_diagonal {A : Matrix n n K} (h : A.IsSemiseparable)
     (a b : n → K) : (diagonal a * A * diagonal b).IsSemiseparable := fun k =>
   ⟨(rank_toBlock_diagonal_mul_mul_diagonal_le A a b _ _).trans (h k).1,
     (rank_toBlock_diagonal_mul_mul_diagonal_le A a b _ _).trans (h k).2⟩
 
-/-- Row and column scalings of a quasiseparable matrix are quasiseparable. -/
+/-- If $A$ is quasiseparable and $a, b \in K^n$, then $\operatorname{diag}(a) \, A
+\operatorname{diag}(b)$ is quasiseparable. -/
 theorem IsQuasiseparable.diagonal_mul_mul_diagonal {A : Matrix n n K} (h : A.IsQuasiseparable)
     (a b : n → K) : (diagonal a * A * diagonal b).IsQuasiseparable := fun k =>
   ⟨(rank_toBlock_diagonal_mul_mul_diagonal_le A a b _ _).trans (h k).1,
     (rank_toBlock_diagonal_mul_mul_diagonal_le A a b _ _).trans (h k).2⟩
 
-/-- Adding a diagonal matrix to a quasiseparable matrix keeps it quasiseparable: the blocks
-strictly below and above the diagonal do not see it. -/
+/-- If $A$ is quasiseparable and $d \in K^n$, then $A + \operatorname{diag}(d)$ is quasiseparable,
+because the blocks strictly below and strictly above the diagonal contain no diagonal entry. -/
 theorem IsQuasiseparable.add_diagonal {A : Matrix n n K} (h : A.IsQuasiseparable) (d : n → K) :
     (A + diagonal d).IsQuasiseparable := fun k => by
   have h₁ : (A + diagonal d).toBlock (k < ·) (· ≤ k) = A.toBlock (k < ·) (· ≤ k) := by
@@ -227,19 +290,23 @@ theorem IsQuasiseparable.add_diagonal {A : Matrix n n K} (h : A.IsQuasiseparable
   exact h k
 
 omit [LinearOrder n] in
-/-- The rank of a block of a Hadamard product. -/
+/-- The rank of a block of a Hadamard product $A \circ B$ is at most the product of the ranks of the
+corresponding blocks of $A$ and $B$. -/
 private theorem rank_toBlock_hadamard_le (A B : Matrix n n K) (p q : n → Prop) [DecidablePred q] :
     ((A ⊙ B).toBlock p q).rank ≤ (A.toBlock p q).rank * (B.toBlock p q).rank :=
   rank_hadamard_le (A.toBlock p q) (B.toBlock p q)
 
-/-- **Hadamard products of quasiseparable matrices are quasiseparable** ([golub2013matrix]
-(12.2.7)), by `rank (X ⊙ Y) ≤ rank X * rank Y` on each block. -/
+/-- If $A$ and $B$ are quasiseparable, then their Hadamard product $A \circ B$ is quasiseparable.
+This is (12.2.7) of [golub2013matrix].
+
+On each block, $\operatorname{rank}(X \circ Y) \le \operatorname{rank} X \cdot
+\operatorname{rank} Y$. -/
 theorem IsQuasiseparable.hadamard {A B : Matrix n n K} (hA : A.IsQuasiseparable)
     (hB : B.IsQuasiseparable) : (A ⊙ B).IsQuasiseparable := fun k =>
   ⟨(rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).1 (hB k).1),
     (rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).2 (hB k).2)⟩
 
-/-- Hadamard products of semiseparable matrices are semiseparable. -/
+/-- If $A$ and $B$ are semiseparable, then their Hadamard product $A \circ B$ is semiseparable. -/
 theorem IsSemiseparable.hadamard {A B : Matrix n n K} (hA : A.IsSemiseparable)
     (hB : B.IsSemiseparable) : (A ⊙ B).IsSemiseparable := fun k =>
   ⟨(rank_toBlock_hadamard_le A B _ _).trans (mul_le_one' (hA k).1 (hB k).1),
@@ -247,23 +314,28 @@ theorem IsSemiseparable.hadamard {A B : Matrix n n K} (hA : A.IsSemiseparable)
 
 end Classes
 
-/-! ### The unit bidiagonal matrix `B(r)` and its inverse -/
+/-! ### The unit bidiagonal matrix $B(r)$ and its inverse -/
 
 section UnitBidiagonal
 
 variable {n : ℕ}
 
-/-- The unit upper bidiagonal matrix `B(r)` of [golub2013matrix] (12.2.2): `1` on the diagonal,
-`-r i` at `(i, i + 1)` and zero elsewhere, the `n − 1`-vector `r` being a sequence `ℕ → K`. -/
+/-- Let $r = (r_0, r_1, \dots)$ be a sequence in $K$. The **unit upper bidiagonal matrix**
+$B(r) \in K^{n \times n}$ of [golub2013matrix] (12.2.2) has the entries
+$$B(r)_{ij} = \begin{cases} 1 & i = j, \\ -r_i & j = i + 1, \\
+  0 & \text{otherwise}. \end{cases}$$
+
+Indices start at $0$. The vector $r \in K^{n-1}$ of the source is a sequence `ℕ → K`, of which
+only $r_0, \dots, r_{n-2}$ enter. -/
 def unitBidiagonal (n : ℕ) (r : ℕ → K) : Matrix (Fin n) (Fin n) K :=
   of fun i j => if i = j then 1 else if (j : ℕ) = i + 1 then -r i else 0
 
-/-- The entries of `B(r)`. -/
+/-- The entries of $B(r)$ are $1$ on the diagonal, $-r_i$ at $(i, i + 1)$, and $0$ elsewhere. -/
 theorem unitBidiagonal_apply (r : ℕ → K) (i j : Fin n) :
     unitBidiagonal n r i j = if i = j then 1 else if (j : ℕ) = i + 1 then -r i else 0 :=
   rfl
 
-/-- `B(r) = 1 - N(r)` with `N(r)` carrying `r` on the superdiagonal. -/
+/-- $B(r) = I - N(r)$, where $N(r)$ has $r_i$ at $(i, i + 1)$ and zeros elsewhere. -/
 private theorem unitBidiagonal_eq_one_sub (r : ℕ → K) :
     unitBidiagonal n r = 1 - of fun i j : Fin n => if (j : ℕ) = i + 1 then r i else 0 := by
   ext i j
@@ -275,7 +347,8 @@ private theorem unitBidiagonal_eq_one_sub (r : ℕ → K) :
     simp only [hij, ite_false]
     split_ifs <;> simp
 
-/-- `B(r)` times the explicit upper triangular matrix of products of `r` is the identity. -/
+/-- $B(r)$ times the upper triangular matrix with the entries $r_i r_{i+1} \cdots r_{j-1}$ for
+$i \le j$ is the identity. -/
 private theorem unitBidiagonal_mul_prod (r : ℕ → K) :
     unitBidiagonal n r *
       (of fun (i j : Fin n) => if i ≤ j then ∏ l ∈ Finset.Ico (i : ℕ) j, r l else 0) = 1 := by
@@ -309,20 +382,28 @@ private theorem unitBidiagonal_mul_prod (r : ℕ → K) :
     · rw [dite_eq_left h1, ite_eq_right (h2 h1), mul_zero, sub_zero]
     · rw [dite_eq_right h1, sub_zero]
 
-/-- **The inverse of `B(r)`** ([golub2013matrix] (12.2.3)): upper triangular, with the products
-`r_i r_{i+1} ⋯ r_{j-1}` above the diagonal. -/
+/-- For every sequence $r$ in $K$, the inverse of $B(r) \in K^{n \times n}$ is upper triangular with
+the entries
+$$\bigl(B(r)^{-1}\bigr)_{ij} = r_i r_{i+1} \cdots r_{j-1} \quad (i \le j),$$
+and $0$ for $i > j$. This is (12.2.3) of [golub2013matrix].
+
+The diagonal entries are the empty product $1$. -/
 theorem inv_unitBidiagonal (r : ℕ → K) :
     (unitBidiagonal n r)⁻¹ =
       of fun (i j : Fin n) => if i ≤ j then ∏ l ∈ Finset.Ico (i : ℕ) j, r l else 0 :=
   inv_eq_right_inv (unitBidiagonal_mul_prod r)
 
-/-- `B(r)` is invertible: `B(r) B(r)⁻¹ = 1`. -/
+/-- For every sequence $r$, $B(r) \, B(r)^{-1} = I$, so $B(r)$ is invertible. -/
 theorem unitBidiagonal_mul_inv (r : ℕ → K) : unitBidiagonal n r * (unitBidiagonal n r)⁻¹ = 1 := by
   rw [inv_unitBidiagonal]
   exact unitBidiagonal_mul_prod r
 
-/-- **`B(r)⁻¹` is semiseparable** ([golub2013matrix] (12.2.3), P12.2.1): an upper maximal block
-is `vecMulVec (∏_{[i, k)} r) (∏_{[k, j)} r)`, and a lower one has the single nonzero entry `1`. -/
+/-- For every sequence $r$, the inverse $B(r)^{-1}$ is semiseparable. This is (12.2.3) and P12.2.1
+of [golub2013matrix].
+
+An upper maximal block of $B(r)^{-1}$ at $k$ is the outer product of the vectors
+$(r_i \cdots r_{k-1})_{i \le k}$ and $(r_k \cdots r_{j-1})_{j \ge k}$, and a lower maximal block
+has the single nonzero entry $1$. -/
 theorem isSemiseparable_inv_unitBidiagonal (r : ℕ → K) :
     (unitBidiagonal n r)⁻¹.IsSemiseparable := by
   rw [inv_unitBidiagonal]
@@ -352,8 +433,10 @@ theorem isSemiseparable_inv_unitBidiagonal (r : ℕ → K) :
     rw [this]
     exact rank_vecMulVec_le _ _
 
-/-- **`B(r)` introduces zeros into a vector** ([golub2013matrix] §12.2.1): if
-`r l = x (l + 1) / x l` with `x l ≠ 0`, then `B(r)ᵀ x = x₀ e₀`. -/
+/-- **$B(r)^T$ introduces zeros into a vector.** Let $x \in K^{n+1}$ with $x_l \neq 0$ for $l < n$,
+and let $r_l = x_{l+1} / x_l$ for $l < n$. Then, for $B(r) \in K^{(n+1) \times (n+1)}$,
+$$B(r)^T x = x_0 \, e_0,$$
+where $e_0$ is the first unit vector. This is the use of $B(r)$ in [golub2013matrix] §12.2.1. -/
 theorem unitBidiagonal_transpose_mulVec_eq_single {x : Fin (n + 1) → K} {r : ℕ → K}
     (hx : ∀ l (h : l < n), x ⟨l, by omega⟩ ≠ 0)
     (hr : ∀ l (h : l < n), r l = x ⟨l + 1, by omega⟩ / x ⟨l, by omega⟩) :
@@ -376,23 +459,31 @@ theorem unitBidiagonal_transpose_mulVec_eq_single {x : Fin (n + 1) → K} {r : �
 
 end UnitBidiagonal
 
-/-! ### The quasiseparable representation `𝐒(u, v, t, d, p, q, r)` -/
+/-! ### The quasiseparable representation $\mathbf{S}(u, v, t, d, p, q, r)$ -/
 
 section Representation
 
 variable {n : ℕ}
 
-/-- **The quasiseparable representation**, with the transfer factors strictly between the row
-and the column (Eidelman–Gohberg 1999; Vandebril–Van Barel–Mastronardi 2008): below the diagonal
-`u_i t_{j+1} ⋯ t_{i−1} v_j`, on it `d_i`, above it `p_i r_{i+1} ⋯ r_{j−1} q_j`. It has one
-transfer factor fewer than the book's `𝐒(u, v, t, d, p, q, r)` of (12.2.8), which is what lets it
-represent every quasiseparable matrix (`Matrix.exists_quasiseparableRep`), `B(r)` included. -/
+/-- Let $u, v, d, p, q \in K^n$, and let $t$ and $r$ be sequences in $K$. The **quasiseparable
+representation** $\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$, with the transfer factors
+strictly between the row and the column, is the matrix with the entries
+$$a_{ij} = \begin{cases} u_i \, t_{j+1} \cdots t_{i-1} \, v_j & i > j, \\ d_i & i = j, \\
+  p_i \, r_{i+1} \cdots r_{j-1} \, q_j & i < j. \end{cases}$$
+This is the representation of Eidelman and Gohberg (1999), as in Vandebril, Van Barel and
+Mastronardi (2008).
+
+It has one transfer factor fewer than the representation $\mathbf{S}(u, v, t, d, p, q, r)$ of
+[golub2013matrix] (12.2.8) (`Matrix.quasiseparableOf`). This lets it represent every
+quasiseparable matrix (`Matrix.exists_quasiseparableRep`), $B(r)$ included. -/
 def quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K) :
     Matrix (Fin n) (Fin n) K :=
   of fun i j => if j < i then u i * (∏ l ∈ Finset.Ico ((j : ℕ) + 1) i, t l) * v j
     else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j
 
-/-- The entries of `quasiseparableRep`. -/
+/-- The entries of $\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$ are
+$u_i t_{j+1} \cdots t_{i-1} v_j$ below the diagonal, $d_i$ on it, and
+$p_i r_{i+1} \cdots r_{j-1} q_j$ above it. -/
 theorem quasiseparableRep_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K)
     (i j : Fin n) :
     quasiseparableRep u v t d p q r i j =
@@ -400,7 +491,10 @@ theorem quasiseparableRep_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin
       else if i = j then d i else p i * (∏ l ∈ Finset.Ico ((i : ℕ) + 1) j, r l) * q j :=
   rfl
 
-/-- Transposing the representation exchanges its lower and upper generators. -/
+/-- For all $u, v, d, p, q \in K^n$ and sequences $t$, $r$, transposition exchanges the lower and
+the upper generators of the representation:
+$$\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)^T = \widetilde{\mathbf{S}}(q, p, r, d, v, u, t).$$
+-/
 theorem transpose_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableRep u v t d p q r)ᵀ = quasiseparableRep q p r d v u t := by
   ext i j
@@ -412,8 +506,12 @@ theorem transpose_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q :
   · simp [h, lt_asymm h, h.ne]
     ring
 
-/-- The representation is quasiseparable: the strictly lower maximal block at `k` is
-`vecMulVec (u_i t_{k+1} ⋯ t_{i−1}) (t_{j+1} ⋯ t_k v_j)`, and symmetrically above. -/
+/-- For all $u, v, d, p, q \in K^n$ and sequences $t$, $r$, the matrix
+$\widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$ is quasiseparable.
+
+The strictly lower maximal block at $k$ is the outer product of the vectors
+$(u_i t_{k+1} \cdots t_{i-1})_{i > k}$ and $(t_{j+1} \cdots t_k v_j)_{j \le k}$, and the
+strictly upper ones are similar. -/
 theorem isQuasiseparable_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableRep u v t d p q r).IsQuasiseparable := by
   intro k
@@ -442,15 +540,24 @@ theorem isQuasiseparable_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (
     rw [this]
     exact rank_vecMulVec_le _ _
 
-/-- **The quasiseparable representation** `𝐒(u, v, t, d, p, q, r)` of [golub2013matrix] (12.2.8):
-below the diagonal `u_i t_{i-1} ⋯ t_j v_j`, on it `d_i`, above it `p_i r_i ⋯ r_{j-1} q_j`; that is
-`tril(u vᵀ, −1) .* B(t)⁻ᵀ + diag(d) + triu(p qᵀ, 1) .* B(r)⁻¹` (`Matrix.quasiseparableOf_eq`). -/
+/-- Let $u, v, d, p, q \in K^n$, and let $t$ and $r$ be sequences in $K$. The **quasiseparable
+representation** $\mathbf{S}(u, v, t, d, p, q, r)$ of [golub2013matrix] (12.2.8) is the matrix
+with the entries
+$$a_{ij} = \begin{cases} u_i \, t_j \cdots t_{i-1} \, v_j & i > j, \\ d_i & i = j, \\
+  p_i \, r_i \cdots r_{j-1} \, q_j & i < j. \end{cases}$$
+Equivalently, $\mathbf{S}(u, v, t, d, p, q, r) = \operatorname{tril}(uv^T, -1) \circ B(t)^{-T} +
+\operatorname{diag}(d) + \operatorname{triu}(pq^T, 1) \circ B(r)^{-1}$
+(`Matrix.quasiseparableOf_eq`).
+
+Not every quasiseparable matrix has this form (`Matrix.unitBidiagonal_ne_quasiseparableOf`). The
+representation `Matrix.quasiseparableRep` corrects this. -/
 def quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K) :
     Matrix (Fin n) (Fin n) K :=
   of fun i j => if j < i then u i * (∏ l ∈ Finset.Ico (j : ℕ) i, t l) * v j
     else if i = j then d i else p i * (∏ l ∈ Finset.Ico (i : ℕ) j, r l) * q j
 
-/-- The entries of `𝐒(u, v, t, d, p, q, r)`. -/
+/-- The entries of $\mathbf{S}(u, v, t, d, p, q, r)$ are $u_i t_j \cdots t_{i-1} v_j$ below the
+diagonal, $d_i$ on it, and $p_i r_i \cdots r_{j-1} q_j$ above it. -/
 theorem quasiseparableOf_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K)
     (i j : Fin n) :
     quasiseparableOf u v t d p q r i j =
@@ -458,8 +565,13 @@ theorem quasiseparableOf_apply (u v : Fin n → K) (t : ℕ → K) (d p q : Fin 
       else if i = j then d i else p i * (∏ l ∈ Finset.Ico (i : ℕ) j, r l) * q j :=
   rfl
 
-/-- The representation through the inverse bidiagonal factors ([golub2013matrix] (12.2.8)):
-`𝐒(u, v, t, d, p, q, r) = tril(u vᵀ, −1) .* B(t)⁻ᵀ + diag(d) + triu(p qᵀ, 1) .* B(r)⁻¹`. -/
+/-- For all $u, v, d, p, q \in K^n$ and sequences $t$, $r$,
+$$\mathbf{S}(u, v, t, d, p, q, r) = \operatorname{tril}(uv^T, -1) \circ B(t)^{-T} +
+  \operatorname{diag}(d) + \operatorname{triu}(pq^T, 1) \circ B(r)^{-1}.$$
+This is the form in which [golub2013matrix] (12.2.8) writes the representation.
+
+Here $\operatorname{tril}(X, -1)$ and $\operatorname{triu}(X, 1)$ are `Matrix.strictLower X` and
+`Matrix.strictUpper X`, and $\circ$ is the Hadamard product. -/
 theorem quasiseparableOf_eq (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K) :
     quasiseparableOf u v t d p q r =
       strictLower (vecMulVec u v) ⊙ ((unitBidiagonal n t)⁻¹)ᵀ + diagonal d +
@@ -475,8 +587,11 @@ theorem quasiseparableOf_eq (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n �
   · simp [h, lt_asymm h, h.ne', h.le]
     ring
 
-/-- With `t = r = 1` the representation is the **generator representation** (12.2.6),
-`tril(u vᵀ, −1) + diag(d) + triu(p qᵀ, 1)`. -/
+/-- With $t = r = (1, 1, \dots)$, the representation is the **generator representation** (12.2.6) of
+[golub2013matrix]:
+$$\mathbf{S}(u, v, 1, d, p, q, 1)
+  = \operatorname{tril}(uv^T, -1) + \operatorname{diag}(d) + \operatorname{triu}(pq^T, 1).$$
+-/
 theorem quasiseparableOf_one_one (u v d p q : Fin n → K) :
     quasiseparableOf u v 1 d p q 1 =
       strictLower (vecMulVec u v) + diagonal d + strictUpper (vecMulVec p q) := by
@@ -488,9 +603,9 @@ theorem quasiseparableOf_one_one (u v d p q : Fin n → K) :
   · simp
   · simp [h, lt_asymm h, h.ne']
 
-/-- **The book's representation is the corrected one** with the first transfer factor absorbed
-into the generators: `𝐒(u, v, t, d, p, q, r)` of (12.2.8) is `quasiseparableRep` with
-`v_j ↦ t_j v_j` and `p_i ↦ p_i r_i`. -/
+/-- The representation (12.2.8) is the corrected representation with the first transfer factor
+absorbed into the generators: $\mathbf{S}(u, v, t, d, p, q, r) = \widetilde{\mathbf{S}}(u, v',
+t, d, p', q, r)$ with $v'_j = t_j v_j$ and $p'_i = p_i r_i$. -/
 theorem quasiseparableOf_eq_quasiseparableRep (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) :
     quasiseparableOf u v t d p q r
@@ -505,16 +620,21 @@ theorem quasiseparableOf_eq_quasiseparableRep (u v : Fin n → K) (t : ℕ → K
     rw [Finset.prod_eq_prod_Ico_succ_bot (Fin.lt_def.1 this)]
     ring
 
-/-- **The quasiseparable representation is quasiseparable** ([golub2013matrix] §12.2.3), through
-`Matrix.quasiseparableOf_eq_quasiseparableRep`. -/
+/-- For all $u, v, d, p, q \in K^n$ and sequences $t$, $r$, the matrix
+$\mathbf{S}(u, v, t, d, p, q, r)$ is quasiseparable, as stated in [golub2013matrix] §12.2.3.
+
+The proof goes through `Matrix.quasiseparableOf_eq_quasiseparableRep`. -/
 theorem isQuasiseparable_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableOf u v t d p q r).IsQuasiseparable := by
   rw [quasiseparableOf_eq_quasiseparableRep]
   exact isQuasiseparable_quasiseparableRep _ _ _ _ _ _ _
 
-/-- **With `d = u .* v = p .* q` the representation is semiseparable** ([golub2013matrix]
-§12.2.3): the diagonal entry `d_k = u_k v_k` continues the rank-one pattern of the lower blocks,
-and `d_k = p_k q_k` that of the upper blocks. -/
+/-- Let $u, v, d, p, q \in K^n$ with $d_i = u_i v_i$ and $d_i = p_i q_i$ for all $i$, and let $t$
+and $r$ be sequences. Then $\mathbf{S}(u, v, t, d, p, q, r)$ is semiseparable. This is stated in
+[golub2013matrix] §12.2.3.
+
+The diagonal entry $d_k = u_k v_k$ continues the rank-one pattern of the lower blocks, and
+$d_k = p_k q_k$ that of the upper blocks. -/
 theorem isSemiseparable_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) (huv : d = u * v) (hpq : d = p * q) :
     (quasiseparableOf u v t d p q r).IsSemiseparable := by
@@ -549,25 +669,32 @@ theorem isSemiseparable_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d 
     rw [this]
     exact rank_vecMulVec_le _ _
 
-/-- **Transposing the representation** ([golub2013matrix] §12.2.3):
-`𝐒(u, v, t, d, p, q, r)ᵀ = 𝐒(q, p, r, d, v, u, t)`; in particular `u = q`, `v = p`, `t = r` gives
-a symmetric matrix. -/
+/-- For all $u, v, d, p, q \in K^n$ and sequences $t$, $r$,
+$$\mathbf{S}(u, v, t, d, p, q, r)^T = \mathbf{S}(q, p, r, d, v, u, t).$$
+This is stated in [golub2013matrix] §12.2.3.
+
+In particular, the matrix is symmetric when $u = q$, $v = p$ and $t = r$. -/
 theorem transpose_quasiseparableOf (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K)
     (r : ℕ → K) : (quasiseparableOf u v t d p q r)ᵀ = quasiseparableOf q p r d v u t := by
   rw [quasiseparableOf_eq_quasiseparableRep, transpose_quasiseparableRep,
     quasiseparableOf_eq_quasiseparableRep]
   simp only [mul_comm]
 
-/-- **Structured products** ([golub2013matrix] (12.2.9)): `triu(p qᵀ) .* B(r)⁻¹` is
-`diag(p) B(r)⁻¹ diag(q)` (the `triu` is redundant, `B(r)⁻¹` being upper triangular). -/
+/-- **Structured products.** For $p, q \in K^n$ and a sequence $r$,
+$$(pq^T) \circ B(r)^{-1} = \operatorname{diag}(p) \, B(r)^{-1} \operatorname{diag}(q).$$
+This is the product (12.2.9) of [golub2013matrix].
+
+The source writes $\operatorname{triu}(pq^T) \circ B(r)^{-1}$. The $\operatorname{triu}$ is
+redundant because $B(r)^{-1}$ is upper triangular, and the statement omits it. -/
 theorem vecMulVec_hadamard_inv_unitBidiagonal (p q : Fin n → K) (r : ℕ → K) :
     vecMulVec p q ⊙ (unitBidiagonal n r)⁻¹ = diagonal p * (unitBidiagonal n r)⁻¹ * diagonal q := by
   ext i j
   simp only [hadamard_apply, vecMulVec_apply, diagonal_mul, mul_diagonal]
   ring
 
-/-- The matrix–vector product of (12.2.9) in `O(n)`: `(triu(p qᵀ) .* B(r)⁻¹) x =
-p .* (B(r)⁻¹ (q .* x))`. -/
+/-- For $p, q, x \in K^n$ and a sequence $r$, $\bigl((pq^T) \circ B(r)^{-1}\bigr) x = p \circ
+\bigl(B(r)^{-1} (q \circ x)\bigr)$. This computes the matrix–vector product of (12.2.9) in
+$O(n)$ operations. -/
 theorem vecMulVec_hadamard_inv_unitBidiagonal_mulVec (p q : Fin n → K) (r : ℕ → K)
     (x : Fin n → K) :
     (vecMulVec p q ⊙ (unitBidiagonal n r)⁻¹) *ᵥ x = p * ((unitBidiagonal n r)⁻¹ *ᵥ (q * x)) := by
@@ -575,8 +702,9 @@ theorem vecMulVec_hadamard_inv_unitBidiagonal_mulVec (p q : Fin n → K) (r : �
   rw [vecMulVec_hadamard_inv_unitBidiagonal, ← mulVec_mulVec, ← mulVec_mulVec, hd]
   exact funext (mulVec_diagonal p _)
 
-/-- The solve of (12.2.9) in `O(n)`: for `p`, `q` with nonzero entries,
-`y = (triu(p qᵀ) .* B(r)⁻¹) x` gives `x = (B(r) (y ./ p)) ./ q`. -/
+/-- Let $p, q \in K^n$ have nonzero entries and let $r$ be a sequence. If
+$\bigl((pq^T) \circ B(r)^{-1}\bigr) x = y$, then $x = \bigl(B(r) (y / p)\bigr) / q$, with
+entrywise division. This solves the system of (12.2.9) in $O(n)$ operations. -/
 theorem eq_div_of_vecMulVec_hadamard_inv_unitBidiagonal_mulVec_eq {p q : Fin n → K} (r : ℕ → K)
     (hp : ∀ i, p i ≠ 0) (hq : ∀ i, q i ≠ 0) {x y : Fin n → K}
     (h : (vecMulVec p q ⊙ (unitBidiagonal n r)⁻¹) *ᵥ x = y) :
@@ -599,7 +727,8 @@ section Order
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- The rows `≥ k` and the columns `≤ k` cover the index set and overlap in `k`. -/
+/-- For an index $k$, the number of indices $i \ge k$ plus the number of indices $j \le k$ is
+$|n| + 1$. -/
 private theorem card_le_add_card_le (k : n) :
     Fintype.card {i // k ≤ i} + Fintype.card {j // j ≤ k} = Fintype.card n + 1 := by
   rw [Fintype.card_subtype, Fintype.card_subtype, ← card_univ, ← card_singleton k,
@@ -611,7 +740,8 @@ private theorem card_le_add_card_le (k : n) :
     simp only [mem_inter, mem_filter, mem_univ, true_and, mem_singleton]
     exact ⟨fun h => le_antisymm h.2 h.1, fun h => h ▸ ⟨le_rfl, le_rfl⟩⟩
 
-/-- The rows `> k` and the columns `≤ k` partition the index set. -/
+/-- For an index $k$, the number of indices $i > k$ plus the number of indices $j \le k$ is $|n|$.
+-/
 private theorem card_lt_add_card_le (k : n) :
     Fintype.card {i // k < i} + Fintype.card {j // j ≤ k} = Fintype.card n := by
   have e := card_filter_add_card_filter_not (s := (univ : Finset n)) (· ≤ k)
@@ -619,7 +749,8 @@ private theorem card_lt_add_card_le (k : n) :
   rw [Fintype.card_subtype, Fintype.card_subtype, ← card_univ]
   omega
 
-/-- The lower maximal blocks of the inverse of a tridiagonal matrix have rank at most one. -/
+/-- If $A$ is invertible and tridiagonal, then every block $A^{-1}[\{i \ge k\}, \{j \le k\}]$ has
+rank at most one. -/
 private theorem rank_toBlock_inv_le_one_of_isTridiagonal {A : Matrix n n K} (hA : IsUnit A)
     (hT : A.IsTridiagonal) (k : n) : (A⁻¹.toBlock (k ≤ ·) (· ≤ k)).rank ≤ 1 := by
   have h := rank_toBlock_inv_add_card hA (k ≤ ·) (· ≤ k)
@@ -631,10 +762,12 @@ private theorem rank_toBlock_inv_le_one_of_isTridiagonal {A : Matrix n n K} (hA 
   have hc := card_le_add_card_le k
   omega
 
-/-- **Fact 1 of [golub2013matrix] §12.2.3**, first half: the inverse of a nonsingular tridiagonal
-matrix is semiseparable. By the nullity theorem, a lower maximal block of `A⁻¹` at `k` has rank
-`rank A[{i > k}, {j < k}] + 1 = 1`, the complementary block of a tridiagonal matrix being zero;
-the upper blocks by transposition. -/
+/-- Let $A$ be an invertible tridiagonal matrix over $K$ with finite, totally ordered indices. Then
+$A^{-1}$ is semiseparable. This is the first half of Fact 1 in [golub2013matrix] §12.2.3.
+
+By the nullity theorem (`Matrix.rank_toBlock_inv_add_card`), the lower maximal block of $A^{-1}$
+at $k$ has rank $\operatorname{rank} A[\{i > k\}, \{j < k\}] + 1 = 1$, since that block of a
+tridiagonal matrix is zero. The upper blocks follow by transposition. -/
 theorem IsTridiagonal.isSemiseparable_inv {A : Matrix n n K} (hT : A.IsTridiagonal)
     (hA : IsUnit A) : A⁻¹.IsSemiseparable := by
   refine fun k => ⟨rank_toBlock_inv_le_one_of_isTridiagonal hA hT k, ?_⟩
@@ -642,8 +775,8 @@ theorem IsTridiagonal.isSemiseparable_inv {A : Matrix n n K} (hT : A.IsTridiagon
     (fun i j h => hT j i h.symm) k
   rwa [← transpose_nonsing_inv, rank_toBlock_transpose] at this
 
-/-- The strictly lower maximal blocks of the inverse of a quasiseparable matrix have rank at most
-one. -/
+/-- If $A$ is invertible and $A[\{i > k\}, \{j \le k\}]$ has rank at most one, then
+$A^{-1}[\{i > k\}, \{j \le k\}]$ has rank at most one. -/
 private theorem rank_toBlock_inv_le_one_of_isQuasiseparable {A : Matrix n n K} (hA : IsUnit A)
     (k : n) (hq : (A.toBlock (k < ·) (· ≤ k)).rank ≤ 1) :
     (A⁻¹.toBlock (k < ·) (· ≤ k)).rank ≤ 1 := by
@@ -654,9 +787,11 @@ private theorem rank_toBlock_inv_le_one_of_isQuasiseparable {A : Matrix n n K} (
   have hc := card_lt_add_card_le k
   omega
 
-/-- **Fact 2 of [golub2013matrix] §12.2.3**: the inverse of a nonsingular quasiseparable matrix is
-quasiseparable. By the nullity theorem the complementary block of a strictly lower maximal block of
-`A⁻¹` is a strictly lower maximal block of `A`, of the same rank. -/
+/-- Let $A$ be an invertible quasiseparable matrix over $K$ with finite, totally ordered indices.
+Then $A^{-1}$ is quasiseparable. This is Fact 2 in [golub2013matrix] §12.2.3.
+
+By the nullity theorem, the complementary block of a strictly lower maximal block of $A^{-1}$ is
+a strictly lower maximal block of $A$, of the same rank. -/
 theorem IsQuasiseparable.inv {A : Matrix n n K} (h : A.IsQuasiseparable) (hA : IsUnit A) :
     A⁻¹.IsQuasiseparable := by
   refine fun k => ⟨rank_toBlock_inv_le_one_of_isQuasiseparable hA k (h k).1, ?_⟩
@@ -664,10 +799,14 @@ theorem IsQuasiseparable.inv {A : Matrix n n K} (h : A.IsQuasiseparable) (hA : I
     (h.transpose k).1
   rwa [← transpose_nonsing_inv, rank_toBlock_transpose] at this
 
-/-- **Orthogonal upper Hessenberg matrices are quasiseparable** ([golub2013matrix] §12.2.10, for
-the product form (12.2.18)): a strictly lower maximal block of an upper Hessenberg matrix is
-supported on one column, and an upper one is the transpose of a lower block of `H⁻¹ = Hᵀ`, of
-the same rank as the lower block of `H` by the nullity theorem. -/
+/-- Let $H$ be an orthogonal upper Hessenberg matrix over $K$ with finite, totally ordered indices,
+so $H^T H = H H^T = I$. Then $H$ is quasiseparable. [golub2013matrix] §12.2.10 uses this for the
+product form (12.2.18).
+
+A strictly lower maximal block of an upper Hessenberg matrix is supported on one column. A
+strictly upper maximal block of $H$ is the transpose of a strictly lower block of
+$H^{-1} = H^T$, which has the same rank as the corresponding block of $H$ by the nullity
+theorem. -/
 theorem orthogonalHessenberg_isQuasiseparable {H : Matrix n n K} (hH : H ∈ orthogonalGroup n K)
     (hHess : H.IsUpperHessenberg) : H.IsQuasiseparable := by
   have hlow : ∀ k, (H.toBlock (k < ·) (· ≤ k)).rank ≤ 1 := fun k => by
@@ -693,15 +832,21 @@ section Generator
 
 variable {n : ℕ}
 
-/-- The **`{p, q}`-generator representable** matrices of [golub2013matrix] §12.2.8: the lower
-part `tril(A, p − 1)` agrees with that of a rank-`p` matrix `U Vᵀ`, and the upper part
-`triu(A, −q + 1)` with that of a rank-`q` matrix `P Qᵀ`. -/
+/-- Let $A \in K^{n \times n}$ and $p, q \in \mathbb{N}$. The matrix $A$ is **$\{p, q\}$-generator
+representable** if there are $U, V \in K^{n \times p}$ and $P, Q \in K^{n \times q}$ with
+$$a_{ij} = (UV^T)_{ij} \ \text{ for } j < i + p, \qquad
+  a_{ij} = (PQ^T)_{ij} \ \text{ for } i < j + q.$$
+That is, $A$ agrees with $UV^T$ in its part $\operatorname{tril}(A, p - 1)$ and with $PQ^T$ in
+its part $\operatorname{triu}(A, -q + 1)$. This is the class of [golub2013matrix] §12.2.8.
+
+The matrices $UV^T$ and $PQ^T$ have rank at most $p$ and at most $q$. -/
 def IsGeneratorRepresentableOfOrder (A : Matrix (Fin n) (Fin n) K) (p q : ℕ) : Prop :=
   ∃ (U V : Matrix (Fin n) (Fin p) K) (P Q : Matrix (Fin n) (Fin q) K),
     (∀ i j : Fin n, (j : ℕ) < i + p → A i j = (U * Vᵀ) i j) ∧
       ∀ i j : Fin n, (i : ℕ) < j + q → A i j = (P * Qᵀ) i j
 
-/-- Transposition exchanges the two orders of a generator representation. -/
+/-- If $A$ is $\{p, q\}$-generator representable, then $A^T$ is $\{q, p\}$-generator representable.
+-/
 theorem IsGeneratorRepresentableOfOrder.transpose {A : Matrix (Fin n) (Fin n) K} {p q : ℕ}
     (h : A.IsGeneratorRepresentableOfOrder p q) : Aᵀ.IsGeneratorRepresentableOfOrder q p := by
   obtain ⟨U, V, P, Q, h₁, h₂⟩ := h
@@ -711,11 +856,11 @@ theorem IsGeneratorRepresentableOfOrder.transpose {A : Matrix (Fin n) (Fin n) K}
   · rw [transpose_apply, h₁ j i hij, ← transpose_apply (U * Vᵀ), transpose_mul,
       transpose_transpose]
 
-/-- The number of indices of `Fin n` below `m`. -/
+/-- The number of $x \in \{0, \dots, n - 1\}$ with $x < m$ is $\min(n, m)$. -/
 private theorem card_val_lt (m : ℕ) : Fintype.card {x : Fin n // (x : ℕ) < m} = min n m := by
   rw [Fintype.card_subtype, Fin.card_filter_val_lt]
 
-/-- The number of indices of `Fin n` from `m` on. -/
+/-- The number of $x \in \{0, \dots, n - 1\}$ with $m \le x$ is $n - \min(n, m)$. -/
 private theorem card_le_val (m : ℕ) : Fintype.card {x : Fin n // m ≤ (x : ℕ)} = n - min n m := by
   have e := card_filter_add_card_filter_not (s := (univ : Finset (Fin n))) fun x => (x : ℕ) < m
   rw [Fin.card_filter_val_lt, card_univ, Fintype.card_fin] at e
@@ -751,11 +896,13 @@ private theorem hasLowerBandwidth_inv_of_isGeneratorRepresentableOfOrder
     omega
   exact congrFun (congrFun (rank_eq_zero_iff.1 h0) ⟨i, by simp; omega⟩) ⟨j, by simp⟩
 
-/-- **The inverse of a `{p, q}`-generator representable matrix is banded** ([golub2013matrix]
-§12.2.8): lower bandwidth `p` and upper bandwidth `q`. By the nullity theorem, the block of
-`A⁻¹` on the rows `≥ k + p` and the columns `< k` has rank
-`rank A[{i ≥ k}, {j < k + p}] − p ≤ 0`, the block of `A` being a block of `U Vᵀ`; the upper
-bandwidth by transposition. -/
+/-- Let $A \in K^{n \times n}$ be invertible and $\{p, q\}$-generator representable. Then $A^{-1}$
+has lower bandwidth $p$ and upper bandwidth $q$: $(A^{-1})_{ij} = 0$ for $i > j + p$ and for
+$j > i + q$. This is the banded inverse of [golub2013matrix] §12.2.8.
+
+By the nullity theorem, the block of $A^{-1}$ on the rows $i \ge k + p$ and the columns $j < k$
+has rank $\operatorname{rank} A[\{i \ge k\}, \{j < k + p\}] - p \le 0$, because that block of
+$A$ is a block of $UV^T$. The upper bandwidth follows by transposition. -/
 theorem IsGeneratorRepresentableOfOrder.hasBandwidth_inv {A : Matrix (Fin n) (Fin n) K}
     {p q : ℕ} (h : A.IsGeneratorRepresentableOfOrder p q) (hA : IsUnit A) :
     A⁻¹.HasLowerBandwidth p ∧ A⁻¹.HasUpperBandwidth q := by
@@ -774,8 +921,9 @@ section LU
 
 variable {n : ℕ}
 
-/-- The row operations of [golub2013matrix] Algorithm 12.2.1 in closed form: `B(τ)ᵀ` carries the
-semiseparable `𝐒(u, v, t, u .* v, p, q, r)` to `triu(p̃ qᵀ) .* B(r)⁻¹`. -/
+/-- Under the hypotheses of `Matrix.isLU_quasiseparableOf`, $B(\tau)^T \, \mathbf{S}(u, v, t, u
+\circ v, p, q, r) = (\tilde{p} q^T) \circ B(r)^{-1}$, which is the row elimination of
+[golub2013matrix] Algorithm 12.2.1 in closed form. -/
 private theorem transpose_unitBidiagonal_mul_quasiseparableOf (u v p q p' : Fin n → K)
     (t r τ : ℕ → K) (huv : u * v = p * q)
     (hτ : ∀ k (h : k + 1 < n), τ k * u ⟨k, by omega⟩ = t k * u ⟨k + 1, h⟩)
@@ -847,11 +995,18 @@ private theorem transpose_unitBidiagonal_mul_quasiseparableOf (u v p q p' : Fin 
       simp only [quasiseparableOf_apply, lt_irrefl, le_refl, ↓reduceIte, Pi.mul_apply,
         Finset.Ico_self, prod_empty, mul_one, hp0, e]
 
-/-- **The LU factorization of a semiseparable matrix** in closed form — the exact content of
-[golub2013matrix] Algorithm 12.2.1. For `A = 𝐒(u, v, t, u .* v, p, q, r)` with
-`u .* v = p .* q`, multipliers `τ` with `τ_k u_k = t_k u_{k+1}` (the book's
-`τ_k = t_k u_{k+1} / u_k`, for `u_k ≠ 0`) and `p̃₀ = p₀`, `p̃_{k+1} = p_{k+1} − p_k τ_k r_k`:
-`A = L U` with `L = B(τ)⁻ᵀ` and `U = triu(p̃ qᵀ) .* B(r)⁻¹`. -/
+/-- **The LU factorization of a semiseparable matrix.** Let $u, v, p, q, \tilde{p} \in K^n$ and let
+$t, r, \tau$ be sequences in $K$, with $u \circ v = p \circ q$,
+$$\tau_k u_k = t_k u_{k+1} \quad \text{and} \quad
+  \tilde{p}_{k+1} = p_{k+1} - p_k \tau_k r_k \qquad (k + 1 < n),$$
+and $\tilde{p}_0 = p_0$. Then the semiseparable matrix
+$A = \mathbf{S}(u, v, t, u \circ v, p, q, r)$ has the LU factorization $A = LU$ with
+$$L = B(\tau)^{-T}, \qquad U = (\tilde{p} q^T) \circ B(r)^{-1},$$
+where $L$ is unit lower triangular and $U$ is upper triangular. This is the content of
+[golub2013matrix] Algorithm 12.2.1 in closed form.
+
+The source takes $\tau_k = t_k u_{k+1} / u_k$, which needs $u_k \neq 0$. The hypothesis
+$\tau_k u_k = t_k u_{k+1}$ does not. The factorization is stated as `Matrix.IsLU`. -/
 theorem isLU_quasiseparableOf (u v p q p' : Fin n → K) (t r τ : ℕ → K) (huv : u * v = p * q)
     (hτ : ∀ k (h : k + 1 < n), τ k * u ⟨k, by omega⟩ = t k * u ⟨k + 1, h⟩)
     (hp₀ : ∀ h : 0 < n, p' ⟨0, h⟩ = p ⟨0, h⟩)
@@ -872,37 +1027,47 @@ theorem isLU_quasiseparableOf (u v p q p' : Fin n → K) (t r τ : ℕ → K) (h
 
 end LU
 
-/-! ### Products of `2 × 2` blocks in consecutive planes -/
+/-! ### Products of $2 \times 2$ blocks in consecutive planes -/
 
 section Chain
 
 variable (N : ℕ) (M : ℕ → Matrix (Fin 2) (Fin 2) K)
 
-/-- The `k`-th factor of `Matrix.givensChain`: the block `M k` in the coordinate plane
-`(k, k + 1)` of `Fin (N + 1)`, and the identity for `k ≥ N`. -/
+/-- Let $N \in \mathbb{N}$ and $M_k \in K^{2 \times 2}$ for $k \in \mathbb{N}$. The $k$-th **factor
+of the chain** of the $M_k$ is the matrix $G_k \in K^{(N+1) \times (N+1)}$ that is $M_k$ in the
+coordinate plane $(k, k + 1)$ and the identity elsewhere, for $k < N$. For $k \ge N$ it is the
+identity.
+
+The embedding is `Matrix.planeEmbed`. -/
 def givensFactor (k : ℕ) : Matrix (Fin (N + 1)) (Fin (N + 1)) K :=
   if h : k < N then planeEmbed ⟨k, by omega⟩ ⟨k + 1, by omega⟩ (M k) else 1
 
-/-- A factor of a chain is the adjacent embedding `Matrix.adjacentEmbed k (M k)` of
-`Numlib/LinearAlgebra/Matrix/PlaneRotation` in `Fin (N + 1)`. -/
+/-- The $k$-th factor of a chain is the adjacent embedding `Matrix.adjacentEmbed k (M k)` of
+`Numlib.LinearAlgebra.Matrix.PlaneRotation`, in $K^{(N+1) \times (N+1)}$. -/
 theorem givensFactor_eq_adjacentEmbed (k : ℕ) : givensFactor N M k = adjacentEmbed k (M k) := by
   unfold givensFactor adjacentEmbed
   split_ifs <;> first | rfl | omega
 
-/-- **A chain of `2 × 2` blocks** ([golub2013matrix] (12.2.4), (12.2.12)–(12.2.13)): the product
-`M₀ M₁ ⋯ M_{N-1}` of the blocks `M k` embedded in the consecutive coordinate planes `(k, k + 1)`
-of `Fin (N + 1)` (`prodFwd` of `Matrix.givensFactor`). With `M k` a plane rotation it is
-the book's `Qᵀ = G₁ ⋯ G_{n−1}`. -/
+/-- **A chain of $2 \times 2$ blocks.** Let $N \in \mathbb{N}$ and $M_k \in K^{2 \times 2}$ for
+$k \in \mathbb{N}$. The chain of the $M_k$ is the product
+$$G_0 G_1 \cdots G_{N-1} \in K^{(N+1) \times (N+1)},$$
+where $G_k$ is $M_k$ embedded in the coordinate plane $(k, k + 1)$ (`Matrix.givensFactor`). It
+appears in [golub2013matrix] (12.2.4) and (12.2.12)–(12.2.13).
+
+With plane rotations $M_k$, it is the matrix $Q^T = G_1 \cdots G_{n-1}$ of the source, whose
+indices start at $1$. The product is `prodFwd`. -/
 def givensChain : Matrix (Fin (N + 1)) (Fin (N + 1)) K :=
   prodFwd (givensFactor N M) N
 
-/-- The leading factor of the entries of a chain: `1` in row `0`, `δ_{i-1}` below. -/
+/-- The leading factor $c_i$ of the entries of a chain: $c_0 = 1$, and $c_i = \delta_{i-1}$, the
+lower right entry of $M_{i-1}$, for $i \ge 1$. -/
 private def chainHead (i : ℕ) : K := if i = 0 then 1 else M (i - 1) 1 1
 
 variable {N M}
 
-/-- The entries of the partial products of a chain: the columns `< m` are finished, the column
-`m` still lacks its factor `α_m`, and the columns `> m` are those of the identity. -/
+/-- The entries of the partial product $G_0 \cdots G_{m-1}$ of a chain: the columns $j < m$ are
+those of the full chain, the column $m$ still lacks its factor $\alpha_m$, and the columns
+$j > m$ are those of the identity. -/
 private theorem prodFwd_givensFactor_apply {m : ℕ} (hm : m ≤ N) (i j : Fin (N + 1)) :
     prodFwd (givensFactor N M) m i j =
       if (j : ℕ) < m then
@@ -954,10 +1119,14 @@ private theorem prodFwd_givensFactor_apply {m : ℕ} (hm : m ≤ N) (i j : Fin (
         · simp [show ¬ (i : ℕ) ≤ m by omega, show ¬ (i : ℕ) ≤ m + 1 by omega,
             show (i : ℕ) ≠ m + 1 by omega]
 
-/-- **The entries of a chain** ([golub2013matrix] (12.2.4)): with `M k = [α_k β_k; γ_k δ_k]`,
-`(M₀ ⋯ M_{N−1})_{ij}` is `γ_j` for `i = j + 1`, zero for `i > j + 1`, and
-`c_i β_i ⋯ β_{j-1} α'_j` for `i ≤ j`, where `c₀ = 1`, `c_i = δ_{i-1}` and `α'_j = α_j` except
-`α'_N = 1`. -/
+/-- **The entries of a chain.** Let $M_k = \begin{bmatrix} \alpha_k & \beta_k \\ \gamma_k & \delta_k
+\end{bmatrix} \in K^{2 \times 2}$ for $k \in \mathbb{N}$, and let $G = G_0 \cdots G_{N-1}$ be
+their chain. Then
+$$G_{ij} = \begin{cases} \gamma_j & i = j + 1, \\
+  c_i \, \beta_i \cdots \beta_{j-1} \, \alpha'_j & i \le j, \\
+  0 & i > j + 1, \end{cases}$$
+where $c_0 = 1$, $c_i = \delta_{i-1}$ for $i \ge 1$, $\alpha'_j = \alpha_j$ for $j < N$, and
+$\alpha'_N = 1$. This is (12.2.4) of [golub2013matrix]. -/
 theorem givensChain_apply (i j : Fin (N + 1)) :
     givensChain N M i j =
       if (i : ℕ) = j + 1 then M j 1 0
@@ -972,16 +1141,20 @@ theorem givensChain_apply (i j : Fin (N + 1)) :
     rw [hj]
     simp only [lt_irrefl, ↓reduceIte, hi, chainHead, mul_one]
 
-/-- A chain is upper Hessenberg ([golub2013matrix] (12.2.4)). -/
+/-- Every chain $G_0 \cdots G_{N-1}$ of $2 \times 2$ blocks is upper Hessenberg, as (12.2.4) of
+[golub2013matrix] shows. -/
 theorem givensChain_isUpperHessenberg : (givensChain N M).IsUpperHessenberg := by
   rw [isUpperHessenberg_iff_fin]
   intro i j hij
   rw [givensChain_apply]
   simp [show (i : ℕ) ≠ j + 1 by omega, show ¬ (i : ℕ) ≤ j by omega]
 
-/-- **A chain is quasiseparable** ([golub2013matrix] §12.2.2, "off-diagonal blocks have unit rank
-or less"): a strictly lower maximal block holds the single entry `γ_k`, and a strictly upper one
-is `vecMulVec (c_i β_i ⋯ β_{k-1}) (β_k ⋯ β_{j-1} α'_j)`. -/
+/-- Every chain $G_0 \cdots G_{N-1}$ of $2 \times 2$ blocks is quasiseparable. This is the remark of
+[golub2013matrix] §12.2.2 that the "off-diagonal blocks have unit rank or less".
+
+In the notation of `Matrix.givensChain_apply`, a strictly lower maximal block holds the single
+entry $\gamma_k$, and a strictly upper one is the outer product of the vectors
+$(c_i \beta_i \cdots \beta_{k-1})_i$ and $(\beta_k \cdots \beta_{j-1} \alpha'_j)_j$. -/
 theorem givensChain_isQuasiseparable : (givensChain N M).IsQuasiseparable := by
   intro k
   constructor
@@ -1028,13 +1201,15 @@ section LUFactors
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
 omit [LinearOrder n] in
-/-- A sum whose terms vanish off a subtype is the sum over the subtype. -/
+/-- If $f_l = 0$ for every $l$ that does not satisfy $p$, then $\sum_l f_l$ is the sum over the $l$
+that satisfy $p$. -/
 private theorem sum_eq_sum_subtype_of_eq_zero {p : n → Prop} [DecidablePred p] (f : n → K)
     (hf : ∀ l, ¬ p l → f l = 0) : ∑ l, f l = ∑ l : {l // p l}, f l := by
   rw [← Fintype.sum_subtype_add_sum_subtype p f,
     Finset.sum_eq_zero (s := (univ : Finset {l // ¬ p l})) (fun l _ => hf l l.2), add_zero]
 
-/-- The lower maximal blocks of an upper triangular matrix hold at most the corner entry. -/
+/-- For an upper triangular $U$, every block $U[\{i \ge k\}, \{j \le k\}]$ has at most the one
+nonzero entry $u_{kk}$, so its rank is at most one. -/
 private theorem rank_toBlock_le_one_of_isUpperTriangular {U : Matrix n n K}
     (hU : U.IsUpperTriangular) (k : n) : (U.toBlock (k ≤ ·) (· ≤ k)).rank ≤ 1 := by
   have : U.toBlock (k ≤ ·) (· ≤ k) = vecMulVec (fun i : {i // k ≤ i} => if (i : n) = k then U k k
@@ -1052,7 +1227,8 @@ private theorem rank_toBlock_le_one_of_isUpperTriangular {U : Matrix n n K}
   rw [this]
   exact rank_vecMulVec_le _ _
 
-/-- The upper maximal blocks of a lower triangular matrix hold at most the corner entry. -/
+/-- For a lower triangular $L$, every block $L[\{i \le k\}, \{j \ge k\}]$ has at most the one
+nonzero entry $l_{kk}$, so its rank is at most one. -/
 private theorem rank_toBlock_le_one_of_isLowerTriangular {L : Matrix n n K}
     (hL : L.IsLowerTriangular) (k : n) : (L.toBlock (· ≤ k) (k ≤ ·)).rank ≤ 1 := by
   have : L.toBlock (· ≤ k) (k ≤ ·) = vecMulVec (fun i : {i // i ≤ k} => if (i : n) = k then L k k
@@ -1070,9 +1246,13 @@ private theorem rank_toBlock_le_one_of_isLowerTriangular {L : Matrix n n K}
   rw [this]
   exact rank_vecMulVec_le _ _
 
-/-- **The upper factor of a semiseparable matrix is semiseparable** ([golub2013matrix] §12.2.5):
-an upper maximal block of `U = L⁻¹ A` is `L⁻¹[≤ k, ≤ k] A[≤ k, ≥ k]`, `L⁻¹` being lower
-triangular; the lower ones hold at most the corner entry. -/
+/-- Let $A = LU$ with $L$ unit lower triangular and $U$ upper triangular, over $K$ with finite,
+totally ordered indices. If $A$ is semiseparable, then $U$ is semiseparable. This is stated in
+[golub2013matrix] §12.2.5.
+
+An upper maximal block of $U = L^{-1} A$ is $L^{-1}[\{i \le k\}, \{j \le k\}] \, A[\{i \le k\},
+\{j \ge k\}]$, since $L^{-1}$ is lower triangular. A lower maximal block of $U$ holds at most
+its corner entry. -/
 theorem IsLU.isSemiseparable_upper {A L U : Matrix n n K} (h : IsLU A L U)
     (hA : A.IsSemiseparable) : U.IsSemiseparable := by
   have hdet : IsUnit L.det := by rw [h.isUnitLowerTriangular.det_eq_one]; exact isUnit_one
@@ -1091,9 +1271,15 @@ theorem IsLU.isSemiseparable_upper {A L U : Matrix n n K} (h : IsLU A L U)
   rw [hblock]
   exact (rank_mul_le_right _ _).trans (hA k).2
 
-/-- **The lower factor of a semiseparable matrix is semiseparable** ([golub2013matrix] §12.2.5)
-when the leading principal submatrices are nonsingular: a lower maximal block of `L` is
-`A[≥ k, ≤ k] U[≤ k, ≤ k]⁻¹`. Without the hypothesis the claim fails for singular `A`. -/
+/-- Let $A = LU$ with $L$ unit lower triangular and $U$ upper triangular, over $K$ with finite,
+totally ordered indices. If $A$ is semiseparable and every leading principal submatrix
+$A[\{i < k\}, \{j < k\}]$ is nonsingular, then $L$ is semiseparable. This is stated in
+[golub2013matrix] §12.2.5.
+
+A lower maximal block of $L$ is $A[\{i \ge k\}, \{j \le k\}] \, U[\{i \le k\}, \{j \le
+k\}]^{-1}$. The leading principal submatrices are those of the orders $0, \dots, |n| - 1$
+(`Matrix.HasUnitStrictLeadingPrincipalSubmatrices`). Without this hypothesis the claim fails for
+singular $A$. -/
 theorem IsLU.isSemiseparable_lower {A L U : Matrix n n K} (h : IsLU A L U)
     (hA : A.IsSemiseparable) (hk : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     L.IsSemiseparable := by
@@ -1140,21 +1326,26 @@ section Counterexample
 
 variable {n : ℕ}
 
-/-- `B(r)` is quasiseparable: it is the inverse of the semiseparable `B(r)⁻¹`
-(`Matrix.IsQuasiseparable.inv`). -/
+/-- For every sequence $r$, the matrix $B(r)$ is quasiseparable, because it is the inverse of the
+semiseparable matrix $B(r)^{-1}$ (`Matrix.IsQuasiseparable.inv`). -/
 theorem isQuasiseparable_unitBidiagonal (r : ℕ → K) : (unitBidiagonal n r).IsQuasiseparable := by
   have hdet := isUnit_det_of_right_inverse (unitBidiagonal_mul_inv (n := n) r)
   have := (isSemiseparable_inv_unitBidiagonal r).isQuasiseparable.inv
     (isUnit_nonsing_inv_iff.2 ((isUnit_iff_isUnit_det _).2 hdet))
   rwa [nonsing_inv_nonsing_inv _ hdet] at this
 
-/-- **`B(r)` has no quasiseparable representation**, a counterexample to the claim of
-[golub2013matrix] §12.2.3 that every quasiseparable matrix is some `𝐒(u, v, t, d, p, q, r)`: for
-`n ≥ 3` and `r₀`, `r₁` nonzero, the entries of a representation satisfy
-`a₀₁ a₁₂ = a₀₂ · p₁ q₁` (with `a₀₁ = p₀ r'₀ q₁`, `a₁₂ = p₁ r'₁ q₂`, `a₀₂ = p₀ r'₀ r'₁ q₂`), while
-`B(r)` has `a₀₁ a₁₂ = r₀ r₁ ≠ 0 = a₀₂`. Yet `B(r)` is quasiseparable
-(`Matrix.isQuasiseparable_unitBidiagonal`): the representation (12.2.8) carries one transfer
-factor too many to leave a zero at distance two beside nonzero entries at distance one. -/
+/-- **$B(r)$ has no quasiseparable representation.** Let $n \ge 3$, and let $r$ be a sequence with
+$r_0 \neq 0$ and $r_1 \neq 0$. Then $B(r) \in K^{n \times n}$ is not
+$\mathbf{S}(u, v, t, d, p, q, r')$ for any $u, v, d, p, q \in K^n$ and any sequences $t$, $r'$.
+Since $B(r)$ is quasiseparable (`Matrix.isQuasiseparable_unitBidiagonal`), this is a
+counterexample to the claim of [golub2013matrix] §12.2.3 that every quasiseparable matrix has a
+representation (12.2.8).
+
+The entries of a representation satisfy $a_{01} a_{12} = a_{02} \, p_1 q_1$, with
+$a_{01} = p_0 r'_0 q_1$, $a_{12} = p_1 r'_1 q_2$ and $a_{02} = p_0 r'_0 r'_1 q_2$. The matrix
+$B(r)$ has $a_{01} a_{12} = r_0 r_1 \neq 0 = a_{02}$. The representation (12.2.8) carries one
+transfer factor too many to leave a zero at distance two beside nonzero entries at distance one.
+The representation `Matrix.quasiseparableRep` corrects this. -/
 theorem unitBidiagonal_ne_quasiseparableOf {r : ℕ → K} (hn : 3 ≤ n) (h₀ : r 0 ≠ 0)
     (h₁ : r 1 ≠ 0) (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r' : ℕ → K) :
     unitBidiagonal n r ≠ quasiseparableOf u v t d p q r' := by
@@ -1179,9 +1370,13 @@ theorem unitBidiagonal_ne_quasiseparableOf {r : ℕ → K} (hn : 3 ≤ n) (h₀ 
   exact mul_ne_zero h₀ h₁ (by
     linear_combination (-r 1) * e01 + (p a₀ * r' 0 * q a₁) * e12 - (p a₁ * q a₁) * e02)
 
-/-- **`B(r)` has no generator representation** ([golub2013matrix] §12.2.3, "not every
-quasiseparable matrix has a generator representation"): the case `t = r' = 1` of
-`Matrix.unitBidiagonal_ne_quasiseparableOf`. -/
+/-- **$B(r)$ has no generator representation.** Let $n \ge 3$, and let $r$ be a sequence with
+$r_0 \neq 0$ and $r_1 \neq 0$. Then $B(r) \in K^{n \times n}$ is not $\mathbf{S}(u, v, 1, d, p,
+q, 1) = \operatorname{tril}(uv^T, -1) + \operatorname{diag}(d) + \operatorname{triu}(pq^T, 1)$
+for any $u, v, d, p, q \in K^n$. This illustrates the remark of [golub2013matrix] §12.2.3 that
+"not every quasiseparable matrix has a generator representation".
+
+This is the case $t = r' = 1$ of `Matrix.unitBidiagonal_ne_quasiseparableOf`. -/
 theorem unitBidiagonal_ne_generatorRep {r : ℕ → K} (hn : 3 ≤ n) (h₀ : r 0 ≠ 0) (h₁ : r 1 ≠ 0)
     (u v d p q : Fin n → K) : unitBidiagonal n r ≠ quasiseparableOf u v 1 d p q 1 :=
   unitBidiagonal_ne_quasiseparableOf hn h₀ h₁ u v 1 d p q 1
@@ -1194,9 +1389,8 @@ section TridiagonalInverse
 
 variable {m : ℕ}
 
-/-- The corner `(A⁻¹)_{N,0}` of the inverse of a tridiagonal matrix with nonzero subdiagonal is
-nonzero, by the nullity theorem: its complementary block `A[{i ≠ 0}, {j ≠ N}]` is upper
-triangular with the subdiagonal of `A` on its diagonal. -/
+/-- If $A$ is invertible and tridiagonal with nonzero subdiagonal entries, then the corner entry
+$(A^{-1})_{N0}$ is nonzero, by the nullity theorem. -/
 private theorem inv_last_zero_ne_zero {A : Matrix (Fin (m + 1)) (Fin (m + 1)) K}
     (hT : A.IsTridiagonal) (hA : IsUnit A)
     (hsub : ∀ i j : Fin (m + 1), (i : ℕ) = j + 1 → A i j ≠ 0) : A⁻¹ (Fin.last m) 0 ≠ 0 := by
@@ -1232,9 +1426,7 @@ private theorem inv_last_zero_ne_zero {A : Matrix (Fin (m + 1)) (Fin (m + 1)) K}
   rw [hz, rank_zero] at h
   omega
 
-/-- In a matrix whose lower maximal blocks have rank at most one, every `2 × 2` minor on the rows
-`i, N` and the columns `0, j ≤ i` vanishes: the lower part is the rank-one pattern of the last row
-and the first column. -/
+/-- If $B$ is semiseparable and $j \le i$, then $b_{i0} \, b_{Nj} = b_{ij} \, b_{N0}$. -/
 private theorem mul_eq_mul_of_isSemiseparable {B : Matrix (Fin (m + 1)) (Fin (m + 1)) K}
     (hB : B.IsSemiseparable) {i j : Fin (m + 1)} (hji : j ≤ i) :
     B i 0 * B (Fin.last m) j = B i j * B (Fin.last m) 0 := by
@@ -1245,19 +1437,24 @@ private theorem mul_eq_mul_of_isSemiseparable {B : Matrix (Fin (m + 1)) (Fin (m 
     (by rw [det_fin_two]; simpa [sub_eq_zero] using hne)
   omega
 
-/-- The lower part of the inverse of a tridiagonal matrix is the rank-one pattern of its last
-row and first column. -/
+/-- If $A$ is invertible and tridiagonal and $j \le i$, then $(A^{-1})_{i0} (A^{-1})_{Nj} =
+(A^{-1})_{ij} (A^{-1})_{N0}$. -/
 private theorem inv_apply_eq_of_le {A : Matrix (Fin (m + 1)) (Fin (m + 1)) K}
     (hT : A.IsTridiagonal) (hA : IsUnit A) {i j : Fin (m + 1)} (hji : j ≤ i) :
     A⁻¹ i 0 * A⁻¹ (Fin.last m) j = A⁻¹ i j * A⁻¹ (Fin.last m) 0 :=
   mul_eq_mul_of_isSemiseparable (hT.isSemiseparable_inv hA) hji
 
-/-- **Fact 1 of [golub2013matrix] §12.2.3**, second half: the inverse of a nonsingular
-tridiagonal matrix with nonzero sub- and superdiagonal entries is **generator representable**,
-`A⁻¹ = tril(u vᵀ, −1) + diag(u .* v) + triu(p qᵀ, 1)` with `u .* v = p .* q`. The corners
-`(A⁻¹)_{N,0}` and `(A⁻¹)_{0,N}` are nonzero (nullity theorem), and every `2 × 2` minor of `A⁻¹` on
-the rows `i, N` and the columns `0, j ≤ i` vanishes (semiseparability); the upper part by
-transposition. -/
+/-- Let $A \in K^{n \times n}$ be invertible and tridiagonal, with nonzero subdiagonal entries
+$a_{j+1, j}$ and nonzero superdiagonal entries $a_{i, i+1}$. Then there are $u, v, p, q \in K^n$
+with $u \circ v = p \circ q$ and
+$$A^{-1} = \operatorname{tril}(uv^T, -1) + \operatorname{diag}(u \circ v) +
+  \operatorname{triu}(pq^T, 1),$$
+that is, $A^{-1} = \mathbf{S}(u, v, 1, u \circ v, p, q, 1)$ is **generator representable**. This
+is the second half of Fact 1 in [golub2013matrix] §12.2.3.
+
+The corners $(A^{-1})_{N0}$ and $(A^{-1})_{0N}$ are nonzero by the nullity theorem, and every
+$2 \times 2$ minor of $A^{-1}$ on the rows $i, N$ and the columns $0, j$ with $j \le i$ vanishes
+because $A^{-1}$ is semiseparable. The upper part follows by transposition. -/
 theorem IsTridiagonal.inv_eq_generatorRep {n : ℕ} {A : Matrix (Fin n) (Fin n) K}
     (hT : A.IsTridiagonal) (hA : IsUnit A)
     (hsub : ∀ i j : Fin n, (i : ℕ) = j + 1 → A i j ≠ 0)
@@ -1305,7 +1502,8 @@ section DiagonalPlus
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- The indices of the right summand of `n ⊕ n` cut out by a predicate. -/
+/-- The indices of the right summand of $n \oplus n$ that satisfy a predicate $P$ correspond to the
+indices of $n$ that satisfy $P$. -/
 private def sumInrSubtypeEquiv (P : n → Prop) :
     {x : n ⊕ n // Sum.elim (fun _ => False) P x} ≃ {i // P i} where
   toFun x := match x with
@@ -1318,8 +1516,8 @@ private def sumInrSubtypeEquiv (P : n → Prop) :
     · rfl
   right_inv _ := rfl
 
-/-- The bordered matrix `[[T, 1], [1, −1]]` has inverse `[[C, C], [C, C − 1]]` with
-`C = (1 + T)⁻¹`. -/
+/-- If $I + T$ is invertible and $C = (I + T)^{-1}$, then $\begin{bmatrix} T & I \\ I & -I
+\end{bmatrix} \begin{bmatrix} C & C \\ C & C - I \end{bmatrix} = I$. -/
 private theorem fromBlocks_mul_fromBlocks_inv {T : Matrix n n K} (hu : IsUnit (1 + T)) :
     fromBlocks T 1 1 (-1) * fromBlocks (1 + T)⁻¹ (1 + T)⁻¹ (1 + T)⁻¹ ((1 + T)⁻¹ - 1) = 1 := by
   have hC : (1 + T)⁻¹ + T * (1 + T)⁻¹ = 1 := by
@@ -1331,10 +1529,9 @@ private theorem fromBlocks_mul_fromBlocks_inv {T : Matrix n n K} (hu : IsUnit (1
   · rw [Matrix.one_mul, Matrix.neg_mul, Matrix.one_mul, add_neg_cancel]
   · rw [Matrix.one_mul, Matrix.neg_mul, Matrix.one_mul, ← sub_eq_add_neg, sub_sub_cancel]
 
-/-- The lower maximal blocks of `(1 + T)⁻¹ − 1` for a semiseparable `T` have rank at most one:
-it is the lower right block of the inverse of `M = [[T, 1], [1, −1]]`, and the nullity theorem
-relates the maximal block to the block `[[T, E₁], [E₂, 0]]` of `M`, of rank at most
-`rank T[≥ k, ≤ k] + (k) + (n − k − 1) ≤ n`. -/
+/-- If $T$ is semiseparable and $I + T$ is invertible, then every block $\bigl((I + T)^{-1} -
+I\bigr)[\{i \ge k\}, \{j \le k\}]$ has rank at most one, by the nullity theorem for the bordered
+matrix $\begin{bmatrix} T & I \\ I & -I \end{bmatrix}$. -/
 private theorem rank_toBlock_inv_one_add_sub_one_le {T : Matrix n n K} (hT : T.IsSemiseparable)
     (hu : IsUnit (1 + T)) (k : n) : (((1 + T)⁻¹ - 1).toBlock (k ≤ ·) (· ≤ k)).rank ≤ 1 := by
   classical
@@ -1417,11 +1614,16 @@ private theorem rank_toBlock_inv_one_add_sub_one_le {T : Matrix n n K} (hT : T.I
   rw [hblock, rank_submatrix]
   omega
 
-/-- **Fact 3 of [golub2013matrix] §12.2.3**: the inverse of a nonsingular
-diagonal-plus-semiseparable matrix `D + S` (`D` diagonal and nonsingular) is
-diagonal-plus-semiseparable, `(D + S)⁻¹ = D⁻¹ + S₁`. With `T = D⁻¹ S`,
-`(D + S)⁻¹ − D⁻¹ = ((1 + T)⁻¹ − 1) D⁻¹`, and `(1 + T)⁻¹ − 1` is a block of the inverse of the
-bordered matrix `[[T, 1], [1, −1]]`, to which the nullity theorem applies. -/
+/-- Let $\delta \in K^n$ have nonzero entries, let $D = \operatorname{diag}(\delta)$, let $S$ be
+semiseparable, and let $D + S$ be invertible. Then there is a semiseparable matrix $S_1$ with
+$$(D + S)^{-1} = D^{-1} + S_1.$$
+So the inverse of a nonsingular diagonal-plus-semiseparable matrix is
+diagonal-plus-semiseparable. This is Fact 3 in [golub2013matrix] §12.2.3.
+
+With $T = D^{-1} S$, the difference $(D + S)^{-1} - D^{-1}$ is
+$\bigl((I + T)^{-1} - I\bigr) D^{-1}$, and $(I + T)^{-1} - I$ is a block of the inverse of the
+bordered matrix $\begin{bmatrix} T & I \\ I & -I \end{bmatrix}$, to which the nullity theorem
+applies. -/
 theorem inv_diagonal_add_eq_add {δ : n → K} (hδ : ∀ i, δ i ≠ 0) {S : Matrix n n K}
     (hS : S.IsSemiseparable) (hu : IsUnit (diagonal δ + S)) :
     ∃ S₁ : Matrix n n K, S₁.IsSemiseparable ∧ (diagonal δ + S)⁻¹ = (diagonal δ)⁻¹ + S₁ := by
@@ -1462,7 +1664,8 @@ section GivensVector
 
 variable {m : ℕ}
 
-/-- A telescoping product of consecutive ratios. -/
+/-- If $\rho_l \neq 0$ for $l \le N$ and $j \le i \le N$, then $\prod_{l=j}^{i-1} \rho_{l+1} /
+\rho_l = \rho_i / \rho_j$. -/
 private theorem prod_Ico_div_eq {ρ : ℕ → ℝ} {N : ℕ} (hρ : ∀ l ≤ N, ρ l ≠ 0) {j i : ℕ}
     (hji : j ≤ i) (hi : i ≤ N) : ∏ l ∈ Finset.Ico j i, ρ (l + 1) / ρ l = ρ i / ρ j := by
   induction i, hji using Nat.le_induction with
@@ -1471,13 +1674,18 @@ private theorem prod_Ico_div_eq {ρ : ℕ → ℝ} {N : ℕ} (hρ : ∀ l ≤ N,
     rw [Finset.prod_Ico_succ_top hji, ih (by omega), div_mul_div_comm, mul_comm (ρ i),
       mul_div_mul_right _ _ (hρ i (by omega))]
 
-/-- **The Givens-vector representation** ([golub2013matrix] (12.2.11); Vandebril–Van Barel 2005):
-a lower triangular semiseparable `A` with `A_{N,0} ≠ 0` is `A_{ij} = c'_i s_j ⋯ s_{i-1} v_j`
-for `j ≤ i`, with cosine–sine pairs `c_k² + s_k² = 1`, `s_k ≠ 0`, `c'_i = c_i` below the last
-row and `c'_N = 1`. The pairs are those of the Givens rotations that reduce the first column to a
-multiple of `e₀` from the bottom up: with `ρ_k = ± ‖A(k:N, 0)‖`, `c_k = a_k / ρ_k` and
-`s_k = ρ_{k+1} / ρ_k`; the other columns are multiples of the first below the diagonal. Without
-the hypothesis `A_{N,0} ≠ 0` the form forces a diagonal `A`. -/
+/-- **The Givens-vector representation.** Let $A \in \mathbb{R}^{(N+1) \times (N+1)}$ be lower
+triangular and semiseparable, with $a_{N0} \neq 0$. Then there are sequences $c$ and $s$ of
+reals with $c_k^2 + s_k^2 = 1$ and $s_k \neq 0$ for all $k$, and a vector
+$v \in \mathbb{R}^{N+1}$, such that
+$$a_{ij} = c'_i \, s_j s_{j+1} \cdots s_{i-1} \, v_j \quad (j \le i),$$
+where $c'_i = c_i$ for $i < N$ and $c'_N = 1$. This is (12.2.11) of [golub2013matrix] (Vandebril
+and Van Barel, 2005).
+
+The pairs $(c_k, s_k)$ are those of the Givens rotations that reduce the first column of $A$ to
+a multiple of $e_0$ from the bottom up: with $\rho_k = \pm \|A(k{:}N, 0)\|$, they are
+$c_k = a_{k0} / \rho_k$ and $s_k = \rho_{k+1} / \rho_k$. Below the diagonal, the other columns
+are multiples of the first. The hypothesis $a_{N0} \neq 0$ makes every $\rho_k$ nonzero. -/
 theorem exists_givensVector_rep {A : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     (hA : A.IsSemiseparable) (hL : A.IsLowerTriangular) (h0 : A (Fin.last m) 0 ≠ 0) :
     ∃ c s : ℕ → ℝ, (∀ k, c k ^ 2 + s k ^ 2 = 1) ∧ (∀ k, s k ≠ 0) ∧
@@ -1559,7 +1767,7 @@ section OrthogonalHessenberg
 
 variable {N : ℕ}
 
-/-- A row of norm one with a unit diagonal entry vanishes off the diagonal. -/
+/-- If $XX^T = I$ and $x_{jj} = 1$, then $x_{jl} = 0$ for every $l \neq j$. -/
 private theorem apply_eq_zero_of_mul_transpose {X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hX : X * Xᵀ = 1) {j : Fin (N + 1)} (hj : X j j = 1) {l : Fin (N + 1)} (hl : l ≠ j) :
     X j l = 0 := by
@@ -1570,7 +1778,7 @@ private theorem apply_eq_zero_of_mul_transpose {X : Matrix (Fin (N + 1)) (Fin (N
   exact mul_self_eq_zero.1 ((Finset.sum_eq_zero_iff_of_nonneg
     (fun x _ => mul_self_nonneg (X j x))).1 h0 l (mem_erase.2 ⟨hl, mem_univ l⟩))
 
-/-- The embedded reflection `G = planeEmbed k (k + 1) R(φ)` is an involution. -/
+/-- The plane reflection $R(\varphi_l)$ embedded in the plane $(l, l + 1)$ is an involution. -/
 private theorem givensFactor_planeReflector_mul_self (φ : ℕ → ℝ) (l : ℕ) :
     givensFactor N (fun k => planeReflector (φ k)) l *
       givensFactor N (fun k => planeReflector (φ k)) l = 1 := by
@@ -1580,7 +1788,7 @@ private theorem givensFactor_planeReflector_mul_self (φ : ℕ → ℝ) (l : ℕ
       planeReflector_mul_self, planeEmbed_one (Fin.ne_of_lt (Fin.lt_def.2 (by simp)))]
   · exact Matrix.one_mul 1
 
-/-- The embedded reflection is symmetric. -/
+/-- The plane reflection $R(\varphi_l)$ embedded in the plane $(l, l + 1)$ is symmetric. -/
 private theorem givensFactor_planeReflector_transpose (φ : ℕ → ℝ) (l : ℕ) :
     (givensFactor N (fun k => planeReflector (φ k)) l)ᵀ =
       givensFactor N (fun k => planeReflector (φ k)) l := by
@@ -1590,23 +1798,26 @@ private theorem givensFactor_planeReflector_transpose (φ : ℕ → ℝ) (l : �
       planeReflector_transpose]
   · exact transpose_one
 
-/-- The angle of the reflection that clears the subdiagonal entry of column `k`. -/
+/-- The angle of the reflection that clears the subdiagonal entry of column $k$: $\arccos(-x_{kk})$
+for $k < N$, and $0$ otherwise. -/
 private noncomputable def ohAngle (X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) (k : ℕ) : ℝ :=
   if h : k < N then Real.arccos (-X ⟨k, by omega⟩ ⟨k, by omega⟩) else 0
 
-/-- The reduction of an orthogonal upper Hessenberg matrix by reflections from the left. -/
+/-- The reduction of an orthogonal upper Hessenberg matrix by plane reflections from the left, one
+column at a time. -/
 private noncomputable def ohReduce (H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     ℕ → Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ
   | 0 => H
   | k + 1 => givensFactor N (fun _ => planeReflector (ohAngle (ohReduce H k) k)) k * ohReduce H k
 
-/-- The invariant of the reduction after `k` steps. -/
+/-- The invariant of the reduction after $k$ steps: $X$ is orthogonal and upper Hessenberg, its
+subdiagonal entries in the columns $\ge k$ are positive, and $x_{jj} = 1$ for $j < k$. -/
 private def OhInv (k : ℕ) (X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) : Prop :=
   X * Xᵀ = 1 ∧ Xᵀ * X = 1 ∧ (∀ i j : Fin (N + 1), (j : ℕ) + 1 < i → X i j = 0) ∧
     (∀ i : Fin N, k ≤ (i : ℕ) → 0 < X i.succ i.castSucc) ∧
     ∀ j : Fin (N + 1), (j : ℕ) < k → X j j = 1
 
-/-- One step of the reduction keeps the invariant, and its angle lies in `(0, π)`. -/
+/-- One step of the reduction keeps the invariant, and its angle lies in $(0, \pi)$. -/
 private theorem ohInv_step {k : ℕ} (hk : k < N) {X : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hX : OhInv k X) :
     OhInv (k + 1) (givensFactor N (fun _ => planeReflector (ohAngle X k)) k * X) ∧
@@ -1691,7 +1902,8 @@ private theorem ohInv_step {k : ℕ} (hk : k < N) {X : Matrix (Fin (N + 1)) (Fin
       rw [ite_eq_left rfl]
       nlinarith [hnorm]
 
-/-- The reduction after `k` steps is the reverse product of its reflections times `H`. -/
+/-- The reduction after $k$ steps is the product of its first $k$ reflections, in reverse order,
+times $H$. -/
 private theorem ohReduce_eq (H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) (k : ℕ) :
     ohReduce H k = prodRev (givensFactor N fun l => planeReflector (ohAngle (ohReduce H l) l)) k *
       H := by
@@ -1699,14 +1911,21 @@ private theorem ohReduce_eq (H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) (k : �
   | zero => rw [prodRev_zero, Matrix.one_mul]; rfl
   | succ k ih => rw [prodRev_succ, Matrix.mul_assoc, ← ih]; rfl
 
-/-- **Orthogonal upper Hessenberg matrices as products of reflections** ([golub2013matrix]
-(12.2.18)): an orthogonal upper Hessenberg `H` of even order with positive subdiagonal and
-`det H = 1` is `G₀ G₁ ⋯ G_{N−1} diag(1, …, 1, −1)`, `G_k` the reflection
-`R(φ_k) = [−cos φ_k, sin φ_k; sin φ_k, cos φ_k]` in the plane `(k, k + 1)` with `0 < φ_k < π`.
-Reflections from the left clear the subdiagonal one column at a time (the book's
-`G_{n−1} ⋯ G₁ H = diag(1, …, 1, −c_n)`); positivity of the subdiagonal puts each angle in
-`(0, π)`, and the determinant fixes the last sign. The book assumes a nonzero subdiagonal
-"without loss of generality"; positivity is what the angles need. -/
+/-- **Orthogonal upper Hessenberg matrices as products of reflections.** Let
+$H \in \mathbb{R}^{(N+1) \times (N+1)}$ be orthogonal and upper Hessenberg, with positive
+subdiagonal entries $h_{k+1, k} > 0$ and $\det H = 1$, and let $N + 1$ be even. Then there are
+angles $\varphi_k$ with $0 < \varphi_k < \pi$ for $k < N$ such that
+$$H = G_0 G_1 \cdots G_{N-1} \operatorname{diag}(1, \dots, 1, -1),$$
+where $G_k$ is the reflection $R(\varphi_k) = \begin{bmatrix} -\cos \varphi_k & \sin \varphi_k
+\\ \sin \varphi_k & \cos \varphi_k \end{bmatrix}$ in the plane $(k, k + 1)$. This is the product
+form (12.2.18) of [golub2013matrix].
+
+The product $G_0 \cdots G_{N-1}$ is `Matrix.givensChain` of the blocks
+`Matrix.planeReflector (φ k)`. Reflections from the left clear the subdiagonal one column at a
+time; this is the reduction $G_{n-1} \cdots G_1 H = \operatorname{diag}(1, \dots, 1, -c_n)$ of
+the source. The positivity of the subdiagonal puts each angle in $(0, \pi)$, and the determinant
+fixes the last sign. The source assumes a nonzero subdiagonal "without loss of generality"; the
+angles need positivity. -/
 theorem exists_orthogonalHessenberg_eq_prod_planeReflector
     {H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hH : H ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hHess : H.IsUpperHessenberg) (hsub : ∀ i : Fin N, 0 < H i.succ i.castSucc)
@@ -1783,10 +2002,9 @@ section Construction
 variable {n : ℕ}
 
 open Classical in
-/-- The factorizations `L[≥ k + δ, ≤ k] = x_k y_kᵀ` of the lower blocks of `L` (`δ = 0`: the
-maximal blocks of a semiseparable matrix; `δ = 1`: those of a quasiseparable one), chosen so that
-consecutive ones are related by a scalar: keep `x_k` when it does not vanish on the rows of the
-next block, else restart from the column `k + 1`. -/
+/-- The factorizations $L[\{i \ge k + \delta\}, \{j \le k\}] = x_k y_k^T$ of the lower blocks of $L$
+($\delta = 0$ for the maximal blocks of a semiseparable matrix, $\delta = 1$ for those of a
+quasiseparable one), chosen so that consecutive left factors are related by a scalar. -/
 private noncomputable def lsState (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) :
     ℕ → (Fin n → K) × (Fin n → K)
   | 0 => (fun i => L i ⟨0, i.pos⟩, fun j : Fin n => if (j : ℕ) = 0 then 1 else 0)
@@ -1798,11 +2016,13 @@ private noncomputable def lsState (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) :
         fun j : Fin n => if (j : ℕ) = k + 1 then 1 else 0)
 
 open Classical in
-/-- The transfer scalar between the factorizations at `k` and `k + 1`. -/
+/-- The scalar that relates the left factors of the factorizations at $k$ and at $k + 1$: $1$ if the
+left factor is kept, and $0$ if the factorization restarts. -/
 private noncomputable def lsTransfer (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) (k : ℕ) : K :=
   if ∃ i : Fin n, k + 1 + δ ≤ (i : ℕ) ∧ (lsState δ L k).1 i ≠ 0 then 1 else 0
 
-/-- The factorizations of `lsState` factor the blocks, with a nonzero right factor. -/
+/-- The factorization at $k$ factors the block $L[\{i \ge k + \delta\}, \{j \le k\}]$, and its right
+factor is nonzero at some column $j \le k$. -/
 private theorem lsState_spec {δ : ℕ} {L : Matrix (Fin n) (Fin n) K}
     (hL : ∀ k, k < n → (L.toBlock (fun i : Fin n => k + δ ≤ (i : ℕ))
       (fun j : Fin n => (j : ℕ) ≤ k)).rank ≤ 1) (k : ℕ) (hk : k < n) :
@@ -1855,7 +2075,8 @@ private theorem lsState_spec {δ : ℕ} {L : Matrix (Fin n) (Fin n) K}
       · obtain rfl : j = ⟨k + 1, hk⟩ := Fin.ext hj
         simp [hk]
 
-/-- On the rows of the next block the left factors propagate by the transfer scalar. -/
+/-- On the rows $i \ge k + 1 + \delta$, the left factor at $k$ is the transfer scalar times the left
+factor at $k + 1$. -/
 private theorem lsState_fst_eq (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) {k : ℕ} (i : Fin n)
     (hi : k + 1 + δ ≤ (i : ℕ)) :
     (lsState δ L k).1 i = lsTransfer δ L k * (lsState δ L (k + 1)).1 i := by
@@ -1866,7 +2087,8 @@ private theorem lsState_fst_eq (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) {k : �
     by_contra hne
     exact h ⟨i, hi, hne⟩
 
-/-- The left factor at `j` is the one at `i − δ` times the transfer scalars in between. -/
+/-- The left factor at $j$ is the left factor at $i - \delta$ times the transfer scalars in between.
+-/
 private theorem lsState_fst_eq_prod (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) (i : Fin n) {j : ℕ}
     (hji : j ≤ (i : ℕ) - δ) (hδ : δ ≤ (i : ℕ)) :
     (lsState δ L j).1 i =
@@ -1877,8 +2099,8 @@ private theorem lsState_fst_eq_prod (δ : ℕ) (L : Matrix (Fin n) (Fin n) K) (i
     rw [lsState_fst_eq δ L i (by omega), ih, Finset.prod_eq_prod_Ico_succ_bot hj]
     ring
 
-/-- The lower blocks of a matrix with rank-one blocks `L[≥ k + δ, ≤ k]` are
-`u_i t_{j} ⋯ t_{i−δ−1} v_j` for `j + δ ≤ i`. -/
+/-- If every block $L[\{i \ge k + \delta\}, \{j \le k\}]$ has rank at most one, then $l_{ij} = u_i
+\, t_j \cdots t_{i-\delta-1} \, v_j$ for $j + \delta \le i$. -/
 private theorem apply_eq_of_lsState {δ : ℕ} {L : Matrix (Fin n) (Fin n) K}
     (hL : ∀ k, k < n → (L.toBlock (fun i : Fin n => k + δ ≤ (i : ℕ))
       (fun j : Fin n => (j : ℕ) ≤ k)).rank ≤ 1) {i j : Fin n} (hji : (j : ℕ) + δ ≤ i) :
@@ -1887,11 +2109,15 @@ private theorem apply_eq_of_lsState {δ : ℕ} {L : Matrix (Fin n) (Fin n) K}
   rw [(lsState_spec hL j j.2).1 i j hji le_rfl, lsState_fst_eq_prod δ L i (by omega) (by omega)]
   ring
 
-/-- **Triangular semiseparable matrices** ([golub2013matrix] §12.2.4): a lower triangular
-semiseparable `L` is `𝐒(u, v, t, u .* v, 0, 0, 0) = tril(u vᵀ) .* B(t)⁻ᵀ`. The lower maximal
-blocks `L[≥ k, ≤ k] = x_k y_kᵀ` are factored so that `x_k = t_k x_{k+1}` below row `k` (keep the
-left factor when it does not vanish there, else restart from column `k + 1` with `t_k = 0`);
-then `u_i = x_i(i)`, `v_j = y_j(j)`. -/
+/-- **Triangular semiseparable matrices.** Let $L \in K^{n \times n}$ be lower triangular and
+semiseparable. Then there are $u, v \in K^n$ and a sequence $t$ in $K$ with
+$$L = \mathbf{S}(u, v, t, u \circ v, 0, 0, 0) = \operatorname{tril}(uv^T) \circ B(t)^{-T}.$$
+This is the representation of [golub2013matrix] §12.2.4.
+
+The lower maximal blocks $L[\{i \ge k\}, \{j \le k\}] = x_k y_k^T$ are factored so that
+$x_k = t_k x_{k+1}$ below the row $k$: the left factor is kept when it does not vanish there,
+and otherwise the factorization restarts from the column $k + 1$ with $t_k = 0$. Then $u_i$ is
+the entry $i$ of $x_i$, and $v_j$ is the entry $j$ of $y_j$. -/
 theorem exists_lower_semiseparable_rep {L : Matrix (Fin n) (Fin n) K} (hL : L.IsSemiseparable)
     (hlow : L.IsLowerTriangular) :
     ∃ (u v : Fin n → K) (t : ℕ → K), L = quasiseparableOf u v t (u * v) 0 0 0 := by
@@ -1912,9 +2138,12 @@ theorem exists_lower_semiseparable_rep {L : Matrix (Fin n) (Fin n) K} (hL : L.Is
   · simp only [Pi.zero_apply, zero_mul]
     exact hlow (OrderDual.toDual_lt_toDual.2 (lt_of_le_of_ne (not_lt.1 hji) hij))
 
-/-- **Upper triangular semiseparable matrices** ([golub2013matrix] §12.2.4): an upper triangular
-semiseparable `U` is `𝐒(0, 0, 0, p .* q, p, q, r) = triu(p qᵀ) .* B(r)⁻¹`, by transposition from
-`Matrix.exists_lower_semiseparable_rep`. -/
+/-- **Upper triangular semiseparable matrices.** Let $U \in K^{n \times n}$ be upper triangular and
+semiseparable. Then there are $p, q \in K^n$ and a sequence $r$ in $K$ with
+$$U = \mathbf{S}(0, 0, 0, p \circ q, p, q, r) = \operatorname{triu}(pq^T) \circ B(r)^{-1}.$$
+This is the representation of [golub2013matrix] §12.2.4.
+
+The proof is by transposition from `Matrix.exists_lower_semiseparable_rep`. -/
 theorem exists_upper_semiseparable_rep {U : Matrix (Fin n) (Fin n) K} (hU : U.IsSemiseparable)
     (hup : U.IsUpperTriangular) :
     ∃ (p q : Fin n → K) (r : ℕ → K), U = quasiseparableOf 0 0 0 (p * q) p q r := by
@@ -1923,8 +2152,8 @@ theorem exists_upper_semiseparable_rep {U : Matrix (Fin n) (Fin n) K} (hU : U.Is
   refine ⟨v, u, t, ?_⟩
   rw [← transpose_transpose U, h, transpose_quasiseparableOf, mul_comm u v]
 
-/-- The lower half of `Matrix.exists_quasiseparableRep`: the strictly lower part of a matrix with
-rank-one strictly lower maximal blocks is `u_i t_{j+1} ⋯ t_{i−1} v_j`. -/
+/-- If every block $A[\{i > k\}, \{j \le k\}]$ has rank at most one, then there are $u, v$ and $t$
+with $a_{ij} = u_i \, t_{j+1} \cdots t_{i-1} \, v_j$ for $j < i$. -/
 private theorem exists_lower_quasiseparableRep {A : Matrix (Fin n) (Fin n) K}
     (hA : ∀ k : Fin n, (A.toBlock (k < ·) (· ≤ k)).rank ≤ 1) :
     ∃ (u v : Fin n → K) (t : ℕ → K), ∀ i j : Fin n, j < i →
@@ -1942,11 +2171,16 @@ private theorem exists_lower_quasiseparableRep {A : Matrix (Fin n) (Fin n) K}
   simp only [Nat.add_sub_cancel] at this
   rw [this, Nat.sub_add_cancel (by omega)]
 
-/-- **Every quasiseparable matrix has a quasiseparable representation** (the corrected form of the
-claim of [golub2013matrix] §12.2.3, for the representation of Eidelman–Gohberg): the strictly
-lower maximal blocks `A[> k, ≤ k] = x_k y_kᵀ` are factored so that consecutive left factors differ
-by a scalar `t_{k+1}` on the rows of the next block, and `u_i = x_{i−1}(i)`, `v_j = y_j(j)`; the
-upper part by transposition. No division by generators is needed. -/
+/-- **Every quasiseparable matrix has a quasiseparable representation.** A matrix
+$A \in K^{n \times n}$ is quasiseparable if and only if
+$$A = \widetilde{\mathbf{S}}(u, v, t, d, p, q, r)$$
+for some $u, v, d, p, q \in K^n$ and sequences $t$, $r$ in $K$. This is the corrected form of
+the claim of [golub2013matrix] §12.2.3, for the representation of Eidelman and Gohberg.
+
+The strictly lower maximal blocks $A[\{i > k\}, \{j \le k\}] = x_k y_k^T$ are factored so that
+consecutive left factors differ by a scalar $t_{k+1}$ on the rows of the next block. Then $u_i$
+is the entry $i$ of $x_{i-1}$, and $v_j$ is the entry $j$ of $y_j$. The upper part follows by
+transposition. No division by generators is needed. -/
 theorem exists_quasiseparableRep {A : Matrix (Fin n) (Fin n) K} :
     A.IsQuasiseparable ↔ ∃ (u v : Fin n → K) (t : ℕ → K) (d p q : Fin n → K) (r : ℕ → K),
       A = quasiseparableRep u v t d p q r := by
@@ -1972,10 +2206,12 @@ section SemiseparableQR
 
 variable {N : ℕ} {c s : ℕ → K}
 
-/-- The cosines of a Givens-vector representation, with `1` for the last row. -/
+/-- The cosines $c'_k$ of a Givens-vector representation: $c'_N = 1$, and $c'_k = c_k$ for
+$k \neq N$. -/
 private def gvCos (N : ℕ) (c : ℕ → K) (k : ℕ) : K := if k = N then 1 else c k
 
-/-- The rotation weights telescope: `∑_{k ≥ a} (s_a ⋯ s_{k-1})² c'_k² = 1` when `c² + s² = 1`. -/
+/-- If $c_k^2 + s_k^2 = 1$ for all $k$ and $a \le N$, then $\sum_{k=a}^{N} (s_a \cdots s_{k-1})^2 \,
+c_k'^2 = 1$. -/
 private theorem sum_sq_prod_mul_gvCos_sq (hcs : ∀ k, c k ^ 2 + s k ^ 2 = 1) {a : ℕ} (ha : a ≤ N) :
     ∑ k ∈ Finset.Ico a (N + 1), (∏ l ∈ Finset.Ico a k, s l) ^ 2 * gvCos N c k ^ 2 = 1 := by
   induction ha using Nat.decreasingInduction with
@@ -1987,7 +2223,8 @@ private theorem sum_sq_prod_mul_gvCos_sq (hcs : ∀ k, c k ^ 2 + s k ^ 2 = 1) {a
       ← Finset.mul_sum, ih, gvCos, ite_eq_right (by omega)]
     linear_combination hcs a
 
-/-- The rows of the partial products `Qᵀ tril(A)`, entry by entry, as sums over `ℕ`. -/
+/-- If $G$ is a chain of $2 \times 2$ blocks and $g_{ik} \, l_{kj} = F_k$ for every $k$, then
+$(GL)_{ij} = \sum_{k=0}^{N} F_k$. -/
 private theorem givensChain_mul_apply (M : ℕ → Matrix (Fin 2) (Fin 2) K)
     (L : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (F : ℕ → K) (i j : Fin (N + 1))
     (hF : ∀ k : Fin (N + 1), givensChain N M i k * L k j = F k) :
@@ -1995,13 +2232,20 @@ private theorem givensChain_mul_apply (M : ℕ → Matrix (Fin 2) (Fin 2) K)
   rw [Matrix.mul_apply, ← Fin.sum_univ_eq_sum_range]
   exact Finset.sum_congr rfl fun k _ => hF k
 
-/-- **The QR factorization of a lower triangular semiseparable matrix** ([golub2013matrix]
-(12.2.14), P12.2.9): if `tril(A)` has the Givens-vector representation
-`A_{ij} = c'_i s_j ⋯ s_{i-1} v_j` (`c'_i = c_i`, `c'_N = 1`, `c_k² + s_k² = 1`) and
-`Qᵀ = G₀ ⋯ G_{N−1}` is the chain of the rotations `[c_k, s_k; −s_k, c_k]`, then
-`Qᵀ tril(A) = triu((𝒟 c) vᵀ) .* B(s)⁻¹` with `(𝒟 c)₀ = 1`, `(𝒟 c)_{i+1} = c_i`; and
-`Qᵀ triu(A, 1)` is upper triangular, `Qᵀ` being upper Hessenberg, so `Qᵀ A` is upper triangular.
-The rotation weights telescope: `∑_{k ≥ a} (s_a ⋯ s_{k-1})² c'_k² = 1`. -/
+/-- **The QR factorization of a lower triangular semiseparable matrix.** Let $c$ and $s$ be
+sequences in $K$ with $c_k^2 + s_k^2 = 1$ for all $k$, let $v \in K^{N+1}$, and let
+$A \in K^{(N+1) \times (N+1)}$ satisfy
+$$a_{ij} = c'_i \, s_j \cdots s_{i-1} \, v_j \quad (j \le i),$$
+with $c'_i = c_i$ for $i < N$ and $c'_N = 1$. Let $Q^T$ be the chain $G_0 \cdots G_{N-1}$ of the
+rotations $\begin{bmatrix} c_k & s_k \\ -s_k & c_k \end{bmatrix}$. Then
+$$Q^T \operatorname{tril}(A) = \bigl((\mathcal{D} c) \, v^T\bigr) \circ B(s)^{-1}, \qquad
+  (\mathcal{D} c)_0 = 1, \ (\mathcal{D} c)_{i+1} = c_i,$$
+and $Q^T \operatorname{triu}(A, 1)$ is upper triangular. Hence $Q^T A$ is upper triangular. This
+is (12.2.14) and P12.2.9 of [golub2013matrix].
+
+Here $\operatorname{tril}(A)$ is `strictLower A + diagPart A` and $\operatorname{triu}(A, 1)$ is
+`Matrix.strictUpper A`. The rotation weights telescope: $\sum_{k \ge a} (s_a \cdots s_{k-1})^2
+c_k'^2 = 1$. The second part holds because $Q^T$ is upper Hessenberg. -/
 theorem givensChain_mul_strictLower_add_diagPart
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) K} (hcs : ∀ k, c k ^ 2 + s k ^ 2 = 1)
     {v : Fin (N + 1) → K}
@@ -2098,8 +2342,9 @@ section OddEven
 
 variable {ι R : Type*} [Fintype ι] [DecidableEq ι] [CommRing R]
 
-/-- The invariant of the reordering: after `m` steps, the first `m` factors have been split
-into their even and odd products. -/
+/-- After $m$ steps of the reordering, $g_0 \cdots g_{n-1}$ is similar to the product of the
+even-indexed factors among the first $m$, times the product of the odd-indexed ones among them,
+times $g_m \cdots g_{n-1}$. -/
 private theorem isSimilar_prodFwd_evenOdd_aux {g : ℕ → Matrix ι ι R} {n : ℕ}
     (hcomm : ∀ k l, k + 2 ≤ l → l < n → Commute (g k) (g l)) (hunit : ∀ k, IsUnit (g k))
     {m : ℕ} (hm : m ≤ n) :
@@ -2192,12 +2437,17 @@ private theorem isSimilar_prodFwd_evenOdd_aux {g : ℕ → Matrix ι ι R} {n : 
       simp only [Matrix.mul_assoc]
       exact IsSimilar.refl _
 
-/-- **Products of the generators of a path in two orders are similar** (the Coxeter-element
-argument behind [golub2013matrix] §12.2.10, Fact 1): if `g k` and `g l` commute for
-`|k − l| ≥ 2` and every `g k` is invertible, then `g₀ g₁ ⋯ g_{n−1}` is similar to the product of
-the even-indexed factors times the product of the odd-indexed ones. Induction on the number of
-factors already split: for an odd index the next factor joins the odd product in place, and for
-an even one a cyclic shift `P Q ∼ Q P` moves it past the odd factor before it. -/
+/-- **Products of the generators of a path in two orders are similar.** Let $R$ be a commutative
+ring, and let $g_0, g_1, \dots$ be invertible square matrices over $R$ such that $g_k$ and $g_l$
+commute whenever $k + 2 \le l < n$. Then
+$$g_0 g_1 \cdots g_{n-1} \quad \text{is similar to} \quad \Bigl(\prod_{k < n, \ k \text{ even}}
+  g_k\Bigr) \Bigl(\prod_{k < n, \ k \text{ odd}} g_k\Bigr),$$
+where each product is taken in increasing order of $k$. This is the Coxeter-element argument
+behind Fact 1 of [golub2013matrix] §12.2.10.
+
+The two products are `prodFwdEven g n` and `prodFwdOdd g n`. The proof is by induction on the
+number of factors already split. An odd-indexed factor joins the odd product in place, and an
+even-indexed one moves past the odd factor before it by a cyclic shift $PQ \sim QP$. -/
 theorem isSimilar_prodFwd_evenOdd {g : ℕ → Matrix ι ι R} {n : ℕ}
     (hcomm : ∀ k l, k + 2 ≤ l → l < n → Commute (g k) (g l)) (hunit : ∀ k, IsUnit (g k)) :
     IsSimilar (prodFwd g n) (prodFwdEven g n * prodFwdOdd g n) := by
@@ -2211,14 +2461,23 @@ section ReflectorProduct
 
 variable {N : ℕ}
 
-/-- The factors of the product form (12.2.18): the plane reflections `G_k = R(φ_k)` in the planes
-`(k, k + 1)` for `k < N`, then `G_N = diag(1, …, 1, −1)`. -/
+/-- Let $N \in \mathbb{N}$ and let $\varphi$ be a sequence of reals. The **factors of the product
+form** (12.2.18) of [golub2013matrix] are the matrices
+$G_k \in \mathbb{R}^{(N+1) \times (N+1)}$, where $G_k$ is the plane reflection $R(\varphi_k)$ in
+the plane $(k, k + 1)$ for $k < N$, and $G_k = \operatorname{diag}(1, \dots, 1, -1)$ for
+$k \ge N$.
+
+Only $G_0, \dots, G_N$ enter the product (12.2.18). The reflection $R(\varphi)$ is
+`Matrix.planeReflector φ`. -/
 noncomputable def reflectorFactor (N : ℕ) (φ : ℕ → ℝ) (k : ℕ) :
     Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
   if k < N then givensFactor N (fun l => planeReflector (φ l)) k
   else diagonal fun i => if (i : ℕ) = N then -1 else 1
 
-/-- The product form (12.2.18) as a forward product of `Matrix.reflectorFactor`. -/
+/-- For every sequence $\varphi$, the product form (12.2.18) is the product of its $N + 1$ factors:
+$$G_0 G_1 \cdots G_{N-1} \operatorname{diag}(1, \dots, 1, -1) = G_0 G_1 \cdots G_N,$$
+where on the left the first $N$ factors form the chain of the blocks $R(\varphi_k)$, and on the
+right the $G_k$ are `Matrix.reflectorFactor N φ k`. -/
 theorem givensChain_mul_diagonal_eq_prodFwd (φ : ℕ → ℝ) :
     givensChain N (fun k => planeReflector (φ k)) *
         diagonal (fun i : Fin (N + 1) => if (i : ℕ) = N then -1 else 1) =
@@ -2227,7 +2486,7 @@ theorem givensChain_mul_diagonal_eq_prodFwd (φ : ℕ → ℝ) :
   congr 1
   exact prodFwd_congr fun k hk => by rw [reflectorFactor, ite_eq_left hk]
 
-/-- The factors of (12.2.18) are involutions. -/
+/-- Every factor $G_k$ of (12.2.18) is an involution: $G_k^2 = I$. -/
 theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :
     reflectorFactor N φ k * reflectorFactor N φ k = 1 := by
   unfold reflectorFactor
@@ -2238,7 +2497,7 @@ theorem reflectorFactor_mul_self (φ : ℕ → ℝ) (k : ℕ) :
     funext i
     split_ifs <;> norm_num
 
-/-- The factors of (12.2.18) are symmetric. -/
+/-- Every factor $G_k$ of (12.2.18) is symmetric. -/
 theorem reflectorFactor_transpose (φ : ℕ → ℝ) (k : ℕ) :
     (reflectorFactor N φ k)ᵀ = reflectorFactor N φ k := by
   unfold reflectorFactor
@@ -2246,13 +2505,13 @@ theorem reflectorFactor_transpose (φ : ℕ → ℝ) (k : ℕ) :
   · exact givensFactor_planeReflector_transpose φ k
   · exact diagonal_transpose _
 
-/-- The factors of (12.2.18) are orthogonal: symmetric involutions. -/
+/-- Every factor $G_k$ of (12.2.18) is orthogonal, as a symmetric involution. -/
 theorem reflectorFactor_mem_orthogonalGroup (φ : ℕ → ℝ) (k : ℕ) :
     reflectorFactor N φ k ∈ orthogonalGroup (Fin (N + 1)) ℝ := by
   rw [mem_orthogonalGroup_iff, reflectorFactor_transpose, reflectorFactor_mul_self]
 
-/-- The factors of (12.2.18) have determinant `−1`: a plane reflection, and
-`diag(1, …, 1, −1)`. -/
+/-- Every factor $G_k$ of (12.2.18) has determinant $-1$: it is a plane reflection or
+$\operatorname{diag}(1, \dots, 1, -1)$. -/
 theorem det_reflectorFactor (φ : ℕ → ℝ) (k : ℕ) :
     (reflectorFactor N φ k).det = -1 := by
   unfold reflectorFactor
@@ -2263,20 +2522,24 @@ theorem det_reflectorFactor (φ : ℕ → ℝ) (k : ℕ) :
     simp only [Fin.val_castSucc, Fin.val_last, ↓reduceIte]
     rw [Finset.prod_eq_one fun x _ => by simp [x.2.ne], one_mul]
 
-/-- **The product (12.2.18) is orthogonal**, as a product of orthogonal factors. -/
+/-- For every $r \in \mathbb{N}$, the product $G_0 \cdots G_{r-1}$ of factors of (12.2.18) is
+orthogonal, as a product of orthogonal factors. -/
 theorem prodFwd_reflectorFactor_mem_orthogonalGroup (φ : ℕ → ℝ) (r : ℕ) :
     prodFwd (reflectorFactor N φ) r ∈ orthogonalGroup (Fin (N + 1)) ℝ :=
   prodFwd_mem_orthogonalGroup fun k _ => reflectorFactor_mem_orthogonalGroup φ k
 
-/-- **The determinant of the product (12.2.18)** is `(−1)^{N+1}`: each of its `N + 1` factors has
-determinant `−1`. -/
+/-- The product $G_0 \cdots G_N$ of (12.2.18) has determinant $(-1)^{N+1}$, since each of its
+$N + 1$ factors has determinant $-1$. -/
 theorem det_prodFwd_reflectorFactor (φ : ℕ → ℝ) :
     (prodFwd (reflectorFactor N φ) (N + 1)).det = (-1) ^ (N + 1) := by
   rw [det_prodFwd, Finset.prod_eq_pow_card (b := -1), card_range]
   exact fun k _ => det_reflectorFactor φ k
 
-/-- **The product (12.2.18) of even order is special orthogonal**, the hypothesis of
-(12.2.19) (`Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`). -/
+/-- If $N + 1 = 2m$ is even, then the product $G_0 \cdots G_N$ of (12.2.18) is special orthogonal:
+it is orthogonal with determinant $1$.
+
+This is the hypothesis of (12.2.19) of [golub2013matrix], which is
+`Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`. -/
 theorem prodFwd_reflectorFactor_mem_specialOrthogonalGroup (φ : ℕ → ℝ) {m : ℕ}
     (hN : N + 1 = 2 * m) :
     prodFwd (reflectorFactor N φ) (N + 1) ∈ specialOrthogonalGroup (Fin (N + 1)) ℝ := by
@@ -2284,9 +2547,13 @@ theorem prodFwd_reflectorFactor_mem_specialOrthogonalGroup (φ : ℕ → ℝ) {m
   rw [det_prodFwd_reflectorFactor, hN, pow_mul]
   norm_num
 
-/-- **Fact 1 of [golub2013matrix] §12.2.10** (Ammar–Gragg–Reichel): the product
-`G₀ G₁ ⋯ G_N` of (12.2.18) is similar to `H_o H_e`, the product of its even-indexed factors times
-the product of its odd-indexed ones: factors in planes at distance two or more commute, and
+/-- For every sequence $\varphi$, the product $H = G_0 G_1 \cdots G_N$ of (12.2.18) is similar to
+$H_o H_e$, where $H_o = G_0 G_2 \cdots$ is the product of the even-indexed factors and
+$H_e = G_1 G_3 \cdots$ is the product of the odd-indexed factors. This is Fact 1 in
+[golub2013matrix] §12.2.10 (Ammar, Gragg and Reichel).
+
+The source numbers the factors from $1$, so its $H_o = G_1 G_3 \cdots$ is the product of the
+even-indexed factors here. Factors in planes at distance two or more commute, and
 `Matrix.isSimilar_prodFwd_evenOdd` reorders the product. -/
 theorem isSimilar_prod_planeReflector_oddEven (φ : ℕ → ℝ) :
     IsSimilar (prodFwd (reflectorFactor N φ) (N + 1))
@@ -2317,7 +2584,8 @@ section HalfSums
 
 variable {N : ℕ}
 
-/-- The factors of (12.2.18) differ from the identity only in the rows and columns `k`, `k + 1`. -/
+/-- For $k \le N$, the entry $(G_k - I)_{pq}$ is $0$ unless both $p$ and $q$ lie in $\{k, k + 1\}$.
+-/
 private theorem reflectorFactor_sub_one_apply_eq_zero (φ : ℕ → ℝ) {k : ℕ} (hk : k ≤ N)
     {p q : Fin (N + 1)}
     (h : ¬((k ≤ (p : ℕ) ∧ (p : ℕ) ≤ k + 1) ∧ (k ≤ (q : ℕ) ∧ (q : ℕ) ≤ k + 1))) :
@@ -2334,7 +2602,8 @@ private theorem reflectorFactor_sub_one_apply_eq_zero (φ : ℕ → ℝ) {k : �
   · rw [reflectorFactor, ite_eq_right (lt_irrefl k), diagonal_apply]
     split_ifs with hpq hp <;> first | simp | (subst hpq; exfalso; exact h (by omega))
 
-/-- Factors of (12.2.18) in planes at distance two or more have disjoint supports. -/
+/-- For $k + 2 \le l \le N$, the departures of $G_k$ and $G_l$ from the identity have zero products:
+$(G_k - I)(G_l - I) = 0$ and $(G_l - I)(G_k - I) = 0$. -/
 private theorem reflectorFactor_sub_one_mul_sub_one (φ : ℕ → ℝ) {k l : ℕ} (hkl : k + 2 ≤ l)
     (hl : l ≤ N) :
     (reflectorFactor N φ k - 1) * (reflectorFactor N φ l - 1) = 0 ∧
@@ -2352,8 +2621,8 @@ private theorem reflectorFactor_sub_one_mul_sub_one (φ : ℕ → ℝ) {k l : �
     · rw [reflectorFactor_sub_one_apply_eq_zero (k := k) (p := r) (q := q) φ (by omega)
         (by omega), mul_zero]
 
-/-- Every factor of (12.2.18) up to `G_N` has trace `n − 2`: a plane reflection has trace `0`,
-and `diag(1, …, 1, −1)` has trace `n − 2`. -/
+/-- For $k \le N$, $\operatorname{tr}(G_k - I) = -2$, because every factor $G_k$ with $k \le N$ has
+trace $N - 1$. -/
 private theorem trace_reflectorFactor_sub_one (φ : ℕ → ℝ) {k : ℕ} (hk : k ≤ N) :
     trace (reflectorFactor N φ k - 1) = -2 := by
   rw [trace]
@@ -2377,7 +2646,8 @@ private theorem trace_reflectorFactor_sub_one (φ : ℕ → ℝ) {k : ℕ} (hk :
     simp [reflectorFactor]
     norm_num
 
-/-- The masked products `H_o`, `H_e` of (12.2.18) as the identity plus their departures. -/
+/-- If no two indices $k < l$ with the property $P$ are adjacent, then the product of the factors
+$G_k$ with $k \le N$ and $P(k)$ is $I + \sum_{k \le N, \, P(k)} (G_k - I)$. -/
 private theorem prodFwd_mask_eq (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
     (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
     prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) =
@@ -2401,19 +2671,21 @@ private theorem odd_add_two_le {k l : ℕ} (hk : Odd k) (hl : Odd l) (hkl : k < 
   obtain ⟨b, rfl⟩ := hl
   omega
 
-/-- `H_o = G₁ G₃ ⋯` as the identity plus the departures of its factors. -/
+/-- The product $H_o$ of the even-indexed factors of (12.2.18) is $I$ plus the sum of their
+departures $G_k - I$. -/
 private theorem prodFwdEven_reflectorFactor_eq (φ : ℕ → ℝ) :
     prodFwdEven (reflectorFactor N φ) (N + 1) =
       1 + ∑ k ∈ range (N + 1), if Even k then reflectorFactor N φ k - 1 else 0 :=
   prodFwd_mask_eq φ Even fun _ _ => even_add_two_le
 
-/-- `H_e = G₂ G₄ ⋯` as the identity plus the departures of its factors. -/
+/-- The product $H_e$ of the odd-indexed factors of (12.2.18) is $I$ plus the sum of their
+departures $G_k - I$. -/
 private theorem prodFwdOdd_reflectorFactor_eq (φ : ℕ → ℝ) :
     prodFwdOdd (reflectorFactor N φ) (N + 1) =
       1 + ∑ k ∈ range (N + 1), if Odd k then reflectorFactor N φ k - 1 else 0 :=
   prodFwd_mask_eq φ Odd fun _ _ => odd_add_two_le
 
-/-- A masked product of (12.2.18) is symmetric. -/
+/-- A product of factors $G_k$ of (12.2.18) with pairwise nonadjacent indices is symmetric. -/
 private theorem transpose_prodFwd_mask (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
     (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
     (prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1))ᵀ =
@@ -2424,7 +2696,7 @@ private theorem transpose_prodFwd_mask (φ : ℕ → ℝ) (P : ℕ → Prop) [De
   · rw [transpose_sub, transpose_one, reflectorFactor_transpose]
   · exact transpose_zero
 
-/-- A masked product of (12.2.18) is tridiagonal. -/
+/-- A product of factors $G_k$ of (12.2.18) with pairwise nonadjacent indices is tridiagonal. -/
 private theorem prodFwd_mask_apply_eq_zero (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
     (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) {i j : Fin (N + 1)}
     (hij : (j : ℕ) + 1 < i ∨ (i : ℕ) + 1 < j) :
@@ -2437,7 +2709,7 @@ private theorem prodFwd_mask_apply_eq_zero (φ : ℕ → ℝ) (P : ℕ → Prop)
       (by omega)
   · rfl
 
-/-- A masked product of (12.2.18) with commuting factors is an involution. -/
+/-- A product of factors $G_k$ of (12.2.18) with pairwise nonadjacent indices is an involution. -/
 private theorem prodFwd_mask_mul_self (φ : ℕ → ℝ) (P : ℕ → Prop) [DecidablePred P]
     (hP : ∀ k l, P k → P l → k < l → k + 2 ≤ l) :
     prodFwd (fun k => if P k then reflectorFactor N φ k else 1) (N + 1) *
@@ -2451,7 +2723,8 @@ private theorem prodFwd_mask_mul_self (φ : ℕ → ℝ) (P : ℕ → Prop) [Dec
     · exact reflectorFactor_mul_self φ k
     · exact Matrix.one_mul 1
 
-/-- The number of even (and of odd) `k < 2m` is `m`. -/
+/-- Among the indices $k < 2m$ there are $m$ even and $m$ odd ones, so summing a constant $c$ over
+either kind gives $mc$. -/
 private theorem sum_range_two_mul_ite (c : ℝ) (m : ℕ) :
     ∑ k ∈ range (2 * m), (if Even k then c else 0) = m * c ∧
       ∑ k ∈ range (2 * m), (if Odd k then c else 0) = m * c := by
@@ -2468,8 +2741,8 @@ private theorem sum_range_two_mul_ite (c : ℝ) (m : ℕ) :
     push_cast
     constructor <;> ring
 
-/-- The masked products of (12.2.18) of even order are traceless: each has `m` factors of
-trace `n − 2`. -/
+/-- If $N + 1 = 2m$, then $H_o$ and $H_e$ have trace $0$: each is $I$ plus $m$ departures of trace
+$-2$. -/
 private theorem trace_prodFwd_mask {m : ℕ} (hN : N + 1 = 2 * m) (φ : ℕ → ℝ) :
     trace (prodFwdEven (reflectorFactor N φ) (N + 1)) = 0 ∧
       trace (prodFwdOdd (reflectorFactor N φ) (N + 1)) = 0 := by
@@ -2487,21 +2760,23 @@ private theorem trace_prodFwd_mask {m : ℕ} (hN : N + 1 = 2 * m) (φ : ℕ → 
   constructor <;> ring
 
 variable (N) in
-/-- The half-sum `C = (H_o + H_e)/2` of the even- and odd-indexed factors of (12.2.18)
-([golub2013matrix] §12.2.10, Fact 2). -/
+/-- The half-sum $C = \frac{1}{2} (H_o + H_e)$ of the product $H_o$ of the even-indexed factors and
+the product $H_e$ of the odd-indexed factors of (12.2.18). It appears in Fact 2 of
+[golub2013matrix] §12.2.10. -/
 noncomputable def oddEvenHalfSum (φ : ℕ → ℝ) : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
   (1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) +
     prodFwdOdd (reflectorFactor N φ) (N + 1))
 
 variable (N) in
-/-- The half-difference `S = (H_o − H_e)/2` of the even- and odd-indexed factors of (12.2.18)
-([golub2013matrix] §12.2.10, Fact 2). -/
+/-- The half-difference $S = \frac{1}{2} (H_o - H_e)$ of the product $H_o$ of the even-indexed
+factors and the product $H_e$ of the odd-indexed factors of (12.2.18). It appears in Fact 2 of
+[golub2013matrix] §12.2.10. -/
 noncomputable def oddEvenHalfDiff (φ : ℕ → ℝ) : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
   (1 / 2 : ℝ) • (prodFwdEven (reflectorFactor N φ) (N + 1) -
     prodFwdOdd (reflectorFactor N φ) (N + 1))
 
-/-- The half-sum `C = (H_o + H_e)/2` is symmetric: `H_o`, `H_e` are products of commuting
-symmetric factors. -/
+/-- The half-sum $C = \frac{1}{2} (H_o + H_e)$ is symmetric, since $H_o$ and $H_e$ are products of
+commuting symmetric factors. -/
 theorem isSymm_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsSymm := by
   have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
     transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
@@ -2509,7 +2784,7 @@ theorem isSymm_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsSymm 
     transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
   exact (hE.add hO).smul _
 
-/-- The half-difference `S = (H_o − H_e)/2` is symmetric. -/
+/-- The half-difference $S = \frac{1}{2} (H_o - H_e)$ is symmetric. -/
 theorem isSymm_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsSymm := by
   have hE : (prodFwdEven (reflectorFactor N φ) (N + 1)).IsSymm :=
     transpose_prodFwd_mask φ Even fun _ _ => even_add_two_le
@@ -2517,16 +2792,20 @@ theorem isSymm_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsSym
     transpose_prodFwd_mask φ Odd fun _ _ => odd_add_two_le
   exact (hE.sub hO).smul _
 
-/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `C = (H_o + H_e)/2` is tridiagonal. Each
-of `H_o`, `H_e` is the identity plus the departures of its factors, which live in disjoint `2 × 2`
-diagonal blocks (`Matrix.prodFwd_eq_one_add_sum_sub_one`). -/
+/-- For every sequence $\varphi$, the half-sum $C = \frac{1}{2} (H_o + H_e)$ is tridiagonal. This is
+the shape part of Fact 2 in [golub2013matrix] §12.2.10.
+
+Each of $H_o$ and $H_e$ is the identity plus the departures $G_k - I$ of its factors
+(`prodFwd_eq_one_add_sum_sub_one`), and these departures live in disjoint $2 \times 2$ diagonal
+blocks. -/
 theorem isTridiagonal_oddEvenHalfSum (φ : ℕ → ℝ) : (oddEvenHalfSum N φ).IsTridiagonal := by
   refine isTridiagonal_iff_fin.2 fun i j hij => ?_
   rw [oddEvenHalfSum, Matrix.smul_apply, Matrix.add_apply, prodFwdEven, prodFwdOdd,
     prodFwd_mask_apply_eq_zero φ Even (fun _ _ => even_add_two_le) hij,
     prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, add_zero, smul_zero]
 
-/-- **Fact 2 of [golub2013matrix] §12.2.10, the shape**: `S = (H_o − H_e)/2` is tridiagonal. -/
+/-- For every sequence $\varphi$, the half-difference $S = \frac{1}{2} (H_o - H_e)$ is tridiagonal.
+This is the shape part of Fact 2 in [golub2013matrix] §12.2.10. -/
 theorem isTridiagonal_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ).IsTridiagonal := by
   refine isTridiagonal_iff_fin.2 fun i j hij => ?_
   rw [oddEvenHalfDiff, Matrix.smul_apply, Matrix.sub_apply, prodFwdEven, prodFwdOdd,
@@ -2534,13 +2813,22 @@ theorem isTridiagonal_oddEvenHalfDiff (φ : ℕ → ℝ) : (oddEvenHalfDiff N φ
     prodFwd_mask_apply_eq_zero φ Odd (fun _ _ => odd_add_two_le) hij, sub_zero, smul_zero]
 
 open Complex in
-/-- **Fact 2 of [golub2013matrix] §12.2.10, the spectrum**: if the eigenvalues of the product
-`H = G₁ ⋯ G_n` of (12.2.18) are the `m` pairs `e^{±iθ_k}` ((12.2.19)), then the eigenvalues of
-`C = (H_o + H_e)/2` are `± cos(θ_k/2)` and those of `S = (H_o − H_e)/2` are `± sin(θ_k/2)`.
-`H_o`, `H_e` are symmetric involutions of trace `0` and `H_o H_e` is similar to `H`
-(`Matrix.isSimilar_prod_planeReflector_oddEven`), so `Matrix.charpoly_half_add_of_involutive`
-applies to `(H_o, H_e)` and to `(H_o, −H_e)`, whose product `−H_o H_e` has the eigenvalues
-`e^{±i(θ_k + π)}`. -/
+/-- Let $\varphi$ be a sequence of reals, let $H = G_0 \cdots G_N$ be the product (12.2.18), and let
+$\theta_0, \dots, \theta_{m-1}$ be reals such that the characteristic polynomial of $H$, as a
+complex matrix, is
+$$\prod_{k < m} (X - e^{i \theta_k}) (X - e^{-i \theta_k}).$$
+Then the characteristic polynomials $p_C$ of $C = \frac{1}{2} (H_o + H_e)$ and $p_S$ of
+$S = \frac{1}{2} (H_o - H_e)$ are
+$$p_C = \prod_{k < m} \bigl(X - \cos(\theta_k / 2)\bigr) \bigl(X + \cos(\theta_k / 2)\bigr),$$
+$$p_S = \prod_{k < m} \bigl(X - \sin(\theta_k / 2)\bigr) \bigl(X + \sin(\theta_k / 2)\bigr).$$
+So the eigenvalues of $C$ are $\pm \cos(\theta_k / 2)$ and those of $S$ are
+$\pm \sin(\theta_k / 2)$. This is the spectral part of Fact 2 in [golub2013matrix] §12.2.10.
+
+The hypothesis is the form (12.2.19) of the eigenvalues, and it forces $N + 1 = 2m$. The
+matrices $H_o$ and $H_e$ are symmetric involutions of trace $0$, and $H_o H_e$ is similar to $H$
+(`Matrix.isSimilar_prod_planeReflector_oddEven`). So `Matrix.charpoly_half_add_of_involutive`
+applies to $(H_o, H_e)$ and to $(H_o, -H_e)$, whose product $-H_o H_e$ has the eigenvalues
+$e^{\pm i (\theta_k + \pi)}$. -/
 theorem charpoly_oddEven_half_sum (φ : ℕ → ℝ) {m : ℕ} (θ : Fin m → ℝ)
     (hθ : ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =
       ∏ k, (X - C (exp (θ k * I))) * (X - C (exp (-θ k * I)))) :

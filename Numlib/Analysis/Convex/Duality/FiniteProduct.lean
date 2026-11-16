@@ -8,43 +8,56 @@ import Numlib.Analysis.Convex.Duality.RelintSeparation
 /-!
 # Convex analysis on a finite product
 
-A finite product `ι → E` carries a pairing, a notion of product set, and — once `E` is
-finite-dimensional — a relative interior, and all three are computed coordinatewise. This file
-establishes that dictionary and then reads one theorem through it: a finite family of convex sets
-has a common relative-interior point exactly when a certain family of dual vectors summing to zero
-does not exist.
+Let $E$ and $F$ be real vector spaces paired by $\langle x, y \rangle$, and let $\iota$ be a finite
+index type. The product $E^\iota$ is paired with $F^\iota$ by $\langle x, y \rangle = \sum_i \langle
+x_i, y_i \rangle$. For this pairing, product sets, separable sums of functions and, when $E$ is
+finite-dimensional, relative interiors are computed coordinatewise. The support function of
+$\prod_i C_i$ is $y \mapsto \sum_i \delta^*(y_i \mid C_i)$, the conjugate of
+$x \mapsto \sum_i f_i(x_i)$ is $y \mapsto \sum_i f_i^*(y_i)$, and $\operatorname{ri} \prod_i C_i =
+\prod_i \operatorname{ri} C_i$ (`Convex.relint_univ_pi`).
+
+The module then reads one theorem through this dictionary. A finite family of nonempty convex sets
+$C_i \subseteq E$ has a common relative interior point exactly when there is no family $(y_i)$ in
+$F$ with $\sum_i y_i = 0$, $\sum_i \delta^*(y_i \mid C_i) \le 0$ and
+$\sum_i \delta^*(-y_i \mid C_i) > 0$. This is Corollary 16.2.2 of [rockafellar1970convex]; the
+material also uses §6 and §13 there.
 
 ## Main definitions
 
-* `piPairing B` — the pairing of `ι → E` with `ι → F` given by `⟨x, y⟩ = ∑ i, ⟨xᵢ, yᵢ⟩`, together
-  with the four pairing classes as instances. It is to `Set.pi` what `prodPairing` is to `×ˢ`.
+* `ConvexAnalysis.piPairing`: the pairing $\langle x, y \rangle = \sum_i \langle x_i, y_i \rangle$
+  of $E^\iota$ with $F^\iota$, with instances for the four pairing classes. It is to `Set.pi` what
+  `ConvexAnalysis.prodPairing` is to the product of two sets.
 
 ## Main results
 
-* `supportFn_univ_pi` — the support function of a product set is the sum of the support functions
-  of the factors.
-* `convexConj_piFn` — the conjugate of a separable sum of proper functions is the separable sum of
-  the conjugates, `(∑ i, fᵢ ∘ prᵢ)* = ∑ i, fᵢ* ∘ prᵢ`.
-* `iInter_relint_nonempty_iff_supportFn`, `iInter_relint_convexDom_nonempty_iff` — a finite family
-  of convex sets (resp. of effective domains) has a common relative-interior point exactly when
-  there is no family `y` with `∑ i, yᵢ = 0`, `∑ i, δ*(yᵢ ∣ Cᵢ) ≤ 0` and `∑ i, δ*(-yᵢ ∣ Cᵢ) > 0`
-  ([rockafellar1970convex] Corollary 16.2.2). The diagonal `{x ∣ x₁ = ⋯ = xₘ}` is a subspace of
-  `ι → E` whose annihilator under the product pairing is the family of `y` summing to zero, so this
-  is the subspace criterion of `Duality/RelintSeparation.lean` read at a product set.
+* `ConvexAnalysis.supportFn_univ_pi`: the support function of a product set is the sum of the
+  support functions of the factors.
+* `ConvexAnalysis.convexConj_piFn`: the conjugate of a separable sum of proper functions is the
+  separable sum of the conjugates, $(x \mapsto \sum_i f_i(x_i))^* = (y \mapsto \sum_i f_i^*(y_i))$.
+* `ConvexAnalysis.iInter_relint_nonempty_iff_supportFn`: a finite family of nonempty convex sets has
+  a common relative interior point exactly when no family $y$ with $\sum_i y_i = 0$ has $\sum_i
+  \delta^*(y_i \mid C_i) \le 0 < \sum_i \delta^*(-y_i \mid C_i)$.
+* `ConvexAnalysis.iInter_relint_convexDom_nonempty_iff`: the same criterion for the effective
+  domains of proper convex functions, with the recession functions of the conjugates in place of the
+  support functions.
+
+## Proof outline
+
+The diagonal $\{x : x_1 = \dots = x_m\}$ is a subspace of $E^\iota$. Its annihilator under the
+product pairing is the set of families $y$ with $\sum_i y_i = 0$. So the criterion for a common
+relative interior point is the subspace criterion
+`ConvexAnalysis.submodule_inter_relint_nonempty_iff_supportFn` of
+`Numlib.Analysis.Convex.Duality.RelintSeparation`, applied to the diagonal and the product set
+$\prod_i C_i$.
 
 ## Implementation notes
 
-`piPairing` sums over `Finset.univ`, so the index has to be a `Fintype`. The product is
-non-dependent because the diagonal subspace needs all the factors to be the same space; the
-`Set.pi` results would hold verbatim for a dependent product.
-
-`⊥` absorbs, so `supportFn_univ_pi` needs no nonemptiness hypothesis — but its two sides are `⊥`
-for different reasons when a factor is empty, and the proof splits. The nonempty branch is an
-induction over the index `Finset` whose step decouples one coordinate with `Function.update`.
-
-## References
-
-* [rockafellar1970convex] §16, §6 and §13.
+* `ConvexAnalysis.piPairing` sums over `Finset.univ`, so the index type is a `Fintype`.
+* The product is not dependent, because the diagonal subspace needs all factors to be the same
+  space. The results about `Set.pi` would hold without change for a dependent product.
+* `ConvexAnalysis.supportFn_univ_pi` needs no nonemptiness hypothesis, because $-\infty$ absorbs in
+  a sum. When a factor is empty, both sides are $-\infty$, for different reasons: on the left the
+  product set is empty, and on the right one summand is $-\infty$.
 -/
 
 open Set
@@ -57,8 +70,10 @@ section Pairing
 
 variable {ι E F : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **The pairing of `ι → E` with `ι → F`**, `⟨x, y⟩ = ∑ i, ⟨xᵢ, yᵢ⟩`: `prodPairing` for a finite
-family, and the pairing under which a product of sets has a separable support function. -/
+/-- The **product pairing** of $E^\iota$ with $F^\iota$, for a finite index type $\iota$: $$\langle
+x, y \rangle = \sum_{i \in \iota} \langle x_i, y_i \rangle.$$ It is the analogue of
+`ConvexAnalysis.prodPairing` for a finite family. Under this pairing a product of sets has a
+separable support function (`ConvexAnalysis.supportFn_univ_pi`). -/
 def piPairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : (ι → E) →ₗ[ℝ] (ι → F) →ₗ[ℝ] ℝ :=
   LinearMap.mk₂ ℝ (fun x y => ∑ i, B (x i) (y i))
     (fun _ _ _ => by simp [← Finset.sum_add_distrib])
@@ -66,10 +81,12 @@ def piPairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : (ι → E) →ₗ[ℝ] (ι
     (fun _ _ _ => by simp [← Finset.sum_add_distrib])
     (fun _ _ _ => by simp [Finset.mul_sum])
 
+/-- The value of the product pairing: $\langle x, y \rangle = \sum_i \langle x_i, y_i \rangle$. -/
 @[simp] theorem piPairing_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x : ι → E) (y : ι → F) :
     piPairing B x y = ∑ i, B (x i) (y i) := rfl
 
-/-- Flipping the product pairing flips the pairing of the factors. -/
+/-- The flip of the product pairing is the product pairing of the flipped pairing:
+$(y, x) \mapsto \sum_i \langle x_i, y_i \rangle$. -/
 theorem piPairing_flip (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) :
     (piPairing (ι := ι) B).flip = piPairing B.flip :=
   LinearMap.ext fun _ => LinearMap.ext fun _ => by simp
@@ -81,14 +98,18 @@ section PairingInstances
 variable {ι E F : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [AddCommGroup F] [Module ℝ F]
 
-/-- A finite product of copies of a continuous pairing is continuous. -/
+/-- If each map $x \mapsto \langle x, y \rangle$ is continuous on $E$, then each map
+$x \mapsto \sum_i \langle x_i, y_i \rangle$ is continuous on $E^\iota$ with the product
+topology. -/
 instance instIsContinuousPairingPi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsContinuousPairing B] :
     IsContinuousPairing (piPairing (ι := ι) B) where
   continuous_left y := by
     simp only [piPairing_apply]
     exact continuous_finsetSum _ fun i _ => (continuous_pairing B (y i)).comp (continuous_apply i)
 
-/-- A finite product of copies of a compatible pairing is compatible. -/
+/-- If the continuous linear functionals on $E$ are exactly the maps
+$x \mapsto \langle x, y \rangle$ with $y \in F$, then the continuous linear functionals on
+$E^\iota$ are exactly the maps $x \mapsto \sum_i \langle x_i, y_i \rangle$ with $y \in F^\iota$. -/
 instance instIsCompatiblePairingPi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B] :
     IsCompatiblePairing (piPairing (ι := ι) B) where
   toIsContinuousPairing := instIsContinuousPairingPi B
@@ -107,8 +128,9 @@ section InnerInstances
 
 variable {ι E : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] {B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ}
 
-/-- A finite product of copies of an inner pairing is an inner pairing. The product carries no
-inner-product structure of its own, but the pairing does not care. -/
+/-- If a pairing of $E$ with itself is symmetric and positive definite, then so is the product
+pairing of $E^\iota$ with itself. The product carries no inner product structure of its own, but
+the pairing does not need one. -/
 instance isInnerPairing_piPairing [IsInnerPairing B] : IsInnerPairing (piPairing (ι := ι) B) where
   pairing_comm _ _ := Finset.sum_congr rfl fun i _ => pairing_comm B _ _
   self_nonneg _ := Finset.sum_nonneg fun i _ => self_pairing_nonneg B _
@@ -118,7 +140,9 @@ instance isInnerPairing_piPairing [IsInnerPairing B] : IsInnerPairing (piPairing
     funext i
     exact self_pairing_eq_zero_iff.1 (hzero i (Finset.mem_univ i))
 
-/-- The quadratic form of a finite product of inner pairings is continuous. -/
+/-- If a symmetric positive definite pairing of $E$ with itself has a continuous quadratic form
+$x \mapsto \langle x, x \rangle$, then the quadratic form
+$x \mapsto \sum_i \langle x_i, x_i \rangle$ of the product pairing is continuous on $E^\iota$. -/
 instance isContinuousInnerPairing_piPairing [TopologicalSpace E] [IsContinuousInnerPairing B] :
     IsContinuousInnerPairing (piPairing (ι := ι) B) where
   continuous_self :=
@@ -126,7 +150,13 @@ instance isContinuousInnerPairing_piPairing [TopologicalSpace E] [IsContinuousIn
 
 end InnerInstances
 
-/-! ### The relative interior of a product set -/
+/-!
+### The relative interior of a product set
+
+For finite-dimensional $E$, the relative interior of a product of convex sets is the product of the
+relative interiors. This result is `Convex.relint_univ_pi` in
+`Numlib.Analysis.Convex.RelativeInterior`.
+-/
 
 section Relint
 
@@ -143,8 +173,13 @@ section Support
 
 variable {ι E F : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **The support function of a product set is the sum of the support functions of its factors**,
-with no hypothesis. If some factor is empty both sides are `⊥`. -/
+/-- **The support function of a product set.** Let $\iota$ be finite and $C_i \subseteq E$ for
+$i \in \iota$. Then for every $y \in F^\iota$, $$\delta^*\Bigl(y \Bigm| \prod_i C_i\Bigr) =
+\sum_i \delta^*(y_i \mid C_i),$$ where the support function on the left is taken with respect to
+the product pairing. No hypothesis is needed. If some $C_i$ is empty, both sides are $-\infty$.
+
+The support function is `ConvexAnalysis.supportFn`, with $\delta^*(y \mid C) = \sup_{x \in C}
+\langle x, y \rangle$. -/
 theorem supportFn_univ_pi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C : ι → Set E) (y : ι → F) :
     supportFn (piPairing B) (univ.pi C) y = ∑ i, supportFn B (C i) (y i) := by
   classical
@@ -165,20 +200,26 @@ theorem supportFn_univ_pi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C : ι → Set 
 
 end Support
 
-/-! ### The conjugate of a separable sum
+/-!
+### The conjugate of a separable sum
 
-The other half of the finite-product dictionary. `⟨x, y⟩ - ∑ fᵢ (xᵢ)` splits as
-`∑ (⟨xᵢ, yᵢ⟩ - fᵢ (xᵢ))` only once the `⊤` case is disposed of, which `⊥` absorbing does. -/
+This is the other half of the finite-product dictionary. The difference
+$\langle x, y \rangle - \sum_i f_i(x_i)$ splits as $\sum_i (\langle x_i, y_i \rangle - f_i(x_i))$
+only after the case of a value $+\infty$ is handled, and the absorption of $-\infty$ handles it.
+-/
 
 section Separable
 
 variable {ι E F : Type*} [Fintype ι] [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **The conjugate of a separable sum is the separable sum of the conjugates.** For a finite
-family of proper functions, `(∑ i, fᵢ ∘ prᵢ)* = ∑ i, fᵢ* ∘ prᵢ` against `piPairing B`.
+/-- **The conjugate of a separable sum.** Let $\iota$ be finite, and let
+$f_i : E \to [-\infty, +\infty]$ be proper for each $i \in \iota$. Then for every
+$y \in F^\iota$, $$\Bigl(x \mapsto \sum_i f_i(x_i)\Bigr)^*(y) = \sum_i f_i^*(y_i),$$ where the
+conjugate on the left is taken with respect to the product pairing.
 
-Properness keeps the two sides from colliding at `∞ - ∞`: it lets the supremum defining `fᵢ*` be
-taken over `dom fᵢ`, and it keeps `fᵢ* yᵢ` off `⊥`, so no summand on the right can absorb. -/
+Properness keeps the two sides away from $\infty - \infty$. It lets the supremum that defines
+$f_i^*$ be taken over $\operatorname{dom} f_i$, and it keeps each $f_i^*(y_i)$ different from
+$-\infty$, so no summand on the right absorbs the others. -/
 theorem convexConj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal) (hf : ∀ i, ProperConvex (f i))
     (y : ι → F) :
     convexConj (piPairing B) (fun x => ∑ i, f i (x i)) y = ∑ i, convexConj B (f i) (y i) := by
@@ -218,10 +259,12 @@ theorem convexConj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → 
 
 end Separable
 
-/-! ### A common relative interior point of a finite family
+/-!
+### A common relative interior point of a finite family
 
-The diagonal `{x | x₁ = ⋯ = xₘ}` is a subspace of `ι → E` whose annihilator, under the product
-pairing, is the family of `y` summing to zero. -/
+The diagonal $\{x : x_1 = \dots = x_m\}$ is a subspace of $E^\iota$. Its annihilator under the
+product pairing is the set of families $y$ with $\sum_i y_i = 0$.
+-/
 
 section Diagonal
 
@@ -229,12 +272,21 @@ variable {ι E F : Type*} [Fintype ι] [NormedAddCommGroup E] [NormedSpace ℝ E
   [FiniteDimensional ℝ E] [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
   [IsCompatiblePairing B]
 
-/-- **A finite family of convex sets has a common relative interior point** exactly when there is
-no family `y` of dual vectors summing to zero with `∑ i, δ*(yᵢ | Cᵢ) ≤ 0 < ∑ i, δ*(-yᵢ | Cᵢ)`.
+/-- **A common relative interior point of a finite family of convex sets.** Let $E$ be a
+finite-dimensional real normed space, and let the continuous linear functionals on $E$ be
+exactly the maps $x \mapsto \langle x, y \rangle$ with $y \in F$. Suppose that the pairing
+separates the points of $F$: if $\langle x, y \rangle = 0$ for all $x \in E$, then $y = 0$. Let
+$\iota$ be finite, and let $C_i \subseteq E$ be nonempty and convex for each $i \in \iota$. Then
+$\bigcap_i \operatorname{ri} C_i \ne \emptyset$ if and only if there is no family
+$(y_i)_{i \in \iota}$ in $F$ with $$\sum_i y_i = 0, \qquad \sum_i \delta^*(y_i \mid C_i) \le 0,
+\qquad \sum_i \delta^*(-y_i \mid C_i) > 0.$$ This is Corollary 16.2.2 of
+[rockafellar1970convex].
 
-This is `submodule_inter_relint_nonempty_iff_supportFn` in `ι → E` at the diagonal subspace and the
-product set `∏ Cᵢ`. Separation on the right of the pairing is what turns the annihilator of the
-diagonal into `∑ i, yᵢ = 0`. -/
+The separation hypothesis is `B.SeparatingRight`, and $\operatorname{ri}$ is
+`intrinsicInterior ℝ`. The proof applies
+`ConvexAnalysis.submodule_inter_relint_nonempty_iff_supportFn` in $E^\iota$ to the diagonal
+subspace and the product set $\prod_i C_i$. The separation hypothesis turns the annihilator of
+the diagonal into the condition $\sum_i y_i = 0$. -/
 theorem iInter_relint_nonempty_iff_supportFn (hB : B.SeparatingRight) (C : ι → Set E)
     (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i).Nonempty) :
     (⋂ i, ri (C i)).Nonempty ↔
@@ -280,10 +332,19 @@ theorem iInter_relint_nonempty_iff_supportFn (hB : B.SeparatingRight) (C : ι �
   rw [← hleft, hstep]
   exact not_congr (exists_congr fun y => and_congr_left' (hann y))
 
-/-- **A finite family of proper convex functions has a common relative interior point of their
-effective domains** exactly when there is no family `y` summing to zero with
-`∑ i, (fᵢ* 0⁺)(yᵢ) ≤ 0 < ∑ i, (fᵢ* 0⁺)(-yᵢ)`: the previous statement at `Cᵢ = dom fᵢ`, whose
-support function is the recession function of `fᵢ*`. -/
+/-- **A common relative interior point of a finite family of effective domains.** Let $E$ be a
+finite-dimensional real normed space, let the continuous linear functionals on $E$ be exactly
+the maps $x \mapsto \langle x, y \rangle$ with $y \in F$, and suppose that the pairing separates
+the points of $F$. Let $\iota$ be finite, and for each $i \in \iota$ let
+$f_i : E \to [-\infty, +\infty]$ be a proper convex function whose conjugate $f_i^*$ is proper.
+Then $\bigcap_i \operatorname{ri}(\operatorname{dom} f_i) \ne \emptyset$ if and only if there is
+no family $(y_i)_{i \in \iota}$ in $F$ with $$\sum_i y_i = 0, \qquad \sum_i (f_i^* 0^+)(y_i) \le
+0, \qquad \sum_i (f_i^* 0^+)(-y_i) > 0,$$ where $f_i^* 0^+$ is the recession function of
+$f_i^*$.
+
+This is `ConvexAnalysis.iInter_relint_nonempty_iff_supportFn` at $C_i = \operatorname{dom} f_i$,
+whose support function is the recession function of $f_i^*$
+(`ConvexAnalysis.recessionFn_convexConj`). -/
 theorem iInter_relint_convexDom_nonempty_iff (hB : B.SeparatingRight) (f : ι → E → EReal)
     (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
         (hc : ∀ i, ProperConvex (convexConj B (f i))) :

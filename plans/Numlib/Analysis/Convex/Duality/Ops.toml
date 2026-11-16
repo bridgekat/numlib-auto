@@ -29,7 +29,6 @@ id = 'convexConj_convHullFn'
 
 [[node]]
 id = 'convexConj_convFn₂'
-desc = 'The conjugate of the convex hull of two functions is the supremum of their conjugates.'
 
 [[node]]
 id = 'convexConj_add_eq_convexCl_infConv'

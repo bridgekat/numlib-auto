@@ -8,52 +8,78 @@ import Numlib.Approximation.Spline
 /-!
 # Broken polynomial spaces
 
-The **broken** (discontinuous) piecewise polynomial space of a partition `x 0 < x 1 < ⋯ < x n`: an
-element is a polynomial of degree at most `r` on each panel `[x i, x (i+1)]`, with no continuity
-across the nodes. It is the trial space of the discontinuous Galerkin method for the transport
-equation ([quarteroni2000numerical] §13.10, `Numlib/Variational/Evolution`), and it contains the
-continuous piecewise polynomials `X_h^r` of §12.4.5 as the subspace of zero interior jumps.
+Let $x_0 < x_1 < \dots < x_n$ be a partition of $[x_0, x_n]$ into the panels $[x_i, x_{i+1}]$,
+$i = 0, \dots, n - 1$. The **broken** (discontinuous) piecewise polynomial space of degree $r$
+consists of the tuples $v = (v_0, \dots, v_{n-1})$ of real polynomials of degree at most $r$, one
+for each panel, with no continuity condition at the nodes. It has dimension $n(r + 1)$. It is the
+trial space of the discontinuous Galerkin method for the transport equation (§13.10 of
+[quarteroni2000numerical], formalized in `Numlib.Variational.Evolution`). It contains the continuous
+piecewise polynomials $X_h^r$ of §12.4.5 of [quarteroni2000numerical] as the subspace of zero
+interior jumps.
 
-## Design
+The file defines the one-sided traces $v^+(x_i) = v_i(x_i)$ and $v^-(x_i) = v_{i-1}(x_i)$, with
+$v^-(x_0) = 0$, and the jumps $[v]_i = v^+(x_i) - v^-(x_i)$. It gives the space the $L^2(x_0, x_n)$
+inner product
+$$\langle v, w \rangle = \sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i\, w_i,$$
+and it proves integration by parts over the panels, an inverse inequality for piecewise linear
+functions, a trace inequality on a panel, and the isometric embedding into $L^2(x_0, x_n)$.
 
-* `BrokenPolynomial x r` is the submodule `Submodule.pi Set.univ fun _ => degreeLT ℝ (r + 1)` of
-  `Fin n → ℝ[X]`, as a type: a tuple of polynomials of degree `< r + 1`, one per panel, of dimension
-  `n (r + 1)` (`finrank_eq`). The partition `x : Fin (n + 1) → ℝ` is a parameter of the type so
-  that the `L²(x 0, x n)` inner product `⟪v, w⟫ = ∑ i, ∫_{x i}^{x (i+1)} v_i w_i` can be an
-  instance; it is definite exactly when the partition is strictly increasing, which is why the
-  inner product space instance asks for `[Fact (StrictMono x)]`. An element `v` is applied as a
-  function `v : Fin n → ℝ[X]` (`BrokenPolynomial.poly`), and `BrokenPolynomial.mk` builds one from
-  a tuple of polynomials with a degree bound.
-* Because each piece is a polynomial, the one-sided traces `v⁺(x i) = v_i(x i)`
-  (`traceRight`), `v⁻(x i) = v_{i-1}(x i)` (`traceLeft`, with the inflow convention `v⁻(x 0) = 0`)
-  and the jumps `[v]_i = v⁺(x i) - v⁻(x i)` (`jump`) are evaluations, linear in `v`
-  (`traceRightₗ`, `traceLeftₗ`, `jumpₗ`).
-* `continuous x r` is the subspace of zero interior jumps. For a strictly increasing partition
-  its elements glue to continuous functions on `[x 0, x n]` (`toContinuousMap`), and the image is
-  the spline space `Spline.splineSpace (x 0) (x n) n x r 0` of `Numlib/Approximation/Spline`
-  without smoothness (`toContinuousMap_range_eq_splineSpace`), so that the continuous piecewise
-  polynomials have one definition, of which this module holds the per-panel representation — the
-  one with traces and jumps.
+## Main definitions
 
-## Main statements
+* `BrokenPolynomial`: the broken polynomial space of a partition $x$ and a degree $r$.
+* `BrokenPolynomial.traceRight`, `BrokenPolynomial.traceLeft`, `BrokenPolynomial.jump`: the traces
+  $v^+(x_i)$ and $v^-(x_i)$, and the jump $[v]_i$.
+* `BrokenPolynomial.continuous`: the subspace of the broken polynomials whose jumps at the interior
+  nodes vanish.
+* `BrokenPolynomial.toContinuousMap`: the gluing map from this subspace to the continuous functions
+  on $[x_0, x_n]$.
+* `BrokenPolynomial.toLpₗᵢ`: the isometric embedding into $L^2(x_0, x_n)$.
 
-* `integral_mul_deriv_mul_eq`, `sum_integral_mul_deriv_mul_eq`: panel integration by parts
-  `∫ a v v' = ½[a v²] - ½ ∫ a' v²` and its sum over the panels in trace/jump form, the identity
-  behind the energy estimate of the upwind discontinuous Galerkin method.
-* `inverseInequality_linear`: the inverse inequality `‖v'‖² ≤ 12 h_min⁻² ‖v‖²` for piecewise
-  linear functions, the `λ_max ≤ c h⁻²` behind the parabolic stability condition `Δt ≤ C h²` of
-  the θ-method with `θ < 1/2` ([quarteroni2000numerical] §13.4.1).
-* `sq_le_of_sub_eq_integral`: the trace inequality on a panel,
-  `v(t)² ≤ 2 h⁻¹ ‖v‖²_{L²(u,w)} + 2 h ‖v'‖²_{L²(u,w)}` for an absolutely continuous `v` with
-  `v' ∈ L²`, the origin of the half power in the `h^{r+1/2}` estimate of the discontinuous
-  Galerkin method (Cauchy–Schwarz for interval integrals is
+## Main results
+
+* `BrokenPolynomial.finrank_eq`: the space has dimension $n(r + 1)$.
+* `BrokenPolynomial.integral_mul_deriv_mul_eq`, `BrokenPolynomial.sum_integral_mul_deriv_mul_eq`:
+  integration by parts $\int a v v' = \tfrac12 [a v^2] - \tfrac12 \int a' v^2$ on a panel, and its
+  sum over the panels in terms of traces. The sum is the identity behind the energy estimate of the
+  upwind discontinuous Galerkin method.
+* `BrokenPolynomial.inverseInequality_linear`: the inverse inequality
+  $\|v'\|^2 \le 12 h_{\min}^{-2} \|v\|^2$ for piecewise linear $v$. It gives the bound
+  $\lambda_{\max} \le c h^{-2}$ behind the stability condition $\Delta t \le C h^2$ of the
+  $\theta$-method with $\theta < 1/2$ for parabolic problems (§13.4.1 of [quarteroni2000numerical]).
+* `sq_le_of_sub_eq_integral`: the trace inequality $v(t)^2 \le 2 h^{-1} \|v\|^2_{L^2(u,w)} + 2 h
+  \|v'\|^2_{L^2(u,w)}$ on a panel $[u, w]$ of length $h$, for an absolutely continuous $v$ with
+  $v' \in L^2$. It is the origin of the half power in the $h^{r+1/2}$ estimate of the discontinuous
+  Galerkin method.
+* `BrokenPolynomial.toContinuousMap_range_eq_splineSpace`: the gluing map sends the continuous
+  subspace onto the spline space $S_r^0$ of degree $r$ and smoothness $C^0$.
+* `BrokenPolynomial.toLpₗᵢ`: the embedding into $L^2(x_0, x_n)$ preserves the norm.
+
+## Implementation notes
+
+* `BrokenPolynomial x r` is the submodule `Submodule.pi Set.univ fun _ => Polynomial.degreeLT ℝ (r +
+  1)` of `Fin n → ℝ[X]`, made into a type: a tuple of polynomials of degree less than $r + 1$, one
+  for each panel. An element `v` is applied as a function `Fin n → ℝ[X]` through
+  `BrokenPolynomial.poly`, and `BrokenPolynomial.mk` builds one from a tuple of polynomials with a
+  degree bound.
+* The partition `x : Fin (n + 1) → ℝ` is a parameter of the type, although the type does not depend
+  on it, so that the $L^2(x_0, x_n)$ inner product can be an instance. This inner product is
+  definite exactly when the partition is strictly increasing, so the inner product space instance
+  assumes `[Fact (StrictMono x)]`.
+* Because each piece is a polynomial, the traces and the jumps are evaluations, and they are linear
+  in $v$ (`BrokenPolynomial.traceRightₗ`, `BrokenPolynomial.traceLeftₗ`, `BrokenPolynomial.jumpₗ`).
+  The left trace at $x_0$ is $0$ (the inflow convention), so the jump at $x_0$ is $v^+(x_0)$.
+* For a strictly increasing partition, the elements of `BrokenPolynomial.continuous x r` glue to
+  continuous functions on $[x_0, x_n]$, and the image is the spline space `Spline.splineSpace (x 0)
+  (x (Fin.last n)) n (Spline.extendFin x) r 0` of `Numlib.Approximation.Spline`
+  (`BrokenPolynomial.toContinuousMap_range_eq_splineSpace`). Thus the continuous piecewise
+  polynomials have one definition, the spline space, and this module gives their representation by
+  panel polynomials, with traces and jumps.
+* For $r = 1$, the image of `BrokenPolynomial.toLpₗᵢ` is the discontinuous piecewise linear space of
+  `Numlib.Approximation.PiecewiseLinearL2`, which lives in $L^2$ of the subtype `Icc a b`. The
+  identification of the two $L^2$ spaces is not made here.
+* The Cauchy–Schwarz inequality for interval integrals is
   `intervalIntegral.integral_mul_le_sqrt_mul_sqrt` of
-  `Numlib/MeasureTheory/Integral/IntervalIntegral`).
-* `toLpₗᵢ`: the isometric embedding of `BrokenPolynomial x r` into `L²(x 0, x n)`, the class of
-  the step function `stepFun v` equal to `v_i` on the half-open panel `[x i, x (i+1))`. The
-  `r = 1` image is the discontinuous piecewise linear space of
-  `Numlib/Approximation/PiecewiseLinearL2`, which lives in `L²` of the subtype `Icc a b`; the
-  identification of the two `L²` spaces is not made here.
+  `Numlib.MeasureTheory.Integral.IntervalIntegral`.
 -/
 
 open Polynomial MeasureTheory intervalIntegral Set
@@ -65,10 +91,13 @@ variable {n : ℕ}
 
 -- the partition is a phantom parameter of the type, there for the inner product instance
 set_option linter.unusedVariables false in
-/-- **The broken polynomial space** of the partition `x 0 < x 1 < ⋯ < x n`: one polynomial of
-degree at most `r` per panel, with no continuity across the nodes. The partition is a parameter of
-the type so that the `L²(x 0, x n)` inner product can be an instance
-(`BrokenPolynomial.instInnerProductSpace`). -/
+/-- **The broken polynomial space** of a partition $x_0, \dots, x_n$ and a degree $r$: the real
+vector space of the tuples $(v_0, \dots, v_{n-1})$ of real polynomials of degree at most $r$,
+one for each panel $[x_i, x_{i+1}]$, with no continuity condition at the nodes.
+
+The type does not depend on `x`, and the definition puts no condition on `x`. The partition is a
+parameter of the type so that the $L^2(x_0, x_n)$ inner product can be an instance. The type is
+the submodule of `Fin n → ℝ[X]` with the coordinates in `Polynomial.degreeLT ℝ (r + 1)`. -/
 def BrokenPolynomial (x : Fin (n + 1) → ℝ) (r : ℕ) : Type :=
   Submodule.pi Set.univ fun _ : Fin n => Polynomial.degreeLT ℝ (r + 1)
 
@@ -76,7 +105,8 @@ namespace BrokenPolynomial
 
 variable {x : Fin (n + 1) → ℝ} {r : ℕ}
 
-/-- The submodule of `Fin n → ℝ[X]` underlying the broken polynomial space. -/
+/-- The submodule of `Fin n → ℝ[X]` of the tuples of polynomials of degree at most $r$, which is the
+type `BrokenPolynomial x r`. -/
 abbrev submodule (n r : ℕ) : Submodule ℝ (Fin n → ℝ[X]) :=
   Submodule.pi Set.univ fun _ : Fin n => Polynomial.degreeLT ℝ (r + 1)
 
@@ -86,58 +116,69 @@ instance : Module ℝ (BrokenPolynomial x r) := inferInstanceAs (Module ℝ (sub
 
 instance : Inhabited (BrokenPolynomial x r) := ⟨0⟩
 
-/-- The polynomial of `v` on the panel `i`. -/
+/-- The polynomial $v_i$ of a broken polynomial $v$ on the panel $[x_i, x_{i+1}]$. -/
 def poly (v : BrokenPolynomial x r) (i : Fin n) : ℝ[X] := (v : submodule n r).1 i
 
 instance : CoeFun (BrokenPolynomial x r) fun _ => Fin n → ℝ[X] := ⟨poly⟩
 
-/-- The degree bound of the polynomials of a broken polynomial. -/
+/-- Each piece $v_i$ of a broken polynomial $v$ of degree $r$ has degree at most $r$. -/
 theorem natDegree_le (v : BrokenPolynomial x r) (i : Fin n) : (v i).natDegree ≤ r := by
   have h : (v i).degree < r + 1 := mem_degreeLT.1 ((v : submodule n r).2 i (Set.mem_univ i))
   by_cases hv : v i = 0
   · rw [hv, natDegree_zero]; exact Nat.zero_le r
   · exact Nat.lt_succ_iff.1 ((natDegree_lt_iff_degree_lt hv).2 (by exact_mod_cast h))
 
+/-- Two broken polynomials with the same polynomial on every panel are equal. -/
 @[ext]
 theorem ext {v w : BrokenPolynomial x r} (h : ∀ i, v i = w i) : v = w :=
   Subtype.ext (funext h)
 
-/-- A broken polynomial from a tuple of polynomials of degree at most `r`. -/
+/-- The broken polynomial with the pieces $p_0, \dots, p_{n-1}$, for real polynomials $p_i$ of
+degree at most $r$. -/
 def mk (x : Fin (n + 1) → ℝ) (p : Fin n → ℝ[X]) (hp : ∀ i, (p i).natDegree ≤ r) :
     BrokenPolynomial x r :=
   (⟨p, fun i _ => mem_degreeLT.2 ((degree_le_of_natDegree_le (hp i)).trans_lt
     (WithBot.coe_lt_coe.2 (Nat.lt_succ_self r)))⟩ : submodule n r)
 
+/-- The pieces of the broken polynomial `BrokenPolynomial.mk x p hp` are the polynomials $p_i$. -/
 @[simp]
 theorem mk_apply (p : Fin n → ℝ[X]) (hp : ∀ i, (p i).natDegree ≤ r) (i : Fin n) :
     mk x p hp i = p i := rfl
 
+/-- The pieces of $v + w$ are the sums $v_i + w_i$. -/
 @[simp]
 theorem add_apply (v w : BrokenPolynomial x r) (i : Fin n) : (v + w) i = v i + w i := rfl
 
+/-- The pieces of $v - w$ are the differences $v_i - w_i$. -/
 @[simp]
 theorem sub_apply (v w : BrokenPolynomial x r) (i : Fin n) : (v - w) i = v i - w i := rfl
 
+/-- The pieces of $-v$ are the polynomials $-v_i$. -/
 @[simp]
 theorem neg_apply (v : BrokenPolynomial x r) (i : Fin n) : (-v) i = -v i := rfl
 
+/-- The pieces of $c v$ are the polynomials $c\, v_i$. -/
 @[simp]
 theorem smul_apply (c : ℝ) (v : BrokenPolynomial x r) (i : Fin n) : (c • v) i = c • v i := rfl
 
+/-- The pieces of the zero broken polynomial are $0$. -/
 @[simp]
 theorem zero_apply (i : Fin n) : (0 : BrokenPolynomial x r) i = 0 := rfl
 
-/-- Evaluation of the panel polynomial, as a linear map. -/
+/-- For a panel index $i$ and a point $s \in \mathbb{R}$, the evaluation $v \mapsto v_i(s)$, as a
+linear map on the broken polynomial space. The point $s$ need not lie in the panel. -/
 def evalₗ (x : Fin (n + 1) → ℝ) (r : ℕ) (i : Fin n) (s : ℝ) : BrokenPolynomial x r →ₗ[ℝ] ℝ where
   toFun v := (v i).eval s
   map_add' v w := by simp
   map_smul' c v := by simp
 
+/-- The evaluation map `BrokenPolynomial.evalₗ x r i s` sends $v$ to $v_i(s)$. -/
 @[simp]
 theorem evalₗ_apply (i : Fin n) (s : ℝ) (v : BrokenPolynomial x r) :
     evalₗ x r i s v = (v i).eval s := rfl
 
-/-- The broken polynomial space as the product of the panel spaces `ℝ[X]_{< r + 1}`. -/
+/-- The linear isomorphism between the broken polynomial space and the product of $n$ copies of the
+space $\mathbb{R}[X]_{< r + 1}$ of the real polynomials of degree less than $r + 1$. -/
 def piEquiv (x : Fin (n + 1) → ℝ) (r : ℕ) :
     BrokenPolynomial x r ≃ₗ[ℝ] (Fin n → Polynomial.degreeLT ℝ (r + 1)) where
   toFun v i := ⟨v i, (v : submodule n r).2 i (Set.mem_univ i)⟩
@@ -153,7 +194,8 @@ instance : FiniteDimensional ℝ (Polynomial.degreeLT ℝ (r + 1)) :=
 instance : FiniteDimensional ℝ (BrokenPolynomial x r) :=
   (piEquiv x r).symm.finiteDimensional
 
-/-- **The dimension** of the broken polynomial space: `n (r + 1)`. -/
+/-- **The dimension** of the broken polynomial space: for every partition with $n$ panels and every
+degree $r$, the space has dimension $n(r + 1)$. -/
 theorem finrank_eq (x : Fin (n + 1) → ℝ) (r : ℕ) :
     Module.finrank ℝ (BrokenPolynomial x r) = n * (r + 1) := by
   rw [(piEquiv x r).finrank_eq, Module.finrank_pi_fintype, Finset.sum_const, Finset.card_univ,
@@ -162,54 +204,62 @@ theorem finrank_eq (x : Fin (n + 1) → ℝ) (r : ℕ) :
 
 /-! ### Traces and jumps -/
 
-/-- **The right trace** `v⁺(x i) = v_i(x i)`: the value at the node `x i` of the polynomial of the
-panel to its right. -/
+/-- **The right trace** $v^+(x_i) = v_i(x_i)$, for $i = 0, \dots, n - 1$: the value at the node
+$x_i$ of the polynomial of the panel to its right. -/
 def traceRight (v : BrokenPolynomial x r) (i : Fin n) : ℝ :=
   (v i).eval (x i.castSucc)
 
-/-- **The left trace** `v⁻(x i) = v_{i-1}(x i)`: the value at the node `x i` of the polynomial of
-the panel to its left, with the inflow convention `v⁻(x 0) = 0`. -/
+/-- **The left trace** $v^-(x_i)$, for $i = 0, \dots, n$: for $i \ge 1$, the value $v_{i-1}(x_i)$ at
+the node $x_i$ of the polynomial of the panel to its left, and $v^-(x_0) = 0$ (the inflow
+convention). -/
 def traceLeft (v : BrokenPolynomial x r) (i : Fin (n + 1)) : ℝ :=
   Fin.cases 0 (fun j => (v j).eval (x j.succ)) i
 
-/-- **The jump** `[v]_i = v⁺(x i) - v⁻(x i)` at the node `x i`; at `x 0` it is `v⁺(x 0)`. -/
+/-- **The jump** $[v]_i = v^+(x_i) - v^-(x_i)$ at the node $x_i$, for $i = 0, \dots, n - 1$. At
+$x_0$ it is $v^+(x_0)$, because $v^-(x_0) = 0$. -/
 def jump (v : BrokenPolynomial x r) (i : Fin n) : ℝ :=
   traceRight v i - traceLeft v i.castSucc
 
+/-- The left trace at $x_0$ is $0$: $v^-(x_0) = 0$. -/
 @[simp]
 theorem traceLeft_zero (v : BrokenPolynomial x r) : traceLeft v 0 = 0 := rfl
 
+/-- For $j = 0, \dots, n - 1$, the left trace at $x_{j+1}$ is $v^-(x_{j+1}) = v_j(x_{j+1})$. -/
 @[simp]
 theorem traceLeft_succ (v : BrokenPolynomial x r) (j : Fin n) :
     traceLeft v j.succ = (v j).eval (x j.succ) := rfl
 
+/-- The right trace at $x_i$ is $v^+(x_i) = v_i(x_i)$. -/
 theorem traceRight_apply (v : BrokenPolynomial x r) (i : Fin n) :
     traceRight v i = (v i).eval (x i.castSucc) := rfl
 
+/-- The jump at $x_i$ is $[v]_i = v^+(x_i) - v^-(x_i)$. -/
 theorem jump_apply (v : BrokenPolynomial x r) (i : Fin n) :
     jump v i = traceRight v i - traceLeft v i.castSucc := rfl
 
-/-- The jump at `x 0` is the right trace. -/
+/-- For $n \ge 1$, the jump at $x_0$ is the right trace: $[v]_0 = v^+(x_0)$. -/
 theorem jump_zero (v : BrokenPolynomial x r) (hn : 0 < n) :
     jump v ⟨0, hn⟩ = traceRight v ⟨0, hn⟩ := by
   rw [jump_apply, show (⟨0, hn⟩ : Fin n).castSucc = 0 from rfl, traceLeft_zero, sub_zero]
 
-/-- The right trace, as a linear map. -/
+/-- The right trace $v \mapsto v^+(x_i)$, as a linear map. -/
 def traceRightₗ (x : Fin (n + 1) → ℝ) (r : ℕ) (i : Fin n) : BrokenPolynomial x r →ₗ[ℝ] ℝ :=
   evalₗ x r i (x i.castSucc)
 
-/-- The left trace, as a linear map. -/
+/-- The left trace $v \mapsto v^-(x_i)$, as a linear map. For $i = 0$ it is the zero map. -/
 def traceLeftₗ (x : Fin (n + 1) → ℝ) (r : ℕ) (i : Fin (n + 1)) : BrokenPolynomial x r →ₗ[ℝ] ℝ :=
   Fin.cases 0 (fun j => evalₗ x r j (x j.succ)) i
 
-/-- The jump, as a linear map. -/
+/-- The jump $v \mapsto [v]_i$, as a linear map. -/
 def jumpₗ (x : Fin (n + 1) → ℝ) (r : ℕ) (i : Fin n) : BrokenPolynomial x r →ₗ[ℝ] ℝ :=
   traceRightₗ x r i - traceLeftₗ x r i.castSucc
 
+/-- The linear map `BrokenPolynomial.traceRightₗ x r i` sends $v$ to $v^+(x_i)$. -/
 @[simp]
 theorem traceRightₗ_apply (i : Fin n) (v : BrokenPolynomial x r) :
     traceRightₗ x r i v = traceRight v i := rfl
 
+/-- The linear map `BrokenPolynomial.traceLeftₗ x r i` sends $v$ to $v^-(x_i)$. -/
 @[simp]
 theorem traceLeftₗ_apply (i : Fin (n + 1)) (v : BrokenPolynomial x r) :
     traceLeftₗ x r i v = traceLeft v i := by
@@ -217,50 +267,59 @@ theorem traceLeftₗ_apply (i : Fin (n + 1)) (v : BrokenPolynomial x r) :
   | zero => rfl
   | succ j => rfl
 
+/-- The linear map `BrokenPolynomial.jumpₗ x r i` sends $v$ to $[v]_i$. -/
 @[simp]
 theorem jumpₗ_apply (i : Fin n) (v : BrokenPolynomial x r) : jumpₗ x r i v = jump v i := by
   simp [jumpₗ, jump]
 
+/-- The right trace is additive: $(v + w)^+(x_i) = v^+(x_i) + w^+(x_i)$. -/
 theorem traceRight_add (v w : BrokenPolynomial x r) (i : Fin n) :
     traceRight (v + w) i = traceRight v i + traceRight w i :=
   (traceRightₗ x r i).map_add v w
 
+/-- The right trace is homogeneous: $(c v)^+(x_i) = c\, v^+(x_i)$. -/
 theorem traceRight_smul (c : ℝ) (v : BrokenPolynomial x r) (i : Fin n) :
     traceRight (c • v) i = c * traceRight v i :=
   (traceRightₗ x r i).map_smul c v
 
+/-- The left trace is additive: $(v + w)^-(x_i) = v^-(x_i) + w^-(x_i)$. -/
 theorem traceLeft_add (v w : BrokenPolynomial x r) (i : Fin (n + 1)) :
     traceLeft (v + w) i = traceLeft v i + traceLeft w i := by
   rw [← traceLeftₗ_apply, map_add, traceLeftₗ_apply, traceLeftₗ_apply]
 
+/-- The left trace is homogeneous: $(c v)^-(x_i) = c\, v^-(x_i)$. -/
 theorem traceLeft_smul (c : ℝ) (v : BrokenPolynomial x r) (i : Fin (n + 1)) :
     traceLeft (c • v) i = c * traceLeft v i := by
   rw [← traceLeftₗ_apply, map_smul, traceLeftₗ_apply, smul_eq_mul]
 
+/-- The jump is additive: $[v + w]_i = [v]_i + [w]_i$. -/
 theorem jump_add (v w : BrokenPolynomial x r) (i : Fin n) :
     jump (v + w) i = jump v i + jump w i := by
   rw [← jumpₗ_apply, map_add, jumpₗ_apply, jumpₗ_apply]
 
+/-- The jump is homogeneous: $[c v]_i = c\, [v]_i$. -/
 theorem jump_smul (c : ℝ) (v : BrokenPolynomial x r) (i : Fin n) :
     jump (c • v) i = c * jump v i := by
   rw [← jumpₗ_apply, map_smul, jumpₗ_apply, smul_eq_mul]
 
 /-! ### The continuous subspace -/
 
-/-- **The continuous piecewise polynomials** `X_h^r` inside the broken space: the broken
-polynomials whose jumps at the interior nodes `x 1, …, x (n-1)` vanish. -/
+/-- **The continuous piecewise polynomials** $X_h^r$ inside the broken polynomial space: the
+subspace of the broken polynomials $v$ whose jumps $[v]_i$ vanish at the interior nodes
+$x_1, \dots, x_{n-1}$. The jump at $x_0$ is not constrained. -/
 def continuous (x : Fin (n + 1) → ℝ) (r : ℕ) : Submodule ℝ (BrokenPolynomial x r) where
   carrier := {v | ∀ i : Fin n, 0 < (i : ℕ) → jump v i = 0}
   add_mem' {v w} hv hw i hi := by rw [jump_add, hv i hi, hw i hi, add_zero]
   zero_mem' i _ := by rw [← jumpₗ_apply, map_zero]
   smul_mem' c {v} hv i hi := by rw [jump_smul, hv i hi, mul_zero]
 
-/-- Membership of the continuous subspace: the jumps at the interior nodes vanish. -/
+/-- A broken polynomial $v$ lies in the continuous subspace if and only if $[v]_i = 0$ for
+$i = 1, \dots, n - 1$. -/
 theorem mem_continuous_iff {v : BrokenPolynomial x r} :
     v ∈ continuous x r ↔ ∀ i : Fin n, 0 < (i : ℕ) → jump v i = 0 := Iff.rfl
 
-/-- In the continuous subspace, the two panel polynomials meeting at an interior node take the same
-value there. -/
+/-- Let $v$ lie in the continuous subspace, and let $j + 1 < n$. The two panel polynomials that meet
+at the interior node $x_{j+1}$ take the same value there: $v_j(x_{j+1}) = v_{j+1}(x_{j+1})$. -/
 theorem eval_succ_eq_of_mem_continuous {v : BrokenPolynomial x r} (hv : v ∈ continuous x r)
     (j : Fin n) (hj : (j : ℕ) + 1 < n) :
     (v j).eval (x j.succ) = (v ⟨j + 1, hj⟩).eval (x j.succ) := by
@@ -269,14 +328,16 @@ theorem eval_succ_eq_of_mem_continuous {v : BrokenPolynomial x r} (hv : v ∈ co
   rw [show (⟨(j : ℕ) + 1, hj⟩ : Fin n).castSucc = j.succ from rfl, traceLeft_succ] at h
   exact h.symm
 
-/-! ### The `L²` inner product -/
+/-! ### The $L^2$ inner product -/
 
-/-- **The `L²(x 0, x n)` inner product** of two broken polynomials:
-`∑ i, ∫_{x i}^{x (i+1)} v_i w_i`. It is definite when the partition is strictly increasing. -/
+/-- **The $L^2(x_0, x_n)$ inner product** of two broken polynomials: $\langle v, w \rangle =
+\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i\, w_i$. It is definite when the partition is strictly
+increasing. -/
 instance : Inner ℝ (BrokenPolynomial x r) :=
   ⟨fun v w => ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s * (w i).eval s⟩
 
-/-- The inner product is the sum of the panel integrals of `v_i w_i`. -/
+/-- The inner product of $v$ and $w$ is $\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i(s)\, w_i(s)\,
+ds$. -/
 theorem inner_def (v w : BrokenPolynomial x r) :
     ⟪v, w⟫ = ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s * (w i).eval s := rfl
 
@@ -315,17 +376,24 @@ instance [Fact (StrictMono x)] : NormedAddCommGroup (BrokenPolynomial x r) :=
 instance [Fact (StrictMono x)] : InnerProductSpace ℝ (BrokenPolynomial x r) :=
   InnerProductSpace.ofCore _
 
-/-- The squared norm is the sum of the panel integrals of the squares. -/
+/-- For a strictly increasing partition, the squared norm of a broken polynomial $v$ is
+$$\|v\|^2 = \sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i^2.$$
+-/
 theorem norm_sq_eq [Fact (StrictMono x)] (v : BrokenPolynomial x r) :
     ‖v‖ ^ 2 = ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, inner_def]
   exact Finset.sum_congr rfl fun i _ => integral_congr fun s _ => (sq _).symm
 
-/-- **A weighted panel integral dominates a multiple of the squared norm**: if `c ≤ w` on
-`[x 0, x n]` then `c ‖v‖²_{L²} ≤ ∑ i, ∫_{x i}^{x (i+1)} w vᵢ²`, since `‖v‖² = ∑ i, ∫ vᵢ²` and the
-integrands compare panelwise. With `w = a₀ - a'/2` and `c = μ₀` this is the coercivity behind the
-energy estimates of the transport equation ([quarteroni2000numerical] (13.66), (13.69)); with
-`c = -μ*` it is the lower bound used when the reaction coefficient has the wrong sign. -/
+/-- **A weighted sum of panel integrals dominates a multiple of the squared norm.** Let the
+partition be strictly increasing, let $w : \mathbb{R} \to \mathbb{R}$ be integrable on
+$[x_0, x_n]$, and let $c \in \mathbb{R}$ satisfy $c \le w(s)$ for all $s \in [x_0, x_n]$. Then
+for every broken polynomial $v$
+$$c\, \|v\|^2 \le \sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} w\, v_i^2.$$
+
+With $w = a_0 - a'/2$ and $c = \mu_0$, this is the coercivity behind the energy estimates for
+the transport equation in (13.66) and (13.69) of [quarteroni2000numerical]. With $c = -\mu^*$,
+it is the lower bound used when the reaction coefficient has the wrong sign. The proof compares
+the integrands panel by panel, since $\|v\|^2 = \sum_i \int v_i^2$. -/
 theorem mul_norm_sq_le_sum_integral [hx : Fact (StrictMono x)] {w : ℝ → ℝ}
     (hw : IntervalIntegrable w volume (x 0) (x (Fin.last n))) {c : ℝ}
     (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ w s) (v : BrokenPolynomial x r) :
@@ -353,44 +421,53 @@ section TraceL
 variable [Fact (StrictMono x)]
 
 variable (x r) in
-/-- **The right trace as a continuous linear functional** `v ↦ v⁺(x i)`: every linear map on the
-finite-dimensional space `BrokenPolynomial x r` is continuous. -/
+/-- **The right trace as a continuous linear functional** $v \mapsto v^+(x_i)$, for a strictly
+increasing partition. It is continuous because every linear map on the finite-dimensional space
+`BrokenPolynomial x r` is continuous. -/
 def traceRightL (i : Fin n) : BrokenPolynomial x r →L[ℝ] ℝ :=
   LinearMap.toContinuousLinearMap (traceRightₗ x r i)
 
+/-- The functional `BrokenPolynomial.traceRightL x r i` sends $v$ to $v^+(x_i)$. -/
 @[simp]
 theorem traceRightL_apply (i : Fin n) (v : BrokenPolynomial x r) :
     traceRightL x r i v = traceRight v i := rfl
 
 variable (x r) in
-/-- **The left trace as a continuous linear functional** `v ↦ v⁻(x i)`. -/
+/-- **The left trace as a continuous linear functional** $v \mapsto v^-(x_i)$, for a strictly
+increasing partition. -/
 def traceLeftL (i : Fin (n + 1)) : BrokenPolynomial x r →L[ℝ] ℝ :=
   LinearMap.toContinuousLinearMap (traceLeftₗ x r i)
 
+/-- The functional `BrokenPolynomial.traceLeftL x r i` sends $v$ to $v^-(x_i)$. -/
 @[simp]
 theorem traceLeftL_apply (i : Fin (n + 1)) (v : BrokenPolynomial x r) :
     traceLeftL x r i v = traceLeft v i := traceLeftₗ_apply i v
 
 variable (x r) in
-/-- **The jump as a continuous linear functional** `v ↦ [v]ᵢ`. -/
+/-- **The jump as a continuous linear functional** $v \mapsto [v]_i$, for a strictly increasing
+partition. -/
 def jumpL (i : Fin n) : BrokenPolynomial x r →L[ℝ] ℝ :=
   LinearMap.toContinuousLinearMap (jumpₗ x r i)
 
+/-- The functional `BrokenPolynomial.jumpL x r i` sends $v$ to $[v]_i$. -/
 @[simp]
 theorem jumpL_apply (i : Fin n) (v : BrokenPolynomial x r) : jumpL x r i v = jump v i :=
   jumpₗ_apply i v
 
-/-- The right trace is continuous. -/
+/-- For a strictly increasing partition, the right trace $v \mapsto v^+(x_i)$ is continuous on the
+broken polynomial space. -/
 theorem continuous_traceRight (i : Fin n) :
     Continuous fun v : BrokenPolynomial x r => traceRight v i :=
   (traceRightL x r i).continuous
 
-/-- The left trace is continuous. -/
+/-- For a strictly increasing partition, the left trace $v \mapsto v^-(x_i)$ is continuous on the
+broken polynomial space. -/
 theorem continuous_traceLeft (i : Fin (n + 1)) :
     Continuous fun v : BrokenPolynomial x r => traceLeft v i :=
   (traceLeftL x r i).continuous.congr fun v => traceLeftL_apply i v
 
-/-- The jump is continuous. -/
+/-- For a strictly increasing partition, the jump $v \mapsto [v]_i$ is continuous on the broken
+polynomial space. -/
 theorem continuous_jump (i : Fin n) : Continuous fun v : BrokenPolynomial x r => jump v i :=
   (jumpL x r i).continuous.congr fun v => jumpL_apply i v
 
@@ -398,8 +475,11 @@ end TraceL
 
 /-! ### Integration by parts on the panels -/
 
-/-- **Panel integration by parts**: for `a` differentiable on `[u, v]` with continuous derivative
-and a polynomial `p`, `∫_u^v a p p' = ½ [a p²]_u^v - ½ ∫_u^v a' p²`, since `p p' = ½ (p²)'`. -/
+/-- **Integration by parts on a panel.** Let $u, v \in \mathbb{R}$, let
+$a : \mathbb{R} \to \mathbb{R}$ be differentiable at every point of the closed interval between
+$u$ and $v$ with $a'$ continuous there, and let $p$ be a real polynomial. Then
+$$\int_u^v a\, p\, p' = \frac{a(v)\, p(v)^2 - a(u)\, p(u)^2}{2} - \frac12 \int_u^v a'\, p^2.$$
+The proof uses $p p' = \tfrac12 (p^2)'$. -/
 theorem integral_mul_deriv_mul_eq {u v : ℝ} {a : ℝ → ℝ}
     (ha : ∀ s ∈ [[u, v]], DifferentiableAt ℝ a s) (ha' : ContinuousOn (deriv a) [[u, v]])
     (p : ℝ[X]) :
@@ -420,12 +500,17 @@ theorem integral_mul_deriv_mul_eq {u v : ℝ} {a : ℝ → ℝ}
   rw [e1, h, e2]
   ring
 
-/-- **Integration by parts summed over the panels, in trace form**: for `a` differentiable on
-`[x 0, x n]` with continuous derivative and a broken polynomial `v`,
-`∑ i, ∫_{x i}^{x (i+1)} a v_i v_i' = ½ a(x n) v⁻(x n)² - ½ ∑ i, a(x i) (v⁺(x i)² - v⁻(x i)²)
-- ½ ∑ i, ∫_{x i}^{x (i+1)} a' v_i²`, with `v⁻(x 0) = 0`. This is the identity behind the energy
-estimate of the upwind discontinuous Galerkin method ([quarteroni2000numerical] §13.10.1): at each
-node `½ a v⁻² - ½ a v⁺² + a [v] v⁺ = ½ a [v]²`. -/
+/-- **Integration by parts summed over the panels, in terms of traces.** Let the partition be
+nondecreasing, let $a : \mathbb{R} \to \mathbb{R}$ be differentiable at every point of
+$[x_0, x_n]$ with $a'$ continuous on $[x_0, x_n]$, and let $v$ be a broken polynomial. Then
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} a\, v_i\, v_i' = \frac12 a(x_n)\, v^-(x_n)^2 - \frac12
+  \sum_{i=0}^{n-1} a(x_i) \bigl(v^+(x_i)^2 - v^-(x_i)^2\bigr) - \frac12 \sum_{i=0}^{n-1}
+  \int_{x_i}^{x_{i+1}} a'\, v_i^2,$$
+with $v^-(x_0) = 0$.
+
+This identity is behind the energy estimate of the upwind discontinuous Galerkin method
+(§13.10.1 of [quarteroni2000numerical]): at each node, $\tfrac12 a (v^-)^2 - \tfrac12 a
+(v^+)^2 + a [v] v^+ = \tfrac12 a [v]^2$. -/
 theorem sum_integral_mul_deriv_mul_eq (hx : Monotone x) {a : ℝ → ℝ}
     (ha : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
     (ha' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) (v : BrokenPolynomial x r) :
@@ -456,9 +541,9 @@ theorem sum_integral_mul_deriv_mul_eq (hx : Monotone x) {a : ℝ → ℝ}
 
 /-! ### The inverse inequality -/
 
-/-- The inverse inequality on one panel: for an affine polynomial `p` and `u < v`,
-`∫_u^v p'² ≤ 12 (v - u)⁻² ∫_u^v p²`. With `p = c₁ s + c₀`, the difference of the two sides is
-`3 (v - u) (c₁ (u + v) + 2 c₀)² ≥ 0`. -/
+/-- For $u < v$ and a real polynomial $p$ of degree at most $1$,
+$\int_u^v p'^2 \le 12 (v - u)^{-2} \int_u^v p^2$: for $p = c_1 s + c_0$, the difference of the
+two sides, multiplied by $(v - u)^2$, is $3 (v - u) (c_1 (u + v) + 2 c_0)^2 \ge 0$. -/
 private theorem integral_sq_derivative_le {u v : ℝ} (huv : u < v) {p : ℝ[X]}
     (hp : p.natDegree ≤ 1) :
     ∫ s in u..v, p.derivative.eval s ^ 2 ≤ 12 / (v - u) ^ 2 * ∫ s in u..v, p.eval s ^ 2 := by
@@ -488,13 +573,18 @@ private theorem integral_sq_derivative_le {u v : ℝ} (huv : u < v) {p : ℝ[X]}
   rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
   nlinarith [mul_nonneg hpos.le (sq_nonneg (c₁ * (u + v) + 2 * c₀))]
 
-/-- **The inverse inequality for piecewise linear functions**: on a partition whose panels have
-length at least `h_min > 0`, every `v : BrokenPolynomial x 1` satisfies
-`∑ i, ∫_{x i}^{x (i+1)} v_i'² ≤ 12 h_min⁻² ∑ i, ∫_{x i}^{x (i+1)} v_i²`, i.e.
-`‖v'‖²_{L²} ≤ 12 h_min⁻² ‖v‖²_{L²}`. No continuity is needed: the estimate holds panel by panel
-(`3 (v - u) (c₁ (u + v) + 2 c₀)² ≥ 0`). For a uniform mesh this is the bound `λ_max ≤ 12 h⁻²` of the
-`P₁` stiffness–mass pencil, the `λ_max ≤ c h⁻²` behind the parabolic stability condition
-`Δt ≤ C h²` of the θ-method with `θ < 1/2` ([quarteroni2000numerical] §13.4.1). -/
+/-- **The inverse inequality for piecewise linear functions.** Let $h_{\min} > 0$, and let every
+panel of the partition have length $x_{i+1} - x_i \ge h_{\min}$. Then every broken polynomial
+$v$ of degree $1$ satisfies
+$$\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i'^2 \le \frac{12}{h_{\min}^2} \sum_{i=0}^{n-1}
+  \int_{x_i}^{x_{i+1}} v_i^2,$$
+that is, $\|v'\|^2_{L^2} \le 12 h_{\min}^{-2} \|v\|^2_{L^2}$.
+
+No continuity is needed, because the estimate holds panel by panel. On a uniform mesh this is
+the bound $\lambda_{\max} \le 12 h^{-2}$ for the pencil of the $\mathbb{P}_1$ stiffness and mass
+matrices. It is the bound $\lambda_{\max} \le c h^{-2}$ behind the stability condition
+$\Delta t \le C h^2$ of the $\theta$-method with $\theta < 1/2$ for parabolic problems (§13.4.1
+of [quarteroni2000numerical]). -/
 theorem inverseInequality_linear {hmin : ℝ} (h0 : 0 < hmin)
     (hle : ∀ i : Fin n, hmin ≤ x i.succ - x i.castSucc) (v : BrokenPolynomial x 1) :
     ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).derivative.eval s ^ 2
@@ -513,36 +603,45 @@ section Glue
 
 open Spline
 
-/-- The panel polynomials of `v`, continued by `0` to all of `ℕ`. -/
+/-- The panel polynomials $v_0, \dots, v_{n-1}$ of $v$, continued by $0$ to all indices $j \ge n$.
+-/
 def polyExt (v : BrokenPolynomial x r) (j : ℕ) : ℝ[X] :=
   if h : j < n then v ⟨j, h⟩ else 0
 
+/-- For $j < n$, the $j$-th continued panel polynomial of $v$ is $v_j$. -/
 theorem polyExt_of_lt (v : BrokenPolynomial x r) {j : ℕ} (hj : j < n) :
     polyExt v j = v ⟨j, hj⟩ := dite_eq_left hj
 
+/-- The continued panel polynomials are additive in $v$. -/
 theorem polyExt_add (v w : BrokenPolynomial x r) (j : ℕ) :
     polyExt (v + w) j = polyExt v j + polyExt w j := by
   unfold polyExt; split_ifs <;> simp
 
+/-- The continued panel polynomials of $c v$ are $c$ times those of $v$. -/
 theorem polyExt_smul (c : ℝ) (v : BrokenPolynomial x r) (j : ℕ) :
     polyExt (c • v) j = c • polyExt v j := by
   unfold polyExt; split_ifs <;> simp
 
-/-- **The glued function** of a broken polynomial: the function on `ℝ` equal to `v_i` on the
-half-open panel `[x i, x (i+1))`, to `v_0` below `x 0` and to `v_{n-1}` from `x (n-1)` on, through
-`Spline.panelGlue` (whose panel `i` is this module's panel `i - 1`). For `v` in the continuous
-subspace it is continuous (`continuous_glue`). -/
+/-- **The glued function** of a broken polynomial $v$: the function on $\mathbb{R}$ equal to $v_i$
+on the half-open panel $[x_i, x_{i+1})$ for $i < n - 1$, to $v_0$ below $x_0$, and to $v_{n-1}$
+on $[x_{n-1}, \infty)$. For $n = 0$ it is the zero function.
+
+It is `Spline.panelGlue`, whose panel with index $i$ carries the polynomial $v_{i-1}$. For $v$
+in the continuous subspace it is continuous (`BrokenPolynomial.continuous_glue`). -/
 def glue (v : BrokenPolynomial x r) : ℝ → ℝ :=
   panelGlue n (extendFin x) fun i t => (polyExt v (i - 1)).eval t
 
+/-- The glued function is additive in $v$. -/
 theorem glue_add (v w : BrokenPolynomial x r) (t : ℝ) : glue (v + w) t = glue v t + glue w t := by
   simp only [glue, panelGlue, polyExt_add, eval_add]
 
+/-- The glued function of $c v$ is $c$ times the glued function of $v$. -/
 theorem glue_smul (c : ℝ) (v : BrokenPolynomial x r) (t : ℝ) : glue (c • v) t = c * glue v t := by
   simp only [glue, panelGlue, polyExt_smul, eval_smul, smul_eq_mul]
 
-/-- A strictly increasing `x : Fin (n + 1) → ℝ`, continued to `ℕ`, is a partition of
-`[x 0, x n]` in the sense of `Numlib/Approximation/Spline`. -/
+/-- A strictly increasing $x : \{0, \dots, n\} \to \mathbb{R}$, continued by $0$ to $\mathbb{N}$
+(`Spline.extendFin`), is a partition of $[x_0, x_n]$ into $n$ panels in the sense of
+`IsIntervalPartition`. -/
 theorem isIntervalPartition_extendFin (hx : StrictMono x) :
     IsIntervalPartition (x 0) (x (Fin.last n)) n (extendFin x) where
   step j hj := by
@@ -551,8 +650,8 @@ theorem isIntervalPartition_extendFin (hx : StrictMono x) :
   first := extendFin_of_lt x (Nat.succ_pos n)
   last := extendFin_of_lt x (Nat.lt_succ_self n)
 
-/-- The panel polynomials of an element of the continuous subspace agree at the interior nodes,
-in the indexing of `Spline.panelGlue`. -/
+/-- For $v$ in the continuous subspace, the panel polynomials agree at the interior nodes, in the
+indexing of `Spline.panelGlue`. -/
 private theorem polyExt_eval_eq_of_mem_continuous {v : BrokenPolynomial x r}
     (hv : v ∈ continuous x r) :
     ∀ i, 1 ≤ i → i < n → (polyExt v (i - 1)).eval (extendFin x i)
@@ -563,8 +662,8 @@ private theorem polyExt_eval_eq_of_mem_continuous {v : BrokenPolynomial x r}
     extendFin_of_lt x (by omega)]
   exact eval_succ_eq_of_mem_continuous hv ⟨j, by omega⟩ hin
 
-/-- On the closed panel `[x i, x (i+1)]`, the glued function of an element of the continuous
-subspace is the panel polynomial `v_i`. -/
+/-- Let the partition be strictly increasing, and let $v$ lie in the continuous subspace. On the
+closed panel $[x_i, x_{i+1}]$, the glued function of $v$ equals the panel polynomial $v_i$. -/
 theorem glue_eq_of_mem (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v ∈ continuous x r)
     (i : Fin n) {t : ℝ} (ht : t ∈ Icc (x i.castSucc) (x i.succ)) : glue v t = (v i).eval t := by
   have h := panelGlue_eq_of_mem (isIntervalPartition_extendFin hx)
@@ -574,7 +673,9 @@ theorem glue_eq_of_mem (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v �
       exact ht))
   rw [glue, h, Nat.add_sub_cancel, polyExt_of_lt v i.2]
 
-/-- **The glued function of an element of the continuous subspace is continuous.** -/
+/-- **The glued function of an element of the continuous subspace is continuous**: for a strictly
+increasing partition and a broken polynomial $v$ whose interior jumps vanish, the glued function
+of $v$ is continuous on $\mathbb{R}$. -/
 theorem continuous_glue (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v ∈ continuous x r) :
     Continuous (glue v) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -586,25 +687,28 @@ theorem continuous_glue (hx : StrictMono x) {v : BrokenPolynomial x r} (hv : v �
   · exact continuous_panelGlue (isIntervalPartition_extendFin hx) hn
       (polyExt_eval_eq_of_mem_continuous hv) fun i _ _ => (Polynomial.continuous _).continuousOn
 
-/-- **The gluing map** of the continuous subspace: the continuous function on `[x 0, x n]` equal to
-`v_i` on the panel `[x i, x (i+1)]`, as a linear map. -/
+/-- **The gluing map** of the continuous subspace, for a strictly increasing partition: the linear
+map that sends $v$ to the continuous function on $[x_0, x_n]$ equal to $v_i$ on each panel
+$[x_i, x_{i+1}]$. -/
 def toContinuousMap (hx : StrictMono x) :
     continuous x r →ₗ[ℝ] C(Icc (x 0) (x (Fin.last n)), ℝ) where
   toFun v := ⟨fun t => glue v.1 t, (continuous_glue hx v.2).comp continuous_subtype_val⟩
   map_add' v w := ContinuousMap.ext fun t => glue_add v.1 w.1 t
   map_smul' c v := ContinuousMap.ext fun t => glue_smul c v.1 t
 
+/-- The gluing map sends $v$ to the restriction to $[x_0, x_n]$ of the glued function of $v$. -/
 theorem toContinuousMap_apply (hx : StrictMono x) (v : continuous x r)
     (t : Icc (x 0) (x (Fin.last n))) : toContinuousMap hx v t = glue v.1 t := rfl
 
-/-- On the panel `[x i, x (i+1)]` the glued function is the panel polynomial. -/
+/-- For a strictly increasing partition, the image of $v$ under the gluing map is the panel
+polynomial $v_i$ on the panel $[x_i, x_{i+1}]$. -/
 theorem toContinuousMap_apply_of_mem (hx : StrictMono x) (v : continuous x r) (i : Fin n)
     {t : Icc (x 0) (x (Fin.last n))} (ht : (t : ℝ) ∈ Icc (x i.castSucc) (x i.succ)) :
     toContinuousMap hx v t = (v.1 i).eval (t : ℝ) :=
   glue_eq_of_mem hx v.2 i ht
 
-/-- The gluing map is injective: a polynomial is determined by its values on a nondegenerate
-panel. -/
+/-- For a strictly increasing partition, the gluing map is injective: a polynomial is determined by
+its values on a panel of positive length. -/
 theorem toContinuousMap_injective (hx : StrictMono x) :
     Function.Injective (toContinuousMap hx (r := r)) := by
   intro v w hvw
@@ -617,12 +721,16 @@ theorem toContinuousMap_injective (hx : StrictMono x) :
   rwa [toContinuousMap_apply_of_mem hx v i (Ioo_subset_Icc_self ht),
     toContinuousMap_apply_of_mem hx w i (Ioo_subset_Icc_self ht)] at this
 
-/-- **The continuous broken polynomials are the spline space without smoothness**: the gluing map
-sends `continuous x r` onto `Spline.splineSpace (x 0) (x n) n x r 0` of
-`Numlib/Approximation/Spline`. With `toContinuousMap_injective` the two are isomorphic, so
-`finrank (continuous x r) = n r + 1` is `Spline.finrank_splineSpace`; the spline space is the one
-definition of the continuous piecewise polynomials, of which `continuous x r` is the per-panel
-representation with traces and jumps. -/
+/-- **The continuous broken polynomials are the spline space of smoothness $C^0$.** For a strictly
+increasing partition with $n \ge 1$ panels, the gluing map sends the continuous subspace onto
+the spline space $S_r^0$ of degree $r$ and smoothness $C^0$ on $[x_0, x_n]$, `Spline.splineSpace
+(x 0) (x (Fin.last n)) n (Spline.extendFin x) r 0`.
+
+Together with `BrokenPolynomial.toContinuousMap_injective`, this makes the two spaces
+isomorphic, so `Spline.finrank_splineSpace` gives the dimension $n r + 1$ of the continuous
+subspace. The spline space is the one definition of the continuous piecewise polynomials in the
+library. The continuous subspace is their representation by panel polynomials, with traces and
+jumps. -/
 theorem toContinuousMap_range_eq_splineSpace (hx : StrictMono x) (hn : 0 < n) :
     LinearMap.range (toContinuousMap hx (r := r))
       = splineSpace (x 0) (x (Fin.last n)) n (extendFin x) r 0 := by
@@ -671,18 +779,20 @@ theorem toContinuousMap_range_eq_splineSpace (hx : StrictMono x) (hn : 0 < n) :
 
 end Glue
 
-/-! ### The embedding into `L²` -/
+/-! ### The embedding into $L^2$ -/
 
 section ToLp
 
 open Spline
 
-/-- **The step function** of a broken polynomial: the function equal to `v_i` on the half-open
-panel `[x i, x (i+1))` and to `0` outside `[x 0, x n)`. -/
+/-- **The step function** of a broken polynomial $v$: the function $\sum_{i=0}^{n-1}
+\mathbf{1}_{[x_i, x_{i+1})}\, v_i$ on $\mathbb{R}$. For a nondecreasing partition, it equals
+$v_i$ on the half-open panel $[x_i, x_{i+1})$ and $0$ outside $[x_0, x_n)$. -/
 def stepFun (v : BrokenPolynomial x r) : ℝ → ℝ :=
   ∑ i : Fin n, (Ico (x i.castSucc) (x i.succ)).indicator fun s => (v i).eval s
 
-/-- On the half-open panel `[x i, x (i+1))` the step function is the panel polynomial. -/
+/-- For a nondecreasing partition and $t \in [x_i, x_{i+1})$, the step function of $v$ takes the
+value $v_i(t)$ at $t$. -/
 theorem stepFun_apply_of_mem (hx : Monotone x) (v : BrokenPolynomial x r) {i : Fin n} {t : ℝ}
     (ht : t ∈ Ico (x i.castSucc) (x i.succ)) : stepFun v t = (v i).eval t := by
   unfold stepFun
@@ -695,24 +805,27 @@ theorem stepFun_apply_of_mem (hx : Monotone x) (v : BrokenPolynomial x r) {i : F
     · exact absurd hj.1 (not_le.2 (ht.2.trans_le (hx (Fin.succ_le_castSucc_iff.2 h))))
   · exact fun h => absurd (Finset.mem_univ i) h
 
+/-- The step function is additive in $v$. -/
 theorem stepFun_add (v w : BrokenPolynomial x r) : stepFun (v + w) = stepFun v + stepFun w := by
   funext t
   simp only [stepFun, add_apply, eval_add, Finset.sum_apply, Pi.add_apply, indicator_add,
     Finset.sum_add_distrib]
 
+/-- The step function of $c v$ is $c$ times the step function of $v$. -/
 theorem stepFun_smul (c : ℝ) (v : BrokenPolynomial x r) : stepFun (c • v) = c • stepFun v := by
   funext t
   simp only [stepFun, smul_apply, eval_smul, Finset.sum_apply, Pi.smul_apply, Finset.smul_sum,
     indicator_const_smul]
 
-/-- The step function is square integrable on `(x 0, x n)`. -/
+/-- The step function of a broken polynomial is square integrable on $(x_0, x_n)$. -/
 theorem memLp_stepFun (v : BrokenPolynomial x r) :
     MemLp (stepFun v) 2 (volume.restrict (Ioo (x 0) (x (Fin.last n)))) :=
   memLp_finsetSum' _ fun i _ =>
     ((v i).continuous.continuousOn.memLp_two_restrict_Ioo).indicator
       measurableSet_Ico.nullMeasurableSet
 
-/-- The squared `L²(x 0, x n)` norm of the step function is the sum of the panel integrals. -/
+/-- For a strictly increasing partition, the integral over $(x_0, x_n)$ of the square of the step
+function of $v$ is $\sum_{i=0}^{n-1} \int_{x_i}^{x_{i+1}} v_i^2$. -/
 theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :
     ∫ t in Ioo (x 0) (x (Fin.last n)), stepFun v t ^ 2
       = ∑ i, ∫ s in x i.castSucc..x i.succ, (v i).eval s ^ 2 := by
@@ -737,8 +850,9 @@ theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :
 variable [hx : Fact (StrictMono x)]
 
 variable (x r) in
-/-- **The isometric embedding into `L²(x 0, x n)`**: a broken polynomial as the class of its step
-function, the function equal to `v_i` on the half-open panel `[x i, x (i+1))`. -/
+/-- **The isometric embedding into $L^2(x_0, x_n)$**, for a strictly increasing partition: the
+linear isometry that sends a broken polynomial $v$ to the class of its step function, the
+function equal to $v_i$ on each half-open panel $[x_i, x_{i+1})$. -/
 def toLpₗᵢ : BrokenPolynomial x r →ₗᵢ[ℝ] Lp ℝ 2 (volume.restrict (Ioo (x 0) (x (Fin.last n)))) where
   toFun v := (memLp_stepFun v).toLp (stepFun v)
   map_add' v w := by
@@ -754,7 +868,8 @@ def toLpₗᵢ : BrokenPolynomial x r →ₗᵢ[ℝ] Lp ℝ 2 (volume.restrict (
     refine integral_congr_ae ((MemLp.coeFn_toLp (memLp_stepFun v)).mono fun t ht => ?_)
     simp only [ht, sq_abs]
 
-/-- The embedding is the step function almost everywhere. -/
+/-- The image of $v$ under the embedding into $L^2(x_0, x_n)$ equals the step function of $v$ almost
+everywhere on $(x_0, x_n)$. -/
 theorem coeFn_toLpₗᵢ (v : BrokenPolynomial x r) :
     toLpₗᵢ x r v =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] stepFun v :=
   MemLp.coeFn_toLp (memLp_stepFun v)
@@ -765,15 +880,19 @@ end BrokenPolynomial
 
 /-! ### The trace inequality on a panel -/
 
-/-- **The trace inequality on a panel** `[u, w]`: for `v` continuous on `[u, w]` with
-`v t - v s = ∫_s^t g` on `[u, w]` and `g` square integrable (the absolutely continuous
-functions with derivative `g ∈ L²`, in particular every `v ∈ H¹(u, w)`), every value on the
-panel is controlled by the `L²` norms of `v` and `g`:
-`v(t)² ≤ 2 (w - u)⁻¹ ∫_u^w v² + 2 (w - u) ∫_u^w g²`. Proof: `v(t) = v(s) + ∫_s^t g`, so by
-Cauchy–Schwarz `v(t)² ≤ 2 v(s)² + 2 (w - u) ∫_u^w g²` for every `s`, and integrating in `s`
-over the panel gives the claim. With `v` an interpolation error of order `h^{r+1}` in `L²` and
-`h^r` in `H¹` this is the source of the half power `h^{r+1/2}` in the discontinuous Galerkin
-error estimate ([quarteroni2000numerical] §13.10.1). -/
+/-- **The trace inequality on a panel.** Let $u < w$, let $v : \mathbb{R} \to \mathbb{R}$ be
+continuous on $[u, w]$, and let $g : \mathbb{R} \to \mathbb{R}$ be a function such that $g$ and
+$g^2$ are integrable on $[u, w]$ and $v(t) - v(s) = \int_s^t g$ for all $s, t \in [u, w]$. Then
+for every $t \in [u, w]$
+$$v(t)^2 \le \frac{2}{w - u} \int_u^w v^2 + 2 (w - u) \int_u^w g^2.$$
+
+The hypotheses describe the absolutely continuous functions with derivative $g \in L^2$, in
+particular every $v \in H^1(u, w)$. Idea of the proof: $v(t) = v(s) + \int_s^t g$, so the
+Cauchy–Schwarz inequality gives $v(t)^2 \le 2 v(s)^2 + 2 (w - u) \int_u^w g^2$ for every $s$,
+and integration in $s$ over the panel gives the claim. When $v$ is an interpolation error of
+order $h^{r+1}$ in $L^2$ and $h^r$ in $H^1$, this inequality is the source of the half power
+$h^{r+1/2}$ in the error estimate of the discontinuous Galerkin method (§13.10.1 of
+[quarteroni2000numerical]). -/
 theorem sq_le_of_sub_eq_integral {u w : ℝ} (huw : u < w) {v g : ℝ → ℝ}
     (hv : ContinuousOn v (Icc u w)) (hg : IntervalIntegrable g volume u w)
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u w)

@@ -9,67 +9,96 @@ import Numlib.Topology.Algebra.InfiniteSum.Group
 /-!
 # Aliasing: the error of the discrete Fourier coefficients
 
-The `N`-point discrete Fourier coefficient of a periodic function at a frequency `k` is the sum of
-its exact coefficients at all frequencies congruent to `k` modulo `N`
-(`DFT.coeff_eq_tsum_fourierCoeff`): the discrete coefficient is the exact one plus the **aliasing
-tail** `∑_{j ≠ 0} a_{k + jN}`. This file bounds that tail for a function with coefficients in the
-periodic Sobolev space `PeriodicSobolev s`, `s > 1/2`, and derives from it the error estimates for
-trigonometric interpolation at equispaced nodes.
+Let $\varphi = \sum_m a_m e^{imx}$ be a $2\pi$-periodic function. Its discrete Fourier coefficient
+on $N$ equispaced nodes at a frequency $k$ is the sum of its exact coefficients at all frequencies
+congruent to $k$ modulo $N$ (`DFT.coeff_eq_tsum_fourierCoeff`). So the discrete coefficient is the
+exact one plus the **aliasing tail** $\sum_{j \ne 0} a_{k + jN}$. This file bounds the aliasing tail
+for $\varphi$ in the periodic Sobolev space $H^s$ with $s > 1/2$, and derives from the bound the
+error estimates for trigonometric interpolation at equispaced nodes. Here $H^s$ is
+`PeriodicSobolev s`, the space of coefficient sequences $(a_m)_{m \in \mathbb{Z}}$ with
+$$\|\varphi\|_s^2 = \sum_{m \in \mathbb{Z}} \bigl(w_s(m) |a_m|\bigr)^2 < \infty, \qquad w_s(0) = 1,
+  \quad w_s(m) = |m|^s \ (m \ne 0).$$
 
-## The window and the tiling
+The frequencies are grouped by the centred window $W_N = \{k \in \mathbb{Z} : -\lfloor N/2 \rfloor
+\le k < -\lfloor N/2 \rfloor + N\}$ of $N$ consecutive frequencies. For $k \in W_N$, the
+Cauchy–Schwarz inequality against $\sum_{j \ne 0} |k + jN|^{-2s} \le (N/2)^{-2s} \cdot 2\zeta(2s)$
+gives
+$$\Bigl|\sum_{j \ne 0} a_{k + jN}\Bigr| \le (N/2)^{-s} \sqrt{2\zeta(2s)} \Bigl(\sum_{j \ne 0}
+  \bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2\Bigr)^{1/2}.$$
+Because $W_N$ tiles $\mathbb{Z}$ under the shifts by multiples of $N$, the sum over $W_N$ of the
+right-hand sides is controlled by the weighted energy of $\varphi$ outside $W_N$, which is at most
+$\|\varphi\|_s^2$. This gives the $\ell^2$ and $\ell^1$ aliasing bounds, and three error estimates
+for the interpolant $\Pi_N f$ of $f = \sum_m a_m e^{imx}$: in $L^2(0, 2\pi)$, in the maximum norm,
+and for the discrete scalar product. The last part reads the interpolant $\mathcal{I}_n \varphi$ on
+$2n + 1$ nodes in the Sobolev scale, and proves $\|\varphi - \mathcal{I}_n \varphi\|_r \le \sqrt{1 +
+2\zeta(2s)} \, n^{r-s} \|\varphi\|_s$ for $0 \le r \le s$, which is Theorem 7.5.7 of
+[han2009theoretical].
 
-`DFT.window N` is the centred window `-(N/2) ≤ k < -(N/2) + N` (integer division) of `N`
-consecutive frequencies — the window `m = −N/2` of [quarteroni2000numerical] §10.9 for even `N`,
-and `-n, …, n` for `N = 2n + 1`. Three facts about it carry everything:
+## Main definitions
 
-* `2 |k| ≤ N` on the window and `N ≤ 2 |k|` off it;
-* `N |j| ≤ 2 |k + jN|` for `k` in the window and `j ≠ 0`, so the aliased frequencies are far
-  from `0`;
-* the window tiles `ℤ`: `(k, j) ↦ k + jN` is a bijection `W × ℤ → ℤ`, and for a summable family
-  `∑_{k ∈ W} ∑_j g (k + jN) = ∑_m g m` (`DFT.sum_window_tsum_add_mul`).
+* `DFT.window`: the centred window $W_N$ of $N$ consecutive frequencies.
+* `PeriodicSobolev.aliasTail`: the aliasing tail $\sum_{j \ne 0} a_{k + jN}$.
+* `PeriodicSobolev.windowTailNormSq`: the weighted energy $\sum_{m \notin W_N} (w_s(m) |a_m|)^2$
+  outside the window.
+* `PeriodicSobolev.interpErrorCoeff`: the coefficients of the interpolation error $f - \Pi_N f$.
+* `DFT.windowTrigPoly`: the trigonometric polynomial $\sum_{q \in W_N} c_q e^{iqx}$.
+* `PeriodicSobolev.trigInterp`: the trigonometric interpolant $\mathcal{I}_n \varphi$ of
+  [han2009theoretical], §3.7, as an element of $H^r$.
 
-## The bounds
+## Main results
 
-For `φ ∈ PeriodicSobolev s` with `s > 1/2` and `k` in the window, Cauchy–Schwarz against
-`∑_{j ≠ 0} |k + jN|^{-2s} ≤ (N/2)^{-2s} · 2 ζ(2s)` gives
+* `DFT.sum_window_tsum_add_mul`: the window tiles $\mathbb{Z}$, $\sum_{k \in W_N} \sum_j g(k + jN) =
+  \sum_m g(m)$.
+* `PeriodicSobolev.norm_aliasTail_le`: the bound on one aliasing tail.
+* `PeriodicSobolev.sum_window_norm_aliasTail_sq_le`: the $\ell^2$ aliasing bound.
+* `PeriodicSobolev.sum_window_norm_aliasTail_le`: the $\ell^1$ aliasing bound.
+* `PeriodicSobolev.dftCoeff_eval_window`: on the window, the discrete coefficient is $a_q$ plus the
+  aliasing tail.
+* `PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le`: $\|f - \Pi_N f\|_{L^2(0,
+  2\pi)} \le \sqrt{2\pi(1 + 2\zeta(2s))} \, 2^s N^{-s} \|\varphi\|_s$.
+* `PeriodicSobolev.norm_eval_sub_interp_le`: $\max |f - \Pi_N f| \le 2 \sqrt{2\zeta(2s)} \, 2^s
+  N^{1/2 - s} \|\varphi\|_s$.
+* `PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le`: $|(f, v_N) - (f, v_N)_N| \le
+  \sqrt{2\pi} \sqrt{2\zeta(2s)} \, 2^s N^{-s} \|\varphi\|_s \|v_N\|_{L^2}$ for every trigonometric
+  polynomial $v_N$ over the window.
+* `PeriodicSobolev.eval_trigInterp_angleNode`: $\mathcal{I}_n \varphi$ interpolates $\varphi$ at the
+  $2n + 1$ nodes.
+* `PeriodicSobolev.norm_incl_sub_trigInterp_le`: Theorem 7.5.7 of [han2009theoretical], $\|\varphi -
+  \mathcal{I}_n \varphi\|_r \le \sqrt{1 + 2\zeta(2s)} \, n^{r-s} \|\varphi\|_s$.
 
-`‖∑_{j ≠ 0} a_{k + jN}‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √(∑_{j ≠ 0} (w(k + jN) ‖a_{k + jN}‖)²)`
+## Proof outline
 
-(`PeriodicSobolev.norm_aliasTail_le`), and the tiling turns the sum over the window of the
-right-hand sides into the weighted energy outside the window, `windowTailNormSq N φ ≤ ‖φ‖²`.
-The results are the **`ℓ²` aliasing bound** `PeriodicSobolev.sum_window_norm_aliasTail_sq_le`,
-the **`ℓ¹` aliasing bound** `sum_window_norm_aliasTail_le` (with the extra `√N` of Cauchy–Schwarz
-over the `N` frequencies of the window), and the `ℓ¹` and `ℓ²` tails outside the window,
-`tsum_norm_coeff_notMem_window_le` and `tsum_norm_coeff_sq_notMem_window_le`.
+Three facts about the window carry everything. First, $2|k| \le N$ on the window and $N \le 2|k|$
+off it. Second, $N|j| \le 2|k + jN|$ for $k$ in the window and $j \ne 0$, so the aliased frequencies
+are far from $0$. Third, the window tiles $\mathbb{Z}$: $(k, j) \mapsto k + jN$ is a bijection
+$W_N \times \mathbb{Z} \to \mathbb{Z}$.
 
-## The interpolation estimates
+For $f = \sum_m a_m e^{imx}$, the discrete coefficients over the centred window are
+$\tilde f_q = a_q + \sum_{j \ne 0} a_{q + jN}$. So the interpolation error $f - \Pi_N f$ is the
+trigonometric series with the coefficient $-\sum_{j \ne 0} a_{m + jN}$ on the window and $a_m$
+outside it. Parseval's identity and the aliasing bounds give the three estimates of
+[quarteroni2000numerical], §10.9.
 
-For `f = eval (2π) φ` the discrete coefficients over the centred window are
-`f̃_q = a_q + aliasTail N φ q` (`PeriodicSobolev.dftCoeff_eval_window`), and the interpolation
-error `f − Π_N f` is the trigonometric series with coefficients `interpErrorCoeff`: `−aliasTail`
-on the window, `a_m` outside. Parseval and the bounds above give the three unnumbered estimates of
-[quarteroni2000numerical] §10.9 in coefficient form:
+## Notation
 
-* `PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le`:
-  `‖f − Π_N f‖_{L²(0,2π)} ≤ √(2π (1 + 2 ζ(2s))) 2^s N^{-s} ‖φ‖`;
-* `PeriodicSobolev.norm_eval_sub_interp_le`:
-  `max |f − Π_N f| ≤ 2 √(2 ζ(2s)) 2^s N^{1/2 − s} ‖φ‖`;
-* `PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le`:
-  `|(f, v_N) − (f, v_N)_N| ≤ √(2π) √(2 ζ(2s)) 2^s N^{-s} ‖φ‖ ‖v_N‖_{L²}` for every trigonometric
-  polynomial `v_N = DFT.windowTrigPoly N c` over the window.
+* $a_m$: the coefficient `PeriodicSobolev.coeff φ m` of $\varphi \in H^s$.
+* $w_s(m)$: the weight `periodicSobolevWeight s m`.
+* $\zeta(r)$: the value `zetaReal r` $= \sum_{n \ge 1} n^{-r}$ of the Riemann zeta function.
+* $f$: the sum `PeriodicSobolev.eval (2 * π) φ` of the series $\sum_m a_m e^{imx}$.
+* $\Pi_N f$: the discrete Fourier series `DFT.interp N (-(N / 2)) f` over the centred window.
 
-The book's norm `‖f‖_s` is reached through `PeriodicSobolev.ofSmooth` of
-`Numlib/Analysis/Sobolev/Periodic/Smooth`, which the surface does. The constants are explicit
-but not sharp; the book leaves them unspecified.
+## Implementation notes
 
-## The interpolant in the Sobolev scale
-
-`PeriodicSobolev.trigInterp r n φ` is the trigonometric interpolant `𝓘_n φ` of
-[han2009theoretical] §3.7 — degree at most `n`, the `2n + 1` equispaced nodes — read as an
-element of `PeriodicSobolev r` for any `r`; `eval_trigInterp_angleNode` is the interpolation
-property and `norm_incl_sub_trigInterp_le` is [han2009theoretical] Theorem 7.5.7,
-`‖φ − 𝓘_n φ‖_r ≤ √(1 + 2 ζ(2s)) n^{r − s} ‖φ‖_s` for `0 ≤ r ≤ s`, `s > 1/2`: the same aliasing
-bound read in the `H^r` norm.
+* The window $W_N$ is the window $m = -N/2$ of [quarteroni2000numerical], §10.9, for even $N$, and
+  it is $\{-n, \dots, n\}$ for $N = 2n + 1$. The bound $\lfloor N/2 \rfloor$ is natural-number
+  division.
+* The three estimates of [quarteroni2000numerical], §10.9, are unnumbered in the source. They are
+  stated here in coefficient form, with the norm $\|\varphi\|_s$ of the coefficient sequence. The
+  norm of the source for a smooth function is reached through `PeriodicSobolev.ofSmooth` of
+  `Numlib.Analysis.Sobolev.Periodic.Smooth`.
+* The constants are explicit but not sharp. The source leaves them unspecified.
+* The interpolant `PeriodicSobolev.trigInterp r n φ` has finitely many nonzero coefficients, so it
+  lies in $H^r$ for every $r$.
 -/
 
 open scoped Real
@@ -79,29 +108,31 @@ open scoped Real
 
 namespace DFT
 
-/-- The centred window of `N` consecutive frequencies, `-(N/2) ≤ k < -(N/2) + N` (integer
-division): the window `m = −N/2` of [quarteroni2000numerical] (10.50) for even `N`, and
-`-n, …, n` for `N = 2n + 1`. -/
+/-- The **centred window** of $N$ consecutive frequencies:
+$$W_N = \{k \in \mathbb{Z} : -\lfloor N/2 \rfloor \le k < -\lfloor N/2 \rfloor + N\}.$$
+For even $N$ it is the window $m = -N/2$ of (10.50) of [quarteroni2000numerical], and for
+$N = 2n + 1$ it is $\{-n, \dots, n\}$. -/
 def window (N : ℕ) : Finset ℤ := Finset.Ico (-((N / 2 : ℕ) : ℤ)) (-((N / 2 : ℕ) : ℤ) + N)
 
-/-- Membership in the centred window. -/
+/-- Membership in the centred window: $k \in W_N$ if and only if $-\lfloor N/2 \rfloor \le k <
+-\lfloor N/2 \rfloor + N$. -/
 theorem mem_window {N : ℕ} {k : ℤ} :
     k ∈ window N ↔ -((N / 2 : ℕ) : ℤ) ≤ k ∧ k < -((N / 2 : ℕ) : ℤ) + N := by
   rw [window, Finset.mem_Ico]
 
-/-- The window has `N` elements. -/
+/-- The centred window $W_N$ has $N$ elements. -/
 theorem card_window (N : ℕ) : (window N).card = N := by
   rw [window, Int.card_Ico]
   omega
 
-/-- On the window, `|k| ≤ N/2`. -/
+/-- On the window, $|k| \le N/2$: if $k \in W_N$, then $2|k| \le N$. -/
 theorem two_mul_abs_le_of_mem_window {N : ℕ} {k : ℤ} (hk : k ∈ window N) : 2 * |k| ≤ N := by
   rw [mem_window] at hk
   rcases le_or_gt 0 k with h | h
   · rw [abs_of_nonneg h]; omega
   · rw [abs_of_neg h]; omega
 
-/-- Off the window, `|k| ≥ N/2`. -/
+/-- Off the window, $|k| \ge N/2$: if $k \notin W_N$, then $N \le 2|k|$. -/
 theorem le_two_mul_abs_of_not_mem_window {N : ℕ} {k : ℤ} (hk : k ∉ window N) :
     (N : ℤ) ≤ 2 * |k| := by
   rw [mem_window, not_and_or, not_le, not_lt] at hk
@@ -109,8 +140,9 @@ theorem le_two_mul_abs_of_not_mem_window {N : ℕ} {k : ℤ} (hk : k ∉ window 
   · rw [abs_of_nonneg h]; omega
   · rw [abs_of_neg h]; omega
 
-/-- The aliased frequencies are far from `0`: for `k` on the window and `j ≠ 0`,
-`|k + jN| ≥ N |j| / 2`. -/
+/-- The aliased frequencies are far from $0$: for $k \in W_N$ and an integer $j \ne 0$,
+$$N |j| \le 2 |k + jN|.$$
+-/
 theorem mul_abs_le_two_mul_abs_add_mul {N : ℕ} {k j : ℤ} (hk : k ∈ window N) (hj : j ≠ 0) :
     (N : ℤ) * |j| ≤ 2 * |k + j * N| := by
   have h1 := two_mul_abs_le_of_mem_window hk
@@ -125,7 +157,7 @@ theorem mul_abs_le_two_mul_abs_add_mul {N : ℕ} {k j : ℤ} (hk : k ∈ window 
   · rw [abs_of_neg hj0]
     nlinarith
 
-/-- The aliased frequencies are nonzero. -/
+/-- For $N \ge 1$, $k \in W_N$ and $j \ne 0$, the aliased frequency $k + jN$ is nonzero. -/
 theorem add_mul_ne_zero_of_mem_window {N : ℕ} (hN : 0 < N) {k j : ℤ} (hk : k ∈ window N)
     (hj : j ≠ 0) :
     k + j * N ≠ 0 := by
@@ -135,7 +167,8 @@ theorem add_mul_ne_zero_of_mem_window {N : ℕ} (hN : 0 < N) {k j : ℤ} (hk : k
   have : (0 : ℤ) < N * |j| := mul_pos (by exact_mod_cast hN) (abs_pos.mpr hj)
   omega
 
-/-- The unique representative in the window of a residue class modulo `N`. -/
+/-- Each residue class modulo $N$ has exactly one representative in the window: for $N \ge 1$ and
+$m \in \mathbb{Z}$ there is a unique $k \in W_N$ with $N \mid m - k$. -/
 theorem existsUnique_mem_window_dvd {N : ℕ} (hN : 0 < N) (m : ℤ) :
     ∃! k, k ∈ window N ∧ (N : ℤ) ∣ m - k := by
   set m₀ : ℤ := -((N / 2 : ℕ) : ℤ)
@@ -157,8 +190,11 @@ end DFT
 
 namespace DFT
 
-/-- **The window tiles `ℤ`**: every integer is `k + j N` for exactly one `k` in the window and one
-`j`, so for a summable family `∑_{k ∈ W} ∑_j g (k + j N) = ∑_m g m`. -/
+/-- **The window tiles $\mathbb{Z}$.** Every integer is $k + jN$ for exactly one $k \in W_N$ and one
+$j \in \mathbb{Z}$. So, for $N \ge 1$, a complete normed group $E$ and a summable family
+$g : \mathbb{Z} \to E$,
+$$\sum_{k \in W_N} \sum_{j \in \mathbb{Z}} g(k + jN) = \sum_{m \in \mathbb{Z}} g(m).$$
+-/
 theorem sum_window_tsum_add_mul {E : Type*} [NormedAddCommGroup E] [CompleteSpace E] {N : ℕ}
     (hN : 0 < N) {g : ℤ → E} (hg : Summable g) :
     ∑ k ∈ window N, ∑' j : ℤ, g (k + j * N) = ∑' m : ℤ, g m := by
@@ -196,21 +232,29 @@ open DFT
 
 variable {s : ℝ}
 
-/-- **The aliasing tail** at frequency `k` with modulus `N`: `∑_{j ≠ 0} a_{k + j N}`, the amount by
-which the `N`-point discrete Fourier coefficient at `k` differs from the exact one. -/
+/-- The **aliasing tail** of $\varphi \in H^s$ at the frequency $k$ for the modulus $N$:
+$$\sum_{j \ne 0} a_{k + jN}.$$
+It is the amount by which the discrete Fourier coefficient on $N$ nodes at $k$ differs from the
+exact coefficient $a_k$.
+
+The sum is a `tsum` over $j \in \mathbb{Z}$ with the term $j = 0$ replaced by $0$. It is $0$ if
+the family is not summable; for $s > 1/2$ and $N \ge 1$ the family is summable. -/
 noncomputable def aliasTail (N : ℕ) (φ : PeriodicSobolev s) (k : ℤ) : ℂ :=
   ∑' j : ℤ, if j = 0 then 0 else coeff φ (k + j * N)
 
-/-- The weighted energy aliased onto `k`: `∑_{j ≠ 0} (w(k + j N) ‖a_{k + j N}‖)²`. -/
+/-- The weighted energy of $\varphi \in H^s$ aliased onto the frequency $k$: $\sum_{j \ne 0}
+\bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2$. -/
 noncomputable def aliasNormSq (N : ℕ) (φ : PeriodicSobolev s) (k : ℤ) : ℝ :=
   ∑' j : ℤ, if j = 0 then 0
     else (periodicSobolevWeight s (k + j * N) * ‖coeff φ (k + j * N)‖) ^ 2
 
-/-- The weighted energy outside the window: `∑_{m ∉ W} (w(m) ‖a_m‖)²`, at most `‖φ‖²`. -/
+/-- The weighted energy of $\varphi \in H^s$ outside the window:
+$$\sum_{m \notin W_N} \bigl(w_s(m) |a_m|\bigr)^2.$$
+It is at most $\|\varphi\|_s^2$ (`PeriodicSobolev.windowTailNormSq_le`). -/
 noncomputable def windowTailNormSq (N : ℕ) (φ : PeriodicSobolev s) : ℝ :=
   ∑' m : ℤ, if m ∈ window N then 0 else (periodicSobolevWeight s m * ‖coeff φ m‖) ^ 2
 
-/-- The energy outside the window is nonnegative. -/
+/-- The weighted energy outside the window is nonnegative. -/
 theorem windowTailNormSq_nonneg (N : ℕ) (φ : PeriodicSobolev s) : 0 ≤ windowTailNormSq N φ :=
   tsum_nonneg fun m => by split_ifs <;> positivity
 
@@ -220,7 +264,9 @@ private theorem summable_ite_window (N : ℕ) (φ : PeriodicSobolev s) :
   Summable.of_nonneg_of_le (fun m => by split_ifs <;> positivity)
     (fun m => by split_ifs <;> [positivity; exact le_rfl]) (hasSum_norm_sq φ).summable
 
-/-- The energy outside the window is at most the whole energy `‖φ‖²`. -/
+/-- The weighted energy outside the window is at most the whole energy: $\sum_{m \notin W_N} (w_s(m)
+|a_m|)^2 \le \|\varphi\|_s^2$.
+-/
 theorem windowTailNormSq_le (N : ℕ) (φ : PeriodicSobolev s) : windowTailNormSq N φ ≤ ‖φ‖ ^ 2 :=
   hasSum_le (fun m => by split_ifs <;> [positivity; exact le_rfl])
     (summable_ite_window N φ).hasSum (hasSum_norm_sq φ)
@@ -235,11 +281,12 @@ private theorem summable_aliasNormSq_term {N : ℕ} (hN : 0 < N) (φ : PeriodicS
     ((hasSum_norm_sq φ).summable.comp_injective
       ((add_right_injective k).comp (mul_left_injective₀ (by exact_mod_cast hN.ne'))))
 
-/-- The aliased energy is nonnegative. -/
+/-- The weighted energy aliased onto a frequency is nonnegative. -/
 theorem aliasNormSq_nonneg (N : ℕ) (φ : PeriodicSobolev s) (k : ℤ) : 0 ≤ aliasNormSq N φ k :=
   tsum_nonneg fun j => by split_ifs <;> positivity
 
-/-- The Cauchy–Schwarz partner: `j ↦ w(k + j N)⁻¹` off `j = 0`. -/
+/-- The partner sequence of the Cauchy–Schwarz inequality: $j \mapsto w_s(k + jN)^{-1}$ for
+$j \ne 0$, and $0$ for $j = 0$. -/
 private noncomputable def invWeight (s : ℝ) (N : ℕ) (k : ℤ) (j : ℤ) : ℝ :=
   if j = 0 then 0 else (periodicSobolevWeight s (k + j * N))⁻¹
 
@@ -249,7 +296,8 @@ private theorem invWeight_nonneg (s : ℝ) (N : ℕ) (k j : ℤ) : 0 ≤ invWeig
   · exact le_rfl
   · exact (inv_pos.mpr (periodicSobolevWeight_pos _ _)).le
 
-/-- Off `j = 0` and for `k` in the window, `w(k + j N)⁻² ≤ (N/2)^{-2s} |j|^{-2s}`. -/
+/-- For $s > 0$, $N \ge 1$, $k \in W_N$ and $j \ne 0$, $w_s(k + jN)^{-2} \le (N/2)^{-2s} |j|^{-2s}$;
+the bound also holds at $j = 0$, where the left side is $0$. -/
 private theorem invWeight_sq_le (hs : 0 < s) {N : ℕ} (hN : 0 < N) {k : ℤ} (hk : k ∈ window N)
     (j : ℤ) :
     invWeight s N k j ^ 2 ≤ (((N : ℝ) / 2) ^ (2 * s))⁻¹ * (|(j : ℝ)| ^ (2 * s))⁻¹ := by
@@ -277,7 +325,7 @@ private theorem tsum_invWeight_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) {k 
   exact hasSum_le (invWeight_sq_le (by linarith) hN hk)
     (summable_invWeight_sq hs hN hk).hasSum h
 
-/-- `√((N/2)^{-2s} a) = (N/2)^{-s} √a`. -/
+/-- For real $s$ and $a$, $\sqrt{(N/2)^{-2s} a} = (N/2)^{-s} \sqrt{a}$. -/
 private theorem sqrt_bound (s : ℝ) (N : ℕ) (a : ℝ) :
     √((((N : ℝ) / 2) ^ (2 * s))⁻¹ * a) = ((N : ℝ) / 2) ^ (-s) * √a := by
   have hpos : (0 : ℝ) ≤ (N : ℝ) / 2 := by positivity
@@ -286,9 +334,11 @@ private theorem sqrt_bound (s : ℝ) (N : ℕ) (a : ℝ) :
   congr 2
   ring
 
-/-- **Cauchy–Schwarz on the aliasing tail**: for `k` in the window,
-`∑_{j ≠ 0} ‖a_{k + j N}‖ ≤ (N/2)^{-s} √(2 ζ(2 s)) √(aliasNormSq N φ k)`, and the family is
-summable. -/
+/-- **The Cauchy–Schwarz inequality on the aliasing tail.** Let $s > 1/2$, $N \ge 1$,
+$\varphi \in H^s$ and $k \in W_N$. Then the family $(|a_{k + jN}|)_{j \ne 0}$ is summable, and
+$$\sum_{j \ne 0} |a_{k + jN}| \le (N/2)^{-s} \sqrt{2\zeta(2s)} \Bigl(\sum_{j \ne 0}
+  \bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2\Bigr)^{1/2}.$$
+-/
 theorem summable_norm_coeff_add_mul_and_tsum_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) {k : ℤ} (hk : k ∈ window N) :
     (Summable fun j : ℤ => if j = 0 then (0 : ℝ) else ‖coeff φ (k + j * N)‖) ∧
@@ -326,8 +376,12 @@ theorem summable_norm_coeff_add_mul_and_tsum_le (hs : 1 / 2 < s) {N : ℕ} (hN :
   exact mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt (tsum_invWeight_sq_le hs hN hk))
     (Real.sqrt_nonneg _)
 
-/-- **The aliasing tail is small**: for `k` on the window,
-`‖∑_{j ≠ 0} a_{k + jN}‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √(aliasNormSq N φ k)`. -/
+/-- **The aliasing tail is small.** Let $s > 1/2$, $N \ge 1$, $\varphi \in H^s$ and $k \in W_N$.
+Then
+$$\Bigl|\sum_{j \ne 0} a_{k + jN}\Bigr| \le (N/2)^{-s} \sqrt{2\zeta(2s)} \Bigl(\sum_{j \ne 0}
+  \bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2\Bigr)^{1/2}.$$
+
+The last factor is the square root of `PeriodicSobolev.aliasNormSq N φ k`. -/
 theorem norm_aliasTail_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s) {k : ℤ}
     (hk : k ∈ window N) :
     ‖aliasTail N φ k‖ ≤ ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(aliasNormSq N φ k) := by
@@ -341,7 +395,11 @@ theorem norm_aliasTail_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Periodic
   refine (norm_tsum_le_tsum_norm (hsum.congr fun j => (hnorm j).symm)).trans (le_of_eq ?_)
   exact tsum_congr hnorm
 
-/-- The squared form: `‖∑_{j ≠ 0} a_{k + j N}‖² ≤ (N/2)^{-2s} · 2 ζ(2 s) · aliasNormSq N φ k`. -/
+/-- The squared form of `PeriodicSobolev.norm_aliasTail_le`: for $s > 1/2$, $N \ge 1$ and
+$k \in W_N$,
+$$\Bigl|\sum_{j \ne 0} a_{k + jN}\Bigr|^2 \le (N/2)^{-2s} \cdot 2\zeta(2s) \sum_{j \ne 0}
+  \bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2.$$
+-/
 theorem norm_aliasTail_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s)
     {k : ℤ} (hk : k ∈ window N) :
     ‖aliasTail N φ k‖ ^ 2
@@ -354,8 +412,11 @@ theorem norm_aliasTail_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Perio
     ← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
   rw [show -s * ((2 : ℕ) : ℝ) = -(2 * s) by push_cast; ring, Real.rpow_neg (by positivity)]
 
-/-- **The window tiles the frequencies**: the aliased energies over the window add up to the
-energy outside it. -/
+/-- **The window tiles the frequencies.** For $N \ge 1$ and $\varphi \in H^s$, the weighted energies
+aliased onto the frequencies of the window add up to the weighted energy outside the window:
+$$\sum_{k \in W_N} \sum_{j \ne 0} \bigl(w_s(k + jN) |a_{k + jN}|\bigr)^2 = \sum_{m \notin W_N}
+  \bigl(w_s(m) |a_m|\bigr)^2.$$
+-/
 theorem sum_window_aliasNormSq {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s) :
     ∑ k ∈ window N, aliasNormSq N φ k = windowTailNormSq N φ := by
   rw [windowTailNormSq, ← sum_window_tsum_add_mul hN (summable_ite_window N φ)]
@@ -382,9 +443,11 @@ open DFT
 
 variable {s : ℝ}
 
-/-- **The `ℓ²` aliasing bound**: the discrete coefficients over the window differ from the exact
-ones by at most `(N/2)^{-2s} · 2 ζ(2s)` times the weighted energy outside the window, in the sum
-of squares. -/
+/-- **The $\ell^2$ aliasing bound.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$. Then
+$$\sum_{k \in W_N} \Bigl|\sum_{j \ne 0} a_{k + jN}\Bigr|^2 \le (N/2)^{-2s} \cdot 2\zeta(2s)
+  \sum_{m \notin W_N} \bigl(w_s(m) |a_m|\bigr)^2.$$
+So the discrete coefficients over the window differ from the exact ones, in the sum of squares,
+by at most $(N/2)^{-2s} \cdot 2\zeta(2s)$ times the weighted energy outside the window. -/
 theorem sum_window_norm_aliasTail_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∑ k ∈ window N, ‖aliasTail N φ k‖ ^ 2
@@ -394,7 +457,8 @@ theorem sum_window_norm_aliasTail_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
           * aliasNormSq N φ k := Finset.sum_le_sum fun k hk => norm_aliasTail_sq_le hs hN φ hk
     _ = _ := by rw [← Finset.mul_sum, sum_window_aliasNormSq hN φ]
 
-/-- Cauchy–Schwarz over the window: `∑_{k ∈ W} √(t k) ≤ √N √(∑_{k ∈ W} t k)`. -/
+/-- The Cauchy–Schwarz inequality over the window: for $t \ge 0$, $\sum_{k \in W_N} \sqrt{t_k} \le
+\sqrt{N} \bigl(\sum_{k \in W_N} t_k\bigr)^{1/2}$. -/
 private theorem sum_window_sqrt_le (N : ℕ) {t : ℤ → ℝ} (ht : ∀ k, 0 ≤ t k) :
     ∑ k ∈ window N, √(t k) ≤ √(N : ℝ) * √(∑ k ∈ window N, t k) := by
   have h := Finset.sum_mul_sq_le_sq_mul_sq (window N) (fun _ => (1 : ℝ)) fun k => √(t k)
@@ -404,7 +468,9 @@ private theorem sum_window_sqrt_le (N : ℕ) {t : ℤ → ℝ} (ht : ∀ k, 0 �
     Real.sqrt_nonneg (t k))]
   exact Real.sqrt_le_sqrt h
 
-/-- The bounds of `summable_norm_coeff_add_mul_and_tsum_le`, summed over the window. -/
+/-- The bounds of `PeriodicSobolev.summable_norm_coeff_add_mul_and_tsum_le`, summed over the window,
+are at most $(N/2)^{-s} \sqrt{2\zeta(2s)} \sqrt{N}$ times the square root of the weighted energy
+outside the window. -/
 private theorem sum_window_mul_sqrt_aliasNormSq_le {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s) :
     ∑ k ∈ window N, ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * √(aliasNormSq N φ k)
       ≤ ((N : ℝ) / 2) ^ (-s) * √(2 * zetaReal (2 * s)) * (√(N : ℝ) * √(windowTailNormSq N φ)) := by
@@ -413,8 +479,11 @@ private theorem sum_window_mul_sqrt_aliasNormSq_le {N : ℕ} (hN : 0 < N) (φ : 
   rw [← sum_window_aliasNormSq hN φ]
   exact sum_window_sqrt_le N (aliasNormSq_nonneg N φ)
 
-/-- **The `ℓ¹` aliasing bound**: `∑_{k ∈ W} ‖∑_{j ≠ 0} a_{k + jN}‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √N
-√(windowTailNormSq N φ)`. -/
+/-- **The $\ell^1$ aliasing bound.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$. Then
+$$\sum_{k \in W_N} \Bigl|\sum_{j \ne 0} a_{k + jN}\Bigr| \le (N/2)^{-s} \sqrt{2\zeta(2s)}
+  \sqrt{N} \Bigl(\sum_{m \notin W_N} \bigl(w_s(m) |a_m|\bigr)^2\Bigr)^{1/2}.$$
+The factor $\sqrt{N}$ comes from the Cauchy–Schwarz inequality over the $N$ frequencies of the
+window. -/
 theorem sum_window_norm_aliasTail_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∑ k ∈ window N, ‖aliasTail N φ k‖
@@ -422,8 +491,10 @@ theorem sum_window_norm_aliasTail_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
   exact (Finset.sum_le_sum fun k hk => norm_aliasTail_le hs hN φ hk).trans
     (sum_window_mul_sqrt_aliasNormSq_le hN φ)
 
-/-- **The `ℓ¹` tail outside the window**: `∑_{m ∉ W} ‖a_m‖ ≤ (N/2)^{-s} √(2 ζ(2s)) √N
-√(windowTailNormSq N φ)`, by tiling the complement of the window with the aliasing tails. -/
+/-- **The $\ell^1$ tail outside the window.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$. Then
+$$\sum_{m \notin W_N} |a_m| \le (N/2)^{-s} \sqrt{2\zeta(2s)} \sqrt{N} \Bigl(\sum_{m \notin W_N}
+  \bigl(w_s(m) |a_m|\bigr)^2\Bigr)^{1/2}.$$
+The proof tiles the complement of the window with the aliasing tails. -/
 theorem tsum_norm_coeff_notMem_window_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖)
@@ -455,7 +526,8 @@ theorem tsum_norm_coeff_notMem_window_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
         Finset.sum_le_sum fun k hk => (summable_norm_coeff_add_mul_and_tsum_le hs hN φ hk).2
     _ ≤ _ := sum_window_mul_sqrt_aliasNormSq_le hN φ
 
-/-- Outside the window `|m| ≥ N/2`, so `‖a_m‖² ≤ (N/2)^{-2s} (w(m) ‖a_m‖)²`. -/
+/-- For $s \ge 0$, $N \ge 1$ and $m \notin W_N$, $|a_m|^2 \le (N/2)^{-2s} (w_s(m) |a_m|)^2$, because
+$|m| \ge N/2$ outside the window. -/
 private theorem norm_coeff_sq_le_of_not_mem_window (hs : 0 ≤ s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) {m : ℤ} (hm : m ∉ window N) :
     ‖coeff φ m‖ ^ 2
@@ -479,8 +551,8 @@ private theorem norm_coeff_sq_le_of_not_mem_window (hs : 0 ≤ s) {N : ℕ} (hN 
     _ ≤ _ := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hpow (by positivity))
         (by positivity)
 
-/-- A family bounded off the window by `C` times the weighted energy sums, outside the window, to
-at most `C · windowTailNormSq N φ`. -/
+/-- A nonnegative family $g$ with $g(m) \le C (w_s(m) |a_m|)^2$ for all $m \notin W_N$ has $\sum_{m
+\notin W_N} g(m) \le C \sum_{m \notin W_N} (w_s(m) |a_m|)^2$. -/
 private theorem tsum_ite_window_le_mul_windowTailNormSq {N : ℕ} (φ : PeriodicSobolev s) {C : ℝ}
     {g : ℤ → ℝ} (hg : ∀ m, 0 ≤ g m)
     (hle : ∀ m ∉ window N, g m ≤ C * (periodicSobolevWeight s m * ‖coeff φ m‖) ^ 2) :
@@ -497,7 +569,9 @@ private theorem tsum_ite_window_le_mul_windowTailNormSq {N : ℕ} (φ : Periodic
     (Summable.of_nonneg_of_le (fun m => by split_ifs <;> [exact le_rfl; exact hg m]) hle'
       ((summable_ite_window N φ).mul_left _)).hasSum ((summable_ite_window N φ).mul_left _).hasSum
 
-/-- **The `ℓ²` tail outside the window**: `∑_{m ∉ W} ‖a_m‖² ≤ (N/2)^{-2s} windowTailNormSq N φ`. -/
+/-- **The $\ell^2$ tail outside the window.** Let $s \ge 0$, $N \ge 1$ and $\varphi \in H^s$. Then
+$$\sum_{m \notin W_N} |a_m|^2 \le (N/2)^{-2s} \sum_{m \notin W_N} \bigl(w_s(m) |a_m|\bigr)^2.$$
+-/
 theorem tsum_norm_coeff_sq_notMem_window_le (hs : 0 ≤ s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∑' m : ℤ, (if m ∈ window N then (0 : ℝ) else ‖coeff φ m‖ ^ 2)
@@ -513,7 +587,10 @@ namespace DFT
 
 open Complex
 
-/-- A sum over `k < N` of the frequencies `k − N/2` is a sum over the centred window. -/
+/-- A sum over the shifted frequencies $k - \lfloor N/2 \rfloor$, $k = 0, \dots, N - 1$, is a sum
+over the centred window: for every $F : \mathbb{Z} \to \mathbb{C}$,
+$$\sum_{k=0}^{N-1} F(k - \lfloor N/2 \rfloor) = \sum_{q \in W_N} F(q).$$
+-/
 theorem sum_range_eq_sum_window (N : ℕ) (F : ℤ → ℂ) :
     ∑ k ∈ Finset.range N, F ((k : ℤ) + -((N / 2 : ℕ) : ℤ)) = ∑ q ∈ window N, F q := by
   refine Finset.sum_nbij' (fun k => (k : ℤ) + -((N / 2 : ℕ) : ℤ))
@@ -542,10 +619,15 @@ open Complex DFT Quadrature
 
 variable {s : ℝ}
 
-/-- **The discrete Fourier coefficients of the sum of the series are the aliasing sums**: for
-`s > 1/2`, `DFT.coeff N m (eval (2π) φ) k = ∑_j a_{k + m + j N}`. Mathlib's aliasing identity
-`DFT.coeff_eq_tsum_fourierCoeff`, with the Fourier coefficients of `eval` read off by
-`fourierCoeff_lift_eval`. -/
+/-- **The discrete Fourier coefficients of the sum of the series are the aliasing sums.** Let
+$s > 1/2$, $N \ge 1$, $m \in \mathbb{Z}$ and $\varphi \in H^s$, and let $f$ be the sum of the
+series $\sum_p a_p e^{ipx}$. Then for every natural number $k$, the discrete Fourier coefficient
+of $f$ on $N$ nodes over the window that starts at $m$ is
+$$\sum_{j \in \mathbb{Z}} a_{k + m + jN}.$$
+
+The function $f$ is `PeriodicSobolev.eval (2 * π) φ`. The proof is the aliasing identity
+`DFT.coeff_eq_tsum_fourierCoeff`, with the Fourier coefficients of $f$ read off by
+`PeriodicSobolev.fourierCoeff_lift_eval`. -/
 theorem dftCoeff_eval (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (m : ℤ) (φ : PeriodicSobolev s)
     (k : ℕ) :
     DFT.coeff N m (eval (2 * π) φ) k = ∑' j : ℤ, coeff φ ((k : ℤ) + m + j * N) := by
@@ -556,8 +638,14 @@ theorem dftCoeff_eval (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (m : ℤ) (φ : Pe
   simp only [ContinuousMap.coe_mk, Function.Periodic.lift_coe, fourierCoeff_lift_eval hs] at h
   exact h
 
-/-- Over the centred window, the discrete coefficient at the frequency `q` is the exact one plus
-the aliasing tail: `f̃_q = a_q + ∑_{j ≠ 0} a_{q + j N}`. -/
+/-- Over the centred window, the discrete coefficient is the exact one plus the aliasing tail. Let
+$s > 1/2$, $N \ge 1$, $\varphi \in H^s$ and $q \in W_N$, and let $\tilde f_q$ be the discrete
+Fourier coefficient of $f = \sum_p a_p e^{ipx}$ at the frequency $q$ over the window $W_N$. Then
+$$\tilde f_q = a_q + \sum_{j \ne 0} a_{q + jN}.$$
+
+The coefficient $\tilde f_q$ is `DFT.coeff N (-(N / 2)) f (q + N / 2).toNat`, the coefficient
+over the window that starts at $-\lfloor N/2 \rfloor$, at the index $q + \lfloor N/2 \rfloor \in
+\{0, \dots, N - 1\}$. -/
 theorem dftCoeff_eval_window (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s)
     {q : ℤ} (hq : q ∈ window N) :
     DFT.coeff N (-((N / 2 : ℕ) : ℤ)) (eval (2 * π) φ) (q + ((N / 2 : ℕ) : ℤ)).toNat
@@ -574,19 +662,21 @@ theorem dftCoeff_eval_window (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Perio
   rw [hsum.tsum_eq_add_tsum_ite 0, aliasTail]
   simp
 
-/-- The coefficients of the interpolation error `eval φ − Π_N (eval φ)`: minus the aliasing tail
-on the window, the exact coefficient outside it. -/
+/-- The coefficients $d_m$ of the interpolation error $f - \Pi_N f$: the negative aliasing tail
+$-\sum_{j \ne 0} a_{m + jN}$ for $m \in W_N$, and the exact coefficient $a_m$ for
+$m \notin W_N$. -/
 noncomputable def interpErrorCoeff (N : ℕ) (φ : PeriodicSobolev s) (m : ℤ) : ℂ :=
   if m ∈ window N then -aliasTail N φ m else coeff φ m
 
-/-- The moduli of the error coefficients. -/
+/-- The moduli of the error coefficients: $|d_m| = |\sum_{j \ne 0} a_{m + jN}|$ for $m \in W_N$, and
+$|d_m| = |a_m|$ otherwise. -/
 theorem norm_interpErrorCoeff (N : ℕ) (φ : PeriodicSobolev s) (m : ℤ) :
     ‖interpErrorCoeff N φ m‖ = if m ∈ window N then ‖aliasTail N φ m‖ else ‖coeff φ m‖ := by
   rw [interpErrorCoeff]
   split_ifs <;> simp
 
-/-- The error coefficients are absolutely summable: the series of the error converges
-uniformly. -/
+/-- For $s > 1/2$, the error coefficients $d_m$ are absolutely summable, so the series of the
+interpolation error converges uniformly. -/
 theorem summable_norm_interpErrorCoeff (hs : 1 / 2 < s) (N : ℕ) (φ : PeriodicSobolev s) :
     Summable fun m => ‖interpErrorCoeff N φ m‖ := by
   have h1 : Summable fun m : ℤ => if m ∈ window N then ‖aliasTail N φ m‖ else 0 :=
@@ -596,8 +686,13 @@ theorem summable_norm_interpErrorCoeff (hs : 1 / 2 < s) (N : ℕ) (φ : Periodic
   rw [norm_interpErrorCoeff]
   split_ifs <;> simp
 
-/-- **The interpolation error is a trigonometric series** with coefficients
-`interpErrorCoeff`: `eval φ x − Π_N (eval φ) x = ∑_m d_m e^{i m x}`. -/
+/-- **The interpolation error is a trigonometric series.** Let $s > 1/2$, $N \ge 1$ and
+$\varphi \in H^s$, and let $f = \sum_m a_m e^{imx}$. Then for every $x \in \mathbb{R}$,
+$$f(x) - \Pi_N f(x) = \sum_{m \in \mathbb{Z}} d_m e^{imx},$$
+where $d_m$ are the coefficients `PeriodicSobolev.interpErrorCoeff N φ m`.
+
+The character $e^{imx}$ is `fourier m` at the class of $x$ in `AddCircle (2 * π)`, and the
+interpolant $\Pi_N f$ is `DFT.interp N (-(N / 2)) f`. -/
 theorem eval_sub_interp_eq_tsum (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s)
     (x : ℝ) :
     eval (2 * π) φ x - DFT.interp N (-((N / 2 : ℕ) : ℤ)) (eval (2 * π) φ) x
@@ -632,7 +727,7 @@ theorem eval_sub_interp_eq_tsum (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : Pe
 
 end PeriodicSobolev
 
-/-! ### The interpolation error in `L²` and in the sup norm -/
+/-! ### The interpolation error in $L^2$ and in the maximum norm -/
 
 namespace PeriodicSobolev
 
@@ -640,8 +735,11 @@ open Complex DFT
 
 variable {s : ℝ}
 
-/-- The `ℓ²` norm of the interpolation-error coefficients splits into the aliasing errors over the
-window and the tail outside it. -/
+/-- For $s > 1/2$, the sum of squares of the error coefficients splits into the aliasing errors over
+the window and the tail outside it:
+$$\sum_m |d_m|^2 = \sum_{m \in W_N} \Bigl|\sum_{j \ne 0} a_{m + jN}\Bigr|^2 + \sum_{m \notin
+  W_N} |a_m|^2.$$
+-/
 theorem tsum_norm_interpErrorCoeff_sq (hs : 1 / 2 < s) (N : ℕ) (φ : PeriodicSobolev s) :
     ∑' m : ℤ, ‖interpErrorCoeff N φ m‖ ^ 2
       = ∑ m ∈ window N, ‖aliasTail N φ m‖ ^ 2
@@ -669,8 +767,10 @@ theorem tsum_norm_interpErrorCoeff_sq (hs : 1 / 2 < s) (N : ℕ) (φ : PeriodicS
     · rfl
     · rw [norm_interpErrorCoeff, ite_eq_right hm]
 
-/-- **Parseval for the interpolation error**:
-`∫_0^{2π} ‖eval φ − Π_N (eval φ)‖² = 2π ∑_m ‖d_m‖²`. -/
+/-- **Parseval's identity for the interpolation error.** For $s > 1/2$, $N \ge 1$ and
+$\varphi \in H^s$,
+$$\int_0^{2\pi} |f(x) - \Pi_N f(x)|^2 \, dx = 2\pi \sum_{m \in \mathbb{Z}} |d_m|^2.$$
+-/
 theorem intervalIntegral_norm_eval_sub_interp_sq (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∫ x in (0 : ℝ)..2 * π,
@@ -679,8 +779,11 @@ theorem intervalIntegral_norm_eval_sub_interp_sq (hs : 1 / 2 < s) {N : ℕ} (hN 
   simp_rw [eval_sub_interp_eq_tsum hs hN φ]
   exact intervalIntegral_norm_tsum_smul_fourier_sq (summable_norm_interpErrorCoeff hs N φ)
 
-/-- **The `L²` interpolation error** in terms of the energy outside the window:
-`∫_0^{2π} ‖eval φ − Π_N (eval φ)‖² ≤ 2π (N/2)^{-2s} (1 + 2 ζ(2s)) · windowTailNormSq N φ`. -/
+/-- **The $L^2$ interpolation error** in terms of the weighted energy outside the window. For
+$s > 1/2$, $N \ge 1$ and $\varphi \in H^s$,
+$$\int_0^{2\pi} |f(x) - \Pi_N f(x)|^2 \, dx \le 2\pi (N/2)^{-2s} \bigl(1 + 2\zeta(2s)\bigr)
+  \sum_{m \notin W_N} \bigl(w_s(m) |a_m|\bigr)^2.$$
+-/
 theorem intervalIntegral_norm_eval_sub_interp_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ∫ x in (0 : ℝ)..2 * π,
@@ -698,21 +801,22 @@ theorem intervalIntegral_norm_eval_sub_interp_sq_le (hs : 1 / 2 < s) {N : ℕ} (
         mul_le_mul_of_nonneg_left (add_le_add h1 h2) hpi
     _ = _ := by ring
 
-/-- `(N/2)^{-s} = 2^s N^{-s}`. -/
+/-- For real $s$ and $N \ge 1$, $(N/2)^{-s} = 2^s N^{-s}$. -/
 theorem div_two_rpow_neg (s : ℝ) {N : ℕ} (hN : 0 < N) :
     ((N : ℝ) / 2) ^ (-s) = (2 : ℝ) ^ s * (N : ℝ) ^ (-s) := by
   rw [Real.rpow_neg (by positivity), Real.rpow_neg (by positivity),
     Real.div_rpow (by positivity) (by positivity)]
   field_simp
 
-/-- **The `L²` interpolation error** (the first interpolation estimate of
-[quarteroni2000numerical] §10.9, in coefficient form): for `s > 1/2` and `φ ∈ H^s`,
+/-- **The $L^2$ interpolation error.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$, and let
+$f = \sum_m a_m e^{imx}$. Then
+$$\|f - \Pi_N f\|_{L^2(0, 2\pi)} \le \sqrt{2\pi(1 + 2\zeta(2s))} \, 2^s N^{-s} \|\varphi\|_s,$$
+where $\Pi_N f$ is the discrete Fourier series of $f$ over the centred window. This is the first
+unnumbered interpolation estimate of [quarteroni2000numerical], §10.9, in coefficient form.
 
-`‖eval φ − Π_N (eval φ)‖_{L²(0,2π)} ≤ √(2π (1 + 2 ζ(2s))) · 2^s · N^{-s} ‖φ‖`,
-
-where `Π_N` is the discrete Fourier series over the centred window (`DFT.interp` at
-`m = −N/2`). The error splits into the aliasing error over the window and the truncation error
-outside it; both are `O(N^{-s})` by the weighted energy outside the window. -/
+The interpolant $\Pi_N f$ is `DFT.interp N (-(N / 2)) f`, the window $m = -\lfloor N/2 \rfloor$.
+The error splits into the aliasing error over the window and the truncation error outside it.
+Both are $O(N^{-s})$, by the bound on the weighted energy outside the window. -/
 theorem sqrt_intervalIntegral_norm_eval_sub_interp_sq_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     √(∫ x in (0 : ℝ)..2 * π,
@@ -731,14 +835,17 @@ theorem sqrt_intervalIntegral_norm_eval_sub_interp_sq_le (hs : 1 / 2 < s) {N : �
   rw [← hsqrt]
   exact Real.sqrt_le_sqrt hbound
 
-/-- **The sup-norm interpolation error** (the second interpolation estimate of
-[quarteroni2000numerical] §10.9, in coefficient form): for `s > 1/2`, `φ ∈ H^s` and every `x`,
+/-- **The interpolation error in the maximum norm.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$,
+and let $f = \sum_m a_m e^{imx}$. Then for every $x \in \mathbb{R}$,
+$$|f(x) - \Pi_N f(x)| \le 2 \sqrt{2\zeta(2s)} \, 2^s N^{1/2 - s} \|\varphi\|_s.$$
+This is the second unnumbered interpolation estimate of [quarteroni2000numerical], §10.9, in
+coefficient form.
 
-`|eval φ x − Π_N (eval φ) x| ≤ 2 √(2 ζ(2s)) · 2^s · N^{1/2 − s} ‖φ‖`.
-
-The error is a trigonometric series with coefficients `interpErrorCoeff`, bounded by the sum of
-their moduli: the `ℓ¹` aliasing bound over the window and the `ℓ¹` tail outside it, each
-`(N/2)^{-s} √(2 ζ(2s)) √N √(windowTailNormSq)`. -/
+The error is a trigonometric series with the coefficients `PeriodicSobolev.interpErrorCoeff`, so
+it is bounded by the sum of their moduli. This sum is the $\ell^1$ aliasing bound over the
+window plus the $\ell^1$ tail outside it, and each is at most
+$(N/2)^{-s} \sqrt{2\zeta(2s)} \sqrt{N}$ times the square root of the weighted energy outside the
+window. -/
 theorem norm_eval_sub_interp_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s)
     (x : ℝ) :
     ‖eval (2 * π) φ x - DFT.interp N (-((N / 2 : ℕ) : ℤ)) (eval (2 * π) φ) x‖
@@ -786,21 +893,25 @@ namespace DFT
 
 open Complex
 
-/-- The trigonometric polynomial `x ↦ ∑_{q ∈ W} c_q e^{i q x}` with frequencies in the centred
-window: the general element of the space `S_N` of [quarteroni2000numerical] §10.9. -/
+/-- The trigonometric polynomial with frequencies in the centred window and coefficients $c$:
+$$v(x) = \sum_{q \in W_N} c_q e^{iqx}.$$
+It is the general element of the space $S_N$ of [quarteroni2000numerical], §10.9. -/
 noncomputable def windowTrigPoly (N : ℕ) (c : ℤ → ℂ) (x : ℝ) : ℂ :=
   ∑ q ∈ window N, c q * Complex.exp ((q : ℂ) * x * I)
 
-/-- A trigonometric polynomial over the window as a trigonometric series with finitely supported
-coefficients. -/
+/-- A trigonometric polynomial over the window is the trigonometric series whose coefficients are
+$c_q$ for $q \in W_N$ and $0$ otherwise. -/
 theorem windowTrigPoly_eq_tsum (N : ℕ) (c : ℤ → ℂ) (x : ℝ) :
     windowTrigPoly N c x
       = ∑' q : ℤ, (if q ∈ window N then c q else 0) • fourier q (x : AddCircle (2 * π)) := by
   rw [windowTrigPoly, tsum_eq_sum (s := window N) fun q hq => by simp [hq]]
   exact Finset.sum_congr rfl fun q hq => by rw [ite_eq_left hq, fourier_coe_two_pi, smul_eq_mul]
 
-/-- Parseval for a trigonometric polynomial over the window:
-`∫_0^{2π} ‖∑_{q ∈ W} c_q e^{iqx}‖² = 2π ∑_{q ∈ W} ‖c_q‖²`. -/
+/-- **Parseval's identity for a trigonometric polynomial over the window**: for
+$c : \mathbb{Z} \to \mathbb{C}$,
+$$\int_0^{2\pi} \Bigl|\sum_{q \in W_N} c_q e^{iqx}\Bigr|^2 \, dx = 2\pi \sum_{q \in W_N}
+  |c_q|^2.$$
+-/
 theorem intervalIntegral_norm_windowTrigPoly_sq (N : ℕ) (c : ℤ → ℂ) :
     ∫ x in (0 : ℝ)..2 * π, ‖windowTrigPoly N c x‖ ^ 2 = 2 * π * ∑ q ∈ window N, ‖c q‖ ^ 2 := by
   simp_rw [windowTrigPoly_eq_tsum]
@@ -819,8 +930,10 @@ open scoped ComplexConjugate
 
 variable {s : ℝ}
 
-/-- The scalar product of the sum of the series against a character picks out the coefficient:
-`∫_0^{2π} eval φ · conj (e^{iqx}) = 2π a_q`. -/
+/-- The scalar product of the sum of the series with a character gives the coefficient: for
+$s > 1/2$, $\varphi \in H^s$ and $q \in \mathbb{Z}$,
+$$\int_0^{2\pi} f(x) \, \overline{e^{iqx}} \, dx = 2\pi a_q.$$
+-/
 theorem intervalIntegral_eval_mul_conj_exp (hs : 1 / 2 < s) (φ : PeriodicSobolev s) (q : ℤ) :
     ∫ x in (0 : ℝ)..2 * π, eval (2 * π) φ x * conj (Complex.exp ((q : ℂ) * x * I))
       = 2 * π * coeff φ q := by
@@ -834,7 +947,11 @@ theorem intervalIntegral_eval_mul_conj_exp (hs : 1 / 2 < s) (φ : PeriodicSobole
   simp only [Function.Periodic.lift_coe, smul_eq_mul, fourier_neg, fourier_coe_two_pi]
   ring
 
-/-- `(eval φ, v)_{L²} = 2π ∑_{q ∈ W} a_q conj (c_q)` for `v = ∑_{q ∈ W} c_q e^{iqx}`. -/
+/-- The $L^2$ scalar product of $f$ with a trigonometric polynomial
+$v = \sum_{q \in W_N} c_q e^{iqx}$ over the window: for $s > 1/2$ and $\varphi \in H^s$,
+$$(f, v) = \int_0^{2\pi} f(x) \overline{v(x)} \, dx = 2\pi \sum_{q \in W_N} a_q
+  \overline{c_q}.$$
+-/
 theorem intervalIntegral_eval_mul_conj_windowTrigPoly (hs : 1 / 2 < s) (N : ℕ)
     (φ : PeriodicSobolev s) (c : ℤ → ℂ) :
     ∫ x in (0 : ℝ)..2 * π, eval (2 * π) φ x * conj (windowTrigPoly N c x)
@@ -850,7 +967,12 @@ theorem intervalIntegral_eval_mul_conj_windowTrigPoly (hs : 1 / 2 < s) (N : ℕ)
   simp only [map_mul]
   ring
 
-/-- `(eval φ, v)_N = 2π ∑_{q ∈ W} f̃_q conj (c_q)` with `f̃_q` the discrete coefficients. -/
+/-- The discrete scalar product of $f$ with a trigonometric polynomial
+$v = \sum_{q \in W_N} c_q e^{iqx}$ over the window: for $N \ge 1$ and $\varphi \in H^s$,
+$$(f, v)_N = \frac{2\pi}{N} \sum_{j=0}^{N-1} f(x_j) \overline{v(x_j)} = 2\pi \sum_{q \in W_N}
+  \tilde f_q \overline{c_q},$$
+where $x_j = 2\pi j/N$ and $\tilde f_q$ are the discrete Fourier coefficients of $f$ over the
+window, as in `PeriodicSobolev.dftCoeff_eval_window`. -/
 theorem discreteInner_eval_windowTrigPoly {N : ℕ} (hN : 0 < N) (φ : PeriodicSobolev s)
     (c : ℤ → ℂ) :
     ((2 * π / N : ℝ) : ℂ) * ∑ j ∈ Finset.range N,
@@ -878,15 +1000,19 @@ theorem discreteInner_eval_windowTrigPoly {N : ℕ} (hN : 0 < N) (φ : PeriodicS
   push_cast
   field_simp
 
-/-- **The discrete scalar product estimate** (the third unnumbered estimate of
-[quarteroni2000numerical] §10.9, in coefficient form): for `s > 1/2`, `φ ∈ H^s` and every
-trigonometric polynomial `v = ∑_{q ∈ W} c_q e^{iqx}` over the window,
+/-- **The estimate of the discrete scalar product.** Let $s > 1/2$, $N \ge 1$ and $\varphi \in H^s$,
+let $f = \sum_m a_m e^{imx}$, and let $v = \sum_{q \in W_N} c_q e^{iqx}$ be a trigonometric
+polynomial over the window. Then
+$$|(f, v) - (f, v)_N| \le \sqrt{2\pi} \sqrt{2\zeta(2s)} \, 2^s N^{-s} \|\varphi\|_s
+  \|v\|_{L^2(0, 2\pi)},$$
+where $(f, g) = \int_0^{2\pi} f \bar g$ and $(f, g)_N = (2\pi/N) \sum_{j<N} f(x_j)
+\overline{g(x_j)}$ with $x_j = 2\pi j/N$. This is the third unnumbered estimate of
+[quarteroni2000numerical], §10.9, in coefficient form.
 
-`|(eval φ, v) − (eval φ, v)_N| ≤ √(2π) √(2 ζ(2s)) · 2^s · N^{-s} ‖φ‖ ‖v‖_{L²(0,2π)}`,
-
-where `(f, g) = ∫_0^{2π} f conj g` and `(f, g)_N = (2π/N) ∑_{j<N} f(x_j) conj g(x_j)`. The
-difference is `2π ∑_{q ∈ W} (a_q − f̃_q) conj (c_q) = −2π ∑_{q ∈ W} aliasTail_q conj (c_q)`, and
-Cauchy–Schwarz over the window with the `ℓ²` aliasing bound and Parseval for `v` finish. -/
+The idea of the proof: the difference is $2\pi \sum_{q \in W_N} (a_q - \tilde f_q)
+\overline{c_q} = -2\pi \sum_{q \in W_N} \bigl(\sum_{j \ne 0} a_{q + jN}\bigr) \overline{c_q}$.
+The Cauchy–Schwarz inequality over the window, the $\ell^2$ aliasing bound and Parseval's
+identity for $v$ finish the proof. -/
 theorem norm_intervalIntegral_sub_discreteInner_le (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) (c : ℤ → ℂ) :
     ‖(∫ x in (0 : ℝ)..2 * π, eval (2 * π) φ x * conj (windowTrigPoly N c x))
@@ -952,25 +1078,31 @@ open Complex DFT Quadrature
 
 variable {s : ℝ}
 
-/-- **The trigonometric interpolant** `𝓘_n φ` of [han2009theoretical] §3.7 and Theorem 7.5.7: the
-trigonometric polynomial of degree at most `n` that agrees with the sum of the series of `φ` at
-the `2n + 1` equispaced nodes `2πj/(2n+1)`, read as an element of `PeriodicSobolev r` for any
-`r` (its coefficients are finitely supported). Its coefficients on the window `-n, …, n` are
-the discrete Fourier coefficients of `eval (2π) φ`, and `0` outside. -/
+/-- The **trigonometric interpolant** $\mathcal{I}_n \varphi$ of [han2009theoretical], §3.7 and
+Theorem 7.5.7: the trigonometric polynomial of degree at most $n$ that agrees with the sum $f$
+of the series of $\varphi \in H^s$ at the $2n + 1$ equispaced nodes $2\pi j/(2n + 1)$. Its
+coefficients on the window $\{-n, \dots, n\}$ are the discrete Fourier coefficients of $f$ over
+that window, and its other coefficients are $0$.
+
+It is an element of $H^r$ for any $r$, because only finitely many of its coefficients are
+nonzero. -/
 noncomputable def trigInterp (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) : PeriodicSobolev r :=
   ofCoeff r (fun q => if q ∈ window (2 * n + 1)
       then DFT.coeff (2 * n + 1) (-(n : ℤ)) (eval (2 * π) φ) (q + n).toNat else 0)
     (memℓp_two_iff.2 (summable_of_ne_finset_zero (s := window (2 * n + 1)) fun q hq => by
       simp [hq]))
 
-/-- The coefficients of the interpolant: the discrete Fourier coefficients on the window, `0`
-outside. -/
+/-- The coefficients of the interpolant $\mathcal{I}_n \varphi$: on the window $\{-n, \dots, n\}$,
+the discrete Fourier coefficients of $f$ on $2n + 1$ nodes; outside the window, $0$. -/
 theorem coeff_trigInterp (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) (q : ℤ) :
     coeff (trigInterp r n φ) q = if q ∈ window (2 * n + 1)
       then DFT.coeff (2 * n + 1) (-(n : ℤ)) (eval (2 * π) φ) (q + n).toNat else 0 := by
   rw [trigInterp, coeff_ofCoeff]
 
-/-- On the window, the interpolant's coefficient is the exact one plus the aliasing tail. -/
+/-- On the window, the coefficient of the interpolant is the exact one plus the aliasing tail: for
+$s > 1/2$ and $q \in \{-n, \dots, n\}$,
+$$(\mathcal{I}_n \varphi)_q = a_q + \sum_{j \ne 0} a_{q + j(2n+1)}.$$
+-/
 theorem coeff_trigInterp_of_mem (hs : 1 / 2 < s) (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s)
     {q : ℤ} (hq : q ∈ window (2 * n + 1)) :
     coeff (trigInterp r n φ) q = coeff φ q + aliasTail (2 * n + 1) φ q := by
@@ -980,7 +1112,11 @@ theorem coeff_trigInterp_of_mem (hs : 1 / 2 < s) (r : ℝ) (n : ℕ) (φ : Perio
   simp only [hn] at h
   exact h
 
-/-- The sum of the series of the interpolant is the discrete Fourier series of `eval φ`. -/
+/-- The sum of the series of the interpolant $\mathcal{I}_n \varphi$ is the discrete Fourier series
+of $f$ on $2n + 1$ nodes over the window $\{-n, \dots, n\}$.
+
+No hypothesis on $s$ is needed: the interpolant is built from the values of the function
+`PeriodicSobolev.eval (2 * π) φ`. -/
 theorem eval_trigInterp (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) :
     eval (2 * π) (trigInterp r n φ)
       = DFT.interp (2 * n + 1) (-(n : ℤ)) (eval (2 * π) φ) := by
@@ -996,8 +1132,11 @@ theorem eval_trigInterp (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) :
   have hk' : ((k : ℤ) + -(n : ℤ) + n).toNat = k := by omega
   rw [coeff_trigInterp, ite_eq_left hq, hk', periodicChar_eq_fourier, fourier_coe_two_pi]
 
-/-- **The interpolation property**: `𝓘_n φ` agrees with `φ` at the `2n + 1` equispaced nodes
-`2πj/(2n+1)`, `j < 2n + 1`. -/
+/-- **The interpolation property.** For every $\varphi \in H^s$, the interpolant
+$\mathcal{I}_n \varphi$ agrees with the sum $f$ of the series of $\varphi$ at the $2n + 1$
+equispaced nodes:
+$$\mathcal{I}_n \varphi(x_j) = f(x_j), \qquad x_j = \frac{2\pi j}{2n + 1}, \quad j < 2n + 1.$$
+-/
 theorem eval_trigInterp_angleNode (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) {j : ℕ}
     (hj : j < 2 * n + 1) :
     eval (2 * π) (trigInterp r n φ) (angleNode (2 * n + 1) j)
@@ -1005,7 +1144,10 @@ theorem eval_trigInterp_angleNode (r : ℝ) (n : ℕ) (φ : PeriodicSobolev s) {
   rw [eval_trigInterp]
   exact DFT.interp_angleNode (by omega) _ _ hj
 
-/-- The coefficients of `φ − 𝓘_n φ` are the interpolation-error coefficients. -/
+/-- For $s > 1/2$ and $r \le s$, the coefficients of $\varphi - \mathcal{I}_n \varphi$ in $H^r$ are
+the coefficients $d_m$ of the interpolation error on $2n + 1$ nodes.
+
+Here $\varphi$ is read in $H^r$ through the inclusion `PeriodicSobolev.incl`. -/
 theorem coeff_incl_sub_trigInterp (hs : 1 / 2 < s) {r : ℝ} (hrs : r ≤ s) (n : ℕ)
     (φ : PeriodicSobolev s) :
     coeff (incl hrs φ - trigInterp r n φ) = interpErrorCoeff (2 * n + 1) φ := by
@@ -1016,7 +1158,8 @@ theorem coeff_incl_sub_trigInterp (hs : 1 / 2 < s) {r : ℝ} (hrs : r ≤ s) (n 
     ring
   · rw [coeff_trigInterp, ite_eq_right hq, sub_zero]
 
-/-- On the window `-n, …, n` the `r`-weight is at most `n^r`, for `n ≥ 1` and `r ≥ 0`. -/
+/-- On the window $\{-n, \dots, n\}$ the weight is at most $n^r$: for $r \ge 0$, $n \ge 1$ and
+$q \in W_{2n+1}$, $w_r(q) \le n^r$. -/
 theorem weight_le_of_mem_window {r : ℝ} (hr : 0 ≤ r) {n : ℕ} (hn : 0 < n) {q : ℤ}
     (hq : q ∈ window (2 * n + 1)) : periodicSobolevWeight r q ≤ (n : ℝ) ^ r := by
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
@@ -1031,8 +1174,8 @@ theorem weight_le_of_mem_window {r : ℝ} (hr : 0 ≤ r) {n : ℕ} (hn : 0 < n) 
     have h4 := (Int.cast_le (R := ℝ)).mpr h3
     rwa [Int.cast_abs, Int.cast_natCast] at h4
 
-/-- Off the window `-n, …, n`, `|m| ≥ n + 1`, so `w_r(m)² ≤ (n+1)^{2(r−s)} w_s(m)²` for
-`0 ≤ r ≤ s`. -/
+/-- For $r \le s$ and $m \notin \{-n, \dots, n\}$, $w_r(m)^2 \le (n + 1)^{2(r - s)} w_s(m)^2$,
+because $|m| \ge n + 1$. -/
 private theorem weight_sq_le_of_not_mem_window {r : ℝ} (hrs : r ≤ s) {n : ℕ} {m : ℤ}
     (hm : m ∉ window (2 * n + 1)) :
     periodicSobolevWeight r m ^ 2
@@ -1052,15 +1195,16 @@ private theorem weight_sq_le_of_not_mem_window {r : ℝ} (hrs : r ≤ s) {n : �
   refine mul_le_mul_of_nonneg_right ?_ (by positivity)
   exact Real.rpow_le_rpow_of_nonpos (by positivity) habs (by linarith)
 
-/-- **[han2009theoretical] Theorem 7.5.7**: for `s > 1/2`, `φ ∈ H^s(2π)`, `0 ≤ r ≤ s` and
-`n ≥ 1`, the trigonometric interpolant satisfies
+/-- **Theorem 7.5.7** of [han2009theoretical]. Let $s > 1/2$, $0 \le r \le s$, $n \ge 1$ and
+$\varphi \in H^s$. Then the trigonometric interpolant $\mathcal{I}_n \varphi$ satisfies
+$$\|\varphi - \mathcal{I}_n \varphi\|_r \le c \, n^{r - s} \|\varphi\|_s, \qquad c = \sqrt{1 +
+  2\zeta(2s)}.$$
 
-`‖φ − 𝓘_n φ‖_r ≤ c n^{r − s} ‖φ‖_s`, `c = √(1 + 2 ζ(2s))`.
-
-The coefficients of `φ − 𝓘_n φ` are the aliasing tails on the window `-n, …, n` and the exact
-coefficients outside it; the `r`-weight is at most `n^r` on the window and at most
-`(n+1)^{r−s}` times the `s`-weight outside, so the `ℓ²` aliasing bound and the energy outside
-the window give the rate `n^{r−s}`. -/
+Here $\varphi$ is read in $H^r$ through `PeriodicSobolev.incl`. The idea of the proof: the
+coefficients of $\varphi - \mathcal{I}_n \varphi$ are the aliasing tails on the window
+$\{-n, \dots, n\}$ and the exact coefficients outside it. The $r$-weight is at most $n^r$ on the
+window, and at most $(n + 1)^{r - s}$ times the $s$-weight outside it. So the $\ell^2$ aliasing
+bound and the energy outside the window give the rate $n^{r - s}$. -/
 theorem norm_incl_sub_trigInterp_le (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (hrs : r ≤ s)
     {n : ℕ} (hn : 0 < n) (φ : PeriodicSobolev s) :
     ‖incl hrs φ - trigInterp r n φ‖ ≤ √(1 + 2 * zetaReal (2 * s)) * (n : ℝ) ^ (r - s) * ‖φ‖ := by

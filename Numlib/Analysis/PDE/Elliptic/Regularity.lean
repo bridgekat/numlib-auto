@@ -10,131 +10,215 @@ import Numlib.Analysis.Sobolev.Translate
 /-!
 # Regularity of weak solutions of elliptic equations
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.6:
-L. Nirenberg's method of translations (difference quotients) for the weak solutions of the
-Dirichlet problem for `-Δu + u = f`, and of second-order elliptic equations with `C¹`
-coefficients, on an open `Ω ⊆ ℝ^N`.
+This file proves the regularity theorem for the Dirichlet problem, Theorem 9.25 of
+[brezis2011functional], §9.6, by L. Nirenberg's method of translations. Let
+$\Omega \subseteq \mathbb{R}^N$ be open of class $C^2$ with bounded boundary, let
+$f \in L^2(\Omega)$, and let $u \in H^1_0(\Omega)$ be the weak solution of $-\Delta u + u = f$, that
+is, $\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi$ for
+all $\varphi \in H^1_0(\Omega)$. Then $u \in H^2(\Omega)$ and $\|u\|_{H^2} \le C \|f\|_{L^2}$. If
+$\Omega$ is of class $C^{m+2}$ and $f \in H^m(\Omega)$, then $u \in H^{m+2}(\Omega)$ and
+$\|u\|_{H^{m+2}} \le C \|f\|_{H^m}$; for $m > N/2$ the solution lies in $C^2(\overline{\Omega})$,
+and on a $C^\infty$ domain it lies in $C^\infty(\overline{\Omega})$ when $f \in H^m(\Omega)$ for
+every $m$. The file also proves interior regularity on an arbitrary open set (Remark 25), Lemmas
+9.6, 9.7 and 9.8, and Theorem 9.26 (the Neumann problem) on the half space. The proofs use the
+translations of `Numlib.Analysis.Sobolev.Translate`, the forms of
+`Numlib.Analysis.PDE.Elliptic.Dirichlet` and the multipliers of
+`Numlib.Analysis.Calculus.ContDiffConstOffCompact`.
 
-## Contents
+The **difference quotient** is $D_h u(x) = (u(x + h) - u(x)) / \|h\|$, and $\tau_h u = u(\cdot + h)$
+is the translation. The half space is $\mathbb{R}^N_+ = \{x : x_N > 0\}$, a direction $e_j$ with
+$j \neq N$ is tangential, $Q$ is the cylinder of a boundary chart and $Q_+ = Q \cap \mathbb{R}^N_+$.
+A **test-function element** of $H^1(\Omega)$ is an element whose function is a test function on
+$\Omega$. For coefficients $A_{k\ell} \in L^\infty(\Omega)$, $a(u, v) = \sum_{k,\ell} \int_\Omega
+A_{k\ell}\, \partial_k u\, \partial_\ell v$ is the principal part of the general form (41) of
+[brezis2011functional], and the coefficients satisfy the **ellipticity condition** with constant
+$\alpha > 0$ if $\alpha \|\xi\|^2 \le \sum_{k,\ell} A_{k\ell}(x)\, \xi_k \xi_\ell$ for almost every
+$x$ and every $\xi$.
 
-* **Difference quotients.** For an open set `Ω` invariant under the translation by `h`
-  (`IsTranslationInvariant Ω h`), the translation `u ↦ u(· + h)` acts isometrically on `L^p(Ω)`
-  (`MeasureTheory.Lp.translate`) and on `W^{k,p}(Ω)` (`SobolevMultiIndex.translateL`) and
-  commutes with the weak derivatives (`Numlib/Analysis/Sobolev/Translate.lean`); the difference
-  quotient `D_h u = (u(· + h) − u)/|h|` (`Elliptic.diffQuot`) is `Elliptic.diffQuotLp` on
-  `L^p(Ω)` and `Elliptic.diffQuotL` on `W^{k,p}(Ω)`, with the adjointness
-  `⟪D_h u, v⟫ = ⟪u, D_{−h} v⟫`.
-* **Weak derivatives from bounded difference quotients**
-  (`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`): if the difference quotients
-  `D_{t y} u`, `t → 0`, are bounded in a Hilbert space `H` mapped continuously into `L²(Ω)`, then
-  `∂_y u` exists, lies in `H`, and has norm at most the bound — the weak compactness that replaces
-  both uses of Proposition 9.3 in the book's proof and the "delicate point" of Lemma 9.7.
-* **Theorem 9.25.** The `H²` clause: case A (`Elliptic.regularity_top`), case B
-  (`Elliptic.regularity_upperHalfSpace`, with Lemmas 9.6 and 9.7), case C₁ = Remark 25
-  (`Elliptic.regularity_interior`, `regularity_interior_higher`), case C₂ through the charts
-  (`Elliptic.transfer_chart`, Lemma 9.8), assembled in `Elliptic.regularity_dirichlet_mem` and,
-  with the constant from the closed graph theorem, `Elliptic.regularity_dirichlet`. The
-  `H^{m+2}` clause (`Elliptic.regularity_dirichlet_higher`, membership
-  `regularity_dirichlet_higher_mem`) is the same induction on the order one level up: the
-  multipliers `IsContDiffConstOffCompact` (smooth functions constant off a compact set,
-  closed under derivatives, products and inversion,
-  `Numlib/Analysis/Calculus/ContDiffConstOffCompact.lean`) keep `H^k` stable
-  (`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`), the differentiated
-  variable-coefficient equation (`Elliptic.forall_testFunction_deriv_general`) drives the
-  induction on the half space (`Elliptic.memSobolevMultiIndex_of_tangential_of_order`), and the
-  chart transfers hold at every order (`Elliptic.memSobolevMultiIndex_comp_chart_of_order`). The
-  `C²(Ω̄)` and `C^∞(Ω̄)` clauses (`Elliptic.regularity_dirichlet_contDiffOn`,
-  `regularity_dirichlet_smooth`) follow from Corollary 9.15.
-* **The test space is a parameter of case B.** `Elliptic.exists_sobolevEuclidean_two_of_tangential`
-  and `Elliptic.memSobolevMultiIndex_of_tangential_of_order` take the space `K` of admissible test
-  elements as an argument, asking of it only that it contain the test-function elements, be
-  invariant under the translations that leave `Ω` invariant and (at higher order) carry the
-  tangential derivatives of its `H²` elements. The Dirichlet problem is `K = H^1_0(Ω)`, where the
-  last condition is the book's Lemma 9.7 (`Elliptic.tangentialDeriv_hyp_zero`); the Neumann
-  problem is `K = ⊤`, where the first two conditions are trivial, and the `H²` clause of
-  Theorem 9.26 on the half space (`Elliptic.regularity_neumann_upperHalfSpace`) comes at no
-  extra cost.
-* **Theorem 9.26 on the half space at every order.** The third condition — Lemma 9.7 for
-  `K = ⊤`, that a tangential derivative of a Neumann solution is a Neumann solution with the
-  differentiated datum — is `Elliptic.tangentialDeriv_hyp_top`. Its proof replaces the book's
-  weak compactness by two integrations by parts along `e_j` against a test function of `ℝ^N`
-  (`Elliptic.integral_fderiv_mul_eq_neg_of_tangential`, legitimate on the half space because the
-  cut-offs `Elliptic.normalCutoff n` that push such a test function inside `ℝ^N_+` depend on
-  `x_N` alone and so are constant along `e_j`) together with Corollary 9.8 on the half space,
-  which makes those test functions dense (`Elliptic.isTestFunctionDense_upperHalfSpace`). The
-  result is `Elliptic.regularity_neumann_upperHalfSpace_higher_mem` and, for the book's equation
-  `−Δu + u = f`, `regularity_neumann_upperHalfSpace_higher_mem_laplace`.
+## Main definitions
 
-## References
+* `Elliptic.diffQuot`: the difference quotient $D_h u$ of a function.
+* `Elliptic.diffQuotLp`, `Elliptic.diffQuotL`: $D_h = (\tau_h - I)/\|h\|$ as a bounded operator on
+  $L^p(\Omega)$ and on $W^{k,p}(\Omega)$, for $\Omega$ invariant under the translation by $h$.
+* `Elliptic.kroneckerCoeff`: the identity coefficients $\delta_{k\ell}$, for which $a$ is the
+  Dirichlet form.
+* `Elliptic.regularityConst`: the constant of the $H^2$ estimate on a tangentially invariant open
+  set.
+* `Elliptic.chartCoeff`, `Elliptic.chartDatum`: the coefficients and the datum of the equation
+  transferred by a chart (Lemma 9.8).
+* `Elliptic.extendCoeff`: the coefficients $\chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$ that extend
+  a family of coefficients by the identity.
+* `Elliptic.normalCutoff`: a smooth cut-off of the half space that depends on $x_N$ only.
+* `Elliptic.IsTangentialByParts`, `Elliptic.IsTestFunctionDense`: integration by parts along a
+  direction against the test functions on $\mathbb{R}^N$, and density of those test functions in
+  $H^1(\Omega)$.
 
-[brezis2011functional], §9.6: Theorem 9.25 and its proof (cases A, B, C₁, C₂), Lemmas 9.6–9.8,
-Remark 25.
+## Main results
 
-## Not formalized here
+* `Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`: if the difference quotients
+  $D_{t y} u$, $t \to 0$, are bounded in a Hilbert space mapped continuously into $L^2(\Omega)$,
+  then $\partial_y u$ exists in that space, with the same bound.
+* `Elliptic.norm_diffQuotLp_fnL_le`, `Elliptic.eLpNorm_diffQuot_le_of_tangential`: Lemma 9.6,
+  $\|D_h v\|_2 \le \|\nabla v\|_2$.
+* `Elliptic.gradNorm_diffQuotL_le`: the tangential estimate (66), $\|\nabla D_h u\|_2 \le
+  \alpha^{-1}(\|g\|_2 + N^2 M \|\nabla u\|_2)$.
+* `Elliptic.regularity_top`, `Elliptic.regularity_top_higher`: case A of Theorem 9.25, on
+  $\mathbb{R}^N$.
+* `Elliptic.regularity_interior`, `Elliptic.regularity_interior_higher`,
+  `Elliptic.memSobolevMultiIndexLoc_of_forall_testFunction_add_mul`: case $C_1$ and Remark 25,
+  interior $H^{m+2}$ regularity on an arbitrary open set.
+* `Elliptic.exists_sobolevEuclidean_two_of_tangential`,
+  `Elliptic.memSobolevMultiIndex_of_tangential_of_order`: $H^2$ and $H^{m+2}$ regularity on a
+  tangentially invariant open set for a variable-coefficient elliptic form, with the test space as a
+  parameter.
+* `Elliptic.regularity_upperHalfSpace`, `Elliptic.regularity_upperHalfSpace_higher`: case B of
+  Theorem 9.25, on $\mathbb{R}^N_+$.
+* `Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`,
+  `Elliptic.tangentialDeriv_mem_zero_of_isGalerkinSolution`: Lemma 9.7.
+* `Elliptic.transfer_chart`: Lemma 9.8, the equation transferred by a chart.
+* `Elliptic.memSobolevMultiIndex_two_of_tangential_of_compact`,
+  `Elliptic.memSobolevMultiIndex_of_tangential_of_compact_of_order`: case $C_2$ on the model
+  cylinder.
+* `Elliptic.memSobolevMultiIndex_two_comp_chart`,
+  `Elliptic.memSobolevMultiIndex_comp_chart_of_order`: $H^k$ is preserved by the inverse chart.
+* `Elliptic.regularity_dirichlet_mem`, `Elliptic.regularity_dirichlet`: Theorem 9.25, the $H^2$
+  clause.
+* `Elliptic.regularity_dirichlet_higher_mem_laplace`, `Elliptic.regularity_dirichlet_higher`:
+  Theorem 9.25, the $H^{m+2}$ clause.
+* `Elliptic.regularity_dirichlet_contDiffOn`, `Elliptic.regularity_dirichlet_smooth`: Theorem 9.25,
+  the $C^2(\overline{\Omega})$ and $C^\infty(\overline{\Omega})$ clauses.
+* `Elliptic.regularity_neumann_upperHalfSpace`,
+  `Elliptic.regularity_neumann_upperHalfSpace_higher_mem_laplace`: Theorem 9.26 on the half space,
+  the $H^2$ estimate and the $H^{m+2}$ membership.
 
-Two results that §9.6 states without proof are not in this module. What *is* proved nearby is
-Theorem 9.25 in all four clauses for the Dirichlet problem (`Elliptic.regularity_dirichlet`,
-`regularity_dirichlet_higher`, `regularity_dirichlet_contDiffOn`, `regularity_dirichlet_smooth`)
-and, for the Neumann problem, the `H²` estimate and the `H^{m+2}` membership on the half space
-(`Elliptic.regularity_neumann_upperHalfSpace`,
-`regularity_neumann_upperHalfSpace_higher_mem_laplace` — the book's own alternative "or else
-`Ω = ℝ^N_+`") together with the boundary condition `∂u/∂n = 0` of an `H²` Neumann solution on a
-bounded `C¹` domain
-(`BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean`).
+## Proof outline
 
-* **Theorem 9.26 (regularity for the Neumann problem) on a general domain.** For `Ω` of class
-  `C²` with `Γ` bounded, `f ∈ L²(Ω)` and `u ∈ H^1(Ω)` with `∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for
-  *every* `φ ∈ H^1(Ω)` (49), the conclusions of Theorem 9.25: `u ∈ H²(Ω)` with
-  `‖u‖_{H²} ≤ C ‖f‖_{L²}`, and `u ∈ H^{m+2}(Ω)` for `f ∈ H^m(Ω)` on a `C^{m+2}` domain. The book
-  proves nothing ("the proof of Theorem 9.26 is entirely analogous"), and the analogy breaks at
-  case C₂. The plan recorded the route "the localized `v = θᵢ u` satisfies the equation against
-  the test space `Vᵢ = {φ ∈ H^1(Ω ∩ Uᵢ) : φ = 0 near ∂Uᵢ ∩ Ω̄}`"; **that is false.** Testing (49)
-  against `θᵢ φ ∈ H^1(Ω)` gives, for `φ ∈ Vᵢ`,
-  `∫_{Ω∩Uᵢ} ∇(θᵢu)·∇φ = ∫_{Ω∩Uᵢ} (θᵢ f − θᵢ u − ∇u·∇θᵢ) φ + ∫_{Ω∩Uᵢ} u ∇θᵢ·∇φ`, and the last
-  term is `−∫ div(u ∇θᵢ) φ + ∫_{Γ∩Uᵢ} u (∂θᵢ/∂n) φ dσ`. The boundary term vanishes for
-  `φ ∈ 𝓓(Ω ∩ Uᵢ)`, which is why the Dirichlet case C₂ works, but not on `Vᵢ`: the localized
-  function `θᵢ u` satisfies the *inhomogeneous* Neumann condition `∂(θᵢu)/∂n = (∂θᵢ/∂n) u` on
-  `Γ ∩ Uᵢ`. In one dimension: `Ω = (0, ∞)`, `U = (−1, 1)`, `θ ∈ C_c^∞(U)` with `θ(0) = 1` and
-  `θ'(0) = a ≠ 0`; a Neumann solution has `u'(0) = 0`, so `(θu)'(0) = a u(0) ≠ 0` in general,
-  whereas a weak solution of `−v'' = g ∈ L²` on `(0, 1)` against `{φ ∈ H^1 : φ = 0 near 1}` must
-  have `v'(0) = 0`. The same computation shows that localizing *after* the chart transfer fails
-  too, the boundary term on the flat face `Q₀` being `∑_k a_{kN} w (∂_k ζ) ψ`, which a cut-off
-  `ζ` independent of `y_N` near `Q₀` kills only if the chart is orthogonal at the boundary.
+The proof follows the source. In case A ($\Omega = \mathbb{R}^N$), the equation is tested with
+$D_{-h}(D_h u)$; with Lemma 9.6 this bounds $\nabla D_h u$ in $L^2$, and the weak compactness of
+bounded difference quotients gives the second derivatives. This weak compactness replaces both uses
+of Proposition 9.3 in the proof of the source and the "delicate point" of Lemma 9.7. In case B (the
+half space), the same argument works in the tangential directions, and $\partial_N \partial_N u$
+comes from the equation. Case $C_1$ cuts off the solution away from the boundary and applies case A.
+Case $C_2$ transfers a boundary piece $\theta_i u$ to $Q_+$ by a chart (Lemma 9.8), extends it by
+zero to the half space, where it solves an equation with variable $C^1$ coefficients, applies case
+B, and transfers back. The $H^2$ clause is assembled in `Elliptic.regularity_dirichlet_mem`, and the
+constant comes from the closed graph theorem. The $H^{m+2}$ clause is the same induction one level
+up: multipliers that are smooth and constant outside a compact set keep $H^k$ stable
+(`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`), the differentiated variable-coefficient
+equation (`Elliptic.forall_testFunction_deriv_general`) drives the induction on the half space, and
+the chart transfers hold at every order. The $C^2(\overline{\Omega})$ and
+$C^\infty(\overline{\Omega})$ clauses follow from Corollary 9.15.
 
-  What does work is to cut off the *test function* instead: `w = u ∘ H ∈ H^1(Q₊)` does satisfy
-  the transferred equation against `{ψ ∈ H^1(Q₊) : ψ = 0 near the lateral and top boundary}`,
-  because the pullback of such a `ψ` extends by zero to an element of `H^1(Ω)` — no cut-off of
-  the solution is needed — and one then runs the method of translations with
-  `ψ = D_{−h}(ζ² D_h w)`, `ζ` a cut-off supported in `Q`. That is a Caccioppoli estimate:
-  `Elliptic.gradNorm_diffQuotL_le` and the chain above it would have to be redone with the
-  weight `ζ²` (the extra terms `∑ a_{kℓ} ∂_k w ∂_ℓ(ζ²) D_h w` absorbed by Young's inequality),
-  and the `H^{m+2}` clause would need a nested-cut-off induction in place of the book's global
-  one. Estimated well beyond the 600 lines the plan allowed, with no consumer in the corpus.
-  On the half space itself nothing has to be cut off — the solution is treated whole — which is
-  why `Elliptic.regularity_neumann_upperHalfSpace` and
-  `regularity_neumann_upperHalfSpace_higher_mem` *are* proved; it is exactly the passage to a
-  general domain, which must cut either the solution or the test function, that fails.
-* **Remark 24, the Dirichlet half** (planned as `Elliptic.regularity_dirichlet_general`): the
-  conclusions of Theorem 9.25 for a general second-order elliptic operator. For `Ω` of class
-  `C²` with bounded boundary, `a_{ij} ∈ C¹(Ω̄)` satisfying the ellipticity condition (36) (with
-  bounded derivatives if `Ω` is unbounded, footnote 26), `a_i ∈ C(Ω̄)`, `a₀ ∈ L^∞(Ω)`,
-  `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` with `generalForm Ω A a₁ a₀ u φ = ∫_Ω f φ` for all
-  `φ ∈ H^1_0(Ω)` (50): `u ∈ H²(Ω)`; and for `m ≥ 1`, `a_{ij} ∈ C^{m+1}(Ω̄)`, `a_i ∈ C^m(Ω̄)`,
-  `Ω` of class `C^{m+2}` and `f ∈ H^m(Ω)`: `u ∈ H^{m+2}(Ω)`. The book gives no proof. The route
-  is sound and is recorded here: case C₂ of Theorem 9.25 *is* already the variable-coefficient
-  estimate (`Elliptic.exists_sobolevEuclidean_two_of_tangential`,
-  `memSobolevMultiIndex_two_of_tangential_of_compact`), so one moves the lower-order terms
-  `∑ a_i ∂_i u + a₀ u ∈ L²(Ω)` to the right-hand side and only the principal part remains; cases
-  A and C₁ become that same tangential estimate with translations in every direction of `ℝ^N`
-  (the product rule for `D_h(a_{ij} ∂_i u)` is the only change from `Elliptic.regularity_top`);
-  case C₂ needs `Elliptic.transfer_chart` for a variable-coefficient equation (footnote 28: the
-  ellipticity condition is preserved under a change of variables) followed by the cylinder
-  estimate unchanged. Estimated ~600 lines beyond Theorem 9.25, with no consumer in the corpus.
-  The Neumann half of the same remark is further out of reach: it needs the general-coefficient
-  Neumann `H²` estimate, hence the missing Caccioppoli machinery above, and an `H²` Green
-  formula for the conormal derivative `∑_{ij} a_{ij} ν_j γ(∂_i u)`, which the boundary backbone
-  does not have.
+## Implementation notes
+
+* Sobolev spaces are spaces of classes, `SobolevEuclidean N k 2 Ω`. A function lies in $H^k(\Omega)$
+  when it is the function of an element (`MemSobolevMultiIndex`). A theorem that gives
+  $u \in H^2(\Omega)$ for $u \in H^1(\Omega)$ gives an element $U \in H^2(\Omega)$ whose function
+  agrees almost everywhere with that of $u$.
+* The weak equation $-\Delta u = g$ is `dirichletForm Ω u φ = load Ω g φ`, and the
+  variable-coefficient equation uses the principal part `generalForm Ω A 0 0`. Several lemmas
+  convert between this form with Sobolev elements and the form with integrals of functions against
+  test functions.
+* The test space is a parameter of case B. `Elliptic.exists_sobolevEuclidean_two_of_tangential` and
+  `Elliptic.memSobolevMultiIndex_of_tangential_of_order` take the subspace $K$ of admissible test
+  elements as an argument. They ask of it only that it contain the test-function elements, be
+  invariant under the translations that leave $\Omega$ invariant and, at higher order, carry the
+  tangential derivatives of its $H^2$ elements. The Dirichlet problem is $K = H^1_0(\Omega)$, where
+  the last condition is Lemma 9.7 (`Elliptic.tangentialDeriv_hyp_zero`). The Neumann problem is
+  $K = H^1(\Omega)$, where the first two conditions are trivial, so the $H^2$ clause of Theorem 9.26
+  on the half space comes at no extra cost.
+* For the Neumann problem at higher order, the third condition is
+  `Elliptic.tangentialDeriv_hyp_top`. Its proof replaces the weak compactness of the source by two
+  integrations by parts along $e_j$ against a test function on $\mathbb{R}^N$
+  (`Elliptic.integral_fderiv_mul_eq_neg_of_tangential`). These are legitimate on the half space,
+  because the cut-offs `Elliptic.normalCutoff n` that push such a test function inside
+  $\mathbb{R}^N_+$ depend on $x_N$ alone and so are constant along $e_j$. Corollary 9.8 on the half
+  space makes those test functions dense (`Elliptic.isTestFunctionDense_upperHalfSpace`).
+* The constants of the $H^2$ and $H^{m+2}$ estimates on a domain come from the closed graph theorem
+  (`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`,
+  `SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev`), not from the constants of the pieces.
+* The results on domains are stated in $\mathbb{R}^{d+1}$, because the charts of `ContDiffChart` are
+  maps of `EuclideanSpace ℝ (Fin (d + 1))`. The coordinate $x_N$ is the coordinate `Fin.last d`. "Of
+  class $C^n$" is `IsContDiffChartDomain n`, and the boundedness of $\partial\Omega$ is a separate
+  hypothesis.
+* $C^k(\overline{\Omega})$ is read as in [brezis2011functional], Chapter 9, footnote 16: a
+  representative that is continuous on $\mathbb{R}^N$ and $C^k$ on $\Omega$, whose derivatives up to
+  order $k$ agree on $\Omega$ with functions continuous on $\mathbb{R}^N$.
+  `Elliptic.exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex` gives the reading
+  `ContDiffOnClosure`.
+* The $C^\infty(\overline{\Omega})$ clause assumes $f \in H^m(\Omega)$ for every $m$ in place of
+  $f \in C^\infty(\overline{\Omega})$.
+* Theorem 9.26 on a general domain does not follow from the proof of Theorem 9.25: the analogy
+  breaks at case $C_2$. The natural localization, that $\theta_i u$ satisfies the equation against
+  the test space $V_i = \{\varphi \in H^1(\Omega \cap U_i) : \varphi = 0 \text{ near } \partial U_i
+  \cap \overline{\Omega}\}$, is false. Testing (49) with $\theta_i \varphi \in H^1(\Omega)$ gives,
+  for $\varphi \in V_i$, $\int_{\Omega \cap U_i} \nabla(\theta_i u) \cdot \nabla\varphi =
+  \int_{\Omega \cap U_i} (\theta_i f - \theta_i u - \nabla u \cdot \nabla\theta_i) \varphi +
+  \int_{\Omega \cap U_i} u\, \nabla\theta_i \cdot \nabla\varphi$, and the last term is $-\int
+  \operatorname{div}(u \nabla\theta_i)\, \varphi + \int_{\Gamma \cap U_i} u\, (\partial\theta_i /
+  \partial n)\, \varphi \, d\sigma$. The boundary term vanishes for
+  $\varphi \in \mathcal{D}(\Omega \cap U_i)$, which is why the Dirichlet case $C_2$ works, but not
+  on $V_i$: the localized function $\theta_i u$ satisfies the inhomogeneous Neumann condition
+  $\partial(\theta_i u)/\partial n = (\partial\theta_i/\partial n)\, u$ on $\Gamma \cap U_i$. In one
+  dimension, take $\Omega = (0, \infty)$, $U = (-1, 1)$ and $\theta \in C_c^\infty(U)$ with
+  $\theta(0) = 1$ and $\theta'(0) = a \neq 0$; a Neumann solution has $u'(0) = 0$, so
+  $(\theta u)'(0) = a u(0) \neq 0$ in general, whereas a weak solution of $-v'' = g \in L^2$ on
+  $(0, 1)$ against $\{\varphi \in H^1 : \varphi = 0 \text{ near } 1\}$ must have $v'(0) = 0$. The
+  same computation shows that localizing after the chart transfer fails too: the boundary term on
+  the flat face $Q_0$ is $\sum_k a_{kN}\, w\, (\partial_k \zeta)\, \psi$, which a cut-off $\zeta$
+  independent of $y_N$ near $Q_0$ removes only if the chart is orthogonal at the boundary. What does
+  work is to cut off the test function instead. The function $w = u \circ H \in H^1(Q_+)$ satisfies
+  the transferred equation against $\{\psi \in H^1(Q_+) : \psi = 0 \text{ near the lateral and top
+  boundary}\}$, because the pullback of such a $\psi$ extends by zero to an element of
+  $H^1(\Omega)$; one then runs the method of translations with $\psi = D_{-h}(\zeta^2 D_h w)$ for a
+  cut-off $\zeta$ supported in $Q$. This is a Caccioppoli estimate: `Elliptic.gradNorm_diffQuotL_le`
+  and the results it rests on would have to be redone with the weight $\zeta^2$, with the extra
+  terms $\sum a_{k\ell}\, \partial_k w\, \partial_\ell(\zeta^2)\, D_h w$ absorbed by Young's
+  inequality, and the $H^{m+2}$ clause would need an induction with nested cut-offs in place of the
+  global induction of the source. On the half space, which the source admits as an alternative
+  domain ("or else $\Omega = \mathbb{R}^N_+$"), nothing has to be cut off, because the solution is
+  treated whole; this is why `Elliptic.regularity_neumann_upperHalfSpace` and
+  `Elliptic.regularity_neumann_upperHalfSpace_higher_mem` are proved. The boundary condition
+  $\partial u / \partial n = 0$ of an $H^2$ Neumann solution on a bounded $C^1$ domain is
+  `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` in
+  `Numlib.Analysis.Sobolev.Boundary.Data`.
+* A route to the Dirichlet half of Remark 24 exists: case $C_2$ of Theorem 9.25 is already the
+  variable-coefficient estimate (`Elliptic.exists_sobolevEuclidean_two_of_tangential`,
+  `Elliptic.memSobolevMultiIndex_two_of_tangential_of_compact`), so one moves the lower-order terms
+  $\sum a_i \partial_i u + a_0 u \in L^2(\Omega)$ to the right side and only the principal part
+  remains. Cases A and $C_1$ become the same tangential estimate with translations in every
+  direction of $\mathbb{R}^N$ (the product rule for $D_h(a_{ij} \partial_i u)$ is the only change
+  from `Elliptic.regularity_top`), and case $C_2$ needs `Elliptic.transfer_chart` for a
+  variable-coefficient equation (footnote 28: the ellipticity condition is preserved under a change
+  of variables), followed by the cylinder estimate unchanged.
+
+## Not formalized
+
+* **Theorem 9.26 (regularity for the Neumann problem) on a general domain.** For $\Omega$ of class
+  $C^2$ with $\Gamma$ bounded, $f \in L^2(\Omega)$ and $u \in H^1(\Omega)$ with $\int_\Omega \nabla
+  u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi$ for every
+  $\varphi \in H^1(\Omega)$ (49), the source states the conclusions of Theorem 9.25:
+  $u \in H^2(\Omega)$ with $\|u\|_{H^2} \le C \|f\|_{L^2}$, and $u \in H^{m+2}(\Omega)$ for
+  $f \in H^m(\Omega)$ on a $C^{m+2}$ domain. The source gives no proof ("the proof of Theorem 9.26
+  is entirely analogous"). The analogy breaks at case $C_2$, its repair needs a Caccioppoli estimate
+  that is not formalized (see the implementation notes), and no other result of the library needs
+  it.
+* **Remark 24, the Dirichlet half.** The conclusions of Theorem 9.25 for a general second-order
+  elliptic operator. For $\Omega$ of class $C^2$ with bounded boundary,
+  $a_{ij} \in C^1(\overline{\Omega})$ satisfying the ellipticity condition (36) (with bounded
+  derivatives if $\Omega$ is unbounded, footnote 26), $a_i \in C(\overline{\Omega})$,
+  $a_0 \in L^\infty(\Omega)$, $f \in L^2(\Omega)$ and $u \in H^1_0(\Omega)$ with
+  $a(u, \varphi) = \int_\Omega f \varphi$ for all $\varphi \in H^1_0(\Omega)$ (50), where $a$ is
+  `Elliptic.generalForm Ω A a₁ a₀`, the conclusion is $u \in H^2(\Omega)$; and for $m \ge 1$,
+  $a_{ij} \in C^{m+1}(\overline{\Omega})$, $a_i \in C^m(\overline{\Omega})$, $\Omega$ of class
+  $C^{m+2}$ and $f \in H^m(\Omega)$, it is $u \in H^{m+2}(\Omega)$. The source gives no proof, and
+  no other result of the library needs it.
+* **Remark 24, the Neumann half.** It is further out of reach: it needs the general-coefficient
+  Neumann $H^2$ estimate, hence the Caccioppoli estimate of Theorem 9.26 on a general domain, and an
+  $H^2$ Green formula for the conormal derivative $\sum_{ij} a_{ij}\, \nu_j\, \gamma(\partial_i u)$,
+  which the boundary results of the library do not provide.
+* **Equation (58) of Lemma 9.7.** The equation that a tangential derivative $\partial_j u$ satisfies
+  when $g \in H^1$ is not stated in the form of the source.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -146,7 +230,8 @@ noncomputable section
 
 section InvariantHalfSpace
 
-/-- The half space is invariant under the tangential translations `t • y`, `y_N = 0`. -/
+/-- For $y \in \mathbb{R}^N$ with $y_N = 0$ and every $t \in \mathbb{R}$, the half space
+$\mathbb{R}^N_+ = \{x : x_N > 0\}$ is invariant under the translation by $t y$. -/
 theorem EuclideanSpace.isTranslationInvariant_upperHalfSpace {d : ℕ}
     {y : EuclideanSpace ℝ (Fin (d + 1))} (hy : y (Fin.last d) = 0) (t : ℝ) :
     IsTranslationInvariant (EuclideanSpace.upperHalfSpace d) (t • y) := fun x ↦ by
@@ -155,7 +240,7 @@ theorem EuclideanSpace.isTranslationInvariant_upperHalfSpace {d : ℕ}
 end InvariantHalfSpace
 
 
-/-! ### From second partial derivatives to `W^{2,p}(Ω)` -/
+/-! ### From second partial derivatives to $W^{2,p}(\Omega)$ -/
 
 section MultiIndexTwo
 
@@ -164,8 +249,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {Ω : Opens E} {μ : Measure E} [IsLocallyFiniteMeasure μ]
 
-/-- **`W^{1,p}(Ω)` by the basis directions**: `f ∈ W^{1,p}(Ω)` exactly when `f ∈ L^p(Ω)` and,
-for every basis vector `b i`, `f` has a weak derivative along `b i` in `L^p(Ω)`. -/
+/-- **$W^{1,p}(\Omega)$ by the basis directions.** A function $f$ lies in $W^{1,p}(\Omega)$ if and
+only if $f \in L^p(\Omega)$ and, for every basis vector $b_i$, $f$ has a weak derivative along
+$b_i$ on $\Omega$ that lies in $L^p(\Omega)$. -/
 theorem memSobolevMultiIndex_one_iff {f : E → F} :
     MemSobolevMultiIndex b f 1 p Ω μ ↔ MemLp f p (μ.restrict (Ω : Set E)) ∧ ∀ i,
       ∃ w : E → F, HasWeakIteratedLineDerivOn ![b i] f w Ω μ ∧
@@ -187,7 +273,8 @@ theorem memSobolevMultiIndex_one_iff {f : E → F} :
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] [Fact (1 ≤ p)] [IsLocallyFiniteMeasure μ] in
-/-- A multi-index of order two is `e_j + e_i` for some `i`, `j`. -/
+/-- A multi-index $\alpha$ with $|\alpha| = 2$ has the form $\alpha = e_j + e_i$ for some indices
+$i$ and $j$. -/
 theorem exists_eq_single_add_single_of_sum_eq_two {α : ι → ℕ} (hα : ∑ i, α i = 2) :
     ∃ i j, α = Pi.single j 1 + Pi.single i 1 := by
   obtain ⟨i, -, hi⟩ : ∃ i ∈ Finset.univ, α i ≠ 0 :=
@@ -211,7 +298,8 @@ theorem exists_eq_single_add_single_of_sum_eq_two {α : ι → ℕ} (hα : ∑ i
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] [Fact (1 ≤ p)] [IsLocallyFiniteMeasure μ] in
-/-- The tuple naming `e_j + e_i` is a rearrangement of `![b i, b j]`. -/
+/-- The tuple of directions that `multiIndexTuple` assigns to the multi-index $e_j + e_i$ is a
+rearrangement of the pair $(b_i, b_j)$. -/
 theorem multiIndexTuple_single_add_single_perm (b : ι → E) (i j : ι) :
     (List.ofFn (multiIndexTuple b (Pi.single j 1 + Pi.single i 1))).Perm
       (List.ofFn ![b i, b j]) := by
@@ -225,8 +313,10 @@ namespace SobolevMultiIndex
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
 omit [Fact (1 ≤ p)] [IsLocallyFiniteMeasure μ] in
-/-- The weak derivative `∂^α U` of an element is any `L^p(Ω)` element that is a weak derivative
-of its function along the tuple naming `α`, by the uniqueness of weak derivatives. -/
+/-- Let $U \in W^{k,p}(\Omega)$ have the function $f$ almost everywhere on $\Omega$, and let
+$|\alpha| \le k$. If $w \in L^p(\Omega)$ is a weak derivative of $f$ along the tuple of
+directions that names $\alpha$, then $\partial^\alpha U = w$. This is the uniqueness of weak
+derivatives. -/
 theorem weakDeriv_eq_of_hasWeakIteratedLineDerivOn {k : ℕ} (U : SobolevMultiIndex F b k p Ω μ)
     {f : E → F} (hU : fn U =ᵐ[μ.restrict (Ω : Set E)] f) (α : MultiIndexLE ι k)
     {w : Lp F p (μ.restrict (Ω : Set E))}
@@ -237,8 +327,10 @@ theorem weakDeriv_eq_of_hasWeakIteratedLineDerivOn {k : ℕ} (U : SobolevMultiIn
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 h
 
 omit [IsLocallyFiniteMeasure μ] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- **The norm of `W^{k,2}(Ω)` from a uniform bound on the derivatives**: if `‖∂^α U‖₂ ≤ C` for
-every `α` then `‖U‖ ≤ √(#{α}) C`. -/
+/-- **The norm of $W^{k,2}(\Omega)$ from a uniform bound on the derivatives.** If
+$U \in W^{k,2}(\Omega)$ and $\|\partial^\alpha U\|_2 \le C$ for every multi-index
+$|\alpha| \le k$, then $\|U\| \le \sqrt{n_k}\, C$, where $n_k$ is the number of multi-indices
+with $|\alpha| \le k$. -/
 theorem norm_le_sqrt_card_mul_of_forall_norm_weakDeriv_le {k : ℕ}
     (U : SobolevMultiIndex F b k 2 Ω μ) {C : ℝ} (hC : ∀ α, ‖weakDeriv U α‖ ≤ C) :
     ‖U‖ ≤ √(Fintype.card (MultiIndexLE ι k)) * C := by
@@ -254,12 +346,16 @@ theorem norm_le_sqrt_card_mul_of_forall_norm_weakDeriv_le {k : ℕ}
     _ = Fintype.card (MultiIndexLE ι k) * C ^ 2 := by
         simp [Finset.sum_const, Finset.card_univ]
 
-/-- **`W^{2,p}(Ω)` from the second partial derivatives, with bounds**: if `u ∈ W^{1,p}(Ω)` and
-each `∂ⱼu` has a weak derivative `w_{ij}` along every `b i`, an element of `L^p(Ω)` with
-`‖w_{ij}‖_p ≤ C`, then `u` is the function of an element `U ∈ W^{2,p}(Ω)`, whose second
-derivatives `∂^α U`, `|α| = 2`, are bounded by `C` and whose first derivatives are those of `u`.
-The bookkeeping of the multi-indices: `α = e_j + e_i` names a rearrangement of `![b i, b j]`
-(`multiIndexTuple_single_add_single_perm`), along which `w_{ij}` is a weak derivative of `u` by
+/-- **$W^{2,p}(\Omega)$ from the second partial derivatives, with bounds.** Let
+$u \in W^{1,p}(\Omega)$ and $C \in \mathbb{R}$. Suppose that for all $i$ and $j$ the derivative
+$\partial_j u$ has a weak derivative $w_{ij}$ along $b_i$ on $\Omega$, with
+$w_{ij} \in L^p(\Omega)$ and $\|w_{ij}\|_p \le C$. Then there is $U \in W^{2,p}(\Omega)$ with
+the same function as $u$ almost everywhere on $\Omega$, such that
+$\|\partial^\alpha U\|_p \le C$ for $|\alpha| = 2$ and
+$\|\partial^\alpha U\|_p \le \|u\|_{W^{1,p}}$ for $|\alpha| \le 1$.
+
+The multi-index $e_j + e_i$ names a rearrangement of the pair $(b_i, b_j)$
+(`multiIndexTuple_single_add_single_perm`), along which $w_{ij}$ is a weak derivative of $u$ by
 `HasWeakIteratedLineDerivOn.cons`. -/
 theorem exists_two_of_forall_exists (u : SobolevMultiIndex F b 1 p Ω μ) {C : ℝ}
     (h : ∀ i j, ∃ w : Lp F p (μ.restrict (Ω : Set E)), ‖w‖ ≤ C ∧
@@ -305,22 +401,29 @@ section DiffQuot
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedAddCommGroup F] [NormedSpace ℝ F] {h : E}
 
-/-- **The difference quotient** `D_h u = (τ_h u − u)/|h|`, `D_h u (x) = (u(x + h) − u(x))/|h|`,
-of [brezis2011functional] §9.6, case A (the method of translations of L. Nirenberg). -/
+/-- The **difference quotient** of $u : E \to F$ in the direction $h \in E$ is
+$$D_h u(x) = \frac{u(x + h) - u(x)}{\|h\|}.$$
+This is the difference quotient of the method of translations of L. Nirenberg, as in
+[brezis2011functional], §9.6, case A.
+
+The quotient is `‖h‖⁻¹ • (u (x + h) - u x)`. For $h = 0$ the factor $\|h\|^{-1}$ is $0$, so
+$D_0 u = 0$. -/
 def diffQuot (h : E) (u : E → F) : E → F := fun x ↦ ‖h‖⁻¹ • (u (x + h) - u x)
 
+/-- The value of the difference quotient: $D_h u(x) = \|h\|^{-1} (u(x + h) - u(x))$. -/
 theorem diffQuot_apply (h : E) (u : E → F) (x : E) :
     diffQuot h u x = ‖h‖⁻¹ • (u (x + h) - u x) :=
   rfl
 
-/-- The difference quotient as a scalar multiple of the difference of a translate and the
-function, in the `Pi` operations. -/
+/-- The difference quotient is $\|h\|^{-1}$ times the difference of the translate $u(\cdot + h)$ and
+$u$, in the pointwise operations on functions. -/
 theorem diffQuot_eq (h : E) (u : E → F) :
     diffQuot h u = ‖h‖⁻¹ • ((fun x ↦ u (x + h)) - u) :=
   rfl
 
-/-- **The difference quotient commutes with the weak derivative** on an invariant open set:
-`∂^y (D_h u) = D_h (∂^y u)`. -/
+/-- **The difference quotient commutes with the weak derivative.** Let $\Omega$ be an open set
+invariant under the translation by $h$, and let $w$ be a weak derivative of $u$ along a tuple of
+directions $y$ on $\Omega$. Then $D_h w$ is a weak derivative of $D_h u$ along $y$ on $\Omega$. -/
 theorem _root_.HasWeakIteratedLineDerivOn.diffQuot [NormedSpace ℝ E] [MeasurableSpace E]
     [BorelSpace E] [ProperSpace E] {μ : Measure E} [μ.IsAddRightInvariant] {Ω : Opens E}
     {n : ℕ} {y : Fin n → E} {u w : E → F}
@@ -328,7 +431,8 @@ theorem _root_.HasWeakIteratedLineDerivOn.diffQuot [NormedSpace ℝ E] [Measurab
     HasWeakIteratedLineDerivOn y (diffQuot h u) (diffQuot h w) Ω μ :=
   ((hu.comp_add_right hΩ).sub hu).const_smul _
 
-/-- The difference quotient of an `L^p(Ω)` function on an invariant open set is in `L^p(Ω)`. -/
+/-- If $u \in L^p(\Omega)$ and the open set $\Omega$ is invariant under the translation by $h$, then
+$D_h u \in L^p(\Omega)$. -/
 theorem _root_.MeasureTheory.MemLp.diffQuot [MeasurableSpace E] [BorelSpace E] {μ : Measure E}
     [μ.IsAddRightInvariant] {Ω : Opens E} {u : E → F} {p : ℝ≥0∞}
     (hu : MemLp u p (μ.restrict (Ω : Set E))) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
@@ -337,7 +441,7 @@ theorem _root_.MeasureTheory.MemLp.diffQuot [MeasurableSpace E] [BorelSpace E] {
 
 end DiffQuot
 
-/-! ### Difference quotients on `L^p(Ω)` -/
+/-! ### Difference quotients on $L^p(\Omega)$ -/
 
 section DiffQuotLp
 
@@ -346,18 +450,21 @@ variable {E F : Type*} [NormedAddCommGroup E] [MeasurableSpace E]
   {Ω : Opens E} {h : E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 variable (F p) in
-/-- **The difference quotient `D_h = (τ_h − 1)/|h|` on `L^p(Ω)`**, as a bounded linear map, for an
-open set `Ω` invariant under the translation by `h`. -/
+/-- **The difference quotient on $L^p(\Omega)$.** For an open set $\Omega$ invariant under the
+translation by $h$, the operator $D_h = (\tau_h - I)/\|h\|$ is a bounded linear map of
+$L^p(\Omega)$ into itself, where $\tau_h u = u(\cdot + h)$. -/
 def diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     Lp F p (μ.restrict (Ω : Set E)) →L[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
   ‖h‖⁻¹ • ((Lp.translate F p hΩ).toContinuousLinearMap - ContinuousLinearMap.id ℝ _)
 
+/-- The value of the difference quotient on $L^p(\Omega)$: $D_h u = \|h\|^{-1} (\tau_h u - u)$. -/
 theorem diffQuotLp_apply (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     diffQuotLp F p hΩ u = ‖h‖⁻¹ • (Lp.translate F p hΩ u - u) :=
   rfl
 
-/-- `diffQuotLp hΩ u` is the difference quotient `D_h u` almost everywhere on `Ω`. -/
+/-- The element $D_h u$ of $L^p(\Omega)$ agrees almost everywhere on $\Omega$ with the difference
+quotient of the function of $u$. -/
 theorem coeFn_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     diffQuotLp F p hΩ u =ᵐ[μ.restrict (Ω : Set E)] diffQuot h u := by
@@ -366,7 +473,7 @@ theorem coeFn_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
     Lp.coeFn_sub (Lp.translate F p hΩ u) u, Lp.coeFn_translate hΩ u] with x h1 h2 h3
   rw [h1, Pi.smul_apply, h2, Pi.sub_apply, h3, diffQuot_apply]
 
-/-- `‖D_h u‖_p ≤ 2 ‖h‖⁻¹ ‖u‖_p`. -/
+/-- The difference quotient on $L^p(\Omega)$ satisfies $\|D_h u\|_p \le 2 \|h\|^{-1} \|u\|_p$. -/
 theorem norm_diffQuotLp_apply_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     ‖diffQuotLp F p hΩ u‖ ≤ 2 * ‖h‖⁻¹ * ‖u‖ := by
@@ -375,9 +482,13 @@ theorem norm_diffQuotLp_apply_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
         gcongr; exact norm_sub_le _ _
     _ = 2 * ‖h‖⁻¹ * ‖u‖ := by rw [LinearIsometry.norm_map]; ring
 
-/-- **Adjointness of the difference quotients in `L²(Ω)`**: `⟪D_h u, v⟫ = ⟪u, D_{−h} v⟫`
-([brezis2011functional] §9.6, proof of Theorem 9.25, case B: "`∫ D_h u φ = −∫ u D_{−h} φ`" up to
-the sign convention of `D_{−h}`). -/
+/-- **Adjointness of the difference quotients in $L^2(\Omega)$.** If $\Omega$ is invariant under the
+translation by $h$, then $\langle D_h u, v \rangle = \langle u, D_{-h} v \rangle$ for all
+$u, v \in L^2(\Omega)$.
+
+In the proof of Theorem 9.25 of [brezis2011functional], case B, this identity appears as $\int
+D_h u\, \varphi = -\int u\, D_{-h} \varphi$; the sign differs because of the convention for
+$D_{-h}$. -/
 theorem inner_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u v : Lp ℝ 2 (μ.restrict (Ω : Set E))) :
     ⟪diffQuotLp ℝ 2 hΩ u, v⟫_ℝ = ⟪u, diffQuotLp ℝ 2 hΩ.neg v⟫_ℝ := by
@@ -387,7 +498,7 @@ theorem inner_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
 
 end DiffQuotLp
 
-/-! ### Difference quotients on `W^{k,p}(Ω)` -/
+/-! ### Difference quotients on $W^{k,p}(\Omega)$ -/
 
 section DiffQuotSobolev
 
@@ -399,40 +510,48 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 open SobolevMultiIndex
 
 variable (F b k p μ) in
-/-- **The difference quotient `D_h = (τ_h − 1)/|h|` on `W^{k,p}(Ω)`**, as a bounded linear map,
-for an open set `Ω` invariant under the translation by `h`: the proof of
-[brezis2011functional] Theorem 9.25 tests the equation with `D_{−h}(D_h u)`, so `D_h u` must be
-an element of the space and not merely a function. -/
+/-- **The difference quotient on $W^{k,p}(\Omega)$.** Let $\Omega$ be an open set invariant under
+the translation by $h$. Then $D_h = (\tau_h - I)/\|h\|$ is a bounded linear map of
+$W^{k,p}(\Omega)$ into itself, where $\tau_h$ is the translation `SobolevMultiIndex.translateL`.
+
+The proof of Theorem 9.25 of [brezis2011functional] tests the equation with $D_{-h}(D_h u)$, so
+$D_h u$ must be an element of the Sobolev space and not only a function. For $h = 0$ the map is
+$0$. -/
 def diffQuotL (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω μ :=
   ‖h‖⁻¹ • ((translateL F b k p μ hΩ).toContinuousLinearMap - ContinuousLinearMap.id ℝ _)
 
+/-- The value of the difference quotient on $W^{k,p}(\Omega)$: $D_h u = \|h\|^{-1} (\tau_h u - u)$.
+-/
 theorem diffQuotL_apply (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) :
     diffQuotL F b k p μ hΩ u = ‖h‖⁻¹ • (translateL F b k p μ hΩ u - u) :=
   rfl
 
-/-- The weak derivatives of `D_h u` are the difference quotients `D_h (∂^α u)` of the weak
-derivatives, as elements of `L^p(Ω)`. -/
+/-- The weak derivatives of $D_h u \in W^{k,p}(\Omega)$ are the difference quotients of the weak
+derivatives: $\partial^\alpha (D_h u) = D_h (\partial^\alpha u)$ in $L^p(\Omega)$ for every
+$|\alpha| \le k$. -/
 theorem weakDeriv_diffQuotL (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
     weakDeriv (diffQuotL F b k p μ hΩ u) α = diffQuotLp F p hΩ (weakDeriv u α) :=
   rfl
 
-/-- The function of `D_h u` is the difference quotient `D_h (fn u)`, almost everywhere on `Ω`. -/
+/-- The function of $D_h u \in W^{k,p}(\Omega)$ agrees almost everywhere on $\Omega$ with the
+difference quotient of the function of $u$. -/
 theorem fn_diffQuotL (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) :
     fn (diffQuotL F b k p μ hΩ u) =ᵐ[μ.restrict (Ω : Set E)] diffQuot h (fn u) :=
   coeFn_diffQuotLp hΩ (weakDeriv u 0)
 
-/-- `D_h u ∈ W_0^{k,p}(Ω)` for `u ∈ W_0^{k,p}(Ω)` and an invariant `Ω`. -/
+/-- If $\Omega$ is invariant under the translation by $h$ and $u \in W^{k,p}_0(\Omega)$, then
+$D_h u \in W^{k,p}_0(\Omega)$. -/
 theorem diffQuotL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
     {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
     diffQuotL F b k p μ hΩ u ∈ SobolevMultiIndexZero F b k p Ω μ := by
   rw [diffQuotL_apply]
   exact Submodule.smul_mem _ _ (Submodule.sub_mem _ (translateL_mem_zero hΩ hu) hu)
 
-/-- `‖D_h u‖ ≤ 2 ‖h‖⁻¹ ‖u‖` in `W^{k,p}(Ω)`. -/
+/-- The difference quotient on $W^{k,p}(\Omega)$ satisfies $\|D_h u\| \le 2 \|h\|^{-1} \|u\|$. -/
 theorem norm_diffQuotL_apply_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : SobolevMultiIndex F b k p Ω μ) :
     ‖diffQuotL F b k p μ hΩ u‖ ≤ 2 * ‖h‖⁻¹ * ‖u‖ := by
@@ -452,9 +571,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [BorelSpace E] [ProperSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
   [μ.IsAddRightInvariant] {Ω : Opens E} {h : E}
 
-/-- **Adjointness of the difference quotient against a test function**:
-`∫_Ω φ D_h u = ∫_Ω (D_{−h} φ) u` for a locally integrable `u` on an invariant open set — the
-change of variables `x ↦ x − h`. -/
+/-- **Adjointness of the difference quotient against a test function.** Let $\Omega$ be invariant
+under the translation by $h$, let $u$ be locally integrable on $\Omega$, and let $\varphi$ be a
+test function on $\Omega$. Then
+$$\int_\Omega \varphi\, D_h u = \int_\Omega (D_{-h} \varphi)\, u.$$
+The proof is the change of variables $x \mapsto x - h$. -/
 theorem integral_smul_diffQuot_eq {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
     (hΩ : IsTranslationInvariant (Ω : Set E) h) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set E), φ x • diffQuot h u x ∂μ
@@ -482,11 +603,15 @@ theorem integral_smul_diffQuot_eq {u : E → F} (hu : LocallyIntegrableOn u Ω �
     mul_sub, sub_smul]
 
 omit [μ.IsAddRightInvariant] in
-/-- **The difference quotients of a test function converge**: for `u` locally integrable on an
-open set `Ω` invariant under the translations `t • y`, `‖y‖ = 1`, and `t_n → 0⁺`,
-`∫_Ω (D_{−t_n y} φ) u → −∫_Ω (∂_y φ) u`, by dominated convergence — the pointwise limit is the
-derivative of `s ↦ φ(x − s y)` at `0` and the quotients are dominated by `‖∇φ‖_∞` on a fixed
-compact subset of `Ω`. -/
+/-- **The difference quotients of a test function converge.** Let $y \in E$ with $\|y\| = 1$, let
+$\Omega$ be invariant under the translations by $t y$ for all $t \in \mathbb{R}$, let $u$ be
+locally integrable on $\Omega$, and let $(t_n)$ satisfy $0 < t_n \le 1$ and $t_n \to 0$. Then
+for every test function $\varphi$ on $\Omega$,
+$$\int_\Omega (D_{-t_n y} \varphi)\, u \to -\int_\Omega (\partial_y \varphi)\, u.$$
+
+The proof is dominated convergence. The pointwise limit is the derivative of
+$s \mapsto \varphi(x - s y)$ at $0$, and the quotients are bounded by $\sup |\nabla \varphi|$ on
+a fixed compact subset of $\Omega$. -/
 theorem tendsto_integral_diffQuot_neg_smul {u : E → F} (hu : LocallyIntegrableOn u Ω μ)
     {y : E} (hy : ‖y‖ = 1) (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set E) (t • y))
     {t : ℕ → ℝ} (htpos : ∀ n, 0 < t n) (ht1 : ∀ n, t n ≤ 1) (ht0 : Tendsto t atTop (𝓝 0))
@@ -565,8 +690,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [BorelSpace E] [ProperSpace E] {μ : Measure E} [μ.IsAddRightInvariant]
   [IsFiniteMeasureOnCompacts μ] {Ω : Opens E}
 
-/-- A weak limit in a Hilbert space has norm at most the bound of the sequence:
-if `‖v n‖ ≤ M` and `⟪v n, w⟫ → ⟪w, w⟫` then `‖w‖ ≤ M`. -/
+/-- A weak limit in a real inner product space has norm at most the bound of the sequence: if
+$\|v_n\| \le M$ with $M \ge 0$ and $\langle w, v_n \rangle \to \langle w, w \rangle$, then
+$\|w\| \le M$. -/
 theorem norm_le_of_tendsto_inner {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     {v : ℕ → H} {w : H} {M : ℝ} (hM : 0 ≤ M) (hv : ∀ n, ‖v n‖ ≤ M)
     (hlim : Tendsto (fun n ↦ ⟪w, v n⟫_ℝ) atTop (𝓝 ⟪w, w⟫_ℝ)) : ‖w‖ ≤ M := by
@@ -579,19 +705,22 @@ theorem norm_le_of_tendsto_inner {H : Type*} [NormedAddCommGroup H] [InnerProduc
   · rw [← hw]; exact hM
   · nlinarith
 
-/-- **Weak derivatives from bounded difference quotients.** Let `H` be a real Hilbert space with
-a bounded linear map `ι : H → L²(Ω)`, let `u` be locally integrable on an open set `Ω` invariant
-under the translations `t • y`, `‖y‖ = 1`, and let `t_n → 0⁺`. If the difference quotients
-`D_{t_n y} u` are the images of a bounded sequence `v_n` of `H`, `‖v_n‖ ≤ M`, then `u` has a weak
-derivative along `y` on `Ω` of the form `ι w` with `w ∈ H` and `‖w‖ ≤ M`.
+/-- **Weak derivatives from bounded difference quotients.** Let $H$ be a real Hilbert space with a
+bounded linear map $\iota : H \to L^2(\Omega)$. Let $y$ be a unit vector, let $\Omega$ be an
+open set invariant under the translations by $t y$ for all $t \in \mathbb{R}$, and let $u$ be
+locally integrable on $\Omega$. Let $(t_n)$ satisfy $0 < t_n \le 1$ and $t_n \to 0$. Suppose
+that there are $v_n \in H$ with $\|v_n\| \le M$ and $\iota v_n = D_{t_n y} u$ almost everywhere
+on $\Omega$. Then there is $w \in H$ with $\|w\| \le M$ such that $\iota w$ is a weak derivative
+of $u$ along $y$ on $\Omega$.
 
-This is the weak compactness step of the method of translations: a subsequence of `v_n`
-converges weakly in the reflexive space `H` (`NormedSpace.exists_subseq_forall_dual_tendsto`),
-the pairings `∫_Ω (D_{t_n y} u) φ = ∫_Ω u D_{−t_n y} φ` against a test function converge to
-`−∫_Ω u ∂_y φ` (`tendsto_integral_diffQuot_neg_smul`), which identifies the weak limit as the
-weak derivative, and the norm bound is the weak lower semicontinuity of the norm. In
-[brezis2011functional] §9.6 it appears as "applying Proposition 9.3 once more" in case A, as the
-limit `h → 0` in (56) in case B, and as the "delicate point" of Lemma 9.7 (with `H = H^1_0`). -/
+This is the weak compactness step of the method of translations. A subsequence of $(v_n)$
+converges weakly in the reflexive space $H$ (`NormedSpace.exists_subseq_forall_dual_tendsto`).
+The pairings $\int_\Omega (D_{t_n y} u)\, \varphi = \int_\Omega u\, D_{-t_n y} \varphi$ converge
+to $-\int_\Omega u\, \partial_y \varphi$ (`Elliptic.tendsto_integral_diffQuot_neg_smul`), which
+identifies the weak limit as the weak derivative. The norm bound is the weak lower
+semicontinuity of the norm. In [brezis2011functional], §9.6, this step appears as "applying
+Proposition 9.3 once more" in case A, as the limit $h \to 0$ in (56) in case B, and as the
+"delicate point" of Lemma 9.7, with $H = H^1_0$. -/
 theorem exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded {H : Type*}
     [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
     (ι : H →L[ℝ] Lp ℝ 2 (μ.restrict (Ω : Set E))) {u : E → ℝ} (hu : LocallyIntegrableOn u Ω μ)
@@ -642,8 +771,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E} [μ.IsAddRightInvariant]
   {Ω : Opens E} {h : E}
 
-/-- An `eLpNorm` translation estimate `‖f(· + h) − f‖_{L²(Ω)} ≤ ‖h‖ C` for the function of an
-`L²(Ω)` element is a bound `‖τ_h f − f‖ ≤ ‖h‖ C` on the norm of the element. -/
+/-- Let $\Omega$ be invariant under the translation by $h$, let $f \in L^2(\Omega)$ and $C \ge 0$.
+If the function of $f$ satisfies $\|f(\cdot + h) - f\|_{L^2(\Omega)} \le \|h\|\, C$, then
+$\|\tau_h f - f\| \le \|h\|\, C$ in $L^2(\Omega)$. -/
 theorem norm_translateLp_sub_le_of_eLpNorm_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (f : Lp F 2 (μ.restrict (Ω : Set E))) {C : ℝ} (hC : 0 ≤ C)
     (hf : eLpNorm (fun x ↦ f (x + h) - f x) 2 (μ.restrict (Ω : Set E))
@@ -656,7 +786,8 @@ theorem norm_translateLp_sub_le_of_eLpNorm_le (hΩ : IsTranslationInvariant (Ω 
   filter_upwards [Lp.coeFn_sub (Lp.translate F 2 hΩ f) f, Lp.coeFn_translate hΩ f] with x h1 h2
   rw [h1, Pi.sub_apply, h2]
 
-/-- `‖D_h f‖ ≤ C` for `f ∈ L²(Ω)` with the translation estimate `‖f(· + h) − f‖₂ ≤ ‖h‖ C`. -/
+/-- Let $\Omega$ be invariant under the translation by $h$, let $f \in L^2(\Omega)$ and $C \ge 0$.
+If $\|f(\cdot + h) - f\|_{L^2(\Omega)} \le \|h\|\, C$, then $\|D_h f\|_2 \le C$. -/
 theorem norm_diffQuotLp_le_of_eLpNorm_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (f : Lp F 2 (μ.restrict (Ω : Set E))) {C : ℝ} (hC : 0 ≤ C)
     (hf : eLpNorm (fun x ↦ f (x + h) - f x) 2 (μ.restrict (Ω : Set E))
@@ -679,8 +810,10 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The operator norm of a linear functional on `ℝ^N` is the Euclidean norm of its values on the
-standard basis: `‖L‖ = √(∑ᵢ (L eᵢ)²)`, by the Riesz representation `L = ⟪v, ·⟫`, `vᵢ = L eᵢ`. -/
+/-- The operator norm of a linear functional $L$ on $\mathbb{R}^N$ is the Euclidean norm of its
+values on the standard basis:
+$$\|L\| = \Big( \sum_i L(e_i)^2 \Big)^{1/2}.$$
+The proof uses the Riesz representation $L = \langle v, \cdot \rangle$ with $v_i = L(e_i)$. -/
 theorem _root_.ContinuousLinearMap.norm_eq_sqrt_sum_sq_single
     (L : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ) :
     ‖L‖ = √(∑ i, (L (EuclideanSpace.single i 1)) ^ 2) := by
@@ -696,7 +829,8 @@ theorem _root_.ContinuousLinearMap.norm_eq_sqrt_sum_sq_single
   rw [hLv, EuclideanSpace.inner_single_right, Real.norm_eq_abs, sq_abs]
   simp
 
-/-- `∫ ‖f‖ₑ² = ‖f‖₂²` in `ℝ≥0∞`. -/
+/-- For an almost everywhere strongly measurable $f$, the lower integral of $\|f\|^2$ equals
+$\|f\|_2^2$, in $[0, \infty]$. -/
 theorem _root_.MeasureTheory.lintegral_enorm_rpow_two_eq {X G : Type*} [MeasurableSpace X]
     [NormedAddCommGroup G] {ν : Measure X} {f : X → G} (hf : AEStronglyMeasurable f ν) :
     ∫⁻ x, ‖f x‖ₑ ^ (2 : ℝ) ∂ν = eLpNorm f 2 ν ^ (2 : ℝ) := by
@@ -704,9 +838,12 @@ theorem _root_.MeasureTheory.lintegral_enorm_rpow_two_eq {X G : Type*} [Measurab
     ENNReal.toReal_ofNat, ← ENNReal.rpow_mul]
   norm_num
 
-/-- **The `L²` norm of the tensor weak derivative is the gradient norm**: for
-`v ∈ H^1(Ω)` and `w : ℝ^N → (ℝ^N →L ℝ)` with `w x eᵢ = ∂ᵢv x` almost everywhere,
-`‖w‖_{L²(Ω)} = ‖∇v‖_{L²(Ω)} = (∑ᵢ ‖∂ᵢv‖₂²)^{1/2}`. -/
+/-- **The $L^2$ norm of the derivative is the gradient norm.** Let $v \in H^1(\Omega)$, and let $w$
+be a measurable map from $\mathbb{R}^N$ to the linear functionals on $\mathbb{R}^N$ with
+$w(x)(e_i) = \partial_i v(x)$ almost everywhere on $\Omega$ for every $i$. Then
+$$\|w\|_{L^2(\Omega)} = \|\nabla v\|_{L^2(\Omega)} = \Big( \sum_i \|\partial_i v\|_2^2
+  \Big)^{1/2}.$$
+-/
 theorem _root_.SobolevEuclidean.eLpNorm_eq_gradNorm_of_forall_ae_eq (v : SobolevEuclidean N 1 2 Ω)
     {w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
     (hwm : AEStronglyMeasurable w (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -742,10 +879,12 @@ theorem _root_.SobolevEuclidean.eLpNorm_eq_gradNorm_of_forall_ae_eq (v : Sobolev
     ENNReal.ofReal_rpow_of_nonneg (Finset.sum_nonneg fun _ _ ↦ sq_nonneg _) (by norm_num),
     gradNorm_eq_sqrt, Real.sqrt_eq_rpow]
 
-/-- **The translation estimate for `H^1(Ω)` with the gradient norm**: for `v ∈ H^1(Ω)` and `h`
-with the segments `[x, x + h]`, `x ∈ Ω`, inside `Ω`,
-`‖v(· + h) − v‖_{L²(Ω)} ≤ ‖h‖ ‖∇v‖_{L²(Ω)}` — Proposition 9.3, (i) ⇒ (iii), on `V = Ω`
-(`HasWeakFDerivOn.eLpNorm_sub_translate_le`), with the tensor weak derivative measured by
+/-- **The translation estimate for $H^1(\Omega)$ with the gradient norm.** Let $v \in H^1(\Omega)$
+and $h \in \mathbb{R}^N$, and suppose that the segment $[x, x + h]$ lies in $\Omega$ for every
+$x \in \Omega$. Then
+$$\|v(\cdot + h) - v\|_{L^2(\Omega)} \le \|h\|\, \|\nabla v\|_{L^2(\Omega)}.$$
+This is the implication (i) ⇒ (iii) of Proposition 9.3 of [brezis2011functional] with
+$V = \Omega$ (`HasWeakFDerivOn.eLpNorm_sub_translate_le`), with the derivative measured by
 `SobolevEuclidean.eLpNorm_eq_gradNorm_of_forall_ae_eq`. -/
 theorem _root_.SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm_of_segments
     (v : SobolevEuclidean N 1 2 Ω) (h : EuclideanSpace ℝ (Fin N))
@@ -759,10 +898,14 @@ theorem _root_.SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm_of_segments
     Ω.isOpen h hseg
   rwa [hwn] at key
 
-/-- **Lemma 9.6, on `L²(Ω)`**: for `v ∈ H^1(Ω)`, an open set `Ω` invariant under the translation
-by `h` and containing the segments `[x, x + h]`, `x ∈ Ω`, the difference quotient satisfies
-`‖D_h v‖_{L²(Ω)} ≤ ‖∇v‖_{L²(Ω)}` ([brezis2011functional] §9.6, Lemma 9.6, and the inequality
-`‖D_{−h} v‖₂ ≤ ‖∇v‖₂` of case A). -/
+/-- **Lemma 9.6** of [brezis2011functional], on $L^2(\Omega)$. Let $\Omega \subseteq \mathbb{R}^N$
+be an open set invariant under the translation by $h$, and suppose that the segment $[x, x + h]$
+lies in $\Omega$ for every $x \in \Omega$. Then for every $v \in H^1(\Omega)$,
+$$\|D_h v\|_{L^2(\Omega)} \le \|\nabla v\|_{L^2(\Omega)}.$$
+
+The same inequality, for $D_{-h}$, is used in case A of the proof of Theorem 9.25. The left side
+is `Elliptic.diffQuotLp` applied to the function of $v$ as an element of $L^2(\Omega)$, and the
+right side is `SobolevMultiIndex.gradNorm`. -/
 theorem norm_diffQuotLp_fnL_le {h : EuclideanSpace ℝ (Fin N)}
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ Ω)
@@ -783,16 +926,19 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {h : EuclideanSpace
 
 open SobolevMultiIndex
 
-/-- The norm of an `L^∞` element is bounded by an almost everywhere bound on its function. -/
+/-- The norm of an element $f$ of $L^\infty$ is at most $C \ge 0$ if $|f| \le C$ almost everywhere.
+-/
 theorem _root_.MeasureTheory.Lp.norm_top_le_of_ae_bound {X G : Type*} [MeasurableSpace X]
     [NormedAddCommGroup G] {ν : Measure X} {f : Lp G ⊤ ν} {C : ℝ} (hC : 0 ≤ C)
     (hf : ∀ᵐ x ∂ν, ‖f x‖ ≤ C) : ‖f‖ ≤ C := by
   rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable f)]
   exact ENNReal.toReal_le_of_le_ofReal hC (eLpNormEssSup_le_of_ae_bound hf)
 
-/-- **The product formula for difference quotients**:
-`D_h (a f) = a(· + h) D_h f + (D_h a) f` in `L²(Ω)`, for `a ∈ L^∞(Ω)` and `f ∈ L²(Ω)`
-([brezis2011functional] §9.6, the displayed identity before (65)). -/
+/-- **The product formula for difference quotients.** Let $\Omega \subseteq \mathbb{R}^N$ be
+invariant under the translation by $h$, let $a \in L^\infty(\Omega)$ and $f \in L^2(\Omega)$.
+Then in $L^2(\Omega)$,
+$$D_h(a f) = (\tau_h a)\, D_h f + (D_h a)\, f.$$
+This is the identity displayed before (65) in [brezis2011functional], §9.6. -/
 theorem diffQuotLp_mulL (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -813,10 +959,14 @@ theorem diffQuotLp_mulL (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace 
   simp only [smul_eq_mul]
   ring
 
-/-- **The difference quotient of a `C¹` coefficient is bounded by its Lipschitz constant**: if
-`a ∈ L^∞(Ω)` agrees almost everywhere with a function `a'` that is `C¹` on `Ω` with
-`‖∇a'‖ ≤ M` on `Ω`, and the segments `[x, x + h]`, `x ∈ Ω`, lie in `Ω`, then `‖D_h a‖_∞ ≤ M` —
-the mean value theorem along the segment ([brezis2011functional] §9.6, "`|D_h a_{kℓ}| ≤ C`"). -/
+/-- **The difference quotient of a $C^1$ coefficient is bounded by its Lipschitz constant.** Let
+$\Omega$ be invariant under the translation by $h$, and suppose that the segment $[x, x + h]$
+lies in $\Omega$ for every $x \in \Omega$. Let $a \in L^\infty(\Omega)$ agree almost everywhere
+on $\Omega$ with a function $a'$ that is $C^1$ on $\Omega$, with $\|\nabla a'(x)\| \le M$ for
+all $x \in \Omega$, where $M \ge 0$. Then $\|D_h a\|_\infty \le M$.
+
+The proof is the mean value theorem along the segment. In [brezis2011functional], §9.6, this is
+the bound $|D_h a_{k\ell}| \le C$. -/
 theorem norm_diffQuotLp_top_le (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ Ω)
     {a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -850,7 +1000,9 @@ theorem norm_diffQuotLp_top_le (hΩ : IsTranslationInvariant (Ω : Set (Euclidea
   calc ‖h‖⁻¹ * ‖a' (x + h) - a' x‖ ≤ ‖h‖⁻¹ * (M * ‖h‖) := by gcongr
     _ = M := by rw [mul_comm M, ← mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.2 hh), one_mul]
 
-/-- The ellipticity condition is invariant under a translation leaving `Ω` invariant. -/
+/-- If the coefficients $A_{k\ell} \in L^\infty(\Omega)$ satisfy the ellipticity condition with
+constant $\alpha$ and $\Omega$ is invariant under the translation by $h$, then the translated
+coefficients $\tau_h A_{k\ell}$ satisfy the ellipticity condition with the same constant. -/
 theorem isUniformlyElliptic_translateLp
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
@@ -865,8 +1017,11 @@ theorem isUniformlyElliptic_translateLp
   simp only [hx']
   exact hx ξ
 
-/-- **The lower-order term of the tangential estimate**: for coefficients `B_{kℓ} ∈ L^∞(Ω)` with
-`‖B_{kℓ}‖_∞ ≤ M`, `|∑_{kℓ} ⟪B_{kℓ} ∂_k u, ∂_ℓ v⟫| ≤ N² M ‖∇u‖₂ ‖∇v‖₂`. -/
+/-- **The lower-order term of the tangential estimate.** Let $B_{k\ell} \in L^\infty(\Omega)$ with
+$\|B_{k\ell}\|_\infty \le M$, where $M \ge 0$. Then for all $u, v \in H^1(\Omega)$,
+$$\Big| \sum_{k,\ell} \langle B_{k\ell}\, \partial_k u, \partial_\ell v \rangle \Big| \le N^2
+  M\, \|\nabla u\|_2\, \|\nabla v\|_2.$$
+-/
 theorem abs_sum_inner_mulL_le
     {B : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {M : ℝ}
     (hM : 0 ≤ M) (hB : ∀ k l, ‖B k l‖ ≤ M) (u v : SobolevEuclidean N 1 2 Ω) :
@@ -902,8 +1057,9 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {h : EuclideanSpace
 
 open SobolevMultiIndex
 
-/-- The principal part of the general form (41), with the lower-order coefficients zero, as a
-double sum of pairings. -/
+/-- The principal part of the general form (41) of [brezis2011functional], that is, the form with
+the lower-order coefficients zero, is the double sum of pairings $a(u, v) = \sum_{k,\ell}
+\langle A_{k\ell}\, \partial_k u, \partial_\ell v \rangle$. -/
 theorem generalForm_zero_zero_apply
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u v : SobolevEuclidean N 1 2 Ω) :
@@ -912,9 +1068,13 @@ theorem generalForm_zero_zero_apply
   rw [generalForm_apply_inner]
   simp [mulL_zero]
 
-/-- **The equation tested with `D_{−h}(D_h u)`**, [brezis2011functional] §9.6, (63): the
-principal part of the form evaluated at `u` and `D_{−h}(D_h u)` is
-`∑_{kℓ} ⟪D_h (a_{kℓ} ∂_k u), D_h ∂_ℓ u⟫`, by the adjointness of the difference quotients. -/
+/-- **The equation tested with $D_{-h}(D_h u)$.** Let $\Omega$ be invariant under the translation by
+$h$, let $A_{k\ell} \in L^\infty(\Omega)$, and let $a$ be the principal part of the general form
+with these coefficients. Then for $u \in H^1(\Omega)$,
+$$a\big(u, D_{-h}(D_h u)\big) = \sum_{k,\ell} \big\langle D_h (A_{k\ell}\, \partial_k u), D_h
+  \partial_\ell u \big\rangle.$$
+This is (63) of [brezis2011functional], §9.6, and follows from the adjointness of the difference
+quotients. -/
 theorem generalForm_apply_diffQuotL_diffQuotL
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -927,10 +1087,12 @@ theorem generalForm_apply_diffQuotL_diffQuotL
   refine Finset.sum_congr rfl fun k _ ↦ Finset.sum_congr rfl fun l _ ↦ ?_
   rw [weakDeriv_diffQuotL, weakDeriv_diffQuotL, inner_diffQuotLp hΩ]
 
-/-- **The equation tested with `D_{−h}(D_h u)`, split by the product formula**: the principal
-part of the form at `u` and `D_{−h}(D_h u)` is
-`∑ ⟪(τ_h A) ∂_k D_h u, ∂_ℓ D_h u⟫ + ∑ ⟪(D_h A) ∂_k u, ∂_ℓ D_h u⟫` ([brezis2011functional] §9.6,
-(63) and the identity before (65)). -/
+/-- **The equation tested with $D_{-h}(D_h u)$, split by the product formula.** Under the hypotheses
+of `Elliptic.generalForm_apply_diffQuotL_diffQuotL`,
+$$a\big(u, D_{-h}(D_h u)\big) = \sum_{k,\ell} \big\langle (\tau_h A_{k\ell})\, D_h \partial_k u,
+  D_h \partial_\ell u \big\rangle + \sum_{k,\ell} \big\langle (D_h A_{k\ell})\, \partial_k u,
+  D_h \partial_\ell u \big\rangle.$$
+This combines (63) of [brezis2011functional], §9.6, with the identity before (65). -/
 theorem generalForm_apply_diffQuotL_diffQuotL_split
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -948,8 +1110,9 @@ theorem generalForm_apply_diffQuotL_diffQuotL_split
   refine Finset.sum_congr rfl fun l _ ↦ ?_
   rw [diffQuotLp_mulL, inner_add_left]
 
-/-- The arithmetic of the tangential estimate: from `α G² ≤ S₁`, `|S₂| ≤ N² M G_u G`,
-`S₁ + S₂ = L` and `L ≤ g G` follows `G ≤ α⁻¹ (g + N² M G_u)`. -/
+/-- The arithmetic of the tangential estimate. Let $\alpha > 0$ and $M, G, G_u, g \ge 0$. If
+$\alpha G^2 \le S_1$, $|S_2| \le N^2 M G_u G$, $S_1 + S_2 = L$ and $L \le g G$, then
+$G \le \alpha^{-1} (g + N^2 M G_u)$. -/
 theorem le_inv_mul_of_estimates {α M S₁ S₂ L G Gu g : ℝ} (hα : 0 < α) (hM : 0 ≤ M) (hG : 0 ≤ G)
     (hGu : 0 ≤ Gu) (hg : 0 ≤ g) (h1 : α * G ^ 2 ≤ S₁) (h2 : |S₂| ≤ N ^ 2 * M * Gu * G)
     (h3 : S₁ + S₂ = L) (h4 : L ≤ g * G) : G ≤ α⁻¹ * (g + N ^ 2 * M * Gu) := by
@@ -963,7 +1126,9 @@ theorem le_inv_mul_of_estimates {α M S₁ S₂ L G Gu g : ℝ} (hα : 0 < α) (
   · rw [le_inv_mul_iff₀ hα]
     exact le_of_mul_le_mul_right (by rw [sq, ← mul_assoc] at hkey; exact hkey) hG0
 
-/-- Lemma 9.6 for the function of `D_h w`: `‖fn (D_h w)‖₂ ≤ ‖∇w‖₂`. -/
+/-- Lemma 9.6 for the function of $D_h w$. Let $\Omega$ be invariant under the translation by $h$,
+and suppose that the segment $[x, x + h]$ lies in $\Omega$ for every $x \in \Omega$. Then for
+$w \in H^1(\Omega)$ the function of $D_h w$ satisfies $\|D_h w\|_2 \le \|\nabla w\|_2$. -/
 theorem norm_weakDeriv_zero_diffQuotL_le
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ Ω)
@@ -972,7 +1137,8 @@ theorem norm_weakDeriv_zero_diffQuotL_le
       ≤ gradNorm w :=
   norm_diffQuotLp_fnL_le hΩ hseg w
 
-/-- The load tested with `D_{−h} v` is at most `‖g‖₂ ‖∇v‖₂` (Lemma 9.6). -/
+/-- Under the hypotheses of Lemma 9.6 (`Elliptic.norm_diffQuotLp_fnL_le`), for $g \in L^2(\Omega)$
+and $v \in H^1(\Omega)$ the load satisfies $\int_\Omega g\, D_h v \le \|g\|_2\, \|\nabla v\|_2$. -/
 theorem load_apply_diffQuotL_le
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ Ω)
@@ -983,7 +1149,8 @@ theorem load_apply_diffQuotL_le
   refine (le_abs_self _).trans ((abs_load_le Ω g _).trans ?_)
   exact mul_le_mul_of_nonneg_left (norm_weakDeriv_zero_diffQuotL_le hΩ hseg v) (norm_nonneg g)
 
-/-- The squared gradient norm of `D_h u` is `∑ᵢ ‖D_h ∂ᵢu‖₂²`. -/
+/-- For $u \in H^1(\Omega)$ and an open set $\Omega$ invariant under the translation by $h$,
+$\|\nabla (D_h u)\|_2^2 = \sum_i \|D_h \partial_i u\|_2^2$. -/
 theorem gradNorm_diffQuotL_sq
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (u : SobolevEuclidean N 1 2 Ω) :
@@ -992,22 +1159,22 @@ theorem gradNorm_diffQuotL_sq
   rw [← dirichletForm_self_eq_gradNorm_sq, dirichletForm_self_eq]
   simp only [weakDeriv_diffQuotL]
 
-/-- **The tangential estimate (66)** of [brezis2011functional] §9.6, for a variable-coefficient
-elliptic form on an open set invariant under the translation by `h` (and containing the segments
-`[x, x − h]`, `x ∈ Ω`): if `u ∈ H^1(Ω)` satisfies `a(u, ψ) = ∫ g ψ` for `ψ = D_{−h}(D_h u)`,
-where `a` is the principal part of the form (41) with coefficients `A_{kℓ} ∈ L^∞(Ω)` that are
-elliptic after translation (`IsUniformlyElliptic Ω (τ_h A) α`) and have difference quotients
-bounded in `L^∞(Ω)` by `M` (`‖D_h A_{kℓ}‖_∞ ≤ M`), then
+/-- **The tangential estimate (66)** of [brezis2011functional], §9.6, for a variable-coefficient
+elliptic form. Let $\Omega \subseteq \mathbb{R}^N$ be invariant under the translation by $h$,
+and suppose that the segment $[x, x - h]$ lies in $\Omega$ for every $x \in \Omega$. Let
+$A_{k\ell} \in L^\infty(\Omega)$ be coefficients such that the translated coefficients
+$\tau_h A_{k\ell}$ satisfy the ellipticity condition with constant $\alpha$, and such that
+$\|D_h A_{k\ell}\|_\infty \le M$ with $M \ge 0$. Let $a$ be the principal part of the general
+form (41) with these coefficients, let $u \in H^1(\Omega)$ and $g \in L^2(\Omega)$, and suppose
+that $a(u, \psi) = \int_\Omega g \psi$ for $\psi = D_{-h}(D_h u)$. Then
+$$\|\nabla D_h u\|_2 \le \alpha^{-1} \big( \|g\|_2 + N^2 M\, \|\nabla u\|_2 \big).$$
 
-`‖∇ D_h u‖₂ ≤ α⁻¹ (‖g‖₂ + N² M ‖∇u‖₂)`.
-
-For the Laplacian (`A = δ`, `M = 0`, `α = 1`) this is the estimate (55) `‖∇ D_h u‖₂ ≤ ‖g‖₂` of
-cases A and B. The proof is the book's: the left side of the tested equation is
-`∑ ⟪(τ_h A) ∂_k D_h u, ∂_ℓ D_h u⟫ + ∑ ⟪(D_h A) ∂_k u, ∂_ℓ D_h u⟫`
-(`Elliptic.generalForm_apply_diffQuotL_diffQuotL_split`), bounded below by
-`α ‖∇ D_h u‖² − N² M ‖∇u‖ ‖∇ D_h u‖` (`Elliptic.sum_inner_mulL_ge`,
-`Elliptic.abs_sum_inner_mulL_le`), and the right side is at most
-`‖g‖ ‖D_{−h} D_h u‖₂ ≤ ‖g‖ ‖∇ D_h u‖₂` by Lemma 9.6 (`Elliptic.load_apply_diffQuotL_le`). -/
+For the Laplacian ($A = I$, $M = 0$, $\alpha = 1$) this is the estimate (55),
+$\|\nabla D_h u\|_2 \le \|g\|_2$, of cases A and B. The proof is the one of the source. The left
+side of the tested equation is split by `Elliptic.generalForm_apply_diffQuotL_diffQuotL_split`
+and is bounded below by $\alpha \|\nabla D_h u\|^2 - N^2 M \|\nabla u\| \|\nabla D_h u\|$
+(`Elliptic.sum_inner_mulL_ge`, `Elliptic.abs_sum_inner_mulL_le`). The right side is at most
+$\|g\|\, \|\nabla D_h u\|_2$ by Lemma 9.6 (`Elliptic.load_apply_diffQuotL_le`). -/
 theorem gradNorm_diffQuotL_le
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg' : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • (-h) ∈ Ω)
@@ -1044,7 +1211,8 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- `D_h u ∈ K` for a submodule `K` of `W^{k,p}(Ω)` invariant under the translation by `h`. -/
+/-- Let $K$ be a subspace of $W^{k,p}(\Omega)$ that is invariant under the translation by $h$, where
+$\Omega$ is invariant under that translation. If $u \in K$, then $D_h u \in K$. -/
 theorem diffQuotL_mem {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
     [BorelSpace E] [ProperSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
     {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
@@ -1055,25 +1223,33 @@ theorem diffQuotL_mem {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [
   rw [diffQuotL_apply]
   exact K.smul_mem _ (K.sub_mem (hK u hu) hu)
 
-/-- The segments `[x, x + s • (t • y)]`, `x ∈ Ω`, lie in an open set invariant under all the
-translations along `y`. -/
+/-- If $\Omega$ is invariant under the translations by $t y$ for all $t$, then for every $t$ the
+segment $[x, x + t y]$ lies in $\Omega$ for every $x \in \Omega$. -/
 theorem forall_add_smul_smul_mem {y : EuclideanSpace ℝ (Fin N)}
     (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • y)) (t : ℝ) :
     ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ s ∈ Icc (0 : ℝ) 1, x + s • (t • y) ∈ Ω :=
   fun x hx s _ ↦ by rw [smul_smul]; exact (hΩ (s * t)).mem hx
 
-/-- The segments `[x, x − s • (t • y)]`, `x ∈ Ω`, lie in an open set invariant under all the
-translations along `y`. -/
+/-- If $\Omega$ is invariant under the translations by $t y$ for all $t$, then for every $t$ the
+segment $[x, x - t y]$ lies in $\Omega$ for every $x \in \Omega$. -/
 theorem forall_add_smul_neg_smul_mem {y : EuclideanSpace ℝ (Fin N)}
     (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • y)) (t : ℝ) :
     ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ s ∈ Icc (0 : ℝ) 1, x + s • (-(t • y)) ∈ Ω :=
   fun x hx s _ ↦ by rw [smul_neg, smul_smul, ← neg_smul]; exact (hΩ (-(s * t))).mem hx
 
-/-- **The tangential estimate along an invariant direction**: for `Ω` invariant under all the
-translations along `y`, a subspace `K` of `H^1(Ω)` invariant under those translations,
-coefficients `A_{kℓ} ∈ L^∞(Ω)` with `C¹` representatives `a_{kℓ}` on `Ω` whose gradients are
-bounded by `M`, elliptic with constant `α`, and `u ∈ K` solving `a(u, ψ) = ∫ g ψ` for all
-`ψ ∈ K`: `‖∇ D_{t y} u‖₂ ≤ α⁻¹ (‖g‖₂ + N² M ‖∇u‖₂)` for every `t`. -/
+/-- **The tangential estimate along an invariant direction.** Let $\Omega \subseteq \mathbb{R}^N$ be
+invariant under the translations by $t y$ for all $t \in \mathbb{R}$. Let $K$ be a subspace of
+$H^1(\Omega)$ that is invariant under every translation that leaves $\Omega$ invariant. Let the
+coefficients $A_{k\ell} \in L^\infty(\Omega)$ agree almost everywhere with functions $a_{k\ell}$
+that are $C^1$ on $\Omega$ with $\|\nabla a_{k\ell}\| \le M$ on $\Omega$, $M \ge 0$, and let $A$
+satisfy the ellipticity condition with constant $\alpha$. Let $g \in L^2(\Omega)$, and let
+$u \in K$ satisfy $a(u, \psi) = \int_\Omega g \psi$ for all $\psi \in K$, where $a$ is the
+principal part of the general form. Then for every $t \in \mathbb{R}$,
+$$\|\nabla D_{t y} u\|_2 \le \alpha^{-1} \big( \|g\|_2 + N^2 M\, \|\nabla u\|_2 \big).$$
+
+The proof applies `Elliptic.gradNorm_diffQuotL_le`. The test element $D_{-ty}(D_{ty} u)$ lies in
+$K$ by the invariance of $K$, and the bound on $D_{ty} A_{k\ell}$ comes from
+`Elliptic.norm_diffQuotLp_top_le`. -/
 theorem gradNorm_diffQuotL_le_of_invariant {y : EuclideanSpace ℝ (Fin N)}
     (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • y))
     {K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)}
@@ -1095,12 +1271,14 @@ theorem gradNorm_diffQuotL_le_of_invariant {y : EuclideanSpace ℝ (Fin N)}
       (forall_add_smul_smul_mem hΩ t) (hAa k l) (ha k l) hM0 (haM k l)) ?_
   exact heq _ (diffQuotL_mem (hΩ t).neg (hK (hΩ t).neg) (diffQuotL_mem (hΩ t) (hK (hΩ t)) hu))
 
-/-- **Second derivatives along an invariant direction** ([brezis2011functional] §9.6, (55)–(56)
-and (66)–(67)): under the hypotheses of `Elliptic.gradNorm_diffQuotL_le_of_invariant`, with
-`‖y‖ = 1`, every partial derivative `∂ᵢu` has a weak derivative along `y` in `L²(Ω)`, bounded by
-`α⁻¹ (‖g‖₂ + N² M ‖∇u‖₂)`. The difference quotients `D_{t y} ∂ᵢu = ∂ᵢ D_{t y} u`, `t → 0`, are
-bounded in `L²(Ω)` by the tangential estimate, and
-`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded` extracts the weak derivative. -/
+/-- **Second derivatives along an invariant direction.** Under the hypotheses of
+`Elliptic.gradNorm_diffQuotL_le_of_invariant`, with $\|y\| = 1$, every partial derivative
+$\partial_i u$ has a weak derivative $w$ along $y$ on $\Omega$ with $w \in L^2(\Omega)$ and
+$$\|w\|_2 \le \alpha^{-1} \big( \|g\|_2 + N^2 M\, \|\nabla u\|_2 \big).$$
+This follows (55)–(56) and (66)–(67) of [brezis2011functional], §9.6. The difference quotients
+$D_{t y} \partial_i u = \partial_i D_{t y} u$, $t \to 0$, are bounded in $L^2(\Omega)$ by the
+tangential estimate, and `Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded` gives
+the weak derivative. -/
 theorem exists_hasWeakIteratedLineDerivOn_weakDeriv_of_invariant {y : EuclideanSpace ℝ (Fin N)}
     (hy : ‖y‖ = 1)
     (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • y))
@@ -1156,23 +1334,24 @@ variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
 open SobolevMultiIndex
 
-/-- The identity matrix `δ_{kℓ}` as `L^∞(Ω)` coefficients, so that the principal part of the
-general form (41) with these coefficients is the Dirichlet form `∫_Ω ∇u · ∇v`. -/
+/-- The coefficients $\delta_{k\ell}$ of the identity matrix, as elements of $L^\infty(\Omega)$.
+With these coefficients the principal part of the general form (41) is the Dirichlet form
+$\int_\Omega \nabla u \cdot \nabla v$. -/
 def kroneckerCoeff :
     Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   fun k l ↦ if k = l then (memLp_top_const (1 : ℝ)).toLp _ else 0
 
-/-- The diagonal coefficients are `1`. -/
+/-- The diagonal identity coefficients $\delta_{kk}$ are the constant $1$. -/
 theorem kroneckerCoeff_diag (k : Fin N) :
     kroneckerCoeff Ω k k = (memLp_top_const (1 : ℝ)).toLp _ := by
   simp [kroneckerCoeff]
 
-/-- The off-diagonal coefficients are `0`. -/
+/-- The off-diagonal identity coefficients $\delta_{k\ell}$, $k \neq \ell$, are $0$. -/
 theorem kroneckerCoeff_of_ne {k l : Fin N} (hkl : k ≠ l) : kroneckerCoeff Ω k l = 0 := by
   simp [kroneckerCoeff, hkl]
 
-/-- The coefficients `δ_{kℓ}` are the constant functions `if k = ℓ then 1 else 0`, almost
-everywhere. -/
+/-- The identity coefficient $\delta_{k\ell}$ is almost everywhere the constant function equal to
+$1$ if $k = \ell$ and to $0$ otherwise. -/
 theorem coeFn_kroneckerCoeff (k l : Fin N) :
     ⇑(kroneckerCoeff Ω k l) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       fun _ ↦ if k = l then (1 : ℝ) else 0 := by
@@ -1185,7 +1364,8 @@ theorem coeFn_kroneckerCoeff (k l : Fin N) :
       (Eventually.of_forall fun x ↦ ?_)
     simp [hkl]
 
-/-- Multiplication by the diagonal coefficient `1` is the identity. -/
+/-- Multiplication by the diagonal identity coefficient $\delta_{kk} = 1$ is the identity of
+$L^2(\Omega)$. -/
 theorem mulL_kroneckerCoeff_diag (k : Fin N)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     mulL Ω (kroneckerCoeff Ω k k) f = f := by
@@ -1194,8 +1374,8 @@ theorem mulL_kroneckerCoeff_diag (k : Fin N)
   rw [h1, h2]
   simp
 
-/-- **The principal part of the general form with the identity coefficients is the Dirichlet
-form** `∫_Ω ∇u · ∇v`. -/
+/-- **The principal part of the general form with the identity coefficients is the Dirichlet form**
+$\int_\Omega \nabla u \cdot \nabla v$. -/
 theorem generalForm_kroneckerCoeff : generalForm Ω (kroneckerCoeff Ω) 0 0 = dirichletForm Ω := by
   ext u v
   rw [generalForm_zero_zero_apply, dirichletForm_apply_inner]
@@ -1207,7 +1387,7 @@ theorem generalForm_kroneckerCoeff : generalForm Ω (kroneckerCoeff Ω) 0 0 = di
     simp
   · simp
 
-/-- The identity coefficients are elliptic with constant `1`. -/
+/-- The identity coefficients satisfy the ellipticity condition with constant $1$. -/
 theorem isUniformlyElliptic_kroneckerCoeff : IsUniformlyElliptic Ω (kroneckerCoeff Ω) 1 := by
   refine ⟨one_pos, ?_⟩
   have h : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
@@ -1218,12 +1398,15 @@ theorem isUniformlyElliptic_kroneckerCoeff : IsUniformlyElliptic Ω (kroneckerCo
     one_mul, EuclideanSpace.real_norm_sq_eq]
   exact le_of_eq (Finset.sum_congr rfl fun i _ ↦ by ring)
 
-/-- The constant representatives of the identity coefficients are `C¹` with zero derivative. -/
+/-- The constant representatives $x \mapsto \delta_{k\ell}$ of the identity coefficients are $C^1$
+on $\Omega$. -/
 theorem contDiffOn_kroneckerRep (k l : Fin N) :
     ContDiffOn ℝ 1 (fun _ : EuclideanSpace ℝ (Fin N) ↦ if k = l then (1 : ℝ) else 0) Ω :=
   contDiffOn_const
 
 omit Ω in
+/-- The constant representatives $x \mapsto \delta_{k\ell}$ of the identity coefficients have
+derivative of norm at most $0$ at every point. -/
 theorem norm_fderiv_kroneckerRep_le (k l : Fin N) (x : EuclideanSpace ℝ (Fin N)) :
     ‖fderiv ℝ (fun _ : EuclideanSpace ℝ (Fin N) ↦ if k = l then (1 : ℝ) else 0) x‖ ≤ 0 := by
   simp
@@ -1238,12 +1421,15 @@ variable {N : ℕ}
 
 open SobolevMultiIndex
 
-/-- **`H²` regularity on an open set invariant under all translations, with bounds**: if `Ω` is
-invariant under every translation along the coordinate directions (the whole space), `u ∈ H^1(Ω)`
-and `∫_Ω ∇u · ∇φ = ∫_Ω g φ` for all `φ ∈ H^1(Ω)`, then `u` is the function of an element
-`U ∈ H²(Ω)` with `‖∂_j ∂_k U‖₂ ≤ ‖g‖₂` for all `j, k` and
-`‖U‖_{H²} ≤ √(#{|α| ≤ 2}) (‖u‖_{H¹} + ‖g‖₂)`.
-This is [brezis2011functional] Theorem 9.25, case A, for the Dirichlet form, on any such `Ω`. -/
+/-- **$H^2$ regularity on an open set invariant under all translations, with bounds.** Let
+$\Omega \subseteq \mathbb{R}^N$ be invariant under the translations by $t e_i$ for every $i$ and
+every $t \in \mathbb{R}$. Let $u \in H^1(\Omega)$ and $g \in L^2(\Omega)$ satisfy $\int_\Omega
+\nabla u \cdot \nabla \varphi = \int_\Omega g \varphi$ for all $\varphi \in H^1(\Omega)$. Then
+there is $U \in H^2(\Omega)$ with the same function as $u$ almost everywhere on $\Omega$, such
+that $\|\partial^\alpha U\|_2 \le \|g\|_2$ for every $|\alpha| = 2$ and
+$$\|U\|_{H^2} \le \sqrt{n_2}\, \big( \|u\|_{H^1} + \|g\|_2 \big),$$
+where $n_2$ is the number of multi-indices with $|\alpha| \le 2$. This is case A of the proof of
+Theorem 9.25 of [brezis2011functional], for the Dirichlet form, on any such $\Omega$. -/
 theorem exists_sobolevEuclidean_two_of_forall_invariant {Ω : Opens (EuclideanSpace ℝ (Fin N))}
     (hΩ : ∀ (i : Fin N) (t : ℝ),
       IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • EuclideanSpace.single i 1))
@@ -1276,19 +1462,23 @@ theorem exists_sobolevEuclidean_two_of_forall_invariant {Ω : Opens (EuclideanSp
   · exact (hU1 α (Nat.lt_succ_iff.1 hlt)).trans (le_add_of_nonneg_right (norm_nonneg _))
   · exact (hU2 α (le_antisymm α.2 hge)).trans (le_add_of_nonneg_left (norm_nonneg _))
 
-/-- **Theorem 9.25, case A (`Ω = ℝ^N`), `H²` regularity, with the book's constants**
-([brezis2011functional] §9.6, case A): let `u ∈ H^1(ℝ^N)`, `g ∈ L²(ℝ^N)`, and
-`∫ ∇u · ∇φ = ∫ g φ` for every `φ ∈ H^1(ℝ^N)`. Then `u` is the function of an element
-`U ∈ H²(ℝ^N)`, with `‖∂_j ∂_k U‖₂ ≤ ‖g‖₂` for all `j, k` and
-`‖U‖_{H²} ≤ √(#{|α| ≤ 2}) (‖u‖_{H¹} + ‖g‖₂)`. The book's equation `−Δu + u = f` is the case
-`g = f − u`, and its `‖u‖_{H¹} ≤ ‖f‖₂` gives `‖U‖_{H²} ≤ C ‖f‖₂`.
+/-- Theorem 9.25 of [brezis2011functional], **case A** ($\Omega = \mathbb{R}^N$), $H^2$ regularity
+with the constants of the source. Let $u \in H^1(\mathbb{R}^N)$ and $g \in L^2(\mathbb{R}^N)$
+satisfy
+$$\int_{\mathbb{R}^N} \nabla u \cdot \nabla \varphi = \int_{\mathbb{R}^N} g \varphi \quad
+  \text{for all } \varphi \in H^1(\mathbb{R}^N).$$
+Then there is $U \in H^2(\mathbb{R}^N)$ with the same function as $u$ almost everywhere, such
+that $\|\partial^\alpha U\|_2 \le \|g\|_2$ for every $|\alpha| = 2$ and
+$$\|U\|_{H^2} \le \sqrt{n_2}\, \big( \|u\|_{H^1} + \|g\|_2 \big),$$
+where $n_2$ is the number of multi-indices with $|\alpha| \le 2$.
 
-The proof is the method of translations: testing with `D_{−h}(D_h u)` and Lemma 9.6 give
-`‖∇ D_h u‖₂ ≤ ‖g‖₂` (`Elliptic.gradNorm_diffQuotL_le`), and the weak compactness of bounded
-difference quotients (`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`) produces
-every second derivative with the same bound. The whole space is invariant under every
-translation, so every direction is available
-(`Elliptic.exists_sobolevEuclidean_two_of_forall_invariant`). -/
+The equation $-\Delta u + u = f$ of the source is the case $g = f - u$, and together with
+$\|u\|_{H^1} \le \|f\|_2$ it gives $\|U\|_{H^2} \le C \|f\|_2$. The proof is the method of
+translations. Testing with $D_{-h}(D_h u)$ and Lemma 9.6 give $\|\nabla D_h u\|_2 \le \|g\|_2$
+(`Elliptic.gradNorm_diffQuotL_le`), and the weak compactness of bounded difference quotients
+(`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`) gives every second derivative
+with the same bound. The whole space is invariant under every translation, so
+`Elliptic.exists_sobolevEuclidean_two_of_forall_invariant` applies. -/
 theorem regularity_top {u : SobolevEuclidean N 1 2 ⊤}
     {g : Lp ℝ 2 (volume.restrict
       ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N))))}
@@ -1301,8 +1491,9 @@ theorem regularity_top {u : SobolevEuclidean N 1 2 ⊤}
       ‖U‖ ≤ √(Fintype.card (MultiIndexLE (Fin N) 2)) * (‖u‖ + ‖g‖) :=
   exists_sobolevEuclidean_two_of_forall_invariant (fun _ _ ↦ IsTranslationInvariant.univ _) heq
 
-/-- **Theorem 9.25, case A, as a membership**: the function of the weak solution lies in
-`H²(ℝ^N)` (`MemSobolevMultiIndex` for the standard basis). -/
+/-- **Case A of Theorem 9.25, as a membership.** If $u \in H^1(\mathbb{R}^N)$ and
+$g \in L^2(\mathbb{R}^N)$ satisfy $\int \nabla u \cdot \nabla \varphi = \int g \varphi$ for all
+$\varphi \in H^1(\mathbb{R}^N)$, then the function of $u$ lies in $H^2(\mathbb{R}^N)$. -/
 theorem regularity_top_memSobolevMultiIndex {u : SobolevEuclidean N 1 2 ⊤}
     {g : Lp ℝ 2 (volume.restrict
       ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N))))}
@@ -1324,10 +1515,12 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E}
 
 omit [MeasurableSpace E] [BorelSpace E] in
-/-- A smooth function `α` whose support misses the frontier of `Ω`, times a smooth compactly
-supported `φ`, agrees on `Ω` with a test function on `Ω`:
-`IsSobolevCutoff.exists_testFunction_mul_eqOn` without the bound on `α` and its derivative, which
-that proof does not use. -/
+/-- Let $\alpha : E \to \mathbb{R}$ be smooth with support disjoint from the frontier of $\Omega$,
+and let $\varphi$ be smooth with compact support. Then there is a test function $\psi$ on
+$\Omega$ with $\psi = \alpha \varphi$ on $\Omega$.
+
+This is `IsSobolevCutoff.exists_testFunction_mul_eqOn` without the bound on $\alpha$ and its
+derivative, which that proof does not use. -/
 theorem exists_testFunction_mul_eqOn_of_disjoint_frontier {α : E → ℝ} (hα : ContDiff ℝ ∞ α)
     (hαΩ : Disjoint (tsupport α) (frontier (Ω : Set E))) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ)
     (hφc : HasCompactSupport φ) :
@@ -1355,8 +1548,10 @@ theorem exists_testFunction_mul_eqOn_of_disjoint_frontier {α : E → ℝ} (hα 
     rw [this, mul_zero]
 
 omit [FiniteDimensional ℝ E] [μ.IsAddHaarMeasure] in
-/-- The defining identity of a weak derivative along one direction, for a function `χ` agreeing
-on `Ω` with a test function: `∫_Ω (∂_y χ) u = −∫_Ω χ w`. -/
+/-- Let $w$ be a weak derivative of $u$ along $y$ on $\Omega$, and let $\chi$ agree on $\Omega$ with
+a test function on $\Omega$. Then
+$$\int_\Omega (\partial_y \chi)\, u = -\int_\Omega \chi\, w.$$
+-/
 theorem _root_.HasWeakIteratedLineDerivOn.integral_fderiv_mul_eq_of_eqOn {y : E} {u w : E → ℝ}
     (hu : HasWeakIteratedLineDerivOn ![y] u w Ω μ) {χ : E → ℝ} (ψ : 𝓓(Ω, ℝ))
     (hχ : ∀ x ∈ (Ω : Set E), ψ x = χ x) :
@@ -1374,17 +1569,22 @@ theorem _root_.HasWeakIteratedLineDerivOn.integral_fderiv_mul_eq_of_eqOn {y : E}
   rw [e1, e2, key]
 
 omit [μ.IsAddHaarMeasure] in
-/-- **Cutting off a weak solution of `−div(∇u) = f`** ([brezis2011functional] §9.6, proof of
-Theorem 9.25, case C₁, "it is easy to verify that `θ₀ u` is a weak solution in `ℝ^N` of
-`−Δ(θ₀u) + θ₀u = θ₀f − 2∇θ₀·∇u − (Δθ₀)u`"): let `u` have the weak partial derivatives `w i` along
-the vectors `b i` on `Ω`, all locally integrable, let `f` be locally integrable on `Ω`, and let
-`∑ᵢ ∫_Ω wᵢ ∂ᵢφ = ∫_Ω f φ` for every test function `φ` on `Ω`. For a cut-off `θ` of `Ω` and every
-test function `ψ` on the whole space,
+/-- **Cutting off a weak solution of $-\operatorname{div}(\nabla u) = f$.** Let $u$ have the weak
+derivatives $w_i$ along the vectors $b_i$ on $\Omega$, with $u$ and $f$ locally integrable on
+$\Omega$, and suppose that
+$$\sum_i \int_\Omega w_i\, \partial_i \varphi = \int_\Omega f \varphi$$
+for every test function $\varphi$ on $\Omega$, where $\partial_i = \partial_{b_i}$. Let $\theta$
+be a Sobolev cut-off of $\Omega$ (`IsSobolevCutoff`). Then for every test function $\psi$ on the
+whole space,
+$$\sum_i \int \mathbf{1}_\Omega \big( \theta w_i + (\partial_i \theta) u \big)\, \partial_i
+  \psi = \int \mathbf{1}_\Omega \Big( \theta f - 2 \sum_i (\partial_i \theta) w_i - \Big( \sum_i
+  \partial_i \partial_i \theta \Big) u \Big) \psi.$$
 
-`∑ᵢ ∫ 1_Ω (θ wᵢ + (∂ᵢθ) u) ∂ᵢψ = ∫ 1_Ω (θ f − 2 ∑ᵢ (∂ᵢθ) wᵢ − (∑ᵢ ∂ᵢ∂ᵢθ) u) ψ`,
-
-with `∂ᵢθ = ∇θ · bᵢ`. The equation is tested with `θψ`, and the weak derivatives with
-`(∂ᵢθ) ψ`, both of which agree on `Ω` with test functions on `Ω`. -/
+This is the computation in case $C_1$ of the proof of Theorem 9.25 of [brezis2011functional]:
+"it is easy to verify that $\theta_0 u$ is a weak solution in $\mathbb{R}^N$ of
+$-\Delta(\theta_0 u) + \theta_0 u = \theta_0 f - 2 \nabla\theta_0 \cdot \nabla u -
+(\Delta\theta_0) u$". The equation is tested with $\theta \psi$, and the weak derivatives with
+$(\partial_i \theta) \psi$. Both agree on $\Omega$ with test functions on $\Omega$. -/
 theorem sum_integral_indicator_cutoff_eq {ι : Type*} [Fintype ι] (b : ι → E) {u f : E → ℝ}
     {w : ι → E → ℝ} (hu : LocallyIntegrableOn u Ω μ) (hf : LocallyIntegrableOn f Ω μ)
     (hw : ∀ i, HasWeakIteratedLineDerivOn ![b i] u (w i) Ω μ)
@@ -1549,7 +1749,7 @@ theorem sum_integral_indicator_cutoff_eq {ι : Type*} [Fintype ι] (b : ι → E
 end Cutoff
 
 
-/-! ### Weak solutions: the typed and the predicate forms -/
+/-! ### Weak solutions: the element form and the functional form -/
 
 section Bridge
 
@@ -1557,11 +1757,15 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **A weak solution against the test functions is one against `H^1_0(Ω)`**: if
-`∫_Ω ∇V · ∇φ = ∫_Ω G φ` for every element `φ` of `H^1(Ω)` whose function is a test function, then
-it holds for every `φ ∈ H^1_0(Ω)`, both sides being continuous in `φ`. On `Ω = ℝ^N`, where
-`H^1_0 = H^1` (`SobolevEuclideanZero.eq_top`), this is the density argument "this implies (53),
-since `C_c^∞(ℝ^N)` is dense in `H^1(ℝ^N)`" of [brezis2011functional] §9.6. -/
+/-- **A weak solution against the test functions is a weak solution against $H^1_0(\Omega)$.** Let
+$V \in H^1(\Omega)$ and $G \in L^2(\Omega)$. If $\int_\Omega \nabla V \cdot \nabla \varphi =
+\int_\Omega G \varphi$ for every element $\varphi$ of $H^1(\Omega)$ whose function is a test
+function, then the same holds for every $\varphi \in H^1_0(\Omega)$, because both sides are
+continuous in $\varphi$.
+
+On $\Omega = \mathbb{R}^N$, where $H^1_0 = H^1$ (`SobolevEuclideanZero.eq_top`), this is the
+density argument "this implies (53), since $C_c^\infty(\mathbb{R}^N)$ is dense in
+$H^1(\mathbb{R}^N)$" of [brezis2011functional], §9.6. -/
 theorem dirichletForm_eq_load_of_forall_testFunctions {V : SobolevEuclidean N 1 2 Ω}
     {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (h : IsWeakSolution (dirichletForm Ω)
@@ -1580,9 +1784,12 @@ theorem dirichletForm_eq_load_of_forall_testFunctions {V : SobolevEuclidean N 1 
     sub_eq_zero] at this
   exact this
 
-/-- **The Dirichlet form of an element against a test-function element, in terms of
-functions**: if the partial derivatives of `V` are the functions `wv i` and the function of `Φ`
-is the test function `ψ`, then `∫_Ω ∇V · ∇Φ = ∑ᵢ ∫_Ω wvᵢ ∂ᵢψ`. -/
+/-- **The Dirichlet form against a test-function element, in terms of functions.** If the partial
+derivatives $\partial_i V$ of $V \in H^1(\Omega)$ agree almost everywhere with functions $v_i$,
+and the function of $\Phi \in H^1(\Omega)$ agrees almost everywhere with a test function $\psi$,
+then
+$$\int_\Omega \nabla V \cdot \nabla \Phi = \sum_i \int_\Omega v_i\, \partial_i \psi.$$
+-/
 theorem dirichletForm_apply_eq_of_ae_eq {V : SobolevEuclidean N 1 2 Ω}
     {wv : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hV : ∀ i, ⇑(weakDeriv V (MultiIndexLE.single i))
@@ -1600,7 +1807,9 @@ theorem dirichletForm_apply_eq_of_ae_eq {V : SobolevEuclidean N 1 2 Ω}
   filter_upwards [hV i, hΦi] with x h1 h2
   rw [h1, h2]
 
-/-- The load of `G` against a test-function element, in terms of functions. -/
+/-- If $G \in L^2(\Omega)$ agrees almost everywhere with $g$ and the function of
+$\Phi \in H^1(\Omega)$ agrees almost everywhere with a test function $\psi$, then the load is
+$\int_\Omega G \Phi = \int_\Omega g \psi$. -/
 theorem load_apply_eq_of_ae_eq {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {g : EuclideanSpace ℝ (Fin N) → ℝ}
     (hG : ⇑G =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] g)
@@ -1612,11 +1821,12 @@ theorem load_apply_eq_of_ae_eq {G : Lp ℝ 2 (volume.restrict (Ω : Set (Euclide
   filter_upwards [hG, hΦ] with x h1 h2
   rw [h1, h2]
 
-/-- **From the predicate form to the typed form of a weak solution**: functions `v`, `wv i`, `g`
-in `L²(Ω)` with `wv i` the weak derivative of `v` along `eᵢ` and
-`∑ᵢ ∫_Ω wvᵢ ∂ᵢψ = ∫_Ω g ψ` for every test function `ψ` on `Ω` are the function, the partial
-derivatives and the load of elements `V ∈ H^1(Ω)`, `G ∈ L²(Ω)` with `∫_Ω ∇V · ∇Φ = ∫_Ω G Φ` for
-every test-function element `Φ`. -/
+/-- **From the functional form to the element form of a weak solution.** Let $v, g \in L^2(\Omega)$,
+and let $v$ have weak derivatives $v_i \in L^2(\Omega)$ along $e_i$ on $\Omega$, with $\sum_i
+\int_\Omega v_i\, \partial_i \psi = \int_\Omega g \psi$ for every test function $\psi$ on
+$\Omega$. Then there are $V \in H^1(\Omega)$ and $G \in L^2(\Omega)$ whose function, partial
+derivatives and datum agree almost everywhere with $v$, $v_i$ and $g$, and $\int_\Omega \nabla V
+\cdot \nabla \Phi = \int_\Omega G \Phi$ for every test-function element $\Phi$. -/
 theorem exists_sobolevEuclidean_of_forall_testFunction {v g : EuclideanSpace ℝ (Fin N) → ℝ}
     {wv : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hv : MemLp v 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -1646,9 +1856,10 @@ theorem exists_sobolevEuclidean_of_forall_testFunction {v g : EuclideanSpace ℝ
   rw [dirichletForm_apply_eq_of_ae_eq hVd hψ, load_apply_eq_of_ae_eq hg.coeFn_toLp hψ]
   exact heq ψ
 
-/-- **From the typed form to the predicate form of a weak solution**: if
-`∫_Ω ∇U · ∇Φ = ∫_Ω F Φ` for every test-function element `Φ`, then
-`∑ᵢ ∫_Ω ∂ᵢU ∂ᵢψ = ∫_Ω F ψ` for every test function `ψ` on `Ω`. -/
+/-- **From the element form to the functional form of a weak solution.** If $U \in H^1(\Omega)$ and
+$F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla U \cdot \nabla \Phi = \int_\Omega F \Phi$ for
+every test-function element $\Phi$, then $\sum_i \int_\Omega \partial_i U\, \partial_i \psi =
+\int_\Omega F \psi$ for every test function $\psi$ on $\Omega$. -/
 theorem forall_testFunction_of_forall_testFunctions {U : SobolevEuclidean N 1 2 Ω}
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (h : IsWeakSolution (dirichletForm Ω)
@@ -1665,7 +1876,7 @@ theorem forall_testFunction_of_forall_testFunctions {U : SobolevEuclidean N 1 2 
 
 end Bridge
 
-/-! ### Case C₁: interior regularity -/
+/-! ### Case $C_1$: interior regularity -/
 
 section Interior
 
@@ -1673,8 +1884,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E}
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [μ.IsAddHaarMeasure] in
-/-- A continuous function with compact support in `Ω` times a function locally in `L^p` on `Ω`
-lies in `L^p(Ω)`, `p < ∞`. -/
+/-- Let $p < \infty$, let $u$ be locally in $L^p$ on $\Omega$, and let $\theta$ be continuous with
+compact support contained in $\Omega$. Then $\theta u \in L^p(\Omega)$. -/
 theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_mul_of_tsupport_subset {p : ℝ≥0∞}
     (hp : p ≠ ⊤) {u : E → ℝ} (hu : LocallyMemLpOn u p Ω μ) {θ : E → ℝ} (hθ : Continuous θ)
     (hθc : HasCompactSupport θ) (hθΩ : tsupport θ ⊆ Ω) :
@@ -1698,8 +1909,9 @@ theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_mul_of_tsupport_subset {p : �
   exact h2.restrict _
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [μ.IsAddHaarMeasure] in
-/-- The zero extension of a continuous compactly supported function in `Ω` times a function
-locally in `L^p` on `Ω` lies in `L^p` of the whole space. -/
+/-- Let $p < \infty$, let $u$ be locally in $L^p$ on $\Omega$, and let $\theta$ be continuous with
+compact support contained in $\Omega$. Then the extension of $\theta u$ by zero outside $\Omega$
+lies in $L^p$ of the whole space. -/
 theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_indicator_mul_of_tsupport_subset {p : ℝ≥0∞}
     (hp : p ≠ ⊤) {u : E → ℝ} (hu : LocallyMemLpOn u p Ω μ) {θ : E → ℝ} (hθ : Continuous θ)
     (hθc : HasCompactSupport θ) (hθΩ : tsupport θ ⊆ Ω) :
@@ -1708,7 +1920,8 @@ theorem _root_.MeasureTheory.LocallyMemLpOn.memLp_indicator_mul_of_tsupport_subs
     (hu.memLp_mul_of_tsupport_subset hp hθ hθc hθΩ)
 
 omit [BorelSpace E] in
-/-- A function locally in `L^p` on an open set, `1 ≤ p < ∞`, is locally integrable there. -/
+/-- A function that is locally in $L^p$ on $\Omega$, with $1 \le p < \infty$, is locally integrable
+on $\Omega$. -/
 theorem _root_.MeasureTheory.LocallyMemLpOn.locallyIntegrableOn_of_le {p : ℝ≥0∞} {u : E → ℝ}
     (hu : LocallyMemLpOn u p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) : LocallyIntegrableOn u Ω μ := by
   rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed]
@@ -1725,19 +1938,24 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **Theorem 9.25, case C₁ = Remark 25 at `m = 0`: interior `H²` regularity on an arbitrary open
-set** ([brezis2011functional] §9.6). Let `Ω ⊆ ℝ^N` be open, let `u ∈ H^1_loc(Ω)` with the weak
-partial derivatives `w i ∈ L²_loc(Ω)`, let `f ∈ L²_loc(Ω)`, and let
-`∑ᵢ ∫_Ω wᵢ ∂ᵢφ = ∫_Ω f φ` for every test function `φ` on `Ω`. Then `u ∈ H²_loc(Ω)`: `u ∈ H²(ω)`
-for every open `ω` with compact closure in `Ω`.
+/-- Theorem 9.25 of [brezis2011functional], **case $C_1$**, which is Remark 25 for $m = 0$: interior
+$H^2$ regularity on an arbitrary open set. Let $\Omega \subseteq \mathbb{R}^N$ be open, let $u$
+be locally in $L^2$ on $\Omega$ with weak partial derivatives $w_i$ on $\Omega$ that are locally
+in $L^2$ on $\Omega$, and let $f$ be locally in $L^2$ on $\Omega$. Suppose that
+$$\int_\Omega \sum_i w_i\, \partial_i \varphi = \int_\Omega f \varphi$$
+for every test function $\varphi$ on $\Omega$. Then $u \in H^2_{\mathrm{loc}}(\Omega)$:
+$u \in H^2(\omega)$ for every open $\omega$ with compact closure contained in $\Omega$.
 
-The proof is the book's: for such an `ω`, a smooth `θ` equal to `1` on `closure ω` with compact
-support in `Ω` (`IsCompact.exists_contDiff_eqOn_one_hasCompactSupport`); `θu` extended by zero
-lies in `H^1(ℝ^N)` (`HasWeakIteratedLineDerivOn.indicator_mul`) and solves
-`−Δ(θu) = θf − 2∇θ·∇u − (Δθ)u ∈ L²(ℝ^N)` against the test functions
-(`Elliptic.sum_integral_indicator_cutoff_eq`), hence against all of `H^1(ℝ^N)` by density
-(`Elliptic.dirichletForm_eq_load_of_forall_testFunctions`, `SobolevEuclideanZero.eq_top`); case A
-(`Elliptic.regularity_top_memSobolevMultiIndex`) gives `θu ∈ H²(ℝ^N)`, and `θu = u` on `ω`. -/
+The proof is the one of the source. For such an $\omega$, take a smooth $\theta$ equal to $1$ on
+$\overline{\omega}$ with compact support in $\Omega$
+(`IsCompact.exists_contDiff_eqOn_one_hasCompactSupport`). The extension of $\theta u$ by zero
+lies in $H^1(\mathbb{R}^N)$ (`HasWeakIteratedLineDerivOn.indicator_mul`) and solves
+$-\Delta(\theta u) = \theta f - 2 \nabla\theta \cdot \nabla u - (\Delta\theta) u \in
+L^2(\mathbb{R}^N)$ against the test functions (`Elliptic.sum_integral_indicator_cutoff_eq`),
+hence against all of $H^1(\mathbb{R}^N)$ by density
+(`Elliptic.dirichletForm_eq_load_of_forall_testFunctions`, `SobolevEuclideanZero.eq_top`). Case
+A (`Elliptic.regularity_top_memSobolevMultiIndex`) gives $\theta u \in H^2(\mathbb{R}^N)$, and
+$\theta u = u$ on $\omega$. The conclusion is `MemSobolevMultiIndexLoc`. -/
 theorem regularity_interior {u f : EuclideanSpace ℝ (Fin N) → ℝ}
     {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : LocallyMemLpOn u 2 Ω volume)
@@ -1844,7 +2062,7 @@ end InteriorEuclidean
 
 /-! ### The normal derivative from the equation -/
 
-/-- A double sum with the `(i₀, i₀)` term separated off. -/
+/-- A double sum equals its $(i_0, i_0)$ term plus the double sum with that term replaced by $0$. -/
 theorem sum_sum_eq_add_sum_sum_ite {ι M : Type*} [Fintype ι] [DecidableEq ι] [AddCommMonoid M]
     (F : ι → ι → M) (i₀ : ι) :
     ∑ k, ∑ l, F k l = F i₀ i₀ + ∑ k, ∑ l, if k = i₀ ∧ l = i₀ then 0 else F k l := by
@@ -1860,14 +2078,21 @@ section Normal
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **The equation gives the normal derivative of `a_{NN} w_N`** ([brezis2011functional] §9.6,
-(57) and (69)): let `w i ∈ L²(Ω)` (the weak partial derivatives of a solution), let the
-coefficients `a_{kℓ}` be `C¹` on `Ω` with `|a_{kℓ}| ≤ M₀` and `‖∇a_{kℓ}‖ ≤ M` there, let
-`∑_{kℓ} ∫_Ω a_{kℓ} w_k ∂_ℓ φ = ∫_Ω f φ` for every test function `φ`, and suppose every `w_k` has a
-weak derivative `v_{kℓ} ∈ L²(Ω)` along `e_ℓ` for `(k, ℓ) ≠ (N, N)`. Then `a_{NN} w_N` has the weak
-derivative `−(f + ∑_{(k,ℓ) ≠ (N,N)} ((∂_ℓ a_{kℓ}) w_k + a_{kℓ} v_{kℓ}))` along `e_N`, which lies in
-`L²(Ω)`: the equation, with the other terms integrated by parts through the product rule
-`HasWeakIteratedLineDerivOn.mul`. -/
+/-- **The equation gives the normal derivative of $a_{NN} w_N$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open, with $N = d + 1$. Let $w_i \in L^2(\Omega)$ and
+$f \in L^2(\Omega)$. Let the coefficients $a_{k\ell}$ be $C^1$ on $\Omega$ with
+$|a_{k\ell}| \le M_0$ and $\|\nabla a_{k\ell}\| \le M$ on $\Omega$, and suppose that
+$$\sum_{k,\ell} \int_\Omega a_{k\ell}\, w_k\, \partial_\ell \varphi = \int_\Omega f \varphi$$
+for every test function $\varphi$. Let $v_{k\ell} \in L^2(\Omega)$ for all $k, \ell$, and
+suppose that $v_{k\ell}$ is a weak derivative of $w_k$ along $e_\ell$ on $\Omega$ for every
+$(k, \ell) \neq (N, N)$. Then the function
+$$-\Big( f + \sum_{(k,\ell) \neq (N,N)} \big( (\partial_\ell a_{k\ell})\, w_k + a_{k\ell}\,
+  v_{k\ell} \big) \Big)$$
+is a weak derivative of $a_{NN} w_N$ along $e_N$ on $\Omega$ and lies in $L^2(\Omega)$.
+
+This is (57) and (69) of [brezis2011functional], §9.6. The other terms of the equation are
+integrated by parts with the product rule `HasWeakIteratedLineDerivOn.mul`. The function
+$v_{NN}$ does not enter the conclusion. -/
 theorem hasWeakIteratedLineDerivOn_last_mul_of_forall {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {w : Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {a v : Fin (d + 1) → Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -1992,12 +2217,16 @@ theorem hasWeakIteratedLineDerivOn_last_mul_of_forall {f : EuclideanSpace ℝ (F
   linarith [hsplit]
 
 
-/-- **The normal-normal derivative of a weak solution, from the equation** ([brezis2011functional]
-§9.6, (57) and (68)–(69)): under the hypotheses of
-`Elliptic.hasWeakIteratedLineDerivOn_last_mul_of_forall`, with `a_{NN} ≥ α > 0` on `Ω`, the
-derivative `w_N` has a weak derivative `v_{NN}` along `e_N` in `L²(Ω)`, dominated pointwise by
-`α⁻¹ (M |w_N| + |f| + ∑_{kℓ} (M |w_k| + M₀ |v_{kℓ}|))`: divide the equation
-`∂_N(a_{NN} w_N) = −(f + …)` by `a_{NN}` with the product rule for the `C¹` factor `1/a_{NN}`. -/
+/-- **The normal-normal derivative of a weak solution, from the equation.** Under the hypotheses of
+`Elliptic.hasWeakIteratedLineDerivOn_last_mul_of_forall`, let moreover $\alpha > 0$ with
+$\alpha \le a_{NN}$ on $\Omega$. Then $w_N$ has a weak derivative $v_{NN}$ along $e_N$ on
+$\Omega$, with $v_{NN} \in L^2(\Omega)$ and, for every $x \in \Omega$,
+$$|v_{NN}(x)| \le \alpha^{-1} \Big( M |w_N(x)| + |f(x)| + \sum_{k,\ell} \big( M |w_k(x)| + M_0
+  |v_{k\ell}(x)| \big) \Big).$$
+
+This is (57) and (68)–(69) of [brezis2011functional], §9.6. The equation
+$\partial_N(a_{NN} w_N) = -(f + \dots)$ is divided by $a_{NN}$ with the product rule for the
+$C^1$ factor $1/a_{NN}$. -/
 theorem exists_hasWeakIteratedLineDerivOn_last_of_forall {f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {w : Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {a v : Fin (d + 1) → Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2145,7 +2374,8 @@ section Domination
 
 variable {X : Type*} [MeasurableSpace X] {ν : Measure X}
 
-/-- `‖M |w|‖₂ = M ‖W‖` for `W ∈ L²` the class of `w` and `M ≥ 0`. -/
+/-- For $M \ge 0$ and $W \in L^2$ with function $w$, the function $M |w|$ has $L^2$ norm $M \|W\|$.
+-/
 theorem eLpNorm_const_mul_abs_eq {M : ℝ} (hM : 0 ≤ M) (W : Lp ℝ 2 ν) {w : X → ℝ}
     (hw : ⇑W =ᵐ[ν] w) : eLpNorm (fun x ↦ M * |w x|) 2 ν = ENNReal.ofReal (M * ‖W‖) := by
   have e1 : (fun x ↦ M * |w x|) = M • fun x ↦ ‖w x‖ := by
@@ -2155,10 +2385,14 @@ theorem eLpNorm_const_mul_abs_eq {M : ℝ} (hM : 0 ≤ M) (W : Lp ℝ 2 ν) {w :
     ← eLpNorm_congr_ae hw, ← Lp.enorm_def, Real.enorm_of_nonneg hM, ← ofReal_norm,
     ← ENNReal.ofReal_mul hM]
 
-/-- **From a pointwise domination to a norm bound**: if
-`|φ| ≤ c (M |w₀| + |f| + ∑_{kℓ} (M |w_k| + M₀ |v_{kℓ}|))`
-almost everywhere, then `‖φ‖₂ ≤ c (M ‖W₀‖ + ‖F‖ + ∑_{kℓ} (M ‖W_k‖ + M₀ ‖V_{kℓ}‖))` for the `L²`
-classes `W₀, F, W_k, V_{kℓ}` of the dominating functions. -/
+/-- **From a pointwise bound to a norm bound.** Let $c, M, M_0 \ge 0$, let $\varphi \in L^2$, and
+let $F$, $W_k$, $V_{k\ell}$ be elements of $L^2$ with functions $f$, $w_k$, $v_{k\ell}$. If
+$$|\varphi| \le c \Big( M |w_{i_0}| + |f| + \sum_{k,\ell} \big( M |w_k| + M_0 |v_{k\ell}| \big)
+  \Big)$$
+almost everywhere, then
+$$\|\varphi\|_2 \le c \Big( M \|W_{i_0}\| + \|F\| + \sum_{k,\ell} \big( M \|W_k\| + M_0
+  \|V_{k\ell}\| \big) \Big).$$
+-/
 theorem norm_toLp_le_of_ae_abs_le {ι : Type*} [Fintype ι] {φ f : X → ℝ} {w : ι → X → ℝ}
     {v : ι → ι → X → ℝ} {c M M₀ : ℝ} (hc : 0 ≤ c) (hM : 0 ≤ M) (hM₀ : 0 ≤ M₀) (i₀ : ι)
     (hφ : MemLp φ 2 ν) (F : Lp ℝ 2 ν) (hF : ⇑F =ᵐ[ν] f) (W : ι → Lp ℝ 2 ν)
@@ -2218,8 +2452,11 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 open SobolevMultiIndex
 
 /-- **The principal part of the general form against a test-function element, in terms of
-functions**: for coefficients `A_{kℓ}` with representatives `a_{kℓ}` and an element `Φ` whose
-function is the test function `ψ`, `a(U, Φ) = ∑_{kℓ} ∫_Ω a_{kℓ} ∂_k U ∂_ℓ ψ`. -/
+functions.** Let the coefficients $A_{k\ell} \in L^\infty(\Omega)$ agree almost everywhere with
+functions $a_{k\ell}$, let $U \in H^1(\Omega)$, and let the function of $\Phi \in H^1(\Omega)$
+agree almost everywhere with a test function $\psi$. Then
+$$a(U, \Phi) = \sum_{k,\ell} \int_\Omega a_{k\ell}\, \partial_k U\, \partial_\ell \psi.$$
+-/
 theorem generalForm_zero_zero_apply_eq_of_ae_eq
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
@@ -2238,9 +2475,14 @@ theorem generalForm_zero_zero_apply_eq_of_ae_eq
   filter_upwards [hAa k l, hΦl] with x h1 h2
   rw [h1, h2]
 
-/-- **From the typed form to the predicate form of a weak solution of the general equation**: if
-`a(U, Φ) = ∫_Ω g Φ` for every `Φ` of a subspace containing the test-function elements, then
-`∑_{kℓ} ∫_Ω a_{kℓ} ∂_k U ∂_ℓ ψ = ∫_Ω g ψ` for every test function `ψ`. -/
+/-- **From the element form to the functional form of a weak solution of the general equation.** Let
+the coefficients $A_{k\ell}$ agree almost everywhere with functions $a_{k\ell}$, let $K$ be a
+subspace of $H^1(\Omega)$ that contains the test-function elements, and let
+$a(U, \Phi) = \int_\Omega g \Phi$ for every $\Phi \in K$. Then for every test function $\psi$ on
+$\Omega$,
+$$\sum_{k,\ell} \int_\Omega a_{k\ell}\, \partial_k U\, \partial_\ell \psi = \int_\Omega g
+  \psi.$$
+-/
 theorem forall_testFunction_of_forall_mem_general
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
@@ -2267,22 +2509,31 @@ variable {d : ℕ}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- The tangential coordinate vectors of the half space: `e_k` for `k ≠ N`. -/
+/-- For $k \neq N$, the coordinate vector $e_k$ is tangential to the half space: its last coordinate
+is $0$. -/
 theorem single_apply_last_eq_zero {k : Fin (d + 1)} (hk : k ≠ Fin.last d) :
     (EuclideanSpace.single k (1 : ℝ)) (Fin.last d) = 0 := by
   simp [hk.symm]
 
-/-- **Second derivatives of a weak solution, all but `∂_N∂_N`, on an open set invariant under
-the tangential translations** ([brezis2011functional] §9.6, (55)–(56) and (66)–(67), the half
-space being the case in point): for a subspace `K` of `H^1(Ω)` invariant under the translations
-that leave `Ω` invariant and `u ∈ K` solving `a(u, ψ) = ∫ g ψ` for all `ψ ∈ K`, with `C¹`
-elliptic coefficients, every partial derivative `∂_k u` has a weak derivative along `e_ℓ` in
-`L²(Ω)` for `(k, ℓ) ≠ (N, N)`, bounded by `α⁻¹ (‖g‖ + N² M ‖∇u‖)`. For tangential `ℓ` this is
-the tangential estimate along `e_ℓ`; for `ℓ = N` and tangential `k` it is the derivative
-`∂_k ∂_N u`, which is `∂_N ∂_k u` by the symmetry of weak derivatives
-(`HasWeakIteratedLineDerivOn.of_perm`). The Dirichlet problem is `K = H^1_0(Ω)` and the Neumann
-problem is `K = ⊤`; only the invariance of `K` is used, which is why the "delicate point" of the
-book's Lemma 9.7 does not arise here. -/
+/-- **All second derivatives of a weak solution except $\partial_N \partial_N$, on an open set
+invariant under the tangential translations.** Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$,
+be invariant under the translations by $t e_j$ for all $j \neq N$ and $t \in \mathbb{R}$. Let
+the coefficients $A_{k\ell} \in L^\infty(\Omega)$ agree almost everywhere with functions
+$a_{k\ell}$ that are $C^1$ on $\Omega$ with $\|\nabla a_{k\ell}\| \le M$ on $\Omega$, $M \ge 0$,
+and let $A$ satisfy the ellipticity condition with constant $\alpha$. Let $K$ be a subspace of
+$H^1(\Omega)$ that is invariant under every translation that leaves $\Omega$ invariant. Let
+$g \in L^2(\Omega)$, and let $u \in K$ satisfy $a(u, \psi) = \int_\Omega g \psi$ for all
+$\psi \in K$. Then for every $(k, \ell) \neq (N, N)$ the derivative $\partial_k u$ has a weak
+derivative $w$ along $e_\ell$ on $\Omega$ with $w \in L^2(\Omega)$ and
+$$\|w\|_2 \le \alpha^{-1} \big( \|g\|_2 + N^2 M\, \|\nabla u\|_2 \big).$$
+
+This follows (55)–(56) and (66)–(67) of [brezis2011functional], §9.6, where the half space is
+the main example. For tangential $\ell$ this is the tangential estimate along $e_\ell$. For
+$\ell = N$ and tangential $k$, the derivative $\partial_N \partial_k u$ equals
+$\partial_k \partial_N u$ by the symmetry of weak derivatives
+(`HasWeakIteratedLineDerivOn.of_perm`). The Dirichlet problem is $K = H^1_0(\Omega)$ and the
+Neumann problem is $K = H^1(\Omega)$. Only the invariance of $K$ is used, so the "delicate
+point" of Lemma 9.7 of the source does not arise here. -/
 theorem exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
@@ -2348,7 +2599,7 @@ theorem exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential
 end HalfSpaceTangential
 
 
-/-! ### Case B: `H²` regularity on a tangentially invariant open set -/
+/-! ### Case B: $H^2$ regularity on a tangentially invariant open set -/
 
 section TangentialRegularity
 
@@ -2356,7 +2607,9 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- The diagonal coefficient `a_{NN}` of an elliptic matrix is at least `α`. -/
+/-- If the coefficients $a_{k\ell}$ satisfy $\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(x)\, \xi_k
+\xi_\ell$ for all $x \in \Omega$ and $\xi$, then every diagonal coefficient satisfies
+$\alpha \le a_{ii}(x)$ for $x \in \Omega$. -/
 theorem le_diag_of_forall_elliptic
     {a : Fin (d + 1) → Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {α : ℝ} (hell : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
@@ -2366,16 +2619,22 @@ theorem le_diag_of_forall_elliptic
   have := hell x hx (EuclideanSpace.single i 1)
   simpa [PiLp.norm_single, Finset.sum_ite_eq'] using this
 
-/-- The constant of the `H²` estimate on a tangentially invariant open set, in terms of the
-dimension `d + 1`, the ellipticity constant `α`, the bound `M₀` on the coefficients and the bound
-`M` on their gradients. -/
+/-- The constant of the $H^2$ estimate on a tangentially invariant open set in $\mathbb{R}^N$,
+$N = d + 1$, in terms of the ellipticity constant $\alpha$, the bound $M_0$ on the coefficients
+and the bound $M$ on their gradients:
+$$C = \sqrt{n_2}\, \Big( 1 + \max\Big\{ \alpha^{-1}(1 + N^2 M),\ \alpha^{-1}\big( 1 + M + N^2
+  \big( M + M_0\, \alpha^{-1} (1 + N^2 M) \big) \big) \Big\} \Big),$$
+where $n_2$ is the number of multi-indices with $|\alpha| \le 2$ in $N$ variables. -/
 def regularityConst (d : ℕ) (α M₀ M : ℝ) : ℝ :=
   √(Fintype.card (MultiIndexLE (Fin (d + 1)) 2)) * (1 + max (α⁻¹ * (1 + (d + 1) ^ 2 * M))
     (α⁻¹ * (1 + M + (d + 1) ^ 2 * (M + M₀ * (α⁻¹ * (1 + (d + 1) ^ 2 * M))))))
 
-/-- The arithmetic of the normal-normal bound: with `C₁ = α⁻¹ (1 + N² M)`,
-`α⁻¹ (M a₀ + b + ∑_{kℓ} (M a_k + M₀ c_{kℓ})) ≤ α⁻¹ (1 + M + N² (M + M₀ C₁)) (‖u‖ + ‖g‖)` when
-`a_k ≤ ‖u‖`, `b = ‖g‖` and `c_{kℓ} ≤ C₁ (‖u‖ + ‖g‖)`. -/
+/-- The arithmetic of the normal-normal bound. Let $N = d + 1$, $\alpha > 0$, $M_0, M \ge 0$,
+$n_u, n_g \ge 0$, and $C_1 = \alpha^{-1}(1 + N^2 M)$. If $a_k \le n_u$ for all $k$ and
+$c_{k\ell} \le C_1 (n_u + n_g)$ for all $k, \ell$, then
+$$\alpha^{-1} \Big( M a_{i_0} + n_g + \sum_{k,\ell} (M a_k + M_0 c_{k\ell}) \Big) \le
+  \alpha^{-1} \big( 1 + M + N^2 (M + M_0 C_1) \big) (n_u + n_g).$$
+-/
 theorem normal_bound_le {α M₀ M nu ng : ℝ} (hα : 0 < α) (hM₀ : 0 ≤ M₀) (hM : 0 ≤ M) (hnu : 0 ≤ nu)
     (hng : 0 ≤ ng) {a : Fin (d + 1) → ℝ} {c : Fin (d + 1) → Fin (d + 1) → ℝ} (i₀ : Fin (d + 1))
     (ha : ∀ k, a k ≤ nu) (hc : ∀ k l, c k l ≤ α⁻¹ * (1 + (d + 1) ^ 2 * M) * (nu + ng)) :
@@ -2399,23 +2658,29 @@ theorem normal_bound_le {α M₀ M nu ng : ℝ} (hα : 0 < α) (hM₀ : 0 ≤ M�
   refine mul_le_mul_of_nonneg_left ?_ hαi
   nlinarith [hsum, h1, mul_nonneg hM hng, mul_nonneg hM hnu, sq_nonneg ((d : ℝ) + 1)]
 
-/-- **`H²` regularity on an open set invariant under the tangential translations, for a
-variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, case B
-(`Ω = ℝ^N_+`), in the generality of the estimates (63)–(69) of case C₂. Let `Ω ⊆ ℝ^N` be open
-and invariant under the translations `t e_j`, `j ≠ N`, let the coefficients `A_{kℓ} ∈ L^∞(Ω)`
-have `C¹` representatives `a_{kℓ}` on `Ω` with `|a_{kℓ}| ≤ M₀`, `‖∇a_{kℓ}‖ ≤ M`, elliptic with
-constant `α > 0` at every point of `Ω`, let `K` be a subspace of `H^1(Ω)` containing the
-test-function elements and invariant under the translations that leave `Ω` invariant, and let
-`u ∈ K` satisfy `∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ K`. Then `u` is the
-function of an element `U ∈ H²(Ω)` with `‖U‖_{H²} ≤ C (‖u‖_{H¹} + ‖g‖₂)`,
-`C = regularityConst d α M₀ M`.
+/-- **$H^2$ regularity on an open set invariant under the tangential translations, for a
+variable-coefficient elliptic form.** This is case B of the proof of Theorem 9.25 of
+[brezis2011functional] ($\Omega = \mathbb{R}^N_+$), in the generality of the estimates (63)–(69)
+of case $C_2$. Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open and invariant under the
+translations by $t e_j$ for all $j \neq N$ and $t \in \mathbb{R}$. Let the coefficients
+$A_{k\ell} \in L^\infty(\Omega)$ agree almost everywhere with functions $a_{k\ell}$ that are
+$C^1$ on $\Omega$, with $|a_{k\ell}| \le M_0$ and $\|\nabla a_{k\ell}\| \le M$ on $\Omega$
+($M_0, M \ge 0$), and with
+$$\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(x)\, \xi_k \xi_\ell \quad \text{for all } x \in
+  \Omega,\ \xi \in \mathbb{R}^N,$$
+where $\alpha > 0$. Let $K$ be a subspace of $H^1(\Omega)$ that contains the test-function
+elements and is invariant under every translation that leaves $\Omega$ invariant. Let
+$g \in L^2(\Omega)$, and let $u \in K$ satisfy $\sum_{k,\ell} \int_\Omega a_{k\ell}\, \partial_k
+u\, \partial_\ell \psi = \int_\Omega g \psi$ for all $\psi \in K$. Then there is
+$U \in H^2(\Omega)$ with the same function as $u$ almost everywhere on $\Omega$ and
+$$\|U\|_{H^2} \le C \big( \|u\|_{H^1} + \|g\|_2 \big),$$
+where $C$ is the constant `Elliptic.regularityConst d α M₀ M`.
 
-The test space is a parameter because the same estimate serves the Dirichlet problem
-(`K = H^1_0(Ω)`), the Neumann problem (`K = ⊤`, Theorem 9.26 on the half space) and case C₂'s
-localized problems: the method of translations needs of `K` only that `D_{−h}(D_h u) ∈ K`, and
-the normal-normal derivative needs only the test functions.
-
-The tangential second derivatives come from the method of translations
+The test space $K$ is a parameter, so that the same estimate serves the Dirichlet problem
+($K = H^1_0(\Omega)$), the Neumann problem ($K = H^1(\Omega)$, Theorem 9.26 on the half space)
+and the localized problems of case $C_2$. The method of translations needs of $K$ only that
+$D_{-h}(D_h u) \in K$, and the normal-normal derivative needs only the test functions. The
+tangential second derivatives come from the method of translations
 (`Elliptic.exists_hasWeakIteratedLineDerivOn_weakDeriv_of_tangential`), the normal-normal one
 from the equation (`Elliptic.exists_hasWeakIteratedLineDerivOn_last_of_forall`), and
 `SobolevMultiIndex.exists_two_of_forall_exists` assembles them. -/
@@ -2530,7 +2795,8 @@ variable {d : ℕ}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- The half space is invariant under the tangential coordinate translations. -/
+/-- For $j \neq N$ and $t \in \mathbb{R}$, the half space $\mathbb{R}^N_+$ is invariant under the
+translation by $t e_j$. -/
 theorem upperHalfSpaceOpens_isTranslationInvariant (j : Fin (d + 1)) (hj : j ≠ Fin.last d)
     (t : ℝ) :
     IsTranslationInvariant ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
@@ -2538,12 +2804,20 @@ theorem upperHalfSpaceOpens_isTranslationInvariant (j : Fin (d + 1)) (hj : j ≠
       (t • EuclideanSpace.single j (1 : ℝ)) :=
   isTranslationInvariant_upperHalfSpace (single_apply_last_eq_zero hj) t
 
-/-- **Theorem 9.25, case B (`Ω = ℝ^N_+`), for a variable-coefficient elliptic form**
-([brezis2011functional] §9.6, case B, in the generality of case C₂'s estimates): let the
-coefficients `A_{kℓ} ∈ L^∞(ℝ^N_+)` have `C¹` representatives `a_{kℓ}` with `|a_{kℓ}| ≤ M₀`,
-`‖∇a_{kℓ}‖ ≤ M`, elliptic with constant `α > 0`, and let `u ∈ H^1_0(ℝ^N_+)` satisfy
-`∑_{kℓ} ∫ a_{kℓ} ∂_k u ∂_ℓ ψ = ∫ g ψ` for all `ψ ∈ H^1_0(ℝ^N_+)`. Then `u` is the function of an
-element `U ∈ H²(ℝ^N_+)` with `‖U‖_{H²} ≤ C (‖u‖_{H¹} + ‖g‖₂)`, `C = regularityConst d α M₀ M`. -/
+/-- **Case B of Theorem 9.25 ($\Omega = \mathbb{R}^N_+$), for a variable-coefficient elliptic
+form.** Let the coefficients $A_{k\ell} \in L^\infty(\mathbb{R}^N_+)$ agree almost everywhere
+with functions $a_{k\ell}$ that are $C^1$ on $\mathbb{R}^N_+$, with $|a_{k\ell}| \le M_0$ and
+$\|\nabla a_{k\ell}\| \le M$ there ($M_0, M \ge 0$), and with $\alpha \|\xi\|^2 \le
+\sum_{k,\ell} a_{k\ell}(x)\, \xi_k \xi_\ell$ for all $x \in \mathbb{R}^N_+$ and $\xi$, where
+$\alpha > 0$. Let $g \in L^2(\mathbb{R}^N_+)$ and let $u \in H^1_0(\mathbb{R}^N_+)$ satisfy
+$\sum_{k,\ell} \int a_{k\ell}\, \partial_k u\, \partial_\ell \psi = \int g \psi$ for all
+$\psi \in H^1_0(\mathbb{R}^N_+)$. Then there is $U \in H^2(\mathbb{R}^N_+)$ with the same
+function as $u$ and $\|U\|_{H^2} \le C (\|u\|_{H^1} + \|g\|_2)$, where $C$ is
+`Elliptic.regularityConst d α M₀ M`.
+
+This is case B of [brezis2011functional], §9.6, in the generality of the estimates of case
+$C_2$, and it is `Elliptic.exists_sobolevEuclidean_two_of_tangential` with
+$K = H^1_0(\mathbb{R}^N_+)$. -/
 theorem regularity_upperHalfSpace_general
     {A : Fin (d + 1) → Fin (d + 1) → Lp ℝ ⊤ (volume.restrict
       ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
@@ -2580,12 +2854,14 @@ theorem regularity_upperHalfSpace_general
     hM0 haM₀ haM hα0 hell (fun _ hh _ hv ↦ translateL_mem_zero hh hv)
     SobolevMultiIndexZero.testFunctions_le hu heq
 
-/-- The constant representatives `δ_{kℓ}` of the identity coefficients are bounded by `1`. -/
+/-- The constant representatives $x \mapsto \delta_{k\ell}$ of the identity coefficients are bounded
+by $1$. -/
 theorem abs_kroneckerRep_le_one (k l : Fin (d + 1)) (x : EuclideanSpace ℝ (Fin (d + 1))) :
     |(fun _ : EuclideanSpace ℝ (Fin (d + 1)) ↦ if k = l then (1 : ℝ) else 0) x| ≤ 1 := by
   split_ifs <;> simp
 
-/-- The identity coefficients are elliptic with constant `1`, pointwise. -/
+/-- The identity coefficients satisfy the pointwise ellipticity condition with constant $1$:
+$\|\xi\|^2 \le \sum_{k,\ell} \delta_{k\ell}\, \xi_k \xi_\ell$. -/
 theorem one_mul_norm_sq_le_sum_kroneckerRep (x ξ : EuclideanSpace ℝ (Fin (d + 1))) :
     (1 : ℝ) * ‖ξ‖ ^ 2 ≤ ∑ k, ∑ l,
       (fun _ : EuclideanSpace ℝ (Fin (d + 1)) ↦ if k = l then (1 : ℝ) else 0) x * ξ k * ξ l := by
@@ -2593,13 +2869,19 @@ theorem one_mul_norm_sq_le_sum_kroneckerRep (x ξ : EuclideanSpace ℝ (Fin (d +
     EuclideanSpace.real_norm_sq_eq]
   exact le_of_eq (Finset.sum_congr rfl fun i _ ↦ by ring)
 
-/-- **Theorem 9.25, case B (`Ω = ℝ^N_+`), `H²` regularity** ([brezis2011functional] §9.6,
-case B): let `u ∈ H^1_0(ℝ^N_+)`, `g ∈ L²(ℝ^N_+)`, and `∫ ∇u · ∇ψ = ∫ g ψ` for every
-`ψ ∈ H^1_0(ℝ^N_+)`. Then `u` is the function of an element `U ∈ H²(ℝ^N_+)`, with
-`‖U‖_{H²} ≤ C_N (‖u‖_{H¹} + ‖g‖₂)`, `C_N = regularityConst d 1 1 0`. The book's equation
-`−Δu + u = f` is the case `g = f − u`. The Dirichlet form is the general form with the identity
-coefficients (`Elliptic.generalForm_kroneckerCoeff`), so this is
-`Elliptic.regularity_upperHalfSpace_general` with `α = 1`, `M₀ = 1`, `M = 0`. -/
+/-- Theorem 9.25 of [brezis2011functional], **case B** ($\Omega = \mathbb{R}^N_+$), $H^2$
+regularity. Let $g \in L^2(\mathbb{R}^N_+)$, and let $u \in H^1_0(\mathbb{R}^N_+)$ satisfy
+$$\int_{\mathbb{R}^N_+} \nabla u \cdot \nabla \psi = \int_{\mathbb{R}^N_+} g \psi \quad
+  \text{for all } \psi \in H^1_0(\mathbb{R}^N_+).$$
+Then there is $U \in H^2(\mathbb{R}^N_+)$ with the same function as $u$ almost everywhere and
+$$\|U\|_{H^2} \le C_N \big( \|u\|_{H^1} + \|g\|_2 \big),$$
+where $C_N$ is the constant `Elliptic.regularityConst d 1 1 0`.
+
+The equation $-\Delta u + u = f$ of the source is the case $g = f - u$. The hypothesis is
+`IsGalerkinSolution` for `Elliptic.dirichletForm` with test space $H^1_0(\mathbb{R}^N_+)$. The
+Dirichlet form is the general form with the identity coefficients
+(`Elliptic.generalForm_kroneckerCoeff`), so this is `Elliptic.regularity_upperHalfSpace_general`
+with $\alpha = 1$, $M_0 = 1$, $M = 0$. -/
 theorem regularity_upperHalfSpace {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
     {g : Lp ℝ 2 (volume.restrict
       ((upperHalfSpaceOpens d : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
@@ -2621,21 +2903,24 @@ theorem regularity_upperHalfSpace {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSp
   rw [generalForm_kroneckerCoeff]
   exact hu.2 ψ hψ
 
-/-- **[brezis2011functional] Theorem 9.26 (regularity for the Neumann problem) on the half
-space, the `H²` clause**: let `u ∈ H^1(ℝ^N_+)`, `g ∈ L²(ℝ^N_+)` and `∫ ∇u · ∇ψ = ∫ g ψ` for
-every `ψ ∈ H^1(ℝ^N_+)` — the Neumann problem, whose test space is the whole of `H^1`. Then `u`
-is the function of an element `U ∈ H²(ℝ^N_+)`, with `‖U‖_{H²} ≤ C_N (‖u‖_{H¹} + ‖g‖₂)`,
-`C_N = regularityConst d 1 1 0`, the same constant as in the Dirichlet case
-(`Elliptic.regularity_upperHalfSpace`). The book's equation `−Δu + u = f` of (49) is the case
-`g = f − u`.
+/-- Theorem 9.26 of [brezis2011functional] (regularity for the Neumann problem) **on the half
+space**, the $H^2$ clause. Let $g \in L^2(\mathbb{R}^N_+)$, and let $u \in H^1(\mathbb{R}^N_+)$
+satisfy
+$$\int_{\mathbb{R}^N_+} \nabla u \cdot \nabla \psi = \int_{\mathbb{R}^N_+} g \psi \quad
+  \text{for all } \psi \in H^1(\mathbb{R}^N_+).$$
+Then there is $U \in H^2(\mathbb{R}^N_+)$ with the same function as $u$ almost everywhere and
+$$\|U\|_{H^2} \le C_N \big( \|u\|_{H^1} + \|g\|_2 \big),$$
+where $C_N$ is the constant `Elliptic.regularityConst d 1 1 0`, the same constant as in the
+Dirichlet case (`Elliptic.regularity_upperHalfSpace`).
 
-This is `Elliptic.exists_sobolevEuclidean_two_of_tangential` with the test space `K = ⊤`, which
-is invariant under every translation and contains the test-function elements: on the half space
-the Neumann problem costs nothing beyond the Dirichlet one, because the method of translations
-needs of the test space only that it be invariant under the tangential translations, and the
-delicate point of the book's Lemma 9.7 is precisely about staying inside `H^1_0`. For a general
-`C²` domain the argument does *not* localize; see `## Not formalized here` in the module
-documentation. -/
+The test space of the Neumann problem is all of $H^1(\mathbb{R}^N_+)$, and the equation
+$-\Delta u + u = f$ of (49) is the case $g = f - u$. This is
+`Elliptic.exists_sobolevEuclidean_two_of_tangential` with $K = H^1(\mathbb{R}^N_+)$, which is
+invariant under every translation and contains the test-function elements. On the half space the
+Neumann problem costs nothing beyond the Dirichlet one: the method of translations needs of the
+test space only that it be invariant under the tangential translations, and the delicate point
+of Lemma 9.7 of the source is about staying inside $H^1_0$. On a general $C^2$ domain the
+argument does not localize; see the section `Not formalized` of the module documentation. -/
 theorem regularity_neumann_upperHalfSpace
     {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
     {g : Lp ℝ 2 (volume.restrict
@@ -2667,13 +2952,19 @@ section Differentiate
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Differentiating the weak equation** ([brezis2011functional] §9.6, "if `φ ∈ C_c^∞` we may
-replace `φ` by `Dφ` in (48)"): let `w i` be weak derivatives of `u` along `eᵢ` on `Ω`, `v i j`
-weak derivatives of `w j` along `eᵢ`, `g j` a weak derivative of `f` along `e_j`, and
-`∑ᵢ ∫_Ω wᵢ ∂ᵢφ = ∫_Ω f φ` for every test function `φ`. Then `∂_j u = w j` solves the equation
-with datum `∂_j f = g j`: `∑ᵢ ∫_Ω v i j ∂ᵢφ = ∫_Ω g j φ` for every test function `φ`. The
-derivatives `∂ᵢ∂_j u` and `∂_j∂ᵢu` agree (`HasWeakIteratedLineDerivOn.of_perm`), and the equation
-is tested with `∂_jφ`. -/
+/-- **Differentiating the weak equation.** Let $\Omega \subseteq \mathbb{R}^N$ be open. Let $w_i$ be
+a weak derivative of $u$ along $e_i$ on $\Omega$, let $v_{ij}$ be a weak derivative of $w_j$
+along $e_i$, and let $g_j$ be a weak derivative of $f$ along $e_j$, for all $i, j$. Suppose that
+$\sum_i \int_\Omega w_i\, \partial_i \varphi = \int_\Omega f \varphi$ for every test function
+$\varphi$ on $\Omega$. Then for every $j$, the derivative $\partial_j u = w_j$ solves the
+equation with the datum $\partial_j f = g_j$:
+$$\sum_i \int_\Omega v_{ij}\, \partial_i \varphi = \int_\Omega g_j \varphi \quad \text{for every
+  test function } \varphi.$$
+
+This is the step "if $\varphi \in C_c^\infty$ we may replace $\varphi$ by $D\varphi$ in (48)" of
+[brezis2011functional], §9.6. The derivatives $\partial_i \partial_j u$ and
+$\partial_j \partial_i u$ agree (`HasWeakIteratedLineDerivOn.of_perm`), and the equation is
+tested with $\partial_j \varphi$. -/
 theorem forall_testFunction_deriv {u f : EuclideanSpace ℝ (Fin N) → ℝ}
     {w g : Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {v : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hw : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u (w i) Ω volume)
@@ -2752,16 +3043,20 @@ variable {N : ℕ}
 
 open SobolevMultiIndex
 
-/-- **Theorem 9.25, case A, higher order, as a membership** ([brezis2011functional] §9.6, case A:
-"`f ∈ H^m ⇒ u ∈ H^{m+2}`, by induction on `m`"): let `u ∈ H^1(ℝ^N)`, `G ∈ L²(ℝ^N)` with
-`G ∈ H^m(ℝ^N)`, and `∫ ∇u · ∇φ = ∫ G φ` for every `φ ∈ H^1(ℝ^N)`. Then `u ∈ H^{m+2}(ℝ^N)`.
+/-- Theorem 9.25 of [brezis2011functional], **case A, higher order**, as a membership. Let
+$m \in \mathbb{N}$, let $u \in H^1(\mathbb{R}^N)$, and let $G \in L^2(\mathbb{R}^N)$ lie in
+$H^m(\mathbb{R}^N)$. If
+$$\int_{\mathbb{R}^N} \nabla u \cdot \nabla \varphi = \int_{\mathbb{R}^N} G \varphi \quad
+  \text{for all } \varphi \in H^1(\mathbb{R}^N),$$
+then $u \in H^{m+2}(\mathbb{R}^N)$.
 
-The induction differentiates the equation (`Elliptic.forall_testFunction_deriv`): each `∂_j u`,
-an element of `H^1(ℝ^N)` by the case `m = 0`, solves it with datum `∂_j G ∈ H^m(ℝ^N)` against the
-test functions, hence against all of `H^1(ℝ^N)` by density
-(`Elliptic.dirichletForm_eq_load_of_forall_testFunctions` with `SobolevEuclideanZero.eq_top`), so
-`∂_j u ∈ H^{m+2}(ℝ^N)` by the inductive hypothesis, and `memSobolevMultiIndex_succ_iff` assembles
-`u ∈ H^{m+3}(ℝ^N)`. -/
+This is the statement "$f \in H^m \Rightarrow u \in H^{m+2}$, by induction on $m$" of case A.
+The induction differentiates the equation (`Elliptic.forall_testFunction_deriv`). Each
+$\partial_j u$, an element of $H^1(\mathbb{R}^N)$ by the case $m = 0$, solves the equation with
+the datum $\partial_j G \in H^m(\mathbb{R}^N)$ against the test functions, hence against all of
+$H^1(\mathbb{R}^N)$ by density (`Elliptic.dirichletForm_eq_load_of_forall_testFunctions` with
+`SobolevEuclideanZero.eq_top`). So $\partial_j u \in H^{m+2}(\mathbb{R}^N)$ by the induction
+hypothesis, and `memSobolevMultiIndex_succ_iff` gives $u \in H^{m+3}(\mathbb{R}^N)$. -/
 theorem regularity_top_higher (m : ℕ) : ∀ (u : SobolevEuclidean N 1 2 ⊤)
     (G : Lp ℝ 2 (volume.restrict
       ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set (EuclideanSpace ℝ (Fin N))))),
@@ -2841,7 +3136,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [IsLocallyFiniteMeasure μ]
 
 omit [OpensMeasurableSpace E] [BorelSpace E] [CompleteSpace F] [IsLocallyFiniteMeasure μ] in
-/-- A function in `W^{0,p}_loc(Ω)` is locally in `L^p` on `Ω`. -/
+/-- A function in $W^{0,p}_{\mathrm{loc}}(\Omega)$ is locally in $L^p$ on $\Omega$. -/
 theorem _root_.MemSobolevMultiIndexLoc.locallyMemLpOn {f : E → F}
     (hf : MemSobolevMultiIndexLoc b f 0 p Ω μ) : LocallyMemLpOn f p Ω μ := by
   intro x hx
@@ -2853,9 +3148,10 @@ theorem _root_.MemSobolevMultiIndexLoc.locallyMemLpOn {f : E → F}
     isClosed_closure closure_ball_subset_closedBall) hball).memLp
 
 omit [IsLocallyFiniteMeasure μ] in
-/-- The weak derivative on `Ω` along a basis vector of a function in `W^{1,p}_loc(Ω)` is locally in
-`L^p` on `Ω`: on every `V ⋐ Ω` it agrees almost everywhere with the derivative that the
-membership provides. -/
+/-- Let $f \in W^{k+1,p}_{\mathrm{loc}}(\Omega)$, and let $w$ be a weak derivative of $f$ along a
+basis vector $b_i$ on $\Omega$. Then $w \in W^{k,p}_{\mathrm{loc}}(\Omega)$: on every open $V$
+with compact closure in $\Omega$, $w$ agrees almost everywhere with the derivative that the
+membership $f \in W^{k+1,p}(V)$ provides. -/
 theorem _root_.MemSobolevMultiIndexLoc.memSobolevMultiIndexLoc_weakDeriv {f w : E → F} {k : ℕ}
     (hf : MemSobolevMultiIndexLoc b f (k + 1) p Ω μ) {i : ι}
     (hw : HasWeakIteratedLineDerivOn ![b i] f w Ω μ) : MemSobolevMultiIndexLoc b w k p Ω μ := by
@@ -2868,7 +3164,7 @@ theorem _root_.MemSobolevMultiIndexLoc.memSobolevMultiIndexLoc_weakDeriv {f w : 
 
 end Algebra
 
-/-! ### Case C₁, higher order: Remark 25 -/
+/-! ### Case $C_1$, higher order: Remark 25 -/
 
 section InteriorHigher
 
@@ -2876,19 +3172,23 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **Chapter 9, Remark 25: interior `H^{m+2}` regularity** ([brezis2011functional] §9.6). Let
-`Ω ⊆ ℝ^N` be open, `u ∈ H^1_loc(Ω)` with weak partial derivatives `w i` on `Ω`,
-`f ∈ H^m_loc(Ω)`, and `∑ᵢ ∫_Ω wᵢ ∂ᵢφ = ∫_Ω f φ` for every test function `φ` on `Ω`. Then
-`u ∈ H^{m+2}_loc(Ω)`.
+/-- **Remark 25** of [brezis2011functional], Chapter 9: interior $H^{m+2}$ regularity. Let
+$\Omega \subseteq \mathbb{R}^N$ be open and $m \in \mathbb{N}$. Let
+$u \in H^1_{\mathrm{loc}}(\Omega)$ have the weak partial derivatives $w_i$ on $\Omega$, and let
+$f \in H^m_{\mathrm{loc}}(\Omega)$. If
+$$\int_\Omega \sum_i w_i\, \partial_i \varphi = \int_\Omega f \varphi$$
+for every test function $\varphi$ on $\Omega$, then $u \in H^{m+2}_{\mathrm{loc}}(\Omega)$.
 
-By induction on `m`, following case C₁: for `ω ⋐ Ω` and a smooth `θ` equal to `1` near
-`closure ω` with compact support in `Ω`, the zero extension of `θu` solves
-`−Δ(θu) = θf − 2∇θ·∇u − (Δθ)u` on `ℝ^N` (`Elliptic.sum_integral_indicator_cutoff_eq`); by the
-inductive hypothesis `u ∈ H^{m+2}_loc(Ω)`, so the right side lies in `H^{m+1}(ℝ^N)`
-(`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` for each piece), and case A at order
-`m + 1` (`Elliptic.regularity_top_higher`) gives `θu ∈ H^{m+3}(ℝ^N)`, hence `u ∈ H^{m+3}(ω)`.
-The hypoellipticity of the last paragraph of Remark 25 is the local nature of the hypotheses:
-apply the theorem on `ω` in place of `Ω`. -/
+The proof is an induction on $m$ that follows case $C_1$. For $\omega$ with compact closure in
+$\Omega$, take a smooth $\theta$ equal to $1$ near $\overline{\omega}$ with compact support in
+$\Omega$. The extension of $\theta u$ by zero solves $-\Delta(\theta u) = \theta f - 2
+\nabla\theta \cdot \nabla u - (\Delta\theta) u$ on $\mathbb{R}^N$
+(`Elliptic.sum_integral_indicator_cutoff_eq`). By the induction hypothesis
+$u \in H^{m+2}_{\mathrm{loc}}(\Omega)$, so the right side lies in $H^{m+1}(\mathbb{R}^N)$
+(`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` for each term). Case A at order
+$m + 1$ (`Elliptic.regularity_top_higher`) gives $\theta u \in H^{m+3}(\mathbb{R}^N)$, hence
+$u \in H^{m+3}(\omega)$. The hypoellipticity of the last paragraph of Remark 25 is the local
+nature of the hypotheses: apply the theorem on $\omega$ in place of $\Omega$. -/
 theorem regularity_interior_higher (m : ℕ) : ∀ {u f : EuclideanSpace ℝ (Fin N) → ℝ}
     {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ},
     MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 2 Ω volume →
@@ -3023,13 +3323,18 @@ theorem regularity_interior_higher (m : ℕ) : ∀ {u f : EuclideanSpace ℝ (Fi
     rw [hv, Set.indicator_of_mem (hVΩ (subset_closure hx)), hθ1 (subset_closure hx), Pi.one_apply,
       one_mul]
 
-/-- **The bootstrap of [brezis2011functional] Chapter 9, Remark 25** ("the same method applies …
-and argue by induction on `m`") for a datum that depends on the solution: let `u ∈ H^1_loc(Ω)`
-with weak partial derivatives `w i`, and let `∫_Ω ∇u · ∇φ = ∫_Ω (f + c u) φ` for every test
-function `φ` on `Ω`, with `f ∈ H^m_loc(Ω)`. Then `u ∈ H^{m+2}_loc(Ω)`: the datum `f + c u` gains
-regularity with `u`, and interior regularity (`regularity_interior_higher`) raises the order by
-two at each step. The datum `f − u` of the Dirichlet problem for `−Δ + 1` is the case `c = −1`,
-the eigenvalue equation `−Δu = λu` the case `f = 0`, `c = λ`. -/
+/-- **Remark 25** of [brezis2011functional], Chapter 9, the bootstrap for a datum that depends on
+the solution. Let $\Omega \subseteq \mathbb{R}^N$ be open, $m \in \mathbb{N}$ and
+$c \in \mathbb{R}$. Let $u \in H^1_{\mathrm{loc}}(\Omega)$ have the weak partial derivatives
+$w_i$ on $\Omega$, let $f \in H^m_{\mathrm{loc}}(\Omega)$, and suppose that
+$$\int_\Omega \sum_i w_i\, \partial_i \varphi = \int_\Omega (f + c u) \varphi$$
+for every test function $\varphi$ on $\Omega$. Then $u \in H^{m+2}_{\mathrm{loc}}(\Omega)$.
+
+This is the remark "the same method applies … and argue by induction on $m$". The datum
+$f + c u$ gains regularity with $u$, and interior regularity
+(`Elliptic.regularity_interior_higher`) raises the order by two at each step. The datum $f - u$
+of the Dirichlet problem for $-\Delta + 1$ is the case $c = -1$, and the eigenvalue equation
+$-\Delta u = \lambda u$ is the case $f = 0$, $c = \lambda$. -/
 theorem memSobolevMultiIndexLoc_of_forall_testFunction_add_mul (m : ℕ)
     {u f : EuclideanSpace ℝ (Fin N) → ℝ} {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {c : ℝ}
     (hu : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 2 Ω volume)
@@ -3055,8 +3360,14 @@ theorem memSobolevMultiIndexLoc_of_forall_testFunction_add_mul (m : ℕ)
       exact regularity_interior_higher k hu hw hfu heq
   exact key (m + 1) le_rfl
 
-/-- **The weak equation against the test functions of `Ω` restricts to any open `Ω' ⊆ Ω`**: both
-integrands vanish off `Ω'`, the test function on `Ω'` being a test function on `Ω`. -/
+/-- **The weak equation restricts to an open subset.** Let $\Omega' \subseteq \Omega$ be open
+subsets of $\mathbb{R}^N$. If $\int_\Omega \sum_i w_i\, \partial_i \varphi = \int_\Omega f
+\varphi$ for every test function $\varphi$ on $\Omega$, then
+$$\int_{\Omega'} \sum_i w_i\, \partial_i \varphi = \int_{\Omega'} f \varphi$$
+for every test function $\varphi$ on $\Omega'$.
+
+A test function on $\Omega'$ is a test function on $\Omega$, and both integrands vanish outside
+$\Omega'$. -/
 theorem forall_testFunction_of_le {f : EuclideanSpace ℝ (Fin N) → ℝ}
     {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {Ω' : Opens (EuclideanSpace ℝ (Fin N))}
     (hω : Ω' ≤ Ω)
@@ -3094,7 +3405,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [BorelSpace E] {μ : Measure E} {Ω : Opens E}
 
 omit [MeasurableSpace E] [BorelSpace E] in
-/-- A smooth function times a test function on `Ω` is a test function on `Ω`. -/
+/-- The product $\theta \psi$ of a smooth function $\theta$ and a test function $\psi$ on $\Omega$,
+as a test function on $\Omega$. -/
 def _root_.TestFunction.contDiffMul (ψ : 𝓓(Ω, ℝ)) {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ) : 𝓓(Ω, ℝ) where
   toFun x := θ x * ψ x
   contDiff' := hθ.mul ψ.contDiff
@@ -3102,21 +3414,27 @@ def _root_.TestFunction.contDiffMul (ψ : 𝓓(Ω, ℝ)) {θ : E → ℝ} (hθ :
   tsupport_subset' := tsupport_mul_subset_right.trans ψ.tsupport_subset
 
 omit [MeasurableSpace E] [BorelSpace E] in
+/-- The function of the test function $\theta \psi$ is $x \mapsto \theta(x) \psi(x)$. -/
 @[simp]
 theorem _root_.TestFunction.contDiffMul_coe (ψ : 𝓓(Ω, ℝ)) {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ) :
     (ψ.contDiffMul hθ : E → ℝ) = fun x ↦ θ x * ψ x :=
   rfl
 
-/-- **Cutting off a weak solution of `−div(∇u) = f`, against the test functions of `Ω`**: let
-`u` have the weak partial derivatives `w i` along the vectors `b i` on `Ω`, all locally
-integrable, let `f` be locally integrable on `Ω`, and let `∑ᵢ ∫_Ω wᵢ ∂ᵢφ = ∫_Ω f φ` for every test
-function `φ` on `Ω`. For a smooth `θ` (no support condition) and every test function `ψ` on `Ω`,
+/-- **Cutting off a weak solution of $-\operatorname{div}(\nabla u) = f$, against the test functions
+of $\Omega$.** Let $u$ have the weak derivatives $w_i$ along the vectors $b_i$ on $\Omega$, with
+$u$ and $f$ locally integrable on $\Omega$, and suppose that $\int_\Omega \sum_i w_i\,
+\partial_i \varphi = \int_\Omega f \varphi$ for every test function $\varphi$ on $\Omega$, where
+$\partial_i = \partial_{b_i}$. Let $\theta$ be smooth, with no condition on its support. Then
+for every test function $\psi$ on $\Omega$,
+$$\sum_i \int_\Omega \big( \theta w_i + (\partial_i \theta) u \big)\, \partial_i \psi =
+  \int_\Omega \Big( \theta f - 2 \sum_i (\partial_i \theta) w_i - \Big( \sum_i \partial_i
+  \partial_i \theta \Big) u \Big) \psi.$$
 
-`∑ᵢ ∫_Ω (θ wᵢ + (∂ᵢθ) u) ∂ᵢψ = ∫_Ω (θ f − 2 ∑ᵢ (∂ᵢθ) wᵢ − (∑ᵢ ∂ᵢ∂ᵢθ) u) ψ`.
-
-The equation is tested with `θψ` and the weak derivatives with `(∂ᵢθ) ψ`, both test functions
-on `Ω`. This is the computation of [brezis2011functional] §9.6, case C₂ ("it is easy to verify
-that `v = θᵢ u` is a weak solution in `Ω ∩ Uᵢ` of `−Δv = θᵢ f − θᵢ u − 2∇θᵢ·∇u − (Δθᵢ)u`"). -/
+The equation is tested with $\theta \psi$ and the weak derivatives with
+$(\partial_i \theta) \psi$, which are test functions on $\Omega$. This is the computation in
+case $C_2$ of the proof of Theorem 9.25 of [brezis2011functional]: "it is easy to verify that
+$v = \theta_i u$ is a weak solution in $\Omega \cap U_i$ of $-\Delta v = \theta_i f - \theta_i
+u - 2 \nabla\theta_i \cdot \nabla u - (\Delta\theta_i) u$". -/
 theorem sum_integral_cutoff_eq {ι : Type*} [Fintype ι] (b : ι → E) {u f : E → ℝ}
     {w : ι → E → ℝ} (hu : LocallyIntegrableOn u Ω μ) (hf : LocallyIntegrableOn f Ω μ)
     (hw : ∀ i, HasWeakIteratedLineDerivOn ![b i] u (w i) Ω μ)
@@ -3242,7 +3560,7 @@ theorem sum_integral_cutoff_eq {ι : Type*} [Fintype ι] (b : ι → E) {u f : E
 end CutoffInside
 
 
-/-! ### The boundary pieces `θᵢ u` on `Ω ∩ Uᵢ` -/
+/-! ### The boundary pieces $\theta_i u$ on $\Omega \cap U_i$ -/
 
 section BoundaryPiece
 
@@ -3250,15 +3568,17 @@ variable {N : ℕ} {Ω Ω' : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The partial derivative `∂ᵢu` of an element of `H^1(Ω)` is a weak derivative of its function
-along `eᵢ` (the case `p = 2` of `SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single`). -/
+/-- The partial derivative $\partial_i u$ of $u \in H^1(\Omega)$ is a weak derivative of the
+function of $u$ along $e_i$ on $\Omega$. This is the case $p = 2$ of
+`SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single`. -/
 theorem weakDeriv_hasWeakIteratedLineDerivOn_single (u : SobolevEuclidean N 1 2 Ω) (i : Fin N) :
     HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u)
       (weakDeriv u (MultiIndexLE.single i)) Ω volume :=
   SobolevEuclidean.hasWeakIteratedLineDerivOn_fn_single u i
 
-/-- A smooth function `θ` with `tsupport θ ∩ Ω ⊆ Ω'` times a test function on `Ω` is a test
-function on `Ω'`. -/
+/-- The product $\theta \varphi$ of a smooth function $\theta$ with $\operatorname{tsupport} \theta
+\cap \Omega \subseteq \Omega'$ and a test function $\varphi$ on $\Omega$, as a test function on
+$\Omega'$. -/
 def _root_.TestFunction.contDiffMulOfSubset (φ : 𝓓(Ω, ℝ)) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') : 𝓓(Ω', ℝ) where
   toFun x := θ x * φ x
@@ -3267,9 +3587,13 @@ def _root_.TestFunction.contDiffMulOfSubset (φ : 𝓓(Ω, ℝ)) {θ : Euclidean
   tsupport_subset' := fun _ hx ↦
     hθΩ' ⟨tsupport_mul_subset_left hx, φ.tsupport_subset (tsupport_mul_subset_right hx)⟩
 
-/-- The function of `(θ ū)|_{Ω'}` is `θ u` on `Ω' ≤ Ω`, for the zero extension `ū` of
-`u ∈ H^1_0(Ω)`: the operator is a variable with its defining equation, as the lessons of this
-project prescribe for composites of typed operators. -/
+/-- Let $\Omega' \subseteq \Omega$, let $\theta$ be a Sobolev cut-off of $\mathbb{R}^N$, and let
+$P : H^1_0(\Omega) \to H^1(\Omega')$ be the map that sends $z$ to the restriction to $\Omega'$
+of $\theta \bar z$, where $\bar z \in H^1(\mathbb{R}^N)$ is the extension of $z$ by zero. Then
+the function of $P z$ is $\theta z$ almost everywhere on $\Omega'$.
+
+The map $P$ is a variable of the statement, together with its defining equation, and is not
+written out as a composite of operators. -/
 theorem fn_boundaryPiece_of_ops (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθtop : IsSobolevCutoff (⊤ : Opens (EuclideanSpace ℝ (Fin N))) θ)
     {P : SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclidean N 1 2 Ω'}
@@ -3288,7 +3612,9 @@ theorem fn_boundaryPiece_of_ops (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fi
   rw [hx1, Set.indicator_of_mem (show x ∈ ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set _) from
     trivial), hx2, Set.indicator_of_mem (hΩ' hxΩ'), smul_eq_mul]
 
-/-- The partial derivatives of `(θ ū)|_{Ω'}` are `θ ∂ᵢu + (∂ᵢθ) u` on `Ω' ≤ Ω`. -/
+/-- Under the hypotheses of `Elliptic.fn_boundaryPiece_of_ops`, the partial derivatives of $P z$ are
+$\partial_i(P z) = \theta\, \partial_i z + (\partial_i \theta)\, z$ almost everywhere on
+$\Omega'$. -/
 theorem weakDeriv_boundaryPiece_of_ops (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθtop : IsSobolevCutoff (⊤ : Opens (EuclideanSpace ℝ (Fin N))) θ)
     {P : SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclidean N 1 2 Ω'}
@@ -3312,9 +3638,15 @@ theorem weakDeriv_boundaryPiece_of_ops (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace 
     EuclideanSpace.basisFun_toBasis_apply]
   simp only [smul_eq_mul]
 
-/-- **A continuous map `H^1_0(Ω) → H^1(Ω')` whose functions are `θ u` takes values in
-`H^1_0(Ω')`**, when `θ` is smooth with `tsupport θ ∩ Ω ⊆ Ω'`: it sends the test-function
-elements of `H^1_0(Ω)` to test-function elements of `H^1(Ω')`, and `H^1_0(Ω')` is closed. -/
+/-- **A map $H^1_0(\Omega) \to H^1(\Omega')$ whose values have the functions $\theta u$ takes values
+in $H^1_0(\Omega')$.** Let $\Omega' \subseteq \Omega$, let $\theta$ be smooth with
+$\operatorname{tsupport} \theta \cap \Omega \subseteq \Omega'$, and let
+$P : H^1_0(\Omega) \to H^1(\Omega')$ be a continuous linear map such that the function of $P z$
+is $\theta z$ almost everywhere on $\Omega'$. Then $P z \in H^1_0(\Omega')$ for every
+$z \in H^1_0(\Omega)$.
+
+The map $P$ sends the test-function elements of $H^1_0(\Omega)$ to test-function elements of
+$H^1(\Omega')$, and $H^1_0(\Omega')$ is closed. -/
 theorem mem_zero_of_fn_ae_eq_contDiff_mul (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθΩ' : tsupport θ ∩ Ω ⊆ Ω')
     {P : SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclidean N 1 2 Ω'}
@@ -3335,8 +3667,9 @@ theorem mem_zero_of_fn_ae_eq_contDiff_mul (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpa
   change θ x * fn (w n) x = θ x * φ n x
   rw [hx (hΩ' hxΩ')]
 
-/-- The predicate form of the equation `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements,
-with the partial derivatives of `u` as functions. -/
+/-- If $u \in H^1(\Omega)$ and $F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla \Phi =
+\int_\Omega F \Phi$ for every test-function element $\Phi$, then $\int_\Omega \sum_i \partial_i
+u\, \partial_i \varphi = \int_\Omega F \varphi$ for every test function $\varphi$ on $\Omega$. -/
 theorem forall_testFunction_weakDeriv_of_forall_testFunctions {u : SobolevEuclidean N 1 2 Ω}
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (dirichletForm Ω)
@@ -3350,7 +3683,9 @@ theorem forall_testFunction_weakDeriv_of_forall_testFunctions {u : SobolevEuclid
       (fun x _ ↦ by simp [TestFunction.fderivApply_apply, mul_comm]) Ω.isOpen.measurableSet]
   exact forall_testFunction_of_forall_testFunctions heq φ
 
-/-- The datum `θ F − 2∇θ·∇u − (Δθ) u` of the boundary piece lies in `L²(Ω')`. -/
+/-- Let $\Omega' \subseteq \Omega$, let $\theta$ be smooth with compact support, let
+$u \in H^1(\Omega)$ and $F \in L^2(\Omega)$. Then the datum $\theta F - 2 \nabla\theta \cdot
+\nabla u - (\Delta\theta) u$ of the boundary piece lies in $L^2(\Omega')$. -/
 theorem memLp_boundaryDatum (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ) (u : SobolevEuclidean N 1 2 Ω)
     (F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -3388,8 +3723,19 @@ theorem memLp_boundaryDatum (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N)
     hb _ hΔ.continuous hΔc (memLp u)
   exact (h1.sub (h2'.const_mul 2)).sub h3
 
-/-- **The boundary piece `v = θ u` of a weak solution, with its datum**
-(`Elliptic.exists_boundary_piece` with the datum `G = θ F − 2∇θ·∇u − (Δθ)u` made explicit). -/
+/-- **The boundary piece $v = \theta u$ of a weak solution, with its datum.** Let
+$\Omega' \subseteq \Omega$ be open subsets of $\mathbb{R}^N$, and let $\theta$ be smooth with
+compact support and $\operatorname{tsupport} \theta \cap \Omega \subseteq \Omega'$. Let
+$u \in H^1_0(\Omega)$ and $F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla \Phi =
+\int_\Omega F \Phi$ for every test-function element $\Phi$. Then there are
+$v \in H^1_0(\Omega')$ and $G \in L^2(\Omega')$ such that, almost everywhere on $\Omega'$, the
+function of $v$ is $\theta u$ and
+$$G = \theta F - 2 \nabla\theta \cdot \nabla u - (\Delta\theta) u,$$
+and $\int_{\Omega'} \nabla v \cdot \nabla \Psi = \int_{\Omega'} G \Psi$ for all
+$\Psi \in H^1_0(\Omega')$.
+
+This is `Elliptic.exists_boundary_piece` with the datum made explicit. It is the boundary piece
+of case $C_2$ of the proof of Theorem 9.25 of [brezis2011functional]. -/
 theorem exists_boundary_piece_ae_eq (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') {u : SobolevEuclidean N 1 2 Ω}
@@ -3448,15 +3794,21 @@ theorem exists_boundary_piece_ae_eq (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ
   simp only [hsub, hsub'] at hcut
   exact hcut
 
-/-- **The boundary piece `v = θ u` of a weak solution** ([brezis2011functional] §9.6, case C₂:
-"`v = θᵢ u ∈ H^1_0(Ω ∩ Uᵢ)` is a weak solution in `Ω ∩ Uᵢ` of `−Δv = g`"): let `Ω' ≤ Ω`, let
-`θ` be smooth with compact support and `tsupport θ ∩ Ω ⊆ Ω'`, let `u ∈ H^1_0(Ω)` satisfy
-`∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`. Then there are `v ∈ H^1_0(Ω')` with
-function `θ u` and `G ∈ L²(Ω')` with `∫_{Ω'} ∇v · ∇Ψ = ∫_{Ω'} G Ψ` for all `Ψ ∈ H^1_0(Ω')`.
+/-- **The boundary piece $v = \theta u$ of a weak solution.** Let $\Omega' \subseteq \Omega$ be open
+subsets of $\mathbb{R}^N$, and let $\theta$ be smooth with compact support and
+$\operatorname{tsupport} \theta \cap \Omega \subseteq \Omega'$. Let $u \in H^1_0(\Omega)$ and
+$F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega F \Phi$ for
+every test-function element $\Phi$. Then there are $v \in H^1_0(\Omega')$ whose function is
+$\theta u$ almost everywhere on $\Omega'$, and $G \in L^2(\Omega')$, with
+$$\int_{\Omega'} \nabla v \cdot \nabla \Psi = \int_{\Omega'} G \Psi \quad \text{for all } \Psi
+  \in H^1_0(\Omega').$$
 
-`v` is `θ ū` restricted to `Ω'`, for the zero extension `ū ∈ H^1(ℝ^N)` of `u`
-(`Elliptic.mem_zero_of_fn_ae_eq_contDiff_mul`); the datum is `G = θ F − 2∇θ·∇u − (Δθ)u`
-(`Elliptic.sum_integral_cutoff_eq`). -/
+This is case $C_2$ of the proof of Theorem 9.25 of [brezis2011functional], §9.6:
+"$v = \theta_i u \in H^1_0(\Omega \cap U_i)$ is a weak solution in $\Omega \cap U_i$ of
+$-\Delta v = g$". The element $v$ is the restriction to $\Omega'$ of $\theta \bar u$, where
+$\bar u \in H^1(\mathbb{R}^N)$ is the extension of $u$ by zero
+(`Elliptic.mem_zero_of_fn_ae_eq_contDiff_mul`). The datum is $G = \theta F - 2 \nabla\theta
+\cdot \nabla u - (\Delta\theta) u$ (`Elliptic.sum_integral_cutoff_eq`). -/
 theorem exists_boundary_piece (hΩ' : Ω' ≤ Ω) {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθΩ' : tsupport θ ∩ Ω ⊆ Ω') {u : SobolevEuclidean N 1 2 Ω}
@@ -3482,8 +3834,8 @@ section Det
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 open scoped Matrix.Norms.Elementwise in
-/-- **The determinant of a matrix is a smooth function of its entries**: a polynomial, by the
-Leibniz formula `Matrix.det_apply'`. -/
+/-- **The determinant of a real square matrix is a smooth function of its entries.** It is a
+polynomial, by the Leibniz formula `Matrix.det_apply'`. -/
 theorem _root_.Matrix.contDiff_det {ι : Type*} [Fintype ι] [DecidableEq ι] :
     ContDiff ℝ ∞ fun M : Matrix ι ι ℝ ↦ M.det := by
   simp_rw [Matrix.det_apply']
@@ -3493,7 +3845,7 @@ theorem _root_.Matrix.contDiff_det {ι : Type*} [Fintype ι] [DecidableEq ι] :
 
 open scoped Matrix.Norms.Elementwise in
 /-- **The determinant of a continuous linear map on a finite-dimensional space is a smooth function
-of the map**: `ContinuousLinearMap.det` is the determinant of the matrix of the map in a basis,
+of the map.** `ContinuousLinearMap.det` is the determinant of the matrix of the map in a basis,
 and the map to that matrix is linear. -/
 theorem _root_.ContinuousLinearMap.contDiff_det :
     ContDiff ℝ ∞ fun f : E →L[ℝ] E ↦ f.det := by
@@ -3514,23 +3866,26 @@ section ChartCoeff
 
 variable {N : ℕ}
 
-/-- **The coefficients `a_{kℓ} = (∑_j ∂_jJ_k ∂_jJ_ℓ) ∘ H · |det Jac H|`** of the equation
-satisfied by `w = v ∘ H` when `v` solves `−Δv = g` ([brezis2011functional] §9.6, Lemma 9.8),
-for a diffeomorphism `H` with inverse `J`; `∂_jJ_k(x)` is the `k`-th coordinate of
-`fderiv ℝ J x e_j`. -/
+/-- **The coefficients of the transferred equation** of Lemma 9.8 of [brezis2011functional]. For
+maps $H, J : \mathbb{R}^N \to \mathbb{R}^N$, where $J$ is meant as the inverse of $H$,
+$$a_{k\ell}(y) = \Big( \sum_j \partial_j J_k(H y)\, \partial_j J_\ell(H y) \Big)\, |\det
+  DH(y)|.$$
+If $v$ solves $-\Delta v = g$, then $w = v \circ H$ solves the equation with these coefficients.
+
+Here $\partial_j J_k(x)$ is the $k$-th coordinate of $DJ(x)\, e_j$. -/
 def chartCoeff (H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) (k l : Fin N)
     (y : EuclideanSpace ℝ (Fin N)) : ℝ :=
   (∑ j, fderiv ℝ J (H y) (EuclideanSpace.single j 1) k
     * fderiv ℝ J (H y) (EuclideanSpace.single j 1) l) * |(fderiv ℝ H y).det|
 
-/-- **The transferred datum `g̃ = (g ∘ H) |det Jac H|`** of [brezis2011functional] §9.6,
-Lemma 9.8. -/
+/-- **The transferred datum** of Lemma 9.8 of [brezis2011functional]:
+$\tilde g(y) = g(H y)\, |\det DH(y)|$. -/
 def chartDatum (H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (g : EuclideanSpace ℝ (Fin N) → ℝ) (y : EuclideanSpace ℝ (Fin N)) : ℝ :=
   g (H y) * |(fderiv ℝ H y).det|
 
-/-- The Jacobian determinant of a `C^{n+1}` local diffeomorphism is `C^n` where it does not
-vanish. -/
+/-- Let $s$ be open, let $H$ be $C^{n+1}$ on $s$, and let $\det DH(y) \neq 0$ for $y \in s$. Then
+$y \mapsto |\det DH(y)|$ is $C^n$ on $s$. -/
 theorem contDiffOn_abs_det_fderiv_of_order (n : ℕ)
     {H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (hH : ContDiffOn ℝ (n + 1) H s)
@@ -3542,8 +3897,10 @@ theorem contDiffOn_abs_det_fderiv_of_order (n : ℕ)
   intro y hy
   exact (contDiffAt_abs (hdet y hy)).comp_contDiffWithinAt y (h1 y hy)
 
-/-- The coefficients of the transferred equation are `C^n` where `H` is `C^{n+1}` with
-nonvanishing Jacobian and maps into a set on which `J` is `C^{n+1}`. -/
+/-- **The transferred coefficients are $C^n$.** Let $s$ and $t$ be open subsets of $\mathbb{R}^N$,
+let $H$ be $C^{n+1}$ on $s$ with $H(s) \subseteq t$ and $\det DH(y) \neq 0$ for $y \in s$, and
+let $J$ be $C^{n+1}$ on $t$. Then every coefficient $a_{k\ell}$ of the transferred equation
+(`Elliptic.chartCoeff`) is $C^n$ on $s$. -/
 theorem contDiffOn_chartCoeff_of_order (n : ℕ)
     {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (ht : IsOpen t)
@@ -3561,15 +3918,17 @@ theorem contDiffOn_chartCoeff_of_order (n : ℕ)
   exact (ContDiffOn.sum fun j _ ↦ (hJH j k).mul (hJH j l)).mul
     (contDiffOn_abs_det_fderiv_of_order n hs hH hdet)
 
-/-- The Jacobian determinant of a `C²` local diffeomorphism is `C¹` where it does not vanish. -/
+/-- Let $s$ be open, let $H$ be $C^2$ on $s$, and let $\det DH(y) \neq 0$ for $y \in s$. Then
+$y \mapsto |\det DH(y)|$ is $C^1$ on $s$. -/
 theorem contDiffOn_abs_det_fderiv {H : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (hH : ContDiffOn ℝ 2 H s)
     (hdet : ∀ y ∈ s, (fderiv ℝ H y).det ≠ 0) :
     ContDiffOn ℝ 1 (fun y ↦ |(fderiv ℝ H y).det|) s :=
   contDiffOn_abs_det_fderiv_of_order 1 hs (by convert hH using 1; norm_num) hdet
 
-/-- The coefficients are `C¹` where `H` is `C²` with nonvanishing Jacobian and maps into a set on
-which `J` is `C²`. -/
+/-- Let $s$ and $t$ be open, let $H$ be $C^2$ on $s$ with $H(s) \subseteq t$ and $\det DH(y) \neq 0$
+for $y \in s$, and let $J$ be $C^2$ on $t$. Then the transferred coefficients $a_{k\ell}$ are
+$C^1$ on $s$. -/
 theorem contDiffOn_chartCoeff {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} (hs : IsOpen s) (ht : IsOpen t)
     (hH : ContDiffOn ℝ 2 H s) (hJ : ContDiffOn ℝ 2 J t) (hHs : MapsTo H s t)
@@ -3587,8 +3946,8 @@ section ChartElliptic
 
 variable {N : ℕ}
 
-/-- The chain rule for the inverse: `fderiv J (H y) ∘ fderiv H y = id` at a point of the source
-of a `C¹` diffeomorphism. -/
+/-- The chain rule for the inverse: for a $C^1$ diffeomorphism $H : s \to t$ with inverse $J$ and
+bounded Jacobians, $DJ(H y) \circ DH(y)$ is the identity for every $y \in s$. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.fderiv_invFun_comp_fderiv
     {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} {M : ℝ} (h : IsDiffeoOnWithBoundedJacobian H J s t M)
@@ -3607,7 +3966,8 @@ theorem _root_.IsDiffeoOnWithBoundedJacobian.fderiv_invFun_comp_fderiv
     exact h.invOn.1 hz
   exact hcomp.unique hid
 
-/-- `det DJ(H y) · det DH(y) = 1` on the source of a diffeomorphism. -/
+/-- For a $C^1$ diffeomorphism $H : s \to t$ with inverse $J$ and bounded Jacobians,
+$\det DJ(H y) \cdot \det DH(y) = 1$ for every $y \in s$. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.det_fderiv_invFun_mul_det_fderiv
     {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} {M : ℝ} (h : IsDiffeoOnWithBoundedJacobian H J s t M)
@@ -3616,15 +3976,18 @@ theorem _root_.IsDiffeoOnWithBoundedJacobian.det_fderiv_invFun_mul_det_fderiv
   have := congrArg ContinuousLinearMap.det (h.fderiv_invFun_comp_fderiv hy)
   simpa [ContinuousLinearMap.det, LinearMap.det_comp] using this
 
-/-- The Jacobian determinant of a diffeomorphism does not vanish on the source. -/
+/-- The Jacobian determinant of a $C^1$ diffeomorphism $H : s \to t$ with bounded Jacobians does not
+vanish on $s$. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.det_fderiv_ne_zero
     {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} {M : ℝ} (h : IsDiffeoOnWithBoundedJacobian H J s t M)
     {y : EuclideanSpace ℝ (Fin N)} (hy : y ∈ s) : (fderiv ℝ H y).det ≠ 0 :=
   right_ne_zero_of_mul_eq_one (h.det_fderiv_invFun_mul_det_fderiv hy)
 
-/-- **The quadratic form of the transferred coefficients**:
-`∑_{kℓ} a_{kℓ}(y) ξ_k ξ_ℓ = |det DH(y)| ∑_j ⟪DJ(Hy) e_j, ξ⟫²`. -/
+/-- **The quadratic form of the transferred coefficients.** For all $y$ and $\xi$,
+$$\sum_{k,\ell} a_{k\ell}(y)\, \xi_k \xi_\ell = |\det DH(y)| \sum_j \langle DJ(H y)\, e_j, \xi
+  \rangle^2.$$
+-/
 theorem sum_chartCoeff_mul_eq (H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (y ξ : EuclideanSpace ℝ (Fin N)) :
     ∑ k, ∑ l, chartCoeff H J k l y * ξ k * ξ l
@@ -3645,12 +4008,16 @@ theorem sum_chartCoeff_mul_eq (H J : EuclideanSpace ℝ (Fin N) → EuclideanSpa
     Finset.sum_congr rfl fun l _ ↦ ?_
   ring
 
-/-- **The transferred coefficients are elliptic** ([brezis2011functional] §9.6, Lemma 9.8:
-"`∑ a_{kℓ} ξ_k ξ_ℓ = |det Jac H| ∑_j |∑_k ∂_jJ_k ξ_k|² ≥ α |ξ|²`"): for a `C¹` diffeomorphism
-`H : s → t` with inverse `J` and Jacobians bounded by `M`, there is `α > 0` with
-`α ‖ξ‖² ≤ ∑_{kℓ} a_{kℓ}(y) ξ_k ξ_ℓ` for all `y ∈ s` and `ξ`. Since `DJ(Hy) ∘ DH(y) = id`, every
-coordinate `ξ_k = ∑_j (DH e_k)_j ⟪DJ e_j, ξ⟫`, so `‖ξ‖² ≤ N M² ∑_j ⟪DJ e_j, ξ⟫²` by
-Cauchy–Schwarz, and `|det DH(y)| ≥ 1/(D+1)` for a bound `D` on `|det DJ|`. -/
+/-- **The transferred coefficients are elliptic.** Let $H : s \to t$ be a $C^1$ diffeomorphism with
+inverse $J$ and Jacobians bounded by $M$. Then there is $\alpha > 0$ with
+$$\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(y)\, \xi_k \xi_\ell \quad \text{for all } y \in s
+  \text{ and } \xi \in \mathbb{R}^N.$$
+
+This is the step "$\sum a_{k\ell} \xi_k \xi_\ell = |\det \operatorname{Jac} H| \sum_j |\sum_k
+\partial_j J_k \xi_k|^2 \ge \alpha |\xi|^2$" of Lemma 9.8 of [brezis2011functional]. Since
+$DJ(H y) \circ DH(y)$ is the identity, every coordinate is $\xi_k = \sum_j (DH\, e_k)_j \langle
+DJ\, e_j, \xi \rangle$, so $\|\xi\|^2 \le N M^2 \sum_j \langle DJ\, e_j, \xi \rangle^2$ by the
+Cauchy–Schwarz inequality, and $|\det DH(y)| \ge 1/(D + 1)$ for a bound $D$ on $|\det DJ|$. -/
 theorem chartCoeff_elliptic {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} {M : ℝ} (h : IsDiffeoOnWithBoundedJacobian H J s t M) :
     ∃ α : ℝ, 0 < α ∧ ∀ y ∈ s, ∀ ξ : EuclideanSpace ℝ (Fin N),
@@ -3720,8 +4087,10 @@ theorem chartCoeff_elliptic {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace
     _ = 1 / (D + 1) * S := by field_simp
     _ ≤ |A.det| * S := mul_le_mul_of_nonneg_right hdet hS0
 
-/-- **The transferred coefficients are bounded on the source**: `|a_{kℓ}(y)| ≤ M₀` for `y ∈ s`,
-by the Jacobian bounds and `ContinuousLinearMap.exists_abs_det_le_mul_norm_pow`. -/
+/-- **The transferred coefficients are bounded on the source.** For a $C^1$ diffeomorphism
+$H : s \to t$ with inverse $J$ and bounded Jacobians, there is $M_0 \ge 0$ with
+$|a_{k\ell}(y)| \le M_0$ for all $k, \ell$ and $y \in s$. The proof uses the Jacobian bounds and
+`ContinuousLinearMap.exists_abs_det_le_mul_norm_pow`. -/
 theorem chartCoeff_bounded {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s t : Set (EuclideanSpace ℝ (Fin N))} {M : ℝ} (h : IsDiffeoOnWithBoundedJacobian H J s t M) :
     ∃ M₀ : ℝ, 0 ≤ M₀ ∧ ∀ k l, ∀ y ∈ s, |chartCoeff H J k l y| ≤ M₀ := by
@@ -3758,7 +4127,8 @@ variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- A test function has its classical derivative as weak derivative. -/
+/-- The classical derivative of a test function $\psi$ on $\Omega'$ is its weak derivative on
+$\Omega'$. -/
 theorem _root_.TestFunction.hasWeakFDerivOn (ψ : 𝓓(Ω', ℝ)) :
     HasWeakFDerivOn (ψ : EuclideanSpace ℝ (Fin N) → ℝ) (fderiv ℝ ψ) Ω' volume := by
   have := ContDiffOn.hasWeakIteratedFDerivOn (μ := volume) (ψ.contDiff.contDiffOn (s := Ω'))
@@ -3767,9 +4137,11 @@ theorem _root_.TestFunction.hasWeakFDerivOn (ψ : 𝓓(Ω', ℝ)) :
   refine this.congr_ae (EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ ?_)
   rw [iteratedFDeriv_one_eq_symm_fderiv]
 
-/-- **The change of variables `x = H y` for integrals over the target of a diffeomorphism**:
-`∫_Ω F = ∫_{Ω'} |det DH| F ∘ H` (Mathlib's
-`MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul`). -/
+/-- **The change of variables $x = H y$ for integrals over the target of a diffeomorphism.** For a
+$C^1$ diffeomorphism $H : \Omega' \to \Omega$ with bounded Jacobians and every
+$F : \mathbb{R}^N \to \mathbb{R}$,
+$$\int_\Omega F = \int_{\Omega'} |\det DH|\, (F \circ H).$$
+This is the Mathlib theorem `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul`. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.integral_eq_integral_abs_det_mul
     (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M) (F : EuclideanSpace ℝ (Fin N) → ℝ) :
     ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), F x
@@ -3782,10 +4154,15 @@ theorem _root_.IsDiffeoOnWithBoundedJacobian.integral_eq_integral_abs_det_mul
     Ω'.isOpen.measurableSet hd h.bijOn.injOn F]
   simp only [smul_eq_mul]
 
-/-- **The pullback `ψ ∘ J` of a test function on `Ω'` is an element of `H^1_0(Ω)`** with the
-derivatives `∂_j(ψ ∘ J) = ∇ψ(J x) (DJ(x) e_j)`: the transfer `φ(x) = ψ(J x)` of
-[brezis2011functional] §9.6, proof of Lemma 9.8, which lies in `H^1_0(Ω ∩ Uᵢ)` because it
-vanishes outside the compact `H(supp ψ)` (Lemma 9.5). -/
+/-- **The pullback of a test function is an element of $H^1_0$.** Let $H : \Omega' \to \Omega$ be a
+$C^1$ diffeomorphism with inverse $J$ and bounded Jacobians, and let $\psi$ be a test function
+on $\Omega'$. Then there is $\Psi \in H^1_0(\Omega)$ whose function is $\psi \circ J$ almost
+everywhere on $\Omega$, with the partial derivatives $\partial_j \Psi(x) = D\psi(J
+x)\big(DJ(x)\, e_j\big)$ almost everywhere on $\Omega$.
+
+This is the transfer $\varphi(x) = \psi(J x)$ in the proof of Lemma 9.8 of
+[brezis2011functional]. It lies in $H^1_0(\Omega \cap U_i)$ because it vanishes outside the
+compact set $H(\operatorname{supp} \psi)$ (Lemma 9.5). -/
 theorem exists_pullback_testFunction (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     (ψ : 𝓓(Ω', ℝ)) :
     ∃ Ψ : SobolevEuclidean N 1 2 Ω, Ψ ∈ SobolevEuclideanZero N 1 2 Ω ∧
@@ -3823,9 +4200,13 @@ theorem exists_pullback_testFunction (h : IsDiffeoOnWithBoundedJacobian H J Ω' 
   have hmem : J x ∈ tsupport ψ := subset_tsupport _ hne
   exact hxK ⟨J x, hmem, h.invOn.2 hxΩ⟩
 
-/-- **The partial derivatives of `v` through the transferred function**: for `w = v ∘ H` with a
-tensor weak derivative `W` on `Ω'`, `∂_j v (x) = W(J x)(DJ(x) e_j)` almost everywhere on `Ω`
-([brezis2011functional] §9.6, Lemma 9.8: "`∂v/∂x_j = ∑_k (∂w/∂y_k)(∂J_k/∂x_j)`"). -/
+/-- **The partial derivatives of $v$ through the transferred function.** Let
+$H : \Omega' \to \Omega$ be a $C^1$ diffeomorphism with inverse $J$ and bounded Jacobians, let
+$v \in H^1(\Omega)$, and let $W$ be a weak derivative on $\Omega'$ of the function of
+$w = v \circ H$ (`SobolevEuclidean.compDiffeoL`). Then for every $j$,
+$$\partial_j v(x) = W(J x)\big(DJ(x)\, e_j\big) \quad \text{for almost every } x \in \Omega.$$
+This is the identity $\partial v / \partial x_j = \sum_k (\partial w / \partial y_k)(\partial
+J_k / \partial x_j)$ of Lemma 9.8 of [brezis2011functional]. -/
 theorem weakDeriv_eq_of_compDiffeo (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     (v : SobolevEuclidean N 1 2 Ω)
     {W : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
@@ -3858,15 +4239,16 @@ variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The product of two `L²` functions is integrable. -/
+/-- The product of two functions in $L^2$ is integrable. -/
 theorem _root_.MeasureTheory.MemLp.integrable_mul_two {X : Type*} [MeasurableSpace X]
     {ν : Measure X} {f g : X → ℝ} (hf : MemLp f 2 ν) (hg : MemLp g 2 ν) :
     Integrable (fun x ↦ f x * g x) ν := by
   have : ENNReal.HolderTriple 2 2 1 := ⟨by rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
   exact memLp_one_iff_integrable.1 (hf.fun_mul hg)
 
-/-- The bounded factor `|det DH(y)| (DJ(Hy) e_j)_k (DJ(Hy) e_j)_l` of the transferred integrand is
-continuous on the source and bounded there. -/
+/-- For a $C^1$ diffeomorphism $H : \Omega' \to \Omega$ with inverse $J$ and bounded Jacobians, the
+factor $y \mapsto |\det DH(y)|\, (DJ(H y)\, e_j)_k\, (DJ(H y)\, e_j)_\ell$ of the transferred
+integrand is continuous on $\Omega'$ and bounded there. -/
 theorem exists_bound_chart_factor (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M) (j k l : Fin N) :
     ContinuousOn (fun y ↦ |(fderiv ℝ H y).det| * fderiv ℝ J (H y) (EuclideanSpace.single j 1) k
       * fderiv ℝ J (H y) (EuclideanSpace.single j 1) l) Ω' ∧
@@ -3897,17 +4279,20 @@ theorem exists_bound_chart_factor (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω 
           (hJb l) (abs_nonneg _) (mul_nonneg ((abs_nonneg _).trans (hD y hy)) (le_max_right _ _))
     _ = D * max M 0 ^ 2 := by ring
 
-/-- **Lemma 9.8, the transferred equation** ([brezis2011functional] §9.6): let `v ∈ H^1(Ω)` satisfy
-`∫_Ω ∇v · ∇Ψ = ∫_Ω G Ψ` for all `Ψ ∈ H^1_0(Ω)`, and let `w = v ∘ H ∈ H^1(Ω')` be its transfer
-along the diffeomorphism `H : Ω' → Ω`. Then for every test function `ψ` on `Ω'`,
+/-- **Lemma 9.8** of [brezis2011functional], the transferred equation. Let $H : \Omega' \to \Omega$
+be a $C^1$ diffeomorphism with inverse $J$ and bounded Jacobians. Let $v \in H^1(\Omega)$ and
+$G \in L^2(\Omega)$ satisfy $\int_\Omega \nabla v \cdot \nabla \Psi = \int_\Omega G \Psi$ for
+all $\Psi \in H^1_0(\Omega)$, and let $w = v \circ H \in H^1(\Omega')$. Then for every test
+function $\psi$ on $\Omega'$,
+$$\sum_{k,\ell} \int_{\Omega'} a_{k\ell}\, \partial_k w\, \partial_\ell \psi = \int_{\Omega'}
+  \tilde g\, \psi,$$
+with $a_{k\ell}$ the coefficients `Elliptic.chartCoeff H J k l` and $\tilde g$ the datum
+`Elliptic.chartDatum H G`.
 
-`∑_{kℓ} ∫_{Ω'} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Ω'} g̃ ψ`,
-
-with `a_{kℓ} = chartCoeff H J k l` and `g̃ = chartDatum H G`. The equation is tested with the
-pullback `ψ ∘ J ∈ H^1_0(Ω)` (`Elliptic.exists_pullback_testFunction`), the derivatives of `v` are
-read through `w` (`Elliptic.weakDeriv_eq_of_compDiffeo`), and the integrals are transported by
-the change of variables `x = H y`
-(`IsDiffeoOnWithBoundedJacobian.integral_eq_integral_abs_det_mul`). -/
+The equation is tested with the pullback $\psi \circ J \in H^1_0(\Omega)$
+(`Elliptic.exists_pullback_testFunction`). The derivatives of $v$ are read through $w$
+(`Elliptic.weakDeriv_eq_of_compDiffeo`), and the integrals are transported by the change of
+variables $x = H y$ (`IsDiffeoOnWithBoundedJacobian.integral_eq_integral_abs_det_mul`). -/
 theorem sum_integral_chartCoeff_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     {v : SobolevEuclidean N 1 2 Ω}
     {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -4022,7 +4407,7 @@ theorem sum_integral_chartCoeff_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω
 end ChartEquation
 
 
-/-! ### Lemma 9.8, typed: the transfer `H^1_0(Ω) → H^1_0(Q₊)` and the transferred problem -/
+/-! ### Lemma 9.8 with Sobolev elements: the transfer to $H^1_0(Q_+)$ and the transferred problem -/
 
 section ChartTyped
 
@@ -4031,8 +4416,8 @@ variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **A continuous linear functional on `H^1(Ω)` vanishing on the test-function elements vanishes
-on `H^1_0(Ω)`**, the closure of the test functions. -/
+/-- **A continuous linear functional on $H^1(\Omega)$ that vanishes on the test-function elements
+vanishes on $H^1_0(\Omega)$**, the closure of the test-function elements. -/
 theorem apply_eq_zero_of_forall_testFunctions {L : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ}
     (h : ∀ φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume, L φ = 0)
     {φ : SobolevEuclidean N 1 2 Ω} (hφ : φ ∈ SobolevEuclideanZero N 1 2 Ω) : L φ = 0 := by
@@ -4043,8 +4428,10 @@ theorem apply_eq_zero_of_forall_testFunctions {L : SobolevEuclidean N 1 2 Ω →
   have := Submodule.topologicalClosure_minimal _ hker L.isClosed_ker hφ
   rwa [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at this
 
-/-- The equation `a(u, Ψ) = ∫ G Ψ` for the general form extends from the test-function elements
-to `H^1_0(Ω)`. -/
+/-- Let $a$ be the principal part of the general form with coefficients
+$A_{k\ell} \in L^\infty(\Omega)$, let $u \in H^1(\Omega)$ and $G \in L^2(\Omega)$. If
+$a(u, \Psi) = \int_\Omega G \Psi$ for every test-function element $\Psi$, then the same holds
+for every $\Psi \in H^1_0(\Omega)$. -/
 theorem generalForm_eq_load_of_forall_testFunctions
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {u : SobolevEuclidean N 1 2 Ω}
@@ -4057,10 +4444,12 @@ theorem generalForm_eq_load_of_forall_testFunctions
     (fun ψ hψ ↦ by rw [sub_apply, h ψ hψ, sub_self]) hφ
   rwa [sub_apply, sub_eq_zero] at this
 
-/-- **The transfer `v ↦ v ∘ H` maps `H^1_0(Ω)` into `H^1_0(Ω')`**: a test function on `Ω`
-transfers to a `C¹` function vanishing outside the compact `J(supp φ) ⊆ Ω'`, which lies in
-`H^1_0(Ω')` by Lemma 9.5, and the transfer is continuous. ([brezis2011functional] §9.6,
-Lemma 9.8: "`w` belongs to `H^1_0(Q₊)`".) -/
+/-- **The transfer $v \mapsto v \circ H$ maps $H^1_0(\Omega)$ into $H^1_0(\Omega')$**, for a $C^1$
+diffeomorphism $H : \Omega' \to \Omega$ with bounded Jacobians. A test function $\varphi$ on
+$\Omega$ transfers to a $C^1$ function that vanishes outside the compact set
+$J(\operatorname{supp} \varphi) \subseteq \Omega'$, which lies in $H^1_0(\Omega')$ by Lemma 9.5,
+and the transfer is continuous. This is the step "$w$ belongs to $H^1_0(Q_+)$" of Lemma 9.8 of
+[brezis2011functional]. -/
 theorem compDiffeoL_mem_zero (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     {v : SobolevEuclidean N 1 2 Ω} (hv : v ∈ SobolevEuclideanZero N 1 2 Ω) :
     SobolevEuclidean.compDiffeoL h v ∈ SobolevEuclideanZero N 1 2 Ω' := by
@@ -4078,7 +4467,8 @@ theorem compDiffeoL_mem_zero (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
   by_contra hne
   exact hyK ⟨H y, subset_tsupport _ hne, h.invOn.1 hyΩ'⟩
 
-/-- The transferred coefficients are continuous on the source. -/
+/-- For a $C^1$ diffeomorphism $H : \Omega' \to \Omega$ with inverse $J$ and bounded Jacobians, the
+transferred coefficients $a_{k\ell}$ are continuous on $\Omega'$. -/
 theorem continuousOn_chartCoeff (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M) (k l : Fin N) :
     ContinuousOn (chartCoeff H J k l) Ω' := by
   have : chartCoeff H J k l = fun y ↦ ∑ j, |(fderiv ℝ H y).det|
@@ -4090,7 +4480,8 @@ theorem continuousOn_chartCoeff (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
   rw [this]
   exact continuousOn_finsetSum _ fun j _ ↦ (exists_bound_chart_factor h j k l).1
 
-/-- The transferred coefficients are `L^∞` classes on the source. -/
+/-- For a $C^1$ diffeomorphism $H : \Omega' \to \Omega$ with inverse $J$ and bounded Jacobians, the
+transferred coefficients $a_{k\ell}$ lie in $L^\infty(\Omega')$. -/
 theorem memLp_top_chartCoeff (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M) (k l : Fin N) :
     MemLp (chartCoeff H J k l) ⊤ (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))) := by
   obtain ⟨M₀, -, hM₀⟩ := chartCoeff_bounded h
@@ -4100,9 +4491,11 @@ theorem memLp_top_chartCoeff (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M) (k
   rw [Real.norm_eq_abs]
   exact hM₀ k l y hy
 
-/-- The transferred datum `g̃ = (G ∘ H) |det DH|` lies in `L²(Ω')`: `G ∘ H ∈ L²(Ω')` by the
-transport of `L^p` norms (`IsDiffeoOnWithBoundedJacobian.memLp_comp`), and the Jacobian
-determinant is bounded on the source. -/
+/-- For a $C^1$ diffeomorphism $H : \Omega' \to \Omega$ with bounded Jacobians and
+$G \in L^2(\Omega)$, the transferred datum $\tilde g = (G \circ H)\, |\det DH|$ lies in
+$L^2(\Omega')$. Indeed $G \circ H \in L^2(\Omega')$ by the transport of $L^p$ norms
+(`IsDiffeoOnWithBoundedJacobian.memLp_comp`), and the Jacobian determinant is bounded on
+$\Omega'$. -/
 theorem memLp_chartDatum (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     (G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     MemLp (chartDatum H G) 2 (volume.restrict (Ω' : Set (EuclideanSpace ℝ (Fin N)))) := by
@@ -4121,8 +4514,18 @@ theorem memLp_chartDatum (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     (fun y hy ↦ by rw [abs_abs]; exact hD y hy) h1
   exact this.ae_eq (Eventually.of_forall fun y ↦ by simp only [chartDatum]; ring)
 
-/-- **Lemma 9.8, typed, with the transferred datum made explicit**: `Elliptic.transfer_chart`
-together with `G̃ = (G ∘ H) |det DH|` almost everywhere (`Elliptic.chartDatum`). -/
+/-- **Lemma 9.8** of [brezis2011functional], with Sobolev elements and the transferred datum made
+explicit. Let $H : \Omega' \to \Omega$ be a $C^1$ diffeomorphism with inverse $J$ and bounded
+Jacobians, and let $v \in H^1_0(\Omega)$ and $G \in L^2(\Omega)$ satisfy $\int_\Omega \nabla v
+\cdot \nabla \Psi = \int_\Omega G \Psi$ for all $\Psi \in H^1_0(\Omega)$. Then there are
+$w \in H^1_0(\Omega')$, coefficients $A_{k\ell} \in L^\infty(\Omega')$ and
+$\tilde G \in L^2(\Omega')$ such that, almost everywhere on $\Omega'$, the function of $w$ is
+$v \circ H$, $A_{k\ell} = a_{k\ell}$ (`Elliptic.chartCoeff H J k l`) and
+$\tilde G = (G \circ H)\, |\det DH|$ (`Elliptic.chartDatum H G`), and
+$$\sum_{k,\ell} \int_{\Omega'} A_{k\ell}\, \partial_k w\, \partial_\ell \Psi = \int_{\Omega'}
+  \tilde G\, \Psi \quad \text{for all } \Psi \in H^1_0(\Omega').$$
+
+This is `Elliptic.transfer_chart` together with the description of $\tilde G$. -/
 theorem transfer_chart_ae_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     {v : SobolevEuclidean N 1 2 Ω} (hv : v ∈ SobolevEuclideanZero N 1 2 Ω)
     {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -4147,12 +4550,19 @@ theorem transfer_chart_ae_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     w hψ, load_apply_eq_of_ae_eq (memLp_chartDatum h G).coeFn_toLp hψ]
   exact sum_integral_chartCoeff_eq h heq hw ψ
 
-/-- **Lemma 9.8, typed** ([brezis2011functional] §9.6): let `H : Ω' → Ω` be a `C¹`
-diffeomorphism with bounded Jacobians and inverse `J`, and let `v ∈ H^1_0(Ω)` satisfy
-`∫_Ω ∇v · ∇Ψ = ∫_Ω G Ψ` for all `Ψ ∈ H^1_0(Ω)`. Then `w = v ∘ H ∈ H^1_0(Ω')` and
-`∑_{kℓ} ∫_{Ω'} a_{kℓ} ∂_k w ∂_ℓ Ψ = ∫_{Ω'} g̃ Ψ` for all `Ψ ∈ H^1_0(Ω')`, with the coefficients
-`A_{kℓ}` the `L^∞(Ω')` classes of `chartCoeff H J k l` and `G̃` the `L²(Ω')` class of
-`chartDatum H G`; the coefficients are elliptic (`Elliptic.chartCoeff_elliptic`). -/
+/-- **Lemma 9.8** of [brezis2011functional], with Sobolev elements. Let $H : \Omega' \to \Omega$ be
+a $C^1$ diffeomorphism with inverse $J$ and bounded Jacobians, and let $v \in H^1_0(\Omega)$ and
+$G \in L^2(\Omega)$ satisfy $\int_\Omega \nabla v \cdot \nabla \Psi = \int_\Omega G \Psi$ for
+all $\Psi \in H^1_0(\Omega)$. Then there are $w \in H^1_0(\Omega')$, coefficients
+$A_{k\ell} \in L^\infty(\Omega')$ and $\tilde G \in L^2(\Omega')$ such that the function of $w$
+is $v \circ H$ and $A_{k\ell} = a_{k\ell}$ almost everywhere on $\Omega'$, with $a_{k\ell}$ the
+coefficients `Elliptic.chartCoeff H J k l`, and
+$$\sum_{k,\ell} \int_{\Omega'} A_{k\ell}\, \partial_k w\, \partial_\ell \Psi = \int_{\Omega'}
+  \tilde G\, \Psi \quad \text{for all } \Psi \in H^1_0(\Omega').$$
+
+The datum $\tilde G$ is the class of `Elliptic.chartDatum H G`
+(`Elliptic.transfer_chart_ae_eq`). The coefficients are elliptic by
+`Elliptic.chartCoeff_elliptic`; that fact is not part of this statement. -/
 theorem transfer_chart (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     {v : SobolevEuclidean N 1 2 Ω} (hv : v ∈ SobolevEuclideanZero N 1 2 Ω)
     {G : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -4171,43 +4581,53 @@ theorem transfer_chart (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
 end ChartTyped
 
 
-/-! ### Case C₂ on the model cylinder: extending the transferred problem to the half space
+/-!
+### Case $C_2$ on the model cylinder: extending the transferred problem to the half space
 
-The transferred solution `w ∈ H^1_0(Q₊)` vanishes outside a compact subset `K` of the cylinder `Q`
-(the support of the cut-off `θᵢ` is compact in `Uᵢ`, footnote 31 of [brezis2011functional]
-§9.6). Its extension by zero `W` to the half space `ℝ^N_+` solves the equation with coefficients
-`χ a_{kℓ} + (1 − χ) δ_{kℓ}`, for a cut-off `χ ∈ C_c^∞(Q)` equal to `1` near `K`: these are `C¹`,
-bounded with bounded derivatives, elliptic, and the half space is invariant under the tangential
-translations, so the case B theorem `Elliptic.exists_sobolevEuclidean_two_of_tangential` applies
-and gives `W ∈ H²(ℝ^N_+)`, hence `w ∈ H²(Q₊)`. -/
+The transferred solution $w \in H^1_0(Q_+)$ vanishes outside a compact subset $K$ of the cylinder
+$Q$, because the support of the cut-off $\theta_i$ is compact in $U_i$ (footnote 31 of
+[brezis2011functional], §9.6). Its extension $W$ by zero to the half space $\mathbb{R}^N_+$ solves
+the equation with the coefficients $\chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$, for a cut-off
+$\chi \in C_c^\infty(Q)$ equal to $1$ near $K$. These coefficients are $C^1$, bounded with bounded
+derivatives, and elliptic, and the half space is invariant under the tangential translations. So the
+case B theorem `Elliptic.exists_sobolevEuclidean_two_of_tangential` applies and gives
+$W \in H^2(\mathbb{R}^N_+)$, hence $w \in H^2(Q_+)$.
+-/
 
 section ExtendCoeff
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {N : ℕ}
 
-/-- **The coefficients `χ a_{kℓ} + (1 − χ) δ_{kℓ}`** extending an elliptic family from the support
-of a cut-off `χ` to the whole space by the identity: the coefficients of the equation satisfied by
-the zero extension of a solution supported where `χ = 1`. -/
+/-- **The extended coefficients** $\tilde a_{k\ell} = \chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$.
+They extend a family of coefficients from the support of a cut-off $\chi$ to the whole space by
+the identity matrix. They are the coefficients of the equation that the extension by zero of a
+solution satisfies, when the solution is supported where $\chi = 1$. -/
 def extendCoeff (χ : E → ℝ) (a : Fin N → Fin N → E → ℝ) (k l : Fin N) (y : E) : ℝ :=
   χ y * a k l y + (1 - χ y) * if k = l then 1 else 0
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- Where $\chi(y) = 1$, the extended coefficient is $\tilde a_{k\ell}(y) = a_{k\ell}(y)$. -/
 theorem extendCoeff_of_eq_one {χ : E → ℝ} {a : Fin N → Fin N → E → ℝ} {k l : Fin N} {y : E}
     (hy : χ y = 1) : extendCoeff χ a k l y = a k l y := by
   simp [extendCoeff, hy]
 
 omit [NormedSpace ℝ E] in
+/-- Outside the support of $\chi$, the extended coefficient is
+$\tilde a_{k\ell}(y) = \delta_{k\ell}$. -/
 theorem extendCoeff_of_notMem_tsupport {χ : E → ℝ} {a : Fin N → Fin N → E → ℝ} {k l : Fin N}
     {y : E} (hy : y ∉ tsupport χ) : extendCoeff χ a k l y = if k = l then 1 else 0 := by
   simp [extendCoeff, image_eq_zero_of_notMem_tsupport hy]
 
+/-- Let $Q$ be open, let $\chi$ be $C^1$ with $\operatorname{tsupport} \chi \subseteq Q$, and let
+every $a_{k\ell}$ be $C^1$ on $Q$. Then every extended coefficient
+$\chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$ is $C^1$ on the whole space. -/
 theorem contDiff_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 χ) {Q : Set E} (hQ : IsOpen Q)
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, ContDiffOn ℝ 1 (a k l) Q) (hχQ : tsupport χ ⊆ Q)
     (k l : Fin N) : ContDiff ℝ 1 (extendCoeff χ a k l) :=
   (hχ.mul_contDiffOn_of_tsupport_subset hQ (ha k l) hχQ).add
     ((contDiff_const.sub hχ).mul contDiff_const)
 
-/-- A finite family of reals has a common nonnegative bound. -/
+/-- A finite family of real numbers $C_{k\ell}$ has a common bound $M \ge 0$. -/
 theorem exists_forall_le_of_fin {n : ℕ} (C : Fin n → Fin n → ℝ) :
     ∃ M, 0 ≤ M ∧ ∀ k l, C k l ≤ M :=
   ⟨∑ k, ∑ l, |C k l|, by positivity, fun k l ↦ (le_abs_self _).trans
@@ -4217,7 +4637,8 @@ theorem exists_forall_le_of_fin {n : ℕ} (C : Fin n → Fin n → ℝ) :
         (fun k _ ↦ Finset.sum_nonneg fun l _ ↦ abs_nonneg (C k l)) (Finset.mem_univ k)))⟩
 
 omit [NormedSpace ℝ E] in
-/-- A continuous function equal to a constant off the compact support of `χ` is bounded. -/
+/-- Let $\chi$ have compact support, and let $f$ be continuous and equal to the constant $c$ outside
+the support of $\chi$. Then $f$ is bounded: $\|f(y)\| \le C$ for all $y$, for some $C \ge 0$. -/
 theorem exists_forall_norm_le_of_continuous {G : Type*} [NormedAddCommGroup G] {χ : E → ℝ}
     {f : E → G} (hχc : HasCompactSupport χ) (hf : Continuous f) {c : G}
     (hfc : ∀ y, y ∉ tsupport χ → f y = c) : ∃ C, 0 ≤ C ∧ ∀ y, ‖f y‖ ≤ C := by
@@ -4228,6 +4649,10 @@ theorem exists_forall_norm_le_of_continuous {G : Type*} [NormedAddCommGroup G] {
   · rw [hfc y hy]
     exact le_max_right _ _
 
+/-- Let $Q$ be open, let $\chi$ be $C^1$ with compact support and
+$\operatorname{tsupport} \chi \subseteq Q$, and let every $a_{k\ell}$ be $C^1$ on $Q$. Then the
+extended coefficients are bounded: there is $M_0 \ge 0$ with $|\chi a_{k\ell} + (1 - \chi)
+\delta_{k\ell}| \le M_0$ everywhere, for all $k, \ell$. -/
 theorem exists_bound_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 χ) (hχc : HasCompactSupport χ)
     {Q : Set E} (hQ : IsOpen Q) {a : Fin N → Fin N → E → ℝ}
     (ha : ∀ k l, ContDiffOn ℝ 1 (a k l) Q) (hχQ : tsupport χ ⊆ Q) :
@@ -4242,6 +4667,10 @@ theorem exists_bound_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 χ) (hχ
   rw [Real.norm_eq_abs] at this
   exact this.trans (hM₀ k l)
 
+/-- Let $Q$ be open, let $\chi$ be $C^1$ with compact support and
+$\operatorname{tsupport} \chi \subseteq Q$, and let every $a_{k\ell}$ be $C^1$ on $Q$. Then the
+derivatives of the extended coefficients are bounded: there is $M \ge 0$ with
+$\|\nabla \tilde a_{k\ell}(y)\| \le M$ for all $k, \ell$ and $y$. -/
 theorem exists_bound_fderiv_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 χ)
     (hχc : HasCompactSupport χ) {Q : Set E} (hQ : IsOpen Q) {a : Fin N → Fin N → E → ℝ}
     (ha : ∀ k l, ContDiffOn ℝ 1 (a k l) Q) (hχQ : tsupport χ ⊆ Q) :
@@ -4257,15 +4686,20 @@ theorem exists_bound_fderiv_extendCoeff {χ : E → ℝ} (hχ : ContDiff ℝ 1 �
   obtain ⟨M, hM0, hM⟩ := exists_forall_le_of_fin C
   exact ⟨M, hM0, fun k l y ↦ (hC k l y).trans (hM k l)⟩
 
-/-- `∑_{kℓ} δ_{kℓ} ξ_k ξ_ℓ = ‖ξ‖²`. -/
+/-- For every $\xi \in \mathbb{R}^N$, $\sum_{k,\ell} \delta_{k\ell}\, \xi_k \xi_\ell = \|\xi\|^2$.
+-/
 theorem sum_ite_mul_eq_norm_sq (ξ : EuclideanSpace ℝ (Fin N)) :
     ∑ k, ∑ l, (if k = l then (1 : ℝ) else 0) * ξ k * ξ l = ‖ξ‖ ^ 2 := by
   rw [EuclideanSpace.norm_sq_eq]
   refine Finset.sum_congr rfl fun k _ ↦ ?_
   simp [ite_mul, Real.norm_eq_abs, sq]
 
-/-- **The extended coefficients are elliptic with constant `min α 1`** where `0 ≤ χ ≤ 1` and
-`a` is elliptic with constant `α` on the part of the support of `χ` under consideration. -/
+/-- **The extended coefficients are elliptic with constant $\min\{\alpha, 1\}$.** Let
+$0 \le \chi \le 1$, let $T$ and $s$ be sets with $\operatorname{tsupport} \chi \cap T \subseteq
+s$, and let $\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(y)\, \xi_k \xi_\ell$ for all $y \in s$
+and $\xi$. Then for $y \in T$ and every $\xi$,
+$$\min\{\alpha, 1\}\, \|\xi\|^2 \le \sum_{k,\ell} \tilde a_{k\ell}(y)\, \xi_k \xi_\ell.$$
+-/
 theorem extendCoeff_elliptic {χ : EuclideanSpace ℝ (Fin N) → ℝ} (hχ01 : ∀ y, χ y ∈ Icc (0 : ℝ) 1)
     {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {T s : Set (EuclideanSpace ℝ (Fin N))}
     (hT : tsupport χ ∩ T ⊆ s) {α : ℝ}
@@ -4300,10 +4734,14 @@ variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **The extension by zero `H^1_0(Ω') → H^1_0(Ω)`, `Ω' ≤ Ω`**: for `w ∈ H^1_0(Ω')` there is
-`W ∈ H^1_0(Ω)` with `W = 1_{Ω'} w` and `∂ᵢW = 1_{Ω'} ∂ᵢw` on `Ω` — the restriction to `Ω` of the
-zero extension `SobolevEuclideanZero.extendZeroL` of Proposition 9.18; membership of `H^1_0(Ω)`
-is by closure from the test functions of `Ω'`, which are test functions of `Ω`. -/
+/-- **The extension by zero $H^1_0(\Omega') \to H^1_0(\Omega)$, for $\Omega' \subseteq \Omega$.**
+For $w \in H^1_0(\Omega')$ there is $W \in H^1_0(\Omega)$ with $W = \mathbf{1}_{\Omega'} w$ and
+$\partial_i W = \mathbf{1}_{\Omega'} \partial_i w$ almost everywhere on $\Omega$.
+
+The element $W$ is the restriction to $\Omega$ of the extension by zero
+`SobolevEuclideanZero.extendZeroL` of Proposition 9.18 of [brezis2011functional]. It lies in
+$H^1_0(\Omega)$ by closure from the test functions on $\Omega'$, which are test functions on
+$\Omega$. -/
 theorem exists_extendZero_mem_zero (hΩ' : Ω' ≤ Ω) {w : SobolevEuclidean N 1 2 Ω'}
     (hw : w ∈ SobolevEuclideanZero N 1 2 Ω') :
     ∃ W : SobolevEuclidean N 1 2 Ω, W ∈ SobolevEuclideanZero N 1 2 Ω ∧
@@ -4345,12 +4783,21 @@ theorem exists_extendZero_mem_zero (hΩ' : Ω' ≤ Ω) {w : SobolevEuclidean N 1
   · rw [Set.indicator_of_notMem hxΩ']
     exact ((φ n).eq_zero_of_notMem hxΩ').symm
 
-/-- **The equation for the zero extension** on `Ω ≥ Ω'`: for `w ∈ H^1_0(Ω')` vanishing off the
-compact `K ⊆ Q`, `Q ∩ Ω ⊆ Ω'`, solving `∑_{kℓ} ∫_{Ω'} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Ω'} g ψ` on
-`H^1_0(Ω')`, and `W ∈ H^1(Ω)` with `∂ᵢW = 1_{Ω'} ∂ᵢw`, the extension `W` solves
-`∑_{kℓ} ∫_Ω ã_{kℓ} ∂_k W ∂_ℓ ψ = ∫_Ω 1_{Ω'} χ g ψ` against the test functions of `Ω`, where
-`ã = χ a + (1 − χ) δ` for a smooth `χ` supported in `Q` and equal to `1` on a neighbourhood of
-`K`: the equation on `Ω'` is tested with `χ ψ`, and `∂_k w = 0` off `K`. -/
+/-- **The equation for the extension by zero.** Let $\Omega' \subseteq \Omega$, let $Q$ be a set
+with $Q \cap \Omega \subseteq \Omega'$, and let $\chi$ be smooth with
+$\operatorname{tsupport} \chi \subseteq Q$ and $\chi = 1$ on a set $L$. Let $K$ be closed with
+$K \subseteq \operatorname{int} L$. Let the coefficients $A_{k\ell} \in L^\infty(\Omega')$ agree
+almost everywhere with functions $a_{k\ell}$. Let $w \in H^1(\Omega')$ vanish almost everywhere
+outside $K$, and let $g \in L^2(\Omega')$ with
+$$\sum_{k,\ell} \int_{\Omega'} a_{k\ell}\, \partial_k w\, \partial_\ell \psi = \int_{\Omega'} g
+  \psi \quad \text{for all } \psi \in H^1_0(\Omega').$$
+Let $W \in H^1(\Omega)$ have $\partial_i W = \mathbf{1}_{\Omega'} \partial_i w$ almost
+everywhere on $\Omega$. Then for every test function $\psi$ on $\Omega$,
+$$\sum_{k,\ell} \int_\Omega \tilde a_{k\ell}\, \partial_k W\, \partial_\ell \psi = \int_\Omega
+  \mathbf{1}_{\Omega'}\, \chi g\, \psi,$$
+where $\tilde a = \chi a + (1 - \chi) \delta$ (`Elliptic.extendCoeff`).
+
+The equation on $\Omega'$ is tested with $\chi \psi$, and $\partial_k w = 0$ outside $K$. -/
 theorem sum_integral_extendCoeff_eq (hΩ' : Ω' ≤ Ω) {Q : Set (EuclideanSpace ℝ (Fin N))}
     (hQΩ' : Q ∩ Ω ⊆ Ω') {χ : EuclideanSpace ℝ (Fin N) → ℝ} (hχ : ContDiff ℝ ∞ χ)
     (hχQ : tsupport χ ⊆ Q) {L : Set (EuclideanSpace ℝ (Fin N))} (hχ1 : EqOn χ 1 L)
@@ -4441,19 +4888,26 @@ variable {d : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **`H²` regularity of a compactly supported solution on a subset of a tangentially invariant
-open set** — [brezis2011functional] Theorem 9.25, case C₂ on the model cylinder (67)–(69), in the
-form used in the proof of the theorem: let `Ω` be invariant under the tangential translations
-(the half space), `Ω' ≤ Ω` with `Q ∩ Ω ⊆ Ω'` for an open `Q` (the cylinder, `Ω' = Q₊`), let the
-coefficients `A_{kℓ} ∈ L^∞(Ω')` have representatives `a_{kℓ}` of class `C¹` on `Q` and elliptic
-on `Ω'`, and let `w ∈ H^1_0(Ω')` vanish off a compact `K ⊆ Q` and solve
-`∑_{kℓ} ∫_{Ω'} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Ω'} g ψ` for all `ψ ∈ H^1_0(Ω')`. Then `w ∈ H²(Ω')`.
+/-- **$H^2$ regularity of a compactly supported solution on a subset of a tangentially invariant
+open set.** This is Theorem 9.25 of [brezis2011functional], case $C_2$ on the model cylinder,
+(67)–(69), in the form used in the proof of the theorem. Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be invariant under the translations by $t e_j$ for all $j \neq N$ and
+$t \in \mathbb{R}$ (the half space). Let $\Omega' \subseteq \Omega$ be open, and let $Q$ be open
+with $Q \cap \Omega \subseteq \Omega'$ (the cylinder, with $\Omega' = Q_+$). Let the
+coefficients $A_{k\ell} \in L^\infty(\Omega')$ agree almost everywhere with functions
+$a_{k\ell}$ that are $C^1$ on $Q$, with
+$$\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(y)\, \xi_k \xi_\ell \quad \text{for all } y \in
+  \Omega' \text{ and } \xi,$$
+where $\alpha > 0$. Let $K \subseteq Q$ be compact, let $w \in H^1_0(\Omega')$ vanish almost
+everywhere outside $K$, and let $g \in L^2(\Omega')$ with $\sum_{k,\ell} \int_{\Omega'}
+a_{k\ell}\, \partial_k w\, \partial_\ell \psi = \int_{\Omega'} g \psi$ for all
+$\psi \in H^1_0(\Omega')$. Then $w \in H^2(\Omega')$.
 
-The extension by zero `W ∈ H^1_0(Ω)` solves the equation with the coefficients
-`Elliptic.extendCoeff χ a` and the datum `1_{Ω'} χ g` (`Elliptic.sum_integral_extendCoeff_eq`),
-which satisfy the hypotheses of the case B theorem
-`Elliptic.exists_sobolevEuclidean_two_of_tangential`; the `H²` element on `Ω` restricts to
-`Ω'`. -/
+The extension by zero $W \in H^1_0(\Omega)$ solves the equation with the coefficients
+`Elliptic.extendCoeff χ a` and the datum $\mathbf{1}_{\Omega'} \chi g$
+(`Elliptic.sum_integral_extendCoeff_eq`). These satisfy the hypotheses of the case B theorem
+`Elliptic.exists_sobolevEuclidean_two_of_tangential`, and the $H^2$ element on $\Omega$
+restricts to $\Omega'$. -/
 theorem memSobolevMultiIndex_two_of_tangential_of_compact
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
       IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -4534,7 +4988,7 @@ theorem memSobolevMultiIndex_two_of_tangential_of_compact
 end CylinderRegularity
 
 
-/-! ### Transfer back: `H²` is preserved by the inverse chart -/
+/-! ### Transfer back: $H^2$ is preserved by the inverse chart -/
 
 section Retransfer
 
@@ -4543,7 +4997,10 @@ variable {N : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **A diffeomorphism with bounded Jacobians restricts to an open subset of its target.** -/
+/-- **A diffeomorphism with bounded Jacobians restricts to an open subset of its target.** If
+$H : s \to t$ is a $C^1$ diffeomorphism with inverse $H^{-1}$ and Jacobians bounded by $M$, and
+$t' \subseteq t$ is open, then $H$ is a $C^1$ diffeomorphism of $H^{-1}(t')$ onto $t'$ with the
+same inverse and the same bound $M$. -/
 theorem _root_.IsDiffeoOnWithBoundedJacobian.restrict_target {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {H Hinv : E → E} {s t : Set E} {M : ℝ}
     (h : IsDiffeoOnWithBoundedJacobian H Hinv s t M) {t' : Set E} (ht' : IsOpen t')
@@ -4562,8 +5019,10 @@ theorem _root_.IsDiffeoOnWithBoundedJacobian.restrict_target {E : Type*} [Normed
   norm_fderiv_le := fun y hy ↦ h.norm_fderiv_le y (h.symm.image_subset ht't hy)
   norm_fderiv_invFun_le := fun x hx ↦ h.norm_fderiv_invFun_le x (ht't hx)
 
-/-- **`H¹(Ω)` is stable under multiplication by a `C¹` function bounded with bounded derivative
-on `Ω`**: the product rule `HasWeakIteratedLineDerivOn.mul` at `p = q = 2`. -/
+/-- **$H^1(\Omega)$ is stable under multiplication by a $C^1$ function that is bounded with bounded
+derivative.** Let $c$ be $C^1$ on $\Omega$ with $|c| \le C$ and $\|\nabla c\| \le C$ on
+$\Omega$. If $f \in H^1(\Omega)$, then $c f \in H^1(\Omega)$. The proof is the product rule
+`HasWeakIteratedLineDerivOn.mul` with $p = q = 2$. -/
 theorem _root_.MemSobolevMultiIndex.contDiffOn_mul {c f : EuclideanSpace ℝ (Fin N) → ℝ}
     (hc : ContDiffOn ℝ 1 c Ω) {C : ℝ}
     (hcC : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), |c x| ≤ C)
@@ -4594,16 +5053,18 @@ theorem _root_.MemSobolevMultiIndex.contDiffOn_mul {c f : EuclideanSpace ℝ (Fi
   exact (MemLp.mul_of_forall_abs_le (hdci.aestronglyMeasurable hΩm) hdciC hfp).add
     (MemLp.mul_of_forall_abs_le hcm hcC hgp)
 
-/-- **Transfer back: `H²` is preserved by the inverse chart** ([brezis2011functional] §9.6,
-proof of Theorem 9.25: "by returning to `Ω ∩ Uᵢ`, `θᵢ u` belongs to `H²(Ω ∩ Uᵢ)`"). For a `C¹`
-diffeomorphism `H : Ω' → Ω` with bounded Jacobians and inverse `J`, with `J` of class `C²` on an
-open set `V` containing a compact `K ⊇ Ω`, and `w ∈ H²(Ω')`, the composite `w ∘ J ∈ H²(Ω)`.
+/-- **Transfer back: $H^2$ is preserved by the inverse chart.** Let $H : \Omega' \to \Omega$ be a
+$C^1$ diffeomorphism with inverse $J$ and bounded Jacobians. Let $V$ be open and $K$ compact
+with $\Omega \subseteq K \subseteq V$, and let $J$ be $C^2$ on $V$. If $w \in H^2(\Omega')$,
+then $w \circ J \in H^2(\Omega)$.
 
-Proposition 9.6 (`MemSobolev.comp_diffeoOn`) gives `w ∘ J ∈ H¹(Ω)` with
-`∂ᵢ(w ∘ J) = ∑_k (∂_i J)_k · (∂_k w ∘ J)` (`HasWeakFDerivOn.comp_diffeoOn`); each `∂_k w ∘ J` is
-in `H¹(Ω)` by Proposition 9.6 again, and each `(∂_i J)_k` is `C¹` on `V`, bounded with bounded
-derivative on the compact `K`, so the products are in `H¹(Ω)`
-(`MemSobolevMultiIndex.contDiffOn_mul`). -/
+This is the step "by returning to $\Omega \cap U_i$, $\theta_i u$ belongs to
+$H^2(\Omega \cap U_i)$" of the proof of Theorem 9.25 of [brezis2011functional]. Proposition 9.6
+(`MemSobolev.comp_diffeoOn`) gives $w \circ J \in H^1(\Omega)$ with $\partial_i(w \circ J) =
+\sum_k (\partial_i J)_k\, (\partial_k w \circ J)$ (`HasWeakFDerivOn.comp_diffeoOn`). Each
+$\partial_k w \circ J$ lies in $H^1(\Omega)$ by Proposition 9.6 again. Each $(\partial_i J)_k$
+is $C^1$ on $V$ and bounded with bounded derivative on the compact set $K$, so the products lie
+in $H^1(\Omega)$ (`MemSobolevMultiIndex.contDiffOn_mul`). -/
 theorem memSobolevMultiIndex_two_comp_chart (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω M)
     {V : Set (EuclideanSpace ℝ (Fin N))} (hV : IsOpen V) (hJ : ContDiffOn ℝ 2 J V)
     {K : Set (EuclideanSpace ℝ (Fin N))} (hK : IsCompact K)
@@ -4682,7 +5143,7 @@ theorem memSobolevMultiIndex_two_comp_chart (h : IsDiffeoOnWithBoundedJacobian H
 end Retransfer
 
 
-/-! ### The interior piece `θ₀ u` -/
+/-! ### The interior piece $\theta_0 u$ -/
 
 section InteriorPiece
 
@@ -4690,8 +5151,9 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The datum `θ F − 2∇θ·∇u − (Δθ) u` lies in `L²(Ω)` for a smooth `θ` bounded with bounded first
-and second derivatives. -/
+/-- Let $\theta$ be smooth, with $|\theta|$, $\|\nabla \theta\|$ and $|\Delta \theta|$ bounded by
+$C$ everywhere. Then for $u \in H^1(\Omega)$ and $F \in L^2(\Omega)$ the datum $\theta F - 2
+\nabla\theta \cdot \nabla u - (\Delta\theta) u$ lies in $L^2(\Omega)$. -/
 theorem memLp_boundaryDatum_of_bounds {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ ∞ θ)
     {C : ℝ} (hθb : ∀ x, |θ x| ≤ C) (hdθb : ∀ x, ‖fderiv ℝ θ x‖ ≤ C)
     (hΔb : ∀ x, |∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
@@ -4726,11 +5188,16 @@ theorem memLp_boundaryDatum_of_bounds {θ : EuclideanSpace ℝ (Fin N) → ℝ} 
     (EuclideanSpace.single i 1)).continuous hΔb (memLp u)
   exact (h1.sub (h2'.const_mul 2)).sub h3
 
-/-- **The interior piece `θ₀ u` is in `H²(Ω)`** — [brezis2011functional] §9.6, proof of
-Theorem 9.25, case C₁: for a cut-off `θ₀` of `Ω` (smooth, bounded with bounded derivative,
-supported off `∂Ω`) with bounded Laplacian, and `u ∈ H¹(Ω)` with `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the
-test-function elements `Φ`, the function `θ₀ u` lies in `H²(Ω)`: its zero extension
-`\overline{θ₀ u} ∈ H¹(ℝ^N)` solves `−Δ(θ₀u) = θ₀F − 2∇θ₀·∇u − (Δθ₀)u` on `ℝ^N`
+/-- **The interior piece $\theta_0 u$ is in $H^2(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be
+open, let $\theta$ be a Sobolev cut-off of $\Omega$ (smooth, bounded with bounded derivative,
+with support disjoint from $\partial\Omega$) whose Laplacian satisfies $|\Delta\theta| \le C$.
+Let $u \in H^1(\Omega)$ and $F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla
+\Phi = \int_\Omega F \Phi$ for every test-function element $\Phi$. Then
+$\theta u \in H^2(\Omega)$.
+
+This is case $C_1$ of the proof of Theorem 9.25 of [brezis2011functional]. The extension of
+$\theta u$ by zero lies in $H^1(\mathbb{R}^N)$ and solves $-\Delta(\theta u) = \theta F - 2
+\nabla\theta \cdot \nabla u - (\Delta\theta) u$ on $\mathbb{R}^N$
 (`Elliptic.sum_integral_indicator_cutoff_eq`), and case A applies. -/
 theorem memSobolevMultiIndex_two_interior_piece {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : IsSobolevCutoff Ω θ) {C : ℝ}
@@ -4796,7 +5263,7 @@ theorem memSobolevMultiIndex_two_interior_piece {θ : EuclideanSpace ℝ (Fin N)
 end InteriorPiece
 
 
-/-! ### The estimate `‖u‖_{H²} ≤ C ‖f‖₂`, by the closed graph theorem -/
+/-! ### The estimate $\|u\|_{H^2} \le C \|f\|_2$, by the closed graph theorem -/
 
 section ClosedGraph
 
@@ -4804,12 +5271,16 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **The `H²` bound from the membership, by the closed graph theorem**: if a continuous linear
-solution map `S : L²(Ω) → H¹(Ω)` takes every `f` to the function of some element of `H²(Ω)`, then
-the `H²` element is bounded by `C ‖f‖₂`. The map `f ↦ U_f ∈ H²(Ω)` is linear (elements of `H²(Ω)`
-are determined by their functions) and its graph is closed (`H² → L²` and `S` are continuous), so
-it is bounded. This is the standard route to the constant of [brezis2011functional] Theorem 9.25,
-whose proof tracks the constants through the pieces instead. -/
+/-- **The $H^2$ bound from the membership, by the closed graph theorem.** Let
+$S : L^2(\Omega) \to H^1(\Omega)$ be a continuous linear map such that for every $f$ the
+function of $S f$ is the function of some element of $H^2(\Omega)$. Then there is $C \ge 0$ such
+that $\|U\|_{H^2} \le C \|f\|_2$ for every $f \in L^2(\Omega)$ and every $U \in H^2(\Omega)$
+whose function agrees almost everywhere with that of $S f$.
+
+The map $f \mapsto U_f \in H^2(\Omega)$ is linear, because elements of $H^2(\Omega)$ are
+determined by their functions. Its graph is closed, because the inclusion $H^2 \to L^2$ and $S$
+are continuous. So it is bounded. This route gives the constant of Theorem 9.25 of
+[brezis2011functional]; the proof in the source tracks the constants through the pieces instead. -/
 theorem exists_norm_le_of_forall_exists_sobolev_two
     {S : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       SobolevEuclidean N 1 2 Ω}
@@ -4867,13 +5338,17 @@ theorem exists_norm_le_of_forall_exists_sobolev_two
   rw [hUT]
   exact Tc.le_opNorm f
 
-/-- The form of `−Δ + 1` is coercive on `H^1_0(Ω)`. -/
+/-- The form of $-\Delta + 1$, $\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v$, is coercive
+on $H^1_0(\Omega)$. -/
 theorem laplaceForm_restrict_isCoercive :
     ((laplaceForm Ω).restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive :=
   ⟨1, one_pos, fun v ↦ laplaceForm_isCoerciveWith_one Ω (v : SobolevEuclidean N 1 2 Ω)⟩
 
-/-- A weak solution of `−Δu + u = f` on a test space `K` solves `∫_Ω ∇u · ∇Φ = ∫_Ω (f − u) Φ` on
-`K`: the Dirichlet problem is `K = H^1_0(Ω)` and the Neumann problem is `K = ⊤`. -/
+/-- Let $K$ be a subspace of $H^1(\Omega)$, let $f \in L^2(\Omega)$, and let $u \in K$ satisfy
+$\int_\Omega \nabla u \cdot \nabla \Phi + \int_\Omega u \Phi = \int_\Omega f \Phi$ for all
+$\Phi \in K$. Then $\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega (f - u) \Phi$ for all
+$\Phi \in K$. The Dirichlet problem is $K = H^1_0(\Omega)$ and the Neumann problem is
+$K = H^1(\Omega)$. -/
 theorem dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)} {u : SobolevEuclidean N 1 2 Ω}
@@ -4888,7 +5363,7 @@ theorem dirichletForm_eq_load_sub_of_isGalerkinSolution_laplace
 end ClosedGraph
 
 
-/-! ### Lemma 9.7: tangential derivatives of an `H² ∩ H^1_0` function are in `H^1_0` -/
+/-! ### Lemma 9.7: tangential derivatives of an $H^2 \cap H^1_0$ function are in $H^1_0$ -/
 
 section TangentialDeriv
 
@@ -4896,9 +5371,10 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **The partial derivatives of an `H²` function are functions of `H¹` elements**: for
-`U ∈ H²(Ω)` and `u ∈ H¹(Ω)` with the same function, each `∂ₖu` is the function of some
-`V ∈ H¹(Ω)`. -/
+/-- **The partial derivatives of an $H^2$ function are functions of $H^1$ elements.** If
+$U \in H^2(\Omega)$ and $u \in H^1(\Omega)$ have the same function almost everywhere on
+$\Omega$, then for every $k$ the derivative $\partial_k u$ is the function of some
+$V \in H^1(\Omega)$. -/
 theorem exists_sobolevEuclidean_one_fn_ae_eq_weakDeriv {U : SobolevEuclidean N 2 2 Ω}
     {u : SobolevEuclidean N 1 2 Ω}
     (hU : fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u) (k : Fin N) :
@@ -4912,13 +5388,18 @@ theorem exists_sobolevEuclidean_one_fn_ae_eq_weakDeriv {U : SobolevEuclidean N 2
   obtain ⟨V, hV⟩ := hgm.exists_sobolevMultiIndex
   exact ⟨V, hV.trans ((ae_restrict_iff' Ω.isOpen.measurableSet).2 h1)⟩
 
-/-- **Lemma 9.7** ([brezis2011functional] §9.6): on an open set invariant under the translations
-along a unit vector `y`, if `u ∈ H^1_0(Ω)` is the function of an element of `H²(Ω)`, then
-`∂u/∂y` is the function of an element of `H^1_0(Ω)`. The difference quotients `D_{ty} u`,
-`t → 0`, lie in `H^1_0(Ω)` and are bounded there (Lemma 9.6 applied to `u` and to its partial
-derivatives), so a subsequence converges weakly in `H^1_0(Ω)`, and the limit is `∂u/∂y`
-(`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`, the "delicate point" of the
-book's proof). On the half space, `y = e_j` for `j ≠ N`. -/
+/-- **Lemma 9.7** of [brezis2011functional], for an invariant direction. Let $y \in \mathbb{R}^N$ be
+a unit vector, and let $\Omega$ be invariant under the translations by $t y$ for all
+$t \in \mathbb{R}$. Let $u \in H^1_0(\Omega)$, and suppose that there is $U \in H^2(\Omega)$
+with the same function as $u$ almost everywhere. Then there is $w \in H^1_0(\Omega)$ whose
+function is a weak derivative of $u$ along $y$ on $\Omega$, that is,
+$\partial u / \partial y \in H^1_0(\Omega)$.
+
+The difference quotients $D_{t y} u$, $t \to 0$, lie in $H^1_0(\Omega)$ and are bounded there,
+by Lemma 9.6 applied to $u$ and to its partial derivatives. So a subsequence converges weakly in
+$H^1_0(\Omega)$, and the limit is $\partial u / \partial y$
+(`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`). This is the "delicate point"
+of the proof in the source. On the half space, $y = e_j$ with $j \neq N$. -/
 theorem tangentialDeriv_mem_zero_of_sobolev_two {y : EuclideanSpace ℝ (Fin N)} (hy : ‖y‖ = 1)
     (hΩ : ∀ t : ℝ, IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) (t • y))
     {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
@@ -4977,7 +5458,7 @@ theorem tangentialDeriv_mem_zero_of_sobolev_two {y : EuclideanSpace ℝ (Fin N)}
 end TangentialDeriv
 
 
-/-! ### Lemmas 9.6 and 9.7 on the half space, in the book's form -/
+/-! ### Lemmas 9.6 and 9.7 on the half space, in the form of the source -/
 
 section HalfSpaceLemmas
 
@@ -4985,9 +5466,13 @@ variable {d : ℕ}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- **Lemma 9.6** ([brezis2011functional] §9.6), on the half space: for `v ∈ H¹(ℝ^N_+)` and `h`
-parallel to the boundary, `‖D_h v‖_{L²(ℝ^N_+)} ≤ ‖∇v‖_{L²(ℝ^N_+)}`. The typed form, on any open
-set invariant under the translations along `h`, is `Elliptic.norm_diffQuotLp_fnL_le`. -/
+/-- **Lemma 9.6** of [brezis2011functional], on the half space. Let $h \in \mathbb{R}^N$ be parallel
+to the boundary, $h_N = 0$. Then for every $v \in H^1(\mathbb{R}^N_+)$,
+$$\|D_h v\|_{L^2(\mathbb{R}^N_+)} \le \|\nabla v\|_{L^2(\mathbb{R}^N_+)}.$$
+
+The left side is the $L^2$ norm of the function `Elliptic.diffQuot h (fn v)`. The form for
+elements of $L^2$, on any open set invariant under the translation by $h$, is
+`Elliptic.norm_diffQuotLp_fnL_le`. -/
 theorem eLpNorm_diffQuot_le_of_tangential {h : EuclideanSpace ℝ (Fin (d + 1))}
     (hh : h (Fin.last d) = 0) (v : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)) :
     eLpNorm (diffQuot h (fn v)) 2
@@ -5020,12 +5505,16 @@ theorem eLpNorm_diffQuot_le_of_tangential {h : EuclideanSpace ℝ (Fin (d + 1))}
         (ENNReal.ofReal_toReal hne).symm
     _ ≤ ENNReal.ofReal (gradNorm v) := ENNReal.ofReal_le_ofReal h1
 
-/-- **Lemma 9.7** ([brezis2011functional] §9.6), on the half space: if `u ∈ H^1_0(ℝ^N_+)` is
-the weak solution of `−Δu = g`, `g ∈ L²(ℝ^N_+)`, then every tangential derivative `∂_j u`,
-`j ≠ N`, is the function of an element of `H^1_0(ℝ^N_+)`. Case B
-(`Elliptic.regularity_upperHalfSpace`) gives `u ∈ H²(ℝ^N_+)`, and
-`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two` is the "delicate point" of the book's
-proof. (Equation (58), the equation satisfied by `∂_j u` when `g ∈ H¹`, is not included.) -/
+/-- **Lemma 9.7** of [brezis2011functional], on the half space. Let $g \in L^2(\mathbb{R}^N_+)$, and
+let $u \in H^1_0(\mathbb{R}^N_+)$ be a weak solution of $-\Delta u = g$:
+$\int \nabla u \cdot \nabla \psi = \int g \psi$ for all $\psi \in H^1_0(\mathbb{R}^N_+)$. Then
+for every $j \neq N$ there is $w \in H^1_0(\mathbb{R}^N_+)$ whose function is a weak derivative
+of $u$ along $e_j$, that is, $\partial_j u \in H^1_0(\mathbb{R}^N_+)$.
+
+Case B (`Elliptic.regularity_upperHalfSpace`) gives $u \in H^2(\mathbb{R}^N_+)$, and
+`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two` is the "delicate point" of the proof in the
+source. Equation (58) of the lemma, the equation that $\partial_j u$ satisfies when $g \in H^1$,
+is not part of this statement. -/
 theorem tangentialDeriv_mem_zero_of_isGalerkinSolution
     {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
     {g : Lp ℝ 2 (volume.restrict (upperHalfSpaceOpens d : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
@@ -5046,7 +5535,7 @@ end HalfSpaceLemmas
 
 
 
-/-! ### Transfer back at every order: `H^k` is preserved by a `C^k` chart -/
+/-! ### Transfer back at every order: $H^k$ is preserved by a $C^k$ chart -/
 
 section RetransferHigher
 
@@ -5054,11 +5543,14 @@ variable {N : ℕ}
 
 open SobolevMultiIndex
 
-/-- **`H^k` is preserved by the inverse chart, at every order** ([brezis2011functional] §9.6,
-proof of Theorem 9.25, "by returning to `Ω ∩ Uᵢ`"): for a `C¹` diffeomorphism `H : Ω' → Ω` with
-bounded Jacobians and inverse `J`, with `J` of class `C^k` on an open set `V` containing a
-compact `K ⊇ Ω`, and `w ∈ H^k(Ω')`, the composite `w ∘ J ∈ H^k(Ω)`. The case `p = 2` of
-`MemSobolevMultiIndex.comp_diffeoOn_of_order`. The case `k = 2` is
+/-- **$H^k$ is preserved by the inverse chart, at every order.** Let $k \in \mathbb{N}$, and let
+$H : \Omega' \to \Omega$ be a $C^1$ diffeomorphism with inverse $J$ and bounded Jacobians. Let
+$V$ be open and $K$ compact with $\Omega \subseteq K \subseteq V$, and let $J$ be $C^k$ on $V$.
+If $w \in H^k(\Omega')$, then $w \circ J \in H^k(\Omega)$.
+
+This is the step "by returning to $\Omega \cap U_i$" of the proof of Theorem 9.25 of
+[brezis2011functional], at every order. It is the case $p = 2$ of
+`MemSobolevMultiIndex.comp_diffeoOn_of_order`. The case $k = 2$ is
 `Elliptic.memSobolevMultiIndex_two_comp_chart`. -/
 theorem memSobolevMultiIndex_comp_chart_of_order (k : ℕ) :
     ∀ {H J : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {M : ℝ}
@@ -5082,15 +5574,24 @@ section DifferentiateGeneral
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Differentiating the weak equation with variable coefficients** ([brezis2011functional]
-§9.6, the induction "`f ∈ H^m ⇒ u ∈ H^{m+2}`" in case B and case C₂): let `w k ∈ L²(Ω)` (the
-weak derivatives of a solution `u` along `e_k`), `v k` weak derivatives of `w k` along `e_j`,
-`gj` a weak derivative of `g` along `e_j`, `q k l` a weak derivative of `(∂_j a_{kℓ}) w_k`
-along `e_ℓ`, with `C¹` coefficients `a_{kℓ}`, and let `∑_{kℓ} ∫_Ω a_{kℓ} w_k ∂_ℓ φ = ∫_Ω g φ`
-for every test function `φ`. Then `∂_j u = w_j`, whose derivatives are the `v k`, solves the
-equation with the datum `∂_j g + ∑_{kℓ} ∂_ℓ((∂_j a_{kℓ}) ∂_k u)`:
-`∑_{kℓ} ∫_Ω a_{kℓ} v_k ∂_ℓ φ = ∫_Ω (gj + ∑_{kℓ} q_{kℓ}) φ`. The equation is tested with `∂_j φ`
-and the derivative moved onto `a_{kℓ} w_k` by the product rule. -/
+/-- **Differentiating the weak equation with variable coefficients.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open, fix a direction $j$, and let the coefficients
+$a_{k\ell}$ be $C^1$ on $\Omega$. Let $w_k \in L^2(\Omega)$, and let $v_k \in L^2(\Omega)$ be a
+weak derivative of $w_k$ along $e_j$ on $\Omega$. Let $g_j$ be a weak derivative of $g$ along
+$e_j$, and let $q_{k\ell}$ be a weak derivative of $(\partial_j a_{k\ell})\, w_k$ along
+$e_\ell$, for all $k, \ell$. Suppose that
+$$\sum_{k,\ell} \int_\Omega a_{k\ell}\, w_k\, \partial_\ell \varphi = \int_\Omega g \varphi$$
+for every test function $\varphi$ on $\Omega$. Then for every test function $\varphi$ on
+$\Omega$,
+$$\sum_{k,\ell} \int_\Omega a_{k\ell}\, v_k\, \partial_\ell \varphi = \int_\Omega \Big( g_j +
+  \sum_{k,\ell} q_{k\ell} \Big) \varphi.$$
+
+When $w_k = \partial_k u$, this says that $\partial_j u$, whose partial derivatives are the
+$v_k$, solves the equation with the datum $\partial_j g + \sum_{k,\ell}
+\partial_\ell\big((\partial_j a_{k\ell})\, \partial_k u\big)$. This is the induction
+"$f \in H^m \Rightarrow u \in H^{m+2}$" of cases B and $C_2$ in [brezis2011functional], §9.6.
+The equation is tested with $\partial_j \varphi$, and the derivative is moved onto
+$a_{k\ell} w_k$ by the product rule. -/
 theorem forall_testFunction_deriv_general {g gj : EuclideanSpace ℝ (Fin N) → ℝ}
     {w v : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     {a q : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} (j : Fin N)
@@ -5246,7 +5747,9 @@ section ConstOffCompactBounds
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- A finite family of multipliers has a common bound. -/
+/-- A finite family of functions $a_{k\ell}$, each $C^n$ and constant outside a compact set
+(`IsContDiffConstOffCompact`), has a common bound $M_0 \ge 0$: $|a_{k\ell}(x)| \le M_0$ for all
+$k, \ell$ and $x$. -/
 theorem exists_forall_abs_le_of_isContDiffConstOffCompact {n : ℕ} {N : ℕ}
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, IsContDiffConstOffCompact n (a k l)) :
     ∃ M₀, 0 ≤ M₀ ∧ ∀ k l x, |a k l x| ≤ M₀ := by
@@ -5254,7 +5757,9 @@ theorem exists_forall_abs_le_of_isContDiffConstOffCompact {n : ℕ} {N : ℕ}
   obtain ⟨M₀, hM₀0, hM₀⟩ := exists_forall_le_of_fin C
   exact ⟨M₀, hM₀0, fun k l x ↦ (hC k l x).trans (hM₀ k l)⟩
 
-/-- A finite family of multipliers of class `C^{n+1}` has a common bound on the derivatives. -/
+/-- A finite family of functions $a_{k\ell}$, each $C^{n+1}$ and constant outside a compact set, has
+a common bound $M \ge 0$ on the derivatives: $\|\nabla a_{k\ell}(x)\| \le M$ for all $k, \ell$
+and $x$. -/
 theorem exists_forall_norm_fderiv_le_of_isContDiffConstOffCompact {n : ℕ} {N : ℕ}
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, IsContDiffConstOffCompact (n + 1) (a k l)) :
     ∃ M, 0 ≤ M ∧ ∀ k l x, ‖fderiv ℝ (a k l) x‖ ≤ M := by
@@ -5265,7 +5770,7 @@ theorem exists_forall_norm_fderiv_le_of_isContDiffConstOffCompact {n : ℕ} {N :
 end ConstOffCompactBounds
 
 
-/-! ### Case B, higher order: `H^{m+2}` regularity on a tangentially invariant open set -/
+/-! ### Case B, higher order: $H^{m+2}$ regularity on a tangentially invariant open set -/
 
 section TangentialHigher
 
@@ -5273,13 +5778,18 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **The Dirichlet test space carries Lemma 9.7.** On an open set invariant under the
-translations along `e_j`, `j ≠ N`, the tangential derivative of an element of `H^1_0(Ω)` with an
-`H²` companion is again an element of `H^1_0(Ω)`
-(`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`), and on `H^1_0(Ω)` — the closure of the
-test-function elements — a weak equation is determined by its restriction to those elements
-(`Elliptic.generalForm_eq_load_of_forall_testFunctions`). Together these are the hypothesis
-`hKd` of `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Dirichlet problem. -/
+/-- **The Dirichlet test space carries Lemma 9.7.** Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be invariant under the translations by $t e_j$ for all $j \neq N$ and
+$t \in \mathbb{R}$. Let $v \in H^1_0(\Omega)$, and let $V \in H^2(\Omega)$ have the same
+function as $v$. Then for every $j \neq N$ there is $w \in H^1_0(\Omega)$ whose function is a
+weak derivative of $v$ along $e_j$, and with the following property: if $G' \in L^2(\Omega)$ and
+$a(w, \Phi) = \int_\Omega G' \Phi$ for every test-function element $\Phi$, then
+$a(w, \psi) = \int_\Omega G' \psi$ for every $\psi \in H^1_0(\Omega)$.
+
+The first part is `Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`. The second holds because
+$H^1_0(\Omega)$ is the closure of the test-function elements
+(`Elliptic.generalForm_eq_load_of_forall_testFunctions`). Together they are the hypothesis `hKd`
+of `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Dirichlet problem. -/
 theorem tangentialDeriv_hyp_zero
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
       IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -5301,25 +5811,36 @@ theorem tangentialDeriv_hyp_zero
   exact ⟨w, hw, hwd, fun _ hG' _ hψ ↦ generalForm_eq_load_of_forall_testFunctions hG' hψ⟩
 
 /-- **Higher-order regularity on an open set invariant under the tangential translations, for a
-variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, case B, the
-induction "`f ∈ H^m ⇒ u ∈ H^{m+2}`", in the generality of case C₂. Let `Ω ⊆ ℝ^N` be open and
-invariant under the translations `t e_j`, `j ≠ N`, let the coefficients `A_{kℓ} ∈ L^∞(Ω)` have
-representatives `a_{kℓ}` of class `C^{m+1}` on `ℝ^N` and constant off a compact set
-(`IsContDiffConstOffCompact`), elliptic with constant `α > 0` at every point, let `K` be a test
-space as in `Elliptic.exists_sobolevEuclidean_two_of_tangential` that moreover carries Lemma 9.7
-(`hKd`: a tangential derivative of an `H²` element of `K` is again in `K`, and for it the
-equation extends from the test functions to `K`), and let `u ∈ K` satisfy
-`∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ K` with `g ∈ H^m(Ω)`. Then
-`u ∈ H^{m+2}(Ω)`.
+variable-coefficient elliptic form.** This is Theorem 9.25 of [brezis2011functional], case B,
+the induction "$f \in H^m \Rightarrow u \in H^{m+2}$", in the generality of case $C_2$. Let
+$m \in \mathbb{N}$ and let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open and invariant
+under the translations by $t e_j$ for all $j \neq N$ and $t \in \mathbb{R}$. Let the
+coefficients $A_{k\ell} \in L^\infty(\Omega)$ agree almost everywhere with functions $a_{k\ell}$
+that are $C^{m+1}$ on $\mathbb{R}^N$ and constant outside a compact set
+(`IsContDiffConstOffCompact`), with
+$$\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(x)\, \xi_k \xi_\ell \quad \text{for all } x, \xi
+  \in \mathbb{R}^N,$$
+where $\alpha > 0$. Let $K$ be a subspace of $H^1(\Omega)$ that contains the test-function
+elements, is invariant under every translation that leaves $\Omega$ invariant, and carries Lemma
+9.7 in the following sense (`hKd`): if $v \in K$ has an $H^2(\Omega)$ companion and solves
+$a(v, \psi) = \int_\Omega G \psi$ for all $\psi \in K$, then for every $j \neq N$ there is
+$w \in K$ whose function is a weak derivative of $v$ along $e_j$, and for which every equation
+$a(w, \Phi) = \int_\Omega G' \Phi$ that holds for the test-function elements $\Phi$ holds for
+all $\Phi \in K$. Let $g \in L^2(\Omega)$ lie in $H^m(\Omega)$, and let $u \in K$ satisfy
+$\sum_{k,\ell} \int_\Omega a_{k\ell}\, \partial_k u\, \partial_\ell \psi = \int_\Omega g \psi$
+for all $\psi \in K$. Then $u \in H^{m+2}(\Omega)$.
 
-Induction on `m`, the case `m = 0` being `Elliptic.exists_sobolevEuclidean_two_of_tangential`.
-For `m + 1`: `u ∈ H^{m+2}(Ω)` by the inductive hypothesis; for a tangential direction `e_j` the
-derivative `∂_j u` lies in `K` by `hKd` (for `K = H^1_0(Ω)` this is Lemma 9.7,
-`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`) and solves the equation with the datum
-`∂_j g + ∑_{kℓ} ∂_ℓ((∂_j a_{kℓ}) ∂_k u) ∈ H^m(Ω)` (`Elliptic.forall_testFunction_deriv_general`),
-so `∂_j u ∈ H^{m+2}(Ω)` by the inductive hypothesis; the normal derivative `∂_N ∂_N u` is read
-off the equation (`Elliptic.hasWeakIteratedLineDerivOn_last_mul_of_forall`) as `a_{NN}⁻¹` times
-a function of `H^{m+1}(Ω)`, and `memSobolevMultiIndex_succ_iff` assembles `u ∈ H^{m+3}(Ω)`. -/
+The proof is an induction on $m$; the case $m = 0$ is
+`Elliptic.exists_sobolevEuclidean_two_of_tangential`. For $m + 1$, the induction hypothesis
+gives $u \in H^{m+2}(\Omega)$. For a tangential direction $e_j$, the derivative $\partial_j u$
+lies in $K$ by `hKd` (for $K = H^1_0(\Omega)$ this is Lemma 9.7,
+`Elliptic.tangentialDeriv_mem_zero_of_sobolev_two`). It solves the equation with the datum
+$\partial_j g + \sum_{k,\ell} \partial_\ell\big((\partial_j a_{k\ell})\, \partial_k u\big) \in
+H^m(\Omega)$ (`Elliptic.forall_testFunction_deriv_general`), so
+$\partial_j u \in H^{m+2}(\Omega)$ by the induction hypothesis. The normal derivative
+$\partial_N \partial_N u$ comes from the equation
+(`Elliptic.hasWeakIteratedLineDerivOn_last_mul_of_forall`) as $a_{NN}^{-1}$ times a function of
+$H^{m+1}(\Omega)$, and `memSobolevMultiIndex_succ_iff` gives $u \in H^{m+3}(\Omega)$. -/
 theorem memSobolevMultiIndex_of_tangential_of_order (m : ℕ)
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
       IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -5607,13 +6128,19 @@ variable {d : ℕ}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- **Theorem 9.25, case B (`Ω = ℝ^N_+`), higher order** ([brezis2011functional] §9.6, case B:
-"`f ∈ H^m ⇒ u ∈ H^{m+2}`, by induction on `m`"): let `u ∈ H^1_0(ℝ^N_+)` and `g ∈ L²(ℝ^N_+)` with
-`∫ ∇u · ∇ψ = ∫ g ψ` for every `ψ ∈ H^1_0(ℝ^N_+)`. If `g ∈ H^m(ℝ^N_+)` then
-`u ∈ H^{m+2}(ℝ^N_+)`. The book's equation `−Δu + u = f` is the case `g = f − u`. This is
+/-- Theorem 9.25 of [brezis2011functional], **case B** ($\Omega = \mathbb{R}^N_+$), **higher
+order**. Let $m \in \mathbb{N}$, let $g \in L^2(\mathbb{R}^N_+)$ lie in $H^m(\mathbb{R}^N_+)$,
+and let $u \in H^1_0(\mathbb{R}^N_+)$ satisfy
+$$\int_{\mathbb{R}^N_+} \nabla u \cdot \nabla \psi = \int_{\mathbb{R}^N_+} g \psi \quad
+  \text{for all } \psi \in H^1_0(\mathbb{R}^N_+).$$
+Then $u \in H^{m+2}(\mathbb{R}^N_+)$.
+
+This is the statement "$f \in H^m \Rightarrow u \in H^{m+2}$, by induction on $m$" of case B.
+The equation $-\Delta u + u = f$ of the source is the case $g = f - u$. The proof is
 `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the identity coefficients
-(`Elliptic.generalForm_kroneckerCoeff`): the tangential derivatives `∂_j u ∈ H^1_0` (Lemma 9.7)
-solve the equation with datum `∂_j g` and the normal one is read off the equation. -/
+(`Elliptic.generalForm_kroneckerCoeff`): the tangential derivatives $\partial_j u$ lie in
+$H^1_0$ (Lemma 9.7) and solve the equation with the datum $\partial_j g$, and the normal
+derivative comes from the equation. -/
 theorem regularity_upperHalfSpace_higher (m : ℕ)
     {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
     {g : Lp ℝ 2 (volume.restrict
@@ -5639,15 +6166,17 @@ theorem regularity_upperHalfSpace_higher (m : ℕ)
 
 end UpperHalfSpaceHigher
 
-/-! ### Theorem 9.26 on the half space: integration by parts in a tangential direction
+/-!
+### Theorem 9.26 on the half space: integration by parts in a tangential direction
 
-The `H^{m+2}` clause of the Neumann problem needs the analogue of Lemma 9.7 for the test space
-`⊤`: for a tangential `e_j` the derivative `∂_j u` of a Neumann solution is again a Neumann
-solution, with datum `∂_j g`. Its proof replaces the book's weak-compactness argument by two
-integrations by parts against a test function of `ℝ^N` — legitimate on the half space because
-the cut-offs `Elliptic.normalCutoff n`, which push such a test function inside `ℝ^N_+`, are
-functions of `x_N` alone and so are constant along `e_j` — together with Corollary 9.8 on the
-half space, which makes those test functions dense in `H^1(ℝ^N_+)`. -/
+The $H^{m+2}$ clause of the Neumann problem needs the analogue of Lemma 9.7 for the test space
+$H^1(\mathbb{R}^N_+)$: for a tangential $e_j$, the derivative $\partial_j u$ of a Neumann solution
+is again a Neumann solution, with the datum $\partial_j g$. The proof replaces the weak compactness
+argument of the source by two integrations by parts against a test function on $\mathbb{R}^N$. This
+is legitimate on the half space because the cut-offs `Elliptic.normalCutoff n`, which push such a
+test function inside $\mathbb{R}^N_+$, are functions of $x_N$ alone and so are constant along $e_j$.
+Corollary 9.8 on the half space makes those test functions dense in $H^1(\mathbb{R}^N_+)$.
+-/
 
 section TangentialByParts
 
@@ -5655,8 +6184,9 @@ variable {d : ℕ}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- The normal cut-off of the half space at height `1/(n+1)`: `x ↦ η((n+1) x_N)`, with `η` the
-smooth transition that vanishes below `1/2` and equals `1` above `1`. -/
+/-- The **normal cut-off** of the half space at height $1/(n+1)$: $x \mapsto \eta((n + 1)\, x_N)$,
+where $\eta$ is the smooth transition `reflectionCutoff` that vanishes on $(-\infty, 1/2]$ and
+equals $1$ on $[1, \infty)$. -/
 def normalCutoff (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) : ℝ :=
   reflectionCutoff ((n + 1 : ℝ) * x (Fin.last d))
 
@@ -5664,11 +6194,11 @@ def normalCutoff (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) : ℝ :=
 theorem normalCutoff_nonneg (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
     0 ≤ normalCutoff n x := reflectionCutoff_nonneg _
 
-/-- The normal cut-off is at most `1`. -/
+/-- The normal cut-off is at most $1$. -/
 theorem normalCutoff_le_one (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1))) :
     normalCutoff n x ≤ 1 := reflectionCutoff_le_one _
 
-/-- The normal cut-off vanishes below the height `1/(2(n+1))`. -/
+/-- The normal cut-off vanishes where $x_N \le 1/(2(n+1))$. -/
 theorem normalCutoff_eq_zero_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : x (Fin.last d) ≤ (2 * ((n : ℝ) + 1))⁻¹) : normalCutoff n x = 0 := by
   refine reflectionCutoff_of_le_half ?_
@@ -5677,7 +6207,7 @@ theorem normalCutoff_eq_zero_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1
         mul_le_mul_of_nonneg_left hx hn.le
     _ = 1 / 2 := by field_simp
 
-/-- The normal cut-off equals `1` above the height `1/(n+1)`. -/
+/-- The normal cut-off equals $1$ where $x_N \ge 1/(n+1)$. -/
 theorem normalCutoff_eq_one_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1))}
     (hx : ((n : ℝ) + 1)⁻¹ ≤ x (Fin.last d)) : normalCutoff n x = 1 := by
   refine reflectionCutoff_of_one_le ?_
@@ -5685,7 +6215,7 @@ theorem normalCutoff_eq_one_of_le (n : ℕ) {x : EuclideanSpace ℝ (Fin (d + 1)
   calc (1 : ℝ) = ((n : ℝ) + 1) * ((n : ℝ) + 1)⁻¹ := by field_simp
     _ ≤ ((n : ℝ) + 1) * x (Fin.last d) := mul_le_mul_of_nonneg_left hx hn.le
 
-/-- The normal cut-off is smooth: a smooth function of the last coordinate. -/
+/-- The normal cut-off is smooth, as a smooth function of the last coordinate. -/
 theorem contDiff_normalCutoff (n : ℕ) : ContDiff ℝ ∞ (normalCutoff (d := d) n) := by
   have h : (normalCutoff (d := d) n) = reflectionCutoff ∘
       fun x : EuclideanSpace ℝ (Fin (d + 1)) ↦ ((n : ℝ) + 1) * x (Fin.last d) := rfl
@@ -5693,8 +6223,8 @@ theorem contDiff_normalCutoff (n : ℕ) : ContDiff ℝ ∞ (normalCutoff (d := d
   exact contDiff_reflectionCutoff.comp
     (contDiff_const.mul (EuclideanSpace.proj (𝕜 := ℝ) (Fin.last d)).contDiff)
 
-/-- **The normal cut-off is constant along the tangential directions**: its differential kills
-every `y` with `y_N = 0`. This is the point of the construction. -/
+/-- **The normal cut-off is constant along the tangential directions**: its derivative vanishes on
+every $y$ with $y_N = 0$. This is the point of the construction. -/
 theorem fderiv_normalCutoff_apply (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1)))
     {y : EuclideanSpace ℝ (Fin (d + 1))} (hy : y (Fin.last d) = 0) :
     fderiv ℝ (normalCutoff (d := d) n) x y = 0 := by
@@ -5712,7 +6242,8 @@ theorem fderiv_normalCutoff_apply (n : ℕ) (x : EuclideanSpace ℝ (Fin (d + 1)
   rw [hcomp.fderiv]
   simp [hLapp y, hy]
 
-/-- A test function of `ℝ^N` cut off by the normal cut-off is a test function of `ℝ^N_+`. -/
+/-- The product of the normal cut-off and a test function on $\mathbb{R}^N$, as a test function on
+$\mathbb{R}^N_+$. -/
 def normalCutoffTestFunction (n : ℕ) (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ)) :
     𝓓(upperHalfSpaceOpens d, ℝ) where
   toFun x := normalCutoff n x * φ x
@@ -5733,23 +6264,27 @@ def normalCutoffTestFunction (n : ℕ) (φ : 𝓓((⊤ : Opens (EuclideanSpace �
     have hn : (0 : ℝ) < (2 * ((n : ℝ) + 1))⁻¹ := by positivity
     exact lt_of_lt_of_le hn hx
 
-/-- The function of the cut-off test function. -/
+/-- The function of the cut-off test function is $x \mapsto \eta_n(x)\, \varphi(x)$, where $\eta_n$
+is the normal cut-off. -/
 @[simp]
 theorem normalCutoffTestFunction_coe (n : ℕ)
     (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ)) :
     (normalCutoffTestFunction n φ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
       = fun x ↦ normalCutoff n x * φ x := rfl
 
-/-- **Integration by parts along a tangential direction of the half space, against a test
-function of the whole space.** If `w` is the weak derivative of `f` along a tangential `y`
-(`y_N = 0`) on `ℝ^N_+` and both lie in `L²(ℝ^N_+)`, then
-`∫_{ℝ^N_+} (∂_y φ) f = −∫_{ℝ^N_+} φ w` for *every* `φ ∈ C_c^∞(ℝ^N)` — the test function need
-not vanish on `∂ℝ^N_+`, as the definition of the weak derivative demands. Multiplying `φ` by
-`Elliptic.normalCutoff n` gives a test function of `ℝ^N_+`, for which the identity is the
-definition, and the cut-off contributes nothing because it is a function of `x_N` alone, so that
-`∂_y (normalCutoff n) = 0`; `normalCutoff n → 1` pointwise on the open half space and dominated
-convergence closes the argument. It is this lemma, and not weak compactness, that carries
-Lemma 9.7 for the Neumann test space `⊤`. -/
+/-- **Integration by parts along a tangential direction of the half space, against a test function
+on the whole space.** Let $y \in \mathbb{R}^N$ with $y_N = 0$, and let $w$ be a weak derivative
+of $f$ along $y$ on $\mathbb{R}^N_+$, with $f, w \in L^2(\mathbb{R}^N_+)$. Then for every test
+function $\varphi$ on $\mathbb{R}^N$,
+$$\int_{\mathbb{R}^N_+} (\partial_y \varphi)\, f = -\int_{\mathbb{R}^N_+} \varphi\, w.$$
+The test function need not vanish on $\partial\mathbb{R}^N_+$, as the definition of the weak
+derivative requires.
+
+Multiplying $\varphi$ by `Elliptic.normalCutoff n` gives a test function on $\mathbb{R}^N_+$,
+for which the identity is the definition. The cut-off contributes nothing, because it is a
+function of $x_N$ alone, so that its derivative along $y$ vanishes. The cut-off tends to $1$
+pointwise on the open half space, and dominated convergence ends the argument. This lemma, and
+not weak compactness, carries Lemma 9.7 for the Neumann test space $H^1(\mathbb{R}^N_+)$. -/
 theorem integral_fderiv_mul_eq_neg_of_tangential {y : EuclideanSpace ℝ (Fin (d + 1))}
     (hy : y (Fin.last d) = 0) {f w : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] f w (upperHalfSpaceOpens d) volume)
@@ -5855,9 +6390,11 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The Dirichlet form against an element whose function is `C¹` on `Ω`, in terms of functions:
-`Elliptic.dirichletForm_apply_eq_of_ae_eq` with no compact-support hypothesis on the second
-argument. -/
+/-- The Dirichlet form against an element whose function is $C^1$ on $\Omega$, in terms of
+functions. If $\partial_i V = v_i$ almost everywhere and the function of $\Phi$ agrees almost
+everywhere with a function $\psi$ that is $C^1$ on $\Omega$, then $\int_\Omega \nabla V \cdot
+\nabla \Phi = \sum_i \int_\Omega v_i\, \partial_i \psi$. This is
+`Elliptic.dirichletForm_apply_eq_of_ae_eq` with no compact support condition on $\psi$. -/
 theorem dirichletForm_apply_eq_of_ae_eq_contDiffOn {V : SobolevEuclidean N 1 2 Ω}
     {wv : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
     (hV : ∀ i, ⇑(weakDeriv V (MultiIndexLE.single i))
@@ -5875,7 +6412,8 @@ theorem dirichletForm_apply_eq_of_ae_eq_contDiffOn {V : SobolevEuclidean N 1 2 �
   filter_upwards [hV i, hΦi] with x h1 h2
   rw [h1, h2]
 
-/-- A test function of `ℝ^N` restricts to an element of `H^1(Ω)` for every open `Ω`. -/
+/-- For every open $\Omega \subseteq \mathbb{R}^N$, the restriction of a test function on
+$\mathbb{R}^N$ to $\Omega$ is the function of an element of $H^1(\Omega)$. -/
 theorem exists_sobolevEuclidean_one_fn_ae_eq_top
     (φ : 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin N))), ℝ)) :
     ∃ Ψ : SobolevEuclidean N 1 2 Ω,
@@ -5896,10 +6434,15 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 open SobolevMultiIndex EuclideanSpace
 
 variable (Ω) in
-/-- **Integration by parts along `y` against the test functions of the whole space** holds on
-`Ω`. This is the half space's property `Elliptic.integral_fderiv_mul_eq_neg_of_tangential` for a
-tangential `y`, isolated as the hypothesis under which the Neumann test space `⊤` carries
-Lemma 9.7. -/
+/-- The open set $\Omega \subseteq \mathbb{R}^N$ **integrates by parts along $y$ against the test
+functions on $\mathbb{R}^N$** if, whenever $w$ is a weak derivative of $f$ along $y$ on $\Omega$
+with $f, w \in L^2(\Omega)$,
+$$\int_\Omega (\partial_y \varphi)\, f = -\int_\Omega \varphi\, w$$
+for every test function $\varphi$ on $\mathbb{R}^N$.
+
+The half space has this property for every tangential $y$
+(`Elliptic.integral_fderiv_mul_eq_neg_of_tangential`). It is the hypothesis under which the
+Neumann test space $H^1(\Omega)$ carries Lemma 9.7. -/
 def IsTangentialByParts (y : EuclideanSpace ℝ (Fin (d + 1))) : Prop :=
   ∀ f w : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
     HasWeakIteratedLineDerivOn ![y] f w Ω volume →
@@ -5909,19 +6452,25 @@ def IsTangentialByParts (y : EuclideanSpace ℝ (Fin (d + 1))) : Prop :=
       ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), fderiv ℝ (φ : _ → ℝ) x y * f x
         = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), φ x * w x
 
-/-- The half space integrates by parts along every tangential direction. -/
+/-- The half space integrates by parts along every tangential coordinate direction $e_j$,
+$j \neq N$, against the test functions on $\mathbb{R}^N$. -/
 theorem isTangentialByParts_upperHalfSpace {j : Fin (d + 1)} (hj : j ≠ Fin.last d) :
     IsTangentialByParts (upperHalfSpaceOpens d) (EuclideanSpace.single j 1) :=
   fun _ _ h hf hw φ ↦
     integral_fderiv_mul_eq_neg_of_tangential (single_apply_last_eq_zero hj) h hf hw φ
 
-/-- **The Dirichlet form of a tangential derivative against a smooth test function of `ℝ^N`.**
-Let `v ∈ H^1(Ω)` be a weak solution of `∫_Ω ∇v · ∇ψ = ∫_Ω G ψ` for *every* `ψ ∈ H^1(Ω)` which is
-the function of an element of `H²(Ω)`, and let `w ∈ H^1(Ω)` be its weak derivative along a
-direction `e_j` in which `Ω` integrates by parts against the test functions of `ℝ^N`. Then
-`∫_Ω ∇w · ∇Ψ = −∫_Ω G ∂_j φ` for every `Ψ ∈ H^1(Ω)` whose function is a `φ ∈ C_c^∞(ℝ^N)`: two
-integrations by parts in the direction `e_j`, the symmetry `∂_j ∂_i φ = ∂_i ∂_j φ` of the smooth
-`φ` and the equation for `v` tested against `∂_j φ`. -/
+/-- **The Dirichlet form of a tangential derivative against a test function on $\mathbb{R}^N$.** Let
+$\Omega$ integrate by parts along $e_j$ against the test functions on $\mathbb{R}^N$
+(`Elliptic.IsTangentialByParts`). Let $v \in H^1(\Omega)$ have an $H^2(\Omega)$ companion $V$,
+and let $G \in L^2(\Omega)$ with $\int_\Omega \nabla v \cdot \nabla \psi = \int_\Omega G \psi$
+for every $\psi \in H^1(\Omega)$. Let the function of $w \in H^1(\Omega)$ be a weak derivative
+of $v$ along $e_j$. Then for every test function $\varphi$ on $\mathbb{R}^N$ and every
+$\Psi \in H^1(\Omega)$ whose function is $\varphi$ almost everywhere on $\Omega$,
+$$\int_\Omega \nabla w \cdot \nabla \Psi = -\int_\Omega G\, \partial_j \varphi.$$
+
+The proof uses two integrations by parts along $e_j$, the symmetry $\partial_j \partial_i
+\varphi = \partial_i \partial_j \varphi$ for the smooth $\varphi$, and the equation for $v$
+tested with $\partial_j \varphi$. -/
 theorem dirichletForm_tangentialDeriv_apply_eq {j : Fin (d + 1)}
     (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1))
     {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
@@ -6006,12 +6555,14 @@ theorem dirichletForm_tangentialDeriv_apply_eq {j : Fin (d + 1)}
     ring
   rw [← e2, hbpi, e1, neg_neg]
 
-/-- **The datum of the differentiated equation is the weak derivative of the datum along `e_j`.**
-Any `G'` that represents the equation for `w = ∂_j v` against the test functions of `Ω` is the
-weak `e_j`-derivative of the datum `G` of the equation for `v`, because
-`Elliptic.dirichletForm_tangentialDeriv_apply_eq` computes both sides at a test function. This is
-what lets the equation for `w` be pushed from the test functions to all of `H^1(Ω)`: a second
-tangential integration by parts, now applied to the pair `(G, G')`. -/
+/-- **The datum of the differentiated equation is the derivative of the datum.** Under the
+hypotheses of `Elliptic.dirichletForm_tangentialDeriv_apply_eq`, let $G' \in L^2(\Omega)$
+satisfy $\int_\Omega \nabla w \cdot \nabla \Phi = \int_\Omega G' \Phi$ for every test-function
+element $\Phi$. Then $G'$ is a weak derivative of $G$ along $e_j$ on $\Omega$.
+
+`Elliptic.dirichletForm_tangentialDeriv_apply_eq` computes both sides at a test function. This
+fact lets the equation for $w$ be extended from the test functions to all of $H^1(\Omega)$, by a
+second tangential integration by parts, now applied to the pair $(G, G')$. -/
 theorem hasWeakIteratedLineDerivOn_datum_of_tangentialDeriv {j : Fin (d + 1)}
     (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1))
     {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
@@ -6053,7 +6604,11 @@ theorem hasWeakIteratedLineDerivOn_datum_of_tangentialDeriv {j : Fin (d + 1)}
     rw [e1, e2, h1, neg_neg]
 
 variable (Ω) in
-/-- **Restrictions of the test functions of `ℝ^N` are dense in `H^1(Ω)`**: Corollary 9.8. -/
+/-- **Restrictions of the test functions on $\mathbb{R}^N$ are dense in $H^1(\Omega)$.** For every
+$\Psi \in H^1(\Omega)$ there are test functions $\varphi_n$ on $\mathbb{R}^N$ and elements
+$\Psi_n \in H^1(\Omega)$ whose functions agree with $\varphi_n$ almost everywhere on $\Omega$,
+with $\Psi_n \to \Psi$ in $H^1(\Omega)$. This is the property of Corollary 9.8 of
+[brezis2011functional]. -/
 def IsTestFunctionDense : Prop :=
   ∀ Ψ : SobolevEuclidean (d + 1) 1 2 Ω,
     ∃ (φ : ℕ → 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))), ℝ))
@@ -6061,7 +6616,9 @@ def IsTestFunctionDense : Prop :=
       (∀ n, fn (Ψn n) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] φ n) ∧
         Tendsto Ψn atTop (𝓝 Ψ)
 
-/-- **Corollary 9.8 on the half space**, in the form the Neumann test space needs. -/
+/-- **Corollary 9.8** of [brezis2011functional] on the half space, in the form that the Neumann test
+space needs: the restrictions of the test functions on $\mathbb{R}^N$ are dense in
+$H^1(\mathbb{R}^N_+)$. -/
 theorem isTestFunctionDense_upperHalfSpace : IsTestFunctionDense (upperHalfSpaceOpens d) := by
   intro Ψ
   obtain ⟨v, hv, hvc, w, hwv, hlim⟩ :=
@@ -6075,7 +6632,11 @@ theorem isTestFunctionDense_upperHalfSpace : IsTestFunctionDense (upperHalfSpace
   exact hwv n
 
 /-- **The equation for a tangential derivative extends from the test functions to all of
-`H^1(Ω)`** when `Ω` integrates by parts tangentially and carries Corollary 9.8. -/
+$H^1(\Omega)$.** Let $\Omega$ integrate by parts along $e_j$ against the test functions on
+$\mathbb{R}^N$, and let those test functions be dense in $H^1(\Omega)$
+(`Elliptic.IsTestFunctionDense`). Under the hypotheses of
+`Elliptic.hasWeakIteratedLineDerivOn_datum_of_tangentialDeriv`, $\int_\Omega \nabla w \cdot
+\nabla \psi = \int_\Omega G' \psi$ for every $\psi \in H^1(\Omega)$. -/
 theorem forall_dirichletForm_tangentialDeriv_eq {j : Fin (d + 1)}
     (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1)) (hdense : IsTestFunctionDense Ω)
     {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
@@ -6114,15 +6675,21 @@ theorem forall_dirichletForm_tangentialDeriv_eq {j : Fin (d + 1)}
     ((load Ω G').continuous.tendsto Ψ).comp hlim
   exact tendsto_nhds_unique (h1.congr hkey) h2
 
-/-- **Lemma 9.7 for the Neumann test space `⊤`.** On an open set that integrates by parts along
-`e_j` against the test functions of `ℝ^N` and in which those test functions are dense, the weak
-derivative along `e_j` of a Neumann solution `v` with an `H²` companion is again an element of
-`H^1(Ω)` — trivially, the test space being everything — *and* satisfies the differentiated
-equation against all of `H^1(Ω)`, not merely against the test functions. This is the hypothesis
-`hKd` of `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Neumann problem, the
-counterpart of `Elliptic.tangentialDeriv_hyp_zero` for the Dirichlet problem; where `H^1_0(Ω)`
-gets the second clause for free from the density of the test functions, `⊤` has to earn it, and
-`Elliptic.forall_dirichletForm_tangentialDeriv_eq` is where it is earned. -/
+/-- **Lemma 9.7 for the Neumann test space.** Let $\Omega$ integrate by parts along $e_j$ against
+the test functions on $\mathbb{R}^N$, and let those test functions be dense in $H^1(\Omega)$.
+Let $v \in H^1(\Omega)$ have an $H^2(\Omega)$ companion, and let $G \in L^2(\Omega)$ with
+$\int_\Omega \nabla v \cdot \nabla \psi = \int_\Omega G \psi$ for every $\psi \in H^1(\Omega)$.
+Then there is $w \in H^1(\Omega)$ whose function is a weak derivative of $v$ along $e_j$, such
+that every equation $\int_\Omega \nabla w \cdot \nabla \Phi = \int_\Omega G' \Phi$ that holds
+for the test-function elements $\Phi$ holds for all $\Phi \in H^1(\Omega)$.
+
+The Dirichlet form is written as the general form with the identity coefficients,
+`Elliptic.kroneckerCoeff`. This is the hypothesis `hKd` of
+`Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the Neumann problem, the counterpart
+of `Elliptic.tangentialDeriv_hyp_zero` for the Dirichlet problem. The membership
+$w \in H^1(\Omega)$ is trivial here, because the test space is all of $H^1(\Omega)$. The
+extension of the equation is the real content: for $H^1_0(\Omega)$ it follows from the density
+of the test functions, and here it is `Elliptic.forall_dirichletForm_tangentialDeriv_eq`. -/
 theorem tangentialDeriv_hyp_top {j : Fin (d + 1)}
     (hbp : IsTangentialByParts Ω (EuclideanSpace.single j 1)) (hdense : IsTestFunctionDense Ω)
     {v : SobolevEuclidean (d + 1) 1 2 Ω} {V : SobolevEuclidean (d + 1) 2 2 Ω}
@@ -6151,14 +6718,18 @@ theorem tangentialDeriv_hyp_top {j : Fin (d + 1)}
   rw [← generalForm_kroneckerCoeff]
   exact hG'' Φ hΦ
 
-/-- **[brezis2011functional] Theorem 9.26 on the half space, the `H^{m+2}` membership.** Let
-`u ∈ H^1(ℝ^N_+)` satisfy `∫ ∇u · ∇ψ = ∫ g ψ` for *every* `ψ ∈ H^1(ℝ^N_+)` with
-`g ∈ H^m(ℝ^N_+)`. Then `u ∈ H^{m+2}(ℝ^N_+)`. This is
-`Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the identity coefficients and the test
-space `⊤`, whose Lemma 9.7 is `Elliptic.tangentialDeriv_hyp_top`: the tangential derivative of a
-Neumann solution is a Neumann solution with the differentiated datum, by the tangential
-integration by parts of `Elliptic.isTangentialByParts_upperHalfSpace` and the density of
-`Elliptic.isTestFunctionDense_upperHalfSpace`. -/
+/-- Theorem 9.26 of [brezis2011functional] **on the half space**, the $H^{m+2}$ membership. Let
+$m \in \mathbb{N}$, let $g \in L^2(\mathbb{R}^N_+)$ lie in $H^m(\mathbb{R}^N_+)$, and let
+$u \in H^1(\mathbb{R}^N_+)$ satisfy
+$$\int_{\mathbb{R}^N_+} \nabla u \cdot \nabla \psi = \int_{\mathbb{R}^N_+} g \psi \quad
+  \text{for all } \psi \in H^1(\mathbb{R}^N_+).$$
+Then $u \in H^{m+2}(\mathbb{R}^N_+)$.
+
+This is `Elliptic.memSobolevMultiIndex_of_tangential_of_order` for the identity coefficients and
+the test space $H^1(\mathbb{R}^N_+)$. Its Lemma 9.7 is `Elliptic.tangentialDeriv_hyp_top`: the
+tangential derivative of a Neumann solution is a Neumann solution with the differentiated datum,
+by the tangential integration by parts `Elliptic.isTangentialByParts_upperHalfSpace` and the
+density `Elliptic.isTestFunctionDense_upperHalfSpace`. -/
 theorem regularity_neumann_upperHalfSpace_higher_mem (m : ℕ)
     {u : SobolevEuclidean (d + 1) 1 2 (upperHalfSpaceOpens d)}
     {g : Lp ℝ 2 (volume.restrict
@@ -6181,11 +6752,16 @@ theorem regularity_neumann_upperHalfSpace_higher_mem (m : ℕ)
   rw [generalForm_kroneckerCoeff]
   exact hu.2 ψ hψ
 
-/-- **[brezis2011functional] Theorem 9.26 on the half space, the `H^{m+2}` clause for the book's
-equation (49).** For `f ∈ H^m(ℝ^N_+)` and the weak solution `u ∈ H^1(ℝ^N_+)` of
-`∫ ∇u · ∇φ + ∫ u φ = ∫ f φ` for every `φ ∈ H^1(ℝ^N_+)`, one has `u ∈ H^{m+2}(ℝ^N_+)`. The datum
-of `−Δu = f − u` lies in `H^k` only as far as `u` is already known to lie in `H^k`, so the order is
-raised one step at a time, exactly as in the Dirichlet case
+/-- Theorem 9.26 of [brezis2011functional] **on the half space**, the $H^{m+2}$ clause for the
+equation (49) of the source. Let $m \in \mathbb{N}$, let $f \in L^2(\mathbb{R}^N_+)$ lie in
+$H^m(\mathbb{R}^N_+)$, and let $u \in H^1(\mathbb{R}^N_+)$ satisfy
+$$\int_{\mathbb{R}^N_+} \nabla u \cdot \nabla \varphi + \int_{\mathbb{R}^N_+} u \varphi =
+  \int_{\mathbb{R}^N_+} f \varphi \quad \text{for all } \varphi \in H^1(\mathbb{R}^N_+).$$
+Then $u \in H^{m+2}(\mathbb{R}^N_+)$.
+
+The datum $f - u$ of $-\Delta u = f - u$ lies in $H^k$ only as far as $u$ is already known to
+lie in $H^k$, so the order is raised one step at a time through
+`Elliptic.regularity_neumann_upperHalfSpace_higher_mem`, as in the Dirichlet case
 (`Elliptic.regularity_dirichlet_higher_mem_laplace`). -/
 theorem regularity_neumann_upperHalfSpace_higher_mem_laplace (m : ℕ)
     {f : Lp ℝ 2 (volume.restrict
@@ -6225,7 +6801,7 @@ theorem regularity_neumann_upperHalfSpace_higher_mem_laplace (m : ℕ)
 
 end NeumannHalf
 
-/-! ### Case C₂ on the model cylinder, higher order -/
+/-! ### Case $C_2$ on the model cylinder, higher order -/
 
 section CylinderRegularityHigher
 
@@ -6233,7 +6809,9 @@ variable {d : ℕ} {Ω' Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- The extended coefficients `χ a + (1 − χ) δ` are of class `C^n` when `χ` and `a` are. -/
+/-- Let $Q$ be open, let $\chi$ be $C^n$ with $\operatorname{tsupport} \chi \subseteq Q$, and let
+every $a_{k\ell}$ be $C^n$ on $Q$. Then the extended coefficients
+$\chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$ are $C^n$ on the whole space. -/
 theorem contDiff_extendCoeff_of_order {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {N : ℕ} {n : WithTop ℕ∞} {χ : E → ℝ} (hχ : ContDiff ℝ n χ) {Q : Set E} (hQ : IsOpen Q)
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, ContDiffOn ℝ n (a k l) Q) (hχQ : tsupport χ ⊆ Q)
@@ -6241,9 +6819,11 @@ theorem contDiff_extendCoeff_of_order {E : Type*} [NormedAddCommGroup E] [Normed
   (hχ.mul_contDiffOn_of_tsupport_subset hQ (ha k l) hχQ).add
     ((contDiff_const.sub hχ).mul contDiff_const)
 
-/-- **The extended coefficients are multipliers**: for a smooth compactly supported `χ` with
-support in `Q` and coefficients `a` of class `C^n` on `Q`, `χ a + (1 − χ) δ` is `C^n` on the
-whole space and equal to `δ` off the support of `χ`. -/
+/-- **The extended coefficients are multipliers.** Let $Q$ be open, let $\chi$ be $C^n$ with compact
+support and $\operatorname{tsupport} \chi \subseteq Q$, and let every $a_{k\ell}$ be $C^n$ on
+$Q$. Then each extended coefficient $\chi a_{k\ell} + (1 - \chi) \delta_{k\ell}$ is $C^n$ on the
+whole space and equal to the constant $\delta_{k\ell}$ outside a compact set
+(`IsContDiffConstOffCompact`). -/
 theorem isContDiffConstOffCompact_extendCoeff {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {N : ℕ} {n : ℕ} {χ : E → ℝ} (hχ : ContDiff ℝ n χ)
     (hχc : HasCompactSupport χ) {Q : Set E} (hQ : IsOpen Q) {a : Fin N → Fin N → E → ℝ}
@@ -6259,13 +6839,22 @@ theorem isContDiffConstOffCompact_extendCoeff {E : Type*} [NormedAddCommGroup E]
   exact hχc.mul_right
 
 /-- **Higher-order regularity of a compactly supported solution on a subset of a tangentially
-invariant open set** — [brezis2011functional] Theorem 9.25, case C₂ on the model cylinder, the
-induction "`f ∈ H^m ⇒ u ∈ H^{m+2}`": under the hypotheses of
-`Elliptic.memSobolevMultiIndex_two_of_tangential_of_compact`, with the coefficients of class
-`C^{m+1}` and elliptic on `Q` and the datum `g ∈ H^m(Ω')`, the solution `w` lies in
-`H^{m+2}(Ω')`. The zero extension `W ∈ H^1_0(Ω)` solves the equation with the coefficients
-`Elliptic.extendCoeff χ a`, which are multipliers of class `C^{m+1}` elliptic everywhere, and the
-datum `1_{Ω'} χ g ∈ H^m(Ω)`, so `Elliptic.memSobolevMultiIndex_of_tangential_of_order` applies. -/
+invariant open set.** This is Theorem 9.25 of [brezis2011functional], case $C_2$ on the model
+cylinder, with the induction "$f \in H^m \Rightarrow u \in H^{m+2}$". Let $m \in \mathbb{N}$ and
+let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be invariant under the translations by $t e_j$
+for all $j \neq N$ and $t \in \mathbb{R}$. Let $\Omega' \subseteq \Omega$ be open, and let $Q$
+be open with $Q \cap \Omega \subseteq \Omega'$. Let the coefficients
+$A_{k\ell} \in L^\infty(\Omega')$ agree almost everywhere with functions $a_{k\ell}$ that are
+$C^{m+1}$ on $Q$, with $\alpha \|\xi\|^2 \le \sum_{k,\ell} a_{k\ell}(y)\, \xi_k \xi_\ell$ for
+all $y \in Q$ and $\xi$, where $\alpha > 0$. Let $K \subseteq Q$ be compact, let
+$w \in H^1_0(\Omega')$ vanish almost everywhere outside $K$, and let $g \in L^2(\Omega')$ lie in
+$H^m(\Omega')$, with $\sum_{k,\ell} \int_{\Omega'} a_{k\ell}\, \partial_k w\, \partial_\ell
+\psi = \int_{\Omega'} g \psi$ for all $\psi \in H^1_0(\Omega')$. Then $w \in H^{m+2}(\Omega')$.
+
+The extension by zero $W \in H^1_0(\Omega)$ solves the equation with the coefficients
+`Elliptic.extendCoeff χ a` and the datum $\mathbf{1}_{\Omega'} \chi g \in H^m(\Omega)$. These
+coefficients are $C^{m+1}$ multipliers and elliptic everywhere, so
+`Elliptic.memSobolevMultiIndex_of_tangential_of_order` applies. -/
 theorem memSobolevMultiIndex_of_tangential_of_compact_of_order (m : ℕ)
     (hΩ : ∀ j : Fin (d + 1), j ≠ Fin.last d → ∀ t : ℝ,
       IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -6349,7 +6938,7 @@ end CylinderRegularityHigher
 
 
 
-/-! ### Case C₂, higher order: a boundary piece `θᵢ u` is in `H^{m+2}(Ω)` -/
+/-! ### Case $C_2$, higher order: a boundary piece $\theta_i u$ is in $H^{m+2}(\Omega)$ -/
 
 section BoundaryPieceHigher
 
@@ -6357,7 +6946,8 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- The datum `θ F − 2∇θ·∇u − (Δθ)u` of a boundary piece vanishes off the support of `θ`. -/
+/-- The datum $\theta F - 2 \nabla\theta \cdot \nabla u - (\Delta\theta) u$ of a boundary piece
+vanishes outside the support of $\theta$. -/
 theorem boundaryDatum_eq_zero_of_notMem_tsupport {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     {u : SobolevEuclidean (d + 1) 1 2 Ω}
     {F : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
@@ -6378,19 +6968,22 @@ theorem boundaryDatum_eq_zero_of_notMem_tsupport {θ : EuclideanSpace ℝ (Fin (
       hx (tsupport_fderiv_apply_subset ℝ _ (tsupport_fderiv_apply_subset ℝ _ h))
   simp only [h0, h1, h2, zero_mul, mul_zero, Finset.sum_const_zero, sub_zero]
 
-/-- **A boundary piece of a weak solution is in `H^{m+2}(Ω)`** — [brezis2011functional] §9.6,
-proof of Theorem 9.25, case C₂ at higher order: for a `C^{m+2}` chart `H : Q → U` of `Ω`, a
-smooth `θ` with compact support in `U`, and `u ∈ H^1_0(Ω) ∩ H^{m+1}(Ω)` with
-`∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ` and `F ∈ H^m(Ω)`, the function
-`θ u` lies in `H^{m+2}(Ω)`.
+/-- **A boundary piece of a weak solution is in $H^{m+2}(\Omega)$.** Let $m \in \mathbb{N}$, let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open, and let $H : Q \to U$ be a chart of class
+$C^{m+2}$ of $\Omega$ (`ContDiffChart`). Let $\theta$ be smooth with compact support contained
+in $U$. Let $u \in H^1_0(\Omega)$ lie in $H^{m+1}(\Omega)$, let $F \in L^2(\Omega)$ lie in
+$H^m(\Omega)$, and suppose that $\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega F \Phi$
+for every test-function element $\Phi$. Then $\theta u \in H^{m+2}(\Omega)$.
 
-The steps of the book's `H²` case, one order up:
-the datum `G = θ F − 2∇θ·∇u − (Δθ) u` of `v = θ u` lies in `H^m(Ω ∩ U)`; its transfer
-`(G ∘ H) |det DH|` lies in `H^m(Q₊)` (`Elliptic.memSobolevMultiIndex_comp_chart_of_order` on a
-smaller half cylinder containing the support, and a cut-off); the higher-order theorem on the
-cylinder (`Elliptic.memSobolevMultiIndex_of_tangential_of_compact_of_order`) gives
-`w = v ∘ H ∈ H^{m+2}(Q₊)`, and the return through the `C^{m+2}` inverse chart at order `m + 2`
-gives `θ u ∈ H^{m+2}(Ω)`. -/
+This is case $C_2$ of the proof of Theorem 9.25 of [brezis2011functional] at higher order, by
+the steps of the $H^2$ case one order up. The datum $G = \theta F - 2 \nabla\theta \cdot \nabla
+u - (\Delta\theta) u$ of $v = \theta u$ lies in $H^m(\Omega \cap U)$. Its transfer
+$(G \circ H)\, |\det DH|$ lies in $H^m(Q_+)$, by
+`Elliptic.memSobolevMultiIndex_comp_chart_of_order` on a smaller half cylinder that contains the
+support, and a cut-off. The higher-order theorem on the cylinder
+(`Elliptic.memSobolevMultiIndex_of_tangential_of_compact_of_order`) gives
+$w = v \circ H \in H^{m+2}(Q_+)$, and the return through the $C^{m+2}$ inverse chart at order
+$m + 2$ gives $\theta u \in H^{m+2}(\Omega)$. -/
 theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChart (m + 2) (Ω : Set _))
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -6626,7 +7219,7 @@ theorem memSobolevMultiIndex_boundary_piece_of_order (m : ℕ) (c : ContDiffChar
 end BoundaryPieceHigher
 
 
-/-! ### Theorem 9.25, the `H²` clause: case C₂ and the assembly -/
+/-! ### Theorem 9.25, the $H^2$ clause: case $C_2$ and the assembly -/
 
 section BoundaryPieceTwo
 
@@ -6634,11 +7227,14 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex EuclideanSpace
 
-/-- **A boundary piece of a weak solution is in `H²(Ω)`** — [brezis2011functional] §9.6, proof of
-Theorem 9.25, case C₂: for a `C²` chart `H : Q → U` of `Ω`, a smooth `θ` with compact support in
-`U`, and `u ∈ H^1_0(Ω)` with `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements `Φ`, the
-function `θ u` lies in `H²(Ω)`. The case `m = 0` of
-`Elliptic.memSobolevMultiIndex_boundary_piece_of_order`. -/
+/-- **A boundary piece of a weak solution is in $H^2(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open, and let $H : Q \to U$ be a chart of class
+$C^2$ of $\Omega$. Let $\theta$ be smooth with compact support contained in $U$. Let
+$u \in H^1_0(\Omega)$ and $F \in L^2(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla \Phi =
+\int_\Omega F \Phi$ for every test-function element $\Phi$. Then $\theta u \in H^2(\Omega)$.
+
+This is case $C_2$ of the proof of Theorem 9.25 of [brezis2011functional]. It is the case
+$m = 0$ of `Elliptic.memSobolevMultiIndex_boundary_piece_of_order`. -/
 theorem memSobolevMultiIndex_two_boundary_piece (c : ContDiffChart 2 (Ω : Set _))
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -6659,16 +7255,21 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
-membership**: let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary, and let `u ∈ H^1_0(Ω)`
-satisfy `∫_Ω ∇u · ∇Φ = ∫_Ω g Φ` for all `Φ ∈ H^1_0(Ω)` with `g ∈ L²(Ω)`. Then `u ∈ H²(Ω)`. (For
-the book's `−Δu + u = f`, take `g = f − u`.)
+/-- **Theorem 9.25** of [brezis2011functional] (regularity for the Dirichlet problem), the $H^2$
+membership. Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^2$ with
+bounded boundary. Let $g \in L^2(\Omega)$, and let $u \in H^1_0(\Omega)$ satisfy
+$$\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega g \Phi \quad \text{for all } \Phi \in
+  H^1_0(\Omega).$$
+Then $u \in H^2(\Omega)$.
 
-The proof of the book: a finite atlas of charts `Hᵢ : Q → Uᵢ` covering the compact `Γ = ∂Ω`
-(`IsContDiffChartDomain.exists_finite_atlas`), a partition of unity `θ₀, θᵢ` subordinate to it
-(Lemma 9.3, `IsCompact.exists_contDiff_partitionOfUnity`), and `u = θ₀ u + ∑ᵢ θᵢ u` with the
-interior piece `θ₀ u ∈ H²(Ω)` by case A (`Elliptic.memSobolevMultiIndex_two_interior_piece`) and
-each boundary piece `θᵢ u ∈ H²(Ω)` by cases B and C₂
+For the equation $-\Delta u + u = f$ of the source, take $g = f - u$. "Of class $C^2$" is
+`IsContDiffChartDomain 2`. The proof is the one of the source. A finite atlas of charts
+$H_i : Q \to U_i$ covers the compact boundary $\Gamma = \partial\Omega$
+(`IsContDiffChartDomain.exists_finite_atlas`), and a partition of unity $\theta_0, \theta_i$ is
+subordinate to it (Lemma 9.3, `IsCompact.exists_contDiff_partitionOfUnity`). Then
+$u = \theta_0 u + \sum_i \theta_i u$, the interior piece $\theta_0 u$ lies in $H^2(\Omega)$ by
+case A (`Elliptic.memSobolevMultiIndex_two_interior_piece`), and each boundary piece
+$\theta_i u$ lies in $H^2(\Omega)$ by cases B and $C_2$
 (`Elliptic.memSobolevMultiIndex_two_boundary_piece`). -/
 theorem regularity_dirichlet_mem
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -6744,16 +7345,19 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
-clause.** Let `Ω ⊆ ℝ^N` be open of class `C²` with bounded boundary. There is a constant `C`
-such that for every `f ∈ L²(Ω)`, the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = f`
-(`∫_Ω ∇u · ∇φ + ∫_Ω u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)`) lies in `H²(Ω)`, and every
-`U ∈ H²(Ω)` with function `u` has `‖U‖_{H²(Ω)} ≤ C ‖f‖_{L²(Ω)}`.
+/-- **Theorem 9.25** of [brezis2011functional] (regularity for the Dirichlet problem), the $H^2$
+clause. Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^2$ with bounded
+boundary. Then there is a constant $C \ge 0$ with the following property. Let
+$f \in L^2(\Omega)$, and let $u \in H^1_0(\Omega)$ be the weak solution of $-\Delta u + u = f$:
+$$\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi
+  \quad \text{for all } \varphi \in H^1_0(\Omega).$$
+Then $u \in H^2(\Omega)$, and every $U \in H^2(\Omega)$ whose function agrees almost everywhere
+with that of $u$ satisfies $\|U\|_{H^2(\Omega)} \le C \|f\|_{L^2(\Omega)}$.
 
-The membership is `Elliptic.regularity_dirichlet_mem` (the localisation of the book's proof:
-case A for the interior piece, cases B and C₂ through the charts for the boundary pieces), and the
-constant comes from the closed graph theorem applied to the map `f ↦ U ∈ H²(Ω)`
-(`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`). -/
+The membership is `Elliptic.regularity_dirichlet_mem`, which localizes the proof of the source:
+case A for the interior piece, and cases B and $C_2$ through the charts for the boundary pieces.
+The constant comes from the closed graph theorem applied to the map
+$f \mapsto U \in H^2(\Omega)$ (`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`). -/
 theorem regularity_dirichlet
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -6791,7 +7395,7 @@ end Main
 
 
 
-/-! ### The interior piece `θ₀ u` at higher order -/
+/-! ### The interior piece $\theta_0 u$ at higher order -/
 
 section InteriorPieceHigher
 
@@ -6799,7 +7403,8 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The Laplacian of a smooth function constant off a compact set has compact support. -/
+/-- If $\theta$ is smooth and $\theta - \kappa$ has compact support for a constant $\kappa$, then
+the Laplacian $\Delta\theta = \sum_i \partial_i \partial_i \theta$ has compact support. -/
 theorem hasCompactSupport_laplacianRep {θ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) {κ : ℝ} (hθκ : HasCompactSupport fun x ↦ θ x - κ) :
     HasCompactSupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
@@ -6814,13 +7419,18 @@ theorem hasCompactSupport_laplacianRep {θ : EuclideanSpace ℝ (Fin N) → ℝ}
   rw [e]
   exact hc
 
-/-- **The interior piece `θ₀ u` is in `H^{m+2}(Ω)`** — [brezis2011functional] §9.6, proof of
-Theorem 9.25, case C₁ at higher order: for a smooth `θ₀` constant off a compact set with support
-off `∂Ω`, and `u ∈ H¹(Ω) ∩ H^{m+1}(Ω)` with `∫_Ω ∇u · ∇Φ = ∫_Ω F Φ` for the test-function elements
-`Φ` and `F ∈ H^m(Ω)`, the function `θ₀ u` lies in `H^{m+2}(Ω)`: its zero extension solves
-`−Δ(θ₀u) = θ₀F − 2∇θ₀·∇u − (Δθ₀)u` on `ℝ^N`, whose right side lies in `H^m(ℝ^N)` by
+/-- **The interior piece $\theta_0 u$ is in $H^{m+2}(\Omega)$.** Let $m \in \mathbb{N}$ and let
+$\Omega \subseteq \mathbb{R}^N$ be open. Let $\theta$ be smooth, equal to a constant $\kappa$
+outside a compact set, with support disjoint from $\partial\Omega$. Let $u \in H^1(\Omega)$ lie
+in $H^{m+1}(\Omega)$, let $F \in L^2(\Omega)$ lie in $H^m(\Omega)$, and suppose that
+$\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega F \Phi$ for every test-function element
+$\Phi$. Then $\theta u \in H^{m+2}(\Omega)$.
+
+This is case $C_1$ of the proof of Theorem 9.25 of [brezis2011functional] at higher order. The
+extension of $\theta u$ by zero solves $-\Delta(\theta u) = \theta F - 2 \nabla\theta \cdot
+\nabla u - (\Delta\theta) u$ on $\mathbb{R}^N$. Its right side lies in $H^m(\mathbb{R}^N)$ by
 `MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub`, and case A at higher order
-applies (`Elliptic.regularity_top_higher`). -/
+(`Elliptic.regularity_top_higher`) applies. -/
 theorem memSobolevMultiIndex_interior_piece_of_order (m : ℕ)
     {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ ∞ θ) {κ : ℝ}
     (hθκ : HasCompactSupport fun x ↦ θ x - κ)
@@ -6922,7 +7532,7 @@ theorem memSobolevMultiIndex_interior_piece_of_order (m : ℕ)
 
 end InteriorPieceHigher
 
-/-! ### Theorem 9.25, the `H^{m+2}` clause: the assembly -/
+/-! ### Theorem 9.25, the $H^{m+2}$ clause: the assembly -/
 
 section AssemblyHigher
 
@@ -6930,16 +7540,21 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **[brezis2011functional] Theorem 9.25, the `H^{m+2}` membership**: let `Ω ⊆ ℝ^N` be open
-of class `C^{m+2}` with bounded boundary, and let `u ∈ H^1_0(Ω)` satisfy
-`∫_Ω ∇u · ∇Φ = ∫_Ω g Φ` for all `Φ ∈ H^1_0(Ω)` with `g ∈ H^m(Ω)`. Then `u ∈ H^{m+2}(Ω)`. (For
-the book's `−Δu + u = f`, take `g = f − u`; `Elliptic.regularity_dirichlet_higher` does so.)
+/-- **Theorem 9.25** of [brezis2011functional], the $H^{m+2}$ membership. Let $m \in \mathbb{N}$,
+and let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^{m+2}$ with bounded
+boundary. Let $g \in L^2(\Omega)$ lie in $H^m(\Omega)$, and let $u \in H^1_0(\Omega)$ satisfy
+$$\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega g \Phi \quad \text{for all } \Phi \in
+  H^1_0(\Omega).$$
+Then $u \in H^{m+2}(\Omega)$.
 
-Induction on `m` ("the implication `f ∈ H^m ⇒ u ∈ H^{m+2}` is done by induction on `m` as in
-cases A and B"): the inductive hypothesis gives `u ∈ H^{m+1}(Ω)`, and `u = θ₀ u + ∑ᵢ θᵢ u` for
-a partition of unity subordinate to a finite atlas of `C^{m+2}` charts, with the interior piece
-in `H^{m+2}(Ω)` by case A (`Elliptic.memSobolevMultiIndex_interior_piece_of_order`) and each
-boundary piece by cases B and C₂ (`Elliptic.memSobolevMultiIndex_boundary_piece_of_order`). -/
+For the equation $-\Delta u + u = f$ of the source, take $g = f - u$;
+`Elliptic.regularity_dirichlet_higher` does so. The proof is an induction on $m$: "the
+implication $f \in H^m \Rightarrow u \in H^{m+2}$ is done by induction on $m$ as in cases A and
+B". The induction hypothesis gives $u \in H^{m+1}(\Omega)$, and
+$u = \theta_0 u + \sum_i \theta_i u$ for a partition of unity subordinate to a finite atlas of
+$C^{m+2}$ charts. The interior piece lies in $H^{m+2}(\Omega)$ by case A
+(`Elliptic.memSobolevMultiIndex_interior_piece_of_order`), and each boundary piece by cases B
+and $C_2$ (`Elliptic.memSobolevMultiIndex_boundary_piece_of_order`). -/
 theorem regularity_dirichlet_higher_mem (m : ℕ) :
     IsContDiffChartDomain (m + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) →
     Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
@@ -6997,7 +7612,7 @@ theorem regularity_dirichlet_higher_mem (m : ℕ) :
 
 end AssemblyHigher
 
-/-! ### The estimate `‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`, by the closed graph theorem -/
+/-! ### The estimate $\|u\|_{H^{m+2}} \le C \|f\|_{H^m}$, by the closed graph theorem -/
 
 section MainHigher
 
@@ -7005,11 +7620,17 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **[brezis2011functional] Theorem 9.25, the `H^{m+2}` clause, membership for the book's
-equation**: for `Ω` of class `C^{m+2}` with bounded boundary, the weak solution `u ∈ H^1_0(Ω)`
-of `−Δu + u = f` with `f ∈ H^m(Ω)` lies in `H^{m+2}(Ω)`. Induction on the order through
-`Elliptic.regularity_dirichlet_higher_mem` with the datum `g = f − u`: `u ∈ H^j` and `f ∈ H^j`
-give `g ∈ H^j`, hence `u ∈ H^{j+2}`. -/
+/-- **Theorem 9.25** of [brezis2011functional], the $H^{m+2}$ clause, membership for the equation of
+the source. Let $m \in \mathbb{N}$, and let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be
+open of class $C^{m+2}$ with bounded boundary. Let $f \in L^2(\Omega)$ lie in $H^m(\Omega)$, and
+let $u \in H^1_0(\Omega)$ be the weak solution of $-\Delta u + u = f$:
+$$\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi
+  \quad \text{for all } \varphi \in H^1_0(\Omega).$$
+Then $u \in H^{m+2}(\Omega)$.
+
+The proof is an induction on the order through `Elliptic.regularity_dirichlet_higher_mem` with
+the datum $g = f - u$: from $u \in H^j$ and $f \in H^j$ follows $g \in H^j$, hence
+$u \in H^{j+2}$. -/
 theorem regularity_dirichlet_higher_mem_laplace (m : ℕ)
     (hΩ : IsContDiffChartDomain (m + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7045,14 +7666,19 @@ theorem regularity_dirichlet_higher_mem_laplace (m : ℕ)
         (hΩ.of_le (by exact_mod_cast Nat.add_le_add_right hjm 2)) hΓ hu.1 (hg (j + 1) huj hjm) heq
   exact key m le_rfl
 
-/-- **[brezis2011functional] Theorem 9.25, the `H^{m+2}` clause.** Let `Ω ⊆ ℝ^N` be open of
-class `C^{m+2}` with bounded boundary. There is a constant `C` such that for every
-`F ∈ H^m(Ω)`, the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = F` lies in `H^{m+2}(Ω)`, and every
-`U ∈ H^{m+2}(Ω)` with function `u` has `‖U‖_{H^{m+2}(Ω)} ≤ C ‖F‖_{H^m(Ω)}`.
+/-- **Theorem 9.25** of [brezis2011functional], the $H^{m+2}$ clause. Let $m \in \mathbb{N}$, and
+let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^{m+2}$ with bounded
+boundary. Then there is a constant $C \ge 0$ with the following property. Let
+$F \in H^m(\Omega)$, and let $u \in H^1_0(\Omega)$ be the weak solution of $-\Delta u + u = F$:
+$$\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega F \varphi
+  \quad \text{for all } \varphi \in H^1_0(\Omega).$$
+Then $u \in H^{m+2}(\Omega)$, and every $U \in H^{m+2}(\Omega)$ whose function agrees almost
+everywhere with that of $u$ satisfies $\|U\|_{H^{m+2}(\Omega)} \le C \|F\|_{H^m(\Omega)}$.
 
-The membership is `Elliptic.regularity_dirichlet_higher_mem_laplace` (induction on `m` through
-the interior and boundary pieces), and the constant comes from the closed graph theorem applied
-to the solution map `H^m(Ω) → H¹(Ω)`
+The datum in the equation is the function of $F$ as an element of $L^2(\Omega)$
+(`SobolevMultiIndex.fnL`). The membership is `Elliptic.regularity_dirichlet_higher_mem_laplace`,
+by induction on $m$ through the interior and boundary pieces. The constant comes from the closed
+graph theorem applied to the solution map $H^m(\Omega) \to H^1(\Omega)$
 (`SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev`). -/
 theorem regularity_dirichlet_higher (m : ℕ)
     (hΩ : IsContDiffChartDomain (m + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -7098,7 +7724,7 @@ end MainHigher
 
 
 
-/-! ### Theorem 9.25, the `C²(Ω̄)` and `C^∞(Ω̄)` clauses -/
+/-! ### Theorem 9.25, the $C^2(\overline{\Omega})$ and $C^\infty(\overline{\Omega})$ clauses -/
 
 section Smooth
 
@@ -7106,11 +7732,15 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **A `C^k(Ω̄)` representative of an `H^{m+2}(Ω)` weak solution**, for `k + N/2 < m + 2`: the
-function `u` agrees almost everywhere on `Ω` with a `ũ` continuous on `ℝ^N`, of class `C^k` on
-`Ω`, each of whose derivatives of order `≤ k` extends continuously to `ℝ^N` from `Ω` — the sense
-of `C^k(Ω̄)` of [brezis2011functional] Chapter 9, footnote 16, as in Corollary 9.15
-(`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`). -/
+/-- **A $C^k(\overline{\Omega})$ representative of an $H^m(\Omega)$ function, for $k + N/2 < m$.**
+Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^1$ with bounded boundary,
+and let $k, m \in \mathbb{N}$ with $k + N/2 < m$. If $u \in H^m(\Omega)$, then $u$ agrees almost
+everywhere on $\Omega$ with a function $\tilde u$ that is continuous on $\mathbb{R}^N$ and $C^k$
+on $\Omega$, and for every $j \le k$ the $j$-th derivative of $\tilde u$ on $\Omega$ agrees on
+$\Omega$ with a function continuous on $\mathbb{R}^N$.
+
+This is the sense of $C^k(\overline{\Omega})$ of [brezis2011functional], Chapter 9, footnote 16,
+and the statement is Corollary 9.15 (`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`). -/
 theorem exists_contDiffOn_of_memSobolevMultiIndex (k : ℕ) {m : ℕ}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7136,14 +7766,19 @@ theorem exists_contDiffOn_of_memSobolevMultiIndex (k : ℕ) {m : ℕ}
   obtain ⟨G, hGc, hGeq, -⟩ := hG j hj
   exact ⟨G, hGc, hGeq⟩
 
-/-- **A function in `H^m(Ω)` for every `m` is `C^∞(Ω̄)`** on a `C¹` domain with bounded
-boundary: it agrees almost everywhere on `Ω` with a function `ũ` continuous on `ℝ^N`, of class
-`C^∞` on `Ω`, all of whose derivatives extend continuously from `Ω` to `ℝ^N` — the book's
-`C^∞(Ω̄)` ([brezis2011functional] Chapter 9, footnote 16). Corollary 9.15 at every order
-(`exists_contDiffOn_of_memSobolevMultiIndex`) gives a `C^k(Ω̄)` representative for each `k`; two
-continuous representatives agree on the open set `Ω` (`Measure.eqOn_open_of_ae_eq`), so the
-representative at order `0` is of class `C^k` on `Ω` for every `k`, with the derivative
-extensions of the representative at order `k`. -/
+/-- **A function in $H^m(\Omega)$ for every $m$ is $C^\infty(\overline{\Omega})$.** Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^1$ with bounded boundary. If
+$u \in H^m(\Omega)$ for every $m$, then $u$ agrees almost everywhere on $\Omega$ with a function
+$\tilde u$ that is continuous on $\mathbb{R}^N$ and $C^\infty$ on $\Omega$, and for every $j$
+the $j$-th derivative of $\tilde u$ on $\Omega$ agrees on $\Omega$ with a function continuous on
+$\mathbb{R}^N$.
+
+This is the class $C^\infty(\overline{\Omega})$ of [brezis2011functional], Chapter 9,
+footnote 16. Corollary 9.15 at every order
+(`Elliptic.exists_contDiffOn_of_memSobolevMultiIndex`) gives a $C^k(\overline{\Omega})$
+representative for each $k$. Two continuous representatives agree on the open set $\Omega$
+(`MeasureTheory.Measure.eqOn_open_of_ae_eq`), so the representative at order $0$ is $C^k$ on
+$\Omega$ for every $k$, with the derivative extensions of the representative at order $k$. -/
 theorem exists_contDiffOn_infty_of_forall_memSobolevMultiIndex
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7180,11 +7815,15 @@ theorem exists_contDiffOn_infty_of_forall_memSobolevMultiIndex
       Filter.eventually_of_mem (Ω.isOpen.mem_nhds hx) fun y hy ↦ hagree j hy
     exact (h.iteratedFDeriv ℝ j).eq_of_nhds
 
-/-- **A function in `H^m(Ω)` for every `m` is `C^∞(Ω̄)`**, in the `ContDiffOnClosure` reading of
-the class `C^∞(Ω̄)`: on a `C¹` domain with bounded boundary it agrees almost everywhere on `Ω`
-with a function of class `C^∞(Ω̄)` (`ContDiffOnClosure ℝ ∞ ũ Ω`), continuous on `Ω̄`
-(`exists_contDiffOn_infty_of_forall_memSobolevMultiIndex`, the extensions restricted to the
-closure). -/
+/-- **A function in $H^m(\Omega)$ for every $m$ is $C^\infty(\overline{\Omega})$**, in the reading
+`ContDiffOnClosure` of the class $C^\infty(\overline{\Omega})$. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^1$ with bounded boundary. If
+$u \in H^m(\Omega)$ for every $m$, then $u$ agrees almost everywhere on $\Omega$ with a function
+$\tilde u$ of class $C^\infty(\overline{\Omega})$ (`ContDiffOnClosure ℝ ∞ ũ Ω`) that is
+continuous on $\overline{\Omega}$.
+
+The proof restricts the extensions of
+`Elliptic.exists_contDiffOn_infty_of_forall_memSobolevMultiIndex` to the closure. -/
 theorem exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7199,13 +7838,18 @@ theorem exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex
   obtain ⟨G, hGc, hGeq⟩ := hG j
   exact ⟨G, hGc.continuousOn, fun x hx ↦ (hGeq hx).symm⟩
 
-/-- **[brezis2011functional] Theorem 9.25, the `C²(Ω̄)` clause**: for `Ω` of class `C^{m+2}`
-with bounded boundary, `f ∈ H^m(Ω)` and `m > N/2`, the weak solution `u ∈ H^1_0(Ω)` of
-`−Δu + u = f` agrees almost everywhere with a function `ũ` continuous on `ℝ^N` and of class
-`C²` on `Ω` whose derivatives up to order `2` extend continuously from `Ω` to `ℝ^N` — the
-book's `C²(Ω̄)` in the sense of Chapter 9, footnote 16. From `u ∈ H^{m+2}(Ω)`
-(`Elliptic.regularity_dirichlet_higher_mem_laplace`) and Corollary 9.15 on the `C¹` domain `Ω`
-(`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`, `2 + N/2 < m + 2`). -/
+/-- **Theorem 9.25** of [brezis2011functional], the $C^2(\overline{\Omega})$ clause. Let
+$m \in \mathbb{N}$ with $m > N/2$, and let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open
+of class $C^{m+2}$ with bounded boundary. Let $f \in L^2(\Omega)$ lie in $H^m(\Omega)$, and let
+$u \in H^1_0(\Omega)$ be the weak solution of $-\Delta u + u = f$. Then $u$ agrees almost
+everywhere on $\Omega$ with a function $\tilde u$ that is continuous on $\mathbb{R}^N$ and $C^2$
+on $\Omega$, and for every $j \le 2$ the $j$-th derivative of $\tilde u$ on $\Omega$ agrees on
+$\Omega$ with a function continuous on $\mathbb{R}^N$.
+
+This is $u \in C^2(\overline{\Omega})$ in the sense of Chapter 9, footnote 16. The proof
+combines $u \in H^{m+2}(\Omega)$ (`Elliptic.regularity_dirichlet_higher_mem_laplace`) with
+Corollary 9.15 on the $C^1$ domain $\Omega$
+(`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`), since $2 + N/2 < m + 2$. -/
 theorem regularity_dirichlet_contDiffOn (m : ℕ)
     (hΩ : IsContDiffChartDomain (m + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7227,13 +7871,20 @@ theorem regularity_dirichlet_contDiffOn (m : ℕ)
   push_cast at hm ⊢
   linarith
 
-/-- **[brezis2011functional] Theorem 9.25, the `C^∞(Ω̄)` clause**: for `Ω` of class `C^∞` with
-bounded boundary and `f ∈ H^m(Ω)` for every `m` (which holds for every `f ∈ C^∞(Ω̄)` with
-bounded derivatives on a bounded `Ω`), the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = f` agrees
-almost everywhere with a function `ũ` continuous on `ℝ^N`, of class `C^∞` on `Ω`, all of whose
-derivatives extend continuously from `Ω` to `ℝ^N` — the book's `C^∞(Ω̄)`. The solution lies in
-`H^{m+2}(Ω)` for every `m` (`regularity_dirichlet_higher_mem_laplace`), and a function in every
-`H^m(Ω)` is `C^∞(Ω̄)` (`exists_contDiffOn_infty_of_forall_memSobolevMultiIndex`). -/
+/-- **Theorem 9.25** of [brezis2011functional], the $C^\infty(\overline{\Omega})$ clause. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be open of class $C^\infty$ with bounded boundary.
+Let $f \in L^2(\Omega)$ lie in $H^m(\Omega)$ for every $m$, and let $u \in H^1_0(\Omega)$ be the
+weak solution of $-\Delta u + u = f$. Then $u$ agrees almost everywhere on $\Omega$ with a
+function $\tilde u$ that is continuous on $\mathbb{R}^N$ and $C^\infty$ on $\Omega$, and for
+every $j$ the $j$-th derivative of $\tilde u$ on $\Omega$ agrees on $\Omega$ with a function
+continuous on $\mathbb{R}^N$.
+
+The source assumes $f \in C^\infty(\overline{\Omega})$; the hypothesis here is
+$f \in H^m(\Omega)$ for every $m$, which holds for every $f \in C^\infty(\overline{\Omega})$
+with bounded derivatives on a bounded $\Omega$. The solution lies in $H^{m+2}(\Omega)$ for every
+$m$ (`Elliptic.regularity_dirichlet_higher_mem_laplace`), and a function in every $H^m(\Omega)$
+is $C^\infty(\overline{\Omega})$
+(`Elliptic.exists_contDiffOn_infty_of_forall_memSobolevMultiIndex`). -/
 theorem regularity_dirichlet_smooth
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))

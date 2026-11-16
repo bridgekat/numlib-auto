@@ -14,54 +14,68 @@ import Numlib.Approximation.OrthogonalPolynomial
 /-!
 # The location of the zeros of the Legendre polynomials and of the Gauss–Lobatto nodes
 
-In the variable `θ = arccos x` the Legendre polynomial becomes the **Liouville normal form**
-`u(θ) = √(sin θ) · L_N(cos θ)`, which satisfies
+Let $L_N$ be the Legendre polynomial of degree $N$, normalized by $L_N(1) = 1$. In the variable
+$\theta = \arccos x$, the function $u(\theta) = \sqrt{\sin\theta}\, L_N(\cos\theta)$ is the
+**Liouville normal form** of the Legendre equation, and it satisfies
+$$u'' + \Bigl(\bigl(N + \tfrac12\bigr)^2 + \frac{1}{4\sin^2\theta}\Bigr) u = 0 \quad \text{on } (0,
+  \pi).$$
+This module derives the equation and uses Sturm's comparison theorem to show that, in the variable
+$\theta$, the zeros of $L_N$ are at most $\pi/(N + \frac12)$ apart, and the zeros of $L_N'$ are at
+most $2\pi/(N + \frac12)$ apart. The zeros of $L_N'$ are the interior Gauss–Lobatto nodes
+(`Quadrature.derivative_legendre_eq_family` in `Numlib.Approximation.GaussLobatto`). For $N \ge 2$
+the node nearest to $1$ lies in $(1 - 81\pi^2/(32N^2), 1)$, and by the symmetry
+$L_N(-x) = (-1)^N L_N(x)$ the same holds at $-1$. The presentation follows Szegő, *Orthogonal
+Polynomials*, §4.7 and §6.3, and [quarteroni2000numerical], §10.4 and §13.3.1.
 
-`u'' + ((N + ½)² + 1/(4 sin² θ)) u = 0` on `(0, π)`
+The spacing bound in $\theta$ is the ingredient of the Marcinkiewicz–Zygmund inequality at the
+Gauss–Lobatto nodes. The lower bound $\lambda_{\max} \ge cN^4$ for the eigenvalues of the
+pseudo-spectral stiffness matrix ([quarteroni2000numerical], §13.3.1) needs the location of the node
+nearest to $1$, together with the bound $w_j \le 2048/N^2$ on the Gauss–Lobatto weight at that node,
+which this module also proves.
 
-(`Polynomial.isSturmSolutionOn_legendreLiouville`; Szegő (4.7.10), derived here from the Legendre
-differential equation `Polynomial.legendre_ode`). The potential exceeds `(N + ½)²`, so Sturm's
-comparison theorem with `sin ((N + ½)(θ − a))` (`IsSturmSolutionOn.exists_zero_Ioo_of_sq_lt`)
-puts a zero of `L_N(cos θ)` in every open interval of `θ`-length `π/(N + ½)` inside `(0, π)`
-(`Polynomial.exists_eval_legendre_cos_eq_zero`): in `θ` the zeros of `L_N` are at most
-`π/(N + ½)` apart.
+## Main definitions
 
-The interior Gauss–Lobatto nodes are the zeros of `L_N'` (`Quadrature.derivative_legendre_eq_family`
-in `Numlib/Approximation/GaussLobatto`). Two zeros of `L_N` in an interval of `θ`-length
-`2π/(N + ½)` give, by Rolle, a zero of `L_N'` between them
-(`Polynomial.exists_eval_derivative_legendre_cos_eq_zero`): the Gauss–Lobatto nodes are at most
-`2π/(N + ½)` apart in `θ`, and the node nearest to `1` is at `θ < 9π/(4N + 2)`
-(`Polynomial.exists_eval_derivative_legendre_cos_eq_zero_lt`), that is at
-`x > 1 − 81π²/(32 N²)` (`Polynomial.exists_eval_derivative_legendre_eq_zero_near_one`). By the
-symmetry `L_N(−x) = (−1)^N L_N(x)` the same holds at `−1`.
-
-The `θ`-spacing bound is the ingredient of the Marcinkiewicz–Zygmund inequality at the
-Gauss–Lobatto nodes; the location of the first node is what the lower eigenvalue bound of the
-pseudo-spectral stiffness matrix ([quarteroni2000numerical] §13.3.1, `λ_max ≥ c N⁴`) needs,
-together with the size of the Gauss–Lobatto weight there, `w_j ≤ 2048/N²`
-(`Quadrature.legendreLobattoWeight_le_of_near_one`): the Christoffel-function bound
-`w_j ≤ ∫ p²/p(x_j)²` of a positive rule (`Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure`)
-with the kernel `K_M(·, 1)` of degree `M = ⌊N/16⌋` as test polynomial.
+* `Polynomial.legendreLiouville`: the Liouville normal form $u(\theta) = \sqrt{\sin\theta}\,
+  L_N(\cos\theta)$.
+* `Polynomial.legendreLiouvilleDeriv`: the formula for its derivative $u'$.
+* `Polynomial.legendreLiouvillePotential`: the potential $q(\theta) = (N + \frac12)^2 +
+  1/(4\sin^2\theta)$.
+* `Polynomial.legendreKernelOne`: the Christoffel–Darboux kernel $K_M(x, 1) = \sum_{k \le M}
+  \frac{2k+1}{2} L_k(x)$.
 
 ## Main results
 
-* `Polynomial.legendreLiouville`, `Polynomial.legendreLiouvillePotential`,
-  `Polynomial.isSturmSolutionOn_legendreLiouville` — the Liouville normal form and its equation.
-* `Polynomial.exists_eval_legendre_cos_eq_zero` — a zero of `L_N(cos ·)` in every open
-  `θ`-interval of length `π/(N + ½)` inside `(0, π)`.
-* `Polynomial.exists_eval_derivative_legendre_cos_eq_zero` — a zero of `L_N'(cos ·)` in every
-  open `θ`-interval of length `2π/(N + ½)` inside `(0, π)`.
-* `Polynomial.exists_eval_derivative_legendre_eq_zero_near_one` — for `N ≥ 2`, a zero `t` of
-  `L_N'` with `1 − 81π²/(32 N²) < t < 1`.
-* `Polynomial.abs_eval_derivative_legendre_le` — `|L_k'(x)| ≤ k²` on `[-1, 1]`.
-* `Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure`,
-  `Quadrature.legendreLobattoWeight_le_of_near_one` — the Christoffel-function bound on the
-  weights and the Legendre–Gauss–Lobatto weight `w_j ≤ 2048/N²` at a node within `81π²/(32 N²)`
-  of `1`.
+* `Polynomial.isSturmSolutionOn_legendreLiouville`: the Liouville normal form solves $u'' + qu = 0$
+  on $(0, \pi)$.
+* `Polynomial.exists_eval_legendre_cos_eq_zero`: every open interval of length at least
+  $\pi/(N + \frac12)$ in $(0, \pi)$ contains a zero of $\theta \mapsto L_N(\cos\theta)$.
+* `Polynomial.exists_eval_derivative_legendre_cos_eq_zero`: every open interval of length at least
+  $2\pi/(N + \frac12)$ in $(0, \pi)$ contains a zero of $\theta \mapsto L_N'(\cos\theta)$.
+* `Polynomial.exists_eval_derivative_legendre_eq_zero_near_one`: for $N \ge 2$ there is a zero $t$
+  of $L_N'$ with $1 - 81\pi^2/(32N^2) < t < 1$.
+* `Polynomial.abs_eval_derivative_legendre_le`: $|L_k'(x)| \le k^2$ on $[-1, 1]$.
+* `Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure`: the Christoffel-function bound
+  $w_j\, p(x_j)^2 \le \int p^2\,d\mu$ on the weights of a rule with nonnegative weights.
+* `Quadrature.legendreLobattoWeight_le_of_near_one`: the Legendre–Gauss–Lobatto weight at a node
+  within $81\pi^2/(32N^2)$ of $1$ is at most $2048/N^2$.
 
-## References
+## Proof outline
 
-Szegő, *Orthogonal Polynomials*, §4.7 (4.7.10) and §6.3; [quarteroni2000numerical] §10.4, §13.3.1.
+The potential $q$ exceeds $(N + \frac12)^2$. Sturm comparison of $u$ with
+$\sin((N + \frac12)(\theta - a))$ (`IsSturmSolutionOn.exists_zero_Ioo_of_sq_lt`) puts a zero of $u$
+in every interval of length $\pi/(N + \frac12)$. Two zeros of $L_N$ in an interval of length
+$2\pi/(N + \frac12)$ give, by Rolle's theorem, a zero of $L_N'$ between them. The bound on the
+weight is the Christoffel-function bound with the test polynomial $K_M(\cdot, 1)$ of degree
+$M = \lfloor N/16 \rfloor$.
+
+## Implementation notes
+
+* $L_N$ is `Polynomial.legendre N`, defined by Rodrigues' formula.
+* The second-order equation is stated in first-order form by `IsSturmSolutionOn`, with
+  `Polynomial.legendreLiouvilleDeriv` as the derivative of $u$.
+* The functions of the Liouville normal form are defined on all of $\mathbb{R}$ but are used only on
+  $(0, \pi)$. Where $\sin\theta \le 0$, Lean's conventions $\sqrt{s} = 0$ for $s \le 0$ and
+  $1/0 = 0$ apply.
 -/
 
 open MeasureTheory Real Set
@@ -72,45 +86,65 @@ variable (N : ℕ)
 
 /-! ### The Liouville normal form of the Legendre equation -/
 
-/-- **The Liouville normal form of the Legendre polynomial**: `u(θ) = √(sin θ) · L_N(cos θ)`. -/
+/-- The **Liouville normal form** of the Legendre polynomial $L_N$ is the function
+$$u(\theta) = \sqrt{\sin\theta}\; L_N(\cos\theta).$$
+
+It is used on $(0, \pi)$, where $\sin\theta > 0$. Where $\sin\theta \le 0$, the Lean square root
+gives $\sqrt{\sin\theta} = 0$, so $u(\theta) = 0$. -/
 noncomputable def legendreLiouville (θ : ℝ) : ℝ :=
   √(sin θ) * (legendre N).eval (cos θ)
 
-/-- The derivative of `legendreLiouville`:
-`u'(θ) = (cos θ / (2 √(sin θ))) L_N(cos θ) − √(sin θ) sin θ L_N'(cos θ)`. -/
+/-- The derivative of the Liouville normal form $u$ of $L_N$, given by the formula
+$$u'(\theta) = \frac{\cos\theta}{2\sqrt{\sin\theta}}\, L_N(\cos\theta) -
+  \sqrt{\sin\theta}\,\sin\theta\, L_N'(\cos\theta).$$
+
+The formula is the derivative of $u$ on $(0, \pi)$ (`Polynomial.hasDerivAt_legendreLiouville`).
+Where $\sin\theta \le 0$, the Lean conventions $\sqrt{s} = 0$ for $s \le 0$ and $1/0 = 0$ give
+the value $0$. -/
 noncomputable def legendreLiouvilleDeriv (θ : ℝ) : ℝ :=
   cos θ / (2 * √(sin θ)) * (legendre N).eval (cos θ) -
     √(sin θ) * sin θ * (derivative (legendre N)).eval (cos θ)
 
-/-- The potential of the Liouville normal form: `q(θ) = (N + ½)² + 1/(4 sin² θ)`. -/
+/-- The potential of the Liouville normal form of $L_N$:
+$$q(\theta) = \bigl(N + \tfrac12\bigr)^2 + \frac{1}{4\sin^2\theta}.$$
+
+At the zeros of $\sin\theta$, the Lean convention $1/0 = 0$ gives $q(\theta) = (N + \frac12)^2$. -/
 noncomputable def legendreLiouvillePotential (θ : ℝ) : ℝ :=
   ((N : ℝ) + 1 / 2) ^ 2 + 1 / (4 * sin θ ^ 2)
 
 variable {N}
 
-/-- The derivative of `√(sin θ)` on `(0, π)`. -/
+/-- The derivative of $\theta \mapsto \sqrt{\sin\theta}$ at $\theta \in (0, \pi)$ is
+$\cos\theta / (2\sqrt{\sin\theta})$. -/
 private theorem hasDerivAt_sqrt_sin {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
     HasDerivAt (fun θ => √(sin θ)) (1 / (2 * √(sin θ)) * cos θ) θ :=
   (Real.hasDerivAt_sqrt (sin_pos_of_mem_Ioo hθ).ne').comp θ (Real.hasDerivAt_sin θ)
 
-/-- The derivative of `p(cos θ)`. -/
+/-- The derivative of $\theta \mapsto p(\cos\theta)$ is $-p'(\cos\theta)\sin\theta$. -/
 private theorem hasDerivAt_eval_cos (p : ℝ[X]) (θ : ℝ) :
     HasDerivAt (fun θ => p.eval (cos θ)) ((derivative p).eval (cos θ) * -sin θ) θ :=
   (p.hasDerivAt (cos θ)).comp θ (Real.hasDerivAt_cos θ)
 
-/-- `u' = legendreLiouvilleDeriv` on `(0, π)`. -/
+/-- For $\theta \in (0, \pi)$, the Liouville normal form $u(\theta) = \sqrt{\sin\theta}\,
+L_N(\cos\theta)$ has the derivative
+$$u'(\theta) = \frac{\cos\theta}{2\sqrt{\sin\theta}}\, L_N(\cos\theta) -
+  \sqrt{\sin\theta}\,\sin\theta\, L_N'(\cos\theta),$$
+which is `Polynomial.legendreLiouvilleDeriv`. -/
 theorem hasDerivAt_legendreLiouville {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
     HasDerivAt (legendreLiouville N) (legendreLiouvilleDeriv N θ) θ := by
   refine ((hasDerivAt_sqrt_sin hθ).mul (hasDerivAt_eval_cos (legendre N) θ)).congr_deriv ?_
   unfold legendreLiouvilleDeriv
   ring
 
-/-- **The Legendre equation in Liouville normal form**: on `(0, π)`,
-`u'' = −((N + ½)² + 1/(4 sin² θ)) u` for `u(θ) = √(sin θ) L_N(cos θ)`. With `r = √(sin θ)`,
-`c = cos θ`, the second derivative of `u = r L_N(c)` is
-`−(2r⁴ + c²) L/(4r³) − 2 r c L' + r⁵ L''`, and `c² = 1 − r⁴` together with the Legendre equation
-`(c² − 1) L'' + 2c L' = N(N+1) L` (`Polynomial.legendre_ode`) turn it into
-`−((N + ½)² + 1/(4r⁴)) r L`. -/
+/-- The **Legendre equation in Liouville normal form**. For $\theta \in (0, \pi)$, the function $u'$
+of `Polynomial.legendreLiouvilleDeriv` has the derivative
+$$u''(\theta) = -\Bigl(\bigl(N + \tfrac12\bigr)^2 + \frac{1}{4\sin^2\theta}\Bigr)\, u(\theta),$$
+where $u(\theta) = \sqrt{\sin\theta}\, L_N(\cos\theta)$.
+
+Write $r = \sqrt{\sin\theta}$ and $c = \cos\theta$. The second derivative of $u = r L_N(c)$ is
+$-(2r^4 + c^2) L_N(c)/(4r^3) - 2rc\, L_N'(c) + r^5 L_N''(c)$. The identity $c^2 = 1 - r^4$ and
+the Legendre equation $(c^2 - 1) L_N''(c) + 2c L_N'(c) = N(N+1) L_N(c)$
+(`Polynomial.legendre_ode`) turn this into $-((N + \frac12)^2 + 1/(4r^4))\, r L_N(c)$. -/
 theorem hasDerivAt_legendreLiouvilleDeriv {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
     HasDerivAt (legendreLiouvilleDeriv N)
       (-(legendreLiouvillePotential N θ * legendreLiouville N θ)) θ := by
@@ -143,15 +177,20 @@ theorem hasDerivAt_legendreLiouvilleDeriv {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
   field_simp
   linear_combination (-4 * L + 16 * r ^ 4 * L'') * hcs + (-16 * r ^ 4) * hode
 
-/-- **`u = √(sin θ) L_N(cos θ)` solves `u'' + ((N + ½)² + 1/(4 sin² θ)) u = 0` on `(0, π)`.**
+/-- The Liouville normal form $u(\theta) = \sqrt{\sin\theta}\, L_N(\cos\theta)$ solves
+$$u'' + \Bigl(\bigl(N + \tfrac12\bigr)^2 + \frac{1}{4\sin^2\theta}\Bigr) u = 0 \quad \text{on }
+  (0, \pi).$$
+This is equation (4.7.10) of Szegő, *Orthogonal Polynomials*.
 
-Reference: Szegő, *Orthogonal Polynomials*, (4.7.10). -/
+The equation is stated in first-order form by `IsSturmSolutionOn`, with the potential
+`Polynomial.legendreLiouvillePotential` and the derivative `Polynomial.legendreLiouvilleDeriv`. -/
 theorem isSturmSolutionOn_legendreLiouville :
     IsSturmSolutionOn (legendreLiouvillePotential N) (legendreLiouville N)
       (legendreLiouvilleDeriv N) (Ioo 0 π) :=
   ⟨fun _ hθ => hasDerivAt_legendreLiouville hθ, fun _ hθ => hasDerivAt_legendreLiouvilleDeriv hθ⟩
 
-/-- The potential of the Liouville normal form exceeds `(N + ½)²` on `(0, π)`. -/
+/-- For $\theta \in (0, \pi)$, the potential of the Liouville normal form exceeds $(N + \frac12)^2$:
+$(N + \frac12)^2 < (N + \frac12)^2 + 1/(4\sin^2\theta)$. -/
 theorem sq_lt_legendreLiouvillePotential {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
     ((N : ℝ) + 1 / 2) ^ 2 < legendreLiouvillePotential N θ := by
   have hs : 0 < sin θ := sin_pos_of_mem_Ioo hθ
@@ -159,13 +198,15 @@ theorem sq_lt_legendreLiouvillePotential {θ : ℝ} (hθ : θ ∈ Ioo 0 π) :
   have : 0 < 1 / (4 * sin θ ^ 2) := by positivity
   linarith
 
-/-! ### The zeros of `L_N(cos θ)` -/
+/-! ### The zeros of $L_N(\cos\theta)$ -/
 
-/-- **The zeros of `L_N(cos θ)` are at most `π/(N + ½)` apart**: every open interval
-`(a, b) ⊆ (0, π)` of length at least `π/(N + ½)` contains a zero of `θ ↦ L_N(cos θ)`. Sturm
-comparison of the Liouville normal form with `sin ((N + ½)(θ − a))`.
+/-- Let $0 < a$ and $b < \pi$ with $b - a \ge \pi/(N + \frac12)$. Then there is $\theta \in (a, b)$
+with $L_N(\cos\theta) = 0$. So, in the variable $\theta$, the zeros of $L_N$ are at most
+$\pi/(N + \frac12)$ apart. This is the Legendre case of Theorem 6.3.2 of Szegő, *Orthogonal
+Polynomials*.
 
-Reference: Szegő, *Orthogonal Polynomials*, Theorem 6.3.2 (the Legendre case). -/
+The proof is the Sturm comparison `IsSturmSolutionOn.exists_zero_Ioo_of_sq_lt` of the Liouville
+normal form with $\sin((N + \frac12)(\theta - a))$. -/
 theorem exists_eval_legendre_cos_eq_zero {a b : ℝ} (ha : 0 < a) (hb : b < π)
     (hab : π / ((N : ℝ) + 1 / 2) ≤ b - a) :
     ∃ θ ∈ Ioo a b, (legendre N).eval (cos θ) = 0 := by
@@ -181,10 +222,13 @@ theorem exists_eval_legendre_cos_eq_zero {a b : ℝ} (ha : 0 < a) (hb : b < π)
 
 /-! ### The Gauss–Lobatto nodes -/
 
-/-- **The zeros of `L_N'(cos θ)` — the interior Gauss–Lobatto nodes — are at most `2π/(N + ½)`
-apart in `θ`**: every open interval `(a, b) ⊆ (0, π)` of length at least `2π/(N + ½)` contains a
-zero of `θ ↦ L_N'(cos θ)`. Two zeros of `L_N(cos ·)` in `(a, b)`, one in each half, and Rolle's
-theorem for `L_N` between the corresponding points `cos θ₂ < cos θ₁`. -/
+/-- Let $0 < a$ and $b < \pi$ with $b - a \ge 2\pi/(N + \frac12)$. Then there is $\theta \in (a, b)$
+with $L_N'(\cos\theta) = 0$. The zeros of $L_N'$ are the interior Gauss–Lobatto nodes, so in the
+variable $\theta$ these nodes are at most $2\pi/(N + \frac12)$ apart.
+
+By `Polynomial.exists_eval_legendre_cos_eq_zero`, each half of $(a, b)$ contains a zero of
+$\theta \mapsto L_N(\cos\theta)$, say $\theta_1 < \theta_2$. Rolle's theorem for $L_N$ on
+$[\cos\theta_2, \cos\theta_1]$ gives the zero of $L_N'$. -/
 theorem exists_eval_derivative_legendre_cos_eq_zero {a b : ℝ} (ha : 0 < a) (hb : b < π)
     (hab : 2 * (π / ((N : ℝ) + 1 / 2)) ≤ b - a) :
     ∃ θ ∈ Ioo a b, (derivative (legendre N)).eval (cos θ) = 0 := by
@@ -213,9 +257,11 @@ theorem exists_eval_derivative_legendre_cos_eq_zero {a b : ℝ} (ha : 0 < a) (hb
       _ = θ₂ := arccos_cos (by linarith) hθ₂π
       _ < b := hθ₂.2
 
-/-- **The Gauss–Lobatto node nearest to `1`, in `θ`-form**: for `N ≥ 2` there is a zero of
-`L_N'(cos θ)` with `0 < θ < 9π/(4N + 2)`, from
-`Polynomial.exists_eval_derivative_legendre_cos_eq_zero` on `(π/(4N + 2), 9π/(4N + 2))`. -/
+/-- For $N \ge 2$ there is $\theta$ with $0 < \theta < 9\pi/(4N + 2)$ and $L_N'(\cos\theta) = 0$.
+This locates, in the variable $\theta$, the Gauss–Lobatto node nearest to $1$.
+
+The proof applies `Polynomial.exists_eval_derivative_legendre_cos_eq_zero` on the interval
+$(\pi/(4N + 2), 9\pi/(4N + 2))$. -/
 theorem exists_eval_derivative_legendre_cos_eq_zero_lt (hN : 2 ≤ N) :
     ∃ θ, 0 < θ ∧ θ < 9 * π / (4 * (N : ℝ) + 2) ∧ (derivative (legendre N)).eval (cos θ) = 0 := by
   have hN' : (2 : ℝ) ≤ N := by exact_mod_cast hN
@@ -231,12 +277,16 @@ theorem exists_eval_derivative_legendre_cos_eq_zero_lt (hN : 2 ≤ N) :
     (a := 1 / 4 * (π / m)) (b := 9 / 4 * (π / m)) (by positivity) hb (by linarith)
   exact ⟨θ, by linarith [hθ.1], by rw [h9]; exact hθ.2, h⟩
 
-/-- **The Gauss–Lobatto node nearest to `1` is within `81π²/(32 N²)` of it**: for `N ≥ 2` there is a
-zero `t` of `L_N'` with `1 − 81π²/(32 N²) < t < 1`. From the `θ`-form
-`θ < 9π/(4N + 2) < 9π/(4N)` and `1 − cos θ ≤ θ²/2` (`Real.one_sub_sq_div_two_le_cos`).
+/-- For $N \ge 2$ there is a zero $t$ of $L_N'$ with
+$$1 - \frac{81\pi^2}{32N^2} < t < 1.$$
+So the Gauss–Lobatto node nearest to $1$ lies within $81\pi^2/(32N^2)$ of $1$. The lower bound
+$\lambda_{\max} \ge cN^4$ for the pseudo-spectral stiffness matrix ([quarteroni2000numerical],
+§13.3.1) needs this location of the node.
 
-This is the node location the lower eigenvalue bound of the pseudo-spectral stiffness matrix
-needs ([quarteroni2000numerical] §13.3.1, `λ_max ≥ c N⁴`). -/
+The proof takes $t = \cos\theta$ with $\theta$ from
+`Polynomial.exists_eval_derivative_legendre_cos_eq_zero_lt`, so that
+$\theta < 9\pi/(4N + 2) < 9\pi/(4N)$, and uses $1 - \cos\theta \le \theta^2/2$
+(`Real.one_sub_sq_div_two_le_cos`). -/
 theorem exists_eval_derivative_legendre_eq_zero_near_one (hN : 2 ≤ N) :
     ∃ t, (derivative (legendre N)).eval t = 0 ∧
       1 - 81 * π ^ 2 / (32 * (N : ℝ) ^ 2) < t ∧ t < 1 := by
@@ -258,18 +308,25 @@ theorem exists_eval_derivative_legendre_eq_zero_near_one (hN : 2 ≤ N) :
       nlinarith [pi_pos]
     simpa using cos_lt_cos_of_nonneg_of_le_pi le_rfl hθπ.le hθ0
 
-/-! ### The Gauss–Lobatto weights near the endpoints
+/-!
+### The Gauss–Lobatto weights near the endpoints
 
-The weight of a positive quadrature rule exact on `ℙ_{2n-1}` at a node `x_j` is at most
-`∫ p² / p(x_j)²` for every `p ∈ ℙ_{n-1}` (`Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure`),
-the Christoffel-function bound. At a node within `81π²/(32 N²)` of `1` the test polynomial
-`K_M(x, 1) = ∑_{k ≤ M} ((2k + 1)/2) L_k(x)` with `M = ⌊N/16⌋` has `∫ K_M² = (M + 1)²/2` (Parseval)
-and `K_M(x_j, 1) ≥ (M + 1)²/4`, because `L_k(x_j) ≥ 1 − k²(1 − x_j) ≥ 1/2` for `k ≤ M` by the
-endpoint bound `|L_k'| ≤ k²`; hence `w_j ≤ 8/(M + 1)² < 2048/N²`
-(`Quadrature.legendreLobattoWeight_le_of_near_one`). -/
+Let a quadrature rule with nonnegative weights be exact on $\mathbb{P}_{2n-1}$. Its weight at a node
+$x_j$ is at most $\int p^2 / p(x_j)^2$ for every $p \in \mathbb{P}_{n-1}$
+(`Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure`). This is the Christoffel-function bound. At
+a node within $81\pi^2/(32N^2)$ of $1$, take the test polynomial $K_M(x, 1) = \sum_{k \le M}
+\frac{2k+1}{2} L_k(x)$ with $M = \lfloor N/16 \rfloor$. By Parseval's identity,
+$\int_{-1}^1 K_M^2 = (M+1)^2/2$. The endpoint bound $|L_k'| \le k^2$ gives
+$L_k(x_j) \ge 1 - k^2(1 - x_j) \ge 1/2$ for $k \le M$, so $K_M(x_j, 1) \ge (M+1)^2/4$. Hence
+$w_j \le 8/(M+1)^2 < 2048/N^2$ (`Quadrature.legendreLobattoWeight_le_of_near_one`).
+-/
 
-/-- **`|L_k'(x)| ≤ k²` on `[-1, 1]`**: `L_k' = ∑_{j < k} (L_k')^_j L_j` with `|(L_k')^_j| ≤ 2j + 1`
-(`Polynomial.abs_legendreCoeff_derivative_legendre_le`) and `|L_j| ≤ 1`. -/
+/-- For every $k \in \mathbb{N}$ and $x \in [-1, 1]$,
+$$|L_k'(x)| \le k^2.$$
+
+The proof expands $L_k' = \sum_{j < k} c_j L_j$ in Legendre polynomials, with coefficients
+$|c_j| \le 2j + 1$ (`Polynomial.abs_legendreCoeff_derivative_legendre_le`), and uses
+$|L_j| \le 1$ on $[-1, 1]$. -/
 theorem abs_eval_derivative_legendre_le (k : ℕ) {x : ℝ} (hx : x ∈ Icc (-1 : ℝ) 1) :
     |(derivative (legendre k)).eval x| ≤ (k : ℝ) ^ 2 := by
   rcases Nat.eq_zero_or_pos k with rfl | hk
@@ -297,7 +354,9 @@ theorem abs_eval_derivative_legendre_le (k : ℕ) {x : ℝ} (hx : x ∈ Icc (-1 
     _ = ((m : ℝ) + 1) ^ 2 := sum_range_two_mul_add_one m
     _ = ((m + 1 : ℕ) : ℝ) ^ 2 := by push_cast; ring
 
-/-- **`L_k(t) ≥ 1 − k²(1 − t)` on `[-1, 1]`**: `L_k(1) = 1` and `|L_k'| ≤ k²`. -/
+/-- For every $k \in \mathbb{N}$ and $t \in [-1, 1]$,
+$$L_k(t) \ge 1 - k^2(1 - t).$$
+This follows from $L_k(1) = 1$ and $|L_k'| \le k^2$ on $[-1, 1]$. -/
 theorem one_sub_sq_mul_le_eval_legendre (k : ℕ) {t : ℝ} (ht : t ∈ Icc (-1 : ℝ) 1) :
     1 - (k : ℝ) ^ 2 * (1 - t) ≤ (legendre k).eval t := by
   have hftc : ∫ x in t..1, (derivative (legendre k)).eval x =
@@ -313,19 +372,22 @@ theorem one_sub_sq_mul_le_eval_legendre (k : ℕ) {t : ℝ} (ht : t ∈ Icc (-1 
   rw [legendre_eval_one] at hftc
   linarith
 
-/-- **The Christoffel–Darboux kernel at `1`**, `K_M(x, 1) = ∑_{k ≤ M} ((2k + 1)/2) L_k(x)`: the
-polynomial of degree `M` concentrated at `x = 1` on a layer of width `M⁻²`. -/
+/-- The **Christoffel–Darboux kernel at $1$** of degree $M$ for the Legendre polynomials:
+$$K_M(x, 1) = \sum_{k=0}^{M} \frac{2k+1}{2}\, L_k(x).$$
+It is a polynomial of degree at most $M$ that is concentrated near $x = 1$, on a layer of width
+of order $M^{-2}$. -/
 noncomputable def legendreKernelOne (M : ℕ) : ℝ[X] :=
   ∑ k ∈ Finset.range (M + 1), C ((2 * (k : ℝ) + 1) / 2) * legendre k
 
-/-- `K_M(·, 1)` has degree at most `M`. -/
+/-- The kernel $K_M(\cdot, 1)$ has degree at most $M$. -/
 theorem natDegree_legendreKernelOne_le (M : ℕ) : (legendreKernelOne M).natDegree ≤ M := by
   refine (natDegree_sum_le_of_forall_le _ _ fun k hk => ?_)
   refine (natDegree_C_mul_le _ _).trans ?_
   rw [natDegree_legendre]
   exact Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
 
-/-- The Legendre coefficients of `K_M(·, 1)` are `(2k + 1)/2` for `k ≤ M`. -/
+/-- For $k \le M$, the $k$-th Legendre coefficient of $K_M(\cdot, 1)$ is $(2k+1)/2$. The coefficient
+is `Polynomial.legendreCoeff`, that is, $\frac{2k+1}{2} \int_{-1}^1 K_M(x, 1)\, L_k(x)\,dx$. -/
 theorem legendreCoeff_legendreKernelOne (M : ℕ) {k : ℕ} (hk : k ∈ Finset.range (M + 1)) :
     legendreCoeff (legendreKernelOne M) k = (2 * (k : ℝ) + 1) / 2 := by
   rw [legendreKernelOne, legendreCoeff_sum, Finset.sum_eq_single k]
@@ -334,7 +396,10 @@ theorem legendreCoeff_legendreKernelOne (M : ℕ) {k : ℕ} (hk : k ∈ Finset.r
     rw [legendreCoeff_C_mul, legendreCoeff_legendre, ite_eq_right hjk, mul_zero]
   · intro h; exact absurd hk h
 
-/-- **`∫_{-1}^1 K_M(x, 1)² dx = (M + 1)²/2`**, by Parseval. -/
+/-- The kernel $K_M(\cdot, 1)$ satisfies
+$$\int_{-1}^{1} K_M(x, 1)^2\,dx = \frac{(M+1)^2}{2}.$$
+This is Parseval's identity: $\int_{-1}^1 L_k^2 = 2/(2k+1)$, and $\sum_{k \le M}
+\bigl(\frac{2k+1}{2}\bigr)^2 \frac{2}{2k+1} = (M+1)^2/2$. -/
 theorem integral_legendreKernelOne_sq (M : ℕ) :
     ∫ x in (-1 : ℝ)..1, (legendreKernelOne M).eval x ^ 2 = ((M : ℝ) + 1) ^ 2 / 2 := by
   rw [integral_sq_eq_sum_legendreCoeff (natDegree_legendreKernelOne_le M)]
@@ -344,8 +409,9 @@ theorem integral_legendreKernelOne_sq (M : ℕ) :
   have : (2 * (k : ℝ) + 1) ≠ 0 := by positivity
   field_simp
 
-/-- **`K_M(t, 1) ≥ (M + 1)²/4`** when `k²(1 − t) ≤ 1/2` for every `k ≤ M`, since then every
-`L_k(t) ≥ 1/2`. -/
+/-- Let $t \in [-1, 1]$ with $k^2(1 - t) \le 1/2$ for every $k \le M$. Then
+$$K_M(t, 1) \ge \frac{(M+1)^2}{4},$$
+because $L_k(t) \ge 1/2$ for every $k \le M$ by `Polynomial.one_sub_sq_mul_le_eval_legendre`. -/
 theorem le_eval_legendreKernelOne (M : ℕ) {t : ℝ} (ht : t ∈ Icc (-1 : ℝ) 1)
     (hsmall : ∀ k ≤ M, (k : ℝ) ^ 2 * (1 - t) ≤ 1 / 2) :
     ((M : ℝ) + 1) ^ 2 / 4 ≤ (legendreKernelOne M).eval t := by
@@ -367,9 +433,14 @@ namespace Quadrature
 
 open OrthogonalPolynomial Polynomial
 
-/-- **The Christoffel-function bound on the weights of a positive rule**: if the rule with
-nonnegative weights is exact to degree `d` and `p² ∈ ℙ_d`, then `w_j p(x_j)² ≤ ∫ p² ∂μ`, one term
-of the nonnegative sum `∑ w_i p(x_i)² = ∫ p²`. -/
+/-- The **Christoffel-function bound** on the weights of a rule with nonnegative weights. Let $\mu$
+be a measure on $\mathbb{R}$, and let a rule with $n$ nodes $x_i$ and weights $w_i \ge 0$ be
+exact to degree $d$ for $\mu$. If $p$ is a real polynomial with $\deg(p^2) \le d$, then for
+every node $x_j$
+$$w_j\, p(x_j)^2 \le \int p^2\,d\mu.$$
+
+Exactness gives $\sum_i w_i\, p(x_i)^2 = \int p^2\,d\mu$, and $w_j\, p(x_j)^2$ is one term of
+this sum of nonnegative terms. Exactness is `Quadrature.IsExactOnMeasure`. -/
 theorem weight_mul_eval_sq_le_of_isExactOnMeasure {μ : MeasureTheory.Measure ℝ} {n d : ℕ}
     {w x : Fin n → ℝ} (hw : ∀ i, 0 ≤ w i) (hexact : IsExactOnMeasure μ w x d) {p : ℝ[X]}
     (hp : (p * p).degree ≤ d) (j : Fin n) :
@@ -381,11 +452,21 @@ theorem weight_mul_eval_sq_le_of_isExactOnMeasure {μ : MeasureTheory.Measure �
   exact Finset.single_le_sum (f := fun i => w i * (p.eval (x i) * p.eval (x i)))
     (fun i _ => mul_nonneg (hw i) (mul_self_nonneg _)) (Finset.mem_univ j)
 
-/-- **The Legendre–Gauss–Lobatto weight at a node within `81π²/(32 N²)` of `1` is at most
-`2048/N²`.** The Christoffel-function bound with the test polynomial `K_M(·, 1)`, `M = ⌊N/16⌋`:
-`w_j ≤ ∫ K_M² / K_M(x_j)² ≤ ((M + 1)²/2) / ((M + 1)²/4)² = 8/(M + 1)² < 2048/N²`, the
-hypothesis `k²(1 − x_j) ≤ (N/16)² · 81π²/(32 N²) ≤ 1/2` (`π ≤ 4`) of
-`Polynomial.le_eval_legendreKernelOne` holding for every `k ≤ M`. -/
+/-- Let $N \ge 1$, and let a rule with $N + 1$ nodes $x_i$ and weights $w_i \ge 0$ be exact to
+degree $2N - 1$ for the Legendre weight, which is Lebesgue measure on $(-1, 1)$. If a node
+$x_j \in [-1, 1]$ satisfies $1 - x_j \le 81\pi^2/(32N^2)$, then
+$$w_j \le \frac{2048}{N^2}.$$
+The Legendre–Gauss–Lobatto rule is such a rule, so this bounds its weight at the node nearest to
+$1$ (`Polynomial.exists_eval_derivative_legendre_eq_zero_near_one`).
+
+The proof is the Christoffel-function bound
+`Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure` with the test polynomial $K_M(\cdot, 1)$,
+$M = \lfloor N/16 \rfloor$:
+$$w_j \le \frac{\int K_M^2}{K_M(x_j, 1)^2} \le \frac{(M+1)^2/2}{\bigl((M+1)^2/4\bigr)^2} =
+  \frac{8}{(M+1)^2} < \frac{2048}{N^2}.$$
+The hypothesis of `Polynomial.le_eval_legendreKernelOne` holds for every $k \le M$, because
+$k^2(1 - x_j) \le (N/16)^2 \cdot 81\pi^2/(32N^2) \le 1/2$ by $\pi \le 4$. The Legendre weight is
+`OrthogonalPolynomial.legendreMeasure`. -/
 theorem legendreLobattoWeight_le_of_near_one {N : ℕ} (hN : 1 ≤ N) {x w : Fin (N + 1) → ℝ}
     (hw : ∀ i, 0 ≤ w i) (hexact : IsExactOnMeasure legendreMeasure w x (2 * N - 1))
     (j : Fin (N + 1)) (hxj : x j ∈ Icc (-1 : ℝ) 1)

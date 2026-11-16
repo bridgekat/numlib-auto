@@ -8,13 +8,19 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDA
 /-!
 # Existence of ARqpIDA runs
 
-In finite dimension, ARqpIDA iterations ([cartis2022evaluation], Algorithm 13.1.2) exist from
-every admissible state, for every deterministic oracle satisfying the error model (13.1.2):
+In finite dimension, iterations of ARqpIDA (Algorithm 13.1.2 of [cartis2022evaluation]) can be
+performed from every admissible state, for every deterministic oracle that satisfies the error model
+(13.1.2) $\|\overline{\nabla}^i f(x) - \nabla^i f(x)\| \le \kappa_{\nabla,i} h_i$. The halving loop
+of Step 1 stops, Step 2 can use a global minimizer of the regularized model, and the resulting
+sequences satisfy the radii control (13.1.69)–(13.1.70). The setting is the whole space $E$, without
+constraints.
 
-* `exists_arqpDA_halving`: the halving loop of Step 1 terminates (existence half of
-  Lemma 13.1.11);
-* `exists_arqpDA_steps`: sequences all of whose iterations are ARqpIDA steps on the whole space
-  satisfying the radii control (Step 2 uses a global minimizer of the regularized model).
+## Main results
+
+* `Optimization.exists_arqpDA_halving`: the halving loop of Step 1 stops (the existence half of
+  Lemma 13.1.11).
+* `Optimization.exists_arqpDA_steps`: from every admissible state there are sequences all of whose
+  iterations are ARqpIDA iterations on $E$ that satisfy the radii control.
 -/
 
 open Set Metric Finset
@@ -31,11 +37,25 @@ section ARExistence
 variable [FiniteDimensional ℝ E]
 
 open Classical in
-/-- **The halving loop of Step 1 of ARqpIDA terminates** ([cartis2022evaluation], Lemma 13.1.11,
-existence half): for inexact derivatives with `‖D_ℓ‖ ≤ L̄` (`ℓ ∈ [1, p]`), `σ ≥ 0`, `ε_j > 0`
-and a radius `δ ∈ (0, 1]`, halving `δ` while (13.1.53) and (13.1.54) both fail stops at a radius
-`δ₁ ∈ (0, δ]` with a displacement `d` satisfying (13.1.52) and (13.1.53) or (13.1.54), and if
-`δ₁ < δ` with the witnesses of the last and of the first halving. -/
+/-- The halving loop of Step 1 of ARqpIDA stops. Let $E$ be finite-dimensional, let $D$ be
+derivative data with $\|D_\ell\| \le \overline{L}$ for $\ell \in [1, p]$ and $\overline{L} > 0$,
+let $\sigma \ge 0$, $j \le p$, $0 < \varsigma \le 1$, $e > 0$ and $\delta \in (0, 1]$. Write
+$m(d) = T_p(d) + \sigma\|d\|^{p+1}/(p+1)!$ for the regularized model of $D$ and $\Delta T_j$ for
+the order-$j$ Taylor decrement of $D$. Then there are a radius $\delta_1$ and a displacement $d$
+such that:
+* $0 < \delta_1 \le \delta$ and $\delta_1 = \delta/2^m$ for some $m \in \mathbb{N}$;
+* $d$ is a $\varsigma$-approximate optimality displacement of $\Delta T_j$ for the radius
+  $\delta_1$ (13.1.52);
+* the test (13.1.53) $\Delta T_j(d) \le \varsigma e\delta_1^j/(2\,j!)$ or the condition
+  (13.1.54) $m(0) - m(d) \ge \varsigma e\delta_1^j/(4\,j!)$ holds;
+* if $\delta_1 < \delta$, then $2\delta_1 \le \delta$, some $d'$ with $\|d'\| \le 2\delta_1$ has
+  $\Delta T_j(d') > \varsigma e(2\delta_1)^j/(2\,j!)$ and $m(0) - m(d') < \varsigma
+  e(2\delta_1)^j/(4\,j!)$ (the last halving), and some $d_0$ with $\|d_0\| \le \delta$ has
+  $\Delta T_j(d_0) > \varsigma e\delta^j/(2\,j!)$ (the first halving).
+
+This is the existence half of Lemma 13.1.11 of [cartis2022evaluation]. The number $e$ stands for
+the tolerance $\varepsilon_j$, and the result gives the data of `Optimization.ARqpStep1` at one
+order. -/
 theorem exists_arqpDA_halving {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ Lb : ℝ} (hσ : 0 ≤ σ)
     (hLb : 0 < Lb) (hD : ∀ ℓ ∈ Finset.Icc 1 p, ‖D ℓ‖ ≤ Lb) {j : ℕ} (hjp : j ≤ p)
     {ς e δ : ℝ} (hς : 0 < ς) (hς1 : ς ≤ 1) (he : 0 < e) (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
@@ -97,7 +117,8 @@ theorem exists_arqpDA_halving {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} 
   exact ⟨hrle m', ⟨d m', (hd m').norm_le, hp', ht'⟩, d 0, (hd 0).norm_le.trans (by simp [hr]),
     by simpa [hr] using hp0⟩
 
-/-- The data of one ARqpIDA iteration. -/
+/-- The data of one ARqpIDA iteration: the iterate, the weight, the three families of radii, the
+accuracies, the Step-1 displacements, the order $j_k$, the step and the accuracy-improving flag. -/
 private structure ARState (E : Type*) where
   x : E
   σ : ℝ
@@ -113,50 +134,53 @@ private structure ARState (E : Type*) where
 variable (P : ARqpIDAParams) (ε : ℕ → ℝ) (O : E → (ℕ → ℝ) → FormalMultilinearSeries ℝ E ℝ)
   (Lb : ℝ)
 
-/-- The Step-1.2 test (13.1.53) of a state. -/
+/-- The test (13.1.53) at order $j$ for a state, with the derivative data given by the oracle. -/
 private def arqpDAPassS (a : ARState E) (j : ℕ) : Prop :=
   (O a.x a.h).taylorDecrement j (a.dd j) ≤ P.ς * ε j * a.δ₁ j ^ j / j ! / 2
 
-/-- Step 2 of a state. -/
+/-- Step 2 of ARqpIDA for a state, as in `Optimization.ARqpStep2` on $E$ with the derivative data
+given by the oracle. -/
 private structure ARStep2S (a : ARState E) : Prop where
-  /-- See `ARqpStep2`. -/
+  /-- The order $j_k$ lies in $[1, q]$. -/
   jk_mem : a.jk ∈ Finset.Icc 1 P.q
-  /-- See `ARqpStep2`. -/
+  /-- The test (13.1.53) fails at the order $j_k$. -/
   not_pass : ¬ arqpDAPassS P ε O a a.jk
-  /-- See `ARqpStep2`. -/
+  /-- The test (13.1.53) holds at every order $j \in [1, q]$ with $j < j_k$. -/
   pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < a.jk → arqpDAPassS P ε O a j
-  /-- See `ARqpStep2`. -/
+  /-- The radii above $j_k$ are not changed in Step 1. -/
   radius_gt : ∀ j ∈ Finset.Icc 1 P.q, a.jk < j → a.δ₁ j = a.δ j
-  /-- See `ARqpStep2`. -/
+  /-- The condition (13.1.54) holds at $j_k$. -/
   model_dec : P.ς * ε a.jk * a.δ₁ a.jk ^ a.jk / a.jk ! / 4 ≤
     regularizedModel (O a.x a.h) P.p a.σ 0 - regularizedModel (O a.x a.h) P.p a.σ (a.dd a.jk)
-  /-- See `ARqpStep2`. -/
+  /-- The condition (13.1.55): the step decreases the model at least as much as $d_{k,j_k}$. -/
   dec_le : regularizedModel (O a.x a.h) P.p a.σ 0 - regularizedModel (O a.x a.h) P.p a.σ
       (a.dd a.jk) ≤
     regularizedModel (O a.x a.h) P.p a.σ 0 - regularizedModel (O a.x a.h) P.p a.σ a.s
-  /-- See `ARqpStep2`. -/
+  /-- Either (13.1.56) for a long step or (13.1.57) holds. -/
   radii : (1 ≤ ‖a.s‖ ∧ a.δs = a.δ₁) ∨ ∀ ℓ ∈ Finset.Icc 1 P.q, a.δs ℓ ∈ Set.Ioc 0 1 ∧
     ∃ dm, IsApproxMeasureStep
         ((ftaylorSeries ℝ (regularizedModel (O a.x a.h) P.p a.σ) a.s).taylorDecrement ℓ)
         (a.δs ℓ) {e | a.x + a.s + e ∈ (univ : Set E)} P.ς dm ∧
       (ftaylorSeries ℝ (regularizedModel (O a.x a.h) P.p a.σ) a.s).taylorDecrement ℓ dm ≤
         P.ς * P.θ * ε ℓ * a.δs ℓ ^ ℓ / ℓ !
-  /-- See `ARqpStep2`. -/
+  /-- The state is accuracy-improving if and only if the step is short and the accuracy test
+  (13.1.46) fails for some $i \in [1, p]$. -/
   acc_iff : a.acc ↔ ‖a.s‖ < 1 ∧ ∃ i ∈ Finset.Icc 1 P.p, P.κs * ‖a.s‖ ^ (P.p - i + 1) < a.h i
 
-/-- Steps 1–2 of a state, the invariants and the radii control. -/
+/-- Steps 1 and 2 of ARqpIDA for a state, the invariants of a run, and the radii control in the form
+of `Optimization.RadiiControl.of_unit_le_two`. -/
 private structure ARLocal (a : ARState E) : Prop where
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The weight satisfies $\sigma \ge \sigma_{\min}$. -/
   σ_ge : P.σmin ≤ a.σ
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The radii $\delta^{(0)}_j$ lie in $(0, 1]$ for $j \in [1, q]$. -/
   δ_mem : ∀ j ∈ Finset.Icc 1 P.q, 0 < a.δ j ∧ a.δ j ≤ 1
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The accuracies lie in $(0, \kappa_h]$ for $i \in [1, p]$. -/
   accuracy_mem : ∀ i ∈ Finset.Icc 1 P.p, 0 < a.h i ∧ a.h i ≤ P.κh
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The radii $\delta^{(1)}_j$ are positive for $j \in [1, q]$. -/
   radius_pos : ∀ j ∈ Finset.Icc 1 P.q, 0 < a.δ₁ j
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The radii satisfy $\delta^{(1)}_j \le \delta^{(0)}_j$ for $j \in [1, q]$. -/
   radius_le : ∀ j ∈ Finset.Icc 1 P.q, a.δ₁ j ≤ a.δ j
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The halving loop of Step 1, as in `Optimization.ARqpStep1`. -/
   halving : ∀ j ∈ Finset.Icc 1 P.q, a.δ₁ j < a.δ j → 2 * a.δ₁ j ≤ a.δ j ∧
     (∃ d', ‖d'‖ ≤ 2 * a.δ₁ j ∧ a.x + d' ∈ (univ : Set E) ∧
       P.ς * ε j * (2 * a.δ₁ j) ^ j / j ! / 2 < (O a.x a.h).taylorDecrement j d' ∧
@@ -164,21 +188,24 @@ private structure ARLocal (a : ARState E) : Prop where
         P.ς * ε j * (2 * a.δ₁ j) ^ j / j ! / 4) ∧
     ∃ d₀, ‖d₀‖ ≤ a.δ j ∧ a.x + d₀ ∈ (univ : Set E) ∧
       P.ς * ε j * a.δ j ^ j / j ! / 2 < (O a.x a.h).taylorDecrement j d₀
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The radii $\delta^{(1)}_j$ come from halving $\delta^{(0)}_j$. -/
   dyadic : ∀ j ∈ Finset.Icc 1 P.q, ∃ m : ℕ, a.δ₁ j = a.δ j / 2 ^ m
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- The Step-1 displacements satisfy (13.1.52). -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((O a.x a.h).taylorDecrement j)
     (a.δ₁ j) {e | a.x + e ∈ (univ : Set E)} P.ς (a.dd j)
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- If the test (13.1.53) holds at every order, the state is accuracy-improving. -/
   acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, arqpDAPassS P ε O a j) → a.acc
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- If the test (13.1.53) fails at some order, Step 2 holds. -/
   step2 : (∃ j ∈ Finset.Icc 1 P.q, ¬ arqpDAPassS P ε O a j) → ARStep2S P ε O a
-  /-- See `ARqpDAStep` and `RadiiControl`. -/
+  /-- After a trial iteration with a short step, the radii of Step 2 are $1$ at the orders
+  $j \le \min\{2, q\}$ and at least $\varsigma\theta\varepsilon_j/(24\max\{\overline{L},
+  \sigma\})$ at the orders $j \in [3, q]$. -/
   rc : ¬ a.acc → ‖a.s‖ < 1 → (∀ j ∈ Finset.Icc 1 (min 2 P.q), a.δs j = 1) ∧
     ∀ j ∈ Finset.Icc 3 P.q, P.ς * P.θ * ε j / (24 * max Lb a.σ) ≤ a.δs j
 
-/-- Steps 1–2 of ARqpIDA can be performed at every state satisfying the invariants, with the
-radii control (13.1.69)–(13.1.70). -/
+/-- Steps 1 and 2 of ARqpIDA, with the radii control (13.1.69)–(13.1.70), can be performed at every
+state that satisfies the invariants, when $\varepsilon \in (0, 1]^q$, $\overline{L} \ge 1$ and
+the oracle data are bounded by $\overline{L}$. -/
 private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hLb1 : 1 ≤ Lb)
     (hO : ∀ y h', (∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh) →
       ∀ ℓ ∈ Finset.Icc 1 P.p, ‖O y h' ℓ‖ ≤ Lb)
@@ -308,7 +335,8 @@ private theorem exists_arLocal (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.I
       exact ⟨h1, ⟨d', hd'n, mem_univ _, hd'T, hd'm⟩, d₀, hd₀n, mem_univ _, hd₀⟩
     · dsimp only; rw [Set.setOf_add_mem_univ]; exact (hH j hj).2.2.1
 
-/-- The transition of an ARqpIDA run from a state satisfying Steps 1–2. -/
+/-- From a state that satisfies Steps 1 and 2 there is a next state that satisfies them, such that
+the transition is an ARqpIDA iteration on $E$ that satisfies `Optimization.RadiiControl`. -/
 private theorem exists_arNext (f : E → ℝ) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
     (hLb1 : 1 ≤ Lb)
     (hO : ∀ y h', (∀ i ∈ Finset.Icc 1 P.p, 0 < h' i ∧ h' i ≤ P.κh) →
@@ -401,14 +429,22 @@ private theorem exists_arNext (f : E → ℝ) (hε : ∀ j ∈ Finset.Icc 1 P.q,
 
 variable {P ε}
 
-/-- **ARqpIDA iterations exist from any admissible state** ([cartis2022evaluation], existence part
-of Lemmas 13.1.11 and 13.1.12): under the smoothness hypothesis, for tolerances `ε ∈ (0, 1]^q`,
-oracle constants `κ_{∇,i} ≥ 0`, every deterministic oracle `O` satisfying (13.1.2) for all
-accuracies `h ∈ (0, κ_h]^p`, and a starting state (`x₀`, a weight `σ' ≥ σ_min`, radii `δ' ∈ (0,
-1]^q`, accuracies `h' ∈ (0, κ_h]^p`), there are sequences starting at that state all of whose
-iterations are ARqpIDA steps (`ARqpDAStep` on `X = univ`, with `D_k = O(x_k, h_k)`) satisfying
-the radii control (13.1.69)–(13.1.70). The initial state of `P` gives runs of ARqpIDA; other
-states allow continuing a run from any of its iterates. -/
+/-- ARqpIDA iterations exist from every admissible state. Let $E$ be finite-dimensional, and assume
+the smoothness hypothesis `LipschitzDerivsAnchored f univ univ 0 p L` with $L_j \ge 1$. Let
+$\varepsilon_j \in (0, 1]$ for $j \in [1, q]$ and $\kappa_{\nabla,i} \ge 0$ for $i \in [1, p]$,
+and let $O$ be a deterministic oracle that satisfies the error model (13.1.2), $\|O(y, h)_i -
+\nabla^i f(y)\| \le \kappa_{\nabla,i} h_i$ for $i \in [1, p]$, at every point $y$ and for all
+accuracies $h \in (0, \kappa_h]^p$. Let a starting state be given: a point $x_0$, a weight
+$\sigma' \ge \sigma_{\min}$, radii $\delta' \in (0, 1]^q$ and accuracies
+$h' \in (0, \kappa_h]^p$. Then there are sequences, starting at this state, with
+$h_k \in (0, \kappa_h]^p$ for every $k$, such that every iteration is an ARqpIDA iteration
+(`Optimization.ARqpDAStep` on $E$, with the derivative data $D_k = O(x_k, h_k)$ and the ratio
+(13.1.58)) and satisfies the radii control `Optimization.RadiiControl` with $\overline{L} =
+L_f + \kappa_{\nabla,\max}\kappa_h$. This is the existence part of Lemmas 13.1.11 and 13.1.12 of
+[cartis2022evaluation].
+
+The initial state of $P$ gives runs of ARqpIDA. Other starting states allow a run to continue
+from any of its iterates. Step 2 uses a global minimizer of the regularized model. -/
 theorem exists_arqpDA_steps {f : E → ℝ} {κg : ℕ → ℝ} {L : ℕ → ℝ}
     (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)

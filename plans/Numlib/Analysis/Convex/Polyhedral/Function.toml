@@ -5,15 +5,12 @@ id = 'PolyhedralFn'
 
 [[node]]
 id = 'PolyhedralFn.convexFn'
-desc = 'A polyhedral function is convex.'
 
 [[node]]
 id = 'PolyhedralFn.lowerSemicontinuous'
-desc = 'A polyhedral function is lower semicontinuous.'
 
 [[node]]
 id = 'PolyhedralFn.closedConvex'
-desc = 'A polyhedral function that never takes the bottom value is closed.'
 
 [[node]]
 id = 'PolyhedralFn.polyhedral_convexDom'

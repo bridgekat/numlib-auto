@@ -11,48 +11,80 @@ import Numlib.Krylov.OrthogonalPolynomials
 /-!
 # Quadratic forms, Gauss and Gauss–Radau quadrature through Lanczos
 
-Quadratic forms `⟪v, f(A) v⟫` of a symmetric operator are integrals against the discrete spectral
-measure `Krylov.spectralMeasure` of `(A, v)`, and the Lanczos process computes Gauss and
-Gauss–Radau rules for that measure ([golub2013matrix] §10.2, after Golub–Meurant;
-[meurant2006lanczos] §2 for the Gauss half). `Numlib/Krylov/OrthogonalPolynomials` already has
-the measure and the exactness of the `m`-point Gauss rule of the compression
-(`Lanczos.gauss_quadrature`); this module adds:
+Let $A$ be a symmetric operator on a finite-dimensional inner product space, and let $v$ be a
+vector. A quadratic form $\langle v, f(A) v \rangle$ is an integral $\int f \, d\mu_v$ against the
+discrete spectral measure $\mu_v$ of $(A, v)$ (`Krylov.spectralMeasure`), and the Lanczos process
+computes Gauss and Gauss–Radau quadrature rules for this measure ([golub2013matrix], §10.2, after
+Golub and Meurant; [meurant2006lanczos], §2, for the Gauss rule). The module
+`Numlib.Krylov.OrthogonalPolynomials` provides the measure and the exactness of the $m$-point Gauss
+rule of the compression of $A$ (`Lanczos.gauss_quadrature`). This module adds integrands that are
+not polynomials, the Golub–Welsch form of the Gauss rule, the Gauss–Radau rule through a modified
+Lanczos matrix, the remainders of both rules, and the two-sided bound
+$$G_m(f) \le \langle v, f(A) v \rangle \le GR_m(a)(f)$$
+for integrands whose derivatives of order $2m$ and $2m + 1$ have suitable signs.
 
-* **integrands that are not polynomials.** For a Hermitian matrix, `vᴴ f(A) v = ∫ f dμ_v` for
-  every `f : ℝ → ℝ`, with `f(A)` Mathlib's continuous functional calculus `cfc f A`
-  (`Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`, [golub2013matrix] (10.2.6)). The
-  backbone's measure is built from `LinearMap.IsSymmetric.eigenvectorBasis` of `toEuclideanLin A`,
-  Mathlib's matrix eigenbasis is its reindexing, and
-  `Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin` identifies the two sums.
-* **the Golub–Welsch form of the Gauss rule**: nodes the eigenvalues `θ_j` of `T_m`, weights `‖v‖²`
-  times the squared first components of its normalized eigenvectors
-  (`Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`; [golub2013matrix] Fact 3,
-  (10.2.12)). The proof interpolates `f` by a polynomial on the finitely many eigenvalues involved,
-  so only polynomial moments `⟪v, p(A_m) v⟫ = ‖v‖² (p(T_m))₀₀` have to be compared.
-* **Gauss–Radau through a modified Lanczos matrix** ([golub2013matrix] §10.2.5, Golub 1973): the
-  `(m+1) × (m+1)` matrix `Lanczos.radauTridiag` agrees with `T_{m+1}` except in its last diagonal
-  entry, `α̃ = a + β_{m−1}² ((T_m − a)⁻¹)_{m−1,m−1}`, which makes `a` an eigenvalue
-  (`Lanczos.radauTridiag_hasEigenvalue`); its rule integrates every polynomial of degree `≤ 2m`
-  exactly (`Lanczos.radau_quadrature`), because `(T^j)₀₀` for `j ≤ 2m` does not see the last
-  diagonal entry of a tridiagonal `T` (`Matrix.pow_apply_zero_zero_eq_of_isTridiagonal`).
+The Gauss rule has as nodes the eigenvalues $\theta_j$ of the Lanczos matrix $T_m$, and as weights
+$\|v\|^2$ times the squared first components of its normalized eigenvectors ([golub2013matrix], Fact
+3 and (10.2.12)). The Gauss–Radau rule with a prescribed node $a$ comes from the
+$(m+1) \times (m+1)$ matrix $\tilde T$ that agrees with $T_{m+1}$ except in its last diagonal entry
+$\tilde\alpha = a + \beta_{m-1}^2 ((T_m - a)^{-1})_{m-1,m-1}$, which makes $a$ an eigenvalue
+([golub2013matrix], §10.2.5, after Golub (1973)). This rule integrates every polynomial of degree at
+most $2m$ exactly.
 
-* **the remainders and the two-sided bound** `G_m(f) ≤ ⟪v, f(A) v⟫ ≤ GR_m(a)(f)`
-  (`Lanczos.exists_gauss_error_eq`, `Lanczos.exists_radau_error_eq`,
-  `Lanczos.gauss_le_integral_le_radau`), instances of the finite-measure Hermite remainder
-  `Quadrature.exists_error_eq_of_hermite` and of `Quadrature.gauss_le_integral_le_gaussRadau`. The
-  hypotheses of those need the nodes distinct and inside the interval carrying the spectrum: the
-  first because `T_m` and `T̃` are unreduced (an eigenvector of an unreduced tridiagonal matrix has
-  a nonzero first component, `Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm`),
-  the second because a rule exact to high enough degree with positive weights has its nodes in the
-  support interval (`Quadrature.mem_Icc_of_isExactOnMeasure`).
+## Main definitions
 
-Indices: `m` is the number of Lanczos steps; `Module.finrank 𝕜 (Krylov.subspace A v m) = m` is the
-condition that the process has not broken down before step `m`.
+* `Lanczos.radauCorrection`: the correction $\beta_{m-1}^2 ((T_m - a)^{-1})_{m-1,m-1}$ of the last
+  diagonal entry.
+* `Lanczos.radauTridiag`: the Gauss–Radau Lanczos matrix $\tilde T$.
 
-## References
+## Main results
 
-* [golub2013matrix] §10.2.
-* [meurant2006lanczos] §2.
+* `Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`: $v^H f(A) v = \int f \, d\mu_v$ for a
+  Hermitian matrix $A$ and every $f : \mathbb{R} \to \mathbb{R}$ ([golub2013matrix], (10.2.6)).
+* `Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`: the Golub–Welsch form of the Gauss
+  rule, $G_m(f) = \|v\|^2 \sum_j s_{j,0}^2 f(\theta_j)$ ([golub2013matrix], Fact 3 and (10.2.12)).
+* `Lanczos.radauTridiag_hasEigenvalue`: $a$ is an eigenvalue of $\tilde T$.
+* `Lanczos.radau_quadrature`: the rule of $\tilde T$ has the node $a$ and integrates every
+  polynomial of degree at most $2m$ exactly.
+* `Lanczos.exists_gauss_error_eq` and `Lanczos.exists_radau_error_eq`: the remainders of the two
+  rules in Hermite form.
+* `Lanczos.gauss_le_integral_le_radau`: the two-sided bound
+  $G_m(f) \le \int f \, d\mu_v \le GR_m(a)(f)$.
+
+## Proof outline
+
+The Golub–Welsch form interpolates $f$ by a polynomial on the finitely many eigenvalues involved, so
+only the polynomial moments $\langle v, p(A_m) v \rangle = \|v\|^2 \, p(T_m)_{00}$ have to be
+compared. The Gauss–Radau rule is exact to degree $2m$ because the entry $(T^j)_{00}$ for $j \le 2m$
+does not depend on the last diagonal entry of a tridiagonal matrix $T$
+(`Matrix.pow_apply_zero_zero_eq_of_isTridiagonal`). The remainders are instances of the Hermite
+remainder for a finite measure, `Quadrature.exists_error_eq_of_hermite`, and the two-sided bound is
+an instance of `Quadrature.gauss_le_integral_le_gaussRadau`. Their hypotheses need distinct nodes
+inside the interval that carries the spectrum. The nodes are distinct because $T_m$ and $\tilde T$
+are unreduced, and an eigenvector of an unreduced symmetric tridiagonal matrix has a nonzero first
+component (`Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm`). The nodes lie in the
+interval because a rule with positive weights that is exact to a high enough degree has its nodes in
+the support interval (`Quadrature.mem_Icc_of_isExactOnMeasure`).
+
+## Notation
+
+* $\mu_v$ is the spectral measure `Krylov.spectralMeasure` of $(A, v)$.
+* $T_m$ is the Lanczos matrix `Lanczos.tridiag A v m`.
+* $\beta_j$ is the Lanczos coefficient `Lanczos.beta A v j`.
+* $(\theta_j, s_j)$ are the eigenpairs of $T_m$, and $(\tilde\theta_j, \tilde s_j)$ are those of
+  $\tilde T$, with orthonormal eigenvectors.
+* $m$ is the number of Lanczos steps. The hypothesis $\dim \mathcal{K}_m(A, v) = m$, which is
+  `Module.finrank 𝕜 (Krylov.subspace A v m) = m`, says that the process has not broken down before
+  step $m$.
+
+## Implementation notes
+
+* For a matrix, $f(A)$ is the continuous functional calculus `cfc f A` of Mathlib. The spectral
+  measure of `Matrix.toEuclideanLin A` is built from `LinearMap.IsSymmetric.eigenvectorBasis`, and
+  the eigenbasis `Matrix.IsHermitian.eigenvectorBasis` of Mathlib is a reindexing of it, so the two
+  sums agree (`Matrix.IsHermitian.integral_spectralMeasure_toEuclideanLin`).
+* The inverse in `Lanczos.radauCorrection` is `Matrix.inv`, which is $0$ at a singular matrix. The
+  results about the Gauss–Radau rule assume that $T_m - a I$ is invertible.
 -/
 
 open MeasureTheory Polynomial Finset
@@ -65,8 +97,13 @@ namespace Matrix.IsHermitian
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
 
-/-- The quadratic form of `f(A)` in the eigenbasis: `vᴴ f(A) v = ∑ᵢ |(Uᴴ v)ᵢ|² f(λᵢ)` for a
-Hermitian `A = U diag(λ) Uᴴ` and every `f : ℝ → ℝ`, with `f(A)` Mathlib's `cfc f A`. -/
+/-- Let $A$ be a Hermitian $n \times n$ matrix over $\mathbb{K}$ with
+$A = U \operatorname{diag}(\lambda) U^H$ for the unitary matrix $U$ of eigenvectors. Then for
+every $f : \mathbb{R} \to \mathbb{R}$ and $v \in \mathbb{K}^n$
+$$v^H f(A) v = \sum_i |(U^H v)_i|^2 \, f(\lambda_i).$$
+
+Here $f(A)$ is `cfc f A`, $U$ is `Matrix.IsHermitian.eigenvectorUnitary`, and $\lambda_i$ is
+`Matrix.IsHermitian.eigenvalues`. -/
 theorem star_dotProduct_cfc_mulVec (hA : A.IsHermitian) (f : ℝ → ℝ) (v : n → 𝕜) :
     star v ⬝ᵥ (cfc f A *ᵥ v) =
       ((∑ i, ‖(star (hA.eigenvectorUnitary : Matrix n n 𝕜) *ᵥ v) i‖ ^ 2 *
@@ -83,10 +120,14 @@ theorem star_dotProduct_cfc_mulVec (hA : A.IsHermitian) (f : ℝ → ℝ) (v : n
     RCLike.conj_mul]
   ring
 
-/-- The backbone's spectral measure of `toEuclideanLin A` in Mathlib's matrix eigenbasis:
-`∫ f dμ_v = ∑ᵢ |(Uᴴ v)ᵢ|² f(λᵢ)`. The measure `Krylov.spectralMeasure` is built from
-`LinearMap.IsSymmetric.eigenvectorBasis`, and Mathlib's `Matrix.IsHermitian.eigenvectorBasis` is the
-same basis reindexed by `Fintype.equivOfCardEq`, so the two sums agree term by term. -/
+/-- Let $A$ be a Hermitian $n \times n$ matrix with $A = U \operatorname{diag}(\lambda) U^H$, and
+let $v \in \mathbb{K}^n$. The spectral measure $\mu_v$ of the operator `Matrix.toEuclideanLin A`
+and the vector $v$ satisfies, for every $f : \mathbb{R} \to \mathbb{R}$,
+$$\int f \, d\mu_v = \sum_i |(U^H v)_i|^2 \, f(\lambda_i).$$
+
+The measure `Krylov.spectralMeasure` is built from `LinearMap.IsSymmetric.eigenvectorBasis`. The
+basis `Matrix.IsHermitian.eigenvectorBasis` of Mathlib is the same basis reindexed by
+`Fintype.equivOfCardEq`, so the two sums agree term by term. -/
 theorem integral_spectralMeasure_toEuclideanLin (hA : A.IsHermitian) (v : EuclideanSpace 𝕜 n)
     (f : ℝ → ℝ) :
     ∫ x, f x ∂(Krylov.spectralMeasure (isSymmetric_toEuclideanLin_iff.mpr hA)
@@ -108,9 +149,12 @@ theorem integral_spectralMeasure_toEuclideanLin (hA : A.IsHermitian) (v : Euclid
       Pi.star_apply]
   rw [hev, hvec]
 
-/-- **Quadratic forms as integrals** ([golub2013matrix] (10.2.6)): for a Hermitian matrix and every
-`f : ℝ → ℝ`, `vᴴ f(A) v = ∫ f dμ_v` with `μ_v` the spectral measure of `(A, v)` and `f(A)` the
-continuous functional calculus `cfc f A`. -/
+/-- **Quadratic forms as integrals** ([golub2013matrix], (10.2.6)). Let $A$ be a Hermitian
+$n \times n$ matrix over $\mathbb{K}$, and let $v \in \mathbb{K}^n$. For every
+$f : \mathbb{R} \to \mathbb{R}$,
+$$v^H f(A) v = \int f \, d\mu_v,$$
+where $\mu_v$ is the spectral measure of $(A, v)$ and $f(A)$ is the continuous functional
+calculus `cfc f A`. -/
 theorem inner_cfc_eq_integral_spectralMeasure (hA : A.IsHermitian) (f : ℝ → ℝ) (v : n → 𝕜) :
     star v ⬝ᵥ (cfc f A *ᵥ v) =
       ((∫ x, f x ∂(Krylov.spectralMeasure (isSymmetric_toEuclideanLin_iff.mpr hA)
@@ -123,8 +167,11 @@ namespace Matrix.IsHermitian
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {T : Matrix n n ℝ}
 
-/-- The diagonal entries of `p(T)` for a real symmetric `T = U diag(θ) Uᵀ`:
-`p(T)ᵢᵢ = ∑_j U_{ij}² p(θ_j)`. -/
+/-- Let $T$ be a real symmetric matrix with $T = U \operatorname{diag}(\theta) U^T$ for an
+orthonormal eigenbasis $U$. Then for every real polynomial $p$, the diagonal entries of $p(T)$
+are
+$$p(T)_{ii} = \sum_j U_{ij}^2 \, p(\theta_j).$$
+-/
 theorem aeval_apply_self (hT : T.IsHermitian) (p : ℝ[X]) (i : n) :
     aeval T p i i = ∑ j, (hT.eigenvectorBasis j i) ^ 2 * p.eval (hT.eigenvalues j) := by
   have h := star_dotProduct_cfc_mulVec hT (fun x => p.eval x) (Pi.single i 1)
@@ -150,7 +197,7 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 open Krylov
 
-/-- The real symmetric Lanczos matrix `T_m` is Hermitian. -/
+/-- The real symmetric Lanczos matrix $T_m$ is Hermitian. -/
 theorem tridiag_isHermitian (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) : (tridiag A v m).IsHermitian :=
   Matrix.isHermitian_iff_isSymm.mpr (tridiag_isSymm A v m)
 
@@ -158,7 +205,8 @@ section GolubWelsch
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- Integrals against the spectral measure only see the values at the eigenvalues. -/
+/-- Two functions that agree at the eigenvalues of $B$ have the same integral against the spectral
+measure of $B$. -/
 private theorem integral_spectralMeasure_congr {n : ℕ} {B : E →ₗ[𝕜] E} (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (u : E) {f g : ℝ → ℝ}
     (hfg : ∀ i, f (hB.eigenvalues hn i) = g (hB.eigenvalues hn i)) :
@@ -166,7 +214,9 @@ private theorem integral_spectralMeasure_congr {n : ℕ} {B : E →ₗ[𝕜] E} 
   rw [integral_spectralMeasure, integral_spectralMeasure]
   exact sum_congr rfl fun i _ => by rw [hfg]
 
-/-- `⟪v, p(A_m) v⟫ = ‖v‖² (p(T_m))₀₀` for the compression `A_m` of a symmetric `A` to `𝒦_m`. -/
+/-- For the compression $A_m$ of a symmetric $A$ to $\mathcal{K}_m$, with
+$0 < m \le \operatorname{grade}(A, v)$, and every real polynomial $p$, $\langle v, p(A_m) v
+\rangle = \|v\|^2 \, p(T_m)_{00}$. -/
 private theorem inner_aeval_compression {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) {m : ℕ}
     (hm : 0 < m) (hmg : m ≤ grade A v) (p : ℝ[X]) :
     inner 𝕜 (⟨v, self_mem_subspace A v hm⟩ : subspace A v m)
@@ -210,10 +260,14 @@ private theorem inner_aeval_compression {A : E →ₗ[𝕜] E} (hA : A.IsSymmetr
   push_cast
   ring
 
-/-- **The Golub–Welsch form of the Gauss rule** ([golub2013matrix] Fact 3, (10.2.12)): for a
-symmetric `A` and `finrank 𝒦_m = m`, integration against the spectral measure of the compression of
-`A` to `𝒦_m` (the `m`-point Gauss rule of `Lanczos.gauss_quadrature`) is the sum over the eigenpairs
-`(θ_j, s_j)` of `T_m` with weights `‖v‖² s_{j,0}²`. -/
+/-- **The Golub–Welsch form of the Gauss rule** ([golub2013matrix], Fact 3 and (10.2.12)). Let $E$
+be finite-dimensional, let $A$ be symmetric, let $v \in E$, and let $m \ge 1$ with
+$\dim \mathcal{K}_m(A, v) = m$. Let $(\theta_j, s_j)$ be the eigenpairs of $T_m$ with
+orthonormal eigenvectors. Then for every $f : \mathbb{R} \to \mathbb{R}$, the integral of $f$
+against the spectral measure of the compression of $A$ to $\mathcal{K}_m$ and of the vector $v$
+is
+$$\int f \, d\mu_{A_m, v} = \|v\|^2 \sum_j s_{j,0}^2 \, f(\theta_j).$$
+The left side is the $m$-point Gauss rule of `Lanczos.gauss_quadrature`. -/
 theorem integral_spectralMeasure_compression_eq_sum_tridiag {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
     (v : E) {m : ℕ} (hm : 0 < m) (hmk : Module.finrank 𝕜 (subspace A v m) = m) (f : ℝ → ℝ) :
     ∫ x, f x ∂(spectralMeasure (compression.isSymmetric A (subspace A v m) hA) hmk
@@ -243,17 +297,24 @@ theorem integral_spectralMeasure_compression_eq_sum_tridiag {A : E →ₗ[𝕜] 
 
 end GolubWelsch
 
-/-- The Gauss–Radau correction `β_{m−1}² ((T_m − a)⁻¹)_{m−1,m−1}` of the last diagonal entry, `0`
-for `m = 0`. -/
+/-- The **Gauss–Radau correction** of the last diagonal entry: for $m \ge 1$ and $a \in \mathbb{R}$
+it is
+$$\beta_{m-1}^2 \, ((T_m - a I)^{-1})_{m-1,m-1},$$
+and for $m = 0$ it is $0$. The inverse is `Matrix.inv`, which is $0$ at a singular matrix. -/
 noncomputable def radauCorrection (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ) : ℝ :=
   if h : 0 < m then
     beta A v (m - 1) ^ 2 * (tridiag A v m - a • 1)⁻¹ ⟨m - 1, by omega⟩ ⟨m - 1, by omega⟩
   else 0
 
-/-- **The Gauss–Radau Lanczos matrix** ([golub2013matrix] §10.2.5): the entries of `T_{m+1}`
-except the last diagonal entry, which is `α̃ = a + β_{m−1}² ((T_m − a)⁻¹)_{m−1,m−1}` (the book's
-`α̃_{k+1} = a + β_k² e_kᵀ (T_k − a I)⁻¹ e_k`; it prints `β_{k+1}`). For `m = 0` it is the `1 × 1`
-matrix `a`. -/
+/-- **The Gauss–Radau Lanczos matrix** ([golub2013matrix], §10.2.5). For $m \in \mathbb{N}$ and
+$a \in \mathbb{R}$, it is the $(m+1) \times (m+1)$ matrix $\tilde T$ with the entries of
+$T_{m+1}$, except the last diagonal entry, which is
+$$\tilde\alpha = a + \beta_{m-1}^2 \, ((T_m - a I)^{-1})_{m-1,m-1}.$$
+For $m = 0$ it is the $1 \times 1$ matrix $(a)$.
+
+In the indexing of the source this entry is $\tilde\alpha_{k+1} = a + \beta_k^2 e_k^T (T_k - a
+I)^{-1} e_k$. The source prints $\beta_{k+1}$ in place of $\beta_k$ in this formula, and the
+definition uses $\beta_k$. The last diagonal entry is $a$ plus `Lanczos.radauCorrection`. -/
 noncomputable def radauTridiag (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ) :
     Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ :=
   Matrix.of fun i j =>
@@ -262,7 +323,7 @@ noncomputable def radauTridiag (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ
 
 variable (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ)
 
-/-- `T̃` is symmetric. -/
+/-- The Gauss–Radau matrix $\tilde T$ is symmetric. -/
 theorem radauTridiag_isSymm : (radauTridiag A v m a).IsSymm := by
   refine Matrix.IsSymm.ext_iff.2 fun i j => ?_
   simp only [radauTridiag, Matrix.of_apply]
@@ -271,17 +332,20 @@ theorem radauTridiag_isSymm : (radauTridiag A v m a).IsSymm := by
   · rw [ite_eq_right h, ite_eq_right fun h' => h ⟨h'.2, h'.1⟩]
     exact ((tridiag_isSymm A v (m + 1)).apply i j)
 
-/-- `T̃` is Hermitian (real symmetric). -/
+/-- The Gauss–Radau matrix $\tilde T$ is Hermitian, that is, real symmetric. -/
 theorem radauTridiag_isHermitian : (radauTridiag A v m a).IsHermitian :=
   Matrix.isHermitian_iff_isSymm.mpr (radauTridiag_isSymm A v m a)
 
-/-- `T̃` agrees with `T_{m+1}` outside the last diagonal entry. -/
+/-- The Gauss–Radau matrix $\tilde T$ agrees with $T_{m+1}$ in every entry except the last diagonal
+entry. -/
 theorem radauTridiag_apply_of_ne {i j : Fin (m + 1)} (h : ¬(i = Fin.last m ∧ j = Fin.last m)) :
     radauTridiag A v m a i j = tridiag A v (m + 1) i j := by
   simp only [radauTridiag, Matrix.of_apply, ite_eq_right h]
 
-/-- **The Radau eigenvector** ([golub2013matrix] §10.2.5): when `T_m − a I` is invertible, the
-vector `(x, −1)` with `x = β_{m−1} (T_m − a)⁻¹ e_{m−1}` satisfies `T̃ (x, −1) = a (x, −1)`. -/
+/-- **The Radau eigenvector** ([golub2013matrix], §10.2.5). If $T_m - a I$ is invertible, then there
+is $x \in \mathbb{R}^m$ with
+$$\tilde T \begin{bmatrix} x \\ -1 \end{bmatrix} = a \begin{bmatrix} x \\ -1 \end{bmatrix}.$$
+The proof takes $x = \beta_{m-1} (T_m - a I)^{-1} e_{m-1}$. -/
 theorem radauTridiag_mulVec_snoc (ha : IsUnit (tridiag A v m - a • 1).det) :
     ∃ x : Fin m → ℝ, radauTridiag A v m a *ᵥ (Fin.snoc x (-1) : Fin (m + 1) → ℝ) =
       a • (Fin.snoc x (-1) : Fin (m + 1) → ℝ) := by
@@ -354,8 +418,9 @@ theorem radauTridiag_mulVec_snoc (ha : IsUnit (tridiag A v m - a • 1).det) :
       rw [ite_eq_right h, ite_eq_right hi]
       ring
 
-/-- **`a` is an eigenvalue of `T̃`** ([golub2013matrix] §10.2.5): when `T_m − a I` is invertible,
-`(x, −1)` is an eigenvector for `a` (`Lanczos.radauTridiag_mulVec_snoc`). -/
+/-- **The prescribed node is an eigenvalue** ([golub2013matrix], §10.2.5). If $T_m - a I$ is
+invertible, then $a$ is an eigenvalue of the Gauss–Radau matrix $\tilde T$, with the eigenvector
+of `Lanczos.radauTridiag_mulVec_snoc`. -/
 theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
     a ∈ spectrum ℝ (radauTridiag A v m a) := by
   obtain ⟨x, hx⟩ := radauTridiag_mulVec_snoc A v m a ha
@@ -366,18 +431,22 @@ theorem radauTridiag_hasEigenvalue (ha : IsUnit (tridiag A v m - a • 1).det) :
       Matrix.one_mulVec, hx, sub_self])
   simpa using congrFun hz (Fin.last m)
 
-/-- **Low moments of the Gauss–Radau matrix** ([golub2013matrix] §10.2.5):
-`(T̃^j)₀₀ = (T_{m+1}^j)₀₀` for every `j ≤ 2m`. -/
+/-- **Low moments of the Gauss–Radau matrix** ([golub2013matrix], §10.2.5). For every $j \le 2m$,
+$$(\tilde T^j)_{00} = (T_{m+1}^j)_{00}.$$
+-/
 theorem radau_moment_eq {j : ℕ} (hj : j ≤ 2 * m) :
     ((radauTridiag A v m a) ^ j) 0 0 = ((tridiag A v (m + 1)) ^ j) 0 0 :=
   (Matrix.pow_apply_zero_zero_eq_of_isTridiagonal (tridiag_isTridiagonal A v (m + 1))
     (fun _ _ h => (radauTridiag_apply_of_ne A v m a h).symm) hj).symm
 
-/-- **The Gauss–Radau rule through Lanczos** ([golub2013matrix] §10.2.5): if the process has not
-broken down before step `m + 1` and `T_m − a I` is invertible, then `a` is a node of the rule
-`GR_m(a)(f) = ‖v‖² ∑_j s̃_{j,0}² f(θ̃_j)` built from the eigenpairs `(θ̃_j, s̃_j)` of
-`Lanczos.radauTridiag A v m a`, and the rule integrates every real polynomial of degree `≤ 2m`
-exactly against the spectral measure of `(A, v)`. -/
+/-- **The Gauss–Radau rule through Lanczos** ([golub2013matrix], §10.2.5). Let $E$ have dimension
+$n$, let $A$ be symmetric, let $v \in E$, and let $\dim \mathcal{K}_{m+1}(A, v) = m + 1$, so
+that the process has not broken down before step $m + 1$. Let $a \in \mathbb{R}$ with
+$T_m - a I$ invertible, and let $(\tilde\theta_j, \tilde s_j)$ be the eigenpairs of $\tilde T$
+with orthonormal eigenvectors. Then $a$ is one of the nodes $\tilde\theta_j$, and for every real
+polynomial $f$ of degree at most $2m$
+$$\int f \, d\mu_v = \|v\|^2 \sum_j \tilde s_{j,0}^2 \, f(\tilde\theta_j).$$
+-/
 theorem radau_quadrature [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (hmk : Module.finrank 𝕜 (subspace A v (m + 1)) = m + 1)
     (ha : IsUnit (tridiag A v m - a • 1).det) {f : ℝ[X]} (hf : f.natDegree ≤ 2 * m) :
@@ -409,20 +478,22 @@ namespace Krylov
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E] {n : ℕ} {A : E →ₗ[𝕜] E}
 
-/-- Every function is integrable against the (finitely supported) spectral measure. -/
+/-- Every function $f : \mathbb{R} \to \mathbb{R}$ is integrable against the spectral measure
+$\mu_v$, which has finite support. -/
 theorem integrable_spectralMeasure (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E)
     (f : ℝ → ℝ) : Integrable f (spectralMeasure hA hn v) := by
   rw [spectralMeasure, integrable_finsetSum_measure]
   exact fun i _ => (integrable_dirac (by simp)).smul_measure (by simp)
 
-/-- The spectral measure is finite (its mass is `‖v‖²`). -/
+/-- The spectral measure $\mu_v$ is finite. Its total mass is $\|v\|^2$. -/
 instance isFiniteMeasure_spectralMeasure (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
     (v : E) : IsFiniteMeasure (spectralMeasure hA hn v) := by
   refine ⟨?_⟩
   rw [spectralMeasure, Measure.finsetSum_apply]
   exact ENNReal.sum_lt_top.2 fun i _ => by simp
 
-/-- The spectral measure is carried by any interval containing the eigenvalues. -/
+/-- If every eigenvalue of $A$ lies in $[a, b]$, then the spectral measure $\mu_v$ is carried by
+$[a, b]$: $\mu_v(\mathbb{R} \setminus [a, b]) = 0$. -/
 theorem spectralMeasure_compl_Icc (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E)
     {a b : ℝ} (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) :
     spectralMeasure hA hn v (Set.Icc a b)ᶜ = 0 := by
@@ -441,7 +512,8 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 open Krylov Quadrature
 
-/-- The Lanczos matrix is unreduced below the grade: `(T_k)_{i,i+1} = β_i ≠ 0` for `i + 1 < k`. -/
+/-- Below the grade the Lanczos matrix is unreduced: $(T_k)_{i, i+1} = \beta_i \neq 0$ for
+$i + 1 < k \le \operatorname{grade}(A, v)$. -/
 private theorem tridiag_succ_ne_zero {A : E →ₗ[𝕜] E} (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {k : ℕ} (hk : k ≤ grade A v) (i : ℕ)
     (h : i + 1 < k) : tridiag A v k ⟨i, by omega⟩ ⟨i + 1, h⟩ ≠ 0 := by
@@ -451,7 +523,8 @@ private theorem tridiag_succ_ne_zero {A : E →ₗ[𝕜] E} (v : E)
   dsimp only at h0
   omega
 
-/-- The Lanczos matrix is unreduced below the grade. -/
+/-- For $k \le \operatorname{grade}(A, v)$ the Lanczos matrix $T_k$ is an unreduced upper Hessenberg
+matrix. -/
 private theorem tridiag_isUnreducedUpperHessenberg {A : E →ₗ[𝕜] E} (v : E)
     [FiniteDimensional 𝕜 (fullSubspace A v)] {k : ℕ} (hk : k ≤ grade A v) :
     (tridiag A v k).IsUnreducedUpperHessenberg :=
@@ -460,7 +533,7 @@ private theorem tridiag_isUnreducedUpperHessenberg {A : E →ₗ[𝕜] E} (v : E
       rw [(tridiag_isSymm A v k).apply ⟨i, by omega⟩ ⟨i + 1, h⟩]
       exact tridiag_succ_ne_zero v hk i h⟩
 
-/-- The Gauss–Radau matrix is tridiagonal. -/
+/-- The Gauss–Radau matrix $\tilde T$ is tridiagonal. -/
 theorem radauTridiag_isTridiagonal (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) (a : ℝ) :
     (radauTridiag A v m a).IsTridiagonal := by
   intro i j h
@@ -485,9 +558,9 @@ private theorem le_grade_of_finrank {v : E} {m : ℕ}
   rw [hmk] at h
   omega
 
-/-- The facts about the `m`-point Lanczos Gauss rule (nodes the eigenvalues `θ_j` of `T_m`,
-weights `‖v‖² s_{j0}²`) that the remainder needs: distinct nodes in any interval carrying the
-spectrum, positive weights, exactness to degree `2m − 1`. -/
+/-- The $m$-point Lanczos Gauss rule, with nodes $\theta_j$ and weights $\|v\|^2 s_{j,0}^2$, has
+distinct nodes, which lie in every interval that contains the eigenvalues of $A$, it has
+positive weights, and it is exact to degree $2m - 1$. -/
 private theorem gauss_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ}
     (hm : 0 < m) (hmk : Module.finrank 𝕜 (subspace A v m) = m) {a b : ℝ}
     (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) :
@@ -542,9 +615,9 @@ private theorem gauss_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
 
 private theorem zero_eq_mk {m : ℕ} : (0 : Fin (m + 1)) = ⟨0, Nat.succ_pos m⟩ := rfl
 
-/-- The facts about the Lanczos Gauss–Radau rule (nodes the eigenvalues `θ̃_j` of
-`Lanczos.radauTridiag`, weights `‖v‖² s̃_{j0}²`) that the remainder needs: distinct nodes in any
-interval `[a, b]` carrying the spectrum, `a` among them, exactness to degree `2m`. -/
+/-- The Lanczos Gauss–Radau rule, with nodes $\tilde\theta_j$ and weights
+$\|v\|^2 \tilde s_{j,0}^2$, has distinct nodes, which lie in every interval $[a, b]$ that
+contains the eigenvalues of $A$, it has $a$ among its nodes, and it is exact to degree $2m$. -/
 private theorem radau_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ}
     (hmk : Module.finrank 𝕜 (subspace A v (m + 1)) = m + 1) {a b : ℝ}
     (ha : IsUnit (tridiag A v m - a • 1).det) (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) :
@@ -644,12 +717,17 @@ private theorem radau_rule (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
   rw [hPeval]
   exact mul_pos (hw j) (mul_pos (by linarith) hprod)
 
-/-- **The Gauss remainder for the spectral measure** ([golub2013matrix] §10.2.2, `R_G`): for a
-symmetric `A`, `finrank 𝒦_m = m > 0`, an interval `[a, b]` containing every eigenvalue of `A`, and
-`f` of class `C^{2m}`, the error of the `m`-point Gauss rule (the spectral measure of the
-compression of `A` to `𝒦_m`) is `f^{(2m)}(η)/(2m)! ∫ π_m² dμ_v` for some `η ∈ [a, b]`, with
-`π_m = charpoly T_m`. An instance of `Quadrature.exists_error_eq_of_hermite` with every node
-double; the nodes (the Ritz values) are distinct because `T_m` is unreduced. -/
+/-- **The Gauss remainder for the spectral measure** ([golub2013matrix], §10.2.2, the remainder
+$R_G$). Let $E$ have dimension $n$, let $A$ be symmetric, let $v \in E$, and let $m \ge 1$ with
+$\dim \mathcal{K}_m(A, v) = m$. Let $[a, b]$ contain every eigenvalue of $A$, and let $f$ be
+$2m$ times continuously differentiable on $\mathbb{R}$. Then there is $\eta \in [a, b]$ with
+$$\int f \, d\mu_v - \int f \, d\mu_{A_m, v} = \frac{f^{(2m)}(\eta)}{(2m)!} \int \chi_{T_m}(x)^2
+  \, d\mu_v(x),$$
+where $\mu_{A_m, v}$ is the spectral measure of the compression of $A$ to $\mathcal{K}_m$, that
+is, the $m$-point Gauss rule, and $\chi_{T_m}$ is the characteristic polynomial of $T_m$.
+
+The result is an instance of `Quadrature.exists_error_eq_of_hermite` with every node double. The
+nodes, which are the Ritz values, are distinct because $T_m$ is unreduced. -/
 theorem exists_gauss_error_eq (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ}
     (hm : 0 < m) (hmk : Module.finrank 𝕜 (subspace A v m) = m) {a b : ℝ}
     (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) {f : ℝ → ℝ}
@@ -683,13 +761,18 @@ theorem exists_gauss_error_eq (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E =
   rw [hG, integral_congr_ae (Filter.Eventually.of_forall fun t => (hnodal t).symm)]
   exact heq
 
-/-- **The Gauss–Radau remainder for the spectral measure** ([golub2013matrix] §10.2.2,
-`R_{GR(a)}`): with `finrank 𝒦_{m+1} = m + 1`, `T_m − a` invertible, every eigenvalue of `A` in
-`[a, b]` and `f` of class `C^{2m+1}`, the error of the Gauss–Radau rule of `Lanczos.radauTridiag`
-is `f^{(2m+1)}(η)/(2m+1)! ∫ (x − a) ∏_j (x − θ̃_j)² dμ_v` (product over the nodes other than `a`)
-for some `η ∈ [a, b]`. An instance of `Quadrature.exists_error_eq_of_hermite` with a simple node at
-`a` and double nodes elsewhere; the nodes are distinct because `T̃` is unreduced, and they lie in
-`[a, b]` because the rule is exact to degree `2m` with positive weights. -/
+/-- **The Gauss–Radau remainder for the spectral measure** ([golub2013matrix], §10.2.2, the
+remainder $R_{GR(a)}$). Let $E$ have dimension $n$, let $A$ be symmetric, let $v \in E$, and let
+$\dim \mathcal{K}_{m+1}(A, v) = m + 1$. Let $[a, b]$ contain every eigenvalue of $A$, let
+$T_m - a I$ be invertible, and let $f$ be $2m + 1$ times continuously differentiable on
+$\mathbb{R}$. Then there is $\eta \in [a, b]$ with
+$$\int f \, d\mu_v - \|v\|^2 \sum_j \tilde s_{j,0}^2 \, f(\tilde\theta_j) =
+  \frac{f^{(2m+1)}(\eta)}{(2m+1)!} \int (x - a) \prod_{\tilde\theta_j \neq a} (x -
+  \tilde\theta_j)^2 \, d\mu_v(x).$$
+
+The result is an instance of `Quadrature.exists_error_eq_of_hermite` with a simple node at $a$
+and double nodes elsewhere. The nodes are distinct because $\tilde T$ is unreduced, and they lie
+in $[a, b]$ because the rule is exact to degree $2m$ with positive weights. -/
 theorem exists_radau_error_eq (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E) {m : ℕ}
     (hmk : Module.finrank 𝕜 (subspace A v (m + 1)) = m + 1) {a b : ℝ}
     (ha : IsUnit (tridiag A v m - a • 1).det) (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b)
@@ -743,13 +826,19 @@ theorem exists_radau_error_eq (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E =
   rw [hR', integral_congr_ae (Filter.Eventually.of_forall fun t => (hnodal t).symm)]
   exact heq
 
-/-- **The two-sided Gauss / Gauss–Radau bound** ([golub2013matrix] §10.2.2 and §10.2.6): if every
-eigenvalue of `A` lies in `[a, b]`, `finrank 𝒦_{m+1} = m + 1` with `m > 0`, `T_m − a` is
-invertible, and `f` is `C^{2m+1}` on an open set containing `[a, b]` with `f^{(2m)} ≥ 0` and
-`f^{(2m+1)} ≤ 0` there, then the Lanczos Gauss rule is a lower and the Lanczos Gauss–Radau rule an
-upper bound for `∫ f dμ_v` (`= vᴴ f(A) v` by
-`Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`). The book's example is `f(λ) = λ⁻²`
-with `0 < a`. An instance of the measure-level `Quadrature.gauss_le_integral_le_gaussRadau`. -/
+/-- **The two-sided Gauss and Gauss–Radau bound** ([golub2013matrix], §10.2.2 and §10.2.6). Let $E$
+have dimension $n$, let $A$ be symmetric, let $v \in E$, and let $m \ge 1$ with
+$\dim \mathcal{K}_{m+1}(A, v) = m + 1$. Let $[a, b]$ contain every eigenvalue of $A$, and let
+$T_m - a I$ be invertible. Let $f$ be $2m + 1$ times continuously differentiable on an open set
+$U \supseteq [a, b]$, with $f^{(2m)} \ge 0$ and $f^{(2m+1)} \le 0$ on $[a, b]$. Then
+$$\|v\|^2 \sum_j s_{j,0}^2 \, f(\theta_j) \le \int f \, d\mu_v \le \|v\|^2 \sum_j \tilde
+  s_{j,0}^2 \, f(\tilde\theta_j).$$
+So the Lanczos Gauss rule is a lower bound and the Lanczos Gauss–Radau rule is an upper bound
+for $\int f \, d\mu_v$, which is $v^H f(A) v$ by
+`Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`.
+
+The example of the source is $f(\lambda) = \lambda^{-2}$ with $0 < a$. The result is an instance
+of the bound `Quadrature.gauss_le_integral_le_gaussRadau` for measures. -/
 theorem gauss_le_integral_le_radau (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (v : E)
     {m : ℕ} (hm : 0 < m) (hmk : Module.finrank 𝕜 (subspace A v (m + 1)) = m + 1) {a b : ℝ}
     (ha : IsUnit (tridiag A v m - a • 1).det) (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b)

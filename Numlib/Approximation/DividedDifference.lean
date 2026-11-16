@@ -11,63 +11,66 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 /-!
 # Divided differences as continuous functions of their nodes
 
-The divided differences of a function are usually written as quotients,
-`f[t, s] = (f s - f t) / (s - t)` and `f[s, s, t] = (f' s - f[t, s]) / (s - t)`, which are junk on
-the diagonal. This file gives them by their **Hermite–Genocchi integrals** instead,
+The divided differences of a function $f$ are usually defined as quotients,
+$f[t, s] = (f(s) - f(t))/(s - t)$ and $f[s, s, t] = (f'(s) - f[t, s])/(s - t)$. These quotients have
+no meaning on the diagonal $s = t$. This module defines them instead by their **Hermite–Genocchi
+integrals**,
+$$f[t, s] = \int_0^1 f'\bigl((s - t)\theta + t\bigr) \, d\theta, \qquad f[s, s, t] = \int_0^1 (1 -
+  \theta) f''\bigl((t - s)\theta + s\bigr) \, d\theta.$$
+They agree with the quotients off the diagonal, they are jointly continuous in the nodes, and on the
+diagonal they take the values $f'(t)$ and $f''(t)/2$. The two identities
+$f(s) - f(t) = (s - t) f[t, s]$ and $f'(s) - f[t, s] = (s - t) f[s, s, t]$ are the first- and
+second-order Taylor expansions with integral remainder. The Hermite–Genocchi formula is classical;
+see §3.2 of [han2009theoretical] and §8.2 of [kress1998numerical].
 
-`firstOrder f' s t = ∫₀¹ f' ((s - t) θ + t) dθ`,
-`secondOrder f'' s t = ∫₀¹ (1 - θ) f'' ((t - s) θ + s) dθ`,
-
-which agree with the quotients off the diagonal and are jointly *continuous* in the nodes, with the
-values `f' t` and `f'' t / 2` on it. The two defining identities
-
-`f s - f t = (s - t) * firstOrder f' s t` and
-`f' s - firstOrder f' s t = (s - t) * secondOrder f'' s t`
-
-are the first- and second-order Taylor expansions with integral remainder, which Mathlib does not
-have: `Mathlib/Analysis/Calculus/Taylor.lean` carries only the mean-value forms.
-
-The point of the exercise is that a quotient whose numerator and denominator both vanish to second
-order on the diagonal — the parametrized double-layer kernel of a plane curve is the example — has a
-continuous extension that can be *defined*, not merely proved to exist, by cancelling the divided
-differences against each other.
-
-A second section carries the classical object at `m + 1` distinct nodes, `f[v₀, …, v_m]`, whose use
-is the divided-difference form of the interpolation error, `f(t) - p(t) = ω(t) f[v₀, …, v_m, t]`.
-Mathlib has the top coefficient of an interpolating polynomial as `Lagrange.coeff_eq_sum` but not
-the name or the error formula.
+With these integrals, a quotient whose numerator and denominator both vanish to second order on the
+diagonal has a continuous extension that is defined explicitly, not only proved to exist: the
+divided differences cancel against each other. An example is the parametrized double-layer kernel of
+a plane curve, as in (13.1.33)–(13.1.34) of [han2009theoretical]. The module also has the Newton
+divided difference $f[v_0, \dots, v_m]$ at $m + 1$ distinct nodes, and the divided-difference form
+$f(t) - p(t) = \omega(t) f[v_0, \dots, v_m, t]$ of the interpolation error, (3.2.5) of
+[han2009theoretical].
 
 ## Main definitions
 
-* `DividedDifference.firstOrder`, `DividedDifference.secondOrder`.
-* `DividedDifference.newton` — the Newton divided difference `f[v₀, …, v_m]` at `m + 1` nodes.
+* `DividedDifference.firstOrder`: the first divided difference $f[t, s]$, as an integral of $f'$.
+* `DividedDifference.secondOrder`: the second divided difference $f[s, s, t]$ with the repeated node
+  $s$, as an integral of $f''$.
+* `DividedDifference.newton`: the Newton divided difference $f[v_0, \dots, v_m] = \sum_i f(v_i) /
+  \prod_{j \neq i} (v_i - v_j)$.
 
-## Main statements
+## Main results
 
-* `DividedDifference.sub_eq_mul_firstOrder`, `DividedDifference.sub_firstOrder_eq` — the two Taylor
-  identities, which are what make the definitions divided differences.
-* `DividedDifference.firstOrder_self`, `DividedDifference.secondOrder_self` — the diagonal values.
-* `DividedDifference.continuous_firstOrder`, `DividedDifference.continuous_secondOrder`.
-* `DividedDifference.newton_eq_coeff` — the Newton divided difference is the coefficient of `X^m`
-  in the interpolating polynomial, and `DividedDifference.newton_pair` identifies the two-node case
-  with `firstOrder`.
-* `DividedDifference.sub_eval_interpolate_eq_newton` — the divided-difference form of the
+* `DividedDifference.sub_eq_mul_firstOrder`: $f(s) - f(t) = (s - t) f[t, s]$.
+* `DividedDifference.sub_firstOrder_eq`: $f'(s) - f[t, s] = (s - t) f[s, s, t]$.
+* `DividedDifference.firstOrder_self` and `DividedDifference.secondOrder_self`: $f[t, t] = f'(t)$
+  and $f[t, t, t] = f''(t)/2$.
+* `DividedDifference.continuous_firstOrder` and `DividedDifference.continuous_secondOrder`: the two
+  divided differences are jointly continuous in their nodes.
+* `DividedDifference.newton_eq_coeff`: at distinct nodes, $f[v_0, \dots, v_m]$ is the coefficient of
+  $X^m$ in the polynomial that interpolates $f$.
+* `DividedDifference.newton_pair`: the Newton divided difference at two distinct nodes equals
+  `DividedDifference.firstOrder`.
+* `DividedDifference.sub_eval_interpolate_eq_newton`: the divided-difference form of the
   interpolation error.
-* `DividedDifference.newton_two_eq`, `DividedDifference.newton_three_eq`,
-  `DividedDifference.newton_four_eq` — the explicit quotient forms at two, three and four distinct
-  nodes, with the symmetries `DividedDifference.newton_three_swap₁`,
-  `DividedDifference.newton_three_swap₂` and the order reductions
-  `DividedDifference.newton_three_eq_newton_two_dslope`,
-  `DividedDifference.newton_four_eq_newton_three_dslope` of a divided difference through a fixed
-  node `a` to one of `dslope f a`.
-* `DividedDifference.exists_newton_three_eq` — the mean value form of the second divided difference
-  at three *arbitrary* nodes, `f[x, y, z] = f''(ξ)/2`, by Rolle's theorem twice.
+* `DividedDifference.newton_two_eq`, `DividedDifference.newton_three_eq` and
+  `DividedDifference.newton_four_eq`: the explicit forms at two, three and four nodes.
+* `DividedDifference.newton_three_swap₁` and `DividedDifference.newton_three_swap₂`: the three-node
+  divided difference is symmetric in its nodes.
+* `DividedDifference.newton_three_eq_newton_two_dslope` and
+  `DividedDifference.newton_four_eq_newton_three_dslope`: a divided difference with a node $a$ is a
+  divided difference of $\operatorname{dslope} f \, a$ of one order less.
+* `DividedDifference.exists_newton_three_eq`: at three distinct nodes, $f[x, y, z] = f''(\xi)/2$ for
+  some $\xi$.
 
-## References
+## Implementation notes
 
-The Hermite–Genocchi formula is classical; see [han2009theoretical], §3.2, and
-[kress1998numerical], §8.2. The use made of it here is [han2009theoretical], (13.1.33)–(13.1.34).
-The divided-difference form of the interpolation error is [han2009theoretical], (3.2.5).
+* `DividedDifference.firstOrder` and `DividedDifference.secondOrder` take the derivatives $f'$ and
+  $f''$ as arguments, not $f$, because the integrals use only these.
+* Mathlib has Taylor's theorem only with the mean value forms of the remainder
+  (`Mathlib.Analysis.Calculus.Taylor`), and not with the integral remainder.
+* Mathlib has the top coefficient of an interpolating polynomial (`Lagrange.coeff_eq_sum`), but not
+  the divided difference as a named object or the error formula.
 -/
 
 open MeasureTheory Set
@@ -76,25 +79,29 @@ namespace DividedDifference
 
 variable {f f' f'' : ℝ → ℝ}
 
-/-- **The first divided difference** `f[t, s]`, given by its Hermite–Genocchi integral
-`∫₀¹ f' ((s - t) θ + t) dθ` rather than by the quotient `(f s - f t) / (s - t)`, so that it is
-defined and continuous on the diagonal as well.
+/-- **The first divided difference** $f[t, s]$, defined by its Hermite–Genocchi integral
+$$f[t, s] = \int_0^1 f'\bigl((s - t)\theta + t\bigr) \, d\theta.$$
+Unlike the quotient $(f(s) - f(t))/(s - t)$, the integral is defined and continuous on the
+diagonal $s = t$.
 
-The argument is the *derivative* `f'`, since that is all the integral sees. -/
+The argument is $f'$, not $f$, because the integral uses only $f'$. -/
 noncomputable def firstOrder (f' : ℝ → ℝ) (s t : ℝ) : ℝ :=
   ∫ θ in (0 : ℝ)..1, f' ((s - t) * θ + t)
 
-/-- **The second divided difference** `f[s, s, t]` at the repeated node `s`, given by its
-Hermite–Genocchi integral `∫₀¹ (1 - θ) f'' ((t - s) θ + s) dθ`. -/
+/-- **The second divided difference** $f[s, s, t]$ with the repeated node $s$, defined by its
+Hermite–Genocchi integral
+$$f[s, s, t] = \int_0^1 (1 - \theta) f''\bigl((t - s)\theta + s\bigr) \, d\theta.$$
+Here the argument is the second derivative $f''$. -/
 noncomputable def secondOrder (f'' : ℝ → ℝ) (s t : ℝ) : ℝ :=
   ∫ θ in (0 : ℝ)..1, (1 - θ) * f'' ((t - s) * θ + s)
 
-/-- On the diagonal the first divided difference is the derivative. -/
+/-- On the diagonal, the first divided difference is the derivative: $f[t, t] = f'(t)$. -/
 @[simp]
 theorem firstOrder_self (f' : ℝ → ℝ) (t : ℝ) : firstOrder f' t t = f' t := by
   simp [firstOrder]
 
-/-- On the diagonal the second divided difference is half the second derivative. -/
+/-- On the diagonal, the second divided difference is half the second derivative:
+$f[t, t, t] = f''(t)/2$. -/
 @[simp]
 theorem secondOrder_self (f'' : ℝ → ℝ) (t : ℝ) : secondOrder f'' t t = f'' t / 2 := by
   have hhalf : (∫ θ in (0 : ℝ)..1, (1 - θ)) = 1 / 2 := by
@@ -110,9 +117,12 @@ theorem secondOrder_self (f'' : ℝ → ℝ) (t : ℝ) : secondOrder f'' t t = f
   rw [intervalIntegral.integral_mul_const, hhalf]
   ring
 
-/-- **The first Taylor identity**: `f s - f t = (s - t) * f[t, s]`, which is what makes
-`DividedDifference.firstOrder` a divided difference. It is the fundamental theorem of calculus after
-the change of variables `v = (s - t) θ + t`. -/
+/-- **The first Taylor identity.** Let $f$ have the continuous derivative $f'$ on $\mathbb{R}$. Then
+for all $s, t \in \mathbb{R}$,
+$$f(s) - f(t) = (s - t) \, f[t, s].$$
+
+This identity makes `DividedDifference.firstOrder` a divided difference. The proof is the
+fundamental theorem of calculus after the change of variables $v = (s - t)\theta + t$. -/
 theorem sub_eq_mul_firstOrder (hf : ∀ x, HasDerivAt f (f' x) x) (hc' : Continuous f') (s t : ℝ) :
     f s - f t = (s - t) * firstOrder f' s t := by
   rcases eq_or_ne s t with rfl | hst
@@ -127,12 +137,14 @@ theorem sub_eq_mul_firstOrder (hf : ∀ x, HasDerivAt f (f' x) x) (hc' : Continu
     rw [hcv, hftc]
     field_simp
 
-/-- **The second Taylor identity**: `f' s - f[t, s] = (s - t) * f[s, s, t]`, which is what makes
-`DividedDifference.secondOrder` the second divided difference at the repeated node `s`.
+/-- **The second Taylor identity.** Let $f$ have the continuous derivative $f'$ on $\mathbb{R}$, and
+let $f'$ have the continuous derivative $f''$. Then for all $s, t \in \mathbb{R}$,
+$$f'(s) - f[t, s] = (s - t) \, f[s, s, t].$$
 
-The change of variables `v = (t - s) θ + s` turns `secondOrder` into
-`(t - s)⁻² ∫_s^t (t - v) f'' v dv`, and integration by parts against `u v = t - v` turns that into
-`(f t - f s) - (t - s) f' s`. -/
+This identity makes `DividedDifference.secondOrder` the second divided difference with the
+repeated node $s$. The change of variables $v = (t - s)\theta + s$ gives $f[s, s, t] = (t -
+s)^{-2} \int_s^t (t - v) f''(v) \, dv$. Integration by parts turns this into $(t - s)^{-2}
+\bigl(f(t) - f(s) - (t - s) f'(s)\bigr)$. -/
 theorem sub_firstOrder_eq (hf : ∀ x, HasDerivAt f (f' x) x) (hf' : ∀ x, HasDerivAt f' (f'' x) x)
     (hc' : Continuous f') (hc'' : Continuous f'') (s t : ℝ) :
     f' s - firstOrder f' s t = (s - t) * secondOrder f'' s t := by
@@ -175,41 +187,49 @@ theorem sub_firstOrder_eq (hf : ∀ x, HasDerivAt f (f' x) x) (hf' : ∀ x, HasD
     field_simp
     ring
 
-/-- The first divided difference is jointly continuous in its two nodes, the diagonal included. -/
+/-- If $f'$ is continuous, the first divided difference $(s, t) \mapsto f[t, s]$ is jointly
+continuous on $\mathbb{R}^2$, the diagonal included. -/
 @[fun_prop]
 theorem continuous_firstOrder (hc' : Continuous f') :
     Continuous fun p : ℝ × ℝ => firstOrder f' p.1 p.2 :=
   intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'
     (f := fun (p : ℝ × ℝ) (θ : ℝ) => f' ((p.1 - p.2) * θ + p.2)) (by fun_prop) 0 1
 
-/-- The second divided difference is jointly continuous in its two nodes, the diagonal included. -/
+/-- If $f''$ is continuous, the second divided difference $(s, t) \mapsto f[s, s, t]$ is jointly
+continuous on $\mathbb{R}^2$, the diagonal included. -/
 @[fun_prop]
 theorem continuous_secondOrder (hc'' : Continuous f'') :
     Continuous fun p : ℝ × ℝ => secondOrder f'' p.1 p.2 :=
   intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'
     (f := fun (p : ℝ × ℝ) (θ : ℝ) => (1 - θ) * f'' ((p.2 - p.1) * θ + p.1)) (by fun_prop) 0 1
 
-/-! ### The Newton divided differences at finitely many nodes
+/-!
+### The Newton divided differences at finitely many nodes
 
-The divided difference of the previous section is the two-node one, written so as to survive the
-collision of its nodes. This section is the classical object at `m + 1` distinct nodes: the
-coefficient `f[v₀, …, v_m]` of the Newton form of the interpolating polynomial. -/
+The divided difference of the previous section has two nodes, and it is defined also when the nodes
+coincide. This section has the classical object at $m + 1$ distinct nodes: the coefficient
+$f[v_0, \dots, v_m]$ of the Newton form of the interpolating polynomial.
+-/
 
 open Polynomial
 
-/-- The **Newton divided difference** `f[v₀, …, v_m]` of `f` at the `m + 1` nodes `v`, in its
-explicit form `∑ᵢ f(vᵢ) / ∏_{j ≠ i} (vᵢ - vⱼ)`.
+/-- The **Newton divided difference** of $f$ at the $m + 1$ nodes $v_0, \dots, v_m$:
+$$f[v_0, \dots, v_m] = \sum_{i=0}^{m} \frac{f(v_i)}{\prod_{j \neq i} (v_i - v_j)}.$$
 
-For distinct nodes it is the coefficient of `X^m` in the polynomial interpolating `f` at them
-(`DividedDifference.newton_eq_coeff`) — its *leading* coefficient exactly when that interpolant has
-degree `m`, and `0` when it has lower degree. That is the property the theory uses; the explicit
-form is taken as the definition because it is visibly symmetric in the nodes and needs no
-hypothesis. -/
+For distinct nodes it is the coefficient of $X^m$ in the polynomial that interpolates $f$ at the
+nodes (`DividedDifference.newton_eq_coeff`). This is the leading coefficient when the
+interpolant has degree $m$, and $0$ when it has a lower degree. The explicit form is the
+definition because it is visibly symmetric in the nodes and needs no hypothesis. When two nodes
+coincide, a quotient with a zero denominator is $0$ by the Lean convention. -/
 noncomputable def newton {m : ℕ} (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) : ℝ :=
   ∑ i, f (v i) / ∏ j ∈ Finset.univ.erase i, (v i - v j)
 
-/-- **The Newton divided difference is the coefficient of `X^m` in the interpolating polynomial.**
-This is `Lagrange.coeff_eq_sum` read backwards. -/
+/-- **The Newton divided difference is the coefficient of $X^m$ in the interpolating polynomial.**
+Let $v_0, \dots, v_m$ be distinct real numbers, and let $p$ be the polynomial of degree at most
+$m$ with $p(v_i) = f(v_i)$ for all $i$. Then $f[v_0, \dots, v_m]$ is the coefficient of $X^m$ in
+$p$.
+
+The interpolant is `Lagrange.interpolate`, and the proof is `Lagrange.coeff_eq_sum`. -/
 theorem newton_eq_coeff {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) :
     newton f v = (Lagrange.interpolate Finset.univ v fun i => f (v i)).coeff m := by
   have hcard : (Finset.univ : Finset (Fin (m + 1))).card = m + 1 := by simp
@@ -223,16 +243,18 @@ theorem newton_eq_coeff {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (h
   refine Finset.sum_congr rfl fun i _ => ?_
   simp only [Lagrange.eval_interpolate_at_node _ hv.injOn (Finset.mem_univ i)]
 
-/-- **The divided-difference form of the interpolation error** ([han2009theoretical], (3.2.5)): if
-`p` interpolates `f` at the `m + 1` distinct nodes `v₀, …, v_m` and `t` is none of them, then
+/-- **The divided-difference form of the interpolation error**, (3.2.5) of [han2009theoretical]. Let
+$v_0, \dots, v_m$ be distinct real numbers, let $p$ be the polynomial of degree at most $m$ that
+interpolates $f$ at them, and let $t$ be different from all $v_i$. Then
+$$f(t) - p(t) = \omega(t) \, f[v_0, \dots, v_m, t], \qquad \omega(t) = \prod_{i=0}^{m} (t -
+  v_i).$$
+Unlike the mean value form $\omega(t) f^{(m+1)}(\xi)/(m + 1)!$, it needs nothing of $f$ beyond
+its values.
 
-`f(t) - p(t) = ω(t) · f[v₀, …, v_m, t]`,   `ω(t) = ∏ᵢ (t - vᵢ)`.
-
-Unlike the mean-value form `ω(t) f⁽ᵐ⁺¹⁾(ξ)/(m + 1)!` it asks nothing of `f` beyond its values.
-
-The proof is Newton's form of the interpolant: the interpolant `q` at the enlarged node set differs
-from `p` by `f[v₀, …, v_m, t] ω`, because subtracting that multiple of `ω` from `q` leaves a
-polynomial of degree at most `m` that still takes the values of `f` at `v₀, …, v_m`. -/
+The proof uses the Newton form of the interpolant. The interpolant $q$ at the nodes
+$v_0, \dots, v_m, t$ differs from $p$ by $f[v_0, \dots, v_m, t] \, \omega$. Indeed, $q$ minus
+this multiple of $\omega$ is a polynomial of degree at most $m$ that takes the values of $f$ at
+$v_0, \dots, v_m$. The node list $v_0, \dots, v_m, t$ is `Fin.snoc v t`. -/
 theorem sub_eval_interpolate_eq_newton {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) {t : ℝ} (ht : ∀ i, v i ≠ t) :
     f t - (Lagrange.interpolate Finset.univ v fun i => f (v i)).eval t
@@ -308,18 +330,21 @@ theorem sub_eval_interpolate_eq_newton {m : ℕ} (f : ℝ → ℝ) {v : Fin (m +
   rw [← this]
   ring
 
-/-! ### Explicit formulas at two, three and four nodes
+/-!
+### Explicit formulas at two, three and four nodes
 
-Read off the definition of `DividedDifference.newton`, these are algebraic identities in the values
-of `f` at distinct nodes: the quotient forms, the symmetry of a three-node difference in its nodes,
-Newton's form of the quadratic interpolant, and the reduction of a divided difference
-one of whose nodes is held fixed to a divided difference of `dslope f a` of one order less. -/
+These follow from the definition of `DividedDifference.newton`. They are algebraic identities in the
+values of $f$ at the nodes: the quotient forms, the symmetry of a three-node divided difference in
+its nodes, the Newton form of the quadratic interpolant, and the reduction of a divided difference
+with a fixed node $a$ to a divided difference of $\operatorname{dslope} f \, a$ of one order less.
+-/
 
 section Explicit
 
 variable (f : ℝ → ℝ) {w x y z : ℝ}
 
-/-- The Newton divided difference at two nodes, explicitly: `f[x, y] = (f y - f x) / (y - x)`. -/
+/-- For $x \neq y$, the Newton divided difference at two nodes is $f[x, y] = (f(y) - f(x))/(y - x)$.
+-/
 theorem newton_two_eq (hxy : x ≠ y) : newton f ![x, y] = (f y - f x) / (y - x) := by
   have hne : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
   rw [newton, Fin.sum_univ_two]
@@ -330,7 +355,10 @@ theorem newton_two_eq (hxy : x ≠ y) : newton f ![x, y] = (f y - f x) / (y - x)
   field_simp
   ring
 
-/-- The Newton divided difference at three nodes, explicitly. -/
+/-- The Newton divided difference at three nodes is
+$$f[x, y, z] = \frac{f(x)}{(x - y)(x - z)} + \frac{f(y)}{(y - x)(y - z)} + \frac{f(z)}{(z -
+  x)(z - y)}.$$
+-/
 theorem newton_three_eq :
     newton f ![x, y, z] = f x / ((x - y) * (x - z)) + f y / ((y - x) * (y - z)) +
       f z / ((z - x) * (z - y)) := by
@@ -341,9 +369,12 @@ theorem newton_three_eq :
     show (Finset.univ.erase (2 : Fin 3)) = {0, 1} from rfl]
   simp
 
-/-- **A divided difference through a node `a` is a divided difference of `dslope f a`**:
-`f[x, y, a] = g[x, y]` with `g = dslope f a`, for distinct `x, y, a`. This is the recursive
-definition of divided differences read with `a` as the first node. -/
+/-- **A divided difference with the node $a$ is a divided difference of
+$\operatorname{dslope} f \, a$.** For distinct $x$, $y$ and $a$,
+$$f[x, y, a] = g[x, y], \qquad g = \operatorname{dslope} f \, a,$$
+where $g(u) = (f(u) - f(a))/(u - a)$ for $u \neq a$.
+
+This is the recursive definition of divided differences, read with $a$ as the first node. -/
 theorem newton_three_eq_newton_two_dslope (a : ℝ) (hxy : x ≠ y) (hxa : x ≠ a) (hya : y ≠ a) :
     newton f ![x, y, a] = newton (dslope f a) ![x, y] := by
   rw [newton_three_eq, newton_two_eq _ hxy, dslope_of_ne f hxa, dslope_of_ne f hya,
@@ -357,7 +388,10 @@ theorem newton_three_eq_newton_two_dslope (a : ℝ) (hxy : x ≠ y) (hxa : x ≠
   field_simp
   ring
 
-/-- The Newton divided difference at four nodes, explicitly. -/
+/-- The Newton divided difference at four nodes is
+$$f[w, x, y, z] = \frac{f(w)}{(w - x)(w - y)(w - z)} + \frac{f(x)}{(x - w)(x - y)(x - z)} +
+  \frac{f(y)}{(y - w)(y - x)(y - z)} + \frac{f(z)}{(z - w)(z - x)(z - y)}.$$
+-/
 theorem newton_four_eq {w : ℝ} :
     newton f ![w, x, y, z] =
       f w / ((w - x) * (w - y) * (w - z)) + f x / ((x - w) * (x - y) * (x - z)) +
@@ -372,11 +406,13 @@ theorem newton_four_eq {w : ℝ} :
   simp
   ring
 
-/-- **A four-node divided difference through `a` is a three-node divided difference of
-`dslope f a`**: `f[x, y, z, a] = g[x, y, z]` with `g = dslope f a`, for distinct `x, y, z, a`.
-The four-node analogue of `DividedDifference.newton_three_eq_newton_two_dslope`: it turns a third
-divided difference one of whose nodes is `a` into a *second* divided difference of a function whose
-second derivative at `a` is `f⁽³⁾(a) / 3`. -/
+/-- **A four-node divided difference with the node $a$ is a three-node divided difference of
+$\operatorname{dslope} f \, a$.** For distinct $x$, $y$, $z$ and $a$,
+$$f[x, y, z, a] = g[x, y, z], \qquad g = \operatorname{dslope} f \, a.$$
+
+This is the four-node analogue of `DividedDifference.newton_three_eq_newton_two_dslope`. It
+turns a third divided difference with the node $a$ into a second divided difference of a
+function whose second derivative at $a$ is $f'''(a)/3$. -/
 theorem newton_four_eq_newton_three_dslope (a : ℝ) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
     (hxa : x ≠ a) (hya : y ≠ a) (hza : z ≠ a) :
     newton f ![x, y, z, a] = newton (dslope f a) ![x, y, z] := by
@@ -397,17 +433,20 @@ theorem newton_four_eq_newton_three_dslope (a : ℝ) (hxy : x ≠ y) (hxz : x �
   field_simp
   ring
 
-/-- Divided differences are symmetric in their nodes: swapping the first two. -/
+/-- The three-node divided difference is symmetric in its first two nodes:
+$f[x, y, z] = f[y, x, z]$. -/
 theorem newton_three_swap₁ : newton f ![x, y, z] = newton f ![y, x, z] := by
   rw [newton_three_eq, newton_three_eq]; ring
 
-/-- Divided differences are symmetric in their nodes: swapping the last two. -/
+/-- The three-node divided difference is symmetric in its last two nodes: $f[x, y, z] = f[x, z, y]$.
+-/
 theorem newton_three_swap₂ : newton f ![x, y, z] = newton f ![x, z, y] := by
   rw [newton_three_eq, newton_three_eq]; ring
 
-/-- **Newton's form of the quadratic interpolant**, read at the third node:
-`f z = f x + (z - x) f[x, y] + (z - x)(z - y) f[x, y, z]` for distinct `x, y, z`. An algebraic
-identity in the three values of `f`. -/
+/-- **The Newton form of the quadratic interpolant, at the third node.** For distinct $x$, $y$ and
+$z$,
+$$f(z) = f(x) + (z - x) \frac{f(y) - f(x)}{y - x} + (z - x)(z - y) \, f[x, y, z].$$
+-/
 theorem newton_three_eq_of_newton_form (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z) :
     f z = f x + (z - x) * ((f y - f x) / (y - x)) + (z - x) * (z - y) * newton f ![x, y, z] := by
   rw [newton_three_eq]
@@ -422,8 +461,9 @@ theorem newton_three_eq_of_newton_form (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y 
 
 end Explicit
 
-/-- The Newton divided difference at two distinct nodes is the difference quotient, hence the value
-of `DividedDifference.firstOrder` there: the two sections describe the same object. -/
+/-- Let $f$ have the continuous derivative $f'$ on $\mathbb{R}$, and let $s \neq t$. Then the Newton
+divided difference $f[t, s]$ equals `DividedDifference.firstOrder f' s t`. So the two sections
+describe the same object. -/
 theorem newton_pair (hf : ∀ x, HasDerivAt f (f' x) x) (hc' : Continuous f') {s t : ℝ}
     (hst : s ≠ t) : newton f ![t, s] = firstOrder f' s t := by
   have hne : s - t ≠ 0 := sub_ne_zero.2 hst
@@ -437,15 +477,17 @@ section MeanValueForm
 
 variable {f f₁ f₂ : ℝ → ℝ} {x y z : ℝ}
 
-/-- **The mean value form of the second divided difference**, for sorted nodes: on a convex set
-where `f` is twice differentiable with derivatives `f₁, f₂`, and `x < y < z` in it, there is `ξ`
-in the set with `f[x, y, z] = f₂(ξ) / 2` ([han2009theoretical] §3.2). Rolle's theorem twice on
-`f` minus its Newton interpolant `f(x) + (t - x) f[x, y] + (t - x)(t - y) f[x, y, z]`, whose
-second derivative is `f₂ - 2 f[x, y, z]`.
+/-- **The mean value form of the second divided difference, for sorted nodes.** Let
+$S \subseteq \mathbb{R}$ be convex, let $f$ have the derivative $f_1$ and $f_1$ the derivative
+$f_2$ at every point of $S$, and let $x < y < z$ with $x, z \in S$. Then there is $\xi \in S$
+with
+$$f[x, y, z] = \frac{f_2(\xi)}{2}.$$
+This is in §3.2 of [han2009theoretical].
 
-No node is distinguished here, so `DividedDifference.newton_three_eq_newton_two_dslope` cannot be
-used to lower the order to a plain difference quotient of `dslope f a`; the Rolle argument is what
-replaces it. -/
+The proof applies Rolle's theorem twice to $f$ minus its Newton interpolant $f(x) + (t - x) f[x,
+y] + (t - x)(t - y) f[x, y, z]$, whose second derivative is $f_2 - 2 f[x, y, z]$. No node is
+distinguished here, so `DividedDifference.newton_three_eq_newton_two_dslope` cannot reduce the
+order. -/
 theorem exists_newton_three_eq_of_lt {s : Set ℝ} (hs : Convex ℝ s)
     (hx : x ∈ s) (hz : z ∈ s) (hxy : x < y) (hyz : y < z)
     (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :
@@ -498,9 +540,13 @@ theorem exists_newton_three_eq_of_lt {s : Set ℝ} (hs : Convex ℝ s)
     fun u hu => hE₁d u (hsub₁₂ (Ioo_subset_Icc_self hu))
   exact ⟨ξ, hsub ⟨(hξ₁.1.trans hξ.1).le, (hξ.2.trans hξ₂.2).le⟩, by linarith⟩
 
-/-- **The mean value form of the second divided difference** at three distinct nodes in a convex
-set where `f` is twice differentiable: `f[x, y, z] = f₂(ξ) / 2` for some `ξ` in the set. The
-sorted case `exists_newton_three_eq_of_lt` plus the symmetry of `newton` in its nodes. -/
+/-- **The mean value form of the second divided difference.** Let $S \subseteq \mathbb{R}$ be
+convex, let $f$ have the derivative $f_1$ and $f_1$ the derivative $f_2$ at every point of $S$,
+and let $x$, $y$ and $z$ be distinct points of $S$. Then there is $\xi \in S$ with
+$$f[x, y, z] = \frac{f_2(\xi)}{2}.$$
+
+The proof is `DividedDifference.exists_newton_three_eq_of_lt` after sorting the nodes, by the
+symmetry of `DividedDifference.newton` in its nodes. -/
 theorem exists_newton_three_eq {s : Set ℝ} (hs : Convex ℝ s)
     (hx : x ∈ s) (hy : y ∈ s) (hz : z ∈ s) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
     (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :

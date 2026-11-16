@@ -20,71 +20,84 @@ import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 
 /-!
-# The `L^p`–`L^q` duality
+# The duality between $L^p$ and $L^q$
 
-For conjugate exponents `1/p + 1/q = 1` the pairing `u ↦ (f ↦ ∫ u f)` is a linear isometry
-`Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` on a σ-finite measure, and it is onto when
-`1 ≤ p < ∞`: every continuous linear functional on `L^p` is integration against a unique
-`u ∈ L^q`, with `‖u‖_q = ‖φ‖` (the **Riesz representation theorems** for `L^p`,
-[brezis2011functional] Theorem 4.11 for `1 < p < ∞` and Theorem 4.14 for `p = 1`). Consequently
-`L^p` is reflexive for `1 < p < ∞` ([brezis2011functional] Theorem 4.10), while the pairing
-`L^1 → (L^∞)^*` is not onto.
+Let $\mu$ be a measure, let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let
+$p, q \in [1, \infty]$ be conjugate exponents, $1/p + 1/q = 1$. Every $u \in L^q(\mu)$ defines the
+continuous linear functional $f \mapsto \int u f \, d\mu$ on $L^p(\mu)$. On a $\sigma$-finite
+measure this map $L^q \to (L^p)^*$ is an isometry. It is onto when $1 \le p < \infty$: every
+continuous linear functional $\varphi$ on $L^p$ is integration against a unique $u \in L^q$, and
+$\|u\|_q = \|\varphi\|$. These are the **Riesz representation theorems** for $L^p$, Theorem 4.11 of
+[brezis2011functional] for $1 < p < \infty$ and Theorem 4.14 for $p = 1$. Consequently $L^p$ is
+reflexive for $1 < p < \infty$ (Theorem 4.10 of [brezis2011functional]). In contrast, the map
+$L^1 \to (L^\infty)^*$ is not onto, as discussed in §4.3 of [brezis2011functional].
 
 ## Main definitions
 
-* `MeasureTheory.Lp.toDualCLM 𝕜 p q μ : Lp 𝕜 q μ →L[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the pairing,
-  Mathlib's `ContinuousLinearMap.lpPairing` for the multiplication of `𝕜`; at `p = q = 2` over
-  `ℝ` it is the inner product, `MeasureTheory.L2.inner_eq_integral_mul`.
-* `MeasureTheory.Lp.toDual 𝕜 p q μ : Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the same map
-  bundled as a linear isometry (σ-finite `μ`).
-* `MeasureTheory.Lp.dualEquiv 𝕜 p q μ hp : Lp 𝕜 q μ ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the
-  identification `(L^p)^* = L^q` for `1 ≤ p < ∞`.
-* `MeasureTheory.Lp.dualToSignedMeasure hp φ : SignedMeasure α` — the finite signed measure
-  `E ↦ φ (1_E)` attached to a functional `φ` on `L^p` of a finite measure, the first step of the
-  Radon–Nikodym proof of surjectivity.
+* `MeasureTheory.Lp.toDualCLM`: the continuous linear map $L^q \to (L^p)^*$,
+  $u \mapsto (f \mapsto \int u f \, d\mu)$.
+* `MeasureTheory.Lp.toDual`: the same map as a linear isometry, for a $\sigma$-finite measure.
+* `MeasureTheory.Lp.dualEquiv`: the identification $(L^p)^* = L^q$ as a linear isometric
+  equivalence, for $1 \le p < \infty$ and a $\sigma$-finite measure.
+* `MeasureTheory.Lp.dualToSignedMeasure`: the finite signed measure
+  $E \mapsto \varphi(\mathbf{1}_E)$ of a functional $\varphi$ on $L^p$ of a finite measure.
+* `MeasureTheory.extremal`: the function $|u|^{r - 2} \bar u$ that realizes the norm of $u$ in the
+  pairing.
 
-## Main statements
+## Main results
 
-* `MeasureTheory.Lp.norm_toDualCLM_apply_of_ne_top`, `MeasureTheory.Lp.norm_toDualCLM_apply` —
-  the pairing is isometric: `‖f ↦ ∫ u f‖ = ‖u‖_q`, with no hypothesis on `μ` when `q ≠ ∞`, and
-  for σ-finite `μ` in general (on a measure that is infinite on every nonempty set `L^1 = 0`
-  and the equality fails at `q = ∞`).
+* `MeasureTheory.Lp.norm_toDualCLM_apply_of_ne_top`, `MeasureTheory.Lp.norm_toDualCLM_apply`: the
+  norm of $f \mapsto \int u f \, d\mu$ is $\|u\|_q$, for every measure when $q \neq \infty$, and for
+  a $\sigma$-finite measure in general.
 * `MeasureTheory.Lp.exists_forall_eq_integral_of_isFiniteMeasure`,
-  `MeasureTheory.Lp.exists_forall_eq_integral`, `MeasureTheory.Lp.toDual_surjective` — the
-  **Riesz representation theorem**: for `1 ≤ p < ∞` and σ-finite `μ`, every
-  `φ : StrongDual 𝕜 (Lp 𝕜 p μ)` is `f ↦ ∫ u f` for some `u : Lp 𝕜 q μ`.
-* `MeasureTheory.Lp.instIsReflexive` — `L^p` is reflexive for `1 < p < ∞` (σ-finite `μ`).
-* `MeasureTheory.Lp.exists_strongDual_top_apply_eq` — for an atomless σ-finite measure on a
-  finite-dimensional real normed space and a point all of whose neighbourhoods have positive
-  measure, a functional on `L^∞` that is the point evaluation on the continuous compactly
-  supported functions and is not `f ↦ ∫ u f` for any `u ∈ L^1`; hence
-  `MeasureTheory.Lp.not_surjective_toDual_top` — on a nonempty open subset of a nontrivial
-  finite-dimensional real normed space, with Lebesgue (or any atomless, open-positive, σ-finite)
-  measure, `(L^∞)^*` is strictly larger than `L^1`.
+  `MeasureTheory.Lp.exists_forall_eq_integral`: for real scalars and $1 \le p < \infty$, every
+  continuous linear functional on $L^p$ is $f \mapsto \int u f \, d\mu$ for some $u \in L^q$, on a
+  finite and on a $\sigma$-finite measure.
+* `MeasureTheory.Lp.toDual_surjective`: the **Riesz representation theorem**, the map
+  $L^q \to (L^p)^*$ is onto for $1 \le p < \infty$ and a $\sigma$-finite measure.
+* `MeasureTheory.Lp.isReflexive_of_one_lt_of_ne_top`, `MeasureTheory.Lp.instIsReflexive`: $L^p$ is
+  reflexive for $1 < p < \infty$ and a $\sigma$-finite measure.
+* `MeasureTheory.Lp.exists_strongDual_top_apply_eq`: for a $\sigma$-finite measure without atoms on
+  a finite-dimensional real normed space and a point $x_0$ whose neighbourhoods have positive
+  measure, some functional on $L^\infty$ is the evaluation at $x_0$ on the continuous compactly
+  supported functions and is not given by any $u \in L^1$.
+* `MeasureTheory.Lp.not_surjective_toDual_top`: on a nonempty open subset of a finite-dimensional
+  real normed space, with a $\sigma$-finite measure without atoms that is positive on nonempty open
+  sets, the map $L^1 \to (L^\infty)^*$ is not onto.
+* `MeasureTheory.continuous_integral_mul_prod`: the map $(f, g) \mapsto \int f g \, d\mu$ on
+  $L^p \times L^q$ is continuous.
 
-## The proof of surjectivity
+## Proof outline
 
-The book proves Theorem 4.11 from the reflexivity of `L^p` (uniform convexity and Milman–Pettis)
-and Theorem 4.14 from the `p = 2` case by a weight. Here both are proved at once by the
-Radon–Nikodym route, which needs neither: on a finite measure a functional `φ` on `L^p`, `p < ∞`,
-defines the finite signed measure `E ↦ φ (1_E)`, absolutely continuous with respect to `μ`; its
-Radon–Nikodym derivative `u₀` (Mathlib's `SignedMeasure.withDensityᵥ_rnDeriv_eq`) represents `φ`
-on indicators, hence on simple functions, hence (by bounded approximation) on bounded functions;
-the bound `‖u₀‖_q ≤ ‖φ‖` comes from testing `φ` against the book's own extremal functions
-`|u₀|^(q-2) u₀` (truncated), exactly the argument of the book's proof of Theorem 4.14; density of
-the bounded functions finishes. The σ-finite case reduces to the finite one by a positive weight
-`θ ∈ L^p`, `0 < θ ≤ 1`: multiplication by `θ` is an isometry of `L^p(θ^p μ)` onto `L^p(μ)`. The
-scalar field `𝕜` is any `RCLike` field; the complex case follows from the real one applied to the
-real and imaginary parts of `φ` on real-valued functions. Reflexivity is then a formal
-consequence of the two surjectivities `L^q → (L^p)^*` and `L^p → (L^q)^*`.
+Brezis proves Theorem 4.11 from the reflexivity of $L^p$, by uniform convexity and the Milman–Pettis
+theorem, and Theorem 4.14 from the case $p = 2$ with a weight. Here both are proved at once by the
+Radon–Nikodym theorem, which needs neither. On a finite measure, a functional $\varphi$ on $L^p$,
+$p < \infty$, defines the finite signed measure $E \mapsto \varphi(\mathbf{1}_E)$, which is
+absolutely continuous with respect to $\mu$. Its Radon–Nikodym derivative $u_0$ (Mathlib's
+`MeasureTheory.SignedMeasure.withDensityᵥ_rnDeriv_eq`) represents $\varphi$ on indicator functions,
+hence on simple functions, and, by bounded approximation, on bounded functions. The bound
+$\|u_0\|_q \le \|\varphi\|$ comes from testing $\varphi$ against truncations of the functions
+$|u_0|^{q - 2} u_0$ of the book, as in the proof of Theorem 4.14 of [brezis2011functional]. The
+density of the bounded functions completes the proof.
 
-The pairing is bilinear, `∫ u f` and not `∫ conj u f`, because `StrongDual 𝕜 E` consists of
-`𝕜`-linear functionals; at `𝕜 = ℂ` the extremal function therefore carries a conjugate.
+The $\sigma$-finite case reduces to the finite case by a weight $\theta \in L^p$ with
+$0 < \theta \le 1$: multiplication by $\theta$ is an isometry of $L^p(\theta^p \mu)$ onto
+$L^p(\mu)$. The complex case follows from the real case, applied to the real and imaginary parts of
+$\varphi$ on real functions. Reflexivity is then a formal consequence of the two surjections
+$L^q \to (L^p)^*$ and $L^p \to (L^q)^*$.
 
-## References
+## Implementation notes
 
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], §4.3.
+* The map `MeasureTheory.Lp.toDualCLM` is Mathlib's `ContinuousLinearMap.lpPairing` for the
+  multiplication of $\mathbb{K}$. For $p = q = 2$ over $\mathbb{R}$ it is the inner product
+  (`MeasureTheory.L2.inner_eq_integral_mul`).
+* The pairing is bilinear, $\int u f$ and not $\int \bar u f$, because `StrongDual 𝕜 E` consists of
+  $\mathbb{K}$-linear functionals. For $\mathbb{K} = \mathbb{C}$ the extremal function therefore
+  contains a complex conjugate.
+* Without $\sigma$-finiteness the isometry can fail for $q = \infty$: for a measure that is infinite
+  on every nonempty measurable set, $L^1 = 0$.
+* The hypotheses $p \ge 1$, $q \ge 1$ and $1/p + 1/q = 1$ are the instances `Fact (1 ≤ p)`,
+  `Fact (1 ≤ q)` and `p.HolderConjugate q`.
 -/
 
 noncomputable section
@@ -101,21 +114,28 @@ variable {α : Type*} [MeasurableSpace α] {𝕜 : Type*} [RCLike 𝕜] {p q : �
 namespace Lp
 
 variable (𝕜 p q μ) in
-/-- The pairing `u ↦ (f ↦ ∫ u f)` of `Lp 𝕜 q μ` with the dual of `Lp 𝕜 p μ`, for conjugate
-exponents `1/p + 1/q = 1`: Mathlib's `ContinuousLinearMap.lpPairing` for the multiplication of
-`𝕜` ([brezis2011functional] Theorem 4.10, Step 3, the operator `T`). -/
+/-- Let $p, q \in [1, \infty]$ be conjugate exponents, $1/p + 1/q = 1$. The **pairing** of
+$L^q(\mu; \mathbb{K})$ with the dual of $L^p(\mu; \mathbb{K})$ is the continuous linear map
+$$L^q(\mu) \to L^p(\mu)^*, \qquad u \mapsto \Big(f \mapsto \int u f \, d\mu\Big).$$
+This is the operator $T$ of Step 3 of the proof of Theorem 4.10 of [brezis2011functional].
+
+The definition is Mathlib's `ContinuousLinearMap.lpPairing` for the multiplication of
+$\mathbb{K}$. -/
 def toDualCLM [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] :
     Lp 𝕜 q μ →L[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ) :=
   (ContinuousLinearMap.mul 𝕜 𝕜).lpPairing μ q p
 
-/-- The pairing evaluated: `toDualCLM 𝕜 p q μ u f = ∫ u f`. -/
+/-- For conjugate exponents $p, q \in [1, \infty]$, $u \in L^q(\mu)$ and $f \in L^p(\mu)$, the value
+of `MeasureTheory.Lp.toDualCLM` at $u$ and $f$ is $\int u(x) f(x) \, d\mu(x)$. -/
 theorem toDualCLM_apply [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] (u : Lp 𝕜 q μ)
     (f : Lp 𝕜 p μ) : toDualCLM 𝕜 p q μ u f = ∫ x, u x * f x ∂μ := by
   change (ContinuousLinearMap.mul 𝕜 𝕜).lpPairing μ q p u f = _
   rw [ContinuousLinearMap.lpPairing_eq_integral]
   rfl
 
-/-- Hölder's inequality for the pairing: `‖f ↦ ∫ u f‖ ≤ ‖u‖_q`. -/
+/-- Hölder's inequality for the pairing. For conjugate exponents $p, q \in [1, \infty]$ and
+$u \in L^q(\mu)$, the functional $f \mapsto \int u f \, d\mu$ on $L^p(\mu)$ has norm at most
+$\|u\|_q$. -/
 theorem norm_toDualCLM_apply_le [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (u : Lp 𝕜 q μ) : ‖toDualCLM 𝕜 p q μ u‖ ≤ ‖u‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg u) fun f => ?_
@@ -141,31 +161,41 @@ theorem norm_toDualCLM_apply_le [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConju
 
 end Lp
 
-/-! ### The `L²` inner product -/
+/-! ### The inner product of $L^2$ -/
 
 open scoped InnerProductSpace in
-/-- **The `L²(μ)` inner product of two real `L²` functions is the integral of their product**,
-`⟪f, g⟫ = ∫ f g`: the real case of `MeasureTheory.L2.inner_def`, in which the pairing
-`toDualCLM ℝ 2 2 μ` is the inner product. -/
+/-- **The inner product of two real functions in $L^2(\mu)$ is the integral of their product**: for
+$f, g \in L^2(\mu; \mathbb{R})$,
+$$\langle f, g \rangle = \int f g \, d\mu.$$
+
+This is the real case of `MeasureTheory.L2.inner_def`. It shows that the pairing
+`MeasureTheory.Lp.toDualCLM ℝ 2 2 μ` is the inner product. -/
 theorem L2.inner_eq_integral_mul (f g : Lp ℝ 2 μ) : ⟪f, g⟫_ℝ = ∫ x, f x * g x ∂μ := by
   rw [L2.inner_def]
   exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp [RCLike.inner_apply, mul_comm])
 
-/-! ### The extremal test functions
+/-!
+### The extremal test functions
 
-`extremal u r x = ‖u x‖ ^ (r - 2) * conj (u x)` is the function against which `u ∈ L^r` is paired
-to realize its norm: `u * extremal u r = ‖u‖ ^ r` pointwise, and `‖extremal u r‖ ≤ ‖u‖ ^ (r - 1)`.
-At `r = 1` it is `conj u / ‖u‖`, the (conjugate) sign of `u`. -/
+For $u \colon \alpha \to \mathbb{K}$ and $r \in \mathbb{R}$, the function $|u|^{r - 2} \bar u$ is
+the test function against which $u \in L^r$ is paired to realize its norm. Pointwise,
+$u \cdot |u|^{r - 2} \bar u = |u|^r$ and $\big||u|^{r - 2} \bar u\big| \le |u|^{r - 1}$. For $r = 1$
+it is $\bar u / |u|$, the conjugate of the sign of $u$.
+-/
 
 section Extremal
 
 variable (u : α → 𝕜) (r : ℝ)
 
-/-- The extremal test function `x ↦ ‖u x‖ ^ (r - 2) * conj (u x)` (zero where `u` vanishes). -/
+/-- Let $u \colon \alpha \to \mathbb{K}$ and $r \in \mathbb{R}$. The **extremal test function** of
+$u$ is
+$$x \mapsto |u(x)|^{r - 2} \, \overline{u(x)}.$$
+It is $0$ where $u = 0$. -/
 def extremal (x : α) : 𝕜 := ((‖u x‖ ^ (r - 2) : ℝ) : 𝕜) * starRingEnd 𝕜 (u x)
 
 omit [MeasurableSpace α] in
-/-- `u * extremal u r = ‖u‖ ^ r` pointwise (`r ≠ 0`). -/
+/-- For $u \colon \alpha \to \mathbb{K}$, $r \neq 0$ and every $x$, $u(x) \cdot |u(x)|^{r - 2}
+\overline{u(x)} = |u(x)|^r$. -/
 theorem mul_extremal {r : ℝ} (hr : r ≠ 0) (x : α) :
     u x * extremal u r x = ((‖u x‖ ^ r : ℝ) : 𝕜) := by
   unfold extremal
@@ -176,7 +206,10 @@ theorem mul_extremal {r : ℝ} (hr : r ≠ 0) (x : α) :
     norm_num
 
 omit [MeasurableSpace α] in
-/-- `‖extremal u r‖ ≤ ‖u‖ ^ (r - 1)` pointwise, with equality where `u ≠ 0`. -/
+/-- For $u \colon \alpha \to \mathbb{K}$, $r \in \mathbb{R}$ and every $x$, the extremal test
+function satisfies $\big||u(x)|^{r - 2} \overline{u(x)}\big| \le |u(x)|^{r - 1}$.
+
+Equality holds where $u(x) \neq 0$, but the theorem states only the inequality. -/
 theorem norm_extremal_le (r : ℝ) (x : α) : ‖extremal u r x‖ ≤ ‖u x‖ ^ (r - 1) := by
   unfold extremal
   by_cases h : u x = 0
@@ -186,11 +219,13 @@ theorem norm_extremal_le (r : ℝ) (x : α) : ‖extremal u r x‖ ≤ ‖u x‖
       ← Real.rpow_add_one (norm_ne_zero_iff.2 h), show r - 2 + 1 = r - 1 by ring]
 
 omit [MeasurableSpace α] in
-/-- The extremal function at `r = 1`, the conjugate sign of `u`, is bounded by `1`. -/
+/-- For $u \colon \alpha \to \mathbb{K}$ and every $x$, the extremal test function for $r = 1$, the
+conjugate of the sign of $u$, has absolute value at most $1$. -/
 theorem norm_extremal_one_le (x : α) : ‖extremal u 1 x‖ ≤ 1 := by
   simpa using norm_extremal_le u 1 x
 
-/-- The extremal function of an a.e. strongly measurable `u` is a.e. strongly measurable. -/
+/-- If $u$ is almost everywhere strongly measurable, then for every $r \in \mathbb{R}$ its extremal
+test function is almost everywhere strongly measurable. -/
 theorem aestronglyMeasurable_extremal {u : α → 𝕜} (hu : AEStronglyMeasurable u μ) (r : ℝ) :
     AEStronglyMeasurable (extremal u r) μ := by
   unfold extremal
@@ -198,8 +233,12 @@ theorem aestronglyMeasurable_extremal {u : α → 𝕜} (hu : AEStronglyMeasurab
     (hu.norm.aemeasurable.pow_const (r - 2)).aestronglyMeasurable).mul
     (RCLike.continuous_conj.comp_aestronglyMeasurable hu)
 
-/-- For `1 < r` and `p * (r - 1) = q` (so that `(r - 1) p = r` when `q = r`), the extremal
-function of `u ∈ L^q` lies in `L^p` with `‖extremal u r‖_p ≤ ‖u‖_q ^ (r - 1)`. -/
+/-- Let $u$ be almost everywhere strongly measurable, let $r > 1$, and let $p, q \in [0, \infty]$
+satisfy $p (r - 1) = q$. Then the extremal test function $v = |u|^{r - 2} \bar u$ satisfies
+$$\|v\|_p \le \|u\|_q^{r - 1}.$$
+In particular $v \in L^p$ when $u \in L^q$. For $q = r$ the condition is $(r - 1) p = r$.
+
+The seminorms are the `ℝ≥0∞`-valued `MeasureTheory.eLpNorm`. -/
 theorem eLpNorm_extremal_le {u : α → 𝕜} (hu : AEStronglyMeasurable u μ) {r : ℝ} (hr : 1 < r)
     (hpq : p * ENNReal.ofReal (r - 1) = q) :
     eLpNorm (extremal u r) p μ ≤ eLpNorm u q μ ^ (r - 1) := by
@@ -211,10 +250,12 @@ theorem eLpNorm_extremal_le {u : α → 𝕜} (hu : AEStronglyMeasurable u μ) {
 
 end Extremal
 
-/-! ### The signed measure of a functional on `L^p` of a finite measure -/
+/-! ### The signed measure of a functional on $L^p$ of a finite measure -/
 
-/-- The indicators (in `Lp`, `p ≠ ∞`) of a disjoint sequence of sets of finite total measure sum
-to the indicator of the union. -/
+/-- Let $E$ be a normed group, let $1 \le p < \infty$, let $(s_i)_{i \in \mathbb{N}}$ be pairwise
+disjoint measurable sets of finite measure whose union $s$ has finite measure, and let
+$c \in E$. Then $\sum_i c \mathbf{1}_{s_i} = c \mathbf{1}_s$, with the series convergent in
+$L^p(\mu; E)$. -/
 theorem hasSum_indicatorConstLp_iUnion {E : Type*} [NormedAddCommGroup E] [Fact (1 ≤ p)]
     (hp : p ≠ ∞) {s : ℕ → Set α} (hs : ∀ i, MeasurableSet (s i))
     (hd : Pairwise fun i j => Disjoint (s i) (s j)) (hμs : ∀ i, μ (s i) ≠ ∞)
@@ -256,10 +297,14 @@ namespace Lp
 variable [IsFiniteMeasure μ] [Fact (1 ≤ p)]
 
 open scoped Classical in
-/-- The finite signed measure `E ↦ φ (1_E)` attached to a continuous linear functional `φ` on
-`L^p` of a finite measure, `p ≠ ∞` (zero on non-measurable sets). Its countable additivity is the
-convergence `1_{⋃ Eᵢ} = ∑ 1_{Eᵢ}` in `L^p`, and it is absolutely continuous with respect to `μ`;
-its Radon–Nikodym derivative represents `φ`. -/
+/-- Let $\mu$ be a finite measure, let $1 \le p < \infty$, and let $\varphi$ be a continuous linear
+functional on $L^p(\mu; \mathbb{R})$. The **signed measure of $\varphi$** is the finite signed
+measure $E \mapsto \varphi(\mathbf{1}_E)$ on the measurable sets $E$. Its Radon–Nikodym
+derivative with respect to $\mu$ represents $\varphi$.
+
+Its value on a set that is not measurable is $0$. The countable additivity is the convergence
+$\mathbf{1}_{\bigcup_i E_i} = \sum_i \mathbf{1}_{E_i}$ in $L^p$
+(`MeasureTheory.hasSum_indicatorConstLp_iUnion`). -/
 def dualToSignedMeasure (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) : SignedMeasure α where
   measureOf' s :=
     if hs : MeasurableSet s then φ (indicatorConstLp p hs (measure_ne_top μ s) 1) else 0
@@ -271,15 +316,16 @@ def dualToSignedMeasure (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) : S
       (measure_ne_top μ _) (1 : ℝ)).mapL φ
 
 open scoped Classical in
-/-- The signed measure of `φ` on a measurable set is `φ` of its indicator. -/
+/-- For a measurable set $E$, the signed measure `MeasureTheory.Lp.dualToSignedMeasure` of $\varphi$
+has the value $\varphi(\mathbf{1}_E)$ at $E$. -/
 theorem dualToSignedMeasure_apply (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) {E : Set α}
     (hE : MeasurableSet E) :
     dualToSignedMeasure hp φ E = φ (indicatorConstLp p hE (measure_ne_top μ E) 1) := by
   change dite _ _ _ = _
   rw [dite_eq_left hE]
 
-/-- The signed measure `E ↦ φ (1_E)` is absolutely continuous with respect to `μ`: a `μ`-null set
-has a zero indicator in `L^p`. -/
+/-- The signed measure $E \mapsto \varphi(\mathbf{1}_E)$ is absolutely continuous with respect to
+$\mu$, because the indicator function of a $\mu$-null set is $0$ in $L^p$. -/
 theorem dualToSignedMeasure_absolutelyContinuous (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) :
     dualToSignedMeasure hp φ ≪ᵥ μ.toENNRealVectorMeasure := by
   refine VectorMeasure.AbsolutelyContinuous.mk fun E hE hμE => ?_
@@ -291,8 +337,9 @@ theorem dualToSignedMeasure_absolutelyContinuous (hp : p ≠ ∞) (φ : StrongDu
       Real.zero_rpow (one_div_ne_zero (ENNReal.toReal_ne_zero.2 ⟨hp0, hp⟩)), mul_zero]
   rw [this, map_zero]
 
-/-- The Radon–Nikodym derivative of `E ↦ φ (1_E)` integrates to `φ (1_E)` on every measurable
-`E`. -/
+/-- Let $u_0$ be the Radon–Nikodym derivative of the signed measure
+$E \mapsto \varphi(\mathbf{1}_E)$ with respect to $\mu$. Then
+$\int_E u_0 \, d\mu = \varphi(\mathbf{1}_E)$ for every measurable set $E$. -/
 theorem setIntegral_rnDeriv_dualToSignedMeasure (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ))
     {E : Set α} (hE : MeasurableSet E) :
     ∫ x in E, (dualToSignedMeasure hp φ).rnDeriv μ x ∂μ =
@@ -302,7 +349,9 @@ theorem setIntegral_rnDeriv_dualToSignedMeasure (hp : p ≠ ∞) (φ : StrongDua
     dualToSignedMeasure_apply]
 
 omit [IsFiniteMeasure μ] [Fact (1 ≤ p)] in
-/-- `1_s c = c • 1_s 1` in `Lp`. -/
+/-- Let $s$ be a measurable set of finite measure and let $c \in \mathbb{R}$. In $L^p(\mu)$, the
+class of the function $c \mathbf{1}_s$ is $c$ times the class of $\mathbf{1}_s$. Here
+$p \in [0, \infty]$ is arbitrary. -/
 theorem toLp_indicator_const_eq_smul {s : Set α} (hs : MeasurableSet s) (hμs : μ s ≠ ∞) (c : ℝ)
     (h : MemLp (s.indicator fun _ => c) p μ) :
     h.toLp _ = c • indicatorConstLp p hs hμs (1 : ℝ) := by
@@ -312,7 +361,9 @@ theorem toLp_indicator_const_eq_smul {s : Set α} (hs : MeasurableSet s) (hμs :
   rw [h1, h2, Pi.smul_apply, h3, smul_eq_mul]
   by_cases hx : x ∈ s <;> simp [hx]
 
-/-- The Radon–Nikodym derivative of `E ↦ φ (1_E)` represents `φ` on simple functions. -/
+/-- Let $u_0$ be the Radon–Nikodym derivative of the signed measure
+$E \mapsto \varphi(\mathbf{1}_E)$ with respect to $\mu$. Then
+$\varphi(g) = \int u_0 \, g \, d\mu$ for every simple function $g$. -/
 theorem apply_toLp_simpleFunc_eq_integral_rnDeriv_mul (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ))
     (g : SimpleFunc α ℝ) :
     φ ((g.memLp_of_isFiniteMeasure p μ).toLp g) =
@@ -340,7 +391,9 @@ theorem apply_toLp_simpleFunc_eq_integral_rnDeriv_mul (hp : p ≠ ∞) (φ : Str
       (hu₀.mul_bdd g.aestronglyMeasurable (ae_of_all _ hCg))]
     simp only [Pi.add_apply, mul_add]
 
-/-- The Radon–Nikodym derivative of `E ↦ φ (1_E)` represents `φ` on bounded functions. -/
+/-- Let $u_0$ be the Radon–Nikodym derivative of the signed measure
+$E \mapsto \varphi(\mathbf{1}_E)$ with respect to $\mu$. If $f \in L^p(\mu)$ and $|f| \le C$
+almost everywhere for some $C \in \mathbb{R}$, then $\varphi(f) = \int u_0 \, f \, d\mu$. -/
 theorem apply_eq_integral_rnDeriv_mul_of_ae_bound (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ))
     (f : Lp ℝ p μ) {C : ℝ} (hC : ∀ᵐ x ∂μ, ‖f x‖ ≤ C) :
     φ f = ∫ x, (dualToSignedMeasure hp φ).rnDeriv μ x * f x ∂μ := by
@@ -396,10 +449,13 @@ theorem apply_eq_integral_rnDeriv_mul_of_ae_bound (hp : p ≠ ∞) (φ : StrongD
 
 end Lp
 
-/-! ### The `L^q` bound, and the representation theorem on a finite measure -/
+/-! ### The bound in $L^q$, and the representation theorem on a finite measure -/
 
-/-- If `∫_A ‖u‖ ≤ M μ(A)` for every measurable `A` of finite measure, then `‖u‖ ≤ M` almost
-everywhere (σ-finite `μ`). -/
+/-- Let $\mu$ be $\sigma$-finite, let $E$ be a normed group, let $u \colon \alpha \to E$ be almost
+everywhere strongly measurable, and let $M \in \mathbb{R}$. Suppose that $\|u\|$ is integrable
+on every measurable set $A$ with $\mu(A) < \infty$, and that
+$$\int_A \|u\| \, d\mu \le M \mu(A)$$
+for every such $A$. Then $\|u\| \le M$ almost everywhere. -/
 theorem ae_norm_le_of_forall_setIntegral_norm_le [SigmaFinite μ] {E : Type*}
     [NormedAddCommGroup E] {u : α → E} (hu : AEStronglyMeasurable u μ) {M : ℝ}
     (hint : ∀ A, MeasurableSet A → μ A < ∞ → IntegrableOn (fun x => ‖u x‖) A μ)
@@ -448,9 +504,14 @@ namespace Lp
 
 variable [IsFiniteMeasure μ] [Fact (1 ≤ p)]
 
-/-- The Radon–Nikodym derivative of `E ↦ φ (1_E)` lies in `L^q` with `‖u₀‖_q ≤ ‖φ‖`, by testing
-`φ` against the truncated extremal functions ([brezis2011functional], the proof of Theorem 4.14,
-inequality (14)). -/
+/-- Let $\mu$ be a finite measure, let $1 \le p < \infty$ and $q$ be conjugate exponents, and let
+$\varphi$ be a continuous linear functional on $L^p(\mu; \mathbb{R})$. The Radon–Nikodym
+derivative $u_0$ of the signed measure $E \mapsto \varphi(\mathbf{1}_E)$ satisfies
+$\|u_0\|_q \le \|\varphi\|$. This is inequality (14) in the proof of Theorem 4.14 of
+[brezis2011functional].
+
+The proof tests $\varphi$ against truncations of the extremal test functions. The seminorm is
+the `ℝ≥0∞`-valued `MeasureTheory.eLpNorm`. -/
 theorem eLpNorm_rnDeriv_dualToSignedMeasure_le [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) :
     eLpNorm ((dualToSignedMeasure hp φ).rnDeriv μ) q μ ≤ ENNReal.ofReal ‖φ‖ := by
@@ -581,9 +642,11 @@ theorem eLpNorm_rnDeriv_dualToSignedMeasure_le [Fact (1 ≤ q)] [p.HolderConjuga
           eLpNorm_lim_le_liminf_eLpNorm hv_meas u₀ hu₀m.aestronglyMeasurable hlim
       _ ≤ ENNReal.ofReal ‖φ‖ := liminf_le_of_frequently_le' (Frequently.of_forall hkey)
 
-/-- **The Riesz representation theorem on a finite measure, real scalars**
-([brezis2011functional] Theorems 4.11 and 4.14): for `1 ≤ p < ∞` and conjugate `q`, every
-continuous linear functional `φ` on `Lp ℝ p μ` is `f ↦ ∫ u f` for some `u : Lp ℝ q μ`. -/
+/-- **The Riesz representation theorem on a finite measure**, for real scalars. Let $\mu$ be a
+finite measure, and let $1 \le p < \infty$ and $q$ be conjugate exponents. For every continuous
+linear functional $\varphi$ on $L^p(\mu; \mathbb{R})$ there is $u \in L^q(\mu; \mathbb{R})$ with
+$$\varphi(f) = \int u f \, d\mu \quad \text{for every } f \in L^p(\mu).$$
+This is Theorems 4.11 and 4.14 of [brezis2011functional] for a finite measure. -/
 theorem exists_forall_eq_integral_of_isFiniteMeasure [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) :
     ∃ u : Lp ℝ q μ, ∀ f : Lp ℝ p μ, φ f = ∫ x, u x * f x ∂μ := by
@@ -607,9 +670,10 @@ theorem exists_forall_eq_integral_of_isFiniteMeasure [Fact (1 ≤ q)] [p.HolderC
 
 end Lp
 
-/-! ### The σ-finite case, by a weight -/
+/-! ### The $\sigma$-finite case, by a weight -/
 
-/-- A measure is absolutely continuous with respect to its density by a positive function. -/
+/-- Let $\rho \colon \alpha \to [0, \infty)$ be measurable with $\rho(x) > 0$ for every $x$. Then
+$\mu$ is absolutely continuous with respect to the measure $\rho \mu$ with density $\rho$. -/
 theorem absolutelyContinuous_withDensity_of_pos {ρ : α → ℝ≥0} (hρ : Measurable ρ)
     (h0 : ∀ x, 0 < ρ x) : μ ≪ μ.withDensity fun x => (ρ x : ℝ≥0∞) := by
   refine Measure.AbsolutelyContinuous.mk fun s hs hνs => ?_
@@ -618,7 +682,11 @@ theorem absolutelyContinuous_withDensity_of_pos {ρ : α → ℝ≥0} (hρ : Mea
     Set.inter_eq_right.2 fun x _ => by simpa using (h0 x).ne'
   rwa [this] at hνs
 
-/-- Multiplication by `h` with `h ^ r = ρ` is an isometry from `L^r(ρ μ)` to `L^r(μ)`. -/
+/-- Let $\rho \colon \alpha \to [0, \infty)$ and $h \colon \alpha \to \mathbb{R}$ be measurable,
+with $h \ge 0$, let $0 < r < \infty$ with $h^r = \rho$, and let $g \colon \alpha \to \mathbb{R}$
+be almost everywhere strongly measurable for $\mu$. Then
+$$\|h g\|_{L^r(\mu)} = \|g\|_{L^r(\rho \mu)}.$$
+So multiplication by $h$ is an isometry from $L^r(\rho \mu)$ to $L^r(\mu)$. -/
 theorem eLpNorm_mul_withDensity {ρ : α → ℝ≥0} (hρ : Measurable ρ) {h : α → ℝ} (hh : Measurable h)
     (hh0 : ∀ x, 0 ≤ h x) {r : ℝ≥0∞} (hr0 : r ≠ 0) (hr : r ≠ ∞) (hhr : ∀ x, h x ^ r.toReal = ρ x)
     {g : α → ℝ} (hg : AEStronglyMeasurable g μ) :
@@ -635,19 +703,26 @@ theorem eLpNorm_mul_withDensity {ρ : α → ℝ≥0} (hρ : Measurable ρ) {h :
   rw [ENNReal.ofReal_rpow_of_nonneg (hh0 x) ENNReal.toReal_nonneg, hhr x,
     ENNReal.ofReal_coe_nnreal]
 
-/-- The essential supremum only depends on the null sets of the measure. -/
+/-- If two measures $\mu$ and $\nu$ have the same null sets, then every function
+$f \colon \alpha \to \mathbb{K}$ has the same essential supremum of $|f|$ for $\mu$ and for
+$\nu$. -/
 theorem eLpNormEssSup_congr_ae_measure {ν : Measure α} (h : ae μ = ae ν) (f : α → 𝕜) :
     eLpNormEssSup f μ = eLpNormEssSup f ν := by
   simp only [eLpNormEssSup, essSup, h]
 
 namespace Lp
 
-/-- **The Riesz representation theorem on a σ-finite measure, real scalars**
-([brezis2011functional] Theorems 4.11 and 4.14): for `1 ≤ p < ∞` and conjugate `q`, every
-continuous linear functional `φ` on `Lp ℝ p μ` is `f ↦ ∫ u f` for some `u : Lp ℝ q μ`. Reduction
-to the finite-measure case by a positive weight `θ ∈ L^p`, `0 < θ ≤ 1`: multiplication by `θ` is
-an isometry of `L^p(θ^p μ)` onto `L^p(μ)`, and the representative of `g ↦ φ (θ g)` on `θ^p μ`,
-multiplied by `θ^(p-1)`, represents `φ`. -/
+/-- **The Riesz representation theorem on a $\sigma$-finite measure**, for real scalars. Let $\mu$
+be a $\sigma$-finite measure, and let $1 \le p < \infty$ and $q$ be conjugate exponents. For
+every continuous linear functional $\varphi$ on $L^p(\mu; \mathbb{R})$ there is
+$u \in L^q(\mu; \mathbb{R})$ with
+$$\varphi(f) = \int u f \, d\mu \quad \text{for every } f \in L^p(\mu).$$
+This is Theorems 4.11 and 4.14 of [brezis2011functional].
+
+The proof reduces to the finite measure $\theta^p \mu$ by a weight $\theta \in L^p$ with
+$0 < \theta \le 1$. Multiplication by $\theta$ is an isometry of $L^p(\theta^p \mu)$ onto
+$L^p(\mu)$. The representative of $g \mapsto \varphi(\theta g)$ on $\theta^p \mu$, multiplied by
+$\theta^{p - 1}$, represents $\varphi$. -/
 theorem exists_forall_eq_integral [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [p.HolderConjugate q] (hp : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) :
     ∃ u : Lp ℝ q μ, ∀ f : Lp ℝ p μ, φ f = ∫ x, u x * f x ∂μ := by
@@ -745,9 +820,12 @@ end Lp
 
 namespace Lp
 
-/-- The pairing is isometric when `q ≠ ∞`, with no hypothesis on the measure: the reverse
-inequality `‖u‖_q ≤ ‖f ↦ ∫ u f‖` is witnessed by the extremal function `‖u‖ ^ (q - 2) conj u`
-([brezis2011functional] Theorem 4.10, Step 3). -/
+/-- Let $p, q \in [1, \infty]$ be conjugate exponents with $q \neq \infty$, and let $\mu$ be any
+measure. For $u \in L^q(\mu; \mathbb{K})$, the functional $f \mapsto \int u f \, d\mu$ on
+$L^p(\mu)$ has norm $\|u\|_q$.
+
+The inequality $\|u\|_q \le \|f \mapsto \int u f\|$ comes from the extremal test function
+$|u|^{q - 2} \bar u$, as in Step 3 of the proof of Theorem 4.10 of [brezis2011functional]. -/
 theorem norm_toDualCLM_apply_of_ne_top [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hq : q ≠ ∞) (u : Lp 𝕜 q μ) : ‖toDualCLM 𝕜 p q μ u‖ = ‖u‖ := by
   refine le_antisymm (norm_toDualCLM_apply_le u) ?_
@@ -808,9 +886,14 @@ theorem norm_toDualCLM_apply_of_ne_top [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.Hold
       _ = ‖u‖ ^ (q.toReal - 1) * ‖toDualCLM 𝕜 p q μ u‖ := mul_comm _ _
   exact le_of_mul_le_mul_left key (Real.rpow_pos_of_pos hu_pos _)
 
-/-- The pairing is isometric, `‖f ↦ ∫ u f‖ = ‖u‖_q`, on a σ-finite measure. The case `q = ∞`
-is the inequality (14) of [brezis2011functional] Theorem 4.14 read backwards: the sets
-`{‖u‖ > ‖f ↦ ∫ u f‖}` are null. -/
+/-- Let $\mu$ be a $\sigma$-finite measure and let $p, q \in [1, \infty]$ be conjugate exponents.
+For $u \in L^q(\mu; \mathbb{K})$, the functional $f \mapsto \int u f \, d\mu$ on $L^p(\mu)$ has
+norm $\|u\|_q$.
+
+For $q = \infty$, the proof reads inequality (14) in the proof of Theorem 4.14 of
+[brezis2011functional] backwards: the sets $\{|u| > \|f \mapsto \int u f\|\}$ are null. Without
+$\sigma$-finiteness the statement can fail for $q = \infty$: for a measure that is infinite on
+every nonempty measurable set, $L^1 = 0$. -/
 theorem norm_toDualCLM_apply [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (u : Lp 𝕜 q μ) : ‖toDualCLM 𝕜 p q μ u‖ = ‖u‖ := by
   by_cases hq : q = ∞
@@ -857,39 +940,46 @@ theorem norm_toDualCLM_apply [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] 
   · exact norm_toDualCLM_apply_of_ne_top hq u
 
 variable (𝕜 p q μ) in
-/-- The pairing `u ↦ (f ↦ ∫ u f)` as a linear isometry `Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`,
-for conjugate exponents and a σ-finite measure ([brezis2011functional] Theorems 4.11 and 4.14,
-the map `T`). -/
+/-- Let $\mu$ be a $\sigma$-finite measure and let $p, q \in [1, \infty]$ be conjugate exponents.
+The pairing $u \mapsto (f \mapsto \int u f \, d\mu)$ is a linear isometry $L^q(\mu; \mathbb{K})
+\to L^p(\mu; \mathbb{K})^*$. This is the map $T$ of Theorems 4.11 and 4.14 of
+[brezis2011functional]. -/
 def toDual [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] :
     Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ) where
   toLinearMap := toDualCLM 𝕜 p q μ
   norm_map' := norm_toDualCLM_apply
 
-/-- The underlying continuous linear map of `toDual` is `toDualCLM`. -/
+/-- The continuous linear map that underlies `MeasureTheory.Lp.toDual` is
+`MeasureTheory.Lp.toDualCLM`. -/
 @[simp]
 theorem coe_toDual [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (u : Lp 𝕜 q μ) : (toDual 𝕜 p q μ u : StrongDual 𝕜 (Lp 𝕜 p μ)) = toDualCLM 𝕜 p q μ u :=
   rfl
 
-/-- The isometry evaluated: `toDual 𝕜 p q μ u f = ∫ u f`. -/
+/-- For $u \in L^q(\mu)$ and $f \in L^p(\mu)$, the value of `MeasureTheory.Lp.toDual` at $u$ and $f$
+is $\int u(x) f(x) \, d\mu(x)$. -/
 theorem toDual_apply [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (u : Lp 𝕜 q μ) (f : Lp 𝕜 p μ) : toDual 𝕜 p q μ u f = ∫ x, u x * f x ∂μ :=
   toDualCLM_apply u f
 
 end Lp
 
-/-! ### Surjectivity over `RCLike` scalars, the identification `(L^p)^* = L^q`, reflexivity -/
+/-! ### Surjectivity, the identification $(L^p)^* = L^q$, and reflexivity -/
 
 namespace Lp
 
 variable [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
 
-/-- **The Riesz representation theorem** ([brezis2011functional] Theorem 4.11 for `1 < p < ∞`,
-Theorem 4.14 for `p = 1`): on a σ-finite measure and for conjugate exponents with `p ≠ ∞`, the
-pairing `Lp 𝕜 q μ → StrongDual 𝕜 (Lp 𝕜 p μ)` is onto — every continuous linear functional on
-`L^p` is `f ↦ ∫ u f` for a unique `u ∈ L^q`, and `‖u‖_q = ‖φ‖` (the map being an isometry). The
-complex case follows from the real one applied to the real and imaginary parts of `φ` on
-real-valued functions. -/
+/-- **The Riesz representation theorem.** Let $\mu$ be a $\sigma$-finite measure, and let
+$1 \le p < \infty$ and $q$ be conjugate exponents. The pairing $L^q(\mu; \mathbb{K}) \to
+L^p(\mu; \mathbb{K})^*$, $u \mapsto (f \mapsto \int u f \, d\mu)$, is onto. This is Theorem 4.11
+of [brezis2011functional] for $1 < p < \infty$ and Theorem 4.14 for $p = 1$.
+
+Since the pairing is an isometry (`MeasureTheory.Lp.toDual`), every continuous linear functional
+$\varphi$ on $L^p$ is $f \mapsto \int u f \, d\mu$ for a unique $u \in L^q$, and
+$\|u\|_q = \|\varphi\|$. The complex case follows from the real case
+`MeasureTheory.Lp.exists_forall_eq_integral`, applied to the real and imaginary parts of
+$\varphi$ on real functions. -/
 theorem toDual_surjective (hp : p ≠ ∞) : Function.Surjective (toDual 𝕜 p q μ) := by
   intro φ
   -- real-valued functions inside `Lp 𝕜`, and the real and imaginary parts
@@ -946,27 +1036,30 @@ theorem toDual_surjective (hp : p ≠ ∞) : Function.Surjective (toDual 𝕜 p 
   rw [hf, (toDual 𝕜 p q μ _).map_add, (toDual 𝕜 p q μ _).map_smul, φ.map_add, φ.map_smul, hA, hA]
 
 variable (𝕜 p q μ) in
-/-- The identification `(L^p)^* = L^q` for conjugate exponents, `1 ≤ p < ∞`, on a σ-finite
-measure ([brezis2011functional] Remarks 4 and 5 of chapter 4): the pairing `u ↦ (f ↦ ∫ u f)` as
-a linear isometric isomorphism `Lp 𝕜 q μ ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`. -/
+/-- Let $\mu$ be a $\sigma$-finite measure, and let $1 \le p < \infty$ and $q$ be conjugate
+exponents. The **identification $(L^p)^* = L^q$** is the pairing
+$u \mapsto (f \mapsto \int u f \, d\mu)$ as a linear isometric equivalence $L^q(\mu; \mathbb{K})
+\to L^p(\mu; \mathbb{K})^*$. This is Remarks 4 and 5 in Chapter 4 of [brezis2011functional]. -/
 def dualEquiv (hp : p ≠ ∞) : Lp 𝕜 q μ ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ) :=
   LinearIsometryEquiv.ofSurjective (toDual 𝕜 p q μ) (toDual_surjective hp)
 
-/-- The underlying continuous linear map of `dualEquiv` is `toDualCLM`. -/
+/-- The continuous linear map that underlies `MeasureTheory.Lp.dualEquiv` is
+`MeasureTheory.Lp.toDualCLM`. -/
 @[simp]
 theorem coe_dualEquiv (hp : p ≠ ∞) (u : Lp 𝕜 q μ) :
     (dualEquiv 𝕜 p q μ hp u : StrongDual 𝕜 (Lp 𝕜 p μ)) = toDualCLM 𝕜 p q μ u :=
   rfl
 
-/-- The identification evaluated: `dualEquiv 𝕜 p q μ hp u f = ∫ u f`. -/
+/-- For $u \in L^q(\mu)$ and $f \in L^p(\mu)$, the value of `MeasureTheory.Lp.dualEquiv` at $u$ and
+$f$ is $\int u(x) f(x) \, d\mu(x)$. -/
 theorem dualEquiv_apply (hp : p ≠ ∞) (u : Lp 𝕜 q μ) (f : Lp 𝕜 p μ) :
     dualEquiv 𝕜 p q μ hp u f = ∫ x, u x * f x ∂μ :=
   toDualCLM_apply u f
 
 end Lp
 
-/-- The conjugate exponent of `p ≥ 1` is at least `1`, as a `Fact` for the `L^p`–`L^{p'}` pairing
-(a local instance where it is wanted). -/
+/-- If $p \ge 1$, then the conjugate exponent `ENNReal.conjExponent p` of $p$ is at least $1$. The
+result is a `Fact`, for use as a local instance in the pairing of $L^p$ with $L^{p'}$. -/
 theorem _root_.ENNReal.fact_one_le_conjExponent [Fact (1 ≤ p)] :
     Fact (1 ≤ ENNReal.conjExponent p) :=
   ⟨ENNReal.HolderConjugate.one_le (ENNReal.conjExponent p) p⟩
@@ -974,9 +1067,12 @@ theorem _root_.ENNReal.fact_one_le_conjExponent [Fact (1 ≤ p)] :
 namespace Lp
 
 variable (𝕜) in
-/-- **`L^p` is reflexive for `1 < p < ∞`** ([brezis2011functional] Theorem 4.10), on a σ-finite
-measure, as a theorem with explicit hypotheses: a formal consequence of the two surjectivities
-`L^q → (L^p)^*` and `L^p → (L^q)^*` of the Riesz representation theorem, with no appeal to
+/-- **$L^p$ is reflexive for $1 < p < \infty$.** Let $\mu$ be a $\sigma$-finite measure and let
+$1 < p < \infty$. Then $L^p(\mu; \mathbb{K})$ is reflexive. This is part of Theorem 4.10 of
+[brezis2011functional].
+
+The hypotheses are explicit arguments. The proof is a formal consequence of the two surjections
+$L^q \to (L^p)^*$ and $L^p \to (L^q)^*$ of the Riesz representation theorem, and it does not use
 uniform convexity. -/
 theorem isReflexive_of_one_lt_of_ne_top [SigmaFinite μ] [Fact (1 ≤ p)] (hp1 : 1 < p)
     (hp : p ≠ ∞) : NormedSpace.IsReflexive 𝕜 (Lp 𝕜 p μ) := by
@@ -996,31 +1092,35 @@ theorem isReflexive_of_one_lt_of_ne_top [SigmaFinite μ] [Fact (1 ≤ p)] (hp1 :
   rw [NormedSpace.dual_def, ← this, toDual_apply, toDual_apply]
   simp_rw [mul_comm]
 
-/-- **`L^p` is reflexive for `1 < p < ∞`** ([brezis2011functional] Theorem 4.10), on a σ-finite
-measure, as an instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]`. -/
+/-- **$L^p$ is reflexive for $1 < p < \infty$**, for a $\sigma$-finite measure, as an instance under
+the hypotheses `[Fact (1 < p)] [Fact (p ≠ ∞)]`. This is part of Theorem 4.10 of
+[brezis2011functional]. -/
 instance instIsReflexive [SigmaFinite μ] [Fact (1 < p)] [Fact (p ≠ ∞)] :
     NormedSpace.IsReflexive 𝕜 (Lp 𝕜 p μ) :=
   isReflexive_of_one_lt_of_ne_top 𝕜 Fact.out Fact.out
 
 end Lp
 
-/-! ### `(L^∞)^*` is strictly larger than `L^1` -/
+/-! ### The dual of $L^\infty$ is strictly larger than $L^1$ -/
 
 section Top
 
 variable {G : Type*} [TopologicalSpace G] [MeasurableSpace G] [OpensMeasurableSpace G]
 
 omit [OpensMeasurableSpace G] in
-/-- At a point all of whose neighbourhoods have positive measure, a property with an open
-exceptional set that holds almost everywhere holds. -/
+/-- Let $\mu$ be a measure on a topological space $G$, and let $x_0 \in G$ be a point such that
+every neighbourhood of $x_0$ has positive measure. If a property $P$ holds $\mu$-almost
+everywhere and the set where $P$ fails is open, then $P(x_0)$ holds. -/
 theorem of_ae_of_isOpen_of_forall_mem_nhds_measure_pos {μ : Measure G} {x₀ : G}
     (hx₀ : ∀ U ∈ 𝓝 x₀, 0 < μ U) {P : G → Prop} (hP : IsOpen {x | ¬ P x})
     (h : ∀ᵐ x ∂μ, P x) : P x₀ := by
   by_contra hx
   exact (hx₀ _ (hP.mem_nhds hx)).ne' (ae_iff.1 h)
 
-/-- On an open set, for a measure positive on nonempty open sets, a property with an open
-exceptional set that holds almost everywhere holds everywhere. -/
+/-- Let $G$ be a topological space in which open sets are measurable, let $\nu$ be a measure on $G$
+that is positive on nonempty open sets, and let $\Omega \subseteq G$ be open. If a property $P$
+holds $\nu$-almost everywhere on $\Omega$ and the set where $P$ fails is open, then $P$ holds at
+every point of $\Omega$. -/
 theorem forall_of_ae_restrict_of_isOpen {ν : Measure G} [ν.IsOpenPosMeasure] {Ω : Set G}
     (hΩ : IsOpen Ω) {P : G → Prop} (hP : IsOpen {x | ¬ P x}) (h : ∀ᵐ x ∂ν.restrict Ω, P x) :
     ∀ x ∈ Ω, P x := by
@@ -1037,12 +1137,15 @@ end Top
 
 namespace Lp
 
-/-- **A functional on
-`L^∞(μ)` that is the point evaluation at `x₀` on the smooth compactly supported functions is not
-`f ↦ ∫ u f` for any `u ∈ L¹(μ)`**, for an atomless σ-finite measure on a finite-dimensional real
-normed space: such a `u` would vanish
-almost everywhere off `x₀` (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence
-almost everywhere, while `φ` is `1` on a bump at `x₀`. -/
+/-- Let $G$ be a finite-dimensional real normed space with its Borel $\sigma$-algebra, let $\mu$ be
+a $\sigma$-finite measure on $G$ for which every singleton is null, and let $x_0 \in G$. Let
+$\varphi$ be a continuous linear functional on $L^\infty(\mu; \mathbb{R})$ with
+$\varphi(f) = f(x_0)$ for every smooth compactly supported $f \colon G \to \mathbb{R}$. Then
+$\varphi$ is not of the form $f \mapsto \int u f \, d\mu$ for any $u \in L^1(\mu)$.
+
+Such a $u$ would vanish almost everywhere outside $\{x_0\}$, by
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`, and hence almost everywhere. But
+$\varphi$ has the value $1$ at a bump function at $x_0$. -/
 theorem toDual_ne_of_forall_contDiff_apply_eq {G : Type*} [NormedAddCommGroup G]
     [NormedSpace ℝ G] [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] {μ : Measure G}
     [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (φ : StrongDual ℝ (Lp ℝ ∞ μ))
@@ -1088,12 +1191,20 @@ theorem toDual_ne_of_forall_contDiff_apply_eq {G : Type*} [NormedAddCommGroup G]
   rw [← hu] at hφψ
   simp at hφψ
 
-/-- **The functional of [brezis2011functional] §4.3 (the study of `L^∞`), general form.** For a
-σ-finite measure `μ` without atoms on a finite-dimensional real normed space `G` and a point
-`x₀` all of whose neighbourhoods have positive measure, there is a functional `φ` on `L^∞(μ)`
-with `φ f = f x₀` for every continuous compactly supported `f` — a Hahn–Banach extension of the
-point evaluation at `x₀`, which is bounded by the `L^∞` norm on the classes of such functions —
-and `φ` is not `f ↦ ∫ u f` for any `u ∈ L^1(μ)` (`toDual_ne_of_forall_contDiff_apply_eq`). -/
+/-- **A functional on $L^\infty$ that does not come from $L^1$**, the functional of the study of
+$L^\infty$ in §4.3 of [brezis2011functional], in a general form. Let $G$ be a finite-dimensional
+real normed space with its Borel $\sigma$-algebra, let $\mu$ be a $\sigma$-finite measure on $G$
+for which every singleton is null, and let $x_0 \in G$ be a point such that every neighbourhood
+of $x_0$ has positive measure. Then there is a continuous linear functional $\varphi$ on
+$L^\infty(\mu; \mathbb{R})$ such that
+
+* $\varphi(f) = f(x_0)$ for every continuous compactly supported $f \colon G \to \mathbb{R}$,
+  and
+* $\varphi$ is not of the form $f \mapsto \int u f \, d\mu$ for any $u \in L^1(\mu)$.
+
+The functional $\varphi$ is a Hahn–Banach extension of the evaluation at $x_0$, which is bounded
+by the norm of $L^\infty$ on the classes of continuous compactly supported functions. The second
+property is `MeasureTheory.Lp.toDual_ne_of_forall_contDiff_apply_eq`. -/
 theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (μ : Measure G)
     [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (hx₀ : ∀ U ∈ 𝓝 x₀, 0 < μ U) :
@@ -1144,12 +1255,16 @@ theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [Norme
   exact ⟨φ, hφeval, fun u => toDual_ne_of_forall_contDiff_apply_eq φ
     (fun f hf hfc hfs => hφeval f hf hfc.continuous hfs) u⟩
 
-/-- **`(L^∞)^*` is strictly larger than `L^1`** ([brezis2011functional] §4.3, the study of
-`L^∞`): on a nonempty open subset `Ω` of a finite-dimensional real normed space `G`, for a
-σ-finite measure `ν` without atoms and positive on nonempty open sets (Lebesgue measure, or any
-Haar measure on a nontrivial `G`), the pairing `L^1(Ω) → (L^∞(Ω))^*` is not onto: the functional
-of `exists_strongDual_top_apply_eq` for the restricted measure `ν.restrict Ω` at a point
-`x₀ ∈ Ω`, every neighbourhood of which meets `Ω` in a nonempty open set. -/
+/-- **The dual of $L^\infty$ is strictly larger than $L^1$.** Let $G$ be a finite-dimensional real
+normed space with its Borel $\sigma$-algebra, let $\nu$ be a $\sigma$-finite measure on $G$ that
+is positive on nonempty open sets and for which every singleton is null, for example the
+Lebesgue measure, or any Haar measure on a nontrivial $G$. Let $\Omega \subseteq G$ be a
+nonempty open set. Then the pairing $L^1(\Omega) \to L^\infty(\Omega)^*$ is not onto. This is
+the study of $L^\infty$ in §4.3 of [brezis2011functional].
+
+The spaces are for the restricted measure `ν.restrict Ω`. The proof applies
+`MeasureTheory.Lp.exists_strongDual_top_apply_eq` to this measure at a point $x_0 \in \Omega$.
+Every neighbourhood of $x_0$ meets $\Omega$ in a nonempty open set. -/
 theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (ν : Measure G)
     [ν.IsOpenPosMeasure] [NullSingletonClass ν] [SigmaFinite ν] {Ω : Set G} (hΩ : IsOpen Ω)
@@ -1162,16 +1277,24 @@ theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpac
 
 end Lp
 
-/-- **The pairing `(f, g) ↦ ∫ f g` of `L^p × L^q` at conjugate exponents is jointly continuous**
-(Hölder's inequality, through Mathlib's `ContinuousLinearMap.lpPairing` in the form
-`MeasureTheory.Lp.toDualCLM`). -/
+/-- **The pairing of $L^p$ and $L^q$ is jointly continuous.** Let $\mu$ be a measure and let
+$p, q \in [1, \infty]$ be conjugate exponents. The map
+$$L^p(\mu; \mathbb{R}) \times L^q(\mu; \mathbb{R}) \to \mathbb{R}, \qquad (f, g) \mapsto \int f
+  g \, d\mu,$$
+is continuous.
+
+The proof is Hölder's inequality, through Mathlib's `ContinuousLinearMap.lpPairing` in the form
+`MeasureTheory.Lp.toDualCLM`. -/
 theorem continuous_integral_mul_prod {X : Type*} [MeasurableSpace X]
     {μ : Measure X} (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] :
     Continuous fun x : Lp ℝ p μ × Lp ℝ q μ ↦ ∫ y, x.1 y * x.2 y ∂μ :=
   (Lp.toDualCLM ℝ q p μ).continuous₂.congr fun x ↦ Lp.toDualCLM_apply x.1 x.2
 
-/-- **Hölder's inequality in the form `∫ ‖f‖^{p−1} ‖g‖ ≤ ‖f‖_p^{p−1} ‖g‖_p`** for `1 ≤ p < ∞`
-(an equality of integrals at `p = 1`). -/
+/-- **Hölder's inequality** in the form needed for powers of a norm. Let $1 \le p < \infty$, let $G$
+and $G'$ be normed groups, and let $f \colon X \to G$ and $g \colon X \to G'$ be in $L^p(\mu)$.
+Then
+$$\int \|f\|^{p - 1} \|g\| \, d\mu \le \|f\|_p^{p - 1} \, \|g\|_p.$$
+For $p = 1$ both sides are $\|g\|_1$. -/
 theorem integral_norm_rpow_sub_one_mul_norm_le {X G G' : Type*}
     [MeasurableSpace X] {μ : Measure X} [NormedAddCommGroup G] [NormedAddCommGroup G']
     {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) {f : X → G} {g : X → G'} (hf : MemLp f p μ)

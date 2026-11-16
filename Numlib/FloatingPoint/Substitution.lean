@@ -9,70 +9,95 @@ import Numlib.FloatingPoint.Program
 /-!
 # Rounding errors of forward and backward substitution
 
-The backward error of the substitution algorithms for triangular systems, in the relational
-rounding model of `Numlib/FloatingPoint/Model` and in the style of
-`Numlib/FloatingPoint/InnerProduct`: [quarteroni2000numerical] §3.2.2, [higham2002accuracy]
-§8.1–8.2.
+This module gives the backward error analysis of forward and backward substitution for a triangular
+system $Tx = b$ of order $n$, over an ordered field $K$, in the relational rounding model of
+`Numlib.FloatingPoint.Model`. The model has a unit roundoff $u$, and every rounded value $\hat y$ of
+an exact value $y$ satisfies $|\hat y - y| \le u |y|$. The constants are $\gamma_k = ku / (1 - ku)$.
+The main result is Theorem 8.5 of [higham2002accuracy], which is (3.24) of
+[quarteroni2000numerical], §3.2.2: the computed solution $\hat x$ solves exactly a perturbed system
+$$(T + \Delta T) \hat x = b, \qquad |\Delta T| \le \gamma_n |T| \text{ entrywise}.$$
 
-The algorithm is described by *what is rounded*, for an explicit order of the operations.
-`RoundsForwardSubst m T b x̂` says that each `x̂ i` is an admissible value of
-`(b i - ∑_{j < i} T i j x̂ j) / T i i` computed as [higham2002accuracy] Lemma 8.4 computes it: the
-products `T i j x̂ j` are rounded, subtracted one after the other from `b i` — in *any* order of the
-indices `j < i`, which is existentially quantified — with one rounding per subtraction, and the
-result is divided by `T i i` with one more rounding. This is the running-difference form of the
-recurrence (the book's Program 2), and it is the evaluation order for which the constant of
-Theorem 8.5 is exactly `γ_n`. The Doolittle recurrence of `Numlib/FloatingPoint/LU`
-(`FloatingPoint.RoundsLU`) is computed by the same running differences, which is why its constant
-is `γ_n` as well.
+A substitution is described by what is rounded, for an explicit order of the operations. In the
+running-difference form (Program 2 of [quarteroni2000numerical], and the evaluation of Lemma 8.4 of
+[higham2002accuracy]), row $i$ rounds the products $t_{ij} \hat x_j$ for $j < i$, subtracts them one
+after the other from $b_i$ with one rounding per subtraction, and divides the result by $t_{ii}$
+with one more rounding. The order of the subtractions is existentially quantified, so every theorem
+holds for every order that an implementation may use. In the inner-product form (Algorithms 3.1.1
+and 3.1.2 of [golub2013matrix], Program 1 of [quarteroni2000numerical]), row $i$ accumulates $s =
+\mathrm{fl}(s + \mathrm{fl}(t_{ij} \hat x_j))$ from $s = 0$, then computes $\mathrm{fl}(b_i - s)$
+and divides; the first row only divides. Both forms have the backward error bound $\gamma_n$.
 
-The inner-product order of [golub2013matrix] Algorithms 3.1.1–3.1.2 (Program 1 of
-[quarteroni2000numerical]: the dot product `s = fl(s + fl(t_ij x̂_j))` accumulated from `s = 0`,
-then one rounded subtraction from `b i` and one rounded division, the first row divided only) is
-`FloatingPoint.RoundsForwardSubstDot` and `FloatingPoint.RoundsBackSubstDot`. It rounds `0 + p`
-and `b i - s`, which the relational model cannot know to be exact, yet the bound is still `γ_n`:
-the extra rounding lands on the diagonal with order `2 ≤ n`
-(`FloatingPoint.exists_rounds_sub_dotFrom_div_eq`), and on each term with order `#{j ≤ i} ≤ n`.
-The first row must only divide: rounding `b 1 - 0` there too would give the diagonal the order
-`2`, and the bound `γ_n` would fail for `n = 1`.
+## Main definitions
 
-The scalar core is [higham2002accuracy] Lemma 8.4 (`FloatingPoint.exists_rounds_sub_dot_div_eq`):
-`d ŷ (1 + θ₀) = c - ∑_i a_i b_i (1 + θ_i)` with every `|θ| ≤ γ_{k+1}`, `k` the number of terms. It
-rests on two one-rounding steps, `(1 + θ_k)(1 + δ) = 1 + θ_{k+1}` and `(1 + θ_k) / (1 + δ) = 1 +
-θ_{k+1}` (`FloatingPoint.abs_one_add_div_one_add_sub_one_le_gamma`), the latter being why a
-division counts as one rounding rather than two.
+* `FloatingPoint.RoundsForwardSubst`: forward substitution in the running-difference form, as a
+  relation between $T$, $b$ and the computed solution $\hat x$.
+* `FloatingPoint.RoundsBackSubst`: backward substitution in the running-difference form.
+* `FloatingPoint.RoundsForwardSubstDot`, `FloatingPoint.RoundsBackSubstDot`: forward and backward
+  substitution in the inner-product form.
+* `FloatingPoint.RoundsUnitForwardSubst`: forward substitution for a unit lower triangular matrix,
+  without the division by the diagonal.
 
-Results, entrywise, over an ordered field `K`:
+## Main results
 
-* `FloatingPoint.exists_roundsForwardSubst_eq`, `FloatingPoint.exists_roundsBackSubst_eq`:
-  [higham2002accuracy] Theorem 8.5 = [quarteroni2000numerical] (3.24), `(T + ΔT) x̂ = b` with
-  `|ΔT| ≤ γ_n |T|`;
-* `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_abs_le_diag`: [higham2002accuracy] Theorem
-  8.7 = [quarteroni2000numerical] §3.2.2's improved bound `|x_i - x̂_i| ≤ 2^{n-i+1} γ_n max_{j ≥ i}
-  |x̂_j|` when `|u_ii| ≥ |u_ij|`, from Lemma 8.6 (`Matrix.sum_abs_inv_mul_abs_apply_le_two_pow`);
-* `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_isDiagDominant`: the row diagonally dominant
-  case, `|x_i - x̂_i| ≤ (2n - 1) γ_n ‖x̂‖_∞`, from Lemma 8.8
-  (`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`);
-* `FloatingPoint.exists_roundsForwardSubstDot_eq`, `FloatingPoint.exists_roundsBackSubstDot_eq`:
-  the rigorous forms of [golub2013matrix] (3.1.1)–(3.1.2), `(T + ΔT) x̂ = b` with `|ΔT| ≤ γ_n |T|`
-  for the inner-product order;
-* `FloatingPoint.roundsForwardSubst_exact_iff` and its three siblings: at the exact model
-  (`RoundingModel.exact`) every relation of this file pins its output to `Matrix.forwardSubst` or
-  `Matrix.backSubst`, with no hypothesis on the matrix. This is how the exact specification of a
-  substitution program is read off its rounding bridge;
-* `FloatingPoint.roundsForwardSubst_of_mem_run_colSubst`: the column-oriented loop of
-  [golub2013matrix] Algorithm 3.1.3, over any linear order, lands in `RoundsForwardSubst` in every
-  run of the relational model; `FloatingPoint.roundsUnitForwardSubst_of_mem_run_unitColSubst` is
-  the unit lower triangular loop, which does not divide, landing in `RoundsUnitForwardSubst`.
+* `FloatingPoint.exists_rounds_sub_dot_div_eq`: Lemma 8.4 of [higham2002accuracy]. If $\hat y$ is
+  computed from $(c - \sum_{j=1}^{k} a_j b_j) / d$ as a running difference and a division, then $d
+  \hat y (1 + \theta_0) = c - \sum_j a_j b_j (1 + \theta_j)$ with all $|\theta| \le \gamma_{k+1}$.
+* `FloatingPoint.exists_roundsForwardSubst_eq`, `FloatingPoint.exists_roundsBackSubst_eq`: Theorem
+  8.5 of [higham2002accuracy]. The computed solution satisfies $(T + \Delta T) \hat x = b$ with
+  $|\Delta T| \le \gamma_n |T|$.
+* `FloatingPoint.exists_roundsForwardSubstDot_eq`, `FloatingPoint.exists_roundsBackSubstDot_eq`: the
+  same bound for the inner-product form, a rigorous form of (3.1.1) and (3.1.2) of
+  [golub2013matrix].
+* `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_abs_le_diag`: Theorem 8.7 of [higham2002accuracy].
+  If $|u_{ii}| \ge |u_{ij}|$ for $j > i$, then $|x_i - \hat x_i| \le 2^{n-i+1} \gamma_n \max_{j \ge
+  i} |\hat x_j|$.
+* `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_isDiagDominant`: for a row diagonally dominant
+  upper triangular $U$, $|x_i - \hat x_i| \le (2n - 1) \gamma_n \|\hat x\|_\infty$.
+* `FloatingPoint.roundsForwardSubst_exact_iff`, `FloatingPoint.roundsBackSubst_exact_iff`,
+  `FloatingPoint.roundsForwardSubstDot_exact_iff`, `FloatingPoint.roundsBackSubstDot_exact_iff`: in
+  the exact model, each relation holds exactly for the result of `Matrix.forwardSubst` or
+  `Matrix.backSubst`, with no hypothesis on the matrix.
+* `FloatingPoint.roundsForwardSubst_of_mem_run_colSubst`: every run of the column-oriented loop of
+  Algorithm 3.1.3 of [golub2013matrix] satisfies `FloatingPoint.RoundsForwardSubst`.
+* `FloatingPoint.roundsUnitForwardSubst_of_mem_run_unitColSubst`: every run of the same loop without
+  the division satisfies `FloatingPoint.RoundsUnitForwardSubst`.
 
-The entry relation of every row is the running difference `FloatingPoint.RoundsRunningDiff` of
-`Numlib/FloatingPoint/InnerProduct` (its program is `FloatingPoint.runningDiff`), and the number of
-its terms is counted once, by `FloatingPoint.length_add_one_le_card_of_forall_mem_iff`.
+## Proof outline
 
-Every backward-error theorem is assembled from its rows by one lemma,
-`FloatingPoint.exists_add_mulVec_eq_of_forall_row_eq`. Backward substitution is forward
-substitution on the dual order (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`), as
-in `Numlib/Direct/Substitution`. The normwise consequence [quarteroni2000numerical] (3.25) needs a
-norm and is a surface statement over `ℝ` through `relative_error_le_condNumber`.
+The scalar core is Lemma 8.4 of [higham2002accuracy]. A running sum of $k$ terms with one rounding
+per addition satisfies $t (1 + \theta_0) = c + \sum_j f_j (1 + \theta_j)$ with all
+$|\theta| \le \gamma_k$. The final division adds one more rounding to each factor, through
+$(1 + \theta_k)(1 + \delta) = 1 + \theta_{k+1}$ and $(1 + \theta_k) / (1 + \delta) = 1 +
+\theta_{k+1}$ (`FloatingPoint.abs_one_add_div_one_add_sub_one_le_gamma`). The second identity is the
+reason why a division counts as one rounding, not two. Row $i$ has at most $n - 1$ terms, so its
+factors are bounded by $\gamma_n$. One lemma, `FloatingPoint.exists_add_mulVec_eq_of_forall_row_eq`,
+assembles the rows into the perturbed system. Backward substitution is forward substitution for the
+reversed order of the indices (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`), as in
+`Numlib.Direct.Substitution`. The forward error bounds follow from
+$x - \hat x = U^{-1} \Delta U \hat x$ and the bounds on $|U^{-1}| |U|$ of Lemmas 8.6 and 8.8 of
+[higham2002accuracy] (`Matrix.sum_abs_inv_mul_abs_apply_le_two_pow`,
+`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`).
+
+## Implementation notes
+
+* All results are entrywise and hold over any ordered field $K$. The index type of the matrix is any
+  finite linear order; the source's index $i$ corresponds to the position of $i$ in this order.
+* The entry relation of every row is the running difference `FloatingPoint.RoundsRunningDiff` of
+  `Numlib.FloatingPoint.InnerProduct`, whose program is `FloatingPoint.runningDiff`. The number of
+  its terms is bounded once, by `FloatingPoint.length_add_one_le_card_of_forall_mem_iff`.
+* The diagonal entries must be nonzero, because the model divides by zero with the value
+  $t / 0 = 0$.
+* The Doolittle recurrence `FloatingPoint.RoundsLU` of `Numlib.FloatingPoint.LU` uses the same
+  running differences, and therefore it has the same constant $\gamma_n$.
+* The inner-product form rounds $0 + p$ and $b_i - s$, which the relational model does not know to
+  be exact. The bound is still $\gamma_n$: these roundings put the order $2 \le n$ on the diagonal
+  factor (`FloatingPoint.exists_rounds_sub_dotFrom_div_eq`) and the order $\#\{j \le i\} \le n$ on
+  the factor of each term. The first row must only divide: if it also rounded $b_1 - 0$, its
+  diagonal factor would have the order $2$, and the bound $\gamma_n$ would fail for $n = 1$.
+* At `FloatingPoint.RoundingModel.exact` the relations give the exact specification of a
+  substitution program from its rounding analysis.
+* The normwise bound (3.25) of [quarteroni2000numerical] needs a norm. It is a surface statement
+  over $\mathbb{R}$, through `relative_error_le_condNumber`.
 -/
 
 open Finset
@@ -87,10 +112,15 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 variable {ι : Type*} [DecidableEq ι]
 
-/-- **Running sums, backwards** ([higham2002accuracy], the computation inside Lemma 8.4): if `t` is
-obtained from `c` by adding the terms `f j`, `j ∈ o`, one rounding per addition, then
-`t (1 + θ₀) = c + ∑_{j ∈ o} f j (1 + θ_j)` with every `|θ| ≤ γ_k`, `k` the number of terms. The
-term `c` is not perturbed; every rounding is charged to `t` and to the terms added after it. -/
+/-- Let $c \in K$, let $f_j \in K$ for $j$ in a list $o$ of $k$ distinct indices, and let the unit
+roundoff satisfy $u < 1$ and $ku < 1$. If $t$ is computed from $c$ by adding the terms $f_j$,
+$j \in o$, in the order of $o$ with one rounding per addition, then there are $\theta_0$ and
+$\theta_j$, $j \in o$, with $|\theta_0| \le \gamma_k$ and $|\theta_j| \le \gamma_k$, such that
+$$t (1 + \theta_0) = c + \sum_{j \in o} f_j (1 + \theta_j).$$
+
+This is the computation inside the proof of Lemma 8.4 of [higham2002accuracy]. The term $c$ is
+not perturbed: each rounding is charged to $t$ and to the terms added after it. The running sum
+is `FloatingPoint.RoundsSumFrom` of the list `o.map f`. -/
 theorem exists_roundsSumFrom_map_eq {m : RoundingModel K} (hu : m.u < 1) {c t : K} {f : ι → K}
     {o : List ι} (hnd : o.Nodup) (h : RoundsSumFrom m c (o.map f) t)
     (hlu : ((o.length : ℕ) : K) * m.u < 1) :
@@ -147,11 +177,16 @@ theorem exists_roundsSumFrom_map_eq {m : RoundingModel K} (hu : m.u < 1) {c t : 
       field_simp
       ring
 
-/-- **[higham2002accuracy] Lemma 8.4**: if `ŷ = (c - ∑_{j ∈ o} a_j b_j) / d` is evaluated as a
-running difference in the order `o` (`FloatingPoint.RoundsRunningDiff`) and a final division, then
-`d ŷ (1 + θ₀) = c - ∑_{j ∈ o} a_j b_j (1 + θ_j)` with every `|θ| ≤ γ_{k+1}`, `k` the number of
-terms — no matter what the order `o`. The divisor must be nonzero, since the model rounds
-`t / d` with the junk value `t / 0 = 0`. -/
+/-- Let $a_j, b_j \in K$ for $j$ in a list $o$ of $k$ distinct indices, let $c, d \in K$ with
+$d \neq 0$, and let the unit roundoff satisfy $u < 1$ and $(k + 1) u < 1$. Suppose that $t$ is
+computed from $c - \sum_{j \in o} a_j b_j$ as a running difference in the order $o$, and that
+$\hat y$ is an admissible rounding of $t / d$. Then there are $\theta_0$ and $\theta_j$,
+$j \in o$, with $|\theta_0| \le \gamma_{k+1}$ and $|\theta_j| \le \gamma_{k+1}$, such that
+$$d \hat y (1 + \theta_0) = c - \sum_{j \in o} a_j b_j (1 + \theta_j).$$
+This is Lemma 8.4 of [higham2002accuracy], and it holds for every order $o$.
+
+The running difference is `FloatingPoint.RoundsRunningDiff`. The divisor must be nonzero,
+because the model divides by zero with the value $t / 0 = 0$. -/
 theorem exists_rounds_sub_dot_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b : ι → K}
     {o : List ι} (hnd : o.Nodup) {c d t y : K} (hd : d ≠ 0) (ht : RoundsRunningDiff m o a b c t)
     (hy : m.Rounds (t / d) y) (hlu : ((o.length + 1 : ℕ) : K) * m.u < 1) :
@@ -189,13 +224,18 @@ theorem exists_rounds_sub_dot_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b :
     field_simp
     ring
 
-/-- **The scalar core of the inner-product order** (the analogue of [higham2002accuracy] Lemma 8.4
-for "dot product, then subtract, then divide", [golub2013matrix] Algorithm 3.1.1): if `s` is
-obtained from `0` by adding the rounded products `p_j = fl(a_j b_j)`, `j ∈ o`, one rounding per
-addition (the first one, `fl(0 + p)`, included), `t` rounds `c - s` and `y` rounds `t / d`, then
-`d y (1 + θ₀) = c - ∑_{j ∈ o} a_j b_j (1 + θ_j)` with `|θ₀| ≤ γ₂` and `|θ_j| ≤ γ_{k+1}`, `k` the
-number of terms. The divisor must be nonzero, since the model rounds `t / d` with the junk value
-`t / 0 = 0`. -/
+/-- Let $a_j, b_j \in K$ for $j$ in a list $o$ of $k$ distinct indices, let $c, d \in K$ with
+$d \neq 0$, and let the unit roundoff satisfy $u < 1$, $(k + 1) u < 1$ and $2u < 1$. Suppose
+that $p_j$ is an admissible rounding of $a_j b_j$ for each $j \in o$, that $s$ is computed from
+$0$ by adding the $p_j$ in the order $o$ with one rounding per addition (the first addition
+$\mathrm{fl}(0 + p)$ included), that $t$ is an admissible rounding of $c - s$, and that $\hat y$
+is an admissible rounding of $t / d$. Then there are $\theta_0$ and $\theta_j$, $j \in o$, with
+$|\theta_0| \le \gamma_2$ and $|\theta_j| \le \gamma_{k+1}$, such that
+$$d \hat y (1 + \theta_0) = c - \sum_{j \in o} a_j b_j (1 + \theta_j).$$
+
+This is the analogue of Lemma 8.4 of [higham2002accuracy] for the order "inner product, then
+subtraction, then division" of Algorithm 3.1.1 of [golub2013matrix]. The divisor must be
+nonzero, because the model divides by zero with the value $t / 0 = 0$. -/
 theorem exists_rounds_sub_dotFrom_div_eq {m : RoundingModel K} (hu : m.u < 1) {a b p : ι → K}
     {o : List ι} (hnd : o.Nodup) (hp : ∀ j ∈ o, m.Rounds (a j * b j) (p j)) {c d s t y : K}
     (hd : d ≠ 0) (hs : RoundsSumFrom m 0 (o.map p) s) (ht : m.Rounds (c - s) t)
@@ -237,26 +277,34 @@ section Forward
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- **Forward substitution in floating-point arithmetic.** `RoundsForwardSubst m T b x̂` says that
-every `x̂ i` is an admissible computed value of `(b i - ∑_{j < i} T i j x̂ j) / T i i`
-([quarteroni2000numerical] (3.22)), computed as in [higham2002accuracy] Lemma 8.4: the running
-difference `t` of `b i` and the rounded products `T i j x̂ j` in some order `o` of the indices
-`j < i` (`FloatingPoint.RoundsRunningDiff`), divided by `T i i` with one more rounding. The order
-is existentially quantified, so a theorem about `RoundsForwardSubst` holds for every order an
+/-- **Forward substitution in floating-point arithmetic.** Let $T \in K^{n \times n}$ and
+$b, \hat x \in K^n$. The relation `FloatingPoint.RoundsForwardSubst m T b xhat` holds if, for
+every index $i$, there are a list $o$ of distinct indices whose members are exactly the indices
+$j < i$, and a value $t$, such that $t$ is computed from $b_i - \sum_{j < i} t_{ij} \hat x_j$ as
+a running difference in the order $o$ and $\hat x_i$ is an admissible rounding of $t / t_{ii}$.
+
+This is the recurrence $x_i = (b_i - \sum_{j < i} t_{ij} x_j) / t_{ii}$ of (3.22) of
+[quarteroni2000numerical], evaluated as in Lemma 8.4 of [higham2002accuracy]: the products
+$t_{ij} \hat x_j$ are rounded and subtracted one after the other from $b_i$, with one rounding
+per subtraction. The running difference is `FloatingPoint.RoundsRunningDiff`. The order $o$ is
+existentially quantified, so a theorem about this relation holds for every order that an
 implementation may use. -/
 def RoundsForwardSubst (m : RoundingModel K) (T : Matrix n n K) (b xhat : n → K) : Prop :=
   ∀ i, ∃ (o : List n) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
     RoundsRunningDiff m o (T i) xhat (b i) t ∧ m.Rounds (t / T i i) (xhat i)
 
-/-- A list of exactly the indices below `i` enumerates the `Finset` of the indices below `i`. -/
+/-- If a list $o$ has as members exactly the indices $j < i$, then the finite set of its members is
+the set of the indices below $i$. -/
 theorem toFinset_eq_filter_lt_of_forall_mem_iff {o : List n} {i : n} (ho : ∀ j, j ∈ o ↔ j < i) :
     o.toFinset = univ.filter (· < i) := by
   ext j
   simp [ho]
 
-/-- **The number of terms of a running difference over the indices below `i`**: a duplicate-free
-list of exactly those indices has at most `card n - 1` entries, so a row of a substitution or of a
-factorization (the terms and one more operation) carries at most `card n` roundings. -/
+/-- If a list $o$ of distinct indices has as members exactly the indices $j < i$ of a finite linear
+order with $n$ elements, then $o$ has at most $n - 1$ entries.
+
+So a row of a substitution or of a factorization, which has the terms and one more operation,
+carries at most $n$ roundings. -/
 theorem length_add_one_le_card_of_forall_mem_iff {o : List n} {i : n} (hnd : o.Nodup)
     (ho : ∀ j, j ∈ o ↔ j < i) : o.length + 1 ≤ Fintype.card n := by
   have hlen : o.length + 1 = #{j | j ≤ i} := by
@@ -264,9 +312,15 @@ theorem length_add_one_le_card_of_forall_mem_iff {o : List n} {i : n} (hnd : o.N
       Finset.card_eq_sum_ones, Finset.card_eq_sum_ones, Matrix.sum_filter_le_eq_add]
   exact hlen ▸ Finset.card_le_univ _
 
-/-- **One row of [higham2002accuracy] Theorem 8.5**: a computed row of forward substitution
-satisfies `t_ii x̂_i (1 + θ₀) = b_i - ∑_{j < i} t_ij x̂_j (1 + θ_j)` with every `|θ| ≤ γ_n`, `n` the
-order of the system, by Lemma 8.4 with `#{j ≤ i} ≤ n` roundings. -/
+/-- **One row of forward substitution.** Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where
+$n$ is the order of the system, let $T \in K^{n \times n}$, and let $\hat x$ be computed by
+forward substitution from $T$ and $b$ (`FloatingPoint.RoundsForwardSubst`). If $t_{ii} \neq 0$,
+then there are $\theta_0$ and $\theta_j$, $j < i$, with $|\theta_0| \le \gamma_n$ and
+$|\theta_j| \le \gamma_n$, such that
+$$t_{ii} \hat x_i (1 + \theta_0) = b_i - \sum_{j < i} t_{ij} \hat x_j (1 + \theta_j).$$
+
+This is row $i$ of Theorem 8.5 of [higham2002accuracy]. It follows from Lemma 8.4
+(`FloatingPoint.exists_rounds_sub_dot_div_eq`), with $\#\{j \le i\} \le n$ roundings. -/
 theorem exists_roundsForwardSubst_row_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {T : Matrix n n K} {b xhat : n → K}
     (h : RoundsForwardSubst m T b xhat) (i : n) (hd : T i i ≠ 0) :
@@ -285,10 +339,15 @@ theorem exists_roundsForwardSubst_row_eq {m : RoundingModel K} (hu : m.u < 1)
   rw [← hset]
   exact heq
 
-/-- **Rows to a perturbed triangular system**, the assembly step of [higham2002accuracy]
-Theorem 8.5 shared by every evaluation order: if every row `i` of a lower triangular `T` satisfies
-`t_ii x̂_i (1 + θ₀) = b_i - ∑_{j < i} t_ij x̂_j (1 + θ_j)` with every `|θ| ≤ γ`, then
-`(T + ΔT) x̂ = b` with `|ΔT| ≤ γ |T|` entrywise. -/
+/-- Let $T \in K^{n \times n}$ be lower triangular, let $\gamma \ge 0$, and let $b, \hat x \in K^n$.
+Suppose that for every row $i$ there are $\theta_0$ and $\theta_j$, $j < i$, with
+$|\theta_0| \le \gamma$ and $|\theta_j| \le \gamma$, such that
+$$t_{ii} \hat x_i (1 + \theta_0) = b_i - \sum_{j < i} t_{ij} \hat x_j (1 + \theta_j).$$
+Then there is a matrix $\Delta T$ with $|\Delta T_{ij}| \le \gamma |T_{ij}|$ for all $i, j$ and
+$(T + \Delta T) \hat x = b$.
+
+This is the step of the proof of Theorem 8.5 of [higham2002accuracy] that assembles the rows
+into a perturbed system. All evaluation orders of this module share it. -/
 theorem exists_add_mulVec_eq_of_forall_row_eq {γ : K} (hγ : 0 ≤ γ) {T : Matrix n n K}
     (hT : T.IsLowerTriangular) {b xhat : n → K}
     (h : ∀ i, ∃ (θ₀ : K) (θ : n → K), |θ₀| ≤ γ ∧ (∀ j, j < i → |θ j| ≤ γ) ∧
@@ -324,12 +383,18 @@ theorem exists_add_mulVec_eq_of_forall_row_eq {γ : K} (hγ : 0 ≤ γ) {T : Mat
     rw [hrow]
     linear_combination heq i
 
-/-- **[higham2002accuracy] Theorem 8.5**, [quarteroni2000numerical] (3.24): the solution `x̂`
-of a lower triangular system `T x = b` computed by forward substitution, in any order of the
-operations, solves exactly a perturbed system `(T + ΔT) x̂ = b` with `|ΔT| ≤ γ_n |T|` entrywise,
-`n` the order of the system. Row `i` of the conclusion is Lemma 8.4; the perturbation lives on the
-entries `j ≤ i` of row `i`. The diagonal must be nonzero because the model rounds `t / t_ii` with
-the junk value `t / 0 = 0`. -/
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$T \in K^{n \times n}$ be lower triangular with nonzero diagonal entries, and let $\hat x$ be
+computed by forward substitution from $T$ and $b$ (`FloatingPoint.RoundsForwardSubst`), in any
+order of the operations. Then there is a matrix $\Delta T$ such that
+$$(T + \Delta T) \hat x = b, \qquad |\Delta T_{ij}| \le \gamma_n |T_{ij}| \text{ for all } i,
+  j.$$
+This is Theorem 8.5 of [higham2002accuracy] and (3.24) of [quarteroni2000numerical].
+
+Row $i$ of the conclusion is Lemma 8.4 of [higham2002accuracy]
+(`FloatingPoint.exists_roundsForwardSubst_row_eq`), and the perturbation of row $i$ lies in the
+entries $j \le i$. The diagonal must be nonzero, because the model divides by zero with the
+value $t / 0 = 0$. -/
 theorem exists_roundsForwardSubst_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {T : Matrix n n K} (hT : T.IsLowerTriangular)
     (hd : ∀ i, T i i ≠ 0) {b xhat : n → K} (h : RoundsForwardSubst m T b xhat) :
@@ -338,26 +403,38 @@ theorem exists_roundsForwardSubst_eq {m : RoundingModel K} (hu : m.u < 1)
   exists_add_mulVec_eq_of_forall_row_eq (gamma_nonneg m.u_nonneg hcard) hT fun i =>
     exists_roundsForwardSubst_row_eq hu hcard h i (hd i)
 
-/-! #### The inner-product order -/
+/-! ### Forward substitution in the inner-product order -/
 
-/-- **Forward substitution in the inner-product order** ([golub2013matrix] Algorithm 3.1.1,
-[higham2002accuracy] §8.1's "inner product form"): `RoundsForwardSubstDot m T b x̂` says that for
-every `i`, if no index lies below `i` then `x̂ i` rounds `b i / T i i`; otherwise the products
-`T i j * x̂ j`, `j < i`, are rounded (`p j`), added to `0` one after the other in some order `o`
-with one rounding per addition (the first one, `fl(0 + p)`, included), the sum `s` is subtracted
-from `b i` with one rounding (`t`) and the difference is divided by `T i i` with one more rounding.
-As for `FloatingPoint.RoundsForwardSubst`, the order is existentially quantified. -/
+/-- **Forward substitution in the inner-product order.** Let $T \in K^{n \times n}$ and
+$b, \hat x \in K^n$. The relation `FloatingPoint.RoundsForwardSubstDot m T b xhat` holds if, for
+every index $i$, the following is true. If $i$ is the least index, then $\hat x_i$ is an
+admissible rounding of $b_i / t_{ii}$. Otherwise there are a list $o$ of distinct indices whose
+members are exactly the indices $j < i$, values $p_j$, $s$ and $t$, such that $p_j$ is an
+admissible rounding of $t_{ij} \hat x_j$ for each $j < i$, $s$ is computed from $0$ by adding
+the $p_j$ in the order $o$ with one rounding per addition (the first addition
+$\mathrm{fl}(0 + p)$ included), $t$ is an admissible rounding of $b_i - s$, and $\hat x_i$ is an
+admissible rounding of $t / t_{ii}$.
+
+This is Algorithm 3.1.1 of [golub2013matrix], the "inner product form" of §8.1 of
+[higham2002accuracy]. As in `FloatingPoint.RoundsForwardSubst`, the order $o$ is existentially
+quantified. -/
 def RoundsForwardSubstDot (m : RoundingModel K) (T : Matrix n n K) (b xhat : n → K) : Prop :=
   ∀ i, (IsMin i → m.Rounds (b i / T i i) (xhat i)) ∧
     (¬ IsMin i → ∃ (o : List n) (p : n → K) (s t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
       (∀ j ∈ o, m.Rounds (T i j * xhat j) (p j)) ∧ RoundsSumFrom m 0 (o.map p) s ∧
       m.Rounds (b i - s) t ∧ m.Rounds (t / T i i) (xhat i))
 
-/-- **One row of forward substitution in the inner-product order**: a computed row satisfies
-`t_ii x̂_i (1 + θ₀) = b_i - ∑_{j < i} t_ij x̂_j (1 + θ_j)` with every `|θ| ≤ γ_n`, `n` the order of
-the system. The first row has one rounded division (order `1`); every other row has the order `2`
-of the subtraction and the division on the diagonal, which needs `n ≥ 2`, and the order
-`#{j ≤ i} ≤ n` on the terms (`FloatingPoint.exists_rounds_sub_dotFrom_div_eq`). -/
+/-- **One row of forward substitution in the inner-product order.** Let the unit roundoff satisfy
+$u < 1$ and $nu < 1$, where $n$ is the order of the system, let $T \in K^{n \times n}$, and let
+$\hat x$ be computed from $T$ and $b$ by `FloatingPoint.RoundsForwardSubstDot`. If
+$t_{ii} \neq 0$, then there are $\theta_0$ and $\theta_j$, $j < i$, with
+$|\theta_0| \le \gamma_n$ and $|\theta_j| \le \gamma_n$, such that
+$$t_{ii} \hat x_i (1 + \theta_0) = b_i - \sum_{j < i} t_{ij} \hat x_j (1 + \theta_j).$$
+
+The first row has one rounded division, so its diagonal factor has the order $1$. Every other
+row has the order $2$ of the subtraction and the division on the diagonal factor, which needs
+$n \ge 2$, and the order $\#\{j \le i\} \le n$ on the factor of each term
+(`FloatingPoint.exists_rounds_sub_dotFrom_div_eq`). -/
 theorem exists_roundsForwardSubstDot_row_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {T : Matrix n n K} {b xhat : n → K}
     (h : RoundsForwardSubstDot m T b xhat) (i : n) (hd : T i i ≠ 0) :
@@ -395,10 +472,15 @@ theorem exists_roundsForwardSubstDot_row_eq {m : RoundingModel K} (hu : m.u < 1)
     rw [← hset]
     exact heq
 
-/-- **Backward error of forward substitution in the inner-product order**, the rigorous form of
-[golub2013matrix] (3.1.1): the solution `x̂` of a lower triangular system computed by
-[golub2013matrix] Algorithm 3.1.1 solves exactly `(T + ΔT) x̂ = b` with `|ΔT| ≤ γ_n |T|`
-entrywise — the same constant as `FloatingPoint.exists_roundsForwardSubst_eq`. -/
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$T \in K^{n \times n}$ be lower triangular with nonzero diagonal entries, and let $\hat x$ be
+computed from $T$ and $b$ by forward substitution in the inner-product order
+(`FloatingPoint.RoundsForwardSubstDot`). Then there is a matrix $\Delta T$ such that
+$$(T + \Delta T) \hat x = b, \qquad |\Delta T_{ij}| \le \gamma_n |T_{ij}| \text{ for all } i,
+  j.$$
+This is the rigorous form of (3.1.1) of [golub2013matrix] for Algorithm 3.1.1.
+
+The constant is the same as in `FloatingPoint.exists_roundsForwardSubst_eq`. -/
 theorem exists_roundsForwardSubstDot_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {T : Matrix n n K} (hT : T.IsLowerTriangular)
     (hd : ∀ i, T i i ≠ 0) {b xhat : n → K} (h : RoundsForwardSubstDot m T b xhat) :
@@ -415,23 +497,39 @@ section Backward
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- **Backward substitution in floating-point arithmetic**, [quarteroni2000numerical] (3.23): as
-`FloatingPoint.RoundsForwardSubst` with the products over the indices `j > i`. It is forward
-substitution on the dual order (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`). -/
+/-- **Backward substitution in floating-point arithmetic.** Let $U \in K^{n \times n}$ and
+$b, \hat x \in K^n$. The relation `FloatingPoint.RoundsBackSubst m U b xhat` holds if, for every
+index $i$, there are a list $o$ of distinct indices whose members are exactly the indices
+$j > i$, and a value $t$, such that $t$ is computed from $b_i - \sum_{j > i} u_{ij} \hat x_j$ as
+a running difference in the order $o$ and $\hat x_i$ is an admissible rounding of $t / u_{ii}$.
+
+This is the recurrence (3.23) of [quarteroni2000numerical], evaluated as in
+`FloatingPoint.RoundsForwardSubst`. It is forward substitution for the reversed order of the
+indices (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`). -/
 def RoundsBackSubst (m : RoundingModel K) (U : Matrix n n K) (b xhat : n → K) : Prop :=
   ∀ i, ∃ (o : List n) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ i < j) ∧
     RoundsRunningDiff m o (U i) xhat (b i) t ∧ m.Rounds (t / U i i) (xhat i)
 
 omit [Fintype n] in
-/-- Backward substitution is forward substitution on the dual order. -/
+/-- Backward substitution is forward substitution for the reversed order:
+`FloatingPoint.RoundsBackSubst m U b xhat` holds if and only if
+`FloatingPoint.RoundsForwardSubst m U b xhat` holds for the order dual `nᵒᵈ` of the index type. -/
 theorem roundsBackSubst_iff_roundsForwardSubst_toDual {m : RoundingModel K} {U : Matrix n n K}
     {b xhat : n → K} :
     RoundsBackSubst m U b xhat ↔ RoundsForwardSubst (n := nᵒᵈ) m U b xhat :=
   Iff.rfl
 
-/-- **[higham2002accuracy] Theorem 8.5 for backward substitution**, [quarteroni2000numerical]
-(3.24): the computed solution of an upper triangular system solves exactly `(U + ΔU) x̂ = b` with
-`|ΔU| ≤ γ_n |U|`, by transport along the dual order. -/
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$U \in K^{n \times n}$ be upper triangular with nonzero diagonal entries, and let $\hat x$ be
+computed by backward substitution from $U$ and $b$ (`FloatingPoint.RoundsBackSubst`). Then there
+is a matrix $\Delta U$ such that
+$$(U + \Delta U) \hat x = b, \qquad |\Delta U_{ij}| \le \gamma_n |U_{ij}| \text{ for all } i,
+  j.$$
+This is Theorem 8.5 of [higham2002accuracy] for backward substitution, and (3.24) of
+[quarteroni2000numerical].
+
+The proof applies `FloatingPoint.exists_roundsForwardSubst_eq` to the reversed order of the
+indices. -/
 theorem exists_roundsBackSubst_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {U : Matrix n n K} (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) {b xhat : n → K} (h : RoundsBackSubst m U b xhat) :
@@ -440,9 +538,16 @@ theorem exists_roundsBackSubst_eq {m : RoundingModel K} (hu : m.u < 1)
   exists_roundsForwardSubst_eq (n := nᵒᵈ) hu hcard hU.isLowerTriangular_orderDual hd
     (roundsBackSubst_iff_roundsForwardSubst_toDual.1 h)
 
-/-- **Backward substitution in the inner-product order** ([golub2013matrix] Algorithm 3.1.2): as
-`FloatingPoint.RoundsForwardSubstDot` with the products over the indices `j > i`, the last row
-divided only. It is `RoundsForwardSubstDot` on the dual order
+/-- **Backward substitution in the inner-product order.** Let $U \in K^{n \times n}$ and
+$b, \hat x \in K^n$. The relation `FloatingPoint.RoundsBackSubstDot m U b xhat` is
+`FloatingPoint.RoundsForwardSubstDot` with the products over the indices $j > i$: if $i$ is the
+greatest index, then $\hat x_i$ is an admissible rounding of $b_i / u_{ii}$; otherwise the
+rounded products $\mathrm{fl}(u_{ij} \hat x_j)$, $j > i$, are summed from $0$ in some order with
+one rounding per addition, the sum $s$ is subtracted from $b_i$ with one rounding, and the
+result is divided by $u_{ii}$ with one more rounding.
+
+This is Algorithm 3.1.2 of [golub2013matrix]. It is `FloatingPoint.RoundsForwardSubstDot` for
+the reversed order of the indices
 (`FloatingPoint.roundsBackSubstDot_iff_roundsForwardSubstDot_toDual`). -/
 def RoundsBackSubstDot (m : RoundingModel K) (U : Matrix n n K) (b xhat : n → K) : Prop :=
   ∀ i, (IsMax i → m.Rounds (b i / U i i) (xhat i)) ∧
@@ -452,15 +557,24 @@ def RoundsBackSubstDot (m : RoundingModel K) (U : Matrix n n K) (b xhat : n → 
 
 omit [Fintype n] in
 /-- Backward substitution in the inner-product order is forward substitution in the inner-product
-order on the dual order. -/
+order for the reversed order: `FloatingPoint.RoundsBackSubstDot m U b xhat` holds if and only if
+`FloatingPoint.RoundsForwardSubstDot m U b xhat` holds for the order dual `nᵒᵈ` of the index
+type. -/
 theorem roundsBackSubstDot_iff_roundsForwardSubstDot_toDual {m : RoundingModel K}
     {U : Matrix n n K} {b xhat : n → K} :
     RoundsBackSubstDot m U b xhat ↔ RoundsForwardSubstDot (n := nᵒᵈ) m U b xhat :=
   Iff.rfl
 
-/-- **Backward error of backward substitution in the inner-product order**, the rigorous form of
-[golub2013matrix] (3.1.2): the computed solution of an upper triangular system solves exactly
-`(U + ΔU) x̂ = b` with `|ΔU| ≤ γ_n |U|`, by transport along the dual order. -/
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$U \in K^{n \times n}$ be upper triangular with nonzero diagonal entries, and let $\hat x$ be
+computed from $U$ and $b$ by backward substitution in the inner-product order
+(`FloatingPoint.RoundsBackSubstDot`). Then there is a matrix $\Delta U$ such that
+$$(U + \Delta U) \hat x = b, \qquad |\Delta U_{ij}| \le \gamma_n |U_{ij}| \text{ for all } i,
+  j.$$
+This is the rigorous form of (3.1.2) of [golub2013matrix] for Algorithm 3.1.2.
+
+The proof applies `FloatingPoint.exists_roundsForwardSubstDot_eq` to the reversed order of the
+indices. -/
 theorem exists_roundsBackSubstDot_eq {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {U : Matrix n n K} (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) {b xhat : n → K} (h : RoundsBackSubstDot m U b xhat) :
@@ -469,9 +583,14 @@ theorem exists_roundsBackSubstDot_eq {m : RoundingModel K} (hu : m.u < 1)
   exists_roundsForwardSubstDot_eq (n := nᵒᵈ) hu hcard hU.isLowerTriangular_orderDual hd
     (roundsBackSubstDot_iff_roundsForwardSubstDot_toDual.1 h)
 
-/-- **The componentwise forward error of a perturbed solve**: if `U x = b` and
-`(U + ΔU) x̂ = b` with `|ΔU| ≤ γ |U|`, then `|x - x̂| ≤ γ |U⁻¹| |U| |x̂|` entrywise, since
-`x - x̂ = U⁻¹ ΔU x̂` ([higham2002accuracy], the first line of the proof of Theorem 8.7). -/
+/-- Let $U \in K^{n \times n}$ be invertible, let $\gamma \in K$, and let $x, \hat x, b \in K^n$ and
+$\Delta U \in K^{n \times n}$ satisfy $Ux = b$, $(U + \Delta U) \hat x = b$ and
+$|\Delta U_{ij}| \le \gamma |U_{ij}|$ for all $i, j$. Then, entrywise,
+$$|x - \hat x| \le \gamma \, |U^{-1}| \, |U| \, |\hat x|.$$
+
+This is the first line of the proof of Theorem 8.7 of [higham2002accuracy], and it follows from
+$x - \hat x = U^{-1} \Delta U \hat x$. The matrices $|U^{-1}|$ and $|U|$ are `Matrix.abs`, and
+the order on vectors is entrywise. -/
 theorem abs_sub_le_of_mulVec_eq_of_abs_le {U ΔU : Matrix n n K} (hU : IsUnit U) {x xhat b : n → K}
     (hx : U *ᵥ x = b) (hxhat : (U + ΔU) *ᵥ xhat = b) {γ : K}
     (hΔ : ∀ i j, |ΔU i j| ≤ γ * |U i j|) :
@@ -494,9 +613,13 @@ theorem abs_sub_le_of_mulVec_eq_of_abs_le {U ΔU : Matrix n n K} (hU : IsUnit U)
     _ = γ • ((U⁻¹.abs * U.abs) *ᵥ |xhat|) := by
         rw [Matrix.smul_mulVec, Matrix.mulVec_smul, Matrix.mulVec_mulVec]
 
-/-- The row-`i` form of `FloatingPoint.abs_sub_le_of_mulVec_eq_of_abs_le` for an upper
-triangular `U`, with the entries of `|x̂|` at or after `i` bounded by `c`:
-`|x_i - x̂_i| ≤ γ c ∑_j (|U⁻¹| |U|)_ij`. -/
+/-- Let $U \in K^{n \times n}$ be upper triangular with nonzero diagonal entries, let
+$\gamma \ge 0$, and let $x, \hat x, b \in K^n$ and $\Delta U \in K^{n \times n}$ satisfy
+$Ux = b$, $(U + \Delta U) \hat x = b$ and $|\Delta U_{ij}| \le \gamma |U_{ij}|$ for all $i, j$.
+If $c \in K$ bounds $|\hat x_j|$ for every $j \ge i$, then
+$$|x_i - \hat x_i| \le \gamma c \sum_j (|U^{-1}| \, |U|)_{ij}.$$
+This is row $i$ of `FloatingPoint.abs_sub_le_of_mulVec_eq_of_abs_le` for an upper triangular
+$U$. -/
 theorem abs_sub_apply_le_of_mulVec_eq_of_abs_le {U ΔU : Matrix n n K} (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) {x xhat b : n → K} (hx : U *ᵥ x = b) (hxhat : (U + ΔU) *ᵥ xhat = b)
     {γ : K} (hγ : 0 ≤ γ) (hΔ : ∀ i j, |ΔU i j| ≤ γ * |U i j|) {i : n} {c : K}
@@ -517,11 +640,19 @@ theorem abs_sub_apply_le_of_mulVec_eq_of_abs_le {U ΔU : Matrix n n K} (hU : U.I
     exact Finset.sum_nonneg fun k _ => mul_nonneg (abs_nonneg _) (abs_nonneg _)
   · rw [Matrix.abs_inv_mul_abs_apply_of_lt hU hji, zero_mul, mul_zero]
 
-/-- **[higham2002accuracy] Theorem 8.7**, the improved bound of [quarteroni2000numerical]
-§3.2.2: if the upper triangular `U` has `|u_ii| ≥ |u_ij|` for `j > i` (as the triangular factors of
-Gaussian elimination with partial pivoting do), `U x = b`, and `x̂` is computed by backward
-substitution, then `|x_i - x̂_i| ≤ 2^{#{j ≥ i}} γ_n max_{j ≥ i} |x̂_j|` — the book's `2^{n-i+1}`,
-the maximum being any bound `c` on the entries `|x̂_j|`, `j ≥ i`. From Theorem 8.5 and Lemma 8.6
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$U \in K^{n \times n}$ be upper triangular with nonzero diagonal entries and with
+$|u_{ij}| \le |u_{ii}|$ for all $j > i$. Let $Ux = b$, and let $\hat x$ be computed by backward
+substitution from $U$ and $b$ (`FloatingPoint.RoundsBackSubst`). If $c \in K$ bounds
+$|\hat x_j|$ for every $j \ge i$, then
+$$|x_i - \hat x_i| \le 2^{\#\{j \,:\, j \ge i\}} \gamma_n c.$$
+This is Theorem 8.7 of [higham2002accuracy], and the improved bound of §3.2.2 of
+[quarteroni2000numerical].
+
+The triangular factors of Gaussian elimination with partial pivoting satisfy the hypothesis on
+$U$. The exponent $\#\{j : j \ge i\}$ is the source's $n - i + 1$, and $c$ stands for the
+source's $\max_{j \ge i} |\hat x_j|$. The proof combines Theorem 8.5
+(`FloatingPoint.exists_roundsBackSubst_eq`) with Lemma 8.6 of [higham2002accuracy]
 (`Matrix.sum_abs_inv_mul_abs_apply_le_two_pow`). -/
 theorem abs_sub_le_of_roundsBackSubst_of_abs_le_diag {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {U : Matrix n n K} (hU : U.IsUpperTriangular)
@@ -541,12 +672,19 @@ theorem abs_sub_le_of_roundsBackSubst_of_abs_le_diag {m : RoundingModel K} (hu :
         mul_le_mul_of_nonneg_left (by linarith) (mul_nonneg hγ hc0)
     _ = 2 ^ #{j | i ≤ j} * gamma m.u (Fintype.card n) * c := by ring
 
-/-- **The row diagonally dominant case** of [quarteroni2000numerical] §3.2.2 ("the same result
-holds … if `L` and `U` are diagonally dominant"): for a row diagonally dominant upper triangular
-`U`, `U x = b` and `x̂` computed by backward substitution, `|x_i - x̂_i| ≤ (2n - 1) γ_n ‖x̂‖_∞`, the
-maximum norm being any bound `c` on the entries of `x̂`. From Theorem 8.5 and [higham2002accuracy]
-Lemma 8.8 (`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`); the bound is linear in
-`n`, better than the `2^{n-i+1}` the book's sentence suggests. -/
+/-- Let the unit roundoff satisfy $u < 1$ and $nu < 1$, where $n$ is the order of the system. Let
+$U \in K^{n \times n}$ be upper triangular with nonzero diagonal entries, and row diagonally
+dominant: $\sum_{j \neq i} |u_{ij}| \le |u_{ii}|$ for every $i$. Let $Ux = b$, and let $\hat x$
+be computed by backward substitution from $U$ and $b$ (`FloatingPoint.RoundsBackSubst`). If
+$c \in K$ bounds $|\hat x_j|$ for every $j$, then for every $i$
+$$|x_i - \hat x_i| \le (2n - 1) \gamma_n c.$$
+
+This is the diagonally dominant case of §3.2.2 of [quarteroni2000numerical] ("the same result
+holds … if $L$ and $U$ are diagonally dominant"), with $c$ in the place of $\|\hat x\|_\infty$.
+The bound is linear in $n$, which is better than the bound $2^{n-i+1}$ that the sentence of the
+source suggests. The proof combines Theorem 8.5 of [higham2002accuracy] with Lemma 8.8
+(`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`). Row diagonal dominance is
+`Matrix.IsAbsDiagDominant`. -/
 theorem abs_sub_le_of_roundsBackSubst_of_isDiagDominant {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card n : K) * m.u < 1) {U : Matrix n n K} (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) {x b xhat : n → K}
@@ -566,21 +704,25 @@ theorem abs_sub_le_of_roundsBackSubst_of_isDiagDominant {m : RoundingModel K} (h
 
 end Backward
 
-/-! ### The exact model
+/-!
+### The exact model
 
-At `RoundingModel.exact` every rounding is the identity, and the substitution relations collapse to
-the recurrences `Matrix.forwardSubst` and `Matrix.backSubst`, with no hypothesis on the matrix
-(both sides divide by a zero diagonal entry with the same junk value). This is how the exact
-specification of a substitution program is read off its rounding bridge. -/
+In `FloatingPoint.RoundingModel.exact` every rounding is the identity. There the substitution
+relations hold exactly for the results of the recurrences `Matrix.forwardSubst` and
+`Matrix.backSubst`, with no hypothesis on the matrix: both sides divide by a zero diagonal entry
+with the same value $0$. This is how the exact specification of a substitution program follows from
+its rounding analysis.
+-/
 
 section Exact
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- **The forward-substitution recurrence determines its solution**: a vector satisfying
-`x i = (b i - ∑_{j < i} t_ij x_j) / t_ii` for every `i` is `Matrix.forwardSubst T b`, junk division
-by a zero diagonal entry included. -/
+/-- Let $T \in K^{n \times n}$ and $b, x \in K^n$, over any field $K$. If
+$$x_i = \Big(b_i - \sum_{j < i} t_{ij} x_j\Big) / t_{ii}$$
+for every index $i$, then $x$ is `Matrix.forwardSubst T b`. This includes the case of a zero
+diagonal entry, where both sides divide by zero with the value $0$. -/
 theorem _root_.Matrix.eq_forwardSubst_of_forall_apply_eq {T : Matrix n n K} {b x : n → K}
     (h : ∀ i, x i = (b i - ∑ j ∈ univ.filter (· < i), T i j * x j) / T i i) :
     x = T.forwardSubst b := by
@@ -591,15 +733,15 @@ theorem _root_.Matrix.eq_forwardSubst_of_forall_apply_eq {T : Matrix n n K} {b x
   congr 2
   exact Finset.sum_congr rfl fun j hj => by rw [ih j (mem_filter.1 hj).2]
 
-/-- In the exact model, the running difference of `c` and the terms `p j`, `j ∈ o`, is
-`c - ∑_{j ∈ o} p j`. -/
+/-- In the exact model, $t$ is the running sum of $c$ and the terms $-p_j$, $j \in o$, for a list
+$o$ of distinct indices, if and only if $t = c - \sum_{j \in o} p_j$. -/
 theorem roundsSumFrom_exact_map_neg_iff {o : List ι} (hnd : o.Nodup) {p : ι → K} {c t : K} :
     RoundsSumFrom (RoundingModel.exact K) c (o.map fun j => -p j) t ↔
       t = c - ∑ j ∈ o.toFinset, p j := by
   rw [roundsSumFrom_exact_iff, ← List.sum_toFinset _ hnd, Finset.sum_neg_distrib, sub_eq_add_neg]
 
-/-- **Exact-model characterization of forward substitution**:
-`RoundsForwardSubst exact T b x ↔ x = Matrix.forwardSubst T b`, with no hypothesis on `T`. -/
+/-- In the exact model, `FloatingPoint.RoundsForwardSubst` holds for $T$, $b$ and $x$ if and only if
+$x$ is `Matrix.forwardSubst T b`. There is no hypothesis on $T$. -/
 theorem roundsForwardSubst_exact_iff {T : Matrix n n K} {b x : n → K} :
     RoundsForwardSubst (RoundingModel.exact K) T b x ↔ x = T.forwardSubst b := by
   constructor
@@ -616,17 +758,18 @@ theorem roundsForwardSubst_exact_iff {T : Matrix n n K} {b x : n → K} :
     · rw [RoundingModel.exact_rounds_iff, Finset.toList_toFinset]
       exact Matrix.forwardSubst_apply T b i
 
-/-- **Exact-model characterization of backward substitution**:
-`RoundsBackSubst exact U b x ↔ x = Matrix.backSubst U b`, the dual of
+/-- In the exact model, `FloatingPoint.RoundsBackSubst` holds for $U$, $b$ and $x$ if and only if
+$x$ is `Matrix.backSubst U b`. There is no hypothesis on $U$. This is the dual of
 `FloatingPoint.roundsForwardSubst_exact_iff`. -/
 theorem roundsBackSubst_exact_iff {U : Matrix n n K} {b x : n → K} :
     RoundsBackSubst (RoundingModel.exact K) U b x ↔ x = U.backSubst b := by
   rw [roundsBackSubst_iff_roundsForwardSubst_toDual, Matrix.backSubst_eq_forwardSubst_toDual]
   exact roundsForwardSubst_exact_iff (n := nᵒᵈ)
 
-/-- **Exact-model characterization of forward substitution in the inner-product order**:
-`RoundsForwardSubstDot exact T b x ↔ x = Matrix.forwardSubst T b` (`0 + ∑` and `b - ∑` are exact at
-`u = 0`). -/
+/-- In the exact model, `FloatingPoint.RoundsForwardSubstDot` holds for $T$, $b$ and $x$ if and only
+if $x$ is `Matrix.forwardSubst T b`. There is no hypothesis on $T$.
+
+The additions $0 + p$ and $b_i - s$ are exact when $u = 0$. -/
 theorem roundsForwardSubstDot_exact_iff {T : Matrix n n K} {b x : n → K} :
     RoundsForwardSubstDot (RoundingModel.exact K) T b x ↔ x = T.forwardSubst b := by
   constructor
@@ -654,8 +797,9 @@ theorem roundsForwardSubstDot_exact_iff {T : Matrix n n K} {b x : n → K} :
     · rw [RoundingModel.exact_rounds_iff, Finset.toList_toFinset]
       exact Matrix.forwardSubst_apply T b i
 
-/-- **Exact-model characterization of backward substitution in the inner-product order**:
-`RoundsBackSubstDot exact U b x ↔ x = Matrix.backSubst U b`, by duality. -/
+/-- In the exact model, `FloatingPoint.RoundsBackSubstDot` holds for $U$, $b$ and $x$ if and only if
+$x$ is `Matrix.backSubst U b`. There is no hypothesis on $U$. The proof uses the reversed order
+of the indices. -/
 theorem roundsBackSubstDot_exact_iff {U : Matrix n n K} {b x : n → K} :
     RoundsBackSubstDot (RoundingModel.exact K) U b x ↔ x = U.backSubst b := by
   rw [roundsBackSubstDot_iff_roundsForwardSubstDot_toDual, Matrix.backSubst_eq_forwardSubst_toDual]
@@ -665,15 +809,18 @@ end Exact
 
 end FloatingPoint
 
-/-! ### Column-oriented forward substitution as a program
+/-!
+### Column-oriented forward substitution as a program
 
-The loop "for `j` in increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for
-every `i > j`" ([golub2013matrix] Algorithm 3.1.3, over any linear order: Algorithm 3.1.4 is its
-instance on the dual order) computes, in every run of the relational model, a
-`FloatingPoint.RoundsForwardSubst`: row `i` receives its subtractions over `j < i` one at a time,
-each from the finished `x̂ j`, which is a running difference in the order of the outer loop. The
-same loop without the division, for a unit lower triangular `L`, computes a
-`FloatingPoint.RoundsUnitForwardSubst` (`roundsUnitForwardSubst_of_mem_run_unitColSubst`). -/
+The loop "for $j$ in increasing order, $b_j := b_j / \ell_{jj}$, then $b_i := b_i - b_j \ell_{ij}$
+for every $i > j$" is Algorithm 3.1.3 of [golub2013matrix]. Here it runs over any linear order, so
+Algorithm 3.1.4 is its instance for the reversed order. In every run of the relational model the
+loop computes a `FloatingPoint.RoundsForwardSubst`: row $i$ receives its subtractions over $j < i$
+one at a time, each from the finished $\hat x_j$, and this is a running difference in the order of
+the outer loop. The same loop without the division, for a unit lower triangular $L$, computes a
+`FloatingPoint.RoundsUnitForwardSubst`
+(`FloatingPoint.roundsUnitForwardSubst_of_mem_run_unitColSubst`).
+-/
 
 namespace FloatingPoint
 
@@ -684,9 +831,9 @@ section ColSubst
 variable {K : Type u} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 variable {ι : Type u} [LinearOrder ι] [DecidableEq ι]
 
-/-- The loop invariant of column-oriented forward substitution: indices outside the remaining
-list `l` are finished rows of `RoundsForwardSubst`; an index `i` in `l` holds the running
-difference of `b i` over the finished indices. -/
+/-- The loop invariant of column-oriented forward substitution: an index outside the remaining list
+$l$ is a finished row of `FloatingPoint.RoundsForwardSubst`, and an index $i$ in $l$ holds the
+running difference of $b_i$ over the finished indices. -/
 private def ColInv (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (l : List ι)
     (s : ι → K) : Prop :=
   (∀ i, i ∉ l → ∃ (o : List ι) (t : K), o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
@@ -694,7 +841,7 @@ private def ColInv (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (l
   (∀ i, i ∈ l → ∃ o : List ι, o.Nodup ∧ (∀ j, j ∈ o ↔ j ∉ l) ∧
       RoundsRunningDiff fp o (L i) s (b i) (s i))
 
-/-- One step of the outer loop keeps the invariant. -/
+/-- One step of the outer loop keeps the loop invariant. -/
 private theorem colInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (j : ι)
     (c : List ι) (hcm : ∀ i, i ∈ c ↔ j < i) (l : List ι)
     (hsort : (j :: l).Pairwise (· < ·)) (hup : ∀ i ∈ j :: l, ∀ k, i ≤ k → k ∈ j :: l)
@@ -765,7 +912,7 @@ private theorem colInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι 
       rw [hj₂, mul_comm]
       exact hq
 
-/-- The outer loop, by induction on the remaining list. -/
+/-- The outer loop keeps the loop invariant, by induction on the remaining list. -/
 private theorem colInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K)
     (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) :
     ∀ (l : List ι) (s s' : ι → K), l.Pairwise (· < ·) →
@@ -807,13 +954,20 @@ private theorem colInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b : �
     · exact absurd (lt_of_lt_of_le (List.rel_of_pairwise_cons hsort hi) hik) (lt_irrefl _)
     · exact hk
 
-/-- **Column-oriented forward substitution, over any linear order**: the loop "for `j` in
-increasing order, `b(j) = b(j)/L(j,j)`, then `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" (the
-inner list `c j` enumerating the indices above `j` in any order) computes, in every run of the
-relational model, an admissible forward substitution `FloatingPoint.RoundsForwardSubst`: row `i`
-receives its subtractions over `j < i` one at a time, each from the finished `x̂ j`
-([golub2013matrix] Algorithm 3.1.3; Algorithm 3.1.4 on the dual order through
-`roundsBackSubst_iff_roundsForwardSubst_toDual`). -/
+/-- **Column-oriented forward substitution.** Let $L \in K^{n \times n}$, $b \in K^n$, let $l$ be
+the list of all indices in increasing order, and for each index $j$ let $c_j$ be a list of
+distinct indices whose members are exactly the indices $i > j$. Consider the loop that, for $j$
+in the order of $l$, sets $b_j := \mathrm{fl}(b_j / \ell_{jj})$ and then, for $i$ in the order
+of $c_j$, sets $b_i := \mathrm{fl}(b_i - \mathrm{fl}(b_j \ell_{ij}))$. Every result $x$ of a run
+of this loop in the rounding model satisfies `FloatingPoint.RoundsForwardSubst` for $L$, $b$ and
+$x$.
+
+This is Algorithm 3.1.3 of [golub2013matrix], over any linear order of the indices. Algorithm
+3.1.4 is its instance for the reversed order, through
+`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`. In the proof, row $i$ receives
+its subtractions over $j < i$ one at a time, each from the finished $\hat x_j$. There is no
+hypothesis on $L$. The set of results of a run is the `run` of the program in the set monad of
+`Numlib.FloatingPoint.Program`. -/
 theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel K) (L : Matrix ι ι K)
     {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l) (c : ι → List ι)
     (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) (b x : ι → K)
@@ -831,25 +985,30 @@ theorem roundsForwardSubst_of_mem_run_colSubst (fp : RoundingModel K) (L : Matri
   have := colInv_foldlM fp L b c hc hcm l b x hl (fun _ _ k _ => hall k) h0 hx
   exact fun i => this.1 i (by simp)
 
-/-- **Unit lower triangular forward substitution in floating-point arithmetic.**
-`RoundsUnitForwardSubst m L b x̂` says that every `x̂ i` is an admissible running difference of
-`b i` and the rounded products `L i j x̂ j`, `j < i`, in some order: `RoundsForwardSubst` without
-the division by the unit diagonal, which a unit triangular solve inside a factorization does not
-perform ([golub2013matrix] §3.1.7). The diagonal of `L` is not read. -/
+/-- **Unit lower triangular forward substitution in floating-point arithmetic.** Let
+$L \in K^{n \times n}$ and $b, \hat x \in K^n$. The relation
+`FloatingPoint.RoundsUnitForwardSubst fp L b xhat` holds if, for every index $i$, there is a
+list $o$ of distinct indices whose members are exactly the indices $j < i$, such that $\hat x_i$
+is computed from $b_i - \sum_{j < i} \ell_{ij} \hat x_j$ as a running difference in the order
+$o$.
+
+This is `FloatingPoint.RoundsForwardSubst` without the division by the unit diagonal, which a
+unit triangular solve inside a factorization does not perform (§3.1.7 of [golub2013matrix]). The
+diagonal of $L$ is not read. -/
 def RoundsUnitForwardSubst (fp : RoundingModel K) (L : Matrix ι ι K) (b xhat : ι → K) : Prop :=
   ∀ i, ∃ o : List ι, o.Nodup ∧ (∀ j, j ∈ o ↔ j < i) ∧
     RoundsRunningDiff fp o (L i) xhat (b i) (xhat i)
 
-/-- The loop invariant of the unit column-oriented forward substitution: every row `i` holds the
-running difference of `b i` over the finished indices below it (those not in the remaining list
-`l`). -/
+/-- The loop invariant of unit column-oriented forward substitution: every row $i$ holds the running
+difference of $b_i$ over the finished indices below $i$, which are the indices not in the
+remaining list $l$. -/
 private def UnitColInv (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (l : List ι)
     (s : ι → K) : Prop :=
   ∀ i, ∃ o : List ι, o.Nodup ∧ (∀ k, k ∈ o ↔ k < i ∧ k ∉ l) ∧
     RoundsRunningDiff fp o (L i) s (b i) (s i)
 
 omit [DecidableEq ι] in
-/-- One step of the outer loop of the unit solve keeps the invariant. -/
+/-- One step of the outer loop of the unit solve keeps the loop invariant. -/
 private theorem unitColInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K) (j : ι)
     (c : List ι) (hcm : ∀ i, i ∈ c ↔ j < i) (l : List ι)
     (hsort : (j :: l).Pairwise (· < ·)) (hup : ∀ i ∈ j :: l, ∀ k, i ≤ k → k ∈ j :: l)
@@ -907,7 +1066,8 @@ private theorem unitColInv_step (fp : RoundingModel K) (L : Matrix ι ι K) (b :
       rw [hle j le_rfl, mul_comm]
       exact hq
 
-/-- The outer loop of the unit solve, by induction on the remaining list. -/
+/-- The outer loop of the unit solve keeps the loop invariant, by induction on the remaining list.
+-/
 private theorem unitColInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b : ι → K)
     (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) :
     ∀ (l : List ι) (s s' : ι → K), l.Pairwise (· < ·) →
@@ -944,12 +1104,16 @@ private theorem unitColInv_foldlM (fp : RoundingModel K) (L : Matrix ι ι K) (b
     · exact absurd (lt_of_lt_of_le (List.rel_of_pairwise_cons hsort hi) hik) (lt_irrefl _)
     · exact hk
 
-/-- **Unit column-oriented forward substitution, over any linear order**: the loop "for `j` in
-increasing order, `b(i) = b(i) - b(j) L(i,j)` for every `i > j`" — the loop of
-`FloatingPoint.roundsForwardSubst_of_mem_run_colSubst` without the division by the unit diagonal —
-computes, in every run of the relational model, an admissible unit forward substitution
-`FloatingPoint.RoundsUnitForwardSubst` ([golub2013matrix] §3.1.7, the solves with `L₁₁` of the
-block LU Algorithms 3.2.3–3.2.4). -/
+/-- **Unit column-oriented forward substitution.** Let $L \in K^{n \times n}$, $b \in K^n$, let $l$
+be the list of all indices in increasing order, and for each index $j$ let $c_j$ be a list of
+distinct indices whose members are exactly the indices $i > j$. Consider the loop that, for $j$
+in the order of $l$ and then for $i$ in the order of $c_j$, sets $b_i := \mathrm{fl}(b_i -
+\mathrm{fl}(b_j \ell_{ij}))$. Every result $x$ of a run of this loop in the rounding model
+satisfies `FloatingPoint.RoundsUnitForwardSubst` for $L$, $b$ and $x$.
+
+This is the loop of `FloatingPoint.roundsForwardSubst_of_mem_run_colSubst` without the division
+by the unit diagonal. It is used for the solves with $L_{11}$ in the block LU Algorithms 3.2.3
+and 3.2.4 of [golub2013matrix] (§3.1.7). -/
 theorem roundsUnitForwardSubst_of_mem_run_unitColSubst (fp : RoundingModel K)
     (L : Matrix ι ι K) {l : List ι} (hl : l.Pairwise (· < ·)) (hall : ∀ i, i ∈ l)
     (c : ι → List ι) (hc : ∀ j, (c j).Nodup) (hcm : ∀ j i, i ∈ c j ↔ j < i) (b x : ι → K)

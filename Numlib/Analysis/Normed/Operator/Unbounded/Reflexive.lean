@@ -11,36 +11,43 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 
 /-!
-# The Banach adjoint between reflexive spaces: `D(A*)` is dense and `A** = A`
+# The adjoint of a closed operator between reflexive spaces
 
-For a densely defined closed operator `A : D(A) ⊆ E → F` between reflexive Banach spaces over
-`RCLike 𝕜`, the Banach adjoint `A* : D(A*) ⊆ F* → E*` (`LinearPMap.strongDualAdjoint`) is itself
-densely defined, so that its adjoint `A** : D(A**) ⊆ E** → F**` is meaningful, and `A**` is `A`
-read through the canonical embeddings `J_E : E → E**`, `J_F : F → F**`
-(`NormedSpace.inclusionInDoubleDual`):
+Let $E$ and $F$ be normed spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \colon D(A) \subseteq E \to F$ be a closed operator with $D(A)$ dense in $E$. Let
+$A^* \colon D(A^*) \subseteq F^* \to E^*$ be its adjoint (`LinearPMap.strongDualAdjoint`), and let
+$J_E \colon E \to E^{**}$ and $J_F \colon F \to F^{**}$ be the canonical embeddings
+(`NormedSpace.inclusionInDoubleDual`). If $F$ is reflexive, then $D(A^*)$ is dense in $F^*$, so the
+adjoint $A^{**} \colon D(A^{**}) \subseteq E^{**} \to F^{**}$ of $A^*$ is meaningful. If $E$ and $F$
+are both reflexive, then $A^{**}$ is $A$ read through the canonical embeddings:
+$D(A^{**}) = J_E(D(A))$ and $A^{**}(J_E u) = J_F(Au)$. This is Theorem 3.24 of
+[brezis2011functional]; without reflexivity only the weak-$*$ density of $D(A^*)$ holds (Remark
+2.15).
 
-* `LinearPMap.dense_domain_strongDualAdjoint` — `D(A*)` is dense in `F*` when `F` is reflexive
-  ([brezis2011functional], Theorem 3.24, first clause; without reflexivity only the weak-∗
-  density `LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint` holds, Remark 2.15).
-* `LinearPMap.graph_strongDualAdjoint_strongDualAdjoint` — `G(A**) = (J_E × J_F)(G(A))`, i.e.
-  `D(A**) = J_E(D(A))` and `A** (J_E u) = J_F (A u)` (Theorem 3.24, second clause, "`A** = A`").
+## Main results
 
-Both proofs are direct separation arguments from the closed graph of `A`, packaged in
-`LinearPMap.IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph`: a functional on
-`F*` vanishing on `D(A*)` is, by reflexivity, evaluation at some `y ∈ F`, and `D(A*)` separates
-the points of `F`; and a pair `(J_E u, J_F y)` in `G(A**)`, which means `v y = (A* v) u` for all
-`v ∈ D(A*)`, has `(u, y) ∈ G(A)` because otherwise some `v ∈ D(A*)` would separate them. The
-book's route through the orthogonality relations `I[G(A*)] = G(A)^⊥`, `I[G(A**)] = G(A*)^⊥`
-(`LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph`) and the reflexive bipolar
-identity in `E × F` is not needed.
+* `LinearPMap.dense_domain_strongDualAdjoint`: $D(A^*)$ is dense in $F^*$ when $F$ is reflexive.
+* `LinearPMap.graph_strongDualAdjoint_strongDualAdjoint`:
+  $G(A^{**}) = \{(J_E u, J_F(Au)) : u \in D(A)\}$ when $E$ and $F$ are reflexive.
 
-Reflexivity is `NormedSpace.IsReflexive` of `Numlib.Analysis.Normed.Module.Reflexive`; only the
-reflexivity of `F` is used for the density, and that of both spaces for the identification.
-No completeness hypothesis appears, since reflexive spaces are complete.
+## Proof outline
 
-## References
+Both proofs are direct separation arguments from the closed graph of $A$, packaged in
+`LinearPMap.IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph`. For the density, a
+functional on $F^*$ that vanishes on $D(A^*)$ is, by reflexivity, the evaluation at some $y \in F$,
+and $D(A^*)$ separates the points of $F$. For the graph, a pair $(J_E u, J_F y)$ lies in $G(A^{**})$
+if and only if $v(y) = (A^* v)(u)$ for all $v \in D(A^*)$; then $(u, y) \in G(A)$, because otherwise
+some $v \in D(A^*)$ would separate them. The route of [brezis2011functional], through the
+orthogonality relations $I[G(A^*)] = G(A)^\perp$ and $I[G(A^{**})] = G(A^*)^\perp$
+(`LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph`) and the bipolar identity in the
+reflexive space $E \times F$, is not needed.
 
-[brezis2011functional], Theorem 3.24, and Remarks 2.15 and 2.17.
+## Implementation notes
+
+* Reflexivity is `NormedSpace.IsReflexive` of `Numlib.Analysis.Normed.Module.Reflexive`. Only the
+  reflexivity of $F$ is used for the density, and that of both spaces for the identification of
+  $A^{**}$.
+* No completeness hypothesis appears, since reflexive spaces are complete.
 -/
 
 open NormedSpace
@@ -50,12 +57,15 @@ namespace LinearPMap
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] {A : E →ₗ.[𝕜] F}
 
-/-- **`D(A*)` is dense when `F` is reflexive** ([brezis2011functional], Theorem 3.24, first
-clause), for a closed densely defined `A : D(A) ⊆ E → F`. A functional `φ ∈ F**` vanishing on
-`D(A*)` is evaluation at some `y ∈ F` by reflexivity, and `D(A*)` separates the points of `F`
-(`LinearPMap.IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero`), so `y = 0` and
-`φ = 0`; the annihilator of `D(A*)` is therefore trivial, which is density. Only the
-reflexivity of `F` is used. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $F$ be reflexive, and let
+$A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense in $E$. Then $D(A^*)$ is dense in
+$F^*$. This is the first clause of Theorem 3.24 of [brezis2011functional].
+
+A functional $\varphi \in F^{**}$ that vanishes on $D(A^*)$ is the evaluation at some $y \in F$
+by reflexivity. Since $D(A^*)$ separates the points of $F$
+(`LinearPMap.IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero`), $y = 0$ and
+$\varphi = 0$. So the annihilator of $D(A^*)$ is trivial, which is density. Only the reflexivity
+of $F$ is used. -/
 theorem dense_domain_strongDualAdjoint [IsReflexive 𝕜 F] (hc : A.IsClosed)
     (hd : Dense (A.domain : Set E)) :
     Dense (A.strongDualAdjoint.domain : Set (StrongDual 𝕜 F)) := by
@@ -71,13 +81,18 @@ theorem dense_domain_strongDualAdjoint [IsReflexive 𝕜 F] (hc : A.IsClosed)
   rw [dual_def] at this
   exact hv this
 
-/-- **`A** = A` between reflexive spaces** ([brezis2011functional], Theorem 3.24, second clause):
-for a closed densely defined `A : D(A) ⊆ E → F` between reflexive spaces, the graph of the double
-adjoint `A** : D(A**) ⊆ E** → F**` is the image of the graph of `A` under the canonical
-embeddings, `G(A**) = {(J_E u, J_F (A u)) | u ∈ D(A)}`. The adjoint `A**` is meaningful because
-`D(A*)` is dense (`dense_domain_strongDualAdjoint`); `(ξ, η) ∈ G(A**)` means `η v = ξ (A* v)` for
-all `v ∈ D(A*)`, and with `ξ = J_E u`, `η = J_F y` this says `v y = (A* v) u`, which by separation
-from the closed graph forces `(u, y) ∈ G(A)`. -/
+/-- $A^{**} = A$ **between reflexive spaces**. Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$E$ and $F$ be reflexive, and let $A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense
+in $E$. Then the graph of the double adjoint $A^{**} \colon D(A^{**}) \subseteq E^{**} \to
+F^{**}$ is the image of the graph of $A$ under the canonical embeddings:
+$$G(A^{**}) = \{(J_E u, J_F(Au)) : u \in D(A)\}.$$
+This is the second clause of Theorem 3.24 of [brezis2011functional].
+
+The adjoint $A^{**}$ is meaningful because $D(A^*)$ is dense
+(`LinearPMap.dense_domain_strongDualAdjoint`). A pair $(\xi, \eta)$ lies in $G(A^{**})$ if and
+only if $\eta(v) = \xi(A^* v)$ for all $v \in D(A^*)$. With $\xi = J_E u$ and $\eta = J_F y$
+this says $v(y) = (A^* v)(u)$, and separation from the closed graph forces $(u, y) \in G(A)$.
+The embeddings act on the graph through `LinearMap.prodMap`. -/
 theorem graph_strongDualAdjoint_strongDualAdjoint [IsReflexive 𝕜 E] [IsReflexive 𝕜 F]
     (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     A.strongDualAdjoint.strongDualAdjoint.graph =

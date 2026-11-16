@@ -11,19 +11,30 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.SpecialFunctions.Exp
 
 /-!
-# A product of factors `1 - bᵢ` with divergent `∑ bᵢ` tends to `0`
+# Products of factors $1 - b_i$ with divergent $\sum b_i$
 
-`Real.tendsto_prod_one_sub_of_tendsto_sum`: if `bᵢ ≤ 1` and `∑ bᵢ → ∞`, then
-`∏_{i < n} (1 - bᵢ) → 0`, by `1 - x ≤ e^{-x}`. With the Weierstrass product inequality
-`Finset.one_sub_sum_le_prod_one_sub` it is the dichotomy behind Müntz's theorem: the products
-stay away from `0` exactly when `∑ bᵢ` converges.
+Let $(b_i)_{i \ge 0}$ be real numbers with $b_i \le 1$. This file proves that if the partial sums
+$\sum_{i < n} b_i$ tend to $+\infty$, then the partial products $\prod_{i < n} (1 - b_i)$ tend to
+$0$. The proof uses the inequality $1 - x \le e^{-x}$. Together with the Weierstrass product
+inequality `Finset.one_sub_sum_le_prod_one_sub`, this gives the dichotomy behind Müntz's theorem:
+the products stay away from $0$ exactly when $\sum b_i$ converges.
+
+## Main results
+
+* `Real.tendsto_prod_one_sub_of_tendsto_sum`: if $b_i \le 1$ for all $i$ and
+  $\sum_{i < n} b_i \to \infty$, then $\prod_{i < n} (1 - b_i) \to 0$.
 -/
 
 open Filter Topology
 
 namespace Real
 
-/-- If `∑ bᵢ` diverges and `bᵢ ≤ 1`, then `∏_{i < n} (1 - bᵢ) → 0`, by `1 - x ≤ exp (-x)`. -/
+/-- Let $(b_i)_{i \ge 0}$ be a real sequence with $b_i \le 1$ for all $i$. If
+$\sum_{i < n} b_i \to +\infty$ as $n \to \infty$, then
+$$\prod_{i < n} (1 - b_i) \to 0 \qquad (n \to \infty).$$
+
+The proof bounds the product between $0$ and $\exp\bigl(-\sum_{i < n} b_i\bigr)$, with the
+inequality $1 - x \le e^{-x}$. -/
 theorem tendsto_prod_one_sub_of_tendsto_sum {b : ℕ → ℝ} (hb1 : ∀ i, b i ≤ 1)
     (hdiv : Tendsto (fun n ↦ ∑ i ∈ Finset.range n, b i) atTop atTop) :
     Tendsto (fun n ↦ ∏ i ∈ Finset.range n, (1 - b i)) atTop (𝓝 0) := by

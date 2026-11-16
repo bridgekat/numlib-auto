@@ -6,47 +6,63 @@ import Numlib.Analysis.Convex.Duality.Level
 import Numlib.Analysis.Convex.Subdifferential.LegendreType
 
 /-!
-# Co-finiteness and the blow-up of the gradient
+# Co-finiteness and the growth of the gradient
 
-A finite differentiable convex function on a finite-dimensional space is *co-finite* exactly when
-`‖∇f xᵢ‖ → ∞` for every sequence with `‖xᵢ‖ → ∞`. This is the criterion that makes co-finiteness
-usable: it turns a hypothesis about the recession function — equivalently about `dom f*` — into one
-that can be checked on the gradient mapping alone.
+Let $E$ be a finite-dimensional real inner product space, and let $f : E \to \mathbb{R}$ be convex
+and differentiable on all of $E$. A closed proper convex function is **co-finite**
+(`ConvexAnalysis.Cofinite`) when its recession function is $+\infty$ in every nonzero direction, or
+equivalently when its conjugate $f^*$ is finite everywhere. This module proves that $f$ is co-finite
+if and only if $\|\nabla f(x_i)\| \to \infty$ for every sequence with $\|x_i\| \to \infty$. This is
+Lemma 26.7 of [rockafellar1970convex]. The criterion turns a condition on the recession function, or
+on $\operatorname{dom} f^*$, into a condition on the gradient map alone.
 
 ## Main results
 
-* `forall_tendsto_norm_atTop_iff_isBounded` — for an arbitrary `g`, the sequential condition is
-  boundedness of every sublevel set `{x | ‖g x‖ ≤ b}`.
-* `isBounded_setOf_norm_gradient_le_of_convexDom_convexConj_eq_univ` — the easy half: when
-  `dom f* = E`, the set of points whose gradient lies in a ball is `∂f*` of that ball, hence
-  compact.
-* `convexDom_convexConj_eq_univ_of_isBounded`, `cofinite_iff_forall_tendsto_norm_gradient_atTop` —
-  the hard half, and the criterion itself ([rockafellar1970convex] Lemma 26.7).
+* `ConvexAnalysis.forall_tendsto_norm_atTop_iff_isBounded`: for any map $g$, the condition
+  "$\|g(x_i)\| \to \infty$ whenever $\|x_i\| \to \infty$" is equivalent to boundedness of every set
+  $\{x \mid \|g(x)\| \le b\}$.
+* `ConvexAnalysis.isBounded_setOf_norm_gradient_le_of_convexDom_convexConj_eq_univ`: if
+  $\operatorname{dom} f^* = E$, the sets $\{x \mid \|\nabla f(x)\| \le b\}$ are bounded.
+* `ConvexAnalysis.convexDom_convexConj_eq_univ_of_isBounded`: conversely, if these sets are bounded,
+  then $\operatorname{dom} f^* = E$.
+* `ConvexAnalysis.cofinite_iff_forall_tendsto_norm_gradient_atTop`: the criterion. This is Lemma
+  26.7 of [rockafellar1970convex].
+
+## Proof outline
+
+If $\operatorname{dom} f^* = E$, the set $\{x \mid \|\nabla f(x)\| \le b\}$ lies in the image under
+$\partial f^*$ of the closed ball of radius $b$, which is compact. For the converse, the proof shows
+that the range $D = \nabla f(E)$ is open and closed in the connected space $E$; it does not use the
+case analysis at a boundary point of $\operatorname{dom} f^*$ of [rockafellar1970convex]. For
+openness, let $n \ne 0$ be normal to $\operatorname{dom} f^*$ at $v = \nabla f(x)$. Then the whole
+half-line $x + t n$, $t \ge 0$, lies in $\partial f^*(v)$, so every point of it has gradient $v$,
+and $\{y \mid \|\nabla f(y)\| \le \|v\|\}$ is unbounded.
 
 ## Implementation notes
 
-The hard half is proved by showing `D = ∇f(E)` clopen in the connected space `E`, rather than by
-the book's case split at a boundary point of `dom f*`. Openness comes from the normal cone: a
-non-zero `n` normal to `dom f*` at `v = ∇f x` puts the whole half-line `x + t n`, `t ≥ 0`, inside
-`∂f*(v)`, so every point of it has gradient `v` and `{y | ‖∇f y‖ ≤ ‖v‖}` is unbounded.
-
-## References
-
-* [rockafellar1970convex] §26.
+* The function is $f : E \to [-\infty, +\infty]$ with the hypotheses that $f$ is proper and convex,
+  $\operatorname{dom} f = E$, and $f$ is differentiable at every point
+  (`ConvexAnalysis.DifferentiableAtFn`). The gradient is `gradient (fun w => (f w).toReal)`.
+* The conjugate is taken for the inner product `innerₗ E`.
 -/
 
 namespace ConvexAnalysis
 
 open Filter Metric Topology Set
 
-/-! ### Sequences going to infinity versus bounded sublevel sets -/
+/-! ### Sequences that tend to infinity and bounded level sets -/
 
 section Metric
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedAddCommGroup F]
 
-/-- `‖g xᵢ‖ → ∞` along every sequence with `‖xᵢ‖ → ∞` is boundedness of every sublevel set of
-`‖g‖`. No convexity and no linearity. -/
+/-- Let $E$ and $F$ be normed additive groups, and let $g : E \to F$ be any map. Then the following
+are equivalent:
+
+* $\|g(x_i)\| \to \infty$ for every sequence $(x_i)$ in $E$ with $\|x_i\| \to \infty$;
+* the set $\{x \in E \mid \|g(x)\| \le b\}$ is bounded for every $b \in \mathbb{R}$.
+
+No convexity and no linearity are needed. -/
 theorem forall_tendsto_norm_atTop_iff_isBounded (g : E → F) :
     (∀ xs : ℕ → E, Tendsto (fun i => ‖xs i‖) atTop atTop →
         Tendsto (fun i => ‖g (xs i)‖) atTop atTop)
@@ -79,8 +95,14 @@ section GradientCriterion
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- The easy half: if `dom f* = E` then `{x | ‖∇f x‖ ≤ b}` is bounded, being contained in `∂f*` of
-the closed ball of radius `b`, which is compact. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex with $\operatorname{dom} f = E$, and let $f$ be differentiable at every point.
+If $\operatorname{dom} f^* = E$, then for every $b \in \mathbb{R}$ the set
+$$\{x \in E \mid \|\nabla f(x)\| \le b\}$$
+is bounded.
+
+This is the easy half of `ConvexAnalysis.cofinite_iff_forall_tendsto_norm_gradient_atTop`. The
+set lies in the image under $\partial f^*$ of the closed ball of radius $b$, which is compact. -/
 theorem isBounded_setOf_norm_gradient_le_of_convexDom_convexConj_eq_univ (hf : ConvexFn f)
     (hp : ProperConvex f)
     (hdom : convexDom f = univ) (hdiff : ∀ z : E, DifferentiableAtFn f z)
@@ -98,10 +120,15 @@ theorem isBounded_setOf_norm_gradient_le_of_convexDom_convexConj_eq_univ (hf : C
       ← hasGradientAtFn_toDual_iff_mem_subdifferential hf hp hcl hes]
     exact (hdiff x).hasGradientAtFn_gradient
 
-/-- The hard half, first step: the range of `∇f` lies inside `int (dom f*)`. A
-non-zero `n` normal to `dom f*` at `v = ∇f x` may be added to `x` with any non-negative coefficient
-without leaving `∂f*(v)`, so the whole half-line `x + t n` has gradient `v` and
-`{y | ‖∇f y‖ ≤ ‖v‖}` is unbounded. -/
+/-- Let $f$ be proper and convex with $\operatorname{dom} f = E$, differentiable at every point, and
+let every set $\{x \mid \|\nabla f(x)\| \le b\}$ be bounded. Then the range of $\nabla f$ lies
+in $\operatorname{int}(\operatorname{dom} f^*)$.
+
+This is the first step of the hard half. A nonzero vector $n$ normal to $\operatorname{dom} f^*$
+at $v = \nabla f(x)$ can be added to $x$ with any nonnegative coefficient without leaving
+$\partial f^*(v)$. So the whole half-line $x + t n$ has gradient $v$, and
+$\{y \mid \|\nabla f(y)\| \le \|v\|\}$ is unbounded. The range of $\nabla f$ is
+`ConvexAnalysis.gradientRange f`. -/
 theorem gradientRange_subset_interior_convexDom_convexConj_of_isBounded (hf : ConvexFn f)
     (hp : ProperConvex f)
     (hdom : convexDom f = univ) (hdiff : ∀ z : E, DifferentiableAtFn f z)
@@ -148,9 +175,13 @@ theorem gradientRange_subset_interior_convexDom_convexConj_of_isBounded (hf : Co
   rw [hnorm] at hsub
   linarith
 
-/-- The hard half, second step: the range of `∇f` is closed. A convergent sequence of
-gradients is bounded, so the points carrying them lie in one bounded sublevel set, and a convergent
-subsequence of those points has the limit gradient as its gradient. -/
+/-- Let $f$ be proper and convex with $\operatorname{dom} f = E$, differentiable at every point, and
+let every set $\{x \mid \|\nabla f(x)\| \le b\}$ be bounded. Then the range of $\nabla f$ is
+closed.
+
+This is the second step of the hard half. A convergent sequence of gradients is bounded, so the
+points where they are taken lie in one bounded set $\{x \mid \|\nabla f(x)\| \le b\}$, and the
+limit of a convergent subsequence of these points has the limit gradient as its gradient. -/
 theorem isClosed_gradientRange_of_isBounded (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = univ) (hdiff : ∀ z : E, DifferentiableAtFn f z)
     (hbd : ∀ b : ℝ, Bornology.IsBounded {x : E | ‖gradient (fun w => (f w).toReal) x‖ ≤ b}) :
@@ -174,8 +205,14 @@ theorem isClosed_gradientRange_of_isBounded (hf : ConvexFn f) (hp : ProperConvex
     exact (hlim.comp hφ.tendsto_atTop).congr fun n => (hgrad (φ n)).symm
   exact ⟨a, hva ▸ (hdiff a).hasGradientAtFn_gradient⟩
 
-/-- The hard half: bounded sublevel sets of `‖∇f‖` force `dom f* = E`. Here `∇f(E)`
-is non-empty, open and closed, and `E` is connected. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex with $\operatorname{dom} f = E$, and let $f$ be differentiable at every point.
+If the set $\{x \in E \mid \|\nabla f(x)\| \le b\}$ is bounded for every $b \in \mathbb{R}$,
+then $\operatorname{dom} f^* = E$.
+
+This is the hard half of `ConvexAnalysis.cofinite_iff_forall_tendsto_norm_gradient_atTop`. The
+range $\nabla f(E)$ is nonempty, open and closed, and $E$ is connected, so $\nabla f(E) = E$.
+With the first step, $E \subseteq \operatorname{int}(\operatorname{dom} f^*)$. -/
 theorem convexDom_convexConj_eq_univ_of_isBounded (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = univ)
     (hdiff : ∀ z : E, DifferentiableAtFn f z)
@@ -194,8 +231,15 @@ theorem convexDom_convexConj_eq_univ_of_isBounded (hf : ConvexFn f) (hp : Proper
   have huniv : interior (convexDom (convexConj (innerₗ E) f)) = univ := heq ▸ hclopen.eq_univ hne
   exact eq_univ_of_univ_subset (huniv.ge.trans interior_subset)
 
-/-- A finite differentiable convex function is co-finite exactly when the norm of its gradient
-tends to infinity along every sequence tending to infinity. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex with $\operatorname{dom} f = E$, and let $f$ be differentiable at every point
+of $E$. Then $f$ is co-finite if and only if
+$$\|\nabla f(x_i)\| \to \infty \quad \text{for every sequence } (x_i) \text{ in } E \text{ with
+  } \|x_i\| \to \infty.$$
+
+This is Lemma 26.7 of [rockafellar1970convex]. Co-finiteness is `ConvexAnalysis.Cofinite`: $f$
+is closed, proper and convex, and its recession function is $+\infty$ in every nonzero
+direction. The gradient is `gradient (fun w => (f w).toReal)`. -/
 theorem cofinite_iff_forall_tendsto_norm_gradient_atTop (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = univ) (hdiff : ∀ z : E, DifferentiableAtFn f z) :
     Cofinite f ↔ ∀ xs : ℕ → E, Tendsto (fun i => ‖xs i‖) atTop atTop →

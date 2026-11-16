@@ -16,54 +16,55 @@ import Mathlib.MeasureTheory.Measure.Support
 /-!
 # The essential support of a function
 
-The support of a function, `Function.support f = {x | f x ≠ 0}`, is not a function of the
-almost-everywhere class of `f`: the indicator of the rationals has support `ℚ` although it is
-almost everywhere zero. The right notion for an `L^p` class is the **essential support** of `f`
-with respect to a measure `μ`: the complement of the largest open set on which `f` vanishes
-almost everywhere, equivalently the set of points all of whose neighbourhoods meet `{f ≠ 0}` in a
-set of positive measure. This is the support of the measure `μ.restrict (Function.support f)` in
-the sense of `MeasureTheory.Measure.support`, and that is how it is defined here:
+The support $\{x : f(x) \neq 0\}$ of a function $f$ does not depend only on the class of $f$ up to
+equality almost everywhere: the indicator function of the rationals has the support $\mathbb{Q}$,
+but it is zero almost everywhere. The right notion for an element of $L^p$ is the **essential
+support** of $f$ with respect to a measure $\mu$. It is the set of points $x$ such that every
+neighbourhood of $x$ meets $\{f \neq 0\}$ in a set of positive measure. It is defined here as the
+support of the measure $\mu$ restricted to $\{f \neq 0\}$. The presentation follows Propositions
+4.17 and 4.18 and Remark 9 in Chapter 4 of [brezis2011functional].
 
-* `MeasureTheory.essSupport μ f := (μ.restrict (Function.support f)).support`.
+The complement of the essential support is the union of all open sets on which $f$ vanishes almost
+everywhere, and there can be uncountably many such sets. On a hereditarily Lindelöf space, for
+example a second-countable space, $f$ still vanishes almost everywhere outside its essential
+support, so that the complement is the largest open set on which $f$ vanishes almost everywhere.
+This makes the definition sound.
 
-That the definition is sound — that `f` vanishes almost everywhere off its essential support,
-although the essential support is a complement of a union of *uncountably* many open null sets
-— is `MeasureTheory.ae_eq_zero_of_notMem_essSupport`, valid on a hereditarily Lindelöf space
-(every second-countable space is one); it is Mathlib's `MeasureTheory.Measure.support_mem_ae`
-applied to the restricted measure.
+## Main definitions
 
-## Main statements
+* `MeasureTheory.essSupport`: the essential support of $f$ with respect to $\mu$.
+
+## Main results
 
 * `MeasureTheory.mem_essSupport_iff`, `MeasureTheory.mem_essSupport_iff_forall_mem_nhds`,
-  `MeasureTheory.notMem_essSupport_iff`: the pointwise characterizations.
+  `MeasureTheory.notMem_essSupport_iff`: $x$ is in the essential support if and only if every open
+  set or every neighbourhood of $x$ meets $\{f \neq 0\}$ in a set of positive measure.
 * `MeasureTheory.isClosed_essSupport`, `MeasureTheory.essSupport_subset_tsupport`,
-  `MeasureTheory.essSupport_zero`: the essential support is closed, contained in the topological
-  support, and empty for the zero function.
-* `MeasureTheory.ae_eq_zero_of_notMem_essSupport`, `MeasureTheory.indicator_essSupport_ae_eq`,
-  `MeasureTheory.essSupport_eq_empty_iff`: `f = 0` almost everywhere outside its essential
-  support, so `f` is almost everywhere equal to its restriction to its essential support, and the
-  essential support is empty exactly when `f = 0` almost everywhere.
-* `MeasureTheory.essSupport_congr_ae`: the essential support depends only on the
-  almost-everywhere class of `f`.
-* `MeasureTheory.essSupport_eq_tsupport`: for a continuous function and a measure positive on
-  open sets, the essential support is the topological support.
-* `MeasureTheory.essSupport_convolution_subset`: the essential support of a convolution is
-  contained in the closure of the sum of the essential supports of the factors.
+  `MeasureTheory.essSupport_zero`: the essential support is closed, is contained in the closure of
+  $\{f \neq 0\}$, and is empty for the zero function.
+* `MeasureTheory.ae_eq_zero_of_notMem_essSupport`: $f = 0$ almost everywhere outside its essential
+  support.
+* `MeasureTheory.indicator_essSupport_ae_eq`: $f$ is equal almost everywhere to its restriction to
+  its essential support.
+* `MeasureTheory.essSupport_eq_empty_iff`: the essential support is empty if and only if $f = 0$
+  almost everywhere.
+* `MeasureTheory.essSupport_congr_ae`: functions that are equal almost everywhere have the same
+  essential support.
+* `MeasureTheory.essSupport_eq_tsupport`: for a continuous function and a measure that is positive
+  on nonempty open sets, the essential support is the closure of $\{f \neq 0\}$.
+* `MeasureTheory.essSupport_convolution_subset`: the essential support of $f * g$ is contained in
+  the closure of the sum of the essential supports of $f$ and $g$.
 
 ## Implementation notes
 
-The definition asks for nothing beyond a topology and a measurable structure on the domain and a
-zero in the codomain. Measurability of `f` is never needed: the characterizations of membership
-use only open neighbourhoods, which are measurable under `OpensMeasurableSpace`, and the
-vanishing off the essential support uses the inequality
-`μ (t ∩ s) ≤ μ.restrict s t` (`MeasureTheory.Measure.le_restrict_apply`), which holds for every
-`s` and `t`.
-
-## References
-
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], Proposition 4.17 with its Remark 9, and
-Proposition 4.18.
+* The definition is `(μ.restrict (Function.support f)).support`, with
+  `MeasureTheory.Measure.support`. It needs only a topology and a measurable structure on the domain
+  and a zero in the codomain.
+* No result needs the measurability of $f$. The characterizations of membership use only open sets,
+  which are measurable under `OpensMeasurableSpace`. The vanishing outside the essential support
+  uses the inequality $\mu(t \cap s) \le \mu|_s(t)$ (`MeasureTheory.Measure.le_restrict_apply`),
+  which holds for all sets $s$ and $t$. It is `MeasureTheory.Measure.support_mem_ae` for the
+  restricted measure.
 -/
 
 open Filter Function Set Topology
@@ -78,19 +79,24 @@ section Definition
 variable [Zero E] {f g : α → E}
 
 variable (μ) in
-/-- The **essential support** of `f` with respect to `μ`: the set of points all of whose
-neighbourhoods meet `{f ≠ 0}` in a set of positive `μ`-measure, that is, the support of the
-measure `μ.restrict (Function.support f)`. Its complement is the largest open set on which `f`
-vanishes `μ`-almost everywhere ([brezis2011functional] Proposition 4.17 and the definition
-following it). -/
+/-- Let $\alpha$ be a topological space with a measure $\mu$, and let $f \colon \alpha \to E$, where
+$E$ has a zero. The **essential support** of $f$ with respect to $\mu$ is the set of points
+$x \in \alpha$ such that every neighbourhood of $x$ meets $\{f \neq 0\}$ in a set of positive
+$\mu$-measure. Its complement is the union of all open sets on which $f$ vanishes $\mu$-almost
+everywhere. On a hereditarily Lindelöf space it is the largest such open set, by
+`MeasureTheory.ae_eq_zero_of_notMem_essSupport`. This is Proposition 4.17 of
+[brezis2011functional] and the definition after it.
+
+The definition is the support `MeasureTheory.Measure.support` of the measure
+`μ.restrict (Function.support f)`. -/
 noncomputable def essSupport (f : α → E) : Set α :=
   (μ.restrict (Function.support f)).support
 
-/-- The essential support is closed. -/
+/-- The essential support of a function is closed. -/
 theorem isClosed_essSupport : IsClosed (essSupport μ f) :=
   Measure.isClosed_support
 
-/-- The complement of the essential support is open. -/
+/-- The complement of the essential support of a function is open. -/
 theorem isOpen_compl_essSupport : IsOpen (essSupport μ f)ᶜ :=
   Measure.isOpen_compl_support
 
@@ -99,8 +105,8 @@ theorem isOpen_compl_essSupport : IsOpen (essSupport μ f)ᶜ :=
 theorem essSupport_zero : essSupport μ (0 : α → E) = ∅ := by
   simp [essSupport]
 
-/-- The essential support depends only on the almost-everywhere class of the function
-([brezis2011functional] Remark 9 (a) of chapter 4). -/
+/-- If $f = g$ $\mu$-almost everywhere, then $f$ and $g$ have the same essential support with
+respect to $\mu$. This is Remark 9(a) in Chapter 4 of [brezis2011functional]. -/
 theorem essSupport_congr_ae (h : f =ᵐ[μ] g) : essSupport μ f = essSupport μ g := by
   unfold essSupport
   congr 1
@@ -110,8 +116,8 @@ theorem essSupport_congr_ae (h : f =ᵐ[μ] g) : essSupport μ f = essSupport μ
 
 variable [OpensMeasurableSpace α]
 
-/-- A point lies in the essential support of `f` iff every open set containing it meets the
-support of `f` in a set of positive measure. -/
+/-- Let open sets of $\alpha$ be measurable. A point $x$ is in the essential support of $f$ if and
+only if $\mu(U \cap \{f \neq 0\}) > 0$ for every open set $U$ that contains $x$. -/
 theorem mem_essSupport_iff {x : α} :
     x ∈ essSupport μ f ↔ ∀ U, IsOpen U → x ∈ U → 0 < μ (U ∩ support f) := by
   rw [essSupport, Measure.support_eq_forall_isOpen]
@@ -124,8 +130,8 @@ theorem mem_essSupport_iff {x : α} :
     rw [Measure.restrict_apply hU.measurableSet]
     exact h U hU hxU
 
-/-- A point lies in the essential support of `f` iff every neighbourhood of it meets the support
-of `f` in a set of positive measure. -/
+/-- Let open sets of $\alpha$ be measurable. A point $x$ is in the essential support of $f$ if and
+only if $\mu(U \cap \{f \neq 0\}) > 0$ for every neighbourhood $U$ of $x$. -/
 theorem mem_essSupport_iff_forall_mem_nhds {x : α} :
     x ∈ essSupport μ f ↔ ∀ U ∈ 𝓝 x, 0 < μ (U ∩ support f) := by
   rw [mem_essSupport_iff]
@@ -135,13 +141,14 @@ theorem mem_essSupport_iff_forall_mem_nhds {x : α} :
     exact (h V hV hxV).trans_le (measure_mono (inter_subset_inter_left _ hVU))
   · exact fun h U hU hxU => h U (hU.mem_nhds hxU)
 
-/-- A point lies outside the essential support of `f` iff some neighbourhood of it meets the
-support of `f` in a null set. -/
+/-- Let open sets of $\alpha$ be measurable. A point $x$ is outside the essential support of $f$ if
+and only if $\mu(U \cap \{f \neq 0\}) = 0$ for some neighbourhood $U$ of $x$. -/
 theorem notMem_essSupport_iff {x : α} :
     x ∉ essSupport μ f ↔ ∃ U ∈ 𝓝 x, μ (U ∩ support f) = 0 := by
   simp [mem_essSupport_iff_forall_mem_nhds, pos_iff_ne_zero]
 
-/-- The essential support is contained in the topological support. -/
+/-- Let open sets of $\alpha$ be measurable. The essential support of $f$ is contained in the
+closure of $\{f \neq 0\}$. -/
 theorem essSupport_subset_tsupport : essSupport μ f ⊆ tsupport f :=
   Measure.support_restrict_subset.trans inter_subset_left
 
@@ -153,11 +160,14 @@ section Lindelof
 
 variable [HereditarilyLindelofSpace α] [Zero E] {f : α → E}
 
-/-- **The essential support carries the function** ([brezis2011functional] Proposition 4.17):
-`f` vanishes almost everywhere outside its essential support, on a hereditarily Lindelöf space
-(in particular on any second-countable space). This is what makes the definition sound: the
-complement of the essential support is the union of *all* open sets on which `f` vanishes almost
-everywhere, and there may be uncountably many of them. -/
+/-- **The function vanishes outside its essential support.** Let $\alpha$ be a hereditarily Lindelöf
+topological space, for example a second-countable space, with a measure $\mu$. Then for every
+$f \colon \alpha \to E$, $f(x) = 0$ for $\mu$-almost every $x$ outside the essential support of
+$f$. This is Proposition 4.17 of [brezis2011functional].
+
+This result makes the definition sound. The complement of the essential support is the union of
+all open sets on which $f$ vanishes almost everywhere, and there can be uncountably many of
+them. -/
 theorem ae_eq_zero_of_notMem_essSupport : ∀ᵐ x ∂μ, x ∉ essSupport μ f → f x = 0 := by
   have h0 : μ ((essSupport μ f)ᶜ ∩ support f) = 0 := by
     refine le_antisymm ((Measure.le_restrict_apply _ _).trans (le_of_eq ?_)) zero_le
@@ -167,14 +177,17 @@ theorem ae_eq_zero_of_notMem_essSupport : ∀ᵐ x ∂μ, x ∉ essSupport μ f 
   by_contra hfx
   exact hx ⟨hxs, hfx⟩
 
-/-- `f` is almost everywhere equal to its restriction to its essential support. -/
+/-- Let $\alpha$ be a hereditarily Lindelöf topological space with a measure $\mu$. Every function
+$f$ is equal $\mu$-almost everywhere to the function that is $f$ on the essential support of $f$
+and $0$ outside it. -/
 theorem indicator_essSupport_ae_eq : (essSupport μ f).indicator f =ᵐ[μ] f := by
   filter_upwards [ae_eq_zero_of_notMem_essSupport (μ := μ) (f := f)] with x hx
   by_cases hxs : x ∈ essSupport μ f
   · simp [indicator_of_mem hxs]
   · simp [indicator_of_notMem hxs, hx hxs]
 
-/-- The essential support is empty exactly when the function vanishes almost everywhere. -/
+/-- Let $\alpha$ be a hereditarily Lindelöf topological space with a measure $\mu$. The essential
+support of $f$ is empty if and only if $f = 0$ $\mu$-almost everywhere. -/
 theorem essSupport_eq_empty_iff : essSupport μ f = ∅ ↔ f =ᵐ[μ] 0 := by
   rw [essSupport, Measure.support_eq_empty_iff, Measure.restrict_eq_zero,
     measure_eq_zero_iff_ae_notMem]
@@ -184,8 +197,10 @@ end Lindelof
 
 /-! ### Continuous functions -/
 
-/-- For a continuous function and a measure positive on open sets, the essential support is the
-topological support ([brezis2011functional] Remark 9 (b) of chapter 4). -/
+/-- Let $\alpha$ be a topological space in which open sets are measurable, with a measure $\mu$ that
+is positive on nonempty open sets, and let $E$ be a $T_1$ topological space with a zero. If
+$f \colon \alpha \to E$ is continuous, then the essential support of $f$ is the closure of
+$\{f \neq 0\}$. This is Remark 9(b) in Chapter 4 of [brezis2011functional]. -/
 theorem essSupport_eq_tsupport [OpensMeasurableSpace α] [μ.IsOpenPosMeasure] [Zero E]
     [TopologicalSpace E] [T1Space E] {f : α → E} (hf : Continuous f) :
     essSupport μ f = tsupport f := by
@@ -205,12 +220,22 @@ variable {𝕜 G E' F : Type*} [NontriviallyNormedField 𝕜]
   {μ : Measure G} [SFinite μ] [μ.IsAddRightInvariant]
   {f : G → E} {g : G → E'}
 
-/-- **The essential support of a convolution** ([brezis2011functional] Proposition 4.18):
-`essSupport μ (f ⋆ g) ⊆ closure (essSupport μ f + essSupport μ g)`. No integrability is
-assumed: where the convolution integral does not exist it is `0`, and the bound holds there for
-free. Replacing `f` and `g` by their restrictions to their essential supports changes neither
-side (`MeasureTheory.indicator_essSupport_ae_eq`, `MeasureTheory.convolution_congr`), and for
-the restrictions the statement is `MeasureTheory.support_convolution_subset`. -/
+/-- **The essential support of a convolution.** Let $G$ be a hereditarily Lindelöf additive
+commutative group with a topology in which open sets are measurable, and with measurable
+addition and negation. Let $\mu$ be an $s$-finite right-invariant measure on $G$. Let $E$, $E'$
+and $F$ be normed spaces over a nontrivially normed field $\mathbb{K}$, with $F$ also a real
+normed space, let $L \colon E \times E' \to F$ be a continuous bilinear map, and let
+$f \colon G \to E$ and $g \colon G \to E'$. Then
+$$\operatorname{ess\,supp}(f * g) \subseteq \overline{\operatorname{ess\,supp} f +
+  \operatorname{ess\,supp} g},$$
+where $(f * g)(x) = \int L(f(t), g(x - t)) \, d\mu(t)$. This is Proposition 4.18 of
+[brezis2011functional].
+
+No integrability is assumed. Where the integral of the convolution does not exist, its value is
+$0$, and the inclusion holds there trivially. The proof replaces $f$ and $g$ by their
+restrictions to their essential supports, which changes neither side
+(`MeasureTheory.indicator_essSupport_ae_eq`, `MeasureTheory.convolution_congr`). For the
+restrictions the statement is `MeasureTheory.support_convolution_subset`. -/
 theorem essSupport_convolution_subset (L : E →L[𝕜] E' →L[𝕜] F) :
     essSupport μ (f ⋆[L, μ] g) ⊆ closure (essSupport μ f + essSupport μ g) := by
   have hf : f =ᵐ[μ] (essSupport μ f).indicator f := indicator_essSupport_ae_eq.symm

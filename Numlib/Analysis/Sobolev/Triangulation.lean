@@ -12,42 +12,84 @@ import Numlib.MeasureTheory.Function.ContinuousOnClosure
 /-!
 # Sobolev functions on a triangulated domain
 
-The two facts about Sobolev spaces that the finite element method needs from a triangulation
-`𝒯` of a plane domain `Ω` ([han2009theoretical] §10.2–§10.3), and their general forms.
+This module proves the facts about Sobolev spaces that the finite element method needs from a
+triangulation $\mathcal{T}$ of a plane domain $\Omega \subseteq \mathbb{R}^2$ ([han2009theoretical],
+§10.2–§10.3), together with their general forms. First, the Sobolev norm is additive over the
+elements: for $f \in W^{k,p}(\Omega)$ and $1 \le p < \infty$,
+$\|f\|_{k,p,\Omega}^p = \sum_K \|f\|_{k,p,K}^p$ and $|f|_{k,p,\Omega}^p = \sum_K |f|_{k,p,K}^p$,
+because the open elements cover $\Omega$ up to a null set and the weak derivative restricts to each
+of them. Second, a continuous piecewise-$C^1$ function is in $W^{1,p}(\Omega)$: a function
+continuous on $\bar\Omega$ that agrees on each open element $K$ with a $C^1$ function $g_K$ lies in
+$W^{1,p}(\Omega)$, and its weak derivative is the elementwise derivative. This is the direction of
+Example 7.2.7 of [han2009theoretical] that the finite element method uses ("$v_h \in H^1(\Omega)$ if
+and only if $v_h \in C(\bar\Omega)$", §10.2.3). In particular the global finite element interpolant
+$\Pi_h v$, glued from the elementwise interpolants, lies in $H^1(\Omega)$.
 
-* **Additivity of the norm over the elements.** Since the open elements partition `Ω` up to a
-  null set and the weak derivative restricts to each of them, `‖f‖_{k,p,Ω}^p = ∑_K ‖f‖_{k,p,K}^p`
-  and `|f|_{k,p,Ω}^p = ∑_K |f|_{k,p,K}^p` for every `f ∈ W^{k,p}(Ω)`, `1 ≤ p < ∞`
-  (`Triangulation.sobolevNorm_rpow_eq_sum`, `Triangulation.sobolevSeminorm_rpow_eq_sum`). The
-  general statement, for any finite family of disjoint open subsets of `Ω` whose union is `Ω`
-  up to a null set, is `sobolevNorm_rpow_eq_sum` and `sobolevSeminorm_rpow_eq_sum`.
-* **Conformity: a continuous piecewise-`C¹` function is `W^{1,p}(Ω)`.** A function on `Ω`
-  continuous up to the boundary which agrees on each open element `K` with a `C¹` function
-  `g K` lies in `W^{1,p}(Ω)` for every `1 ≤ p ≤ ∞`, with weak derivative the elementwise
-  derivative `Triangulation.pieceFDeriv g` (`Triangulation.hasWeakFDerivOn_of_piecewise`,
-  `Triangulation.memSobolev_of_piecewise`). This is the direction of [han2009theoretical]
-  Example 7.2.7 that the finite element method uses ("`v_h ∈ H¹(Ω)` if and only if
-  `v_h ∈ C(Ω̄)`", §10.2.3), and it is proved **without Green's formula**: the weak-derivative
-  identity `∫_Ω (∂_v φ) u = -∫_Ω φ (∂_v u)` is the integration by parts
-  `integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments` of
-  `Numlib/Analysis/Calculus/IntegrationByPartsOffSegments.lean`, whose exceptional set is the
-  skeleton of the triangulation, a finite union of segments: on almost every line parallel to
-  `v` the function `φ u` is continuous and differentiable off finitely many points, so the
-  fundamental theorem of calculus holds on it, and Fubini does the rest.
-* **The glued function.** The function `𝒯.glue g` equal to `g K` on each closed element, for a
-  compatible family of `C¹` pieces, is therefore in `W^{1,p}(Ω)` (`Triangulation.memSobolev_glue`):
-  this is how the global finite element interpolant `Π_h v` enters `H¹(Ω)`.
-* **The finite element spaces.** `Triangulation.polySpace p k` is the space `X_h ⊆ W^{1,p}(Ω)`
-  of continuous piecewise polynomials of degree at most `k` (`Triangulation.IsPiecewisePoly`),
-  and `Triangulation.polySpaceZero p k` the space `V_h ⊆ W_0^{1,p}(Ω)` of those vanishing on
-  `∂Ω` ([quarteroni2000numerical] (12.94), [han2009theoretical] §10.4). The boundary condition
-  is read on the continuous representative and needs no trace: a continuous `W^{1,p}` function
-  vanishing on `∂Ω` lies in `W_0^{1,p}(Ω)` on any open set ([brezis2011functional] Theorem 9.17,
-  `Triangulation.exists_mem_polySpaceZero`). The interpolant of a boundary-vanishing function
-  lies in `V_h` for an edge-unisolvent element on a polygon
-  (`Triangulation.exists_mem_polySpaceZero_globalInterp`), and both spaces are
-  finite-dimensional once a conforming element reproducing `ℙ_k` is fixed, an element of `X_h`
-  being determined by its nodal values (`Triangulation.finiteDimensional_polySpace`).
+The module then defines the finite element spaces. The space $X_h \subseteq W^{1,p}(\Omega)$
+consists of the continuous piecewise polynomials of degree at most $k$, and the space
+$V_h \subseteq W_0^{1,p}(\Omega)$ consists of those that vanish on $\partial\Omega$
+([quarteroni2000numerical], (12.94); [han2009theoretical], §10.4). Both spaces are
+finite-dimensional once a conforming element that reproduces $\mathbb{P}_k$ is fixed, because an
+element of $X_h$ is determined by its nodal values.
+
+## Main definitions
+
+* `Triangulation.pieceFDeriv`: the elementwise derivative of a family of functions, one per element.
+* `Triangulation.pieceIteratedFDeriv`: the elementwise derivative of order $n$.
+* `Triangulation.IsPiecewisePoly`: a function whose restriction to each closed element is a
+  polynomial of degree at most $k$.
+* `Triangulation.polySpace`: the finite element space $X_h \subseteq W^{1,p}(\Omega)$.
+* `Triangulation.polySpaceZero`: the finite element space $V_h \subseteq W_0^{1,p}(\Omega)$.
+* `Triangulation.nodalValues`: the linear map that sends an element of $X_h$ to its values at the
+  nodes.
+
+## Main results
+
+* `sobolevNorm_rpow_eq_sum`: for $1 \le p < \infty$, the $p$-th power of the Sobolev norm is
+  additive over a finite family of disjoint open subsets of $\Omega$ whose union is $\Omega$ up to a
+  null set.
+* `Triangulation.sobolevNorm_rpow_eq_sum`: $\|f\|_{k,p,\Omega}^p = \sum_K \|f\|_{k,p,K}^p$ for
+  $f \in W^{k,p}(\Omega)$ and $1 \le p < \infty$.
+* `Triangulation.hasWeakFDerivOn_of_piecewise`: a function continuous on $\Omega$ and equal to a
+  $C^1$ function on each open element has the elementwise derivative as weak derivative.
+* `Triangulation.memSobolev_of_piecewise`: such a function, if it is continuous on $\bar\Omega$,
+  lies in $W^{1,p}(\Omega)$.
+* `Triangulation.hasWeakIteratedLineDerivOn_of_piecewise`: a $C^k$ function that is piecewise
+  $C^{k+1}$ has the elementwise derivative of order $k + 1$ as weak derivative.
+* `Triangulation.memSobolev_glue` and `Triangulation.memSobolev_globalInterp`: the function glued
+  from compatible $C^1$ pieces, and the global interpolant of a conforming element, lie in
+  $W^{1,p}(\Omega)$.
+* `Triangulation.exists_mem_polySpaceZero`: a continuous piecewise polynomial that vanishes on
+  $\partial\Omega$ is the function of an element of $V_h$.
+* `Triangulation.exists_mem_polySpaceZero_globalInterp`: for an edge-unisolvent element on a
+  polygon, the interpolant of a function that vanishes on $\partial\Omega$ lies in $V_h$.
+* `Triangulation.finiteDimensional_polySpace` and `Triangulation.finiteDimensional_polySpaceZero`:
+  $X_h$ and $V_h$ are finite-dimensional.
+* `ContDiff.memSobolev_of_isBounded`: a $C^k$ function lies in $W^{k,p}$ of every bounded open set.
+
+## Proof outline
+
+The conformity result is proved without Green's formula. For a test function $\varphi$ and a
+direction $v$, the identity $\int_\Omega (\partial_v \varphi) u = -\int_\Omega \varphi \, \partial_v
+u$ is the integration by parts `integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments`
+of `Numlib.Analysis.Calculus.IntegrationByPartsOffSegments`. Its exceptional set is the skeleton of
+the triangulation, a finite union of segments. On almost every line parallel to $v$, the function
+$\varphi u$ is continuous and differentiable off finitely many points, so the fundamental theorem of
+calculus holds on that line, and Fubini's theorem gives the identity.
+
+## Implementation notes
+
+* The norm $\|f\|_{k,p,\Omega}$ is `sobolevNorm f k p Ω volume` and the seminorm $|f|_{k,p,\Omega}$
+  is `sobolevSeminorm f k p Ω volume`. Both have values in $[0, \infty]$. The open element $K$ is
+  `Triangulation.Kopens`.
+* The elementwise derivative is $0$ on the skeleton and outside $\Omega$. These values do not
+  matter, because the skeleton is a null set.
+* The boundary condition of $V_h$ is read on the continuous representative and needs no trace. A
+  function in $W^{1,p}(\Omega)$ that is continuous on $\bar\Omega$ and vanishes on $\partial\Omega$
+  lies in $W_0^{1,p}(\Omega)$ for every open set $\Omega$, by Theorem 9.17 of [brezis2011functional]
+  (`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`).
+* The membership results in $W^{1,p}(\Omega)$ hold for every exponent `p : ℝ≥0∞`, not only for
+  $1 \le p \le \infty$.
 -/
 
 open EuclideanSpace Function Set Topology MeasureTheory TopologicalSpace
@@ -65,9 +107,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {Ω : Opens E} {μ : Measure E} {p : ℝ≥0∞} {f : E → F}
   {ι : Type*} [Fintype ι] {U : ι → Opens E}
 
-/-- **The `p`-th power of the Sobolev seminorm is additive over a finite family of disjoint
-open subsets of `Ω` covering it up to a null set**, `1 ≤ p < ∞`: the weak derivative of order
-`n` on `Ω` restricts to a weak derivative on each `U i`, and the `L^p(Ω)` integral splits. -/
+/-- **Additivity of the Sobolev seminorm.** Let $E$ be finite-dimensional with its Borel
+$\sigma$-algebra, let $F$ be complete, and let $1 \le p < \infty$. Let $(U_i)$ be a finite
+family of pairwise disjoint open subsets of $\Omega$ whose union equals $\Omega$ up to a
+$\mu$-null set. Then for every $f \in W^{n,p}(\Omega)$,
+$$|f|_{n,p,\Omega}^p = \sum_i |f|_{n,p,U_i}^p.$$
+
+The weak derivative of order $n$ on $\Omega$ restricts to a weak derivative on each $U_i$, and
+the $L^p(\Omega)$ integral splits over the $U_i$. -/
 theorem sobolevSeminorm_rpow_eq_sum [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hU : ∀ i, U i ≤ Ω)
     (hd : Pairwise (Disjoint on fun i ↦ (U i : Set E)))
     (hae : (⋃ i, (U i : Set E)) =ᵐ[μ] (Ω : Set E)) {n : ℕ} (hf : MemSobolev f n p Ω μ) :
@@ -90,8 +137,11 @@ theorem sobolevSeminorm_rpow_eq_sum [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hU : ∀ 
   rw [hx hxU]
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- The `p`-th power of the Sobolev norm is the sum of the `p`-th powers of the seminorms of
-all orders, `1 ≤ p < ∞`. -/
+/-- Let $1 \le p < \infty$. For every function $f$, every $k$ and every open set $V$, the $p$-th
+power of the Sobolev norm is the sum of the $p$-th powers of the seminorms of all orders up to
+$k$:
+$$\|f\|_{k,p,V}^p = \sum_{n=0}^{k} |f|_{n,p,V}^p.$$
+-/
 theorem sobolevNorm_rpow_eq_sum_sobolevSeminorm_rpow [Fact (1 ≤ p)] (hp : p ≠ ⊤) (k : ℕ)
     (V : Opens E) :
     sobolevNorm f k p V μ ^ p.toReal = ∑ n : Fin (k + 1), sobolevSeminorm f n p V μ ^ p.toReal := by
@@ -101,9 +151,12 @@ theorem sobolevNorm_rpow_eq_sum_sobolevSeminorm_rpow [Fact (1 ≤ p)] (hp : p �
   rw [← ENNReal.rpow_mul, one_div, inv_mul_cancel₀ hpt, ENNReal.rpow_one]
   rfl
 
-/-- **The `p`-th power of the Sobolev norm is additive over a finite family of disjoint open
-subsets of `Ω` covering it up to a null set**, `1 ≤ p < ∞`:
-`‖f‖_{k,p,Ω}^p = ∑_i ‖f‖_{k,p,U i}^p` for `f ∈ W^{k,p}(Ω)`. -/
+/-- **Additivity of the Sobolev norm.** Let $E$ be finite-dimensional with its Borel
+$\sigma$-algebra, let $F$ be complete, and let $1 \le p < \infty$. Let $(U_i)$ be a finite
+family of pairwise disjoint open subsets of $\Omega$ whose union equals $\Omega$ up to a
+$\mu$-null set. Then for every $f \in W^{k,p}(\Omega)$,
+$$\|f\|_{k,p,\Omega}^p = \sum_i \|f\|_{k,p,U_i}^p.$$
+-/
 theorem sobolevNorm_rpow_eq_sum [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hU : ∀ i, U i ≤ Ω)
     (hd : Pairwise (Disjoint on fun i ↦ (U i : Set E)))
     (hae : (⋃ i, (U i : Set E)) =ᵐ[μ] (Ω : Set E)) {k : ℕ} (hf : MemSobolev f k p Ω μ) :
@@ -124,33 +177,44 @@ namespace Triangulation
 
 variable {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {p : ℝ≥0∞}
 
-/-- **The Sobolev seminorm is additive over the elements**: `|f|_{n,p,Ω}^p = ∑_K |f|_{n,p,K}^p`
-for `f ∈ W^{n,p}(Ω)`, `1 ≤ p < ∞`. -/
+/-- **The Sobolev seminorm is additive over the elements.** Let $\mathcal{T}$ be a triangulation of
+$\Omega \subseteq \mathbb{R}^2$ and let $1 \le p < \infty$. Then for every real
+$f \in W^{n,p}(\Omega)$,
+$$|f|_{n,p,\Omega}^p = \sum_K |f|_{n,p,K}^p,$$
+where $K$ runs over the open elements of $\mathcal{T}$. -/
 theorem sobolevSeminorm_rpow_eq_sum [Fact (1 ≤ p)] (hp : p ≠ ⊤) {f : 𝔼₂ → ℝ} {n : ℕ}
     (hf : MemSobolev f n p Ω volume) :
     sobolevSeminorm f n p Ω volume ^ p.toReal
       = ∑ T, sobolevSeminorm f n p (𝒯.Kopens T) volume ^ p.toReal :=
   _root_.sobolevSeminorm_rpow_eq_sum hp 𝒯.Kopens_le 𝒯.pairwise_disjoint_K 𝒯.ae_eq_iUnion_K hf
 
-/-- **The Sobolev norm is additive over the elements** ([han2009theoretical], the first line of
-the proof of Theorem 10.3.9): `‖f‖_{k,p,Ω}^p = ∑_K ‖f‖_{k,p,K}^p` for `f ∈ W^{k,p}(Ω)`,
-`1 ≤ p < ∞`. -/
+/-- **The Sobolev norm is additive over the elements.** Let $\mathcal{T}$ be a triangulation of
+$\Omega \subseteq \mathbb{R}^2$ and let $1 \le p < \infty$. Then for every real
+$f \in W^{k,p}(\Omega)$,
+$$\|f\|_{k,p,\Omega}^p = \sum_K \|f\|_{k,p,K}^p,$$
+where $K$ runs over the open elements of $\mathcal{T}$.
+
+This is the first line of the proof of Theorem 10.3.9 of [han2009theoretical]. -/
 theorem sobolevNorm_rpow_eq_sum [Fact (1 ≤ p)] (hp : p ≠ ⊤) {f : 𝔼₂ → ℝ} {k : ℕ}
     (hf : MemSobolev f k p Ω volume) :
     sobolevNorm f k p Ω volume ^ p.toReal
       = ∑ T, sobolevNorm f k p (𝒯.Kopens T) volume ^ p.toReal :=
   _root_.sobolevNorm_rpow_eq_sum hp 𝒯.Kopens_le 𝒯.pairwise_disjoint_K 𝒯.ae_eq_iUnion_K hf
 
-/-! #### The elementwise derivative -/
+/-! ### The elementwise derivative -/
 
-/-- **The elementwise derivative** of a family `g` of functions, one per element: the derivative
-of `g T` on the open element `K_T`, and `0` on the skeleton and outside the domain. It is the
-weak derivative of the function equal to `g T` on each `K_T`
-(`Triangulation.hasWeakFDerivOn_of_piecewise`). -/
+/-- **The elementwise derivative** of a family $g$ of real functions, one function $g_T$ per element
+$T$: the function
+$$x \mapsto \sum_T \mathbf{1}_{K_T}(x) \, D g_T(x),$$
+which is the derivative of $g_T$ on the open element $K_T$, and $0$ on the skeleton and outside
+$\Omega$.
+
+It is the weak derivative of a continuous function that equals $g_T$ on each $K_T$, by
+`Triangulation.hasWeakFDerivOn_of_piecewise`. -/
 def pieceFDeriv (g : 𝒯.elems → 𝔼₂ → ℝ) : 𝔼₂ → 𝔼₂ →L[ℝ] ℝ := fun x ↦
   ∑ T, (𝒯.K T).indicator (fderiv ℝ (g T)) x
 
-/-- On an open element the elementwise derivative is the derivative of the piece there. -/
+/-- On the open element $K_T$, the elementwise derivative is the derivative of $g_T$. -/
 theorem pieceFDeriv_of_mem (g : 𝒯.elems → 𝔼₂ → ℝ) (T : 𝒯.elems) {x : 𝔼₂} (hx : x ∈ 𝒯.K T) :
     𝒯.pieceFDeriv g x = fderiv ℝ (g T) x := by
   unfold pieceFDeriv
@@ -166,8 +230,8 @@ theorem measurable_pieceFDeriv (g : 𝒯.elems → 𝔼₂ → ℝ) : Measurable
   Finset.measurable_sum _ fun T _ ↦
     (measurable_fderiv ℝ (g T)).indicator (𝒯.isOpen_K T).measurableSet
 
-/-- The elementwise derivative of a family of `C¹` pieces is bounded: each derivative is
-continuous on the compact closed element. -/
+/-- If every $g_T$ is of class $C^1$, the elementwise derivative is bounded on $\mathbb{R}^2$. Each
+derivative $D g_T$ is continuous on the compact closed element. -/
 theorem exists_norm_pieceFDeriv_le {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ 1 (g T)) :
     ∃ M : ℝ, ∀ x, ‖𝒯.pieceFDeriv g x‖ ≤ M := by
   have hb : ∀ T : 𝒯.elems, ∃ C : ℝ, ∀ x ∈ 𝒯.K T, ‖fderiv ℝ (g T) x‖ ≤ C := fun T ↦ by
@@ -183,25 +247,28 @@ theorem exists_norm_pieceFDeriv_le {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : �
   · rw [indicator_of_notMem hx, norm_zero]
     exact le_max_right _ _
 
-/-- The elementwise derivative of a family of `C¹` pieces lies in `L^∞(Ω)`. -/
+/-- If every $g_T$ is of class $C^1$, the elementwise derivative lies in $L^\infty(\Omega)$. -/
 theorem memLp_top_pieceFDeriv {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ 1 (g T)) :
     MemLp (𝒯.pieceFDeriv g) ⊤ (volume.restrict (Ω : Set 𝔼₂)) := by
   obtain ⟨M, hM⟩ := 𝒯.exists_norm_pieceFDeriv_le hg
   exact memLp_top_of_bound (𝒯.measurable_pieceFDeriv g).aestronglyMeasurable M
     (Filter.Eventually.of_forall hM)
 
-/-! #### Conformity: continuous piecewise-`C¹` functions are `W^{1,p}` -/
+/-! ### Conformity: continuous piecewise-$C^1$ functions are in $W^{1,p}$ -/
 
-/-- **A continuous piecewise-`C¹` function has the elementwise derivative as weak derivative.**
-Let `u` be continuous on `Ω` and equal on each open element `K_T` to a `C¹` function `g T`.
-Then `𝒯.pieceFDeriv g` is a first-order weak derivative of `u` on `Ω`.
+/-- **A continuous piecewise-$C^1$ function has the elementwise derivative as weak derivative.** Let
+$\mathcal{T}$ be a triangulation of $\Omega \subseteq \mathbb{R}^2$. Let $u$ be a real function
+that is continuous on $\Omega$, and let $g$ be a family of $C^1$ functions with $u = g_T$ on
+each open element $K_T$. Then the elementwise derivative of $g$ is a first-order weak derivative
+of $u$ on $\Omega$.
 
-The integration by parts against a test function `φ` and a direction `v`,
-`∫_Ω (∂_v φ) u = -∫_Ω φ (∂_v u)`, is
-`integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments`: `u` is continuous on the
-support of `φ` and differentiable, with derivative `fderiv (g T)`, at every point of it off the
-skeleton `⋃_T ∂K_T`, which is a finite union of segments — a point of `Ω` off the skeleton lies
-in some open `K_T`, where `u = g T`. No Green formula on the elements is used. -/
+For a test function $\varphi$ and a direction $v$, the identity $\int_\Omega (\partial_v
+\varphi) u = -\int_\Omega \varphi \, \partial_v u$ is
+`integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments`. The function $u$ is
+continuous on the support of $\varphi$. At every point of the support off the skeleton
+$\bigcup_T \partial K_T$, which is a finite union of segments, $u$ is differentiable with
+derivative $D g_T$, because a point of $\Omega$ off the skeleton lies in some open $K_T$, where
+$u = g_T$. No Green formula on the elements is used. -/
 theorem hasWeakFDerivOn_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u Ω)
     {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ 1 (g T))
     (hug : ∀ T, ∀ x ∈ 𝒯.K T, u x = g T x) :
@@ -234,10 +301,14 @@ theorem hasWeakFDerivOn_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u 
     filter_upwards [(𝒯.isOpen_K T).mem_nhds hT] with y hy
     exact hug T y hy
 
-/-- **A continuous piecewise-`C¹` function lies in `W^{1,p}(Ω)`** for every `1 ≤ p ≤ ∞`
-([han2009theoretical] Example 7.2.7 and §10.2.3, the direction used by the finite element
-method): a function continuous on `Ω̄` and equal on each open element to a `C¹` function is in
-`W^{1,p}(Ω)`, with weak derivative the elementwise derivative. -/
+/-- **A continuous piecewise-$C^1$ function lies in $W^{1,p}(\Omega)$.** Let $\mathcal{T}$ be a
+triangulation of $\Omega \subseteq \mathbb{R}^2$. Let $u$ be a real function that is continuous
+on $\bar\Omega$, and let $g$ be a family of $C^1$ functions with $u = g_T$ on each open element
+$K_T$. Then $u \in W^{1,p}(\Omega)$ for every exponent $p$.
+
+This is the direction of Example 7.2.7 and §10.2.3 of [han2009theoretical] that the finite
+element method uses. The weak derivative is the elementwise derivative, by
+`Triangulation.hasWeakFDerivOn_of_piecewise`. -/
 theorem memSobolev_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u (closure (Ω : Set 𝔼₂)))
     {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ 1 (g T))
     (hug : ∀ T, ∀ x ∈ 𝒯.K T, u x = g T x) (p : ℝ≥0∞) :
@@ -252,16 +323,18 @@ theorem memSobolev_of_piecewise {u : 𝔼₂ → ℝ} (hu : ContinuousOn u (clos
   · exact (𝒯.memLp_top_pieceFDeriv hg).mono_exponent le_top
 
 
-/-! #### The elementwise derivative of order `n`, and the weak derivative of order `k + 1` -/
+/-! ### The elementwise derivative of order $n$, and the weak derivative of order $k + 1$ -/
 
-/-- **The elementwise derivative of order `n`** of a family `g` of functions, one per element:
-`∂^n (g T)` on the open element `K_T`, and `0` on the skeleton and outside the domain. At `n = 1`
-it is `pieceFDeriv` read as a multilinear map. -/
+/-- **The elementwise derivative of order $n$** of a family $g$ of real functions, one function
+$g_T$ per element $T$: the function
+$$x \mapsto \sum_T \mathbf{1}_{K_T}(x) \, D^n g_T(x),$$
+which is $D^n g_T$ on the open element $K_T$, and $0$ on the skeleton and outside $\Omega$.
+
+At $n = 1$ it is `Triangulation.pieceFDeriv` read as a multilinear map. -/
 def pieceIteratedFDeriv (n : ℕ) (g : 𝒯.elems → 𝔼₂ → ℝ) : 𝔼₂ → 𝔼₂ [×n]→L[ℝ] ℝ := fun x ↦
   ∑ T, (𝒯.K T).indicator (iteratedFDeriv ℝ n (g T)) x
 
-/-- On an open element the elementwise derivative of order `n` is the derivative of the piece
-there. -/
+/-- On the open element $K_T$, the elementwise derivative of order $n$ is $D^n g_T$. -/
 theorem pieceIteratedFDeriv_of_mem {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) (T : 𝒯.elems) {x : 𝔼₂}
     (hx : x ∈ 𝒯.K T) : 𝒯.pieceIteratedFDeriv n g x = iteratedFDeriv ℝ n (g T) x := by
   unfold pieceIteratedFDeriv
@@ -272,13 +345,13 @@ theorem pieceIteratedFDeriv_of_mem {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ
     exact Set.disjoint_left.1 (𝒯.pairwise_disjoint_K hT') hx' hx
   · exact fun h ↦ absurd (Finset.mem_univ T) h
 
-/-- Off the open elements the elementwise derivative of order `n` vanishes. -/
+/-- At a point outside every open element, the elementwise derivative of order $n$ is $0$. -/
 theorem pieceIteratedFDeriv_of_notMem {n : ℕ} (g : 𝒯.elems → 𝔼₂ → ℝ) {x : 𝔼₂}
     (hx : x ∉ ⋃ T, 𝒯.K T) : 𝒯.pieceIteratedFDeriv n g x = 0 :=
   Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _
 
-/-- On an open element, where `v` agrees with the piece `g T`, the classical derivatives of `v`
-are those of the piece. -/
+/-- Let $v$ be a real function with $v = g_T$ on each open element $K_T$. Then for every $n$ and
+every $x \in K_T$, $D^n v(x) = D^n g_T(x)$. -/
 theorem iteratedFDeriv_eq_of_mem_K {v : 𝔼₂ → ℝ} {g : 𝒯.elems → 𝔼₂ → ℝ}
     (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) (n : ℕ) (T : 𝒯.elems) {x : 𝔼₂} (hx : x ∈ 𝒯.K T) :
     iteratedFDeriv ℝ n v x = iteratedFDeriv ℝ n (g T) x := by
@@ -287,8 +360,8 @@ theorem iteratedFDeriv_eq_of_mem_K {v : 𝔼₂ → ℝ} {g : 𝒯.elems → �
     exact hvg T y hy
   exact (h.iteratedFDeriv (𝕜 := ℝ) n).self_of_nhds
 
-/-- The elementwise derivative of order `n` of `C^n` pieces is bounded: each `∂^n (g T)` is
-continuous on the compact closed element. -/
+/-- If every $g_T$ is of class $C^n$, the elementwise derivative of order $n$ is bounded on
+$\mathbb{R}^2$. Each $D^n g_T$ is continuous on the compact closed element. -/
 theorem exists_norm_pieceIteratedFDeriv_le {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
     (hg : ∀ T, ContDiff ℝ n (g T)) : ∃ M : ℝ, ∀ x, ‖𝒯.pieceIteratedFDeriv n g x‖ ≤ M := by
   have hb : ∀ T : 𝒯.elems, ∃ C : ℝ, ∀ x ∈ 𝒯.K T, ‖iteratedFDeriv ℝ n (g T) x‖ ≤ C := fun T ↦ by
@@ -304,15 +377,16 @@ theorem exists_norm_pieceIteratedFDeriv_le {n : ℕ} {g : 𝒯.elems → 𝔼₂
   · rw [indicator_of_notMem hx, norm_zero]
     exact le_max_right _ _
 
-/-- The elementwise derivative of order `n` of `C^n` pieces is strongly measurable. -/
+/-- If every $g_T$ is of class $C^n$, the elementwise derivative of order $n$ is strongly
+measurable. -/
 theorem stronglyMeasurable_pieceIteratedFDeriv {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
     (hg : ∀ T, ContDiff ℝ n (g T)) : StronglyMeasurable (𝒯.pieceIteratedFDeriv n g) :=
   Finset.stronglyMeasurable_fun_sum _ fun T _ ↦
     ((hg T).continuous_iteratedFDeriv le_rfl).stronglyMeasurable.indicator
       (𝒯.isOpen_K T).measurableSet
 
-/-- The elementwise derivative of order `n` of `C^n` pieces is locally integrable on `Ω`: it is
-strongly measurable and bounded. -/
+/-- If every $g_T$ is of class $C^n$, the elementwise derivative of order $n$ is locally integrable
+on $\Omega$. It is strongly measurable and bounded. -/
 theorem locallyIntegrableOn_pieceIteratedFDeriv {n : ℕ} {g : 𝒯.elems → 𝔼₂ → ℝ}
     (hg : ∀ T, ContDiff ℝ n (g T)) :
     LocallyIntegrableOn (𝒯.pieceIteratedFDeriv n g) (Ω : Set 𝔼₂) volume := by
@@ -320,14 +394,18 @@ theorem locallyIntegrableOn_pieceIteratedFDeriv {n : ℕ} {g : 𝒯.elems → �
   exact (memLp_top_of_bound (𝒯.stronglyMeasurable_pieceIteratedFDeriv hg).aestronglyMeasurable M
     (Filter.Eventually.of_forall hM)).locallyIntegrableOn le_top
 
-/-- **The weak derivative of order `k + 1` along a tuple of directions** of a `C^k` function that
-is piecewise `C^{k+1}` on a triangulation: the elementwise classical derivative of order `k + 1`
-evaluated at the tuple. This is the order-`k+1` form of `hasWeakFDerivOn_of_piecewise`.
+/-- **The weak derivative of order $k + 1$ of a piecewise-$C^{k+1}$ function.** Let $\mathcal{T}$ be
+a triangulation of $\Omega \subseteq \mathbb{R}^2$. Let $v$ be a real function of class $C^k$ on
+$\Omega$, and let $g$ be a family of $C^{k+1}$ functions with $v = g_T$ on each open element
+$K_T$. Then for every tuple $y$ of $k + 1$ directions, the function
+$x \mapsto D^{k+1}_{\mathcal{T}} g(x)(y)$ is a weak derivative of $v$ along $y$ on $\Omega$,
+where $D^{k+1}_{\mathcal{T}} g$ is the elementwise derivative of order $k + 1$.
 
-The tuple `y` is `y 0 :: tail y`; the classical derivative of order `k` along `tail y` is a weak
-one, it is continuous on `Ω` and piecewise `C¹`, so its first-order weak derivative in the
-direction `y 0` is the elementwise one (`hasWeakFDerivOn_of_piecewise`), and
-`HasWeakIteratedLineDerivOn.cons` composes the two ([han2009theoretical] Example 7.1.9). -/
+This is the form of order $k + 1$ of `Triangulation.hasWeakFDerivOn_of_piecewise`. Write
+$y = (y_0, y')$. The classical derivative of order $k$ of $v$ along $y'$ is a weak derivative.
+It is continuous on $\Omega$ and piecewise $C^1$, so its first-order weak derivative in the
+direction $y_0$ is the elementwise one, by `Triangulation.hasWeakFDerivOn_of_piecewise`. Then
+`HasWeakIteratedLineDerivOn.cons` composes the two ([han2009theoretical], Example 7.1.9). -/
 theorem hasWeakIteratedLineDerivOn_of_piecewise {k : ℕ} {v : 𝔼₂ → ℝ} (hv : ContDiffOn ℝ k v Ω)
     {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ (k + 1) (g T))
     (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) (y : Fin (k + 1) → 𝔼₂) :
@@ -363,19 +441,23 @@ theorem hasWeakIteratedLineDerivOn_of_piecewise {k : ℕ} {v : 𝔼₂ → ℝ} 
     unfold Triangulation.pieceFDeriv
     rw [Finset.sum_eq_zero fun T _ ↦ indicator_of_notMem (fun h ↦ hx (mem_iUnion.2 ⟨T, h⟩)) _]
     simp
-/-! #### The glued function -/
+/-! ### The glued function -/
 
-/-- **The function glued from compatible `C¹` pieces lies in `W^{1,p}(Ω)`** for every
-`1 ≤ p ≤ ∞`: it is continuous on `Ω̄` (`Triangulation.continuousOn_glue`) and equal to the
-piece on each open element. This is how the global finite element interpolant, glued from the
-elementwise polynomial interpolants, enters `H¹(Ω)`. -/
+/-- **The glued function is in $W^{1,p}(\Omega)$.** Let $g$ be a compatible family of $C^1$
+functions, one per element. Then the function glued from $g$ lies in $W^{1,p}(\Omega)$ for every
+exponent $p$.
+
+The glued function is continuous on $\bar\Omega$ by `Triangulation.continuousOn_glue`, and it
+equals $g_T$ on each open element. This is how the global finite element interpolant, glued from
+the elementwise polynomial interpolants, enters $H^1(\Omega)$. -/
 theorem memSobolev_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Compatible g)
     (hgc : ∀ T, ContDiff ℝ 1 (g T)) (p : ℝ≥0∞) :
     MemSobolev (𝒯.glue g) 1 p Ω volume :=
   𝒯.memSobolev_of_piecewise (𝒯.continuousOn_glue hg fun T ↦ (hgc T).continuous.continuousOn)
     hgc (fun T _ hx ↦ 𝒯.glue_eq_of_mem_K hg T hx) p
 
-/-- The weak derivative of the glued function is the elementwise derivative. -/
+/-- Let $g$ be a compatible family of $C^1$ functions, one per element. Then the elementwise
+derivative of $g$ is a first-order weak derivative on $\Omega$ of the function glued from $g$. -/
 theorem hasWeakFDerivOn_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Compatible g)
     (hgc : ∀ T, ContDiff ℝ 1 (g T)) :
     HasWeakFDerivOn (𝒯.glue g) (𝒯.pieceFDeriv g) Ω volume :=
@@ -383,9 +465,11 @@ theorem hasWeakFDerivOn_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Com
     ((𝒯.continuousOn_glue hg fun T ↦ (hgc T).continuous.continuousOn).mono subset_closure) hgc
     fun T _ hx ↦ 𝒯.glue_eq_of_mem_K hg T hx
 
-/-- On an open element, a function of `W^{k,p}(Ω)` and its glued interpolant differ, in the
-Sobolev norm of the element, by the same amount as the function and the piece there: the
-Sobolev norm on `K_T` only sees the function up to a null set of `K_T`. -/
+/-- Let $g$ be a compatible family of functions, one per element, and let $f$ be any real function.
+On each open element $K_T$,
+$$\|f - \operatorname{glue}(g)\|_{k,p,K_T} = \|f - g_T\|_{k,p,K_T}.$$
+
+The Sobolev norm on $K_T$ sees the function only up to a null set of $K_T$. -/
 theorem sobolevNorm_sub_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Compatible g) (T : 𝒯.elems)
     (f : 𝔼₂ → ℝ) (k : ℕ) :
     sobolevNorm (f - 𝒯.glue g) k p (𝒯.Kopens T) volume
@@ -394,21 +478,26 @@ theorem sobolevNorm_sub_glue {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : 𝒯.Com
     (Filter.Eventually.of_forall fun x hx ↦ by
       simp only [Pi.sub_apply, 𝒯.glue_eq_of_mem_K hg T hx]))
 
-/-! #### The global interpolant -/
+/-! ### The global interpolant -/
 
 section Interpolant
 
 variable {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
 
-/-- **The global interpolant of a conforming element with `C¹` shape functions lies in
-`W^{1,p}(Ω)`** for every `1 ≤ p ≤ ∞` ([han2009theoretical] §10.2.3, `X_h ⊆ H¹(Ω)`). -/
+/-- **The global interpolant is in $W^{1,p}(\Omega)$.** For a conforming element with $C^1$ shape
+functions $\hat\varphi_i$, the global interpolant $\Pi_h v$ of every real function $v$ lies in
+$W^{1,p}(\Omega)$ for every exponent $p$.
+
+This is the inclusion $X_h \subseteq H^1(\Omega)$ of §10.2.3 of [han2009theoretical]. -/
 theorem memSobolev_globalInterp (h : 𝒯.IsConformingElement xhat φhat)
     (hφ : ∀ i, ContDiff ℝ 1 (φhat i)) (v : 𝔼₂ → ℝ) (p : ℝ≥0∞) :
     MemSobolev (𝒯.globalInterp xhat φhat v) 1 p Ω volume :=
   𝒯.memSobolev_glue (h v) (fun T ↦ 𝒯.contDiff_localInterp xhat φhat hφ T v) p
 
-/-- On an element, the interpolation error of the global interpolant is that of the local one:
-`‖v − Π_h v‖_{k,p,K} = ‖v − Π_K v‖_{k,p,K}`. -/
+/-- For a conforming element, the interpolation error of the global interpolant on an element is
+that of the local interpolant: for every real function $v$ and every open element $K$,
+$$\|v - \Pi_h v\|_{k,p,K} = \|v - \Pi_K v\|_{k,p,K}.$$
+-/
 theorem sobolevNorm_sub_globalInterp (h : 𝒯.IsConformingElement xhat φhat) (T : 𝒯.elems)
     (v : 𝔼₂ → ℝ) (k : ℕ) :
     sobolevNorm (v - 𝒯.globalInterp xhat φhat v) k p (𝒯.Kopens T) volume
@@ -417,27 +506,34 @@ theorem sobolevNorm_sub_globalInterp (h : 𝒯.IsConformingElement xhat φhat) (
 
 end Interpolant
 
-/-! #### Continuous piecewise polynomials: the finite element spaces -/
+/-! ### Continuous piecewise polynomials: the finite element spaces -/
 
 section PolySpace
 
 open MvPolynomial
 
-/-- **A piecewise polynomial of degree at most `k`** on the triangulation: on each closed element
-`K` the function is a polynomial of total degree at most `k` in the reference coordinates
-`F_K⁻¹ x`, that is, `v|_K ∈ ℙ_k(K)` ([han2009theoretical] §10.4, [quarteroni2000numerical]
-(12.94), (8.35)). -/
+/-- **A piecewise polynomial of degree at most $k$** on the triangulation: a real function $v$ such
+that for each element $T$ there is a polynomial $q$ in two variables of total degree at most $k$
+with
+$$v(x) = q(F_K^{-1} x) \quad \text{for all } x \in \bar K_T,$$
+where $F_K^{-1} x = T_K^{-1}(x - a_T)$ are the reference coordinates, $T_K$ is the linear part
+of the affine map onto the element and $a_T$ is its first vertex. That is,
+$v|_K \in \mathbb{P}_k(K)$.
+
+See [han2009theoretical], §10.4, and [quarteroni2000numerical], (12.94) and (8.35). The linear
+part $T_K$ is `Triangulation.linearPart`. -/
 def IsPiecewisePoly (k : ℕ) (v : 𝔼₂ → ℝ) : Prop :=
   ∀ T : 𝒯.elems, ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
     ∀ x ∈ 𝒯.closedK T, v x = eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q
 
 variable {𝒯}
 
-/-- The zero function is piecewise polynomial. -/
+/-- The zero function is a piecewise polynomial of degree at most $k$. -/
 theorem IsPiecewisePoly.zero (k : ℕ) : 𝒯.IsPiecewisePoly k 0 := fun _ ↦
   ⟨0, by simp, fun _ _ ↦ by simp⟩
 
-/-- The sum of two piecewise polynomials of degree at most `k` is one. -/
+/-- The sum of two piecewise polynomials of degree at most $k$ is a piecewise polynomial of degree
+at most $k$. -/
 theorem IsPiecewisePoly.add {k : ℕ} {v w : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecewisePoly k v)
     (hw : 𝒯.IsPiecewisePoly k w) : 𝒯.IsPiecewisePoly k (v + w) := fun T ↦ by
   obtain ⟨q, hq, hvq⟩ := hv T
@@ -445,7 +541,8 @@ theorem IsPiecewisePoly.add {k : ℕ} {v w : 𝔼₂ → ℝ} (hv : 𝒯.IsPiece
   refine ⟨q + r, (totalDegree_add q r).trans (max_le hq hr), fun x hx ↦ ?_⟩
   rw [Pi.add_apply, hvq x hx, hwr x hx, map_add]
 
-/-- A scalar multiple of a piecewise polynomial of degree at most `k` is one. -/
+/-- A scalar multiple of a piecewise polynomial of degree at most $k$ is a piecewise polynomial of
+degree at most $k$. -/
 theorem IsPiecewisePoly.smul {k : ℕ} {v : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecewisePoly k v) (c : ℝ) :
     𝒯.IsPiecewisePoly k (c • v) := fun T ↦ by
   obtain ⟨q, hq, hvq⟩ := hv T
@@ -454,7 +551,8 @@ theorem IsPiecewisePoly.smul {k : ℕ} {v : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecew
 
 variable (𝒯)
 
-/-- A polynomial in the reference coordinates of an element is smooth. -/
+/-- For an element $T$ and a polynomial $q$ in two variables, the function $x \mapsto q(F_K^{-1} x)$
+is of class $C^1$. -/
 theorem contDiff_eval_symm (T : 𝒯.elems) (q : MvPolynomial (Fin 2) ℝ) :
     ContDiff ℝ 1 fun x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q := by
   have : (fun x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q)
@@ -468,9 +566,12 @@ theorem contDiff_eval_symm (T : 𝒯.elems) (q : MvPolynomial (Fin 2) ℝ) :
 
 variable {𝒯}
 
-/-- **A continuous piecewise polynomial lies in `W^{1,p}(Ω)`** for every `1 ≤ p ≤ ∞`
-([han2009theoretical] §10.2.3, the conformity `X_h ⊆ H¹(Ω)`): `memSobolev_of_piecewise` with
-the polynomial pieces. -/
+/-- **A continuous piecewise polynomial lies in $W^{1,p}(\Omega)$.** If $v$ is continuous on
+$\bar\Omega$ and is a piecewise polynomial of degree at most $k$, then $v \in W^{1,p}(\Omega)$
+for every exponent $p$.
+
+This is the conformity $X_h \subseteq H^1(\Omega)$ of §10.2.3 of [han2009theoretical]. The proof
+applies `Triangulation.memSobolev_of_piecewise` to the polynomial pieces. -/
 theorem IsPiecewisePoly.memSobolev {k : ℕ} {v : 𝔼₂ → ℝ}
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (h : 𝒯.IsPiecewisePoly k v) (p : ℝ≥0∞) :
     MemSobolev v 1 p Ω volume := by
@@ -482,10 +583,13 @@ theorem IsPiecewisePoly.memSobolev {k : ℕ} {v : 𝔼₂ → ℝ}
 
 variable (𝒯)
 
-/-- **The interpolant with polynomial shape functions is piecewise polynomial**: when every
-shape function `φ̂ᵢ` is a polynomial of total degree at most `k`, so is every local
-interpolant `Π_K v = ∑ᵢ v(F_K x̂ᵢ) φ̂ᵢ ∘ F_K⁻¹` in the reference coordinates, and hence the global
-interpolant of a conforming element is piecewise polynomial. -/
+/-- **The interpolant with polynomial shape functions is piecewise polynomial.** Let the element be
+conforming, and let every shape function $\hat\varphi_i$ be a polynomial of total degree at most
+$k$ in the coordinates of $\hat x$. Then for every real function $v$, the global interpolant
+$\Pi_h v$ is a piecewise polynomial of degree at most $k$.
+
+Each local interpolant $\Pi_K v = \sum_i v(F_K \hat x_i) \, \hat\varphi_i \circ F_K^{-1}$ is a
+polynomial of degree at most $k$ in the reference coordinates. -/
 theorem globalInterp_isPiecewisePoly {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
     (hconf : 𝒯.IsConformingElement xhat φhat) {k : ℕ}
     (hpoly : ∀ i, ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
@@ -504,11 +608,13 @@ theorem globalInterp_isPiecewisePoly {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat
 
 variable (p : ℝ≥0∞)
 
-/-- **The finite element space `X_h ⊆ H¹(Ω)`** of continuous piecewise polynomials of degree at
-most `k` on the triangulation, as a subspace of `W^{1,p}(Ω)`: the elements whose function is,
-almost everywhere on `Ω`, a function continuous on `Ω̄` and piecewise polynomial of degree at
-most `k` ([han2009theoretical] §10.2.3, §10.4, "affine-equivalent finite element spaces of
-piecewise polynomials of degree less than or equal to `k`"). -/
+/-- **The finite element space $X_h \subseteq H^1(\Omega)$** of continuous piecewise polynomials of
+degree at most $k$, as a subspace of $W^{1,p}(\Omega)$: the elements $w$ whose function agrees
+almost everywhere on $\Omega$ with a function $v$ that is continuous on $\bar\Omega$ and is a
+piecewise polynomial of degree at most $k$.
+
+This is the space of §10.2.3 and §10.4 of [han2009theoretical], "affine-equivalent finite
+element spaces of piecewise polynomials of degree less than or equal to $k$". -/
 def polySpace (k : ℕ) : Submodule ℝ (SobolevEuclidean 2 1 p Ω) where
   carrier := {w | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
     𝒯.IsPiecewisePoly k v ∧ SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v}
@@ -524,14 +630,19 @@ def polySpace (k : ℕ) : Submodule ℝ (SobolevEuclidean 2 1 p Ω) where
     filter_upwards [hvw] with x h1
     simp only [Pi.smul_apply, h1]
 
-/-- Membership of `X_h`, unfolded. -/
+/-- An element $w \in W^{1,p}(\Omega)$ lies in $X_h$ if and only if its function agrees almost
+everywhere on $\Omega$ with a function that is continuous on $\bar\Omega$ and is a piecewise
+polynomial of degree at most $k$. -/
 theorem mem_polySpace_iff {k : ℕ} {w : SobolevEuclidean 2 1 p Ω} :
     w ∈ 𝒯.polySpace p k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
       𝒯.IsPiecewisePoly k v ∧ SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
   Iff.rfl
 
-/-- **Every continuous piecewise polynomial is the function of an element of `X_h`**: the
-space `X_h` is the book's space of continuous piecewise polynomials. -/
+/-- **Every continuous piecewise polynomial is the function of an element of $X_h$.** If $v$ is
+continuous on $\bar\Omega$ and is a piecewise polynomial of degree at most $k$, then there is
+$w \in X_h$ whose function agrees with $v$ almost everywhere on $\Omega$.
+
+So $X_h$ is the space of continuous piecewise polynomials of the source. -/
 theorem exists_mem_polySpace {k : ℕ} {v : 𝔼₂ → ℝ}
     (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v) :
     ∃ w ∈ 𝒯.polySpace p k, SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v := by
@@ -540,18 +651,21 @@ theorem exists_mem_polySpace {k : ℕ} {v : 𝔼₂ → ℝ}
   obtain ⟨u, hu⟩ := h
   exact ⟨u, ⟨v, hvc, hvp, hu⟩, hu⟩
 
-/-! ##### Finite dimensionality
+/-!
+### Finite dimensionality
 
-`X_h` is finite-dimensional because an element of `X_h` is determined by its nodal values, once
-a conforming element reproducing `ℙ_k` is fixed: the continuous representative `v` of `w ∈ X_h`
-is unique (two continuous functions agreeing almost everywhere on the open set `Ω` agree on
-`Ω̄`), it satisfies `v = Π_h v` on `Ω̄` (`ℙ_k` reproduction on each element), and `Π_h v` depends
-on the nodal values of `v` only. -/
+The space $X_h$ is finite-dimensional because an element of $X_h$ is determined by its nodal values,
+once a conforming element that reproduces $\mathbb{P}_k$ is fixed. The continuous representative $v$
+of $w \in X_h$ is unique, because two functions that are continuous on $\bar\Omega$ and agree almost
+everywhere on the open set $\Omega$ agree on $\bar\Omega$. It satisfies $v = \Pi_h v$ on
+$\bar\Omega$, by the reproduction of $\mathbb{P}_k$ on each element, and $\Pi_h v$ depends only on
+the nodal values of $v$.
+-/
 
-/-- **`ℙ_k` reproduction on the elements**: for a conforming element with nodes in the closed
-reference triangle whose reference interpolant reproduces every polynomial of total degree at
-most `k`, the global interpolant of a piecewise polynomial of degree at most `k` is that
-function on `Ω̄`. -/
+/-- **Reproduction of $\mathbb{P}_k$ on the elements.** Let the element be conforming, with nodes
+$\hat x_i$ in the closed reference triangle, and let the reference interpolant reproduce every
+polynomial of total degree at most $k$ on $\mathbb{R}^2$. Then for every piecewise polynomial
+$v$ of degree at most $k$, $\Pi_h v = v$ on $\bar\Omega$. -/
 theorem globalInterp_eqOn_closure_of_isPiecewisePoly {I : ℕ} {xhat : Fin I → 𝔼₂}
     {φhat : Fin I → 𝔼₂ → ℝ} (hconf : 𝒯.IsConformingElement xhat φhat)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
@@ -569,24 +683,28 @@ theorem globalInterp_eqOn_closure_of_isPiecewisePoly {I : ℕ} {xhat : Fin I →
   refine Finset.sum_congr rfl fun i _ ↦ ?_
   rw [hvq _ (𝒯.node_mem_closedK xhat hx T i), 𝒯.affine_symm]
 
-/-- The continuous representative of an element of `X_h`. -/
+/-- The continuous representative of an element $w$ of $X_h$: a function, chosen once, that is
+continuous on $\bar\Omega$, is a piecewise polynomial of degree at most $k$, and agrees with the
+function of $w$ almost everywhere on $\Omega$. -/
 noncomputable def polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) : 𝔼₂ → ℝ := w.2.choose
 
-/-- The continuous representative is continuous on `Ω̄`. -/
+/-- The continuous representative of $w \in X_h$ is continuous on $\bar\Omega$. -/
 theorem continuousOn_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
     ContinuousOn (𝒯.polySpaceRep p w) (closure (Ω : Set 𝔼₂)) := w.2.choose_spec.1
 
-/-- The continuous representative is piecewise polynomial. -/
+/-- The continuous representative of $w \in X_h$ is a piecewise polynomial of degree at most $k$. -/
 theorem isPiecewisePoly_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
     𝒯.IsPiecewisePoly k (𝒯.polySpaceRep p w) := w.2.choose_spec.2.1
 
-/-- The continuous representative represents. -/
+/-- The function of $w \in X_h$ agrees with its continuous representative almost everywhere on
+$\Omega$. -/
 theorem fn_ae_eq_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
     SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
       =ᵐ[volume.restrict (Ω : Set 𝔼₂)] 𝒯.polySpaceRep p w := w.2.choose_spec.2.2
 
-/-- The continuous representative is the unique one: any function continuous on `Ω̄`
-representing `w` agrees with it on `Ω̄`. -/
+/-- The continuous representative is unique: if $v$ is continuous on $\bar\Omega$ and agrees with
+the function of $w \in X_h$ almost everywhere on $\Omega$, then $v$ equals the continuous
+representative of $w$ on $\bar\Omega$. -/
 theorem polySpaceRep_eqOn {k : ℕ} (w : 𝒯.polySpace p k) {v : 𝔼₂ → ℝ}
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂)))
     (hvw : SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
@@ -595,8 +713,10 @@ theorem polySpaceRep_eqOn {k : ℕ} (w : 𝒯.polySpace p k) {v : 𝔼₂ → �
   (𝒯.continuousOn_polySpaceRep p w).eqOn_closure_of_ae_eq Ω.isOpen hv
     ((𝒯.fn_ae_eq_polySpaceRep p w).symm.trans hvw)
 
-/-- **The nodal values of an element of `X_h`**, as a linear map into `ℝ^{𝒯.elems × I}`: the
-values of the continuous representative at the nodes `F_K x̂ᵢ` of the elements. -/
+/-- **The nodal values of an element of $X_h$**, for nodes $\hat x_i$ in the closed reference
+triangle: the linear map from $X_h$ to the functions on pairs $(T, i)$ of an element and a node
+index, which sends $w$ to the values $v(F_K \hat x_i)$ of its continuous representative $v$ at
+the transported nodes. -/
 noncomputable def nodalValues {I : ℕ} (xhat : Fin I → 𝔼₂)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) (k : ℕ) :
     𝒯.polySpace p k →ₗ[ℝ] (𝒯.elems × Fin I → ℝ) where
@@ -620,8 +740,10 @@ noncomputable def nodalValues {I : ℕ} (xhat : Fin I → 𝔼₂)
       filter_upwards [𝒯.fn_ae_eq_polySpaceRep p w] with x h1
       simp only [Pi.smul_apply, h1]
 
-/-- **An element of `X_h` is determined by its nodal values**, for a conforming element
-reproducing `ℙ_k`: the nodal-value map is injective. -/
+/-- **An element of $X_h$ is determined by its nodal values.** Let the element be conforming, with
+nodes in the closed reference triangle, and let the reference interpolant reproduce every
+polynomial of total degree at most $k$ on $\mathbb{R}^2$. Then the nodal-value map on $X_h$ is
+injective. -/
 theorem nodalValues_injective {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
     (hconf : 𝒯.IsConformingElement xhat φhat)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
@@ -647,9 +769,12 @@ theorem nodalValues_injective {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin 
   refine (ae_restrict_iff' Ω.isOpen.measurableSet).2 (Filter.Eventually.of_forall fun x hx' ↦ ?_)
   exact hrep0 (subset_closure hx')
 
-/-- **`X_h` is finite-dimensional** once a conforming element with nodes in the closed
-reference triangle reproducing `ℙ_k` is given (the `ℙ_k` Lagrange element on the principal
-lattice, for instance): its elements are determined by finitely many nodal values. -/
+/-- **$X_h$ is finite-dimensional.** Let the element be conforming, with nodes in the closed
+reference triangle, and let the reference interpolant reproduce every polynomial of total degree
+at most $k$ on $\mathbb{R}^2$. Then $X_h$ is finite-dimensional.
+
+The $\mathbb{P}_k$ Lagrange element on the principal lattice is an example of such an element.
+The elements of $X_h$ are determined by finitely many nodal values. -/
 theorem finiteDimensional_polySpace {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
     (hconf : 𝒯.IsConformingElement xhat φhat)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
@@ -660,19 +785,22 @@ theorem finiteDimensional_polySpace {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat 
   FiniteDimensional.of_injective (𝒯.nodalValues p xhat hx k)
     (𝒯.nodalValues_injective p hconf hx hrep)
 
-/-! ##### The space with the homogeneous Dirichlet condition -/
+/-! ### The space with the homogeneous Dirichlet condition -/
 
 variable [Fact (1 ≤ p)]
 
-/-- **The finite element space `V_h ⊆ H¹₀(Ω)`** of continuous piecewise polynomials of degree
-at most `k` vanishing on the boundary, as a subspace of `W_0^{1,p}(Ω)`:
+/-- **The finite element space $V_h \subseteq H_0^1(\Omega)$** of continuous piecewise polynomials
+of degree at most $k$ that vanish on the boundary, as a subspace of $W_0^{1,p}(\Omega)$, for
+$p \ge 1$. In the source,
+$$V_h = \{v_h \in C(\bar\Omega) : v_h|_K \in \mathbb{P}_k(K) \text{ for every } K \in
+  \mathcal{T}_h, \ v_h|_{\partial\Omega} = 0\}$$
+([quarteroni2000numerical], (12.94); [han2009theoretical], Example 10.4.2). The subspace
+consists of the elements of $W_0^{1,p}(\Omega)$ whose function agrees almost everywhere on
+$\Omega$ with such a $v_h$.
 
-  `V_h = {v_h ∈ C(Ω̄) : v_h|_K ∈ ℙ_k(K) for every K ∈ 𝒯_h, v_h|_∂Ω = 0}`
-
-([quarteroni2000numerical] (12.94), [han2009theoretical] Example 10.4.2). Its elements are the
-elements of `W_0^{1,p}(Ω)` whose function is, almost everywhere on `Ω`, such a `v_h`; that every
-such `v_h` *is* the function of an element of `W_0^{1,p}(Ω)` is `exists_mem_polySpaceZero`
-(Brezis's Theorem 9.17, (i) ⇒ (ii), which needs no regularity of `Ω`). -/
+That every such $v_h$ is the function of an element of $W_0^{1,p}(\Omega)$ is
+`Triangulation.exists_mem_polySpaceZero`. It uses the implication (i) ⇒ (ii) of Theorem 9.17 of
+[brezis2011functional], which needs no regularity of $\Omega$. -/
 def polySpaceZero (k : ℕ) : Submodule ℝ (SobolevEuclideanZero 2 1 p Ω) where
   carrier := {w | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
     𝒯.IsPiecewisePoly k v ∧ EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
@@ -694,24 +822,30 @@ def polySpaceZero (k : ℕ) : Submodule ℝ (SobolevEuclideanZero 2 1 p Ω) wher
     · filter_upwards [hvw] with x h1
       simp only [Pi.smul_apply, h1]
 
-/-- Membership of `V_h`, unfolded. -/
+/-- An element $w \in W_0^{1,p}(\Omega)$ lies in $V_h$ if and only if its function agrees almost
+everywhere on $\Omega$ with a function that is continuous on $\bar\Omega$, is a piecewise
+polynomial of degree at most $k$, and vanishes on $\partial\Omega$. -/
 theorem mem_polySpaceZero_iff {k : ℕ} {w : SobolevEuclideanZero 2 1 p Ω} :
     w ∈ 𝒯.polySpaceZero p k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
       𝒯.IsPiecewisePoly k v ∧ EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
       SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
   Iff.rfl
 
-/-- An element of `V_h` is, as an element of `W^{1,p}(Ω)`, an element of `X_h`. -/
+/-- An element of $V_h$, read as an element of $W^{1,p}(\Omega)$, lies in $X_h$. -/
 theorem coe_mem_polySpace_of_mem_polySpaceZero {k : ℕ} {w : SobolevEuclideanZero 2 1 p Ω}
     (hw : w ∈ 𝒯.polySpaceZero p k) : (w : SobolevEuclidean 2 1 p Ω) ∈ 𝒯.polySpace p k := by
   obtain ⟨v, hvc, hvp, -, hvw⟩ := hw
   exact ⟨v, hvc, hvp, hvw⟩
 
-/-- **Every continuous piecewise polynomial vanishing on `∂Ω` is the function of an element of
-`V_h ⊆ W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: it lies in `W^{1,p}(Ω)` by `IsPiecewisePoly.memSobolev`
-and in `W_0^{1,p}(Ω)` by [brezis2011functional] Theorem 9.17, (i) ⇒ (ii)
-(`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`), with no regularity of
-`Ω` — no trace theorem is needed to read the boundary condition `v_h|_∂Ω = 0`. -/
+/-- **Every continuous piecewise polynomial that vanishes on $\partial\Omega$ is the function of an
+element of $V_h$.** Let $1 \le p < \infty$. If $v$ is continuous on $\bar\Omega$, is a piecewise
+polynomial of degree at most $k$, and vanishes on $\partial\Omega$, then there is $w \in V_h$
+whose function agrees with $v$ almost everywhere on $\Omega$.
+
+The function $v$ lies in $W^{1,p}(\Omega)$ by `Triangulation.IsPiecewisePoly.memSobolev`, and in
+$W_0^{1,p}(\Omega)$ by the implication (i) ⇒ (ii) of Theorem 9.17 of [brezis2011functional]
+(`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`). No regularity of $\Omega$
+and no trace theorem are needed to read the boundary condition $v_h|_{\partial\Omega} = 0$. -/
 theorem exists_mem_polySpaceZero (hp' : p ≠ ⊤) {k : ℕ} {v : 𝔼₂ → ℝ}
     (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v)
     (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
@@ -724,12 +858,16 @@ theorem exists_mem_polySpaceZero (hp' : p ≠ ⊤) {k : ℕ} {v : 𝔼₂ → �
     SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier hp' u hu hvc hv0
   exact ⟨⟨u, hu0⟩, ⟨v, hvc, hvp, hv0, hu⟩, hu⟩
 
-/-- **The interpolant of a boundary-vanishing function lies in `V_h`**: for a conforming,
-edge-unisolvent element with polynomial shape functions of degree at most `k` on a
-triangulation whose boundary is a union of edges, the global interpolant `Π_h v` of a function
-`v` continuous on `Ω̄` and vanishing on `∂Ω` is the function of an element of `V_h`, `1 ≤ p < ∞`.
-This is the `v_h = Π_h u` step of the finite element error analysis on `H¹₀(Ω)`
-([han2009theoretical] Example 10.4.2, [quarteroni2000numerical] Property 12.2). -/
+/-- **The interpolant of a function that vanishes on the boundary lies in $V_h$.** Let
+$1 \le p < \infty$. Let the element be conforming and edge-unisolvent, with continuous shape
+functions that are polynomials of total degree at most $k$, and let the boundary of $\Omega$ be
+a union of edges of the triangulation. Then for every real function $v$ that vanishes on
+$\partial\Omega$, there is $w \in V_h$ whose function agrees with the global interpolant
+$\Pi_h v$ almost everywhere on $\Omega$.
+
+This is the step $v_h = \Pi_h u$ of the finite element error analysis on $H_0^1(\Omega)$
+([han2009theoretical], Example 10.4.2; [quarteroni2000numerical], Property 12.2). The condition
+on the boundary is `Triangulation.FrontierSubsetEdges`. -/
 theorem exists_mem_polySpaceZero_globalInterp (hp' : p ≠ ⊤) {I : ℕ} {xhat : Fin I → 𝔼₂}
     {φhat : Fin I → 𝔼₂ → ℝ} (hconf : 𝒯.IsConformingElement xhat φhat)
     (hφ : ∀ i, Continuous (φhat i)) (hunis : IsEdgeUnisolvent xhat φhat) {k : ℕ}
@@ -742,8 +880,9 @@ theorem exists_mem_polySpaceZero_globalInterp (hp' : p ≠ ⊤) {I : ℕ} {xhat 
     (𝒯.globalInterp_isPiecewisePoly hconf hpoly v)
     (𝒯.globalInterp_eqOn_frontier xhat φhat hedge hconf hunis hv0)
 
-/-- **`V_h` is finite-dimensional** under the hypotheses of `finiteDimensional_polySpace`: it
-embeds in `X_h`. -/
+/-- **$V_h$ is finite-dimensional.** Let $p \ge 1$. Under the hypotheses of
+`Triangulation.finiteDimensional_polySpace`, the space $V_h$ is finite-dimensional, because it
+embeds in $X_h$. -/
 theorem finiteDimensional_polySpaceZero {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
     (hconf : 𝒯.IsConformingElement xhat φhat)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
@@ -772,8 +911,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedSpace ℝ F]
   [μ.IsAddHaarMeasure] in
-/-- A continuous function lies in `L^p` of a bounded open set, for every exponent, when the
-measure is finite on bounded sets: it is bounded on the compact closure. -/
+/-- Let $E$ be a proper space in which open sets are measurable, with a measure $\mu$ that is finite
+on compact sets, and let $\Omega \subseteq E$ be a bounded open set. Then every continuous
+function $g$ on $E$ lies in $L^p(\Omega)$ for every exponent $p$.
+
+The function is bounded on the compact closure of $\Omega$. -/
 theorem Continuous.memLp_restrict_of_isBounded [ProperSpace E] [OpensMeasurableSpace E]
     [IsFiniteMeasureOnCompacts μ] (hb : Bornology.IsBounded (Ω : Set E)) {g : E → F}
     (hg : Continuous g) (p : ℝ≥0∞) : MemLp g p (μ.restrict (Ω : Set E)) := by
@@ -783,8 +925,12 @@ theorem Continuous.memLp_restrict_of_isBounded [ProperSpace E] [OpensMeasurableS
   exact MemLp.of_bound hg.aestronglyMeasurable C ((ae_restrict_iff' Ω.isOpen.measurableSet).2
     (Filter.Eventually.of_forall fun x hx ↦ hC x (subset_closure hx)))
 
-/-- **A `C^k` function on a bounded open set lies in `W^{k,p}`** for every exponent: its
-classical derivatives are its weak derivatives, and they are bounded on the compact closure. -/
+/-- **A $C^k$ function lies in $W^{k,p}$ of a bounded open set.** Let $E$ be finite-dimensional with
+an additive Haar measure $\mu$, and let $\Omega \subseteq E$ be a bounded open set. If
+$f : E \to F$ is of class $C^k$, then $f \in W^{k,p}(\Omega)$ for every exponent $p$.
+
+The classical derivatives of $f$ are its weak derivatives, and they are bounded on the compact
+closure of $\Omega$. -/
 theorem ContDiff.memSobolev_of_isBounded (hb : Bornology.IsBounded (Ω : Set E)) {k : ℕ}
     {f : E → F} (hf : ContDiff ℝ k f) (p : ℝ≥0∞) : MemSobolev f k p Ω μ := by
   refine ⟨hf.continuous.memLp_restrict_of_isBounded hb p,

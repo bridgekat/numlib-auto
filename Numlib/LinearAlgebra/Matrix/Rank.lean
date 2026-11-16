@@ -17,41 +17,62 @@ import Numlib.Data.Subtype
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 
 /-!
-# The nullity of a matrix, and the rank as the largest nonvanishing minor
+# Rank and nullity of a matrix
 
-The *nullity* of a square matrix `A` over a field is the dimension of its null space
-`LinearMap.ker A.mulVecLin`, the `Null A` of numerical linear algebra. Mathlib has `Matrix.rank`,
-the dimension of the range, but not the rank–nullity relation between the two, nor the invariance
-of the null space dimension under the operations that leave the rank alone. Nor does it have the
-classical characterization of the rank as the largest order of a nonvanishing minor
-([quarteroni2000numerical] Definition 1.12), which is the last section.
+Let $A$ be a matrix over a field $K$. The **nullity** of a square matrix $A$ is the dimension of its
+null space $\operatorname{Null}(A) = \{x : Ax = 0\}$, which is `LinearMap.ker A.mulVecLin`. This
+file proves the rank–nullity relation $\operatorname{rank} A + \dim \operatorname{Null}(A) = n$ for
+$A \in K^{n \times n}$, and the invariance of the nullity under the operations that keep the rank:
+reindexing and similarity. It also proves the classical characterization of the rank as the largest
+order of a nonvanishing minor, which [quarteroni2000numerical] takes as Definition 1.12.
 
-## Main statements
+The second half gives tools for rectangular matrices: subadditivity of the rank, the rank
+factorization $A = BC$ through $K^r$, a rank bound for a matrix supported on a few rows and columns,
+and the ranks of blocks. It ends with the **nullity theorem** of Fiedler and Markham (1986), in the
+form of Strang and Nguyen (2004): for an invertible $A$ and index sets $p$, $q$, the blocks
+$A^{-1}[p, q]$ and $A[q^c, p^c]$ have null spaces of the same dimension. For a $2 \times 2$ block
+matrix this gives $\operatorname{rank} (A^{-1})_{21} = \operatorname{rank} A_{21}$, as in
+[golub2013matrix], §4.3.8.
 
-* `Matrix.rank_add_finrank_ker_mulVecLin`: rank–nullity, `A.rank + nullity A = card`.
-* `Matrix.finrank_ker_mulVecLin_reindex` and `Matrix.finrank_ker_mulVecLin_conj`: the nullity is
-  unchanged by reindexing and by conjugation with an invertible matrix, both because the rank is.
-* `Matrix.ker_mulVecLin_pow_le_succ`: the null spaces of the powers of a square matrix increase.
+## Main definitions
+
+* `Matrix.kerMulVecLinBlockDiagonal'Equiv`: the null space of a block diagonal matrix is linearly
+  equivalent to the product of the null spaces of its blocks.
+
+## Main results
+
+* `Matrix.rank_add_finrank_ker_mulVecLin`: rank–nullity, $\operatorname{rank} A + \dim
+  \operatorname{Null}(A) = n$ for $A \in K^{n \times n}$.
+* `Matrix.finrank_ker_mulVecLin_reindex`, `Matrix.finrank_ker_mulVecLin_conj`: the nullity does not
+  change under reindexing or under similarity $A \mapsto P A P^{-1}$.
+* `Matrix.ker_mulVecLin_pow_le_succ`: $\operatorname{Null}(A^k) \subseteq
+  \operatorname{Null}(A^{k+1})$.
 * `Matrix.finrank_ker_mulVecLin_blockDiagonal'`: the nullity of a block diagonal matrix is the sum
-  of the nullities of its blocks, since its null space is the product of theirs
-  (`Matrix.kerMulVecLinBlockDiagonal'Equiv`).
-* `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`: the rank of a rectangular matrix is the
-  largest `k` for which some `k × k` submatrix has nonzero determinant; the two inequalities are
-  `Matrix.card_le_rank_of_det_submatrix_ne_zero` and `Matrix.exists_det_submatrix_ne_zero`.
-* `Matrix.rank_add_le`, subadditivity, and the rank factorization
-  `Matrix.rank_le_iff_exists_mul` (`rank A ≤ r ↔ A = B C` through `K^r`) with its generator form
-  `Matrix.rank_le_iff_exists_mul_transpose`; `Matrix.rank_le_card_add_card_of_forall_ne_zero`, the
-  rank bound of a matrix supported on a few rows and columns; `Matrix.rank_eq_zero_iff`; and
-  `Matrix.exists_mul_eq_of_range_mulVecLin_le`, `ran N ⊆ ran M ⇒ ∃ X, M X = N`.
-* `Matrix.rank_toBlock_mono`: a block of a block has smaller rank; `Matrix.rank_submatrix_one_mul`:
-  padding with zero rows does not change the rank.
-* **The nullity theorem** (Fiedler–Markham; Strang–Nguyen): for invertible `A`,
-  `Matrix.finrank_ker_toBlock_inv` (the null spaces of `A⁻¹[p, q]` and `A[¬q, ¬p]` have the same
-  dimension), its rank form `Matrix.rank_toBlock_inv_add_card`, and the block corollaries
-  `Matrix.rank_inv_toBlocks₂₁`, `Matrix.rank_inv_toBlocks₁₂` ([golub2013matrix] §4.3.8). The
-  algebra behind it is `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` (in
-  `Numlib/Data/Matrix/Mul`): a submatrix applied to a vector is the matrix applied to its extension
-  by zero.
+  of the nullities of its blocks.
+* `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`: the rank is the largest $k$ such that some
+  $k \times k$ submatrix has a nonzero determinant.
+* `Matrix.rank_add_le`: $\operatorname{rank}(A + B) \le \operatorname{rank} A + \operatorname{rank}
+  B$.
+* `Matrix.rank_le_iff_exists_mul`: $\operatorname{rank} A \le r$ if and only if $A = BC$ with
+  $B \in K^{m \times r}$ and $C \in K^{r \times n}$.
+* `Matrix.rank_le_card_add_card_of_forall_ne_zero`: a matrix whose nonzero entries lie in $s$ rows
+  or $t$ columns has rank at most $s + t$.
+* `Matrix.finrank_ker_toBlock_inv`, `Matrix.rank_toBlock_inv_add_card`: the nullity theorem, in
+  kernel form and in rank form.
+* `Matrix.rank_inv_toBlocks₂₁`, `Matrix.rank_inv_toBlocks₁₂`: an off-diagonal block of a nonsingular
+  block matrix and the same block of its inverse have the same rank.
+
+## Implementation notes
+
+* Mathlib has `Matrix.rank`, the dimension of the range. It does not have the rank–nullity relation
+  for matrices, the invariance of the nullity under reindexing and similarity, or the
+  characterization of the rank by minors; this file supplies them.
+* Rows and columns are indexed by finite types. An index set is a predicate on the index type, and
+  the block $A[p, q]$ is `A.toBlock p q`, indexed by the subtypes of $p$ and $q$. The complement
+  $p^c$ is the predicate `fun i => ¬ p i`.
+* The nullity theorem uses `Matrix.submatrix_mulVec_eq_comp_mulVec_extend` in
+  `Numlib.Data.Matrix.Mul`: a submatrix applied to a vector is the matrix applied to the extension
+  of the vector by zero, restricted to the selected rows.
 -/
 
 open Module
@@ -64,13 +85,16 @@ section Square
 
 variable {n n' : Type*} [Fintype n] [Fintype n']
 
-/-- **Rank–nullity for a square matrix**: the rank of `A` and the dimension of its null space add
-up to the number of columns. -/
+/-- **Rank–nullity for a square matrix.** Let $A \in K^{n \times n}$. Then
+$$\operatorname{rank} A + \dim \operatorname{Null}(A) = n.$$
+-/
 theorem rank_add_finrank_ker_mulVecLin (A : Matrix n n K) :
     A.rank + finrank K (LinearMap.ker A.mulVecLin) = Fintype.card n := by
   rw [rank, LinearMap.finrank_range_add_finrank_ker, Module.finrank_pi]
 
-/-- Reindexing a square matrix does not change the dimension of its null space. -/
+/-- Let $A \in K^{n \times n}$ and let $\sigma : n \simeq n'$ be a bijection of index types. The
+matrix $A$ reindexed by $\sigma$ in its rows and columns has a null space of the same dimension
+as $\operatorname{Null}(A)$. -/
 theorem finrank_ker_mulVecLin_reindex (σ : n ≃ n') (A : Matrix n n K) :
     finrank K (LinearMap.ker (reindex σ σ A).mulVecLin)
       = finrank K (LinearMap.ker A.mulVecLin) := by
@@ -82,14 +106,15 @@ theorem finrank_ker_mulVecLin_reindex (σ : n ≃ n') (A : Matrix n n K) :
 
 variable [DecidableEq n]
 
-/-- Conjugating a square matrix by an invertible matrix does not change its rank. -/
+/-- Let $A, P \in K^{n \times n}$ with $P$ invertible. Then $\operatorname{rank}(P A P^{-1}) =
+\operatorname{rank} A$. -/
 theorem rank_conj {A P : Matrix n n K} (hP : IsUnit P) : (P * A * P⁻¹).rank = A.rank := by
   have hd : IsUnit P.det := (Matrix.isUnit_iff_isUnit_det P).1 hP
   rw [rank_mul_eq_left_of_isUnit_det _ _ (isUnit_nonsing_inv_det P hd),
     rank_mul_eq_right_of_isUnit_det _ _ hd]
 
-/-- Conjugating a square matrix by an invertible matrix does not change the dimension of its null
-space. -/
+/-- Let $A, P \in K^{n \times n}$ with $P$ invertible. Then $\dim \operatorname{Null}(P A P^{-1}) =
+\dim \operatorname{Null}(A)$. -/
 theorem finrank_ker_mulVecLin_conj {A P : Matrix n n K} (hP : IsUnit P) :
     finrank K (LinearMap.ker (P * A * P⁻¹).mulVecLin)
       = finrank K (LinearMap.ker A.mulVecLin) := by
@@ -98,15 +123,17 @@ theorem finrank_ker_mulVecLin_conj {A P : Matrix n n K} (hP : IsUnit P) :
   rw [rank_conj hP] at h₁
   omega
 
-/-- A square matrix over a field of full rank is nonsingular: its kernel has dimension `0` by
-rank–nullity, so `x ↦ A x` is injective. -/
+/-- Let $A \in K^{n \times n}$ have rank $n$. Then $A$ is invertible.
+
+By rank–nullity the null space of $A$ is zero, so $x \mapsto Ax$ is injective. -/
 theorem isUnit_of_rank_eq_card {A : Matrix n n K} (h : A.rank = Fintype.card n) : IsUnit A := by
   have hk := rank_add_finrank_ker_mulVecLin A
   rw [h] at hk
   rw [← mulVec_injective_iff_isUnit, ← coe_mulVecLin, ← LinearMap.ker_eq_bot]
   exact Submodule.finrank_eq_zero.1 (by omega)
 
-/-- The null spaces of the powers of a square matrix increase with the exponent. -/
+/-- Let $A \in K^{n \times n}$ and $k \in \mathbb{N}$. The null spaces of the powers of $A$
+increase: $\operatorname{Null}(A^k) \subseteq \operatorname{Null}(A^{k+1})$. -/
 theorem ker_mulVecLin_pow_le_succ (A : Matrix n n K) (k : ℕ) :
     LinearMap.ker ((A ^ k).mulVecLin) ≤ LinearMap.ker ((A ^ (k + 1)).mulVecLin) := by
   intro v hv
@@ -119,9 +146,13 @@ section BlockDiagonal
 
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (m i)]
 
-/-- The null space of a block diagonal matrix is the product of the null spaces of its blocks: a
-vector is annihilated by `blockDiagonal' M` exactly when each of its blocks is annihilated by the
-corresponding `M i`. -/
+/-- Let $M_i \in K^{m_i \times m_i}$ for $i$ in a finite index type. The null space of the block
+diagonal matrix $\operatorname{diag}(M_i)_i$ is linearly equivalent to the product
+$\prod_i \operatorname{Null}(M_i)$: a vector is in the null space of the block diagonal matrix
+exactly when each of its blocks is in the null space of the corresponding $M_i$.
+
+The block diagonal matrix is `Matrix.blockDiagonal' M`, indexed by the sigma type
+`(i : ι) × m i`. The equivalence sends a vector $v$ to the family of its blocks $(v_i)_i$. -/
 noncomputable def kerMulVecLinBlockDiagonal'Equiv (M : ∀ i, Matrix (m i) (m i) K) :
     LinearMap.ker (blockDiagonal' M).mulVecLin ≃ₗ[K] ∀ i, LinearMap.ker (M i).mulVecLin where
   toFun v i := ⟨fun a => v.1 ⟨i, a⟩, by
@@ -138,7 +169,12 @@ noncomputable def kerMulVecLinBlockDiagonal'Equiv (M : ∀ i, Matrix (m i) (m i)
   left_inv v := by ext x; obtain ⟨i, a⟩ := x; rfl
   right_inv w := by ext i a; rfl
 
-/-- **The nullity of a block diagonal matrix** is the sum of the nullities of its blocks. -/
+/-- **The nullity of a block diagonal matrix.** Let $M_i \in K^{m_i \times m_i}$ for $i$ in a finite
+index type. Then
+$$\dim \operatorname{Null}(\operatorname{diag}(M_i)_i) = \sum_i \dim \operatorname{Null}(M_i).$$
+
+The block diagonal matrix is `Matrix.blockDiagonal' M`. The proof uses
+`Matrix.kerMulVecLinBlockDiagonal'Equiv`. -/
 theorem finrank_ker_mulVecLin_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) K) :
     finrank K (LinearMap.ker (blockDiagonal' M).mulVecLin)
       = ∑ i, finrank K (LinearMap.ker (M i).mulVecLin) := by
@@ -150,8 +186,12 @@ section Minor
 
 variable {m n : Type*} [Fintype n] (A : Matrix m n K)
 
-/-- A nonvanishing minor of order `k` forces rank at least `k`: the `k × k` submatrix is a unit,
-so its rank is `k`, and the rank of a submatrix is at most the rank. -/
+/-- Let $A \in K^{m \times n}$, and let $r : \{0, \dots, k-1\} \to m$ and
+$c : \{0, \dots, k-1\} \to n$ select $k$ rows and $k$ columns. If the minor $\det A[r, c]$ is
+nonzero, then $k \le \operatorname{rank} A$.
+
+The $k \times k$ submatrix is invertible, so its rank is $k$, and the rank of a submatrix is at
+most the rank of the matrix. The maps $r$ and $c$ need not be injective. -/
 theorem card_le_rank_of_det_submatrix_ne_zero {k : ℕ} {r : Fin k → m} {c : Fin k → n}
     (h : (A.submatrix r c).det ≠ 0) : k ≤ A.rank := by
   have hu : IsUnit (A.submatrix r c) := (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 h)
@@ -159,21 +199,24 @@ theorem card_le_rank_of_det_submatrix_ne_zero {k : ℕ} {r : Fin k → m} {c : F
   rwa [rank_of_isUnit _ hu, Fintype.card_fin] at this
 
 omit [Fintype n] in
-/-- The row selection of a nonvanishing minor is injective: two equal rows give a zero
-determinant. -/
+/-- Let $A \in K^{m \times n}$, and let $r$ and $c$ select $k$ rows and $k$ columns. If
+$\det A[r, c] \neq 0$, then $r$ is injective, because two equal rows give a zero determinant. -/
 theorem injective_of_det_submatrix_ne_zero_left {k : ℕ} {r : Fin k → m} {c : Fin k → n}
     (h : (A.submatrix r c).det ≠ 0) : Function.Injective r := fun a b hab => by
   by_contra hne
   exact h (det_zero_of_row_eq hne (funext fun j => by simp [hab]))
 
 omit [Fintype n] in
-/-- The column selection of a nonvanishing minor is injective. -/
+/-- Let $A \in K^{m \times n}$, and let $r$ and $c$ select $k$ rows and $k$ columns. If
+$\det A[r, c] \neq 0$, then $c$ is injective. -/
 theorem injective_of_det_submatrix_ne_zero_right {k : ℕ} {r : Fin k → m} {c : Fin k → n}
     (h : (A.submatrix r c).det ≠ 0) : Function.Injective c := fun a b hab => by
   by_contra hne
   exact h (det_zero_of_column_eq hne fun i => by simp [hab])
 
-/-- A matrix of rank `k` has `k` linearly independent columns. -/
+/-- Let $A \in K^{m \times n}$ have rank $k$. Then $A$ has $k$ linearly independent columns: there
+is $c : \{0, \dots, k-1\} \to n$ such that the columns $A(:, c(0)), \dots, A(:, c(k-1))$ are
+linearly independent. -/
 theorem exists_linearIndependent_col {k : ℕ} (h : A.rank = k) :
     ∃ c : Fin k → n, LinearIndependent K (A.col ∘ c) := by
   obtain ⟨t, ht, hsp, hli⟩ := exists_linearIndependent K (Set.range A.col)
@@ -188,9 +231,13 @@ theorem exists_linearIndependent_col {k : ℕ} (h : A.rank = k) :
   rw [this]
   exact hli.comp e e.injective
 
-/-- A matrix of rank `k` has a nonsingular `k × k` submatrix: choose `k` linearly independent
-columns, then `k` linearly independent rows of the resulting `m × k` matrix (which has rank `k`
-as well); a square matrix with linearly independent rows is a unit. -/
+/-- Let $A \in K^{m \times n}$ with $m$ finite, and let $k = \operatorname{rank} A$. Then $A$ has a
+$k \times k$ submatrix with nonzero determinant: there are $r : \{0, \dots, k-1\} \to m$ and
+$c : \{0, \dots, k-1\} \to n$ with $\det A[r, c] \neq 0$.
+
+The proof chooses $k$ linearly independent columns, and then $k$ linearly independent rows of
+the resulting $m \times k$ matrix, which also has rank $k$. A square matrix with linearly
+independent rows is invertible. -/
 theorem exists_det_submatrix_ne_zero [Finite m] :
     ∃ (r : Fin A.rank → m) (c : Fin A.rank → n), (A.submatrix r c).det ≠ 0 := by
   have := Fintype.ofFinite m
@@ -204,10 +251,15 @@ theorem exists_det_submatrix_ne_zero [Finite m] :
   rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, ← linearIndependent_row_iff_isUnit]
   exact hr
 
-/-- [quarteroni2000numerical] Definition 1.12 as a theorem: the rank is the largest order of a
-nonvanishing minor. The set of orders is bounded by the rank
-(`Matrix.card_le_rank_of_det_submatrix_ne_zero`) and attains it
-(`Matrix.exists_det_submatrix_ne_zero`). -/
+/-- **The rank as the largest nonvanishing minor.** Let $A \in K^{m \times n}$ with $m$ finite. Then
+$$\operatorname{rank} A = \sup \{k : \det A[r, c] \neq 0 \text{ for some injective } r : \{0,
+  \dots, k-1\} \to m,\ c : \{0, \dots, k-1\} \to n\}.$$
+This is Definition 1.12 of [quarteroni2000numerical], stated here as a theorem.
+
+The rows and columns are selected by embeddings `Fin k ↪ m` and `Fin k ↪ n`. The set contains
+$0$, because the empty minor is $1$. The rank bounds the set by
+`Matrix.card_le_rank_of_det_submatrix_ne_zero`, and the set contains the rank by
+`Matrix.exists_det_submatrix_ne_zero`. -/
 theorem rank_eq_sup_card_det_submatrix_ne_zero [Finite m] :
     A.rank = sSup {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0} := by
   have hub : ∀ k ∈ {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0},
@@ -226,8 +278,10 @@ section Factorization
 
 variable {m n : Type*} [Fintype n]
 
-/-- **The rank is subadditive**: `rank (A + B) ≤ rank A + rank B`, the column space of `A + B`
-lying in the sum of those of `A` and `B`. -/
+/-- **The rank is subadditive.** Let $A, B \in K^{m \times n}$. Then
+$$\operatorname{rank}(A + B) \le \operatorname{rank} A + \operatorname{rank} B.$$
+
+The column space of $A + B$ lies in the sum of the column spaces of $A$ and $B$. -/
 theorem rank_add_le (A B : Matrix m n K) : (A + B).rank ≤ A.rank + B.rank := by
   rw [rank, rank, rank, mulVecLin_add]
   calc finrank K (LinearMap.range (A.mulVecLin + B.mulVecLin))
@@ -235,9 +289,12 @@ theorem rank_add_le (A B : Matrix m n K) : (A + B).rank ≤ A.rank + B.rank := b
         Submodule.finrank_mono (LinearMap.range_add_le _ _)
     _ ≤ _ := Submodule.finrank_add_le_finrank_add_finrank _ _
 
-/-- **The rank factorization**: `A` has rank at most `r` exactly when it factors as `A = B C`
-through `K^r`, `B : Matrix m (Fin r) K`, `C : Matrix (Fin r) n K`. Coordinates on a basis of the
-column space, padded by zeros to length `r`, give the factorization. -/
+/-- **The rank factorization.** Let $A \in K^{m \times n}$ and $r \in \mathbb{N}$. Then
+$\operatorname{rank} A \le r$ if and only if $A = BC$ for some $B \in K^{m \times r}$ and
+$C \in K^{r \times n}$.
+
+For the forward direction, the coordinates of the columns of $A$ in a basis of the column space,
+padded by zeros to length $r$, give $C$. -/
 theorem rank_le_iff_exists_mul (A : Matrix m n K) (r : ℕ) :
     A.rank ≤ r ↔ ∃ (B : Matrix m (Fin r) K) (C : Matrix (Fin r) n K), A = B * C := by
   classical
@@ -268,19 +325,23 @@ theorem rank_le_iff_exists_mul (A : Matrix m n K) (r : ℕ) :
   · rintro ⟨B, C, rfl⟩
     exact (rank_mul_le_left B C).trans ((rank_le_card_width B).trans_eq (Fintype.card_fin r))
 
-/-- The generator form of the rank factorization ([golub2013matrix] (12.1.3), displacement
-structure): `rank A ≤ r` exactly when `A = R Sᵀ` with `R : Matrix m (Fin r) K`,
-`S : Matrix n (Fin r) K`. -/
+/-- Let $A \in K^{m \times n}$ and $r \in \mathbb{N}$. Then $\operatorname{rank} A \le r$ if and
+only if $A = R S^T$ for some $R \in K^{m \times r}$ and $S \in K^{n \times r}$. This is the
+generator form of a matrix of displacement rank at most $r$ in [golub2013matrix], (12.1.3). -/
 theorem rank_le_iff_exists_mul_transpose (A : Matrix m n K) (r : ℕ) :
     A.rank ≤ r ↔ ∃ (R : Matrix m (Fin r) K) (S : Matrix n (Fin r) K), A = R * Sᵀ := by
   rw [rank_le_iff_exists_mul]
   exact ⟨fun ⟨B, C, h⟩ => ⟨B, Cᵀ, by rwa [transpose_transpose]⟩,
     fun ⟨R, S, h⟩ => ⟨R, Sᵀ, h⟩⟩
 
-/-- **A matrix supported on `s` rows and `t` columns has rank at most `|s| + |t|`**: if every
-nonzero entry lies in a row of `s` or a column of `t`, split `A` into its rows in `s` and the rest,
-which is supported on the columns `t`. Every displacement-rank bound of [golub2013matrix]
-(12.1.8)–(12.1.11) is an instance. -/
+/-- **A matrix supported on a few rows and columns has small rank.** Let $A \in K^{m \times n}$ with
+$m$ finite, let $s$ be a finite set of rows and $t$ a finite set of columns, and suppose that
+every nonzero entry $a_{ij}$ has $i \in s$ or $j \in t$. Then
+$$\operatorname{rank} A \le |s| + |t|.$$
+
+The proof splits $A$ into its rows in $s$ and the remaining rows, which are supported on the
+columns in $t$. The displacement rank bounds (12.1.8)–(12.1.11) of [golub2013matrix] are
+instances of this bound. -/
 theorem rank_le_card_add_card_of_forall_ne_zero [Finite m] (A : Matrix m n K)
     (s : Finset m) (t : Finset n) (h : ∀ i j, A i j ≠ 0 → i ∈ s ∨ j ∈ t) :
     A.rank ≤ s.card + t.card := by
@@ -309,7 +370,8 @@ theorem rank_le_card_add_card_of_forall_ne_zero [Finite m] (A : Matrix m n K)
   rw [hA]
   exact (rank_add_le A₁ A₂).trans (add_le_add h₁ h₂)
 
-/-- A matrix has rank zero exactly when it vanishes. -/
+/-- Let $A \in K^{m \times n}$ with $m$ finite. Then $\operatorname{rank} A = 0$ if and only if
+$A = 0$. -/
 theorem rank_eq_zero_iff [Finite m] {A : Matrix m n K} : A.rank = 0 ↔ A = 0 := by
   classical
   have := Fintype.ofFinite m
@@ -317,8 +379,10 @@ theorem rank_eq_zero_iff [Finite m] {A : Matrix m n K} : A.rank = 0 ↔ A = 0 :=
   rw [rank, Submodule.finrank_eq_zero, LinearMap.range_eq_bot] at h
   exact toLin'.injective (h.trans (map_zero toLin').symm)
 
-/-- A range inclusion `ran N ⊆ ran M` makes `M X = N` solvable: each column of `N` is `M` applied
-to some vector. -/
+/-- Let $M \in K^{m \times n}$ and $N \in K^{m \times k}$. If the column space of $N$ lies in the
+column space of $M$, then $MX = N$ for some $X \in K^{n \times k}$.
+
+Each column of $N$ is $M$ applied to some vector, and these vectors are the columns of $X$. -/
 theorem exists_mul_eq_of_range_mulVecLin_le {k : Type*} [Fintype k] {M : Matrix m n K}
     {N : Matrix m k K} (h : LinearMap.range N.mulVecLin ≤ LinearMap.range M.mulVecLin) :
     ∃ X, M * X = N := by
@@ -342,21 +406,25 @@ section Blocks
 
 variable {m n : Type*}
 
-/-- A block of a block has smaller rank: shrinking the row and column predicates of `toBlock`
-does not increase the rank. -/
+/-- Let $A \in K^{m \times n}$, and let $p \subseteq p'$ be sets of rows and $q \subseteq q'$ sets
+of columns. Then $\operatorname{rank} A[p, q] \le \operatorname{rank} A[p', q']$: shrinking a
+block does not increase its rank. -/
 theorem rank_toBlock_mono [Fintype n] (A : Matrix m n K) {p p' : m → Prop}
     {q q' : n → Prop} [DecidablePred q] [DecidablePred q'] (hp : ∀ i, p i → p' i)
     (hq : ∀ j, q j → q' j) : (A.toBlock p q).rank ≤ (A.toBlock p' q').rank :=
   rank_submatrix_le (A.toBlock p' q') (Subtype.map id hp) (Subtype.map id hq)
 
-/-- The rank of a block of the transpose is the rank of the transposed block. -/
+/-- Let $A \in K^{m \times n}$, let $p$ be a set of columns and $q$ a set of rows of $A$. Then
+$\operatorname{rank} A^T[p, q] = \operatorname{rank} A[q, p]$. -/
 theorem rank_toBlock_transpose [Fintype m] [Fintype n] (A : Matrix m n K) (p : n → Prop)
     (q : m → Prop) [DecidablePred p] [DecidablePred q] :
     (Aᵀ.toBlock p q).rank = (A.toBlock q p).rank :=
   rank_transpose (A.toBlock q p)
 
-/-- Padding with zero rows does not change the rank: `[X; 0]`, written as the product of the
-leading columns of the identity with `X`, has the rank of `X`. -/
+/-- **Padding with zero rows does not change the rank.** Let $f : p \to n$ be injective, let
+$X \in K^{p \times q}$, and let $I(:, f) \in K^{n \times p}$ be the matrix of the columns
+$e_{f(j)}$ of the identity. Then $\operatorname{rank}(I(:, f)\, X) = \operatorname{rank} X$. The
+matrix $I(:, f)\, X$ has the rows of $X$ at the positions $f(j)$ and zero rows elsewhere. -/
 theorem rank_submatrix_one_mul [Finite n] [DecidableEq n] {p q : Type*} [Fintype p]
     [Fintype q] {f : p → n} (hf : Function.Injective f) (X : Matrix p q K) :
     ((1 : Matrix n n K).submatrix id f * X).rank = X.rank := by
@@ -380,15 +448,16 @@ section Nullity
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
 omit [DecidableEq n] in
-/-- A block applied to a vector is the matrix applied to its extension by zero, restricted. -/
+/-- A block applied to a vector is the matrix applied to the extension of the vector by zero,
+restricted to the rows of the block: $M[p, q]\, x = (M \bar x)|_p$. -/
 private theorem toBlock_mulVec (M : Matrix n n K) (p q : n → Prop) [DecidablePred q]
     (x : {j // q j} → K) :
     (M.toBlock p q) *ᵥ x = (M *ᵥ Function.extend Subtype.val x 0) ∘ Subtype.val :=
   submatrix_mulVec_eq_comp_mulVec_extend M Subtype.val Subtype.val_injective x
 
-/-- The correspondence of the nullity theorem, one direction: if `A B = 1` and `B[p, q] x = 0`,
-then `(B x̄)|_{p'}` is in the null space of `A[q', p']`, where `p'`, `q'` are the complements of
-`p`, `q` and `x̄` is the extension of `x` by zero. -/
+/-- One direction of the correspondence in the nullity theorem: if $AB = I$ and $B[p, q]\, x = 0$,
+then $(B \bar x)|_{p^c}$ is in the null space of $A[q^c, p^c]$, where $\bar x$ is the extension
+of $x$ by zero. -/
 private theorem mem_ker_toBlock_of_mem_ker_toBlock {A B : Matrix n n K} (hAB : A * B = 1)
     {p q p' q' : n → Prop} [DecidablePred q] [DecidablePred p'] (hp : ∀ i, p' i ↔ ¬ p i)
     (hq : ∀ i, q' i ↔ ¬ q i) {x : {j // q j} → K}
@@ -401,10 +470,14 @@ private theorem mem_ker_toBlock_of_mem_ker_toBlock {A B : Matrix n n K} (hAB : A
   funext i
   exact Function.extend_val_apply' ((hq i).1 i.2)
 
-/-- **The nullity theorem, kernel form** (Fiedler–Markham 1986, cited by [golub2013matrix]
-§12.2): for an invertible `A` and index predicates `p`, `q`, the null spaces of `A⁻¹[p, q]` and of
-`A[¬q, ¬p]` have the same dimension. The correspondence is `x ↦ (A⁻¹ x̄)|_{¬p}`, with inverse
-`y ↦ (A ȳ)|_q`, the bars denoting extension by zero. -/
+/-- **The nullity theorem, kernel form.** Let $A \in K^{n \times n}$ be invertible, and let $p$ and
+$q$ be sets of indices. Then
+$$\dim \operatorname{Null}(A^{-1}[p, q]) = \dim \operatorname{Null}(A[q^c, p^c]).$$
+This is the theorem of Fiedler and Markham (1986) that [golub2013matrix], §12.2, cites.
+
+The linear equivalence between the two null spaces is $x \mapsto (A^{-1} \bar x)|_{p^c}$, with
+inverse $y \mapsto (A \bar y)|_q$, where a bar denotes the extension by zero. The complements
+are `fun i => ¬ q i` and `fun j => ¬ p j`. -/
 theorem finrank_ker_toBlock_inv {A : Matrix n n K} (hA : IsUnit A) (p q : n → Prop)
     [DecidablePred p] [DecidablePred q] :
     finrank K (LinearMap.ker (A⁻¹.toBlock p q).mulVecLin)
@@ -448,10 +521,12 @@ theorem finrank_ker_toBlock_inv {A : Matrix n n K} (hA : IsUnit A) (p q : n → 
     funext j
     exact Subtype.val_injective.extend_apply _ _ j
 
-/-- **The nullity theorem**, rank form (Fiedler–Markham 1986; Strang–Nguyen 2004): for an
-invertible `A` and index predicates `p`, `q`,
-`rank A⁻¹[p, q] + |n| = rank A[¬q, ¬p] + |p| + |q|`. Rank–nullity on the two blocks
-(`LinearMap.finrank_range_add_finrank_ker`) turns `Matrix.finrank_ker_toBlock_inv` into this. -/
+/-- **The nullity theorem, rank form** (Fiedler and Markham 1986; Strang and Nguyen 2004). Let
+$A \in K^{n \times n}$ be invertible, and let $p$ and $q$ be sets of indices. Then
+$$\operatorname{rank} A^{-1}[p, q] + n = \operatorname{rank} A[q^c, p^c] + |p| + |q|.$$
+
+Rank–nullity on the two blocks (`LinearMap.finrank_range_add_finrank_ker`) turns
+`Matrix.finrank_ker_toBlock_inv` into this identity. -/
 theorem rank_toBlock_inv_add_card {A : Matrix n n K} (hA : IsUnit A) (p q : n → Prop)
     [DecidablePred p] [DecidablePred q] :
     (A⁻¹.toBlock p q).rank + Fintype.card n
@@ -468,10 +543,17 @@ theorem rank_toBlock_inv_add_card {A : Matrix n n K} (hA : IsUnit A) (p q : n �
   rw [rank, rank]
   omega
 
-/-- **The nullity theorem for the off-diagonal blocks** ([golub2013matrix] §4.3.8; Strang–Nguyen
-2004): for a nonsingular block matrix, `rank (A⁻¹)₂₁ = rank A₂₁`. The case `p = isRight`,
-`q = isLeft` of `Matrix.rank_toBlock_inv_add_card`; no invertibility of the diagonal blocks is
-needed. -/
+/-- **The nullity theorem for an off-diagonal block** ([golub2013matrix], §4.3.8; Strang and Nguyen
+2004). Let
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}$$
+be invertible, with square diagonal blocks $A_{11} \in K^{m \times m}$ and
+$A_{22} \in K^{n' \times n'}$. Then the lower-left blocks of $A^{-1}$ and $A$ have the same
+rank:
+$$\operatorname{rank} (A^{-1})_{21} = \operatorname{rank} A_{21}.$$
+The diagonal blocks need not be invertible.
+
+The block $A_{21}$ is `A.toBlocks₂₁`, with rows indexed by $n'$ and columns by $m$. The proof
+is the case $p = n'$, $q = m$ of `Matrix.rank_toBlock_inv_add_card`. -/
 theorem rank_inv_toBlocks₂₁ {m n' : Type*} [Fintype m] [Fintype n'] [DecidableEq m]
     [DecidableEq n'] {A : Matrix (m ⊕ n') (m ⊕ n') K} (hA : IsUnit A) :
     (A⁻¹).toBlocks₂₁.rank = A.toBlocks₂₁.rank := by
@@ -497,10 +579,14 @@ theorem rank_inv_toBlocks₂₁ {m n' : Type*} [Fintype m] [Fintype n'] [Decidab
     Fintype.card_congr (Equiv.sumIsLeft (α := m) (β := n'))] at h
   omega
 
-/-- **The nullity theorem for the other off-diagonal block**: `rank (A⁻¹)₁₂ = rank A₁₂` for a
-nonsingular block matrix: `Matrix.rank_inv_toBlocks₂₁` for `Aᵀ`, since `(A⁻¹)ᵀ = (Aᵀ)⁻¹`, the
-lower-left block of a transpose is the transposed upper-right block, and transposition keeps the
-rank. -/
+/-- **The nullity theorem for the other off-diagonal block.** Let $A$ be an invertible $2 \times 2$
+block matrix with square diagonal blocks of orders $m$ and $n'$. Then the upper-right blocks of
+$A^{-1}$ and $A$ have the same rank:
+$$\operatorname{rank} (A^{-1})_{12} = \operatorname{rank} A_{12}.$$
+
+The block $A_{12}$ is `A.toBlocks₁₂`. The proof applies `Matrix.rank_inv_toBlocks₂₁` to $A^T$:
+$(A^{-1})^T = (A^T)^{-1}$, the lower-left block of $A^T$ is the transpose of the upper-right
+block of $A$, and transposition keeps the rank. -/
 theorem rank_inv_toBlocks₁₂ {m n' : Type*} [Fintype m] [Fintype n'] [DecidableEq m]
     [DecidableEq n'] {A : Matrix (m ⊕ n') (m ⊕ n') K} (hA : IsUnit A) :
     (A⁻¹).toBlocks₁₂.rank = A.toBlocks₁₂.rank := by

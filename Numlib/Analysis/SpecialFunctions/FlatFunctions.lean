@@ -11,24 +11,41 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 /-!
 # Flat functions
 
-Smooth functions all of whose derivatives vanish at a point, built from Mathlib's
-`expNegInvGlue` (`exp(-1/x)` for `x > 0`, `0` otherwise). They give the classical examples showing
-that derivative information at a point cannot decide local minimality ([cartis2022evaluation],
-Example 12.1.1 and its variant (12.1.3)).
+A smooth function is **flat** at a point if all its derivatives vanish there. This file builds flat
+functions from Mathlib's `expNegInvGlue`, which is $e^{-1/x}$ for $x > 0$ and $0$ for $x \le 0$.
+They give the classical examples which show that the derivatives at a point cannot decide whether
+the point is a local minimizer ([cartis2022evaluation], Example 12.1.1 and its variant (12.1.3)).
+
+The first family is $\mathrm{expNegInvGlue} \circ q$ for a smooth function $q$ that vanishes at a
+point $x_0$, for example $e^{-1/x_1^2}$ extended by $0$. The second family consists of the flat
+oscillating functions
+$$\Phi_{P,Q}(t) = \Bigl(P(1/t) \sin(1/t) + Q(1/t) \cos(1/t)\Bigr) e^{-1/t^2}, \qquad \Phi_{P,Q}(0) =
+  0,$$
+for real polynomials $P$ and $Q$. The derivative of $\Phi_{P,Q}$ is $\Phi_{\tilde P, \tilde Q}$ with
+$\tilde P = -X^2 P' + X^2 Q + 2X^3 P$ and $\tilde Q = -X^2 P - X^2 Q' + 2X^3 Q$, again of this form,
+so $\Phi_{P,Q}$ is $C^\infty$. In particular $t \mapsto \sin(1/t)\, e^{-1/t^2}$ is $C^\infty$ and
+flat at $0$.
+
+## Main definitions
+
+* `oscFlat`: the flat oscillating function $\Phi_{P,Q}$.
+* `oscFlatDerivP`, `oscFlatDerivQ`: the polynomials $\tilde P$ and $\tilde Q$ with
+  $\Phi_{P,Q}' = \Phi_{\tilde P,\tilde Q}$.
 
 ## Main results
 
-* `iteratedFDeriv_expNegInvGlue_zero`, `iteratedFDeriv_expNegInvGlue_comp_eq_zero`: flatness of
-  `expNegInvGlue` at `0` and of `expNegInvGlue ∘ q` at a zero of a smooth `q`;
-* `oscFlat P Q t = (P(1/t) sin(1/t) + Q(1/t) cos(1/t)) exp(-1/t²)` (`0` at `t = 0`): the derivative
-  is again of this form (`hasDerivAt_oscFlat`), hence `contDiff_oscFlat`. In particular
-  `t ↦ sin(1/t) exp(-1/t²)` is `C^∞` and flat at `0`.
+* `iteratedFDeriv_expNegInvGlue_zero`: all derivatives of `expNegInvGlue` vanish at $0$.
+* `iteratedFDeriv_expNegInvGlue_comp_eq_zero`: if $q$ is $C^\infty$ and $q(x_0) = 0$, all
+  derivatives of $\mathrm{expNegInvGlue} \circ q$ vanish at $x_0$.
+* `hasDerivAt_oscFlat`: the derivative of $\Phi_{P,Q}$ is $\Phi_{\tilde P,\tilde Q}$ at every point.
+* `contDiff_oscFlat`: $\Phi_{P,Q}$ is $C^\infty$.
 -/
 
 open Filter Topology Set
 open scoped ContDiff
 
-/-- All derivatives of `expNegInvGlue` vanish at `0` (it vanishes on `(-∞, 0]`). -/
+/-- For every natural number $k$, the $k$-th derivative of `expNegInvGlue` at $0$ is zero. The
+function vanishes on $(-\infty, 0]$. -/
 theorem iteratedFDeriv_expNegInvGlue_zero (k : ℕ) : iteratedFDeriv ℝ k expNegInvGlue 0 = 0 := by
   have hc : Continuous (iteratedFDeriv ℝ k expNegInvGlue) :=
     (expNegInvGlue.contDiff (n := ⊤)).continuous_iteratedFDeriv (by exact_mod_cast le_top)
@@ -41,9 +58,12 @@ theorem iteratedFDeriv_expNegInvGlue_zero (k : ℕ) : iteratedFDeriv ℝ k expNe
   rw [closure_Iio] at this
   exact this (Set.mem_Iic.2 le_rfl)
 
-/-- **Flatness of `expNegInvGlue` composed with a smooth function vanishing at a point**: if
-`q : E → ℝ` is `C^∞` and `q x₀ = 0`, all derivatives of `expNegInvGlue ∘ q` vanish at `x₀`
-(e.g. `exp(-1/x₁²)`, extended by `0`). -/
+/-- **Flatness of `expNegInvGlue` composed with a smooth function that vanishes at a point.** Let
+$E$ be a real normed space, let $q : E \to \mathbb{R}$ be $C^\infty$, and let $x_0 \in E$ with
+$q(x_0) = 0$. Then for every natural number $k$, the $k$-th Fréchet derivative of
+$x \mapsto \mathrm{expNegInvGlue}(q(x))$ at $x_0$ is zero.
+
+An example is $e^{-1/x_1^2}$, extended by $0$ where $x_1 = 0$. -/
 theorem iteratedFDeriv_expNegInvGlue_comp_eq_zero {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {q : E → ℝ} (hq : ContDiff ℝ ∞ q) {x₀ : E} (hq0 : q x₀ = 0) (k : ℕ) :
     iteratedFDeriv ℝ k (fun x => expNegInvGlue (q x)) x₀ = 0 := by
@@ -61,7 +81,7 @@ theorem iteratedFDeriv_expNegInvGlue_comp_eq_zero {E : Type*} [NormedAddCommGrou
   simp only [mul_zero, zero_mul] at h
   exact norm_le_zero_iff.1 h
 
-/-- `exp(-1/s) ≤ s` for `s ≥ 0`, in the form `expNegInvGlue s ≤ s`. -/
+/-- For $s \ge 0$, $\mathrm{expNegInvGlue}(s) \le s$; that is, $e^{-1/s} \le s$ for $s > 0$. -/
 theorem expNegInvGlue_le_self {s : ℝ} (hs : 0 ≤ s) : expNegInvGlue s ≤ s := by
   rcases hs.eq_or_lt with rfl | hs
   · simp
@@ -70,25 +90,36 @@ theorem expNegInvGlue_le_self {s : ℝ} (hs : 0 ≤ s) : expNegInvGlue s ≤ s :
     rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos _) hs]
     linarith [inv_pos.2 hs]
 
-/-- Flat oscillating functions `(P(1/t) sin(1/t) + Q(1/t) cos(1/t)) exp(-1/t²)` (`0` at
-`t = 0`), the building blocks of Lewis' example (12.1.3). -/
+/-- For real polynomials $P$ and $Q$, the **flat oscillating function** is
+$$\Phi_{P,Q}(t) = \Bigl(P(1/t) \sin(1/t) + Q(1/t) \cos(1/t)\Bigr) e^{-1/t^2}$$
+for $t \neq 0$, and $\Phi_{P,Q}(0) = 0$. These functions are the building blocks of Lewis'
+example (12.1.3) of [cartis2022evaluation].
+
+The factor $e^{-1/t^2}$ is `expNegInvGlue (t ^ 2)`, and $1/t$ is `t⁻¹`. The value $0$ at $t = 0$
+comes from $\mathrm{expNegInvGlue}(0) = 0$. -/
 noncomputable def oscFlat (P Q : Polynomial ℝ) (t : ℝ) : ℝ :=
   (P.eval t⁻¹ * Real.sin t⁻¹ + Q.eval t⁻¹ * Real.cos t⁻¹) * expNegInvGlue (t ^ 2)
 
+/-- The defining formula of `oscFlat`: $\Phi_{P,Q}(t) = \bigl(P(1/t) \sin(1/t) + Q(1/t)
+\cos(1/t)\bigr) \cdot \mathrm{expNegInvGlue}(t^2)$ for every $t \in \mathbb{R}$, with $1/t$ read
+as `t⁻¹`. -/
 theorem oscFlat_def (P Q : Polynomial ℝ) (t : ℝ) :
     oscFlat P Q t =
       (P.eval t⁻¹ * Real.sin t⁻¹ + Q.eval t⁻¹ * Real.cos t⁻¹) * expNegInvGlue (t ^ 2) :=
   rfl
 
-/-- The polynomial multiplying `sin(1/t)` in the derivative of `oscFlat P Q`. -/
+/-- The polynomial $-X^2 P' + X^2 Q + 2X^3 P$, which multiplies $\sin(1/t)$ in the derivative of
+$\Phi_{P,Q}$. -/
 noncomputable def oscFlatDerivP (P Q : Polynomial ℝ) : Polynomial ℝ :=
   -(Polynomial.X ^ 2 * Polynomial.derivative P) + Polynomial.X ^ 2 * Q + 2 * Polynomial.X ^ 3 * P
 
-/-- The polynomial multiplying `cos(1/t)` in the derivative of `oscFlat P Q`. -/
+/-- The polynomial $-X^2 P - X^2 Q' + 2X^3 Q$, which multiplies $\cos(1/t)$ in the derivative of
+$\Phi_{P,Q}$. -/
 noncomputable def oscFlatDerivQ (P Q : Polynomial ℝ) : Polynomial ℝ :=
   -(Polynomial.X ^ 2 * P) - Polynomial.X ^ 2 * Polynomial.derivative Q + 2 * Polynomial.X ^ 3 * Q
 
-/-- A polynomial is dominated by a polynomial in the square of the variable. -/
+/-- For every real polynomial $R$ there is a real polynomial $S$ with $|R(u)| \le S(u^2)$ for all
+$u \in \mathbb{R}$. -/
 theorem abs_eval_le_eval_sq (R : Polynomial ℝ) :
     ∃ S : Polynomial ℝ, ∀ u : ℝ, |R.eval u| ≤ S.eval (u ^ 2) := by
   refine ⟨∑ i ∈ Finset.range (R.natDegree + 1), Polynomial.C |R.coeff i| * (1 + Polynomial.X ^ i),
@@ -107,7 +138,7 @@ theorem abs_eval_le_eval_sq (R : Polynomial ℝ) :
       exact pow_le_pow_left₀ (abs_nonneg u) (by nlinarith) i
     linarith
 
-/-- `R(1/t) exp(-1/t²) → 0` as `t → 0` for every polynomial `R`. -/
+/-- For every real polynomial $R$, $R(1/t)\, e^{-1/t^2} \to 0$ as $t \to 0$. -/
 theorem tendsto_eval_inv_mul_expNegInvGlue_sq (R : Polynomial ℝ) :
     Tendsto (fun t : ℝ => R.eval t⁻¹ * expNegInvGlue (t ^ 2)) (𝓝 0) (𝓝 0) := by
   obtain ⟨S, hS⟩ := abs_eval_le_eval_sq R
@@ -121,7 +152,8 @@ theorem tendsto_eval_inv_mul_expNegInvGlue_sq (R : Polynomial ℝ) :
   rw [inv_pow] at this
   exact mul_le_mul_of_nonneg_right this (expNegInvGlue.nonneg _)
 
-/-- The flat oscillating functions are continuous at `0`. -/
+/-- For all real polynomials $P$ and $Q$, the flat oscillating function $\Phi_{P,Q}$ is continuous
+at $0$. -/
 theorem continuousAt_oscFlat_zero (P Q : Polynomial ℝ) : ContinuousAt (oscFlat P Q) 0 := by
   have h0 : oscFlat P Q 0 = 0 := by simp [oscFlat]
   rw [ContinuousAt, h0]
@@ -140,7 +172,9 @@ theorem continuousAt_oscFlat_zero (P Q : Polynomial ℝ) : ContinuousAt (oscFlat
   · exact mul_le_of_le_one_right (abs_nonneg _) h1
   · exact mul_le_of_le_one_right (abs_nonneg _) h2
 
-/-- Derivative of a flat oscillating function away from `0`. -/
+/-- For real polynomials $P, Q$ and $t \neq 0$, the derivative of $\Phi_{P,Q}$ at $t$ is
+$\Phi_{\tilde P, \tilde Q}(t)$, where $\tilde P = -X^2 P' + X^2 Q + 2X^3 P$ and
+$\tilde Q = -X^2 P - X^2 Q' + 2X^3 Q$. -/
 theorem hasDerivAt_oscFlat_of_ne (P Q : Polynomial ℝ) {t : ℝ} (ht : t ≠ 0) :
     HasDerivAt (oscFlat P Q) (oscFlat (oscFlatDerivP P Q) (oscFlatDerivQ P Q) t) t := by
   have heq : oscFlat P Q =ᶠ[𝓝 t] fun s => (P.eval s⁻¹ * Real.sin s⁻¹ + Q.eval s⁻¹ * Real.cos s⁻¹) *
@@ -164,14 +198,19 @@ theorem hasDerivAt_oscFlat_of_ne (P Q : Polynomial ℝ) {t : ℝ} (ht : t ≠ 0)
   field_simp
   ring
 
-/-- Derivative of a flat oscillating function: again a flat oscillating function (at `0` both
-vanish). -/
+/-- For real polynomials $P, Q$ and every $t \in \mathbb{R}$, the derivative of $\Phi_{P,Q}$ at $t$
+is $\Phi_{\tilde P, \tilde Q}(t)$, where $\tilde P = -X^2 P' + X^2 Q + 2X^3 P$ and
+$\tilde Q = -X^2 P - X^2 Q' + 2X^3 Q$. At $t = 0$ both sides vanish. -/
 theorem hasDerivAt_oscFlat (P Q : Polynomial ℝ) (t : ℝ) :
     HasDerivAt (oscFlat P Q) (oscFlat (oscFlatDerivP P Q) (oscFlatDerivQ P Q) t) t :=
   hasDerivAt_of_hasDerivAt_of_ne' (fun _ hy => hasDerivAt_oscFlat_of_ne P Q hy)
     (continuousAt_oscFlat_zero P Q) (continuousAt_oscFlat_zero _ _) t
 
-/-- The flat oscillating functions are `C^∞`. -/
+/-- For all real polynomials $P$ and $Q$, the flat oscillating function $\Phi_{P,Q}$ is of class
+$C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$.
+
+The derivative of $\Phi_{P,Q}$ is again a flat oscillating function (`hasDerivAt_oscFlat`). By
+induction, every iterated derivative is a flat oscillating function, and hence differentiable. -/
 theorem contDiff_oscFlat (P Q : Polynomial ℝ) {n : ℕ∞} : ContDiff ℝ n (oscFlat P Q) := by
   have hderiv : ∀ P Q : Polynomial ℝ,
       deriv (oscFlat P Q) = oscFlat (oscFlatDerivP P Q) (oscFlatDerivQ P Q) :=

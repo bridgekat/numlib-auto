@@ -12,37 +12,60 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 
 /-!
-# The smooth regularization `(t² + ε²)^{p/2} − ε^p` of `|t|^p`
+# The smooth regularization $(t^2 + \varepsilon^2)^{p/2} - \varepsilon^p$ of $|t|^p$
 
-For `p ≥ 1` the function `t ↦ |t|^p` is not `C¹` at the origin when `p = 1`. Its regularization
-`Real.rpowReg p ε t = (t² + ε²)^{p/2} − ε^p`, `ε > 0`, is smooth in `t`, vanishes at the origin,
-satisfies `0 ≤ φ_ε t ≤ (|t| + ε)^p` and `|φ_ε' t| ≤ p (|t| + ε)^{p−1}`, and tends to `|t|^p` as
-`ε → 0⁺`.
+For $p = 1$ the function $t \mapsto |t|^p$ is not $C^1$ at the origin. For $\varepsilon > 0$ this
+file studies its regularization
+$$\varphi_\varepsilon(t) = (t^2 + \varepsilon^2)^{p/2} - \varepsilon^p.$$
+The function $\varphi_\varepsilon$ is smooth and vanishes at the origin. For $p \ge 0$ it satisfies
+$0 \le \varphi_\varepsilon(t) \le (|t| + \varepsilon)^p$, and for $p \ge 1$ it satisfies
+$|\varphi_\varepsilon'(t)| \le p\,(|t| + \varepsilon)^{p-1}$. For $p > 0$,
+$\varphi_\varepsilon(t) \to |t|^p$ as $\varepsilon \to 0^+$. This regularization makes Nečas's proof
+of the trace inequality work at $p = 1$ (`Numlib.Analysis.Sobolev.Boundary.Trace`): the divergence
+theorem is applied to $\varphi_\varepsilon(u)\, w$, and the bounds above survive the passage to the
+limit.
 
-It is what makes Nečas's proof of the trace inequality work at `p = 1`
-(`Numlib/Analysis/Sobolev/Boundary/Trace.lean`): the divergence theorem is applied to
-`φ_ε(u) w`, and the bounds above survive the passage to the limit.
+The file also proves the mean value bound $A^q - B^q \le q A^{q-1} (A - B)$ for $q \ge 1$ and
+$0 < B < A$, which sizes the panels of a graded mesh.
 
-The file also records the mean value bound `A ^ q - B ^ q ≤ q A ^ (q - 1) (A - B)` for `q ≥ 1`,
-`0 < B < A` (`Real.rpow_sub_rpow_le`), which sizes the panels of a graded mesh.
+## Main definitions
+
+* `Real.rpowReg`: the regularization $\varphi_\varepsilon(t) = (t^2 + \varepsilon^2)^{p/2} -
+  \varepsilon^p$.
+
+## Main results
+
+* `Real.rpowReg_zero`, `Real.rpowReg_nonneg`, `Real.rpowReg_le`: $\varphi_\varepsilon(0) = 0$, and
+  $0 \le \varphi_\varepsilon(t) \le (|t| + \varepsilon)^p$ for $p \ge 0$.
+* `Real.hasDerivAt_rpowReg`, `Real.contDiff_rpowReg`: $\varphi_\varepsilon'(t) = p\,t\,(t^2 +
+  \varepsilon^2)^{p/2 - 1}$, and $\varphi_\varepsilon$ is smooth.
+* `Real.abs_deriv_rpowReg_le`: $|\varphi_\varepsilon'(t)| \le p\,(|t| + \varepsilon)^{p-1}$ for
+  $p \ge 1$.
+* `Real.tendsto_rpowReg`: $\varphi_\varepsilon(t) \to |t|^p$ as $\varepsilon \to 0^+$, for $p > 0$.
+* `Real.rpow_sub_rpow_le`: $A^q - B^q \le q A^{q-1} (A - B)$ for $q \ge 1$ and $0 < B < A$.
 -/
 
 open Filter Topology
 
 namespace Real
 
-/-- **The regularization `(t² + ε²)^{p/2} − ε^p` of `|t|^p`**, smooth in `t` for `ε > 0`, with
-`φ_ε 0 = 0`, `0 ≤ φ_ε t ≤ (|t| + ε)^p`, `|φ_ε' t| ≤ p (|t| + ε)^{p−1}` and `φ_ε t → |t|^p` as
-`ε → 0`. It is what makes Nečas's proof of the trace inequality work at `p = 1`, where `|t|^p` is
-not `C¹`. -/
+/-- The **regularization of $|t|^p$**: for real numbers $p$, $\varepsilon$ and $t$,
+$$\varphi_\varepsilon(t) = (t^2 + \varepsilon^2)^{p/2} - \varepsilon^p.$$
+For $\varepsilon > 0$ it is smooth in $t$ and $\varphi_\varepsilon(0) = 0$. Moreover $0 \le
+\varphi_\varepsilon(t) \le (|t| + \varepsilon)^p$ for $p \ge 0$, $|\varphi_\varepsilon'(t)| \le
+p\,(|t| + \varepsilon)^{p-1}$ for $p \ge 1$, and $\varphi_\varepsilon(t) \to |t|^p$ as
+$\varepsilon \to 0^+$ for $p > 0$.
+
+The powers are real powers `Real.rpow`. The regularization makes Nečas's proof of the trace
+inequality work at $p = 1$, where $|t|^p$ is not $C^1$. -/
 noncomputable def rpowReg (p ε t : ℝ) : ℝ := (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p
 
 variable {p ε : ℝ}
 
-/-- `t² + ε² > 0` for `ε > 0`. -/
+/-- For $\varepsilon > 0$ and every $t \in \mathbb{R}$, $t^2 + \varepsilon^2 > 0$. -/
 theorem sq_add_sq_pos (hε : 0 < ε) (t : ℝ) : 0 < t ^ 2 + ε ^ 2 := by positivity
 
-/-- `φ_ε 0 = 0`. -/
+/-- For $\varepsilon > 0$ and every real $p$, $\varphi_\varepsilon(0) = 0$. -/
 theorem rpowReg_zero (hε : 0 < ε) : rpowReg p ε 0 = 0 := by
   have h : (0 : ℝ) ^ 2 + ε ^ 2 = ε ^ 2 := by ring
   unfold rpowReg
@@ -51,7 +74,8 @@ theorem rpowReg_zero (hε : 0 < ε) : rpowReg p ε 0 = 0 := by
   push_cast
   ring
 
-/-- `φ_ε ≥ 0`. -/
+/-- For $\varepsilon > 0$, $p \ge 0$ and every $t \in \mathbb{R}$, $\varphi_\varepsilon(t) \ge 0$.
+-/
 theorem rpowReg_nonneg (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : 0 ≤ rpowReg p ε t := by
   unfold rpowReg
   rw [sub_nonneg]
@@ -64,7 +88,8 @@ theorem rpowReg_nonneg (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : 0 ≤ rpowReg p
         Real.rpow_le_rpow (by positivity) (le_add_of_nonneg_left (by positivity))
           (by positivity)
 
-/-- `φ_ε t ≤ (|t| + ε)^p`. -/
+/-- For $\varepsilon > 0$, $p \ge 0$ and every $t \in \mathbb{R}$, $\varphi_\varepsilon(t) \le
+(|t| + \varepsilon)^p$. -/
 theorem rpowReg_le (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : rpowReg p ε t ≤ (|t| + ε) ^ p := by
   unfold rpowReg
   calc (t ^ 2 + ε ^ 2) ^ (p / 2) - ε ^ p ≤ (t ^ 2 + ε ^ 2) ^ (p / 2) :=
@@ -78,7 +103,10 @@ theorem rpowReg_le (hε : 0 < ε) (hp : 0 ≤ p) (t : ℝ) : rpowReg p ε t ≤ 
         push_cast
         ring
 
-/-- The derivative of `φ_ε`: `φ_ε' t = p t (t² + ε²)^{p/2 − 1}`. -/
+/-- For $\varepsilon > 0$, every real $p$ and every $t \in \mathbb{R}$, the function
+$\varphi_\varepsilon$ has derivative
+$$\varphi_\varepsilon'(t) = p\,t\,(t^2 + \varepsilon^2)^{p/2 - 1}$$
+at $t$. -/
 theorem hasDerivAt_rpowReg (hε : 0 < ε) (t : ℝ) :
     HasDerivAt (rpowReg p ε) (p * t * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)) t := by
   have h1 : HasDerivAt (fun t : ℝ ↦ t ^ 2 + ε ^ 2) (2 * t) t := by
@@ -88,13 +116,17 @@ theorem hasDerivAt_rpowReg (hε : 0 < ε) (t : ℝ) :
       (2 * t * (p / 2) * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)) t := h2.sub_const (ε ^ p)
   exact h3.congr_deriv (by ring)
 
-/-- `φ_ε` is `C¹` (indeed smooth). -/
+/-- For $\varepsilon > 0$ and every real $p$, the function $\varphi_\varepsilon$ is of class $C^n$
+for every $n$, including $n = \infty$ and the analytic class $n = \omega$. -/
 theorem contDiff_rpowReg (hε : 0 < ε) {n : WithTop ℕ∞} : ContDiff ℝ n (rpowReg p ε) := by
   unfold rpowReg
   refine ContDiff.sub ?_ contDiff_const
   exact ((contDiff_id.pow 2).add contDiff_const).rpow_const_of_ne fun t ↦ (sq_add_sq_pos hε t).ne'
 
-/-- `|φ_ε' t| ≤ p (|t| + ε)^{p−1}` for `p ≥ 1`. -/
+/-- For $\varepsilon > 0$, $p \ge 1$ and every $t \in \mathbb{R}$, the derivative of
+$\varphi_\varepsilon$ satisfies
+$$\bigl|p\,t\,(t^2 + \varepsilon^2)^{p/2 - 1}\bigr| \le p\,(|t| + \varepsilon)^{p-1}.$$
+-/
 theorem abs_deriv_rpowReg_le (hε : 0 < ε) (hp : 1 ≤ p) (t : ℝ) :
     |p * t * (t ^ 2 + ε ^ 2) ^ (p / 2 - 1)| ≤ p * (|t| + ε) ^ (p - 1) := by
   have hpos := sq_add_sq_pos hε t
@@ -119,7 +151,8 @@ theorem abs_deriv_rpowReg_le (hε : 0 < ε) (hp : 1 ≤ p) (t : ℝ) :
         push_cast
         ring
 
-/-- `φ_ε t → |t|^p` as `ε → 0⁺`. -/
+/-- For $p > 0$ and every $t \in \mathbb{R}$, $\varphi_\varepsilon(t) \to |t|^p$ as
+$\varepsilon \to 0^+$. -/
 theorem tendsto_rpowReg (hp : 0 < p) (t : ℝ) :
     Tendsto (fun ε ↦ rpowReg p ε t) (𝓝[>] 0) (𝓝 (|t| ^ p)) := by
   have h1 : Tendsto (fun ε : ℝ ↦ (t ^ 2 + ε ^ 2) ^ (p / 2)) (𝓝[>] 0) (𝓝 ((t ^ 2) ^ (p / 2))) := by
@@ -143,10 +176,10 @@ theorem tendsto_rpowReg (hp : 0 < p) (t : ℝ) :
   rw [sub_zero, h3] at this
   exact this
 
-/-- **The mean value bound for a real power**: for `q ≥ 1` and `0 < B < A`,
-`A ^ q - B ^ q ≤ q A ^ (q - 1) (A - B)`.
+/-- The **mean value bound for a real power**: let $q \ge 1$ and $0 < B < A$. Then
+$$A^q - B^q \le q A^{q-1} (A - B).$$
 
-The hypothesis `0 < B` is what makes `y ↦ y ^ q` differentiable on `[B, A]`. -/
+The hypothesis $B > 0$ makes $y \mapsto y^q$ differentiable on $[B, A]$. -/
 theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A) :
     A ^ q - B ^ q ≤ q * A ^ (q - 1) * (A - B) := by
   have hderiv : ∀ s ∈ Set.Icc B A, HasDerivAt (fun y : ℝ => y ^ q) (q * s ^ (q - 1)) s :=

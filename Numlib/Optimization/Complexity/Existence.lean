@@ -9,33 +9,42 @@ import Mathlib.Data.Fin.Basic
 /-!
 # Existence of runs of relationally specified methods
 
-Iterative methods are specified relationally (see `Numlib/Optimization/Complexity/Basic`): a run
-is a sequence of states satisfying the rule of the method at every iteration before termination.
-Complexity theorems quantify over all runs, so every method needs an existence theorem to show
-that these statements are not vacuous ([cartis2022evaluation], all algorithms). Existence follows
-from dependent choice along `ℕ` as soon as every non-terminal admissible state has an admissible
-successor.
+The iterative methods of [cartis2022evaluation] are specified relationally (see
+`Numlib.Optimization.Complexity.Basic`): a run is a sequence of states that satisfies the rule of
+the method at every iteration before termination. The complexity theorems quantify over all runs, so
+each method needs an existence theorem, which shows that these statements are not vacuous. Existence
+follows from dependent choice along $\mathbb{N}$ as soon as every admissible state at which the
+method has not stopped has an admissible successor.
+
+## Main results
 
 * `Optimization.exists_run_of_forall_exists`: if an initial state exists and every state at which
-  the method has not stopped has a successor, there is a sequence starting at an initial state and
-  following the step relation at every non-stopped iteration.
-* `Optimization.exists_run_of_forall_exists_of_invariant`: the same with an invariant (such as
-  positivity of a regularization parameter) that the step relation needs and preserves; the
-  conclusion is stated up to termination, in the form of `Optimization.UntilHit`.
-* `Optimization.exists_run_of_forall_exists_hist`: the step may depend on the whole history
-  `(r 0, …, r k)`.
+  the method has not stopped has a successor, there is a sequence that starts at an initial state
+  and follows the step relation at every iteration at which it has not stopped.
+* `Optimization.exists_run_of_forall_exists_of_invariant`: the same with an invariant, such as
+  positivity of a regularization parameter, that the step relation needs and preserves. The
+  conclusion holds up to termination, in the form of `Optimization.UntilHit`.
+* `Optimization.exists_run_of_forall_exists_hist`: the same when the step may depend on the whole
+  history $(r_0, \dots, r_k)$.
 
-States are typically tuples `(x_k, s_k, σ_k, …)`; admissibility of the chosen step is encoded in
-the step relation.
+## Implementation notes
+
+* States are typically tuples $(x_k, s_k, \sigma_k, \dots)$. The admissibility of the chosen step is
+  part of the step relation.
 -/
 
 namespace Optimization
 
 variable {α : Type*}
 
-/-- **Existence of runs** (dependent choice). If an initial state exists and every state at which
-the method has not stopped has an admissible successor, then there is a sequence of states `r`
-with `init (r 0)` that follows `step` at every iteration `k` at which it has not stopped. -/
+/-- **Existence of runs** (dependent choice). Let $\alpha$ be a type of states, let $\mathrm{init}$
+be a predicate on $\alpha$, and for each $k \in \mathbb{N}$ let $\mathrm{stop}_k$ be a predicate
+on $\alpha$ and $\mathrm{step}_k$ a relation on $\alpha$. Suppose that some $a$ satisfies
+$\mathrm{init}(a)$, and that for every $k$ and every $a$ with $\lnot \mathrm{stop}_k(a)$ there
+is $b$ with $\mathrm{step}_k(a, b)$. Then there is a sequence $r \colon \mathbb{N} \to \alpha$
+with $\mathrm{init}(r_0)$ such that
+$$\lnot \mathrm{stop}_k(r_k) \implies \mathrm{step}_k(r_k, r_{k+1}) \quad \text{for every } k.$$
+-/
 theorem exists_run_of_forall_exists {init : α → Prop} {stop : ℕ → α → Prop}
     {step : ℕ → α → α → Prop} (h0 : ∃ a, init a)
     (hstep : ∀ k a, ¬ stop k a → ∃ b, step k a b) :
@@ -50,11 +59,17 @@ theorem exists_run_of_forall_exists {init : α → Prop} {stop : ℕ → α → 
   let r : ℕ → α := fun k => Nat.rec a₀ (fun k a => next k a) k
   exact ⟨r, ha₀, fun k hk => hnext k (r k) hk⟩
 
-/-- **Existence of runs** with an invariant. If an initial state exists, every initial state
-satisfies the invariant `inv 0`, and every state satisfying `inv k` at which the method has not
-stopped has an admissible successor satisfying `inv (k + 1)`, then there is a sequence of states
-`r` with `init (r 0)` such that at every iteration `k` before termination (the method has not
-stopped at any `j ≤ k`) the invariant holds and `r` follows `step`. -/
+/-- **Existence of runs** with an invariant. Let $\alpha$ be a type of states, let $\mathrm{init}$
+be a predicate on $\alpha$, and for each $k \in \mathbb{N}$ let $\mathrm{inv}_k$ and
+$\mathrm{stop}_k$ be predicates on $\alpha$ and $\mathrm{step}_k$ a relation on $\alpha$.
+Suppose that some $a$ satisfies $\mathrm{init}(a)$, that every $a$ with $\mathrm{init}(a)$
+satisfies $\mathrm{inv}_0(a)$, and that for every $k$ and every $a$ with $\mathrm{inv}_k(a)$ and
+$\lnot \mathrm{stop}_k(a)$ there is $b$ with $\mathrm{inv}_{k+1}(b)$ and
+$\mathrm{step}_k(a, b)$. Then there is a sequence $r \colon \mathbb{N} \to \alpha$ with
+$\mathrm{init}(r_0)$ such that, at every iteration $k$ before termination
+($\lnot \mathrm{stop}_j(r_j)$ for all $j \le k$),
+$$\mathrm{inv}_k(r_k) \quad\text{and}\quad \mathrm{step}_k(r_k, r_{k+1}).$$
+-/
 theorem exists_run_of_forall_exists_of_invariant {init : α → Prop} {inv : ℕ → α → Prop}
     {stop : ℕ → α → Prop} {step : ℕ → α → α → Prop} (h0 : ∃ a, init a)
     (hinit : ∀ a, init a → inv 0 a)
@@ -80,10 +95,16 @@ theorem exists_run_of_forall_exists_of_invariant {init : α → Prop} {inv : ℕ
   have hi := hinv k hk
   exact ⟨hi, (hr k (by simp [hi, hk k (Nat.le_refl k)])).2⟩
 
-/-- **Existence of runs** with history-dependent steps. If an initial state exists and for every
-history `(a 0, …, a k)` at which the method has not stopped there is an admissible next state, then
-there is a sequence `r` with `init (r 0)` such that `step k (r 0, …, r k) (r (k + 1))` holds at
-every iteration `k` at which the method has not stopped. -/
+/-- **Existence of runs** with history-dependent steps. Let $\alpha$ be a type of states and
+$\mathrm{init}$ a predicate on $\alpha$. For each $k \in \mathbb{N}$, let $\mathrm{stop}_k$ be a
+predicate on histories $(a_0, \dots, a_k) \in \alpha^{k+1}$, and let $\mathrm{step}_k$ relate a
+history $(a_0, \dots, a_k)$ to a next state. Suppose that some $a$ satisfies $\mathrm{init}(a)$,
+and that for every $k$ and every history $h$ with $\lnot \mathrm{stop}_k(h)$ there is $b$ with
+$\mathrm{step}_k(h, b)$. Then there is a sequence $r \colon \mathbb{N} \to \alpha$ with
+$\mathrm{init}(r_0)$ such that for every $k$
+$$\lnot \mathrm{stop}_k(r_0, \dots, r_k) \implies \mathrm{step}_k((r_0, \dots, r_k), r_{k+1}).$$
+
+A history is a map `Fin (k + 1) → α`. -/
 theorem exists_run_of_forall_exists_hist {init : α → Prop}
     {stop : (k : ℕ) → (Fin (k + 1) → α) → Prop}
     {step : (k : ℕ) → (Fin (k + 1) → α) → α → Prop} (h0 : ∃ a, init a)

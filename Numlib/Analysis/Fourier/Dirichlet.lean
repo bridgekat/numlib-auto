@@ -18,42 +18,59 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # The Dirichlet kernel and pointwise convergence of Fourier series
 
-Mathlib has the `L²` theory of Fourier series on the circle and the uniform convergence of an
-absolutely summable series, but no Dirichlet kernel and no pointwise convergence criterion. This
-file supplies both, for a `2 π`-periodic, interval-integrable `f : ℝ → ℝ`. [han2009theoretical]
-state the kernel as (3.7.6)–(3.7.8) and the partial sums as (4.1.1)–(4.1.3). Their Theorem 4.1.1 —
-convergence to the mean of the one-sided limits at a point where the one-sided derivatives exist —
-is the criterion `tendsto_fourierPartialSum_of_dini` applied to that mean;
+Let $f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic and integrable over one period. Its real
+Fourier coefficients are
+$$a_j = \frac{1}{\pi} \int_{-\pi}^{\pi} f(t) \cos(jt) \, dt, \qquad b_j = \frac{1}{\pi}
+  \int_{-\pi}^{\pi} f(t) \sin(jt) \, dt,$$
+and its partial sums are $S_n f(x) = a_0/2 + \sum_{j=1}^n (a_j \cos(jx) + b_j \sin(jx))$. This file
+defines the Dirichlet kernel $D_n(t) = 1/2 + \sum_{j=1}^n \cos(jt)$, proves its closed form
+$D_n(t) = \sin((n + 1/2)t)/(2 \sin(t/2))$, and proves the kernel representation
+$$S_n f(x) = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x + t) D_n(t) \, dt.$$
+It then proves Dini's criterion for pointwise convergence: if
+$t \mapsto (f(x + t) + f(x - t) - 2L)/t$ is integrable on $[0, \pi]$, then $S_n f(x) \to L$. In
+particular $S_n f(x) \to f(x)$ at every point where $f$ is differentiable. The kernel is
+(3.7.6)–(3.7.8) of [han2009theoretical], and the partial sums are (4.1.1)–(4.1.3) there. Theorem
+4.1.1 of [han2009theoretical] states the convergence to the mean $(f(x-) + f(x+))/2$ of the
+one-sided limits at a point where the two one-sided derivatives exist. It is Dini's criterion
+`tendsto_fourierPartialSum_of_dini` applied to that mean, and
 `tendsto_fourierPartialSum_of_hasDerivAt` is its corollary at a point of differentiability.
 
 ## Main definitions
 
-* `dirichletKernel n t = 1 / 2 + ∑_{j = 1}^{n} cos (j t)`, the kernel of the `n`-th partial-sum
-  operator;
-* `fourierCoeffCos` and `fourierCoeffSin`, the real Fourier coefficients `a_j` and `b_j`;
-* `fourierPartialSum f n x = a₀ / 2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))`, the `n`-th
-  partial sum of the real Fourier series.
+* `dirichletKernel`: the Dirichlet kernel $D_n(t) = 1/2 + \sum_{j=1}^n \cos(jt)$, the kernel of the
+  operator $f \mapsto S_n f$.
+* `fourierCoeffCos` and `fourierCoeffSin`: the real Fourier coefficients $a_j$ and $b_j$.
+* `fourierPartialSum`: the partial sum $S_n f(x) = a_0/2 + \sum_{j=1}^n (a_j \cos(jx) + b_j
+  \sin(jx))$ of the real Fourier series.
 
-## Main statements
+## Main results
 
-* `dirichletKernel_eq_sin_div`, the closed form `sin ((n + 1/2) t) / (2 sin (t / 2))`;
-* `fourierPartialSum_eq_integral`, the kernel representation `fourierPartialSum f n x = (1 / π) * ∫
-  t in -π..π, f (x + t) * dirichletKernel n t`;
-* `tendsto_fourierPartialSum_of_dini`, **Dini's criterion**: if `t ↦ (f (x + t) + f (x - t) - 2 L) /
-  t` is interval-integrable on `[0, π]` then `fourierPartialSum f n x → L`.
+* `dirichletKernel_eq_sin_div`: $D_n(t) = \sin((n + 1/2)t)/(2 \sin(t/2))$ where $\sin(t/2) \ne 0$.
+* `fourierPartialSum_eq_integral`: $S_n f(x) = \pi^{-1} \int_{-\pi}^{\pi} f(x + t) D_n(t) \, dt$.
+* `tendsto_intervalIntegral_mul_sin`: the Riemann–Lebesgue lemma on an interval.
+* `tendsto_fourierPartialSum_of_dini`: **Dini's criterion**, $S_n f(x) \to L$ if
+  $t \mapsto (f(x + t) + f(x - t) - 2L)/t$ is integrable on $[0, \pi]$.
+* `tendsto_fourierPartialSum_of_hasDerivAt`: $S_n f(x) \to f(x)$ at a point where $f$ is
+  differentiable.
+
+## Proof outline
+
+The proof of Dini's criterion is the classical one. The difference $S_n f(x) - L$ is $\pi^{-1}
+\int_0^\pi g(t) \sin((n + 1/2)t) \, dt$ with $g(t) = (f(x + t) + f(x - t) - 2L)/(2 \sin(t/2))$. The
+function $g$ is integrable under the hypothesis of Dini, because $2 \sin(t/2) \ge 2t/\pi$ on
+$[0, \pi]$. The Riemann–Lebesgue lemma then gives the limit $0$.
 
 ## Implementation notes
 
-Everything is stated for a function on `ℝ` rather than on `AddCircle (2 π)`, because the hypotheses
-of a pointwise convergence theorem are about one-sided limits at a real point.
-
-The proof of Dini's criterion is the classical one: the difference `S_n f x - L` is `(1 / π) ∫_0^π g
-t * sin ((n + 1/2) t)` for `g t = (f (x + t) + f (x - t) - 2 L) / (2 sin (t / 2))`, which is
-integrable under the Dini hypothesis because `2 sin (t / 2) ≥ 2 t / π` on `[0, π]`; the
-Riemann–Lebesgue lemma finishes. Mathlib states that lemma for the Fourier integral over `ℝ`
-(`Real.tendsto_integral_exp_smul_cocompact`), so the form needed here — the integral of `g t * sin
-(r t)` over an interval tends to `0` as `r → ∞` — is obtained by extending `g` by zero, which is
-`tendsto_intervalIntegral_mul_sin`.
+* Mathlib has the $L^2$ theory of Fourier series on the circle and the uniform convergence of an
+  absolutely summable Fourier series, but no Dirichlet kernel and no criterion for pointwise
+  convergence.
+* Everything is stated for a function on $\mathbb{R}$, not on `AddCircle (2 * π)`, because the
+  hypotheses of a theorem on pointwise convergence are about one-sided limits at a real point.
+* Mathlib states the Riemann–Lebesgue lemma for the Fourier integral over $\mathbb{R}$
+  (`Real.tendsto_integral_exp_smul_cocompact`). The form needed here,
+  $\int_a^b g(t) \sin(rt) \, dt \to 0$ as $r \to \infty$, is `tendsto_intervalIntegral_mul_sin`,
+  which extends $g$ by zero.
 -/
 
 open MeasureTheory Filter Topology
@@ -62,29 +79,36 @@ open scoped Real FourierTransform
 
 /-! ### The Dirichlet kernel -/
 
-/-- The Dirichlet kernel `D_n t = 1 / 2 + ∑_{j = 1}^{n} cos (j t)`, the kernel of the `n`-th
-partial-sum operator of a Fourier series. -/
+/-- The **Dirichlet kernel** of order $n$:
+$$D_n(t) = \frac{1}{2} + \sum_{j=1}^n \cos(jt).$$
+It is the kernel of the operator that maps a $2\pi$-periodic function to the $n$-th partial sum
+of its Fourier series. -/
 noncomputable def dirichletKernel (n : ℕ) (t : ℝ) : ℝ :=
   1 / 2 + ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t)
 
+/-- The defining formula of the Dirichlet kernel: $D_n(t) = 1/2 + \sum_{j=1}^n \cos(jt)$. -/
 theorem dirichletKernel_apply (n : ℕ) (t : ℝ) :
     dirichletKernel n t = 1 / 2 + ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) :=
   rfl
 
+/-- The Dirichlet kernel of order $0$ is the constant $1/2$. -/
 @[simp]
 theorem dirichletKernel_zero (t : ℝ) : dirichletKernel 0 t = 1 / 2 := by
   simp [dirichletKernel_apply]
 
+/-- The recursion of the Dirichlet kernel: $D_{n+1}(t) = D_n(t) + \cos((n + 1)t)$. -/
 theorem dirichletKernel_succ (n : ℕ) (t : ℝ) :
     dirichletKernel (n + 1) t = dirichletKernel n t + Real.cos ((n + 1) * t) := by
   rw [dirichletKernel_apply, dirichletKernel_apply, Finset.sum_Icc_succ_top (by omega),
     ← add_assoc]
   norm_num
 
+/-- The Dirichlet kernel is even: $D_n(-t) = D_n(t)$. -/
 @[simp]
 theorem dirichletKernel_neg (n : ℕ) (t : ℝ) : dirichletKernel n (-t) = dirichletKernel n t := by
   simp [dirichletKernel_apply, mul_neg]
 
+/-- The Dirichlet kernel is $2\pi$-periodic. -/
 theorem dirichletKernel_periodic (n : ℕ) : Function.Periodic (dirichletKernel n) (2 * π) := by
   intro t
   simp only [dirichletKernel_apply]
@@ -92,14 +116,15 @@ theorem dirichletKernel_periodic (n : ℕ) : Function.Periodic (dirichletKernel 
   rw [mul_add]
   simp
 
+/-- The Dirichlet kernel is continuous. -/
 @[fun_prop]
 theorem continuous_dirichletKernel (n : ℕ) : Continuous (dirichletKernel n) := by
   have h : dirichletKernel n = fun t => 1 / 2 + ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) := rfl
   rw [h]
   fun_prop
 
-/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n`
-cosines and a half. -/
+/-- The Dirichlet kernel is bounded by its value at the origin: $|D_n(t)| \le n + 1/2$ for every
+$t$, because $D_n$ is a sum of $n$ cosines and $1/2$. -/
 theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) : |dirichletKernel n t| ≤ (n : ℝ) + 1 / 2 := by
   rw [dirichletKernel_apply]
   refine (abs_add_le _ _).trans ?_
@@ -110,8 +135,10 @@ theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) : |dirichletKernel n t| ≤ (
       _ = (n : ℝ) := by simp
   linarith
 
-/-- The telescoping identity behind the closed form of the Dirichlet kernel, Lagrange's
-trigonometric identity `Real.two_mul_sin_half_mul_sum_range_cos`. -/
+/-- For every $n$ and $t$,
+$$2 \sin(t/2) \, D_n(t) = \sin((n + 1/2)t).$$
+This is a telescoping identity, Lagrange's trigonometric identity
+`Real.two_mul_sin_half_mul_sum_range_cos`, and it gives the closed form of the Dirichlet kernel. -/
 theorem two_mul_sin_half_mul_dirichletKernel (n : ℕ) (t : ℝ) :
     2 * Real.sin (t / 2) * dirichletKernel n t = Real.sin ((n + 1 / 2) * t) := by
   have hs : ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) =
@@ -122,15 +149,20 @@ theorem two_mul_sin_half_mul_dirichletKernel (n : ℕ) (t : ℝ) :
     show ((n : ℝ) + 1 / 2) * t = (2 * n + 1) * (t / 2) by ring]
   ring
 
-/-- The closed form of the Dirichlet kernel ([han2009theoretical], (3.7.8)). The hypothesis `sin (t
-/ 2) ≠ 0` says exactly that `t` is not an integer multiple of `2 π`. -/
+/-- The **closed form of the Dirichlet kernel** ((3.7.8) of [han2009theoretical]). For
+$t \in \mathbb{R}$ with $\sin(t/2) \ne 0$,
+$$D_n(t) = \frac{\sin((n + 1/2)t)}{2 \sin(t/2)}.$$
+
+The hypothesis $\sin(t/2) \ne 0$ says exactly that $t$ is not an integer multiple of $2\pi$. -/
 theorem dirichletKernel_eq_sin_div {n : ℕ} {t : ℝ} (ht : Real.sin (t / 2) ≠ 0) :
     dirichletKernel n t = Real.sin ((n + 1 / 2) * t) / (2 * Real.sin (t / 2)) := by
   rw [← two_mul_sin_half_mul_dirichletKernel n t]
   field_simp
 
-/-- The Dirichlet kernel has mean `1 / 2` over half a period ([han2009theoretical], Exercise 4.1.4
-(b)). -/
+/-- The Dirichlet kernel has mean $1/2$ over half a period (Exercise 4.1.4(b) of
+[han2009theoretical]): for every $n$,
+$$\frac{1}{\pi} \int_0^\pi D_n(t) \, dt = \frac{1}{2}.$$
+-/
 theorem integral_dirichletKernel (n : ℕ) :
     (1 / π) * ∫ t in (0 : ℝ)..π, dirichletKernel n t = 1 / 2 := by
   have hcos : ∀ c : ℝ, c ≠ 0 → Real.sin (c * π) = 0 →
@@ -159,14 +191,16 @@ theorem integral_dirichletKernel (n : ℕ) :
   rw [hint n]
   field_simp
 
-/-- The Dirichlet kernel has mean `1 / 2` over the other half period, by evenness. -/
+/-- The Dirichlet kernel has mean $1/2$ over the other half period:
+$\pi^{-1} \int_{-\pi}^0 D_n(t) \, dt = 1/2$. This follows from the evenness of $D_n$. -/
 theorem integral_dirichletKernel_neg (n : ℕ) :
     (1 / π) * ∫ t in -π..(0 : ℝ), dirichletKernel n t = 1 / 2 := by
   have h := intervalIntegral.integral_comp_neg (a := (0 : ℝ)) (b := π) (dirichletKernel n)
   simp only [dirichletKernel_neg, neg_zero] at h
   rw [← h, integral_dirichletKernel]
 
-/-- The Dirichlet kernel has mean `1` over a full period. -/
+/-- The Dirichlet kernel has mean $1$ over a full period:
+$\pi^{-1} \int_{-\pi}^{\pi} D_n(t) \, dt = 1$. -/
 theorem integral_dirichletKernel_neg_pi_pi (n : ℕ) :
     (1 / π) * ∫ t in -π..π, dirichletKernel n t = 1 := by
   rw [← intervalIntegral.integral_add_adjacent_intervals (b := (0 : ℝ))
@@ -177,18 +211,24 @@ theorem integral_dirichletKernel_neg_pi_pi (n : ℕ) :
 
 /-! ### The partial sums of a Fourier series -/
 
-/-- The cosine coefficient `a_j = (1 / π) ∫_{-π}^{π} f t cos (j t) dt` of the Fourier series of a `2
-π`-periodic `f : ℝ → ℝ` ([han2009theoretical], (4.1.2)). -/
+/-- The **cosine coefficient** of the Fourier series of a $2\pi$-periodic function
+$f : \mathbb{R} \to \mathbb{R}$ ((4.1.2) of [han2009theoretical]):
+$$a_j = \frac{1}{\pi} \int_{-\pi}^{\pi} f(t) \cos(jt) \, dt.$$
+-/
 noncomputable def fourierCoeffCos (f : ℝ → ℝ) (j : ℕ) : ℝ :=
   (1 / π) * ∫ t in -π..π, f t * Real.cos (j * t)
 
-/-- The sine coefficient `b_j = (1 / π) ∫_{-π}^{π} f t sin (j t) dt` of the Fourier series of a `2
-π`-periodic `f : ℝ → ℝ` ([han2009theoretical], (4.1.3)). -/
+/-- The **sine coefficient** of the Fourier series of a $2\pi$-periodic function
+$f : \mathbb{R} \to \mathbb{R}$ ((4.1.3) of [han2009theoretical]):
+$$b_j = \frac{1}{\pi} \int_{-\pi}^{\pi} f(t) \sin(jt) \, dt.$$
+-/
 noncomputable def fourierCoeffSin (f : ℝ → ℝ) (j : ℕ) : ℝ :=
   (1 / π) * ∫ t in -π..π, f t * Real.sin (j * t)
 
-/-- The `n`-th partial sum `a₀ / 2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))` of the real
-Fourier series of a `2 π`-periodic `f : ℝ → ℝ` ([han2009theoretical], (4.1.1)). -/
+/-- The **$n$-th partial sum** of the real Fourier series of a $2\pi$-periodic function
+$f : \mathbb{R} \to \mathbb{R}$ ((4.1.1) of [han2009theoretical]):
+$$S_n f(x) = \frac{a_0}{2} + \sum_{j=1}^n \bigl(a_j \cos(jx) + b_j \sin(jx)\bigr),$$
+where $a_j$ and $b_j$ are the coefficients `fourierCoeffCos f j` and `fourierCoeffSin f j`. -/
 noncomputable def fourierPartialSum (f : ℝ → ℝ) (n : ℕ) (x : ℝ) : ℝ :=
   fourierCoeffCos f 0 / 2 + ∑ j ∈ Finset.Icc 1 n,
     (fourierCoeffCos f j * Real.cos (j * x) + fourierCoeffSin f j * Real.sin (j * x))
@@ -200,13 +240,15 @@ variable {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
 
 include hf hfi
 
-/-- A `2 π`-periodic function that is interval-integrable over one period is interval-integrable
-over every interval. -/
+/-- A $2\pi$-periodic function $f : \mathbb{R} \to \mathbb{R}$ that is integrable on $[-\pi, \pi]$
+is integrable on every bounded interval $[a, b]$. -/
 theorem intervalIntegrable_of_periodic (a b : ℝ) : IntervalIntegrable f volume a b :=
   hf.intervalIntegrable (by positivity) (t := -π) (by rw [show -π + 2 * π = π by ring]; exact hfi)
     a b
 
 omit hf hfi in
+/-- The recursion of the partial sums: $S_{n+1} f(x) = S_n f(x) + a_{n+1} \cos((n + 1)x) + b_{n+1}
+\sin((n + 1)x)$. -/
 theorem fourierPartialSum_succ (n : ℕ) (x : ℝ) :
     fourierPartialSum f (n + 1) x = fourierPartialSum f n x
       + (fourierCoeffCos f (n + 1) * Real.cos ((n + 1 : ℕ) * x)
@@ -215,9 +257,12 @@ theorem fourierPartialSum_succ (n : ℕ) (x : ℝ) :
   rw [Finset.sum_Icc_succ_top (by omega)]
   ring
 
-/-- **The kernel representation of the partial sums** ([han2009theoretical], (3.7.6) and Exercise
-4.1.4): the `n`-th partial sum of the Fourier series of `f` at `x` is the mean of `f` against the
-Dirichlet kernel recentered at `x`. -/
+/-- **The kernel representation of the partial sums** ((3.7.6) and Exercise 4.1.4 of
+[han2009theoretical]). Let $f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic and integrable on
+$[-\pi, \pi]$. For every $n$ and $x$,
+$$S_n f(x) = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x + t) D_n(t) \, dt.$$
+So the $n$-th partial sum at $x$ is the mean of $f$ against the Dirichlet kernel centered at
+$x$. -/
 theorem fourierPartialSum_eq_integral (n : ℕ) (x : ℝ) :
     fourierPartialSum f n x = (1 / π) * ∫ t in -π..π, f (x + t) * dirichletKernel n t := by
   have hall := intervalIntegrable_of_periodic hf hfi
@@ -284,9 +329,13 @@ end Periodic
 
 /-! ### The Riemann–Lebesgue lemma over an interval -/
 
-/-- The Riemann–Lebesgue lemma in the form the Dirichlet-kernel argument needs: the integral of `g t
-* sin (r t)` over an interval tends to `0` as `r → ∞`. Obtained from Mathlib's
-`Real.tendsto_integral_exp_smul_cocompact` by extending `g` by zero. -/
+/-- The **Riemann–Lebesgue lemma** on an interval, in the form that the argument with the Dirichlet
+kernel needs. Let $a \le b$, and let $g : \mathbb{R} \to \mathbb{R}$ be integrable on $[a, b]$.
+Then
+$$\int_a^b g(t) \sin(rt) \, dt \to 0 \qquad (r \to \infty).$$
+
+The proof extends $g$ by zero outside $[a, b]$ and applies Mathlib's
+`Real.tendsto_integral_exp_smul_cocompact`. -/
 theorem tendsto_intervalIntegral_mul_sin {a b : ℝ} (hab : a ≤ b) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume a b) :
     Tendsto (fun r : ℝ => ∫ t in a..b, g t * Real.sin (r * t)) atTop (𝓝 0) := by
@@ -354,11 +403,16 @@ variable {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
 
 include hf hfi
 
-/-- **Dini's criterion** for the pointwise convergence of a Fourier series: if the symmetrized
-difference quotient `t ↦ (f (x + t) + f (x - t) - 2 L) / t` is interval-integrable on `[0, π]`, then
-the Fourier partial sums of `f` at `x` converge to `L`. Every hypothesis under which
-[han2009theoretical], Theorem 4.1.1 asserts convergence — one-sided derivatives, Hölder continuity
-at `x`, differentiability at `x` — implies it. -/
+/-- **Dini's criterion** for the pointwise convergence of a Fourier series. Let
+$f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic and integrable on $[-\pi, \pi]$, and let
+$x, L \in \mathbb{R}$. If the function
+$$t \mapsto \frac{f(x + t) + f(x - t) - 2L}{t}$$
+is integrable on $[0, \pi]$, then the partial sums $S_n f(x)$ of the Fourier series of $f$
+converge to $L$ as $n \to \infty$.
+
+Each hypothesis under which Theorem 4.1.1 of [han2009theoretical] asserts convergence implies
+the hypothesis of Dini: the existence of the one-sided derivatives, Hölder continuity at $x$,
+and differentiability at $x$. -/
 theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
     (hdini : IntervalIntegrable (fun t => (f (x + t) + f (x - t) - 2 * L) / t) volume 0 π) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 L) := by
@@ -445,12 +499,14 @@ theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
   have hfinal := this.add_const L
   simpa using hfinal
 
-/-- The consumer form of Dini's criterion: a `2 π`-periodic, interval-integrable function that is
-differentiable at `x` has its Fourier series converging to `f x` there.
+/-- **Pointwise convergence at a point of differentiability.** Let $f : \mathbb{R} \to \mathbb{R}$
+be $2\pi$-periodic and integrable on $[-\pi, \pi]$. If $f$ is differentiable at $x$, then the
+partial sums $S_n f(x)$ of the Fourier series of $f$ converge to $f(x)$.
 
-This is the corollary at a point of differentiability of [han2009theoretical], Theorem 4.1.1; the
-theorem itself asks only for the two one-sided derivatives and concludes convergence to `(f (x-) + f
-(x+)) / 2`, which is `tendsto_fourierPartialSum_of_dini` applied to that mean. -/
+This is the corollary of Theorem 4.1.1 of [han2009theoretical] at a point of differentiability.
+The theorem itself asks only for the two one-sided derivatives, and concludes that $S_n f(x)$
+converges to $(f(x-) + f(x+))/2$; this is `tendsto_fourierPartialSum_of_dini` applied to that
+mean. The derivative at $x$ is given as `HasDerivAt f c x` for some $c$. -/
 theorem tendsto_fourierPartialSum_of_hasDerivAt {x c : ℝ} (hd : HasDerivAt f c x) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
   have hall := intervalIntegrable_of_periodic hf hfi

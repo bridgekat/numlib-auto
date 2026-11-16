@@ -14,26 +14,33 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 /-!
 # The Cauchy–Binet formula
 
-The determinant of a product of rectangular matrices as a sum over selections of rows or columns,
-over any commutative ring.
+This file expresses the determinant of a product of rectangular matrices as a sum over selections of
+columns and rows, over any commutative ring $R$. Let $P \in R^{p \times m}$ and
+$Q \in R^{m \times p}$, so that $PQ$ is a square matrix of order $p$. For a map
+$r \colon \{1, \dots, p\} \to \{1, \dots, m\}$, write $P_{:, r}$ for the $p \times p$ matrix with
+the columns $r(1), \dots, r(p)$ of $P$, and $Q_{r, :}$ for the $p \times p$ matrix with the rows
+$r(1), \dots, r(p)$ of $Q$. The Cauchy–Binet formula, in the form proved here, is
+$$p! \, \det(PQ) = \sum_{r} \det(P_{:, r}) \det(Q_{r, :}),$$
+where the sum runs over all maps $r$.
 
 ## Main results
 
-* `Matrix.det_mul_eq_sum_prod_mul_det_submatrix`: for `P : Matrix p m R` and `Q : Matrix m p R`,
-  `det (P Q) = ∑_{r : p → m} (∏ᵢ Q_{r i, i}) det (P_{·, r})` — the first step of Mathlib's
-  `Matrix.det_mul`, for rectangular factors.
-* `Matrix.factorial_mul_det_mul`: **the Cauchy–Binet formula**, for `P : Matrix p m R` and
-  `Q : Matrix m p R`, `p! det (P Q) = ∑_{r : p → m} det (P_{·, r}) det (Q_{r, ·})`.
-* `Matrix.factorial_mul_det_transpose_mul_diagonal_mul`: its weighted Gram case,
-  `p! det (Xᵀ D Y) = ∑_{r : p → m} (∏ᵢ d_{r i}) det (X_r) det (Y_r)`.
+* `Matrix.det_mul_eq_sum_prod_mul_det_submatrix`: $\det(PQ) = \sum_r \bigl(\prod_i Q_{r(i), i}\bigr)
+  \det(P_{:, r})$.
+* `Matrix.factorial_mul_det_mul`: the **Cauchy–Binet formula** $p! \det(PQ) = \sum_r \det(P_{:, r})
+  \det(Q_{r, :})$.
+* `Matrix.factorial_mul_det_transpose_mul_diagonal_mul`: the case of a weighted Gram matrix, $p!
+  \det(X^T D Y) = \sum_r \bigl(\prod_i d_{r(i)}\bigr) \det(X_{r, :}) \det(Y_{r, :})$.
 
 ## Implementation notes
 
-The formula is stated symmetrized over the orderings of the selected rows: the sum runs over all
-maps `r : p → m` rather than over the `p`-element subsets of `m`. A non-injective `r` contributes
-`0` (two equal rows), and each subset is counted `p!` times with the same sign in both
-determinants, whence the factor `p!`. This keeps sorted subsets and their reindexings out of the
-statement and the proof.
+* The formula is symmetrized over the orderings of the selected indices: the sum runs over all maps
+  $r \colon p \to m$, not over the $p$-element subsets of $m$. A map $r$ that is not injective
+  contributes $0$, because two selected columns are equal. Each $p$-element subset is counted $p!$
+  times, with the same sign in both determinants, and this gives the factor $p!$. The statement and
+  the proof then need no sorted subsets and no reindexing.
+* The matrices are indexed by finite types `p` and `m`. The Lean terms `P.submatrix id r` and
+  `Q.submatrix r id` are the matrices $P_{:, r}$ and $Q_{r, :}$.
 -/
 
 namespace Matrix
@@ -44,10 +51,13 @@ variable {R : Type*} [CommRing R] {m p : Type*} [Fintype m] [DecidableEq m] [Fin
   [DecidableEq p]
 
 omit [DecidableEq m] in
-/-- **The determinant of a product over its column selections**: for `P : Matrix p m R` and
-`Q : Matrix m p R`, `det (P Q) = ∑_{r : p → m} (∏ᵢ Q_{r i, i}) det (P_{·, r})`, where `P_{·, r}`
-takes the columns `r` of `P`. The first step of Mathlib's `Matrix.det_mul`, for rectangular
-factors. -/
+/-- Let $R$ be a commutative ring, let $P \in R^{p \times m}$ and let $Q \in R^{m \times p}$. Then
+$$\det(PQ) = \sum_{r \colon p \to m} \Bigl(\prod_{i} Q_{r(i), i}\Bigr) \det(P_{:, r}),$$
+where the sum runs over all maps $r$ from the index set of $p$ to the index set of $m$, and
+$P_{:, r}$ is the square matrix with the columns $r(1), \dots, r(p)$ of $P$.
+
+This is the first step of the proof of Mathlib's `Matrix.det_mul`, for rectangular factors. The
+matrix $P_{:, r}$ is `P.submatrix id r`. -/
 theorem det_mul_eq_sum_prod_mul_det_submatrix (P : Matrix p m R) (Q : Matrix m p R) :
     (P * Q).det = ∑ r : p → m, (∏ i, Q (r i) i) * (P.submatrix id r).det := by
   simp only [det_apply', Matrix.mul_apply, Finset.prod_univ_sum, Finset.mul_sum,
@@ -58,13 +68,18 @@ theorem det_mul_eq_sum_prod_mul_det_submatrix (P : Matrix p m R) (Q : Matrix m p
   ring
 
 omit [DecidableEq m] in
-/-- **The Cauchy–Binet formula**, symmetrized over the orderings of the selected indices: for
-`P : Matrix p m R` and `Q : Matrix m p R`,
-`p! det (P Q) = ∑_{r : p → m} det (P_{·, r}) det (Q_{r, ·})`, where `P_{·, r}` takes the columns
-`r` of `P` and `Q_{r, ·}` the rows `r` of `Q` (non-injective `r` contribute `0`, and each
-`p`-element index set is counted `p!` times, with the same sign in both determinants). Each
-ordering `σ` of the selection rewrites `Matrix.det_mul_eq_sum_prod_mul_det_submatrix` with a
-sign, and summing over `σ` assembles `det (Q_{r, ·})`. -/
+/-- The **Cauchy–Binet formula**. Let $R$ be a commutative ring, let $P \in R^{p \times m}$ and let
+$Q \in R^{m \times p}$. Then
+$$p! \, \det(PQ) = \sum_{r \colon p \to m} \det(P_{:, r}) \det(Q_{r, :}),$$
+where the sum runs over all maps $r$ from the index set of $p$ to the index set of $m$,
+$P_{:, r}$ is the square matrix with the columns $r(1), \dots, r(p)$ of $P$, and $Q_{r, :}$ is
+the square matrix with the rows $r(1), \dots, r(p)$ of $Q$.
+
+A map $r$ that is not injective contributes $0$, and each $p$-element set of indices is counted
+$p!$ times, with the same sign in both determinants. The matrices $P_{:, r}$ and $Q_{r, :}$ are
+`P.submatrix id r` and `Q.submatrix r id`. The proof rewrites
+`Matrix.det_mul_eq_sum_prod_mul_det_submatrix` for each ordering $\sigma$ of the selection, with
+a sign, and the sum over $\sigma$ gives $\det(Q_{r, :})$. -/
 theorem factorial_mul_det_mul (P : Matrix p m R) (Q : Matrix m p R) :
     ((Fintype.card p).factorial : R) * (P * Q).det =
       ∑ r : p → m, (P.submatrix id r).det * (Q.submatrix r id).det := by
@@ -92,10 +107,15 @@ theorem factorial_mul_det_mul (P : Matrix p m R) (Q : Matrix m p R) :
   simp only [submatrix_apply, id]
   ring
 
-/-- **The Cauchy–Binet formula for a weighted Gram matrix**, the case `P = Xᵀ D`, `Q = Y` of
-`Matrix.factorial_mul_det_mul`: for `X Y : Matrix m p R` and weights `d`,
-`p! det (Xᵀ D Y) = ∑_{r : p → m} (∏ᵢ d_{r i}) det (X_r) det (Y_r)`, where `X_r` takes the rows
-`r` of `X`. -/
+/-- The **Cauchy–Binet formula for a weighted Gram matrix**. Let $R$ be a commutative ring, let
+$X, Y \in R^{m \times p}$, let $d \in R^m$, and let $D = \operatorname{diag}(d)$. Then
+$$p! \, \det(X^T D Y) = \sum_{r \colon p \to m} \Bigl(\prod_{i} d_{r(i)}\Bigr) \det(X_{r, :})
+  \det(Y_{r, :}),$$
+where the sum runs over all maps $r$ from the index set of $p$ to the index set of $m$, and
+$X_{r, :}$ is the square matrix with the rows $r(1), \dots, r(p)$ of $X$.
+
+This is the case $P = X^T D$, $Q = Y$ of `Matrix.factorial_mul_det_mul`. The matrix $X_{r, :}$
+is `X.submatrix r id`. -/
 theorem factorial_mul_det_transpose_mul_diagonal_mul (X Y : Matrix m p R) (d : m → R) :
     ((Fintype.card p).factorial : R) * (Xᵀ * diagonal d * Y).det =
       ∑ r : p → m, (∏ i, d (r i)) * (X.submatrix r id).det * (Y.submatrix r id).det := by

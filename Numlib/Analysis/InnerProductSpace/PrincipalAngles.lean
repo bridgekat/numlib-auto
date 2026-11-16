@@ -11,52 +11,73 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares
 /-!
 # Principal angles between subspaces
 
-Principal angles and principal vectors between two finite-dimensional subspaces `F`, `G` of an
-inner product space ([golub2013matrix] §6.4.3–6.4.4, after Björck–Golub 1973; Jordan 1875). The
-cosines of the angles are the singular values of the restricted projection
-`Submodule.orthogonalProjectionRestrict F G : G →ₗ[𝕜] F`, `x ↦ P_F x`, and the principal vectors
-are its singular vectors. The book's recursive max–max definition is a theorem here, the
-intersection `F ⊓ G` is spanned by the principal vectors of angle `0`, and for subspaces of equal
-dimension the gap `‖P_F - P_G‖` is the sine of the largest angle.
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $F$ and
+$G$ be finite-dimensional subspaces of $E$ with orthogonal projections $P_F$ and $P_G$. Let
+$q = \dim G$. The **principal angles** $0 \le \theta_0 \le \theta_1 \le \dots \le \theta_{q-1} \le
+\pi/2$ between $F$ and $G$ are defined by their cosines, which are the singular values of the
+restricted projection $P_F|_G \colon G \to F$, $x \mapsto P_F x$. The **principal vectors** are the
+corresponding singular vectors: an orthonormal basis $(g_j)$ of $G$ and an orthonormal family
+$(f_j)$ in $F$ with $P_F g_j = \cos \theta_j \, f_j$. The presentation follows [golub2013matrix],
+§6.4.3–6.4.4, after Björck and Golub (1973) and Jordan (1875).
+
+The source defines the principal vectors recursively: $(f_k, g_k)$ maximizes
+$\operatorname{Re} \langle u, v \rangle$ over unit vectors $u \in F$ and $v \in G$ orthogonal to the
+earlier $f_i$ and $g_i$. Here this recursive definition is a theorem: every such greedy choice of
+maximizers gives the principal angles. The module also proves that the intersection $F \cap G$ is
+spanned by the principal vectors of angle $0$, that for subspaces of equal dimension the gap
+$\|P_F - P_G\|$ is the sine of the largest angle, and that for matrices $Q_A$ and $Q_B$ with
+orthonormal columns the cosines are the singular values of $Q_A^H Q_B$.
 
 ## Main definitions
 
-* `Submodule.cosPrincipalAngle F G i`: the `i`-th cosine, `σ_i(P_F|_G)` (Mathlib's sorted and
-  zero-padded `LinearMap.singularValues`), and `Submodule.principalAngle F G i`, its `arccos`. Index
-  `i` is the book's `θ_{i+1}`; for `i ≥ finrank G` the cosine is `0` and the angle `π / 2`.
-* `Submodule.IsPrincipalVectors F G f g`: `g` an orthonormal basis of `G`, `f` orthonormal in `F`,
-  and `P_F (g j) = cos θ_j • f j`.
-* `Submodule.IsRecursivePrincipalVectors F G f g`: the book's recursive definition, a greedy
-  sequence of maximizers of `re ⟪u, v⟫` over unit vectors orthogonal to the earlier ones.
+* `Submodule.cosPrincipalAngle`: the cosines $\cos \theta_i$, the singular values of $P_F|_G$.
+* `Submodule.principalAngle`: the principal angles $\theta_i = \arccos(\cos \theta_i)$.
+* `Submodule.IsPrincipalVectors`: $(g_j)$ is an orthonormal basis of $G$, $(f_j)$ is orthonormal in
+  $F$, and $P_F g_j = \cos \theta_j \, f_j$.
+* `Submodule.IsRecursivePrincipalVectors`: the recursive definition of the source, a greedy sequence
+  of maximizers of $\operatorname{Re} \langle u, v \rangle$ over unit vectors orthogonal to the
+  earlier ones.
 
 ## Main results
 
 * `Submodule.cosPrincipalAngle_nonneg`, `Submodule.cosPrincipalAngle_le_one`,
   `Submodule.antitone_cosPrincipalAngle`, `Submodule.monotone_principalAngle`,
-  `Submodule.principalAngle_mem_Icc`: `0 ≤ θ₁ ≤ ⋯ ≤ θ_q ≤ π / 2`.
-* `Submodule.cosPrincipalAngle_comm`: principal angles are symmetric.
-* `Submodule.exists_isPrincipalVectors`: principal vectors exist when `finrank G ≤ finrank F`.
-* `Submodule.IsPrincipalVectors.isGreatest_re_inner`: the max–max characterization.
-* `Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors`: every greedy choice of
-  maximizers produces the principal angles, so the book's recursive definition is well posed.
-* `Submodule.IsPrincipalVectors.inf_eq_span`, `Submodule.finrank_inf_eq_card`: the intersection
-  ([golub2013matrix] Theorem 6.4.2).
-* `Submodule.cosPrincipalAngle_eq_singularValues`: the matrix bridge — for matrices `Q_A`, `Q_B`
-  with orthonormal columns, the cosines are the singular values of `Q_Aᴴ Q_B`.
+  `Submodule.principalAngle_mem_Icc`: $0 \le \theta_0 \le \theta_1 \le \dots \le \pi/2$.
+* `Submodule.cosPrincipalAngle_comm`: the principal angles between $F$ and $G$ are those between $G$
+  and $F$.
+* `Submodule.exists_isPrincipalVectors`: principal vectors exist when $\dim G \le \dim F$.
+* `Submodule.IsPrincipalVectors.isGreatest_re_inner`: the max–max characterization of
+  $\cos \theta_k$.
+* `Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors`: every greedy choice of maximizers
+  gives the principal angles, so the recursive definition of the source is well posed.
+* `Submodule.IsPrincipalVectors.inf_eq_span`, `Submodule.finrank_inf_eq_card`: $F \cap G$ is spanned
+  by the principal vectors of angle $0$, and its dimension is the number of these angles (Theorem
+  6.4.2 of [golub2013matrix]).
+* `Submodule.cosPrincipalAngle_eq_singularValues`: for matrices $Q_A$ and $Q_B$ with orthonormal
+  columns, the cosines are the singular values of $Q_A^H Q_B$.
 * `Submodule.cosPrincipalAngle_eq_of_isSVD`, `Submodule.isPrincipalVectors_of_isSVD`: from any SVD
-  `Q_Aᴴ Q_B = Y Σ Zᴴ`, the diagonal of `Σ` lists the cosines and the columns of `Q_A Y(:, 1:q)`,
-  `Q_B Z` are principal vectors (the SVD step of [golub2013matrix] Algorithm 6.4.3).
-* `Submodule.gap_eq_sin_principalAngle`: `dist(F, G) = sin θ_max` for equal dimensions.
-* `Submodule.cosPrincipalAngle_span_singleton_zero`: the angle with a line is the angle of
-  `Submodule.cosAngle`.
+  $Q_A^H Q_B = Y \Sigma Z^H$, the diagonal of $\Sigma$ lists the cosines, and the columns of
+  $Q_A Y(:, 1{:}q)$ and $Q_B Z$ are principal vectors. This is the SVD step of Algorithm 6.4.3 of
+  [golub2013matrix].
+* `Submodule.gap_eq_sin_principalAngle`: $\operatorname{dist}(F, G) = \sin \theta_{\max}$ for
+  subspaces of equal dimension.
+* `Submodule.cosPrincipalAngle_span_singleton_zero`: the cosine of the first principal angle between
+  $F$ and a line is `Submodule.cosAngle`, the cosine of the angle between $F$ and a nonzero vector
+  of the line.
 
 ## Implementation notes
 
-The definition is by singular values, not by recursion: the recursion is then a characterization,
-proved by deflation (`LinearMap.singularValues_comp_linearIsometry_eq_succ`). Nothing needs
-completeness or finite dimension of the ambient space, only of `F` and `G`. The distance of
-[golub2013matrix] §2.5.3 is `Submodule.gap` of `Numlib.Analysis.InnerProductSpace.Projection.Gap`,
-whose equal-dimension theory gives `gap_eq_sin_principalAngle` without coordinates.
+* Indices start at $0$: the angle $\theta_i$ here, `Submodule.principalAngle F G i`, is the angle
+  $\theta_{i+1}$ of [golub2013matrix]. A principal vector $f_j$ or $g_j$ is indexed by `j : Fin q`.
+* The cosines are Mathlib's `LinearMap.singularValues` of
+  `Submodule.orthogonalProjectionRestrict F G`. These are sorted in decreasing order and padded with
+  zeros. So `Submodule.cosPrincipalAngle F G i` is $0$ and the angle is $\pi/2$ for $i \ge \dim G$.
+* The definition uses singular values, not recursion. The recursion is then a characterization,
+  proved by deflation (`LinearMap.singularValues_comp_linearIsometry_eq_succ`).
+* No result needs completeness or finite dimension of $E$, only finite dimension of $F$ and $G$.
+* The distance between subspaces of [golub2013matrix], §2.5.3, is `Submodule.gap` of
+  `Numlib.Analysis.InnerProductSpace.Projection.Gap`. Its theory for equal dimensions gives
+  `Submodule.gap_eq_sin_principalAngle` without coordinates.
 -/
 
 open Module
@@ -67,43 +88,65 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 variable (F G : Submodule 𝕜 E) [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G]
 
-/-- **The cosines of the principal angles** between `F` and `G` ([golub2013matrix] (6.4.3),
-`cos θ_{i+1}`): the singular values of the restricted projection `P_F|_G : G → F`, sorted
-decreasingly and `0` from `finrank G` on. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. The **cosines of the
+principal angles** between $F$ and $G$ are the singular values of the restricted projection
+$P_F|_G \colon G \to F$, in decreasing order:
+$$\cos \theta_i = \sigma_i(P_F|_G), \qquad i = 0, 1, 2, \dots$$
+This is $\cos \theta_{i+1}$ in (6.4.3) of [golub2013matrix].
+
+The singular values are Mathlib's `LinearMap.singularValues`, indexed from $0$ and equal to $0$
+for $i \ge \dim G$. -/
 noncomputable def cosPrincipalAngle (i : ℕ) : ℝ :=
   (F.orthogonalProjectionRestrict G).singularValues i
 
-/-- **The principal angles** between `F` and `G` ([golub2013matrix] (6.4.3), `θ_{i+1}`):
-`arccos` of the cosines. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. The **principal
+angles** between $F$ and $G$ are
+$$\theta_i = \arccos(\cos \theta_i), \qquad i = 0, 1, 2, \dots,$$
+where $\cos \theta_i$ is `Submodule.cosPrincipalAngle F G i`. This is $\theta_{i+1}$ in (6.4.3)
+of [golub2013matrix]. For $i \ge \dim G$ the value is $\pi/2$. -/
 noncomputable def principalAngle (i : ℕ) : ℝ :=
   Real.arccos (F.cosPrincipalAngle G i)
 
-/-- The cosines of the principal angles are nonnegative. -/
+/-- The cosines of the principal angles are nonnegative: $\cos \theta_i \ge 0$ for every $i$. -/
 theorem cosPrincipalAngle_nonneg (i : ℕ) : 0 ≤ F.cosPrincipalAngle G i :=
   LinearMap.singularValues_nonneg _ i
 
-/-- The cosines of the principal angles are at most `1` ([golub2013matrix] §6.4.3: the singular
-values of `Q_Aᵀ Q_B` lie in `[0, 1]`): an orthogonal projection does not lengthen vectors. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. Then
+$\cos \theta_i \le 1$ for every $i$. The reason is that an orthogonal projection does not
+lengthen vectors. In [golub2013matrix], §6.4.3, this is the statement that the singular values
+of $Q_A^T Q_B$ lie in $[0, 1]$. -/
 theorem cosPrincipalAngle_le_one (i : ℕ) : F.cosPrincipalAngle G i ≤ 1 :=
   LinearMap.singularValues_le_of_forall_norm_apply_le _ zero_le_one (fun x => by
     rw [← Submodule.norm_coe, coe_orthogonalProjectionRestrict_apply, one_mul,
       ← Submodule.norm_coe x]
     exact F.norm_starProjection_apply_le x) i
 
-/-- The cosines decrease. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. Then the cosines of
+the principal angles decrease: $\cos \theta_i \ge \cos \theta_j$ for $i \le j$. -/
 theorem antitone_cosPrincipalAngle : Antitone (F.cosPrincipalAngle G) :=
   LinearMap.singularValues_antitone _
 
-/-- **`θ₁ ≤ ⋯ ≤ θ_q`** ([golub2013matrix] §6.4.3): the principal angles increase. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. Then the principal
+angles increase:
+$$\theta_0 \le \theta_1 \le \theta_2 \le \cdots.$$
+This is stated in §6.4.3 of [golub2013matrix]. -/
 theorem monotone_principalAngle : Monotone (F.principalAngle G) :=
   fun _ _ hij => Real.antitone_arccos (F.antitone_cosPrincipalAngle G hij)
 
-/-- **`0 ≤ θ_i ≤ π / 2`** ([golub2013matrix] §6.4.3). -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. Then every principal
+angle satisfies
+$$0 \le \theta_i \le \pi/2.$$
+This is stated in §6.4.3 of [golub2013matrix]. -/
 theorem principalAngle_mem_Icc (i : ℕ) : F.principalAngle G i ∈ Set.Icc 0 (Real.pi / 2) :=
   ⟨Real.arccos_nonneg _, Real.arccos_le_pi_div_two.2 (F.cosPrincipalAngle_nonneg G i)⟩
 
-/-- **Principal angles are symmetric**: `P_G|_F` is the adjoint of `P_F|_G`, and a map and its
-adjoint have the same singular values. -/
+/-- **Principal angles are symmetric.** Let $F$ and $G$ be finite-dimensional subspaces of an inner
+product space. Then the cosines of the principal angles between $F$ and $G$ equal those between
+$G$ and $F$:
+$$\cos \theta_i(F, G) = \cos \theta_i(G, F) \quad \text{for every } i.$$
+
+The map $P_G|_F$ is the adjoint of $P_F|_G$, and a map and its adjoint have the same singular
+values. -/
 theorem cosPrincipalAngle_comm : F.cosPrincipalAngle G = G.cosPrincipalAngle F := by
   funext i
   rw [cosPrincipalAngle, cosPrincipalAngle, ← orthogonalProjectionRestrict_adjoint,
@@ -111,20 +154,37 @@ theorem cosPrincipalAngle_comm : F.cosPrincipalAngle G = G.cosPrincipalAngle F :
 
 /-! ### Principal vectors -/
 
-/-- **Principal vectors** ([golub2013matrix] (6.4.3)–(6.4.5), `{f_i, g_i}`): `g` is an orthonormal
-basis of `G` (of dimension `q`), `f` is an orthonormal family in `F`, and
-`P_F (g j) = cos θ_j • f j`. So `g` consists of right and `f` of left singular vectors of
-`P_F|_G`, the latter completed arbitrarily where the cosine vanishes. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space $E$, and let
+$f, g \colon \{0, \dots, q-1\} \to E$. The pair $(f, g)$ is a family of **principal vectors** of
+$F$ and $G$ if $\dim G = q$, $f$ and $g$ are orthonormal, $f_j \in F$ and $g_j \in G$ for every
+$j$, and
+$$P_F g_j = \cos \theta_j \, f_j \quad \text{for every } j.$$
+These are the vectors $\{f_i, g_i\}$ of (6.4.3)–(6.4.5) of [golub2013matrix].
+
+So $g$ is an orthonormal basis of $G$ of right singular vectors of $P_F|_G$, and $f$ is a family
+of left singular vectors, completed arbitrarily where the cosine vanishes. -/
 structure IsPrincipalVectors {q : ℕ} (f g : Fin q → E) : Prop where
+  /-- The number $q$ of principal vectors is the dimension of $G$. -/
   finrank_eq : finrank 𝕜 G = q
+  /-- The left vectors $f_j$ are orthonormal. -/
   orthonormal_left : Orthonormal 𝕜 f
+  /-- The right vectors $g_j$ are orthonormal. -/
   orthonormal_right : Orthonormal 𝕜 g
+  /-- Every left vector $f_j$ lies in $F$. -/
   mem_left : ∀ i, f i ∈ F
+  /-- Every right vector $g_j$ lies in $G$. -/
   mem_right : ∀ i, g i ∈ G
+  /-- The projection onto $F$ maps each right vector to a multiple of the left vector:
+  $P_F g_j = \cos \theta_j \, f_j$. -/
   starProjection_right : ∀ j, F.starProjection (g j) = (F.cosPrincipalAngle G j : 𝕜) • f j
 
-/-- **Principal vectors exist** when `finrank G ≤ finrank F` ([golub2013matrix] §6.4.3, `p ≥ q`):
-the singular value decomposition `LinearMap.exists_orthonormal_singularVectors` of `P_F|_G`. -/
+/-- **Principal vectors exist.** Let $F$ and $G$ be finite-dimensional subspaces of an inner product
+space with $\dim G \le \dim F$. Then there exist $f, g \colon \{0, \dots, \dim G - 1\} \to E$
+that form a family of principal vectors of $F$ and $G$. In [golub2013matrix], §6.4.3, this is
+the case $p \ge q$.
+
+The vectors come from the singular value decomposition
+`LinearMap.exists_orthonormal_singularVectors` of $P_F|_G$. -/
 theorem exists_isPrincipalVectors (h : finrank 𝕜 G ≤ finrank 𝕜 F) :
     ∃ f g : Fin (finrank 𝕜 G) → E, F.IsPrincipalVectors G f g := by
   obtain ⟨v, u, hu, hvu⟩ :=
@@ -139,15 +199,22 @@ namespace IsPrincipalVectors
 
 variable {F G} {q : ℕ} {f g : Fin q → E}
 
-/-- `⟪f i, g j⟫ = cos θ_j` if `i = j` and `0` otherwise ([golub2013matrix] (6.4.3),
-`cos θ_k = f_kᵀ g_k`): `⟪f i, g j⟫ = ⟪f i, P_F g j⟫ = cos θ_j ⟪f i, f j⟫`. -/
+/-- Let $(f, g)$ be a family of principal vectors of $F$ and $G$, indexed by $\{0, \dots, q-1\}$.
+Then for all $i$ and $j$,
+$$\langle f_i, g_j \rangle = \begin{cases} \cos \theta_j & \text{if } i = j, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+In particular $\cos \theta_k = f_k^T g_k$, as in (6.4.3) of [golub2013matrix].
+
+The proof is $\langle f_i, g_j \rangle = \langle f_i, P_F g_j \rangle = \cos \theta_j \langle
+f_i, f_j \rangle$. -/
 theorem inner_eq (h : F.IsPrincipalVectors G f g) (i j : Fin q) :
     inner 𝕜 (f i) (g j) = if i = j then (F.cosPrincipalAngle G j : 𝕜) else 0 := by
   rw [← starProjection_eq_self_iff.2 (h.mem_left i), inner_starProjection_left_eq_right,
     h.starProjection_right, inner_smul_right, orthonormal_iff_ite.1 h.orthonormal_left i j]
   split_ifs <;> simp
 
-/-- The principal vectors `g` expand every vector of `G`. -/
+/-- If $(f, g)$ is a family of principal vectors of $F$ and $G$, then every $v \in G$ satisfies
+$v = \sum_j \langle g_j, v \rangle g_j$. -/
 theorem sum_inner_smul_right (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     ∑ j, inner 𝕜 (g j) v • g j = v := by
   have hon : Orthonormal 𝕜 (fun j => (⟨g j, h.mem_right j⟩ : G)) :=
@@ -157,27 +224,30 @@ theorem sum_inner_smul_right (h : F.IsPrincipalVectors G f g) {v : E} (hv : v �
   have := congrArg Subtype.val ((OrthonormalBasis.mk hon hsp).sum_repr' ⟨v, hv⟩)
   simpa [OrthonormalBasis.coe_mk, Submodule.coe_inner] using this
 
-/-- The projection onto `F` of a vector of `G`, in principal coordinates. -/
+/-- If $(f, g)$ is a family of principal vectors of $F$ and $G$, then every $v \in G$ satisfies $P_F
+v = \sum_j \langle g_j, v \rangle \cos \theta_j \, f_j$. -/
 theorem starProjection_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     F.starProjection v = ∑ j, (inner 𝕜 (g j) v * F.cosPrincipalAngle G j) • f j := by
   conv_lhs => rw [← h.sum_inner_smul_right hv]
   simp_rw [map_sum, map_smul, h.starProjection_right, smul_smul]
 
-/-- Parseval in `G`. -/
+/-- If $(f, g)$ is a family of principal vectors of $F$ and $G$, then every $v \in G$ satisfies
+Parseval's identity $\|v\|^2 = \sum_j |\langle g_j, v \rangle|^2$. -/
 theorem norm_sq_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     ‖v‖ ^ 2 = ∑ j, ‖inner 𝕜 (g j) v‖ ^ 2 := by
   conv_lhs => rw [← h.sum_inner_smul_right hv]
   exact h.orthonormal_right.norm_sum_smul_sq _
 
-/-- The squared norm of the projection onto `F` of a vector of `G`, in principal coordinates. -/
+/-- If $(f, g)$ is a family of principal vectors of $F$ and $G$, then every $v \in G$ satisfies
+$\|P_F v\|^2 = \sum_j |\langle g_j, v \rangle|^2 \cos^2 \theta_j$. -/
 theorem norm_starProjection_sq_eq_sum (h : F.IsPrincipalVectors G f g) {v : E} (hv : v ∈ G) :
     ‖F.starProjection v‖ ^ 2 = ∑ j, ‖inner 𝕜 (g j) v‖ ^ 2 * F.cosPrincipalAngle G j ^ 2 := by
   rw [h.starProjection_eq_sum hv, h.orthonormal_left.norm_sum_smul_sq]
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [norm_mul, RCLike.norm_ofReal, abs_of_nonneg (F.cosPrincipalAngle_nonneg G j), mul_pow]
 
-/-- On the vectors of `G` orthogonal to `g i` for `i < k`, the projection onto `F` shrinks by at
-least `cos θ_k`. -/
+/-- If $(f, g)$ is a family of principal vectors of $F$ and $G$, and $v \in G$ satisfies
+$\langle g_i, v \rangle = 0$ for all $i < k$, then $\|P_F v\| \le \cos \theta_k \, \|v\|$. -/
 theorem norm_starProjection_le (h : F.IsPrincipalVectors G f g) (k : Fin q) {v : E} (hv : v ∈ G)
     (hvk : ∀ i < k, inner 𝕜 (g i) v = 0) :
     ‖F.starProjection v‖ ≤ F.cosPrincipalAngle G k * ‖v‖ := by
@@ -192,10 +262,18 @@ theorem norm_starProjection_le (h : F.IsPrincipalVectors G f g) (k : Fin q) {v :
     · exact F.cosPrincipalAngle_nonneg G j
     · exact F.antitone_cosPrincipalAngle G hjk
 
-/-- **The max–max characterization** ([golub2013matrix] (6.4.3), and the argument (6.4.6) after
-it): `cos θ_k` is the largest value of `re ⟪u, v⟫` over unit vectors `u ∈ F`, `v ∈ G` orthogonal to
-`f i`, resp. `g i`, for `i < k`, attained at `(f k, g k)`. Only the constraint on `v` matters:
-`re ⟪u, v⟫ ≤ ‖P_F v‖ ≤ cos θ_k`. -/
+/-- **The max–max characterization.** Let $(f, g)$ be a family of principal vectors of $F$ and $G$,
+indexed by $\{0, \dots, q-1\}$, and let $k < q$. Then $\cos \theta_k$ is the greatest element of
+the set of the numbers $\operatorname{Re} \langle u, v \rangle$, where $u \in F$ and $v \in G$
+are unit vectors with $\langle f_i, u \rangle = 0$ and $\langle g_i, v \rangle = 0$ for all
+$i < k$:
+$$\cos \theta_k = \max \{\operatorname{Re} \langle u, v \rangle : u \in F, \ v \in G, \ \|u\| =
+  \|v\| = 1, \ u \perp f_i, \ v \perp g_i \ (i < k)\}.$$
+The maximum is attained at $(f_k, g_k)$. This is (6.4.3) of [golub2013matrix] and the argument
+(6.4.6) after it.
+
+Only the constraint on $v$ matters, because $\operatorname{Re} \langle u, v \rangle \le \|P_F
+v\| \le \cos \theta_k$. -/
 theorem isGreatest_re_inner (h : F.IsPrincipalVectors G f g) (k : Fin q) :
     IsGreatest {r : ℝ | ∃ u ∈ F, ∃ v ∈ G, ‖u‖ = 1 ∧ ‖v‖ = 1 ∧
       (∀ i < k, inner 𝕜 (f i) u = 0) ∧ (∀ i < k, inner 𝕜 (g i) v = 0) ∧
@@ -213,17 +291,22 @@ theorem isGreatest_re_inner (h : F.IsPrincipalVectors G f g) (k : Fin q) :
           rw [hu1, one_mul]
           simpa [hv1] using h.norm_starProjection_le k hv hvk
 
-/-- If `cos θ_i = 1` then `f i = g i` ([golub2013matrix] Theorem 6.4.2, proof): unit vectors with
-inner product `1` coincide. -/
+/-- Let $(f, g)$ be a family of principal vectors of $F$ and $G$, and let $i$ be an index with
+$\cos \theta_i = 1$. Then $f_i = g_i$. This step is in the proof of Theorem 6.4.2 of
+[golub2013matrix]: unit vectors with inner product $1$ coincide. -/
 theorem eq_of_cosPrincipalAngle_eq_one (h : F.IsPrincipalVectors G f g) {i : Fin q}
     (hi : F.cosPrincipalAngle G i = 1) : f i = g i := by
   rw [← inner_eq_one_iff_of_norm_eq_one (𝕜 := 𝕜) (h.orthonormal_left.1 i)
     (h.orthonormal_right.1 i), h.inner_eq, ite_eq_left rfl, hi, RCLike.ofReal_one]
 
-/-- **The intersection of two subspaces** ([golub2013matrix] Theorem 6.4.2): `F ⊓ G` is spanned by
-the principal vectors of angle `0`. The book's proof gives `⊇`; for `⊆`, a vector of `F ⊓ G` has
-`‖P_F v‖ = ‖v‖`, which in principal coordinates forces every coordinate with `cos θ_j < 1` to
-vanish. -/
+/-- **The intersection of two subspaces.** Let $(f, g)$ be a family of principal vectors of $F$ and
+$G$. Then the intersection $F \cap G$ is spanned by the principal vectors of angle $0$:
+$$F \cap G = \operatorname{span} \{f_i : \cos \theta_i = 1\}.$$
+This is Theorem 6.4.2 of [golub2013matrix].
+
+The proof in the source gives the inclusion $\supseteq$. For $\subseteq$, a vector
+$v \in F \cap G$ has $\|P_F v\| = \|v\|$, and in principal coordinates this forces every
+coordinate with $\cos \theta_j < 1$ to vanish. -/
 theorem inf_eq_span (h : F.IsPrincipalVectors G f g) :
     F ⊓ G = span 𝕜 (f '' {i | F.cosPrincipalAngle G i = 1}) := by
   apply le_antisymm
@@ -257,8 +340,10 @@ theorem inf_eq_span (h : F.IsPrincipalVectors G f g) :
 
 end IsPrincipalVectors
 
-/-- **The dimension of the intersection** ([golub2013matrix] §6.4.4): when
-`finrank G ≤ finrank F`, `finrank (F ⊓ G)` is the number of principal angles equal to `0`. -/
+/-- **The dimension of the intersection.** Let $F$ and $G$ be finite-dimensional subspaces of an
+inner product space with $\dim G \le \dim F$. Then
+$$\dim(F \cap G) = \#\{i < \dim G : \cos \theta_i = 1\},$$
+the number of principal angles equal to $0$. This is stated in §6.4.4 of [golub2013matrix]. -/
 theorem finrank_inf_eq_card (h : finrank 𝕜 G ≤ finrank 𝕜 F) :
     finrank 𝕜 (F ⊓ G : Submodule 𝕜 E) =
       (Finset.univ.filter fun i : Fin (finrank 𝕜 G) => F.cosPrincipalAngle G i = 1).card := by
@@ -274,33 +359,57 @@ theorem finrank_inf_eq_card (h : finrank 𝕜 G ≤ finrank 𝕜 F) :
 
 /-! ### The recursive definition -/
 
-/-- **The book's recursive definition of principal vectors** ([golub2013matrix] (6.4.3)): unit
-vectors `f k ∈ F`, `g k ∈ G`, orthogonal to the earlier `f i`, resp. `g i`, such that
-`re ⟪f k, g k⟫` is the largest value of `re ⟪u, v⟫` over unit `u ∈ F`, `v ∈ G` orthogonal to the
-earlier ones. Any greedy choice of maximizers satisfies it; the values `re ⟪f k, g k⟫` are the
-cosines of the principal angles whatever the choices
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space $E$, and let
+$f, g \colon \{0, \dots, q-1\} \to E$. The pair $(f, g)$ satisfies the **recursive definition of
+principal vectors** of (6.4.3) of [golub2013matrix] if $\dim G = q$, and for every $k$:
+$f_k \in F$ and $g_k \in G$ are unit vectors, $f_k$ is orthogonal to $f_i$ and $g_k$ to $g_i$
+for all $i < k$, and
+$$\operatorname{Re} \langle u, v \rangle \le \operatorname{Re} \langle f_k, g_k \rangle$$
+for all unit vectors $u \in F$ and $v \in G$ with $u \perp f_i$ and $v \perp g_i$ for all
+$i < k$.
+
+Any greedy choice of maximizers satisfies this definition. Whatever the choices, the values
+$\operatorname{Re} \langle f_k, g_k \rangle$ are the cosines of the principal angles
 (`Submodule.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors`). -/
 structure IsRecursivePrincipalVectors {q : ℕ} (f g : Fin q → E) : Prop where
+  /-- The number $q$ of vectors is the dimension of $G$. -/
   finrank_eq : finrank 𝕜 G = q
+  /-- Every left vector $f_k$ lies in $F$. -/
   mem_left : ∀ k, f k ∈ F
+  /-- Every right vector $g_k$ lies in $G$. -/
   mem_right : ∀ k, g k ∈ G
+  /-- Every left vector is a unit vector: $\|f_k\| = 1$. -/
   norm_left : ∀ k, ‖f k‖ = 1
+  /-- Every right vector is a unit vector: $\|g_k\| = 1$. -/
   norm_right : ∀ k, ‖g k‖ = 1
+  /-- Each left vector is orthogonal to the earlier ones: $\langle f_i, f_k \rangle = 0$ for
+  $i < k$. -/
   inner_left : ∀ k, ∀ i < k, inner 𝕜 (f i) (f k) = 0
+  /-- Each right vector is orthogonal to the earlier ones: $\langle g_i, g_k \rangle = 0$ for
+  $i < k$. -/
   inner_right : ∀ k, ∀ i < k, inner 𝕜 (g i) (g k) = 0
+  /-- The pair $(f_k, g_k)$ is a maximizer: every pair of unit vectors $u \in F$ and $v \in G$ with
+  $u \perp f_i$ and $v \perp g_i$ for all $i < k$ satisfies $\operatorname{Re} \langle u, v
+  \rangle \le \operatorname{Re} \langle f_k, g_k \rangle$. -/
   re_inner_le : ∀ k, ∀ u ∈ F, ∀ v ∈ G, ‖u‖ = 1 → ‖v‖ = 1 → (∀ i < k, inner 𝕜 (f i) u = 0) →
     (∀ i < k, inner 𝕜 (g i) v = 0) → RCLike.re (inner 𝕜 u v) ≤ RCLike.re (inner 𝕜 (f k) (g k))
 
-/-- `P_F` shrinks by at least `cos θ₁`, the largest cosine. -/
+/-- The projection onto $F$ shrinks every vector of $G$ by at least the largest cosine:
+$\|P_F v\| \le \cos \theta_0 \, \|v\|$ for every $v \in G$. -/
 theorem norm_starProjection_le_cosPrincipalAngle_zero_mul {v : E} (hv : v ∈ G) :
     ‖F.starProjection v‖ ≤ F.cosPrincipalAngle G 0 * ‖v‖ := by
   have h := (F.orthogonalProjectionRestrict G).norm_apply_le_singularValues_zero_mul ⟨v, hv⟩
   rw [← Submodule.norm_coe, coe_orthogonalProjectionRestrict_apply] at h
   exact h
 
-/-- **A maximizing pair is a singular pair**: if unit vectors `u ∈ F`, `v ∈ G` have
-`re ⟪u, v⟫ = cos θ₁`, then `P_F v = cos θ₁ • u`: `re ⟪u, v⟫ = re ⟪u, P_F v⟫ ≤ ‖P_F v‖ ≤ cos θ₁`, and
-equality in Cauchy–Schwarz. -/
+/-- **A maximizing pair is a singular pair.** Let $F$ and $G$ be finite-dimensional subspaces of an
+inner product space, and let $u \in F$ and $v \in G$ be unit vectors with $\operatorname{Re}
+\langle u, v \rangle = \cos \theta_0$. Then
+$$P_F v = \cos \theta_0 \, u.$$
+
+The proof is $\operatorname{Re} \langle u, v \rangle = \operatorname{Re} \langle u, P_F v
+\rangle \le \|P_F v\| \le \cos \theta_0$, with the equality case of the Cauchy–Schwarz
+inequality. -/
 theorem starProjection_eq_of_re_inner_eq {u v : E} (hu : u ∈ F) (hv : v ∈ G) (hu1 : ‖u‖ = 1)
     (hv1 : ‖v‖ = 1) (h : RCLike.re (inner 𝕜 u v) = F.cosPrincipalAngle G 0) :
     F.starProjection v = (F.cosPrincipalAngle G 0 : 𝕜) • u := by
@@ -324,16 +433,18 @@ namespace IsRecursivePrincipalVectors
 variable {F G} {q : ℕ} {f g : Fin q → E}
 
 omit [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G] in
-/-- The left vectors are nonzero. -/
+/-- The left vectors of a family that satisfies the recursive definition are nonzero. -/
 theorem ne_zero_left (hfg : F.IsRecursivePrincipalVectors G f g) (k : Fin q) : f k ≠ 0 :=
   norm_ne_zero_iff.1 (by rw [hfg.norm_left k]; exact one_ne_zero)
 
 omit [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G] in
-/-- The right vectors are nonzero. -/
+/-- The right vectors of a family that satisfies the recursive definition are nonzero. -/
 theorem ne_zero_right (hfg : F.IsRecursivePrincipalVectors G f g) (k : Fin q) : g k ≠ 0 :=
   norm_ne_zero_iff.1 (by rw [hfg.norm_right k]; exact one_ne_zero)
 
-/-- The first stage of the recursion: `re ⟪f 0, g 0⟫ = cos θ₁`, the unconstrained maximum. -/
+/-- If $(f, g)$ satisfies the recursive definition, $\dim G \le \dim F$ and $q > 0$, then the first
+stage of the recursion gives the unconstrained maximum: $\operatorname{Re} \langle f_0, g_0
+\rangle = \cos \theta_0$. -/
 theorem re_inner_zero (hfg : F.IsRecursivePrincipalVectors G f g)
     (h : finrank 𝕜 G ≤ finrank 𝕜 F) (hq : 0 < q) :
     RCLike.re (inner 𝕜 (f ⟨0, hq⟩) (g ⟨0, hq⟩)) = F.cosPrincipalAngle G 0 := by
@@ -351,8 +462,11 @@ theorem re_inner_zero (hfg : F.IsRecursivePrincipalVectors G f g)
 
 end IsRecursivePrincipalVectors
 
-/-- Removing a nonzero vector of a finite-dimensional subspace lowers its dimension by one: the
-case `K₁ = 𝕜 ∙ w` of Mathlib's `Submodule.finrank_add_inf_finrank_orthogonal`. -/
+/-- Let $K$ be a finite-dimensional subspace of an inner product space over $\mathbb{K}$, and let
+$w \in K$ with $w \neq 0$. Then
+$$\dim(K \cap (\mathbb{K} w)^\perp) + 1 = \dim K.$$
+This is the case $K_1 = \mathbb{K} w$ of Mathlib's
+`Submodule.finrank_add_inf_finrank_orthogonal`. -/
 theorem finrank_inf_orthogonal_singleton_add_one (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
     {w : E} (hw : w ∈ K) (hw0 : w ≠ 0) :
     finrank 𝕜 (K ⊓ (𝕜 ∙ w)ᗮ : Submodule 𝕜 E) + 1 = finrank 𝕜 K := by
@@ -365,8 +479,9 @@ namespace IsRecursivePrincipalVectors
 variable {F G} {q : ℕ} {f g : Fin (q + 1) → E}
 
 omit [FiniteDimensional 𝕜 F] in
-/-- The recursion shifted by one: the later vectors are recursive principal vectors of the
-subspaces orthogonal to the first pair. -/
+/-- If $(f, g)$, indexed by $\{0, \dots, q\}$, satisfies the recursive definition for $F$ and $G$,
+then the shifted family $(f_{k+1}, g_{k+1})_{k < q}$ satisfies the recursive definition for the
+subspaces $F \cap f_0^\perp$ and $G \cap g_0^\perp$. -/
 theorem tail (hfg : F.IsRecursivePrincipalVectors G f g) :
     (F ⊓ (𝕜 ∙ f 0)ᗮ).IsRecursivePrincipalVectors (G ⊓ (𝕜 ∙ g 0)ᗮ) (f ∘ Fin.succ)
       (g ∘ Fin.succ) where
@@ -391,10 +506,13 @@ theorem tail (hfg : F.IsRecursivePrincipalVectors G f g) :
       · exact (mem_orthogonal_singleton_iff_inner_right).1 hv.2
       · exact hgv j (Fin.succ_lt_succ_iff.1 hi)
 
-/-- The cosines of the subspaces orthogonal to a maximizing first pair are the later cosines:
-`cos θ_{k+1}(F', G') = cos θ_{k+2}(F, G)`. On `G' = G ⊓ (g 0)ᗮ` the projection onto
-`F' = F ⊓ (f 0)ᗮ` is the projection onto `F`, and `P_F|_G` restricted to `G'` is the deflation of
-`P_F|_G` by its top singular pair `(g 0, f 0)`. -/
+/-- Let $(f, g)$, indexed by $\{0, \dots, q\}$, satisfy the recursive definition for $F$ and $G$,
+and let $\dim G \le \dim F$. Let $F' = F \cap f_0^\perp$ and $G' = G \cap g_0^\perp$. Then for
+every $k$,
+$$\cos \theta_k(F', G') = \cos \theta_{k+1}(F, G).$$
+
+On $G'$ the projection onto $F'$ is the projection onto $F$, and $P_F|_G$ restricted to $G'$ is
+the deflation of $P_F|_G$ by its top singular pair $(g_0, f_0)$. -/
 theorem cosPrincipalAngle_tail (hfg : F.IsRecursivePrincipalVectors G f g)
     (h : finrank 𝕜 G ≤ finrank 𝕜 F) (k : ℕ) :
     (F ⊓ (𝕜 ∙ f 0)ᗮ).cosPrincipalAngle (G ⊓ (𝕜 ∙ g 0)ᗮ) k = F.cosPrincipalAngle G (k + 1) := by
@@ -450,7 +568,8 @@ theorem cosPrincipalAngle_tail (hfg : F.IsRecursivePrincipalVectors G f g)
 
 end IsRecursivePrincipalVectors
 
-/-- The recursion, by induction on the stage. -/
+/-- The recursive definition gives $\operatorname{Re} \langle f_k, g_k \rangle = \cos \theta_k$ at
+every stage $k$, by induction on $k$. -/
 private theorem re_inner_eq_cosPrincipalAngle_aux (k : ℕ) :
     ∀ (F G : Submodule 𝕜 E) [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 G] (q : ℕ)
       (f g : Fin q → E), finrank 𝕜 G ≤ finrank 𝕜 F → F.IsRecursivePrincipalVectors G f g →
@@ -467,12 +586,18 @@ private theorem re_inner_eq_cosPrincipalAngle_aux (k : ℕ) :
     rw [hfg.cosPrincipalAngle_tail h] at this
     exact this
 
-/-- **The recursive definition of the principal angles is well posed** ([golub2013matrix] (6.4.3):
-the angles "are defined recursively"): if `finrank G ≤ finrank F`, every greedy sequence of
-maximizers `(f k, g k)` has `re ⟪f k, g k⟫ = cos θ_{k+1}`, whichever maximizers were chosen. By
-induction on `k`: a maximizing first pair is a top singular pair of `P_F|_G`, and the problem on
-the orthogonal complements of the first pair is the same problem for the deflated map, whose
-singular values are the later ones (`LinearMap.singularValues_comp_linearIsometry_eq_succ`). -/
+/-- **The recursive definition of the principal angles is well posed.** Let $F$ and $G$ be
+finite-dimensional subspaces of an inner product space with $\dim G \le \dim F$, and let
+$(f, g)$, indexed by $\{0, \dots, q-1\}$, satisfy the recursive definition of principal vectors.
+Then for every $k < q$,
+$$\operatorname{Re} \langle f_k, g_k \rangle = \cos \theta_k,$$
+whichever maximizers were chosen. In (6.4.3) of [golub2013matrix] the angles "are defined
+recursively".
+
+The proof is by induction on $k$. A maximizing first pair is a top singular pair of $P_F|_G$.
+The problem on the orthogonal complements of the first pair is the same problem for the deflated
+map, whose singular values are the later ones
+(`LinearMap.singularValues_comp_linearIsometry_eq_succ`). -/
 theorem cosPrincipalAngle_eq_of_isRecursivePrincipalVectors (h : finrank 𝕜 G ≤ finrank 𝕜 F)
     {q : ℕ} {f g : Fin q → E} (hfg : F.IsRecursivePrincipalVectors G f g) (k : Fin q) :
     RCLike.re (inner 𝕜 (f k) (g k)) = F.cosPrincipalAngle G k :=
@@ -480,10 +605,15 @@ theorem cosPrincipalAngle_eq_of_isRecursivePrincipalVectors (h : finrank 𝕜 G 
 
 /-! ### The gap, lines, and matrices -/
 
-/-- **The distance of equal-dimensional subspaces is the sine of the largest principal angle**
-([golub2013matrix] §6.4.3: if `p = q`, `dist(F, G) = √(1 - cos(θ_p)²) = sin θ_p`): if
-`finrank F = finrank G = q + 1`, then `gap F G = sin θ_{q+1}`. The gap is the one-sided gap
-`‖P_{F⊥} P_G‖`, whose square is `1 - σ_q(P_F|_G)²`. -/
+/-- **The distance between subspaces of equal dimension is the sine of the largest principal
+angle.** Let $F$ and $G$ be finite-dimensional subspaces of an inner product space with
+$\dim F = \dim G = q + 1$. Then
+$$\operatorname{gap}(F, G) = \sin \theta_q.$$
+In [golub2013matrix], §6.4.3, this is the statement that for $p = q$, $\operatorname{dist}(F,
+G) = \sqrt{1 - \cos^2 \theta_p} = \sin \theta_p$, with indices from $1$.
+
+The gap is `Submodule.gap`, $\|P_F - P_G\|$. For equal dimensions it is the one-sided gap
+$\|P_{F^\perp} P_G\|$, whose square is $1 - \sigma_q(P_F|_G)^2$. -/
 theorem gap_eq_sin_principalAngle {q : ℕ} (hF : finrank 𝕜 F = q + 1)
     (hG : finrank 𝕜 G = q + 1) : F.gap G = Real.sin (F.principalAngle G q) := by
   have h := G.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues F (by omega)
@@ -492,9 +622,12 @@ theorem gap_eq_sin_principalAngle {q : ℕ} (hF : finrank 𝕜 F = q + 1)
   rw [principalAngle, Real.sin_arccos, cosPrincipalAngle, ← h,
     Real.sqrt_sq (F.gap_nonneg G)]
 
-/-- **One principal angle with a line is the angle with a vector** ([golub2013matrix] §6.4.3 for
-`q = 1`): for `u ≠ 0`, `cos θ₁(F, 𝕜 u) = ‖P_F u‖ / ‖u‖` is `Submodule.cosAngle`. On a line,
-`P_F` stretches every vector by the same factor. -/
+/-- **A principal angle with a line is the angle with a vector.** Let $F$ be a finite-dimensional
+subspace of an inner product space over $\mathbb{K}$, and let $u \neq 0$. Then
+$$\cos \theta_0(F, \mathbb{K} u) = \frac{\|P_F u\|}{\|u\|},$$
+which is `Submodule.cosAngle`. This is the case $q = 1$ of §6.4.3 of [golub2013matrix].
+
+On a line, $P_F$ stretches every vector by the same factor. -/
 theorem cosPrincipalAngle_span_singleton_zero {u : E} (hu : u ≠ 0) :
     F.cosPrincipalAngle (𝕜 ∙ u) 0 = F.cosAngle u := by
   have hr : finrank 𝕜 (𝕜 ∙ u) = 1 := finrank_span_singleton hu
@@ -512,17 +645,27 @@ theorem cosPrincipalAngle_span_singleton_zero {u : E} (hu : u ≠ 0) :
   · exact LinearMap.le_singularValues_of_mul_norm_le _ (S := ⊤) (by simp [hr])
       fun x hx => (hstretch x hx).ge
 
-/-- The principal angle with a line is the angle of `Submodule.angle`. -/
+/-- Let $F$ be a finite-dimensional subspace of an inner product space over $\mathbb{K}$, and let
+$u \neq 0$. Then the first principal angle $\theta_0(F, \mathbb{K} u)$ is the angle
+`Submodule.angle` between $u$ and $F$. -/
 theorem principalAngle_span_singleton_zero {u : E} (hu : u ≠ 0) :
     F.principalAngle (𝕜 ∙ u) 0 = F.angle u := by
   rw [principalAngle, cosPrincipalAngle_span_singleton_zero F hu, angle]
 
 open Matrix in
-/-- **The matrix bridge** ([golub2013matrix] §6.4.3: `σ_i = cos θ_i` for the SVD of `Q_Aᴴ Q_B`):
-if the columns of `Q_A` and `Q_B` are orthonormal (`Q_Aᴴ Q_A = 1`, `Q_Bᴴ Q_B = 1`), the cosines of
-the principal angles between their ranges are the singular values of `Q_Aᴴ Q_B`. The two matrices
-are isometries onto the ranges, and `Q_A (Q_Aᴴ Q_B) y = P_F (Q_B y)`, so `Q_Aᴴ Q_B` is `P_F|_G` up
-to isometries on both sides. -/
+/-- **The matrix form of the cosines.** Let $Q_A \in \mathbb{K}^{m \times p}$ and
+$Q_B \in \mathbb{K}^{m \times q}$ have orthonormal columns, $Q_A^H Q_A = I$ and $Q_B^H Q_B = I$.
+Then the cosines of the principal angles between their ranges are the singular values of
+$Q_A^H Q_B$:
+$$\cos \theta_i(\operatorname{ran} Q_A, \operatorname{ran} Q_B) = \sigma_i(Q_A^H Q_B) \quad
+  \text{for every } i.$$
+In [golub2013matrix], §6.4.3, this is the statement $\sigma_i = \cos \theta_i$ for the SVD of
+$Q_A^H Q_B$.
+
+The ranges are those of `Matrix.toEuclideanLin`, and the singular values are those of
+`Matrix.toEuclideanLin (QAᴴ * QB)`, indexed from $0$. The two matrices are isometries onto their
+ranges, and $Q_A (Q_A^H Q_B) y = P_F (Q_B y)$, so $Q_A^H Q_B$ is $P_F|_G$ up to isometries on
+both sides. -/
 theorem cosPrincipalAngle_eq_singularValues {m p q : Type*} [Fintype m]
     [Fintype p] [DecidableEq p] [Fintype q] [DecidableEq q] {QA : Matrix m p 𝕜}
     {QB : Matrix m q 𝕜} (hA : QAᴴ * QA = 1) (hB : QBᴴ * QB = 1) (i : ℕ) :
@@ -554,9 +697,14 @@ theorem cosPrincipalAngle_eq_singularValues {m p q : Type*} [Fintype m]
   rfl
 
 open Matrix in
-/-- **The cosines from any SVD** ([golub2013matrix] §6.4.3, Algorithm 6.4.3): if the columns of
-`Q_A` and `Q_B` are orthonormal and `Q_Aᴴ Q_B = Y Σ Zᴴ` is an SVD, then `σ_k = cos θ_{k+1}` for
-`k < min p q`: the diagonal of every SVD is the sorted singular values
+/-- **The cosines from any SVD.** Let $Q_A \in \mathbb{K}^{m \times p}$ and
+$Q_B \in \mathbb{K}^{m \times q}$ have orthonormal columns, and let $Q_A^H Q_B = Y \Sigma Z^H$
+be a singular value decomposition with $\Sigma = \operatorname{diag}(\sigma_0, \sigma_1,
+\dots)$. Then for every $k < \min\{p, q\}$,
+$$\cos \theta_k(\operatorname{ran} Q_A, \operatorname{ran} Q_B) = \sigma_k.$$
+This is part of §6.4.3 and Algorithm 6.4.3 of [golub2013matrix].
+
+The SVD is `Matrix.IsSVD`. The diagonal of every SVD lists the sorted singular values
 (`Matrix.IsSVD.singularValues_eq`), which are the cosines
 (`Submodule.cosPrincipalAngle_eq_singularValues`). -/
 theorem cosPrincipalAngle_eq_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
@@ -568,11 +716,17 @@ theorem cosPrincipalAngle_eq_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
   rw [cosPrincipalAngle_eq_singularValues hA hB, h.singularValues_eq hkp hkq]
 
 open Matrix in
-/-- **Principal vectors from any SVD** ([golub2013matrix] §6.4.3, Algorithm 6.4.3): if the columns
-of `Q_A` and `Q_B` are orthonormal, `q ≤ p`, and `Q_Aᴴ Q_B = Y Σ Zᴴ` is an SVD, then the columns of
-`Q_A Y(:, 1:q)` and `Q_B Z` are principal vectors of `(ran Q_A, ran Q_B)`. The projection onto
-`ran Q_A` is `Q_A Q_Aᴴ`, so `P (Q_B z_j) = Q_A Y Σ Zᴴ z_j = σ_j Q_A y_j`, and
-`σ_j = cos θ_{j+1}` (`Submodule.cosPrincipalAngle_eq_of_isSVD`). -/
+/-- **Principal vectors from any SVD.** Let $Q_A \in \mathbb{K}^{m \times p}$ and
+$Q_B \in \mathbb{K}^{m \times q}$ have orthonormal columns with $q \le p$, and let
+$Q_A^H Q_B = Y \Sigma Z^H$ be a singular value decomposition. Then the columns of
+$Q_A Y(:, 1{:}q)$ and the columns of $Q_B Z$ form a family of principal vectors of
+$\operatorname{ran} Q_A$ and $\operatorname{ran} Q_B$. This is part of §6.4.3 and Algorithm
+6.4.3 of [golub2013matrix].
+
+The first $q$ columns of $Y$ are `Matrix.firstColumns Y hqp`, and the columns are read as
+vectors of `EuclideanSpace` with `WithLp.toLp 2`. The projection onto $\operatorname{ran} Q_A$
+is $Q_A Q_A^H$, so $P (Q_B z_j) = Q_A Y \Sigma Z^H z_j = \sigma_j Q_A y_j$, and
+$\sigma_j = \cos \theta_j$ (`Submodule.cosPrincipalAngle_eq_of_isSVD`). -/
 theorem isPrincipalVectors_of_isSVD {m : Type*} [Fintype m] {p q : ℕ}
     {QA : Matrix m (Fin p) 𝕜} {QB : Matrix m (Fin q) 𝕜} (hA : QAᴴ * QA = 1) (hB : QBᴴ * QB = 1)
     (hqp : q ≤ p) {Y : Matrix (Fin p) (Fin p) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin q) (Fin q) 𝕜}

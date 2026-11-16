@@ -16,91 +16,101 @@ import Numlib.Analysis.Sobolev.Interval.Higher
 import Numlib.Analysis.Sobolev.Interval.Zero
 
 /-!
-# Sobolev spaces on an interval
+# Sobolev spaces on a bounded interval
 
-`H^m(a, b) = W^{m,2}(a, b)` and `H^1_0(a, b)`, with the one-dimensional facts that have no
-analogue in higher dimension: every function of `H^1(a, b)` has an absolutely continuous
-representative, `H^1(a, b)` embeds in `C[a, b]`, and Poincaré's inequality on `H^1_0(a, b)` holds
-with the explicit constant `(b - a)/√2`.
+This module studies the Sobolev spaces $H^m(a, b) = W^{m,2}(a, b)$ and $H^1_0(a, b)$ on a bounded
+open interval $(a, b)$. An element $u \in H^m(a, b)$ has weak derivatives
+$u = u^{(0)}, u', \dots, u^{(m)}$ in $L^2(a, b)$, and $H^m(a, b)$ is a Hilbert space for the inner
+product $(u, v)_{H^m} = \sum_{j=0}^m (u^{(j)}, v^{(j)})_{L^2(a, b)}$, which is (10.34) of
+[quarteroni2000numerical]. The module proves the one-dimensional facts that have no analogue in
+higher dimension. Every $u \in H^1(a, b)$ has an absolutely continuous representative $\tilde u$
+with $\tilde u(y) - \tilde u(x) = \int_x^y u'$ for $x, y \in [a, b]$. The map $u \mapsto \tilde u$
+is a bounded injection $H^1(a, b) \hookrightarrow C[a, b]$ with $\|\tilde u\|_\infty \le ((b -
+a)^{-1/2} + (b - a)^{1/2}) \|u\|_{H^1}$. Poincaré's inequality $\|u\|_{L^2} \le \frac{b - a}{\sqrt
+2} \|u'\|_{L^2}$ holds on $H^1_0(a, b)$, which is (12.16) of [quarteroni2000numerical] with an
+explicit constant, and $H^1_0(a, b)$ is the set of $u \in H^1(a, b)$ with
+$\tilde u(a) = \tilde u(b) = 0$, which is (12.42) there.
 
-`SobolevInterval m a b` is *not* a new space: it is `SobolevIntervalLp m 2 (Opens.Ioo a b)` of
-`Numlib/Analysis/Sobolev/Interval/Basic.lean`, that is, the multi-index Sobolev space
-`SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume` of
-`Numlib/Analysis/Sobolev/MultiIndex.lean`, read on `E = ℝ` with the one-element basis, so that
-its components are the weak derivatives `u, u', …, u^{(m)}` in `L²(a, b)` and it is a Hilbert
-space for the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²}` on the nose
-(`SobolevMultiIndex.inner_eq`). `H^1_0(a, b)` is accordingly `SobolevIntervalLpZero 1 2 _`, the
-closure of the test functions in the multi-index space. The weak derivative on an interval,
-`HasWeakDerivOn f w (Opens.Ioo a b)`, and the general theory of `W^{m,p}(I)` on an arbitrary open
-`I ⊆ ℝ` live in `Interval/Basic.lean`; this module is the bounded `p = 2` layer over it. The
-general-`p` theory is spread over the modules of `Interval/`: `Basic` (the weak derivative, the
-spaces `W^{m,p}(I)`, the continuous representative), `Extension` (the extension operator),
-`Embedding` (`W^{1,p}(I) ↪ C(Ī)` and its compactness), `Density` (the density of `C_c^∞`),
-`Higher` (`W^{m,p}` as an iterated `W^{1,p}`, `C^k[a, b] → W^{k,p}(a, b)`, Poincaré's
-inequality at every `p`), `Zero` (`W_0^{1,p}(I)`, its boundary characterization and cut-offs),
-`DifferenceQuotient` and `Dual` (`W^{-1,p'}`).
-
-This module adds only what is specific to `p = 2` or to a bounded interval, and otherwise reuses
-that API: `SobolevInterval.fn`, `SobolevInterval.rep` (the continuous representative),
-`SobolevInterval.toContinuousMap`, `SobolevInterval.evalCLM` and their lemmas are aliases
-(`export`) of the `SobolevIntervalLp` declarations, not copies; `SobolevInterval.seminorm`,
-`derivL`, `derivCLM`, `inclusionCLM` and `mk` are abbreviations of them at `p = 2`, with the
-bounded-interval argument convention `m a b`; and `SobolevInterval.deriv u j` is
-`SobolevIntervalLp.deriv u j` with its codomain spelled `Lp ℝ 2 (volume.restrict (Ioo a b))`, the
-spelling the `L²(a, b)` lemmas rewrite with (whence the one-line restatements of its basic
-lemmas). The statements kept here are the `p = 2` constants (`(b - a)/√2`,
-`(b - a)^{-1/2} + (b - a)^{1/2}`), the Hilbert-space identities, and the bounded-interval forms of
-the representative lemmas, stated on `[a, b]` rather than on the closure of an open interval.
+The spaces are the case $p = 2$, $I = (a, b)$ of the spaces $W^{m,p}(I)$ on an open set
+$I \subseteq \mathbb{R}$ of `Numlib.Analysis.Sobolev.Interval.Basic`. The general theory is spread
+over the modules `Numlib.Analysis.Sobolev.Interval.Basic` (the weak derivative, the spaces
+$W^{m,p}(I)$, the continuous representative), `Numlib.Analysis.Sobolev.Interval.Extension` (the
+extension operator), `Numlib.Analysis.Sobolev.Interval.Embedding`
+($W^{1,p}(I) \hookrightarrow C(\bar I)$ and its compactness),
+`Numlib.Analysis.Sobolev.Interval.Density` (the density of $C_c^\infty$),
+`Numlib.Analysis.Sobolev.Interval.Higher` ($W^{m,p}$ as an iterated $W^{1,p}$, the inclusion
+$C^k[a, b] \to W^{k,p}(a, b)$, Poincaré's inequality for every $p$),
+`Numlib.Analysis.Sobolev.Interval.Zero` ($W_0^{1,p}(I)$, its boundary characterization and
+cut-offs), `Numlib.Analysis.Sobolev.Interval.DifferenceQuotient` and
+`Numlib.Analysis.Sobolev.Interval.Dual` ($W^{-1,p'}$). This module adds only what is specific to
+$p = 2$ or to a bounded interval: the constants $(b - a)/\sqrt 2$ and
+$(b - a)^{-1/2} + (b - a)^{1/2}$, the Hilbert-space identities, and the forms of the representative
+lemmas on $[a, b]$ instead of on the closure of an open interval.
 
 ## Main definitions
 
-* `SobolevInterval m a b`, the space `H^m(a, b)`, with `MemSobolevInterval f m a b` the
-  corresponding predicate on functions, `SobolevInterval.deriv u j` the `j`-th weak derivative in
-  `L²(a, b)`, and `SobolevInterval.seminorm m a b` the seminorm `|u|_{H^m} = ‖u^{(m)}‖_{L²}`;
-* `SobolevInterval.toContinuousMap hab`, the embedding `H^1(a, b) ↪ C[a, b]`, sending `u` to
-  its continuous representative, and `SobolevInterval.evalCLM hab c`, the evaluation of that
-  representative at one point of `[a, b]` as a bounded linear functional;
-* `SobolevIntervalZero a b`, the space `H^1_0(a, b)`;
-* `SobolevInterval.derivCLM m a b`, weak differentiation `H^{m+1}(a, b) → H^m(a, b)`, and
-  `ContDiffMapIcc.toSobolevInterval`, the inclusion `C^k[a, b] → H^k(a, b)`.
+* `SobolevInterval`: the space $H^m(a, b)$, with `MemSobolevInterval` the corresponding predicate on
+  functions.
+* `SobolevInterval.deriv`: the $j$-th weak derivative $u^{(j)} \in L^2(a, b)$ of $u \in H^m(a, b)$.
+* `SobolevInterval.seminorm`: the seminorm $|u|_{H^m} = \|u^{(m)}\|_{L^2(a, b)}$.
+* `SobolevInterval.toContinuousMap`: the embedding $H^1(a, b) \hookrightarrow C[a, b]$,
+  $u \mapsto \tilde u$.
+* `SobolevInterval.evalCLM`: the evaluation $u \mapsto \tilde u(c)$ at a point $c \in [a, b]$, as a
+  bounded linear functional on $H^1(a, b)$.
+* `SobolevIntervalZero`: the space $H^1_0(a, b)$, the closure of the test functions in $H^1(a, b)$.
+* `SobolevInterval.derivCLM`: weak differentiation $H^{m+1}(a, b) \to H^m(a, b)$.
+* `ContDiffMapIcc.toSobolevInterval`: the inclusion $C^k[a, b] \to H^k(a, b)$.
 
-## Main statements
+## Main results
 
-* `hasWeakDerivOn_integral`: the antiderivative of an integrable function is weakly
-  differentiable; with du Bois-Reymond's lemma `HasWeakDerivOn.exists_ae_eq_const` it gives
-  `HasWeakDerivOn.exists_ae_eq_integral`, **the absolutely continuous representative**: a
-  function with an integrable weak derivative `w` on `(a, b)` agrees almost everywhere with
-  `c + ∫_a^x w`.
-* `SobolevInterval.norm_toContinuousMap_le`: **`H^1(a, b) ↪ C[a, b]`** with the constant
-  `(b - a)^{-1/2} + (b - a)^{1/2}`; `SobolevInterval.toContinuousMap_sub_eq_integral`, the
-  fundamental theorem of calculus in `H^1(a, b)`;
-  `SobolevInterval.integral_deriv_mul_add_mul_deriv`, integration by parts (the product rule is
-  `SobolevIntervalLp.memSobolevIntervalLp_mul`).
-* `SobolevIntervalZero.norm_deriv_zero_le`: **Poincaré's inequality** on `H^1_0(a, b)` with the
-  constant `(b - a)/√2` ([quarteroni2000numerical] (12.16)), and `mem_sobolevIntervalZero_iff`,
-  the characterization `H^1_0(a, b) = {u ∈ H^1(a, b) : u(a) = u(b) = 0}`
-  ([quarteroni2000numerical] (12.42)).
-* `memSobolevInterval_of_piecewise_contDiffOn`: continuous piecewise-`C¹` functions lie in
-  `H^1(a, b)`, which is what puts the finite element spaces inside `H^1`.
+* `HasWeakDerivOn.exists_ae_eq_integral`: a function with an integrable weak derivative $w$ on
+  $(a, b)$ agrees almost everywhere with $c + \int_a^x w$ for a constant $c$.
+* `SobolevInterval.norm_toContinuousMap_le`: $\|\tilde u\|_\infty \le ((b - a)^{-1/2} + (b -
+  a)^{1/2}) \|u\|_{H^1}$.
+* `SobolevInterval.toContinuousMap_sub_eq_integral`: $\tilde u(y) - \tilde u(x) = \int_x^y u'$ for
+  $x, y \in [a, b]$.
+* `SobolevInterval.integral_deriv_mul_add_mul_deriv`: integration by parts, $\int_a^b (u' \tilde v +
+  \tilde u v') = \tilde u(b) \tilde v(b) - \tilde u(a) \tilde v(a)$.
+* `SobolevIntervalZero.norm_deriv_zero_le`: Poincaré's inequality $\|u\|_{L^2} \le \frac{b -
+  a}{\sqrt 2} \|u'\|_{L^2}$ on $H^1_0(a, b)$.
+* `mem_sobolevIntervalZero_iff`: $u \in H^1(a, b)$ lies in $H^1_0(a, b)$ if and only if
+  $\tilde u(a) = \tilde u(b) = 0$.
+* `memSobolevInterval_of_piecewise_contDiffOn`: a continuous piecewise $C^1$ function with bounded
+  derivative lies in $H^1(a, b)$.
+
+## Proof outline
+
+The one-dimensional theory rests on the representation $f = c + \int_a^x w$ of a function with weak
+derivative $w$. An antiderivative is weakly differentiable by integration by parts against a test
+function, and the difference of $f$ and the antiderivative has weak derivative $0$, so it is
+constant by du Bois-Reymond's lemma. All other results are elementary integral estimates on this
+representation, mainly the Cauchy–Schwarz inequality $|\int_x^y w| \le \sqrt{y - x}\, \|w\|_{L^2}$.
 
 ## Implementation notes
 
-The whole one-dimensional theory rests on the representation `f = c + ∫_a^x w`; everything else
-is an elementary integral estimate on it. Mathlib supplies the calculus of absolutely continuous
-functions on this pin: `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`,
-the Lebesgue differentiation theorem `IntervalIntegrable.ae_hasDerivAt_integral`, and the
-integration by parts `AbsolutelyContinuousOnInterval.integral_mul_deriv_eq_deriv_mul`, so the
-Fubini identities the planning round anticipated are not needed: an antiderivative is weakly
-differentiable by integration by parts against a test function, and the product rule in `H^1`
-is Mathlib's product rule for absolutely continuous functions.
-
-The converse direction of the boundary characterization of `H^1_0(a, b)` — a function of
-`H^1(a, b)` vanishing at both endpoints lies in the closure of the test functions — is the case
-`p = 2` of `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded`.
-
-Conventions: `a < b` is a hypothesis of every theorem that needs it, never of the definitions;
-the measure is `volume.restrict (Ioo a b)`; the `L²(a, b)` type is
-`Lp ℝ 2 (volume.restrict (Ioo a b))`.
+* `SobolevInterval m a b` is not a new type. It is the abbreviation `SobolevIntervalLp m 2
+  (TopologicalSpace.Opens.Ioo a b)`, that is, the multi-index Sobolev space `SobolevMultiIndex` on
+  $E = \mathbb{R}$ with the one-element basis. Its inner product is exactly the sum above
+  (`SobolevMultiIndex.inner_eq`). `SobolevIntervalZero a b` is `SobolevIntervalLpZero 1 2
+  (TopologicalSpace.Opens.Ioo a b)`.
+* The names `SobolevInterval.fn`, `SobolevInterval.rep` and several lemmas about the representative
+  are aliases (`export`) of the `SobolevIntervalLp` declarations, not copies.
+  `SobolevInterval.seminorm`, `SobolevInterval.derivL`, `SobolevInterval.derivCLM`,
+  `SobolevInterval.inclusionCLM`, `SobolevInterval.mk` and `SobolevInterval.toContinuousMap` are
+  abbreviations of them at $p = 2$, with the argument convention `m a b`.
+* `SobolevInterval.deriv u j` is `SobolevIntervalLp.deriv u j` with its codomain written
+  `Lp ℝ 2 (volume.restrict (Ioo a b))`. The lemmas about $L^2(a, b)$ rewrite only with this form,
+  which is why the basic lemmas about `SobolevInterval.deriv` are restated here.
+* The hypothesis $a < b$ appears on every theorem that needs it, never on the definitions. The
+  measure is `volume.restrict (Ioo a b)`, and the type of $L^2(a, b)$ is
+  `Lp ℝ 2 (volume.restrict (Ioo a b))`.
+* Mathlib supplies the calculus of absolutely continuous functions:
+  `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`, the Lebesgue differentiation
+  theorem `IntervalIntegrable.ae_hasDerivAt_integral`, and the integration by parts
+  `AbsolutelyContinuousOnInterval.integral_mul_deriv_eq_deriv_mul`. No Fubini argument is needed,
+  and the product rule in $H^1$ is Mathlib's product rule for absolutely continuous functions.
+* The converse half of the boundary characterization of $H^1_0(a, b)$ is the case $p = 2$ of
+  `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -108,10 +118,14 @@ open scoped ContDiff Distributions ENNReal InnerProductSpace Topology
 
 noncomputable section
 
-/-! ### Finite sums in `L^p` -/
+/-! ### Finite sums in $L^p$ -/
 
-/-- The coercion of a finite sum in `L^2` is almost everywhere the sum of the coercions: Mathlib's
-`MeasureTheory.Lp.coeFn_fun_finsetSum`, for an `ℕ`-indexed family on `ℝ`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, let $F_i \in L^2(\mu)$ for $i \in \mathbb{N}$, and let
+$s \subseteq \mathbb{N}$ be finite. Then the sum $\sum_{i \in s} F_i$ agrees $\mu$-almost
+everywhere with the pointwise sum $t \mapsto \sum_{i \in s} F_i(t)$.
+
+This is Mathlib's `MeasureTheory.Lp.coeFn_fun_finsetSum` for an $\mathbb{N}$-indexed family on
+$\mathbb{R}$. -/
 theorem MeasureTheory.Lp.coeFn_sum {μ : Measure ℝ} (s : Finset ℕ) (F : ℕ → Lp ℝ 2 μ) :
     ⇑(∑ i ∈ s, F i) =ᵐ[μ] fun t ↦ ∑ i ∈ s, F i t :=
   Lp.coeFn_fun_finsetSum s F
@@ -122,16 +136,18 @@ section Integral
 
 variable {a b : ℝ} {f w : ℝ → ℝ}
 
-/-- The antiderivative of a function integrable on `(a, b)` is absolutely continuous on
-`[a, b]`. -/
+/-- Let $a \le b$ and let $w$ be integrable on $(a, b)$. For every constant $c$, the antiderivative
+$x \mapsto c + \int_a^x w$ is absolutely continuous on $[a, b]$. -/
 theorem absolutelyContinuousOnInterval_integral (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b))
     (c : ℝ) : AbsolutelyContinuousOnInterval (fun x ↦ c + ∫ t in a..x, w t) a b :=
   (contDiffOn_const (c := c)).absolutelyContinuousOnInterval.fun_add
     (IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral
       (hw.intervalIntegrable_of_Ioo (left_mem_Icc.2 hab) (right_mem_Icc.2 hab)) left_mem_uIcc)
 
-/-- The derivative of the antiderivative of a function integrable on `(a, b)` is that function
-almost everywhere on `(a, b]`: the Lebesgue differentiation theorem. -/
+/-- Let $a \le b$ and let $w$ be integrable on $(a, b)$. For every constant $c$, the classical
+derivative of $x \mapsto c + \int_a^x w$ equals $w(x)$ for almost every $x \in (a, b]$.
+
+This is the Lebesgue differentiation theorem. -/
 theorem ae_deriv_integral_eq (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b)) (c : ℝ) :
     ∀ᵐ x, x ∈ Ioc a b → deriv (fun x ↦ c + ∫ t in a..x, w t) x = w x := by
   filter_upwards [(hw.intervalIntegrable_of_Ioo (left_mem_Icc.2 hab)
@@ -139,10 +155,12 @@ theorem ae_deriv_integral_eq (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b)) (c 
   have := (hx (uIcc_of_le hab ▸ Ioc_subset_Icc_self hxab) a (uIcc_of_le hab ▸ left_mem_Icc.2 hab))
   exact ((hasDerivAt_const x c).add this).deriv.trans (zero_add _)
 
-/-- **The antiderivative of an integrable function is weakly differentiable**: for `w`
-integrable on `(a, b)` and any constant `c`, `w` is the weak derivative of `c + ∫_a^x w` on
-`(a, b)`. The proof is integration by parts for absolutely continuous functions against a test
-function, together with the Lebesgue differentiation theorem. -/
+/-- **The antiderivative of an integrable function is weakly differentiable.** Let $a \le b$ and let
+$w$ be integrable on $(a, b)$. For every constant $c$, the function $w$ is the weak derivative
+of $x \mapsto c + \int_a^x w$ on $(a, b)$.
+
+The proof is integration by parts for absolutely continuous functions against a test function,
+together with the Lebesgue differentiation theorem. -/
 theorem hasWeakDerivOn_integral (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b)) (c : ℝ) :
     HasWeakDerivOn (fun x ↦ c + ∫ t in a..x, w t) w (Opens.Ioo a b) := by
   set g : ℝ → ℝ := fun x ↦ c + ∫ t in a..x, w t with hg
@@ -164,9 +182,11 @@ theorem hasWeakDerivOn_integral (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b)) 
     integral_Ioc_eq_integral_Ioo, integral_Ioc_eq_integral_Ioo] at key
   exact neg_eq_iff_eq_neg.1 key.symm
 
-/-- **The absolutely continuous representative**: a function with an integrable weak derivative
-`w` on `(a, b)` agrees almost everywhere on `(a, b)` with `c + ∫_a^x w` for some constant `c`.
-The difference of `f` and the antiderivative has weak derivative `0`, so it is almost everywhere
+/-- **The absolutely continuous representative.** Let $a < b$, and let $f$ have the weak derivative
+$w$ on $(a, b)$, with $w$ integrable on $(a, b)$. Then there is a constant $c$ such that
+$$f(x) = c + \int_a^x w(t)\, dt \quad \text{for almost every } x \in (a, b).$$
+
+The difference of $f$ and the antiderivative has weak derivative $0$, so it is almost everywhere
 constant by du Bois-Reymond's lemma `HasWeakDerivOn.exists_ae_eq_const`. -/
 theorem HasWeakDerivOn.exists_ae_eq_integral (hab : a < b) (h : HasWeakDerivOn f w (Opens.Ioo a b))
     (hw : IntegrableOn w (Ioo a b)) :
@@ -180,8 +200,9 @@ theorem HasWeakDerivOn.exists_ae_eq_integral (hab : a < b) (h : HasWeakDerivOn f
   simp only [zero_add] at hx ⊢
   linarith
 
-/-- The absolutely continuous representative, as a function continuous on `[a, b]` that is the
-integral of the weak derivative between any two points of `[a, b]`. -/
+/-- Let $a < b$, and let $f$ have the weak derivative $w$ on $(a, b)$, with $w$ integrable on
+$(a, b)$. Then there is a function $g$, continuous on $[a, b]$, that agrees with $f$ almost
+everywhere on $(a, b)$ and satisfies $g(y) - g(x) = \int_x^y w$ for all $x, y \in [a, b]$. -/
 theorem HasWeakDerivOn.exists_continuousOn_ae_eq (hab : a < b)
     (h : HasWeakDerivOn f w (Opens.Ioo a b))
     (hw : IntegrableOn w (Ioo a b)) :
@@ -196,52 +217,63 @@ theorem HasWeakDerivOn.exists_continuousOn_ae_eq (hab : a < b)
 
 end Integral
 
-/-! ### The space `H^m(a, b)` -/
+/-! ### The space $H^m(a, b)$ -/
 
 section Space
 
-/-- **The Sobolev space `H^m(a, b) = W^{m,2}(a, b)`**: the space `SobolevIntervalLp m 2 I` of
-`Numlib/Analysis/Sobolev/Interval/Basic.lean` on `I = (a, b)`, that is, the multi-index Sobolev
-space `SobolevMultiIndex` of `Numlib/Analysis/Sobolev/MultiIndex.lean` on `E = ℝ` with the
-one-element basis, whose multi-indices of order at most `m` are the derivative orders `0, …, m`.
-Being an `abbrev`, it inherits the `InnerProductSpace ℝ` and `CompleteSpace` instances of the
-multi-index space, and the whole `SobolevIntervalLp` API applies to it: it is a Hilbert space for
-the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²(a, b)}`
-(`SobolevIntervalLp.inner_eq`). -/
+/-- **The Sobolev space** $H^m(a, b) = W^{m,2}(a, b)$. An element consists of functions
+$u^{(0)}, \dots, u^{(m)} \in L^2(a, b)$ such that $u^{(j)}$ is the $j$-th weak derivative of
+$u^{(0)}$ on $(a, b)$ for every $j \le m$. It is a Hilbert space for the inner product
+$$(u, v)_{H^m} = \sum_{j=0}^m (u^{(j)}, v^{(j)})_{L^2(a, b)}.$$
+
+The type is the abbreviation `SobolevIntervalLp m 2 (TopologicalSpace.Opens.Ioo a b)`, that is,
+the multi-index Sobolev space `SobolevMultiIndex` on $E = \mathbb{R}$ with the one-element
+basis, whose multi-indices of order at most $m$ are the derivative orders $0, \dots, m$. As an
+`abbrev`, it inherits the `InnerProductSpace ℝ` and `CompleteSpace` instances of the multi-index
+space, and the whole `SobolevIntervalLp` API applies to it. The inner product formula is
+`SobolevIntervalLp.inner_eq`. -/
 abbrev SobolevInterval (m : ℕ) (a b : ℝ) : Type :=
   SobolevIntervalLp m 2 (Opens.Ioo a b)
 
-/-- `MemSobolevInterval f m a b` says that the function `f` belongs to `H^m(a, b)`: it lies in
-`L²(a, b)` together with its weak derivatives of orders `1, …, m`. -/
+/-- A function $f : \mathbb{R} \to \mathbb{R}$ **belongs to $H^m(a, b)$** if $f \in L^2(a, b)$ and,
+for every $j \le m$, $f$ has a $j$-th weak derivative on $(a, b)$ that lies in $L^2(a, b)$.
+
+This is `MemSobolevIntervalLp f m 2 (TopologicalSpace.Opens.Ioo a b)`. -/
 abbrev MemSobolevInterval (f : ℝ → ℝ) (m : ℕ) (a b : ℝ) : Prop :=
   MemSobolevIntervalLp f m 2 (Opens.Ioo a b)
 
 variable {m : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- Membership of `H^m(a, b)` unfolded: `f ∈ L²(a, b)`, and for every `j ≤ m` the `j`-th weak
-derivative of `f` on `(a, b)` exists and lies in `L²(a, b)` (`memSobolevIntervalLp_iff` at
-`p = 2`). -/
+/-- A function $f$ lies in $H^m(a, b)$ if and only if $f \in L^2(a, b)$ and, for every $j \le m$,
+there is a function $w \in L^2(a, b)$ that is the $j$-th weak derivative of $f$ on $(a, b)$.
+
+This is `memSobolevIntervalLp_iff` at $p = 2$. -/
 theorem memSobolevInterval_iff :
     MemSobolevInterval f m a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧ ∀ j ≤ m,
       ∃ w : ℝ → ℝ, HasWeakIteratedDerivOn j f w (Opens.Ioo a b) ∧
         MemLp w 2 (volume.restrict (Ioo a b)) :=
   memSobolevIntervalLp_iff
 
-/-- `H^0(a, b)` is `L²(a, b)` (`memSobolevIntervalLp_zero_iff` at `p = 2`). -/
+/-- A function lies in $H^0(a, b)$ if and only if it lies in $L^2(a, b)$.
+
+This is `memSobolevIntervalLp_zero_iff` at $p = 2$. -/
 theorem memSobolevInterval_zero_iff :
     MemSobolevInterval f 0 a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) :=
   memSobolevIntervalLp_zero_iff
 
-/-- **The recursive description of `H^{m+1}(a, b)`**: a function lies in `H^{m+1}(a, b)` exactly
-when it lies in `L²(a, b)` and has a weak derivative lying in `H^m(a, b)`
-(`memSobolevIntervalLp_succ_iff` at `p = 2`). -/
+/-- **The recursive description of $H^{m+1}(a, b)$.** A function $f$ lies in $H^{m+1}(a, b)$ if and
+only if $f \in L^2(a, b)$ and $f$ has a weak derivative $w$ on $(a, b)$ with $w \in H^m(a, b)$.
+
+This is `memSobolevIntervalLp_succ_iff` at $p = 2$. -/
 theorem memSobolevInterval_succ_iff :
     MemSobolevInterval f (m + 1) a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧
       ∃ w : ℝ → ℝ, HasWeakDerivOn f w (Opens.Ioo a b) ∧ MemSobolevInterval w m a b :=
   memSobolevIntervalLp_succ_iff
 
-/-- `H^1(a, b)` is the space of `L²(a, b)` functions with a weak derivative in `L²(a, b)`:
-[quarteroni2000numerical] (12.42), without the boundary condition. -/
+/-- A function $f$ lies in $H^1(a, b)$ if and only if $f \in L^2(a, b)$ and $f$ has a weak
+derivative $w$ on $(a, b)$ with $w \in L^2(a, b)$.
+
+This is the set (12.42) of [quarteroni2000numerical] without the boundary condition. -/
 theorem memSobolevInterval_one_iff :
     MemSobolevInterval f 1 a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧
       ∃ w : ℝ → ℝ, HasWeakDerivOn f w (Opens.Ioo a b) ∧ MemLp w 2 (volume.restrict (Ioo a b)) :=
@@ -254,100 +286,113 @@ names below that do not mention `L²(a, b)` are aliases of that API, not new dec
 export SobolevIntervalLp (fn fn_mk seminorm_le_norm fn_inclusionCLM norm_derivCLM_le
   norm_inclusionCLM_le)
 
-/-- The `j`-th weak derivative `u^{(j)}` of `u ∈ H^m(a, b)`, as an element of `L²(a, b)`:
-`SobolevIntervalLp.deriv u j`, with its codomain spelled `Lp ℝ 2 (volume.restrict (Ioo a b))`
-rather than `Lp ℝ 2 (volume.restrict ↑(Opens.Ioo a b))`. The two are definitionally equal, but
-the lemmas about `L²(a, b)` (`norm_sq_eq_integral_sq`, `ae_restrict_iff' measurableSet_Ioo`, …)
-and the interval integrals of the consumers rewrite only with the first spelling; this is the
-reason the basic lemmas about `deriv` are restated below, each a one-line instance of its
-`SobolevIntervalLp` counterpart. (Making `Opens.Ioo` reducible does not remove the need: `rw`
-still fails to match `∫ x in Ioo a b` against `∫ x in ↑(Opens.Ioo a b)`, and rewriting the
-coercion away is blocked by the dependent `Lp` types; normalizing the spelling here, once, is what
-keeps every consumer on the `Set.Ioo` form.) -/
+/-- The $j$-th weak derivative $u^{(j)}$ of $u \in H^m(a, b)$, for $0 \le j \le m$, as an element of
+$L^2(a, b)$.
+
+This is `SobolevIntervalLp.deriv u j` with its codomain written
+`Lp ℝ 2 (volume.restrict (Ioo a b))` instead of `Lp ℝ 2 (volume.restrict
+↑(TopologicalSpace.Opens.Ioo a b))`. The two types are definitionally equal, but the lemmas
+about $L^2(a, b)$ (such as `norm_sq_eq_integral_sq` and `ae_restrict_iff' measurableSet_Ioo`)
+and the interval integrals of the users of this module rewrite only with the first form. For
+this reason the basic lemmas about `SobolevInterval.deriv` are restated below, each a one-line
+instance of its `SobolevIntervalLp` counterpart. Making `TopologicalSpace.Opens.Ioo` reducible
+does not remove the need: `rw` still fails to match `∫ x in Ioo a b` against
+`∫ x in ↑(Opens.Ioo a b)`, and the dependent `Lp` types block rewriting the coercion away. -/
 abbrev deriv (u : SobolevInterval m a b) (j : Fin (m + 1)) : Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   SobolevIntervalLp.deriv u j
 
-/-- The derivative of order `0` is the function itself. -/
+/-- For $u \in H^m(a, b)$, the derivative $u^{(0)}$ of order $0$ is the function of $u$. -/
 theorem deriv_zero (u : SobolevInterval m a b) : ⇑(deriv u 0) = fn u := rfl
 
-/-- The weak derivatives of a sum. -/
+/-- For $u, v \in H^m(a, b)$ and $j \le m$, $(u + v)^{(j)} = u^{(j)} + v^{(j)}$. -/
 theorem deriv_add (u v : SobolevInterval m a b) (j : Fin (m + 1)) :
     deriv (u + v) j = deriv u j + deriv v j := rfl
 
-/-- The weak derivatives of a scalar multiple. -/
+/-- For $c \in \mathbb{R}$, $u \in H^m(a, b)$ and $j \le m$, $(c u)^{(j)} = c\, u^{(j)}$. -/
 theorem deriv_smul (c : ℝ) (u : SobolevInterval m a b) (j : Fin (m + 1)) :
     deriv (c • u) j = c • deriv u j := rfl
 
-/-- The weak derivatives of a difference. -/
+/-- For $u, v \in H^m(a, b)$ and $j \le m$, $(u - v)^{(j)} = u^{(j)} - v^{(j)}$. -/
 theorem deriv_sub (u v : SobolevInterval m a b) (j : Fin (m + 1)) :
     deriv (u - v) j = deriv u j - deriv v j := rfl
 
-/-- The weak derivatives of the zero element vanish. -/
+/-- For $j \le m$, the $j$-th weak derivative of $0 \in H^m(a, b)$ is $0$. -/
 theorem deriv_zero_elem (j : Fin (m + 1)) : deriv (0 : SobolevInterval m a b) j = 0 := rfl
 
-/-- An element of `H^m(a, b)` is determined by its weak derivatives of orders `0, …, m`. -/
+/-- Let $u, v \in H^m(a, b)$. If $u^{(j)} = v^{(j)}$ in $L^2(a, b)$ for every $j \le m$, then
+$u = v$. -/
 theorem ext {u v : SobolevInterval m a b} (h : ∀ j, deriv u j = deriv v j) : u = v :=
   SobolevIntervalLp.ext h
 
-/-- The `j`-th component of an element of `H^m(a, b)` is the `j`-th weak derivative of its
-function. -/
+/-- For $u \in H^m(a, b)$ and $j \le m$, the element $u^{(j)}$ is the $j$-th weak derivative of the
+function of $u$ on $(a, b)$. -/
 theorem hasWeakIteratedDerivOn_deriv (u : SobolevInterval m a b) (j : Fin (m + 1)) :
     HasWeakIteratedDerivOn j (fn u) (deriv u j) (Opens.Ioo a b) :=
   SobolevIntervalLp.hasWeakIteratedDerivOn_deriv u j
 
-/-- The weak derivatives of an element of `H^m(a, b)` form a chain: `u^{(j+1)}` is the weak
-derivative of `u^{(j)}`. -/
+/-- For $u \in H^m(a, b)$ and $j < m$, the element $u^{(j+1)}$ is the weak derivative of $u^{(j)}$
+on $(a, b)$. -/
 theorem hasWeakDerivOn_deriv_succ (u : SobolevInterval m a b) (j : Fin m) :
     HasWeakDerivOn (deriv u j.castSucc) (deriv u j.succ) (Opens.Ioo a b) :=
   SobolevIntervalLp.hasWeakDerivOn_deriv_succ u j
 
-/-- The function of `u ∈ H^1(a, b)` has the weak derivative `u'`. -/
+/-- For $u \in H^1(a, b)$, the function of $u$ has the weak derivative $u'$ on $(a, b)$. -/
 theorem hasWeakDerivOn_fn (u : SobolevInterval 1 a b) :
     HasWeakDerivOn (fn u) (deriv u 1) (Opens.Ioo a b) :=
   SobolevIntervalLp.hasWeakDerivOn_fn u
 
-/-- Each weak derivative is bounded by the `H^m` norm. -/
+/-- For $u \in H^m(a, b)$ and $j \le m$, $\|u^{(j)}\|_{L^2(a, b)} \le \|u\|_{H^m}$. -/
 theorem norm_deriv_le (u : SobolevInterval m a b) (j : Fin (m + 1)) : ‖deriv u j‖ ≤ ‖u‖ :=
   SobolevIntervalLp.norm_deriv_le u j
 
-/-- **The inner product of `H^m(a, b)`**: `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²(a, b)}`,
-the inner product (10.34) of [quarteroni2000numerical]. -/
+/-- **The inner product of $H^m(a, b)$.** For $u, v \in H^m(a, b)$,
+$$(u, v)_{H^m} = \sum_{j=0}^m (u^{(j)}, v^{(j)})_{L^2(a, b)}.$$
+This is the inner product (10.34) of [quarteroni2000numerical]. -/
 theorem inner_eq (u v : SobolevInterval m a b) :
     ⟪u, v⟫_ℝ = ∑ j : Fin (m + 1), ⟪deriv u j, deriv v j⟫_ℝ :=
   SobolevIntervalLp.inner_eq u v
 
-/-- Building an element of `H^m(a, b)` from `L²(a, b)` functions `v 0, …, v m` of which `v j` is
-the `j`-th weak derivative of `v 0`: `SobolevIntervalLp.mk`. -/
+/-- The element of $H^m(a, b)$ built from $v_0, \dots, v_m \in L^2(a, b)$ such that $v_j$ is the
+$j$-th weak derivative of $v_0$ on $(a, b)$ for every $j \le m$.
+
+This is `SobolevIntervalLp.mk` at $p = 2$. -/
 abbrev mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
     (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) (Opens.Ioo a b)) :
     SobolevInterval m a b :=
   SobolevIntervalLp.mk v hv
 
-/-- The weak derivatives of `SobolevInterval.mk v hv` are the `v j`. -/
+/-- The weak derivatives of `SobolevInterval.mk v hv` are the given functions: its $j$-th weak
+derivative is $v_j$. -/
 @[simp]
 theorem deriv_mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
     (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) (Opens.Ioo a b))
     (j : Fin (m + 1)) :
     deriv (mk v hv) j = v j := rfl
 
-/-- **The norm of `H^m(a, b)`**: `‖u‖² = ∑_{j ≤ m} ‖u^{(j)}‖²_{L²(a, b)}`, the norm (10.35) of
-[quarteroni2000numerical]; the square of `SobolevIntervalLp.norm_eq_sum` at `p = 2`. -/
+/-- **The norm of $H^m(a, b)$.** For $u \in H^m(a, b)$,
+$$\|u\|_{H^m}^2 = \sum_{j=0}^m \|u^{(j)}\|_{L^2(a, b)}^2.$$
+This is the norm (10.35) of [quarteroni2000numerical].
+
+The proof squares `SobolevIntervalLp.norm_eq_sum` at $p = 2$. -/
 theorem norm_sq_eq (u : SobolevInterval m a b) :
     ‖u‖ ^ 2 = ∑ j : Fin (m + 1), ‖deriv u j‖ ^ 2 := by
   rw [← Submodule.norm_coe, PiLp.norm_sq_eq_of_L2,
     ← (SobolevIntervalLp.derivIndexEquiv m).sum_comp]
   rfl
 
-/-- `‖u‖_{H^1} ≤ ‖u‖_{L²} + ‖u'‖_{L²}`: `SobolevIntervalLp.norm_le_sum_norm_deriv` at `m = 1`. -/
+/-- For $u \in H^1(a, b)$, $\|u\|_{H^1} \le \|u\|_{L^2(a, b)} + \|u'\|_{L^2(a, b)}$.
+
+This is `SobolevIntervalLp.norm_le_sum_norm_deriv` at $m = 1$. -/
 theorem norm_le_add_norm_deriv (u : SobolevInterval 1 a b) :
     ‖u‖ ≤ ‖deriv u 0‖ + ‖deriv u 1‖ := by
   have h := SobolevIntervalLp.norm_le_sum_norm_deriv u
   rwa [Fin.sum_univ_two] at h
 
-/-- **The inner product of `H^1(a, b)` as an integral**:
-`(u, v)_{H¹} = ∫_a^b (u'(x) v'(x) + u(x) v(x)) dx`. It is `inner_eq` with the two
-`L²(a, b)` inner products written out, the sum of the integrands being integrable by
-`MeasureTheory.L2.integrable_inner`. -/
+/-- **The inner product of $H^1(a, b)$ as an integral.** Let $a \le b$. For $u, v \in H^1(a, b)$,
+$$(u, v)_{H^1} = \int_a^b \bigl(u'(x) v'(x) + u(x) v(x)\bigr)\, dx.$$
+
+This is `SobolevInterval.inner_eq` with the two inner products of $L^2(a, b)$ written as
+integrals. The sum of the integrands is integrable by `MeasureTheory.L2.integrable_inner`. -/
 theorem inner_eq_intervalIntegral (hab : a ≤ b) (u v : SobolevInterval 1 a b) :
     inner ℝ u v = ∫ x in a..b, (deriv u 1 x * deriv v 1 x + fn u x * fn v x) := by
   rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo,
@@ -358,47 +403,56 @@ theorem inner_eq_intervalIntegral (hab : a ≤ b) (u v : SobolevInterval 1 a b) 
   ring
 
 variable (m a b) in
-/-- The `j`-th weak derivative as a continuous linear map `H^m(a, b) → L²(a, b)`, of norm at most
-one: `SobolevIntervalLp.derivL` at `p = 2`. -/
+/-- For $j \le m$, the map $u \mapsto u^{(j)}$ as a continuous linear map $H^m(a, b) \to L^2(a, b)$
+of norm at most $1$.
+
+This is `SobolevIntervalLp.derivL` at $p = 2$. -/
 abbrev derivL (j : Fin (m + 1)) :
     SobolevInterval m a b →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   SobolevIntervalLp.derivL m 2 (Opens.Ioo a b) j
 
-/-- `SobolevInterval.derivL` is the weak derivative. -/
+/-- The map `SobolevInterval.derivL m a b j` sends $u$ to $u^{(j)}$. -/
 @[simp]
 theorem derivL_apply (j : Fin (m + 1)) (u : SobolevInterval m a b) :
     derivL m a b j u = deriv u j :=
   rfl
 
 variable (m a b) in
-/-- **The Sobolev seminorm** `|u|_{H^m(a, b)} = ‖u^{(m)}‖_{L²(a, b)}`, bundled as a `Seminorm` so
-that the seminorm forms of Céa's and Strang's lemmas apply to it; it is the `|·|_{H¹(0,1)}` of
-[quarteroni2000numerical] (12.49), and `SobolevIntervalLp.seminorm` at `p = 2`. -/
+/-- **The Sobolev seminorm** $|u|_{H^m(a, b)} = \|u^{(m)}\|_{L^2(a, b)}$ on $H^m(a, b)$.
+
+It is bundled as a `Seminorm`, so that the seminorm forms of Céa's and Strang's lemmas apply to
+it. For $m = 1$ it is the seminorm $|\cdot|_{H^1(0,1)}$ of (12.49) in [quarteroni2000numerical].
+It is `SobolevIntervalLp.seminorm` at $p = 2$. -/
 abbrev seminorm : Seminorm ℝ (SobolevInterval m a b) :=
   SobolevIntervalLp.seminorm m 2 (Opens.Ioo a b)
 
-/-- The seminorm is the `L²` norm of the top derivative. -/
+/-- For $u \in H^m(a, b)$, $|u|_{H^m} = \|u^{(m)}\|_{L^2(a, b)}$. -/
 theorem seminorm_apply (u : SobolevInterval m a b) : seminorm m a b u = ‖deriv u (Fin.last m)‖ :=
   rfl
 
 variable (m a b) in
-/-- **Weak differentiation `d/dx : H^{m+1}(a, b) → H^m(a, b)`** as a continuous linear map, of
-norm at most one: `SobolevIntervalLp.derivCLM` at `p = 2`. -/
+/-- **Weak differentiation** $d/dx : H^{m+1}(a, b) \to H^m(a, b)$, $u \mapsto u'$, as a continuous
+linear map of norm at most $1$.
+
+This is `SobolevIntervalLp.derivCLM` at $p = 2$. -/
 abbrev derivCLM : SobolevInterval (m + 1) a b →L[ℝ] SobolevInterval m a b :=
   SobolevIntervalLp.derivCLM m 2 (Opens.Ioo a b)
 
-/-- The weak derivatives of `u'` are those of `u`, shifted by one. -/
+/-- For $u \in H^{m+1}(a, b)$ and $j \le m$, the $j$-th weak derivative of $u'$ is $u^{(j+1)}$. -/
 @[simp]
 theorem deriv_derivCLM (u : SobolevInterval (m + 1) a b) (j : Fin (m + 1)) :
     deriv (derivCLM m a b u) j = deriv u j.succ := rfl
 
 variable (m a b) in
-/-- **The inclusion `H^{m+1}(a, b) → H^m(a, b)`**, forgetting the top derivative, as a continuous
-linear map of norm at most one: `SobolevIntervalLp.inclusionCLM` at `p = 2`. -/
+/-- **The inclusion** $H^{m+1}(a, b) \to H^m(a, b)$, which forgets the top derivative, as a
+continuous linear map of norm at most $1$.
+
+This is `SobolevIntervalLp.inclusionCLM` at $p = 2$. -/
 abbrev inclusionCLM : SobolevInterval (m + 1) a b →L[ℝ] SobolevInterval m a b :=
   SobolevIntervalLp.inclusionCLM m 2 (Opens.Ioo a b)
 
-/-- The weak derivatives of the inclusion of `u` are those of `u`. -/
+/-- For $u \in H^{m+1}(a, b)$ and $j \le m$, the $j$-th weak derivative of the image of $u$ in
+$H^m(a, b)$ is $u^{(j)}$. -/
 @[simp]
 theorem deriv_inclusionCLM (u : SobolevInterval (m + 1) a b) (j : Fin (m + 1)) :
     deriv (inclusionCLM m a b u) j = deriv u j.castSucc := rfl
@@ -407,14 +461,16 @@ end SobolevInterval
 
 end Space
 
-/-! ### Cauchy–Schwarz on an interval -/
+/-! ### The Cauchy–Schwarz inequality on an interval -/
 
 section CauchySchwarz
 
 variable {a b : ℝ}
 
-/-- Cauchy–Schwarz for a set integral of an `L²(a, b)` function:
-`|∫_s f| ≤ √|s| ‖f‖_{L²(a, b)}` for a measurable `s ⊆ (a, b)`. -/
+/-- Let $f \in L^2(a, b)$ and let $s \subseteq (a, b)$ be measurable, with Lebesgue measure $|s|$.
+Then
+$$\Bigl|\int_s f\Bigr| \le \sqrt{|s|}\, \|f\|_{L^2(a, b)}.$$
+-/
 theorem abs_setIntegral_le_sqrt_mul_norm (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {s : Set ℝ}
     (hs : MeasurableSet s) (hsub : s ⊆ Ioo a b) :
     |∫ x in s, f x| ≤ Real.sqrt (volume.real s) * ‖f‖ := by
@@ -426,8 +482,9 @@ theorem abs_setIntegral_le_sqrt_mul_norm (f : Lp ℝ 2 (volume.restrict (Ioo a b
     measureReal_restrict_apply hs, inter_eq_left.2 hsub, Real.sqrt_eq_rpow]
   simp
 
-/-- Cauchy–Schwarz for an interval integral of an `L²(a, b)` function:
-`|∫_x^y f| ≤ √(y - x) ‖f‖_{L²(a, b)}` for `a ≤ x ≤ y ≤ b`. -/
+/-- Let $f \in L^2(a, b)$ and $x, y \in [a, b]$ with $x \le y$. Then
+$$\Bigl|\int_x^y f\Bigr| \le \sqrt{y - x}\, \|f\|_{L^2(a, b)}.$$
+-/
 theorem abs_intervalIntegral_le_sqrt_mul_norm (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {x y : ℝ}
     (hx : x ∈ Icc a b) (hy : y ∈ Icc a b) (hxy : x ≤ y) :
     |∫ t in x..y, f t| ≤ Real.sqrt (y - x) * ‖f‖ := by
@@ -435,7 +492,8 @@ theorem abs_intervalIntegral_le_sqrt_mul_norm (f : Lp ℝ 2 (volume.restrict (Io
   have := abs_setIntegral_le_sqrt_mul_norm f measurableSet_Ioo (Ioo_subset_Ioo hx.1 hy.2)
   rwa [Real.volume_real_Ioo_of_le hxy] at this
 
-/-- The `L¹(a, b)` norm of an `L²(a, b)` function is at most `√(b - a)` times its `L²` norm. -/
+/-- Let $a \le b$ and $f \in L^2(a, b)$. Then $\int_{(a, b)} |f| \le \sqrt{b - a}\, \|f\|_{L^2(a,
+b)}$. -/
 theorem integral_abs_le_sqrt_mul_norm (hab : a ≤ b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ∫ x in Ioo a b, |f x| ≤ Real.sqrt (b - a) * ‖f‖ := by
   have e1 : ∫ x in Ioo a b, |f x| = ∫ x in Ioo a b, (|f| : Lp ℝ 2 (volume.restrict (Ioo a b))) x :=
@@ -445,8 +503,10 @@ theorem integral_abs_le_sqrt_mul_norm (hab : a ≤ b) (f : Lp ℝ 2 (volume.rest
 
 open intervalIntegral in
 open scoped Interval in
-/-- **Cauchy–Schwarz for an interval integral**: `|∫_s^t g| ≤ √(v - u) √(∫_u^v g²)` for
-`s, t ∈ [u, v]` and `g` square integrable on `[u, v]`. -/
+/-- **The Cauchy–Schwarz inequality for an interval integral.** Let $u \le v$, and let $g$ and $g^2$
+be integrable on $[u, v]$. For all $s, t \in [u, v]$,
+$$\Bigl|\int_s^t g\Bigr| \le \sqrt{v - u}\, \Bigl(\int_u^v g^2\Bigr)^{1/2}.$$
+-/
 theorem abs_intervalIntegral_le_sqrt_mul_sqrt {u v : ℝ} (huv : u ≤ v) {g : ℝ → ℝ}
     (hg : IntervalIntegrable g volume u v) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume u v)
     {s t : ℝ} (hs : s ∈ Icc u v) (ht : t ∈ Icc u v) :
@@ -481,7 +541,7 @@ theorem abs_intervalIntegral_le_sqrt_mul_sqrt {u v : ℝ} (huv : u ≤ v) {g : �
 
 end CauchySchwarz
 
-/-! ### The continuous representative, and `H^1(a, b) ↪ C[a, b]` -/
+/-! ### The continuous representative and the embedding into $C[a, b]$ -/
 
 section Embedding
 
@@ -501,32 +561,45 @@ export SobolevIntervalLp (rep toContinuousMap_apply coe_toContinuousMap_ae_eq
   toContinuousMap_eq_of_continuousOn absolutelyContinuousOnInterval_toContinuousMap
   exists_toContinuousMap_eq evalCLM_apply)
 
-/-- **The embedding `H^1(a, b) ↪ C[a, b]`**, `u ↦` its continuous representative on `[a, b]`:
-`SobolevIntervalLp.toContinuousMap` at `p = 2` (an abbreviation, so that the exponent is fixed).
-Its norm is at most `(b - a)^{-1/2} + (b - a)^{1/2}` (`SobolevInterval.norm_toContinuousMap_le`);
-for `H^m(a, b)` with `m ≥ 1`, compose with `SobolevInterval.inclusionCLM`. -/
+/-- **The embedding** $H^1(a, b) \hookrightarrow C[a, b]$. For $a < b$, it is the continuous linear
+map that sends $u \in H^1(a, b)$ to its continuous representative $\tilde u$ on $[a, b]$.
+
+Its norm is at most $(b - a)^{-1/2} + (b - a)^{1/2}$
+(`SobolevInterval.norm_toContinuousMap_le`). For $H^m(a, b)$ with $m \ge 1$, compose it with
+`SobolevInterval.inclusionCLM`. It is the abbreviation `SobolevIntervalLp.toContinuousMap hab`
+at $p = 2$, so that the exponent is fixed. -/
 abbrev toContinuousMap (hab : a < b) : SobolevInterval 1 a b →L[ℝ] C(Icc a b, ℝ) :=
   SobolevIntervalLp.toContinuousMap hab
 
-/-- **Point evaluation on `H^1(a, b)`** (2.5.7), `ℓ_c(v) = v(c)` for `c ∈ [a, b]`, as a bounded
-linear functional: `SobolevIntervalLp.evalCLM` at `p = 2`. This is Atkinson–Han's
-Exercise 2.5.5. -/
+/-- **Point evaluation on $H^1(a, b)$.** For $a < b$ and $c \in [a, b]$, the bounded linear
+functional $\ell_c(v) = \tilde v(c)$ on $H^1(a, b)$, where $\tilde v$ is the continuous
+representative of $v$.
+
+This is the functional (2.5.7) and Exercise 2.5.5 of [han2009theoretical]. It is
+`SobolevIntervalLp.evalCLM` at $p = 2$. -/
 abbrev evalCLM (hab : a < b) (c : Icc a b) : StrongDual ℝ (SobolevInterval 1 a b) :=
   SobolevIntervalLp.evalCLM hab c
 
-/-- **The fundamental theorem of calculus in `H^1(a, b)`**: the embedding of `u` into `C[a, b]`
-is the integral of `u'` between any two points of `[a, b]`. -/
+/-- **The fundamental theorem of calculus in $H^1(a, b)$.** Let $a < b$ and $u \in H^1(a, b)$, with
+continuous representative $\tilde u$. For all $x, y \in [a, b]$,
+$$\tilde u(y) - \tilde u(x) = \int_x^y u'(t)\, dt.$$
+
+Here $\tilde u$ is `SobolevInterval.toContinuousMap hab u`. -/
 theorem toContinuousMap_sub_eq_integral (hab : a < b) (u : SobolevInterval 1 a b)
     (x y : Icc a b) :
     toContinuousMap hab u y - toContinuousMap hab u x = ∫ t in (x : ℝ)..y, deriv u 1 t :=
   SobolevIntervalLp.toContinuousMap_sub_eq_integral hab u x y
 
-/-- **The embedding `H^1(a, b) ↪ C([a, b], ℝ)` is injective**. -/
+/-- For $a < b$, the embedding $H^1(a, b) \hookrightarrow C[a, b]$, $u \mapsto \tilde u$, is
+injective. -/
 theorem toContinuousMap_injective (hab : a < b) :
     Function.Injective (toContinuousMap hab) :=
   SobolevIntervalLp.toContinuousMap_injective hab
 
-/-- The continuous representative is continuous on `[a, b]`. -/
+/-- Let $a \le b$ and $u \in H^1(a, b)$. The continuous representative $\tilde u$ is continuous on
+$[a, b]$.
+
+Here $\tilde u$ is `SobolevIntervalLp.rep u`, a function on all of $\mathbb{R}$. -/
 theorem continuousOn_rep (hab : a ≤ b) (u : SobolevInterval 1 a b) :
     ContinuousOn (rep u) (Icc a b) := by
   rcases hab.lt_or_eq with hab | rfl
@@ -534,7 +607,8 @@ theorem continuousOn_rep (hab : a ≤ b) (u : SobolevInterval 1 a b) :
   · rw [Icc_self]
     exact continuousOn_singleton _ _
 
-/-- The continuous representative is absolutely continuous on `[a, b]`. -/
+/-- Let $a \le b$ and $u \in H^1(a, b)$. The continuous representative $\tilde u$ is absolutely
+continuous on $[a, b]$. -/
 theorem absolutelyContinuousOnInterval_rep (hab : a ≤ b) (u : SobolevInterval 1 a b) :
     AbsolutelyContinuousOnInterval (rep u) a b := by
   rcases hab.lt_or_eq with hab | rfl
@@ -543,8 +617,8 @@ theorem absolutelyContinuousOnInterval_rep (hab : a ≤ b) (u : SobolevInterval 
       (by rw [closure_coe_Ioo hab]; exact right_mem_Icc.2 hab.le)
   · exact .refl _ _
 
-/-- The classical derivative of the continuous representative is `u'` almost everywhere on
-`(a, b]`. -/
+/-- For $u \in H^1(a, b)$, the classical derivative of the continuous representative $\tilde u$
+equals $u'(x)$ for almost every $x \in (a, b]$. -/
 theorem ae_deriv_rep_eq (u : SobolevInterval 1 a b) :
     ∀ᵐ x, x ∈ Ioc a b → _root_.deriv (rep u) x = deriv u 1 x := by
   have hb : ∀ᵐ t : ℝ, t ≠ b := by simp [ae_iff, measure_singleton]
@@ -552,14 +626,17 @@ theorem ae_deriv_rep_eq (u : SobolevInterval 1 a b) :
     with x hx hxb hxI
   exact hx ⟨hxI.1, lt_of_le_of_ne hxI.2 hxb⟩
 
-/-- The function of `u ∈ H^1(a, b)` agrees almost everywhere on `(a, b)` with its continuous
-representative (`SobolevIntervalLp.fn_ae_eq_rep` on `(a, b)`). -/
+/-- For $u \in H^1(a, b)$, the function of $u$ agrees with its continuous representative $\tilde u$
+almost everywhere on $(a, b)$.
+
+This is `SobolevIntervalLp.fn_ae_eq_rep` on $(a, b)$. -/
 theorem fn_ae_eq_rep (u : SobolevInterval 1 a b) :
     fn u =ᵐ[volume.restrict (Ioo a b)] rep u :=
   SobolevIntervalLp.fn_ae_eq_rep (ordConnected_coe_Ioo a b) u
 
-/-- The continuous representative is canonical: any function continuous on `[a, b]` that agrees
-almost everywhere with `u` on `(a, b)` is the representative on all of `[a, b]`. -/
+/-- **The continuous representative is unique.** Let $a < b$ and $u \in H^1(a, b)$. If $g$ is
+continuous on $[a, b]$ and agrees with $u$ almost everywhere on $(a, b)$, then $\tilde u = g$ on
+$[a, b]$. -/
 theorem rep_eq_of_continuousOn (hab : a < b) (u : SobolevInterval 1 a b) {g : ℝ → ℝ}
     (hg : ContinuousOn g (Icc a b)) (hu : fn u =ᵐ[volume.restrict (Ioo a b)] g) :
     EqOn (rep u) g (Icc a b) := by
@@ -567,34 +644,45 @@ theorem rep_eq_of_continuousOn (hab : a < b) (u : SobolevInterval 1 a b) {g : �
     (by rwa [closure_coe_Ioo hab]) hu
   rwa [closure_coe_Ioo hab] at h
 
-/-- The continuous representative of a sum, on `[a, b]`. -/
+/-- Let $a < b$ and $u, v \in H^1(a, b)$. Then $\widetilde{u + v} = \tilde u + \tilde v$ on
+$[a, b]$. -/
 theorem rep_add (hab : a < b) (u v : SobolevInterval 1 a b) :
     EqOn (rep (u + v)) (rep u + rep v) (Icc a b) :=
   fun _ hx ↦ SobolevIntervalLp.rep_add_Icc hab u v hx
 
-/-- The continuous representative of a scalar multiple, on `[a, b]`. -/
+/-- Let $a < b$, $c \in \mathbb{R}$ and $u \in H^1(a, b)$. Then $\widetilde{c u} = c\, \tilde u$ on
+$[a, b]$. -/
 theorem rep_smul (hab : a < b) (c : ℝ) (u : SobolevInterval 1 a b) :
     EqOn (rep (c • u)) (c • rep u) (Icc a b) :=
   fun _ hx ↦ SobolevIntervalLp.rep_smul_Icc hab c u hx
 
-/-- **The product rule in `H^1(a, b)`**, weak derivative form: the product of the continuous
-representatives has the weak derivative `u' g_v + g_u v'` on `(a, b)`
-(`SobolevIntervalLp.hasWeakDerivOn_rep_mul` on `(a, b)`). -/
+/-- **The product rule in $H^1(a, b)$.** For $u, v \in H^1(a, b)$ with continuous representatives
+$\tilde u$, $\tilde v$, the product $\tilde u \tilde v$ has the weak derivative
+$u' \tilde v + \tilde u v'$ on $(a, b)$.
+
+This is `SobolevIntervalLp.hasWeakDerivOn_rep_mul` on $(a, b)$. The membership
+$\tilde u \tilde v \in H^1(a, b)$ is `SobolevIntervalLp.memSobolevIntervalLp_mul`. -/
 theorem hasWeakDerivOn_rep_mul (u v : SobolevInterval 1 a b) :
     HasWeakDerivOn (fun t ↦ rep u t * rep v t)
       (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) (Opens.Ioo a b) :=
   SobolevIntervalLp.hasWeakDerivOn_rep_mul (ordConnected_coe_Ioo a b) u v
 
-/-- The continuous representative of a finite linear combination in `H¹(a, b)`, on `[a, b]`. -/
+/-- Let $a < b$, let $s$ be a finite index set, and let $c_j \in \mathbb{R}$ and
+$\varphi_j \in H^1(a, b)$ for $j \in s$. For every $x \in [a, b]$, the continuous representative
+of $\sum_{j \in s} c_j \varphi_j$ takes the value $\sum_{j \in s} c_j \tilde\varphi_j(x)$ at
+$x$. -/
 theorem rep_finset_sum (hab : a < b) {ι : Type*} (s : Finset ι) (c : ι → ℝ)
     (φ : ι → SobolevInterval 1 a b) {x : ℝ} (hx : x ∈ Icc a b) :
     rep (∑ j ∈ s, c j • φ j) x = ∑ j ∈ s, c j * rep (φ j) x :=
   SobolevIntervalLp.rep_finset_sum (ordConnected_coe_Ioo a b) s c φ
     (by rwa [closure_coe_Ioo hab])
 
-/-- **The pointwise bound of the embedding `H^1(a, b) ↪ C[a, b]`**:
-`|u(x)| ≤ ((b - a)^{-1/2} + (b - a)^{1/2}) ‖u‖_{H^1}` for `x ∈ [a, b]`, the case `p = 2` of
-`SobolevIntervalLp.abs_rep_le_of_bounded`. -/
+/-- **The pointwise bound of the embedding** $H^1(a, b) \hookrightarrow C[a, b]$. Let $a < b$ and
+$u \in H^1(a, b)$. For every $x \in [a, b]$,
+$$|\tilde u(x)| \le \bigl((b - a)^{-1/2} + (b - a)^{1/2}\bigr) \|u\|_{H^1}.$$
+
+It follows from the case $p = 2$ of `SobolevIntervalLp.abs_rep_le_of_bounded`, which bounds
+$|\tilde u(x)|$ by $(b - a)^{-1/2} \|u\|_{L^2} + (b - a)^{1/2} \|u'\|_{L^2}$. -/
 theorem abs_rep_le (hab : a < b) (u : SobolevInterval 1 a b) {x : ℝ} (hx : x ∈ Icc a b) :
     |rep u x| ≤ (1 / Real.sqrt (b - a) + Real.sqrt (b - a)) * ‖u‖ := by
   have hba : 0 < b - a := sub_pos.2 hab
@@ -612,15 +700,17 @@ theorem abs_rep_le (hab : a < b) (u : SobolevInterval 1 a b) {x : ℝ} (hx : x �
   · exact norm_deriv_le u 0
   · exact norm_deriv_le u 1
 
-/-- **The embedding constant of `H^1(a, b) ↪ C[a, b]`**:
-`‖u‖_∞ ≤ ((b - a)^{-1/2} + (b - a)^{1/2}) ‖u‖_{H^1}`. -/
+/-- **The embedding constant of** $H^1(a, b) \hookrightarrow C[a, b]$. Let $a < b$ and
+$u \in H^1(a, b)$. Then
+$$\|\tilde u\|_{C[a, b]} \le \bigl((b - a)^{-1/2} + (b - a)^{1/2}\bigr) \|u\|_{H^1},$$
+where $\|\cdot\|_{C[a, b]}$ is the supremum norm on $[a, b]$. -/
 theorem norm_toContinuousMap_le (hab : a < b) (u : SobolevInterval 1 a b) :
     ‖toContinuousMap hab u‖ ≤ (1 / Real.sqrt (b - a) + Real.sqrt (b - a)) * ‖u‖ :=
   (ContinuousMap.norm_le _ (by positivity)).2 fun x ↦ by
     rw [Real.norm_eq_abs]; exact abs_rep_le hab u x.2
 
-/-- The operator norm of the embedding `H^1(a, b) ↪ C[a, b]` is at most
-`(b - a)^{-1/2} + (b - a)^{1/2}`. -/
+/-- For $a < b$, the operator norm of the embedding $H^1(a, b) \hookrightarrow C[a, b]$ is at most
+$(b - a)^{-1/2} + (b - a)^{1/2}$. -/
 theorem norm_toContinuousMap_le' (hab : a < b) :
     ‖(toContinuousMap hab : SobolevInterval 1 a b →L[ℝ] C(Icc a b, ℝ))‖
       ≤ 1 / Real.sqrt (b - a) + Real.sqrt (b - a) :=
@@ -631,7 +721,7 @@ end SobolevInterval
 
 end Embedding
 
-/-! ### The `C^k` representative, and the seminorm as an interval integral -/
+/-! ### The $C^k$ representative, and the seminorm as an interval integral -/
 
 section Representative
 
@@ -642,11 +732,12 @@ variable {a b : ℝ}
 
 namespace SobolevInterval
 
-/-- **The `C^k` representative of an element of `H^{k+1}(a, b)`**: a function `f` of class `C^k` on
-all of `ℝ` that agrees almost everywhere on `(a, b)` with `u`, whose derivatives `f^{(j)}` for
-`j ≤ k` agree almost everywhere with the weak derivatives `u^{(j)}`, and whose `k`-th derivative is
-the integral of the top weak derivative `u^{(k+1)}` between any two points of `[a, b]`:
-`SobolevIntervalLp.exists_contDiff_ae_eq` on `(a, b)`. -/
+/-- **The $C^k$ representative of an element of $H^{k+1}(a, b)$.** Let $a < b$ and
+$u \in H^{k+1}(a, b)$. There is a function $f \in C^k(\mathbb{R})$ such that $f^{(j)} = u^{(j)}$
+almost everywhere on $(a, b)$ for every $j \le k$, and
+$$f^{(k)}(t) - f^{(k)}(s) = \int_s^t u^{(k+1)}(r)\, dr \quad \text{for all } s, t \in [a, b].$$
+
+This is `SobolevIntervalLp.exists_contDiff_ae_eq` on $(a, b)$. -/
 theorem exists_contDiff_ae_eq (hab : a < b) {k : ℕ} (u : SobolevInterval (k + 1) a b) :
     ∃ f : ℝ → ℝ, ContDiff ℝ k f ∧
       (∀ j : Fin (k + 1), deriv u j.castSucc =ᵐ[volume.restrict (Ioo a b)] iteratedDeriv j f) ∧
@@ -656,24 +747,26 @@ theorem exists_contDiff_ae_eq (hab : a < b) {k : ℕ} (u : SobolevInterval (k + 
     (SobolevIntervalLp.ordConnected_coe_Ioo a b) u
   rwa [SobolevIntervalLp.closure_coe_Ioo hab] at h
 
-/-- The `L²(a, b)` norm of a weak derivative, as an interval integral. -/
+/-- Let $a \le b$, $u \in H^m(a, b)$ and $j \le m$. Then $\|u^{(j)}\|_{L^2(a, b)}^2 = \int_a^b
+(u^{(j)})^2$. -/
 theorem norm_deriv_sq_eq_integral (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
     (j : Fin (m + 1)) : ‖deriv u j‖ ^ 2 = ∫ t in a..b, deriv u j t ^ 2 := by
   rw [norm_sq_eq_integral_sq, integral_of_le hab, integral_Ioc_eq_integral_Ioo]
   simp only [sq_abs]
 
-/-- **The Sobolev seminorm as an interval integral**: `|u|²_{H^m(a, b)} = ∫_a^b |u^{(m)}|²`. -/
+/-- **The Sobolev seminorm as an interval integral.** Let $a \le b$ and $u \in H^m(a, b)$. Then
+$|u|_{H^m(a, b)}^2 = \int_a^b (u^{(m)})^2$. -/
 theorem seminorm_sq_eq_integral (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b) :
     seminorm m a b u ^ 2 = ∫ t in a..b, deriv u (Fin.last m) t ^ 2 := by
   rw [seminorm_apply, norm_deriv_sq_eq_integral hab]
 
-/-- The weak derivatives are interval integrable on `[a, b]`. -/
+/-- Let $a \le b$, $u \in H^m(a, b)$ and $j \le m$. Then $u^{(j)}$ is integrable on $[a, b]$. -/
 theorem intervalIntegrable_deriv (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
     (j : Fin (m + 1)) : IntervalIntegrable (deriv u j) volume a b :=
   (SobolevIntervalLp.integrableOn_deriv_Ioo u j).intervalIntegrable_of_Ioo (left_mem_Icc.2 hab)
     (right_mem_Icc.2 hab)
 
-/-- The squares of the weak derivatives are interval integrable on `[a, b]`. -/
+/-- Let $a \le b$, $u \in H^m(a, b)$ and $j \le m$. Then $(u^{(j)})^2$ is integrable on $[a, b]$. -/
 theorem intervalIntegrable_deriv_sq (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
     (j : Fin (m + 1)) : IntervalIntegrable (fun t => deriv u j t ^ 2) volume a b := by
   have h : IntegrableOn (fun t => deriv u j t ^ 2) (Ioo a b) :=
@@ -684,17 +777,20 @@ end SobolevInterval
 
 end Representative
 
-/-! ### Integration by parts in `H^1(a, b)` -/
+/-! ### Integration by parts in $H^1(a, b)$ -/
 
 section Leibniz
 
 variable {a b : ℝ}
 
-/-- **The Leibniz identity for antiderivatives of integrable functions**: for `w₁, w₂` integrable
-on `(a, b)`, `g_i = c_i + ∫_a^x w_i` and `x ∈ [a, b]`,
-`g₁(x) g₂(x) - c₁ c₂ = ∫_a^x (w₁ g₂ + g₁ w₂)`. It is Mathlib's product rule for absolutely
-continuous functions, `AbsolutelyContinuousOnInterval.integral_deriv_mul_eq_sub`, with the
-classical derivatives replaced by `w₁, w₂` through the Lebesgue differentiation theorem. -/
+/-- **The Leibniz identity for antiderivatives of integrable functions.** Let $a \le b$, let
+$w_1, w_2$ be integrable on $(a, b)$, let $c_1, c_2 \in \mathbb{R}$, and put
+$g_i(x) = c_i + \int_a^x w_i$. For every $x \in [a, b]$,
+$$g_1(x)\, g_2(x) - c_1 c_2 = \int_a^x (w_1 g_2 + g_1 w_2).$$
+
+It is Mathlib's product rule for absolutely continuous functions,
+`AbsolutelyContinuousOnInterval.integral_deriv_mul_eq_sub`, with the classical derivatives
+replaced by $w_1, w_2$ through the Lebesgue differentiation theorem. -/
 theorem integral_mul_add_mul_of_eq_integral (hab : a ≤ b) {w₁ w₂ : ℝ → ℝ}
     (hw₁ : IntegrableOn w₁ (Ioo a b)) (hw₂ : IntegrableOn w₂ (Ioo a b)) (c₁ c₂ : ℝ) {x : ℝ}
     (hx : x ∈ Icc a b) :
@@ -723,9 +819,11 @@ namespace SobolevInterval
 
 open SobolevIntervalLp (ordConnected_coe_Ioo closure_coe_Ioo)
 
-/-- **Integration by parts in `H^1(a, b)`**: for `u, v ∈ H^1(a, b)` with continuous
-representatives `g_u, g_v`, `∫_a^b (u' g_v + g_u v') = g_u(b) g_v(b) - g_u(a) g_v(a)`
-(`SobolevIntervalLp.integral_deriv_mul_add_mul_deriv` on `[a, b]`). -/
+/-- **Integration by parts in $H^1(a, b)$.** Let $a < b$, and let $u, v \in H^1(a, b)$ have
+continuous representatives $\tilde u, \tilde v$. Then
+$$\int_a^b (u' \tilde v + \tilde u v') = \tilde u(b) \tilde v(b) - \tilde u(a) \tilde v(a).$$
+
+This is `SobolevIntervalLp.integral_deriv_mul_add_mul_deriv` on $[a, b]$. -/
 theorem integral_deriv_mul_add_mul_deriv (hab : a < b) (u v : SobolevInterval 1 a b) :
     ∫ t in a..b, (deriv u 1 t * rep v t + rep u t * deriv v 1 t) =
       rep u b * rep v b - rep u a * rep v a :=
@@ -733,9 +831,12 @@ theorem integral_deriv_mul_add_mul_deriv (hab : a < b) (u v : SobolevInterval 1 
     (by rw [closure_coe_Ioo hab]; exact right_mem_Icc.2 hab.le)
     (by rw [closure_coe_Ioo hab]; exact left_mem_Icc.2 hab.le)
 
-/-- **Integration by parts in `H^1(a, b)` against an absolutely continuous factor** `ψ`:
-`∫_a^b u' ψ = [g_u ψ]_a^b - ∫_a^b g_u ψ'`, where `ψ'` is the classical derivative, which exists
-almost everywhere. -/
+/-- **Integration by parts in $H^1(a, b)$ against an absolutely continuous factor.** Let $a < b$,
+let $u \in H^1(a, b)$ have continuous representative $\tilde u$, and let $\psi$ be absolutely
+continuous on $[a, b]$. Then
+$$\int_a^b u' \psi = \tilde u(b) \psi(b) - \tilde u(a) \psi(a) - \int_a^b \tilde u \psi'.$$
+
+Here $\psi'$ is the classical derivative `deriv ψ`, which exists almost everywhere. -/
 theorem integral_deriv_mul_eq_sub_integral_mul_deriv (hab : a < b) (u : SobolevInterval 1 a b)
     {ψ : ℝ → ℝ} (hψ : AbsolutelyContinuousOnInterval ψ a b) :
     ∫ t in a..b, deriv u 1 t * ψ t =
@@ -744,8 +845,11 @@ theorem integral_deriv_mul_eq_sub_integral_mul_deriv (hab : a < b) (u : SobolevI
     (ordConnected_coe_Ioo a b) u (by rw [closure_coe_Ioo hab]; exact right_mem_Icc.2 hab.le)
     (by rw [closure_coe_Ioo hab]; exact left_mem_Icc.2 hab.le) hψ
 
-/-- **Integration by parts in `H^1(a, b)` against a `C¹` factor** `ψ`, such as a coefficient of
-a differential operator: `∫_a^b u' ψ = [g_u ψ]_a^b - ∫_a^b g_u ψ'`. -/
+/-- **Integration by parts in $H^1(a, b)$ against a $C^1$ factor.** Let $a < b$, let
+$u \in H^1(a, b)$ have continuous representative $\tilde u$, and let $\psi$ be of class $C^1$ on
+$[a, b]$, such as a coefficient of a differential operator. Then
+$$\int_a^b u' \psi = \tilde u(b) \psi(b) - \tilde u(a) \psi(a) - \int_a^b \tilde u \psi'.$$
+-/
 theorem integral_deriv_mul_contDiffOn (hab : a < b) (u : SobolevInterval 1 a b)
     {ψ : ℝ → ℝ} (hψ : ContDiffOn ℝ 1 ψ (Icc a b)) :
     ∫ t in a..b, deriv u 1 t * ψ t =
@@ -757,24 +861,26 @@ end SobolevInterval
 
 end Leibniz
 
-/-! ### Poincaré's inequality, and `H^1_0(a, b)` -/
+/-! ### Poincaré's inequality, and the space $H^1_0(a, b)$ -/
 
 section Poincare
 
 variable {a b : ℝ}
 
-/-- `∫_a^b (x - a) dx = (b - a)²/2`. -/
+/-- For $a \le b$, $\int_{(a, b)} (x - a)\, dx = (b - a)^2 / 2$. -/
 theorem integral_Ioo_sub_left (hab : a ≤ b) : ∫ x in Ioo a b, (x - a) = (b - a) ^ 2 / 2 := by
   rw [← integral_Ioc_eq_integral_Ioo, ← intervalIntegral.integral_of_le hab,
     intervalIntegral.integral_comp_sub_right (fun x ↦ x) a, sub_self, integral_id]
   ring
 
-/-- **Poincaré's inequality, elementary form**: for `w ∈ L²(a, b)`, an `L²` function `g` that is
-almost everywhere the antiderivative `∫_a^x w` (so `g(a) = 0`) satisfies
-`‖g‖_{L²(a, b)} ≤ ((b - a)/√2) ‖w‖_{L²(a, b)}`. By Cauchy–Schwarz
-`|g(x)|² ≤ (x - a) ‖w‖²`, and `∫_a^b (x - a) dx = (b - a)²/2`. This covers the Poincaré inequality
-(12.16) of [quarteroni2000numerical] for `C¹` functions vanishing at the endpoints without any
-density argument, and is the form the finite-difference and finite-element estimates use. -/
+/-- **Poincaré's inequality, elementary form.** Let $a \le b$ and $w, g \in L^2(a, b)$. If
+$g(x) = \int_a^x w$ for almost every $x \in (a, b)$, then
+$$\|g\|_{L^2(a, b)} \le \frac{b - a}{\sqrt 2}\, \|w\|_{L^2(a, b)}.$$
+
+By the Cauchy–Schwarz inequality $|g(x)|^2 \le (x - a) \|w\|^2$, and
+$\int_a^b (x - a)\, dx = (b - a)^2/2$. This gives the Poincaré inequality (12.16) of
+[quarteroni2000numerical] for $C^1$ functions that vanish at the endpoints without a density
+argument, and it is the form that the finite difference and finite element estimates use. -/
 theorem SobolevInterval.norm_le_of_eq_integral (hab : a ≤ b)
     {w g : Lp ℝ 2 (volume.restrict (Ioo a b))}
     (hg : g =ᵐ[volume.restrict (Ioo a b)] fun x ↦ ∫ t in a..x, w t) :
@@ -800,12 +906,13 @@ theorem SobolevInterval.norm_le_of_eq_integral (hab : a ≤ b)
     _ = (b - a) ^ 2 / 2 * ‖w‖ ^ 2 := by
         rw [integral_mul_const, integral_Ioo_sub_left hab]
 
-/-- **The Sobolev space `H^1_0(a, b)`**, the closure of the test functions `C_0^∞(a, b)` in
-`H^1(a, b)`: `SobolevIntervalLpZero 1 2 (a, b)`, that is, `SobolevMultiIndexZero` of
-`Numlib/Analysis/Sobolev/MultiIndex.lean` on the interval. A closed subspace of a Hilbert space,
-hence a Hilbert space. It is the space `V` of [quarteroni2000numerical] §12.4.1, and by
-`mem_sobolevIntervalZero_iff` it is exactly the set (12.42) of functions of `H^1(a, b)` vanishing
-at both endpoints. -/
+/-- **The Sobolev space** $H^1_0(a, b)$: the closure in $H^1(a, b)$ of the test functions
+$C_0^\infty(a, b)$. It is a closed subspace of a Hilbert space, hence a Hilbert space.
+
+It is the space $V$ of [quarteroni2000numerical] §12.4.1. By `mem_sobolevIntervalZero_iff`, it
+is exactly the set (12.42) there of the functions of $H^1(a, b)$ that vanish at both endpoints.
+The definition is `SobolevIntervalLpZero 1 2 (TopologicalSpace.Opens.Ioo a b)`, that is,
+`SobolevMultiIndexZero` on the interval. -/
 abbrev SobolevIntervalZero (a b : ℝ) : Submodule ℝ (SobolevInterval 1 a b) :=
   SobolevIntervalLpZero 1 2 (Opens.Ioo a b)
 
@@ -815,15 +922,19 @@ namespace SobolevIntervalZero
 `p = 2`; these names are aliases of them. -/
 export SobolevIntervalLpZero (mem_of_fn_ae_eq rep_left_eq_zero rep_right_eq_zero rep_eq_integral)
 
-/-- Every test function on `(a, b)` is the function of an element of `H^1_0(a, b)`
-(`SobolevIntervalLpZero.exists_mem_fn_ae_eq` at `p = 2`). -/
+/-- For every test function $\varphi$ on $(a, b)$ there is $u \in H^1_0(a, b)$ whose function agrees
+with $\varphi$ almost everywhere on $(a, b)$.
+
+This is `SobolevIntervalLpZero.exists_mem_fn_ae_eq` at $p = 2$. -/
 theorem exists_mem_fn_ae_eq (φ : 𝓓(Opens.Ioo a b, ℝ)) :
     ∃ u ∈ SobolevIntervalZero a b, SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] φ :=
   SobolevIntervalLpZero.exists_mem_fn_ae_eq φ
 
 open SobolevInterval in
-/-- **An element of `H^1_0(a, b)` vanishes at both endpoints**: the trace of `H^1_0(a, b)` is
-zero. -/
+/-- **An element of $H^1_0(a, b)$ vanishes at both endpoints.** Let $a < b$ and $u \in H^1_0(a, b)$.
+Then the continuous representative satisfies $\tilde u(a) = \tilde u(b) = 0$.
+
+Here $\tilde u$ is `SobolevInterval.toContinuousMap hab u`. -/
 theorem toContinuousMap_eq_zero (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
     toContinuousMap hab u ⟨a, left_mem_Icc.2 hab.le⟩ = 0 ∧
@@ -831,10 +942,12 @@ theorem toContinuousMap_eq_zero (hab : a < b) {u : SobolevInterval 1 a b}
   ⟨rep_left_eq_zero hab hu, rep_right_eq_zero hab hu⟩
 
 open SobolevInterval in
-/-- **Poincaré's inequality on `H^1_0(a, b)`**, [quarteroni2000numerical] (12.16) with the
-explicit constant `C_P = (b - a)/√2`: `‖u‖_{L²(a, b)} ≤ ((b - a)/√2) ‖u'‖_{L²(a, b)}` — the case
-`p = 2` of `SobolevIntervalLpZero.norm_deriv_zero_le`, whose constant `(b - a)/p^{1/p}` is
-`(b - a)/√2`. -/
+/-- **Poincaré's inequality on $H^1_0(a, b)$.** Let $a < b$ and $u \in H^1_0(a, b)$. Then
+$$\|u\|_{L^2(a, b)} \le \frac{b - a}{\sqrt 2}\, \|u'\|_{L^2(a, b)}.$$
+This is (12.16) of [quarteroni2000numerical] with the explicit constant $C_P = (b - a)/\sqrt 2$.
+
+It is the case $p = 2$ of `SobolevIntervalLpZero.norm_deriv_zero_le`, whose constant
+$(b - a)/p^{1/p}$ is $(b - a)/\sqrt 2$. -/
 theorem norm_deriv_zero_le (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
     ‖deriv u 0‖ ≤ (b - a) / Real.sqrt 2 * ‖deriv u 1‖ := by
@@ -844,10 +957,13 @@ theorem norm_deriv_zero_le (hab : a < b) {u : SobolevInterval 1 a b}
   exact h
 
 open SobolevInterval in
-/-- **The `H^1` norm and the `H^1` seminorm are equivalent on `H^1_0(a, b)`**:
-`‖u‖_{H^1} ≤ √(1 + (b - a)²/2) |u|_{H^1}`, so that the seminorm `|·|_{H^1}` is a norm on
-`H^1_0(a, b)` equivalent to `‖·‖_{H^1}`; it is what makes the Dirichlet form of
-`Numlib/Variational/EllipticInterval` coercive for the `H^1` norm. -/
+/-- **The norm and the seminorm of $H^1$ are equivalent on $H^1_0(a, b)$.** Let $a < b$ and
+$u \in H^1_0(a, b)$. Then
+$$\|u\|_{H^1} \le \sqrt{1 + (b - a)^2/2}\; |u|_{H^1}.$$
+
+Together with $|u|_{H^1} \le \|u\|_{H^1}$, this makes the seminorm $|\cdot|_{H^1}$ a norm on
+$H^1_0(a, b)$ equivalent to $\|\cdot\|_{H^1}$. It is what makes the Dirichlet form of
+`Numlib.Variational.EllipticInterval` coercive for the norm of $H^1$. -/
 theorem norm_le_seminorm (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
     ‖u‖ ≤ Real.sqrt (1 + (b - a) ^ 2 / 2) * seminorm 1 a b u := by
@@ -863,8 +979,9 @@ theorem norm_le_seminorm (hab : a < b) {u : SobolevInterval 1 a b}
   nlinarith [h']
 
 open SobolevInterval in
-/-- The seminorm `|·|_{H^1}` is a norm on `H^1_0(a, b)`
-(`SobolevIntervalLpZero.norm_deriv_one_eq_zero_iff` at `p = 2`). -/
+/-- Let $a < b$ and $u \in H^1_0(a, b)$. Then $|u|_{H^1} = 0$ if and only if $u = 0$.
+
+This is `SobolevIntervalLpZero.norm_deriv_one_eq_zero_iff` at $p = 2$. -/
 theorem seminorm_eq_zero_iff (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) : seminorm 1 a b u = 0 ↔ u = 0 :=
   SobolevIntervalLpZero.norm_deriv_one_eq_zero_iff hab hu
@@ -873,18 +990,21 @@ end SobolevIntervalZero
 
 end Poincare
 
-/-! ### Density of the test functions in `L²(a, b)`, and the boundary characterization of
-`H^1_0(a, b)` -/
+/-! ### Density of the test functions, and the boundary characterization of $H^1_0(a, b)$ -/
 
 section Density
 
 variable {a b : ℝ}
 
-/-- **A smooth bounded function is approximated in `L²(a, b)` by its cut-offs to the interior.**
-For `g` smooth with `|g| ≤ C` and `ε > 0` there is a test function `ψ` on `(a, b)` with
-`‖g - ψ‖_{L²(a, b)} ≤ ε`: `ψ = g χ` for a bump `χ` equal to `1` on `[a + 2δ, b - 2δ]` and
-supported in `(a + δ, b - δ)`, so that `|g - ψ| ≤ C` on a set of measure at most `4δ` and
-vanishes elsewhere. -/
+/-- **A smooth bounded function is approximated in $L^2(a, b)$ by its cut-offs.** Let $a < b$, let
+$g : \mathbb{R} \to \mathbb{R}$ be smooth with $|g(x)| \le C$ for all $x$, and let
+$\varepsilon > 0$. There is a test function $\psi$ on $(a, b)$ with
+$\|g - \psi\|_{L^2(a, b)} \le \varepsilon$.
+
+The test function is $\psi = g \chi$ for a bump function $\chi$ that equals $1$ on
+$[a + 2\delta, b - 2\delta]$ and has support in $(a + \delta, b - \delta)$. Then
+$|g - \psi| \le C$ on a set of measure at most $4\delta$, and $g - \psi$ vanishes elsewhere on
+$(a, b)$. -/
 theorem exists_testFunction_eLpNorm_sub_le_of_contDiff (hab : a < b) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ∞ g) {C : ℝ} (hC : ∀ x, |g x| ≤ C) {ε : ℝ} (hε : 0 < ε) :
     ∃ ψ : 𝓓(Opens.Ioo a b, ℝ),
@@ -955,9 +1075,13 @@ theorem exists_testFunction_eLpNorm_sub_le_of_contDiff (hab : a < b) {g : ℝ �
         calc (C + 1) * Real.sqrt (4 * δ) ≤ (C + 1) * (ε / (C + 1)) := by gcongr
           _ = ε := mul_div_cancel₀ _ (by positivity)
 
-/-- **The test functions `C_0^∞(a, b)` are dense in `L²(a, b)`**: Mathlib's smooth compactly
-supported approximation `MeasureTheory.MemLp.exist_eLpNorm_sub_le`, followed by the cut-off to
-the interior `exists_testFunction_eLpNorm_sub_le_of_contDiff`. -/
+/-- **The test functions $C_0^\infty(a, b)$ are dense in $L^2(a, b)$.** Let $a < b$, let
+$w \in L^2(a, b)$, and let $\varepsilon > 0$. There is a test function $\psi$ on $(a, b)$ with
+$\|w - \psi\|_{L^2(a, b)} \le \varepsilon$.
+
+The proof applies Mathlib's smooth compactly supported approximation
+`MeasureTheory.MemLp.exist_eLpNorm_sub_le`, followed by the cut-off
+`exists_testFunction_eLpNorm_sub_le_of_contDiff`. -/
 theorem exists_testFunction_eLpNorm_sub_le (hab : a < b) {w : ℝ → ℝ}
     (hw : MemLp w 2 (volume.restrict (Ioo a b))) {ε : ℝ} (hε : 0 < ε) :
     ∃ ψ : 𝓓(Opens.Ioo a b, ℝ),
@@ -977,8 +1101,8 @@ theorem exists_testFunction_eLpNorm_sub_le (hab : a < b) {w : ℝ → ℝ}
     _ ≤ ENNReal.ofReal (ε / 2) + ENNReal.ofReal (ε / 2) := add_le_add hwg hψ
     _ = ENNReal.ofReal ε := by rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
 
-/-- Interval integrals over `[a, x] ⊆ [a, b]` only see the integrand almost everywhere on
-`(a, b)`. -/
+/-- Let $f = g$ almost everywhere on $(a, b)$ and let $x \in [a, b]$. Then
+$\int_a^x f = \int_a^x g$. -/
 theorem intervalIntegral_congr_ae_Ioo {f g : ℝ → ℝ} (h : f =ᵐ[volume.restrict (Ioo a b)] g)
     {x : ℝ} (hx : x ∈ Icc a b) : ∫ t in a..x, f t = ∫ t in a..x, g t := by
   refine intervalIntegral.integral_congr_ae ?_
@@ -987,16 +1111,21 @@ theorem intervalIntegral_congr_ae_Ioo {f g : ℝ → ℝ} (h : f =ᵐ[volume.res
   rw [uIoc_of_le hx.1] at htI
   exact ht ⟨htI.1, lt_of_le_of_ne (htI.2.trans hx.2) htb⟩
 
-/-- A test function on `(a, b)` as an element of `L²(a, b)`. -/
+/-- A test function $\psi$ on $(a, b)$, as an element of $L^2(a, b)$. -/
 def TestFunction.toLp₂ (ψ : 𝓓(Opens.Ioo a b, ℝ)) : Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   (TestFunction.memLp ψ 2 _).toLp ψ
 
-/-- The `L²(a, b)` element of a test function is the test function almost everywhere. -/
+/-- For a test function $\psi$ on $(a, b)$, the element `TestFunction.toLp₂ ψ` of $L^2(a, b)$ agrees
+with $\psi$ almost everywhere on $(a, b)$. -/
 theorem TestFunction.coeFn_toLp₂ (ψ : 𝓓(Opens.Ioo a b, ℝ)) :
     ψ.toLp₂ =ᵐ[volume.restrict (Ioo a b)] ψ :=
   MemLp.coeFn_toLp _
 
-/-- **The test functions are dense in `L²(a, b)`**, in the norm of `Lp`. -/
+/-- **The test functions are dense in $L^2(a, b)$.** Let $a < b$, let $w \in L^2(a, b)$, and let
+$\varepsilon > 0$. There is a test function $\psi$ on $(a, b)$ with
+$\|w - \psi\|_{L^2(a, b)} \le \varepsilon$, where $\psi$ is read as an element of $L^2(a, b)$.
+
+This is the form of `exists_testFunction_eLpNorm_sub_le` for an element of the type `Lp`. -/
 theorem exists_testFunction_norm_sub_toLp_le (hab : a < b)
     (w : Lp ℝ 2 (volume.restrict (Ioo a b))) {ε : ℝ} (hε : 0 < ε) :
     ∃ ψ : 𝓓(Opens.Ioo a b, ℝ), ‖w - ψ.toLp₂‖ ≤ ε := by
@@ -1008,17 +1137,23 @@ theorem exists_testFunction_norm_sub_toLp_le (hab : a < b)
     simp only [Pi.sub_apply, hx])
 
 open SobolevInterval in
-/-- **A function of `H^1(a, b)` whose continuous representative vanishes at both endpoints lies
-in `H^1_0(a, b)`**, the converse of `SobolevIntervalZero.toContinuousMap_eq_zero`: the case
-`p = 2` of `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded` (Theorem 8.12 of
-[brezis2011functional] on a bounded interval). -/
+/-- **A function of $H^1(a, b)$ whose continuous representative vanishes at both endpoints lies in
+$H^1_0(a, b)$.** Let $a < b$ and $u \in H^1(a, b)$. If $\tilde u(a) = 0$ and $\tilde u(b) = 0$,
+then $u \in H^1_0(a, b)$.
+
+This is the converse of `SobolevIntervalZero.toContinuousMap_eq_zero`. It is the case $p = 2$ of
+`SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded`, which is Theorem 8.12 of
+[brezis2011functional] on a bounded interval. Here $\tilde u$ is `SobolevIntervalLp.rep u`. -/
 theorem SobolevIntervalZero.mem_of_rep_eq_zero (hab : a < b) (u : SobolevInterval 1 a b)
     (ha : rep u a = 0) (hb : rep u b = 0) : u ∈ SobolevIntervalZero a b :=
   SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded hab (by norm_num) u ha hb
 
 open SobolevInterval in
-/-- **A function of `H^1(a, b)` vanishing at both endpoints lies in `H^1_0(a, b)`**, stated for
-the embedding `SobolevInterval.toContinuousMap`. -/
+/-- Let $a < b$ and $u \in H^1(a, b)$. If the image $\tilde u$ of $u$ under the embedding
+$H^1(a, b) \hookrightarrow C[a, b]$ satisfies $\tilde u(a) = 0$ and $\tilde u(b) = 0$, then
+$u \in H^1_0(a, b)$.
+
+This is `SobolevIntervalZero.mem_of_rep_eq_zero`, stated for `SobolevInterval.toContinuousMap`. -/
 theorem mem_sobolevIntervalZero_of_toContinuousMap_eq_zero (hab : a < b)
     (u : SobolevInterval 1 a b) (ha : toContinuousMap hab u ⟨a, left_mem_Icc.2 hab.le⟩ = 0)
     (hb : toContinuousMap hab u ⟨b, right_mem_Icc.2 hab.le⟩ = 0) :
@@ -1026,9 +1161,12 @@ theorem mem_sobolevIntervalZero_of_toContinuousMap_eq_zero (hab : a < b)
   SobolevIntervalZero.mem_of_rep_eq_zero hab u ha hb
 
 open SobolevInterval in
-/-- **The boundary characterization of `H^1_0(a, b)`**: an element of `H^1(a, b)` lies in
-`H^1_0(a, b)` exactly when its continuous representative vanishes at both endpoints. This is
-[quarteroni2000numerical] (12.42), `H^1_0(0,1) = {v ∈ L² : v' ∈ L², v(0) = v(1) = 0}`. -/
+/-- **The boundary characterization of $H^1_0(a, b)$.** Let $a < b$ and $u \in H^1(a, b)$. Then
+$u \in H^1_0(a, b)$ if and only if its continuous representative satisfies
+$\tilde u(a) = \tilde u(b) = 0$.
+
+This is (12.42) of [quarteroni2000numerical], $H^1_0(0,1) = \{v \in L^2 : v' \in L^2,\ v(0) =
+v(1) = 0\}$. Here $\tilde u$ is `SobolevInterval.toContinuousMap hab u`. -/
 theorem mem_sobolevIntervalZero_iff (hab : a < b) (u : SobolevInterval 1 a b) :
     u ∈ SobolevIntervalZero a b ↔ toContinuousMap hab u ⟨a, left_mem_Icc.2 hab.le⟩ = 0 ∧
       toContinuousMap hab u ⟨b, right_mem_Icc.2 hab.le⟩ = 0 :=
@@ -1041,48 +1179,59 @@ namespace ContDiffMapIcc
 
 variable {a b : ℝ} {hab : a ≤ b} {k : ℕ}
 
-/-- The `j`-th derivative of `u ∈ C^k[a, b]`, extended by its endpoint values off `[a, b]`, as an
-element of `L²(a, b)`: `ContDiffMapIcc.derivLpOf` at `p = 2`. -/
+/-- For $u \in C^k[a, b]$ and $j \le k$, the derivative $u^{(j)}$, extended by its endpoint values
+off $[a, b]$, as an element of $L^2(a, b)$.
+
+This is `ContDiffMapIcc.derivLpOf` at $p = 2$. -/
 def derivLp (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) : Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   derivLpOf 2 u j
 
-/-- `ContDiffMapIcc.derivLp` is the extended derivative almost everywhere. -/
+/-- For $u \in C^k[a, b]$ and $j \le k$, the element `u.derivLp j` of $L^2(a, b)$ agrees almost
+everywhere on $(a, b)$ with $u^{(j)}$, extended by its endpoint values off $[a, b]$. -/
 theorem coeFn_derivLp (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     u.derivLp j =ᵐ[volume.restrict (Ioo a b)] IccExtend hab (u.deriv j) :=
   coeFn_derivLpOf u j
 
-/-- `ContDiffMapIcc.derivLp` is additive. -/
+/-- For $u, v \in C^k[a, b]$ and $j \le k$, the class of $(u + v)^{(j)}$ in $L^2(a, b)$ is the sum
+of the classes of $u^{(j)}$ and $v^{(j)}$. -/
 theorem derivLp_add (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     (u + v).derivLp j = u.derivLp j + v.derivLp j :=
   derivLpOf_add u v j
 
-/-- `ContDiffMapIcc.derivLp` is homogeneous. -/
+/-- For $c \in \mathbb{R}$, $u \in C^k[a, b]$ and $j \le k$, the class of $(c u)^{(j)}$ in
+$L^2(a, b)$ is $c$ times the class of $u^{(j)}$. -/
 theorem derivLp_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     (c • u).derivLp j = c • u.derivLp j :=
   derivLpOf_smul c u j
 
-/-- The extended derivatives of `u ∈ C^k[a, b]` are the weak derivatives of `u` on `(a, b)`
-(`ContDiffMapIcc.hasWeakIteratedDerivOn_derivLpOf` at `p = 2`). -/
+/-- Let $a < b$, $u \in C^k[a, b]$ and $j \le k$. The class of $u^{(j)}$ in $L^2(a, b)$ is the
+$j$-th weak derivative on $(a, b)$ of the class of $u$.
+
+This is `ContDiffMapIcc.hasWeakIteratedDerivOn_derivLpOf` at $p = 2$. -/
 theorem hasWeakIteratedDerivOn_derivLp (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) :
     HasWeakIteratedDerivOn (j : ℕ) (u.derivLp 0) (u.derivLp j) (Opens.Ioo a b) :=
   hasWeakIteratedDerivOn_derivLpOf hlt u j
 
-/-- The inclusion `C^k[a, b] → H^k(a, b)` as a linear map: `u` goes to the element whose `j`-th
-component is the extended derivative `u^{(j)}` (`ContDiffMapIcc.toSobolevIntervalLpₗ` at
-`p = 2`). -/
+/-- The inclusion $C^k[a, b] \to H^k(a, b)$ as a linear map, for $a < b$. It sends $u$ to the
+element of $H^k(a, b)$ whose $j$-th weak derivative is the class of $u^{(j)}$ in $L^2(a, b)$.
+
+This is `ContDiffMapIcc.toSobolevIntervalLpₗ` at $p = 2$. -/
 def toSobolevIntervalₗ (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     ContDiffMapIcc hab k →ₗ[ℝ] SobolevInterval k a b :=
   toSobolevIntervalLpₗ 2 hab hlt k
 
-/-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
+/-- For $a < b$, $u \in C^k[a, b]$ and $j \le k$, the $j$-th weak derivative of the image of $u$
+under the linear inclusion $C^k[a, b] \to H^k(a, b)$ is the class of $u^{(j)}$ in $L^2(a, b)$. -/
 @[simp]
 theorem deriv_toSobolevIntervalₗ (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) : SobolevInterval.deriv (toSobolevIntervalₗ hab hlt k u) j = u.derivLp j :=
   rfl
 
-/-- `‖u^{(j)}‖_{L²(a, b)} ≤ √(b - a) ‖u^{(j)}‖_∞` (`ContDiffMapIcc.norm_derivLpOf_le` at `p = 2`,
-where `(b - a)^{1/p} = √(b - a)`). -/
+/-- For $u \in C^k[a, b]$ and $j \le k$, $\|u^{(j)}\|_{L^2(a, b)} \le \sqrt{b - a}\,
+\|u^{(j)}\|_\infty$.
+
+This is `ContDiffMapIcc.norm_derivLpOf_le` at $p = 2$, where $(b - a)^{1/p} = \sqrt{b - a}$. -/
 theorem norm_derivLp_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     ‖u.derivLp j‖ ≤ Real.sqrt (b - a) * ‖u.deriv j‖ := by
   have h := norm_derivLpOf_le (p := 2) u j
@@ -1090,8 +1239,11 @@ theorem norm_derivLp_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
   rw [Real.sqrt_eq_rpow, one_div]
   exact h
 
-/-- The constant of the inclusion `C^k[a, b] → H^k(a, b)`, for the linear map:
-`‖u‖_{H^k} ≤ √(b - a) ‖u‖_{C^k}` (`ContDiffMapIcc.norm_toSobolevIntervalLpₗ_le` at `p = 2`). -/
+/-- For $a < b$ and $u \in C^k[a, b]$, the image of $u$ under the linear inclusion
+$C^k[a, b] \to H^k(a, b)$ satisfies $\|u\|_{H^k} \le \sqrt{b - a}\, \|u\|_{C^k}$, where
+$\|u\|_{C^k} = \sum_{j \le k} \|u^{(j)}\|_\infty$.
+
+This is `ContDiffMapIcc.norm_toSobolevIntervalLpₗ_le` at $p = 2$. -/
 theorem norm_toSobolevIntervalₗ_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ‖toSobolevIntervalₗ hab hlt k u‖ ≤ Real.sqrt (b - a) * ‖u‖ := by
   have h := norm_toSobolevIntervalLpₗ_le (p := 2) hab hlt u
@@ -1099,71 +1251,87 @@ theorem norm_toSobolevIntervalₗ_le (hab : a ≤ b) (hlt : a < b) (u : ContDiff
   rw [Real.sqrt_eq_rpow, one_div]
   exact h
 
-/-- **The inclusion `C^k[a, b] → H^k(a, b)`**: the continuous linear map sending
-`u ∈ C^k[a, b]` to the element of `H^k(a, b)` whose components are its derivatives
-`u, u', …, u^{(k)}`, extended by their endpoint values off `[a, b]` —
-`ContDiffMapIcc.toSobolevIntervalLp` at `p = 2`. It is injective
-(`ContDiffMapIcc.toSobolevInterval_injective`) and has norm at most `√(b - a)`
-(`ContDiffMapIcc.norm_toSobolevInterval_le`). Its completion is what Atkinson and Han,
-*Theoretical Numerical Analysis*, 3rd edition, Examples 1.2.28(b) and 2.4.2 call `H^k(a, b)`;
-its range is dense at every order (`ContDiffMapIcc.denseRange_toSobolevInterval`,
-`ContDiffMapIcc.denseRange_toSobolevInterval_one`). -/
+/-- **The inclusion** $C^k[a, b] \to H^k(a, b)$, for $a < b$. It is the continuous linear map that
+sends $u \in C^k[a, b]$ to the element of $H^k(a, b)$ whose weak derivatives are
+$u, u', \dots, u^{(k)}$, extended by their endpoint values off $[a, b]$.
+
+It is injective (`ContDiffMapIcc.toSobolevInterval_injective`), it has norm at most
+$\sqrt{b - a}$ (`ContDiffMapIcc.norm_toSobolevInterval_le`), and its range is dense for every
+$k$ (`ContDiffMapIcc.denseRange_toSobolevInterval`,
+`ContDiffMapIcc.denseRange_toSobolevInterval_one`). The completion of $C^k[a, b]$ in this norm
+is what Examples 1.2.28(b) and 2.4.2 of [han2009theoretical] call $H^k(a, b)$. It is
+`ContDiffMapIcc.toSobolevIntervalLp` at $p = 2$. -/
 def toSobolevInterval (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     ContDiffMapIcc hab k →L[ℝ] SobolevInterval k a b :=
   toSobolevIntervalLp 2 hab hlt k
 
-/-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
+/-- For $a < b$, $u \in C^k[a, b]$ and $j \le k$, the $j$-th weak derivative of the image of $u$
+under the inclusion $C^k[a, b] \to H^k(a, b)$ is the class of $u^{(j)}$ in $L^2(a, b)$. -/
 @[simp]
 theorem deriv_toSobolevInterval (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) : SobolevInterval.deriv (toSobolevInterval hab hlt k u) j = u.derivLp j :=
   rfl
 
-/-- The function of the inclusion of `u ∈ C^k[a, b]` is `u` almost everywhere on `(a, b)`. -/
+/-- For $a < b$ and $u \in C^k[a, b]$, the function of the image of $u$ in $H^k(a, b)$ agrees with
+$u$ almost everywhere on $(a, b)$.
+
+Here $u$ is read as the function `u.extend` on $\mathbb{R}$, constant off $[a, b]$. -/
 theorem fn_toSobolevInterval_ae_eq (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     SobolevInterval.fn (toSobolevInterval hab hlt k u) =ᵐ[volume.restrict (Ioo a b)] u.extend :=
   coeFn_derivLp u 0
 
-/-- **The constant of the inclusion `C^k[a, b] → H^k(a, b)`**: `‖u‖_{H^k} ≤ √(b - a) ‖u‖_{C^k}`,
-each `‖u^{(j)}‖_{L²}` being at most `√(b - a) ‖u^{(j)}‖_∞`. -/
+/-- **The constant of the inclusion** $C^k[a, b] \to H^k(a, b)$. For $a < b$ and $u \in C^k[a, b]$,
+$$\|u\|_{H^k} \le \sqrt{b - a}\, \|u\|_{C^k}, \qquad \|u\|_{C^k} = \sum_{j=0}^k
+  \|u^{(j)}\|_\infty.$$
+
+Each $\|u^{(j)}\|_{L^2}$ is at most $\sqrt{b - a}\, \|u^{(j)}\|_\infty$. -/
 theorem norm_toSobolevInterval_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ‖toSobolevInterval hab hlt k u‖ ≤ Real.sqrt (b - a) * ‖u‖ :=
   norm_toSobolevIntervalₗ_le hab hlt u
 
-/-- **The inclusion `C^k[a, b] → H^k(a, b)` is injective**: a continuous function vanishing
-almost everywhere on `(a, b)` vanishes on `[a, b]` (`ContDiffMapIcc.toSobolevIntervalLp_injective`
-at `p = 2`). -/
+/-- **The inclusion $C^k[a, b] \to H^k(a, b)$ is injective**, for $a < b$: a continuous function
+that vanishes almost everywhere on $(a, b)$ vanishes on $[a, b]$.
+
+This is `ContDiffMapIcc.toSobolevIntervalLp_injective` at $p = 2$. -/
 theorem toSobolevInterval_injective (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     Function.Injective (toSobolevInterval hab hlt k) :=
   toSobolevIntervalLp_injective (p := 2) hab hlt k
 
-/-- **`C^k[a, b]` is dense in `H^k(a, b)`** at every order
-(`ContDiffMapIcc.denseRange_toSobolevIntervalLp` at `p = 2`). -/
+/-- **$C^k[a, b]$ is dense in $H^k(a, b)$.** For $a < b$ and every $k$, the inclusion
+$C^k[a, b] \to H^k(a, b)$ has dense range.
+
+This is `ContDiffMapIcc.denseRange_toSobolevIntervalLp` at $p = 2$. -/
 theorem denseRange_toSobolevInterval (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     DenseRange (toSobolevInterval hab hlt k) :=
   denseRange_toSobolevIntervalLp (p := 2) hab hlt (by norm_num) k
 
-/-- **`C¹[a, b]` is dense in `H^1(a, b)`**: the case `k = 1` of
-`ContDiffMapIcc.denseRange_toSobolevInterval` (Atkinson and Han, *Theoretical Numerical
-Analysis*, 3rd edition, Examples 1.2.28(b) and 2.4.2). -/
+/-- **$C^1[a, b]$ is dense in $H^1(a, b)$.** For $a < b$, the inclusion $C^1[a, b] \to H^1(a, b)$
+has dense range.
+
+This is the case $k = 1$ of `ContDiffMapIcc.denseRange_toSobolevInterval`, as in Examples
+1.2.28(b) and 2.4.2 of [han2009theoretical]. -/
 theorem denseRange_toSobolevInterval_one (hlt : a < b) :
     DenseRange (toSobolevInterval hlt.le hlt 1) :=
   denseRange_toSobolevInterval hlt.le hlt 1
 
 end ContDiffMapIcc
 
-/-! ### Piecewise `C¹` functions -/
+/-! ### Piecewise $C^1$ functions -/
 
 section Piecewise
 
 variable {a b : ℝ}
 
-/-- **Continuous piecewise-`C¹` functions lie in `H^1(a, b)`**: for a partition
-`x 0 = a < x 1 < ⋯ < x (N + 1) = b` and `g` continuous on `[a, b]`, `C¹` on each open panel with
-the panel derivatives bounded by a common constant, `g ∈ H^1(a, b)` with weak derivative
-`deriv g` (whose values at the nodes are irrelevant). This is what puts the finite element spaces
-`X_h^k` of [quarteroni2000numerical] §12.4.5 inside `H^1(0, 1)`; with
-`mem_sobolevIntervalZero_of_toContinuousMap_eq_zero` the elements vanishing at the endpoints lie
-in `H^1_0(0, 1)`. The case `p = 2` of `memSobolevIntervalLp_of_piecewise_contDiffOn`. -/
+/-- **Continuous piecewise $C^1$ functions lie in $H^1(a, b)$.** Let
+$a = x_0 < x_1 < \dots < x_{N+1} = b$ be a partition, and let $g$ be continuous on $[a, b]$ and
+of class $C^1$ on each open panel $(x_j, x_{j+1})$. Assume that there is a constant $C$ with
+$|g'(t)| \le C$ for every $t$ in every open panel. Then $g \in H^1(a, b)$, and the classical
+derivative $g'$ is the weak derivative of $g$ on $(a, b)$.
+
+The values of $g'$ at the nodes do not matter. This result puts the finite element spaces
+$X_h^k$ of [quarteroni2000numerical] §12.4.5 inside $H^1(0, 1)$. With
+`mem_sobolevIntervalZero_of_toContinuousMap_eq_zero`, the elements that vanish at the endpoints
+lie in $H^1_0(0, 1)$. It is the case $p = 2$ of `memSobolevIntervalLp_of_piecewise_contDiffOn`. -/
 theorem memSobolevInterval_of_piecewise_contDiffOn {N : ℕ} {x : Fin (N + 2) → ℝ}
     (hx : StrictMono x) (hxa : x 0 = a) (hxb : x (Fin.last (N + 1)) = b) {g : ℝ → ℝ}
     (hg : ContinuousOn g (Icc a b))

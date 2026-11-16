@@ -10,38 +10,54 @@ import Numlib.Analysis.Convex.Operations.Epi
 /-!
 # The convex hull of a family of functions
 
-The pointwise infimum of convex functions is generally not convex; the convex hull is what replaces
-it. The convex hull of a family `f : ι → E → EReal` is the function determined by the convex hull of
-the union of the epigraphs, and it is the **greatest convex function below every `f i`**.
+Let $E$ be a real vector space. The pointwise infimum of a family of convex functions
+$f_i : E \to [-\infty, +\infty]$ is in general not convex, and the convex hull takes its place. The
+convex hull $\operatorname{conv}\{f_i\}$ is the function determined by the convex hull of the union
+of the epigraphs, and it is the greatest convex function below every $f_i$. When the $f_i$ are
+convex and never take the value $-\infty$, it is given by the formula
+$$(\operatorname{conv}\{f_i\})(x) = \inf\Big\{\sum_i \lambda_i f_i(x_i) \Bigm|
+  \lambda_i \ge 0,\ \sum_i \lambda_i = 1,\ \sum_i \lambda_i x_i = x\Big\},$$
+over the convex combinations with finitely many nonzero coefficients. This is Theorem 5.6 of
+[rockafellar1970convex]. The convex hull $\operatorname{conv} g$ of a single function is the
+greatest convex function below $g$. The presentation follows [rockafellar1970convex], §5.
 
 ## Main definitions
 
-* `convFn f` — the convex hull of a family: the infimum in the lattice of convex functions.
-* `convHullFn g` — the convex hull `conv g` of a single function: the coreflector onto that
-  lattice. The two determine each other (`convFn_eq_convHullFn_iInf`, `convFn_unit`) but play
-  different roles — only `convHullFn` is an adjoint, only `convFn` takes a family.
-* `convFn₂ f g` — the binary case, the meet of two convex functions.
+* `ConvexAnalysis.convFn`: the convex hull $\operatorname{conv}\{f_i\}$ of a family, the infimum in
+  the lattice of convex functions.
+* `ConvexAnalysis.convHullFn`: the convex hull $\operatorname{conv} g$ of a single function, the
+  coreflection onto the convex functions.
+* `ConvexAnalysis.gci_val_convHullFn`: $\operatorname{conv}$ as a right adjoint of the inclusion of
+  the convex functions, in the form of a `GaloisCoinsertion`.
+* `ConvexAnalysis.convFn₂`: the convex hull $\operatorname{conv}\{f, g\}$ of two functions, the meet
+  of two convex functions.
 
 ## Main results
 
-* `convFn_le`, `le_convFn`, `isGreatest_convFn` — **the universal property**: greatest convex
-  minorant, from which everything else in the file follows.
-* `convexFn_convFn` — the convex hull is convex.
-* `convFn_le_iInf` — the convex hull is below the pointwise infimum, generally *strictly*;
-  `convFn₂_indicatorFn_lt_inf` is a witness.
-* `gci_val_convHullFn` — `conv` is right adjoint to the inclusion of the convex functions, as a
-  `GaloisCoinsertion`. This is what makes the convex functions a complete lattice with
-  `⨅ = convFn` and `⨆ = sSup`.
-* `convFn_apply` — the explicit formula `(conv {f i}) x = inf {∑ λ i * f i (x i) | ∑ λ i • x i = x}`
-  ([rockafellar1970convex] Theorem 5.6); `convFn₂_apply` is the two-function form later sections
-  use.
-* `IsEpiLike.mem_convexHull_of_le`, `isEpiLike_convexHull_epi_union`, `epi_convFn₂` — when that
-  infimum is *attained*. `epi (conv {f, g})` is `conv (epi f ∪ epi g)` exactly when that hull is
-  an epigraph, and the only way it can fail to be one is by failing to be closed.
+* `ConvexAnalysis.convexFn_convFn`: the convex hull of a family is convex.
+* `ConvexAnalysis.convFn_le`, `ConvexAnalysis.le_convFn`, `ConvexAnalysis.isGreatest_convFn`: the
+  convex hull is the greatest convex function below every $f_i$. The other results of the module
+  follow from this universal property.
+* `ConvexAnalysis.convFn_le_iInf`: the convex hull lies below the pointwise infimum, in general
+  strictly (`ConvexAnalysis.convFn₂_indicatorFn_lt_inf`).
+* `ConvexAnalysis.convFn_eq_convHullFn_iInf`, `ConvexAnalysis.convFn_unit`: the convex hull of a
+  family is the convex hull of its pointwise infimum, and the convex hull of one function is the
+  convex hull of a one-element family.
+* `ConvexAnalysis.convFn_apply`: the explicit formula above; `ConvexAnalysis.convFn₂_apply` is the
+  form for two functions.
+* `ConvexAnalysis.IsEpiLike.mem_convexHull_of_le`, `ConvexAnalysis.epi_convFn₂`,
+  `ConvexAnalysis.isEpiLike_convexHull_epi_union`: these results describe when the infimum in the
+  formula for two functions is attained. The set $\operatorname{epi}(\operatorname{conv}\{f, g\})$
+  equals $\operatorname{conv}(\operatorname{epi} f \cup \operatorname{epi} g)$ exactly when this
+  hull is an epigraph, and the hull can fail to be an epigraph only by failing to be closed.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §5.
+* The two hulls determine each other (`ConvexAnalysis.convFn_eq_convHullFn_iInf`,
+  `ConvexAnalysis.convFn_unit`) but have different roles: only `ConvexAnalysis.convHullFn` is an
+  adjoint, and only `ConvexAnalysis.convFn` takes a family.
+* With `ConvexAnalysis.gci_val_convHullFn`, the convex functions form a complete lattice with
+  infimum `ConvexAnalysis.convFn` and pointwise supremum: see `ConvexAnalysis.ConvexFns`.
 -/
 
 open Set
@@ -59,47 +75,67 @@ section Family
 
 variable {ι : Sort*} {f : ι → E → EReal} {g : E → EReal}
 
-/-- The **convex hull of a family of functions**: the function determined by the convex hull of the
-union of the epigraphs. Equivalently (`isGreatest_convFn`), the greatest convex `h`, proper or not,
-with `h ≤ f i` for every `i`. -/
+/-- The **convex hull of a family of functions** $f_i : E \to [-\infty, +\infty]$: the function
+determined (`ConvexAnalysis.ofEpi`) by the convex hull of the union of the epigraphs,
+$$\operatorname{conv}\{f_i\} = \operatorname{ofEpi}\Big(\operatorname{conv} \bigcup_i
+  \operatorname{epi} f_i\Big).$$
+
+Equivalently (`ConvexAnalysis.isGreatest_convFn`), it is the greatest convex function $h$,
+proper or not, with $h \le f_i$ for every $i$. -/
 noncomputable def convFn (f : ι → E → EReal) : E → EReal :=
   ofEpi (convexHull ℝ (⋃ i, epi (f i)))
 
-/-- The convex hull of a family is a convex function, a convex hull of sets being convex. -/
+/-- The convex hull of a family of functions is a convex function, because the convex hull of a set
+is convex. -/
 theorem convexFn_convFn (f : ι → E → EReal) : ConvexFn (convFn f) :=
   convexFn_ofEpi (convex_convexHull ℝ _)
 
+/-- The convex hull of a family of functions lies below each member:
+$\operatorname{conv}\{f_i\} \le f_i$ for every $i$. -/
 theorem convFn_le (f : ι → E → EReal) (i : ι) : convFn f ≤ f i := by
   have h : epi (f i) ⊆ convexHull ℝ (⋃ j, epi (f j)) :=
     (subset_iUnion (fun j => epi (f j)) i).trans (subset_convexHull ℝ _)
   have h' := ofEpi_mono h
   rwa [ofEpi_epi] at h'
 
-/-- **The universal property.** Any convex function below every `f i` is below the convex hull;
-with `convFn_le` and `convexFn_convFn`, the convex hull is the *greatest* convex minorant. -/
+/-- **The universal property.** If $g$ is convex and $g \le f_i$ for every $i$, then
+$g \le \operatorname{conv}\{f_i\}$.
+
+With `ConvexAnalysis.convFn_le` and `ConvexAnalysis.convexFn_convFn`, this makes the convex hull
+the greatest convex function below every $f_i$. -/
 theorem le_convFn (hg : ConvexFn g) (h : ∀ i, g ≤ f i) : g ≤ convFn f :=
   subset_epi_iff_le_ofEpi.1 (convexHull_min (iUnion_subset fun i => epi_anti (h i)) hg.convex_epi)
 
+/-- The convex hull $\operatorname{conv}\{f_i\}$ is the greatest element of the set of convex
+functions $g$ with $g \le f_i$ for every $i$. -/
 theorem isGreatest_convFn (f : ι → E → EReal) :
     IsGreatest {g : E → EReal | ConvexFn g ∧ ∀ i, g ≤ f i} (convFn f) :=
   ⟨⟨convexFn_convFn f, convFn_le f⟩, fun _ hg => le_convFn hg.1 hg.2⟩
 
+/-- The convex hull is monotone: if $f_i \le f'_i$ for every $i$, then $\operatorname{conv}\{f_i\}
+\le \operatorname{conv}\{f'_i\}$. -/
 theorem convFn_mono {f₁ f₂ : ι → E → EReal} (h : ∀ i, f₁ i ≤ f₂ i) : convFn f₁ ≤ convFn f₂ :=
   le_convFn (convexFn_convFn f₁) fun i => (convFn_le f₁ i).trans (h i)
 
-/-- The epigraph of the convex hull is the convex hull of the union of epigraphs, under the
-hypothesis that the latter is an epigraph at all. It need not be: even for two functions the
-infimum in the formula for `convFn` need not be attained. -/
+/-- If the convex hull $\operatorname{conv} \bigcup_i \operatorname{epi} f_i$ is epi-like, then it
+is the epigraph of $\operatorname{conv}\{f_i\}$.
+
+The hull need not be epi-like: already for two functions, the infimum in the formula for
+$\operatorname{conv}\{f_i\}$ need not be attained. -/
 theorem epi_convFn (h : IsEpiLike (convexHull ℝ (⋃ i, epi (f i)))) :
     epi (convFn f) = convexHull ℝ (⋃ i, epi (f i)) :=
   epi_ofEpi h
 
-/-- The convex hull is below the pointwise infimum, strictly in general
-(`convFn₂_indicatorFn_lt_inf`), which is the entire reason the convex hull exists. -/
+/-- The convex hull lies below the pointwise infimum: $(\operatorname{conv}\{f_i\})(x) \le \inf_i
+f_i(x)$ for every $x \in E$.
+
+In general the inequality is strict (`ConvexAnalysis.convFn₂_indicatorFn_lt_inf`). This is the
+reason for the notion of convex hull. -/
 theorem convFn_le_iInf (f : ι → E → EReal) (x : E) : convFn f x ≤ ⨅ i, f i x :=
   le_iInf fun i => convFn_le f i x
 
-/-- When the pointwise infimum happens to be convex, it *is* the convex hull. -/
+/-- If the pointwise infimum $x \mapsto \inf_i f_i(x)$ is convex, then it is the convex hull
+$\operatorname{conv}\{f_i\}$. -/
 theorem convFn_eq_iInf (hc : ConvexFn fun x => ⨅ i, f i x) : convFn f = fun x => ⨅ i, f i x :=
   le_antisymm (fun x => convFn_le_iInf f x)
     (le_convFn hc fun i x => iInf_le (fun j => f j x) i)
@@ -112,34 +148,48 @@ section Single
 
 variable {g h : E → EReal}
 
-/-- The **convex hull of a function**, `conv g`: the greatest convex function majorised by `g`. -/
+/-- The **convex hull** $\operatorname{conv} g$ of a function $g : E \to [-\infty, +\infty]$: the
+function determined by the convex hull of $\operatorname{epi} g$,
+$$\operatorname{conv} g = \operatorname{ofEpi}(\operatorname{conv} \operatorname{epi} g).$$
+
+It is the greatest convex function below $g$ (`ConvexAnalysis.isGreatest_convHullFn`). -/
 noncomputable def convHullFn (g : E → EReal) : E → EReal := ofEpi (convexHull ℝ (epi g))
 
+/-- The convex hull $\operatorname{conv} g$ of a function is convex. -/
 theorem convexFn_convHullFn (g : E → EReal) : ConvexFn (convHullFn g) :=
   convexFn_ofEpi (convex_convexHull ℝ _)
 
+/-- The convex hull of a function lies below the function: $\operatorname{conv} g \le g$. -/
 theorem convHullFn_le (g : E → EReal) : convHullFn g ≤ g := by
   have h' := ofEpi_mono (subset_convexHull ℝ (epi g))
   rwa [ofEpi_epi] at h'
 
-/-- **The universal property of `conv g`.** -/
+/-- **The universal property of $\operatorname{conv} g$.** If $h$ is convex and $h \le g$, then
+$h \le \operatorname{conv} g$. -/
 theorem le_convHullFn (hh : ConvexFn h) (hg : h ≤ g) : h ≤ convHullFn g :=
   subset_epi_iff_le_ofEpi.1 (convexHull_min (epi_anti hg) hh.convex_epi)
 
+/-- The convex hull $\operatorname{conv} g$ is the greatest element of the set of convex functions
+$h$ with $h \le g$. -/
 theorem isGreatest_convHullFn (g : E → EReal) :
     IsGreatest {h : E → EReal | ConvexFn h ∧ h ≤ g} (convHullFn g) :=
   ⟨⟨convexFn_convHullFn g, convHullFn_le g⟩, fun _ hh => le_convHullFn hh.1 hh.2⟩
 
+/-- The convex hull is monotone: $g \le h$ implies $\operatorname{conv} g \le \operatorname{conv}
+h$. -/
 theorem convHullFn_mono (hgh : g ≤ h) : convHullFn g ≤ convHullFn h :=
   le_convHullFn (convexFn_convHullFn g) ((convHullFn_le g).trans hgh)
 
+/-- A convex function is its own convex hull: if $g$ is convex, then $\operatorname{conv} g = g$. -/
 theorem convHullFn_eq_self (hg : ConvexFn g) : convHullFn g = g :=
   le_antisymm (convHullFn_le g) (le_convHullFn hg le_rfl)
 
-/-- Convexity is exactly closedness under `conv`. -/
+/-- A function $g$ is convex if and only if $\operatorname{conv} g = g$. -/
 theorem convexFn_iff_convHullFn_eq : ConvexFn g ↔ convHullFn g = g :=
   ⟨convHullFn_eq_self, fun h => h ▸ convexFn_convHullFn g⟩
 
+/-- The convex hull is idempotent: $\operatorname{conv}(\operatorname{conv} g) = \operatorname{conv}
+g$. -/
 theorem convHullFn_idem (g : E → EReal) : convHullFn (convHullFn g) = convHullFn g :=
   convHullFn_eq_self (convexFn_convHullFn g)
 
@@ -149,8 +199,12 @@ end Single
 
 section Coreflection
 
-/-- **`conv` is right adjoint to the inclusion of the convex functions.** For convex `h` and
-arbitrary `g`, `h ≤ g` and `h ≤ conv g` say the same thing. -/
+/-- **$\operatorname{conv}$ is right adjoint to the inclusion of the convex functions.** For convex
+$h$ and any $g : E \to [-\infty, +\infty]$, $h \le g$ if and only if
+$h \le \operatorname{conv} g$.
+
+The adjunction is a `GaloisConnection` between the subtype of convex functions and
+$E \to [-\infty, +\infty]$. -/
 theorem gc_val_convHullFn :
     GaloisConnection (Subtype.val : {g : E → EReal // ConvexFn g} → (E → EReal))
       (fun g : E → EReal => (⟨convHullFn g, convexFn_convHullFn g⟩ :
@@ -158,8 +212,11 @@ theorem gc_val_convHullFn :
   fun h g => ⟨fun hle => le_convHullFn h.2 hle,
     fun hle => (show (h : E → EReal) ≤ convHullFn g from hle).trans (convHullFn_le g)⟩
 
-/-- A coinsertion, because `conv` fixes the convex functions. The convex functions therefore
-inherit a complete lattice structure in which the infimum is `convFn`. -/
+/-- The adjunction `ConvexAnalysis.gc_val_convHullFn` as a **Galois coinsertion**, which holds
+because $\operatorname{conv}$ fixes the convex functions.
+
+The convex functions therefore inherit a complete lattice structure, in which the infimum is
+`ConvexAnalysis.convFn`: see `ConvexAnalysis.ConvexFns.instCompleteLattice`. -/
 noncomputable def gci_val_convHullFn :
     GaloisCoinsertion (Subtype.val : {g : E → EReal // ConvexFn g} → (E → EReal))
       (fun g : E → EReal => (⟨convHullFn g, convexFn_convHullFn g⟩ :
@@ -174,20 +231,26 @@ section Compare
 
 variable {ι : Sort*} {f : ι → E → EReal}
 
-/-- Rockafellar: the convex hull of a collection "is the convex hull of the pointwise infimum of
-the collection". Both sides are the greatest convex function below every `f i`. -/
+/-- The convex hull of a family is the convex hull of its pointwise infimum:
+$$\operatorname{conv}\{f_i\} = \operatorname{conv}\Big(x \mapsto \inf_i f_i(x)\Big).$$
+
+[rockafellar1970convex] states that the convex hull of a collection "is the convex hull of the
+pointwise infimum of the collection". Both sides are the greatest convex function below every
+$f_i$. -/
 theorem convFn_eq_convHullFn_iInf (f : ι → E → EReal) :
     convFn f = convHullFn fun x => ⨅ i, f i x :=
   le_antisymm (le_convHullFn (convexFn_convFn f) fun x => convFn_le_iInf f x)
     (le_convFn (convexFn_convHullFn _) fun i =>
       (convHullFn_le _).trans fun x => iInf_le (fun j => f j x) i)
 
-/-- A constant family has the convex hull of its one function. -/
+/-- For a nonempty index type, the convex hull of a constant family $f_i = g$ is
+$\operatorname{conv} g$. -/
 theorem convFn_const [Nonempty ι] (g : E → EReal) : convFn (fun _ : ι => g) = convHullFn g := by
   rw [convFn_eq_convHullFn_iInf]
   simp
 
-/-- `convHullFn` is the one-element instance of `convFn`. -/
+/-- The convex hull of the one-element family $\{g\}$ is the convex hull $\operatorname{conv} g$ of
+the single function $g$. -/
 theorem convFn_unit (g : E → EReal) : convFn (fun _ : Unit => g) = convHullFn g := by
   rw [convFn_eq_convHullFn_iInf]
   simp
@@ -200,36 +263,48 @@ section Binary
 
 variable {f g h : E → EReal}
 
-/-- The convex hull of two functions: the greatest convex function below both, i.e. the meet in the
-lattice of convex functions. -/
+/-- The **convex hull of two functions** $f, g : E \to [-\infty, +\infty]$:
+$$\operatorname{conv}\{f, g\} = \operatorname{ofEpi}(\operatorname{conv}(\operatorname{epi} f
+  \cup \operatorname{epi} g)).$$
+
+It is the greatest convex function below both $f$ and $g$, that is, the meet in the lattice of
+convex functions. -/
 noncomputable def convFn₂ (f g : E → EReal) : E → EReal := ofEpi (convexHull ℝ (epi f ∪ epi g))
 
+/-- The convex hull $\operatorname{conv}\{f, g\}$ of two functions is convex. -/
 theorem convexFn_convFn₂ (f g : E → EReal) : ConvexFn (convFn₂ f g) :=
   convexFn_ofEpi (convex_convexHull ℝ _)
 
+/-- The convex hull of two functions lies below the first: $\operatorname{conv}\{f, g\} \le f$. -/
 theorem convFn₂_le_left (f g : E → EReal) : convFn₂ f g ≤ f := by
   have h' := ofEpi_mono (subset_union_left.trans (subset_convexHull ℝ (epi f ∪ epi g)))
   rwa [ofEpi_epi] at h'
 
+/-- The convex hull of two functions lies below the second: $\operatorname{conv}\{f, g\} \le g$. -/
 theorem convFn₂_le_right (f g : E → EReal) : convFn₂ f g ≤ g := by
   have h' := ofEpi_mono (subset_union_right.trans (subset_convexHull ℝ (epi f ∪ epi g)))
   rwa [ofEpi_epi] at h'
 
-/-- **The universal property**, binary case. -/
+/-- **The universal property, binary case.** If $h$ is convex, $h \le f$ and $h \le g$, then
+$h \le \operatorname{conv}\{f, g\}$. -/
 theorem le_convFn₂ (hh : ConvexFn h) (h₁ : h ≤ f) (h₂ : h ≤ g) : h ≤ convFn₂ f g :=
   subset_epi_iff_le_ofEpi.1
     (convexHull_min (union_subset (epi_anti h₁) (epi_anti h₂)) hh.convex_epi)
 
+/-- The convex hull $\operatorname{conv}\{f, g\}$ is the greatest element of the set of convex
+functions $h$ with $h \le f$ and $h \le g$. -/
 theorem isGreatest_convFn₂ (f g : E → EReal) :
     IsGreatest {h : E → EReal | ConvexFn h ∧ h ≤ f ∧ h ≤ g} (convFn₂ f g) :=
   ⟨⟨convexFn_convFn₂ f g, convFn₂_le_left f g, convFn₂_le_right f g⟩,
     fun _ hh => le_convFn₂ hh.1 hh.2.1 hh.2.2⟩
 
-/-- The binary convex hull is below the pointwise minimum, generally strictly. -/
+/-- The convex hull of two functions lies below their pointwise minimum:
+$\operatorname{conv}\{f, g\} \le \min\{f, g\}$. In general the inequality is strict. -/
 theorem convFn₂_le_inf (f g : E → EReal) : convFn₂ f g ≤ f ⊓ g :=
   le_inf (convFn₂_le_left f g) (convFn₂_le_right f g)
 
-/-- The binary case is the two-element instance of `convFn`. -/
+/-- The convex hull of two functions is the convex hull of the family indexed by
+$\{\mathrm{true}, \mathrm{false}\}$ whose members are $f$ and $g$. -/
 theorem convFn₂_eq_convFn (f g : E → EReal) :
     convFn₂ f g = convFn (fun b : Bool => cond b f g) := by
   refine le_antisymm (le_convFn (convexFn_convFn₂ f g) fun b => ?_)
@@ -238,9 +313,12 @@ theorem convFn₂_eq_convFn (f g : E → EReal) :
   · exact convFn₂_le_right f g
   · exact convFn₂_le_left f g
 
-/-- **The inequality `convFn₂_le_inf` is strict in general.** The indicator functions of `{0}` and
-`{1}` in `ℝ` are both convex; their pointwise minimum is `⊤` at `1 / 2`, while their convex hull —
-the indicator function of the segment `[0, 1]` — is `0` there. -/
+/-- **The inequality `ConvexAnalysis.convFn₂_le_inf` is strict in general.** Let
+$f = \delta(\cdot \mid \{0\})$ and $g = \delta(\cdot \mid \{1\})$ on $\mathbb{R}$. Then
+$$(\operatorname{conv}\{f, g\})(1/2) < \min\{f(1/2), g(1/2)\}.$$
+
+Both functions are convex. Their pointwise minimum is $+\infty$ at $1/2$, while their convex
+hull, the indicator function of the segment $[0, 1]$, is $0$ there. -/
 theorem convFn₂_indicatorFn_lt_inf :
     convFn₂ (indicatorFn ({0} : Set ℝ)) (indicatorFn ({1} : Set ℝ)) (1 / 2) <
       indicatorFn ({0} : Set ℝ) (1 / 2) ⊓ indicatorFn ({1} : Set ℝ) (1 / 2) := by
@@ -264,9 +342,13 @@ theorem convFn₂_indicatorFn_lt_inf :
 
 /-! #### The explicit formula for two functions -/
 
-/-- Every convex combination `a • u + b • v = x` bounds the convex hull at `x`: the easy half of the
-formula. Only `f, g ≠ ⊥` is needed, not full properness — with `⊥` allowed the right-hand side
-can be `⊥` (since `⊥ + ⊤ = ⊥` in `EReal`) while the left-hand side is `⊤`. -/
+/-- Let $f, g : E \to [-\infty, +\infty]$ never take the value $-\infty$. Let $a, b \ge 0$ with
+$a + b = 1$, and let $u, v \in E$ with $a u + b v = x$. Then
+$$(\operatorname{conv}\{f, g\})(x) \le a f(u) + b g(v).$$
+
+This is the easy half of `ConvexAnalysis.convFn₂_apply`. Only the hypothesis $f, g \neq -\infty$
+is needed, not full properness. If $-\infty$ were allowed, the right-hand side could be
+$-\infty$ (since $-\infty + \infty = -\infty$ in `EReal`) while the left-hand side is $+\infty$. -/
 theorem convFn₂_le_combo (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) {a b : ℝ} (ha : 0 ≤ a)
     (hb : 0 ≤ b) (hab : a + b = 1) {u v x : E} (hx : a • u + b • v = x) :
     convFn₂ f g x ≤ (a : EReal) * f u + (b : EReal) * g v := by
@@ -306,15 +388,15 @@ theorem convFn₂_le_combo (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) {
   refine (ofEpi_apply_le hpt).trans (le_of_eq ?_)
   rw [hμ, hν, ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add]
 
-/-- The convex hull of two proper convex functions is given by the explicit formula
+/-- Let $f, g : E \to [-\infty, +\infty]$ be proper convex functions. Then for every $x \in E$,
+$$(\operatorname{conv}\{f, g\})(x) = \inf\{a f(u) + b g(v) \mid a, b \ge 0,\ a + b = 1,\ a u + b
+  v = x\}.$$
 
-`(conv {f, g}) x = inf {a f u + b g v | a u + b v = x, a, b ≥ 0, a + b = 1}`,
-
-the infimum over *all* representations, and genuinely an infimum — it need not be attained.
-
-`convFn_apply` proves the same theorem for an arbitrary family and needs only the `≠ ⊥` half of
-properness. Here `dom f, dom g ≠ ∅` is used as well, to make the epigraphs non-empty and so turn
-the convex hull of their union into a convex join. -/
+The infimum is over all such representations of $x$, and it need not be attained.
+`ConvexAnalysis.convFn_apply` proves the same formula for an arbitrary family and needs only the
+half of properness that excludes $-\infty$. Here the nonemptiness of $\operatorname{dom} f$ and
+$\operatorname{dom} g$ is used as well: it makes the epigraphs nonempty, so that the convex hull
+of their union is a convex join. -/
 theorem convFn₂_apply (hf : ConvexFn f) (hg : ConvexFn g) (hf' : ProperConvex f)
     (hg' : ProperConvex g)
     (x : E) :
@@ -342,21 +424,31 @@ theorem convFn₂_apply (hf : ConvexFn f) (hg : ConvexFn g) (hf' : ProperConvex 
     refine (add_le_add h₁ h₂).trans (le_of_eq ?_)
     rw [← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add, hμ2]
 
-/-- `conv (f ⊓ g) = conv {f, g}`: both sides are the greatest convex function below `f` and `g`. -/
+/-- The convex hull of the pointwise minimum is the convex hull of the pair:
+$\operatorname{conv}(\min\{f, g\}) = \operatorname{conv}\{f, g\}$.
+
+Both sides are the greatest convex function below $f$ and $g$. -/
 theorem convHullFn_inf (f g : E → EReal) : convHullFn (f ⊓ g) = convFn₂ f g :=
   le_antisymm
     (le_convFn₂ (convexFn_convHullFn _) ((convHullFn_le _).trans inf_le_left)
       ((convHullFn_le _).trans inf_le_right))
     (le_convHullFn (convexFn_convFn₂ f g) (convFn₂_le_inf f g))
 
-/-! #### When a convex hull of epigraphs is again an epigraph
+/-!
+#### When a convex hull of epigraphs is again an epigraph
 
-`epi (convFn₂ f g)` is `conv (epi f ∪ epi g)` only when that hull is epi-like, which is exactly the
-statement that the infimum in the formula is attained. Of the two halves of `isEpiLike_iff_forall`
-the upward-closure half holds unconditionally; only attainment is at issue. -/
+$\operatorname{epi}(\operatorname{conv}\{f, g\})$ equals $\operatorname{conv}(\operatorname{epi} f
+\cup \operatorname{epi} g)$ only when this hull is epi-like, that is, exactly when the infimum in
+the formula is attained. Of the two conditions of `ConvexAnalysis.isEpiLike_iff_forall`, upward
+closedness holds without hypotheses, and only attainment is in question.
+-/
 
-/-- The convex hull of an epi-like set is upward closed in the vertical coordinate: `conv F`
-inherits every translation `p ↦ p + (0, t)`, `t ≥ 0`, that `F` itself admits. -/
+/-- Let $F \subseteq E \times \mathbb{R}$ be epi-like. Then $\operatorname{conv} F$ is upward closed
+in the vertical direction: if $(x, \mu) \in \operatorname{conv} F$ and $\mu \le \nu$, then
+$(x, \nu) \in \operatorname{conv} F$.
+
+In other words, $\operatorname{conv} F$ inherits every translation $p \mapsto p + (0, t)$ with
+$t \ge 0$ that $F$ admits. -/
 theorem IsEpiLike.mem_convexHull_of_le {F : Set (E × ℝ)} (hF : IsEpiLike F) {x : E} {μ ν : ℝ}
     (hmem : (x, μ) ∈ convexHull ℝ F) (hμν : μ ≤ ν) : (x, ν) ∈ convexHull ℝ F := by
   have hconv : Convex ℝ ((fun p : E × ℝ => p + ((0 : E), ν - μ)) ⁻¹' convexHull ℝ F) := by
@@ -383,7 +475,10 @@ theorem IsEpiLike.mem_convexHull_of_le {F : Set (E × ℝ)} (hF : IsEpiLike F) {
     rw [Prod.mk_add_mk, add_zero, hval]
   rwa [hxy] at hres
 
-/-- The binary case of `epi_convFn`. -/
+/-- If $\operatorname{conv}(\operatorname{epi} f \cup \operatorname{epi} g)$ is epi-like, then it is
+the epigraph of $\operatorname{conv}\{f, g\}$.
+
+This is the binary case of `ConvexAnalysis.epi_convFn`. -/
 theorem epi_convFn₂ (hF : IsEpiLike (convexHull ℝ (epi f ∪ epi g))) :
     epi (convFn₂ f g) = convexHull ℝ (epi f ∪ epi g) :=
   epi_ofEpi hF
@@ -398,9 +493,13 @@ section Formula
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {ι : Type*}
 
-/-- **The easy half of `convFn_apply`**: the convex hull of a family is below the value
-`∑ λ i * f i (x i)` of every representation of `x` as a convex combination of points `x i`, one per
-index. It needs no convexity, only that no `f i (x i)` in the sum is `⊥`. -/
+/-- **The easy half of `ConvexAnalysis.convFn_apply`.** Let $f_i : E \to [-\infty, +\infty]$, let
+$t$ be a finite index set, and let $w_i \ge 0$ and $p_i \in E$ for $i \in t$, with
+$\sum_{i \in t} w_i = 1$ and $\sum_{i \in t} w_i p_i = x$. If $f_i(p_i) \neq -\infty$ for every
+$i \in t$, then
+$$(\operatorname{conv}\{f_i\})(x) \le \sum_{i \in t} w_i f_i(p_i).$$
+
+No convexity is needed. -/
 theorem convFn_le_sum {f : ι → E → EReal} {t : Finset ι} {w : ι → ℝ} {p : ι → E} {x : E}
     (hf' : ∀ i ∈ t, f i (p i) ≠ ⊥) (hw₀ : ∀ i ∈ t, 0 ≤ w i) (hw₁ : ∑ i ∈ t, w i = 1)
     (hwx : ∑ i ∈ t, w i • p i = x) : convFn f x ≤ ∑ i ∈ t, (w i : EReal) * f i (p i) := by
@@ -442,22 +541,21 @@ theorem convFn_le_sum {f : ι → E → EReal} {t : Finset ι} {w : ι → ℝ} 
     ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
   exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
 
-/-- The convex hull of a family of convex functions, none of which takes the value `⊥`, is given by
-the explicit formula
+/-- Let $f_i : E \to [-\infty, +\infty]$ be convex functions that never take the value $-\infty$.
+Then for every $x \in E$,
+$$(\operatorname{conv}\{f_i\})(x) = \inf\Big\{\sum_{i \in t} w_i f_i(p_i) \Bigm|
+  t \text{ finite},\ w_i \ge 0,\ \sum_{i \in t} w_i = 1,\ \sum_{i \in t} w_i p_i = x\Big\}.$$
+This is Theorem 5.6 of [rockafellar1970convex].
 
-`(conv {f i}) x = inf {∑ λ i * f i (x i) | ∑ λ i • x i = x}`,
+[rockafellar1970convex] assumes the $f_i$ proper. Only the half of properness that excludes
+$-\infty$ is used, in two places: it keeps $w_i f_i(p_i)$ from being $-\infty$ where $w_i = 0$,
+and it turns a finite bound on the sum into a finite bound on each term. As for sums, the
+nonemptiness of $\operatorname{dom} f_i$ is not needed.
 
-the infimum being over all representations of `x` as a convex combination of points `x i`, with
-only finitely many non-zero coefficients.
-
-The classical statement assumes the `f i` proper; only the `≠ ⊥` half is used, twice — it keeps
-`λ i * f i (x i)` from being `−∞` where `λ i = 0`, and it turns a finite bound on the sum into a
-finite bound on each term. `dom (f i) ≠ ∅` does no work, exactly as for sums.
-
-The description of a convex hull by convex combinations presents a point of the hull as drawn from
-the `epi (f i)` *with repetitions*, whereas the infimum here ranges over one point per index. The
-proof of `≥` bridges the two by merging the points drawn from a single `epi (f i)` into their
-center of mass, which is the only use made of convexity of the `f i`. -/
+The description of a convex hull by convex combinations takes the points of the hull from the
+sets $\operatorname{epi} f_i$ with repetitions, but the infimum here takes one point per index.
+The proof of $\ge$ merges the points taken from one $\operatorname{epi} f_i$ into their center
+of mass. This is the only use of the convexity of the $f_i$. -/
 theorem convFn_apply {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i)) (hf' : ∀ i x, f i x ≠ ⊥)
     (x : E) :
     convFn f x = sInf {z : EReal | ∃ (t : Finset ι) (w : ι → ℝ) (p : ι → E),
@@ -562,10 +660,14 @@ section Topology
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] {f g : E → EReal}
 
-/-- A **closed** convex hull of two epigraphs is an epigraph: `IsEpiLike.mem_convexHull_of_le`
-gives upward closure unconditionally and closedness gives attainment of the vertical infima. So the
-only way `conv (epi f ∪ epi g)` can fail to be an epigraph is by failing to be closed, which turns
-the closedness criteria for convex hulls into attainment statements for that infimum. -/
+/-- Let $E$ be a real vector space with a topology. If $\operatorname{conv}(\operatorname{epi} f
+\cup \operatorname{epi} g)$ is closed, then it is epi-like.
+
+Upward closedness holds without hypotheses (`ConvexAnalysis.IsEpiLike.mem_convexHull_of_le`),
+and closedness gives the attainment of the vertical infima. So
+$\operatorname{conv}(\operatorname{epi} f \cup \operatorname{epi} g)$ can fail to be an epigraph
+only by failing to be closed. This turns the closedness criteria for convex hulls into
+statements that the infimum in the formula is attained. -/
 theorem isEpiLike_convexHull_epi_union (hc : IsClosed (convexHull ℝ (epi f ∪ epi g))) :
     IsEpiLike (convexHull ℝ (epi f ∪ epi g)) :=
   IsEpiLike.of_isClosed (fun _ _ _ hmem hle =>

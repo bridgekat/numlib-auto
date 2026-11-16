@@ -15,52 +15,66 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # Orthogonal bidiagonalization
 
-Every rectangular matrix is carried by a unitary matrix on each side to an upper bidiagonal one,
-`Uᴴ A V = B`: the **Golub–Kahan bidiagonalization** ([golub2013matrix] §5.4.8, (5.4.13);
-[quarteroni2000numerical] (5.57); Golub–Kahan 1965), the first stage of every algorithm for the
-singular value decomposition and the matrix form of the Golub–Kahan–Lanczos process of
-`Numlib/Krylov/Bidiagonalization`.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$. Every $M \times N$ matrix $A$ over $\mathbb{K}$ is
+carried by a unitary matrix on each side to an upper bidiagonal matrix: there are unitary $U$ and
+$V$ such that $B = U^H A V$ has nonzero entries only on the diagonal and the first superdiagonal.
+This is the **Golub–Kahan bidiagonalization**, introduced by Golub and Kahan in 1965
+([golub2013matrix], §5.4.8 and (5.4.13); [quarteroni2000numerical], (5.57) and §5.8.3). It is the
+first stage of the algorithms for the singular value decomposition, and it is the matrix form of the
+Golub–Kahan–Lanczos process of `Numlib.Krylov.Bidiagonalization`.
+
+The module also defines the rectangular upper and lower bidiagonal shapes, and it names the
+factorization $U^H A V = B$ as a specification. For $N \le M$, the $R$-bidiagonalization of
+[golub2013matrix], §5.4.9, first computes a QR factorization $A = QR$ and then bidiagonalizes the
+square top block of $R$. The bidiagonalization of $A$ is related to the tridiagonalization of
+$A^H A$: if $U^H A V = B$, then $V^H (A^H A) V = B^H B$, and $B^H B$ is tridiagonal.
+
+## Main definitions
+
+* `Matrix.IsUpperBidiagonalRect`, `Matrix.IsLowerBidiagonalRect`: an $M \times N$ matrix is upper
+  bidiagonal if $b_{ij} = 0$ unless $j = i$ or $j = i + 1$, and lower bidiagonal if $b_{ij} = 0$
+  unless $i = j$ or $i = j + 1$.
+* `Matrix.padRows`, `Matrix.padOne`: for $N \le M$, the $M$-row matrix
+  $\begin{bmatrix} B \\ 0 \end{bmatrix}$ and the $M \times M$ matrix $\operatorname{diag}(U, I)$.
+* `Matrix.IsBidiagonalization`: $U$ and $V$ are unitary, $U^H A V = B$, and $B$ is upper bidiagonal.
 
 ## Main results
 
-* `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero`: entrywise, for any `M × N` matrix, the
-  entries of `Uᴴ A V` off the diagonal and the first superdiagonal vanish. Tail reflectors
-  (`Matrix.householderTail` of `Numlib/LinearAlgebra/Matrix/QR`) alternate on the left (column
-  `k`, pivot `k`) and on the right (row `k`, pivot `k + 1`); the right reflector's axis vanishes on
-  the columns `≤ k`, so the zeros already created survive.
-* `Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal`: for `N ≤ M`, `Uᴴ A V` is zero
-  below row `N` and upper bidiagonal (`Matrix.IsUpperBidiagonal` of
-  `Numlib/LinearAlgebra/Matrix/Hessenberg`) on top.
-* `Matrix.IsUpperBidiagonalRect`, `Matrix.IsLowerBidiagonalRect`: the rectangular shapes, dual
-  under transposition, with their bandwidth characterizations
-  (`Matrix.isUpperBidiagonalRect_iff_hasBandwidthRect`) and their agreement with the square
-  shapes on `Fin N` (`Matrix.isUpperBidiagonalRect_iff_isUpperBidiagonal`).
-* `Matrix.IsBidiagonalization A U V B`: the factorization `Uᴴ A V = B` as a named specification,
-  a two-sided unitary equivalence (`Matrix.IsUnitaryEquiv` of
-  `Numlib/LinearAlgebra/Matrix/UnitaryEquiv`) with an upper bidiagonal middle factor, with
-  existence (`Matrix.exists_isBidiagonalization`), the `R`-bidiagonalization
-  (`Matrix.IsBidiagonalization.of_isQR`, [golub2013matrix] §5.4.9: a QR factorization first, then
-  a bidiagonalization of the square triangular block, glued by `diag(U_R, I)`), and the link to the
-  tridiagonalization of `Aᴴ A` (`Matrix.IsBidiagonalization.isTridiagonal_conjTranspose_mul_self`).
+* `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero`: for every $M \times N$ matrix $A$ there are
+  unitary $U$, $V$ such that $(U^H A V)_{ij} = 0$ unless $j = i$ or $j = i + 1$.
+* `Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal`: for $N \le M$, the matrix $U^H A V$ is
+  zero below row $N$, and its top $N \times N$ block is upper bidiagonal.
+* `Matrix.isUpperBidiagonalRect_iff_hasBandwidthRect`: upper bidiagonal means lower bandwidth $0$
+  and upper bandwidth $1$.
+* `Matrix.isUpperBidiagonalRect_iff_isUpperBidiagonal`: on a square matrix, the rectangular upper
+  bidiagonal shape is `Matrix.IsUpperBidiagonal`.
+* `Matrix.exists_isBidiagonalization`: every rectangular matrix has an orthogonal bidiagonalization.
+* `Matrix.IsBidiagonalization.of_isQR`: the $R$-bidiagonalization $(Q \operatorname{diag}(U_R, I))^H
+  A V = \begin{bmatrix} B_1 \\ 0 \end{bmatrix}$.
+* `Matrix.IsBidiagonalization.isTridiagonal_conjTranspose_mul_self`: $V^H (A^H A) V = B^H B$, and
+  $B^H B$ is tridiagonal.
+
+## Proof outline
+
+Householder reflectors that act on the tail of a vector (`Matrix.householderTail` of
+`Numlib.LinearAlgebra.Matrix.QR`) alternate on the left and on the right. At step $k$, a reflector
+on the left with pivot $k$ clears column $k$ below the diagonal, and a reflector on the right with
+pivot $k + 1$ clears row $k$ beyond the first superdiagonal. The axis of the right reflector
+vanishes on the columns $0, \dots, k$, so the zeros that are already created stay zero.
 
 ## Implementation notes
 
-The square bidiagonal shapes `Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal` are phrased with
-the order on the index and live in `Numlib/LinearAlgebra/Matrix/Hessenberg`; the statements here
-are on `Fin M × Fin N`, with the index difference taken in `ℕ` as in the rectangular band
-vocabulary of `Numlib/LinearAlgebra/Matrix/Band`. The lower shape is the one of the `(k + 1) × k`
-matrix of the Golub–Kahan lower bidiagonalization ([golub2013matrix] (10.4.18)).
-
-The block matrices `[B; 0]` and `diag(U, I)` of the `R`-bidiagonalization are `Matrix.padRows`
-(the right inverse of `Matrix.firstRows`) and `Matrix.padOne`, both defined through
-`Matrix.fromRows`/`Matrix.fromBlocks` reindexed along
-`Matrix.blockEquiv : Fin N ⊕ Fin (M - N) ≃ Fin M` of `Numlib/LinearAlgebra/Matrix/Block`, so that
-the block product rules of Mathlib apply.
-
-## References
-
-* [golub2013matrix] §5.4.8, §5.4.9.
-* [quarteroni2000numerical] §5.8.3.
+* The square bidiagonal shapes `Matrix.IsUpperBidiagonal` and `Matrix.IsLowerBidiagonal` of
+  `Numlib.LinearAlgebra.Matrix.Hessenberg` use the order on the index type. The statements here are
+  on `Fin M × Fin N`, with the index difference taken in $\mathbb{N}$, as for the rectangular
+  bandwidths of `Numlib.LinearAlgebra.Matrix.Band`. The lower shape is the shape of the
+  $(k + 1) \times k$ matrix of the Golub–Kahan lower bidiagonalization ([golub2013matrix],
+  (10.4.18)).
+* The block matrices $\begin{bmatrix} B \\ 0 \end{bmatrix}$ and $\operatorname{diag}(U, I)$ of the
+  $R$-bidiagonalization are `Matrix.padRows` and `Matrix.padOne`. They are defined through
+  `Matrix.fromRows` and `Matrix.fromBlocks`, reindexed along `Matrix.blockEquiv : Fin N ⊕ Fin (M -
+  N) ≃ Fin M` of `Numlib.LinearAlgebra.Matrix.Block`, so that the block product rules of Mathlib
+  apply. `Matrix.padRows` is a right inverse of `Matrix.firstRows`.
 -/
 
 open scoped Matrix
@@ -75,8 +89,8 @@ section Bidiagonal
 
 variable {M N : ℕ}
 
-/-- The left half-step of the bidiagonalization: the tail reflector of column `k` with pivot `k`
-clears that column below the diagonal, keeps the rows before `k` and the columns already cleared. -/
+/-- The left half-step of the bidiagonalization: a unitary Hermitian reflector clears column $k$
+below the diagonal and keeps the zeros of the rows before $k$ and of the columns before $k$. -/
 private theorem bidiag_left_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (hk : k < N)
     (hB : ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k) → (i : ℕ) ≠ j →
       (i : ℕ) + 1 ≠ j → B i j = 0) :
@@ -101,9 +115,8 @@ private theorem bidiag_left_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (hk
       exact hB i _ (Or.inl hik) hne1 hne2
     · exact householder_householderTail_mulVec_apply_of_gt _ hik
 
-/-- The right half-step of the bidiagonalization: the reflector of the conjugate tail axis of row
-`k` with pivot `k + 1` clears that row beyond the superdiagonal, keeps the columns `≤ k` and the
-rows already cleared. -/
+/-- The right half-step of the bidiagonalization: a unitary reflector clears row $k$ beyond the
+first superdiagonal and keeps the zeros of the rows before $k$ and of the columns $0, \dots, k$. -/
 private theorem bidiag_right_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (hk : k < M)
     (hB : ∀ (i : Fin M) (j : Fin N), ((i : ℕ) < k ∨ (j : ℕ) < k + 1) → (i : ℕ) ≠ j →
       (i : ℕ) + 1 ≠ j → B i j = 0) :
@@ -130,11 +143,14 @@ private theorem bidiag_right_step (B : Matrix (Fin M) (Fin N) 𝕜) {k : ℕ} (h
     · rw [householder_householderTail_mulVec_apply_of_lt _ hjk]
       exact hB _ j (Or.inr hjk) hne1 hne2
 
-/-- **The Golub–Kahan bidiagonalization**, entrywise ([quarteroni2000numerical] (5.57);
-[golub2013matrix] §5.4.8): any rectangular matrix is carried by a unitary matrix on each side to
-one whose only nonzero entries lie on the diagonal and the first superdiagonal. Alternating tail
-reflectors on the left (column `k`, pivot `k`) and on the right (row `k`, pivot `k + 1`); the
-right reflector's axis vanishes on the columns `≤ k`, so the zeros already created survive. -/
+/-- **The Golub–Kahan bidiagonalization**, entrywise. Let $A$ be an $M \times N$ matrix over
+$\mathbb{K}$. Then there are unitary matrices $U$ of order $M$ and $V$ of order $N$ such that
+$$(U^H A V)_{ij} = 0 \quad \text{whenever } j \ne i \text{ and } j \ne i + 1.$$
+This is (5.57) of [quarteroni2000numerical] and §5.4.8 of [golub2013matrix].
+
+The indices are natural numbers from $0$. The proof alternates tail reflectors on the left
+(column $k$, pivot $k$) and on the right (row $k$, pivot $k + 1$). The axis of the right
+reflector vanishes on the columns $0, \dots, k$, so the zeros already created stay zero. -/
 theorem exists_unitary_mul_mul_unitary_apply_eq_zero (A : Matrix (Fin M) (Fin N) 𝕜) :
     ∃ U ∈ Matrix.unitaryGroup (Fin M) 𝕜, ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
       ∀ (i : Fin M) (j : Fin N), (i : ℕ) ≠ j → (i : ℕ) + 1 ≠ j → (Uᴴ * A * V) i j = 0 := by
@@ -173,10 +189,15 @@ theorem exists_unitary_mul_mul_unitary_apply_eq_zero (A : Matrix (Fin M) (Fin N)
     rw [← Matrix.mul_assoc, hUP]
     exact hWB i j hij hne1 hne2
 
-/-- **The Golub–Kahan bidiagonalization** ([quarteroni2000numerical] (5.57); [golub2013matrix]
-§5.4.8): for `A : Matrix (Fin M) (Fin N) 𝕜` with `N ≤ M` there are unitary `U`, `V` with
-`Uᴴ A V = (B; 0)`, zero below row `N` and upper bidiagonal on top. This is the first phase of the
-Golub–Kahan–Reinsch computation of the singular value decomposition. -/
+/-- **The Golub–Kahan bidiagonalization.** Let $A$ be an $M \times N$ matrix over $\mathbb{K}$ with
+$N \le M$. Then there are unitary matrices $U$ of order $M$ and $V$ of order $N$ such that
+$$U^H A V = \begin{bmatrix} B \\ 0 \end{bmatrix},$$
+where the rows of $U^H A V$ from row $N$ on are zero and the top $N \times N$ block $B$ is upper
+bidiagonal. This is (5.57) of [quarteroni2000numerical] and §5.4.8 of [golub2013matrix].
+
+This is the first phase of the Golub–Kahan–Reinsch computation of the singular value
+decomposition. The top block is `(Uᴴ * A * V).submatrix (Fin.castLE h) id`, and upper bidiagonal
+means `Matrix.IsUpperBidiagonal`. -/
 theorem exists_unitary_mul_mul_unitary_isUpperBidiagonal (h : N ≤ M)
     (A : Matrix (Fin M) (Fin N) 𝕜) :
     ∃ U ∈ Matrix.unitaryGroup (Fin M) 𝕜, ∃ V ∈ Matrix.unitaryGroup (Fin N) 𝕜,
@@ -199,33 +220,42 @@ section Shapes
 
 variable {R : Type*} [Zero R] {M N : ℕ}
 
-/-- A rectangular matrix is **upper bidiagonal** when its only nonzero entries lie on the diagonal
-and the first superdiagonal, the index difference taken in `ℕ`: the shape of [golub2013matrix]
-(5.4.13) for `M ≥ N` (the rows from the `N`-th on vanish automatically) and of `[B | 0]` for
-`M < N`. On a square `Fin N` it is `Matrix.IsUpperBidiagonal`
-(`Matrix.isUpperBidiagonalRect_iff_isUpperBidiagonal`). -/
+/-- An $M \times N$ matrix $B$ is **upper bidiagonal** if its only nonzero entries lie on the
+diagonal and the first superdiagonal: $b_{ij} = 0$ whenever $j \ne i$ and $j \ne i + 1$, with
+natural-number indices.
+
+For $M \ge N$ this is the shape of (5.4.13) of [golub2013matrix]; the rows from row $N$ on are
+then zero automatically. For $M < N$ the columns from column $M + 1$ on are zero, and the entry
+$b_{M-1, M}$ can be nonzero, so the matrix is $\begin{bmatrix} B' & 0 \end{bmatrix}$ with an
+upper bidiagonal $M \times (M + 1)$ block $B'$. On a square matrix it is
+`Matrix.IsUpperBidiagonal` (see `Matrix.isUpperBidiagonalRect_iff_isUpperBidiagonal`). -/
 def IsUpperBidiagonalRect (B : Matrix (Fin M) (Fin N) R) : Prop :=
   ∀ (i : Fin M) (j : Fin N), (j : ℕ) ≠ i → (j : ℕ) ≠ i + 1 → B i j = 0
 
-/-- A rectangular matrix is **lower bidiagonal** when its only nonzero entries lie on the diagonal
-and the first subdiagonal: the shape of the `(k + 1) × k` matrix of the Golub–Kahan lower
-bidiagonalization ([golub2013matrix] (10.4.18)). It is the transpose of the upper shape
-(`Matrix.isUpperBidiagonalRect_transpose_iff`). -/
+/-- An $M \times N$ matrix $B$ is **lower bidiagonal** if its only nonzero entries lie on the
+diagonal and the first subdiagonal: $b_{ij} = 0$ whenever $i \ne j$ and $i \ne j + 1$, with
+natural-number indices.
+
+This is the shape of the $(k + 1) \times k$ matrix of the Golub–Kahan lower bidiagonalization
+([golub2013matrix], (10.4.18)). It is the transpose of the upper shape (see
+`Matrix.isUpperBidiagonalRect_transpose_iff`). -/
 def IsLowerBidiagonalRect (B : Matrix (Fin M) (Fin N) R) : Prop :=
   ∀ (i : Fin M) (j : Fin N), (i : ℕ) ≠ j → (i : ℕ) ≠ j + 1 → B i j = 0
 
-/-- Transposition carries the upper bidiagonal shape to the lower one. -/
+/-- For an $M \times N$ matrix $B$, the transpose $B^T$ is upper bidiagonal if and only if $B$ is
+lower bidiagonal. -/
 theorem isUpperBidiagonalRect_transpose_iff {B : Matrix (Fin M) (Fin N) R} :
     Bᵀ.IsUpperBidiagonalRect ↔ B.IsLowerBidiagonalRect :=
   forall_comm
 
-/-- Transposition carries the lower bidiagonal shape to the upper one. -/
+/-- For an $M \times N$ matrix $B$, the transpose $B^T$ is lower bidiagonal if and only if $B$ is
+upper bidiagonal. -/
 theorem isLowerBidiagonalRect_transpose_iff {B : Matrix (Fin M) (Fin N) R} :
     Bᵀ.IsLowerBidiagonalRect ↔ B.IsUpperBidiagonalRect :=
   forall_comm
 
-/-- "Upper bidiagonal" is "lower bandwidth `0`, upper bandwidth `1`" ([golub2013matrix]
-Table 1.2.1). -/
+/-- An $M \times N$ matrix is upper bidiagonal if and only if it has lower bandwidth $0$ and upper
+bandwidth $1$ ([golub2013matrix], Table 1.2.1). -/
 theorem isUpperBidiagonalRect_iff_hasBandwidthRect {B : Matrix (Fin M) (Fin N) R} :
     B.IsUpperBidiagonalRect ↔ B.HasLowerBandwidthRect 0 ∧ B.HasUpperBandwidthRect 1 := by
   refine ⟨fun h => ⟨fun i j hij => h i j (by omega) (by omega),
@@ -234,15 +264,16 @@ theorem isUpperBidiagonalRect_iff_hasBandwidthRect {B : Matrix (Fin M) (Fin N) R
   · exact h.1 i j (by omega)
   · exact h.2 i j (by omega)
 
-/-- "Lower bidiagonal" is "lower bandwidth `1`, upper bandwidth `0`", by transposition from the
-upper shape. -/
+/-- An $M \times N$ matrix is lower bidiagonal if and only if it has lower bandwidth $1$ and upper
+bandwidth $0$. -/
 theorem isLowerBidiagonalRect_iff_hasBandwidthRect {B : Matrix (Fin M) (Fin N) R} :
     B.IsLowerBidiagonalRect ↔ B.HasLowerBandwidthRect 1 ∧ B.HasUpperBandwidthRect 0 := by
   rw [← isUpperBidiagonalRect_transpose_iff, isUpperBidiagonalRect_iff_hasBandwidthRect,
     hasLowerBandwidthRect_transpose_iff, hasUpperBandwidthRect_transpose_iff, and_comm]
 
-/-- On a square `Fin N`, the rectangular upper bidiagonal shape is the order-theoretic one of
-`Numlib/LinearAlgebra/Matrix/Hessenberg`. -/
+/-- For a square matrix indexed by $\{0, \dots, N - 1\}$, the rectangular upper bidiagonal shape
+`Matrix.IsUpperBidiagonalRect` is equivalent to the order-theoretic shape
+`Matrix.IsUpperBidiagonal` of `Numlib.LinearAlgebra.Matrix.Hessenberg`. -/
 theorem isUpperBidiagonalRect_iff_isUpperBidiagonal {B : Matrix (Fin N) (Fin N) R} :
     B.IsUpperBidiagonalRect ↔ B.IsUpperBidiagonal := by
   refine ⟨fun h i j hij => ?_, fun h i j h1 h2 => ?_⟩
@@ -256,15 +287,19 @@ theorem isUpperBidiagonalRect_iff_isUpperBidiagonal {B : Matrix (Fin N) (Fin N) 
     · exact h i j (Or.inr ⟨⟨i + 1, by omega⟩, Fin.lt_def.2 (by simp),
         Fin.lt_def.2 (by simp; omega)⟩)
 
-/-- On a square `Fin N`, the rectangular lower bidiagonal shape is the order-theoretic one of
-`Numlib/LinearAlgebra/Matrix/Hessenberg`, by transposition from the upper shape. -/
+/-- For a square matrix indexed by $\{0, \dots, N - 1\}$, the rectangular lower bidiagonal shape
+`Matrix.IsLowerBidiagonalRect` is equivalent to the order-theoretic shape
+`Matrix.IsLowerBidiagonal` of `Numlib.LinearAlgebra.Matrix.Hessenberg`. -/
 theorem isLowerBidiagonalRect_iff_isLowerBidiagonal {B : Matrix (Fin N) (Fin N) R} :
     B.IsLowerBidiagonalRect ↔ B.IsLowerBidiagonal := by
   rw [← isUpperBidiagonalRect_transpose_iff, isUpperBidiagonalRect_iff_isUpperBidiagonal,
     isUpperBidiagonal_transpose_iff]
 
-/-- The Gram matrix `Bᴴ B` of an upper bidiagonal matrix is tridiagonal: `(Bᴴ B)_{ij}` sums
-`conj(b_{ki}) b_{kj}` over the rows `k` with `i, j ∈ {k, k + 1}`. -/
+/-- If an $M \times N$ matrix $B$ over a semiring with an involution is upper bidiagonal, then
+$B^H B$ is tridiagonal.
+
+The entry $(B^H B)_{ij}$ is the sum of $\overline{b_{ki}} b_{kj}$ over the rows $k$ with
+$i, j \in \{k, k + 1\}$. -/
 theorem IsUpperBidiagonalRect.isTridiagonal_conjTranspose_mul_self {R : Type*}
     [NonUnitalNonAssocSemiring R] [StarAddMonoid R] {B : Matrix (Fin M) (Fin N) R}
     (hB : B.IsUpperBidiagonalRect) : (Bᴴ * B).IsTridiagonal := by
@@ -286,19 +321,24 @@ section Pad
 
 variable {α : Type*} {M N : ℕ} {n' : Type*}
 
-/-- `[B; 0]`: a matrix on `Fin N` rows stacked on `M - N` zero rows, for `N ≤ M`; the right
-inverse of `Matrix.firstRows` (`Matrix.firstRows_padRows`). -/
+/-- For $N \le M$ and an $N \times n'$ matrix $B$, `Matrix.padRows B h` is the $M \times n'$ matrix
+$$\begin{bmatrix} B \\ 0 \end{bmatrix}$$
+that stacks $B$ on $M - N$ zero rows. It is a right inverse of `Matrix.firstRows` (see
+`Matrix.firstRows_padRows`). -/
 def padRows [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) : Matrix (Fin M) n' α :=
   (fromRows B (0 : Matrix (Fin (M - N)) n' α)).submatrix (blockEquiv h).symm id
 
-/-- `diag(U, I)`: a square matrix on the first `N` indices of `Fin M` extended by the identity on
-the last `M - N`, for `N ≤ M` — the `diag(U_R, I_{m-n})` of [golub2013matrix] §5.4.9. -/
+/-- For $N \le M$ and a square matrix $U$ of order $N$, `Matrix.padOne U h` is the square matrix of
+order $M$
+$$\operatorname{diag}(U, I) = \begin{bmatrix} U & 0 \\ 0 & I_{M - N} \end{bmatrix}.$$
+It is the matrix $\operatorname{diag}(U_R, I_{m-n})$ of [golub2013matrix], §5.4.9. -/
 def padOne [Zero α] [One α] (U : Matrix (Fin N) (Fin N) α) (h : N ≤ M) :
     Matrix (Fin M) (Fin M) α :=
   (fromBlocks U 0 0 (1 : Matrix (Fin (M - N)) (Fin (M - N)) α)).submatrix (blockEquiv h).symm
     (blockEquiv h).symm
 
-/-- The entries of `[B; 0]`. -/
+/-- The entries of $\begin{bmatrix} B \\ 0 \end{bmatrix}$: the entry in row $i$ and column $j$ is
+$b_{ij}$ if $i < N$ and $0$ otherwise. -/
 theorem padRows_apply [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) (i : Fin M) (j : n') :
     padRows B h i j = if hi : (i : ℕ) < N then B ⟨i, hi⟩ j else 0 := by
   rw [padRows, submatrix_apply, id]
@@ -306,14 +346,16 @@ theorem padRows_apply [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) (i : Fi
   · rw [blockEquiv_symm_apply_of_lt h hi, fromRows_apply_inl]
   · rw [blockEquiv_symm_apply_of_le h (not_lt.1 hi), fromRows_apply_inr, Matrix.zero_apply]
 
-/-- `Matrix.padRows` is a right inverse of `Matrix.firstRows`. -/
+/-- The first $N$ rows of $\begin{bmatrix} B \\ 0 \end{bmatrix}$ form $B$: `Matrix.padRows` is a
+right inverse of `Matrix.firstRows`. -/
 @[simp]
 theorem firstRows_padRows [Zero α] (B : Matrix (Fin N) n' α) (h : N ≤ M) :
     firstRows (padRows B h) h = B := by
   ext i j
   simp [padRows_apply]
 
-/-- `[B; 0]` is the product of the leading columns of the identity with `B`. -/
+/-- For $N \le M$, the matrix $\begin{bmatrix} B \\ 0 \end{bmatrix}$ is the product of the first $N$
+columns of the identity matrix of order $M$ with $B$. -/
 theorem padRows_eq_mul [NonAssocSemiring α] (B : Matrix (Fin N) n' α)
     (h : N ≤ M) : padRows B h = (1 : Matrix (Fin M) (Fin M) α).submatrix id (Fin.castLE h) * B := by
   ext i j
@@ -328,7 +370,8 @@ theorem padRows_eq_mul [NonAssocSemiring α] (B : Matrix (Fin N) n' α)
   · exact (Finset.sum_eq_zero fun k _ =>
       ite_eq_right fun e => hi (by rw [e]; exact k.isLt)).symm
 
-/-- A matrix whose rows from the `N`-th on vanish is `[B; 0]` of its first `N` rows. -/
+/-- Let $N \le M$, and let $R$ be a matrix with $M$ rows whose rows from row $N$ on are zero. Then
+$R = \begin{bmatrix} R_1 \\ 0 \end{bmatrix}$, where $R_1$ consists of the first $N$ rows of $R$. -/
 theorem padRows_firstRows [Zero α] {R : Matrix (Fin M) n' α} (h : N ≤ M)
     (hR : ∀ (i : Fin M) (j : n'), N ≤ (i : ℕ) → R i j = 0) : padRows (firstRows R h) h = R := by
   ext i j
@@ -337,7 +380,8 @@ theorem padRows_firstRows [Zero α] {R : Matrix (Fin M) n' α} (h : N ≤ M)
   · rfl
   · exact (hR i j (not_lt.1 hi)).symm
 
-/-- `[B; 0] C = [B C; 0]`. -/
+/-- For $N \le M$, $\begin{bmatrix} B \\ 0 \end{bmatrix} C = \begin{bmatrix} BC \\ 0 \end{bmatrix}$.
+-/
 theorem padRows_mul [Fintype n'] [NonUnitalNonAssocSemiring α] {p : Type*}
     (B : Matrix (Fin N) n' α) (C : Matrix n' p α) (h : N ≤ M) :
     padRows B h * C = padRows (B * C) h := by
@@ -348,19 +392,20 @@ theorem padRows_mul [Fintype n'] [NonUnitalNonAssocSemiring α] {p : Type*}
   · simp [Matrix.mul_apply]
   · simp
 
-/-- `diag(U, I) [B; 0] = [U B; 0]`. -/
+/-- For $N \le M$, $\operatorname{diag}(U, I) \begin{bmatrix} B \\ 0 \end{bmatrix} = \begin{bmatrix}
+UB \\ 0 \end{bmatrix}$. -/
 theorem padOne_mul_padRows [Semiring α] (U : Matrix (Fin N) (Fin N) α)
     (B : Matrix (Fin N) n' α) (h : N ≤ M) : padOne U h * padRows B h = padRows (U * B) h := by
   rw [padOne, padRows, padRows, submatrix_mul_equiv, fromBlocks_mul_fromRows]
   simp
 
-/-- `diag(U, I)ᴴ = diag(Uᴴ, I)`. -/
+/-- For $N \le M$, $\operatorname{diag}(U, I)^H = \operatorname{diag}(U^H, I)$. -/
 theorem conjTranspose_padOne [NonAssocSemiring α] [StarRing α] (U : Matrix (Fin N) (Fin N) α)
     (h : N ≤ M) : (padOne U h)ᴴ = padOne Uᴴ h := by
   rw [padOne, padOne, conjTranspose_submatrix, fromBlocks_conjTranspose, conjTranspose_zero,
     conjTranspose_zero, conjTranspose_one]
 
-/-- `diag(U, I)` is unitary when `U` is. -/
+/-- For $N \le M$, if $U$ is unitary, then $\operatorname{diag}(U, I)$ is unitary. -/
 theorem padOne_mem_unitaryGroup [CommRing α] [StarRing α] {U : Matrix (Fin N) (Fin N) α}
     (hU : U ∈ unitaryGroup (Fin N) α) (h : N ≤ M) : padOne U h ∈ unitaryGroup (Fin M) α := by
   rw [mem_unitaryGroup_iff', star_eq_conjTranspose, conjTranspose_padOne, padOne, padOne,
@@ -378,25 +423,34 @@ section Factorization
 
 variable {M N : ℕ}
 
-/-- **An orthogonal bidiagonalization** `Uᴴ A V = B` of a rectangular matrix
-([golub2013matrix] §5.4.8, (5.4.13)): a two-sided unitary equivalence (`Matrix.IsUnitaryEquiv`,
-with its fields `mem_unitaryGroup_left`, `mem_unitaryGroup_right`, `star_mul_mul`) whose middle
-factor `B` is upper bidiagonal. The specification of Householder bidiagonalization and of the
-`R`-bidiagonalization. -/
+/-- An **orthogonal bidiagonalization** of an $M \times N$ matrix $A$ over $\mathbb{K}$ consists of
+unitary matrices $U$ of order $M$ and $V$ of order $N$ and an upper bidiagonal $M \times N$
+matrix $B$ with
+$$U^H A V = B.$$
+See §5.4.8 and (5.4.13) of [golub2013matrix].
+
+The structure extends the two-sided unitary equivalence `Matrix.IsUnitaryEquiv A U B V`, with
+the fields `mem_unitaryGroup_left`, `mem_unitaryGroup_right` and `star_mul_mul`. It is the
+specification of Householder bidiagonalization and of the $R$-bidiagonalization. -/
 structure IsBidiagonalization (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
     (V : Matrix (Fin N) (Fin N) 𝕜) (B : Matrix (Fin M) (Fin N) 𝕜) : Prop
     extends IsUnitaryEquiv A U B V where
-  /-- The transformed matrix is upper bidiagonal. -/
+  /-- The matrix $B$ is upper bidiagonal. -/
   isUpperBidiagonalRect : B.IsUpperBidiagonalRect
 
-/-- **Every rectangular matrix has an orthogonal bidiagonalization** ([golub2013matrix] (5.4.13)):
-`Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` repackaged. -/
+/-- **Every rectangular matrix has an orthogonal bidiagonalization.** For every $M \times N$ matrix
+$A$ over $\mathbb{K}$ there are $U$, $V$ and $B$ that form an orthogonal bidiagonalization
+$U^H A V = B$ ([golub2013matrix], (5.4.13)).
+
+This is `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` in the form of
+`Matrix.IsBidiagonalization`. -/
 theorem exists_isBidiagonalization (A : Matrix (Fin M) (Fin N) 𝕜) :
     ∃ U V B, IsBidiagonalization A U V B := by
   obtain ⟨U, hU, V, hV, hB⟩ := exists_unitary_mul_mul_unitary_apply_eq_zero A
   exact ⟨U, V, _, ⟨hU, hV, rfl⟩, fun i j h1 h2 => hB i j (Ne.symm h1) (Ne.symm h2)⟩
 
-/-- A padded upper bidiagonal matrix is upper bidiagonal. -/
+/-- For $N \le M$, if a square matrix $B$ of order $N$ is upper bidiagonal, then
+$\begin{bmatrix} B \\ 0 \end{bmatrix}$ is upper bidiagonal. -/
 theorem IsUpperBidiagonalRect.padRows {R : Type*} [Zero R] {B : Matrix (Fin N) (Fin N) R}
     (hB : B.IsUpperBidiagonalRect) (h : N ≤ M) : (padRows B h).IsUpperBidiagonalRect := by
   intro i j h1 h2
@@ -405,9 +459,16 @@ theorem IsUpperBidiagonalRect.padRows {R : Type*} [Zero R] {B : Matrix (Fin N) (
   · exact hB _ j h1 h2
   · rfl
 
-/-- **`R`-bidiagonalization** ([golub2013matrix] §5.4.9; Chan 1982): for `N ≤ M`, a QR
-factorization `A = Q R` followed by a bidiagonalization `U_Rᴴ R₁ V = B₁` of the square top block
-`R₁` of `R` bidiagonalizes `A` as `(Q diag(U_R, I))ᴴ A V = [B₁; 0]`. -/
+/-- **$R$-bidiagonalization** ([golub2013matrix], §5.4.9). Let $A$ be an $M \times N$ matrix over
+$\mathbb{K}$ with $N \le M$, and let $A = QR$ be a QR factorization, with $Q$ unitary and $R$
+upper trapezoidal. Let $R_1$ be the top $N \times N$ block of $R$, and let $U_R^H R_1 V = B_1$
+be an orthogonal bidiagonalization of $R_1$. Then
+$$\bigl(Q \operatorname{diag}(U_R, I)\bigr)^H A V = \begin{bmatrix} B_1 \\ 0 \end{bmatrix}$$
+is an orthogonal bidiagonalization of $A$.
+
+This method is due to Chan (1982). The QR factorization is `Matrix.IsQR A Q R`, the block $R_1$
+is `Matrix.firstRows R hNM`, and $\operatorname{diag}(U_R, I)$ and
+$\begin{bmatrix} B_1 \\ 0 \end{bmatrix}$ are `Matrix.padOne` and `Matrix.padRows`. -/
 theorem IsBidiagonalization.of_isQR (hNM : N ≤ M) {A : Matrix (Fin M) (Fin N) 𝕜}
     {Q : Matrix (Fin M) (Fin M) 𝕜} {R : Matrix (Fin M) (Fin N) 𝕜} (hQR : IsQR A Q R)
     {UR V B₁ : Matrix (Fin N) (Fin N) 𝕜} (hB : IsBidiagonalization (firstRows R hNM) UR V B₁) :
@@ -424,8 +485,11 @@ theorem IsBidiagonalization.of_isQR (hNM : N ≤ M) {A : Matrix (Fin M) (Fin N) 
       padOne_mul_padRows, padRows_mul, hB.conjTranspose_mul_mul]
   isUpperBidiagonalRect := hB.isUpperBidiagonalRect.padRows hNM
 
-/-- "The bidiagonalization of `A` is related to the tridiagonalization of `Aᴴ A`"
-([golub2013matrix] §5.4.8, §8.3.1): `Vᴴ (Aᴴ A) V = Bᴴ B`, and `Bᴴ B` is tridiagonal. -/
+/-- The bidiagonalization of $A$ is related to the tridiagonalization of $A^H A$ ([golub2013matrix],
+§5.4.8 and §8.3.1). If $U^H A V = B$ is an orthogonal bidiagonalization of an $M \times N$
+matrix $A$, then
+$$V^H (A^H A) V = B^H B,$$
+and $B^H B$ is tridiagonal. -/
 theorem IsBidiagonalization.isTridiagonal_conjTranspose_mul_self {A : Matrix (Fin M) (Fin N) 𝕜}
     {U : Matrix (Fin M) (Fin M) 𝕜} {V : Matrix (Fin N) (Fin N) 𝕜} {B : Matrix (Fin M) (Fin N) 𝕜}
     (hB : IsBidiagonalization A U V B) :

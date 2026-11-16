@@ -9,37 +9,56 @@ import Numlib.Analysis.Convex.Indicator
 /-!
 # Polyhedral constraint qualifications
 
-The constraint qualifications for exact conjugate addition weaken when one of the two functions is
-polyhedral: where `Duality/Relint.lean` asks for a *common relative interior point* of the two
-effective domains, the polyhedral side here contributes only a point of its effective domain.
+Let $E$ and $F$ be finite-dimensional real normed spaces in duality through a pairing
+$\langle x, y \rangle$. Two proper convex functions $f, g$ on $E$ **add exactly** if the conjugate
+of the sum is the infimal convolute of the conjugates, with the infimum attained: $$(f + g)^*(y) =
+\min_{y_1 + y_2 = y} \big( f^*(y_1) + g^*(y_2) \big).$$ The relative-interior constraint
+qualification of `Numlib.Analysis.Convex.Duality.Relint` asks that
+$\operatorname{ri}(\operatorname{dom} f) \cap \operatorname{ri}(\operatorname{dom} g) \ne
+\emptyset$. This module weakens it when $f$ is polyhedral: the polyhedral side contributes only a
+point of its effective domain, not of its relative interior. This is Theorem 20.1 of
+[rockafellar1970convex]. The same weakening holds for finitely many summands, and for the conjugate
+of an inverse image $gA$.
 
 ## Main results
 
-* `IsExactSum.of_polyhedral_pair` — both functions polyhedral: no relative interiors at all, only
-  `dom f ∩ dom g ≠ ∅`.
-* `IsExactSum.of_polyhedral` — a proper polyhedral `f` and a proper convex `g` add exactly as soon
-  as `dom f` meets `ri (dom g)` ([rockafellar1970convex] Theorem 20.1).
-  `IsExactSum.of_polyhedral_closed` is the closed case, which carries the argument, and
-  `relint_inter_relint_nonempty_of_subset_affineSpan` is the relative-interior step it turns on.
-* `IsExactFinsetSum.of_polyhedral` — the same for `m` summands; `PolyhedralFn.finsetSum`, a finite
-  sum of proper polyhedral functions being polyhedral, makes the polyhedral block one summand.
-* `IsExactImage.of_polyhedral` — the same weakening on the *image* side: a proper polyhedral `g`
-  pulls back exactly as soon as the range of `A` meets `dom g`. This is what gives the general
-  image and subgradient rules their polyhedral clauses.
+* `ConvexAnalysis.IsExactSum.of_polyhedral_pair`: two proper polyhedral convex functions add exactly
+  if $\operatorname{dom} f \cap \operatorname{dom} g \ne \emptyset$.
+* `ConvexAnalysis.IsExactSum.of_polyhedral`: a proper polyhedral convex function $f$ and a proper
+  convex function $g$ add exactly if $\operatorname{dom} f$ meets
+  $\operatorname{ri}(\operatorname{dom} g)$.
+* `ConvexAnalysis.IsExactSum.of_polyhedral_closed`: the case of the previous result with $g$ closed,
+  which carries the argument.
+* `ConvexAnalysis.relint_inter_relint_nonempty_of_subset_affineSpan`: the step on relative interiors
+  that the reduction uses.
+* `ConvexAnalysis.IsExactFinsetSum.of_polyhedral`: proper convex functions $f_1, \dots, f_m$, of
+  which $f_1, \dots, f_k$ are polyhedral, add exactly if $\operatorname{dom} f_1 \cap \dots \cap
+  \operatorname{dom} f_k \cap \operatorname{ri}(\operatorname{dom} f_{k+1}) \cap \dots \cap
+  \operatorname{ri}(\operatorname{dom} f_m) \ne \emptyset$.
+* `ConvexAnalysis.IsExactImage.of_polyhedral`: a proper polyhedral convex function $g$ pulls back
+  exactly along a linear map $A$ if the range of $A$ meets $\operatorname{dom} g$. This gives the
+  polyhedral clauses of the general rules for images and subgradients.
+
+## Proof outline
+
+The case of two polyhedral functions is the proof of `ConvexAnalysis.IsExactSum.of_relint`, with its
+closedness criterion replaced by polyhedrality. Both proofs need $\operatorname{epi} f^* +
+\operatorname{epi} g^*$ to be closed. Here this is automatic, because a sum of polyhedral sets is
+polyhedral and therefore closed. The general case is the classical reduction, applied to an
+indicator function. Let $M = \operatorname{aff}(\operatorname{dom} g)$ and
+$\delta = \delta(\cdot \mid M)$. The function $\delta + f$ is polyhedral, and
+$M \cap \operatorname{dom} f$ meets $\operatorname{ri}(\operatorname{dom} g)$. So
+`ConvexAnalysis.IsExactSum.of_relint` applies to $\delta + f$ and $g$. The remaining term $\delta^*$
+is then absorbed, because $\delta + g = g$ and $\delta + (f + g) = f + g$.
 
 ## Implementation notes
 
-The pair case is the proof of `of_relint` with its closedness criterion replaced by polyhedrality:
-both need `epi f* + epi g*` closed, and here that is free, a sum of polyhedral sets being
-polyhedral and closed. `ClosedConvex` is a hypothesis on neither side, a proper polyhedral convex
-function being automatically closed. The general case is the classical reduction, run on an
-indicator: with `M = aff (dom g)` and `δ = δ(· | M)`, the function `δ + f` is polyhedral and
-`M ∩ dom f` does meet `ri (dom g)`, so `of_relint` applies to `δ + f` and `g`; the leftover `δ*`
-is then re-absorbed, since `δ + g = g` and `δ + (f + g) = f + g`.
-
-## References
-
-* [rockafellar1970convex] §20.
+* Closedness is not a hypothesis on either function, because a proper polyhedral convex function is
+  closed (`ConvexAnalysis.PolyhedralFn.closedProperConvexFn`).
+* The pairing is a bilinear map `B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ`. The hypotheses
+  `ConvexAnalysis.IsCompatiblePairing B` and `ConvexAnalysis.IsCompatiblePairing B.flip` say that
+  every continuous linear functional on $E$ is $\langle \cdot, y \rangle$ for some $y \in F$, and
+  every continuous linear functional on $F$ is $\langle x, \cdot \rangle$ for some $x \in E$.
 -/
 
 open Set
@@ -55,14 +74,21 @@ variable {E F : Type*}
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
 omit [FiniteDimensional ℝ F] in
-/-- A proper polyhedral convex function is a closed proper convex function. -/
+/-- A proper polyhedral convex function on a finite-dimensional space is a closed proper convex
+function. -/
 theorem PolyhedralFn.closedProperConvexFn (hf : PolyhedralFn f) (hpf : ProperConvex f) :
     ClosedProperConvexFn f :=
   ⟨hf.convexFn, hf.closedConvex hpf.ne_bot, hpf⟩
 
-/-- **The all-polyhedral case**: two proper polyhedral convex functions add exactly as soon as
-their effective domains meet, with no relative interior on either side. This is the case `k = m`,
-to which the general form is reduced. -/
+/-- **The case of two polyhedral functions.** Let $E$ and $F$ be finite-dimensional real normed
+spaces with a pairing under which each space represents all continuous linear functionals on the
+other. Let $f, g \colon E \to [-\infty, +\infty]$ be proper polyhedral convex functions, and let
+$x_0 \in \operatorname{dom} f \cap \operatorname{dom} g$. Then $f$ and $g$ add exactly: for
+every $y \in F$ there are $y_1, y_2 \in F$ with $y_1 + y_2 = y$ and $$f^*(y_1) + g^*(y_2) \le
+(f + g)^*(y).$$
+
+No relative interior is needed on either side. This is the case $k = m$ of Theorem 20.1 of
+[rockafellar1970convex], to which the general case is reduced. -/
 theorem IsExactSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : PolyhedralFn f) (hpf : ProperConvex f) (hg : PolyhedralFn g) (hpg : ProperConvex g)
     {x₀ : E} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ convexDom g) : IsExactSum B f g := by
@@ -74,10 +100,11 @@ theorem IsExactSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairi
   exact IsExactSum.of_isClosed_epi_add hfc hgc hxf hxg hclosed
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- An indicator function is absorbed by any function whose effective domain it contains. This is
-the algebraic device the reduction below runs on: with `M = aff (dom g)` both
-`indicatorFn M + g` and `indicatorFn M + (f + g)` collapse. No properness is needed — off `C` the
-sum is `⊤ + ⊤`. -/
+/-- Let $C \subseteq E$ and let $k \colon E \to [-\infty, +\infty]$ have
+$\operatorname{dom} k \subseteq C$. Then $\delta(\cdot \mid C) + k = k$.
+
+No properness is needed: off $C$ the sum is $+\infty + (+\infty) = +\infty$. The reduction below
+uses this with $C = \operatorname{aff}(\operatorname{dom} g)$, for $k = g$ and for $k = f + g$. -/
 theorem indicatorFn_add_eq_self {C : Set E} {k : E → EReal}
     (hsub : convexDom k ⊆ C) : indicatorFn C + k = k := by
   funext x
@@ -90,12 +117,14 @@ theorem indicatorFn_add_eq_self {C : Set E} {k : E → EReal}
     simp
 
 omit [FiniteDimensional ℝ F] in
-/-- **The relative-interior step** the reduction below turns on. If a convex set `D₁` lies in the
-affine hull of a convex set `D₂` and the two share a point `x₀` of `ri D₂`, then `ri D₁` and
-`ri D₂` already share a point.
+/-- **The step on relative interiors.** Let $D_1, D_2 \subseteq E$ be convex, with $D_1$ contained
+in the affine hull of $D_2$. If some $x_0 \in D_1$ is in $\operatorname{ri} D_2$, then
+$\operatorname{ri} D_1 \cap \operatorname{ri} D_2 \ne \emptyset$.
 
-`x₀` need not itself be in `ri D₁`, but `ri D₂` is a relatively open neighbourhood of `x₀` inside
-`aff D₂ ⊇ aff D₁`, so a small push from `x₀` towards any point of `ri D₁` lands in both. -/
+The point $x_0$ need not be in $\operatorname{ri} D_1$. But $\operatorname{ri} D_2$ is a
+relatively open neighbourhood of $x_0$ in $\operatorname{aff} D_2 \supseteq \operatorname{aff}
+D_1$, so a small step from $x_0$ towards any point of $\operatorname{ri} D_1$ lands in both
+sets. -/
 theorem relint_inter_relint_nonempty_of_subset_affineSpan {D₁ D₂ : Set E}
     (h₁ : Convex ℝ D₁) (h₂ : Convex ℝ D₂) (hsub : D₁ ⊆ (affineSpan ℝ D₂ : Set E))
     {x₀ : E} (hx₁ : x₀ ∈ D₁) (hx₂ : x₀ ∈ ri D₂) : (ri D₁ ∩ ri D₂).Nonempty := by
@@ -130,13 +159,19 @@ theorem relint_inter_relint_nonempty_of_subset_affineSpan {D₁ D₂ : Set E}
       match_scalars <;> (field_simp; try ring)
     rwa [heq] at hseg
 
-/-- A proper polyhedral convex function and a closed proper convex function add exactly as soon as
-`dom f` meets `ri (dom g)`: the polyhedral side contributes only a point of its effective domain,
-not of its relative interior.
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing under which each space
+represents all continuous linear functionals on the other. Let
+$f \colon E \to [-\infty, +\infty]$ be a proper polyhedral convex function, let
+$g \colon E \to [-\infty, +\infty]$ be a closed proper convex function, and let $x_0 \in
+\operatorname{dom} f \cap \operatorname{ri}(\operatorname{dom} g)$. Then $f$ and $g$ add
+exactly.
 
-With `M = aff (dom g)`, `δ = δ(· | M)` and `h = δ + f`, `ri (dom h)` does meet `ri (dom g)`, so
-`of_relint` splits `(h + g)* = (f + g)*` exactly; the pair case splits `h*` as `δ* □ f*`, and
-`δ* □ g* = (δ + g)* = g*` re-absorbs the leftover `δ*`. -/
+Let $M = \operatorname{aff}(\operatorname{dom} g)$, $\delta = \delta(\cdot \mid M)$ and
+$h = \delta + f$. Then $\operatorname{ri}(\operatorname{dom} h)$ meets
+$\operatorname{ri}(\operatorname{dom} g)$, so `ConvexAnalysis.IsExactSum.of_relint` splits
+$(h + g)^* = (f + g)^*$ exactly. The case of two polyhedral functions splits $h^*$ as
+$\delta^* \mathbin{\square} f^*$, and $\delta^* \mathbin{\square} g^* = (\delta + g)^* = g^*$
+absorbs the remaining term $\delta^*$. -/
 theorem IsExactSum.of_polyhedral_closed [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : PolyhedralFn f) (hpf : ProperConvex f) (hg : ClosedProperConvexFn g)
     {x₀ : E} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ ri (convexDom g)) : IsExactSum B f g := by
@@ -205,14 +240,21 @@ theorem IsExactSum.of_polyhedral_closed [IsCompatiblePairing B] [IsCompatiblePai
       _ ≤ convexConj B (δ + f + g) y := hzle
       _ = convexConj B (f + g) y := by rw [hsum]
 
-/-- A proper polyhedral convex function and a *proper convex* function add exactly as soon as
-`dom f` meets `ri (dom g)`. Neither closedness of `g` nor a relative interior point of `dom f` is
-needed.
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing under which each space
+represents all continuous linear functionals on the other. Let
+$f \colon E \to [-\infty, +\infty]$ be a proper polyhedral convex function, let
+$g \colon E \to [-\infty, +\infty]$ be a proper convex function, and let $x_0 \in
+\operatorname{dom} f \cap \operatorname{ri}(\operatorname{dom} g)$. Then $f$ and $g$ add
+exactly: for every $y \in F$, $$(f + g)^*(y) = \min_{y_1 + y_2 = y} \big( f^*(y_1) + g^*(y_2)
+\big).$$
 
-The reduction to `IsExactSum.of_polyhedral_closed` runs through the conjugate form
-`convexConj_add_eq_convexConj_convexCl_add_convexCl`, whose two segment hypotheses are met on
-opposite grounds: `f` is closed proper (only `x₀ ∈ dom f` needed) and `g` is proper convex
-(`x₀ ∈ ri (dom g)`). That asymmetry is the asymmetry of the theorem itself. -/
+This is the case $m = 2$, $k = 1$ of Theorem 20.1 of [rockafellar1970convex]. Neither closedness
+of $g$ nor a relative interior point of $\operatorname{dom} f$ is needed. The proof reduces to
+`ConvexAnalysis.IsExactSum.of_polyhedral_closed` through
+`ConvexAnalysis.convexConj_add_eq_convexConj_convexCl_add_convexCl`. The two hypotheses of that
+lemma hold for different reasons: $f$ is closed and proper, so $x_0 \in \operatorname{dom} f$ is
+enough, and $g$ is proper and convex, with $x_0 \in \operatorname{ri}(\operatorname{dom} g)$.
+This asymmetry is the asymmetry of the theorem. -/
 theorem IsExactSum.of_polyhedral [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : PolyhedralFn f) (hpf : ProperConvex f) (hg : ConvexFn g) (hpg : ProperConvex g)
     {x₀ : E} (hxf : x₀ ∈ convexDom f) (hxg : x₀ ∈ ri (convexDom g)) : IsExactSum B f g := by
@@ -228,7 +270,7 @@ theorem IsExactSum.of_polyhedral [IsCompatiblePairing B] [IsCompatiblePairing B.
 
 end Sum
 
-/-! ### Exact addition of `m` summands -/
+/-! ### Exact addition of $m$ summands -/
 
 section FinsetSum
 
@@ -237,8 +279,14 @@ variable {ι : Type*} {E F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {s t u : Finset ι} {f : ι → E → EReal}
 
-/-- **The all-polyhedral case, for `m` summands**: finitely many proper polyhedral convex
-functions add exactly as soon as their effective domains have a point in common. -/
+/-- **The case of $m$ polyhedral functions.** Let $E$ and $F$ be finite-dimensional real normed
+spaces with a pairing under which each space represents all continuous linear functionals on the
+other. Let $s$ be a nonempty finite set and let $f_i$, $i \in s$, be proper polyhedral convex
+functions on $E$ whose effective domains have a common point $x_0$. Then the family
+$(f_i)_{i \in s}$ adds exactly: for every $y \in F$ there are $y_i \in F$ with
+$\sum_{i \in s} y_i = y$ and $$\sum_{i \in s} f_i^*(y_i) \le \Big( \sum_{i \in s} f_i
+\Big)^*(y).$$
+-/
 theorem IsExactFinsetSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hs : s.Nonempty) (hpoly : ∀ i ∈ s, PolyhedralFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
     {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (f i)) : IsExactFinsetSum B s f := by
@@ -261,17 +309,25 @@ theorem IsExactFinsetSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatibl
     rw [hdom]
     exact Set.mem_iInter₂.2 fun j hj => hx₀ j (hmt j hj)
 
-/-- The `m`-ary form: let `f₁, …, fₘ` be proper convex with `f₁, …, f_k` polyhedral, and suppose
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing under which each space
+represents all continuous linear functionals on the other. Let $s$ be a nonempty finite set that
+is the disjoint union of $t$ and $u$. Let $f_i$, $i \in s$, be proper convex functions on $E$,
+with $f_i$ polyhedral for $i \in t$. Suppose that there is a point $x_0$ with
+$x_0 \in \operatorname{dom} f_i$ for every $i \in t$ and $x_0 \in
+\operatorname{ri}(\operatorname{dom} f_i)$ for every $i \in u$. Then the family
+$(f_i)_{i \in s}$ adds exactly: for every $y \in F$, $$\Big( \sum_{i \in s} f_i \Big)^*(y) =
+\min \Big\{ \sum_{i \in s} f_i^*(y_i) \Bigm| \sum_{i \in s} y_i = y \Big\}.$$
 
-`dom f₁ ∩ ⋯ ∩ dom f_k ∩ ri (dom f_{k+1}) ∩ ⋯ ∩ ri (dom fₘ) ≠ ∅`.
+This is Theorem 20.1 of [rockafellar1970convex], with $t = \{1, \dots, k\}$ and
+$u = \{k + 1, \dots, m\}$. The condition there reads $$\operatorname{dom} f_1 \cap \dots \cap
+\operatorname{dom} f_k \cap \operatorname{ri}(\operatorname{dom} f_{k+1}) \cap \dots \cap
+\operatorname{ri}(\operatorname{dom} f_m) \ne \emptyset.$$
 
-Then `f₁, …, fₘ` add exactly.
-
-`t` is `{1, …, k}` and `u` is its complement; the splitting is spelled membership-wise rather than
-as `s = t ∪ u` so that no `DecidableEq` instance enters the statement. `∑_{i ∈ t} fᵢ` is
-polyhedral and adds exactly to `∑_{i ∈ u} fᵢ` by the binary case, while each block adds exactly on
-its own — the polyhedral one by the all-polyhedral case, the other by the relative-interior
-criterion. -/
+The splitting of $s$ is stated by membership, $i \in s \iff i \in t \lor i \in u$, rather than
+as $s = t \cup u$, so that no `DecidableEq` instance enters the statement. The sum
+$\sum_{i \in t} f_i$ is polyhedral and adds exactly to $\sum_{i \in u} f_i$ by the binary case.
+Each of the two blocks adds exactly on its own: the polyhedral block by the case of $m$
+polyhedral functions, and the other by the relative-interior criterion. -/
 theorem IsExactFinsetSum.of_polyhedral [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
@@ -314,13 +370,22 @@ variable {E F G H : Type*}
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
   {A : E →ₗ[ℝ] G} {A' : H →ₗ[ℝ] F} {g : G → EReal}
 
-/-- **The companion on the image side**: a proper *polyhedral* `g` pulls back exactly along `A` as
-soon as the range of `A` meets `dom g` — no relative interior anywhere, exactly as on the sum side.
+/-- **The polyhedral case for an inverse image.** Let $E$ be a real vector space, and let $F$, $G$
+and $H$ be finite-dimensional real normed spaces. Let $\langle \cdot, \cdot \rangle$ pair $E$
+with $F$ and $\langle \cdot, \cdot \rangle'$ pair $G$ with $H$, such that every continuous
+linear functional on $G$ is $\langle \cdot, z \rangle'$ for some $z \in H$ and every continuous
+linear functional on $F$ is $\langle x, \cdot \rangle$ for some $x \in E$. Let
+$A \colon E \to G$ and $A' \colon H \to F$ be linear maps with $\langle Ax, z \rangle' = \langle
+x, A'z \rangle$. Let $g \colon G \to [-\infty, +\infty]$ be a proper polyhedral convex function,
+and let $Ax_0 \in \operatorname{dom} g$ for some $x_0 \in E$. Then $g$ pulls back exactly along
+$A$: wherever $(gA)^*(y) < +\infty$, there is a $z \in H$ with $A'z = y$ and
+$g^*(z) \le (gA)^*(y)$, so that $(gA)^* = A'(g^*)$ with the infimum attained.
 
-None of the sum theory is used. `g*` is polyhedral, so `A' g*` is polyhedral and therefore closed,
-and the general image rule's *closure* formula has nothing left to close; the same fact attains the
-infimum over the fibre. Properness of `g` enters twice and cheaply: it makes `g` closed, and
-`A x₀ ∈ dom g` stops `(g A)*` from being `-∞`. -/
+No relative interior is needed, as for sums. The proof uses none of the theory of sums. The
+conjugate $g^*$ is polyhedral, so $A'(g^*)$ is polyhedral and therefore closed, and the closure
+in the general formula for the image changes nothing. The same fact gives the attainment of the
+infimum over the fibre. Properness of $g$ is used twice: it makes $g$ closed, and
+$Ax_0 \in \operatorname{dom} g$ prevents $(gA)^*$ from taking the value $-\infty$. -/
 theorem IsExactImage.of_polyhedral [IsCompatiblePairing B'] [IsCompatiblePairing B.flip]
     (hA : IsAdjointPair B B' A A') (hg : PolyhedralFn g) (hp : ProperConvex g)
     {x₀ : E} (hx₀ : A x₀ ∈ convexDom g) :

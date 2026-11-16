@@ -9,73 +9,82 @@ import Numlib.Analysis.Sobolev.Boundary.Gram
 import Numlib.Topology.MetricSpace.Bounded
 
 /-!
-# The surface measure and the outward normal of a bounded `C¹` domain
+# The surface measure and the outward normal of a bounded $C^1$ domain
 
-The surface measure `σ` and the outward unit normal `ν` of a bounded `C¹` domain in the graph
-form `IsContDiffDomain 1 Ω` of `Numlib/Analysis/Sobolev/Domain.lean` (decisions B2, B3 of
-`notes/boundary/planning-brief.md`), built from graph charts and a partition of unity and
-characterized chart by chart.
+Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain in the graph sense of
+`IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]). This file builds the surface
+measure $\sigma$ on $\partial\Omega$ and the outward unit normal $\nu$ from graph charts and a
+partition of unity, and characterizes both chart by chart. A **graph chart** at $(x_0, r)$ is a
+rigid motion $T$ of $\mathbb{R}^{d+1}$, with linear part $L$, and a $C^1$ function
+$g : \mathbb{R}^d \to \mathbb{R}$ with $\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y :
+y_{d+1} > g(y')\})$. Its parametrization $\Phi(x') = T^{-1}(x', g(x'))$ maps the open bounded set
+$D = \Phi^{-1}(B(x_0, r)) \subseteq \mathbb{R}^d$ onto $\partial\Omega \cap B(x_0, r)$. The local
+surface measure is the image under $\Phi$ of the measure $\sqrt{1 + |\nabla g|^2} \, dx'$ on $D$,
+and the local outward normal at $x$ is
+$$\nu(x) = \frac{L^{-1}(\nabla g(x'), -1)}{\sqrt{1 + |\nabla g(x')|^2}}, \qquad x' = (T x)'.$$
 
-**Local objects.** A graph chart is a rigid motion `T : ℝ^{d+1} ≃ᵃⁱ ℝ^{d+1}` and a `C¹` function
-`g : ℝ^d → ℝ` with `Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`. Its parametrization of the
-boundary is `graphParam T g x' = T⁻¹ (x', g x')`, defined on the open bounded
-`graphDomain T g x₀ r = graphParam T g ⁻¹' B(x₀, r)` and mapping it onto `∂Ω ∩ B(x₀, r)`; the
-local surface measure is the pushforward `graphMeasure T g s` of `√(1 + |∇g|²) dx'` on `s ⊆ ℝ^d`
-(`graphDensity g`), and the local outward normal is
-`graphNormal T g x = T.linear⁻¹ (∇g x', −1) / √(1 + |∇g x'|²)`, `x' = (T x)'` — the sign is the
-one pointing *out of* the region above the graph (`(∇g, −1)` is the gradient of
-`y ↦ g y' − y_N`, which is negative on `Ω`); Grisvard's `(−∇φ, 1)` (§1.5.1) is for a region
-*below* the graph. `graphNormal_outward` proves the sign: `x + tν ∉ Ω` and `x − tν ∈ Ω` for
-small `t > 0`.
-
-**Chart independence.** On the overlap of two charts the transition
-`ψ = (T₂ ·)' ∘ graphParam T₁ g₁` is a `C¹` injection between open subsets of `ℝ^d` with
-`graphParam T₁ g₁ = graphParam T₂ g₂ ∘ ψ`, the densities transform by `|det Dψ|` (the Gram
-identity `gram (L ∘ A) = gram L · |det A|` of `Boundary/Gram.lean` with
-`graphDensity g x' = gram (D graphParam x')`), and Mathlib's change of variables
-`MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul` gives
-`graphMeasure T₁ g₁ = graphMeasure T₂ g₂` on the overlap (`graphMeasure_eq_of_eq`). The normals
-agree pointwise (`graphNormal_eq_of_eq`): both are unit vectors orthogonal to the common tangent
-space, so `ν₂ = ±ν₁` (a direct computation in the frame of the first chart, no dimension count),
-and both point outward, which excludes the minus sign.
-
-**Global objects.** A `GraphAtlas Ω` is a finite family of graph charts covering `∂Ω` with a
-smooth partition of unity `θ₀ + ∑ θᵢ = 1` subordinate to the balls (`θ₀` vanishing near `∂Ω`, as
-in [brezis2011functional] Lemma 9.3); its measure is `∑ᵢ θᵢ · σᵢ` and its normal is `νᵢ` on the
-`i`-th ball. The chart characterization `GraphAtlas.measure_restrict_ball` — the atlas measure
-restricted to *any* graph chart ball of `Ω` is that chart's `graphMeasure` — makes the measure
-independent of the atlas (`GraphAtlas.measure_eq`), and likewise for the normal
-(`GraphAtlas.normal_eq_graphNormal_of_inter_eq`). For `hΩ : IsContDiffDomain 1 Ω` bounded, an
-atlas exists (`IsContDiffDomain.exists_graphAtlas`, from `IsBoundaryOfClass.exists_finite_cover`
-and `IsCompact.exists_contDiff_partitionOfUnity`), and `IsContDiffDomain.boundaryMeasure hΩ hb`,
-`IsContDiffDomain.outwardNormal hΩ hb` are the measure and normal of a chosen one. No Hausdorff
-measure enters; the identity `σ = μH[d]⌊∂Ω` is a future node (area formula).
+A **graph atlas** of $\Omega$ is a finite family of graph charts whose balls cover $\partial\Omega$,
+together with a smooth partition of unity $\theta_0 + \sum_i \theta_i = 1$ subordinate to the balls,
+with $\theta_0$ vanishing near $\partial\Omega$, as in Lemma 9.3 of [brezis2011functional]. Its
+measure is $\sum_i \theta_i \sigma_i$, and its normal is $\nu_i$ on the $i$-th ball. Restricted to
+the ball of *any* graph chart of $\Omega$, the atlas measure is the local measure of that chart, and
+the atlas normal on $\partial\Omega$ is the normal of that chart. So the measure and the normal do
+not depend on the atlas. Every bounded $C^1$ domain has an atlas, and
+`IsContDiffDomain.boundaryMeasure` and `IsContDiffDomain.outwardNormal` are the measure and the
+normal of a chosen one.
 
 ## Main definitions
 
-* `EuclideanSpace.graphParam`, `graphDomain`, `graphDensity`, `graphMeasure`, `graphNormal`,
-  `graphTransition`: the local objects of a graph chart;
-* `GraphAtlas Ω`, `GraphAtlas.measure`, `GraphAtlas.normal`: the glued objects of an atlas;
+* `EuclideanSpace.graphParam`, `EuclideanSpace.graphDomain`, `EuclideanSpace.graphDensity`,
+  `EuclideanSpace.graphMeasure`, `EuclideanSpace.graphNormal`, `EuclideanSpace.graphTransition`: the
+  parametrization, the parameter domain, the surface element, the local surface measure, the local
+  normal of a graph chart, and the transition between two charts.
+* `GraphAtlas`, `GraphAtlas.measure`, `GraphAtlas.normal`: a graph atlas with a partition of unity,
+  and its surface measure and normal.
 * `IsContDiffDomain.graphAtlas`, `IsContDiffDomain.boundaryMeasure`,
-  `IsContDiffDomain.outwardNormal`: the surface measure and outward normal of a bounded `C¹`
-  domain.
+  `IsContDiffDomain.outwardNormal`: a chosen atlas of a bounded $C^1$ domain, and the surface
+  measure and outward unit normal of the domain.
 
-## Main statements
+## Main results
 
-* `EuclideanSpace.integral_graphMeasure`: `∫ f dσ_loc = ∫_s √(1 + |∇g|²) f (graphParam x') dx'`;
-* `EuclideanSpace.graphNormal_outward`: the normal points out of the region above the graph;
-* `EuclideanSpace.graphDensity_graphTransition`: the Gram identity between two charts;
-* `EuclideanSpace.graphMeasure_eq_of_eq`, `EuclideanSpace.graphNormal_eq_of_eq`: chart
-  independence of the local measure and normal;
-* `GraphAtlas.measure_restrict_ball`, `IsContDiffDomain.boundaryMeasure_restrict_ball`: the
-  surface measure restricted to any chart ball is the chart's graph measure;
-* `IsContDiffDomain.boundaryMeasure_pos_of_isOpen`: `σ` has full support on `∂Ω`;
-* `IsContDiffDomain.outwardNormal_eq_graphNormal`: the normal in any chart.
+* `EuclideanSpace.integral_graphMeasure`: the integral against the local measure is $\int_s
+  \sqrt{1 + |\nabla g(x')|^2} \, f(\Phi(x')) \, dx'$.
+* `EuclideanSpace.graphNormal_outward`: the local normal points out of the region above the graph.
+* `EuclideanSpace.graphDensity_graphTransition`: the surface elements of two charts differ by the
+  factor $|\det D\psi|$ of the transition $\psi$.
+* `EuclideanSpace.graphMeasure_eq_of_eq`, `EuclideanSpace.graphNormal_eq_of_eq`: two charts that
+  describe the same set on an open set give the same local measure and the same normal there.
+* `GraphAtlas.measure_restrict_ball`, `IsContDiffDomain.boundaryMeasure_restrict_ball`: the surface
+  measure restricted to any chart ball is the local measure of the chart.
+* `GraphAtlas.measure_eq`: the atlas measure does not depend on the atlas.
+* `IsContDiffDomain.boundaryMeasure_pos_of_isOpen`: every open set that meets $\partial\Omega$ has
+  positive surface measure.
+* `IsContDiffDomain.outwardNormal_eq_graphNormal`: on $\partial\Omega$ the outward normal is the
+  normal of any chart.
 
-## References
+## Proof outline
 
-Grisvard, *Elliptic Problems in Nonsmooth Domains*, §1.5.1; [brezis2011functional] §9.2
-(Lemma 9.3); Atkinson–Han, Definition 7.2.1.
+On the overlap of two charts, the transition $\psi = (T_2 \Phi_1)'$ is a $C^1$ injection between
+open subsets of $\mathbb{R}^d$ with $\Phi_1 = \Phi_2 \circ \psi$. The surface element of a chart is
+the Gram factor of $D\Phi$ (`EuclideanSpace.graphDensity_eq_gram`), so the identity
+$\operatorname{gram}(L A) = \operatorname{gram}(L) \, |\det A|$ of
+`Numlib.Analysis.Sobolev.Boundary.Gram` shows that the surface elements transform by $|\det D\psi|$.
+The change of variables formula then gives equality of the two local measures on the overlap. The
+two normals are unit vectors orthogonal to the common tangent space, so $\nu_2 = \pm \nu_1$, by a
+direct computation in the frame of the first chart; both point outward, which excludes the minus
+sign. On a chart ball, the partition of unity glues the restrictions of the local measures back to
+the local measure of that chart, which gives the chart characterization of the atlas measure.
+
+## Implementation notes
+
+* The sign of the normal: $\Omega$ lies above the graph, the function $\varphi(y) = g(y') - y_{d+1}$
+  is negative on $\Omega$, and its gradient $(\nabla g, -1)$ points out of $\Omega$. The normal
+  $(-\nabla\varphi, 1)$ of [grisvard2011elliptic] §1.5.1 is the one for a region *below* the graph.
+  `EuclideanSpace.graphNormal_outward` proves that the sign is correct.
+* The normal is a function on all of $\mathbb{R}^{d+1}$. The local normal at $x$ is computed from
+  $x' = (Tx)'$ for every $x$, and the atlas normal is $0$ outside the chart balls.
+* No Hausdorff measure enters. The identity of $\sigma$ with the $d$-dimensional Hausdorff measure
+  restricted to $\partial\Omega$ (the area formula) is not proved here.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -95,43 +104,54 @@ namespace EuclideanSpace
 variable (T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)))
   (g : EuclideanSpace ℝ (Fin d) → ℝ)
 
-/-- **The parametrization of the graph of `g` seen through the rigid motion `T`**:
-`graphParam T g x' = T⁻¹ (x', g x')`. It maps `ℝ^d` onto `frontier (T ⁻¹' epigraph g)`, the
-boundary of the region above the graph in the frame `T`. -/
+/-- **The parametrization of the graph of $g$ in the frame of the rigid motion $T$**: for a rigid
+motion $T$ of $\mathbb{R}^{d+1}$ and $g : \mathbb{R}^d \to \mathbb{R}$,
+$$\Phi(x') = T^{-1}(x', g(x')), \qquad x' \in \mathbb{R}^d.$$
+
+When $g$ is continuous, $\Phi$ maps $\mathbb{R}^d$ onto the boundary of
+$T^{-1}(\{y : y_{d+1} > g(y')\})$, the region above the graph in the frame $T$
+(`EuclideanSpace.graphParam_mem_frontier_epigraph`,
+`EuclideanSpace.graphParam_eq_of_mem_frontier`). -/
 def graphParam (x' : 𝔼') : 𝔼 := T.symm (snocLast x' (g x'))
 
 variable {T g}
 
+/-- The first $d$ coordinates of $T \Phi(x')$ are $x'$. -/
 @[simp]
 theorem init_apply_graphParam (x' : 𝔼') : init (T (graphParam T g x')) = x' := by
   simp [graphParam]
 
+/-- The last coordinate of $T \Phi(x')$ is $g(x')$. -/
 @[simp]
 theorem apply_graphParam_last (x' : 𝔼') : T (graphParam T g x') (Fin.last d) = g x' := by
   simp [graphParam]
 
+/-- The graph parametrization $\Phi$ is injective. -/
 theorem graphParam_injective : Function.Injective (graphParam T g) := fun x y h ↦ by
   have := congrArg (fun z ↦ init (T z)) h
   simpa using this
 
-/-- Every point of the parametrized graph lies on the frontier of the rotated epigraph. -/
+/-- If $g$ is continuous, every point $\Phi(x')$ lies on the boundary of the region
+$T^{-1}(\{y : y_{d+1} > g(y')\})$. -/
 theorem graphParam_mem_frontier_epigraph (hg : Continuous g) (x' : 𝔼') :
     graphParam T g x' ∈ frontier (T ⁻¹' epigraph g) := by
   rw [frontier_preimage_epigraph hg]
   simp
 
-/-- A point of the frontier of the rotated epigraph is the parametrization of its first
-coordinates: `graphParam T g (init (T x)) = x`. -/
+/-- If $g$ is continuous, every point $x$ of the boundary of $T^{-1}(\{y : y_{d+1} > g(y')\})$ is
+the parametrization of its first coordinates in the frame $T$: $x = \Phi((Tx)')$. -/
 theorem graphParam_eq_of_mem_frontier (hg : Continuous g) {x : 𝔼}
     (hx : x ∈ frontier (T ⁻¹' epigraph g)) : graphParam T g (init (T x)) = x := by
   rw [frontier_preimage_epigraph hg] at hx
   have hx' : T x (Fin.last d) = g (init (T x)) := hx
   rw [graphParam, ← hx', snocLast_init_last, AffineIsometryEquiv.symm_apply_apply]
 
+/-- If $g$ is continuous, the graph parametrization $\Phi$ is continuous. -/
 theorem continuous_graphParam (hg : Continuous g) : Continuous (graphParam T g) := by
   unfold graphParam
   exact T.symm.continuous.comp (continuous_snocLast.comp (continuous_id.prodMk hg))
 
+/-- If $g$ is of class $C^n$, the graph parametrization $\Phi$ is of class $C^n$. -/
 theorem contDiff_graphParam {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) :
     ContDiff ℝ n (graphParam T g) := by
   unfold graphParam
@@ -139,14 +159,18 @@ theorem contDiff_graphParam {n : WithTop ℕ∞} (hg : ContDiff ℝ n g) :
   change ContDiff ℝ n fun x' ↦ (lastInitL d).symm (g x', x')
   exact (lastInitL d).symm.contDiff.comp (hg.prodMk contDiff_id)
 
-/-- The graph parametrization is a measurable embedding (continuous and injective on a Polish
-space). -/
+/-- If $g$ is continuous, the graph parametrization $\Phi$ is a measurable embedding, because it is
+continuous and injective on a Polish space. -/
 theorem measurableEmbedding_graphParam (hg : Continuous g) :
     MeasurableEmbedding (graphParam T g) :=
   (continuous_graphParam hg).measurableEmbedding graphParam_injective
 
-/-- **The derivative of the graph parametrization**: if `g` has derivative `ℓ` at `x'`, then
-`graphParam T g` has derivative `T.linear⁻¹ ∘L snocLastL ℓ`, `v ↦ T.linear⁻¹ (v, ℓ v)`. -/
+/-- **The derivative of the graph parametrization.** If $g$ has derivative $\ell$ at $x'$, then
+$\Phi$ has derivative $v \mapsto L^{-1}(v, \ell v)$ at $x'$, where $L$ is the linear part of
+$T$.
+
+The derivative is the composition of `T.linearIsometryEquiv.symm` with
+`EuclideanSpace.snocLastL ℓ`. -/
 theorem hasFDerivAt_graphParam {x' : 𝔼'} {ℓ : 𝔼' →L[ℝ] ℝ} (hg : HasFDerivAt g ℓ x') :
     HasFDerivAt (graphParam T g)
       ((T.linearIsometryEquiv.symm.toContinuousLinearEquiv : 𝔼 →L[ℝ] 𝔼) ∘L snocLastL ℓ) x' := by
@@ -156,14 +180,16 @@ theorem hasFDerivAt_graphParam {x' : 𝔼'} {ℓ : 𝔼' →L[ℝ] ℝ} (hg : Ha
   have h2 := (T.symm.hasFDerivAt (snocLast x' (g x'))).comp x' h1
   rwa [AffineIsometryEquiv.linearIsometryEquiv_symm] at h2
 
+/-- If $g$ is differentiable at $x'$, the derivative of $\Phi$ at $x'$ is
+$v \mapsto L^{-1}(v, Dg(x') v)$, where $L$ is the linear part of $T$. -/
 theorem fderiv_graphParam {x' : 𝔼'} (hg : DifferentiableAt ℝ g x') :
     fderiv ℝ (graphParam T g) x'
       = (T.linearIsometryEquiv.symm.toContinuousLinearEquiv : 𝔼 →L[ℝ] 𝔼) ∘L
         snocLastL (fderiv ℝ g x') :=
   (hasFDerivAt_graphParam hg.hasFDerivAt).fderiv
 
-/-- The derivative of the graph parametrization is injective (its composite with
-`init ∘ T.linear` is the identity). -/
+/-- If $g$ is differentiable at $x'$, the derivative of $\Phi$ at $x'$ is injective: its composition
+with $y \mapsto (L y)'$ is the identity. -/
 theorem injective_fderiv_graphParam {x' : 𝔼'} (hg : DifferentiableAt ℝ g x') :
     Function.Injective (fderiv ℝ (graphParam T g) x') := by
   rw [fderiv_graphParam hg]
@@ -174,19 +200,22 @@ theorem injective_fderiv_graphParam {x' : 𝔼'} (hg : DifferentiableAt ℝ g x'
 /-! ### The chart domain -/
 
 variable (T g) in
-/-- **The parameter domain of a graph chart**: the part `graphParam T g ⁻¹' B(x₀, r)` of `ℝ^d`
-that the chart ball sees. -/
+/-- **The parameter domain of a graph chart**: the set $D = \Phi^{-1}(B(x_0, r)) \subseteq
+\mathbb{R}^d$ of parameters whose points lie in the chart ball. -/
 def graphDomain (x₀ : 𝔼) (r : ℝ) : Set 𝔼' := graphParam T g ⁻¹' Metric.ball x₀ r
 
+/-- If $g$ is continuous, the parameter domain $\Phi^{-1}(B(x_0, r))$ is open. -/
 theorem isOpen_graphDomain (hg : Continuous g) (x₀ : 𝔼) (r : ℝ) :
     IsOpen (graphDomain T g x₀ r) :=
   Metric.isOpen_ball.preimage (continuous_graphParam hg)
 
+/-- If $g$ is continuous, the parameter domain $\Phi^{-1}(B(x_0, r))$ is measurable. -/
 theorem measurableSet_graphDomain (hg : Continuous g) (x₀ : 𝔼) (r : ℝ) :
     MeasurableSet (graphDomain T g x₀ r) :=
   (isOpen_graphDomain hg x₀ r).measurableSet
 
-/-- The parameter domain is bounded: `‖x'‖ ≤ ‖T (graphParam x')‖ < ‖T x₀‖ + r` on it. -/
+/-- The parameter domain $\Phi^{-1}(B(x_0, r))$ is bounded: on it,
+$\|x'\| \le \|T\Phi(x')\| < \|T x_0\| + r$. -/
 theorem isBounded_graphDomain (x₀ : 𝔼) (r : ℝ) : Bornology.IsBounded (graphDomain T g x₀ r) := by
   rw [isBounded_iff_forall_norm_le]
   refine ⟨‖T x₀‖ + r, fun x' hx' ↦ ?_⟩
@@ -197,8 +226,9 @@ theorem isBounded_graphDomain (x₀ : 𝔼) (r : ℝ) : Bornology.IsBounded (gra
     _ ≤ ‖T x₀‖ + ‖T (graphParam T g x') - T x₀‖ := norm_le_norm_add_norm_sub' _ _
     _ ≤ ‖T x₀‖ + r := by rw [← dist_eq_norm]; linarith
 
-/-- The parametrization maps the parameter domain onto the part of the rotated graph inside the
-ball. -/
+/-- If $g$ is continuous, $\Phi$ maps the parameter domain $\Phi^{-1}(B(x_0, r))$ onto the part
+$\partial(T^{-1}(\{y : y_{d+1} > g(y')\})) \cap B(x_0, r)$ of the boundary of the rotated region
+inside the ball. -/
 theorem graphParam_image_graphDomain (hg : Continuous g) (x₀ : 𝔼) (r : ℝ) :
     graphParam T g '' graphDomain T g x₀ r = frontier (T ⁻¹' epigraph g) ∩ Metric.ball x₀ r := by
   ext x
@@ -212,9 +242,11 @@ theorem graphParam_image_graphDomain (hg : Continuous g) (x₀ : 𝔼) (r : ℝ)
 
 end EuclideanSpace
 
-/-- **The parametrization of a graph chart of `Ω` covers `∂Ω ∩ B(x₀, r)`**: if
-`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g` with `g` continuous, then
-`graphParam T g '' graphDomain T g x₀ r = frontier Ω ∩ B(x₀, r)`. -/
+/-- **The parametrization of a graph chart covers $\partial\Omega \cap B(x_0, r)$.** Let
+$\Omega \subseteq \mathbb{R}^{d+1}$, let $T$ be a rigid motion, and let
+$g : \mathbb{R}^d \to \mathbb{R}$ be continuous with $\Omega \cap B(x_0, r) = B(x_0, r) \cap
+T^{-1}(\{y : y_{d+1} > g(y')\})$. Then the parametrization $\Phi$ maps the parameter domain
+$\Phi^{-1}(B(x_0, r))$ onto $\partial\Omega \cap B(x_0, r)$. -/
 theorem IsBoundaryGraphAt.graphParam_image_graphDomain {g : 𝔼' → ℝ} (hg : Continuous g)
     {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {Ω : Set 𝔼} {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g) :
@@ -229,31 +261,40 @@ namespace EuclideanSpace
 variable {T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
   {g : EuclideanSpace ℝ (Fin d) → ℝ}
 
-/-! ### The surface element `√(1 + |∇g|²)` -/
+/-! ### The surface element $\sqrt{1 + |\nabla g|^2}$ -/
 
 variable (g) in
-/-- **The surface element of the graph of `g`**: `graphDensity g x' = √(1 + ‖∇g x'‖²)`, the
-density with which the parametrization `graphParam T g` transports Lebesgue measure of `ℝ^d` to
-the graph (`graphDensity_eq_gram`: it is the Gram factor of `D graphParam`, for every frame `T`). -/
+/-- **The surface element of the graph of $g$**: the function
+$$x' \mapsto \sqrt{1 + \|\nabla g(x')\|^2}$$
+on $\mathbb{R}^d$. It is the density with which the parametrization $\Phi$ carries Lebesgue
+measure of $\mathbb{R}^d$ to the graph: it is the Gram factor of $D\Phi$ in every frame $T$
+(`EuclideanSpace.graphDensity_eq_gram`). -/
 def graphDensity (x' : 𝔼') : ℝ := Real.sqrt (1 + ‖gradient g x'‖ ^ 2)
 
+/-- The surface element is at least $1$. -/
 theorem one_le_graphDensity (x' : 𝔼') : 1 ≤ graphDensity g x' := by
   rw [graphDensity, Real.le_sqrt zero_le_one (by positivity)]
   nlinarith [sq_nonneg ‖gradient g x'‖]
 
+/-- The surface element is positive. -/
 theorem graphDensity_pos (x' : 𝔼') : 0 < graphDensity g x' :=
   zero_lt_one.trans_le (one_le_graphDensity x')
 
+/-- The surface element is nonzero. -/
 theorem graphDensity_ne_zero (x' : 𝔼') : graphDensity g x' ≠ 0 :=
   (graphDensity_pos x').ne'
 
+/-- If $g$ is of class $C^1$, the surface element is continuous. -/
 theorem continuous_graphDensity (hg : ContDiff ℝ 1 g) : Continuous (graphDensity g) := by
   have h := continuous_gradient hg
   unfold graphDensity
   fun_prop
 
-/-- **The surface element is intrinsic**: `graphDensity g x' = gram (D (graphParam T g) x')`
-for every frame `T`, by `gram_isometry_comp` and `gram_snocLastL`. -/
+/-- **The surface element does not depend on the frame.** If $g$ is differentiable at $x'$, then for
+every rigid motion $T$ the surface element $\sqrt{1 + \|\nabla g(x')\|^2}$ is the volume scaling
+factor `EuclideanSpace.gram` of the derivative of $\Phi$ at $x'$.
+
+The proof is `EuclideanSpace.gram_isometry_comp` and `EuclideanSpace.gram_snocLastL`. -/
 theorem graphDensity_eq_gram (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) {x' : 𝔼'} (hg : DifferentiableAt ℝ g x') :
     graphDensity g x' = gram (fderiv ℝ (graphParam T g) x') := by
   rw [fderiv_graphParam hg, gram_isometry_comp, gram_snocLastL, graphDensity, norm_gradient_eq]
@@ -261,18 +302,25 @@ theorem graphDensity_eq_gram (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) {x' : 𝔼'} (hg : D
 /-! ### The local surface measure -/
 
 variable (T g) in
-/-- **The local surface measure of a graph piece**: the pushforward under `graphParam T g` of
-`√(1 + |∇g|²) dx'` on `s ⊆ ℝ^d` (decision B2 of `notes/boundary/planning-brief.md`). -/
+/-- **The local surface measure of a graph piece**: for $s \subseteq \mathbb{R}^d$, the image under
+$\Phi$ of the measure with density $\sqrt{1 + |\nabla g|^2}$ with respect to Lebesgue measure on
+$s$:
+$$\sigma_s(A) = \int_{s \cap \Phi^{-1}(A)} \sqrt{1 + |\nabla g(x')|^2} \, dx'.$$
+The formula holds for measurable $A$ and continuous $g$ (`EuclideanSpace.graphMeasure_apply`). -/
 def graphMeasure (s : Set 𝔼') : Measure 𝔼 :=
   Measure.map (graphParam T g)
     ((volume.restrict s).withDensity fun x' ↦ ENNReal.ofReal (graphDensity g x'))
 
+/-- If $g$ is of class $C^1$, the surface element, as a function with values in $[0, \infty]$, is
+measurable. -/
 theorem measurable_ofReal_graphDensity (hg : ContDiff ℝ 1 g) :
     Measurable fun x' ↦ ENNReal.ofReal (graphDensity g x') :=
   ENNReal.measurable_ofReal.comp (continuous_graphDensity hg).measurable
 
-/-- The local surface measure of a measurable set `A` is the weighted Lebesgue measure of its
-preimage in the parameter domain. -/
+/-- If $g$ is continuous and $A \subseteq \mathbb{R}^{d+1}$ is measurable, the local surface measure
+of $A$ is the weighted Lebesgue measure of its preimage:
+$$\sigma_s(A) = \int_{s \cap \Phi^{-1}(A)} \sqrt{1 + |\nabla g(x')|^2} \, dx'.$$
+-/
 theorem graphMeasure_apply (hg : Continuous g) (s : Set 𝔼') {A : Set 𝔼} (hA : MeasurableSet A) :
     graphMeasure T g s A
       = ∫⁻ x' in s ∩ graphParam T g ⁻¹' A, ENNReal.ofReal (graphDensity g x') := by
@@ -280,31 +328,36 @@ theorem graphMeasure_apply (hg : Continuous g) (s : Set 𝔼') {A : Set 𝔼} (h
     withDensity_apply _ (hA.preimage (continuous_graphParam hg).measurable),
     Measure.restrict_restrict (hA.preimage (continuous_graphParam hg).measurable), inter_comm]
 
-/-- Restricting the local surface measure to a measurable set is the local surface measure over
-the preimage. -/
+/-- If $g$ is continuous and $A$ is measurable, the restriction of the local surface measure
+$\sigma_s$ to $A$ is the local surface measure over $s \cap \Phi^{-1}(A)$. -/
 theorem graphMeasure_restrict (hg : Continuous g) (s : Set 𝔼') {A : Set 𝔼} (hA : MeasurableSet A) :
     (graphMeasure T g s).restrict A = graphMeasure T g (s ∩ graphParam T g ⁻¹' A) := by
   rw [graphMeasure, graphMeasure, Measure.restrict_map (continuous_graphParam hg).measurable hA,
     restrict_withDensity (hA.preimage (continuous_graphParam hg).measurable),
     Measure.restrict_restrict (hA.preimage (continuous_graphParam hg).measurable), inter_comm]
 
+/-- If $g$ is continuous and $t \subseteq \mathbb{R}^d$ is measurable, the restriction of the local
+surface measure $\sigma_s$ to $\Phi(t)$ is the local surface measure over $s \cap t$. -/
 theorem graphMeasure_restrict_image (hg : Continuous g) (s : Set 𝔼') {t : Set 𝔼'}
     (ht : MeasurableSet t) :
     (graphMeasure T g s).restrict (graphParam T g '' t) = graphMeasure T g (s ∩ t) := by
   rw [graphMeasure_restrict hg s ((measurableEmbedding_graphParam hg).measurableSet_image.2 ht),
     preimage_image_eq _ graphParam_injective]
 
-/-- The local surface measure is carried by the parametrized piece. -/
+/-- If $g$ is continuous and $s$ is measurable, the local surface measure $\sigma_s$ is carried by
+the parametrized piece: $\sigma_s(\Phi(s)^c) = 0$. -/
 theorem graphMeasure_compl_image (hg : Continuous g) {s : Set 𝔼'} (hs : MeasurableSet s) :
     graphMeasure T g s (graphParam T g '' s)ᶜ = 0 := by
   rw [graphMeasure_apply hg s ((measurableEmbedding_graphParam hg).measurableSet_image.2 hs).compl,
     preimage_compl, preimage_image_eq _ graphParam_injective, inter_compl_self,
     Measure.restrict_empty, lintegral_zero_measure]
 
+/-- If $g$ is continuous and $s$ is measurable, $\sigma_s$-almost every point lies in $\Phi(s)$. -/
 theorem ae_mem_image_graphMeasure (hg : Continuous g) {s : Set 𝔼'} (hs : MeasurableSet s) :
     ∀ᵐ x ∂(graphMeasure T g s), x ∈ graphParam T g '' s :=
   (measure_eq_zero_iff_ae_notMem.1 (graphMeasure_compl_image hg hs)).mono fun _ h ↦ not_not.1 h
 
+/-- If $g$ is continuous and $s \subseteq t$, then $\sigma_s \le \sigma_t$. -/
 theorem graphMeasure_mono_set (hg : Continuous g) {s t : Set 𝔼'} (hst : s ⊆ t) :
     graphMeasure T g s ≤ graphMeasure T g t := by
   refine Measure.map_mono ?_ (continuous_graphParam hg).measurable
@@ -312,7 +365,8 @@ theorem graphMeasure_mono_set (hg : Continuous g) {s t : Set 𝔼'} (hst : s ⊆
   rw [withDensity_apply _ hA, withDensity_apply _ hA]
   exact lintegral_mono' (Measure.restrict_mono le_rfl (Measure.restrict_mono hst le_rfl)) le_rfl
 
-/-- The surface element is integrable over a bounded parameter set. -/
+/-- If $g$ is of class $C^1$ and $s \subseteq \mathbb{R}^d$ is bounded, the surface element has a
+finite integral over $s$. -/
 theorem lintegral_ofReal_graphDensity_lt_top (hg : ContDiff ℝ 1 g) {s : Set 𝔼'}
     (hs : Bornology.IsBounded s) :
     ∫⁻ x' in s, ENNReal.ofReal (graphDensity g x') < ⊤ := by
@@ -327,7 +381,8 @@ theorem lintegral_ofReal_graphDensity_lt_top (hg : ContDiff ℝ 1 g) {s : Set �
     _ = ENNReal.ofReal C * volume (closure s) := by rw [setLIntegral_const]
     _ < ⊤ := ENNReal.mul_lt_top ENNReal.ofReal_lt_top hs.isCompact_closure.measure_lt_top
 
-/-- The local surface measure over a bounded parameter set is finite. -/
+/-- If $g$ is of class $C^1$ and $s \subseteq \mathbb{R}^d$ is bounded, the local surface measure
+$\sigma_s$ is finite. -/
 theorem isFiniteMeasure_graphMeasure (hg : ContDiff ℝ 1 g) {s : Set 𝔼'}
     (hs : Bornology.IsBounded s) : IsFiniteMeasure (graphMeasure T g s) := by
   rw [graphMeasure]
@@ -336,8 +391,10 @@ theorem isFiniteMeasure_graphMeasure (hg : ContDiff ℝ 1 g) {s : Set 𝔼'}
     isFiniteMeasure_withDensity (lintegral_ofReal_graphDensity_lt_top hg hs).ne
   infer_instance
 
-/-- **The Lebesgue integral against the local surface measure** is the weighted integral over
-the parameter domain. -/
+/-- **The Lebesgue integral against the local surface measure.** If $g$ is of class $C^1$, then for
+every $s \subseteq \mathbb{R}^d$ and every $f : \mathbb{R}^{d+1} \to [0, \infty]$,
+$$\int f \, d\sigma_s = \int_s \sqrt{1 + |\nabla g(x')|^2} \, f(\Phi(x')) \, dx'.$$
+-/
 theorem lintegral_graphMeasure (hg : ContDiff ℝ 1 g) (s : Set 𝔼') (f : 𝔼 → ℝ≥0∞) :
     ∫⁻ x, f x ∂(graphMeasure T g s)
       = ∫⁻ x' in s, ENNReal.ofReal (graphDensity g x') * f (graphParam T g x') := by
@@ -346,8 +403,11 @@ theorem lintegral_graphMeasure (hg : ContDiff ℝ 1 g) (s : Set 𝔼') (f : 𝔼
       (Eventually.of_forall fun _ ↦ ENNReal.ofReal_lt_top)]
   rfl
 
-/-- **The integral against the local surface measure** is the weighted integral over the
-parameter domain: `∫ f dσ_loc = ∫ x' in s, √(1 + |∇g x'|²) • f (graphParam T g x')`. -/
+/-- **The integral against the local surface measure.** Let $g$ be of class $C^1$, let
+$s \subseteq \mathbb{R}^d$, let $G$ be a real normed space, and let $f : \mathbb{R}^{d+1} \to G$
+be almost everywhere strongly measurable for $\sigma_s$. Then
+$$\int f \, d\sigma_s = \int_s \sqrt{1 + |\nabla g(x')|^2} \, f(\Phi(x')) \, dx'.$$
+-/
 theorem integral_graphMeasure (hg : ContDiff ℝ 1 g) (s : Set 𝔼') {G : Type*}
     [NormedAddCommGroup G] [NormedSpace ℝ G] {f : 𝔼 → G}
     (hf : AEStronglyMeasurable f (graphMeasure T g s)) :
@@ -366,23 +426,27 @@ theorem integral_graphMeasure (hg : ContDiff ℝ 1 g) (s : Set 𝔼') {G : Type*
 /-! ### The outward normal of a graph chart -/
 
 variable (T g) in
-/-- **The outward unit normal of the region above the graph of `g` in the frame `T`**, at a point
-`x` read as lying on the graph:
-`graphNormal T g x = T.linear⁻¹ (∇g x', −1) / √(1 + |∇g x'|²)` with `x' = (T x)'` (decision B3
-of `notes/boundary/planning-brief.md`). The sign: `Ω` is `{(T x)_N > g ((T x)')}`, the function
-`φ(y) = g y' − y_N` is negative on it, and its gradient `(∇g, −1)` points where `φ` grows, that is
-out of `Ω` (`graphNormal_outward`). Grisvard's `(−∇φ, 1)` (§1.5.1) is for the region *below* the
-graph. -/
+/-- **The outward unit normal of the region above the graph of $g$ in the frame $T$**: for
+$x \in \mathbb{R}^{d+1}$, read as the point of the graph with parameters $x' = (Tx)'$,
+$$\nu(x) = \frac{L^{-1}(\nabla g(x'), -1)}{\sqrt{1 + |\nabla g(x')|^2}},$$
+where $L$ is the linear part of $T$.
+
+The region is $\{x : (Tx)_{d+1} > g((Tx)')\}$. The function $\varphi(y) = g(y') - y_{d+1}$ is
+negative on it, and its gradient $(\nabla g, -1)$ points where $\varphi$ grows, that is out of
+the region (`EuclideanSpace.graphNormal_outward`). The normal $(-\nabla\varphi, 1)$ of
+[grisvard2011elliptic] §1.5.1 is the one for the region *below* the graph. The normal is defined
+at every $x$, and depends on $x$ only through $(Tx)'$. -/
 def graphNormal (x : 𝔼) : 𝔼 :=
   (graphDensity g (init (T x)))⁻¹ •
     T.linearIsometryEquiv.symm (snocLast (gradient g (init (T x))) (-1))
 
-/-- The normal is a unit vector. -/
+/-- The normal $\nu(x)$ is a unit vector, for every $x$. -/
 theorem norm_graphNormal (x : 𝔼) : ‖graphNormal T g x‖ = 1 := by
   rw [graphNormal, norm_smul, norm_inv, LinearIsometryEquiv.norm_map, norm_snocLast_neg_one,
     Real.norm_eq_abs, abs_of_pos (graphDensity_pos _)]
   exact inv_mul_cancel₀ (graphDensity_ne_zero _)
 
+/-- If $g$ is of class $C^1$, the normal $\nu$ is continuous. -/
 theorem continuous_graphNormal (hg : ContDiff ℝ 1 g) : Continuous (graphNormal T g) := by
   have h1 := continuous_graphDensity hg
   have h2 := continuous_gradient hg
@@ -394,13 +458,18 @@ theorem continuous_graphNormal (hg : ContDiff ℝ 1 g) : Continuous (graphNormal
   refine Continuous.smul (Continuous.inv₀ (h1.comp (h3.comp h4)) fun x ↦ graphDensity_ne_zero _) ?_
   exact h6.comp (h5.comp ((h2.comp (h3.comp h4)).prodMk continuous_const))
 
-/-- The normal depends on `x` only through the first coordinates `(T x)'`. -/
+/-- The normal $\nu(x)$ depends on $x$ only through $(Tx)'$: if $(Tx)' = (Ty)'$, then
+$\nu(x) = \nu(y)$. -/
 theorem graphNormal_eq_of_init_eq {x y : 𝔼} (h : init (T x) = init (T y)) :
     graphNormal T g x = graphNormal T g y := by
   simp only [graphNormal, h]
 
-/-- **Tangency**: the normal is orthogonal to the range of the derivative of the parametrization,
-`⟪T⁻¹(∇g, −1), T⁻¹(v, Dg v)⟫ = ⟪∇g, v⟫ − Dg v = 0`. -/
+/-- **Tangency.** If $g$ is differentiable at $x'$, the normal at $\Phi(x')$ is orthogonal to the
+range of the derivative of $\Phi$ at $x'$: for every $v \in \mathbb{R}^d$,
+$$\bigl\langle \nu(\Phi(x')), D\Phi(x') v \bigr\rangle = 0.$$
+
+Indeed $\langle L^{-1}(\nabla g, -1), L^{-1}(v, Dg \, v) \rangle = \langle \nabla g, v \rangle -
+Dg \, v = 0$. -/
 theorem inner_graphNormal_fderiv_graphParam {x' : 𝔼'} (hg : DifferentiableAt ℝ g x') (v : 𝔼') :
     ⟪graphNormal T g (graphParam T g x'), fderiv ℝ (graphParam T g) x' v⟫_ℝ = 0 := by
   rw [fderiv_graphParam hg, graphNormal, init_apply_graphParam, inner_smul_left]
@@ -409,8 +478,10 @@ theorem inner_graphNormal_fderiv_graphParam {x' : 𝔼'} (hg : DifferentiableAt 
     snocLastL_apply, inner_snocLast, inner_gradient_eq_fderiv]
   ring
 
-/-- The point `x + t ν` in the frame `T`, for `x = graphParam T g x'` and `ν` the normal at `x`:
-its coordinates are `(x' + (t/c) ∇g x', g x' − t/c)` with `c = √(1 + |∇g x'|²)`. -/
+/-- The point $x + t\nu$ in the frame $T$, for $x = \Phi(x')$ and $\nu$ the normal at $x$: with
+$c = \sqrt{1 + |\nabla g(x')|^2}$,
+$$T(x + t\nu) = \bigl(x' + (t/c) \nabla g(x'), \; g(x') - t/c\bigr).$$
+-/
 theorem apply_graphParam_add_smul_graphNormal (x' : 𝔼') (t : ℝ) :
     T (graphParam T g x' + t • graphNormal T g (graphParam T g x'))
       = snocLast (x' + (t * (graphDensity g x')⁻¹) • gradient g x')
@@ -427,10 +498,15 @@ theorem apply_graphParam_add_smul_graphNormal (x' : 𝔼') (t : ℝ) :
   · simp only [PiLp.add_apply, PiLp.smul_apply, snocLast_apply_castSucc, smul_eq_mul]
     ring
 
-/-- **The normal points out of the region above the graph**: for `x = graphParam T g x'` on the
-graph and all small `t > 0`, `x + t ν ∉ T ⁻¹' epigraph g` and `x − t ν ∈ T ⁻¹' epigraph g`. In
-the frame `T` the point `x + tν` lies in the epigraph iff
-`h(t) := g (x' + (t/c) ∇g x') − g x' + t/c < 0`, and `h(0) = 0`, `h'(0) = (‖∇g x'‖² + 1)/c > 0`. -/
+/-- **The normal points out of the region above the graph.** Let $g$ be of class $C^1$, let
+$x' \in \mathbb{R}^d$, and let $x = \Phi(x')$ with normal $\nu$ at $x$. Then for all
+sufficiently small $t > 0$,
+$$x + t\nu \notin T^{-1}(\{y : y_{d+1} > g(y')\}) \quad \text{and} \quad x - t\nu \in T^{-1}(\{y
+  : y_{d+1} > g(y')\}).$$
+
+In the frame $T$, the point $x + t\nu$ lies in the region if and only if $h(t) = g(x' + (t/c)
+\nabla g(x')) - g(x') + t/c < 0$, where $c = \sqrt{1 + |\nabla g(x')|^2}$. Here $h(0) = 0$ and
+$h'(0) = (\|\nabla g(x')\|^2 + 1)/c > 0$. -/
 theorem graphNormal_outward (hg : ContDiff ℝ 1 g) (x' : 𝔼') :
     ∀ᶠ t in 𝓝[>] (0 : ℝ),
       graphParam T g x' + t • graphNormal T g (graphParam T g x') ∉ T ⁻¹' epigraph g ∧
@@ -476,24 +552,33 @@ variable (T₁ : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace 
   (g₁ : EuclideanSpace ℝ (Fin d) → ℝ)
   (T₂ : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)))
 
-/-- **The transition between two graph charts**: `x' ↦ (T₂ (graphParam T₁ g₁ x'))'`, the
-parameters of the second chart of the point with parameters `x'` in the first. Where both charts
-describe the same set (an open `V` with `V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂`) it
-is a `C¹` bijection `graphParam T₁ g₁ ⁻¹' V → graphParam T₂ g₂ ⁻¹' V` with
-`graphParam T₂ g₂ ∘ graphTransition = graphParam T₁ g₁` (`graphParam_graphTransition`). -/
+/-- **The transition between two graph charts**: for rigid motions $T_1, T_2$ and
+$g_1 : \mathbb{R}^d \to \mathbb{R}$, the map
+$$\psi(x') = \bigl(T_2 \Phi_1(x')\bigr)',$$
+which gives the parameters in the second chart of the point with parameters $x'$ in the first
+chart. Here $\Phi_1$ is the parametrization of the first chart.
+
+Let $g_1, g_2$ be continuous, let $V$ be open, and let both charts describe the same set on $V$:
+$V \cap T_1^{-1}(\{y_{d+1} > g_1(y')\}) = V \cap T_2^{-1}(\{y_{d+1} > g_2(y')\})$. Then $\psi$
+is a bijection from $\Phi_1^{-1}(V)$ onto $\Phi_2^{-1}(V)$ with $\Phi_2 \circ \psi = \Phi_1$
+there (`EuclideanSpace.graphParam_graphTransition`), and it is of class $C^1$ when $g_1$ is. -/
 def graphTransition (x' : 𝔼') : 𝔼' := init (T₂ (graphParam T₁ g₁ x'))
 
 variable {T₁ g₁ T₂} {g₂ : EuclideanSpace ℝ (Fin d) → ℝ} {V : Set (EuclideanSpace ℝ (Fin (d + 1)))}
 
+/-- If $g_1$ is of class $C^n$, the transition $\psi$ is of class $C^n$. -/
 theorem contDiff_graphTransition {n : WithTop ℕ∞} (hg₁ : ContDiff ℝ n g₁) :
     ContDiff ℝ n (graphTransition T₁ g₁ T₂) :=
   contDiff_init.comp ((contDiff_affineIsometryEquiv T₂).comp (contDiff_graphParam hg₁))
 
+/-- If $g_1$ is continuous, the transition $\psi$ is continuous. -/
 theorem continuous_graphTransition (hg₁ : Continuous g₁) :
     Continuous (graphTransition T₁ g₁ T₂) :=
   continuous_init.comp (T₂.continuous.comp (continuous_graphParam hg₁))
 
-/-- Two charts describing the same set on an open `V` have the same frontier in `V`. -/
+/-- Let $V$ be open, and let two charts describe the same set on $V$: $V \cap T_1^{-1}(\{y_{d+1} >
+g_1(y')\}) = V \cap T_2^{-1}(\{y_{d+1} > g_2(y')\})$. Then the boundaries of the two regions
+agree in $V$. -/
 theorem frontier_inter_eq_of_inter_eq (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) :
     frontier (T₁ ⁻¹' epigraph g₁) ∩ V = frontier (T₂ ⁻¹' epigraph g₂) ∩ V := by
@@ -503,9 +588,9 @@ theorem frontier_inter_eq_of_inter_eq (hV : IsOpen V)
     rw [inter_comm V, frontier_inter_open_inter hV]
   rw [h1, h2, hΩ]
 
-/-- **The transition reparametrizes**:
-`graphParam T₂ g₂ (graphTransition T₁ g₁ T₂ x') = graphParam T₁ g₁ x'` for `x'` in the first
-chart's preimage of `V`. -/
+/-- **The transition reparametrizes.** Let $g_1, g_2$ be continuous, let $V$ be open, and let the
+two charts describe the same set on $V$. Then $\Phi_2(\psi(x')) = \Phi_1(x')$ for every
+$x' \in \Phi_1^{-1}(V)$. -/
 theorem graphParam_graphTransition (hg₁ : Continuous g₁) (hg₂ : Continuous g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) {x' : 𝔼'}
     (hx' : x' ∈ graphParam T₁ g₁ ⁻¹' V) :
@@ -515,6 +600,8 @@ theorem graphParam_graphTransition (hg₁ : Continuous g₁) (hg₂ : Continuous
     exact ⟨graphParam_mem_frontier_epigraph hg₁ x', hx'⟩
   exact graphParam_eq_of_mem_frontier hg₂ h.1
 
+/-- Let $g_1, g_2$ be continuous, let $V$ be open, and let the two charts describe the same set on
+$V$. Then the transition $\psi$ maps $\Phi_1^{-1}(V)$ into $\Phi_2^{-1}(V)$. -/
 theorem graphTransition_mapsTo (hg₁ : Continuous g₁) (hg₂ : Continuous g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) :
     MapsTo (graphTransition T₁ g₁ T₂) (graphParam T₁ g₁ ⁻¹' V) (graphParam T₂ g₂ ⁻¹' V) :=
@@ -523,6 +610,8 @@ theorem graphTransition_mapsTo (hg₁ : Continuous g₁) (hg₂ : Continuous g�
     rw [graphParam_graphTransition hg₁ hg₂ hV hΩ hx']
     exact hx'
 
+/-- Let $g_1, g_2$ be continuous, let $V$ be open, and let the two charts describe the same set on
+$V$. Then the transition $\psi$ is injective on $\Phi_1^{-1}(V)$. -/
 theorem graphTransition_injOn (hg₁ : Continuous g₁) (hg₂ : Continuous g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) :
     InjOn (graphTransition T₁ g₁ T₂) (graphParam T₁ g₁ ⁻¹' V) := fun x' hx' y' hy' h ↦ by
@@ -530,13 +619,18 @@ theorem graphTransition_injOn (hg₁ : Continuous g₁) (hg₂ : Continuous g₂
   rw [← graphParam_graphTransition hg₁ hg₂ hV hΩ hx', h,
     graphParam_graphTransition hg₁ hg₂ hV hΩ hy']
 
-/-- The transition in the other direction is the inverse. -/
+/-- Let $g_1, g_2$ be continuous, let $V$ be open, and let the two charts describe the same set on
+$V$. Then the transition from the second chart to the first is a right inverse of $\psi$ on
+$\Phi_2^{-1}(V)$: $\psi(\psi_{21}(y')) = y'$ for $y' \in \Phi_2^{-1}(V)$, where $\psi_{21}$ is
+the transition from the second chart to the first. -/
 theorem graphTransition_graphTransition (hg₁ : Continuous g₁) (hg₂ : Continuous g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) {y' : 𝔼'}
     (hy' : y' ∈ graphParam T₂ g₂ ⁻¹' V) :
     graphTransition T₁ g₁ T₂ (graphTransition T₂ g₂ T₁ y') = y' := by
   rw [graphTransition, graphParam_graphTransition hg₂ hg₁ hV hΩ.symm hy', init_apply_graphParam]
 
+/-- Let $g_1, g_2$ be continuous, let $V$ be open, and let the two charts describe the same set on
+$V$. Then the transition $\psi$ maps $\Phi_1^{-1}(V)$ onto $\Phi_2^{-1}(V)$. -/
 theorem graphTransition_image (hg₁ : Continuous g₁) (hg₂ : Continuous g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) :
     graphTransition T₁ g₁ T₂ '' (graphParam T₁ g₁ ⁻¹' V) = graphParam T₂ g₂ ⁻¹' V := by
@@ -544,8 +638,10 @@ theorem graphTransition_image (hg₁ : Continuous g₁) (hg₂ : Continuous g₂
   exact ⟨graphTransition T₂ g₂ T₁ y', graphTransition_mapsTo hg₂ hg₁ hV hΩ.symm hy',
     graphTransition_graphTransition hg₁ hg₂ hV hΩ hy'⟩
 
-/-- **The chain rule across the transition**: on the first chart's preimage of `V`,
-`D (graphParam T₁ g₁) = D (graphParam T₂ g₂) ∘ D graphTransition`. -/
+/-- **The chain rule across the transition.** Let $g_1, g_2$ be of class $C^1$, let $V$ be open, and
+let the two charts describe the same set on $V$. Then for every $x' \in \Phi_1^{-1}(V)$,
+$$D\Phi_1(x') = D\Phi_2(\psi(x')) \circ D\psi(x').$$
+-/
 theorem fderiv_graphParam_comp (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff ℝ 1 g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) {x' : 𝔼'}
     (hx' : x' ∈ graphParam T₁ g₁ ⁻¹' V) :
@@ -561,9 +657,13 @@ theorem fderiv_graphParam_comp (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff �
   exact fderiv_comp x' ((contDiff_graphParam hg₂).differentiable one_ne_zero _)
     ((contDiff_graphTransition hg₁).differentiable one_ne_zero _)
 
-/-- **The Gram identity between two charts** (decision B2 of `notes/boundary/planning-brief.md`):
-`graphDensity g₁ x' = graphDensity g₂ (ψ x') · |det Dψ x'|` for the transition `ψ`, on the first
-chart's preimage of `V`. -/
+/-- **The surface elements of two charts.** Let $g_1, g_2$ be of class $C^1$, let $V$ be open, and
+let the two charts describe the same set on $V$. Then for every $x' \in \Phi_1^{-1}(V)$,
+$$\sqrt{1 + |\nabla g_1(x')|^2} = \sqrt{1 + |\nabla g_2(\psi(x'))|^2} \, \bigl|\det
+  D\psi(x')\bigr|.$$
+
+This is the identity $\operatorname{gram} D(\Phi_2 \circ \psi) = (\operatorname{gram} D\Phi_2
+\circ \psi) \, |\det D\psi|$ of `EuclideanSpace.gram_comp`. -/
 theorem graphDensity_graphTransition (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff ℝ 1 g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) {x' : 𝔼'}
     (hx' : x' ∈ graphParam T₁ g₁ ⁻¹' V) :
@@ -575,11 +675,14 @@ theorem graphDensity_graphTransition (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : Cont
 
 /-! ### Chart independence of the local measure -/
 
-/-- **Chart independence of the local surface measure**: two `C¹` graph charts describing the
-same set on an open `V` induce the same measure on `V`,
-`graphMeasure T₁ g₁ (graphParam T₁ g₁ ⁻¹' V) = graphMeasure T₂ g₂ (graphParam T₂ g₂ ⁻¹' V)`. The
-change of variables `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul` along the
-transition and the Gram identity `graphDensity_graphTransition`. -/
+/-- **The local surface measure does not depend on the chart.** Let $g_1, g_2$ be of class $C^1$,
+let $V$ be open, and let the two charts describe the same set on $V$. Then the local surface
+measures over the preimages of $V$ agree:
+$$\sigma^{(1)}_{\Phi_1^{-1}(V)} = \sigma^{(2)}_{\Phi_2^{-1}(V)}.$$
+
+The proof is the change of variables
+`MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul` along the transition, together
+with `EuclideanSpace.graphDensity_graphTransition`. -/
 theorem graphMeasure_eq_of_eq (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff ℝ 1 g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) :
     graphMeasure T₁ g₁ (graphParam T₁ g₁ ⁻¹' V) = graphMeasure T₂ g₂ (graphParam T₂ g₂ ⁻¹' V) := by
@@ -614,8 +717,8 @@ theorem graphMeasure_eq_of_eq (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff �
 
 /-! ### Chart independence of the normal -/
 
-/-- A vector of `ℝ^{d+1}` orthogonal to the graph directions `(v, ⟪a, v⟫)` of a linear form and to
-the normal direction `(a, −1)` is zero. -/
+/-- Let $a \in \mathbb{R}^d$ and $z \in \mathbb{R}^{d+1}$. If $z$ is orthogonal to every vector
+$(v, \langle a, v \rangle)$, $v \in \mathbb{R}^d$, and to $(a, -1)$, then $z = 0$. -/
 theorem eq_zero_of_inner_snocLast_eq_zero {a : 𝔼'} {z : 𝔼}
     (h1 : ∀ v, ⟪z, snocLast v ⟪a, v⟫_ℝ⟫_ℝ = 0) (h2 : ⟪z, snocLast a (-1)⟫_ℝ = 0) : z = 0 := by
   have hz : z = snocLast (init z) (z (Fin.last d)) := (snocLast_init_last z).symm
@@ -641,13 +744,17 @@ theorem eq_zero_of_inner_snocLast_eq_zero {a : 𝔼'} {z : 𝔼}
   ext i
   induction i using Fin.lastCases <;> simp
 
-/-- **Chart independence of the normal**: two `C¹` graph charts describing the same set on an
-open `V` have the same outward normal at every point of the graph inside `V`. Both normals are
-unit vectors orthogonal to the tangent space of the first chart
-(`inner_graphNormal_fderiv_graphParam`, `fderiv_graphParam_comp`), so `ν₂ = ⟪ν₂, ν₁⟫ ν₁`
-(`eq_zero_of_inner_snocLast_eq_zero` in the first frame) with `⟪ν₂, ν₁⟫ = ±1`; the sign `−1`
-would put `x + tν₁ = x − tν₂` both inside and outside the set for small `t > 0`
-(`graphNormal_outward` for each chart). -/
+/-- **The normal does not depend on the chart.** Let $g_1, g_2$ be of class $C^1$, let $V$ be open,
+and let the two charts describe the same set on $V$. Then at every point $x$ of $V$ on the
+boundary of $T_1^{-1}(\{y_{d+1} > g_1(y')\})$, the two normals agree: $\nu_1(x) = \nu_2(x)$.
+
+Both normals are unit vectors orthogonal to the tangent space of the first chart
+(`EuclideanSpace.inner_graphNormal_fderiv_graphParam`, `EuclideanSpace.fderiv_graphParam_comp`).
+So $\nu_2 = \langle \nu_2, \nu_1 \rangle \nu_1$ by
+`EuclideanSpace.eq_zero_of_inner_snocLast_eq_zero` in the first frame, with
+$\langle \nu_2, \nu_1 \rangle = \pm 1$. The sign $-1$ would put $x + t\nu_1 = x - t\nu_2$ both
+inside and outside the set for small $t > 0$ (`EuclideanSpace.graphNormal_outward` for each
+chart). -/
 theorem graphNormal_eq_of_eq (hg₁ : ContDiff ℝ 1 g₁) (hg₂ : ContDiff ℝ 1 g₂) (hV : IsOpen V)
     (hΩ : V ∩ T₁ ⁻¹' epigraph g₁ = V ∩ T₂ ⁻¹' epigraph g₂) {x : 𝔼}
     (hx : x ∈ frontier (T₁ ⁻¹' epigraph g₁) ∩ V) :
@@ -726,99 +833,134 @@ end EuclideanSpace
 
 /-! ### Atlases: finitely many graph charts with a partition of unity -/
 
-/-- **A finite graph atlas of `Ω ⊆ ℝ^{d+1}` with a subordinate partition of unity** — the data
-from which the surface measure and the outward normal are built: `k` balls `B(x i, r i)` covering
-`∂Ω`, in each of which `Ω` is the region above the graph of a `C¹` function `g i` in the frame
-`T i`, and smooth `θ₀, θ i` with values in `[0, 1]`, `θ₀ + ∑ i, θ i = 1`, each `θ i` compactly
-supported in its ball and `θ₀` vanishing on a neighbourhood of `∂Ω` (the partition of unity of
-[brezis2011functional] Lemma 9.3; `θ₀` is what the assembly of the divergence theorem needs, so
-that `θ₀ F` has compact support inside `Ω`). -/
+/-- **A finite graph atlas of $\Omega \subseteq \mathbb{R}^{d+1}$ with a subordinate partition of
+unity**, the data from which the surface measure and the outward normal are built. It consists
+of $k$ balls $B(x_i, r_i)$ with centres on $\partial\Omega$ and $r_i > 0$ that cover
+$\partial\Omega$, such that in each ball $\Omega$ is the region above the graph of a $C^1$
+function $g_i$ in the frame of a rigid motion $T_i$, and of smooth functions
+$\theta_0, \theta_i$ with values in $[0, 1]$ and $\theta_0 + \sum_i \theta_i = 1$, where each
+$\theta_i$ has compact support inside its ball and the support of $\theta_0$ is disjoint from
+$\partial\Omega$.
+
+The partition of unity is that of Lemma 9.3 of [brezis2011functional]. The function $\theta_0$
+is needed by the proof of the divergence theorem, so that $\theta_0 F$ has compact support
+inside $\Omega$. -/
 structure GraphAtlas (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) where
-  /-- The number of charts. -/
+  /-- The number $k$ of charts. -/
   k : ℕ
-  /-- The centres of the chart balls. -/
+  /-- The centres $x_i$ of the chart balls. -/
   x : Fin k → EuclideanSpace ℝ (Fin (d + 1))
-  /-- The radii of the chart balls. -/
+  /-- The radii $r_i$ of the chart balls. -/
   r : Fin k → ℝ
-  /-- The rigid motions of the charts. -/
+  /-- The rigid motions $T_i$ of the charts. -/
   T : Fin k → (EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)))
-  /-- The graph functions of the charts. -/
+  /-- The graph functions $g_i : \mathbb{R}^d \to \mathbb{R}$ of the charts. -/
   g : Fin k → (EuclideanSpace ℝ (Fin d) → ℝ)
-  /-- The interior piece of the partition of unity. -/
+  /-- The interior piece $\theta_0$ of the partition of unity. -/
   θ₀ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ
-  /-- The pieces of the partition of unity subordinate to the balls. -/
+  /-- The pieces $\theta_i$ of the partition of unity subordinate to the balls. -/
   θ : Fin k → EuclideanSpace ℝ (Fin (d + 1)) → ℝ
+  /-- Each centre $x_i$ lies on $\partial\Omega$. -/
   x_mem_frontier : ∀ i, x i ∈ frontier Ω
+  /-- Each radius $r_i$ is positive. -/
   r_pos : ∀ i, 0 < r i
+  /-- Each graph function $g_i$ is of class $C^1$. -/
   contDiff_g : ∀ i, ContDiff ℝ 1 (g i)
+  /-- In each ball, $\Omega$ is the region above the graph of $g_i$ in the frame $T_i$: $\Omega \cap
+  B(x_i, r_i) = B(x_i, r_i) \cap T_i^{-1}(\{y : y_{d+1} > g_i(y')\})$. -/
   inter_ball_eq : ∀ i, Ω ∩ Metric.ball (x i) (r i)
     = Metric.ball (x i) (r i) ∩ T i ⁻¹' EuclideanSpace.epigraph (g i)
+  /-- The balls cover $\partial\Omega$. -/
   frontier_subset : frontier Ω ⊆ ⋃ i, Metric.ball (x i) (r i)
+  /-- The interior piece $\theta_0$ is of class $C^\infty$. -/
   contDiff_θ₀ : ContDiff ℝ ∞ θ₀
+  /-- Each piece $\theta_i$ is of class $C^\infty$. -/
   contDiff_θ : ∀ i, ContDiff ℝ ∞ (θ i)
+  /-- The interior piece $\theta_0$ takes values in $[0, 1]$. -/
   θ₀_mem_Icc : ∀ y, θ₀ y ∈ Icc (0 : ℝ) 1
+  /-- Each piece $\theta_i$ takes values in $[0, 1]$. -/
   θ_mem_Icc : ∀ i y, θ i y ∈ Icc (0 : ℝ) 1
+  /-- The pieces sum to one: $\theta_0 + \sum_i \theta_i = 1$ everywhere. -/
   θ₀_add_sum_θ : ∀ y, θ₀ y + ∑ i, θ i y = 1
+  /-- Each piece $\theta_i$ has compact support. -/
   hasCompactSupport_θ : ∀ i, HasCompactSupport (θ i)
+  /-- The support of each piece $\theta_i$ lies in the ball $B(x_i, r_i)$. -/
   tsupport_θ_subset : ∀ i, tsupport (θ i) ⊆ Metric.ball (x i) (r i)
+  /-- The support of the interior piece $\theta_0$ is disjoint from $\partial\Omega$. -/
   disjoint_tsupport_θ₀ : Disjoint (tsupport θ₀) (frontier Ω)
 
 namespace GraphAtlas
 
 variable {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (a : GraphAtlas Ω)
 
+/-- The interior piece $\theta_0$ vanishes on $\partial\Omega$. -/
 theorem θ₀_eq_zero {y : 𝔼} (hy : y ∈ frontier Ω) : a.θ₀ y = 0 :=
   image_eq_zero_of_notMem_tsupport (disjoint_right.1 a.disjoint_tsupport_θ₀ hy)
 
-/-- On `∂Ω` the pieces subordinate to the balls sum to one. -/
+/-- On $\partial\Omega$ the pieces subordinate to the balls sum to one: $\sum_i \theta_i(y) = 1$ for
+$y \in \partial\Omega$. -/
 theorem sum_θ {y : 𝔼} (hy : y ∈ frontier Ω) : ∑ i, a.θ i y = 1 := by
   have := a.θ₀_add_sum_θ y
   rwa [a.θ₀_eq_zero hy, zero_add] at this
 
+/-- The piece $\theta_i$ vanishes outside the ball $B(x_i, r_i)$. -/
 theorem θ_eq_zero (i : Fin a.k) {y : 𝔼} (hy : y ∉ Metric.ball (a.x i) (a.r i)) : a.θ i y = 0 :=
   image_eq_zero_of_notMem_tsupport fun h ↦ hy (a.tsupport_θ_subset i h)
 
+/-- Each piece $\theta_i$ is nonnegative. -/
 theorem θ_nonneg (i : Fin a.k) (y : 𝔼) : 0 ≤ a.θ i y := (a.θ_mem_Icc i y).1
 
+/-- Each piece $\theta_i$ is at most $1$. -/
 theorem θ_le_one (i : Fin a.k) (y : 𝔼) : a.θ i y ≤ 1 := (a.θ_mem_Icc i y).2
 
+/-- Each piece $\theta_i$, as a function with values in $[0, \infty]$, is measurable. -/
 theorem measurable_ofReal_θ (i : Fin a.k) : Measurable fun y ↦ ENNReal.ofReal (a.θ i y) :=
   ENNReal.measurable_ofReal.comp (a.contDiff_θ i).continuous.measurable
 
+/-- Every point of $\partial\Omega$ lies in some chart ball $B(x_i, r_i)$. -/
 theorem exists_mem_ball {y : 𝔼} (hy : y ∈ frontier Ω) : ∃ i, y ∈ Metric.ball (a.x i) (a.r i) :=
   mem_iUnion.1 (a.frontier_subset hy)
 
-/-- The boundary of a set with an atlas is compact (closed and covered by finitely many balls). -/
+/-- If $\Omega$ has a graph atlas, then $\partial\Omega$ is compact: it is closed and covered by
+finitely many balls. -/
 theorem isCompact_frontier (a : GraphAtlas Ω) : IsCompact (frontier Ω) :=
   Metric.isCompact_of_isClosed_isBounded isClosed_frontier
     ((Bornology.isBounded_iUnion.2 fun _ ↦ Metric.isBounded_ball).subset a.frontier_subset)
 
-/-- The parameter domain of the `i`-th chart. -/
+/-- The parameter domain $D_i = \Phi_i^{-1}(B(x_i, r_i))$ of the $i$-th chart, where $\Phi_i$ is the
+parametrization of that chart. -/
 def graphDomain (i : Fin a.k) : Set 𝔼' :=
   EuclideanSpace.graphDomain (a.T i) (a.g i) (a.x i) (a.r i)
 
+/-- The parameter domain of the $i$-th chart is $\Phi_i^{-1}(B(x_i, r_i))$. -/
 theorem graphDomain_eq (i : Fin a.k) :
     a.graphDomain i = EuclideanSpace.graphParam (a.T i) (a.g i) ⁻¹' Metric.ball (a.x i) (a.r i) :=
   rfl
 
-/-- The local surface measure of the `i`-th chart, over its parameter domain. -/
+/-- The local surface measure $\sigma_i$ of the $i$-th chart, over its parameter domain $D_i$. -/
 def localMeasure (i : Fin a.k) : Measure 𝔼 :=
   EuclideanSpace.graphMeasure (a.T i) (a.g i) (a.graphDomain i)
 
+/-- The local surface measure of the $i$-th chart is `EuclideanSpace.graphMeasure` of the chart data
+over its parameter domain. -/
 theorem localMeasure_eq (i : Fin a.k) :
     a.localMeasure i = EuclideanSpace.graphMeasure (a.T i) (a.g i) (a.graphDomain i) :=
   rfl
 
-/-- **The surface measure of the atlas**: the local graph measures glued by the partition of
-unity, `∑ i, θ i · σ i`. -/
+/-- **The surface measure of the atlas**: the local surface measures glued by the partition of
+unity,
+$$\sigma = \sum_i \theta_i \, \sigma_i,$$
+where $\theta_i \sigma_i$ is the measure with density $\theta_i$ with respect to $\sigma_i$. -/
 def measure : Measure 𝔼 :=
   ∑ i, (a.localMeasure i).withDensity fun y ↦ ENNReal.ofReal (a.θ i y)
 
+/-- The surface measure of the atlas is $\sum_i \theta_i \sigma_i$. -/
 theorem measure_eq_sum :
     a.measure = ∑ i, (a.localMeasure i).withDensity fun y ↦ ENNReal.ofReal (a.θ i y) :=
   rfl
 
-/-- The `i`-th local measure is carried by `∂Ω ∩ B(x i, r i)`. -/
+/-- The $i$-th local measure is carried by $\partial\Omega$: $\sigma_i((\partial\Omega)^c) = 0$. In
+fact it is carried by $\partial\Omega \cap B(x_i, r_i)$. -/
 theorem localMeasure_compl_frontier (i : Fin a.k) : a.localMeasure i (frontier Ω)ᶜ = 0 := by
   refine measure_mono_null (compl_subset_compl.2 ?_)
     (EuclideanSpace.graphMeasure_compl_image (a.contDiff_g i).continuous
@@ -843,28 +985,33 @@ instance isFiniteMeasure_measure : IsFiniteMeasure a.measure := by
       _ < ⊤ := by simp [measure_lt_top]
   infer_instance
 
-/-- The surface measure of the atlas is carried by `∂Ω`. -/
+/-- The surface measure of the atlas is carried by $\partial\Omega$:
+$\sigma((\partial\Omega)^c) = 0$. -/
 theorem measure_compl_frontier : a.measure (frontier Ω)ᶜ = 0 := by
   rw [measure, Measure.finsetSum_apply]
   refine Finset.sum_eq_zero fun i _ ↦ ?_
   exact withDensity_absolutelyContinuous _ _ (a.localMeasure_compl_frontier i)
 
+/-- Almost every point for the surface measure of the atlas lies on $\partial\Omega$. -/
 theorem ae_mem_frontier : ∀ᵐ y ∂a.measure, y ∈ frontier Ω :=
   (measure_eq_zero_iff_ae_notMem.1 a.measure_compl_frontier).mono fun _ h ↦ not_not.1 h
 
-/-- A function continuous on `∂Ω` is integrable for the surface measure of the atlas. -/
+/-- Every function $f$ with values in a normed group that is continuous on $\partial\Omega$ is
+integrable for the surface measure of the atlas. -/
 theorem integrable_of_continuousOn {G : Type*} [NormedAddCommGroup G] {f : 𝔼 → G}
     (hf : ContinuousOn f (frontier Ω)) : Integrable f a.measure := by
   have := hf.integrableOn_compact (μ := a.measure) a.isCompact_frontier
   rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem a.ae_mem_frontier] at this
 
+/-- Each term $\theta_i \sigma_i$ is at most the surface measure of the atlas. -/
 theorem withDensity_localMeasure_le (i : Fin a.k) :
     (a.localMeasure i).withDensity (fun y ↦ ENNReal.ofReal (a.θ i y)) ≤ a.measure :=
   Finset.single_le_sum (f := fun j ↦ (a.localMeasure j).withDensity
     fun y ↦ ENNReal.ofReal (a.θ j y)) (fun _ _ ↦ bot_le) (Finset.mem_univ i)
 
-/-- The integral against the atlas measure is the sum over the charts of the integrals against
-the local measures weighted by the partition of unity. -/
+/-- For $f$ integrable for the surface measure of the atlas, with values in a real normed space,
+$$\int f \, d\sigma = \sum_i \int \theta_i \, f \, d\sigma_i.$$
+-/
 theorem integral_measure_eq_sum {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] {f : 𝔼 → G}
     (hf : Integrable f a.measure) :
     ∫ y, f y ∂a.measure = ∑ i, ∫ y, a.θ i y • f y ∂(a.localMeasure i) := by
@@ -879,8 +1026,11 @@ theorem integral_measure_eq_sum {G : Type*} [NormedAddCommGroup G] [NormedSpace 
   refine integral_congr_ae (Eventually.of_forall fun y ↦ ?_)
   simp only [NNReal.smul_def, Real.coe_toNNReal _ (a.θ_nonneg i _)]
 
-/-- **The integral against the atlas measure, in the parameters of the charts**:
-`∫ f dσ = ∑ i, ∫ x' in Dᵢ, √(1 + |∇gᵢ|²) θᵢ(Φᵢ x') • f (Φᵢ x')`. -/
+/-- **The integral against the atlas measure, in the parameters of the charts.** For $f$ integrable
+for the surface measure of the atlas, with values in a real normed space,
+$$\int f \, d\sigma = \sum_i \int_{D_i} \sqrt{1 + |\nabla g_i(x')|^2} \; \theta_i(\Phi_i(x')) \,
+  f(\Phi_i(x')) \, dx',$$
+where $\Phi_i$ is the parametrization and $D_i$ the parameter domain of the $i$-th chart. -/
 theorem integral_measure {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] {f : 𝔼 → G}
     (hf : Integrable f a.measure) :
     ∫ y, f y ∂a.measure = ∑ i, ∫ x' in a.graphDomain i,
@@ -901,9 +1051,12 @@ theorem integral_measure {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] 
     _ _) fun x' _ ↦ ?_
   simp only [smul_smul]
 
-/-- **The partition of unity glues a measure carried by `∂Ω` back to itself**:
-`∑ i, θ i · μ⌊B(x i, r i) = μ` whenever `μ (∂Ω)ᶜ = 0`. This is the mechanism behind the chart
-characterization of the atlas measure and its independence of the atlas. -/
+/-- **The partition of unity glues a measure carried by $\partial\Omega$ back to itself.** For every
+measure $\mu$ on $\mathbb{R}^{d+1}$ with $\mu((\partial\Omega)^c) = 0$,
+$$\sum_i \theta_i \, \mu|_{B(x_i, r_i)} = \mu.$$
+
+This is the step behind the chart characterization of the atlas measure and its independence of
+the atlas. -/
 theorem sum_withDensity_restrict_eq {μ : Measure 𝔼} (hμ : μ (frontier Ω)ᶜ = 0) :
     ∑ i, (μ.restrict (Metric.ball (a.x i) (a.r i))).withDensity (fun y ↦ ENNReal.ofReal (a.θ i y))
       = μ := by
@@ -933,11 +1086,15 @@ theorem sum_withDensity_restrict_eq {μ : Measure 𝔼} (hμ : μ (frontier Ω)�
     simp
   rw [withDensity_congr_ae h3, withDensity_one]
 
-/-- **The chart characterization of the atlas measure**: restricted to the ball of *any* `C¹`
-graph chart `(T, g)` of `Ω` at `(x₀, r)`, the atlas measure is that chart's graph measure. Each
-local measure restricted to `B(x₀, r)` is the chart's measure restricted to the local ball
-(`graphMeasure_eq_of_eq` on the intersection of the balls), and the partition of unity glues
-(`sum_withDensity_restrict_eq`). -/
+/-- **The chart characterization of the atlas measure.** Let $(T, g)$ be any graph chart of $\Omega$
+at $(x_0, r)$: $g$ of class $C^1$ and $\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y :
+y_{d+1} > g(y')\})$. Then the restriction of the atlas measure to $B(x_0, r)$ is the local
+surface measure of the chart over its parameter domain $\Phi^{-1}(B(x_0, r))$.
+
+Each local measure restricted to $B(x_0, r)$ is the local measure of the chart restricted to the
+ball of the atlas chart (`EuclideanSpace.graphMeasure_eq_of_eq` on the intersection of the
+balls), and the partition of unity glues these pieces
+(`GraphAtlas.sum_withDensity_restrict_eq`). -/
 theorem measure_restrict_ball {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g) {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g) :
     a.measure.restrict (Metric.ball x₀ r)
@@ -974,15 +1131,17 @@ theorem measure_restrict_ball {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ}
         simp_rw [hkey]
     _ = ν := a.sum_withDensity_restrict_eq hν
 
-/-- **A measure carried by `∂Ω` that agrees with the chart measures on the atlas balls is the
-atlas measure.** -/
+/-- **A measure carried by $\partial\Omega$ that agrees with the local measures on the atlas balls
+is the atlas measure.** If $\mu((\partial\Omega)^c) = 0$ and $\mu|_{B(x_i, r_i)} = \sigma_i$ for
+every $i$, then $\mu = \sigma$. -/
 theorem measure_eq_of_forall_restrict_ball {μ : Measure 𝔼} (hμ : μ (frontier Ω)ᶜ = 0)
     (h : ∀ i, μ.restrict (Metric.ball (a.x i) (a.r i)) = a.localMeasure i) : μ = a.measure := by
   rw [measure_eq_sum]
   simp_rw [← h]
   exact (a.sum_withDensity_restrict_eq hμ).symm
 
-/-- **The atlas measure does not depend on the atlas.** -/
+/-- **The atlas measure does not depend on the atlas**: two graph atlases of $\Omega$ have the same
+surface measure. -/
 theorem measure_eq (a a' : GraphAtlas Ω) : a.measure = a'.measure :=
   a'.measure_eq_of_forall_restrict_ball a.measure_compl_frontier fun i ↦
     a.measure_restrict_ball (a'.contDiff_g i) (a'.inter_ball_eq i)
@@ -990,15 +1149,18 @@ theorem measure_eq (a a' : GraphAtlas Ω) : a.measure = a'.measure :=
 /-! ### The normal of an atlas -/
 
 open Classical in
-/-- **The outward normal of the atlas**: on each chart ball the chart's `graphNormal`, and `0` off
-the atlas. -/
+/-- **The outward normal of the atlas**: at a point $y$ in some chart ball, the normal
+`EuclideanSpace.graphNormal` of one such chart, chosen; at a point in no chart ball, $0$.
+
+On $\partial\Omega$ the value does not depend on the chosen chart
+(`GraphAtlas.normal_eq_graphNormal`). -/
 def normal (y : 𝔼) : 𝔼 :=
   if h : ∃ i, y ∈ Metric.ball (a.x i) (a.r i) then
     EuclideanSpace.graphNormal (a.T (Classical.choose h)) (a.g (Classical.choose h)) y
   else 0
 
-/-- On `∂Ω ∩ B(x i, r i)` the atlas normal is the `i`-th chart's normal, whichever chart the
-definition picked (`graphNormal_eq_of_eq`). -/
+/-- On $\partial\Omega \cap B(x_i, r_i)$ the atlas normal is the normal of the $i$-th chart,
+whichever chart the definition chose (`EuclideanSpace.graphNormal_eq_of_eq`). -/
 theorem normal_eq_graphNormal {y : 𝔼} (hy : y ∈ frontier Ω) {i : Fin a.k}
     (hi : y ∈ Metric.ball (a.x i) (a.r i)) :
     a.normal y = EuclideanSpace.graphNormal (a.T i) (a.g i) y := by
@@ -1013,8 +1175,10 @@ theorem normal_eq_graphNormal {y : 𝔼} (hy : y ∈ frontier Ω) {i : Fin a.k}
   exact EuclideanSpace.mem_frontier_preimage_epigraph_of_mem_frontier (a.contDiff_g j).continuous
     (a.inter_ball_eq j) hy hj
 
-/-- **The chart characterization of the atlas normal**: at a boundary point inside the ball of
-*any* `C¹` graph chart of `Ω`, the atlas normal is that chart's normal. -/
+/-- **The chart characterization of the atlas normal.** Let $(T, g)$ be any graph chart of $\Omega$
+at $(x_0, r)$: $g$ of class $C^1$ and $\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y :
+y_{d+1} > g(y')\})$. Then at every $y \in \partial\Omega \cap B(x_0, r)$, the atlas normal is
+the normal of the chart $(T, g)$. -/
 theorem normal_eq_graphNormal_of_inter_eq {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g)
     {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g)
@@ -1028,18 +1192,21 @@ theorem normal_eq_graphNormal_of_inter_eq {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : �
   exact EuclideanSpace.mem_frontier_preimage_epigraph_of_mem_frontier (a.contDiff_g i).continuous
     (a.inter_ball_eq i) hy hi
 
-/-- **The atlas normal does not depend on the atlas** on `∂Ω`. -/
+/-- **The atlas normal does not depend on the atlas** on $\partial\Omega$: two graph atlases of
+$\Omega$ have the same normal at every point of $\partial\Omega$. -/
 theorem normal_eq_of_mem_frontier (a a' : GraphAtlas Ω) {y : 𝔼} (hy : y ∈ frontier Ω) :
     a.normal y = a'.normal y := by
   obtain ⟨i, hi⟩ := a'.exists_mem_ball hy
   rw [a'.normal_eq_graphNormal hy hi]
   exact a.normal_eq_graphNormal_of_inter_eq (a'.contDiff_g i) (a'.inter_ball_eq i) hy hi
 
+/-- The atlas normal is a unit vector at every point of $\partial\Omega$. -/
 theorem norm_normal {y : 𝔼} (hy : y ∈ frontier Ω) : ‖a.normal y‖ = 1 := by
   obtain ⟨i, hi⟩ := a.exists_mem_ball hy
   rw [a.normal_eq_graphNormal hy hi, EuclideanSpace.norm_graphNormal]
 
-/-- The atlas normal is continuous on `∂Ω` (locally it is a chart normal). -/
+/-- The atlas normal is continuous on $\partial\Omega$, because near each boundary point it is the
+normal of one chart. -/
 theorem continuousOn_normal : ContinuousOn a.normal (frontier Ω) := by
   intro y hy
   obtain ⟨i, hi⟩ := a.exists_mem_ball hy
@@ -1049,9 +1216,12 @@ theorem continuousOn_normal : ContinuousOn a.normal (frontier Ω) := by
     eventually_mem_nhdsWithin] with z hz1 hz2
   exact a.normal_eq_graphNormal hz2 hz1
 
+/-- The atlas normal is a unit vector almost everywhere for the surface measure of the atlas. -/
 theorem ae_norm_normal : ∀ᵐ y ∂a.measure, ‖a.normal y‖ = 1 :=
   a.ae_mem_frontier.mono fun _ hy ↦ a.norm_normal hy
 
+/-- The atlas normal is almost everywhere strongly measurable for the surface measure of the atlas.
+-/
 theorem aestronglyMeasurable_normal : AEStronglyMeasurable a.normal a.measure := by
   have := a.continuousOn_normal.aestronglyMeasurable (μ := a.measure)
     isClosed_frontier.measurableSet
@@ -1059,15 +1229,18 @@ theorem aestronglyMeasurable_normal : AEStronglyMeasurable a.normal a.measure :=
 
 end GraphAtlas
 
-/-! ### The surface measure and the outward normal of a bounded `C¹` domain -/
+/-! ### The surface measure and the outward normal of a bounded $C^1$ domain -/
 
 namespace IsContDiffDomain
 
 variable {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **A bounded `C¹` domain has a graph atlas**: the finite cover of
-`IsBoundaryOfClass.exists_finite_cover` with the partition of unity of
-`IsCompact.exists_contDiff_partitionOfUnity` on the compact `∂Ω`. -/
+/-- **A bounded $C^1$ domain has a graph atlas.** If $\Omega \subseteq \mathbb{R}^{d+1}$ is a
+bounded $C^1$ domain, then $\Omega$ has a graph atlas.
+
+The charts are the finite cover of `IsBoundaryOfClass.exists_finite_cover`, and the partition of
+unity is that of `IsCompact.exists_contDiff_partitionOfUnity` on the compact set
+$\partial\Omega$. -/
 theorem exists_graphAtlas (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) :
     Nonempty (GraphAtlas Ω) := by
   obtain ⟨s, hs, hcov⟩ := hΩ.isBoundaryOfClass.exists_finite_cover hb
@@ -1108,58 +1281,71 @@ theorem exists_graphAtlas (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounde
             tsupport_θ_subset := hθs
             disjoint_tsupport_θ₀ := hθ₀d }⟩
 
-/-- **The chosen graph atlas** of a bounded `C¹` domain. Everything defined from it is
-characterized chart-independently (`boundaryMeasure_restrict_ball`,
-`outwardNormal_eq_graphNormal`), so the choice never leaks. -/
+/-- **The chosen graph atlas** of a bounded $C^1$ domain.
+
+Everything defined from it is characterized independently of the chart
+(`IsContDiffDomain.boundaryMeasure_restrict_ball`,
+`IsContDiffDomain.outwardNormal_eq_graphNormal`), so the choice does not matter. -/
 def graphAtlas (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : GraphAtlas Ω :=
   Classical.choice (hΩ.exists_graphAtlas hb)
 
-/-- **The surface measure of a bounded `C¹` domain**: the measure of the chosen atlas,
-`∑ i, θ i · σ i` (decision B2 of `notes/boundary/planning-brief.md`); by `GraphAtlas.measure_eq`
-it is the measure of every atlas, and by `boundaryMeasure_restrict_ball` it is, on every chart
-ball, the pushforward of `√(1 + |∇g|²) dx'` under the chart's parametrization. -/
+/-- **The surface measure of a bounded $C^1$ domain** $\Omega$: the measure
+$\sum_i \theta_i \sigma_i$ of the chosen graph atlas.
+
+By `GraphAtlas.measure_eq` it is the measure of every graph atlas of $\Omega$. By
+`IsContDiffDomain.boundaryMeasure_restrict_ball`, on every chart ball it is the image of
+$\sqrt{1 + |\nabla g|^2} \, dx'$ under the parametrization of the chart. -/
 def boundaryMeasure (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : Measure 𝔼 :=
   (hΩ.graphAtlas hb).measure
 
-/-- **The outward unit normal of a bounded `C¹` domain**, as a function on the ambient space: on
-each chart ball of the chosen atlas the chart's `graphNormal`, and `0` off the atlas (decision
-B3 of `notes/boundary/planning-brief.md`); by `outwardNormal_eq_graphNormal` it is the normal of
-every chart at every boundary point. -/
+/-- **The outward unit normal of a bounded $C^1$ domain** $\Omega$, as a function on
+$\mathbb{R}^{d+1}$: the normal of the chosen graph atlas, which on each of its chart balls is
+the normal of a chart and is $0$ outside them.
+
+By `IsContDiffDomain.outwardNormal_eq_graphNormal` it is the normal of every graph chart at
+every boundary point in the chart ball. -/
 def outwardNormal (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω) : 𝔼 → 𝔼 :=
   (hΩ.graphAtlas hb).normal
 
 variable (hΩ : IsContDiffDomain 1 Ω) (hb : Bornology.IsBounded Ω)
 
+/-- The surface measure of $\Omega$ is the measure of the chosen graph atlas. -/
 theorem boundaryMeasure_eq_graphAtlas_measure :
     hΩ.boundaryMeasure hb = (hΩ.graphAtlas hb).measure :=
   rfl
 
-/-- The surface measure is the measure of every graph atlas of `Ω`. -/
+/-- The surface measure of $\Omega$ is the measure of every graph atlas of $\Omega$. -/
 theorem boundaryMeasure_eq_measure (a : GraphAtlas Ω) : hΩ.boundaryMeasure hb = a.measure :=
   GraphAtlas.measure_eq _ a
 
+/-- The outward normal of $\Omega$ is the normal of the chosen graph atlas. -/
 theorem outwardNormal_eq_graphAtlas_normal : hΩ.outwardNormal hb = (hΩ.graphAtlas hb).normal :=
   rfl
 
 instance isFiniteMeasure_boundaryMeasure : IsFiniteMeasure (hΩ.boundaryMeasure hb) :=
   GraphAtlas.isFiniteMeasure_measure _
 
-/-- The surface measure is carried by `∂Ω`. -/
+/-- The surface measure is carried by $\partial\Omega$: $\sigma((\partial\Omega)^c) = 0$. -/
 theorem boundaryMeasure_compl_frontier : hΩ.boundaryMeasure hb (frontier Ω)ᶜ = 0 :=
   GraphAtlas.measure_compl_frontier _
 
+/-- Almost every point for the surface measure lies on $\partial\Omega$. -/
 theorem ae_mem_frontier_boundaryMeasure : ∀ᵐ y ∂(hΩ.boundaryMeasure hb), y ∈ frontier Ω :=
   GraphAtlas.ae_mem_frontier _
 
-/-- A function continuous on `∂Ω` is integrable for the surface measure. -/
+/-- Every function $f$ with values in a normed group that is continuous on $\partial\Omega$ is
+integrable for the surface measure of $\Omega$. -/
 theorem integrable_boundaryMeasure_of_continuousOn {G : Type*} [NormedAddCommGroup G]
     {f : 𝔼 → G} (hf : ContinuousOn f (frontier Ω)) : Integrable f (hΩ.boundaryMeasure hb) :=
   GraphAtlas.integrable_of_continuousOn _ hf
 
-/-- **The integral against the surface measure, in the charts of the chosen atlas**
-`a := hΩ.graphAtlas hb`:
-`∫ f dσ = ∑ i, ∫ x' in a.graphDomain i, √(1 + |∇(a.g i)|²) · θᵢ(Φᵢ x') • f (Φᵢ x')` with
-`Φᵢ := graphParam (a.T i) (a.g i)`. -/
+/-- **The integral against the surface measure, in the charts of the chosen atlas.** Let
+$(T_i, g_i, \theta_i)$ be the charts and the partition of unity of the chosen atlas, with
+parametrizations $\Phi_i$ and parameter domains $D_i$. For $f$ integrable for the surface
+measure, with values in a real normed space,
+$$\int f \, d\sigma = \sum_i \int_{D_i} \sqrt{1 + |\nabla g_i(x')|^2} \; \theta_i(\Phi_i(x')) \,
+  f(\Phi_i(x')) \, dx'.$$
+-/
 theorem integral_boundaryMeasure {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] {f : 𝔼 → G}
     (hf : Integrable f (hΩ.boundaryMeasure hb)) :
     ∫ y, f y ∂(hΩ.boundaryMeasure hb) = ∑ i, ∫ x' in (hΩ.graphAtlas hb).graphDomain i,
@@ -1169,18 +1355,23 @@ theorem integral_boundaryMeasure {G : Type*} [NormedAddCommGroup G] [NormedSpace
           f (EuclideanSpace.graphParam ((hΩ.graphAtlas hb).T i) ((hΩ.graphAtlas hb).g i) x') :=
   GraphAtlas.integral_measure _ hf
 
-/-- The integral against the surface measure as the sum over the chosen atlas of the integrals
-against the local measures weighted by the partition of unity. -/
+/-- For $f$ integrable for the surface measure, with values in a real normed space, $\int f \,
+d\sigma = \sum_i \int \theta_i \, f \, d\sigma_i$, where the $\theta_i$ and the local measures
+$\sigma_i$ are those of the chosen atlas. -/
 theorem integral_boundaryMeasure_eq_sum {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     {f : 𝔼 → G} (hf : Integrable f (hΩ.boundaryMeasure hb)) :
     ∫ y, f y ∂(hΩ.boundaryMeasure hb)
       = ∑ i, ∫ y, (hΩ.graphAtlas hb).θ i y • f y ∂((hΩ.graphAtlas hb).localMeasure i) :=
   GraphAtlas.integral_measure_eq_sum _ hf
 
-/-- **The chart characterization of the surface measure**: for *any* `C¹` graph chart `(T, g)` of
-`Ω` at `(x₀, r)`, the surface measure restricted to `B(x₀, r)` is the chart's graph measure
-`graphMeasure T g (graphDomain T g x₀ r)`, the pushforward of `√(1 + |∇g|²) dx'`. This is the
-theorem that makes `boundaryMeasure` canonical and what consumers compute with. -/
+/-- **The chart characterization of the surface measure.** Let $(T, g)$ be any graph chart of
+$\Omega$ at $(x_0, r)$: $g$ of class $C^1$ and $\Omega \cap B(x_0, r) = B(x_0, r) \cap
+T^{-1}(\{y : y_{d+1} > g(y')\})$. Then the restriction of the surface measure to $B(x_0, r)$ is
+the local surface measure of the chart over $\Phi^{-1}(B(x_0, r))$, the image of
+$\sqrt{1 + |\nabla g|^2} \, dx'$ under $\Phi$.
+
+This theorem makes `IsContDiffDomain.boundaryMeasure` canonical, and it is the form in which the
+surface measure is computed. -/
 theorem boundaryMeasure_restrict_ball {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g)
     {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g) :
@@ -1188,13 +1379,17 @@ theorem boundaryMeasure_restrict_ball {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' 
       = EuclideanSpace.graphMeasure T g (EuclideanSpace.graphDomain T g x₀ r) :=
   GraphAtlas.measure_restrict_ball _ hg h
 
-/-- **Composition with a patch respects equality almost everywhere on `∂Ω`**: two functions equal
-`σ`-almost everywhere on `∂Ω` pull back to functions equal almost everywhere on the parameter
-domain `Dᵢ` of a chart, since on the chart ball `σ` is the pushforward under `Φᵢ` of a measure
-with a positive density with respect to Lebesgue measure on `Dᵢ`
-(`boundaryMeasure_restrict_ball`, `EuclideanSpace.graphDensity_pos`). This is what makes a
-condition on `v ∘ Φᵢ` a condition on the class of `v` in `L^p(∂Ω)`
-([han2009theoretical] Definition 7.2.13). -/
+/-- **Composition with a chart respects equality almost everywhere on $\partial\Omega$.** Let $a$ be
+any graph atlas of $\Omega$, with parametrizations $\Phi_i$ and parameter domains $D_i$. If two
+real functions $f_1, f_2$ on $\mathbb{R}^{d+1}$ satisfy $f_1 = f_2$ almost everywhere for the
+surface measure of $\Omega$, then $f_1 \circ \Phi_i = f_2 \circ \Phi_i$ almost everywhere on
+$D_i$ for the Lebesgue measure.
+
+On the chart ball, the surface measure is the image under $\Phi_i$ of a measure with positive
+density with respect to Lebesgue measure on $D_i$
+(`IsContDiffDomain.boundaryMeasure_restrict_ball`, `EuclideanSpace.graphDensity_pos`). This
+makes a condition on $v \circ \Phi_i$ a condition on the class of $v$ in $L^p(\partial\Omega)$,
+as in Definition 7.2.13 of [han2009theoretical]. -/
 theorem ae_eq_comp_graphParam (a : GraphAtlas Ω) (i : Fin a.k) {f g : 𝔼 → ℝ}
     (h : f =ᵐ[hΩ.boundaryMeasure hb] g) :
     f ∘ EuclideanSpace.graphParam (a.T i) (a.g i)
@@ -1209,8 +1404,10 @@ theorem ae_eq_comp_graphParam (a : GraphAtlas Ω) (i : Fin a.k) {f g : 𝔼 → 
     (EuclideanSpace.measurable_ofReal_graphDensity (a.contDiff_g i))] at h2
   exact h2.mono fun x hx ↦ hx (ENNReal.ofReal_pos.2 (EuclideanSpace.graphDensity_pos _)).ne'
 
-/-- The surface measure of a chart ball is the weighted Lebesgue measure of the parameter
-domain. -/
+/-- For every graph chart $(T, g)$ of $\Omega$ at $(x_0, r)$ with $g$ of class $C^1$, the surface
+measure of the ball is the weighted Lebesgue measure of the parameter domain:
+$$\sigma(B(x_0, r)) = \int_{\Phi^{-1}(B(x_0, r))} \sqrt{1 + |\nabla g(x')|^2} \, dx'.$$
+-/
 theorem boundaryMeasure_ball_eq_lintegral {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g)
     {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g) :
@@ -1220,9 +1417,11 @@ theorem boundaryMeasure_ball_eq_lintegral {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : �
   rw [← Measure.restrict_apply_univ, boundaryMeasure_restrict_ball hΩ hb hg h,
     EuclideanSpace.graphMeasure_apply hg.continuous _ MeasurableSet.univ, preimage_univ, inter_univ]
 
-/-- **The surface measure has full support on `∂Ω`**: every open set meeting `∂Ω` has positive
-surface measure. In a chart at a common point, a small ball has measure at least the Lebesgue
-measure of its nonempty open parameter domain (the density is `≥ 1`). -/
+/-- **The surface measure has full support on $\partial\Omega$.** Every open set $U$ that meets
+$\partial\Omega$ has positive surface measure.
+
+In a chart at a common point, a small ball has measure at least the Lebesgue measure of its
+parameter domain, which is open and nonempty, because the surface element is at least $1$. -/
 theorem boundaryMeasure_pos_of_isOpen {U : Set 𝔼} (hU : IsOpen U)
     (hne : (U ∩ frontier Ω).Nonempty) : 0 < hΩ.boundaryMeasure hb U := by
   obtain ⟨x, hxU, hxF⟩ := hne
@@ -1262,13 +1461,13 @@ theorem boundaryMeasure_pos_of_isOpen {U : Set 𝔼} (hU : IsOpen U)
         (boundaryMeasure_ball_eq_lintegral hΩ hb hg h').symm
     _ ≤ hΩ.boundaryMeasure hb U := measure_mono hρU
 
-/-- The surface measure of a nonempty bounded `C¹` domain is positive. -/
+/-- If $\Omega$ is nonempty, its surface measure is positive: $\sigma(\mathbb{R}^{d+1}) > 0$. -/
 theorem boundaryMeasure_univ_pos (hne : Ω.Nonempty) : 0 < hΩ.boundaryMeasure hb univ :=
   hΩ.boundaryMeasure_pos_of_isOpen hb isOpen_univ
     (by rw [univ_inter]; exact hb.frontier_nonempty hne)
 
-/-- On `∂Ω ∩ B(a.x i, a.r i)` the outward normal is the `i`-th chart normal of the chosen atlas
-`a := hΩ.graphAtlas hb`. -/
+/-- On $\partial\Omega \cap B(x_i, r_i)$ the outward normal is the normal of the $i$-th chart of the
+chosen atlas. -/
 theorem outwardNormal_eq_graphNormal_atlas {y : 𝔼} (hy : y ∈ frontier Ω)
     {i : Fin (hΩ.graphAtlas hb).k}
     (hi : y ∈ Metric.ball ((hΩ.graphAtlas hb).x i) ((hΩ.graphAtlas hb).r i)) :
@@ -1276,9 +1475,11 @@ theorem outwardNormal_eq_graphNormal_atlas {y : 𝔼} (hy : y ∈ frontier Ω)
       = EuclideanSpace.graphNormal ((hΩ.graphAtlas hb).T i) ((hΩ.graphAtlas hb).g i) y :=
   GraphAtlas.normal_eq_graphNormal _ hy hi
 
-/-- **The chart characterization of the outward normal**: for *any* `C¹` graph chart `(T, g)` of
-`Ω` at `(x₀, r)` and every `y ∈ ∂Ω ∩ B(x₀, r)`, `outwardNormal hΩ hb y = graphNormal T g y`,
-that is `T.linear⁻¹ (∇g y', −1) / √(1 + |∇g y'|²)` with `y' = (T y)'`. -/
+/-- **The chart characterization of the outward normal.** Let $(T, g)$ be any graph chart of
+$\Omega$ at $(x_0, r)$: $g$ of class $C^1$ and $\Omega \cap B(x_0, r) = B(x_0, r) \cap
+T^{-1}(\{y : y_{d+1} > g(y')\})$. Then at every $y \in \partial\Omega \cap B(x_0, r)$,
+$$\nu(y) = \frac{L^{-1}(\nabla g(y'), -1)}{\sqrt{1 + |\nabla g(y')|^2}}, \qquad y' = (T y)',$$
+where $L$ is the linear part of $T$; that is, $\nu(y)$ is `EuclideanSpace.graphNormal T g y`. -/
 theorem outwardNormal_eq_graphNormal {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' → ℝ} (hg : ContDiff ℝ 1 g)
     {x₀ : 𝔼} {r : ℝ}
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g)
@@ -1286,20 +1487,24 @@ theorem outwardNormal_eq_graphNormal {T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼} {g : 𝔼' �
     hΩ.outwardNormal hb y = EuclideanSpace.graphNormal T g y :=
   GraphAtlas.normal_eq_graphNormal_of_inter_eq _ hg h hy hyB
 
-/-- The outward normal is the normal of every graph atlas of `Ω`, on `∂Ω`. -/
+/-- On $\partial\Omega$, the outward normal is the normal of every graph atlas of $\Omega$. -/
 theorem outwardNormal_eq_normal (a : GraphAtlas Ω) {y : 𝔼} (hy : y ∈ frontier Ω) :
     hΩ.outwardNormal hb y = a.normal y :=
   GraphAtlas.normal_eq_of_mem_frontier _ a hy
 
+/-- The outward normal is a unit vector at every point of $\partial\Omega$. -/
 theorem norm_outwardNormal {y : 𝔼} (hy : y ∈ frontier Ω) : ‖hΩ.outwardNormal hb y‖ = 1 :=
   GraphAtlas.norm_normal _ hy
 
+/-- The outward normal is continuous on $\partial\Omega$. -/
 theorem continuousOn_outwardNormal : ContinuousOn (hΩ.outwardNormal hb) (frontier Ω) :=
   GraphAtlas.continuousOn_normal _
 
+/-- The outward normal is a unit vector almost everywhere for the surface measure. -/
 theorem ae_norm_outwardNormal : ∀ᵐ y ∂(hΩ.boundaryMeasure hb), ‖hΩ.outwardNormal hb y‖ = 1 :=
   GraphAtlas.ae_norm_normal _
 
+/-- The outward normal is almost everywhere strongly measurable for the surface measure. -/
 theorem aestronglyMeasurable_outwardNormal :
     AEStronglyMeasurable (hΩ.outwardNormal hb) (hΩ.boundaryMeasure hb) :=
   GraphAtlas.aestronglyMeasurable_normal _

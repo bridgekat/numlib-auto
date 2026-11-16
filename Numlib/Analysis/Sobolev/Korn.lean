@@ -5,43 +5,57 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 
 /-!
-# Korn's first inequality on `[H¹₀(Ω)]^N`
+# Korn's first inequality on $[H^1_0(\Omega)]^N$
 
-For a vector field `v = (v₁, …, v_N)` with components in `H¹₀(Ω)`, the *linearized strain* is the
-symmetric matrix of `L²(Ω)` functions `ε(v)_{ij} = ½ (∂_j v_i + ∂_i v_j)`. **Korn's first
-inequality** is the bound `∫_Ω |∇v|² ≤ 2 ∫_Ω |ε(v)|²`, which together with Poincaré's inequality
-makes `∫_Ω |ε(v)|²` an equivalent squared norm on `[H¹₀(Ω)]^N`; it is the `V`-ellipticity behind
-the linearized elasticity problem of [han2009theoretical] §8.5 (Theorem 8.5.1) in the pure
-displacement case `Γ_D = ∂Ω`.
+Let $\Omega \subseteq \mathbb{R}^N$ be open. For a vector field $v = (v_1, \dots, v_N)$ with
+components in $H^1_0(\Omega)$, the **linearized strain** is the symmetric matrix of $L^2(\Omega)$
+functions $\varepsilon(v)_{ij} = \frac12 (\partial_j v_i + \partial_i v_j)$. **Korn's first
+inequality** is the bound $\int_\Omega |\nabla v|^2 \le 2 \int_\Omega |\varepsilon(v)|^2$. Together
+with Poincaré's inequality it makes $\int_\Omega |\varepsilon(v)|^2$ an equivalent squared norm on
+$[H^1_0(\Omega)]^N$ for a bounded $\Omega$. This is the $V$-ellipticity behind the linearized
+elasticity problem of [han2009theoretical], §8.5, in the pure displacement case
+$\Gamma_D = \partial\Omega$; the source quotes Korn's inequality after Theorem 8.5.1. The bounded
+case uses Poincaré's inequality in the form of Corollary 9.19 of [brezis2011functional].
 
-The proof is the identity `∫_Ω |ε(v)|² = ½ ∫_Ω |∇v|² + ½ ∫_Ω (div v)²`, itself a consequence of
+## Main definitions
 
-`∫_Ω ∂_j u ∂_i v = ∫_Ω ∂_i u ∂_j v`  for `u, v ∈ H¹₀(Ω)`,
+* `SobolevEuclideanZeroVec`: the Hilbert space $[H^1_0(\Omega)]^N$, the $\ell^2$ product of $N$
+  copies of $H^1_0(\Omega)$.
+* `SobolevEuclideanZeroVec.partialL`: the partial derivative $v \mapsto \partial_j v_i$, as a
+  continuous linear map into $L^2(\Omega)$.
+* `SobolevEuclideanZeroVec.strainL`: the strain $v \mapsto \varepsilon(v)_{ij}$, as a continuous
+  linear map into $L^2(\Omega)$.
 
-two integrations by parts against test functions (`∫ ∂_j φ ∂_i ψ = -∫ φ ∂_j ∂_i ψ = -∫ φ ∂_i ∂_j ψ
-= ∫ ∂_i φ ∂_j ψ`) extended to `H¹₀(Ω)` by density, both sides being continuous bilinear forms.
-This is what fails on `H¹(Ω)`: the boundary terms of the integrations by parts do not vanish, and
-Korn's *second* inequality on `H¹(Ω)` (with the `L²` norm on the right) needs the regularity of
-the boundary and a compactness argument that are not here.
+## Main results
 
-## Main definitions and results
+* `SobolevEuclideanZero.inner_weakDeriv_single_comm`: for $u, v \in H^1_0(\Omega)$, $(\partial_j u,
+  \partial_i v)_{L^2} = (\partial_i u, \partial_j v)_{L^2}$.
+* `SobolevEuclideanZeroVec.sum_norm_strainL_sq_eq`: Korn's identity $\int_\Omega
+  |\varepsilon(v)|^2 = \frac12 \int_\Omega |\nabla v|^2 + \frac12 \int_\Omega (\operatorname{div}
+  v)^2$.
+* `SobolevEuclideanZeroVec.korn_first`: Korn's first inequality $\frac12 \int_\Omega |\nabla v|^2
+  \le \int_\Omega |\varepsilon(v)|^2$.
+* `SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`: for $\Omega \subseteq B(0, R) \subseteq
+  \mathbb{R}^{d+1}$, $\|v\|^2 \le 2 (1 + (2R)^2) \int_\Omega |\varepsilon(v)|^2$.
 
-* `SobolevEuclideanZero.inner_weakDeriv_single_comm`: `⟪∂_j u, ∂_i v⟫_{L²} = ⟪∂_i u, ∂_j v⟫_{L²}`
-  for `u, v ∈ H¹₀(Ω)`;
-* `SobolevEuclideanZeroVec N Ω`, the Hilbert space `[H¹₀(Ω)]^N` as the `ℓ²` product of `N` copies
-  of `H¹₀(Ω)`, with `SobolevEuclideanZeroVec.partialL i j` (`∂_j v_i`) and
-  `SobolevEuclideanZeroVec.strainL i j` (`ε(v)_{ij}`) as continuous linear maps into `L²(Ω)`;
-* `SobolevEuclideanZeroVec.sum_norm_strainL_sq_eq`, the identity
-  `∫_Ω |ε(v)|² = ½ ∫_Ω |∇v|² + ½ ∫_Ω (div v)²`, and `SobolevEuclideanZeroVec.korn_first`,
-  `½ ∫_Ω |∇v|² ≤ ∫_Ω |ε(v)|²`;
-* `SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`: on a bounded `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`,
-  `‖v‖²_{[H¹]^N} ≤ 2 (1 + (2R)²) ∫_Ω |ε(v)|²` (Korn plus Poincaré, Corollary 9.19 of
-  [brezis2011functional]).
+## Proof outline
 
-## References
+Korn's identity follows from the commutation
+$$\int_\Omega \partial_j u \, \partial_i v = \int_\Omega \partial_i u \, \partial_j v, \qquad u, v
+  \in H^1_0(\Omega).$$
+For test functions $\varphi, \psi$ this is two integrations by parts, $\int \partial_j \varphi \,
+\partial_i \psi = -\int \varphi \, \partial_j \partial_i \psi = -\int \varphi \, \partial_i
+\partial_j \psi = \int \partial_i \varphi \, \partial_j \psi$. Both sides are continuous bilinear
+forms on $H^1(\Omega)$, so the identity extends to $H^1_0(\Omega)$ by density.
 
-[han2009theoretical] §8.5 (Korn's inequality is quoted after Theorem 8.5.1);
-[brezis2011functional] Corollary 9.19 for Poincaré's inequality.
+## Implementation notes
+
+* The commutation fails on $H^1(\Omega)$, because the boundary terms of the integrations by parts do
+  not vanish. Korn's second inequality on $H^1(\Omega)$, with the $L^2$ norm on the right, needs the
+  regularity of the boundary and a compactness argument; it is not formalized here.
+* The number of components of a vector field is the dimension $N$ of the space. The results on a
+  bounded domain are stated in dimension $N = d + 1$, the setting of the Poincaré inequality
+  `SobolevEuclideanZero.norm_le_gradNorm`.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -49,15 +63,19 @@ open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
 
-/-! ### The commutation `∫ ∂_j u ∂_i v = ∫ ∂_i u ∂_j v` on `H¹₀(Ω)` -/
+/-! ### The commutation $\int \partial_j u \, \partial_i v = \int \partial_i u \, \partial_j v$ -/
 
 section Comm
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Two integrations by parts on test functions**: `∫_Ω ∂_v φ ∂_w ψ = ∫_Ω ∂_w φ ∂_v ψ` for
-`φ, ψ ∈ C_0^∞(Ω)` and directions `v, w`, since both sides are `-∫_Ω φ ∂_v ∂_w ψ` by the symmetry
-of the second derivative of `ψ`. -/
+/-- **Two integrations by parts on test functions.** Let $\varphi, \psi \in C_0^\infty(\Omega)$ and
+let $v, w \in \mathbb{R}^N$ be two directions. Then
+$$\int_\Omega D\varphi(x)[v] \, D\psi(x)[w] \, dx = \int_\Omega D\varphi(x)[w] \, D\psi(x)[v] \,
+  dx.$$
+
+Both sides equal $-\int_\Omega \varphi \, D^2\psi[v, w]$, by the symmetry of the second
+derivative of $\psi$. -/
 theorem TestFunction.setIntegral_fderiv_mul_fderiv_comm (φ ψ : 𝓓(Ω, ℝ))
     (v w : EuclideanSpace ℝ (Fin N)) :
     ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), fderiv ℝ φ x v * fderiv ℝ ψ x w
@@ -78,8 +96,11 @@ theorem TestFunction.setIntegral_fderiv_mul_fderiv_comm (φ ψ : 𝓓(Ω, ℝ))
 
 namespace SobolevEuclideanZero
 
-/-- The commutation `⟪∂_j w, ∂_i w'⟫ = ⟪∂_i w, ∂_j w'⟫` for elements of `H¹(Ω)` whose functions
-are test functions on `Ω`: their partial derivatives are the classical ones
+/-- Let $w, w' \in H^1(\Omega)$ be elements whose functions agree almost everywhere on $\Omega$ with
+test functions $\varphi$ and $\psi$. Then for all $i, j$,
+$$(\partial_j w, \partial_i w')_{L^2(\Omega)} = (\partial_i w, \partial_j w')_{L^2(\Omega)}.$$
+
+The weak partial derivatives of $w$ and $w'$ are the classical ones
 (`SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction`), and
 `TestFunction.setIntegral_fderiv_mul_fderiv_comm` applies. -/
 theorem inner_weakDeriv_single_comm_of_testFunction {w w' : SobolevEuclidean N 1 2 Ω}
@@ -104,11 +125,17 @@ theorem inner_weakDeriv_single_comm_of_testFunction {w w' : SobolevEuclidean N 1
   rw [e, e]
   exact TestFunction.setIntegral_fderiv_mul_fderiv_comm φ ψ _ _
 
-/-- **The commutation `∫_Ω ∂_j u ∂_i v = ∫_Ω ∂_i u ∂_j v` on `H¹₀(Ω)`**: for `u, v ∈ H¹₀(Ω)` and
-`i, j`, `⟪∂_j u, ∂_i v⟫_{L²(Ω)} = ⟪∂_i u, ∂_j v⟫_{L²(Ω)}`. Two integrations by parts on test
-functions (`TestFunction.setIntegral_fderiv_mul_fderiv_comm`), extended by density: both sides
-are continuous bilinear forms on `H¹(Ω)` (sums of `Elliptic.pairing`s) and agree on the dense
-subspace of test functions. On `H¹(Ω)` the identity fails, the boundary terms not vanishing. -/
+/-- **The commutation of partial derivatives on $H^1_0(\Omega)$.** Let $u, v \in H^1_0(\Omega)$ and
+$i, j \in \{1, \dots, N\}$. Then
+$$(\partial_j u, \partial_i v)_{L^2(\Omega)} = (\partial_i u, \partial_j v)_{L^2(\Omega)},
+  \quad\text{that is,}\quad \int_\Omega \partial_j u \, \partial_i v = \int_\Omega \partial_i u
+  \, \partial_j v.$$
+
+The identity holds for test functions by two integrations by parts
+(`TestFunction.setIntegral_fderiv_mul_fderiv_comm`). Both sides are continuous bilinear forms on
+$H^1(\Omega)$ (sums of `Elliptic.pairing` forms), so the identity extends to the closure
+$H^1_0(\Omega)$ of the test functions. On $H^1(\Omega)$ the identity fails, because the boundary
+terms do not vanish. -/
 theorem inner_weakDeriv_single_comm {u v : SobolevEuclidean N 1 2 Ω}
     (hu : u ∈ SobolevEuclideanZero N 1 2 Ω) (hv : v ∈ SobolevEuclideanZero N 1 2 Ω)
     (i j : Fin N) :
@@ -149,12 +176,15 @@ end SobolevEuclideanZero
 
 end Comm
 
-/-! ### Vector fields with components in `H¹₀(Ω)`, and the linearized strain -/
+/-! ### Vector fields with components in $H^1_0(\Omega)$, and the linearized strain -/
 
 variable (N : ℕ) (Ω : Opens (EuclideanSpace ℝ (Fin N))) in
-/-- **The space `[H¹₀(Ω)]^N` of vector fields with components in `H¹₀(Ω)`**, as the `ℓ²` product
-of `N` copies of `H¹₀(Ω) = SobolevEuclideanZero N 1 2 Ω`: a Hilbert space with
-`‖v‖² = ∑ᵢ ‖vᵢ‖²_{H¹(Ω)}`. -/
+/-- **The space $[H^1_0(\Omega)]^N$** of vector fields $v = (v_1, \dots, v_N)$ with components
+$v_i \in H^1_0(\Omega)$. It is a Hilbert space with the norm
+$\|v\|^2 = \sum_i \|v_i\|^2_{H^1(\Omega)}$.
+
+The space is the $\ell^2$ product `PiLp 2` of $N$ copies of $H^1_0(\Omega)$, which is
+`SobolevEuclideanZero N 1 2 Ω`. -/
 abbrev SobolevEuclideanZeroVec : Type :=
   PiLp 2 fun _ : Fin N ↦ SobolevEuclideanZero N 1 2 Ω
 
@@ -162,8 +192,8 @@ namespace SobolevEuclideanZeroVec
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **The partial derivative `∂_j v_i`** of a vector field `v ∈ [H¹₀(Ω)]^N`, as a continuous
-linear map into `L²(Ω)`. -/
+/-- **The partial derivative** $v \mapsto \partial_j v_i$ on $[H^1_0(\Omega)]^N$, as a continuous
+linear map into $L^2(\Omega)$. -/
 def partialL (i j : Fin N) :
     SobolevEuclideanZeroVec N Ω →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
@@ -172,14 +202,15 @@ def partialL (i j : Fin N) :
     ((SobolevEuclideanZero N 1 2 Ω).subtypeL.comp
       (PiLp.proj 2 (fun _ : Fin N ↦ SobolevEuclideanZero N 1 2 Ω) i))
 
-/-- `partialL i j v = ∂_j v_i`. -/
+/-- The value of `SobolevEuclideanZeroVec.partialL i j` at $v$ is the weak partial derivative
+$\partial_j v_i$ of the component $v_i$. -/
 @[simp]
 theorem partialL_apply (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) :
     partialL i j v
       = SobolevMultiIndex.weakDeriv (v i : SobolevEuclidean N 1 2 Ω) (MultiIndexLE.single j) :=
   rfl
 
-/-- `‖∂_j v_i‖_{L²} ≤ ‖v_i‖_{H¹} ≤ ‖v‖`. -/
+/-- For $v \in [H^1_0(\Omega)]^N$, $\|\partial_j v_i\|_{L^2(\Omega)} \le \|v\|$. -/
 theorem norm_partialL_apply_le (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) :
     ‖partialL i j v‖ ≤ ‖v‖ := by
   rw [partialL_apply]
@@ -187,24 +218,26 @@ theorem norm_partialL_apply_le (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) 
   rw [Submodule.norm_coe]
   exact PiLp.norm_apply_le v i
 
-/-- **The linearized strain `ε(v)_{ij} = ½ (∂_j v_i + ∂_i v_j)`** of a vector field
-`v ∈ [H¹₀(Ω)]^N` ([han2009theoretical] (8.5.2)), as a continuous linear map into `L²(Ω)`. -/
+/-- **The linearized strain** $\varepsilon(v)_{ij} = \frac12 (\partial_j v_i + \partial_i v_j)$ of a
+vector field $v \in [H^1_0(\Omega)]^N$, as a continuous linear map into $L^2(\Omega)$. This is
+(8.5.2) of [han2009theoretical]. -/
 def strainL (i j : Fin N) :
     SobolevEuclideanZeroVec N Ω →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   (1 / 2 : ℝ) • (partialL i j + partialL j i)
 
-/-- `strainL i j v = ½ (∂_j v_i + ∂_i v_j)`. -/
+/-- The strain is $\varepsilon(v)_{ij} = \frac12 (\partial_j v_i + \partial_i v_j)$. -/
 theorem strainL_apply (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) :
     strainL i j v = (1 / 2 : ℝ) • (partialL i j v + partialL j i v) :=
   rfl
 
-/-- The strain is symmetric: `ε(v)_{ij} = ε(v)_{ji}`. -/
+/-- The strain is symmetric: $\varepsilon(v)_{ij} = \varepsilon(v)_{ji}$, as an identity of
+continuous linear maps. -/
 theorem strainL_symm (i j : Fin N) : (strainL i j : SobolevEuclideanZeroVec N Ω →L[ℝ] _)
       = strainL j i := by
   rw [strainL, strainL, add_comm]
 
-/-- `‖ε(v)_{ij}‖_{L²} ≤ ‖v‖`. -/
+/-- For $v \in [H^1_0(\Omega)]^N$, $\|\varepsilon(v)_{ij}\|_{L^2(\Omega)} \le \|v\|$. -/
 theorem norm_strainL_apply_le (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) :
     ‖strainL i j v‖ ≤ ‖v‖ := by
   rw [strainL_apply, norm_smul, Real.norm_eq_abs, abs_of_pos (by norm_num : (0 : ℝ) < 1 / 2)]
@@ -216,7 +249,7 @@ theorem norm_strainL_apply_le (i j : Fin N) (v : SobolevEuclideanZeroVec N Ω) :
         · exact norm_partialL_apply_le j i v
     _ = ‖v‖ := by ring
 
-/-- The operator norm of the strain is at most one. -/
+/-- The operator norm of the strain $v \mapsto \varepsilon(v)_{ij}$ is at most $1$. -/
 theorem norm_strainL_le (i j : Fin N) : ‖(strainL i j : SobolevEuclideanZeroVec N Ω →L[ℝ] _)‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v ↦ by
     rw [one_mul]
@@ -224,11 +257,17 @@ theorem norm_strainL_le (i j : Fin N) : ‖(strainL i j : SobolevEuclideanZeroVe
 
 /-! ### Korn's identity and Korn's first inequality -/
 
-/-- **Korn's identity on `[H¹₀(Ω)]^N`**: `∫_Ω |ε(v)|² = ½ ∫_Ω |∇v|² + ½ ∫_Ω (div v)²`, that is
-`∑ᵢⱼ ‖ε(v)_{ij}‖² = ½ ∑ᵢⱼ ‖∂_j v_i‖² + ½ ‖∑ᵢ ∂_i v_i‖²` in `L²(Ω)`. Expanding
-`‖½ (∂_j v_i + ∂_i v_j)‖²` gives `¼ (‖∂_j v_i‖² + ‖∂_i v_j‖²) + ½ ⟪∂_j v_i, ∂_i v_j⟫`, and
-`⟪∂_j v_i, ∂_i v_j⟫ = ⟪∂_i v_i, ∂_j v_j⟫` on `H¹₀(Ω)`
-(`SobolevEuclideanZero.inner_weakDeriv_single_comm`), whose double sum is `‖∑ᵢ ∂_i v_i‖²`. -/
+/-- **Korn's identity on $[H^1_0(\Omega)]^N$.** For $v \in [H^1_0(\Omega)]^N$,
+$$\int_\Omega |\varepsilon(v)|^2 = \frac12 \int_\Omega |\nabla v|^2 + \frac12 \int_\Omega
+  (\operatorname{div} v)^2,$$
+that is, $\sum_{i,j} \|\varepsilon(v)_{ij}\|^2 = \frac12 \sum_{i,j} \|\partial_j v_i\|^2 +
+\frac12 \|\sum_i \partial_i v_i\|^2$, with norms in $L^2(\Omega)$.
+
+Expanding $\|\frac12 (\partial_j v_i + \partial_i v_j)\|^2$ gives $\frac14 (\|\partial_j
+v_i\|^2 + \|\partial_i v_j\|^2) + \frac12 (\partial_j v_i, \partial_i v_j)$. On $H^1_0(\Omega)$,
+$(\partial_j v_i, \partial_i v_j) = (\partial_i v_i, \partial_j v_j)$
+(`SobolevEuclideanZero.inner_weakDeriv_single_comm`), and the double sum of these terms is
+$\|\sum_i \partial_i v_i\|^2$. -/
 theorem sum_norm_strainL_sq_eq (v : SobolevEuclideanZeroVec N Ω) :
     ∑ i, ∑ j, ‖strainL i j v‖ ^ 2
       = (1 / 2 : ℝ) * ∑ i, ∑ j, ‖partialL i j v‖ ^ 2
@@ -270,16 +309,21 @@ theorem sum_norm_strainL_sq_eq (v : SobolevEuclideanZeroVec N Ω) :
   rw [hS, hP] at key
   exact key
 
-/-- **Korn's first inequality on `[H¹₀(Ω)]^N`**: `½ ∫_Ω |∇v|² ≤ ∫_Ω |ε(v)|²`, that is
-`½ ∑ᵢⱼ ‖∂_j v_i‖² ≤ ∑ᵢⱼ ‖ε(v)_{ij}‖²`, the term `½ ‖div v‖²` of Korn's identity being
-nonnegative. -/
+/-- **Korn's first inequality on $[H^1_0(\Omega)]^N$.** For $v \in [H^1_0(\Omega)]^N$,
+$$\frac12 \int_\Omega |\nabla v|^2 \le \int_\Omega |\varepsilon(v)|^2,$$
+that is, $\frac12 \sum_{i,j} \|\partial_j v_i\|^2 \le \sum_{i,j} \|\varepsilon(v)_{ij}\|^2$,
+with norms in $L^2(\Omega)$.
+
+The inequality follows from Korn's identity `SobolevEuclideanZeroVec.sum_norm_strainL_sq_eq`,
+because the term $\frac12 \|\operatorname{div} v\|^2$ is nonnegative. -/
 theorem korn_first (v : SobolevEuclideanZeroVec N Ω) :
     (1 / 2 : ℝ) * ∑ i, ∑ j, ‖partialL i j v‖ ^ 2 ≤ ∑ i, ∑ j, ‖strainL i j v‖ ^ 2 := by
   rw [sum_norm_strainL_sq_eq]
   have : 0 ≤ (1 / 2 : ℝ) * ‖∑ i, partialL i i v‖ ^ 2 := by positivity
   linarith
 
-/-- The squared norm of `[H¹₀(Ω)]^N` is the sum of the squared `H¹` norms of the components. -/
+/-- The squared norm of $v \in [H^1_0(\Omega)]^N$ is the sum of the squared $H^1(\Omega)$ norms of
+its components: $\|v\|^2 = \sum_i \|v_i\|^2_{H^1(\Omega)}$. -/
 theorem norm_sq_eq (v : SobolevEuclideanZeroVec N Ω) :
     ‖v‖ ^ 2 = ∑ i, ‖(v i : SobolevEuclidean N 1 2 Ω)‖ ^ 2 := by
   rw [PiLp.norm_sq_eq_of_L2]
@@ -293,9 +337,11 @@ namespace SobolevEuclideanZeroVec
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **Poincaré's inequality on `[H¹₀(Ω)]^N`**: for `Ω ⊆ B(0, R)`,
-`‖v‖² ≤ (1 + (2R)²) ∑ᵢⱼ ‖∂_j v_i‖²`, from `SobolevEuclideanZero.norm_le_gradNorm` on each
-component. -/
+/-- **Poincaré's inequality on $[H^1_0(\Omega)]^N$.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be
+open, let $R \ge 0$ and $\Omega \subseteq B(0, R)$. Then for $v \in [H^1_0(\Omega)]^{d+1}$,
+$$\|v\|^2 \le (1 + (2R)^2) \sum_{i,j} \|\partial_j v_i\|^2_{L^2(\Omega)}.$$
+
+The proof applies `SobolevEuclideanZero.norm_le_gradNorm` at $p = 2$ to each component. -/
 theorem norm_sq_le_sum_norm_partialL_sq {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (v : SobolevEuclideanZeroVec (d + 1) Ω) :
@@ -312,10 +358,13 @@ theorem norm_sq_le_sum_norm_partialL_sq {R : ℝ} (hR : 0 ≤ R)
   rw [← hu, hsum]
   exact SobolevEuclideanZero.norm_sq_le_sum_norm_weakDeriv_single_sq hR hΩ u
 
-/-- **Korn's first inequality with Poincaré's constant**: for `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}` and
-`v ∈ [H¹₀(Ω)]^{d+1}`, `‖v‖² ≤ 2 (1 + (2R)²) ∑ᵢⱼ ‖ε(v)_{ij}‖²`; so `∫_Ω |ε(v)|²` is an equivalent
-squared norm on `[H¹₀(Ω)]^{d+1}`, and any bilinear form bounded below by `α ∫_Ω |ε(v)|²` is
-`V`-elliptic there with constant `α / (2 (1 + (2R)²))`. -/
+/-- **Korn's first inequality with Poincaré's constant.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be
+open, let $R \ge 0$ and $\Omega \subseteq B(0, R)$. Then for $v \in [H^1_0(\Omega)]^{d+1}$,
+$$\|v\|^2 \le 2 (1 + (2R)^2) \sum_{i,j} \|\varepsilon(v)_{ij}\|^2_{L^2(\Omega)}.$$
+
+So $\int_\Omega |\varepsilon(v)|^2$ is an equivalent squared norm on $[H^1_0(\Omega)]^{d+1}$. A
+bilinear form bounded below by $\alpha \int_\Omega |\varepsilon(v)|^2$ is therefore $V$-elliptic
+on this space, with constant $\alpha / (2 (1 + (2R)^2))$. -/
 theorem norm_sq_le_sum_norm_strainL_sq {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (v : SobolevEuclideanZeroVec (d + 1) Ω) :

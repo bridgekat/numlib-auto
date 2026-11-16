@@ -16,79 +16,97 @@ import Numlib.LinearAlgebra.Matrix.RealSchur
 /-!
 # Factorizations of symmetric indefinite matrices
 
-Factorization specifications for symmetric indefinite matrices ([golub2013matrix] §4.4;
-[higham2002accuracy] Ch. 11): the Aasen factorization `P A Pᵀ = L T Lᵀ` with `T` tridiagonal
-(`Matrix.IsAasen`) and the block `L D Lᵀ` factorization with `1 × 1` and `2 × 2` pivots
-(`Matrix.IsBlockLDL`, `Matrix.IsPivotBlockDiagonal`), with their existence theorems and solve
-chains.
+This file states and proves the existence of two factorizations of a symmetric matrix $A$ of order
+$n$ that need not be positive definite, following [golub2013matrix] §4.4 and [higham2002accuracy]
+Chapter 11. Let $P$ be a permutation matrix. The **block $L D L^T$ factorization** is
+$P A P^T = L D L^T$, where $L$ is unit lower triangular and $D$ is block diagonal with $1 \times 1$
+and $2 \times 2$ pivot blocks. The **Aasen factorization** is $P A P^T = L T L^T$, where $L$ is unit
+lower triangular with first column $e_1$ and $T$ is symmetric tridiagonal.
+
+Every symmetric matrix over a field has a block $L D L^T$ factorization, by bordering one
+nonsingular pivot block of order one or two at a time. With the Bunch–Parlett pivot rule and a
+parameter $0 < \alpha < 1$, the multipliers satisfy $|\ell_{ij}| \le \max\{1/\alpha, 1/(1 -
+\alpha)\}$. Every symmetric matrix over a linearly ordered field has an Aasen factorization with
+$|\ell_{ij}| \le 1$, by the Parlett–Reid process. Each factorization gives a solve chain for
+$A x = b$.
 
 ## Main definitions
 
-* `Matrix.IsPivotBlockDiagonal D`: `D` is symmetric and block diagonal with `1 × 1` and `2 × 2`
-  diagonal blocks, on `Fin n`: a symmetric tridiagonal matrix no two consecutive subdiagonal
-  entries of which are nonzero; equivalently symmetric and upper quasi-triangular
-  (`Matrix.isPivotBlockDiagonal_iff`), the shape of the real Schur form.
-* `Matrix.IsBlockLDL A L D`: `A = L D Lᵀ` with `L` unit lower triangular carrying the identity in
-  each `2 × 2` diagonal block and `D` pivot-block-diagonal.
-* `Matrix.IsAasen A L T`: `A = L T Lᵀ` with `L` unit lower triangular of first column `e₁` and
-  `T` symmetric tridiagonal.
+* `Matrix.IsPivotBlockDiagonal`: $D$ is symmetric and block diagonal with $1 \times 1$ and
+  $2 \times 2$ diagonal blocks. On `Fin n` this means that $D$ is symmetric tridiagonal and no two
+  consecutive subdiagonal entries are nonzero.
+* `Matrix.IsBlockLDL`: $A = L D L^T$, with $L$ unit lower triangular and equal to the identity on
+  each $2 \times 2$ diagonal block, and $D$ pivot block diagonal.
+* `Matrix.IsAasen`: $A = L T L^T$, with $L$ unit lower triangular with first column $e_1$, and $T$
+  symmetric tridiagonal.
 
 ## Main results
 
-* `Matrix.exists_principal_pivot_ne_zero`: a nonzero symmetric matrix has a nonsingular `1 × 1` or
-  `2 × 2` principal pivot, the step of the existence proof of (4.4.2).
-* `Matrix.exists_perm_isBlockLDL`: [golub2013matrix] (4.4.2), every symmetric matrix has a
-  symmetric permutation with a block `L D Lᵀ` factorization, by bordering one pivot block at a
-  time (`Matrix.isBlockLDL_pivot`, `Matrix.exists_perm_isBlockLDL_of_pivot`, which carries a
-  property of the multipliers through the induction);
-  `Matrix.exists_perm_isBlockLDL_abs_le`: with the Bunch–Parlett pivot rule the multipliers are
-  bounded by `max (1/α) (1/(1 - α))` (not by `1`, as the book prints).
-* `Matrix.exists_perm_isAasen`: [golub2013matrix] (4.4.1), the Aasen factorization with
-  `|l_ij| ≤ 1`, by the Parlett–Reid process on the trailing block.
-* `Matrix.IsBlockLDL.solve`, `Matrix.IsAasen.solve`: the solve chains `L z = P b`, `D w = z` (or
-  `T w = z`), `Lᵀ y = w`, `x = Pᵀ y`, both instances of
-  `Matrix.mulVec_comp_symm_eq_of_mul_mul_transpose_eq` for an arbitrary middle factor.
-* `Matrix.IsAasen.isUpperHessenberg_mul_transpose`, `Matrix.IsAasen.eq_mul_mul_transpose`:
-  `A = L H` with `H = T Lᵀ` upper Hessenberg, [golub2013matrix] (4.4.5).
+* `Matrix.isPivotBlockDiagonal_iff`: a matrix is pivot block diagonal if and only if it is symmetric
+  and upper quasi-triangular, the shape of the real Schur form.
+* `Matrix.exists_principal_pivot_ne_zero`: a nonzero symmetric matrix has a nonsingular principal
+  submatrix of order one or two.
+* `Matrix.exists_perm_isBlockLDL`: every symmetric matrix over a field has a block $L D L^T$
+  factorization $P A P^T = L D L^T$, as in (4.4.2) of [golub2013matrix].
+* `Matrix.exists_perm_isBlockLDL_abs_le`: with the Bunch–Parlett pivot rule, the multipliers are
+  bounded by $\max\{1/\alpha, 1/(1 - \alpha)\}$, not by $1$ as [golub2013matrix] prints.
+* `Matrix.exists_perm_isAasen`: every symmetric matrix over a linearly ordered field has an Aasen
+  factorization $P A P^T = L T L^T$ with $|\ell_{ij}| \le 1$, as in (4.4.1) of [golub2013matrix].
+* `Matrix.IsBlockLDL.solve`, `Matrix.IsAasen.solve`: the solve chains $L z = P b$, $D w = z$ (or
+  $T w = z$), $L^T y = w$, $x = P^T y$ give $A x = b$.
+* `Matrix.IsAasen.isUpperHessenberg_mul_transpose`, `Matrix.IsAasen.eq_mul_mul_transpose`: $A = L H$
+  with $H = T L^T$ upper Hessenberg, as in (4.4.5) of [golub2013matrix].
+
+## Proof outline
+
+The block $L D L^T$ factorization exists by strong induction on the order. A nonzero symmetric
+matrix has a nonsingular principal pivot $E$ of order one or two. A symmetric permutation moves it
+to the front, so that the matrix is $\begin{bmatrix} E & C^T \\ C & B \end{bmatrix}$. The Schur
+complement $B - C E^{-1} C^T$ is symmetric and has a factorization by the induction hypothesis, and
+bordering gives a factorization of the whole matrix. The multiplier bounds are carried through the
+same induction as a property of the entries of $L$.
 
 ## Implementation notes
 
-These are specifications, not algorithms, in the style of `Matrix.IsLU` and `Matrix.IsLDM`
-(`Numlib/LinearAlgebra/Matrix/LU`). The permutation is a `σ : Equiv.Perm (Fin n)` acting as
-`A.submatrix σ σ`, which is `P A Pᵀ` for `P = σ.permMatrix`. The `D` of a block `L D Lᵀ`
-factorization is described on `Fin n` by its entries rather than by a sigma-typed block
-structure, so that `L D Lᵀ` stays an ordinary product. What is numerical about the symmetric
-indefinite factorizations — the Bunch–Parlett element growth, the Stewart–Todd bound — is in
-`Numlib/Direct/SymmetricIndefinite`; the equilibrium (saddle point) matrix of §4.4.5 is
-`Matrix.saddleMatrix` of `Numlib/LinearAlgebra/Matrix/SchurComplement`.
-
-## References
-
-* [golub2013matrix] §4.4.
-* [higham2002accuracy] Ch. 11.
+* These are specifications, not algorithms, in the style of `Matrix.IsLU` and `Matrix.IsLDM` in
+  `Numlib.LinearAlgebra.Matrix.LU`.
+* The permutation is a `σ : Equiv.Perm (Fin n)` that acts as `A.submatrix σ σ`. This is $P A P^T$
+  for the permutation matrix $P$ = `σ.permMatrix`.
+* The factor $D$ of a block $L D L^T$ factorization is described on `Fin n` by conditions on its
+  entries, not by a block structure indexed by a sigma type, so that $L D L^T$ is an ordinary matrix
+  product.
+* The numerical properties of these factorizations, such as the element growth of the Bunch–Parlett
+  method and the Stewart–Todd bound, are in `Numlib.Direct.SymmetricIndefinite`. The equilibrium
+  (saddle point) matrix of [golub2013matrix] §4.4.5 is `Matrix.saddleMatrix` in
+  `Numlib.LinearAlgebra.Matrix.SchurComplement`.
 -/
 
 namespace Matrix
 
 variable {n : ℕ} {K : Type*}
 
-/-- **Block diagonal with `1 × 1` and `2 × 2` pivot blocks** ([golub2013matrix] (4.4.2): "`D` is a
-direct sum of 1-by-1 and 2-by-2 pivot blocks"): `D` is symmetric and tridiagonal, and no two
-consecutive subdiagonal entries are nonzero, so that each nonzero subdiagonal entry `D (i+1) i`
-belongs to a `2 × 2` block on the indices `i, i + 1`. -/
+/-- A square matrix $D$ on `Fin n` is **pivot block diagonal** if it is block diagonal with
+$1 \times 1$ and $2 \times 2$ diagonal blocks. In entries: $D$ is symmetric and tridiagonal, and
+for $i + 2 < n$,
+$$d_{i+1,i} \neq 0 \implies d_{i+2,i+1} = 0.$$
+So each nonzero subdiagonal entry $d_{i+1,i}$ belongs to a $2 \times 2$ block on the indices
+$i, i + 1$. This is the shape of $D$ in (4.4.2) of [golub2013matrix], where "$D$ is a direct sum
+of 1-by-1 and 2-by-2 pivot blocks". -/
 structure IsPivotBlockDiagonal [Zero K] (D : Matrix (Fin n) (Fin n) K) : Prop where
-  /-- The block diagonal matrix is symmetric. -/
+  /-- The matrix $D$ is symmetric. -/
   isSymm : D.IsSymm
-  /-- The block diagonal matrix is tridiagonal. -/
+  /-- The matrix $D$ is tridiagonal. -/
   isTridiagonal : D.IsTridiagonal
-  /-- Two `2 × 2` blocks do not overlap. -/
+  /-- Two $2 \times 2$ blocks do not overlap: if $i + 2 < n$ and $d_{i+1,i} \neq 0$, then
+  $d_{i+2,i+1} = 0$. -/
   apply_eq_zero : ∀ (i : ℕ) (h : i + 2 < n), D ⟨i + 1, by omega⟩ ⟨i, by omega⟩ ≠ 0 →
     D ⟨i + 2, h⟩ ⟨i + 1, by omega⟩ = 0
 
-/-- **Pivot block diagonal is symmetric quasi-triangular**: a symmetric matrix is block diagonal
-with `1 × 1` and `2 × 2` blocks exactly when it is upper quasi-triangular — the shape of the real
-Schur form, with the no-overlap condition as the `Fin` characterization's
-(`Matrix.isQuasiUpperTriangular_iff_fin`) "no two consecutive nonzero subdiagonal entries". -/
+/-- A square matrix $D$ on `Fin n` is pivot block diagonal if and only if $D$ is symmetric and upper
+quasi-triangular, which is the shape of the real Schur form.
+
+The condition that two blocks do not overlap is the condition "no two consecutive nonzero
+subdiagonal entries" of `Matrix.isQuasiUpperTriangular_iff_fin`. -/
 theorem isPivotBlockDiagonal_iff [Zero K] {D : Matrix (Fin n) (Fin n) K} :
     D.IsPivotBlockDiagonal ↔ D.IsSymm ∧ D.IsQuasiUpperTriangular := by
   rw [isQuasiUpperTriangular_iff_fin]
@@ -110,9 +128,12 @@ theorem IsPivotBlockDiagonal.isQuasiUpperTriangular [Zero K] {D : Matrix (Fin n)
     (h : D.IsPivotBlockDiagonal) : D.IsQuasiUpperTriangular :=
   (isPivotBlockDiagonal_iff.1 h).2
 
-/-- **The solve chain of a symmetric factorization** `P A Pᵀ = L M Lᵀ`, whatever the middle
-factor `M`: with `P` the permutation matrix of `σ`, solving `L z = P b`, `M w = z`, `Lᵀ y = w` and
-setting `x = Pᵀ y` solves `A x = b`. -/
+/-- **The solve chain of a symmetric factorization.** Let $A$, $L$ and $M$ be square matrices of
+order $n$ over a commutative semiring, let $P$ be the permutation matrix of a permutation
+$\sigma$, and assume $L M L^T = P A P^T$. If $L z = P b$, $M w = z$ and $L^T y = w$, then
+$x = P^T y$ solves $A x = b$.
+
+The middle factor $M$ is arbitrary. The vector $P b$ is `b ∘ σ`, and $P^T y$ is `y ∘ σ.symm`. -/
 theorem mulVec_comp_symm_eq_of_mul_mul_transpose_eq [CommSemiring K]
     {A L M : Matrix (Fin n) (Fin n) K} {σ : Equiv.Perm (Fin n)}
     (h : L * M * Lᵀ = A.submatrix σ σ) {b z w y : Fin n → K} (hz : L *ᵥ z = b ∘ σ)
@@ -123,77 +144,98 @@ theorem mulVec_comp_symm_eq_of_mul_mul_transpose_eq [CommSemiring K]
   funext i
   simpa using congrFun h1 (σ.symm i)
 
-/-- **The block `L D Lᵀ` factorization** ([golub2013matrix] (4.4.2)): `L` unit lower triangular,
-`D` block diagonal with `1 × 1` and `2 × 2` pivots, `L` the identity on each `2 × 2` diagonal
-block, and `L D Lᵀ = A`. -/
+/-- The **block $L D L^T$ factorization** $A = L D L^T$ of a square matrix $A$ on `Fin n`. Here $L$
+is unit lower triangular, $D$ is pivot block diagonal (block diagonal with $1 \times 1$ and
+$2 \times 2$ pivot blocks), and $L$ is the identity on each $2 \times 2$ diagonal block:
+$\ell_{i+1,i} = 0$ whenever $d_{i+1,i} \neq 0$. This is the factorization (4.4.2) of
+[golub2013matrix]. -/
 structure IsBlockLDL [Semiring K] (A L D : Matrix (Fin n) (Fin n) K) : Prop where
-  /-- The lower factor is unit lower triangular. -/
+  /-- The factor $L$ is unit lower triangular. -/
   isUnitLowerTriangular : L.IsUnitLowerTriangular
-  /-- The middle factor is block diagonal with `1 × 1` and `2 × 2` blocks. -/
+  /-- The factor $D$ is block diagonal with $1 \times 1$ and $2 \times 2$ blocks. -/
   isPivotBlockDiagonal : D.IsPivotBlockDiagonal
-  /-- The lower factor is the identity on each `2 × 2` diagonal block. -/
+  /-- The factor $L$ is the identity on each $2 \times 2$ diagonal block: if $j + 1 = i$ and
+  $d_{ij} \neq 0$, then $\ell_{ij} = 0$. -/
   block : ∀ i j : Fin n, (j : ℕ) + 1 = i → D i j ≠ 0 → L i j = 0
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $L D L^T = A$. -/
   mul_eq : L * D * Lᵀ = A
 
-/-- A matrix with a block `L D Lᵀ` factorization is symmetric. -/
+/-- Over a commutative semiring, a matrix with a block $L D L^T$ factorization is symmetric. -/
 theorem IsBlockLDL.isSymm [CommSemiring K] {A L D : Matrix (Fin n) (Fin n) K}
     (h : IsBlockLDL A L D) : A.IsSymm := by
   rw [IsSymm, ← h.mul_eq, transpose_mul, transpose_mul, transpose_transpose,
     h.isPivotBlockDiagonal.isSymm.eq, Matrix.mul_assoc]
 
-/-- **The solve chain of the block `L D Lᵀ` factorization** ([golub2013matrix], after (4.4.2)):
-if `P A Pᵀ = L D Lᵀ` with `P` the permutation matrix of `σ`, then solving `L z = P b`, `D w = z`,
-`Lᵀ y = w` and setting `x = Pᵀ y` solves `A x = b`. -/
+/-- **The solve chain of the block $L D L^T$ factorization.** Let $A$ be a square matrix of order
+$n$ over a commutative semiring, let $P$ be the permutation matrix of a permutation $\sigma$,
+and let $P A P^T = L D L^T$ be a block $L D L^T$ factorization. If $L z = P b$, $D w = z$ and
+$L^T y = w$, then $x = P^T y$ solves $A x = b$. This is the solution procedure after (4.4.2) in
+[golub2013matrix].
+
+The vector $P b$ is `b ∘ σ`, and $P^T y$ is `y ∘ σ.symm`. The proof specializes
+`Matrix.mulVec_comp_symm_eq_of_mul_mul_transpose_eq`. -/
 theorem IsBlockLDL.solve [CommSemiring K] {A L D : Matrix (Fin n) (Fin n) K}
     {σ : Equiv.Perm (Fin n)} (h : IsBlockLDL (A.submatrix σ σ) L D) {b z w y : Fin n → K}
     (hz : L *ᵥ z = b ∘ σ) (hw : D *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) :
     A *ᵥ (y ∘ σ.symm) = b :=
   mulVec_comp_symm_eq_of_mul_mul_transpose_eq h.mul_eq hz hw hy
 
-/-- **The Aasen factorization** ([golub2013matrix] (4.4.1), §4.4.2): `A = L T Lᵀ` with `L` unit
-lower triangular whose first column is `e₁` (the book's `L(:, 1) = e₁`) and `T` symmetric
-tridiagonal. -/
+/-- The **Aasen factorization** $A = L T L^T$ of a square matrix $A$ on `Fin n`. Here $L$ is unit
+lower triangular with first column $e_1$, and $T$ is symmetric tridiagonal. This is the
+factorization (4.4.1) of [golub2013matrix], §4.4.2, where the condition on $L$ is written
+$L(:, 1) = e_1$. -/
 structure IsAasen [Semiring K] (A L T : Matrix (Fin n) (Fin n) K) : Prop where
-  /-- The lower factor is unit lower triangular. -/
+  /-- The factor $L$ is unit lower triangular. -/
   isUnitLowerTriangular : L.IsUnitLowerTriangular
-  /-- The first column of the lower factor is `e₁`. -/
+  /-- The first column of $L$ is $e_1$: $\ell_{i1} = 0$ for every row $i$ other than the first. -/
   col_zero : ∀ (i : Fin n) (h : 0 < n), i ≠ ⟨0, h⟩ → L i ⟨0, h⟩ = 0
-  /-- The middle factor is symmetric. -/
+  /-- The factor $T$ is symmetric. -/
   isSymm : T.IsSymm
-  /-- The middle factor is tridiagonal. -/
+  /-- The factor $T$ is tridiagonal. -/
   isTridiagonal : T.IsTridiagonal
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $L T L^T = A$. -/
   mul_eq : L * T * Lᵀ = A
 
-/-- [golub2013matrix] (4.4.5): if `A = L T Lᵀ` is an Aasen factorization, then `H = T Lᵀ` is
-upper Hessenberg; with `Matrix.IsAasen.eq_mul_mul_transpose` (`A = L H`) the columns of `A` are
-the combinations `A(:, j) = ∑_{k ≤ j+1} L(:, k) h_kj` from which Aasen's method computes `L`
-column by column. -/
+/-- Let $A = L T L^T$ be an Aasen factorization over a commutative ring. Then $H = T L^T$ is upper
+Hessenberg. This is (4.4.5) of [golub2013matrix].
+
+With `Matrix.IsAasen.eq_mul_mul_transpose`, which gives $A = L H$, the columns of $A$ are the
+combinations
+$$A(:, j) = \sum_{k \le j + 1} L(:, k)\, h_{kj},$$
+from which Aasen's method computes $L$ column by column. -/
 theorem IsAasen.isUpperHessenberg_mul_transpose [CommRing K] {A L T : Matrix (Fin n) (Fin n) K}
     (h : IsAasen A L T) : (T * Lᵀ).IsUpperHessenberg :=
   h.isTridiagonal.isUpperHessenberg.mul_isUpperTriangular
     h.isUnitLowerTriangular.isLowerTriangular.transpose_isUpperTriangular
 
-/-- [golub2013matrix] (4.4.5): an Aasen factorization `A = L T Lᵀ` is `A = L H` with
-`H = T Lᵀ`. -/
+/-- An Aasen factorization $A = L T L^T$ is the factorization $A = L H$ with $H = T L^T$. This is
+(4.4.5) of [golub2013matrix]. -/
 theorem IsAasen.eq_mul_mul_transpose [Semiring K] {A L T : Matrix (Fin n) (Fin n) K}
     (h : IsAasen A L T) : A = L * (T * Lᵀ) := by
   rw [← h.mul_eq, Matrix.mul_assoc]
 
-/-- **The solve chain of the Aasen factorization** ([golub2013matrix], after (4.4.2)): if
-`P A Pᵀ = L T Lᵀ`, then `L z = P b`, `T w = z`, `Lᵀ y = w` and `x = Pᵀ y` give `A x = b`. -/
+/-- **The solve chain of the Aasen factorization.** Let $A$ be a square matrix of order $n$ over a
+commutative semiring, let $P$ be the permutation matrix of a permutation $\sigma$, and let
+$P A P^T = L T L^T$ be an Aasen factorization. If $L z = P b$, $T w = z$ and $L^T y = w$, then
+$x = P^T y$ solves $A x = b$. This is the solution procedure after (4.4.2) in [golub2013matrix].
+
+The vector $P b$ is `b ∘ σ`, and $P^T y$ is `y ∘ σ.symm`. The proof specializes
+`Matrix.mulVec_comp_symm_eq_of_mul_mul_transpose_eq`. -/
 theorem IsAasen.solve [CommSemiring K] {A L T : Matrix (Fin n) (Fin n) K}
     {σ : Equiv.Perm (Fin n)} (h : IsAasen (A.submatrix σ σ) L T) {b z w y : Fin n → K}
     (hz : L *ᵥ z = b ∘ σ) (hw : T *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) :
     A *ᵥ (y ∘ σ.symm) = b :=
   mulVec_comp_symm_eq_of_mul_mul_transpose_eq h.mul_eq hz hw hy
 
-/-- **A nonzero symmetric matrix has a nonsingular principal pivot of order one or two**
-([golub2013matrix] §4.4.4, the step "if `A` is nonzero it is always possible to choose `s` and
-`P₁` so that `E` is nonsingular"): a nonzero diagonal entry, or a pair `i ≠ j` whose principal
-`2 × 2` minor is nonzero. If every diagonal entry vanishes, a nonzero `A i j`, `i ≠ j`, gives the
-minor `-A i j ^ 2`. -/
+/-- **A nonzero symmetric matrix has a nonsingular principal pivot of order one or two.** Let $A$ be
+a nonzero symmetric square matrix over a field. Then $A$ has a nonzero diagonal entry $a_{ii}$,
+or there are indices $i \neq j$ with
+$$a_{ii} a_{jj} - a_{ij} a_{ji} \neq 0.$$
+This is the step of [golub2013matrix] §4.4.4 that says: "if $A$ is nonzero it is always possible
+to choose $s$ and $P_1$ so that $E$ is nonsingular".
+
+The index type of $A$ is arbitrary. If every diagonal entry is zero, a nonzero entry $a_{ij}$
+with $i \neq j$ gives the minor $-a_{ij}^2 \neq 0$. -/
 theorem exists_principal_pivot_ne_zero {m : Type*} [Field K] {A : Matrix m m K} (hA : A.IsSymm)
     (hA0 : A ≠ 0) :
     (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 := by
@@ -214,26 +256,35 @@ section Bordering
 
 variable [Field K] {s m : ℕ}
 
-/-- The Schur complement `N₂₂ - N₂₁ N₁₁⁻¹ N₁₂` of the leading block of a two-block matrix. -/
+/-- The **Schur complement** $N_{22} - N_{21} N_{11}^{-1} N_{12}$ of the leading block $N_{11}$ of a
+matrix $N$ with two block rows and two block columns. -/
 noncomputable def pivotSchur (N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ Fin m) K) :
     Matrix (Fin m) (Fin m) K :=
   N.toBlocks₂₂ - N.toBlocks₂₁ * N.toBlocks₁₁⁻¹ * N.toBlocks₁₂
 
-/-- The lower factor bordered by one pivot block: `[I 0; C E⁻¹ L']`. -/
+/-- The lower factor bordered by one pivot block: $\begin{bmatrix} I & 0 \\ C E^{-1} & L'
+\end{bmatrix}$, where $E = N_{11}$ and $C = N_{21}$, with the indices `Fin s ⊕ Fin m` read as
+`Fin (s + m)`. -/
 noncomputable def pivotLower (N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ Fin m) K)
     (L' : Matrix (Fin m) (Fin m) K) : Matrix (Fin (s + m)) (Fin (s + m)) K :=
   reindex finSumFinEquiv finSumFinEquiv (fromBlocks 1 0 (N.toBlocks₂₁ * N.toBlocks₁₁⁻¹) L')
 
-/-- The block diagonal factor bordered by one pivot block: `[E 0; 0 D']`. -/
+/-- The block diagonal factor bordered by one pivot block:
+$\begin{bmatrix} E & 0 \\ 0 & D' \end{bmatrix}$, where $E = N_{11}$, with the indices
+`Fin s ⊕ Fin m` read as `Fin (s + m)`. -/
 noncomputable def pivotDiag (N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ Fin m) K)
     (D' : Matrix (Fin m) (Fin m) K) : Matrix (Fin (s + m)) (Fin (s + m)) K :=
   reindex finSumFinEquiv finSumFinEquiv (fromBlocks N.toBlocks₁₁ 0 0 D')
 
-/-- **The bordering step of the block `L D Lᵀ` factorization** ([golub2013matrix] §4.4.4): if
-`N = [E Cᵀ; C B]` is symmetric with a nonsingular pivot block `E` of order `s ≤ 2`, and the Schur
-complement `B - C E⁻¹ Cᵀ` has the block factorization `L' D' L'ᵀ`, then
-`[I 0; C E⁻¹ L'] [E 0; 0 D'] [I 0; C E⁻¹ L']ᵀ` is a block `L D Lᵀ` factorization of `N`, read on
-`Fin (s + m)`. -/
+/-- **The bordering step of the block $L D L^T$ factorization.** Let $N = \begin{bmatrix} E & C^T \\
+C & B \end{bmatrix}$ be symmetric, with a nonsingular pivot block $E$ of order $s \le 2$. If the
+Schur complement $B - C E^{-1} C^T$ has the block $L D L^T$ factorization $L' D' L'^T$, then
+$$N = \begin{bmatrix} I & 0 \\ C E^{-1} & L' \end{bmatrix} \begin{bmatrix} E & 0 \\ 0 & D'
+  \end{bmatrix} \begin{bmatrix} I & 0 \\ C E^{-1} & L' \end{bmatrix}^T$$
+is a block $L D L^T$ factorization of $N$. This is §4.4.4 of [golub2013matrix].
+
+The factorization is stated on `Fin (s + m)` through `finSumFinEquiv`. The two factors are
+`Matrix.pivotLower N L'` and `Matrix.pivotDiag N D'`. -/
 theorem isBlockLDL_pivot (hs : s ≤ 2) {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ Fin m) K}
     (hN : N.IsSymm) (hE : IsUnit N.toBlocks₁₁.det) {L' D' : Matrix (Fin m) (Fin m) K}
     (h : IsBlockLDL (pivotSchur N) L' D') :
@@ -354,7 +405,8 @@ section Existence
 
 variable [Field K]
 
-/-- The Schur complement of a pivot block of a symmetric matrix is symmetric. -/
+/-- The Schur complement `Matrix.pivotSchur N` of the leading block of a symmetric matrix $N$ is
+symmetric. -/
 theorem IsSymm.pivotSchur {s m : ℕ} {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ Fin m) K}
     (hN : N.IsSymm) : (pivotSchur N).IsSymm := by
   have hE' : N.toBlocks₁₁.IsSymm := IsSymm.ext fun i j => hN.apply (Sum.inl i) (Sum.inl j)
@@ -367,11 +419,14 @@ theorem IsSymm.pivotSchur {s m : ℕ} {N : Matrix (Fin s ⊕ Fin m) (Fin s ⊕ F
   rw [transpose_sub, transpose_mul, transpose_mul, hB.eq, hC,
     transpose_transpose, transpose_nonsing_inv, hE'.eq, Matrix.mul_assoc]
 
-/-- **One bordering step of the existence proof of the block `L D Lᵀ` factorization**, with a
-predicate `P` on the entries of the lower factor carried along: if the leading `s × s` block
-(`s ∈ {1, 2}`) of `A.submatrix τ τ` is nonsingular with multipliers `C E⁻¹` satisfying `P`, and
-every symmetric matrix of order `m` has a factorization whose lower factor satisfies `P`, so does
-`A`. -/
+/-- **One bordering step of the existence proof**, with a property $P$ of the entries of the lower
+factor. Let $P$ be a property of scalars with $P(0)$ and $P(1)$, let $s \le 2$, and let $A$ be a
+symmetric matrix of order $s + m$. Assume that, after a symmetric permutation $\tau$, the
+leading $s \times s$ block $E$ of $A$ is nonsingular and every entry of the multiplier matrix
+$C E^{-1}$ has the property $P$. Assume also that every symmetric matrix of order $m$ has, after
+a symmetric permutation, a block $L D L^T$ factorization whose factor $L$ has the property $P$
+in every entry. Then $A$ has, after a symmetric permutation, a block $L D L^T$ factorization
+whose factor $L$ has the property $P$ in every entry. -/
 theorem exists_isBlockLDL_step (P : K → Prop) (hP0 : P 0) (hP1 : P 1) {s m : ℕ} (hs : s ≤ 2)
     {A : Matrix (Fin (s + m)) (Fin (s + m)) K} (hA : A.IsSymm) (τ : Equiv.Perm (Fin (s + m)))
     (hE : IsUnit ((A.submatrix τ τ).submatrix finSumFinEquiv finSumFinEquiv).toBlocks₁₁.det)
@@ -414,7 +469,7 @@ theorem exists_isBlockLDL_step (P : K → Prop) (hP0 : P 0) (hP1 : P 1) {s m : �
     · rw [fromBlocks_apply₂₂]
       exact hL' a b
 
-/-- The trivial block `L D Lᵀ` factorization of the zero matrix. -/
+/-- The zero matrix has the block $L D L^T$ factorization $0 = I \cdot 0 \cdot I^T$. -/
 theorem isBlockLDL_zero {n : ℕ} : IsBlockLDL (0 : Matrix (Fin n) (Fin n) K) 1 0 where
   isUnitLowerTriangular := isUnitLowerTriangular_one
   isPivotBlockDiagonal :=
@@ -422,11 +477,21 @@ theorem isBlockLDL_zero {n : ℕ} : IsBlockLDL (0 : Matrix (Fin n) (Fin n) K) 1 
   block := fun _ _ _ h => absurd rfl h
   mul_eq := by simp
 
-/-- **The block `L D Lᵀ` factorization exists, with a pivot rule** ([golub2013matrix] §4.4.4):
-if every nonzero symmetric matrix admits a nonsingular `1 × 1` or `2 × 2` principal pivot whose
-multipliers satisfy `P`, then every symmetric matrix has a symmetric permutation with a block
-`L D Lᵀ` factorization whose lower factor satisfies `P` entrywise. Strong induction on the order,
-bordering one pivot block at a time (`Matrix.exists_isBlockLDL_step`). -/
+/-- **Existence of the block $L D L^T$ factorization under a pivot rule.** Let $P$ be a property of
+scalars with $P(0)$ and $P(1)$. Assume that every nonzero symmetric matrix $A$ on `Fin n`, for
+every $n$, has one of the following pivots:
+
+* an index $r$ with $a_{rr} \neq 0$ such that $P(a_{ir} / a_{rr})$ holds for all $i \neq r$;
+* indices $r \neq t$ with $\delta = a_{rr} a_{tt} - a_{rt} a_{tr} \neq 0$ such that, for all
+  $i \notin \{r, t\}$, both multipliers $(a_{ir} a_{tt} - a_{it} a_{tr}) / \delta$ and
+  $(a_{it} a_{rr} - a_{ir} a_{rt}) / \delta$ have the property $P$.
+
+Then for every symmetric matrix $A$ on `Fin n` there is a permutation $\sigma$ such that the
+matrix $(a_{\sigma(i)\sigma(j)})$ has a block $L D L^T$ factorization whose factor $L$ has the
+property $P$ in every entry. This is the construction of [golub2013matrix] §4.4.4.
+
+The proof is a strong induction on the order that borders one pivot block at a time with
+`Matrix.exists_isBlockLDL_step`. -/
 theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
     (hpiv : ∀ {n : ℕ} (A : Matrix (Fin n) (Fin n) K), A.IsSymm → A ≠ 0 →
       (∃ r : Fin n, A r r ≠ 0 ∧ ∀ i, i ≠ r → P (A i r / A r r)) ∨
@@ -540,13 +605,20 @@ theorem exists_perm_isBlockLDL_of_pivot (P : K → Prop) (hP0 : P 0) (hP1 : P 1)
         field_simp
         ring
 
-/-- **[golub2013matrix] (4.4.2), existence**: every symmetric matrix over a field has a symmetric
-permutation `P A Pᵀ = L D Lᵀ` with `L` unit lower triangular and `D` block diagonal with `1 × 1`
-and `2 × 2` pivots. Strong induction on the order: a nonzero symmetric matrix has a nonsingular
-principal pivot of order one or two (`Matrix.exists_principal_pivot_ne_zero`), moved to the front,
-and the factorization of the Schur complement is bordered back. The multipliers are not bounded by
-`1` in general (the book's `|ℓ_ij| ≤ 1` is false; see `Matrix.exists_perm_isBlockLDL_abs_le` for the
-bound of the Bunch–Parlett pivot rule). -/
+/-- **Existence of the block $L D L^T$ factorization.** Let $A$ be a symmetric matrix of order $n$
+over a field. Then there is a permutation matrix $P$ with
+$$P A P^T = L D L^T,$$
+where $L$ is unit lower triangular and $D$ is block diagonal with $1 \times 1$ and $2 \times 2$
+pivot blocks, as in `Matrix.IsBlockLDL`. This is the factorization (4.4.2) of [golub2013matrix].
+
+In general the multipliers are not bounded by $1$, so the bound $|\ell_{ij}| \le 1$ that
+[golub2013matrix] prints with (4.4.2) is false. For the bound under the Bunch–Parlett pivot
+rule, see `Matrix.exists_perm_isBlockLDL_abs_le`.
+
+The permutation $P A P^T$ is `A.submatrix σ σ`. The proof is a strong induction on the order. A
+nonzero symmetric matrix has a nonsingular principal pivot of order one or two by
+`Matrix.exists_principal_pivot_ne_zero`. This pivot is moved to the front, and the factorization
+of the Schur complement is bordered back. -/
 theorem exists_perm_isBlockLDL {n : ℕ} {A : Matrix (Fin n) (Fin n) K} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L D : Matrix (Fin n) (Fin n) K),
       IsBlockLDL (A.submatrix σ σ) L D := by
@@ -563,14 +635,23 @@ section BunchParlett
 
 variable [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
-/-- **The multiplier bound of the Bunch–Parlett pivot rule** ([golub2013matrix] (4.4.2) and
-§4.4.4; [higham2002accuracy] §11.1.1): for `0 < α < 1`, every symmetric `A` has a symmetric
-permutation `P A Pᵀ = L D Lᵀ` with `|l_ij| ≤ max (1/α) (1/(1 - α))`. With `μ₀ = max |a_ij|` and
-`μ₁ = max |a_ii|`: if `μ₁ ≥ α μ₀` the pivot is the diagonal entry of modulus `μ₁`, with multipliers
-at most `μ₀ / μ₁ ≤ 1/α`; otherwise it is the `2 × 2` block around an entry of modulus `μ₀`, whose
-determinant exceeds `(1 - α²) μ₀²` in modulus while the numerators of the multipliers are at most
-`(1 + α) μ₀²`. The book prints `|ℓ_ij| ≤ 1`, which is false for this rule: at
-`α = (1 + √17)/8`, `A = [1 3/2; 3/2 0]` takes a `1 × 1` pivot with multiplier `3/2`. -/
+/-- **The multiplier bound of the Bunch–Parlett pivot rule.** Let $A$ be a symmetric matrix of order
+$n$ over a linearly ordered field, and let $0 < \alpha < 1$. Then there is a permutation matrix
+$P$ with a block $L D L^T$ factorization $P A P^T = L D L^T$ such that
+$$|\ell_{ij}| \le \max\left\{\frac{1}{\alpha}, \frac{1}{1 - \alpha}\right\} \quad \text{for all
+  } i, j.$$
+This is the bound for the pivot rule of (4.4.2) and §4.4.4 of [golub2013matrix] and §11.1.1 of
+[higham2002accuracy].
+
+[golub2013matrix] prints the bound $|\ell_{ij}| \le 1$, which is false for this pivot rule. For
+$\alpha = (1 + \sqrt{17})/8$ and $A = \begin{bmatrix} 1 & 3/2 \\ 3/2 & 0 \end{bmatrix}$, the
+rule takes a $1 \times 1$ pivot with the multiplier $3/2$.
+
+Let $\mu_0 = \max_{i,j} |a_{ij}|$ and $\mu_1 = \max_i |a_{ii}|$. If $\mu_1 \ge \alpha \mu_0$,
+the pivot is a diagonal entry of modulus $\mu_1$, and the multipliers are at most
+$\mu_0 / \mu_1 \le 1/\alpha$. Otherwise the pivot is the $2 \times 2$ block around an entry of
+modulus $\mu_0$. Its determinant has modulus at least $(1 - \alpha^2) \mu_0^2$, and the
+numerators of the multipliers are at most $(1 + \alpha) \mu_0^2$. -/
 theorem exists_perm_isBlockLDL_abs_le {n : ℕ} {A : Matrix (Fin n) (Fin n) K} (hA : A.IsSymm)
     {α : K} (hα0 : 0 < α) (hα1 : α < 1) :
     ∃ (σ : Equiv.Perm (Fin n)) (L D : Matrix (Fin n) (Fin n) K),
@@ -650,8 +731,8 @@ section Aasen
 variable [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The Gauss transform `I - l e₀ᵀ` of Aasen's method, and its inverse `I + l e₀ᵀ` when
-`l 0 = 0`. -/
+/-- If $l_0 = 0$, then the Gauss transform $I - l e_0^T$ of Aasen's method has the inverse
+$I + l e_0^T$. -/
 private theorem one_add_mul_one_sub {m : ℕ} {l : Fin (m + 1) → K} (hl : l 0 = 0) :
     (1 + vecMulVec l (Pi.single (0 : Fin (m + 1)) (1 : K))) *
       (1 - vecMulVec l (Pi.single (0 : Fin (m + 1)) (1 : K))) = 1 := by
@@ -663,7 +744,7 @@ private theorem one_add_mul_one_sub {m : ℕ} {l : Fin (m + 1) → K} (hl : l 0 
   rw [add_mul, Matrix.one_mul, mul_sub, Matrix.mul_one, hsq, sub_zero, sub_add_cancel]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- `I + l e₀ᵀ` is unit lower triangular when `l 0 = 0`. -/
+/-- If $l_0 = 0$, then $I + l e_0^T$ is unit lower triangular. -/
 private theorem isUnitLowerTriangular_one_add {m : ℕ} {l : Fin (m + 1) → K} (hl : l 0 = 0) :
     (1 + vecMulVec l (Pi.single (0 : Fin (m + 1)) (1 : K))).IsUnitLowerTriangular := by
   refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -675,9 +756,9 @@ private theorem isUnitLowerTriangular_one_add {m : ℕ} {l : Fin (m + 1) → K} 
       simp [vecMulVec_apply, hl]
     · simp [vecMulVec_apply, hi]
 
-/-- **[golub2013matrix] (4.4.1), existence with the pivoting bound**, in the strong form used by the
-induction: every symmetric matrix over a linearly ordered field has a symmetric permutation fixing
-the first index with an Aasen factorization `P A Pᵀ = L T Lᵀ`, `|l_ij| ≤ 1`. -/
+/-- Every symmetric matrix over a linearly ordered field has an Aasen factorization
+$P A P^T = L T L^T$ with $|\ell_{ij}| \le 1$ and a permutation that fixes the first index. This
+stronger form of `Matrix.exists_perm_isAasen` is the induction hypothesis of its proof. -/
 private theorem exists_perm_isAasen_aux :
     ∀ {n : ℕ} {A : Matrix (Fin n) (Fin n) K}, A.IsSymm →
       ∃ (σ : Equiv.Perm (Fin n)) (L T : Matrix (Fin n) (Fin n) K),
@@ -902,12 +983,16 @@ private theorem exists_perm_isAasen_aux :
           · rw [hNj _ _ hj']
             exact hL' i' j'
 
-/-- **[golub2013matrix] (4.4.1), existence with the pivoting bound**: every symmetric matrix over a
-linearly ordered field has a symmetric permutation `P A Pᵀ = L T Lᵀ` with `L` unit lower
-triangular of first column `e₁`, `T` symmetric tridiagonal and `|l_ij| ≤ 1`. The Parlett–Reid
-process (§4.4.1): the largest entry of the first column below the diagonal is moved up by a
-permutation fixing the first index, the Gauss transform `I - l e₂ᵀ` with `|l_i| ≤ 1` annihilates
-the rest of the column, and the trailing block is factored recursively. -/
+/-- **Existence of the Aasen factorization with the pivoting bound.** Let $A$ be a symmetric matrix
+of order $n$ over a linearly ordered field. Then there is a permutation matrix $P$ with
+$$P A P^T = L T L^T, \qquad |\ell_{ij}| \le 1 \text{ for all } i, j,$$
+where $L$ is unit lower triangular with first column $e_1$ and $T$ is symmetric tridiagonal, as
+in `Matrix.IsAasen`. This is the factorization (4.4.1) of [golub2013matrix].
+
+The proof is the Parlett–Reid process of [golub2013matrix] §4.4.1. A permutation that fixes the
+first index moves the largest entry of the first column below the diagonal up to the
+subdiagonal. A Gauss transform $I - \ell e_2^T$ with $|\ell_i| \le 1$ then annihilates the rest
+of the column, and the trailing block is factored recursively. -/
 theorem exists_perm_isAasen {n : ℕ} {A : Matrix (Fin n) (Fin n) K} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L T : Matrix (Fin n) (Fin n) K),
       IsAasen (A.submatrix σ σ) L T ∧ ∀ i j, |L i j| ≤ 1 := by

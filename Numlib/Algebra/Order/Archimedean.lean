@@ -13,13 +13,20 @@ import Mathlib.Analysis.SpecificLimits.Basic
 /-!
 # Dyadic brackets
 
-`exists_one_div_two_pow_le_lt`: every `r ∈ (0, ½]` lies between consecutive dyadic numbers
-`2^{-m} ≤ r < 2 · 2^{-m}` with `m ≥ 1`, the radius at which repeated halving from `1` first falls
-below `r`.
+Every real number $r \in (0, \tfrac12]$ lies between two consecutive dyadic numbers
+$2^{-m} \le r < 2 \cdot 2^{-m}$ with $m \ge 1$. The number $2^{-m}$ is the first term of the
+sequence $1, \tfrac12, \tfrac14, \dots$ of repeated halvings that is at most $r$.
+
+## Main results
+
+* `exists_one_div_two_pow_le_lt`: for $0 < r \le \tfrac12$ there is $m \ge 1$ with
+  $2^{-m} \le r < 2 \cdot 2^{-m}$.
 -/
 
-/-- A real `r ∈ (0, ½]` lies between consecutive dyadic numbers reached by halving from `1`:
-`2^{-m} ≤ r < 2 · 2^{-m}` for some `m ≥ 1`. -/
+/-- Let $r$ be a real number with $0 < r$ and $2r \le 1$. Then there is a natural number $m \ge 1$
+such that
+$$\frac{1}{2^m} \le r < 2 \cdot \frac{1}{2^m}.$$
+-/
 theorem exists_one_div_two_pow_le_lt {r : ℝ} (hr : 0 < r) (hr1 : 2 * r ≤ 1) :
     ∃ m : ℕ, 1 ≤ m ∧ 1 / 2 ^ m ≤ r ∧ r < 2 * (1 / 2 ^ m) := by
   classical

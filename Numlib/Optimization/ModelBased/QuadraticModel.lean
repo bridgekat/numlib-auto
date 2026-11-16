@@ -10,29 +10,52 @@ import Numlib.Optimization.Subproblem.TrustRegion
 /-!
 # Quadratic models of trust-region methods
 
-Trust-region methods of [cartis2022evaluation] (Algorithms 2.3.1 TR1, 3.2.1 TR2) use the
-quadratic model `m(s) = f(x) + q(s)`, `q(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` (2.3.1), written with the shared
-`Subproblem.quadModel g H` (`H : E →L[ℝ] E`, `‖H‖` its operator norm). For a `C²` function and
-`H = Optimization.hessianOperator f x` this is the second-order Taylor polynomial
-(`Optimization.taylorPolynomial_two_eq_quadModel`).
+The trust-region methods TR1 (Algorithm 2.3.1) and TR2 (Algorithm 3.2.1) of [cartis2022evaluation]
+use, at an iterate $x$, the quadratic model (2.3.1)
+$$m(s) = f(x) + q(s), \qquad q(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle,$$
+where $g \in E$, $H$ is a bounded linear operator on a real inner product space $E$, and $\|H\|$ is
+its operator norm. For a twice continuously differentiable $f$ with $g = \nabla f(x)$ and
+$H = \nabla^2 f(x)$, the model is the second-order Taylor polynomial of $f$ at $x$.
 
-* `Optimization.IsCauchyStep g H Δ t`: `t` is a Cauchy step (2.3.5), a minimizer of the model
-  along `-g` within the trust region, with existence `Optimization.exists_isCauchyStep`;
-* `Optimization.neg_quadModel_cauchy_ge`: the Cauchy decrease (Lemma 2.3.2);
-* `Optimization.quadModel_smul_le_of_curvature`, `Optimization.le_neg_quadModel_smul_of_curvature`:
-  the eigenpoint decrease (Lemma 3.2.3);
-* `Optimization.abs_reductionRatio_sub_one_le_trust_first`,
-  `Optimization.le_reductionRatio_trust_first`: Lemma 2.3.3 for one iteration with the predicted
-  decrease as a hypothesis, and its book form
-  `Optimization.le_reductionRatio_trust_first_of_isCauchyStep`;
-* `Optimization.abs_reductionRatio_sub_one_le_trust_second`,
-  `Optimization.le_reductionRatio_trust_second`: Lemma 3.2.4 likewise, with book form
-  `Optimization.le_reductionRatio_trust_second_of_curvature`;
-* `Optimization.exists_isMinOn_quadModel_ball`: a global model minimizer in the trust region
-  exists in finite dimension and satisfies both the Cauchy and the eigenpoint conditions.
+This file proves the model decreases that drive these methods: the decrease at the Cauchy step,
+which minimizes the model along $-g$ in the trust region $\|s\| \le \Delta$ (Lemma 2.3.2), and the
+decrease at the eigenpoint along a direction of negative curvature (Lemma 3.2.3). It then bounds the
+reduction ratio $\rho$ of one iteration, so that a small enough radius makes the iteration very
+successful (Lemmas 2.3.3 and 3.2.4). Finally, in finite dimension a global minimizer of the model in
+the trust region exists and satisfies both decrease conditions.
 
-The trust-region constraints on the Cauchy and eigenpoint steps are `‖t g‖ ≤ Δ_k`,
-`‖t u‖ ≤ Δ_k` (written `x_k - t g ∈ 𝓡_k`, `x_k + t u ∈ 𝓑_{Δ_k}` in [cartis2022evaluation]).
+## Main definitions
+
+* `Optimization.IsCauchyStep`: $t \ge 0$ is a Cauchy step (2.3.5): $s^C = -t g$ is in the trust
+  region and minimizes $q$ along $-g$ there.
+
+## Main results
+
+* `Optimization.exists_isCauchyStep`: a Cauchy step exists for every radius $\Delta \ge 0$.
+* `Optimization.neg_quadModel_cauchy_ge`: the Cauchy decrease $-q(s^C) \ge \frac{\|g\|}{2}
+  \min\left(\frac{\|g\|}{1 + \|H\|}, \Delta\right)$ of Lemma 2.3.2.
+* `Optimization.quadModel_smul_le_of_curvature` and
+  `Optimization.le_neg_quadModel_smul_of_curvature`: the eigenpoint decrease
+  $-q(\Delta u) \ge |\lambda| \Delta^2 / 2$ of Lemma 3.2.3.
+* `Optimization.taylorPolynomial_two_eq_quadModel`: the second-order Taylor polynomial of $f$ at $x$
+  is $f(x) + q(s)$ with $g = \nabla f(x)$ and $H = \nabla^2 f(x)$.
+* `Optimization.abs_reductionRatio_sub_one_le_trust_first` and
+  `Optimization.le_reductionRatio_trust_first`: Lemma 2.3.3 for one iteration, with the predicted
+  decrease as a hypothesis. The form of the source is
+  `Optimization.le_reductionRatio_trust_first_of_isCauchyStep`.
+* `Optimization.abs_reductionRatio_sub_one_le_trust_second` and
+  `Optimization.le_reductionRatio_trust_second`: Lemma 3.2.4 in the same way. The form of the source
+  is `Optimization.le_reductionRatio_trust_second_of_curvature`.
+* `Optimization.exists_isMinOn_quadModel_ball`: in finite dimension, a global minimizer of $q$ in
+  the trust region exists and satisfies both the Cauchy and the eigenpoint conditions.
+
+## Implementation notes
+
+* The function $q$ is `Subproblem.quadModel g H`, with `H : E →L[ℝ] E`. The Hessian $\nabla^2 f(x)$
+  is `Optimization.hessianOperator f x`.
+* The trust-region constraints on the Cauchy step and on the eigenpoint are $\|t g\| \le \Delta_k$
+  and $\|t u\| \le \Delta_k$. The source writes them as $x_k - t g \in \mathcal{R}_k$ and
+  $x_k + t u \in \mathcal{B}_{\Delta_k}$.
 -/
 
 open Set Metric
@@ -46,11 +69,14 @@ section Inner
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- `|⟪s, H s⟫| ≤ ‖H‖ ‖s‖²` (the real case of `ContinuousLinearMap.abs_re_inner_apply_self_le`). -/
+/-- For a bounded linear operator $H$ on a real inner product space,
+$|\langle s, H s \rangle| \le \|H\| \|s\|^2$. -/
 private theorem abs_inner_self_apply_le (H : E →L[ℝ] E) (s : E) : |⟪s, H s⟫| ≤ ‖H‖ * ‖s‖ ^ 2 := by
   simpa [real_inner_comm] using H.abs_re_inner_apply_self_le s
 
-/-- The model along the ray `-t g`: `q(-t g) = -t ‖g‖² + t²/2 ⟪g, H g⟫`. -/
+/-- The model along the ray $-t g$:
+$$q(-t g) = -t \|g\|^2 + \frac{t^2}{2} \langle g, H g \rangle.$$
+-/
 theorem quadModel_neg_smul (g : E) (H : E →L[ℝ] E) (t : ℝ) :
     quadModel g H (-(t • g)) = -t * ‖g‖ ^ 2 + t ^ 2 / 2 * ⟪g, H g⟫ := by
   rw [quadModel_def, map_neg, map_smul, inner_neg_right, inner_neg_left, inner_neg_right,
@@ -58,28 +84,36 @@ theorem quadModel_neg_smul (g : E) (H : E →L[ℝ] E) (t : ℝ) :
   simp only [conj_trivial]
   ring
 
-/-- The model along the ray `t u`: `q(t u) = t ⟪g, u⟫ + t²/2 ⟪u, H u⟫`. -/
+/-- The model along the ray $t u$:
+$$q(t u) = t \langle g, u \rangle + \frac{t^2}{2} \langle u, H u \rangle.$$
+-/
 theorem quadModel_smul (g : E) (H : E →L[ℝ] E) (t : ℝ) (u : E) :
     quadModel g H (t • u) = t * ⟪g, u⟫ + t ^ 2 / 2 * ⟪u, H u⟫ := by
   rw [quadModel_def, map_smul, inner_smul_right, inner_smul_left, inner_smul_right]
   simp only [conj_trivial]
   ring
 
-/-- `t` is a **Cauchy step** of the model `q = Subproblem.quadModel g H` for the radius `Δ`
-([cartis2022evaluation], (2.3.5)): `t ≥ 0`, the point `-t g` lies in the trust region
-(`t ‖g‖ ≤ Δ`), and `-t g` minimizes `q` along `-g` within the region. The Cauchy step is
-`s^C = -t g`. -/
+/-- A **Cauchy step** of the model $q(s) = \langle g, s \rangle + \frac12 \langle s, H s \rangle$
+for the radius $\Delta$, as in (2.3.5) of [cartis2022evaluation]. A real number $t$ is a Cauchy
+step if $t \ge 0$, the point $-t g$ is in the trust region ($t \|g\| \le \Delta$), and
+$$q(-t g) \le q(-\tau g) \quad \text{for all } \tau \ge 0 \text{ with } \tau \|g\| \le \Delta.$$
+The Cauchy step of the source is the vector $s^C = -t g$. -/
 def IsCauchyStep (g : E) (H : E →L[ℝ] E) (Δ t : ℝ) : Prop :=
   0 ≤ t ∧ t * ‖g‖ ≤ Δ ∧
     ∀ τ, 0 ≤ τ → τ * ‖g‖ ≤ Δ → quadModel g H (-(t • g)) ≤ quadModel g H (-(τ • g))
 
+/-- The defining property of a Cauchy step: $t$ is a Cauchy step if and only if $t \ge 0$,
+$t \|g\| \le \Delta$, and $q(-t g) \le q(-\tau g)$ for all $\tau \ge 0$ with
+$\tau \|g\| \le \Delta$. -/
 theorem isCauchyStep_iff {g : E} {H : E →L[ℝ] E} {Δ t : ℝ} :
     IsCauchyStep g H Δ t ↔ 0 ≤ t ∧ t * ‖g‖ ≤ Δ ∧
       ∀ τ, 0 ≤ τ → τ * ‖g‖ ≤ Δ → quadModel g H (-(t • g)) ≤ quadModel g H (-(τ • g)) :=
   Iff.rfl
 
-/-- A Cauchy step exists for every radius `Δ ≥ 0` (a continuous function on a compact interval;
-any `t` works if `g = 0`, e.g. `t = 0`). -/
+/-- For every $g$, $H$ and every radius $\Delta \ge 0$, a Cauchy step exists.
+
+The model along $-g$ is continuous on a compact interval of $\tau$. If $g = 0$, every $t \ge 0$
+is a Cauchy step, for example $t = 0$. -/
 theorem exists_isCauchyStep (g : E) (H : E →L[ℝ] E) {Δ : ℝ} (hΔ : 0 ≤ Δ) :
     ∃ t, IsCauchyStep g H Δ t := by
   rcases eq_or_ne g 0 with rfl | hg
@@ -92,9 +126,14 @@ theorem exists_isCauchyStep (g : E) (H : E →L[ℝ] E) {Δ : ℝ} (hΔ : 0 ≤ 
   refine ⟨t, ht.1, (le_div_iff₀ hgpos).1 ht.2, fun τ hτ hτΔ => ?_⟩
   exact hmin ⟨hτ, (le_div_iff₀ hgpos).2 hτΔ⟩
 
-/-- **Lemma 2.3.2** ([cartis2022evaluation], (2.3.12)): the decrease at a Cauchy step satisfies
-`m(0) - m(s^C) = -q(-t g) ≥ ‖g‖/2 · min(‖g‖ / (1 + ‖H‖), Δ)`. The comparison step is
-`τ = min(1/(1 + ‖H‖), Δ/‖g‖)`, along which `q(-τ g) ≤ -τ ‖g‖²/2`. -/
+/-- The **Cauchy decrease**, Lemma 2.3.2 of [cartis2022evaluation], bound (2.3.12). Let $E$ be a
+real inner product space, $g \in E$, $H$ a bounded linear operator on $E$ and
+$\Delta \in \mathbb{R}$. If $t$ is a Cauchy step for $\Delta$, then the decrease
+$m(0) - m(s^C) = -q(-t g)$ satisfies
+$$-q(-t g) \ge \frac{\|g\|}{2} \min\left(\frac{\|g\|}{1 + \|H\|}, \Delta\right).$$
+
+The proof compares with the step $\tau = \min(1 / (1 + \|H\|), \Delta / \|g\|)$, along which
+$q(-\tau g) \le -\tau \|g\|^2 / 2$. -/
 theorem neg_quadModel_cauchy_ge {g : E} {H : E →L[ℝ] E} {Δ t : ℝ} (ht : IsCauchyStep g H Δ t) :
     ‖g‖ / 2 * min (‖g‖ / (1 + ‖H‖)) Δ ≤ -quadModel g H (-(t • g)) := by
   have hΔ : 0 ≤ Δ := (mul_nonneg ht.1 (norm_nonneg g)).trans ht.2.1
@@ -127,10 +166,15 @@ theorem neg_quadModel_cauchy_ge {g : E} {H : E →L[ℝ] E} {Δ t : ℝ} (ht : I
     _ ≤ -quadModel g H (-(τ • g)) := by linarith
     _ ≤ -quadModel g H (-(t • g)) := neg_le_neg hmin
 
-/-- **Lemma 3.2.3** core ([cartis2022evaluation], (3.2.5), (3.2.15)): along a unit direction `u`
-of nonpositive curvature `⟪u, H u⟫ = λ ≤ 0` with `⟪g, u⟫ ≤ 0`, the model at the boundary point
-`Δ u` satisfies `q(Δ u) ≤ λ Δ² / 2`, and `t = Δ` minimizes `t ↦ q(t u)` over `[0, Δ]` (the
-eigenpoint lies on the trust-region boundary). -/
+/-- The core of Lemma 3.2.3 of [cartis2022evaluation], (3.2.5) and (3.2.15). Let $E$ be a real inner
+product space, $g, u \in E$ and $H$ a bounded linear operator on $E$. Suppose that $u$ has
+nonpositive curvature, $\langle u, H u \rangle = \lambda \le 0$, that
+$\langle g, u \rangle \le 0$, and that $\Delta \ge 0$. Then
+$$q(\Delta u) \le \frac{\lambda \Delta^2}{2},$$
+and $\tau = \Delta$ minimizes $\tau \mapsto q(\tau u)$ over $[0, \Delta]$. Thus the eigenpoint
+lies on the boundary of the trust region.
+
+The direction $u$ need not be a unit vector here. In Lean, $\lambda$ is `lam`. -/
 theorem quadModel_smul_le_of_curvature {g : E} {H : E →L[ℝ] E} {u : E} {lam Δ : ℝ}
     (hHu : ⟪u, H u⟫ = lam) (hlam : lam ≤ 0) (hgu : ⟪g, u⟫ ≤ 0) (hΔ : 0 ≤ Δ) :
     quadModel g H (Δ • u) ≤ lam * Δ ^ 2 / 2 ∧
@@ -142,9 +186,12 @@ theorem quadModel_smul_le_of_curvature {g : E} {H : E →L[ℝ] E} {u : E} {lam 
     obtain ⟨hτ0, hτΔ⟩ := hτ
     nlinarith [mul_nonneg (sub_nonneg.2 hτΔ) (add_nonneg hτ0 hΔ)]
 
-/-- **Lemma 3.2.3** ([cartis2022evaluation], (3.2.15)): under the hypotheses of
-`Optimization.quadModel_smul_le_of_curvature`, the eigenpoint decrease is
-`m(0) - m(Δ u) = -q(Δ u) ≥ |λ| Δ² / 2`. -/
+/-- The **eigenpoint decrease**, Lemma 3.2.3 of [cartis2022evaluation], bound (3.2.15). Let $E$ be a
+real inner product space, $g, u \in E$ and $H$ a bounded linear operator on $E$. If
+$\langle u, H u \rangle = \lambda \le 0$, $\langle g, u \rangle \le 0$ and $\Delta \ge 0$, then
+the decrease $m(0) - m(\Delta u) = -q(\Delta u)$ satisfies
+$$-q(\Delta u) \ge \frac{|\lambda| \Delta^2}{2}.$$
+-/
 theorem le_neg_quadModel_smul_of_curvature {g : E} {H : E →L[ℝ] E} {u : E} {lam Δ : ℝ}
     (hHu : ⟪u, H u⟫ = lam) (hlam : lam ≤ 0) (hgu : ⟪g, u⟫ ≤ 0) (hΔ : 0 ≤ Δ) :
     |lam| * Δ ^ 2 / 2 ≤ -quadModel g H (Δ • u) := by
@@ -158,9 +205,14 @@ section Taylor
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
-/-- The second-order Taylor polynomial is the quadratic model with the gradient and the Hessian
-operator ([cartis2022evaluation], (2.3.1), (3.1.2)):
-`T_{f,2}(x, s) = f(x) + ⟪∇f(x), s⟫ + ½ ⟪s, ∇²f(x) s⟫`. -/
+/-- The second-order Taylor polynomial is the quadratic model with the gradient and the Hessian, as
+in (2.3.1) and (3.1.2) of [cartis2022evaluation]. Let $E$ be a real Hilbert space and let
+$f : E \to \mathbb{R}$ be twice continuously differentiable at $x$. Then for all $s \in E$,
+$$T_{f,2}(x, s) = f(x) + \langle \nabla f(x), s \rangle + \tfrac12 \langle s, \nabla^2 f(x) s
+  \rangle.$$
+
+Here $T_{f,2}(x, s)$ is `taylorPolynomial f 2 x s`, and $\nabla^2 f(x)$ is
+`Optimization.hessianOperator f x`. -/
 theorem taylorPolynomial_two_eq_quadModel {f : E → ℝ} {x : E} (hf : ContDiffAt ℝ 2 f x)
     (s : E) :
     taylorPolynomial f 2 x s = f x + quadModel (gradient f x) (hessianOperator f x) s := by
@@ -168,7 +220,11 @@ theorem taylorPolynomial_two_eq_quadModel {f : E → ℝ} {x : E} (hf : ContDiff
     inner_hessianOperator_apply hf, ← apply_diag_eq_vec]
   ring
 
-/-- The first-order Taylor polynomial: `T_{f,1}(x, s) = f(x) + ⟪∇f(x), s⟫`. -/
+/-- The first-order Taylor polynomial: for every $f : E \to \mathbb{R}$ on a real Hilbert space and
+all $x, s \in E$, $T_{f,1}(x, s) = f(x) + \langle \nabla f(x), s \rangle$.
+
+No differentiability is needed, because the gradient in Lean is $0$ where $f$ is not
+differentiable, and so is the derivative in the Taylor polynomial. -/
 theorem taylorPolynomial_one_eq_inner (f : E → ℝ) (x s : E) :
     taylorPolynomial f 1 x s = f x + ⟪gradient f x, s⟫ := by
   rw [taylorPolynomial_apply, inner_gradient_left]
@@ -176,12 +232,21 @@ theorem taylorPolynomial_one_eq_inner (f : E → ℝ) (x s : E) :
 
 variable {f : E → ℝ} {x s : E} {H : E →L[ℝ] E} {C : Set E} {L κB Δ : ℝ}
 
-/-- **Lemma 2.3.3** for one iteration ([cartis2022evaluation]): the ratio of a trust-region
-iteration with model `f(x) + q(s)`, `q = Subproblem.quadModel (∇f(x)) H` (any `H`, `‖H‖ ≤ κB`).
-Let `∇f` be `L`-Lipschitz on a convex set `C` containing `x` and `x + s` (`f` `C¹` there),
-`‖s‖ ≤ Δ` with `Δ > 0`, `g = ∇f(x) ≠ 0`, and let the predicted decrease `-q(s)` be at least
-`‖g‖ Δ / 2` (the Cauchy decrease (2.3.16)). Then `|ρ - 1| ≤ (L + κB) Δ / ‖g‖`. (The book's
-mean-value argument gives the constant `2(L + κB)`; (A.19) gives `L + κB`.) -/
+/-- **Lemma 2.3.3** of [cartis2022evaluation] for one iteration: a bound on the reduction ratio of a
+trust-region iteration with a quadratic model. Let $E$ be a real Hilbert space, $C \subseteq E$
+convex, and $f : E \to \mathbb{R}$ continuously differentiable at every point of $C$, with
+$\nabla f$ Lipschitz on $C$ with constant $L$. Let $x, x + s \in C$, let
+$g = \nabla f(x) \neq 0$, and let $H$ be a bounded linear operator with $\|H\| \le \kappa_B$.
+Let $q(s) = \langle g, s \rangle + \frac12 \langle s, H s \rangle$. Suppose that
+$\|s\| \le \Delta$ with $\Delta > 0$, and that the predicted decrease $-q(s)$ is at least
+$\|g\| \Delta / 2$, as in the Cauchy decrease (2.3.16). Then the ratio $\rho$ with predicted
+decrease $-q(s)$ satisfies
+$$|\rho - 1| \le \frac{(L + \kappa_B) \Delta}{\|g\|}.$$
+
+The mean-value argument of the source gives the constant $2(L + \kappa_B)$. The bound (A.19) of
+[cartis2022evaluation] on the Taylor remainder gives $L + \kappa_B$. The Lipschitz condition is
+`IteratedFDerivLipschitzOn f 1 L C`. The ratio is `Optimization.reductionRatio` with the predicted
+decrease $-q(s)$. -/
 theorem abs_reductionRatio_sub_one_le_trust_first (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 1 f y) (hL : IteratedFDerivLipschitzOn f 1 L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hH : ‖H‖ ≤ κB) (hs : ‖s‖ ≤ Δ) (hΔ : 0 < Δ) (hg : 0 < ‖gradient f x‖)
@@ -213,11 +278,14 @@ theorem abs_reductionRatio_sub_one_le_trust_first (hC : Convex ℝ C)
     _ = (L + κB) * Δ / ‖g‖ * (‖g‖ * Δ / 2) := by field_simp
     _ ≤ (L + κB) * Δ / ‖g‖ * -quadModel g H s := by gcongr
 
-/-- **Lemma 2.3.3** ([cartis2022evaluation]): under the hypotheses of
-`Optimization.abs_reductionRatio_sub_one_le_trust_first`, a radius with
-`(L + κB) Δ ≤ (1 - η) ‖∇f(x)‖` gives `ρ ≥ η`. (The book-form statement, which derives the
-predicted-decrease hypothesis from the Cauchy condition and (2.3.15), is
-`Optimization.le_reductionRatio_trust_first_of_isCauchyStep`.) -/
+/-- **Lemma 2.3.3** of [cartis2022evaluation], with the predicted decrease as a hypothesis. Under
+the hypotheses of `Optimization.abs_reductionRatio_sub_one_le_trust_first`, let
+$\eta \in \mathbb{R}$ with
+$$(L + \kappa_B) \Delta \le (1 - \eta) \|\nabla f(x)\|.$$
+Then $\rho \ge \eta$.
+
+The form of the source, which derives the bound on the predicted decrease from the Cauchy
+condition and (2.3.15), is `Optimization.le_reductionRatio_trust_first_of_isCauchyStep`. -/
 theorem le_reductionRatio_trust_first (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 1 f y) (hL : IteratedFDerivLipschitzOn f 1 L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hH : ‖H‖ ≤ κB) (hs : ‖s‖ ≤ Δ) (hΔ : 0 < Δ) (hg : 0 < ‖gradient f x‖)
@@ -228,10 +296,18 @@ theorem le_reductionRatio_trust_first (hC : Convex ℝ C)
   have : (L + κB) * Δ / ‖gradient f x‖ ≤ 1 - η := (div_le_iff₀ hg).2 hηΔ
   linarith [neg_abs_le (reductionRatio f x s (-quadModel (gradient f x) H s) - 1)]
 
-/-- **Lemma 3.2.4** for one iteration ([cartis2022evaluation]): with the exact second-order model
-`H = ∇²f(x)`, `∇²f` `L`-Lipschitz on a convex `C ∋ x, x + s` (`f` `C²` there), `‖s‖ ≤ Δ`, `λ < 0`
-and the predicted decrease at least `|λ| Δ² / 2` (the eigenpoint decrease (3.2.15)):
-`|ρ - 1| ≤ L Δ / (3 |λ|)`. -/
+/-- **Lemma 3.2.4** of [cartis2022evaluation] for one iteration: a bound on the reduction ratio with
+the exact second-order model. Let $E$ be a real Hilbert space, $C \subseteq E$ convex, and
+$f : E \to \mathbb{R}$ twice continuously differentiable at every point of $C$, with
+$\nabla^2 f$ Lipschitz on $C$ with constant $L$. Let $x, x + s \in C$ and $q(s) = \langle \nabla
+f(x), s \rangle + \frac12 \langle s, \nabla^2 f(x) s \rangle$. Suppose that $\|s\| \le \Delta$
+with $\Delta > 0$, that $\lambda < 0$, and that the predicted decrease $-q(s)$ is at least
+$|\lambda| \Delta^2 / 2$, as in the eigenpoint decrease (3.2.15). Then the ratio $\rho$ with
+predicted decrease $-q(s)$ satisfies
+$$|\rho - 1| \le \frac{L \Delta}{3 |\lambda|}.$$
+
+The number $\lambda$ is arbitrary here. The form of the source takes it to be the curvature
+along a direction, see `Optimization.le_reductionRatio_trust_second_of_curvature`. -/
 theorem abs_reductionRatio_sub_one_le_trust_second (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 2 f y) (hL : IteratedFDerivLipschitzOn f 2 L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hs : ‖s‖ ≤ Δ) (hΔ : 0 < Δ) {lam : ℝ} (hlam : lam < 0)
@@ -254,10 +330,14 @@ theorem abs_reductionRatio_sub_one_le_trust_second (hC : Convex ℝ C)
     _ = L * Δ / (3 * |lam|) * (|lam| * Δ ^ 2 / 2) := by field_simp; ring
     _ ≤ L * Δ / (3 * |lam|) * -q := by gcongr
 
-/-- **Lemma 3.2.4** ([cartis2022evaluation], (3.2.16)): under the hypotheses of
-`Optimization.abs_reductionRatio_sub_one_le_trust_second`, `L Δ ≤ 3 (1 - η) |λ|` gives `ρ ≥ η`.
-(The book-form statement from the eigenpoint condition is
-`Optimization.le_reductionRatio_trust_second_of_curvature`.) -/
+/-- **Lemma 3.2.4** of [cartis2022evaluation], bound (3.2.16), with the predicted decrease as a
+hypothesis. Under the hypotheses of `Optimization.abs_reductionRatio_sub_one_le_trust_second`,
+let $\eta \in \mathbb{R}$ with
+$$L \Delta \le 3 (1 - \eta) |\lambda|.$$
+Then $\rho \ge \eta$.
+
+The form of the source, which derives the bound on the predicted decrease from the eigenpoint
+condition, is `Optimization.le_reductionRatio_trust_second_of_curvature`. -/
 theorem le_reductionRatio_trust_second (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 2 f y) (hL : IteratedFDerivLipschitzOn f 2 L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hs : ‖s‖ ≤ Δ) (hΔ : 0 < Δ) {lam : ℝ} (hlam : lam < 0)
@@ -270,11 +350,15 @@ theorem le_reductionRatio_trust_second (hC : Convex ℝ C)
   linarith [neg_abs_le (reductionRatio f x s
     (-quadModel (gradient f x) (hessianOperator f x) s) - 1)]
 
-/-- **Lemma 2.3.3** ([cartis2022evaluation]), book form. Let `∇f` be `L`-Lipschitz (`L ≥ 1`) on a
-convex `C ∋ x, x + s` (`f` `C¹` there), `‖H‖ ≤ κB`, `∇f(x) ≠ 0`, and let the step `s` lie in the
-trust region (`‖s‖ ≤ Δ`, `Δ > 0`) and satisfy the Cauchy condition (2.3.4)
-`q(s) ≤ q(s^C)` for a Cauchy step `t`. If (2.3.15) `Δ < (1 - η) ‖∇f(x)‖ / (2 (L + κB))` with
-`η ≥ 0`, then `ρ ≥ η` (with `η = η₂`: the iteration is very successful). -/
+/-- **Lemma 2.3.3** of [cartis2022evaluation], in the form of the source. Let $E$ be a real Hilbert
+space, $C \subseteq E$ convex, and $f : E \to \mathbb{R}$ continuously differentiable at every
+point of $C$, with $\nabla f$ Lipschitz on $C$ with constant $L \ge 1$. Let $x, x + s \in C$,
+let $g = \nabla f(x) \neq 0$, and let $H$ be a bounded linear operator with
+$\|H\| \le \kappa_B$. Let $t$ be a Cauchy step for the radius $\Delta > 0$. Suppose that the
+step $s$ is in the trust region, $\|s\| \le \Delta$, and satisfies the Cauchy condition (2.3.4),
+$q(s) \le q(-t g)$. If $\eta \ge 0$ and (2.3.15) holds,
+$$\Delta < \frac{(1 - \eta) \|g\|}{2 (L + \kappa_B)},$$
+then $\rho \ge \eta$. With $\eta = \eta_2$, the iteration is very successful. -/
 theorem le_reductionRatio_trust_first_of_isCauchyStep (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 1 f y) (hL : IteratedFDerivLipschitzOn f 1 L C) (hL1 : 1 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hH : ‖H‖ ≤ κB) {t : ℝ}
@@ -295,11 +379,19 @@ theorem le_reductionRatio_trust_first_of_isCauchyStep (hC : Convex ℝ C)
   refine le_reductionRatio_trust_first hC hf hL hx hxs hH hs hΔ hg (by linarith) ?_
   nlinarith
 
-/-- **Lemma 3.2.4** ([cartis2022evaluation]), book form. Let `∇²f` be `L`-Lipschitz (`L > 0`) on a
-convex `C ∋ x, x + s` (`f` `C²` there), let `u` be a direction of negative curvature
-`⟪u, ∇²f(x) u⟫ = λ < 0` (e.g. a unit eigenvector of `λ_min[∇²f(x)]`) with `⟪∇f(x), u⟫ ≤ 0`, and let
-the step lie in the trust region (`‖s‖ ≤ Δ`, `Δ > 0`) and satisfy the eigenpoint condition
-(3.2.10) `T_{f,2}(x, s) ≤ T_{f,2}(x, Δ u)`. If (3.2.16) `Δ < 3 (1 - η) |λ| / L`, then `ρ ≥ η`. -/
+/-- **Lemma 3.2.4** of [cartis2022evaluation], in the form of the source. Let $E$ be a real Hilbert
+space, $C \subseteq E$ convex, and $f : E \to \mathbb{R}$ twice continuously differentiable at
+every point of $C$, with $\nabla^2 f$ Lipschitz on $C$ with constant $L > 0$. Let
+$x, x + s \in C$. Let $u \in E$ be a direction of negative curvature, $\langle u, \nabla^2 f(x)
+u \rangle = \lambda < 0$, with $\langle \nabla f(x), u \rangle \le 0$; for example, $u$ can be a
+unit eigenvector for $\lambda_{\min}[\nabla^2 f(x)]$. Suppose that the step $s$ is in the trust
+region, $\|s\| \le \Delta$ with $\Delta > 0$, and satisfies the eigenpoint condition (3.2.10),
+$T_{f,2}(x, s) \le T_{f,2}(x, \Delta u)$. If (3.2.16) holds,
+$$\Delta < \frac{3 (1 - \eta) |\lambda|}{L},$$
+then $\rho \ge \eta$.
+
+The eigenpoint condition is stated as $q(s) \le q(\Delta u)$ for the model $q$ with
+$\nabla f(x)$ and $\nabla^2 f(x)$. The direction $u$ need not be a unit vector. -/
 theorem le_reductionRatio_trust_second_of_curvature (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 2 f y) (hL : IteratedFDerivLipschitzOn f 2 L C) (hL0 : 0 < L)
     (hx : x ∈ C) (hxs : x + s ∈ C) {u : E} {lam : ℝ}
@@ -318,8 +410,10 @@ section Existence
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- A global minimizer of the model on the trust region satisfies the Cauchy decrease condition
-(2.3.4) for every Cauchy step and the eigenpoint condition (3.2.10) for every unit direction. -/
+/-- Let $E$ be a real inner product space and let $s$ minimize $q$ on the trust region
+$\|s\| \le \Delta$. Then $s$ satisfies the Cauchy condition (2.3.4), $q(s) \le q(-t g)$, for
+every Cauchy step $t$. If $\Delta \ge 0$, then $s$ also satisfies the eigenpoint condition
+(3.2.10), $q(s) \le q(\Delta u)$, for every unit vector $u$. -/
 theorem quadModel_le_of_isMinOn_ball {g : E} {H : E →L[ℝ] E} {Δ : ℝ} {s : E}
     (hmin : IsMinOn (quadModel g H) (closedBall 0 Δ) s) :
     (∀ t, IsCauchyStep g H Δ t → quadModel g H s ≤ quadModel g H (-(t • g))) ∧
@@ -329,9 +423,12 @@ theorem quadModel_le_of_isMinOn_ball {g : E} {H : E →L[ℝ] E} {Δ : ℝ} {s :
     exact ht.2.1
   · rw [mem_closedBall_zero_iff, norm_smul, hu, mul_one, Real.norm_of_nonneg hΔ]
 
-/-- In finite dimension the model attains its minimum on the trust region `‖s‖ ≤ Δ`, `Δ ≥ 0`,
-and the minimizer satisfies the Cauchy and eigenpoint conditions (existence of the steps of
-TR1, TR2; [cartis2022evaluation], Section 3.2.1). -/
+/-- Existence of the steps of TR1 and TR2, Section 3.2.1 of [cartis2022evaluation]. Let $E$ be a
+finite-dimensional real inner product space, $g \in E$, $H$ a linear operator on $E$ and
+$\Delta \ge 0$. Then $q$ attains its minimum on the trust region $\|s\| \le \Delta$ at some $s$,
+and this $s$ satisfies
+* the Cauchy condition $q(s) \le q(-t g)$ for every Cauchy step $t$, and
+* the eigenpoint condition $q(s) \le q(\Delta u)$ for every unit vector $u$. -/
 theorem exists_isMinOn_quadModel_ball [FiniteDimensional ℝ E] (g : E) (H : E →L[ℝ] E) {Δ : ℝ}
     (hΔ : 0 ≤ Δ) :
     ∃ s, ‖s‖ ≤ Δ ∧ IsMinOn (quadModel g H) (closedBall 0 Δ) s ∧

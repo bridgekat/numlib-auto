@@ -17,49 +17,71 @@ import Numlib.LinearAlgebra.Matrix.UnreducedHessenberg
 /-!
 # Krylov and Arnoldi decompositions, and the implicit Q theorem
 
-A *Krylov decomposition* (Stewart) of a square matrix `A` is an identity
-`A Q = Q B + r bᵀ` in which `Q` has orthonormal columns and the residual `r` is orthogonal to
-them; an *Arnoldi decomposition* is the case of an upper Hessenberg `B = H` and `b = e_last`
-([golub2013matrix] §10.5.1, the definition after (10.5.2)). A unitary reduction `Qᴴ A Q = H` to
-Hessenberg form is an Arnoldi decomposition with zero residual, and so are its leading columns
-with residual `h_{j+1,j} q_{j+1}`; the Arnoldi process produces one at every step
-(`Numlib/Krylov/Decomposition`).
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{n \times n}$. A
+**Krylov decomposition** of $A$, in the sense of Stewart, is an identity
+$$A Q = Q B + r b^T$$
+in which $Q \in \mathbb{K}^{n \times m}$ has orthonormal columns $q_i$, the residual
+$r \in \mathbb{K}^n$ is orthogonal to them, and $B \in \mathbb{K}^{m \times m}$ and
+$b \in \mathbb{K}^m$ are arbitrary. An **Arnoldi decomposition** is the case in which $B = H$ is
+upper Hessenberg and $b = e_k$ is the last unit vector, as in the definition after (10.5.2) in
+§10.5.1 of [golub2013matrix]. A unitary reduction $Q^H A Q = H$ to Hessenberg form is an Arnoldi
+decomposition with zero residual. Its leading $j + 1$ columns form an Arnoldi decomposition with the
+residual $h_{j+1,j} q_{j+1}$. The Arnoldi process produces an Arnoldi decomposition at every step
+(`Numlib.Krylov.Decomposition`).
+
+The main result is the **implicit Q theorem**: two Arnoldi decompositions of $A$ with the same first
+column, the first with unreduced $H$, agree up to a diagonal matrix $D$ with unimodular entries.
+This holds for decompositions with any number of columns. The square forms of Theorem 7.4.2 of
+[golub2013matrix] follow as corollaries. Columns are indexed from $0$, so that $q_0$ is the first
+column and $e_0$ the first unit vector.
 
 ## Main definitions
 
-* `Matrix.IsKrylovDecomposition A Q B r b`: `Qᴴ Q = 1`, `Qᴴ r = 0` and `A Q = Q B + r bᵀ`.
-* `Matrix.IsArnoldiDecomposition A Q H r`: a Krylov decomposition with `k + 1` columns, `H` upper
-  Hessenberg and `b = Pi.single (Fin.last k) 1`. The column count is `k + 1` so that the last
-  unit vector and the first column `Q *ᵥ Pi.single 0 1` are well typed.
+* `Matrix.IsKrylovDecomposition`: $Q^H Q = I$, $Q^H r = 0$ and $A Q = Q B + r b^T$.
+* `Matrix.IsArnoldiDecomposition`: a Krylov decomposition with $k + 1$ columns, $B = H$ upper
+  Hessenberg and $b = e_k$.
 
 ## Main results
 
-* `Matrix.IsKrylovDecomposition.conjTranspose_mul_mul`: `B = Qᴴ A Q`.
-* `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self`:
-  a change of basis `Q ↦ Q U`, `B ↦ Uᴴ B U`
-  ([golub2013matrix] (10.5.9), §10.5.4).
-* `Matrix.IsKrylovDecomposition.leading`: truncation to the leading `j + 1` columns, the residual
-  collecting what the discarded columns contributed to column `j` — the one lemma behind implicit
-  restarting, Krylov–Schur restarting and the square implicit Q theorem.
-* `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero`: truncation across a zero block, keeping
-  the residual vector and restricting the residual row (Krylov–Schur restarting).
-* `Matrix.IsArnoldiDecomposition.implicitQ`: **the implicit Q theorem**, once, for decompositions
-  with any number of columns: two Arnoldi decompositions of `A` with the same first column, the
-  first with unreduced `H`, agree up to a unimodular diagonal, `Q' = Q D`, `H' = Dᴴ H D`,
-  `r' = d_k r`. The proof is the column recursion of [golub2013matrix] Theorem 7.4.2:
-  `h_{i+1,i} q_{i+1} = A q_i − ∑_{l ≤ i} h_{l,i} q_l` for `i < k`.
-* The square theorems of [golub2013matrix] Theorem 7.4.2, as corollaries:
-  `Matrix.implicitQ_of_apply_eq_zero` (the book's form, with the first vanishing subdiagonal
-  entry), `Matrix.implicitQ` (the unreduced case), and their real forms
-  `Matrix.implicitQ_of_apply_eq_zero_real`, `Matrix.implicitQ_real`.
+* `Matrix.IsKrylovDecomposition.conjTranspose_mul_mul`: the matrix of a Krylov decomposition is the
+  compression $B = Q^H A Q$.
+* `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self`: a change of basis $Q \mapsto QU$,
+  $B \mapsto U^H B U$ with unitary $U$ gives a Krylov decomposition ([golub2013matrix] (10.5.9) and
+  §10.5.4).
+* `Matrix.IsKrylovDecomposition.leading`: the leading $j + 1$ columns form a Krylov decomposition,
+  whose residual collects what the discarded columns contribute to column $j$. This lemma is behind
+  implicit restarting, Krylov–Schur restarting and the square implicit Q theorem.
+* `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero`: truncation across a zero block, with the
+  same residual vector and the restricted residual row, as in Krylov–Schur restarting.
+* `Matrix.IsArnoldiDecomposition.implicitQ`: the implicit Q theorem for Arnoldi decompositions with
+  $k + 1$ columns: $Q' = QD$, $H' = D^H H D$ and $r' = d_k r$ for a unimodular diagonal
+  $D = \operatorname{diag}(d)$ with $d_0 = 1$.
+* `Matrix.IsArnoldiDecomposition.aeval_mulVec_first`: for a polynomial $p$ of degree at most $k$,
+  $p(A) Q e_0 = Q\, p(H) e_0$ ([golub2013matrix] §10.5.3).
+* `Matrix.implicitQ_of_apply_eq_zero`, `Matrix.implicitQ`: Theorem 7.4.2 of [golub2013matrix] for
+  unitary $Q$ and $V$, in the form of the source with a first vanishing subdiagonal entry, and in
+  the unreduced case.
+* `Matrix.implicitQ_of_apply_eq_zero_real`, `Matrix.implicitQ_real`: the same for real orthogonal
+  $Q$ and $V$, with $D = \operatorname{diag}(\pm 1)$.
+
+## Proof outline
+
+Column $i < k$ of an Arnoldi decomposition gives the recurrence
+$$h_{i+1,i} q_{i+1} = A q_i - \sum_{l \le i} h_{li} q_l,$$
+as in the proof of Theorem 7.4.2 of [golub2013matrix]. The implicit Q theorem follows by induction
+on $i$ from these recurrences for the two decompositions. The square theorems apply it to the
+leading columns of the two unitary reductions.
 
 ## Implementation notes
 
-The predicates are pure matrix statements over `[RCLike 𝕜]`; the operator-level predicates on an
-orthonormal family in an inner product space are `Krylov.IsKrylovDecomposition` and
-`Krylov.IsArnoldiDecomposition` of `Numlib/Krylov/Decomposition`, which proves that these are their
-`toEuclideanLin` instances. The implicit Q theorem needs neither a square `Q` nor a unitary
-`Vᴴ Q`: orthonormal columns and the Hessenberg shape carry the induction.
+* The predicates are matrix statements over `[RCLike 𝕜]`. The predicates for an orthonormal family
+  in an inner product space are `Krylov.IsKrylovDecomposition` and `Krylov.IsArnoldiDecomposition`
+  of `Numlib.Krylov.Decomposition`. That module proves that the predicates here are their instances
+  for `Matrix.toEuclideanLin`.
+* An Arnoldi decomposition has $k + 1$ columns, indexed by `Fin (k + 1)`, so that the last unit
+  vector `Pi.single (Fin.last k) 1` and the first column `Q *ᵥ Pi.single 0 1` are well typed.
+* The implicit Q theorem needs neither a square $Q$ nor a unitary $V^H Q$. The orthonormal columns
+  and the Hessenberg shape carry the induction.
 -/
 
 open Finset
@@ -74,34 +96,43 @@ section Krylov
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- A **Krylov decomposition** (Stewart; [golub2013matrix] §10.5.4) `A Q = Q B + r bᵀ` of
-`A : Matrix n n 𝕜`: `Q` has orthonormal columns, the residual `r` is orthogonal to them, and
-`B`, `b` are arbitrary. -/
+/-- A **Krylov decomposition** of $A \in \mathbb{K}^{n \times n}$ is an identity
+$$A Q = Q B + r b^T,$$
+where $Q \in \mathbb{K}^{n \times m}$ has orthonormal columns ($Q^H Q = I$), the residual
+$r \in \mathbb{K}^n$ is orthogonal to the columns of $Q$ ($Q^H r = 0$), and
+$B \in \mathbb{K}^{m \times m}$ and $b \in \mathbb{K}^m$ are arbitrary.
+
+The notion is due to Stewart. It follows §10.5.4 of [golub2013matrix]. The term $r b^T$ is
+`Matrix.vecMulVec r b`, without complex conjugation. -/
 structure IsKrylovDecomposition (A : Matrix n n 𝕜) (Q : Matrix n m 𝕜) (B : Matrix m m 𝕜)
     (r : n → 𝕜) (b : m → 𝕜) : Prop where
-  /-- The columns of `Q` are orthonormal. -/
+  /-- The columns of $Q$ are orthonormal: $Q^H Q = I$. -/
   conjTranspose_mul_self : Qᴴ * Q = 1
-  /-- The residual is orthogonal to the columns of `Q`. -/
+  /-- The residual is orthogonal to the columns of $Q$: $Q^H r = 0$. -/
   conjTranspose_mulVec : Qᴴ *ᵥ r = 0
-  /-- The decomposition itself. -/
+  /-- The decomposition $A Q = Q B + r b^T$. -/
   mul_eq : A * Q = Q * B + vecMulVec r b
 
 namespace IsKrylovDecomposition
 
 variable {A : Matrix n n 𝕜} {Q : Matrix n m 𝕜} {B : Matrix m m 𝕜} {r : n → 𝕜} {b : m → 𝕜}
 
-/-- The columns of `Q` are orthonormal, entrywise: `⟪q_i, q_j⟫ = δ_ij`. -/
+/-- The columns $q_i$ of $Q$ in a Krylov decomposition are orthonormal: for all $i$ and $j$,
+$$q_i^H q_j = \delta_{ij}.$$
+-/
 theorem star_col_dotProduct_col (h : IsKrylovDecomposition A Q B r b) (i j : m) :
     star (Q.col i) ⬝ᵥ Q.col j = (1 : Matrix m m 𝕜) i j := by
   rw [← h.conjTranspose_mul_self, Matrix.mul_apply]
   rfl
 
-/-- The residual is orthogonal to every column of `Q`. -/
+/-- In a Krylov decomposition, the residual is orthogonal to every column of $Q$: $q_i^H r = 0$. -/
 theorem star_col_dotProduct_residual (h : IsKrylovDecomposition A Q B r b) (i : m) :
     star (Q.col i) ⬝ᵥ r = 0 :=
   congrFun h.conjTranspose_mulVec i
 
-/-- Column `j` of the decomposition: `A q_j = ∑ᵢ B i j q_i + b_j r`. -/
+/-- Column $j$ of a Krylov decomposition $A Q = Q B + r b^T$ reads
+$$A q_j = \sum_i b_{ij} q_i + b_j r,$$
+where $b_{ij}$ are the entries of $B$ and $b_j$ is the $j$-th entry of $b$. -/
 theorem mulVec_col (h : IsKrylovDecomposition A Q B r b) (j : m) :
     A *ᵥ Q.col j = ∑ i, B i j • Q.col i + b j • r := by
   have hc := congrArg (fun M : Matrix n m 𝕜 => M.col j) h.mul_eq
@@ -110,20 +141,30 @@ theorem mulVec_col (h : IsKrylovDecomposition A Q B r b) (j : m) :
   ext x
   simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, mul_comm]
 
-/-- The entries of `B` are those of the compression: `B i j = ⟪q_i, A q_j⟫`. -/
+/-- The entries of the matrix of a Krylov decomposition $A Q = Q B + r b^T$ are those of the
+compression of $A$: for all $i$ and $j$,
+$$B_{ij} = q_i^H A q_j.$$
+-/
 theorem apply_eq_star_col_dotProduct (h : IsKrylovDecomposition A Q B r b) (i j : m) :
     B i j = star (Q.col i) ⬝ᵥ (A *ᵥ Q.col j) := by
   rw [h.mulVec_col, dotProduct_add, dotProduct_sum, dotProduct_smul,
     h.star_col_dotProduct_residual]
   simp [dotProduct_smul, h.star_col_dotProduct_col, Matrix.one_apply]
 
-/-- `B = Qᴴ A Q`: the matrix of a Krylov decomposition is the compression of `A`. -/
+/-- The matrix of a Krylov decomposition $A Q = Q B + r b^T$ is the compression of $A$:
+$$Q^H A Q = B.$$
+-/
 theorem conjTranspose_mul_mul (h : IsKrylovDecomposition A Q B r b) : Qᴴ * A * Q = B := by
   rw [Matrix.mul_assoc, h.mul_eq, Matrix.mul_add, ← Matrix.mul_assoc, h.conjTranspose_mul_self,
     Matrix.one_mul, mul_vecMulVec, h.conjTranspose_mulVec, zero_vecMulVec, add_zero]
 
-/-- **Change of basis** ([golub2013matrix] (10.5.9) and §10.5.4): for a unitary `U`
-(`Uᴴ U = 1`), `A (Q U) = (Q U) (Uᴴ B U) + r (Uᵀ b)ᵀ` is again a Krylov decomposition. -/
+/-- **Change of basis.** Let $A Q = Q B + r b^T$ be a Krylov decomposition, and let
+$U \in \mathbb{K}^{m \times m}$ satisfy $U^H U = I$. Then
+$$A (Q U) = (Q U)(U^H B U) + r (U^T b)^T$$
+is a Krylov decomposition.
+
+This is (10.5.9) and §10.5.4 of [golub2013matrix]. The new residual row $(U^T b)^T = b^T U$ is
+`b ᵥ* U`. -/
 theorem mul_of_conjTranspose_mul_self (h : IsKrylovDecomposition A Q B r b) {U : Matrix m m 𝕜}
     (hU : Uᴴ * U = 1) : IsKrylovDecomposition A (Q * U) (Uᴴ * B * U) r (b ᵥ* U) where
   conjTranspose_mul_self := by
@@ -138,11 +179,16 @@ theorem mul_of_conjTranspose_mul_self (h : IsKrylovDecomposition A Q B r b) {U :
     simp only [← Matrix.mul_assoc]
     rw [Matrix.mul_assoc Q U Uᴴ, hU', Matrix.mul_one]
 
-/-- **Truncation to the leading `j + 1` columns.** If the entries of `B` below row `j` vanish in
-the columns before `j`, and so do those of `b`, then the leading `j + 1` columns form a Krylov
-decomposition with `b = e_last`, whose residual collects what the discarded columns contributed to
-column `j`: `r' = ∑_{i > j} B i j q_i + b_j r`. For a Hessenberg `B` the first hypothesis always
-holds and `r' = B (j+1) j q_{j+1} + b_j r`. -/
+/-- **Truncation to the leading $j + 1$ columns.** Let $A Q = Q B + r b^T$ be a Krylov decomposition
+with $k$ columns $q_0, \dots, q_{k-1}$, and let $j < k$. Suppose that $B_{il} = 0$ whenever
+$l < j < i$, and that $b_l = 0$ for $l < j$. Let $Q_j$ consist of the columns $q_0, \dots, q_j$
+and let $B_j$ be the leading principal submatrix of $B$ of order $j + 1$. Then
+$$A Q_j = Q_j B_j + r' e_j^T, \qquad r' = \sum_{i > j} B_{ij} q_i + b_j r,$$
+is a Krylov decomposition, where $e_j$ is the last unit vector of $\mathbb{K}^{j+1}$.
+
+The residual $r'$ collects what the discarded columns contribute to column $j$. For an upper
+Hessenberg $B$ the first hypothesis always holds, and $r' = B_{j+1,j} q_{j+1} + b_j r$ when
+$j + 1 < k$. The columns $q_0, \dots, q_j$ are `Q.submatrix id (Fin.castLE j.isLt)`. -/
 theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k) 𝕜}
     {b : Fin k → 𝕜} (h : IsKrylovDecomposition A Q B r b) (j : Fin k)
     (hB : ∀ i l : Fin k, l < j → j < i → B i l = 0) (hb : ∀ l : Fin k, l < j → b l = 0) :
@@ -179,10 +225,15 @@ theorem leading {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k
       rw [Pi.single_eq_of_ne ha, mul_zero, hb _ hlt, mul_zero, add_zero]
       exact sum_eq_zero fun i hi => by rw [hB i _ hlt (mem_Ioi.1 hi), mul_zero]
 
-/-- **Truncation of a Krylov decomposition across a zero block.** If `B` is block upper triangular
-with respect to the split after index `j` (`B i l = 0` for `l ≤ j < i`), the leading `j + 1` columns
-form a Krylov decomposition with the same residual vector and the residual row restricted. This is
-the truncation of Krylov–Schur restarting ([golub2013matrix] §10.5.4). -/
+/-- **Truncation across a zero block.** Let $A Q = Q B + r b^T$ be a Krylov decomposition with $k$
+columns, and let $j < k$. Suppose that $B$ is block upper triangular for the split after index
+$j$, that is, $B_{il} = 0$ whenever $l \le j < i$. Let $Q_j$ consist of the columns
+$q_0, \dots, q_j$, let $B_j$ be the leading principal submatrix of $B$ of order $j + 1$, and let
+$b' = (b_0, \dots, b_j)$. Then
+$$A Q_j = Q_j B_j + r b'^T$$
+is a Krylov decomposition, with the same residual vector $r$.
+
+This is the truncation step of Krylov–Schur restarting, §10.5.4 of [golub2013matrix]. -/
 theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k) 𝕜}
     {b : Fin k → 𝕜} (h : IsKrylovDecomposition A Q B r b) (j : Fin k)
     (hB : ∀ i l : Fin k, l ≤ j → j < i → B i l = 0) :
@@ -210,7 +261,9 @@ theorem leading_of_apply_eq_zero {k : ℕ} {Q : Matrix n (Fin k) 𝕜} {B : Matr
 
 end IsKrylovDecomposition
 
-/-- A unitary `Q` gives a Krylov decomposition with zero residual: `A Q = Q (Qᴴ A Q)`. -/
+/-- Let $Q \in \mathbb{K}^{m \times m}$ be unitary. Then, for every $A \in \mathbb{K}^{m \times m}$
+and every $b \in \mathbb{K}^m$, the identity $A Q = Q (Q^H A Q) + 0 \cdot b^T$ is a Krylov
+decomposition with zero residual. -/
 theorem isKrylovDecomposition_of_mem_unitaryGroup {Q : Matrix m m 𝕜}
     (hQ : Q ∈ unitaryGroup m 𝕜) (A : Matrix m m 𝕜) (b : m → 𝕜) :
     IsKrylovDecomposition A Q (star Q * A * Q) 0 b where
@@ -226,17 +279,30 @@ end Krylov
 
 section Arnoldi
 
-/-- An **Arnoldi decomposition** with `k + 1` columns ([golub2013matrix] §10.5.1, the definition
-after (10.5.2)): a Krylov decomposition `A Q = Q H + r e_lastᵀ` with `H` upper Hessenberg. The
-book's `k`-step decomposition is the case `k = k' + 1` of this one. -/
+/-- An **Arnoldi decomposition** of $A \in \mathbb{K}^{n \times n}$ with $k + 1$ columns is a Krylov
+decomposition
+$$A Q = Q H + r e_k^T,$$
+where $Q \in \mathbb{K}^{n \times (k+1)}$ has orthonormal columns $q_0, \dots, q_k$, the
+residual $r$ is orthogonal to them, $H \in \mathbb{K}^{(k+1) \times (k+1)}$ is upper Hessenberg,
+and $e_k$ is the last unit vector of $\mathbb{K}^{k+1}$.
+
+This is the definition after (10.5.2) in §10.5.1 of [golub2013matrix]. The $k$-step
+decomposition of the source has $k$ columns, so it is the case of $k - 1$ in place of $k$ here.
+The vector $e_k$ is `Pi.single (Fin.last k) 1`. -/
 structure IsArnoldiDecomposition {k : ℕ} (A : Matrix n n 𝕜) (Q : Matrix n (Fin (k + 1)) 𝕜)
     (H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜) (r : n → 𝕜) : Prop
     extends IsKrylovDecomposition A Q H r (Pi.single (Fin.last k) 1) where
-  /-- The coefficient matrix is upper Hessenberg. -/
+  /-- The matrix $H$ of an Arnoldi decomposition is upper Hessenberg. -/
   isUpperHessenberg : H.IsUpperHessenberg
 
-/-- The leading `j + 1` columns of a Krylov decomposition with Hessenberg `B` (and `b` vanishing
-before `j`) form an Arnoldi decomposition. -/
+/-- Let $A Q = Q B + r b^T$ be a Krylov decomposition with $k$ columns, in which $B$ is upper
+Hessenberg. Let $j < k$, and suppose that $b_l = 0$ for $l < j$. Then the leading $j + 1$
+columns form an Arnoldi decomposition
+$$A Q_j = Q_j B_j + r' e_j^T, \qquad r' = \sum_{i > j} B_{ij} q_i + b_j r,$$
+where $Q_j$ consists of the columns $q_0, \dots, q_j$ and $B_j$ is the leading principal
+submatrix of $B$ of order $j + 1$.
+
+This is `Matrix.IsKrylovDecomposition.leading` together with the Hessenberg shape of $B_j$. -/
 theorem IsKrylovDecomposition.isArnoldiDecomposition_leading {k : ℕ} {A : Matrix n n 𝕜}
     {Q : Matrix n (Fin k) 𝕜} {B : Matrix (Fin k) (Fin k) 𝕜} {r : n → 𝕜} {b : Fin k → 𝕜}
     (h : IsKrylovDecomposition A Q B r b) (hB : B.IsUpperHessenberg) (j : Fin k)
@@ -248,7 +314,10 @@ theorem IsKrylovDecomposition.isArnoldiDecomposition_leading {k : ℕ} {A : Matr
   isUpperHessenberg := hB.submatrix_of_strictMono fun _ _ hab => by
     rw [Fin.lt_def, Fin.val_castLE, Fin.val_castLE]; exact hab
 
-/-- A unitary reduction to Hessenberg form is an Arnoldi decomposition with zero residual. -/
+/-- A unitary reduction to Hessenberg form is an Arnoldi decomposition with zero residual. Let
+$Q \in \mathbb{K}^{(N+1) \times (N+1)}$ be unitary, let $A \in \mathbb{K}^{(N+1) \times (N+1)}$,
+and suppose that $Q^H A Q$ is upper Hessenberg. Then $A Q = Q (Q^H A Q) + 0 \cdot e_N^T$ is an
+Arnoldi decomposition. -/
 theorem isArnoldiDecomposition_of_mem_unitaryGroup {N : ℕ}
     {Q : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜} (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜)
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜} (hH : (star Q * A * Q).IsUpperHessenberg) :
@@ -260,8 +329,11 @@ namespace IsArnoldiDecomposition
 variable {k : ℕ} {A : Matrix n n 𝕜} {Q : Matrix n (Fin (k + 1)) 𝕜}
   {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} {r : n → 𝕜}
 
-/-- The Arnoldi recurrence read off column `i < k` of an Arnoldi decomposition:
-`h_{i+1,i} q_{i+1} = A q_i − ∑_{l ≤ i} h_{l,i} q_l`. -/
+/-- The **Arnoldi recurrence.** Let $A Q = Q H + r e_k^T$ be an Arnoldi decomposition with columns
+$q_0, \dots, q_k$. Then, for every $i < k$,
+$$h_{i+1,i} q_{i+1} = A q_i - \sum_{l \le i} h_{li} q_l.$$
+
+This is column $i$ of the decomposition, where the residual does not appear because $i < k$. -/
 theorem smul_col_succ (h : IsArnoldiDecomposition A Q H r) (i : Fin k) :
     H i.succ i.castSucc • Q.col i.succ =
       A *ᵥ Q.col i.castSucc - ∑ l ∈ Iic i.castSucc, H l i.castSucc • Q.col l := by
@@ -279,14 +351,20 @@ theorem smul_col_succ (h : IsArnoldiDecomposition A Q H r) (i : Fin k) :
     omega
   rw [h.isUpperHessenberg l i.castSucc ⟨i.succ, Fin.castSucc_lt_succ, hsl⟩, zero_smul]
 
-/-- **The implicit Q theorem for Arnoldi decompositions** — the one uniqueness engine
-([golub2013matrix] Theorem 7.4.2 and §10.5.1, in `k`-step form). Two Arnoldi decompositions of the
-same `A` with `k + 1` columns and the same first column, the first with unreduced `H`, agree up to
-a unimodular diagonal `D = diagonal d` with `d 0 = 1`: `Q' = Q D`, `H' = Dᴴ H D`, `r' = d_k r`.
+/-- The **implicit Q theorem** for Arnoldi decompositions. Let $A Q = Q H + r e_k^T$ and
+$A Q' = Q' H' + r' e_k^T$ be two Arnoldi decompositions of the same
+$A \in \mathbb{K}^{n \times n}$, each with $k + 1$ columns. Suppose that $H$ is unreduced upper
+Hessenberg and that the two decompositions have the same first column, $Q' e_0 = Q e_0$. Then
+there is $d \in \mathbb{K}^{k+1}$ with $|d_i| = 1$ for all $i$ and $d_0 = 1$ such that, with
+$D = \operatorname{diag}(d)$,
+$$Q' = Q D, \qquad H' = D^H H D, \qquad r' = d_k r.$$
 
-By induction on `i`, `q'_l = d_l q_l` for `l ≤ i` gives `h'_{l,i} = conj (d_l) h_{l,i} d_i`, so the
-recurrences `h_{i+1,i} q_{i+1} = A q_i − ∑_{l ≤ i} h_{l,i} q_l` for `Q` and `Q'` give
-`h'_{i+1,i} q'_{i+1} = d_i h_{i+1,i} q_{i+1}` with a nonzero right side; both are unit vectors. -/
+This follows Theorem 7.4.2 and §10.5.1 of [golub2013matrix], in the form for $k$-step
+decompositions. The proof is by induction on $i$. If $q'_l = d_l q_l$ for $l \le i$, then
+$h'_{li} = \bar d_l h_{li} d_i$, and the recurrences of
+`Matrix.IsArnoldiDecomposition.smul_col_succ` for $Q$ and $Q'$ give
+$h'_{i+1,i} q'_{i+1} = d_i h_{i+1,i} q_{i+1}$. The right side is nonzero, and both $q_{i+1}$ and
+$q'_{i+1}$ are unit vectors. -/
 theorem implicitQ {Q' : Matrix n (Fin (k + 1)) 𝕜} {H' : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜}
     {r' : n → 𝕜} (h : IsArnoldiDecomposition A Q H r) (h' : IsArnoldiDecomposition A Q' H' r')
     (hH : H.IsUnreducedUpperHessenberg) (h0 : Q' *ᵥ Pi.single 0 1 = Q *ᵥ Pi.single 0 1) :
@@ -391,8 +469,12 @@ theorem implicitQ {Q' : Matrix n (Fin (k + 1)) 𝕜} {H' : Matrix (Fin (k + 1)) 
   have := congrFun (congrFun hr x) (Fin.last k)
   simpa [vecMulVec_apply, mul_comm] using this
 
-/-- For `i ≤ k`, `A^i q_0 = Q H^i e_0`: the residual term of `A Q = Q H + r e_kᵀ` does not reach
-`H^i e_0`, which is supported on the first `i + 1` coordinates. -/
+/-- Let $A Q = Q H + r e_k^T$ be an Arnoldi decomposition with $k + 1$ columns. Then, for every
+$i \le k$,
+$$A^i q_0 = Q H^i e_0.$$
+
+The residual term does not reach $H^i e_0$, because $H^i e_0$ is supported on the first $i + 1$
+coordinates. -/
 theorem pow_mulVec_first [DecidableEq n] (h : IsArnoldiDecomposition A Q H r) {i : ℕ}
     (hi : i ≤ k) : A ^ i *ᵥ (Q *ᵥ Pi.single 0 1) = Q *ᵥ (H ^ i *ᵥ Pi.single 0 1) := by
   induction i with
@@ -410,9 +492,14 @@ theorem pow_mulVec_first [DecidableEq n] (h : IsArnoldiDecomposition A Q H r) {i
           exact (mulVec_mulVec _ Q H).symm
       _ = Q *ᵥ (H ^ (i + 1) *ᵥ Pi.single 0 1) := by rw [pow_succ', ← mulVec_mulVec]
 
-/-- **Polynomial filtering of the first column** ([golub2013matrix] §10.5.3, "`(A − μI) Q_c e₁ =
-Q_c (H_c − μI) e₁` … and so `q₊ = p(A) q₁`"): for an Arnoldi decomposition with `k + 1` columns
-and a polynomial of degree at most `k`, `p(A) (Q e₀) = Q (p(H) e₀)`. -/
+/-- **Polynomial filtering of the first column.** Let $A Q = Q H + r e_k^T$ be an Arnoldi
+decomposition with $k + 1$ columns, and let $p$ be a polynomial over $\mathbb{K}$ of degree at
+most $k$. Then
+$$p(A)\, Q e_0 = Q\, p(H) e_0.$$
+
+This is the identity of §10.5.3 of [golub2013matrix]:
+"$(A - \mu I) Q_c e_1 = Q_c (H_c - \mu I) e_1$ … and so $q_+ = p(A) q_1$". The source indexes
+from $1$. -/
 theorem aeval_mulVec_first [DecidableEq n] (h : IsArnoldiDecomposition A Q H r)
     {p : Polynomial 𝕜} (hp : p.natDegree ≤ k) :
     Polynomial.aeval A p *ᵥ (Q *ᵥ Pi.single 0 1) =
@@ -433,10 +520,16 @@ section Square
 
 variable {N : ℕ} {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜}
 
-/-- **The implicit Q theorem**, unreduced case ([golub2013matrix] Theorem 7.4.2 and the remark
-after it: `G` and `H` are "essentially equal"): if `Q`, `V` are unitary with the same first column,
-`H = Qᴴ A Q` is unreduced upper Hessenberg and `G = Vᴴ A V` is upper Hessenberg, then
-`V = Q D` and `G = Dᴴ H D` for a unimodular diagonal `D` with `d 0 = 1`. -/
+/-- The **implicit Q theorem**, unreduced case. Let $A, Q, V \in \mathbb{K}^{(N+1) \times (N+1)}$,
+and let $Q$ and $V$ be unitary with the same first column, $V e_0 = Q e_0$. Suppose that
+$H = Q^H A Q$ is unreduced upper Hessenberg and that $G = V^H A V$ is upper Hessenberg. Then
+there is $d \in \mathbb{K}^{N+1}$ with $|d_i| = 1$ for all $i$ and $d_0 = 1$ such that, with
+$D = \operatorname{diag}(d)$,
+$$V = Q D, \qquad G = D^H H D.$$
+
+This is Theorem 7.4.2 of [golub2013matrix] and the remark after it, which says that $G$ and $H$
+are "essentially equal". The proof specializes `Matrix.IsArnoldiDecomposition.implicitQ` to the
+two reductions, which are Arnoldi decompositions with zero residual. -/
 theorem implicitQ (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜) (hV : V ∈ unitaryGroup (Fin (N + 1)) 𝕜)
     (hH : (star Q * A * Q).IsUnreducedUpperHessenberg) (hG : (star V * A * V).IsUpperHessenberg)
     (h0 : V.col 0 = Q.col 0) :
@@ -448,16 +541,23 @@ theorem implicitQ (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜) (hV : V ∈ unita
       (by rw [mulVec_single_one, mulVec_single_one, h0])
   exact ⟨d, hd1, hd0, hVQ, hGH⟩
 
-/-- [golub2013matrix] **Theorem 7.4.2 (implicit Q theorem)**, the book's form: let `Q`, `V` be
-unitary with the same first column, `H = Qᴴ A Q` and `G = Vᴴ A V` upper Hessenberg, and let the
-first `k` subdiagonal entries of `H` be nonzero (`k ≤ N`). Then
-(a) the columns `i ≤ k` of `V` are unimodular multiples of those of `Q`;
-(b) `|g_{i+1,i}| = |h_{i+1,i}|` for `i < k`;
-(c) if `h_{k+1,k} = 0` then `g_{k+1,k} = 0`.
-(The book takes `k` to be the first index with `h_{k+1,k} = 0`, and indexes from `1`.) The leading
-`k + 1` columns of both reductions are Arnoldi decompositions (`IsKrylovDecomposition.leading`),
-with residuals `h_{k+1,k} q_{k+1}` and `g_{k+1,k} v_{k+1}`, and the engine
-`Matrix.IsArnoldiDecomposition.implicitQ` compares them. -/
+/-- **Theorem 7.4.2** of [golub2013matrix] (**implicit Q theorem**). Let
+$A, Q, V \in \mathbb{K}^{(N+1) \times (N+1)}$, and let $Q$ and $V$ be unitary with the same
+first column, $V e_0 = Q e_0$. Suppose that $H = Q^H A Q$ and $G = V^H A V$ are upper
+Hessenberg. Let $k \le N$, and suppose that $h_{i+1,i} \neq 0$ for all $i < k$. Then:
+
+(a) for every $i \le k$, there is $c \in \mathbb{K}$ with $|c| = 1$ and $v_i = c q_i$;
+
+(b) $|g_{i+1,i}| = |h_{i+1,i}|$ for every $i < k$;
+
+(c) if $k < N$ and $h_{k+1,k} = 0$, then $g_{k+1,k} = 0$.
+
+The source takes $k$ to be the first index with $h_{k+1,k} = 0$, and indexes from $1$. Here $k$
+is any index up to which the subdiagonal of $H$ is nonzero, and the vanishing of $h_{k+1,k}$ is
+the hypothesis of (c). The proof applies `Matrix.IsKrylovDecomposition.leading` to the two
+reductions. Their leading $k + 1$ columns are Arnoldi decompositions with the residuals
+$h_{k+1,k} q_{k+1}$ and $g_{k+1,k} v_{k+1}$, and `Matrix.IsArnoldiDecomposition.implicitQ`
+compares them. -/
 theorem implicitQ_of_apply_eq_zero (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜)
     (hV : V ∈ unitaryGroup (Fin (N + 1)) 𝕜) (hH : (star Q * A * Q).IsUpperHessenberg)
     (hG : (star V * A * V).IsUpperHessenberg) (h0 : V.col 0 = Q.col 0) {k : ℕ} (hk : k ≤ N)
@@ -530,8 +630,13 @@ theorem implicitQ_of_apply_eq_zero (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜)
 
 variable {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
 
-/-- The implicit Q theorem for real orthogonal matrices, unreduced case: `V = Q D` and
-`Vᵀ A V = D (Qᵀ A Q) D` with `D = diag(±1)`, `d 0 = 1`. -/
+/-- The implicit Q theorem for real orthogonal matrices, unreduced case. Let
+$A, Q, V \in \mathbb{R}^{(N+1) \times (N+1)}$, and let $Q$ and $V$ be orthogonal with the same
+first column, $V e_0 = Q e_0$. Suppose that $Q^T A Q$ is unreduced upper Hessenberg and that
+$V^T A V$ is upper Hessenberg. Then there is $d \in \mathbb{R}^{N+1}$ with $d_i = \pm 1$ for all
+$i$ and $d_0 = 1$ such that, with $D = \operatorname{diag}(d)$,
+$$V = Q D, \qquad V^T A V = D (Q^T A Q) D.$$
+-/
 theorem implicitQ_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hV : V ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hH : (Qᵀ * A * Q).IsUnreducedUpperHessenberg)
     (hG : (Vᵀ * A * V).IsUpperHessenberg) (h0 : V.col 0 = Q.col 0) :
@@ -545,10 +650,19 @@ theorem implicitQ_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ)
   · simp only [← conjTranspose_eq_transpose_of_trivial, ← star_eq_conjTranspose, hGH]
     rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial, diagonal_transpose]
 
-/-- [golub2013matrix] **Theorem 7.4.2**, as the book states it, for real orthogonal `Q`, `V`: the
-columns `i ≤ k` of `V` are `± ` those of `Q`, `|g_{i+1,i}| = |h_{i+1,i}|` for `i < k`, and
-`h_{k+1,k} = 0` forces `g_{k+1,k} = 0`. Chapter 8's Theorem 8.3.2 is its symmetric-tridiagonal
-instance. -/
+/-- **Theorem 7.4.2** of [golub2013matrix], for real orthogonal matrices. Let
+$A, Q, V \in \mathbb{R}^{(N+1) \times (N+1)}$, and let $Q$ and $V$ be orthogonal with the same
+first column, $V e_0 = Q e_0$. Suppose that $H = Q^T A Q$ and $G = V^T A V$ are upper
+Hessenberg. Let $k \le N$, and suppose that $h_{i+1,i} \neq 0$ for all $i < k$. Then:
+
+(a) $v_i = q_i$ or $v_i = -q_i$ for every $i \le k$;
+
+(b) $|g_{i+1,i}| = |h_{i+1,i}|$ for every $i < k$;
+
+(c) if $k < N$ and $h_{k+1,k} = 0$, then $g_{k+1,k} = 0$.
+
+Theorem 8.3.2 of [golub2013matrix] is the instance of this theorem for symmetric tridiagonal
+matrices. The source indexes from $1$. -/
 theorem implicitQ_of_apply_eq_zero_real (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hV : V ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hH : (Qᵀ * A * Q).IsUpperHessenberg)
     (hG : (Vᵀ * A * V).IsUpperHessenberg) (h0 : V.col 0 = Q.col 0) {k : ℕ} (hk : k ≤ N)

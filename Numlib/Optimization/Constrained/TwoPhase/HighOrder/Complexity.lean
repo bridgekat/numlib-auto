@@ -9,76 +9,85 @@ import Numlib.Optimization.ModelBased.InexactTaylor
 /-!
 # Evaluation complexity of high-order target-following runs
 
-For a run of Phase 2 of TPqp-GC (`Constrained.IsHighOrderTargetRun`, Algorithm 14.3.2 of
-[cartis2022evaluation]) whose inner calls satisfy a merit-decrease contract (the form of
-Lemmas 14.2.2–14.2.3 for `μ(·, t_k)`), this file bounds the number of outer iterations and the
-evaluation counts (cf. Lemma 14.3.8 and Theorem 14.3.9 of [cartis2022evaluation], Phase 2).
+This file bounds the number of outer iterations and the numbers of evaluations of Phase 2 of TPqp-GC
+(Algorithm 14.3.2 of [cartis2022evaluation]), for a run (`Constrained.IsHighOrderTargetRun`) whose
+inner calls satisfy a merit-decrease contract. The contract has the form of Lemmas 14.2.2 and 14.2.3
+of [cartis2022evaluation] for the merit function $\mu(\cdot, t_k) = \frac12 \|r(\cdot, t_k)\|^2$. At
+every outer iteration $k \ge 1$ that is reached, it asks: $e_k \le \kappa_{\mathrm{uns}}
+|\mathcal{S}_k| + \kappa_{\mathrm{unc}}$, unsuccessful inner iterations do not move, and every
+successful inner iteration whose new iterate has residual at least $\theta\varepsilon_0$, and which
+is not the last iteration of a call ending at an exempt point, lowers the merit by at least
+$\kappa_{\mathrm{decr}} \min_l (\beta \|r(x_k, t_k)\| \varepsilon_l)^{\pi_l}$. This is (14.2.11) for
+the inner method called with the tolerances $\beta \|r(x_k, t_k)\| \varepsilon_l$. The results
+follow Lemma 14.3.8 and Theorem 14.3.9 of [cartis2022evaluation] for Phase 2.
 
-The contract `HighOrderTargetSeq.IsMeritContract … exempt …` asks, at every outer iteration
-`k ≥ 1` reached: `e_k ≤ κ_uns |𝒮_k| + κ_unc` (Lemma 2.4.1 or (14.2.13)), unsuccessful inner
-iterations do not move, and every successful inner iteration `i` whose new iterate has residual
-`≥ θε₀` and which is not the last iteration of a call ending at a point passing the exemption test
-`exempt k` lowers the merit by `κ_decr min_l (β ‖r(x_k, t_k)‖ ε_l)^{π_l}` ((14.2.11) for the inner
-method called with tolerances `β ‖r(x_k, t_k)‖ ε_l`). It is a residual-decrease contract of the
-generic outer loop (`HighOrderTargetSeq.IsMeritContract.toContract`), so the counting of
-`Numlib.Optimization.Constrained.TwoPhase.Complexity` applies; the number of bad outer iterations
-(case (b), no counted inner iteration) remains a parameter (`IsHighOrderTargetRun.complexity`).
-
-Two exemptions occur: the criticality test (14.3.34) at the old target
-(`HighOrderTargetSeq.IsEndCritContract`),
-and the termination test (14.3.19) of the inner method, together with a lower bound `ρ` on the
-radii returned by case-(b) calls passing it (`HighOrderTargetSeq.IsInnerTestContract`, the form
-in which Lemma 14.2.2 holds for runs of the inner method). A case-(b) call ending at a point
-passing (14.3.19) for the old target, where (14.3.34) fails for the new one, lowers the target by
-an amount bounded below in terms of the margin `‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖`, since
-`μ(·, t_{k+1}) - μ(·, t_k)` is `(t_k - t_{k+1})(f - f(x_{k+1}))` up to a constant
-(`IsHighOrderTargetRun.target_drop_of_innerTest`). With the margin argument of the generic loop
-this bounds those calls, and Phase 2 terminates within an explicit bound without a bad-iteration
-parameter (`IsHighOrderTargetRun.complexity_of_innerTest`). The same holds for any merit contract
-when every case-(b) call passes (14.3.19) (`HighOrderTargetSeq.IsCertified`,
-`IsHighOrderTargetRun.complexity_of_certified`).
+Two exemption tests occur: the criticality test (14.3.34) at the old target, and the termination
+test (14.3.19) of the inner method. With the second test, a lower bound $\rho$ on the radii returned
+by the case-(b) calls that pass it gives a bound on these calls. Then Phase 2 terminates within an
+explicit bound, and the number of bad outer iterations is no longer a parameter. Write $N_a =
+(f_{\mathrm{up}} - f_{\mathrm{low}} + 1)/((1 - \theta)\varepsilon_0)$, $G$ for the bound
+`Constrained.goodBound` on the counted inner iterations of a block, and $\eta = \theta(1 -
+\theta)\varepsilon_0/(1 + \theta)$ for the margin `Constrained.kbMargin`. Here
+$f_{\mathrm{low}} \le f \le f_{\mathrm{up}}$ on the points of $X$ with $\|c\| \le \varepsilon_0$
+(assumption f.B.Fb).
 
 ## Main definitions
 
-* `Constrained.goodBound`, `Constrained.goodDecr`: the bound `κ^S (1 - θ) M` of (14.3.71) and the
-  residual decrease of a counted inner iteration;
+* `Constrained.goodBound`, `Constrained.goodDecr`: the bound $\kappa^S (1 - \theta) M$ of (14.3.71)
+  and the residual decrease of a counted inner iteration.
 * `Constrained.HighOrderTargetSeq.IsMeritContract`: the merit-decrease contract for an exemption
-  test; `IsEndCritContract`, `IsInnerTestContract`: its two instances;
+  test. `Constrained.HighOrderTargetSeq.IsEndCritContract` and
+  `Constrained.HighOrderTargetSeq.IsInnerTestContract` are its two instances.
 * `Constrained.HighOrderTargetSeq.IsCertified`: every case-(b) call passes (14.3.19), with radii
   bounded below.
 
 ## Main results
 
-* `Constrained.HighOrderTargetSeq.IsMeritContract.toContract`: the merit contract as a contract of
-  the generic outer loop;
-* `Constrained.IsHighOrderTargetRun.complexity`: Theorem 14.3.9 (Phase 2) with the number of bad
-  outer iterations as a parameter;
+* `Constrained.HighOrderTargetSeq.IsMeritContract.toContract`: the merit contract is a contract of
+  the generic outer loop.
+* `Constrained.IsHighOrderTargetRun.complexity`: Theorem 14.3.9 for Phase 2, with the number of bad
+  outer iterations as a parameter.
 * `Constrained.IsHighOrderTargetRun.target_drop_of_innerTest`,
-  `Constrained.IsHighOrderTargetRun.card_kb_innerTest_le`: the target-drop margin argument;
+  `Constrained.IsHighOrderTargetRun.card_kb_innerTest_le`: the case-(b) calls that pass (14.3.19)
+  lower the target, and their number.
 * `Constrained.IsHighOrderTargetRun.complexity_of_certified`,
-  `Constrained.IsHighOrderTargetRun.complexity_of_certified_margin`: Phase 2 under the
-  certificate, for `β < θ` and for `β ≤ θ`;
-* `Constrained.IsHighOrderTargetRun.complexity_of_innerTest`: Phase 2 under the contract keyed
-  on (14.3.19), for `β ≤ θ`, without a bad-iteration parameter;
+  `Constrained.IsHighOrderTargetRun.complexity_of_certified_margin`: Phase 2 when every case-(b)
+  call passes (14.3.19), for $\beta < \theta$ and for $\beta \le \theta$.
+* `Constrained.IsHighOrderTargetRun.complexity_of_innerTest`: Phase 2 under the contract keyed on
+  (14.3.19), for $\beta \le \theta$, without a bad-iteration parameter.
 * `Constrained.HighOrderTargetSeq.IsEndCritContract.toInnerTestContract`,
-  `Constrained.HighOrderTargetSeq.IsInnerTestContract.toEndCritContract`: the relation between
-  the two contracts;
+  `Constrained.HighOrderTargetSeq.IsInnerTestContract.toEndCritContract`: the relation between the
+  two contracts.
 * `Constrained.IsHighOrderTargetRun.exists_const_order_of_innerTest` and its variants: with
-  constants fixed before the tolerances, Phase 2 takes `O(O)` evaluations for every `O`
-  dominating `ε₀^{-1}`, the terms `ε₀^{1-π_j} ε_j^{-π_j}` and the bad-iteration terms
-  `(ε₀ ε_j ρ'_j^{j-1})^{-1}`.
+  constants fixed before the tolerances, Phase 2 takes $O(\Omega)$ evaluations for every $\Omega$
+  that dominates $\varepsilon_0^{-1}$, the terms $\varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j}$
+  and the bad-iteration terms $(\varepsilon_0 \varepsilon_j \rho'^{\,j-1}_j)^{-1}$.
+
+## Proof outline
+
+A merit decrease of the contract gives a residual decrease of at least `Constrained.goodDecr`
+(`Constrained.sub_ge_of_merit_decrease`). So the merit contract is a residual-decrease contract of
+the generic outer loop, and the counting of `Numlib.Optimization.Constrained.TwoPhase.Complexity`
+applies. For the termination test (14.3.19), take a case-(b) call that ends at a point passing
+(14.3.19) for the old target, while (14.3.34) fails at the new target. This call lowers the target
+by an amount bounded below in terms of the margin $\|r(x_{k+1}, t_k)\| - \beta \|r(x_k, t_k)\|$. The
+reason is that $\mu(\cdot, t_{k+1}) - \mu(\cdot, t_k)$ is $(t_k - t_{k+1}) f$ up to a constant. The
+margin argument of the generic loop then bounds these calls.
 
 ## Implementation notes
 
-All counting is done on the residual-decrease contract of the generic outer loop
-(`Constrained.TargetFollowingSeq.IsInnerContract`), through
-`Constrained.HighOrderTargetSeq.IsMeritContract.toContract` and
-`Constrained.sub_ge_of_merit_decrease`; the merit contract is parametrized by the exemption test,
-so the two exemptions share one structure (`IsEndCritContract` is a reducible abbreviation of it,
-`IsInnerTestContract` extends it, for the exemption by (14.3.19), with the radius bound).
-
-The smoothness of `f` and `c` is assumed only at the points of `X` (`ContDiffAt` there), and
-f.B.Fb as `f_low ≤ f ≤ f_up` on the points of `X` with `‖c‖ ≤ ε₀`.
+* All counting is done on the residual-decrease contract
+  `Constrained.TargetFollowingSeq.IsInnerContract` of the generic outer loop, through
+  `Constrained.HighOrderTargetSeq.IsMeritContract.toContract`. The merit contract has the exemption
+  test as a parameter, so the two exemptions share one structure:
+  `Constrained.HighOrderTargetSeq.IsEndCritContract` is a reducible abbreviation of it, and
+  `Constrained.HighOrderTargetSeq.IsInnerTestContract` extends it with the radius bound.
+* The smoothness of $f$ and $c$ is assumed only at the points of $X$ (`ContDiffAt` there).
+  Assumption f.B.Fb is $f_{\mathrm{low}} \le f \le f_{\mathrm{up}}$ on the points of $X$ with
+  $\|c\| \le \varepsilon_0$.
+* The results on target drops, and the order bounds that use them, assume that $c$ takes values in a
+  real inner product space $F$.
+* In the order bounds, the number $\Omega$ is the Lean variable `O`.
 -/
 
 open Finset
@@ -90,23 +99,36 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 /-! ### Constants -/
 
-/-- The bound `G = κ^S (1 - θ) M` of (14.3.71) of [cartis2022evaluation] on the counted inner
-iterations of a block, with `κ^S = κ_decr⁻¹ (βθ)^{-π_max}` and `M ≥ max_l ε₀^{2-π_l} ε_l^{-π_l}`. -/
+/-- The **bound** $G = \kappa^S (1 - \theta) M$ on the counted inner iterations of a block, with
+$\kappa^S = \kappa_{\mathrm{decr}}^{-1} (\beta\theta)^{-\pi_{\max}}$:
+$$G = \kappa_{\mathrm{decr}}^{-1} (\beta\theta)^{-\pi_{\max}} (1 - \theta) M.$$
+
+This is the bound of (14.3.71) of [cartis2022evaluation]. In the applications, $M \ge \max_l
+\varepsilon_0^{2 - \pi_l} \varepsilon_l^{-\pi_l}$. The power is the real power `Real.rpow`. -/
 noncomputable def goodBound (κdecr β θ πmax M : ℝ) : ℝ :=
   κdecr⁻¹ * (β * θ) ^ (-πmax) * (1 - θ) * M
 
-/-- The residual decrease `κ_decr (βθ)^{π_max} ε₀ / M` of a counted inner iteration under the
-merit contract (`goodBound = (1 - θ)ε₀ / goodDecr`). -/
+/-- The **residual decrease** $\kappa_{\mathrm{decr}} (\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$
+of a counted inner iteration under the merit contract.
+
+When all constants are positive, `Constrained.goodBound` is $(1 - \theta)\varepsilon_0$ divided
+by this decrease (`Constrained.goodBound_eq`). -/
 noncomputable def goodDecr (κdecr β θ πmax M ε₀ : ℝ) : ℝ := κdecr * (β * θ) ^ πmax * ε₀ / M
 
 section Constants
 
 variable {κdecr β θ πmax M ε₀ : ℝ}
 
+/-- If $\kappa_{\mathrm{decr}}$, $\beta$, $\theta$, $M$ and $\varepsilon_0$ are positive, then the
+residual decrease $\kappa_{\mathrm{decr}} (\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$ is
+positive. -/
 theorem goodDecr_pos (hκ : 0 < κdecr) (hβ : 0 < β) (hθ : 0 < θ) (hM : 0 < M) (hε₀ : 0 < ε₀) :
     0 < goodDecr κdecr β θ πmax M ε₀ := by
   unfold goodDecr; positivity
 
+/-- If $\kappa_{\mathrm{decr}}$, $\beta$, $\theta$, $M$ and $\varepsilon_0$ are positive, then the
+bound $G$ of (14.3.71) equals $(1 - \theta)\varepsilon_0$ divided by the residual decrease
+$\kappa_{\mathrm{decr}} (\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$. -/
 theorem goodBound_eq (hκ : 0 < κdecr) (hβ : 0 < β) (hθ : 0 < θ) (hM : 0 < M) (hε₀ : 0 < ε₀) :
     goodBound κdecr β θ πmax M = (1 - θ) * ε₀ / goodDecr κdecr β θ πmax M ε₀ := by
   unfold goodBound goodDecr
@@ -120,22 +142,34 @@ end Constants
 
 namespace HighOrderTargetSeq
 
-/-- **The merit-decrease contract of the inner method** for the exemption test `exempt`
-([cartis2022evaluation], Lemmas 14.2.2–14.2.3 for `μ(·, t_k)`, with constants independent of
-`t_k`): for every outer iteration `k ≥ 1` reached,
-* (count) `e_k ≤ κ_uns |𝒮_k| + κ_unc` ((14.2.13)), `𝒮_k` the successful inner iterations;
-* (stay) unsuccessful inner iterations do not move;
-* (decrease) every successful inner iteration `i` that is not the last one of a call ending at a
-  point passing `exempt k` (`i + 1 < e_k` or `¬ exempt k`), and whose new iterate has residual
-  `‖r(x_{k,i+1}, t_k)‖ ≥ θε₀`, decreases `μ(·, t_k)` by at least
-  `κ_decr min_l (β ‖r(x_k, t_k)‖ ε_l)^{π_l}` ((14.2.11) for the inner method called with the
-  tolerances `β ‖r(x_k, t_k)‖ ε_l`). -/
+/-- **The merit-decrease contract of the inner method** for the exemption test `exempt`, with
+constants $\kappa_{\mathrm{decr}}$, $\kappa_{\mathrm{uns}}$, $\kappa_{\mathrm{unc}}$ and
+exponents $\pi$. It holds if, for every outer iteration $k \ge 1$ that is reached:
+
+* (count) $e_k \le \kappa_{\mathrm{uns}} |\mathcal{S}_k| + \kappa_{\mathrm{unc}}$, where
+  $\mathcal{S}_k$ is the set of successful inner iterations, as in Lemma 2.4.1 or (14.2.13) of
+  [cartis2022evaluation];
+* (stay) every unsuccessful inner iteration $i < e_k$ has $x_{k,i+1} = x_{k,i}$;
+* (decrease) every successful inner iteration $i < e_k$ such that $i + 1 < e_k$ or the output of
+  the call fails the exemption test, and such that
+  $\|r(x_{k,i+1}, t_k)\| \ge \theta\varepsilon_0$, satisfies for some $l \in \{1, \dots, q\}$
+$$\mu(x_{k,i}, t_k) - \mu(x_{k,i+1}, t_k) \ge \kappa_{\mathrm{decr}} (\beta \|r(x_k, t_k)\|
+  \varepsilon_l)^{\pi_l}.$$
+
+This is the form of Lemmas 14.2.2 and 14.2.3 of [cartis2022evaluation] for $\mu(\cdot, t_k)$,
+with constants independent of $t_k$. The decrease is (14.2.11) for the inner method called with
+the tolerances $\beta \|r(x_k, t_k)\| \varepsilon_l$. -/
 structure IsMeritContract (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ) (ε : ℕ → ℝ)
     (D : HighOrderTargetSeq E) (exempt : ℕ → Prop) (κdecr κuns κunc : ℝ) (π : ℕ → ℝ) :
     Prop where
+  /-- The length of each call is at most
+  $\kappa_{\mathrm{uns}} |\mathcal{S}_k| + \kappa_{\mathrm{unc}}$. -/
   count : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → (D.e k : ℝ) ≤ κuns * D.succCount k + κunc
+  /-- Unsuccessful inner iterations do not move the iterate. -/
   stay : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k, ¬ D.succ k i →
     D.xi k (i + 1) = D.xi k i
+  /-- Every counted successful inner iteration lowers $\mu(\cdot, t_k)$ by at least
+  $\kappa_{\mathrm{decr}} (\beta \|r(x_k, t_k)\| \varepsilon_l)^{\pi_l}$ for some $l \le q$. -/
   decrease : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k, D.succ k i →
     (i + 1 < D.e k ∨ ¬ exempt k) →
     θ * ε 0 ≤ targetResidual f c (D.t k) (D.xi k (i + 1)) →
@@ -143,40 +177,54 @@ structure IsMeritContract (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (�
       κdecr * (β * targetResidual f c (D.t k) (D.x k) * ε l) ^ π l ≤
         targetMerit f c (D.t k) (D.xi k i) - targetMerit f c (D.t k) (D.xi k (i + 1))
 
-/-- **The merit contract exempting the criticality test at the old target** (the decreases used
-by the proof of Lemma 14.3.8 of [cartis2022evaluation], "so long as the third termination test in
-(14.3.32) has not been satisfied", (B.14.21)): the exemption is (14.3.34) at
-`(x_{k+1}, t_k)` with the radii `δ_{k+1}`. -/
+/-- **The merit contract that exempts the criticality test at the old target.** The exemption test
+of `Constrained.HighOrderTargetSeq.IsMeritContract` is (14.3.34) at $(x_{k+1}, t_k)$ with the
+radii $\delta_{k+1}$.
+
+These are the decreases used by the proof of Lemma 14.3.8 of [cartis2022evaluation], "so long as
+the third termination test in (14.3.32) has not been satisfied", (B.14.21). -/
 abbrev IsEndCritContract (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ) (ε : ℕ → ℝ)
     (D : HighOrderTargetSeq E) (κdecr κuns κunc : ℝ) (π : ℕ → ℝ) : Prop :=
   D.IsMeritContract f c X q θ β ε (D.EndCrit f c X q ε) κdecr κuns κunc π
 
-/-- **The merit contract exempting the inner method's own test** (Lemma 14.2.2 of
-[cartis2022evaluation] for the inner method on `μ(·, t_k)`, which needs only that the method does
-not terminate at `x_{k,i+1}`), with radii bounded below by `ρ`: the exemption is (14.3.19) at
-the end of the call (`HighOrderTargetSeq.InnerTest`), and a case-(b) call ending at a point
-passing (14.3.19) returns radii `δ_{k+1,j} ≥ ρ_j`. The calls may be cut by any test of
-(14.3.32). -/
+/-- **The merit contract that exempts the termination test of the inner method**, with radii bounded
+below by $\rho$. It holds if:
+
+* the merit contract `Constrained.HighOrderTargetSeq.IsMeritContract` holds with the exemption
+  test (14.3.19) at the end of the call (`Constrained.HighOrderTargetSeq.InnerTest`);
+* every case-(b) call that ends at a point passing (14.3.19) returns radii
+  $\delta_{k+1,j} \ge \rho_j$ for $j = 1, \dots, q$.
+
+This is Lemma 14.2.2 of [cartis2022evaluation] for the inner method on $\mu(\cdot, t_k)$, which
+needs only that the method does not terminate at $x_{k,i+1}$. The calls may be cut by any test
+of (14.3.32). -/
 structure IsInnerTestContract (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : HighOrderTargetSeq E) (κdecr κuns κunc : ℝ) (π ρ : ℕ → ℝ) : Prop
     extends D.IsMeritContract f c X q θ β ε (D.InnerTest f c X q β ε) κdecr κuns κunc π where
+  /-- A case-(b) call that ends at a point passing (14.3.19) returns radii at least $\rho$. -/
   radius_ge : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
     D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j
 
-/-- **Every case-(b) call passes the inner method's test** (14.3.19), with radii bounded below
-by `ρ`: at every outer iteration `k ∈ 𝒦_b` reached, `δ_{k+1,j} ≥ ρ_j` and (14.3.19) holds at
-`x_{k+1}`. This holds when the inner method is interrupted only by the first test of (14.3.32):
-a call ending in `𝒦_b` has `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, so the method has terminated. -/
+/-- **Every case-(b) call passes the termination test of the inner method**, with radii bounded
+below by $\rho$: at every outer iteration $k \ge 1$ in $\mathcal{K}_b$ that is reached,
+$\delta_{k+1,j} \ge \rho_j$ for $j = 1, \dots, q$, and the test (14.3.19) holds at $x_{k+1}$.
+
+This holds when the inner method is interrupted only by the first test of (14.3.32). A call that
+ends in $\mathcal{K}_b$ has $\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$, so the method has
+terminated. -/
 structure IsCertified (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ) (ε : ℕ → ℝ)
     (D : HighOrderTargetSeq E) (ρ : ℕ → ℝ) : Prop where
+  /-- Every case-(b) call returns radii at least $\rho$. -/
   radius_ge : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
     ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j
+  /-- Every case-(b) call ends at a point that passes (14.3.19). -/
   cert : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k → D.InnerTest f c X q β ε k
 
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ}
   {D : HighOrderTargetSeq E} {κdecr κuns κunc : ℝ} {π ρ ρ' : ℕ → ℝ}
 
-/-- The contract keyed on (14.3.19) with radii `ρ` gives it with any smaller radii. -/
+/-- If the contract keyed on (14.3.19) holds with radii $\rho$, and $\rho'_j \le \rho_j$ for
+$j = 1, \dots, q$, then it holds with radii $\rho'$. -/
 theorem IsInnerTestContract.mono_radius
     (h : D.IsInnerTestContract f c X q θ β ε κdecr κuns κunc π ρ)
     (hρ : ∀ j ∈ Finset.Icc 1 q, ρ' j ≤ ρ j) :
@@ -191,8 +239,18 @@ namespace IsHighOrderTargetRun
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E}
   {D : HighOrderTargetSeq E} {κdecr κuns κunc πmax M : ℝ} {π : ℕ → ℝ}
 
-/-- An inner iteration with the merit decrease of the contract lowers the residual
-`‖r(·, t_k)‖` by at least `goodDecr` (`Constrained.sub_ge_of_merit_decrease`). -/
+/-- In a run, let $\kappa_{\mathrm{decr}} > 0$, $0 \le \pi_l \le \pi_{\max}$ for $l = 1, \dots, q$,
+and $M > 0$ with $\varepsilon_0^{2 - \pi_l} \varepsilon_l^{-\pi_l} \le M$ for $l = 1, \dots, q$.
+Let $k \ge 1$ be an outer iteration that is reached and let $i < e_k$. If for some
+$l \in \{1, \dots, q\}$
+$$\mu(x_{k,i}, t_k) - \mu(x_{k,i+1}, t_k) \ge \kappa_{\mathrm{decr}} (\beta \|r(x_k, t_k)\|
+  \varepsilon_l)^{\pi_l},$$
+then the residual drops by at least the decrease $\kappa_{\mathrm{decr}}
+(\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$ of `Constrained.goodDecr`:
+$$\|r(x_{k,i}, t_k)\| - \|r(x_{k,i+1}, t_k)\| \ge \frac{\kappa_{\mathrm{decr}}
+  (\beta\theta)^{\pi_{\max}} \varepsilon_0}{M}.$$
+
+The proof specializes `Constrained.sub_ge_of_merit_decrease`. -/
 theorem residual_drop (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
     (hM : ∀ l ∈ Finset.Icc 1 q, ε 0 ^ (2 - π l) * ε l ^ (-π l) ≤ M)
@@ -219,9 +277,13 @@ namespace HighOrderTargetSeq.IsMeritContract
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E}
   {D : HighOrderTargetSeq E} {exempt : ℕ → Prop} {κdecr κuns κunc πmax M : ℝ} {π : ℕ → ℝ}
 
-/-- **The merit contract is a contract of the generic outer loop**
-(`Constrained.TargetFollowingSeq.IsInnerContract`), with the residual decrease `goodDecr` and the
-same exemption test. -/
+/-- **The merit contract is a contract of the generic outer loop.** In a run, let the inner calls
+satisfy the merit contract for an exemption test, with $\kappa_{\mathrm{decr}} > 0$,
+$0 \le \pi_l \le \pi_{\max}$ and $M > 0$ with $\varepsilon_0^{2 - \pi_l} \varepsilon_l^{-\pi_l}
+\le M$ for $l = 1, \dots, q$. Then the data of the generic outer loop satisfy
+`Constrained.TargetFollowingSeq.IsInnerContract` with the same exemption test, the same
+constants $\kappa_{\mathrm{uns}}$ and $\kappa_{\mathrm{unc}}$, and the residual decrease of
+`Constrained.goodDecr`. -/
 theorem toContract (hin : D.IsMeritContract f c X q θ β ε exempt κdecr κuns κunc π)
     (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -244,26 +306,43 @@ open HighOrderTargetSeq
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E}
   {D : HighOrderTargetSeq E} {exempt : ℕ → Prop} {κdecr κuns κunc πmax M : ℝ} {π : ℕ → ℝ}
 
+/-- In a run, if $\kappa_{\mathrm{decr}} > 0$ and $M > 0$, then the residual decrease
+$\kappa_{\mathrm{decr}} (\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$ is positive. -/
 theorem goodDecr_pos (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hM0 : 0 < M) : 0 < goodDecr κdecr β θ πmax M (ε 0) :=
   Constrained.goodDecr_pos hκ h.β_pos h.θ_pos hM0 h.ε₀_pos
 
+/-- In a run, if $\kappa_{\mathrm{decr}} > 0$ and $M > 0$, then the bound $G$ of (14.3.71) equals
+$(1 - \theta)\varepsilon_0$ divided by the residual decrease $\kappa_{\mathrm{decr}}
+(\beta\theta)^{\pi_{\max}} \varepsilon_0 / M$. -/
 theorem goodBound_eq (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hκ : 0 < κdecr)
     (hM0 : 0 < M) :
     goodBound κdecr β θ πmax M = (1 - θ) * ε 0 / goodDecr κdecr β θ πmax M (ε 0) :=
   Constrained.goodBound_eq hκ h.β_pos h.θ_pos hM0 h.ε₀_pos
 
-/-- **Phase 2 of a high-order target-following run, with the bad outer iterations as a
-parameter** (cf. [cartis2022evaluation], Theorem 14.3.9 for Phase 2). Let the inner calls
-satisfy the merit contract for an exemption test `exempt` (`κ_decr > 0`, `κ_uns ≥ 0`,
-`0 ≤ π_l ≤ π_max`, `M > 0` bounding `ε₀^{2-π_l} ε_l^{-π_l}` for `l ∈ [1 : q]`), and assume f.B.Fb
-(`f_low ≤ f ≤ f_up` on the points of `X` with `‖c‖ ≤ ε₀`); write
-`N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` and `G = goodBound κ_decr β θ π_max M`. Then
-(i) every outer iteration `K ≥ 1` reached satisfies `K ≤ (N_a + 1)(G + 1) + n_bad(K)`, `n_bad(K)`
-the number of bad outer iterations in `[1, K)`;
-(ii) if `n_bad` is bounded by `B`, Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + B`;
-(iii) if Phase 2 terminates at `k_ε`, it uses at most `1 + G (N_a + 1) + k_ε` derivative
-evaluations and at most `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)`. -/
+/-- **Phase 2 of a high-order target-following run, with the bad outer iterations as a parameter.**
+In a run, let the inner calls satisfy the merit contract for an exemption test, with
+$\kappa_{\mathrm{decr}} > 0$, $\kappa_{\mathrm{uns}} \ge 0$, $0 \le \pi_l \le \pi_{\max}$, and
+$M > 0$ with $\varepsilon_0^{2 - \pi_l} \varepsilon_l^{-\pi_l} \le M$ for $l = 1, \dots, q$.
+Assume that $f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every $z \in X$ with
+$\|c(z)\| \le \varepsilon_0$ (assumption f.B.Fb). Write $N_a = (f_{\mathrm{up}} -
+f_{\mathrm{low}} + 1)/((1 - \theta)\varepsilon_0)$, let $G$ be the bound
+$\kappa_{\mathrm{decr}}^{-1} (\beta\theta)^{-\pi_{\max}} (1 - \theta) M$, and let
+$n_{\mathrm{bad}}(K)$ be the number of bad outer iterations in $[1, K)$ for the exemption test.
+Then:
+
+* (i) every outer iteration $K \ge 1$ that is reached satisfies
+  $K \le (N_a + 1)(G + 1) + n_{\mathrm{bad}}(K)$;
+* (ii) if $n_{\mathrm{bad}}(K) \le B$ for every outer iteration $K$ that is reached, then Phase
+  2 terminates at some outer iteration $k_\varepsilon \le (N_a + 1)(G + 1) + B$;
+* (iii) if Phase 2 terminates at $k_\varepsilon$, it uses at most
+  $1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+  \kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+  evaluations of $(f, c)$.
+
+This is Theorem 14.3.9 of [cartis2022evaluation] for Phase 2, with the number of bad outer
+iterations as a parameter. The proof specializes
+`Constrained.TargetFollowingSeq.IsInnerContract.complexity`. -/
 theorem complexity (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsMeritContract f c X q θ β ε exempt κdecr κuns κunc π) (hκ : 0 < κdecr)
     (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -286,11 +365,13 @@ theorem complexity (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
   (hin.toContract h hκ hπ hM0 hM).complexity h.toRun (h.goodDecr_pos hκ hM0)
     (h.goodBound_eq hκ hM0).ge hκuns hB
 
-/-- **Phase 2 given a bound on the bad outer iterations** (as `complexity`): if
-`n_bad(K) ≤ N_b` at every outer iteration `K ≥ 1` reached, then every such `K` satisfies
-`K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + N_b`,
-using at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
-`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)`. -/
+/-- **Phase 2 given a bound on the bad outer iterations.** Under the assumptions of
+`Constrained.IsHighOrderTargetRun.complexity`, suppose that $n_{\mathrm{bad}}(K) \le N_b$ for
+every outer iteration $K \ge 1$ that is reached. Then every such $K$ satisfies
+$K \le (N_a + 1)(G + 1) + N_b$. Moreover Phase 2 terminates at some outer iteration
+$k_\varepsilon \le (N_a + 1)(G + 1) + N_b$, and it uses at most $1 + G(N_a + 1) + k_\varepsilon$
+derivative evaluations and at most $1 + \kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) +
+\kappa_{\mathrm{unc}} k_\varepsilon$ evaluations of $(f, c)$. -/
 theorem complexity_of_badCount_le (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsMeritContract f c X q θ β ε exempt κdecr κuns κunc π) (hκ : 0 < κdecr)
     (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -320,9 +401,15 @@ section TargetDrop
 
 variable [InnerProductSpace ℝ F]
 
-/-- The Taylor jets of `μ(·, t)` and `μ(·, t')` at `x` differ by `(t' - t) ∇^i f(x)` at the orders
-`i ≥ 1` (`Constrained.iteratedFDeriv_targetMerit_eq_sub`): if `‖∇^i f(x)‖ ≤ B_f` for
-`i ∈ [1 : q]`, they are `|t - t'| B_f`-close. -/
+/-- Let $f$ and $c$ be of class $C^q$ at $x$, with $\|\nabla^i f(x)\| \le B_f$ for
+$i = 1, \dots, q$. Then for all targets $t$ and $t'$, the Taylor jets of $\mu(\cdot, t)$ and
+$\mu(\cdot, t')$ at $x$ are $|t - t'| B_f$-close up to order $q$:
+$$\|\nabla^i \mu(x, t) - \nabla^i \mu(x, t')\| \le |t - t'| B_f \quad \text{for } i = 1, \dots,
+  q.$$
+
+At the orders $i \ge 1$ the jets differ by $(t' - t) \nabla^i f(x)$
+(`Constrained.iteratedFDeriv_targetMerit_eq_sub`). The statement is `Optimization.JetApprox` for
+the two Taylor series. -/
 theorem jetApprox_targetMerit {f : E → ℝ} {c : E → F} {x : E} {q : ℕ}
     (hf : ContDiffAt ℝ q f x) (hc : ContDiffAt ℝ q c x) {Bf : ℝ}
     (hB : ∀ i ∈ Finset.Icc 1 q, ‖iteratedFDeriv ℝ i f x‖ ≤ Bf) (t t' : ℝ) :
@@ -340,8 +427,8 @@ theorem jetApprox_targetMerit {f : E → ℝ} {c : E → F} {x : E} {q : ℕ}
     ← sub_smul, norm_smul, Real.norm_eq_abs, abs_sub_comm]
   exact mul_le_mul_of_nonneg_left (hB i hi) (abs_nonneg _)
 
-/-- From a strict bound `A_j < 2 B_f d` at some order `j` with `2 B_f τ ≤ A_j` at every order and
-`A_j ≥ 0`, `d > 0`: `τ ≤ d`. -/
+/-- If $d > 0$, $A_j \ge 0$ and $2 B_f \tau \le A_j$ for every $j \in J$, and $A_j < 2 B_f d$ for
+some $j \in J$, then $\tau \le d$. -/
 private theorem le_of_exists_lt {Bf τ d : ℝ} {A : ℕ → ℝ} {J : Finset ℕ} (hd : 0 < d)
     (hA : ∀ j ∈ J, 0 ≤ A j) (hτ : ∀ j ∈ J, 2 * Bf * τ ≤ A j) (h : ∃ j ∈ J, A j < 2 * Bf * d) :
     τ ≤ d := by
@@ -360,15 +447,20 @@ variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε :
   {D : HighOrderTargetSeq E} {exempt : ℕ → Prop} {κdecr κuns κunc πmax M : ℝ} {π ρ : ℕ → ℝ}
   {Bf : ℝ}
 
-/-- **A case-(b) outer iteration passing the inner method's test lowers the target, with an
-explicit margin.** Let `k ∈ 𝒦_b` be an outer iteration that does not terminate Phase 2, whose
-new iterate passes (14.3.19) (`HighOrderTargetSeq.InnerTest` at `k`) with radii
-`δ_{k+1,j} ≥ ρ_j ≥ 0`, with `f`, `c` of class `C^q` at the points of `X` and `‖∇^i f‖ ≤ B_f`
-(`i ∈ [1 : q]`) at the points of `X` with `‖c‖ ≤ ε₀`. If
-`0 ≤ m ≤ ‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖` (the gap between the tolerance
-`ε_j ‖r(x_{k+1}, t_{k+1})‖` of (14.3.34), which fails at the new target, and the tolerance
-`β ‖r(x_k, t_k)‖ ε_j` of (14.3.19), which holds at the old one), then some order `j ∈ [1 : q]` has
-`m ε_j ρ_j^{j-1}/j! < 2 B_f (t_k - t_{k+1})`. -/
+/-- **A case-(b) outer iteration that passes the termination test of the inner method lowers the
+target, with an explicit margin.** In a run, let $\rho_j \ge 0$ for $j = 1, \dots, q$, let $f$
+and $c$ be of class $C^q$ at the points of $X$, and let $\|\nabla^i f(y)\| \le B_f$ for
+$i = 1, \dots, q$ at the points $y \in X$ with $\|c(y)\| \le \varepsilon_0$. Let $k \ge 1$ be an
+outer iteration in $\mathcal{K}_b$ that is reached and does not terminate Phase 2, whose new
+iterate passes the test (14.3.19), with radii $\delta_{k+1,j} \ge \rho_j$. If
+$$0 \le m \le \|r(x_{k+1}, t_k)\| - \beta \|r(x_k, t_k)\|,$$
+then some order $j \in \{1, \dots, q\}$ satisfies
+$$\frac{m \varepsilon_j \rho_j^{j-1}}{j!} < 2 B_f (t_k - t_{k+1}).$$
+
+The number $m$ bounds the gap between the tolerance $\varepsilon_j \|r(x_{k+1}, t_{k+1})\|$ of
+(14.3.34), which fails at the new target, and the tolerance
+$\beta \|r(x_k, t_k)\| \varepsilon_j$ of (14.3.19), which holds at the old target. The test
+(14.3.19) is `Constrained.HighOrderTargetSeq.InnerTest`. -/
 theorem target_drop_of_innerTest (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j) (hf : ∀ y ∈ X, ContDiffAt ℝ q f y)
     (hc : ∀ y ∈ X, ContDiffAt ℝ q c y)
@@ -444,10 +536,17 @@ theorem target_drop_of_innerTest (h : IsHighOrderTargetRun f c X q θ β ε x₁
         gcongr
     _ < _ := key2
 
-/-- **A case-(b) outer iteration lowers the target under the certificate** (`IsCertified`, radii
-`δ_{k+1,j} ≥ ρ_j ≥ 0`): since (14.3.34) fails at `(x_{k+1}, t_{k+1})` while (14.3.19), with the
-smaller tolerance `β ‖r(x_k, t_k)‖ ε_j ≤ βε₀ε_j`, holds at `(x_{k+1}, t_k)`, some order
-`j ∈ [1 : q]` has `(θ - β) ε₀ ε_j ρ_j^{j-1}/j! < 2 B_f (t_k - t_{k+1})`. -/
+/-- **A case-(b) outer iteration lowers the target when every case-(b) call passes the inner test.**
+In a run, let every case-(b) call pass (14.3.19) with radii $\delta_{k+1,j} \ge \rho_j \ge 0$
+(`Constrained.HighOrderTargetSeq.IsCertified`). Let $f$ and $c$ be of class $C^q$ at the points
+of $X$, and let $\|\nabla^i f(y)\| \le B_f$ for $i = 1, \dots, q$ at the points $y \in X$ with
+$\|c(y)\| \le \varepsilon_0$. Then every outer iteration $k \ge 1$ in $\mathcal{K}_b$ that is
+reached and does not terminate Phase 2 has an order $j \in \{1, \dots, q\}$ with
+$$\frac{(\theta - \beta) \varepsilon_0 \varepsilon_j \rho_j^{j-1}}{j!} < 2 B_f (t_k -
+  t_{k+1}).$$
+
+The test (14.3.34) fails at $(x_{k+1}, t_{k+1})$, while (14.3.19) holds at $(x_{k+1}, t_k)$ with
+the smaller tolerance $\beta \|r(x_k, t_k)\| \varepsilon_j \le \beta\varepsilon_0\varepsilon_j$. -/
 theorem target_drop_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcert : D.IsCertified f c X q θ β ε ρ) (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
     (hf : ∀ y ∈ X, ContDiffAt ℝ q f y) (hc : ∀ y ∈ X, ContDiffAt ℝ q c y)
@@ -465,11 +564,19 @@ theorem target_drop_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁
   exact h.target_drop_of_innerTest hρ hf hc hBf hk1 hk hb (hcert.cert k hk1 hkB hb)
     (hcert.radius_ge k hk1 hkB hb) (mul_nonneg (sub_nonneg.2 h.β_le_θ) h.ε₀_pos.le) hm
 
-/-- **The number of case-(b) outer iterations under the certificate, for `β < θ`.** Under the
-assumptions of `target_drop_of_certified` and f.B.Fb, if `τ > 0` satisfies
-`2 B_f τ ≤ (θ - β) ε₀ ε_j ρ_j^{j-1}/j!` for every `j ∈ [1 : q]`, then every case-(b) iteration
-before termination lowers the target by more than `τ`, and, the targets staying in
-`[f_low - 1, f_up]`, `|𝒦_b ∩ [1, K)| ≤ (f_up - f_low + 1)/τ`. -/
+/-- **The number of case-(b) outer iterations when every case-(b) call passes the inner test, for
+$\beta < \theta$.** Under the assumptions of
+`Constrained.IsHighOrderTargetRun.target_drop_of_certified` and assumption f.B.Fb, let
+$\tau > 0$ satisfy
+$$2 B_f \tau \le \frac{(\theta - \beta) \varepsilon_0 \varepsilon_j \rho_j^{j-1}}{j!} \quad
+  \text{for } j = 1, \dots, q.$$
+Then every outer iteration $K \ge 1$ that is reached satisfies
+$$|\mathcal{K}_b \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+
+Every case-(b) iteration before termination lowers the target by more than $\tau$, and the
+targets stay in $[f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$. The statement does not assume
+$\beta < \theta$, but for $q \ge 1$ and $B_f > 0$ the hypothesis on $\tau$ can hold only if
+$\beta < \theta$. -/
 theorem kbCount_le_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcert : D.IsCertified f c X q θ β ε ρ) (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
     (hf : ∀ y ∈ X, ContDiffAt ℝ q f y) (hc : ∀ y ∈ X, ContDiffAt ℝ q c y)
@@ -487,15 +594,21 @@ theorem kbCount_le_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁ 
       (h.target_drop_of_certified hcert hρ hf hc hBf hk1 hk hb)) hK1 hK
 
 open Classical in
-/-- **The case-(b) outer iterations passing the inner method's test, for every `β ≤ θ`**
-(including `β = θ`), when those calls return radii `δ_{k+1,j} ≥ ρ_j ≥ 0`, under the smoothness
-assumptions of `target_drop_of_innerTest` and f.B.Fb. Write `η = θ(1 - θ)ε₀/(1 + θ)`
-(`Constrained.kbMargin`) and let `τ > 0` satisfy `2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` for
-`j ∈ [1 : q]`. Then their number in `[1, K)` is at most
-`|𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ`: those with margin
-`‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖ ≥ η` lower the target by more than `τ`
-(`target_drop_of_innerTest`), and between two consecutive elements of `𝒦_a` there is at most one
-other one (`Constrained.IsTargetFollowingRun.card_kb_le_of_margin`). -/
+/-- **The case-(b) outer iterations that pass the termination test of the inner method, for every
+$\beta \le \theta$.** In a run, let every case-(b) call that passes (14.3.19) return radii
+$\delta_{k+1,j} \ge \rho_j \ge 0$. Assume the smoothness assumptions of
+`Constrained.IsHighOrderTargetRun.target_drop_of_innerTest` and assumption f.B.Fb. Write $\eta =
+\theta(1 - \theta)\varepsilon_0/(1 + \theta)$ (`Constrained.kbMargin`), and let $\tau > 0$
+satisfy $2 B_f \tau \le \eta \varepsilon_j \rho_j^{j-1}/j!$ for $j = 1, \dots, q$. Then every
+outer iteration $K \ge 1$ that is reached satisfies
+$$|\{k \in [1, K) \mid k \in \mathcal{K}_b,\ k \text{ passes (14.3.19)}\}| \le |\mathcal{K}_a
+  \cap [1, K)| + 1 + \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+
+The iterations with margin $\|r(x_{k+1}, t_k)\| - \beta \|r(x_k, t_k)\| \ge \eta$ lower the
+target by more than $\tau$ (`Constrained.IsHighOrderTargetRun.target_drop_of_innerTest`).
+Between two consecutive elements of $\mathcal{K}_a$, at most one of the iterations counted here
+has a margin smaller than $\eta$ (`Constrained.IsTargetFollowingRun.card_kb_le_of_margin`). The
+result includes the case $\beta = \theta$. -/
 theorem card_kb_innerTest_le (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hrad : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
       D.InnerTest f c X q β ε k → ∀ j ∈ Finset.Icc 1 q, ρ j ≤ D.δ (k + 1) j)
@@ -516,10 +629,14 @@ theorem card_kb_innerTest_le (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
       (h.target_drop_of_innerTest hρ hf hc hBf hk1 hk hb htest
         (hrad k hk1 (hk.mono k.le_succ) hb htest) hη0 hm)) hK1 hK
 
-/-- **The number of case-(b) outer iterations under the certificate, for every `β ≤ θ`**: under
-the assumptions of `card_kb_innerTest_le` with the radii of `IsCertified`,
-`|𝒦_b ∩ [1, K)| ≤ |𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ` (every case-(b) call passes the
-inner method's test). -/
+/-- **The number of case-(b) outer iterations when every case-(b) call passes the inner test, for
+every $\beta \le \theta$.** Under the assumptions of
+`Constrained.IsHighOrderTargetRun.card_kb_innerTest_le`, with the radii of
+`Constrained.HighOrderTargetSeq.IsCertified`, every outer iteration $K \ge 1$ that is reached
+satisfies
+$$|\mathcal{K}_b \cap [1, K)| \le |\mathcal{K}_a \cap [1, K)| + 1 + \frac{f_{\mathrm{up}} -
+  f_{\mathrm{low}} + 1}{\tau}.$$
+-/
 theorem kbCount_le_of_certified_margin (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcert : D.IsCertified f c X q θ β ε ρ) (hρ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ρ j)
     (hf : ∀ y ∈ X, ContDiffAt ℝ q f y) (hc : ∀ y ∈ X, ContDiffAt ℝ q c y)
@@ -541,15 +658,20 @@ theorem kbCount_le_of_certified_margin (h : IsHighOrderTargetRun f c X q θ β �
     exact hcert.cert k hk.1 (hK.mono hk.2.le) hb
   rw [e]
 
-/-- **Phase 2 under the certificate, for `β < θ`, without a bad-iteration parameter.** Let the
-inner calls satisfy a merit contract (any exemption test) and let every case-(b) call carry the
-certificate `IsCertified` with radii `ρ_j ≥ 0`; under the assumptions of `complexity`, with `f`,
-`c` of class `C^q` at the points of `X`, `‖∇^i f‖ ≤ B_f` (`i ∈ [1 : q]`) at the points of `X`
-with `‖c‖ ≤ ε₀`, and `τ > 0` with `2 B_f τ ≤ (θ - β) ε₀ ε_j ρ_j^{j-1}/j!` (`j ∈ [1 : q]`), write
-`N_b = (f_up - f_low + 1)/τ`: every outer iteration `K ≥ 1` reached satisfies
-`K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + N_b`,
-using at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
-`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)`. -/
+/-- **Phase 2 when every case-(b) call passes the inner test, for $\beta < \theta$, without a
+bad-iteration parameter.** In a run, let the inner calls satisfy a merit contract for some
+exemption test, under the assumptions of `Constrained.IsHighOrderTargetRun.complexity`. Let
+every case-(b) call pass (14.3.19) with radii $\delta_{k+1,j} \ge \rho_j \ge 0$
+(`Constrained.HighOrderTargetSeq.IsCertified`). Let $f$ and $c$ be of class $C^q$ at the points
+of $X$, let $\|\nabla^i f(y)\| \le B_f$ for $i = 1, \dots, q$ at the points $y \in X$ with
+$\|c(y)\| \le \varepsilon_0$, and let $\tau > 0$ satisfy $2 B_f \tau \le (\theta - \beta)
+\varepsilon_0 \varepsilon_j \rho_j^{j-1}/j!$ for $j = 1, \dots, q$. Write $N_b =
+(f_{\mathrm{up}} - f_{\mathrm{low}} + 1)/\tau$. Then every outer iteration $K \ge 1$ that is
+reached satisfies $K \le (N_a + 1)(G + 1) + N_b$. Moreover Phase 2 terminates at some outer
+iteration $k_\varepsilon \le (N_a + 1)(G + 1) + N_b$, and it uses at most
+$1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+\kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+evaluations of $(f, c)$. -/
 theorem complexity_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsMeritContract f c X q θ β ε exempt κdecr κuns κunc π) (hκ : 0 < κdecr)
     (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -575,10 +697,16 @@ theorem complexity_of_certified (h : IsHighOrderTargetRun f c X q θ β ε x₁ 
     (Nat.cast_le.2 (TargetFollowingSeq.badCount_le_kbCount K)).trans
       (h.kbCount_le_of_certified hcert hρ hf hc hBf hτ0 hτ hB hK1 hK)
 
-/-- **Phase 2 under the certificate, for every `β ≤ θ`, without a bad-iteration parameter**: as
-`complexity_of_certified`, with `τ > 0` satisfying `2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!`
-(`η = kbMargin θ ε₀`) in place of the margin `(θ - β)ε₀`, and
-`N_b = N_a + 1 + (f_up - f_low + 1)/τ` (`kbCount_le_of_certified_margin` and `kaCount_le`). -/
+/-- **Phase 2 when every case-(b) call passes the inner test, for every $\beta \le \theta$, without
+a bad-iteration parameter.** Under the assumptions of
+`Constrained.IsHighOrderTargetRun.complexity_of_certified`, with $\tau > 0$ that satisfies $2
+B_f \tau \le \eta \varepsilon_j \rho_j^{j-1}/j!$ for $j = 1, \dots, q$ in place of the margin
+$(\theta - \beta)\varepsilon_0$, where $\eta = \theta(1 - \theta)\varepsilon_0/(1 + \theta)$,
+the same conclusions hold with
+$$N_b = N_a + 1 + \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+
+The proof uses `Constrained.IsHighOrderTargetRun.kbCount_le_of_certified_margin` and
+`Constrained.IsHighOrderTargetRun.kaCount_le`. -/
 theorem complexity_of_certified_margin (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsMeritContract f c X q θ β ε exempt κdecr κuns κunc π) (hκ : 0 < κdecr)
     (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -618,10 +746,13 @@ namespace HighOrderTargetSeq
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E}
   {D : HighOrderTargetSeq E} {κdecr κuns κunc : ℝ} {π ρ : ℕ → ℝ}
 
-/-- **From the contract exempting (14.3.34) to the one keyed on (14.3.19)**: if every call ending
-with `‖r(x_{k+1}, t_k)‖ ≥ θε₀` ends at a point passing (14.3.19) with radii `δ_{k+1,j} ≥ ρ_j`
-(calls are interrupted only by the first test of (14.3.32)), the contract exempting (14.3.34)
-gives the contract keyed on (14.3.19). -/
+/-- **From the contract that exempts (14.3.34) to the contract keyed on (14.3.19).** In a run, let
+the inner calls satisfy `Constrained.HighOrderTargetSeq.IsEndCritContract`. Suppose that every
+call that ends with $\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$ ends at a point that passes
+(14.3.19), with radii $\delta_{k+1,j} \ge \rho_j$ for $j = 1, \dots, q$. Then the inner calls
+satisfy `Constrained.HighOrderTargetSeq.IsInnerTestContract` with the radii $\rho$.
+
+The hypothesis holds when the calls are interrupted only by the first test of (14.3.32). -/
 theorem IsEndCritContract.toInnerTestContract
     (hin : D.IsEndCritContract f c X q θ β ε κdecr κuns κunc π)
     (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
@@ -642,9 +773,13 @@ theorem IsEndCritContract.toInnerTestContract
         exact absurd (hcert k hk1 hk hge').1 h'
   radius_ge k hk1 hk hb _ := (hcert k hk1 hk hb.1).2
 
-/-- **The contract keyed on (14.3.19) gives the contract exempting (14.3.34)**: since `β ≤ θ` and
-`‖r(x_k, t_k)‖ ≤ ε₀`, (14.3.19) at a point with `‖r(x_{k+1}, t_k)‖ ≥ θε₀` implies (14.3.34) there,
-so every step exempted by the latter is exempted by the former. -/
+/-- **The contract keyed on (14.3.19) gives the contract that exempts (14.3.34).** In a run, if the
+inner calls satisfy `Constrained.HighOrderTargetSeq.IsInnerTestContract`, then they satisfy
+`Constrained.HighOrderTargetSeq.IsEndCritContract`.
+
+Since $\beta \le \theta$ and $\|r(x_k, t_k)\| \le \varepsilon_0$, the test (14.3.19) at a point
+with $\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$ implies (14.3.34) there. So every step that
+the second contract exempts is exempted by the first. -/
 theorem IsInnerTestContract.toEndCritContract
     (hin : D.IsInnerTestContract f c X q θ β ε κdecr κuns κunc π ρ)
     (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) :
@@ -689,14 +824,19 @@ variable [InnerProductSpace ℝ F] {f : E → ℝ} {c : E → F} {X : Set E} {q 
 
 omit [InnerProductSpace ℝ F] in
 open Classical in
-/-- **Phase 2 under the contract keyed on (14.3.19), given a bound `N_b` on the case-(b)
-iterations passing (14.3.19)**: with `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` and
-`G = goodBound κ_decr β θ π_max M`, every outer iteration `K ≥ 1` reached has
-`K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + N_b`,
-using at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
-`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)` (the bad outer iterations
-for the exemption by (14.3.19) end at points passing it,
-`Constrained.IsTargetFollowingRun.badCount_le_card`). -/
+/-- **Phase 2 under the contract keyed on (14.3.19), given a bound on the case-(b) iterations that
+pass it.** In a run, let the inner calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract`, under the assumptions of
+`Constrained.IsHighOrderTargetRun.complexity`. Suppose that for every outer iteration $K \ge 1$
+that is reached, the iterations $k \in [1, K) \cap \mathcal{K}_b$ that pass (14.3.19) number at
+most $N_b$. Then every such $K$ satisfies $K \le (N_a + 1)(G + 1) + N_b$. Moreover Phase 2
+terminates at some outer iteration $k_\varepsilon \le (N_a + 1)(G + 1) + N_b$, and it uses at
+most $1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+\kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+evaluations of $(f, c)$.
+
+The bad outer iterations for the exemption by (14.3.19) end at points that pass it
+(`Constrained.IsTargetFollowingRun.badCount_le_card`). -/
 theorem complexity_of_innerTest_card (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsInnerTestContract f c X q θ β ε κdecr κuns κunc π ρ)
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
@@ -719,20 +859,30 @@ theorem complexity_of_innerTest_card (h : IsHighOrderTargetRun f c X q θ β ε 
   h.complexity_of_badCount_le hin.toIsMeritContract hκ hκuns hπ hM0 hM hB fun K hK1 hK =>
     (Nat.cast_le.2 (h.toRun.badCount_le_card hin.stay hK)).trans (hNb K hK1 hK)
 
-/-- **Phase 2 under the contract keyed on (14.3.19): termination within an explicit bound
-without a bad-iteration parameter, for every `β ≤ θ`** (cf. Theorem 14.3.9 of
-[cartis2022evaluation] for Phase 2; the calls may be cut by any test of (14.3.32)). Assume
-`κ_decr > 0`, `κ_uns ≥ 0`, `0 ≤ π_l ≤ π_max`, `M > 0` bounding `ε₀^{2-π_l} ε_l^{-π_l}`, f.B.Fb,
-radii `ρ_j ≥ 0`, `f`, `c` of class `C^q` at the points of `X` with `‖∇^i f‖ ≤ B_f`
-(`i ∈ [1 : q]`) at the points of `X` with `‖c‖ ≤ ε₀`, and `τ > 0` with
-`2 B_f τ ≤ η ε_j ρ_j^{j-1}/j!` (`η = kbMargin θ ε₀`). Write
-`N_a = (f_up - f_low + 1)/((1 - θ)ε₀)`, `G = goodBound κ_decr β θ π_max M` and
-`N_b = N_a + 1 + (f_up - f_low + 1)/τ`. Every case-(b) iteration either ends at a point passing
-(14.3.19) (at most `N_b` of them, `card_kb_innerTest_le`) or its call has a counted successful
-iteration (its last one; these number at most `G (N_a + 1)` in total). Hence every outer iteration
-`K ≥ 1` reached satisfies `K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some
-`k_ε ≤ (N_a + 1)(G + 1) + N_b`, using at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
-`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` evaluations of `(f, c)`. -/
+/-- **Phase 2 under the contract keyed on (14.3.19): termination within an explicit bound, without a
+bad-iteration parameter, for every $\beta \le \theta$.** In a run, let the inner calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with $\kappa_{\mathrm{decr}} > 0$,
+$\kappa_{\mathrm{uns}} \ge 0$, $0 \le \pi_l \le \pi_{\max}$, radii $\rho_j \ge 0$, and $M > 0$
+with $\varepsilon_0^{2 - \pi_l} \varepsilon_l^{-\pi_l} \le M$ for $l = 1, \dots, q$. Assume
+f.B.Fb, let $f$ and $c$ be of class $C^q$ at the points of $X$, and let
+$\|\nabla^i f(y)\| \le B_f$ for $i = 1, \dots, q$ at the points $y \in X$ with
+$\|c(y)\| \le \varepsilon_0$. Let $\tau > 0$ satisfy $2 B_f \tau \le \eta \varepsilon_j
+\rho_j^{j-1}/j!$ for $j = 1, \dots, q$, where $\eta = \theta(1 - \theta)\varepsilon_0/(1 +
+\theta)$. Write
+$$N_a = \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{(1 - \theta)\varepsilon_0}, \qquad G =
+  \kappa_{\mathrm{decr}}^{-1} (\beta\theta)^{-\pi_{\max}} (1 - \theta) M, \qquad N_b = N_a + 1 +
+  \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+Then every outer iteration $K \ge 1$ that is reached satisfies $K \le (N_a + 1)(G + 1) + N_b$.
+Moreover Phase 2 terminates at some outer iteration $k_\varepsilon \le (N_a + 1)(G + 1) + N_b$,
+and it uses at most $1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+\kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+evaluations of $(f, c)$.
+
+This is Theorem 14.3.9 of [cartis2022evaluation] for Phase 2; the calls may be cut by any test
+of (14.3.32). Every case-(b) iteration either ends at a point that passes (14.3.19), and at most
+$N_b$ of these exist (`Constrained.IsHighOrderTargetRun.card_kb_innerTest_le`), or its call has
+a counted successful iteration, namely its last one, and at most $G(N_a + 1)$ of these exist in
+total. -/
 theorem complexity_of_innerTest (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hin : D.IsInnerTestContract f c X q θ β ε κdecr κuns κunc π ρ)
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax)
@@ -773,13 +923,24 @@ variable [InnerProductSpace ℝ F] {f : E → ℝ} {c : E → F} {X : Set E} {q 
 
 omit [InnerProductSpace ℝ F] in
 open Classical in
-/-- **Phase 2 within an order bound, given a bound on the case-(b) iterations passing (14.3.19)**
-([cartis2022evaluation], Lemma 14.3.8 and Theorem 14.3.9, Phase 2): there are constants
-`C_F, C_D, C_K ≥ 0` such that for every `κ_unc ≥ 0` and every run satisfying the contract keyed on
-(14.3.19) with the constants `κ_decr`, `κ_uns`, `κ_unc` and any radii, if those iterations number
-at most `B_b O` in every `[1, K)` reached, then Phase 2 terminates at some `k_ε ≤ C_K O` using at
-most `C_F O + κ_unc k_ε` evaluations of `(f, c)` and `C_D O` derivative evaluations
-(`complexity_of_innerTest_card`). -/
+/-- **Phase 2 within an order bound, given a bound on the case-(b) iterations that pass (14.3.19).**
+Fix $f$, $c$, $X$, $q \ge 1$, $\theta \in (0, 1)$, $\beta > 0$, $\kappa_{\mathrm{decr}} > 0$,
+$\kappa_{\mathrm{uns}} \ge 0$, $\pi_{\max}$, $A \ge 0$ and $B_b \ge 0$. Then there are constants
+$C_F, C_D, C_K \ge 0$ with the following property. Let $\kappa_{\mathrm{unc}} \ge 0$, and let
+$D$ be a run whose inner calls satisfy `Constrained.HighOrderTargetSeq.IsInnerTestContract` with
+the constants $\kappa_{\mathrm{decr}}$, $\kappa_{\mathrm{uns}}$, $\kappa_{\mathrm{unc}}$,
+exponents $0 \le \pi_l \le \pi_{\max}$ and any radii. Assume f.B.Fb with
+$f_{\mathrm{up}} - f_{\mathrm{low}} + 1 \le A$. Let $\Omega$ satisfy
+$\varepsilon_0^{-1} \le \Omega$ and $\varepsilon_0^{1 - \pi_l} \varepsilon_l^{-\pi_l} \le
+\Omega$ for $l = 1, \dots, q$. If for every outer iteration $K \ge 1$ that is reached, the
+iterations $k \in [1, K) \cap \mathcal{K}_b$ that pass (14.3.19) number at most $B_b \Omega$,
+then Phase 2 terminates at some outer iteration $k_\varepsilon \le C_K \Omega$, using at most
+$C_F \Omega + \kappa_{\mathrm{unc}} k_\varepsilon$ evaluations of $(f, c)$ and at most
+$C_D \Omega$ derivative evaluations.
+
+This follows Lemma 14.3.8 and Theorem 14.3.9 of [cartis2022evaluation] for Phase 2. The proof
+specializes `Constrained.IsHighOrderTargetRun.complexity_of_innerTest_card`. The constants do
+not depend on the tolerances $\varepsilon$, the run, $\kappa_{\mathrm{unc}}$ or $\Omega$. -/
 theorem exists_const_order_of_card (hq : 1 ≤ q)
     {κdecr κuns πmax A Bb : ℝ} (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hA : 0 ≤ A)
     (hBb : 0 ≤ Bb) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) :
@@ -875,14 +1036,26 @@ theorem exists_const_order_of_card (hq : 1 ≤ q)
       _ = _ := by ring
 
 open Classical in
-/-- **Phase 2 within an order bound, with the count constant paid per outer iteration**
-([cartis2022evaluation], Lemma 14.3.8 and Theorem 14.3.9, Phase 2): there are constants
-`C_F, C_D, C_K ≥ 0` such that for every `κ_unc ≥ 0` and every run satisfying the contract keyed on
-(14.3.19) with the constants `κ_decr`, `κ_uns`, `κ_unc` and radii `ρ_j = κ_ρ ρ'_j` (`ρ'_j > 0`),
-under the assumptions of `complexity_of_innerTest` with `f_up - f_low + 1 ≤ A`, and for every `O`
-with `ε₀^{-1} ≤ O`, `ε₀^{1-π_l} ε_l^{-π_l} ≤ O` and `(ε₀ ε_j ρ'_j^{j-1})^{-1} ≤ b O`, Phase 2
-terminates at some `k_ε ≤ C_K O` using at most `C_F O + κ_unc k_ε` evaluations of `(f, c)` and
-`C_D O` derivative evaluations. -/
+/-- **Phase 2 within an order bound, with the count constant paid per outer iteration.** Fix $f$,
+$c$, $X$, $q \ge 1$, $\theta \in (0, 1)$, $\beta > 0$, $\kappa_{\mathrm{decr}} > 0$,
+$\kappa_{\mathrm{uns}} \ge 0$, $\kappa_\rho > 0$, $\pi_{\max}$, $B_f > 0$, $A \ge 0$ and
+$b \ge 0$. Then there are constants $C_F, C_D, C_K \ge 0$ with the following property. Let
+$\kappa_{\mathrm{unc}} \ge 0$, and let $D$ be a run whose inner calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with the constants
+$\kappa_{\mathrm{decr}}$, $\kappa_{\mathrm{uns}}$, $\kappa_{\mathrm{unc}}$, exponents
+$0 \le \pi_l \le \pi_{\max}$ and radii $\rho_j = \kappa_\rho \rho'_j$ with $\rho'_j > 0$. Assume
+f.B.Fb with $f_{\mathrm{up}} - f_{\mathrm{low}} + 1 \le A$, let $f$ and $c$ be of class $C^q$ at
+the points of $X$, and let $\|\nabla^i f(y)\| \le B_f$ for $i = 1, \dots, q$ at the points
+$y \in X$ with $\|c(y)\| \le \varepsilon_0$. Let $\Omega$ satisfy
+$\varepsilon_0^{-1} \le \Omega$, $\varepsilon_0^{1 - \pi_l} \varepsilon_l^{-\pi_l} \le \Omega$
+and $(\varepsilon_0 \varepsilon_j \rho'^{\,j-1}_j)^{-1} \le b \Omega$ for $j, l = 1, \dots, q$.
+Then Phase 2 terminates at some outer iteration $k_\varepsilon \le C_K \Omega$, using at most
+$C_F \Omega + \kappa_{\mathrm{unc}} k_\varepsilon$ evaluations of $(f, c)$ and at most
+$C_D \Omega$ derivative evaluations.
+
+This follows Lemma 14.3.8 and Theorem 14.3.9 of [cartis2022evaluation] for Phase 2. The
+constants do not depend on the tolerances $\varepsilon$, the run, $\kappa_{\mathrm{unc}}$ or
+$\Omega$. -/
 theorem exists_const_order_of_innerTest_calls (hq : 1 ≤ q)
     {κdecr κuns κρ πmax Bf A b : ℝ}
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)
@@ -973,12 +1146,15 @@ theorem exists_const_order_of_innerTest_calls (hq : 1 ≤ q)
   linarith
 
 open Classical in
-/-- **Phase 2 within an order bound, with a count constant chosen after the tolerances** (as
-`exists_const_order_of_innerTest`, with `κ_unc` allowed to depend on `ε`): there are constants
-`C_F, C_U, C_D ≥ 0` such that, under the assumptions of `exists_const_order_of_innerTest_calls`,
-Phase 2 terminates using at most `(C_F + C_U κ_unc) O` evaluations of `(f, c)` and `C_D O`
-derivative evaluations (inner calls restarting from a fixed trust-region radius have a `κ_unc`
-containing `|log(ε₀ ε_min)|`). -/
+/-- **Phase 2 within an order bound, with a count constant chosen after the tolerances.** Under the
+assumptions of `Constrained.IsHighOrderTargetRun.exists_const_order_of_innerTest_calls`, there
+are constants $C_F, C_U, C_D \ge 0$ such that Phase 2 terminates using at most
+$(C_F + C_U \kappa_{\mathrm{unc}}) \Omega$ evaluations of $(f, c)$ and at most $C_D \Omega$
+derivative evaluations.
+
+The constant $\kappa_{\mathrm{unc}}$ may depend on the tolerances $\varepsilon$, while $C_F$,
+$C_U$ and $C_D$ do not. For example, inner calls that restart from a fixed trust-region radius
+have a $\kappa_{\mathrm{unc}}$ that contains $|\log(\varepsilon_0 \varepsilon_{\min})|$. -/
 theorem exists_const_order_of_innerTest_unc (hq : 1 ≤ q)
     {κdecr κuns κρ πmax Bf A b : ℝ}
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)
@@ -1006,16 +1182,24 @@ theorem exists_const_order_of_innerTest_unc (hq : 1 ≤ q)
   nlinarith
 
 open Classical in
-/-- **Phase 2 within an order bound, for every run satisfying the contract keyed on (14.3.19)**
-([cartis2022evaluation], Theorem 14.3.9, Phase 2). For constants `κ_decr > 0`, `κ_uns, κ_unc ≥ 0`,
-`κ_ρ > 0`, `π_max`, `B_f > 0`, `A ≥ 0`, `b ≥ 0` and `θ ∈ (0, 1)`, `β > 0`, there are constants
-`C_F`, `C_D` such that for all tolerances `ε` and every run satisfying the contract keyed on
-(14.3.19) with these constants, exponents `0 ≤ π_l ≤ π_max` and radii `ρ_j = κ_ρ ρ'_j`
-(`ρ'_j > 0`), under f.B.Fb with `f_up - f_low + 1 ≤ A`, `f`, `c` of class `C^q` at the points of
-`X` with `‖∇^i f‖ ≤ B_f` at the points of `X` with `‖c‖ ≤ ε₀`, and for every `O` with
-`ε₀^{-1} ≤ O`, `ε₀^{1-π_l} ε_l^{-π_l} ≤ O` and `(ε₀ ε_j ρ'_j^{j-1})^{-1} ≤ b O` (the order of the
-bad outer iterations), Phase 2 terminates at some `k_ε` using at most `C_F O` evaluations of
-`(f, c)` and `C_D O` derivative evaluations (`complexity_of_innerTest`). -/
+/-- **Phase 2 within an order bound, for every run that satisfies the contract keyed on (14.3.19).**
+Fix $f$, $c$, $X$, $q \ge 1$, $\theta \in (0, 1)$, $\beta > 0$ and constants
+$\kappa_{\mathrm{decr}} > 0$, $\kappa_{\mathrm{uns}} \ge 0$, $\kappa_{\mathrm{unc}} \ge 0$,
+$\kappa_\rho > 0$, $\pi_{\max}$, $B_f > 0$, $A \ge 0$ and $b \ge 0$. Then there are constants
+$C_F, C_D \ge 0$ with the following property. Let $D$ be a run, for any tolerances
+$\varepsilon$, whose inner calls satisfy `Constrained.HighOrderTargetSeq.IsInnerTestContract`
+with these constants, exponents $0 \le \pi_l \le \pi_{\max}$ and radii
+$\rho_j = \kappa_\rho \rho'_j$ with $\rho'_j > 0$. Assume f.B.Fb with
+$f_{\mathrm{up}} - f_{\mathrm{low}} + 1 \le A$, let $f$ and $c$ be of class $C^q$ at the points
+of $X$, and let $\|\nabla^i f(y)\| \le B_f$ for $i = 1, \dots, q$ at the points $y \in X$ with
+$\|c(y)\| \le \varepsilon_0$. Let $\Omega$ satisfy $\varepsilon_0^{-1} \le \Omega$,
+$\varepsilon_0^{1 - \pi_l} \varepsilon_l^{-\pi_l} \le \Omega$ and $(\varepsilon_0 \varepsilon_j
+\rho'^{\,j-1}_j)^{-1} \le b \Omega$ for $j, l = 1, \dots, q$; the last terms are the order of
+the bad outer iterations. Then Phase 2 terminates at some outer iteration $k_\varepsilon$, using
+at most $C_F \Omega$ evaluations of $(f, c)$ and at most $C_D \Omega$ derivative evaluations.
+
+This is Theorem 14.3.9 of [cartis2022evaluation] for Phase 2. The proof specializes
+`Constrained.IsHighOrderTargetRun.complexity_of_innerTest`. -/
 theorem exists_const_order_of_innerTest (hq : 1 ≤ q)
     {κdecr κuns κunc κρ πmax Bf A b : ℝ}
     (hκ : 0 < κdecr) (hκuns : 0 ≤ κuns) (hκunc : 0 ≤ κunc) (hκρ : 0 < κρ) (hBf0 : 0 < Bf)

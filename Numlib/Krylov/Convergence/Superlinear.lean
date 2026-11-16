@@ -16,49 +16,79 @@ import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Iterate
 
 /-!
-# Superlinear convergence of conjugate gradients for `A = 1 - K`
+# Superlinear convergence of conjugate gradients for $A = I - K$
 
-[winther1980some] theorem: for a compact perturbation `A = 1 - K` of the identity on a Hilbert
-space, with `K` self-adjoint and `A` positive definite, the conjugate gradient method converges
-*superlinearly* — the error after `k` steps is at most `c_k^k` times the initial error, with `c_k →
-0`. No Chebyshev bound can do this: the rate of `Krylov.IsGalerkinIterate.energyNorm_error_le`
-depends only on the enclosing interval `[δ, Δ]` of the spectrum, and does not improve with `k`. What
-drives the improvement here is that the eigenvalues of `K` accumulate only at `0`, so a polynomial
-of degree `k` can annihilate the `k` largest of them and still be small at all the others.
+**Winther's theorem** [winther1980some]: let $A = I - K$ be a compact perturbation of the identity
+on a Hilbert space, with $K$ self-adjoint and $A$ positive definite. Then the conjugate gradient
+method converges *superlinearly*: the error after $k$ steps is at most $c_k^k$ times the initial
+error, with $c_k \to 0$. No Chebyshev bound can give this, because the rate of
+`Krylov.IsGalerkinIterate.energyNorm_error_le` depends only on the interval $[\delta, \Delta]$ that
+encloses the spectrum, and does not improve with $k$. Here the improvement comes from the
+eigenvalues $\lambda_j$ of $K$, which accumulate only at $0$: a polynomial of degree $k$ can vanish
+at the $k$ largest of them and still be small at all the others.
 
-The classical proof ([han2009theoretical] Thm 5.6.2, after [winther1980some]) reads the
-eigen-decomposition of `K` off the spectral theorem for compact self-adjoint operators. What the
-argument actually consumes is one step further on — the *enumeration* of the eigenvalues as a
-sequence with `|λ|` decreasing — which rests on the eigenvalues accumulating only at `0` and needs
-the index type to be `ℕ`. That enumeration is `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, with
-the matching orthonormal basis `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`.
+The competitor polynomial is $Q_k(t) = \prod_{j < k} (1 - \lambda_j - t)/(1 - \lambda_j)$
+(`Krylov.wintherPoly`). It is $1$ at $0$ and vanishes at the $k$ leading eigenvalues $1 - \lambda_j$
+of $A$. At the other eigenvalues $|Q_k| \le \prod_{j < k} 2 |\lambda_j|/(1 - \lambda_j)$, because
+$|\lambda_i - \lambda_j| \le 2 |\lambda_j|$ when $|\lambda_i| \le |\lambda_j|$. Galerkin optimality
+turns this into `Krylov.IsGalerkinIterate.norm_error_le_prod`. The inequality of arithmetic and
+geometric means turns the product into the $k$-th power of $c_k$ (`Krylov.wintherRate`), and
+$c_k \to 0$ by Cesàro convergence (`Krylov.winther_rate_tendsto_zero`). The presentation follows
+Theorem 5.6.2 of [han2009theoretical].
 
-The statements here take the *enumerated* decomposition as data: a Hilbert basis `φ : HilbertBasis ℕ
-𝕜 E` of eigenvectors of `K` with real eigenvalues `λ`, ordered so that `|λ|` is antitone, together
-with the enclosure `0 < δ ≤ 1 - λ j ≤ Δ`. Compactness of `K` is then never used — it is what
-produces the data, not what the proof needs, and `Krylov.winther_of_isCompactOperator` is the same
-theorem with the data discharged, proved without changing a line above it. Everything else is
-proved: the quadratic-form bounds `LinearMap.IsSymmetricBoundedBy δ Δ` follow from the decomposition
-by Parseval (`Krylov.isSymmetricBoundedBy_of_eq_one_sub`), and so does the operator bound
-`LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`, the discrete counterpart of the
-interval bound `LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`. Once the decreasing
-enumeration is available the data become a conclusion and these statements specialize to the book's.
+## Main definitions
 
-The competitor polynomial is `Krylov.wintherPoly`, `Q_k(t) = ∏_{j < k} (1 - λ_j - t)/(1 - λ_j)`,
-which is `1` at `0` and vanishes at the `k` leading eigenvalues `1 - λ_j` of `A`; at the remaining
-ones `|Q_k| ≤ ∏_{j < k} 2 |λ_j|/(1 - λ_j)`, because `|λ_i - λ_j| ≤ 2 |λ_j|` once `|λ_i| ≤ |λ_j|`.
-Galerkin optimality turns this into `Krylov.IsGalerkinIterate.norm_error_le_prod`, and the
-arithmetic–geometric mean inequality turns the product into the `k`-th power of
-`Krylov.wintherRate`, which tends to `0` by Cesàro convergence (`Krylov.winther_rate_tendsto_zero`).
+* `Krylov.wintherPoly`: the competitor polynomial $Q_k$.
+* `Krylov.wintherRate`: the rate $c_k = (\Delta/\delta)^{1/(2k)} (2/k) \sum_{j < k} |\lambda_j|/(1 -
+  \lambda_j)$.
+
+## Main results
+
+* `HilbertBasis.hasSum_norm_inner_sq`: Parseval's identity $\sum_i |\langle \varphi_i, v
+  \rangle|^2 = \|v\|^2$.
+* `LinearMap.IsSymmetric.isSymmetricBoundedBy_of_hilbertBasis`: an operator that is diagonal in a
+  Hilbert basis with entries in $[a, b]$ has quadratic form bounded by $a$ and $b$.
+* `LinearMap.IsSymmetric.norm_apply_le_of_hilbertBasis` and
+  `LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`: bounds on $\|Av\|$ and
+  $\|p(A) v\|$ by the diagonal entries.
+* `LinearMap.IsSymmetricBoundedBy.energyNorm_le_sqrt_mul_norm`: $\|v\|_A \le \sqrt{b} \|v\|$.
+* `Krylov.isSymmetricBoundedBy_of_eq_one_sub`: the eigenvalue bounds
+  $\delta \le 1 - \lambda_j \le \Delta$ give the quadratic-form bounds for $A = I - K$.
+* `Krylov.abs_eval_wintherPoly_le`: $|Q_k(1 - \lambda_i)| \le \prod_{j < k} 2 |\lambda_j|/(1 -
+  \lambda_j)$ for every $i$.
+* `Krylov.winther_rate_tendsto_zero`: $c_k \to 0$ when $\lambda_j \to 0$.
+* `Krylov.IsGalerkinIterate.norm_error_le_prod`: the error bound with the product, for any Galerkin
+  iterate.
+* `Krylov.winther`: Winther's theorem for the conjugate gradient iterates, with the
+  eigen-decomposition of $K$ as data.
+* `Krylov.winther_of_isCompactOperator`: Winther's theorem for an injective compact self-adjoint $K$
+  on an infinite-dimensional Hilbert space.
 
 ## Implementation notes
 
-`Krylov.winther` is proved with `c_k = (Δ/δ)^{1/(2k)} (2/k) ∑_{j < k} |λ_j|/(1 - λ_j)`, where
-[han2009theoretical] state `(Δ/δ)^{3/(2k)}` in their (5.6.21). The exponent `3/2` is the price of
-their route through the residual, `‖x* - x_k‖ ≤ ‖A⁻¹‖ ‖r̃_k‖` and `‖r₀‖ ≤ ‖A‖ ‖x* - x₀‖`; measuring
-the error directly in the energy norm at both ends costs only the one conversion `√δ ‖v‖ ≤ ‖v‖_A ≤
-√Δ ‖v‖`. Since `δ ≤ Δ`, the constant proved here is the smaller one, and the book's form follows
-from it.
+* The classical proof reads the eigen-decomposition of $K$ from the spectral theorem for compact
+  self-adjoint operators. The argument uses one more fact: an *enumeration* of the eigenvalues as a
+  sequence with $|\lambda_j|$ decreasing. This rests on the eigenvalues accumulating only at $0$,
+  and it needs the index type $\mathbb{N}$. The enumeration is
+  `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, with the matching orthonormal basis
+  `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`.
+* The main statements take the enumerated decomposition as data: a Hilbert basis
+  `φ : HilbertBasis ℕ 𝕜 E` of eigenvectors of $K$ with real eigenvalues $\lambda_j$, ordered so that
+  $|\lambda_j|$ is antitone, together with the enclosure $0 < \delta \le 1 - \lambda_j \le \Delta$.
+  Compactness of $K$ is then never used: it produces the data, but the proof does not need it.
+  `Krylov.winther_of_isCompactOperator` is the same theorem with the data supplied by the spectral
+  theorem.
+* The quadratic-form bounds `LinearMap.IsSymmetricBoundedBy δ Δ` follow from the decomposition by
+  Parseval's identity (`Krylov.isSymmetricBoundedBy_of_eq_one_sub`), and so does the operator bound
+  `LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`, the discrete counterpart of the
+  interval bound `LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`.
+* `Krylov.winther` is proved with $c_k = (\Delta/\delta)^{1/(2k)} (2/k) \sum_{j < k}
+  |\lambda_j|/(1 - \lambda_j)$, where (5.6.21) of [han2009theoretical] has the factor
+  $(\Delta/\delta)^{3/(2k)}$. The exponent $3/2$ comes from their route through the residual,
+  $\|x^* - x_k\| \le \|A^{-1}\| \|\tilde r_k\|$ and $\|r_0\| \le \|A\| \|x^* - x_0\|$. Measuring the
+  error in the energy norm at both ends costs only the conversion $\sqrt{\delta} \|v\| \le \|v\|_A
+  \le \sqrt{\Delta} \|v\|$. Since $\delta \le \Delta$, the constant proved here is the smaller one,
+  and the form in [han2009theoretical] follows from it.
 -/
 
 open Filter Polynomial Topology
@@ -69,8 +99,11 @@ variable {𝕜 E ι : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductS
 
 namespace HilbertBasis
 
-/-- **Parseval's identity** in the summable form the eigenvector estimates use: `∑ᵢ |⟪φᵢ, v⟫|² =
-‖v‖²`. -/
+/-- **Parseval's identity**, in the form of a convergent sum: for a Hilbert basis $(\varphi_i)$ of
+an inner product space $E$ and every $v \in E$,
+$$\sum_i |\langle \varphi_i, v \rangle|^2 = \|v\|^2.$$
+
+The sum is stated with `HasSum`, the form that the eigenvector estimates of this module use. -/
 theorem hasSum_norm_inner_sq (φ : HilbertBasis ι 𝕜 E) (v : E) :
     HasSum (fun i => ‖inner 𝕜 (φ i) v‖ ^ 2) (‖v‖ ^ 2) := by
   have key : (fun i => ‖inner 𝕜 (φ i) v‖ ^ 2)
@@ -88,13 +121,19 @@ namespace LinearMap.IsSymmetric
 
 variable {A : E →ₗ[𝕜] E} {ν : ι → ℝ}
 
-/-- A symmetric operator diagonal in `φ` multiplies the `i`-th coefficient by `νᵢ`. -/
+/-- Let $A$ be symmetric and diagonal in a Hilbert basis $(\varphi_i)$, with
+$A \varphi_i = \nu_i \varphi_i$ for real $\nu_i$. Then $A$ multiplies the $i$-th coefficient by
+$\nu_i$: $\langle \varphi_i, Av \rangle = \nu_i \langle \varphi_i, v \rangle$ for every $v$. -/
 theorem inner_apply_of_apply_eq_smul (hA : A.IsSymmetric) (φ : HilbertBasis ι 𝕜 E)
     (hν : ∀ i, A (φ i) = ((ν i : ℝ) : 𝕜) • φ i) (v : E) (i : ι) :
     inner 𝕜 (φ i) (A v) = ((ν i : ℝ) : 𝕜) * inner 𝕜 (φ i) v := by
   rw [← hA (φ i) v, hν i, inner_smul_left, RCLike.conj_ofReal]
 
-/-- The quadratic form of an operator diagonal in `φ` is `∑ᵢ νᵢ |⟪φᵢ, v⟫|²`. -/
+/-- Let $A$ be symmetric and diagonal in a Hilbert basis $(\varphi_i)$, with
+$A \varphi_i = \nu_i \varphi_i$ for real $\nu_i$. Then the quadratic form of $A$ is the
+convergent sum
+$$\operatorname{Re} \langle Av, v \rangle = \sum_i \nu_i |\langle \varphi_i, v \rangle|^2.$$
+-/
 theorem hasSum_re_inner_apply_self (hA : A.IsSymmetric) (φ : HilbertBasis ι 𝕜 E)
     (hν : ∀ i, A (φ i) = ((ν i : ℝ) : 𝕜) • φ i) (v : E) :
     HasSum (fun i => ν i * ‖inner 𝕜 (φ i) v‖ ^ 2) (RCLike.re (inner 𝕜 (A v) v)) := by
@@ -110,9 +149,12 @@ theorem hasSum_re_inner_apply_self (hA : A.IsSymmetric) (φ : HilbertBasis ι �
   rw [key]
   exact (φ.hasSum_inner_mul_inner (A v) v).map (RCLike.re : 𝕜 →+ ℝ) RCLike.continuous_re
 
-/-- Eigenvalue bounds are quadratic-form bounds, in any Hilbert space: an operator diagonal in a
-Hilbert basis with `a ≤ νᵢ ≤ b` satisfies `LinearMap.IsSymmetricBoundedBy a b`. This is the
-infinite-dimensional counterpart of
+/-- Let $A$ be symmetric and diagonal in a Hilbert basis $(\varphi_i)$ of an inner product space,
+with $A \varphi_i = \nu_i \varphi_i$ for real $\nu_i$. If $a \le \nu_i \le b$ for all $i$, then
+$$a \|v\|^2 \le \operatorname{Re} \langle Av, v \rangle \le b \|v\|^2 \quad \text{for all } v,$$
+that is, `A.IsSymmetricBoundedBy a b`.
+
+This is the counterpart, in any Hilbert space, of
 `LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`, which goes through the
 Rayleigh quotient and needs finite dimension. -/
 theorem isSymmetricBoundedBy_of_hilbertBasis (hA : A.IsSymmetric) (φ : HilbertBasis ι 𝕜 E)
@@ -124,9 +166,12 @@ theorem isSymmetricBoundedBy_of_hilbertBasis (hA : A.IsSymmetric) (φ : HilbertB
   · exact hasSum_le (fun i => mul_le_mul_of_nonneg_right (hb i) (sq_nonneg _))
       (hA.hasSum_re_inner_apply_self φ hν v) ((φ.hasSum_norm_inner_sq v).mul_left b)
 
-/-- An operator diagonal in a Hilbert basis is bounded by the supremum of the absolute values of its
-diagonal entries. The bound is not assumed nonnegative: when the index type is empty the space is
-trivial and the inequality reads `0 ≤ 0`. -/
+/-- Let $A$ be symmetric and diagonal in a Hilbert basis $(\varphi_i)$, with
+$A \varphi_i = \nu_i \varphi_i$ for real $\nu_i$. If $|\nu_i| \le C$ for all $i$, then
+$\|Av\| \le C \|v\|$ for every $v$.
+
+The bound $C$ is not assumed nonnegative: when the index type is empty, the space is trivial and
+the inequality reads $0 \le 0$. -/
 theorem norm_apply_le_of_hilbertBasis (hA : A.IsSymmetric) (φ : HilbertBasis ι 𝕜 E)
     (hν : ∀ i, A (φ i) = ((ν i : ℝ) : 𝕜) • φ i) {C : ℝ} (hC : ∀ i, |ν i| ≤ C) (v : E) :
     ‖A v‖ ≤ C * ‖v‖ := by
@@ -149,7 +194,8 @@ theorem norm_apply_le_of_hilbertBasis (hA : A.IsSymmetric) (φ : HilbertBasis ι
     have h := Real.sqrt_le_sqrt hle
     rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
 
-/-- A polynomial with real coefficients in a symmetric operator is symmetric. -/
+/-- A polynomial with real coefficients in a symmetric operator is symmetric: if $A$ is symmetric
+and $p \in \mathbb{R}[X]$, then $p(A)$ is symmetric. -/
 theorem aeval_map (hA : A.IsSymmetric) (p : ℝ[X]) :
     (aeval A (p.map (algebraMap ℝ 𝕜))).IsSymmetric := by
   induction p using Polynomial.induction_on' with
@@ -160,10 +206,14 @@ theorem aeval_map (hA : A.IsSymmetric) (p : ℝ[X]) :
       rw [h]
       exact (hA.pow n).smul (RCLike.conj_ofReal c)
 
-/-- The discrete counterpart of `LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`: `‖p(A) v‖
-≤ C ‖v‖` whenever `|p|` is bounded by `C` at every eigenvalue of an operator diagonal in a Hilbert
-basis. Unlike the interval form, this sees the individual eigenvalues, which is exactly what makes a
-superlinear rate possible. -/
+/-- Let $A$ be symmetric and diagonal in a Hilbert basis $(\varphi_i)$, with
+$A \varphi_i = \nu_i \varphi_i$ for real $\nu_i$. If $p$ is a real polynomial with
+$|p(\nu_i)| \le C$ for all $i$, then for every $v$
+$$\|p(A) v\| \le C \|v\|.$$
+
+This is the discrete counterpart of `LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`.
+Unlike the interval form, it sees the individual eigenvalues, and this is what makes a
+superlinear rate possible. The real polynomial acts on $A$ through `p.map (algebraMap ℝ 𝕜)`. -/
 theorem norm_aeval_map_apply_le_of_hilbertBasis (hA : A.IsSymmetric) (φ : HilbertBasis ι 𝕜 E)
     (hν : ∀ i, A (φ i) = ((ν i : ℝ) : 𝕜) • φ i) (p : ℝ[X]) {C : ℝ}
     (hC : ∀ i, |p.eval (ν i)| ≤ C) (v : E) :
@@ -175,8 +225,12 @@ theorem norm_aeval_map_apply_le_of_hilbertBasis (hA : A.IsSymmetric) (φ : Hilbe
 
 end LinearMap.IsSymmetric
 
-/-- Upper norm equivalence from the quadratic-form bounds, `‖v‖_A ≤ √b ‖v‖`: the companion of
-`LinearMap.IsCoerciveWith.norm_le_energyNorm`, which is the lower half. -/
+/-- Let $A$ be symmetric with $a \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le b \|x\|^2$
+for all $x$. Then the energy norm satisfies, for every $v$,
+$$\|v\|_A \le \sqrt{b} \, \|v\|.$$
+
+This is the upper half of the equivalence of the two norms. The lower half is
+`LinearMap.IsCoerciveWith.norm_le_energyNorm`. -/
 theorem LinearMap.IsSymmetricBoundedBy.energyNorm_le_sqrt_mul_norm {A : E →ₗ[𝕜] E} {a b : ℝ}
     (hA : A.IsSymmetricBoundedBy a b) (v : E) : energyNorm A v ≤ Real.sqrt b * ‖v‖ := by
   have h := Real.sqrt_le_sqrt (hA.re_inner_le v)
@@ -184,17 +238,25 @@ theorem LinearMap.IsSymmetricBoundedBy.energyNorm_le_sqrt_mul_norm {A : E →ₗ
 
 namespace Krylov
 
-/-! ### The operator `A = 1 - K` -/
+/-! ### The operator $A = I - K$ -/
 
-/-- `A = 1 - K` acts on an eigenvector of `K` by `1 - λ`. -/
+/-- If $A = I - K$ and $K \varphi_j = \lambda_j \varphi_j$ with $\lambda_j$ real, then
+$A \varphi_j = (1 - \lambda_j) \varphi_j$. -/
 theorem apply_eq_smul_of_eq_one_sub {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K)
     (φ : HilbertBasis ι 𝕜 E) {lam : ι → ℝ} (hlam : ∀ j, K (φ j) = ((lam j : ℝ) : 𝕜) • φ j)
     (j : ι) : A (φ j) = (((1 - lam j : ℝ)) : 𝕜) • φ j := by
   rw [hAK, LinearMap.sub_apply, Module.End.one_apply, hlam j, RCLike.ofReal_sub,
     RCLike.ofReal_one, sub_smul, one_smul]
 
-/-- The enclosure `δ ≤ 1 - λ_j ≤ Δ` of the eigenvalues of `A = 1 - K` is the quadratic-form
-enclosure `LinearMap.IsSymmetricBoundedBy δ Δ`, by Parseval in the eigenbasis. -/
+/-- Let $K$ be symmetric and diagonal in a Hilbert basis $(\varphi_j)$, with
+$K \varphi_j = \lambda_j \varphi_j$ for real $\lambda_j$, and let $A = I - K$. If
+$\delta \le 1 - \lambda_j \le \Delta$ for all $j$, then
+$$\delta \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le \Delta \|x\|^2 \quad \text{for
+  all } x,$$
+that is, `A.IsSymmetricBoundedBy δ Δ`.
+
+The proof applies Parseval's identity in the eigenvector basis
+(`LinearMap.IsSymmetric.isSymmetricBoundedBy_of_hilbertBasis`). -/
 theorem isSymmetricBoundedBy_of_eq_one_sub {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K)
     (hK : K.IsSymmetric) (φ : HilbertBasis ι 𝕜 E) {lam : ι → ℝ}
     (hlam : ∀ j, K (φ j) = ((lam j : ℝ) : 𝕜) • φ j) {δ Δ : ℝ} (hlow : ∀ j, δ ≤ 1 - lam j)
@@ -206,17 +268,24 @@ theorem isSymmetricBoundedBy_of_eq_one_sub {A K : E →ₗ[𝕜] E} (hAK : A = 1
 
 /-! ### The competitor polynomial -/
 
-/-- The competitor polynomial of [winther1980some] theorem, `Q_k(t) = ∏_{j < k} (1 - λ_j - t)/(1 -
-λ_j)`: it is `1` at `0` and vanishes at the `k` leading eigenvalues `1 - λ_j` of `A = 1 - K`. -/
+/-- The **competitor polynomial** of Winther's theorem [winther1980some]: for a real sequence
+$(\lambda_j)$ and $k \in \mathbb{N}$,
+$$Q_k(t) = \prod_{j < k} \frac{1 - \lambda_j - t}{1 - \lambda_j}.$$
+When every $1 - \lambda_j$ is nonzero, $Q_k(0) = 1$ and $Q_k$ vanishes at the $k$ leading
+eigenvalues $1 - \lambda_j$, $j < k$, of $A = I - K$.
+
+Each factor is written $(1 - \lambda_j)^{-1} (1 - \lambda_j - t)$, so a factor with
+$1 - \lambda_j = 0$ is the zero polynomial, by the Lean convention $0^{-1} = 0$. -/
 noncomputable def wintherPoly (lam : ℕ → ℝ) (k : ℕ) : ℝ[X] :=
   ∏ j ∈ Finset.range k, C (1 - lam j)⁻¹ * (C (1 - lam j) - X)
 
-/-- The values of `Q_k`, the form every estimate on it starts from. -/
+/-- The value of $Q_k$ at $t \in \mathbb{R}$ is $\prod_{j < k} (1 - \lambda_j)^{-1} (1 - \lambda_j -
+t)$. -/
 theorem wintherPoly_eval (lam : ℕ → ℝ) (k : ℕ) (t : ℝ) :
     (wintherPoly lam k).eval t = ∏ j ∈ Finset.range k, (1 - lam j)⁻¹ * (1 - lam j - t) := by
   simp [wintherPoly, eval_prod]
 
-/-- `Q_k` has degree at most `k`, so it is a competitor at step `k`. -/
+/-- The polynomial $Q_k$ has degree at most $k$, so it is a competitor at step $k$. -/
 theorem wintherPoly_natDegree_le (lam : ℕ → ℝ) (k : ℕ) : (wintherPoly lam k).natDegree ≤ k := by
   refine (natDegree_prod_le _ _).trans ?_
   refine (Finset.sum_le_card_nsmul _ _ 1 fun j _ => ?_).trans (by simp)
@@ -224,16 +293,20 @@ theorem wintherPoly_natDegree_le (lam : ℕ → ℝ) (k : ℕ) : (wintherPoly la
   simp only [natDegree_C, zero_add]
   exact (natDegree_sub_le _ _).trans (by simp)
 
-/-- `Q_k(0) = 1`, the normalization every residual polynomial must satisfy. -/
+/-- If $1 - \lambda_j \neq 0$ for all $j$, then $Q_k(0) = 1$, the normalization of a residual
+polynomial. -/
 theorem wintherPoly_eval_zero {lam : ℕ → ℝ} (h : ∀ j, 1 - lam j ≠ 0) (k : ℕ) :
     (wintherPoly lam k).eval 0 = 1 := by
   rw [wintherPoly_eval]
   exact Finset.prod_eq_one fun j _ => by rw [sub_zero, inv_mul_cancel₀ (h j)]
 
-/-- The key estimate on the competitor polynomial: at *every* eigenvalue `1 - λ_i` of `A`, `|Q_k(1 -
-λ_i)| ≤ ∏_{j < k} 2 |λ_j|/(1 - λ_j)`. For `i < k` the value is `0`; for `k ≤ i` each factor is
-bounded by `2 |λ_j|/(1 - λ_j)` because `|λ_i| ≤ |λ_j|`, which is where the antitone enumeration of
-the eigenvalues is used. -/
+/-- The **key estimate on the competitor polynomial**. Let $(\lambda_j)$ be a real sequence with
+$1 - \lambda_j > 0$ for all $j$ and $|\lambda_j|$ nonincreasing. Then for all $k$ and $i$,
+$$|Q_k(1 - \lambda_i)| \le \prod_{j < k} \frac{2 |\lambda_j|}{1 - \lambda_j}.$$
+
+For $i < k$ the value is $0$. For $k \le i$, each factor is at most
+$2 |\lambda_j|/(1 - \lambda_j)$ because $|\lambda_i| \le |\lambda_j|$; this is where the
+decreasing enumeration of the eigenvalues is used. -/
 theorem abs_eval_wintherPoly_le {lam : ℕ → ℝ} (hpos : ∀ j, 0 < 1 - lam j)
     (hanti : Antitone fun j => |lam j|) (k i : ℕ) :
     |(wintherPoly lam k).eval (1 - lam i)| ≤
@@ -264,14 +337,23 @@ theorem abs_eval_wintherPoly_le {lam : ℕ → ℝ} (hpos : ∀ j, 0 < 1 - lam j
 
 /-! ### The rate -/
 
-/-- [winther1980some] rate `c_k = (Δ/δ)^{1/(2k)} (2/k) ∑_{j < k} |λ_j|/(1 - λ_j)`. Its `k`-th power
-bounds the relative error of the `k`-th conjugate gradient iterate (`Krylov.winther`), and `c_k → 0`
-(`Krylov.winther_rate_tendsto_zero`), which is superlinear convergence. -/
+/-- The **rate** of Winther's theorem [winther1980some]: for a real sequence $(\lambda_j)$, reals
+$\delta$, $\Delta$ and $k \in \mathbb{N}$,
+$$c_k = \left( \frac{\Delta}{\delta} \right)^{1/(2k)} \frac{2}{k} \sum_{j < k}
+  \frac{|\lambda_j|}{1 - \lambda_j}.$$
+By `Krylov.winther`, its $k$-th power bounds the relative error of the $k$-th conjugate gradient
+iterate. By `Krylov.winther_rate_tendsto_zero`, the rate tends to $0$, which is superlinear
+convergence.
+
+The power is the real power `Real.rpow`. At $k = 0$ the Lean formula divides by $0$ and gives
+$c_0 = 0$, with $c_0^0 = 1$. -/
 noncomputable def wintherRate (lam : ℕ → ℝ) (δ Δ : ℝ) (k : ℕ) : ℝ :=
   (Δ / δ) ^ (1 / (2 * k : ℝ)) * (2 / k * ∑ j ∈ Finset.range k, |lam j| / (1 - lam j))
 
-/-- **AM–GM** in the form the rate needs: a product of `k` nonnegative reals is at most the `k`-th
-power of their arithmetic mean. -/
+/-- The **inequality of arithmetic and geometric means**, in the form that the rate needs: if
+$b_j \ge 0$ for all $j$ and $k \neq 0$, then
+$$\prod_{j < k} b_j \le \left( \frac{1}{k} \sum_{j < k} b_j \right)^k.$$
+-/
 theorem prod_range_le_pow_inv_mul_sum {b : ℕ → ℝ} (hb : ∀ j, 0 ≤ b j) {k : ℕ} (hk : k ≠ 0) :
     ∏ j ∈ Finset.range k, b j ≤ ((k : ℝ)⁻¹ * ∑ j ∈ Finset.range k, b j) ^ k := by
   have hk0 : (0 : ℝ) < k := Nat.cast_pos.2 (Nat.pos_of_ne_zero hk)
@@ -287,9 +369,12 @@ theorem prod_range_le_pow_inv_mul_sum {b : ℕ → ℝ} (hb : ∀ j, 0 ≤ b j) 
     _ ≤ ((∑ j ∈ Finset.range k, b j) / k) ^ k := by gcongr
     _ = ((k : ℝ)⁻¹ * ∑ j ∈ Finset.range k, b j) ^ k := by rw [div_eq_inv_mul]
 
-/-- The rate tends to `0`: the Cesàro means of `|λ_j|/(1 - λ_j) → 0` tend to `0`, and the correction
-`(Δ/δ)^{1/(2k)}` tends to `1`. This is what makes the bound of `Krylov.winther` superlinear; it is
-the only place where `λ → 0` is used. -/
+/-- The rate tends to $0$. Let $\delta > 0$, $\Delta > 0$ and $\lambda_j \to 0$. Then $c_k \to 0$ as
+$k \to \infty$.
+
+The Cesàro means of $|\lambda_j|/(1 - \lambda_j) \to 0$ tend to $0$, and the correction
+$(\Delta/\delta)^{1/(2k)}$ tends to $1$. This makes the bound of `Krylov.winther` superlinear,
+and it is the only place where $\lambda_j \to 0$ is used. -/
 theorem winther_rate_tendsto_zero {lam : ℕ → ℝ} {δ Δ : ℝ} (hδ : 0 < δ) (hΔ : 0 < Δ)
     (hlim : Tendsto lam atTop (𝓝 0)) : Tendsto (wintherRate lam δ Δ) atTop (𝓝 0) := by
   have hden : Tendsto (fun j => 1 - lam j) atTop (𝓝 1) := by
@@ -317,16 +402,22 @@ theorem winther_rate_tendsto_zero {lam : ℕ → ℝ} {δ Δ : ℝ} (hδ : 0 < �
   rw [one_mul] at h
   exact h
 
-/-! ### [winther1980some] theorem -/
+/-! ### Winther's theorem -/
 
-/-- The sharp form of [winther1980some] theorem, for any Galerkin iterate (in particular for
-conjugate gradients): `‖x* - x_k‖ ≤ √(Δ/δ) ∏_{j < k} 2 |λ_j|/(1 - λ_j) ‖x* - x₀‖`.
+/-- The **sharp form of Winther's theorem** [winther1980some], for any Galerkin iterate, in
+particular for conjugate gradients. Let $K$ be symmetric and diagonal in a Hilbert basis
+$(\varphi_j)_{j \in \mathbb{N}}$, with $K \varphi_j = \lambda_j \varphi_j$ for real $\lambda_j$
+and $|\lambda_j|$ nonincreasing. Let $A = I - K$, let $0 < \delta$ with
+$\delta \le 1 - \lambda_j \le \Delta$ for all $j$, and let $A x^* = b$. If $x$ is the Galerkin
+iterate for $Ax = b$ from $x_0$ at step $k$, then
+$$\|x^* - x\| \le \sqrt{\Delta/\delta} \left( \prod_{j < k} \frac{2 |\lambda_j|}{1 - \lambda_j}
+  \right) \|x^* - x_0\|.$$
 
-The competitor `Krylov.wintherPoly` annihilates the `k` leading eigencomponents, its remaining
-values are bounded by the product (`Krylov.abs_eval_wintherPoly_le`), and Parseval turns that into
-an operator bound (`LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`). Galerkin
-optimality is used in the energy norm, so the passage between the two norms is paid for exactly
-twice, once at each end: `√δ ‖v‖ ≤ ‖v‖_A ≤ √Δ ‖v‖`. -/
+The competitor `Krylov.wintherPoly` removes the $k$ leading eigencomponents, its other values
+are bounded by the product (`Krylov.abs_eval_wintherPoly_le`), and Parseval's identity turns
+this into an operator bound (`LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`).
+Galerkin optimality is used in the energy norm, so the conversion between the two norms is paid
+exactly twice, once at each end: $\sqrt{\delta} \|v\| \le \|v\|_A \le \sqrt{\Delta} \|v\|$. -/
 theorem IsGalerkinIterate.norm_error_le_prod {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K)
     (hK : K.IsSymmetric) (φ : HilbertBasis ℕ 𝕜 E) {lam : ℕ → ℝ}
     (hlam : ∀ j, K (φ j) = ((lam j : ℝ) : 𝕜) • φ j) (hanti : Antitone fun j => |lam j|)
@@ -365,16 +456,20 @@ theorem IsGalerkinIterate.norm_error_le_prod {A K : E →ₗ[𝕜] E} (hAK : A =
     _ = Real.sqrt Δ * (∏ j ∈ Finset.range k, 2 * |lam j| / (1 - lam j)) * ‖xstar - x₀‖ :=
         (mul_assoc _ _ _).symm
 
-/-- **[winther1980some] theorem** ([han2009theoretical], Thm 5.6.2), with the eigen-decomposition of
-the compact part taken as data: for `A = 1 - K` with `K` self-adjoint and diagonal in the Hilbert
-basis `φ` with eigenvalues `λ` enumerated so that `|λ|` is antitone, and with `0 < δ ≤ 1 - λ_j ≤ Δ`,
-the conjugate gradient iterates for `A x = b` started at `x₀` satisfy `‖x* - x_k‖ ≤ c_k^k ‖x* - x₀‖`
-with `c_k = Krylov.wintherRate λ δ Δ k`.
+/-- **Winther's theorem** [winther1980some], with the eigen-decomposition of the compact part given
+as data. Let $K$ be symmetric and diagonal in a Hilbert basis $(\varphi_j)_{j \in \mathbb{N}}$,
+with $K \varphi_j = \lambda_j \varphi_j$ for real $\lambda_j$ and $|\lambda_j|$ nonincreasing.
+Let $A = I - K$, let $0 < \delta$ with $\delta \le 1 - \lambda_j \le \Delta$ for all $j$, and
+let $A x^* = b$. Then for every $k$ the conjugate gradient iterate $x_k$ for $Ax = b$ from $x_0$
+satisfies
+$$\|x^* - x_k\| \le c_k^k \, \|x^* - x_0\|,$$
+with $c_k$ the rate `Krylov.wintherRate`. This is Theorem 5.6.2 of [han2009theoretical].
 
-Together with `Krylov.winther_rate_tendsto_zero`, which needs `λ → 0`, this is superlinear
-convergence: the rate improves without bound as the iteration proceeds, because a degree-`k`
-polynomial can annihilate the `k` largest eigenvalues of `K` and the rest are small. See the module
-documentation for the comparison of `c_k` with the book's constant. -/
+Together with `Krylov.winther_rate_tendsto_zero`, which needs $\lambda_j \to 0$, this is
+superlinear convergence: the rate improves without bound as the iteration proceeds, because a
+polynomial of degree $k$ can vanish at the $k$ largest eigenvalues of $K$ and the other
+eigenvalues are small. The module doc comment compares $c_k$ with the constant of
+[han2009theoretical]. The iterate $x_k$ is `(CG.iterate A b x₀ k).x`. -/
 theorem winther {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K) (hK : K.IsSymmetric)
     (φ : HilbertBasis ℕ 𝕜 E) {lam : ℕ → ℝ} (hlam : ∀ j, K (φ j) = ((lam j : ℝ) : 𝕜) • φ j)
     (hanti : Antitone fun j => |lam j|) {δ Δ : ℝ} (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j)
@@ -415,18 +510,22 @@ theorem winther {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K) (hK : K.IsSymmetric)
           (2 / (k : ℝ) * ∑ j ∈ Finset.range k, |lam j| / (1 - lam j)) k, hrpow]
 
 open ContinuousLinearMap in
-/-- **[winther1980some] theorem with no eigen-decomposition supplied.** For an injective compact
-self-adjoint `K` on an infinite-dimensional Hilbert space and `A = 1 - K` with `0 < δ ≤ 1 - λ_j ≤ Δ`
-for the eigenvalues `λ` of `K`, the conjugate gradient iterates for `A x = b` satisfy `‖x* - x_k‖ ≤
-c_k^k ‖x* - x₀‖` with `c_k = Krylov.wintherRate λ δ Δ k`, and `c_k → 0`: convergence is superlinear.
+/-- **Winther's theorem** [winther1980some] for a compact operator, with no eigen-decomposition
+supplied. Let $E$ be an infinite-dimensional Hilbert space, let $K$ be a compact, self-adjoint,
+injective bounded operator on $E$, with eigenvalues $\lambda_j$ enumerated by
+`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, and let $A = I - K$. Let $0 < \delta$ with
+$\delta \le 1 - \lambda_j \le \Delta$ for all $j$, and let $A x^* = b$. Then the conjugate
+gradient iterates $x_k$ for $Ax = b$ from $x_0$ satisfy
+$$\|x^* - x_k\| \le c_k^k \, \|x^* - x_0\| \quad \text{for every } k,$$
+with $c_k$ the rate `Krylov.wintherRate`, and $c_k \to 0$: the convergence is superlinear.
 
-This is `Krylov.winther` and `Krylov.winther_rate_tendsto_zero` with their three data hypotheses
-discharged by `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` and its companions. The
-proof of `Krylov.winther` is unchanged and still never uses compactness: compactness is what
-*produces* the enumerated eigen-decomposition, not what the estimate needs. The two hypotheses
-beyond compactness and symmetry, injectivity of `K` and infinite-dimensionality of `E`, are what
-make an antitone enumeration by `ℕ` possible at all; see
-`Numlib/Analysis/InnerProductSpace/CompactSpectral`. -/
+This is `Krylov.winther` and `Krylov.winther_rate_tendsto_zero`, with their data supplied by
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` and the facts proved with it. The
+proof of `Krylov.winther` never uses compactness: compactness *produces* the enumerated
+eigen-decomposition, but the estimate does not need it. The two hypotheses beyond compactness
+and symmetry, injectivity of $K$ and infinite dimension of $E$, make an enumeration by
+$\mathbb{N}$ with decreasing $|\lambda_j|$ possible; see
+`Numlib.Analysis.InnerProductSpace.CompactSpectral`. -/
 theorem winther_of_isCompactOperator [CompleteSpace E] {A : E →ₗ[𝕜] E} {K : E →L[𝕜] E}
     (hAK : A = 1 - (K : E →ₗ[𝕜] E)) (hKs : (K : E →ₗ[𝕜] E).IsSymmetric)
     (hKc : IsCompactOperator K) (hKinj : LinearMap.ker (K : E →ₗ[𝕜] E) = ⊥)

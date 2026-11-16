@@ -18,44 +18,53 @@ import Numlib.LinearAlgebra.Matrix.PlaneRotation
 /-!
 # Jacobi's eigenvalue algorithm
 
-Jacobi's method drives a real symmetric matrix towards a diagonal one by a sequence of plane
-rotations (`Matrix.planeRotation` of `Numlib/LinearAlgebra/Matrix/PlaneRotation`), each chosen to
-annihilate one off-diagonal entry. The quantity it decreases is the **off-diagonal mass** `N(A)² =
-∑_{i ≠ j} |a_ij|²`, and the whole of the classical analysis is the identity `N(UᵀAU)² = N(A)² - 2
-a_jk²` for the rotation `U` that annihilates `a_jk` ([kress1998numerical], Lemma 7.13), together
-with the observation that the largest off-diagonal entry carries at least a fraction `1/(n² - n)`
-of the mass.
+Jacobi's method drives a real symmetric matrix $A = (a_{ij})$ of order $n$ towards a diagonal matrix
+by a sequence of plane rotations (`Matrix.planeRotation` of
+`Numlib.LinearAlgebra.Matrix.PlaneRotation`). Each rotation is chosen so that the similarity it
+induces annihilates one off-diagonal entry. The quantity that decreases is the **off-diagonal mass**
+$$N(A)^2 = \sum_{i \neq j} a_{ij}^2,$$
+the notation of [kress1998numerical]. The classical analysis rests on two facts. First, if $U$ is
+the rotation that annihilates $a_{jk}$, then $N(U^T A U)^2 = N(A)^2 - 2 a_{jk}^2$
+([kress1998numerical], Lemma 7.13). Second, an off-diagonal entry of largest modulus carries at
+least the fraction $1/(n^2 - n)$ of the mass. So the classical method, which annihilates an entry of
+largest modulus at each step, reduces the mass by the factor $1 - 2/(n^2 - n)$ per step.
+
+This module proves these facts and the convergence of the classical method ([kress1998numerical],
+Theorem 7.14). It also proves that the sequence of matrices converges to a diagonal matrix with the
+eigenvalues of $A$, and it relates the rotation to the parametrization of [quarteroni2000numerical].
 
 ## Main definitions
 
-* `Matrix.offDiagNormSq`: [kress1998numerical] `N(A)²`.
-* `Matrix.jacobiRotation`, `Matrix.jacobiStep`: the rotation annihilating `a_jk`, and the similarity
-  it induces.
-* `Matrix.classicalJacobiIterate`: the classical method, annihilating a largest off-diagonal entry
-  at each step.
+* `Matrix.offDiagNormSq`: the off-diagonal mass $N(A)^2$.
+* `Matrix.jacobiRotation`: the plane rotation in the $(j, k)$-plane that annihilates $a_{jk}$.
+* `Matrix.jacobiStep`: the similarity $U^T A U$ by this rotation.
+* `Matrix.classicalJacobiIterate`: the classical Jacobi method, which annihilates an off-diagonal
+  entry of largest modulus at each step.
 
 ## Main results
 
-* `Matrix.offDiagNormSq_jacobiStep`: `N(UᵀAU)² = N(A)² - 2 a_jk²`.
-* `Matrix.offDiagNormSq_classicalJacobiIterate_le`: the geometric decay `N(A_ν)² ≤ (1 - 2/(n² -
-  n))^ν N(A)²`.
-* `Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`: the off-diagonal mass tends to `0`.
-* `Matrix.charpoly_classicalJacobiIterate`: every iterate is orthogonally similar to `A`, so the
-  eigenvalues never move.
+* `Matrix.offDiagNormSq_jacobiStep`: a Jacobi step gives $N(U^T A U)^2 = N(A)^2 - 2 a_{jk}^2$.
+* `Matrix.offDiagNormSq_classicalJacobiIterate_le`: the iterates satisfy
+  $N(A_\nu)^2 \le (1 - 2/(n^2 - n))^\nu N(A)^2$.
+* `Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`: the off-diagonal mass of the iterates tends
+  to $0$.
+* `Matrix.charpoly_classicalJacobiIterate`: every iterate has the characteristic polynomial of $A$.
 * `Matrix.tendsto_classicalJacobiIterate`: the iterates converge to a diagonal matrix with the
-  characteristic polynomial of `A`.
+  characteristic polynomial of $A$.
 
 ## Implementation notes
 
-The method is stated for **real symmetric** matrices, which is what a plane rotation with a real
-angle can diagonalize: for a complex Hermitian matrix a rotation with one real parameter cannot
-annihilate a complex `a_jk`, and one needs a phase as well.
-
-The rotation angle is parametrized by its tangent `t`, the root `t = θ + √(θ²+1)` of `t² - 2θt - 1 =
-0` with `θ = (a_kk - a_jj)/(2 a_jk)`, rather than by the angle itself: the annihilation identity is
-then a polynomial identity in `c` and `s`, provable by `linear_combination`, and no trigonometry is
-needed. The numerically preferable root, the one of smaller modulus, differs only in stability and
-not in the statements proved here.
+* The method is stated for real symmetric matrices, which plane rotations with a real angle can
+  diagonalize. For a complex Hermitian matrix, a rotation with one real parameter cannot annihilate
+  a complex entry $a_{jk}$; a phase is also necessary.
+* The rotation is parametrized by the tangent $t$ of its angle, not by the angle. With
+  $\theta = (a_{kk} - a_{jj}) / (2 a_{jk})$, the tangent `Matrix.jacobiTan` is the root of
+  $t^2 - 2 \theta t - 1 = 0$ of smaller modulus, so $|t| \le 1$. Then the annihilation identity is a
+  polynomial identity in the cosine $c$ and the sine $s$, and no trigonometry is necessary.
+* The choice of the root of smaller modulus is necessary for the convergence of the matrix sequence,
+  not only for numerical stability; see `Matrix.jacobiTan`.
+* The rotation `Matrix.planeRotation j k c s` has the entries $c$ at $(j, j)$ and $(k, k)$, $-s$ at
+  $(j, k)$ and $s$ at $(k, j)$.
 -/
 
 open Finset
@@ -70,25 +79,30 @@ section OffDiag
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The **off-diagonal mass** of a matrix, `N(A)² = ∑_{i ≠ j} ‖a_ij‖²`; [kress1998numerical] writes
-it `N(A)²`. Jacobi's method is the statement that a plane rotation annihilating `a_jk` decreases it
-by exactly `2 ‖a_jk‖²`. -/
+/-- The **off-diagonal mass** of a square matrix $A$ over $\mathbb{R}$ or $\mathbb{C}$ is
+$$N(A)^2 = \sum_{i \neq j} |a_{ij}|^2.$$
+
+The notation $N(A)^2$ is that of [kress1998numerical]. A plane rotation that annihilates
+$a_{jk}$ decreases this quantity by exactly $2 |a_{jk}|^2$ (`Matrix.offDiagNormSq_jacobiStep`). -/
 noncomputable def offDiagNormSq (A : Matrix n n 𝕜) : ℝ :=
   ∑ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ^ 2
 
-/-- The off-diagonal mass is a sum of squares, hence nonnegative. -/
+/-- The off-diagonal mass is nonnegative: $N(A)^2 \ge 0$. -/
 theorem offDiagNormSq_nonneg (A : Matrix n n 𝕜) : 0 ≤ offDiagNormSq A :=
   Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
 
-/-- The off-diagonal mass and the diagonal mass make up the squared Frobenius norm `∑ i, ∑ j,
-‖a_ij‖²` ([kress1998numerical], Lemma 7.8). -/
+/-- The off-diagonal mass and the diagonal mass add up to the squared Frobenius norm:
+$$N(A)^2 + \sum_i |a_{ii}|^2 = \sum_{i, j} |a_{ij}|^2.$$
+
+This is Lemma 7.8 of [kress1998numerical]. -/
 theorem offDiagNormSq_add_sum_diag_sq (A : Matrix n n 𝕜) :
     offDiagNormSq A + ∑ i, ‖A i i‖ ^ 2 = ∑ i, ∑ j, ‖A i j‖ ^ 2 := by
   rw [offDiagNormSq, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun i _ =>
     Finset.sum_erase_add _ _ (Finset.mem_univ i)
 
-/-- The off-diagonal mass vanishes exactly for diagonal matrices. -/
+/-- The off-diagonal mass vanishes if and only if the matrix is diagonal: $N(A)^2 = 0$ if and only
+if $a_{ij} = 0$ for all $i \neq j$. -/
 theorem offDiagNormSq_eq_zero_iff {A : Matrix n n 𝕜} :
     offDiagNormSq A = 0 ↔ ∀ i j, i ≠ j → A i j = 0 := by
   rw [offDiagNormSq, Finset.sum_eq_zero_iff_of_nonneg
@@ -105,30 +119,37 @@ theorem offDiagNormSq_eq_zero_iff {A : Matrix n n 𝕜} :
 
 end OffDiag
 
-/-! ### Frobenius mass and orthogonal conjugation -/
+/-! ### The Frobenius mass and orthogonal similarity -/
 
 section Frobenius
 
 omit [DecidableEq n] in
-/-- The trace of `AᵀA` is the squared Frobenius norm of `A`. -/
+/-- For a real square matrix $A$, the trace of $A^T A$ is the squared Frobenius norm:
+$\operatorname{tr}(A^T A) = \sum_{i, q} a_{iq}^2$. -/
 theorem trace_transpose_mul_self (A : Matrix n n ℝ) :
     (Aᵀ * A).trace = ∑ i, ∑ q, (A i q) ^ 2 := by
   simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.transpose_apply, sq]
   exact Finset.sum_comm
 
-/-- Over the reals the off-diagonal mass is the sum of the squares of the off-diagonal entries, the
-norm bars being redundant. -/
+/-- For a real matrix, the off-diagonal mass is the sum of the squares of the off-diagonal entries:
+$N(A)^2 = \sum_{i \neq q} a_{iq}^2$. -/
 theorem offDiagNormSq_real (A : Matrix n n ℝ) :
     offDiagNormSq A = ∑ i, ∑ q ∈ Finset.univ.erase i, (A i q) ^ 2 := by
   simp [offDiagNormSq, Real.norm_eq_abs, sq_abs]
 
-/-- The real form of `Matrix.offDiagNormSq_add_sum_diag_sq`: the off-diagonal and the diagonal
-masses make up the squared Frobenius norm. -/
+/-- For a real square matrix $A$, the off-diagonal mass and the diagonal mass add up to the squared
+Frobenius norm:
+$$N(A)^2 + \sum_i a_{ii}^2 = \sum_{i, q} a_{iq}^2.$$
+
+This is the real form of `Matrix.offDiagNormSq_add_sum_diag_sq`. -/
 theorem offDiagNormSq_add_sum_diag_sq_real (A : Matrix n n ℝ) :
     offDiagNormSq A + ∑ i, (A i i) ^ 2 = ∑ i, ∑ q, (A i q) ^ 2 := by
   simpa [Real.norm_eq_abs, sq_abs] using offDiagNormSq_add_sum_diag_sq A
 
-/-- The Frobenius mass is invariant under conjugation by an orthogonal matrix. -/
+/-- The squared Frobenius norm is invariant under orthogonal similarity. Let $A$ and $U$ be real
+square matrices with $U^T U = I$. Then
+$$\sum_{i, q} \bigl( (U^T A U)_{iq} \bigr)^2 = \sum_{i, q} a_{iq}^2.$$
+-/
 theorem sum_sq_conj_eq (A U : Matrix n n ℝ) (hU : Uᵀ * U = 1) :
     ∑ i, ∑ q, ((Uᵀ * A * U) i q) ^ 2 = ∑ i, ∑ q, (A i q) ^ 2 := by
   have hU' : U * Uᵀ = 1 := _root_.mul_eq_one_comm.1 hU
@@ -140,8 +161,11 @@ theorem sum_sq_conj_eq (A U : Matrix n n ℝ) (hU : Uᵀ * U = 1) :
   rw [← trace_transpose_mul_self, ← trace_transpose_mul_self, key, Matrix.trace_mul_cycle,
     ← Matrix.mul_assoc, hU', Matrix.one_mul]
 
-/-- The off-diagonal mass of a `2 × 2` block matrix: that of the diagonal blocks plus the full mass
-of the off-diagonal blocks. -/
+/-- The off-diagonal mass of a real $2 \times 2$ block matrix is the off-diagonal mass of the two
+diagonal blocks plus the squared Frobenius norm of the two off-diagonal blocks:
+$$N\begin{pmatrix} P & Q \\ R & S \end{pmatrix}^2 = N(P)^2 + N(S)^2 + \sum_{i, j} q_{ij}^2 +
+  \sum_{i, j} r_{ij}^2.$$
+-/
 theorem offDiagNormSq_fromBlocks {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁]
     [Fintype κ₂] [DecidableEq κ₂] (P : Matrix κ₁ κ₁ ℝ) (Q : Matrix κ₁ κ₂ ℝ) (R : Matrix κ₂ κ₁ ℝ)
     (S : Matrix κ₂ κ₂ ℝ) :
@@ -154,10 +178,17 @@ theorem offDiagNormSq_fromBlocks {κ₁ κ₂ : Type*} [Fintype κ₁] [Decidabl
     fromBlocks_apply₂₂, Finset.sum_add_distrib] at h
   linarith
 
-/-- **The off-diagonal mass after a rotation acting on a set of coordinates**
-([golub2013matrix] §8.5.6): if `V` is the orthogonal `W` on the coordinates `e(κ)` and the identity
-elsewhere, then `N(VᵀAV)² = N(A)² - N(A_e)² + N(Wᵀ A_e W)²` for the principal block `A_e` on
-`e(κ)`. The block-Jacobi identity is the case where `W` diagonalizes `A_e`. -/
+/-- **The off-diagonal mass after a rotation on a set of coordinates.** Let $A$ be a real square
+matrix indexed by a finite type $\iota$, let $e : \kappa \to \iota$ be injective, and let $W$ be
+a real matrix indexed by $\kappa$ with $W^T W = I$. Let $V$ be the matrix that equals $W$ on the
+coordinates $e(\kappa)$ and the identity elsewhere: $V_{e(a), e(b)} = W_{ab}$ for all $a, b$,
+and $V_{ij} = \delta_{ij}$ whenever $i$ or $j$ is not in the range of $e$. Let $A_e$ be the
+principal submatrix of $A$ on the coordinates $e(\kappa)$. Then
+$$N(V^T A V)^2 = N(A)^2 - N(A_e)^2 + N(W^T A_e W)^2.$$
+
+This is the identity behind the block Jacobi method of [golub2013matrix] §8.5.6; the block
+Jacobi step is the case where $W$ diagonalizes $A_e$. The principal submatrix $A_e$ is
+`A.submatrix e e`. -/
 theorem offDiagNormSq_conj_block {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
     [DecidableEq κ] (A : Matrix ι ι ℝ) {e : κ → ι} (he : Function.Injective e)
     {W : Matrix κ κ ℝ} (hW : Wᵀ * W = 1) {V : Matrix ι ι ℝ} (hV : ∀ a b, V (e a) (e b) = W a b)
@@ -239,40 +270,50 @@ section Jacobi
 
 variable (A : Matrix n n ℝ) (j k : n)
 
-/-- The tangent of the Jacobi angle: the root of `t² - 2θt - 1 = 0` of **smaller modulus**, where
-`θ = (a_kk - a_jj)/(2 a_jk)`, namely `θ - √(θ²+1)` for `θ ≥ 0` and `θ + √(θ²+1)` for `θ < 0`. It
-is `0` when `a_jk` already vanishes, so that the rotation is then the identity.
+/-- The **Jacobi tangent**: the tangent of the angle of the Jacobi rotation of a real matrix $A$ in
+the $(j, k)$-plane. If $a_{jk} = 0$, it is $0$, so that the rotation is the identity. Otherwise
+let $\theta = (a_{kk} - a_{jj}) / (2 a_{jk})$; the Jacobi tangent is the root of smaller modulus
+of $t^2 - 2 \theta t - 1 = 0$, namely
+$$t = \theta - \sqrt{\theta^2 + 1} \ \text{ if } \theta \ge 0, \qquad t = \theta +
+  \sqrt{\theta^2 + 1} \ \text{ if } \theta < 0.$$
 
-The two roots have product `-1`, so exactly one of them has `|t| ≤ 1`, and that is the one
-[kress1998numerical] Lemma 7.13 prescribes: its `cos 2φ = 1/√(1 + tan² 2φ)` is positive, which is
-`|φ| ≤ π/4`. **The choice is not a matter of numerical stability alone.** With the other root the
-rotation angle lies in `(0, π/2)` and a step at a pair with `a_kk > a_jj` and `|a_jk|` small is
-close to an interchange of the two coordinates, so `A_{ν+1} - A_ν` does not tend to `0` and the
-iterates need not converge at all — `Matrix.abs_jacobiTan_le_one` is exactly what
-`Matrix.dist_jacobiStep_le` needs. -/
+The two roots of the quadratic have product $-1$, so exactly one of them has $|t| \le 1$. This
+is the root that Lemma 7.13 of [kress1998numerical] prescribes: for it,
+$\cos 2\varphi = 1 / \sqrt{1 + \tan^2 2\varphi}$ is positive, which means $|\varphi| \le \pi/4$.
+The choice is not a matter of numerical stability only. With the other root, the angle of
+rotation lies in $(0, \pi/2)$. A step at a pair with $a_{kk} > a_{jj}$ and small $|a_{jk}|$ is
+then close to an interchange of the two coordinates, so $A_{\nu+1} - A_\nu$ does not tend to
+$0$, and the iterates need not converge. The bound $|t| \le 1$ (`Matrix.abs_jacobiTan_le_one`)
+is what `Matrix.abs_jacobiStep_sub_le` uses. -/
 noncomputable def jacobiTan : ℝ :=
   if A j k = 0 then 0
   else if 0 ≤ (A k k - A j j) / (2 * A j k) then
     (A k k - A j j) / (2 * A j k) - Real.sqrt (((A k k - A j j) / (2 * A j k)) ^ 2 + 1)
   else (A k k - A j j) / (2 * A j k) + Real.sqrt (((A k k - A j j) / (2 * A j k)) ^ 2 + 1)
 
-/-- The cosine of the Jacobi angle. -/
+/-- The **Jacobi cosine** $c = 1 / \sqrt{1 + t^2}$, where $t$ is the Jacobi tangent
+`Matrix.jacobiTan`. -/
 noncomputable def jacobiCos : ℝ := 1 / Real.sqrt (1 + jacobiTan A j k ^ 2)
 
-/-- The sine of the Jacobi angle. -/
+/-- The **Jacobi sine** $s = t c$, where $t$ is the Jacobi tangent and $c$ the Jacobi cosine. -/
 noncomputable def jacobiSin : ℝ := jacobiTan A j k * jacobiCos A j k
 
-/-- The **Jacobi rotation** of `A` in the `(j,k)`-plane: the plane rotation whose angle is chosen so
-that the similarity it induces annihilates the entry `a_jk` ([kress1998numerical], Lemma 7.13). -/
+/-- The **Jacobi rotation** of a real matrix $A$ in the $(j, k)$-plane: the plane rotation
+`Matrix.planeRotation j k c s` with the Jacobi cosine $c$ and the Jacobi sine $s$. For a
+symmetric $A$ and $j \neq k$, the similarity that it induces annihilates the entry $a_{jk}$
+(`Matrix.jacobiStep_apply_eq_zero`).
+
+This is the rotation of [kress1998numerical], Lemma 7.13. -/
 noncomputable def jacobiRotation : Matrix n n ℝ :=
   planeRotation j k (jacobiCos A j k) (jacobiSin A j k)
 
-/-- One **Jacobi step**: the orthogonal similarity of `A` by its Jacobi rotation. -/
+/-- A **Jacobi step**: the orthogonal similarity $U^T A U$ of a real matrix $A$ by its Jacobi
+rotation $U$ in the $(j, k)$-plane. -/
 noncomputable def jacobiStep : Matrix n n ℝ :=
   (jacobiRotation A j k)ᵀ * A * jacobiRotation A j k
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi cosine and sine are the cosine and the sine of an angle: `c² + s² = 1`. -/
+/-- The Jacobi cosine $c$ and the Jacobi sine $s$ satisfy $c^2 + s^2 = 1$. -/
 theorem jacobiCos_sq_add_jacobiSin_sq : jacobiCos A j k ^ 2 + jacobiSin A j k ^ 2 = 1 := by
   have hpos : (0 : ℝ) < 1 + jacobiTan A j k ^ 2 := by positivity
   have hsq : Real.sqrt (1 + jacobiTan A j k ^ 2) ^ 2 = 1 + jacobiTan A j k ^ 2 :=
@@ -283,7 +324,8 @@ theorem jacobiCos_sq_add_jacobiSin_sq : jacobiCos A j k ^ 2 + jacobiSin A j k ^ 
   linarith [hsq]
 
 omit [Fintype n] [DecidableEq n] in
-/-- The defining quadratic `t² = 2θ t + 1` of the Jacobi tangent. -/
+/-- If $a_{jk} \neq 0$, the Jacobi tangent $t$ satisfies $t^2 = 2 \theta t + 1$, where
+$\theta = (a_{kk} - a_{jj}) / (2 a_{jk})$. -/
 theorem jacobiTan_sq (h : A j k ≠ 0) :
     jacobiTan A j k ^ 2
       = 2 * ((A k k - A j j) / (2 * A j k)) * jacobiTan A j k + 1 := by
@@ -293,9 +335,11 @@ theorem jacobiTan_sq (h : A j k ≠ 0) :
   split_ifs <;> nlinarith [hsq]
 
 omit [Fintype n] [DecidableEq n] in
-/-- **The Jacobi angle is at most `π/4`**: the root of smaller modulus has `|t| ≤ 1`. This is what
-keeps a Jacobi step close to the identity when the annihilated entry is small, and hence what makes
-the classical method converge as a sequence of matrices and not merely in off-diagonal mass. -/
+/-- **The Jacobi angle is at most $\pi/4$.** The Jacobi tangent $t$ satisfies $|t| \le 1$.
+
+This bound keeps a Jacobi step close to the identity when the annihilated entry is small. So it
+is what makes the classical method converge as a sequence of matrices, and not only in
+off-diagonal mass (`Matrix.tendsto_classicalJacobiIterate`). -/
 theorem abs_jacobiTan_le_one : |jacobiTan A j k| ≤ 1 := by
   rw [jacobiTan]
   split_ifs with h hθ
@@ -320,7 +364,7 @@ theorem abs_jacobiTan_le_one : |jacobiTan A j k| ≤ 1 := by
     constructor <;> linarith
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi tangent annihilates the off-diagonal entry. -/
+/-- The Jacobi tangent $t$ satisfies $(1 - t^2) a_{jk} + t (a_{kk} - a_{jj}) = 0$. -/
 theorem jacobiTan_annihilate :
     (1 - jacobiTan A j k ^ 2) * A j k + jacobiTan A j k * (A k k - A j j) = 0 := by
   by_cases h : A j k = 0
@@ -332,7 +376,10 @@ theorem jacobiTan_annihilate :
     linear_combination (-(A j k)) * ht
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi angle annihilates the off-diagonal entry: this is the equation `b_jk = 0`. -/
+/-- The Jacobi cosine $c$ and sine $s$ satisfy
+$$(c^2 - s^2) a_{jk} + c s (a_{kk} - a_{jj}) = 0.$$
+
+This is the equation which says that the $(j, k)$ entry of the Jacobi step vanishes. -/
 theorem jacobi_annihilate :
     (jacobiCos A j k ^ 2 - jacobiSin A j k ^ 2) * A j k
       + jacobiCos A j k * jacobiSin A j k * (A k k - A j j) = 0 := by
@@ -340,22 +387,28 @@ theorem jacobi_annihilate :
   rw [jacobiSin]
   linear_combination (jacobiCos A j k ^ 2) * h
 
-/-! ### The book's parametrization of the angle
+/-!
+### The parametrization of the angle in Quarteroni, Sacco and Saleri
 
-[quarteroni2000numerical] (5.61)–(5.62) and [golub1989matrix] Algorithm 8.4.1 parametrize the
-rotation by the root of `t² + 2ηt - 1 = 0` of modulus at most one, `η = (a_kk - a_jj)/(2 a_jk)`.
-Their rotation matrix carries `+s` where `Matrix.planeRotation` carries `-s`, and the two sign
-conventions cancel: their `t` is `-jacobiTan`, their `(c, s)` is `(jacobiCos, -jacobiSin)`, and the
-rotation matrix they build is `Matrix.jacobiRotation` itself. The planning note that the two
-tangents are the two roots of one quadratic, with product `-1`, was mistaken: they are roots of
-the two quadratics `t² ∓ 2ηt - 1 = 0`, both of modulus at most one, and negatives of each other. -/
+Equations (5.61)–(5.62) of [quarteroni2000numerical], and Algorithm 8.4.1 of the 1989 edition of
+Golub and Van Loan, parametrize the rotation by the root of $t^2 + 2 \eta t - 1 = 0$ of modulus at
+most one, where $\eta = (a_{kk} - a_{jj}) / (2 a_{jk})$. Their rotation matrix has $+s$ where
+`Matrix.planeRotation` has $-s$, and the two sign conventions cancel. Their tangent is the negative
+of `Matrix.jacobiTan`, their pair $(c, s)$ is $(c, -s)$ for the Jacobi cosine and sine of this
+module, and the rotation matrix that they build is `Matrix.jacobiRotation`. The two tangents are not
+the two roots of one quadratic: they are roots of the two quadratics $t^2 \mp 2 \eta t - 1 = 0$,
+both have modulus at most one, and each is the negative of the other.
+-/
 
 omit [Fintype n] [DecidableEq n] in
-/-- The root of `t² + 2ηt - 1 = 0` of modulus at most one, `η = (a_kk - a_jj)/(2 a_jk)`: the
-tangent [quarteroni2000numerical] (5.61)–(5.62) prescribe, `1/(η + √(1 + η²))` for `η ≥ 0` and
-`-1/(-η + √(1 + η²))` for `η < 0`; it is `0` when `a_jk` already vanishes. It is `-jacobiTan`
-(`Matrix.jacobiTanSmall_eq_neg_jacobiTan`), the sign being absorbed by the book's convention for
-the rotation matrix. -/
+/-- The tangent of [quarteroni2000numerical], (5.61)–(5.62). If $a_{jk} = 0$, it is $0$. Otherwise
+let $\eta = (a_{kk} - a_{jj}) / (2 a_{jk})$; the tangent is the root of modulus at most one of
+$t^2 + 2 \eta t - 1 = 0$, namely
+$$t = \frac{1}{\eta + \sqrt{1 + \eta^2}} \ \text{ if } \eta \ge 0, \qquad t = \frac{-1}{-\eta +
+  \sqrt{1 + \eta^2}} \ \text{ if } \eta < 0.$$
+
+It is the negative of `Matrix.jacobiTan` (`Matrix.jacobiTanSmall_eq_neg_jacobiTan`). The sign is
+compensated by the sign convention of the source for the rotation matrix. -/
 noncomputable def jacobiTanSmall : ℝ :=
   if A j k = 0 then 0
   else if 0 ≤ (A k k - A j j) / (2 * A j k) then
@@ -363,7 +416,10 @@ noncomputable def jacobiTanSmall : ℝ :=
   else -1 / (-((A k k - A j j) / (2 * A j k)) + Real.sqrt (1 + ((A k k - A j j) / (2 * A j k)) ^ 2))
 
 omit [Fintype n] [DecidableEq n] in
-/-- The book's tangent is the negative of the backbone's: `1/(η + √(1 + η²)) = √(1 + η²) - η`. -/
+/-- The tangent of [quarteroni2000numerical] is the negative of the Jacobi tangent:
+`Matrix.jacobiTanSmall A j k = -Matrix.jacobiTan A j k`.
+
+The key identity is $1 / (\eta + \sqrt{1 + \eta^2}) = \sqrt{1 + \eta^2} - \eta$. -/
 theorem jacobiTanSmall_eq_neg_jacobiTan : jacobiTanSmall A j k = -jacobiTan A j k := by
   rw [jacobiTanSmall, jacobiTan]
   split_ifs with h hθ
@@ -390,7 +446,8 @@ theorem jacobiTanSmall_eq_neg_jacobiTan : jacobiTanSmall A j k = -jacobiTan A j 
     nlinarith [hsq]
 
 omit [Fintype n] [DecidableEq n] in
-/-- `jacobiTanSmall` is a root of `t² + 2ηt - 1 = 0`. -/
+/-- If $a_{jk} \neq 0$, the tangent $t$ of [quarteroni2000numerical] is a root of
+$t^2 + 2 \eta t - 1 = 0$, where $\eta = (a_{kk} - a_{jj}) / (2 a_{jk})$. -/
 theorem jacobiTanSmall_sq (h : A j k ≠ 0) :
     jacobiTanSmall A j k ^ 2 + 2 * ((A k k - A j j) / (2 * A j k)) * jacobiTanSmall A j k - 1
       = 0 := by
@@ -398,38 +455,45 @@ theorem jacobiTanSmall_sq (h : A j k ≠ 0) :
   linear_combination jacobiTan_sq A j k h
 
 omit [Fintype n] [DecidableEq n] in
-/-- The book's root has modulus at most one. -/
+/-- The tangent $t$ of [quarteroni2000numerical] satisfies $|t| \le 1$. -/
 theorem abs_jacobiTanSmall_le_one : |jacobiTanSmall A j k| ≤ 1 := by
   rw [jacobiTanSmall_eq_neg_jacobiTan, abs_neg]
   exact abs_jacobiTan_le_one A j k
 
-/-- The cosine of the book's Jacobi angle, `1/√(1 + t²)`. -/
+/-- The cosine $c = 1 / \sqrt{1 + t^2}$ of the angle of [quarteroni2000numerical], where $t$ is the
+tangent `Matrix.jacobiTanSmall`. -/
 noncomputable def jacobiCosSmall : ℝ := 1 / Real.sqrt (1 + jacobiTanSmall A j k ^ 2)
 
-/-- The sine of the book's Jacobi angle, `c t`. -/
+/-- The sine $s = t c$ of the angle of [quarteroni2000numerical], where $t$ is the tangent
+`Matrix.jacobiTanSmall` and $c$ the cosine `Matrix.jacobiCosSmall`. -/
 noncomputable def jacobiSinSmall : ℝ := jacobiTanSmall A j k * jacobiCosSmall A j k
 
 omit [Fintype n] [DecidableEq n] in
-/-- The book's cosine is the backbone's. -/
+/-- The cosine of [quarteroni2000numerical] equals the Jacobi cosine: `Matrix.jacobiCosSmall A j k =
+Matrix.jacobiCos A j k`. -/
 theorem jacobiCosSmall_eq : jacobiCosSmall A j k = jacobiCos A j k := by
   rw [jacobiCosSmall, jacobiCos, jacobiTanSmall_eq_neg_jacobiTan, neg_sq]
 
 omit [Fintype n] [DecidableEq n] in
-/-- The book's sine is the negative of the backbone's. -/
+/-- The sine of [quarteroni2000numerical] is the negative of the Jacobi sine: `Matrix.jacobiSinSmall
+A j k = -Matrix.jacobiSin A j k`. -/
 theorem jacobiSinSmall_eq_neg : jacobiSinSmall A j k = -jacobiSin A j k := by
   rw [jacobiSinSmall, jacobiSin, jacobiTanSmall_eq_neg_jacobiTan, jacobiCosSmall_eq, neg_mul]
 
 omit [Fintype n] [DecidableEq n] in
-/-- `c² + s² = 1` for the book's angle. -/
+/-- The cosine $c$ and the sine $s$ of [quarteroni2000numerical] satisfy $c^2 + s^2 = 1$. -/
 theorem jacobiCosSmall_sq_add_jacobiSinSmall_sq :
     jacobiCosSmall A j k ^ 2 + jacobiSinSmall A j k ^ 2 = 1 := by
   rw [jacobiCosSmall_eq, jacobiSinSmall_eq_neg, neg_sq]
   exact jacobiCos_sq_add_jacobiSin_sq A j k
 
 omit [Fintype n] [DecidableEq n] in
-/-- The book's angle annihilates the off-diagonal entry ([quarteroni2000numerical] (5.60)), in the
-book's sign convention for the rotation: `(c² - s²) a_jk - c s (a_kk - a_jj) = 0`. This is
-`Matrix.jacobi_annihilate` with `s ↦ -s`. -/
+/-- The angle of [quarteroni2000numerical] annihilates the off-diagonal entry, in the sign
+convention of the source for the rotation matrix: its cosine $c$ and sine $s$ satisfy
+$$(c^2 - s^2) a_{jk} - c s (a_{kk} - a_{jj}) = 0.$$
+
+This is equation (5.60) of [quarteroni2000numerical]. It is `Matrix.jacobi_annihilate` with $s$
+replaced by $-s$. -/
 theorem jacobiSmall_annihilate :
     (jacobiCosSmall A j k ^ 2 - jacobiSinSmall A j k ^ 2) * A j k
       - jacobiCosSmall A j k * jacobiSinSmall A j k * (A k k - A j j) = 0 := by
@@ -437,32 +501,34 @@ theorem jacobiSmall_annihilate :
   linear_combination jacobi_annihilate A j k
 
 omit [Fintype n] in
-/-- The rotation matrix the book builds from `(c, s) = (jacobiCosSmall, jacobiSinSmall)` — with
-`+s` in position `(j, k)`, which in the backbone's convention is `planeRotation j k c (-s)` — is
-the backbone's Jacobi rotation. -/
+/-- Let $c$ and $s$ be the cosine and the sine of [quarteroni2000numerical]. The rotation matrix
+that the source builds from them has $+s$ at position $(j, k)$; in the convention of this module
+it is `Matrix.planeRotation j k c (-s)`. This matrix equals the Jacobi rotation
+`Matrix.jacobiRotation A j k`. -/
 theorem jacobiRotation_eq_planeRotation_small :
     jacobiRotation A j k = planeRotation j k (jacobiCosSmall A j k) (-jacobiSinSmall A j k) := by
   rw [jacobiRotation, jacobiCosSmall_eq, jacobiSinSmall_eq_neg, neg_neg]
 
-/-- A Jacobi rotation is orthogonal, so a Jacobi step is an orthogonal similarity. -/
+/-- For $j \neq k$, the Jacobi rotation $U$ is orthogonal: $U^T U = I$. So a Jacobi step is an
+orthogonal similarity. -/
 theorem transpose_jacobiRotation_mul_self (hjk : j ≠ k) :
     (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
   transpose_planeRotation_mul_self hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi cosine is positive. -/
+/-- The Jacobi cosine is positive: $c > 0$. -/
 theorem jacobiCos_pos : 0 < jacobiCos A j k := by
   rw [jacobiCos]
   positivity
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi cosine is at most one. -/
+/-- The Jacobi cosine satisfies $c \le 1$. -/
 theorem jacobiCos_le_one : jacobiCos A j k ≤ 1 := by
   nlinarith [jacobiCos_sq_add_jacobiSin_sq A j k, jacobiCos_pos A j k,
     sq_nonneg (jacobiSin A j k)]
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Jacobi sine is at most one in modulus. -/
+/-- The Jacobi sine satisfies $|s| \le 1$. -/
 theorem abs_jacobiSin_le_one : |jacobiSin A j k| ≤ 1 := by
   have h := jacobiCos_sq_add_jacobiSin_sq A j k
   rw [abs_le]
@@ -477,14 +543,17 @@ section Step
 
 variable {c s : ℝ} {j k : n} (A : Matrix n n ℝ)
 
-/-- **The Jacobi step annihilates the chosen off-diagonal entry** ([kress1998numerical], Lemma
-7.13). -/
+/-- **A Jacobi step annihilates the chosen entry** ([kress1998numerical], Lemma 7.13). Let $A$ be
+real symmetric and $j \neq k$. Then the $(j, k)$ entry of the Jacobi step $U^T A U$ is $0$. -/
 theorem jacobiStep_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k) : jacobiStep A j k j k = 0 := by
   have hsym : A k j = A j k := hA.apply j k
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_jk hjk, hsym]
   linear_combination jacobi_annihilate A j k
 
-/-- The `(j,j)` entry after a Jacobi step. -/
+/-- Let $A$ be real symmetric and $j \neq k$, and let $c$ and $s$ be the Jacobi cosine and sine. The
+$(j, j)$ entry of the Jacobi step is
+$$(U^T A U)_{jj} = c^2 a_{jj} + 2 c s \, a_{jk} + s^2 a_{kk}.$$
+-/
 theorem jacobiStep_apply_jj (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k j j = jacobiCos A j k ^ 2 * A j j
       + 2 * (jacobiCos A j k * jacobiSin A j k) * A j k + jacobiSin A j k ^ 2 * A k k := by
@@ -492,7 +561,10 @@ theorem jacobiStep_apply_jj (hA : A.IsSymm) (hjk : j ≠ k) :
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_jj hjk, hsym]
   ring
 
-/-- The `(k,k)` entry after a Jacobi step. -/
+/-- Let $A$ be real symmetric and $j \neq k$, and let $c$ and $s$ be the Jacobi cosine and sine. The
+$(k, k)$ entry of the Jacobi step is
+$$(U^T A U)_{kk} = s^2 a_{jj} - 2 c s \, a_{jk} + c^2 a_{kk}.$$
+-/
 theorem jacobiStep_apply_kk (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k k k = jacobiSin A j k ^ 2 * A j j
       - 2 * (jacobiCos A j k * jacobiSin A j k) * A j k + jacobiCos A j k ^ 2 * A k k := by
@@ -500,15 +572,16 @@ theorem jacobiStep_apply_kk (hA : A.IsSymm) (hjk : j ≠ k) :
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_kk hjk, hsym]
   ring
 
-/-- A Jacobi step leaves every diagonal entry outside the rotated plane alone. -/
+/-- For $j \neq k$, a Jacobi step does not change a diagonal entry outside the rotated plane:
+$(U^T A U)_{ii} = a_{ii}$ for $i \neq j, k$. -/
 theorem jacobiStep_apply_diag_of_ne (hjk : j ≠ k) {i : n} (hij : i ≠ j) (hik : i ≠ k) :
     jacobiStep A j k i i = A i i := by
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_of_ne hjk A hij hik hij hik]
 
 omit [Fintype n] [DecidableEq n] in
-/-- The algebraic core of [kress1998numerical] Lemma 7.13: a rotation that annihilates the
-off-diagonal entry `w` of a symmetric two-by-two block moves exactly `2w²` of mass onto the
-diagonal. -/
+/-- If $c^2 + s^2 = 1$ and $(c^2 - s^2) w + c s (v - u) = 0$, then the rotation of the symmetric
+block $\begin{pmatrix} u & w \\ w & v \end{pmatrix}$ moves exactly $2 w^2$ of mass onto the
+diagonal; this is the algebraic core of Lemma 7.13 of [kress1998numerical]. -/
 private theorem sq_add_sq_of_rotation {u v w : ℝ} (h1 : c ^ 2 + s ^ 2 = 1)
     (h2 : (c ^ 2 - s ^ 2) * w + c * s * (v - u) = 0) :
     (c ^ 2 * u + 2 * (c * s) * w + s ^ 2 * v) ^ 2
@@ -522,9 +595,11 @@ private theorem sum_split (hjk : j ≠ k) (f : n → ℝ) :
   rw [← Finset.add_sum_erase _ f (Finset.mem_univ j),
     ← Finset.add_sum_erase _ f (Finset.mem_erase.2 ⟨Ne.symm hjk, Finset.mem_univ k⟩), add_assoc]
 
-/-- A plane rotation that annihilates the entry `a_jk` of a symmetric matrix moves exactly
-`2 a_jk²` of mass onto the diagonal, whatever the angle: only `c² + s² = 1` and the annihilation
-are used. -/
+/-- Let $A$ be real symmetric, let $j \neq k$, and let $G$ be the plane rotation
+`Matrix.planeRotation j k c s` with $c^2 + s^2 = 1$. If $(G^T A G)_{jk} = 0$, then
+$$\sum_i \bigl( (G^T A G)_{ii} \bigr)^2 = \sum_i a_{ii}^2 + 2 a_{jk}^2.$$
+
+So the rotation moves exactly $2 a_{jk}^2$ of mass onto the diagonal, whatever its angle. -/
 theorem sum_diag_sq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k)
     (hcs : c ^ 2 + s ^ 2 = 1)
     (h0 : ((planeRotation j k c s)ᵀ * A * planeRotation j k c s) j k = 0) :
@@ -545,12 +620,15 @@ theorem sum_diag_sq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk : j
     htail, hG, conj_planeRotation_apply_jj hjk, conj_planeRotation_apply_kk hjk, hsym]
   linarith [hpoly]
 
-/-- **The Jacobi decrease identity for any annihilating rotation** ([kress1998numerical], Lemma
-7.13; [quarteroni2000numerical] (5.64)): a plane rotation `G` in the `(j, k)`-plane with
-`(Gᵀ A G) j k = 0` decreases the off-diagonal mass of a symmetric `A` by exactly `2 a_jk²`. The
-Frobenius mass is unchanged by the orthogonal similarity, and the two-by-two block moves `2 a_jk²`
-of it onto the diagonal. The backbone's own root `Matrix.jacobiTan` and the book's other root
-`Matrix.jacobiTanSmall` both qualify. -/
+/-- **The decrease of the off-diagonal mass for any annihilating rotation.** Let $A$ be real
+symmetric, let $j \neq k$, and let $G$ be the plane rotation `Matrix.planeRotation j k c s` with
+$c^2 + s^2 = 1$. If $(G^T A G)_{jk} = 0$, then
+$$N(G^T A G)^2 = N(A)^2 - 2 a_{jk}^2.$$
+
+This is Lemma 7.13 of [kress1998numerical] and (5.64) of [quarteroni2000numerical]. The
+orthogonal similarity does not change the squared Frobenius norm, and the rotation moves
+$2 a_{jk}^2$ of it onto the diagonal. Both the Jacobi tangent `Matrix.jacobiTan` and the tangent
+`Matrix.jacobiTanSmall` of [quarteroni2000numerical] give such a rotation. -/
 theorem offDiagNormSq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k)
     (hcs : c ^ 2 + s ^ 2 = 1)
     (h0 : ((planeRotation j k c s)ᵀ * A * planeRotation j k c s) j k = 0) :
@@ -565,29 +643,39 @@ theorem offDiagNormSq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk :
   have hD := sum_diag_sq_conj_planeRotation_of_apply_eq_zero A hA hjk hcs h0
   linarith
 
-/-- A Jacobi step moves exactly `2 a_jk²` of mass onto the diagonal. -/
+/-- Let $A$ be real symmetric and $j \neq k$. A Jacobi step moves exactly $2 a_{jk}^2$ of mass onto
+the diagonal:
+$$\sum_i \bigl( (U^T A U)_{ii} \bigr)^2 = \sum_i a_{ii}^2 + 2 a_{jk}^2.$$
+-/
 theorem sum_diag_sq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
     ∑ i, (jacobiStep A j k i i) ^ 2 = ∑ i, (A i i) ^ 2 + 2 * (A j k) ^ 2 :=
   sum_diag_sq_conj_planeRotation_of_apply_eq_zero A hA hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
     (jacobiStep_apply_eq_zero A hA hjk)
 
-/-- **[kress1998numerical], Lemma 7.13**: a Jacobi step decreases the off-diagonal mass by exactly
-twice the square of the annihilated entry; the instance of
-`Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero` at the backbone's root
+/-- **The decrease of the off-diagonal mass in a Jacobi step.** Let $A$ be real symmetric and
+$j \neq k$, and let $U$ be the Jacobi rotation in the $(j, k)$-plane. Then
+$$N(U^T A U)^2 = N(A)^2 - 2 a_{jk}^2.$$
+
+This is Lemma 7.13 of [kress1998numerical]. It is
+`Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero` for the Jacobi tangent
 `Matrix.jacobiTan`. -/
 theorem offDiagNormSq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
     offDiagNormSq (jacobiStep A j k) = offDiagNormSq A - 2 * (A j k) ^ 2 :=
   offDiagNormSq_conj_planeRotation_of_apply_eq_zero A hA hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
     (jacobiStep_apply_eq_zero A hA hjk)
 
-/-- A Jacobi step preserves symmetry, being an orthogonal similarity. -/
+/-- A Jacobi step of a real symmetric matrix is symmetric, because it is an orthogonal similarity.
+-/
 theorem isSymm_jacobiStep {A : Matrix n n ℝ} (hA : A.IsSymm) (j k : n) :
     (jacobiStep A j k).IsSymm := by
   rw [Matrix.IsSymm, jacobiStep, Matrix.transpose_mul, Matrix.transpose_mul,
     Matrix.transpose_transpose, hA, ← Matrix.mul_assoc]
 
-/-- **The `(j,j)` entry moves by `t a_jk`**: with the angle of `Matrix.jacobiTan` the diagonal entry
-changes by the tangent times the annihilated entry, so by at most `|a_jk|`. -/
+/-- **The $(j, j)$ entry moves by $t a_{jk}$.** Let $A$ be real symmetric and $j \neq k$, and let
+$t$ be the Jacobi tangent. Then
+$$(U^T A U)_{jj} - a_{jj} = t \, a_{jk}.$$
+
+Since $|t| \le 1$, the entry moves by at most $|a_{jk}|$. -/
 theorem jacobiStep_apply_jj_sub (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k j j - A j j = jacobiTan A j k * A j k := by
   have hcs := jacobiCos_sq_add_jacobiSin_sq A j k
@@ -597,7 +685,10 @@ theorem jacobiStep_apply_jj_sub (hA : A.IsSymm) (hjk : j ≠ k) :
   linear_combination (A j j + jacobiTan A j k * A j k) * hcs
     + (jacobiTan A j k * jacobiCos A j k ^ 2) * hann
 
-/-- **The `(k,k)` entry moves by `-t a_jk`**, the mirror of `Matrix.jacobiStep_apply_jj_sub`. -/
+/-- **The $(k, k)$ entry moves by $-t a_{jk}$.** Let $A$ be real symmetric and $j \neq k$, and let
+$t$ be the Jacobi tangent. Then
+$$(U^T A U)_{kk} - a_{kk} = -t \, a_{jk}.$$
+-/
 theorem jacobiStep_apply_kk_sub (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k k k - A k k = -(jacobiTan A j k * A j k) := by
   have hcs := jacobiCos_sq_add_jacobiSin_sq A j k
@@ -607,11 +698,14 @@ theorem jacobiStep_apply_kk_sub (hA : A.IsSymm) (hjk : j ≠ k) :
   linear_combination (A k k - jacobiTan A j k * A j k) * hcs
     - (jacobiTan A j k * jacobiCos A j k ^ 2) * hann
 
-/-- **The distance moved by a Jacobi step** ([golub2013matrix] §8.5.2): for symmetric `A`,
-`p ≠ q`, `c = Matrix.jacobiCos A p q` and `B = Matrix.jacobiStep A p q`,
-`‖B - A‖_F² = 4(1 - c) ∑_{i ≠ p,q} (a_ip² + a_iq²) + 2 a_pq² / c²`, written as a double sum.
-Only the rows and columns `p`, `q` move; the cross terms collapse by `c² + s² = 1`, and the two
-diagonal entries move by `±t a_pq` (`Matrix.jacobiStep_apply_jj_sub`). -/
+/-- **The distance moved by a Jacobi step.** Let $A$ be real symmetric and $p \neq q$, let $c$ be
+the Jacobi cosine, and let $B = U^T A U$ be the Jacobi step in the $(p, q)$-plane. Then
+$$\|B - A\|_F^2 = 4 (1 - c) \sum_{i \neq p, q} (a_{ip}^2 + a_{iq}^2) + \frac{2 a_{pq}^2}{c^2}.$$
+
+This is a formula of [golub2013matrix] §8.5.2. The left side is written as the double sum
+$\sum_{i, l} (b_{il} - a_{il})^2$. Only the rows and the columns $p$ and $q$ change. The cross
+terms simplify by $c^2 + s^2 = 1$, and the two diagonal entries move by $\pm t a_{pq}$
+(`Matrix.jacobiStep_apply_jj_sub`). -/
 theorem sum_sq_jacobiStep_sub (hA : A.IsSymm) {p q : n} (hpq : p ≠ q) :
     ∑ i, ∑ l, (jacobiStep A p q i l - A i l) ^ 2 =
       4 * (1 - jacobiCos A p q) * ∑ i ∈ (univ.erase p).erase q, (A i p ^ 2 + A i q ^ 2) +
@@ -678,8 +772,10 @@ theorem sum_sq_jacobiStep_sub (hA : A.IsSymm) {p q : n} (hpq : p ≠ q) :
   linear_combination h2
 
 
-/-- Every off-diagonal entry is at most `√(N(A))` in modulus, being one term of the sum defining
-the off-diagonal mass. -/
+/-- Let $A$ be a real square matrix and $p \neq q$. Then every off-diagonal entry is at most the
+square root of the off-diagonal mass:
+$$|a_{pq}| \le \sqrt{N(A)^2} = N(A).$$
+-/
 theorem abs_le_sqrt_offDiagNormSq (A : Matrix n n ℝ) {p q : n} (hpq : p ≠ q) :
     |A p q| ≤ Real.sqrt (offDiagNormSq A) := by
   have h : (A p q) ^ 2 ≤ offDiagNormSq A := by
@@ -693,11 +789,15 @@ theorem abs_le_sqrt_offDiagNormSq (A : Matrix n n ℝ) {p q : n} (hpq : p ≠ q)
   calc |A p q| = Real.sqrt ((A p q) ^ 2) := (Real.sqrt_sq_eq_abs _).symm
     _ ≤ Real.sqrt (offDiagNormSq A) := Real.sqrt_le_sqrt h
 
-/-- **A Jacobi step moves no entry by more than `2 √(N(A))`.** Every entry it changes is a
-combination of off-diagonal entries of `A` with coefficients at most one, or the annihilated entry
-times the tangent, and `Matrix.abs_jacobiTan_le_one` keeps the latter below `|a_jk|`. This is the
-estimate the convergence of the *matrix* sequence rests on, and it fails for the other root of the
-Jacobi quadratic. -/
+/-- **A Jacobi step moves no entry by more than $2 N(A)$.** Let $A$ be real symmetric and
+$j \neq k$, and let $U$ be the Jacobi rotation in the $(j, k)$-plane. Then for all indices $p$
+and $q$
+$$|(U^T A U)_{pq} - a_{pq}| \le 2 \sqrt{N(A)^2}.$$
+
+Each entry that changes is a combination of off-diagonal entries of $A$ with coefficients of
+modulus at most one, or the annihilated entry multiplied by the tangent; the bound $|t| \le 1$
+of `Matrix.abs_jacobiTan_le_one` controls the second case. The convergence of the sequence of
+matrices rests on this estimate. It fails for the other root of the Jacobi quadratic. -/
 theorem abs_jacobiStep_sub_le (hA : A.IsSymm) (hjk : j ≠ k) (p q : n) :
     |jacobiStep A j k p q - A p q| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
   have hnn : (0 : ℝ) ≤ Real.sqrt (offDiagNormSq A) := Real.sqrt_nonneg _
@@ -793,13 +893,18 @@ theorem abs_jacobiStep_sub_le (hA : A.IsSymm) (hjk : j ≠ k) (p q : n) :
 
 end Step
 
-/-! ### The classical Jacobi method -/
+/-!
+### The classical Jacobi method
+
+From here on, the index type is nonempty, $n \ge 1$.
+-/
 
 section ClassicalJacobi
 
-/-- A matrix with at most one index has no off-diagonal entries, so no off-diagonal mass. This is
-the degenerate case that the geometric decay below has to dispose of separately, the factor `1/(n² -
-n)` being meaningless there. -/
+/-- A matrix of order at most one has no off-diagonal entries, so its off-diagonal mass is $0$.
+
+This is the degenerate case that the geometric decay must treat separately, because the factor
+$1/(n^2 - n)$ has no meaning there. -/
 theorem offDiagNormSq_eq_zero_of_card_le_one (h : Fintype.card n ≤ 1) (A : Matrix n n ℝ) :
     offDiagNormSq A = 0 := by
   refine Finset.sum_eq_zero fun i _ => Finset.sum_eq_zero fun q hq => ?_
@@ -812,8 +917,9 @@ theorem offDiagNormSq_eq_zero_of_card_le_one (h : Fintype.card n ≤ 1) (A : Mat
 variable [Nonempty n]
 
 omit [DecidableEq n] [Nonempty n] in
-/-- With at least two indices there is a pair of distinct ones at which `A` attains its largest
-off-diagonal modulus: the choice the classical method makes at every step. -/
+/-- If $n \ge 2$, there is a pair of distinct indices at which $A$ has an off-diagonal entry of
+largest modulus: there are $j \neq k$ with $|a_{pq}| \le |a_{jk}|$ for all $p \neq q$. This is
+the choice that the classical method makes at every step. -/
 theorem exists_maxOffDiagPair (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) :
     ∃ p : n × n, p.1 ≠ p.2 ∧ ∀ q : n × n, q.1 ≠ q.2 → |A q.1 q.2| ≤ |A p.1 p.2| := by
   classical
@@ -834,54 +940,63 @@ private theorem exists_maxOffDiagPair_aux (A : Matrix n n ℝ) :
     exact ⟨p, fun _ => hp⟩
   · exact ⟨(Classical.arbitrary n, Classical.arbitrary n), fun h => absurd h hn⟩
 
-/-- A pair of distinct indices at which `A` has a largest off-diagonal entry in absolute value. When
-the index type has fewer than two elements no such pair exists and the value is junk; the two facts
-about it, `Matrix.maxOffDiagPair_ne` and `Matrix.abs_le_abs_maxOffDiagPair`, both assume `2 ≤
-Fintype.card n`. -/
+/-- A pair of distinct indices at which the real matrix $A$ of order $n \ge 1$ has an off-diagonal
+entry of largest modulus.
+
+If $n < 2$, there is no such pair and the value is an unspecified pair. The two properties of
+the pair, `Matrix.maxOffDiagPair_ne` and `Matrix.abs_le_abs_maxOffDiagPair`, both assume
+$n \ge 2$. -/
 noncomputable def maxOffDiagPair (A : Matrix n n ℝ) : n × n :=
   (exists_maxOffDiagPair_aux A).choose
 
 omit [DecidableEq n] in
-/-- The two indices of `Matrix.maxOffDiagPair` are distinct, so the pair really is off the diagonal.
--/
+/-- If $n \ge 2$, the two indices of `Matrix.maxOffDiagPair` are distinct. -/
 theorem maxOffDiagPair_ne (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) :
     (maxOffDiagPair A).1 ≠ (maxOffDiagPair A).2 :=
   ((exists_maxOffDiagPair_aux A).choose_spec hn).1
 
 omit [DecidableEq n] in
-/-- `Matrix.maxOffDiagPair` really is a maximizing pair: no off-diagonal entry has larger modulus.
--/
+/-- If $n \ge 2$, the pair $(j, k)$ given by `Matrix.maxOffDiagPair` has an entry of largest
+off-diagonal modulus: $|a_{pq}| \le |a_{jk}|$ for all $p \neq q$. -/
 theorem abs_le_abs_maxOffDiagPair (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) (q : n × n)
     (hq : q.1 ≠ q.2) :
     |A q.1 q.2| ≤ |A (maxOffDiagPair A).1 (maxOffDiagPair A).2| :=
   ((exists_maxOffDiagPair_aux A).choose_spec hn).2 q hq
 
-/-- The **classical Jacobi method**: each step annihilates a largest off-diagonal entry of the
-current matrix ([kress1998numerical], Section 7.3). -/
+/-- The **classical Jacobi method** for a real matrix $A$ of order $n \ge 1$: the sequence with
+$A_0 = A$ in which $A_{\nu+1}$ is the Jacobi step of $A_\nu$ at the pair `Matrix.maxOffDiagPair`
+of $A_\nu$, an off-diagonal entry of largest modulus.
+
+This is the method of [kress1998numerical], Section 7.3. -/
 noncomputable def classicalJacobiIterate (A : Matrix n n ℝ) : ℕ → Matrix n n ℝ
   | 0 => A
   | ν + 1 => jacobiStep (classicalJacobiIterate A ν)
       (maxOffDiagPair (classicalJacobiIterate A ν)).1
       (maxOffDiagPair (classicalJacobiIterate A ν)).2
 
-/-- The method starts at the given matrix. -/
+/-- The classical Jacobi method starts at the given matrix: $A_0 = A$. -/
 @[simp]
 theorem classicalJacobiIterate_zero (A : Matrix n n ℝ) : classicalJacobiIterate A 0 = A := rfl
 
-/-- One step of the classical method is a Jacobi step at a largest off-diagonal entry. -/
+/-- One step of the classical Jacobi method is a Jacobi step at an off-diagonal entry of largest
+modulus: $A_{\nu+1}$ is the Jacobi step of $A_\nu$ at `Matrix.maxOffDiagPair` of $A_\nu$. -/
 theorem classicalJacobiIterate_succ (A : Matrix n n ℝ) (ν : ℕ) :
     classicalJacobiIterate A (ν + 1)
       = jacobiStep (classicalJacobiIterate A ν) (maxOffDiagPair (classicalJacobiIterate A ν)).1
         (maxOffDiagPair (classicalJacobiIterate A ν)).2 := rfl
 
-/-- Every iterate of the classical method is symmetric, each step being an orthogonal similarity. -/
+/-- If $A$ is real symmetric, every iterate $A_\nu$ of the classical Jacobi method is symmetric. -/
 theorem isSymm_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm) :
     ∀ ν, (classicalJacobiIterate A ν).IsSymm
   | 0 => hA
   | ν + 1 => isSymm_jacobiStep (isSymm_classicalJacobiIterate hA ν) _ _
 
-/-- The largest off-diagonal entry carries at least a fraction `1/(n² - n)` of the off-diagonal
-mass, since the mass is a sum of `n² - n` terms each at most its square. -/
+/-- Let $A$ be a real matrix of order $n \ge 1$, and let $|a_{pq}| \le |a_{jk}|$ for all $p \neq q$.
+Then
+$$N(A)^2 \le (n^2 - n) \, a_{jk}^2.$$
+
+The mass is a sum of $n^2 - n$ terms, and each term is at most $a_{jk}^2$. So an off-diagonal
+entry of largest modulus carries at least the fraction $1/(n^2 - n)$ of the mass. -/
 theorem offDiagNormSq_le_mul_sq (A : Matrix n n ℝ) {j k : n}
     (hmax : ∀ q : n × n, q.1 ≠ q.2 → |A q.1 q.2| ≤ |A j k|) :
     offDiagNormSq A ≤ ((Fintype.card n : ℝ) ^ 2 - Fintype.card n) * (A j k) ^ 2 := by
@@ -902,7 +1017,9 @@ theorem offDiagNormSq_le_mul_sq (A : Matrix n n ℝ) {j k : n}
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   ring
 
-/-- One step of the classical method multiplies the off-diagonal mass by at most `1 - 2/(n² - n)`.
+/-- Let $A$ be real symmetric of order $n \ge 2$. One step of the classical method, at the pair
+`Matrix.maxOffDiagPair` of $A$, multiplies the off-diagonal mass by at most $1 - 2/(n^2 - n)$:
+$$N(U^T A U)^2 \le \Bigl( 1 - \frac{2}{n^2 - n} \Bigr) N(A)^2.$$
 -/
 theorem offDiagNormSq_jacobiStep_maxOffDiagPair_le {A : Matrix n n ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ Fintype.card n) :
@@ -921,8 +1038,12 @@ theorem offDiagNormSq_jacobiStep_maxOffDiagPair_le {A : Matrix n n ℝ} (hA : A.
   rw [hexp]
   linarith
 
-/-- **[kress1998numerical], proof of Theorem 7.14**: the off-diagonal mass of the classical Jacobi
-iterates decays geometrically, `N(A_ν)² ≤ (1 - 2/(n² - n))^ν N(A)²`. -/
+/-- **The geometric decay of the off-diagonal mass.** Let $A$ be real symmetric of order $n \ge 1$,
+and let $A_\nu$ be the iterates of the classical Jacobi method. Then for every $\nu$
+$$N(A_\nu)^2 \le \Bigl( 1 - \frac{2}{n^2 - n} \Bigr)^\nu N(A)^2.$$
+
+This is the estimate in the proof of Theorem 7.14 of [kress1998numerical]. For $n = 1$, the Lean
+value of $2 / 0$ is $0$, so the factor is $1$, and both sides are $0$. -/
 theorem offDiagNormSq_classicalJacobiIterate_le {A : Matrix n n ℝ} (hA : A.IsSymm) (ν : ℕ) :
     offDiagNormSq (classicalJacobiIterate A ν)
       ≤ (1 - 2 / ((Fintype.card n : ℝ) ^ 2 - Fintype.card n)) ^ ν * offDiagNormSq A := by
@@ -949,8 +1070,8 @@ theorem offDiagNormSq_classicalJacobiIterate_le {A : Matrix n n ℝ} (hA : A.IsS
         _ = _ := by ring
 
 omit [Nonempty n] in
-/-- Every Jacobi step is an orthogonal similarity, so it leaves the characteristic polynomial — and
-with it the eigenvalues — alone. -/
+/-- For $j \neq k$, a Jacobi step is an orthogonal similarity. So it does not change the
+characteristic polynomial, and hence it does not change the eigenvalues. -/
 theorem charpoly_jacobiStep (A : Matrix n n ℝ) {j k : n} (hjk : j ≠ k) :
     (jacobiStep A j k).charpoly = A.charpoly := by
   have hU : (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
@@ -959,9 +1080,12 @@ theorem charpoly_jacobiStep (A : Matrix n n ℝ) {j k : n} (hjk : j ≠ k) :
   rw [jacobiStep, Matrix.mul_assoc, Matrix.charpoly_mul_comm, Matrix.mul_assoc, hU',
     Matrix.mul_one]
 
-/-- The classical Jacobi iterates are all orthogonally similar to `A`, so they all have its
-characteristic polynomial: the method moves the mass of the matrix onto the diagonal without
-changing the eigenvalues. -/
+/-- **The classical Jacobi method does not change the eigenvalues.** Let $A$ be a real matrix of
+order $n \ge 2$. Then every iterate $A_\nu$ of the classical Jacobi method has the
+characteristic polynomial of $A$.
+
+Each step is an orthogonal similarity. So the method moves the mass of the matrix onto the
+diagonal without a change of the eigenvalues. -/
 theorem charpoly_classicalJacobiIterate {A : Matrix n n ℝ} (hn : 2 ≤ Fintype.card n) :
     ∀ ν, (classicalJacobiIterate A ν).charpoly = A.charpoly
   | 0 => rfl
@@ -970,9 +1094,13 @@ theorem charpoly_classicalJacobiIterate {A : Matrix n n ℝ} (hn : 2 ≤ Fintype
       charpoly_jacobiStep _ (maxOffDiagPair_ne (classicalJacobiIterate A ν) hn)]
     exact charpoly_classicalJacobiIterate hn ν
 
-/-- **The classical Jacobi method drives the off-diagonal mass to zero** (the first half of
-[kress1998numerical], Theorem 7.14): the iterates converge to a diagonal matrix, and by
-`Matrix.charpoly_classicalJacobiIterate` they all carry the characteristic polynomial of `A`. -/
+/-- **The off-diagonal mass tends to zero.** Let $A$ be real symmetric of order $n \ge 2$, and let
+$A_\nu$ be the iterates of the classical Jacobi method. Then $N(A_\nu)^2 \to 0$ as
+$\nu \to \infty$.
+
+This is the first half of Theorem 7.14 of [kress1998numerical]. It follows from
+`Matrix.offDiagNormSq_classicalJacobiIterate_le`, because the factor $1 - 2/(n^2 - n)$ is in
+$[0, 1)$ for $n \ge 2$. -/
 theorem tendsto_offDiagNormSq_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ Fintype.card n) :
     Filter.Tendsto (fun ν => offDiagNormSq (classicalJacobiIterate A ν)) Filter.atTop (nhds 0) := by
@@ -987,17 +1115,20 @@ theorem tendsto_offDiagNormSq_classicalJacobiIterate {A : Matrix n n ℝ} (hA : 
     (fun ν => offDiagNormSq_classicalJacobiIterate_le hA ν) ?_
   simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hρ0 hρ1).mul_const (offDiagNormSq A)
 
-/-- **[kress1998numerical], Theorem 7.14**: the classical Jacobi iterates converge, and the limit is
-a diagonal matrix carrying the characteristic polynomial of `A` — a diagonal matrix whose diagonal
-is the multiset of eigenvalues of `A`.
+/-- **The convergence of the classical Jacobi method.** Let $A$ be real symmetric of order
+$n \ge 2$, and let $A_\nu$ be the iterates of the classical Jacobi method. Then there is a
+diagonal matrix $\Lambda$ with the characteristic polynomial of $A$ such that
+$A_\nu \to \Lambda$ as $\nu \to \infty$. So the diagonal of $\Lambda$ is the list of the
+eigenvalues of $A$, with multiplicities.
 
-[kress1998numerical] proves only that the off-diagonal mass tends to `0`
-(`Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`); convergence of the matrix sequence is a
-separate theorem, usually attributed to Forsythe and Henrici, and is normally proved by showing
-that the limit points lie in the finite set of diagonal matrices with the right spectrum. None of
-that is needed here: `Matrix.abs_jacobiStep_sub_le` bounds a step by `2 √(N(A_ν))`, and
-`Matrix.offDiagNormSq_classicalJacobiIterate_le` makes `N(A_ν)` decay geometrically, so the steps
-are bounded by a geometric series and the sequence is Cauchy outright. -/
+This is Theorem 7.14 of [kress1998numerical]. That source proves only that the off-diagonal mass
+tends to $0$ (`Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`). The convergence of the
+sequence of matrices is a separate theorem, usually attributed to Forsythe and Henrici, and it
+is usually proved by showing that the limit points lie in the finite set of diagonal matrices
+with the correct spectrum. That argument is not necessary here. By
+`Matrix.abs_jacobiStep_sub_le`, a step moves each entry by at most $2 N(A_\nu)$, and by
+`Matrix.offDiagNormSq_classicalJacobiIterate_le` the quantity $N(A_\nu)$ decays geometrically.
+So the steps are bounded by a geometric series, and the sequence is a Cauchy sequence. -/
 theorem tendsto_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ Fintype.card n) :
     ∃ Λ : Matrix n n ℝ, Matrix.IsDiag Λ ∧ Matrix.charpoly Λ = A.charpoly ∧

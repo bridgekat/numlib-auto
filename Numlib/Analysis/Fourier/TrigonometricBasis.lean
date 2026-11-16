@@ -11,58 +11,76 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Fourier.AddCircle
 
 /-!
-# The real trigonometric system as a Hilbert basis of `L²` on a circle
+# The real trigonometric system as a Hilbert basis of $L^2$ on a circle
 
-Mathlib's `fourierBasis` is the Hilbert basis of `Lp ℂ 2 haarAddCircle` formed by the complex
-exponentials `fourier n : x ↦ exp (2 π i n x / T)`. Classical analysis states the same theory over
-the reals, with the system
+Let $T > 0$, let $\mathbb{T}_T = \mathbb{R} / T \mathbb{Z}$ be the circle of circumference $T$, and
+let $\mu$ be its Haar probability measure. Mathlib's `fourierBasis` is the Hilbert basis of the
+complex space $L^2(\mathbb{T}_T)$ formed by the exponentials $e_n(x) = \exp(2 \pi i n x / T)$,
+$n \in \mathbb{Z}$. This module states the same theory over the reals, with the system
+$$1, \qquad \sqrt{2} \cos(2 \pi n x / T), \qquad \sqrt{2} \sin(2 \pi n x / T), \qquad n \ge 1,$$
+which is orthonormal for $\mu$. It writes $t_n$ for the members of this system, indexed by
+$n \in \mathbb{Z}$, and $r_n(f) = \int t_n f \, d\mu$ for the real Fourier coefficients. The module
+proves that $(t_n)$ is a Hilbert basis of the real space $L^2(\mathbb{T}_T)$, relates $r_n(f)$ to
+the complex coefficients $c_n(f) = \int e_{-n} f \, d\mu$, proves Parseval's identity and the error
+formula for the partial sums $S_n f = \sum_{|m| \le n} r_m(f) t_m$, shows that the space $V_n$ of
+trigonometric polynomials of degree at most $n$ has dimension $2n + 1$, and proves that the real
+trigonometric polynomials are uniformly dense in the continuous functions on $\mathbb{T}_T$.
 
-`1`, `√2 cos (2 π n x / T)`, `√2 sin (2 π n x / T)`, for `n ≥ 1`,
-
-which is orthonormal for the probability measure `haarAddCircle` on the circle `AddCircle T` of
-circumference `T`. This file defines that system as `trigFun`, indexed by `ℤ` so that a single
-family carries the constant (`n = 0`), the cosines (`n > 0`) and the sines (`n < 0`); proves it
-orthonormal; records the dictionary between the real coefficients and Mathlib's complex
-`fourierCoeff`; and assembles the system into `trigBasis : HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`.
-
-The file is organized around the single identity `trigFun T n x = (trigWeight n * fourier n x).re`,
-where `trigWeight n` is `1`, `√2` or `√2 * i` according to the sign of `n`. It turns every
-computation about the real system into one about the complex exponentials, so that nothing here
-repeats an argument Mathlib already has: orthonormality reduces to `∫ fourier n = 0` for `n ≠ 0`,
-and completeness to `fourierBasis` through `realFourierCoeff_eq_fourierCoeff`, not to a second
-Stone–Weierstrass argument.
-
-[han2009theoretical] state the orthonormal basis as Theorem 1.3.13 and the coefficient dictionary as
-(4.1.6). The normalization used here — `‖trigFun T n‖ = 1` in `L²` of the *probability* Haar measure
-— is the one that makes the system a Hilbert basis; the book's `a_j`, `b_j` of (4.1.2)–(4.1.3), for
-which the series reads `a₀/2 + ∑ (a_j cos + b_j sin)`, are `√2 * realFourierCoeff f j` and `√2 *
-realFourierCoeff f (-j)`.
+[han2009theoretical] state the orthonormal basis as Theorem 1.3.13 and the relation between the real
+and the complex coefficients as (4.1.6). The normalization here, $\|t_n\| = 1$ in $L^2$ of the
+probability measure $\mu$, is the one that makes the system a Hilbert basis. The coefficients $a_j$
+and $b_j$ of (4.1.2)–(4.1.3), for which the series reads
+$a_0 / 2 + \sum_{j \ge 1} (a_j \cos + b_j \sin)$, are $a_j = \sqrt{2} \, r_j(f)$ and
+$b_j = \sqrt{2} \, r_{-j}(f)$ for $j \ge 1$, and $a_0 = 2 r_0(f)$.
 
 ## Main definitions
 
-* `trigWeight n`, the complex weight relating `trigFun` to `fourier`;
-* `trigFun T n : C(AddCircle T, ℝ)`, the real trigonometric system;
-* `trigLp T n : Lp ℝ 2 haarAddCircle`, the same as an element of `L²`;
-* `realFourierCoeff f n`, the coefficient of `f` against `trigFun T n`;
-* `trigBasis T : HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`;
-* `trigPolyLE T n`, the subspace of `C(AddCircle T, ℝ)` of the trigonometric polynomials of degree
-  at most `n`, spanned by the `trigFun T m` with `|m| ≤ n`.
+* `trigWeight`: the complex weight $w_n$, equal to $1$, $\sqrt{2}$ or $\sqrt{2} \, i$, with
+  $t_n = \operatorname{Re}(w_n e_n)$.
+* `trigFun`: the real trigonometric system $t_n$, as continuous functions on $\mathbb{T}_T$.
+* `trigLp`: the function $t_n$ as an element of $L^2(\mathbb{T}_T)$.
+* `realFourierCoeff`: the real Fourier coefficient $r_n(f) = \int t_n f \, d\mu$.
+* `trigBasis`: the real trigonometric system as a Hilbert basis of $L^2(\mathbb{T}_T)$, indexed by
+  $\mathbb{Z}$.
+* `trigPartialSum`: the partial sum $S_n f = \sum_{|m| \le n} r_m(f) t_m$ of the Fourier series.
+* `trigPolyLE`: the space $V_n$ of trigonometric polynomials of degree at most $n$, spanned by the
+  $t_m$ with $|m| \le n$.
 
-## Main statements
+## Main results
 
-* `orthonormal_trigFun`: the system is orthonormal;
-* `realFourierCoeff_eq_fourierCoeff`: the dictionary to Mathlib's complex `fourierCoeff`;
-* `hasSum_trigSeries`: the real Fourier series of an `L²` function converges to it in `L²`;
-* `tsum_sq_realFourierCoeff`: Parseval's identity in real form;
-* `mem_trigPolyLE_iff`, `linearIndependent_trigFun` and `finrank_trigPolyLE`: the trigonometric
-  polynomials of degree at most `n` are the linear combinations of the `trigFun T m` with `|m| ≤ n`,
-  and they form a space of dimension `2 n + 1`.  That space is what the Fourier projection and
-  trigonometric interpolation project onto, and the Haar subspace of the trigonometric
-  equioscillation theorem, so it is defined once here rather than in each of them;
-* `span_trigFun_closure_eq_top` and `exists_mem_span_trigFun_norm_sub_lt`: the real trigonometric
-  polynomials are *uniformly* dense in `C(AddCircle T, ℝ)`, the real form of Mathlib's
-  `span_fourier_closure_eq_top`, obtained by taking real parts rather than by a second
-  Stone–Weierstrass argument.
+* `orthonormal_trigFun`: the system $(t_n)$ is orthonormal in $L^2(\mathbb{T}_T)$.
+* `realFourierCoeff_eq_fourierCoeff`: for integrable $f$,
+  $r_n(f) = \operatorname{Re}(w_n c_{-n}(f))$.
+* `trigBasis_repr`: the coordinates of $f$ in the Hilbert basis are the coefficients $r_n(f)$.
+* `hasSum_trigSeries`: the real Fourier series of $f \in L^2(\mathbb{T}_T)$ converges to $f$ in
+  $L^2$.
+* `tsum_sq_realFourierCoeff`: Parseval's identity $\sum_n r_n(f)^2 = \|f\|^2$.
+* `norm_sub_trigPartialSum_sq`: $\|f - S_n f\|^2 = \|f\|^2 - \sum_{|m| \le n} r_m(f)^2$.
+* `hasSum_sq_realFourierCoeff_compl`: $\sum_{|m| > n} r_m(f)^2 = \|f - S_n f\|^2$.
+* `mem_trigPolyLE_iff`: $V_n$ consists of the linear combinations of the $t_m$ with $|m| \le n$.
+* `linearIndependent_trigFun`: the functions $t_n$ are linearly independent.
+* `finrank_trigPolyLE`: $\dim V_n = 2n + 1$.
+* `exists_mem_span_trigFun_norm_sub_lt`: every continuous real function on $\mathbb{T}_T$ is a
+  uniform limit of real trigonometric polynomials.
+* `span_trigFun_closure_eq_top`: the span of $(t_n)$ is dense in the continuous real functions on
+  $\mathbb{T}_T$.
+
+## Implementation notes
+
+* The system is indexed by $\mathbb{Z}$, so that one family carries the constant ($n = 0$), the
+  cosines ($n > 0$) and the sines ($n < 0$). For $n < 0$, $t_n(x) = \sqrt{2} \sin(-2 \pi n x / T)$,
+  so $t_{-j}(x) = \sqrt{2} \sin(2 \pi j x / T)$ for $j > 0$.
+* The module is built on the identity $t_n(x) = \operatorname{Re}(w_n e_n(x))$ (`trigFun_apply`). It
+  turns each computation about the real system into one about the complex exponentials, so that no
+  argument of Mathlib is repeated: orthonormality reduces to $\int e_n \, d\mu = 0$ for $n \neq 0$,
+  completeness reduces to the completeness of `fourierBasis` through
+  `realFourierCoeff_eq_fourierCoeff`, and uniform density reduces to `span_fourier_closure_eq_top`
+  by taking real parts, not to a second Stone–Weierstrass argument.
+* The measure $\mu$ is `AddCircle.haarAddCircle`, and the hypothesis $T > 0$ is the instance
+  `Fact (0 < T)`. An instance supplies `Fact (0 < 2 * π)` for the classical circle of circumference
+  $2 \pi$.
+* The space $V_n$ is defined here once, because it is the range of the Fourier projection and of
+  trigonometric interpolation, and the Haar subspace of the trigonometric equioscillation theorem.
 -/
 
 open Complex MeasureTheory Set Submodule
@@ -71,38 +89,51 @@ open scoped ComplexConjugate ENNReal Real
 
 variable {T : ℝ}
 
-/-! ### The system -/
+/-! ### The real trigonometric system -/
 
-/-- The complex weight that turns the exponential `fourier n` into the `n`-th member of the real
-trigonometric system: `trigWeight 0 = 1`, `trigWeight n = √2` for `n > 0` and `trigWeight n = √2 *
-I` for `n < 0`. Its modulus is the constant that normalizes the system for the probability measure
-`haarAddCircle`, and its argument selects a cosine or a sine, through `trigFun_apply : trigFun T n x
-= (trigWeight n * fourier n x).re`. -/
+/-- The complex weight $w_n$ that turns the exponential $e_n(x) = \exp(2 \pi i n x / T)$ into the
+member $t_n$ of the real trigonometric system:
+$$w_n = \begin{cases} 1 & \text{if } n = 0, \\ \sqrt{2} & \text{if } n > 0, \\
+  \sqrt{2} \, i & \text{if } n < 0. \end{cases}$$
+
+The modulus of $w_n$ normalizes the system for the probability measure
+`AddCircle.haarAddCircle`, and its argument selects a cosine or a sine through
+$t_n(x) = \operatorname{Re}(w_n e_n(x))$ (`trigFun_apply`). -/
 noncomputable def trigWeight (n : ℤ) : ℂ :=
   if n = 0 then 1 else if 0 < n then (√2 : ℝ) else (√2 : ℝ) * I
 
+/-- The weight of index $0$ is $w_0 = 1$. -/
 @[simp]
 theorem trigWeight_zero : trigWeight 0 = 1 := ite_eq_left rfl
 
+/-- For $n > 0$, the weight is $w_n = \sqrt{2}$. -/
 theorem trigWeight_of_pos {n : ℤ} (hn : 0 < n) : trigWeight n = (√2 : ℝ) := by
   rw [trigWeight, ite_eq_right hn.ne', ite_eq_left hn]
 
+/-- For $n < 0$, the weight is $w_n = \sqrt{2} \, i$. -/
 theorem trigWeight_of_neg {n : ℤ} (hn : n < 0) : trigWeight n = (√2 : ℝ) * I := by
   rw [trigWeight, ite_eq_right hn.ne, ite_eq_right (by omega)]
 
-/-- The real trigonometric system on the circle of circumference `T`, normalized for the probability
-measure `haarAddCircle`: `trigFun T 0 = 1`, `trigFun T n = √2 cos (2 π n x / T)` for `n > 0`, and
-`trigFun T n = √2 sin (-2 π n x / T)` for `n < 0`. Indexing by `ℤ` keeps a single family where the
-classical statement has three. -/
+/-- The **real trigonometric system** on the circle $\mathbb{T}_T$ of circumference $T$: for
+$n \in \mathbb{Z}$, the continuous real function $t_n(x) = \operatorname{Re}(w_n e_n(x))$, where
+$e_n(x) = \exp(2 \pi i n x / T)$. That is,
+$$t_0 = 1, \qquad t_n(x) = \sqrt{2} \cos(2 \pi n x / T) \ (n > 0), \qquad t_n(x) = \sqrt{2}
+  \sin(-2 \pi n x / T) \ (n < 0).$$
+
+The system is normalized for the probability measure `AddCircle.haarAddCircle`. The index set
+$\mathbb{Z}$ keeps in one family what the classical statement writes as three families. The
+exponential $e_n$ is Mathlib's `fourier n`, and $w_n$ is `trigWeight n`. -/
 noncomputable def trigFun (T : ℝ) (n : ℤ) : C(AddCircle T, ℝ) where
   toFun x := (trigWeight n * fourier n x).re
   continuous_toFun := Complex.continuous_re.comp (continuous_const.mul (fourier n).continuous)
 
+/-- For $n \in \mathbb{Z}$ and $x \in \mathbb{T}_T$, $t_n(x) = \operatorname{Re}(w_n e_n(x))$. -/
 @[simp]
 theorem trigFun_apply (T : ℝ) (n : ℤ) (x : AddCircle T) :
     trigFun T n x = (trigWeight n * fourier n x).re :=
   rfl
 
+/-- The member of index $0$ is the constant function $t_0 = 1$. -/
 @[simp]
 theorem trigFun_zero : trigFun T 0 = 1 := by
   ext x; simp
@@ -113,46 +144,51 @@ private theorem fourier_coe_apply_mul_I (n : ℤ) (x : ℝ) :
   push_cast
   ring_nf
 
-/-- The members of positive index are the cosines: `trigFun T n x = √2 cos (2 π n x / T)`. -/
+/-- For $n > 0$ and $x \in \mathbb{R}$, the member of index $n$ is the cosine
+$t_n(x) = \sqrt{2} \cos(2 \pi n x / T)$. -/
 theorem trigFun_coe_apply_of_pos {n : ℤ} (hn : 0 < n) (x : ℝ) :
     trigFun T n (x : AddCircle T) = √2 * Real.cos (2 * π * n * x / T) := by
   rw [trigFun_apply, trigWeight_of_pos hn, fourier_coe_apply_mul_I, re_ofReal_mul,
     exp_ofReal_mul_I_re]
 
-/-- The members of negative index are the sines: `trigFun T n x = √2 sin (-2 π n x / T)`, which for
-`n = -j` with `j > 0` is `√2 sin (2 π j x / T)`. -/
+/-- For $n < 0$ and $x \in \mathbb{R}$, the member of index $n$ is the sine
+$t_n(x) = \sqrt{2} \sin(-2 \pi n x / T)$. For $n = -j$ with $j > 0$, this is
+$\sqrt{2} \sin(2 \pi j x / T)$. -/
 theorem trigFun_coe_apply_of_neg {n : ℤ} (hn : n < 0) (x : ℝ) :
     trigFun T n (x : AddCircle T) = √2 * Real.sin (-(2 * π * n * x / T)) := by
   rw [trigFun_apply, trigWeight_of_neg hn, fourier_coe_apply_mul_I, mul_assoc, re_ofReal_mul,
     Real.sin_neg, Complex.I_mul_re, exp_ofReal_mul_I_im]
 
-/-- On the circle of circumference `2 π` the member of index `j > 0` of the real trigonometric
-system is `√2 cos (j t)`. -/
+/-- On the circle of circumference $2 \pi$, for $j > 0$ and $t \in \mathbb{R}$, the member of index
+$j$ is $t_j(t) = \sqrt{2} \cos(j t)$. -/
 theorem trigFun_coe_of_pos {j : ℤ} (hj : 0 < j) (t : ℝ) :
     trigFun (2 * π) j ↑t = √2 * Real.cos (j * t) := by
   have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
   have h : 2 * π * (j : ℝ) * t / (2 * π) = (j : ℝ) * t := by field_simp
   rw [trigFun_coe_apply_of_pos hj, h]
 
-/-- On the circle of circumference `2 π` the member of index `j < 0` of the real trigonometric
-system is `√2 sin (-j t)`. -/
+/-- On the circle of circumference $2 \pi$, for $j < 0$ and $t \in \mathbb{R}$, the member of index
+$j$ is $t_j(t) = \sqrt{2} \sin(-j t)$. -/
 theorem trigFun_coe_of_neg {j : ℤ} (hj : j < 0) (t : ℝ) :
     trigFun (2 * π) j ↑t = √2 * Real.sin (-(j : ℝ) * t) := by
   have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
   have h : -(2 * π * (j : ℝ) * t / (2 * π)) = -(j : ℝ) * t := by field_simp
   rw [trigFun_coe_apply_of_neg hj, h]
 
-/-- The `n`-th member of the real trigonometric system, as an element of `L²` of the circle. -/
+/-- For $T > 0$ and $n \in \mathbb{Z}$, the member $t_n$ of the real trigonometric system as an
+element of $L^2(\mathbb{T}_T)$ for the Haar probability measure.
+
+The hypothesis $T > 0$ is the instance `Fact (0 < T)`. -/
 noncomputable abbrev trigLp (T : ℝ) [hT : Fact (0 < T)] (n : ℤ) :
     Lp ℝ 2 (@AddCircle.haarAddCircle T hT) :=
   ContinuousMap.toLp (E := ℝ) 2 AddCircle.haarAddCircle ℝ (trigFun T n)
 
-/-- The characters of the circle have modulus one at every point. -/
+/-- For $n \in \mathbb{Z}$ and every point $x$ of the circle, $|e_n(x)| = 1$. -/
 theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
   rw [fourier_apply, Circle.norm_coe]
 
-/-- The circle of circumference `2 π`, on which the classical Fourier series lives, needs
-`0 < 2 π` as a `Fact` for its Haar measure and its compactness. -/
+/-- The circle of circumference $2 \pi$, on which the classical Fourier series lives, needs
+$0 < 2 \pi$ as a `Fact` for its Haar measure and its compactness. -/
 instance : Fact (0 < 2 * π) := ⟨by positivity⟩
 
 section Circle
@@ -161,8 +197,8 @@ variable [hT : Fact (0 < T)]
 
 open AddCircle
 
-/-- The circle of circumference `T > 0` is infinite, being in bijection with the interval
-`[0, T)`. -/
+/-- For $T > 0$, the circle of circumference $T$ is infinite, because it is in bijection with the
+interval $[0, T)$. -/
 instance instInfiniteAddCircle : Infinite (AddCircle T) :=
   have : Infinite (Set.Ico (0 : ℝ) (0 + T)) := Set.Ico.infinite (by simpa using hT.out)
   (AddCircle.equivIco T 0).infinite_iff.2 this
@@ -176,8 +212,8 @@ private theorem integrable_const_mul_fourier (c : ℂ) (n : ℤ) :
     (map_continuous (fourier n)).aestronglyMeasurable
     (Filter.Eventually.of_forall fun x => (norm_fourier_apply n x).le)
 
-/-- The integral of `fourier n` against the probability Haar measure: `1` at `n = 0` and `0`
-elsewhere. -/
+/-- For $T > 0$ and $n \in \mathbb{Z}$, the integral of $e_n$ against the Haar probability measure
+is $1$ if $n = 0$ and $0$ otherwise. -/
 theorem integral_fourier (n : ℤ) :
     ∫ x : AddCircle T, fourier n x ∂haarAddCircle = if n = 0 then 1 else 0 := by
   have h := congrFun (fourierCoeff_fourier (T := T) n) 0
@@ -236,8 +272,9 @@ private theorem integral_trigFun_mul (i j : ℤ) :
         simp [Complex.mul_re]
     · rw [ite_eq_right hij0]; ring
 
-/-- The real trigonometric system is orthonormal in `L²` of the circle with its probability Haar
-measure. This is the orthonormality half of [han2009theoretical], Theorem 1.3.13. -/
+/-- For $T > 0$, the real trigonometric system $(t_n)_{n \in \mathbb{Z}}$ is **orthonormal** in
+$L^2(\mathbb{T}_T)$ for the Haar probability measure. This is the orthonormality part of Theorem
+1.3.13 of [han2009theoretical]. -/
 theorem orthonormal_trigFun : Orthonormal ℝ (trigLp T) := by
   rw [orthonormal_iff_ite]
   intro i j
@@ -246,32 +283,42 @@ theorem orthonormal_trigFun : Orthonormal ℝ (trigLp T) := by
 
 /-! ### The real Fourier coefficients -/
 
-/-- The `n`-th real Fourier coefficient of `f : AddCircle T → ℝ`: the integral of `f` against
-`trigFun T n` for the probability Haar measure. The classical `a_j` and `b_j`, normalized so that
-the series reads `a₀/2 + ∑ (a_j cos + b_j sin)`, are `√2 * realFourierCoeff f j` and `√2 *
-realFourierCoeff f (-j)`. -/
+/-- The **real Fourier coefficient** of index $n \in \mathbb{Z}$ of a function
+$f \colon \mathbb{T}_T \to \mathbb{R}$, for $T > 0$:
+$$r_n(f) = \int t_n(x) f(x) \, d\mu(x),$$
+where $\mu$ is the Haar probability measure.
+
+The classical coefficients $a_j$ and $b_j$, normalized so that the series reads
+$a_0 / 2 + \sum_{j \ge 1} (a_j \cos + b_j \sin)$, are $a_j = \sqrt{2} \, r_j(f)$ and
+$b_j = \sqrt{2} \, r_{-j}(f)$ for $j \ge 1$, and $a_0 = 2 r_0(f)$. The integral is a Bochner
+integral, so $r_n(f) = 0$ when $t_n f$ is not integrable. -/
 noncomputable def realFourierCoeff (f : AddCircle T → ℝ) (n : ℤ) : ℝ :=
   ∫ x : AddCircle T, trigFun T n x * f x ∂haarAddCircle
 
+/-- The defining formula $r_n(f) = \int t_n(x) f(x) \, d\mu(x)$ of the real Fourier coefficient. -/
 theorem realFourierCoeff_apply (f : AddCircle T → ℝ) (n : ℤ) :
     realFourierCoeff f n = ∫ x : AddCircle T, trigFun T n x * f x ∂haarAddCircle :=
   rfl
 
+/-- The coefficient of index $0$ is the mean value: $r_0(f) = \int f \, d\mu$. -/
 @[simp]
 theorem realFourierCoeff_zero (f : AddCircle T → ℝ) :
     realFourierCoeff f 0 = ∫ x : AddCircle T, f x ∂haarAddCircle := by
   simp [realFourierCoeff_apply]
 
-/-- The real Fourier coefficients of a member of the real trigonometric system: the system is its
-own coefficient sequence.  This is `orthonormal_trigFun` read on the continuous functions rather
-than on `L²`, and it is what makes the Fourier projection of `Numlib/Approximation/Trigonometric`
-fix the trigonometric polynomials. -/
+/-- The real Fourier coefficients of a member of the real trigonometric system: for
+$i, j \in \mathbb{Z}$, $r_j(t_i)$ is $1$ if $i = j$ and $0$ otherwise.
+
+This is `orthonormal_trigFun` for continuous functions instead of $L^2$. It makes the Fourier
+projection of `Numlib.Approximation.Trigonometric` fix the trigonometric polynomials. -/
 @[simp]
 theorem realFourierCoeff_trigFun (i j : ℤ) :
     realFourierCoeff (trigFun T i) j = if i = j then 1 else 0 :=
   integral_trigFun_mul i j
 
-/-- The complex Fourier coefficients of a real-valued function are conjugate-symmetric. -/
+/-- The complex Fourier coefficients of a real function are conjugate symmetric: for
+$f \colon \mathbb{T}_T \to \mathbb{R}$ and $n \in \mathbb{Z}$, $c_{-n}(f) = \overline{c_n(f)}$,
+where $c_n$ is Mathlib's `fourierCoeff`. -/
 theorem fourierCoeff_ofReal_neg (f : AddCircle T → ℝ) (n : ℤ) :
     fourierCoeff (fun x => (f x : ℂ)) (-n) = conj (fourierCoeff (fun x => (f x : ℂ)) n) := by
   have h : ∀ x : AddCircle T, conj (fourier (-n) x) = fourier n x := by
@@ -280,12 +327,18 @@ theorem fourierCoeff_ofReal_neg (f : AddCircle T → ℝ) (n : ℤ) :
   refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
   simp only [smul_eq_mul, map_mul, Complex.conj_ofReal, neg_neg, h]
 
-/-- The dictionary between the real trigonometric coefficients and Mathlib's complex `fourierCoeff`:
-for a real-valued integrable `f`, `realFourierCoeff f n = (trigWeight n * fourierCoeff (fun x => (f
-x : ℂ)) (-n)).re`. Since `trigWeight` is `1`, `√2` and `√2 * i` according to the sign of `n`, this
-says that the constant coefficient is the constant complex coefficient, that the cosine coefficients
-are `√2` times real parts and the sine coefficients `√2` times imaginary parts; see
-`realFourierCoeff_of_pos`, `realFourierCoeff_of_neg` and `fourierCoeff_ofReal`. -/
+/-- The relation between the real and the complex Fourier coefficients. Let $T > 0$ and let
+$f \colon \mathbb{T}_T \to \mathbb{R}$ be integrable for the Haar probability measure $\mu$.
+Then for every $n \in \mathbb{Z}$,
+$$r_n(f) = \operatorname{Re}\bigl(w_n \, c_{-n}(f)\bigr),$$
+where $c_m(f) = \int e_{-m} f \, d\mu$ is the complex Fourier coefficient.
+
+Since $w_n$ is $1$, $\sqrt{2}$ or $\sqrt{2} \, i$ according to the sign of $n$, the identity
+says that $r_0(f)$ is the real part of $c_0(f)$, that the cosine coefficients are $\sqrt{2}$
+times real parts of complex coefficients, and that the sine coefficients are $\sqrt{2}$ times
+imaginary parts; see `realFourierCoeff_of_pos`, `realFourierCoeff_of_neg` and
+`fourierCoeff_ofReal`. The complex coefficient $c_m(f)$ is Mathlib's `fourierCoeff` of the
+complex function $x \mapsto f(x)$. -/
 theorem realFourierCoeff_eq_fourierCoeff {f : AddCircle T → ℝ}
     (hf : Integrable f haarAddCircle) (n : ℤ) :
     realFourierCoeff f n = (trigWeight n * fourierCoeff (fun x => (f x : ℂ)) (-n)).re := by
@@ -307,14 +360,16 @@ theorem realFourierCoeff_eq_fourierCoeff {f : AddCircle T → ℝ}
   simp_rw [smul_eq_mul, mul_assoc]
   exact integral_const_mul _ _
 
-/-- The cosine coefficients are `√2` times the real parts of the complex Fourier coefficients. -/
+/-- The cosine coefficients: let $f \colon \mathbb{T}_T \to \mathbb{R}$ be integrable and let
+$n > 0$. Then $r_n(f) = \sqrt{2} \operatorname{Re} c_n(f)$. -/
 theorem realFourierCoeff_of_pos {f : AddCircle T → ℝ} (hf : Integrable f haarAddCircle)
     {n : ℤ} (hn : 0 < n) :
     realFourierCoeff f n = √2 * (fourierCoeff (fun x => (f x : ℂ)) n).re := by
   rw [realFourierCoeff_eq_fourierCoeff hf, trigWeight_of_pos hn, re_ofReal_mul,
     fourierCoeff_ofReal_neg, Complex.conj_re]
 
-/-- The sine coefficients are `√2` times the imaginary parts of the complex Fourier coefficients. -/
+/-- The sine coefficients: let $f \colon \mathbb{T}_T \to \mathbb{R}$ be integrable and let $n < 0$.
+Then $r_n(f) = \sqrt{2} \operatorname{Im} c_n(f)$. -/
 theorem realFourierCoeff_of_neg {f : AddCircle T → ℝ} (hf : Integrable f haarAddCircle)
     {n : ℤ} (hn : n < 0) :
     realFourierCoeff f n = √2 * (fourierCoeff (fun x => (f x : ℂ)) n).im := by
@@ -322,9 +377,12 @@ theorem realFourierCoeff_of_neg {f : AddCircle T → ℝ} (hf : Integrable f haa
     fourierCoeff_ofReal_neg]
   simp [Complex.mul_re]
 
-/-- The classical form of the dictionary: for `n > 0` the complex Fourier coefficient is `(a_n - i
-b_n) / 2` in the book's normalization, here `(aₙ - i bₙ) / √2` with `aₙ` and `bₙ` the real
-coefficients at `n` and `-n`. -/
+/-- The classical form of the relation between the coefficients: let
+$f \colon \mathbb{T}_T \to \mathbb{R}$ be integrable and let $n > 0$. Then
+$$c_n(f) = \frac{r_n(f) - i \, r_{-n}(f)}{\sqrt{2}}.$$
+
+With $a_n = \sqrt{2} \, r_n(f)$ and $b_n = \sqrt{2} \, r_{-n}(f)$, this is the classical formula
+$c_n = (a_n - i b_n) / 2$. -/
 theorem fourierCoeff_ofReal {f : AddCircle T → ℝ} (hf : Integrable f haarAddCircle)
     {n : ℤ} (hn : 0 < n) :
     fourierCoeff (fun x => (f x : ℂ)) n =
@@ -371,8 +429,8 @@ private theorem fourierCoeff_eq_zero_of_realFourierCoeff_eq_zero {f : AddCircle 
       rw [fourierCoeff_ofReal_neg, Complex.conj_im, neg_eq_zero] at this
       simpa using this
 
-/-- The inner product of an `L²` function with a member of the real trigonometric system is the
-corresponding real Fourier coefficient. -/
+/-- For $f \in L^2(\mathbb{T}_T)$ and $n \in \mathbb{Z}$, the inner product $\langle t_n, f \rangle$
+in $L^2$ is the real Fourier coefficient $r_n(f)$. -/
 theorem inner_trigLp (n : ℤ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     inner ℝ (trigLp T n) f = realFourierCoeff (f : AddCircle T → ℝ) n := by
   rw [MeasureTheory.L2.inner_def, realFourierCoeff_apply]
@@ -382,8 +440,10 @@ theorem inner_trigLp (n : ℤ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
   rw [hx, RCLike.inner_apply]
   simp [mul_comm]
 
-/-- The span of the real trigonometric system is dense in `L²`: its orthogonal complement is
-trivial, because a function orthogonal to every member has all its complex Fourier coefficients
+/-- **Completeness of the real trigonometric system**: for $T > 0$, the orthogonal complement in
+$L^2(\mathbb{T}_T)$ of the span of the functions $t_n$, $n \in \mathbb{Z}$, is $\{0\}$.
+
+A function that is orthogonal to every $t_n$ has all its complex Fourier coefficients equal to
 zero, and Mathlib's `fourierBasis` is complete. -/
 theorem orthogonal_span_trigLp_eq_bot : (span ℝ (range (trigLp T)))ᗮ = ⊥ := by
   rw [Submodule.eq_bot_iff]
@@ -415,31 +475,38 @@ theorem orthogonal_span_trigLp_eq_bot : (span ℝ (range (trigLp T)))ᗮ = ⊥ :
     exact_mod_cast hx
   exact Lp.eq_zero_iff_ae_eq_zero.mpr this
 
-/-- **The real trigonometric system is a Hilbert basis of `L²` on the circle.** This is
-[han2009theoretical], Theorem 1.3.13. -/
+/-- For $T > 0$, the real trigonometric system $(t_n)_{n \in \mathbb{Z}}$ as a **Hilbert basis** of
+$L^2(\mathbb{T}_T)$ for the Haar probability measure. This is Theorem 1.3.13 of
+[han2009theoretical].
+
+It is built from `orthonormal_trigFun` and `orthogonal_span_trigLp_eq_bot`. -/
 noncomputable def trigBasis (T : ℝ) [hT : Fact (0 < T)] :
     HilbertBasis ℤ ℝ (Lp ℝ 2 (@haarAddCircle T hT)) :=
   HilbertBasis.mkOfOrthogonalEqBot orthonormal_trigFun orthogonal_span_trigLp_eq_bot
 
-/-- The Hilbert basis `trigBasis` is the real trigonometric system. -/
+/-- The members of the Hilbert basis `trigBasis T` are the elements `trigLp T n`. -/
 @[simp]
 theorem coe_trigBasis : ⇑(trigBasis T) = trigLp T :=
   HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- The coordinates of an `L²` function in the Hilbert basis `trigBasis` are its real Fourier
-coefficients. -/
+/-- For $f \in L^2(\mathbb{T}_T)$ and $n \in \mathbb{Z}$, the coordinate of index $n$ of $f$ in the
+Hilbert basis `trigBasis T` is the real Fourier coefficient $r_n(f)$. -/
 theorem trigBasis_repr (f : Lp ℝ 2 (@haarAddCircle T hT)) (n : ℤ) :
     (trigBasis T).repr f n = realFourierCoeff (f : AddCircle T → ℝ) n := by
   rw [HilbertBasis.repr_apply_apply, coe_trigBasis, inner_trigLp]
 
-/-- The real Fourier series of an `L²` function converges to it in `L²`. This is the `p = 2` case of
-the classical `Lᵖ` convergence theorem, and [han2009theoretical], Example 1.3.15. -/
+/-- **Convergence of the Fourier series in $L^2$**: for $T > 0$ and $f \in L^2(\mathbb{T}_T)$,
+$$f = \sum_{n \in \mathbb{Z}} r_n(f) \, t_n,$$
+where the series converges unconditionally in $L^2$. This is the case $p = 2$ of the classical
+$L^p$ convergence theorem, and Example 1.3.15 of [han2009theoretical]. -/
 theorem hasSum_trigSeries (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     HasSum (fun n : ℤ => realFourierCoeff (f : AddCircle T → ℝ) n • trigLp T n) f := by
   simpa only [trigBasis_repr, coe_trigBasis] using (trigBasis T).hasSum_repr f
 
-/-- **Parseval's identity** in real form: the sum of the squares of the real Fourier coefficients of
-an `L²` function is the square of its `L²` norm. -/
+/-- **Parseval's identity** in real form: for $T > 0$ and $f \in L^2(\mathbb{T}_T)$,
+$$\sum_{n \in \mathbb{Z}} r_n(f)^2 = \|f\|^2.$$
+
+The sum is a Lean `tsum`. The family is summable by `hasSum_sq_realFourierCoeff`. -/
 theorem tsum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     ∑' n : ℤ, realFourierCoeff (f : AddCircle T → ℝ) n ^ 2 = ‖f‖ ^ 2 := by
   have h := (trigBasis T).tsum_inner_mul_inner f f
@@ -449,8 +516,8 @@ theorem tsum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
   rw [real_inner_comm, inner_trigLp]
   ring
 
-/-- **Parseval's identity** as a `HasSum`: the squares of the real Fourier coefficients are a
-summable family whose sum is `‖f‖ ^ 2`. -/
+/-- **Parseval's identity** with summability: for $f \in L^2(\mathbb{T}_T)$, the family
+$(r_n(f)^2)_{n \in \mathbb{Z}}$ is summable, and its sum is $\|f\|^2$. -/
 theorem hasSum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     HasSum (fun n : ℤ => realFourierCoeff (f : AddCircle T → ℝ) n ^ 2) (‖f‖ ^ 2) := by
   have h := (trigBasis T).hasSum_inner_mul_inner f f
@@ -463,25 +530,25 @@ theorem hasSum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
 
 /-! ### The partial sums of the Fourier series -/
 
-/-- The `L²` partial sum of the real Fourier series, the truncation of `hasSum_trigSeries` to the
-frequencies of absolute value at most `n`:
+/-- The **partial sum** of the real Fourier series of $f \in L^2(\mathbb{T}_T)$ of order
+$n \in \mathbb{N}$:
+$$S_n f = \sum_{m = -n}^{n} r_m(f) \, t_m.$$
 
-`trigPartialSum n f = ∑_{|m| ≤ n} realFourierCoeff f m • trigLp T m`.
-
-It is the orthogonal projection of `f` onto the trigonometric polynomials of degree at most `n`,
-and in the classical coefficients it is `a₀ / 2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))`. -/
+It is the orthogonal projection of $f$ onto the trigonometric polynomials of degree at most $n$.
+For $T = 2 \pi$, in the classical coefficients, it is $a_0 / 2 + \sum_{j = 1}^{n} (a_j \cos(j
+x) + b_j \sin(j x))$. -/
 noncomputable def trigPartialSum (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     Lp ℝ 2 (@haarAddCircle T hT) :=
   ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m • trigLp T m
 
+/-- The defining formula of the partial sum: $S_n f = \sum_{m = -n}^{n} r_m(f) \, t_m$. -/
 theorem trigPartialSum_def (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     trigPartialSum n f
       = ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
           realFourierCoeff (f : AddCircle T → ℝ) m • trigLp T m :=
   rfl
 
-/-- The partial sum has the same inner product with `f` as it has with itself: both are the sum of
-the squares of the coefficients it keeps. -/
+/-- The partial sum satisfies $\langle S_n f, f \rangle = \sum_{|m| \le n} r_m(f)^2$. -/
 private theorem inner_trigPartialSum_left (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     inner ℝ (trigPartialSum n f) f
       = ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m ^ 2 := by
@@ -495,8 +562,11 @@ private theorem norm_trigPartialSum_sq (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T
   refine Finset.sum_congr rfl fun m hm => ?_
   rw [real_inner_smul_left, orthonormal_trigFun.inner_right_sum _ hm, sq]
 
-/-- **The `L²` truncation error of the Fourier series**: subtracting the partial sum removes
-exactly the coefficients it keeps, so `‖f - S_n f‖² = ‖f‖² - ∑_{|m| ≤ n} c_m²`. -/
+/-- **The $L^2$ error of the partial sum**: for $T > 0$, $f \in L^2(\mathbb{T}_T)$ and
+$n \in \mathbb{N}$,
+$$\|f - S_n f\|^2 = \|f\|^2 - \sum_{|m| \le n} r_m(f)^2.$$
+
+Subtracting the partial sum removes exactly the coefficients that it keeps. -/
 theorem norm_sub_trigPartialSum_sq (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     ‖f - trigPartialSum n f‖ ^ 2
       = ‖f‖ ^ 2 - ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
@@ -504,9 +574,14 @@ theorem norm_sub_trigPartialSum_sq (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)
   rw [norm_sub_sq_real, real_inner_comm, inner_trigPartialSum_left, norm_trigPartialSum_sq]
   ring
 
-/-- **The tail form of Parseval's identity**: the squares of the Fourier coefficients of frequency
-`|m| > n` sum to the squared `L²` truncation error `‖f - S_n f‖²`. It is Parseval's identity with
-the finitely many coefficients that the partial sum reproduces taken out. -/
+/-- **The tail form of Parseval's identity**: for $T > 0$, $f \in L^2(\mathbb{T}_T)$ and
+$n \in \mathbb{N}$, the squares $r_m(f)^2$ of the coefficients with $|m| > n$ form a summable
+family, and
+$$\sum_{|m| > n} r_m(f)^2 = \|f - S_n f\|^2.$$
+
+This is Parseval's identity with the finitely many coefficients of the partial sum taken out.
+The Lean family is indexed by all of $\mathbb{Z}$ and is $0$ at the indices $m$ with
+$|m| \le n$. -/
 theorem hasSum_sq_realFourierCoeff_compl (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
     HasSum (fun m : ℤ =>
         if m.natAbs ≤ n then 0 else realFourierCoeff (f : AddCircle T → ℝ) m ^ 2)
@@ -533,33 +608,34 @@ theorem hasSum_sq_realFourierCoeff_compl (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle
 
 end Circle
 
-/-! ### The trigonometric polynomials of degree at most `n` -/
+/-! ### The trigonometric polynomials of degree at most $n$ -/
 
-/-- The **trigonometric polynomials of degree at most `n`** on the circle of circumference `T`: the
-subspace of `C(AddCircle T, ℝ)` spanned by the members `trigFun T m` of the real trigonometric
-system with `|m| ≤ n`, that is, by the constant together with the cosines and the sines of
-frequencies `1, …, n`.
+/-- The space $V_n$ of **trigonometric polynomials of degree at most $n$** on the circle
+$\mathbb{T}_T$ of circumference $T$: the subspace of the continuous real functions on
+$\mathbb{T}_T$ spanned by the functions $t_m$ with $|m| \le n$. That is, $V_n$ is spanned by the
+constant together with the cosines and the sines of the frequencies $1, \dots, n$.
 
-This is the subspace that the Fourier projection and trigonometric interpolation project onto, and
-the Haar subspace of the trigonometric equioscillation theorem. It is `2 n + 1`-dimensional
-(`finrank_trigPolyLE`). -/
+This is the space onto which the Fourier projection and trigonometric interpolation project, and
+the Haar subspace of the trigonometric equioscillation theorem. For $T > 0$ it has dimension
+$2n + 1$ (`finrank_trigPolyLE`). -/
 noncomputable def trigPolyLE (T : ℝ) (n : ℕ) : Submodule ℝ C(AddCircle T, ℝ) :=
   span ℝ (trigFun T '' Set.Icc (-(n : ℤ)) n)
 
 variable {n : ℕ}
 
-/-- An integer lies in `Set.Icc (-n) n` exactly when its absolute value is at most `n`. -/
+/-- For $m \in \mathbb{Z}$ and $n \in \mathbb{N}$, $-n \le m \le n$ if and only if $|m| \le n$. -/
 theorem mem_Icc_iff_natAbs_le {m : ℤ} : m ∈ Set.Icc (-(n : ℤ)) n ↔ m.natAbs ≤ n := by
   rw [Set.mem_Icc]
   omega
 
-/-- Each member of the real trigonometric system of index at most `n` in absolute value is a
-trigonometric polynomial of degree at most `n`. -/
+/-- For $m \in \mathbb{Z}$ with $|m| \le n$, the function $t_m$ lies in $V_n$. -/
 theorem trigFun_mem_trigPolyLE {m : ℤ} (hm : m.natAbs ≤ n) : trigFun T m ∈ trigPolyLE T n :=
   subset_span ⟨m, mem_Icc_iff_natAbs_le.2 hm, rfl⟩
 
-/-- The trigonometric polynomials of degree at most `n` are exactly the linear combinations of the
-`2 n + 1` members of the real trigonometric system of index at most `n` in absolute value. -/
+/-- A continuous real function $f$ on $\mathbb{T}_T$ lies in $V_n$ if and only if there are
+coefficients $c \colon \mathbb{Z} \to \mathbb{R}$ with
+$$f = \sum_{m = -n}^{n} c_m t_m.$$
+-/
 theorem mem_trigPolyLE_iff {f : C(AddCircle T, ℝ)} :
     f ∈ trigPolyLE T n ↔ ∃ c : ℤ → ℝ, f = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, c m • trigFun T m := by
   constructor
@@ -583,7 +659,7 @@ theorem mem_trigPolyLE_iff {f : C(AddCircle T, ℝ)} :
     exact sum_mem fun m hm =>
       Submodule.smul_mem _ _ (subset_span ⟨m, Set.mem_Icc.2 (Finset.mem_Icc.1 hm), rfl⟩)
 
-/-- The trigonometric polynomials of degree at most `n` form an increasing family of subspaces. -/
+/-- The spaces $V_n$ increase with $n$: for $m \le n$, $V_m \subseteq V_n$. -/
 theorem trigPolyLE_mono {m n : ℕ} (h : m ≤ n) : trigPolyLE T m ≤ trigPolyLE T n :=
   span_mono (Set.image_mono fun _j hj => mem_Icc_iff_natAbs_le.2
     ((mem_Icc_iff_natAbs_le.1 hj).trans h))
@@ -595,14 +671,17 @@ section Circle
 
 variable [hT : Fact (0 < T)]
 
-/-- The real trigonometric system is linearly independent in `C(AddCircle T, ℝ)`, because it is
-orthonormal in `L²` and the inclusion of the continuous functions is linear. -/
+/-- For $T > 0$, the functions $t_n$, $n \in \mathbb{Z}$, are **linearly independent** in the space
+of continuous real functions on $\mathbb{T}_T$.
+
+They are orthonormal in $L^2$, and the map from the continuous functions to $L^2$ is linear. -/
 theorem linearIndependent_trigFun : LinearIndependent ℝ (trigFun T) :=
   orthonormal_trigFun.linearIndependent.of_comp
     (ContinuousMap.toLp (E := ℝ) 2 AddCircle.haarAddCircle ℝ).toLinearMap
 
-/-- **The trigonometric polynomials of degree at most `n` form a space of dimension `2 n + 1`**: the
-constant, and a cosine and a sine for each frequency `1, …, n`. -/
+/-- **Dimension of the trigonometric polynomials**: for $T > 0$ and $n \in \mathbb{N}$,
+$$\dim V_n = 2n + 1.$$
+A basis is the constant, together with a cosine and a sine for each frequency $1, \dots, n$. -/
 theorem finrank_trigPolyLE (T : ℝ) [Fact (0 < T)] (n : ℕ) :
     Module.finrank ℝ (trigPolyLE T n) = 2 * n + 1 := by
   have hrange : trigFun T '' Set.Icc (-(n : ℤ)) n
@@ -619,11 +698,13 @@ end Circle
 
 section Density
 
-/-- Taking real parts, as a real-linear map on continuous complex-valued functions. -/
+/-- The real part, as a real-linear map from the continuous complex functions on $X$ to the
+continuous real functions on $X$. -/
 private noncomputable def reMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
   (Complex.reCLM.compLeftContinuous ℝ X).toLinearMap
 
-/-- Taking imaginary parts, as a real-linear map on continuous complex-valued functions. -/
+/-- The imaginary part, as a real-linear map from the continuous complex functions on $X$ to the
+continuous real functions on $X$. -/
 private noncomputable def imMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
   (Complex.imCLM.compLeftContinuous ℝ X).toLinearMap
 
@@ -637,7 +718,8 @@ private theorem imMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x 
     imMap X P x = (P x).im :=
   rfl
 
-/-- The real and imaginary parts of a complex exponential are real trigonometric polynomials. -/
+/-- The real and the imaginary parts of the exponential $e_n$ lie in the span of the real
+trigonometric system. -/
 private theorem reMap_imMap_fourier_mem (n : ℤ) :
     reMap (AddCircle T) (fourier n) ∈ span ℝ (range (trigFun T)) ∧
       imMap (AddCircle T) (fourier n) ∈ span ℝ (range (trigFun T)) := by
@@ -680,9 +762,8 @@ private theorem reMap_imMap_fourier_mem (n : ℤ) :
   · exact ⟨by rw [hre n hn]; exact smul_mem _ _ (hgen _),
       by rw [him n hn]; exact smul_mem _ _ (hgen _)⟩
 
-/-- The real and imaginary parts of a complex trigonometric polynomial are real trigonometric
-polynomials. The two halves have to be proved together, because a complex scalar multiple mixes
-them. -/
+/-- The real and the imaginary parts of a complex trigonometric polynomial are real trigonometric
+polynomials; the two parts are proved together, because a complex scalar multiple mixes them. -/
 private theorem reMap_imMap_mem_of_mem_span {P : C(AddCircle T, ℂ)}
     (hP : P ∈ span ℂ (range (fourier (T := T)))) :
     reMap (AddCircle T) P ∈ span ℝ (range (trigFun T)) ∧
@@ -706,11 +787,14 @@ private theorem reMap_imMap_mem_of_mem_span {P : C(AddCircle T, ℂ)}
 
 variable [hT : Fact (0 < T)]
 
-/-- **The real trigonometric polynomials are uniformly dense**: every continuous real function on
-the circle is uniformly within `ε` of a real linear combination of the `trigFun T n`. This is the
-density of the complex exponentials, `span_fourier_closure_eq_top`, carried to the real system by
-taking real parts: the real part of a complex trigonometric polynomial is a real one, and taking
-real parts does not increase the uniform norm. -/
+/-- **Uniform density of the real trigonometric polynomials**: let $T > 0$, let $f$ be a continuous
+real function on $\mathbb{T}_T$, and let $\varepsilon > 0$. Then there is a function $p$ in the
+span of the real trigonometric system $(t_n)_{n \in \mathbb{Z}}$ with
+$\|p - f\|_\infty < \varepsilon$.
+
+The proof takes real parts in the density of the complex exponentials,
+`span_fourier_closure_eq_top`. The real part of a complex trigonometric polynomial is a real
+trigonometric polynomial, and taking real parts does not increase the uniform norm. -/
 theorem exists_mem_span_trigFun_norm_sub_lt (f : C(AddCircle T, ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∃ p ∈ span ℝ (range (trigFun T)), ‖p - f‖ < ε := by
   -- the complexification of `f`
@@ -730,8 +814,9 @@ theorem exists_mem_span_trigFun_norm_sub_lt (f : C(AddCircle T, ℝ)) {ε : ℝ}
   rw [dist_eq_norm, norm_sub_rev] at hPdist
   exact lt_of_le_of_lt hle hPdist
 
-/-- The real form of `span_fourier_closure_eq_top`: the span of the real trigonometric system is
-dense in `C(AddCircle T, ℝ)`. -/
+/-- For $T > 0$, the span of the real trigonometric system is dense in the space of continuous real
+functions on $\mathbb{T}_T$ with the uniform norm. This is the real form of Mathlib's
+`span_fourier_closure_eq_top`. -/
 theorem span_trigFun_closure_eq_top : (span ℝ (range (trigFun T))).topologicalClosure = ⊤ := by
   rw [← Submodule.dense_iff_topologicalClosure_eq_top]
   intro f

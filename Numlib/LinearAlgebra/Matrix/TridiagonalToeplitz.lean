@@ -19,64 +19,79 @@ import Numlib.LinearAlgebra.Matrix.MMatrix
 /-!
 # The symmetric tridiagonal Toeplitz matrix and its discrete sine eigenbasis
 
-`Matrix.symmTridiagonalToeplitz n a b` is `tridiag(a, b, a)`: the `n × n` real matrix with `b` on
-the diagonal and `a` on both off-diagonals.  It is diagonalized, for every `a` and `b` at once, by
-the **discrete sine vectors** `Matrix.sineVec n k`, whose `j`-th entry is `sin((j + 1)(k + 1)π / (n
-+ 1))`, with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`.
+For real numbers $a$ and $b$, the matrix $\operatorname{tridiag}(a, b, a)$ is the $n \times n$ real
+matrix with $b$ on the diagonal, $a$ on the two off-diagonals and $0$ elsewhere. For every $a$ and
+$b$ it is diagonalized by the **discrete sine vectors** $q_k$, $k = 0, \dots, n - 1$, with entries
+$(q_k)_j = \sin((j + 1) \theta_k)$ at the angles $\theta_k = (k + 1)\pi / (n + 1)$; the eigenvalue
+of $q_k$ is $b + 2 a \cos \theta_k$. The whole argument is the identity $\sin((j - 1)\theta) +
+\sin((j + 1)\theta) = 2 \cos \theta \sin(j\theta)$ at $\theta = \theta_k$. In the first and the last
+row the missing neighbour is supplied by the boundary values $\sin 0 = 0$ and
+$\sin((n + 1)\theta_k) = 0$; this is why the sine vectors are the eigenvectors of a *tridiagonal*
+Toeplitz matrix. The sine vectors are pairwise orthogonal with squared length $(n + 1)/2$, so they
+give an orthonormal eigenbasis; the spectrum consists of exactly the $n$ numbers
+$b + 2 a \cos \theta_k$, and the quadratic form lies between $b - 2|a| \cos(\pi/(n+1))$ and
+$b + 2|a| \cos(\pi/(n+1))$.
 
-The whole content is the trigonometric identity `sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`,
-applied at `θ_k = (k + 1)π / (n + 1)`.  The first and last rows of the matrix are the same identity
-with the missing neighbour supplied by the boundary values `sin 0 = 0` and `sin((n + 1)θ_k) = 0`,
-which is exactly why the sine vectors are the eigenvectors of a *tridiagonal* Toeplitz matrix.
+For the model Laplacian $T = \operatorname{tridiag}(-1, 2, -1)$ the module also gives positive
+definiteness, the explicit inverse (the discrete Green's function $(T^{-1})_{jk} = (\min(j, k) +
+1)(n - \max(j, k))/(n + 1)$), the comparison vector $w_j = (j + 1)(n - j)/2$ with
+$T w = \mathbf{1}$, the M-matrix property, and the spectral condition number
+$\cot^2(\pi/(2(n + 1)))$. Further sections treat the sine and cosine vectors at an arbitrary angle
+and the second-difference matrices of [golub2013matrix], §4.8, the corner-modified matrices
+$Y_{\gamma,\delta}$ of [golub2013matrix], §12.1.7, with their DCT-II eigenvectors, and the general
+matrix $\operatorname{tridiag}(a, b, c)$. This is the model problem of [saad2003iterative], §2.2.3
+and §2.2.6, and of [kress1998numerical], §4.
 
-Everything else follows: the sine vectors are pairwise orthogonal, of squared length `(n + 1) / 2`
-(`Matrix.dotProduct_sineVec`), so after the normalization `√(2 / (n + 1))` they form an orthonormal
-basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the `n` numbers `b + 2 a cos
-θ_k` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); the quadratic form is enclosed in `[b -
-2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]` (`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`);
-and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`
-(`Real.two_sub_two_mul_cos`), is positive definite. For that model Laplacian the module also gives
-the explicit inverse — the discrete Green's function `(min(j, k) + 1)(n - max(j, k)) / (n + 1)`
-(`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply`) — with its row sums, the discrete
-parabola `(j + 1)(n - j) / 2`; its M-matrix property
-(`Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two`); and its spectral condition number
-`cot²(π / (2(n + 1)))` (`Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two`).
+## Main definitions
 
-`Matrix.tridiagonalToeplitz n a b c` is the general `tridiag(a, b, c)`, with possibly different
-off-diagonals. When they have the same sign, `a c ≥ 0`, the diagonal similarity `diag(1, d, d², …)`
-with `d² = a / c` turns it into a symmetric one whose off-diagonal squares to `a c`, so its
-eigenvalues are again a cosine family, `b + 2 √(a c) cos((k + 1)π / (n + 1))`
-(`Matrix.tridiagonalToeplitz_hasEigenvalue_iff`). A sign in the off-diagonal only reflects the
-family, `k ↦ n - 1 - k`, and the degenerate case `a c = 0` is a triangular matrix whose only
-eigenvalue is `b` — which the same formula gives.
+* `Matrix.symmTridiagonalToeplitz`: the matrix $\operatorname{tridiag}(a, b, a)$.
+* `Matrix.sineVec`: the discrete sine vector $q_k$.
+* `Matrix.sineOrthonormalBasis`: the normalized vectors $\sqrt{2/(n+1)} \, q_k$, an orthonormal
+  basis of $\mathbb{R}^n$.
+* `Matrix.sinAngleVec`, `Matrix.cosAngleVec`: the vectors $s(\theta)$ and $c(\theta)$ of
+  [golub2013matrix] (4.8.15).
+* `Matrix.secondDifferenceDN`, `Matrix.secondDifferenceNN`, `Matrix.secondDifferencePeriodic`: the
+  second-difference matrices of [golub2013matrix] (4.8.8)–(4.8.10).
+* `Matrix.cornerTridiagonal`, `Matrix.cosineIIVec`: the matrix $Y_{\gamma,\delta}$ of
+  [golub2013matrix] (12.1.7) and the DCT-II vectors.
+* `Matrix.tridiagonalToeplitz`: the matrix $\operatorname{tridiag}(a, b, c)$.
 
-For an arbitrary angle `θ` the sine and cosine vectors `Matrix.sinAngleVec n θ = (sin ((k + 1)
-θ))_k` and `Matrix.cosAngleVec n θ = (cos (k θ))_k` are eigenvectors of `tridiag(a, b, a)` up to
-residuals in the first and last rows (`Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec`,
-`…_cosAngleVec`; [golub2013matrix] Lemma 4.8.3); `sineVec n k` is `sinAngleVec n θ_k`, the case
-in which the residual vanishes.
+## Main results
 
-**The second-difference matrices.** `𝒯^{(DD)}_n` is `symmTridiagonalToeplitz n (-1) 2`; its three
-low-rank adjustments of [golub2013matrix] (4.8.8)–(4.8.10) are `Matrix.secondDifferenceDN n`
-(`− e_n e_{n−1}ᵀ`), `Matrix.secondDifferenceNN n` (also `− e_1 e_2ᵀ`) and
-`Matrix.secondDifferencePeriodic n` (`− e_1 e_nᵀ − e_n e_1ᵀ`), with their residual identities on the
-sine and cosine vectors. Their eigenvector matrices (DST-II, DCT-I, the discrete Fourier transform)
-are in `Numlib.Analysis.Fourier.SineCosineTransform` and `Numlib.Analysis.Fourier.Circulant`.
+* `Matrix.symmTridiagonalToeplitz_mulVec_sineVec`: $\operatorname{tridiag}(a, b, a) \, q_k = (b + 2
+  a \cos \theta_k) \, q_k$.
+* `Matrix.dotProduct_sineVec`: $q_k \cdot q_l = (n + 1)/2$ if $k = l$, and $0$ otherwise.
+* `Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`: the eigenvalues of
+  $\operatorname{tridiag}(a, b, a)$ are exactly the numbers $b + 2 a \cos \theta_k$.
+* `Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`: the quadratic form of
+  $\operatorname{tridiag}(a, b, a)$ lies between $(b - 2|a| \cos(\pi/(n+1))) \|x\|^2$ and
+  $(b + 2|a| \cos(\pi/(n+1))) \|x\|^2$.
+* `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`: the model Laplacian is positive definite.
+* `Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec`,
+  `Matrix.symmTridiagonalToeplitz_mulVec_cosAngleVec`: the identities (4.8.16) and (4.8.17) of
+  [golub2013matrix] for the sine and cosine vectors at any angle.
+* `Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply`: the inverse of the model Laplacian is the
+  discrete Green's function.
+* `Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two`: the model Laplacian is an M-matrix.
+* `Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two`: the spectral condition number of the
+  model Laplacian is $\cot^2(\pi/(2(n + 1)))$.
+* `Matrix.cornerTridiagonal_one_one_mulVec_cosineIIVec`, `Matrix.dotProduct_cosineIIVec`: the DCT-II
+  vectors are mutually orthogonal eigenvectors of $Y_{1,1}$.
+* `Matrix.tridiagonalToeplitz_hasEigenvalue_iff`: if $a c \ge 0$, the eigenvalues of
+  $\operatorname{tridiag}(a, b, c)$ are exactly the numbers $b + 2 \sqrt{ac} \cos \theta_k$.
 
-**The corner-modified tridiagonal matrix.** `Matrix.cornerTridiagonal n γ δ` is the `Y_{γ,δ}` of
-[golub2013matrix] (12.1.7), ones on the off-diagonals and `γ`, `δ` in the diagonal corners; the
-DCT-II vectors `Matrix.cosineIIVec n k = (cos ((2 j + 1) k π / (2 n)))_j` are eigenvectors of
-`Y_{1,1}` with eigenvalues `2 cos (k π / n)` and mutually orthogonal
-(`Matrix.dotProduct_cosineIIVec`) — the cosine twins of `sineVec`. These are *not* the
-second-difference matrices above: `𝒯^{(DN)}` and `𝒯^{(NN)}` are unsymmetric and no diagonal
-scaling maps one family to the other; the only shared member is `2 • 1 − Y_{0,0} = 𝒯^{(DD)}_n`
-(`Matrix.two_smul_one_sub_cornerTridiagonal_zero_zero`), and `2 • 1 − Y_{1,1}` is the *symmetric*
-Neumann matrix, with diagonal `(1, 2, …, 2, 1)`, that the DCT-II diagonalizes.
+## Implementation notes
 
-This is the model problem of [saad2003iterative], §2.2.3 and §2.2.6, and of [kress1998numerical],
-§4. The module knows nothing about differential equations: the claim that these matrices discretize
-`-u''` belongs to a textbook surface, and the two-dimensional five-point Laplacian is the Kronecker
-sum of two of them, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
+* Indices of vectors and matrices start at $0$: a vector is $v = (v_0, \dots, v_{n-1})$. The unit
+  vectors follow [golub2013matrix] and are numbered from $1$: $e_1$ is `Pi.single 0 1` and $e_n$ is
+  `Pi.single ⟨n - 1, _⟩ 1`.
+* The eigenvalue statements are about `Matrix.toEuclideanLin` of the matrix, and the spectral norm
+  is the operator norm of the scoped instances `Matrix.Norms.L2Operator`.
+* The module does not treat differential equations: the fact that these matrices discretize $-u''$
+  is not stated here. The two-dimensional five-point Laplacian is the Kronecker sum of two of these
+  matrices, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`. The eigenvector matrices of the
+  second-difference matrices (DST-II, DCT-I and the discrete Fourier transform) are in
+  `Numlib.Analysis.Fourier.SineCosineTransform` and `Numlib.Analysis.Fourier.Circulant`.
 -/
 
 open Finset
@@ -88,55 +103,61 @@ variable {n : ℕ} (a b : ℝ)
 
 /-! ### The matrix -/
 
-/-- The symmetric tridiagonal Toeplitz matrix `tridiag(a, b, a)`: `b` on the diagonal, `a` on both
-off-diagonals and `0` elsewhere. -/
+/-- The **symmetric tridiagonal Toeplitz matrix** $\operatorname{tridiag}(a, b, a)$: the
+$n \times n$ real matrix with entries
+$$t_{ij} = \begin{cases} b & \text{if } i = j, \\ a & \text{if } |i - j| = 1, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+-/
 def symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0
 
-/-- The entries of `tridiag(a, b, a)`. -/
+/-- The entries of $\operatorname{tridiag}(a, b, a)$: $b$ if $i = j$, $a$ if $i + 1 = j$ or
+$j + 1 = i$, and $0$ otherwise. -/
 theorem symmTridiagonalToeplitz_apply (i j : Fin n) :
     symmTridiagonalToeplitz n a b i j =
       if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0 := rfl
 
-/-- The entries, with every condition read off the natural-number indices. -/
+/-- The entries of $\operatorname{tridiag}(a, b, a)$, with the condition $i = j$ stated for the
+indices as natural numbers. -/
 theorem symmTridiagonalToeplitz_apply' (i j : Fin n) :
     symmTridiagonalToeplitz n a b i j =
       if (i : ℕ) = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0 := by
   rw [symmTridiagonalToeplitz_apply]
   simp only [Fin.ext_iff]
 
-/-- The diagonal entries are `b`. -/
+/-- The diagonal entries of $\operatorname{tridiag}(a, b, a)$ are $b$. -/
 @[simp]
 theorem symmTridiagonalToeplitz_apply_self (i : Fin n) :
     symmTridiagonalToeplitz n a b i i = b := by simp [symmTridiagonalToeplitz_apply]
 
-/-- The entries on the first superdiagonal are `a`. -/
+/-- If $i + 1 = j$, then the entry $(i, j)$ of $\operatorname{tridiag}(a, b, a)$ is $a$. -/
 theorem symmTridiagonalToeplitz_apply_succ {i j : Fin n} (h : (i : ℕ) + 1 = j) :
     symmTridiagonalToeplitz n a b i j = a := by
   rw [symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- Away from the three central diagonals the entries vanish. -/
+/-- If $i + 1 < j$ or $j + 1 < i$, then the entry $(i, j)$ of $\operatorname{tridiag}(a, b, a)$ is
+$0$. -/
 theorem symmTridiagonalToeplitz_apply_of_one_lt {i j : Fin n}
     (h : (i : ℕ) + 1 < j ∨ (j : ℕ) + 1 < i) : symmTridiagonalToeplitz n a b i j = 0 := by
   rw [symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- A symmetric tridiagonal Toeplitz matrix is symmetric. -/
+/-- The matrix $\operatorname{tridiag}(a, b, a)$ is symmetric. -/
 theorem symmTridiagonalToeplitz_isSymm : (symmTridiagonalToeplitz n a b).IsSymm := by
   ext i j
   rw [transpose_apply, symmTridiagonalToeplitz_apply', symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- Over the reals, symmetry is Hermitian symmetry. -/
+/-- The matrix $\operatorname{tridiag}(a, b, a)$ is Hermitian, since it is real and symmetric. -/
 theorem symmTridiagonalToeplitz_isHermitian : (symmTridiagonalToeplitz n a b).IsHermitian := by
   ext i j
   rw [conjTranspose_apply, star_trivial, symmTridiagonalToeplitz_apply',
     symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- A symmetric tridiagonal Toeplitz matrix is tridiagonal in the sense of `Matrix.IsTridiagonal`.
--/
+/-- The matrix $\operatorname{tridiag}(a, b, a)$ is tridiagonal in the sense of
+`Matrix.IsTridiagonal`. -/
 theorem symmTridiagonalToeplitz_isTridiagonal :
     (symmTridiagonalToeplitz n a b).IsTridiagonal := by
   rintro i j (⟨k, hjk, hki⟩ | ⟨k, hik, hkj⟩)
@@ -147,34 +168,38 @@ theorem symmTridiagonalToeplitz_isTridiagonal :
 
 /-! ### The action on a vector -/
 
-/-- A vector on `Fin n`, shifted up by one and extended by zero to all of `ℕ`.  It turns the
-three-term row of a tridiagonal matrix into a uniform formula: the missing neighbours at the first
-and last rows are supplied by the padding. -/
+/-- The **zero padding** $\tilde v$ of a vector $v = (v_0, \dots, v_{n-1})$: the sequence on
+$\mathbb{N}$ with $\tilde v_m = v_{m-1}$ for $1 \le m \le n$ and $\tilde v_m = 0$ for $m = 0$
+and $m > n$.
+
+With the padding, the three-term row of a tridiagonal matrix has the same form in the first, the
+last and the interior rows: the padding supplies the missing neighbours. -/
 def padZero (v : Fin n → ℝ) : ℕ → ℝ
   | 0 => 0
   | m + 1 => if h : m < n then v ⟨m, h⟩ else 0
 
-/-- The padding vanishes at `0`. -/
+/-- The zero padding vanishes at $0$: $\tilde v_0 = 0$. -/
 @[simp]
 theorem padZero_zero (v : Fin n → ℝ) : padZero v 0 = 0 := rfl
 
-/-- The padding at `m + 1` is the entry `v m` if `m < n`, and `0` otherwise. -/
+/-- The zero padding at $m + 1$ is $v_m$ if $m < n$, and $0$ otherwise. -/
 theorem padZero_succ (v : Fin n → ℝ) (m : ℕ) :
     padZero v (m + 1) = if h : m < n then v ⟨m, h⟩ else 0 := rfl
 
-/-- The padding at `i + 1` for `i : Fin n` is `v i`. -/
+/-- For every index $i$ of $v$, the zero padding at $i + 1$ is $v_i$. -/
 @[simp]
 theorem padZero_val_succ (v : Fin n → ℝ) (i : Fin n) :
     padZero v ((i : ℕ) + 1) = v i := by
   rw [padZero_succ, dite_eq_left i.isLt]
 
-/-- The padding vanishes beyond `n`. -/
+/-- The zero padding vanishes beyond $n$: $\tilde v_m = 0$ for $m > n$. -/
 theorem padZero_of_lt (v : Fin n → ℝ) {m : ℕ} (hm : n < m) : padZero v m = 0 := by
   cases m with
   | zero => rfl
   | succ m => rw [padZero_succ, dite_eq_right (by omega)]
 
-/-- The sum picking out the entry at natural index `m`, in the padded form. -/
+/-- For $c \in \mathbb{R}$ and $m \in \mathbb{N}$, the sum $\sum_{j : j = m} c v_j$ over the indices
+of $v$ is $c \tilde v_{m+1}$. -/
 theorem sum_ite_val_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
     ∑ j : Fin n, (if (j : ℕ) = m then c * v j else 0) = c * padZero v (m + 1) := by
   have h : ∀ j : Fin n, (if (j : ℕ) = m then c * v j else 0)
@@ -188,7 +213,8 @@ theorem sum_ite_val_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
   · rw [ite_eq_right fun hmem => hm (Finset.mem_range.1 hmem), padZero_of_lt v (by omega),
       mul_zero]
 
-/-- The sum picking out the entry just below natural index `m`, in the padded form. -/
+/-- For $c \in \mathbb{R}$ and $m \in \mathbb{N}$, the sum $\sum_{j : j + 1 = m} c v_j$ over the
+indices of $v$ is $c \tilde v_m$. -/
 theorem sum_ite_val_add_one_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
     ∑ j : Fin n, (if (j : ℕ) + 1 = m then c * v j else 0) = c * padZero v m := by
   cases m with
@@ -198,8 +224,11 @@ theorem sum_ite_val_add_one_eq_mul_padZero (c : ℝ) (v : Fin n → ℝ) (m : �
     simp only [h]
     exact sum_ite_val_eq_mul_padZero c v m
 
-/-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniformly across the first, the
-last and the interior rows. -/
+/-- The three-term row of $\operatorname{tridiag}(a, b, a)$. For a vector $v$ with zero padding
+$\tilde v$ and every index $i$,
+$$(\operatorname{tridiag}(a, b, a) \, v)_i = a \tilde v_i + b \tilde v_{i+1} + a \tilde
+  v_{i+2}.$$
+The formula is the same for the first, the last and the interior rows. -/
 theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
     (symmTridiagonalToeplitz n a b *ᵥ v) i
       = a * padZero v (i : ℕ) + b * padZero v ((i : ℕ) + 1) + a * padZero v ((i : ℕ) + 2) := by
@@ -217,22 +246,24 @@ theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
 
 /-! ### The discrete sine vectors -/
 
-/-- The `k`-th discrete sine vector on `Fin n`, `j ↦ sin((j + 1)(k + 1)π / (n + 1))`: an eigenvector
-of every `Matrix.symmTridiagonalToeplitz n a b`. -/
+/-- The **discrete sine vector** $q_k$ for $k = 0, \dots, n - 1$: the vector with entries
+$$(q_k)_j = \sin\left(\frac{(j + 1)(k + 1)\pi}{n + 1}\right), \qquad j = 0, \dots, n - 1.$$
+It is an eigenvector of every matrix $\operatorname{tridiag}(a, b, a)$
+(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec`). -/
 noncomputable def sineVec (n : ℕ) (k : Fin n) : Fin n → ℝ :=
   fun j => Real.sin (((j : ℕ) + 1) * (((k : ℕ) + 1) * π / (n + 1)))
 
-/-- The entries of a discrete sine vector. -/
+/-- The entries of a discrete sine vector: $(q_k)_j = \sin((j + 1)(k + 1)\pi/(n + 1))$. -/
 theorem sineVec_apply (k j : Fin n) :
     sineVec n k j = Real.sin (((j : ℕ) + 1) * (((k : ℕ) + 1) * π / (n + 1))) := rfl
 
-/-- The angle `θ_k = (k + 1)π / (n + 1)` is positive, which is why every discrete sine vector is
+/-- The angle $\theta_k = (k + 1)\pi/(n + 1)$ is positive. This is why every discrete sine vector is
 nonzero. -/
 theorem angle_pos (n : ℕ) (k : Fin n) : 0 < (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) := by
   positivity
 
-/-- The angle `θ_k = (k + 1)π / (n + 1)` is below `π`, which is why the `n` eigenvalues `b + 2 a cos
-θ_k` are distinct. -/
+/-- The angle $\theta_k = (k + 1)\pi/(n + 1)$ is less than $\pi$. This is why the $n$ eigenvalues
+$b + 2 a \cos \theta_k$ are distinct when $a \neq 0$. -/
 theorem angle_lt_pi (n : ℕ) (k : Fin n) : (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) < π := by
   have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
   have hk : ((k : ℕ) : ℝ) + 1 < (n : ℝ) + 1 := by
@@ -241,7 +272,7 @@ theorem angle_lt_pi (n : ℕ) (k : Fin n) : (((k : ℕ) : ℝ) + 1) * π / ((n :
   rw [div_lt_iff₀ hn]
   nlinarith [Real.pi_pos]
 
-/-- Distinct indices give distinct angles. -/
+/-- Distinct indices $k \neq l$ give distinct angles $\theta_k \neq \theta_l$. -/
 private theorem angle_inj {k l : Fin n}
     (h : (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)
       = (((l : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) : k = l := by
@@ -253,46 +284,52 @@ private theorem angle_inj {k l : Fin n}
     have := mul_right_cancel₀ hc h1; linarith
   exact Fin.ext (by exact_mod_cast h3)
 
-/-! ### Sine and cosine vectors at an arbitrary angle
+/-!
+### Sine and cosine vectors at an arbitrary angle
 
-At an arbitrary angle `θ` the sine and cosine vectors are eigenvectors of `tridiag(a, b, a)` up to
-residuals in the first and last rows; `sineVec n k` is the sine vector at `θ_k`, the angle at which
-the residual vanishes. -/
+At an arbitrary angle $\theta$ the sine and cosine vectors are eigenvectors of
+$\operatorname{tridiag}(a, b, a)$ up to residuals in the first and the last row. The discrete sine
+vector $q_k$ is the sine vector at $\theta_k$, the angle at which the residual vanishes.
+-/
 
 section AngleVec
 
-/-- The sine vector at the angle `θ`, `k ↦ sin ((k + 1) θ)` on `Fin n`: the vector `s(θ) = (s_1, …,
-s_n)`, `s_k = sin (k θ)`, of [golub2013matrix] (4.8.15). -/
+/-- The **sine vector** at the angle $\theta \in \mathbb{R}$: the vector
+$s(\theta) \in \mathbb{R}^n$ with entries $\sin((k + 1)\theta)$, $k = 0, \dots, n - 1$. This is
+the vector $s(\theta) = (s_1, \dots, s_n)$, $s_k = \sin(k\theta)$, of [golub2013matrix]
+(4.8.15). -/
 noncomputable def sinAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
   fun k => Real.sin (((k : ℕ) + 1) * θ)
 
-/-- The cosine vector at the angle `θ`, `k ↦ cos (k θ)` on `Fin n`: the vector `c(θ) = (c_0, …,
-c_{n-1})`, `c_k = cos (k θ)`, of [golub2013matrix] (4.8.15). -/
+/-- The **cosine vector** at the angle $\theta \in \mathbb{R}$: the vector
+$c(\theta) \in \mathbb{R}^n$ with entries $c_k = \cos(k\theta)$, $k = 0, \dots, n - 1$. This is
+the vector $c(\theta) = (c_0, \dots, c_{n-1})$ of [golub2013matrix] (4.8.15). -/
 noncomputable def cosAngleVec (n : ℕ) (θ : ℝ) : Fin n → ℝ :=
   fun k => Real.cos ((k : ℕ) * θ)
 
-/-- The entries of a sine vector. -/
+/-- The entry $k$ of the sine vector $s(\theta)$ is $\sin((k + 1)\theta)$. -/
 theorem sinAngleVec_apply (θ : ℝ) (k : Fin n) :
     sinAngleVec n θ k = Real.sin (((k : ℕ) + 1) * θ) := rfl
 
-/-- The entries of a cosine vector. -/
+/-- The entry $k$ of the cosine vector $c(\theta)$ is $\cos(k\theta)$. -/
 theorem cosAngleVec_apply (θ : ℝ) (k : Fin n) : cosAngleVec n θ k = Real.cos ((k : ℕ) * θ) := rfl
 
-/-- The discrete sine vectors are the sine vectors at the angles `θ_k = (k + 1) π / (n + 1)`. -/
+/-- The discrete sine vector $q_k$ is the sine vector $s(\theta_k)$ at the angle
+$\theta_k = (k + 1)\pi/(n + 1)$. -/
 theorem sineVec_eq_sinAngleVec (k : Fin n) :
     sineVec n k = sinAngleVec n ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := rfl
 
-/-- A vector sampled from `g : ℕ → ℝ` at `1, …, n` is padded by `g` itself at `1, …, n` (and by
-zero at the two boundary points `0` and `n + 1`). -/
+/-- If $v_j = g(j + 1)$ for every index $j$, for some $g : \mathbb{N} \to \mathbb{R}$, then the zero
+padding of $v$ agrees with $g$ at $1, \dots, n$. -/
 private theorem padZero_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
     (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) {m : ℕ} (hm0 : 0 < m) (hm : m ≤ n) :
     padZero v m = g m := by
   obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
   rw [padZero_succ, dite_eq_left (by omega), hv]
 
-/-- The row of `tridiag(a, b, a)` on a vector sampled from `g : ℕ → ℝ` at `1, …, n`: the
-three-term row of `g`, less the neighbours `g 0` and `g (n + 1)` that the first and last rows
-miss. -/
+/-- If $v_j = g(j + 1)$ for every index $j$, then $(\operatorname{tridiag}(a, b, a) \, v)_i$ is the
+three-term row $a g(i) + b g(i + 1) + a g(i + 2)$, less the term $a g(0)$ in the first row and
+the term $a g(n + 1)$ in the last row. -/
 private theorem symmTridiagonalToeplitz_mulVec_apply_of_forall_eq {v : Fin n → ℝ} {g : ℕ → ℝ}
     (hv : ∀ j : Fin n, v j = g ((j : ℕ) + 1)) (i : Fin n) :
     (symmTridiagonalToeplitz n a b *ᵥ v) i
@@ -313,7 +350,7 @@ private theorem symmTridiagonalToeplitz_mulVec_apply_of_forall_eq {v : Fin n →
     padZero_of_forall_eq hv (by omega) (by omega)]
   split_ifs <;> ring
 
-/-- The standard basis vector `e_n` of the last coordinate, evaluated. -/
+/-- The entry $i$ of the unit vector $e_n$ is $1$ if $i = n - 1$, and $0$ otherwise. -/
 private theorem single_last_apply (hn : 0 < n) (i : Fin n) :
     (Pi.single (⟨n - 1, by omega⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i
       = if (i : ℕ) + 1 = n then 1 else 0 := by
@@ -321,29 +358,33 @@ private theorem single_last_apply (hn : 0 < n) (i : Fin n) :
   simp only [Fin.ext_iff]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- The standard basis vector `e_1` of the first coordinate, evaluated. -/
+/-- The entry $i$ of the unit vector $e_1$ is $1$ if $i = 0$, and $0$ otherwise. -/
 private theorem single_first_apply (hn : 0 < n) (i : Fin n) :
     (Pi.single (⟨0, hn⟩ : Fin n) (1 : ℝ) : Fin n → ℝ) i = if (i : ℕ) = 0 then 1 else 0 := by
   rw [Pi.single_apply]
   simp only [Fin.ext_iff]
 
-/-- `sin (B - θ) + sin (B + θ) = 2 cos θ sin B`, with the two arguments given in any form. -/
+/-- If $A = B - \theta$ and $C = B + \theta$, then $\sin A + \sin C = 2 \cos \theta \sin B$. -/
 private theorem sin_add_sin_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
     Real.sin A + Real.sin C = 2 * Real.cos θ * Real.sin B := by
   rw [hA, hC, Real.sin_sub, Real.sin_add]
   ring
 
-/-- `cos (B - θ) + cos (B + θ) = 2 cos θ cos B`, with the two arguments given in any form. -/
+/-- If $A = B - \theta$ and $C = B + \theta$, then $\cos A + \cos C = 2 \cos \theta \cos B$. -/
 private theorem cos_add_cos_of_eq {θ A B C : ℝ} (hA : A = B - θ) (hC : C = B + θ) :
     Real.cos A + Real.cos C = 2 * Real.cos θ * Real.cos B := by
   rw [hA, hC, Real.cos_sub, Real.cos_add]
   ring
 
-/-- **The sine vector at any angle**, [golub2013matrix] (4.8.16) for `tridiag(a, b, a)`:
-`T s(θ) = (b + 2 a cos θ) s(θ) − a sin ((n + 1) θ) e_n`. Row by row this is
-`sin ((k - 1) θ) + sin ((k + 1) θ) = 2 cos θ sin (k θ)`, with `sin 0 = 0` supplying the missing
-neighbour of the first row and the residual `s_{n+1}` left over in the last. At `a = -1`, `b = 2`
-the factor is `2 - 2 cos θ = 4 sin² (θ / 2)`. -/
+/-- **The sine vector at any angle**, (4.8.16) of [golub2013matrix] for
+$\operatorname{tridiag}(a, b, a)$. Let $n \ge 1$ and $\theta \in \mathbb{R}$. Then
+$$\operatorname{tridiag}(a, b, a) \, s(\theta) = (b + 2 a \cos \theta) \, s(\theta) - a
+  \sin((n + 1)\theta) \, e_n.$$
+
+Row by row this is $\sin((k - 1)\theta) + \sin((k + 1)\theta) = 2 \cos \theta \sin(k\theta)$. In
+the first row $\sin 0 = 0$ supplies the missing neighbour, and in the last row the residual
+$\sin((n + 1)\theta)$ is left over. For $a = -1$ and $b = 2$ the factor is
+$2 - 2 \cos \theta = 4 \sin^2(\theta/2)$. -/
 theorem symmTridiagonalToeplitz_mulVec_sinAngleVec (hn : 0 < n) (θ : ℝ) :
     symmTridiagonalToeplitz n a b *ᵥ sinAngleVec n θ
       = (b + 2 * a * Real.cos θ) • sinAngleVec n θ
@@ -374,9 +415,13 @@ theorem symmTridiagonalToeplitz_mulVec_sinAngleVec (hn : 0 < n) (θ : ℝ) :
     (by ring) (by push_cast; ring)
   linear_combination a * key
 
-/-- **The cosine vector at any angle**, [golub2013matrix] (4.8.17) for `tridiag(a, b, a)`:
-`T c(θ) = (b + 2 a cos θ) c(θ) − a cos θ e_1 − a cos (n θ) e_n` for `2 ≤ n`. The first row misses
-the neighbour `c_{-1} = cos θ`, the last misses `c_n = cos (n θ)`. -/
+/-- **The cosine vector at any angle**, (4.8.17) of [golub2013matrix] for
+$\operatorname{tridiag}(a, b, a)$. Let $n \ge 2$ and $\theta \in \mathbb{R}$. Then
+$$\operatorname{tridiag}(a, b, a) \, c(\theta) = (b + 2 a \cos \theta) \, c(\theta) - a \cos
+  \theta \, e_1 - a \cos(n\theta) \, e_n.$$
+
+The first row misses the neighbour $c_{-1} = \cos \theta$, and the last row misses
+$c_n = \cos(n\theta)$. -/
 theorem symmTridiagonalToeplitz_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
     symmTridiagonalToeplitz n a b *ᵥ cosAngleVec n θ
       = (b + 2 * a * Real.cos θ) • cosAngleVec n θ
@@ -412,10 +457,13 @@ theorem symmTridiagonalToeplitz_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
 
 end AngleVec
 
-/-- The eigenpairs of the symmetric tridiagonal Toeplitz matrix: the `k`-th discrete sine vector is
-an eigenvector with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`, for every `a` and `b` at once.
-It is the sine vector at `θ_k = (k + 1)π / (n + 1)`, at which the residual `sin((n + 1)θ_k)` of
-`Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec` vanishes. -/
+/-- **The eigenpairs of the symmetric tridiagonal Toeplitz matrix.** For all $a, b \in \mathbb{R}$
+and every $k = 0, \dots, n - 1$, the discrete sine vector $q_k$ satisfies
+$$\operatorname{tridiag}(a, b, a) \, q_k = \left(b + 2 a \cos \frac{(k + 1)\pi}{n + 1}\right)
+  q_k.$$
+
+The vector $q_k$ is the sine vector at $\theta_k = (k + 1)\pi/(n + 1)$, at which the residual
+$\sin((n + 1)\theta_k)$ of `Matrix.symmTridiagonalToeplitz_mulVec_sinAngleVec` vanishes. -/
 theorem symmTridiagonalToeplitz_mulVec_sineVec (k : Fin n) :
     symmTridiagonalToeplitz n a b *ᵥ sineVec n k
       = (b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) • sineVec n k := by
@@ -428,7 +476,8 @@ theorem symmTridiagonalToeplitz_mulVec_sineVec (k : Fin n) :
   rw [sineVec_eq_sinAngleVec, symmTridiagonalToeplitz_mulVec_sinAngleVec a b hn, hsin, mul_zero,
     zero_smul, sub_zero]
 
-/-- The discrete sine vectors are nonzero: the first entry is `sin θ_k` with `0 < θ_k < π`. -/
+/-- Every discrete sine vector $q_k$ is nonzero: its first entry is $\sin \theta_k$ with
+$0 < \theta_k < \pi$. -/
 theorem sineVec_ne_zero (k : Fin n) : sineVec n k ≠ 0 := by
   have hpos : 0 < sineVec n k ⟨0, k.pos⟩ := by
     rw [sineVec_apply]
@@ -439,8 +488,8 @@ theorem sineVec_ne_zero (k : Fin n) : sineVec n k ≠ 0 := by
 
 /-! ### Orthogonality of the sine basis -/
 
-/-- The telescoping identity `2 sin φ ∑_{j<M} cos(α + 2jφ) = sin(α + 2Mφ − φ) − sin(α − φ)`,
-from `sin(x + φ) − sin(x − φ) = 2 cos x sin φ`. -/
+/-- For $\varphi, \alpha \in \mathbb{R}$ and $M \in \mathbb{N}$, $2 \sin \varphi \sum_{j < M}
+\cos(\alpha + 2j\varphi) = \sin(\alpha + 2M\varphi - \varphi) - \sin(\alpha - \varphi)$. -/
 private theorem two_sin_mul_sum_cos (φ α : ℝ) (M : ℕ) :
     2 * Real.sin φ * ∑ j ∈ Finset.range M, Real.cos (α + 2 * (j : ℝ) * φ)
       = Real.sin (α + 2 * (M : ℝ) * φ - φ) - Real.sin (α - φ) := by
@@ -448,8 +497,8 @@ private theorem two_sin_mul_sum_cos (φ α : ℝ) (M : ℕ) :
   rw [mul_div_cancel_left₀ φ two_ne_zero] at h
   convert h using 3 <;> ring_nf
 
-/-- The cosine sum at a sine-basis angle: `∑_{j<n} cos(2(j+1)θ_k) = -1`, because `sin((2n+1)θ_k) =
--sin θ_k`. -/
+/-- At the angle $\theta_k$ of a discrete sine vector, $\sum_{j < n} \cos(2(j + 1)\theta_k) = -1$.
+-/
 private theorem sum_cos_two_mul_angle (k : Fin n) :
     ∑ j ∈ Finset.range n,
         Real.cos (2 * ((j : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) = -1 := by
@@ -481,7 +530,7 @@ private theorem sum_cos_two_mul_angle (k : Fin n) :
     rw [h]; ring
   exact mul_left_cancel₀ (by simpa using hs) h2
 
-/-- The squared length of a discrete sine vector, `∑_j sin²((j+1)θ_k) = (n+1)/2`. -/
+/-- The squared length of a discrete sine vector: $\sum_j \sin^2((j + 1)\theta_k) = (n + 1)/2$. -/
 private theorem sum_sineVec_mul_self (k : Fin n) :
     ∑ j : Fin n, sineVec n k j * sineVec n k j = ((n : ℝ) + 1) / 2 := by
   have hterm : ∀ j : Fin n, sineVec n k j * sineVec n k j
@@ -507,10 +556,13 @@ private theorem sum_sineVec_mul_self (k : Fin n) :
     hsum, sum_cos_two_mul_angle k]
   ring
 
-/-- Orthogonality of the discrete sine basis: `sineVec n k ⬝ᵥ sineVec n l = if k = l then (n + 1) /
-2 else 0`.  Off the diagonal this is the orthogonality of eigenvectors of the symmetric matrix
-`tridiag(1, 0, 1)` belonging to the distinct eigenvalues `2 cos θ_k`; on the diagonal it is a
-telescoping cosine sum. -/
+/-- **Orthogonality of the discrete sine vectors.** For all $k, l = 0, \dots, n - 1$,
+$$q_k \cdot q_l = \begin{cases} (n + 1)/2 & \text{if } k = l, \\ 0 & \text{if } k \neq l.
+  \end{cases}$$
+
+Off the diagonal this is the orthogonality of eigenvectors of the symmetric matrix
+$\operatorname{tridiag}(1, 0, 1)$ for the distinct eigenvalues $2 \cos \theta_k$. On the
+diagonal it is a telescoping sum of cosines. -/
 theorem dotProduct_sineVec (k l : Fin n) :
     sineVec n k ⬝ᵥ sineVec n l = if k = l then ((n : ℝ) + 1) / 2 else 0 := by
   by_cases hkl : k = l
@@ -546,14 +598,15 @@ theorem dotProduct_sineVec (k l : Fin n) :
 
 /-! ### The orthonormal sine basis -/
 
-/-- The inner product of two discrete sine vectors, in the `EuclideanSpace` form that the spectral
-statements need. -/
+/-- The inner product of two discrete sine vectors in `EuclideanSpace ℝ (Fin n)`:
+$\langle q_k, q_l \rangle = (n + 1)/2$ if $k = l$, and $0$ otherwise. -/
 theorem inner_toLp_sineVec (k l : Fin n) :
     inner ℝ (WithLp.toLp 2 (sineVec n k)) (WithLp.toLp 2 (sineVec n l))
       = if k = l then ((n : ℝ) + 1) / 2 else 0 := by
   rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm, dotProduct_sineVec]
 
-/-- The normalized discrete sine vectors `√(2/(n+1)) q_k` are orthonormal. -/
+/-- The normalized discrete sine vectors $\sqrt{2/(n + 1)} \, q_k$ are orthonormal in
+$\mathbb{R}^n$. -/
 theorem orthonormal_sineVec (n : ℕ) :
     Orthonormal ℝ fun k : Fin n =>
       Real.sqrt (2 / ((n : ℝ) + 1)) • (WithLp.toLp 2 (sineVec n k)) := by
@@ -567,21 +620,24 @@ theorem orthonormal_sineVec (n : ℕ) :
     field_simp
   · rw [ite_eq_right h, ite_eq_right h, mul_zero, mul_zero]
 
-/-- The normalized discrete sine vectors as an orthonormal basis of `EuclideanSpace ℝ (Fin n)`. It
-diagonalizes every `Matrix.symmTridiagonalToeplitz n a b` at once: the symmetric tridiagonal
-Toeplitz matrices are a family with this one common eigenbasis. -/
+/-- The **orthonormal sine basis** of $\mathbb{R}^n$ (as `EuclideanSpace ℝ (Fin n)`): the normalized
+discrete sine vectors $\sqrt{2/(n + 1)} \, q_k$, $k = 0, \dots, n - 1$.
+
+This basis diagonalizes every matrix $\operatorname{tridiag}(a, b, a)$ at once: the symmetric
+tridiagonal Toeplitz matrices of order $n$ share this one eigenbasis. -/
 noncomputable def sineOrthonormalBasis (n : ℕ) :
     OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)) :=
   OrthonormalBasis.mk (orthonormal_sineVec n)
     ((orthonormal_sineVec n).linearIndependent.span_eq_top_of_card_eq_finrank' (by simp)).ge
 
-/-- The vectors of the orthonormal sine basis are the normalized discrete sine vectors. -/
+/-- The vector $k$ of the orthonormal sine basis is $\sqrt{2/(n + 1)} \, q_k$. -/
 @[simp]
 theorem sineOrthonormalBasis_apply (k : Fin n) :
     sineOrthonormalBasis n k = Real.sqrt (2 / ((n : ℝ) + 1)) • (WithLp.toLp 2 (sineVec n k)) := by
   rw [sineOrthonormalBasis, OrthonormalBasis.coe_mk]
 
-/-- The eigenpairs, read on the orthonormal sine basis. -/
+/-- The vector $k$ of the orthonormal sine basis is an eigenvector of
+$\operatorname{tridiag}(a, b, a)$ with eigenvalue $b + 2 a \cos \theta_k$. -/
 theorem toEuclideanLin_symmTridiagonalToeplitz_apply_sineOrthonormalBasis (k : Fin n) :
     toEuclideanLin (symmTridiagonalToeplitz n a b) (sineOrthonormalBasis n k)
       = (b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)))
@@ -597,7 +653,9 @@ theorem toEuclideanLin_symmTridiagonalToeplitz_apply_sineOrthonormalBasis (k : F
   rw [sineOrthonormalBasis_apply, map_smul, hmul, symmTridiagonalToeplitz_mulVec_sineVec, hsmul,
     smul_comm]
 
-/-- The eigenpairs of `Matrix.symmTridiagonalToeplitz`, as `Module.End.HasEigenvector`. -/
+/-- The vector $k$ of the orthonormal sine basis is an eigenvector of
+$\operatorname{tridiag}(a, b, a)$ with eigenvalue $b + 2 a \cos \theta_k$, stated as
+`Module.End.HasEigenvector`. -/
 theorem sineOrthonormalBasis_hasEigenvector (k : Fin n) :
     Module.End.HasEigenvector (toEuclideanLin (symmTridiagonalToeplitz n a b))
       (b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)))
@@ -608,8 +666,11 @@ theorem sineOrthonormalBasis_hasEigenvector (k : Fin n) :
 
 /-! ### The spectrum and the quadratic form -/
 
-/-- The sine basis exhausts the spectrum: the eigenvalues of `tridiag(a, b, a)` are exactly the `n`
-numbers `b + 2 a cos((k + 1)π / (n + 1))`. -/
+/-- **The spectrum of the symmetric tridiagonal Toeplitz matrix.** For all
+$a, b, \mu \in \mathbb{R}$, $\mu$ is an eigenvalue of $\operatorname{tridiag}(a, b, a)$ if and
+only if
+$$\mu = b + 2 a \cos \frac{(k + 1)\pi}{n + 1}$$
+for some $k = 0, \dots, n - 1$. Thus the sine basis exhausts the spectrum. -/
 theorem symmTridiagonalToeplitz_hasEigenvalue_iff (μ : ℝ) :
     Module.End.HasEigenvalue (toEuclideanLin (symmTridiagonalToeplitz n a b)) μ ↔
       ∃ k : Fin n, μ = b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
@@ -646,9 +707,14 @@ theorem symmTridiagonalToeplitz_hasEigenvalue_iff (μ : ℝ) :
   · rintro ⟨k, rfl⟩
     exact Module.End.hasEigenvalue_of_hasEigenvector (sineOrthonormalBasis_hasEigenvector a b k)
 
-/-- The quadratic-form bounds of `tridiag(a, b, a)` from bounds on its eigenvalues, through the sine
-eigenbasis.  This is the shape in which every convergence estimate consumes the spectrum of the
-model problem: no eigenvalue is ever named. -/
+/-- Let $\lambda_{\min}, \lambda_{\max} \in \mathbb{R}$, and suppose that $\lambda_{\min} \le b + 2
+a \cos \theta_k \le \lambda_{\max}$ for every $k$. Then $\operatorname{tridiag}(a, b, a)$ is
+symmetric with $\lambda_{\min} \|x\|^2 \le x^T \operatorname{tridiag}(a, b, a) \, x \le
+\lambda_{\max} \|x\|^2$ for all $x \in \mathbb{R}^n$.
+
+The proof expands $x$ in the sine eigenbasis. This is the form in which convergence estimates
+use the spectrum of the model problem: no eigenvalue is named. The conclusion is
+`LinearMap.IsSymmetricBoundedBy`. -/
 theorem isSymmetricBoundedBy_symmTridiagonalToeplitz_of_mem_Icc {lmin lmax : ℝ}
     (h : ∀ k : Fin n, b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
       ∈ Set.Icc lmin lmax) :
@@ -679,10 +745,15 @@ theorem isSymmetricBoundedBy_symmTridiagonalToeplitz_of_mem_Icc {lmin lmax : ℝ
   · rw [RCLike.re_to_real, hquad, hnorm, Finset.mul_sum]
     exact Finset.sum_le_sum fun k _ => mul_le_mul_of_nonneg_right (h k).2 (sq_nonneg _)
 
-/-- The spectrum of `tridiag(a, b, a)` in quadratic-form form: it is enclosed in `[b - 2|a|
-cos(π/(n+1)), b + 2|a| cos(π/(n+1))]`, and both ends are attained, at `k = n - 1` and at `k = 0`.
-This is the sharp version of the crude bound `[b - 2|a|, b + 2|a|]`, and it is what makes the
-condition number of the model problem grow like `(n + 1)²`. -/
+/-- **The quadratic form of the symmetric tridiagonal Toeplitz matrix.** For all
+$a, b \in \mathbb{R}$, the matrix $\operatorname{tridiag}(a, b, a)$ is symmetric and for all
+$x \in \mathbb{R}^n$
+$$\left(b - 2|a| \cos \frac{\pi}{n + 1}\right) \|x\|^2 \le x^T \operatorname{tridiag}(a, b, a)
+  \, x \le \left(b + 2|a| \cos \frac{\pi}{n + 1}\right) \|x\|^2.$$
+
+For $n \ge 1$ both bounds are eigenvalues, at $k = 0$ and $k = n - 1$. This sharpens the simple
+bound $[b - 2|a|, b + 2|a|]$, and it is why the condition number of the model problem grows like
+$(n + 1)^2$. The conclusion is `LinearMap.IsSymmetricBoundedBy`. -/
 theorem isSymmetricBoundedBy_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
     (toEuclideanLin (symmTridiagonalToeplitz n a b)).IsSymmetricBoundedBy
       (b - 2 * |a| * Real.cos (π / ((n : ℝ) + 1)))
@@ -708,24 +779,29 @@ theorem isSymmetricBoundedBy_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
   rcases abs_cases a with ⟨ha, _⟩ | ⟨ha, _⟩ <;> rw [ha] <;>
     exact ⟨by nlinarith [hupper, hlower], by nlinarith [hupper, hlower]⟩
 
-/-- `tridiag(a, b, a)` is positive definite when the diagonal dominates strictly, `2|a| < b`. The
-boundary case `2|a| = b`, which is the model Laplacian `tridiag(-1, 2, -1)`, needs the sharp cosine
-bound instead: see `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. -/
+/-- If $2|a| < b$, then $\operatorname{tridiag}(a, b, a)$ is positive definite: the diagonal
+dominates strictly.
+
+The boundary case $2|a| = b$, which includes the model Laplacian
+$\operatorname{tridiag}(-1, 2, -1)$, needs the sharp cosine bound instead: see
+`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. -/
 theorem posDef_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) :
     (symmTridiagonalToeplitz n a b).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]
   refine (isSymmetricBoundedBy_symmTridiagonalToeplitz n a b).isSymmetricCoercive ?_
   nlinarith [Real.cos_le_one (π / ((n : ℝ) + 1)), abs_nonneg a]
 
-/-- The half-angle `π / (2(n + 1))` of the model problem has positive sine. -/
+/-- The half-angle $\pi/(2(n + 1))$ of the model problem has positive sine. -/
 private theorem sin_half_angle_pos (n : ℕ) : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
   refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
   rw [div_lt_iff₀ (by positivity)]
   nlinarith [Real.pi_pos]
 
-/-- The one-dimensional model Laplacian `tridiag(-1, 2, -1)` is positive definite: its eigenvalues
-are `2 - 2 cos θ_k = 4 sin²(θ_k / 2)`, which lie in `(0, 4)`.  Its diagonal dominance is not strict,
-so what does the work is `cos(π/(n+1)) < 1`. -/
+/-- **The model Laplacian is positive definite.** For every $n$, the matrix
+$\operatorname{tridiag}(-1, 2, -1)$ of order $n$ is positive definite.
+
+Its eigenvalues are $2 - 2 \cos \theta_k = 4 \sin^2(\theta_k/2)$, which lie in $(0, 4)$. Its
+diagonal dominance is not strict, so the proof uses $\cos(\pi/(n + 1)) < 1$. -/
 theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     (symmTridiagonalToeplitz n (-1) 2).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]
@@ -739,27 +815,31 @@ theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
   simp only [abs_neg, abs_one]
   nlinarith [hhalf]
 
-/-! ### The model Laplacian `tridiag(-1, 2, -1)`: inverse, comparison vector, M-matrix, conditioning
+/-!
+### The model Laplacian: inverse, comparison vector, M-matrix, conditioning
 
-The matrix `T = tridiag(-1, 2, -1)` has the explicit inverse
-`T⁻¹ j k = (min(j, k) + 1)(n - max(j, k)) / (n + 1)`, the discrete Green's function of `-u'' = f`
-with homogeneous Dirichlet data: with `x_j = (j + 1) / (n + 1)` it is `(n + 1) G(x_j, x_k)` for
-`G(x, s) = min(x, s)(1 - max(x, s))`. Its row sums are the discrete parabola `(j + 1)(n - j) / 2`,
-which is the *comparison vector* `w` with `T w = 1` that the stability estimate
-`Matrix.IsMMatrix.norm_inv_mulVec_le` consumes. `T` is an M-matrix, by positive definiteness, and
-its spectral condition number is `cot²(π / (2(n + 1)))`, of order `(n + 1)²`. -/
+The matrix $T = \operatorname{tridiag}(-1, 2, -1)$ has the explicit inverse $(T^{-1})_{jk} =
+(\min(j, k) + 1)(n - \max(j, k))/(n + 1)$, the discrete Green's function of $-u'' = f$ with
+homogeneous Dirichlet data: with $x_j = (j + 1)/(n + 1)$ it is $(n + 1) \, G(x_j, x_k)$ for
+$G(x, s) = \min(x, s)(1 - \max(x, s))$. The row sums of $T^{-1}$ are the discrete parabola
+$(j + 1)(n - j)/2$. This is the *comparison vector* $w$ with $T w = \mathbf{1}$ that the stability
+estimate `Matrix.IsMMatrix.norm_inv_mulVec_le` uses. The matrix $T$ is an M-matrix because it is
+positive definite, and its spectral condition number is $\cot^2(\pi/(2(n + 1)))$, of order
+$(n + 1)^2$.
+-/
 
 section NegOneTwo
 
-/-- The three-term row of `tridiag(-1, 2, -1)` applied to `v`, in padded form. -/
+/-- The three-term row of $\operatorname{tridiag}(-1, 2, -1)$: $(T v)_i = 2 \tilde v_{i+1} - \tilde
+v_i - \tilde v_{i+2}$ for the zero padding $\tilde v$ of $v$. -/
 private theorem neg_one_two_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
     (symmTridiagonalToeplitz n (-1) 2 *ᵥ v) i
       = 2 * padZero v ((i : ℕ) + 1) - padZero v (i : ℕ) - padZero v ((i : ℕ) + 2) := by
   rw [symmTridiagonalToeplitz_mulVec_apply]
   ring
 
-/-- The padded discrete parabola `m ↦ m (n + 1 - m) / 2`, which vanishes at both ends `m = 0` and
-`m = n + 1`. -/
+/-- The zero padding of the discrete parabola $w_j = (j + 1)(n - j)/2$ is
+$m \mapsto m (n + 1 - m)/2$ for $m \le n + 1$; it vanishes at $m = 0$ and $m = n + 1$. -/
 private theorem padZero_parabola {m : ℕ} (hm : m ≤ n + 1) :
     padZero (fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2) m
       = (m : ℝ) * ((n : ℝ) + 1 - m) / 2 := by
@@ -777,13 +857,16 @@ private theorem padZero_parabola {m : ℕ} (hm : m ≤ n + 1) :
       push_cast
       ring
 
-/-- **The comparison vector of the model Laplacian**: `tridiag(-1, 2, -1)` maps the discrete
-parabola `w_j = (j + 1)(n - j) / 2` to the all-ones vector, because the second difference of a
-quadratic sequence is constant and the parabola vanishes at the padded ends `j = -1` and `j = n`.
-With `x_j = (j + 1) h`, `h = 1 / (n + 1)`, this is `h⁻² · x_j (1 - x_j) / 2`, the function
-[quarteroni2000numerical] Exercise 12.7 exhibits (`T_h 1 (x_j) = x_j (1 - x_j) / 2`), and it is
-the vector `w` of `Matrix.IsMMatrix.norm_inv_mulVec_le` for the two-point boundary value problem.
--/
+/-- **The comparison vector of the model Laplacian.** For every $n$, the matrix
+$\operatorname{tridiag}(-1, 2, -1)$ maps the discrete parabola $w$, $w_j = (j + 1)(n - j)/2$, to
+the vector $\mathbf{1}$ whose entries are all $1$:
+$$\operatorname{tridiag}(-1, 2, -1) \, w = \mathbf{1}.$$
+
+The second difference of a quadratic sequence is constant, and the parabola vanishes at the
+padded ends $j = -1$ and $j = n$. With $x_j = (j + 1) h$ and $h = 1/(n + 1)$,
+$w_j = h^{-2} x_j (1 - x_j)/2$, the function that [quarteroni2000numerical], Exercise 12.7,
+exhibits ($T_h 1 (x_j) = x_j (1 - x_j)/2$). It is the vector $w$ of
+`Matrix.IsMMatrix.norm_inv_mulVec_le` for the two-point boundary value problem. -/
 theorem symmTridiagonalToeplitz_neg_one_two_mulVec_parabola (n : ℕ) :
     symmTridiagonalToeplitz n (-1) 2
       *ᵥ (fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2) = 1 := by
@@ -794,15 +877,15 @@ theorem symmTridiagonalToeplitz_neg_one_two_mulVec_parabola (n : ℕ) :
   push_cast
   ring
 
-/-- The candidate inverse of `tridiag(-1, 2, -1)`: the discrete Green's function
-`(min(j, k) + 1)(n - max(j, k)) / (n + 1)`. -/
+/-- The candidate inverse of $\operatorname{tridiag}(-1, 2, -1)$: the discrete Green's function with
+entries $(\min(j, k) + 1)(n - \max(j, k))/(n + 1)$. -/
 private noncomputable def negOneTwoInv (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun j k =>
     (((min (j : ℕ) k : ℕ) : ℝ) + 1) * ((n : ℝ) - (max (j : ℕ) k : ℕ)) / ((n : ℝ) + 1)
 
-/-- The `k`-th column of the Green's function, padded and scaled by `n + 1`, in the piecewise-affine
-form `m ↦ m (n - k)` for `m ≤ k + 1` and `m ↦ (k + 1)(n + 1 - m)` beyond: affine on each side of
-`m = k + 1`, and vanishing at the ends `m = 0` and `m = n + 1`. -/
+/-- The zero padding of column $k$ of the discrete Green's function is $m \mapsto m (n - k)/(n + 1)$
+for $m \le k + 1$ and $m \mapsto (k + 1)(n + 1 - m)/(n + 1)$ for $k + 1 < m \le n + 1$: affine
+on each side of $m = k + 1$, and zero at $m = 0$ and $m = n + 1$. -/
 private theorem padZero_negOneTwoInv_col (k : Fin n) {m : ℕ} (hm : m ≤ n + 1) :
     padZero (fun j => negOneTwoInv n j k) m
       = (if m ≤ (k : ℕ) + 1 then (m : ℝ) * ((n : ℝ) - (k : ℕ))
@@ -828,8 +911,8 @@ private theorem padZero_negOneTwoInv_col (k : Fin n) {m : ℕ} (hm : m ≤ n + 1
       push_cast
       ring
 
-/-- `tridiag(-1, 2, -1)` times the Green's function is the identity: column by column, the second
-difference of the piecewise-affine column `k` vanishes off `j = k` and is `n + 1` there. -/
+/-- The product of $\operatorname{tridiag}(-1, 2, -1)$ and the discrete Green's function is the
+identity: the second difference of the piecewise affine column $k$ vanishes except at $j = k$. -/
 private theorem symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv (n : ℕ) :
     symmTridiagonalToeplitz n (-1) 2 * negOneTwoInv n = 1 := by
   ext i k
@@ -867,27 +950,32 @@ private theorem symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv (n : ℕ) :
       push_cast
       ring
 
-/-- **The inverse of the model Laplacian**: `tridiag(-1, 2, -1)⁻¹ j k = (min(j, k) + 1)(n - max(j,
-k)) / (n + 1)`. With `x_j = (j + 1) / (n + 1)` this is `(n + 1) G(x_j, x_k)` for the Green's
-function `G(x, s) = min(x, s)(1 - max(x, s))` of `-u'' = f` on `(0, 1)` with homogeneous Dirichlet
-data — the discrete Green's function of [quarteroni2000numerical] Exercise 12.6 (`G^k(x_j) = h
-G(x_j, x_k)`, with `L_h = h⁻² T`). -/
+/-- **The inverse of the model Laplacian.** For all indices $j$ and $k$,
+$$\left(\operatorname{tridiag}(-1, 2, -1)^{-1}\right)_{jk} = \frac{(\min(j, k) + 1)(n - \max(j,
+  k))}{n + 1}.$$
+
+With $x_j = (j + 1)/(n + 1)$ this is $(n + 1) \, G(x_j, x_k)$ for the Green's function
+$G(x, s) = \min(x, s)(1 - \max(x, s))$ of $-u'' = f$ on $(0, 1)$ with homogeneous Dirichlet
+data. It is the discrete Green's function of [quarteroni2000numerical], Exercise 12.6
+($G^k(x_j) = h \, G(x_j, x_k)$, with $L_h = h^{-2} T$). -/
 theorem inv_symmTridiagonalToeplitz_neg_one_two_apply (j k : Fin n) :
     (symmTridiagonalToeplitz n (-1) 2)⁻¹ j k
       = (((min (j : ℕ) k : ℕ) : ℝ) + 1) * ((n : ℝ) - (max (j : ℕ) k : ℕ)) / ((n : ℝ) + 1) := by
   rw [inv_eq_right_inv (symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n)]
   rfl
 
-/-- The model Laplacian is nonsingular. -/
+/-- The model Laplacian $\operatorname{tridiag}(-1, 2, -1)$ is nonsingular. -/
 theorem isUnit_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     IsUnit (symmTridiagonalToeplitz n (-1) 2) :=
   ⟨⟨_, negOneTwoInv n, symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n,
     mul_eq_one_comm.1 (symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n)⟩, rfl⟩
 
-/-- The row sums of the inverse of the model Laplacian are the discrete parabola:
-`∑_k tridiag(-1, 2, -1)⁻¹ j k = (j + 1)(n - j) / 2`. This is `T⁻¹ 1 = w` for the comparison vector
-`w` of `Matrix.symmTridiagonalToeplitz_neg_one_two_mulVec_parabola`; it bounds the discrete Green's
-function sum of [quarteroni2000numerical] Theorem 12.1 by `(n + 1)² / 8`. -/
+/-- **The row sums of the inverse of the model Laplacian.** For every index $j$,
+$$\sum_k \left(\operatorname{tridiag}(-1, 2, -1)^{-1}\right)_{jk} = \frac{(j + 1)(n - j)}{2}.$$
+
+This is $T^{-1} \mathbf{1} = w$ for the comparison vector $w$ of
+`Matrix.symmTridiagonalToeplitz_neg_one_two_mulVec_parabola`. It bounds the sum of the discrete
+Green's function in [quarteroni2000numerical], Theorem 12.1, by $(n + 1)^2/8$. -/
 theorem inv_symmTridiagonalToeplitz_neg_one_two_sum (j : Fin n) :
     ∑ k, (symmTridiagonalToeplitz n (-1) 2)⁻¹ j k
       = (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2 := by
@@ -900,7 +988,8 @@ theorem inv_symmTridiagonalToeplitz_neg_one_two_sum (j : Fin n) :
   have h' := congrFun h j
   simpa [mulVec_apply_eq_sum] using h'
 
-/-- The off-diagonal entries of `tridiag(a, b, a)` are nonpositive when `a ≤ 0`. -/
+/-- If $a \le 0$, then the off-diagonal entries of $\operatorname{tridiag}(a, b, a)$ are
+nonpositive: the entry $(i, j)$ with $i \neq j$ is at most $0$. -/
 theorem symmTridiagonalToeplitz_offDiag_nonpos {a : ℝ} (ha : a ≤ 0) (b : ℝ) {i j : Fin n}
     (hij : i ≠ j) : symmTridiagonalToeplitz n a b i j ≤ 0 := by
   rw [symmTridiagonalToeplitz_apply, ite_eq_right hij]
@@ -908,19 +997,24 @@ theorem symmTridiagonalToeplitz_offDiag_nonpos {a : ℝ} (ha : a ≤ 0) (b : ℝ
   · exact ha
   · exact le_rfl
 
-/-- **Diagonally dominant symmetric tridiagonal Toeplitz matrices with nonpositive off-diagonals
-are M-matrices**: `tridiag(a, b, a)` with `a ≤ 0` and `2|a| < b`, through positive definiteness
-(`Matrix.posDef_symmTridiagonalToeplitz`) and the Stieltjes criterion
-`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`. -/
+/-- **Diagonally dominant symmetric tridiagonal Toeplitz matrices with nonpositive off-diagonals are
+M-matrices.** If $a \le 0$ and $2|a| < b$, then $\operatorname{tridiag}(a, b, a)$ is an
+M-matrix.
+
+The proof combines positive definiteness (`Matrix.posDef_symmTridiagonalToeplitz`) with the
+Stieltjes criterion `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`. -/
 theorem isMMatrix_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) (ha : a ≤ 0) :
     (symmTridiagonalToeplitz n a b).IsMMatrix :=
   IsMMatrix.of_posDef_of_offDiag_nonpos (posDef_symmTridiagonalToeplitz n h)
     fun _ _ hij => symmTridiagonalToeplitz_offDiag_nonpos ha b hij
 
-/-- **The model Laplacian is an M-matrix** ([quarteroni2000numerical] Exercise 12.2): it is
-positive definite with nonpositive off-diagonal entries. The explicit inverse
-`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply` is visibly nonnegative as well; the book's
-hint, continuity of the inverse of `T + αI` in `α`, is needed by neither route. -/
+/-- **The model Laplacian is an M-matrix** ([quarteroni2000numerical], Exercise 12.2). For every
+$n$, the matrix $\operatorname{tridiag}(-1, 2, -1)$ is an M-matrix.
+
+The proof uses that the matrix is positive definite with nonpositive off-diagonal entries. The
+explicit inverse `Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply` is visibly nonnegative
+as well. Neither route needs the hint of the source, the continuity of the inverse of
+$T + \alpha I$ in $\alpha$. -/
 theorem isMMatrix_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     (symmTridiagonalToeplitz n (-1) 2).IsMMatrix :=
   IsMMatrix.of_posDef_of_offDiag_nonpos (posDef_symmTridiagonalToeplitz_neg_one_two n)
@@ -930,8 +1024,8 @@ section SpectralNorm
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The half-angle `π / (2(n + 1))` of the model problem has nonnegative cosine (it vanishes at
-`n = 0`). -/
+/-- The half-angle $\pi/(2(n + 1))$ of the model problem has nonnegative cosine; the cosine is zero
+for $n = 0$. -/
 private theorem cos_half_angle_nonneg (n : ℕ) : 0 ≤ Real.cos (π / (2 * ((n : ℝ) + 1))) := by
   refine Real.cos_nonneg_of_mem_Icc ⟨?_, ?_⟩
   · have : 0 < π / (2 * ((n : ℝ) + 1)) := by positivity
@@ -939,21 +1033,22 @@ private theorem cos_half_angle_nonneg (n : ℕ) : 0 ≤ Real.cos (π / (2 * ((n 
   · rw [div_le_div_iff_of_pos_left Real.pi_pos (by positivity) (by norm_num)]
     linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
 
-/-- `1 + cos(π / (n + 1)) = 2 cos²(π / (2(n + 1)))`. -/
+/-- For every $n$, $1 + \cos(\pi/(n + 1)) = 2 \cos^2(\pi/(2(n + 1)))$. -/
 private theorem one_add_cos_angle (n : ℕ) :
     1 + Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
   have h := Real.two_add_two_mul_cos (π / ((n : ℝ) + 1))
   rw [div_div, mul_comm ((n : ℝ) + 1) 2] at h
   linarith
 
-/-- `1 - cos(π / (n + 1)) = 2 sin²(π / (2(n + 1)))`. -/
+/-- For every $n$, $1 - \cos(\pi/(n + 1)) = 2 \sin^2(\pi/(2(n + 1)))$. -/
 private theorem one_sub_cos_angle (n : ℕ) :
     1 - Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
   have h := Real.two_sub_two_mul_cos (π / ((n : ℝ) + 1))
   rw [div_div, mul_comm ((n : ℝ) + 1) 2] at h
   linarith
 
-/-- Every eigenvalue of the model Laplacian lies in `[4 sin²(π/(2(n+1))), 4 cos²(π/(2(n+1)))]`. -/
+/-- Every eigenvalue of the model Laplacian lies in the interval $[4 \sin^2(\pi/(2(n + 1))), 4
+\cos^2(\pi/(2(n + 1)))]$. -/
 private theorem eigenvalue_neg_one_two_mem_Icc {μ : ℝ}
     (hμ : Module.End.HasEigenvalue (toEuclideanLin (symmTridiagonalToeplitz n (-1) 2)) μ) :
     μ ∈ Set.Icc (4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2)
@@ -963,8 +1058,9 @@ private theorem eigenvalue_neg_one_two_mem_Icc {μ : ℝ}
   simp only [abs_neg, abs_one] at h
   exact ⟨by linarith [h.1, one_sub_cos_angle n], by linarith [h.2, one_add_cos_angle n]⟩
 
-/-- **The spectral norm of the model Laplacian**: `‖tridiag(-1, 2, -1)‖₂ = 4 cos²(π / (2(n + 1)))`,
-its largest eigenvalue, attained by the last discrete sine vector. -/
+/-- **The spectral norm of the model Laplacian.** For $n \ge 1$,
+$$\|\operatorname{tridiag}(-1, 2, -1)\|_2 = 4 \cos^2 \frac{\pi}{2(n + 1)}.$$
+This is the largest eigenvalue, the eigenvalue of the last discrete sine vector. -/
 theorem l2_opNorm_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
     ‖symmTridiagonalToeplitz n (-1) 2‖ = 4 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
   refine (symmTridiagonalToeplitz_isHermitian (-1) 2).l2_opNorm_eq (fun μ hμ => ?_) ?_
@@ -987,9 +1083,11 @@ theorem l2_opNorm_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
     rw [hrw, Real.cos_pi_sub, abs_of_nonneg hnn]
     linarith [one_add_cos_angle n]
 
-/-- **The spectral norm of the inverse of the model Laplacian**: `‖tridiag(-1, 2, -1)⁻¹‖₂ = 1 / (4
-sin²(π / (2(n + 1))))`, the reciprocal of its smallest eigenvalue, attained by the first discrete
-sine vector. -/
+/-- **The spectral norm of the inverse of the model Laplacian.** For $n \ge 1$,
+$$\|\operatorname{tridiag}(-1, 2, -1)^{-1}\|_2 = \left(4 \sin^2 \frac{\pi}{2(n +
+  1)}\right)^{-1}.$$
+This is the reciprocal of the smallest eigenvalue, the eigenvalue of the first discrete sine
+vector. -/
 theorem l2_opNorm_inv_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
     ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖ = (4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2)⁻¹ := by
   have hpos : 0 < 4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
@@ -1006,12 +1104,15 @@ theorem l2_opNorm_inv_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
     rw [abs_of_nonneg hnn]
     linarith [one_sub_cos_angle n]
 
-/-- **The spectral condition number of the model Laplacian**: `‖T‖₂ ‖T⁻¹‖₂ = cot²(π / (2(n + 1)))`
-for `T = tridiag(-1, 2, -1)`, the ratio of its extreme eigenvalues `4 cos²(π/(2(n+1)))` and `4
-sin²(π/(2(n+1)))`. This is the `K₂ = O(h⁻²)` of [quarteroni2000numerical] §12.4.5 for the model
-stiffness matrix `h⁻¹ T` (the scaling cancels), and the growth `(n + 1)²` that motivates
-preconditioning. On no indices both norms and `cot(π / 2)` vanish, so the identity holds for every
-`n`. -/
+/-- **The spectral condition number of the model Laplacian.** For every $n$ and
+$T = \operatorname{tridiag}(-1, 2, -1)$,
+$$\|T\|_2 \, \|T^{-1}\|_2 = \cot^2 \frac{\pi}{2(n + 1)},$$
+the ratio of the extreme eigenvalues $4 \cos^2(\pi/(2(n + 1)))$ and $4 \sin^2(\pi/(2(n + 1)))$.
+
+This is the estimate $K_2 = O(h^{-2})$ of [quarteroni2000numerical], §12.4.5, for the model
+stiffness matrix $h^{-1} T$ (the scaling cancels), and the growth like $(n + 1)^2$ that
+motivates preconditioning. For $n = 0$ both norms are $0$ and $\cot(\pi/2) = 0$, so the identity
+holds for every $n$. -/
 theorem condNumber_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     ‖symmTridiagonalToeplitz n (-1) 2‖ * ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖
       = Real.cot (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
@@ -1024,8 +1125,10 @@ theorem condNumber_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     have := sin_half_angle_pos n
     field_simp
 
-/-- The spectral condition number of the model Laplacian is at most `(2(n + 1) / π)²`: `cot x ≤
-1/x` on `(0, π/2)`, since `x < tan x` there. -/
+/-- The spectral condition number of the model Laplacian satisfies
+$\|T\|_2 \, \|T^{-1}\|_2 \le (2(n + 1)/\pi)^2$ for every $n$.
+
+The proof uses $\cot x \le 1/x$ on $(0, \pi/2)$, which holds because $x < \tan x$ there. -/
 theorem condNumber_symmTridiagonalToeplitz_neg_one_two_le (n : ℕ) :
     ‖symmTridiagonalToeplitz n (-1) 2‖ * ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖
       ≤ (2 * ((n : ℝ) + 1) / π) ^ 2 := by
@@ -1055,38 +1158,47 @@ end SpectralNorm
 end NegOneTwo
 
 
-/-! ### The second-difference matrices
+/-!
+### The second-difference matrices
 
-The Dirichlet–Dirichlet second difference `𝒯^{(DD)}_n` is `symmTridiagonalToeplitz n (-1) 2`; its
-three low-rank adjustments of [golub2013matrix] (4.8.8)–(4.8.10) are the Dirichlet–Neumann, the
-Neumann–Neumann and the periodic second difference. On sine and cosine vectors each acts as
-`4 sin² (θ / 2)` up to residuals in the first and last rows ([golub2013matrix] Lemma 4.8.3); the
-angles at which the residuals vanish give their eigensystems, whose eigenvector matrices — DST-II,
-DCT-I and the discrete Fourier transform — are in `Numlib.Analysis.Fourier.SineCosineTransform` and
-`Numlib.Analysis.Fourier.Circulant`. -/
+The Dirichlet–Dirichlet second difference $\mathcal{T}^{(DD)}_n$ is
+$\operatorname{tridiag}(-1, 2, -1)$. Its three low-rank modifications in (4.8.8)–(4.8.10) of
+[golub2013matrix] are the Dirichlet–Neumann, the Neumann–Neumann and the periodic second difference.
+On sine and cosine vectors each of them acts as multiplication by $4 \sin^2(\theta/2)$, up to
+residuals in the first and the last row ([golub2013matrix], Lemma 4.8.3). The angles at which the
+residuals vanish give their eigensystems. Their eigenvector matrices (DST-II, DCT-I and the discrete
+Fourier transform) are in `Numlib.Analysis.Fourier.SineCosineTransform` and
+`Numlib.Analysis.Fourier.Circulant`.
+-/
 
 section SecondDifference
 
-/-- The Dirichlet–Neumann second difference `𝒯^{(DN)}_n = 𝒯^{(DD)}_n − e_n e_{n−1}ᵀ`
-([golub2013matrix] (4.8.8)): the last row is `(…, 0, −2, 2)`. -/
+/-- The **Dirichlet–Neumann second difference** ((4.8.8) of [golub2013matrix]):
+$$\mathcal{T}^{(DN)}_n = \mathcal{T}^{(DD)}_n - e_n e_{n-1}^T.$$
+Its last row is $(\dots, 0, -2, 2)$. For $n = 1$ the correction is absent and the matrix is
+$[2]$. -/
 def secondDifferenceDN (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   symmTridiagonalToeplitz n (-1) 2
     - of fun (i j : Fin n) => if (i : ℕ) + 1 = n ∧ (j : ℕ) + 2 = n then 1 else 0
 
-/-- The Neumann–Neumann second difference `𝒯^{(NN)}_n = 𝒯^{(DN)}_n − e_1 e_2ᵀ`
-([golub2013matrix] (4.8.9)): the first row is `(2, −2, 0, …)`, the last `(…, 0, −2, 2)`. -/
+/-- The **Neumann–Neumann second difference** ((4.8.9) of [golub2013matrix]):
+$$\mathcal{T}^{(NN)}_n = \mathcal{T}^{(DN)}_n - e_1 e_2^T.$$
+Its first row is $(2, -2, 0, \dots)$ and its last row is $(\dots, 0, -2, 2)$. -/
 def secondDifferenceNN (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   secondDifferenceDN n - of fun (i j : Fin n) => if (i : ℕ) = 0 ∧ (j : ℕ) = 1 then 1 else 0
 
-/-- The periodic second difference `𝒯^{(P)}_n = 𝒯^{(DD)}_n − e_1 e_nᵀ − e_n e_1ᵀ`
-([golub2013matrix] (4.8.10)), for `2 ≤ n`: the definition subtracts the indicator of the two
-corner positions, which coincide at `n = 1` (there it is `[1]`, not the formula's `[0]`). -/
+/-- The **periodic second difference** ((4.8.10) of [golub2013matrix]), for $n \ge 2$:
+$$\mathcal{T}^{(P)}_n = \mathcal{T}^{(DD)}_n - e_1 e_n^T - e_n e_1^T.$$
+
+The definition subtracts the indicator matrix of the two corner positions $(0, n - 1)$ and
+$(n - 1, 0)$. For $n = 1$ these positions coincide, and the matrix is $[1]$, not the value $[0]$
+of the formula. -/
 def secondDifferencePeriodic (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   symmTridiagonalToeplitz n (-1) 2 - of fun (i j : Fin n) =>
     if ((i : ℕ) = 0 ∧ (j : ℕ) + 1 = n) ∨ ((i : ℕ) + 1 = n ∧ (j : ℕ) = 0) then 1 else 0
 
-/-- A `0/1` matrix whose ones sit in the column `m`, on the rows satisfying `P`, applied to a
-vector. -/
+/-- A $0/1$ matrix whose ones are in column $m$, in the rows that satisfy a predicate $P$, maps $v$
+to the vector with entry $v_m$ in the rows that satisfy $P$ and $0$ elsewhere. -/
 private theorem of_ite_mulVec_apply (P : Fin n → Prop) [DecidablePred P] {m : ℕ} (hm : m < n)
     (Q : Fin n → Prop) [DecidablePred Q] (hQ : ∀ j : Fin n, Q j ↔ (j : ℕ) = m)
     (v : Fin n → ℝ) (i : Fin n) :
@@ -1101,8 +1213,10 @@ private theorem of_ite_mulVec_apply (P : Fin n → Prop) [DecidablePred P] {m : 
     simp [this]
   · simp
 
-/-- The Dirichlet–Neumann second difference applied to a vector: the second difference with the
-correction `− v_{n−1} e_n` (1-based) in the last row. -/
+/-- The Dirichlet–Neumann second difference applied to a vector. For $n \ge 2$ and
+$v \in \mathbb{R}^n$,
+$$\mathcal{T}^{(DN)}_n v = \mathcal{T}^{(DD)}_n v - v_{n-2} \, e_n.$$
+-/
 theorem secondDifferenceDN_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
     secondDifferenceDN n *ᵥ v = symmTridiagonalToeplitz n (-1) 2 *ᵥ v
       - v ⟨n - 2, by omega⟩ • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 := by
@@ -1113,8 +1227,10 @@ theorem secondDifferenceDN_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
       (fun j : Fin n => (j : ℕ) + 2 = n) (fun j => by omega), single_last_apply (by omega)]
   split_ifs <;> ring
 
-/-- The Neumann–Neumann second difference applied to a vector: the corrections `− v_{n−1} e_n` and
-`− v_2 e_1` (1-based) in the last and first rows. -/
+/-- The Neumann–Neumann second difference applied to a vector. For $n \ge 2$ and
+$v \in \mathbb{R}^n$,
+$$\mathcal{T}^{(NN)}_n v = \mathcal{T}^{(DD)}_n v - v_{n-2} \, e_n - v_1 \, e_1.$$
+-/
 theorem secondDifferenceNN_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
     secondDifferenceNN n *ᵥ v = symmTridiagonalToeplitz n (-1) 2 *ᵥ v
       - v ⟨n - 2, by omega⟩ • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1
@@ -1126,8 +1242,9 @@ theorem secondDifferenceNN_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
       (fun j : Fin n => (j : ℕ) = 1) (fun j => Iff.rfl), single_first_apply (by omega)]
   split_ifs <;> ring
 
-/-- The periodic second difference applied to a vector: the corrections `− v_n e_1` and
-`− v_1 e_n` (1-based) in the first and last rows. -/
+/-- The periodic second difference applied to a vector. For $n \ge 2$ and $v \in \mathbb{R}^n$,
+$$\mathcal{T}^{(P)}_n v = \mathcal{T}^{(DD)}_n v - v_{n-1} \, e_1 - v_0 \, e_n.$$
+-/
 theorem secondDifferencePeriodic_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
     secondDifferencePeriodic n *ᵥ v = symmTridiagonalToeplitz n (-1) 2 *ᵥ v
       - v ⟨n - 1, by omega⟩ • Pi.single (⟨0, by omega⟩ : Fin n) 1
@@ -1149,8 +1266,11 @@ theorem secondDifferencePeriodic_mulVec (hn : 2 ≤ n) (v : Fin n → ℝ) :
     single_first_apply (by omega), single_last_apply (by omega)]
   split_ifs <;> ring
 
-/-- [golub2013matrix] (4.8.18), the Dirichlet–Neumann second difference on a sine vector:
-`𝒯^{(DN)} s(θ) = 4 sin² (θ / 2) s(θ) + (s_{n+1} − s_{n−1}) e_n`. -/
+/-- The Dirichlet–Neumann second difference on a sine vector, (4.8.18) of [golub2013matrix]. For
+$n \ge 2$ and $\theta \in \mathbb{R}$,
+$$\mathcal{T}^{(DN)}_n s(\theta) = 4 \sin^2(\theta/2) \, s(\theta) + \bigl(\sin((n + 1)\theta) -
+  \sin((n - 1)\theta)\bigr) e_n.$$
+In the notation of the source the residual is $(s_{n+1} - s_{n-1}) e_n$. -/
 theorem secondDifferenceDN_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferenceDN n *ᵥ sinAngleVec n θ
       = (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ
@@ -1167,9 +1287,12 @@ theorem secondDifferenceDN_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
   simp only [neg_mul, one_mul, neg_smul, sub_neg_eq_add]
   abel
 
-/-- [golub2013matrix] (4.8.19), the Neumann–Neumann second difference on a cosine vector:
-`𝒯^{(NN)} c(θ) = 4 sin² (θ / 2) c(θ) + (c_n − c_{n−2}) e_n`; the residual `c_1 e_1` of (4.8.17) is
-cancelled by the correction in the first row. -/
+/-- The Neumann–Neumann second difference on a cosine vector, (4.8.19) of [golub2013matrix]. For
+$n \ge 2$ and $\theta \in \mathbb{R}$,
+$$\mathcal{T}^{(NN)}_n c(\theta) = 4 \sin^2(\theta/2) \, c(\theta) + \bigl(\cos(n\theta) -
+  \cos((n - 2)\theta)\bigr) e_n.$$
+In the notation of the source the residual is $(c_n - c_{n-2}) e_n$. The residual $c_1 e_1$ of
+(4.8.17) is cancelled by the correction in the first row. -/
 theorem secondDifferenceNN_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferenceNN n *ᵥ cosAngleVec n θ
       = (4 * Real.sin (θ / 2) ^ 2) • cosAngleVec n θ
@@ -1187,8 +1310,11 @@ theorem secondDifferenceNN_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
   simp only [neg_mul, one_mul, neg_smul, sub_neg_eq_add]
   abel
 
-/-- [golub2013matrix] (4.8.20), the periodic second difference on a sine vector:
-`𝒯^{(P)} s(θ) = 4 sin² (θ / 2) s(θ) − s_n e_1 + (s_{n+1} − s_1) e_n`. -/
+/-- The periodic second difference on a sine vector, (4.8.20) of [golub2013matrix]. For $n \ge 2$
+and $\theta \in \mathbb{R}$,
+$$\mathcal{T}^{(P)}_n s(\theta) = 4 \sin^2(\theta/2) \, s(\theta) - \sin(n\theta) \, e_1 +
+  \bigl(\sin((n + 1)\theta) - \sin \theta\bigr) e_n.$$
+In the notation of the source the residual is $-s_n e_1 + (s_{n+1} - s_1) e_n$. -/
 theorem secondDifferencePeriodic_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferencePeriodic n *ᵥ sinAngleVec n θ
       = (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ
@@ -1207,8 +1333,11 @@ theorem secondDifferencePeriodic_mulVec_sinAngleVec (hn : 2 ≤ n) (θ : ℝ) :
   simp only [neg_mul, one_mul, neg_smul, sub_neg_eq_add]
   abel
 
-/-- [golub2013matrix] (4.8.21), the periodic second difference on a cosine vector:
-`𝒯^{(P)} c(θ) = 4 sin² (θ / 2) c(θ) + (c_1 − c_{n−1}) e_1 + (c_n − 1) e_n`. -/
+/-- The periodic second difference on a cosine vector, (4.8.21) of [golub2013matrix]. For $n \ge 2$
+and $\theta \in \mathbb{R}$,
+$$\mathcal{T}^{(P)}_n c(\theta) = 4 \sin^2(\theta/2) \, c(\theta) + \bigl(\cos \theta -
+  \cos((n - 1)\theta)\bigr) e_1 + \bigl(\cos(n\theta) - 1\bigr) e_n.$$
+In the notation of the source the residual is $(c_1 - c_{n-1}) e_1 + (c_n - 1) e_n$. -/
 theorem secondDifferencePeriodic_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferencePeriodic n *ᵥ cosAngleVec n θ
       = (4 * Real.sin (θ / 2) ^ 2) • cosAngleVec n θ
@@ -1227,49 +1356,60 @@ theorem secondDifferencePeriodic_mulVec_cosAngleVec (hn : 2 ≤ n) (θ : ℝ) :
 
 end SecondDifference
 
-/-! ### The corner-modified tridiagonal matrix and the DCT-II vectors
+/-!
+### The corner-modified tridiagonal matrix and the DCT-II vectors
 
-`cornerTridiagonal n γ δ` is the matrix `Y_{γ,δ}` of the displacement theory of [golub2013matrix]
-§12.1.7: ones on the two off-diagonals, `γ` and `δ` in the two diagonal corners. Its member
-`Y_{1,1}` is diagonalized by the **DCT-II vectors** `cosineIIVec n k = (cos ((2 j + 1) k π /
-(2 n)))_j`, with eigenvalues `2 cos (k π / n)`, and these vectors are mutually orthogonal — the
-cosine twins of `sineVec`. The family is not the second-difference family above: the only shared
-member is `2 • 1 − Y_{0,0} = 𝒯^{(DD)}_n`, and `2 • 1 − Y_{1,1}` is the *symmetric* Neumann matrix
-with diagonal `(1, 2, …, 2, 1)`, not the unsymmetric `secondDifferenceNN`. -/
+The matrix $Y_{\gamma,\delta}$ of the displacement theory of [golub2013matrix], §12.1.7, has ones on
+the two off-diagonals and $\gamma$ and $\delta$ in the two diagonal corners. The member $Y_{1,1}$ is
+diagonalized by the **DCT-II vectors** $(\cos((2j + 1) k \pi/(2n)))_j$, with eigenvalues
+$2 \cos(k\pi/n)$, and these vectors are mutually orthogonal; they are the cosine counterparts of the
+discrete sine vectors. The family $Y_{\gamma,\delta}$ is not the family of second-difference
+matrices above: $\mathcal{T}^{(DN)}_n$ and $\mathcal{T}^{(NN)}_n$ are not symmetric, and no diagonal
+scaling maps one family to the other. The only common member is
+$2 I - Y_{0,0} = \mathcal{T}^{(DD)}_n$, and $2 I - Y_{1,1}$ is the *symmetric* Neumann matrix with
+diagonal $(1, 2, \dots, 2, 1)$, not the matrix $\mathcal{T}^{(NN)}_n$ of
+`Matrix.secondDifferenceNN`.
+-/
 
 section CornerTridiagonal
 
-/-- The corner-modified tridiagonal matrix `Y_{γ,δ}` ([golub2013matrix] (12.1.7)): ones on the two
-off-diagonals, `γ` at `(0, 0)` and `δ` at `(n - 1, n - 1)` (added, so `γ + δ` when `n = 1`), zero
-elsewhere. -/
+/-- The **corner-modified tridiagonal matrix** $Y_{\gamma,\delta}$ ((12.1.7) of [golub2013matrix]):
+the $n \times n$ real matrix with ones on the two off-diagonals, $\gamma$ at $(0, 0)$, $\delta$
+at $(n - 1, n - 1)$, and zero elsewhere. It is $\operatorname{tridiag}(1, 0, 1)$ plus the
+diagonal matrix of the two corner values.
+
+The corner values are added, so for $n = 1$ the matrix is $[\gamma + \delta]$. -/
 noncomputable def cornerTridiagonal (n : ℕ) (γ δ : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   symmTridiagonalToeplitz n 1 0
     + diagonal fun i : Fin n => (if (i : ℕ) = 0 then γ else 0) + if (i : ℕ) + 1 = n then δ else 0
 
-/-- Without its corners, `Y_{0,0}` is `tridiag(1, 0, 1)`. -/
+/-- Without its corners, $Y_{0,0}$ is $\operatorname{tridiag}(1, 0, 1)$. -/
 @[simp]
 theorem cornerTridiagonal_zero_zero (n : ℕ) :
     cornerTridiagonal n 0 0 = symmTridiagonalToeplitz n 1 0 := by
   simp [cornerTridiagonal]
 
-/-- The corner-modified tridiagonal matrix is symmetric. -/
+/-- The matrix $Y_{\gamma,\delta}$ is symmetric. -/
 theorem cornerTridiagonal_isSymm (n : ℕ) (γ δ : ℝ) : (cornerTridiagonal n γ δ).IsSymm :=
   IsSymm.add (symmTridiagonalToeplitz_isSymm 1 0) (isSymm_diagonal _)
 
-/-- Off the diagonal, `Y_{γ,δ}` is `tridiag(1, 0, 1)`. -/
+/-- Off the diagonal, $Y_{\gamma,\delta}$ agrees with $\operatorname{tridiag}(1, 0, 1)$: for
+$i \neq l$ the entry $(i, l)$ is $1$ if $|i - l| = 1$, and $0$ otherwise. -/
 theorem cornerTridiagonal_apply_of_ne (γ δ : ℝ) {i l : Fin n} (h : i ≠ l) :
     cornerTridiagonal n γ δ i l = if (i : ℕ) + 1 = l ∨ (l : ℕ) + 1 = i then 1 else 0 := by
   rw [cornerTridiagonal, Matrix.add_apply, diagonal_apply_ne _ h, add_zero,
     symmTridiagonalToeplitz_apply', ite_eq_right (fun h' => h (Fin.ext h'))]
 
-/-- Away from the two corners, the diagonal of `Y_{γ,δ}` vanishes. -/
+/-- Away from the two corners, the diagonal of $Y_{\gamma,\delta}$ is zero: the entry $(i, i)$ is
+$0$ for $0 < i < n - 1$. -/
 theorem cornerTridiagonal_apply_self (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
     (hi : (i : ℕ) + 1 < n) : cornerTridiagonal n γ δ i i = 0 := by
   rw [cornerTridiagonal, Matrix.add_apply, diagonal_apply_eq, symmTridiagonalToeplitz_apply',
     ite_eq_left rfl, ite_eq_right hi₀.ne', ite_eq_right hi.ne]
   ring
 
-/-- A row `i` of `Y_{γ,δ}` away from the corners picks the two neighbours of `i`. -/
+/-- For $0 < i < n - 1$, the row $i$ of $Y_{\gamma,\delta}$ applied to $f$ gives
+$f_{i-1} + f_{i+1}$. -/
 private theorem cornerTridiagonal_mul_apply_aux (γ δ : ℝ) {i : Fin n} (hi₀ : 0 < (i : ℕ))
     (hi : (i : ℕ) + 1 < n) (f : Fin n → ℝ) :
     ∑ l, cornerTridiagonal n γ δ i l * f l = f ⟨i - 1, by omega⟩ + f ⟨i + 1, hi⟩ := by
@@ -1289,19 +1429,21 @@ private theorem cornerTridiagonal_mul_apply_aux (γ δ : ℝ) {i : Fin n} (hi₀
   rw [sum_congr rfl fun l _ => hterm l, sum_add_distrib, h1, h2, dite_eq_left hi₀,
     dite_eq_left hi]
 
-/-- `Y_{γ,δ}` is symmetric. -/
+/-- The matrix $Y_{\gamma,\delta}$ is equal to its transpose. -/
 theorem cornerTridiagonal_transpose (γ δ : ℝ) :
     (cornerTridiagonal n γ δ)ᵀ = cornerTridiagonal n γ δ :=
   (cornerTridiagonal_isSymm n γ δ).eq
 
-/-- Away from the first and last row, `(Y_{γ,δ} A)_ij = A_{i−1, j} + A_{i+1, j}`. -/
+/-- Let $A$ be an $n \times n$ real matrix and $0 < i < n - 1$. Then $(Y_{\gamma,\delta} A)_{ij} =
+a_{i-1,j} + a_{i+1,j}$ for every $j$. -/
 theorem cornerTridiagonal_mul_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {i : Fin n}
     (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n) (j : Fin n) :
     (cornerTridiagonal n γ δ * A) i j = A ⟨i - 1, by omega⟩ j + A ⟨i + 1, hi⟩ j := by
   rw [Matrix.mul_apply]
   exact cornerTridiagonal_mul_apply_aux γ δ hi₀ hi fun l => A l j
 
-/-- Away from the first and last column, `(A Y_{γ,δ})_ij = A_{i, j−1} + A_{i, j+1}`. -/
+/-- Let $A$ be an $n \times n$ real matrix and $0 < j < n - 1$. Then $(A Y_{\gamma,\delta})_{ij} =
+a_{i,j-1} + a_{i,j+1}$ for every $i$. -/
 theorem mul_cornerTridiagonal_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n)
     {j : Fin n} (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
     (A * cornerTridiagonal n γ δ) i j = A i ⟨j - 1, by omega⟩ + A i ⟨j + 1, hj⟩ := by
@@ -1309,8 +1451,10 @@ theorem mul_cornerTridiagonal_apply (γ δ : ℝ) (A : Matrix (Fin n) (Fin n) �
   refine sum_congr rfl fun l _ => ?_
   rw [mul_comm, ← transpose_apply (cornerTridiagonal n γ δ), cornerTridiagonal_transpose]
 
-/-- The bridge between the displacement operators of [golub2013matrix] §12.1.7 and the
-second-difference matrices of [golub2013matrix] §4.8: `2 • 1 − Y_{0,0} = 𝒯^{(DD)}_n`. -/
+/-- The link between the displacement operators of [golub2013matrix], §12.1.7, and the
+second-difference matrices of [golub2013matrix], §4.8: for every $n$,
+$$2 I - Y_{0,0} = \mathcal{T}^{(DD)}_n = \operatorname{tridiag}(-1, 2, -1).$$
+-/
 theorem two_smul_one_sub_cornerTridiagonal_zero_zero (n : ℕ) :
     (2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ) - cornerTridiagonal n 0 0
       = symmTridiagonalToeplitz n (-1) 2 := by
@@ -1319,20 +1463,25 @@ theorem two_smul_one_sub_cornerTridiagonal_zero_zero (n : ℕ) :
     symmTridiagonalToeplitz_apply, symmTridiagonalToeplitz_apply]
   split_ifs <;> simp
 
-/-- The DCT-II vectors `cosineIIVec n k : j ↦ cos ((2 j + 1) k π / (2 n))` (0-based; the columns of
-the `𝒞_n` of [golub2013matrix] (12.1.13) up to the normalization `√(2 / n)`, `√(1 / n)` for
-`k = 0`). -/
+/-- The **DCT-II vectors**: for $k = 0, \dots, n - 1$, the vector with entries
+$$\cos\left(\frac{(2j + 1) k \pi}{2n}\right), \qquad j = 0, \dots, n - 1.$$
+Up to the normalization factor $\sqrt{2/n}$ (and $\sqrt{1/n}$ for $k = 0$), these are the
+columns of the matrix $\mathcal{C}_n$ of [golub2013matrix] (12.1.13). -/
 noncomputable def cosineIIVec (n : ℕ) (k : Fin n) : Fin n → ℝ :=
   fun j => Real.cos ((2 * ((j : ℕ) : ℝ) + 1) * (k : ℕ) * π / (2 * n))
 
-/-- The entries of a DCT-II vector. -/
+/-- The entry $j$ of the DCT-II vector $k$ is $\cos((2j + 1) k \pi/(2n))$. -/
 theorem cosineIIVec_apply (k j : Fin n) :
     cosineIIVec n k j = Real.cos ((2 * ((j : ℕ) : ℝ) + 1) * (k : ℕ) * π / (2 * n)) := rfl
 
-/-- **The DCT-II vectors are the eigenvectors of `Y_{1,1}`**: `Y_{1,1} q_k = 2 cos (k π / n) q_k`.
-Interior rows are `cos ((2j − 1) θ / 2) + cos ((2j + 3) θ / 2) = 2 cos θ cos ((2j + 1) θ / 2)` for
-`θ = k π / n`; in the first row the corner `1` stands in for `cos (−θ / 2) = cos (θ / 2)`, in the
-last for `cos ((2n + 1) θ / 2) = cos ((2n − 1) θ / 2)`, true because `n θ = k π`. -/
+/-- **The DCT-II vectors are eigenvectors of $Y_{1,1}$.** For every $k = 0, \dots, n - 1$, the
+DCT-II vector $q_k$ satisfies
+$$Y_{1,1} \, q_k = 2 \cos(k\pi/n) \, q_k.$$
+
+Let $\theta = k\pi/n$. The interior rows are the identity $\cos((2j - 1)\theta/2) + \cos((2j +
+3)\theta/2) = 2 \cos \theta \cos((2j + 1)\theta/2)$. In the first row the corner entry $1$
+replaces $\cos(-\theta/2) = \cos(\theta/2)$, and in the last row it replaces $\cos((2n +
+1)\theta/2) = \cos((2n - 1)\theta/2)$, which holds because $n\theta = k\pi$. -/
 theorem cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n) :
     cornerTridiagonal n 1 1 *ᵥ cosineIIVec n k
       = (2 * Real.cos ((k : ℕ) * π / n)) • cosineIIVec n k := by
@@ -1386,8 +1535,8 @@ theorem cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n) :
     (C := (2 * (((i : ℕ) + 2 : ℕ) : ℝ) - 1) * (θ / 2)) (by push_cast; ring) (by push_cast; ring)
   linear_combination key
 
-/-- The DCT-II diagonalizes the symmetric Neumann second difference `2 • 1 − Y_{1,1}`, with
-eigenvalues `4 sin² (k π / (2 n))`. -/
+/-- The DCT-II vectors diagonalize the symmetric Neumann second difference $2 I - Y_{1,1}$: the
+DCT-II vector $q_k$ is an eigenvector with eigenvalue $4 \sin^2(k\pi/(2n))$. -/
 theorem two_smul_one_sub_cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n) :
     ((2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ) - cornerTridiagonal n 1 1) *ᵥ cosineIIVec n k
       = (4 * Real.sin ((k : ℕ) * π / (2 * n)) ^ 2) • cosineIIVec n k := by
@@ -1395,7 +1544,7 @@ theorem two_smul_one_sub_cornerTridiagonal_one_one_mulVec_cosineIIVec (k : Fin n
     ← sub_smul, show (k : ℕ) * π / (2 * n) = ((k : ℕ) * π / n) / 2 by ring,
     ← Real.two_sub_two_mul_cos]
 
-/-- The angle `k π / n` of a DCT-II vector lies in `[0, π)`. -/
+/-- The angle $k\pi/n$ of a DCT-II vector lies in $[0, \pi)$. -/
 private theorem cosineII_angle_mem (k : Fin n) :
     0 ≤ (k : ℕ) * π / n ∧ (k : ℕ) * π / n < π := by
   have hn : (0 : ℝ) < n := by exact_mod_cast k.pos
@@ -1404,7 +1553,7 @@ private theorem cosineII_angle_mem (k : Fin n) :
   rw [div_lt_iff₀ hn]
   nlinarith [Real.pi_pos]
 
-/-- The squared length of a DCT-II vector: `n` for `k = 0`, `n / 2` otherwise. -/
+/-- The squared length of the DCT-II vector $q_k$ is $n$ for $k = 0$ and $n/2$ for $k > 0$. -/
 private theorem sum_cosineIIVec_mul_self (k : Fin n) :
     ∑ j : Fin n, cosineIIVec n k j * cosineIIVec n k j
       = if (k : ℕ) = 0 then (n : ℝ) else (n : ℝ) / 2 := by
@@ -1430,10 +1579,12 @@ private theorem sum_cosineIIVec_mul_self (k : Fin n) :
     Fin.sum_univ_eq_sum_range fun j => Real.cos ((2 * (j : ℝ) + 1) * ((k : ℕ) * π / n)), hsum]
   ring
 
-/-- **Orthogonality of the DCT-II vectors**: `q_k ⬝ᵥ q_l = 0` for `k ≠ l`, and `‖q_k‖² = n`
-for `k = 0`, `n / 2` otherwise. Off the diagonal this is the orthogonality of eigenvectors of the
-symmetric `Y_{1,1}` for the distinct eigenvalues `2 cos (k π / n)`; on the diagonal a telescoping
-cosine sum. -/
+/-- **Orthogonality of the DCT-II vectors.** For all $k, l = 0, \dots, n - 1$, the DCT-II vectors
+satisfy $q_k \cdot q_l = 0$ for $k \neq l$, and $q_k \cdot q_k = n$ for $k = 0$ and $n/2$ for
+$k > 0$.
+
+Off the diagonal this is the orthogonality of eigenvectors of the symmetric matrix $Y_{1,1}$ for
+the distinct eigenvalues $2 \cos(k\pi/n)$. On the diagonal it is a telescoping sum of cosines. -/
 theorem dotProduct_cosineIIVec (k l : Fin n) :
     cosineIIVec n k ⬝ᵥ cosineIIVec n l
       = if k = l then (if (k : ℕ) = 0 then (n : ℝ) else (n : ℝ) / 2) else 0 := by
@@ -1463,48 +1614,57 @@ theorem dotProduct_cosineIIVec (k l : Fin n) :
   exact (mul_eq_zero.mp h2).resolve_left (sub_ne_zero.mpr (Ne.symm hcos))
 
 end CornerTridiagonal
-/-! ### The general tridiagonal Toeplitz matrix
+/-!
+### The general tridiagonal Toeplitz matrix
 
-A tridiagonal Toeplitz matrix with off-diagonals of the *same sign* is a diagonal similarity away
-from a symmetric one, so its spectrum is again a cosine family.  The similarity is
-`diag(1, d, d², …)` with `d² = a / c`, which turns the pair `(a, c)` of off-diagonals into the
-constant `c d`, whose square is `a c`. -/
+A tridiagonal Toeplitz matrix whose two off-diagonals have the *same sign* is similar, through a
+diagonal matrix, to a symmetric one, so its spectrum is again a family of cosines. The similarity is
+$\operatorname{diag}(1, d, d^2, \dots)$ with $d^2 = a/c$. It turns the two off-diagonals $a$ and $c$
+into the common value $c d$, whose square is $a c$.
+-/
 
 section General
 
 variable (c : ℝ)
 
-/-- The tridiagonal Toeplitz matrix `tridiag(a, b, c)`: `b` on the diagonal, `a` on the
-subdiagonal, `c` on the superdiagonal and `0` elsewhere.  `Matrix.symmTridiagonalToeplitz n a b` is
-the case `c = a`. -/
+/-- The **tridiagonal Toeplitz matrix** $\operatorname{tridiag}(a, b, c)$: the $n \times n$ real
+matrix with $b$ on the diagonal, $a$ on the subdiagonal, $c$ on the superdiagonal and $0$
+elsewhere. The matrix $\operatorname{tridiag}(a, b, a)$ of `Matrix.symmTridiagonalToeplitz` is
+the case $c = a$. -/
 def tridiagonalToeplitz (n : ℕ) (a b c : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then b else if (j : ℕ) + 1 = i then a else if (i : ℕ) + 1 = j then c else 0
 
-/-- The entries of `tridiag(a, b, c)`. -/
+/-- The entries of $\operatorname{tridiag}(a, b, c)$: $b$ if $i = j$, $a$ if $j + 1 = i$, $c$ if
+$i + 1 = j$, and $0$ otherwise. -/
 theorem tridiagonalToeplitz_apply (i j : Fin n) :
     tridiagonalToeplitz n a b c i j =
       if (i : ℕ) = j then b else if (j : ℕ) + 1 = i then a else
         if (i : ℕ) + 1 = j then c else 0 := rfl
 
-/-- The symmetric tridiagonal Toeplitz matrix is the case of equal off-diagonals. -/
+/-- The symmetric tridiagonal Toeplitz matrix is the case of equal off-diagonals:
+`Matrix.symmTridiagonalToeplitz n a b` is `Matrix.tridiagonalToeplitz n a b a`. -/
 theorem symmTridiagonalToeplitz_eq_tridiagonalToeplitz (n : ℕ) (a b : ℝ) :
     symmTridiagonalToeplitz n a b = tridiagonalToeplitz n a b a := by
   ext i j
   rw [symmTridiagonalToeplitz_apply', tridiagonalToeplitz_apply]
   split_ifs with h1 h2 h3 h4 <;> first | rfl | omega
 
-/-- The constant-coefficient tridiagonal matrix is the variable-coefficient
-`Matrix.tridiagonalOf` of `Numlib/LinearAlgebra/Matrix/Hessenberg` with constant bands, so that
-its API (products, bandwidths, `mulVec`) applies to `tridiag(β, δ, γ)`. -/
+/-- The tridiagonal Toeplitz matrix $\operatorname{tridiag}(\beta, \delta, \gamma)$ of order $N + 1$
+is the matrix `Matrix.tridiagonalOf` of `Numlib.LinearAlgebra.Matrix.Hessenberg` with the
+constant bands $\beta$, $\delta$ and $\gamma$. Thus the results on `Matrix.tridiagonalOf`
+(products, bandwidths, matrix-vector products) apply to it. -/
 theorem tridiagonalToeplitz_eq_tridiagonalOf (N : ℕ) (β δ γ : ℝ) :
     tridiagonalToeplitz (N + 1) β δ γ = tridiagonalOf (fun _ => β) (fun _ => δ) fun _ => γ := by
   ext i j
   simp only [tridiagonalToeplitz_apply, tridiagonalOf, of_apply]
   split_ifs <;> first | rfl | omega
 
-/-- The three-term row of `tridiag(a, b, a)` on `Fin (N + 1)`, the boundary terms absent in the
-first and last rows: `Matrix.tridiagonalOf_mulVec` for the constant bands. -/
+/-- The three-term row of $\operatorname{tridiag}(a, b, a)$ of order $N + 1$, without the boundary
+terms in the first and the last row. For $v \in \mathbb{R}^{N+1}$ and $i = 0, \dots, N$,
+$$(\operatorname{tridiag}(a, b, a) \, v)_i = a v_{i-1} + b v_i + a v_{i+1},$$
+where the term $a v_{i-1}$ is absent for $i = 0$ and the term $a v_{i+1}$ is absent for $i = N$.
+This is `Matrix.tridiagonalOf_mulVec` for constant bands. -/
 theorem symmTridiagonalToeplitz_mulVec_apply' {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
     (i : Fin (N + 1)) :
     (symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i
@@ -1513,10 +1673,10 @@ theorem symmTridiagonalToeplitz_mulVec_apply' {N : ℕ} (a b : ℝ) (v : Fin (N 
   rw [symmTridiagonalToeplitz_eq_tridiagonalToeplitz, tridiagonalToeplitz_eq_tridiagonalOf,
     tridiagonalOf_mulVec]
 
-/-- **The row bound in the maximum norm**: every entry of `tridiag(a, b, a) v` is at most
-`(2 |a| + |b|) ‖v‖_∞` in absolute value (the row sums of the absolute entries are at most
-`2 |a| + |b|`), as used for the stability of the forward heat scheme in [han2009theoretical]
-Example 6.3.3. -/
+/-- **The row bound in the maximum norm.** For $v \in \mathbb{R}^{N+1}$ and every $i$,
+$$|(\operatorname{tridiag}(a, b, a) \, v)_i| \le (2|a| + |b|) \, \|v\|_\infty.$$
+The absolute row sums of the matrix are at most $2|a| + |b|$. The bound is used for the
+stability of the forward scheme for the heat equation in [han2009theoretical], Example 6.3.3. -/
 theorem abs_symmTridiagonalToeplitz_mulVec_apply_le {N : ℕ} (a b : ℝ) (v : Fin (N + 1) → ℝ)
     (i : Fin (N + 1)) :
     |(symmTridiagonalToeplitz (N + 1) a b *ᵥ v) i| ≤ (2 * |a| + |b|) * ‖v‖ := by
@@ -1537,14 +1697,16 @@ theorem abs_symmTridiagonalToeplitz_mulVec_apply_le {N : ℕ} (a b : ℝ) (v : F
     _ ≤ |a| * ‖v‖ + |b| * ‖v‖ + |a| * ‖v‖ := add_le_add (add_le_add h1 h3) h2
     _ = (2 * |a| + |b|) * ‖v‖ := by ring
 
-/-- Transposition exchanges the two off-diagonals. -/
+/-- Transposition exchanges the two off-diagonals: $\operatorname{tridiag}(a, b, c)^T =
+\operatorname{tridiag}(c, b, a)$. -/
 theorem tridiagonalToeplitz_transpose (n : ℕ) (a b c : ℝ) :
     (tridiagonalToeplitz n a b c)ᵀ = tridiagonalToeplitz n c b a := by
   ext i j
   rw [transpose_apply, tridiagonalToeplitz_apply, tridiagonalToeplitz_apply]
   split_ifs <;> first | rfl | omega
 
-/-- `diag(1, d, d², …)` as a unit of the matrix ring, for `d ≠ 0`. -/
+/-- The matrix $\operatorname{diag}(1, d, d^2, \dots, d^{n-1})$ as a unit of the matrix ring, for
+$d \neq 0$. -/
 private noncomputable def diagPowUnit (n : ℕ) {d : ℝ} (hd : d ≠ 0) :
     (Matrix (Fin n) (Fin n) ℝ)ˣ where
   val := diagonal fun i : Fin n => d ^ (i : ℕ)
@@ -1560,9 +1722,9 @@ private noncomputable def diagPowUnit (n : ℕ) {d : ℝ} (hd : d ≠ 0) :
     funext i
     simp [inv_mul_cancel₀ (pow_ne_zero (i : ℕ) hd)]
 
-/-- The symmetrizing similarity: with `d² = a / c`, `tridiag(a, b, c) · diag(1, d, d², …)` and
-`diag(1, d, d², …) · tridiag(c d, b, c d)` agree.  The scaling multiplies the superdiagonal by `d`
-and divides the subdiagonal by `d`, and `d² = a / c` is exactly what makes the two results equal. -/
+/-- The symmetrizing similarity: if $c \neq 0$ and $d^2 = a/c$, then $\operatorname{tridiag}(a, b,
+c) \, D = D \, \operatorname{tridiag}(c d, b, c d)$ for
+$D = \operatorname{diag}(1, d, d^2, \dots)$. -/
 private theorem tridiagonalToeplitz_mul_diagonal_pow (n : ℕ) (a b c d : ℝ) (hc : c ≠ 0)
     (hd : d ^ 2 = a / c) :
     tridiagonalToeplitz n a b c * diagonal (fun i : Fin n => d ^ (i : ℕ))
@@ -1585,8 +1747,9 @@ private theorem tridiagonalToeplitz_mul_diagonal_pow (n : ℕ) (a b c d : ℝ) (
   · rw [ite_eq_right h3, ite_eq_right (by tauto)]
     ring
 
-/-- Reflecting the index `k ↦ n - 1 - k` negates `cos((k + 1)π/(n + 1))`, so the cosine family is
-unchanged when the amplitude changes sign. -/
+/-- For $b, t, \mu \in \mathbb{R}$, $\mu = b + 2(-t) \cos \theta_k$ for some $k$ if and only if
+$\mu = b + 2 t \cos \theta_k$ for some $k$: the reflection $k \mapsto n - 1 - k$ changes the
+sign of $\cos \theta_k$. -/
 private theorem exists_eq_add_cos_neg_iff (n : ℕ) (b t μ : ℝ) :
     (∃ k : Fin n, μ = b + 2 * (-t) * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) ↔
       ∃ k : Fin n, μ = b + 2 * t * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
@@ -1608,8 +1771,8 @@ private theorem exists_eq_add_cos_neg_iff (n : ℕ) (b t μ : ℝ) :
   · rintro ⟨k, rfl⟩
     exact ⟨k.rev, by rw [hcos]; ring⟩
 
-/-- A tridiagonal Toeplitz matrix with a vanishing superdiagonal is lower triangular, so its
-spectrum is the single diagonal entry (and is empty for `n = 0`). -/
+/-- The spectrum of $\operatorname{tridiag}(a, b, 0)$, which is lower triangular, is $\{b\}$ for
+$n \ge 1$ and empty for $n = 0$. -/
 private theorem mem_spectrum_tridiagonalToeplitz_super_zero (n : ℕ) (a b μ : ℝ) :
     μ ∈ spectrum ℝ (tridiagonalToeplitz n a b 0) ↔ ∃ _k : Fin n, μ = b := by
   set M : Matrix (Fin n) (Fin n) ℝ :=
@@ -1641,13 +1804,16 @@ private theorem mem_spectrum_tridiagonalToeplitz_super_zero (n : ℕ) (a b μ : 
   · rintro ⟨k, hμ⟩
     exact ⟨hμ, by have := k.isLt; omega⟩
 
-/-- **The spectrum of a tridiagonal Toeplitz matrix** whose two off-diagonals have the same sign:
-the eigenvalues of `tridiag(a, b, c)` with `a c ≥ 0` are the `n` numbers
-`b + 2 √(a c) cos((k + 1)π/(n + 1))`.
+/-- **The spectrum of a tridiagonal Toeplitz matrix** whose two off-diagonals have the same sign.
+Let $a, b, c \in \mathbb{R}$ with $a c \ge 0$. Then $\mu \in \mathbb{R}$ is an eigenvalue of
+$\operatorname{tridiag}(a, b, c)$ if and only if
+$$\mu = b + 2 \sqrt{a c} \cos \frac{(k + 1)\pi}{n + 1}$$
+for some $k = 0, \dots, n - 1$.
 
-For `a c > 0` the matrix is `diag(1, d, d², …)`-similar to `tridiag(√(ac), b, √(ac))` up to a sign
-in the off-diagonal, and a sign there only reflects the cosine family; for `a c = 0` the matrix is
-triangular and its only eigenvalue is `b`, which the formula also gives. -/
+For $a c > 0$ the matrix is similar through $\operatorname{diag}(1, d, d^2, \dots)$ to
+$\operatorname{tridiag}(\sqrt{ac}, b, \sqrt{ac})$ up to a sign of the off-diagonal, and that
+sign only reflects the family of cosines. For $a c = 0$ the matrix is triangular and its only
+eigenvalue is $b$, which the formula also gives. -/
 theorem tridiagonalToeplitz_hasEigenvalue_iff (n : ℕ) (a b c : ℝ) (hac : 0 ≤ a * c) (μ : ℝ) :
     Module.End.HasEigenvalue (toEuclideanLin (tridiagonalToeplitz n a b c)) μ ↔
       ∃ k : Fin n, μ = b + 2 * Real.sqrt (a * c)
@@ -1688,18 +1854,21 @@ theorem tridiagonalToeplitz_hasEigenvalue_iff (n : ℕ) (a b c : ℝ) (hac : 0 �
   · rw [← habs, h]
   · rw [← habs, ← exists_eq_add_cos_neg_iff, h]
 
-/-! ### The centred advection-diffusion matrix `tridiag(-(1 + p), 2, -(1 - p))` -/
+/-! ### The centred advection-diffusion matrix $\operatorname{tridiag}(-(1 + p), 2, -(1 - p))$ -/
 
-/-- Negating a tridiagonal Toeplitz matrix negates its three bands. -/
+/-- The negative of a tridiagonal Toeplitz matrix is the tridiagonal Toeplitz matrix of the negated
+bands: $-\operatorname{tridiag}(x, y, z) = \operatorname{tridiag}(-x, -y, -z)$. -/
 theorem neg_tridiagonalToeplitz (m : ℕ) (x y z : ℝ) :
     -Matrix.tridiagonalToeplitz m x y z = Matrix.tridiagonalToeplitz m (-x) (-y) (-z) := by
   ext i j
   rw [Matrix.neg_apply, Matrix.tridiagonalToeplitz_apply, Matrix.tridiagonalToeplitz_apply]
   split_ifs <;> simp
 
-/-- The matrix of the stabilized centred scheme splits into the symmetric model Laplacian and the
-antisymmetric centred advection matrix:
-`tridiag(-(1 + p), 2, -(1 - p)) = tridiag(-1, 2, -1) + p tridiag(-1, 0, 1)`. -/
+/-- The matrix of the stabilized centred scheme is the sum of the symmetric model Laplacian and a
+multiple of the antisymmetric centred advection matrix: for $p \in \mathbb{R}$,
+$$\operatorname{tridiag}(-(1 + p), 2, -(1 - p)) = \operatorname{tridiag}(-1, 2, -1) + p
+  \operatorname{tridiag}(-1, 0, 1).$$
+-/
 theorem tridiagonalToeplitz_eq_add_smul (m : ℕ) (p : ℝ) :
     Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p))
       = Matrix.symmTridiagonalToeplitz m (-1) 2 + p • Matrix.tridiagonalToeplitz m (-1) 0 1 := by
@@ -1709,8 +1878,9 @@ theorem tridiagonalToeplitz_eq_add_smul (m : ℕ) (p : ℝ) :
     Matrix.tridiagonalToeplitz_apply, Matrix.tridiagonalToeplitz_apply, smul_eq_mul]
   split_ifs <;> ring
 
-/-- The centred advection matrix `tridiag(-1, 0, 1)` is antisymmetric, so its quadratic form
-vanishes: the advective term contributes nothing to the energy of the discrete operator. -/
+/-- The centred advection matrix $\operatorname{tridiag}(-1, 0, 1)$ is antisymmetric, so its
+quadratic form is zero: $x^T \operatorname{tridiag}(-1, 0, 1) \, x = 0$ for every
+$x \in \mathbb{R}^m$. The advective term adds nothing to the energy of the discrete operator. -/
 theorem dotProduct_mulVec_tridiagonalToeplitz_antisymm {m : ℕ} (x : Fin m → ℝ) :
     x ⬝ᵥ (Matrix.tridiagonalToeplitz m (-1) 0 1 *ᵥ x) = 0 := by
   have htr : (Matrix.tridiagonalToeplitz m (-1) 0 1)ᵀ = -Matrix.tridiagonalToeplitz m (-1) 0 1 := by
@@ -1722,9 +1892,11 @@ theorem dotProduct_mulVec_tridiagonalToeplitz_antisymm {m : ℕ} (x : Fin m → 
   rw [htr, Matrix.neg_mulVec, dotProduct_neg] at h1
   linarith
 
-/-- The quadratic form of the stabilized scheme's matrix is that of the model Laplacian, hence
-positive: `xᵀ tridiag(-(1 + p), 2, -(1 - p)) x = xᵀ tridiag(-1, 2, -1) x > 0` for `x ≠ 0`,
-whatever `p`. -/
+/-- The quadratic form of the matrix of the stabilized scheme is that of the model Laplacian, so it
+is positive: for every $p \in \mathbb{R}$ and every nonzero $x \in \mathbb{R}^m$,
+$$x^T \operatorname{tridiag}(-(1 + p), 2, -(1 - p)) \, x = x^T \operatorname{tridiag}(-1, 2, -1)
+  \, x > 0.$$
+-/
 theorem dotProduct_mulVec_tridiagonalToeplitz_pos {m : ℕ} (p : ℝ) {x : Fin m → ℝ} (hx : x ≠ 0) :
     0 < x ⬝ᵥ (Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p)) *ᵥ x) := by
   rw [tridiagonalToeplitz_eq_add_smul, Matrix.add_mulVec, dotProduct_add,
@@ -1732,9 +1904,13 @@ theorem dotProduct_mulVec_tridiagonalToeplitz_pos {m : ℕ} (p : ℝ) {x : Fin m
     dotProduct_mulVec_tridiagonalToeplitz_antisymm, mul_zero, add_zero]
   simpa using (Matrix.posDef_symmTridiagonalToeplitz_neg_one_two m).dotProduct_mulVec_pos hx
 
-/-- **The matrix of the stabilized scheme is an M-matrix** whenever `|Pe*| ≤ 1`
-([quarteroni2000numerical] Exercise 12.13): its off-diagonal entries `-(1 ± Pe*)` are
-nonpositive, and its quadratic form is that of the model Laplacian, which is positive definite. -/
+/-- **The matrix of the stabilized scheme is an M-matrix** ([quarteroni2000numerical], Exercise
+12.13). Let $c > 0$ and $|p| \le 1$. Then $c \operatorname{tridiag}(-(1 + p), 2, -(1 - p))$ is
+an M-matrix.
+
+Here $p$ is the number $\mathrm{Pe}^*$ of the source, and the condition $|p| \le 1$ is
+$|\mathrm{Pe}^*| \le 1$. The off-diagonal entries $-(1 \pm p)$ are nonpositive, and the
+quadratic form is that of the model Laplacian, which is positive definite. -/
 theorem isMMatrix_smul_tridiagonalToeplitz {m : ℕ} {c p : ℝ} (hc : 0 < c) (hp : |p| ≤ 1) :
     (c • Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p))).IsMMatrix := by
   obtain ⟨hp1, hp2⟩ := abs_le.1 hp

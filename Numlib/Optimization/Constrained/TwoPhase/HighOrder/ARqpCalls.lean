@@ -6,29 +6,35 @@ import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Complexity
 import Numlib.Optimization.ModelBased.HighOrder.ARqpCCall
 
 /-!
-# Phase-2 runs whose inner calls are regularization runs
+# Runs of Phase 2 with adaptive-regularization inner calls
 
-Phase 2 of a high-order target-following method ([cartis2022evaluation], Algorithm 14.3.2) with
-the inner method realized by the adaptive-regularization method ARqp (run as ARqpC with
-`c = 0`, `h = 0`): every inner call `INNER(μ(·, t_k), X, q, x_k, β ‖r(x_k, t_k)‖ ε)` is a prefix of
-such a run (`Optimization.IsARqpCallOut`), cut at any iteration, with its output radii. For every
-run of this kind the calls satisfy the inner-test contract
-(`Constrained.HighOrderTargetSeq.IsInnerTestContract`) with constants independent of the targets,
-and calls with the required properties exist from every admissible point, so that such runs
-exist (`Constrained.HighOrderTargetSeq.exists_run_of_oracle`). The same holds on the whole space
-for the ARqp runs with unit radii (`Optimization.IsARqpUnitCallOut`).
+This file realizes the inner method of Phase 2 of a high-order target-following method (Algorithm
+14.3.2 of [cartis2022evaluation]) by the adaptive-regularization method ARqp, run as ARqpC with
+$c = 0$ and $h = 0$. Every inner call $\mathrm{INNER}(\mu(\cdot, t_k), X, q, x_k, \beta \|r(x_k,
+t_k)\| \varepsilon)$ is a prefix of such a run on the merit function $\mu(\cdot, t_k)$, cut at any
+iteration, together with its output radii (`Optimization.IsARqpCallOut`). For every run of Phase 2
+of this kind, the calls satisfy the contract keyed on the inner test
+(`Constrained.HighOrderTargetSeq.IsInnerTestContract`) with constants independent of the targets.
+Calls with the required properties exist from every admissible point, so such runs exist by
+`Constrained.HighOrderTargetSeq.exists_run_of_oracle`. The same holds on the whole space for the
+ARqp runs with unit radii (`Optimization.IsARqpUnitCallOut`).
+
+Below, $\mathcal{L}(t) = \{y \in X \mid \|r(y, t)\| \le 1\}$ is the sublevel set
+`Constrained.targetSublevel`, and $\theta_P$ and $\varsigma_P$ are the parameters
+`Optimization.ARqpParams.θ` and `Optimization.ARqpParams.ς` of ARqp.
 
 ## Main definitions
 
-* `Constrained.HighOrderTargetSeq.IsARqpCalls`: the calls are ARqp calls with their output radii;
-* `Constrained.HighOrderTargetSeq.IsARqpUnitCalls`: the calls are ARqp calls with unit radii.
+* `Constrained.HighOrderTargetSeq.IsARqpCalls`: the inner calls are ARqp calls with their output
+  radii.
+* `Constrained.HighOrderTargetSeq.IsARqpUnitCalls`: the inner calls are ARqp calls with unit radii.
 
 ## Main results
 
-* `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls` (exponents `j + 1`),
-  `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls_arqpPiOf` (exponents
-  `arqpPiOf u p`), `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpUnitCalls`: the
-  contracts;
+* `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls` (exponents $\pi_l = l + 1$),
+  `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls_arqpPiOf` (exponents given by
+  `Optimization.arqpPiOf`),
+  `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpUnitCalls`: the contracts.
 * `Constrained.exists_arqpCall`, `Constrained.exists_arqpUnitCall`: one inner call from every
   admissible point.
 -/
@@ -45,10 +51,12 @@ variable [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup G]
 namespace HighOrderTargetSeq
 
 variable (G) in
-/-- **The inner calls of Phase 2 are ARqp calls**: for every outer iteration `k ≥ 1` reached, the
-iterates, successful iterations and output radii `δ_{k+1}` of the `k`-th call are those of an ARqp
-run (ARqpC with `c = 0 : E → G`, `h = 0`) on `μ(·, t_k)` with tolerances `β ‖r(x_k, t_k)‖ ε_j`,
-cut at any iteration (`Optimization.IsARqpCallOut`). -/
+/-- **The inner calls of Phase 2 are ARqp calls.** For every outer iteration $k \ge 1$ that is
+reached, the iterates, the successful iterations and the output radii $\delta_{k+1}$ of the
+$k$-th call are those of an ARqp run on $\mu(\cdot, t_k)$ with the tolerances
+$\beta \|r(x_k, t_k)\| \varepsilon_j$, cut at any iteration (`Optimization.IsARqpCallOut`).
+
+The ARqp run is an ARqpC run with the constraint $c = 0 : E \to G$ and $h = 0$. -/
 def IsARqpCalls (D : HighOrderTargetSeq E) (f : E → ℝ) (c : E → F) (X : Set E) (p q : ℕ)
     (P : Optimization.ARqpParams) (θ β : ℝ) (ε : ℕ → ℝ) : Prop :=
   ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
@@ -56,9 +64,10 @@ def IsARqpCalls (D : HighOrderTargetSeq E) (f : E → ℝ) (c : E → F) (X : Se
       (fun j => β * targetResidual f c (D.t k) (D.x k) * ε j) (D.xi k) (D.e k) (D.succ k)
       (D.δ (k + 1))
 
-/-- **The inner calls of Phase 2 on the whole space are ARqp calls with unit radii**: for every
-outer iteration `k ≥ 1` reached, the `k`-th call is an `Optimization.IsARqpUnitCallOut` on
-`μ(·, t_k)` with tolerances `β ‖r(x_k, t_k)‖ ε_j`, cut at any iteration. -/
+/-- **The inner calls of Phase 2 on the whole space are ARqp calls with unit radii.** For every
+outer iteration $k \ge 1$ that is reached, the $k$-th call is an
+`Optimization.IsARqpUnitCallOut` on $\mu(\cdot, t_k)$ with the tolerances
+$\beta \|r(x_k, t_k)\| \varepsilon_j$, cut at any iteration. -/
 def IsARqpUnitCalls (D : HighOrderTargetSeq E) (f : E → ℝ) (c : E → F) (p q : ℕ)
     (P : Optimization.ARqpParams) (θ β : ℝ) (ε : ℕ → ℝ) : Prop :=
   ∀ k, 1 ≤ k → D.Before f c univ q θ ε k →
@@ -73,8 +82,11 @@ namespace IsHighOrderTargetRun
 variable {f : E → ℝ} {c : E → F} {X : Set E} {p q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E}
   {D : HighOrderTargetSeq E}
 
-/-- The points of `X` where `μ(·, t_k)` is at most its value at the start `x_k` of the `k`-th
-call lie in `targetSublevel f c X t_k`, since `‖r(x_k, t_k)‖ ≤ ε₀ ≤ 1`. -/
+/-- In a run of Phase 2, let $k \ge 1$ be an outer iteration that is reached. Then every $y \in X$
+with $\mu(y, t_k) \le \mu(x_{k,0}, t_k)$ lies in the sublevel set $\mathcal{L}(t_k)$
+(`Constrained.targetSublevel`), that is, $\|r(y, t_k)\| \le 1$.
+
+The reason is $\|r(x_k, t_k)\| \le \varepsilon_0 \le 1$. -/
 theorem call_sublevel (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) {k : ℕ}
     (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
     ∀ y ∈ X, targetMerit f c (D.t k) y ≤ targetMerit f c (D.t k) (D.xi k 0) →
@@ -85,7 +97,9 @@ theorem call_sublevel (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) {k : �
     (((h.isTargetSequence hk).residual_le h.θ_lt_one.le h.ε₀_pos.le hk1 le_rfl).trans
       (h.ε_le_one 0 (by simp)))⟩
 
-/-- `κ βθ ε₀ ε_j ≤ κ β ‖r(x_k, t_k)‖ ε_j` at a case-(b) iteration, for `κ ≥ 0`. -/
+/-- In a run of Phase 2, let $k \ge 1$ be an outer iteration in $\mathcal{K}_b$ that is reached, let
+$\kappa \ge 0$, and let $j \in \{1, \dots, q\}$. Then $\kappa \beta \theta \varepsilon_0
+\varepsilon_j \le \kappa \beta \|r(x_k, t_k)\| \varepsilon_j$. -/
 theorem mul_tol_le_of_isKb (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) {k : ℕ} (hk1 : 1 ≤ k)
     (hk : D.Before f c X q θ ε k) (hb : D.IsKb f c θ ε k) {κ : ℝ} (hκ : 0 ≤ κ) {j : ℕ}
     (hj : j ∈ Finset.Icc 1 q) :
@@ -99,14 +113,27 @@ theorem mul_tol_le_of_isKb (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) {k
 
 variable {P : Optimization.ARqpParams} {X₀ : Set E} {L : ℕ → ℝ}
 
-/-- **Runs with ARqp calls satisfy the inner-test contract** ([cartis2022evaluation],
-Lemmas 14.2.2–14.2.3, exponents `π_l = l + 1`), with the target-independent constants
-`κ_decr = Optimization.arqpCallKappaDecr`, `κ_uns = Optimization.arqpKappaUns`,
-`κ_unc = Optimization.arqpCallKappaUnc` and radii `ρ_j = κ_ρ βθ ε₀ ε_j`
-(`κ_ρ = Optimization.arqpCallKappaRad`), when every `μ(·, t)` satisfies the anchored Lipschitz
-condition of order `p` with constants `L` (`L_p ≥ 1`) and jet bounds on `targetSublevel f c X t`,
-for an open convex `X₀ ⊇ X`, and `θ < ς` (`Optimization.IsARqpCallOut.contract` for every call;
-the calls may be cut by any test). -/
+/-- **Runs with ARqp calls satisfy the contract keyed on the inner test**, with the exponents
+$\pi_l = l + 1$. Let $D$ be a run of Phase 2 whose inner calls are ARqp calls
+(`Constrained.HighOrderTargetSeq.IsARqpCalls`). Let $X_0 \supseteq X$, and suppose that for
+every target $t$:
+
+* $\mu(\cdot, t)$ satisfies the anchored Lipschitz condition of order $p$
+  (`LipschitzDerivsAnchored`) on the open convex set $X_0$, anchored in $\mathcal{L}(t)$, with
+  constants $L$ and $L_p \ge 1$;
+* $\|\nabla^i \mu(y, t)\| \le \max(1, \max_{1 \le j \le p} L_j)$ for $i = 2, \dots, p$ and every
+  $y \in \mathcal{L}(t)$.
+
+Suppose also that the ARqp parameters satisfy $\theta_P < \varsigma_P$. Then the calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with target-independent constants: the
+decrease constant $\kappa_{\mathrm{decr}}$ given by `Optimization.arqpCallKappaDecr`, the count
+constants $\kappa_{\mathrm{uns}}$ given by `Optimization.arqpKappaUns` and
+$\kappa_{\mathrm{unc}}$ given by `Optimization.arqpCallKappaUnc`, and the radii $\rho_j =
+\kappa_\rho \beta\theta\varepsilon_0\varepsilon_j$ with $\kappa_\rho$ given by
+`Optimization.arqpCallKappaRad`.
+
+This follows Lemmas 14.2.2 and 14.2.3 of [cartis2022evaluation]. The proof applies
+`Optimization.IsARqpCallOut.contract` to every call, so the calls may be cut by any test. -/
 theorem isInnerTestContract_of_isARqpCalls (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcalls : D.IsARqpCalls G f c X p q P θ β ε)
     (hf : ∀ t, LipschitzDerivsAnchored (targetMerit f c t) X₀ (targetSublevel f c X t) p p L)
@@ -136,10 +163,17 @@ theorem isInnerTestContract_of_isARqpCalls (h : IsHighOrderTargetRun f c X q θ 
       (Optimization.arqpCallKappaRad_pos (P := P) (L := L) (p := p)).le hj).trans
       ((hC k hk1 hk).2.2.2.2 j hj)
 
-/-- **Runs with ARqp calls satisfy the inner-test contract with the exponents
-`π_l = arqpPiOf u p l`** ([cartis2022evaluation], Lemmas 14.2.2–14.2.3, ARqp-SC row): as
-`isInnerTestContract_of_isARqpCalls`, with `κ_decr = η₁ κ_{Δm}` (`Optimization.arqpKappaDmOf u`)
-in a radii mode `u` with `u → q = 1 ∧ X` convex. -/
+/-- **Runs with ARqp calls satisfy the contract keyed on the inner test, with the exponents of a
+radii mode.** Under the assumptions of
+`Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls`, let $u$ be a radii mode
+such that $u$ implies $q = 1$ and the convexity of $X$. Then the calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with the same constants
+$\kappa_{\mathrm{uns}}$ and $\kappa_{\mathrm{unc}}$ and the same radii, the decrease constant
+$\kappa_{\mathrm{decr}} = \eta_1 \kappa_{\Delta m}$ (`Optimization.arqpKappaDmOf`), and the
+exponents (`Optimization.arqpPiOf`) $\pi_l = (p + 1)/(p - l + 1)$ if $u$ holds and
+$\pi_l = l(p + 1)/p$ otherwise.
+
+This follows Lemmas 14.2.2 and 14.2.3 of [cartis2022evaluation], row ARqp-SC. -/
 theorem isInnerTestContract_of_isARqpCalls_arqpPiOf (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcalls : D.IsARqpCalls G f c X p q P θ β ε)
     (hf : ∀ t, LipschitzDerivsAnchored (targetMerit f c t) X₀ (targetSublevel f c X t) p p L)
@@ -166,13 +200,20 @@ theorem isInnerTestContract_of_isARqpCalls_arqpPiOf (h : IsHighOrderTargetRun f 
       (Optimization.arqpCallKappaRad_pos (P := P) (L := L) (p := p)).le hj).trans
       ((hC k hk1 hk).2.2.2.2 j hj)
 
-/-- **Runs on the whole space with unit-radius ARqp calls satisfy the inner-test contract**
-([cartis2022evaluation], Lemmas 12.2.13 and 14.2.3 with unit radii), with the exponents
-`π_l = arqpPiOf True p l = (p+1)/(p-l+1)`, the target-independent constants
-`κ_decr = η₁ κ_{Δm}` (`Optimization.arqpKappaDmOf True`), `κ_uns = Optimization.arqpKappaUns`,
-`κ_unc = Optimization.arqpCallKappaUnc` and radii `ρ_j = 1`, when every `μ(·, t)` satisfies the
-anchored Lipschitz condition of order `p` with constants `L` (`L_p ≥ 1`) on
-`targetSublevel f c univ t`, `θ < ς` and `1 ≤ q ≤ p`. -/
+/-- **Runs on the whole space with unit-radius ARqp calls satisfy the contract keyed on the inner
+test.** Let $D$ be a run of Phase 2 with $X = E$ whose inner calls are ARqp calls with unit
+radii (`Constrained.HighOrderTargetSeq.IsARqpUnitCalls`). Suppose that for every target $t$ the
+merit function $\mu(\cdot, t)$ satisfies the anchored Lipschitz condition of order $p$ on $E$,
+anchored in $\mathcal{L}(t)$, with constants $L$ and $L_p \ge 1$. Suppose also that the ARqp
+parameters satisfy $\theta_P < \varsigma_P$, and that $1 \le q \le p$. Then the calls satisfy
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with the exponents
+$\pi_l = (p + 1)/(p - l + 1)$ (`Optimization.arqpPiOf` in the mode of unit radii), the
+target-independent constants $\kappa_{\mathrm{decr}} = \eta_1 \kappa_{\Delta m}$
+(`Optimization.arqpKappaDmOf` in the mode of unit radii), $\kappa_{\mathrm{uns}}$ given by
+`Optimization.arqpKappaUns` and $\kappa_{\mathrm{unc}}$ given by
+`Optimization.arqpCallKappaUnc`, and the radii $\rho_j = 1$.
+
+This follows Lemmas 12.2.13 and 14.2.3 of [cartis2022evaluation] with unit radii. -/
 theorem isInnerTestContract_of_isARqpUnitCalls (h : IsHighOrderTargetRun f c univ q θ β ε x₁ D)
     (hcalls : D.IsARqpUnitCalls f c p q P θ β ε)
     (hf : ∀ t, LipschitzDerivsAnchored (targetMerit f c t) univ (targetSublevel f c univ t) p p L)
@@ -220,11 +261,27 @@ variable [FiniteDimensional ℝ E] {f : E → ℝ} {c : E → F} {X : Set E} {p 
 
 variable (G) in
 open Classical in
-/-- **One ARqp inner call with its output radii exists** from every `(x, t)` with `x ∈ X` and
-`θε₀ ≤ ‖r(x, t)‖ ≤ ε₀`: an ARqp run on `μ(·, t)` with tolerances `β ‖r(x, t)‖ ε`, stopped at its
-termination or as soon as `‖r(·, t)‖ < θε₀`; its output satisfies the first or the third test of
-(14.3.32), the merit does not increase along the call, and the residual stays at least `θε₀`
-before the last iterate. -/
+/-- **One ARqp inner call with its output radii exists.** Let $E$ be finite-dimensional, let $X$ be
+closed with $X \subseteq X_0$, and fix a target $t$. Suppose that $\mu(\cdot, t)$ satisfies the
+anchored Lipschitz condition of order $p$ on $X_0$, anchored in $\mathcal{L}(t)$, with constants
+$L$ and $L_p \ge 1$, and that $\|\nabla^i \mu(y, t)\| \le \max(1, \max_{1 \le j \le p} L_j)$ for
+$i = 2, \dots, p$ and every $y \in \mathcal{L}(t)$. Let the ARqp parameters satisfy
+$\sigma_{\min} > 0$ and $\theta_P < \varsigma_P$, let $1 \le q \le p$, $\theta > 0$,
+$0 < \beta \le \theta$ and $\varepsilon_j \in (0, 1]$ for $j = 0, \dots, q$. Then for every
+$x \in X$ with $\theta\varepsilon_0 \le \|r(x, t)\| \le \varepsilon_0$ there is a call $o$ with
+$e$ iterations such that:
+
+* $o_0 = x$, $o_e \in X$, and the radii satisfy $\delta_j \in (0, 1]$ for $j = 1, \dots, q$;
+* $\|r(o_e, t)\| < \theta\varepsilon_0$, or the criticality test (14.3.34) holds at $(o_e, t)$
+  with the radii $\delta$; these are the first and the third test of (14.3.32);
+* $\mu(\cdot, t)$ does not increase along the call, and $\|r(o_i, t)\| \ge \theta\varepsilon_0$
+  for every $i < e$;
+* $\|r(o_e, t)\| \le \|r(x, t)\|$;
+* the call is an `Optimization.IsARqpCallOut` on $\mu(\cdot, t)$ with the tolerances
+  $\beta \|r(x, t)\| \varepsilon_j$.
+
+The call is an ARqp run on $\mu(\cdot, t)$, stopped at its termination or as soon as
+$\|r(\cdot, t)\| < \theta\varepsilon_0$. -/
 theorem exists_arqpCall
     (hf : LipschitzDerivsAnchored (targetMerit f c t) X₀ (targetSublevel f c X t) p p L)
     (hL : 1 ≤ L p)
@@ -280,11 +337,27 @@ theorem exists_arqpCall
   · exact Or.inr (hcrit δo (fun j hj => (hδo j hj).1) (hend.resolve_left hlt) (not_lt.1 hlt))
 
 open Classical in
-/-- **One unit-radius ARqp inner call exists on the whole space** (`1 ≤ q ≤ min(2, p)`) from every
-`(x, t)` with `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀`: the ARqp run of
-`Optimization.exists_isARqpUnitCallOut_of_stop` on `μ(·, t)` with tolerances `β ‖r(x, t)‖ ε`,
-stopped at its termination or as soon as `‖r(·, t)‖ < θε₀`, returning the radii `1`; its output
-satisfies (14.3.32). -/
+/-- **One unit-radius ARqp inner call exists on the whole space.** Let $E$ be finite-dimensional and
+fix a target $t$. Let $\mathcal{L}(t)$ here be the sublevel set in $E$. Suppose that
+$\mu(\cdot, t)$ satisfies the anchored Lipschitz condition of order $p$ on $E$, anchored in
+$\mathcal{L}(t)$, with constants $L$ and $L_p \ge 1$, and that $\|\nabla^i \mu(y, t)\| \le
+\max(1, \max_{1 \le j \le p} L_j)$ for $i = 2, \dots, p$ and every $y \in \mathcal{L}(t)$. Let
+the ARqp parameters satisfy $\sigma_{\min} > 0$ and $\theta_P < \varsigma_P$, let
+$1 \le q \le \min(2, p)$, $\theta > 0$, $0 < \beta \le \theta$ and $\varepsilon_j \in (0, 1]$
+for $j = 0, \dots, q$. Then for every $x$ with $\theta\varepsilon_0 \le \|r(x, t)\| \le
+\varepsilon_0$ there is a call $o$ with $e$ iterations such that:
+
+* $o_0 = x$, and the radii satisfy $\delta_j \in (0, 1]$ for $j = 1, \dots, q$;
+* $\|r(o_e, t)\| < \theta\varepsilon_0$, or the criticality test (14.3.34) on the whole space
+  holds at $(o_e, t)$ with the radii $\delta$;
+* $\mu(\cdot, t)$ does not increase along the call, and $\|r(o_i, t)\| \ge \theta\varepsilon_0$
+  for every $i < e$;
+* $\|r(o_e, t)\| \le \|r(x, t)\|$;
+* the call is an `Optimization.IsARqpUnitCallOut` on $\mu(\cdot, t)$ with the tolerances
+  $\beta \|r(x, t)\| \varepsilon_j$, and its radii are $1$.
+
+The call is the ARqp run of `Optimization.exists_isARqpUnitCallOut_of_stop` on $\mu(\cdot, t)$,
+stopped at its termination or as soon as $\|r(\cdot, t)\| < \theta\varepsilon_0$. -/
 theorem exists_arqpUnitCall
     (hf : LipschitzDerivsAnchored (targetMerit f c t) univ (targetSublevel f c univ t) p p L)
     (hL : 1 ≤ L p)

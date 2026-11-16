@@ -10,43 +10,58 @@ import Mathlib.Analysis.Normed.Operator.Compact.Basic
 /-!
 # Compact and completely continuous nonlinear operators
 
-A map `T` defined on a subset `K` of a normed space is a **compact map** when it carries every
-bounded subset of `K` to a relatively compact set, and **completely continuous** when it is in
-addition continuous. For a *linear* map on the whole space compactness already forces continuity and
-the notion is Mathlib's `IsCompactOperator`; for a nonlinear map continuity is an independent
-hypothesis, which is why the two words are needed.
+Let $T$ be a map defined on a subset $K$ of a normed space. Then $T$ is a **compact map** on $K$ if
+it maps every bounded subset of $K$ to a relatively compact set, and $T$ is **completely
+continuous** if it is also continuous. For a linear map on the whole space, compactness already
+implies continuity, and the notion is the compact operator `IsCompactOperator` of Mathlib. For a
+nonlinear map, continuity is an independent hypothesis, and so the two words are necessary. This
+module follows Definition 5.5.3 and Proposition 5.5.5 of [han2009theoretical] and Remark 1 (3) in
+§6.1 of [brezis2011functional].
 
-* `IsCompactMap T K` is the predicate, and `isCompactMap_univ_iff_isCompactOperator` identifies it
-  with `IsCompactOperator` for a linear map on the whole space.
+The main result is that the Fréchet derivative of a compact map at an interior point is a compact
+linear operator. This result makes the Fredholm alternative available for $I - T'(v_0)$, and so it
+connects a nonlinear fixed-point problem $u = T(u)$ with the linear theory of equations of the
+second kind. The module also proves the Schauder projection: up to any $\varepsilon > 0$, a
+continuous map with totally bounded range is a continuous map with values in the convex hull of
+finitely many points of its range. This is the step from the fixed-point theorem of Brouwer to that
+of Schauder.
+
+## Main definitions
+
+* `IsCompactMap`: $T$ maps every bounded subset of $K$ to a set with compact closure.
+
+## Main results
+
+* `isCompactMap_univ_iff_isCompactOperator`: a linear map is a compact map on the whole space if and
+  only if it is a compact operator.
 * `IsCompactMap.isCompactOperator_hasFDerivAt`: the Fréchet derivative of a compact map at an
-  interior point is a **compact linear operator**. This is what licenses the Fredholm alternative
-  for `1 - T'(v₀)`, and so it is the bridge from a nonlinear fixed point problem `u = T u` to the
-  linear theory of second-kind equations.
-* `Continuous.exists_finset_mem_convexHull_norm_sub_lt`: the **Schauder projection** — a
-  continuous map with totally bounded range is, to within any `ε`, a continuous map with values in
-  the convex hull of finitely many points of its range. This is the step from Brouwer's to
-  Schauder's fixed point theorem.
+  interior point of its domain is a compact operator.
+* `Continuous.exists_finset_mem_convexHull_norm_sub_lt`: the Schauder projection.
 
-The proof of the derivative theorem is the classical one: for a scalar `a` of small norm the
-difference quotients `v ↦ a⁻¹ • (T (v₀ + a • v) - T v₀)` run over a totally bounded set as `v` runs
-over the closed unit ball, and they approximate `A` uniformly there, so `A` maps the unit ball into
-a totally bounded set. Continuity of `T` is not used: differentiability at the one point `v₀`
-together with compactness on bounded sets is enough, so the hypothesis is weaker than the
-"completely continuous" of the source.
+## Proof outline
 
-These are [han2009theoretical] Definition 5.5.3 and Proposition 5.5.5, and
-[brezis2011functional] §6.1 Remark 1 (3). Brouwer's and Schauder's fixed point theorems, and the
-rotation of a completely continuous vector field, are not here: Mathlib has neither a Brouwer
-theorem nor degree theory.
+For a scalar $a$ of small norm, the difference quotients $v \mapsto a^{-1}(T(v_0 + a v) - T(v_0))$
+lie in a totally bounded set as $v$ runs over the closed unit ball. They approximate the derivative
+$A$ uniformly on the ball. So $A$ maps the unit ball into a totally bounded set. The proof does not
+use the continuity of $T$: differentiability at the one point $v_0$, together with compactness on
+bounded sets, is sufficient. So the hypothesis is weaker than the complete continuity of
+[han2009theoretical].
+
+## Implementation notes
+
+* The fixed-point theorems of Brouwer and Schauder, and the rotation of a completely continuous
+  vector field, are not in this module, because Mathlib has neither the theorem of Brouwer nor
+  degree theory.
 -/
 
 open Metric Set Bornology
 
-/-- A map `T` is a **compact map on `K`** when the image of every bounded subset of `K` is
-relatively compact: `closure (T '' B)` is compact for every bounded `B ⊆ K`.
+/-- A map $T : V \to W$ is a **compact map on $K$** if the image of every bounded subset of $K$ is
+relatively compact: for every bounded set $B \subseteq K$, the closure of $T(B)$ is compact.
+This is Definition 5.5.3 of [han2009theoretical].
 
-A *completely continuous* map is a continuous compact map; continuity is a separate hypothesis
-because, unlike for linear maps, it does not follow. -/
+A **completely continuous** map is a continuous compact map. Continuity is a separate hypothesis
+because, unlike for linear maps, it does not follow from compactness. -/
 def IsCompactMap {V W : Type*} [SeminormedAddCommGroup V] [TopologicalSpace W]
     (T : V → W) (K : Set V) : Prop :=
   ∀ B ⊆ K, IsBounded B → IsCompact (closure (T '' B))
@@ -55,7 +70,7 @@ namespace IsCompactMap
 
 variable {V W : Type*} [SeminormedAddCommGroup V] [TopologicalSpace W] {T : V → W} {K L : Set V}
 
-/-- A compact map on `K` is a compact map on every subset of `K`. -/
+/-- A compact map on $K$ is a compact map on every subset $L \subseteq K$. -/
 theorem mono (hT : IsCompactMap T K) (h : L ⊆ K) : IsCompactMap T L :=
   fun _ hB hb => hT _ (hB.trans h) hb
 
@@ -63,16 +78,19 @@ end IsCompactMap
 
 section SchauderProjection
 
-/-- **The Schauder projection** ([brezis2011functional] §6.1 Remark 1 (3)). Let `X` be a
-topological space and `T : X → F` a continuous map into a normed space whose range is totally
-bounded (e.g. relatively compact). Then for every `ε > 0` there are finitely many points `t` of
-the range and a continuous map `Tε : X → F` with values in the convex hull of `t` and
-`‖Tε x - T x‖ < ε` for all `x`.
+/-- **The Schauder projection.** Let $X$ be a topological space, let $F$ be a real normed space, and
+let $T : X \to F$ be continuous with totally bounded range, for example a relatively compact
+range. Then for every $\varepsilon > 0$ there are a finite set $t$ of points of the range of $T$
+and a continuous map $T_\varepsilon : X \to F$ such that, for every $x \in X$,
+$T_\varepsilon(x)$ lies in the convex hull of $t$ and
+$$\|T_\varepsilon(x) - T(x)\| < \varepsilon.$$
+This is Remark 1 (3) in §6.1 of [brezis2011functional].
 
-The construction: cover the range by the balls `B(f, ε/2)`, `f ∈ t`, put
-`q_f(x) = max (ε - ‖T x - f‖) 0` and let `Tε x` be the centre of mass of the points `f` with the
-weights `q_f(x)`, a convex combination of points within `ε` of `T x`. This is the step from
-Brouwer's to Schauder's fixed point theorem. -/
+The construction covers the range by the balls $B(f, \varepsilon/2)$ for $f \in t$, puts
+$q_f(x) = \max\{\varepsilon - \|T(x) - f\|, 0\}$, and defines $T_\varepsilon(x)$ as the centre
+of mass of the points $f$ with the weights $q_f(x)$. This is a convex combination of points
+within $\varepsilon$ of $T(x)$. The result is the step from the fixed-point theorem of Brouwer
+to that of Schauder. -/
 theorem Continuous.exists_finset_mem_convexHull_norm_sub_lt {X F : Type*} [TopologicalSpace X]
     [SeminormedAddCommGroup F] [NormedSpace ℝ F] {T : X → F} (hT : Continuous T)
     (hK : TotallyBounded (range T)) {ε : ℝ} (hε : 0 < ε) :
@@ -149,7 +167,9 @@ section Linear
 variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [SeminormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- For a linear map on the whole space, being a compact map is Mathlib's `IsCompactOperator`. -/
+/-- Let $V$ and $W$ be normed spaces over a nontrivially normed field. A linear map $f : V \to W$ is
+a compact map on the whole space $V$ if and only if it is a compact operator in the sense of
+`IsCompactOperator`. Continuity of $f$ is not assumed. -/
 theorem isCompactMap_univ_iff_isCompactOperator {f : V →ₗ[𝕜] W} :
     IsCompactMap f univ ↔ IsCompactOperator f := by
   constructor
@@ -167,12 +187,13 @@ variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
   [CompleteSpace W]
 
-/-- **The Fréchet derivative of a compact map is a compact operator** ([han2009theoretical],
-Proposition 5.5.5). If `T` is a compact map on a neighbourhood `K` of `v₀` and is Fréchet
-differentiable at `v₀` with derivative `A`, then `A` is a compact operator.
+/-- **The Fréchet derivative of a compact map is a compact operator.** Let $V$ and $W$ be normed
+spaces over a nontrivially normed field, with $W$ complete. Let $T : V \to W$ be a compact map
+on a neighbourhood $K$ of $v_0$, and let $T$ be Fréchet differentiable at $v_0$ with derivative
+$A$. Then $A$ is a compact operator. This is Proposition 5.5.5 of [han2009theoretical].
 
-Note that `T` is not assumed continuous: differentiability at `v₀` is all the smoothness the proof
-uses, so the statement applies to a completely continuous operator in particular. -/
+The map $T$ is not assumed continuous. Differentiability at $v_0$ is the only smoothness that
+the proof uses, so the result applies in particular to a completely continuous operator. -/
 theorem IsCompactMap.isCompactOperator_hasFDerivAt {T : V → W} {K : Set V} {v₀ : V} {A : V →L[𝕜] W}
     (hT : IsCompactMap T K) (hK : K ∈ nhds v₀) (hA : HasFDerivAt T A v₀) :
     IsCompactOperator A := by

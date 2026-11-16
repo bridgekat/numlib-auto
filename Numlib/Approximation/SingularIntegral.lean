@@ -10,53 +10,80 @@ import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 /-!
 # Singular integrals: endpoint singularities and unbounded intervals
 
-The elementary analysis behind the numerical treatment of singular integrals in
-[quarteroni2000numerical] §9.8: an integrand `φ(x)/(x - a)^μ`, `0 ≤ μ < 1`, with `φ` bounded or
-smooth, and integrals over `[a, ∞)`.
+This module gives the elementary analysis behind the numerical treatment of singular integrals in
+§9.8 of [quarteroni2000numerical]. It treats two cases: an integrand $\varphi(x)/(x - a)^\mu$ on
+$[a, b]$ with $0 \le \mu < 1$ and $\varphi$ bounded or smooth, and an integral over $[a, \infty)$.
+For the first case, let
+$$\Phi_p(x) = \sum_{k=0}^{p} \frac{\varphi^{(k)}(a)}{k!} (x - a)^k$$
+be the Taylor polynomial of $\varphi$ at $a$. The module proves the a priori bound $\bigl|\int_a^b
+\varphi(x)/(x - a)^\mu \, dx\bigr| \le M (b - a)^{1-\mu}/(1 - \mu)$ for $|\varphi| \le M$, the
+closed form of $\int_a^b \Phi_p(x)/(x - a)^\mu \, dx$, the truncation estimate of Method 1 of the
+source, and the regularity of the subtracted integrand $(\varphi - \Phi_p)/(x - a)^\mu$ of Method 2.
+For the second case, it proves a decay criterion for integrability on $[a, \infty)$ and the change
+of variables $x = 1/t$.
+
+Nothing here is a quadrature rule. These are the identities and regularity facts that let the
+composite Newton–Cotes error formulae of `Numlib.Approximation.NewtonCotes` be applied to a
+regularized integrand. The operator theory of product integration for weakly singular kernels is in
+`Numlib.IntegralEquations.ProductIntegration` and is not repeated here.
 
 ## Main results
 
-* `Quadrature.intervalIntegrable_div_rpow`, `Quadrature.abs_integral_div_rpow_le` — for bounded
-  measurable `φ`, `φ(x)/(x - a)^μ` is integrable on `[a, b]` and
-  `|∫_a^b φ(x)/(x - a)^μ| ≤ M (b - a)^{1-μ}/(1 - μ)`, the a priori bound of §9.8.2.
-* `Quadrature.integral_pow_div_rpow`, `Quadrature.integral_sum_mul_pow_div_rpow` — the closed
-  forms `∫_a^b (x - a)^k/(x - a)^μ = (b - a)^{k+1-μ}/(k + 1 - μ)` and, for a polynomial in
-  `x - a`, the sum that (9.51) displays for the Taylor polynomial.
-* `Quadrature.taylorWithinEval_univ_eq_sum`, `Quadrature.exists_sub_taylorWithinEval_univ_eq` —
-  the Taylor polynomial `Φ_p(x) = ∑_{k≤p} φ^{(k)}(a)(x - a)^k/k!` as Mathlib's
-  `taylorWithinEval φ p univ a`, and the Lagrange form of the remainder (9.47) with the
-  unrestricted derivative `φ^{(p+1)}(ξ)`, for `φ` smooth on an open set containing the segment.
-* `Quadrature.abs_integral_taylorRemainder_div_rpow_le` — the truncation estimate (9.48) of
-  Method 1: `|∫_a^{a+ε} (φ - Φ_p)/(x - a)^μ| ≤ ε^{p+2-μ}/((p + 1)! (p + 2 - μ)) max |φ^{(p+1)}|`.
-* `Quadrature.integrableOn_Ioi_of_tendsto_rpow_mul`,
-  `Quadrature.tendsto_intervalIntegral_of_tendsto_rpow_mul` — the decay criterion of §9.8.3:
-  `x^{1+ρ} f(x) → 0` for some `ρ > 0` makes a continuous `f` integrable on `[a, ∞)`, and then
-  `∫_a^∞ f = lim_{t→∞} ∫_a^t f` (9.53).
-* `Quadrature.integral_Ioi_eq_integral_Ioo_inv` — the inversion `x = 1/t` (9.55),
-  `∫_c^∞ f = ∫_0^{1/c} f(1/t)/t² dt`.
-* `Quadrature.contDiffOn_taylorRemainder_div_rpow` — the regularity claim after (9.52): the
-  subtracted integrand `(φ - Φ_p)/(x - a)^μ`, continued by `0` at `a`, is of class `C^p` on
-  `[a, b]` for `μ < 1` and `φ` of class `C^{p+1}` on an open set containing `[a, b]`. This is the
-  hypothesis under which the composite Newton–Cotes error formulae apply to the regularized
-  integrand of Method 2.
-* `Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero` — and all its derivatives up
-  to order `p` within `[a, b]` vanish at `a`.
-* `Quadrature.hasDerivAt_taylorWithinEval_univ` — the derivative of the Taylor polynomial of `φ`
-  at `a` is the Taylor polynomial of `φ'` at `a`, one degree lower.
+* `Quadrature.intervalIntegrable_div_rpow`: for $0 \le \mu < 1$ and $\varphi$ measurable and bounded
+  on $(a, b]$, the function $\varphi(x)/(x - a)^\mu$ is integrable on $[a, b]$.
+* `Quadrature.abs_integral_div_rpow_le`: the a priori bound of §9.8.2, $\bigl|\int_a^b
+  \varphi(x)/(x - a)^\mu \, dx\bigr| \le M (b - a)^{1-\mu}/(1 - \mu)$ for $|\varphi| \le M$ on
+  $(a, b]$.
+* `Quadrature.integral_pow_div_rpow`: the closed form $\int_a^b (x - a)^k/(x - a)^\mu \, dx = (b -
+  a)^{k+1-\mu}/(k + 1 - \mu)$.
+* `Quadrature.integral_sum_mul_pow_div_rpow`: the closed form of the integral of a polynomial in
+  $x - a$ against $(x - a)^{-\mu}$, which (9.51) displays for the Taylor polynomial.
+* `Quadrature.taylorWithinEval_univ_eq_sum`: the Taylor polynomial $\Phi_p$ is Mathlib's
+  `taylorWithinEval φ p Set.univ a`.
+* `Quadrature.exists_sub_taylorWithinEval_univ_eq`: the Lagrange form (9.47) of the remainder
+  $\varphi(x) - \Phi_p(x)$, for $\varphi$ smooth on an open set that contains the segment.
+* `Quadrature.abs_integral_taylorRemainder_div_rpow_le`: the truncation estimate (9.48) of Method 1,
+  $\bigl|\int_a^{a+\varepsilon} (\varphi - \Phi_p)/(x - a)^\mu\bigr| \le \varepsilon^{p+2-\mu} M /
+  \bigl((p + 1)! \, (p + 2 - \mu)\bigr)$ for $|\varphi^{(p+1)}| \le M$.
+* `Quadrature.hasDerivAt_taylorWithinEval_univ`: the derivative of the Taylor polynomial of
+  $\varphi$ at $a$ is the Taylor polynomial of $\varphi'$ at $a$, of one degree less.
+* `Quadrature.contDiffOn_taylorRemainder_div_rpow`: the regularity claim after (9.52); for $\mu < 1$
+  and $\varphi$ of class $C^{p+1}$ on an open set that contains $[a, b]$, the subtracted integrand
+  $(\varphi - \Phi_p)/(x - a)^\mu$, continued by $0$ at $a$, is of class $C^p$ on $[a, b]$.
+* `Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero`: all derivatives of the
+  subtracted integrand up to order $p$ within $[a, b]$ vanish at $a$.
+* `Quadrature.integrableOn_Ioi_of_tendsto_rpow_mul`: the decay criterion of §9.8.3; if $f$ is
+  continuous on $[a, \infty)$ and $x^{1+\rho} f(x) \to 0$ for some $\rho > 0$, then $f$ is
+  integrable on $(a, \infty)$.
+* `Quadrature.tendsto_intervalIntegral_of_tendsto_rpow_mul`: under the decay criterion,
+  $\int_a^\infty f = \lim_{t \to \infty} \int_a^t f$, as in (9.53).
+* `Quadrature.integral_Ioi_eq_integral_Ioo_inv`: the inversion $x = 1/t$ of (9.55), $\int_c^\infty
+  f(x) \, dx = \int_0^{1/c} f(1/t)/t^2 \, dt$ for $c > 0$.
 
-Nothing here is a quadrature rule: these are the identities and regularity facts that let the
-composite Newton–Cotes error formulae of `Numlib/Approximation/NewtonCotes` be applied to a
-regularized integrand. The operator-level theory of product integration for weakly singular
-kernels is `Numlib/IntegralEquations/ProductIntegration` and is not repeated.
+## Proof outline
 
-## Conventions
+The regularity of the subtracted integrand is proved by an induction on the order of smoothness, in
+which both the Taylor degree $p$ and the excess $i$ of the exponent $\nu = \mu + i$ vary. Away from
+$a$, the quotient rule gives the derivative of $(\varphi - \Phi_p)/(x - a)^{\mu+i}$ as
+$$\frac{\varphi' - \Phi_p'}{(x - a)^{\mu+i}} - (\mu + i) \frac{\varphi - \Phi_p}{(x -
+  a)^{\mu+i+1}}.$$
+The two terms have the same form, with the pairs $(p - 1, i)$ and $(p, i + 1)$, and one order less
+smoothness. At $a$ the derivative comes from Mathlib's `hasDerivWithinAt_Ici_of_tendsto_deriv`. Both
+terms tend to $0$ at $a$, because $\varphi - \Phi_p = O((x - a)^{p+1})$ and the exponent stays below
+$p + 1$. The same induction proves that every derivative vanishes at $a$, because the two terms
+vanish there.
 
-Smoothness of `φ` is `ContDiffOn ℝ (p + 1) φ U` on an open `U` containing the closed interval, as
-the quadrature error formulae of `Numlib/Approximation/NewtonCotes` state it, so that the
-derivatives `iteratedDeriv k φ` are the two-sided ones. Mathlib supplies the power integrals
-(`integral_rpow`, `intervalIntegrable_rpow'`, `integrableOn_Ioi_rpow_of_lt`), Taylor's theorem
-(`taylor_mean_remainder_lagrange_iteratedDeriv`), the improper integrals
-(`intervalIntegral_tendsto_integral_Ioi`) and the change of variables `integral_comp_rpow_Ioi`.
+## Implementation notes
+
+* Smoothness of $\varphi$ is `ContDiffOn ℝ (p + 1) φ U` on an open set $U$ that contains the closed
+  interval, as in the quadrature error formulae of `Numlib.Approximation.NewtonCotes`. Then the
+  derivatives $\varphi^{(k)}$ = `iteratedDeriv k φ` are the two-sided ones.
+* The source assumes $0 \le \mu$ for the regularity of the subtracted integrand. The proof needs
+  only $\mu < 1$.
+* Mathlib supplies the power integrals (`integral_rpow`, `intervalIntegrable_rpow'`,
+  `integrableOn_Ioi_rpow_of_lt`), Taylor's theorem (`taylor_mean_remainder_lagrange_iteratedDeriv`),
+  the improper integrals (`intervalIntegral_tendsto_integral_Ioi`) and the change of variables
+  `integral_comp_rpow_Ioi`.
 -/
 
 open Set Filter Topology MeasureTheory intervalIntegral
@@ -69,22 +96,33 @@ section Endpoint
 
 variable {a b μ : ℝ} {φ : ℝ → ℝ}
 
-/-- The weight `x ↦ (x - a)^{-μ}`, `μ < 1`, is integrable over `[a, b]`. -/
+/-- Let $\mu < 1$. For all real $a$ and $b$, the weight $x \mapsto (x - a)^{-\mu}$ is integrable on
+the interval between $a$ and $b$.
+
+For $b < a$ the weight is the real power of a negative number on $(b, a)$, with Mathlib's
+convention for `Real.rpow`. -/
 theorem intervalIntegrable_rpow_neg_sub (hμ : μ < 1) :
     IntervalIntegrable (fun x => (x - a) ^ (-μ)) volume a b := by
   have h := (intervalIntegrable_rpow' (a := 0) (b := b - a) (by linarith : (-1 : ℝ) < -μ))
     |>.comp_sub_right a
   simpa using h
 
-/-- `∫_a^b (x - a)^{-μ} = (b - a)^{1-μ}/(1 - μ)` for `a ≤ b`, `μ < 1`. -/
+/-- Let $\mu < 1$. For all real $a$ and $b$,
+$$\int_a^b (x - a)^{-\mu} \, dx = \frac{(b - a)^{1-\mu}}{1 - \mu}.$$
+
+The case of interest is $a \le b$. For $b < a$, both sides use Mathlib's convention for the real
+power `Real.rpow` of a negative number, and the identity still holds. -/
 theorem integral_rpow_neg_sub (hμ : μ < 1) :
     ∫ x in a..b, (x - a) ^ (-μ) = (b - a) ^ (1 - μ) / (1 - μ) := by
   rw [intervalIntegral.integral_comp_sub_right (fun x => x ^ (-μ)) a, sub_self,
     integral_rpow (Or.inl (by linarith)), Real.zero_rpow (by linarith), sub_zero,
     show -μ + 1 = 1 - μ by ring]
 
-/-- **Integrability of `φ(x)/(x - a)^μ`** for `0 ≤ μ < 1` and `φ` measurable and bounded on
-`(a, b]`. -/
+/-- Let $a < b$ and $0 \le \mu < 1$, and let $\varphi$ be a measurable function with
+$|\varphi(x)| \le M$ for all $x \in (a, b]$. Then the function
+$x \mapsto \varphi(x)/(x - a)^\mu$ is integrable on $[a, b]$.
+
+Measurability is almost-everywhere strong measurability for the Lebesgue measure on $(a, b]$. -/
 theorem intervalIntegrable_div_rpow (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1)
     (hφ : AEStronglyMeasurable φ (volume.restrict (Ioc a b))) {M : ℝ}
     (hM : ∀ x ∈ Ioc a b, |φ x| ≤ M) :
@@ -106,10 +144,11 @@ theorem intervalIntegrable_div_rpow (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ <
       abs_of_pos (Real.rpow_pos_of_pos hxa (-μ)), Real.rpow_neg hxa.le, div_eq_mul_inv]
     exact mul_le_mul_of_nonneg_right (hM x hx) (inv_nonneg.2 hpos.le)
 
-/-- **`φ(x)/(x - a)^μ` is as smooth as `φ` away from the singularity `a`**: `C^k` on `U ∩ (a, ∞)`
-whenever `φ` is `C^k` on `U`, since `x ↦ (x - a)^μ` is smooth and positive there. This is what
-lets a Newton–Cotes error bound be applied to the integrand on `[a + ε, b]`
-([quarteroni2000numerical] (9.49)). -/
+/-- Let $U \subseteq \mathbb{R}$, let $\mu \in \mathbb{R}$, and let $\varphi$ be of class $C^k$ on
+$U$, for any order $k$, finite or not. Then $x \mapsto \varphi(x)/(x - a)^\mu$ is of class $C^k$
+on $U \cap (a, \infty)$, because $x \mapsto (x - a)^\mu$ is smooth and positive there. This lets
+a Newton–Cotes error bound be applied to the integrand on $[a + \varepsilon, b]$, as in (9.49)
+of [quarteroni2000numerical]. -/
 theorem contDiffOn_div_rpow {U : Set ℝ} {k : WithTop ℕ∞} (hφ : ContDiffOn ℝ k φ U) :
     ContDiffOn ℝ k (fun x => φ x / (x - a) ^ μ) (U ∩ Set.Ioi a) := by
   refine (hφ.mono Set.inter_subset_left).div ?_ fun x hx =>
@@ -119,10 +158,15 @@ theorem contDiffOn_div_rpow {U : Set ℝ} {k : WithTop ℕ∞} (hφ : ContDiffOn
   exact ((Real.contDiffAt_rpow_const_of_ne (p := μ) hne).comp x
     (contDiffAt_id.sub contDiffAt_const)).contDiffWithinAt
 
-/-- **The a priori bound of [quarteroni2000numerical] §9.8.2.** For `μ < 1` and `φ` with
-`|φ| ≤ M` on `(a, b]`, `|∫_a^b φ(x)/(x - a)^μ dx| ≤ M (b - a)^{1-μ}/(1 - μ)` (the integral exists
-by `intervalIntegrable_div_rpow` when `φ` is measurable; the bound needs no more than the
-pointwise estimate). -/
+/-- The **a priori bound** for an endpoint singularity. Let $a < b$, $\mu < 1$ and
+$M \in \mathbb{R}$, and let $\varphi$ satisfy $|\varphi(x)| \le M$ for all $x \in (a, b]$. Then
+$$\left| \int_a^b \frac{\varphi(x)}{(x - a)^\mu} \, dx \right| \le \frac{M (b - a)^{1-\mu}}{1 -
+  \mu}.$$
+This is the bound of §9.8.2 of [quarteroni2000numerical].
+
+The bound needs only the pointwise estimate, and no measurability of $\varphi$. If the integrand
+is not integrable, the Lean integral is $0$ and the bound holds because $M \ge 0$. The integral
+exists by `Quadrature.intervalIntegrable_div_rpow` when $\varphi$ is measurable and $\mu \ge 0$. -/
 theorem abs_integral_div_rpow_le (hab : a < b) (hμ1 : μ < 1) {M : ℝ}
     (hM : ∀ x ∈ Ioc a b, |φ x| ≤ M) :
     |∫ x in a..b, φ x / (x - a) ^ μ| ≤ M * (b - a) ^ (1 - μ) / (1 - μ) := by
@@ -142,7 +186,9 @@ theorem abs_integral_div_rpow_le (hab : a < b) (hμ1 : μ < 1) {M : ℝ}
 
 /-! ### The closed forms (9.51) -/
 
-/-- `∫_a^b (x - a)^k/(x - a)^μ dx = (b - a)^{k+1-μ}/(k + 1 - μ)` for `a ≤ b`, `k : ℕ`, `μ < 1`. -/
+/-- Let $a \le b$, $\mu < 1$ and $k \in \mathbb{N}$. Then
+$$\int_a^b \frac{(x - a)^k}{(x - a)^\mu} \, dx = \frac{(b - a)^{k+1-\mu}}{k + 1 - \mu}.$$
+-/
 theorem integral_pow_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (k : ℕ) :
     ∫ x in a..b, (x - a) ^ k / (x - a) ^ μ = (b - a) ^ (k + 1 - μ) / (k + 1 - μ) := by
   rw [intervalIntegral.integral_comp_sub_right (fun t => t ^ k / t ^ μ) a, sub_self]
@@ -153,10 +199,13 @@ theorem integral_pow_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (k : ℕ) :
   rw [hcongr, integral_rpow (Or.inl (by linarith)), Real.zero_rpow (by linarith), sub_zero,
     show (k : ℝ) - μ + 1 = k + 1 - μ by ring]
 
-/-- **The singular part integrates in closed form** ([quarteroni2000numerical] (9.51)): for a
-polynomial `∑_{k≤p} c_k (x - a)^k` in `x - a`,
-`∫_a^b (∑_{k≤p} c_k (x - a)^k)/(x - a)^μ dx = (b - a)^{1-μ} ∑_{k≤p} (b - a)^k c_k/(k + 1 - μ)`;
-with `c_k = φ^{(k)}(a)/k!` this is (9.51). -/
+/-- Let $a \le b$, $\mu < 1$ and $p \in \mathbb{N}$, and let $c_0, \dots, c_p$ be real numbers. The
+integral of a polynomial in $x - a$ against the singular weight has the closed form
+$$\int_a^b \frac{\sum_{k=0}^{p} c_k (x - a)^k}{(x - a)^\mu} \, dx = (b - a)^{1-\mu}
+  \sum_{k=0}^{p} \frac{(b - a)^k c_k}{k + 1 - \mu}.$$
+With $c_k = \varphi^{(k)}(a)/k!$ this is (9.51) of [quarteroni2000numerical].
+
+The coefficients are a sequence `c : ℕ → ℝ`, of which only $c_0, \dots, c_p$ are used. -/
 theorem integral_sum_mul_pow_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (c : ℕ → ℝ) (p : ℕ) :
     ∫ x in a..b, (∑ k ∈ Finset.range (p + 1), c k * (x - a) ^ k) / (x - a) ^ μ
       = (b - a) ^ (1 - μ) * ∑ k ∈ Finset.range (p + 1), (b - a) ^ k * c k / (k + 1 - μ) := by
@@ -188,8 +237,14 @@ theorem integral_sum_mul_pow_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (c : ℕ �
 
 /-! ### The Taylor polynomial and the remainder (9.47) -/
 
-/-- The Taylor polynomial `Φ_p(x) = ∑_{k≤p} φ^{(k)}(a)(x - a)^k/k!` of `φ` at `a`
-([quarteroni2000numerical] (9.47)) is Mathlib's `taylorWithinEval φ p univ a x`. -/
+/-- For every function $\varphi \colon \mathbb{R} \to \mathbb{R}$, every $p \in \mathbb{N}$ and all
+real $a$ and $x$, Mathlib's Taylor polynomial `taylorWithinEval φ p Set.univ a x` is
+$$\Phi_p(x) = \sum_{k=0}^{p} \frac{\varphi^{(k)}(a)}{k!} (x - a)^k,$$
+the Taylor polynomial of $\varphi$ at $a$ in (9.47) of [quarteroni2000numerical].
+
+The derivatives $\varphi^{(k)}$ are `iteratedDeriv k φ`. For $k \ge 1$, $\varphi^{(k)}$ is the
+derivative of $\varphi^{(k-1)}$, with the value $0$ at a point where $\varphi^{(k-1)}$ is not
+differentiable. -/
 theorem taylorWithinEval_univ_eq_sum (φ : ℝ → ℝ) (p : ℕ) (a x : ℝ) :
     taylorWithinEval φ p univ a x
       = ∑ k ∈ Finset.range (p + 1), iteratedDeriv k φ a * (x - a) ^ k / k.factorial := by
@@ -198,12 +253,16 @@ theorem taylorWithinEval_univ_eq_sum (φ : ℝ → ℝ) (p : ℕ) (a x : ℝ) :
   rw [iteratedDerivWithin_univ, smul_eq_mul]
   ring
 
-/-- **Taylor's formula with the Lagrange remainder** ([quarteroni2000numerical] (9.47)): for `φ`
-of class `C^{p+1}` on an open set containing the segment from `a` to `x ≠ a`,
-`φ(x) = Φ_p(x) + φ^{(p+1)}(ξ)(x - a)^{p+1}/(p + 1)!` for some `ξ` strictly between `a` and `x`,
-with `Φ_p = taylorWithinEval φ p univ a` the Taylor polynomial in the two-sided derivatives.
-Mathlib's `taylor_mean_remainder_lagrange_iteratedDeriv`, whose Taylor polynomial is taken within
-the segment, and the agreement of the within-derivatives at `a` with the two-sided ones. -/
+/-- **Taylor's formula with the Lagrange remainder.** Let $a \neq x$ and $p \in \mathbb{N}$. Let $U$
+be an open set that contains the closed segment between $a$ and $x$, and let $\varphi$ be of
+class $C^{p+1}$ on $U$. Then there is a point $\xi$ strictly between $a$ and $x$ with
+$$\varphi(x) - \Phi_p(x) = \frac{\varphi^{(p+1)}(\xi)}{(p + 1)!} (x - a)^{p+1}.$$
+This is (9.47) of [quarteroni2000numerical].
+
+Here $\Phi_p$ is `taylorWithinEval φ p Set.univ a`, the Taylor polynomial in the two-sided
+derivatives. The proof specializes Mathlib's `taylor_mean_remainder_lagrange_iteratedDeriv`,
+whose Taylor polynomial uses the derivatives within the segment, and uses that these agree at
+$a$ with the two-sided derivatives. -/
 theorem exists_sub_taylorWithinEval_univ_eq {a x : ℝ} (hax : a ≠ x) {p : ℕ} {U : Set ℝ}
     (hU : IsOpen U) (hsub : uIcc a x ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     ∃ ξ ∈ uIoo a x, φ x - taylorWithinEval φ p univ a x
@@ -218,12 +277,17 @@ theorem exists_sub_taylorWithinEval_univ_eq {a x : ℝ} (hax : a ≠ x) {p : ℕ
   rw [iteratedDerivWithin_univ, iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_uIcc hax)
     ((hφ.contDiffAt (hU.mem_nhds (hsub left_mem_uIcc))).of_le hk') left_mem_uIcc]
 
-/-- **The truncation estimate of Method 1** ([quarteroni2000numerical] (9.48)). For `ε > 0`,
-`μ < 1`, `φ` of class `C^{p+1}` on an open set containing `[a, a + ε]` and
-`|φ^{(p+1)}| ≤ M` on `[a, a + ε]`,
-`|∫_a^{a+ε} (φ(x) - Φ_p(x))/(x - a)^μ dx| ≤ ε^{p+2-μ}/((p + 1)! (p + 2 - μ)) · M`:
-the Lagrange remainder gives `|φ(x) - Φ_p(x)| ≤ M (x - a)^{p+1}/(p + 1)!`, and
-`(x - a)^{p+1-μ}` integrates to `ε^{p+2-μ}/(p + 2 - μ)`. -/
+/-- The **truncation estimate** for an endpoint singularity. Let $\varepsilon > 0$, $\mu < 1$ and
+$p \in \mathbb{N}$. Let $U$ be an open set that contains $[a, a + \varepsilon]$, let $\varphi$
+be of class $C^{p+1}$ on $U$, and let $|\varphi^{(p+1)}(x)| \le M$ for all
+$x \in [a, a + \varepsilon]$. Then
+$$\left| \int_a^{a+\varepsilon} \frac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu} \, dx \right| \le
+  \frac{\varepsilon^{p+2-\mu}}{(p + 1)! \, (p + 2 - \mu)} M.$$
+This is the estimate (9.48) of Method 1 in [quarteroni2000numerical].
+
+Here $\Phi_p$ is `taylorWithinEval φ p Set.univ a`. The Lagrange remainder gives $|\varphi(x) -
+\Phi_p(x)| \le M (x - a)^{p+1}/(p + 1)!$, and $(x - a)^{p+1-\mu}$ integrates to
+$\varepsilon^{p+2-\mu}/(p + 2 - \mu)$. -/
 theorem abs_integral_taylorRemainder_div_rpow_le {ε : ℝ} (hε : 0 < ε) (hμ1 : μ < 1)
     {p : ℕ} {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a (a + ε) ⊆ U)
     (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) {M : ℝ}
@@ -272,26 +336,15 @@ theorem abs_integral_taylorRemainder_div_rpow_le {ε : ℝ} (hε : 0 < ε) (hμ1
     rw [e]
     gcongr
 
-/-! ### Regularity of the subtracted integrand
+/-!
+### Regularity of the subtracted integrand
 
-The function `(φ - Φ_p)/(x - a)^μ`, continued by `0` at `a`, is of class `C^p` on `[a, b]` when
-`φ` is `C^{p+1}` on an open set containing it and `μ < 1` ([quarteroni2000numerical] §9.8.2, the
-claim after (9.52)); this is the hypothesis under which the composite Newton–Cotes error formulae
-of `Numlib/Approximation/NewtonCotes` apply to the regularized integrand of Method 2.
-
-The proof is an induction on the order of smoothness in which the *pair* of the Taylor degree `p`
-and of the excess `i` of the exponent `ν = μ + i` varies. Away from `a` the quotient rule gives
-the derivative of `(φ - Φ_p)/(x - a)^{μ+i}` as
-`(φ' - Φ_p')/(x - a)^{μ+i} - (μ + i) (φ - Φ_p)/(x - a)^{μ+i+1}`, whose two summands are again of
-the same shape, with the pairs `(p - 1, i)` and `(p, i + 1)` and one order less smoothness. At `a`
-the derivative comes from Mathlib's `hasDerivWithinAt_Ici_of_tendsto_deriv`, both summands tending
-to `0` because `φ - Φ_p = O((x - a)^{p+1})` while the exponent stays below `p + 1`. The same
-induction carries the vanishing of every derivative at `a`, since the two summands vanish there.
-
-The hypothesis `0 ≤ μ` of the book is not needed: only `μ < 1` enters.
+The function $(\varphi - \Phi_p)/(x - a)^\mu$, continued by $0$ at $a$, is of class $C^p$ on
+$[a, b]$ when $\varphi$ is of class $C^{p+1}$ on an open set that contains $[a, b]$ and $\mu < 1$.
+This is the claim after (9.52) in §9.8.2 of [quarteroni2000numerical].
 -/
 
-/-- The subtracted integrand, continued by `0` at `a`. -/
+/-- The subtracted integrand $(\varphi(x) - \Phi_p(x))/(x - a)^\nu$, continued by $0$ at $x = a$. -/
 private noncomputable def remDiv (φ : ℝ → ℝ) (p : ℕ) (a ν : ℝ) : ℝ → ℝ :=
   fun x => if x = a then 0 else (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ ν
 
@@ -301,7 +354,7 @@ private theorem remDiv_apply_of_ne {p : ℕ} {ν x : ℝ} (hx : x ≠ a) :
 @[simp]
 private theorem remDiv_self {p : ℕ} {ν : ℝ} : remDiv φ p a ν a = 0 := ite_eq_left rfl
 
-/-- A bound on `|φ^{(p+1)}|` on the compact interval. -/
+/-- There is a bound $M \ge 0$ with $|\varphi^{(p+1)}| \le M$ on $[a, b]$. -/
 private theorem exists_bound_iteratedDeriv {p : ℕ} {U : Set ℝ} (hU : IsOpen U)
     (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     ∃ M, 0 ≤ M ∧ ∀ x ∈ Icc a b, |iteratedDeriv (p + 1) φ x| ≤ M := by
@@ -317,7 +370,8 @@ private theorem exists_bound_iteratedDeriv {p : ℕ} {U : Set ℝ} (hU : IsOpen 
   calc |iteratedDeriv (p + 1) φ x| ≤ M := this
     _ ≤ |M| + 1 := by cases abs_cases M <;> linarith
 
-/-- The subtracted integrand is `O((x - a)^{p + 1 - ν})` on `[a, b]`. -/
+/-- On $[a, b]$, the subtracted integrand is bounded by $C (x - a)^{p+1-\nu}$ for a constant
+$C \ge 0$. -/
 private theorem abs_remDiv_le (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1) {U : Set ℝ}
     (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     ∃ C, 0 ≤ C ∧ ∀ x ∈ Icc a b, |remDiv φ p a ν x| ≤ C * (x - a) ^ ((p : ℝ) + 1 - ν) := by
@@ -344,13 +398,20 @@ private theorem abs_remDiv_le (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p +
           * ((p + 1).factorial * (x - a) ^ ν) := by
           rw [hpow]; field_simp
 
-/-- The Taylor polynomial at `a` is continuous. -/
+/-- The Taylor polynomial at $a$ is a continuous function. -/
 private theorem continuous_taylorWithinEval_univ (φ : ℝ → ℝ) (p : ℕ) (a : ℝ) :
     Continuous (fun x => taylorWithinEval φ p univ a x) := by
   simp only [taylorWithinEval_univ_eq_sum]
   fun_prop
 
-/-- **The derivative of the Taylor polynomial** is the Taylor polynomial of the derivative. -/
+/-- For every function $\varphi \colon \mathbb{R} \to \mathbb{R}$, every $q \in \mathbb{N}$ and all
+real $a$ and $x$, the Taylor polynomial of degree $q + 1$ of $\varphi$ at $a$ has at $x$ the
+derivative
+$$\frac{d}{dx} \Phi_{q+1}[\varphi](x) = \Phi_q[\varphi'](x),$$
+where $\Phi_q[\varphi']$ is the Taylor polynomial of degree $q$ of $\varphi'$ at $a$.
+
+The Taylor polynomials are `taylorWithinEval` on `Set.univ`, and the derivative of $\varphi$ is
+`deriv φ`. No differentiability of $\varphi$ is needed. -/
 theorem hasDerivAt_taylorWithinEval_univ (φ : ℝ → ℝ) (q : ℕ) (a x : ℝ) :
     HasDerivAt (fun y => taylorWithinEval φ (q + 1) univ a y)
       (taylorWithinEval (deriv φ) q univ a x) x := by
@@ -380,7 +441,8 @@ theorem hasDerivAt_taylorWithinEval_univ (φ : ℝ → ℝ) (q : ℕ) (a x : ℝ
   have hsum := HasDerivAt.fun_sum hterm
   exact hsum.add_const (φ a)
 
-/-- **The derivative of the subtracted integrand** away from `a`. -/
+/-- For $x > a$, the subtracted integrand of degree $q + 1$ has the derivative $(\varphi' -
+\Phi_q[\varphi'])/(x - a)^\nu - \nu (\varphi - \Phi_{q+1}[\varphi])/(x - a)^{\nu+1}$ at $x$. -/
 private theorem hasDerivAt_remDiv {x ν : ℝ} (hx : a < x) {q : ℕ} {U : Set ℝ} (hU : IsOpen U)
     (hxU : x ∈ U) (hφ : DifferentiableOn ℝ φ U) :
     HasDerivAt (remDiv φ (q + 1) a ν)
@@ -407,7 +469,7 @@ private theorem hasDerivAt_remDiv {x ν : ℝ} (hx : a < x) {q : ℕ} {U : Set �
     show -ν - 1 = -(ν + 1) by ring, Real.rpow_neg hxa.le ν, Real.rpow_neg hxa.le (ν + 1)]
   ring
 
-/-- The subtracted integrand tends to `0` at the singular endpoint. -/
+/-- The subtracted integrand tends to $0$ at the singular endpoint $a$, within $[a, b]$. -/
 private theorem tendsto_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1) {U : Set ℝ}
     (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     Tendsto (remDiv φ p a ν) (𝓝[Icc a b] a) (𝓝 0) := by
@@ -426,7 +488,7 @@ private theorem tendsto_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p 
   filter_upwards [self_mem_nhdsWithin] with x hx
   simpa using hC x hx
 
-/-- **The subtracted integrand is continuous up to the singular endpoint.** -/
+/-- The subtracted integrand is continuous on $[a, b]$, including the singular endpoint $a$. -/
 private theorem continuousOn_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1)
     {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     ContinuousOn (remDiv φ p a ν) (Icc a b) := by
@@ -447,7 +509,9 @@ private theorem continuousOn_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν
     filter_upwards [nhdsWithin_le_nhds (Ioi_mem_nhds hxa)] with y hy
     exact remDiv_apply_of_ne (ne_of_gt (mem_Ioi.mp hy))
 
-/-- The induction behind `contDiffOn_taylorRemainder_div_rpow`. -/
+/-- For all $m, i \in \mathbb{N}$ and $\psi$ of class $C^{i+m+1}$ on $U$, the function
+$(\psi - \Phi_{i+m}[\psi])/(x - a)^{\mu+i}$, continued by $0$ at $a$, is of class $C^m$ on
+$[a, b]$, and its derivatives of order at most $m$ within $[a, b]$ vanish at $a$. -/
 private theorem contDiffOn_remDiv (hab : a < b) (hμ1 : μ < 1) {U : Set ℝ} (hU : IsOpen U)
     (hsub : Icc a b ⊆ U) :
     ∀ (m i : ℕ) (ψ : ℝ → ℝ), ContDiffOn ℝ ((i + m + 1 : ℕ)) ψ U →
@@ -548,8 +612,17 @@ private theorem contDiffOn_remDiv (hab : a < b) (hμ1 : μ < 1) {U : Set ℝ} (h
             (((hF2.const_smul (μ + (i : ℝ))).of_le hj'') a ha),
           iteratedDerivWithin_fun_const_smul_field, hF1z j' hj', hF2z j' hj', smul_zero, sub_zero]
 
-/-- **Regularity of the subtracted integrand** ([quarteroni2000numerical] §9.8.2, the claim after
-(9.52)). -/
+/-- **Regularity of the subtracted integrand.** Let $a < b$, $\mu < 1$ and $p \in \mathbb{N}$. Let
+$U$ be an open set that contains $[a, b]$, and let $\varphi$ be of class $C^{p+1}$ on $U$. Then
+the function
+$$g(x) = \begin{cases} 0, & x = a, \\ \dfrac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu}, & x \neq a,
+  \end{cases}$$
+is of class $C^p$ on $[a, b]$. This is the claim after (9.52) in §9.8.2 of
+[quarteroni2000numerical].
+
+Here $\Phi_p$ is `taylorWithinEval φ p Set.univ a`. The source also assumes $0 \le \mu$; the
+proof does not need it. This is the hypothesis under which the composite Newton–Cotes error
+formulae of `Numlib.Approximation.NewtonCotes` apply to the regularized integrand of Method 2. -/
 theorem contDiffOn_taylorRemainder_div_rpow (hab : a < b) (hμ1 : μ < 1) {p : ℕ}
     {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
     ContDiffOn ℝ p
@@ -559,10 +632,15 @@ theorem contDiffOn_taylorRemainder_div_rpow (hab : a < b) (hμ1 : μ < 1) {p : �
   simp only [Nat.cast_zero, add_zero, zero_add] at h
   exact h
 
-/-- **The subtracted integrand has vanishing derivatives at the singular endpoint**
-([quarteroni2000numerical] §9.8.2, the second half of the claim after (9.52)): under the
-hypotheses of `contDiffOn_taylorRemainder_div_rpow`, all its derivatives up to order `p` within
-`[a, b]` vanish at `a`. -/
+/-- **Vanishing derivatives of the subtracted integrand.** Let $a < b$, $\mu < 1$ and
+$p \in \mathbb{N}$. Let $U$ be an open set that contains $[a, b]$, and let $\varphi$ be of class
+$C^{p+1}$ on $U$. Let $g$ be the subtracted integrand $(\varphi - \Phi_p)/(x - a)^\mu$,
+continued by $0$ at $a$, as in `Quadrature.contDiffOn_taylorRemainder_div_rpow`. Then for every
+$j \le p$ the $j$-th derivative of $g$ within $[a, b]$ vanishes at $a$:
+$$g^{(j)}(a) = 0.$$
+This is the second half of the claim after (9.52) in §9.8.2 of [quarteroni2000numerical].
+
+The derivative within $[a, b]$ is `iteratedDerivWithin j g (Set.Icc a b)`. -/
 theorem iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero (hab : a < b) (hμ1 : μ < 1) {p : ℕ}
     {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U)
     {j : ℕ} (hj : j ≤ p) :
@@ -581,11 +659,14 @@ section Unbounded
 
 variable {a c ρ : ℝ} {f : ℝ → ℝ}
 
-/-- **The decay criterion of [quarteroni2000numerical] §9.8.3.** If `f` is continuous on
-`[a, ∞)` and `x^{1+ρ} f(x) → 0` as `x → ∞` for some `ρ > 0` — `f` is infinitesimal of order
-`> 1` with respect to `1/x` — then `f` is integrable over `(a, ∞)`: eventually
-`|f(x)| ≤ x^{-(1+ρ)}`, which is integrable at infinity, and the compact piece is integrable by
-continuity. -/
+/-- The **decay criterion** for integrals over unbounded intervals. Let $\rho > 0$, and let $f$ be
+continuous on $[a, \infty)$ with
+$$x^{1+\rho} f(x) \to 0 \quad (x \to \infty),$$
+that is, $f$ is infinitesimal of order greater than $1$ with respect to $1/x$. Then $f$ is
+integrable on $(a, \infty)$. This is the criterion of §9.8.3 of [quarteroni2000numerical].
+
+The proof: eventually $|f(x)| \le x^{-(1+\rho)}$, which is integrable at infinity, and the
+remaining compact piece is integrable because $f$ is continuous. -/
 theorem integrableOn_Ioi_of_tendsto_rpow_mul (hf : ContinuousOn f (Ici a)) (hρ : 0 < ρ)
     (hlim : Tendsto (fun x => x ^ (1 + ρ) * f x) atTop (𝓝 0)) : IntegrableOn f (Ioi a) := by
   -- eventually `|x^{1+ρ} f x| ≤ 1`
@@ -618,17 +699,27 @@ theorem integrableOn_Ioi_of_tendsto_rpow_mul (hf : ContinuousOn f (Ici a)) (hρ 
   rw [← Ioc_union_Ioi_eq_Ioi hca]
   exact hcomp.union htail
 
-/-- Under the decay criterion, the improper integral is the limit of the proper ones,
-`∫_a^∞ f = lim_{t→∞} ∫_a^t f` ([quarteroni2000numerical] (9.53)). -/
+/-- Let $\rho > 0$, and let $f$ be continuous on $[a, \infty)$ with $x^{1+\rho} f(x) \to 0$ as
+$x \to \infty$. Then the improper integral is the limit of the proper ones:
+$$\int_a^t f(x) \, dx \to \int_a^\infty f(x) \, dx \quad (t \to \infty).$$
+This is (9.53) of [quarteroni2000numerical].
+
+The integral $\int_a^\infty f$ is the Lebesgue integral over $(a, \infty)$. -/
 theorem tendsto_intervalIntegral_of_tendsto_rpow_mul (hf : ContinuousOn f (Ici a)) (hρ : 0 < ρ)
     (hlim : Tendsto (fun x => x ^ (1 + ρ) * f x) atTop (𝓝 0)) :
     Tendsto (fun t => ∫ x in a..t, f x) atTop (𝓝 (∫ x in Ioi a, f x)) :=
   intervalIntegral_tendsto_integral_Ioi a (integrableOn_Ioi_of_tendsto_rpow_mul hf hρ hlim)
     tendsto_id
 
-/-- **The inversion `x = 1/t`** ([quarteroni2000numerical] (9.55)): for `c > 0`,
-`∫_c^∞ f(x) dx = ∫_0^{1/c} f(1/t)/t² dt`. Mathlib's `integral_comp_rpow_Ioi` with `p = -1` on the
-indicator of `(c, ∞)`, whose preimage under `t ↦ 1/t` on `(0, ∞)` is `(0, 1/c)`. -/
+/-- The **inversion** $x = 1/t$. Let $c > 0$, and let $f \colon \mathbb{R} \to \mathbb{R}$ be any
+function. Then
+$$\int_c^\infty f(x) \, dx = \int_0^{1/c} \frac{f(1/t)}{t^2} \, dt.$$
+This is (9.55) of [quarteroni2000numerical].
+
+Both sides are Lebesgue integrals, over $(c, \infty)$ and over $(0, 1/c)$. The identity holds
+for every $f$; when $f$ is not integrable on $(c, \infty)$, both sides are $0$. The proof
+applies Mathlib's `integral_comp_rpow_Ioi` with $p = -1$ to the indicator of $(c, \infty)$,
+whose preimage under $t \mapsto 1/t$ on $(0, \infty)$ is $(0, 1/c)$. -/
 theorem integral_Ioi_eq_integral_Ioo_inv (hc : 0 < c) (f : ℝ → ℝ) :
     ∫ x in Ioi c, f x = ∫ t in Ioo 0 (1 / c), f (1 / t) / t ^ 2 := by
   have key := integral_comp_rpow_Ioi ((Ioi c).indicator f) (p := -1) (by norm_num)

@@ -15,34 +15,35 @@ import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 # The convergence half of the Banach–Steinhaus theorem, and its corollaries
 
 Mathlib's `banach_steinhaus` is the uniform boundedness principle: a pointwise bounded family of
-operators out of a Banach space is bounded in norm. This file adds the companion that the
-applications use, and which needs neither completeness nor a Baire argument, together with the
-corollaries of the principle stated in [brezis2011functional] §2.2 that Mathlib does not state:
-the lower semicontinuity of the operator norm under pointwise convergence, and the two
-"weakly bounded implies bounded" statements.
+bounded linear operators on a Banach space is bounded in norm. This file adds the convergence half
+that the applications use: a uniformly bounded family that converges pointwise on a dense set to a
+bounded operator $L$ converges pointwise everywhere to $L$. This half needs neither completeness nor
+a Baire argument. Together with the uniform boundedness principle it gives, on a Banach space, the
+criterion by which a family of quadrature rules, or of interpolation projections, is shown to
+converge on all of $C[a, b]$ from its convergence on the polynomials.
 
-## Main statements
+The file also proves the corollaries of the uniform boundedness principle in [brezis2011functional],
+§2.2, that Mathlib does not state: the lower semicontinuity of the operator norm under pointwise
+convergence (Corollary 2.3(c)), and the two statements "weakly bounded implies bounded" (Corollary
+2.4) and "weak-∗ bounded implies bounded" (Corollary 2.5).
 
-* `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded` — a uniformly bounded family that
-  converges pointwise on a dense *set* to a bounded operator converges pointwise everywhere. This
-  is the ε/3 argument, and it holds along an arbitrary filter on an arbitrary index type.
-* `ContinuousLinearMap.tendsto_iff_tendsto_on_dense_of_completeSpace` — the two halves combined,
-  as an `Iff` on a complete space: a sequence converges pointwise everywhere exactly when it
-  converges on a dense set and is uniformly bounded. This is the criterion by which a family of
-  quadrature rules, or of interpolation projections, is shown to converge on all of `C[a, b]`
-  from its convergence on the polynomials.
-* `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` — the contrapositive of
-  `banach_steinhaus`: unbounded operator norms produce a vector whose images do not converge.
-  With the Lebesgue constants of the Fourier projections this is the existence of a continuous
-  function whose Fourier series diverges.
-* `ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto` — the operator norm is lower
-  semicontinuous under pointwise convergence of a uniformly bounded sequence,
-  `‖L‖ ≤ liminf ‖Lₙ‖` ([brezis2011functional], Corollary 2.3 (c)).
-* `isBounded_of_forall_dual_image_isBounded`, `isBounded_iff_forall_dual_image_isBounded` — a
-  set is bounded iff every bounded linear functional is bounded on it (Corollary 2.4, "weakly
-  bounded implies bounded"), by the uniform boundedness principle in the (always complete) dual.
-* `StrongDual.isBounded_of_forall_eval_isBounded` — a set of functionals on a Banach space that
-  is bounded at every point is bounded in norm (Corollary 2.5, "weak-∗ bounded implies bounded").
+## Main results
+
+* `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`: a uniformly bounded family that
+  converges pointwise on a dense set to a bounded operator converges pointwise everywhere, along an
+  arbitrary filter on an arbitrary index type.
+* `ContinuousLinearMap.tendsto_iff_tendsto_on_dense_of_completeSpace`: on a Banach space, a sequence
+  of operators converges pointwise everywhere if and only if it converges on a dense set and is
+  uniformly bounded.
+* `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove`: if the operator norms are unbounded,
+  some vector has images that do not converge to a given limit. With the Lebesgue constants of the
+  Fourier projections, this gives a continuous function whose Fourier series diverges.
+* `ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto`: under pointwise convergence of a
+  uniformly bounded sequence, $\|L\| \le \liminf \|L_n\|$.
+* `isBounded_of_forall_dual_image_isBounded`, `isBounded_iff_forall_dual_image_isBounded`: a set is
+  bounded if and only if every bounded linear functional is bounded on it.
+* `StrongDual.isBounded_of_forall_eval_isBounded`: a set of functionals on a Banach space that is
+  bounded at every point is bounded in norm.
 -/
 
 open Filter Topology Bornology Metric
@@ -52,12 +53,15 @@ namespace ContinuousLinearMap
 variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
   [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- **The ε/3 argument.** A family of operators bounded uniformly in norm, converging pointwise
-along a filter on a dense set to a bounded operator, converges pointwise everywhere.
+/-- **The ε/3 argument.** Let $V$ and $W$ be normed spaces over a nontrivially normed field, let
+$s \subseteq V$ be dense, let $L : V \to W$ be a bounded linear operator, and let
+$(L_n)_{n \in \iota}$ be bounded linear operators with $\|L_n\| \le C$ for all $n$. Let $l$ be a
+filter on $\iota$. If $L_n v \to L v$ along $l$ for every $v \in s$, then $L_n v \to L v$ along
+$l$ for every $v \in V$.
 
-Neither completeness of `V` nor linearity of the dense set is used, and the index type and the
-filter are arbitrary; only the boundedness of the limit operator `L` matters, which is why `L` is
-given as a `ContinuousLinearMap` rather than as a bare function. -/
+Neither completeness of $V$ nor linearity of $s$ is used, and the index type and the filter are
+arbitrary. Only the boundedness of the limit $L$ matters, which is why $L$ is a
+`ContinuousLinearMap` and not a bare function. -/
 theorem tendsto_of_tendsto_on_dense_of_bounded {ι : Type*} {l : Filter ι} {s : Set V}
     (hs : Dense s) {L : V →L[𝕜] W} {Ln : ι → V →L[𝕜] W} {C : ℝ} (hC : ∀ n, ‖Ln n‖ ≤ C)
     (h : ∀ v ∈ s, Tendsto (fun n => Ln n v) l (𝓝 (L v))) (v : V) :
@@ -91,18 +95,21 @@ theorem tendsto_of_tendsto_on_dense_of_bounded {ι : Type*} {l : Filter ι} {s :
   rw [dist_eq_norm]
   nlinarith
 
-/-- A convergent sequence in a normed space has bounded norms. -/
+/-- A convergent sequence in a normed additive group has bounded norms: if $f_n \to a$, then there
+is $C$ with $\|f_n\| \le C$ for all $n$. -/
 theorem _root_.Filter.Tendsto.exists_norm_le {X : Type*} [NormedAddCommGroup X] {f : ℕ → X} {a : X}
     (h : Tendsto f atTop (𝓝 a)) : ∃ C : ℝ, ∀ n, ‖f n‖ ≤ C := by
   obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (Metric.isBounded_range_of_tendsto _ h)
   exact ⟨C, fun n => hC _ ⟨n, rfl⟩⟩
 
-/-- **Banach–Steinhaus, the convergence form.** On a Banach space, a sequence of bounded operators
-converges pointwise to a bounded operator `L` if and only if it converges pointwise on a dense set
-and its norms are uniformly bounded.
+/-- **The Banach–Steinhaus theorem, convergence form.** Let $V$ be a Banach space and $W$ a normed
+space over a nontrivially normed field, let $s \subseteq V$ be dense, and let
+$L, L_0, L_1, \dots : V \to W$ be bounded linear operators. Then $L_n v \to L v$ for every
+$v \in V$ if and only if $L_n v \to L v$ for every $v \in s$ and there is $C$ with
+$\|L_n\| \le C$ for all $n$.
 
-The forward direction is `banach_steinhaus`, the uniform boundedness principle, and is where
-completeness of `V` is used; the backward direction is the ε/3 argument
+The forward direction is the uniform boundedness principle `banach_steinhaus`, and it is where
+the completeness of $V$ is used. The backward direction is the ε/3 argument
 `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`. -/
 theorem tendsto_iff_tendsto_on_dense_of_completeSpace [CompleteSpace V] {s : Set V} (hs : Dense s)
     (L : V →L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) :
@@ -112,12 +119,14 @@ theorem tendsto_iff_tendsto_on_dense_of_completeSpace [CompleteSpace V] {s : Set
   rintro ⟨hdense, C, hC⟩
   exact tendsto_of_tendsto_on_dense_of_bounded hs hC hdense
 
-/-- **The contrapositive of the uniform boundedness principle.** If the norms `‖Lₙ‖` are unbounded
-then, for every candidate limit `L`, some vector has `Lₙ v ↛ L v`.
+/-- **The contrapositive of the uniform boundedness principle.** Let $V$ be a Banach space and $W$ a
+normed space over a nontrivially normed field, and let $L_0, L_1, \dots : V \to W$ be bounded
+linear operators whose norms $\|L_n\|$ are unbounded. Then for every bounded linear operator
+$L : V \to W$ there is $v \in V$ such that $L_n v$ does not converge to $Lv$.
 
-Applied to a sequence of projections whose norms grow — the Fourier projections on the continuous
-periodic functions, whose norms are the Lebesgue constants — with `L` the identity, this produces
-a function that its own approximations do not converge to. -/
+Apply this to a sequence of projections whose norms grow, such as the Fourier projections on the
+continuous periodic functions, whose norms are the Lebesgue constants, with $L$ the identity.
+The result is a function to which its own approximations do not converge. -/
 theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] {Ln : ℕ → V →L[𝕜] W}
     (h : ¬ BddAbove (Set.range fun n => ‖Ln n‖)) (L : V →L[𝕜] W) :
     ∃ v : V, ¬ Tendsto (fun n => Ln n v) atTop (𝓝 (L v)) := by
@@ -126,11 +135,15 @@ theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] {Ln : ℕ → V →
   obtain ⟨C, hC⟩ := banach_steinhaus fun v => (hcon v).exists_norm_le
   exact h ⟨C, by rintro x ⟨n, rfl⟩; exact hC n⟩
 
-/-- **The operator norm is lower semicontinuous under pointwise convergence**
-([brezis2011functional], Corollary 2.3 (c)): if `Lₙ v → L v` for every `v` and the norms `‖Lₙ‖`
-are bounded, then `‖L‖ ≤ liminf ‖Lₙ‖`. For each `v ≠ 0`, `‖L v‖ / ‖v‖` is the limit of
-`‖Lₙ v‖ / ‖v‖ ≤ ‖Lₙ‖`, and the bound on the norms makes the comparison of `liminf`s legitimate.
-On a Banach space the boundedness of the norms is automatic (`banach_steinhaus`). -/
+/-- **The operator norm is lower semicontinuous under pointwise convergence.** Let $V$ and $W$ be
+normed spaces over a nontrivially normed field, and let $L, L_0, L_1, \dots : V \to W$ be
+bounded linear operators. If $L_n v \to Lv$ for every $v \in V$ and the norms $\|L_n\|$ are
+bounded, then $$\|L\| \le \liminf_{n \to \infty} \|L_n\|.$$ This is Corollary 2.3(c) of
+[brezis2011functional].
+
+For each $v \neq 0$, $\|Lv\| / \|v\|$ is the limit of $\|L_n v\| / \|v\| \le \|L_n\|$, and the
+bound on the norms makes the comparison of the limits inferior valid. On a Banach space the
+bound on the norms follows from the pointwise convergence by `banach_steinhaus`. -/
 theorem opNorm_le_liminf_opNorm_of_tendsto {L : V →L[𝕜] W} {Ln : ℕ → V →L[𝕜] W}
     (h : ∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v)))
     (hb : BddAbove (Set.range fun n => ‖Ln n‖)) :
@@ -161,12 +174,14 @@ open NormedSpace
 
 variable {𝕜 G : Type*}
 
-/-- **Weakly bounded implies bounded** ([brezis2011functional], Corollary 2.4): a subset `B` of
-a normed space over `RCLike 𝕜` on which every bounded linear functional is bounded is bounded.
-The uniform boundedness principle in the (complete) dual `StrongDual 𝕜 G`, applied to the
-evaluations `f ↦ f b`, `b ∈ B`, bounds their norms uniformly, and evaluation at `b` has norm
-`‖b‖` (the canonical embedding in the bidual is an isometry). Completeness of `G` is not
-needed. -/
+/-- **Weakly bounded implies bounded.** Let $G$ be a normed space over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, and let $B \subseteq G$. If $f(B)$ is bounded for every bounded linear functional
+$f \in G^*$, then $B$ is bounded. This is Corollary 2.4 of [brezis2011functional].
+
+Completeness of $G$ is not needed. The uniform boundedness principle in the dual $G^*$, which is
+always complete, applies to the evaluations $f \mapsto f(b)$ for $b \in B$ and bounds their
+norms uniformly. Evaluation at $b$ has norm $\|b\|$, because the canonical embedding of $G$ in
+its bidual is an isometry. -/
 theorem isBounded_of_forall_dual_image_isBounded [RCLike 𝕜] [NormedAddCommGroup G]
     [NormedSpace 𝕜 G] {B : Set G} (h : ∀ f : StrongDual 𝕜 G, IsBounded (f '' B)) :
     IsBounded B := by
@@ -179,17 +194,20 @@ theorem isBounded_of_forall_dual_image_isBounded [RCLike 𝕜] [NormedAddCommGro
   rwa [show inclusionInDoubleDual 𝕜 G b = inclusionInDoubleDualLi 𝕜 b from rfl,
     (inclusionInDoubleDualLi 𝕜).norm_map] at this
 
-/-- A set is bounded iff every bounded linear functional is bounded on it
-([brezis2011functional], Corollary 2.4, as an equivalence). -/
+/-- Let $G$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. A set $B \subseteq G$
+is bounded if and only if $f(B)$ is bounded for every bounded linear functional $f \in G^*$.
+This is Corollary 2.4 of [brezis2011functional], as an equivalence. -/
 theorem isBounded_iff_forall_dual_image_isBounded [RCLike 𝕜] [NormedAddCommGroup G]
     [NormedSpace 𝕜 G] {B : Set G} :
     IsBounded B ↔ ∀ f : StrongDual 𝕜 G, IsBounded (f '' B) :=
   ⟨fun hB f => f.lipschitzWith.isBounded_image hB, isBounded_of_forall_dual_image_isBounded⟩
 
-/-- **Weak-∗ bounded implies bounded** ([brezis2011functional], Corollary 2.5): a set of bounded
-linear functionals on a Banach space `G` that is bounded at every point of `G` is bounded in
-norm. This is the uniform boundedness principle itself, for the family of functionals indexed
-by the set. -/
+/-- **Weak-∗ bounded implies bounded.** Let $G$ be a Banach space over a nontrivially normed field,
+and let $B \subseteq G^*$ be a set of bounded linear functionals. If $\{f(x) : f \in B\}$ is
+bounded for every $x \in G$, then $B$ is bounded in norm. This is Corollary 2.5 of
+[brezis2011functional].
+
+This is the uniform boundedness principle for the family of functionals indexed by $B$. -/
 theorem StrongDual.isBounded_of_forall_eval_isBounded [NontriviallyNormedField 𝕜]
     [NormedAddCommGroup G] [NormedSpace 𝕜 G] [CompleteSpace G] {B : Set (StrongDual 𝕜 G)}
     (h : ∀ x : G, IsBounded ((fun f : StrongDual 𝕜 G => f x) '' B)) : IsBounded B := by

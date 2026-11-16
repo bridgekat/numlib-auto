@@ -14,19 +14,35 @@ import Mathlib.Topology.Separation.Regular
 /-!
 # Splitting a compact set away from a finite set
 
-In a compact Hausdorff space a connected component is the intersection of the clopen sets
-containing it (`connectedComponent_eq_iInter_isClopen`). Read inside a compact subset `s` of a
-Hausdorff space, finitely many points outside the component of `z` are therefore cut off by one
-clopen part of `s`: `s` splits into disjoint compact parts `C ∋ z` and `D ⊇ t`
-(`IsCompact.exists_compact_split_of_finite`). This is the topological step of the statement that
-every connected component of a pseudospectrum contains an eigenvalue.
+Let $s$ be a compact subset of a Hausdorff space, let $z \in s$, and let $t \subseteq s$ be a finite
+set with no point in the connected component of $z$ in $s$. This file proves that $s$ splits into
+two disjoint compact parts $C$ and $D$ with $z \in C$ and $t \subseteq D$. This is the topological
+step in the proof that every connected component of a pseudospectrum contains an eigenvalue.
+
+## Main results
+
+* `IsCompact.exists_compact_split_of_finite`: $s = C \cup D$ with $C$ and $D$ compact and disjoint,
+  $z \in C$ and $t \subseteq D$.
+
+## Proof outline
+
+In a compact Hausdorff space, a connected component is the intersection of the sets that are both
+open and closed and contain it (`connectedComponent_eq_iInter_isClopen`). Apply this in the compact
+space $s$. Each of the finitely many points of $t$ lies outside some relatively clopen subset of $s$
+that contains $z$. The intersection of these finitely many sets is a relatively clopen set $C$; its
+complement $D$ in $s$ contains $t$.
 -/
 
 open Set
 
-/-- **A connected component of a compact set `s` that misses a finite set `t ⊆ s` lies in a
-relatively clopen part of `s` that misses `t`**: `s = C ∪ D` with `C`, `D` compact and disjoint,
-`z ∈ C`, `t ⊆ D`. -/
+/-- Let $\alpha$ be a Hausdorff topological space, let $s \subseteq \alpha$ be compact, let
+$t \subseteq s$ be finite, and let $z \in s$. Assume that no point of $t$ lies in the connected
+component of $z$ in $s$. Then there are compact sets $C, D \subseteq \alpha$ such that
+$$C \cap D = \emptyset, \qquad C \cup D = s, \qquad z \in C, \qquad t \subseteq D.$$
+
+The sets $C$ and $D$ are closed in $s$ and complementary in $s$, so both are open and closed in
+$s$. Hence the connected component of $z$ in $s$ lies in $C$, although the statement does not
+say this. The component is `connectedComponentIn s z`. -/
 theorem IsCompact.exists_compact_split_of_finite {α : Type*} [TopologicalSpace α] [T2Space α]
     {s t : Set α} (hs : IsCompact s) (ht : t.Finite) (hts : t ⊆ s) {z : α} (hz : z ∈ s)
     (hK : ∀ x ∈ t, x ∉ connectedComponentIn s z) :

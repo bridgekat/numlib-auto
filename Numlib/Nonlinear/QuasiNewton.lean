@@ -10,42 +10,67 @@ import Numlib.Analysis.Matrix.OperatorNorm
 /-!
 # Broyden's method for nonlinear systems
 
-The rank-one secant update of Broyden ([quarteroni2000numerical] §7.1.4, (7.14); Dennis–Schnabel,
-*Numerical Methods for Unconstrained Optimization and Nonlinear Equations*, Chapter 8) on a real
-inner product space `E`,
+Let $E$ be a real inner product space and $F \colon E \to E$. Broyden's method solves $F(x) = 0$
+with the Newton-like iteration $Q_k \delta_k = -F(x_k)$, $x_{k+1} = x_k + \delta_k$, in which the
+approximation $Q_k$ of the Jacobian is corrected after each step by a rank-one update
+([quarteroni2000numerical], §7.1.4, (7.11)–(7.14); [dennis1996numerical], Chapter 8). For a step $s$
+and the corresponding change $y$ of $F$, the update is
+$$Q_+ = Q + \frac{(y - Q s) \otimes s}{\langle s, s \rangle}, \qquad (u \otimes s) v = \langle s, v
+  \rangle u.$$
+It has three defining properties: the secant condition $Q_+ s = y$; $Q_+ - Q$ vanishes on every
+vector orthogonal to $s$, which is the least-change reading of the derivation in
+[quarteroni2000numerical]; and $Q_+$ is closest to $Q$ in the operator norm among all operators that
+satisfy the secant condition, with $\|Q_+ - Q\| = \|y - Q s\| / \|s\|$.
 
-  `Broyden.update Q s y = Q + ((y - Q s) ⊗ s) / ⟪s, s⟫`,
+For matrices $Q \in \mathbb{R}^{n \times n}$ the update is the case $c = s$ of the rank-one secant
+update $B_+ = B + (y - B s) c^T / (c^T s)$ of (7.42) of [quarteroni2000numerical]. Its error against
+any matrix $J$ splits as $(Q - J)(I - P) + (y - J s) s^T / (s^T s)$ with $P = s s^T / (s^T s)$. This
+gives the least-change property in the Frobenius norm and the **bounded deterioration** estimate
+$$\|Q_+ - J(z)\|_F \le \|Q - J(z)\|_F + \frac{L}{2} \bigl(\|x_+ - z\| + \|x - z\|\bigr),$$
+which is the first step of every proof of superlinear convergence of Broyden's method
+([dennis1996numerical], Lemmas 8.1.1 and 8.2.1). The superlinear convergence theorem itself,
+Property 7.2 of [quarteroni2000numerical] and the Dennis–Moré theory, is
+`Broyden.exists_superlinear` in `Numlib.Nonlinear.DennisMore`.
 
-written with Mathlib's `InnerProductSpace.rankOne`, and its three defining properties: the secant
-condition `Q₊ s = y` (`Broyden.update_apply_self`), invariance on `s^⊥`
-(`Broyden.update_sub_apply_of_inner_eq_zero`, the least-change reading of the book's derivation:
-`Q₊ - Q` vanishes on every direction orthogonal to the step), and least change in the operator
-norm among all operators satisfying the secant condition (`Broyden.norm_update_sub_le`, with the
-exact value `‖Q₊ - Q‖ = ‖y - Q s‖ / ‖s‖`). The iteration (7.11)–(7.14) is the state machine
-`Broyden.step` on the pair `(x, Q)`, with `Broyden.iterate` its orbit; the step solves `Q δ = -F x`
-with the junk-valued `ContinuousLinearMap.inverse`, as `Newton.step` does, so that a singular `Q`
-leaves the state unchanged rather than breaking the definition.
+## Main definitions
 
-On `Matrix n n ℝ` the update is `Matrix.broydenUpdate`, the case `c = s` of the rank-one secant
-update `Matrix.rankOneSecantUpdate B s y c` ([quarteroni2000numerical] (7.42)), whose symmetric
-variants for minimization are in `Numlib/Optimization/QuasiNewton`. It is bridged to the operator
-form through `Matrix.toEuclideanCLM`, its error against any `J` splits as
-`(Q - J) (1 - P) + ((y - J s) sᵀ) / (sᵀ s)` (`Matrix.broydenUpdate_sub_eq`), with the least-change
-property in the Frobenius norm
-(`Matrix.frobenius_norm_broydenUpdate_sub_le`, Dennis–Schnabel Lemma 8.1.1) and the
-**bounded deterioration** estimate
-`‖Q₊ - J(z)‖_F ≤ ‖Q - J(z)‖_F + (L / 2) (‖x₊ - z‖ + ‖x - z‖)`
-(`Matrix.frobenius_norm_broydenUpdate_sub_le_add`, Dennis–Schnabel Lemma 8.2.1), the first
-step of every superlinear convergence proof for Broyden's method. The superlinear convergence
-theorem itself ([quarteroni2000numerical] Property 7.2, the Dennis–Moré theory) is
-`Broyden.exists_superlinear` of `Numlib/Nonlinear/DennisMore`.
+* `Broyden.update`: Broyden's update $Q_+$ of an operator $Q$ for the secant pair $(s, y)$.
+* `Broyden.State`: the state $(x, Q)$ of the iteration.
+* `Broyden.step`: one step of Broyden's method.
+* `Broyden.iterate`: the states of Broyden's method from $(x_0, Q_0)$.
+* `Matrix.rankOneSecantUpdate`: the rank-one secant update $B + (y - B s) c^T / (c^T s)$.
+* `Matrix.broydenUpdate`: Broyden's update of a matrix.
 
-The estimates rest on two auxiliary facts: the mean value inequality with the derivative frozen
-at a *third* point, `‖F y - F x - F' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`
-(Dennis–Schnabel Lemma 4.1.15, `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add` of
-`Numlib/Analysis/Calculus/MeanValue`), and the Frobenius-norm contraction of the projection off a
-line, `‖A (1 - s sᵀ / sᵀ s)‖_F ≤ ‖A‖_F` (`Matrix.frobenius_norm_mul_one_sub_le` of
-`Numlib/Analysis/Matrix/OperatorNorm`, Pythagoras in the trace form `‖A‖_F² = tr(Aᵀ A)`).
+## Main results
+
+* `Broyden.update_apply_self`: the secant condition $Q_+ s = y$ for $s \neq 0$.
+* `Broyden.update_sub_apply_of_inner_eq_zero`: $(Q_+ - Q) v = 0$ for every $v$ orthogonal to $s$.
+* `Broyden.norm_update_sub`: $\|Q_+ - Q\| = \|y - Q s\| / \|s\|$.
+* `Broyden.norm_update_sub_le`: least change in the operator norm.
+* `Broyden.step_Q_apply_sub`: the secant condition along the iteration.
+* `Matrix.broydenUpdate_sub_eq`: the error of Broyden's update against any matrix $J$.
+* `Matrix.toEuclideanCLM_broydenUpdate`: the matrix update is the operator update.
+* `Matrix.frobenius_norm_broydenUpdate_sub_le`: least change in the Frobenius norm.
+* `Matrix.frobenius_norm_broydenUpdate_sub_le_add`: bounded deterioration.
+
+## Implementation notes
+
+* The rank-one operator $u \otimes s$ is Mathlib's `InnerProductSpace.rankOne ℝ u s`.
+* For $s = 0$ the coefficient $1 / \langle s, s \rangle$ is the value $0$ of $1/0$, and the update
+  leaves $Q$ unchanged.
+* The step solves $Q \delta = -F(x)$ with `ContinuousLinearMap.inverse`, as `Newton.step` does. For
+  a singular $Q$ this gives $\delta = 0$, so the point does not move and the definition needs no
+  hypothesis.
+* Matrices act on `EuclideanSpace ℝ n` through `Matrix.toEuclideanCLM`, and the Frobenius norm is
+  the one of `Matrix.Norms.Frobenius`.
+* The estimates rest on two auxiliary facts. The first is the mean value inequality with the
+  derivative frozen at a third point, $\|F(y) - F(x) - F'(z)(y - x)\| \le (L/2)(\|x - z\| + \|y -
+  z\|) \|y - x\|$ (Lemma 4.1.15 of [dennis1996numerical]), which is
+  `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add` of
+  `Numlib.Analysis.Calculus.MeanValue`. The second is the Frobenius-norm contraction
+  $\|A (I - s s^T / (s^T s))\|_F \le \|A\|_F$ of the projection off a line, which is
+  `Matrix.frobenius_norm_mul_one_sub_le` of `Numlib.Analysis.Matrix.OperatorNorm` and follows from
+  Pythagoras in the form $\|A\|_F^2 = \operatorname{tr}(A^T A)$.
 -/
 
 open scoped InnerProductSpace
@@ -54,41 +79,53 @@ namespace Broyden
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **Broyden's update** ([quarteroni2000numerical] (7.14)): `Q₊ = Q + ((y - Q s) ⊗ s) / ⟪s, s⟫`,
-where `(u ⊗ s) v = ⟪s, v⟫ u` is Mathlib's `InnerProductSpace.rankOne ℝ u s`. In the book's
-notation `s = δx_k` is the last step and `y = b_k = F x_k - F x_{k-1}` the corresponding change of
-`F`; the update is the rank-one correction of `Q` that enforces the secant condition `Q₊ s = y`
-while leaving `Q` unchanged on the orthogonal complement of `s`. For `s = 0` the coefficient
-`1 / ⟪s, s⟫` is the junk value `0` and `Q₊ = Q`. -/
+/-- **Broyden's update.** Let $E$ be a real inner product space, let $Q \colon E \to E$ be a
+continuous linear map, and let $s, y \in E$. Broyden's update of $Q$ is
+$$Q_+ = Q + \frac{1}{\langle s, s \rangle} (y - Q s) \otimes s,$$
+where $(u \otimes s) v = \langle s, v \rangle u$. For $s = 0$ the coefficient
+$1 / \langle s, s \rangle$ is $0$ and $Q_+ = Q$.
+
+This is (7.14) of [quarteroni2000numerical]. In the notation of the source, $s = \delta x_k$ is
+the last step and $y = b_k = F(x_k) - F(x_{k-1})$ is the corresponding change of $F$. The update
+is the rank-one correction of $Q$ that enforces the secant condition $Q_+ s = y$ and leaves $Q$
+unchanged on the orthogonal complement of $s$. The rank-one operator is
+`InnerProductSpace.rankOne ℝ (y - Q s) s`. -/
 noncomputable def update (Q : E →L[ℝ] E) (s y : E) : E →L[ℝ] E :=
   Q + (1 / ⟪s, s⟫_ℝ) • InnerProductSpace.rankOne ℝ (y - Q s) s
 
-/-- The update applied to a vector: `Q₊ v = Q v + (⟪s, v⟫ / ⟪s, s⟫) (y - Q s)`. -/
+/-- For every $v \in E$, Broyden's update satisfies
+$$Q_+ v = Q v + \frac{\langle s, v \rangle}{\langle s, s \rangle} (y - Q s).$$
+-/
 theorem update_apply (Q : E →L[ℝ] E) (s y v : E) :
     update Q s y v = Q v + (⟪s, v⟫_ℝ / ⟪s, s⟫_ℝ) • (y - Q s) := by
   simp only [update, add_apply, smul_apply, InnerProductSpace.rankOne_apply, smul_smul, one_div,
     inv_mul_eq_div]
 
-/-- The correction made by the update is the scaled rank-one operator `((y - Q s) ⊗ s) / ⟪s, s⟫`. -/
+/-- The correction made by Broyden's update is the scaled rank-one operator $Q_+ - Q = (y - Q s)
+\otimes s / \langle s, s \rangle$. -/
 theorem update_sub (Q : E →L[ℝ] E) (s y : E) :
     update Q s y - Q = (1 / ⟪s, s⟫_ℝ) • InnerProductSpace.rankOne ℝ (y - Q s) s :=
   sub_eq_of_eq_add' rfl
 
-/-- **The secant condition** ([quarteroni2000numerical] (7.12) with `j = 1`): for `s ≠ 0`,
-`Q₊ s = y`. -/
+/-- **The secant condition.** If $s \neq 0$, then Broyden's update satisfies $Q_+ s = y$.
+
+This is (7.12) of [quarteroni2000numerical] with $j = 1$. -/
 theorem update_apply_self (Q : E →L[ℝ] E) {s : E} (hs : s ≠ 0) (y : E) : update Q s y s = y := by
   rw [update_apply, div_self (inner_self_ne_zero.2 hs), one_smul]
   abel
 
-/-- **The update changes `Q` only along `s`**: `(Q₊ - Q) v = 0` for every `v ⟂ s`. Together with
-the secant condition this is the characterization of (7.14) in [quarteroni2000numerical] §7.1.4:
-`(Q_k - Q_{k-1}) s` vanishes for every `s` orthogonal to `δx_k`. -/
+/-- **Broyden's update changes $Q$ only along $s$.** If $v \in E$ satisfies
+$\langle s, v \rangle = 0$, then $(Q_+ - Q) v = 0$.
+
+Together with the secant condition this characterizes (7.14) in §7.1.4 of
+[quarteroni2000numerical]: $(Q_k - Q_{k-1}) v$ vanishes for every $v$ orthogonal to
+$\delta x_k$. -/
 theorem update_sub_apply_of_inner_eq_zero (Q : E →L[ℝ] E) (s y : E) {v : E}
     (hv : ⟪s, v⟫_ℝ = 0) : (update Q s y - Q) v = 0 := by
   simp [update_sub, InnerProductSpace.rankOne_apply, hv]
 
-/-- The size of the correction: `‖Q₊ - Q‖ = ‖y - Q s‖ / ‖s‖` (both sides are `0` when
-`s = 0`). -/
+/-- The size of the correction: $\|Q_+ - Q\| = \|y - Q s\| / \|s\|$ in the operator norm. Both sides
+are $0$ when $s = 0$. -/
 theorem norm_update_sub (Q : E →L[ℝ] E) (s y : E) : ‖update Q s y - Q‖ = ‖y - Q s‖ / ‖s‖ := by
   rw [update_sub, norm_smul, InnerProductSpace.norm_rankOne, Real.norm_eq_abs,
     real_inner_self_eq_norm_sq, abs_of_nonneg (by positivity)]
@@ -96,9 +133,13 @@ theorem norm_update_sub (Q : E →L[ℝ] E) (s y : E) : ‖update Q s y - Q‖ =
   · simp
   · field_simp
 
-/-- **Least change in the operator norm** (Dennis–Schnabel §8.1): among all operators `Q'`
-satisfying the secant condition `Q' s = y`, Broyden's update is the closest to `Q`, since
-`‖Q₊ - Q‖ = ‖(Q' - Q) s‖ / ‖s‖ ≤ ‖Q' - Q‖`. -/
+/-- **Least change in the operator norm.** Let $Q, Q' \colon E \to E$ be continuous linear maps and
+$s \neq 0$, and suppose that $Q' s = y$. Then Broyden's update satisfies
+$$\|Q_+ - Q\| \le \|Q' - Q\|.$$
+
+So among all operators that satisfy the secant condition, Broyden's update is the closest to $Q$
+([dennis1996numerical], §8.1). The proof is $\|Q_+ - Q\| = \|(Q' - Q) s\| / \|s\| \le \|Q' -
+Q\|$. -/
 theorem norm_update_sub_le (Q Q' : E →L[ℝ] E) {s : E} (hs : s ≠ 0) {y : E} (hQ' : Q' s = y) :
     ‖update Q s y - Q‖ ≤ ‖Q' - Q‖ := by
   rw [norm_update_sub, div_le_iff₀ (norm_pos_iff.2 hs), ← hQ', ← sub_apply]
@@ -106,61 +147,70 @@ theorem norm_update_sub_le (Q Q' : E →L[ℝ] E) {s : E} (hs : s ≠ 0) {y : E}
 
 /-! ### The iteration -/
 
-/-- The state of Broyden's iteration: the current point `x` and the current approximation `Q` of
-the Jacobian. -/
+/-- A **state of Broyden's iteration** consists of the current point $x \in E$ and the current
+approximation $Q \colon E \to E$ of the Jacobian, a continuous linear map. -/
 structure State (E : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E] where
-  /-- The current iterate. -/
+  /-- The current iterate $x$. -/
   x : E
-  /-- The current Jacobian approximation. -/
+  /-- The current approximation $Q$ of the Jacobian. -/
   Q : E →L[ℝ] E
 
-/-- One step of Broyden's method ([quarteroni2000numerical] (7.11)–(7.14)): solve `Q δ = -F x`
-(with the junk-valued `ContinuousLinearMap.inverse`, `δ = 0` when `Q` is singular), move to
-`x₊ = x + δ`, and update `Q` with the secant pair `(δ, F x₊ - F x)`. -/
+/-- **One step of Broyden's method** for $F \colon E \to E$ from the state $(x, Q)$. Solve
+$Q \delta = -F(x)$, move to $x_+ = x + \delta$, and replace $Q$ by Broyden's update for the
+secant pair $(\delta, F(x_+) - F(x))$.
+
+This is (7.11)–(7.14) of [quarteroni2000numerical]. The solution is $\delta = -Q^{-1} F(x)$ with
+`ContinuousLinearMap.inverse`, so $\delta = 0$ when $Q$ is not invertible. -/
 noncomputable def step (Fn : E → E) (σ : State E) : State E where
   x := σ.x - σ.Q.inverse (Fn σ.x)
   Q := update σ.Q (-(σ.Q.inverse (Fn σ.x))) (Fn (σ.x - σ.Q.inverse (Fn σ.x)) - Fn σ.x)
 
-/-- The point component of a Broyden step, `x₊ = x - Q⁻¹ (F x)`. -/
+/-- The point of a Broyden step is $x_+ = x - Q^{-1} F(x)$. -/
 theorem step_x (Fn : E → E) (σ : State E) : (step Fn σ).x = σ.x - σ.Q.inverse (Fn σ.x) :=
   rfl
 
-/-- The operator component of a Broyden step is the update with `s = x₊ - x` and
-`y = F x₊ - F x`. -/
+/-- The operator of a Broyden step is Broyden's update of $Q$ with $s = x_+ - x$ and
+$y = F(x_+) - F(x)$. -/
 theorem step_Q (Fn : E → E) (σ : State E) :
     (step Fn σ).Q = update σ.Q ((step Fn σ).x - σ.x) (Fn (step Fn σ).x - Fn σ.x) := by
   simp only [step, sub_sub_cancel_left]
 
-/-- **The secant condition along the iteration** ([quarteroni2000numerical] (7.12) with `j = 1`):
-whenever the step is nonzero, `Q₊ (x₊ - x) = F x₊ - F x`. -/
+/-- **The secant condition along the iteration.** If the step moves the point, $x_+ \neq x$, then
+the new operator satisfies $Q_+ (x_+ - x) = F(x_+) - F(x)$.
+
+This is (7.12) of [quarteroni2000numerical] with $j = 1$. -/
 theorem step_Q_apply_sub (Fn : E → E) (σ : State E) (h : (step Fn σ).x ≠ σ.x) :
     (step Fn σ).Q ((step Fn σ).x - σ.x) = Fn (step Fn σ).x - Fn σ.x := by
   rw [step_Q]
   exact update_apply_self _ (sub_ne_zero.2 h) _
 
-/-- The linear system solved by a step ([quarteroni2000numerical] (7.11)): when `Q` is
-invertible, `Q (x₊ - x) = -F x`. -/
+/-- **The linear system of a step.** If $Q$ is invertible, then the step satisfies
+$Q (x_+ - x) = -F(x)$.
+
+This is (7.11) of [quarteroni2000numerical]. The invertible $Q$ is given as an equivalence `e`
+with `(e : E →L[ℝ] E) = σ.Q`. -/
 theorem apply_step_x_sub (Fn : E → E) (σ : State E) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = σ.Q) : σ.Q ((step Fn σ).x - σ.x) = -Fn σ.x := by
   rw [step_x, sub_sub_cancel_left, map_neg, ← he, ContinuousLinearMap.inverse_equiv]
   simp
 
-/-- A root is a fixed point of the point component: at `F x = 0` the step does not move. -/
+/-- If $F(x) = 0$, then the point of a Broyden step from $(x, Q)$ is $x$ itself. -/
 theorem step_x_eq_self_of_eq_zero (Fn : E → E) (σ : State E) (hx : Fn σ.x = 0) :
     (step Fn σ).x = σ.x := by
   simp [step_x, hx]
 
-/-- The orbit of Broyden's method from the initial point `x₀` and the initial approximation
-`Q₀`. -/
+/-- The **states of Broyden's method** from the initial point $x_0$ and the initial approximation
+$Q_0$: the $k$-fold application of `Broyden.step` to $(x_0, Q_0)$. -/
 noncomputable def iterate (Fn : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k : ℕ) : State E :=
   (step Fn)^[k] ⟨x₀, Q₀⟩
 
-/-- The initial state. -/
+/-- The state after $0$ steps is $(x_0, Q_0)$. -/
 @[simp] theorem iterate_zero (Fn : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) :
     iterate Fn x₀ Q₀ 0 = ⟨x₀, Q₀⟩ :=
   rfl
 
-/-- The recurrence: the next state is the step taken at the last one. -/
+/-- The recurrence of Broyden's method: the state after $k + 1$ steps is one step from the state
+after $k$ steps. -/
 theorem iterate_succ (Fn : E → E) (x₀ : E) (Q₀ : E →L[ℝ] E) (k : ℕ) :
     iterate Fn x₀ Q₀ (k + 1) = step Fn (iterate Fn x₀ Q₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -173,43 +223,56 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open WithLp
 
-/-- **The rank-one secant update** ([quarteroni2000numerical] (7.42)):
-`B₊ = B + ((y - B s) cᵀ) / (cᵀ s)`, with an arbitrary scaling vector `c`. With `c = s` it is
-Broyden's update `Matrix.broydenUpdate`; with `c = y - B s` it is the symmetric rank-one update
-`Matrix.sr1Update` of `Numlib/Optimization/QuasiNewton`. For `cᵀ s = 0` the coefficient is the
-junk value `0` and `B₊ = B`. -/
+/-! ### Rank-one secant updates of matrices -/
+
+/-- **The rank-one secant update.** Let $B \in \mathbb{R}^{n \times n}$ and
+$s, y, c \in \mathbb{R}^n$. The update is
+$$B_+ = B + \frac{1}{c^T s} (y - B s) c^T.$$
+For $c^T s = 0$ the coefficient is $0$ and $B_+ = B$.
+
+This is (7.42) of [quarteroni2000numerical], with an arbitrary scaling vector $c$. For $c = s$
+it is Broyden's update `Matrix.broydenUpdate`. For $c = y - B s$ it is the symmetric rank-one
+update `Matrix.sr1Update` of `Numlib.Optimization.QuasiNewton`. -/
 noncomputable def rankOneSecantUpdate (B : Matrix n n ℝ) (s y c : n → ℝ) : Matrix n n ℝ :=
   B + (1 / (c ⬝ᵥ s)) • vecMulVec (y - B *ᵥ s) c
 
 omit [DecidableEq n] in
-/-- **The secant equation** for the rank-one update: `B₊ s = y` whenever `cᵀ s ≠ 0`. -/
+/-- **The secant equation.** If $c^T s \neq 0$, then the rank-one secant update satisfies
+$B_+ s = y$. -/
 theorem rankOneSecantUpdate_mulVec (B : Matrix n n ℝ) {s c : n → ℝ} (hcs : c ⬝ᵥ s ≠ 0)
     (y : n → ℝ) : rankOneSecantUpdate B s y c *ᵥ s = y := by
   simp only [rankOneSecantUpdate, add_mulVec, smul_mulVec, vecMulVec_mulVec,
     op_smul_eq_smul, smul_smul, one_div, inv_mul_cancel₀ hcs, one_smul]
   abel
 
-/-- **Broyden's update in matrix form** ([quarteroni2000numerical] (7.14)):
-`Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)`, the rank-one secant update with `c = s`. -/
+/-- **Broyden's update of a matrix.** For $Q \in \mathbb{R}^{n \times n}$ and
+$s, y \in \mathbb{R}^n$,
+$$Q_+ = Q + \frac{1}{s^T s} (y - Q s) s^T,$$
+the rank-one secant update with $c = s$. For $s = 0$, $Q_+ = Q$.
+
+This is (7.14) of [quarteroni2000numerical] in matrix form. -/
 noncomputable def broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) : Matrix n n ℝ :=
   rankOneSecantUpdate Q s y s
 
 omit [DecidableEq n] in
-/-- Broyden's update is the rank-one secant update with `c = s`. -/
+/-- Broyden's update of a matrix is the rank-one secant update with $c = s$. -/
 theorem broydenUpdate_eq_rankOneSecantUpdate (B : Matrix n n ℝ) (s y : n → ℝ) :
     broydenUpdate B s y = rankOneSecantUpdate B s y s :=
   rfl
 
 omit [DecidableEq n] in
-/-- Broyden's update written out: `Q₊ = Q + ((y - Q s) sᵀ) / (sᵀ s)`. -/
+/-- Broyden's update of a matrix is $Q_+ = Q + (y - Q s) s^T / (s^T s)$. -/
 theorem broydenUpdate_eq (Q : Matrix n n ℝ) (s y : n → ℝ) :
     broydenUpdate Q s y = Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s :=
   rfl
 
-/-- **The error of Broyden's update against any matrix `J`**: with `P = s sᵀ / (sᵀ s)`,
-`Q₊ - J = (Q - J) (1 - P) + ((y - J s) sᵀ) / (sᵀ s)`. The first term is the old error with its
-component along the step removed, the second the secant residual of `J`; both the bounded
-deterioration estimate and the Dennis–Moré inequality start from this decomposition. -/
+/-- **The error of Broyden's update against any matrix.** Let $Q, J \in \mathbb{R}^{n \times n}$ and
+$s, y \in \mathbb{R}^n$, and let $P = s s^T / (s^T s)$. Then
+$$Q_+ - J = (Q - J)(I - P) + \frac{1}{s^T s} (y - J s) s^T.$$
+
+The first term is the old error with its component along the step removed, and the second is the
+secant residual of $J$. Both the bounded deterioration estimate and the Dennis–Moré inequality
+start from this decomposition. For $s = 0$ both $P$ and the second term are $0$. -/
 theorem broydenUpdate_sub_eq (Q J : Matrix n n ℝ) (s y : n → ℝ) :
     broydenUpdate Q s y - J
       = (Q - J) * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)
@@ -220,13 +283,18 @@ theorem broydenUpdate_sub_eq (Q J : Matrix n n ℝ) (s y : n → ℝ) :
   abel
 
 omit [DecidableEq n] in
-/-- Broyden's update with a zero step does not move: `broydenUpdate Q 0 y = Q`. -/
+/-- Broyden's update with the step $s = 0$ leaves the matrix unchanged: $Q_+ = Q$. -/
 theorem broydenUpdate_zero_left (Q : Matrix n n ℝ) (y : n → ℝ) :
     broydenUpdate Q 0 y = Q := by
   simp [broydenUpdate_eq]
 
-/-- The matrix update is the operator update: `toEuclideanCLM (broydenUpdate Q s y)` is
-`Broyden.update` of `toEuclideanCLM Q` with the secant pair read in `EuclideanSpace ℝ n`. -/
+/-- **The matrix update is the operator update.** For $Q \in \mathbb{R}^{n \times n}$ and
+$s, y \in \mathbb{R}^n$, the operator on the Euclidean space $\mathbb{R}^n$ of Broyden's matrix
+update of $Q$ is `Broyden.update` of the operator of $Q$, with $s$ and $y$ read as vectors of
+the Euclidean space.
+
+The operator of a matrix is `Matrix.toEuclideanCLM`, and a vector is read in
+`EuclideanSpace ℝ n` by `WithLp.toLp 2`. -/
 theorem toEuclideanCLM_broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) :
     toEuclideanCLM (𝕜 := ℝ) (broydenUpdate Q s y)
       = Broyden.update (toEuclideanCLM (𝕜 := ℝ) Q) (toLp 2 s) (toLp 2 y) := by
@@ -237,8 +305,9 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The rank-one matrix `(w sᵀ) / (sᵀ s)` has Frobenius norm at most `‖w‖ / ‖s‖` (equality in fact;
-both sides are `0` for `s = 0` by the junk value of the division). -/
+/-- For $w, s \in \mathbb{R}^n$, the rank-one matrix $w s^T / (s^T s)$ has Frobenius norm at most
+$\|w\| / \|s\|$, with Euclidean norms on the right. Both sides are $0$ for $s = 0$, and in fact
+equality holds. -/
 theorem frobenius_norm_smul_vecMulVec_le (w s : n → ℝ) :
     ‖(1 / (s ⬝ᵥ s)) • vecMulVec w s‖ ≤ ‖toLp 2 w‖ / ‖toLp 2 s‖ := by
   rcases eq_or_ne s 0 with rfl | hs
@@ -251,9 +320,14 @@ theorem frobenius_norm_smul_vecMulVec_le (w s : n → ℝ) :
         exact frobenius_norm_vecMulVec_le _ _
     _ = ‖toLp 2 w‖ / ‖toLp 2 s‖ := by field_simp
 
-/-- **Least change in the Frobenius norm** (Dennis–Schnabel Lemma 8.1.1): among all matrices
-`Q'` satisfying the secant condition `Q' s = y`, Broyden's update is the closest to `Q`, since
-`Q₊ - Q = ((Q' - Q) s) sᵀ / (sᵀ s)` has Frobenius norm `‖(Q' - Q) s‖ / ‖s‖ ≤ ‖Q' - Q‖_F`. -/
+/-- **Least change in the Frobenius norm.** Let $Q, Q' \in \mathbb{R}^{n \times n}$ and
+$s, y \in \mathbb{R}^n$ with $s \neq 0$ and $Q' s = y$. Then Broyden's update satisfies
+$$\|Q_+ - Q\|_F \le \|Q' - Q\|_F.$$
+
+This is Lemma 8.1.1 of [dennis1996numerical]: among all matrices that satisfy the secant
+condition, Broyden's update is the closest to $Q$. The proof is that
+$Q_+ - Q = (Q' - Q) s s^T / (s^T s)$ has Frobenius norm
+$\|(Q' - Q) s\| / \|s\| \le \|Q' - Q\|_F$. -/
 theorem frobenius_norm_broydenUpdate_sub_le (Q Q' : Matrix n n ℝ) {s y : n → ℝ} (hs : s ≠ 0)
     (hQ's : Q' *ᵥ s = y) : ‖broydenUpdate Q s y - Q‖ ≤ ‖Q' - Q‖ := by
   have hs0 : 0 < ‖toLp 2 s‖ := norm_pos_iff.2 (by simpa using hs)
@@ -265,19 +339,21 @@ theorem frobenius_norm_broydenUpdate_sub_le (Q Q' : Matrix n n ℝ) {s y : n →
         exact frobenius_norm_mulVec_le _ _
     _ = ‖Q' - Q‖ := by field_simp
 
-/-- **Bounded deterioration of Broyden's update** (Dennis–Schnabel Lemma 8.2.1): if
-`F` has Jacobian `J` on a convex set `D` containing `x` and `x₊ = x + s`, with
-`‖J w - J z‖ ≤ L ‖w - z‖` on `D` in the operator norm of `EuclideanSpace ℝ n`, and
-`y = F x₊ - F x`, then in the Frobenius norm
+/-- **Bounded deterioration of Broyden's update.** Let $F \colon \mathbb{R}^n \to \mathbb{R}^n$, let
+$D \subseteq \mathbb{R}^n$ be convex, and let $F$ have Jacobian
+$J(w) \in \mathbb{R}^{n \times n}$ at every $w \in D$. Let $z \in \mathbb{R}^n$ and
+$L \in \mathbb{R}$ with $\|J(w) - J(z)\| \le L \|w - z\|$ for all $w \in D$, in the operator
+norm of the Euclidean space. Let $x \in D$ and $s \neq 0$ with $x + s \in D$, let
+$y = F(x + s) - F(x)$, and let $Q \in \mathbb{R}^{n \times n}$. Then, with $x_+ = x + s$ and
+$Q_+$ Broyden's update of $Q$ for $(s, y)$,
+$$\|Q_+ - J(z)\|_F \le \|Q - J(z)\|_F + \frac{L}{2} \bigl(\|x_+ - z\| + \|x - z\|\bigr).$$
 
-  `‖Q₊ - J z‖_F ≤ ‖Q - J z‖_F + (L / 2) (‖x₊ - z‖ + ‖x - z‖)`.
-
-The decomposition is `Q₊ - J z = (Q - J z) (1 - P) + ((y - J z s) sᵀ) / (sᵀ s)` with
-`P = s sᵀ / (sᵀ s)`; the first term is bounded by `Matrix.frobenius_norm_mul_one_sub_le` and the
-second by `‖y - J z s‖ / ‖s‖` and the third-point mean value inequality
-`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`. This is the estimate every
-superlinear convergence proof for Broyden's method (the Dennis–Moré theory,
-[quarteroni2000numerical] Property 7.2) starts from. -/
+This is Lemma 8.2.1 of [dennis1996numerical], the estimate from which every proof of superlinear
+convergence of Broyden's method starts (the Dennis–Moré theory, Property 7.2 of
+[quarteroni2000numerical]). The proof uses the decomposition `Matrix.broydenUpdate_sub_eq` with
+$J = J(z)$. The first term is bounded by `Matrix.frobenius_norm_mul_one_sub_le`, and the second
+by $\|y - J(z) s\| / \|s\|$ and the mean value inequality with the derivative frozen at a third
+point, `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`. -/
 theorem frobenius_norm_broydenUpdate_sub_le_add {F : EuclideanSpace ℝ n → EuclideanSpace ℝ n}
     {J : EuclideanSpace ℝ n → Matrix n n ℝ} {D : Set (EuclideanSpace ℝ n)} (hD : Convex ℝ D)
     (hF : ∀ w ∈ D, HasFDerivAt F (toEuclideanCLM (𝕜 := ℝ) (J w)) w) {z : EuclideanSpace ℝ n}

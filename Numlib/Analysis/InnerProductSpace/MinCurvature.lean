@@ -7,44 +7,71 @@ import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.Matrix.Spectrum
 
 /-!
-# The least curvature `λ_min` of a bilinear form
+# The least curvature of a bilinear form
 
-For a continuous bilinear form `A : E [×2]→L[ℝ] ℝ` on a real normed space (typically a second
-derivative `iteratedFDeriv ℝ 2 f x`), `minCurvature A = ⨅_{‖d‖ = 1} A[d, d]` is the least value of
-the quadratic form on the unit sphere. On a finite-dimensional inner product space and for a
-symmetric form it is the leftmost eigenvalue `λ_min` of the associated self-adjoint operator
-([cartis2022evaluation], Section A.5), and the Rayleigh-quotient inequality (A.3) holds by
-definition. Here `A[d, d]` is `A (fun _ => d)`.
+Let $E$ be a real normed space and let $A$ be a continuous bilinear form on $E$, typically a second
+derivative $\nabla^2 f(x)$. Its **least curvature** is the infimum of the quadratic form on the unit
+sphere,
+$$\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d, d],$$
+and it satisfies the Rayleigh bound $\lambda_{\min}[A] \|d\|^2 \le A[d, d]$ for every $d$, which is
+(A.3) of [cartis2022evaluation]. On a nonzero finite-dimensional inner product space, for a
+symmetric form $A[v, w] = \langle v, T w \rangle$, the number $\lambda_{\min}[A]$ is the leftmost
+eigenvalue of the symmetric operator $T$, as in Section A.5 of [cartis2022evaluation], and it is
+attained at a unit eigenvector.
 
-`minCurvature A` is the book's `λ_min` (an eigenvalue, attained on the sphere) only on a nonzero
-finite-dimensional space; in infinite dimension it is just the infimum of the quadratic form on
-the unit sphere. On the zero space the sphere is empty and `minCurvature A = 0`; characterizations
-that need a unit vector assume `[Nontrivial E]`.
+In infinite dimension, $\lambda_{\min}[A]$ is only the infimum of the quadratic form on the unit
+sphere, and it need not be an eigenvalue. On the zero space the unit sphere is empty and
+$\lambda_{\min}[A] = 0$; the characterizations that need a unit vector assume that $E$ is nonzero.
 
 ## Main definitions
 
-* `minCurvature A`: the infimum of `A[d, d]` over the unit sphere;
-* `minCurvatureOn A V`: the least curvature of `A` restricted to a subspace `V` (`λ_min[Qᵀ A Q]` for
-  a matrix `Q` with orthonormal columns spanning `V`, [cartis2022evaluation] (3.4.32));
-* `innerForm`: the bilinear form `(v, w) ↦ ⟪v, w⟫`, the "identity matrix".
+* `minCurvature`: the least curvature $\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d, d]$.
+* `minCurvatureOn`: the least curvature of $A$ restricted to a subspace $V$, which is
+  $\lambda_{\min}[Q^T A Q]$ for a matrix $Q$ with orthonormal columns that span $V$ ((3.4.32) of
+  [cartis2022evaluation]).
+* `innerForm`: the inner product $(v, w) \mapsto \langle v, w \rangle$ as a bilinear form, the
+  identity matrix $I$ of [cartis2022evaluation].
 
 ## Main results
 
-* `minCurvature_le_apply`, `minCurvature_mul_norm_sq_le`: the Rayleigh bound (A.3);
-* `le_minCurvature_iff`: `c ≤ λ_min[A] ↔ ∀ d, c ‖d‖² ≤ A[d, d]` (so `-ε ≤ λ_min[A]` is the book's
-  approximate second-order condition (3.2.6));
-* `abs_minCurvature_le_norm`, `abs_minCurvature_sub_le`: (A.4) and (A.5);
-* `minCurvature_add_smul_inner`: shifting by `λ I` shifts `λ_min` by `λ` ((3.4.33));
-* `minCurvature_ge_of_add_smul`: `λ_min[A] ≥ λ_min[T + c N] - ‖A - T‖ - c K` when `N[d, d] ≤ K ‖d‖²`
-  (the step bounds (4.1.27), (5.5.15));
-* `exists_eq_minCurvature`, `apply_eq_minCurvature_mul_inner`, `exists_eigenvector_minCurvature`:
-  in finite dimension `λ_min` is attained at a unit vector, which for a symmetric form is an
-  eigenvector and may be chosen with `⟪u, g⟫ ≤ 0` for a given `g` ((3.2.3));
-* for `A[v, w] = ⟪v, T w⟫` with `T` symmetric: `minCurvature_eq_iInf_eigenvalues`,
-  `hasEigenvalue_minCurvature`, `minCurvature_le_of_hasEigenvalue` (`λ_min` is the least eigenvalue
-  of `T`), `minCurvature_eq_iInf_rayleigh` (the least Rayleigh quotient `H.rayleighQuotient`), and
-  `minCurvature_eq_iInf_isHermitian_eigenvalues` (the least eigenvalue of a symmetric matrix).
-  The bridge to `Subproblem.leftmost` is in `Numlib.Optimization.Subproblem.MinCurvature`.
+* `minCurvature_le_apply`, `minCurvature_mul_norm_sq_le`: the Rayleigh bound (A.3) of
+  [cartis2022evaluation].
+* `le_minCurvature_iff`: on a nonzero space, $c \le \lambda_{\min}[A]$ if and only if
+  $c \|d\|^2 \le A[d, d]$ for all $d$. So $-\varepsilon \le \lambda_{\min}[A]$ is the approximate
+  second-order condition (3.2.6) of [cartis2022evaluation].
+* `abs_minCurvature_le_norm`, `abs_minCurvature_sub_le`: $|\lambda_{\min}[A]| \le \|A\|$ and
+  $|\lambda_{\min}[A] - \lambda_{\min}[B]| \le \|A - B\|$, the bounds (A.4) and (A.5) of
+  [cartis2022evaluation].
+* `minCurvature_add_smul_inner`: $\lambda_{\min}[A + \lambda I] = \lambda_{\min}[A] + \lambda$,
+  which is (3.4.33) of [cartis2022evaluation].
+* `minCurvature_ge_of_add_smul`: $\lambda_{\min}[A] \ge \lambda_{\min}[T + c N] - \|A - T\| - c K$
+  when $N[d, d] \le K \|d\|^2$; this is the step in the bounds (4.1.27) and (5.5.15) of
+  [cartis2022evaluation].
+* `exists_eq_minCurvature`, `apply_eq_minCurvature_mul_inner`, `exists_eigenvector_minCurvature`: in
+  finite dimension $\lambda_{\min}[A]$ is attained at a unit vector $u$; for a symmetric form $u$ is
+  an eigenvector, and it can be chosen with $\langle u, g \rangle \le 0$ for a given $g$, as in
+  (3.2.3) of [cartis2022evaluation].
+* `minCurvature_eq_iInf_eigenvalues`, `hasEigenvalue_minCurvature`,
+  `minCurvature_le_of_hasEigenvalue`: for $A[v, w] = \langle v, T w \rangle$ with $T$ symmetric,
+  $\lambda_{\min}[A]$ is the least eigenvalue of $T$.
+* `minCurvature_eq_iInf_rayleigh`: $\lambda_{\min}[A]$ is the least Rayleigh quotient of $H$ when
+  $A[v, w] = \langle v, H w \rangle$.
+* `minCurvature_eq_iInf_isHermitian_eigenvalues`: $\lambda_{\min}[A]$ is the least eigenvalue of a
+  real symmetric matrix $M$ when $A[v, w] = \langle v, M w \rangle$.
+
+## Notation
+
+* $A[v, w]$: the value `A ![v, w]` of the bilinear form `A : ContinuousMultilinearMap ℝ (fun _ : Fin
+  2 => E) ℝ`.
+* $A[d, d]$: the diagonal value `A (fun _ => d)`.
+* $\lambda_{\min}[A]$: `minCurvature A`.
+
+## Implementation notes
+
+* A bilinear form is a continuous multilinear map on `Fin 2`, the type of `iteratedFDeriv ℝ 2 f x`.
+  The norm $\|A\|$ is its operator norm.
+* The relation to the leftmost eigenvalue `Subproblem.leftmost` of the trust-region subproblem
+  theory is in the module `Numlib.Optimization.Subproblem.MinCurvature`.
 -/
 
 open Metric Set
@@ -54,20 +81,26 @@ section Normed
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The least curvature `λ_min[A] = inf_{‖d‖ = 1} A[d, d]` of a continuous bilinear form
-([cartis2022evaluation], Section A.5: the leftmost eigenvalue when `A` is a symmetric matrix).
-It is `0` on the zero space. -/
+/-- The **least curvature** of a continuous bilinear form $A$ on $E$ is
+$$\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d, d].$$
+It is $0$ on the zero space, where the unit sphere is empty.
+
+For a symmetric matrix $A$ this is the leftmost eigenvalue of Section A.5 of
+[cartis2022evaluation]. The infimum is the infimum in `ℝ` over the unit sphere
+`Metric.sphere 0 1`. -/
 noncomputable def minCurvature (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) : ℝ :=
   ⨅ d : sphere (0 : E) 1, A (fun _ => (d : E))
 
 variable (A B : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ)
 
+/-- The defining formula $\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d, d]$. -/
 theorem minCurvature_def : minCurvature A = ⨅ d : sphere (0 : E) 1, A (fun _ => (d : E)) := rfl
 
-/-- `|A[d, d]| ≤ ‖A‖ ‖d‖²`. -/
+/-- For every $d \in E$, $|A[d, d]| \le \|A\| \|d\|^2$. -/
 theorem abs_apply_diag_le (d : E) : |A (fun _ => d)| ≤ ‖A‖ * ‖d‖ ^ 2 := by
   simpa [Fin.prod_univ_two, sq] using A.le_opNorm (fun _ => d)
 
+/-- The values $A[d, d]$ on the unit sphere are bounded below. -/
 theorem bddBelow_apply_sphere :
     BddBelow (range fun d : sphere (0 : E) 1 => A (fun _ => (d : E))) := by
   refine ⟨-‖A‖, ?_⟩
@@ -78,11 +111,14 @@ theorem bddBelow_apply_sphere :
   rw [hd] at this
   linarith
 
-/-- The Rayleigh bound on the unit sphere ([cartis2022evaluation], (A.3)). -/
+/-- If $\|d\| = 1$, then $\lambda_{\min}[A] \le A[d, d]$. This is the Rayleigh bound (A.3) of
+[cartis2022evaluation] on the unit sphere. -/
 theorem minCurvature_le_apply {d : E} (hd : ‖d‖ = 1) : minCurvature A ≤ A (fun _ => d) :=
   ciInf_le (bddBelow_apply_sphere A) (⟨d, by simpa using hd⟩ : sphere (0 : E) 1)
 
-/-- The homogeneous Rayleigh bound `λ_min[A] ‖d‖² ≤ A[d, d]` ([cartis2022evaluation], (A.3)). -/
+/-- For every $d \in E$,
+$$\lambda_{\min}[A] \|d\|^2 \le A[d, d].$$
+This is the Rayleigh bound (A.3) of [cartis2022evaluation]. -/
 theorem minCurvature_mul_norm_sq_le (d : E) : minCurvature A * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
   rcases eq_or_ne d 0 with rfl | hd
   · simp [A.map_coord_zero (m := fun _ => (0 : E)) 0 rfl]
@@ -95,7 +131,7 @@ theorem minCurvature_mul_norm_sq_le (d : E) : minCurvature A * ‖d‖ ^ 2 ≤ A
   calc minCurvature A * ‖d‖ ^ 2 ≤ (‖d‖⁻¹) ^ 2 * A (fun _ => d) * ‖d‖ ^ 2 := by gcongr
     _ = A (fun _ => d) := by field_simp
 
-/-- On the zero space the unit sphere is empty and `λ_min[A] = 0`. -/
+/-- If $E$ is the zero space, then $\lambda_{\min}[A] = 0$, because the unit sphere is empty. -/
 theorem minCurvature_of_subsingleton [Subsingleton E] : minCurvature A = 0 := by
   have : IsEmpty (sphere (0 : E) 1) := ⟨fun d => by
     have := d.2
@@ -104,8 +140,11 @@ theorem minCurvature_of_subsingleton [Subsingleton E] : minCurvature A = 0 := by
 
 variable {A B}
 
-/-- **Characterization of `λ_min`** ([cartis2022evaluation], (3.2.6)): on a nonzero space,
-`c ≤ λ_min[A]` iff `c ‖d‖² ≤ A[d, d]` for all `d`. -/
+/-- Let $E$ be a nonzero real normed space and let $c \in \mathbb{R}$. Then
+$$c \le \lambda_{\min}[A] \iff c \|d\|^2 \le A[d, d] \text{ for all } d \in E.$$
+
+With $c = -\varepsilon$, the right-hand side is the approximate second-order condition (3.2.6)
+of [cartis2022evaluation]. -/
 theorem le_minCurvature_iff [Nontrivial E] {c : ℝ} :
     c ≤ minCurvature A ↔ ∀ d, c * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
   constructor
@@ -117,7 +156,8 @@ theorem le_minCurvature_iff [Nontrivial E] {c : ℝ} :
     have hd : ‖(d : E)‖ = 1 := by simp
     simpa [hd] using h d
 
-/-- `λ_min[A] ≥ 0` iff `A` is positive semidefinite. -/
+/-- $\lambda_{\min}[A] \ge 0$ if and only if $A$ is positive semidefinite: $A[d, d] \ge 0$ for all
+$d$. -/
 theorem minCurvature_nonneg_iff : 0 ≤ minCurvature A ↔ ∀ d, 0 ≤ A (fun _ => d) := by
   rcases subsingleton_or_nontrivial E with hE | hE
   · simp only [minCurvature_of_subsingleton, le_refl, true_iff]
@@ -125,15 +165,17 @@ theorem minCurvature_nonneg_iff : 0 ≤ minCurvature A ↔ ∀ d, 0 ≤ A (fun _
     rw [Subsingleton.elim d 0, A.map_coord_zero (m := fun _ => (0 : E)) 0 rfl]
   · simp [le_minCurvature_iff]
 
-/-- On a nonzero space the infimum is attained along a minimizing sequence: for every `c >
-λ_min[A]` there is a unit vector `d` with `A[d, d] < c`. -/
+/-- On a nonzero space, for every $c > \lambda_{\min}[A]$ there is a unit vector $d$ with
+$A[d, d] < c$. -/
 theorem exists_apply_lt_of_minCurvature_lt [Nontrivial E] {c : ℝ} (hc : minCurvature A < c) :
     ∃ d, ‖d‖ = 1 ∧ A (fun _ => d) < c := by
   have : Nonempty (sphere (0 : E) 1) := (NormedSpace.sphere_nonempty.2 zero_le_one).to_subtype
   obtain ⟨d, hd⟩ := exists_lt_of_ciInf_lt hc
   exact ⟨d, by simp, hd⟩
 
-/-- (A.4) of [cartis2022evaluation]: `-‖A‖ ≤ λ_min[A] ≤ ‖A‖`. -/
+/-- For every continuous bilinear form $A$,
+$$-\|A\| \le \lambda_{\min}[A] \le \|A\|.$$
+This is (A.4) of [cartis2022evaluation]. -/
 theorem abs_minCurvature_le_norm : |minCurvature A| ≤ ‖A‖ := by
   rcases subsingleton_or_nontrivial E with hE | hE
   · simp [minCurvature_of_subsingleton]
@@ -150,8 +192,9 @@ theorem abs_minCurvature_le_norm : |minCurvature A| ≤ ‖A‖ := by
     rw [hd] at h3
     linarith
 
-/-- (A.5) of [cartis2022evaluation]: `λ_min` is `1`-Lipschitz,
-`|λ_min[A] - λ_min[B]| ≤ ‖A - B‖`. -/
+/-- For continuous bilinear forms $A$ and $B$,
+$$|\lambda_{\min}[A] - \lambda_{\min}[B]| \le \|A - B\|,$$
+so $\lambda_{\min}$ is $1$-Lipschitz. This is (A.5) of [cartis2022evaluation]. -/
 theorem abs_minCurvature_sub_le : |minCurvature A - minCurvature B| ≤ ‖A - B‖ := by
   rcases subsingleton_or_nontrivial E with hE | hE
   · simp [minCurvature_of_subsingleton]
@@ -172,7 +215,8 @@ theorem abs_minCurvature_sub_le : |minCurvature A - minCurvature B| ≤ ‖A - B
 
 variable (A)
 
-/-- In finite dimension `λ_min[A]` is attained at a unit vector. -/
+/-- Let $E$ be a nonzero finite-dimensional real normed space. Then for every continuous bilinear
+form $A$ there is a unit vector $u$ with $A[u, u] = \lambda_{\min}[A]$. -/
 theorem exists_eq_minCurvature [FiniteDimensional ℝ E] [Nontrivial E]
     (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) :
     ∃ u, ‖u‖ = 1 ∧ A (fun _ => u) = minCurvature A := by
@@ -186,9 +230,9 @@ theorem exists_eq_minCurvature [FiniteDimensional ℝ E] [Nontrivial E]
   have : Nonempty (sphere (0 : E) 1) := ⟨⟨u, hu⟩⟩
   exact le_ciInf fun d => hmin d.2
 
-/-! ### Bilinear-form calculus on `![v, w]` -/
+/-! ### Bilinear-form calculus on pairs of vectors -/
 
-/-- The diagonal tuple `fun _ => d` is `![d, d]`. -/
+/-- The diagonal value $A[d, d]$, written `A (fun _ => d)`, equals `A ![d, d]`. -/
 theorem apply_diag_eq_vec (d : E) : A (fun _ => d) = A ![d, d] := by
   congr 1
   funext i
@@ -204,24 +248,30 @@ private theorem update_vec_one (x z v : E) : Function.update ![z, x] 1 v = ![z, 
   ext i
   fin_cases i <;> rfl
 
+/-- $A[x + y, z] = A[x, z] + A[y, z]$. -/
 theorem apply_vec_add_left (x y z : E) : A ![x + y, z] = A ![x, z] + A ![y, z] := by
   simpa only [update_vec_zero] using A.map_update_add ![x, z] 0 x y
 
+/-- $A[c x, z] = c A[x, z]$. -/
 theorem apply_vec_smul_left (c : ℝ) (x z : E) : A ![c • x, z] = c * A ![x, z] := by
   simpa only [update_vec_zero, smul_eq_mul] using A.map_update_smul ![x, z] 0 c x
 
+/-- $A[z, x + y] = A[z, x] + A[z, y]$. -/
 theorem apply_vec_add_right (x y z : E) : A ![z, x + y] = A ![z, x] + A ![z, y] := by
   simpa only [update_vec_one] using A.map_update_add ![z, x] 1 x y
 
+/-- $A[z, c x] = c A[z, x]$. -/
 theorem apply_vec_smul_right (c : ℝ) (x z : E) : A ![z, c • x] = c * A ![z, x] := by
   simpa only [update_vec_one, smul_eq_mul] using A.map_update_smul ![z, x] 1 c x
 
 variable {A}
 
-/-- **Lower bound on the least curvature of a perturbed form.** If the bilinear form `M = T + c N`
-is a model of `A` (`c ≥ 0`, `N[d, d] ≤ K ‖d‖²` for all `d`, `K ≥ 0`), then
-`λ_min[A] ≥ λ_min[M] - ‖A - T‖ - c K`. (This is the computation (4.1.27)–(4.1.29), (5.5.15)–(5.5.17)
-of [cartis2022evaluation]: `min (a + b) ≥ min a + min b`.) -/
+/-- Let $A$, $T$ and $N$ be continuous bilinear forms on $E$, and let $c \ge 0$ and $K \ge 0$ be
+real numbers with $N[d, d] \le K \|d\|^2$ for all $d \in E$. Then
+$$\lambda_{\min}[T + c N] - \|A - T\| - c K \le \lambda_{\min}[A].$$
+
+In [cartis2022evaluation], $T + c N$ is a model of $A$, and this is the computation
+(4.1.27)–(4.1.29) and (5.5.15)–(5.5.17), based on $\min(a + b) \ge \min a + \min b$. -/
 theorem minCurvature_ge_of_add_smul
     (A T N : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) {c K : ℝ} (hc : 0 ≤ c)
     (hK : 0 ≤ K) (hN : ∀ d, N (fun _ => d) ≤ K * ‖d‖ ^ 2) :
@@ -244,13 +294,21 @@ theorem minCurvature_ge_of_add_smul
 
 /-! ### Least curvature on a subspace -/
 
-/-- The least curvature of a bilinear form `A` restricted to a subspace `V`:
-`λ_min[Qᵀ A Q]` for a matrix `Q` with orthonormal columns spanning `V` ([cartis2022evaluation],
-(3.4.32)); for `V = ⊤` (`Q = I`) it is `λ_min[A]` (`minCurvatureOn_top`). -/
+/-- The **least curvature of $A$ on a subspace** $V$ of $E$ is the least curvature of the
+restriction of $A$ to $V$:
+$$\lambda_{\min}[A|_V] = \inf_{d \in V,\ \|d\| = 1} A[d, d].$$
+It is $\lambda_{\min}[Q^T A Q]$ for a matrix $Q$ with orthonormal columns that span $V$, as in
+(3.4.32) of [cartis2022evaluation]. For $V = E$, which is $Q = I$, it is $\lambda_{\min}[A]$
+(`minCurvatureOn_top`).
+
+The restriction is the composition of $A$ with the inclusion of $V$ in both arguments. On
+$V = 0$ the value is $0$. -/
 noncomputable def minCurvatureOn (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ)
     (V : Submodule ℝ E) : ℝ :=
   minCurvature (A.compContinuousLinearMap fun _ => V.subtypeL)
 
+/-- The defining formula: `minCurvatureOn A V` is the least curvature of the restriction of $A$ to
+$V$. -/
 theorem minCurvatureOn_def (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ)
     (V : Submodule ℝ E) :
     minCurvatureOn A V = minCurvature (A.compContinuousLinearMap fun _ => V.subtypeL) := rfl
@@ -259,7 +317,7 @@ section MinCurvatureOn
 
 variable {V : Submodule ℝ E}
 
-/-- `λ_min[Qᵀ A Q] ‖d‖² ≤ A[d, d]` for `d ∈ V`. -/
+/-- For every $d \in V$, $\lambda_{\min}[A|_V] \|d\|^2 \le A[d, d]$. -/
 theorem minCurvatureOn_mul_norm_sq_le {d : E} (hd : d ∈ V) :
     minCurvatureOn A V * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
   have := minCurvature_mul_norm_sq_le (A.compContinuousLinearMap fun _ => V.subtypeL)
@@ -267,8 +325,9 @@ theorem minCurvatureOn_mul_norm_sq_le {d : E} (hd : d ∈ V) :
   rw [minCurvatureOn]
   simpa using this
 
-/-- Characterization of `λ_min[Qᵀ A Q]` on a nonzero subspace:
-`c ≤ λ_min[Qᵀ A Q] ↔ c ‖d‖² ≤ A[d, d]` for all `d ∈ V`. -/
+/-- Let $V$ be a nonzero subspace of $E$ and let $c \in \mathbb{R}$. Then
+$$c \le \lambda_{\min}[A|_V] \iff c \|d\|^2 \le A[d, d] \text{ for all } d \in V.$$
+-/
 theorem le_minCurvatureOn_iff [Nontrivial V] {c : ℝ} :
     c ≤ minCurvatureOn A V ↔ ∀ d ∈ V, c * ‖d‖ ^ 2 ≤ A (fun _ => d) := by
   refine ⟨fun hc d hd => (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans
@@ -276,14 +335,16 @@ theorem le_minCurvatureOn_iff [Nontrivial V] {c : ℝ} :
   refine le_minCurvature_iff.2 fun d => ?_
   simpa using h d d.2
 
-/-- `c ≤ λ_min[Qᵀ A Q]` if `c ‖d‖² ≤ A[d, d]` on `V` and `c ≤ 0` (the latter for `V = 0`). -/
+/-- If $c \le 0$ and $c \|d\|^2 \le A[d, d]$ for all $d \in V$, then $c \le \lambda_{\min}[A|_V]$.
+The hypothesis $c \le 0$ covers the case $V = 0$, where $\lambda_{\min}[A|_V] = 0$. -/
 theorem le_minCurvatureOn {c : ℝ} (hc : c ≤ 0) (h : ∀ d ∈ V, c * ‖d‖ ^ 2 ≤ A (fun _ => d)) :
     c ≤ minCurvatureOn A V := by
   rcases subsingleton_or_nontrivial V with hV | hV
   · rw [minCurvatureOn, minCurvature_of_subsingleton]; exact hc
   · exact le_minCurvatureOn_iff.2 h
 
-/-- On the whole space, `λ_min[Iᵀ A I] = λ_min[A]`. -/
+/-- On the whole space, the least curvature of $A$ on $V = E$ is $\lambda_{\min}[A]$; in matrix
+terms, $\lambda_{\min}[I^T A I] = \lambda_{\min}[A]$. -/
 @[simp]
 theorem minCurvatureOn_top : minCurvatureOn A ⊤ = minCurvature A := by
   rcases subsingleton_or_nontrivial E with hE | hE
@@ -302,25 +363,31 @@ section Inner
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The inner product as a continuous bilinear form, `innerForm (v, w) = ⟪v, w⟫` (the identity
-matrix `I` of [cartis2022evaluation]). -/
+/-- Let $E$ be a real inner product space. The inner product as a continuous bilinear form,
+$I[v, w] = \langle v, w \rangle$. It is the identity matrix $I$ of [cartis2022evaluation]. -/
 noncomputable def innerForm : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ :=
   @ContinuousLinearMap.uncurryLeft ℝ 1 (fun _ => E) ℝ _ _ _ _ _ <|
     (↑(continuousMultilinearCurryFin1 ℝ E ℝ).symm : (E →L[ℝ] ℝ) →L[ℝ] _).comp (innerSL ℝ)
 
+/-- The inner product form takes the value $I[v, w] = \langle v, w \rangle$, written
+`innerForm v = ⟪v 0, v 1⟫` for a pair `v : Fin 2 → E`. -/
 @[simp]
 theorem innerForm_apply (v : Fin 2 → E) : innerForm v = ⟪v 0, v 1⟫ := rfl
 
+/-- The diagonal of the inner product form is the squared norm: $I[d, d] = \|d\|^2$. -/
 theorem innerForm_apply_diag (d : E) : innerForm (fun _ => d) = ‖d‖ ^ 2 := by
   simp
 
-/-- `λ_min[I] = 1` on a nonzero space. -/
+/-- On a nonzero real inner product space, $\lambda_{\min}[I] = 1$. -/
 theorem minCurvature_innerForm [Nontrivial E] : minCurvature (innerForm : E [×2]→L[ℝ] ℝ) = 1 := by
   refine le_antisymm ?_ (le_minCurvature_iff.2 fun d => by simp)
   obtain ⟨d, hd⟩ := exists_norm_eq E zero_le_one
   simpa [innerForm_apply_diag, hd] using minCurvature_le_apply innerForm hd
 
-/-- **Shifted forms** ([cartis2022evaluation], (3.4.33)): `λ_min[A + λ I] = λ_min[A] + λ`. -/
+/-- Let $E$ be a nonzero real inner product space, let $A$ be a continuous bilinear form on $E$ and
+let $\lambda \in \mathbb{R}$. Then
+$$\lambda_{\min}[A + \lambda I] = \lambda_{\min}[A] + \lambda.$$
+This is (3.4.33) of [cartis2022evaluation]. -/
 theorem minCurvature_add_smul_inner [Nontrivial E]
     (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ) (lam : ℝ) :
     minCurvature (A + lam • innerForm) = minCurvature A + lam := by
@@ -341,7 +408,10 @@ theorem minCurvature_add_smul_inner [Nontrivial E]
 
 variable {A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => E) ℝ}
 
-/-- A symmetric form on a sum: `A[x + t y, x + t y] = A[x, x] + 2t A[x, y] + t² A[y, y]`. -/
+/-- If $A$ is symmetric, $A[v, w] = A[w, v]$ for all $v, w$, then for all $x, y \in E$ and
+$t \in \mathbb{R}$,
+$$A[x + t y, x + t y] = A[x, x] + 2 t A[x, y] + t^2 A[y, y].$$
+-/
 theorem apply_diag_add_smul (hA : ∀ v w, A ![v, w] = A ![w, v]) (x y : E) (t : ℝ) :
     A (fun _ => x + t • y) = A (fun _ => x) + 2 * t * A ![x, y] + t ^ 2 * A (fun _ => y) := by
   rw [apply_diag_eq_vec, apply_diag_eq_vec, apply_diag_eq_vec, apply_vec_add_left,
@@ -349,10 +419,14 @@ theorem apply_diag_add_smul (hA : ∀ v w, A ![v, w] = A ![w, v]) (x y : E) (t :
     apply_vec_smul_right, apply_vec_smul_right, hA y x]
   ring
 
-/-- **Minimizers are eigenvectors** ([cartis2022evaluation], (3.2.3)). If `A` is symmetric and the
-unit vector `u` attains `λ_min[A]`, then `A[u, w] = λ_min[A] ⟪u, w⟫` for all `w`. This is the
-bilinear-form version of Mathlib's `IsSelfAdjoint.hasEigenvector_of_isMinOn`; it needs neither
-completeness nor an associated operator. -/
+/-- Let $E$ be a real inner product space and let $A$ be a symmetric continuous bilinear form on
+$E$: $A[v, w] = A[w, v]$ for all $v, w$. If a unit vector $u$ satisfies
+$A[u, u] = \lambda_{\min}[A]$, then for all $w \in E$,
+$$A[u, w] = \lambda_{\min}[A] \langle u, w \rangle.$$
+So a minimizer is an eigenvector, as in (3.2.3) of [cartis2022evaluation].
+
+This is the bilinear-form version of Mathlib's `IsSelfAdjoint.hasEigenvector_of_isMinOn`. It
+needs neither completeness of $E$ nor an operator that represents $A$. -/
 theorem apply_eq_minCurvature_mul_inner (hA : ∀ v w, A ![v, w] = A ![w, v]) {u : E}
     (hu : ‖u‖ = 1) (hmin : A (fun _ => u) = minCurvature A) (w : E) :
     A ![u, w] = minCurvature A * ⟪u, w⟫ := by
@@ -378,9 +452,13 @@ theorem apply_eq_minCurvature_mul_inner (hA : ∀ v w, A ![v, w] = A ![w, v]) {u
   simp only [a] at this
   linarith
 
-/-- **Eigenvector of `λ_min`** ([cartis2022evaluation], (3.2.3)). In finite dimension, for a
-symmetric form `A` and any `g`, there is a unit vector `u` with `A[u, u] = λ_min[A]`,
-`A[u, w] = λ_min[A] ⟪u, w⟫` for all `w`, and `⟪u, g⟫ ≤ 0`. -/
+/-- Let $E$ be a nonzero finite-dimensional real inner product space, let $A$ be a symmetric
+continuous bilinear form on $E$, and let $g \in E$. Then there is a unit vector $u$ with
+$$A[u, u] = \lambda_{\min}[A], \qquad A[u, w] = \lambda_{\min}[A] \langle u, w \rangle \text{
+  for all } w \in E, \qquad \langle u, g \rangle \le 0.$$
+So $u$ is an eigenvector for $\lambda_{\min}[A]$, as in (3.2.3) of [cartis2022evaluation].
+
+The sign condition comes from replacing $u$ by $-u$ if necessary. -/
 theorem exists_eigenvector_minCurvature [FiniteDimensional ℝ E] [Nontrivial E]
     (hA : ∀ v w, A ![v, w] = A ![w, v]) (g : E) :
     ∃ u, ‖u‖ = 1 ∧ A (fun _ => u) = minCurvature A ∧
@@ -401,7 +479,8 @@ section Operator
 
 variable {T : E →ₗ[ℝ] E}
 
-/-- `λ_min[A]` lies below every eigenvalue of `T` when `A[v, w] = ⟪v, T w⟫`. -/
+/-- Let $T$ be a linear operator on $E$ with $A[v, w] = \langle v, T w \rangle$ for all $v, w$. Then
+$\lambda_{\min}[A] \le \mu$ for every eigenvalue $\mu$ of $T$. -/
 theorem minCurvature_le_of_hasEigenvalue (hAT : ∀ v w, A ![v, w] = ⟪v, T w⟫) {μ : ℝ}
     (hμ : Module.End.HasEigenvalue T μ) : minCurvature A ≤ μ := by
   obtain ⟨v, hv⟩ := hμ.exists_hasEigenvector
@@ -411,13 +490,15 @@ theorem minCurvature_le_of_hasEigenvalue (hAT : ∀ v w, A ![v, w] = ⟪v, T w�
   rw [apply_diag_eq_vec, hAT, hTv, real_inner_smul_right, real_inner_self_eq_norm_sq] at h
   exact le_of_mul_le_mul_right h hv0
 
-/-- A form `A[v, w] = ⟪v, T w⟫` with `T` symmetric is symmetric. -/
+/-- If $T$ is a symmetric linear operator on $E$ and $A[v, w] = \langle v, T w \rangle$ for all
+$v, w$, then $A$ is symmetric: $A[v, w] = A[w, v]$. -/
 theorem apply_vec_comm_of_isSymmetric (hT : T.IsSymmetric) (hAT : ∀ v w, A ![v, w] = ⟪v, T w⟫)
     (v w : E) : A ![v, w] = A ![w, v] := by
   rw [hAT, hAT, ← hT, real_inner_comm]
 
-/-- `λ_min[A]` is an eigenvalue of `T` when `A[v, w] = ⟪v, T w⟫`, `T` symmetric, on a nonzero
-finite-dimensional space. -/
+/-- Let $E$ be a nonzero finite-dimensional real inner product space and let $T$ be a symmetric
+linear operator on $E$ with $A[v, w] = \langle v, T w \rangle$ for all $v, w$. Then
+$\lambda_{\min}[A]$ is an eigenvalue of $T$. -/
 theorem hasEigenvalue_minCurvature [FiniteDimensional ℝ E] [Nontrivial E] (hT : T.IsSymmetric)
     (hAT : ∀ v w, A ![v, w] = ⟪v, T w⟫) : Module.End.HasEigenvalue T (minCurvature A) := by
   obtain ⟨u, hu, -, heig, -⟩ :=
@@ -428,9 +509,14 @@ theorem hasEigenvalue_minCurvature [FiniteDimensional ℝ E] [Nontrivial E] (hT 
   exact Module.End.hasEigenvalue_of_hasEigenvector
     ⟨Module.End.mem_eigenspace_iff.2 hTu, hu0⟩
 
-/-- **`λ_min` is the least eigenvalue** ([cartis2022evaluation], Section A.5). If
-`A[v, w] = ⟪v, T w⟫` with `T` symmetric on a finite-dimensional space, `λ_min[A]` is the least of
-the eigenvalues of `T` (both sides are `0` on the zero space). -/
+/-- Let $E$ be a finite-dimensional real inner product space of dimension $n$, and let $T$ be a
+symmetric linear operator on $E$ with $A[v, w] = \langle v, T w \rangle$ for all $v, w$. Then
+$\lambda_{\min}[A]$ is the least eigenvalue of $T$:
+$$\lambda_{\min}[A] = \min_{1 \le i \le n} \lambda_i(T).$$
+This is the leftmost eigenvalue of Section A.5 of [cartis2022evaluation].
+
+The eigenvalues are Mathlib's `LinearMap.IsSymmetric.eigenvalues`, indexed by `Fin n`, and the
+minimum is an infimum in `ℝ`. For $n = 0$ both sides are $0$. -/
 theorem minCurvature_eq_iInf_eigenvalues [FiniteDimensional ℝ E] (hT : T.IsSymmetric) {n : ℕ}
     (hn : Module.finrank ℝ E = n) (hAT : ∀ v w, A ![v, w] = ⟪v, T w⟫) :
     minCurvature A = ⨅ i, hT.eigenvalues hn i := by
@@ -445,9 +531,14 @@ theorem minCurvature_eq_iInf_eigenvalues [FiniteDimensional ℝ E] (hT : T.IsSym
   rw [← hi]
   exact ciInf_le (Set.finite_range _).bddBelow i
 
-/-- `λ_min[A]` is the least Rayleigh quotient `H.rayleighQuotient x = ⟪H x, x⟫ / ‖x‖²` when
-`A[v, w] = ⟪v, H w⟫` ([cartis2022evaluation], (A.2)–(A.3)); compare Mathlib's
-`IsSelfAdjoint.hasEigenvalue_iInf_of_finiteDimensional`. -/
+/-- Let $E$ be a nonzero finite-dimensional real inner product space and let $H$ be a continuous
+linear operator on $E$ with $A[v, w] = \langle v, H w \rangle$ for all $v, w$. Then
+$\lambda_{\min}[A]$ is the least Rayleigh quotient of $H$:
+$$\lambda_{\min}[A] = \inf_{x \ne 0} \frac{\langle H x, x \rangle}{\|x\|^2}.$$
+This combines (A.2) and (A.3) of [cartis2022evaluation].
+
+The Rayleigh quotient is Mathlib's `ContinuousLinearMap.rayleighQuotient`. No symmetry of $H$ is
+assumed. Compare Mathlib's `IsSelfAdjoint.hasEigenvalue_iInf_of_finiteDimensional`. -/
 theorem minCurvature_eq_iInf_rayleigh [FiniteDimensional ℝ E] [Nontrivial E] {H : E →L[ℝ] E}
     (hAH : ∀ v w, A ![v, w] = ⟪v, H w⟫) :
     minCurvature A = ⨅ x : {x : E // x ≠ 0}, H.rayleighQuotient x := by
@@ -471,9 +562,16 @@ theorem minCurvature_eq_iInf_rayleigh [FiniteDimensional ℝ E] [Nontrivial E] {
 
 end Operator
 
-/-- **`λ_min` of a symmetric matrix** ([cartis2022evaluation], Section A.5). If `M` is a real
-symmetric matrix and `A[v, w] = ⟪v, M w⟫` on `EuclideanSpace ℝ ι`, then `λ_min[A]` is the least
-of the eigenvalues `M.IsHermitian.eigenvalues`. -/
+/-- Let $\iota$ be a finite type, let $M \in \mathbb{R}^{\iota \times \iota}$ be a symmetric matrix,
+and let $A$ be a continuous bilinear form on $\mathbb{R}^\iota$ with the Euclidean inner
+product, such that $A[v, w] = \langle v, M w \rangle$ for all $v, w$. Then $\lambda_{\min}[A]$
+is the least eigenvalue of $M$:
+$$\lambda_{\min}[A] = \min_i \lambda_i(M).$$
+This is the leftmost eigenvalue of Section A.5 of [cartis2022evaluation].
+
+The space is `EuclideanSpace ℝ ι`, $M w$ is `Matrix.toEuclideanLin M w`, and the eigenvalues are
+`Matrix.IsHermitian.eigenvalues`. The minimum is an infimum in `ℝ`, which is $0$ for an empty
+$\iota$. -/
 theorem minCurvature_eq_iInf_isHermitian_eigenvalues {ι : Type*} [Fintype ι] [DecidableEq ι]
     {M : Matrix ι ι ℝ} (hM : M.IsHermitian)
     {A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => EuclideanSpace ℝ ι) ℝ}

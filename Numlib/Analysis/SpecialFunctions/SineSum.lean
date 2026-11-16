@@ -15,30 +15,38 @@ import Numlib.Analysis.SpecialFunctions.Log.Deriv
 /-!
 # A logarithmic bound for Lebesgue-type sums of reciprocal sines
 
-For a positive integer `M`, an offset `δ ∈ [0, 1)` and an integer `k`, put
+For a positive integer $M$, an offset $\delta \in [0, 1)$ and an integer $k$, put
+$$t_k = \frac{|\sin(\pi(k + \delta))|}{M\,|\sin(\pi(k + \delta)/M)|},$$
+with $t_k = 0$ at the finitely many $k$ in a period where the denominator vanishes; there the
+numerator vanishes too. This file proves that a sum of $M$ consecutive terms $t_k$ is at most
+$2 + \frac{2}{\pi} \log M$ for $M \ge 3$, uniformly in $\delta$ and in the first index of the sum.
 
-`SineSum.term M δ k = |sin (π (k + δ))| / (M |sin (π (k + δ) / M)|)`,
+This is the one estimate behind the Lebesgue constants of interpolation at equally spaced angles.
+The bound `norm_trigInterpCLM_le` for trigonometric interpolation in
+`Numlib.Approximation.TrigonometricInterpolation` is the odd case $M = 2n + 1$. The logarithmic
+growth of the Lebesgue constant of the Chebyshev nodes, `Lagrange.norm_interpolateCLM_chebyshev_le`
+in `Numlib.Approximation.Interpolation`, is the even case $M = 2n + 2$ after the substitution
+$t = \cos \theta$.
 
-with the convention `0/0 = 0` at the finitely many `k` where the denominator vanishes. This file
-proves that a sum of `M` consecutive such terms is at most `2 + (2/π) log M` for `M ≥ 3`,
-uniformly in `δ` and in where the run of indices starts (`SineSum.sum_term_le`).
+## Main definitions
 
-## The argument
+* `SineSum.term`: the term $t_k = |\sin(\pi(k + \delta))| / (M\,|\sin(\pi(k + \delta)/M)|)$.
 
-The numerator is the same for every `k` in the run, and `|sin (M x)| ≤ M |sin x|`
-(`SineSum.abs_sin_natCast_mul_le`) bounds every term by `1` (`SineSum.term_le_one`). The two terms
-whose index is nearest the evaluation point are taken at that bound; for the rest, `sin` is
-bounded below by `x - x³/6` near `0` and by the tangent comparison `x < tan x` further out, which
-turns `1 / (M sin (π(k + δ)/M))` into a difference of logarithms that telescopes
-(`SineSum.sum_le_of_telescope`).
+## Main results
 
-## Where it is used
+* `SineSum.abs_sin_natCast_mul_le`: $|\sin(nx)| \le n\,|\sin x|$ for a natural number $n$.
+* `SineSum.term_le_one`: $t_k \le 1$ for $M > 0$.
+* `SineSum.sum_range_shift`: a sum of $M$ consecutive terms does not depend on its first index.
+* `SineSum.sum_term_le`: $\sum_{i < M} t_{c+i} \le 2 + \frac{2}{\pi} \log M$ for $M \ge 3$,
+  $\delta \in [0, 1)$ and every integer $c$.
 
-It is the one estimate behind every Lebesgue constant of interpolation at equally spaced angles:
-`Numlib/Approximation/TrigonometricInterpolation`'s `norm_trigInterpCLM_le` is the odd case
-`M = 2 n + 1`, and `Numlib/Approximation/Interpolation`'s
-`Lagrange.norm_interpolateCLM_chebyshev_le`, the logarithmic growth of the Lebesgue constant of
-the Chebyshev nodes, is the even case `M = 2 n + 2` after the substitution `t = cos θ`.
+## Proof outline
+
+The numerator $|\sin(\pi(k + \delta))|$ is the same for every $k$ in the sum, and
+$|\sin(Mx)| \le M\,|\sin x|$ bounds every term by $1$. The two terms whose index is nearest to the
+evaluation point are bounded by $1$. For the other terms, $\sin$ is bounded below by $x - x^3/6$
+near $0$ and by the comparison $x < \tan x$ further out. This turns $1/(M \sin(\pi(k + \delta)/M))$
+into a difference of logarithms, and these differences telescope.
 -/
 
 open Real Set
@@ -46,7 +54,7 @@ open scoped Real
 
 namespace SineSum
 
-/-- `|sin (n x)| ≤ n |sin x|` for a natural number `n`. -/
+/-- For a natural number $n$ and $x \in \mathbb{R}$, $|\sin(nx)| \le n\,|\sin x|$. -/
 theorem abs_sin_natCast_mul_le (n : ℕ) (x : ℝ) : |Real.sin ((n : ℝ) * x)| ≤ n * |Real.sin x| := by
   induction n with
   | zero => simp
@@ -63,7 +71,7 @@ theorem abs_sin_natCast_mul_le (n : ℕ) (x : ℝ) : |Real.sin ((n : ℝ) * x)| 
       exact Real.abs_cos_le_one _
     linarith
 
-/-- `|sin (y + n π)| = |sin y|`. -/
+/-- For a natural number $n$ and $y \in \mathbb{R}$, $|\sin(y + n\pi)| = |\sin y|$. -/
 theorem abs_sin_add_natCast_mul_pi (n : ℕ) (y : ℝ) :
     |Real.sin (y + (n : ℝ) * π)| = |Real.sin y| := by
   induction n with
@@ -72,17 +80,23 @@ theorem abs_sin_add_natCast_mul_pi (n : ℕ) (y : ℝ) :
     push_cast
     rw [show y + ((k : ℝ) + 1) * π = (y + (k : ℝ) * π) + π by ring, Real.sin_add_pi, abs_neg, ih]
 
-/-- `|sin (y + m π)| = |sin y|` for an integer `m`. -/
+/-- For an integer $m$ and $y \in \mathbb{R}$, $|\sin(y + m\pi)| = |\sin y|$. -/
 theorem abs_sin_add_intCast_mul_pi (m : ℤ) (y : ℝ) :
     |Real.sin (y + (m : ℝ) * π)| = |Real.sin y| := by
   rw [Real.sin_add, Real.sin_int_mul_pi, Real.cos_int_mul_pi, mul_zero, add_zero, abs_mul,
     abs_zpow, abs_neg, abs_one, one_zpow, mul_one]
 
-/-- One term of the Lebesgue-type sum: `|sin (π (k + δ))| / (M |sin (π (k + δ) / M)|)`. -/
+/-- One term of the Lebesgue-type sum: for a natural number $M$, a real number $\delta$ and an
+integer $k$,
+$$t_k = \frac{|\sin(\pi(k + \delta))|}{M\,|\sin(\pi(k + \delta)/M)|}.$$
+
+With the Lean convention $x/0 = 0$, the term is $0$ where the denominator vanishes, in
+particular for $M = 0$. For $M > 0$ the denominator vanishes only where $(k + \delta)/M$ is an
+integer, and there the numerator vanishes too. -/
 noncomputable def term (M : ℕ) (δ : ℝ) (k : ℤ) : ℝ :=
   |Real.sin (π * ((k : ℝ) + δ))| / ((M : ℝ) * |Real.sin (π * ((k : ℝ) + δ) / M)|)
 
-/-- The terms are periodic in the index with period `M`. -/
+/-- The terms are periodic in the index with period $M$: $t_{k+M} = t_k$ for every integer $k$. -/
 theorem term_periodic (M : ℕ) (δ : ℝ) (k : ℤ) : term M δ (k + M) = term M δ k := by
   have hnum : Real.sin (π * (((k + (M : ℤ) : ℤ) : ℝ) + δ))
       = Real.sin (π * ((k : ℝ) + δ) + (M : ℝ) * π) := by
@@ -98,11 +112,11 @@ theorem term_periodic (M : ℕ) (δ : ℝ) (k : ℤ) : term M δ (k + M) = term 
     ring
   rw [term, term, hnum, hden, abs_sin_add_natCast_mul_pi, Real.sin_add_pi, abs_neg]
 
-/-- Every term is nonnegative. -/
+/-- Every term is nonnegative: $t_k \ge 0$. -/
 theorem term_nonneg (M : ℕ) (δ : ℝ) (k : ℤ) : 0 ≤ term M δ k :=
   div_nonneg (abs_nonneg _) (by positivity)
 
-/-- Every term is at most `1`, because `|sin (M u)| ≤ M |sin u|`. -/
+/-- For $M > 0$ every term satisfies $t_k \le 1$, because $|\sin(Mu)| \le M\,|\sin u|$. -/
 theorem term_le_one {M : ℕ} (hM : 0 < M) (δ : ℝ) (k : ℤ) : term M δ k ≤ 1 := by
   rcases eq_or_lt_of_le (abs_nonneg (Real.sin (π * ((k : ℝ) + δ) / M))) with h | h
   · rw [term, ← h, mul_zero, div_zero]; norm_num
@@ -111,7 +125,9 @@ theorem term_le_one {M : ℕ} (hM : 0 < M) (δ : ℝ) (k : ℤ) : term M δ k �
     nth_rewrite 1 [hx]
     exact abs_sin_natCast_mul_le M _
 
-/-- The sum of `M` consecutive terms does not depend on where it starts. -/
+/-- A sum of $M$ consecutive terms does not depend on its first index: for every integer $c$,
+$$\sum_{i < M} t_{c+i} = \sum_{i < M} t_i.$$
+-/
 theorem sum_range_shift (M : ℕ) (δ : ℝ) (c : ℤ) :
     ∑ i ∈ Finset.range M, term M δ (c + i) = ∑ i ∈ Finset.range M, term M δ i := by
   have key : ∀ d : ℤ, ∑ i ∈ Finset.range M, term M δ (d + 1 + i)
@@ -137,7 +153,7 @@ theorem sum_range_shift (M : ℕ) (δ : ℝ) (c : ℤ) :
     rw [← key (-(i : ℤ) - 1), show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring]
     exact ih
 
-/-- For `0 < h ≤ π/6`, `h ≤ sin h + (sin h)³ / 3`. -/
+/-- For $0 < h \le \pi/6$, $h \le \sin h + (\sin h)^3/3$. -/
 private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6) :
     h ≤ Real.sin h + Real.sin h ^ 3 / 3 := by
   have hb : h ≤ 2 / 3 := by
@@ -150,9 +166,9 @@ private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π /
   have h2 : (0.925 * h) ^ 3 ≤ Real.sin h ^ 3 := pow_le_pow_left₀ (by positivity) h1 3
   nlinarith [pow_pos hh0 3]
 
-/-- **The midpoint bound for the cosecant.** For `0 < h ≤ π/6` and `h < φ < π - h`,
-`2 h / sin φ ≤ log (tan ((φ + h)/2)) - log (tan ((φ - h)/2))`: the comparison
-`2h / sin φ ≤ ∫_{φ - h}^{φ + h} dy / sin y` in algebraic form. -/
+/-- For $0 < h \le \pi/6$ and $h < \varphi < \pi - h$, $2h / \sin \varphi \le \log \tan((\varphi +
+h)/2) - \log \tan((\varphi - h)/2)$, which is the comparison $2h / \sin \varphi \le
+\int_{\varphi - h}^{\varphi + h} dy / \sin y$ in algebraic form. -/
 private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6)
     (hφ1 : h < φ) (hφ2 : φ < π - h) :
     2 * h / Real.sin φ
@@ -202,8 +218,8 @@ private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6
   rw [hid]
   exact div_nonneg hnum (by positivity)
 
-/-- A sum whose first and last terms are at most `1` and whose interior terms are dominated by a
-telescoping difference is at most `2` plus the total difference. -/
+/-- If $G(c) \le 1$ for all $c$ and $G(i + 1) \le C\,(\Psi(i + 1) - \Psi(i))$ for $i < M$, then
+$\sum_{c < M + 2} G(c) \le 2 + C\,(\Psi(M) - \Psi(0))$. -/
 private theorem sum_le_of_telescope {M : ℕ} (G Ψ : ℕ → ℝ) (C : ℝ)
     (hend : ∀ c, G c ≤ 1) (hmid : ∀ i, i < M → G (i + 1) ≤ C * (Ψ (i + 1) - Ψ i)) :
     ∑ c ∈ Finset.range (M + 2), G c ≤ 2 + C * (Ψ M - Ψ 0) := by
@@ -219,7 +235,7 @@ private theorem sum_le_of_telescope {M : ℕ} (G Ψ : ℕ → ℝ) (C : ℝ)
   have e2 := hend 0
   linarith [h2.trans_eq h3]
 
-/-- If the `M`-scaled sine is positive, the term is at most `1 / (M sin …)`. -/
+/-- If $\sin(\pi(k + \delta)/M) > 0$, then $t_k \le 1 / (M \sin(\pi(k + \delta)/M))$. -/
 private theorem term_le_inv {M : ℕ} {δ : ℝ} (k : ℤ)
     (hpos : 0 < Real.sin (π * ((k : ℝ) + δ) / M)) :
     term M δ k ≤ 1 / ((M : ℝ) * Real.sin (π * ((k : ℝ) + δ) / M)) := by
@@ -227,14 +243,15 @@ private theorem term_le_inv {M : ℕ} {δ : ℝ} (k : ℤ)
   gcongr
   · exact Real.abs_sin_le_one _
 
-/-- **A logarithmic bound for a Lebesgue-type sum of reciprocal sines.** For `M ≥ 3`, `δ ∈ [0, 1)`
-and any starting index `c`,
+/-- **A logarithmic bound for a Lebesgue-type sum of reciprocal sines.** Let $M \ge 3$ be a natural
+number, let $0 \le \delta < 1$, and let $c$ be an integer. Then
+$$\sum_{i=0}^{M-1} \frac{|\sin(\pi(c + i + \delta))|}{M\,|\sin(\pi(c + i + \delta)/M)|} \le 2 +
+  \frac{2}{\pi} \log M.$$
 
-`∑_{i < M} |sin (π (c + i + δ))| / (M |sin (π (c + i + δ) / M)|) ≤ 2 + (2/π) log M`.
-
-The two terms nearest the evaluation point are bounded by `1` each (`|sin (M u)| ≤ M |sin u|`) and
-the remaining ones by the midpoint comparison `2q / sin φ ≤ ∫_{φ-q}^{φ+q} dy / sin y` with
-`q = π / (2 M)` the half-spacing, whose right-hand sides telescope to at most `2 log M`. -/
+The two terms nearest to the evaluation point are bounded by $1$ each, by
+$|\sin(Mu)| \le M\,|\sin u|$. The other terms are bounded by the midpoint comparison $2q / \sin
+\varphi \le \int_{\varphi - q}^{\varphi + q} dy / \sin y$, with the half-spacing $q = \pi/(2M)$.
+The right sides telescope to at most $2 \log M$. -/
 theorem sum_term_le {M : ℕ} (hM : 3 ≤ M) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ < 1) (c : ℤ) :
     ∑ i ∈ Finset.range M, term M δ (c + i) ≤ 2 + 2 / π * Real.log M := by
   rw [sum_range_shift]

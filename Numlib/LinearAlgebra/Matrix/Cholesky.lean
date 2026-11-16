@@ -20,85 +20,119 @@ import Numlib.LinearAlgebra.Matrix.QR
 /-!
 # The Cholesky factorization and positive definite matrices
 
-The Cholesky factorization `A = Hᴴ H` of a Hermitian positive definite matrix, with `H` upper
-triangular of positive diagonal, as a specification `Matrix.IsCholesky A H`; its existence and
-uniqueness ([quarteroni2000numerical] Theorem 3.6, [higham2002accuracy] Theorem 10.1); the
-recurrence computing it as a total function `Matrix.cholesky`; Sylvester's criterion and the other
-characterizations of positive definiteness of [quarteroni2000numerical] Property 1.18; the entry
-bounds of positive (semi)definite matrices; and the bridge to Mathlib's `Matrix.LDL`.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{n \times n}$, with the
+indices in a finite linear order. A **Cholesky factorization** of $A$ is $A = H^H H$ with $H$ upper
+triangular with a positive diagonal. This file proves that a positive definite matrix has exactly
+one Cholesky factorization (Theorem 3.6 of [quarteroni2000numerical], Theorem 10.1 of
+[higham2002accuracy]), and that the recurrence (3.45) of [quarteroni2000numerical] computes it. It
+also proves Sylvester's criterion and the other characterizations of positive definiteness in
+Property 1.18 of [quarteroni2000numerical], the entry bounds $|a_{ij}|^2 \le a_{ii} a_{jj}$ of a
+positive semidefinite matrix, and the relation to the $LDL^H$ factorization of Mathlib's module
+`Mathlib.Analysis.Matrix.LDL`. The presentation follows §1.12, §3.4.2 and §3.4.3 of
+[quarteroni2000numerical] and §10.1 of [higham2002accuracy].
+
+The file also proves results of §4.2 of [golub2013matrix]: the LU factorization of an unsymmetric
+matrix whose Hermitian part is positive definite, and a bound on the size of $|L| |U|$ for it; the
+elimination step and the rank-revealing pivoted $LDL^H$ factorization of a positive semidefinite
+matrix; and the block form, the bandwidth and the norm of the Cholesky factor.
 
 ## Main definitions
 
-* `Matrix.IsCholesky A H`: `H` is upper triangular with positive diagonal and `Hᴴ * H = A`.
-* `Matrix.cholesky A`: the lower triangular factor `Hᴴ` computed by the recurrence
-  [quarteroni2000numerical] (3.45), as one total function on a finite linear order
-  (`Matrix.choleskyAux` is its well-founded recursion).
+* `Matrix.IsCholesky`: $H$ is upper triangular with a positive diagonal and $H^H H = A$.
+* `Matrix.cholesky`: the lower triangular factor $H^H$, computed by the recurrence (3.45) of
+  [quarteroni2000numerical] as one total function on a finite linear order. `Matrix.choleskyAux` is
+  its well-founded recursion.
 
 ## Main results
 
-* `Matrix.exists_isCholesky`, `Matrix.IsCholesky.unique`, `Matrix.existsUnique_isCholesky`:
-  [quarteroni2000numerical] Theorem 3.6. Existence goes through the `L D Lᴴ` factorization
-  obtained from `Matrix.existsUnique_isLDM` of `Numlib/LinearAlgebra/Matrix/LU`
-  (`Matrix.exists_isLDM_conjTranspose_of_posDef`), `H = D^{1/2} Lᴴ`; uniqueness is the uniqueness
-  of the LU factorization `A = (Hᴴ D⁻¹) (D H)`, `D = diag H` (`Matrix.IsCholesky.isLU`).
-* `Matrix.IsCholesky.posDef`: the converse, `Hᴴ H` is positive definite for nonsingular `H`.
+* `Matrix.exists_isCholesky`, `Matrix.IsCholesky.unique`, `Matrix.existsUnique_isCholesky`: a
+  positive definite matrix has exactly one Cholesky factor (Theorem 3.6 of
+  [quarteroni2000numerical]).
+* `Matrix.IsCholesky.posDef`: conversely, $H^H H$ is positive definite for a nonsingular $H$.
 * `Matrix.cholesky_eq_of_isCholesky`, `Matrix.isCholesky_cholesky`: the recurrence (3.45) computes
-  the factor. As for the Doolittle recurrence, no bordering induction is needed: the recurrence
-  restates the entrywise identities `Matrix.IsCholesky.apply_eq_sum` satisfied by *any* Cholesky
-  factor, so the computed entries agree with it by strong induction along the order of `min i j`.
-* `Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos`: Sylvester's criterion,
-  [quarteroni2000numerical] Property 1.18 (3), through the pivots of the `L D Lᴴ` factorization as
-  ratios of consecutive leading minors (`Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`).
-* `Matrix.posDef_iff_exists_isUnit_conjTranspose_mul_self` (Property 1.18 (4)),
-  `Matrix.posDef_iff_forall_principalSubmatrix_eigenvalues_pos` (Property 1.18 (2)).
+  the Cholesky factor.
+* `Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos`: **Sylvester's criterion**, Property
+  1.18(3) of [quarteroni2000numerical].
+* `Matrix.posDef_iff_exists_isUnit_conjTranspose_mul_self`: $A$ is positive definite if and only if
+  $A = H^H H$ for a nonsingular $H$ (Property 1.18(4)).
+* `Matrix.posDef_iff_forall_principalSubmatrix_eigenvalues_pos`: a Hermitian matrix is positive
+  definite if and only if all its principal submatrices have positive eigenvalues (Property
+  1.18(2)).
 * `Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag`,
   `Matrix.PosSemidef.norm_apply_le_add_re_diag_div_two`,
-  `Matrix.PosSemidef.norm_apply_le_max_re_diag` (with its definite case
-  `Matrix.PosDef.norm_apply_le_max_re_diag`): `|a_ij|² ≤ a_ii a_jj`, hence
-  `|a_ij| ≤ (a_ii + a_jj) / 2`, so the entry of largest modulus of a positive semidefinite matrix is
-  diagonal ([quarteroni2000numerical] §1.12, [golub2013matrix] (4.2.12)–(4.2.14)).
-* `Matrix.LDL.lower_isUnitLowerTriangular` (the TODO of `Mathlib/Analysis/Matrix/LDL.lean`),
-  `Matrix.LDL.diagEntries_pos`, `Matrix.isLDM_ldl`, `Matrix.LDL.lower_eq_of_isLDM`: Mathlib's `LDL`
-  factors are the unique `L D Lᴴ` factors of `Numlib/LinearAlgebra/Matrix/LU`.
+  `Matrix.PosSemidef.norm_apply_le_max_re_diag`, `Matrix.PosDef.norm_apply_le_max_re_diag`: for a
+  positive semidefinite matrix, $|a_{ij}|^2 \le a_{ii} a_{jj}$ and
+  $|a_{ij}| \le (a_{ii} + a_{jj})/2$, so an entry of largest modulus lies on the diagonal (§1.12 of
+  [quarteroni2000numerical], (4.2.12)–(4.2.14) of [golub2013matrix]).
+* `Matrix.LDL.lower_isUnitLowerTriangular`, `Matrix.LDL.diagEntries_pos`, `Matrix.isLDM_ldl`,
+  `Matrix.LDL.lower_eq_of_isLDM`: the factors `LDL.lower` and `LDL.diag` of Mathlib are the unique
+  $LDL^H$ factors of `Numlib.LinearAlgebra.Matrix.LU`.
 * `Matrix.isCholesky_conjTranspose_mul_self_of_qr`, `Matrix.cholesky_conjTranspose_mul_self_of_qr`:
-  the triangular factor of a reduced QR factorization `X = Q R` is the Cholesky factor of `Xᴴ X`
-  ([quarteroni2000numerical] Property 3.3, last clause).
-
+  the triangular factor of a reduced QR factorization $X = QR$ is the Cholesky factor of $X^H X$
+  (Property 3.3 of [quarteroni2000numerical], last clause).
 * `Matrix.IsThinQR.isCholesky`: the triangular factor of a thin QR factorization is the Cholesky
-  factor of the Gram matrix ([golub2013matrix] Theorem 5.2.3).
-* [golub2013matrix] §4.2 for unsymmetric matrices with positive definite Hermitian part:
-  `Matrix.exists_isLU_of_posDef_hermitianPart` (Corollary 4.2.4) and
-  `Matrix.posDef_hermitianPart_schurComplementSingle` (Theorem 4.2.5), both through
-  `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`: the quadratic form of a one-step
-  Schur complement is a quadratic form of the matrix.
-* `Matrix.IsLU.frobenius_norm_abs_mul_abs_le`: Theorem 4.2.6,
-  `‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`, from
-  `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` and its transpose twin
-  `Matrix.dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart`
-  (`‖A x‖², ‖Aᵀ x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`, through `A T⁻¹ Aᵀ = Aᵀ T⁻¹ A = T − S T⁻¹ S`)
-  applied to a row of `L⁻¹` and a column of `U⁻¹`.
-* Semidefinite matrices: `Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero` ((4.2.15)),
-  `Matrix.PosSemidef.schurComplementSingle` and
-  `Matrix.PosSemidef.re_schurComplementSingle_apply_self_le` ((4.2.16)) and the rank-revealing
-  pivoted `L D Lᴴ`, `Matrix.PosSemidef.exists_perm_ldl_rank` ((4.2.17)).
-* The factor: `Matrix.cholesky_finSumFin` (the block form (4.2.18)),
-  `Matrix.cholesky_hasLowerBandwidth` (§4.3.5), `Matrix.sq_norm_cholesky_apply_le` and
-  `Matrix.l2_opNorm_cholesky_sq` (§4.2.6).
+  factor of the Gram matrix (Theorem 5.2.3 of [golub2013matrix]).
+* `Matrix.exists_isLU_of_posDef_hermitianPart`: a matrix with a positive definite Hermitian part has
+  an LU factorization with pivots of positive real part (Corollary 4.2.4 of [golub2013matrix]).
+* `Matrix.posDef_hermitianPart_schurComplementSingle`: one elimination step keeps a positive
+  definite Hermitian part (Theorem 4.2.5 of [golub2013matrix]).
+* `Matrix.IsLU.frobenius_norm_abs_mul_abs_le`: $\| |L| |U| \|_F \le n (\|T\|_2 + \|S T^{-1} S\|_2)$
+  (Theorem 4.2.6 of [golub2013matrix]).
+* `Matrix.PosSemidef.apply_eq_zero_of_diag_eq_zero`: a zero diagonal entry of a positive
+  semidefinite matrix has a zero row and a zero column ((4.2.15) of [golub2013matrix]).
+* `Matrix.PosSemidef.schurComplementSingle`,
+  `Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`: one elimination step keeps a matrix
+  positive semidefinite and does not increase the diagonal ((4.2.16) of [golub2013matrix]).
+* `Matrix.PosSemidef.exists_perm_ldl_rank`: the rank-revealing pivoted $LDL^H$ factorization
+  ((4.2.17) of [golub2013matrix]).
+* `Matrix.cholesky_finSumFin`: the block form of the Cholesky factor ((4.2.18) of
+  [golub2013matrix]).
+* `Matrix.cholesky_hasLowerBandwidth`: the Cholesky factor has the lower bandwidth of the matrix
+  (§4.3.5 of [golub2013matrix]).
+* `Matrix.sq_norm_cholesky_apply_le`, `Matrix.l2_opNorm_cholesky_sq`: the entries and the spectral
+  norm of the Cholesky factor are bounded by those of $A$ (§4.2.6 of [golub2013matrix]).
+
+## Proof outline
+
+Existence goes through the $LDL^H$ factorization that `Matrix.existsUnique_isLDM` of
+`Numlib.LinearAlgebra.Matrix.LU` gives (`Matrix.exists_isLDM_conjTranspose_of_posDef`): the Cholesky
+factor is $H = D^{1/2} L^H$. Uniqueness is the uniqueness of the LU factorization
+$A = (H^H D^{-1})(D H)$ with $D = \operatorname{diag}(h_{11}, \dots, h_{nn})$
+(`Matrix.IsCholesky.isLU`). As for the Doolittle recurrence, the correctness of the recurrence
+(3.45) needs no bordering induction: the recurrence restates the entrywise identities
+`Matrix.IsCholesky.apply_eq_sum` that every Cholesky factor satisfies, so the computed entries agree
+with the factor by strong induction along the order of $\min(i, j)$. Sylvester's criterion uses the
+pivots of the $LDL^H$ factorization as ratios of consecutive leading principal minors
+(`Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`).
+
+Corollary 4.2.4 and Theorem 4.2.5 of [golub2013matrix] both use
+`Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`: the quadratic form of a one-step Schur
+complement is a quadratic form of the matrix. Theorem 4.2.6 applies the bounds $\|Ax\|^2, \|A^T
+x\|^2 \le (\|T\|_2 + \|S T^{-1} S\|_2) \, x^T A x$
+(`Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` and
+`Matrix.dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart`, through
+$A T^{-1} A^T = A^T T^{-1} A = T - S T^{-1} S$) to a row of $L^{-1}$ and a column of $U^{-1}$.
+
+## Notation
+
+* $A(\le k)$: the leading principal submatrix of $A$ on the indices $i \le k$,
+  `Matrix.leadingPrincipalSubmatrix A k`.
+* $A(< k)$: the strict leading principal submatrix of $A$ on the indices $i < k$,
+  `Matrix.strictLeadingPrincipalSubmatrix A k`.
+* $\bar{L}$: the entrywise conjugate of $L$, written `Lᴴᵀ` in Lean.
 
 ## Implementation notes
 
-The index type is `[Fintype n] [LinearOrder n]` throughout; only the section on Mathlib's `LDL`
-adds the `[LocallyFiniteOrderBot n]` that `Matrix.LDL.lower` demands, and nothing else depends on
-it — existence of the Cholesky factor is proved through the LU theory instead. The scalars are
-`[RCLike 𝕜]` with `open scoped ComplexOrder`, so that `Matrix.PosDef` and "`0 < H i i`" make sense
-over `ℂ` as over `ℝ`; the `L D Mᵀ` factorization of `LU.lean` is used in the Hermitian form
-`M = Lᴴᵀ`, whose transpose is `Lᴴ`. A `2 × 2` principal minor is read as a submatrix along
-`![i, j] : Fin 2 → n` (`Matrix.PosSemidef.submatrix`, `Matrix.det_fin_two`).
-
-## References
-
-* [quarteroni2000numerical] §1.12, §3.4.2, §3.4.3.
-* [higham2002accuracy] §10.1.
+* The index type is `[Fintype n] [LinearOrder n]` throughout. Only the section on Mathlib's $LDL^H$
+  factorization adds the assumption `[LocallyFiniteOrderBot n]` that `LDL.lower` needs. Nothing else
+  depends on it: the existence of the Cholesky factor is proved through the LU theory instead.
+* The scalars are `[RCLike 𝕜]`, with `open scoped ComplexOrder`, so that `Matrix.PosDef` and the
+  condition $0 < h_{ii}$ make sense over $\mathbb{C}$ as over $\mathbb{R}$. In this order, $0 < z$
+  means that $z$ is real and positive.
+* The $LDM^T$ factorization `Matrix.IsLDM` of `Numlib.LinearAlgebra.Matrix.LU` is used in the
+  Hermitian form $M = \bar{L}$, whose transpose is $L^H$.
+* A $2 \times 2$ principal minor is the determinant of the submatrix along `![i, j] : Fin 2 → n`
+  (`Matrix.PosSemidef.submatrix`, `Matrix.det_fin_two`).
 -/
 
 open Finset
@@ -108,15 +142,19 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [LinearOrder n] {𝕜 : Type*} [RCLike 𝕜]
 
-/-! ### Entry bounds of positive (semi)definite matrices -/
+/-! ### Entry bounds of positive semidefinite and positive definite matrices -/
 
 section Entries
 
 variable {A : Matrix n n 𝕜}
 
 omit [Fintype n] [LinearOrder n] in
-/-- The `2 × 2` principal minor of a positive semidefinite matrix is nonnegative:
-`‖a_ij‖² ≤ a_ii a_jj` ([quarteroni2000numerical] §1.12). -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive semidefinite. Then every $2 \times 2$ principal
+minor of $A$ is nonnegative: for all indices $i$ and $j$,
+$$|a_{ij}|^2 \le \operatorname{Re} a_{ii} \cdot \operatorname{Re} a_{jj}.$$
+This is in §1.12 of [quarteroni2000numerical].
+
+The diagonal entries of $A$ are real; the statement uses their real parts. -/
 theorem PosSemidef.norm_apply_sq_le_mul_re_diag (hA : A.PosSemidef) (i j : n) :
     ‖A i j‖ ^ 2 ≤ RCLike.re (A i i) * RCLike.re (A j j) := by
   classical
@@ -129,9 +167,12 @@ theorem PosSemidef.norm_apply_sq_le_mul_re_diag (hA : A.PosSemidef) (i j : n) :
   exact h
 
 omit [Fintype n] [LinearOrder n] in
-/-- Every entry of a positive semidefinite matrix is bounded in modulus by the mean of the two
-diagonal entries in its row and column, `‖a_ij‖ ≤ (a_ii + a_jj) / 2` ([golub2013matrix] (4.2.12)):
-`‖a_ij‖² ≤ a_ii a_jj ≤ ((a_ii + a_jj) / 2)²`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive semidefinite. Then every entry of $A$ is bounded
+in modulus by the mean of the two diagonal entries in its row and its column:
+$$|a_{ij}| \le \frac{\operatorname{Re} a_{ii} + \operatorname{Re} a_{jj}}{2}.$$
+This is (4.2.12) of [golub2013matrix].
+
+The proof is $|a_{ij}|^2 \le a_{ii} a_{jj} \le \bigl((a_{ii} + a_{jj})/2\bigr)^2$. -/
 theorem PosSemidef.norm_apply_le_add_re_diag_div_two (hA : A.PosSemidef) (i j : n) :
     ‖A i j‖ ≤ (RCLike.re (A i i) + RCLike.re (A j j)) / 2 := by
   have hi : 0 ≤ RCLike.re (A i i) := (RCLike.nonneg_iff.1 hA.diag_nonneg).1
@@ -141,9 +182,10 @@ theorem PosSemidef.norm_apply_le_add_re_diag_div_two (hA : A.PosSemidef) (i j : 
   nlinarith [sq_nonneg (RCLike.re (A i i) - RCLike.re (A j j))]
 
 omit [Fintype n] [LinearOrder n] in
-/-- Every entry of a positive semidefinite matrix is bounded in modulus by the larger of the two
-diagonal entries in its row and column, so the entry of largest modulus lies on the diagonal
-([golub2013matrix] (4.2.14)). -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive semidefinite. Then every entry of $A$ is bounded
+in modulus by the larger of the two diagonal entries in its row and its column:
+$$|a_{ij}| \le \max\{\operatorname{Re} a_{ii}, \operatorname{Re} a_{jj}\}.$$
+So an entry of largest modulus lies on the diagonal. This is (4.2.14) of [golub2013matrix]. -/
 theorem PosSemidef.norm_apply_le_max_re_diag (hA : A.PosSemidef) (i j : n) :
     ‖A i j‖ ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) :=
   (hA.norm_apply_le_add_re_diag_div_two i j).trans (by
@@ -151,10 +193,13 @@ theorem PosSemidef.norm_apply_le_max_re_diag (hA : A.PosSemidef) (i j : n) :
       le_max_right (RCLike.re (A i i)) (RCLike.re (A j j))])
 
 omit [Fintype n] [LinearOrder n] in
-/-- Every entry of a positive definite matrix is bounded in modulus by the larger of the two
-diagonal entries in its row and column, so the entry of largest modulus lies on the diagonal
-([quarteroni2000numerical] §1.12, after Property 1.18); the definite case of
-`Matrix.PosSemidef.norm_apply_le_max_re_diag`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then every entry of $A$ is bounded in
+modulus by the larger of the two diagonal entries in its row and its column:
+$$|a_{ij}| \le \max\{\operatorname{Re} a_{ii}, \operatorname{Re} a_{jj}\}.$$
+So an entry of largest modulus lies on the diagonal. This is in §1.12 of
+[quarteroni2000numerical], after Property 1.18.
+
+This is the definite case of `Matrix.PosSemidef.norm_apply_le_max_re_diag`. -/
 theorem PosDef.norm_apply_le_max_re_diag (hA : A.PosDef) (i j : n) :
     ‖A i j‖ ≤ max (RCLike.re (A i i)) (RCLike.re (A j j)) :=
   hA.posSemidef.norm_apply_le_max_re_diag i j
@@ -169,57 +214,72 @@ variable {A : Matrix n n 𝕜} (hA : A.PosDef)
 include hA
 
 omit [Fintype n] in
-/-- The leading principal submatrices of a positive definite matrix are positive definite. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then for every index $k$, the leading
+principal submatrix $A(\le k)$ is positive definite. -/
 theorem PosDef.leadingPrincipalSubmatrix (k : n) : (A.leadingPrincipalSubmatrix k).PosDef :=
   hA.submatrix Subtype.val_injective
 
 omit [Fintype n] in
-/-- The strict leading principal submatrices of a positive definite matrix are positive
-definite. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then for every index $k$, the strict
+leading principal submatrix $A(< k)$ is positive definite.
+
+For the least index $k$, the matrix $A(< k)$ is empty, and it is positive definite trivially. -/
 theorem PosDef.strictLeadingPrincipalSubmatrix (k : n) :
     (A.strictLeadingPrincipalSubmatrix k).PosDef :=
   hA.submatrix Subtype.val_injective
 
-/-- The leading principal minors of a positive definite matrix are positive. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then for every index $k$, the leading
+principal minor $\det A(\le k)$ is positive.
+
+In the order on $\mathbb{C}$, this means that $\det A(\le k)$ is real and positive. -/
 theorem PosDef.det_leadingPrincipalSubmatrix_pos (k : n) :
     0 < (A.leadingPrincipalSubmatrix k).det :=
   (hA.leadingPrincipalSubmatrix k).det_pos
 
-/-- The leading principal submatrices of a positive definite matrix are nonsingular. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then for every index $k$, the leading
+principal submatrix $A(\le k)$ is nonsingular. -/
 theorem PosDef.isUnit_leadingPrincipalSubmatrix (k : n) :
     IsUnit (A.leadingPrincipalSubmatrix k) :=
   (hA.leadingPrincipalSubmatrix k).isUnit
 
-/-- The strict leading principal submatrices of a positive definite matrix are nonsingular. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then for every index $k$, the strict
+leading principal submatrix $A(< k)$ is nonsingular. -/
 theorem PosDef.isUnit_strictLeadingPrincipalSubmatrix (k : n) :
     IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
   (hA.strictLeadingPrincipalSubmatrix k).isUnit
 
-/-- A positive definite matrix satisfies the hypothesis of the LU existence theorem. -/
+/-- A positive definite matrix $A \in \mathbb{K}^{n \times n}$ satisfies the hypothesis of the
+existence theorem for the LU factorization: every strict leading principal submatrix $A(< k)$ is
+nonsingular (`Matrix.HasUnitStrictLeadingPrincipalSubmatrices`). -/
 theorem PosDef.hasUnitStrictLeadingPrincipalSubmatrices :
     A.HasUnitStrictLeadingPrincipalSubmatrices :=
   hA.isUnit_strictLeadingPrincipalSubmatrix
 
 end Leading
 
-/-! ### The Hermitian `L D Lᴴ` factorization -/
+/-! ### The Hermitian $LDL^H$ factorization -/
 
 section LDLstar
 
 omit [Fintype n] in
-/-- The conjugate transpose of a lower triangular matrix is upper triangular. -/
+/-- Let $L \in \mathbb{K}^{n \times n}$ be lower triangular. Then its conjugate transpose $L^H$ is
+upper triangular. -/
 theorem IsLowerTriangular.conjTranspose_isUpperTriangular {L : Matrix n n 𝕜}
     (hL : L.IsLowerTriangular) : Lᴴ.IsUpperTriangular := fun i j hij => by
   rw [conjTranspose_apply, hL (i := j) (j := i) (OrderDual.toDual_lt_toDual.2 hij), star_zero]
 
 omit [Fintype n] in
-/-- The conjugate transpose of an upper triangular matrix is lower triangular. -/
+/-- Let $U \in \mathbb{K}^{n \times n}$ be upper triangular. Then its conjugate transpose $U^H$ is
+lower triangular. -/
 theorem IsUpperTriangular.conjTranspose_isLowerTriangular {U : Matrix n n 𝕜}
     (hU : U.IsUpperTriangular) : Uᴴ.IsLowerTriangular := fun i j hij => by
   rw [conjTranspose_apply, hU (i := j) (j := i) (OrderDual.toDual_lt_toDual.1 hij), star_zero]
 
 omit [Fintype n] in
-/-- The entrywise conjugate `Lᴴᵀ` of a unit lower triangular matrix is unit lower triangular. -/
+/-- Let $L \in \mathbb{K}^{n \times n}$ be unit lower triangular. Then its entrywise conjugate
+$\bar{L}$ is unit lower triangular.
+
+In Lean, $\bar{L}$ is `Lᴴᵀ`, the transpose of the conjugate transpose. -/
 theorem IsUnitLowerTriangular.conjTranspose_transpose {L : Matrix n n 𝕜}
     (hL : L.IsUnitLowerTriangular) : Lᴴᵀ.IsUnitLowerTriangular where
   isLowerTriangular i j hij := by
@@ -228,8 +288,11 @@ theorem IsUnitLowerTriangular.conjTranspose_transpose {L : Matrix n n 𝕜}
 
 variable {A L D M : Matrix n n 𝕜}
 
-/-- The conjugate transpose of an `L D Mᵀ` factorization is the `L D Mᵀ` factorization
-`Aᴴ = Mᴴᵀ Dᴴ (Lᴴᵀ)ᵀ`. -/
+/-- Let $A = L D M^T$ be an $LDM^T$ factorization of $A \in \mathbb{K}^{n \times n}$: $L$ and $M$
+are unit lower triangular and $D$ is diagonal. Then its conjugate transpose is the $LDM^T$
+factorization
+$$A^H = \bar{M} \, D^H \, \bar{L}^T,$$
+with the unit lower triangular factors $\bar{M}$ and $\bar{L}$ and the diagonal factor $D^H$. -/
 theorem IsLDM.conjTranspose (h : IsLDM A L D M) : IsLDM Aᴴ Mᴴᵀ Dᴴ Lᴴᵀ where
   isUnitLowerTriangular_left := h.isUnitLowerTriangular_right.conjTranspose_transpose
   isDiag := h.isDiag.conjTranspose
@@ -238,10 +301,15 @@ theorem IsLDM.conjTranspose (h : IsLDM A L D M) : IsLDM Aᴴ Mᴴᵀ Dᴴ Lᴴ�
     rw [← h.mul_eq, conjTranspose_mul, conjTranspose_mul, transpose_transpose,
       conjTranspose_transpose, transpose_conjTranspose, Matrix.mul_assoc]
 
-/-- For a Hermitian matrix with nonsingular strict leading principal submatrices, the `L D Mᵀ`
-factorization is Hermitian: `M = Lᴴᵀ` (so that `Mᵀ = Lᴴ`) and `D` is real. The conjugate transpose
-of the factorization is a second factorization of `A`, and `Matrix.existsUnique_isLDM` identifies
-the two. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian, with every strict leading principal submatrix
+$A(< k)$ nonsingular, and let $A = L D M^T$ be an $LDM^T$ factorization. Then the factorization
+is Hermitian:
+$$M = \bar{L} \quad \text{and} \quad D = D^H.$$
+So $M^T = L^H$, and $D$ is real.
+
+The conjugate transpose of the factorization is a second $LDM^T$ factorization of $A$
+(`Matrix.IsLDM.conjTranspose`), and the uniqueness theorem `Matrix.existsUnique_isLDM`
+identifies the two. -/
 theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
     (hlead : A.HasUnitStrictLeadingPrincipalSubmatrices) : M = Lᴴᵀ ∧ D = Dᴴ := by
   have h' := h.conjTranspose
@@ -255,17 +323,24 @@ theorem IsLDM.eq_of_isHermitian (h : IsLDM A L D M) (hA : A.IsHermitian)
   ext i j
   simp only [transpose_apply, conjTranspose_apply, star_star]
 
-/-- The Hermitian `L D Lᴴ` factorization of a Hermitian matrix with nonsingular strict leading
-principal submatrices ([golub2013matrix] Theorem 4.1.3; unique by `Matrix.existsUnique_isLDM`),
-from `Matrix.existsUnique_isLDM`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian, with every strict leading principal submatrix
+$A(< k)$ nonsingular. Then $A$ has a Hermitian $LDL^H$ factorization: there are a unit lower
+triangular $L$ and a diagonal $D$ with
+$$A = L D L^H.$$
+This is Theorem 4.1.3 of [golub2013matrix].
+
+The factorization is unique by `Matrix.existsUnique_isLDM`, and it is obtained from that
+theorem. In Lean, the factorization is `Matrix.IsLDM A L D Lᴴᵀ`. -/
 theorem exists_isLDM_conjTranspose_of_isHermitian (hA : A.IsHermitian)
     (hlead : A.HasUnitStrictLeadingPrincipalSubmatrices) : ∃ L D, IsLDM A L D Lᴴᵀ := by
   obtain ⟨⟨L, D, M⟩, h, -⟩ := existsUnique_isLDM hlead
   obtain ⟨hM, -⟩ := h.eq_of_isHermitian hA hlead
   exact ⟨L, D, hM ▸ h⟩
 
-/-- A matrix `A = L D Lᴴ` with `L` unit lower triangular is positive definite exactly when the
-diagonal of `D` is positive: `A` is congruent to `D`. -/
+/-- Let $A = L D L^H$ with $L \in \mathbb{K}^{n \times n}$ unit lower triangular and $D$ diagonal.
+Then $A$ is positive definite if and only if every diagonal entry $d_{ii}$ of $D$ is positive.
+
+The matrix $A$ is congruent to $D$. -/
 theorem IsLDM.posDef_iff (h : IsLDM A L D Lᴴᵀ) : A.PosDef ↔ ∀ i, 0 < D i i := by
   have hU : IsUnit Lᴴ := (isUnit_conjTranspose _).2 h.isUnitLowerTriangular_left.isUnit
   have hL : L * D * Lᴴ = star Lᴴ * D * Lᴴ := by
@@ -275,9 +350,13 @@ theorem IsLDM.posDef_iff (h : IsLDM A L D Lᴴᵀ) : A.PosDef ↔ ∀ i, 0 < D i
   rw [posDef_diagonal_iff]
   rfl
 
-/-- The pivots of the `L D Lᴴ` factorization of a Hermitian matrix are positive when the leading
-principal minors are positive: `d_k = det A(≤ k) / det A(< k)`, by strong induction along the
-order (`det A(< k)` is the product of the earlier pivots). -/
+/-- Let $A = L D M^T$ be an $LDM^T$ factorization of $A \in \mathbb{K}^{n \times n}$, and assume
+that every leading principal minor $\det A(\le k)$ is positive. Then every pivot $d_{kk}$ is
+positive.
+
+The pivots are the ratios $d_{kk} = \det A(\le k) / \det A(< k)$ of consecutive leading
+principal minors, and the proof is a strong induction along the order: $\det A(< k)$ is the
+product of the earlier pivots. In the order on $\mathbb{C}$, positive means real and positive. -/
 theorem IsLDM.diag_pos_of_forall_det_pos (h : IsLDM A L D M)
     (hpos : ∀ k, 0 < (A.leadingPrincipalSubmatrix k).det) (k : n) : 0 < D k k := by
   have hLU := h.isLU
@@ -295,8 +374,9 @@ theorem IsLDM.diag_pos_of_forall_det_pos (h : IsLDM A L D M)
   rw [hLU.diag_upper_eq_div_leadingPrincipalMinor hlt.ne']
   exact div_pos (hpos k) hlt
 
-/-- A positive definite matrix has an `L D Lᴴ` factorization with positive pivots
-([quarteroni2000numerical] §3.4.2). -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite. Then $A$ has an $LDL^H$ factorization
+$A = L D L^H$, with $L$ unit lower triangular and $D$ diagonal with positive pivots
+$d_{ii} > 0$. This is in §3.4.2 of [quarteroni2000numerical]. -/
 theorem exists_isLDM_conjTranspose_of_posDef (hA : A.PosDef) :
     ∃ L D, IsLDM A L D Lᴴᵀ ∧ ∀ i, 0 < D i i := by
   obtain ⟨L, D, h⟩ :=
@@ -311,12 +391,17 @@ section Sylvester
 
 variable {A : Matrix n n 𝕜}
 
-/-- **Sylvester's criterion**, [quarteroni2000numerical] Property 1.18 (3): a Hermitian matrix is
-positive definite if and only if all its leading principal minors are positive. Forwards, every
-leading principal submatrix of a positive definite matrix is positive definite, so its determinant
-is positive. Backwards, the leading principal submatrices are nonsingular, so `A = L D Lᴴ`
-(`Matrix.exists_isLDM_conjTranspose_of_isHermitian`); the pivots `d_k = det A(≤ k) / det A(< k)`
-are positive (`Matrix.IsLDM.diag_pos_of_forall_det_pos`), and `A` is congruent to `D`. -/
+/-- **Sylvester's criterion**. Let $A \in \mathbb{K}^{n \times n}$ be Hermitian. Then $A$ is
+positive definite if and only if all its leading principal minors are positive:
+$$A \text{ is positive definite} \iff \det A(\le k) > 0 \text{ for every index } k.$$
+This is Property 1.18(3) of [quarteroni2000numerical].
+
+For the forward direction, every leading principal submatrix of a positive definite matrix is
+positive definite, so its determinant is positive. For the backward direction, the strict
+leading principal submatrices are nonsingular, so $A = L D L^H$
+(`Matrix.exists_isLDM_conjTranspose_of_isHermitian`). The pivots
+$d_{kk} = \det A(\le k) / \det A(< k)$ are positive (`Matrix.IsLDM.diag_pos_of_forall_det_pos`),
+and $A$ is congruent to $D$. -/
 theorem posDef_iff_forall_det_leadingPrincipalSubmatrix_pos (hA : A.IsHermitian) :
     A.PosDef ↔ ∀ k, 0 < (A.leadingPrincipalSubmatrix k).det := by
   refine ⟨fun h k => h.det_leadingPrincipalSubmatrix_pos k, fun hpos => ?_⟩
@@ -327,10 +412,14 @@ theorem posDef_iff_forall_det_leadingPrincipalSubmatrix_pos (hA : A.IsHermitian)
   exact h.posDef_iff.2 (h.diag_pos_of_forall_det_pos hpos)
 
 omit [Fintype n] in
-/-- [quarteroni2000numerical] Property 1.18 (2): a Hermitian matrix is positive definite if and
-only if the eigenvalues of all its principal submatrices are positive. Forwards, every principal
-submatrix is positive definite; backwards, the principal submatrix along `univ` is a reindexing of
-`A` itself. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian, with $n$ finite. Then $A$ is positive definite
+if and only if, for every set $s$ of indices, all eigenvalues of the principal submatrix
+$A(s, s)$ are positive. This is Property 1.18(2) of [quarteroni2000numerical].
+
+For the forward direction, every principal submatrix is positive definite. For the backward
+direction, the principal submatrix on the set of all indices is a reindexing of $A$. The
+eigenvalues are `Matrix.IsHermitian.eigenvalues` of the Hermitian submatrix along
+`Subtype.val : s → n`. -/
 theorem posDef_iff_forall_principalSubmatrix_eigenvalues_pos [Finite n] (hA : A.IsHermitian) :
     A.PosDef ↔
       ∀ (s : Finset n) (i : s), 0 < (hA.submatrix (Subtype.val : s → n)).eigenvalues i := by
@@ -351,16 +440,21 @@ end Sylvester
 
 /-! ### The Cholesky specification -/
 
-/-- `IsCholesky A H`: `H` is upper triangular with positive (real) diagonal and `Hᴴ * H = A`, the
-Cholesky factorization `A = Hᴴ H` of [quarteroni2000numerical] Theorem 3.6 ((3.44); Higham writes
-`A = Rᴴ R`). Theorems about "the Cholesky factor" are theorems about any `H` satisfying it, and
-`Matrix.IsCholesky.unique` says there is only one. -/
+/-- A **Cholesky factorization** of $A \in \mathbb{K}^{n \times n}$. The proposition
+`Matrix.IsCholesky A H` holds if $H \in \mathbb{K}^{n \times n}$ is upper triangular, every
+diagonal entry $h_{ii}$ is real and positive, and
+$$A = H^H H.$$
+This is the Cholesky factorization of Theorem 3.6 of [quarteroni2000numerical], equation (3.44).
+[higham2002accuracy] writes it $A = R^H R$.
+
+A theorem about "the Cholesky factor" is a theorem about any $H$ that satisfies this
+specification; `Matrix.IsCholesky.unique` shows that there is at most one. -/
 structure IsCholesky (A H : Matrix n n 𝕜) : Prop where
-  /-- The factor is upper triangular. -/
+  /-- The factor $H$ is upper triangular. -/
   isUpperTriangular : H.IsUpperTriangular
-  /-- The diagonal of the factor is positive. -/
+  /-- Every diagonal entry $h_{ii}$ of the factor is positive, so in particular real. -/
   diag_pos : ∀ i, 0 < H i i
-  /-- The factor multiplies to `A`. -/
+  /-- The factor satisfies $H^H H = A$. -/
   conjTranspose_mul_self : Hᴴ * H = A
 
 namespace IsCholesky
@@ -368,33 +462,37 @@ namespace IsCholesky
 variable {A H : Matrix n n 𝕜} (h : IsCholesky A H)
 include h
 
-/-- The diagonal of a Cholesky factor has no zero. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then every diagonal entry $h_{ii}$ is nonzero. -/
 theorem diag_ne_zero (i : n) : H i i ≠ 0 := (h.diag_pos i).ne'
 
-/-- The diagonal of a Cholesky factor is real. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then every diagonal entry $h_{ii}$ is real:
+$\overline{h_{ii}} = h_{ii}$. -/
 theorem star_diag (i : n) : star (H i i) = H i i :=
   RCLike.conj_eq_iff_im.2 (RCLike.pos_iff.1 (h.diag_pos i)).2
 
-/-- The diagonal of a Cholesky factor is the cast of its real part. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then every diagonal entry $h_{ii}$ equals its real part
+$\operatorname{Re} h_{ii}$, cast to $\mathbb{K}$. -/
 theorem coe_re_diag (i : n) : (RCLike.re (H i i) : 𝕜) = H i i :=
   RCLike.conj_eq_iff_re.1 (h.star_diag i)
 
-/-- A Cholesky factor is nonsingular. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then $H$ is nonsingular. -/
 theorem isUnit : IsUnit H :=
   h.isUpperTriangular.isUnit_iff.2 h.diag_ne_zero
 
-/-- **The converse of [quarteroni2000numerical] Theorem 3.6** (and Property 1.18 (4)): a matrix
-with a Cholesky factorization is positive definite, since `Hᴴ H` is positive definite for a
-nonsingular `H`. -/
+/-- The converse of Theorem 3.6 of [quarteroni2000numerical], and one direction of its Property
+1.18(4). Let $H$ be a Cholesky factor of $A$. Then $A$ is positive definite.
+
+The matrix $H^H H$ is positive definite because $H$ is nonsingular. -/
 theorem posDef : A.PosDef :=
   h.conjTranspose_mul_self ▸
     PosDef.conjTranspose_mul_self H (mulVec_injective_iff_isUnit.2 h.isUnit)
 
-/-- A matrix with a Cholesky factorization is Hermitian. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then $A$ is Hermitian. -/
 theorem isHermitian : A.IsHermitian := h.posDef.isHermitian
 
-/-- The entries of `A = Hᴴ H`: `a_ij = ∑_{k ≤ min i j} h̄_ki h_kj`, since `H` vanishes below the
-diagonal. -/
+/-- Let $H$ be a Cholesky factor of $A$. Then for all indices $i$ and $j$,
+$$a_{ij} = \sum_{k \le \min(i, j)} \overline{h_{ki}} \, h_{kj},$$
+because $H$ vanishes below the diagonal. -/
 theorem apply_eq_sum (i j : n) :
     A i j = ∑ k ∈ univ.filter (· ≤ min i j), star (H k i) * H k j := by
   rw [← h.conjTranspose_mul_self, Matrix.mul_apply]
@@ -407,14 +505,19 @@ theorem apply_eq_sum (i j : n) :
   · exact hk (by rw [h.isUpperTriangular hik, star_zero, zero_mul])
   · exact hk (by rw [h.isUpperTriangular hjk, mul_zero])
 
-/-- The off-diagonal identity of the Cholesky recurrence, [quarteroni2000numerical] (3.45), first
-line: for `j < i`, `h̄_ji h_jj = a_ij - ∑_{k < j} h̄_ki h_kj`. -/
+/-- The off-diagonal identity of the Cholesky recurrence, the first line of (3.45) of
+[quarteroni2000numerical]. Let $H$ be a Cholesky factor of $A$, and let $j < i$. Then
+$$\overline{h_{ji}} \, h_{jj} = a_{ij} - \sum_{k < j} \overline{h_{ki}} \, h_{kj}.$$
+-/
 theorem star_apply_mul_diag_eq {i j : n} (hij : j < i) :
     star (H j i) * H j j = A i j - ∑ k ∈ univ.filter (· < j), star (H k i) * H k j := by
   rw [h.apply_eq_sum, min_eq_right hij.le, sum_filter_le_eq_add, add_sub_cancel_left]
 
-/-- The diagonal identity of the Cholesky recurrence, [quarteroni2000numerical] (3.45), second
-line: `h_ii² = a_ii - ∑_{k < i} ‖h_ki‖²`, so `h_ii = √(a_ii - ∑_{k < i} ‖h_ki‖²)`. -/
+/-- The diagonal identity of the Cholesky recurrence, the second line of (3.45) of
+[quarteroni2000numerical]. Let $H$ be a Cholesky factor of $A$. Then for every index $i$,
+$$\operatorname{Re} h_{ii} = \sqrt{\operatorname{Re} a_{ii} - \sum_{k < i} |h_{ki}|^2}.$$
+
+This follows from $h_{ii}^2 = a_{ii} - \sum_{k < i} |h_{ki}|^2$ and $h_{ii} > 0$. -/
 theorem re_diag_eq_sqrt (i : n) :
     RCLike.re (H i i) =
       Real.sqrt (RCLike.re (A i i) - ∑ k ∈ univ.filter (· < i), ‖H k i‖ ^ 2) := by
@@ -431,7 +534,9 @@ theorem re_diag_eq_sqrt (i : n) :
   conv_rhs => rw [← h.coe_re_diag i]
   rw [RCLike.norm_ofReal, abs_of_pos (RCLike.pos_iff.1 (h.diag_pos i)).1]
 
-/-- A Cholesky factorization is the LU factorization `A = (Hᴴ D⁻¹) (D H)` with `D = diag H`. -/
+/-- Let $H$ be a Cholesky factor of $A$, and let $D = \operatorname{diag}(h_{11}, \dots, h_{nn})$.
+Then $A = (H^H D^{-1})(D H)$ is an LU factorization of $A$: the factor $H^H D^{-1}$ is unit
+lower triangular and $D H$ is upper triangular. -/
 theorem isLU : IsLU A (Hᴴ * diagonal fun i => (H i i)⁻¹) (diagonal (fun i => H i i) * H) where
   isUnitLowerTriangular := by
     refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -444,11 +549,14 @@ theorem isLU : IsLU A (Hᴴ * diagonal fun i => (H i i)⁻¹) (diagonal (fun i =
     simp only [inv_mul_cancel₀ (h.diag_ne_zero _), diagonal_one, Matrix.one_mul,
       h.conjTranspose_mul_self]
 
-/-- **Uniqueness of the Cholesky factorization** ([quarteroni2000numerical] Theorem 3.6,
-[higham2002accuracy] Theorem 10.1): two Cholesky factors of a matrix coincide. Both give LU
-factorizations `A = (Hᴴ D⁻¹) (D H)` of a positive definite matrix, which are unique
-(`Matrix.IsLU.unique`); the diagonal of `D H` is `h_ii²`, which determines the positive `h_ii`, and
-then `H = D⁻¹ (D H)`. -/
+/-- **Uniqueness of the Cholesky factorization**. Let $H$ and $H_2$ be Cholesky factors of the same
+matrix $A$. Then $H = H_2$. This is the uniqueness part of Theorem 3.6 of
+[quarteroni2000numerical] and of Theorem 10.1 of [higham2002accuracy].
+
+Both factors give LU factorizations $A = (H^H D^{-1})(D H)$ of the positive definite matrix $A$,
+with $D = \operatorname{diag}(h_{11}, \dots, h_{nn})$ (`Matrix.IsCholesky.isLU`), and the LU
+factorization is unique (`Matrix.IsLU.unique`). The diagonal of $D H$ is $h_{ii}^2$, which
+determines the positive $h_{ii}$, and then $H = D^{-1}(D H)$. -/
 theorem unique {H₂ : Matrix n n 𝕜} (h₂ : IsCholesky A H₂) : H = H₂ := by
   obtain ⟨-, hU⟩ := h.isLU.unique h₂.isLU h.posDef.isUnit_strictLeadingPrincipalSubmatrix
   have hdiag : ∀ i, H i i = H₂ i i := fun i => by
@@ -474,9 +582,13 @@ section Existence
 
 variable {A : Matrix n n 𝕜}
 
-/-- **Existence of the Cholesky factorization** ([quarteroni2000numerical] Theorem 3.6,
-[higham2002accuracy] Theorem 10.1): a positive definite matrix `A = L D Lᴴ` has the Cholesky
-factor `H = D^{1/2} Lᴴ`, upper triangular with the positive diagonal `√d_i`. -/
+/-- **Existence of the Cholesky factorization**. Let $A \in \mathbb{K}^{n \times n}$ be positive
+definite. Then $A$ has a Cholesky factor: there is an upper triangular $H$ with a positive
+diagonal and $A = H^H H$. This is the existence part of Theorem 3.6 of [quarteroni2000numerical]
+and of Theorem 10.1 of [higham2002accuracy].
+
+If $A = L D L^H$ with positive pivots $d_i$, then $H = D^{1/2} L^H$ is the factor, with the
+diagonal entries $\sqrt{d_i}$. -/
 theorem exists_isCholesky (hA : A.PosDef) : ∃ H, IsCholesky A H := by
   obtain ⟨L, D, h, hD⟩ := exists_isLDM_conjTranspose_of_posDef hA
   set s : n → 𝕜 := fun i => ((Real.sqrt (RCLike.re (D i i)) : ℝ) : 𝕜) with hs
@@ -497,14 +609,18 @@ theorem exists_isCholesky (hA : A.PosDef) : ∃ H, IsCholesky A H := by
     conv_rhs => rw [← h.isDiag.diagonal_diag]
     exact congrArg _ (funext hss)
 
-/-- **[quarteroni2000numerical] Theorem 3.6**, [higham2002accuracy] Theorem 10.1: a positive
-definite matrix has exactly one Cholesky factorization. -/
+/-- **Theorem 3.6** of [quarteroni2000numerical], and Theorem 10.1 of [higham2002accuracy]. Let
+$A \in \mathbb{K}^{n \times n}$ be positive definite. Then $A$ has exactly one Cholesky
+factorization: there is exactly one upper triangular $H$ with a positive diagonal such that
+$A = H^H H$. -/
 theorem existsUnique_isCholesky (hA : A.PosDef) : ∃! H, IsCholesky A H := by
   obtain ⟨H, h⟩ := exists_isCholesky hA
   exact ⟨H, h, fun H' h' => h'.unique h⟩
 
-/-- [quarteroni2000numerical] Property 1.18 (4): a matrix is positive definite if and only if it
-is `Hᴴ H` for a nonsingular `H`. Neither direction needs the matrix to be assumed Hermitian. -/
+/-- Property 1.18(4) of [quarteroni2000numerical]. A matrix $A \in \mathbb{K}^{n \times n}$ is
+positive definite if and only if $A = H^H H$ for a nonsingular $H \in \mathbb{K}^{n \times n}$.
+
+Neither direction assumes that $A$ is Hermitian. -/
 theorem posDef_iff_exists_isUnit_conjTranspose_mul_self :
     A.PosDef ↔ ∃ H : Matrix n n 𝕜, IsUnit H ∧ Hᴴ * H = A := by
   constructor
@@ -518,14 +634,19 @@ end Existence
 
 /-! ### The Cholesky recurrence -/
 
-/-- The Cholesky recurrence, [quarteroni2000numerical] (3.45), as one total function on a finite
-linear order, in the lower triangular indexing of the book's `h_ij` (the entries of `Hᴴ`):
-`choleskyAux A i j = (A i j - ∑_{k < j} h_ik h̄_jk) / h_jj` for `j < i`,
-`choleskyAux A i i = √(re a_ii - ∑_{k < i} ‖h_ik‖²)` and `0` above the diagonal. The recursion is
-well founded on the number of indices below `min i j`, the off-diagonal entries after the diagonal
-one at the same level, exactly as `Matrix.luPacked`; off the positive definite cone it computes
-junk (`√` of a negative number is `0`, `x / 0 = 0`), and `Matrix.isCholesky_cholesky` says when
-the result is the Cholesky factor. -/
+/-- The Cholesky recurrence (3.45) of [quarteroni2000numerical], as one total function on a finite
+linear order. It computes the entries $c_{ij}$ of the lower triangular factor, which is $H^H$
+for the Cholesky factor $H$:
+$$c_{ij} = \begin{cases} \bigl(a_{ij} - \sum_{k < j} c_{ik} \overline{c_{jk}}\bigr) / c_{jj} &
+  \text{if } j < i, \\ \sqrt{\operatorname{Re} a_{ii} - \sum_{k < i} |c_{ik}|^2} & \text{if }
+  i = j, \\ 0 & \text{if } i < j. \end{cases}$$
+
+The entries are indexed as the entries $h_{ij}$ of the lower triangular factor in the source.
+The recursion is well founded on the number of indices below $\min(i, j)$, with the off-diagonal
+entries after the diagonal entry at the same level, as in `Matrix.luPacked`. When $A$ is not
+positive definite, the result has no meaning: the square root of a negative number is $0$, and
+division by $0$ gives $0$. `Matrix.isCholesky_cholesky` says when the result is the Cholesky
+factor. -/
 noncomputable def choleskyAux (A : Matrix n n 𝕜) : n → n → 𝕜
   | i, j =>
     if j < i then
@@ -557,8 +678,8 @@ decreasing_by
        rw [min_eq_right hr.le, min_self]
        exact Prod.Lex.left _ _ (card_filter_lt_lt_of_lt hr))
 
-/-- The lower triangular Cholesky factor `Hᴴ` computed by the recurrence
-[quarteroni2000numerical] (3.45) (`Matrix.choleskyAux`), as a matrix. -/
+/-- The lower triangular Cholesky factor $H^H$ computed by the recurrence (3.45) of
+[quarteroni2000numerical], as a matrix: its entries are `Matrix.choleskyAux A i j`. -/
 noncomputable def cholesky (A : Matrix n n 𝕜) : Matrix n n 𝕜 :=
   of fun i j => choleskyAux A i j
 
@@ -566,7 +687,11 @@ section Recurrence
 
 variable (A : Matrix n n 𝕜)
 
-/-- The Cholesky recurrence below the diagonal, [quarteroni2000numerical] (3.45), first line. -/
+/-- The Cholesky recurrence below the diagonal, the first line of (3.45) of
+[quarteroni2000numerical]. Let $C$ be the matrix `Matrix.cholesky A`, with the entries $c_{ij}$.
+For $j < i$,
+$$c_{ij} = \Bigl(a_{ij} - \sum_{k < j} c_{ik} \overline{c_{jk}}\Bigr) / c_{jj}.$$
+-/
 theorem cholesky_apply_of_lt {i j : n} (hij : j < i) :
     cholesky A i j =
       (A i j - ∑ k ∈ univ.filter (· < j), cholesky A i k * star (cholesky A j k)) /
@@ -575,7 +700,10 @@ theorem cholesky_apply_of_lt {i j : n} (hij : j < i) :
   rw [choleskyAux, ite_eq_left hij,
     Finset.sum_attach (univ.filter (· < j)) fun k => choleskyAux A i k * star (choleskyAux A j k)]
 
-/-- The Cholesky recurrence on the diagonal, [quarteroni2000numerical] (3.45), second line. -/
+/-- The Cholesky recurrence on the diagonal, the second line of (3.45) of [quarteroni2000numerical].
+Let $C$ be the matrix `Matrix.cholesky A`, with the entries $c_{ij}$. For every index $i$,
+$$c_{ii} = \sqrt{\operatorname{Re} a_{ii} - \sum_{k < i} |c_{ik}|^2},$$
+where the square root of a negative number is $0$. -/
 theorem cholesky_apply_self (i : n) :
     cholesky A i i =
       ((Real.sqrt (RCLike.re (A i i) - ∑ k ∈ univ.filter (· < i), ‖cholesky A i k‖ ^ 2) : ℝ) :
@@ -584,23 +712,26 @@ theorem cholesky_apply_self (i : n) :
   rw [choleskyAux, ite_eq_right (lt_irrefl i), ite_eq_left rfl,
     Finset.sum_attach (univ.filter (· < i)) fun k => ‖choleskyAux A i k‖ ^ 2]
 
-/-- The Cholesky recurrence vanishes above the diagonal. -/
+/-- The matrix `Matrix.cholesky A` vanishes above the diagonal: its entry $c_{ij}$ is $0$ for
+$i < j$. -/
 theorem cholesky_apply_of_gt {i j : n} (hij : i < j) : cholesky A i j = 0 := by
   simp only [cholesky, of_apply]
   rw [choleskyAux, ite_eq_right (not_lt.2 hij.le), ite_eq_right hij.ne]
 
-/-- The computed Cholesky factor is lower triangular. -/
+/-- The matrix `Matrix.cholesky A` is lower triangular. -/
 theorem isLowerTriangular_cholesky : (cholesky A).IsLowerTriangular := fun _ _ hij =>
   cholesky_apply_of_gt A (OrderDual.toDual_lt_toDual.1 hij)
 
 variable {A}
 
-/-- **Correctness of the Cholesky recurrence** ([quarteroni2000numerical] (3.45), and the second
-half of its Theorem 3.6): the recurrence computes `Hᴴ` for any Cholesky factor `H` of `A`. The
-recurrence equations are the entrywise identities `Matrix.IsCholesky.star_apply_mul_diag_eq` and
-`Matrix.IsCholesky.re_diag_eq_sqrt` satisfied by every Cholesky factor, so the computed entries
-agree with `Hᴴ` by strong induction along the order of `min i j`, the diagonal entry at each level
-before the entries below it. -/
+/-- **Correctness of the Cholesky recurrence**. Let $H$ be a Cholesky factor of $A$. Then the
+recurrence (3.45) of [quarteroni2000numerical] computes $H^H$: `Matrix.cholesky A` $= H^H$. This
+is the second half of Theorem 3.6 of [quarteroni2000numerical].
+
+The recurrence equations are the entrywise identities `Matrix.IsCholesky.star_apply_mul_diag_eq`
+and `Matrix.IsCholesky.re_diag_eq_sqrt` that every Cholesky factor satisfies. So the computed
+entries agree with $H^H$ by strong induction along the order of $\min(i, j)$, with the diagonal
+entry at each level before the entries below it. -/
 theorem cholesky_eq_of_isCholesky {H : Matrix n n 𝕜} (h : IsCholesky A H) : cholesky A = Hᴴ := by
   suffices ∀ m i j, min i j = m → cholesky A i j = Hᴴ i j from
     Matrix.ext fun i j => this _ i j rfl
@@ -629,16 +760,20 @@ theorem cholesky_eq_of_isCholesky {H : Matrix n n 𝕜} (h : IsCholesky A H) : c
     rw [ih k hkm i k (min_eq_right (hk'.trans hij).le), ih k hkm j k (min_eq_right hk'.le),
       conjTranspose_apply, conjTranspose_apply, star_star]
 
-/-- **The Cholesky recurrence computes the Cholesky factor** ([quarteroni2000numerical] (3.45)):
-for a positive definite `A`, `(cholesky A)ᴴ` is the Cholesky factor of `A`. -/
+/-- **The Cholesky recurrence computes the Cholesky factor**. Let $A \in \mathbb{K}^{n \times n}$ be
+positive definite, and let $C$ be the matrix `Matrix.cholesky A` computed by the recurrence
+(3.45) of [quarteroni2000numerical]. Then $C^H$ is the Cholesky factor of $A$. -/
 theorem isCholesky_cholesky (hA : A.PosDef) : IsCholesky A (cholesky A)ᴴ := by
   obtain ⟨H, h⟩ := exists_isCholesky hA
   rw [cholesky_eq_of_isCholesky h, conjTranspose_conjTranspose]
   exact h
 
-/-- Every implementation of the Cholesky factorization computes `Matrix.cholesky`: the recurrence
-of Program 7, the `L D Lᴴ` route and the QR route of Property 3.3 of [quarteroni2000numerical]
-all produce the unique factor. -/
+/-- Let $H$ be a Cholesky factor of $A$, and let $C$ be the matrix `Matrix.cholesky A`. Then
+$C^H = H$.
+
+So every method that computes a Cholesky factor computes `Matrix.cholesky`: the recurrence of
+Program 7, the $LDL^H$ route and the QR route of Property 3.3 of [quarteroni2000numerical] all
+give the unique factor. -/
 theorem cholesky_conjTranspose_eq_of_isCholesky {H : Matrix n n 𝕜} (h : IsCholesky A H) :
     (cholesky A)ᴴ = H := by
   rw [cholesky_eq_of_isCholesky h, conjTranspose_conjTranspose]
@@ -651,9 +786,13 @@ section QR
 
 variable {m : Type*} [Fintype m]
 
-/-- [quarteroni2000numerical] Property 3.3, last clause: if `X = Q R` with `Qᴴ Q = 1` and `R`
-upper triangular with positive diagonal (a reduced QR factorization, `Matrix.exists_isThinQR`),
-then `R` is the Cholesky factor of `Xᴴ X`, since `Xᴴ X = Rᴴ Qᴴ Q R = Rᴴ R`. -/
+/-- The last clause of Property 3.3 of [quarteroni2000numerical]. Let
+$X, Q \in \mathbb{K}^{m \times n}$ and let $R \in \mathbb{K}^{n \times n}$. Assume that
+$X = QR$, $Q^H Q = I$, $R$ is upper triangular and every diagonal entry $r_{ii}$ is positive, so
+that $X = QR$ is a reduced QR factorization (`Matrix.exists_isThinQR`). Then $R$ is the Cholesky
+factor of $X^H X$.
+
+The proof is $X^H X = R^H Q^H Q R = R^H R$. -/
 theorem isCholesky_conjTranspose_mul_self_of_qr {X Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
     (hX : X = Q * R) (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) :
     IsCholesky (Xᴴ * X) R where
@@ -662,17 +801,23 @@ theorem isCholesky_conjTranspose_mul_self_of_qr {X Q : Matrix m n 𝕜} {R : Mat
   conjTranspose_mul_self := by
     rw [hX, conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Qᴴ, hQ, Matrix.one_mul]
 
-/-- The triangular factor of a reduced QR factorization of `X` is the factor computed by the
-Cholesky recurrence on `Xᴴ X` ([quarteroni2000numerical] Property 3.3, §3.4.3). -/
+/-- Let $X, Q \in \mathbb{K}^{m \times n}$ and let $R \in \mathbb{K}^{n \times n}$. Assume that
+$X = QR$, $Q^H Q = I$, $R$ is upper triangular and every diagonal entry $r_{ii}$ is positive.
+Then the Cholesky recurrence applied to $X^H X$ computes $R^H$: `Matrix.cholesky` of $X^H X$ is
+$R^H$. This is Property 3.3 and §3.4.3 of [quarteroni2000numerical]. -/
 theorem cholesky_conjTranspose_mul_self_of_qr {X Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
     (hX : X = Q * R) (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) :
     cholesky (Xᴴ * X) = Rᴴ :=
   cholesky_eq_of_isCholesky (isCholesky_conjTranspose_mul_self_of_qr hX hQ hR hd)
 
-/-- **The triangular factor of a thin QR factorization is the Cholesky factor of the Gram
-matrix** ([golub2013matrix] Theorem 5.2.3, "`R₁ = Gᵀ` where `G` is the lower triangular Cholesky
-factor of `AᵀA`"): if `A = Q R` is thin with a positive diagonal, `Aᴴ A = Rᴴ R`. With
-`Matrix.IsCholesky.unique` this is a second proof of `Matrix.IsThinQR.unique`. -/
+/-- **The triangular factor of a thin QR factorization is the Cholesky factor of the Gram matrix**.
+Let $A, Q \in \mathbb{K}^{m \times N}$ and $R \in \mathbb{K}^{N \times N}$ form a thin QR
+factorization $A = QR$ (`Matrix.IsThinQR`), and assume that every diagonal entry $r_{jj}$ is
+positive. Then $R$ is the Cholesky factor of $A^H A$, that is, $A^H A = R^H R$. This is Theorem
+5.2.3 of [golub2013matrix], which states "$R_1 = G^T$ where $G$ is the lower triangular Cholesky
+factor of $A^T A$".
+
+With `Matrix.IsCholesky.unique`, this gives a second proof of `Matrix.IsThinQR.unique`. -/
 theorem IsThinQR.isCholesky {N : ℕ} {A Q : Matrix m (Fin N) 𝕜} {R : Matrix (Fin N) (Fin N) 𝕜}
     (h : IsThinQR A Q R) (hd : ∀ j, 0 < R j j) : IsCholesky (Aᴴ * A) R :=
   isCholesky_conjTranspose_mul_self_of_qr h.mul_eq.symm h.conjTranspose_mul_self
@@ -680,7 +825,7 @@ theorem IsThinQR.isCholesky {N : ℕ} {A Q : Matrix m (Fin N) 𝕜} {R : Matrix 
 
 end QR
 
-/-! ### Mathlib's `LDL` factorization -/
+/-! ### Mathlib's $LDL^H$ factorization -/
 
 section LDL
 
@@ -689,8 +834,11 @@ open InnerProductSpace
 variable [LocallyFiniteOrderBot n] {S : Matrix n n 𝕜} (hS : S.PosDef)
 include hS
 
-/-- The Gram–Schmidt matrix `LDL.lowerInv` has unit diagonal: the `i`-th vector is `e_i` minus a
-combination of the earlier ones, which vanish at the coordinate `i`. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite. Then the Gram–Schmidt matrix
+`LDL.lowerInv` of $S$, from Mathlib, has the diagonal entries $1$.
+
+The $i$-th row is $e_i$ minus a combination of the earlier rows, and these vanish at the
+coordinate $i$. -/
 theorem LDL.lowerInv_apply_self (i : n) : LDL.lowerInv hS i i = 1 := by
   have h := congrFun (@gramSchmidt_def'' 𝕜 (n → 𝕜) _ (Sᵀ.toNormedAddCommGroup hS.transpose)
     (Sᵀ.toInnerProductSpace hS.transpose.posSemidef) n _ _ (Pi.basisFun 𝕜 n) i) i
@@ -701,18 +849,23 @@ theorem LDL.lowerInv_apply_self (i : n) : LDL.lowerInv hS i i = 1 := by
     exact smul_eq_zero_of_right _
       (LDL.isLowerTriangular_lowerInv hS (OrderDual.toDual_lt_toDual.2 (Finset.mem_Iio.1 hk)))
 
-/-- The Gram–Schmidt matrix `LDL.lowerInv` is unit lower triangular. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite. Then the Gram–Schmidt matrix
+`LDL.lowerInv` of $S$, from Mathlib, is unit lower triangular. -/
 theorem LDL.lowerInv_isUnitLowerTriangular : (LDL.lowerInv hS).IsUnitLowerTriangular :=
   ⟨LDL.isLowerTriangular_lowerInv hS, LDL.lowerInv_apply_self hS⟩
 
-/-- The `L` of Mathlib's `LDL` factorization is unit lower triangular (the TODO of
-`Mathlib/Analysis/Matrix/LDL.lean`): it is the inverse of the unit lower triangular
-`LDL.lowerInv`. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite. Then the factor $L$ of Mathlib's
+$LDL^H$ factorization of $S$, `LDL.lower`, is unit lower triangular.
+
+Mathlib proves only that $L$ is lower triangular (`LDL.isLowerTriangular_lower`). The matrix $L$
+is the inverse of the unit lower triangular matrix `LDL.lowerInv`. -/
 theorem LDL.lower_isUnitLowerTriangular : (LDL.lower hS).IsUnitLowerTriangular :=
   (LDL.lowerInv_isUnitLowerTriangular hS).inv
 
-/-- The diagonal entries of Mathlib's `LDL` factorization are positive: each is the quadratic form
-of `S` at a row of the invertible matrix `LDL.lowerInv`. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite. Then every diagonal entry
+`LDL.diagEntries` of Mathlib's $LDL^H$ factorization of $S$ is positive.
+
+Each entry is the quadratic form of $S$ at a row of the invertible matrix `LDL.lowerInv`. -/
 theorem LDL.diagEntries_pos (i : n) : 0 < LDL.diagEntries hS i := by
   have hx : star (LDL.lowerInv hS i) ≠ 0 := fun h0 => by
     have := congrFun h0 i
@@ -722,15 +875,18 @@ theorem LDL.diagEntries_pos (i : n) : 0 < LDL.diagEntries hS i := by
   rw [LDL.diagEntries, EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
   exact this
 
-/-- Mathlib's `LDL` factorization is an `L D Mᵀ` factorization in the Hermitian form `M = Lᴴᵀ`,
-`L D Lᴴ = S`. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite, and let $L$ and $D$ be the factors
+`LDL.lower` and `LDL.diag` of Mathlib. Then $S = L D L^H$ is an $LDM^T$ factorization in the
+Hermitian form $M = \bar{L}$. -/
 theorem isLDM_ldl : IsLDM S (LDL.lower hS) (LDL.diag hS) (LDL.lower hS)ᴴᵀ where
   isUnitLowerTriangular_left := LDL.lower_isUnitLowerTriangular hS
   isDiag := isDiag_diagonal _
   isUnitLowerTriangular_right := (LDL.lower_isUnitLowerTriangular hS).conjTranspose_transpose
   mul_eq := by rw [transpose_transpose, LDL.lower_conj_diag]
 
-/-- Mathlib's `LDL` factors are the unique `L D Lᴴ` factors of a positive definite matrix. -/
+/-- Let $S \in \mathbb{K}^{n \times n}$ be positive definite, and let $S = L D L^H$ with $L$ unit
+lower triangular and $D$ diagonal. Then $L$ and $D$ are the factors `LDL.lower` and `LDL.diag`
+of Mathlib. So Mathlib's factors are the unique $LDL^H$ factors of a positive definite matrix. -/
 theorem LDL.lower_eq_of_isLDM {L D : Matrix n n 𝕜} (h : IsLDM S L D Lᴴᵀ) :
     LDL.lower hS = L ∧ LDL.diag hS = D := by
   obtain ⟨LDM₀, -, huniq⟩ := existsUnique_isLDM hS.isUnit_strictLeadingPrincipalSubmatrix
@@ -741,15 +897,18 @@ theorem LDL.lower_eq_of_isLDM {L D : Matrix n n 𝕜} (h : IsLDM S L D Lᴴᵀ) 
 
 end LDL
 
-/-! ### Unsymmetric positive definite and semidefinite matrices -/
+/-! ### Unsymmetric matrices with a positive definite Hermitian part, and semidefinite matrices -/
 
 section Unsymmetric
 
-/-- **[golub2013matrix] Corollary 4.2.4**: if the Hermitian part of `A` is positive definite
-(the book's "`A` positive definite" for unsymmetric `A`), then `A` has an LU factorization and
-its pivots have positive real part. The strict leading principal submatrices inherit a positive
-definite Hermitian part, hence are nonsingular; and `u_ii = yᴴ A y` for `y` the conjugate of the
-`i`-th row of `L⁻¹`, since `U L⁻ᴴ = L⁻¹ A L⁻ᴴ` has the diagonal of `U`. -/
+/-- **Corollary 4.2.4** of [golub2013matrix]. Let $A \in \mathbb{K}^{n \times n}$, and assume that
+its Hermitian part $(A + A^H)/2$ is positive definite. Then $A$ has an LU factorization
+$A = LU$, and every pivot $u_{ii}$ has a positive real part.
+
+The source calls such an unsymmetric matrix $A$ "positive definite". The strict leading
+principal submatrices of $A$ have a positive definite Hermitian part, so they are nonsingular.
+And $u_{ii} = y^H A y$ for the conjugate $y$ of the $i$-th row of $L^{-1}$, because
+$U L^{-H} = L^{-1} A L^{-H}$ has the diagonal of $U$. -/
 theorem exists_isLU_of_posDef_hermitianPart {A : Matrix n n 𝕜}
     (hA : (hermitianPart A).PosDef) : ∃ L U, IsLU A L U ∧ ∀ i, 0 < RCLike.re (U i i) := by
   obtain ⟨L, U, h⟩ := exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix fun k => by
@@ -792,9 +951,13 @@ section SchurStep
 
 variable {A : Matrix n n 𝕜} {p : n}
 
-/-- **The quadratic form of one elimination step**: for `A p p ≠ 0` and any `z` off the pivot,
-the extension `X` of `z` with `X p = -(A p p)⁻¹ ∑_j A p j z j` has `(A X)_p = 0`, and
-`zᴴ S z = Xᴴ A X` for the Schur complement `S = schurComplementSingle A p`. -/
+/-- **The quadratic form of one elimination step**. Let $A \in \mathbb{K}^{n \times n}$ with
+$a_{pp} \neq 0$, and let $S$ be the Schur complement `Matrix.schurComplementSingle A p` of one
+elimination step at the pivot $p$. Then for every vector $z$ on the indices other than $p$,
+there is a vector $X$ on all indices that extends $z$ and satisfies
+$$z^H S z = X^H A X.$$
+
+The proof takes $X_p = -a_{pp}^{-1} \sum_{j \neq p} a_{pj} z_j$, for which $(AX)_p = 0$. -/
 theorem exists_star_dotProduct_schurComplementSingle_mulVec (hpp : A p p ≠ 0)
     (z : {x : n // x ≠ p} → 𝕜) :
     ∃ X : n → 𝕜, (∀ t : {x : n // x ≠ p}, X t.1 = z t) ∧
@@ -820,10 +983,14 @@ theorem exists_star_dotProduct_schurComplementSingle_mulVec (hpp : A p p ≠ 0)
 end SchurStep
 
 omit [Fintype n] in
-/-- **[golub2013matrix] Theorem 4.2.5**: if the Hermitian part of `A` is positive definite, so is
-the Hermitian part of the Schur complement of one elimination step (the book's `B₁ + C₁` of
-(4.2.1)). By the extension of `Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`, the
-quadratic form of the Schur complement is a quadratic form of `A`. -/
+/-- **Theorem 4.2.5** of [golub2013matrix]. Let $A \in \mathbb{K}^{n \times n}$, with $n$ finite,
+have a positive definite Hermitian part, and let $p$ be an index. Then the Schur complement $S$
+of one elimination step at the pivot $p$ (`Matrix.schurComplementSingle A p`) also has a
+positive definite Hermitian part.
+
+The Schur complement is the matrix $B_1 + C_1$ of (4.2.1) in the source. By
+`Matrix.exists_star_dotProduct_schurComplementSingle_mulVec`, the quadratic form of $S$ is a
+quadratic form of $A$. -/
 theorem posDef_hermitianPart_schurComplementSingle [Finite n] {A : Matrix n n 𝕜}
     (hA : (hermitianPart A).PosDef) (p : n) :
     (hermitianPart (A.schurComplementSingle p)).PosDef := by
@@ -846,8 +1013,11 @@ section Semidefinite
 variable {A : Matrix n n 𝕜}
 
 omit [Fintype n] [LinearOrder n] in
-/-- **[golub2013matrix] (4.2.15)**: a zero diagonal entry of a positive semidefinite matrix has a
-zero row and a zero column, by `‖a_ij‖² ≤ a_ii a_jj`. -/
+/-- (4.2.15) of [golub2013matrix]. Let $A \in \mathbb{K}^{n \times n}$ be positive semidefinite,
+with $a_{ii} = 0$. Then the $i$-th row and the $i$-th column of $A$ are zero: $a_{ij} = 0$ and
+$a_{ji} = 0$ for every index $j$.
+
+The proof uses $|a_{ij}|^2 \le a_{ii} a_{jj}$. -/
 theorem PosSemidef.apply_eq_zero_of_diag_eq_zero (hA : A.PosSemidef) {i : n} (hi : A i i = 0)
     (j : n) : A i j = 0 ∧ A j i = 0 := by
   have h1 := hA.norm_apply_sq_le_mul_re_diag i j
@@ -858,7 +1028,7 @@ theorem PosSemidef.apply_eq_zero_of_diag_eq_zero (hA : A.PosSemidef) {i : n} (hi
     norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h2 (sq_nonneg _)))⟩
 
 omit [Fintype n] in
-/-- The two halves of `Matrix.PosSemidef.schurComplementSingle` and
+/-- The two statements `Matrix.PosSemidef.schurComplementSingle` and
 `Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`, proved together. -/
 private theorem PosSemidef.schurComplementSingle_aux [Finite n] (hA : A.PosSemidef) {p : n}
     (hpp : A p p ≠ 0) :
@@ -893,18 +1063,25 @@ private theorem PosSemidef.schurComplementSingle_aux [Finite n] (hA : A.PosSemid
     positivity
 
 omit [Fintype n] in
-/-- **One step of the outer-product `L D Lᴴ` on a positive semidefinite matrix**
-([golub2013matrix] (4.2.16)): if `A` is positive semidefinite and `A p p ≠ 0`, the Schur
-complement of one elimination step, the book's `Ã = B − v vᵀ/α`, is positive semidefinite. The
-semidefinite analogue of `Matrix.PosDef.schurComplement`; its diagonal is dominated by that of `A`
-(`Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`). -/
+/-- **One step of the outer-product $LDL^H$ factorization of a positive semidefinite matrix**,
+(4.2.16) of [golub2013matrix]. Let $A \in \mathbb{K}^{n \times n}$, with $n$ finite, be positive
+semidefinite, and let $a_{pp} \neq 0$. Then the Schur complement of one elimination step at the
+pivot $p$ (`Matrix.schurComplementSingle A p`) is positive semidefinite.
+
+The Schur complement is the matrix $\tilde{A} = B - v v^T / \alpha$ of the source. This is the
+semidefinite analogue of `Matrix.PosDef.schurComplement`. Its diagonal is bounded by the
+diagonal of $A$ (`Matrix.PosSemidef.re_schurComplementSingle_apply_self_le`). -/
 theorem PosSemidef.schurComplementSingle [Finite n] (hA : A.PosSemidef) {p : n} (hpp : A p p ≠ 0) :
     (A.schurComplementSingle p).PosSemidef :=
   (hA.schurComplementSingle_aux hpp).1
 
 omit [Fintype n] in
-/-- [golub2013matrix] (4.2.16): the diagonal of the one-step Schur complement of a positive
-semidefinite matrix is dominated by that of the matrix, `re Ã_ii ≤ re a_ii`. -/
+/-- (4.2.16) of [golub2013matrix]. Let $A \in \mathbb{K}^{n \times n}$, with $n$ finite, be positive
+semidefinite, let $a_{pp} \neq 0$, and let $\tilde{A}$ be the Schur complement of one
+elimination step at the pivot $p$ (`Matrix.schurComplementSingle A p`). Then the diagonal of
+$\tilde{A}$ is bounded by the diagonal of $A$: for every index $i \neq p$,
+$$\operatorname{Re} \tilde{a}_{ii} \le \operatorname{Re} a_{ii}.$$
+-/
 theorem PosSemidef.re_schurComplementSingle_apply_self_le [Finite n] (hA : A.PosSemidef) {p : n}
     (hpp : A p p ≠ 0) (i : {x : n // x ≠ p}) :
     RCLike.re ((A.schurComplementSingle p) i i) ≤ RCLike.re (A i.1 i.1) :=
@@ -916,10 +1093,14 @@ section Factor
 
 variable {A : Matrix n n 𝕜}
 
-/-- **The Cholesky factor has the lower bandwidth of the matrix** ([golub2013matrix] §4.3.5):
-`cholesky A = Hᴴ` is `L D` for the LU factorization `A = (Hᴴ D⁻¹) (D H)`, whose lower factor keeps
-the lower bandwidth of `A` (`Matrix.IsLU.hasLowerBandwidth`), and right multiplication by a
-nonsingular diagonal changes no zero pattern. -/
+/-- **The Cholesky factor has the lower bandwidth of the matrix**. Let
+$A \in \mathbb{K}^{n \times n}$ be positive definite with the lower bandwidth $p$. Then the
+lower triangular factor `Matrix.cholesky A` also has the lower bandwidth $p$. This is in §4.3.5
+of [golub2013matrix].
+
+The factor $H^H$ is $L D$ for the LU factorization $A = (H^H D^{-1})(D H)$, and the lower factor
+$L$ keeps the lower bandwidth of $A$ (`Matrix.IsLU.hasLowerBandwidth`). Multiplication on the
+right by a nonsingular diagonal matrix changes no zero pattern. -/
 theorem cholesky_hasLowerBandwidth (hA : A.PosDef) {p : ℕ} (hp : A.HasLowerBandwidth p) :
     (cholesky A).HasLowerBandwidth p := by
   have hc := isCholesky_cholesky hA
@@ -929,8 +1110,14 @@ theorem cholesky_hasLowerBandwidth (hA : A.PosDef) {p : ℕ} (hp : A.HasLowerBan
   rw [conjTranspose_conjTranspose, mul_diagonal] at this
   exact (mul_eq_zero.1 this).resolve_right (inv_ne_zero (hc.diag_ne_zero j))
 
-/-- **The entries of the Cholesky factor are bounded by the diagonal** ([golub2013matrix] §4.2.6,
-"`g_ij² ≤ ∑_{k ≤ i} g_ik² = a_ii`"): the diagonal of `A = G Gᴴ`. -/
+/-- **The entries of the Cholesky factor are bounded by the diagonal**. Let
+$A \in \mathbb{K}^{n \times n}$ be positive definite, and let $G$ be the lower triangular factor
+`Matrix.cholesky A`. Then for all indices $i$ and $j$,
+$$|g_{ij}|^2 \le \operatorname{Re} a_{ii}.$$
+This is in §4.2.6 of [golub2013matrix], which writes
+"$g_{ij}^2 \le \sum_{k \le i} g_{ik}^2 = a_{ii}$".
+
+The bound follows from the diagonal of $A = G G^H$. -/
 theorem sq_norm_cholesky_apply_le (hA : A.PosDef) (i j : n) :
     ‖cholesky A i j‖ ^ 2 ≤ RCLike.re (A i i) := by
   have hc := isCholesky_cholesky hA
@@ -945,8 +1132,12 @@ theorem sq_norm_cholesky_apply_le (hA : A.PosDef) (i j : n) :
     (Finset.mem_univ j)
 
 open scoped Matrix.Norms.L2Operator in
-/-- **`‖G‖₂² = ‖A‖₂`** for the Cholesky factor ([golub2013matrix] §4.2.6): Mathlib's C⋆-identity
-`‖Bᴴ B‖ = ‖B‖²` at `B = Gᴴ`, since `A = G Gᴴ`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be positive definite, and let $G$ be the lower triangular
+factor `Matrix.cholesky A`. Then in the spectral norm,
+$$\|G\|_2^2 = \|A\|_2.$$
+This is in §4.2.6 of [golub2013matrix].
+
+The proof is Mathlib's C*-identity $\|B^H B\| = \|B\|^2$ for $B = G^H$, since $A = G G^H$. -/
 theorem l2_opNorm_cholesky_sq (hA : A.PosDef) : ‖cholesky A‖ ^ 2 = ‖A‖ := by
   have hc := isCholesky_cholesky hA
   conv_rhs => rw [← hc.conjTranspose_mul_self]
@@ -954,11 +1145,12 @@ theorem l2_opNorm_cholesky_sq (hA : A.PosDef) : ‖cholesky A‖ ^ 2 = ‖A‖ :
 
 end Factor
 
-/-! ### The rank-revealing pivoted `L D Lᴴ` of a semidefinite matrix -/
+/-! ### The rank-revealing pivoted $LDL^H$ factorization of a semidefinite matrix -/
 
 section PivotedLDL
 
-/-- For a unit lower triangular `L`, the entry of `L D Lᴴ` at a least index `i` is `d i`. -/
+/-- For a unit lower triangular $L$, the diagonal entry of $L \operatorname{diag}(d) L^H$ at the
+least index $i$ is $d_i$. -/
 private theorem mul_diagonal_mul_conjTranspose_apply_of_isBot {n : ℕ}
     {L : Matrix (Fin n) (Fin n) 𝕜} (hL : L.IsUnitLowerTriangular) (d : Fin n → 𝕜) {i : Fin n}
     (hi : IsBot i) : (L * diagonal d * Lᴴ) i i = d i := by
@@ -969,10 +1161,14 @@ private theorem mul_diagonal_mul_conjTranspose_apply_of_isBot {n : ℕ}
       (lt_of_le_of_ne (hi k) (Ne.symm hki))), zero_mul, zero_mul]
   · simp
 
-/-- **The pivoted `L D Lᴴ` factorization of a positive semidefinite matrix**, before the rank
-count: with the largest remaining diagonal entry as pivot at every step, a positive semidefinite
-`A` on `Fin n` has a symmetric permutation `A.submatrix σ σ = L D Lᴴ` with `L` unit lower
-triangular and `D = diag d` real, nonnegative and nonincreasing. -/
+/-- **The pivoted $LDL^H$ factorization of a positive semidefinite matrix**, without the count of
+the rank. Let $A \in \mathbb{K}^{n \times n}$ be positive semidefinite, with the indices
+$0, \dots, n - 1$. Then there are a permutation $\sigma$, a unit lower triangular $L$ and a
+nonincreasing real vector $d \ge 0$ with
+$$A(\sigma, \sigma) = L \operatorname{diag}(d) L^H,$$
+where $A(\sigma, \sigma)$ is the symmetric permutation `A.submatrix σ σ` of $A$.
+
+The proof takes the largest remaining diagonal entry as the pivot at every step. -/
 theorem PosSemidef.exists_perm_ldl_antitone :
     ∀ {n : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}, A.PosSemidef →
       ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin n) 𝕜) (d : Fin n → ℝ),
@@ -1100,8 +1296,8 @@ theorem PosSemidef.exists_perm_ldl_antitone :
       | zero => exact hpos.le
       | succ i' => exact hnn i'
 
-/-- On `Fin n`, a nonnegative nonincreasing `d` is positive exactly on the first `k` indices,
-`k` the number of its nonzero values. -/
+/-- On `Fin n`, a nonnegative nonincreasing vector $d$ is positive exactly at the first $k$ indices,
+where $k$ is the number of its nonzero entries. -/
 private theorem pos_iff_lt_card_of_antitone {n : ℕ} {d : Fin n → ℝ} (hanti : Antitone d)
     (hnn : ∀ i, 0 ≤ d i) (i : Fin n) : 0 < d i ↔ (i : ℕ) < #{j | d j ≠ 0} := by
   constructor
@@ -1125,12 +1321,18 @@ private theorem pos_iff_lt_card_of_antitone {n : ℕ} {d : Fin n → ℝ} (hanti
     rw [Fin.card_filter_val_lt] at this
     omega
 
-/-- **[golub2013matrix] (4.2.17), the rank-revealing pivoted factorization**: a positive
-semidefinite `A` on `Fin n` of rank `r` has a symmetric permutation `A.submatrix σ σ = L D Lᴴ` with
-`L` unit lower triangular and `D = diag d` real and nonincreasing, `d i > 0` for `i < r` and
-`d i = 0` for `i ≥ r`: only the first `r` columns of `L` carry the factorization. The pivot is the
-largest remaining diagonal entry (`Matrix.PosSemidef.exists_perm_ldl_antitone`); `A` is congruent
-to `D`, so its rank is the number of nonzero pivots. -/
+/-- **The rank-revealing pivoted factorization**, (4.2.17) of [golub2013matrix]. Let
+$A \in \mathbb{K}^{n \times n}$ be positive semidefinite with the rank $r$, with the indices
+$0, \dots, n - 1$. Then there are a permutation $\sigma$, a unit lower triangular $L$ and a
+nonincreasing real vector $d$ with
+$$A(\sigma, \sigma) = L \operatorname{diag}(d) L^H,$$
+$d_i > 0$ for $i < r$, and $d_i = 0$ for $i \ge r$. So only the first $r$ columns of $L$
+contribute to the factorization. Here $A(\sigma, \sigma)$ is the symmetric permutation
+`A.submatrix σ σ` of $A$.
+
+The pivot is the largest remaining diagonal entry
+(`Matrix.PosSemidef.exists_perm_ldl_antitone`). The matrix $A$ is congruent to
+$\operatorname{diag}(d)$, so its rank is the number of nonzero pivots. -/
 theorem PosSemidef.exists_perm_ldl_rank {n : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.PosSemidef) :
     ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin n) 𝕜) (d : Fin n → ℝ),
@@ -1160,13 +1362,19 @@ end PivotedLDL
 
 section Block
 
-/-- **The block form of the Cholesky factor** ([golub2013matrix] (4.2.18), the specification of the
-block Cholesky algorithms 4.2.3–4.2.4): for positive definite `A` on `Fin (r + s)`, read as
-`A' = [A₁₁ A₁₂; A₂₁ A₂₂]` along `finSumFinEquiv`, the lower Cholesky factor is
-`[G₁₁ 0; G₂₁ G₂₂]` with `G₁₁` the factor of `A₁₁`, `G₂₁ = A₂₁ G₁₁⁻ᴴ` (the book's `G₂₁ G₁₁ᵀ = A₂₁`)
-and `G₂₂` the factor of the Schur complement `A₂₂ - A₂₁ A₁₁⁻¹ A₁₂`. By uniqueness of the Cholesky
-factor: the block matrix is lower triangular with positive diagonal in the order of `Fin (r + s)`,
-and its product with its conjugate transpose is `A'`. -/
+/-- **The block form of the Cholesky factor**, (4.2.18) of [golub2013matrix], which specifies the
+block Cholesky algorithms 4.2.3 and 4.2.4. Let $A \in \mathbb{K}^{(r+s) \times (r+s)}$ be
+positive definite, and write it in blocks as
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}$$
+with $A_{11} \in \mathbb{K}^{r \times r}$. Let $G_{11}$ be the lower triangular Cholesky factor
+of $A_{11}$, and let $G_{22}$ be the lower triangular Cholesky factor of the Schur complement
+$A_{22} - A_{21} A_{11}^{-1} A_{12}$. Then the lower triangular Cholesky factor of $A$ is
+$$\begin{bmatrix} G_{11} & 0 \\ A_{21} G_{11}^{-H} & G_{22} \end{bmatrix}.$$
+
+The source writes the condition on the block $G_{21}$ as $G_{21} G_{11}^T = A_{21}$. The blocks
+are taken along `finSumFinEquiv`, and each factor is `Matrix.cholesky` of the block. The proof
+uses the uniqueness of the Cholesky factor: the block matrix is lower triangular with a positive
+diagonal in the order of `Fin (r + s)`, and its product with its conjugate transpose is $A$. -/
 theorem cholesky_finSumFin {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) 𝕜} (hA : A.PosDef) :
     (cholesky A).submatrix finSumFinEquiv finSumFinEquiv =
       fromBlocks (cholesky (A.submatrix finSumFinEquiv finSumFinEquiv).toBlocks₁₁) 0
@@ -1236,14 +1444,14 @@ theorem cholesky_finSumFin {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) �
 
 end Block
 
-/-! ### The size of `|L| |U|` when the symmetric part is positive definite -/
+/-! ### The size of $|L| |U|$ when the Hermitian part is positive definite -/
 
 section UnsymmetricLU
 
 open scoped Matrix.Norms.L2Operator
 
-/-- `‖M x‖² ≤ ‖M T⁻¹ Mᵀ‖₂ xᵀ T x` for positive definite `T`: with `y = M x` and `T w = Mᵀ y`,
-`‖y‖² = xᵀ T w ≤ √(xᵀ T x) √(wᵀ T w)` and `wᵀ T w = yᵀ M T⁻¹ Mᵀ y ≤ ‖M T⁻¹ Mᵀ‖₂ ‖y‖²`. -/
+/-- For a real positive definite $T$, a real square matrix $M$ and a vector $x$,
+$\|Mx\|^2 \le \|M T^{-1} M^T\|_2 \, x^T T x$. -/
 private theorem dotProduct_mulVec_self_le_of_posDef {T : Matrix n n ℝ} (hT : T.PosDef)
     (M : Matrix n n ℝ) (x : n → ℝ) :
     (M *ᵥ x) ⬝ᵥ (M *ᵥ x) ≤ ‖M * T⁻¹ * Mᵀ‖ * (x ⬝ᵥ (T *ᵥ x)) := by
@@ -1272,10 +1480,10 @@ private theorem dotProduct_mulVec_self_le_of_posDef {T : Matrix n n ℝ} (hT : T
   have hr0 : 0 ≤ ‖M * T⁻¹ * Mᵀ‖ * (x ⬝ᵥ (T *ᵥ x)) := mul_nonneg (norm_nonneg _) hq0
   nlinarith
 
-/-- The two growth bounds behind [golub2013matrix] Theorem 4.2.6, for a real `A` with positive
-definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`: `xᵀ A x = xᵀ T x`,
-`A T⁻¹ Aᵀ = Aᵀ T⁻¹ A = T − S T⁻¹ S` (the identity `A T⁻¹ Aᵀ = T + S T⁻¹ Sᵀ` of Golub and Van Loan
-1979), and its spectral norm is at most `‖T‖₂ + ‖S T⁻¹ S‖₂`. -/
+/-- For a real $A$ whose symmetric part $T = (A + A^T)/2$ is positive definite, with the skew part
+$S = A - T$: $x^T A x = x^T T x$, $A T^{-1} A^T = A^T T^{-1} A$ (both equal $T - S T^{-1} S$,
+the identity $A T^{-1} A^T = T + S T^{-1} S^T$ of Golub and Van Loan (1979)), and $\|A T^{-1}
+A^T\|_2 \le \|T\|_2 + \|S T^{-1} S\|_2$. -/
 private theorem growth_aux {A : Matrix n n ℝ} (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
     x ⬝ᵥ (A *ᵥ x) = x ⬝ᵥ (hermitianPart A *ᵥ x) ∧
       A * (hermitianPart A)⁻¹ * Aᵀ = Aᵀ * (hermitianPart A)⁻¹ * Aᵀᵀ ∧
@@ -1319,10 +1527,14 @@ private theorem growth_aux {A : Matrix n n ℝ} (hT : (hermitianPart A).PosDef) 
   rw [hG]
   exact norm_sub_le _ _
 
-/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**: for a real `A` with positive
-definite symmetric part `T = (A + Aᵀ)/2` and skew part `S = A − T`,
-`‖A x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`. Here `xᵀ A x = xᵀ T x` and `A T⁻¹ Aᵀ = T − S T⁻¹ S`, so
-`‖A x‖² ≤ ‖A T⁻¹ Aᵀ‖₂ xᵀ T x` by Cauchy–Schwarz for the form of `T`. The transpose twin is
+/-- **The growth bound behind Theorem 4.2.6** of [golub2013matrix]. Let
+$A \in \mathbb{R}^{n \times n}$ have a positive definite symmetric part $T = (A + A^T)/2$, and
+let $S = A - T$ be its skew part. Then for every $x \in \mathbb{R}^n$, in the spectral norm,
+$$\|Ax\|^2 \le \bigl(\|T\|_2 + \|S T^{-1} S\|_2\bigr) \, x^T A x.$$
+
+The proof uses $x^T A x = x^T T x$ and $A T^{-1} A^T = T - S T^{-1} S$, so that
+$\|Ax\|^2 \le \|A T^{-1} A^T\|_2 \, x^T T x$ by the Cauchy–Schwarz inequality for the form of
+$T$. The bound for the transpose is
 `Matrix.dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart`. -/
 theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
     (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
@@ -1336,8 +1548,12 @@ theorem dotProduct_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
   exact (dotProduct_mulVec_self_le_of_posDef hT A x).trans
     (mul_le_mul_of_nonneg_right hnorm hq0)
 
-/-- **The growth bound behind [golub2013matrix] Theorem 4.2.6**, for the transpose:
-`‖Aᵀ x‖² ≤ (‖T‖₂ + ‖S T⁻¹ S‖₂) xᵀ A x`, since also `Aᵀ T⁻¹ A = T − S T⁻¹ S`. -/
+/-- **The growth bound behind Theorem 4.2.6** of [golub2013matrix], for the transpose. Let
+$A \in \mathbb{R}^{n \times n}$ have a positive definite symmetric part $T = (A + A^T)/2$, and
+let $S = A - T$ be its skew part. Then for every $x \in \mathbb{R}^n$, in the spectral norm,
+$$\|A^T x\|^2 \le \bigl(\|T\|_2 + \|S T^{-1} S\|_2\bigr) \, x^T A x.$$
+
+The proof uses $A^T T^{-1} A = T - S T^{-1} S$. -/
 theorem dotProduct_transpose_mulVec_self_le_of_posDef_hermitianPart {A : Matrix n n ℝ}
     (hT : (hermitianPart A).PosDef) (x : n → ℝ) :
     (Aᵀ *ᵥ x) ⬝ᵥ (Aᵀ *ᵥ x) ≤ (‖hermitianPart A‖
@@ -1357,15 +1573,22 @@ section UnsymmetricLUGrowth
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The growth of `|L| |U|` for a positive definite symmetric part** ([golub2013matrix]
-Theorem 4.2.6, from G. H. Golub and C. F. Van Loan, *Unsymmetric positive definite linear systems*,
-Linear Algebra Appl. 28 (1979) 85–97): if `A = L U` is real with `T = (A + Aᵀ)/2` positive definite
-and `S = A − T`, then `‖|L| |U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`. `|L| |U| = ∑_k |ℓ_k| |u_kᵀ|`, and with
-`y` the `k`-th row of `L⁻¹` and `x` the `k`-th column of `U⁻¹`, `u_k = Aᵀ y`, `ℓ_k = A x`,
-`yᵀ A y = u_kk` and `xᵀ A x = 1/u_kk`, so `Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart`
-gives `‖ℓ_k‖ ‖u_k‖ ≤ ‖T‖₂ + ‖S T⁻¹ S‖₂` for each of the `n` terms. The norm of `|L| |U|` is the
-Frobenius norm, so the spectral norms are written `‖toEuclideanCLM ·‖` here
-(`Matrix.l2_opNorm_toEuclideanCLM`), the two scoped matrix norms not being open together. -/
+/-- **Theorem 4.2.6** of [golub2013matrix] (the growth of $|L| |U|$ for a positive definite
+symmetric part). Let $A \in \mathbb{R}^{n \times n}$ have a positive definite symmetric part
+$T = (A + A^T)/2$, let $S = A - T$, and let $A = LU$ be an LU factorization. Then
+$$\bigl\| |L| \, |U| \bigr\|_F \le n \bigl(\|T\|_2 + \|S T^{-1} S\|_2\bigr),$$
+where $|L|$ and $|U|$ are the matrices of the absolute values of the entries. The source takes
+this result from G. H. Golub and C. F. Van Loan, *Unsymmetric positive definite linear systems*,
+Linear Algebra Appl. 28 (1979) 85–97.
+
+The product is $|L| |U| = \sum_k |\ell_k| |u_k^T|$, where $\ell_k$ is the $k$-th column of $L$
+and $u_k^T$ the $k$-th row of $U$. With $y$ the $k$-th row of $L^{-1}$ and $x$ the $k$-th column
+of $U^{-1}$, $u_k = A^T y$, $\ell_k = A x$, $y^T A y = u_{kk}$ and $x^T A x = 1/u_{kk}$. So
+`Matrix.dotProduct_mulVec_self_le_of_posDef_hermitianPart` gives $\|\ell_k\| \|u_k\| \le
+\|T\|_2 + \|S T^{-1} S\|_2$ for each of the $n$ terms. The norm of $|L| |U|$ is the Frobenius
+norm, so the spectral norms are written with `Matrix.toEuclideanCLM`
+(`Matrix.l2_opNorm_toEuclideanCLM`), because the two scoped matrix norms cannot be open
+together. The matrix $|L|$ is `Matrix.abs L`. -/
 theorem IsLU.frobenius_norm_abs_mul_abs_le {A L U : Matrix n n ℝ}
     (hT : (hermitianPart A).PosDef) (h : IsLU A L U) :
     ‖L.abs * U.abs‖ ≤ Fintype.card n * (‖toEuclideanCLM (𝕜 := ℝ) (hermitianPart A)‖

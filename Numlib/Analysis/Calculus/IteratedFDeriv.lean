@@ -14,32 +14,46 @@ import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 /-!
 # Iterated derivatives of a smooth function: peeling and symmetry
 
-Two pieces of pure calculus about `iteratedFDeriv ℝ n f` for a `C^∞` function `f`, with no
-measure theory in them.
+This module proves two facts of calculus about the iterated Fréchet derivative $D^n f$
+(`iteratedFDeriv ℝ n f`) of a $C^\infty$ function $f : E \to F$ between real normed spaces. First,
+an extra directional derivative can be taken either outside or inside the $n$ iterated ones. So the
+$(n + 1)$-st derivative along $(y_0, \dots, y_n)$ is the $n$-th derivative along $(y_1, \dots, y_n)$
+of the derivative along $y_0$. Second, $D^n f(x)$ is symmetric in its $n$ arguments, at every order
+$n$. Mathlib has the symmetry only at order two (`ContDiffAt.isSymmSndFDerivAt`) or, at every order,
+for analytic functions (`ContDiffAt.domDomCongr_iteratedFDeriv`).
 
-## Commuting an extra derivative past iterated derivatives
+## Main definitions
 
-Mathlib's `iteratedFDeriv_succ_apply_left` peels the *outermost* derivative off
-`iteratedFDeriv ℝ (n + 1) f x m`, and `iteratedFDeriv_succ_apply_right` the innermost one, but at
-the *last* index of the tuple `m`. For a smooth function the two may be combined: an extra
-directional derivative may be taken either outside or inside the `n` iterated ones
-(`ContDiff.fderiv_iteratedFDeriv_apply`), so that the `(n + 1)`-st derivative along `y` is the
-`n`-th derivative along `Fin.tail y` of the derivative along `y 0`
-(`ContDiff.iteratedFDeriv_succ_apply_left'`, and `ContDiff.iteratedFDeriv_cons` for a tuple
-written as `Fin.cons z y`). This is what lets an induction on the order of a derivative peel
-directions off the *front* of the tuple, which is the order in which integrating by parts `n` times
-moves derivatives from a test function onto the other factor; without it, the weak derivative of
-`Numlib/Analysis/Sobolev/WeakDeriv.lean` would relate `∂^n φ (y)` to `∂^n f (y ∘ Fin.rev)`, and the
-derivative of a convolution in `Numlib/Analysis/Convolution/Lp.lean` would come out reversed too.
+* `listFDeriv`: the derivative of $f$ along the entries of a list of directions, the head of the
+  list innermost.
 
-## Symmetry of the iterated derivative
+## Main results
 
-* `ContDiff.iteratedFDeriv_congr_perm`: **the iterated derivative of a `C^∞` function is symmetric
-  in its arguments**, which Mathlib has only at order two (`ContDiffAt.isSymmSndFDerivAt`) or, at
-  every order, for analytic functions (`ContDiffAt.domDomCongr_iteratedFDeriv`). The vehicle is
-  `listFDeriv`, differentiation along the entries of a *list* of directions, along which the
-  commutation of two directional derivatives (`ContDiff.fderiv_fderiv_comm`) propagates by an
-  induction on `List.Perm`; `ContDiff.listFDeriv_ofFn` identifies it with `iteratedFDeriv`.
+* `ContDiff.fderiv_iteratedFDeriv_apply`: for a smooth $f$, $\partial_v (D^n f(\cdot)[m]) =
+  D^n(\partial_v f)(\cdot)[m]$.
+* `ContDiff.iteratedFDeriv_succ_apply_left'`, `ContDiff.iteratedFDeriv_cons`: $D^{n+1} f(x)[y_0,
+  y_1, \dots, y_n] = D^n(\partial_{y_0} f)(x)[y_1, \dots, y_n]$.
+* `ContDiff.fderiv_fderiv_comm`: two directional derivatives of a smooth function commute.
+* `ContDiff.iteratedFDeriv_congr_perm`: the iterated derivative of a $C^\infty$ function takes the
+  same value at two tuples of directions that are permutations of each other.
+
+## Proof outline
+
+The symmetry is proved with `listFDeriv`. The commutation of two directional derivatives
+(`ContDiff.fderiv_fderiv_comm`) propagates along a permutation of the list by induction on
+`List.Perm`, and `ContDiff.listFDeriv_ofFn` identifies `listFDeriv` with `iteratedFDeriv`.
+
+## Implementation notes
+
+* Mathlib's `iteratedFDeriv_succ_apply_left` peels off the outermost derivative of
+  $D^{n+1} f(x)[m]$, and `iteratedFDeriv_succ_apply_right` peels off the innermost one, but at the
+  last index of the tuple $m$. For a smooth function, `ContDiff.iteratedFDeriv_succ_apply_left'`
+  combines the two: it peels the innermost derivative off the front of the tuple. An induction on
+  the order of a derivative can then remove directions from the front of the tuple. This is the
+  order in which $n$ integrations by parts move derivatives from a test function to the other
+  factor. Without it, the weak derivative of `Numlib.Analysis.Sobolev.WeakDeriv` would relate
+  $\partial^n \varphi(y)$ to $\partial^n f$ along the reversed tuple, and the derivative of a
+  convolution in `Numlib.Analysis.Convolution.Lp` would also come out reversed.
 -/
 
 open scoped ContDiff
@@ -51,18 +65,21 @@ section Calculus
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {f : E → F} {n : ℕ} {x : E}
 
-/-- `iteratedFDeriv_succ_apply_left` with the evaluation at a tuple moved inside the outermost
-derivative: the `(n + 1)`-st derivative of `f` along `m` is the derivative along `m 0` of the
-`n`-th derivative along `Fin.tail m`. -/
+/-- If $D^n f$ is differentiable at $x$, then for every $m = (m_0, \dots, m_n) \in E^{n+1}$
+$$D^{n+1} f(x)[m] = D\big(z \mapsto D^n f(z)[m_1, \dots, m_n]\big)(x)[m_0].$$
+
+This is `iteratedFDeriv_succ_apply_left` with the evaluation at the tuple moved inside the
+outermost derivative. -/
 theorem iteratedFDeriv_succ_apply_left_of_differentiableAt
     (h : DifferentiableAt ℝ (iteratedFDeriv ℝ n f) x) (m : Fin (n + 1) → E) :
     iteratedFDeriv ℝ (n + 1) f x m
       = fderiv ℝ (fun z ↦ iteratedFDeriv ℝ n f z (Fin.tail m)) x (m 0) :=
   h.iteratedFDeriv_succ_apply_left'
 
-/-- For a smooth function, an extra derivative in the direction `v` may be taken either outside or
-inside the `n` iterated derivatives. Iterating this is the symmetry of higher derivatives; only
-this one-step form is needed here. -/
+/-- For a $C^\infty$ function $f$, an extra derivative in the direction $v$ can be taken either
+outside or inside the $n$ iterated derivatives: for all $m \in E^n$ and $v, x \in E$,
+$$D\big(z \mapsto D^n f(z)[m]\big)(x)[v] = D^n\big(z \mapsto Df(z)[v]\big)(x)[m].$$
+-/
 theorem ContDiff.fderiv_iteratedFDeriv_apply (hf : ContDiff ℝ ∞ f) (n : ℕ) (m : Fin n → E)
     (v x : E) :
     fderiv ℝ (fun z ↦ iteratedFDeriv ℝ n f z m) x v
@@ -93,10 +110,13 @@ theorem ContDiff.fderiv_iteratedFDeriv_apply (hf : ContDiff ℝ ∞ f) (n : ℕ)
       zero_apply, map_zero, zero_add, ContinuousLinearMap.flip_apply]
     exact (ContDiffAt.isSymmSndFDerivAt (x := x) hG.contDiffAt (by simp)).eq _ _
 
-/-- For a smooth function, the `(n + 1)`-st derivative along `y` is the `n`-th derivative along
-`Fin.tail y` of the derivative along `y 0`. Contrast `iteratedFDeriv_succ_apply_left`, which peels
-off the *outermost* derivative, and `iteratedFDeriv_succ_apply_right`, which peels off the
-innermost one but at the *last* index of the tuple. -/
+/-- For a $C^\infty$ function $f$, the $(n + 1)$-st derivative along $y = (y_0, \dots, y_n)$ is the
+$n$-th derivative along $(y_1, \dots, y_n)$ of the derivative in the direction $y_0$:
+$$D^{n+1} f(x)[y_0, \dots, y_n] = D^n\big(z \mapsto Df(z)[y_0]\big)(x)[y_1, \dots, y_n].$$
+
+Compare `iteratedFDeriv_succ_apply_left`, which peels off the outermost derivative, and
+`iteratedFDeriv_succ_apply_right`, which peels off the innermost one but at the last index of
+the tuple. -/
 theorem ContDiff.iteratedFDeriv_succ_apply_left' (hf : ContDiff ℝ ∞ f) (n : ℕ)
     (y : Fin (n + 1) → E) (x : E) :
     iteratedFDeriv ℝ (n + 1) f x y
@@ -105,11 +125,14 @@ theorem ContDiff.iteratedFDeriv_succ_apply_left' (hf : ContDiff ℝ ∞ f) (n : 
     iteratedFDeriv_succ_apply_left_of_differentiableAt
       ((hf.iteratedFDeriv_right (m := 1) (i := n) (by simp)).differentiable one_ne_zero x) y]
 
-/-- `ContDiff.iteratedFDeriv_succ_apply_left'` with the tuple written as a `Fin.cons`: for a smooth
-function, differentiating `n + 1` times along `z :: y` is differentiating `n` times along `y` the
-directional derivative in the direction `z`. This is the identity that splits a weak derivative
-along a tuple of length `n + 1` into one of length `n` and one of length `1`; see
-`HasWeakIteratedLineDerivOn.cons`. -/
+/-- For a $C^\infty$ function $f$, differentiating $n + 1$ times along the tuple
+$(z, y_1, \dots, y_n)$ is differentiating $n$ times along $(y_1, \dots, y_n)$ the derivative in
+the direction $z$:
+$$D^{n+1} f(x)[z, y_1, \dots, y_n] = D^n\big(t \mapsto Df(t)[z]\big)(x)[y_1, \dots, y_n].$$
+
+This is `ContDiff.iteratedFDeriv_succ_apply_left'` with the tuple written as `Fin.cons z y`. It
+splits a weak derivative along a tuple of length $n + 1$ into one of length $n$ and one of
+length $1$; see `HasWeakIteratedLineDerivOn.cons`. -/
 theorem ContDiff.iteratedFDeriv_cons (hf : ContDiff ℝ ∞ f) (z : E) (y : Fin n → E) (x : E) :
     iteratedFDeriv ℝ (n + 1) f x (Fin.cons z y)
       = iteratedFDeriv ℝ n (fun t ↦ fderiv ℝ f t z) x y := by
@@ -125,31 +148,37 @@ section Symmetry
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {f : E → F}
 
-/-- Differentiating `f` successively along the entries of a list of directions, the head of the
-list *innermost*: `listFDeriv [v₁, …, vₙ] f = ∂_{vₙ} ⋯ ∂_{v₁} f`.
+/-- The derivative of $f$ along the entries of a list of directions, the head of the list innermost:
+$$\partial_{[v_1, \dots, v_n]} f = \partial_{v_n} \cdots \partial_{v_1} f,$$
+where $\partial_v g(z) = Dg(z)[v]$. Below, $\partial_l f$ denotes `listFDeriv l f`.
 
-Indexing by a list rather than by a tuple is what makes `listFDeriv_congr_perm` an induction on
-`List.Perm`, whose `swap` constructor is exactly the transposition of the two innermost
-derivatives; `ContDiff.listFDeriv_ofFn` identifies this with `iteratedFDeriv`. -/
+The index is a list and not a tuple, so that `listFDeriv_congr_perm` is an induction on
+`List.Perm`, whose `swap` constructor is the transposition of the two innermost derivatives.
+`ContDiff.listFDeriv_ofFn` identifies `listFDeriv` with `iteratedFDeriv`. -/
 noncomputable def listFDeriv (l : List E) (f : E → F) : E → F :=
   l.foldl (fun g v ↦ fun z ↦ fderiv ℝ g z v) f
 
-/-- Differentiating along no directions at all leaves the function alone. -/
+/-- The derivative along the empty list of directions is $f$ itself. -/
 @[simp]
 theorem listFDeriv_nil (f : E → F) : listFDeriv [] f = f := rfl
 
-/-- Peeling the head of the list off `listFDeriv` takes the derivative along it first. -/
+/-- The derivative along $v :: l$ is the derivative along $l$ of $\partial_v f$: the head direction
+is taken first. -/
 theorem listFDeriv_cons (v : E) (l : List E) (f : E → F) :
     listFDeriv (v :: l) f = listFDeriv l (fun z ↦ fderiv ℝ f z v) := rfl
 
-/-- The derivative of a smooth function in a fixed direction is smooth. -/
+/-- If $f$ is $C^\infty$, then the directional derivative $z \mapsto Df(z)[v]$ is $C^\infty$ for
+every $v \in E$. -/
 theorem ContDiff.fderiv_apply_right (hf : ContDiff ℝ ∞ f) (v : E) :
     ContDiff ℝ ∞ fun z ↦ fderiv ℝ f z v :=
   (hf.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
 
-/-- Differentiating a smooth function along the entries of `List.ofFn y` is its `n`-th derivative
-evaluated at the tuple `y`. Each step is `ContDiff.iteratedFDeriv_succ_apply_left'`, which moves one
-derivative from the outside of the iterated derivative to the inside. -/
+/-- For a $C^\infty$ function $f$ and $y \in E^n$, the derivative along the list
+$[y_0, \dots, y_{n-1}]$ is the $n$-th derivative evaluated at $y$:
+$\partial_{[y_0, \dots, y_{n-1}]} f(x) = D^n f(x)[y]$.
+
+Each step is `ContDiff.iteratedFDeriv_succ_apply_left'`, which moves one derivative from the
+outside of the iterated derivative to the inside. -/
 theorem ContDiff.listFDeriv_ofFn (hf : ContDiff ℝ ∞ f) {n : ℕ} (y : Fin n → E) (x : E) :
     listFDeriv (List.ofFn y) f x = iteratedFDeriv ℝ n f x y := by
   induction n generalizing f with
@@ -159,9 +188,11 @@ theorem ContDiff.listFDeriv_ofFn (hf : ContDiff ℝ ∞ f) {n : ℕ} (y : Fin n 
       hf.iteratedFDeriv_succ_apply_left' n y x]
     rfl
 
-/-- **Two directional derivatives of a smooth function commute.** This is the symmetry of the
-second derivative, in the form in which `listFDeriv_congr_perm` consumes it: an equality of
-functions rather than of values, so that it may be applied under a further derivative. -/
+/-- **Two directional derivatives of a smooth function commute.** For a $C^\infty$ function $f$ and
+$v, w \in E$, $\partial_w \partial_v f = \partial_v \partial_w f$ as functions on $E$.
+
+This is the symmetry of the second derivative, stated as an equality of functions and not of
+values, so that it can be used under a further derivative, as `listFDeriv_congr_perm` uses it. -/
 theorem ContDiff.fderiv_fderiv_comm (hf : ContDiff ℝ ∞ f) (v w : E) :
     (fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y v) z w)
       = fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y w) z v := by
@@ -172,11 +203,14 @@ theorem ContDiff.fderiv_fderiv_comm (hf : ContDiff ℝ ∞ f) (v w : E) :
   rw [h1, iteratedFDeriv_one_apply] at h2
   simpa using h2
 
-/-- **Differentiating a smooth function along a list of directions does not depend on the order of
-the list.** The induction is on `List.Perm`: its `swap` constructor is the transposition of the two
-innermost derivatives, which is `ContDiff.fderiv_fderiv_comm`, and its `cons` constructor peels one
-derivative off and applies the induction hypothesis to the differentiated function, which is smooth
-again. -/
+/-- **The derivative of a smooth function along a list of directions does not depend on the order of
+the list.** If $f$ is $C^\infty$ and the list $l_2$ is a permutation of $l_1$, then
+$\partial_{l_1} f = \partial_{l_2} f$, where $\partial_l f$ is `listFDeriv l f`.
+
+The induction is on `List.Perm`. Its `swap` constructor is the transposition of the two
+innermost derivatives, which is `ContDiff.fderiv_fderiv_comm`. Its `cons` constructor peels one
+derivative off and applies the induction hypothesis to the differentiated function, which is
+smooth again. -/
 theorem listFDeriv_congr_perm {l₁ l₂ : List E} (h : l₁.Perm l₂) {f : E → F}
     (hf : ContDiff ℝ ∞ f) : listFDeriv l₁ f = listFDeriv l₂ f := by
   induction h generalizing f with
@@ -187,15 +221,16 @@ theorem listFDeriv_congr_perm {l₁ l₂ : List E} (h : l₁.Perm l₂) {f : E �
       hf.fderiv_fderiv_comm b a]
   | trans _ _ ih₁ ih₂ => rw [ih₁ hf, ih₂ hf]
 
-/-- **The iterated derivative of a `C^∞` function is symmetric in its arguments**: it takes the same
-value at two tuples of directions that are permutations of each other.
+/-- **The iterated derivative of a $C^\infty$ function is symmetric in its arguments.** Let $f$ be
+$C^\infty$, and let $y_1 \in E^{n_1}$ and $y_2 \in E^{n_2}$ be such that the list of entries of
+$y_2$ is a permutation of that of $y_1$. Then for every $x \in E$
+$$D^{n_1} f(x)[y_1] = D^{n_2} f(x)[y_2].$$
 
-Mathlib has this for order two (`ContDiffAt.isSymmSndFDerivAt`) and, for any order, for analytic
-functions (`ContDiffAt.domDomCongr_iteratedFDeriv`, which asks for `ω`-smoothness); this is the
-`C^∞` statement of any order, obtained by transporting the commutation of two directional
-derivatives along a `List.Perm`. The two tuples are allowed to have different lengths — the
-hypothesis forces them to be equal — so that it applies to a pair of tuples whose lengths agree only
-propositionally, such as `Fin n` and `Fin (∑ i, α i)`. -/
+Mathlib has this at order two (`ContDiffAt.isSymmSndFDerivAt`) and, at every order, for analytic
+functions (`ContDiffAt.domDomCongr_iteratedFDeriv`). This is the statement for $C^\infty$
+functions at every order. The two tuples can have different lengths in the statement; the
+hypothesis forces $n_1 = n_2$. So the theorem applies to two tuples whose lengths are equal only
+by a proof, such as tuples indexed by `Fin n` and by `Fin (∑ i, α i)`. -/
 theorem ContDiff.iteratedFDeriv_congr_perm (hf : ContDiff ℝ ∞ f) {n₁ n₂ : ℕ}
     {y₁ : Fin n₁ → E} {y₂ : Fin n₂ → E} (h : (List.ofFn y₁).Perm (List.ofFn y₂)) (x : E) :
     iteratedFDeriv ℝ n₁ f x y₁ = iteratedFDeriv ℝ n₂ f x y₂ := by

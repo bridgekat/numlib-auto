@@ -16,63 +16,74 @@ import Numlib.Analysis.Sobolev.WeakDeriv
 /-!
 # Removable point singularities of weak derivatives
 
-A function that is classically differentiable on `Ω ∖ {a}` need not have that derivative as its
-weak derivative on all of `Ω`: the Heaviside function on `ℝ` has classical derivative `0` away
-from the origin, but its weak derivative is a Dirac mass. What rules such a jump out is a
-quantitative smallness of the function near the singular point, and the sharp condition is that
-
-`∫_{B(a,δ)} ‖f‖ = o(δ)   as δ → 0`.
-
-`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton` is the statement: under that condition, the
-classical derivative on `Ω ∖ {a}` is the weak derivative on `Ω`, the singular point included.
-
-The proof integrates by parts against a test function multiplied by a cutoff `1 - punctureBump a δ`
-that vanishes on `B(a, δ)`, where the classical derivative is available, and lets `δ → 0`. The
-error term produced by differentiating the cutoff carries the factor `δ⁻¹`, because the cutoff
-climbs from `0` to `1` across an annulus of width `δ`, and it is exactly the displayed condition
-that makes it vanish in the limit. No mollification and no convolution theory is involved.
+Let $\Omega$ be an open subset of a finite-dimensional real normed space $E$, and let $a \in E$. A
+function that is classically differentiable on $\Omega \setminus \{a\}$ need not have that
+derivative as its weak derivative on all of $\Omega$: the Heaviside function on $\mathbb{R}$ has
+classical derivative $0$ away from the origin, but its weak derivative is a Dirac mass. A
+quantitative smallness of the function near the singular point rules such a jump out. The sharp
+condition is
+$$\int_{B(a, \delta)} \|f\| = o(\delta) \qquad \text{as } \delta \to 0^+.$$
+Under this condition, if the classical derivative is locally integrable on $\Omega$, then it is the
+weak derivative of $f$ on $\Omega$, the singular point included
+(`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`). The module also gives a sufficient condition for
+the smallness, a power bound $\|f(x)\| \le C \|x\|^s$ with $s > 1 - d$, where $d = \dim E$. As an
+application, the classical derivatives of the radial power $|x|^\lambda$ on $\mathbb{R}^d$ are its
+weak derivatives on every ball about the origin, which is the computation behind Example 7.2.5 of
+[han2009theoretical].
 
 ## Main definitions
 
-* `punctureBump a δ`, a smooth bump equal to `1` on the closed ball `B̄(a, δ)`, supported in
-  `B(a, 2δ)`, with values in `[0, 1]` and with derivative of size `O(1/δ)`.
+* `punctureBump`: a smooth bump $\chi_{a,\delta}$ equal to $1$ on the closed ball
+  $\bar B(a, \delta)$, supported in $B(a, 2\delta)$, with values in $[0, 1]$ and with derivative of
+  size $O(1/\delta)$.
 
-## Main statements
+## Main results
 
-* `hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`: the removable-singularity lemma above.
-* `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`: the same conclusion read along a
-  single direction, which is the form in which a Sobolev space indexed by multi-indices asks for a
+* `hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`: the removable singularity lemma above.
+* `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`: the same conclusion along a single
+  direction, which is the form in which a Sobolev space indexed by multi-indices asks for a
   first-order derivative.
-* `hasWeakFDerivOn_of_hasFDerivAt` and `hasWeakIteratedLineDerivOn_of_hasFDerivAt`: the degenerate
-  case with no singular point at all, that is, the first-order form of "a classical derivative is
-  a weak derivative" stated with the derivative named rather than written `fderiv`.
-* `tendsto_inv_mul_setIntegral_norm_ball_zero`: a sufficient condition for the displayed
-  smallness, namely `‖f x‖ ≤ C ‖x‖ ^ s` near the origin for some `s > 1 - d` with `d` the
-  dimension. This covers every radial singularity milder than `‖x‖^{1-d}`, in particular every
-  logarithmic one. Its ingredients `setIntegral_norm_rpow_ball_zero` and
-  `integrableOn_norm_rpow_ball_zero` are the scaling law and the integrability of a power on a
-  ball, and are useful on their own; `tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne` asks for
-  the bound off the origin only.
-* `hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow`: on `ℝ^d`, for `λ > k − d`, every
-  classical derivative `D^n |·|^λ`, `n ≤ k`, is the weak derivative of `|x|^λ` on a ball about
-  the origin — the removable singularity at work on the radial powers.
+* `hasWeakFDerivOn_of_hasFDerivAt`, `hasWeakIteratedLineDerivOn_of_hasFDerivAt`: the case with no
+  singular point, that is, a classical first derivative that is locally integrable is a weak
+  derivative.
+* `tendsto_inv_mul_setIntegral_norm_ball_zero`: if $\|f(x)\| \le C \|x\|^s$ near the origin for some
+  $s > 1 - d$, then $\int_{B(0, \delta)} \|f\| = o(\delta)$. This covers every radial singularity
+  milder than $\|x\|^{1-d}$, in particular every logarithmic one. The variant
+  `tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne` needs the bound off the origin only.
+* `setIntegral_norm_rpow_ball_zero`, `integrableOn_norm_rpow_ball_zero`: the scaling law and the
+  integrability of a power $\|x\|^s$ on a ball about the origin.
+* `hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow`: on $\mathbb{R}^d$, for $\lambda > k - d$,
+  every classical derivative $D^n |\cdot|^\lambda$ with $n \le k$ is the weak derivative of
+  $|x|^\lambda$ on every ball about the origin.
+
+## Proof outline
+
+The proof integrates by parts against a test function multiplied by the cutoff
+$1 - \chi_{a,\delta}$, which vanishes on $B(a, \delta)$, where the classical derivative is
+available, and lets $\delta \to 0$. The error term from the derivative of the cutoff carries the
+factor $\delta^{-1}$, because the cutoff climbs from $0$ to $1$ across an annulus of width $\delta$.
+The smallness condition is exactly what makes this term vanish in the limit. No mollification and no
+convolution is used.
+
+## Notation
+
+* $B(a, \delta)$ and $\bar B(a, \delta)$: the open and the closed ball of radius $\delta$ about $a$.
+* $d$: the dimension of $E$, `Module.finrank ℝ E`.
 
 ## Implementation notes
 
-The exceptional set is a single point. A closed set of vanishing `(d-1)`-dimensional capacity
-would do as well, but the cutoff would then have to be built by a smooth Urysohn lemma and the
-bound `‖∇χ‖ = O(1/δ)` would have to be assumed rather than computed, so nothing is gained for
-the applications, which are radial functions on a ball singular at the centre.
-
-The smallness condition is imposed on `f` alone. The corresponding error term for the derivative
-is handled instead by the hypothesis that the derivative is locally integrable on all of `Ω`,
-origin included — which is also part of the conclusion, since a weak derivative is by definition
-locally integrable there.
-
-Nothing is asked about the continuity of the derivative: the integration by parts used is
-`integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`, which needs only pointwise
-differentiability on the support of the test function, so `HasFDerivAt` off the singular point is
-the whole hypothesis.
+* The exceptional set is a single point. A closed set of vanishing $(d-1)$-dimensional capacity
+  would also do. But the cutoff would then have to be built by a smooth Urysohn lemma, and the bound
+  $\|\nabla \chi\| = O(1/\delta)$ would have to be assumed rather than computed. Nothing is gained
+  for the applications, which are radial functions on a ball that are singular at the centre.
+* The smallness condition is imposed on $f$ alone. The corresponding error term for the derivative
+  is handled by the hypothesis that the derivative is locally integrable on all of $\Omega$, the
+  singular point included. This hypothesis is also part of the conclusion, because a weak derivative
+  is locally integrable by definition.
+* Nothing is assumed about the continuity of the derivative. The integration by parts uses
+  `integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`, which needs only pointwise
+  differentiability on the support of the test function. So `HasFDerivAt` off the singular point is
+  the whole differentiability hypothesis.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace
@@ -86,37 +97,42 @@ section Bump
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [HasContDiffBump E]
 
 variable (E) in
-/-- The bump function of `E` that is `1` on the closed unit ball and vanishes outside the ball of
-radius `2`. Rescaling it is how `punctureBump` is built. -/
+/-- The smooth bump function of $E$ that equals $1$ on the closed unit ball and vanishes outside the
+open ball of radius $2$. The bump `punctureBump` is a rescaling of it. -/
 noncomputable def unitPunctureBump : ContDiffBump (0 : E) := ⟨1, 2, one_pos, one_lt_two⟩
 
-/-- `punctureBump a δ` is a smooth function of `E` that equals `1` on the closed ball `B̄(a, δ)`,
-vanishes outside the ball `B(a, 2δ)`, takes values in `[0, 1]` and has derivative of size
-`O(1/δ)`. Multiplying a test function by `1 - punctureBump a δ` produces a test function that
-vanishes near `a`, which is how one integrates by parts away from a point singularity. -/
+/-- The smooth bump $\chi_{a,\delta}(x) = \chi((x - a)/\delta)$, where $\chi$ is
+`unitPunctureBump E`. For $\delta > 0$ it equals $1$ on the closed ball $\bar B(a, \delta)$,
+vanishes outside the ball $B(a, 2\delta)$, takes values in $[0, 1]$, and has derivative of size
+$O(1/\delta)$.
+
+The product of a test function with $1 - \chi_{a,\delta}$ is a test function that vanishes near
+$a$. This is how one integrates by parts away from a point singularity. -/
 noncomputable def punctureBump (a : E) (δ : ℝ) : E → ℝ :=
   fun x ↦ unitPunctureBump E (δ⁻¹ • (x - a))
 
 variable {a x : E} {δ : ℝ}
 
 omit [HasContDiffBump E] in
-/-- The rescaling map `x ↦ δ⁻¹ • (x - a)` used to build `punctureBump`. -/
+/-- The derivative of the rescaling map $y \mapsto \delta^{-1}(y - a)$ that defines `punctureBump`
+is $\delta^{-1}$ times the identity. -/
 private theorem hasFDerivAt_punctureBump_arg (a : E) (δ : ℝ) (x : E) :
     HasFDerivAt (fun y ↦ δ⁻¹ • (y - a)) (δ⁻¹ • (ContinuousLinearMap.id ℝ E)) x :=
   ((hasFDerivAt_id x).sub_const a).const_smul δ⁻¹
 
-/-- `punctureBump` is smooth. -/
+/-- For every $a \in E$ and $\delta \in \mathbb{R}$, the bump $\chi_{a,\delta}$ is smooth
+($C^\infty$). -/
 theorem contDiff_punctureBump (a : E) (δ : ℝ) : ContDiff ℝ ∞ (punctureBump a δ) :=
   (unitPunctureBump E).contDiff.comp
     ((contDiff_id.sub contDiff_const).const_smul δ⁻¹)
 
-/-- `punctureBump` is nonnegative. -/
+/-- The bump is nonnegative: $\chi_{a,\delta}(x) \ge 0$ for all $a$, $\delta$ and $x$. -/
 theorem punctureBump_nonneg : 0 ≤ punctureBump a δ x := ContDiffBump.nonneg _
 
-/-- `punctureBump` is at most `1`. -/
+/-- The bump is at most $1$: $\chi_{a,\delta}(x) \le 1$ for all $a$, $\delta$ and $x$. -/
 theorem punctureBump_le_one : punctureBump a δ x ≤ 1 := ContDiffBump.le_one _
 
-/-- `punctureBump a δ` is `1` on the closed ball of radius `δ` about `a`. -/
+/-- Let $\delta > 0$. If $\|x - a\| \le \delta$, then $\chi_{a,\delta}(x) = 1$. -/
 theorem punctureBump_eq_one (hδ : 0 < δ) (hx : dist x a ≤ δ) : punctureBump a δ x = 1 := by
   refine ContDiffBump.one_of_mem_closedBall _ ?_
   simp only [mem_closedBall, dist_zero_right, norm_smul, norm_inv, Real.norm_eq_abs,
@@ -124,7 +140,7 @@ theorem punctureBump_eq_one (hδ : 0 < δ) (hx : dist x a ≤ δ) : punctureBump
   rw [inv_mul_le_iff₀ hδ, mul_one, ← dist_eq_norm]
   exact hx
 
-/-- `punctureBump a δ` vanishes outside the ball of radius `2δ` about `a`. -/
+/-- Let $\delta > 0$. If $\|x - a\| \ge 2\delta$, then $\chi_{a,\delta}(x) = 0$. -/
 theorem punctureBump_eq_zero (hδ : 0 < δ) (hx : 2 * δ ≤ dist x a) : punctureBump a δ x = 0 := by
   refine ContDiffBump.zero_of_le_dist _ ?_
   simp only [dist_zero_right, norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hδ,
@@ -132,23 +148,29 @@ theorem punctureBump_eq_zero (hδ : 0 < δ) (hx : 2 * δ ≤ dist x a) : punctur
   rw [le_inv_mul_iff₀ hδ, ← dist_eq_norm]
   linarith
 
-/-- The support of `punctureBump a δ` is contained in the ball of radius `2δ` about `a`. -/
+/-- Let $\delta > 0$. The support of $\chi_{a,\delta}$ is contained in the ball $B(a, 2\delta)$. -/
 theorem support_punctureBump_subset (hδ : 0 < δ) :
     Function.support (punctureBump a δ) ⊆ ball a (2 * δ) := fun x hx ↦ by
   by_contra hmem
   rw [mem_ball, not_lt] at hmem
   exact hx (punctureBump_eq_zero hδ hmem)
 
-/-- The derivative of `punctureBump a δ` vanishes outside the ball of radius `2δ` about `a`: there
-the bump is at a global minimum. -/
+/-- Let $\delta > 0$. If $\|x - a\| \ge 2\delta$, then the derivative of $\chi_{a,\delta}$ at $x$ is
+$0$.
+
+At such a point the bump has a global minimum. -/
 theorem fderiv_punctureBump_eq_zero (hδ : 0 < δ) (hx : 2 * δ ≤ dist x a) :
     fderiv ℝ (punctureBump a δ) x = 0 := by
   refine IsLocalMin.fderiv_eq_zero (Eventually.of_forall fun y ↦ ?_)
   rw [punctureBump_eq_zero hδ hx]
   exact punctureBump_nonneg
 
-/-- The derivative of `punctureBump a δ` is `O(1/δ)`, with a constant depending only on `E`: the
-bump climbs from `0` to `1` across an annulus of width `δ`. -/
+/-- **The derivative of the bump is $O(1/\delta)$.** Let $E$ be finite-dimensional. There is a
+constant $K \ge 0$, which depends only on $E$, such that for all $a \in E$, all $\delta > 0$ and
+all $x \in E$,
+$$\|D\chi_{a,\delta}(x)\| \le K / \delta.$$
+
+The bump climbs from $0$ to $1$ across an annulus of width $\delta$. -/
 theorem exists_norm_fderiv_punctureBump_le [FiniteDimensional ℝ E] :
     ∃ K : ℝ, 0 ≤ K ∧ ∀ (a : E) (δ : ℝ), 0 < δ → ∀ x, ‖fderiv ℝ (punctureBump a δ) x‖ ≤ K / δ := by
   have hb : ContDiff ℝ ∞ (unitPunctureBump E : E → ℝ) := ContDiffBump.contDiff _
@@ -177,11 +199,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure] {f : E → F} {w : E → E →L[ℝ] F}
 
-/-- **Integration by parts against a test function whose support avoids the singularities.** If
-`f` is locally integrable on `Ω`, if `w` is locally integrable on `Ω`, and if `w x` is the
-classical derivative of `f` at every point of the support of the test function `ψ`, then the
-integration by parts formula holds for `ψ`. Nothing is asked of `f` off that support, which is
-what makes this usable with a cutoff. -/
+/-- **Integration by parts against a test function whose support avoids the singularities.** Let
+$\mu$ be an additive Haar measure on $E$, and let $f : E \to F$ and
+$w : E \to \mathcal{L}(E, F)$ be locally integrable on $\Omega$. Let $\psi$ be a test function
+on $\Omega$, and assume that $f$ is differentiable at every point $x$ of the support of $\psi$,
+with derivative $w(x)$. Then for every $v \in E$,
+$$\int_E D\psi(x) v \, f(x) \, d\mu(x) = -\int_E \psi(x) \, w(x) v \, d\mu(x).$$
+
+Nothing is assumed about $f$ off the support of $\psi$. This makes the lemma usable with a
+cutoff. -/
 theorem integral_fderiv_smul_eq_neg_integral_smul_apply
     (hf : LocallyIntegrableOn f Ω μ) (hw : LocallyIntegrableOn w Ω μ) (ψ : 𝓓(Ω, ℝ))
     (hfd : ∀ x ∈ tsupport (ψ : E → ℝ), HasFDerivAt f (w x) x) (v : E) :
@@ -217,10 +243,12 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure] {f : E → F} {w : E → E →L[ℝ] F} {a : E}
 
-/-- **A classical derivative is a weak derivative**, first-order form with the derivative named
-rather than written `fderiv`: if `f` is differentiable at every point of the open set `Ω` with
-derivative `w`, and both are locally integrable there, then `w` is the weak derivative of `f`
-on `Ω`. -/
+/-- **A classical derivative is a weak derivative**, first-order form. Let $\mu$ be an additive Haar
+measure on $E$, and let $f : E \to F$ and $w : E \to \mathcal{L}(E, F)$ be locally integrable on
+$\Omega$. If $f$ is differentiable at every point $x \in \Omega$ with derivative $w(x)$, then
+$w$ is the weak derivative of $f$ on $\Omega$.
+
+The derivative is given as $w$, not written as `fderiv`. -/
 theorem hasWeakFDerivOn_of_hasFDerivAt (hf : LocallyIntegrableOn f Ω μ)
     (hw : LocallyIntegrableOn w Ω μ) (hfd : ∀ x ∈ (Ω : Set E), HasFDerivAt f (w x) x) :
     HasWeakFDerivOn f w Ω μ := by
@@ -233,9 +261,14 @@ theorem hasWeakFDerivOn_of_hasFDerivAt (hf : LocallyIntegrableOn f Ω μ)
   exact integral_fderiv_smul_eq_neg_integral_smul_apply hf hw φ
     (fun x hx ↦ hfd x (φ.tsupport_subset hx)) v
 
-/-- **A classical derivative is a weak derivative**, read along a single direction: the form in
-which a Sobolev space indexed by multi-indices asks for a first-order derivative, the tuple having
-length one and single entry the direction `u`. -/
+/-- **A classical derivative is a weak derivative**, along a single direction. Let $\mu$ be an
+additive Haar measure on $E$, and let $f : E \to F$ and $w : E \to \mathcal{L}(E, F)$ be locally
+integrable on $\Omega$, with $f$ differentiable at every point $x \in \Omega$ with derivative
+$w(x)$. Let $y$ be a tuple of length $n = 1$ whose entry is $u \in E$. Then $x \mapsto w(x) u$
+is the weak derivative of $f$ along $y$ on $\Omega$.
+
+This is the form in which a Sobolev space indexed by multi-indices asks for a first-order
+derivative. -/
 theorem hasWeakIteratedLineDerivOn_of_hasFDerivAt {n : ℕ} {y : Fin n → E} {u : E} (hn : n = 1)
     (hy : ∀ i, y i = u) (hf : LocallyIntegrableOn f Ω μ) (hw : LocallyIntegrableOn w Ω μ)
     (hfd : ∀ x ∈ (Ω : Set E), HasFDerivAt f (w x) x) :
@@ -256,19 +289,20 @@ private theorem norm_integral_le_mul_setIntegral_norm {g h : E → F} {s : Set E
   · exact ((integrable_indicator_iff hs).2 hh.norm).const_mul C
   · exact le_of_eq (by rw [integral_const_mul, integral_indicator hs])
 
-/-- **The removable-singularity lemma for weak derivatives.** Let `f` be locally integrable on the
-open set `Ω`, let `w` be locally integrable on `Ω`, and suppose that `w x` is the classical
-derivative of `f` at every point of `Ω` other than `a`. If moreover
+/-- **The removable singularity lemma for weak derivatives.** Let $E$ be a nontrivial
+finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $a \in E$. Let $f : E \to F$ and
+$w : E \to \mathcal{L}(E, F)$ be locally integrable on $\Omega$, and assume that $f$ is
+differentiable with derivative $w(x)$ at every point $x \in \Omega$ with $x \neq a$. If moreover
+$$\frac{1}{\delta} \int_{B(a, \delta)} \|f\| \, d\mu \to 0 \qquad \text{as } \delta \to 0^+,$$
+then $w$ is the weak derivative of $f$ on all of $\Omega$, the point $a$ included.
 
-`∫_{B(a,δ)} ‖f‖ = o(δ)   as δ → 0⁺,`
-
-then `w` is the weak derivative of `f` on all of `Ω`, the point `a` included.
-
-Some such smallness is genuinely needed: on `ℝ` the Heaviside function is locally integrable, has
-classical derivative `0` away from the origin, and has weak derivative a Dirac mass rather than
-`0`. The proof integrates by parts against `φ · (1 - punctureBump a δ)`, a test function that
-vanishes near `a`, and lets `δ → 0`; the term in which the cutoff is differentiated is `O(δ⁻¹)`
-times the displayed integral, which is exactly why the displayed condition is the right one. -/
+Some such smallness is needed: on $\mathbb{R}$ the Heaviside function is locally integrable and
+has classical derivative $0$ away from the origin, but its weak derivative is a Dirac mass, not
+$0$. The proof integrates by parts against $\varphi \, (1 - \chi_{a,\delta})$, a test function
+that vanishes near $a$, and lets $\delta \to 0$. The term in which the cutoff is differentiated
+is $O(\delta^{-1})$ times the integral in the hypothesis, and this is why the hypothesis is the
+right one. -/
 theorem hasWeakFDerivOn_of_hasFDerivAt_compl_singleton (hf : LocallyIntegrableOn f Ω μ)
     (hw : LocallyIntegrableOn w Ω μ)
     (hfd : ∀ x ∈ (Ω : Set E), x ≠ a → HasFDerivAt f (w x) x)
@@ -478,10 +512,12 @@ theorem hasWeakFDerivOn_of_hasFDerivAt_compl_singleton (hf : LocallyIntegrableOn
   have hIJ : I + J = 0 := tendsto_nhds_unique tendsto_const_nhds hconst
   exact eq_neg_of_add_eq_zero_left hIJ
 
-/-- **The removable-singularity lemma along a single direction.** The same hypotheses as
-`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton` give the weak derivative in the form indexed by a
-tuple of directions, which is how a Sobolev space indexed by multi-indices asks for a first-order
-derivative: the tuple has length one and its single entry is the direction `u`. -/
+/-- **The removable singularity lemma along a single direction.** Under the hypotheses of
+`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`, let $y$ be a tuple of length $n = 1$ whose
+entry is $u \in E$. Then $x \mapsto w(x) u$ is the weak derivative of $f$ along $y$ on $\Omega$.
+
+This is the form in which a Sobolev space indexed by multi-indices asks for a first-order
+derivative. -/
 theorem hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton {n : ℕ} {y : Fin n → E} {u : E}
     (hn : n = 1) (hy : ∀ i, y i = u) (hf : LocallyIntegrableOn f Ω μ)
     (hw : LocallyIntegrableOn w Ω μ)
@@ -505,8 +541,13 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [NormedAddCommGroup F]
   {μ : Measure E} [μ.IsAddHaarMeasure]
 
-/-- The integral of `‖x‖ ^ s` over a ball about the origin scales like `δ ^ (d + s)`, with `d` the
-dimension: the integrand is homogeneous of degree `s` and the measure of degree `d`. -/
+/-- **Scaling of the integral of a power.** Let $\mu$ be an additive Haar measure on $E$, let
+$d = \dim E$, and let $s \in \mathbb{R}$ and $\delta > 0$. Then
+$$\int_{B(0, \delta)} \|x\|^s \, d\mu(x) = \delta^d \, \delta^s \int_{B(0, 1)} \|x\|^s \,
+  d\mu(x).$$
+
+The integrand is homogeneous of degree $s$ and the measure is homogeneous of degree $d$. The
+identity has no integrability hypothesis. -/
 theorem setIntegral_norm_rpow_ball_zero {s δ : ℝ} (hδ : 0 < δ) :
     ∫ x in ball (0 : E) δ, ‖x‖ ^ s ∂μ
       = δ ^ finrank ℝ E * (δ ^ s * ∫ x in ball (0 : E) 1, ‖x‖ ^ s ∂μ) := by
@@ -521,7 +562,8 @@ theorem setIntegral_norm_rpow_ball_zero {s δ : ℝ} (hδ : 0 < δ) :
   rw [hlhs, smul_eq_mul] at h
   rw [h, ← mul_assoc, mul_inv_cancel₀ hne, one_mul]
 
-/-- A power `‖x‖ ^ s` with `s > -d` is integrable on every ball about the origin. -/
+/-- Let $\mu$ be an additive Haar measure on $E$ with $d = \dim E \ge 1$, and let $s > -d$. Then
+$x \mapsto \|x\|^s$ is integrable on the ball $B(0, t)$ for every $t \in \mathbb{R}$. -/
 theorem integrableOn_norm_rpow_ball_zero (hd : 1 ≤ finrank ℝ E) {s : ℝ}
     (hs : -(finrank ℝ E : ℝ) < s) (t : ℝ) :
     IntegrableOn (fun x : E ↦ ‖x‖ ^ s) (ball (0 : E) t) μ := by
@@ -529,15 +571,18 @@ theorem integrableOn_norm_rpow_ball_zero (hd : 1 ≤ finrank ℝ E) {s : ℝ}
     (Eventually.of_forall fun x ↦ ?_) (measurable_norm.pow measurable_const).aestronglyMeasurable
   rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg (norm_nonneg x) s), one_mul, neg_neg]
 
-/-- **A sufficient condition for the smallness hypothesis of
-`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`.** If `‖f x‖ ≤ C ‖x‖ ^ s` near the origin for
-some `s > 1 - d`, `d` being the dimension of the ambient space, then
-`∫_{B(0,δ)} ‖f‖ = o(δ)` as `δ → 0⁺`.
+/-- **A sufficient condition for the smallness hypothesis** of
+`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`. Let $\mu$ be an additive Haar measure on $E$
+with $d = \dim E \ge 1$. Let $f : E \to F$ be almost everywhere strongly measurable, and let
+$R > 0$, $C \in \mathbb{R}$ and $s > 1 - d$ be such that $\|f(x)\| \le C \|x\|^s$ for all
+$x \in B(0, R)$. Then
+$$\frac{1}{\delta} \int_{B(0, \delta)} \|f\| \, d\mu \to 0 \qquad \text{as } \delta \to 0^+.$$
 
-Every radial singularity milder than `‖x‖^{1-d}` qualifies, and in particular every logarithmic
-one, since `|log ‖x‖|^m ≤ C ‖x‖^{-ε}` near the origin for every `ε > 0`. The statement is at the
-origin because that is where a radial singularity sits; the general case follows by translating,
-the measure being invariant. -/
+Every radial singularity milder than $\|x\|^{1-d}$ satisfies the hypothesis. In particular every
+logarithmic singularity does, since $|\log \|x\||^m \le C \|x\|^{-\varepsilon}$ near the origin
+for every $\varepsilon > 0$. The statement is at the origin because a radial singularity sits
+there; the general case follows by translation, since the measure is invariant under
+translations. -/
 theorem tendsto_inv_mul_setIntegral_norm_ball_zero (hd : 1 ≤ finrank ℝ E) {f : E → F} {C s R : ℝ}
     (hR : 0 < R) (hs : 1 - (finrank ℝ E : ℝ) < s) (hmeas : AEStronglyMeasurable f μ)
     (hle : ∀ x ∈ ball (0 : E) R, ‖f x‖ ≤ C * ‖x‖ ^ s) :
@@ -585,8 +630,11 @@ theorem tendsto_inv_mul_setIntegral_norm_ball_zero (hd : 1 ≤ finrank ℝ E) {f
     simpa using (hc.mono_left nhdsWithin_le_nhds).const_mul (C' * G)
 
 
-/-- The smallness criterion with the bound
-`‖f x‖ ≤ C ‖x‖^s` required off the origin only, where the value of `f` does not matter. -/
+/-- The smallness criterion `tendsto_inv_mul_setIntegral_norm_ball_zero` with the bound required off
+the origin only. Let $\mu$ be an additive Haar measure on $E$ with $d = \dim E \ge 1$. Let
+$f : E \to F$ be almost everywhere strongly measurable, and let $R > 0$, $C \in \mathbb{R}$ and
+$s > 1 - d$ be such that $\|f(x)\| \le C \|x\|^s$ for all $x \in B(0, R)$ with $x \neq 0$. Then
+$\delta^{-1} \int_{B(0, \delta)} \|f\| \, d\mu \to 0$ as $\delta \to 0^+$. -/
 theorem tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne (hd : 1 ≤ finrank ℝ E)
     {f : E → F} {C s R : ℝ} (hR : 0 < R) (hs : 1 - (finrank ℝ E : ℝ) < s)
     (hmeas : AEStronglyMeasurable f μ) (hle : ∀ x ∈ ball (0 : E) R, x ≠ 0 → ‖f x‖ ≤ C * ‖x‖ ^ s) :
@@ -613,12 +661,15 @@ theorem tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne (hd : 1 ≤ finrank ℝ
 
 end Smallness
 
-/-! ### The radial powers `|x|^λ` on `ℝ^d`: all weak derivatives on a ball
+/-!
+### The radial powers $|x|^\lambda$ on $\mathbb{R}^d$: all weak derivatives on a ball
 
-For `λ > k − d` the classical derivatives `D^n |·|^λ`, `n ≤ k`, which exist off the origin and are
-`O(|x|^{λ−n})`, are the weak derivatives of `|x|^λ` on every ball about the origin: the
-singularity at the origin is removable (`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`)
-because `λ − n > 1 − d`. This is the computation behind [han2009theoretical] Example 7.2.5. -/
+For $\lambda > k - d$, the classical derivatives $D^n |\cdot|^\lambda$ with $n \le k$ exist off the
+origin and are $O(|x|^{\lambda - n})$. They are the weak derivatives of $|x|^\lambda$ on every ball
+about the origin: the singularity at the origin is removable
+(`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`), because $\lambda - n > 1 - d$. This
+is the computation behind Example 7.2.5 of [han2009theoretical].
+-/
 
 section RadialPower
 
@@ -628,7 +679,8 @@ variable {d : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin d)
 
-/-- `|x|^q` is integrable on every ball about the origin as soon as `q > -d`. -/
+/-- Let $d > 0$ and $q > -d$. Then $x \mapsto |x|^q$ is integrable on the ball
+$B(0, t) \subseteq \mathbb{R}^d$ for every $t \in \mathbb{R}$. -/
 theorem integrableOn_normRpow (hd : 0 < d) {q : ℝ} (hq : -(d : ℝ) < q) (t : ℝ) :
     IntegrableOn (fun x : EuclideanSpace ℝ (Fin d) ↦ ‖x‖ ^ q) (ball 0 t) volume := by
   have hfr : finrank ℝ (EuclideanSpace ℝ (Fin d)) = d := finrank_euclideanSpace_fin
@@ -636,8 +688,11 @@ theorem integrableOn_normRpow (hd : 0 < d) {q : ℝ} (hq : -(d : ℝ) < q) (t : 
   rw [hfr]
   exact hq
 
-/-- The evaluation of `D^n |·|^λ` at a fixed tuple of directions is measurable: it is continuous
-off the origin, a null set. -/
+/-- Let $d > 0$, $\lambda \in \mathbb{R}$, $n \in \mathbb{N}$, and let $y$ be a tuple of $n$ vectors
+of $\mathbb{R}^d$. Then $x \mapsto D^n |\cdot|^\lambda(x)(y)$ is almost everywhere strongly
+measurable on $\mathbb{R}^d$.
+
+The function is continuous off the origin, which is a null set. -/
 theorem aestronglyMeasurable_iteratedFDeriv_normRpow_apply (hd : 0 < d) (lam : ℝ) (n : ℕ)
     (y : Fin n → 𝔼) :
     AEStronglyMeasurable (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) volume := by
@@ -652,7 +707,10 @@ theorem aestronglyMeasurable_iteratedFDeriv_normRpow_apply (hd : 0 < d) (lam : �
   rw [ae_iff]
   simp
 
-/-- The bound `‖D^n |·|^λ (x) y‖ ≤ C ‖x‖^{λ-n}` for a fixed tuple `y`, with `C` depending on `y`. -/
+/-- Let $\lambda \in \mathbb{R}$, $n \in \mathbb{N}$, and let $y$ be a tuple of $n$ vectors of
+$\mathbb{R}^d$. There is a constant $C \ge 0$, which depends on $y$, such that
+$$\|D^n |\cdot|^\lambda(x)(y)\| \le C |x|^{\lambda - n} \qquad \text{for all } x \neq 0.$$
+-/
 theorem exists_norm_iteratedFDeriv_normRpow_apply_le (lam : ℝ) (n : ℕ) (y : Fin n → 𝔼) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ x : 𝔼, x ≠ 0 →
       ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y‖ ≤ C * ‖x‖ ^ (lam - n) := by
@@ -665,7 +723,9 @@ theorem exists_norm_iteratedFDeriv_normRpow_apply_le (lam : ℝ) (n : ℕ) (y : 
         mul_le_mul_of_nonneg_right (hC x hx) (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
     _ = C * (∏ i, ‖y i‖) * ‖x‖ ^ (lam - n) := by ring
 
-/-- `D^n |·|^λ (·) y` is integrable on every ball about the origin as soon as `λ - n > -d`. -/
+/-- Let $d > 0$, $n \in \mathbb{N}$ and $\lambda > n - d$, and let $y$ be a tuple of $n$ vectors of
+$\mathbb{R}^d$. Then $x \mapsto D^n |\cdot|^\lambda(x)(y)$ is integrable on the ball $B(0, t)$
+for every $t \in \mathbb{R}$. -/
 theorem integrableOn_iteratedFDeriv_normRpow_apply (hd : 0 < d) {lam : ℝ} {n : ℕ}
     (hlam : (n : ℝ) - d < lam) (y : Fin n → 𝔼) (t : ℝ) :
     IntegrableOn (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) (ball 0 t)
@@ -681,14 +741,18 @@ theorem integrableOn_iteratedFDeriv_normRpow_apply (hd : 0 < d) {lam : ℝ} {n :
   filter_upwards [ae_restrict_of_ae h0] with x hx
   exact hC x hx
 
-/-- **The weak derivatives of `|x|^λ` of every order `n ≤ k` on a ball**, for `λ > k - d`: along
-any tuple `y` of `n` directions the classical `D^n |·|^λ (·) y`, which exists off the origin, is
-the weak derivative on the whole ball. By induction on `n` through the composition rule
-`HasWeakIteratedLineDerivOn.cons`: the derivative of order `n + 1` along `z :: y` is the
-first-order weak derivative in the direction `z` of the derivative of order `n` along `y`, and the
-latter's singularity at the origin is removable
-(`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`) because it is `O(|x|^{λ-n})` with
-`λ - n > 1 - d`. -/
+/-- **The weak derivatives of $|x|^\lambda$ of every order $n \le k$ on a ball.** Let $d > 0$,
+$k \in \mathbb{N}$, $\lambda > k - d$ and $t \in \mathbb{R}$. Then for every $n \le k$ and every
+tuple $y$ of $n$ vectors of $\mathbb{R}^d$, the function $x \mapsto D^n |\cdot|^\lambda(x)(y)$
+is the weak derivative of $x \mapsto |x|^\lambda$ along $y$ on the ball $B(0, t)$.
+
+Here $D^n |\cdot|^\lambda$ is the classical derivative `iteratedFDeriv`, which exists off the
+origin; its value at the origin does not matter. The proof is by induction on $n$ through the
+composition rule `HasWeakIteratedLineDerivOn.cons`. The derivative of order $n + 1$ along
+$z :: y$ is the first-order weak derivative in the direction $z$ of the derivative of order $n$
+along $y$. The singularity of the latter at the origin is removable
+(`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`), because it is
+$O(|x|^{\lambda - n})$ with $\lambda - n > 1 - d$. -/
 theorem hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow (hd : 0 < d) {lam : ℝ} {k : ℕ}
     (hlam : (k : ℝ) - d < lam) (t : ℝ) :
     ∀ n ≤ k, ∀ y : Fin n → 𝔼,

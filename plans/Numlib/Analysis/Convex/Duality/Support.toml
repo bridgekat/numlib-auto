@@ -8,11 +8,9 @@ id = 'supportFn_eq_convexConj_indicatorFn'
 
 [[node]]
 id = 'supportFn_singleton'
-desc = 'The support function of a singleton is the pairing against that point.'
 
 [[node]]
 id = 'supportFn_union'
-desc = 'The support function of a union is the pointwise supremum of the two support functions.'
 
 [[node]]
 id = 'supportFn_convexHull'

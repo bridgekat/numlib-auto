@@ -17,78 +17,89 @@ import Numlib.Analysis.Normed.Module.WeakClosed
 /-!
 # The Banach-space adjoint of a bounded and of an unbounded operator
 
-For normed spaces `E`, `F` over a nontrivially normed field `𝕜`, the **adjoint** (transpose) of a
-bounded operator `T : E →L[𝕜] F` is the bounded operator `T* : F* → E*`, `T* v = v ∘ T`, between
-the strong duals; it satisfies `⟨T* v, u⟩ = ⟨v, T u⟩` and, over `RCLike 𝕜`, `‖T*‖ = ‖T‖`. For an
-unbounded operator `A : D(A) ⊆ E → F` (a `LinearPMap`, `E →ₗ.[𝕜] F`) with dense domain, the
-adjoint is the unbounded operator `A* : D(A*) ⊆ F* → E*` whose domain consists of those `v ∈ F*`
-for which `u ↦ ⟨v, A u⟩` is bounded on `D(A)`, `A* v` being the extension by continuity of that
-functional to `E`; the fundamental relation is `⟨A* v, u⟩ = ⟨v, A u⟩` for `u ∈ D(A)`,
-`v ∈ D(A*)`. This is [brezis2011functional] §2.6.
+Let $E$ and $F$ be normed spaces over a nontrivially normed field $\mathbb{K}$, with strong duals
+$E^*$ and $F^*$, and write $\langle f, u \rangle = f(u)$. The **adjoint** (transpose) of a bounded
+operator $T \colon E \to F$ is the bounded operator $T^* \colon F^* \to E^*$, $T^* v = v \circ T$.
+It satisfies $\langle T^* v, u \rangle = \langle v, Tu \rangle$ and, over $\mathbb{K} = \mathbb{R}$
+or $\mathbb{C}$, $\|T^*\| = \|T\|$. For an unbounded operator $A \colon D(A) \subseteq E \to F$ with
+dense domain, the adjoint is the unbounded operator $A^* \colon D(A^*) \subseteq F^* \to E^*$. Its
+domain consists of the $v \in F^*$ for which $u \mapsto \langle v, Au \rangle$ is bounded on $D(A)$,
+and $A^* v$ is the extension by continuity of that functional to $E$. The fundamental relation is
+$\langle A^* v, u \rangle = \langle v, Au \rangle$ for $u \in D(A)$ and $v \in D(A^*)$. The
+presentation follows [brezis2011functional], §2.6 (the definition, Remarks 2.14–2.17, Proposition
+2.17, relation (27), Corollary 2.18 and Exercise 2.18) and §2.7 (Remark 2.20).
 
-Mathlib has the algebraic `LinearMap.dualMap` on `Module.Dual`, the TVS-general precomposition
-map `ContinuousLinearMap.precomp`, and the Hilbert-space adjoints `ContinuousLinearMap.adjoint`
-and `LinearPMap.adjoint` (`T†`, through the Riesz representation); it has no norm statement
-about the Banach transpose and no Banach-space adjoint of an unbounded operator.
+For a subspace $M \subseteq E$ the annihilator is $M^\perp = \{f \in E^* : f = 0 \text{ on } M\}$,
+and for a subspace $N \subseteq E^*$ it is $N^\perp = \{u \in E : f(u) = 0 \text{ for all } f \in
+N\}$. The main results relate kernels, ranges and graphs: $N(A^*) = R(A)^\perp$,
+$N(A) = R(A^*)^\perp$ for closed $A$, $\overline{R(A^*)} \subseteq N(A)^\perp$,
+$N(A^*)^\perp = \overline{R(A)}$, and $A^*$ is closed. When $A$ is closed, $D(A^*)$ is weak-$*$
+dense in $F^*$, and $N(A)^\perp$ is the weak-$*$ closure of $R(A^*)$.
 
 ## Main definitions
 
-* `ContinuousLinearMap.strongDualMap T : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E` — the bounded
-  adjoint `T* v = v.comp T`. It is Mathlib's `ContinuousLinearMap.precomp 𝕜 T` specialised to
-  scalar-valued maps (`strongDualMap_eq_precomp`, by `rfl`), so that Mathlib's lemmas about
-  `precomp` apply; `strongDualMapₗᵢ` is the map `T ↦ T*` bundled as a linear isometry over
-  `RCLike 𝕜`. The name `dualMap` is left free for a future Mathlib addition.
-* `LinearPMap.strongDualAdjoint A : StrongDual 𝕜 F →ₗ.[𝕜] StrongDual 𝕜 E` — the unbounded
-  adjoint, built exactly like Mathlib's Hilbert-space `LinearPMap.adjoint`: the domain is the
-  subspace `{v | Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)}`, the value on `v` is
-  `ContinuousLinearMap.extend` of `u ↦ v (A u)` along the inclusion of `D(A)`, and the map
-  `v ↦ A* v` is linear because the extension is unique when `D(A)` is dense; when `D(A)` is not
-  dense the values are the junk `0`. Only the completeness of `𝕜` is used, no Hahn–Banach
-  ([brezis2011functional], Remark 2.14).
+* `ContinuousLinearMap.strongDualMap`: the adjoint $T^* v = v \circ T$ of a bounded operator.
+* `ContinuousLinearMap.strongDualMapₗᵢ`: over $\mathbb{R}$ or $\mathbb{C}$, the map $T \mapsto T^*$
+  as a linear isometry.
+* `LinearPMap.strongDualAdjoint`: the adjoint $A^* \colon D(A^*) \subseteq F^* \to E^*$ of an
+  unbounded operator.
 
-## Main statements
+## Main results
 
-* `LinearPMap.mem_strongDualAdjoint_domain_iff` — `v ∈ D(A*) ↔ ∃ c, ∀ u ∈ D(A), ‖v (A u)‖ ≤ c ‖u‖`
-  (the book's definition of the domain).
-* `LinearPMap.strongDualAdjoint_apply` — the fundamental relation `(A* v) u = v (A u)`, and
-  `strongDualAdjoint_apply_eq`, `mem_strongDualAdjoint_domain_of_exists` — `A* v` is the unique
-  `f ∈ E*` with `f u = v (A u)` on `D(A)`, and any such `f` puts `v` in `D(A*)`.
-* `LinearPMap.strongDualAdjoint_isClosed` — **the adjoint is closed** (Proposition 2.17).
-* `ContinuousLinearMap.toPMap_strongDualAdjoint` — for a bounded operator restricted to a dense
-  subspace the two adjoints agree, `D(T*) = F*` and `T* v = v ∘ T` (Remark 2.16).
-* `LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph` — the graphs are related by
-  `I[G(A*)] = G(A)^⊥` with `I (v, f) = (-f, v)`, after the identification
-  `(E × F)* ≃ E* × F*`.
-* `LinearPMap.IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph` — separation
-  of a point `(u, y)` from the closed graph of `A`, read through the adjoint: some `v ∈ D(A*)`
-  has `v y ≠ (A* v) u`. Every consequence of closedness below goes through it.
-* Corollary 2.18: `LinearPMap.ker_strongDualAdjoint_eq_annihilator_range` (`N(A*) = R(A)^⊥`),
-  `LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint`
-  (`N(A) = R(A*)^⊥`), `LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker`
-  (`closure R(A*) ⊆ N(A)^⊥`),
-  `LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range`
-  (`N(A*)^⊥ = closure R(A)`), and the bounded forms
-  `ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`,
-  `ContinuousLinearMap.ker_eq_strongDualCoannihilator_range_strongDualMap`.
-* Remark 2.20: `A` onto implies `A*` injective, `A*` onto implies `A` injective.
-* Remarks 2.15 and 2.17, the weak-∗ clauses: `D(A*)` is weak-∗ dense in `F*`
-  (`LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint`), and `N(A)^⊥` is the weak-∗
-  closure of `R(A*)`
-  (`LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint`).
+* `LinearPMap.mem_strongDualAdjoint_domain_iff`: $v \in D(A^*)$ if and only if $|v(Au)| \le c \|u\|$
+  on $D(A)$ for some constant $c$.
+* `LinearPMap.strongDualAdjoint_apply`: the fundamental relation $(A^* v)(u) = v(Au)$.
+* `LinearPMap.strongDualAdjoint_apply_eq` and `LinearPMap.mem_strongDualAdjoint_domain_of_exists`:
+  $A^* v$ is the unique $f \in E^*$ with $f(u) = v(Au)$ on $D(A)$, and any such $f$ puts $v$ in
+  $D(A^*)$.
+* `LinearPMap.strongDualAdjoint_isClosed`: the adjoint is closed.
+* `ContinuousLinearMap.toPMap_strongDualAdjoint`: for a bounded operator restricted to a dense
+  subspace, the two adjoints agree.
+* `LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph`: $I[G(A^*)] = G(A)^\perp$ with
+  $I(v, f) = (-f, v)$.
+* `LinearPMap.IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph`: if $A$ is closed
+  and $(u, y) \notin G(A)$, some $v \in D(A^*)$ has $v(y) \ne (A^* v)(u)$.
+* `LinearPMap.ker_strongDualAdjoint_eq_annihilator_range`: $N(A^*) = R(A)^\perp$.
+* `LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint`:
+  $N(A) = R(A^*)^\perp$ for closed $A$.
+* `LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker`:
+  $\overline{R(A^*)} \subseteq N(A)^\perp$.
+* `LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range`:
+  $N(A^*)^\perp = \overline{R(A)}$.
+* `ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range` and
+  `ContinuousLinearMap.ker_eq_strongDualCoannihilator_range_strongDualMap`: $N(T^*) = R(T)^\perp$
+  and $N(T) = R(T^*)^\perp$ for a bounded operator.
+* `LinearPMap.ker_strongDualAdjoint_eq_bot_of_range_eq_top` and
+  `LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top`: if $A$ is onto then $A^*$ is
+  injective, and if $A^*$ is onto then the closed operator $A$ is injective.
+* `LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint`: $D(A^*)$ is weak-$*$ dense in
+  $F^*$.
+* `LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint`: $N(A)^\perp$
+  is the weak-$*$ closure of $R(A^*)$.
 
-## Conventions
+## Implementation notes
 
-The annihilators are `Submodule.strongDualAnnihilator` (`M^⊥ ⊆ E*`) and
-`Submodule.strongDualCoannihilator` (`N^⊥ ⊆ E`) of `Numlib.Analysis.Normed.Module.Annihilator`,
-abbreviated to `annihilator` in lemma names. The range of `A` is `LinearMap.range A.toFun`, its
-kernel `A.ker`. The reflexive-space theorems about `A*` (`D(A*)` dense, `A** = A`) are in
-`Numlib.Analysis.Normed.Operator.Unbounded.Reflexive`, the closed range theorem in
-`Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange`.
-
-## References
-
-[brezis2011functional], §2.6 (the definition, Remarks 14–17, Proposition 2.17, relation (27),
-Corollary 2.18, Exercise 2.18) and §2.7 (Remark 20).
+* Mathlib has the algebraic `LinearMap.dualMap` on `Module.Dual`, the precomposition map
+  `ContinuousLinearMap.precomp` for topological vector spaces, and the Hilbert-space adjoints
+  `ContinuousLinearMap.adjoint` and `LinearPMap.adjoint`, which go through the Riesz representation.
+  It has no norm statement about the Banach transpose and no Banach-space adjoint of an unbounded
+  operator.
+* `ContinuousLinearMap.strongDualMap T` is `ContinuousLinearMap.precomp 𝕜 T` with scalar-valued
+  targets, by `rfl` (`ContinuousLinearMap.strongDualMap_eq_precomp`), so that Mathlib's lemmas about
+  `precomp` apply. The name `dualMap` is left free for a future Mathlib addition.
+* `LinearPMap.strongDualAdjoint` is built like Mathlib's `LinearPMap.adjoint`. The domain is the
+  subspace `{v | Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)}`, and the value at $v$ is
+  `ContinuousLinearMap.extend` of $u \mapsto v(Au)$ along the inclusion of $D(A)$. The map
+  $v \mapsto A^* v$ is linear because the extension is unique when $D(A)$ is dense. When $D(A)$ is
+  not dense, all values are $0$. Only the completeness of $\mathbb{K}$ is used, and no Hahn–Banach
+  theorem (Remark 2.14 of [brezis2011functional]).
+* The annihilators are `Submodule.strongDualAnnihilator` ($M^\perp \subseteq E^*$) and
+  `Submodule.strongDualCoannihilator` ($N^\perp \subseteq E$) of
+  `Numlib.Analysis.Normed.Module.Annihilator`; lemma names abbreviate the first to `annihilator`.
+  The range of $A$ is `LinearMap.range A.toFun` and its kernel is `A.ker`.
+* The theorems about $A^*$ between reflexive spaces ($D(A^*)$ dense, $A^{**} = A$) are in
+  `Numlib.Analysis.Normed.Operator.Unbounded.Reflexive`, and the closed range theorem is in
+  `Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange`.
 -/
 
 open Filter Topology
@@ -103,50 +114,60 @@ variable {𝕜 E F G : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
   [NormedAddCommGroup G] [NormedSpace 𝕜 G]
 
-/-- **The Banach-space adjoint of a bounded operator**, `T* : F* → E*`, `T* v = v ∘ T`
-([brezis2011functional], Remark 2.16). It is Mathlib's precomposition map
+/-- The **adjoint of a bounded operator**. Let $T \colon E \to F$ be a bounded linear operator
+between normed spaces over $\mathbb{K}$. Its adjoint is the bounded operator
+$T^* \colon F^* \to E^*$ defined by
+$$T^* v = v \circ T.$$
+This is the adjoint of Remark 2.16 of [brezis2011functional].
+
+The dual $F^*$ is `StrongDual 𝕜 F`. The definition is Mathlib's precomposition map
 `ContinuousLinearMap.precomp 𝕜 T` with scalar-valued functionals as targets. -/
 def strongDualMap (T : E →L[𝕜] F) : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E :=
   precomp 𝕜 T
 
-/-- The fundamental relation `⟨T* v, u⟩ = ⟨v, T u⟩`. -/
+/-- The **fundamental relation** for a bounded operator. Let $T \colon E \to F$ be bounded,
+$v \in F^*$ and $u \in E$. Then $(T^* v)(u) = v(Tu)$, that is, $\langle T^* v, u \rangle =
+\langle v, Tu \rangle$. -/
 @[simp]
 theorem strongDualMap_apply (T : E →L[𝕜] F) (v : StrongDual 𝕜 F) (u : E) :
     T.strongDualMap v u = v (T u) :=
   rfl
 
-/-- `T* v` is the composite functional `v ∘ T`. -/
+/-- For a bounded operator $T$ and $v \in F^*$, $T^* v$ is the composite functional $v \circ T$. -/
 theorem strongDualMap_apply' (T : E →L[𝕜] F) (v : StrongDual 𝕜 F) :
     T.strongDualMap v = v.comp T :=
   rfl
 
-/-- The adjoint is Mathlib's `ContinuousLinearMap.precomp` at scalar-valued targets. -/
+/-- The adjoint $T^*$ of a bounded operator is Mathlib's `ContinuousLinearMap.precomp 𝕜 T` with
+scalar-valued targets. -/
 theorem strongDualMap_eq_precomp (T : E →L[𝕜] F) : T.strongDualMap = precomp 𝕜 T :=
   rfl
 
-/-- The adjoint is the flip of the composition map `compL`, applied to `T`. -/
+/-- The adjoint $T^*$ of a bounded operator is the flip of the composition map
+`ContinuousLinearMap.compL 𝕜 E F 𝕜`, evaluated at $T$. -/
 theorem strongDualMap_eq_compL_flip (T : E →L[𝕜] F) :
     T.strongDualMap = (compL 𝕜 E F 𝕜).flip T := by
   ext; rfl
 
-/-- The adjoint of the identity is the identity. -/
+/-- The adjoint of the identity of $E$ is the identity of $E^*$. -/
 @[simp]
 theorem strongDualMap_id :
     (ContinuousLinearMap.id 𝕜 E).strongDualMap = ContinuousLinearMap.id 𝕜 (StrongDual 𝕜 E) := by
   ext; rfl
 
-/-- `(S ∘ T)* = T* ∘ S*` ([brezis2011functional], Exercise 2.25). -/
+/-- Let $T \colon E \to F$ and $S \colon F \to G$ be bounded operators. Then
+$(S \circ T)^* = T^* \circ S^*$. This is Exercise 2.25 of [brezis2011functional]. -/
 theorem strongDualMap_comp (S : F →L[𝕜] G) (T : E →L[𝕜] F) :
     (S.comp T).strongDualMap = T.strongDualMap.comp S.strongDualMap := by
   ext; rfl
 
-/-- The adjoint of a sum is the sum of the adjoints. -/
+/-- For bounded operators $S, T \colon E \to F$, $(S + T)^* = S^* + T^*$. -/
 @[simp]
 theorem strongDualMap_add (S T : E →L[𝕜] F) :
     (S + T).strongDualMap = S.strongDualMap + T.strongDualMap := by
   ext; simp
 
-/-- The adjoint of a scalar multiple is the scalar multiple of the adjoint. -/
+/-- For $c \in \mathbb{K}$ and a bounded operator $T$, $(cT)^* = c T^*$. -/
 @[simp]
 theorem strongDualMap_smul (c : 𝕜) (T : E →L[𝕜] F) :
     (c • T).strongDualMap = c • T.strongDualMap := by
@@ -157,27 +178,31 @@ theorem strongDualMap_smul (c : 𝕜) (T : E →L[𝕜] F) :
 theorem strongDualMap_zero : (0 : E →L[𝕜] F).strongDualMap = 0 := by
   ext; simp
 
-/-- The adjoint of a difference is the difference of the adjoints. -/
+/-- For bounded operators $S, T \colon E \to F$, $(S - T)^* = S^* - T^*$. -/
 @[simp]
 theorem strongDualMap_sub (S T : E →L[𝕜] F) :
     (S - T).strongDualMap = S.strongDualMap - T.strongDualMap := by
   ext; simp
 
-/-- Compatibility with Mathlib's algebraic dual map: as a linear map, `T* v` is
-`LinearMap.dualMap T v`. -/
+/-- Let $T \colon E \to F$ be bounded and $v \in F^*$. As a linear map, $T^* v$ is Mathlib's
+algebraic dual map `LinearMap.dualMap` of $T$ applied to $v$. -/
 theorem toLinearMap_strongDualMap_apply (T : E →L[𝕜] F) (v : StrongDual 𝕜 F) :
     ((T.strongDualMap v : StrongDual 𝕜 E) : E →ₗ[𝕜] 𝕜) =
       (T : E →ₗ[𝕜] F).dualMap (v : F →ₗ[𝕜] 𝕜) :=
   rfl
 
-/-- `‖T*‖ ≤ ‖T‖` ([brezis2011functional], Remark 2.16, first inequality). -/
+/-- Let $T \colon E \to F$ be a bounded operator between normed spaces over a nontrivially normed
+field. Then
+$$\|T^*\| \le \|T\|.$$
+This is the first inequality of Remark 2.16 of [brezis2011functional]. -/
 theorem opNorm_strongDualMap_le (T : E →L[𝕜] F) : ‖T.strongDualMap‖ ≤ ‖T‖ := by
   refine opNorm_le_bound _ (norm_nonneg _) fun v => ?_
   rw [strongDualMap_apply', mul_comm]
   exact opNorm_comp_le v T
 
-/-- **`N(T*) = R(T)^⊥`** ([brezis2011functional], Corollary 2.18 (ii) for a bounded operator):
-`T* v = 0` iff `v` vanishes on the range of `T`. -/
+/-- Let $T \colon E \to F$ be bounded. Then $N(T^*) = R(T)^\perp$: for $v \in F^*$, $T^* v = 0$ if
+and only if $v$ vanishes on the range of $T$. This is Corollary 2.18(ii) of
+[brezis2011functional] for a bounded operator. -/
 theorem ker_strongDualMap_eq_annihilator_range (T : E →L[𝕜] F) :
     T.strongDualMap.ker = (LinearMap.range (T : E →ₗ[𝕜] F)).strongDualAnnihilator := by
   ext v
@@ -192,9 +217,12 @@ section RCLike
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **`‖T*‖ = ‖T‖`** ([brezis2011functional], Remark 2.16). The inequality `‖T‖ ≤ ‖T*‖` is
-Corollary 1.4 of the book: a norming functional `v` of `T u` with `‖v‖ ≤ 1` gives
-`‖T u‖ = ‖(T* v) u‖ ≤ ‖T*‖ ‖u‖`. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T \colon E \to F$ be bounded. Then
+$$\|T^*\| = \|T\|.$$
+This is Remark 2.16 of [brezis2011functional].
+
+The inequality $\|T\| \le \|T^*\|$ uses Corollary 1.4 of [brezis2011functional]: a functional
+$v$ with $\|v\| \le 1$ and $v(Tu) = \|Tu\|$ gives $\|Tu\| = |(T^* v)(u)| \le \|T^*\| \|u\|$. -/
 theorem opNorm_strongDualMap (T : E →L[𝕜] F) : ‖T.strongDualMap‖ = ‖T‖ := by
   refine le_antisymm (opNorm_strongDualMap_le T) ?_
   refine opNorm_le_bound _ (norm_nonneg _) fun u => ?_
@@ -208,21 +236,27 @@ theorem opNorm_strongDualMap (T : E →L[𝕜] F) : ‖T.strongDualMap‖ = ‖T
         nlinarith [norm_nonneg u, norm_nonneg T.strongDualMap]
 
 variable (𝕜 E F) in
-/-- The map `T ↦ T*` as a linear isometry `(E →L[𝕜] F) →ₗᵢ[𝕜] (F* →L[𝕜] E*)`. Unlike the
-Hilbert-space adjoint it is not onto: its image consists of the weak-∗ continuous operators. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The map $T \mapsto T^*$ is a linear isometry from
+the bounded operators $E \to F$ to the bounded operators $F^* \to E^*$.
+
+Unlike the Hilbert-space adjoint, this map is not onto in general: its image consists of the
+weak-$*$ continuous operators. -/
 def strongDualMapₗᵢ : (E →L[𝕜] F) →ₗᵢ[𝕜] (StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E) where
   toFun := strongDualMap
   map_add' := strongDualMap_add
   map_smul' := strongDualMap_smul
   norm_map' := opNorm_strongDualMap
 
+/-- The linear isometry `ContinuousLinearMap.strongDualMapₗᵢ` sends $T$ to $T^*$. -/
 @[simp]
 theorem strongDualMapₗᵢ_apply (T : E →L[𝕜] F) : strongDualMapₗᵢ 𝕜 E F T = T.strongDualMap :=
   rfl
 
-/-- **`N(T) = R(T*)^⊥`** ([brezis2011functional], Corollary 2.18 (i) for a bounded operator):
-`T u = 0` iff `(T* v) u = v (T u) = 0` for every `v ∈ F*`, the functionals separating the points
-of `F`. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T \colon E \to F$ be bounded. Then
+$N(T) = R(T^*)^\perp$: $Tu = 0$ if and only if $(T^* v)(u) = 0$ for every $v \in F^*$. This is
+Corollary 2.18(i) of [brezis2011functional] for a bounded operator.
+
+The proof uses that $(T^* v)(u) = v(Tu)$ and that the functionals separate the points of $F$. -/
 theorem ker_eq_strongDualCoannihilator_range_strongDualMap (T : E →L[𝕜] F) :
     T.ker = Submodule.strongDualCoannihilator
       (LinearMap.range (T.strongDualMap : StrongDual 𝕜 F →ₗ[𝕜] StrongDual 𝕜 E)) := by
@@ -248,8 +282,9 @@ variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
 
 variable (A : E →ₗ.[𝕜] F)
 
-/-- The domain of the Banach adjoint: those `v ∈ F*` for which `u ↦ v (A u)` is continuous on
-`D(A)`, i.e. `‖v (A u)‖ ≤ c ‖u‖` for some `c`. -/
+/-- The **domain of the adjoint**. For a linear operator $A \colon D(A) \subseteq E \to F$, this is
+the subspace of those $v \in F^*$ for which $u \mapsto v(Au)$ is continuous on $D(A)$, that is,
+$|v(Au)| \le c \|u\|$ on $D(A)$ for some constant $c$. -/
 def strongDualAdjointDomain : Submodule 𝕜 (StrongDual 𝕜 F) where
   carrier := {v | Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)}
   zero_mem' := by
@@ -263,12 +298,16 @@ def strongDualAdjointDomain : Submodule 𝕜 (StrongDual 𝕜 F) where
     exact hv.const_smul c
 
 omit [CompleteSpace 𝕜] in
+/-- A functional $v \in F^*$ lies in `LinearPMap.strongDualAdjointDomain` if and only if
+$u \mapsto v(Au)$ is continuous on $D(A)$. -/
 theorem mem_strongDualAdjointDomain_iff (v : StrongDual 𝕜 F) :
     v ∈ A.strongDualAdjointDomain ↔ Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun) :=
   Iff.rfl
 
 omit [CompleteSpace 𝕜] in
-/-- The book's form of the domain condition. -/
+/-- A functional $v \in F^*$ lies in `LinearPMap.strongDualAdjointDomain` if and only if there is
+$c \in \mathbb{R}$ with $|v(Au)| \le c \|u\|$ for every $u \in D(A)$. This is the form of the
+definition in [brezis2011functional]. -/
 theorem mem_strongDualAdjointDomain_iff_exists (v : StrongDual 𝕜 F) :
     v ∈ A.strongDualAdjointDomain ↔ ∃ c : ℝ, ∀ u : A.domain, ‖v (A u)‖ ≤ c * ‖u‖ := by
   rw [mem_strongDualAdjointDomain_iff]
@@ -279,22 +318,28 @@ theorem mem_strongDualAdjointDomain_iff_exists (v : StrongDual 𝕜 F) :
   · rintro ⟨c, hc⟩
     exact (LinearMap.mkContinuousOfExistsBound _ ⟨c, hc⟩).continuous
 
-/-- `u ↦ v (A u)` as a bounded functional on `D(A)`. -/
+/-- For $v$ in the domain of the adjoint, the bounded functional $u \mapsto v(Au)$ on $D(A)$, with
+the norm of $E$. -/
 def strongDualAdjointDomainMkCLM (v : A.strongDualAdjointDomain) : StrongDual 𝕜 A.domain :=
   ⟨((v : StrongDual 𝕜 F) : F →ₗ[𝕜] 𝕜).comp A.toFun, v.prop⟩
 
 omit [CompleteSpace 𝕜] in
+/-- For $v$ in the domain of the adjoint and $u \in D(A)$, `LinearPMap.strongDualAdjointDomainMkCLM`
+takes the value $v(Au)$ at $u$. -/
 theorem strongDualAdjointDomainMkCLM_apply (v : A.strongDualAdjointDomain) (u : A.domain) :
     A.strongDualAdjointDomainMkCLM v u = (v : StrongDual 𝕜 F) (A u) :=
   rfl
 
-/-- The extension by continuity of `u ↦ v (A u)` to all of `E` ([brezis2011functional],
-Remark 2.14: no Hahn–Banach is needed). -/
+/-- For $v$ in the domain of the adjoint, the extension by continuity of $u \mapsto v(Au)$ from
+$D(A)$ to an element of $E^*$. As Remark 2.14 of [brezis2011functional] observes, no Hahn–Banach
+theorem is needed. -/
 def strongDualAdjointDomainMkCLMExtend (v : A.strongDualAdjointDomain) : StrongDual 𝕜 E :=
   (A.strongDualAdjointDomainMkCLM v).extend (Submodule.subtypeL A.domain)
 
 variable {A}
 
+/-- If $D(A)$ is dense in $E$, then for $v$ in the domain of the adjoint and $u \in D(A)$, the
+extension `LinearPMap.strongDualAdjointDomainMkCLMExtend` takes the value $v(Au)$ at $u$. -/
 @[simp]
 theorem strongDualAdjointDomainMkCLMExtend_apply (hA : Dense (A.domain : Set E))
     (v : A.strongDualAdjointDomain) (u : A.domain) :
@@ -304,7 +349,9 @@ theorem strongDualAdjointDomainMkCLMExtend_apply (hA : Dense (A.domain : Set E))
 
 variable (hA : Dense (A.domain : Set E))
 
-/-- The adjoint as a linear map on its domain; linearity needs the density of `D(A)`. -/
+/-- If $D(A)$ is dense in $E$, the map that sends $v$ in the domain of the adjoint to the extension
+of $u \mapsto v(Au)$ is linear. Linearity uses the density of $D(A)$, through the uniqueness of
+the extension. -/
 def strongDualAdjointAux : A.strongDualAdjointDomain →ₗ[𝕜] StrongDual 𝕜 E where
   toFun v := A.strongDualAdjointDomainMkCLMExtend v
   map_add' v w := by
@@ -316,10 +363,14 @@ def strongDualAdjointAux : A.strongDualAdjointDomain →ₗ[𝕜] StrongDual �
     rintro u hu
     simp [strongDualAdjointDomainMkCLMExtend_apply hA _ ⟨u, hu⟩]
 
+/-- If $D(A)$ is dense, then for $v$ in the domain of the adjoint and $u \in D(A)$, the functional
+that `LinearPMap.strongDualAdjointAux` assigns to $v$ takes the value $v(Au)$ at $u$. -/
 theorem strongDualAdjointAux_apply (v : A.strongDualAdjointDomain) (u : A.domain) :
     strongDualAdjointAux hA v u = (v : StrongDual 𝕜 F) (A u) := by
   simp [strongDualAdjointAux, hA]
 
+/-- If $D(A)$ is dense, $v$ lies in the domain of the adjoint, and $f \in E^*$ satisfies
+$f(u) = v(Au)$ for every $u \in D(A)$, then `LinearPMap.strongDualAdjointAux` sends $v$ to $f$. -/
 theorem strongDualAdjointAux_unique (v : A.strongDualAdjointDomain) {f : StrongDual 𝕜 E}
     (hf : ∀ u : A.domain, f u = (v : StrongDual 𝕜 F) (A u)) : strongDualAdjointAux hA v = f := by
   refine ContinuousLinearMap.ext_on (R₁ := 𝕜) (s := (A.domain : Set E)) (by simpa) ?_
@@ -329,34 +380,47 @@ theorem strongDualAdjointAux_unique (v : A.strongDualAdjointDomain) {f : StrongD
 variable (A)
 
 open scoped Classical in
-/-- **The Banach-space adjoint** `A* : D(A*) ⊆ F* → E*` of an unbounded operator
-`A : D(A) ⊆ E → F` ([brezis2011functional], §2.6): `D(A*)` consists of the `v ∈ F*` with
-`‖v (A u)‖ ≤ c ‖u‖` on `D(A)`, and `A* v` is the extension by continuity of `u ↦ v (A u)` to
-`E`. When `D(A)` is not dense the values are the junk `0` (the pattern of Mathlib's Hilbert-space
-`LinearPMap.adjoint`). -/
+/-- The **adjoint of an unbounded operator**. Let $\mathbb{K}$ be a complete nontrivially normed
+field, let $E$ and $F$ be normed spaces over $\mathbb{K}$, and let
+$A \colon D(A) \subseteq E \to F$ be a linear operator. The adjoint
+$A^* \colon D(A^*) \subseteq F^* \to E^*$ has the domain
+$$D(A^*) = \{v \in F^* : \exists c,\ |v(Au)| \le c \|u\| \text{ for all } u \in D(A)\}.$$
+If $D(A)$ is dense in $E$, then $A^* v$ is the extension by continuity of $u \mapsto v(Au)$ to
+$E$, which is the unique $f \in E^*$ with $f(u) = v(Au)$ on $D(A)$. If $D(A)$ is not dense, then
+$A^* v = 0$ for every $v \in D(A^*)$. This is the adjoint of §2.6 of [brezis2011functional].
+
+The value $0$ off the dense case follows the pattern of Mathlib's Hilbert-space
+`LinearPMap.adjoint`. The domain is `LinearPMap.strongDualAdjointDomain`, and the value is
+`LinearPMap.strongDualAdjointAux`. -/
 def strongDualAdjoint : StrongDual 𝕜 F →ₗ.[𝕜] StrongDual 𝕜 E where
   domain := A.strongDualAdjointDomain
   toFun := if hA : Dense (A.domain : Set E) then strongDualAdjointAux hA else 0
 
-/-- **The domain of the adjoint** ([brezis2011functional], §2.6, the definition (24)):
-`v ∈ D(A*)` iff `‖v (A u)‖ ≤ c ‖u‖` on `D(A)` for some constant `c`. -/
+/-- The **domain of the adjoint**. A functional $v \in F^*$ lies in $D(A^*)$ if and only if there is
+$c \in \mathbb{R}$ with
+$$|v(Au)| \le c \|u\| \quad \text{for every } u \in D(A).$$
+This is the definition (24) in §2.6 of [brezis2011functional]. -/
 theorem mem_strongDualAdjoint_domain_iff (v : StrongDual 𝕜 F) :
     v ∈ A.strongDualAdjoint.domain ↔ ∃ c : ℝ, ∀ u : A.domain, ‖v (A u)‖ ≤ c * ‖u‖ :=
   A.mem_strongDualAdjointDomain_iff_exists v
 
-/-- `v ∈ D(A*)` iff `u ↦ v (A u)` is continuous on `D(A)`. -/
+/-- A functional $v \in F^*$ lies in $D(A^*)$ if and only if $u \mapsto v(Au)$ is continuous on
+$D(A)$. -/
 theorem mem_strongDualAdjoint_domain_iff_continuous (v : StrongDual 𝕜 F) :
     v ∈ A.strongDualAdjoint.domain ↔ Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun) :=
   Iff.rfl
 
 variable {A}
 
+/-- If $D(A)$ is dense, then $A^* v$ is `LinearPMap.strongDualAdjointAux` at $v$, for every
+$v \in D(A^*)$. -/
 theorem strongDualAdjoint_apply_of_dense (v : A.strongDualAdjoint.domain) :
     A.strongDualAdjoint v = strongDualAdjointAux hA v := by
   classical
   change (if hA : Dense (A.domain : Set E) then strongDualAdjointAux hA else 0) v = _
   simp only [hA, dite_true]
 
+/-- If $D(A)$ is not dense in $E$, then $A^* v = 0$ for every $v \in D(A^*)$. -/
 theorem strongDualAdjoint_apply_of_not_dense (hA : ¬ Dense (A.domain : Set E))
     (v : A.strongDualAdjoint.domain) : A.strongDualAdjoint v = 0 := by
   classical
@@ -365,22 +429,28 @@ theorem strongDualAdjoint_apply_of_not_dense (hA : ¬ Dense (A.domain : Set E))
   rfl
 
 include hA in
-/-- **The fundamental relation** `⟨A* v, u⟩ = ⟨v, A u⟩` for `u ∈ D(A)`, `v ∈ D(A*)`
-([brezis2011functional], §2.6, (25)). -/
+/-- The **fundamental relation** for the adjoint. Let $D(A)$ be dense in $E$. Then for
+$v \in D(A^*)$ and $u \in D(A)$,
+$$(A^* v)(u) = v(Au), \quad \text{that is,} \quad \langle A^* v, u \rangle = \langle v, Au
+  \rangle.$$
+This is relation (25) in §2.6 of [brezis2011functional]. -/
 theorem strongDualAdjoint_apply (v : A.strongDualAdjoint.domain) (u : A.domain) :
     A.strongDualAdjoint v u = (v : StrongDual 𝕜 F) (A u) := by
   rw [strongDualAdjoint_apply_of_dense hA]
   exact strongDualAdjointAux_apply hA v u
 
 include hA in
-/-- **Uniqueness of the extension**: a functional `f ∈ E*` with `f u = v (A u)` on the dense
-`D(A)` is `A* v`. -/
+/-- **Uniqueness of the extension**. Let $D(A)$ be dense in $E$, let $v \in D(A^*)$, and let
+$f \in E^*$ satisfy $f(u) = v(Au)$ for every $u \in D(A)$. Then $A^* v = f$. -/
 theorem strongDualAdjoint_apply_eq (v : A.strongDualAdjoint.domain) {f : StrongDual 𝕜 E}
     (hf : ∀ u : A.domain, f u = (v : StrongDual 𝕜 F) (A u)) : A.strongDualAdjoint v = f := by
   rw [strongDualAdjoint_apply_of_dense hA]
   exact strongDualAdjointAux_unique hA v hf
 
-/-- `v ∈ D(A*)` as soon as some `f ∈ E*` satisfies `f u = v (A u)` on `D(A)`. -/
+/-- Let $v \in F^*$. If some $f \in E^*$ satisfies $f(u) = v(Au)$ for every $u \in D(A)$, then
+$v \in D(A^*)$.
+
+No density of $D(A)$ is needed. -/
 theorem mem_strongDualAdjoint_domain_of_exists (v : StrongDual 𝕜 F)
     (h : ∃ f : StrongDual 𝕜 E, ∀ u : A.domain, f u = v (A u)) :
     v ∈ A.strongDualAdjoint.domain := by
@@ -390,9 +460,10 @@ theorem mem_strongDualAdjoint_domain_of_exists (v : StrongDual 𝕜 F)
   exact f.le_opNorm u
 
 include hA in
-/-- **The graph of the adjoint**: `(v, f) ∈ G(A*)` iff `f u = v (A u)` for every `u ∈ D(A)`
-([brezis2011functional], the computation after Proposition 2.17, before any identification of
-`(E × F)*`). -/
+/-- The **graph of the adjoint**. Let $D(A)$ be dense in $E$. For $v \in F^*$ and $f \in E^*$,
+$(v, f) \in G(A^*)$ if and only if $f(u) = v(Au)$ for every $u \in D(A)$. This is the
+computation after Proposition 2.17 of [brezis2011functional], before any identification of
+$(E \times F)^*$. -/
 theorem mem_graph_strongDualAdjoint_iff (v : StrongDual 𝕜 F) (f : StrongDual 𝕜 E) :
     (v, f) ∈ A.strongDualAdjoint.graph ↔ ∀ u : A.domain, f u = v (A u) := by
   rw [mem_graph_iff]
@@ -407,9 +478,13 @@ theorem mem_graph_strongDualAdjoint_iff (v : StrongDual 𝕜 F) (f : StrongDual 
     exact ⟨⟨v, hv⟩, rfl, strongDualAdjoint_apply_eq hA ⟨v, hv⟩ h⟩
 
 include hA in
-/-- **The adjoint is closed** ([brezis2011functional], Proposition 2.17): the graph of `A*` is
-the intersection over `u ∈ D(A)` of the closed sets `{(v, f) | f u = v (A u)}`. Without density
-of `D(A)` the graph is `D(A*) × {0}`, which need not be closed. -/
+/-- The **adjoint is closed**. Let $D(A)$ be dense in $E$. Then
+$A^* \colon D(A^*) \subseteq F^* \to E^*$ is a closed operator. This is Proposition 2.17 of
+[brezis2011functional].
+
+The graph of $A^*$ is the intersection over $u \in D(A)$ of the closed sets
+$\{(v, f) : f(u) = v(Au)\}$. Without the density of $D(A)$ the graph is $D(A^*) \times \{0\}$,
+which need not be closed. -/
 theorem strongDualAdjoint_isClosed : A.strongDualAdjoint.IsClosed := by
   have hgraph : (A.strongDualAdjoint.graph : Set (StrongDual 𝕜 F × StrongDual 𝕜 E)) =
       ⋂ u : A.domain, {p | p.2 (u : E) = p.1 (A u)} := by
@@ -421,9 +496,12 @@ theorem strongDualAdjoint_isClosed : A.strongDualAdjoint.IsClosed := by
     isClosed_eq (continuous_snd.clm_apply continuous_const)
       (continuous_fst.clm_apply continuous_const)
 
-/-- **The adjoint of a bounded operator restricted to a dense subspace is its bounded adjoint**
-([brezis2011functional], Remark 2.16): `D(T*) = F*` and `T* v = v ∘ T`. With `p = ⊤` this is
-the statement that the two adjoints agree on bounded operators. -/
+/-- The **adjoint of a bounded operator restricted to a dense subspace is its bounded adjoint**. Let
+$\mathbb{K}$ be complete, let $T \colon E \to F$ be bounded, and let $p$ be a dense subspace of
+$E$. Then the adjoint of the restriction of $T$ to $p$ has domain $F^*$ and equals $T^*$, that
+is, it sends $v$ to $v \circ T$. This is Remark 2.16 of [brezis2011functional].
+
+With $p = E$ this says that the two adjoints agree on bounded operators. -/
 theorem _root_.ContinuousLinearMap.toPMap_strongDualAdjoint (T : E →L[𝕜] F) {p : Submodule 𝕜 E}
     (hp : Dense (p : Set E)) :
     ((T : E →ₗ[𝕜] F).toPMap p).strongDualAdjoint =
@@ -435,8 +513,12 @@ theorem _root_.ContinuousLinearMap.toPMap_strongDualAdjoint (T : E →L[𝕜] F)
   · intro v hv hv'
     exact strongDualAdjoint_apply_eq hp' ⟨v, hv⟩ fun u => rfl
 
-/-- **`N(A*) = R(A)^⊥`** ([brezis2011functional], Corollary 2.18 (ii); Exercise 2.18): `v ∈ D(A*)`
-with `A* v = 0` iff `v` vanishes on `R(A)`. Closedness of `A` is not needed. -/
+/-- Let $D(A)$ be dense in $E$. Then
+$$N(A^*) = R(A)^\perp:$$
+an element $v \in F^*$ lies in $D(A^*)$ with $A^* v = 0$ if and only if $v$ vanishes on $R(A)$.
+This is Corollary 2.18(ii) and Exercise 2.18 of [brezis2011functional].
+
+Closedness of $A$ is not needed. -/
 theorem ker_strongDualAdjoint_eq_annihilator_range (hA : Dense (A.domain : Set E)) :
     A.strongDualAdjoint.ker = (LinearMap.range A.toFun).strongDualAnnihilator := by
   ext v
@@ -451,10 +533,13 @@ theorem ker_strongDualAdjoint_eq_annihilator_range (hA : Dense (A.domain : Set E
     exact ⟨⟨v, hv⟩, rfl, strongDualAdjoint_apply_eq hA _ fun u => by
       rw [h u, _root_.zero_apply]⟩
 
-/-- **`closure R(A*) ⊆ N(A)^⊥`** ([brezis2011functional], Corollary 2.18 (iii)):
-`(A* v) u = v (A u) = 0` for `u ∈ N(A)`, and the annihilator is closed. Equality can fail
-(Remark 2.17, Exercise 2.23); the weak-∗ closure does give equality,
-`IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint`. -/
+/-- Let $D(A)$ be dense in $E$. Then the norm closure of $R(A^*)$ is contained in $N(A)^\perp$. This
+is Corollary 2.18(iii) of [brezis2011functional].
+
+The relation $(A^* v)(u) = v(Au) = 0$ holds for $u \in N(A)$, and the annihilator is closed.
+Equality can fail (Remark 2.17 and Exercise 2.23 of [brezis2011functional]). The weak-$*$
+closure gives equality for closed $A$, by
+`LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint`. -/
 theorem closure_range_strongDualAdjoint_le_annihilator_ker (hA : Dense (A.domain : Set E)) :
     (LinearMap.range A.strongDualAdjoint.toFun).topologicalClosure ≤
       A.ker.strongDualAnnihilator := by
@@ -464,8 +549,10 @@ theorem closure_range_strongDualAdjoint_le_annihilator_ker (hA : Dense (A.domain
   obtain ⟨w, rfl, hw⟩ := mem_ker_iff.1 hu
   rw [toFun_eq_coe, strongDualAdjoint_apply hA v w, hw, _root_.map_zero]
 
-/-- **`A` onto implies `A*` injective** ([brezis2011functional], Remark 2.20):
-`N(A*) = R(A)^⊥ = F^⊥ = 0`. -/
+/-- Let $D(A)$ be dense in $E$. If $A$ is onto, that is, $R(A) = F$, then $A^*$ is injective:
+$N(A^*) = \{0\}$. This is Remark 2.20 of [brezis2011functional].
+
+The proof is $N(A^*) = R(A)^\perp = F^\perp = \{0\}$. -/
 theorem ker_strongDualAdjoint_eq_bot_of_range_eq_top (hA : Dense (A.domain : Set E))
     (h : LinearMap.range A.toFun = ⊤) : A.strongDualAdjoint.ker = ⊥ := by
   rw [ker_strongDualAdjoint_eq_annihilator_range hA, h, Submodule.strongDualAnnihilator_top]
@@ -477,10 +564,14 @@ section RCLike
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] {A : E →ₗ.[𝕜] F}
 
-/-- **`N(A*)^⊥ = closure R(A)`** ([brezis2011functional], Corollary 2.18 (iv)): `N(A*) = R(A)^⊥`
-and the bipolar identity `(M^⊥)^⊥ = closure M`. This is the shape of the closed range theorem and
-of the Fredholm alternative: when `R(A)` is closed, `A u = f` is solvable iff `v f = 0` for every
-`v ∈ N(A*)`. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $D(A)$ be dense in $E$. Then
+$$N(A^*)^\perp = \overline{R(A)}.$$
+This is Corollary 2.18(iv) of [brezis2011functional].
+
+The proof combines $N(A^*) = R(A)^\perp$ with the bipolar identity
+$(M^\perp)^\perp = \overline{M}$. This is the shape of the closed range theorem and of the
+Fredholm alternative: when $R(A)$ is closed, $Au = f$ is solvable if and only if $v(f) = 0$ for
+every $v \in N(A^*)$. -/
 theorem strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range
     (hA : Dense (A.domain : Set E)) :
     A.strongDualAdjoint.ker.strongDualCoannihilator =
@@ -488,10 +579,15 @@ theorem strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range
   rw [ker_strongDualAdjoint_eq_annihilator_range hA,
     Submodule.strongDualCoannihilator_strongDualAnnihilator]
 
-/-- **The graph relation** `I[G(A*)] = G(A)^⊥` ([brezis2011functional], §2.6, (27)), with
-`I (v, f) = (-f, v)` (`LinearEquiv.skewSwap`) and the identification `(E × F)* ≃ E* × F*`
-sending `(g, v)` to `(x, y) ↦ g x + v y` (`ContinuousLinearMap.coprodEquivL`): the functional
-`(x, y) ↦ -f x + v y` vanishes on `G(A)` iff `f u = v (A u)` on `D(A)`. -/
+/-- The **graph relation**. Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $D(A)$ be dense
+in $E$. Let $I \colon F^* \times E^* \to E^* \times F^*$ be $I(v, f) = (-f, v)$, and identify
+$E^* \times F^*$ with $(E \times F)^*$ by sending $(g, v)$ to $(x, y) \mapsto g(x) + v(y)$. Then
+$$I[G(A^*)] = G(A)^\perp.$$
+This is relation (27) in §2.6 of [brezis2011functional].
+
+The map $I$ is `LinearEquiv.skewSwap`, and the identification is
+`ContinuousLinearMap.coprodEquivL`. The functional $(x, y) \mapsto -f(x) + v(y)$ vanishes on
+$G(A)$ if and only if $f(u) = v(Au)$ on $D(A)$. -/
 theorem map_graph_strongDualAdjoint_eq_annihilator_graph (hA : Dense (A.domain : Set E)) :
     (A.strongDualAdjoint.graph.map
       (LinearEquiv.skewSwap 𝕜 (StrongDual 𝕜 F) (StrongDual 𝕜 E) : _ →ₗ[𝕜] _)).map
@@ -527,13 +623,17 @@ theorem map_graph_strongDualAdjoint_eq_annihilator_graph (hA : Dense (A.domain :
         ← _root_.map_add φ, ContinuousLinearMap.inl_apply, ContinuousLinearMap.inr_apply,
         Prod.mk_add_mk, add_zero, zero_add]
 
-/-- **Separation from the closed graph, through the adjoint.** If `A` is closed and densely
-defined and `(u, y) ∉ G(A)`, then some `v ∈ D(A*)` has `v y ≠ (A* v) u`. A functional
-`Φ ∈ (E × F)*` vanishing on the graph with `Φ (u, y) ≠ 0`
-(`Submodule.exists_dual_eq_zero_of_notMem`) has components `f = Φ ∘ inl`, `v = Φ ∘ inr` with
-`f x + v (A x) = 0` on `D(A)`, so `v ∈ D(A*)`
-with `A* v = -f`, and `v y - (A* v) u = Φ (u, y)`. Every consequence of the closedness of `A` for
-its adjoint (Corollary 2.18 (i), the weak-∗ density of `D(A*)`, Theorem 3.24) reduces to this. -/
+/-- **Separation from the closed graph, through the adjoint**. Let $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, let $A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense in $E$, and let
+$(u, y) \in E \times F$ with $(u, y) \notin G(A)$. Then some $v \in D(A^*)$ has
+$$v(y) \ne (A^* v)(u).$$
+
+A functional $\Phi \in (E \times F)^*$ that vanishes on the graph with $\Phi(u, y) \ne 0$
+(`Submodule.exists_dual_eq_zero_of_notMem`) has components $f = \Phi \circ \mathrm{inl}$ and
+$v = \Phi \circ \mathrm{inr}$ with $f(x) + v(Ax) = 0$ on $D(A)$. So $v \in D(A^*)$ with
+$A^* v = -f$, and $v(y) - (A^* v)(u) = \Phi(u, y)$. Every consequence of the closedness of $A$
+for its adjoint reduces to this: Corollary 2.18(i), the weak-$*$ density of $D(A^*)$, and
+Theorem 3.24 of [brezis2011functional]. -/
 theorem IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) {u : E} {y : F} (h : (u, y) ∉ A.graph) :
     ∃ v : A.strongDualAdjoint.domain, (v : StrongDual 𝕜 F) y ≠ A.strongDualAdjoint v u := by
@@ -556,11 +656,15 @@ theorem IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph (hc : A
   rw [hsplit]
   linear_combination heq
 
-/-- **`N(A) = R(A*)^⊥`** for a closed operator ([brezis2011functional], Corollary 2.18 (i);
-Exercise 2.18): `u ∈ D(A)` with `A u = 0` iff `(A* v) u = 0` for every `v ∈ D(A*)`. The
-inclusion `⊆` is the fundamental relation; for `⊇`, a `u ∈ R(A*)^⊥` outside `N(A)` has
-`(u, 0) ∉ G(A)`, and separation from the closed graph produces `v ∈ D(A*)` with
-`(A* v) u ≠ v 0 = 0`. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be
+closed with $D(A)$ dense in $E$. Then
+$$N(A) = R(A^*)^\perp:$$
+an element $u \in E$ lies in $D(A)$ with $Au = 0$ if and only if $(A^* v)(u) = 0$ for every
+$v \in D(A^*)$. This is Corollary 2.18(i) and Exercise 2.18 of [brezis2011functional].
+
+The inclusion $\subseteq$ is the fundamental relation. For $\supseteq$, an element
+$u \in R(A^*)^\perp$ outside $N(A)$ has $(u, 0) \notin G(A)$, and separation from the closed
+graph produces $v \in D(A^*)$ with $(A^* v)(u) \ne v(0) = 0$. -/
 theorem IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) :
     A.ker = (LinearMap.range A.strongDualAdjoint.toFun).strongDualCoannihilator := by
@@ -579,18 +683,24 @@ theorem IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint (hc : A.
     obtain ⟨v, hv⟩ := hc.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph hA hnot
     exact hv (by rw [h v, _root_.map_zero])
 
-/-- **`A*` onto implies `A` injective** ([brezis2011functional], Remark 2.20): for a closed
-operator, `N(A) = R(A*)^⊥ = (E*)^⊥ = 0`. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A$ be closed with $D(A)$ dense in $E$.
+If $A^*$ is onto, that is, $R(A^*) = E^*$, then $A$ is injective: $N(A) = \{0\}$. This is Remark
+2.20 of [brezis2011functional].
+
+The proof is $N(A) = R(A^*)^\perp = (E^*)^\perp = \{0\}$. -/
 theorem IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) (h : LinearMap.range A.strongDualAdjoint.toFun = ⊤) :
     A.ker = ⊥ := by
   rw [hc.ker_eq_strongDualCoannihilator_range_strongDualAdjoint hA, h,
     Submodule.strongDualCoannihilator_top]
 
-/-- **`D(A*)` separates the points of `F`** when `A` is closed and densely defined: for `y ≠ 0`
-some `v ∈ D(A*)` has `v y ≠ 0`. Indeed `(0, y) ∉ G(A)`, and separation from the closed graph
-gives `v ∈ D(A*)` with `v y ≠ (A* v) 0 = 0`. This is the common core of the weak-∗ density of
-`D(A*)` (Remark 2.15) and of its norm density for reflexive `F` (Theorem 3.24). -/
+/-- The **domain of the adjoint separates the points of $F$**. Let $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, and let $A$ be closed with $D(A)$ dense in $E$. For every $y \in F$ with
+$y \ne 0$, some $v \in D(A^*)$ has $v(y) \ne 0$.
+
+Indeed $(0, y) \notin G(A)$, and separation from the closed graph gives $v \in D(A^*)$ with
+$v(y) \ne (A^* v)(0) = 0$. This is the common core of the weak-$*$ density of $D(A^*)$ (Remark
+2.15 of [brezis2011functional]) and of its norm density for reflexive $F$ (Theorem 3.24). -/
 theorem IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) {y : F} (hy : y ≠ 0) :
     ∃ v : A.strongDualAdjoint.domain, (v : StrongDual 𝕜 F) y ≠ 0 := by
@@ -603,12 +713,16 @@ theorem IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero (hc : A.IsClo
   refine ⟨v, fun h => hv ?_⟩
   rw [h, _root_.map_zero]
 
-/-- **`D(A*)` is weak-∗ dense in `F*`** for a closed densely defined operator
-([brezis2011functional], Remark 2.15; Problem 9): if the weak-∗ closure `K` of `D(A*)` missed
-some `w`, the separation `Submodule.exists_weakDual_eval_eq_zero_of_notMem` would give `y : F`
-killed by every `v ∈ D(A*)` with `w y ≠ 0`; but `D(A*)` separates the points of `F`
-(`exists_mem_domain_strongDualAdjoint_apply_ne_zero`). The norm-closure statement fails in
-general (Exercise 2.22) and holds for reflexive `F` (Theorem 3.24,
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A$ be closed with $D(A)$ dense in $E$.
+Then $D(A^*)$ is dense in $F^*$ for the weak-$*$ topology. This is Remark 2.15 and Problem 9 of
+[brezis2011functional].
+
+The statement is that the image of $D(A^*)$ under `StrongDual.toWeakDual` is dense. If the
+weak-$*$ closure of $D(A^*)$ missed some $w$, then
+`Submodule.exists_weakDual_eval_eq_zero_of_notMem` would give $y \in F$ with $v(y) = 0$ for
+every $v \in D(A^*)$ and $w(y) \ne 0$; but $D(A^*)$ separates the points of $F$
+(`LinearPMap.IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero`). Density in norm fails
+in general (Exercise 2.22) and holds for reflexive $F$ (Theorem 3.24,
 `LinearPMap.dense_domain_strongDualAdjoint`). -/
 theorem IsClosed.dense_toWeakDual_domain_strongDualAdjoint (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) :
@@ -631,12 +745,15 @@ theorem IsClosed.dense_toWeakDual_domain_strongDualAdjoint (hc : A.IsClosed)
   obtain ⟨v, hv⟩ := hc.exists_mem_domain_strongDualAdjoint_apply_ne_zero hA hy0
   exact hv (hy (StrongDual.toWeakDual v) (Submodule.le_topologicalClosure _ ⟨v, v.2, rfl⟩))
 
-/-- **`N(A)^⊥` is the weak-∗ closure of `R(A*)`** for a closed densely defined operator
-([brezis2011functional], Remark 2.17; Problem 9): `N(A) = R(A*)^⊥` and the weak-∗ bipolar
-theorem for subspaces,
-`Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual`. In norm the
-inclusion `closure R(A*) ⊆ N(A)^⊥` can be strict; equality holds when `E` is reflexive
-(`Submodule.strongDualAnnihilator_strongDualCoannihilator`). -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A$ be closed with $D(A)$ dense in $E$.
+Then $N(A)^\perp$ is the closure of $R(A^*)$ in the weak-$*$ topology of $E^*$. This is Remark
+2.17 and Problem 9 of [brezis2011functional].
+
+Both sides are stated as subsets of the weak dual, through `StrongDual.toWeakDual`. The proof
+combines $N(A) = R(A^*)^\perp$ with the weak-$*$ bipolar theorem for subspaces,
+`Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual`. In norm, the
+inclusion $\overline{R(A^*)} \subseteq N(A)^\perp$ can be strict; equality holds when $E$ is
+reflexive (`Submodule.strongDualAnnihilator_strongDualCoannihilator`). -/
 theorem IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) :
     StrongDual.toWeakDual '' (A.ker.strongDualAnnihilator : Set (StrongDual 𝕜 E)) =

@@ -11,37 +11,53 @@ import Mathlib.Tactic.Ring
 /-!
 # Ratio tests with inexact data
 
-In the dynamic-accuracy methods of [cartis2022evaluation] (§13.1, §13.3: (13.1.16), (13.1.58),
-(13.3.10), (13.3.19)) the ratio of achieved to predicted decrease is
-`ρ = (a - b) / Δbar`, where `Δbar > 0` is an *inexact* Taylor decrement and `a, b` are the values
-of the objective at `x` and `x + s`, exact (IDA framework, `a = f x`, `b = f (x + s)`) or inexact
-(EDA framework). The lemmas below are statements about real numbers: the exact values
-`fx = f x`, `fxs = f (x + s)` and the exact decrement `ΔT` enter only through the error terms, so
-the same lemmas serve every algorithm of Chapter 13.
+The dynamic-accuracy methods of Chapter 13 of [cartis2022evaluation] (§13.1 and §13.3, with the
+ratios (13.1.16), (13.1.58), (13.3.10) and (13.3.19)) compare the achieved decrease with the
+predicted decrease through the ratio $\rho = (a - b)/\bar\Delta$. Here $\bar\Delta > 0$ is an
+inexact Taylor decrement, and $a$ and $b$ are values of the objective at $x$ and $x + s$. These
+values are exact in the IDA framework, $a = f(x)$ and $b = f(x + s)$, and inexact in the EDA
+framework. Write $f_x = f(x)$ and $f_{xs} = f(x + s)$ for the exact values and $\Delta_T$ for the
+exact Taylor decrement at $x$ along $s$.
 
-* `Optimization.abs_div_sub_one_le_of_inexact`: `|ρ - 1|` is bounded by the sum of the value
-  errors, the Taylor remainder `|fxs - (fx - ΔT)|` and the decrement error `|ΔT - Δbar|`, divided
-  by `Δbar`.
-* `Optimization.le_div_of_inexact_error_le`: if that sum is at most `(1 - η) Δbar` then `η ≤ ρ`
-  (the very-successful criterion).
+The lemmas of this file are statements about real numbers. The exact quantities $f_x$, $f_{xs}$ and
+$\Delta_T$ enter only through the error terms $|a - f_x|$, $|b - f_{xs}|$,
+$|f_{xs} - (f_x - \Delta_T)|$ and $|\Delta_T - \bar\Delta|$, so the same lemmas serve every
+algorithm of Chapter 13.
+
+## Main results
+
+* `Optimization.abs_div_sub_one_le_of_inexact`: $|\rho - 1|$ is at most the sum of the two value
+  errors, the Taylor remainder $|f_{xs} - (f_x - \Delta_T)|$ and the decrement error
+  $|\Delta_T - \bar\Delta|$, divided by $\bar\Delta$.
+* `Optimization.le_div_of_inexact_error_le`: if that sum is at most $(1 - \eta)\bar\Delta$, then
+  $\rho \ge \eta$ (the very-successful criterion).
 * `Optimization.sub_ge_of_inexact_ratio`: on an accepted step with value errors at most
-  `κs Δbar`, `κs ≤ η₁ / 4`, the true decrease is at least `η₁ Δbar / 2`.
+  $\kappa_s \bar\Delta$ and $\kappa_s \le \eta_1/4$, the true decrease $f_x - f_{xs}$ is at least
+  $\eta_1 \bar\Delta/2$.
 
-In the IDA framework the book's ratio is `Optimization.reductionRatio f x s Δbar`, which is
-`(a - b) / Δbar` with `a = f x`, `b = f (x + s)` by `Optimization.reductionRatio_def`. With
-moreover `Δbar = ΔT` the first lemma is the exact estimate behind
-`Optimization.le_reductionRatio_of_abs_sub_le`.
+## Implementation notes
+
+* The quantities are real variables: `fx`, `fxs`, `ΔT` and `Δbar` stand for $f_x$, $f_{xs}$,
+  $\Delta_T$ and $\bar\Delta$.
+* In the IDA framework the ratio of the source is `Optimization.reductionRatio f x s Δbar`, which
+  equals $(a - b)/\bar\Delta$ with $a = f(x)$ and $b = f(x + s)$ by
+  `Optimization.reductionRatio_def`. If moreover $\bar\Delta = \Delta_T$, the first lemma is the
+  exact estimate behind `Optimization.le_reductionRatio_of_abs_sub_le`.
 -/
 
 namespace Optimization
 
 variable {a b fx fxs ΔT Δbar η η₁ κs : ℝ}
 
-/-- **Error decomposition of the inexact ratio.** For `Δbar > 0`,
-`|(a - b) / Δbar - 1| ≤ (|a - fx| + |fxs - (fx - ΔT)| + |ΔT - Δbar| + |b - fxs|) / Δbar`. When
-`ΔT` is the exact Taylor decrement at `x`, `fx - ΔT` is the Taylor polynomial at `s`, so the
-second term is the Taylor remainder; the third is the error of the inexact decrement, and the first
-and last are the errors of the function values (zero in the IDA framework). -/
+/-- The **error decomposition of the inexact ratio**. Let $a, b, f_x, f_{xs}, \Delta_T, \bar\Delta
+\in \mathbb{R}$ with $\bar\Delta > 0$. Then
+$$\left|\frac{a - b}{\bar\Delta} - 1\right| \le \frac{|a - f_x| + |f_{xs} - (f_x - \Delta_T)| +
+  |\Delta_T - \bar\Delta| + |b - f_{xs}|}{\bar\Delta}.$$
+
+When $\Delta_T$ is the exact Taylor decrement at $x$ along $s$, $f_x - \Delta_T$ is the value of
+the Taylor polynomial at $s$, so the second term is the Taylor remainder. The third term is the
+error of the inexact decrement. The first and the last terms are the errors of the function
+values, and they vanish in the IDA framework. -/
 theorem abs_div_sub_one_le_of_inexact (hΔ : 0 < Δbar) :
     |(a - b) / Δbar - 1| ≤
       (|a - fx| + |fxs - (fx - ΔT)| + |ΔT - Δbar| + |b - fxs|) / Δbar := by
@@ -58,9 +74,12 @@ theorem abs_div_sub_one_le_of_inexact (hΔ : 0 < Δbar) :
     _ ≤ |a - fx| + |fxs - (fx - ΔT)| + |ΔT - Δbar| + |b - fxs| := by
         gcongr; exact abs_sub _ _
 
-/-- **Very-successful criterion for the inexact ratio.** If `Δbar > 0` and the total error
-`|a - fx| + |fxs - (fx - ΔT)| + |ΔT - Δbar| + |b - fxs|` is at most `(1 - η) Δbar`, then
-`η ≤ (a - b) / Δbar`. -/
+/-- The **very-successful criterion for the inexact ratio**. Let $a, b, f_x, f_{xs}, \Delta_T,
+\bar\Delta, \eta \in \mathbb{R}$ with $\bar\Delta > 0$, and suppose that the total error is
+small:
+$$|a - f_x| + |f_{xs} - (f_x - \Delta_T)| + |\Delta_T - \bar\Delta| + |b - f_{xs}| \le (1 -
+  \eta)\bar\Delta.$$
+Then $\eta \le (a - b)/\bar\Delta$. -/
 theorem le_div_of_inexact_error_le (hΔ : 0 < Δbar)
     (herr : |a - fx| + |fxs - (fx - ΔT)| + |ΔT - Δbar| + |b - fxs| ≤ (1 - η) * Δbar) :
     η ≤ (a - b) / Δbar := by
@@ -70,8 +89,9 @@ theorem le_div_of_inexact_error_le (hΔ : 0 < Δbar)
   have := neg_abs_le ((a - b) / Δbar - 1)
   linarith
 
-/-- True decrease on an accepted step with inexact values, sharp form: if `Δbar > 0`, the value
-errors are at most `κs Δbar` and `η₁ ≤ (a - b) / Δbar`, then `fx - fxs ≥ (η₁ - 2 κs) Δbar`. -/
+/-- The true decrease on an accepted step with inexact values, sharp form. Let $\bar\Delta > 0$,
+$|a - f_x| \le \kappa_s \bar\Delta$, $|b - f_{xs}| \le \kappa_s \bar\Delta$ and
+$\eta_1 \le (a - b)/\bar\Delta$. Then $f_x - f_{xs} \ge (\eta_1 - 2\kappa_s)\bar\Delta$. -/
 theorem sub_ge_sub_mul_of_inexact_ratio (hΔ : 0 < Δbar) (ha : |a - fx| ≤ κs * Δbar)
     (hb : |b - fxs| ≤ κs * Δbar) (hρ : η₁ ≤ (a - b) / Δbar) :
     (η₁ - 2 * κs) * Δbar ≤ fx - fxs := by
@@ -80,9 +100,12 @@ theorem sub_ge_sub_mul_of_inexact_ratio (hΔ : 0 < Δbar) (ha : |a - fx| ≤ κs
   have := neg_abs_le (b - fxs)
   nlinarith [abs_sub_comm a fx]
 
-/-- **True decrease on accepted steps with inexact values** ([cartis2022evaluation], proofs of
-Lemmas 13.3.2, 13.3.7): if `Δbar > 0`, `|a - fx| ≤ κs Δbar`, `|b - fxs| ≤ κs Δbar`,
-`η₁ ≤ (a - b) / Δbar` and `κs ≤ η₁ / 4`, then `fx - fxs ≥ η₁ Δbar / 2`. -/
+/-- The **true decrease on accepted steps with inexact values**. Let $a, b, f_x, f_{xs}, \bar\Delta,
+\eta_1, \kappa_s \in \mathbb{R}$ with $\bar\Delta > 0$, $|a - f_x| \le \kappa_s \bar\Delta$,
+$|b - f_{xs}| \le \kappa_s \bar\Delta$, $\eta_1 \le (a - b)/\bar\Delta$ and
+$\kappa_s \le \eta_1/4$. Then
+$$f_x - f_{xs} \ge \frac{\eta_1}{2}\bar\Delta.$$
+This is the estimate in the proofs of Lemmas 13.3.2 and 13.3.7 of [cartis2022evaluation]. -/
 theorem sub_ge_of_inexact_ratio (hΔ : 0 < Δbar) (ha : |a - fx| ≤ κs * Δbar)
     (hb : |b - fxs| ≤ κs * Δbar) (hρ : η₁ ≤ (a - b) / Δbar) (hκ : κs ≤ η₁ / 4) :
     η₁ / 2 * Δbar ≤ fx - fxs := by

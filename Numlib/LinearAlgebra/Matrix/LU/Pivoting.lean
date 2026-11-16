@@ -18,123 +18,153 @@ import Numlib.LinearAlgebra.Matrix.Rank
 /-!
 # Pivoting and the growth factor of Gaussian elimination
 
-Pivoting, at two levels. The *specification* level says what pivoting achieves: every square
-matrix over a normed field has a row permutation `σ` with `P A = L U`, `P` the permutation matrix
-of `σ`, and all multipliers of modulus at most one — partial pivoting,
-[quarteroni2000numerical] (3.52) — and a row and a column permutation with `P A Q = L U` whose
-upper factor is dominated by its diagonal — complete pivoting, [quarteroni2000numerical] §3.5.
-Neither needs nonsingularity: a zero pivot column is skipped with a zero column of multipliers.
-The *algorithm* level is the stage recurrence of Gaussian elimination
-(`Numlib/LinearAlgebra/Matrix/LU/Elimination`) with a pivot-row choice inserted before each step:
-`Matrix.gemPivotStage A piv k` runs `k` stages with an arbitrary strategy `piv`, returning the
-current matrix and the accumulated row permutation, and `Matrix.partialPivotRow` (the first row of
-maximal modulus in the current column) is the strategy of Gaussian elimination with partial
-pivoting. `Matrix.gemFullPivotStage A piv k` is its two-sided counterpart, interchanging rows *and*
-columns for a strategy choosing a pair of indices, with `Matrix.completePivotEntry` the strategy of
-complete pivoting.
+This module treats pivoting in Gaussian elimination at two levels. The first level states what
+pivoting achieves. Every square matrix $A$ over a normed field has a row permutation $\sigma$ with
+$P_\sigma A = LU$ and all multipliers of modulus at most one (partial pivoting, equation (3.52) of
+[quarteroni2000numerical]). It also has a row permutation and a column permutation with
+$P A Q = LU$, where in addition every row of $U$ is dominated by its diagonal entry (complete
+pivoting, [quarteroni2000numerical], §3.5). Neither statement needs $A$ to be nonsingular: a zero
+pivot column is skipped with a zero column of multipliers. The second level is the algorithm: the
+stages of Gaussian elimination of `Numlib.LinearAlgebra.Matrix.LU.Elimination` with a choice of the
+pivot row before each step. A strategy chooses the pivot; partial pivoting takes the first row of
+maximal modulus in the current column, and complete pivoting takes an entry of maximal modulus in
+the trailing block, with a row and a column interchange ([golub2013matrix], §3.4;
+[higham2002accuracy], §9.3–9.5). Rook pivoting ([golub2013matrix], §3.4.7) is also defined. The
+module also proves partial pivoting on a tall block column ([golub2013matrix], §3.6) and the band
+structure of the factors of partial pivoting ([golub2013matrix], §4.3).
 
-The growth factor `ρ_N = max_{i,j,k} |a^{(k)}_{ij}| / max_{i,j} |a_{ij}|`
-([quarteroni2000numerical] (3.66)) is defined on the *exact* stages and over `ℝ`; the book
-defines it on the computed stages, and [higham2002accuracy] (after Theorem 9.5) explains why the
-exact one is the one that can be bounded. Of the bounds of [quarteroni2000numerical] §3.10, this
-module proves `2^{N-1}` under bounded multipliers (hence for partial pivoting), `1` for symmetric
-positive definite matrices, `2` for column diagonally dominant matrices, `2` for tridiagonal,
-`N` for upper Hessenberg, `2^{p+q}` for banded matrices of lower bandwidth `p` and upper
-bandwidth `q` under partial pivoting, and Wilkinson's
-`N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}` for complete pivoting.
-
-**Bohte's band bound is not here.** [quarteroni2000numerical] §3.10 (1) and
-[higham2002accuracy] Theorem 9.11 state that a matrix whose upper and lower bandwidths are both
-`p` has `ρ_n ≤ 2^{2p-1} - (p-1) 2^{p-2}` under partial pivoting. What this module proves instead
-is `Matrix.growthFactor_le_two_pow_of_hasBandwidth`, `ρ_N ≤ 2^{p+q}` for lower bandwidth `p` and
-upper bandwidth `q`; that carries the content of the book's item — the growth factor of a banded
-matrix is bounded independently of the order — and `Matrix.growthFactor_le_two_of_isTridiagonal`
-gives the book's tridiagonal consequence `2` sharply. Bohte's constant is about a factor two
-better at `p = q`, and no proof of it is available: the book states it without one, and
-[higham2002accuracy] refers to Z. Bohte, *Bounds for rounding errors in the Gaussian elimination
-for band systems*, J. Inst. Maths. Applics. 16 (1975), 133–142, which is not among the project's
-references; Problem 9.15 there records the sharp bound for `p ≠ q` as an open research problem.
-Reaching the printed constant would need Bohte's finer analysis of how the entries of one band row
-grow along a sweep — a second-order recursion in the pair (column offset, number of updates) in
-place of the "each update at most doubles the column" counting used here — and the constant itself
-could not be checked against its source. Nothing in the corpus consumes it, so it is not tracked.
+The growth factor of Gaussian elimination on $A \in \mathbb{R}^{N \times N}$ is
+$$\rho(A) = \frac{\max_{i, j, k} |a^{(k)}_{ij}|}{\max_{i, j} |a_{ij}|}$$
+(equation (3.66) of [quarteroni2000numerical]). It is defined here with the exact stages $A^{(k)}$.
+Of the bounds in §3.10 of [quarteroni2000numerical], this module proves $\rho \le 2^{N-1}$ when the
+multipliers are bounded by one (so for partial pivoting), $\rho = 1$ for symmetric positive definite
+matrices, $\rho \le 2$ for nonsingular column diagonally dominant matrices, $\rho \le 2$ for
+tridiagonal matrices and $\rho \le N$ for upper Hessenberg matrices under partial pivoting,
+$\rho \le 2^{p+q}$ for band matrices of lower bandwidth $p$ and upper bandwidth $q$ under partial
+pivoting, and Wilkinson's bound
+$$\rho \le N^{1/2} \big( 2 \cdot 3^{1/2} \cdot 4^{1/3} \cdots N^{1/(N-1)} \big)^{1/2}$$
+for complete pivoting ([higham2002accuracy], (9.14)).
 
 ## Main definitions
 
-* `Matrix.IsPartialPivot`, `Matrix.partialPivotRow M k`: choosing a row `r ≥ k` maximizing
-  `‖M r k‖`, the strategy of partial pivoting, with `Matrix.partialPivotRow` the first such row.
-* `Matrix.IsCompletePivot`, `Matrix.completePivotEntry M k`: choosing an entry of maximal modulus
-  in the trailing block from `k` on, the strategy of complete pivoting.
-* `Matrix.IsRookPivot`: choosing an entry maximal in modulus in both its row and its column of the
-  trailing block, rook pivoting ([golub2013matrix] §3.4.7); complete pivoting is one
+* `Matrix.IsPartialPivot`: a strategy that chooses a row $r \ge k$ that maximizes $|m_{rk}|$.
+* `Matrix.partialPivotRow`: the first such row, the strategy of partial pivoting.
+* `Matrix.IsCompletePivot`: a strategy that chooses an entry of maximal modulus in the trailing
+  block from $k$ on.
+* `Matrix.completePivotEntry`: one such entry, the strategy of complete pivoting.
+* `Matrix.IsRookPivot`: a strategy that chooses an entry of the trailing block that is maximal in
+  modulus in both its row and its column; complete pivoting is one
   (`Matrix.IsCompletePivot.isRookPivot`).
-* `Matrix.gemPivotStage A piv k`: `k` stages of Gaussian elimination with the pivoting strategy
-  `piv`, as a pair (current matrix, accumulated row permutation).
-* `Matrix.gemFullPivotStage A piv k`: the same for a strategy choosing an entry, as a triple
-  (current matrix, accumulated row permutation, accumulated column permutation).
-* `Matrix.supAbs A`: the largest absolute value of an entry of a real matrix, and
-  `Matrix.growthFactor A`: the growth factor of Gaussian elimination without pivoting on `A`.
-* `Matrix.HasDominantPivots A`: every stage of the elimination has its pivot dominating the
-  trailing block, with `Matrix.absGemPivot A k` the modulus of the `k`-th pivot.
-* `Matrix.wilkinsonGrowthBound N`: `N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`.
+* `Matrix.gemPivotStage`: $k$ stages of Gaussian elimination with a row-pivoting strategy, as the
+  pair of the current matrix and the accumulated row permutation.
+* `Matrix.gemFullPivotStage`: the same for a strategy that chooses an entry, as the triple of the
+  current matrix and the accumulated row and column permutations.
+* `Matrix.supAbs`: the largest absolute value $\mu(A)$ of an entry of a real matrix.
+* `Matrix.growthFactor`: the growth factor $\rho(A)$ of Gaussian elimination without pivoting.
+* `Matrix.HasDominantPivots`: at every stage the pivot dominates the trailing block.
+* `Matrix.absGemPivot`: the modulus of the $k$-th pivot.
+* `Matrix.wilkinsonGrowthBound`: Wilkinson's bound $W(n) = n^{1/2} (2 \cdot 3^{1/2} \cdots
+  n^{1/(n-1)})^{1/2}$.
 
 ## Main results
 
-* `Matrix.exists_permMatrix_mul_isLU`: `P A = L U` with `‖L i j‖ ≤ 1`, for every square matrix.
-* `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`: `P A Q = L U` with `‖L i j‖ ≤ 1` and
-  `‖U i j‖ ≤ ‖U i i‖`.
+* `Matrix.exists_permMatrix_mul_isLU`: every square matrix has $P_\sigma A = LU$ with
+  $|l_{ij}| \le 1$.
+* `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`: every square matrix has $P A Q = LU$ with
+  $|l_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$.
 * `Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`: the stages of Gaussian elimination
-  on `P A` are the pivoted stages with their rows permuted by the *later* interchanges; hence
-  `Matrix.gemPivotStage_permMatrix_mul_isLU`, the factorization `P A = L U` computed by the
-  recurrence, and `Matrix.gemPivotStage_norm_gemLower_le_one`, the bound on the multipliers of
-  any partial-pivoting strategy (`Matrix.IsPartialPivot`), with its `Matrix.partialPivotRow`
-  case `Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`.
-* `Matrix.growthFactor_le_two_pow`, `Matrix.growthFactor_eq_one_of_posDef`,
-  `Matrix.growthFactor_le_two_of_isColDiagDominant`, `Matrix.growthFactor_le_two_of_isTridiagonal`,
-  `Matrix.growthFactor_le_card_of_isUpperHessenberg`,
-  `Matrix.growthFactor_le_two_pow_of_hasBandwidth`.
+  without pivoting on $P_\sigma A$ are the pivoted stages, with their rows permuted by the later
+  interchanges.
+* `Matrix.gemPivotStage_permMatrix_mul_isLU`: the pivoted recurrence computes $P_\sigma A = LU$ when
+  the chosen pivots are nonzero.
+* `Matrix.gemPivotStage_norm_gemLower_le_one`,
+  `Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`: the multipliers of partial pivoting
+  have modulus at most one.
+* `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot`: partial pivoting factors
+  $P_\sigma A = LU$ for every square matrix.
 * `Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`: the two-sided analogue for complete
-  pivoting, whence `Matrix.hasDominantPivots_submatrix_gemFullPivotStage`, the stage dominance
-  that complete pivoting buys.
-* `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot`,
-  `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`: partial pivoting factors
-  `P A = L U` and rook (hence complete) pivoting factors `P A Q = L U` with bounded multipliers
-  and a dominant diagonal of `U`, for *every* matrix: a zero pivot comes with a zero column
-  (`Matrix.isLU_gemLower_gemStage'`), so "Algorithm 3.4.1 always runs to completion"
-  ([golub2013matrix] §3.4.3).
+  pivoting.
+* `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`: rook pivoting, and so complete
+  pivoting, factors $P A Q = LU$ for every square matrix, with $|l_{ij}| \le 1$ and
+  $|u_{ij}| \le |u_{ii}|$.
 * `Matrix.gemFullPivotStage_trailing_eq_zero_of_rank`: complete pivoting reveals the rank
-  ([golub2013matrix] §3.4.6); `Matrix.exists_permMatrix_mul_isRectLU`: partial pivoting on a tall
-  block column ((3.6.2)).
+  ([golub2013matrix], §3.4.6).
+* `Matrix.exists_permMatrix_mul_isRectLU`: partial pivoting on a tall block column
+  ([golub2013matrix], (3.6.2)).
+* `Matrix.growthFactor_le_two_pow`: $\rho \le 2^{N-1}$ when the multipliers have modulus at most
+  one.
+* `Matrix.growthFactor_eq_one_of_posDef`: $\rho = 1$ for a symmetric positive definite matrix.
+* `Matrix.growthFactor_le_two_of_isColDiagDominant`: $\rho \le 2$ for a nonsingular column
+  diagonally dominant matrix.
+* `Matrix.growthFactor_le_card_of_isUpperHessenberg`: $\rho \le N$ for partial pivoting on an upper
+  Hessenberg matrix.
+* `Matrix.growthFactor_le_two_of_isTridiagonal`: $\rho \le 2$ for partial pivoting on a tridiagonal
+  matrix.
+* `Matrix.growthFactor_le_two_pow_of_hasBandwidth`: $\rho \le 2^{p+q}$ for partial pivoting on a
+  band matrix.
 * `Matrix.gemPivotStage_partialPivotRow_hasUpperBandwidth`,
-  `Matrix.gemPivotStage_partialPivotRow_multiplier_eq_zero`: [golub2013matrix] Theorem 4.3.2, the
-  band structure of the factors of partial pivoting.
-* `Matrix.abs_gemFullPivotStage_le_wilkinson`: Wilkinson's bound stage by stage
-  ([golub2013matrix] (3.4.10), with the index corrected).
-* `Matrix.growthFactor_le_of_completePivoting` and its algorithmic form
-  `Matrix.growthFactor_le_wilkinson_of_isCompletePivot`: **Wilkinson's bound**, by Hadamard's
-  determinant inequality (`Matrix.norm_det_le_of_forall_norm_le`) on the leading blocks of the
-  reduced matrices and a telescoping induction over the pivots.
+  `Matrix.gemPivotStage_partialPivotRow_multiplier_eq_zero`: the band structure of the factors of
+  partial pivoting, Theorem 4.3.2 of [golub2013matrix].
+* `Matrix.abs_gemFullPivotStage_le_wilkinson`: Wilkinson's bound stage by stage ([golub2013matrix],
+  (3.4.10)).
+* `Matrix.growthFactor_le_of_completePivoting`,
+  `Matrix.growthFactor_le_wilkinson_of_isCompletePivot`: Wilkinson's bound $\rho \le W(N)$ under
+  dominant pivots, and for complete pivoting.
+
+## Proof outline
+
+The existence theorems are proved by strong induction on the number of indices, as in
+`Numlib.LinearAlgebra.Matrix.LU`: the pivot is moved to the first index by a transposition, one step
+of elimination is taken, and the permutation of the trailing block is extended. For the recurrence,
+the key fact is that the interchanges after stage $k$ fix the indices below $k$, so they commute
+with the elimination steps up to stage $k$. Wilkinson's bound uses Hadamard's determinant inequality
+(`Matrix.norm_det_le_of_forall_norm_le`) on the leading blocks of the reduced matrices, followed by
+a telescoping induction over the pivots.
+
+## Notation
+
+* $P_\sigma$ is the permutation matrix `σ.permMatrix 𝕜`, with $(P_\sigma A)_{ij} = a_{\sigma(i) j}$.
+* $B^{(k)}$ is the stage `Matrix.gemStage B k` of Gaussian elimination *without* pivoting on $B$,
+  with $B^{(0)} = B$.
+* $(\hat A^{(k)}, \sigma_k)$ is `Matrix.gemPivotStage A piv k`, and
+  $(\hat A^{(k)}, \sigma_k, \tau_k)$ is `Matrix.gemFullPivotStage A piv k`.
+* $\mu(A) = \max_{i, j} |a_{ij}|$ is `Matrix.supAbs A`.
+* $\rho(A)$ is `Matrix.growthFactor A`.
+* $W(n)$ is `Matrix.wilkinsonGrowthBound n`.
 
 ## Implementation notes
 
-A row permutation is applied as `A.submatrix σ id`, whose entries are `A (σ i) j` by definition;
-the permutation-matrix form `σ.permMatrix K * A` of the statements is the same matrix by
-`PEquiv.toMatrix_toPEquiv_mul`. The existence proofs are the strong induction on the number of
-indices of `Numlib/LinearAlgebra/Matrix/LU` (`Matrix.isLU_luLowerOfSchur_luUpperOfSchur`), with
-the pivot moved to the first index by a transposition and the permutation of the trailing block
-extended by `Equiv.Perm.ofSubtype`. The recurrence is on `Fin N`, as `Matrix.gemStage` is; the
-accumulated permutation is `σ_{k+1} = σ_k * swap k r_k`, so that its permutation matrix is
-`P_k ⋯ P_1` and the interchanges *after* stage `k`, `σ_k⁻¹ σ_N`, fix the indices below `k`. The
-complete-pivoting recurrence carries a second permutation with the same bookkeeping, and the only
-new geometric fact is that an elimination step commutes with a permutation of the *columns* that
-fixes the pivot (`Matrix.elimStep_submatrix_id_of_apply_self`).
-
-## References
-
-* [quarteroni2000numerical] §3.5, §3.10.
-* [golub2013matrix] §3.4, §3.6, §4.3.
-* [higham2002accuracy] §9.3–9.5, (9.14) (Wilkinson's complete-pivoting bound) and
-  Theorem 9.11 (Bohte).
+* Indices and stages are numbered from $0$, and the sources number them from $1$.
+* A row permutation is applied as `A.submatrix σ id`, whose entries are $a_{\sigma(i) j}$ by
+  definition. The form `σ.permMatrix K * A` of the statements is the same matrix, by
+  `PEquiv.toMatrix_toPEquiv_mul`. A two-sided permutation `A.submatrix σ τ` is
+  $P_\sigma A P_{\tau^{-1}}$ (`Matrix.permMatrix_mul_mul_permMatrix`).
+* The recurrence is on `Fin N`, as `Matrix.gemStage` is. The accumulated permutation is
+  $\sigma_{k+1} = \sigma_k s_k$, with $s_k$ the transposition of $k$ and the pivot row, so that
+  $P_{\sigma_k} = P_{s_{k-1}} \cdots P_{s_0}$, and the later interchanges $\sigma_k^{-1} \sigma_N$
+  fix the indices below $k$. The complete-pivoting recurrence carries a second permutation with the
+  same bookkeeping. The only new fact that it needs is that an elimination step commutes with a
+  permutation of the *columns* that fixes the pivot (`Matrix.elimStep_submatrix_id_of_apply_self`).
+* The growth factor is defined with the exact stages and over $\mathbb{R}$. The source defines it
+  with the computed stages; [higham2002accuracy] (after Theorem 9.5) explains that the exact growth
+  factor is the one that can be bounded. For partial pivoting the growth factor is
+  $\rho(P_\sigma A)$, because the pivoted stages are the stages of elimination without pivoting on
+  $P_\sigma A$ up to the order of the rows.
+* Bohte's band bound is not proved. Section 3.10 (1) of [quarteroni2000numerical] and Theorem 9.11
+  of [higham2002accuracy] state that a matrix with upper and lower bandwidth $p$ has
+  $\rho \le 2^{2p-1} - (p-1) 2^{p-2}$ under partial pivoting. This module proves instead
+  $\rho \le 2^{p+q}$ for lower bandwidth $p$ and upper bandwidth $q$
+  (`Matrix.growthFactor_le_two_pow_of_hasBandwidth`). That bound carries the content of the source's
+  item, namely that the growth factor of a band matrix is bounded independently of the order, and
+  `Matrix.growthFactor_le_two_of_isTridiagonal` gives the sharp tridiagonal bound $2$. Bohte's
+  constant is about a factor two better for $p = q$. Neither source proves it:
+  [quarteroni2000numerical] states it without proof, and [higham2002accuracy] refers to Z. Bohte,
+  *Bounds for rounding errors in the Gaussian elimination for band systems*, J. Inst. Maths.
+  Applics. 16 (1975), 133–142, and records the sharp bound for $p \neq q$ as an open problem
+  (Problem 9.15). A proof of the printed constant would need Bohte's finer analysis of how the
+  entries of one band row grow along a sweep, a second-order recursion in the pair (column offset,
+  number of updates), in place of the argument here that each update at most doubles the column. No
+  other result of the library depends on it.
 -/
 
 open Finset
@@ -149,8 +179,10 @@ section Perm
 
 variable {n : Type*} {K : Type*} [Field K]
 
-/-- The one-step Schur complement at `p` commutes with a permutation of the rows and of the
-columns that fixes `p`, the permutation restricting to the indices other than `p`. -/
+/-- Let $p$ be an index, and let $\sigma$ and $\rho$ be permutations of the indices other than $p$,
+extended to all indices by $p \mapsto p$. Then the one-step Schur complement at $p$ of the
+matrix with the entries $a_{\sigma(i) \rho(j)}$ is the Schur complement of $A$ at $p$ with its
+rows permuted by $\sigma$ and its columns permuted by $\rho$. -/
 theorem schurComplementSingle_submatrix_ofSubtype [DecidableEq n] (A : Matrix n n K) (p : n)
     (σ ρ : Equiv.Perm {i : n // i ≠ p}) :
     (A.submatrix (Equiv.Perm.ofSubtype σ) (Equiv.Perm.ofSubtype ρ)).schurComplementSingle p =
@@ -159,21 +191,25 @@ theorem schurComplementSingle_submatrix_ofSubtype [DecidableEq n] (A : Matrix n 
   simp only [schurComplementSingle_apply, submatrix_apply, Equiv.Perm.ofSubtype_apply_coe,
     Equiv.Perm.ofSubtype_apply_of_not_mem (p := fun i => i ≠ p) _ (not_not.2 rfl)]
 
-/-- A permutation extended from the indices other than `p` fixes `p`. -/
+/-- A permutation of the indices other than $p$, extended by `Equiv.Perm.ofSubtype`, fixes $p$. -/
 theorem ofSubtype_ne_apply_self [DecidableEq n] (p : n) (σ : Equiv.Perm {i : n // i ≠ p}) :
     Equiv.Perm.ofSubtype σ p = p :=
   Equiv.Perm.ofSubtype_apply_of_not_mem (p := fun i => i ≠ p) _ (not_not.2 rfl)
 
 end Perm
 
-/-! ### Existence of `P A = L U` and `P A Q = L U` -/
+/-! ### Existence of $PA = LU$ and $PAQ = LU$ -/
 
 section Existence
 
 variable {n : Type u} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
 
-/-- The bordered lower factor is bounded by `1` when the pivot dominates its column and the
-lower factor of the trailing block is bounded by `1`. -/
+/-- Let $p$ be an index with $|a_{ip}| \le |a_{pp}|$ for every $i$, and let $L'$ be a matrix on the
+indices other than $p$ with $|l'_{ij}| \le 1$ for all $i, j$. Then every entry of the bordered
+lower factor `Matrix.luLowerOfSchur A p L'` has modulus at most $1$.
+
+The entries in the column $p$ are the multipliers $a_{ip} / a_{pp}$, and these are $0$ if
+$a_{pp} = 0$. -/
 theorem norm_luLowerOfSchur_apply_le_one {A : Matrix n n 𝕜} {p : n}
     (hpiv : ∀ i, ‖A i p‖ ≤ ‖A p p‖) {L' : Matrix {i // i ≠ p} {i // i ≠ p} 𝕜}
     (hL' : ∀ i j, ‖L' i j‖ ≤ 1) (i j : n) : ‖luLowerOfSchur A p L' i j‖ ≤ 1 := by
@@ -187,8 +223,10 @@ theorem norm_luLowerOfSchur_apply_le_one {A : Matrix n n 𝕜} {p : n}
       exact hpiv i
   · exact hL' _ _
 
-/-- The bordered upper factor is dominated by its diagonal when the pivot dominates its row and
-the upper factor of the trailing block is dominated by its diagonal. -/
+/-- Let $p$ be an index with $|a_{pj}| \le |a_{pp}|$ for every $j$, and let $U'$ be a matrix on the
+indices other than $p$ with $|u'_{ij}| \le |u'_{ii}|$ for all $i, j$. Then the bordered upper
+factor $U$ = `Matrix.luUpperOfSchur A p U'` satisfies $|u_{ij}| \le |u_{ii}|$ for all $i, j$:
+every row of $U$ is dominated by its diagonal entry. -/
 theorem norm_luUpperOfSchur_apply_le {A : Matrix n n 𝕜} {p : n}
     (hpiv : ∀ j, ‖A p j‖ ≤ ‖A p p‖) {U' : Matrix {i // i ≠ p} {i // i ≠ p} 𝕜}
     (hU' : ∀ i j, ‖U' i j‖ ≤ ‖U' i i‖) (i j : n) :
@@ -204,10 +242,14 @@ theorem norm_luUpperOfSchur_apply_le {A : Matrix n n 𝕜} {p : n}
 variable [Fintype n]
 
 omit [LinearOrder n] [Fintype n] in
-/-- **Partial pivoting**, by strong induction on the number of indices: a row of maximal
-modulus in the first column is moved to the first index by a transposition, one step of
-elimination is taken, and the permutation of the trailing block is extended by
-`Equiv.Perm.ofSubtype`. -/
+/-- **Partial pivoting**, for a fixed number of indices: for every finite linear order $n$ with $N$
+elements and every $A \in \mathbb{K}^{n \times n}$ over a normed field $\mathbb{K}$, there are a
+permutation $\sigma$ of $n$ and an LU factorization of the matrix $(a_{\sigma(i) j})_{i, j}$
+whose lower factor satisfies $|l_{ij}| \le 1$ for all $i, j$.
+
+The proof is a strong induction on $N$. A row of maximal modulus in the first column is moved to
+the first index by a transposition, one step of elimination is taken, and the permutation of the
+trailing block is extended by `Equiv.Perm.ofSubtype`. -/
 theorem exists_submatrix_isLU_of_card (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [LinearOrder n] (A : Matrix n n 𝕜), Fintype.card n = N →
       ∃ (σ : Equiv.Perm n) (L U : Matrix n n 𝕜), IsLU (A.submatrix σ id) L U ∧
@@ -246,7 +288,14 @@ theorem exists_submatrix_isLU_of_card (N : ℕ) :
   exact norm_le_zero_iff.1 this
 
 omit [LinearOrder n] [Fintype n] in
-/-- **Complete pivoting**, by the same induction with the pivot chosen in the whole matrix. -/
+/-- **Complete pivoting**, for a fixed number of indices: for every finite linear order $n$ with $N$
+elements and every $A \in \mathbb{K}^{n \times n}$ over a normed field $\mathbb{K}$, there are
+permutations $\sigma$ and $\rho$ of $n$ and an LU factorization $LU$ of the matrix
+$(a_{\sigma(i) \rho(j)})_{i, j}$ with $|l_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$ for all
+$i, j$.
+
+The proof is the induction of `Matrix.exists_submatrix_isLU_of_card`, with the pivot chosen in
+the whole matrix. -/
 theorem exists_submatrix_submatrix_isLU_of_card (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [LinearOrder n] (A : Matrix n n 𝕜), Fintype.card n = N →
       ∃ (σ ρ : Equiv.Perm n) (L U : Matrix n n 𝕜), IsLU (A.submatrix σ ρ) L U ∧
@@ -288,22 +337,31 @@ theorem exists_submatrix_submatrix_isLU_of_card (N : ℕ) :
   rw [h0, norm_zero] at this
   exact norm_le_zero_iff.1 this
 
-/-- **Gaussian elimination with partial pivoting exists** ([quarteroni2000numerical] (3.52),
-[higham2002accuracy] §9.3): every square matrix over a normed field has a row permutation `σ`
-with `P A = L U`, `P = σ.permMatrix 𝕜`, and every multiplier of modulus at most `1`. No
-nonsingularity is needed — the book proves (3.52) for nonsingular `A`, but a zero pivot column
-is simply skipped, with a zero column of multipliers. -/
+/-- **Gaussian elimination with partial pivoting exists.** Let $\mathbb{K}$ be a normed field and
+$A \in \mathbb{K}^{n \times n}$. Then there are a permutation $\sigma$ and matrices $L$ and $U$
+with
+$$P_\sigma A = LU,$$
+$L$ unit lower triangular, $U$ upper triangular, and $|l_{ij}| \le 1$ for all $i, j$.
+
+This is equation (3.52) of [quarteroni2000numerical] (see also [higham2002accuracy], §9.3). The
+source proves it for a nonsingular $A$. No nonsingularity is needed here, because a zero pivot
+column is skipped with a zero column of multipliers. -/
 theorem exists_permMatrix_mul_isLU (A : Matrix n n 𝕜) :
     ∃ (σ : Equiv.Perm n) (L U : Matrix n n 𝕜),
       IsLU (σ.permMatrix 𝕜 * A) L U ∧ ∀ i j, ‖L i j‖ ≤ 1 := by
   obtain ⟨σ, L, U, h, hL⟩ := exists_submatrix_isLU_of_card _ A rfl
   exact ⟨σ, L, U, by rwa [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul], hL⟩
 
-/-- **Gaussian elimination with complete pivoting exists** ([quarteroni2000numerical] §3.5):
-every square matrix has a row permutation `σ` and a column permutation `τ` with
-`P A Q = L U`, every multiplier of modulus at most `1`, and every row of `U` dominated by its
-diagonal entry — the pivot is the largest entry of the trailing block, which is what complete
-pivoting buys over partial pivoting. -/
+/-- **Gaussian elimination with complete pivoting exists.** Let $\mathbb{K}$ be a normed field and
+$A \in \mathbb{K}^{n \times n}$. Then there are permutations $\sigma$ and $\tau$ and matrices
+$L$ and $U$ with
+$$P_\sigma A P_\tau = LU,$$
+$L$ unit lower triangular, $U$ upper triangular, $|l_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$
+for all $i, j$.
+
+This is complete pivoting of [quarteroni2000numerical], §3.5. The pivot is the largest entry of
+the trailing block, so every row of $U$ is dominated by its diagonal entry; this is what
+complete pivoting gives in addition to partial pivoting. -/
 theorem exists_permMatrix_mul_mul_permMatrix_isLU (A : Matrix n n 𝕜) :
     ∃ (σ τ : Equiv.Perm n) (L U : Matrix n n 𝕜),
       IsLU (σ.permMatrix 𝕜 * A * τ.permMatrix 𝕜) L U ∧ (∀ i j, ‖L i j‖ ≤ 1) ∧
@@ -322,15 +380,19 @@ section PartialPivot
 
 variable {n : Type*} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
 
-/-- **A partial-pivoting strategy** ([quarteroni2000numerical] §3.5, [golub2013matrix] §3.4.3):
-`piv M k` returns a row `r` at or after `k` at which `‖M r k‖` is maximal among the rows from `k`
-on. `Matrix.partialPivotRow` is one (`Matrix.isPartialPivot_partialPivotRow`); the interchanges
-such a strategy produces are run by `Matrix.gemPivotStage`. The column counterpart of
-`Matrix.IsCompletePivot`. -/
+/-- A **partial-pivoting strategy**: a function `piv` that maps a matrix $M$ and an index $k$ to a
+row $r = $ `piv M k` with $r \ge k$ and
+$$|m_{r' k}| \le |m_{rk}| \quad \text{for every } r' \ge k.$$
+
+This is the choice of the pivot row of [quarteroni2000numerical], §3.5, and [golub2013matrix],
+§3.4.3. The strategy `Matrix.partialPivotRow` is one (`Matrix.isPartialPivot_partialPivotRow`),
+and `Matrix.gemPivotStage` runs the interchanges that a strategy produces.
+`Matrix.IsCompletePivot` is the analogue for complete pivoting. -/
 def IsPartialPivot (piv : Matrix n n 𝕜 → n → n) : Prop :=
   ∀ (M : Matrix n n 𝕜) (k : n), k ≤ piv M k ∧ ∀ r, k ≤ r → ‖M r k‖ ≤ ‖M (piv M k) k‖
 
-/-- Under a partial-pivoting strategy a zero pivot comes with a zero column below it. -/
+/-- Under a partial-pivoting strategy, a zero pivot comes with a zero column: if the chosen entry
+$m_{rk}$ is $0$, then $m_{r' k} = 0$ for every $r' \ge k$. -/
 theorem IsPartialPivot.apply_eq_zero {piv : Matrix n n 𝕜 → n → n} (hpiv : IsPartialPivot piv)
     {M : Matrix n n 𝕜} {k : n} (h : M (piv M k) k = 0) {r : n} (hr : k ≤ r) : M r k = 0 := by
   have := (hpiv M k).2 r hr
@@ -338,7 +400,7 @@ theorem IsPartialPivot.apply_eq_zero {piv : Matrix n n 𝕜 → n → n} (hpiv :
 
 variable [Fintype n]
 
-/-- Some row `r ≥ k` maximizes `‖M r k‖` among the rows `≥ k`. -/
+/-- Some row $r \ge k$ maximizes $|m_{rk}|$ among the rows $r \ge k$. -/
 theorem exists_partialPivotRow (M : Matrix n n 𝕜) (k : n) :
     (univ.filter fun r => k ≤ r ∧ ∀ r', k ≤ r' → ‖M r' k‖ ≤ ‖M r k‖).Nonempty := by
   obtain ⟨r, hr, hmax⟩ := Finset.exists_max_image (univ.filter (k ≤ ·)) (fun r => ‖M r k‖)
@@ -346,50 +408,61 @@ theorem exists_partialPivotRow (M : Matrix n n 𝕜) (k : n) :
   refine ⟨r, mem_filter.2 ⟨mem_univ _, (mem_filter.1 hr).2, fun r' hr' => ?_⟩⟩
   exact hmax r' (mem_filter.2 ⟨mem_univ _, hr'⟩)
 
-/-- **The partial-pivoting strategy** ([quarteroni2000numerical] §3.5): `partialPivotRow M k`
-is the first row `r ≥ k` at which `‖M r k‖` is maximal among the rows `≥ k`. Taking the *first*
-such row makes the choice deterministic and, when the whole column vanishes below `k`, makes it
-`k` itself, so that no interchange is performed on a zero pivot column. -/
+/-- The **partial-pivoting strategy**: `partialPivotRow M k` is the first row $r \ge k$ at which
+$|m_{rk}|$ is maximal among the rows $r \ge k$.
+
+This is the pivot row of [quarteroni2000numerical], §3.5. The choice of the *first* maximizing
+row makes the strategy deterministic. If the column vanishes from the row $k$ downwards, it
+chooses $k$ itself, so no interchange is made at a zero pivot column. -/
 noncomputable def partialPivotRow (M : Matrix n n 𝕜) (k : n) : n :=
   (univ.filter fun r => k ≤ r ∧ ∀ r', k ≤ r' → ‖M r' k‖ ≤ ‖M r k‖).min'
     (exists_partialPivotRow M k)
 
 variable (M : Matrix n n 𝕜) (k : n)
 
-/-- The membership of the pivot row in the set of maximizing rows. -/
+/-- The row `Matrix.partialPivotRow M k` satisfies $r \ge k$ and maximizes $|m_{rk}|$ among the rows
+$r \ge k$. -/
 theorem partialPivotRow_mem :
     partialPivotRow M k ∈
       univ.filter fun r => k ≤ r ∧ ∀ r', k ≤ r' → ‖M r' k‖ ≤ ‖M r k‖ :=
   Finset.min'_mem _ _
 
-/-- The pivot row lies at or below the current index. -/
+/-- The pivot row lies at or below the current index: $k \le r$ for $r$ =
+`Matrix.partialPivotRow M k`. -/
 theorem le_partialPivotRow : k ≤ partialPivotRow M k :=
   (mem_filter.1 (partialPivotRow_mem M k)).2.1
 
-/-- The pivot dominates its column below the current index. -/
+/-- The pivot dominates its column from the current index downwards: for $r$ =
+`Matrix.partialPivotRow M k` and every $r' \ge k$,
+$$|m_{r' k}| \le |m_{rk}|.$$
+-/
 theorem norm_apply_le_partialPivotRow {r : n} (hr : k ≤ r) :
     ‖M r k‖ ≤ ‖M (partialPivotRow M k) k‖ :=
   (mem_filter.1 (partialPivotRow_mem M k)).2.2 r hr
 
-/-- The pivot row is the *first* maximizing row. -/
+/-- The pivot row is the *first* maximizing row: if $r' \ge k$ and $|m_{r'' k}| \le |m_{r' k}|$ for
+every $r'' \ge k$, then `Matrix.partialPivotRow M k` $\le r'$. -/
 theorem partialPivotRow_le {r : n} (hr : k ≤ r) (hmax : ∀ r', k ≤ r' → ‖M r' k‖ ≤ ‖M r k‖) :
     partialPivotRow M k ≤ r :=
   Finset.min'_le _ _ (mem_filter.2 ⟨mem_univ _, hr, hmax⟩)
 
-/-- If the pivot vanishes, the whole column vanishes below the current index. -/
+/-- If the pivot chosen by `Matrix.partialPivotRow` is $0$, then $m_{rk} = 0$ for every $r \ge k$.
+-/
 theorem apply_eq_zero_of_partialPivotRow_eq_zero (h : M (partialPivotRow M k) k = 0) {r : n}
     (hr : k ≤ r) : M r k = 0 := by
   have := norm_apply_le_partialPivotRow M k hr
   rw [h, norm_zero] at this
   exact norm_le_zero_iff.1 this
 
-/-- On a zero pivot column no interchange is performed: the pivot row is `k` itself. -/
+/-- At a zero pivot column no interchange is made: if $m_{rk} = 0$ for every $r \ge k$, then
+`Matrix.partialPivotRow M k` $= k$. -/
 theorem partialPivotRow_eq_self_of_forall_eq_zero (h : ∀ r, k ≤ r → M r k = 0) :
     partialPivotRow M k = k :=
   le_antisymm (partialPivotRow_le M k le_rfl fun r' hr' => by rw [h r' hr', h k le_rfl])
     (le_partialPivotRow M k)
 
-/-- `Matrix.partialPivotRow` is a partial-pivoting strategy. -/
+/-- `Matrix.partialPivotRow` is a partial-pivoting strategy in the sense of `Matrix.IsPartialPivot`.
+-/
 theorem isPartialPivot_partialPivotRow :
     IsPartialPivot (partialPivotRow : Matrix n n 𝕜 → n → n) :=
   fun M k => ⟨le_partialPivotRow M k, fun _ hr => norm_apply_le_partialPivotRow M k hr⟩
@@ -402,17 +475,21 @@ section CompletePivot
 
 variable {n : Type*} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
 
-/-- **A complete-pivoting strategy** ([quarteroni2000numerical] §3.5, [higham2002accuracy] §9.3):
-`piv M k` returns a pair `(r, c)` of indices at or after `k` at which `‖M r c‖` is maximal over
-the whole trailing block, the rows and columns from `k` on. The interchanges such a strategy
-produces are run by `Matrix.gemFullPivotStage`. -/
+/-- A **complete-pivoting strategy**: a function `piv` that maps a matrix $M$ and an index $k$ to a
+pair $(r, c)$ = `piv M k` with $r \ge k$, $c \ge k$ and
+$$|m_{ij}| \le |m_{rc}| \quad \text{for all } i \ge k, \ j \ge k.$$
+So $m_{rc}$ is an entry of maximal modulus in the trailing block from $k$ on.
+
+This is the choice of the pivot of [quarteroni2000numerical], §3.5, and [higham2002accuracy],
+§9.3. `Matrix.gemFullPivotStage` runs the interchanges that such a strategy produces. -/
 def IsCompletePivot (piv : Matrix n n 𝕜 → n → n × n) : Prop :=
   ∀ (M : Matrix n n 𝕜) (k : n), k ≤ (piv M k).1 ∧ k ≤ (piv M k).2 ∧
     ∀ i j, k ≤ i → k ≤ j → ‖M i j‖ ≤ ‖M (piv M k).1 (piv M k).2‖
 
 variable [Finite n]
 
-/-- Some entry of the trailing block from `k` on has maximal modulus in that block. -/
+/-- Some entry of the trailing block from $k$ on has maximal modulus in that block: there are
+$r \ge k$ and $c \ge k$ with $|m_{ij}| \le |m_{rc}|$ for all $i, j \ge k$. -/
 theorem exists_completePivotEntry (M : Matrix n n 𝕜) (k : n) :
     ∃ rc : n × n, k ≤ rc.1 ∧ k ≤ rc.2 ∧
       ∀ i j, k ≤ i → k ≤ j → ‖M i j‖ ≤ ‖M rc.1 rc.2‖ := by
@@ -423,14 +500,18 @@ theorem exists_completePivotEntry (M : Matrix n n 𝕜) (k : n) :
   obtain ⟨-, h1, h2⟩ := mem_filter.1 hrc
   exact ⟨rc, h1, h2, fun i j hi hj => hmax (i, j) (mem_filter.2 ⟨mem_univ _, hi, hj⟩)⟩
 
-/-- **Complete pivoting** ([quarteroni2000numerical] §3.5): an entry of maximal modulus in the
-trailing block from `k` on. Unlike `Matrix.partialPivotRow` no canonical choice among the
-maximizing entries is made, because every complete-pivoting strategy obeys the same growth bound
+/-- The **complete-pivoting strategy** `completePivotEntry M k`: an entry $(r, c)$ of maximal
+modulus in the trailing block of $M$ from $k$ on.
+
+Unlike `Matrix.partialPivotRow`, it makes no canonical choice among the maximizing entries; it
+is an arbitrary choice, made with `Exists.choose`. A canonical choice is not needed, because
+every complete-pivoting strategy satisfies the same growth bound
 (`Matrix.growthFactor_le_wilkinson_of_isCompletePivot`). -/
 noncomputable def completePivotEntry (M : Matrix n n 𝕜) (k : n) : n × n :=
   (exists_completePivotEntry M k).choose
 
-/-- `Matrix.completePivotEntry` is a complete-pivoting strategy. -/
+/-- `Matrix.completePivotEntry` is a complete-pivoting strategy in the sense of
+`Matrix.IsCompletePivot`. -/
 theorem isCompletePivot_completePivotEntry :
     IsCompletePivot (completePivotEntry : Matrix n n 𝕜 → n → n × n) :=
   fun M k => (exists_completePivotEntry M k).choose_spec
@@ -443,18 +524,26 @@ section Rook
 
 variable {n : Type*} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
 
-/-- **A rook-pivoting strategy** ([golub2013matrix] §3.4.7; [higham2002accuracy] §9.1):
-`piv M k` returns a pair `(r, c)` of indices at or after `k` whose entry is maximal in modulus
-both in its column and in its row of the trailing block from `k` on. Complete pivoting is one
-(`Matrix.IsCompletePivot.isRookPivot`); the column condition is that of partial pivoting. -/
+/-- A **rook-pivoting strategy**: a function `piv` that maps a matrix $M$ and an index $k$ to a pair
+$(r, c)$ = `piv M k` with $r \ge k$, $c \ge k$, and
+$$|m_{ic}| \le |m_{rc}| \ \text{ for every } i \ge k, \qquad |m_{rj}| \le |m_{rc}| \ \text{ for
+  every } j \ge k.$$
+So $m_{rc}$ is maximal in modulus both in its column and in its row of the trailing block from
+$k$ on.
+
+This is rook pivoting of [golub2013matrix], §3.4.7 (see also [higham2002accuracy], §9.1). The
+column condition is the condition of partial pivoting. Complete pivoting is a rook-pivoting
+strategy (`Matrix.IsCompletePivot.isRookPivot`). -/
 def IsRookPivot (piv : Matrix n n 𝕜 → n → n × n) : Prop :=
   ∀ (M : Matrix n n 𝕜) (k : n), k ≤ (piv M k).1 ∧ k ≤ (piv M k).2 ∧
     (∀ i, k ≤ i → ‖M i (piv M k).2‖ ≤ ‖M (piv M k).1 (piv M k).2‖) ∧
     ∀ j, k ≤ j → ‖M (piv M k).1 j‖ ≤ ‖M (piv M k).1 (piv M k).2‖
 
 /-- A complete-pivoting strategy is a rook-pivoting strategy: the largest entry of the trailing
-block is the largest of its row and of its column. With `Matrix.isCompletePivot_completePivotEntry`
-rook-pivoting strategies exist. -/
+block is the largest entry of its row and of its column in that block.
+
+With `Matrix.isCompletePivot_completePivotEntry`, this shows that rook-pivoting strategies
+exist. -/
 theorem IsCompletePivot.isRookPivot {piv : Matrix n n 𝕜 → n → n × n} (h : IsCompletePivot piv) :
     IsRookPivot piv := fun M k =>
   ⟨(h M k).1, (h M k).2.1, fun i hi => (h M k).2.2 i _ hi (h M k).2.1,
@@ -468,13 +557,19 @@ section Stages
 
 variable {K : Type*} [Field K] {N : ℕ}
 
-/-- **Gaussian elimination with a pivoting strategy** `piv`, [quarteroni2000numerical] §3.5:
-`gemPivotStage A piv k` is the pair of the matrix `A^{(k+1)}` after `k` stages and the row
-permutation `σ_k` accumulated so far. Stage `k < N` chooses the row `r = piv A^{(k)} k`, swaps
-rows `k` and `r`, and eliminates column `k` below the pivot; the permutation becomes
-`σ_k * swap k r`, so that `σ_k.permMatrix K = P_{k-1} ⋯ P_0` (`Matrix.permMatrix_mul` reverses
-the order). Beyond `N` nothing happens. `gemPivotStage A partialPivotRow` is Gaussian elimination
-with partial pivoting, and `gemPivotStage A (fun _ k => k)` performs no interchange. -/
+/-- **Gaussian elimination with a pivoting strategy** `piv`. Let $A \in K^{N \times N}$. The pair
+$(\hat A^{(k)}, \sigma_k)$ = `gemPivotStage A piv k` consists of the matrix after $k$ stages and
+the accumulated row permutation. It is defined by $(\hat A^{(0)}, \sigma_0) = (A, 1)$ and the
+following rule. For $k < N$, let $r_k$ be the row that `piv` chooses for the matrix
+$\hat A^{(k)}$ and the index $k$, and let $s_k$ be the transposition of $k$ and $r_k$. Then
+$\hat A^{(k+1)}$ is the elimination step at $k$ of $\hat A^{(k)}$ with the rows $k$ and $r_k$
+interchanged, and $\sigma_{k+1} = \sigma_k s_k$. For $k \ge N$, nothing changes.
+
+This is Gaussian elimination with pivoting of [quarteroni2000numerical], §3.5. Since
+$P_{\sigma s} = P_s P_\sigma$ (`Matrix.permMatrix_mul`),
+$P_{\sigma_k} = P_{s_{k-1}} \cdots P_{s_0}$. The strategy `Matrix.partialPivotRow` gives
+Gaussian elimination with partial pivoting, and the strategy `fun _ k => k` makes no
+interchange. -/
 noncomputable def gemPivotStage (A : Matrix (Fin N) (Fin N) K)
     (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N) :
     ℕ → Matrix (Fin N) (Fin N) K × Equiv.Perm (Fin N)
@@ -488,36 +583,43 @@ noncomputable def gemPivotStage (A : Matrix (Fin N) (Fin N) K)
 
 variable (A : Matrix (Fin N) (Fin N) K) (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N)
 
-/-- The interchange of stage `k`: the transposition of `k` and the chosen pivot row. -/
+/-- The interchange $s_k$ of the stage $k < N$: the transposition of $k$ and the pivot row $r_k$
+that `piv` chooses for $\hat A^{(k)}$ and $k$. -/
 noncomputable def gemPivotSwap (k : ℕ) (h : k < N) : Equiv.Perm (Fin N) :=
   Equiv.swap ⟨k, h⟩ (piv (gemPivotStage A piv k).1 ⟨k, h⟩)
 
-/-- Before the first stage: the matrix itself and the identity permutation. -/
+/-- $(\hat A^{(0)}, \sigma_0) = (A, 1)$. -/
 @[simp]
 theorem gemPivotStage_zero : gemPivotStage A piv 0 = (A, 1) := rfl
 
-/-- Stage `k + 1`: swap, eliminate, and record the interchange. -/
+/-- For $k < N$, the stage $k + 1$ interchanges, eliminates, and records the interchange:
+$\hat A^{(k+1)}$ is the elimination step at $k$ of $\hat A^{(k)}$ with its rows permuted by
+$s_k$, and $\sigma_{k+1} = \sigma_k s_k$, where $s_k$ is `Matrix.gemPivotSwap A piv k`. -/
 theorem gemPivotStage_succ_of_lt {k : ℕ} (h : k < N) :
     gemPivotStage A piv (k + 1) =
       (elimStep ((gemPivotStage A piv k).1.submatrix (gemPivotSwap A piv k h) id) ⟨k, h⟩,
         (gemPivotStage A piv k).2 * gemPivotSwap A piv k h) := by
   simp only [gemPivotStage, h, dite_true, gemPivotSwap]
 
-/-- Beyond `N`, the stages do not change. -/
+/-- For $k \ge N$, the pivoted stages do not change: stage $k + 1$ equals stage $k$. -/
 theorem gemPivotStage_succ_of_le {k : ℕ} (h : N ≤ k) :
     gemPivotStage A piv (k + 1) = gemPivotStage A piv k := by
   simp only [gemPivotStage, not_lt.2 h, dite_false]
 
-/-- Beyond `N`, the stages do not change. -/
+/-- For $k \ge N$, stage $k$ of `Matrix.gemPivotStage` equals stage $N$. -/
 theorem gemPivotStage_of_le {k : ℕ} (h : N ≤ k) :
     gemPivotStage A piv k = gemPivotStage A piv N := by
   induction k, h using Nat.le_induction with
   | base => rfl
   | succ k hk ih => rw [gemPivotStage_succ_of_le A piv hk, ih]
 
-/-- [quarteroni2000numerical] (3.51), one stage: `A^{(k+2)} = M_k P_k A^{(k+1)}` with `P_k` the
-permutation matrix of the interchange and `M_k` the Gaussian transformation of the swapped
-matrix. -/
+/-- One stage of pivoted elimination as a product: for $k < N$,
+$$\hat A^{(k+1)} = M_k P_{s_k} \hat A^{(k)},$$
+with $P_{s_k}$ the permutation matrix of the interchange and $M_k$ the Gaussian transformation
+matrix of $P_{s_k} \hat A^{(k)}$ at the pivot $k$.
+
+This is one stage of equation (3.51) of [quarteroni2000numerical], with the stages numbered from
+$0$. -/
 theorem gemPivotStage_succ_fst_eq_gaussTransform_mul {k : ℕ} (h : k < N) :
     (gemPivotStage A piv (k + 1)).1 =
       gaussTransform ((gemPivotSwap A piv k h).permMatrix K * (gemPivotStage A piv k).1) ⟨k, h⟩ *
@@ -525,8 +627,8 @@ theorem gemPivotStage_succ_fst_eq_gaussTransform_mul {k : ℕ} (h : k < N) :
   rw [gemPivotStage_succ_of_lt A piv h, gaussTransform_mul, Equiv.Perm.permMatrix,
     PEquiv.toMatrix_toPEquiv_mul]
 
-/-- The pivot row chosen at stage `k` lies at or below `k` when the strategy does; the
-interchange then fixes every index below `k`. -/
+/-- If the strategy always chooses a row at or below the current index, then the interchange $s_k$
+fixes every index $i < k$. -/
 theorem gemPivotSwap_apply_of_lt (hpiv : ∀ M k, k ≤ piv M k) {k : ℕ} (h : k < N) {i : Fin N}
     (hi : (i : ℕ) < k) : gemPivotSwap A piv k h i = i := by
   refine Equiv.swap_apply_of_ne_of_ne (fun hik => ?_) fun hir => ?_
@@ -536,7 +638,9 @@ theorem gemPivotSwap_apply_of_lt (hpiv : ∀ M k, k ≤ piv M k) {k : ℕ} (h : 
     rw [← hir, Fin.le_def] at this
     exact absurd (this.trans_lt hi) (lt_irrefl _)
 
-/-- The interchanges after stage `m`, `σ_m⁻¹ σ_{m'}` for `m ≤ m'`, fix every index below `m`. -/
+/-- Suppose that the strategy always chooses a row at or below the current index. Then for
+$m \le m'$ the interchanges after stage $m$, the permutation $\sigma_m^{-1} \sigma_{m'}$, fix
+every index $i < m$. -/
 theorem gemPivotStage_snd_inv_mul_apply (hpiv : ∀ M k, k ≤ piv M k) {m m' : ℕ} (hmm' : m ≤ m')
     {i : Fin N} (hi : (i : ℕ) < m) :
     ((gemPivotStage A piv m).2⁻¹ * (gemPivotStage A piv m').2) i = i := by
@@ -550,8 +654,10 @@ theorem gemPivotStage_snd_inv_mul_apply (hpiv : ∀ M k, k ≤ piv M k) {m m' : 
         ih]
     · rw [gemPivotStage_succ_of_le A piv (not_lt.1 h), ih]
 
-/-- One step of elimination commutes with a permutation of the rows that fixes the pivot and
-every index below it. -/
+/-- Let $\rho$ be a permutation with $\rho(i) = i$ for every $i \le p$. Then one elimination step at
+$p$ commutes with the permutation of the rows by $\rho$: the step of the matrix with the entries
+$m_{\rho(i) j}$ is the matrix with the entries $m'_{\rho(i) j}$, where $M'$ is the step of $M$
+at $p$. -/
 theorem elimStep_submatrix_of_forall_le {n : Type*} [LinearOrder n] [Fintype n]
     (M : Matrix n n K) {p : n} {ρ : Equiv.Perm n} (hρ : ∀ i, i ≤ p → ρ i = i) :
     elimStep (M.submatrix ρ id) p = (elimStep M p).submatrix ρ id := by
@@ -567,11 +673,13 @@ theorem elimStep_submatrix_of_forall_le {n : Type*} [LinearOrder n] [Fintype n]
   ext i j
   simp only [elimStep_apply, submatrix_apply, id, hp, hlt]
 
-/-- **The stages of Gaussian elimination on `P A` are the pivoted stages, with the rows
-permuted by the later interchanges**: with `σ = σ_N` the final permutation of
-`gemPivotStage A piv`, `gemStage (P A) k = (A^{(k+1)}).submatrix (σ_k⁻¹ σ) id`, i.e. row `i`
-of the plain stage is row `σ_k⁻¹ σ i` of the pivoted stage. This is the content of the book's
-`L = P M⁻¹` bookkeeping in [quarteroni2000numerical] §3.5. -/
+/-- **The stages of Gaussian elimination on $P_\sigma A$ are the pivoted stages, with their rows
+permuted by the later interchanges.** Suppose that the strategy always chooses a row at or below
+the current index, and let $\sigma = \sigma_N$ be the final permutation. Let $B$ be the matrix
+with the entries $b_{ij} = a_{\sigma(i) j}$. Then for every $k$,
+$$b^{(k)}_{ij} = \hat a^{(k)}_{\pi_k(i) j}, \qquad \pi_k = \sigma_k^{-1} \sigma.$$
+
+This is the content of the relation $L = P M^{-1}$ in [quarteroni2000numerical], §3.5. -/
 theorem gemStage_submatrix_eq_submatrix_gemPivotStage (hpiv : ∀ M k, k ≤ piv M k) (k : ℕ) :
     gemStage (A.submatrix (gemPivotStage A piv N).2 id) k =
       (gemPivotStage A piv k).1.submatrix
@@ -597,7 +705,10 @@ theorem gemStage_submatrix_eq_submatrix_gemPivotStage (hpiv : ∀ M k, k ≤ piv
       exact gemPivotStage_snd_inv_mul_apply A piv hpiv h (Nat.lt_succ_of_le (Fin.le_def.1 hi))
     · rw [gemStage_succ_of_le _ (not_lt.1 h), ih, gemPivotStage_succ_of_le A piv (not_lt.1 h)]
 
-/-- The permutation-matrix form of `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`. -/
+/-- The permutation-matrix form of `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`: if the
+strategy always chooses a row at or below the current index, then for every $k$ the stage
+$(P_\sigma A)^{(k)}$, with $\sigma = \sigma_N$, is $\hat A^{(k)}$ with its rows permuted by
+$\sigma_k^{-1} \sigma$. -/
 theorem gemStage_permMatrix_mul_eq_submatrix_gemPivotStage (hpiv : ∀ M k, k ≤ piv M k)
     (k : ℕ) :
     gemStage ((gemPivotStage A piv N).2.permMatrix K * A) k =
@@ -606,14 +717,19 @@ theorem gemStage_permMatrix_mul_eq_submatrix_gemPivotStage (hpiv : ∀ M k, k �
   rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul]
   exact gemStage_submatrix_eq_submatrix_gemPivotStage A piv hpiv k
 
-/-- The last stage of Gaussian elimination on `P A` is the last pivoted stage. -/
+/-- If the strategy always chooses a row at or below the current index, then the last stage of
+Gaussian elimination without pivoting on $P_{\sigma_N} A$ is the last pivoted stage:
+$(P_{\sigma_N} A)^{(N)} = \hat A^{(N)}$. -/
 theorem gemStage_permMatrix_mul_card (hpiv : ∀ M k, k ≤ piv M k) :
     gemStage ((gemPivotStage A piv N).2.permMatrix K * A) N = (gemPivotStage A piv N).1 := by
   rw [gemStage_permMatrix_mul_eq_submatrix_gemPivotStage A piv hpiv, inv_mul_cancel]
   rfl
 
-/-- The pivot of stage `k` of Gaussian elimination on `P A` is the entry chosen by the
-strategy: `(P A)^{(k)}_{kk} = A^{(k)}_{r_k k}` with `r_k = piv A^{(k)} k`. -/
+/-- Suppose that the strategy always chooses a row at or below the current index. Then for $k < N$,
+the pivot of stage $k$ of Gaussian elimination without pivoting on $P_{\sigma_N} A$ is the entry
+chosen by the strategy:
+$$(P_{\sigma_N} A)^{(k)}_{kk} = \hat a^{(k)}_{r_k k},$$
+where $r_k$ is the row that `piv` chooses for $\hat A^{(k)}$ and $k$. -/
 theorem gemStage_permMatrix_mul_apply_self (hpiv : ∀ M k, k ≤ piv M k) {k : ℕ} (h : k < N) :
     gemStage ((gemPivotStage A piv N).2.permMatrix K * A) k ⟨k, h⟩ ⟨k, h⟩ =
       (gemPivotStage A piv k).1 (piv (gemPivotStage A piv k).1 ⟨k, h⟩) ⟨k, h⟩ := by
@@ -626,7 +742,9 @@ theorem gemStage_permMatrix_mul_apply_self (hpiv : ∀ M k, k ≤ piv M k) {k : 
   rw [hρ, Equiv.Perm.mul_apply, gemPivotStage_snd_inv_mul_apply A piv hpiv h (Nat.lt_succ_self k),
     gemPivotSwap, Equiv.swap_apply_left]
 
-/-- The later interchanges map the indices `≥ k` to indices `≥ k`. -/
+/-- Suppose that the strategy always chooses a row at or below the current index. Then for
+$m \le m'$ the later interchanges $\sigma_m^{-1} \sigma_{m'}$ map each index $i \ge m$ to an
+index $\ge m$. -/
 theorem le_gemPivotStage_snd_inv_mul_apply (hpiv : ∀ M k, k ≤ piv M k) {m m' : ℕ} (hmm' : m ≤ m')
     {i : Fin N} (hi : m ≤ (i : ℕ)) :
     m ≤ (((gemPivotStage A piv m).2⁻¹ * (gemPivotStage A piv m').2) i : ℕ) := by
@@ -636,12 +754,18 @@ theorem le_gemPivotStage_snd_inv_mul_apply (hpiv : ∀ M k, k ≤ piv M k) {m m'
   rw [h] at hcon
   exact hcon hi
 
-/-- **[quarteroni2000numerical] (3.52) for the recurrence**: if the strategy chooses rows at or
-below the current index and no chosen pivot vanishes (the last one excepted, which is never used),
-then `P A = L U` with `P` the permutation matrix of the accumulated interchanges, `U` the last
-pivoted stage, and `L` the multiplier matrix of Gaussian elimination *without* pivoting applied
-to `P A` — the book's "the entries of `L` coincide with the multipliers computed by LU
-factorization, without pivoting, when applied to the matrix `P A`". -/
+/-- **Pivoted elimination computes $P_\sigma A = LU$.** Let $A \in K^{N \times N}$. Suppose that the
+strategy always chooses a row at or below the current index, and that the chosen pivot
+$\hat a^{(k)}_{r_k k}$ is nonzero for every $k$ with $k + 1 < N$. Then, with
+$\sigma = \sigma_N$,
+$$P_\sigma A = LU,$$
+where $U = \hat A^{(N)}$ is the last pivoted stage and $L$ is the multiplier matrix
+`Matrix.gemLower` of Gaussian elimination *without* pivoting on $P_\sigma A$.
+
+This is equation (3.52) of [quarteroni2000numerical] for the recurrence. It expresses the remark
+there that "the entries of $L$ coincide with the multipliers computed by LU factorization,
+without pivoting, when applied to the matrix $PA$". The last pivot is never used as a divisor,
+so it may be zero. -/
 theorem gemPivotStage_permMatrix_mul_isLU (hpiv : ∀ M k, k ≤ piv M k)
     (hnz : ∀ k (hk : k < N), k + 1 < N →
       (gemPivotStage A piv k).1 (piv (gemPivotStage A piv k).1 ⟨k, hk⟩) ⟨k, hk⟩ ≠ 0) :
@@ -652,10 +776,13 @@ theorem gemPivotStage_permMatrix_mul_isLU (hpiv : ∀ M k, k ≤ piv M k)
   rw [gemStage_permMatrix_mul_apply_self A piv hpiv hm]
   exact hnz m hm hmN
 
-/-- **The multipliers of partial pivoting are bounded by one**: for any partial-pivoting
-strategy `piv`, every entry of the unit lower factor `L` of `P A = L U` produced by
-`gemPivotStage A piv` has norm at most `1`, because `l_ij` is `a^{(j)}_{r j} / a^{(j)}_{r_j j}`
-for some row `r ≥ j`, and the pivot row `r_j` maximizes the modulus in the column. -/
+/-- **The multipliers of partial pivoting have modulus at most one.** Let $\mathbb{K}$ be a normed
+field, let `piv` be a partial-pivoting strategy, and let $A \in \mathbb{K}^{N \times N}$. Then
+every entry of the multiplier matrix $L$ of Gaussian elimination without pivoting on
+$P_{\sigma_N} A$ satisfies $|l_{ij}| \le 1$.
+
+The multiplier $l_{ij}$ is $\hat a^{(j)}_{rj} / \hat a^{(j)}_{r_j j}$ for some row $r \ge j$,
+and the pivot row $r_j$ maximizes the modulus in the column. -/
 theorem gemPivotStage_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
     {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N} (hpiv : IsPartialPivot piv)
     (A : Matrix (Fin N) (Fin N) 𝕜) (i j : Fin N) :
@@ -680,8 +807,12 @@ theorem gemPivotStage_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
   · simp
   · simp
 
-/-- The multipliers of `Matrix.partialPivotRow` are bounded by one
-(`Matrix.gemPivotStage_norm_gemLower_le_one`). -/
+/-- The multipliers of `Matrix.partialPivotRow` have modulus at most one: for
+$A \in \mathbb{K}^{N \times N}$ over a normed field, every entry of the multiplier matrix $L$ of
+Gaussian elimination without pivoting on $P_{\sigma_N} A$, with $\sigma_N$ the permutation of
+partial pivoting, satisfies $|l_{ij}| \le 1$.
+
+This is `Matrix.gemPivotStage_norm_gemLower_le_one` for the strategy `Matrix.partialPivotRow`. -/
 theorem gemPivotStage_partialPivotRow_norm_gemLower_le_one {𝕜 : Type*} [NormedField 𝕜]
     (A : Matrix (Fin N) (Fin N) 𝕜) (i j : Fin N) :
     ‖gemLower ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A) i j‖ ≤ 1 :=
@@ -695,9 +826,14 @@ section ZeroPivot
 
 variable {K : Type*} [Field K] {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
 
-/-- `Matrix.gemStage_apply_eq_zero_of_lt` with the nonvanishing of the pivots weakened to "a
-vanishing pivot comes with a vanishing column below it": such a step is the identity on the pivot
-column (the multipliers are the junk `0 / 0 = 0`), so the shape of the stages is kept. -/
+/-- The shape of the stages when every zero pivot comes with a zero column. Suppose that for every
+$m < N$ with $a^{(m)}_{mm} = 0$, also $a^{(m)}_{im} = 0$ for every $i > m$. Then $A^{(k)}$
+vanishes below the diagonal in its first $k$ columns: $a^{(k)}_{ij} = 0$ whenever $j < k$ and
+$j < i$.
+
+This is `Matrix.gemStage_apply_eq_zero_of_lt` with the hypothesis of nonzero pivots weakened. At
+a zero pivot the multipliers are $0$, so the step does not change the column, which is already
+zero. -/
 theorem gemStage_apply_eq_zero_of_lt'
     (hz : ∀ (m : ℕ) (hm : m < N) (i : Fin N), m < (i : ℕ) →
       gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ = 0 → gemStage A m i ⟨m, hm⟩ = 0)
@@ -721,11 +857,15 @@ theorem gemStage_apply_eq_zero_of_lt'
         ring
       · rw [mul_assoc, inv_mul_cancel₀ h0, mul_one, sub_self]
 
-/-- **Gaussian elimination factors whenever a zero pivot comes with a zero column**:
-`Matrix.isLU_gemLower_gemStage` with the nonzero-pivot hypothesis replaced by "if the pivot of
-stage `m` vanishes, so does the column below it". This is what partial, rook and complete pivoting
-arrange, and it makes the algorithmic factorizations `P A = L U` and `P A Q = L U` hold for every
-matrix ([golub2013matrix] §3.4.3: "Algorithm 3.4.1 always runs to completion"). -/
+/-- **Gaussian elimination factors when every zero pivot comes with a zero column.** Let
+$A \in K^{N \times N}$, and suppose that for every $m < N$ with $a^{(m)}_{mm} = 0$, also
+$a^{(m)}_{im} = 0$ for every $i > m$. Then $A = LU$ with $L$ the multiplier matrix
+`Matrix.gemLower A` and $U = A^{(N)}$.
+
+This is `Matrix.isLU_gemLower_gemStage` with the hypothesis of nonzero pivots replaced. Partial,
+rook and complete pivoting give this property, so the algorithmic factorizations
+$P_\sigma A = LU$ and $P A Q = LU$ hold for every matrix ([golub2013matrix], §3.4.3: "Algorithm
+3.4.1 always runs to completion"). -/
 theorem isLU_gemLower_gemStage'
     (hz : ∀ (m : ℕ) (hm : m < N) (i : Fin N), m < (i : ℕ) →
       gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ = 0 → gemStage A m i ⟨m, hm⟩ = 0) :
@@ -734,14 +874,18 @@ theorem isLU_gemLower_gemStage'
   isUpperTriangular := fun _ j hij => gemStage_apply_eq_zero_of_lt' A hz j.2 hij
   mul_eq := by rw [← gemLowerStage_of_le A le_rfl, gemLowerStage_mul_gemStage]
 
-/-- **Gaussian elimination with partial pivoting always factors** ([golub2013matrix] §3.4.3,
-"Algorithm 3.4.1 always runs to completion. If `A(k:n,k) = 0` in step `k`, then `M_k = I_n`";
-[quarteroni2000numerical] §3.5): for every square matrix over a normed field and every
-partial-pivoting strategy `piv`, `P A = L U` with `P` the accumulated interchanges of
-`gemPivotStage A piv`, `U` its last stage and `L` the multipliers of elimination without pivoting
-on `P A` — `Matrix.gemPivotStage_permMatrix_mul_isLU` with no hypothesis on the pivots: a zero
-pivot of partial pivoting comes with a zero column (`Matrix.IsPartialPivot.apply_eq_zero`). The
-counterpart of the rook form `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`. -/
+/-- **Gaussian elimination with partial pivoting always factors.** Let $\mathbb{K}$ be a normed
+field, let `piv` be a partial-pivoting strategy, and let $A \in \mathbb{K}^{N \times N}$. Then,
+with $\sigma = \sigma_N$,
+$$P_\sigma A = LU,$$
+where $U = \hat A^{(N)}$ is the last pivoted stage and $L$ is the multiplier matrix of Gaussian
+elimination without pivoting on $P_\sigma A$.
+
+This is `Matrix.gemPivotStage_permMatrix_mul_isLU` with no hypothesis on the pivots, because a
+zero pivot of partial pivoting comes with a zero column (`Matrix.IsPartialPivot.apply_eq_zero`).
+It is the statement of [golub2013matrix], §3.4.3: "Algorithm 3.4.1 always runs to completion. If
+$A(k{:}n, k) = 0$ in step $k$, then $M_k = I_n$" (see also [quarteroni2000numerical], §3.5). The
+analogue for rook pivoting is `Matrix.gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU`. -/
 theorem gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot {𝕜 : Type*} [NormedField 𝕜]
     {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N} (hpiv : IsPartialPivot piv)
     (A : Matrix (Fin N) (Fin N) 𝕜) :
@@ -755,7 +899,13 @@ theorem gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot {𝕜 : Type*} [Norm
   exact hpiv.apply_eq_zero h0 (Fin.le_def.2
     (le_gemPivotStage_snd_inv_mul_apply A piv hle hm.le hi.le))
 
-/-- `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot` for `Matrix.partialPivotRow`. -/
+/-- Gaussian elimination with the strategy `Matrix.partialPivotRow` factors every square matrix: for
+$A \in \mathbb{K}^{N \times N}$ over a normed field, $P_{\sigma_N} A = LU$ with
+$U = \hat A^{(N)}$ and $L$ the multiplier matrix of Gaussian elimination without pivoting on
+$P_{\sigma_N} A$.
+
+This is `Matrix.gemPivotStage_permMatrix_mul_isLU_of_isPartialPivot` for
+`Matrix.partialPivotRow`. -/
 theorem gemPivotStage_partialPivotRow_permMatrix_mul_isLU {𝕜 : Type*} [NormedField 𝕜]
     (A : Matrix (Fin N) (Fin N) 𝕜) :
     IsLU ((gemPivotStage A partialPivotRow N).2.permMatrix 𝕜 * A)
@@ -771,13 +921,18 @@ section FullPivotStages
 
 variable {K : Type*} [Field K] {N : ℕ}
 
-/-- **Gaussian elimination with complete pivoting** ([quarteroni2000numerical] §3.5): with a
-strategy `piv` choosing a *pair* of indices, `gemFullPivotStage A piv k` is the triple of the
-matrix `A^{(k+1)}` after `k` stages, the accumulated row permutation `σ_k` and the accumulated
-column permutation `ρ_k`. Stage `k < N` chooses `(r, c) = piv A^{(k)} k`, swaps rows `k` and `r`
-and columns `k` and `c`, and eliminates column `k` below the pivot; the permutations become
-`σ_k * swap k r` and `ρ_k * swap k c`. Beyond `N` nothing happens. This is the two-sided analogue
-of `Matrix.gemPivotStage`, which permutes rows only. -/
+/-- **Gaussian elimination with complete pivoting**, for a strategy `piv` that chooses a pair of
+indices. Let $A \in K^{N \times N}$. The triple $(\hat A^{(k)}, \sigma_k, \tau_k)$ =
+`gemFullPivotStage A piv k` consists of the matrix after $k$ stages, the accumulated row
+permutation and the accumulated column permutation. It is defined by
+$(\hat A^{(0)}, \sigma_0, \tau_0) = (A, 1, 1)$ and the following rule. For $k < N$, let $(r, c)$
+be the pair that `piv` chooses for $\hat A^{(k)}$ and $k$; interchange the rows $k$ and $r$ and
+the columns $k$ and $c$ of $\hat A^{(k)}$, take the elimination step at $k$, and set
+$\sigma_{k+1} = \sigma_k s$ and $\tau_{k+1} = \tau_k t$, with $s$ the transposition of $k$ and
+$r$ and $t$ the transposition of $k$ and $c$. For $k \ge N$, nothing changes.
+
+This is complete pivoting of [quarteroni2000numerical], §3.5. It is the two-sided analogue of
+`Matrix.gemPivotStage`, which permutes the rows only. -/
 noncomputable def gemFullPivotStage (A : Matrix (Fin N) (Fin N) K)
     (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N × Fin N) :
     ℕ → Matrix (Fin N) (Fin N) K × Equiv.Perm (Fin N) × Equiv.Perm (Fin N)
@@ -795,19 +950,24 @@ noncomputable def gemFullPivotStage (A : Matrix (Fin N) (Fin N) K)
 
 variable (A : Matrix (Fin N) (Fin N) K) (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N × Fin N)
 
-/-- The row interchange of stage `k` of complete pivoting. -/
+/-- The row interchange of the stage $k < N$ of complete pivoting: the transposition of $k$ and the
+pivot row chosen at stage $k$. -/
 noncomputable def gemFullPivotRowSwap (k : ℕ) (h : k < N) : Equiv.Perm (Fin N) :=
   Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).1
 
-/-- The column interchange of stage `k` of complete pivoting. -/
+/-- The column interchange of the stage $k < N$ of complete pivoting: the transposition of $k$ and
+the pivot column chosen at stage $k$. -/
 noncomputable def gemFullPivotColSwap (k : ℕ) (h : k < N) : Equiv.Perm (Fin N) :=
   Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).2
 
-/-- Before the first stage: the matrix itself and two identity permutations. -/
+/-- $(\hat A^{(0)}, \sigma_0, \tau_0) = (A, 1, 1)$. -/
 @[simp]
 theorem gemFullPivotStage_zero : gemFullPivotStage A piv 0 = (A, 1, 1) := rfl
 
-/-- Stage `k + 1`: interchange, eliminate, and record both interchanges. -/
+/-- For $k < N$, the stage $k + 1$ of complete pivoting interchanges, eliminates, and records both
+interchanges: $\hat A^{(k+1)}$ is the elimination step at $k$ of $\hat A^{(k)}$ with its rows
+permuted by the row interchange $s$ and its columns permuted by the column interchange $t$, and
+$\sigma_{k+1} = \sigma_k s$, $\tau_{k+1} = \tau_k t$. -/
 theorem gemFullPivotStage_succ_of_lt {k : ℕ} (h : k < N) :
     gemFullPivotStage A piv (k + 1) =
       (elimStep ((gemFullPivotStage A piv k).1.submatrix (gemFullPivotRowSwap A piv k h)
@@ -816,15 +976,17 @@ theorem gemFullPivotStage_succ_of_lt {k : ℕ} (h : k < N) :
         (gemFullPivotStage A piv k).2.2 * gemFullPivotColSwap A piv k h) := by
   simp only [gemFullPivotStage, h, dite_true, gemFullPivotRowSwap, gemFullPivotColSwap]
 
-/-- Beyond `N`, the stages do not change. -/
+/-- For $k \ge N$, the stages of complete pivoting do not change: stage $k + 1$ equals stage $k$. -/
 theorem gemFullPivotStage_succ_of_le {k : ℕ} (h : N ≤ k) :
     gemFullPivotStage A piv (k + 1) = gemFullPivotStage A piv k := by
   simp only [gemFullPivotStage, not_lt.2 h, dite_false]
 
 omit [Field K] in
-/-- A sequence of permutations built up by right multiplication by permutations that fix the
-indices below the step: the composite of the interchanges after step `m` fixes every index below
-`m`. Both the row and the column permutations of `Matrix.gemFullPivotStage` are of this shape. -/
+/-- Let $(\sigma_k)_{k \in \mathbb{N}}$ be permutations of $\{0, \dots, N - 1\}$ with
+$\sigma_{k+1} = \sigma_k \pi_k$ for permutations $\pi_k$ that fix every index $i < k$. Then for
+$m \le m'$, the permutation $\sigma_m^{-1} \sigma_{m'}$ fixes every index $i < m$.
+
+Both the row and the column permutations of `Matrix.gemFullPivotStage` have this form. -/
 theorem perm_inv_mul_apply_of_step {σ : ℕ → Equiv.Perm (Fin N)}
     (hstep : ∀ k, ∃ τ : Equiv.Perm (Fin N),
       σ (k + 1) = σ k * τ ∧ ∀ i : Fin N, (i : ℕ) < k → τ i = i)
@@ -837,8 +999,8 @@ theorem perm_inv_mul_apply_of_step {σ : ℕ → Equiv.Perm (Fin N)}
     rw [hτ, ← mul_assoc, Equiv.Perm.mul_apply, hfix i (hi.trans_le hm), ih]
 
 omit [Field K] in
-/-- A permutation fixing every index below `m` maps the indices from `m` on to indices from `m`
-on. -/
+/-- A permutation of $\{0, \dots, N - 1\}$ that fixes every index $i < m$ maps every index $i \ge m$
+to an index $\ge m$. -/
 theorem le_apply_of_forall_lt_apply_eq {ρ : Equiv.Perm (Fin N)} {m : ℕ}
     (h : ∀ i : Fin N, (i : ℕ) < m → ρ i = i) {i : Fin N} (hi : m ≤ (i : ℕ)) : m ≤ (ρ i : ℕ) := by
   by_contra hcon
@@ -847,12 +1009,16 @@ theorem le_apply_of_forall_lt_apply_eq {ρ : Equiv.Perm (Fin N)} {m : ℕ}
   rw [h1] at hcon
   exact hcon hi
 
-/-- Taking a submatrix along a product of permutations is taking two submatrices. -/
+/-- The submatrix of $M$ along products of permutations is an iterated submatrix:
+`M.submatrix (s * t) (s' * t')` is `(M.submatrix s s').submatrix t t'`. -/
 theorem submatrix_perm_mul {m α : Type*} (M : Matrix m m α) (s t s' t' : Equiv.Perm m) :
     M.submatrix (s * t) (s' * t') = (M.submatrix s s').submatrix t t' := rfl
 
-/-- One step of elimination commutes with a permutation of the rows fixing the pivot and every
-index below it together with a permutation of the columns fixing the pivot. -/
+/-- Let $\sigma$ be a permutation with $\sigma(i) = i$ for every $i \le p$, and let $\rho$ be a
+permutation with $\rho(p) = p$. Then one elimination step at $p$ commutes with the permutation
+of the rows by $\sigma$ and of the columns by $\rho$: the step of the matrix with the entries
+$m_{\sigma(i) \rho(j)}$ is the matrix with the entries $m'_{\sigma(i) \rho(j)}$, where $M'$ is
+the step of $M$ at $p$. -/
 theorem elimStep_submatrix_submatrix_of_forall_le {m : Type*} [LinearOrder m] [Fintype m]
     (M : Matrix m m K) {p : m} {σ ρ : Equiv.Perm m} (hσ : ∀ i, i ≤ p → σ i = i) (hρ : ρ p = p) :
     elimStep (M.submatrix σ ρ) p = (elimStep M p).submatrix σ ρ := by
@@ -863,7 +1029,8 @@ theorem elimStep_submatrix_submatrix_of_forall_le {m : Type*} [LinearOrder m] [F
     submatrix_submatrix]
   rfl
 
-/-- The row interchange of stage `k` fixes every index below `k`. -/
+/-- If the strategy always chooses a row at or below the current index, then the row interchange of
+stage $k$ fixes every index $i < k$. -/
 theorem gemFullPivotRowSwap_apply_of_lt (hrow : ∀ M k, k ≤ (piv M k).1) {k : ℕ} (h : k < N)
     {i : Fin N} (hi : (i : ℕ) < k) : gemFullPivotRowSwap A piv k h i = i := by
   refine Equiv.swap_apply_of_ne_of_ne (fun hik => ?_) fun hir => ?_
@@ -873,7 +1040,8 @@ theorem gemFullPivotRowSwap_apply_of_lt (hrow : ∀ M k, k ≤ (piv M k).1) {k :
     rw [← hir, Fin.le_def] at this
     exact absurd (this.trans_lt hi) (lt_irrefl _)
 
-/-- The column interchange of stage `k` fixes every index below `k`. -/
+/-- If the strategy always chooses a column at or after the current index, then the column
+interchange of stage $k$ fixes every index $i < k$. -/
 theorem gemFullPivotColSwap_apply_of_lt (hcol : ∀ M k, k ≤ (piv M k).2) {k : ℕ} (h : k < N)
     {i : Fin N} (hi : (i : ℕ) < k) : gemFullPivotColSwap A piv k h i = i := by
   refine Equiv.swap_apply_of_ne_of_ne (fun hik => ?_) fun hir => ?_
@@ -883,7 +1051,8 @@ theorem gemFullPivotColSwap_apply_of_lt (hcol : ∀ M k, k ≤ (piv M k).2) {k :
     rw [← hir, Fin.le_def] at this
     exact absurd (this.trans_lt hi) (lt_irrefl _)
 
-/-- The row interchanges after stage `m` fix every index below `m`. -/
+/-- If the strategy always chooses a row at or below the current index, then for $m \le m'$ the
+later row interchanges $\sigma_m^{-1} \sigma_{m'}$ fix every index $i < m$. -/
 theorem gemFullPivotStage_rowPerm_inv_mul_apply (hrow : ∀ M k, k ≤ (piv M k).1) {m m' : ℕ}
     (hmm' : m ≤ m') {i : Fin N} (hi : (i : ℕ) < m) :
     ((gemFullPivotStage A piv m).2.1⁻¹ * (gemFullPivotStage A piv m').2.1) i = i := by
@@ -894,7 +1063,8 @@ theorem gemFullPivotStage_rowPerm_inv_mul_apply (hrow : ∀ M k, k ≤ (piv M k)
       fun _ hj => gemFullPivotRowSwap_apply_of_lt A piv hrow h hj⟩
   · exact ⟨1, by rw [gemFullPivotStage_succ_of_le A piv (not_lt.1 h), mul_one], fun _ _ => rfl⟩
 
-/-- The column interchanges after stage `m` fix every index below `m`. -/
+/-- If the strategy always chooses a column at or after the current index, then for $m \le m'$ the
+later column interchanges $\tau_m^{-1} \tau_{m'}$ fix every index $i < m$. -/
 theorem gemFullPivotStage_colPerm_inv_mul_apply (hcol : ∀ M k, k ≤ (piv M k).2) {m m' : ℕ}
     (hmm' : m ≤ m') {i : Fin N} (hi : (i : ℕ) < m) :
     ((gemFullPivotStage A piv m).2.2⁻¹ * (gemFullPivotStage A piv m').2.2) i = i := by
@@ -905,11 +1075,15 @@ theorem gemFullPivotStage_colPerm_inv_mul_apply (hcol : ∀ M k, k ≤ (piv M k)
       fun _ hj => gemFullPivotColSwap_apply_of_lt A piv hcol h hj⟩
   · exact ⟨1, by rw [gemFullPivotStage_succ_of_le A piv (not_lt.1 h), mul_one], fun _ _ => rfl⟩
 
-/-- **The stages of Gaussian elimination on `P A Q` are the completely pivoted stages, with their
-rows and columns permuted by the later interchanges**: with `σ` and `ρ` the final permutations of
-`gemFullPivotStage A piv`,
-`gemStage (A.submatrix σ ρ) k = (A^{(k+1)}).submatrix (σ_k⁻¹ σ) (ρ_k⁻¹ ρ)`. It is the two-sided
-form of `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`. -/
+/-- **The stages of Gaussian elimination on $P A Q$ are the completely pivoted stages, with their
+rows and columns permuted by the later interchanges.** Suppose that the strategy always chooses
+a row and a column at or after the current index, and let $\sigma = \sigma_N$ and
+$\tau = \tau_N$ be the final permutations. Let $B$ be the matrix with the entries
+$b_{ij} = a_{\sigma(i) \tau(j)}$. Then for every $k$,
+$$b^{(k)}_{ij} = \hat a^{(k)}_{\pi_k(i) \kappa_k(j)}, \qquad \pi_k = \sigma_k^{-1} \sigma, \quad
+  \kappa_k = \tau_k^{-1} \tau.$$
+
+This is the two-sided form of `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`. -/
 theorem gemStage_submatrix_eq_submatrix_gemFullPivotStage (hrow : ∀ M k, k ≤ (piv M k).1)
     (hcol : ∀ M k, k ≤ (piv M k).2) (k : ℕ) :
     gemStage (A.submatrix (gemFullPivotStage A piv N).2.1 (gemFullPivotStage A piv N).2.2) k =
@@ -943,7 +1117,8 @@ theorem gemStage_submatrix_eq_submatrix_gemFullPivotStage (hrow : ∀ M k, k ≤
       · exact gemFullPivotStage_colPerm_inv_mul_apply A piv hcol h (Nat.lt_succ_self k)
     · rw [gemStage_succ_of_le _ (not_lt.1 h), ih, gemFullPivotStage_succ_of_le A piv (not_lt.1 h)]
 
-/-- The later row interchanges send the index `k` to the pivot row chosen at stage `k`. -/
+/-- If the strategy always chooses a row at or below the current index, then for $k < N$ the later
+row interchanges $\sigma_k^{-1} \sigma_N$ map $k$ to the pivot row chosen at stage $k$. -/
 theorem gemFullPivotStage_rowPerm_inv_mul_apply_self (hrow : ∀ M k, k ≤ (piv M k).1) {k : ℕ}
     (h : k < N) :
     ((gemFullPivotStage A piv k).2.1⁻¹ * (gemFullPivotStage A piv N).2.1) ⟨k, h⟩ =
@@ -959,7 +1134,8 @@ theorem gemFullPivotStage_rowPerm_inv_mul_apply_self (hrow : ∀ M k, k ≤ (piv
     gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow h (Nat.lt_succ_self k),
     gemFullPivotRowSwap, Equiv.swap_apply_left]
 
-/-- The later column interchanges send the index `k` to the pivot column chosen at stage `k`. -/
+/-- If the strategy always chooses a column at or after the current index, then for $k < N$ the
+later column interchanges $\tau_k^{-1} \tau_N$ map $k$ to the pivot column chosen at stage $k$. -/
 theorem gemFullPivotStage_colPerm_inv_mul_apply_self (hcol : ∀ M k, k ≤ (piv M k).2) {k : ℕ}
     (h : k < N) :
     ((gemFullPivotStage A piv k).2.2⁻¹ * (gemFullPivotStage A piv N).2.2) ⟨k, h⟩ =
@@ -975,7 +1151,9 @@ theorem gemFullPivotStage_colPerm_inv_mul_apply_self (hcol : ∀ M k, k ≤ (piv
     gemFullPivotStage_colPerm_inv_mul_apply A piv hcol h (Nat.lt_succ_self k),
     gemFullPivotColSwap, Equiv.swap_apply_left]
 
-/-- The last stage of Gaussian elimination on `P A Q` is the last completely pivoted stage. -/
+/-- If the strategy always chooses a row and a column at or after the current index, then the last
+stage of Gaussian elimination without pivoting on the matrix $(a_{\sigma_N(i) \tau_N(j)})$ is
+the last completely pivoted stage $\hat A^{(N)}$. -/
 theorem gemStage_submatrix_gemFullPivotStage_card (hrow : ∀ M k, k ≤ (piv M k).1)
     (hcol : ∀ M k, k ≤ (piv M k).2) :
     gemStage (A.submatrix (gemFullPivotStage A piv N).2.1 (gemFullPivotStage A piv N).2.2) N =
@@ -984,8 +1162,11 @@ theorem gemStage_submatrix_gemFullPivotStage_card (hrow : ∀ M k, k ≤ (piv M 
     inv_mul_cancel]
   rfl
 
-/-- The pivot of stage `k` of Gaussian elimination on `P A Q` is the entry chosen by the
-strategy: `(P A Q)^{(k)}_{kk} = A^{(k)}_{r c}` with `(r, c) = piv A^{(k)} k`. -/
+/-- Suppose that the strategy always chooses a row and a column at or after the current index, and
+let $B = (a_{\sigma_N(i) \tau_N(j)})$. Then for $k < N$, the pivot of stage $k$ of Gaussian
+elimination without pivoting on $B$ is the entry chosen by the strategy:
+$$b^{(k)}_{kk} = \hat a^{(k)}_{rc},$$
+where $(r, c)$ is the pair that `piv` chooses for $\hat A^{(k)}$ and $k$. -/
 theorem gemStage_submatrix_apply_self (hrow : ∀ M k, k ≤ (piv M k).1)
     (hcol : ∀ M k, k ≤ (piv M k).2) {k : ℕ} (h : k < N) :
     gemStage (A.submatrix (gemFullPivotStage A piv N).2.1 (gemFullPivotStage A piv N).2.2) k
@@ -996,31 +1177,37 @@ theorem gemStage_submatrix_apply_self (hrow : ∀ M k, k ≤ (piv M k).1)
     gemFullPivotStage_rowPerm_inv_mul_apply_self A piv hrow h,
     gemFullPivotStage_colPerm_inv_mul_apply_self A piv hcol h]
 
-/-- The later row interchanges map the indices from `m` on to indices from `m` on. -/
+/-- If the strategy always chooses a row at or below the current index, then for $m \le m'$ the
+later row interchanges $\sigma_m^{-1} \sigma_{m'}$ map each index $i \ge m$ to an index $\ge m$. -/
 theorem le_gemFullPivotStage_rowPerm_inv_mul_apply (hrow : ∀ M k, k ≤ (piv M k).1) {m m' : ℕ}
     (hmm' : m ≤ m') {i : Fin N} (hi : m ≤ (i : ℕ)) :
     m ≤ ((((gemFullPivotStage A piv m).2.1⁻¹ * (gemFullPivotStage A piv m').2.1) i : Fin N) : ℕ) :=
   le_apply_of_forall_lt_apply_eq
     (fun _ hj => gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow hmm' hj) hi
 
-/-- The later column interchanges map the indices from `m` on to indices from `m` on. -/
+/-- If the strategy always chooses a column at or after the current index, then for $m \le m'$ the
+later column interchanges $\tau_m^{-1} \tau_{m'}$ map each index $i \ge m$ to an index $\ge m$. -/
 theorem le_gemFullPivotStage_colPerm_inv_mul_apply (hcol : ∀ M k, k ≤ (piv M k).2) {m m' : ℕ}
     (hmm' : m ≤ m') {i : Fin N} (hi : m ≤ (i : ℕ)) :
     m ≤ ((((gemFullPivotStage A piv m).2.2⁻¹ * (gemFullPivotStage A piv m').2.2) i : Fin N) : ℕ) :=
   le_apply_of_forall_lt_apply_eq
     (fun _ hj => gemFullPivotStage_colPerm_inv_mul_apply A piv hcol hmm' hj) hi
 
-/-- The permutation-matrix form of a two-sided submatrix: `A.submatrix σ ρ` is `P A Q` with
-`P = σ.permMatrix K` and `Q = (ρ⁻¹).permMatrix K`. -/
+/-- The permutation-matrix form of a two-sided permutation: for permutations $\sigma$ and $\rho$,
+$$P_\sigma A P_{\rho^{-1}} = (a_{\sigma(i) \rho(j)})_{i, j}.$$
+-/
 theorem permMatrix_mul_mul_permMatrix (σ ρ : Equiv.Perm (Fin N)) :
     σ.permMatrix K * A * (ρ⁻¹).permMatrix K = A.submatrix σ ρ := by
   rw [Equiv.Perm.permMatrix, Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul,
     PEquiv.mul_toMatrix_toPEquiv, submatrix_submatrix, Function.id_comp, Function.comp_id,
     Equiv.Perm.inv_def, Equiv.symm_symm]
 
-/-- Conjugating an elementary matrix `1 - τ e_kᵀ` by a permutation fixing `k` permutes its vector:
-`P (1 - τ e_kᵀ) Pᵀ = 1 - (P τ) e_kᵀ` — how the Gauss transformations of partial pivoting are
-carried past the later row interchanges ([golub2013matrix] (3.4.5)). -/
+/-- Conjugation of an elementary matrix by a permutation that fixes its index. Let $\rho$ be a
+permutation with $\rho(k) = k$, and let $v$ be a vector. Then
+$$P_\rho (I - v e_k^T) P_\rho^T = I - (P_\rho v) e_k^T.$$
+
+This is how the Gauss transformations of partial pivoting are carried past the later row
+interchanges ([golub2013matrix], (3.4.5)). -/
 theorem permMatrix_mul_one_sub_vecMulVec_single_mul_transpose {ρ : Equiv.Perm (Fin N)} {k : Fin N}
     (hk : ρ k = k) (τ : Fin N → K) :
     ρ.permMatrix K * (1 - vecMulVec τ (Pi.single k 1)) * (ρ.permMatrix K)ᵀ =
@@ -1034,9 +1221,14 @@ theorem permMatrix_mul_one_sub_vecMulVec_single_mul_transpose {ρ : Equiv.Perm (
 
 end FullPivotStages
 
-/-- The permutation matrix of `σ ⊕ τ`, transported to `p` along `e : m ⊕ n ≃ p`, is the block
-diagonal matrix `[P_σ 0; 0 P_τ]` reindexed along `e`: the permutation `[I 0; 0 P]` of a pivoted
-block LU factorization ([golub2013matrix] §3.6.1). -/
+/-- Let $e \colon m \sqcup n \to p$ be a bijection, and let $\sigma$ and $\tau$ be permutations of
+$m$ and $n$. The permutation matrix of the permutation $\sigma \sqcup \tau$, transported to $p$
+along $e$, is the block diagonal matrix
+$$\begin{bmatrix} P_\sigma & 0 \\ 0 & P_\tau \end{bmatrix}$$
+reindexed along $e$.
+
+This gives the permutation $\begin{bmatrix} I & 0 \\ 0 & P \end{bmatrix}$ of a pivoted block LU
+factorization ([golub2013matrix], §3.6.1). -/
 theorem permMatrix_permCongr_sumCongr {R m n p : Type*} [DecidableEq m] [DecidableEq n]
     [DecidableEq p] [Zero R] [One R] (e : m ⊕ n ≃ p) (σ : Equiv.Perm m) (τ : Equiv.Perm n) :
     (e.permCongr (Equiv.sumCongr σ τ)).permMatrix R =
@@ -1056,9 +1248,12 @@ theorem permMatrix_permCongr_sumCongr {R m n p : Type*} [DecidableEq m] [Decidab
 
 section Nonsingular
 
-/-- A square matrix whose columns before `k` vanish below the diagonal and whose column `k`
-vanishes from row `k` downwards is singular: it is block upper triangular along `{≤ k}`, and its
-leading block is upper triangular with the zero diagonal entry `M k k`. -/
+/-- Let $R$ be a commutative ring, let $n$ be a finite linear order, let $M \in R^{n \times n}$, and
+let $k \in n$. Suppose that $m_{ij} = 0$ whenever $j < k$ and $j < i$, and that $m_{ik} = 0$ for
+every $i \ge k$. Then $\det M = 0$.
+
+The matrix is block upper triangular for the split of the indices into $i \le k$ and $i > k$,
+and its leading block is upper triangular with the zero diagonal entry $m_{kk}$. -/
 theorem det_eq_zero_of_apply_eq_zero_of_lt {n : Type*} [LinearOrder n] [Fintype n] {R : Type*}
     [CommRing R] (M : Matrix n n R) (k : n) (h1 : ∀ i j, j < k → j < i → M i j = 0)
     (h2 : ∀ i, k ≤ i → M i k = 0) : M.det = 0 := by
@@ -1073,12 +1268,15 @@ theorem det_eq_zero_of_apply_eq_zero_of_lt {n : Type*} [LinearOrder n] [Fintype 
 
 variable {N : ℕ} {𝕜 : Type*} [NormedField 𝕜]
 
-/-- **A nonsingular matrix has nonzero pivots under partial pivoting**: if `A` is a unit, the
-pivot chosen at every stage of `gemPivotStage A piv` is nonzero, for any partial-pivoting strategy
-`piv`. Otherwise the pivot column of some stage vanishes from the diagonal downwards, so the
-corresponding stage of Gaussian elimination on `P A` is singular
-(`Matrix.det_eq_zero_of_apply_eq_zero_of_lt`), while every stage has the determinant of
-`P A = ± det A`. -/
+/-- **A nonsingular matrix has nonzero pivots under partial pivoting.** Let $\mathbb{K}$ be a normed
+field, let `piv` be a partial-pivoting strategy, and let $A \in \mathbb{K}^{N \times N}$ be
+invertible. Then for every $k < N$, the pivot $\hat a^{(k)}_{r_k k}$ chosen at stage $k$ is
+nonzero.
+
+Otherwise the pivot column of some stage vanishes from the diagonal downwards. Then the
+corresponding stage of Gaussian elimination on $P_{\sigma_N} A$ is singular
+(`Matrix.det_eq_zero_of_apply_eq_zero_of_lt`), but every stage has the determinant
+$\det (P_{\sigma_N} A) = \pm \det A$. -/
 theorem gemPivotStage_pivot_ne_zero_of_isUnit {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N}
     (hpiv' : IsPartialPivot piv) (A : Matrix (Fin N) (Fin N) 𝕜)
     (hA : IsUnit A) (k : ℕ) (hk : k < N) :
@@ -1111,17 +1309,24 @@ theorem gemPivotStage_pivot_ne_zero_of_isUnit {piv : Matrix (Fin N) (Fin N) 𝕜
     at hdetB
   exact hdetB rfl
 
-/-- `Matrix.gemPivotStage_pivot_ne_zero_of_isUnit` for `Matrix.partialPivotRow`. -/
+/-- If $A \in \mathbb{K}^{N \times N}$ is invertible, then for every $k < N$ the pivot chosen by
+`Matrix.partialPivotRow` at stage $k$ is nonzero.
+
+This is `Matrix.gemPivotStage_pivot_ne_zero_of_isUnit` for `Matrix.partialPivotRow`. -/
 theorem gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit (A : Matrix (Fin N) (Fin N) 𝕜)
     (hA : IsUnit A) (k : ℕ) (hk : k < N) :
     (gemPivotStage A partialPivotRow k).1
       (partialPivotRow (gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩) ⟨k, hk⟩ ≠ 0 :=
   gemPivotStage_pivot_ne_zero_of_isUnit isPartialPivot_partialPivotRow A hA k hk
 
-/-- **The factors of `P A = L U` are those of Gaussian elimination without pivoting applied to
-`P A`** ([quarteroni2000numerical] §3.5, the sentence before Program 9): if `P A = L U` and the
-strict leading principal submatrices of `P A` are nonsingular, then `L` is the multiplier matrix
-and `U` the last stage of `Matrix.gemStage` on `P A`, by uniqueness of the factorization. -/
+/-- **The factors of $P_\sigma A = LU$ are the factors of Gaussian elimination without pivoting on
+$P_\sigma A$.** Let $A, L, U \in K^{N \times N}$ and let $\sigma$ be a permutation. If
+$P_\sigma A = LU$ is an LU factorization and every strict leading principal submatrix of
+$P_\sigma A$ is nonsingular, then $L$ is the multiplier matrix `Matrix.gemLower` of $P_\sigma A$
+and $U = (P_\sigma A)^{(N)}$.
+
+This is the sentence before Program 9 in [quarteroni2000numerical], §3.5. The proof uses the
+uniqueness of the LU factorization. -/
 theorem IsLU.eq_of_permMatrix_mul {K : Type*} [Field K] {σ : Equiv.Perm (Fin N)}
     {A L U : Matrix (Fin N) (Fin N) K} (h : IsLU (σ.permMatrix K * A) L U)
     (hA : (σ.permMatrix K * A).HasUnitStrictLeadingPrincipalSubmatrices) :
@@ -1136,16 +1341,21 @@ section RookStages
 
 variable {N : ℕ} {𝕜 : Type*} [NormedField 𝕜]
 
-/-- **Gaussian elimination with rook (hence complete) pivoting factors `P A Q = L U`**
-([golub2013matrix] Algorithm 3.4.3 and §3.4.7): for a rook-pivoting strategy `piv` and the
-accumulated row and column permutations `σ`, `ρ` of `gemFullPivotStage A piv`, the matrix
-`P A Q` with `P = σ.permMatrix 𝕜` and `Q = (ρ⁻¹).permMatrix 𝕜` is `L U` with `U` the last pivoted
-stage and `L` the multipliers of elimination without pivoting on `P A Q`, every multiplier has
-modulus at most one and every row of `U` is dominated by its diagonal entry — the algorithmic
-counterpart of `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`. No hypothesis on the pivots:
-column maximality makes a zero pivot come with a zero column, and row maximality gives
-`|u_kj| ≤ |u_kk|`, the rows of `U` being the pivot rows of the stages. The book writes
-`P A Qᵀ = L U` in Algorithm 3.4.3 and `P A Q = L U` in §3.4.7; here `Q = (ρ⁻¹).permMatrix 𝕜`. -/
+/-- **Gaussian elimination with rook pivoting, and so with complete pivoting, factors
+$P A Q = LU$.** Let $\mathbb{K}$ be a normed field, let `piv` be a rook-pivoting strategy, and
+let $A \in \mathbb{K}^{N \times N}$. Let $\sigma = \sigma_N$ and $\tau = \tau_N$ be the
+accumulated permutations, $P = P_\sigma$ and $Q = P_{\tau^{-1}}$. Then
+$$P A Q = LU,$$
+where $U = \hat A^{(N)}$ is the last pivoted stage and $L$ is the multiplier matrix of Gaussian
+elimination without pivoting on $P A Q$. Moreover $|l_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$
+for all $i, j$.
+
+This is Algorithm 3.4.3 and §3.4.7 of [golub2013matrix], and the algorithmic counterpart of
+`Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`. No hypothesis on the pivots is needed. The
+column condition of rook pivoting makes a zero pivot come with a zero column, and the row
+condition gives $|u_{kj}| \le |u_{kk}|$, since the rows of $U$ are the pivot rows of the stages.
+The source writes $P A Q^T = LU$ in Algorithm 3.4.3 and $P A Q = LU$ in §3.4.7; here
+$Q = P_{\tau^{-1}}$. -/
 theorem gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU (A : Matrix (Fin N) (Fin N) 𝕜)
     {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N × Fin N} (hpiv : IsRookPivot piv) :
     IsLU ((gemFullPivotStage A piv N).2.1.permMatrix 𝕜 * A *
@@ -1197,12 +1407,15 @@ theorem gemFullPivotStage_permMatrix_mul_mul_permMatrix_isLU (A : Matrix (Fin N)
       exact (hpiv _ _).2.2.2 _
         (Fin.le_def.2 (le_gemFullPivotStage_colPerm_inv_mul_apply A piv hcol hk.le hij))
 
-/-- **Complete pivoting reveals the rank** ([golub2013matrix] §3.4.6): for a complete-pivoting
-strategy and `A` of rank `r`, the first `r` pivots of `gemFullPivotStage A piv` are nonzero and
-the trailing block of the stage after `r` steps vanishes. The stages of elimination on `P A Q`
-have the rank of `A`; while the pivots are nonzero the leading block of a stage is upper
-triangular with nonzero diagonal, and a zero pivot makes the whole trailing block zero, so the
-first zero pivot occurs exactly at `r`. -/
+/-- **Complete pivoting reveals the rank.** Let $\mathbb{K}$ be a normed field, let `piv` be a
+complete-pivoting strategy, and let $A \in \mathbb{K}^{N \times N}$ have rank $r$. Then the
+trailing block of the stage $\hat A^{(r)}$ vanishes, $\hat a^{(r)}_{ij} = 0$ for all
+$i, j \ge r$, and the pivots chosen at the stages $k < r$ are nonzero.
+
+This is [golub2013matrix], §3.4.6. The stages of elimination on $P A Q$ have the rank of $A$.
+While the pivots are nonzero, the leading block of a stage is upper triangular with a nonzero
+diagonal, and a zero pivot makes the whole trailing block zero. So the first zero pivot is at
+the stage $r$. -/
 theorem gemFullPivotStage_trailing_eq_zero_of_rank (A : Matrix (Fin N) (Fin N) 𝕜)
     {piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv)
     {r : ℕ} (hr : A.rank = r) :
@@ -1294,11 +1507,16 @@ theorem gemFullPivotStage_trailing_eq_zero_of_rank (A : Matrix (Fin N) (Fin N) �
     rw [gemStage_submatrix_apply_self A piv hrow hcol hk]
     exact h0
 
-/-- **Partial pivoting on a tall block column** ([golub2013matrix] (3.6.2)): a matrix
-`W : Matrix (Fin m) (Fin r) 𝕜` with `r ≤ m` has a row permutation `σ` with `P W = L U`,
-`L` unit lower trapezoidal `m × r` with multipliers of modulus at most one and `U` upper
-triangular `r × r`. The square factorization `Matrix.exists_permMatrix_mul_isLU` of `W` padded
-with zero columns, cut down to the first `r` columns of `L` and the leading block of `U`. -/
+/-- **Partial pivoting on a tall block column.** Let $\mathbb{K}$ be a normed field, $r \le m$, and
+$W \in \mathbb{K}^{m \times r}$. Then there are a permutation $\sigma$ of $\{0, \dots, m - 1\}$,
+a unit lower trapezoidal $L \in \mathbb{K}^{m \times r}$ and an upper triangular
+$U \in \mathbb{K}^{r \times r}$ with
+$$P_\sigma W = LU$$
+and $|l_{ij}| \le 1$ for all $i, j$.
+
+This is equation (3.6.2) of [golub2013matrix]. The proof applies the square factorization
+`Matrix.exists_permMatrix_mul_isLU` to $W$ padded with zero columns, and keeps the first $r$
+columns of $L$ and the leading block of $U$. -/
 theorem exists_permMatrix_mul_isRectLU {m r : ℕ} (W : Matrix (Fin m) (Fin r) 𝕜) (hrm : r ≤ m) :
     ∃ (σ : Equiv.Perm (Fin m)) (L : Matrix (Fin m) (Fin r) 𝕜) (U : Matrix (Fin r) (Fin r) 𝕜),
       IsRectLU (σ.permMatrix 𝕜 * W) L U ∧ ∀ i j, ‖L i j‖ ≤ 1 := by
@@ -1327,35 +1545,38 @@ section SupAbs
 
 variable {m n : Type*} [Finite m] [Finite n]
 
-/-- The largest absolute value of an entry of a real matrix, `max_{i,j} |a_ij|`, as a supremum
-(`0` for an empty matrix). -/
+/-- The **largest absolute value of an entry** of a real matrix:
+$$\mu(A) = \max_{i, j} |a_{ij}|,$$
+defined as a supremum, with the value $0$ for an empty matrix. -/
 noncomputable def supAbs (A : Matrix m n ℝ) : ℝ := ⨆ p : m × n, |A p.1 p.2|
 
-/-- Every entry is bounded by `supAbs`. -/
+/-- Every entry is bounded by the largest one: $|a_{ij}| \le \mu(A)$. -/
 theorem abs_apply_le_supAbs (A : Matrix m n ℝ) (i : m) (j : n) : |A i j| ≤ A.supAbs :=
   le_ciSup (f := fun p : m × n => |A p.1 p.2|) (Set.finite_range _).bddAbove (i, j)
 
-/-- `supAbs` is nonnegative. -/
+/-- $\mu(A) \ge 0$. -/
 theorem supAbs_nonneg (A : Matrix m n ℝ) : 0 ≤ A.supAbs := by
   rcases isEmpty_or_nonempty (m × n) with h | ⟨⟨i, j⟩⟩
   · simp [supAbs]
   · exact (abs_nonneg _).trans (abs_apply_le_supAbs A i j)
 
 omit [Finite m] [Finite n] in
-/-- `supAbs` is the least bound on the entries, among nonnegative bounds. -/
+/-- $\mu(A)$ is the least nonnegative bound on the entries: if $c \ge 0$ and $|a_{ij}| \le c$ for
+all $i, j$, then $\mu(A) \le c$. -/
 theorem supAbs_le {A : Matrix m n ℝ} {c : ℝ} (hc : 0 ≤ c) (h : ∀ i j, |A i j| ≤ c) :
     A.supAbs ≤ c := by
   rcases isEmpty_or_nonempty (m × n) with hmn | hmn
   · simp [supAbs, hc]
   · exact ciSup_le fun p => h p.1 p.2
 
-/-- `supAbs` is attained on a nonempty matrix. -/
+/-- On a matrix with at least one row and one column, $\mu(A)$ is attained: $|a_{ij}| = \mu(A)$ for
+some $i, j$. -/
 theorem exists_abs_apply_eq_supAbs [Nonempty m] [Nonempty n] (A : Matrix m n ℝ) :
     ∃ i j, |A i j| = A.supAbs := by
   obtain ⟨⟨i, j⟩, hij⟩ := Finite.exists_max fun p : m × n => |A p.1 p.2|
   exact ⟨i, j, le_antisymm (abs_apply_le_supAbs A i j) (ciSup_le fun p => hij p)⟩
 
-/-- `supAbs A = 0` exactly when `A = 0`. -/
+/-- $\mu(A) = 0$ if and only if $A = 0$. -/
 theorem supAbs_eq_zero_iff {A : Matrix m n ℝ} : A.supAbs = 0 ↔ A = 0 := by
   constructor
   · intro h
@@ -1367,7 +1588,7 @@ theorem supAbs_eq_zero_iff {A : Matrix m n ℝ} : A.supAbs = 0 ↔ A = 0 := by
     exact le_antisymm (supAbs_le le_rfl fun i j => by simp) (supAbs_nonneg _)
 
 omit [Finite m] [Finite n] in
-/-- On an empty index type `supAbs` vanishes. -/
+/-- If the matrix has no rows, then $\mu(A) = 0$. -/
 theorem supAbs_of_isEmpty [IsEmpty m] (A : Matrix m n ℝ) : A.supAbs = 0 := by
   simp [supAbs]
 
@@ -1377,21 +1598,24 @@ section GrowthFactor
 
 variable {N : ℕ}
 
-/-- **The growth factor** of Gaussian elimination without pivoting on `A`,
-[quarteroni2000numerical] (3.66) and [higham2002accuracy] §9.3:
-`max_{i,j,k} |a^{(k)}_{ij}| / max_{i,j} |a_{ij}|` over the *exact* stages
-`A^{(1)} = A, …, A^{(N)}` (`Matrix.gemStage A k`, `k < N`), with the junk value `0` for `A = 0`.
-The book defines it on the computed stages; the exact one is the one that admits bounds
-([higham2002accuracy], after Theorem 9.5). For Gaussian elimination with partial pivoting the
-growth factor is `growthFactor (P A)`, since the stages of the pivoted elimination are those of
-the plain elimination on `P A` up to the order of the rows
+/-- The **growth factor** of Gaussian elimination without pivoting on
+$A \in \mathbb{R}^{N \times N}$:
+$$\rho(A) = \frac{\max_{0 \le k < N} \max_{i, j} |a^{(k)}_{ij}|}{\mu(A)},$$
+over the exact stages $A^{(0)} = A, \dots, A^{(N-1)}$, with the value $0$ if $A = 0$.
+
+This is equation (3.66) of [quarteroni2000numerical] (see also [higham2002accuracy], §9.3),
+where the stages are numbered from $1$ to $n$. The source defines the growth factor with the
+computed stages; the exact one is the one that can be bounded ([higham2002accuracy], after
+Theorem 9.5). For Gaussian elimination with partial pivoting the growth factor is
+$\rho(P_\sigma A)$, because the pivoted stages are the stages of elimination without pivoting on
+$P_\sigma A$ up to the order of the rows
 (`Matrix.gemStage_permMatrix_mul_eq_submatrix_gemPivotStage`). -/
 noncomputable def growthFactor (A : Matrix (Fin N) (Fin N) ℝ) : ℝ :=
   (⨆ p : Fin N × Fin N × Fin N, |gemStage A p.1 p.2.1 p.2.2|) / A.supAbs
 
 variable (A : Matrix (Fin N) (Fin N) ℝ)
 
-/-- The stages of the zero matrix are zero. -/
+/-- Every stage of Gaussian elimination on the zero matrix is zero. -/
 theorem gemStage_zero_matrix {K : Type*} [Field K] (k : ℕ) :
     gemStage (0 : Matrix (Fin N) (Fin N) K) k = 0 := by
   induction k with
@@ -1403,7 +1627,7 @@ theorem gemStage_zero_matrix {K : Type*} [Field K] (k : ℕ) :
       simp [elimStep_apply]
     · rw [gemStage_succ_of_le _ (not_lt.1 h), ih]
 
-/-- The growth factor is nonnegative. -/
+/-- $\rho(A) \ge 0$. -/
 theorem growthFactor_nonneg : 0 ≤ growthFactor A := by
   unfold growthFactor
   refine div_nonneg ?_ (supAbs_nonneg A)
@@ -1412,9 +1636,11 @@ theorem growthFactor_nonneg : 0 ≤ growthFactor A := by
   · exact (abs_nonneg _).trans (le_ciSup (f := fun p : Fin N × Fin N × Fin N =>
       |gemStage A p.1 p.2.1 p.2.2|) (Set.finite_range _).bddAbove (k, i, j))
 
-/-- Every entry of every stage (the last, `U`, included) is at most the growth factor times the
-largest entry of `A`, the inequality `|u_ij| ≤ ρ_n max |a_ij|` of [quarteroni2000numerical]
-§3.10. -/
+/-- Every entry of every stage, the last stage $U$ included, is bounded by the growth factor times
+the largest entry of $A$: for every $k$ and all $i, j$,
+$$|a^{(k)}_{ij}| \le \rho(A) \, \mu(A).$$
+
+This is the inequality $|u_{ij}| \le \rho_n \max |a_{ij}|$ of [quarteroni2000numerical], §3.10. -/
 theorem abs_gemStage_le_growthFactor_mul_supAbs (k : ℕ) (i j : Fin N) :
     |gemStage A k i j| ≤ growthFactor A * A.supAbs := by
   rcases eq_or_ne A.supAbs 0 with h0 | h0
@@ -1429,8 +1655,10 @@ theorem abs_gemStage_le_growthFactor_mul_supAbs (k : ℕ) (i j : Fin N) :
   · rw [gemStage_apply_of_le A (le_refl (i : ℕ)) (i.2.le.trans hk)]
     exact le_ciSup hbdd (i, i, j)
 
-/-- A uniform bound `|a^{(k)}_{ij}| ≤ c max |a_{ij}|` on the stages bounds the growth factor by
-`c`. -/
+/-- A uniform bound on the stages bounds the growth factor: if $c \ge 0$ and
+$|a^{(k)}_{ij}| \le c \, \mu(A)$ for all $k < N$ and all $i, j$, then
+$$\rho(A) \le c.$$
+-/
 theorem growthFactor_le_of_forall_abs_le {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ (k : ℕ) (i j : Fin N), k < N → |gemStage A k i j| ≤ c * A.supAbs) :
     growthFactor A ≤ c := by
@@ -1445,7 +1673,7 @@ theorem growthFactor_le_of_forall_abs_le {c : ℝ} (hc : 0 ≤ c)
   rw [growthFactor, div_le_iff₀ hpos]
   exact ciSup_le fun p => h p.1 p.2.1 p.2.2 p.1.2
 
-/-- The growth factor of a nonzero matrix is at least `1`: the first stage is `A` itself. -/
+/-- If $A \neq 0$, then $\rho(A) \ge 1$, because the first stage is $A$. -/
 theorem one_le_growthFactor (hA : A ≠ 0) : 1 ≤ growthFactor A := by
   have h0 : A.supAbs ≠ 0 := fun h => hA (supAbs_eq_zero_iff.1 h)
   have hpos : 0 < A.supAbs := lt_of_le_of_ne (supAbs_nonneg A) (Ne.symm h0)
@@ -1459,8 +1687,13 @@ theorem one_le_growthFactor (hA : A ≠ 0) : 1 ≤ growthFactor A := by
   exact le_ciSup (f := fun p : Fin N × Fin N × Fin N => |gemStage A p.1 p.2.1 p.2.2|)
     (Set.finite_range _).bddAbove (⟨0, hN0⟩, i, j)
 
-/-- Each stage of Gaussian elimination with multipliers of modulus at most `1` at most doubles
-the largest entry: `|a^{(k+1)}_{ij}| ≤ |a^{(k)}_{ij}| + |m_{ik}| |a^{(k)}_{kj}|`. -/
+/-- Suppose that every multiplier of Gaussian elimination on $A$ has modulus at most one:
+$|a^{(k)}_{ik} / a^{(k)}_{kk}| \le 1$ for all $k < N$ and $i > k$. Then for every $k$ and all
+$i, j$, $|a^{(k)}_{ij}| \le 2^k \mu(A)$.
+
+Each stage at most doubles the largest entry, since $|a^{(k+1)}_{ij}| \le |a^{(k)}_{ij}| +
+|a^{(k)}_{ik} / a^{(k)}_{kk}| \, |a^{(k)}_{kj}|$.
+-/
 theorem abs_gemStage_le_two_pow_mul_supAbs
     (hmul : ∀ (k : ℕ) (hk : k < N) (i : Fin N), ⟨k, hk⟩ < i →
       |gemStage A k i ⟨k, hk⟩ / gemStage A k ⟨k, hk⟩ ⟨k, hk⟩| ≤ 1) (k : ℕ) (i j : Fin N) :
@@ -1493,10 +1726,14 @@ theorem abs_gemStage_le_two_pow_mul_supAbs
     · rw [gemStage_succ_of_le A (not_lt.1 hk)]
       exact (ih i j).trans h2
 
-/-- **[quarteroni2000numerical] §3.10, "the growth factor can be bounded by `2^{n-1}`"**: if
-every multiplier of Gaussian elimination has modulus at most one, the growth factor is at most
-`2^{N-1}`, each stage at most doubling the largest entry. With
-`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one` this is the bound for partial
+/-- **The growth factor is at most $2^{N-1}$ when the multipliers are bounded by one.** Let
+$A \in \mathbb{R}^{N \times N}$, and suppose that $|a^{(k)}_{ik} / a^{(k)}_{kk}| \le 1$ for all
+$k < N$ and $i > k$. Then
+$$\rho(A) \le 2^{N-1}.$$
+
+This is the statement "the growth factor can be bounded by $2^{n-1}$" of
+[quarteroni2000numerical], §3.10. Each stage at most doubles the largest entry. With
+`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one` this gives the bound for partial
 pivoting (`Matrix.growthFactor_le_two_pow_of_partialPivotRow`). -/
 theorem growthFactor_le_two_pow
     (hmul : ∀ (k : ℕ) (hk : k < N) (i : Fin N), ⟨k, hk⟩ < i →
@@ -1506,8 +1743,13 @@ theorem growthFactor_le_two_pow
   refine (abs_gemStage_le_two_pow_mul_supAbs A hmul k i j).trans ?_
   refine mul_le_mul_of_nonneg_right (pow_le_pow_right₀ one_le_two (by omega)) (supAbs_nonneg A)
 
-/-- **The growth factor of partial pivoting is at most `2^{N-1}`** ([quarteroni2000numerical]
-§3.10, [higham2002accuracy] §9.3): the multipliers of `P A = L U` are bounded by one. -/
+/-- **The growth factor of partial pivoting is at most $2^{N-1}$.** For every
+$A \in \mathbb{R}^{N \times N}$, with $\sigma_N$ the permutation of Gaussian elimination with
+the strategy `Matrix.partialPivotRow`,
+$$\rho(P_{\sigma_N} A) \le 2^{N-1}.$$
+
+This is [quarteroni2000numerical], §3.10, and [higham2002accuracy], §9.3. The multipliers of
+$P_{\sigma_N} A = LU$ have modulus at most one. -/
 theorem growthFactor_le_two_pow_of_partialPivotRow :
     growthFactor ((gemPivotStage A partialPivotRow N).2.permMatrix ℝ * A) ≤ 2 ^ (N - 1) := by
   refine growthFactor_le_two_pow _ fun k hk i hki => ?_
@@ -1522,27 +1764,34 @@ section PosDef
 
 variable {N : ℕ}
 
-/-- `IsPosDefFrom M k`: the trailing block `M(≥ k, ≥ k)` of a real matrix is symmetric positive
-definite, stated on the vectors supported on the indices `≥ k` so that no reindexing is needed.
-It is the invariant carried by the stages of Gaussian elimination on a positive definite matrix
-([higham2002accuracy] §10.1.1). -/
+/-- A real matrix $M \in \mathbb{R}^{N \times N}$ is **positive definite from $k$** if its trailing
+block on the indices $i \ge k$ is symmetric positive definite: $m_{ij} = m_{ji}$ for all
+$i, j \ge k$, and
+$$y^T M y > 0$$
+for every nonzero $y$ with $y_i = 0$ for all $i < k$.
+
+The condition is stated with vectors supported on the indices $i \ge k$, so no reindexing is
+needed. It is the invariant of the stages of Gaussian elimination on a positive definite matrix
+([higham2002accuracy], §10.1.1). -/
 def IsPosDefFrom (M : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) : Prop :=
   (∀ i j : Fin N, k ≤ (i : ℕ) → k ≤ (j : ℕ) → M i j = M j i) ∧
     ∀ y : Fin N → ℝ, (∀ i : Fin N, (i : ℕ) < k → y i = 0) → y ≠ 0 → 0 < y ⬝ᵥ M *ᵥ y
 
-/-- A positive definite matrix is positive definite from the first index. -/
+/-- A positive definite matrix is positive definite from $0$. -/
 theorem PosDef.isPosDefFrom_zero {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.PosDef) :
     IsPosDefFrom A 0 :=
   ⟨fun i j _ _ => by simpa using (hA.isHermitian.apply i j).symm,
     fun y _ hy => by simpa using hA.dotProduct_mulVec_pos hy⟩
 
-/-- Positive definiteness from `k` implies positive definiteness from every later index. -/
+/-- If $M$ is positive definite from $k$ and $k \le k'$, then $M$ is positive definite from $k'$. -/
 theorem IsPosDefFrom.mono {M : Matrix (Fin N) (Fin N) ℝ} {k k' : ℕ} (h : IsPosDefFrom M k)
     (hkk' : k ≤ k') : IsPosDefFrom M k' :=
   ⟨fun i j hi hj => h.1 i j (hkk'.trans hi) (hkk'.trans hj),
     fun y hy hy0 => h.2 y (fun i hi => hy i (hi.trans_le hkk')) hy0⟩
 
-/-- The quadratic form at `y = e_i a + e_j b`. -/
+/-- The quadratic form at $y = a e_i + b e_j$:
+$$y^T M y = a m_{ii} a + a m_{ij} b + (b m_{ji} a + b m_{jj} b).$$
+-/
 theorem dotProduct_mulVec_single_add_single (M : Matrix (Fin N) (Fin N) ℝ) (i j : Fin N)
     (a b : ℝ) :
     (Pi.single i a + Pi.single j b) ⬝ᵥ M *ᵥ (Pi.single i a + Pi.single j b) =
@@ -1551,15 +1800,16 @@ theorem dotProduct_mulVec_single_add_single (M : Matrix (Fin N) (Fin N) ℝ) (i 
     Pi.smul_apply, col_apply, MulOpposite.smul_eq_mul_unop, MulOpposite.unop_op]
   ring
 
-/-- The diagonal of the trailing block is positive. -/
+/-- If $M$ is positive definite from $k$, then $m_{ii} > 0$ for every $i \ge k$. -/
 theorem IsPosDefFrom.diag_pos {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ} (h : IsPosDefFrom M k)
     {i : Fin N} (hi : k ≤ (i : ℕ)) : 0 < M i i := by
   have := h.2 (Pi.single i 1) (fun l hl => Pi.single_eq_of_ne (fun hli => by
     rw [hli] at hl; exact absurd hi (not_le.2 hl)) 1) (by simp)
   simpa using this
 
-/-- The entries of a positive definite block are bounded by its diagonal:
-`|m_ij| ≤ max m_ii m_jj`, since `m_ii ± 2 m_ij + m_jj > 0`. -/
+/-- If $M$ is positive definite from $k$, then the entries of the trailing block are bounded by its
+diagonal: $|m_{ij}| \le \max(m_{ii}, m_{jj})$ for all $i, j \ge k$, since
+$m_{ii} \pm 2 m_{ij} + m_{jj} > 0$. -/
 theorem IsPosDefFrom.abs_apply_le_max {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ}
     (h : IsPosDefFrom M k) {i j : Fin N} (hi : k ≤ (i : ℕ)) (hj : k ≤ (j : ℕ)) :
     |M i j| ≤ max (M i i) (M j j) := by
@@ -1585,9 +1835,12 @@ theorem IsPosDefFrom.abs_apply_le_max {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ}
   · nlinarith [le_max_left (M i i) (M j j), le_max_right (M i i) (M j j)]
   · nlinarith [le_max_left (M i i) (M j j), le_max_right (M i i) (M j j)]
 
-/-- The quadratic form of one elimination step on a vector supported strictly below the pivot
-is the quadratic form of the matrix on the vector completed by `-s / m_kk` at the pivot, where
-`s = (M y)_k`: the Schur-complement identity `yᵀ S y = zᵀ M z`. -/
+/-- Let $M$ be positive definite from $k$, with $k < N$, and let $y$ satisfy $y_i = 0$ for all
+$i \le k$. Then the quadratic form of the elimination step $M'$ at $k$ is the quadratic form of
+$M$ at a corrected vector:
+$$y^T M' y = z^T M z, \qquad z = y - \frac{(My)_k}{m_{kk}} e_k.$$
+
+This is the Schur-complement identity for one step. -/
 theorem dotProduct_elimStep_mulVec {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ} (h : IsPosDefFrom M k)
     (hk : k < N) {y : Fin N → ℝ} (hy : ∀ i : Fin N, (i : ℕ) < k + 1 → y i = 0) :
     y ⬝ᵥ elimStep M ⟨k, hk⟩ *ᵥ y =
@@ -1637,8 +1890,8 @@ theorem dotProduct_elimStep_mulVec {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ} (h
   field_simp
   ring
 
-/-- One elimination step at the pivot `k` of a matrix positive definite from `k` is positive
-definite from `k + 1`: the trailing block of the step is a Schur complement. -/
+/-- If $M$ is positive definite from $k$ and $k < N$, then the elimination step of $M$ at $k$ is
+positive definite from $k + 1$: its trailing block is a Schur complement. -/
 theorem IsPosDefFrom.elimStep {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ} (h : IsPosDefFrom M k)
     (hk : k < N) : IsPosDefFrom (elimStep M ⟨k, hk⟩) (k + 1) := by
   set p : Fin N := ⟨k, hk⟩ with hp
@@ -1660,8 +1913,8 @@ theorem IsPosDefFrom.elimStep {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ} (h : Is
         exact hy p (Nat.lt_succ_self k)
       · rwa [Pi.add_apply, Pi.single_eq_of_ne hip, add_zero] at this
 
-/-- The diagonal entries do not increase along an elimination step at a positive pivot:
-`m_ii - m_ik² / m_kk ≤ m_ii`. -/
+/-- If $M$ is positive definite from $k$ and $k < N$, then the elimination step at $k$ does not
+increase the diagonal entries $i \ge k + 1$: $m_{ii} - m_{ik}^2 / m_{kk} \le m_{ii}$. -/
 theorem IsPosDefFrom.elimStep_apply_self_le {M : Matrix (Fin N) (Fin N) ℝ} {k : ℕ}
     (h : IsPosDefFrom M k) (hk : k < N) {i : Fin N} (hi : k + 1 ≤ (i : ℕ)) :
     Matrix.elimStep M ⟨k, hk⟩ i i ≤ M i i := by
@@ -1674,8 +1927,10 @@ theorem IsPosDefFrom.elimStep_apply_self_le {M : Matrix (Fin N) (Fin N) ℝ} {k 
 
 variable {A : Matrix (Fin N) (Fin N) ℝ}
 
-/-- Every stage of Gaussian elimination on a positive definite matrix is positive definite from
-its pivot index on ([higham2002accuracy] §10.1.1: the trailing blocks are Schur complements). -/
+/-- If $A$ is positive definite, then every stage $A^{(k)}$ of Gaussian elimination is positive
+definite from $k$.
+
+The trailing blocks are Schur complements ([higham2002accuracy], §10.1.1). -/
 theorem PosDef.isPosDefFrom_gemStage (hA : A.PosDef) (k : ℕ) :
     IsPosDefFrom (gemStage A k) k := by
   induction k with
@@ -1687,13 +1942,14 @@ theorem PosDef.isPosDefFrom_gemStage (hA : A.PosDef) (k : ℕ) :
     · rw [gemStage_succ_of_le A (not_lt.1 hk)]
       exact ih.mono (Nat.le_succ k)
 
-/-- The pivots of Gaussian elimination on a positive definite matrix are positive. -/
+/-- If $A$ is positive definite, then every pivot of Gaussian elimination is positive:
+$a^{(k)}_{kk} > 0$ for $k < N$. -/
 theorem PosDef.gemStage_pivot_pos (hA : A.PosDef) {k : ℕ} (hk : k < N) :
     0 < gemStage A k ⟨k, hk⟩ ⟨k, hk⟩ :=
   (hA.isPosDefFrom_gemStage k).diag_pos le_rfl
 
-/-- The diagonal entries of the stages of Gaussian elimination on a positive definite matrix
-never exceed those of the matrix. -/
+/-- If $A$ is positive definite, then the diagonal entries of the stages never exceed those of $A$:
+$a^{(k)}_{ii} \le a_{ii}$ for $i \ge k$. -/
 theorem PosDef.gemStage_apply_self_le (hA : A.PosDef) (k : ℕ) {i : Fin N} (hi : k ≤ (i : ℕ)) :
     gemStage A k i i ≤ A i i := by
   induction k with
@@ -1706,8 +1962,8 @@ theorem PosDef.gemStage_apply_self_le (hA : A.PosDef) (k : ℕ) {i : Fin N} (hi 
     · rw [gemStage_succ_of_le A (not_lt.1 hk)]
       exact ih (Nat.le_of_succ_le hi)
 
-/-- On a positive definite matrix no entry of any stage exceeds the largest entry of the matrix,
-in the rows at or below the pivot. -/
+/-- If $A$ is positive definite, then $|a^{(k)}_{ij}| \le \mu(A)$ for every $k$, every row $i \ge k$
+and every column $j$. -/
 theorem PosDef.abs_gemStage_le_supAbs_of_le (hA : A.PosDef) {k : ℕ} {i : Fin N}
     (hki : k ≤ (i : ℕ)) (j : Fin N) : |gemStage A k i j| ≤ A.supAbs := by
   rcases le_or_gt k j with hkj | hjk
@@ -1723,8 +1979,7 @@ theorem PosDef.abs_gemStage_le_supAbs_of_le (hA : A.PosDef) {k : ℕ} {i : Fin N
       (Fin.lt_def.2 (hjk.trans_le hki)), abs_zero]
     exact supAbs_nonneg A
 
-/-- On a positive definite matrix no entry of any stage exceeds the largest entry of the
-matrix. -/
+/-- If $A$ is positive definite, then $|a^{(k)}_{ij}| \le \mu(A)$ for every $k$ and all $i, j$. -/
 theorem PosDef.abs_gemStage_le_supAbs (hA : A.PosDef) (k : ℕ) (i j : Fin N) :
     |gemStage A k i j| ≤ A.supAbs := by
   rcases le_or_gt k i with hki | hik
@@ -1732,17 +1987,23 @@ theorem PosDef.abs_gemStage_le_supAbs (hA : A.PosDef) (k : ℕ) (i j : Fin N) :
   · rw [gemStage_apply_of_le A (le_refl (i : ℕ)) hik.le]
     exact hA.abs_gemStage_le_supAbs_of_le le_rfl j
 
-/-- **No growth on positive definite matrices**: the growth factor of Gaussian elimination
-without pivoting on a symmetric positive definite matrix is at most `1`. -/
+/-- **No growth on positive definite matrices.** If $A \in \mathbb{R}^{N \times N}$ is symmetric
+positive definite, then the growth factor of Gaussian elimination without pivoting satisfies
+$$\rho(A) \le 1.$$
+-/
 theorem growthFactor_le_one_of_posDef (hA : A.PosDef) : growthFactor A ≤ 1 :=
   growthFactor_le_of_forall_abs_le A zero_le_one fun k i j _ => by
     simpa using hA.abs_gemStage_le_supAbs k i j
 
-/-- **[quarteroni2000numerical] §3.10 (3)**, [higham2002accuracy] §10.1.1: for a symmetric
-positive definite matrix of positive order, the growth factor of Gaussian elimination without
-pivoting is exactly `1`. Every stage's trailing block is again positive definite, so its entries
-are bounded by its diagonal, and the diagonal entries decrease from stage to stage. The order
-must be positive: the growth factor of the empty matrix is the junk value `0`. -/
+/-- **The growth factor of a positive definite matrix is one.** If $A \in \mathbb{R}^{N \times N}$
+is symmetric positive definite and $N \ge 1$, then the growth factor of Gaussian elimination
+without pivoting is
+$$\rho(A) = 1.$$
+
+This is [quarteroni2000numerical], §3.10 (3), and [higham2002accuracy], §10.1.1. The trailing
+block of every stage is again positive definite, so its entries are bounded by its diagonal, and
+the diagonal entries decrease from stage to stage. The hypothesis $N \ge 1$ is necessary,
+because the growth factor of the empty matrix is $0$. -/
 theorem growthFactor_eq_one_of_posDef (hA : A.PosDef) (hN : 0 < N) : growthFactor A = 1 := by
   refine le_antisymm (growthFactor_le_one_of_posDef hA) (one_le_growthFactor A fun h0 => ?_)
   have := hA.diag_pos (i := ⟨0, hN⟩)
@@ -1757,9 +2018,11 @@ section ColDiagDominant
 
 variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
 
-/-- The pivots of Gaussian elimination on a nonsingular column diagonally dominant matrix are
-nonzero: the factorization exists (`Matrix.exists_isLU_of_isColDiagDominant`) and
-`det A = ∏ u_ii`. -/
+/-- If $A \in \mathbb{R}^{N \times N}$ is invertible and column diagonally dominant, then every
+pivot of Gaussian elimination is nonzero: $a^{(k)}_{kk} \neq 0$ for $k < N$.
+
+The LU factorization exists (`Matrix.exists_isLU_of_isColDiagDominant`), and
+$\det A = \prod_i u_{ii}$. -/
 theorem gemStage_pivot_ne_zero_of_isColDiagDominant (hu : IsUnit A) (hA : A.IsColDiagDominant)
     {k : ℕ} (hk : k < N) : gemStage A k ⟨k, hk⟩ ⟨k, hk⟩ ≠ 0 := by
   obtain ⟨L, U, hLU, -⟩ := exists_isLU_of_isColDiagDominant hu hA
@@ -1776,7 +2039,7 @@ theorem gemStage_pivot_ne_zero_of_isColDiagDominant (hu : IsUnit A) (hA : A.IsCo
   have := Finset.prod_ne_zero_iff.1 hdet' ⟨k, hk⟩ (mem_univ _)
   rwa [gemStage_apply_of_le A (le_refl k) hk.le] at this
 
-/-- The rows `≥ k` are the row `k` and the rows `≥ k + 1`. -/
+/-- The indices $i \ge k$ are the index $k$ together with the indices $i \ge k + 1$. -/
 theorem filter_le_eq_insert_filter_succ_le {k : ℕ} (hk : k < N) :
     (univ.filter fun i : Fin N => k ≤ (i : ℕ)) =
       insert ⟨k, hk⟩ (univ.filter fun i : Fin N => k + 1 ≤ (i : ℕ)) := by
@@ -1784,7 +2047,7 @@ theorem filter_le_eq_insert_filter_succ_le {k : ℕ} (hk : k < N) :
   simp only [mem_filter, mem_univ, true_and, mem_insert, Fin.ext_iff]
   omega
 
-/-- The rows `≥ k` other than `k` are the rows `≥ k + 1`. -/
+/-- The indices $i \ge k$ other than $k$ are the indices $i \ge k + 1$. -/
 theorem filter_le_erase_eq_filter_succ_le {k : ℕ} (hk : k < N) :
     (univ.filter fun i : Fin N => k ≤ (i : ℕ)).erase ⟨k, hk⟩ =
       univ.filter fun i : Fin N => k + 1 ≤ (i : ℕ) := by
@@ -1792,10 +2055,17 @@ theorem filter_le_erase_eq_filter_succ_le {k : ℕ} (hk : k < N) :
   simp only [mem_erase, mem_filter, mem_univ, true_and, ne_eq, Fin.ext_iff]
   omega
 
-/-- **The invariant of Gaussian elimination on a column diagonally dominant matrix**
-([higham2002accuracy] Theorem 9.9, after Wilkinson): at every stage the trailing block is
-column diagonally dominant, and the column sums of the trailing block do not exceed those of
-`A`. The dominance of the trailing block is the Schur-complement lemma
+/-- **The invariant of Gaussian elimination on a column diagonally dominant matrix.** Let
+$A \in \mathbb{R}^{N \times N}$ be invertible and column diagonally dominant. Then for every
+stage $k$:
+
+* the trailing block is column diagonally dominant: $\sum_{i \ge k, i \neq j} |a^{(k)}_{ij}| \le
+  |a^{(k)}_{jj}|$ for every $j \ge k$;
+* for every column $j$, the part of the column in the rows $i \ge k$ has at most the column sum
+  of $A$: $\sum_{i \ge k} |a^{(k)}_{ij}| \le \sum_i |a_{ij}|$.
+
+This is the invariant of the proof of Theorem 9.9 of [higham2002accuracy], after Wilkinson. The
+dominance of the trailing block is the Schur-complement lemma
 `Matrix.IsColDiagDominant.sum_norm_sub_le`, applied to the stage with its finished rows replaced
 by zeros. -/
 theorem gemStage_isColDiagDominant_invariant (hu : IsUnit A) (hA : A.IsColDiagDominant) (k : ℕ) :
@@ -1903,9 +2173,12 @@ theorem gemStage_isColDiagDominant_invariant (hu : IsUnit A) (hA : A.IsColDiagDo
         _ = |M p j| + ∑ i ∈ univ.filter (fun i : Fin N => k + 1 ≤ (i : ℕ)), |M i j| := by
             rw [mul_inv_cancel₀ (abs_ne_zero.2 hpp), one_mul, add_comm]
 
-/-- On a nonsingular column diagonally dominant matrix, no entry of any stage of Gaussian
-elimination exceeds twice the largest entry of the matrix: a column sum of the trailing block is
-at most the column sum of `A`, which is at most `2 |a_jj|` by dominance. -/
+/-- If $A \in \mathbb{R}^{N \times N}$ is invertible and column diagonally dominant, then every
+entry of every stage of Gaussian elimination is at most twice the largest entry of $A$:
+$$|a^{(k)}_{ij}| \le 2 \mu(A).$$
+
+The part of a column in the trailing rows is at most the column sum of $A$, which is at most
+$2 |a_{jj}|$ by dominance. -/
 theorem abs_gemStage_le_two_mul_supAbs_of_isColDiagDominant (hu : IsUnit A)
     (hA : A.IsColDiagDominant) (k : ℕ) (i j : Fin N) :
     |gemStage A k i j| ≤ 2 * A.supAbs := by
@@ -1927,10 +2200,15 @@ theorem abs_gemStage_le_two_mul_supAbs_of_isColDiagDominant (hu : IsUnit A)
   · rw [gemStage_apply_of_le A (le_refl (i : ℕ)) hik.le]
     exact hcol i i le_rfl
 
-/-- **[quarteroni2000numerical] §3.10 (4)**, [higham2002accuracy] Theorem 9.9 (Wilkinson): the
-growth factor of Gaussian elimination without pivoting on a nonsingular matrix diagonally
-dominant by columns is at most `2`. Weak dominance suffices (the book says "strictly"), and
-partial pivoting would perform no interchange, the multipliers being bounded by `1`
+/-- **The growth factor of a column diagonally dominant matrix is at most two.** If
+$A \in \mathbb{R}^{N \times N}$ is invertible and diagonally dominant by columns,
+$\sum_{i \neq j} |a_{ij}| \le |a_{jj}|$ for every $j$, then the growth factor of Gaussian
+elimination without pivoting satisfies
+$$\rho(A) \le 2.$$
+
+This is [quarteroni2000numerical], §3.10 (4), and Theorem 9.9 of [higham2002accuracy]
+(Wilkinson). The source asks for strict dominance; weak dominance suffices. Partial pivoting
+would make no interchange, because the multipliers are bounded by one
 (`Matrix.exists_isLU_of_isColDiagDominant`). -/
 theorem growthFactor_le_two_of_isColDiagDominant (hu : IsUnit A) (hA : A.IsColDiagDominant) :
     growthFactor A ≤ 2 :=
@@ -1945,7 +2223,8 @@ section Hessenberg
 
 variable {N : ℕ}
 
-/-- The largest entry is invariant under a permutation of the rows. -/
+/-- The largest entry does not change under a permutation of the rows: $\mu$ of the matrix
+$(a_{\sigma(i) j})$ is $\mu(A)$. -/
 theorem supAbs_submatrix_equiv {m : Type*} [Finite m] (A : Matrix m m ℝ) (σ : Equiv.Perm m) :
     (A.submatrix σ id).supAbs = A.supAbs := by
   refine le_antisymm (supAbs_le (supAbs_nonneg A) fun i j => abs_apply_le_supAbs A (σ i) j)
@@ -1953,16 +2232,20 @@ theorem supAbs_submatrix_equiv {m : Type*} [Finite m] (A : Matrix m m ℝ) (σ :
   have := abs_apply_le_supAbs (A.submatrix σ id) (σ.symm i) j
   simpa using this
 
-/-- `|a / b| ≤ 1` when `|a| ≤ |b|`, the case `b = 0` included (junk division). -/
+/-- For real numbers $a$ and $b$ with $|a| \le |b|$, $|a / b| \le 1$. The case $b = 0$ is included,
+since division by zero is $0$. -/
 theorem abs_div_le_one_of_abs_le {a b : ℝ} (h : |a| ≤ |b|) : |a / b| ≤ 1 := by
   rcases eq_or_ne b 0 with rfl | hb
   · simp
   · rw [abs_div, div_le_one (abs_pos.2 hb)]
     exact h
 
-/-- When the rows more than `b` below `p` vanish in column `p`, partial pivoting chooses a row at
-most `b` below `p`: a pivot further down would be zero, so the whole column below `p` would vanish
-and the first maximal row would be `p` itself. -/
+/-- Let $M \in \mathbb{K}^{N \times N}$, let $p$ be an index and $b \in \mathbb{N}$, and suppose
+that $m_{ip} = 0$ for every $i > p + b$. Then the row chosen by `Matrix.partialPivotRow M p` is
+at most $p + b$.
+
+A pivot further down would be zero, so the whole column below $p$ would vanish, and the first
+maximal row would be $p$ itself. -/
 theorem partialPivotRow_le_add {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fin N) (Fin N) 𝕜)
     (p : Fin N) (b : ℕ) (h : ∀ i : Fin N, (p : ℕ) + b < i → M i p = 0) :
     ((partialPivotRow M p : Fin N) : ℕ) ≤ (p : ℕ) + b := by
@@ -1974,8 +2257,10 @@ theorem partialPivotRow_le_add {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fi
   rw [hself] at hlt
   omega
 
-/-- When the rows more than one below `p` vanish in column `p`, partial pivoting chooses the
-row `p` or the row `p + 1`, the case `b = 1` of `Matrix.partialPivotRow_le_add`. -/
+/-- Let $M \in \mathbb{K}^{N \times N}$ and let $p$ be an index with $m_{ip} = 0$ for every
+$i > p + 1$. Then the row chosen by `Matrix.partialPivotRow M p` is $p$ or $p + 1$.
+
+This is the case $b = 1$ of `Matrix.partialPivotRow_le_add`. -/
 theorem partialPivotRow_le_succ {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fin N) (Fin N) 𝕜)
     (p : Fin N) (h : ∀ i : Fin N, (p : ℕ) + 1 < i → M i p = 0) :
     ((partialPivotRow M p : Fin N) : ℕ) ≤ (p : ℕ) + 1 :=
@@ -1983,11 +2268,16 @@ theorem partialPivotRow_le_succ {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (F
 
 variable {A : Matrix (Fin N) (Fin N) ℝ}
 
-/-- **The shape invariant of partial pivoting on an upper Hessenberg matrix**
-([higham2002accuracy], proof of Theorem 9.10): at the start of stage `k`, the rows below `k`
-are the original rows of `A`, and the entries of the rows `i ≤ k` are bounded by `(i + 1)` times
-the largest entry of `A`. Each stage swaps at most the rows `k` and `k + 1` and adds a multiple
-of modulus at most one of the pivot row to the row `k + 1`. -/
+/-- **The shape invariant of partial pivoting on an upper Hessenberg matrix.** Let
+$A \in \mathbb{R}^{N \times N}$ be upper Hessenberg, and let $\hat A^{(k)}$ be the stages of
+Gaussian elimination with the strategy `Matrix.partialPivotRow`. Then for every $k$:
+
+* the rows below $k$ are the rows of $A$: $\hat a^{(k)}_{ij} = a_{ij}$ for $i > k$;
+* the entries of the rows $i \le k$ satisfy $|\hat a^{(k)}_{ij}| \le (i + 1) \mu(A)$.
+
+This is the invariant of the proof of Theorem 9.10 of [higham2002accuracy]. Each stage
+interchanges at most the rows $k$ and $k + 1$, and adds to the row $k + 1$ a multiple of modulus
+at most one of the pivot row. -/
 theorem gemPivotStage_partialPivotRow_isUpperHessenberg_invariant (hA : A.IsUpperHessenberg)
     (k : ℕ) :
     (∀ i j : Fin N, k < (i : ℕ) → (gemPivotStage A partialPivotRow k).1 i j = A i j) ∧
@@ -2100,12 +2390,16 @@ theorem gemPivotStage_partialPivotRow_isUpperHessenberg_invariant (hA : A.IsUppe
           _ ≤ ((k : ℕ) + 1) * A.supAbs + A.supAbs := by rw [one_mul]; exact hsum
           _ = ((i : ℕ) + 1) * A.supAbs := by rw [hiq]; push_cast; ring
 
-/-- **[quarteroni2000numerical] §3.10 (2)**, [higham2002accuracy] Theorem 9.10 (Wilkinson):
-the growth factor of Gaussian elimination with partial pivoting on an upper Hessenberg matrix of
-order `N` is at most `N`. Every entry of every stage is bounded by `N` times the largest entry
-of `A`, by the shape invariant `Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant`;
-the stages of the pivoted elimination are those of the plain elimination on `P A` up to the
-order of the rows. -/
+/-- **The growth factor of partial pivoting on an upper Hessenberg matrix is at most $N$.** If
+$A \in \mathbb{R}^{N \times N}$ is upper Hessenberg and $\sigma_N$ is the permutation of
+Gaussian elimination with the strategy `Matrix.partialPivotRow`, then
+$$\rho(P_{\sigma_N} A) \le N.$$
+
+This is [quarteroni2000numerical], §3.10 (2), and Theorem 9.10 of [higham2002accuracy]
+(Wilkinson). By the shape invariant
+`Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant`, every entry of every stage
+is at most $N \mu(A)$. The pivoted stages are the stages of elimination without pivoting on
+$P_{\sigma_N} A$ up to the order of the rows. -/
 theorem growthFactor_le_card_of_isUpperHessenberg (hA : A.IsUpperHessenberg) :
     growthFactor ((gemPivotStage A partialPivotRow N).2.permMatrix ℝ * A) ≤ N := by
   have hpiv : ∀ (M : Matrix (Fin N) (Fin N) ℝ) k, k ≤ partialPivotRow M k := fun M k =>
@@ -2130,8 +2424,9 @@ section Tridiagonal
 
 variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
 
-/-- After a stage of partial pivoting the pivot column vanishes below the pivot, whether or
-not the pivot itself is zero: a zero pivot means a zero column. -/
+/-- After a stage of partial pivoting, the pivot column vanishes below the pivot, whether the pivot
+is zero or not: for $A \in \mathbb{R}^{N \times N}$, $k < N$ and $i > k$,
+$\hat a^{(k+1)}_{ik} = 0$. A zero pivot comes with a zero column. -/
 theorem gemPivotStage_partialPivotRow_succ_apply_pivot {k : ℕ} (hk : k < N) {i : Fin N}
     (hi : (⟨k, hk⟩ : Fin N) < i) :
     (gemPivotStage A partialPivotRow (k + 1)).1 i ⟨k, hk⟩ = 0 := by
@@ -2155,12 +2450,18 @@ theorem gemPivotStage_partialPivotRow_succ_apply_pivot {k : ℕ} (hk : k < N) {i
           exact hi.le
   · exact elimStep_apply_pivot _ hi h0
 
-/-- **The shape invariant of partial pivoting on a tridiagonal matrix** ([higham2002accuracy]
-§9.5, "the easily verified result that for a tridiagonal matrix `ρ_n^p ≤ 2`"): at the start of
-stage `k`, the working row `k` is supported on the columns `k`, `k + 1`, with `|a^{(k)}_{kk}| ≤ 2μ`
-and every other entry at most `μ`, the largest entry of `A`; the finished rows are bounded by
-`2μ`; and the rows below `k` are the original rows
-(`Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant`). -/
+/-- **The shape invariant of partial pivoting on a tridiagonal matrix.** Let
+$A \in \mathbb{R}^{N \times N}$ be tridiagonal, let $\mu = \mu(A)$, and let $\hat A^{(k)}$ be
+the stages of Gaussian elimination with the strategy `Matrix.partialPivotRow`. Then for every
+$k$:
+
+* if $k < N$, the working row $k$ of $\hat A^{(k)}$ is supported in the columns $k$ and $k + 1$,
+  with $|\hat a^{(k)}_{kk}| \le 2\mu$ and $|\hat a^{(k)}_{kj}| \le \mu$ for $j \neq k$;
+* the finished rows are bounded by $2\mu$: $|\hat a^{(k)}_{ij}| \le 2\mu$ for $i < k$.
+
+This is the "easily verified result that for a tridiagonal matrix $\rho_n^p \le 2$" of
+[higham2002accuracy], §9.5. The rows below $k$ are the rows of $A$, by
+`Matrix.gemPivotStage_partialPivotRow_isUpperHessenberg_invariant`. -/
 theorem gemPivotStage_partialPivotRow_isTridiagonal_invariant (hA : A.IsTridiagonal) (k : ℕ) :
     (∀ hk : k < N,
       |(gemPivotStage A partialPivotRow k).1 ⟨k, hk⟩ ⟨k, hk⟩| ≤ 2 * A.supAbs ∧
@@ -2294,11 +2595,15 @@ theorem gemPivotStage_partialPivotRow_isTridiagonal_invariant (hA : A.IsTridiago
         rw [hw, hAqj, abs_zero, add_zero] at this
         exact abs_nonpos_iff.1 this
 
-/-- **[quarteroni2000numerical] §3.10 (1), the tridiagonal case**, [higham2002accuracy] §9.5 (the
-case `p = 1` of Bohte's Theorem 9.11): the growth factor of Gaussian elimination with partial
-pivoting on a tridiagonal matrix is at most `2`. Every entry of every stage is at most twice the
-largest entry of `A`, by the shape invariant
-`Matrix.gemPivotStage_partialPivotRow_isTridiagonal_invariant`. -/
+/-- **The growth factor of partial pivoting on a tridiagonal matrix is at most two.** If
+$A \in \mathbb{R}^{N \times N}$ is tridiagonal and $\sigma_N$ is the permutation of Gaussian
+elimination with the strategy `Matrix.partialPivotRow`, then
+$$\rho(P_{\sigma_N} A) \le 2.$$
+
+This is the tridiagonal case of [quarteroni2000numerical], §3.10 (1), and of
+[higham2002accuracy], §9.5: the case $p = 1$ of Bohte's Theorem 9.11. By the shape invariant
+`Matrix.gemPivotStage_partialPivotRow_isTridiagonal_invariant`, every entry of every stage is at
+most $2 \mu(A)$. -/
 theorem growthFactor_le_two_of_isTridiagonal (hA : A.IsTridiagonal) :
     growthFactor ((gemPivotStage A partialPivotRow N).2.permMatrix ℝ * A) ≤ 2 := by
   have hpiv : ∀ (M : Matrix (Fin N) (Fin N) ℝ) k, k ≤ partialPivotRow M k := fun M k =>
@@ -2328,9 +2633,12 @@ section Band
 
 variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {p q : ℕ}
 
-/-- Once a column has been eliminated it stays zero below its diagonal entry, whether or not the
-pivot was zero: under partial pivoting a zero pivot means a zero column, so no hypothesis on the
-pivots is needed, unlike in `Matrix.gemStage_apply_eq_zero_of_lt`. -/
+/-- Under partial pivoting, a column stays zero below its diagonal entry once it has been
+eliminated, whether its pivot was zero or not: for $A \in \mathbb{R}^{N \times N}$ and every
+$k$, $\hat a^{(k)}_{ij} = 0$ whenever $j < k$ and $j < i$.
+
+A zero pivot of partial pivoting comes with a zero column, so no hypothesis on the pivots is
+needed, unlike in `Matrix.gemStage_apply_eq_zero_of_lt`. -/
 theorem gemPivotStage_partialPivotRow_apply_eq_zero_of_lt (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     ∀ i j : Fin N, (j : ℕ) < k → j < i → (gemPivotStage A partialPivotRow k).1 i j = 0 := by
   induction k with
@@ -2370,12 +2678,18 @@ theorem gemPivotStage_partialPivotRow_apply_eq_zero_of_lt (A : Matrix (Fin N) (F
       subst hjP
       exact gemPivotStage_partialPivotRow_succ_apply_pivot hk hji
 
-/-- **The shape invariant of partial pivoting on a banded matrix** ([higham2002accuracy] §9.5,
-[quarteroni2000numerical] §3.10 (1)): if `A` has lower bandwidth `p` and upper bandwidth `q` then,
-at the start of stage `k`, the rows `k + p` and below are still the original rows of `A` (they have
-not met a pivot yet), and every row above them vanishes past the column `k + p + q`: the
-interchanges widen the upper band from `q` to `p + q` and no further, because a pivot row is at
-most `p` below the pivot index. -/
+/-- **The shape invariant of partial pivoting on a band matrix.** Let
+$A \in \mathbb{R}^{N \times N}$ have lower bandwidth $p$ and upper bandwidth $q$, and let
+$\hat A^{(k)}$ be the stages of Gaussian elimination with the strategy `Matrix.partialPivotRow`.
+Then for every $k$:
+
+* the rows $i \ge k + p$ are still the rows of $A$: $\hat a^{(k)}_{ij} = a_{ij}$;
+* every row $i < k + p$ vanishes after the column $k + p + q$: $\hat a^{(k)}_{ij} = 0$ for
+  $j > k + p + q$.
+
+The rows $i \ge k + p$ have not met a pivot yet. The interchanges widen the upper band from $q$
+to $p + q$ and no further, because a pivot row is at most $p$ below the pivot index
+([higham2002accuracy], §9.5; [quarteroni2000numerical], §3.10 (1)). -/
 theorem gemPivotStage_partialPivotRow_hasBandwidth_invariant (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) (k : ℕ) :
     (∀ i j : Fin N, k + p ≤ (i : ℕ) → (gemPivotStage A partialPivotRow k).1 i j = A i j) ∧
@@ -2445,12 +2759,16 @@ theorem gemPivotStage_partialPivotRow_hasBandwidth_invariant (hp : A.HasLowerBan
       rw [hMk, elimStep_apply, hrow P (by omega), mul_zero, ite_self, sub_zero]
       exact hrow i hi
 
-/-- **The band bound on the stages of Gaussian elimination with partial pivoting**: with `A` of
-lower bandwidth `p` and upper bandwidth `q`, an entry of column `j` at stage `k` is at most `2^m`
-times the largest entry of `A`, where `m = min k j - (j - (p + q))` counts the stages before `k`
-that touch column `j`. A stage touches a column only while the pivot row — supported in the columns
-`k` to `k + p + q` by `Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant` — reaches it,
-and each such stage at most doubles the column, since the multipliers are bounded by one. -/
+/-- **The band bound on the stages of partial pivoting.** Let $A \in \mathbb{R}^{N \times N}$ have
+lower bandwidth $p$ and upper bandwidth $q$, and let $\hat A^{(k)}$ be the stages of Gaussian
+elimination with the strategy `Matrix.partialPivotRow`. Then for every $k$ and all $i, j$,
+$$|\hat a^{(k)}_{ij}| \le 2^{m} \mu(A), \qquad m = \min(k, j) - (j - (p + q)),$$
+with truncated subtraction of natural numbers.
+
+The number $m$ counts the stages before $k$ that change the column $j$. A stage changes a column
+only if the pivot row reaches it, and the pivot row of stage $k$ is supported in the columns $k$
+to $k + p + q$ (`Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant`). Each such stage
+at most doubles the column, because the multipliers are bounded by one. -/
 theorem abs_gemPivotStage_le_of_hasBandwidth (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) (k : ℕ) (i j : Fin N) :
     |(gemPivotStage A partialPivotRow k).1 i j| ≤
@@ -2545,12 +2863,16 @@ theorem abs_gemPivotStage_le_of_hasBandwidth (hp : A.HasLowerBandwidth p)
       · rw [hMk, elimStep_apply_of_not_lt _ hi]
         exact (hih' i).trans (mul_le_mul_of_nonneg_right hmono hμ)
 
-/-- **A band bound for the growth factor of Gaussian elimination with partial pivoting**: for `A`
-of lower bandwidth `p` and upper bandwidth `q` the growth factor is at most `2^{p+q}`, a bound
-independent of the order of the matrix. [quarteroni2000numerical] §3.10 (1) and
-[higham2002accuracy] Theorem 9.11 quote Bohte's sharper `2^{2p-1} - (p-1) 2^{p-2}` for `p = q`,
-which this does not reach (it gives `2^{2p}`); the tridiagonal case `p = q = 1` is sharpened to `2`
-by `Matrix.growthFactor_le_two_of_isTridiagonal`. -/
+/-- **A band bound for the growth factor of partial pivoting.** If $A \in \mathbb{R}^{N \times N}$
+has lower bandwidth $p$ and upper bandwidth $q$, and $\sigma_N$ is the permutation of Gaussian
+elimination with the strategy `Matrix.partialPivotRow`, then
+$$\rho(P_{\sigma_N} A) \le 2^{p+q},$$
+a bound that does not depend on the order $N$.
+
+Section 3.10 (1) of [quarteroni2000numerical] and Theorem 9.11 of [higham2002accuracy] quote
+Bohte's sharper bound $2^{2p-1} - (p-1) 2^{p-2}$ for $p = q$. This theorem does not reach it:
+for $p = q$ it gives $2^{2p}$. The tridiagonal case $p = q = 1$ is sharpened to $2$ by
+`Matrix.growthFactor_le_two_of_isTridiagonal`. -/
 theorem growthFactor_le_two_pow_of_hasBandwidth (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) :
     growthFactor ((gemPivotStage A partialPivotRow N).2.permMatrix ℝ * A) ≤ 2 ^ (p + q) := by
@@ -2573,8 +2895,10 @@ section BandStages
 
 variable {N : ℕ}
 
-/-- Under a strategy choosing rows at or below the current index, row `i` of the pivoted stages is
-final after stage `i + 1`: the later interchanges and eliminations only touch rows below. -/
+/-- Suppose that the strategy always chooses a row at or below the current index. Then the row $i$
+of the pivoted stages does not change after the stage $k + 1$, for every $k \ge i$: if
+$k + 1 \le m$, then $\hat a^{(m)}_{ij} = \hat a^{(k+1)}_{ij}$. The later interchanges and
+elimination steps only change the rows below. -/
 theorem gemPivotStage_fst_apply_of_le {K : Type*} [Field K] (A : Matrix (Fin N) (Fin N) K)
     (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N) (hpiv : ∀ M k, k ≤ piv M k) {i : Fin N}
     {k m : ℕ} (hi : (i : ℕ) ≤ k) (hkm : k + 1 ≤ m) (j : Fin N) :
@@ -2592,11 +2916,14 @@ theorem gemPivotStage_fst_apply_of_le {K : Type*} [Field K] (A : Matrix (Fin N) 
 
 variable {A : Matrix (Fin N) (Fin N) ℝ} {p q : ℕ}
 
-/-- **[golub2013matrix] Theorem 4.3.2, the upper factor**: Gaussian elimination with partial
-pivoting on a matrix of lower bandwidth `p` and upper bandwidth `q` produces an upper factor of
-upper bandwidth `p + q`, with no nonsingularity needed. Row `k` of `U` is the pivot row of stage
-`k`, which lies at most `p` below `k` and, by
-`Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant`, vanishes past column `k + p + q`. -/
+/-- Let $A \in \mathbb{R}^{N \times N}$ have lower bandwidth $p$ and upper bandwidth $q$. Then the
+upper factor $U = \hat A^{(N)}$ of Gaussian elimination with the strategy
+`Matrix.partialPivotRow` has upper bandwidth $p + q$. No nonsingularity is needed. This is
+Theorem 4.3.2 of [golub2013matrix], the statement on the upper factor.
+
+The row $k$ of $U$ is the pivot row of stage $k$. It lies at most $p$ below $k$ and, by
+`Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant`, vanishes after the column
+$k + p + q$. -/
 theorem gemPivotStage_partialPivotRow_hasUpperBandwidth (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) :
     (gemPivotStage A partialPivotRow N).1.HasUpperBandwidth (p + q) := by
@@ -2623,12 +2950,14 @@ theorem gemPivotStage_partialPivotRow_hasUpperBandwidth (hp : A.HasLowerBandwidt
   · rw [(gemPivotStage_partialPivotRow_hasBandwidth_invariant hp hq k).1 _ j hrk]
     exact hq' _ j (by omega)
 
-/-- **[golub2013matrix] Theorem 4.3.2, the Gauss vectors**: under the same hypotheses, the
-multipliers of stage `k` of Gaussian elimination with partial pivoting — the matrix
-`Matrix.elimMultipliers` of the stage-`k` matrix after its interchange — vanish in the rows
-`i ≤ k` and `i > k + p`: below row `k + p` the column `k` still holds original entries of `A`,
-which vanish by the lower bandwidth. So each column of the lower factor has at most `p + 1`
-nonzero entries. -/
+/-- Let $A \in \mathbb{R}^{N \times N}$ have lower bandwidth $p$ and upper bandwidth $q$, and let
+$k < N$. The multiplier matrix `Matrix.elimMultipliers` of stage $k$ of Gaussian elimination
+with the strategy `Matrix.partialPivotRow`, that is, of $\hat A^{(k)}$ after its interchange,
+vanishes in the rows $i \le k$ and $i > k + p$. This is Theorem 4.3.2 of [golub2013matrix], the
+statement on the Gauss vectors.
+
+So each column of the lower factor has at most $p + 1$ nonzero entries. Below the row $k + p$
+the column $k$ still holds entries of $A$, and these vanish by the lower bandwidth. -/
 theorem gemPivotStage_partialPivotRow_multiplier_eq_zero (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) {k : ℕ} (hk : k < N) {i : Fin N}
     (hi : (i : ℕ) ≤ k ∨ k + p < (i : ℕ)) (j : Fin N) :
@@ -2662,43 +2991,49 @@ section Wilkinson
 
 variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
 
-/-- `A.HasDominantPivots`: at every stage of Gaussian elimination *without* pivoting on `A` the
-pivot dominates the whole trailing block, `|a^{(k)}_{ij}| ≤ |a^{(k)}_{kk}|` for `i, j ≥ k`. This
-is what complete pivoting arranges (`Matrix.hasDominantPivots_submatrix_gemFullPivotStage`), and
-it is the hypothesis under which Wilkinson's bound of [quarteroni2000numerical] §3.10 holds. It is
-strictly stronger than the `‖U i j‖ ≤ ‖U i i‖` recorded by
-`Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`, which speaks about the final factor only. -/
+/-- $A \in \mathbb{R}^{N \times N}$ **has dominant pivots** if at every stage of Gaussian
+elimination *without* pivoting the pivot dominates the trailing block:
+$$|a^{(k)}_{ij}| \le |a^{(k)}_{kk}| \quad \text{for all } k < N \text{ and } i, j \ge k.$$
+
+This is what complete pivoting gives (`Matrix.hasDominantPivots_submatrix_gemFullPivotStage`),
+and it is the hypothesis of Wilkinson's bound of [quarteroni2000numerical], §3.10. It is
+strictly stronger than the condition $|u_{ij}| \le |u_{ii}|$ of
+`Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`, which concerns the final factor only. -/
 def HasDominantPivots (A : Matrix (Fin N) (Fin N) ℝ) : Prop :=
   ∀ (k : ℕ) (hk : k < N) (i j : Fin N), k ≤ (i : ℕ) → k ≤ (j : ℕ) →
     |gemStage A k i j| ≤ |gemStage A k ⟨k, hk⟩ ⟨k, hk⟩|
 
-/-- The modulus `|a^{(k)}_{kk}|` of the `k`-th pivot of Gaussian elimination without pivoting, as
-a total function of `k : ℕ` with the junk value `0` beyond the order of the matrix. -/
+/-- The modulus $|a^{(k)}_{kk}|$ of the $k$-th pivot of Gaussian elimination without pivoting, as a
+function of $k \in \mathbb{N}$, with the value $0$ for $k \ge N$. -/
 noncomputable def absGemPivot (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) : ℝ :=
   if h : k < N then |gemStage A k ⟨k, h⟩ ⟨k, h⟩| else 0
 
-/-- Below the order of the matrix, `Matrix.absGemPivot` is the modulus of the pivot. -/
+/-- For $k < N$, `Matrix.absGemPivot A k` is $|a^{(k)}_{kk}|$. -/
 theorem absGemPivot_of_lt (A : Matrix (Fin N) (Fin N) ℝ) {k : ℕ} (h : k < N) :
     absGemPivot A k = |gemStage A k ⟨k, h⟩ ⟨k, h⟩| := by simp [absGemPivot, h]
 
-/-- `Matrix.absGemPivot` is nonnegative. -/
+/-- `Matrix.absGemPivot A k` is nonnegative. -/
 theorem absGemPivot_nonneg (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) : 0 ≤ absGemPivot A k := by
   rw [absGemPivot]
   split_ifs
   · exact abs_nonneg _
   · exact le_rfl
 
-/-- Dominance, in terms of `Matrix.absGemPivot`. -/
+/-- If $A$ has dominant pivots, then $|a^{(k)}_{ij}| \le$ `Matrix.absGemPivot A k` for every $k < N$
+and all $i, j \ge k$. -/
 theorem HasDominantPivots.abs_gemStage_le (hA : A.HasDominantPivots) {k : ℕ} (hk : k < N)
     {i j : Fin N} (hi : k ≤ (i : ℕ)) (hj : k ≤ (j : ℕ)) :
     |gemStage A k i j| ≤ absGemPivot A k := by
   rw [absGemPivot_of_lt A hk]
   exact hA k hk i j hi hj
 
-/-- **The shape of `A^{(k)}` under dominance**: stage `k` vanishes below the diagonal in the first
-`k` columns. This is `Matrix.gemStage_apply_eq_zero_of_lt` with the nonvanishing of the pivots
-replaced by dominance, which also covers a vanishing pivot: there the whole trailing block is
-zero, so the elimination step is the identity. -/
+/-- **The shape of $A^{(k)}$ under dominant pivots.** If $A$ has dominant pivots, then for every $k$
+the stage $A^{(k)}$ vanishes below the diagonal in its first $k$ columns: $a^{(k)}_{ij} = 0$
+whenever $j < k$ and $j < i$.
+
+This is `Matrix.gemStage_apply_eq_zero_of_lt` with the hypothesis of nonzero pivots replaced by
+dominance. Dominance also covers a zero pivot: then the whole trailing block is zero, and the
+elimination step does not change the matrix. -/
 theorem HasDominantPivots.gemStage_apply_eq_zero (hA : A.HasDominantPivots) (k : ℕ) {i j : Fin N}
     (hjk : (j : ℕ) < k) (hji : j < i) : gemStage A k i j = 0 := by
   induction k generalizing i j with
@@ -2722,8 +3057,11 @@ theorem HasDominantPivots.gemStage_apply_eq_zero (hA : A.HasDominantPivots) (k :
         ring
       · rw [mul_assoc, inv_mul_cancel₀ h0, mul_one, sub_self]
 
-/-- **A vanishing pivot freezes the elimination**: under dominance a zero pivot at stage `m` means
-that the whole trailing block of `A^{(m)}` vanishes, and then every later stage equals `A^{(m)}`. -/
+/-- **A zero pivot stops the elimination.** Let $A$ have dominant pivots, and let $m < N$ with
+$a^{(m)}_{mm} = 0$. Then $A^{(k)} = A^{(m)}$ for every $k \ge m$.
+
+By dominance, the whole trailing block of $A^{(m)}$ vanishes, so the later elimination steps do
+not change the matrix. -/
 theorem HasDominantPivots.gemStage_eq_of_pivot_eq_zero (hA : A.HasDominantPivots) {m : ℕ}
     (hm : m < N) (h0 : gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ = 0) {k : ℕ} (hk : m ≤ k) :
     gemStage A k = gemStage A m := by
@@ -2743,7 +3081,8 @@ theorem HasDominantPivots.gemStage_eq_of_pivot_eq_zero (hA : A.HasDominantPivots
       exact elimStep_apply_of_pivot_row_eq_zero _ _ _ (hrow j)
     · rw [gemStage_succ_of_le A (not_lt.1 hkN), ih]
 
-/-- Under dominance the vanishing of a pivot propagates to every later pivot. -/
+/-- If $A$ has dominant pivots, $m \le k < N$ and the $m$-th pivot is zero, then the $k$-th pivot is
+zero. -/
 theorem HasDominantPivots.absGemPivot_eq_zero_of_le (hA : A.HasDominantPivots) {m k : ℕ}
     (hm : m < N) (hk : k < N) (hmk : m ≤ k) (h0 : absGemPivot A m = 0) : absGemPivot A k = 0 := by
   rw [absGemPivot_of_lt A hm, abs_eq_zero] at h0
@@ -2752,12 +3091,15 @@ theorem HasDominantPivots.absGemPivot_eq_zero_of_le (hA : A.HasDominantPivots) {
   rw [h0, abs_zero, abs_nonpos_iff] at this
   exact this
 
-/-- **Hadamard's inequality on the reduced matrices**, the first half of Wilkinson's argument for
-[higham2002accuracy] (9.14): under dominance, if the pivots `a^{(k+t)}_{k+t,k+t}` of a run of `j`
-consecutive stages are nonzero, then their moduli multiply to at most `(√j |a^{(k)}_{kk}|)^j`.
-Indeed the block of `A^{(k)}` on the indices `k, …, k + j - 1` has those pivots as the diagonal of
-its own elimination, so its determinant is their product, while its entries are bounded by
-`|a^{(k)}_{kk}|` and `Matrix.norm_det_le_of_forall_norm_le` applies. -/
+/-- **Hadamard's inequality on the reduced matrices.** Let $A$ have dominant pivots, let
+$k + j \le N$ with $j \ge 1$, and suppose that the pivots $\mu_{k+t} = |a^{(k+t)}_{k+t,k+t}|$
+are nonzero for $t < j$. Then
+$$\prod_{t < j} \mu_{k+t} \le \big( \sqrt{j} \, \mu_k \big)^j.$$
+
+This is the first half of Wilkinson's argument for (9.14) of [higham2002accuracy]. The block of
+$A^{(k)}$ on the indices $k, \dots, k + j - 1$ has these pivots as the pivots of its own
+elimination, so its determinant is their product. Its entries are bounded by $\mu_k$, and
+`Matrix.norm_det_le_of_forall_norm_le` applies. -/
 theorem prod_absGemPivot_le (hA : A.HasDominantPivots) {k j : ℕ} (h : k + j ≤ N) (hj : 0 < j)
     (hne : ∀ t, t < j → absGemPivot A (k + t) ≠ 0) :
     ∏ t ∈ Finset.range j, absGemPivot A (k + t) ≤ (Real.sqrt j * absGemPivot A k) ^ j := by
@@ -2794,20 +3136,23 @@ theorem prod_absGemPivot_le (hA : A.HasDominantPivots) {k j : ℕ} (h : k + j �
   rw [absGemPivot_of_lt A hki]
   rfl
 
-/-- **Wilkinson's growth bound** ([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)):
-`n^{1/2} (2 · 3^{1/2} · 4^{1/3} ⋯ n^{1/(n-1)})^{1/2}`, the bound on the growth factor
-of Gaussian elimination with complete pivoting on a matrix of order `n`. The inner product is
-written over `t = 0, …, n - 2` with the factor `(t + 2)^{1/(t+1)}`. -/
+/-- **Wilkinson's growth bound**
+$$W(n) = n^{1/2} \big( 2 \cdot 3^{1/2} \cdot 4^{1/3} \cdots n^{1/(n-1)} \big)^{1/2} = \sqrt{n}
+  \, \Big( \prod_{t=0}^{n-2} (t + 2)^{1/(t+1)} \Big)^{1/2},$$
+the bound on the growth factor of Gaussian elimination with complete pivoting on a matrix of
+order $n$ ([quarteroni2000numerical], §3.10; [higham2002accuracy], (9.14)).
+
+The product is empty for $n \le 1$, so $W(0) = 0$ and $W(1) = 1$. -/
 noncomputable def wilkinsonGrowthBound (n : ℕ) : ℝ :=
   Real.sqrt n * Real.sqrt (∏ t ∈ Finset.range (n - 1), ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹)
 
-/-- Every factor of Wilkinson's product is at least one. -/
+/-- Every factor of Wilkinson's product is at least one: $(t + 2)^{1/(t+1)} \ge 1$. -/
 theorem one_le_wilkinsonFactor (t : ℕ) : (1 : ℝ) ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
   calc (1 : ℝ) = (1 : ℝ) ^ ((t : ℝ) + 1)⁻¹ := (Real.one_rpow _).symm
     _ ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
         Real.rpow_le_rpow zero_le_one (by linarith) (by positivity)
 
-/-- Wilkinson's product is at least one. -/
+/-- Wilkinson's product is at least one: $\prod_{t < n} (t + 2)^{1/(t+1)} \ge 1$. -/
 theorem one_le_wilkinsonProd (n : ℕ) :
     (1 : ℝ) ≤ ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
   have h1 : (∏ _t ∈ Finset.range n, (1 : ℝ)) ≤
@@ -2815,12 +3160,13 @@ theorem one_le_wilkinsonProd (n : ℕ) :
     Finset.prod_le_prod₀ (fun _ _ => zero_le_one) fun t _ => one_le_wilkinsonFactor t
   simpa using h1
 
-/-- Wilkinson's product is positive. -/
+/-- Wilkinson's product $\prod_{t < n} (t + 2)^{1/(t+1)}$ is positive. -/
 theorem wilkinsonProd_pos (n : ℕ) :
     (0 : ℝ) < ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
   lt_of_lt_of_le zero_lt_one (one_le_wilkinsonProd n)
 
-/-- Wilkinson's product is monotone in the number of factors. -/
+/-- Wilkinson's product is monotone in the number of factors: if $a \le b$, then $\prod_{t < a} (t +
+2)^{1/(t+1)} \le \prod_{t < b} (t + 2)^{1/(t+1)}$. -/
 theorem wilkinsonProd_mono {a b : ℕ} (h : a ≤ b) :
     (∏ t ∈ Finset.range a, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹) ≤
       ∏ t ∈ Finset.range b, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
@@ -2830,16 +3176,16 @@ theorem wilkinsonProd_mono {a b : ℕ} (h : a ≤ b) :
     rw [Finset.prod_range_succ]
     exact ih.trans (by nlinarith [wilkinsonProd_pos b, one_le_wilkinsonFactor b])
 
-/-- Wilkinson's bound is nonnegative. -/
+/-- $W(n) \ge 0$. -/
 theorem wilkinsonGrowthBound_nonneg (n : ℕ) : 0 ≤ wilkinsonGrowthBound n := by
   unfold wilkinsonGrowthBound
   positivity
 
-/-- Wilkinson's bound is positive on a nonempty matrix. -/
+/-- If $n \ge 1$, then $W(n) > 0$. -/
 theorem wilkinsonGrowthBound_pos {n : ℕ} (hn : 0 < n) : 0 < wilkinsonGrowthBound n :=
   mul_pos (Real.sqrt_pos.2 (by exact_mod_cast hn)) (Real.sqrt_pos.2 (wilkinsonProd_pos _))
 
-/-- Wilkinson's bound is monotone in the order. -/
+/-- Wilkinson's bound is monotone in the order: if $m \le n$, then $W(m) \le W(n)$. -/
 theorem wilkinsonGrowthBound_mono {m n : ℕ} (h : m ≤ n) :
     wilkinsonGrowthBound m ≤ wilkinsonGrowthBound n := by
   have hmn : ((m : ℝ)) ≤ (n : ℝ) := by exact_mod_cast h
@@ -2848,7 +3194,9 @@ theorem wilkinsonGrowthBound_mono {m n : ℕ} (h : m ≤ n) :
   exact _root_.mul_le_mul_of_nonneg_left
     (Real.sqrt_le_sqrt (wilkinsonProd_mono (by omega))) (Real.sqrt_nonneg _)
 
-/-- The logarithm of Wilkinson's bound, the form in which the telescoping induction uses it. -/
+/-- The logarithm of Wilkinson's bound: for $n \ge 1$,
+$$\log W(n) = \frac{\log n}{2} + \sum_{t < n - 1} \frac{\log (t + 2)}{2 (t + 1)}.$$
+-/
 theorem log_wilkinsonGrowthBound {n : ℕ} (hn : 0 < n) :
     Real.log (wilkinsonGrowthBound n) = Real.log n / 2 +
       ∑ t ∈ Finset.range (n - 1), Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) := by
@@ -2863,15 +3211,17 @@ theorem log_wilkinsonGrowthBound {n : ℕ} (hn : 0 < n) :
   rw [Real.log_rpow (by positivity)]
   field_simp
 
-/-- **Wilkinson's telescoping estimate, in logarithmic form**: under dominance, if the first
-`r + 1` pivots are nonzero then
-`log μ_r ≤ log μ_0 + (1/2) log(r+1) + ∑_{t<r} log(t+2) / (2(t+1))`, where `μ_k` is the modulus of
-the `k`-th pivot. Neither [quarteroni2000numerical] nor [higham2002accuracy] proves (9.14) — both
-refer to Wilkinson's 1961 paper — so the argument is reconstructed here: writing
-`L_s` for the sum of the logarithms of the last `s + 1` pivots, `Matrix.prod_absGemPivot_le` on the
-run of `s + 2` pivots ending at `r` gives `L_{s+1} ≥ ((s+2)/(s+1)) (L_s - (1/2) log(s+2))`, whence
-`L_s ≥ (s+1) log μ_r - (s+1) ∑_{t<s} log(t+2)/(2(t+1))`; feeding `s = r` into
-`Matrix.prod_absGemPivot_le` on the whole run gives the statement. -/
+/-- **Wilkinson's telescoping estimate, in logarithmic form.** Let $A$ have dominant pivots, let
+$r < N$, and suppose that the pivots $\mu_m = |a^{(m)}_{mm}|$ are nonzero for $m \le r$. Then
+$$\log \mu_r \le \log \mu_0 + \frac{\log (r + 1)}{2} + \sum_{t < r} \frac{\log (t + 2)}{2 (t +
+  1)}.$$
+
+Neither [quarteroni2000numerical] nor [higham2002accuracy] proves (9.14); both refer to a paper
+of Wilkinson of 1961. The proof here goes as follows. Let $L_s$ be the sum of the logarithms of
+the last $s + 1$ pivots up to $\mu_r$. Then `Matrix.prod_absGemPivot_le`, on the run of $s + 2$
+pivots that ends at $r$, gives $L_{s+1} \ge \frac{s+2}{s+1} \big( L_s - \frac{1}{2} \log (s + 2)
+\big)$. By induction, $L_s \ge (s + 1) \log \mu_r - (s + 1) \sum_{t < s} \frac{\log (t + 2)}{2
+(t + 1)}$. With $s = r$, `Matrix.prod_absGemPivot_le` on the whole run gives the statement. -/
 theorem log_absGemPivot_le (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N)
     (hne : ∀ m, m ≤ r → absGemPivot A m ≠ 0) :
     Real.log (absGemPivot A r) ≤ Real.log (absGemPivot A 0) + Real.log ((r : ℝ) + 1) / 2 +
@@ -2942,8 +3292,9 @@ theorem log_absGemPivot_le (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N)
   refine le_of_mul_le_mul_left ?_ hr1
   nlinarith [hfin, hP0]
 
-/-- **Wilkinson's estimate on one pivot**: under dominance the `r`-th pivot is at most
-`wilkinsonGrowthBound (r + 1)` times the first. -/
+/-- **Wilkinson's estimate for one pivot.** If $A$ has dominant pivots and $r < N$, then
+$$|a^{(r)}_{rr}| \le W(r + 1) \, |a^{(0)}_{00}|.$$
+-/
 theorem absGemPivot_le_wilkinson (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N) :
     absGemPivot A r ≤ wilkinsonGrowthBound (r + 1) * absGemPivot A 0 := by
   rcases eq_or_ne (absGemPivot A r) 0 with h0 | h0
@@ -2961,13 +3312,15 @@ theorem absGemPivot_le_wilkinson (hA : A.HasDominantPivots) {r : ℕ} (hr : r < 
   have := log_absGemPivot_le hA hr hne
   linarith
 
-/-- **Wilkinson's bound on the growth factor of complete pivoting**
-([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)): if the pivot dominates the
-trailing block at every stage — which is what complete pivoting arranges — then
-`ρ_N ≤ N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`. The largest entry of `A` is the first pivot, by
-dominance at stage `0`; every entry of every stage is either zero, by the shape of the reduced
-matrices, or bounded by the pivot of an earlier stage; and
-`Matrix.absGemPivot_le_wilkinson` bounds each pivot in terms of the first. -/
+/-- **Wilkinson's bound on the growth factor under dominant pivots.** If
+$A \in \mathbb{R}^{N \times N}$ has dominant pivots, which is what complete pivoting gives, then
+$$\rho(A) \le W(N) = N^{1/2} \big( 2 \cdot 3^{1/2} \cdots N^{1/(N-1)} \big)^{1/2}.$$
+
+This is Wilkinson's bound of [quarteroni2000numerical], §3.10, and (9.14) of
+[higham2002accuracy]. By dominance at stage $0$, the largest entry of $A$ is the first pivot.
+Every entry of every stage is either zero, by the shape of the reduced matrices, or bounded by
+the pivot of an earlier stage, and `Matrix.absGemPivot_le_wilkinson` bounds each pivot in terms
+of the first. -/
 theorem growthFactor_le_of_completePivoting {A : Matrix (Fin N) (Fin N) ℝ}
     (hA : A.HasDominantPivots) : growthFactor A ≤ wilkinsonGrowthBound N := by
   refine growthFactor_le_of_forall_abs_le A (wilkinsonGrowthBound_nonneg N) fun k i j hk => ?_
@@ -2999,9 +3352,10 @@ theorem growthFactor_le_of_completePivoting {A : Matrix (Fin N) (Fin N) ℝ}
     · rw [hA.gemStage_apply_eq_zero (i : ℕ) hij (Fin.lt_def.2 hij), abs_zero]
       exact hzero
 
-/-- **Complete pivoting makes the pivots dominant**: the stages of Gaussian elimination on
-`P A Q`, for the permutations accumulated by `Matrix.gemFullPivotStage` with a complete-pivoting
-strategy, have their pivot dominating the trailing block. -/
+/-- **Complete pivoting gives dominant pivots.** Let `piv` be a complete-pivoting strategy, let
+$A \in \mathbb{R}^{N \times N}$, and let $\sigma_N$ and $\tau_N$ be the permutations accumulated
+by `Matrix.gemFullPivotStage`. Then the matrix $(a_{\sigma_N(i) \tau_N(j)})$, which is $P A Q$,
+has dominant pivots. -/
 theorem hasDominantPivots_submatrix_gemFullPivotStage (A : Matrix (Fin N) (Fin N) ℝ)
     {piv : Matrix (Fin N) (Fin N) ℝ → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv) :
     (A.submatrix (gemFullPivotStage A piv N).2.1
@@ -3018,13 +3372,17 @@ theorem hasDominantPivots_submatrix_gemFullPivotStage (A : Matrix (Fin N) (Fin N
     (Fin.le_def.2 (le_gemFullPivotStage_colPerm_inv_mul_apply A piv hcol hk.le hj))
   simpa only [Real.norm_eq_abs] using hbound
 
-/-- **The growth factor of Gaussian elimination with complete pivoting obeys Wilkinson's bound**
-([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)): for every complete-pivoting
-strategy `piv`, the growth factor of the elimination of `P A Q` — whose stages are those of the
-pivoted elimination up to the order of the rows and of the columns
-(`Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`) — is at most
-`N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`, which grows more slowly than the `2^{N-1}` of partial
-pivoting. -/
+/-- **The growth factor of complete pivoting satisfies Wilkinson's bound.** Let `piv` be a
+complete-pivoting strategy, let $A \in \mathbb{R}^{N \times N}$, and let $\sigma_N$ and $\tau_N$
+be the permutations accumulated by `Matrix.gemFullPivotStage`. Then the growth factor of
+Gaussian elimination without pivoting on $B = (a_{\sigma_N(i) \tau_N(j)})$, which is $P A Q$,
+satisfies
+$$\rho(B) \le W(N) = N^{1/2} \big( 2 \cdot 3^{1/2} \cdots N^{1/(N-1)} \big)^{1/2}.$$
+
+This is [quarteroni2000numerical], §3.10, and (9.14) of [higham2002accuracy]. The stages of
+elimination on $B$ are the completely pivoted stages up to the order of the rows and of the
+columns (`Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`). The bound grows more
+slowly than the bound $2^{N-1}$ of partial pivoting. -/
 theorem growthFactor_le_wilkinson_of_isCompletePivot (A : Matrix (Fin N) (Fin N) ℝ)
     {piv : Matrix (Fin N) (Fin N) ℝ → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv) :
     growthFactor (A.submatrix (gemFullPivotStage A piv N).2.1
@@ -3039,11 +3397,15 @@ section WilkinsonStages
 
 variable {N : ℕ}
 
-/-- **Wilkinson's bound, stage by stage** ([golub2013matrix] (3.4.10), with the index
-corrected): under a complete-pivoting strategy, every entry of the trailing block of the stage
-after `k` steps, `k < N`, is at most `wilkinsonGrowthBound (k + 1)` times the largest entry of
-`A`. The book prints `f(k)`, which is false at `k = 1`: one step of complete pivoting on
-`!![1, 1; 1, -1]` produces the entry `-2`, while `f(1) = 1`. -/
+/-- **Wilkinson's bound, stage by stage.** Let `piv` be a complete-pivoting strategy, let
+$A \in \mathbb{R}^{N \times N}$, and let $k < N$. Then every entry of the trailing block of the
+stage $\hat A^{(k)}$ after $k$ steps satisfies
+$$|\hat a^{(k)}_{ij}| \le W(k + 1) \, \mu(A) \quad \text{for all } i, j \ge k.$$
+
+This is (3.4.10) of [golub2013matrix] with the index corrected. The source prints the bound
+$f(k)$, which is $W(k)$ in the notation here, in place of $W(k + 1)$. That bound is false at
+$k = 1$: one step of complete pivoting on $\begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}$
+produces the entry $-2$, but $f(1) = 1$. -/
 theorem abs_gemFullPivotStage_le_wilkinson (A : Matrix (Fin N) (Fin N) ℝ)
     {piv : Matrix (Fin N) (Fin N) ℝ → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv)
     {k : ℕ} (hk : k < N) {i j : Fin N} (hi : k ≤ (i : ℕ)) (hj : k ≤ (j : ℕ)) :

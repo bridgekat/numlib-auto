@@ -11,16 +11,32 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 /-!
 # Gluing separated quadratic jets
 
-The multidimensional construction behind Theorem 3.1.1 of [cartis2022evaluation] ((3.1.7)):
-quadratic jets prescribed at points at mutual distance at least `r` are interpolated by a smooth
-function whose derivatives of order `≤ 3` are bounded independently of the number of points. The
-interpolant is a sum of translated bump functions times the quadratic Taylor polynomials.
+Let $E$ be a finite-dimensional real inner product space. Prescribe at points
+$x_0, \dots, x_K \in E$ with mutual distances at least $r > 0$ quadratic jets: values $f_k$,
+gradients $g_k$ and symmetric Hessians $H_k$, all of norm at most $\kappa$. This module constructs a
+smooth function $F \colon E \to \mathbb{R}$ with $F(x_k) = f_k$, $\nabla F(x_k) = g_k$ and
+$\nabla^2 F(x_k) = H_k$ whose derivatives of order at most $3$ are bounded by a constant that
+depends on $E$, $r$ and $\kappa$, but not on the number of points. This is the multidimensional
+construction in the proof of Theorem 3.1.1 of [cartis2022evaluation], (3.1.7). The interpolant is a
+sum of translated bump functions, each multiplied by the quadratic Taylor polynomial of its jet.
 
-## Main definitions and results
+## Main definitions
 
-* `Optimization.quadJet f g H`: the jet `(f, g, H)` as a formal multilinear series.
-* `Optimization.exists_contDiff_interpolating_separated_taylorData`,
-  `Optimization.exists_contDiff_interpolating_separated_jets`: the gluing.
+* `Optimization.quadJet`: the quadratic jet $(f, g, H)$ as a formal multilinear series.
+
+## Main results
+
+* `Optimization.exists_contDiff_interpolating_separated_taylorData`: the gluing for Taylor data of
+  order $2$.
+* `Optimization.exists_contDiff_interpolating_separated_jets`: the gluing for quadratic jets
+  $(f_k, g_k, H_k)$.
+
+## Proof outline
+
+Fix a smooth bump function $\varphi$ that equals $1$ on the ball of radius $r/8$ and vanishes
+outside the ball of radius $r/4$. The interpolant is $F(y) = \sum_k \varphi(y - x_k)\, T_{D_k,2}(y -
+x_k)$, where $T_{D_k,2}$ is the Taylor polynomial of degree $2$ of the data $D_k$. Near every point
+at most one term is nonzero, so the derivative bounds of one term are bounds for $F$.
 -/
 
 open Set
@@ -35,7 +51,8 @@ open scoped ContDiff
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- Gluing with separation `2r`; see `exists_contDiff_interpolating_separated_taylorData`. -/
+/-- The gluing of `Optimization.exists_contDiff_interpolating_separated_taylorData` under the
+stronger separation $\|x_i - x_j\| \ge 2r$. -/
 private theorem exists_contDiff_interpolating_separated_taylorData_aux [FiniteDimensional ℝ E]
     {r κ : ℝ} (hr : 0 < r) (hκ : 0 ≤ κ) :
     ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (D : ℕ → FormalMultilinearSeries ℝ E ℝ),
@@ -174,15 +191,19 @@ private theorem exists_contDiff_interpolating_separated_taylorData_aux [FiniteDi
         norm_zero]
       positivity
 
-/-- **Gluing separated quadratic jets** (Taylor-data form). Let `E` be a finite-dimensional real
-inner product space, `r > 0` and `κ ≥ 0`. There is `B ≥ 0` (depending only on `E`, `r` and `κ`)
-such that for any points `x_0, …, x_K` with `‖x_i - x_j‖ ≥ r` (`i ≠ j`) and symmetric Taylor data
-`D_k` with `‖D_{k,i}‖ ≤ κ` (`i ≤ 2`), there is a smooth `F : E → ℝ` whose derivatives of order
-`j ≤ 2` at `x_k` are `D_{k,j}` and whose derivatives of order `j ≤ 3` are bounded by `B`.
+/-- **Gluing separated quadratic jets**, in the form for Taylor data. Let $E$ be a
+finite-dimensional real inner product space, let $r > 0$ and let $\kappa \ge 0$. Then there is a
+constant $B \ge 0$, which depends only on $E$, $r$ and $\kappa$, with the following property.
+Let $K \in \mathbb{N}$, let $x_0, \dots, x_K \in E$ satisfy $\|x_i - x_j\| \ge r$ for $i \ne j$,
+and let $D_0, \dots, D_K$ be formal multilinear series that are symmetric up to order $2$ and
+satisfy $\|D_{k,i}\| \le \kappa$ for $i \le 2$. Then there is a smooth function
+$F \colon E \to \mathbb{R}$ with
+$$\nabla^j F(x_k) = D_{k,j} \quad (k \le K,\ j \le 2), \qquad \|\nabla^j F(y)\| \le B \quad (j
+  \le 3,\ y \in E).$$
 
-The function is `F(y) = ∑_k φ(y - x_k) T_{D_k,2}(y - x_k)` with a fixed bump `φ` equal to `1` on
-the ball of radius `r/8` and supported in the ball of radius `r/4`: near every point at most one
-term is nonzero. -/
+The function is $F(y) = \sum_k \varphi(y - x_k)\, T_{D_k,2}(y - x_k)$ with a fixed bump function
+$\varphi$ that equals $1$ on the ball of radius $r/8$ and is supported in the ball of radius
+$r/4$. Near every point at most one term is nonzero. -/
 theorem exists_contDiff_interpolating_separated_taylorData [FiniteDimensional ℝ E] {r κ : ℝ}
     (hr : 0 < r) (hκ : 0 ≤ κ) :
     ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (D : ℕ → FormalMultilinearSeries ℝ E ℝ),
@@ -196,14 +217,19 @@ theorem exists_contDiff_interpolating_separated_taylorData [FiniteDimensional �
   exact ⟨B, hB, fun K x D hsep => hmain K x D fun i hi j hj hij => by
     linarith [hsep i hi j hj hij]⟩
 
-/-- The quadratic jet `(f, g, H)` (value, gradient, Hessian) as Taylor data:
-`D_0 = f`, `D_1 = ⟪g, ·⟫`, `D_2 = H`, `D_i = 0` for `i ≥ 3`. -/
+/-- The **quadratic jet** of a value $f \in \mathbb{R}$, a gradient $g \in E$ and a bilinear form
+$H$ on $E$ is the formal multilinear series $D$ with
+$$D_0 = f, \qquad D_1 = \langle g, \cdot \rangle, \qquad D_2 = H, \qquad D_i = 0 \quad (i \ge
+  3).$$
+-/
 noncomputable def quadJet (f : ℝ) (g : E) (H : E [×2]→L[ℝ] ℝ) : FormalMultilinearSeries ℝ E ℝ
   | 0 => ContinuousMultilinearMap.uncurry0 ℝ E f
   | 1 => (continuousMultilinearCurryFin1 ℝ E ℝ).symm (innerSL ℝ g)
   | 2 => H
   | _ + 3 => 0
 
+/-- If the bilinear form $H$ is symmetric, $H[v, w] = H[w, v]$ for all $v, w \in E$, then the
+quadratic jet $(f, g, H)$ is symmetric up to order $2$. -/
 theorem quadJet_isSymm {f : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ}
     (hH : ∀ v w, H ![v, w] = H ![w, v]) : (quadJet f g H).IsSymm 2 := by
   intro i hi σ v
@@ -226,6 +252,8 @@ theorem quadJet_isSymm {f : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ}
     rw [hs, hw, hH]
     rfl
 
+/-- If $|f| \le \kappa$, $\|g\| \le \kappa$ and $\|H\| \le \kappa$, then the terms of order
+$i \le 2$ of the quadratic jet $(f, g, H)$ have norm at most $\kappa$. -/
 theorem norm_quadJet_le {f κ : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ} (hf : |f| ≤ κ) (hg : ‖g‖ ≤ κ)
     (hH : ‖H‖ ≤ κ) : ∀ i ≤ 2, ‖quadJet f g H i‖ ≤ κ := by
   intro i hi
@@ -234,13 +262,21 @@ theorem norm_quadJet_le {f κ : ℝ} {g : E} {H : E [×2]→L[ℝ] ℝ} (hf : |f
   · simpa [quadJet, innerSL_apply_norm] using hg
   · exact hH
 
-/-- **Gluing separated quadratic jets** ([cartis2022evaluation], proof of Theorem 3.1.1, (3.1.7),
-with a smooth bump in place of the book's piecewise-polynomial one). Let `E` be a
-finite-dimensional real inner product space, `r > 0` and `κ ≥ 0`. There is `B ≥ 0` (depending
-only on `E`, `r` and `κ`, not on the number of points) such that for any points
-`x_0, …, x_K` with `‖x_i - x_j‖ ≥ r` (`i ≠ j`) and jets `(f_k, g_k, H_k)` with `H_k` symmetric
-and `|f_k|, ‖g_k‖, ‖H_k‖ ≤ κ`, there is a smooth `F : E → ℝ` with `F(x_k) = f_k`,
-`∇F(x_k) = g_k`, `∇²F(x_k) = H_k`, `|F| ≤ B` and `‖∇^j F‖ ≤ B` for `j ≤ 3`. -/
+/-- **Gluing separated quadratic jets.** Let $E$ be a finite-dimensional real inner product space,
+let $r > 0$ and let $\kappa \ge 0$. Then there is a constant $B \ge 0$, which depends only on
+$E$, $r$ and $\kappa$ and not on the number of points, with the following property. Let
+$K \in \mathbb{N}$, let $x_0, \dots, x_K \in E$ satisfy $\|x_i - x_j\| \ge r$ for $i \ne j$, and
+for $k \le K$ let $f_k \in \mathbb{R}$, $g_k \in E$ and let $H_k$ be a symmetric continuous
+bilinear form on $E$ with $|f_k| \le \kappa$, $\|g_k\| \le \kappa$ and $\|H_k\| \le \kappa$.
+Then there is a smooth function $F \colon E \to \mathbb{R}$ with
+$$F(x_k) = f_k, \qquad \nabla F(x_k) = g_k, \qquad \nabla^2 F(x_k) = H_k \qquad (k \le K),$$
+and, for every $y \in E$, $|F(y)| \le B$ and $\|\nabla^j F(y)\| \le B$ for $j \le 3$.
+
+This is the construction in the proof of Theorem 3.1.1 of [cartis2022evaluation], (3.1.7). The
+book uses a piecewise-polynomial bump function; the proof here uses a smooth one. The Hessian
+$\nabla^2 F(x_k)$ is `iteratedFDeriv ℝ 2 F (x k)`, and the result specializes
+`Optimization.exists_contDiff_interpolating_separated_taylorData` to the jets
+`Optimization.quadJet`. -/
 theorem exists_contDiff_interpolating_separated_jets [FiniteDimensional ℝ E] {r κ : ℝ}
     (hr : 0 < r) (hκ : 0 ≤ κ) :
     ∃ B : ℝ, 0 ≤ B ∧ ∀ (K : ℕ) (x : ℕ → E) (f : ℕ → ℝ) (g : ℕ → E) (H : ℕ → E [×2]→L[ℝ] ℝ),

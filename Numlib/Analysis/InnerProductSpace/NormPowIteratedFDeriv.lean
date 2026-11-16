@@ -12,51 +12,83 @@ import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 import Numlib.Analysis.InnerProductSpace.NormPow
 
 /-!
-# Derivatives of all orders of `‖x‖^λ`
+# Derivatives of all orders of a power of the norm
 
-The derivatives of `x ↦ ‖x‖ ^ λ` on a real inner product space, everywhere including the origin,
-with sharp operator-norm bounds ([cartis2022evaluation], Lemma B.4.1). These are the
-regularization terms `σ/(p+1)! ‖s‖^{p+1}` (and `‖s‖^{p+β}`) of adaptive-regularization models.
-Write `π_j(λ) = λ(λ-1)⋯(λ-j+1) = ∏_{i<j} (λ - i)`.
+Let $E$ be a real inner product space and let $\lambda$ be a real number. This module studies the
+derivatives $D^j(\|\cdot\|^\lambda)$ of the function $x \mapsto \|x\|^\lambda$, everywhere including
+the origin, with sharp bounds on their operator norms. Write
+$$\pi_j(\lambda) = \lambda (\lambda - 1) \cdots (\lambda - j + 1) = \prod_{i < j} (\lambda - i).$$
+The main result is (B.4.1) of Lemma B.4.1 of [cartis2022evaluation]: for $j \le \lambda$ and
+$x \neq 0$, the operator norm of $D^j(\|\cdot\|^\lambda)(x)$ is
+$\pi_j(\lambda) \|x\|^{\lambda - j}$, and the bound $\le$ holds also at $x = 0$ when $j < \lambda$.
+The functions $\|s\|^{p+1}$ and $\|s\|^{p+\beta}$ are the regularization terms of adaptive
+regularization models, such as $\sigma / (p+1)! \, \|s\|^{p+1}$.
 
-## Main statements
+For real exponents the module proves an averaging identity on a finite-dimensional space, an
+integral formula for the derivatives, the operator-norm bound and its equality case, smoothness of
+class $C^j$ for $j < \lambda$ with vanishing derivatives at the origin, the radial values (B.4.2),
+and the convexity statements of Lemma B.4.1. For natural exponents $r$, the form in which
+regularized models are written, it proves that $\|s\|^r$ is of class $C^{r-1}$, that
+$D^\ell(\|\cdot\|^r)(s)$ has operator norm at most $r! / (r - \ell)! \, \|s\|^{r - \ell}$, that
+$D^{r-1}(\|\cdot\|^r)$ is $r!$-Lipschitz, and the Taylor remainder bound
+$|\|s + d\|^r - T_{r-1}(s, d)| \le \|d\|^r$.
 
-Real exponents:
-* `exists_integral_abs_inner_rpow_eq`: the averaging identity
-  `∫_{‖ω‖<1} |⟪y, ω⟫|^λ dω = κ ‖y‖^λ` on a finite-dimensional space (rotation invariance).
-* `iteratedFDeriv_normRpow_eq_integral`: for `j ≤ λ`, `D^j(‖·‖^λ)(x)[v₁,…,v_j]` is
-  `π_j(λ)/κ ∫ |⟪x,ω⟫|^{λ-j} sign(⟪x,ω⟫)^j ∏ᵢ ⟪vᵢ,ω⟫ dω` (differentiation under the integral).
-* `norm_iteratedFDeriv_normRpow_le`, `norm_iteratedFDeriv_normRpow`: (B.4.1), the operator norm
-  of `D^j(‖·‖^λ)(x)` is `π_j(λ) ‖x‖^{λ-j}` for `j ≤ λ`, on any real inner product space.
-* `contDiff_normRpow_of_lt`, `iteratedFDeriv_normRpow_zero`: `‖·‖^λ` is `C^j` for `j < λ`, with
-  vanishing derivatives at the origin.
-* `iteratedFDeriv_normRpow_apply_self`: (B.4.2), the radial values `π_j(λ) ‖x‖^λ`.
-* `not_norm_iteratedFDeriv_normRpow_eq_radial`: for `β < 1` the operator norm of
-  `D^{p+1}(‖·‖^{p+β})(x)` exceeds the radial value `β (p+β)! ‖x‖^{β-1}`.
+## Main results
+
+* `exists_integral_abs_inner_rpow_eq`: on a finite-dimensional space, $\int_{\|\omega\| < 1}
+  |\langle y, \omega \rangle|^\lambda \, d\omega = \kappa \|y\|^\lambda$ for a constant
+  $\kappa > 0$.
+* `iteratedFDeriv_normRpow_eq_integral`: for $j \le \lambda$,
+  $D^j(\|\cdot\|^\lambda)(x)[v_1, \dots, v_j]$ is $\pi_j(\lambda) / \kappa$ times the integral over
+  the unit ball of $|\langle x, \omega \rangle|^{\lambda - j} \operatorname{sign}(\langle x, \omega
+  \rangle)^j \prod_i \langle v_i, \omega \rangle$.
+* `norm_iteratedFDeriv_normRpow_le`, `norm_iteratedFDeriv_normRpow`: (B.4.1),
+  $\|D^j(\|\cdot\|^\lambda)(x)\| \le \pi_j(\lambda) \|x\|^{\lambda - j}$ for $j \le \lambda$, with
+  equality for $x \neq 0$, on any real inner product space.
+* `contDiff_normRpow_of_lt`, `iteratedFDeriv_normRpow_zero`: $\|\cdot\|^\lambda$ is of class $C^j$
+  for $j < \lambda$, and its derivatives of these orders vanish at the origin.
+* `iteratedFDeriv_normRpow_apply_self`: (B.4.2), the radial values $D^j(\|\cdot\|^\lambda)(x)[x]^j =
+  \pi_j(\lambda) \|x\|^\lambda$.
+* `not_norm_iteratedFDeriv_normRpow_eq_radial`: for $p = 1$ and $\beta = 1/2$, the operator norm of
+  $D^{p+1}(\|\cdot\|^{p+\beta})(x)$ at a unit vector $x$ of $\mathbb{R}^2$ exceeds the radial value
+  $\beta (p + \beta)! \, \|x\|^{\beta - 1}$.
 * `convexOn_iteratedFDeriv_normRpow`: the convexity statements of Lemma B.4.1.
-
-Natural exponents `‖s‖ ^ r` (`r : ℕ`), the form in which regularized models are written:
-* `contDiff_norm_pow` (`C^{r-1}`), `contDiff_norm_pow_of_even`, `contDiffAt_norm_pow`;
+* `contDiff_norm_pow`, `contDiff_norm_pow_of_even`, `contDiffAt_norm_pow`: $\|\cdot\|^r$ is of class
+  $C^{r-1}$, analytic for even $r$, and analytic away from the origin.
 * `iteratedFDeriv_norm_pow_apply_self`, `norm_iteratedFDeriv_norm_pow_le`,
   `norm_iteratedFDeriv_norm_pow`, `abs_iteratedFDeriv_norm_pow_apply_le`:
-  `‖D^ℓ(‖·‖^r)(s)‖ ≤ r!/(r-ℓ)! ‖s‖^{r-ℓ}` for `ℓ ≤ r`;
-* `iteratedFDerivLipschitzOn_norm_pow`: `∇^{r-1} ‖·‖^r` is `r!`-Lipschitz ((B.4.3) for `β = 1`);
-* `abs_norm_pow_sub_taylorPolynomial_le`: `|‖s+d‖^r - T_{r-1}(s,d)| ≤ ‖d‖^r`.
+  $\|D^\ell(\|\cdot\|^r)(s)\| \le r! / (r - \ell)! \, \|s\|^{r - \ell}$ for $\ell \le r$, with the
+  equality cases.
+* `iteratedFDerivLipschitzOn_norm_pow`: $D^{r-1}(\|\cdot\|^r)$ is $r!$-Lipschitz, which is (B.4.3)
+  for $\beta = 1$.
+* `abs_norm_pow_sub_taylorPolynomial_le`: $|\|s + d\|^r - T_{r-1}(s, d)| \le \|d\|^r$.
+
+## Proof outline
+
+The operator norm in (B.4.1) does not follow from a maximization in the radial direction, because
+the terms of (B.4.9) have mixed signs. Instead, on a finite-dimensional space, the rotation
+invariance of Lebesgue measure on the unit ball gives $\|y\|^\lambda = \kappa^{-1} \int_{\|\omega\|
+< 1} |\langle y, \omega \rangle|^\lambda \, d\omega$. Differentiation $j \le \lambda$ times under
+the integral sign gives the integral formula: at each step the integrand is Lipschitz in $y$,
+because the current exponent is at least $1$, and it is differentiable off a null hyperplane. The
+weighted inequality of arithmetic and geometric means with the weights $(\lambda - j)/\lambda,
+1/\lambda, \dots, 1/\lambda$, integrated over the ball, then gives the operator-norm bound with the
+sharp constant $\pi_j(\lambda)$. So no result on symmetric multilinear forms, such as Banach's
+theorem, is needed. A general inner product space reduces to the finite-dimensional span of the
+point and the arguments. Smoothness at the origin follows from the bound, with an explicit Taylor
+series.
 
 ## Implementation notes
 
-The operator norm in (B.4.1) is not obtained by maximizing over the radial direction directly (the
-terms of (B.4.9) have mixed signs). Instead, on a finite-dimensional space rotation invariance
-of Lebesgue measure on the unit ball gives `‖y‖^λ = κ⁻¹ ∫_{‖ω‖<1} |⟪y,ω⟫|^λ dω`. Differentiating
-`j ≤ λ` times under the integral sign (the integrand is Lipschitz in `y` since `λ - k ≥ 1` at each
-step, and differentiable off a null hyperplane) gives `iteratedFDeriv_normRpow_eq_integral`, and
-the weighted AM–GM inequality with weights `(λ-j)/λ, 1/λ, …, 1/λ`, integrated, gives the
-operator-norm bound with the sharp constant `π_j(λ)`. In particular no result on symmetric
-multilinear forms (Banach's theorem) is needed. A general inner product space reduces to the
-finite-dimensional span of the point and the arguments
-(`Submodule.iteratedFDeriv_comp_subtypeL_apply`), and
-smoothness at the origin follows from the bound by an explicit Taylor series
-(`hasFTaylorSeriesUpTo_normRpow`).
+* The number $\pi_j(\lambda)$ is written `∏ i ∈ Finset.range j, (lam - i)` in the statements.
+* The power $\|x\|^\lambda$ for real $\lambda$ is `Real.rpow`, with $0^0 = 1$ and $0^\lambda = 0$
+  for $\lambda \neq 0$. The power $\|s\|^r$ for natural $r$ is the monoid power.
+* The generalized factorial $(k + \beta)!$ is `holderFactorial k β`.
+* Integrals are with respect to the Lebesgue measure `volume` of a finite-dimensional real inner
+  product space, over the open unit ball `Metric.ball 0 1`.
+* The reduction to a finite-dimensional subspace is `Submodule.iteratedFDeriv_comp_subtypeL_apply`,
+  and the Taylor series at the origin is `NormPowIteratedFDeriv.taylorNormRpow` with
+  `NormPowIteratedFDeriv.hasFTaylorSeriesUpTo_normRpow`.
 -/
 
 open Filter Metric MeasureTheory Module Set Topology
@@ -64,35 +96,41 @@ open scoped Nat RealInnerProductSpace
 
 namespace NormPowIteratedFDeriv
 
-/-- The signed power `|u|^a sign(u)^k`, the one-variable profile of the derivatives of `‖·‖^λ`. -/
+/-- The signed power $\operatorname{sgnPow}_{a,k}(u) = |u|^a \operatorname{sign}(u)^k$ for
+$a \in \mathbb{R}$, $k \in \mathbb{N}$ and $u \in \mathbb{R}$. It is the profile in one variable
+of the derivatives of $\|\cdot\|^\lambda$. -/
 noncomputable def sgnPow (a : ℝ) (k : ℕ) (u : ℝ) : ℝ := |u| ^ a * (SignType.sign u : ℝ) ^ k
 
-/-- Unfolding `sgnPow`. -/
+/-- The definition of the signed power: $\operatorname{sgnPow}_{a,k}(u) = |u|^a
+\operatorname{sign}(u)^k$. -/
 theorem sgnPow_def (a : ℝ) (k : ℕ) (u : ℝ) : sgnPow a k u = |u| ^ a * (SignType.sign u : ℝ) ^ k :=
   rfl
 
-/-- Powers of a sign have absolute value at most `1`. -/
+/-- A power of a sign has absolute value at most $1$: $|\operatorname{sign}(u)^k| \le 1$. -/
 theorem abs_sign_pow_le (k : ℕ) (u : ℝ) : |(SignType.sign u : ℝ) ^ k| ≤ 1 := by
   rw [abs_pow]
   refine pow_le_one₀ (abs_nonneg _) ?_
   rcases lt_trichotomy u 0 with h | h | h <;> simp [sign_neg, sign_pos, h]
 
-/-- `|sgnPow a k u| ≤ |u|^a`. -/
+/-- The signed power is bounded by the power: $|\operatorname{sgnPow}_{a,k}(u)| \le |u|^a$. -/
 theorem abs_sgnPow_le (a : ℝ) (k : ℕ) (u : ℝ) : |sgnPow a k u| ≤ |u| ^ a := by
   rw [sgnPow, abs_mul, abs_of_nonneg (Real.rpow_nonneg (abs_nonneg u) a)]
   exact mul_le_of_le_one_right (Real.rpow_nonneg (abs_nonneg u) a) (abs_sign_pow_le k u)
 
-/-- The sign function `ℝ → ℝ` is measurable (it is monotone). -/
+/-- The sign function $\mathbb{R} \to \mathbb{R}$ is measurable, because it is monotone. -/
 theorem measurable_sign_real : Measurable fun u : ℝ ↦ (SignType.sign u : ℝ) := by
   refine Monotone.measurable fun u v huv ↦ ?_
   rcases lt_trichotomy u 0 with hu | hu | hu <;> rcases lt_trichotomy v 0 with hv | hv | hv <;>
     simp [sign_neg, sign_pos, hu, hv] <;> linarith
 
-/-- `sgnPow a k` is measurable. -/
+/-- The signed power $u \mapsto |u|^a \operatorname{sign}(u)^k$ is measurable. -/
 theorem measurable_sgnPow (a : ℝ) (k : ℕ) : Measurable (sgnPow a k) :=
   (continuous_abs.measurable.pow_const a).mul (measurable_sign_real.pow_const k)
 
-/-- Away from `0`, `d/du (|u|^a sign(u)^k) = a |u|^{a-1} sign(u)^{k+1}`. -/
+/-- At every $u \neq 0$, the signed power has the derivative
+$$\frac{d}{du} \big( |u|^a \operatorname{sign}(u)^k \big) = a \, |u|^{a-1}
+  \operatorname{sign}(u)^{k+1}.$$
+-/
 theorem hasDerivAt_sgnPow (a : ℝ) (k : ℕ) {u : ℝ} (hu : u ≠ 0) :
     HasDerivAt (sgnPow a k) (a * sgnPow (a - 1) (k + 1) u) u := by
   rcases hu.lt_or_gt with hu | hu
@@ -111,7 +149,8 @@ theorem hasDerivAt_sgnPow (a : ℝ) (k : ℕ) {u : ℝ} (hu : u ≠ 0) :
     refine ((Real.hasDerivAt_rpow_const (Or.inl hu.ne')).congr_of_eventuallyEq hev).congr_deriv ?_
     simp [sgnPow, sign_pos hu, abs_of_pos hu]
 
-/-- For `a > 0`, `sgnPow a k` is continuous (also at `0`, where it vanishes). -/
+/-- For $a > 0$, the signed power $u \mapsto |u|^a \operatorname{sign}(u)^k$ is continuous, also at
+$0$, where it vanishes. -/
 theorem continuous_sgnPow {a : ℝ} (ha : 0 < a) (k : ℕ) : Continuous (sgnPow a k) := by
   refine continuous_iff_continuousAt.2 fun u ↦ ?_
   rcases eq_or_ne u 0 with rfl | hu
@@ -122,7 +161,10 @@ theorem continuous_sgnPow {a : ℝ} (ha : 0 < a) (k : ℕ) : Continuous (sgnPow 
         ((continuous_abs.rpow_const fun _ ↦ Or.inr ha.le).tendsto (0 : ℝ)))
   · exact (hasDerivAt_sgnPow a k hu).continuousAt
 
-/-- Mean value inequality for a continuous function differentiable off `0`, on `[-R, R]`. -/
+/-- A mean value inequality on $[-R, R]$ for a function differentiable off $0$. Let
+$g \colon \mathbb{R} \to \mathbb{R}$ be continuous, with derivative $g'(t)$ at every $t \neq 0$,
+and let $|g'(t)| \le L$ for all $t \neq 0$ with $|t| \le R$. Then $|g(u) - g(v)| \le L |u - v|$
+for all $u, v$ with $|u|, |v| \le R$. -/
 theorem abs_sub_le_of_hasDerivAt_ne_zero {g g' : ℝ → ℝ} (hc : Continuous g)
     (hd : ∀ t ≠ 0, HasDerivAt g (g' t) t) {L R : ℝ} (hb : ∀ t, t ≠ 0 → |t| ≤ R → |g' t| ≤ L)
     {u v : ℝ} (hu : |u| ≤ R) (hv : |v| ≤ R) : |g u - g v| ≤ L * |u - v| := by
@@ -157,7 +199,10 @@ theorem abs_sub_le_of_hasDerivAt_ne_zero {g g' : ℝ → ℝ} (hc : Continuous g
           abs_of_pos (by linarith)]
         ring
 
-/-- For `a ≥ 1`, `u ↦ |u|^a sign(u)^k` is `a R^{a-1}`-Lipschitz on `[-R, R]`. -/
+/-- For $a \ge 1$, the signed power is $a R^{a-1}$-Lipschitz on $[-R, R]$: if $|u|, |v| \le R$, then
+$$\big| |u|^a \operatorname{sign}(u)^k - |v|^a \operatorname{sign}(v)^k \big| \le a R^{a-1} |u -
+  v|.$$
+-/
 theorem abs_sgnPow_sub_le {a : ℝ} (ha : 1 ≤ a) (k : ℕ) {R u v : ℝ} (hu : |u| ≤ R) (hv : |v| ≤ R) :
     |sgnPow a k u - sgnPow a k v| ≤ a * R ^ (a - 1) * |u - v| := by
   refine abs_sub_le_of_hasDerivAt_ne_zero (continuous_sgnPow (by linarith) k)
@@ -176,44 +221,51 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 namespace NormPowIteratedFDeriv
 
-/-- On the unit ball, `|⟪y, ω⟫| ≤ ‖y‖`. -/
+/-- On the open unit ball, $|\langle y, \omega \rangle| \le \|y\|$. -/
 theorem abs_inner_le_of_mem_ball {y ω : E} (hω : ω ∈ ball (0 : E) 1) : |⟪y, ω⟫| ≤ ‖y‖ := by
   have : ‖ω‖ ≤ 1 := by simpa using (mem_ball_zero_iff.1 hω).le
   calc |⟪y, ω⟫| ≤ ‖y‖ * ‖ω‖ := abs_real_inner_le_norm y ω
     _ ≤ ‖y‖ := mul_le_of_le_one_right (norm_nonneg y) this
 
-/-- `|⟪y, ω⟫| = ‖y‖ |⟪ŷ, ω⟫|` with `ŷ = ‖y‖⁻¹ y` (also for `y = 0`). -/
+/-- For all $y$ and $\omega$, $|\langle y, \omega \rangle| = \|y\| \, |\langle \|y\|^{-1} y, \omega
+\rangle|$. This holds also for $y = 0$, where Lean sets $\|0\|^{-1} = 0$. -/
 theorem abs_inner_eq_norm_mul (y ω : E) : |⟪y, ω⟫| = ‖y‖ * |⟪‖y‖⁻¹ • y, ω⟫| := by
   rcases eq_or_ne y 0 with rfl | hy
   · simp
   rw [real_inner_smul_left, abs_mul, abs_inv, abs_norm, ← mul_assoc,
     mul_inv_cancel₀ (norm_ne_zero_iff.2 hy), one_mul]
 
-/-- The normalization `‖y‖⁻¹ y` has norm at most `1` (it is `0` for `y = 0`). -/
+/-- The normalization $\|y\|^{-1} y$ has norm at most $1$. It is $0$ for $y = 0$, because Lean sets
+$\|0\|^{-1} = 0$. -/
 theorem norm_inv_smul_self_le (y : E) : ‖‖y‖⁻¹ • y‖ ≤ 1 := by
   rcases eq_or_ne y 0 with rfl | hy
   · simp
   rw [norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ (norm_ne_zero_iff.2 hy)]
 
-/-- The derivative of `z ↦ ⟪z, ω⟫` is `innerSL ℝ ω`. -/
+/-- The map $z \mapsto \langle z, \omega \rangle$ has the derivative
+$h \mapsto \langle \omega, h \rangle$ at every point; this derivative is `innerSL ℝ ω`. -/
 theorem hasFDerivAt_inner_left (ω y : E) :
     HasFDerivAt (fun z : E ↦ ⟪z, ω⟫) (innerSL ℝ ω) y := by
   have h := (innerSL ℝ ω).hasFDerivAt (x := y)
   refine h.congr_of_eventuallyEq (Eventually.of_forall fun z ↦ ?_)
   simp [real_inner_comm]
 
-/-- `ω ↦ ∏ᵢ ⟪vᵢ, ω⟫` is continuous. -/
+/-- For $v_1, \dots, v_j \in E$, the map $\omega \mapsto \prod_i \langle v_i, \omega \rangle$ is
+continuous. -/
 theorem continuous_prod_inner {j : ℕ} (v : Fin j → E) : Continuous fun ω : E ↦ ∏ i, ⟪v i, ω⟫ :=
   continuous_finsetProd _ fun _ _ ↦ continuous_const.inner continuous_id
 
-/-- On the unit ball, `|∏ᵢ ⟪vᵢ, ω⟫| ≤ ∏ᵢ ‖vᵢ‖`. -/
+/-- On the open unit ball, $|\prod_i \langle v_i, \omega \rangle| \le \prod_i \|v_i\|$. -/
 theorem abs_prod_inner_le {j : ℕ} (v : Fin j → E) {ω : E} (hω : ω ∈ ball (0 : E) 1) :
     |∏ i, ⟪v i, ω⟫| ≤ ∏ i, ‖v i‖ := by
   rw [Finset.abs_prod]
   exact Finset.prod_le_prod₀ (fun i _ ↦ abs_nonneg _) fun i _ ↦ abs_inner_le_of_mem_ball hω
 
-/-- Weighted AM–GM in the shape used for the derivatives of `‖·‖^λ`: for `a + j = λ > 0`,
-`s^a ∏ tᵢ ≤ (a/λ) s^λ + ∑ λ⁻¹ tᵢ^λ`. -/
+/-- The weighted inequality of arithmetic and geometric means in the form that the derivatives of
+$\|\cdot\|^\lambda$ use. Let $a \ge 0$ and $j \in \mathbb{N}$ with $a + j = \lambda > 0$, let
+$s \ge 0$, and let $t_1, \dots, t_j \ge 0$. Then
+$$s^a \prod_i t_i \le \frac{a}{\lambda} s^\lambda + \sum_i \frac{1}{\lambda} t_i^\lambda.$$
+-/
 theorem rpow_mul_prod_le_of_add_eq {a lam : ℝ} {j : ℕ} (ha : 0 ≤ a) (hlam : a + j = lam)
     (hpos : 0 < lam) {s : ℝ} (hs : 0 ≤ s) {t : Fin j → ℝ} (ht : ∀ i, 0 ≤ t i) :
     s ^ a * ∏ i, t i ≤ a / lam * s ^ lam + ∑ i, lam⁻¹ * t i ^ lam := by
@@ -236,7 +288,8 @@ theorem rpow_mul_prod_le_of_add_eq {a lam : ℝ} {j : ℕ} (ha : 0 ≤ a) (hlam 
     · simpa using Real.rpow_nonneg hs lam
     · simpa using Real.rpow_nonneg (ht i) lam
 
-/-- `λ(λ-1)⋯(λ-j+1) ≥ 0` for `j ≤ λ`. -/
+/-- For $j \le \lambda$, the number $\pi_j(\lambda) = \lambda (\lambda - 1) \cdots (\lambda - j +
+1)$ is nonnegative. -/
 theorem prod_range_sub_nonneg {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam) :
     0 ≤ ∏ i ∈ Finset.range j, (lam - i) :=
   Finset.prod_nonneg fun i hi ↦ by
@@ -258,7 +311,8 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 namespace NormPowIteratedFDeriv
 
-/-- A measurable function bounded on the unit ball is integrable on it. -/
+/-- On a finite-dimensional space, a measurable function $g$ with $\|g(\omega)\| \le C$ on the open
+unit ball is integrable on the open unit ball. -/
 theorem integrableOn_ball_of_le {F : Type*} [NormedAddCommGroup F] {g : E → F}
     (hg : AEStronglyMeasurable g volume) (C : ℝ) (hb : ∀ ω ∈ ball (0 : E) 1, ‖g ω‖ ≤ C) :
     IntegrableOn g (ball (0 : E) 1) :=
@@ -266,11 +320,12 @@ theorem integrableOn_ball_of_le {F : Type*} [NormedAddCommGroup F] {g : E → F}
     (ae_restrict_of_forall_mem measurableSet_ball hb)
 
 omit [FiniteDimensional ℝ E] in
-/-- `ω ↦ |⟪y, ω⟫|^a` is measurable. -/
+/-- The map $\omega \mapsto |\langle y, \omega \rangle|^a$ is measurable. -/
 theorem measurable_abs_inner_rpow (y : E) (a : ℝ) : Measurable fun ω : E ↦ |⟪y, ω⟫| ^ a :=
   (continuous_abs.comp (continuous_const.inner continuous_id)).measurable.pow_const a
 
-/-- For `a ≥ 0`, `ω ↦ |⟪y, ω⟫|^a` is integrable on the unit ball. -/
+/-- For $a \ge 0$, the map $\omega \mapsto |\langle y, \omega \rangle|^a$ is integrable on the open
+unit ball. -/
 theorem integrableOn_abs_inner_rpow (y : E) {a : ℝ} (ha : 0 ≤ a) :
     IntegrableOn (fun ω : E ↦ |⟪y, ω⟫| ^ a) (ball (0 : E) 1) :=
   integrableOn_ball_of_le (measurable_abs_inner_rpow y a).aestronglyMeasurable (‖y‖ ^ a)
@@ -278,7 +333,9 @@ theorem integrableOn_abs_inner_rpow (y : E) {a : ℝ} (ha : 0 ≤ a) :
       rw [Real.norm_of_nonneg (Real.rpow_nonneg (abs_nonneg _) a)]
       exact Real.rpow_le_rpow (abs_nonneg _) (abs_inner_le_of_mem_ball hω) ha
 
-/-- Rotation invariance: `∫_{‖ω‖<1} |⟪u, ω⟫|^λ dω` is the same for all unit vectors `u`. -/
+/-- Rotation invariance: for unit vectors $e$ and $u$ of a finite-dimensional real inner product
+space, $\int_{\|\omega\| < 1} |\langle u, \omega \rangle|^\lambda \, d\omega = \int_{\|\omega\|
+< 1} |\langle e, \omega \rangle|^\lambda \, d\omega$. -/
 theorem integral_abs_inner_rpow_eq_of_norm_eq (lam : ℝ) {e u : E} (he : ‖e‖ = 1) (hu : ‖u‖ = 1) :
     ∫ ω in ball (0 : E) 1, |⟪u, ω⟫| ^ lam = ∫ ω in ball (0 : E) 1, |⟪e, ω⟫| ^ lam := by
   set T : E ≃ₗᵢ[ℝ] E := (ℝ ∙ (e - u))ᗮ.reflection with hT
@@ -295,9 +352,14 @@ theorem integral_abs_inner_rpow_eq_of_norm_eq (lam : ℝ) {e u : E} (he : ‖e�
 end NormPowIteratedFDeriv
 
 open NormPowIteratedFDeriv in
-/-- **Averaging identity.** On a finite-dimensional real inner product space, rotation invariance
-of Lebesgue measure gives `∫_{‖ω‖<1} |⟪y, ω⟫|^λ dω = κ ‖y‖^λ` for a constant `κ > 0` (the value of
-the integral at any unit vector). -/
+/-- **Averaging identity.** Let $E$ be a finite-dimensional real inner product space, and let
+$\lambda \ge 0$. Then there is a constant $\kappa > 0$ such that for every $y \in E$,
+$$\int_{\|\omega\| < 1} |\langle y, \omega \rangle|^\lambda \, d\omega = \kappa \,
+  \|y\|^\lambda.$$
+
+The integral is over the open unit ball with respect to Lebesgue measure. The constant $\kappa$
+is the value of the integral at any unit vector, and the identity comes from the rotation
+invariance of Lebesgue measure. -/
 theorem exists_integral_abs_inner_rpow_eq {lam : ℝ} (hlam : 0 ≤ lam) :
     ∃ κ > 0, ∀ y : E, ∫ ω in ball (0 : E) 1, |⟪y, ω⟫| ^ lam = κ * ‖y‖ ^ lam := by
   rcases subsingleton_or_nontrivial E with hE | hE
@@ -336,7 +398,8 @@ theorem exists_integral_abs_inner_rpow_eq {lam : ℝ} (hlam : 0 ≤ lam) :
 
 namespace NormPowIteratedFDeriv
 
-/-- For `x ≠ 0` the hyperplane `⟪x, ·⟫ = 0` is Lebesgue-null. -/
+/-- For $x \neq 0$, the hyperplane $\{\omega : \langle x, \omega \rangle = 0\}$ is a null set for
+Lebesgue measure. -/
 theorem ae_inner_ne_zero {x : E} (hx : x ≠ 0) : ∀ᵐ ω ∂(volume : Measure E), ⟪x, ω⟫ ≠ 0 := by
   rw [ae_iff]
   simp only [ne_eq, not_not]
@@ -349,13 +412,15 @@ theorem ae_inner_ne_zero {x : E} (hx : x ≠ 0) : ∀ᵐ ω ∂(volume : Measure
   simp [hx] at this
 
 omit [FiniteDimensional ℝ E] in
-/-- `ω ↦ |⟪x, ω⟫|^a ∏ᵢ |⟪vᵢ, ω⟫|` is measurable. -/
+/-- The map $\omega \mapsto |\langle x, \omega \rangle|^a \prod_i |\langle v_i, \omega \rangle|$ is
+measurable. -/
 theorem measurable_abs_inner_rpow_mul_prod (x : E) (a : ℝ) {j : ℕ} (v : Fin j → E) :
     Measurable fun ω : E ↦ |⟪x, ω⟫| ^ a * ∏ i, |⟪v i, ω⟫| :=
   (measurable_abs_inner_rpow x a).mul <| Finset.measurable_prod _ fun _ _ ↦
     (continuous_abs.comp (continuous_const.inner continuous_id)).measurable
 
-/-- For `a ≥ 0`, `ω ↦ |⟪x, ω⟫|^a ∏ᵢ |⟪vᵢ, ω⟫|` is integrable on the unit ball. -/
+/-- For $a \ge 0$, the map $\omega \mapsto |\langle x, \omega \rangle|^a \prod_i |\langle v_i,
+\omega \rangle|$ is integrable on the open unit ball. -/
 theorem integrableOn_abs_inner_rpow_mul_prod (x : E) {a : ℝ} (ha : 0 ≤ a) {j : ℕ}
     (v : Fin j → E) :
     IntegrableOn (fun ω : E ↦ |⟪x, ω⟫| ^ a * ∏ i, |⟪v i, ω⟫|) (ball (0 : E) 1) := by
@@ -367,9 +432,14 @@ theorem integrableOn_abs_inner_rpow_mul_prod (x : E) {a : ℝ} (ha : 0 ≤ a) {j
     (Finset.prod_le_prod₀ (fun i _ ↦ abs_nonneg _) fun i _ ↦ abs_inner_le_of_mem_ball hω)
     (Finset.prod_nonneg fun i _ ↦ abs_nonneg _) (Real.rpow_nonneg (norm_nonneg _) a)
 
-/-- **The Hölder step.** If `∫_{‖ω‖<1} |⟪y, ω⟫|^λ dω = κ ‖y‖^λ` for all `y`, and `a + j = λ > 0`
-with `a ≥ 0`, then `∫ |⟪x, ω⟫|^a ∏ᵢ |⟪vᵢ, ω⟫| ≤ κ ‖x‖^a ∏ᵢ ‖vᵢ‖`: by homogeneity reduce to
-vectors of norm at most `1`, then integrate the weighted AM–GM inequality. -/
+/-- **The Hölder step.** Let $E$ be a finite-dimensional real inner product space, let
+$\kappa \ge 0$ satisfy $\int_{\|\omega\| < 1} |\langle y, \omega \rangle|^\lambda \, d\omega =
+\kappa \|y\|^\lambda$ for all $y$, and let $a \ge 0$ and $j \in \mathbb{N}$ with
+$a + j = \lambda > 0$. Then for all $x, v_1, \dots, v_j \in E$,
+$$\int_{\|\omega\| < 1} |\langle x, \omega \rangle|^a \prod_i |\langle v_i, \omega \rangle| \,
+  d\omega \le \kappa \, \|x\|^a \prod_i \|v_i\|.$$
+The proof reduces by homogeneity to vectors of norm at most $1$, and then integrates the
+weighted inequality of arithmetic and geometric means. -/
 theorem integral_abs_inner_rpow_mul_prod_le {lam a κ : ℝ} {j : ℕ} (ha : 0 ≤ a)
     (hlam : a + j = lam) (hpos : 0 < lam) (hκ0 : 0 ≤ κ)
     (hκ : ∀ y : E, ∫ ω in ball (0 : E) 1, |⟪y, ω⟫| ^ lam = κ * ‖y‖ ^ lam) (x : E)
@@ -418,10 +488,20 @@ theorem integral_abs_inner_rpow_mul_prod_le {lam a κ : ℝ} {j : ℕ} (ha : 0 �
         rw [← hlam]
         ring
 
-/-- **Differentiation under the integral.** For `a ≥ 1`, a continuous weight `P` bounded on the
-unit ball and `y ≠ 0`, `z ↦ ∫_{‖ω‖<1} |⟪z,ω⟫|^a sign(⟪z,ω⟫)^k P(ω) dω` has derivative
-`h ↦ ∫ a |⟪y,ω⟫|^{a-1} sign(⟪y,ω⟫)^{k+1} P(ω) ⟪ω, h⟫ dω` at `y`. The integrand is Lipschitz in `z`
-and differentiable off the null hyperplane `⟪y, ·⟫ = 0`. -/
+/-- **Differentiation under the integral.** Let $E$ be a finite-dimensional real inner product
+space, let $a \ge 1$ and $k \in \mathbb{N}$, let $P \colon E \to \mathbb{R}$ be continuous with
+$|P(\omega)| \le C$ on the open unit ball, and let $y \neq 0$. Then the vector-valued map
+$\omega \mapsto a |\langle y, \omega \rangle|^{a-1} \operatorname{sign}(\langle y, \omega
+\rangle)^{k+1} P(\omega) \, \langle \omega, \cdot \rangle$ is integrable on the open unit ball,
+and the function
+$$z \mapsto \int_{\|\omega\| < 1} |\langle z, \omega \rangle|^a \operatorname{sign}(\langle z,
+  \omega \rangle)^k P(\omega) \, d\omega$$
+has at $y$ the derivative
+$$h \mapsto \int_{\|\omega\| < 1} a |\langle y, \omega \rangle|^{a-1}
+  \operatorname{sign}(\langle y, \omega \rangle)^{k+1} P(\omega) \langle \omega, h \rangle \,
+  d\omega.$$
+The integrand is Lipschitz in $z$, and differentiable off the null hyperplane
+$\langle y, \cdot \rangle = 0$. -/
 theorem hasFDerivAt_integral_sgnPow_mul {a : ℝ} (ha : 1 ≤ a) (k : ℕ) {P : E → ℝ}
     (hP : Continuous P) {C : ℝ} (hPC : ∀ ω ∈ ball (0 : E) 1, |P ω| ≤ C) {y : E} (hy : y ≠ 0) :
     Integrable (fun ω ↦ (a * sgnPow (a - 1) (k + 1) ⟪y, ω⟫ * P ω) • innerSL ℝ ω)
@@ -468,8 +548,14 @@ theorem hasFDerivAt_integral_sgnPow_mul {a : ℝ} (ha : 1 ≤ a) (k : ℕ) {P : 
     simp only [smul_apply, smul_eq_mul, innerSL_apply_apply]
     ring
 
-/-- The integral formula off the origin (the inductive core of
-`iteratedFDeriv_normRpow_eq_integral`). -/
+/-- The integral formula of `iteratedFDeriv_normRpow_eq_integral` at points $x \neq 0$. Let $E$ be a
+finite-dimensional real inner product space, and let $\kappa \neq 0$ satisfy $\int_{\|\omega\| <
+1} |\langle y, \omega \rangle|^\lambda \, d\omega = \kappa \|y\|^\lambda$ for all $y$. Then for
+$j \le \lambda$, $x \neq 0$ and $v_1, \dots, v_j \in E$,
+$D^j(\|\cdot\|^\lambda)(x)[v_1, \dots, v_j]$ is $\pi_j(\lambda) / \kappa$ times the integral
+over the open unit ball of $|\langle x, \omega \rangle|^{\lambda - j}
+\operatorname{sign}(\langle x, \omega \rangle)^j \prod_i \langle v_i, \omega \rangle$. This is
+the inductive core of the general formula. -/
 theorem iteratedFDeriv_normRpow_eq_integral_of_ne_zero {lam κ : ℝ}
     (hκ : ∀ y : E, ∫ ω in ball (0 : E) 1, |⟪y, ω⟫| ^ lam = κ * ‖y‖ ^ lam) (hκ0 : κ ≠ 0) :
     ∀ (j : ℕ), (j : ℝ) ≤ lam → ∀ {x : E}, x ≠ 0 → ∀ v : Fin j → E,
@@ -506,7 +592,14 @@ theorem iteratedFDeriv_normRpow_eq_integral_of_ne_zero {lam κ : ℝ}
       show lam - j - 1 = lam - (j + 1) by ring, real_inner_comm ω (v 0)]
     field_simp
 
-/-- An integral of `g(⟪x,ω⟫) ∏ᵢ ⟪vᵢ,ω⟫` with `|g(u)| ≤ |u|^a` is bounded by `κ ‖x‖^a ∏ᵢ ‖vᵢ‖`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $\kappa \ge 0$ satisfy
+$\int_{\|\omega\| < 1} |\langle y, \omega \rangle|^\lambda \, d\omega = \kappa \|y\|^\lambda$
+for all $y$, and let $a \ge 0$ and $j \in \mathbb{N}$ with $a + j = \lambda > 0$. If
+$g \colon E \to \mathbb{R}$ satisfies $|g(\omega)| \le |\langle x, \omega \rangle|^a$ for all
+$\omega$, then
+$$\Big| \int_{\|\omega\| < 1} g(\omega) \prod_i \langle v_i, \omega \rangle \, d\omega \Big| \le
+  \kappa \, \|x\|^a \prod_i \|v_i\|.$$
+-/
 theorem abs_integral_mul_prod_le {lam a κ : ℝ} {j : ℕ} (ha : 0 ≤ a)
     (hlam : a + j = lam) (hpos : 0 < lam) (hκ0 : 0 ≤ κ)
     (hκ : ∀ y : E, ∫ ω in ball (0 : E) 1, |⟪y, ω⟫| ^ lam = κ * ‖y‖ ^ lam) {g : E → ℝ}
@@ -522,8 +615,9 @@ theorem abs_integral_mul_prod_le {lam a κ : ℝ} {j : ℕ} (ha : 0 ≤ a)
 end NormPowIteratedFDeriv
 
 open NormPowIteratedFDeriv in
-/-- The operator-norm bound on a finite-dimensional space, off the origin (the general case is
-`norm_iteratedFDeriv_normRpow_le`). -/
+/-- On a finite-dimensional real inner product space, for $j \le \lambda$ and $x \neq 0$,
+$$\|D^j(\|\cdot\|^\lambda)(x)\| \le \pi_j(\lambda) \, \|x\|^{\lambda - j}.$$
+The general case is `norm_iteratedFDeriv_normRpow_le`. -/
 theorem norm_iteratedFDeriv_normRpow_le_of_finiteDimensional {lam : ℝ} {j : ℕ}
     (hj : (j : ℝ) ≤ lam) {x : E} (hx : x ≠ 0) :
     ‖iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x‖
@@ -558,8 +652,12 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 namespace NormPowIteratedFDeriv
 
-/-- Iterated derivatives of the restriction of a function to a subspace, at a point of an open set
-where the function is `C^n`, are the restrictions of its iterated derivatives. -/
+/-- Let $E$ be a real inner product space, let $K$ be a subspace, let $s \subseteq E$ be open, and
+let $f \colon E \to \mathbb{R}$ be of class $C^n$ on $s$. Then for every $x \in K$ with
+$x \in s$ and all $v_1, \dots, v_n \in K$, the $n$-th derivative of the restriction $f|_K$ is
+the restriction of the $n$-th derivative of $f$:
+$$D^n(f|_K)(x)[v_1, \dots, v_n] = D^n f(x)[v_1, \dots, v_n].$$
+-/
 theorem _root_.Submodule.iteratedFDeriv_comp_subtypeL_apply (K : Submodule ℝ E) {f : E → ℝ}
     {s : Set E}
     (hs : IsOpen s) {n : ℕ} (hf : ContDiffOn ℝ n f s) {x : K} (hx : (x : E) ∈ s)
@@ -573,7 +671,8 @@ theorem _root_.Submodule.iteratedFDeriv_comp_subtypeL_apply (K : Submodule ℝ E
   have h2 := congrArg (fun T : ContinuousMultilinearMap ℝ (fun _ : Fin n ↦ K) ℝ ↦ T v) h1
   simpa [Function.comp_def] using h2
 
-/-- A finite-dimensional subspace containing `x` and the vectors `v i`. -/
+/-- For $x, v_1, \dots, v_n \in E$, there is a finite-dimensional subspace of $E$ that contains $x$
+and all $v_i$. -/
 theorem exists_finiteDimensional_submodule (x : E) {n : ℕ} (v : Fin n → E) :
     ∃ K : Submodule ℝ E, FiniteDimensional ℝ K ∧ x ∈ K ∧ ∀ i, v i ∈ K :=
   ⟨Submodule.span ℝ (insert x (Set.range v)),
@@ -584,8 +683,10 @@ theorem exists_finiteDimensional_submodule (x : E) {n : ℕ} (v : Fin n → E) :
 end NormPowIteratedFDeriv
 
 open NormPowIteratedFDeriv in
-/-- The operator-norm bound `norm_iteratedFDeriv_normRpow_le` off the origin, on any inner
-product space: restrict to the finite-dimensional span of `x` and the arguments. -/
+/-- On any real inner product space, for $j \le \lambda$ and $x \neq 0$,
+$$\|D^j(\|\cdot\|^\lambda)(x)\| \le \pi_j(\lambda) \, \|x\|^{\lambda - j}.$$
+The proof restricts to the finite-dimensional span of $x$ and the arguments. This is the case
+$x \neq 0$ of `norm_iteratedFDeriv_normRpow_le`. -/
 theorem norm_iteratedFDeriv_normRpow_le_of_ne_zero {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam)
     {x : E} (hx : x ≠ 0) :
     ‖iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x‖
@@ -606,7 +707,9 @@ theorem norm_iteratedFDeriv_normRpow_le_of_ne_zero {lam : ℝ} {j : ℕ} (hj : (
 
 namespace NormPowIteratedFDeriv
 
-/-- A function bounded by `C ‖y‖^b` with `b > 1` has derivative `0` at the origin. -/
+/-- Let $E$ be a real inner product space, let $F$ be a real normed space, and let
+$g \colon E \to F$ satisfy $\|g(y)\| \le C \|y\|^b$ for all $y$, where $b > 1$. Then $g$ has the
+derivative $0$ at the origin. -/
 theorem _root_.hasFDerivAt_zero_of_norm_le_rpow {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     {g : E → F} {C b : ℝ} (hb : 1 < b) (hg : ∀ y, ‖g y‖ ≤ C * ‖y‖ ^ b) :
     HasFDerivAt g (0 : E →L[ℝ] F) 0 := by
@@ -632,17 +735,19 @@ theorem _root_.hasFDerivAt_zero_of_norm_le_rpow {F : Type*} [NormedAddCommGroup 
   exact hg y
 
 open Classical in
-/-- The Taylor series of `‖·‖^λ` used to prove its smoothness at the origin: the iterated
-derivatives off the origin, and `0` at the origin in positive orders. -/
+/-- The Taylor series of $\|\cdot\|^\lambda$ that proves its smoothness at the origin. At a point
+$y \neq 0$, its term of order $m$ is the derivative $D^m(\|\cdot\|^\lambda)(y)$. At $y = 0$, its
+terms of positive order are $0$, and its term of order $0$ is the value $\|0\|^\lambda$. -/
 noncomputable def taylorNormRpow (lam : ℝ) (y : E) : FormalMultilinearSeries ℝ E ℝ :=
   fun m ↦ if y = 0 ∧ m ≠ 0 then 0 else iteratedFDeriv ℝ m (fun y : E ↦ ‖y‖ ^ lam) y
 
-/-- Off the origin `taylorNormRpow` is the family of iterated derivatives. -/
+/-- At $y \neq 0$, the term of order $m$ of `NormPowIteratedFDeriv.taylorNormRpow` is
+$D^m(\|\cdot\|^\lambda)(y)$. -/
 theorem taylorNormRpow_of_ne_zero (lam : ℝ) {y : E} (hy : y ≠ 0) (m : ℕ) :
     taylorNormRpow lam y m = iteratedFDeriv ℝ m (fun y : E ↦ ‖y‖ ^ lam) y := by
   simp [taylorNormRpow, hy]
 
-/-- For `λ > 0`, `taylorNormRpow` vanishes at the origin in every order. -/
+/-- For $\lambda > 0$, all terms of `NormPowIteratedFDeriv.taylorNormRpow` at the origin are $0$. -/
 theorem taylorNormRpow_zero {lam : ℝ} (hlam : 0 < lam) (m : ℕ) :
     taylorNormRpow lam (0 : E) m = 0 := by
   rcases eq_or_ne m 0 with rfl | hm
@@ -650,7 +755,9 @@ theorem taylorNormRpow_zero {lam : ℝ} (hlam : 0 < lam) (m : ℕ) :
     simp [taylorNormRpow, Real.zero_rpow hlam.ne']
   · simp [taylorNormRpow, hm]
 
-/-- The bound `‖taylorNormRpow λ y m‖ ≤ λ(λ-1)⋯(λ-m+1) ‖y‖^{λ-m}` for `m ≤ λ`. -/
+/-- For $\lambda > 0$ and $m \le \lambda$, the term of order $m$ of
+`NormPowIteratedFDeriv.taylorNormRpow` at $y$ has norm at most
+$\pi_m(\lambda) \|y\|^{\lambda - m}$. -/
 theorem norm_taylorNormRpow_le {lam : ℝ} (hlam : 0 < lam) {m : ℕ} (hm : (m : ℝ) ≤ lam) (y : E) :
     ‖taylorNormRpow lam y m‖ ≤ (∏ i ∈ Finset.range m, (lam - i)) * ‖y‖ ^ (lam - m) := by
   rcases eq_or_ne y 0 with rfl | hy
@@ -659,9 +766,10 @@ theorem norm_taylorNormRpow_le {lam : ℝ} (hlam : 0 < lam) {m : ℕ} (hm : (m :
   · rw [taylorNormRpow_of_ne_zero lam hy]
     exact norm_iteratedFDeriv_normRpow_le_of_ne_zero hm hy
 
-/-- For `n < λ`, `taylorNormRpow λ` is a Taylor series of `‖·‖^λ` up to order `n` on the whole
-space: each term of order `m < n` is differentiable at the origin with derivative `0` since it is
-`O(‖y‖^{λ-m})` with `λ - m > 1`, and each term of order `m ≤ n` is continuous there. -/
+/-- For $n < \lambda$, `NormPowIteratedFDeriv.taylorNormRpow` is a Taylor series of
+$\|\cdot\|^\lambda$ up to order $n$ on the whole space. Each term of order $m < n$ is
+differentiable at the origin with derivative $0$, because it is $O(\|y\|^{\lambda - m})$ with
+$\lambda - m > 1$, and each term of order $m \le n$ is continuous there. -/
 theorem hasFTaylorSeriesUpTo_normRpow {lam : ℝ} {n : ℕ} (hn : (n : ℝ) < lam) :
     HasFTaylorSeriesUpTo n (fun y : E ↦ ‖y‖ ^ lam) (taylorNormRpow lam) := by
   have hlam : 0 < lam := (Nat.cast_nonneg n).trans_lt hn
@@ -708,25 +816,36 @@ theorem hasFTaylorSeriesUpTo_normRpow {lam : ℝ} {n : ℕ} (hn : (n : ℝ) < la
 end NormPowIteratedFDeriv
 
 open NormPowIteratedFDeriv in
-/-- **Global smoothness of `‖·‖^λ`.** For `j : ℕ` with `j < λ`, `x ↦ ‖x‖^λ` is `C^j` on the whole
-space, including the origin. -/
+/-- **Smoothness of $\|\cdot\|^\lambda$ on the whole space.** Let $E$ be a real inner product space,
+let $\lambda \in \mathbb{R}$, and let $j \in \mathbb{N}$ with $j < \lambda$. Then the function
+$x \mapsto \|x\|^\lambda$ is of class $C^j$ on $E$, including the origin. -/
 theorem contDiff_normRpow_of_lt {lam : ℝ} {j : ℕ} (hj : (j : ℝ) < lam) :
     ContDiff ℝ j (fun y : E ↦ ‖y‖ ^ lam) :=
   (hasFTaylorSeriesUpTo_normRpow hj).contDiff
 
 open NormPowIteratedFDeriv in
-/-- The derivatives of `‖·‖^λ` of orders `i < λ` vanish at the origin. -/
+/-- Let $E$ be a real inner product space, let $\lambda \in \mathbb{R}$, and let $i \in \mathbb{N}$
+with $i < \lambda$. Then the derivative of order $i$ of $x \mapsto \|x\|^\lambda$ vanishes at
+the origin:
+$$D^i(\|\cdot\|^\lambda)(0) = 0.$$
+-/
 theorem iteratedFDeriv_normRpow_zero {lam : ℝ} {i : ℕ} (hi : (i : ℝ) < lam) :
     iteratedFDeriv ℝ i (fun y : E ↦ ‖y‖ ^ lam) 0 = 0 := by
   rw [← (hasFTaylorSeriesUpTo_normRpow hi).eq_iteratedFDeriv le_rfl,
     taylorNormRpow_zero ((Nat.cast_nonneg i).trans_lt hi)]
 
-/-- **Sharp operator-norm bound on the derivatives of `‖·‖^λ`** ([cartis2022evaluation],
-Lemma B.4.1, (B.4.1)): for `j ≤ λ`,
-`‖D^j(‖·‖^λ)(x)‖ ≤ λ(λ-1)⋯(λ-j+1) ‖x‖^{λ-j}` at every `x ≠ 0`, and also at `x = 0` when `j < λ`
-(where the derivative vanishes). On a finite-dimensional subspace the derivative is an average of
-`|⟪x,ω⟫|^{λ-j} sign(⟪x,ω⟫)^j ∏ᵢ ⟪vᵢ,ω⟫` over the unit ball (`iteratedFDeriv_normRpow_eq_integral`),
-and a weighted AM–GM (Hölder-type) inequality bounds that average. -/
+/-- **Sharp operator-norm bound on the derivatives of $\|\cdot\|^\lambda$.** Let $E$ be a real inner
+product space, let $\lambda \in \mathbb{R}$, let $j \in \mathbb{N}$ with $j \le \lambda$, and
+let $x \in E$ with $x \neq 0$ or $j < \lambda$. Then
+$$\|D^j(\|\cdot\|^\lambda)(x)\| \le \lambda (\lambda - 1) \cdots (\lambda - j + 1) \,
+  \|x\|^{\lambda - j}.$$
+This is (B.4.1) of Lemma B.4.1 of [cartis2022evaluation]. At $x = 0$ with $j < \lambda$ both
+sides are $0$.
+
+On a finite-dimensional subspace, the derivative is an average of $|\langle x, \omega
+\rangle|^{\lambda - j} \operatorname{sign}(\langle x, \omega \rangle)^j \prod_i \langle v_i,
+\omega \rangle$ over the unit ball (`iteratedFDeriv_normRpow_eq_integral`), and a weighted
+inequality of arithmetic and geometric means, of Hölder type, bounds this average. -/
 theorem norm_iteratedFDeriv_normRpow_le {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam) {x : E}
     (hx : x ≠ 0 ∨ (j : ℝ) < lam) :
     ‖iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x‖
@@ -737,8 +856,11 @@ theorem norm_iteratedFDeriv_normRpow_le {lam : ℝ} {j : ℕ} (hj : (j : ℝ) �
       (Real.rpow_nonneg (norm_nonneg _) _)
   · exact norm_iteratedFDeriv_normRpow_le_of_ne_zero hj hx0
 
-/-- The diagonal form of `norm_iteratedFDeriv_normRpow_le`:
-`|D^j(‖·‖^λ)(x)[v]^j| ≤ λ(λ-1)⋯(λ-j+1) ‖x‖^{λ-j} ‖v‖^j`. -/
+/-- Let $E$ be a real inner product space, let $j \in \mathbb{N}$ with $j \le \lambda$, and let
+$x \in E$ with $x \neq 0$ or $j < \lambda$. Then for every $v \in E$,
+$$|D^j(\|\cdot\|^\lambda)(x)[v]^j| \le \lambda (\lambda - 1) \cdots (\lambda - j + 1) \,
+  \|x\|^{\lambda - j} \|v\|^j.$$
+This is the diagonal form of `norm_iteratedFDeriv_normRpow_le`. -/
 theorem abs_iteratedFDeriv_normRpow_apply_le {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam) {x : E}
     (hx : x ≠ 0 ∨ (j : ℝ) < lam) (v : E) :
     |iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x (fun _ ↦ v)|
@@ -751,27 +873,33 @@ theorem abs_iteratedFDeriv_normRpow_apply_le {lam : ℝ} {j : ℕ} (hj : (j : �
 
 namespace NormPowIteratedFDeriv
 
-/-- `π_j(λ) = λ(λ-1)⋯(λ-j+1)` is the descending Pochhammer polynomial evaluated at `λ`. -/
+/-- The number $\pi_j(\lambda) = \lambda (\lambda - 1) \cdots (\lambda - j + 1)$ is the descending
+Pochhammer polynomial of degree $j$ evaluated at $\lambda$. -/
 theorem prod_range_sub_eq_descPochhammer (lam : ℝ) (j : ℕ) :
     ∏ i ∈ Finset.range j, (lam - i) = (descPochhammer ℝ j).eval lam := by
   induction j with
   | zero => simp
   | succ j ih => rw [Finset.prod_range_succ, ih, descPochhammer_succ_eval]
 
-/-- `∏_{i<k} (n - i) = n!/(n-k)!` (the descending factorial; both sides vanish for `k > n`). -/
+/-- For natural numbers $n$ and $k$, $\prod_{i < k} (n - i) = n (n - 1) \cdots (n - k + 1)$ is the
+descending factorial `n.descFactorial k`. Both sides are $0$ for $k > n$. -/
 theorem prod_range_natCast_sub (n k : ℕ) :
     ∏ i ∈ Finset.range k, ((n : ℝ) - i) = n.descFactorial k := by
   rw [prod_range_sub_eq_descPochhammer, descPochhammer_eval_eq_descFactorial]
 
-/-- `n.descFactorial k = n!/(n-k)!` in `ℝ`, for `k ≤ n`. -/
+/-- For natural numbers $k \le n$, the descending factorial `n.descFactorial k` equals
+$n! / (n - k)!$ in $\mathbb{R}$. -/
 theorem descFactorial_eq_div (n k : ℕ) (hk : k ≤ n) :
     (n.descFactorial k : ℝ) = n ! / (n - k) ! := by
   rw [eq_div_iff (by positivity), mul_comm, ← Nat.cast_mul, Nat.factorial_mul_descFactorial hk]
 
 end NormPowIteratedFDeriv
 
-/-- `(p+β)! = (p+β)(p+β-1)⋯(p+β-j+1) · (p-j+β)!` for `j ≤ p`, with
-`(k+β)! = holderFactorial k β`. -/
+/-- Let $j \le p$ be natural numbers and let $\beta \in \mathbb{R}$. Then the generalized factorial
+satisfies
+$$(p + \beta)! = (p + \beta)(p + \beta - 1) \cdots (p + \beta - j + 1) \cdot (p - j + \beta)!.$$
+
+The generalized factorial $(k + \beta)!$ is `holderFactorial k β`. -/
 theorem holderFactorial_eq_prod_range_mul {p j : ℕ} (hj : j ≤ p) (β : ℝ) :
     holderFactorial p β
       = (∏ i ∈ Finset.range j, ((p : ℝ) + β - i)) * holderFactorial (p - j) β := by
@@ -788,8 +916,12 @@ theorem holderFactorial_eq_prod_range_mul {p j : ℕ} (hj : j ≤ p) (β : ℝ) 
     rw [this]
     ring
 
-/-- **The factorial ratio of Lemma B.4.1** ([cartis2022evaluation]): for `j ≤ p` and `β > -1`,
-`(p+β)!/(p-j+β)! = π_j(p+β) = ∏_{i<j} (p + β - i)`, where `(k+β)! = holderFactorial k β`. -/
+/-- **The factorial ratio of Lemma B.4.1** of [cartis2022evaluation]. Let $j \le p$ be natural
+numbers and let $\beta > -1$. Then
+$$\frac{(p + \beta)!}{(p - j + \beta)!} = \pi_j(p + \beta) = \prod_{i < j} (p + \beta - i).$$
+
+The generalized factorial $(k + \beta)!$ is `holderFactorial k β`. The hypothesis $\beta > -1$
+makes the denominator nonzero. -/
 theorem holderFactorial_div_holderFactorial_sub {p j : ℕ} (hj : j ≤ p) {β : ℝ} (hβ : -1 < β) :
     holderFactorial p β / holderFactorial (p - j) β = ∏ i ∈ Finset.range j, ((p : ℝ) + β - i) := by
   have hpos : 0 < holderFactorial (p - j) β := by
@@ -800,7 +932,8 @@ theorem holderFactorial_div_holderFactorial_sub {p j : ℕ} (hj : j ≤ p) {β :
       exact mul_pos ih (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])
   rw [holderFactorial_eq_prod_range_mul hj β, mul_div_cancel_right₀ _ hpos.ne']
 
-/-- `∏_{i ≤ p} (p + β - i) = β (p+β)!`, with `(k+β)! = holderFactorial k β`. -/
+/-- For $p \in \mathbb{N}$ and $\beta \in \mathbb{R}$, $\prod_{i = 0}^{p} (p + \beta - i) = \beta \,
+(p + \beta)!$, where $(p + \beta)!$ is `holderFactorial p β`. -/
 theorem prod_fin_succ_eq_mul_holderFactorial (p : ℕ) (β : ℝ) :
     ∏ i : Fin (p + 1), ((p : ℝ) + β - i) = β * holderFactorial p β := by
   rw [Fin.prod_univ_eq_prod_range (fun i ↦ (p : ℝ) + β - i), Finset.prod_range_succ,
@@ -822,11 +955,19 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   [MeasurableSpace E] [BorelSpace E]
 
 open NormPowIteratedFDeriv in
-/-- **Integral formula for the derivatives of `‖·‖^λ`.** Let `κ ≠ 0` with
-`∫_{‖ω‖<1} |⟪y, ω⟫|^λ dω = κ ‖y‖^λ` for all `y` (`exists_integral_abs_inner_rpow_eq`). For
-`j ≤ λ`, and `x ≠ 0` or `j < λ`:
-`D^j(‖·‖^λ)(x)[v₁,…,v_j] = λ(λ-1)⋯(λ-j+1)/κ ∫_{‖ω‖<1} |⟪x,ω⟫|^{λ-j} sign(⟪x,ω⟫)^j ∏ᵢ ⟪vᵢ,ω⟫ dω`.
-Proved by differentiating under the integral sign, one order at a time. -/
+/-- **Integral formula for the derivatives of $\|\cdot\|^\lambda$.** Let $E$ be a finite-dimensional
+real inner product space, let $\lambda, \kappa \in \mathbb{R}$ with $\kappa \neq 0$, and assume
+that
+$$\int_{\|\omega\| < 1} |\langle y, \omega \rangle|^\lambda \, d\omega = \kappa \, \|y\|^\lambda
+  \quad \text{for all } y \in E,$$
+as given by `exists_integral_abs_inner_rpow_eq`. Let $j \in \mathbb{N}$ with $j \le \lambda$,
+and let $x \in E$ with $x \neq 0$ or $j < \lambda$. Then for all $v_1, \dots, v_j \in E$,
+$$D^j(\|\cdot\|^\lambda)(x)[v_1, \dots, v_j] = \frac{\pi_j(\lambda)}{\kappa} \int_{\|\omega\| <
+  1} |\langle x, \omega \rangle|^{\lambda - j} \operatorname{sign}(\langle x, \omega \rangle)^j
+  \prod_i \langle v_i, \omega \rangle \, d\omega.$$
+
+The integral is over the open unit ball with respect to Lebesgue measure. The proof
+differentiates under the integral sign, one order at a time. -/
 theorem iteratedFDeriv_normRpow_eq_integral {lam κ : ℝ}
     (hκ : ∀ y : E, ∫ ω in ball (0 : E) 1, |⟪y, ω⟫| ^ lam = κ * ‖y‖ ^ lam) (hκ0 : κ ≠ 0)
     {j : ℕ} (hj : (j : ℝ) ≤ lam) {x : E} (hx : x ≠ 0 ∨ (j : ℝ) < lam) (v : Fin j → E) :
@@ -842,8 +983,10 @@ theorem iteratedFDeriv_normRpow_eq_integral {lam κ : ℝ}
 
 namespace NormPowIteratedFDeriv
 
-/-- The finite-dimensional core of `iteratedFDerivLipschitzOn_norm_pow`:
-`|D^j(‖·‖^{j+1})(x)[v] - D^j(‖·‖^{j+1})(y)[v]| ≤ (j+1)! ‖x - y‖ ∏ᵢ ‖vᵢ‖`. -/
+/-- On a finite-dimensional real inner product space, for all $x, y, v_1, \dots, v_j$,
+$$|D^j(\|\cdot\|^{j+1})(x)[v] - D^j(\|\cdot\|^{j+1})(y)[v]| \le (j + 1)! \, \|x - y\| \prod_i
+  \|v_i\|.$$
+This is the finite-dimensional core of `iteratedFDerivLipschitzOn_norm_pow`. -/
 theorem abs_iteratedFDeriv_normRpow_sub_le_of_finiteDimensional (j : ℕ) (x y : E)
     (v : Fin j → E) :
     |iteratedFDeriv ℝ j (fun z : E ↦ ‖z‖ ^ ((j : ℝ) + 1)) x v
@@ -907,8 +1050,11 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 open NormPowIteratedFDeriv
 
-/-- **Radial values** ([cartis2022evaluation], (B.4.2)): for every real `λ`, every `j` and
-`x ≠ 0`, `D^j(‖·‖^λ)(x)[x]^j = λ(λ-1)⋯(λ-j+1) ‖x‖^λ`. -/
+/-- **Radial values.** Let $E$ be a real inner product space, let $\lambda \in \mathbb{R}$ and
+$j \in \mathbb{N}$, and let $x \neq 0$. Then
+$$D^j(\|\cdot\|^\lambda)(x)[x, \dots, x] = \lambda (\lambda - 1) \cdots (\lambda - j + 1) \,
+  \|x\|^\lambda.$$
+This is (B.4.2) of [cartis2022evaluation]. -/
 theorem iteratedFDeriv_normRpow_apply_self (lam : ℝ) (j : ℕ) {x : E} (hx : x ≠ 0) :
     iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x (fun _ ↦ x)
       = (∏ i ∈ Finset.range j, (lam - i)) * ‖x‖ ^ lam := by
@@ -920,10 +1066,15 @@ theorem iteratedFDeriv_normRpow_apply_self (lam : ℝ) (j : ℕ) {x : E} (hx : x
     Finset.prod_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul, Finset.prod_range,
     ← Real.rpow_natCast, mul_left_comm, ← Real.rpow_add hnx, add_sub_cancel]
 
-/-- **The operator norm of the derivatives of `‖·‖^λ`** ([cartis2022evaluation], (B.4.1) as an
-equality): for `j ≤ λ` and `x ≠ 0`, `‖D^j(‖·‖^λ)(x)‖ = λ(λ-1)⋯(λ-j+1) ‖x‖^{λ-j}`, attained in the
-radial direction. For `λ = j = p + 1` this is `‖∇^{p+1} ‖x‖^{p+1}‖ = (p+1)!`, the case `β = 1` of
-(B.4.3). -/
+/-- **The operator norm of the derivatives of $\|\cdot\|^\lambda$.** Let $E$ be a real inner product
+space, let $j \in \mathbb{N}$ with $j \le \lambda$, and let $x \neq 0$. Then
+$$\|D^j(\|\cdot\|^\lambda)(x)\| = \lambda (\lambda - 1) \cdots (\lambda - j + 1) \,
+  \|x\|^{\lambda - j},$$
+and the norm is attained in the radial direction. This is (B.4.1) of [cartis2022evaluation] as
+an equality.
+
+For $\lambda = j = p + 1$ this gives $\|\nabla^{p+1} \|x\|^{p+1}\| = (p + 1)!$, the case
+$\beta = 1$ of (B.4.3). -/
 theorem norm_iteratedFDeriv_normRpow {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam) {x : E}
     (hx : x ≠ 0) :
     ‖iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x‖
@@ -937,7 +1088,8 @@ theorem norm_iteratedFDeriv_normRpow {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ l
     mul_one] at h
   exact (le_abs_self _).trans h
 
-/-- `‖·‖^{j+1}` has `(j+1)!`-Lipschitz `j`-th derivative on the whole space. -/
+/-- For $j \in \mathbb{N}$, the derivative of order $j$ of $x \mapsto \|x\|^{j+1}$ is
+$(j + 1)!$-Lipschitz on the whole space. Here the exponent $j + 1$ is a real number. -/
 theorem iteratedFDerivLipschitzOn_normRpow_add_one (j : ℕ) :
     IteratedFDerivLipschitzOn (fun z : E ↦ ‖z‖ ^ ((j : ℝ) + 1)) j ((j + 1)! : ℝ) univ := by
   rw [iteratedFDerivLipschitzOn_iff]
@@ -972,26 +1124,28 @@ open NormPowIteratedFDeriv
 namespace NormPowIteratedFDeriv
 
 omit [InnerProductSpace ℝ E] in
-/-- The natural power `‖s‖^r` as the real power `‖s‖^(r : ℝ)`. -/
+/-- The natural power $\|s\|^r$ equals the real power $\|s\|^{(r : \mathbb{R})}$. -/
 theorem norm_pow_eq_normRpow (r : ℕ) :
     (fun s : E ↦ ‖s‖ ^ r) = fun s : E ↦ ‖s‖ ^ (r : ℝ) :=
   funext fun s ↦ (Real.rpow_natCast ‖s‖ r).symm
 
-/-- `∏_{i<ℓ} (r - i) = r!/(r-ℓ)!` for natural `ℓ ≤ r`. -/
+/-- For natural numbers $\ell \le r$, $\prod_{i < \ell} (r - i) = r! / (r - \ell)!$. -/
 theorem prod_range_natCast_sub_eq_div {r ℓ : ℕ} (h : ℓ ≤ r) :
     ∏ i ∈ Finset.range ℓ, ((r : ℝ) - i) = r ! / (r - ℓ) ! := by
   rw [prod_range_natCast_sub, descFactorial_eq_div r ℓ h]
 
 omit [InnerProductSpace ℝ E] in
-/-- `‖s‖^{(r:ℝ) - ℓ} = ‖s‖^{r-ℓ}` for natural `ℓ ≤ r`. -/
+/-- For natural numbers $\ell \le r$, the real power $\|s\|^{(r : \mathbb{R}) - \ell}$ equals the
+natural power $\|s\|^{r - \ell}$. -/
 theorem norm_rpow_natCast_sub {r ℓ : ℕ} (h : ℓ ≤ r) (s : E) :
     ‖s‖ ^ ((r : ℝ) - ℓ) = ‖s‖ ^ (r - ℓ) := by
   rw [← Nat.cast_sub h, Real.rpow_natCast]
 
 end NormPowIteratedFDeriv
 
-/-- **Smoothness of `‖·‖^r` for natural `r ≥ 1`**: it is `C^{r-1}` on the whole space. In
-particular the regularization term `‖s‖^{p+1}` is `C^p`. -/
+/-- **Smoothness of $\|\cdot\|^r$ for natural $r$.** Let $E$ be a real inner product space and let
+$r \ge 1$ be a natural number. Then the function $s \mapsto \|s\|^r$ is of class $C^{r-1}$ on
+$E$. In particular, the regularization term $\|s\|^{p+1}$ is of class $C^p$. -/
 theorem contDiff_norm_pow {r : ℕ} (hr : 1 ≤ r) :
     ContDiff ℝ (r - 1 : ℕ) (fun s : E ↦ ‖s‖ ^ r) := by
   rw [norm_pow_eq_normRpow]
@@ -999,21 +1153,28 @@ theorem contDiff_norm_pow {r : ℕ} (hr : 1 ≤ r) :
   rw [Nat.cast_sub hr]
   simp
 
-/-- For even `r`, `‖s‖^r = (‖s‖²)^{r/2}` is a polynomial, hence analytic. -/
+/-- Let $E$ be a real inner product space and let $r$ be an even natural number. Then the function
+$s \mapsto \|s\|^r$ is analytic on $E$, since $\|s\|^r = (\|s\|^2)^{r/2}$ is a polynomial.
+
+Analyticity is `ContDiff ℝ ⊤`, the class $C^\omega$. -/
 theorem contDiff_norm_pow_of_even {r : ℕ} (hr : Even r) :
     ContDiff ℝ ⊤ (fun s : E ↦ ‖s‖ ^ r) := by
   obtain ⟨m, rfl⟩ := hr
   simp_rw [← two_mul, pow_mul]
   exact contDiff_norm_sq ℝ |>.pow m
 
-/-- Away from the origin `‖·‖^r` is analytic, for every natural `r`. -/
+/-- Let $E$ be a real inner product space and let $r$ be a natural number. Then the function
+$s \mapsto \|s\|^r$ is analytic at every $s \neq 0$.
+
+Analyticity is `ContDiffAt ℝ ⊤`, the class $C^\omega$. -/
 theorem contDiffAt_norm_pow (r : ℕ) {s : E} (hs : s ≠ 0) :
     ContDiffAt ℝ ⊤ (fun s : E ↦ ‖s‖ ^ r) s :=
   (contDiffAt_norm ℝ hs).pow r
 
-/-- **Radial values for natural exponents** ([cartis2022evaluation], (B.4.2) with `β = 1`): for
-`ℓ ≤ r`, and `s ≠ 0` or `ℓ < r`,
-`D^ℓ(‖·‖^r)(s)[s]^ℓ = r!/(r-ℓ)! ‖s‖^r`. -/
+/-- **Radial values for natural exponents.** Let $E$ be a real inner product space, let $\ell \le r$
+be natural numbers, and let $s \in E$ with $s \neq 0$ or $\ell < r$. Then
+$$D^\ell(\|\cdot\|^r)(s)[s, \dots, s] = \frac{r!}{(r - \ell)!} \|s\|^r.$$
+This is (B.4.2) of [cartis2022evaluation] for $\beta = 1$. -/
 theorem iteratedFDeriv_norm_pow_apply_self {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E}
     (hs : s ≠ 0 ∨ ℓ < r) :
     iteratedFDeriv ℝ ℓ (fun s : E ↦ ‖s‖ ^ r) s (fun _ ↦ s) = r ! / (r - ℓ) ! * ‖s‖ ^ r := by
@@ -1025,24 +1186,29 @@ theorem iteratedFDeriv_norm_pow_apply_self {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s :
   · rw [iteratedFDeriv_normRpow_apply_self _ _ hs0, prod_range_natCast_sub_eq_div hℓ,
       Real.rpow_natCast]
 
-/-- **Sharp operator-norm bound for natural exponents** ([cartis2022evaluation], Lemma B.4.1
-with `β = 1`): for `ℓ ≤ r`, and `s ≠ 0` or `ℓ < r`,
-`‖D^ℓ(‖·‖^r)(s)‖ ≤ r!/(r-ℓ)! ‖s‖^{r-ℓ}`, with equality for `s ≠ 0`
-(`norm_iteratedFDeriv_norm_pow`). -/
+/-- **Sharp operator-norm bound for natural exponents.** Let $E$ be a real inner product space, let
+$\ell \le r$ be natural numbers, and let $s \in E$ with $s \neq 0$ or $\ell < r$. Then
+$$\|D^\ell(\|\cdot\|^r)(s)\| \le \frac{r!}{(r - \ell)!} \|s\|^{r - \ell}.$$
+This is Lemma B.4.1 of [cartis2022evaluation] for $\beta = 1$. For $s \neq 0$ the bound is an
+equality (`norm_iteratedFDeriv_norm_pow`). -/
 theorem norm_iteratedFDeriv_norm_pow_le {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E} (hs : s ≠ 0 ∨ ℓ < r) :
     ‖iteratedFDeriv ℝ ℓ (fun s : E ↦ ‖s‖ ^ r) s‖ ≤ r ! / (r - ℓ) ! * ‖s‖ ^ (r - ℓ) := by
   rw [norm_pow_eq_normRpow, ← prod_range_natCast_sub_eq_div hℓ, ← norm_rpow_natCast_sub hℓ]
   exact norm_iteratedFDeriv_normRpow_le (by exact_mod_cast hℓ) (by exact_mod_cast hs)
 
-/-- The equality case of `norm_iteratedFDeriv_norm_pow_le`: for `ℓ ≤ r` and `s ≠ 0`,
-`‖D^ℓ(‖·‖^r)(s)‖ = r!/(r-ℓ)! ‖s‖^{r-ℓ}`. -/
+/-- Let $E$ be a real inner product space, let $\ell \le r$ be natural numbers, and let $s \neq 0$.
+Then
+$$\|D^\ell(\|\cdot\|^r)(s)\| = \frac{r!}{(r - \ell)!} \|s\|^{r - \ell}.$$
+This is the equality case of `norm_iteratedFDeriv_norm_pow_le`. -/
 theorem norm_iteratedFDeriv_norm_pow {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E} (hs : s ≠ 0) :
     ‖iteratedFDeriv ℝ ℓ (fun s : E ↦ ‖s‖ ^ r) s‖ = r ! / (r - ℓ) ! * ‖s‖ ^ (r - ℓ) := by
   rw [norm_pow_eq_normRpow, ← prod_range_natCast_sub_eq_div hℓ, ← norm_rpow_natCast_sub hℓ]
   exact norm_iteratedFDeriv_normRpow (by exact_mod_cast hℓ) hs
 
-/-- Diagonal form of `norm_iteratedFDeriv_norm_pow_le`: for `ℓ ≤ r`, and `s ≠ 0` or `ℓ < r`,
-`|D^ℓ(‖·‖^r)(s)[d]^ℓ| ≤ r!/(r-ℓ)! ‖s‖^{r-ℓ} ‖d‖^ℓ`, with equality for `d = s`
+/-- Let $E$ be a real inner product space, let $\ell \le r$ be natural numbers, and let $s \in E$
+with $s \neq 0$ or $\ell < r$. Then for every $d \in E$,
+$$|D^\ell(\|\cdot\|^r)(s)[d]^\ell| \le \frac{r!}{(r - \ell)!} \|s\|^{r - \ell} \|d\|^\ell.$$
+This is the diagonal form of `norm_iteratedFDeriv_norm_pow_le`. Equality holds for $d = s$
 (`iteratedFDeriv_norm_pow_apply_self`). -/
 theorem abs_iteratedFDeriv_norm_pow_apply_le {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E}
     (hs : s ≠ 0 ∨ ℓ < r) (d : E) :
@@ -1054,17 +1220,27 @@ theorem abs_iteratedFDeriv_norm_pow_apply_le {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s
   exact mul_le_mul_of_nonneg_right (norm_iteratedFDeriv_norm_pow_le hℓ hs)
     (pow_nonneg (norm_nonneg _) _)
 
-/-- **Lipschitz continuity of `∇^{r-1} ‖·‖^r`** ([cartis2022evaluation], (B.4.3) with `β = 1`):
-for `r ≥ 1` the `(r-1)`-th derivative of `‖·‖^r` is `r!`-Lipschitz on the whole space. -/
+/-- **Lipschitz continuity of $\nabla^{r-1} \|\cdot\|^r$.** Let $E$ be a real inner product space
+and let $r \ge 1$ be a natural number. Then the derivative of order $r - 1$ of
+$s \mapsto \|s\|^r$ is $r!$-Lipschitz on the whole space:
+$$\|D^{r-1}(\|\cdot\|^r)(x) - D^{r-1}(\|\cdot\|^r)(y)\| \le r! \, \|x - y\| \quad \text{for all
+  } x, y \in E.$$
+This is (B.4.3) of [cartis2022evaluation] for $\beta = 1$.
+
+The Lipschitz condition is `IteratedFDerivLipschitzOn` on `Set.univ`. -/
 theorem iteratedFDerivLipschitzOn_norm_pow {r : ℕ} (hr : 1 ≤ r) :
     IteratedFDerivLipschitzOn (fun s : E ↦ ‖s‖ ^ r) (r - 1) (r ! : ℝ) univ := by
   obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le' hr
   rw [norm_pow_eq_normRpow, Nat.add_sub_cancel]
   simpa using iteratedFDerivLipschitzOn_normRpow_add_one (E := E) j
 
-/-- **Taylor remainder of `‖·‖^r`** at order `r - 1`: for `r ≥ 1` and all `s, d`,
-`|‖s + d‖^r - T_{r-1}(s, d)| ≤ ‖d‖^r`, where `T_{r-1}` is the Taylor polynomial of `‖·‖^r` at
-`s`. -/
+/-- **Taylor remainder of $\|\cdot\|^r$.** Let $E$ be a real inner product space and let $r \ge 1$
+be a natural number. Then for all $s, d \in E$,
+$$\big| \|s + d\|^r - T_{r-1}(s, d) \big| \le \|d\|^r,$$
+where $T_{r-1}(s, d) = \sum_{i \le r-1} \frac{1}{i!} D^i(\|\cdot\|^r)(s)[d]^i$ is the Taylor
+polynomial of degree $r - 1$ of $\|\cdot\|^r$ at $s$.
+
+The Taylor polynomial is `taylorPolynomial`. -/
 theorem abs_norm_pow_sub_taylorPolynomial_le {r : ℕ} (hr : 1 ≤ r) (s d : E) :
     |‖s + d‖ ^ r - taylorPolynomial (fun s : E ↦ ‖s‖ ^ r) (r - 1) s d| ≤ ‖d‖ ^ r := by
   have h := abs_sub_taylorPolynomial_le_of_lipschitz convex_univ
@@ -1072,7 +1248,8 @@ theorem abs_norm_pow_sub_taylorPolynomial_le {r : ℕ} (hr : 1 ≤ r) (s d : E) 
     (mem_univ s) (mem_univ (s + d))
   rwa [Nat.sub_add_cancel hr, div_self (by positivity), one_mul] at h
 
-/-- On the unit ball, `‖∇^ℓ ‖·‖^r (s)‖ ≤ r!` for `ℓ ≤ r` (and `s ≠ 0` or `ℓ < r`). -/
+/-- For natural numbers $\ell \le r$ and $s$ in the closed unit ball with $s \neq 0$ or $\ell < r$,
+$\|D^\ell(\|\cdot\|^r)(s)\| \le r!$. -/
 theorem norm_iteratedFDeriv_norm_pow_le_factorial {r ℓ : ℕ} (hℓ : ℓ ≤ r) {s : E}
     (hs0 : s ≠ 0 ∨ ℓ < r)
     (hs : ‖s‖ ≤ 1) : ‖iteratedFDeriv ℝ ℓ (fun s : E ↦ ‖s‖ ^ r) s‖ ≤ r ! := by
@@ -1093,9 +1270,15 @@ section Convexity
 
 open NormPowIteratedFDeriv
 
-/-- **The radial value is not the operator norm for fractional `β`.** For `p = 1`, `β = 1/2` (so
-`λ = p + β = 3/2`) and `x = e₀ ∈ ℝ²`, the operator norm of `D²(‖·‖^{3/2})(x)` exceeds the radial
-value `β (p+β)! ‖x‖^{β-1} = 3/4`: the derivative in the direction `e₁ ⊥ x` is already `3/2`. -/
+/-- **The radial value is not the operator norm for fractional $\beta$.** Let $p = 1$ and
+$\beta = 1/2$, so that $\lambda = p + \beta = 3/2$, and let $x = e_0 \in \mathbb{R}^2$ be the
+first coordinate vector. Then the operator norm of $D^2(\|\cdot\|^{3/2})(x)$ exceeds the radial
+value:
+$$\beta \, (p + \beta)! \, \|x\|^{\beta - 1} = \frac{3}{4} < \|D^2(\|\cdot\|^{3/2})(x)\|.$$
+The derivative in the direction $e_1 \perp x$ is already $3/2$.
+
+The generalized factorial $(p + \beta)!$ is `holderFactorial 1 (1 / 2)`, and $\mathbb{R}^2$ is
+`EuclideanSpace ℝ (Fin 2)`. -/
 theorem not_norm_iteratedFDeriv_normRpow_eq_radial :
     (1 / 2 : ℝ) * holderFactorial 1 (1 / 2)
         * ‖(EuclideanSpace.single 0 1 : EuclideanSpace ℝ (Fin 2))‖ ^ ((1 / 2 : ℝ) - 1)
@@ -1126,7 +1309,8 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 namespace NormPowIteratedFDeriv
 
-/-- The odd-order derivatives of the even function `(1 + t²)^{λ/2}` vanish at `0`. -/
+/-- For $\lambda \in \mathbb{R}$ and $m \in \mathbb{N}$, the derivative of odd order $2m + 1$ of the
+even function $t \mapsto (1 + t^2)^{\lambda/2}$ vanishes at $0$. -/
 theorem iteratedDeriv_one_add_sq_rpow_two_mul_add_one (lam : ℝ) (m : ℕ) :
     iteratedDeriv (2 * m + 1) (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0 = 0 := by
   induction m with
@@ -1135,7 +1319,8 @@ theorem iteratedDeriv_one_add_sq_rpow_two_mul_add_one (lam : ℝ) (m : ℕ) :
     rw [show 2 * (m + 1) + 1 = 2 * m + 1 + 2 by ring, iteratedDeriv_one_add_sq_rpow_succ_succ, ih,
       mul_zero]
 
-/-- The derivatives of `(1 + t²)^{λ/2}` at `0` of orders `j ≤ λ + 2` are nonnegative. -/
+/-- For $j \in \mathbb{N}$ with $j \le \lambda + 2$, the derivative of order $j$ of
+$t \mapsto (1 + t^2)^{\lambda/2}$ at $0$ is nonnegative. -/
 theorem iteratedDeriv_one_add_sq_rpow_nonneg {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam + 2) :
     0 ≤ iteratedDeriv j (fun t : ℝ ↦ (1 + t ^ 2) ^ (lam / 2)) 0 := by
   obtain ⟨m, rfl | rfl⟩ := Nat.even_or_odd' j
@@ -1146,8 +1331,10 @@ theorem iteratedDeriv_one_add_sq_rpow_nonneg {lam : ℝ} {j : ℕ} (hj : (j : �
     linarith
   · rw [iteratedDeriv_one_add_sq_rpow_two_mul_add_one]
 
-/-- The derivatives of `‖·‖^λ` at `x ≠ 0` in a direction `d ⊥ x`:
-`D^j(‖·‖^λ)(x)[d]^j = ‖x‖^{λ-j} h^{(j)}(0) ‖d‖^j` with `h(t) = (1 + t²)^{λ/2}`. -/
+/-- Let $x \neq 0$ and let $d$ be orthogonal to $x$. Then
+$$D^j(\|\cdot\|^\lambda)(x)[d]^j = \|x\|^{\lambda - j} \, h^{(j)}(0) \, \|d\|^j, \qquad h(t) =
+  (1 + t^2)^{\lambda/2}.$$
+-/
 theorem iteratedFDeriv_normRpow_apply_of_inner_eq_zero (lam : ℝ) (j : ℕ) {x d : E}
     (hx : x ≠ 0) (hxd : ⟪x, d⟫ = 0) :
     iteratedFDeriv ℝ j (fun y : E ↦ ‖y‖ ^ lam) x (fun _ ↦ d)
@@ -1183,14 +1370,22 @@ theorem iteratedFDeriv_normRpow_apply_of_inner_eq_zero (lam : ℝ) (j : ℕ) {x 
 
 end NormPowIteratedFDeriv
 
-/-- **The convexity statements of Lemma B.4.1** ([cartis2022evaluation]). Let `x ≠ 0` and
-`j ≤ λ + 2`.
-(a) On the orthogonal complement of `x`, `d ↦ D^j(‖·‖^λ)(x)[d]^j` is convex: it equals
-`c ‖d‖^j` with `c = ‖x‖^{λ-j} h^{(j)}(0) ≥ 0`, `h(t) = (1 + t²)^{λ/2}` (and `c = 0` for odd `j`).
-(b) For even `j ≤ λ + 1`, `t ↦ D^j(‖·‖^λ)(x)[t x]^j = t^j λ(λ-1)⋯(λ-j+1) ‖x‖^λ` is convex
-on `ℝ`.
-For `λ = p + β` the range `j ≤ λ + 1` of (b) covers the derivatives `j ≤ p + 1` that the lemma is
-about; beyond it the coefficient `λ(λ-1)⋯(λ-j+1)` can be negative. -/
+/-- **The convexity statements of Lemma B.4.1** of [cartis2022evaluation]. Let $E$ be a real inner
+product space, let $\lambda \in \mathbb{R}$, let $j \in \mathbb{N}$ with $j \le \lambda + 2$,
+and let $x \in E$ with $x \neq 0$. Then:
+
+(a) on the orthogonal complement of $x$, the map $d \mapsto D^j(\|\cdot\|^\lambda)(x)[d]^j$ is
+convex;
+
+(b) if $j$ is even and $j \le \lambda + 1$, the map $t \mapsto D^j(\|\cdot\|^\lambda)(x)[t x]^j$
+is convex on $\mathbb{R}$.
+
+In (a) the map is $c \|d\|^j$ with $c = \|x\|^{\lambda - j} h^{(j)}(0) \ge 0$ and
+$h(t) = (1 + t^2)^{\lambda/2}$, and $c = 0$ for odd $j$. In (b) the map is $t \mapsto t^j \,
+\lambda (\lambda - 1) \cdots (\lambda - j + 1) \, \|x\|^\lambda$. For $\lambda = p + \beta$, the
+range $j \le \lambda + 1$ of (b) covers the derivatives of orders $j \le p + 1$ that the lemma
+is about. Beyond this range the coefficient $\lambda (\lambda - 1) \cdots (\lambda - j + 1)$ can
+be negative. -/
 theorem convexOn_iteratedFDeriv_normRpow {lam : ℝ} {j : ℕ} (hj : (j : ℝ) ≤ lam + 2) {x : E}
     (hx : x ≠ 0) :
     ConvexOn ℝ ((ℝ ∙ x)ᗮ : Set E)

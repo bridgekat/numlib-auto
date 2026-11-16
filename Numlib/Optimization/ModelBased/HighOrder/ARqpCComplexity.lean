@@ -9,58 +9,88 @@ import Numlib.Optimization.ModelBased.RatioTest
 /-!
 # Evaluation complexity of ARqpC
 
-The complexity analysis of the adaptive-regularization method for composite problems
-([cartis2022evaluation], §14.1, Algorithm 14.1.1): minimize `w = f + h ∘ c` with `f : E → ℝ`,
-`c : E → F` smooth and `h : F → ℝ` Lipschitz (possibly nonsmooth), on a feasible set `X`
-(`X = univ` is ARqpC, a closed `X` is ARqpC-SC of §14.2). The run is the generic ARqp run
-`Optimization.IsARqpRun` for the objective `w` with the composite model data
-`arqpcData f c h p x σ k = ARqpData.ofComposite (ftaylorSeries ℝ f (x k)) (ftaylorSeries ℝ c (x k))
-h p (σ k)`; for `h = 0` these are the data of exact ARqp (`ARqpData.ofComposite_zero_fun`).
+This file proves the evaluation complexity of the adaptive-regularization method ARqpC for composite
+problems of [cartis2022evaluation], §14.1, Algorithm 14.1.1. The problem is to minimize
+$w = f + h \circ c$ on a feasible set $X$, where $f : E \to \mathbb{R}$ and $c : E \to F$ are smooth
+and $h : F \to \mathbb{R}$ is Lipschitz and possibly nonsmooth. The case $X = E$ is ARqpC, and a
+closed $X$ is ARqpC-SC of §14.2. The model of iteration $k$ keeps $h$ exactly: $$\hat m_k(s) =
+T_{f,p}(x_k, s) + h(T_{c,p}(x_k, s)) + \frac{\sigma_k}{(p+1)!} \|s\|^{p+1},$$ and the predicted
+decrease is $\Delta T_{w,p}(x_k, s) = w(x_k) - T_{f,p}(x_k, s) - h(T_{c,p}(x_k, s))$. The run is the
+generic ARqp run `Optimization.IsARqpRun` for the objective $w$ with the composite model data
+`Optimization.arqpcData`. For $h = 0$ these are the data of exact ARqp
+(`Optimization.ARqpData.ofComposite_zero_fun`). The main result, Theorem 14.1.10 of the source, is
+that a run terminates at an $(\varepsilon, \delta)$-approximate $q$-th order minimizer after
+$O(\max_j \varepsilon_j^{-(j+1)})$ evaluations, and after $O(\varepsilon_1^{-(p+1)/p})$ evaluations
+when $q = 1$ and $h$ and $X$ are convex.
 
-The smoothness hypotheses mirror those of the ARqp analysis
-(`Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`): the top-order anchored conditions
-`LipschitzDerivsAnchored f C A p p Lf` and `LipschitzDerivsAnchored c C A p p Lc` (`∇^p f`, `∇^p c`
-Lipschitz anchored at the points of `A`, with respect to an open convex `C ⊇ X`), where `A`
-contains the sublevel set `{y ∈ X | w(y) ≤ w(x₀)}`, which contains every iterate
-(`IsARqpRun.mem_compositeSublevel`). The constants enter through any `L_w ≥ L_{f,p} + L_h L_{c,p}`
-(the Lipschitz constant (14.1.27) of the composite model's remainder) and, for the radii of the
-detailed Step 2, any `K_w ≥ K_f + L_h K_c` where `K_f`, `K_c` bound the jets `‖∇^i f‖`, `‖∇^i c‖`
-(`i ∈ [2, p]`) at the anchors (the constant `L_w` of (14.1.3)). With `σ_max = arSigmaMax P L_w`
-the radius constant is `κ_{δ,min} = arqpKappaDelta P K_w σ_max` ((14.1.29)), the same as for ARqp.
-
-The analysis uses the radius lower bound at every order and the step bounds (14.1.31), which give
-decreases of order `ε_j^{j+1}` (Lemma 14.1.9). For `h = 0`, `c = 0` the run is an exact ARqp run;
-the ARqp analysis (`Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`) distinguishes two
-radii modes with the exponents `arqpPiOf`. Both rest on the model lemmas
-(`Optimization.compositeRegularizedModel_sub_ge_of_decrement_ge`, of which Lemma 12.2.8 is the case
-`h = 0`), the radius inequalities (`HighOrderModel`), the step-length
-lemmas (`Optimization.norm_step_ge_of_measure_ineq`, `Optimization.pow_ge_of_measure_ineq`), the
-radius constant `arqpKappaDelta` and the run existence `Optimization.exists_isARqpRun_of_forall`.
+The smoothness hypotheses are those of `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`.
+Let $C \supseteq X$ be open and convex, and let $\nabla^p f$ and $\nabla^p c$ be $L_{f,p}$- and
+$L_{c,p}$-Lipschitz anchored at the points of a set $A$ with respect to $C$
+(`LipschitzDerivsAnchored f C A p p Lf` and `LipschitzDerivsAnchored c C A p p Lc`). The set $A$
+contains the sublevel set $\{y \in X : w(y) \le w(x_0)\}$, which contains every iterate
+(`Optimization.IsARqpRun.mem_compositeSublevel`). The constants enter through a number
+$L_w \ge L_{f,p} + L_h L_{c,p}$, the Lipschitz constant (14.1.27) of the remainder of the composite
+model, where $L_h$ is a Lipschitz constant of $h$. The radii of the detailed Step 2 also use a
+number $K_w \ge K_f + L_h K_c$, where $K_f$ and $K_c$ bound the jets $\|\nabla^i f\|$ and
+$\|\nabla^i c\|$, $i \in [2, p]$, at the points of $A$; this is the constant $L_w$ of (14.1.3) of
+the source. With $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_w / (1 - \eta_2))$ the radius constant
+is $\kappa_{\delta, \min} = \kappa_\delta(\sigma_{\max}) = \varsigma \theta / (8 (3 K_w +
+\sigma_{\max}))$, as in (14.1.29); it is the same function `Optimization.arqpKappaDelta` as for
+ARqp.
 
 ## Main definitions
 
-* `Optimization.arqpcStepBoundUnit`, `Optimization.arqpcStepBound`: the step-length bounds of the
-  two cases of (14.1.31);
-* `Optimization.arqpcKappaDmUnit`, `Optimization.arqpcKappaDm`: the decrease constants `κ_{Δm}` of
-  Lemma 14.1.9.
+* `Optimization.arqpcStepBoundUnit`, `Optimization.arqpcStepBound`: the lower bounds on the step
+  length in the two cases of (14.1.31).
+* `Optimization.arqpcKappaDmUnit`, `Optimization.arqpcKappaDm`: the decrease constants
+  $\kappa_{\Delta m}$ of Lemma 14.1.9 in the two cases.
 
 ## Main results
 
-* `Optimization.IsARqpRun.compositeTaylorDecrement_ge` (Lemma 14.1.5),
-  `IsARqpRun.mem_compositeSublevel`;
-* `Optimization.IsARqpRun.sigma_le_of_compositeAnchored` (Lemma 14.1.6);
-* `Optimization.IsARqpRun.exists_composite_radius_ineq` (Lemma 14.1.7),
-  `IsARqpRun.composite_norm_step_ge` (Lemma 14.1.8),
-  `IsARqpRun.composite_decrease` (Lemma 14.1.9);
-* `Optimization.IsARqpRun.arqpKappaDelta_mul_le_radius_composite`: the radius policy (14.1.28)
-  holds for every run whose Step 2 is computed by the detailed Step 2 (Lemma 14.1.3);
-* `Optimization.IsARqpRun.exists_isEpsDeltaApproxComposite_of_stop₂` (Lemma 14.1.4 (ii)),
-  `IsARqpRun.compositeModel_lt_of_convex` (Lemma 14.1.4 (i));
-* `Optimization.IsARqpRun.complexity_composite` (Theorem 14.1.10, part 2) and
-  `IsARqpRun.complexity_composite_unit` (Theorem 14.1.10, part 1);
-* `Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius`, `IsARqpCRun.complexity`,
-  `IsARqpCRun.complexity_unit`: the radius policy and Theorem 14.1.10 for every ARqpC run
-  (`IsARqpCRun`).
+* `Optimization.IsARqpRun.compositeTaylorDecrement_ge`: the model decrease is at least
+  $\sigma_k \|s_k\|^{p+1} / (p+1)!$ (Lemma 14.1.5).
+* `Optimization.IsARqpRun.mem_compositeSublevel`: the iterates stay in
+  $\{y \in X : w(y) \le w(x_0)\}$.
+* `Optimization.IsARqpRun.sigma_le_of_compositeAnchored`: the weights stay below $\sigma_{\max}$
+  (Lemma 14.1.6).
+* `Optimization.IsARqpRun.exists_composite_radius_ineq`: the inequality (14.1.30) after a successful
+  iteration (Lemma 14.1.7).
+* `Optimization.IsARqpRun.composite_norm_step_ge`: the lower bounds (14.1.31) on the step length
+  (Lemma 14.1.8).
+* `Optimization.IsARqpRun.composite_decrease_unit`, `Optimization.IsARqpRun.composite_decrease`: a
+  successful iteration decreases the model and $w$ (Lemma 14.1.9).
+* `Optimization.IsARqpRun.arqpKappaDelta_mul_le_radius_composite`: every output of the detailed Step
+  2 satisfies the radius policy (14.1.28) (Lemma 14.1.3).
+* `Optimization.IsARqpRun.exists_isEpsDeltaApproxComposite_of_stop₂`: a termination in Step 2 gives
+  an approximate minimizer (Lemma 14.1.4(ii)).
+* `Optimization.IsARqpRun.compositeModel_lt_of_convex`: for $q = 1$ and convex $h$ and $X$ there is
+  no termination in Step 2 (Lemma 14.1.4(i)).
+* `Optimization.IsARqpRun.complexity_composite`, `Optimization.IsARqpRun.complexity_composite_unit`:
+  the evaluation complexity, parts 2 and 1 of Theorem 14.1.10.
+* `Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius`, `Optimization.IsARqpCRun.complexity`,
+  `Optimization.IsARqpCRun.complexity_unit`: the radius policy and Theorem 14.1.10 for every ARqpC
+  run (`Optimization.IsARqpCRun`).
+
+## Proof outline
+
+Both analyses rest on the model lemma
+`Optimization.compositeRegularizedModel_sub_ge_of_decrement_ge` (Lemma 12.2.8 is its case $h = 0$),
+the radius inequalities of `Numlib.Optimization.ModelBased.HighOrderModel`, the step-length lemmas
+`Optimization.norm_step_ge_of_measure_ineq` and `Optimization.pow_ge_of_measure_ineq`, the radius
+constant `Optimization.arqpKappaDelta`, and the existence of runs
+`Optimization.exists_isARqpRun_of_forall`. The analysis of this file uses the lower bound on the
+radii at every order and the step bounds (14.1.31), which give decreases of order
+$\varepsilon_j^{j+1}$ (Lemma 14.1.9). For $h = 0$ and $c = 0$ the run is an exact ARqp run, and the
+analysis of `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity` also applies; it distinguishes
+two radii modes with the exponents `Optimization.arqpPiOf`.
+
+## Implementation notes
+
+* The notions "iteration $k$ is reached", "does not terminate", "successful" and the evaluation
+  counts are those of `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`, for the termination
+  test `Optimization.arqpcStop` and the ratio of $w$.
+* The counts `Optimization.funEvalCount` and `Optimization.derivEvalCount` count the evaluations of
+  $w$, that is, of $f$ and $c$ together, and of their derivatives.
 -/
 
 open Set Metric Filter
@@ -71,7 +101,8 @@ namespace Optimization
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {p q : ℕ}
 
-/-- The predicted decrease of the composite model is `w(x) - T_{w,p}(x, s)`. -/
+/-- The predicted decrease of the composite model at $x$ along $t$ is $\Delta T_{w,p}(x, t) =
+(f(x) + h(c(x))) - (T_{f,p}(x, t) + h(T_{c,p}(x, t)))$. -/
 theorem compositeTaylorDecrement_ftaylorSeries_eq_sub (f : E → ℝ) (c : E → F) (h : F → ℝ)
     (p : ℕ) (y t : E) :
     compositeTaylorDecrement (ftaylorSeries ℝ f y) (ftaylorSeries ℝ c y) h p t =
@@ -85,28 +116,37 @@ section Constants
 
 variable (P : ARqpParams) (Lw Kw : ℝ) (p q : ℕ)
 
-/-- The step-length bound of the unit-radius case of (14.1.31):
-`((ς - θ)/(j! A) ε_j/3)^{1/(p-j+1)}` with `A = L_w + σ_max`. -/
+/-- The lower bound on the step length in the unit-radius case of (14.1.31) of
+[cartis2022evaluation]: $$\left(\frac{\varsigma - \theta}{j! \, (L_w + \sigma_{\max})} \cdot
+\frac{\varepsilon_j}{3}\right)^{1/(p-j+1)},$$ where $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_w
+/ (1 - \eta_2))$. -/
 noncomputable def arqpcStepBoundUnit (j : ℕ) (εj : ℝ) : ℝ :=
   ((P.ς - P.θ) / ((j ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw)) * εj / 3) ^
     (1 / ((p : ℝ) - j + 1))
 
-/-- The step-length bound of the lower-bound-radius case of (14.1.31), with the factor
-`ε_j^{(j+1)/(p+1)}`: `((ς - θ) κ^j/(3 j! A))^{1/(p-j+1)} ε_j^{(j+1)/(p+1)}` with
-`A = L_w + σ_max` and `κ = κ_δ(σ_max)` computed with `K_w`. -/
+/-- The lower bound on the step length in the case of (14.1.31) of [cartis2022evaluation] where the
+radii satisfy the lower bound (14.1.28): $$\left(\frac{(\varsigma - \theta) \kappa^j}{3 \, j! \,
+(L_w + \sigma_{\max})}\right)^{1/(p-j+1)} \varepsilon_j^{(j+1)/(p+1)},$$ where $\sigma_{\max} =
+\max(\sigma_0, \gamma_3 L_w / (1 - \eta_2))$ and $\kappa = \kappa_\delta(\sigma_{\max})$ is
+computed with $K_w$. -/
 noncomputable def arqpcStepBound (j : ℕ) (εj : ℝ) : ℝ :=
   ((P.ς - P.θ) / ((j ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw)) *
       arqpKappaDelta P Kw (arSigmaMax P.toARParams Lw) ^ j / 3) ^ (1 / ((p : ℝ) - j + 1)) *
     εj ^ (((j : ℝ) + 1) / ((p : ℝ) + 1))
 
-/-- The decrease constant `κ_{Δm}` of Lemma 14.1.9 in the unit-radius case:
-`σ_min/(p+1)! ((ς - θ)/(3 (L_w + σ_max)))^{(p+1)/p}`. -/
+/-- The decrease constant $\kappa_{\Delta m}$ of Lemma 14.1.9 of [cartis2022evaluation] in the
+unit-radius case: $$\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!} \left(\frac{\varsigma -
+\theta}{3 (L_w + \sigma_{\max})}\right)^{(p+1)/p}.$$
+-/
 noncomputable def arqpcKappaDmUnit : ℝ :=
   P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) / (Lw + arSigmaMax P.toARParams Lw) / 3) ^
     (((p : ℝ) + 1) / p)
 
-/-- The decrease constant `κ_{Δm}` of Lemma 14.1.9 in the lower-bound-radius case:
-`σ_min/(p+1)! ((ς - θ) κ^q/(3 q! (L_w + σ_max)))^{(p+1)/(p-q+1)}`. -/
+/-- The decrease constant $\kappa_{\Delta m}$ of Lemma 14.1.9 of [cartis2022evaluation] in the case
+where the radii satisfy the lower bound (14.1.28): $$\kappa_{\Delta m} =
+\frac{\sigma_{\min}}{(p+1)!} \left(\frac{(\varsigma - \theta) \kappa^q}{3 \, q! \, (L_w +
+\sigma_{\max})}\right)^{(p+1)/(p-q+1)},$$ where $\kappa = \kappa_\delta(\sigma_{\max})$ is
+computed with $K_w$. -/
 noncomputable def arqpcKappaDm : ℝ :=
   P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) / ((q ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw)) *
     arqpKappaDelta P Kw (arSigmaMax P.toARParams Lw) ^ q / 3) ^
@@ -114,15 +154,20 @@ noncomputable def arqpcKappaDm : ℝ :=
 
 variable {P Lw Kw p q}
 
+/-- The defining formula of `Optimization.arqpcKappaDm`: $\kappa_{\Delta m} = \sigma_{\min} / (p+1)!
+\cdot ((\varsigma - \theta) \kappa^q / (3 \, q! \, (L_w + \sigma_{\max})))^{(p+1)/(p-q+1)}$. -/
 theorem arqpcKappaDm_def : arqpcKappaDm P Lw Kw p q =
     P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) / ((q ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw)) *
       arqpKappaDelta P Kw (arSigmaMax P.toARParams Lw) ^ q / 3) ^
         (((p : ℝ) + 1) / ((p : ℝ) - q + 1)) := rfl
 
-/-- The size facts on the constants used by Lemmas 14.1.8–14.1.9 and Theorem 14.1.10, for
-`p ≥ 1`, `L_w ≥ L_{f,p} + L_h L_{c,p}`, `L_{f,p} ≥ 1`, `L_{c,p}, L_h ≥ 0`, `K_w ≥ 1`, `θ < ς`:
-`0 < ς - θ ≤ j! A`, `A > 0`, `0 ≤ B ≤ A` and `κ ∈ (0, 1]`, where `A = L_w + σ_max`,
-`B = 2 L_h L_{c,p}/(p+1)!` and `κ = κ_δ(σ_max)`. -/
+/-- The sizes of the constants of Lemmas 14.1.8–14.1.9 and Theorem 14.1.10 of
+[cartis2022evaluation]. Let $p \ge 1$, $\theta < \varsigma$, $L_{f,p} + L_h L_{c,p} \le L_w$,
+$L_{f,p} \ge 1$, $L_{c,p} \ge 0$, $L_h \ge 0$ and $K_w \ge 1$, and let $j \in \mathbb{N}$. With
+$A = L_w + \sigma_{\max}$, $B = 2 L_h L_{c,p} / (p+1)!$ and
+$\kappa = \kappa_\delta(\sigma_{\max})$ computed with $K_w$, $$0 < \varsigma - \theta \le j! \,
+A, \quad A > 0, \quad 0 \le B \le A, \quad 0 < \kappa \le 1.$$
+-/
 theorem arqpc_consts (hp : 1 ≤ p) (hθς : P.θ < P.ς) {Lfp Lcp Lh : ℝ} (hLw : Lfp + Lh * Lcp ≤ Lw)
     (hLf : 1 ≤ Lfp) (hLc : 0 ≤ Lcp) (hLh : 0 ≤ Lh) (hKw : 1 ≤ Kw) (j : ℕ) :
     0 < P.ς - P.θ ∧ P.ς - P.θ ≤ (j ! : ℝ) * (Lw + arSigmaMax P.toARParams Lw) ∧
@@ -149,7 +194,7 @@ theorem arqpc_consts (hp : 1 ≤ p) (hθς : P.θ < P.ς) {Lfp Lcp Lh : ℝ} (hL
   · rw [div_le_iff₀ (by positivity)]
     nlinarith
 
-/-- `(b^{1/e})^{p+1} = b^{(p+1)/e}`. -/
+/-- For $b \ge 0$, $(b^{1/e})^{p+1} = b^{(p+1)/e}$. -/
 private theorem rpow_one_div_pow_succ {b e : ℝ} (hb : 0 ≤ b) (p : ℕ) :
     (b ^ (1 / e)) ^ (p + 1) = b ^ (((p : ℝ) + 1) / e) := by
   rw [← Real.rpow_natCast, ← Real.rpow_mul hb]
@@ -167,9 +212,11 @@ namespace IsARqpRun
 
 /-! ### Decrease and sublevel set -/
 
-/-- **Lemma 14.1.5** of [cartis2022evaluation] (Taylor decrease for ARqpC): at every iteration
-reaching Step 2, `ΔT_{w,p}(x_k, s_k) ≥ σ_k/(p+1)! ‖s_k‖^{p+1}` (14.1.25), and the decrease is
-positive unless Step 2 terminates. -/
+/-- **Lemma 14.1.5** of [cartis2022evaluation] (Taylor decrease for ARqpC). Consider an ARqp run on
+$X$ for $w = f + h \circ c$ with the composite model data, and an iteration $k$ that is reached
+and at which the Step-1 test fails. Then $$\Delta T_{w,p}(x_k, s_k) \ge \frac{\sigma_k}{(p+1)!}
+\|s_k\|^{p+1}, \qquad (14.1.25)$$ and $\Delta T_{w,p}(x_k, s_k) > 0$ unless the Step-2 test
+$\hat m_k(s_k) = \hat m_k(0)$ holds. -/
 theorem compositeTaylorDecrement_ge
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     {k : ℕ} (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i)
@@ -187,7 +234,8 @@ theorem compositeTaylorDecrement_ge
   have hσ := hr.toIsARRun.sigma_pos hk k le_rfl
   exact lt_of_le_of_lt (by positivity) hlt
 
-/-- The objective `w = f + h ∘ c` does not increase along an ARqpC run before termination. -/
+/-- The objective $w = f + h \circ c$ does not increase along an ARqp run with the composite model
+data: if iteration $k$ is reached and does not terminate, then $w(x_{k+1}) \le w(x_k)$. -/
 theorem composite_objective_succ_le
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpcStop f c h P p q ε x s σ δ d i) :
@@ -203,8 +251,10 @@ theorem composite_objective_succ_le
     linarith
   · rw [hr.toIsARRun.eq_of_not_succ hk (not_le.1 hs)]
 
-/-- The iterates of an ARqpC run lie in the sublevel set `{y ∈ X | w(y) ≤ w(x₀)}` up to (and
-including) the first termination index. -/
+/-- The iterates of an ARqp run on $X$ with the composite model data stay in the sublevel set: every
+iteration $k$ that is reached satisfies $x_k \in X$ and $w(x_k) \le w(x_0)$.
+
+This includes the termination index. -/
 theorem mem_compositeSublevel
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     {k : ℕ} (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i) :
@@ -218,11 +268,13 @@ theorem mem_compositeSublevel
 
 /-! ### Lemma 14.1.6: the regularization weights stay bounded -/
 
-/-- **Lemma 14.1.6** of [cartis2022evaluation] (upper bound on the regularization weight of
-ARqpC), anchored: if `X ⊆ C`, `∇^p f` and `∇^p c` are `L_{f,p}`- and `L_{c,p}`-Lipschitz anchored
-at the points of a set `A ⊇ {y ∈ X | w(y) ≤ w(x₀)}`, `h` has Lipschitz constant `L_h` and
-`L_{f,p} + L_h L_{c,p} ≤ L_w`, then `σ_k ≤ σ_max = max(σ₀, γ₃ L_w/(1 - η₂))` (14.1.26) up to (and
-including) termination. -/
+/-- **Lemma 14.1.6** of [cartis2022evaluation] (upper bound on the regularization weight of ARqpC),
+anchored form. Let $X \subseteq C$, let $\nabla^p f$ and $\nabla^p c$ be $L_{f,p}$- and
+$L_{c,p}$-Lipschitz anchored at the points of $A$ with respect to $C$, let $A$ contain
+$\{y \in X : w(y) \le w(x_0)\}$, let $h$ have the Lipschitz constant $L_h$, and let
+$L_{f,p} + L_h L_{c,p} \le L_w$. Consider an ARqp run on $X$ for $w$ with the composite model
+data, and let iteration $K$ be reached. Then $$\sigma_k \le \sigma_{\max} = \max\left(\sigma_0,
+\frac{\gamma_3 L_w}{1 - \eta_2}\right) \qquad (14.1.26)$$ for all $k \le K$. -/
 theorem sigma_le_of_compositeAnchored (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hLw : Lf p + Lh * Lc p ≤ Lw) (hXC : X ⊆ C)
@@ -273,14 +325,21 @@ theorem sigma_le_of_compositeAnchored (hf : LipschitzDerivsAnchored f C A p p Lf
 
 /-! ### Lemmas 14.1.7 and 14.1.8: the step is long -/
 
-/-- **Lemma 14.1.7** of [cartis2022evaluation] (a useful inequality for ARqpC),
-anchored: under the hypotheses of `sigma_le_of_compositeAnchored` with `L_{f,p} ≥ 1`,
-`L_{c,p} ≥ 0`, if iteration `k` is successful, the run has not terminated up to `k` and the Step-1
-test fails at `k + 1`, then for some `j ∈ [1, q]`
-`(ς - θ) ε_j δ_{k+1,j}^j/j! < (L_w + σ_max) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ! ‖s_k‖^{p-ℓ+1} +
-2 L_h L_{c,p}/(p+1)! ‖s_k‖^{p+1}` (the form (14.1.30) for approximate measure evaluations with
-accuracy `ς`). For short steps the inequality comes from the model test (14.1.13); for
-long steps it holds trivially. -/
+/-- **Lemma 14.1.7** of [cartis2022evaluation] (a useful inequality for ARqpC), anchored form. Let
+$X \subseteq C$, let $\nabla^p f$ and $\nabla^p c$ be $L_{f,p}$- and $L_{c,p}$-Lipschitz
+anchored at the points of $A$ with respect to $C$, with $L_{f,p} \ge 1$ and $L_{c,p} \ge 0$, let
+$A$ contain $\{y \in X : w(y) \le w(x_0)\}$, let $h$ have the Lipschitz constant $L_h$, and let
+$L_{f,p} + L_h L_{c,p} \le L_w$. Let $1 \le q \le p$, $\varepsilon \in (0, 1]^q$ and
+$\delta_0 \in (0, 1]^q$. Consider an ARqp run on $X$ for $w$ with the composite model data and
+initial radii $\delta_0$, and an iteration $k$ that is reached, does not terminate and is
+successful, such that the Step-1 test fails at $k + 1$. Then for some $j \in [1, q]$
+$$\frac{(\varsigma - \theta) \varepsilon_j \delta_{k+1,j}^j}{j!} < (L_w + \sigma_{\max})
+\sum_{\ell = 1}^j \frac{\delta_{k+1,j}^\ell}{\ell!} \|s_k\|^{p - \ell + 1} + \frac{2 L_h
+L_{c,p}}{(p+1)!} \|s_k\|^{p+1}.$$
+
+This is the form (14.1.30) of the source for approximate measure evaluations with accuracy
+$\varsigma$. For a short step the inequality comes from the model test (14.1.13); for a long
+step it holds trivially. -/
 theorem exists_composite_radius_ineq (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p) (hLw : Lf p + Lh * Lc p ≤ Lw) (hXC : X ⊆ C)
@@ -373,16 +432,20 @@ theorem exists_composite_radius_ineq (hf : LipschitzDerivsAnchored f C A p p Lf)
       div_one]
     nlinarith [mul_le_mul_of_nonneg_left hsp hδ.le]
 
-/-- **Lemma 14.1.8** of [cartis2022evaluation] (lower bound on the step of ARqpC):
-under the hypotheses of `exists_composite_radius_ineq` with `θ < ς` and `K_w ≥ 1`,
-there is `j ∈ [1, q]` such that
-* if `δ_{k+1,j} = 1`, `‖s_k‖ ≥ ((ς - θ)/(j! A) ε_j/3)^{1/(p-j+1)}` (first case of (14.1.31));
-* if `δ_{k+1,j} ≥ κ_{δ,min} ε_j`,
-  `‖s_k‖ ≥ ((ς - θ) κ_{δ,min}^j/(3 j! A))^{1/(p-j+1)} ε_j^{(j+1)/(p+1)}` (second case of
-  (14.1.31)),
+/-- **Lemma 14.1.8** of [cartis2022evaluation] (lower bound on the step of ARqpC). Assume the
+hypotheses of `Optimization.IsARqpRun.exists_composite_radius_ineq`, and also
+$\theta < \varsigma$ and $K_w \ge 1$. Let $A = L_w + \sigma_{\max}$ and let $\kappa_{\delta,
+\min} = \kappa_\delta(\sigma_{\max})$ be computed with $K_w$. Then there is $j \in [1, q]$ such
+that
 
-where `A = L_w + σ_max` and `κ_{δ,min} = κ_δ(σ_max)` is computed with `K_w`. Long steps
-(`‖s_k‖ ≥ 1`) satisfy both bounds. -/
+* if $\delta_{k+1,j} = 1$, then $\|s_k\| \ge ((\varsigma - \theta) / (j! \, A) \cdot
+  \varepsilon_j / 3)^{1/(p-j+1)}$, the first case of (14.1.31);
+* if $\delta_{k+1,j} \ge \kappa_{\delta, \min} \varepsilon_j$, then $\|s_k\| \ge ((\varsigma -
+  \theta) \kappa_{\delta, \min}^j / (3 \, j! \, A))^{1/(p-j+1)} \varepsilon_j^{(j+1)/(p+1)}$,
+  the second case of (14.1.31).
+
+The bounds are `Optimization.arqpcStepBoundUnit` and `Optimization.arqpcStepBound`. A long step
+($\|s_k\| \ge 1$) satisfies both bounds. -/
 theorem composite_norm_step_ge (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p) (hLw : Lf p + Lh * Lc p ≤ Lw) (hKw : 1 ≤ Kw)
@@ -456,13 +519,19 @@ theorem composite_norm_step_ge (hf : LipschitzDerivsAnchored f C A p p Lf)
 /-! ### The radius policy (Lemma 14.1.3 for every output of the detailed Step 2) -/
 
 /-- **The radii of the detailed Step 2 are bounded below** ([cartis2022evaluation], Lemma 14.1.3,
-for every execution of Algorithm 14.1.2): let `h` be subadditive with `h 0 = 0`, let the jets of
-`f` and `c` be bounded by `K_f`, `K_c ≥ 0` at the anchors (orders `i ∈ [2, p]`), with
-`K_f + L_h K_c ≤ K_w`, `K_w ≥ 1`, and let the Step-2 pair of every iteration reaching Step 2 be an
-output of the detailed Step 2 (`IsARqpCDetailedStep`) with any halving set `J`. Under the
-hypotheses of `sigma_le_of_compositeAnchored`, at every iteration reaching Step 2,
-`δ_{s_k,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1, q]` with `κ_{δ,min} = κ_δ(σ_max)` computed with `K_w`,
-whatever the length of the step. -/
+for every execution of Algorithm 14.1.2). Let $X \subseteq C$, let $\nabla^p f$ and $\nabla^p c$
+be $L_{f,p}$- and $L_{c,p}$-Lipschitz anchored at the points of $A$ with respect to $C$, let $A$
+contain $\{y \in X : w(y) \le w(x_0)\}$, and let $h$ be subadditive with $h(0) = 0$ and have the
+Lipschitz constant $L_h$, with $L_{f,p} + L_h L_{c,p} \le L_w$. Let $\|\nabla^i f(y)\| \le K_f$
+and $\|\nabla^i c(y)\| \le K_c$ for $i \in [2, p]$ and $y \in A$, with $K_f, K_c \ge 0$,
+$K_f + L_h K_c \le K_w$ and $K_w \ge 1$. Let $1 \le q \le p$ and $\varepsilon \in (0, 1]^q$.
+Consider an ARqp run on $X$ for $w$ with the composite model data, and an iteration $k$ that is
+reached and whose Step-2 pair $(s_k, \delta_{s_k})$ is an output of the detailed Step 2
+(`Optimization.IsARqpCDetailedStep`) with some halving set $J$. Then $$\delta_{s_k, j} \ge
+\kappa_{\delta, \min} \varepsilon_j \quad \text{for all } j \in [1, q],$$ where $\kappa_{\delta,
+\min} = \kappa_\delta(\sigma_{\max})$ is computed with $K_w$.
+
+The bound holds whatever the length of the step. -/
 theorem arqpKappaDelta_mul_le_radius_composite (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0) (hLw : Lf p + Lh * Lc p ≤ Lw) {Kf Kc : ℝ}
@@ -538,8 +607,10 @@ theorem arqpKappaDelta_mul_le_radius_composite (hf : LipschitzDerivsAnchored f C
 
 /-! ### Lemma 14.1.9: the decrease of a successful iteration -/
 
-/-- The predicted decrease of a successful iteration before termination bounds `σ_min/(p+1)!
-‖s_k‖^{p+1}` from above and `(w(x_k) - w(x_{k+1}))/η₁` from below. -/
+/-- Let iteration $k$ of an ARqp run with the composite model data be reached, not terminate, and be
+successful. Then $$\frac{\sigma_{\min}}{(p+1)!} \|s_k\|^{p+1} \le \Delta T_{w,p}(x_k, s_k)
+\quad\text{and}\quad \eta_1 \Delta T_{w,p}(x_k, s_k) \le w(x_k) - w(x_{k+1}).$$
+-/
 theorem composite_pred_bounds
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpcStop f c h P p q ε x s σ δ d i)
@@ -558,11 +629,12 @@ theorem composite_pred_bounds
       (pred := fun k => compositeTaylorDecrement (ftaylorSeries ℝ f (x k))
         (ftaylorSeries ℝ c (x k)) h p (s k)) hk rfl hpos hsucc).2⟩
 
-/-- **Lemma 14.1.9** of [cartis2022evaluation] (model and function decreases of ARqpC),
-unit-radius case: under the hypotheses of `exists_composite_radius_ineq` with
-`q = 1`, `θ < ς` and `δ_{k+1,1} = 1`, `ΔT_{w,p}(x_k, s_k) ≥ κ_{Δm} ε_1^{(p+1)/p}` (14.1.32) and
-`w(x_k) - w(x_{k+1}) ≥ η₁ κ_{Δm} ε_1^{(p+1)/p}` (14.1.33), `κ_{Δm} = arqpcKappaDmUnit P L_w p`,
-at every successful iteration `k` before termination after which the Step-1 test fails. -/
+/-- **Lemma 14.1.9** of [cartis2022evaluation] (model and function decreases of ARqpC), unit-radius
+case. Assume the hypotheses of `Optimization.IsARqpRun.exists_composite_radius_ineq` with
+$q = 1$ in place of $1 \le q$, and also $\theta < \varsigma$ and $\delta_{k+1, 1} = 1$. Then
+$$\Delta T_{w,p}(x_k, s_k) \ge \kappa_{\Delta m} \varepsilon_1^{(p+1)/p} \qquad (14.1.32)$$ and
+$$w(x_k) - w(x_{k+1}) \ge \eta_1 \kappa_{\Delta m} \varepsilon_1^{(p+1)/p}, \qquad (14.1.33)$$
+where $\kappa_{\Delta m}$ is `Optimization.arqpcKappaDmUnit` for $L_w$. -/
 theorem composite_decrease_unit (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p) (hLw : Lf p + Lh * Lc p ≤ Lw) (hXC : X ⊆ C)
@@ -607,10 +679,12 @@ theorem composite_decrease_unit (hf : LipschitzDerivsAnchored f C A p p Lf)
   exact ⟨hv, (mul_le_mul_of_nonneg_left hv hη.le).trans hdecr⟩
 
 /-- **Lemma 14.1.9** of [cartis2022evaluation] (model and function decreases of ARqpC), general
-case: under the hypotheses of `composite_norm_step_ge`, if `‖s_k‖ ≥ 1` or
-`δ_{k+1,j} ≥ κ_{δ,min} ε_j` for all `j ∈ [1, q]` (the radius policy (14.1.28)), then for some
-`j ∈ [1, q]`, `ΔT_{w,p}(x_k, s_k) ≥ κ_{Δm} ε_j^{j+1}` and
-`w(x_k) - w(x_{k+1}) ≥ η₁ κ_{Δm} ε_j^{j+1}`, `κ_{Δm} = arqpcKappaDm P L_w K_w p q`. -/
+case. Assume the hypotheses of `Optimization.IsARqpRun.composite_norm_step_ge`, and assume that
+$\|s_k\| \ge 1$ or $\delta_{k+1,j} \ge \kappa_{\delta, \min} \varepsilon_j$ for all
+$j \in [1, q]$ (the radius policy (14.1.28)). Then for some $j \in [1, q]$ $$\Delta T_{w,p}(x_k,
+s_k) \ge \kappa_{\Delta m} \varepsilon_j^{j+1} \quad\text{and}\quad w(x_k) - w(x_{k+1}) \ge
+\eta_1 \kappa_{\Delta m} \varepsilon_j^{j+1},$$ where $\kappa_{\Delta m}$ is
+`Optimization.arqpcKappaDm` for $L_w$ and $K_w$. -/
 theorem composite_decrease (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p) (hLw : Lf p + Lh * Lc p ≤ Lw) (hKw : 1 ≤ Kw)
@@ -734,10 +808,17 @@ theorem composite_decrease (hf : LipschitzDerivsAnchored f C A p p Lf)
 
 /-! ### Lemma 14.1.4: termination in Step 2 -/
 
-/-- **Lemma 14.1.4 (ii)** of [cartis2022evaluation] (no smoothness needed): if `h` is subadditive
-with `h 0 = 0` and Lipschitz, and Step 2 of an ARqpC run terminates at iteration `k`
-(`m̂_k(s_k) = m̂_k(0)`), then `x_k` is an `(ε, δ)`-approximate `q`-th order minimizer (14.1.9) over
-`X` for some `δ ∈ (0, 1]^q`. -/
+/-- **Lemma 14.1.4(ii)** of [cartis2022evaluation]. Let $h$ be subadditive with $h(0) = 0$ and have
+the Lipschitz constant $L_h$, and let $q \le p$ and $\varepsilon_j > 0$ for $j \in [1, q]$.
+Consider an ARqp run on $X$ for $w$ with the composite model data, and an iteration $k$ that is
+reached, at which the Step-1 test fails and Step 2 terminates: $\hat m_k(s_k) = \hat m_k(0)$.
+Then there are radii $\delta \in (0, 1]^q$ such that $x_k$ is an
+$(\varepsilon, \delta)$-approximate $q$-th order minimizer (14.1.9) of $w$ over $X$, that is,
+$\varphi^{\delta_j}_{w,j}(x_k) \le \varepsilon_j \delta_j^j / j!$ for $j \in [1, q]$, with the
+measures taken over $\{e : x_k + e \in X\}$.
+
+No smoothness of $f$ or $c$ is needed. The certificate is
+`Optimization.IsEpsDeltaApproxComposite`. -/
 theorem exists_isEpsDeltaApproxComposite_of_stop₂ (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0)
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
@@ -765,9 +846,12 @@ theorem exists_isEpsDeltaApproxComposite_of_stop₂ (hLh : HasLipschitzConst h L
   choose δ' hδ' using hex
   exact ⟨δ', fun j hj => ⟨(hδ' j hj).1, (hδ' j hj).2.1⟩, fun j hj => (hδ' j hj).2.2⟩
 
-/-- **Lemma 14.1.4 (i)** of [cartis2022evaluation]: if `q = 1`, `p ≥ 1`, `h` and `X` are convex,
-`h` is Lipschitz and `f`, `c` are `C^p` near the points of `X`, then ARqpC never terminates in
-Step 2: at every iteration reaching Step 2, `m̂_k(s_k) < m̂_k(0)`. -/
+/-- **Lemma 14.1.4(i)** of [cartis2022evaluation]. Let $q = 1$ and $p \ge 1$, let $h$ be convex and
+have the Lipschitz constant $L_h$, let $X$ be convex, let $f$ and $c$ be of class $C^p$ at every
+point of $X$, let $\varepsilon_1 > 0$ and $\delta_{0,1} \in (0, 1]$. Consider an ARqp run on $X$
+for $w$ with the composite model data and initial radii $\delta_0$. Then ARqpC never terminates
+in Step 2: at every iteration $k$ that is reached and at which the Step-1 test fails,
+$\hat m_k(s_k) < \hat m_k(0)$. -/
 theorem compositeModel_lt_of_convex (hLh : HasLipschitzConst h Lh) (hconv : ConvexOn ℝ univ h)
     (hXc : Convex ℝ X) (hfC : ∀ y ∈ X, ContDiffAt ℝ p f y) (hcC : ∀ y ∈ X, ContDiffAt ℝ p c y)
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
@@ -802,7 +886,9 @@ theorem compositeModel_lt_of_convex (hLh : HasLipschitzConst h Lh) (hconv : Conv
 
 /-! ### Theorem 14.1.10: evaluation complexity -/
 
-/-- The Step-1 termination certifies (14.1.9) with the current radii. -/
+/-- If iteration $k$ of an ARqp run on $X$ with the composite model data is reached and the Step-1
+test holds at $k$, then $x_k$ satisfies the condition (14.1.9) of [cartis2022evaluation] with
+the current radii $\delta_k$, over $\{e : x_k + e \in X\}$. -/
 theorem isEpsDeltaApproxComposite_of_stop₁
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     {k : ℕ} (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i)
@@ -811,16 +897,32 @@ theorem isEpsDeltaApproxComposite_of_stop₁
       {e | x k + e ∈ X} q ε (δ k) :=
   MeasureTestPasses.isEpsDeltaApproxComposite P.ς_pos (fun j hj => hr.witness k hk j hj) h1
 
-/-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] (`h` nonconvex or `q > 1`), anchored.
-Under the hypotheses of `composite_decrease` and `arqpKappaDelta_mul_le_radius_composite` (the
-detailed Step 2 computes every Step-2 pair, so the radius policy (14.1.28) holds for every run),
-with `σ_min > 0`, `w ≥ w_low` on `X` and `0 < m_ε ≤ ε_j^{j+1}` for `j ∈ [1, q]`
-(e.g. `m_ε = min_j ε_j^{j+1}`), the ARqpC run terminates at some `k_ε` at which `x_{k_ε}` is an
-`(ε, δ_ε)`-approximate `q`-th order minimizer (14.1.9) for some `δ_ε ∈ (0, 1]^q`, using at most
-`κ_A (w(x₀) - w_low)/δ + κ_C` evaluations of `f` and `c` (14.1.36) and at most
-`(w(x₀) - w_low)/δ + 2` evaluations of their derivatives (14.1.37), where `δ = η₁ κ_{Δm} m_ε`
-(`κ_{Δm} = arqpcKappaDm P L_w K_w p q`), `κ_A = 1 + |log γ₁|/log γ₂` and
-`κ_C = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2`. This is `O(max_j ε_j^{-(j+1)})`. -/
+/-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] ($h$ nonconvex or $q > 1$), anchored form.
+Let $X \subseteq C$, let $\nabla^p f$ and $\nabla^p c$ be $L_{f,p}$- and $L_{c,p}$-Lipschitz
+anchored at the points of $A$ with respect to $C$, with $L_{f,p} \ge 1$ and $L_{c,p} \ge 0$, and
+let $A$ contain $\{y \in X : w(y) \le w(x_0)\}$. Let $h$ be subadditive with $h(0) = 0$ and have
+the Lipschitz constant $L_h$, with $L_{f,p} + L_h L_{c,p} \le L_w$. Let
+$\|\nabla^i f(y)\| \le K_f$ and $\|\nabla^i c(y)\| \le K_c$ for $i \in [2, p]$ and $y \in A$,
+with $K_f, K_c \ge 0$, $K_f + L_h K_c \le K_w$ and $K_w \ge 1$. Let $1 \le q \le p$,
+$\theta < \varsigma$, $\sigma_{\min} > 0$, $\varepsilon \in (0, 1]^q$, $\delta_0 \in (0, 1]^q$,
+and let $w \ge w_{\mathrm{low}}$ on $X$. Let $0 < m_\varepsilon \le \varepsilon_j^{j+1}$ for
+$j \in [1, q]$, for example $m_\varepsilon = \min_j \varepsilon_j^{j+1}$. Consider an ARqp run
+on $X$ for $w$ with the composite model data and initial radii $\delta_0$, whose Step-2 pair is
+an output of the detailed Step 2 with a halving set $J$ at every iteration that is reached and
+at which the Step-1 test fails. Then the run terminates at some $k_\varepsilon$, the point
+$x_{k_\varepsilon}$ is an $(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer
+(14.1.9) for some $\delta_\varepsilon \in (0, 1]^q$, and with $\delta = \eta_1 \kappa_{\Delta m}
+m_\varepsilon$ the run uses at most $$\kappa_A \frac{w(x_0) - w_{\mathrm{low}}}{\delta} +
+\kappa_C \text{ evaluations of } f \text{ and } c \text{ (14.1.36)}, \qquad \frac{w(x_0) -
+w_{\mathrm{low}}}{\delta} + 2 \text{ evaluations of their derivatives (14.1.37)}.$$ Here
+$\kappa_{\Delta m}$ is `Optimization.arqpcKappaDm` for $L_w$ and $K_w$,
+$\kappa_A = 1 + |\log \gamma_1| / \log \gamma_2$ and $\kappa_C = (|\log \gamma_1| +
+\log(\sigma_{\max} / \sigma_0)) / \log \gamma_2 + 2$. The bound is
+$O(\max_j \varepsilon_j^{-(j+1)})$.
+
+The detailed Step 2 makes the radius policy (14.1.28) hold for every run, by
+`Optimization.IsARqpRun.arqpKappaDelta_mul_le_radius_composite`; the decreases come from
+`Optimization.IsARqpRun.composite_decrease`. -/
 theorem complexity_composite (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0) (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p)
@@ -894,8 +996,9 @@ theorem complexity_composite (hf : LipschitzDerivsAnchored f C A p p Lf)
   · exact hr.exists_isEpsDeltaApproxComposite_of_stop₂ hLh hS h0 hqp (fun j hj => (hε j hj).1)
       hbef h1 (hhit.1.resolve_left h1)
 
-/-- The radii policy `δ_{k,1} = 1` propagates along the run: if `δ₀ 1 = 1` and every Step-2
-radius of order `1` is `1`, then `δ_{k,1} = 1` at every iteration reached. -/
+/-- Let $\delta_{0,1} = 1$, and let the Step-2 radius of order $1$ be $\delta_{s_k, 1} = 1$ at every
+iteration $k$ that is reached and at which the Step-1 test fails. Then $\delta_{k,1} = 1$ at
+every iteration $k$ that is reached. -/
 theorem delta_one_eq
     (hr : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm)
     (hδ₀ : δ₀ 1 = 1)
@@ -916,14 +1019,26 @@ theorem delta_one_eq
     · rw [(h2 hs).1]
       exact ih fun i hi => hk' i hi.le
 
-/-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] (`q = 1`, `h` and `X` convex),
-anchored. Under the hypotheses of `composite_decrease_unit`, with `σ_min > 0`, `w ≥ w_low` on
-`X`, `δ_{0,1} = 1`, and Step-2 radii `δ_{s_k,1} = 1` (as computed by the detailed Step 2, which
-never halves the first-order radius when `h` and `X` are convex), the ARqpC run terminates at some
-`k_ε` with `φ^1_{w,1}(x_{k_ε}) ≤ ε_1`, using at most `κ_A (w(x₀) - w_low)/δ + κ_C` evaluations of
-`f` and `c` (14.1.34) and at most `(w(x₀) - w_low)/δ + 2` evaluations of their derivatives
-(14.1.35), where `δ = η₁ κ_{Δm} ε_1^{(p+1)/p}` (`κ_{Δm} = arqpcKappaDmUnit P L_w p`). This is
-`O(ε_1^{-(p+1)/p})`. -/
+/-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] ($q = 1$, $h$ and $X$ convex), anchored
+form. Let $X \subseteq C$ be convex, let $\nabla^p f$ and $\nabla^p c$ be $L_{f,p}$- and
+$L_{c,p}$-Lipschitz anchored at the points of $A$ with respect to $C$, with $L_{f,p} \ge 1$ and
+$L_{c,p} \ge 0$, and let $A$ contain $\{y \in X : w(y) \le w(x_0)\}$. Let $h$ be convex and have
+the Lipschitz constant $L_h$, with $L_{f,p} + L_h L_{c,p} \le L_w$. Let $q = 1 \le p$,
+$\theta < \varsigma$, $\sigma_{\min} > 0$, $\varepsilon_1 \in (0, 1]$, $\delta_{0,1} = 1$, and
+let $w \ge w_{\mathrm{low}}$ on $X$. Consider an ARqp run on $X$ for $w$ with the composite
+model data and initial radii $\delta_0$, whose Step-2 radius is $\delta_{s_k, 1} = 1$ at every
+iteration $k$ that is reached and at which the Step-1 test fails. Then the run terminates at
+some $k_\varepsilon$ with $\varphi^1_{w,1}(x_{k_\varepsilon}) \le \varepsilon_1$, and with
+$\delta = \eta_1 \kappa_{\Delta m} \varepsilon_1^{(p+1)/p}$ it uses at most $$\kappa_A
+\frac{w(x_0) - w_{\mathrm{low}}}{\delta} + \kappa_C \text{ evaluations of } f \text{ and } c
+\text{ (14.1.34)}, \qquad \frac{w(x_0) - w_{\mathrm{low}}}{\delta} + 2 \text{ evaluations of
+their derivatives (14.1.35)}.$$ Here $\kappa_{\Delta m}$ is `Optimization.arqpcKappaDmUnit` for
+$L_w$, and $\kappa_A$ and $\kappa_C$ are as in `Optimization.IsARqpRun.complexity_composite`.
+The bound is $O(\varepsilon_1^{-(p+1)/p})$.
+
+The detailed Step 2 computes such radii: it never halves the first-order radius when $h$ and $X$
+are convex. The measure $\varphi^1_{w,1}$ is `Optimization.compositeTaylorMeasure` of order $1$
+and radius $1$ over $\{e : x_{k_\varepsilon} + e \in X\}$. -/
 theorem complexity_composite_unit (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
     (hconv : ConvexOn ℝ univ h) (hXc : Convex ℝ X) (hLf : 1 ≤ Lf p) (hLc : 0 ≤ Lc p)
@@ -996,10 +1111,16 @@ namespace IsARqpCRun
 
 variable {J : Set ℕ}
 
-/-- **The radius policy (14.1.28) holds for every ARqpC run** ([cartis2022evaluation],
-Lemma 14.1.3 for every output of Algorithm 14.1.2): under the hypotheses of
-`IsARqpRun.arqpKappaDelta_mul_le_radius_composite`, at every iteration reaching Step 2,
-`δ_{s_k,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1, q]`. -/
+/-- **The radius policy (14.1.28) holds for every ARqpC run** ([cartis2022evaluation], Lemma 14.1.3
+for every output of Algorithm 14.1.2). Let `Optimization.IsARqpCRun` hold for $f$, $c$, $h$, $X$
+and a halving set $J$. Assume the hypotheses of
+`Optimization.IsARqpRun.arqpKappaDelta_mul_le_radius_composite` on $f$, $c$, $h$, $C$, $A$,
+$L_w$, $K_f$, $K_c$ and $K_w$. Then at every iteration $k$ that is reached and at which the
+Step-1 test fails, $\delta_{s_k, j} \ge \kappa_{\delta, \min} \varepsilon_j$ for all
+$j \in [1, q]$.
+
+The conditions $1 \le q \le p$ and $\varepsilon \in (0, 1]^q$ and the detailed Step 2 are part
+of `Optimization.IsARqpCRun`. -/
 theorem arqpKappaDelta_mul_le_radius (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p Lf) (hc : LipschitzDerivsAnchored c C A p p Lc)
     (hLh : HasLipschitzConst h Lh) (hS : IsSubadditive h) (h0 : h 0 = 0)
@@ -1014,8 +1135,15 @@ theorem arqpKappaDelta_mul_le_radius (hr : IsARqpCRun f c h X p q P J ε δ₀ x
   hr.run.arqpKappaDelta_mul_le_radius_composite hf hc hLh hS h0 hLw hKf hKc hKw hKw1 hjf hjc hXC
     hA hr.one_le_q hr.q_le_p hr.ε_mem hk (hr.detailed k hk h1)
 
-/-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] for every ARqpC run: the conclusion of
-`IsARqpRun.complexity_composite`, under its hypotheses on the data. -/
+/-- **Theorem 14.1.10, part 2** of [cartis2022evaluation] for every ARqpC run. Let
+`Optimization.IsARqpCRun` hold for $f$, $c$, $h$, $X$ and a halving set $J$. Assume the
+hypotheses of `Optimization.IsARqpRun.complexity_composite` on $f$, $c$, $h$, $C$, $A$, the
+constants, $w_{\mathrm{low}}$ and $m_\varepsilon$. Then the run terminates at some
+$k_\varepsilon$ at an $(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer for
+some $\delta_\varepsilon \in (0, 1]^q$, with the evaluation bounds of
+`Optimization.IsARqpRun.complexity_composite`.
+
+The constant $\kappa_A$ is written `Optimization.arqpKappaUns`. -/
 theorem complexity (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)
@@ -1042,10 +1170,17 @@ theorem complexity (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
   hr.run.complexity_composite hf hc hLh hS h0 hLf hLc hLw hKf hKc hKw hKw1 hjf hjc hXC hA
     hr.one_le_q hr.q_le_p hθς hσmin hr.ε_mem hr.δ₀_mem hr.detailed hb hmε0 hmε
 
-/-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] for every ARqpC run with `q = 1`,
-convex `h` and `X`, `δ_{0,1} = 1` and a halving set not containing `1` (as the book's halving set
-`compositeHalvingSet h X`): the conclusion of `IsARqpRun.complexity_composite_unit`, under its
-hypotheses on the data. -/
+/-- **Theorem 14.1.10, part 1** of [cartis2022evaluation] for every ARqpC run. Let
+`Optimization.IsARqpCRun` hold for $f$, $c$, $h$, $X$ with $q = 1$ and a halving set $J$ with
+$1 \notin J$, and let $\delta_{0,1} = 1$. Assume the hypotheses of
+`Optimization.IsARqpRun.complexity_composite_unit` on $f$, $c$, $h$, $X$, $C$, $A$, the
+constants and $w_{\mathrm{low}}$. Then the run terminates at some $k_\varepsilon$ with
+$\varphi^1_{w,1}(x_{k_\varepsilon}) \le \varepsilon_1$, with the evaluation bounds of
+`Optimization.IsARqpRun.complexity_composite_unit`.
+
+The halving set `compositeHalvingSet h X` of the source does not contain $1$ when $h$ and $X$
+are convex (`Optimization.one_notMem_compositeHalvingSet`). The constant $\kappa_A$ is written
+`Optimization.arqpKappaUns`. -/
 theorem complexity_unit (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p Lf)
     (hc : LipschitzDerivsAnchored c C A p p Lc) (hLh : HasLipschitzConst h Lh)

@@ -18,72 +18,93 @@ import Numlib.Analysis.Convex.LinearInequalities
 import Numlib.Analysis.Convex.Extremum.Program
 
 /-!
-# Constrained optimization: Lagrange multipliers, Karush–Kuhn–Tucker, penalty methods
+# Constrained optimization: Lagrange multipliers, Karush–Kuhn–Tucker conditions, penalty methods
 
-Constrained minimization on a real normed space ([quarteroni2000numerical] §7.3;
-[nocedal2006numerical] Ch. 12; Bertsekas, *Constrained Optimization and Lagrange Multiplier
-Methods*, Ch. 1, 2, 4): equality constraints `h i x = 0` indexed by a `Fintype ι`, inequality
-constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' : E → E →L[ℝ] ℝ` and
-`h' : ι → E → E →L[ℝ] ℝ`, as in `Numlib/Analysis/Convex/Gateaux`.
+This file studies the minimization of $f : E \to \mathbb{R}$ on a real normed space $E$ under
+finitely many equality constraints $h_i(x) = 0$, $i \in \iota$, and inequality constraints
+$g_j(x) \le 0$, $j \in \kappa$. It follows §7.3 of [quarteroni2000numerical], Chapter 12 of
+[nocedal2006numerical], and Chapters 1, 2 and 4 of Bertsekas, *Constrained Optimization and Lagrange
+Multiplier Methods*. The derivatives are given as data $f' : E \to (E \to_L \mathbb{R})$ and
+$h_i', g_j' : E \to (E \to_L \mathbb{R})$, as in `Numlib.Analysis.Convex.Gateaux`.
+
+The main results are the existence and uniqueness of Lagrange multipliers at a regular local
+minimizer, the second-order sufficient condition, the Karush–Kuhn–Tucker necessary conditions under
+the linear independence constraint qualification (LICQ), their sufficiency for convex programs, the
+Karush–Kuhn–Tucker conditions under Slater's condition, the convergence of the penalty method and of
+the method of multipliers, and Debreu's lemma with its application to the Hessian of the augmented
+Lagrangian
+$$\mathcal{G}_\alpha(x, \lambda) = f(x) + \langle \lambda, h(x) \rangle + \tfrac12 \alpha
+  \|h(x)\|^2.$$
 
 ## Main definitions
 
-* `Constrained.feasibleEq h`, `Constrained.feasible h g`: the feasible sets;
-* `Constrained.IsRegularPoint h h' x`: a feasible point whose constraint gradients are linearly
-  independent ([quarteroni2000numerical] Definition 7.2);
-* `Constrained.lagrangian f h x l = f x + ∑ i, l i * h i x`;
-* `Constrained.innerLagrangian f c y = f - ⟪y, c⟫`: the Lagrangian of constraints with values in an
-  inner product space, with the opposite sign convention for the multipliers
-  (`Constrained.innerLagrangian_apply_eq_lagrangian`);
-* `Constrained.activeSet g x`, `Constrained.IsRegularPointIneq h h' g g' x`: the active
-  inequality constraints and regularity in their presence, the linear independence constraint
-  qualification (LICQ; [quarteroni2000numerical] Definition 7.3);
-* `Constrained.IsKKTPoint f' h h' g g' x l μ`: the Karush–Kuhn–Tucker conditions;
-* `Constrained.penalized f h α`, `Constrained.augmented f h α l`: the penalized and augmented
-  Lagrangians ([quarteroni2000numerical] (7.53), (7.55)).
+* `Constrained.feasibleEq`, `Constrained.feasible`: the feasible sets of the equality constraints
+  and of the mixed constraints.
+* `Constrained.IsRegularPoint`: a feasible point at which the gradients of the equality constraints
+  are linearly independent ([quarteroni2000numerical] Definition 7.2).
+* `Constrained.lagrangian`: the Lagrangian $\mathcal{L}(x, \lambda) = f(x) + \sum_i \lambda_i
+  h_i(x)$.
+* `Constrained.innerLagrangian`: the Lagrangian $f - \langle y, c \rangle$ of constraints with
+  values in an inner product space, with the opposite sign convention for the multipliers.
+* `Constrained.activeSet`, `Constrained.IsRegularPointIneq`: the active inequality constraints, and
+  regularity of a point of the mixed constraints, which is LICQ ([quarteroni2000numerical]
+  Definition 7.3).
+* `Constrained.IsKKTPoint`: the Karush–Kuhn–Tucker conditions.
+* `Constrained.penalized`, `Constrained.augmented`: the penalized Lagrangian and the augmented
+  Lagrangian ([quarteroni2000numerical] (7.53) and (7.55)).
 
-## Main statements
+## Main results
 
-* `Constrained.existsUnique_multipliers_of_isLocalMinOn`: Lagrange multipliers exist and are
-  unique at a regular local minimizer ([quarteroni2000numerical] Property 7.11, first part), from
-  Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which produces a nontrivial
-  `(Λ, Λ₀)`, and regularity, which normalizes `Λ₀ = 1`;
-* `Constrained.isLocalMin_of_lagrangian_second_order`: the second-order sufficient condition
-  ([quarteroni2000numerical] Property 7.11, second part);
-* `Constrained.exists_kkt_of_isLocalMinOn`: the Kuhn–Tucker necessary conditions under LICQ
-  ([quarteroni2000numerical] Property 7.12), through the linearizing lemma
-  `Constrained.mem_posTangentConeAt_of_isRegularPointIneq` (the implicit function theorem) and
-  Farkas' lemma `ConvexAnalysis.farkas`; `Constrained.kkt_multipliers_unique` is the uniqueness;
-* `Constrained.exists_contDiff_feasible_arc`: under LICQ every direction of the linearized cone is
-  the velocity of a feasible arc, `Cⁿ` when the constraints are, keeping the equality constraints
-  and the active inequality constraints with zero directional derivative at zero (implicit function
-  theorem, `Constrained.exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top`);
-* `Constrained.isMinOn_of_lagrangian_convexOn`: sufficiency of the Kuhn–Tucker conditions for a
-  convex program ([quarteroni2000numerical] Property 7.15);
-* `Constrained.exists_kkt_of_convexOn_of_slater`: the Kuhn–Tucker conditions for a differentiable
-  convex program under Slater's condition, restated from
-  `ConvexAnalysis.exists_multipliers_of_slater_eq` of the convex library;
+* `Constrained.existsUnique_multipliers_of_isLocalMinOn`: at a regular local minimizer of $f$ on the
+  equality constraints, the Lagrange multipliers exist and are unique ([quarteroni2000numerical]
+  Property 7.11, first part).
+* `Constrained.isLocalMin_of_lagrangian_second_order`: the second-order sufficient condition for a
+  strict local minimizer ([quarteroni2000numerical] Property 7.11, second part).
+* `Constrained.exists_kkt_of_isLocalMinOn`: under LICQ, a local minimizer is a Karush–Kuhn–Tucker
+  point ([quarteroni2000numerical] Property 7.12); `Constrained.kkt_multipliers_unique` gives the
+  uniqueness of the multipliers.
+* `Constrained.exists_contDiff_feasible_arc`: under LICQ, every direction of the linearized cone is
+  the velocity of a feasible arc, of class $C^n$ when the constraints are.
+* `Constrained.isMinOn_of_lagrangian_convexOn`: the Karush–Kuhn–Tucker conditions are sufficient for
+  a convex program ([quarteroni2000numerical] Property 7.15).
+* `Constrained.exists_kkt_of_convexOn_of_slater`: a minimizer of a differentiable convex program
+  that satisfies Slater's condition is a Karush–Kuhn–Tucker point.
 * `Constrained.penalty_clusterPt`, `Constrained.tendsto_penalty_of_unique`,
   `Constrained.augmented_clusterPt`: convergence of the penalty method and of the method of
-  multipliers ([quarteroni2000numerical] Property 7.16, in its correct cluster-point form);
-* `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker`: **Debreu's lemma** (Bertsekas
-  Lemma 1.25), a bilinear form positive on the kernel of `A` becomes positive definite after
-  adding `α ‖A ·‖²` for large `α`; `Constrained.fderiv_fderiv_augmented_apply`, the Hessian of
-  the augmented Lagrangian at a feasible point, `H_{𝒢_α} = H_ℒ + α J_hᵀ J_h`; and
-  `Constrained.exists_forall_pos_fderiv_fderiv_augmented`, condition 3 of Bertsekas'
-  Proposition 2.4 ([quarteroni2000numerical] Property 7.17) from its condition 2.
+  multipliers, in the cluster-point form of [quarteroni2000numerical] Property 7.16.
+* `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker`: **Debreu's lemma**: a bilinear form
+  that is positive on the kernel of $A$ becomes positive definite after the addition of
+  $\alpha \|A \cdot\|^2$ for large $\alpha$.
+* `Constrained.fderiv_fderiv_augmented_apply`: at a feasible point, the Hessian of the augmented
+  Lagrangian is $H_{\mathcal{G}_\alpha} = H_{\mathcal{L}} + \alpha J_h^T J_h$.
+* `Constrained.exists_forall_pos_fderiv_fderiv_augmented`: at a feasible point where the Hessian of
+  the Lagrangian is positive on the tangent space of the constraints, the Hessian of the augmented
+  Lagrangian is positive definite for large $\alpha$ ([quarteroni2000numerical] Property 7.17).
 
-## Design
+## Proof outline
 
-The smooth theory of this module and the convex theory of `Numlib/Analysis/Convex/Extremum`
-meet in two places: the sufficiency theorem, which is the tangent-functional inequality of
-`Numlib/Analysis/Convex/Gateaux`, and the Slater theorem, restated from the convex library. The
-Kuhn–Tucker theorem under LICQ is proved, not assumed: the tangent cone of the feasible set
-contains the linearized cone (Mathlib's implicit function theorem applied to the active
-constraints), the first-order condition holds on the tangent cone
-(`IsLocalMinOn.hasFDerivWithinAt_nonneg`), and Farkas' lemma turns it into the multipliers.
-Property 7.16 is stated for cluster points; the book's "the sequence converges" needs a unique
-constrained minimizer and a bounded sequence (`tendsto_penalty_of_unique`).
+The existence of Lagrange multipliers comes from the Mathlib theorem
+`IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which gives a nontrivial pair
+$(\Lambda, \Lambda_0)$; regularity allows the normalization $\Lambda_0 = 1$. The Karush–Kuhn–Tucker
+theorem under LICQ is proved, not assumed. By the implicit function theorem applied to the active
+constraints, the tangent cone of the feasible set contains the linearized cone. The first-order
+condition holds on the tangent cone (`IsLocalMinOn.hasFDerivWithinAt_nonneg`), and Farkas' lemma
+`ConvexAnalysis.farkas` turns it into multipliers.
+
+## Implementation notes
+
+* The smooth theory of this file and the convex theory of `Numlib.Analysis.Convex.Extremum.Program`
+  meet in two places. The sufficiency theorem `Constrained.isMinOn_of_lagrangian_convexOn` is the
+  tangent inequality of `Numlib.Analysis.Convex.Gateaux`, and the Slater theorem
+  `Constrained.exists_kkt_of_convexOn_of_slater` is restated from
+  `ConvexAnalysis.exists_multipliers_of_slater_eq`.
+* Property 7.16 of [quarteroni2000numerical] states that the sequence of penalty minimizers
+  converges. Here it is stated for cluster points. Convergence needs a unique constrained minimizer
+  and a bounded sequence (`Constrained.tendsto_penalty_of_unique`).
+* `Constrained.lagrangian` and `Constrained.augmented` add the multiplier term, and
+  `Constrained.innerLagrangian` subtracts it. The conventions agree under $y \mapsto -y$
+  (`Constrained.innerLagrangian_apply_eq_lagrangian`,
+  `Constrained.innerLagrangian_apply_eq_augmented`).
 -/
 
 open Filter Set Topology
@@ -96,52 +117,66 @@ section Defs
 
 variable {E : Type*} {ι κ : Type*}
 
-/-- The feasible set of the equality constraints `h i x = 0`
-([quarteroni2000numerical] (7.50)). -/
+/-- The **feasible set** of the equality constraints $h_i(x) = 0$, $i \in \iota$: the set of
+$x \in E$ with $h_i(x) = 0$ for all $i$. This is (7.50) of [quarteroni2000numerical]. -/
 def feasibleEq (h : ι → E → ℝ) : Set E := {x | ∀ i, h i x = 0}
 
-/-- The feasible set of the mixed constraints `h i x = 0`, `g j x ≤ 0`
-([quarteroni2000numerical] (7.51)). -/
+/-- The **feasible set** of the mixed constraints: the set of $x \in E$ with $h_i(x) = 0$ for all
+$i \in \iota$ and $g_j(x) \le 0$ for all $j \in \kappa$. This is (7.51) of
+[quarteroni2000numerical]. -/
 def feasible (h : ι → E → ℝ) (g : κ → E → ℝ) : Set E := {x | (∀ i, h i x = 0) ∧ ∀ j, g j x ≤ 0}
 
-/-- Membership in the feasible set of the equality constraints. -/
+/-- A point $x$ is in the feasible set of the equality constraints if and only if $h_i(x) = 0$ for
+all $i$. -/
 @[simp] theorem mem_feasibleEq {h : ι → E → ℝ} {x : E} : x ∈ feasibleEq h ↔ ∀ i, h i x = 0 :=
   Iff.rfl
 
-/-- Membership in the feasible set of the mixed constraints. -/
+/-- A point $x$ is in the feasible set of the mixed constraints if and only if $h_i(x) = 0$ for all
+$i$ and $g_j(x) \le 0$ for all $j$. -/
 @[simp] theorem mem_feasible {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E} :
     x ∈ feasible h g ↔ (∀ i, h i x = 0) ∧ ∀ j, g j x ≤ 0 := Iff.rfl
 
-/-- The active inequality constraints at `x`, `𝒥(x) = {j | g_j x = 0}`
-([quarteroni2000numerical] Definition 7.3). -/
+/-- The **active set** of the inequality constraints at $x$ is
+$\mathcal{J}(x) = \{j \in \kappa : g_j(x) = 0\}$. This is from Definition 7.3 of
+[quarteroni2000numerical]. -/
 def activeSet (g : κ → E → ℝ) (x : E) : Set κ := {j | g j x = 0}
 
-/-- A constraint is active at `x` when it holds with equality there. -/
+/-- A constraint $j$ is in the active set at $x$ if and only if $g_j(x) = 0$. -/
 @[simp] theorem mem_activeSet {g : κ → E → ℝ} {x : E} {j : κ} : j ∈ activeSet g x ↔ g j x = 0 :=
   Iff.rfl
 
 variable [Fintype ι]
 
-/-- The Lagrangian `ℒ(x, λ) = f x + ∑ λ_i h_i x` of the equality-constrained problem
-([quarteroni2000numerical] §7.3). It is the real-valued, differentiable form of Rockafellar's
-Lagrangian `ConvexAnalysis.lagrangian` of the program with perturbed constraints `h x = u`
-(`Constrained.coe_lagrangian_eq`); the convex-analysis one is `EReal`-valued and defined for an
-arbitrary perturbation bifunction. -/
+/-- The **Lagrangian** of the equality-constrained problem, for finitely many constraints $h_i$ and
+multipliers $\lambda \in \mathbb{R}^\iota$:
+$$\mathcal{L}(x, \lambda) = f(x) + \sum_i \lambda_i h_i(x).$$
+This is the Lagrangian of §7.3 of [quarteroni2000numerical].
+
+It is the real-valued, differentiable form of the Lagrangian `ConvexAnalysis.lagrangian` of
+[rockafellar1970convex] for the program with the perturbed constraints $h(x) = u$
+(`Constrained.coe_lagrangian_eq`). The convex-analysis Lagrangian takes values in `EReal` and is
+defined for an arbitrary perturbation bifunction. -/
 def lagrangian (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) : ℝ := f x + ∑ i, l i * h i x
 
+/-- The Lagrangian at $(x, \lambda)$ is $f(x) + \sum_i \lambda_i h_i(x)$. -/
 theorem lagrangian_apply (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) :
     lagrangian f h x l = f x + ∑ i, l i * h i x := rfl
 
-/-- On the feasible set the Lagrangian is the objective. -/
+/-- Let $x$ be in the feasible set of the equality constraints. Then
+$\mathcal{L}(x, \lambda) = f(x)$ for every $\lambda$. -/
 theorem lagrangian_eq_of_mem {f : E → ℝ} {h : ι → E → ℝ} {x : E} (hx : x ∈ feasibleEq h)
     (l : ι → ℝ) : lagrangian f h x l = f x := by
   simp [lagrangian, hx _]
 
-/-- **The equality-constrained Lagrangian is Rockafellar's Lagrangian** ([rockafellar1970convex]
-§29). `ConvexAnalysis.lagrangian B F v x = ⨅ u (⟨u, v⟩ + F u x)` is defined for any perturbation
-bifunction `F`; for the perturbation `F u x = f x` if `h x = u` and `⊤` otherwise — the
-constraints `h x = 0` shifted to `h x = u` — and the dot product pairing on `ι → ℝ`, the infimum
-is attained at `u = h x` and is `lagrangian f h x v = f x + ∑ v_i h_i x`, read in `EReal`. -/
+/-- **The equality-constrained Lagrangian is the Lagrangian of [rockafellar1970convex], §29.** For a
+perturbation bifunction $F$, the Lagrangian of [rockafellar1970convex] is $L(v, x) = \inf_u
+(\langle u, v \rangle + F(u, x))$. Take the perturbation $F(u, x) = f(x)$ if $h(x) = u$ and
+$F(u, x) = +\infty$ otherwise, which shifts the constraints $h(x) = 0$ to $h(x) = u$, and take
+the dot product pairing on $\mathbb{R}^\iota$. Then for every $x$ and $\lambda$,
+$L(\lambda, x) = f(x) + \sum_i \lambda_i h_i(x)$, read as an element of $[-\infty, +\infty]$.
+
+The infimum is attained at $u = h(x)$. The Lagrangian of [rockafellar1970convex] is
+`ConvexAnalysis.lagrangian` with the pairing `dotProductBilin ℝ ℝ`. -/
 theorem coe_lagrangian_eq (f : E → ℝ) (h : ι → E → ℝ) (x : E) (l : ι → ℝ) :
     ((lagrangian f h x l : ℝ) : EReal) =
       ConvexAnalysis.lagrangian (dotProductBilin ℝ ℝ)
@@ -166,27 +201,32 @@ section InnerLagrangian
 
 variable {E F ι : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- The Lagrangian `ℒ(·, y) = f - ⟪y, c⟫` of the equality constraints `c x = 0` with values in a
-real inner product space `F`, as a function of `x` for a fixed multiplier `y ∈ F`
-([cartis2022evaluation] (1.1.1); [nocedal2006numerical] (12.33)). The prefix "inner" refers to the
-pairing `⟪y, c x⟫` through the inner product of `F` (as opposed to the indexed sum of
-`Constrained.lagrangian`), not to the INNER solvers of the two-phase methods.
+/-- The **Lagrangian** of the equality constraints $c(x) = 0$ with values in a real inner product
+space $F$, as a function of $x$ for a fixed multiplier $y \in F$:
+$$\mathcal{L}(\cdot, y) = f - \langle y, c \rangle.$$
+This is (1.1.1) of [cartis2022evaluation] and (12.33) of [nocedal2006numerical].
 
-**Sign convention.** The multipliers enter with a *minus* sign, whereas `Constrained.lagrangian`
-(`f + ∑ λᵢ hᵢ`, an indexed family of real constraints) and `Constrained.augmented`
-(`f + ⟪λ, h⟫ + ½ α ‖h‖²`) use a plus sign; the two agree under `y ↦ -y`
-(`innerLagrangian_apply_eq_lagrangian`, `innerLagrangian_apply_eq_augmented`).
-
-It is reducible, so that statements about `fun z => f z - ⟪y, c z⟫` apply to it. -/
+The multipliers enter with a minus sign. `Constrained.lagrangian`, which is
+$f + \sum_i \lambda_i h_i$ for an indexed family of real constraints, and
+`Constrained.augmented`, which is $f + \langle \lambda, h \rangle + \frac12 \alpha \|h\|^2$, use
+a plus sign. The conventions agree under $y \mapsto -y$
+(`Constrained.innerLagrangian_apply_eq_lagrangian`,
+`Constrained.innerLagrangian_apply_eq_augmented`). The prefix "inner" refers to the pairing
+$\langle y, c(x) \rangle$ through the inner product of $F$, as opposed to the indexed sum of
+`Constrained.lagrangian`; it does not refer to the inner solvers of two-phase methods. The
+definition is reducible, so that statements about `fun z => f z - ⟪y, c z⟫` apply to it. -/
 noncomputable abbrev innerLagrangian (f : E → ℝ) (c : E → F) (y : F) : E → ℝ :=
   fun z => f z - inner ℝ y (c z)
 
+/-- The Lagrangian $f - \langle y, c \rangle$ at $x$ is $f(x) - \langle y, c(x) \rangle$. -/
 theorem innerLagrangian_apply (f : E → ℝ) (c : E → F) (y : F) (x : E) :
     innerLagrangian f c y x = f x - inner ℝ y (c x) := rfl
 
-/-- **The two sign conventions for the Lagrangian.** For constraints with values in
-`EuclideanSpace ℝ ι`, the Lagrangian `f - ⟪y, c⟫` is `Constrained.lagrangian` of the coordinate
-constraints `cᵢ` with the multipliers `λ = -y`. -/
+/-- **The two sign conventions for the Lagrangian.** Let $\iota$ be finite and let
+$c : E \to \mathbb{R}^\iota$ take values in the Euclidean space $\mathbb{R}^\iota$. Then for
+every $y \in \mathbb{R}^\iota$ and $x \in E$, the Lagrangian $f(x) - \langle y, c(x) \rangle$
+equals $\mathcal{L}(x, -y)$, the Lagrangian `Constrained.lagrangian` of the coordinate
+constraints $c_i$ with the multipliers $\lambda = -y$. -/
 theorem innerLagrangian_apply_eq_lagrangian [Fintype ι] (f : E → ℝ)
     (c : E → EuclideanSpace ℝ ι) (y : EuclideanSpace ℝ ι) (x : E) :
     innerLagrangian f c y x = lagrangian f (fun i z => c z i) x (fun i => -y i) := by
@@ -200,13 +240,15 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι κ : Type*} 
 /-! ### Regular points and Lagrange multipliers -/
 
 omit [Fintype κ] in
-/-- [quarteroni2000numerical] Definition 7.2: a *regular point* of the equality constraints is a
-feasible point at which the constraint gradients are linearly independent (the linear independence
-constraint qualification for equality constraints). -/
+/-- A **regular point** of the equality constraints is a feasible point $x$ at which the gradients
+$h_i'(x)$, $i \in \iota$, are linearly independent. This is the linear independence constraint
+qualification for equality constraints, Definition 7.2 of [quarteroni2000numerical]. -/
 def IsRegularPoint (h : ι → E → ℝ) (h' : ι → E → E →L[ℝ] ℝ) (x : E) : Prop :=
   x ∈ feasibleEq h ∧ LinearIndependent ℝ fun i => h' i x
 
-/-- The derivative of the Lagrangian in `x`: `ℒ' = f' + ∑ λ_i h_i'`. -/
+/-- Let $f$ have the derivative $f'(x)$ at $x$, and let each $h_i$ have the derivative $h_i'(x)$ at
+$x$. Then for every $\lambda$, the map $y \mapsto \mathcal{L}(y, \lambda)$ has the derivative
+$f'(x) + \sum_i \lambda_i h_i'(x)$ at $x$. -/
 theorem lagrangian_hasFDerivAt {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {x : E} (hf : HasFDerivAt f (f' x) x)
     (hh : ∀ i, HasFDerivAt (h i) (h' i x) x) (l : ι → ℝ) :
@@ -215,13 +257,19 @@ theorem lagrangian_hasFDerivAt {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {h :
 
 /-! ### Lagrange multipliers at a regular local minimizer -/
 
-/-- [quarteroni2000numerical] Property 7.11, first part, with the regularity hypothesis the book
-omits (without it multipliers need not exist: `min x` subject to `x² = 0`): at a regular local
-minimizer `x` of `f` on the equality constraints there is a unique multiplier vector `λ` with
-`f' x + ∑ λ_i h_i' x = 0`, that is, the Lagrangian is stationary in `x` at `(x, λ)`. Existence up to
-normalization is Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which needs the
-strict differentiability and the completeness; regularity forces the multiplier of `f'` to be
-nonzero and gives the uniqueness. -/
+/-- **Existence and uniqueness of Lagrange multipliers.** Let $E$ be complete, and let $x$ be a
+regular point of the equality constraints that is a local minimizer of $f$ on the feasible set.
+Let $f$ and each $h_i$ be strictly differentiable at $x$, with derivatives $f'(x)$ and
+$h_i'(x)$. Then there is a unique $\lambda \in \mathbb{R}^\iota$ with
+$$f'(x) + \sum_i \lambda_i h_i'(x) = 0,$$
+that is, the Lagrangian is stationary in $x$ at $(x, \lambda)$. This is the first part of
+Property 7.11 of [quarteroni2000numerical], with the regularity hypothesis that the source
+omits; without it, multipliers need not exist, as for $\min x$ subject to $x^2 = 0$.
+
+Existence up to normalization is the Mathlib theorem
+`IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which needs the strict
+differentiability and the completeness. Regularity forces the multiplier of $f'(x)$ to be
+nonzero, and it gives the uniqueness. -/
 theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → ℝ}
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPoint h h' x) (hmin : IsLocalMinOn f (feasibleEq h) x)
@@ -252,16 +300,23 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
 
 /-! ### The second-order sufficient condition -/
 
-/-- [quarteroni2000numerical] Property 7.11, second part (the second-order sufficient condition;
-[nocedal2006numerical] Theorem 12.6): let `x` satisfy the equality constraints, let `f` and the
-`h_i` be differentiable near `x` with the derivative of the Lagrangian `y ↦ f' y + ∑ λ_i h_i' y`
-differentiable at `x`, with derivative `H` (the Hessian of the Lagrangian at `(x, λ)`); if the
-Lagrangian is stationary at `x` and `H` is positive definite on the tangent space of the
-constraints, `0 < H z z` for `z ≠ 0` with `h_i' x z = 0`, then `x` is a strict local minimizer of
-`f` on the constraint set. Neither regularity nor the implicit function theorem is needed: a
-sequence of feasible `y_k → x`, `y_k ≠ x`, with `f y_k ≤ f x` has unit directions with a cluster
-point `z` in the tangent space (`E` is finite-dimensional), and the second-order expansion of the
-Lagrangian (`isLittleO_taylor_two`), which equals `f` on feasible points, forces `H z z ≤ 0`. -/
+/-- **The second-order sufficient condition.** Let $E$ be finite-dimensional, let $x$ be in the
+feasible set of the equality constraints, and let $\lambda \in \mathbb{R}^\iota$. Let $f$ and
+each $h_i$ be differentiable at every point $y$ of a neighbourhood of $x$, with derivatives
+$f'(y)$ and $h_i'(y)$. Let the derivative of the Lagrangian
+$y \mapsto f'(y) + \sum_i \lambda_i h_i'(y)$ be differentiable at $x$, with derivative $H$ (the
+Hessian of the Lagrangian at $(x, \lambda)$). Suppose that the Lagrangian is stationary at $x$,
+$f'(x) + \sum_i \lambda_i h_i'(x) = 0$, and that $H$ is positive definite on the tangent space
+of the constraints: $H(z, z) > 0$ for every $z \neq 0$ with $h_i'(x) z = 0$ for all $i$. Then
+$x$ is a strict local minimizer of $f$ on the feasible set: there is $\delta > 0$ such that
+$f(x) < f(y)$ for every feasible $y \neq x$ with $\|y - x\| < \delta$. This is the second part
+of Property 7.11 of [quarteroni2000numerical] and Theorem 12.6 of [nocedal2006numerical].
+
+Neither regularity nor the implicit function theorem is needed. Suppose there are feasible
+$y_k \to x$ with $y_k \neq x$ and $f(y_k) \le f(x)$. Since $E$ is finite-dimensional, the unit
+directions of $y_k - x$ have a cluster point $z$ in the tangent space. The second-order
+expansion of the Lagrangian (`isLittleO_taylor_two`), which equals $f$ at feasible points,
+forces $H(z, z) \le 0$. -/
 theorem isLocalMin_of_lagrangian_second_order [FiniteDimensional ℝ E] {f : E → ℝ}
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ}
     {H : E →L[ℝ] E →L[ℝ] ℝ} (hx : x ∈ feasibleEq h) (hf : ∀ᶠ y in 𝓝 x, HasFDerivAt f (f' y) y)
@@ -355,15 +410,22 @@ theorem isLocalMin_of_lagrangian_second_order [FiniteDimensional ℝ E] {f : E �
 
 /-! ### Karush–Kuhn–Tucker points -/
 
-/-- [quarteroni2000numerical] Definition 7.3: a *regular point* of the mixed constraints is a
-feasible point at which the equality gradients together with the active inequality gradients are
-linearly independent (the linear independence constraint qualification, LICQ). -/
+/-- A **regular point** of the mixed constraints is a point $x$ with $h_i(x) = 0$ for all $i$ and
+$g_j(x) \le 0$ for all $j$, at which the gradients $h_i'(x)$, $i \in \iota$, together with the
+gradients $g_j'(x)$ of the active constraints $j \in \mathcal{J}(x)$, are linearly independent.
+This is the linear independence constraint qualification (LICQ), Definition 7.3 of
+[quarteroni2000numerical].
+
+The family of gradients is indexed by the disjoint union of $\iota$ and the active set. -/
 def IsRegularPointIneq (h : ι → E → ℝ) (h' : ι → E → E →L[ℝ] ℝ) (g : κ → E → ℝ)
     (g' : κ → E → E →L[ℝ] ℝ) (x : E) : Prop :=
   (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
     LinearIndependent ℝ (Sum.elim (fun i => h' i x) fun j : activeSet g x => g' j x)
 
 omit [Fintype ι] [Fintype κ] in
+/-- A point $x$ is a regular point of the mixed constraints if and only if it is feasible and the
+gradients $h_i'(x)$ together with the active gradients $g_j'(x)$, $j \in \mathcal{J}(x)$, are
+linearly independent. -/
 theorem isRegularPointIneq_iff {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
     {g' : κ → E → E →L[ℝ] ℝ} {x : E} :
     IsRegularPointIneq h h' g g' x ↔ (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
@@ -371,36 +433,42 @@ theorem isRegularPointIneq_iff {h : ι → E → ℝ} {h' : ι → E → E →L[
   Iff.rfl
 
 omit [Fintype ι] [Fintype κ] in
-/-- A regular point of the mixed constraints is feasible. -/
+/-- A regular point of the mixed constraints is in the feasible set of the mixed constraints. -/
 theorem IsRegularPointIneq.mem_feasible {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} (hx : IsRegularPointIneq h h' g g' x) :
     x ∈ feasible h g :=
   ⟨hx.1, hx.2.1⟩
 
-/-- The Karush–Kuhn–Tucker conditions for `min f` subject to `h = 0`, `g ≤ 0`
-([quarteroni2000numerical] Property 7.12 and §7.3.1): feasibility, stationarity of the Lagrangian
-`ℳ(x, λ, μ) = f + ∑ λ_i h_i + ∑ μ_j g_j` in `x`, nonnegativity of the inequality multipliers and
-complementary slackness `μ_j g_j x = 0`. -/
+/-- The **Karush–Kuhn–Tucker conditions** for $\min f$ subject to $h = 0$ and $g \le 0$, at a point
+$x$ with multipliers $\lambda \in \mathbb{R}^\iota$ and $\mu \in \mathbb{R}^\kappa$: $x$ is
+feasible, the Lagrangian $\mathcal{M}(x, \lambda, \mu) = f(x) + \sum_i \lambda_i h_i(x) + \sum_j
+\mu_j g_j(x)$ is stationary in $x$,
+$$f'(x) + \sum_i \lambda_i h_i'(x) + \sum_j \mu_j g_j'(x) = 0,$$
+the inequality multipliers are nonnegative, $\mu_j \ge 0$, and complementary slackness
+$\mu_j g_j(x) = 0$ holds for every $j$. These are the conditions of Property 7.12 and §7.3.1 of
+[quarteroni2000numerical]. -/
 structure IsKKTPoint (f' : E → E →L[ℝ] ℝ) (h : ι → E → ℝ) (h' : ι → E → E →L[ℝ] ℝ)
     (g : κ → E → ℝ) (g' : κ → E → E →L[ℝ] ℝ) (x : E) (l : ι → ℝ) (μ : κ → ℝ) : Prop where
-  /-- The equality constraints hold at `x`. -/
+  /-- The equality constraints hold at $x$: $h_i(x) = 0$ for all $i$. -/
   feasible_eq : ∀ i, h i x = 0
-  /-- The inequality constraints hold at `x`. -/
+  /-- The inequality constraints hold at $x$: $g_j(x) \le 0$ for all $j$. -/
   feasible_ineq : ∀ j, g j x ≤ 0
-  /-- Stationarity of the Lagrangian in `x`. -/
+  /-- Stationarity of the Lagrangian in $x$: $f'(x) + \sum_i \lambda_i h_i'(x) + \sum_j \mu_j
+  g_j'(x) = 0$. -/
   stationary : f' x + ∑ i, l i • h' i x + ∑ j, μ j • g' j x = 0
-  /-- The inequality multipliers are nonnegative. -/
+  /-- The inequality multipliers are nonnegative: $\mu_j \ge 0$ for all $j$. -/
   nonneg : ∀ j, 0 ≤ μ j
-  /-- Complementary slackness. -/
+  /-- Complementary slackness: $\mu_j g_j(x) = 0$ for all $j$. -/
   complementary : ∀ j, μ j * g j x = 0
 
-/-- A Karush–Kuhn–Tucker point is feasible. -/
+/-- A Karush–Kuhn–Tucker point is in the feasible set of the mixed constraints. -/
 theorem IsKKTPoint.mem_feasible {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}
     (hx : IsKKTPoint f' h h' g g' x l μ) : x ∈ feasible h g :=
   ⟨hx.feasible_eq, hx.feasible_ineq⟩
 
-/-- The multiplier of an inactive constraint vanishes. -/
+/-- At a Karush–Kuhn–Tucker point $x$ with multipliers $(\lambda, \mu)$, the multiplier $\mu_j$ of a
+constraint $j$ that is not active at $x$ is zero. -/
 theorem IsKKTPoint.eq_zero_of_notMem_activeSet {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ}
     {μ : κ → ℝ} (hx : IsKKTPoint f' h h' g g' x l μ) {j : κ} (hj : j ∉ activeSet g x) :
@@ -408,7 +476,9 @@ theorem IsKKTPoint.eq_zero_of_notMem_activeSet {f' : E → E →L[ℝ] ℝ} {h :
   (mul_eq_zero.1 (hx.complementary j)).resolve_right hj
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [Fintype ι] in
-/-- A sum over `κ` of terms that vanish off the active set is a sum over the active set. -/
+/-- Let $\kappa$ be finite and let $F_j$, $j \in \kappa$, be elements of an additive commutative
+monoid with $F_j = 0$ for every $j$ outside the active set $\mathcal{J}(x)$. Then $\sum_{j \in
+\kappa} F_j = \sum_{j \in \mathcal{J}(x)} F_j$. -/
 theorem sum_eq_sum_activeSet {V : Type*} [AddCommMonoid V] {g : κ → E → ℝ} {x : E}
     [Fintype (activeSet g x)] {F : κ → V} (hF : ∀ j, j ∉ activeSet g x → F j = 0) :
     ∑ j, F j = ∑ j : activeSet g x, F j := by
@@ -417,10 +487,14 @@ theorem sum_eq_sum_activeSet {V : Type*} [AddCommMonoid V] {g : κ → E → ℝ
     (fun j _ hj => by_contra fun hj' => hj (hF j hj'))]
   exact Finset.sum_subtype _ (fun j => by simp) F
 
-/-- Under LICQ the Karush–Kuhn–Tucker multipliers are unique ("only two vectors" in
-[quarteroni2000numerical] Property 7.12): complementarity kills the inactive multipliers and the
-difference of two stationarity equations is a vanishing combination of the linearly independent
-active gradients. -/
+/-- **Uniqueness of the Karush–Kuhn–Tucker multipliers.** Let $x$ be a regular point of the mixed
+constraints. If $x$ is a Karush–Kuhn–Tucker point with the multipliers $(\lambda, \mu)$ and with
+the multipliers $(\lambda', \mu')$, then $\lambda = \lambda'$ and $\mu = \mu'$. This is the
+uniqueness ("only two vectors") in Property 7.12 of [quarteroni2000numerical].
+
+Complementary slackness makes the multipliers of the inactive constraints zero. The difference
+of the two stationarity equations is then a vanishing combination of the linearly independent
+gradients $h_i'(x)$ and active $g_j'(x)$. -/
 theorem kkt_multipliers_unique {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} (hx : IsRegularPointIneq h h' g g' x)
     {l l' : ι → ℝ} {μ μ' : κ → ℝ} (h₁ : IsKKTPoint f' h h' g g' x l μ)
@@ -444,19 +518,25 @@ theorem kkt_multipliers_unique {f' : E → E →L[ℝ] ℝ} {h : ι → E → �
   · exact sub_eq_zero.1 (hzero (Sum.inr ⟨j, hj⟩))
   · rw [h₁.eq_zero_of_notMem_activeSet hj, h₂.eq_zero_of_notMem_activeSet hj]
 
-/-! ### The Kuhn–Tucker necessary conditions under LICQ
+/-!
+### The Karush–Kuhn–Tucker necessary conditions under LICQ
 
-The route: (a) a family of linearly independent functionals is jointly surjective onto `ℝ^σ`;
-(b) a map with surjective strict derivative has, in every direction `z`, a curve `γ` with
-`γ 0 = a`, `γ' 0 = z` and `c (γ t) = c a + t c' z` — the implicit function theorem; (c) under
-LICQ the linearized cone is contained in the positive tangent cone of the feasible set; (d) the
-first-order condition of `IsLocalMinOn.hasFDerivWithinAt_nonneg` on that cone, turned into
-multipliers by Farkas' lemma. -/
+The proof has four steps. (a) A linearly independent family of functionals is jointly surjective
+onto $\mathbb{R}^\sigma$. (b) If a map $c$ has a surjective strict derivative $c'$ at $a$, then for
+every direction $z$ there is a curve $\gamma$ with $\gamma(0) = a$, $\gamma'(0) = z$ and
+$c(\gamma(t)) = c(a) + t\, c'z$; this is the implicit function theorem. (c) Under LICQ the
+linearized cone is contained in the positive tangent cone of the feasible set. (d) The first-order
+condition `IsLocalMinOn.hasFDerivWithinAt_nonneg` holds on that cone, and Farkas' lemma turns it
+into multipliers.
+-/
 
 omit [Fintype ι] [Fintype κ] in
-/-- Linearly independent functionals `φ_s`, `s : σ`, are jointly surjective: the map
-`v ↦ (φ_s v)_s` has range `ℝ^σ`. This is the dual form of linear independence,
-`span_flip_eq_top_iff_linearIndependent`. -/
+/-- Let $\sigma$ be finite and let $\varphi_s$, $s \in \sigma$, be linearly independent continuous
+linear functionals on $E$. Then they are jointly surjective: the map
+$v \mapsto (\varphi_s(v))_{s \in \sigma}$ from $E$ to $\mathbb{R}^\sigma$ is surjective.
+
+This is the dual form of linear independence, `span_flip_eq_top_iff_linearIndependent`. The map
+is `ContinuousLinearMap.pi φ`. -/
 theorem _root_.LinearIndependent.range_pi_eq_top {σ : Type*} [Finite σ] {φ : σ → E →L[ℝ] ℝ}
     (hφ : LinearIndependent ℝ φ) : (ContinuousLinearMap.pi φ).range = ⊤ := by
   cases nonempty_fintype σ
@@ -481,13 +561,18 @@ theorem _root_.LinearIndependent.range_pi_eq_top {σ : Type*} [Finite σ] {φ : 
   exact hspan
 
 omit [Fintype ι] [Fintype κ] in
-/-- **Curves through level sets** (implicit function theorem). If `c : E → F` is strictly
-differentiable at `a` with surjective derivative `c'`, `F` finite-dimensional, then for every
-direction `z` there is a curve `γ` with `γ 0 = a`, `γ'(0) = z` and `c (γ t) = c a + t c' z` near
-`t = 0`; moreover `γ` is `Cⁿ` at `0` whenever `c` is `Cⁿ` at `a`. The curve is
-`t ↦ ψ (c a + t c' z, t P z)` for the local inverse `ψ` of `y ↦ (c y, P (y - a))` provided by
-`ImplicitFunctionData`, `P` a projection onto `ker c'`; its derivative at `0` is
-`(c', P)⁻¹ (c' z, P z) = z`, and `ψ` is `Cⁿ` by the inverse function theorem. -/
+/-- **Curves through level sets** (implicit function theorem). Let $E$ be complete, let $F$ be a
+finite-dimensional normed space, and let $c : E \to F$ be strictly differentiable at $a$ with
+surjective derivative $c'$. Then for every direction $z \in E$ there is a curve
+$\gamma : \mathbb{R} \to E$ with $\gamma(0) = a$ and $\gamma'(0) = z$, such that
+$c(\gamma(t)) = c(a) + t\, c'z$ for all $t$ near $0$. Moreover, for every
+$n \in \mathbb{N} \cup \{\infty, \omega\}$, if $c$ is $C^n$ at $a$, then $\gamma$ is $C^n$ at
+$0$.
+
+The curve is $t \mapsto \psi(c(a) + t\, c'z, t P z)$, where $\psi$ is the local inverse of
+$y \mapsto (c(y), P(y - a))$ given by `ImplicitFunctionData` and $P$ is a projection onto
+$\ker c'$. Its derivative at $0$ is $(c', P)^{-1}(c'z, Pz) = z$, and $\psi$ is $C^n$ by the
+inverse function theorem. -/
 theorem exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E] {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] {c : E → F}
     {c' : E →L[ℝ] F} {a : E} (hc : HasStrictFDerivAt c c' a) (hc' : c'.range = ⊤) (z : E) :
@@ -552,10 +637,14 @@ theorem exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E]
     exact ht
 
 omit [Fintype ι] [Fintype κ] in
-/-- The linearizing lemma of the implicit function theorem: if `c : E → F` is strictly
-differentiable at `a` with surjective derivative `c'`, `F` finite-dimensional, then for every
-direction `z` there is a curve `γ` with `γ 0 = a`, `γ' 0 = z` and `c (γ t) = c a + t c' z` near
-`t = 0` (`exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` without the smoothness). -/
+/-- **The linearizing lemma of the implicit function theorem.** Let $E$ be complete, let $F$ be a
+finite-dimensional normed space, and let $c : E \to F$ be strictly differentiable at $a$ with
+surjective derivative $c'$. Then for every direction $z \in E$ there is a curve
+$\gamma : \mathbb{R} \to E$ with $\gamma(0) = a$ and $\gamma'(0) = z$, such that
+$c(\gamma(t)) = c(a) + t\, c'z$ for all $t$ near $0$.
+
+This is `Constrained.exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` without the
+smoothness of $\gamma$. -/
 theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E] {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] {c : E → F}
     {c' : E →L[ℝ] F} {a : E} (hc : HasStrictFDerivAt c c' a) (hc' : c'.range = ⊤) (z : E) :
@@ -564,14 +653,19 @@ theorem exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top [CompleteSpace E]
   exact ⟨γ, h0, hd, hc⟩
 
 omit [Fintype ι] [Fintype κ] in
-/-- **Feasible arcs under LICQ** ([nocedal2006numerical] Lemma 12.2). In finite dimension, let `x`
-be a regular point of the mixed constraints, with all constraints strictly differentiable at `x`,
-and let `d` satisfy `h_i' x d = 0` for all `i` and `g_j' x d ≤ 0` for the active `j`. Then there is
-an arc `γ` with `γ(0) = x`, `γ'(0) = d`, which is `Cⁿ` at `0` whenever all constraints are `Cⁿ` at
-`x`, and which for all small `t > 0` is feasible and satisfies `g_j(γ(t)) = t g_j' x d` for every
-active `j` (so the active constraints with `g_j' x d = 0` stay active). The curve of
-`exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` for the equality and active constraints
-keeps `h_i = 0`; the inactive constraints stay strict by continuity. -/
+/-- **Feasible arcs under LICQ.** Let $E$ be finite-dimensional, and let $\iota$ and $\kappa$ be
+finite. Let $x$ be a regular point of the mixed constraints, and let each $h_i$ and $g_j$ be
+strictly differentiable at $x$. Let $d \in E$ satisfy $h_i'(x) d = 0$ for all $i$ and
+$g_j'(x) d \le 0$ for all active $j$. Then there is an arc $\gamma : \mathbb{R} \to E$ with
+$\gamma(0) = x$ and $\gamma'(0) = d$ with the following properties. For every
+$n \in \mathbb{N} \cup \{\infty, \omega\}$, if all $h_i$ and $g_j$ are $C^n$ at $x$, then
+$\gamma$ is $C^n$ at $0$. For all sufficiently small $t > 0$, $\gamma(t)$ is feasible and
+$g_j(\gamma(t)) = t\, g_j'(x) d$ for every active $j$; in particular, the active constraints
+with $g_j'(x) d = 0$ stay active. This is Lemma 12.2 of [nocedal2006numerical].
+
+The arc is the curve of `Constrained.exists_contDiffAt_of_hasStrictFDerivAt_of_range_eq_top` for
+the equality constraints and the active constraints together, so it keeps $h_i = 0$. The
+inactive constraints stay strictly negative by continuity. -/
 theorem exists_contDiff_feasible_arc [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
     {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPointIneq h h' g g' x) (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
@@ -632,11 +726,14 @@ theorem exists_contDiff_feasible_arc [FiniteDimensional ℝ E] [Finite ι] [Fini
     · exact (hin j hj).le
 
 omit [Fintype ι] [Fintype κ] in
-/-- Under LICQ the linearized cone is contained in the positive tangent cone of the feasible set
-([nocedal2006numerical] Lemma 12.2): if `x` is a regular point of the mixed constraints, the `h_i`
-and `g_j` are strictly differentiable at `x`, and `z` satisfies `h_i' x z = 0` for all `i` and
-`g_j' x z ≤ 0` for the active `j`, then `z ∈ posTangentConeAt (feasible h g) x`: it is the velocity
-of the feasible arc of `exists_contDiff_feasible_arc`. -/
+/-- **The linearized cone is in the tangent cone under LICQ.** Let $E$ be finite-dimensional, and
+let $\iota$ and $\kappa$ be finite. Let $x$ be a regular point of the mixed constraints, and let
+each $h_i$ and $g_j$ be strictly differentiable at $x$. Let $z \in E$ satisfy $h_i'(x) z = 0$
+for all $i$ and $g_j'(x) z \le 0$ for all active $j$. Then $z$ is in the positive tangent cone
+of the feasible set at $x$. This is part of Lemma 12.2 of [nocedal2006numerical].
+
+The positive tangent cone is the Mathlib `posTangentConeAt`. The direction $z$ is the velocity
+of the feasible arc of `Constrained.exists_contDiff_feasible_arc`. -/
 theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Finite ι] [Finite κ]
     {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
@@ -656,8 +753,12 @@ theorem mem_posTangentConeAt_of_isRegularPointIneq [FiniteDimensional ℝ E] [Fi
   rw [NNReal.smul_def, Real.coe_toNNReal _ (inv_nonneg.2 (le_of_lt ht))]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [Fintype ι] in
-/-- Multipliers on the active set extended by zero to all of `κ` (`Function.extend` along the
-inclusion) sum against `v` as the multipliers themselves do over the active set. -/
+/-- Let $\kappa$ be finite, let $c_j$, $j \in \mathcal{J}(x)$, be real numbers indexed by the active
+set, and let $v_j$, $j \in \kappa$, be elements of a real module. Extend $c$ by zero to all of
+$\kappa$. Then $\sum_{j \in \kappa} \bar c_j v_j = \sum_{j \in \mathcal{J}(x)} c_j v_j$, where
+$\bar c$ is the extension.
+
+The extension is `Function.extend Subtype.val c 0`. -/
 theorem sum_extend_activeSet_smul {V : Type*} [AddCommMonoid V] [Module ℝ V] {g : κ → E → ℝ}
     {x : E} [Fintype (activeSet g x)] (c : activeSet g x → ℝ) (v : κ → V) :
     ∑ j, Function.extend Subtype.val c 0 j • v j = ∑ j : activeSet g x, c j • v j := by
@@ -667,9 +768,14 @@ theorem sum_extend_activeSet_smul {V : Type*} [AddCommMonoid V] [Module ℝ V] {
         zero_smul])]
   exact Finset.sum_congr rfl fun j _ => by rw [Subtype.val_injective.extend_apply]
 
-/-- Farkas' lemma converts the first-order inequality on feasible linearized
-directions into KKT multipliers. This is independent of the constraint qualification
-used to establish that inequality. -/
+/-- **From the first-order inequality to multipliers.** Let $E$ be finite-dimensional and let $x$ be
+feasible for the mixed constraints. Suppose that $f'(x) z \ge 0$ for every $z$ with
+$h_i'(x) z = 0$ for all $i$ and $g_j'(x) z \le 0$ for all active $j$. Then there are multipliers
+$\lambda \in \mathbb{R}^\iota$ and $\mu \in \mathbb{R}^\kappa$ such that $x$ is a
+Karush–Kuhn–Tucker point with these multipliers.
+
+The proof applies Farkas' lemma `ConvexAnalysis.farkas`. It does not depend on the constraint
+qualification that is used to prove the first-order inequality. -/
 theorem exists_kkt_of_linearized_feasible_directions [FiniteDimensional ℝ E]
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
@@ -709,17 +815,21 @@ theorem exists_kkt_of_linearized_feasible_directions [FiniteDimensional ℝ E]
     · rw [Function.extend_apply' _ _ _ (by rintro ⟨⟨j', hj'⟩, rfl⟩; exact hj hj'), Pi.zero_apply,
         zero_mul]
 
-/-- [quarteroni2000numerical] Property 7.12, the Karush–Kuhn–Tucker necessary conditions under
-the linear independence constraint qualification ([nocedal2006numerical] Theorem 12.1): in finite
-dimension, if `x` is a regular local minimizer of `f` on the mixed constraints, `f` differentiable
-at `x`, the `h_i` and `g_j` strictly differentiable at `x` (as every `C¹` function is,
-`ContDiffAt.hasStrictFDerivAt`), then there are multipliers `(λ, μ)` making `x` a
-Karush–Kuhn–Tucker point; they are unique by `kkt_multipliers_unique`. Every `z` of the
-linearized cone lies in the positive tangent cone of the feasible set
-(`mem_posTangentConeAt_of_isRegularPointIneq`), so `f' x z ≥ 0` there
-(`IsLocalMinOn.hasFDerivWithinAt_nonneg`); Farkas' lemma (`ConvexAnalysis.farkas`, for the
-pairing of `E` with its dual, the coefficient vectors `h_i' x`, `-h_i' x` and the active
-`g_j' x`) then writes `-f' x` as a nonnegative combination of them. -/
+/-- **The Karush–Kuhn–Tucker necessary conditions under LICQ.** Let $E$ be finite-dimensional. Let
+$x$ be a regular point of the mixed constraints and a local minimizer of $f$ on the feasible
+set. Let $f$ be differentiable at $x$ with derivative $f'(x)$, and let each $h_i$ and $g_j$ be
+strictly differentiable at $x$ with derivatives $h_i'(x)$ and $g_j'(x)$. Then there are
+multipliers $\lambda \in \mathbb{R}^\iota$ and $\mu \in \mathbb{R}^\kappa$ such that $x$ is a
+Karush–Kuhn–Tucker point with these multipliers. This is Property 7.12 of
+[quarteroni2000numerical] and Theorem 12.1 of [nocedal2006numerical].
+
+A $C^1$ function is strictly differentiable (`ContDiffAt.hasStrictFDerivAt`). The multipliers
+are unique by `Constrained.kkt_multipliers_unique`. Every $z$ in the linearized cone lies in the
+positive tangent cone of the feasible set
+(`Constrained.mem_posTangentConeAt_of_isRegularPointIneq`), so $f'(x) z \ge 0$ there
+(`IsLocalMinOn.hasFDerivWithinAt_nonneg`). Farkas' lemma `ConvexAnalysis.farkas`, for the
+pairing of $E$ with its dual and the coefficient vectors $h_i'(x)$, $-h_i'(x)$ and the active
+$g_j'(x)$, then writes $-f'(x)$ as a nonnegative combination of them. -/
 theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f' : E → E →L[ℝ] ℝ}
     {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPointIneq h h' g g' x) (hmin : IsLocalMinOn f (feasible h g) x)
@@ -733,16 +843,24 @@ theorem exists_kkt_of_isLocalMinOn [FiniteDimensional ℝ E] {f : E → ℝ} {f'
 /-! ### Sufficiency for convex programs -/
 
 omit [Fintype ι] in
-/-- Sufficiency of the Kuhn–Tucker conditions for a convex program, the engine behind
-[quarteroni2000numerical] Property 7.15. Let `C` be convex, `S ⊆ C`, `x ∈ S`, `f` convex on `C`,
-and let each `y ↦ μ_j g_j y` be convex on `C` (so `g_j` convex where `μ_j > 0`, concave where
-`μ_j < 0`, arbitrary where `μ_j = 0`); suppose `f`, `g_j` differentiable at `x`, the multipliers
-sign-compatible with feasibility on `S` (`μ_j g_j y ≤ 0` for `y ∈ S`) and complementary at `x`, and
-the variational inequality `0 ≤ f' x (y - x) + ∑ μ_j g_j' x (y - x)` on `C`. Then `x` minimizes
-`f` over `S`. The Lagrangian `Λ = f + ∑ μ_j g_j` is convex on `C`, lies above its tangent
-functional at `x` (`ConvexOn.add_lineDeriv_le`), equals `f x` at `x` and is at most `f` on `S`.
-Equality constraints are the pair `h ≤ 0`, `-h ≤ 0` with free multipliers, `≥`-constraints have
-nonpositive multipliers, and stationarity `Λ' x = 0` is the case `C = univ`. -/
+/-- **Sufficiency of the Karush–Kuhn–Tucker conditions for a convex program.** Let
+$S \subseteq C \subseteq E$ and $x \in S$, let $\kappa$ be finite, and let
+$\mu \in \mathbb{R}^\kappa$. Suppose that:
+* $f$ is convex on $C$ (in particular $C$ is convex), and each $y \mapsto \mu_j g_j(y)$ is
+  convex on $C$;
+* $f$ and each $g_j$ are differentiable at $x$, with derivatives $f'(x)$ and $g_j'(x)$;
+* $\mu_j g_j(y) \le 0$ for all $y \in S$ and all $j$, and $\mu_j g_j(x) = 0$ for all $j$;
+* the variational inequality $0 \le f'(x)(y - x) + \sum_j \mu_j g_j'(x)(y - x)$ holds for all
+  $y \in C$.
+
+Then $x$ minimizes $f$ over $S$. This is the core of Property 7.15 of [quarteroni2000numerical].
+
+The convexity hypothesis on $\mu_j g_j$ means that $g_j$ is convex where $\mu_j > 0$, concave
+where $\mu_j < 0$, and arbitrary where $\mu_j = 0$. Equality constraints are the pair $h \le 0$,
+$-h \le 0$ with free multipliers, constraints $g_j \ge 0$ have nonpositive multipliers, and
+stationarity of the Lagrangian is the case $C = E$. The Lagrangian $f + \sum_j \mu_j g_j$ is
+convex on $C$, lies above its tangent functional at $x$ (`ConvexOn.add_lineDeriv_le`), equals
+$f(x)$ at $x$, and is at most $f$ on $S$. -/
 theorem isMinOn_of_lagrangian_convexOn {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
     {g' : κ → E → E →L[ℝ] ℝ} {μ : κ → ℝ} {C S : Set E} {x : E}
     (hSC : S ⊆ C) (hx : x ∈ S) (hf : ConvexOn ℝ C f) (hg : ∀ j, ConvexOn ℝ C fun y => μ j * g j y)
@@ -774,7 +892,8 @@ section Slater
 variable [FiniteDimensional ℝ E]
 
 omit [Fintype ι] [Fintype κ] in
-/-- The derivative of an affine functional on a finite-dimensional space is its linear part. -/
+/-- Let $E$ be finite-dimensional and let $a : E \to \mathbb{R}$ be an affine functional. Then at
+every $x$, the derivative of $a$ is its linear part. -/
 theorem _root_.AffineMap.hasFDerivAt_of_finiteDimensional (a : E →ᵃ[ℝ] ℝ) (x : E) :
     HasFDerivAt a (LinearMap.toContinuousLinearMap a.linear) x := by
   have h := (LinearMap.toContinuousLinearMap a.linear).hasFDerivAt (x := x) |>.add_const (a 0)
@@ -783,20 +902,23 @@ theorem _root_.AffineMap.hasFDerivAt_of_finiteDimensional (a : E →ᵃ[ℝ] ℝ
   simp only [Pi.add_apply] at hy
   simpa using hy
 
-/-- The Kuhn–Tucker conditions for a differentiable convex program under Slater's condition — the
-constraint qualification [quarteroni2000numerical] allude to after Property 7.14, in the convex
-case with Slater's condition in place of LICQ. In finite dimension let `f` and the inequality
-constraints `g_j` be convex on the whole space and differentiable at `x`, the equality constraints
-affine, `a i : E →ᵃ[ℝ] ℝ`; let Slater's condition hold, `∃ y, (∀ i, a i y = 0) ∧ ∀ j, g j y < 0`;
-and let `x` minimize `f` on the feasible set (for a convex program a local minimizer is a global
-one).
-Then `x` is a Karush–Kuhn–Tucker point with the equality gradients `(a i).linear`. No regularity
-of the constraint gradients is assumed, and the multipliers need not be unique. The multipliers
-come from `ConvexAnalysis.exists_multipliers_of_slater_eq` ([rockafellar1970convex] Theorem 28.2),
-with the objective and the constraints read in `EReal`: the infimum of the Lagrangian
-`f + ∑ μ_j g_j + ∑ λ_i a_i` over `E` is `f x`, so `x` is an unconstrained minimizer of the
-Lagrangian, whose derivative therefore vanishes at `x`, and complementary slackness follows from
-`∑ μ_j g_j x = 0` with nonpositive terms. -/
+/-- **The Karush–Kuhn–Tucker conditions under Slater's condition.** Let $E$ be finite-dimensional.
+Let $f$ and the inequality constraints $g_j$ be convex on $E$ and differentiable at $x$, with
+derivatives $f'(x)$ and $g_j'(x)$, and let the equality constraints $a_i : E \to \mathbb{R}$ be
+affine. Suppose that Slater's condition holds, that is, there is $y$ with $a_i(y) = 0$ for all
+$i$ and $g_j(y) < 0$ for all $j$. Let $x$ be feasible and minimize $f$ on the feasible set. Then
+$x$ is a Karush–Kuhn–Tucker point for some multipliers $\lambda$ and $\mu$, with the linear
+parts of the $a_i$ as the gradients of the equality constraints. This is the constraint
+qualification that [quarteroni2000numerical] mentions after Property 7.14, in the convex case
+and with Slater's condition in place of LICQ.
+
+No regularity of the constraint gradients is assumed, and the multipliers need not be unique.
+For a convex program a local minimizer is a global one, so the hypothesis of global minimality
+is not a restriction. The multipliers come from `ConvexAnalysis.exists_multipliers_of_slater_eq`
+(Theorem 28.2 of [rockafellar1970convex]), with the objective and the constraints read in
+`EReal`. The infimum of the Lagrangian $f + \sum_j \mu_j g_j + \sum_i \lambda_i a_i$ over $E$ is
+$f(x)$. So $x$ is an unconstrained minimizer of the Lagrangian, its derivative vanishes at $x$,
+and complementary slackness follows from $\sum_j \mu_j g_j(x) = 0$ with nonpositive terms. -/
 theorem exists_kkt_of_convexOn_of_slater {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {a : ι → E →ᵃ[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} (hf : ConvexOn ℝ univ f)
     (hg : ∀ j, ConvexOn ℝ univ (g j)) (hf' : HasFDerivAt f (f' x) x)
@@ -882,34 +1004,47 @@ section Penalty
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- The penalized Lagrangian `ℒ_α(x) = f x + ½ α ‖h x‖²` ([quarteroni2000numerical] (7.53)). -/
+/-- The **penalized Lagrangian** of $f$ and the constraint $h : E \to F$ with values in a real inner
+product space, with penalty parameter $\alpha$:
+$$\mathcal{L}_\alpha(x) = f(x) + \tfrac12 \alpha \|h(x)\|^2.$$
+This is (7.53) of [quarteroni2000numerical]. -/
 noncomputable def penalized (f : E → ℝ) (h : E → F) (α : ℝ) (x : E) : ℝ :=
   f x + 1 / 2 * α * ‖h x‖ ^ 2
 
-/-- The augmented Lagrangian `𝒢_α(x, λ) = f x + ⟪λ, h x⟫ + ½ α ‖h x‖²`
-([quarteroni2000numerical] (7.55)). -/
+/-- The **augmented Lagrangian** of $f$ and the constraint $h : E \to F$ with values in a real inner
+product space, with penalty parameter $\alpha$ and multiplier $\lambda \in F$:
+$$\mathcal{G}_\alpha(x, \lambda) = f(x) + \langle \lambda, h(x) \rangle + \tfrac12 \alpha
+  \|h(x)\|^2.$$
+This is (7.55) of [quarteroni2000numerical]. -/
 noncomputable def augmented (f : E → ℝ) (h : E → F) (α : ℝ) (l : F) (x : E) : ℝ :=
   f x + inner ℝ l (h x) + 1 / 2 * α * ‖h x‖ ^ 2
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- With the zero multiplier the augmented Lagrangian is the penalized one. -/
+/-- With the multiplier $\lambda = 0$, the augmented Lagrangian $\mathcal{G}_\alpha(\cdot, 0)$ is
+the penalized Lagrangian $\mathcal{L}_\alpha$. -/
 @[simp] theorem augmented_zero (f : E → ℝ) (h : E → F) (α : ℝ) :
     augmented f h α 0 = penalized f h α := by
   funext x; simp [augmented, penalized]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [Fintype ι] [Fintype κ] in
-/-- The Lagrangian `f - ⟪y, c⟫` is the augmented Lagrangian with `α = 0` and the multiplier
-`λ = -y`. -/
+/-- For every $y \in F$ and $x \in E$, the Lagrangian $f(x) - \langle y, c(x) \rangle$ is the
+augmented Lagrangian $\mathcal{G}_0(x, -y)$, with $\alpha = 0$ and the multiplier
+$\lambda = -y$. -/
 theorem innerLagrangian_apply_eq_augmented (f : E → ℝ) (c : E → F) (y : F) (x : E) :
     innerLagrangian f c y x = augmented f c 0 (-y) x := by
   simp [innerLagrangian, augmented, inner_neg_left, sub_eq_add_neg]
 
 omit [NormedSpace ℝ E] [InnerProductSpace ℝ F] [Fintype ι] [Fintype κ] in
-/-- The common core of the convergence theorems for the penalty method and the method of
-multipliers: if the iterates `x_k ∈ Ω` satisfy `f x_k + ½ α_k ‖h x_k‖² - Λ ‖h x_k‖ ≤ f x*` with
-`α_k → ∞`, then every cluster point `x̄` of `x_k` lies in `Ω`, satisfies the constraint and has
-`f x̄ ≤ f x*`. Along a subsequence converging to `x̄` the objective converges, so the penalty term
-is bounded and forces `h x̄ = 0`. -/
+/-- **The common core of the convergence theorems** for the penalty method and the method of
+multipliers. Let $E$ and $F$ be normed groups, let $\Omega \subseteq E$ be closed, and let
+$f : E \to \mathbb{R}$ and $h : E \to F$ be continuous on $\Omega$. Let $\alpha_k \to \infty$,
+$\Lambda \ge 0$ and $f^* \in \mathbb{R}$, and let $x_k \in \Omega$ satisfy
+$$f(x_k) + \tfrac12 \alpha_k \|h(x_k)\|^2 - \Lambda \|h(x_k)\| \le f^*$$
+for all $k$. Then every cluster point $\bar x$ of the sequence $(x_k)$ lies in $\Omega$ and
+satisfies $h(\bar x) = 0$ and $f(\bar x) \le f^*$.
+
+Along a subsequence that converges to $\bar x$ the objective converges, so the penalty term is
+bounded and forces $h(\bar x) = 0$. -/
 theorem mem_and_eq_zero_and_le_of_clusterPt {f : E → ℝ} {h : E → F} {Ω : Set E}
     (hΩ : IsClosed Ω) (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ}
     (hdiv : Tendsto α atTop atTop) {Λ : ℝ} (hΛ : 0 ≤ Λ) {fstar : ℝ} {xk : ℕ → E}
@@ -962,17 +1097,22 @@ theorem mem_and_eq_zero_and_le_of_clusterPt {f : E → ℝ} {h : E → F} {Ω : 
   exact le_of_tendsto_of_tendsto hflim hlimr hbound
 
 omit [NormedSpace ℝ E] [InnerProductSpace ℝ F] [Fintype ι] [Fintype κ] in
-/-- [quarteroni2000numerical] Property 7.16, corrected to what is true (Luenberger–Ye,
-*Linear and Nonlinear Programming*, Theorem 13.1; Bertsekas Proposition 4.2.1): every cluster
-point of the sequence of global minimizers of the penalized problems is a global minimizer of the
-constrained problem. Let `Ω` be closed, `f` and `h` continuous on `Ω`, `α_k → ∞`, `x*` a
-constrained global minimizer, and `x_k ∈ Ω` a global minimizer of `ℒ_{α_k}` on `Ω`; then every
-cluster point `x̄` of `x_k` lies in `Ω`, satisfies `h x̄ = 0` and minimizes `f` on the constraint
-set. From `ℒ_{α_k}(x_k) ≤ ℒ_{α_k}(x*) = f x*`, along a subsequence converging to `x̄` the objective
-converges, so `½ α_k ‖h x_k‖²` is bounded and `h x̄ = 0`, and `f x̄ ≤ f x*`. Neither the
-monotonicity nor the positivity of the `α_k` the book assumes is needed, only the divergence. The
-book's "the sequence converges to `x*`" needs a unique constrained minimizer and a bounded
-sequence: `tendsto_penalty_of_unique`. -/
+/-- **Convergence of the penalty method.** Let $E$ and $F$ be normed groups, let
+$\Omega \subseteq E$ be closed, and let $f : E \to \mathbb{R}$ and $h : E \to F$ be continuous
+on $\Omega$. Let $\alpha_k \to \infty$. Let $x^* \in \Omega$ with $h(x^*) = 0$ minimize $f$ on
+$\{y \in \Omega : h(y) = 0\}$, and for each $k$ let $x_k \in \Omega$ minimize the penalized
+Lagrangian $\mathcal{L}_{\alpha_k}$ on $\Omega$. Then every cluster point $\bar x$ of $(x_k)$
+lies in $\Omega$, satisfies $h(\bar x) = 0$, and minimizes $f$ on $\{y \in \Omega : h(y) = 0\}$.
+This is Property 7.16 of [quarteroni2000numerical] in a corrected form, as in Theorem 13.1 of
+Luenberger and Ye, *Linear and Nonlinear Programming*, and Proposition 4.2.1 of Bertsekas.
+
+The source states that the sequence converges to $x^*$. This needs a unique constrained
+minimizer and a bounded sequence; see `Constrained.tendsto_penalty_of_unique`. The source also
+assumes that the $\alpha_k$ are positive and increasing; only $\alpha_k \to \infty$ is needed.
+The proof uses $\mathcal{L}_{\alpha_k}(x_k) \le \mathcal{L}_{\alpha_k}(x^*) = f(x^*)$: along a
+subsequence that converges to $\bar x$ the objective converges, so
+$\frac12 \alpha_k \|h(x_k)\|^2$ is bounded, and therefore $h(\bar x) = 0$ and
+$f(\bar x) \le f(x^*)$. -/
 theorem penalty_clusterPt {f : E → ℝ} {h : E → F} {Ω : Set E} (hΩ : IsClosed Ω)
     (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ} (hdiv : Tendsto α atTop atTop)
     {xstar : E} (hstar : xstar ∈ Ω ∧ h xstar = 0) (hmin : IsMinOn f {y ∈ Ω | h y = 0} xstar)
@@ -989,11 +1129,14 @@ theorem penalty_clusterPt {f : E → ℝ} {h : E → F} {Ω : Set E} (hΩ : IsCl
   exact ⟨hmem, hzero, fun y hy => le_trans hfle (hmin hy)⟩
 
 omit [NormedSpace ℝ E] [InnerProductSpace ℝ F] [Fintype ι] [Fintype κ] in
-/-- The convergent form of [quarteroni2000numerical] Property 7.16: under the hypotheses of
-`penalty_clusterPt`, in a proper space, if the sequence of penalty minimizers is bounded and the
-constrained problem has the unique global minimizer `x*`, then `x_k → x*`. Every subsequence
-outside a neighbourhood of `x*` would have a cluster point, which is a constrained minimizer
-(`penalty_clusterPt`), hence `x*` itself. -/
+/-- **Convergence of the penalty method to a unique minimizer.** Let $E$ be proper, that is, closed
+bounded sets in $E$ are compact, and take the hypotheses of `Constrained.penalty_clusterPt`.
+Suppose further that the sequence $(x_k)$ of penalty minimizers is bounded, and that $x^*$ is
+the unique point of $\{y \in \Omega : h(y) = 0\}$ that minimizes $f$ on this set. Then
+$x_k \to x^*$. This is the convergent form of Property 7.16 of [quarteroni2000numerical].
+
+If a subsequence stayed outside a neighbourhood of $x^*$, it would have a cluster point, which
+is a constrained minimizer by `Constrained.penalty_clusterPt` and hence equal to $x^*$. -/
 theorem tendsto_penalty_of_unique [ProperSpace E] {f : E → ℝ} {h : E → F} {Ω : Set E}
     (hΩ : IsClosed Ω) (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ}
     (hdiv : Tendsto α atTop atTop) {xstar : E} (hstar : xstar ∈ Ω ∧ h xstar = 0)
@@ -1019,12 +1162,20 @@ theorem tendsto_penalty_of_unique [ProperSpace E] {f : E → ℝ} {h : E → F} 
   exact ha.2 (huniq a hmem hzero hamin ▸ hxU)
 
 omit [NormedSpace ℝ E] [Fintype ι] [Fintype κ] in
-/-- [quarteroni2000numerical] Property 7.16 for the method of multipliers ((7.56), as the book
-asserts after (7.56)): with the hypotheses of `penalty_clusterPt`, a bounded multiplier sequence
-`‖λ_k‖ ≤ Λ` and `x_k` a global minimizer of the augmented Lagrangian `𝒢_{α_k}(·, λ_k)` on `Ω`,
-every cluster point of `x_k` is a constrained global minimizer. The inequality
-`𝒢_{α_k}(x_k, λ_k) ≤ 𝒢_{α_k}(x*, λ_k) = f x*` and Cauchy–Schwarz give
-`f x_k + ½ α_k ‖h x_k‖² - Λ ‖h x_k‖ ≤ f x*`, and the argument of `penalty_clusterPt` applies. -/
+/-- **Convergence of the method of multipliers.** Let $E$ be a normed group, let $F$ be a real inner
+product space, let $\Omega \subseteq E$ be closed, and let $f : E \to \mathbb{R}$ and
+$h : E \to F$ be continuous on $\Omega$. Let $\alpha_k \to \infty$. Let $x^* \in \Omega$ with
+$h(x^*) = 0$ minimize $f$ on $\{y \in \Omega : h(y) = 0\}$. Let $\lambda_k \in F$ satisfy
+$\|\lambda_k\| \le \Lambda$ for all $k$, and let $x_k \in \Omega$ minimize the augmented
+Lagrangian $\mathcal{G}_{\alpha_k}(\cdot, \lambda_k)$ on $\Omega$. Then every cluster point
+$\bar x$ of $(x_k)$ lies in $\Omega$, satisfies $h(\bar x) = 0$, and minimizes $f$ on
+$\{y \in \Omega : h(y) = 0\}$. This is Property 7.16 of [quarteroni2000numerical] for the method
+of multipliers (7.56), as the source asserts after (7.56).
+
+The inequality $\mathcal{G}_{\alpha_k}(x_k, \lambda_k) \le \mathcal{G}_{\alpha_k}(x^*,
+\lambda_k) = f(x^*)$ and the Cauchy–Schwarz inequality give $f(x_k) + \frac12 \alpha_k
+\|h(x_k)\|^2 - \Lambda \|h(x_k)\| \le f(x^*)$, and
+`Constrained.mem_and_eq_zero_and_le_of_clusterPt` applies. -/
 theorem augmented_clusterPt {f : E → ℝ} {h : E → F} {Ω : Set E} (hΩ : IsClosed Ω)
     (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ} (hdiv : Tendsto α atTop atTop)
     {xstar : E} (hstar : xstar ∈ Ω ∧ h xstar = 0) (hmin : IsMinOn f {y ∈ Ω | h y = 0} xstar)
@@ -1054,15 +1205,17 @@ section Debreu
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- **Debreu's lemma** (Bertsekas, *Constrained Optimization and Lagrange Multiplier Methods*,
-Lemma 1.25; Finsler 1937, Debreu 1952): on a finite-dimensional space, if a continuous bilinear
-form `H` is positive on the nonzero kernel vectors of a continuous linear map `A`, `H z z > 0`
-for `z ≠ 0` with `A z = 0`, then `H + α ‖A ·‖²` is positive definite for every large `α`: there
-is `α₀` with `H z z + α ‖A z‖² > 0` for all `α ≥ α₀` and `z ≠ 0`.
+/-- **Debreu's lemma.** Let $E$ be finite-dimensional, let $F$ be a real normed space, let $H$ be a
+continuous bilinear form on $E$, and let $A : E \to F$ be a continuous linear map. Suppose that
+$H(z, z) > 0$ for every $z \neq 0$ with $Az = 0$. Then there is $\alpha_0$ such that
+$$H(z, z) + \alpha \|Az\|^2 > 0$$
+for all $\alpha \ge \alpha_0$ and all $z \neq 0$. This is Lemma 1.25 of Bertsekas, *Constrained
+Optimization and Lagrange Multiplier Methods*; it goes back to Finsler (1937) and Debreu (1952).
 
-By compactness of the unit sphere: otherwise there are `α_k ≥ k` and unit vectors `u_k` with
-`H u_k u_k + α_k ‖A u_k‖² ≤ 0`, so `‖A u_k‖² ≤ ‖H‖ / k → 0` and `H u_k u_k ≤ 0`; a cluster point
-`w` of `u_k` is a unit vector with `A w = 0` and `H w w ≤ 0`. -/
+The proof uses the compactness of the unit sphere. Otherwise there are $\alpha_k \ge k$ and unit
+vectors $u_k$ with $H(u_k, u_k) + \alpha_k \|Au_k\|^2 \le 0$. Then
+$\|Au_k\|^2 \le \|H\| / k \to 0$ and $H(u_k, u_k) \le 0$, so a cluster point $w$ of $(u_k)$ is a
+unit vector with $Aw = 0$ and $H(w, w) \le 0$. -/
 theorem exists_forall_pos_add_mul_sq_norm_of_pos_on_ker [FiniteDimensional ℝ E]
     (H : E →L[ℝ] E →L[ℝ] ℝ) (A : E →L[ℝ] F) (hpos : ∀ z, z ≠ 0 → A z = 0 → 0 < H z z) :
     ∃ α₀ : ℝ, ∀ α, α₀ ≤ α → ∀ z, z ≠ 0 → 0 < H z z + α * ‖A z‖ ^ 2 := by
@@ -1137,9 +1290,13 @@ section AugmentedHessian
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- The second derivative of `y ↦ ‖h y‖²` at a zero of `h`: for `h` of class `C²` at `x` with
-`h x = 0`, `(‖h ·‖²)''(x) v v = 2 ‖h'(x) v‖²`. The first derivative is
-`y ↦ 2 ⟪h y, h'(y) ·⟫`, whose derivative at `x` is `2 ⟪h'(x) ·, h'(x) ·⟫ + 2 ⟪h x, h''(x) · ·⟫`,
+/-- Let $F$ be a real inner product space, and let $h : E \to F$ be $C^2$ at $x$ with $h(x) = 0$.
+Then the second derivative of $y \mapsto \|h(y)\|^2$ at $x$ satisfies
+$$(\|h\|^2)''(x)(v, v) = 2 \|h'(x) v\|^2$$
+for every $v \in E$.
+
+The first derivative is $y \mapsto 2 \langle h(y), h'(y) \cdot \rangle$. Its derivative at $x$
+is $2 \langle h'(x) \cdot, h'(x) \cdot \rangle + 2 \langle h(x), h''(x)(\cdot, \cdot) \rangle$,
 and the second term vanishes. -/
 theorem fderiv_fderiv_norm_sq_apply {h : E → F} {x : E} (hx : h x = 0)
     (hh : ContDiffAt ℝ 2 h x) (v : E) :
@@ -1168,14 +1325,17 @@ theorem fderiv_fderiv_norm_sq_apply {h : E → F} {x : E} (hx : h x = 0)
   rw [hin.fderiv]
   simp [fderivInnerCLM_apply, hx]
 
-/-- **The Hessian of the augmented Lagrangian at a feasible point**: for `f`, `h` of class `C²`
-at `x` with `h x = 0`, the second derivative of `𝒢_α(·, λ) = f + ⟪λ, h ·⟫ + ½ α ‖h ·‖²` is that
-of the Lagrangian `𝒢_0(·, λ)` plus `α ‖h'(x) ·‖²`:
+/-- **The Hessian of the augmented Lagrangian at a feasible point.** Let $F$ be a real inner product
+space, and let $f : E \to \mathbb{R}$ and $h : E \to F$ be $C^2$ at $x$ with $h(x) = 0$. Then
+for every $\alpha \in \mathbb{R}$, $\lambda \in F$ and $v \in E$,
+$$\mathcal{G}_\alpha''(x)(v, v) = \mathcal{G}_0''(x)(v, v) + \alpha \|h'(x) v\|^2,$$
+where $\mathcal{G}_\alpha''$ is the second derivative of $\mathcal{G}_\alpha(\cdot, \lambda) =
+f + \langle \lambda, h \rangle + \frac12 \alpha \|h\|^2$ and $\mathcal{G}_0(\cdot, \lambda)$ is
+the Lagrangian. In matrix form this is the identity $H_{\mathcal{G}_\alpha}(x, \lambda) =
+H_{\mathcal{L}}(x, \lambda) + \alpha J_h(x)^T J_h(x)$ of §2.2 of Bertsekas, *Constrained
+Optimization and Lagrange Multiplier Methods*.
 
-`𝒢_α''(x) v v = 𝒢_0''(x) v v + α ‖h'(x) v‖²`,
-
-the matrix identity `H_{𝒢_α}(x, λ) = H_ℒ(x, λ) + α J_h(x)ᵀ J_h(x)` of Bertsekas, *Constrained
-Optimization and Lagrange Multiplier Methods*, §2.2. -/
+The second derivative is `fderiv ℝ (fderiv ℝ ·) x` applied to $(v, v)$. -/
 theorem fderiv_fderiv_augmented_apply {f : E → ℝ} {h : E → F} {x : E} (hx : h x = 0)
     (hf : ContDiffAt ℝ 2 f x) (hh : ContDiffAt ℝ 2 h x) (α : ℝ) (l : F) (v : E) :
     fderiv ℝ (fderiv ℝ (augmented f h α l)) x v v
@@ -1216,12 +1376,19 @@ theorem fderiv_fderiv_augmented_apply {f : E → ℝ} {h : E → F} {x : E} (hx 
   rw [fderiv_fderiv_norm_sq_apply hx hh v]
   ring
 
-/-- **Condition 3 of Bertsekas' Proposition 2.4 follows from condition 2** (Bertsekas,
-*Constrained Optimization and Lagrange Multiplier Methods*, Lemma 1.25 applied to the augmented
-Lagrangian; [quarteroni2000numerical] Property 7.17): at a feasible point `x`, `h x = 0`, with
-`f`, `h` of class `C²`, if the Hessian of the Lagrangian `𝒢_0(·, λ)` is positive on the nonzero
-directions `z` tangent to the constraints, `h'(x) z = 0`, then the Hessian of the augmented
-Lagrangian `𝒢_α(·, λ)` at `x` is positive definite for every large `α`. -/
+/-- **Positive definiteness of the Hessian of the augmented Lagrangian.** Let $E$ be
+finite-dimensional and $F$ a real inner product space. Let $f : E \to \mathbb{R}$ and
+$h : E \to F$ be $C^2$ at $x$ with $h(x) = 0$, and let $\lambda \in F$. Suppose that the Hessian
+of the Lagrangian $\mathcal{G}_0(\cdot, \lambda)$ at $x$ is positive on the nonzero directions
+tangent to the constraints: $\mathcal{G}_0''(x)(z, z) > 0$ for every $z \neq 0$ with
+$h'(x) z = 0$. Then there is $\alpha_0$ such that $\mathcal{G}_\alpha''(x)(z, z) > 0$ for all
+$\alpha \ge \alpha_0$ and all $z \neq 0$, where $\mathcal{G}_\alpha''$ is the second derivative
+of $\mathcal{G}_\alpha(\cdot, \lambda)$. This shows that condition 3 of Proposition 2.4 of
+Bertsekas, *Constrained Optimization and Lagrange Multiplier Methods*, follows from its
+condition 2; compare Property 7.17 of [quarteroni2000numerical].
+
+The proof applies Debreu's lemma `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker`
+to the identity `Constrained.fderiv_fderiv_augmented_apply`. -/
 theorem exists_forall_pos_fderiv_fderiv_augmented [FiniteDimensional ℝ E] {f : E → ℝ} {h : E → F}
     {x : E} (hx : h x = 0) (hf : ContDiffAt ℝ 2 f x) (hh : ContDiffAt ℝ 2 h x) (l : F)
     (hpos : ∀ z, z ≠ 0 → fderiv ℝ h x z = 0 →

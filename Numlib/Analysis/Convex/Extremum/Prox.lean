@@ -6,49 +6,64 @@ import Numlib.Analysis.Convex.Extremum.Moreau
 import Numlib.Analysis.Convex.Subdifferential.Monotone
 
 /-!
-# Proximal mappings, and maximal monotonicity of the subdifferential
+# Proximal mappings and maximal monotonicity of the subdifferential
 
-For `f` closed proper convex and `w x = ½ B x x`, the infimum defining the Moreau envelope
-`(f □ w) z` is attained at exactly one point, the **proximal point** `prox (z | f)`, and the
-minimiser is characterised by `z - x ∈ ∂f x`. That is the attainment and uniqueness half of
-**Moreau's decomposition**; `Extremum/Moreau.lean` has the identity `(f □ w) + (f* □ w) = w`,
-and `Extremum/MoreauGradient.lean` the gradient formulas.
+Let $E$ be a real normed space with a symmetric positive definite pairing
+$\langle x, y \rangle = B(x, y)$ whose quadratic form is continuous, and let
+$w(x) = \tfrac12 \langle x, x \rangle$. For a closed proper convex function
+$f \colon E \to [-\infty, +\infty]$ and a point $z \in E$, the infimum that defines the Moreau
+envelope $(f \mathbin{\square} w)(z) = \inf_x \bigl(f(x) + w(z - x)\bigr)$ is attained at exactly
+one point, the **proximal point** $\operatorname{prox}(z \mid f)$, when $E$ is finite-dimensional. A
+point $x$ is this minimizer if and only if $z - x \in \partial f(x)$. This is the attainment and
+uniqueness half of **Moreau's decomposition** ([rockafellar1970convex], Theorem 31.5). The identity
+$(f \mathbin{\square} w) + (f^* \mathbin{\square} w) = w$ is in
+`Numlib.Analysis.Convex.Extremum.Moreau`, and the gradient formulas are in
+`Numlib.Analysis.Convex.Extremum.MoreauGradient`.
 
-Two corollaries follow from the same monotonicity argument. Proximation is nonexpansive, so
-`(x, x*) ↦ x + x*` is a homeomorphism of the graph of `∂f` onto the space, and `∂f` is a *maximal
-monotone* mapping — maximal among monotone relations, which is a different statement from the
-maximal cyclic monotonicity of a subdifferential.
+Two corollaries follow from the same monotonicity argument. The proximal mapping is nonexpansive, so
+$(x, x^*) \mapsto x + x^*$ is a homeomorphism of the graph of $\partial f$ onto $E$. Also,
+$\partial f$ is a **maximal monotone** mapping: it is maximal among monotone relations. This is a
+different statement from the maximal cyclic monotonicity of a subdifferential.
+
+The pairing $B$ is called **compatible** below if it is continuous and every continuous linear
+functional on $E$ has the form $\langle \cdot, y \rangle$ for some $y \in E$
+(`ConvexAnalysis.IsCompatiblePairing B`). Most results of the section on attainment assume this.
 
 ## Main definitions
 
-* `moreauObj B f z` — the objective `x ↦ f x + w (z - x)`, whose infimum is `(f □ w) z`.
-* `prox B f z` — the **proximal point**: the unique minimiser of `moreauObj B f z`, or `0` when
-  there is none.
+* `ConvexAnalysis.moreauObj`: the objective $x \mapsto f(x) + w(z - x)$, whose infimum is
+  $(f \mathbin{\square} w)(z)$.
+* `ConvexAnalysis.prox`: the **proximal point** $\operatorname{prox}(z \mid f)$, a minimizer of this
+  objective.
 
 ## Main results
 
-* `subdifferential_quadFn_sub` — `∂(w (z - ·)) x = {x - z}`; `recessionFn_quadFn_sub` — `w (z - ·)`
-  recedes in no direction but `0`.
-* `argmin_moreauObj_nonempty`, `mem_argmin_moreauObj_iff`, `existsUnique_sub_mem_subdifferential`,
-  `prox_eq_iff` — the minimum exists, is unique, and solves `z - x ∈ ∂f x`
-  ([rockafellar1970convex] Theorem 31.5); `prox_add_prox_convexConj` —
-  `z = prox (z | f) + prox (z | f*)`.
-* `pairingNorm_prox_sub_le`, `dist_prox_prox_le`, `lipschitzWith_prox` — proximation is
-  nonexpansive.
-* `subgradientRelHomeomorph` — the graph of `∂f` is homeomorphic to `E`;
-  `isMaximalMonotoneRel_subgradientRel` — `∂f` is maximal monotone.
+* `ConvexAnalysis.subdifferential_quadFn_sub`: $\partial \bigl(w(z - \cdot)\bigr)(x) = \{x - z\}$.
+* `ConvexAnalysis.recessionFn_quadFn_sub`: the function $w(z - \cdot)$ has recession function
+  $+\infty$ in every direction $y \neq 0$.
+* `ConvexAnalysis.argmin_moreauObj_nonempty`: the infimum of $f + w(z - \cdot)$ is attained.
+* `ConvexAnalysis.mem_argmin_moreauObj_iff`: $x$ minimizes $f + w(z - \cdot)$ if and only if
+  $z - x \in \partial f(x)$.
+* `ConvexAnalysis.existsUnique_sub_mem_subdifferential`: exactly one $x$ satisfies
+  $z - x \in \partial f(x)$.
+* `ConvexAnalysis.prox_eq_iff`: $\operatorname{prox}(z \mid f) = x$ if and only if
+  $z - x \in \partial f(x)$.
+* `ConvexAnalysis.prox_add_prox_convexConj`: $z = \operatorname{prox}(z \mid f) +
+  \operatorname{prox}(z \mid f^*)$.
+* `ConvexAnalysis.pairingNorm_prox_sub_le`, `ConvexAnalysis.dist_prox_prox_le`,
+  `ConvexAnalysis.lipschitzWith_prox`: the proximal mapping is nonexpansive.
+* `ConvexAnalysis.subgradientRelHomeomorph`: the graph of $\partial f$ is homeomorphic to $E$.
+* `ConvexAnalysis.isMaximalMonotoneRel_subgradientRel`: $\partial f$ is maximal monotone.
 
 ## Implementation notes
 
-Everything runs through the pairing `B`, never through the ambient norm, so `prox` is available on
-product spaces carrying no `InnerProductSpace` instance; the norm enters only in `continuous_prox`.
-`prox` is a `Classical` choice from the minimum set, with value `0` where that set is empty; the
-standing hypothesis `ClosedProperConvexFn f` makes the set a singleton. Finite-dimensionality is
-used only for attainment of the minimum.
-
-## References
-
-* [rockafellar1970convex] §31.
+* All results use the pairing $B$ and not the norm of $E$. Therefore `ConvexAnalysis.prox` is
+  available on product spaces that carry no `InnerProductSpace` instance. The norm of $E$ enters
+  only in `ConvexAnalysis.continuous_prox`.
+* `ConvexAnalysis.prox` is a choice by `Classical.epsilon` from the set of minimizers. Where this
+  set is empty, its value is an unspecified point of $E$. The standing hypothesis
+  `ConvexAnalysis.ClosedProperConvexFn f` makes the set a singleton.
+* Finite dimension is used only for the attainment of the minimum.
 -/
 
 namespace ConvexAnalysis
@@ -60,20 +75,25 @@ section Objective
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ} [IsContinuousInnerPairing B] {f : E → EReal}
 
-/-- The objective `x ↦ f x + w (z - x)`, whose infimum over `x` is the envelope `(f □ w) z`. -/
+/-- The **Moreau objective** of $f$ at $z$: the function $x \mapsto f(x) + w(z - x)$, with
+$w(x) = \tfrac12 B(x, x)$. Its infimum over $x$ is the envelope $(f \mathbin{\square} w)(z)$.
+
+The quadratic $w$ is `ConvexAnalysis.quadFn B`. -/
 noncomputable def moreauObj (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) (f : E → EReal) (z : E) : E → EReal :=
   f + fun x => quadFn B (z - x)
 
 omit [IsContinuousInnerPairing B] in
+/-- The Moreau objective is $f + w(z - \cdot)$. -/
 theorem moreauObj_def (f : E → EReal) (z : E) :
     moreauObj B f z = f + fun x => quadFn B (z - x) := rfl
 
 omit [IsContinuousInnerPairing B] in
+/-- The Moreau objective at $x$ is $f(x) + w(z - x)$. -/
 @[simp] theorem moreauObj_apply (f : E → EReal) (z x : E) :
     moreauObj B f z x = f x + quadFn B (z - x) := rfl
 
-/-- `x - z` is a subgradient of `u ↦ w (z - u)` at `x`; the defect in the inequality is
-`½ B (u - x) (u - x)`. -/
+/-- For all $z, x \in E$, the vector $x - z$ is a subgradient of $u \mapsto w(z - u)$ at $x$. The
+defect in the subgradient inequality is $\tfrac12 B(u - x, u - x)$. -/
 theorem sub_mem_subdifferential_quadFn_sub (z x : E) :
     x - z ∈ subdifferential B (fun u => quadFn B (z - u)) x := by
   intro u
@@ -84,8 +104,11 @@ theorem sub_mem_subdifferential_quadFn_sub (z x : E) :
   rw [show z - u = (z - x) - (u - x) by abel]
   nlinarith [self_pairing_nonneg B (u - x)]
 
-/-- **The subdifferential of the translated quadratic is a singleton**: `∂(w (z - ·)) x = {x - z}`.
-Testing at the point `y + z` forces `½ B ((z - x) + y) ((z - x) + y) ≤ 0`. -/
+/-- **The subdifferential of the translated quadratic is a singleton.** For all $z, x \in E$,
+$$\partial \bigl(w(z - \cdot)\bigr)(x) = \{x - z\}.$$
+
+If $y$ is a subgradient, the subgradient inequality at the point $y + z$ forces $\tfrac12
+B\bigl((z - x) + y, (z - x) + y\bigr) \le 0$, so $y = x - z$. -/
 theorem subdifferential_quadFn_sub (z x : E) :
     subdifferential B (fun u => quadFn B (z - u)) x = {x - z} := by
   refine Set.Subset.antisymm (fun y hy => ?_) ?_
@@ -105,20 +128,25 @@ theorem subdifferential_quadFn_sub (z x : E) :
   · rw [Set.singleton_subset_iff]
     exact sub_mem_subdifferential_quadFn_sub z x
 
-/-- **The subdifferential of the quadratic is the identity**: `∂w x = {x}`. -/
+/-- **The subdifferential of the quadratic is the identity:** $\partial w(x) = \{x\}$ for every
+$x \in E$. -/
 theorem subdifferential_quadFn (x : E) : subdifferential B (quadFn B) x = {x} := by
   rw [← quadFn_zero_sub, subdifferential_quadFn_sub, sub_zero]
 
-/-- `u ↦ w (z - u)` is closed proper convex: it is finite, convex and continuous. -/
+/-- For every $z \in E$, the function $u \mapsto w(z - u)$ is closed proper convex: it is finite,
+convex and continuous. -/
 theorem closedProperConvexFn_quadFn_sub (z : E) :
     ClosedProperConvexFn (fun x => quadFn B (z - x)) := by
   refine ⟨convexFn_quadFn_sub z, ?_, properConvex_quadFn_sub z⟩
   rw [closedConvex_iff_lowerSemicontinuous fun _ => quadFn_ne_bot _]
   exact (continuous_quadFn_sub z).lowerSemicontinuous
 
-/-- **The translated quadratic recedes in no direction**: `(w (z - ·))0⁺ y = +∞` for `y ≠ 0`.
-Testing `q (x + a • y) ≤ q x + a ν` at `x = z` gives `½ a² B y y ≤ a ν` for every `a ≥ 0`, which
-fails for large `a` since `B y y > 0`. -/
+/-- **The translated quadratic recedes in no direction.** For every $z \in E$ and every $y \neq 0$,
+the recession function of $x \mapsto w(z - x)$ satisfies
+$$\bigl(w(z - \cdot)\bigr)0^+(y) = +\infty.$$
+
+A finite value $\nu$ would give $\tfrac12 a^2 B(y, y) \le a \nu$ for every $a \ge 0$, which
+fails for large $a$ because $B(y, y) > 0$. -/
 theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
     recessionFn (fun x => quadFn B (z - x)) y = ⊤ := by
   by_contra hne
@@ -142,8 +170,11 @@ theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
   nlinarith [hkey, mul_le_mul_of_nonneg_left ha3 ha0,
     mul_le_mul_of_nonneg_left (le_abs_self ν) ha0]
 
-/-- **Uniqueness of the proximal point**: at most one `x` satisfies `z - x ∈ ∂f x`. Monotonicity
-of `∂f` gives `0 ≤ B (x₁ - x₂) (-(x₁ - x₂))`, and definiteness finishes. -/
+/-- **Uniqueness of the proximal point.** Let $f$ be proper convex and let $z \in E$. If
+$z - x_1 \in \partial f(x_1)$ and $z - x_2 \in \partial f(x_2)$, then $x_1 = x_2$.
+
+The monotonicity of $\partial f$ gives $0 \le B\bigl(x_1 - x_2, -(x_1 - x_2)\bigr)$, and the
+definiteness of $B$ gives $x_1 = x_2$. -/
 theorem eq_of_sub_mem_subdifferential (hp : ProperConvex f) {z x₁ x₂ : E}
     (h₁ : z - x₁ ∈ subdifferential B f x₁) (h₂ : z - x₂ ∈ subdifferential B f x₂) :
     x₁ = x₂ := by
@@ -153,14 +184,19 @@ theorem eq_of_sub_mem_subdifferential (hp : ProperConvex f) {z x₁ x₂ : E}
   exact self_pairing_eq_zero_iff.1
     (le_antisymm (by linarith) (self_pairing_nonneg B (x₁ - x₂)))
 
-/-- The **proximal mapping** `prox (z | f)`: the point at which `x ↦ f x + w (z - x)` attains its
-minimum, and `0` where no minimum exists — which for closed proper convex `f` never happens. -/
+/-- The **proximal mapping**: $\operatorname{prox}(z \mid f)$ is a point at which
+$x \mapsto f(x) + w(z - x)$ attains its minimum. If there is no such point, the value is an
+unspecified point of $E$. For a closed proper convex $f$ on a finite-dimensional space, the
+minimizer exists and is unique.
+
+The point is chosen by `Classical.epsilon` from `ConvexAnalysis.argmin (ConvexAnalysis.moreauObj
+B f z)`. -/
 noncomputable def prox (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) (f : E → EReal) (z : E) : E :=
   Classical.epsilon fun x => x ∈ argmin (moreauObj B f z)
 
 end Objective
 
-/-! ### Attainment, uniqueness, and `prox` -/
+/-! ### Attainment, uniqueness, and the proximal mapping -/
 
 section Attainment
 
@@ -169,7 +205,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f : E → EReal}
 
 omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
-/-- The Moreau objective of a closed proper convex function is closed proper convex. -/
+/-- If $f$ is closed proper convex, then for every $z$ the Moreau objective $f + w(z - \cdot)$ is
+closed proper convex. -/
 theorem closedProperConvexFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     ClosedProperConvexFn (moreauObj B f z) := by
   obtain ⟨x₀, hx₀⟩ := hf.proper.convexDom_nonempty
@@ -177,8 +214,11 @@ theorem closedProperConvexFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
   exact mem_convexDom.2 (EReal.add_lt_top (mem_convexDom.1 hx₀).ne (quadFn_ne_top _))
 
 omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
-/-- **The Moreau objective has no direction of recession.** Its recession function splits as
-`f0⁺ + (w (z - ·))0⁺`, where the second term is `+∞` off the origin. -/
+/-- **The Moreau objective has no direction of recession.** If $f$ is closed proper convex, then for
+every $z$ the recession cone of $f + w(z - \cdot)$ is $\{0\}$.
+
+The recession function of the sum is $f0^+ + \bigl(w(z - \cdot)\bigr)0^+$, and the second term
+is $+\infty$ off the origin. -/
 theorem recessionConeFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     recessionConeFn (moreauObj B f z) = {0} := by
   have hg := closedProperConvexFn_moreauObj (B := B) hf z
@@ -195,8 +235,11 @@ theorem recessionConeFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     exact recessionFn_apply_zero_le _
 
 omit [IsCompatiblePairing B] in
-/-- **Attainment**: the infimum defining `(f □ w) z` is attained, because `f + w (z - ·)` is
-closed proper convex with recession cone `{0}`. -/
+/-- **Attainment.** Let $E$ be finite-dimensional and let $f$ be closed proper convex. Then for
+every $z \in E$ the infimum that defines $(f \mathbin{\square} w)(z)$ is attained: the set of
+minimizers of $x \mapsto f(x) + w(z - x)$ is nonempty.
+
+The objective is closed proper convex with recession cone $\{0\}$, so it attains its minimum. -/
 theorem argmin_moreauObj_nonempty (hf : ClosedProperConvexFn f) (z : E) :
     (argmin (moreauObj B f z)).Nonempty :=
   argmin_nonempty_of_recessionConeFn_eq_zero (closedProperConvexFn_moreauObj hf z).convex
@@ -204,8 +247,13 @@ theorem argmin_moreauObj_nonempty (hf : ClosedProperConvexFn f) (z : E) :
     (recessionConeFn_moreauObj hf z)
 
 omit [FiniteDimensional ℝ E] in
-/-- **The characterisation of the minimiser**: `x` minimises `f + w (z - ·)` exactly when
-`z - x ∈ ∂f x`. Fermat's rule, the sum rule and `subdifferential_quadFn_sub`. -/
+/-- **Characterization of the minimizer.** Let the pairing $B$ be compatible, and let $f$ be closed
+proper convex. Then for all $z, x \in E$, the point $x$ minimizes $f + w(z - \cdot)$ if and only
+if
+$$z - x \in \partial f(x).$$
+
+The proof combines Fermat's rule, the sum rule for subdifferentials and
+`ConvexAnalysis.subdifferential_quadFn_sub`. Finite dimension is not needed. -/
 theorem mem_argmin_moreauObj_iff (hf : ClosedProperConvexFn f) (z x : E) :
     x ∈ argmin (moreauObj B f z) ↔ z - x ∈ subdifferential B f x := by
   rw [mem_argmin_iff_zero_mem_subdifferential B, moreauObj_def,
@@ -221,7 +269,10 @@ theorem mem_argmin_moreauObj_iff (hf : ClosedProperConvexFn f) (z x : E) :
   · intro h
     exact ⟨z - x, h, x - z, rfl, by abel_nf⟩
 
-/-- There is exactly one `x` with `z = x + x*` and `x* ∈ ∂f x`. -/
+/-- Let $E$ be finite-dimensional, let the pairing $B$ be compatible, and let $f$ be closed proper
+convex. Then for every $z \in E$ there is exactly one $x \in E$ with
+$$z - x \in \partial f(x),$$
+that is, exactly one splitting $z = x + x^*$ with $x^* \in \partial f(x)$. -/
 theorem existsUnique_sub_mem_subdifferential (hf : ClosedProperConvexFn f) (z : E) :
     ∃! x : E, z - x ∈ subdifferential B f x := by
   obtain ⟨x, hx⟩ := argmin_moreauObj_nonempty (B := B) hf z
@@ -229,27 +280,37 @@ theorem existsUnique_sub_mem_subdifferential (hf : ClosedProperConvexFn f) (z : 
   exact ⟨x, hx', fun x' hx'' => eq_of_sub_mem_subdifferential hf.proper hx'' hx'⟩
 
 omit [IsCompatiblePairing B] in
-/-- `prox B f z` minimises the Moreau objective. -/
+/-- If $E$ is finite-dimensional and $f$ is closed proper convex, then
+$\operatorname{prox}(z \mid f)$ minimizes the Moreau objective $f + w(z - \cdot)$. -/
 theorem prox_mem_argmin (hf : ClosedProperConvexFn f) (z : E) :
     prox B f z ∈ argmin (moreauObj B f z) :=
   Classical.epsilon_spec (argmin_moreauObj_nonempty hf z)
 
-/-- The splitting `z = x + x*` with `x* ∈ ∂f x` exists, at `x = prox (z | f)`. -/
+/-- If $E$ is finite-dimensional, the pairing $B$ is compatible and $f$ is closed proper convex,
+then $z - \operatorname{prox}(z \mid f) \in \partial f(\operatorname{prox}(z \mid f))$: the
+splitting $z = x + x^*$ with $x^* \in \partial f(x)$ exists at
+$x = \operatorname{prox}(z \mid f)$. -/
 theorem sub_prox_mem_subdifferential (hf : ClosedProperConvexFn f) (z : E) :
     z - prox B f z ∈ subdifferential B f (prox B f z) :=
   (mem_argmin_moreauObj_iff hf z _).1 (prox_mem_argmin hf z)
 
-/-- That splitting determines `prox`. -/
+/-- If $E$ is finite-dimensional, the pairing $B$ is compatible, $f$ is closed proper convex and
+$z - x \in \partial f(x)$, then $\operatorname{prox}(z \mid f) = x$. -/
 theorem prox_eq_of_sub_mem_subdifferential (hf : ClosedProperConvexFn f) {z x : E}
     (h : z - x ∈ subdifferential B f x) : prox B f z = x :=
   eq_of_sub_mem_subdifferential hf.proper (sub_prox_mem_subdifferential hf z) h
 
-/-- Attainment and uniqueness in one statement: `prox (z | f) = x` exactly when `z - x ∈ ∂f x`. -/
+/-- Let $E$ be finite-dimensional, let the pairing $B$ be compatible, and let $f$ be closed proper
+convex. Then for all $z, x \in E$,
+$$\operatorname{prox}(z \mid f) = x \iff z - x \in \partial f(x).$$
+This combines attainment and uniqueness in one statement. -/
 theorem prox_eq_iff (hf : ClosedProperConvexFn f) (z x : E) :
     prox B f z = x ↔ z - x ∈ subdifferential B f x :=
   ⟨fun h => h ▸ sub_prox_mem_subdifferential hf z, prox_eq_of_sub_mem_subdifferential hf⟩
 
-/-- The minimum set of the Moreau objective is `{prox (z | f)}`. -/
+/-- If $E$ is finite-dimensional, the pairing $B$ is compatible and $f$ is closed proper convex,
+then the set of minimizers of the Moreau objective $f + w(z - \cdot)$ is
+$\{\operatorname{prox}(z \mid f)\}$. -/
 theorem argmin_moreauObj_eq_singleton (hf : ClosedProperConvexFn f) (z : E) :
     argmin (moreauObj B f z) = {prox B f z} := by
   refine Set.Subset.antisymm (fun x hx => ?_) ?_
@@ -259,20 +320,30 @@ theorem argmin_moreauObj_eq_singleton (hf : ClosedProperConvexFn f) (z : E) :
     exact prox_mem_argmin hf z
 
 omit [IsCompatiblePairing B] in
-/-- The envelope is the value of the objective at the proximal point. -/
+/-- If $E$ is finite-dimensional and $f$ is closed proper convex, then the Moreau envelope is the
+value of the objective at the proximal point:
+$$(f \mathbin{\square} w)(z) = f(\operatorname{prox}(z \mid f)) + w(z - \operatorname{prox}(z
+  \mid f)).$$
+-/
 theorem infConv_quadFn_eq_moreauObj_prox (hf : ClosedProperConvexFn f) (z : E) :
     infConv f (quadFn B) z = f (prox B f z) + quadFn B (z - prox B f z) := by
   rw [infConv_quadFn_apply hf.proper.ne_bot z]
   exact iInf_eq_of_mem_argmin (f := moreauObj B f z) (prox_mem_argmin hf z)
 
 omit [FiniteDimensional ℝ E] in
-/-- The conjugate of a closed proper convex function is closed proper convex. -/
+/-- If the pairing $B$ is compatible and $f$ is closed proper convex, then the conjugate $f^*$ with
+respect to $B$ is closed proper convex. -/
 theorem closedProperConvexFn_convexConj (hf : ClosedProperConvexFn f) :
     ClosedProperConvexFn (convexConj B f) := by
   exact ⟨convexFn_convexConj _ _, closedConvex_convexConj, properConvex_convexConj hf⟩
 
-/-- **Moreau's decomposition of a point**: `z` splits as `prox (z | f) + prox (z | f*)`. Conjugate
-inversion turns `∂f` into `∂f*`, so the second half of `z = x + x*` is `prox (z | f*)`. -/
+/-- **Moreau's decomposition of a point.** Let $E$ be finite-dimensional, let the pairing $B$ be
+compatible, and let $f$ be closed proper convex, with conjugate $f^*$ taken with respect to $B$.
+Then for every $z \in E$,
+$$\operatorname{prox}(z \mid f) + \operatorname{prox}(z \mid f^*) = z.$$
+
+Conjugate inversion turns $x^* \in \partial f(x)$ into $x \in \partial f^*(x^*)$, so the second
+part $x^*$ of the splitting $z = x + x^*$ is $\operatorname{prox}(z \mid f^*)$. -/
 theorem prox_add_prox_convexConj (hf : ClosedProperConvexFn f) (z : E) :
     prox B f z + prox B (convexConj B f) z = z := by
   have hx : z - prox B f z ∈ subdifferential B f (prox B f z) := sub_prox_mem_subdifferential hf z
@@ -284,10 +355,16 @@ theorem prox_add_prox_convexConj (hf : ClosedProperConvexFn f) (z : E) :
   rw [prox_eq_of_sub_mem_subdifferential (closedProperConvexFn_convexConj hf) hstar]
   abel
 
-/-! ### The graph of `∂f` is homeomorphic to the space -/
+/-! ### The graph of the subdifferential is homeomorphic to the space -/
 
-/-- **Proximation is nonexpansive** in the norm the pairing induces. Monotonicity of `∂f` gives
-`B (x₁ - x₂) (x₁ - x₂) ≤ B (x₁ - x₂) (z₁ - z₂)`, and Cauchy–Schwarz finishes. -/
+/-- **The proximal mapping is nonexpansive** in the norm $\|x\|_B = \sqrt{B(x, x)}$ that the pairing
+induces. Let $E$ be finite-dimensional, let the pairing $B$ be compatible, and let $f$ be closed
+proper convex. Then for all $z_1, z_2 \in E$,
+$$\|\operatorname{prox}(z_1 \mid f) - \operatorname{prox}(z_2 \mid f)\|_B \le \|z_1 - z_2\|_B.$$
+
+With $x_i = \operatorname{prox}(z_i \mid f)$, the monotonicity of $\partial f$ gives $B(x_1 -
+x_2, x_1 - x_2) \le B(x_1 - x_2, z_1 - z_2)$, and the Cauchy–Schwarz inequality finishes the
+proof. The norm $\|\cdot\|_B$ is `ConvexAnalysis.pairingNorm B`. -/
 theorem pairingNorm_prox_sub_le (hf : ClosedProperConvexFn f) (z₁ z₂ : E) :
     pairingNorm B (prox B f z₁ - prox B f z₂) ≤ pairingNorm B (z₁ - z₂) := by
   have hmono := isMonotoneRel_subgradientRel (B := B) hf.proper
@@ -303,8 +380,11 @@ theorem pairingNorm_prox_sub_le (hf : ClosedProperConvexFn f) (z₁ z₂ : E) :
   · refine le_of_mul_le_mul_left ?_ h0
     nlinarith
 
-/-- `prox` is Lipschitz, hence continuous. The constant is `1` only for the pairing norm; in the
-ambient norm it is the ratio of the two equivalence constants between the norms. -/
+/-- If $E$ is finite-dimensional, the pairing $B$ is compatible and $f$ is closed proper convex,
+then the proximal mapping $z \mapsto \operatorname{prox}(z \mid f)$ is continuous.
+
+The mapping is Lipschitz. The constant is $1$ for the norm that the pairing induces. In the norm
+of $E$, it is the ratio of the two constants of equivalence between the norms. -/
 theorem continuous_prox (hf : ClosedProperConvexFn f) : Continuous (prox B f) := by
   obtain ⟨c, C, hc, hC, hlow, hhigh⟩ := exists_pairingNorm_le_and_le_pairingNorm B
   have hK : (0 : ℝ) ≤ C / c := by positivity
@@ -315,9 +395,13 @@ theorem continuous_prox (hf : ClosedProperConvexFn f) : Continuous (prox B f) :=
   have h3 := hhigh (z₁ - z₂)
   linarith
 
-/-- `(x, x*) ↦ x + x*` is a homeomorphism of the graph of `∂f` onto `E`. It is bijective because
-every `z` splits uniquely, continuous because addition is, and its inverse
-`z ↦ (prox (z | f), z - prox (z | f))` is continuous because `prox` is nonexpansive. -/
+/-- Let $E$ be finite-dimensional, let the pairing $B$ be compatible, and let $f$ be closed proper
+convex. The map $(x, x^*) \mapsto x + x^*$ is a homeomorphism from the graph of $\partial f$
+onto $E$, with inverse $z \mapsto \bigl(\operatorname{prox}(z \mid f), z - \operatorname{prox}(z
+\mid f)\bigr)$.
+
+The map is bijective because every $z$ splits uniquely, it is continuous because addition is
+continuous, and its inverse is continuous because the proximal mapping is nonexpansive. -/
 noncomputable def subgradientRelHomeomorph (hf : ClosedProperConvexFn f) :
     ↥(subgradientRel B f) ≃ₜ E where
   toFun p := p.1.1 + p.1.2
@@ -338,19 +422,26 @@ noncomputable def subgradientRelHomeomorph (hf : ClosedProperConvexFn f) :
     Continuous.subtype_mk
       ((continuous_prox hf).prodMk (continuous_id.sub (continuous_prox hf))) _
 
+/-- The homeomorphism `ConvexAnalysis.subgradientRelHomeomorph` sends $(x, x^*)$ to $x + x^*$. -/
 @[simp] theorem subgradientRelHomeomorph_apply (hf : ClosedProperConvexFn f)
     (p : ↥(subgradientRel B f)) : subgradientRelHomeomorph hf p = p.1.1 + p.1.2 := rfl
 
+/-- The inverse of `ConvexAnalysis.subgradientRelHomeomorph` sends $z$ to
+$\bigl(\operatorname{prox}(z \mid f), z - \operatorname{prox}(z \mid f)\bigr)$. -/
 @[simp] theorem subgradientRelHomeomorph_symm_apply (hf : ClosedProperConvexFn f) (z : E) :
     (subgradientRelHomeomorph hf).symm z
       = ⟨(prox B f z, z - prox B f z), sub_prox_mem_subdifferential hf z⟩ := rfl
 
-/-! ### `∂f` is maximal monotone -/
+/-! ### The subdifferential is maximal monotone -/
 
-/-- The subdifferential of a closed proper convex function is *maximal monotone*. Given `(y, y*)`
-monotonically related to the whole graph, the unique splitting of `y + y*` produces `(x, x*)` in
-the graph with `x + x* = y + y*`; then `y - x = -(y* - x*)`, so the monotonicity inequality reads
-`0 ≤ -|y - x|²`. -/
+/-- Let $E$ be finite-dimensional, let the pairing $B$ be compatible, and let $f$ be closed proper
+convex. Then the subdifferential $\partial f$ is **maximal monotone**: it is monotone, and every
+monotone relation that contains its graph is equal to it.
+
+Suppose that $(y, y^*)$ is monotonically related to every point of the graph. The unique
+splitting of $y + y^*$ gives $(x, x^*)$ in the graph with $x + x^* = y + y^*$. Then
+$y - x = -(y^* - x^*)$, so the monotonicity inequality reads $0 \le -\|y - x\|_B^2$, and
+$(y, y^*) = (x, x^*)$. -/
 theorem isMaximalMonotoneRel_subgradientRel (hf : ClosedProperConvexFn f) :
     IsMaximalMonotoneRel B (subgradientRel B f) := by
   refine ⟨isMonotoneRel_subgradientRel hf.proper, fun σ hσ hsub q hq => ?_⟩
@@ -369,22 +460,31 @@ theorem isMaximalMonotoneRel_subgradientRel (hf : ClosedProperConvexFn f) :
 
 end Attainment
 
-/-! ### The inner-product case
+/-!
+### The inner product case
 
-For `innerₗ E` the pairing norm is the norm itself, so proximation is nonexpansive on the nose. -/
+For the pairing `innerₗ E`, the norm that the pairing induces is the norm of $E$, so the proximal
+mapping is nonexpansive in the norm of $E$.
+-/
 
 section Inner
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- The distance between two proximal points is at most the distance between the two points. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be closed proper convex.
+Then for all $z_1, z_2 \in E$,
+$$\operatorname{dist}\bigl(\operatorname{prox}(z_1 \mid f), \operatorname{prox}(z_2 \mid
+  f)\bigr) \le \operatorname{dist}(z_1, z_2).$$
+-/
 theorem dist_prox_prox_le (hf : ClosedProperConvexFn f) (z₁ z₂ : E) :
     dist (prox (innerₗ E) f z₁) (prox (innerₗ E) f z₂) ≤ dist z₁ z₂ := by
   have h := pairingNorm_prox_sub_le (B := innerₗ E) hf z₁ z₂
   rwa [pairingNorm_innerL, pairingNorm_innerL, ← dist_eq_norm, ← dist_eq_norm] at h
 
-/-- `prox` is nonexpansive in an inner-product space. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be closed proper convex.
+Then the proximal mapping $z \mapsto \operatorname{prox}(z \mid f)$ is Lipschitz with constant
+$1$. -/
 theorem lipschitzWith_prox (hf : ClosedProperConvexFn f) :
     LipschitzWith 1 (prox (innerₗ E) f) :=
   LipschitzWith.of_dist_le_mul fun z₁ z₂ => by

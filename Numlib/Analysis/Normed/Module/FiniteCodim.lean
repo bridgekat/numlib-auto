@@ -19,78 +19,103 @@ import Mathlib.Topology.Algebra.Module.FiniteDimension
 /-!
 # Finite-dimensional and finite-codimensional subspaces of a normed space
 
-The complement and dimension facts of [brezis2011functional] §11.1 that Mathlib does not have.
+This file proves the facts on complements and dimensions of §11.1 of [brezis2011functional] that
+Mathlib does not have. Let $E$ be a normed space. A subspace $M$ of $E$ is **complemented** if there
+is a continuous linear projection of $E$ onto $M$, or equivalently, if $M$ is closed and there is a
+closed subspace $N$ with $M \oplus N = E$. The file shows that a normed space and its dual have the
+same finite dimension, that for a closed subspace $M$ and a finite-dimensional subspace $X$ the sum
+$M + X$ is complemented if and only if $M$ is complemented, that a closed subspace of finite
+codimension has an algebraic complement inside any dense subspace, and that in a Banach space two
+closed subspaces $G$, $L$ with $G + L$ of finite codimension and $G \cap L$ finite-dimensional are
+complemented.
 
-Most of that section *is* in Mathlib, and nothing of it is re-proved here: a finite-dimensional
-subspace is closed (`Submodule.closed_of_finiteDimensional`, Proposition 11.1), every linear map
-out of a finite-dimensional space is continuous (`LinearMap.continuous_of_finiteDimensional`,
-Proposition 11.2), the sum of a closed and a finite-dimensional subspace is closed
-(`Submodule.isClosed_sup_finiteDimensional`, the first clause of Proposition 11.4), a subspace
-containing a closed subspace of finite codimension is closed
-(`Submodule.isClosed_mono_of_finiteDimensional_quotient`, Proposition 11.5), and "finite
-codimension" is `Submodule.CoFG` (`M.CoFG := Module.Finite 𝕜 (E ⧸ M)`, with
-`Submodule.FG.cofg_of_codisjoint` and `Submodule.CoFG.fg_of_isCompl` relating it to the book's
-"`M + X = E` for a finite-dimensional `X`"). Mathlib also has the one-directional complement
-facts: a finite-dimensional subspace is complemented
-(`Submodule.ClosedComplemented.of_finiteDimensional`, by Hahn–Banach), a closed subspace of
-finite codimension is complemented (`Submodule.ClosedComplemented.of_finiteDimensional_quotient`),
-and closed algebraic complements in a Banach space are topological complements
-(`Submodule.ClosedComplemented.of_isCompl_isClosed`).
+## Main results
 
-## Main statements
+* `NormedSpace.finrank_strongDual`: if $E$ is finite-dimensional, then $\dim E^* = \dim E$.
+* `NormedSpace.finiteDimensional_of_finiteDimensional_strongDual`: if the dual $E^*$ is
+  finite-dimensional, then $E$ is finite-dimensional (Proposition 11.3 of [brezis2011functional]).
+* `Submodule.ClosedComplemented.sup_finiteDimensional`: if $M$ is complemented and $X$ is
+  finite-dimensional, then $M + X$ is complemented.
+* `Submodule.ClosedComplemented.of_sup_finiteDimensional`: if $M$ is closed, $X$ is
+  finite-dimensional and $M + X$ is complemented, then $M$ is complemented.
+* `Submodule.closedComplemented_sup_finiteDimensional_iff`: for $M$ closed and $X$
+  finite-dimensional, $M + X$ is complemented if and only if $M$ is complemented (the second clause
+  of Proposition 11.4 of [brezis2011functional]).
+* `Submodule.exists_isCompl_le_of_dense`: a closed subspace of finite codimension has an algebraic
+  complement inside any dense subspace $D$ (Proposition 11.6 of [brezis2011functional]).
+* `Submodule.closedComplemented_of_disjoint_of_sup_sup_eq_top`: in a Banach space, closed subspaces
+  $G$, $L$ with $G \cap L = 0$ and $G + L + X_1 = E$ for a finite-dimensional $X_1$ are
+  complemented.
+* `Submodule.closedComplemented_of_sup_sup_eq_top_of_inf_le`: in a Banach space, closed subspaces
+  $G$, $L$ with $G + L + X_1 = E$ and $G \cap L \subseteq X_2$ for finite-dimensional $X_1$, $X_2$
+  are complemented (Proposition 11.7 of [brezis2011functional]). This is the bookkeeping behind the
+  statement "$I - T$ has index zero" of the Fredholm alternative in Chapter 6 of
+  [brezis2011functional].
 
-* `NormedSpace.finrank_strongDual` — `dim E* = dim E` for a finite-dimensional `E`, and
-  `NormedSpace.finiteDimensional_of_finiteDimensional_strongDual` — a normed space whose strong
-  dual is finite-dimensional is finite-dimensional (Proposition 11.3; the canonical embedding
-  into the bidual is injective, which is where Hahn–Banach enters).
-* `Submodule.ClosedComplemented.sup_finiteDimensional`,
-  `Submodule.ClosedComplemented.of_sup_finiteDimensional`,
-  `Submodule.closedComplemented_sup_finiteDimensional_iff` — for a closed `M` and a
-  finite-dimensional `X`, `M ⊔ X` is complemented iff `M` is (the second clause of
-  Proposition 11.4). Neither direction needs `E` complete: the complement of `M ⊔ X` is built
-  from a complement `N` of `M` by complementing the finite-dimensional projection of `X` inside
-  `N`, and conversely `M` has finite codimension inside `M ⊔ X`, so a continuous projection onto
-  `M ⊔ X` composed with the (automatically continuous) projection of `M ⊔ X` onto `M` is a
-  continuous projection onto `M`.
-* `Submodule.exists_isCompl_le_of_dense` — a closed subspace of finite codimension has an
-  algebraic complement inside any dense subspace `D` (Proposition 11.6): `M ⊔ D` is closed and
-  contains `D`, hence is everything, and a complement of `M ⊓ D` inside `D` does the job. No
-  induction on the codimension is needed.
-* `Submodule.closedComplemented_of_disjoint_of_sup_sup_eq_top`,
-  `Submodule.closedComplemented_of_sup_sup_eq_top_of_inf_le` — Proposition 11.7: in a Banach
-  space, closed subspaces `G, L` with `G + L + X₁ = E` and `G ∩ L ⊆ X₂` for finite-dimensional
-  `X₁, X₂` are complemented. This is the bookkeeping behind the Fredholm alternative's "`I - T`
-  has index zero" in the book's chapter 6.
+## Proof outline
 
-## Generality
+For the "if" direction of Proposition 11.4, the complement of $M + X$ is built from a complement $N$
+of $M$: the projection of $X$ into $N$ is finite-dimensional, so it has a complement inside $N$. For
+the "only if" direction, $M$ has finite codimension inside $M + X$, so the projection of $M + X$
+onto $M$ is automatically continuous, and its composition with a continuous projection onto $M + X$
+is a continuous projection onto $M$. Neither direction needs $E$ to be complete. For Proposition
+11.6, the subspace $M + D$ is closed because it contains the closed subspace $M$ of finite
+codimension, and it is dense because it contains $D$. Hence $M + D = E$, and a complement of
+$M \cap D$ inside $D$ is a complement of $M$. No induction on the codimension is needed.
 
-Scalars are `RCLike 𝕜` exactly where Hahn–Banach enters (Proposition 11.3, the complement of a
-finite-dimensional subspace in the `sup` direction of Proposition 11.4 and in Step 2 of
-Proposition 11.7) and a complete nontrivially normed field elsewhere. Completeness of `E` is
-assumed only in Proposition 11.7, where a closed algebraic complement must be shown topological
-by the open mapping theorem. `Submodule.ClosedComplemented` is "admits a complement" in the
-book's sense: a closed subspace `N` with `M ⊕ N = E`, equivalently a continuous projection
-onto `M` (`Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`).
+## Implementation notes
+
+* Most of §11.1 of [brezis2011functional] is in Mathlib, and it is not proved again here: a
+  finite-dimensional subspace is closed (`Submodule.closed_of_finiteDimensional`, Proposition 11.1),
+  every linear map from a finite-dimensional space is continuous
+  (`LinearMap.continuous_of_finiteDimensional`, Proposition 11.2), the sum of a closed subspace and
+  a finite-dimensional subspace is closed (`Submodule.isClosed_sup_finiteDimensional`, the first
+  clause of Proposition 11.4), and a subspace that contains a closed subspace of finite codimension
+  is closed (`Submodule.isClosed_mono_of_finiteDimensional_quotient`, Proposition 11.5).
+* Mathlib also has the one-directional complement facts: a finite-dimensional subspace is
+  complemented (`Submodule.ClosedComplemented.of_finiteDimensional`, by the Hahn–Banach theorem), a
+  closed subspace of finite codimension is complemented
+  (`Submodule.ClosedComplemented.of_finiteDimensional_quotient`), and in a Banach space a closed
+  algebraic complement is a topological complement
+  (`Submodule.ClosedComplemented.of_isCompl_isClosed`).
+* "Finite codimension" is `Submodule.CoFG`, that is, `M.CoFG` is `Module.Finite 𝕜 (E ⧸ M)`. The
+  lemmas `Submodule.FG.cofg_of_codisjoint` and `Submodule.CoFG.fg_of_isCompl` relate it to the
+  condition "$M + X = E$ for a finite-dimensional $X$" of [brezis2011functional].
+* "Complemented" is `Submodule.ClosedComplemented`, the existence of a continuous linear projection
+  onto $M$. It is equivalent to the definition of [brezis2011functional], a closed subspace $N$ with
+  $M \oplus N = E$, by `Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`.
+* The scalars are `RCLike 𝕜` exactly where the Hahn–Banach theorem is used: Proposition 11.3, the
+  "if" direction of Proposition 11.4, and Step 2 of Proposition 11.7. Elsewhere the scalar field is
+  any complete nontrivially normed field. Completeness of $E$ is assumed only in Proposition 11.7,
+  where the open mapping theorem shows that a closed algebraic complement is a topological
+  complement.
 -/
 
 open Module
 
 section Dual
 
-/-- **The strong dual of a finite-dimensional normed space has the same dimension**
-([brezis2011functional] §11.1, the paragraph before Proposition 11.3): every linear functional
-is continuous, so `StrongDual 𝕜 E` is linearly equivalent to the algebraic dual, whose dimension
-is that of `E`. -/
+/-- Let $\mathbb{K}$ be a complete nontrivially normed field and let $E$ be a finite-dimensional
+normed space over $\mathbb{K}$. Then the dual $E^*$ of continuous linear functionals has the
+same dimension as $E$: $$\dim E^* = \dim E.$$ This is stated in §11.1 of [brezis2011functional],
+in the paragraph before Proposition 11.3.
+
+The dual $E^*$ is `StrongDual 𝕜 E`. Every linear functional on $E$ is continuous, so $E^*$ is
+linearly equivalent to the algebraic dual, whose dimension is that of $E$. -/
 theorem NormedSpace.finrank_strongDual {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] [FiniteDimensional 𝕜 E] :
     finrank 𝕜 (StrongDual 𝕜 E) = finrank 𝕜 E := by
   rw [← Subspace.dual_finrank_eq (K := 𝕜) (V := E)]
   exact (LinearMap.toContinuousLinearMap (𝕜 := 𝕜) (E := E) (F' := 𝕜)).symm.finrank_eq
 
-/-- **A normed space whose strong dual is finite-dimensional is finite-dimensional**
-([brezis2011functional] Proposition 11.3; the book assumes `E` complete, which is not used).
-The bidual is then finite-dimensional, and the canonical embedding of `E` into it is injective,
-being an isometry. The dimensions agree by `NormedSpace.finrank_strongDual`. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the dual $E^*$ is
+finite-dimensional, then $E$ is finite-dimensional. This is Proposition 11.3 of
+[brezis2011functional].
+
+[brezis2011functional] assumes that $E$ is a Banach space. Completeness is not needed here. The
+bidual $E^{**}$ is finite-dimensional, and the canonical embedding of $E$ into $E^{**}$ is
+injective because it is an isometry; this is where the Hahn–Banach theorem enters. The
+dimensions agree by `NormedSpace.finrank_strongDual`. -/
 theorem NormedSpace.finiteDimensional_of_finiteDimensional_strongDual {𝕜 E : Type*} [RCLike 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] [FiniteDimensional 𝕜 (StrongDual 𝕜 E)] :
     FiniteDimensional 𝕜 E :=
@@ -105,14 +130,15 @@ section SupRCLike
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **A complemented subspace stays complemented after adding a finite-dimensional one**
-([brezis2011functional] Proposition 11.4, second clause, "if" half): for `M` complemented and
-`X` finite-dimensional, `M ⊔ X` is complemented. No completeness of `E` is needed.
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $M$ be a
+complemented subspace of $E$, and let $X$ be a finite-dimensional subspace of $E$. Then $M + X$
+is complemented. This is the "if" half of the second clause of Proposition 11.4 of
+[brezis2011functional].
 
-With `N` a topological complement of `M` and `P_M`, `P_N` the two projections, the
-finite-dimensional subspace `X' = P_N(X)` of `N` has a continuous projection `R` of `N` onto it
-(Hahn–Banach in `N`), and `P_M + R ∘ P_N` is a continuous projection of `E` onto
-`M ⊔ X' = M ⊔ X`. -/
+Completeness of $E$ is not needed. Let $N$ be a topological complement of $M$, with projections
+$P_M$ and $P_N$. The finite-dimensional subspace $X' = P_N(X)$ of $N$ has a continuous
+projection $R$ of $N$ onto it, by the Hahn–Banach theorem in $N$. Then $P_M + R \circ P_N$ is a
+continuous projection of $E$ onto $M + X' = M + X$. -/
 theorem ClosedComplemented.sup_finiteDimensional {M : Submodule 𝕜 E}
     (hM : M.ClosedComplemented) (X : Submodule 𝕜 E) [FiniteDimensional 𝕜 X] :
     (M ⊔ X).ClosedComplemented := by
@@ -154,12 +180,15 @@ section Sup
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup E]
   [NormedSpace 𝕜 E]
 
-/-- **If `M ⊔ X` is complemented then so is the closed subspace `M`**, for `X` finite-dimensional
-([brezis2011functional] Proposition 11.4, second clause, "only if" half). No completeness of
-`E` is needed: `M` has finite codimension inside `M ⊔ X`, so the projection of `M ⊔ X` onto `M`
-along any algebraic complement is continuous
-(`Submodule.ClosedComplemented.of_finiteDimensional_quotient`), and composing it with a
-continuous projection of `E` onto `M ⊔ X` gives a continuous projection onto `M`. -/
+/-- Let $\mathbb{K}$ be a complete nontrivially normed field, let $E$ be a normed space over
+$\mathbb{K}$, let $M$ be a closed subspace of $E$, and let $X$ be a finite-dimensional subspace
+of $E$. If $M + X$ is complemented, then $M$ is complemented. This is the "only if" half of the
+second clause of Proposition 11.4 of [brezis2011functional].
+
+Completeness of $E$ is not needed. The subspace $M$ has finite codimension in $M + X$, so the
+projection of $M + X$ onto $M$ along any algebraic complement is continuous
+(`Submodule.ClosedComplemented.of_finiteDimensional_quotient`). Its composition with a
+continuous projection of $E$ onto $M + X$ is a continuous projection onto $M$. -/
 theorem ClosedComplemented.of_sup_finiteDimensional {M : Submodule 𝕜 E}
     (hM : IsClosed (M : Set E)) (X : Submodule 𝕜 E) [FiniteDimensional 𝕜 X]
     (h : (M ⊔ X).ClosedComplemented) : M.ClosedComplemented := by
@@ -185,8 +214,13 @@ theorem ClosedComplemented.of_sup_finiteDimensional {M : Submodule 𝕜 E}
   change ((g (f (y : E)) : ↥(M ⊔ X)) : E) = y
   rw [hfy, hgy]
 
-/-- **[brezis2011functional] Proposition 11.4, second clause**: for `M` closed and `X`
-finite-dimensional, `M ⊔ X` is complemented iff `M` is. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $M$ be a closed
+subspace of $E$, and let $X$ be a finite-dimensional subspace of $E$. Then $M + X$ is
+complemented if and only if $M$ is complemented. This is the second clause of Proposition 11.4
+of [brezis2011functional].
+
+The two directions are `Submodule.ClosedComplemented.sup_finiteDimensional` and
+`Submodule.ClosedComplemented.of_sup_finiteDimensional`. -/
 theorem closedComplemented_sup_finiteDimensional_iff {𝕜 E : Type*} [RCLike 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] {M : Submodule 𝕜 E} (hM : IsClosed (M : Set E))
     (X : Submodule 𝕜 E) [FiniteDimensional 𝕜 X] :
@@ -200,14 +234,16 @@ section Dense
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup E]
   [NormedSpace 𝕜 E]
 
-/-- **A closed subspace of finite codimension has a complement inside any dense subspace**
-([brezis2011functional] Proposition 11.6). The complement is automatically finite-dimensional
-(`Submodule.CoFG.fg_of_isCompl`) and topological
-(`Submodule.IsCompl.isTopCompl_of_finiteDimensional_quotient`).
+/-- Let $\mathbb{K}$ be a complete nontrivially normed field, let $E$ be a normed space over
+$\mathbb{K}$, let $M$ be a closed subspace of $E$ of finite codimension, and let $D$ be a dense
+subspace of $E$. Then there is a subspace $X \subseteq D$ with $M \oplus X = E$ as an algebraic
+direct sum. This is Proposition 11.6 of [brezis2011functional].
 
-`M ⊔ D` is closed, containing the closed finite-codimensional `M`, and contains the dense `D`,
-so `M ⊔ D = ⊤`; a complement `X` of `M ⊓ D` inside `D` is then a complement of `M` in `E`
-(the modular law). -/
+The complement $X$ is automatically finite-dimensional (`Submodule.CoFG.fg_of_isCompl`) and a
+topological complement (`Submodule.IsCompl.isTopCompl_of_finiteDimensional_quotient`). For the
+proof, $M + D$ is closed because it contains the closed subspace $M$ of finite codimension, and
+it contains the dense subspace $D$, so $M + D = E$. A complement $X$ of $M \cap D$ inside $D$ is
+then a complement of $M$ in $E$, by the modular law. -/
 theorem exists_isCompl_le_of_dense {M : Submodule 𝕜 E} (hM : IsClosed (M : Set E)) [M.CoFG]
     {D : Submodule 𝕜 E} (hD : Dense (D : Set E)) :
     ∃ X : Submodule 𝕜 E, X ≤ D ∧ IsCompl M X := by
@@ -233,12 +269,15 @@ section Fredholm
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup E]
   [NormedSpace 𝕜 E] [CompleteSpace E]
 
-/-- **[brezis2011functional] Proposition 11.7, Step 1** (the case `X₂ = 0`): in a Banach space,
-closed subspaces `G`, `L` with `G ∩ L = 0` and `G + L + X₁ = E` for a finite-dimensional `X₁`
-are complemented (the statement is symmetric in `G` and `L`).
+/-- Let $\mathbb{K}$ be a complete nontrivially normed field and let $E$ be a Banach space over
+$\mathbb{K}$. Let $G$ and $L$ be closed subspaces of $E$ with $G \cap L = \{0\}$, and let $X_1$
+be a finite-dimensional subspace with $G + L + X_1 = E$. Then $G$ is complemented. This is Step
+1 of the proof of Proposition 11.7 of [brezis2011functional], the case $X_2 = 0$.
 
-With `X̃₁` a complement of `(G ⊔ L) ⊓ X₁` inside `X₁`, the subspace `L ⊔ X̃₁` is closed and an
-algebraic complement of `G`; in a Banach space closed algebraic complements are topological. -/
+The hypotheses are symmetric in $G$ and $L$, so $L$ is complemented as well. Let $\tilde X_1$ be
+a complement of $(G + L) \cap X_1$ inside $X_1$. Then $L + \tilde X_1$ is closed and is an
+algebraic complement of $G$, and in a Banach space a closed algebraic complement is a
+topological complement. -/
 theorem closedComplemented_of_disjoint_of_sup_sup_eq_top {G L : Submodule 𝕜 E}
     (hG : IsClosed (G : Set E)) (hL : IsClosed (L : Set E)) (hGL : Disjoint G L)
     (X₁ : Submodule 𝕜 E) [FiniteDimensional 𝕜 X₁] (hsup : G ⊔ L ⊔ X₁ = ⊤) :
@@ -255,14 +294,17 @@ theorem closedComplemented_of_disjoint_of_sup_sup_eq_top {G L : Submodule 𝕜 E
     exact hdisj.eq_bot
   · rw [codisjoint_iff, ← sup_assoc, ← hsup, ← hY, ← sup_assoc, sup_inf_self]
 
-/-- **[brezis2011functional] Proposition 11.7**: in a Banach space over `RCLike 𝕜`, closed
-subspaces `G`, `L` with `G + L + X₁ = E` and `G ∩ L ⊆ X₂` for finite-dimensional `X₁`, `X₂` are
-complemented (the statement is symmetric in `G` and `L`).
+/-- Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $G$ and $L$ be
+closed subspaces of $E$. Assume that there are finite-dimensional subspaces $X_1$ and $X_2$ with
+$$G + L + X_1 = E \quad \text{and} \quad G \cap L \subseteq X_2.$$ Then $G$ is complemented.
+This is Proposition 11.7 of [brezis2011functional].
 
-The finite-dimensional `G ⊓ L` has a topological complement `N` in `E` (Hahn–Banach), and
-`G̃ = G ⊓ N`, `L̃ = L ⊓ N` are closed, disjoint, and satisfy `G̃ + L̃ + (X₁ + X₂) = E`, so `G̃` is
-complemented by Step 1; then `G = G̃ ⊔ (G ⊓ L)` is complemented by
-`Submodule.ClosedComplemented.sup_finiteDimensional`. -/
+The hypotheses are symmetric in $G$ and $L$, so $L$ is complemented as well. The
+finite-dimensional subspace $G \cap L$ has a topological complement $N$ in $E$, by the
+Hahn–Banach theorem. The subspaces $\tilde G = G \cap N$ and $\tilde L = L \cap N$ are closed
+and disjoint, and $\tilde G + \tilde L + (X_1 + X_2) = E$, so $\tilde G$ is complemented by
+`Submodule.closedComplemented_of_disjoint_of_sup_sup_eq_top`. Then $G = \tilde G + (G \cap L)$
+is complemented by `Submodule.ClosedComplemented.sup_finiteDimensional`. -/
 theorem closedComplemented_of_sup_sup_eq_top_of_inf_le {𝕜 E : Type*} [RCLike 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] [CompleteSpace E] {G L : Submodule 𝕜 E}
     (hG : IsClosed (G : Set E)) (hL : IsClosed (L : Set E)) (X₁ X₂ : Submodule 𝕜 E)

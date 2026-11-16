@@ -9,67 +9,94 @@ import Numlib.IntegralEquations.Basic
 /-!
 # Integral operators with a weakly singular kernel
 
-`Numlib/IntegralEquations/Basic` builds the integral operator `u ↦ (x ↦ ∫ k (x, y) u y dμ)` on
-`C(X, ℝ)` for a *continuous* kernel. The kernels that boundary integral equations produce are not
-continuous — `log |x − y|` and `‖x − y‖^{-β}` with `β < d` are the standard ones — but they are
-integrable in `y`, and that is enough provided two conditions hold, the ones called (A₁) and (A₂)
-in [han2009theoretical], §2.8.1:
+Let $X$ be a compact metric space with a Borel measure $\mu$, and let
+$k \colon X \times X \to \mathbb{R}$. The module `Numlib.IntegralEquations.Basic` defines the
+integral operator $(Ku)(x) = \int k(x, y) u(y) \, d\mu(y)$ on $C(X)$ for a continuous kernel. The
+kernels of boundary integral equations are not continuous; the standard examples are $\log |x - y|$
+and $\|x - y\|^{-\beta}$ with $\beta < d$. They are integrable in $y$, and this is sufficient when
+two conditions hold. These are the conditions (A₁) and (A₂) of [han2009theoretical], §2.8.1,
+equations (2.8.2)–(2.8.6):
 
-* (A₁) the *modulus of continuity in the mean*
-  `ω(h) = sup { ∫ |k (x, y) − k (z, y)| dμ y : dist x z ≤ h }` tends to `0` with `h`;
-* (A₂) the row `L¹` norms `∫ |k (x, y)| dμ y` are bounded in `x`.
+* (A₁) the modulus of continuity in the mean $\omega(h) = \sup \{ \int |k(x, y) - k(z, y)| \,
+  d\mu(y) : d(x, z) \le h \}$ tends to $0$ as $h \to 0$;
+* (A₂) the row integrals $\int |k(x, y)| \, d\mu(y)$ are bounded in $x$.
 
-`IntegralOperator.IsAdmissibleKernel` bundles the two, with (A₁) in the equivalent `ε`–`δ` form
-that every proof consumes. Both halves of the argument for a continuous kernel then survive:
-(A₁) is what makes the image of a continuous function continuous and the image of the unit ball
-equicontinuous, and (A₂) is what bounds the operator.
+A kernel with integrable rows that satisfies (A₁) and (A₂) is called admissible here. Condition (A₁)
+makes the image of a continuous function continuous and the image of the unit ball equicontinuous,
+and condition (A₂) bounds the operator. So the integral operator of an admissible kernel is a
+compact operator on $C(X)$, and for a finite measure $\mu$ its norm is
+$\sup_x \int |k(x, y)| \, d\mu(y)$. A continuous kernel is admissible, and on an interval $[a, b]$ a
+kernel that is continuous off the diagonal with $|k(x, y)| \le C |x - y|^{-\gamma}$,
+$0 < \gamma < 1$, is admissible. [kress1989linear], §2, studies the same conditions under the name
+of weakly singular kernels.
 
-## Main statements
+## Main definitions
 
-* `IntegralOperator.IsAdmissibleKernel` — the conditions, and `IntegralOperator.kernelModulus` the
-  modulus `ω` of (A₁), with `IntegralOperator.IsAdmissibleKernel.tendsto_kernelModulus` its limit.
-* `IntegralOperator.admissibleKernelCLM` — the operator on `C(X, ℝ)`, with
-  `IntegralOperator.norm_admissibleKernelCLM_le` bounding its norm by
-  `IntegralOperator.rowBound`, the supremum of (A₂), and
-  `IntegralOperator.IsAdmissibleKernel.abs_admissibleKernelCLM_sub_le` the oscillation estimate
-  in terms of `ω`.
-* `IntegralOperator.isCompactOperator_admissibleKernelCLM` — **the operator is compact**, by
-  Arzelà–Ascoli in the form `ContinuousMap.isCompact_closure_of_forall_norm_le`.
-* `IntegralOperator.isAdmissibleKernel_of_continuousMap` — a continuous kernel on a compact metric
-  space is admissible, and its operator is `IntegralOperator.kernelCLM`
-  (`IntegralOperator.admissibleKernelCLM_eq_kernelCLM`); so this development subsumes the
-  continuous case.
-* `IntegralOperator.IsAdmissibleKernel.mul_continuousMap` — the splitting rule: an admissible
-  kernel times a continuous factor is admissible, which is how a kernel written as a singular
-  factor times a smooth one is handled.
-* `IntegralOperator.isAdmissibleKernel_of_abs_le_rpow` — **the concrete criterion on an interval**:
-  a kernel continuous off the diagonal and bounded by `C |x − y| ^ (-γ)` with `γ < 1` is
-  admissible. `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` is the kernel `|x − y| ^ (-γ)`
-  itself, and `IntegralOperator.isAdmissibleKernel_log_cos_sub_cos` the logarithmic kernel
-  `log |cos x − cos y|` on `[0, π]`.
+* `IntegralOperator.IsAdmissibleKernel`: the rows of $k$ are integrable and $k$ satisfies (A₁) and
+  (A₂).
+* `IntegralOperator.rowBound`: the bound $\sup_x \int |k(x, y)| \, d\mu(y)$ of (A₂).
+* `IntegralOperator.admissibleKernelCLM`: the integral operator of an admissible kernel on $C(X)$.
+* `IntegralOperator.kernelModulus`: the modulus of continuity in the mean $\omega(h)$ of (A₁).
 
-The domain is a compact metric space rather than a closed bounded `D ⊆ ℝ^d`: the argument uses
-nothing of the ambient space, and the metric enters only through the uniform statement of (A₁).
+## Main results
 
-## References
+* `IntegralOperator.IsAdmissibleKernel.tendsto_kernelModulus`: $\omega(h) \to 0$ as $h \to 0^+$ for
+  an admissible kernel.
+* `IntegralOperator.IsAdmissibleKernel.abs_admissibleKernelCLM_sub_le`:
+  $|(Ku)(x) - (Ku)(z)| \le \omega(d(x, z)) \|u\|$.
+* `IntegralOperator.norm_admissibleKernelCLM_le` and `IntegralOperator.norm_admissibleKernelCLM`:
+  $\|K\| = \sup_x \int |k(x, y)| \, d\mu(y)$ (the inequality $\le$ holds for every $\mu$, the
+  equality for a finite measure).
+* `IntegralOperator.isCompactOperator_admissibleKernelCLM`: the operator of an admissible kernel is
+  compact.
+* `IntegralOperator.isAdmissibleKernel_of_continuousMap` and
+  `IntegralOperator.admissibleKernelCLM_eq_kernelCLM`: a continuous kernel is admissible for a
+  finite measure, and its operator is `IntegralOperator.kernelCLM`.
+* `IntegralOperator.isAdmissibleKernel_of_forall_exists_continuousMap`: a kernel that continuous
+  kernels approximate in the row $L^1$ norm, uniformly in the row, is admissible.
+* `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`: an admissible kernel times a continuous
+  kernel is admissible.
+* `IntegralOperator.isAdmissibleKernel_of_abs_le_rpow`: a kernel on $[a, b]$ that is continuous off
+  the diagonal and satisfies $|k(x, y)| \le C |x - y|^{-\gamma}$ with $0 < \gamma < 1$ is
+  admissible.
+* `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` and
+  `IntegralOperator.isAdmissibleKernel_log_cos_sub_cos`: the kernels $|x - y|^{-\gamma}$ on $[a, b]$
+  and $\log |\cos x - \cos y|$ on $[0, \pi]$ are admissible.
 
-[han2009theoretical], §2.8.1, equations (2.8.2)–(2.8.6); [kress1989linear], §2, treats the same
-conditions under the name of weakly singular kernels.
+## Proof outline
+
+Compactness follows from the Arzelà–Ascoli theorem in the form
+`ContinuousMap.isCompact_closure_of_forall_norm_le`. For the norm equality, the operator is tested
+against a continuous approximation of the sign of a row, as in `IntegralOperator.norm_kernelCLM`.
+For a kernel with an algebraic singularity, the singularity is cut off near the diagonal, and the
+$L^1$ distance of the rows to the truncated kernel is bounded uniformly in the row.
+
+## Implementation notes
+
+* The domain is a compact metric space and not a closed bounded set $D \subseteq \mathbb{R}^d$. The
+  argument uses nothing of the ambient space, and the metric enters only through the uniform
+  condition (A₁).
+* Condition (A₁) is stated in the $\varepsilon$–$\delta$ form that the proofs use. It is equivalent
+  to $\omega(h) \to 0$ by `IntegralOperator.IsAdmissibleKernel.tendsto_kernelModulus` and
+  `IntegralOperator.IsAdmissibleKernel.le_kernelModulus`.
+* The suprema `IntegralOperator.rowBound` and `IntegralOperator.kernelModulus` are `⨆` in `ℝ`, which
+  is $0$ for an empty or unbounded family. For an admissible kernel both families are bounded above.
 -/
 
 open Filter MeasureTheory Metric Set Topology
 
 open scoped Real
 
-/-! ### The algebraic singularity `|t| ^ r` on the line
+/-!
+### The algebraic singularity $|t|^r$ on the line
 
-Two facts about `t ↦ |t| ^ r` for `-1 < r`, the profile of every singular kernel treated below: it
-is interval integrable across its singularity, and its integral over an interval centred at that
-singularity is explicit. Mathlib has both for `t ↦ t ^ r`, which at a negative argument is
-`|t| ^ r` times `cos (r π)` and so is a different function. -/
+Two facts about $t \mapsto |t|^r$ for $r > -1$, the profile of every singular kernel in this module:
+it is interval integrable across its singularity, and its integral over an interval centred at the
+singularity is explicit. Mathlib has both facts for $t \mapsto t^r$. For $t < 0$ the Lean value of
+$t^r$ is $|t|^r \cos(r\pi)$, so that is a different function.
+-/
 
-/-- The algebraic singularity `t ↦ |t| ^ r` is interval integrable exactly when it is integrable at
-the origin, that is, when `-1 < r`. -/
+/-- Let $r > -1$. Then $t \mapsto |t|^r$ is interval integrable on every interval $[a, b]$. -/
 theorem intervalIntegrable_abs_rpow {r : ℝ} (hr : -1 < r) (a b : ℝ) :
     IntervalIntegrable (fun t => |t| ^ r) volume a b := by
   have hpos : ∀ c : ℝ, 0 ≤ c → IntervalIntegrable (fun t => |t| ^ r) volume 0 c := by
@@ -85,8 +112,9 @@ theorem intervalIntegrable_abs_rpow {r : ℝ} (hr : -1 < r) (a b : ℝ) :
       simpa using hpos (-c) (by linarith)
   exact (key a).symm.trans (key b)
 
-/-- The integral of the algebraic singularity `|t| ^ r` over an interval centred at its singular
-point: over `[-s, s]` it is `2 s ^ (r + 1) / (r + 1)`. -/
+/-- Let $r > -1$ and $s \ge 0$. Then
+$$\int_{-s}^{s} |t|^r \, dt = \frac{2 s^{r + 1}}{r + 1}.$$
+-/
 theorem integral_abs_rpow_neg_self {r : ℝ} (hr : -1 < r) {s : ℝ} (hs : 0 ≤ s) :
     ∫ t in (-s)..s, |t| ^ r = 2 * s ^ (r + 1) / (r + 1) := by
   have hr1 : r + 1 ≠ 0 := by linarith
@@ -102,8 +130,9 @@ theorem integral_abs_rpow_neg_self {r : ℝ} (hr : -1 < r) {s : ℝ} (hs : 0 ≤
       (intervalIntegrable_abs_rpow hr _ _) (intervalIntegrable_abs_rpow hr _ _), hrefl, hhalf]
   ring
 
-/-- A logarithm is dominated by any algebraic singularity at the origin. This crude two-sided form
-is what a logarithmic kernel needs in order to fit under an algebraic bound. -/
+/-- For every $u > 0$,
+$$|\log u| \le 2 \left( u^{1/2} + u^{-1/2} \right).$$
+This crude bound puts a logarithmic kernel under an algebraic bound. -/
 theorem abs_log_le_two_mul_rpow {u : ℝ} (hu : 0 < u) :
     |Real.log u| ≤ 2 * (u ^ ((1 : ℝ) / 2) + u ^ (-((1 : ℝ) / 2))) := by
   have h1 : (0 : ℝ) < u ^ ((1 : ℝ) / 2) := Real.rpow_pos_of_pos hu _
@@ -114,10 +143,12 @@ theorem abs_log_le_two_mul_rpow {u : ℝ} (hu : 0 < u) :
   rw [abs_le]
   constructor <;> linarith
 
-/-- **The cosine separates the points of `[0, π]` at least quadratically**:
-`2 |x − y|² / π² ≤ |cos x − cos y|`. Both factors of
-`cos x − cos y = -2 sin ((x + y)/2) sin ((x − y)/2)` are bounded below by `|x − y| / π`, by Jordan's
-inequality applied at `(x + y)/2` or at `π − (x + y)/2`, whichever of the two lies in `[0, π/2]`. -/
+/-- For $x, y \in [0, \pi]$,
+$$\frac{2 |x - y|^2}{\pi^2} \le |\cos x - \cos y|.$$
+
+In $\cos x - \cos y = -2 \sin \frac{x + y}{2} \sin \frac{x - y}{2}$, both factors are at least
+$|x - y| / \pi$ in absolute value. This is Jordan's inequality, applied at $(x + y)/2$ or at
+$\pi - (x + y)/2$, whichever is in $[0, \pi/2]$. -/
 theorem two_mul_sq_div_pi_sq_le_abs_cos_sub_cos {x y : ℝ} (hx : x ∈ Icc 0 π) (hy : y ∈ Icc 0 π) :
     2 * |x - y| ^ 2 / π ^ 2 ≤ |Real.cos x - Real.cos y| := by
   have hpi : (0 : ℝ) < π := Real.pi_pos
@@ -159,25 +190,37 @@ section Admissible
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   {μ : Measure X} {k : X × X → ℝ}
 
-/-- **An admissible kernel**: one that is integrable in its second variable and satisfies the two
-conditions (A₁) and (A₂) of [han2009theoretical], §2.8.1, which together make the integral operator
-`u ↦ (x ↦ ∫ k (x, y) u y dμ)` a compact operator on `C(X, ℝ)`.
+/-- Let $X$ be a compact metric space with a Borel measure $\mu$. A function
+$k \colon X \times X \to \mathbb{R}$ is an **admissible kernel** if every row
+$y \mapsto k(x, y)$ is $\mu$-integrable and $k$ satisfies the conditions (A₁) and (A₂) of
+[han2009theoretical], §2.8.1:
 
-(A₁) is stated here in the `ε`–`δ` form rather than as a limit of the modulus of continuity
-`IntegralOperator.kernelModulus`; the two agree by
+* (A₂) the row integrals $\int |k(x, y)| \, d\mu(y)$ are bounded above in $x$;
+* (A₁) for every $\varepsilon > 0$ there is $\delta > 0$ such that $\int |k(x, y) - k(z, y)| \,
+  d\mu(y) < \varepsilon$ whenever $d(x, z) < \delta$.
+
+These conditions make the integral operator $u \mapsto \left( x \mapsto \int k(x, y) u(y) \,
+d\mu(y) \right)$ a compact operator on $C(X)$.
+
+The source states (A₁) as $\omega(h) \to 0$ for the modulus of continuity in the mean
+`IntegralOperator.kernelModulus`. The two forms are equivalent by
 `IntegralOperator.IsAdmissibleKernel.tendsto_kernelModulus` and
-`IntegralOperator.IsAdmissibleKernel.le_kernelModulus`, and the `ε`–`δ` form is what the proofs
-use. -/
+`IntegralOperator.IsAdmissibleKernel.le_kernelModulus`. -/
 structure IsAdmissibleKernel (μ : Measure X) (k : X × X → ℝ) : Prop where
-  /-- Every row of the kernel is integrable. -/
+  /-- Every row $y \mapsto k(x, y)$ of the kernel is $\mu$-integrable. -/
   integrable_row : ∀ x, Integrable (fun y => k (x, y)) μ
-  /-- Condition (A₂): the row `L¹` norms are bounded. -/
+  /-- Condition (A₂): the row integrals $\int |k(x, y)| \, d\mu(y)$ are bounded above in $x$. -/
   bddAbove_integral_abs : BddAbove (Set.range fun x => ∫ y, |k (x, y)| ∂μ)
-  /-- Condition (A₁): rows at nearby base points are close in `L¹`, uniformly in the base point. -/
+  /-- Condition (A₁): for every $\varepsilon > 0$ there is $\delta > 0$ such that $\int |k(x, y) -
+  k(z, y)| \, d\mu(y) < \varepsilon$ for all $x, z$ with $d(x, z) < \delta$. -/
   exists_delta : ∀ ε > 0, ∃ δ > 0, ∀ x z : X, dist x z < δ →
     (∫ y, |k (x, y) - k (z, y)| ∂μ) < ε
 
-/-- The bound of condition (A₂) on a kernel: `sup_x ∫ |k (x, y)| dμ`. -/
+/-- The **row bound** of a kernel $k$, the bound of condition (A₂):
+$$\sup_{x \in X} \int |k(x, y)| \, d\mu(y).$$
+
+This is the supremum `⨆ x` in `ℝ`, which is $0$ if $X$ is empty or the row integrals are not
+bounded above. -/
 noncomputable def rowBound (μ : Measure X) (k : X × X → ℝ) : ℝ := ⨆ x, ∫ y, |k (x, y)| ∂μ
 
 namespace IsAdmissibleKernel
@@ -186,30 +229,36 @@ variable (hk : IsAdmissibleKernel μ k)
 include hk
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- Every row `L¹` norm is at most the (A₂) bound. -/
+/-- For an admissible kernel $k$, every row integral satisfies $\int |k(x, y)| \, d\mu(y) \le
+\sup_{x'} \int |k(x', y)| \, d\mu(y)$. -/
 theorem le_rowBound (x : X) : (∫ y, |k (x, y)| ∂μ) ≤ rowBound μ k :=
   le_ciSup hk.bddAbove_integral_abs x
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- The (A₂) bound of an admissible kernel is nonnegative. -/
+/-- The row bound $\sup_x \int |k(x, y)| \, d\mu(y)$ of an admissible kernel is nonnegative. -/
 theorem rowBound_nonneg : 0 ≤ rowBound μ k := by
   rcases isEmpty_or_nonempty X with h | h
   · rw [rowBound, Real.iSup_of_isEmpty]
   · exact le_trans (integral_nonneg fun _ => abs_nonneg _) (hk.le_rowBound h.some)
 
-/-- The integrand of the operator attached to an admissible kernel is integrable. -/
+/-- For an admissible kernel $k$, $u \in C(X)$ and $x \in X$, the function $y \mapsto k(x, y) u(y)$
+is $\mu$-integrable. -/
 theorem integrable_mul (u : C(X, ℝ)) (x : X) : Integrable (fun y => k (x, y) * u y) μ :=
   (hk.integrable_row x).mul_bdd u.continuous.aestronglyMeasurable
     (Eventually.of_forall fun y => u.norm_coe_le_norm y)
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- The `L¹` distance between two rows of an admissible kernel. -/
+/-- For an admissible kernel $k$ and $x, z \in X$, the function $y \mapsto |k(x, y) - k(z, y)|$ is
+$\mu$-integrable. -/
 theorem integrable_abs_row_sub (x z : X) : Integrable (fun y => |k (x, y) - k (z, y)|) μ := by
   have h : Integrable (fun y => k (x, y) - k (z, y)) μ :=
     (hk.integrable_row x).sub (hk.integrable_row z)
   exact h.abs
 
-/-- The integral of the operator is bounded by the row `L¹` norm times `‖u‖`. -/
+/-- For an admissible kernel $k$, $u \in C(X)$ and $x \in X$,
+$$\left| \int k(x, y) u(y) \, d\mu(y) \right| \le \left( \int |k(x, y)| \, d\mu(y) \right)
+  \|u\|.$$
+-/
 theorem abs_integral_mul_le (u : C(X, ℝ)) (x : X) :
     |∫ y, k (x, y) * u y ∂μ| ≤ (∫ y, |k (x, y)| ∂μ) * ‖u‖ := by
   have hint : Integrable (fun y => |k (x, y)| * ‖u‖) μ := ((hk.integrable_row x).abs).mul_const _
@@ -220,8 +269,10 @@ theorem abs_integral_mul_le (u : C(X, ℝ)) (x : X) :
         exact mul_le_mul_of_nonneg_left (u.norm_coe_le_norm y) (abs_nonneg _)
     _ = (∫ y, |k (x, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
 
-/-- The oscillation of the image of `u` between two base points is at most `‖u‖` times the `L¹`
-distance between the two rows of the kernel. -/
+/-- For an admissible kernel $k$, $u \in C(X)$ and $x, z \in X$,
+$$\left| \int k(x, y) u(y) \, d\mu(y) - \int k(z, y) u(y) \, d\mu(y) \right| \le \left( \int
+  |k(x, y) - k(z, y)| \, d\mu(y) \right) \|u\|.$$
+-/
 theorem abs_integral_mul_sub_le (u : C(X, ℝ)) (x z : X) :
     |(∫ y, k (x, y) * u y ∂μ) - ∫ y, k (z, y) * u y ∂μ|
       ≤ (∫ y, |k (x, y) - k (z, y)| ∂μ) * ‖u‖ := by
@@ -243,7 +294,8 @@ theorem abs_integral_mul_sub_le (u : C(X, ℝ)) (x z : X) :
         exact mul_le_mul_of_nonneg_left (u.norm_coe_le_norm y) (abs_nonneg _)
     _ = (∫ y, |k (x, y) - k (z, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
 
-/-- Condition (A₁) makes the image of a continuous function continuous. -/
+/-- For an admissible kernel $k$ and $u \in C(X)$, the function
+$x \mapsto \int k(x, y) u(y) \, d\mu(y)$ is continuous. This uses condition (A₁). -/
 theorem continuous_integral_mul (u : C(X, ℝ)) :
     Continuous fun x => ∫ y, k (x, y) * u y ∂μ := by
   refine continuous_iff_continuousAt.2 fun x₀ => Metric.tendsto_nhds.2 fun ε hε => ?_
@@ -260,9 +312,14 @@ theorem continuous_integral_mul (u : C(X, ℝ)) :
 
 end IsAdmissibleKernel
 
-/-- **The integral operator of an admissible kernel** on `C(X, ℝ)`, equation (2.8.2) of
-[han2009theoretical]: `u ↦ (x ↦ ∫ k (x, y) u y dμ)`. Condition (A₁) is what makes the image
-continuous, so it is needed already to define the operator, and condition (A₂) is what bounds it. -/
+/-- Let $X$ be a compact metric space with a Borel measure $\mu$, and let $k$ be an admissible
+kernel. The **integral operator** of $k$ is the bounded linear operator $K$ on $C(X)$ given by
+$$(Ku)(x) = \int k(x, y) \, u(y) \, d\mu(y).$$
+This is equation (2.8.2) of [han2009theoretical].
+
+Condition (A₁) makes $Ku$ continuous, so it is necessary already to define the operator.
+Condition (A₂) bounds it: the operator is built with the bound `IntegralOperator.rowBound`. The
+argument `hk` is the proof that $k$ is admissible. -/
 noncomputable def admissibleKernelCLM (hk : IsAdmissibleKernel μ k) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   LinearMap.mkContinuous
     { toFun := fun u => ⟨fun x => ∫ y, k (x, y) * u y ∂μ, hk.continuous_integral_mul u⟩
@@ -283,20 +340,26 @@ noncomputable def admissibleKernelCLM (hk : IsAdmissibleKernel μ k) : C(X, ℝ)
       exact le_trans (hk.abs_integral_mul_le u x)
         (mul_le_mul_of_nonneg_right (hk.le_rowBound x) (norm_nonneg u))
 
-/-- The defining formula of `IntegralOperator.admissibleKernelCLM`. -/
+/-- For an admissible kernel $k$, the integral operator of $k$ maps $u$ to
+$x \mapsto \int k(x, y) u(y) \, d\mu(y)$. -/
 @[simp]
 theorem admissibleKernelCLM_apply (hk : IsAdmissibleKernel μ k) (u : C(X, ℝ)) (x : X) :
     admissibleKernelCLM hk u x = ∫ y, k (x, y) * u y ∂μ :=
   rfl
 
-/-- The operator norm of an admissible kernel operator is at most `sup_x ∫ |k (x, y)| dμ`. -/
+/-- Let $k$ be an admissible kernel. Then its integral operator $K$ on $C(X)$ satisfies
+$$\|K\| \le \sup_{x \in X} \int |k(x, y)| \, d\mu(y).$$
+-/
 theorem norm_admissibleKernelCLM_le (hk : IsAdmissibleKernel μ k) :
     ‖admissibleKernelCLM hk‖ ≤ rowBound μ k :=
   LinearMap.mkContinuous_norm_le _ hk.rowBound_nonneg _
 
-/-- **An admissible kernel gives a compact operator on `C(X, ℝ)`**: the image of the unit ball is
-uniformly bounded by (A₂) and equicontinuous by (A₁), so Arzelà–Ascoli applies exactly as it does
-for a continuous kernel. This is the unnumbered conclusion of [han2009theoretical], §2.8.1. -/
+/-- Let $X$ be a compact metric space with a Borel measure $\mu$, and let $k$ be an admissible
+kernel. Then the integral operator of $k$ is a compact operator on $C(X)$. This is the
+unnumbered conclusion of [han2009theoretical], §2.8.1.
+
+The image of the unit ball is uniformly bounded by (A₂) and equicontinuous by (A₁), so the
+Arzelà–Ascoli theorem applies as for a continuous kernel. -/
 theorem isCompactOperator_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
     IsCompactOperator (admissibleKernelCLM hk) := by
   refine (isCompactOperator_iff_isCompact_closure_image_closedBall
@@ -325,8 +388,13 @@ theorem isCompactOperator_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
           rw [mul_one]
           exact hδk x₀ x (by rw [dist_comm]; exact mem_ball.1 hx)
 
-/-- The **modulus of continuity in the mean** of a kernel: the supremum of the `L¹` distance
-between two rows whose base points are within `h`. -/
+/-- The **modulus of continuity in the mean** of a kernel $k$ at $h \in \mathbb{R}$:
+$$\omega(h) = \sup \left\{ \int |k(x, y) - k(z, y)| \, d\mu(y) : x, z \in X, \ d(x, z) \le h
+  \right\}.$$
+
+This is the supremum `⨆` in `ℝ`, which is $0$ when the set is empty (for $h < 0$) or not bounded
+above. For an admissible kernel it is bounded above
+(`IntegralOperator.IsAdmissibleKernel.bddAbove_modulus`). -/
 noncomputable def kernelModulus (μ : Measure X) (k : X × X → ℝ) (h : ℝ) : ℝ :=
   ⨆ p : {p : X × X // dist p.1 p.2 ≤ h}, ∫ y, |k (p.1.1, y) - k (p.1.2, y)| ∂μ
 
@@ -336,8 +404,9 @@ variable (hk : IsAdmissibleKernel μ k)
 include hk
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- The `L¹` distance between two rows is at most twice the (A₂) bound, so the family whose
-supremum is the modulus of continuity is bounded. -/
+/-- For an admissible kernel $k$ and $x, z \in X$,
+$$\int |k(x, y) - k(z, y)| \, d\mu(y) \le 2 \sup_{x'} \int |k(x', y)| \, d\mu(y).$$
+So the family that defines the modulus of continuity is bounded. -/
 theorem integral_abs_row_sub_le (x z : X) :
     (∫ y, |k (x, y) - k (z, y)| ∂μ) ≤ 2 * rowBound μ k := by
   have hI : Integrable (fun y => |k (x, y)| + |k (z, y)|) μ :=
@@ -352,7 +421,8 @@ theorem integral_abs_row_sub_le (x z : X) :
   linarith
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- The family whose supremum defines the modulus of continuity is bounded above. -/
+/-- For an admissible kernel $k$ and every $h$, the set of row distances
+$\int |k(x, y) - k(z, y)| \, d\mu(y)$ with $d(x, z) \le h$ is bounded above. -/
 theorem bddAbove_modulus (h : ℝ) :
     BddAbove (Set.range fun p : {p : X × X // dist p.1 p.2 ≤ h} =>
       ∫ y, |k (p.1.1, y) - k (p.1.2, y)| ∂μ) := by
@@ -361,13 +431,15 @@ theorem bddAbove_modulus (h : ℝ) :
   exact hk.integral_abs_row_sub_le p.1.1 p.1.2
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- Every row distance is bounded by the modulus of continuity at the corresponding radius. -/
+/-- For an admissible kernel $k$, if $d(x, z) \le h$, then $\int |k(x, y) - k(z, y)| \, d\mu(y) \le
+\omega(h)$. -/
 theorem le_kernelModulus {x z : X} {h : ℝ} (hxz : dist x z ≤ h) :
     (∫ y, |k (x, y) - k (z, y)| ∂μ) ≤ kernelModulus μ k h :=
   le_ciSup (hk.bddAbove_modulus h) (⟨(x, z), hxz⟩ : {p : X × X // dist p.1 p.2 ≤ h})
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- The modulus of continuity is nonnegative. -/
+/-- For an admissible kernel $k$, the modulus of continuity $\omega(h)$ is nonnegative for every
+$h$. -/
 theorem kernelModulus_nonneg (h : ℝ) : 0 ≤ kernelModulus μ k h := by
   rcases isEmpty_or_nonempty {p : X × X // dist p.1 p.2 ≤ h} with hE | hE
   · rw [kernelModulus, Real.iSup_of_isEmpty]
@@ -375,8 +447,9 @@ theorem kernelModulus_nonneg (h : ℝ) : 0 ≤ kernelModulus μ k h := by
     exact le_trans (integral_nonneg fun _ => abs_nonneg _) (hk.le_kernelModulus hp)
 
 omit [CompactSpace X] [BorelSpace X] in
-/-- **Condition (A₁)** in the book's own form: the modulus of continuity of an admissible kernel
-tends to `0` as the radius does. -/
+/-- For an admissible kernel $k$, the modulus of continuity in the mean satisfies
+$$\omega(h) \to 0 \quad \text{as } h \to 0^+.$$
+This is condition (A₁) in the form of [han2009theoretical], §2.8.1. -/
 theorem tendsto_kernelModulus :
     Filter.Tendsto (kernelModulus μ k) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
   refine Metric.tendsto_nhdsWithin_nhds.2 fun ε hε => ?_
@@ -389,8 +462,11 @@ theorem tendsto_kernelModulus :
   rw [Real.dist_eq, sub_zero, abs_of_nonneg (hk.kernelModulus_nonneg h)]
   linarith
 
-/-- **Estimate (2.8.5)**: the oscillation of `K u` between two base points is at most the modulus
-of continuity of the kernel at their distance, times `‖u‖`. -/
+/-- Let $k$ be an admissible kernel with integral operator $K$. For every $u \in C(X)$ and
+$x, z \in X$,
+$$|(Ku)(x) - (Ku)(z)| \le \omega(d(x, z)) \, \|u\|,$$
+where $\omega$ is the modulus of continuity in the mean of $k$. This is the estimate (2.8.5) of
+[han2009theoretical]. -/
 theorem abs_admissibleKernelCLM_sub_le (u : C(X, ℝ)) (x z : X) :
     |admissibleKernelCLM hk u x - admissibleKernelCLM hk u z|
       ≤ kernelModulus μ k (dist x z) * ‖u‖ :=
@@ -406,9 +482,11 @@ section ContinuousKernel
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- **A continuous kernel on a compact metric space is admissible**, so the operator and its
-compactness specialize to `IntegralOperator.kernelCLM`. Condition (A₁) is the uniform continuity
-of `k` on the compact `X × X`. -/
+/-- Let $X$ be a compact metric space with a finite Borel measure $\mu$. Then every continuous
+kernel $k$ on $X \times X$ is admissible. So the operator and its compactness specialize to
+`IntegralOperator.kernelCLM`.
+
+Condition (A₁) follows from the uniform continuity of $k$ on the compact space $X \times X$. -/
 theorem isAdmissibleKernel_of_continuousMap (k : C(X × X, ℝ)) :
     IsAdmissibleKernel μ fun p => k p := by
   refine ⟨fun x => integrable_kernel_row μ k x, ⟨‖k‖ * μ.real univ, ?_⟩, ?_⟩
@@ -439,7 +517,9 @@ theorem isAdmissibleKernel_of_continuousMap (k : C(X × X, ℝ)) :
           rw [mul_div_assoc', div_lt_iff₀ (by positivity)]
           nlinarith [hε]
 
-/-- The operator of an admissible continuous kernel is `IntegralOperator.kernelCLM`. -/
+/-- Let $X$ be a compact metric space with a finite Borel measure $\mu$, and let $k$ be a continuous
+kernel on $X \times X$. Then the integral operator of $k$ as an admissible kernel is
+`IntegralOperator.kernelCLM μ k`. -/
 theorem admissibleKernelCLM_eq_kernelCLM (k : C(X × X, ℝ)) :
     admissibleKernelCLM (isAdmissibleKernel_of_continuousMap μ k) = kernelCLM μ k := by
   ext u x
@@ -452,17 +532,18 @@ section Approximation
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   {μ : Measure X} [IsFiniteMeasure μ] {k : X × X → ℝ}
 
-/-- **A kernel that continuous kernels approximate uniformly in the row `L¹` norm is admissible.**
+/-- Let $X$ be a compact metric space with a finite Borel measure $\mu$, and let
+$k \colon X \times X \to \mathbb{R}$ have $\mu$-integrable rows. Suppose that for every
+$\varepsilon > 0$ there is a continuous kernel $g$ with
+$$\int |k(x, y) - g(x, y)| \, d\mu(y) \le \varepsilon \quad \text{for every } x \in X.$$
+Then $k$ is admissible.
 
-This is the practical criterion for admissibility: both (A₁) and (A₂) are stable under a uniform
-`L¹` perturbation of the rows, so it is enough to exhibit, for each `ε`, one *continuous* kernel
-whose rows are within `ε` of those of `k` in `L¹(μ)`, uniformly in the row index. The continuous
-kernel supplies (A₁) through `IntegralOperator.isAdmissibleKernel_of_continuousMap`, that is,
-through its uniform continuity on the compact `X × X`.
-
-The route is the one [han2009theoretical] takes for a singular kernel on an interval: regularize
-the singularity, estimate the `L¹` distance to the regularization, and let the regularization
-parameter go to zero. -/
+This is the practical criterion for admissibility: (A₁) and (A₂) are stable under a perturbation
+of the rows that is small in $L^1(\mu)$ uniformly in the row. The continuous kernel satisfies
+(A₁) by `IntegralOperator.isAdmissibleKernel_of_continuousMap`, that is, by its uniform
+continuity on $X \times X$. For a singular kernel on an interval, [han2009theoretical] uses the
+same method: regularize the singularity, bound the $L^1$ distance to the regularization, and let
+the regularization parameter go to zero. -/
 theorem isAdmissibleKernel_of_forall_exists_continuousMap
     (hrow : ∀ x, Integrable (fun y => k (x, y)) μ)
     (happrox : ∀ ε > 0, ∃ g : C(X × X, ℝ), ∀ x, (∫ y, |k (x, y) - g (x, y)| ∂μ) ≤ ε) :
@@ -513,17 +594,19 @@ theorem isAdmissibleKernel_of_forall_exists_continuousMap
           have h3 := hg z
           linarith
 
-/-- **The operator norm of an admissible kernel operator is the largest row integral**,
-`‖K‖ = sup_x ∫ |k (x, y)| dμ`, equation (2.8.6) of [han2009theoretical].
+/-- Let $X$ be a compact metric space with a finite Borel measure $\mu$, and let $k$ be an
+admissible kernel with integral operator $K$ on $C(X)$. Then
+$$\|K\| = \sup_{x \in X} \int |k(x, y)| \, d\mu(y).$$
+This is equation (2.8.6) of [han2009theoretical].
 
-`IntegralOperator.norm_admissibleKernelCLM_le` is the easy half. For the other one, testing `K`
-against a continuous approximation of the sign of the row `k (x₀, ·)` needs that row to be
-approximable by continuous functions in `L¹(μ)`, which for a finite Borel measure on a metric space
-is `MeasureTheory.Integrable.exists_boundedContinuous_integral_sub_le`; the sign is then
-approximated as in `IntegralOperator.norm_kernelCLM`, by `y ↦ g y / (|g y| + δ)`.
-
-Unlike the continuous case there is no reason for the supremum to be attained, so it is a `⨆` and
-not a `max`. -/
+`IntegralOperator.norm_admissibleKernelCLM_le` is the upper bound. For the lower bound, $K$ is
+tested against a continuous approximation of the sign of the row $k(x_0, \cdot)$. This needs a
+continuous approximation of the row in $L^1(\mu)$, which
+`MeasureTheory.Integrable.exists_boundedContinuous_integral_sub_le` gives for a finite Borel
+measure on a metric space. The sign of a continuous $g$ is then approximated by
+$y \mapsto g(y) / (|g(y)| + \delta)$, as in `IntegralOperator.norm_kernelCLM`. For a continuous
+kernel the supremum is a maximum, but here it need not be attained, so the right side is the
+supremum `IntegralOperator.rowBound`. -/
 theorem norm_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
     ‖admissibleKernelCLM hk‖ = rowBound μ k := by
   refine le_antisymm (norm_admissibleKernelCLM_le hk) ?_
@@ -607,9 +690,11 @@ section Splitting
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   {μ : Measure X} {k : X × X → ℝ}
 
-/-- **The splitting rule**: an admissible kernel multiplied by a continuous factor is again
-admissible. This is what reduces a kernel of the form `k (x, y) = h (x, y) * g (x, y)` with `h`
-singular and `g` continuous to the singular factor alone. -/
+/-- **The splitting rule.** Let $k$ be an admissible kernel and let $g$ be a continuous kernel on
+$X \times X$. Then the kernel $(x, y) \mapsto k(x, y) g(x, y)$ is admissible.
+
+This reduces a kernel $h(x, y) g(x, y)$ with a singular factor $h$ and a continuous factor $g$
+to the singular factor alone. -/
 theorem IsAdmissibleKernel.mul_continuousMap (hk : IsAdmissibleKernel μ k) (g : C(X × X, ℝ)) :
     IsAdmissibleKernel μ fun p => k p * g p := by
   have hgm : ∀ x : X, AEStronglyMeasurable (fun y => g (x, y)) μ := by
@@ -691,24 +776,28 @@ end Splitting
 
 section AlgebraicSingularity
 
-/-! ### Kernels with an algebraic singularity on the diagonal
+/-!
+### Kernels with an algebraic singularity on the diagonal
 
-The concrete weakly singular kernels of [han2009theoretical] §2.8.1 live on an interval and are
-continuous off the diagonal, with `|k (x, y)| ≤ C |x − y| ^ (-γ)` for some `0 < γ < 1`. That alone
-makes them admissible, and the two Examples the book gives are instances.
+The concrete weakly singular kernels of [han2009theoretical], §2.8.1, are kernels on an interval
+that are continuous off the diagonal and satisfy $|k(x, y)| \le C |x - y|^{-\gamma}$ for some
+$0 < \gamma < 1$. This bound alone makes them admissible, and the two examples of the source are
+instances.
 
-The uniformity in (A₁) — the point the book leaves to the reader — comes out of translation
-invariance rather than out of a two-point estimate. Excising the diagonal with a continuous cut-off
-leaves a row error bounded by `C ψ (x − y)` for one fixed nonnegative profile `ψ` vanishing away
-from the origin, and the substitution `t = x − y` turns the row integral into an integral of `ψ`
-over an interval that, whatever `x ∈ [a, b]` is, sits inside one fixed symmetric interval. What is
-left to bound is then a single number, `2 C s ^ (1 - γ) / (1 - γ)`, with no `x` in it. -/
+The uniformity in (A₁), which the source leaves to the reader, comes from translation invariance and
+not from an estimate at two points. A continuous cut-off near the diagonal leaves a row error
+bounded by $C \psi(x - y)$, for one fixed nonnegative profile $\psi$ that vanishes away from the
+origin. The substitution $t = x - y$ turns the row integral into an integral of $\psi$ over an
+interval that is contained in one fixed symmetric interval for every $x \in [a, b]$. What remains to
+bound is one number, $2 C s^{1 - \gamma} / (1 - \gamma)$, which does not depend on $x$.
+-/
 
 variable {a b : ℝ}
 
-/-- Translating a nonnegative integrand by a point of `[a, b]` and integrating over `[a, b]` is
-dominated by integrating it over a symmetric interval long enough to contain every translate. This
-is what makes an estimate for a difference kernel on an interval uniform in the row index. -/
+/-- Let $a \le b$, $x \in [a, b]$ and $b - a \le M$, and let $f \colon \mathbb{R} \to \mathbb{R}$ be
+nonnegative and interval integrable on $[-M, M]$. Then
+$$\int_a^b f(x - y) \, dy \le \int_{-M}^{M} f(t) \, dt.$$
+This makes an estimate for a difference kernel on an interval uniform in the row index $x$. -/
 theorem integral_comp_sub_le {x M : ℝ} (hab : a ≤ b) (hx : x ∈ Icc a b) (hM : b - a ≤ M)
     {f : ℝ → ℝ} (hf0 : ∀ t, 0 ≤ f t) (hf : IntervalIntegrable f volume (-M) M) :
     (∫ y in a..b, f (x - y)) ≤ ∫ t in (-M)..M, f t := by
@@ -716,21 +805,24 @@ theorem integral_comp_sub_le {x M : ℝ} (hab : a ≤ b) (hx : x ∈ Icc a b) (h
   exact intervalIntegral.integral_mono_interval (by linarith [hx.1]) (by linarith)
     (by linarith [hx.2]) (Eventually.of_forall hf0) hf
 
-/-- **A kernel with an algebraic singularity on the diagonal of an interval is admissible.** If `k`
-is continuous off the diagonal of `[a, b] × [a, b]` and `|k (x, y)| ≤ C |x − y| ^ (-γ)` with
-`0 < γ < 1`, then `k` satisfies (A₁) and (A₂), so
-`IntegralOperator.isCompactOperator_admissibleKernelCLM` makes its integral operator compact on
-`C[a, b]`.
+/-- Let $a \le b$, $0 < \gamma < 1$ and $C \ge 0$, and let
+$k \colon [a, b] \times [a, b] \to \mathbb{R}$ be continuous on the set $\{(x, y) : x \neq y\}$
+with
+$$|k(x, y)| \le C |x - y|^{-\gamma} \quad \text{for all } x, y \in [a, b].$$
+Then $k$ is admissible for Lebesgue measure on $[a, b]$. By
+`IntegralOperator.isCompactOperator_admissibleKernelCLM`, its integral operator is compact on
+$C[a, b]$.
 
-Note that the hypothesis at a diagonal point reads `|k (x, x)| ≤ C * 0`, since `0 ^ (-γ) = 0`; so it
-also fixes the value of `k` on the diagonal to be `0`. That is the value `|x − y| ^ (-γ)` and
-`log |cos x − cos y|` both take there, both being of the form `f (x − y)` for an `f` that Lean's
-conventions send to `0` at `0`.
+In Lean $0^{-\gamma} = 0$, so at a diagonal point the hypothesis is $|k(x, x)| \le 0$: it also
+requires $k = 0$ on the diagonal. The kernels $|x - y|^{-\gamma}$ and $\log |\cos x - \cos y|$
+both have the value $0$ there, by the same convention and by $\log 0 = 0$. Lebesgue measure on
+$[a, b]$ is `IntegralOperator.iccMeasure a b`.
 
-The proof is `IntegralOperator.isAdmissibleKernel_of_forall_exists_continuousMap` applied to the
-truncations `k (x, y) * χ |x − y|`, with `χ` a cut-off vanishing on a neighbourhood of the diagonal;
-that neighbourhood is where the truncation is continuous for free, and the `L¹` distance to `k`
-there is controlled by `IntegralOperator.integral_comp_sub_le` and `integral_abs_rpow_neg_self`. -/
+The proof applies `IntegralOperator.isAdmissibleKernel_of_forall_exists_continuousMap` to the
+truncations $k(x, y) \chi(|x - y|)$, where $\chi$ is a cut-off that vanishes in a neighbourhood
+of the diagonal. The truncation is continuous because it vanishes near the diagonal, and its
+$L^1$ distance to $k$ is bounded by `IntegralOperator.integral_comp_sub_le` and
+`integral_abs_rpow_neg_self`. -/
 theorem isAdmissibleKernel_of_abs_le_rpow {γ C : ℝ} (hab : a ≤ b) (hγ0 : 0 < γ) (hγ1 : γ < 1)
     (hC : 0 ≤ C) {k : Icc a b × Icc a b → ℝ}
     (hcont : ContinuousOn k {p : Icc a b × Icc a b | (p.1 : ℝ) ≠ (p.2 : ℝ)})
@@ -879,11 +971,13 @@ theorem isAdmissibleKernel_of_abs_le_rpow {γ C : ℝ} (hab : a ≤ b) (hγ0 : 0
           rw [h, div_le_iff₀ (by positivity)]
           nlinarith [hε.le, hC]
 
-/-- **The kernel `|x − y| ^ (-γ)` with `0 < γ < 1` is admissible on `C[a, b]`**, which is the
-kernel (2.8.14) of [han2009theoretical], Example 2.8.9. The book obtains the compactness of its
-operator from the truncations (2.8.15) and Proposition 2.8.7; the route here is the same
-truncation, taken inside the (A₁)–(A₂) framework so that the operator itself is the one of
-§2.8.1. -/
+/-- Let $a \le b$ and $0 < \gamma < 1$. Then the kernel $(x, y) \mapsto |x - y|^{-\gamma}$ on
+$[a, b] \times [a, b]$ is admissible for Lebesgue measure on $[a, b]$. This is the kernel
+(2.8.14) of [han2009theoretical], Example 2.8.9.
+
+The source obtains the compactness of the operator from the truncations (2.8.15) and Proposition
+2.8.7. Here the same truncation is used inside the (A₁)–(A₂) framework, so that the operator is
+the operator of §2.8.1. The value at the diagonal is $0^{-\gamma} = 0$ in Lean. -/
 theorem isAdmissibleKernel_abs_sub_rpow (hab : a ≤ b) {γ : ℝ} (hγ0 : 0 < γ) (hγ1 : γ < 1) :
     IsAdmissibleKernel (iccMeasure a b)
       (fun p : Icc a b × Icc a b => |(p.1 : ℝ) - (p.2 : ℝ)| ^ (-γ)) := by
@@ -892,15 +986,16 @@ theorem isAdmissibleKernel_abs_sub_rpow (hab : a ≤ b) {γ : ℝ} (hγ0 : 0 < �
     simpa [sub_eq_zero] using hp
   · rw [one_mul, abs_of_nonneg (Real.rpow_nonneg (abs_nonneg _) _)]
 
-/-- **The logarithmic kernel `log |cos x − cos y|` is admissible on `C[0, π]`**, which is
-[han2009theoretical], Example 2.8.2. The book factors it as `|x − y| ^ (-1/2)` times a continuous
-function and appeals to the splitting rule (2.8.9); the route here reads the same factorisation as
-the bound `|log |cos x − cos y|| ≤ C |x − y| ^ (-1/2)`, which
-`two_mul_sq_div_pi_sq_le_abs_cos_sub_cos` and `abs_log_le_two_mul_rpow` supply, and which needs no
-separate continuity argument at the two ends of the diagonal.
+/-- The kernel $(x, y) \mapsto \log |\cos x - \cos y|$ on $[0, \pi] \times [0, \pi]$ is admissible
+for Lebesgue measure on $[0, \pi]$. This is Example 2.8.2 of [han2009theoretical].
 
-Off the diagonal the kernel is continuous because `Real.injOn_cos` keeps `cos x − cos y` away from
-`0`; on the diagonal both sides of the bound are `0`, since `Real.log 0 = 0`. -/
+The source writes the kernel as $|x - y|^{-1/2}$ times a continuous function and uses the
+splitting rule (2.8.9). Here the same factorization is used as the bound
+$|\log |\cos x - \cos y|| \le C |x - y|^{-1/2}$, which follows from
+`two_mul_sq_div_pi_sq_le_abs_cos_sub_cos` and `abs_log_le_two_mul_rpow`. This needs no separate
+continuity argument at the two ends of the diagonal. Off the diagonal, the kernel is continuous
+because $\cos$ is injective on $[0, \pi]$ (`Real.injOn_cos`), so $\cos x - \cos y \neq 0$. On
+the diagonal both sides of the bound are $0$, because $\log 0 = 0$ in Lean. -/
 theorem isAdmissibleKernel_log_cos_sub_cos :
     IsAdmissibleKernel (iccMeasure 0 π)
       (fun p : Icc (0 : ℝ) π × Icc (0 : ℝ) π =>

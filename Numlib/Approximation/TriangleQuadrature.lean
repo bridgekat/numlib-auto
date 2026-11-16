@@ -16,53 +16,71 @@ import Numlib.RingTheory.MvPolynomial.TotalDegree
 /-!
 # Quadrature on the reference triangle
 
-Quadrature on the reference triangle `T̂ = {(x, y) : x, y ≥ 0, x + y ≤ 1}` and, by the affine map
-onto a triangle `T`, on `T` ([quarteroni2000numerical] §9.9.2). The vocabulary is
-`Approximation.IsExactOn μ w x m` of `Numlib/Approximation/Hyperinterpolation` — exactness on the
-multivariate polynomials of total degree at most `m` against a measure — with
-`μ = volume.restrict refTriangle` on `Fin 2 → ℝ`, which is the book's Definition 9.1 verbatim.
+This file studies quadrature rules on the reference triangle $\hat T = \{(x, y) : x \ge 0,\ y \ge
+0,\ x + y \le 1\}$ and, through an affine map, on any triangle $T$, as in §9.9.2 of
+[quarteroni2000numerical]. A rule with weights $w_k$ and nodes $x_k \in \mathbb{R}^2$ approximates
+$\int_{\hat T} f$ by $\sum_k w_k f(x_k)$. It is exact to degree $m$ if it integrates every
+polynomial of total degree at most $m$ without error (`Approximation.IsExactOn` for the Lebesgue
+measure restricted to $\hat T$). This is Definition 9.1 of the source.
+
+The key computation is Dirichlet's integral $\int_{\hat T} x^a y^b = a!\, b! / (a + b + 2)!$. With
+it, exactness to degree $m$ becomes a finite system of equations in the weights and the nodes. The
+file verifies four rules of the source: the centroid rule and the vertex rule are exact to degree
+$1$, the edge-midpoint rule to degree $2$, and the seven-point rule to degree $3$, and none of them
+is exact to a higher degree. An injective affine map $F(y) = Ay + c$ transports a rule that is exact
+to degree $m$ on a set $T$ to a rule that is exact to degree $m$ on $F(T)$, with the weights
+multiplied by $|\det A|$. For $T = \hat T$ this factor is $2|F(\hat T)|$.
 
 ## Main definitions
 
-* `Quadrature.refTriangle` — the reference triangle, with `measurableSet_refTriangle`,
-  `isCompact_refTriangle` and `volume_refTriangle : volume refTriangle = 1/2`.
-* `Quadrature.affinePoly A c` — the affine map `y ↦ A y + c` as a family of polynomials of total
-  degree at most one, the tool of the transport lemma.
+* `Quadrature.affinePoly`: the coordinates of the affine map $y \mapsto Ay + c$, as polynomials of
+  total degree at most one.
+* `Quadrature.refTriangle`: the reference triangle $\hat T$ in $\mathbb{R}^2$.
 
 ## Main results
 
-* `Quadrature.integral_refTriangle_pow_mul_pow` — Dirichlet's integral on the triangle,
-  `∫_{T̂} xᵃ yᵇ = a! b!/(a + b + 2)!`, by Fubini on `ℝ × ℝ` and the Beta integral
-  `integral_pow_mul_one_sub_pow` of `Numlib/Analysis/SpecialFunctions/Integrals/Beta`.
-* `Quadrature.isExactOn_refTriangle_iff` — exactness
-  to degree `m` is exactness on the monomials of degree at most `m`; on `T̂` it is the finite
-  system `∑_k w_k x_k^a y_k^b = a! b!/(a + b + 2)!`, `a + b ≤ m`.
+* `Quadrature.isExactOn_affineImage`: an injective affine map $F(y) = Ay + c$ transports a rule
+  exact to degree $m$ on $T$ to a rule exact to degree $m$ on $F(T)$, with nodes $F(x_k)$ and
+  weights $|\det A|\, w_k$.
+* `Quadrature.integral_refTriangle_pow_mul_pow`: $\int_{\hat T} x^a y^b = a!\, b! / (a + b + 2)!$.
+* `Quadrature.volume_refTriangle`: the area of $\hat T$ is $1/2$.
+* `Quadrature.volume_affineImage_refTriangle`: the area of $F(\hat T)$ is $|\det A| / 2$.
+* `Quadrature.isExactOn_refTriangle_iff`: a rule is exact to degree $m$ on $\hat T$ if and only if
+  $\sum_k w_k \xi_k^a \eta_k^b = a!\, b! / (a + b + 2)!$ for all $a + b \le m$, where
+  $x_k = (\xi_k, \eta_k)$.
 * `Quadrature.isExactOn_centroid`, `Quadrature.isExactOn_vertex`,
-  `Quadrature.isExactOn_edgeMidpoint`, `Quadrature.isExactOn_sevenPoint` — the four rules the
-  book displays, exact to degrees `1`, `1`, `2`, `3`, each with its `not_isExactOn_*` companion
-  showing the degree is sharp.
-* `Quadrature.isExactOn_affineImage` — a rule exact to degree `m` on `T` transports along an
-  injective affine map `y ↦ A y + c` to a rule exact to degree `m` on the image, with the weights
-  scaled by `|det A|`; `Quadrature.volume_affineImage_refTriangle` gives the area
-  `|T| = |det A|/2` of the image triangle, so the scale is the book's `2|T|`.
+  `Quadrature.isExactOn_edgeMidpoint`, `Quadrature.isExactOn_sevenPoint`: the centroid, vertex,
+  edge-midpoint and seven-point rules are exact to degrees $1$, $1$, $2$ and $3$ on $\hat T$.
+* `Quadrature.not_isExactOn_centroid_two`, `Quadrature.not_isExactOn_vertex_two`,
+  `Quadrature.not_isExactOn_edgeMidpoint_three`, `Quadrature.not_isExactOn_sevenPoint_four`: these
+  degrees are sharp.
 
-Property 9.4 of [quarteroni2000numerical] (the `O(h^{n+1})` error of a composite rule of degree
-`n` on a triangulation) is **not** here: it is a Bramble–Hilbert estimate in two dimensions, out
-of reach (`notes/frontier.md`), and stays a "not formalized" node of the surface. The composite
-rule (9.57) over a triangulation is a finite sum of transported rules and is left to the surface.
+## Proof outline
+
+Fubini's theorem reduces Dirichlet's integral to the Beta integral
+$\int_0^1 x^a (1 - x)^{b+1} / (b + 1)\, dx$ (`integral_pow_mul_one_sub_pow`). Since a polynomial is
+a linear combination of monomials, exactness to degree $m$ is exactness on the monomials $x^a y^b$
+with $a + b \le m$. For the transport, a polynomial of total degree at most $m$ composed with an
+affine map is again a polynomial of total degree at most $m$, and the change of variables formula
+gives the Jacobian $|\det A|$.
 
 ## Implementation notes
 
-The degree bound for the affine substitution
-is `MvPolynomial.totalDegree_bind₁_le_of_totalDegree_le_one` of
-`Numlib/RingTheory/MvPolynomial/TotalDegree`. The integrals on `Fin 2 → ℝ` are transported to
-`ℝ × ℝ` by `MeasurableEquiv.finTwoArrow`, which is measure preserving.
+* Points of the plane are `Fin 2 → ℝ`, and $(x, y)$ is `(x 0, x 1)`. Integrals are moved to `ℝ × ℝ`,
+  where Fubini's theorem is stated, by `MeasurableEquiv.finTwoArrow`, which preserves Lebesgue
+  measure.
+* The bound on the total degree after the affine substitution is
+  `MvPolynomial.totalDegree_bind₁_le_of_totalDegree_le_one`.
+* Property 9.4 of [quarteroni2000numerical], the error $O(h^{n+1})$ of a composite rule of degree
+  $n$ on a triangulation, is not in this file. It needs a Bramble–Hilbert estimate in two
+  dimensions. The composite rule (9.57) over a triangulation is a finite sum of transported rules
+  and is not defined here.
 -/
 
 open Set Filter MeasureTheory Finset intervalIntegral
 open scoped Nat
 
-/-! ### Generic API: exactness on monomials -/
+/-! ### Exactness under affine maps -/
 
 namespace Quadrature
 
@@ -72,13 +90,15 @@ section Affine
 
 variable [DecidableEq ι]
 
-/-- **The affine map `y ↦ A y + c` as polynomials**: `affinePoly A c i` is the polynomial
-`cᵢ + ∑ⱼ Aᵢⱼ Xⱼ` evaluating to `(A y + c) i`. -/
+/-- For a linear map $A$ on $\mathbb{R}^\iota$, a vector $c \in \mathbb{R}^\iota$ and an index $i$,
+`Quadrature.affinePoly A c i` is the polynomial $c_i + \sum_j A_{ij} X_j$, where $A_{ij}$ is the
+$i$-th coordinate of $A e_j$. It is the $i$-th coordinate of the **affine map**
+$y \mapsto Ay + c$. -/
 noncomputable def affinePoly (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → ℝ) (i : ι) :
     MvPolynomial ι ℝ :=
   MvPolynomial.C (c i) + ∑ j, MvPolynomial.C (A (Pi.single j 1) i) * MvPolynomial.X j
 
-/-- `affinePoly A c i` evaluates to the `i`-th coordinate of `A y + c`. -/
+/-- The polynomial `Quadrature.affinePoly A c i` evaluated at $y$ is $(Ay + c)_i$. -/
 theorem eval_affinePoly (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → ℝ) (y : ι → ℝ) (i : ι) :
     MvPolynomial.eval y (affinePoly A c i) = (A y + c) i := by
   simp only [affinePoly, map_add, map_sum, map_mul, MvPolynomial.eval_C, MvPolynomial.eval_X,
@@ -94,7 +114,8 @@ theorem eval_affinePoly (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → 
     simp [Pi.single_apply, eq_comm]
   rw [e]
 
-/-- The polynomials of an affine map have total degree at most one. -/
+/-- Each coordinate polynomial `Quadrature.affinePoly A c i` of an affine map has total degree at
+most one. -/
 theorem totalDegree_affinePoly_le (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → ℝ) (i : ι) :
     (affinePoly A c i).totalDegree ≤ 1 := by
   refine (MvPolynomial.totalDegree_add _ _).trans (max_le ?_ ?_)
@@ -104,7 +125,11 @@ theorem totalDegree_affinePoly_le (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c
     rw [MvPolynomial.totalDegree_C, zero_add]
     exact (MvPolynomial.totalDegree_X _).le
 
-/-- Evaluating `p` at `A y + c` is evaluating the substituted polynomial at `y`. -/
+/-- Let $p$ be a polynomial in the variables $X_i$, and let $q$ be the polynomial obtained from $p$
+by the substitution $X_i \mapsto c_i + \sum_j A_{ij} X_j$. Then $p(Ay + c) = q(y)$ for every
+$y$.
+
+The substituted polynomial is `MvPolynomial.bind₁ (Quadrature.affinePoly A c) p`. -/
 theorem eval_add_eq_eval_bind₁ (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → ℝ) (p : MvPolynomial ι ℝ)
     (y : ι → ℝ) :
     MvPolynomial.eval (A y + c) p
@@ -117,13 +142,18 @@ theorem eval_add_eq_eval_bind₁ (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c 
   exact (eval_affinePoly A c y i).symm
 
 omit [DecidableEq ι] in
-/-- **Transport of a rule by an affine map** ([quarteroni2000numerical] §9.9.2). For an
-injective linear map `A` and a vector `c`, a rule exact to degree `m` on a measurable set `T`
-transports along `F y = A y + c` to a rule exact to degree `m` on `F '' T`: the nodes are `F(x_k)`
-and the weights are `|det A| w_k`, the Jacobian of the change of variables. A polynomial of total
-degree at most `m` composed with `F` is again one (`totalDegree_bind₁_le_of_totalDegree_le_one`).
-For the reference triangle and a triangle `T` of area `|T|` the scale is `|det A| = 2|T|`
-(`volume_affineImage_refTriangle`), the book's `α_T^{(j)} = 2|T| ∫_{T̂} l̂_j`. -/
+/-- **Transport of a rule by an affine map.** Let $T \subseteq \mathbb{R}^\iota$ be measurable, let
+$A$ be an injective linear map on $\mathbb{R}^\iota$, let $c \in \mathbb{R}^\iota$, and let
+$F(y) = Ay + c$. If the rule with weights $w_k$ and nodes $x_k$ is exact to degree $m$ for the
+Lebesgue measure on $T$, then the rule with weights $|\det A|\, w_k$ and nodes $F(x_k)$ is exact
+to degree $m$ for the Lebesgue measure on $F(T)$.
+
+This is the transport of a rule from the reference triangle in §9.9.2 of
+[quarteroni2000numerical]. For $T = \hat T$ the factor is $|\det A| = 2|F(\hat T)|$ by
+`Quadrature.volume_affineImage_refTriangle`, which gives the weights
+$\alpha_T^{(j)} = 2|T| \int_{\hat T} \hat l_j$ of the source. The proof uses the change of
+variables formula and the fact that a polynomial of total degree at most $m$ composed with $F$
+has total degree at most $m$ (`MvPolynomial.totalDegree_bind₁_le_of_totalDegree_le_one`). -/
 theorem isExactOn_affineImage {T : Set (ι → ℝ)} (hT : MeasurableSet T)
     (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (hA : Function.Injective A) (c : ι → ℝ) {w : K → ℝ}
     {x : K → ι → ℝ} {m : ℕ} (h : Approximation.IsExactOn (volume.restrict T) w x m) :
@@ -143,7 +173,8 @@ theorem isExactOn_affineImage {T : Set (ι → ℝ)} (hT : MeasurableSet T)
   exact Finset.sum_congr rfl fun k _ => by ring
 
 omit [DecidableEq ι] in
-/-- The volume of the affine image of a set: `|det A|` times the volume. -/
+/-- For a linear map $A$ on $\mathbb{R}^\iota$, a vector $c$ and any set $T$, the Lebesgue measure
+of the image of $T$ under $y \mapsto Ay + c$ is $|\det A|$ times the measure of $T$. -/
 theorem volume_affineImage (A : (ι → ℝ) →ₗ[ℝ] (ι → ℝ)) (c : ι → ℝ) (T : Set (ι → ℝ)) :
     volume ((fun y => A y + c) '' T) = ENNReal.ofReal |LinearMap.det A| * volume T := by
   have e : (fun y => A y + c) '' T = (fun y => y + c) '' (A '' T) := by
@@ -154,24 +185,24 @@ end Affine
 
 /-! ### The reference triangle -/
 
-/-- **The reference triangle** `T̂ = {(x, y) : x ≥ 0, y ≥ 0, x + y ≤ 1}`, with vertices `(0, 0)`,
-`(1, 0)`, `(0, 1)`, as a subset of `Fin 2 → ℝ`.
+/-- The **reference triangle** $\hat T = \{(x, y) : x \ge 0,\ y \ge 0,\ x + y \le 1\}$, with
+vertices $(0, 0)$, $(1, 0)$ and $(0, 1)$, as a subset of `Fin 2 → ℝ`.
 
-Reference: [quarteroni2000numerical], §9.9.2. -/
+This is the reference triangle of §9.9.2 of [quarteroni2000numerical]. The point $(x, y)$ is the
+function `![x, y]`. -/
 def refTriangle : Set (Fin 2 → ℝ) := {x | 0 ≤ x 0 ∧ 0 ≤ x 1 ∧ x 0 + x 1 ≤ 1}
 
-/-- The reference triangle read in `ℝ × ℝ`, the coordinates on which Fubini's theorem is
-stated. -/
+/-- The reference triangle $\hat T$ as a subset of `ℝ × ℝ`, where Fubini's theorem is stated. -/
 def refTriangle' : Set (ℝ × ℝ) := {p | 0 ≤ p.1 ∧ 0 ≤ p.2 ∧ p.1 + p.2 ≤ 1}
 
-/-- The reference triangle is the preimage of its `ℝ × ℝ` copy under the coordinate
-identification. -/
+/-- The reference triangle `Quadrature.refTriangle` is the preimage of its copy
+`Quadrature.refTriangle'` in `ℝ × ℝ` under the identification `MeasurableEquiv.finTwoArrow`. -/
 theorem refTriangle_eq_preimage :
     refTriangle = MeasurableEquiv.finTwoArrow ⁻¹' refTriangle' := by
   ext x
   simp [refTriangle, refTriangle', MeasurableEquiv.finTwoArrow]
 
-/-- The `ℝ × ℝ` copy of the reference triangle is compact. -/
+/-- The copy of the reference triangle in `ℝ × ℝ` is compact. -/
 theorem isCompact_refTriangle' : IsCompact refTriangle' := by
   refine (isCompact_Icc (a := ((0 : ℝ), (0 : ℝ))) (b := (1, 1))).of_isClosed_subset ?_ ?_
   · exact (isClosed_le continuous_const continuous_fst).inter
@@ -180,18 +211,18 @@ theorem isCompact_refTriangle' : IsCompact refTriangle' := by
   · rintro ⟨x, y⟩ ⟨hx, hy, hxy⟩
     exact ⟨⟨hx, hy⟩, ⟨by simp only at *; linarith, by simp only at *; linarith⟩⟩
 
-/-- The `ℝ × ℝ` copy of the reference triangle is measurable. -/
+/-- The copy of the reference triangle in `ℝ × ℝ` is measurable. -/
 theorem measurableSet_refTriangle' : MeasurableSet refTriangle' :=
   (measurableSet_le measurable_const measurable_fst).inter
     ((measurableSet_le measurable_const measurable_snd).inter
       (measurableSet_le (measurable_fst.add measurable_snd) measurable_const))
 
-/-- The reference triangle is measurable. -/
+/-- The reference triangle $\hat T$ is measurable. -/
 theorem measurableSet_refTriangle : MeasurableSet refTriangle := by
   rw [refTriangle_eq_preimage]
   exact MeasurableEquiv.finTwoArrow.measurable measurableSet_refTriangle'
 
-/-- The reference triangle is compact: a closed subset of the unit square. -/
+/-- The reference triangle $\hat T$ is compact, because it is a closed subset of the unit square. -/
 theorem isCompact_refTriangle : IsCompact refTriangle := by
   refine (isCompact_Icc (a := (0 : Fin 2 → ℝ)) (b := 1)).of_isClosed_subset ?_ ?_
   · exact (isClosed_le continuous_const (continuous_apply 0)).inter
@@ -200,8 +231,9 @@ theorem isCompact_refTriangle : IsCompact refTriangle := by
   · rintro x ⟨h0, h1, h01⟩
     refine ⟨fun i => ?_, fun i => ?_⟩ <;> fin_cases i <;> simp <;> linarith
 
-/-- The slice of the triangle at abscissa `x` is the segment `[0, 1 - x]` for `x ∈ [0, 1]` and
-empty otherwise. -/
+/-- For $g : \mathbb{R}^2 \to \mathbb{R}$ and $x \in \mathbb{R}$, the restriction of the indicator
+$1_{\hat T}\, g$ to the vertical line through $x$ is the function
+$y \mapsto 1_{[0, 1 - x]}(y)\, g(x, y)$ if $x \in [0, 1]$, and the zero function otherwise. -/
 theorem refTriangle'_indicator_slice (g : ℝ × ℝ → ℝ) (x : ℝ) :
     (fun y => refTriangle'.indicator g (x, y))
       = if x ∈ Icc (0 : ℝ) 1 then (Icc 0 (1 - x)).indicator (fun y => g (x, y)) else 0 := by
@@ -218,8 +250,11 @@ theorem refTriangle'_indicator_slice (g : ℝ × ℝ → ℝ) (x : ℝ) :
     rintro ⟨h1, h2, h3⟩
     exact hx ⟨h1, by linarith⟩
 
-/-- Dirichlet's integral on the triangle, in the coordinates of `ℝ × ℝ`: Fubini reduces it to
-`∫₀¹ xᵃ (1 - x)^{b+1}/(b + 1) dx`, a Beta integral. -/
+/-- **Dirichlet's integral** on the copy of the reference triangle in `ℝ × ℝ`: for natural numbers
+$a$ and $b$,
+$$\int_{\hat T} x^a y^b \, d(x, y) = \frac{a!\, b!}{(a + b + 2)!}.$$
+Fubini's theorem reduces the integral to the Beta integral
+$\int_0^1 x^a (1 - x)^{b+1} / (b + 1)\, dx$. -/
 theorem integral_refTriangle'_pow_mul_pow (a b : ℕ) :
     ∫ p in refTriangle', p.1 ^ a * p.2 ^ b = (a ! * b ! : ℝ) / (a + b + 2)! := by
   set g : ℝ × ℝ → ℝ := fun p => p.1 ^ a * p.2 ^ b with hg
@@ -254,12 +289,17 @@ theorem integral_refTriangle'_pow_mul_pow (a b : ℕ) :
   push_cast
   field_simp
 
-/-- The coordinate identification `Fin 2 → ℝ ≃ ℝ × ℝ` preserves Lebesgue measure. -/
+/-- The identification `MeasurableEquiv.finTwoArrow` of `Fin 2 → ℝ` with `ℝ × ℝ` preserves Lebesgue
+measure. -/
 theorem measurePreserving_finTwoArrow_volume :
     MeasurePreserving (MeasurableEquiv.finTwoArrow : (Fin 2 → ℝ) ≃ᵐ ℝ × ℝ) volume volume :=
   measurePreserving_finTwoArrow (volume : Measure ℝ)
 
-/-- **Dirichlet's integral on the reference triangle**: `∫_{T̂} xᵃ yᵇ = a! b!/(a + b + 2)!`. -/
+/-- **Dirichlet's integral on the reference triangle.** For natural numbers $a$ and $b$,
+$$\int_{\hat T} x^a y^b \, d(x, y) = \frac{a!\, b!}{(a + b + 2)!}.$$
+
+The point $(x, y)$ is `![x 0, x 1]`. The proof transports
+`Quadrature.integral_refTriangle'_pow_mul_pow` along `MeasurableEquiv.finTwoArrow`. -/
 theorem integral_refTriangle_pow_mul_pow (a b : ℕ) :
     ∫ x in refTriangle, x 0 ^ a * x 1 ^ b = (a ! * b ! : ℝ) / (a + b + 2)! := by
   rw [refTriangle_eq_preimage, ← integral_refTriangle'_pow_mul_pow]
@@ -267,7 +307,7 @@ theorem integral_refTriangle_pow_mul_pow (a b : ℕ) :
     MeasurableEquiv.finTwoArrow.measurableEmbedding (fun p : ℝ × ℝ => p.1 ^ a * p.2 ^ b)
     refTriangle'
 
-/-- **The area of the reference triangle is `1/2`.** -/
+/-- The area of the reference triangle $\hat T$ is $1/2$. -/
 theorem volume_refTriangle : volume refTriangle = ENNReal.ofReal (1 / 2) := by
   have h := integral_refTriangle_pow_mul_pow 0 0
   simp only [pow_zero, mul_one, Nat.factorial_zero, Nat.cast_one, zero_add,
@@ -275,20 +315,26 @@ theorem volume_refTriangle : volume refTriangle = ENNReal.ofReal (1 / 2) := by
   rw [← ENNReal.ofReal_toReal (isCompact_refTriangle.measure_lt_top).ne, ← measureReal_def, h]
   norm_num [Nat.factorial]
 
-/-- **The area of a triangle** `T = F(T̂)`, `F y = A y + c`, is `|det A|/2`; so the Jacobian of
-the map from the reference triangle is `|det A| = 2|T|`. -/
+/-- **The area of a triangle.** Let $A$ be a linear map on $\mathbb{R}^2$, let $c \in \mathbb{R}^2$,
+and let $F(y) = Ay + c$. The area of $F(\hat T)$ is $|\det A| / 2$.
+
+Hence, when $A$ is injective, the Jacobian of the map from the reference triangle onto
+$T = F(\hat T)$ is $|\det A| = 2|T|$. -/
 theorem volume_affineImage_refTriangle (A : (Fin 2 → ℝ) →ₗ[ℝ] (Fin 2 → ℝ)) (c : Fin 2 → ℝ) :
     volume ((fun y => A y + c) '' refTriangle) = ENNReal.ofReal (|LinearMap.det A| / 2) := by
   rw [volume_affineImage, volume_refTriangle, ← ENNReal.ofReal_mul (abs_nonneg _)]
   congr 1
   ring
 
-/-! ### The rules of the book -/
+/-! ### The rules of the source -/
 
-/-- **Exactness on the reference triangle is a finite system of equations**: a rule with weights
-`w` and nodes `x` is exact to degree `m` on `T̂` iff
-`∑_k w_k x_k^a y_k^b = a! b!/(a + b + 2)!` for all `a + b ≤ m` — the book's Definition 9.1 read
-on the monomials. -/
+/-- **Exactness on the reference triangle is a finite system of equations.** Let $w_k$ be weights
+and $x_k = (\xi_k, \eta_k) \in \mathbb{R}^2$ be nodes, indexed by a finite set. The rule is
+exact to degree $m$ on $\hat T$ if and only if
+$$\sum_k w_k\, \xi_k^a \eta_k^b = \frac{a!\, b!}{(a + b + 2)!} \quad \text{for all natural
+  numbers } a, b \text{ with } a + b \le m.$$
+
+This is Definition 9.1 of [quarteroni2000numerical], tested on the monomials $x^a y^b$. -/
 theorem isExactOn_refTriangle_iff (w : K → ℝ) (x : K → Fin 2 → ℝ) (m : ℕ) :
     Approximation.IsExactOn (volume.restrict refTriangle) w x m ↔
       ∀ a b : ℕ, a + b ≤ m →
@@ -307,8 +353,10 @@ theorem isExactOn_refTriangle_iff (w : K → ℝ) (x : K → Fin 2 → ℝ) (m :
     exact (by fun_prop : Continuous fun y : Fin 2 → ℝ => ∏ i, y i ^ d i).continuousOn
       |>.integrableOn_compact isCompact_refTriangle
 
-/-- **The centroid rule** `|T̂| f(1/3, 1/3)` is exact to degree `1` on `T̂`
-([quarteroni2000numerical] (9.58) on the reference triangle). -/
+/-- **The centroid rule** $|\hat T|\, f(1/3, 1/3)$, with the single weight $1/2$ at the centroid, is
+exact to degree $1$ on $\hat T$.
+
+This is formula (9.58) of [quarteroni2000numerical] on the reference triangle. -/
 theorem isExactOn_centroid :
     Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 1 => (1 / 2 : ℝ))
       (fun _ => ![1 / 3, 1 / 3]) 1 := by
@@ -319,7 +367,9 @@ theorem isExactOn_centroid :
   interval_cases a <;> interval_cases b <;>
     first | omega | norm_num [Fin.sum_univ_succ, Nat.factorial]
 
-/-- The centroid rule is not exact to degree `2`: on `x²` it gives `1/18 ≠ 1/12`. -/
+/-- The centroid rule $|\hat T|\, f(1/3, 1/3)$ is not exact to degree $2$ on $\hat T$.
+
+On $x^2$ the rule gives $1/18$, and the integral is $1/12$. -/
 theorem not_isExactOn_centroid_two :
     ¬ Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 1 => (1 / 2 : ℝ))
       (fun _ => ![1 / 3, 1 / 3]) 2 := by
@@ -328,8 +378,10 @@ theorem not_isExactOn_centroid_two :
   have := h 2 0 le_rfl
   norm_num [Fin.sum_univ_succ, Nat.factorial] at this
 
-/-- **The vertex ("trapezoidal") rule** `(|T̂|/3) ∑ⱼ f(aⱼ)` at the three vertices is exact to
-degree `1` on `T̂` ([quarteroni2000numerical] (9.59) on the reference triangle). -/
+/-- **The vertex rule** $(|\hat T| / 3) \sum_j f(a_j)$, with the weight $1/6$ at each of the
+vertices $a_j = (0, 0)$, $(1, 0)$, $(0, 1)$, is exact to degree $1$ on $\hat T$.
+
+This is the trapezoidal formula (9.59) of [quarteroni2000numerical] on the reference triangle. -/
 theorem isExactOn_vertex :
     Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => (1 / 6 : ℝ))
       ![![0, 0], ![1, 0], ![0, 1]] 1 := by
@@ -340,7 +392,9 @@ theorem isExactOn_vertex :
   interval_cases a <;> interval_cases b <;>
     first | omega | norm_num [Fin.sum_univ_succ, Nat.factorial]
 
-/-- The vertex rule is not exact to degree `2`: on `x²` it gives `1/6 ≠ 1/12`. -/
+/-- The vertex rule $(|\hat T| / 3) \sum_j f(a_j)$ is not exact to degree $2$ on $\hat T$.
+
+On $x^2$ the rule gives $1/6$, and the integral is $1/12$. -/
 theorem not_isExactOn_vertex_two :
     ¬ Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => (1 / 6 : ℝ))
       ![![0, 0], ![1, 0], ![0, 1]] 2 := by
@@ -349,8 +403,10 @@ theorem not_isExactOn_vertex_two :
   have := h 2 0 le_rfl
   norm_num [Fin.sum_univ_succ, Nat.factorial] at this
 
-/-- **The edge-midpoint rule** `(|T̂|/3) ∑ⱼ f(mⱼ)` at the three edge midpoints is exact to degree
-`2` on `T̂` — the first symmetric formula `I₃` of [quarteroni2000numerical] §9.9.2. -/
+/-- **The edge-midpoint rule** $(|\hat T| / 3) \sum_j f(m_j)$, with the weight $1/6$ at each of the
+edge midpoints $m_j = (1/2, 0)$, $(0, 1/2)$, $(1/2, 1/2)$, is exact to degree $2$ on $\hat T$.
+
+This is the first symmetric formula $I_3$ of §9.9.2 of [quarteroni2000numerical]. -/
 theorem isExactOn_edgeMidpoint :
     Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => (1 / 6 : ℝ))
       ![![1 / 2, 0], ![0, 1 / 2], ![1 / 2, 1 / 2]] 2 := by
@@ -361,7 +417,9 @@ theorem isExactOn_edgeMidpoint :
   interval_cases a <;> interval_cases b <;>
     first | omega | norm_num [Fin.sum_univ_succ, Nat.factorial]
 
-/-- The edge-midpoint rule is not exact to degree `3`. -/
+/-- The edge-midpoint rule $(|\hat T| / 3) \sum_j f(m_j)$ is not exact to degree $3$ on $\hat T$.
+
+On $x^3$ the rule gives $1/24$, and the integral is $1/20$. -/
 theorem not_isExactOn_edgeMidpoint_three :
     ¬ Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => (1 / 6 : ℝ))
       ![![1 / 2, 0], ![0, 1 / 2], ![1 / 2, 1 / 2]] 3 := by
@@ -370,10 +428,12 @@ theorem not_isExactOn_edgeMidpoint_three :
   have := h 3 0 le_rfl
   norm_num [Fin.sum_univ_succ, Nat.factorial] at this
 
-/-- **The seven-point rule** `(|T̂|/60)(3 ∑ f(aⱼ) + 8 ∑ f(mⱼ) + 27 f(centroid))` — weights
-`1/40` at the three vertices, `1/15` at the three edge midpoints and `9/40` at the centroid — is
-exact to degree `3` on `T̂`: the second symmetric formula `I₇` of [quarteroni2000numerical]
-§9.9.2. -/
+/-- **The seven-point rule**
+$$\frac{|\hat T|}{60} \Bigl(3 \sum_j f(a_j) + 8 \sum_j f(m_j) + 27 f(1/3, 1/3)\Bigr),$$
+with the weight $1/40$ at each vertex $a_j$, the weight $1/15$ at each edge midpoint $m_j$ and
+the weight $9/40$ at the centroid, is exact to degree $3$ on $\hat T$.
+
+This is the second symmetric formula $I_7$ of §9.9.2 of [quarteroni2000numerical]. -/
 theorem isExactOn_sevenPoint :
     Approximation.IsExactOn (volume.restrict refTriangle)
       ![1 / 40, 1 / 40, 1 / 40, 1 / 15, 1 / 15, 1 / 15, 9 / 40]
@@ -386,7 +446,9 @@ theorem isExactOn_sevenPoint :
   interval_cases a <;> interval_cases b <;>
     first | omega | norm_num [Fin.sum_univ_succ, Nat.factorial]
 
-/-- The seven-point rule is not exact to degree `4`. -/
+/-- The seven-point rule is not exact to degree $4$ on $\hat T$.
+
+On $x^4$ the rule gives $13/360$, and the integral is $1/30$. -/
 theorem not_isExactOn_sevenPoint_four :
     ¬ Approximation.IsExactOn (volume.restrict refTriangle)
       ![1 / 40, 1 / 40, 1 / 40, 1 / 15, 1 / 15, 1 / 15, 9 / 40]

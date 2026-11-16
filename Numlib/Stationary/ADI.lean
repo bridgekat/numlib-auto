@@ -14,67 +14,91 @@ import Numlib.Stationary.Splitting
 /-!
 # The alternating direction implicit iteration
 
-The Peaceman–Rachford sweep splits a two-term operator `H + V` into two half-steps, each of which
-inverts only one of the terms:
+Let $H$ and $V$ be continuous linear operators on an inner product space $E$ over $\mathbb{R}$ or
+$\mathbb{C}$, and let $r > 0$. The **Peaceman–Rachford iteration** for $(H + V) x = b$ splits each
+sweep into two half-steps, and each half-step inverts only one of the two terms:
+$$(H + rI) x_{k+1/2} = (rI - V) x_k + b, \qquad (V + rI) x_{k+1} = (rI - H) x_{k+1/2} + b.$$
+Their composition is the affine iteration $x \mapsto P_r x + f_r(b)$ with
+$$P_r = (V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI), \qquad f_r(b) = (V + rI)^{-1} \bigl(I - (H -
+  rI)(H + rI)^{-1}\bigr) b,$$
+and it comes from the splitting $H + V = M - N$ with $M = (2r)^{-1} (H + rI)(V + rI)$ and
+$N = (2r)^{-1} (H - rI)(V - rI)$. This is Algorithm 4.3 and the identities (4.50)–(4.52) of
+[saad2003iterative], §4.3. The source states no numbered result there and asserts the convergence in
+one sentence. This module proves that if $H$ and $V$ are coercive, the iterates converge from every
+starting vector, and that the spectral radius of $P_r$ is less than $1$.
 
-`(H + r) x_{k+1/2} = (r - V) x_k + b`,   `(V + r) x_{k+1} = (r - H) x_{k+1/2} + b`.
+Following [quarteroni2000numerical], §4.3.6, the module also treats the two-parameter sweep $P_{r_1,
+r_2} = (V + r_2 I)^{-1} (H - r_2 I) (H + r_1 I)^{-1} (V - r_1 I)$, where $r_i = 1/\alpha_i$ for the
+parameters $\alpha_1, \alpha_2$ of the source; the one-parameter sweep is the case $r_1 = r_2$. For
+symmetric positive definite $H$ and $V$, the spectral radius of $P_{r_1, r_2}$ is at most the
+product of the maxima of $|\lambda - r_2| / (\lambda + r_1)$ over the spectrum of $H$ and of
+$|\mu - r_1| / (\mu + r_2)$ over the spectrum of $V$. When both spectra lie in $[\gamma, \delta]$
+with $\gamma > 0$, the parameter $r = \sqrt{\gamma \delta}$ gives $\rho(P_r) \le \bigl((1 -
+\sqrt{\gamma/\delta}) / (1 + \sqrt{\gamma/\delta})\bigr)^2$. The last section states these results
+for matrices.
 
-Composing them is the affine iteration `x ↦ P x + f` with `P = (V + r)⁻¹ (H - r) (H + r)⁻¹ (V - r)`
-(`Stationary.peacemanRachford`) and `f = (V + r)⁻¹ (1 - (H - r)(H + r)⁻¹) b`
-(`Stationary.peacemanRachfordConst`), and it comes from the splitting `H + V = M - N` with `M =
-(2r)⁻¹ (H + r)(V + r)` and `N = (2r)⁻¹ (H - r)(V - r)` (`Stationary.peacemanRachfordSplitting`).
+## Main definitions
 
-**The whole convergence proof is one inequality.**  For `A` with `re ⟪A x, x⟫ ≥ c ‖x‖²` and `r > 0`,
+* `Stationary.peacemanRachford`: the sweep operator $P_r$ of (4.50) in [saad2003iterative].
+* `Stationary.peacemanRachfordConst`: the affine part $f_r(b)$ of (4.51) in [saad2003iterative].
+* `Stationary.peacemanRachfordSplitting`: the splitting $H + V = M - N$ of (4.52) in
+  [saad2003iterative].
+* `Stationary.peacemanRachfordTwo`: the two-parameter sweep operator $P_{r_1, r_2}$.
+* `Stationary.peacemanRachfordTwoConst` and `Stationary.peacemanRachfordTwoSweep`: the affine part
+  of the two-parameter sweep, and the sweep written as two half-steps.
 
-`‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`,
+## Main results
 
-which is nothing but the expansion of both sides
-(`Stationary.norm_sub_smul_sq_add_le_norm_add_smul_sq`).  It says that the Cayley transform `(A -
-r)(A + r)⁻¹` is a strict contraction, with the explicit factor `1 - 4 r c / (‖A‖ + r)²`
-(`Stationary.norm_cayley_lt_one`).  Conjugating `P` by `V + r` turns it into the product of the two
-Cayley transforms of `H` and of `V`, so that product is a strict contraction, `P` is similar to it,
-and the iterates converge from any starting vector (`Stationary.tendsto_peacemanRachford`).
+* `Stationary.norm_sub_smul_sq_add_le_norm_add_smul_sq`: the Cayley inequality
+  $\|Ax - rx\|^2 + 4rc\|x\|^2 \le \|Ax + rx\|^2$ for $A$ coercive with constant $c$.
+* `Stationary.norm_cayley_lt_one`: the Cayley transform $(A - rI)(A + rI)^{-1}$ of a coercive
+  operator is a strict contraction.
+* `Stationary.norm_conj_peacemanRachford_lt_one`: for coercive $H$ and $V$,
+  $\|(V + rI) P_r (V + rI)^{-1}\| < 1$.
+* `Stationary.spectralRadius_peacemanRachford_lt_one`: for coercive $H$ and $V$, $\rho(P_r) < 1$.
+* `Stationary.tendsto_peacemanRachford`: for coercive $H$ and $V$, the iterates converge to the
+  solution of $(H + V) x = b$ from every starting vector.
+* `Stationary.norm_cayleyTwo_le`: the norm of $(A - r_2 I)(A + r_1 I)^{-1}$ for a self-adjoint $A$
+  is bounded by any bound of $|t - r_2| / |t + r_1|$ on the spectrum.
+* `Stationary.spectralRadius_peacemanRachfordTwo_le`: the spectral bound for the two-parameter sweep
+  of symmetric positive definite operators.
+* `Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`: the bound for spectra in
+  $[\gamma, \delta]$ with $r = \sqrt{\gamma\delta}$.
+* `Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`,
+  `Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le` and
+  `Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`: the spectral
+  bounds for real symmetric positive definite matrices.
 
-Three things the usual framing obscures.
+## Proof outline
 
-* **No commutativity of `H` and `V` is used anywhere.**  The commutativity hypothesis of the
-  literature belongs to the theory of the optimal parameter *sequence*, which is not treated here;
-  the splitting identity `M - N = H + V` needs none of it either, the `H V` terms cancelling on
-  their own.
-* **No symmetry is used either.**  Coercivity alone — `re ⟪H x, x⟫ ≥ c ‖x‖²` with `c > 0`, which is
-  what "symmetric positive definite" gives — carries the whole argument, so the theorem covers
-  nonsymmetric `H` and `V` as well.
-* **`‖P‖ < 1` is false in general**, and only the *conjugated* operator `(V + r) P (V + r)⁻¹` is a
-  contraction in the operator norm (`Stationary.norm_conj_peacemanRachford_lt_one`).  What `P`
-  itself satisfies is the spectral radius bound `Stationary.spectralRadius_peacemanRachford_lt_one`,
-  and that is what convergence rests on.
+The convergence proof rests on one inequality. If $\operatorname{Re} \langle Ax, x \rangle \ge c
+\|x\|^2$ for all $x$ and $r > 0$, then $\|Ax - rx\|^2 + 4rc\|x\|^2 \le \|Ax + rx\|^2$, which is the
+expansion of both sides. It says that the Cayley transform $(A - rI)(A + rI)^{-1}$ is a strict
+contraction, with the factor $1 - 4rc / (\|A\| + r)^2$. Conjugation by $V + rI$ turns $P_r$ into the
+product of the Cayley transforms of $H$ and of $V$. So this product is a strict contraction, $P_r$
+is similar to it, and the iterates converge from every starting vector. For the two-parameter
+bounds, the norm of the Cayley transform $(A - r_2 I)(A + r_1 I)^{-1}$ of a self-adjoint $A$ is the
+maximum of $|t - r_2| / |t + r_1|$ over the spectrum, by the continuous functional calculus.
 
-Everything is stated in an inner product space, complete where an inverse is needed; matrices reach
-it through `Matrix.toEuclideanCLM`.  The last section does that once for the surfaces: the matrix
-sweep is the operator sweep (`Matrix.toEuclideanCLM_peacemanRachfordTwo`), and for real symmetric
-positive definite `H`, `V` the spectral bounds hold for `Matrix.complexSpectralRadius`
-(`Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`,
-`Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le`,
-`Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`).  The Cayley
-inequality is an upstreaming candidate on its own and should move beside the coercivity API as soon
-as a second consumer appears.
+## Implementation notes
 
-This is [saad2003iterative], §4.3: Algorithm 4.3 and the identities (4.50)–(4.52).  The book states
-no numbered result there and asserts the convergence claim in one sentence.
-
-**Two parameters.**  [quarteroni2000numerical] §4.3.6 writes the two half-steps with different
-parameters `α₁`, `α₂` — here `r₁ = 1/α₁`, `r₂ = 1/α₂` — which gives the sweep operator
-`Stationary.peacemanRachfordTwo H V r₁ r₂ = (V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)`, the
-one-parameter sweep being its diagonal (`Stationary.peacemanRachfordTwo_self`).  For symmetric
-positive definite `H`, `V` the spectral radius is bounded by the product of the maxima of
-`|λ - r₂| / (λ + r₁)` over the spectrum of `H` and of `|μ - r₁| / (μ + r₂)` over the spectrum of
-`V` (`Stationary.spectralRadius_peacemanRachfordTwo_le`, the book's display), because the
-conjugated sweep is the product of two Cayley transforms `(A - r₂)(A + r₁)⁻¹`, whose norm is the
-maximum of `|t - r₂| / |t + r₁|` over the spectrum by the continuous functional calculus of a
-self-adjoint operator (`Stationary.norm_cayleyTwo_le`).  When both spectra lie in `[γ, δ]` with
-`γ > 0`, the parameter `r = √(γ δ)` gives `ρ ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`
-(`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`, the book's last display,
-without the proviso "`γ/δ → 0`", which is not a hypothesis of the bound).
+* No commutativity of $H$ and $V$ is used. The commutativity hypothesis of the literature belongs to
+  the theory of the optimal sequence of parameters, which is not treated here. The splitting
+  identity $M - N = H + V$ does not need it either, because the terms $HV$ cancel.
+* No symmetry is used for convergence. Coercivity alone, $\operatorname{Re} \langle Hx, x \rangle
+  \ge c \|x\|^2$ with $c > 0$, which a symmetric positive definite operator has, carries the
+  argument. So the convergence theorem covers nonsymmetric $H$ and $V$.
+* The bound $\|P_r\| < 1$ is false in general. Only the conjugated operator
+  $(V + rI) P_r (V + rI)^{-1}$ is a contraction in the operator norm. The operator $P_r$ itself
+  satisfies the spectral radius bound, and convergence rests on that bound.
+* The results are stated in an inner product space, complete where an inverse is needed. Inverses of
+  operators are `Ring.inverse`, which is $0$ at a non-invertible operator. Matrices reach the
+  operator results through `Matrix.toEuclideanCLM`, and real matrices through `Matrix.complexify`
+  and `Matrix.complexSpectralRadius`.
+* The bounds for symmetric positive definite operators are stated on a complex Hilbert space, where
+  the continuous functional calculus of a self-adjoint operator is available.
+* In the bound for spectra in $[\gamma, \delta]$, the source adds the proviso
+  "$\gamma/\delta \to 0$". It is not a hypothesis of the bound.
 -/
 
 open Filter Topology
@@ -85,10 +109,14 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-! ### The Cayley contraction inequality -/
 
-/-- The inequality behind every statement in this file: for `A` coercive with constant `c` and `r >
-0`, `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`.  Both sides expand to `‖A x‖² ± 2 r re ⟪A x, x⟫ + r²
-‖x‖²`, so the whole content is that the cross term is bounded below by coercivity.  Neither
-symmetry, nor completeness, nor finite dimension is used. -/
+/-- The **Cayley inequality**. Let $E$ be an inner product space over $\mathbb{R}$ or $\mathbb{C}$,
+let $c \in \mathbb{R}$, and let $A$ be a linear operator on $E$ with $\operatorname{Re} \langle
+Ax, x \rangle \ge c \|x\|^2$ for every $x \in E$. Let $r > 0$. Then for every $x \in E$,
+$$\|Ax - rx\|^2 + 4rc\|x\|^2 \le \|Ax + rx\|^2.$$
+
+Both sides expand to $\|Ax\|^2 \pm 2r \operatorname{Re} \langle Ax, x \rangle + r^2 \|x\|^2$, so
+the content is the lower bound on the cross term. The statement uses neither symmetry, nor
+completeness, nor finite dimension. The hypothesis on $A$ is `LinearMap.IsCoerciveWith A c`. -/
 theorem norm_sub_smul_sq_add_le_norm_add_smul_sq {A : E →ₗ[𝕜] E} {c : ℝ}
     (hA : A.IsCoerciveWith c) {r : ℝ} (hr : 0 < r) (x : E) :
     ‖A x - (r : 𝕜) • x‖ ^ 2 + 4 * r * c * ‖x‖ ^ 2 ≤ ‖A x + (r : 𝕜) • x‖ ^ 2 := by
@@ -99,7 +127,9 @@ theorem norm_sub_smul_sq_add_le_norm_add_smul_sq {A : E →ₗ[𝕜] E} {c : ℝ
   rw [norm_add_sq (𝕜 := 𝕜), norm_sub_sq (𝕜 := 𝕜), h1, h2]
   nlinarith [hA x]
 
-/-- The strict form of the Cayley inequality away from the origin. -/
+/-- Let $A$ be a linear operator on an inner product space with $\operatorname{Re} \langle Ax, x
+\rangle \ge c \|x\|^2$ for all $x$, where $c > 0$, and let $r > 0$. Then
+$\|Ax - rx\| < \|Ax + rx\|$ for every $x \neq 0$. -/
 theorem norm_sub_smul_lt_norm_add_smul {A : E →ₗ[𝕜] E} {c : ℝ} (hA : A.IsCoerciveWith c)
     (hc : 0 < c) {r : ℝ} (hr : 0 < r) {x : E} (hx : x ≠ 0) :
     ‖A x - (r : 𝕜) • x‖ < ‖A x + (r : 𝕜) • x‖ := by
@@ -114,8 +144,12 @@ section Cayley
 
 variable [CompleteSpace E]
 
-/-- `A + r` is invertible for a coercive `A` and `r > 0`: it is coercive with constant `c + r`, and
-Lax–Milgram supplies the inverse. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $c > 0$, let $A$ be a
+continuous linear operator on $E$ with $\operatorname{Re} \langle Ax, x \rangle \ge c \|x\|^2$
+for all $x$, and let $r > 0$. Then $A + rI$ is invertible.
+
+The operator $A + rI$ is coercive with constant $c + r$, and the Lax–Milgram theorem gives the
+inverse. -/
 theorem isUnit_add_smul_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) :
     IsUnit (A + (r : 𝕜) • (1 : E →L[𝕜] E)) := by
@@ -127,9 +161,15 @@ theorem isUnit_add_smul_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
   rw [← ContinuousLinearEquiv.unitsEquiv_apply 𝕜 E, MulEquiv.apply_symm_apply]
   rfl
 
-/-- The Cayley transform is a pointwise strict contraction, with the explicit factor `1 - 4 r c /
-(‖A‖ + r)²`.  Applying the Cayley inequality at `x = (A + r)⁻¹ y` and using `‖y‖ ≤ (‖A‖ + r) ‖x‖` is
-the whole proof. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $c > 0$, let $A$ be a
+continuous linear operator on $E$ with $\operatorname{Re} \langle Ax, x \rangle \ge c \|x\|^2$
+for all $x$, and let $r > 0$. Then the Cayley transform $(A - rI)(A + rI)^{-1}$ satisfies, for
+every $y \in E$,
+$$\bigl\|(A - rI)(A + rI)^{-1} y\bigr\|^2 \le \left(1 - \frac{4rc}{(\|A\| + r)^2}\right)
+  \|y\|^2.$$
+
+The proof applies the Cayley inequality at $x = (A + rI)^{-1} y$ and uses
+$\|y\| \le (\|A\| + r) \|x\|$. -/
 theorem norm_cayley_apply_sq_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) (y : E) :
     ‖((A - (r : 𝕜) • 1) * Ring.inverse (A + (r : 𝕜) • 1)) y‖ ^ 2
@@ -169,8 +209,12 @@ theorem norm_cayley_apply_sq_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
   rw [hLHS, sub_mul, one_mul]
   linarith
 
-/-- The Cayley transform `(A - r)(A + r)⁻¹` of a coercive operator is a strict contraction. This is
-the Mathlib-shaped statement of the file, and an upstreaming candidate on its own. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $c > 0$, let $A$ be a
+continuous linear operator on $E$ with $\operatorname{Re} \langle Ax, x \rangle \ge c \|x\|^2$
+for all $x$, and let $r > 0$. Then the Cayley transform of $A$ is a strict contraction:
+$$\bigl\|(A - rI)(A + rI)^{-1}\bigr\| < 1.$$
+
+The inverse is `Ring.inverse`. -/
 theorem norm_cayley_lt_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) :
     ‖(A - (r : 𝕜) • 1) * Ring.inverse (A + (r : 𝕜) • 1)‖ < 1 := by
@@ -210,24 +254,31 @@ end Cayley
 
 /-! ### The Peaceman–Rachford sweep -/
 
-/-- [saad2003iterative] (4.50): the iteration operator of one Peaceman–Rachford sweep with parameter
-`r`. -/
+/-- The **Peaceman–Rachford sweep operator** with parameter $r$ of two continuous linear operators
+$H$ and $V$ is
+$$P_r = (V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI).$$
+This is (4.50) of [saad2003iterative].
+
+The inverses are `Ring.inverse`, which is $0$ at a non-invertible operator. -/
 noncomputable def peacemanRachford (H V : E →L[𝕜] E) (r : ℝ) : E →L[𝕜] E :=
   Ring.inverse (V + (r : 𝕜) • 1) * (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1) *
     (V - (r : 𝕜) • 1)
 
-/-- [saad2003iterative] (4.51): the affine part of one Peaceman–Rachford sweep. -/
+/-- The **affine part** of one Peaceman–Rachford sweep with parameter $r$ and right-hand side $b$ is
+$$f_r(b) = (V + rI)^{-1} \bigl(I - (H - rI)(H + rI)^{-1}\bigr) b.$$
+This is (4.51) of [saad2003iterative]. -/
 noncomputable def peacemanRachfordConst (H V : E →L[𝕜] E) (r : ℝ) (b : E) : E :=
   Ring.inverse (V + (r : 𝕜) • 1) ((1 - (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1)) b)
 
-/-- One sweep of [saad2003iterative] Algorithm 4.3 written as its two half-steps: solve `(H + r)
-x_{k+1/2} = (r - V) x_k + b`, then `(V + r) x_{k+1} = (r - H) x_{k+1/2} + b`. -/
+/-- One sweep of Algorithm 4.3 of [saad2003iterative], written as its two half-steps: from $x_k$,
+solve $(H + rI) x_{k+1/2} = (rI - V) x_k + b$, and then solve
+$(V + rI) x_{k+1} = (rI - H) x_{k+1/2} + b$. -/
 noncomputable def peacemanRachfordSweep (H V : E →L[𝕜] E) (r : ℝ) (b x : E) : E :=
   Ring.inverse (V + (r : 𝕜) • 1)
     (((r : 𝕜) • 1 - H) (Ring.inverse (H + (r : 𝕜) • 1) (((r : 𝕜) • 1 - V) x + b)) + b)
 
-/-- The two half-steps of [saad2003iterative] Algorithm 4.3, composed, are the affine step of its
-(4.50)–(4.51). -/
+/-- For all $b$ and $x$, the two half-steps of Algorithm 4.3 of [saad2003iterative], applied to $x$,
+give the affine step $P_r x + f_r(b)$ of (4.50)–(4.51). -/
 theorem peacemanRachford_step_eq (H V : E →L[𝕜] E) (r : ℝ) (b x : E) :
     step (peacemanRachford H V r) (peacemanRachfordConst H V r b) x
       = peacemanRachfordSweep H V r b x := by
@@ -241,7 +292,7 @@ section Splitting
 
 variable {H V : E →L[𝕜] E} {r : ℝ}
 
-/-- A nonzero scalar multiple of a unit is a unit. -/
+/-- A nonzero scalar multiple of an invertible operator is invertible. -/
 private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {X : E →L[𝕜] E} (hX : IsUnit X) :
     IsUnit (c • X) := by
   have h1 : IsUnit (c • (1 : E →L[𝕜] E)) :=
@@ -249,22 +300,26 @@ private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {X : E →L[𝕜] E} (hX :
       by rw [smul_mul_smul_comm, one_mul, inv_mul_cancel₀ hc, one_smul]⟩, rfl⟩
   simpa [smul_mul_assoc] using h1.mul hX
 
-/-- A scalar shift is central. -/
+/-- A scalar multiple of the identity commutes with every operator. -/
 private theorem smul_one_mul_comm (c : 𝕜) (T : E →L[𝕜] E) :
     (c • (1 : E →L[𝕜] E)) * T = T * (c • (1 : E →L[𝕜] E)) := by
   ext y
   simp
 
-/-- `H + r` and `H - r` commute.  This is the only commutation used anywhere in the file, and it
-involves `H` alone — never `H` together with `V`. -/
+/-- The operators $H + rI$ and $H - rI$ commute; this is the only commutation used in this module,
+and it involves $H$ alone, never $H$ together with $V$. -/
 private theorem commute_add_sub_smul_one (H : E →L[𝕜] E) (r : ℝ) :
     (H + (r : 𝕜) • 1) * (H - (r : 𝕜) • 1) = (H - (r : 𝕜) • 1) * (H + (r : 𝕜) • 1) := by
   simp only [mul_sub, sub_mul, add_mul, mul_add, smul_one_mul_comm]
   abel
 
-/-- [saad2003iterative] (4.52): the splitting `H + V = M - N` behind the Peaceman–Rachford sweep,
-with `M = (2r)⁻¹ (H + r)(V + r)`.  The identity `M - N = H + V` is pure ring algebra: the `H V`
-terms cancel, so no commutativity of `H` and `V` is used. -/
+/-- Let $H$ and $V$ be continuous linear operators, let $r \neq 0$, and let $H + rI$ and $V + rI$ be
+invertible. The **Peaceman–Rachford splitting** is the splitting $H + V = M - N$ with
+$$M = (2r)^{-1} (H + rI)(V + rI).$$
+This is (4.52) of [saad2003iterative].
+
+The identity $M - N = H + V$, with $N = (2r)^{-1} (H - rI)(V - rI)$, is pure ring algebra: the
+terms $HV$ cancel, so no commutativity of $H$ and $V$ is used. -/
 noncomputable def peacemanRachfordSplitting (H V : E →L[𝕜] E) {r : ℝ} (hr : r ≠ 0)
     (hH : IsUnit (H + (r : 𝕜) • 1)) (hV : IsUnit (V + (r : 𝕜) • 1)) :
     Splitting (H + V) :=
@@ -274,13 +329,15 @@ noncomputable def peacemanRachfordSplitting (H V : E →L[𝕜] E) {r : ℝ} (hr
 
 variable {hr : r ≠ 0} {hH : IsUnit (H + (r : 𝕜) • 1)} {hV : IsUnit (V + (r : 𝕜) • 1)}
 
-/-- The preconditioner of [saad2003iterative] (4.52) is `M = (2r)⁻¹ (H + r)(V + r)`. -/
+/-- The Peaceman–Rachford splitting has $M = (2r)^{-1} (H + rI)(V + rI)$, as in (4.52) of
+[saad2003iterative]. -/
 theorem peacemanRachfordSplitting_m :
     (peacemanRachfordSplitting H V hr hH hV).m
       = (2 * (r : 𝕜))⁻¹ • ((H + (r : 𝕜) • 1) * (V + (r : 𝕜) • 1)) := rfl
 
-/-- The complementary part of [saad2003iterative] (4.52).  The `H V` terms cancel in `M - (H + V)`,
-which is why the splitting needs no commutativity. -/
+/-- The Peaceman–Rachford splitting has $N = (2r)^{-1} (H - rI)(V - rI)$, as in (4.52) of
+[saad2003iterative]. The terms $HV$ cancel in $M - (H + V)$, so the splitting needs no
+commutativity. -/
 theorem peacemanRachfordSplitting_n :
     (peacemanRachfordSplitting H V hr hH hV).n
       = (2 * (r : 𝕜))⁻¹ • ((H - (r : 𝕜) • 1) * (V - (r : 𝕜) • 1)) := by
@@ -294,8 +351,9 @@ theorem peacemanRachfordSplitting_n :
     module
   rw [hn, ← hexp, smul_sub, smul_smul, inv_mul_cancel₀ hs, one_smul]
 
-/-- The iteration operator of [saad2003iterative] splitting (4.52) is the sweep operator (4.50).
-The two differ by `(H + r)⁻¹ (H - r) = (H - r)(H + r)⁻¹`, a commutation of `H` with itself. -/
+/-- The iteration operator $M^{-1} N$ of the Peaceman–Rachford splitting (4.52) is the sweep
+operator $P_r$ of (4.50) in [saad2003iterative]. The two expressions differ by
+$(H + rI)^{-1} (H - rI) = (H - rI)(H + rI)^{-1}$, a commutation of $H$ with itself. -/
 theorem peacemanRachfordSplitting_iterationOperator :
     (peacemanRachfordSplitting H V hr hH hV).iterationOperator = peacemanRachford H V r := by
   have hmu := (peacemanRachfordSplitting H V hr hH hV).isUnit
@@ -319,8 +377,9 @@ theorem peacemanRachfordSplitting_iterationOperator :
     _ = (H - (r : 𝕜) • 1) * (V - (r : 𝕜) • 1) := by
         rw [Ring.mul_inverse_cancel _ hH]; noncomm_ring
 
-/-- [saad2003iterative] Problem P-4.5: the preconditioner of the splitting inverts to `2 r (V + r)⁻¹
-(H + r)⁻¹`. -/
+/-- The Peaceman–Rachford splitting has
+$$M^{-1} = (V + rI)^{-1} \bigl(I - (H - rI)(H + rI)^{-1}\bigr),$$
+which equals $2r (V + rI)^{-1} (H + rI)^{-1}$. This is Problem P-4.5 of [saad2003iterative]. -/
 theorem peacemanRachfordSplitting_ringInverse_m :
     Ring.inverse (peacemanRachfordSplitting H V hr hH hV).m
       = Ring.inverse (V + (r : 𝕜) • 1) *
@@ -362,8 +421,8 @@ theorem peacemanRachfordSplitting_ringInverse_m :
             (1 - (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1))) := by rw [mul_assoc]
     _ = _ := by rw [Ring.inverse_mul_cancel _ hmu, one_mul]
 
-/-- The affine part (4.51) of the sweep is `M⁻¹ b` for the splitting's preconditioner `M`
-([saad2003iterative], Problem P-4.5). -/
+/-- For every $b$, the Peaceman–Rachford splitting has $M^{-1} b = f_r(b)$, the affine part (4.51)
+of the sweep ([saad2003iterative], Problem P-4.5). -/
 theorem peacemanRachfordSplitting_const (b : E) :
     Ring.inverse (peacemanRachfordSplitting H V hr hH hV).m b
       = peacemanRachfordConst H V r b := by
@@ -377,27 +436,39 @@ section Two
 
 variable (H V : E →L[𝕜] E) (r₁ r₂ : ℝ)
 
-/-- The Peaceman–Rachford sweep with two parameters: the composition of `(H + r₁) x_{k+1/2} = (r₁ -
-V) x_k + b` and `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b` has the iteration operator
-`(V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)` ([quarteroni2000numerical] (4.50) with `A₁ = H`, `A₂ = V`
-and `α_i = 1 / r_i`; the sign convention `1 - α A = -α (A - 1/α)` cancels between the two factors).
-`Stationary.peacemanRachford` is the diagonal `r₁ = r₂` (`Stationary.peacemanRachfordTwo_self`). -/
+/-- The **two-parameter Peaceman–Rachford sweep operator** with parameters $r_1$ and $r_2$ of two
+continuous linear operators $H$ and $V$ is
+$$P_{r_1, r_2} = (V + r_2 I)^{-1} (H - r_2 I) (H + r_1 I)^{-1} (V - r_1 I).$$
+It is the iteration operator of the composition of the half-steps
+$(H + r_1 I) x_{k+1/2} = (r_1 I - V) x_k + b$ and $(V + r_2 I) x_{k+1} = (r_2 I - H) x_{k+1/2} +
+b$. This is (4.50) of [quarteroni2000numerical] with $A_1 = H$, $A_2 = V$ and
+$\alpha_i = 1/r_i$.
+
+The source writes the factors as $I - \alpha A = -\alpha (A - \alpha^{-1} I)$, and the signs
+cancel between the two factors. The one-parameter operator `Stationary.peacemanRachford` is the
+case $r_1 = r_2$ (`Stationary.peacemanRachfordTwo_self`). -/
 noncomputable def peacemanRachfordTwo : E →L[𝕜] E :=
   Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
     (V - (r₁ : 𝕜) • 1)
 
-/-- The affine part of the two-parameter Peaceman–Rachford sweep, `(V + r₂)⁻¹ (1 - (H - r₂)(H +
-r₁)⁻¹) b` ([quarteroni2000numerical] §4.3.6, the vector `f`). -/
+/-- The **affine part** of the two-parameter Peaceman–Rachford sweep with right-hand side $b$ is
+$$(V + r_2 I)^{-1} \bigl(I - (H - r_2 I)(H + r_1 I)^{-1}\bigr) b.$$
+This is the vector $f$ of [quarteroni2000numerical], §4.3.6. -/
 noncomputable def peacemanRachfordTwoConst (b : E) : E :=
   Ring.inverse (V + (r₂ : 𝕜) • 1) ((1 - (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) b)
 
-/-- The two half-steps of the two-parameter sweep, written as such: solve `(H + r₁) x_{k+1/2} =
-(r₁ - V) x_k + b`, then `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b`. -/
+/-- The two-parameter Peaceman–Rachford sweep, written as its two half-steps: from $x_k$, solve
+$(H + r_1 I) x_{k+1/2} = (r_1 I - V) x_k + b$, and then solve $(V + r_2 I) x_{k+1} = (r_2 I - H)
+x_{k+1/2} + b$.
+
+The inverses are `Ring.inverse`. -/
 noncomputable def peacemanRachfordTwoSweep (b x : E) : E :=
   Ring.inverse (V + (r₂ : 𝕜) • 1)
     (((r₂ : 𝕜) • 1 - H) (Ring.inverse (H + (r₁ : 𝕜) • 1) (((r₁ : 𝕜) • 1 - V) x + b)) + b)
 
-/-- The two half-steps, composed, are the affine step of `Stationary.peacemanRachfordTwo`. -/
+/-- For all $b$ and $x$, the two half-steps of the two-parameter sweep, applied to $x$, give the
+affine step $P_{r_1, r_2} x + f$, where $f$ is the affine part
+`Stationary.peacemanRachfordTwoConst`. -/
 theorem peacemanRachfordTwo_step_eq (b x : E) :
     step (peacemanRachfordTwo H V r₁ r₂) (peacemanRachfordTwoConst H V r₁ r₂ b) x
       = peacemanRachfordTwoSweep H V r₁ r₂ b x := by
@@ -405,16 +476,21 @@ theorem peacemanRachfordTwo_step_eq (b x : E) :
     mul_apply_eq_comp, sub_apply, smul_apply, one_apply_eq_self, map_add, map_sub, map_smul]
   module
 
-/-- With equal parameters the two-parameter sweep is the one-parameter one. -/
+/-- For equal parameters, the two-parameter sweep operator is the one-parameter one:
+$P_{r, r} = P_r$. -/
 theorem peacemanRachfordTwo_self (r : ℝ) :
     peacemanRachfordTwo H V r r = peacemanRachford H V r := rfl
 
-/-- With equal parameters the affine part of the two-parameter sweep is the one-parameter one. -/
+/-- For equal parameters, the affine part of the two-parameter sweep is the affine part $f_r(b)$ of
+the one-parameter sweep. -/
 theorem peacemanRachfordTwoConst_self (r : ℝ) (b : E) :
     peacemanRachfordTwoConst H V r r b = peacemanRachfordConst H V r b := rfl
 
-/-- Conjugating the two-parameter sweep operator by `V + r₂` turns it into the product of the two
-Cayley transforms `(H - r₂)(H + r₁)⁻¹` and `(V - r₁)(V + r₂)⁻¹`. -/
+/-- Let $V + r_2 I$ be invertible. Then conjugation by $V + r_2 I$ turns the two-parameter sweep
+operator into the product of two Cayley transforms:
+$$(V + r_2 I) P_{r_1, r_2} (V + r_2 I)^{-1} = (H - r_2 I)(H + r_1 I)^{-1} \cdot (V - r_1 I)(V +
+  r_2 I)^{-1}.$$
+-/
 theorem peacemanRachfordTwo_conj (hV : IsUnit (V + (r₂ : 𝕜) • (1 : E →L[𝕜] E))) :
     (V + (r₂ : 𝕜) • 1) * peacemanRachfordTwo H V r₁ r₂ * Ring.inverse (V + (r₂ : 𝕜) • 1)
       = ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) *
@@ -437,19 +513,27 @@ section Convergence
 variable [CompleteSpace E] {H V : E →L[𝕜] E} {r : ℝ}
 
 omit [CompleteSpace E] in
-/-- Conjugating the sweep operator (4.50) by `V + r` turns it into the product of the two Cayley
-transforms, of `H` and of `V`. -/
+/-- Let $V + rI$ be invertible. Then conjugation by $V + rI$ turns the sweep operator (4.50) into
+the product of the Cayley transforms of $H$ and of $V$:
+$$(V + rI) P_r (V + rI)^{-1} = (H - rI)(H + rI)^{-1} \cdot (V - rI)(V + rI)^{-1}.$$
+-/
 theorem peacemanRachford_conj (hV : IsUnit (V + (r : 𝕜) • (1 : E →L[𝕜] E))) :
     (V + (r : 𝕜) • 1) * peacemanRachford H V r * Ring.inverse (V + (r : 𝕜) • 1)
       = ((H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1)) *
         ((V - (r : 𝕜) • 1) * Ring.inverse (V + (r : 𝕜) • 1)) :=
   peacemanRachfordTwo_conj H V r r hV
 
-/-- The convergence theorem [saad2003iterative] asserts in §4.3 without proof, in its sharp operator
-form: the sweep operator conjugated by `V + r` — the product of the two Cayley transforms — is a
-strict contraction.  Neither symmetry nor commutativity of `H` and `V` is used.  The *unconjugated*
-`Stationary.peacemanRachford` need not have norm below one, which is why the statement is made here
-and the spectral radius bound is derived from it. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $H$ and $V$ be coercive
+continuous linear operators on $E$, and let $r > 0$. Then
+$$\bigl\|(V + rI) P_r (V + rI)^{-1}\bigr\| < 1.$$
+This is the convergence theorem that §4.3 of [saad2003iterative] asserts without proof, in its
+sharp operator form.
+
+Coercive means $\operatorname{Re} \langle Ax, x \rangle \ge c \|x\|^2$ for all $x$, for some
+$c > 0$ (`LinearMap.IsCoercive`). Neither symmetry nor commutativity of $H$ and $V$ is used. The
+operator $P_r$ itself need not have norm less than $1$. For this reason the statement is made
+for the conjugated operator, and the spectral radius bound
+`Stationary.spectralRadius_peacemanRachford_lt_one` is derived from it. -/
 theorem norm_conj_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoercive)
     (hV : (V : E →ₗ[𝕜] E).IsCoercive) (hr : 0 < r) :
     ‖(V + (r : 𝕜) • 1) * peacemanRachford H V r * Ring.inverse (V + (r : 𝕜) • 1)‖ < 1 := by
@@ -463,9 +547,9 @@ theorem norm_conj_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoerciv
     norm_nonneg ((V - (r : 𝕜) • (1 : E →L[𝕜] E)) * Ring.inverse (V + (r : 𝕜) • 1))]
 
 omit [CompleteSpace E] in
-/-- A power of a conjugate grows no faster than the conjugated power of the norm: this is what turns
-"the sweep is similar to a contraction" into "the errors go to zero", with the constant `‖u⁻¹‖ ‖u‖`
-absorbed once and for all.  The conjugation identity is `Units.conj_pow'`. -/
+/-- If $P = u^{-1} Q u$ for an invertible operator $u$, then
+$\|P^k\| \le \|u^{-1}\| \, \|Q\|^k \, \|u\|$ for every $k$; this turns similarity to a
+contraction into convergence of the errors. -/
 private theorem norm_pow_conj_le {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
     (hP : (↑u⁻¹ : E →L[𝕜] E) * Q * ↑u = P) (k : ℕ) :
     ‖P ^ k‖ ≤ ‖(↑u⁻¹ : E →L[𝕜] E)‖ * ‖Q‖ ^ k * ‖(u : E →L[𝕜] E)‖ := by
@@ -486,8 +570,12 @@ private theorem norm_pow_conj_le {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
         exact norm_mul_le _ _
     _ ≤ ‖(↑u⁻¹ : E →L[𝕜] E)‖ * ‖Q‖ ^ k * ‖(u : E →L[𝕜] E)‖ := by gcongr; exact hQ k
 
-/-- The sweep operator has spectral radius below one: it is similar to the product of two Cayley
-transforms, and similarity preserves the spectrum. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $H$ and $V$ be coercive
+continuous linear operators on $E$, and let $r > 0$. Then the sweep operator has spectral radius
+$\rho(P_r) < 1$.
+
+The spectral radius is taken over the scalar field of $E$. The operator $P_r$ is similar to the
+product of two Cayley transforms, and similarity preserves the spectrum. -/
 theorem spectralRadius_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoercive)
     (hV : (V : E →ₗ[𝕜] E).IsCoercive) (hr : 0 < r) :
     spectralRadius 𝕜 (peacemanRachford H V r) < 1 := by
@@ -508,10 +596,12 @@ theorem spectralRadius_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCo
     refine lt_of_le_of_lt hle ?_
     rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm]
 
-/-- Convergence of the Peaceman–Rachford iteration from any starting vector and for any parameter `r
-> 0`: the theorem [saad2003iterative] asserts in §4.3 in one sentence.  The iterates of one sweep
-converge to the solution of `(H + V) x = b`.  No commutativity of `H` and `V` is used, and no
-symmetry either. -/
+/-- Let $E$ be a Hilbert space over $\mathbb{R}$ or $\mathbb{C}$, let $H$ and $V$ be coercive
+continuous linear operators on $E$, let $r > 0$, and let $x, b \in E$ satisfy $(H + V) x = b$.
+Then for every $x_0 \in E$, the iterates of $y \mapsto P_r y + f_r(b)$ from $x_0$ converge to
+$x$. This is the convergence that §4.3 of [saad2003iterative] asserts in one sentence.
+
+No commutativity of $H$ and $V$ is used, and no symmetry. -/
 theorem tendsto_peacemanRachford (hH : (H : E →ₗ[𝕜] E).IsCoercive)
     (hV : (V : E →ₗ[𝕜] E).IsCoercive) (hr : 0 < r) {b x : E} (hx : (H + V) x = b) (x₀ : E) :
     Tendsto (fun k => (step (peacemanRachford H V r) (peacemanRachfordConst H V r b))^[k] x₀)
@@ -559,21 +649,28 @@ theorem tendsto_peacemanRachford (hH : (H : E →ₗ[𝕜] E).IsCoercive)
 
 end Convergence
 
-/-! ### The spectral bounds for symmetric positive definite `H` and `V`
+/-!
+### The spectral bounds for symmetric positive definite $H$ and $V$
 
-These are stated on a complex Hilbert space, where the continuous functional calculus of a
-self-adjoint operator is available; a real symmetric matrix reaches them through
-`Matrix.complexify` and `Matrix.toEuclideanCLM`. -/
+These bounds are stated on a complex Hilbert space, where the continuous functional calculus of a
+self-adjoint operator is available. A real symmetric matrix reaches them through `Matrix.complexify`
+and `Matrix.toEuclideanCLM`.
+-/
 
 section Complex
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
 
-/-- **The norm of the two-parameter Cayley transform of a self-adjoint operator** is bounded by any
-bound `M` of `|t - r₂| / |t + r₁|` over the real spectrum (it is in fact the maximum): `(A -
-r₂)(A + r₁)⁻¹` is the continuous functional calculus of `t ↦ (t - r₂)/(t + r₁)` at `A`, and the
-calculus is isometric (`norm_cfc_le`).  The one-parameter case with `r₁ = r₂` is the strict
-contraction `Stationary.norm_cayley_lt_one`, which needs no functional calculus. -/
+/-- Let $F$ be a complex Hilbert space, let $A$ be a self-adjoint continuous linear operator on $F$,
+and let $r_1, r_2 \in \mathbb{R}$ with $t + r_1 \neq 0$ for every $t$ in the real spectrum of
+$A$. Let $M \ge 0$ satisfy $|t - r_2| / |t + r_1| \le M$ for every $t$ in the real spectrum of
+$A$. Then
+$$\bigl\|(A - r_2 I)(A + r_1 I)^{-1}\bigr\| \le M.$$
+
+The norm is in fact the maximum of $|t - r_2| / |t + r_1|$ over the spectrum. The operator is
+the continuous functional calculus of $t \mapsto (t - r_2) / (t + r_1)$ at $A$, and the calculus
+is isometric (`norm_cfc_le`). The one-parameter case $r_1 = r_2$ for coercive operators is
+`Stationary.norm_cayley_lt_one`, which needs no functional calculus. -/
 theorem norm_cayleyTwo_le {A : F →L[ℂ] F} (hA : IsSelfAdjoint A) {r₁ r₂ : ℝ}
     (hr : ∀ t ∈ spectrum ℝ A, t + r₁ ≠ 0) {M : ℝ} (hM : 0 ≤ M)
     (h : ∀ t ∈ spectrum ℝ A, |t - r₂| / |t + r₁| ≤ M) :
@@ -594,12 +691,17 @@ theorem norm_cayleyTwo_le {A : F →L[ℂ] F} (hA : IsSelfAdjoint A) {r₁ r₂ 
   rw [Real.norm_eq_abs, abs_mul, abs_inv, ← div_eq_mul_inv]
   exact h t ht
 
-/-- **The spectral radius bound for the two-parameter ADI sweep** ([quarteroni2000numerical]
-§4.3.6, the display after (4.50), in the letters `r_i = 1/α_i`): for symmetric positive definite
-`H`, `V` and `r₁, r₂ > 0`, if `|λ - r₂| / (λ + r₁) ≤ M₁` on the spectrum of `H` and `|μ - r₁| /
-(μ + r₂) ≤ M₂` on the spectrum of `V`, then `ρ(B) ≤ M₁ M₂`; the book's statement is the case of
-the two maxima.  `B` is similar to the product of the two Cayley transforms
-(`Stationary.peacemanRachfordTwo_conj`), each bounded by `Stationary.norm_cayleyTwo_le`. -/
+/-- Let $F$ be a complex Hilbert space, let $H$ and $V$ be symmetric coercive continuous linear
+operators on $F$, let $r_1, r_2 > 0$, and let $M_1, M_2 \ge 0$. Assume that
+$|t - r_2| / (t + r_1) \le M_1$ for every $t$ in the real spectrum of $H$, and that
+$|t - r_1| / (t + r_2) \le M_2$ for every $t$ in the real spectrum of $V$. Then
+$$\rho(P_{r_1, r_2}) \le M_1 M_2.$$
+This is the display after (4.50) of [quarteroni2000numerical], §4.3.6, in the letters
+$r_i = 1/\alpha_i$. The source states the case where $M_1$ and $M_2$ are the two maxima.
+
+The hypothesis on $H$ and $V$ is `LinearMap.IsSymmetricCoercive`. The operator $P_{r_1, r_2}$ is
+similar to the product of two Cayley transforms (`Stationary.peacemanRachfordTwo_conj`), and
+each of them is bounded by `Stationary.norm_cayleyTwo_le`. -/
 theorem spectralRadius_peacemanRachfordTwo_le {H V : F →L[ℂ] F}
     (hH : (H : F →ₗ[ℂ] F).IsSymmetricCoercive) (hV : (V : F →ₗ[ℂ] F).IsSymmetricCoercive)
     {r₁ r₂ : ℝ} (hr₁ : 0 < r₁) (hr₂ : 0 < r₂) {M₁ M₂ : ℝ} (hM₁ : 0 ≤ M₁) (hM₂ : 0 ≤ M₂)
@@ -630,8 +732,8 @@ theorem spectralRadius_peacemanRachfordTwo_le {H V : F →L[ℂ] F}
   exact ENNReal.ofReal_le_ofReal
     ((norm_mul_le _ _).trans (mul_le_mul hCH hCV (norm_nonneg _) hM₁))
 
-/-- On `[a², b²]` the function `t ↦ |t - ab| / (t + ab)` is at most `(b - a)/(b + a)`, the common
-value at the two endpoints. -/
+/-- For $0 < a \le b$ and $a^2 \le t \le b^2$, $|t - ab| / (t + ab) \le (b - a) / (b + a)$, the
+common value at the two endpoints. -/
 private theorem abs_sub_div_add_le {a b t : ℝ} (ha : 0 < a) (hab : a ≤ b) (ht : a ^ 2 ≤ t)
     (ht' : t ≤ b ^ 2) : |t - a * b| / (t + a * b) ≤ (b - a) / (b + a) := by
   have hb : 0 < b := ha.trans_le hab
@@ -643,13 +745,20 @@ private theorem abs_sub_div_add_le {a b t : ℝ} (ha : 0 < a) (hab : a ≤ b) (h
   · rw [abs_of_neg (by linarith)]
     nlinarith [mul_le_mul_of_nonneg_left ht hb.le]
 
-/-- **The ADI bound for spectra in `[γ, δ]`** ([quarteroni2000numerical] §4.3.6, last display):
-if the quadratic forms of `H` and `V` are enclosed in `[γ, δ]` with `0 < γ ≤ δ`, the parameter
-`r = √(γ δ)` (the book's `α₁ = α₂ = 1/√(δ γ)`) gives
-`ρ(B) ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`.  It is `Stationary.spectralRadius_peacemanRachfordTwo_le`
-at `r₁ = r₂ = r`: on `[γ, δ]` the function `t ↦ |t - r| / (t + r)` is largest at the endpoints,
-where it equals `(√δ - √γ)/(√δ + √γ)`.  The book's proviso "provided `γ/δ → 0` as the size grows"
-is not a hypothesis of the inequality. -/
+/-- Let $F$ be a complex Hilbert space, let $0 < \gamma \le \delta$, and let $H$ and $V$ be
+symmetric continuous linear operators on $F$ with $\gamma \|x\|^2 \le \operatorname{Re} \langle
+Hx, x \rangle \le \delta \|x\|^2$ and $\gamma \|x\|^2 \le \operatorname{Re} \langle Vx, x
+\rangle \le \delta \|x\|^2$ for all $x$. Then the parameter $r = \sqrt{\gamma \delta}$ gives
+$$\rho(P_r) \le \left(\frac{1 - \sqrt{\gamma/\delta}}{1 + \sqrt{\gamma/\delta}}\right)^2.$$
+This is the last display of [quarteroni2000numerical], §4.3.6, where the parameter is
+$\alpha_1 = \alpha_2 = 1/\sqrt{\delta\gamma}$.
+
+The source adds the proviso "provided $\gamma/\delta \to 0$ as the size grows", which is not a
+hypothesis of the inequality. The hypotheses on $H$ and $V$ are
+`LinearMap.IsSymmetricBoundedBy`. The proof is
+`Stationary.spectralRadius_peacemanRachfordTwo_le` at $r_1 = r_2 = r$: on $[\gamma, \delta]$ the
+function $t \mapsto |t - r| / (t + r)$ is largest at the endpoints, where it equals
+$(\sqrt\delta - \sqrt\gamma) / (\sqrt\delta + \sqrt\gamma)$. -/
 theorem spectralRadius_peacemanRachford_le_of_spectrum_subset {H V : F →L[ℂ] F} {γ δ : ℝ}
     (hγ : 0 < γ) (hγδ : γ ≤ δ) (hH : (H : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ)
     (hV : (V : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ) :
@@ -681,14 +790,16 @@ end Complex
 
 end Stationary
 
-/-! ### Matrices
+/-!
+### Matrices
 
-The sweep of two square matrices, read through `Matrix.toEuclideanCLM`, and the bounds of the
-previous sections for real symmetric positive definite matrices, read through `Matrix.complexify`
-and `Matrix.complexSpectralRadius`.  The matrix is written out,
-`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)`, with Mathlib's junk-valued `Matrix.inv`; the
-nonsingularity of the shifts is a hypothesis where the operator side needs it, and follows from
-positive definiteness in the corollaries. -/
+This section reads the sweep of two square matrices through `Matrix.toEuclideanCLM`, and the bounds
+of the previous sections for real symmetric positive definite matrices through `Matrix.complexify`
+and `Matrix.complexSpectralRadius`. The matrix is written out as $(V + r_2 I)^{-1} (H - r_2 I) (H +
+r_1 I)^{-1} (V - r_1 I)$ with Mathlib's matrix inverse, which is $0$ at a singular matrix. The
+nonsingularity of the shifts is a hypothesis where the operator results need it, and it follows from
+positive definiteness in the corollaries.
+-/
 
 namespace Matrix
 
@@ -700,10 +811,12 @@ section RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜] {H V : Matrix ι ι 𝕜} {r₁ r₂ : ℝ}
 
-/-- The matrix `(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` of a two-parameter
-Peaceman–Rachford sweep acts on `EuclideanSpace 𝕜 ι` as the operator
-`Stationary.peacemanRachfordTwo` of `H` and `V`, when the shifts `H + r₁ I` and `V + r₂ I` are
-nonsingular. -/
+/-- Let $H$ and $V$ be square matrices over $\mathbb{R}$ or $\mathbb{C}$, and let
+$r_1, r_2 \in \mathbb{R}$ be such that $H + r_1 I$ and $V + r_2 I$ are nonsingular. Then the
+matrix
+$$(V + r_2 I)^{-1} (H - r_2 I) (H + r_1 I)^{-1} (V - r_1 I)$$
+acts on the Euclidean space of vectors indexed by $\iota$ as the operator $P_{r_1, r_2}$
+(`Stationary.peacemanRachfordTwo`) of the operators of $H$ and $V$. -/
 theorem toEuclideanCLM_peacemanRachfordTwo (hH : IsUnit (H + (r₁ : 𝕜) • (1 : Matrix ι ι 𝕜)))
     (hV : IsUnit (V + (r₂ : 𝕜) • (1 : Matrix ι ι 𝕜))) :
     toEuclideanCLM (n := ι) (𝕜 := 𝕜)
@@ -715,8 +828,10 @@ theorem toEuclideanCLM_peacemanRachfordTwo (hH : IsUnit (H + (r₁ : 𝕜) • (
     toEuclideanCLM_nonsing_inv hH, toEuclideanCLM_add_smul_one, toEuclideanCLM_add_smul_one,
     toEuclideanCLM_sub_smul_one, toEuclideanCLM_sub_smul_one]
 
-/-- The matrix `(V + r₂ I)⁻¹ (I - (H - r₂ I)(H + r₁ I)⁻¹)` of the affine part of a two-parameter
-Peaceman–Rachford sweep acts on `EuclideanSpace 𝕜 ι` as `Stationary.peacemanRachfordTwoConst`. -/
+/-- Let $H$ and $V$ be square matrices over $\mathbb{R}$ or $\mathbb{C}$ such that $H + r_1 I$ and
+$V + r_2 I$ are nonsingular. Then the matrix $(V + r_2 I)^{-1} \bigl(I - (H - r_2 I)(H + r_1
+I)^{-1}\bigr)$ acts on every vector $b$ as the affine part `Stationary.peacemanRachfordTwoConst`
+of the operators of $H$ and $V$. -/
 theorem toEuclideanCLM_peacemanRachfordTwoConst
     (hH : IsUnit (H + (r₁ : 𝕜) • (1 : Matrix ι ι 𝕜)))
     (hV : IsUnit (V + (r₂ : 𝕜) • (1 : Matrix ι ι 𝕜))) (b : EuclideanSpace 𝕜 ι) :
@@ -735,15 +850,18 @@ section Real
 
 variable {H V : Matrix ι ι ℝ} {r₁ r₂ : ℝ}
 
-/-- A nonsingular real shift stays nonsingular after complexification. -/
+/-- If $A + rI$ is nonsingular for a real square matrix $A$, then so is the complexification of $A$
+plus $rI$. -/
 private theorem isUnit_complexify_add_smul_one {A : Matrix ι ι ℝ} {r : ℝ}
     (hA : IsUnit (A + r • (1 : Matrix ι ι ℝ))) :
     IsUnit (complexify A + (r : ℂ) • (1 : Matrix ι ι ℂ)) := by
   rwa [← complexify_one, ← complexify_smul, ← complexify_add, isUnit_complexify_iff]
 
-/-- The complex spectral radius of the real two-parameter Peaceman–Rachford matrix
-`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` is the spectral radius of the operator
-`Stationary.peacemanRachfordTwo` of the complexified `H` and `V` on `EuclideanSpace ℂ ι`. -/
+/-- Let $H$ and $V$ be real square matrices, and let $r_1, r_2 \in \mathbb{R}$ be such that
+$H + r_1 I$ and $V + r_2 I$ are nonsingular. Then the complex spectral radius of the real matrix
+$$(V + r_2 I)^{-1} (H - r_2 I) (H + r_1 I)^{-1} (V - r_1 I)$$
+is the spectral radius of the operator $P_{r_1, r_2}$ (`Stationary.peacemanRachfordTwo`) of the
+complexifications of $H$ and $V$ on `EuclideanSpace ℂ ι`. -/
 theorem complexSpectralRadius_peacemanRachfordTwo (hH : IsUnit (H + r₁ • (1 : Matrix ι ι ℝ)))
     (hV : IsUnit (V + r₂ • (1 : Matrix ι ι ℝ))) :
     complexSpectralRadius ((V + r₂ • 1)⁻¹ * (H - r₂ • 1) * (H + r₁ • 1)⁻¹ * (V - r₁ • 1)) =
@@ -764,13 +882,15 @@ theorem complexSpectralRadius_peacemanRachfordTwo (hH : IsUnit (H + r₁ • (1 
   rw [complexSpectralRadius, hc, ← h, spectralRadius_eq_of_unital, spectralRadius_eq_of_unital,
     AlgEquiv.spectrum_eq (toEuclideanCLM (n := ι) (𝕜 := ℂ))]
 
-/-- **The two-parameter ADI bound for symmetric positive definite matrices**
-([quarteroni2000numerical] §4.3.6, the display after (4.50), with `r_i = 1/α_i`): for `H`, `V`
-positive definite and `r₁, r₂ > 0`, if `|λ - r₂| / (λ + r₁) ≤ M₁` on the spectrum of `H` and
-`|μ - r₁| / (μ + r₂) ≤ M₂` on the spectrum of `V`, then the complex spectral radius of
-`(V + r₂ I)⁻¹ (H - r₂ I) (H + r₁ I)⁻¹ (V - r₁ I)` is at most `M₁ M₂`.  It is
-`Stationary.spectralRadius_peacemanRachfordTwo_le` for the complexified matrices; `H` and `V`
-need not commute. -/
+/-- Let $H$ and $V$ be real symmetric positive definite matrices, let $r_1, r_2 > 0$, and let
+$M_1, M_2 \ge 0$. Assume that $|t - r_2| / (t + r_1) \le M_1$ for every eigenvalue $t$ of $H$,
+and that $|t - r_1| / (t + r_2) \le M_2$ for every eigenvalue $t$ of $V$. Then
+$$\rho\bigl((V + r_2 I)^{-1} (H - r_2 I) (H + r_1 I)^{-1} (V - r_1 I)\bigr) \le M_1 M_2.$$
+This is the display after (4.50) of [quarteroni2000numerical], §4.3.6, with $r_i = 1/\alpha_i$.
+
+The spectral radius is `Matrix.complexSpectralRadius`, and the eigenvalues are the real spectrum
+`spectrum ℝ`. The proof is `Stationary.spectralRadius_peacemanRachfordTwo_le` for the
+complexified matrices. The matrices $H$ and $V$ need not commute. -/
 theorem PosDef.complexSpectralRadius_peacemanRachfordTwo_le (hH : H.PosDef) (hV : V.PosDef)
     (hr₁ : 0 < r₁) (hr₂ : 0 < r₂) {M₁ M₂ : ℝ} (hM₁ : 0 ≤ M₁) (hM₂ : 0 ≤ M₂)
     (h₁ : ∀ t ∈ spectrum ℝ H, |t - r₂| / (t + r₁) ≤ M₁)
@@ -784,11 +904,14 @@ theorem PosDef.complexSpectralRadius_peacemanRachfordTwo_le (hH : H.PosDef) (hV 
   · rwa [spectrum_real_toEuclideanCLM_complexify]
   · rwa [spectrum_real_toEuclideanCLM_complexify]
 
-/-- **Convergence of the ADI sweep for symmetric positive definite matrices**
-([saad2003iterative] §4.3, [quarteroni2000numerical] §4.3.6 for `α₁ = α₂`): for `H`, `V` positive
-definite and `r > 0`, the matrix `(V + r I)⁻¹ (H - r I) (H + r I)⁻¹ (V - r I)` has complex
-spectral radius below one.  It is `Stationary.spectralRadius_peacemanRachford_lt_one` for the
-complexified matrices; `H` and `V` need not commute. -/
+/-- Let $H$ and $V$ be real symmetric positive definite matrices and let $r > 0$. Then
+$$\rho\bigl((V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI)\bigr) < 1.$$
+This is the convergence of the alternating direction implicit iteration of [saad2003iterative],
+§4.3, and of [quarteroni2000numerical], §4.3.6, for $\alpha_1 = \alpha_2$.
+
+The spectral radius is `Matrix.complexSpectralRadius`. The proof is
+`Stationary.spectralRadius_peacemanRachford_lt_one` for the complexified matrices. The matrices
+$H$ and $V$ need not commute. -/
 theorem PosDef.complexSpectralRadius_peacemanRachford_lt_one (hH : H.PosDef) (hV : V.PosDef)
     {r : ℝ} (hr : 0 < r) :
     complexSpectralRadius ((V + r • 1)⁻¹ * (H - r • 1) * (H + r • 1)⁻¹ * (V - r • 1)) < 1 := by
@@ -798,12 +921,15 @@ theorem PosDef.complexSpectralRadius_peacemanRachford_lt_one (hH : H.PosDef) (hV
     hH.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
     hV.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive hr
 
-/-- **The ADI bound for spectra in `[γ, δ]`, for real symmetric matrices**
-([quarteroni2000numerical] §4.3.6, last display): if the spectra of the symmetric `H` and `V` lie
-in `[γ, δ]` with `0 < γ ≤ δ`, the parameter `r = √(γ δ)` gives
-`ρ((V + r I)⁻¹ (H - r I) (H + r I)⁻¹ (V - r I)) ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`.  It is
-`Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le` at `r₁ = r₂ = r`, as in
-`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`. -/
+/-- Let $H$ and $V$ be real symmetric matrices whose eigenvalues lie in $[\gamma, \delta]$, with
+$0 < \gamma \le \delta$. Then the parameter $r = \sqrt{\gamma \delta}$ gives
+$$\rho\bigl((V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI)\bigr) \le \left(\frac{1 -
+  \sqrt{\gamma/\delta}}{1 + \sqrt{\gamma/\delta}}\right)^2.$$
+This is the last display of [quarteroni2000numerical], §4.3.6.
+
+The spectral radius is `Matrix.complexSpectralRadius`, and the eigenvalues are the real spectrum
+`spectrum ℝ`. The proof is `Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le` at
+$r_1 = r_2 = r$, as in `Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`. -/
 theorem IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset
     (hH : H.IsHermitian) (hV : V.IsHermitian) {γ δ : ℝ} (hγ : 0 < γ) (hγδ : γ ≤ δ)
     (h₁ : spectrum ℝ H ⊆ Set.Icc γ δ) (h₂ : spectrum ℝ V ⊆ Set.Icc γ δ) :

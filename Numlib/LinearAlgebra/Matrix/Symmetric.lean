@@ -13,23 +13,37 @@ import Mathlib.LinearAlgebra.Matrix.Symmetric
 /-!
 # Congruences of symmetric matrices
 
-A congruence `Xᵀ A X` of a symmetric matrix is symmetric (`Matrix.IsSymm.transpose_mul_mul`), and
-so is its row twin `X A Xᵀ` (`Matrix.IsSymm.mul_mul_transpose`), for rectangular `X` over a
-commutative semiring: the transpose analogues of Mathlib's
-`Matrix.isHermitian_conjTranspose_mul_mul` and `Matrix.isHermitian_mul_mul_conjTranspose`, which
-Mathlib's `Symmetric` file lacks.
+Let $A$ be a symmetric $n \times n$ matrix over a commutative semiring, and let $X$ be a rectangular
+matrix. This file proves that the congruences $X^T A X$ and $X A X^T$ are again symmetric.
+
+## Main results
+
+* `Matrix.IsSymm.transpose_mul_mul`: if $A$ is symmetric, then $X^T A X$ is symmetric.
+* `Matrix.IsSymm.mul_mul_transpose`: if $A$ is symmetric, then $X A X^T$ is symmetric.
+
+## Implementation notes
+
+* The two results are the transpose analogues of Mathlib's
+  `Matrix.isHermitian_conjTranspose_mul_mul` and `Matrix.isHermitian_mul_mul_conjTranspose`. The
+  Mathlib module `Mathlib.LinearAlgebra.Matrix.Symmetric` does not contain them.
 -/
 
 namespace Matrix
 
 variable {m n α : Type*} [Fintype n] [CommSemiring α] {A : Matrix n n α}
 
-/-- **A congruence of a symmetric matrix is symmetric**: `(Xᵀ A X)ᵀ = Xᵀ Aᵀ X = Xᵀ A X`. -/
+/-- Let $A$ be a symmetric $n \times n$ matrix over a commutative semiring, and let $X$ be an
+$n \times m$ matrix. Then the **congruence** $X^T A X$ is symmetric:
+$$(X^T A X)^T = X^T A^T X = X^T A X.$$
+-/
 theorem IsSymm.transpose_mul_mul (hA : A.IsSymm) (X : Matrix n m α) : (Xᵀ * A * X).IsSymm := by
   rw [IsSymm, transpose_mul, transpose_mul, transpose_transpose, hA.eq, Matrix.mul_assoc]
 
-/-- **A congruence of a symmetric matrix is symmetric**, the row twin of
-`Matrix.IsSymm.transpose_mul_mul`: `(X A Xᵀ)ᵀ = X Aᵀ Xᵀ = X A Xᵀ`. -/
+/-- Let $A$ be a symmetric $n \times n$ matrix over a commutative semiring, and let $X$ be an
+$m \times n$ matrix. Then $X A X^T$ is symmetric:
+$$(X A X^T)^T = X A^T X^T = X A X^T.$$
+
+This is the row form of `Matrix.IsSymm.transpose_mul_mul`. -/
 theorem IsSymm.mul_mul_transpose (hA : A.IsSymm) (X : Matrix m n α) : (X * A * Xᵀ).IsSymm := by
   simpa only [transpose_transpose] using hA.transpose_mul_mul Xᵀ
 

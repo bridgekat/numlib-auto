@@ -12,35 +12,59 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # Integral operators with a square-integrable kernel
 
-For a kernel `k` that is square-integrable on the product `μ × μ`, the formula
-`K v (x) = ∫ k (x, y) v y ∂μ` defines a bounded operator on `L²(μ)` whose norm is at most the
-`L²` norm `B` of the kernel, and whose adjoint is the operator of the transposed kernel
-`(x, y) ↦ k (y, x)`. This is the classical Hilbert–Schmidt integral operator; see
-[han2009theoretical], Example 2.6.1 and §2.8.3, and [kress1989linear], §4.
-`Numlib/IntegralEquations/Basic` builds the companion operator on `C(X, ℝ)` for a *continuous*
-kernel, which is a different object: its bound is the row `L¹` norm, not the `L²` norm of `k`.
+Let $\mu$ be an s-finite measure on a measurable space $X$, and let
+$k \colon X \times X \to \mathbb{R}$ be square-integrable for the product measure $\mu \otimes \mu$.
+Write $B = \left( \iint k(x, y)^2 \, d\mu(x) \, d\mu(y) \right)^{1/2}$ for the $L^2$ norm of the
+kernel. The formula
+$$(Kv)(x) = \int k(x, y) \, v(y) \, d\mu(y)$$
+defines a bounded linear operator $K$ on $L^2(\mu)$ with $\|K\| \le B$, and the adjoint of $K$ is
+the operator of the transposed kernel $k^T(x, y) = k(y, x)$. This is the classical Hilbert–Schmidt
+integral operator of [han2009theoretical], Example 2.6.1 and §2.8.3; see also [kress1989linear], §4.
 
-## Main statements
+When $\mu$ is separable, the map $k \mapsto K$ is injective up to null sets. As a consequence, $K$
+is self-adjoint if and only if $k(x, y) = k(y, x)$ for $\mu \otimes \mu$-almost every $(x, y)$.
 
-* `IntegralOperator.l2KernelCLM` — the operator itself, with `IntegralOperator.l2KernelCLM_apply_ae`
-  the defining formula (an `L²` element is an a.e.-class, so the formula holds almost everywhere).
-* `IntegralOperator.norm_l2KernelCLM_le` — `‖K‖ ≤ √(∫∫ k²)`. Cauchy–Schwarz on the row `k (x, ·)`
-  bounds `|K v (x)|²` by `(∫ k (x, y)² ∂μ) ‖v‖²`, and Fubini integrates the row norms to `B²`.
-* `IntegralOperator.adjoint_l2KernelCLM` — the adjoint is the operator of the transposed kernel,
-  by Fubini on `∫∫ k (x, y) v y w x`.
-* `IntegralOperator.isSelfAdjoint_l2KernelCLM` and
-  `IntegralOperator.isSelfAdjoint_l2KernelCLM_iff` — the operator is self-adjoint exactly when the
-  kernel is symmetric almost everywhere. The forward direction of the `iff` is the injectivity of
-  `k ↦ l2KernelCLM hk` (`IntegralOperator.ae_eq_zero_of_l2KernelCLM_eq_zero`), which asks that the
-  measure be separable, so that `L²(μ)` has a countable dense subset; that holds automatically
-  when the space is countably generated, in particular for `L²(a, b)`.
+## Main definitions
 
-Along the way, `MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`
-(`Numlib/MeasureTheory/Integral/IntervalIntegral`) is the Cauchy–Schwarz inequality for a
-product of two square-integrable real functions, and
-`IntegralOperator.norm_lp_eq_sqrt_integral_sq` and `MeasureTheory.L2.inner_eq_integral_mul` read the
-norm and the inner product of `Lp ℝ 2 μ` as ordinary integrals, which is what makes the
-statements below quantifier-free integral inequalities rather than `eLpNorm` manipulations.
+* `IntegralOperator.l2KernelCLM`: the bounded operator $K$ on $L^2(\mu)$ of a square-integrable
+  kernel $k$.
+
+## Main results
+
+* `IntegralOperator.l2KernelCLM_apply_ae`: $(Kv)(x) = \int k(x, y) v(y) \, d\mu(y)$ for almost every
+  $x$.
+* `IntegralOperator.norm_l2KernelCLM_le`: $\|K\| \le B$.
+* `IntegralOperator.adjoint_l2KernelCLM`: the adjoint of $K$ is the operator of the transposed
+  kernel.
+* `IntegralOperator.isSelfAdjoint_l2KernelCLM`: if $k$ is symmetric almost everywhere, then $K$ is
+  self-adjoint.
+* `IntegralOperator.ae_eq_zero_of_l2KernelCLM_eq_zero`: for a separable measure, $K = 0$ implies
+  $k = 0$ almost everywhere.
+* `IntegralOperator.isSelfAdjoint_l2KernelCLM_iff`: for a separable measure, $K$ is self-adjoint if
+  and only if $k$ is symmetric almost everywhere.
+
+## Proof outline
+
+The Cauchy–Schwarz inequality on the row $k(x, \cdot)$ gives $|(Kv)(x)|^2 \le \left( \int k(x, y)^2
+\, d\mu(y) \right) \|v\|^2$, and the Fubini theorem integrates the squared row norms to $B^2$. The
+adjoint identity is the Fubini theorem for the double integral $\iint k(x, y) v(y) w(x)$. For the
+injectivity, if $K = 0$, then almost every row of $k$ is orthogonal to a countable dense subset of
+$L^2(\mu)$, so it is zero.
+
+## Implementation notes
+
+* An element of `Lp ℝ 2 μ` is an equivalence class of functions modulo null sets, so the defining
+  formula of $K$ holds only almost everywhere.
+* `IntegralOperator.norm_lp_eq_sqrt_integral_sq` and `MeasureTheory.L2.inner_eq_integral_mul` write
+  the norm and the inner product of `Lp ℝ 2 μ` as ordinary integrals, and
+  `MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt` is the Cauchy–Schwarz inequality for two
+  square-integrable real functions. With these, the statements are integral inequalities, not
+  statements about `eLpNorm`.
+* The separability of $\mu$ is Mathlib's `MeasureTheory.IsSeparable`. It makes $L^2(\mu)$ separable.
+  It holds when the σ-algebra of $X$ is countably generated, in particular for $L^2(a, b)$.
+* The module `Numlib.IntegralEquations.Basic` defines a different operator: the integral operator of
+  a continuous kernel on the space of continuous functions on a compact space. Its norm is the
+  largest row integral $\max_x \int |k(x, y)| \, d\mu(y)$, not the $L^2$ norm of $k$.
 -/
 
 open Filter MeasureTheory Real
@@ -49,7 +73,9 @@ namespace IntegralOperator
 
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X}
 
-/-- The norm of an element of `L²(μ)` as an ordinary integral, `‖f‖ = √(∫ f²)`. -/
+/-- For $f \in L^2(\mu)$, the norm is the integral
+$$\|f\| = \left( \int f(x)^2 \, d\mu(x) \right)^{1/2}.$$
+-/
 theorem norm_lp_eq_sqrt_integral_sq (f : Lp ℝ 2 μ) : ‖f‖ = √(∫ x, f x ^ 2 ∂μ) := by
   have h := real_inner_self_eq_norm_mul_norm f
   rw [MeasureTheory.L2.inner_def] at h
@@ -63,24 +89,29 @@ theorem norm_lp_eq_sqrt_integral_sq (f : Lp ℝ 2 μ) : ‖f‖ = √(∫ x, f x
 
 variable [SFinite μ] {k : X × X → ℝ}
 
-/-- Almost every row `k (x, ·)` of a square-integrable kernel is square-integrable. -/
+/-- If $k \in L^2(\mu \otimes \mu)$, then for $\mu$-almost every $x$ the row $y \mapsto k(x, y)$ is
+in $L^2(\mu)$. -/
 theorem ae_memLp_row (hk : MemLp k 2 (μ.prod μ)) :
     ∀ᵐ x ∂μ, MemLp (fun y => k (x, y)) 2 μ := by
   filter_upwards [hk.aestronglyMeasurable.prodMk_left, hk.integrable_sq.prod_right_ae]
     with x hm hi using (memLp_two_iff_integrable_sq hm).2 hi
 
-/-- The squared `L²` norm of the row `k (x, ·)` is an integrable function of `x`. -/
+/-- If $k \in L^2(\mu \otimes \mu)$, then the squared row norm $x \mapsto \int k(x, y)^2 \, d\mu(y)$
+is $\mu$-integrable. -/
 theorem integrable_integral_sq_row (hk : MemLp k 2 (μ.prod μ)) :
     Integrable (fun x => ∫ y, k (x, y) ^ 2 ∂μ) μ :=
   hk.integrable_sq.integral_prod_left
 
-/-- Fubini for the squared kernel: integrating the squared row norms recovers `∫∫ k²`,
-the square of the bound `B` of [han2009theoretical], Example 2.6.1. -/
+/-- If $k \in L^2(\mu \otimes \mu)$, then
+$$\int \left( \int k(x, y)^2 \, d\mu(y) \right) d\mu(x) = \int k^2 \, d(\mu \otimes \mu).$$
+This is the Fubini theorem for $k^2$. The right side is $B^2$, the square of the bound in
+Example 2.6.1 of [han2009theoretical]. -/
 theorem integral_integral_sq (hk : MemLp k 2 (μ.prod μ)) :
     ∫ x, (∫ y, k (x, y) ^ 2 ∂μ) ∂μ = ∫ p, k p ^ 2 ∂(μ.prod μ) :=
   integral_integral hk.integrable_sq
 
-/-- The row `L²` norm `x ↦ √(∫ k (x, y)² ∂μ)` is itself square-integrable. -/
+/-- If $k \in L^2(\mu \otimes \mu)$, then the row norm $x \mapsto \left( \int k(x, y)^2 \, d\mu(y)
+\right)^{1/2}$ is in $L^2(\mu)$. -/
 theorem memLp_sqrt_integral_sq_row (hk : MemLp k 2 (μ.prod μ)) :
     MemLp (fun x => √(∫ y, k (x, y) ^ 2 ∂μ)) 2 μ := by
   have hI := integrable_integral_sq_row hk
@@ -90,7 +121,8 @@ theorem memLp_sqrt_integral_sq_row (hk : MemLp k 2 (μ.prod μ)) :
   refine Filter.Eventually.of_forall fun x => ?_
   exact (Real.sq_sqrt (integral_nonneg fun y => sq_nonneg _)).symm
 
-/-- For almost every `x` the integrand `y ↦ k (x, y) v y` of the operator is integrable. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, then for $\mu$-almost every $x$ the
+function $y \mapsto k(x, y) v(y)$ is $\mu$-integrable. -/
 theorem ae_integrable_row_mul (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     ∀ᵐ x ∂μ, Integrable (fun y => k (x, y) * v y) μ := by
   filter_upwards [ae_memLp_row hk] with x hx
@@ -98,19 +130,26 @@ theorem ae_integrable_row_mul (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv 
 
 /-! ### The operator -/
 
-/-- The image `x ↦ ∫ k (x, y) v y ∂μ` of a measurable function is measurable. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v$ is almost everywhere strongly measurable, then
+$x \mapsto \int k(x, y) v(y) \, d\mu(y)$ is almost everywhere strongly measurable. -/
 theorem aestronglyMeasurable_l2Kernel (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ}
     (hv : AEStronglyMeasurable v μ) :
     AEStronglyMeasurable (fun x => ∫ y, k (x, y) * v y ∂μ) μ :=
   (hk.aestronglyMeasurable.mul hv.comp_snd).integral_prod_right'
 
-/-- Cauchy–Schwarz on the row: `|∫ k (x, y) v y ∂μ| ≤ √(∫ k (x, y)² ∂μ) √(∫ v²)`. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, then for $\mu$-almost every $x$,
+$$\left| \int k(x, y) v(y) \, d\mu(y) \right| \le \left( \int k(x, y)^2 \, d\mu(y) \right)^{1/2}
+  \left( \int v^2 \, d\mu \right)^{1/2}.$$
+This is the Cauchy–Schwarz inequality for the row $k(x, \cdot)$. -/
 theorem abs_integral_row_mul_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     ∀ᵐ x ∂μ, |∫ y, k (x, y) * v y ∂μ| ≤ √(∫ y, k (x, y) ^ 2 ∂μ) * √(∫ y, v y ^ 2 ∂μ) := by
   filter_upwards [ae_memLp_row hk] with x hx
   exact MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt hx hv
 
-/-- The squared form of the row bound, which is what integrates in `x`. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, then for $\mu$-almost every $x$,
+$$\left( \int k(x, y) v(y) \, d\mu(y) \right)^2 \le \left( \int k(x, y)^2 \, d\mu(y) \right)
+  \int v^2 \, d\mu.$$
+-/
 theorem ae_sq_l2Kernel_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     ∀ᵐ x ∂μ, (∫ y, k (x, y) * v y ∂μ) ^ 2 ≤ (∫ y, k (x, y) ^ 2 ∂μ) * ∫ y, v y ^ 2 ∂μ := by
   filter_upwards [abs_integral_row_mul_le hk hv] with x hx
@@ -122,7 +161,8 @@ theorem ae_sq_l2Kernel_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : Me
     _ = (∫ y, k (x, y) ^ 2 ∂μ) * ∫ y, v y ^ 2 ∂μ := by
         rw [mul_pow, Real.sq_sqrt hA, Real.sq_sqrt hB]
 
-/-- The image of a square-integrable function under an `L²` kernel is square-integrable. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, then
+$x \mapsto \int k(x, y) v(y) \, d\mu(y)$ is in $L^2(\mu)$. -/
 theorem memLp_l2Kernel (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     MemLp (fun x => ∫ y, k (x, y) * v y ∂μ) 2 μ := by
   have hmeas := aestronglyMeasurable_l2Kernel hk hv.aestronglyMeasurable
@@ -133,14 +173,18 @@ theorem memLp_l2Kernel (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp
   rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
   exact hx
 
-/-- `∫ (K v)² ≤ (∫∫ k²) ∫ v²`: the squared operator bound, before taking square roots. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, then
+$$\int \left( \int k(x, y) v(y) \, d\mu(y) \right)^2 d\mu(x) \le \left( \int k^2 \, d(\mu
+  \otimes \mu) \right) \int v^2 \, d\mu.$$
+This is the square of the bound $\|K\| \le B$. -/
 theorem integral_sq_l2Kernel_le (hk : MemLp k 2 (μ.prod μ)) {v : X → ℝ} (hv : MemLp v 2 μ) :
     ∫ x, (∫ y, k (x, y) * v y ∂μ) ^ 2 ∂μ ≤ (∫ p, k p ^ 2 ∂(μ.prod μ)) * ∫ y, v y ^ 2 ∂μ := by
   rw [← integral_integral_sq hk, ← integral_mul_const]
   exact integral_mono_ae (memLp_l2Kernel hk hv).integrable_sq
     ((integrable_integral_sq_row hk).mul_const _) (ae_sq_l2Kernel_le hk hv)
 
-/-- The linear map underlying `IntegralOperator.l2KernelCLM`. -/
+/-- The linear map $v \mapsto \left( x \mapsto \int k(x, y) v(y) \, d\mu(y) \right)$ on $L^2(\mu)$,
+for $k \in L^2(\mu \otimes \mu)$. It is the linear map of `IntegralOperator.l2KernelCLM`. -/
 noncomputable def l2KernelLM (hk : MemLp k 2 (μ.prod μ)) : Lp ℝ 2 μ →ₗ[ℝ] Lp ℝ 2 μ where
   toFun v := (memLp_l2Kernel hk (Lp.memLp v)).toLp _
   map_add' v w := by
@@ -169,14 +213,21 @@ noncomputable def l2KernelLM (hk : MemLp k 2 (μ.prod μ)) : Lp ℝ 2 μ →ₗ[
     rw [hy, Pi.smul_apply, smul_eq_mul]
     ring
 
-/-- The defining formula for `IntegralOperator.l2KernelLM`, valid almost everywhere. -/
+/-- For $k \in L^2(\mu \otimes \mu)$ and $v \in L^2(\mu)$, the function
+`IntegralOperator.l2KernelLM hk v` is equal to $x \mapsto \int k(x, y) v(y) \, d\mu(y)$ almost
+everywhere. -/
 theorem coeFn_l2KernelLM (hk : MemLp k 2 (μ.prod μ)) (v : Lp ℝ 2 μ) :
     l2KernelLM hk v =ᵐ[μ] fun x => ∫ y, k (x, y) * v y ∂μ :=
   MemLp.coeFn_toLp (memLp_l2Kernel hk (Lp.memLp v))
 
-/-- **The integral operator of a square-integrable kernel.** For `k ∈ L²(μ × μ)` the map
-`v ↦ (x ↦ ∫ k (x, y) v y ∂μ)` is a bounded operator on `L²(μ)`, of norm at most the `L²`
-norm of `k` (`IntegralOperator.norm_l2KernelCLM_le`). -/
+/-- Let $\mu$ be an s-finite measure on $X$ and let $k \in L^2(\mu \otimes \mu)$. The **integral
+operator** of $k$ is the bounded linear operator $K$ on $L^2(\mu)$ given by
+$$(Kv)(x) = \int k(x, y) \, v(y) \, d\mu(y).$$
+
+The operator is built with the bound $B = \left( \int k^2 \, d(\mu \otimes \mu) \right)^{1/2}$,
+so $\|K\| \le B$ (`IntegralOperator.norm_l2KernelCLM_le`). The argument `hk` is the proof that
+$k$ is square-integrable. The formula holds for almost every $x$
+(`IntegralOperator.l2KernelCLM_apply_ae`). -/
 noncomputable def l2KernelCLM (hk : MemLp k 2 (μ.prod μ)) : Lp ℝ 2 μ →L[ℝ] Lp ℝ 2 μ :=
   (l2KernelLM hk).mkContinuous (√(∫ p, k p ^ 2 ∂(μ.prod μ))) <| by
     intro v
@@ -185,26 +236,35 @@ noncomputable def l2KernelCLM (hk : MemLp k 2 (μ.prod μ)) : Lp ℝ 2 μ →L[�
     refine Real.sqrt_le_sqrt (le_trans (le_of_eq ?_) (integral_sq_l2Kernel_le hk (Lp.memLp v)))
     exact integral_congr_ae ((coeFn_l2KernelLM hk v).mono fun x hx => by simp only [hx])
 
-/-- **The defining formula** `K v (x) = ∫ k (x, y) v y ∂μ`, valid for almost every `x`. -/
+/-- Let $\mu$ be an s-finite measure on $X$, and let $k \in L^2(\mu \otimes \mu)$ and
+$v \in L^2(\mu)$. Then for $\mu$-almost every $x$,
+$$(Kv)(x) = \int k(x, y) \, v(y) \, d\mu(y),$$
+where $K$ is `IntegralOperator.l2KernelCLM hk`. -/
 theorem l2KernelCLM_apply_ae (hk : MemLp k 2 (μ.prod μ)) (v : Lp ℝ 2 μ) :
     l2KernelCLM hk v =ᵐ[μ] fun x => ∫ y, k (x, y) * v y ∂μ :=
   coeFn_l2KernelLM hk v
 
-/-- **The operator norm is at most the `L²` norm of the kernel**, `‖K‖ ≤ B` with
-`B = √(∫∫ k (x, y)²)`. This is the bound of [han2009theoretical], Example 2.6.1 and (2.8.13). -/
+/-- Let $\mu$ be an s-finite measure on $X$, and let $k \in L^2(\mu \otimes \mu)$. The integral
+operator $K$ of $k$ satisfies
+$$\|K\| \le \left( \iint k(x, y)^2 \, d\mu(x) \, d\mu(y) \right)^{1/2}.$$
+This is the bound $\|K\| \le B$ of [han2009theoretical], Example 2.6.1 and (2.8.13).
+
+The double integral is the integral of $k^2$ for the product measure $\mu \otimes \mu$. -/
 theorem norm_l2KernelCLM_le (hk : MemLp k 2 (μ.prod μ)) :
     ‖l2KernelCLM hk‖ ≤ √(∫ p, k p ^ 2 ∂(μ.prod μ)) :=
   LinearMap.mkContinuous_norm_le _ (Real.sqrt_nonneg _) _
 
 /-! ### The adjoint -/
 
-/-- The transposed kernel `(x, y) ↦ k (y, x)` is square-integrable when `k` is. -/
+/-- If $k \in L^2(\mu \otimes \mu)$, then the transposed kernel $(x, y) \mapsto k(y, x)$ is in
+$L^2(\mu \otimes \mu)$. -/
 theorem memLp_swapKernel (hk : MemLp k 2 (μ.prod μ)) :
     MemLp (fun p : X × X => k (p.2, p.1)) 2 (μ.prod μ) :=
   hk.comp_measurePreserving Measure.measurePreserving_swap
 
-/-- The function `(x, y) ↦ k (x, y) v y w x` is integrable on the product, which is what makes
-the Fubini step of the adjoint identity legitimate. -/
+/-- If $k \in L^2(\mu \otimes \mu)$ and $v, w \in L^2(\mu)$, then the function
+$(x, y) \mapsto k(x, y) v(y) w(x)$ is integrable for $\mu \otimes \mu$. This makes the Fubini
+step in `IntegralOperator.adjoint_l2KernelCLM` valid. -/
 theorem integrable_kernel_mul_prod (hk : MemLp k 2 (μ.prod μ)) {v w : X → ℝ}
     (hv : MemLp v 2 μ) (hw : MemLp w 2 μ) :
     Integrable (fun p : X × X => k p * (v p.2 * w p.1)) (μ.prod μ) := by
@@ -220,10 +280,14 @@ theorem integrable_kernel_mul_prod (hk : MemLp k 2 (μ.prod μ)) {v w : X → �
   rw [Real.norm_eq_abs, abs_mul]
   nlinarith [sq_nonneg (|k p| - |v p.2 * w p.1|), sq_abs (k p), sq_abs (v p.2 * w p.1)]
 
-/-- **The adjoint of an `L²` kernel operator is the operator of the transposed kernel**:
-`(K_k)† = K_{kᵀ}` with `kᵀ (x, y) = k (y, x)`. Both sides pair with `v` and `w` to the same
-double integral `∫∫ k (x, y) v y w x`, so the identity is Fubini.
-This is [han2009theoretical], Example 2.6.1 and (2.8.14). -/
+/-- Let $\mu$ be an s-finite measure on $X$, let $k \in L^2(\mu \otimes \mu)$, let $K$ be its
+integral operator, and let $K^T$ be the integral operator of the transposed kernel
+$k^T(x, y) = k(y, x)$. Then the adjoint of $K$ on $L^2(\mu)$ is
+$$K^* = K^T.$$
+This is [han2009theoretical], Example 2.6.1 and (2.8.14).
+
+For $v, w \in L^2(\mu)$, both $\langle Kv, w \rangle$ and $\langle v, K^T w \rangle$ are equal
+to the double integral $\iint k(x, y) v(y) w(x)$, by the Fubini theorem. -/
 theorem adjoint_l2KernelCLM (hk : MemLp k 2 (μ.prod μ)) :
     ContinuousLinearMap.adjoint (l2KernelCLM hk) = l2KernelCLM (memLp_swapKernel hk) := by
   refine ((ContinuousLinearMap.eq_adjoint_iff _ _).2 fun w v => ?_).symm
@@ -245,7 +309,8 @@ theorem adjoint_l2KernelCLM (hk : MemLp k 2 (μ.prod μ)) :
     exact integral_congr_ae (Eventually.of_forall fun b => by ring)
   rw [hL, hR, hswap]
 
-/-- Kernels equal almost everywhere give the same operator. -/
+/-- If $k, k' \in L^2(\mu \otimes \mu)$ and $k = k'$ almost everywhere for $\mu \otimes \mu$, then
+$k$ and $k'$ have the same integral operator. -/
 theorem l2KernelCLM_congr {k' : X × X → ℝ} (hk : MemLp k 2 (μ.prod μ))
     (hk' : MemLp k' 2 (μ.prod μ)) (h : k =ᵐ[μ.prod μ] k') :
     l2KernelCLM hk = l2KernelCLM hk' := by
@@ -256,17 +321,22 @@ theorem l2KernelCLM_congr {k' : X × X → ℝ} (hk : MemLp k 2 (μ.prod μ))
   rw [h1, h2]
   exact integral_congr_ae (h3.mono fun y hy => by simp only [hy])
 
-/-- **A kernel symmetric almost everywhere gives a self-adjoint operator**, by
-`IntegralOperator.adjoint_l2KernelCLM`. This is the direction of [han2009theoretical],
-Example 2.6.1 that is used to recognise a self-adjoint integral operator. -/
+/-- Let $\mu$ be an s-finite measure on $X$, and let $k \in L^2(\mu \otimes \mu)$. If
+$k(x, y) = k(y, x)$ for $\mu \otimes \mu$-almost every $(x, y)$, then the integral operator of
+$k$ is self-adjoint on $L^2(\mu)$.
+
+This is the direction of [han2009theoretical], Example 2.6.1, that identifies a self-adjoint
+integral operator. It follows from `IntegralOperator.adjoint_l2KernelCLM`. -/
 theorem isSelfAdjoint_l2KernelCLM (hk : MemLp k 2 (μ.prod μ))
     (hsymm : ∀ᵐ p ∂(μ.prod μ), k p = k (p.2, p.1)) : IsSelfAdjoint (l2KernelCLM hk) := by
   rw [ContinuousLinearMap.isSelfAdjoint_iff', adjoint_l2KernelCLM hk]
   exact l2KernelCLM_congr (memLp_swapKernel hk) hk (hsymm.mono fun p hp => hp.symm)
 
-/-! ### Injectivity of the kernel-to-operator map -/
+/-! ### Injectivity of the map from kernels to operators -/
 
-/-- The operator of a difference of kernels is the difference of the operators. -/
+/-- Let $\mu$ be an s-finite measure on $X$, and let $k_1, k_2 \in L^2(\mu \otimes \mu)$. Then the
+integral operator of $k_1 - k_2$ is the integral operator of $k_1$ minus the integral operator
+of $k_2$. -/
 theorem l2KernelCLM_sub {k₁ k₂ : X × X → ℝ} (hk₁ : MemLp k₁ 2 (μ.prod μ))
     (hk₂ : MemLp k₂ 2 (μ.prod μ)) :
     l2KernelCLM (hk₁.sub hk₂) = l2KernelCLM hk₁ - l2KernelCLM hk₂ := by
@@ -283,8 +353,12 @@ theorem l2KernelCLM_sub {k₁ k₂ : X × X → ℝ} (hk₁ : MemLp k₁ 2 (μ.p
 
 variable [MeasureTheory.IsSeparable μ]
 
-/-- **An `L²` kernel whose operator vanishes is null.** Every row of the kernel is orthogonal to a
-countable dense subset of `L²(μ)`, hence to all of it, hence zero. -/
+/-- Let $\mu$ be an s-finite separable measure on $X$, and let $k \in L^2(\mu \otimes \mu)$. If the
+integral operator of $k$ is zero, then $k = 0$ almost everywhere for $\mu \otimes \mu$.
+
+Almost every row of $k$ is orthogonal to a countable dense subset of $L^2(\mu)$, so it is
+orthogonal to all of $L^2(\mu)$ and is zero. Separability is `MeasureTheory.IsSeparable μ`,
+which makes $L^2(\mu)$ separable. -/
 theorem ae_eq_zero_of_l2KernelCLM_eq_zero (hk : MemLp k 2 (μ.prod μ))
     (h : l2KernelCLM hk = 0) : k =ᵐ[μ.prod μ] 0 := by
   have : Fact ((2 : ENNReal) ≠ ⊤) := ⟨by norm_num⟩
@@ -327,11 +401,14 @@ theorem ae_eq_zero_of_l2KernelCLM_eq_zero (hk : MemLp k 2 (μ.prod μ))
   rw [hp1]
   exact hp2
 
-/-- **An `L²` kernel operator is self-adjoint exactly when its kernel is symmetric almost
-everywhere.** The implication that matters in practice is the easy one,
-`IntegralOperator.isSelfAdjoint_l2KernelCLM`; the converse is the injectivity of
-`k ↦ l2KernelCLM hk`, which is `IntegralOperator.ae_eq_zero_of_l2KernelCLM_eq_zero` and needs the
-measure to be separable, so that `L²(μ)` has a countable dense subset. -/
+/-- Let $\mu$ be an s-finite separable measure on $X$, and let $k \in L^2(\mu \otimes \mu)$. Then
+the integral operator of $k$ is self-adjoint on $L^2(\mu)$ if and only if
+$$k(x, y) = k(y, x) \quad \text{for } \mu \otimes \mu\text{-almost every } (x, y).$$
+
+The implication from a symmetric kernel is `IntegralOperator.isSelfAdjoint_l2KernelCLM`, and it
+does not need separability. The converse uses
+`IntegralOperator.ae_eq_zero_of_l2KernelCLM_eq_zero` for the kernel $k - k^T$, and this needs
+the separability of $\mu$. -/
 theorem isSelfAdjoint_l2KernelCLM_iff (hk : MemLp k 2 (μ.prod μ)) :
     IsSelfAdjoint (l2KernelCLM hk) ↔ ∀ᵐ p ∂(μ.prod μ), k p = k (p.2, p.1) := by
   refine ⟨fun hsa => ?_, isSelfAdjoint_l2KernelCLM hk⟩

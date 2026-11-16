@@ -16,41 +16,53 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 import Numlib.Data.ENNReal.Real
 
 /-!
-# Comparison of the `ℓ^p` norms on a finite product
+# Comparison of the $\ell^p$ norms on a finite product
 
-For `x` in a finite product `PiLp p β` of seminormed groups, the `p`-norms
-`‖x‖_p = (∑ ‖x i‖ ^ p) ^ (1 / p)` are compared with each other:
+Let $x = (x_i)_{i \in \iota}$ be an element of a finite product `PiLp p β` of seminormed groups,
+with $n$ factors. Its $p$-norm is $\|x\|_p = (\sum_i \|x_i\|^p)^{1/p}$ for $1 \le p < \infty$ and
+$\|x\|_\infty = \max_i \|x_i\|$. This module compares these norms: for $1 \le p \le q \le \infty$,
+$$\|x\|_q \le \|x\|_p \le n^{1/p - 1/q} \|x\|_q,$$
+and $\|x\|_p \to \|x\|_\infty$ as $p \to \infty$. The six cases with $p, q \in \{1, 2, \infty\}$ are
+the equivalence constants $1$, $\sqrt{n}$ and $n$ of [quarteroni2000numerical], Table 1.1.
 
-* `PiLp.norm_le_norm_of_le`: `‖x‖_q ≤ ‖x‖_p` for `1 ≤ p ≤ q ≤ ∞` — the `p`-norms decrease in
-  `p`, because `t ↦ t ^ (q / p)` is superadditive on `[0, ∞)`
-  (`NNReal.sum_rpow_le_rpow_sum`);
-* `PiLp.norm_le_card_rpow_mul_norm`: `‖x‖_p ≤ (card ι) ^ (1 / p - 1 / q) ‖x‖_q` for
-  `1 ≤ p ≤ q ≤ ∞`, from the power-mean inequality `NNReal.rpow_sum_le_const_mul_sum_rpow`
-  (Hölder with exponents `q / p` and its conjugate);
-* `PiLp.tendsto_norm_toLp_atTop`: `‖x‖_p → ‖x‖_∞` as `p → ∞`, by squeezing between the two.
-* `PiLp.norm_toLp_comp_le` and `PiLp.norm_toLp_extend`: dropping coordinates does not increase
-  the `p`-norm, and extending by zero preserves it; together they bound the induced norm of a
-  submatrix (`Matrix.lpOpNorm_submatrix_le`).
-* `Matrix.dotProduct_self_eq_norm_sq`, `Matrix.star_dotProduct_self`: `xᵀ x` and `xᴴ x` are the
-  squared Euclidean norm, the bridge from a dot product to `EuclideanSpace`.
-* `PiLp.norm_dotProduct_le`: Hölder's inequality `|x ⬝ᵥ y| ≤ ‖x‖_p ‖y‖_q` for Hölder-conjugate
-  exponents, endpoints included ([golub2013matrix] (2.2.2)). Mathlib has it for the sequence
-  space `lp` (`lp.norm_dualPairing`) and for finite sums of reals (`Real.inner_le_Lp_mul_Lq`),
-  not in this form.
+The module also proves that the $p$-norm is monotone in the norms of the coordinates, that dropping
+coordinates does not increase it and extending by zero preserves it, and Hölder's inequality
+$|x \cdot y| \le \|x\|_p \|y\|_q$ for conjugate exponents ([golub2013matrix], (2.2.2)). Finally it
+identifies the dot products $x^T x$ and $x^H x$ with the squared Euclidean norm.
 
-The six instances with `p, q ∈ {1, 2, ∞}` are the equivalence constants `1`, `√n`, `n` of
-[quarteroni2000numerical] Table 1.1 and are stated as corollaries
-(`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`, …). Mathlib has the `∞`-versus-`p`
-comparison as the Lipschitz constants `PiLp.lipschitzWith_toLp` / `PiLp.antilipschitzWith_ofLp`
-only; the matrix consequences (the operator-norm comparison table) are in
-`Numlib/Analysis/Matrix/OperatorNorm`.
+## Main results
+
+* `NNReal.sum_rpow_le_rpow_sum`: $\sum_i f_i^p \le (\sum_i f_i)^p$ for $f_i \ge 0$ and $p \ge 1$.
+* `PiLp.norm_le_norm_of_le`: $\|x\|_q \le \|x\|_p$ for $1 \le p \le q \le \infty$.
+* `PiLp.norm_le_card_rpow_mul_norm`: $\|x\|_p \le n^{1/p - 1/q} \|x\|_q$ for
+  $1 \le p \le q \le \infty$.
+* `PiLp.tendsto_norm_toLp_atTop`: $\|x\|_p \to \|x\|_\infty$ as $p \to \infty$.
+* `PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two` and the other five cases with
+  $p, q \in \{1, 2, \infty\}$: the constants of [quarteroni2000numerical], Table 1.1.
+* `PiLp.norm_toLp_comp_le`, `PiLp.norm_toLp_extend`: dropping coordinates does not increase the
+  $p$-norm, and extending by zero preserves it.
+* `PiLp.norm_dotProduct_le`: Hölder's inequality $|x \cdot y| \le \|x\|_p \|y\|_q$ for conjugate
+  exponents, the endpoints included.
+* `Matrix.dotProduct_self_eq_norm_sq`, `Matrix.star_dotProduct_self`: $x^T x$ and $x^H x$ are the
+  squared Euclidean norm of $x$.
+
+## Implementation notes
+
+* Mathlib has the comparison of the $\infty$-norm with the $p$-norm only as the Lipschitz constants
+  `PiLp.lipschitzWith_toLp` and `PiLp.antilipschitzWith_ofLp`.
+* Mathlib has Hölder's inequality for the sequence space `lp` (`lp.norm_dualPairing`) and for finite
+  sums of reals (`Real.inner_le_Lp_mul_Lq`), but not in the form of `PiLp.norm_dotProduct_le`.
+* The consequences for matrices, such as the comparison of the induced matrix norms and the bound
+  `Matrix.lpOpNorm_submatrix_le` for a submatrix, are in `Numlib.Analysis.Matrix.OperatorNorm`.
 -/
 
 open Filter Topology WithLp
 open scoped ENNReal NNReal
 
-/-- `t ↦ t ^ p` is superadditive on `ℝ≥0` for `1 ≤ p`: `∑ (f i) ^ p ≤ (∑ f i) ^ p`. The finite-sum
-form of `NNReal.add_rpow_le_rpow_add`. -/
+/-- Let $s$ be a finite set, let $f_i \ge 0$ for $i \in s$, and let $p \ge 1$. Then
+$$\sum_{i \in s} f_i^p \le \Big(\sum_{i \in s} f_i\Big)^p,$$
+that is, $t \mapsto t^p$ is superadditive on $[0, \infty)$. This is the form for finite sums of
+`NNReal.add_rpow_le_rpow_add`. -/
 theorem NNReal.sum_rpow_le_rpow_sum {ι : Type*} (s : Finset ι) (f : ι → ℝ≥0) {p : ℝ}
     (hp : 1 ≤ p) : ∑ i ∈ s, f i ^ p ≤ (∑ i ∈ s, f i) ^ p := by
   classical
@@ -65,10 +77,14 @@ namespace PiLp
 
 variable {ι : Type*} [Fintype ι] {β : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
 
-/-- **The `p`-norms decrease in `p`**: `‖x‖_q ≤ ‖x‖_p` for `1 ≤ p ≤ q ≤ ∞`. For finite `q` this
-is the superadditivity of `t ↦ t ^ (q / p)`, `∑ ‖x i‖ ^ q ≤ (∑ ‖x i‖ ^ p) ^ (q / p)`; for
-`q = ∞` it is `PiLp.norm_apply_le`. These are the constants `c_pq = 1` of
-[quarteroni2000numerical] Table 1.1. -/
+/-- **The $p$-norms decrease in $p$.** Let $x$ be an element of a finite product of seminormed
+groups, and let $1 \le p \le q \le \infty$. Then
+$$\|x\|_q \le \|x\|_p.$$
+These are the constants $c_{pq} = 1$ of [quarteroni2000numerical], Table 1.1.
+
+For finite $q$ this is the superadditivity of $t \mapsto t^{q/p}$, which gives
+$\sum_i \|x_i\|^q \le (\sum_i \|x_i\|^p)^{q/p}$; for $q = \infty$ it is `PiLp.norm_apply_le`.
+Here $\|x\|_p$ is the norm of `toLp p x`. -/
 theorem norm_le_norm_of_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] (hpq : p ≤ q)
     (x : ∀ i, β i) : ‖toLp q x‖ ≤ ‖toLp p x‖ := by
   rcases eq_or_ne q ∞ with rfl | hq
@@ -93,11 +109,14 @@ theorem norm_le_norm_of_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] 
           field_simp
   exact_mod_cast key
 
-/-- **The `p`-norms are equivalent with the constants `(card ι) ^ (1 / p - 1 / q)`**:
-`‖x‖_p ≤ (card ι) ^ (1 / p - 1 / q) ‖x‖_q` for `1 ≤ p ≤ q ≤ ∞` (with `1 / ∞ = 0`). For finite
-`q` this is the power-mean inequality `NNReal.rpow_sum_le_const_mul_sum_rpow` with exponent
-`q / p`; for `q = ∞` it is the Lipschitz constant `PiLp.lipschitzWith_toLp`. These are the
-constants `C_pq` of [quarteroni2000numerical] Table 1.1. -/
+/-- **The $p$-norms are equivalent.** Let $x$ be an element of a finite product of $n$ seminormed
+groups, and let $1 \le p \le q \le \infty$. Then
+$$\|x\|_p \le n^{1/p - 1/q} \|x\|_q,$$
+with $1/\infty = 0$. These are the constants $C_{pq}$ of [quarteroni2000numerical], Table 1.1.
+
+For finite $q$ this is the power-mean inequality `NNReal.rpow_sum_le_const_mul_sum_rpow` with
+exponent $q/p$; for $q = \infty$ it is the Lipschitz constant `PiLp.lipschitzWith_toLp`. The
+exponents are converted with `ENNReal.toReal`, which maps $\infty$ to $0$. -/
 theorem norm_le_card_rpow_mul_norm {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] (hpq : p ≤ q)
     (x : ∀ i, β i) :
     ‖toLp p x‖ ≤ (Fintype.card ι : ℝ) ^ (1 / p.toReal - 1 / q.toReal) * ‖toLp q x‖ := by
@@ -129,10 +148,14 @@ theorem norm_le_card_rpow_mul_norm {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 
           field_simp
   exact_mod_cast key
 
-/-- **`‖x‖_p → ‖x‖_∞` as `p → ∞`**: the maximum norm is the limit of the `p`-norms, squeezed
-between `‖x‖_∞ ≤ ‖x‖_p ≤ (card ι + 1) ^ (1 / p) ‖x‖_∞`. The `p`-norm of the statement is the
-`Norm` instance of `PiLp`, which is defined for every exponent; the bounds hold for `p ≥ 1`.
-[quarteroni2000numerical] §1.10. -/
+/-- Let $x$ be an element of a finite product of seminormed groups. Then
+$$\|x\|_p \to \|x\|_\infty \qquad \text{as the real number } p \to \infty.$$
+The maximum norm is thus the limit of the $p$-norms ([quarteroni2000numerical], §1.10).
+
+The proof squeezes $\|x\|_p$ between $\|x\|_\infty \le \|x\|_p \le (n + 1)^{1/p} \|x\|_\infty$,
+where $n$ is the number of coordinates. The $p$-norm in the statement is the norm of `PiLp` at
+the exponent `ENNReal.ofReal p`, which is defined for every exponent; the bounds hold for
+$p \ge 1$. -/
 theorem tendsto_norm_toLp_atTop (x : ∀ i, β i) :
     Tendsto (fun p : ℝ => ‖toLp (ENNReal.ofReal p) x‖) atTop (𝓝 ‖toLp ∞ x‖) := by
   have hn : Tendsto (fun p : ℝ => ((Fintype.card ι : ℝ) + 1) ^ (1 / p)) atTop (𝓝 1) := by
@@ -154,25 +177,32 @@ theorem tendsto_norm_toLp_atTop (x : ∀ i, β i) :
     refine h.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
     exact Real.rpow_le_rpow (Nat.cast_nonneg _) (by linarith) (by positivity)
 
-/-! ### The constants of Table 1.1
+/-!
+### The constants of Table 1.1
 
-The six comparisons between the `1`-, `2`- and `∞`-norms, [quarteroni2000numerical] Table 1.1:
-`‖x‖_∞ ≤ ‖x‖_2 ≤ ‖x‖_1` with constant `1`, and `‖x‖_1 ≤ √n ‖x‖_2`, `‖x‖_2 ≤ √n ‖x‖_∞`,
-`‖x‖_1 ≤ n ‖x‖_∞`. -/
+The six comparisons between the $1$-, $2$- and $\infty$-norms in [quarteroni2000numerical], Table
+1.1: $\|x\|_\infty \le \|x\|_2 \le \|x\|_1$ and $\|x\|_\infty \le \|x\|_1$ with constant $1$, and
+$\|x\|_1 \le \sqrt{n} \|x\|_2$, $\|x\|_2 \le \sqrt{n} \|x\|_\infty$ and
+$\|x\|_1 \le n \|x\|_\infty$, where $n$ is the number of coordinates.
+-/
 
-/-- `‖x‖_2 ≤ ‖x‖_1`. -/
+/-- For $x$ in a finite product of seminormed groups, $\|x\|_2 \le \|x\|_1$. This is a constant $1$
+of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_two_le_norm_toLp_one (x : ∀ i, β i) : ‖toLp 2 x‖ ≤ ‖toLp 1 x‖ :=
   norm_le_norm_of_le (by norm_num) x
 
-/-- `‖x‖_∞ ≤ ‖x‖_2`. -/
+/-- For $x$ in a finite product of seminormed groups, $\|x\|_\infty \le \|x\|_2$. This is a constant
+$1$ of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_top_le_norm_toLp_two (x : ∀ i, β i) : ‖toLp ∞ x‖ ≤ ‖toLp 2 x‖ :=
   norm_le_norm_of_le le_top x
 
-/-- `‖x‖_∞ ≤ ‖x‖_1`. -/
+/-- For $x$ in a finite product of seminormed groups, $\|x\|_\infty \le \|x\|_1$. This is a constant
+$1$ of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_top_le_norm_toLp_one (x : ∀ i, β i) : ‖toLp ∞ x‖ ≤ ‖toLp 1 x‖ :=
   norm_le_norm_of_le le_top x
 
-/-- `‖x‖_1 ≤ √n ‖x‖_2`, `n` the number of coordinates. -/
+/-- For $x$ in a finite product of $n$ seminormed groups, $\|x\|_1 \le \sqrt{n}\, \|x\|_2$. This is
+a constant of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_one_le_sqrt_card_mul_norm_toLp_two (x : ∀ i, β i) :
     ‖toLp 1 x‖ ≤ √(Fintype.card ι : ℝ) * ‖toLp 2 x‖ := by
   have h := norm_le_card_rpow_mul_norm (p := 1) (q := 2) (by norm_num) x
@@ -180,7 +210,8 @@ theorem norm_toLp_one_le_sqrt_card_mul_norm_toLp_two (x : ∀ i, β i) :
   convert h using 3
   norm_num
 
-/-- `‖x‖_2 ≤ √n ‖x‖_∞`, `n` the number of coordinates. -/
+/-- For $x$ in a finite product of $n$ seminormed groups, $\|x\|_2 \le \sqrt{n}\, \|x\|_\infty$.
+This is a constant of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_two_le_sqrt_card_mul_norm_toLp_top (x : ∀ i, β i) :
     ‖toLp 2 x‖ ≤ √(Fintype.card ι : ℝ) * ‖toLp ∞ x‖ := by
   have h := norm_le_card_rpow_mul_norm (p := 2) (q := ∞) le_top x
@@ -188,7 +219,8 @@ theorem norm_toLp_two_le_sqrt_card_mul_norm_toLp_top (x : ∀ i, β i) :
   convert h using 3
   norm_num
 
-/-- `‖x‖_1 ≤ n ‖x‖_∞`, `n` the number of coordinates. -/
+/-- For $x$ in a finite product of $n$ seminormed groups, $\|x\|_1 \le n \|x\|_\infty$. This is a
+constant of [quarteroni2000numerical], Table 1.1. -/
 theorem norm_toLp_one_le_card_mul_norm_toLp_top (x : ∀ i, β i) :
     ‖toLp 1 x‖ ≤ Fintype.card ι * ‖toLp ∞ x‖ := by
   have h := norm_le_card_rpow_mul_norm (p := 1) (q := ∞) le_top x
@@ -200,8 +232,11 @@ section Mono
 
 variable {γ : ι → Type*} [∀ i, SeminormedAddCommGroup (γ i)]
 
-/-- The `ℓ^p` norm is monotone in the norms of the coordinates: if `‖y i‖ ≤ c ‖z i‖` for every
-`i`, then `‖y‖_p ≤ c ‖z‖_p`. -/
+/-- Let $1 \le p \le \infty$, let $y$ and $z$ be elements of two finite products of seminormed
+groups over the same index set, and let $c \ge 0$. If $\|y_i\| \le c \|z_i\|$ for every $i$,
+then
+$$\|y\|_p \le c \|z\|_p.$$
+-/
 theorem norm_toLp_le_mul_norm_toLp (p : ℝ≥0∞) [Fact (1 ≤ p)] {y : ∀ i, β i} {z : ∀ i, γ i}
     {c : ℝ} (hc : 0 ≤ c) (h : ∀ i, ‖y i‖ ≤ c * ‖z i‖) :
     ‖WithLp.toLp p y‖ ≤ c * ‖WithLp.toLp p z‖ := by
@@ -222,8 +257,11 @@ theorem norm_toLp_le_mul_norm_toLp (p : ℝ≥0∞) [Fact (1 ≤ p)] {y : ∀ i,
             (Finset.sum_nonneg fun i _ => Real.rpow_nonneg (norm_nonneg _) _),
             ← Real.rpow_mul hc, mul_one_div_cancel hp0.ne', Real.rpow_one]
 
-/-- **The `ℓ^p` norm is monotone in each coordinate**: if `‖x i‖ ≤ ‖y i‖` for every `i`, then
-`‖x‖ ≤ ‖y‖`, the two tuples possibly living in different families of spaces. -/
+/-- **The $\ell^p$ norm is monotone in the coordinates.** Let $1 \le p \le \infty$, and let $x$ and
+$y$ be elements of the $\ell^p$ products of two families of seminormed groups over the same
+finite index set. If $\|x_i\| \le \|y_i\|$ for every $i$, then
+$$\|x\|_p \le \|y\|_p.$$
+-/
 theorem norm_le_norm_of_forall_norm_le {p : ℝ≥0∞} [Fact (1 ≤ p)] {x : PiLp p β} {y : PiLp p γ}
     (h : ∀ i, ‖x i‖ ≤ ‖y i‖) : ‖x‖ ≤ ‖y‖ := by
   rcases eq_or_ne p ⊤ with rfl | hp
@@ -243,8 +281,11 @@ section Reindex
 
 variable {E : Type*} [SeminormedAddCommGroup E] (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- The `ℓ^p` norm of a subfamily of the coordinates of a vector is at most the norm of the
-vector. -/
+/-- Let $E$ be a seminormed group, let $1 \le p \le \infty$, let $f : \iota \to \iota'$ be an
+injection of finite index sets, and let $y \in E^{\iota'}$. Then the subfamily $y \circ f$ has
+no larger $\ell^p$ norm:
+$$\|y \circ f\|_p \le \|y\|_p.$$
+-/
 theorem norm_toLp_comp_le {ι ι' : Type*} [Fintype ι] [Fintype ι'] {f : ι → ι'}
     (hf : Function.Injective f) (y : ι' → E) :
     ‖(toLp p (y ∘ f) : PiLp p fun _ : ι => E)‖ ≤ ‖(toLp p y : PiLp p fun _ : ι' => E)‖ := by
@@ -259,7 +300,13 @@ theorem norm_toLp_comp_le {ι ι' : Type*} [Fintype ι] [Fintype ι'] {f : ι �
     rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ p.toReal) hf.injOn]
     exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
 
-/-- Extending a vector by zero along an injection preserves its `ℓ^p` norm. -/
+/-- Let $E$ be a seminormed group, let $1 \le p \le \infty$, let $g : \iota \to \iota'$ be an
+injection of finite index sets, and let $x \in E^\iota$. Let $\tilde{x} \in E^{\iota'}$ be the
+extension of $x$ by zero along $g$: $\tilde{x}_{g(i)} = x_i$, and $\tilde{x}_j = 0$ for $j$
+outside the range of $g$. Then
+$$\|\tilde{x}\|_p = \|x\|_p.$$
+
+The extension is `Function.extend g x 0`. -/
 theorem norm_toLp_extend {ι ι' : Type*} [Fintype ι] [Fintype ι'] {g : ι → ι'}
     (hg : Function.Injective g) (x : ι → E) :
     ‖(toLp p (Function.extend g x 0) : PiLp p fun _ : ι' => E)‖
@@ -298,7 +345,7 @@ private theorem norm_dotProduct_le_sum (x y : ι → 𝕜) :
     ‖x ⬝ᵥ y‖ ≤ ∑ i, ‖x i‖ * ‖y i‖ :=
   (norm_sum_le _ _).trans_eq (by simp only [norm_mul])
 
-/-- Hölder's inequality for the exponents `(∞, 1)`. -/
+/-- Hölder's inequality for the exponents $(\infty, 1)$: $|x \cdot y| \le \|x\|_\infty \|y\|_1$. -/
 private theorem norm_dotProduct_le_top_one (x y : ι → 𝕜) :
     ‖x ⬝ᵥ y‖ ≤ ‖toLp ∞ x‖ * ‖toLp 1 y‖ := by
   refine (norm_dotProduct_le_sum x y).trans ?_
@@ -307,9 +354,15 @@ private theorem norm_dotProduct_le_top_one (x y : ι → 𝕜) :
   gcongr with i
   exact norm_apply_le (toLp ∞ x) i
 
-/-- **Hölder's inequality** on `𝕜^ι` ([golub2013matrix] (2.2.2)): for Hölder-conjugate exponents
-`1/p + 1/q = 1`, endpoints included, `‖x ⬝ᵥ y‖ ≤ ‖x‖_p ‖y‖_q`. The finite exponents are
-`Real.inner_le_Lp_mul_Lq_of_nonneg` applied to the moduli of the coordinates. -/
+/-- **Hölder's inequality** on $\mathbb{K}^\iota$ ([golub2013matrix], (2.2.2)). Let $\mathbb{K}$ be
+$\mathbb{R}$ or $\mathbb{C}$, let $\iota$ be finite, and let $p, q \in [1, \infty]$ be conjugate
+exponents, $1/p + 1/q = 1$, the pairs $(1, \infty)$ and $(\infty, 1)$ included. For
+$x, y \in \mathbb{K}^\iota$,
+$$|x \cdot y| \le \|x\|_p \|y\|_q,$$
+where $x \cdot y = \sum_i x_i y_i$ is the dot product without conjugation.
+
+For finite exponents the proof applies `Real.inner_le_Lp_mul_Lq_of_nonneg` to the moduli of the
+coordinates. -/
 theorem norm_dotProduct_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (x y : ι → 𝕜) : ‖x ⬝ᵥ y‖ ≤ ‖toLp p x‖ * ‖toLp q y‖ := by
   obtain rfl | hp := eq_or_ne p ∞
@@ -330,15 +383,16 @@ end Holder
 
 end PiLp
 
-/-- The squared `ℓ²` norm of a vector on a sum type is the sum of the squared norms of its two
-parts. -/
+/-- For $u \in \mathbb{K}^{m_1}$ and $w \in \mathbb{K}^{m_2}$, the vector $(u, w)$ on the disjoint
+union $m_1 \sqcup m_2$ has the squared Euclidean norm $\|(u, w)\|^2 = \|u\|^2 + \|w\|^2$. -/
 theorem EuclideanSpace.norm_toLp_sumElim_sq {𝕜 : Type*} [RCLike 𝕜] {m₁ m₂ : Type*} [Fintype m₁]
     [Fintype m₂] (u : m₁ → 𝕜) (w : m₂ → 𝕜) :
     ‖(toLp 2 (Sum.elim u w) : EuclideanSpace 𝕜 (m₁ ⊕ m₂))‖ ^ 2
       = ‖(toLp 2 u : EuclideanSpace 𝕜 m₁)‖ ^ 2 + ‖(toLp 2 w : EuclideanSpace 𝕜 m₂)‖ ^ 2 := by
   simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl, Sum.elim_inr]
 
-/-- A unit vector of `ℝ^n` has a nonzero coordinate. -/
+/-- Let $v \in \mathbb{R}^n$ have Euclidean norm $\|v\| = 1$. Then some coordinate $v_i$ is nonzero.
+-/
 theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
     {v : EuclideanSpace ℝ (Fin n)} (hv : ‖v‖ = 1) : ∃ i : Fin n, v i ≠ 0 := by
   by_contra hcon
@@ -346,14 +400,15 @@ theorem EuclideanSpace.exists_apply_ne_zero_of_norm_eq_one {n : ℕ}
   rw [this, norm_zero] at hv
   exact zero_ne_one hv
 
-/-- A vector of `ℝ^N` is the sum of its coordinates times the basis vectors. -/
+/-- Every $z \in \mathbb{R}^N$ is $z = \sum_k z_k e_k$, where $e_k$ are the standard basis vectors.
+-/
 theorem EuclideanSpace.eq_sum_single_smul {N : ℕ} (z : EuclideanSpace ℝ (Fin N)) :
     z = ∑ k, z k • EuclideanSpace.single k (1 : ℝ) := by
   have := (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr z
   simpa [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply] using this.symm
 
-/-- A linear functional on `ℝ^N` evaluated at `z` is the sum of `z_k` times its values on the
-basis vectors. -/
+/-- A continuous linear functional $L$ on $\mathbb{R}^N$ satisfies $L(z) = \sum_k z_k L(e_k)$, where
+$e_k$ are the standard basis vectors. -/
 theorem ContinuousLinearMap.apply_eq_sum_single {N : ℕ} (L : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
     (z : EuclideanSpace ℝ (Fin N)) : L z = ∑ k, z k * L (EuclideanSpace.single k 1) := by
   conv_lhs => rw [EuclideanSpace.eq_sum_single_smul z, map_sum]
@@ -363,12 +418,16 @@ theorem ContinuousLinearMap.apply_eq_sum_single {N : ℕ} (L : EuclideanSpace �
 
 namespace Matrix
 
-/-- `sᵀ s` is the squared Euclidean norm of `s`. -/
+/-- For $s \in \mathbb{R}^n$, the dot product $s^T s$ is the square of the Euclidean norm:
+$$s^T s = \|s\|_2^2.$$
+
+This connects the dot product `s ⬝ᵥ s` with the norm of `EuclideanSpace`. -/
 theorem dotProduct_self_eq_norm_sq {n : Type*} [Fintype n] (s : n → ℝ) :
     s ⬝ᵥ s = ‖toLp 2 s‖ ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
 
-/-- The Euclidean inner square of a vector of scalars: `star x ⬝ᵥ x = ‖x‖²`. -/
+/-- For $x \in \mathbb{K}^n$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, $x^H x = \|x\|_2^2$, as
+an element of $\mathbb{K}$. -/
 theorem star_dotProduct_self {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] (x : n → 𝕜) :
     star x ⬝ᵥ x = ((‖(toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2 := by
   rw [← inner_self_eq_norm_sq_to_K (𝕜 := 𝕜), EuclideanSpace.inner_toLp_toLp, dotProduct_comm]

@@ -14,14 +14,25 @@ import Mathlib.Data.Subtype
 /-!
 # Extending a restriction by zero
 
-`Function.extend_val_comp_val`: a function vanishing off `p` is the extension by zero of its
-restriction to `{a // p a}`.
+Let $p$ be a predicate on a type $\alpha$, let $S = \{a \in \alpha : p(a)\}$, and let
+$z \colon \alpha \to \beta$ be a function into a type with a zero. If $z$ vanishes outside $S$, then
+$z$ is the extension by zero of its restriction to $S$.
+
+## Main results
+
+* `Function.extend_val_comp_val`: a function that vanishes outside $S$ is the extension by zero of
+  its restriction to $S$.
 -/
 
 namespace Function
 
-/-- **A function vanishing off `p` is the extension by zero of its restriction** to
-`{a // p a}`. -/
+/-- Let $\beta$ be a type with a zero, let $p$ be a predicate on $\alpha$ with
+$S = \{a \in \alpha : p(a)\}$, and let $z \colon \alpha \to \beta$ satisfy $z(a) = 0$ for every
+$a \notin S$. Then $z$ is the **extension by zero** of its restriction $z|_S$: the function that
+equals $z|_S$ on $S$ and $0$ outside $S$ is $z$.
+
+The extension by zero is `Function.extend Subtype.val (z ∘ Subtype.val) 0`, where `Subtype.val`
+is the inclusion of the subtype `{a // p a}` in $\alpha$. -/
 theorem extend_val_comp_val {α β : Type*} [Zero β] {p : α → Prop} {z : α → β}
     (hz : ∀ a, ¬ p a → z a = 0) :
     extend (Subtype.val : {a // p a} → α) (z ∘ Subtype.val) 0 = z := by

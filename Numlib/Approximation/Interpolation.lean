@@ -19,102 +19,104 @@ import Numlib.Approximation.Unisolvent
 /-!
 # Interpolation on continuous function spaces
 
-Lagrange interpolation at `n + 1` distinct nodes, with the classical error formula `f(t) - p(t) =
-f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`; piecewise-linear interpolation on a partition; and trigonometric
-interpolation at the equispaced nodes of a period. The material is [han2009theoretical] §3.2 and
-[kress1998numerical] §8.1 and §8.3.
+This file studies three interpolation operators on spaces of continuous functions: Lagrange
+interpolation at $n + 1$ distinct nodes, piecewise polynomial interpolation on a partition of an
+interval, and trigonometric interpolation at the equispaced nodes of a period. For distinct nodes
+$x_0, \dots, x_n$ in a compact set $X \subseteq \mathbb{R}$, the Lagrange basis functions $\ell_i$
+give the interpolation operator $\Pi_n f = \sum_i f(x_i)\, \ell_i$, a bounded projection of $C(X)$
+onto the polynomials of degree at most $n$. For $f$ of class $C^{n+1}$, the error has the classical
+form
+$$f(t) - \Pi_n f(t) = \frac{f^{(n+1)}(\xi)}{(n + 1)!} \prod_{i=0}^{n} (t - x_i)$$
+for some $\xi$ in the interval, a consequence of the generalized Rolle theorem. The operator norm
+$\|\Pi_n\|$ is the **Lebesgue constant**, the maximum of the Lebesgue function
+$t \mapsto \sum_i |\ell_i(t)|$. It grows at least exponentially for equispaced nodes and at most
+logarithmically for the Chebyshev nodes. The material is [han2009theoretical], §3.2, and
+[kress1998numerical], §8.1 and §8.3.
+
+Piecewise interpolation of degree $m$ on a partition $a = x_0 < \dots < x_{n+1} = b$ interpolates
+$f$ on each panel $[x_j, x_{j+1}]$ at $m + 1$ nodes that include the two endpoints. Its error is
+bounded by $(1 + \Lambda)\, \omega(f, h)$, where $\Lambda$ bounds the local Lebesgue constants of
+the panels, $\omega(f, \delta)$ is the modulus of continuity of $f$, and $h$ is the mesh size; for
+smooth $f$ the error formula gives the order $h^{m+1}$. For $m = 1$ the operator has norm one, and
+its error for $f \in C^2$ is at most $h^2 \|f''\|/8$.
 
 ## Main definitions
 
-* `Lagrange.basisCM x i` and `Lagrange.interpolateCLM x` are the Lagrange basis functions and the
-  interpolation operator on `C(X, ℝ)`, for a compact `X ⊆ ℝ`.
-* `piecewiseLinearRamp` and `piecewiseLinearInterpCLM` are the clamped ramp of a subinterval and the
-  piecewise-linear interpolation operator on a partition, which is a combination of ramps.
-* `IsPanelNodes n m x node` is a system of `m + 1` interpolation nodes on each panel `[x j, x
-  (j + 1)]` of a partition, the first and the last of which are the panel's endpoints, and
-  `piecewisePolyInterpCLM n m x node` is the resulting **piecewise polynomial interpolation
-  operator of degree `m`**, of which the piecewise-linear one is the case `m = 1`.
-  `IsPanelLebesgueBound` is a uniform bound for the local Lebesgue constants of the panels.
-* `trigInterpNode T n` are the `2 n + 1` equispaced nodes `j T / (2 n + 1)` of a period, and
-  `trigInterpCLM T n` is trigonometric interpolation at them.
-* `ContinuousMap.modulusOfContinuity f δ` is the modulus of continuity `ω(f, δ)`, the largest change
-  of `f` over pairs of points at distance at most `δ`.
+* `Lagrange.basisCM`: the Lagrange basis functions $\ell_i$ as continuous functions on $X$.
+* `Lagrange.interpolateCLM`: the Lagrange interpolation operator $\Pi_n$ on $C(X)$.
+* `ContinuousMap.modulusOfContinuity`: the modulus of continuity $\omega(f, \delta)$.
+* `piecewiseLinearInterpCLM`: piecewise-linear interpolation on a partition of $[a, b]$.
+* `IsPanelNodes`: a system of $m + 1$ interpolation nodes on each panel of a partition, with the
+  endpoints of the panel among them.
+* `piecewisePolyInterpCLM`: piecewise polynomial interpolation of degree $m$.
+* `IsPanelLebesgueBound`: a uniform bound for the local Lebesgue constants of the panels.
+* `trigInterpCLM`: trigonometric interpolation of degree $n$ at the $2n + 1$ equispaced nodes of a
+  period.
+* `Lagrange.chebNode`: the Chebyshev nodes $\cos((2j + 1)\pi/(2(n + 1)))$.
 
 ## Main results
 
-* `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` is the **generalized Rolle theorem**: a `C^{n+1}`
-  function vanishing at `n + 2` points of `[a, b]` has a zero of its `(n+1)`-st derivative strictly
-  inside `[a, b]`. Applied to `s ↦ f s - p s - c ∏ (s - x_i)` with `c` chosen to make the value at
-  `t` vanish, it gives the error formula `Lagrange.exists_sub_interpolate_eq`.
-* `Lagrange.isGreatest_norm_interpolateCLM` and `Lagrange.norm_interpolateCLM` identify the operator
-  norm of the interpolation operator with the **Lebesgue constant** of its nodes, the largest value
-  of `t ↦ ∑ i, |ℓ_i t|`; at equispaced nodes it is at least `2^n/(8n²)`
-  (`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`, Schönhage's lower bound).
-* `norm_piecewiseLinearInterpCLM` says that piecewise-linear interpolation has norm one, and
-  `norm_sub_piecewiseLinearInterpCLM_le` bounds its error on a mesh of size `h` by `h² ‖f''‖ / 8` —
-  the two-node case of the same error formula. `norm_sub_piecewiseLinearInterpCLM_le_modulus` is the
-  companion bound `ω(f, h)` for a merely continuous `f`.
-* `piecewisePolyInterpCLM_apply_of_mem` is the local description of the degree-`m` piecewise
-  polynomial interpolant — on each panel it is the Lagrange interpolant at that panel's nodes — and
-  everything else about the operator follows from it: `norm_piecewisePolyInterpCLM_le`,
-  `exists_sub_piecewisePolyInterpCLM_apply_eq` and its consequence
-  `norm_sub_piecewisePolyInterpCLM_le`, the bound `(1 + Λ) ω(f, h)` of
-  `norm_sub_piecewisePolyInterpCLM_le_modulus`, and the uniform convergence
-  `tendsto_piecewisePolyInterpCLM`; `abs_add_mul_mul_sub_le` is the bound on the nodal polynomial of
-  three equispaced nodes that the error bound needs for piecewise quadratics on a uniform mesh.
-  `isPanelLebesgueBound_of_sep` bounds the local Lebesgue
-  constants by the separation of the nodes within their panels, and
-  `exists_isPanelLebesgueBound_of_affine` reads off from it the bound for nodes placed at fixed
-  fractions of every panel, where one constant serves every mesh however unequal its panels.
-* `Lagrange.isUnisolvent_polyLE` reads Lagrange interpolation as the abstract interpolation problem
-  of `Numlib/Approximation/Unisolvent` for the subspace `polyLE X n` and the point evaluations at
-  the nodes, and `Lagrange.interpCLM_isUnisolvent_polyLE` identifies `Lagrange.interpolateCLM` with
-  the interpolation projection of that problem.
-* `isUnisolvent_trigPolyLE`: a nonzero trigonometric polynomial of degree at most `n` has at most
-  `2 n` zeros in a period (`haarCondition_trigPolyLE`, in `Numlib.Approximation.Chebyshev`), so
-  interpolation by such polynomials at `2 n + 1` distinct nodes has exactly one solution.
-  `trigInterpCLM` is the resulting bounded projection onto `trigPolyLE T n` at the equispaced nodes.
-* `Lagrange.norm_interpolateCLM_chebyshev_le` reads off the **logarithmic growth of the Lebesgue
-  constant of the Chebyshev nodes** `x_j = cos ((2j + 1)π/(2(n + 1)))` of `[-1, 1]` from
-  `SineSum.sum_term_le` of `Numlib/Analysis/SpecialFunctions/SineSum`, which bounds a
-  Lebesgue-type sum of reciprocal sines by `2 + (2/π) log M`.
+* `exists_iteratedDeriv_eq_zero_of_forall_eq_zero`: the generalized Rolle theorem.
+* `Lagrange.exists_sub_interpolate_eq`: the error formula of Lagrange interpolation.
+* `Lagrange.isUnisolvent_polyLE`: Lagrange interpolation is unisolvent.
+* `Lagrange.norm_interpolateCLM`: the norm of the interpolation operator is the supremum of the
+  Lebesgue function.
+* `ContinuousMap.tendsto_modulusOfContinuity`: on a compact space, $\omega(f, \delta) \to 0$ as
+  $\delta \to 0$.
+* `norm_piecewiseLinearInterpCLM`: piecewise-linear interpolation has norm one.
+* `norm_sub_piecewiseLinearInterpCLM_le`: the error of piecewise-linear interpolation of a $C^2$
+  function is at most $h^2 \|f''\|/8$.
+* `piecewisePolyInterpCLM_apply_of_mem`: on each panel, the piecewise polynomial interpolant is the
+  Lagrange interpolant at the nodes of that panel.
+* `exists_isPanelLebesgueBound_of_affine`: for nodes at fixed fractions of the panels, one constant
+  bounds the local Lebesgue constants of every mesh.
+* `norm_sub_piecewisePolyInterpCLM_le`: the error bound $W M/(m + 1)!$ of piecewise polynomial
+  interpolation.
+* `tendsto_piecewisePolyInterpCLM`: piecewise polynomial interpolation converges uniformly for every
+  continuous function.
+* `isUnisolvent_trigPolyLE`: trigonometric interpolation at $2n + 1$ distinct nodes of a period is
+  unisolvent.
+* `Lagrange.norm_interpolateCLM_chebyshev_le`: the Lebesgue constant of the Chebyshev nodes is at
+  most $2 + (2/\pi) \log(2n + 2)$.
+* `Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`: the Lebesgue function of $n + 1$
+  equispaced nodes is at least $2^n/(8n^2)$ at the midpoint of the first panel.
 
-## Not formalized
+## Notation
 
-**Rivlin's sharp constant for the Lebesgue constant of the Chebyshev nodes**,
-`‖Π_n‖ ≤ (2/π) log (n + 1) + 1` ([rivlin1969introduction] Theorem 1.2;
-[quarteroni2000numerical] (10.25) as printed), is *not* here. What is proved is
-`Lagrange.norm_interpolateCLM_chebyshev_le`, `‖Π_n‖ ≤ 2 + (2/π) log (2n + 2)`: the sharp factor
-`2/π`, and so the growth rate every application consumes, with `1.441…` more in the additive
-constant. The sharp form is not a longer version of the same argument but two further theorems,
-neither of which anything else in this development needs:
-
-* the Lebesgue function attains its maximum at `t = ±1`, where it is exactly
-  `(1/(n+1)) ∑_{j ≤ n} cot ((2j + 1)π/(4(n + 1)))` — the monotonicity of the successive local
-  maxima towards the endpoints is of Ehlich–Zeller type, and is the whole difficulty; and
-* that cotangent sum is at most `(2/π) log (n + 1) + 1`.
-
-Neither step may give anything away. The Lebesgue constant is
-`(2/π)(log (n + 1) + γ + log (8/π)) + o(1) = (2/π) log (n + 1) + 0.9625…`, so the printed constant
-has an asymptotic margin of `0.0375`, and at `n = 0` the two sides are *equal*, both `1`. The route
-through `SineSum.sum_term_le` cannot be repaired to reach it: it loses `(2/π) log 2` in passing from
-the `n + 1` nodes to the `2n + 2` reflected angles `±θ_j`, a triangle inequality
-`|sin (A + B)| ≤ |sin A| + |sin B|` on the two halves, and a crude bound `1` on each of the two
-terms nearest the evaluation point — `1.441…` in all, against a budget of `0.0375`.
+* $\ell_i$: the Lagrange basis polynomial of the node $x_i$, `Lagrange.basis`.
+* $\omega(f, \delta)$: the modulus of continuity, `ContinuousMap.modulusOfContinuity`.
 
 ## Implementation notes
 
-Trigonometric interpolation has no formula for its cardinal basis here: the operator is built from
-unisolvence, which is the Haar condition `card_le_two_mul_of_forall_trigFun_eq_zero` of
-`Numlib/Approximation/Chebyshev` — the substitution `z = e^{2 π i x / T}` turning a trigonometric
-polynomial into an algebraic one — together with the dimension count `finrank_trigPolyLE`.
+* The interpolation operators are bounded linear operators on $C(X)$, written as finite sums of
+  evaluation functionals times fixed continuous functions. Linearity, boundedness and continuity are
+  then immediate.
+* The piecewise interpolation operators are written as the value at the first breakpoint plus a sum
+  of clamped increments over the panels, so that nothing has to be glued. The local descriptions
+  `piecewiseLinearInterpCLM_apply_of_mem` and `piecewisePolyInterpCLM_apply_of_mem` give the
+  interpolant on one panel.
+* The breakpoints and the nodes of a partition are given as sequences indexed by `ℕ`, of which only
+  the first terms are used, so that the index arithmetic of the panels stays in `ℕ`.
+* Functions in $C([a, b])$ carry no derivative. The error bounds for smooth functions take a smooth
+  function $\mathbb{R} \to \mathbb{R}$ that agrees with $f$ on $[a, b]$.
+* Trigonometric interpolation has no formula for its cardinal basis here. The operator is built from
+  unisolvence, which follows from the Haar condition `card_le_two_mul_of_forall_trigFun_eq_zero` of
+  `Numlib.Approximation.Chebyshev` (the substitution $z = e^{2\pi i x/T}$ turns a trigonometric
+  polynomial into an algebraic one) and the dimension count `finrank_trigPolyLE`.
+* Lagrange interpolation is also an instance of the abstract interpolation problem of
+  `Numlib.Approximation.Unisolvent`: `Lagrange.interpCLM_isUnisolvent_polyLE` identifies
+  `Lagrange.interpolateCLM` with the interpolation projection of that problem.
+* Rivlin's sharp bound $\|\Pi_n\| \le (2/\pi) \log(n + 1) + 1$ for the Chebyshev nodes is not
+  proved. The bound that is proved has the same factor $2/\pi$ and a larger additive constant; see
+  `Lagrange.norm_interpolateCLM_chebyshev_le`.
 -/
 
 open scoped Polynomial
 
 namespace Polynomial
 
-/-- The iterated formal derivative is additive. -/
+/-- The iterated formal derivative is additive: $(P + Q)^{(k)} = P^{(k)} + Q^{(k)}$ for polynomials
+$P$ and $Q$ over a commutative ring. -/
 theorem iterate_derivative_add {R : Type*} [CommRing R] (k : ℕ) (P Q : R[X]) :
     Polynomial.derivative^[k] (P + Q)
       = Polynomial.derivative^[k] P + Polynomial.derivative^[k] Q := by
@@ -128,9 +130,9 @@ end Polynomial
 
 /-! ### The generalized Rolle theorem -/
 
-/-- The induction behind the generalized Rolle theorem, phrased over an explicit sequence `F` of
-successive derivatives: if `F 0` vanishes at `n + 1` increasing points of `[a, b]` then `F n`
-vanishes somewhere between the extreme two. -/
+/-- If $F_0$ vanishes at $n + 1$ increasing points of $[a, b]$ and each $F_{k+1}$ is the derivative
+of $F_k$ on $(a, b)$, then $F_n$ vanishes at a point between the first and the last of these
+points. -/
 private theorem exists_eq_zero_aux {a b : ℝ} :
     ∀ (n : ℕ) (F : ℕ → ℝ → ℝ),
       (∀ k < n, ContinuousOn (F k) (Set.Icc a b)) →
@@ -173,15 +175,14 @@ private theorem exists_eq_zero_aux {a b : ℝ} :
     · refine le_trans hc.2 (le_of_lt ?_)
       simpa using (hz (Fin.last n)).2
 
-/-- **The generalized Rolle theorem, for a function smooth only near the interval.** A function
-that is `C^{n+1}` on an open set containing `[a, b]` and vanishes at `n + 2` distinct points of
-`[a, b]` has a zero of its `(n + 1)`-st derivative strictly inside `[a, b]`.
+/-- **The generalized Rolle theorem, for a function that is smooth only near the interval.** Let $U$
+be an open set that contains $[a, b]$, and let $f$ be of class $C^{n+1}$ on $U$. If $f$ vanishes
+at $n + 2$ distinct points of $[a, b]$, then there is $c \in (a, b)$ with $f^{(n+1)}(c) = 0$.
 
-The hypothesis is local because the applications are: a function of Rice's type `(γ, m + 1)` is
-smooth on `(0, 1]` only, and the interpolation error on a panel that stays away from the origin
-must still be available.
-
-Reference: [kress1998numerical], §8.1. -/
+The applications need the local hypothesis: a function of Rice's type $(\gamma, m + 1)$ is
+smooth on $(0, 1]$ only, and the interpolation error on a panel away from the origin must still
+be available. The theorem follows [kress1998numerical], §8.1. The zeros are a finite set `s`
+with at least $n + 2$ elements. -/
 theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero_of_contDiffOn {n : ℕ} {a b : ℝ}
     {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U) (hUsub : Set.Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {s : Finset ℝ}
@@ -240,10 +241,13 @@ theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero_of_contDiffOn {n : ℕ} {
   · exact lt_of_le_of_lt hc.2 (lt_of_lt_of_le (by simpa using (hz (Fin.last n)).2)
       (hymem (Fin.last (n + 1))).2)
 
-/-- **The generalized Rolle theorem.** A function of class `C^{n+1}` that vanishes at `n + 2`
-distinct points of `[a, b]` has a zero of its `(n + 1)`-st derivative strictly inside `[a, b]`.
+/-- **The generalized Rolle theorem.** Let $f : \mathbb{R} \to \mathbb{R}$ be of class $C^{n+1}$. If
+$f$ vanishes at $n + 2$ distinct points of $[a, b]$, then there is $c \in (a, b)$ with
+$$f^{(n+1)}(c) = 0.$$
+The theorem follows [kress1998numerical], §8.1.
 
-Reference: [kress1998numerical], §8.1. -/
+The zeros are a finite set `s` with at least $n + 2$ elements. The theorem is the case
+$U = \mathbb{R}$ of `exists_iteratedDeriv_eq_zero_of_forall_eq_zero_of_contDiffOn`. -/
 theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero {n : ℕ} {a b : ℝ}
     {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f) {s : Finset ℝ}
     (hcard : n + 2 ≤ s.card) (hsub : ∀ t ∈ s, t ∈ Set.Icc a b) (hzero : ∀ t ∈ s, f t = 0) :
@@ -255,15 +259,18 @@ theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero {n : ℕ} {a b : ℝ}
 
 namespace Lagrange
 
-/-! #### Basis and nodal polynomials -/
+/-! ### Lagrange basis and nodal polynomials -/
 
 section BasisNodal
 
 open Polynomial
 
-/-- **A polynomial with the values of a Lagrange basis polynomial is that polynomial**: if
-`p` has degree less than the number of nodes, `p (v i) = 1` and `p (v j) = 0` for the other nodes
-`j ∈ s`, then `p = Lagrange.basis s v i`. -/
+/-- **A polynomial with the values of a Lagrange basis polynomial is that polynomial.** Let $F$ be a
+field, let $s$ be a finite index set, and let the nodes $v_j$, $j \in s$, be distinct. Let $p$
+be a polynomial of degree less than $|s|$, and let $i \in s$. If $p(v_j) = 1$ for $j = i$ and
+$p(v_j) = 0$ for the other $j \in s$, then
+$$p = \ell_i,$$
+the Lagrange basis polynomial `Lagrange.basis s v i`. -/
 theorem eq_basis_of_eval {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
     {s : Finset ι} {v : ι → F} (hvs : Set.InjOn v s) {p : F[X]} (hp : p.degree < s.card)
     {i : ι} (hi : i ∈ s) (h : ∀ j ∈ s, p.eval (v j) = if j = i then 1 else 0) :
@@ -276,15 +283,20 @@ theorem eq_basis_of_eval {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
     · rw [hji, Lagrange.eval_basis_self hvs hi]
     · rw [Lagrange.eval_basis_of_ne (Ne.symm hji) hj]
 
-/-- The Lagrange basis polynomial is the nodal polynomial of the other nodes scaled by the nodal
-weight: `ℓ_i = w_i ∏_{j ≠ i} (X - v j)`. -/
+/-- The Lagrange basis polynomial is the nodal weight times the nodal polynomial of the other nodes:
+if $i \in s$, then $\ell_i = w_i \prod_{j \in s,\, j \neq i} (X - v_j)$, where $w_i$ is
+`Lagrange.nodalWeight s v i`. -/
 theorem basis_eq_C_nodalWeight_mul_nodal_erase {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
     {s : Finset ι} {v : ι → F} {i : ι} (hi : i ∈ s) :
     Lagrange.basis s v i = C (Lagrange.nodalWeight s v i) * Lagrange.nodal (s.erase i) v := by
   rw [Lagrange.basis_eq_prod_sub_inv_mul_nodal_div hi, ← Lagrange.nodal_erase_eq_nodal_div hi]
 
-/-- The Lagrange basis polynomial of an affine image of nodes is the basis polynomial of the
-nodes composed with the affine map: `l_i(c + h t) = φ_i(t)` for `x_i = c + h v_i`, `h ≠ 0`. -/
+/-- The Lagrange basis polynomial of an affine image of the nodes is the basis polynomial of the
+nodes, composed with the affine map. Let $v_0, \dots, v_n$ be distinct real numbers, let
+$c, h \in \mathbb{R}$ with $h \neq 0$, and let $\ell_i$ and $\varphi_i$ be the Lagrange basis
+polynomials of the nodes $x_k = c + h v_k$ and $v_k$. Then for every $i$
+$$\ell_i(c + hX) = \varphi_i.$$
+-/
 theorem basis_comp_affine {n : ℕ} {v : Fin (n + 1) → ℝ} (hv : Function.Injective v)
     {c h : ℝ} (hh : h ≠ 0) (i : Fin (n + 1)) :
     (Lagrange.basis Finset.univ (fun k => c + h * v k) i).comp (C h * X + C c)
@@ -310,9 +322,13 @@ theorem basis_comp_affine {n : ℕ} {v : Fin (n + 1) → ℝ} (hv : Function.Inj
     · exact Lagrange.eval_basis_of_ne (v := fun k => c + h * v k) (Ne.symm hji)
         (Finset.mem_univ j)
 
-/-- The derivative of the Lagrange basis polynomial at its own node is `ω''(x_k)/(2 ω'(x_k))`:
-with `ω = (X - x_k) ω_k` and `l_k = ω_k/ω_k(x_k)`, one has `ω'(x_k) = ω_k(x_k)` and
-`ω''(x_k) = 2 ω_k'(x_k)`. -/
+/-- The derivative of a Lagrange basis polynomial at its own node. Let $x_0, \dots, x_n$ be distinct
+real numbers, let $\omega = \prod_j (X - x_j)$ be their nodal polynomial, and let $\ell_k$ be
+the Lagrange basis polynomial of $x_k$. Then
+$$\ell_k'(x_k) = \frac{\omega''(x_k)}{2\, \omega'(x_k)}.$$
+
+With $\omega = (X - x_k)\, \omega_k$ and $\ell_k = \omega_k/\omega_k(x_k)$, one has
+$\omega'(x_k) = \omega_k(x_k)$ and $\omega''(x_k) = 2\, \omega_k'(x_k)$. -/
 theorem eval_derivative_basis_self {n : ℕ} {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (k : Fin (n + 1)) :
     (derivative (Lagrange.basis Finset.univ x k)).eval (x k)
@@ -342,8 +358,8 @@ theorem eval_derivative_basis_self {n : ℕ} {x : Fin (n + 1) → ℝ}
     add_zero]
   field_simp
 
-/-- A monic polynomial of degree `n + 1` vanishing at `n + 1` distinct points is their nodal
-polynomial. -/
+/-- Let $x_0, \dots, x_n$ be distinct real numbers. A monic real polynomial $q$ of degree $n + 1$
+with $q(x_i) = 0$ for all $i$ is the nodal polynomial: $q = \prod_i (X - x_i)$. -/
 theorem nodal_eq_of_forall_eval_eq_zero {n : ℕ} {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x)
     {q : ℝ[X]} (hq : q.Monic) (hdeg : q.natDegree = n + 1) (hroot : ∀ i, q.eval (x i) = 0) :
@@ -356,14 +372,20 @@ theorem nodal_eq_of_forall_eval_eq_zero {n : ℕ} {x : Fin (n + 1) → ℝ}
     rwa [Lagrange.degree_nodal] at this
   · rw [eval_sub, hroot i, Lagrange.eval_nodal_at_node (Finset.mem_univ i), sub_zero]
 
-/-- A point is a node of an injective family exactly when the nodal polynomial vanishes there. -/
+/-- A real number $t$ is a node of the family $x_0, \dots, x_n$ if and only if the nodal polynomial
+vanishes there:
+$$(\exists i,\ x_i = t) \iff \prod_i (t - x_i) = 0.$$
+The nodes need not be distinct. -/
 theorem exists_eq_iff_eval_nodal_eq_zero {n : ℕ} (x : Fin (n + 1) → ℝ) (t : ℝ) :
     (∃ i, x i = t) ↔ (Lagrange.nodal Finset.univ x).eval t = 0 := by
   rw [Lagrange.eval_nodal, Finset.prod_eq_zero_iff]
   simp only [Finset.mem_univ, true_and, sub_eq_zero]
   exact exists_congr fun i => eq_comm
 
-/-- The interpolant at a reindexed family of nodes is the interpolant at the original family. -/
+/-- Let $x_0, \dots, x_{m-1}$ be distinct real numbers, let $\sigma$ be a permutation of the
+indices, and let $f : \mathbb{R} \to \mathbb{R}$. Then the interpolation polynomial of $f$ at
+the reindexed nodes $x_{\sigma(0)}, \dots, x_{\sigma(m-1)}$ equals the interpolation polynomial
+of $f$ at $x_0, \dots, x_{m-1}$. -/
 theorem interpolate_comp_equiv {m : ℕ} {x : Fin m → ℝ} (hx : Function.Injective x)
     (σ : Equiv.Perm (Fin m)) (f : ℝ → ℝ) :
     (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)) =
@@ -383,15 +405,19 @@ theorem interpolate_comp_equiv {m : ℕ} {x : Fin m → ℝ} (hx : Function.Inje
 
 end BasisNodal
 
-/-! #### The interpolation error formula -/
+/-! ### The error formula -/
 
-/-- **The Lagrange interpolation error formula, for a function smooth only near the interval.**
-For `f` of class `C^{n+1}` on an open set containing `[a, b]` and `n + 1` distinct nodes in
-`[a, b]`, the error of the interpolating polynomial at a point `t` of `[a, b]` is
-`f^{(n+1)}(ξ)/(n+1)!` times the nodal polynomial `∏ (t - x_i)`, for some `ξ` strictly inside
-`[a, b]`.
+/-- **The Lagrange interpolation error formula, for a function that is smooth only near the
+interval.** Let $a < b$, let $U$ be an open set that contains $[a, b]$, and let $f$ be of class
+$C^{n+1}$ on $U$. Let $x_0, \dots, x_n$ be distinct nodes in $[a, b]$, and let $p$ be the
+polynomial of degree at most $n$ that interpolates $f$ at them. Then for every $t \in [a, b]$
+there is $\xi \in (a, b)$ with
+$$f(t) - p(t) = \frac{f^{(n+1)}(\xi)}{(n + 1)!} \prod_{i=0}^{n} (t - x_i).$$
+This is Theorem 8.4 of [kress1998numerical], and §3.2 of [han2009theoretical].
 
-Reference: [kress1998numerical], Theorem 8.4; [han2009theoretical], §3.2. -/
+The interpolation polynomial is `Lagrange.interpolate`. The proof applies the generalized Rolle
+theorem to $s \mapsto f(s) - p(s) - c \prod_i (s - x_i)$, with $c$ chosen so that the value at
+$t$ vanishes. -/
 theorem exists_sub_interpolate_eq_of_contDiffOn {n : ℕ} {a b : ℝ} (hab : a < b) {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUsub : Set.Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {v : Fin (n + 1) → ℝ}
@@ -488,12 +514,15 @@ theorem exists_sub_interpolate_eq_of_contDiffOn {n : ℕ} {a b : ℝ} (hab : a <
     rw [← hWeval, ← hceq, hc]
     field_simp
 
-/-- **The Lagrange interpolation error formula.** For `f` of class `C^{n+1}` and `n + 1` distinct
-nodes in `[a, b]`, the error of the interpolating polynomial at a point `t` of `[a, b]` is
-`f^{(n+1)}(ξ)/(n+1)!` times the nodal polynomial `∏ (t - x_i)`, for some `ξ` strictly inside `[a,
-b]`.
+/-- **The Lagrange interpolation error formula.** Let $a < b$, and let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^{n+1}$. Let $x_0, \dots, x_n$ be distinct nodes
+in $[a, b]$, and let $p$ be the polynomial of degree at most $n$ that interpolates $f$ at them.
+Then for every $t \in [a, b]$ there is $\xi \in (a, b)$ with
+$$f(t) - p(t) = \frac{f^{(n+1)}(\xi)}{(n + 1)!} \prod_{i=0}^{n} (t - x_i).$$
+This is Theorem 8.4 of [kress1998numerical], and §3.2 of [han2009theoretical].
 
-Reference: [kress1998numerical], Theorem 8.4; [han2009theoretical], §3.2. -/
+The interpolation polynomial is `Lagrange.interpolate`. The theorem is the case $U = \mathbb{R}$
+of `Lagrange.exists_sub_interpolate_eq_of_contDiffOn`. -/
 theorem exists_sub_interpolate_eq {n : ℕ} {a b : ℝ} (hab : a < b) {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f) {v : Fin (n + 1) → ℝ}
     (hv : Function.Injective v) (hvmem : ∀ i, v i ∈ Set.Icc a b) {t : ℝ} (ht : t ∈ Set.Icc a b) :
@@ -503,8 +532,8 @@ theorem exists_sub_interpolate_eq {n : ℕ} {a b : ℝ} (hab : a < b) {f : ℝ �
   exists_sub_interpolate_eq_of_contDiffOn hab isOpen_univ (Set.subset_univ _) hf.contDiffOn hv
     hvmem ht
 
-/-- The value of a Lagrange basis function, as the product of the ratios
-`(t - v j)/(v i - v j)` over the other nodes. -/
+/-- The value of a Lagrange basis polynomial at $t$ is the product of the ratios over the other
+nodes: $\ell_i(t) = \prod_{j \in s,\, j \neq i} (t - v_j)/(v_i - v_j)$. -/
 theorem eval_basis_eq_prod {F : Type*} [Field F] {ι : Type*} [DecidableEq ι] (s : Finset ι)
     (v : ι → F) (i : ι) (t : F) :
     (Lagrange.basis s v i).eval t = ∏ j ∈ s.erase i, (t - v j) / (v i - v j) := by
@@ -512,14 +541,15 @@ theorem eval_basis_eq_prod {F : Type*} [Field F] {ι : Type*} [DecidableEq ι] (
     Polynomial.eval_C, Polynomial.eval_sub, Polynomial.eval_X]
   exact Finset.prod_congr rfl fun j _ => (div_eq_inv_mul _ _).symm
 
-/-- **A crude bound for a Lagrange basis function**: if the evaluation point is within `D` of every
-node and the node `v i` is at distance at least `d` from every other node, then `|ℓ_i| ≤ (D/d)^m`,
-with `m` the number of other nodes.
+/-- **A crude bound for a Lagrange basis polynomial.** Let $v$ be a finite family of real nodes, and
+let $d > 0$ and $D$ be such that $|t - v_j| \le D$ for every node $v_j$ and $|v_i - v_j| \ge d$
+for every $j \neq i$. Then $|\ell_i(t)| \le (D/d)^m$, where $m$ is the number of nodes other
+than $v_i$.
 
-The bound is far from sharp — the sharp one is the Lebesgue function — but it is uniform over any
-family of node systems with the same *shape*, which is what a piecewise polynomial interpolation
-operator on a refining mesh needs: `D` and `d` are then both proportional to the panel length and
-the ratio does not depend on the mesh. -/
+The bound is far from sharp; the sharp quantity is the Lebesgue function. But the bound is
+uniform over every family of node systems with the same shape, and a piecewise polynomial
+interpolation operator on a refining mesh needs this: $D$ and $d$ are then both proportional to
+the length of the panel, and their ratio does not depend on the mesh. -/
 theorem abs_eval_basis_le {ι : Type*} [DecidableEq ι] [Fintype ι] (v : ι → ℝ) (i : ι)
     {t D d : ℝ} (hd : 0 < d) (hD : ∀ j, |t - v j| ≤ D) (hsep : ∀ j, j ≠ i → d ≤ |v i - v j|) :
     |(Lagrange.basis Finset.univ v i).eval t| ≤ (D / d) ^ ((Finset.univ : Finset ι).erase i).card
@@ -543,31 +573,37 @@ theorem abs_eval_basis_le {ι : Type*} [DecidableEq ι] [Fintype ι] (v : ι →
 
 variable {X : Set ℝ} [CompactSpace X] {n : ℕ}
 
-/-- The `i`-th Lagrange basis polynomial for the nodes `x`, as a continuous function on `X`. -/
+/-- The $i$-th Lagrange basis polynomial $\ell_i$ of the nodes $x_0, \dots, x_n \in X$, as a
+continuous function on $X$. -/
 noncomputable def basisCM (x : Fin (n + 1) → X) (i : Fin (n + 1)) : C(X, ℝ) :=
   (Lagrange.basis Finset.univ (fun j => (x j : ℝ)) i).toContinuousMapOn X
 
 omit [CompactSpace X] in
-/-- The value of a Lagrange basis function is the value of the Lagrange basis polynomial. -/
+/-- The value of the Lagrange basis function `Lagrange.basisCM x i` at $t$ is $\ell_i(t)$. -/
 theorem basisCM_apply (x : Fin (n + 1) → X) (i : Fin (n + 1)) (t : X) :
     basisCM x i t = (Lagrange.basis Finset.univ (fun j => (x j : ℝ)) i).eval (t : ℝ) := rfl
 
-/-- The **Lagrange interpolation operator** at `n + 1` distinct nodes of a compact `X ⊆ ℝ`: the
-bounded projection `f ↦ ∑ i, f (x i) • ℓ_i` of `C(X, ℝ)` onto the polynomials of degree at most `n`.
-It is the projection `P` of the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem`, whose
-operator norm is the Lebesgue constant of the nodes.
+/-- The **Lagrange interpolation operator** at the nodes $x_0, \dots, x_n$ of a compact set
+$X \subseteq \mathbb{R}$: the bounded operator on $C(X)$
+$$\Pi_n f = \sum_{i=0}^{n} f(x_i)\, \ell_i.$$
+This is Example 3.6.5 of [han2009theoretical].
 
-Reference: [han2009theoretical], Example 3.6.5. -/
+For distinct nodes, $\Pi_n$ is a projection onto the polynomials of degree at most $n$
+(`Lagrange.range_interpolateCLM`, `Lagrange.isIdempotentElem_interpolateCLM`). It is the
+projection $P$ of the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem`, and its operator
+norm is the Lebesgue constant of the nodes (`Lagrange.norm_interpolateCLM`). The definition
+makes sense for any nodes. -/
 noncomputable def interpolateCLM (x : Fin (n + 1) → X) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   ∑ i, (ContinuousMap.evalCLM (R := ℝ) (x i)).smulRight (basisCM x i)
 
-/-- The Lagrange interpolant, as the combination `∑ i, f (x i) • ℓ_i` of the basis functions. -/
+/-- The value of the Lagrange interpolant at $t \in X$ is $\Pi_n f(t) = \sum_i f(x_i)\, \ell_i(t)$.
+-/
 theorem interpolateCLM_apply (x : Fin (n + 1) → X) (f : C(X, ℝ)) (t : X) :
     interpolateCLM x f t = ∑ i, f (x i) * basisCM x i t := by
   simp [interpolateCLM]
 
-/-- The interpolation operator is the evaluation of Mathlib's polynomial-valued
-`Lagrange.interpolate`. -/
+/-- The Lagrange interpolation operator is the evaluation of Mathlib's interpolation polynomial
+`Lagrange.interpolate` of the values $f(x_i)$. -/
 theorem interpolateCLM_apply_eq_eval (x : Fin (n + 1) → X) (f : C(X, ℝ)) (t : X) :
     interpolateCLM x f t
       = (Lagrange.interpolate Finset.univ (fun j => (x j : ℝ))
@@ -575,14 +611,17 @@ theorem interpolateCLM_apply_eq_eval (x : Fin (n + 1) → X) (f : C(X, ℝ)) (t 
   rw [interpolateCLM_apply, Lagrange.interpolate_apply, Polynomial.eval_finsetSum]
   simp [basisCM_apply]
 
-/-- The interpolant agrees with the function at the nodes. -/
+/-- If the nodes are distinct, then the Lagrange interpolant agrees with $f$ at the nodes:
+$\Pi_n f(x_j) = f(x_j)$. -/
 theorem interpolateCLM_apply_node {x : Fin (n + 1) → X} (hx : Function.Injective x)
     (f : C(X, ℝ)) (j : Fin (n + 1)) : interpolateCLM x f (x j) = f (x j) := by
   have hinj : Function.Injective fun j => (x j : ℝ) := Subtype.val_injective.comp hx
   rw [interpolateCLM_apply_eq_eval,
     Lagrange.eval_interpolate_at_node _ hinj.injOn (Finset.mem_univ j)]
 
-/-- The range of the interpolation operator is the space of polynomials of degree at most `n`. -/
+/-- Let $X \subseteq \mathbb{R}$ be compact, and let $x_0, \dots, x_n \in X$ be distinct. Then the
+range of the Lagrange interpolation operator $\Pi_n$ is the space of polynomials of degree at
+most $n$ on $X$, `polyLE X n`. -/
 theorem range_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     LinearMap.range (interpolateCLM x : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) = polyLE X n := by
   have hinj : Function.Injective fun j => (x j : ℝ) := Subtype.val_injective.comp hx
@@ -607,8 +646,8 @@ theorem range_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.Injective x)
       exact hPval (x i)
     rw [hnodes, ← hP, hPval t]
 
-/-- The interpolation operator is a projection: it fixes the polynomials of degree at most `n`, in
-particular its own values. -/
+/-- Let $X \subseteq \mathbb{R}$ be compact, and let $x_0, \dots, x_n \in X$ be distinct. Then the
+Lagrange interpolation operator is a projection: $\Pi_n \circ \Pi_n = \Pi_n$. -/
 theorem isIdempotentElem_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     IsIdempotentElem (interpolateCLM x) := by
   have h : ∀ f : C(X, ℝ), interpolateCLM x (interpolateCLM x f) = interpolateCLM x f := by
@@ -619,21 +658,23 @@ theorem isIdempotentElem_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.I
   exact ContinuousLinearMap.ext h
 
 omit [CompactSpace X] in
-/-- A Lagrange basis function takes the value `1` at its own node. -/
+/-- If the nodes are distinct, then the Lagrange basis function $\ell_i$ takes the value $1$ at its
+own node: $\ell_i(x_i) = 1$. -/
 theorem basisCM_apply_node_self {x : Fin (n + 1) → X} (hx : Function.Injective x)
     (i : Fin (n + 1)) : basisCM x i (x i) = 1 := by
   have hinj : Function.Injective fun k => (x k : ℝ) := Subtype.val_injective.comp hx
   rw [basisCM_apply, Lagrange.eval_basis_self hinj.injOn (Finset.mem_univ i)]
 
 omit [CompactSpace X] in
-/-- A Lagrange basis function vanishes at the other nodes. -/
+/-- A Lagrange basis function vanishes at the other nodes: $\ell_i(x_j) = 0$ for $i \neq j$. -/
 theorem basisCM_apply_node_ne {x : Fin (n + 1) → X} {i j : Fin (n + 1)} (hij : i ≠ j) :
     basisCM x i (x j) = 0 := by
   rw [basisCM_apply]
   exact Lagrange.eval_basis_of_ne (v := fun k => (x k : ℝ)) hij (Finset.mem_univ j)
 
 omit [CompactSpace X] in
-/-- A combination of the Lagrange basis functions takes the prescribed values at the nodes. -/
+/-- If the nodes are distinct, then the combination $\sum_i \sigma_i \ell_i$ of the Lagrange basis
+functions takes the value $\sigma_j$ at the node $x_j$. -/
 theorem sum_smul_basisCM_apply_node {x : Fin (n + 1) → X} (hx : Function.Injective x)
     (σ : Fin (n + 1) → ℝ) (j : Fin (n + 1)) :
     (∑ i, σ i • basisCM x i) (x j) = σ j := by
@@ -647,8 +688,8 @@ theorem sum_smul_basisCM_apply_node {x : Fin (n + 1) → X} (hx : Function.Injec
 /-! ### Lagrange interpolation as a unisolvent problem -/
 
 omit [CompactSpace X] in
-/-- The Lagrange basis functions of `n + 1` distinct nodes are polynomials of degree at most `n`,
-so every combination of them is. -/
+/-- If the nodes $x_0, \dots, x_n$ are distinct, then every combination $\sum_i c_i \ell_i$ of their
+Lagrange basis functions is a polynomial of degree at most $n$ on $X$. -/
 theorem sum_smul_basisCM_mem_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x)
     (c : Fin (n + 1) → ℝ) : (∑ i, c i • basisCM x i) ∈ polyLE X n := by
   have hinj : Function.Injective fun j => (x j : ℝ) := Subtype.val_injective.comp hx
@@ -660,10 +701,12 @@ theorem sum_smul_basisCM_mem_polyLE {x : Fin (n + 1) → X} (hx : Function.Injec
   · rw [Lagrange.interpolate_apply, Polynomial.eval_finsetSum, ContinuousMap.sum_apply]
     exact Finset.sum_congr rfl fun i _ => by simp [basisCM_apply]
 
-/-- **Lagrange interpolation is unisolvent**: at `n + 1` distinct nodes of `X` there is exactly one
-polynomial of degree at most `n` taking prescribed values. This is the interpolation problem of
-`Numlib/Approximation/Unisolvent` for the space `polyLE X n` and the point evaluations at the
-nodes. -/
+/-- **Lagrange interpolation is unisolvent.** Let $X \subseteq \mathbb{R}$ be compact, and let
+$x_0, \dots, x_n \in X$ be distinct. Then for all values $b_0, \dots, b_n \in \mathbb{R}$ there
+is exactly one polynomial $p$ of degree at most $n$ on $X$ with $p(x_i) = b_i$ for all $i$.
+
+This is `Approximation.IsUnisolvent` of `Numlib.Approximation.Unisolvent` for the space
+`polyLE X n` and the point evaluations at the nodes. -/
 theorem isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     Approximation.IsUnisolvent (polyLE X n) fun i => ContinuousMap.evalCLM ℝ (x i) := by
   classical
@@ -685,7 +728,8 @@ theorem isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x) 
     rw [Finset.card_image_of_injective _ hx, Finset.card_univ, Fintype.card_fin]
   exact absurd (haarCondition_polyLE X n _ hmem hne0 _ hzero) (by omega)
 
-/-- The cardinal basis of the Lagrange interpolation problem is the Lagrange basis. -/
+/-- If the nodes are distinct, then the cardinal basis of the Lagrange interpolation problem is the
+Lagrange basis: the $i$-th cardinal function is $\ell_i$. -/
 theorem cardinalBasisCM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x)
     (i : Fin (n + 1)) : (isUnisolvent_polyLE hx).cardinalBasisCM i = basisCM x i := by
   have h := (isUnisolvent_polyLE hx).eq_interpolate (b := Pi.single i (1 : ℝ))
@@ -699,18 +743,20 @@ theorem cardinalBasisCM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Functi
     · simpa [Pi.single_apply, hij] using basisCM_apply_node_ne (Ne.symm hij) (x := x)
 
 /-- **The Lagrange interpolation operator is the interpolation projection** of the unisolvent
-problem it solves. -/
+problem that it solves: for distinct nodes, `Approximation.IsUnisolvent.interpCLM` of
+`Lagrange.isUnisolvent_polyLE` is $\Pi_n$. -/
 theorem interpCLM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     (isUnisolvent_polyLE hx).interpCLM = interpolateCLM x := by
   refine ContinuousLinearMap.ext fun f => ContinuousMap.ext fun t => ?_
   rw [Approximation.IsUnisolvent.interpCLM_apply, interpolateCLM_apply]
   exact Finset.sum_congr rfl fun i _ => by rw [cardinalBasisCM_isUnisolvent_polyLE hx i]
 
-/-- **The Lebesgue constant.** The operator norm of the interpolation operator is the largest value
-of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`. It is the polynomial case of
-`Approximation.IsUnisolvent.isGreatest_norm_interpCLM`.
+/-- **The Lebesgue constant.** Let $X \subseteq \mathbb{R}$ be nonempty and compact, and let
+$x_0, \dots, x_n \in X$ be distinct. Then the operator norm $\|\Pi_n\|$ is the largest value of
+the Lebesgue function $t \mapsto \sum_i |\ell_i(t)|$ on $X$; in particular, the maximum is
+attained. This is §3.7.3 of [han2009theoretical].
 
-Reference: [han2009theoretical], §3.7.3. -/
+It is the polynomial case of `Approximation.IsUnisolvent.isGreatest_norm_interpCLM`. -/
 theorem isGreatest_norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X}
     (hx : Function.Injective x) :
     IsGreatest (Set.range fun t : X => ∑ i, |basisCM x i t|) ‖interpolateCLM x‖ := by
@@ -718,13 +764,19 @@ theorem isGreatest_norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X}
   rw [interpCLM_isUnisolvent_polyLE hx] at h
   simpa only [cardinalBasisCM_isUnisolvent_polyLE hx] using h
 
-/-- The operator norm of the interpolation operator is the supremum of the Lebesgue function. -/
+/-- Let $X \subseteq \mathbb{R}$ be nonempty and compact, and let $x_0, \dots, x_n \in X$ be
+distinct. Then the operator norm of the Lagrange interpolation operator is the supremum of the
+Lebesgue function:
+$$\|\Pi_n\| = \sup_{t \in X} \sum_{i=0}^{n} |\ell_i(t)|.$$
+-/
 theorem norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     ‖interpolateCLM x‖ = sSup (Set.range fun t : X => ∑ i, |basisCM x i t|) :=
   (isGreatest_norm_interpolateCLM hx).csSup_eq.symm
 
 omit [CompactSpace X] in
-/-- Permuting the nodes permutes the Lagrange basis functions. -/
+/-- Permuting the nodes permutes the Lagrange basis functions: for a permutation $s$ of the indices,
+the $i$-th basis function of the nodes $x_{s(0)}, \dots, x_{s(n)}$ is the $s(i)$-th basis
+function of $x_0, \dots, x_n$. -/
 theorem basisCM_comp_equiv (x : Fin (n + 1) → X) (s : Equiv.Perm (Fin (n + 1)))
     (i : Fin (n + 1)) : basisCM (x ∘ s) i = basisCM x (s i) := by
   ext t
@@ -742,8 +794,9 @@ theorem basisCM_comp_equiv (x : Fin (n + 1) → X) (s : Equiv.Perm (Fin (n + 1))
   rw [← hmap, Finset.prod_map]
   rfl
 
-/-- **Interpolation depends on the nodes only as a set**: permuting them leaves the interpolation
-operator unchanged. -/
+/-- **Interpolation depends on the nodes only as a set.** For every permutation $s$ of the indices,
+the interpolation operator at the nodes $x_{s(0)}, \dots, x_{s(n)}$ equals the interpolation
+operator at $x_0, \dots, x_n$. -/
 theorem interpolateCLM_comp_equiv (x : Fin (n + 1) → X) (s : Equiv.Perm (Fin (n + 1))) :
     interpolateCLM (x ∘ s) = interpolateCLM x := by
   rw [interpolateCLM, interpolateCLM, ← Equiv.sum_comp s
@@ -759,17 +812,22 @@ namespace ContinuousMap
 
 variable {X : Type*} [PseudoMetricSpace X]
 
-/-- The **modulus of continuity** of a continuous function at the scale `δ`: the largest change
-`|f u - f v|` of its value over pairs of points at distance at most `δ`.
+/-- The **modulus of continuity** of a continuous function $f$ on a pseudometric space $X$ at the
+scale $\delta$: the supremum
+$$\omega(f, \delta) = \sup \{\, |f(u) - f(v)| : d(u, v) \le \delta \,\}.$$
 
-It is a supremum, so it takes the junk value `0` when the set of such changes is empty or unbounded;
-on a compact space it is a genuine supremum (`ContinuousMap.le_modulusOfContinuity`), and it tends
-to `0` with `δ` exactly because a continuous function on a compact space is uniformly continuous. -/
+The supremum is the real `sSup`, so it takes the value $0$ when the set is empty (for
+$\delta < 0$ or empty $X$) or unbounded above. On a compact space the set is bounded, and
+$\omega(f, \delta)$ is a true supremum (`ContinuousMap.le_modulusOfContinuity`). It tends to $0$
+with $\delta$ because a continuous function on a compact space is uniformly continuous
+(`ContinuousMap.tendsto_modulusOfContinuity`). -/
 noncomputable def modulusOfContinuity (f : C(X, ℝ)) (δ : ℝ) : ℝ :=
   sSup ((fun p : X × X => |f p.1 - f p.2|) '' {p : X × X | dist p.1 p.2 ≤ δ})
 
 variable [CompactSpace X] (f : C(X, ℝ)) {δ : ℝ}
 
+/-- On a compact space, the set of changes $|f(u) - f(v)|$ over pairs with $d(u, v) \le \delta$ is
+bounded above. -/
 theorem bddAbove_modulusOfContinuity_image :
     BddAbove ((fun p : X × X => |f p.1 - f p.2|) '' {p : X × X | dist p.1 p.2 ≤ δ}) := by
   refine ⟨2 * ‖f‖, ?_⟩
@@ -779,22 +837,27 @@ theorem bddAbove_modulusOfContinuity_image :
   calc |f u - f v| ≤ |f u| + |f v| := abs_sub _ _
     _ ≤ 2 * ‖f‖ := by linarith
 
-/-- The modulus of continuity bounds every change of value over a distance at most `δ`. -/
+/-- On a compact space, the modulus of continuity bounds every change of value over a distance at
+most $\delta$: if $d(u, v) \le \delta$, then $|f(u) - f(v)| \le \omega(f, \delta)$. -/
 theorem le_modulusOfContinuity {u v : X} (huv : dist u v ≤ δ) :
     |f u - f v| ≤ f.modulusOfContinuity δ :=
   le_csSup (bddAbove_modulusOfContinuity_image f) ⟨(u, v), huv, rfl⟩
 
-/-- The modulus of continuity is nonnegative at every nonnegative scale. -/
+/-- On a nonempty compact space, the modulus of continuity is nonnegative at every scale
+$\delta \ge 0$. -/
 theorem modulusOfContinuity_nonneg [Nonempty X] (hδ : 0 ≤ δ) : 0 ≤ f.modulusOfContinuity δ := by
   obtain ⟨u⟩ := ‹Nonempty X›
   have := le_modulusOfContinuity f (u := u) (v := u) (by simpa using hδ)
   simpa using this
 
 open Filter Topology in
-/-- **The modulus of continuity tends to zero with the scale.** This is the uniform continuity of a
-continuous function on a compact space, restated for the modulus: it is what turns every
-approximation bound of the form `‖f - P f‖ ≤ ω(f, h)` into a convergence statement as the mesh `h`
-tends to zero. -/
+/-- **The modulus of continuity tends to zero with the scale.** Let $X$ be a nonempty compact
+pseudometric space and $f \in C(X)$. Then
+$$\omega(f, \delta) \to 0 \qquad \text{as } \delta \to 0,\ \delta \ge 0.$$
+
+This is the uniform continuity of a continuous function on a compact space. It turns every
+approximation bound of the form $\|f - Pf\| \le \omega(f, h)$ into a convergence statement as
+the mesh $h$ tends to zero. -/
 theorem tendsto_modulusOfContinuity [Nonempty X] :
     Tendsto f.modulusOfContinuity (𝓝[≥] (0 : ℝ)) (𝓝 0) := by
   have huc : UniformContinuous f := CompactSpace.uniformContinuous_of_continuous f.continuous
@@ -819,32 +882,33 @@ end ContinuousMap
 
 /-! ### Piecewise-linear interpolation -/
 
-/-- The **clamped ramp** of `[u, v]`: the continuous function that vanishes below `u`, rises with
-slope `1` on `[u, v]` and is constant equal to `v - u` above `v`.
+/-- The **clamped ramp** of $[u, v]$, as a continuous function on $[a, b]$: the function
+$t \mapsto \min(\max(t - u, 0), v - u)$, which vanishes below $u$, rises with slope $1$ on
+$[u, v]$, and is equal to $v - u$ above $v$.
 
 A continuous piecewise-linear function on a partition is a combination of the ramps of its
-subintervals, which is what lets the piecewise-linear interpolation operator be written without
-gluing anything. -/
+subintervals. So the piecewise-linear interpolation operator can be written without gluing. -/
 noncomputable def piecewiseLinearRamp (a b u v : ℝ) : C(Set.Icc a b, ℝ) :=
   ⟨fun t => min (max ((t : ℝ) - u) 0) (v - u),
     ((continuous_subtype_val.sub continuous_const).max continuous_const).min continuous_const⟩
 
-/-- The value of the clamped ramp. -/
+/-- The value of the clamped ramp at $t$ is $\min(\max(t - u, 0), v - u)$. -/
 @[simp]
 theorem piecewiseLinearRamp_apply (a b u v : ℝ) (t : Set.Icc a b) :
     piecewiseLinearRamp a b u v t = min (max ((t : ℝ) - u) 0) (v - u) := rfl
 
-/-- **Piecewise-linear interpolation** on the partition `a = x 0 < x 1 < ⋯ < x (n + 1) = b` of `[a,
-b]`: the bounded operator on `C([a, b], ℝ)` sending `f` to the continuous function that agrees with
-`f` at every node and is affine on every subinterval.
+/-- **Piecewise-linear interpolation** on the partition $a = x_0 < x_1 < \dots < x_{n+1} = b$ of
+$[a, b]$: the bounded operator on $C([a, b])$ that sends $f$ to the continuous function that
+agrees with $f$ at every node and is affine on every subinterval. It is defined as
+$$I f = f(x_0) + \sum_{i=0}^{n} \frac{f(x_{i+1}) - f(x_i)}{x_{i+1} - x_i}\, r_i,$$
+where $r_i$ is the clamped ramp of $[x_i, x_{i+1}]$. This is §3.2.3 and Exercise 3.6.6 of
+[han2009theoretical], and §8.3 of [kress1998numerical].
 
-The operator is written as the value at the first node plus the ramps of the subintervals scaled by
-the divided differences of `f`, which makes linearity, boundedness and continuity immediate;
-`piecewiseLinearInterpCLM_apply_of_mem` is the equivalent local description on one subinterval. The
-nodes are given as a sequence, of which only `x 0, …, x (n + 1)` are used, so that the index
-arithmetic of the subintervals stays in `ℕ`.
-
-Reference: [han2009theoretical], §3.2.3 and Exercise 3.6.6; [kress1998numerical], §8.3. -/
+The form with ramps makes linearity, boundedness and continuity immediate;
+`piecewiseLinearInterpCLM_apply_of_mem` is the equivalent local description on one subinterval.
+The nodes are given as a sequence, of which only $x_0, \dots, x_{n+1}$ are used, so that the
+index arithmetic of the subintervals stays in `ℕ`. The definition makes sense for any sequence
+of points of $[a, b]$. -/
 noncomputable def piecewiseLinearInterpCLM {a b : ℝ} (n : ℕ) (x : ℕ → Set.Icc a b) :
     C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
   (ContinuousMap.evalCLM ℝ (x 0)).smulRight 1 +
@@ -859,8 +923,9 @@ section PiecewiseLinear
 
 variable {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
 
-/-- The piecewise-linear interpolant, as the value at the first node plus the ramps of the
-subintervals scaled by the divided differences of `f`. -/
+/-- The value of the piecewise-linear interpolant at $t$ is $f(x_0)$ plus the clamped ramps
+$\min(\max(t - x_i, 0), x_{i+1} - x_i)$ of the subintervals, scaled by the divided differences
+$(f(x_{i+1}) - f(x_i))/(x_{i+1} - x_i)$. -/
 theorem piecewiseLinearInterpCLM_apply (n : ℕ) (x : ℕ → Set.Icc a b) (f : C(Set.Icc a b, ℝ))
     (t : Set.Icc a b) :
     piecewiseLinearInterpCLM n x f t = f (x 0) + ∑ i ∈ Finset.range (n + 1),
@@ -868,7 +933,7 @@ theorem piecewiseLinearInterpCLM_apply (n : ℕ) (x : ℕ → Set.Icc a b) (f : 
         min (max ((t : ℝ) - (x i : ℝ)) 0) ((x (i + 1) : ℝ) - (x i : ℝ)) := by
   simp [piecewiseLinearInterpCLM, div_eq_inv_mul, mul_assoc]
 
-/-- The nodes of a partition increase along the used range. -/
+/-- If $x_i < x_{i+1}$ for all $i \le n$, then $x_i \le x_j$ for all $i \le j \le n + 1$. -/
 theorem piecewiseLinearInterpCLM.le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     {i j : ℕ} (hij : i ≤ j)
     (hj : j ≤ n + 1) : (x i : ℝ) ≤ (x j : ℝ) := by
@@ -877,7 +942,8 @@ theorem piecewiseLinearInterpCLM.le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ)
   | base => exact fun _ => le_rfl
   | succ k hk ih => exact fun hk1 => (ih (by omega)).trans (hstep k (by omega)).le
 
-/-- Every point of `[a, b]` lies in one of the subintervals of the partition. -/
+/-- If $x_0 = a$ and $x_{n+1} = b$, then every $t \in [a, b]$ lies in a subinterval $[x_j, x_{j+1}]$
+with $j \le n$. -/
 theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b)
     (t : Set.Icc a b) :
     ∃ j ≤ n, (x j : ℝ) ≤ (t : ℝ) ∧ (t : ℝ) ≤ (x (j + 1) : ℝ) := by
@@ -904,8 +970,11 @@ theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : 
   have := S.le_max' _ hmem
   omega
 
-/-- **The local description of the piecewise-linear interpolant.** On the subinterval `[x j, x (j +
-1)]` it is the affine function through `(x j, f (x j))` and `(x (j + 1), f (x (j + 1)))`. -/
+/-- **The local description of the piecewise-linear interpolant.** Let $x_i < x_{i+1}$ for all
+$i \le n$, let $j \le n$, and let $t \in [a, b]$ with $x_j \le t \le x_{j+1}$. Then
+$$I f(t) = f(x_j) + \bigl(f(x_{j+1}) - f(x_j)\bigr) \frac{t - x_j}{x_{j+1} - x_j}.$$
+So on $[x_j, x_{j+1}]$ the interpolant is the affine function through $(x_j, f(x_j))$ and
+$(x_{j+1}, f(x_{j+1}))$. -/
 theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b}
     (h1 : (x j : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
@@ -966,7 +1035,8 @@ theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) 
   rw [hsum, hat]
   ring
 
-/-- The piecewise-linear interpolant agrees with the function at every node. -/
+/-- If $x_i < x_{i+1}$ for all $i \le n$, then the piecewise-linear interpolant agrees with $f$ at
+every node $x_j$, $j \le n + 1$. -/
 theorem piecewiseLinearInterpCLM_apply_node (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n + 1) :
     piecewiseLinearInterpCLM n x f (x j) = f (x j) := by
@@ -981,7 +1051,8 @@ theorem piecewiseLinearInterpCLM_apply_node (hstep : ∀ i ≤ n, (x i : ℝ) < 
     field_simp
     ring
 
-/-- The piecewise-linear interpolation operator is a projection. -/
+/-- On a partition $a = x_0 < \dots < x_{n+1} = b$, the piecewise-linear interpolation operator is a
+projection: $I \circ I = I$. -/
 theorem isIdempotentElem_piecewiseLinearInterpCLM
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) :
     IsIdempotentElem (piecewiseLinearInterpCLM n x) := by
@@ -997,8 +1068,9 @@ theorem isIdempotentElem_piecewiseLinearInterpCLM
       piecewiseLinearInterpCLM_apply_node hstep f (by omega)]
   exact ContinuousLinearMap.ext h
 
-/-- On the subinterval `[x j, x (j + 1)]` the piecewise-linear interpolant is a convex
-combination `(1 - θ) f (x j) + θ f (x (j + 1))`, `θ ∈ [0, 1]`, of the two node values. -/
+/-- Let $x_i < x_{i+1}$ for all $i \le n$, let $j \le n$, and let $x_j \le t \le x_{j+1}$. Then
+there is $\theta \in [0, 1]$ with $I f(t) = (1 - \theta) f(x_j) + \theta f(x_{j+1})$: the
+interpolant is a convex combination of the two node values. -/
 theorem exists_piecewiseLinearInterpCLM_apply_eq (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b}
     (h1 : (x j : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
@@ -1010,8 +1082,9 @@ theorem exists_piecewiseLinearInterpCLM_apply_eq (hstep : ∀ i ≤ n, (x i : �
   rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2]
   ring
 
-/-- The piecewise-linear interpolant never exceeds the function in sup norm: on each subinterval its
-value is a convex combination of two values of the function. -/
+/-- On a partition $a = x_0 < \dots < x_{n+1} = b$, the piecewise-linear interpolant satisfies
+$\|I f\| \le \|f\|$ in the uniform norm. On each subinterval its value is a convex combination
+of two values of $f$. -/
 theorem norm_piecewiseLinearInterpCLM_apply_le
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) :
     ‖piecewiseLinearInterpCLM n x f‖ ≤ ‖f‖ := by
@@ -1029,11 +1102,13 @@ theorem norm_piecewiseLinearInterpCLM_apply_le
     _ ≤ (1 - θ) * ‖f‖ + θ * ‖f‖ := by gcongr
     _ = ‖f‖ := by ring
 
-/-- **The piecewise-linear interpolation operator has norm one.** It is a projection of norm one
-onto the continuous piecewise-linear functions of the partition, which is what makes its Lebesgue
-constant the best possible.
+/-- **The piecewise-linear interpolation operator has norm one.** On a partition
+$a = x_0 < \dots < x_{n+1} = b$ of $[a, b]$,
+$$\|I\| = 1.$$
+This is Exercise 3.6.6 of [han2009theoretical].
 
-Reference: [han2009theoretical], Exercise 3.6.6. -/
+The operator is a projection of norm one onto the continuous piecewise-linear functions of the
+partition, so its Lebesgue constant is the best possible. -/
 theorem norm_piecewiseLinearInterpCLM (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) :
     ‖piecewiseLinearInterpCLM n x‖ = 1 := by
   have hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ) := fun i hi => hx.step i (by omega)
@@ -1051,18 +1126,18 @@ theorem norm_piecewiseLinearInterpCLM (hx : IsIntervalPartition a b (n + 1) fun 
     rw [hfix, hone, mul_one] at this
     exact this
 
-/-- **The error of piecewise-linear interpolation.** On a partition of `[a, b]` of mesh at most `h`,
-the piecewise-linear interpolant of a `C²` function differs from it by at most `h² ‖f''‖ / 8`.
+/-- **The error of piecewise-linear interpolation.** Let $a = x_0 < \dots < x_{n+1} = b$ be a
+partition of $[a, b]$ with $x_{i+1} - x_i \le h$ for all $i$. Let
+$g : \mathbb{R} \to \mathbb{R}$ be of class $C^2$, let $f \in C([a, b])$ agree with $g$ on
+$[a, b]$, and let $|g''(t)| \le M$ for all $t \in [a, b]$. Then
+$$\|f - I f\| \le \frac{h^2}{8} M.$$
+This is (3.2.9) of [han2009theoretical], and §8.3 of [kress1998numerical].
 
-The function is given as a `C²` map `ℝ → ℝ` agreeing with `f` on `[a, b]`, since `C(Icc a b, ℝ)`
-carries no derivative; only the values of the second derivative on `[a, b]` are used.
-
-The route is `piecewiseLinearInterpCLM_apply_of_mem`: on `[x j, x (j+1)]` the interpolant is the
-affine function through the two node values, hence the Lagrange interpolant at those two nodes, so
-`Lagrange.exists_sub_interpolate_eq` at `n = 1` applies on the subinterval, and `|(t - u)(t - v)| ≤
-(v - u)²/4` finishes it.
-
-Reference: [han2009theoretical], (3.2.9); [kress1998numerical], §8.3. -/
+The function $f$ is given through a $C^2$ function $g$ on $\mathbb{R}$, since $C([a, b])$
+carries no derivative; only the values of $g''$ on $[a, b]$ are used. By
+`piecewiseLinearInterpCLM_apply_of_mem`, on $[x_j, x_{j+1}]$ the interpolant is the Lagrange
+interpolant at the two endpoints, so `Lagrange.exists_sub_interpolate_eq` with $n = 1$ applies,
+and $|(t - u)(t - v)| \le (v - u)^2/4$ finishes the proof. -/
 theorem norm_sub_piecewiseLinearInterpCLM_le
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g) {f : C(Set.Icc a b, ℝ)}
@@ -1147,15 +1222,15 @@ theorem norm_sub_piecewiseLinearInterpCLM_le
         mul_le_mul (by linarith [hM ξ hξmem]) hprod (abs_nonneg _) (by linarith)
     _ = h ^ 2 / 8 * M := by ring
 
-/-- **The piecewise-linear interpolation error for a merely continuous function.** On a partition
-of `[a, b]` of mesh at most `h`, the piecewise-linear interpolant of a continuous `f` differs from
-it by at most the modulus of continuity `ω(f, h)`.
+/-- **The piecewise-linear interpolation error for a continuous function.** Let
+$a = x_0 < \dots < x_{n+1} = b$ be a partition of $[a, b]$ with $x_{i+1} - x_i \le h$ for all
+$i$, and let $f \in C([a, b])$. Then
+$$\|f - I f\| \le \omega(f, h).$$
+This is (3.2.8) of [han2009theoretical], and §8.3 of [kress1998numerical].
 
-On each subinterval the interpolant is a convex combination of the two node values, so the error is
-the same convex combination of `f(t) - f(x j)` and `f(t) - f(x (j+1))`, and both nodes are within
-`h` of `t`.
-
-Reference: [han2009theoretical], (3.2.8); [kress1998numerical], §8.3. -/
+On each subinterval the interpolant is a convex combination of the two node values. So the error
+is the same convex combination of $f(t) - f(x_j)$ and $f(t) - f(x_{j+1})$, and both nodes are
+within $h$ of $t$. -/
 theorem norm_sub_piecewiseLinearInterpCLM_le_modulus
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
     (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h) :
@@ -1187,14 +1262,15 @@ theorem norm_sub_piecewiseLinearInterpCLM_le_modulus
     _ = f.modulusOfContinuity h := by ring
 
 open Filter Topology in
-/-- **Piecewise-linear interpolation converges uniformly for every continuous function** as the
-mesh of the partitions tends to zero. The bound is the modulus of continuity
-(`norm_sub_piecewiseLinearInterpCLM_le_modulus`), which tends to zero with the mesh
-(`ContinuousMap.tendsto_modulusOfContinuity`); no differentiability of `f` is used, and it is this
-statement — not the `h²` bound for a `C²` function — that a projection method needs in order to
-satisfy the hypothesis `P_n u → u` of the Banach–Steinhaus argument.
+/-- **Piecewise-linear interpolation converges uniformly for every continuous function.** For each
+$k$, let $a = y_{k,0} < \dots < y_{k,N_k+1} = b$ be a partition of $[a, b]$ with mesh at most
+$h_k$, and let $h_k \to 0$. Then for every $f \in C([a, b])$ the piecewise-linear interpolants
+of $f$ on these partitions converge uniformly to $f$. This is (3.2.8) of [han2009theoretical].
 
-Reference: [han2009theoretical], (3.2.8). -/
+The bound is the modulus of continuity (`norm_sub_piecewiseLinearInterpCLM_le_modulus`), which
+tends to zero with the mesh (`ContinuousMap.tendsto_modulusOfContinuity`). No differentiability
+of $f$ is used. A projection method needs this statement, and not the $h^2$ bound for a $C^2$
+function, for the hypothesis $P_n u \to u$ of the Banach–Steinhaus argument. -/
 theorem tendsto_piecewiseLinearInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
     (hstep : ∀ n, ∀ i ≤ N n, (y n i : ℝ) < (y n (i + 1) : ℝ))
     (hfirst : ∀ n, (y n 0 : ℝ) = a) (hlast : ∀ n, (y n (N n + 1) : ℝ) = b)
@@ -1217,46 +1293,47 @@ theorem tendsto_piecewiseLinearInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → 
 
 end PiecewiseLinear
 
-/-! ### Piecewise polynomial interpolation of degree `m` -/
+/-! ### Piecewise polynomial interpolation of degree $m$ -/
 
-/-- **A panel node system of degree `m`.** The breakpoints `a = x 0 < x 1 < ⋯ < x (n + 1) = b` cut
-`[a, b]` into `n + 1` panels, and each panel `[x j, x (j + 1)]` carries `m + 1` distinct
-interpolation nodes `node j 0, …, node j m`, of which the first and the last are the endpoints of
-the panel.
+/-- **A panel node system of degree $m$.** The breakpoints $a = x_0 < x_1 < \dots < x_{n+1} = b$ cut
+$[a, b]$ into $n + 1$ panels, and each panel $[x_j, x_{j+1}]$ carries $m + 1$ distinct
+interpolation nodes $\nu_{j,0}, \dots, \nu_{j,m}$ in the panel, of which the first is $x_j$ and
+the last is $x_{j+1}$.
 
-The endpoint condition is what makes the panel interpolants agree where two panels meet, so that
-the piecewise polynomial interpolant is continuous; the interior nodes are arbitrary, and are
-usually the images of a fixed partition `0 = μ_0 < ⋯ < μ_m = 1` of the unit interval under the
-affine map onto the panel. -/
+The endpoint condition makes the panel interpolants agree where two panels meet, so that the
+piecewise polynomial interpolant is continuous. The interior nodes are arbitrary. They are
+usually the images of a fixed partition $0 = \mu_0 < \dots < \mu_m = 1$ of the unit interval
+under the affine map onto the panel. The node $\nu_{j,i}$ is `node j i`. -/
 structure IsPanelNodes {a b : ℝ} (n m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) : Prop where
-  /-- The breakpoints increase along the used range. -/
+  /-- The breakpoints increase: $x_i < x_{i+1}$ for all $i \le n$. -/
   step : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)
-  /-- The first breakpoint is the left endpoint of the interval. -/
+  /-- The first breakpoint is the left endpoint of the interval: $x_0 = a$. -/
   first : (x 0 : ℝ) = a
-  /-- The last breakpoint is the right endpoint of the interval. -/
+  /-- The last breakpoint is the right endpoint of the interval: $x_{n+1} = b$. -/
   last : (x (n + 1) : ℝ) = b
-  /-- The nodes of a panel lie in that panel. -/
+  /-- The nodes of a panel lie in that panel: $\nu_{j,i} \in [x_j, x_{j+1}]$ for all $j \le n$. -/
   mem : ∀ j ≤ n, ∀ i, ((node j i : ℝ)) ∈ Set.Icc ((x j : ℝ)) ((x (j + 1) : ℝ))
-  /-- The nodes of a panel are distinct. -/
+  /-- The nodes of a panel are distinct: $i \mapsto \nu_{j,i}$ is injective for all $j \le n$. -/
   injective : ∀ j ≤ n, Function.Injective fun i => ((node j i : ℝ))
-  /-- The first node of a panel is its left endpoint. -/
+  /-- The first node of a panel is its left endpoint: $\nu_{j,0} = x_j$ for all $j \le n$. -/
   node_zero : ∀ j ≤ n, node j 0 = x j
-  /-- The last node of a panel is its right endpoint. -/
+  /-- The last node of a panel is its right endpoint: $\nu_{j,m} = x_{j+1}$ for all $j \le n$. -/
   node_last : ∀ j ≤ n, node j (Fin.last m) = x (j + 1)
 
-/-- The **panel interpolant**: the Lagrange interpolation polynomial of `f` at the `m + 1` nodes of
-the panel `[x j, x (j + 1)]`. -/
+/-- The **panel interpolant**: the Lagrange interpolation polynomial of degree at most $m$ of $f$ at
+the $m + 1$ nodes $\nu_{j,0}, \dots, \nu_{j,m}$ of the panel $[x_j, x_{j+1}]$. -/
 noncomputable def panelPoly {a b : ℝ} {m : ℕ} (node : ℕ → Fin (m + 1) → Set.Icc a b) (j : ℕ)
     (f : C(Set.Icc a b, ℝ)) : ℝ[X] :=
   Lagrange.interpolate Finset.univ (fun p => ((node j p : ℝ))) fun i => f (node j i)
 
-/-- The `i`-th Lagrange basis function of the nodes of the panel `[x j, x (j + 1)]`, **clamped to
-that panel**: at a point outside the panel it takes the value it has at the nearer endpoint.
+/-- The $i$-th Lagrange basis function of the nodes of the panel $[x_j, x_{j+1}]$, **clamped to that
+panel**: its value at $t$ is the value of the basis polynomial at the point of $[x_j, x_{j+1}]$
+nearest to $t$.
 
-Clamping is what lets the piecewise polynomial interpolant be written as a *sum* over the panels,
-exactly as `piecewiseLinearRamp` does for degree one: in `piecewisePolyInterpCLM_apply` the panels
-to the left of the evaluation point contribute their full increment, those to the right contribute
+Clamping lets the piecewise polynomial interpolant be written as a sum over the panels, as
+`piecewiseLinearRamp` does for degree one. In `piecewisePolyInterpCLM_apply`, the panels to the
+left of the evaluation point contribute their full increment, those to the right contribute
 nothing, and the sum telescopes. -/
 noncomputable def panelBasis {a b : ℝ} {m : ℕ} (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (j : ℕ) (i : Fin (m + 1)) : C(Set.Icc a b, ℝ) :=
@@ -1265,33 +1342,34 @@ noncomputable def panelBasis {a b : ℝ} {m : ℕ} (x : ℕ → Set.Icc a b)
     (Polynomial.continuous _).comp
       ((continuous_subtype_val.max continuous_const).min continuous_const)⟩
 
-/-- The value of a clamped panel basis function. -/
+/-- The value of a clamped panel basis function at $t$ is the value of the basis polynomial at
+$\min(\max(t, x_j), x_{j+1})$. -/
 @[simp]
 theorem panelBasis_apply {a b : ℝ} {m : ℕ} (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (j : ℕ) (i : Fin (m + 1)) (t : Set.Icc a b) :
     panelBasis x node j i t = (Lagrange.basis Finset.univ (fun p => ((node j p : ℝ))) i).eval
       (min (max (t : ℝ) ((x j : ℝ))) ((x (j + 1) : ℝ))) := rfl
 
-/-- **The panel interpolation operator**: the Lagrange interpolant at the nodes of the panel
-`[x j, x (j + 1)]`, evaluated at the point of that panel nearest to the argument. -/
+/-- **The panel interpolation operator**: the operator on $C([a, b])$ that sends $f$ to the function
+whose value at $t$ is the panel interpolant of $f$ on $[x_j, x_{j+1}]$, evaluated at the point
+of that panel nearest to $t$. -/
 noncomputable def panelInterpCLM {a b : ℝ} (m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (j : ℕ) :
     C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
   ∑ i, (ContinuousMap.evalCLM ℝ (node j i)).smulRight (panelBasis x node j i)
 
-/-- **Piecewise polynomial interpolation of degree `m`** on the partition
-`a = x 0 < x 1 < ⋯ < x (n + 1) = b` of `[a, b]`: the bounded operator on `C([a, b], ℝ)` sending `f`
-to the continuous function that agrees on each panel `[x j, x (j + 1)]` with the polynomial of
-degree at most `m` interpolating `f` at the `m + 1` nodes of that panel.
+/-- **Piecewise polynomial interpolation of degree $m$** on the partition
+$a = x_0 < x_1 < \dots < x_{n+1} = b$ of $[a, b]$: the bounded operator on $C([a, b])$ that
+sends $f$ to the continuous function that agrees on each panel $[x_j, x_{j+1}]$ with the
+polynomial of degree at most $m$ that interpolates $f$ at the $m + 1$ nodes of that panel. This
+is §12.3.2 and (12.5.32) of [han2009theoretical].
 
-Continuity across a breakpoint holds because both panels meeting there interpolate `f` at it, and
-the operator is written so that this is all it takes: it is the value at the first breakpoint plus
-the increments `panelInterpCLM j f t - panelInterpCLM j f (x j)` of the clamped panel interpolants,
-a sum which telescopes to the interpolant of the panel containing `t`
-(`piecewisePolyInterpCLM_apply_of_mem`).  Linearity, boundedness and continuity are therefore
-immediate, as they are for `piecewiseLinearInterpCLM`, which is the case `m = 1`.
-
-Reference: [han2009theoretical], §12.3.2 and (12.5.32). -/
+The operator is defined as the value at the first breakpoint plus the increments
+$Q_j f(t) - Q_j f(x_j)$ of the clamped panel interpolation operators $Q_j$ (`panelInterpCLM`).
+This sum telescopes to the interpolant of the panel that contains $t$
+(`piecewisePolyInterpCLM_apply_of_mem`). Continuity across a breakpoint holds because both
+panels that meet there interpolate $f$ at it. Linearity, boundedness and continuity are
+immediate, as they are for `piecewiseLinearInterpCLM`, which is the case $m = 1$. -/
 noncomputable def piecewisePolyInterpCLM {a b : ℝ} (n m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
   (ContinuousMap.evalCLM ℝ (x 0)).smulRight 1 +
@@ -1304,15 +1382,17 @@ section PiecewisePolynomial
 
 variable {a b : ℝ} {n m : ℕ} {x : ℕ → Set.Icc a b} {node : ℕ → Fin (m + 1) → Set.Icc a b}
 
-/-- The panel interpolation operator evaluates the panel interpolant at the clamped argument. -/
+/-- The value of the panel interpolation operator at $t$ is the panel interpolant evaluated at
+$\min(\max(t, x_j), x_{j+1})$. -/
 theorem panelInterpCLM_apply (m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (j : ℕ) (f : C(Set.Icc a b, ℝ)) (t : Set.Icc a b) :
     panelInterpCLM m x node j f t
       = (panelPoly node j f).eval (min (max (t : ℝ) ((x j : ℝ))) ((x (j + 1) : ℝ))) := by
   simp [panelInterpCLM, panelPoly, Lagrange.interpolate_apply, Polynomial.eval_finsetSum]
 
-/-- The piecewise polynomial interpolant, as the value at the first breakpoint plus the increments
-of the clamped panel interpolants. -/
+/-- The value of the piecewise polynomial interpolant at $t$ is $f(x_0) + \sum_{j=0}^{n} \bigl(Q_j
+f(t) - Q_j f(x_j)\bigr)$, where $Q_j$ is the panel interpolation operator of the panel
+$[x_j, x_{j+1}]$. -/
 theorem piecewisePolyInterpCLM_apply (n m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (f : C(Set.Icc a b, ℝ)) (t : Set.Icc a b) :
     piecewisePolyInterpCLM n m x node f t = f (x 0) +
@@ -1320,7 +1400,8 @@ theorem piecewisePolyInterpCLM_apply (n m : ℕ) (x : ℕ → Set.Icc a b)
         (panelInterpCLM m x node j f t - panelInterpCLM m x node j f (x j)) := by
   simp [piecewisePolyInterpCLM]
 
-/-- A panel interpolant reproduces the value of `f` at the left endpoint of its panel. -/
+/-- For a panel node system and $j \le n$, the panel interpolant of the panel $[x_j, x_{j+1}]$ takes
+the value $f(x_j)$ at the left endpoint $x_j$. -/
 theorem eval_panelPoly_left (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, ℝ)) {j : ℕ}
     (hj : j ≤ n) : (panelPoly node j f).eval ((x j : ℝ)) = f (x j) := by
   have hval := Lagrange.eval_interpolate_at_node (s := (Finset.univ : Finset (Fin (m + 1))))
@@ -1329,7 +1410,8 @@ theorem eval_panelPoly_left (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, �
   rw [h.node_zero j hj] at hval
   exact hval
 
-/-- A panel interpolant reproduces the value of `f` at the right endpoint of its panel. -/
+/-- For a panel node system and $j \le n$, the panel interpolant of the panel $[x_j, x_{j+1}]$ takes
+the value $f(x_{j+1})$ at the right endpoint $x_{j+1}$. -/
 theorem eval_panelPoly_right (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, ℝ)) {j : ℕ}
     (hj : j ≤ n) : (panelPoly node j f).eval ((x (j + 1) : ℝ)) = f (x (j + 1)) := by
   have hval := Lagrange.eval_interpolate_at_node (s := (Finset.univ : Finset (Fin (m + 1))))
@@ -1338,8 +1420,10 @@ theorem eval_panelPoly_right (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, �
   rw [h.node_last j hj] at hval
   exact hval
 
-/-- **The local description of the piecewise polynomial interpolant.** On the panel
-`[x k, x (k + 1)]` it is the Lagrange interpolant of `f` at the nodes of that panel. -/
+/-- **The local description of the piecewise polynomial interpolant.** Let the nodes form a panel
+node system, let $k \le n$, and let $t \in [a, b]$ with $x_k \le t \le x_{k+1}$. Then
+$I f(t) = p_k(t)$, where $p_k$ is the Lagrange interpolation polynomial of $f$ at the nodes of
+the panel $[x_k, x_{k+1}]$. -/
 theorem piecewisePolyInterpCLM_apply_of_mem (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, ℝ))
     {k : ℕ} (hk : k ≤ n) {t : Set.Icc a b} (h1 : (x k : ℝ) ≤ (t : ℝ))
     (h2 : (t : ℝ) ≤ (x (k + 1) : ℝ)) :
@@ -1397,14 +1481,18 @@ theorem piecewisePolyInterpCLM_apply_of_mem (h : IsPanelNodes n m x node) (f : C
 end PiecewisePolynomial
 
 
-/-- **A uniform local Lebesgue constant** for a panel node system: `Λ` bounds, on every panel, the
-sum of the absolute values of the Lagrange basis functions of that panel's nodes.  It is the
-operator norm bound of `norm_piecewisePolyInterpCLM_le`.
+/-- **A uniform local Lebesgue constant** for a panel node system: a number $\Lambda$ with
+$$\sum_{i=0}^{m} |\ell_{j,i}(s)| \le \Lambda \qquad \text{for all } j \le n \text{ and } s \in
+  [x_j, x_{j+1}],$$
+where $\ell_{j,0}, \dots, \ell_{j,m}$ are the Lagrange basis polynomials of the nodes of the
+panel $[x_j, x_{j+1}]$. It bounds the operator norm of piecewise polynomial interpolation
+(`norm_piecewisePolyInterpCLM_le`).
 
-When the nodes of every panel are the images of one fixed partition `0 = μ_0 < ⋯ < μ_m = 1` of the
-unit interval under the affine map onto the panel, the basis functions are the same functions of
-the normalized variable on every panel, so the smallest such `Λ` is the Lebesgue constant of that
-partition alone and does not depend on the mesh. -/
+If the nodes of every panel are the images of one fixed partition
+$0 = \mu_0 < \dots < \mu_m = 1$ of the unit interval under the affine map onto the panel, then
+the basis functions are the same functions of the normalized variable on every panel. Then the
+smallest such $\Lambda$ is the Lebesgue constant of that partition alone, and it does not depend
+on the mesh. -/
 def IsPanelLebesgueBound {a b : ℝ} (n m : ℕ) (x : ℕ → Set.Icc a b)
     (node : ℕ → Fin (m + 1) → Set.Icc a b) (Λ : ℝ) : Prop :=
   ∀ j ≤ n, ∀ s ∈ Set.Icc ((x j : ℝ)) ((x (j + 1) : ℝ)),
@@ -1414,7 +1502,8 @@ section PiecewisePolynomialApi
 
 variable {a b : ℝ} {n m : ℕ} {x : ℕ → Set.Icc a b} {node : ℕ → Fin (m + 1) → Set.Icc a b}
 
-/-- The piecewise polynomial interpolant agrees with the function at every interpolation node. -/
+/-- For a panel node system, the piecewise polynomial interpolant agrees with $f$ at every
+interpolation node $\nu_{j,i}$, $j \le n$. -/
 theorem piecewisePolyInterpCLM_apply_node (h : IsPanelNodes n m x node) (f : C(Set.Icc a b, ℝ))
     {j : ℕ} (hj : j ≤ n) (i : Fin (m + 1)) :
     piecewisePolyInterpCLM n m x node f (node j i) = f (node j i) := by
@@ -1422,7 +1511,8 @@ theorem piecewisePolyInterpCLM_apply_node (h : IsPanelNodes n m x node) (f : C(S
   rw [piecewisePolyInterpCLM_apply_of_mem h f hj hmem.1 hmem.2, panelPoly]
   exact Lagrange.eval_interpolate_at_node _ (h.injective j hj).injOn (Finset.mem_univ i)
 
-/-- The piecewise polynomial interpolant agrees with the function at every breakpoint. -/
+/-- For a panel node system, the piecewise polynomial interpolant agrees with $f$ at every
+breakpoint $x_j$, $j \le n + 1$. -/
 theorem piecewisePolyInterpCLM_apply_breakpoint (h : IsPanelNodes n m x node)
     (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n + 1) :
     piecewisePolyInterpCLM n m x node f (x j) = f (x j) := by
@@ -1435,8 +1525,8 @@ theorem piecewisePolyInterpCLM_apply_breakpoint (h : IsPanelNodes n m x node)
     have hval := piecewisePolyInterpCLM_apply_node h f (le_refl n) (Fin.last m)
     rwa [h.node_last n le_rfl] at hval
 
-/-- The piecewise polynomial interpolation operator is a projection: it fixes every function that
-is already a polynomial of degree at most `m` on each panel, since such a function is its own
+/-- For a panel node system, the piecewise polynomial interpolation operator is a projection:
+$I \circ I = I$. A function that is a polynomial of degree at most $m$ on each panel is its own
 panel interpolant. -/
 theorem isIdempotentElem_piecewisePolyInterpCLM (h : IsPanelNodes n m x node) :
     IsIdempotentElem (piecewisePolyInterpCLM n m x node) := by
@@ -1451,20 +1541,23 @@ theorem isIdempotentElem_piecewisePolyInterpCLM (h : IsPanelNodes n m x node) :
       piecewisePolyInterpCLM_apply_of_mem h f hk h1 h2, panelPoly, panelPoly, hr]
   exact ContinuousLinearMap.ext hfun
 
-/-- A Lebesgue bound is nonnegative. -/
+/-- For a panel node system, every uniform local Lebesgue constant $\Lambda$ is nonnegative. -/
 theorem IsPanelLebesgueBound.nonneg (h : IsPanelNodes n m x node) {Λ : ℝ}
     (hΛ : IsPanelLebesgueBound n m x node Λ) : 0 ≤ Λ :=
   le_trans (Finset.sum_nonneg fun _ _ => abs_nonneg _)
     (hΛ 0 (Nat.zero_le n) ((x 0 : ℝ)) ⟨le_rfl, (h.step 0 (Nat.zero_le n)).le⟩)
 
-/-- **A Lebesgue bound from the shape of the panel node systems alone.**  If the nodes of the panel
-`j` are at mutual distance at least `d j` and the panel is at most `ρ (d j)` long, then
-`(m + 1) ρ^m` is a Lebesgue bound.
+/-- **A Lebesgue bound from the shape of the panel node systems alone.** Let the nodes form a panel
+node system, let $\rho \in \mathbb{R}$, and for each $j \le n$ let $d_j > 0$ be such that
+$x_{j+1} - x_j \le \rho\, d_j$ and $|\nu_{j,i} - \nu_{j,i'}| \ge d_j$ for all $i \neq i'$. Then
+$$\Lambda = (m + 1)\, \rho^m$$
+is a uniform local Lebesgue constant.
 
-The separation is allowed to vary from panel to panel, only the *ratio* `ρ` being uniform, which is
-what a graded mesh needs: with the nodes placed at fixed fractions of every panel, `d j` and the
-length of the panel are both proportional to that length, so `ρ` is the same for every panel of
-every mesh of the family however unequal the panels are. -/
+The separation $d_j$ may vary from panel to panel; only the ratio $\rho$ is uniform. A graded
+mesh needs this: with the nodes at fixed fractions of every panel, $d_j$ and the length of the
+panel are both proportional to that length, so $\rho$ is the same for every panel of every mesh
+of the family, however unequal the panels are. The proof applies `Lagrange.abs_eval_basis_le` on
+each panel. -/
 theorem isPanelLebesgueBound_of_sep (h : IsPanelNodes n m x node) {ρ : ℝ} {d : ℕ → ℝ}
     (hd : ∀ j ≤ n, 0 < d j) (hD : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ ρ * d j)
     (hsep : ∀ j ≤ n, ∀ i i' : Fin (m + 1), i ≠ i' → d j ≤ |((node j i : ℝ)) - ((node j i' : ℝ))|) :
@@ -1493,19 +1586,22 @@ theorem isPanelLebesgueBound_of_sep (h : IsPanelNodes n m x node) {ρ : ℝ} {d 
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         norm_num
 
-/-- **A Lebesgue bound for nodes placed at fixed fractions of the panels.**  Fix finitely many
-*patterns* `μ k : Fin (m + 1) → ℝ`, each with distinct entries, and take any panel node system
-whose panel `j` carries the nodes `x_j + μ (c j)_i (x_{j+1} - x_j)`, the images of the pattern
-`c j` under the affine map of the unit interval onto that panel.  Then a single constant `Λ`,
-determined by the patterns alone, is a Lebesgue bound for every such system: the interval, the
-number of panels and the panels' lengths are all arbitrary.
+/-- **A Lebesgue bound for nodes at fixed fractions of the panels.** Let $\iota$ be a finite set of
+patterns, and for each $k \in \iota$ let $\mu_k = (\mu_{k,0}, \dots, \mu_{k,m})$ have distinct
+entries. Then there is a constant $\Lambda$ with the following property. Let
+$a, b \in \mathbb{R}$, let the nodes form a panel node system on $[a, b]$ with $n + 1$ panels,
+and let $c$ assign a pattern to each panel such that
+$$\nu_{j,i} = x_j + \mu_{c(j),i}\, (x_{j+1} - x_j) \qquad \text{for all } j \le n \text{ and all
+  } i.$$
+Then $\Lambda$ is a uniform local Lebesgue constant for this system. The interval, the number of
+panels and the lengths of the panels are arbitrary.
 
-This is what a graded mesh needs, whose panels shrink towards an endpoint while the nodes keep
-their positions relative to the panel containing them.  Several patterns are allowed because a mesh
-graded towards *both* endpoints uses one pattern on the panels of the left half and its reflection
-`i ↦ 1 - μ_{m-i}` on those of the right.  The proof is `isPanelLebesgueBound_of_sep` with a
-separation proportional to the length of the panel, the ratio being the reciprocal of the smallest
-gap between two entries of a pattern. -/
+A graded mesh needs this: its panels shrink towards an endpoint, while the nodes keep their
+positions relative to the panel that contains them. Several patterns are allowed because a mesh
+graded towards both endpoints uses one pattern on the panels of the left half and its reflection
+$i \mapsto 1 - \mu_{m-i}$ on those of the right half. The proof is `isPanelLebesgueBound_of_sep`
+with a separation proportional to the length of the panel; the ratio is the reciprocal of the
+smallest gap between two entries of a pattern. -/
 theorem exists_isPanelLebesgueBound_of_affine {ι : Type*} [Finite ι] {μ : ι → Fin (m + 1) → ℝ}
     (hμ : ∀ k, Function.Injective (μ k)) :
     ∃ Λ : ℝ, ∀ {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
@@ -1545,9 +1641,10 @@ theorem exists_isPanelLebesgueBound_of_affine {ι : Type*} [Finite ι] {μ : ι 
     rw [hrw, abs_mul, abs_of_pos hlen]
     exact mul_le_mul_of_nonneg_right (hd (c j) i i' hii) hlen.le
 
-/-- **The piecewise polynomial interpolant is bounded by the local Lebesgue constant**: on the
-panel containing the evaluation point it is the combination `∑ f (node k i) ℓ_i` of the panel's
-basis functions. -/
+/-- **The piecewise polynomial interpolant is bounded by the local Lebesgue constant.** For a panel
+node system with a uniform local Lebesgue constant $\Lambda$ and every $f \in C([a, b])$,
+$\|I f\| \le \Lambda \|f\|$. On the panel that contains the evaluation point, the interpolant is
+the combination $\sum_i f(\nu_{k,i})\, \ell_{k,i}$ of the basis functions of the panel. -/
 theorem norm_piecewisePolyInterpCLM_apply_le (h : IsPanelNodes n m x node) {Λ : ℝ}
     (hΛ : IsPanelLebesgueBound n m x node Λ) (f : C(Set.Icc a b, ℝ)) :
     ‖piecewisePolyInterpCLM n m x node f‖ ≤ Λ * ‖f‖ := by
@@ -1575,16 +1672,25 @@ theorem norm_piecewisePolyInterpCLM_apply_le (h : IsPanelNodes n m x node) {Λ :
     _ = Λ * ‖f‖ := mul_comm _ _
 
 /-- **The operator norm of piecewise polynomial interpolation is at most the local Lebesgue
-constant**, uniformly in the mesh. -/
+constant.** Let the nodes form a panel node system, and let $\Lambda$ be a uniform local
+Lebesgue constant for it. Then
+$$\|I\| \le \Lambda.$$
+The bound is uniform in the mesh whenever $\Lambda$ is. -/
 theorem norm_piecewisePolyInterpCLM_le (h : IsPanelNodes n m x node) {Λ : ℝ}
     (hΛ : IsPanelLebesgueBound n m x node Λ) : ‖piecewisePolyInterpCLM n m x node‖ ≤ Λ :=
   ContinuousLinearMap.opNorm_le_bound _ (hΛ.nonneg h) fun f =>
     norm_piecewisePolyInterpCLM_apply_le h hΛ f
 
-/-- **The error formula of piecewise polynomial interpolation on one panel, for a function smooth
-only near that panel.** Only the smoothness of `G` on an open set containing the panel is used, so
-a function singular at an endpoint of `[a, b]` — as the solution of a weakly singular equation is —
-still obeys the formula on every panel that stays away from the singularity. -/
+/-- **The error formula of piecewise polynomial interpolation on one panel, for a function that is
+smooth only near that panel.** Let the nodes form a panel node system, let $k \le n$, let $U$ be
+an open set that contains $[x_k, x_{k+1}]$, and let $G$ be of class $C^{m+1}$ on $U$. Let
+$f \in C([a, b])$ agree with $G$ on $[a, b]$, and let $x_k \le t \le x_{k+1}$. Then there is
+$\xi \in (x_k, x_{k+1})$ with
+$$f(t) - I f(t) = \frac{G^{(m+1)}(\xi)}{(m + 1)!} \prod_{i=0}^{m} (t - \nu_{k,i}).$$
+
+Only the smoothness of $G$ near the panel is used. So a function that is singular at an endpoint
+of $[a, b]$, as the solution of a weakly singular equation is, still obeys the formula on every
+panel away from the singularity. -/
 theorem exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn (h : IsPanelNodes n m x node)
     {G : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U) {k : ℕ} (hk : k ≤ n)
     (hUsub : Set.Icc ((x k : ℝ)) ((x (k + 1) : ℝ)) ⊆ U)
@@ -1601,13 +1707,15 @@ theorem exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn (h : IsPanelNod
   rw [piecewisePolyInterpCLM_apply_of_mem h f hk h1 h2, hf t, panelPoly, hr]
   exact hξeq
 
-/-- **The error formula of piecewise polynomial interpolation.** On the panel containing `t` the
-interpolant is the Lagrange interpolant at that panel's nodes, so the Lagrange error formula
-applies on the panel: the error is `G^{(m+1)}(ξ)/(m+1)!` times the nodal polynomial of the panel,
-for some `ξ` strictly inside it.
+/-- **The error formula of piecewise polynomial interpolation.** Let the nodes form a panel node
+system, let $G : \mathbb{R} \to \mathbb{R}$ be of class $C^{m+1}$, and let $f \in C([a, b])$
+agree with $G$ on $[a, b]$. Let $k \le n$ and $x_k \le t \le x_{k+1}$. Then there is
+$\xi \in (x_k, x_{k+1})$ with
+$$f(t) - I f(t) = \frac{G^{(m+1)}(\xi)}{(m + 1)!} \prod_{i=0}^{m} (t - \nu_{k,i}).$$
 
-The function is given as a `C^{m+1}` map `ℝ → ℝ` agreeing with `f` on `[a, b]`, since
-`C(Icc a b, ℝ)` carries no derivative. -/
+The function $f$ is given through a $C^{m+1}$ function $G$ on $\mathbb{R}$, since $C([a, b])$
+carries no derivative. On the panel that contains $t$, the interpolant is the Lagrange
+interpolant at the nodes of that panel, so the Lagrange error formula applies on the panel. -/
 theorem exists_sub_piecewisePolyInterpCLM_apply_eq (h : IsPanelNodes n m x node) {G : ℝ → ℝ}
     (hG : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) G) {f : C(Set.Icc a b, ℝ)}
     (hf : ∀ t : Set.Icc a b, f t = G ((t : ℝ))) {k : ℕ} (hk : k ≤ n) {t : Set.Icc a b}
@@ -1618,14 +1726,18 @@ theorem exists_sub_piecewisePolyInterpCLM_apply_eq (h : IsPanelNodes n m x node)
   exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn h isOpen_univ hk (Set.subset_univ _)
     hG.contDiffOn hf h1 h2
 
-/-- **The error of piecewise polynomial interpolation of degree `m`.** If the nodal polynomial of
-every panel is bounded by `W` on that panel and `|G^{(m+1)}| ≤ M` on `[a, b]`, the interpolation
-error is at most `W M / (m + 1)!`.
+/-- **The error of piecewise polynomial interpolation of degree $m$.** Let the nodes form a panel
+node system, let $G : \mathbb{R} \to \mathbb{R}$ be of class $C^{m+1}$, and let
+$f \in C([a, b])$ agree with $G$ on $[a, b]$. Let $W$ bound the nodal polynomial of every panel
+on that panel, $|\prod_i (s - \nu_{j,i})| \le W$ for all $j \le n$ and $s \in [x_j, x_{j+1}]$,
+and let $|G^{(m+1)}(s)| \le M$ for all $s \in [a, b]$. Then
+$$\|f - I f\| \le \frac{W}{(m + 1)!} M.$$
 
-For equally spaced panels of length `h` with the nodes at the breakpoints one may take
-`W = h^{m+1}`, but the sharp value of `W` is smaller and is what produces the classical constants:
-`h²/4` for `m = 1`, giving `h² ‖G''‖/8`, and `2 √3 h³/9` on a panel of length `2 h` for `m = 2`,
-giving `√3 h³ ‖G'''‖/27`. -/
+For equally spaced panels of length $h$ with the nodes at the breakpoints, one may take
+$W = h^{m+1}$. The sharp value of $W$ is smaller and gives the classical constants: $W = h^2/4$
+for $m = 1$, which gives $h^2 \|G''\|/8$, and $W = 2\sqrt{3} h^3/9$ on a panel of length $2h$
+with three equispaced nodes for $m = 2$ (`abs_add_mul_mul_sub_le`), which gives
+$\sqrt{3} h^3 \|G'''\|/27$. -/
 theorem norm_sub_piecewisePolyInterpCLM_le (h : IsPanelNodes n m x node) {G : ℝ → ℝ}
     (hG : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) G) {f : C(Set.Icc a b, ℝ)}
     (hf : ∀ t : Set.Icc a b, f t = G ((t : ℝ))) {W M : ℝ}
@@ -1654,16 +1766,18 @@ theorem norm_sub_piecewisePolyInterpCLM_le (h : IsPanelNodes n m x node) {G : �
           (abs_nonneg _) (by positivity)
     _ = W / (m + 1).factorial * M := by ring
 
-/-- **The piecewise polynomial interpolation error on one panel, from the oscillation of `f`
-there**: at most `(1 + Λ) ω`, where `ω` bounds `|f - f (x k)|` on the panel and `Λ` is the local
-Lebesgue constant.
+/-- **The piecewise polynomial interpolation error on one panel, from the oscillation of $f$
+there.** Let the nodes form a panel node system with a uniform local Lebesgue constant
+$\Lambda$, let $f \in C([a, b])$, let $k \le n$, and let $x_k \le t \le x_{k+1}$. If
+$|f(s) - f(x_k)| \le \omega$ for all $s \in [x_k, x_{k+1}]$, then
+$$|f(t) - I f(t)| \le (1 + \Lambda)\, \omega.$$
 
-On the panel containing `t` the interpolant is `∑ f (node k i) ℓ_i`, and the basis functions sum to
-one, so subtracting `f (x k)` from every value turns the error into
-`(f t - f (x k)) - ∑ (f (node k i) - f (x k)) ℓ_i (t)`, in which every difference of values of `f`
-is taken between two points of the panel.  Only the oscillation on *that* panel enters, which is
-what a graded mesh needs: the panel adjacent to a singularity is handled by a Hölder bound and the
-others by the derivative bound. -/
+On the panel that contains $t$, the interpolant is $\sum_i f(\nu_{k,i})\, \ell_{k,i}$, and the
+basis functions sum to one. Subtracting $f(x_k)$ from every value turns the error into $(f(t) -
+f(x_k)) - \sum_i (f(\nu_{k,i}) - f(x_k))\, \ell_{k,i}(t)$, in which every difference of values
+of $f$ is taken between two points of the panel. Only the oscillation on that panel enters. A
+graded mesh needs this: the panel next to a singularity is handled by a Hölder bound and the
+other panels by the derivative bound. -/
 theorem abs_sub_piecewisePolyInterpCLM_apply_le_of_osc (h : IsPanelNodes n m x node) {Λ : ℝ}
     (hΛ : IsPanelLebesgueBound n m x node Λ) (f : C(Set.Icc a b, ℝ)) {k : ℕ} (hk : k ≤ n)
     {t : Set.Icc a b} (h1 : (x k : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (k + 1) : ℝ)) {ω : ℝ}
@@ -1712,10 +1826,12 @@ theorem abs_sub_piecewisePolyInterpCLM_apply_le_of_osc (h : IsPanelNodes n m x n
         exact hΛ k hk ((t : ℝ)) ⟨h1, h2⟩
     _ = (1 + Λ) * ω := by ring
 
-/-- **The piecewise polynomial interpolation error for a merely continuous function**: at most
-`(1 + Λ) ω(f, h)` on a mesh of size `h`, with `Λ` the local Lebesgue constant.  This is
-`abs_sub_piecewisePolyInterpCLM_apply_le_of_osc` with the modulus of continuity as the panel
-oscillation bound. -/
+/-- **The piecewise polynomial interpolation error for a continuous function.** Let the nodes form a
+panel node system with a uniform local Lebesgue constant $\Lambda$, and let every panel have
+length at most $h$. Then for every $f \in C([a, b])$
+$$\|f - I f\| \le (1 + \Lambda)\, \omega(f, h).$$
+This is `abs_sub_piecewisePolyInterpCLM_apply_le_of_osc` with the modulus of continuity as the
+bound for the oscillation on each panel. -/
 theorem norm_sub_piecewisePolyInterpCLM_le_modulus (h : IsPanelNodes n m x node) {Λ : ℝ}
     (hΛ : IsPanelLebesgueBound n m x node Λ) (f : C(Set.Icc a b, ℝ)) {hs : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ hs) :
@@ -1735,9 +1851,15 @@ theorem norm_sub_piecewisePolyInterpCLM_le_modulus (h : IsPanelNodes n m x node)
   exact le_trans (by linarith) (hmesh k hk)
 
 open Filter Topology in
-/-- **Piecewise polynomial interpolation of degree `m` converges uniformly for every continuous
-function** as the mesh tends to zero, provided the local Lebesgue constants stay bounded.  This is
-the hypothesis `P_n u → u` that a projection or a product integration method needs. -/
+/-- **Piecewise polynomial interpolation of degree $m$ converges uniformly for every continuous
+function**, provided that the local Lebesgue constants stay bounded. For each $p$, let the nodes
+$\nu_p$ on the breakpoints $y_{p,0}, \dots, y_{p,N_p+1}$ form a panel node system of degree $m$
+on $[a, b]$ with the uniform local Lebesgue constant $\Lambda$ (the same for every $p$), and let
+every panel have length at most $h_p$, with $h_p \to 0$. Then for every $f \in C([a, b])$ the
+piecewise polynomial interpolants $I_p f$ converge uniformly to $f$.
+
+This is the hypothesis $P_n u \to u$ that a projection method or a product integration method
+needs. -/
 theorem tendsto_piecewisePolyInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b}
     {nd : ℕ → ℕ → Fin (m + 1) → Set.Icc a b} {hs : ℕ → ℝ} {Λ : ℝ}
     (h : ∀ p, IsPanelNodes (N p) m (y p) (nd p))
@@ -1759,12 +1881,15 @@ theorem tendsto_piecewisePolyInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Se
   rw [norm_sub_rev]
   exact norm_sub_piecewisePolyInterpCLM_le_modulus (h p) (hΛ p) f (hmesh p)
 
-/-- **The nodal polynomial of three equispaced nodes.**  In the variable `w` centred at the middle
-node, the nodal polynomial of the nodes `-δ, 0, δ` is `(w + δ) w (w - δ)`, and
-`4 δ⁶ - 27 w² (w² - δ²)² = (3 w² - δ²)² (4 δ² - 3 w²)` is nonnegative for `|w| ≤ δ`, so on the
-panel it does not exceed `2 √3 δ³/9`, its value at `w = ∓ δ/√3`. Divided by `3! = 6` it gives
-the constant `√3/27` of piecewise quadratic interpolation on a uniform mesh of width `δ`
-([han2009theoretical] (12.3.27)), through `norm_sub_piecewisePolyInterpCLM_le`. -/
+/-- **The nodal polynomial of three equispaced nodes.** Let $\delta > 0$ and $|w| \le \delta$. Then
+$$|(w + \delta)\, w\, (w - \delta)| \le \frac{2\sqrt{3}\, \delta^3}{9}.$$
+
+In the variable $w$ centred at the middle node, $(w + \delta) w (w - \delta)$ is the nodal
+polynomial of the nodes $-\delta, 0, \delta$. The identity $4\delta^6 - 27 w^2 (w^2 -
+\delta^2)^2 = (3w^2 - \delta^2)^2 (4\delta^2 - 3w^2)$ shows that the bound holds for
+$|w| \le \delta$, with equality at $w = \mp \delta/\sqrt{3}$. Divided by $3! = 6$, it gives the
+constant $\sqrt{3}/27$ of piecewise quadratic interpolation on a uniform mesh of width $\delta$
+((12.3.27) of [han2009theoretical]), through `norm_sub_piecewisePolyInterpCLM_le`. -/
 theorem abs_add_mul_mul_sub_le {δ w : ℝ} (hδ : 0 < δ) (hw : |w| ≤ δ) :
     |(w + δ) * w * (w - δ)| ≤ 2 * Real.sqrt 3 * δ ^ 3 / 9 := by
   have hwle := abs_le.mp hw
@@ -1790,19 +1915,25 @@ end PiecewisePolynomialApi
 
 section Trigonometric
 
-/-- **Trigonometric interpolation at `2 n + 1` distinct nodes of a period is unisolvent.** The
-Haar condition it feeds on is `haarCondition_trigPolyLE`, proved with the rest of the Haar theory
-in `Numlib.Approximation.Chebyshev`. -/
+/-- **Trigonometric interpolation at $2n + 1$ distinct nodes of a period is unisolvent.** Let
+$T > 0$, and let $x_0, \dots, x_{2n}$ be distinct points of the circle $\mathbb{R}/T\mathbb{Z}$.
+Then for all values $b_0, \dots, b_{2n} \in \mathbb{R}$ there is exactly one trigonometric
+polynomial $q$ of degree at most $n$ with $q(x_i) = b_i$ for all $i$.
+
+The proof uses the Haar condition `haarCondition_trigPolyLE` of
+`Numlib.Approximation.Chebyshev`. -/
 theorem isUnisolvent_trigPolyLE (T : ℝ) [hT : Fact (0 < T)] {n : ℕ}
     {x : Fin (2 * n + 1) → AddCircle T} (hx : Function.Injective x) :
     Approximation.IsUnisolvent (trigPolyLE T n) fun i => ContinuousMap.evalCLM ℝ (x i) :=
   (Approximation.haarCondition_iff_isUnisolvent (trigPolyLE T n)
     (finrank_trigPolyLE T n)).mp (haarCondition_trigPolyLE hT.out.ne' n) x hx
 
-/-- The `2 n + 1` **equispaced nodes** of a period: `x j = j T / (2 n + 1)`. -/
+/-- The $2n + 1$ **equispaced nodes** of a period $T$: $x_j = jT/(2n + 1)$, $j = 0, \dots, 2n$, as
+points of the circle $\mathbb{R}/T\mathbb{Z}$. -/
 noncomputable def trigInterpNode (T : ℝ) (n : ℕ) (j : Fin (2 * n + 1)) : AddCircle T :=
   (((j : ℕ) * T / (2 * n + 1) : ℝ) : AddCircle T)
 
+/-- For $T > 0$, the $2n + 1$ equispaced nodes are distinct points of the circle. -/
 theorem injective_trigInterpNode (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
     Function.Injective (trigInterpNode T n) := by
   have hd : (0 : ℝ) < 2 * n + 1 := by positivity
@@ -1820,34 +1951,46 @@ theorem injective_trigInterpNode (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
     simpa [div_mul_cancel₀, hd.ne'] using this
   exact Fin.ext (by exact_mod_cast mul_right_cancel₀ hT.out.ne' h3)
 
-/-- **Trigonometric interpolation** at the `2 n + 1` equispaced nodes of a period: the bounded
-projection of `C(AddCircle T, ℝ)` onto the trigonometric polynomials of degree at most `n`. -/
+/-- **Trigonometric interpolation** at the $2n + 1$ equispaced nodes of a period $T > 0$: the
+bounded projection of $C(\mathbb{R}/T\mathbb{Z})$ onto the trigonometric polynomials of degree
+at most $n$ that sends $f$ to the unique such polynomial that agrees with $f$ at the nodes.
+
+It is the interpolation projection `Approximation.IsUnisolvent.interpCLM` of
+`isUnisolvent_trigPolyLE`. -/
 noncomputable def trigInterpCLM (T : ℝ) [Fact (0 < T)] (n : ℕ) :
     C(AddCircle T, ℝ) →L[ℝ] C(AddCircle T, ℝ) :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM
 
 variable {T : ℝ} [Fact (0 < T)] {n : ℕ}
 
+/-- The trigonometric interpolant agrees with $f$ at every equispaced node. -/
 @[simp]
 theorem trigInterpCLM_apply_node (f : C(AddCircle T, ℝ)) (j : Fin (2 * n + 1)) :
     trigInterpCLM T n f (trigInterpNode T n j) = f (trigInterpNode T n j) :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_apply_node f j
 
+/-- The trigonometric interpolant of $f$ is a trigonometric polynomial of degree at most $n$. -/
 theorem trigInterpCLM_mem (f : C(AddCircle T, ℝ)) : trigInterpCLM T n f ∈ trigPolyLE T n :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_mem f
 
+/-- Trigonometric interpolation fixes every trigonometric polynomial of degree at most $n$. -/
 theorem trigInterpCLM_eq_self {g : C(AddCircle T, ℝ)} (hg : g ∈ trigPolyLE T n) :
     trigInterpCLM T n g = g :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_eq_self hg
 
+/-- The range of trigonometric interpolation is the space of trigonometric polynomials of degree at
+most $n$. -/
 theorem range_trigInterpCLM :
     LinearMap.range (trigInterpCLM T n : C(AddCircle T, ℝ) →ₗ[ℝ] C(AddCircle T, ℝ))
       = trigPolyLE T n :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).range_interpCLM
 
+/-- Trigonometric interpolation is a projection. -/
 theorem isIdempotentElem_trigInterpCLM : IsIdempotentElem (trigInterpCLM T n) :=
   (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).isIdempotentElem_interpCLM
 
+/-- A trigonometric polynomial $g$ of degree at most $n$ that agrees with $f$ at the $2n + 1$
+equispaced nodes is the trigonometric interpolant of $f$. -/
 theorem eq_trigInterpCLM {f g : C(AddCircle T, ℝ)} (hg : g ∈ trigPolyLE T n)
     (hval : ∀ j, g (trigInterpNode T n j) = f (trigInterpNode T n j)) :
     g = trigInterpCLM T n f := by
@@ -1864,14 +2007,16 @@ end Trigonometric
 open Real Set Polynomial
 open scoped Real
 
-/-! ### The Lebesgue constant of the Chebyshev nodes
+/-!
+### The Lebesgue constant of the Chebyshev nodes
 
-The `n + 1` Chebyshev nodes of `[-1, 1]` are `x_j = cos θ_j` with `θ_j = (2j + 1)π/(2(n + 1))`,
-the zeros of the Chebyshev polynomial `T_{n+1}`. Their Lagrange basis functions have the closed
-form `ℓ_j(cos θ) = (-1)^j cos((n+1)θ) sin θ_j / ((n + 1)(cos θ - x_j))`, so the Lebesgue function
-is a sum of reciprocal sines of the half sums and half differences `(θ_j ± θ)/2`; those angles
-are `π (k + δ)/(2n + 2)` for `2 n + 2` consecutive integers `k`, and `SineSum.sum_term_le`
-applies.
+The $n + 1$ Chebyshev nodes of $[-1, 1]$ are $x_j = \cos\theta_j$ with
+$\theta_j = (2j + 1)\pi/(2(n + 1))$, the zeros of the Chebyshev polynomial $T_{n+1}$. Their Lagrange
+basis functions have the closed form
+$$\ell_j(\cos\theta) = \frac{(-1)^j \cos((n + 1)\theta) \sin\theta_j}{(n + 1)(\cos\theta - x_j)}.$$
+So the Lebesgue function is a sum of reciprocal sines of the half sums and the half differences
+$(\theta_j \pm \theta)/2$. These angles are $\pi(k + \delta)/(2n + 2)$ for $2n + 2$ consecutive
+integers $k$, and `SineSum.sum_term_le` applies.
 -/
 
 
@@ -1879,13 +2024,14 @@ namespace Lagrange
 
 variable {n : ℕ}
 
-/-- The angle of the `j`-th Chebyshev node of order `n + 1`. -/
+/-- The angle $\theta_j = (2j + 1)\pi/(2(n + 1))$ of the $j$-th Chebyshev node of order $n + 1$. -/
 noncomputable def chebAngle (n j : ℕ) : ℝ := (2 * j + 1) * π / (2 * (n + 1))
 
-/-- The `n + 1` Chebyshev nodes. -/
+/-- The $n + 1$ **Chebyshev nodes** $x_j = \cos\theta_j = \cos((2j + 1)\pi/(2(n + 1)))$,
+$j = 0, \dots, n$. -/
 noncomputable def chebNode (n : ℕ) (j : Fin (n + 1)) : ℝ := Real.cos (chebAngle n j)
 
-/-- The angle of a Chebyshev node lies strictly inside `(0, π)`. -/
+/-- For $j \le n$, the angle of the $j$-th Chebyshev node lies in $(0, \pi)$. -/
 theorem chebAngle_mem (n j : ℕ) (hj : j ≤ n) : chebAngle n j ∈ Ioo 0 π := by
   have hpi := Real.pi_pos
   constructor
@@ -1894,11 +2040,11 @@ theorem chebAngle_mem (n j : ℕ) (hj : j ≤ n) : chebAngle n j ∈ Ioo 0 π :=
     have : (j:ℝ) ≤ n := by exact_mod_cast hj
     nlinarith
 
-/-- The sine of the angle of a Chebyshev node is positive. -/
+/-- For $j \le n$, the sine of the angle of the $j$-th Chebyshev node is positive. -/
 theorem sin_chebAngle_pos (n j : ℕ) (hj : j ≤ n) : 0 < Real.sin (chebAngle n j) :=
   Real.sin_pos_of_pos_of_lt_pi (chebAngle_mem n j hj).1 (chebAngle_mem n j hj).2
 
-/-- The `n + 1` Chebyshev nodes are distinct. -/
+/-- The $n + 1$ Chebyshev nodes are distinct. -/
 theorem chebNode_injective (n : ℕ) : Function.Injective (chebNode n) := by
   intro i j hij
   have hi := chebAngle_mem n i (Nat.lt_succ_iff.1 i.2)
@@ -1912,7 +2058,7 @@ theorem chebNode_injective (n : ℕ) : Function.Injective (chebNode n) := by
   exact Fin.ext (by exact_mod_cast h2)
 
 
-/-- The Chebyshev nodes are the zeros of `T_{n+1}`. -/
+/-- The Chebyshev nodes are zeros of the Chebyshev polynomial: $T_{n+1}(x_j) = 0$. -/
 theorem eval_chebyshevT_chebNode (n : ℕ) (j : Fin (n + 1)) :
     (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval (chebNode n j) = 0 := by
   rw [chebNode, chebAngle, Chebyshev.T_real_cos, Real.cos_eq_zero_iff]
@@ -1921,9 +2067,10 @@ theorem eval_chebyshevT_chebNode (n : ℕ) (j : Fin (n + 1)) :
   push_cast
   field_simp
 
-/-- `T_{n+1} = 2^n ∏_j (X - x_j)`: the Chebyshev polynomial is `2^n` times the nodal polynomial
-of its own zeros, both sides being of degree `n + 1` with leading coefficient `2^n` and agreeing
-at the `n + 1` distinct nodes. -/
+/-- The Chebyshev polynomial is $2^n$ times the nodal polynomial of its own zeros:
+$$T_{n+1} = 2^n \prod_{j=0}^{n} (X - x_j).$$
+Both sides have degree $n + 1$ and leading coefficient $2^n$, and they agree at the $n + 1$
+distinct nodes. -/
 theorem chebyshevT_eq_nodal (n : ℕ) :
     Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)
       = Polynomial.C ((2 : ℝ) ^ n) * Lagrange.nodal Finset.univ (chebNode n) := by
@@ -1945,7 +2092,7 @@ theorem chebyshevT_eq_nodal (n : ℕ) :
     rw [eval_chebyshevT_chebNode, Polynomial.eval_mul, Polynomial.eval_C, Lagrange.eval_nodal,
       Finset.prod_eq_zero (Finset.mem_univ j) (by ring), mul_zero]
 
-/-- `sin ((n + 1) θ_j) = (-1)^j` at the angle of the `j`-th Chebyshev node. -/
+/-- At the angle of the $j$-th Chebyshev node, $\sin((n + 1)\theta_j) = (-1)^j$. -/
 theorem sin_succ_mul_chebAngle (n j : ℕ) :
     Real.sin (((n : ℝ) + 1) * chebAngle n j) = (-1) ^ j := by
   have h : ((n : ℝ) + 1) * chebAngle n j = (j : ℝ) * π + π / 2 := by
@@ -1953,9 +2100,9 @@ theorem sin_succ_mul_chebAngle (n j : ℕ) :
     field_simp
   rw [h, Real.sin_add_pi_div_two, Real.cos_nat_mul_pi]
 
-/-- The derivative of the nodal polynomial at a Chebyshev node:
-`2^n ω'(x_j) sin θ_j = (n + 1) (-1)^j`, from `T_{n+1}' = (n + 1) U_n` and
-`U_n(cos θ) sin θ = sin ((n + 1) θ)`. -/
+/-- The derivative of the nodal polynomial $\omega$ of the Chebyshev nodes at a node: $2^n\,
+\omega'(x_j) \sin\theta_j = (n + 1)(-1)^j$. It follows from $T_{n+1}' = (n + 1) U_n$ and
+$U_n(\cos\theta) \sin\theta = \sin((n + 1)\theta)$. -/
 theorem eval_derivative_nodal_chebNode (n : ℕ) (j : Fin (n + 1)) :
     (2 : ℝ) ^ n * (Polynomial.derivative (Lagrange.nodal Finset.univ (chebNode n))).eval
         (chebNode n j) * Real.sin (chebAngle n j) = ((n : ℝ) + 1) * (-1) ^ (j : ℕ) := by
@@ -1974,8 +2121,11 @@ theorem eval_derivative_nodal_chebNode (n : ℕ) (j : Fin (n + 1)) :
           * Real.sin (chebAngle n j)) := by rw [← hev]; ring
     _ = ((n : ℝ) + 1) * (-1) ^ (j : ℕ) := by rw [hU]; push_cast; ring
 
-/-- **The Lagrange basis functions of the Chebyshev nodes**, in division-free form:
-`ℓ_j(t) (n + 1) (t - x_j) = T_{n+1}(t) (-1)^j sin θ_j`. -/
+/-- **The Lagrange basis functions of the Chebyshev nodes**, in a form without division. Let
+$\ell_j$ be the Lagrange basis polynomial of the Chebyshev node $x_j$, and let $t \neq x_j$.
+Then
+$$\ell_j(t)\, (n + 1)(t - x_j) = T_{n+1}(t)\, (-1)^j \sin\theta_j.$$
+-/
 theorem eval_basis_chebNode (n : ℕ) (j : Fin (n + 1)) {t : ℝ} (ht : t ≠ chebNode n j) :
     (Lagrange.basis Finset.univ (chebNode n) j).eval t * (((n : ℝ) + 1) * (t - chebNode n j))
       = (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval t * ((-1) ^ (j : ℕ) * Real.sin (chebAngle n j)) := by
@@ -2007,12 +2157,12 @@ theorem eval_basis_chebNode (n : ℕ) (j : Fin (n + 1)) {t : ℝ} (ht : t ≠ ch
   linear_combination (-(Lagrange.nodal Finset.univ (chebNode n)).eval t * (-1 : ℝ) ^ (j : ℕ))
       * hkey - ((Lagrange.nodal Finset.univ (chebNode n)).eval t * ((n : ℝ) + 1)) * hsign
 
-/-- The Chebyshev nodes lie in `[-1, 1]`. -/
+/-- The Chebyshev nodes lie in $[-1, 1]$. -/
 theorem chebNode_mem_Icc (n : ℕ) (j : Fin (n + 1)) : chebNode n j ∈ Icc (-1 : ℝ) 1 :=
   ⟨Real.neg_one_le_cos _, Real.cos_le_one _⟩
 
-/-- The sine of the half difference of the evaluation angle and a node angle vanishes only at
-the node itself. -/
+/-- Let $\theta \in [0, \pi]$ with $\cos\theta \neq x_j$. Then $\sin((\theta_j - \theta)/2) \neq 0$:
+the sine of the half difference of the angles vanishes only at the node itself. -/
 theorem sin_half_sub_chebAngle_ne_zero (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π)
     (hne : Real.cos θ ≠ chebNode n j) : Real.sin ((chebAngle n j - θ) / 2) ≠ 0 := by
   have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
@@ -2027,15 +2177,18 @@ theorem sin_half_sub_chebAngle_ne_zero (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (h
     · exact absurd h (Real.sin_pos_of_pos_of_lt_pi hgt (by linarith [h1.2, Real.pi_pos])).ne'
   exact hne (by rw [chebNode, show θ = chebAngle n j by linarith])
 
-/-- The sine of the half sum of the evaluation angle and a node angle is positive. -/
+/-- For $\theta \in [0, \pi]$, the sine of the half sum of the angles is positive:
+$\sin((\theta_j + \theta)/2) > 0$. -/
 theorem sin_half_add_chebAngle_pos (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π) :
     0 < Real.sin ((chebAngle n j + θ) / 2) := by
   have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
   exact Real.sin_pos_of_pos_of_lt_pi (by linarith [hθ.1, hj.1]) (by linarith [hθ.2, hj.2])
 
-/-- **The Lebesgue function of the Chebyshev nodes, term by term.** For `θ ∈ [0, π]` with
-`cos θ` not a node, the `j`-th Lagrange basis function at `cos θ` is bounded by the two
-reciprocal sines of the half difference and the half sum of the angles. -/
+/-- **The Lebesgue function of the Chebyshev nodes, term by term.** Let $\theta \in [0, \pi]$ with
+$\cos\theta \neq x_j$. Then
+$$|\ell_j(\cos\theta)| \le \frac{|\cos((n + 1)\theta)|}{2(n + 1)\, |\sin((\theta_j -
+  \theta)/2)|} + \frac{|\cos((n + 1)\theta)|}{2(n + 1)\, |\sin((\theta_j + \theta)/2)|}.$$
+-/
 theorem abs_eval_basis_chebNode_le (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π)
     (hne : Real.cos θ ≠ chebNode n j) :
     |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
@@ -2089,7 +2242,8 @@ theorem abs_eval_basis_chebNode_le (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ :
         refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
         linarith
 
-/-- At a node the Lebesgue function of any injective node family equals `1`. -/
+/-- At a node, the Lebesgue function of distinct nodes equals $1$: if $v_0, \dots, v_m$ are distinct
+real numbers, then $\sum_j |\ell_j(v_i)| = 1$ for every $i$. -/
 theorem sum_abs_eval_basis_at_node {m : ℕ} {v : Fin (m + 1) → ℝ} (hv : Function.Injective v)
     (i : Fin (m + 1)) : ∑ j, |(Lagrange.basis Finset.univ v j).eval (v i)| = 1 := by
   rw [Finset.sum_eq_single i]
@@ -2099,8 +2253,12 @@ theorem sum_abs_eval_basis_at_node {m : ℕ} {v : Fin (m + 1) → ℝ} (hv : Fun
   · intro h
     exact absurd (Finset.mem_univ i) h
 
-/-- **The Lebesgue function of the `n + 1` Chebyshev nodes is at most `2 + (2/π) log (2n + 2)`.**
-The evaluation point is written as `cos θ` with `θ ∈ [0, π]`. -/
+/-- **The Lebesgue function of the $n + 1$ Chebyshev nodes is at most $2 + (2/\pi) \log(2n + 2)$.**
+For every $\theta \in [0, \pi]$,
+$$\sum_{j=0}^{n} |\ell_j(\cos\theta)| \le 2 + \frac{2}{\pi} \log(2n + 2),$$
+where $\ell_0, \dots, \ell_n$ are the Lagrange basis polynomials of the Chebyshev nodes.
+
+The evaluation point $t \in [-1, 1]$ is written as $\cos\theta$ with $\theta \in [0, \pi]$. -/
 theorem sum_abs_eval_basis_chebNode_le (n : ℕ) {θ : ℝ} (hθ : θ ∈ Icc 0 π) :
     ∑ j : Fin (n + 1), |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
       ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
@@ -2198,25 +2356,31 @@ theorem sum_abs_eval_basis_chebNode_le (n : ℕ) {θ : ℝ} (hθ : θ ∈ Icc 0 
     _ ≤ 2 + 2 / π * Real.log (M : ℝ) := SineSum.sum_term_le hM3 hδ0 hδ1 _
     _ = 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by rw [hMr]; ring_nf
 
-/-- The `n + 1` Chebyshev nodes as points of `[-1, 1]`. -/
+/-- The $n + 1$ Chebyshev nodes as points of $[-1, 1]$. -/
 noncomputable def chebNodeIcc (n : ℕ) (j : Fin (n + 1)) : Icc (-1 : ℝ) 1 :=
   ⟨chebNode n j, chebNode_mem_Icc n j⟩
 
-/-- **The Lebesgue constant of the Chebyshev nodes grows logarithmically**: the norm of the
-Lagrange interpolation operator at the `n + 1` Chebyshev nodes
-`x_j = cos ((2j + 1) π / (2 (n + 1)))` of `[-1, 1]` satisfies
+/-- **The Lebesgue constant of the Chebyshev nodes grows logarithmically.** The Lagrange
+interpolation operator $\Pi_n$ on $C[-1, 1]$ at the $n + 1$ Chebyshev nodes
+$x_j = \cos((2j + 1)\pi/(2(n + 1)))$ satisfies
+$$\|\Pi_n\| \le 2 + \frac{2}{\pi} \log(2n + 2).$$
 
-`‖Π_n‖ ≤ 2 + (2/π) log (2 n + 2)`.
-
-Rivlin's sharp form of this estimate ([Rivlin, *An Introduction to the Approximation of
-Functions*][rivlin1969introduction], Theorem 1.2; [quarteroni2000numerical] (10.25)) is
-`‖Π_n‖ ≤ (2/π) log (n + 1) + 1`, whose two sides differ by less than `0.04` for every `n`; what
-is proved here keeps the sharp factor `2/π` — and so the growth rate the applications consume —
-but pays a larger additive constant, one for each of the two nodes nearest the evaluation point
-and `(2/π) log 2` for the passage to the
-`2 n + 2` reflected angles. The maximum of the Lebesgue function is in fact attained at `t = ±1`,
-where it equals `(1/(n+1)) ∑_j cot ((2j + 1) π / (4 (n + 1)))`; that identification, which is what
-the sharp constant needs, is not proved here. -/
+Rivlin's sharp form of this estimate, $\|\Pi_n\| \le (2/\pi) \log(n + 1) + 1$ (Theorem 1.2 of
+[rivlin1969introduction], and (10.25) of [quarteroni2000numerical]), is not proved here. The
+bound proved here has the sharp factor $2/\pi$, and so the growth rate that the applications
+use, but its additive constant is larger by $1.441\ldots$. The sharp form is not a longer
+version of the same argument but two further theorems: the Lebesgue function attains its maximum
+at $t = \pm 1$, where it equals $\frac{1}{n + 1} \sum_{j \le n} \cot((2j + 1)\pi/(4(n + 1)))$
+(the monotonicity of the successive local maxima towards the endpoints is of Ehlich–Zeller type,
+and is the whole difficulty); and this cotangent sum is at most $(2/\pi) \log(n + 1) + 1$.
+Neither step may give anything away: the Lebesgue constant is $(2/\pi)(\log(n + 1) + \gamma +
+\log(8/\pi)) + o(1) = (2/\pi) \log(n + 1) + 0.9625\ldots$, so the sharp constant has an
+asymptotic margin of $0.0375$, and at $n = 0$ the two sides are both equal to $1$. The argument
+through `SineSum.sum_term_le` cannot reach the sharp form. It loses $(2/\pi) \log 2$ in the
+passage from the $n + 1$ nodes to the $2n + 2$ reflected angles $\pm\theta_j$, and it loses more
+in the triangle inequality $|\sin(A + B)| \le |\sin A| + |\sin B|$ on the two halves and in the
+bound $1$ on each of the two terms nearest the evaluation point: $1.441\ldots$ in all, against a
+margin of $0.0375$. -/
 theorem norm_interpolateCLM_chebyshev_le (n : ℕ) :
     ‖Lagrange.interpolateCLM (chebNodeIcc n)‖ ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
   have hinj : Function.Injective (chebNodeIcc n) := fun i j hij =>
@@ -2240,14 +2404,14 @@ section Equispaced
 open Finset
 open scoped Nat
 
-/-- `∏_{j<m} (m − j) = m !`, over `ℝ`. -/
+/-- Over $\mathbb{R}$, $\prod_{j<m} (m - j) = m!$. -/
 private theorem prod_range_sub_cast (m : ℕ) : ∏ j ∈ range m, ((m : ℝ) - j) = (m ! : ℝ) := by
   have h : ∀ j ∈ range m, ((m : ℝ) - (j : ℝ)) = ((m - j : ℕ) : ℝ) := fun j hj => by
     rw [Nat.cast_sub (le_of_lt (mem_range.mp hj))]
   rw [Finset.prod_congr rfl h, ← Nat.cast_prod, ← Nat.descFactorial_eq_prod_range,
     Nat.descFactorial_self]
 
-/-- `∏_{m < j ≤ n} (j − m) = (n − m)!`, over `ℝ`. -/
+/-- Over $\mathbb{R}$, $\prod_{m < j \le n} (j - m) = (n - m)!$. -/
 private theorem prod_Ico_sub_cast {m n : ℕ} :
     ∏ j ∈ Ico (m + 1) (n + 1), ((j : ℝ) - m) = ((n - m)! : ℝ) := by
   rw [Finset.prod_Ico_eq_prod_range]
@@ -2255,8 +2419,8 @@ private theorem prod_Ico_sub_cast {m n : ℕ} :
   rw [← Finset.prod_range_add_one_eq_factorial (n - m), Nat.cast_prod]
   exact Finset.prod_congr rfl fun i _ => by push_cast; ring
 
-/-- The product of the distances from `m` to the other integers `0, …, n`, with the vanishing
-factor at `k = m` replaced by `1`: it is `m ! (n − m)!`. -/
+/-- For $m \le n$, the product of the distances $|m - k|$ from $m$ to the other integers
+$k = 0, \dots, n$, with the factor at $k = m$ replaced by $1$, is $m!\, (n - m)!$. -/
 private theorem prod_range_ite_abs_sub {m n : ℕ} (hmn : m ≤ n) :
     ∏ k ∈ range (n + 1), (if k = m then (1 : ℝ) else |(m : ℝ) - (k : ℝ)|)
       = (m ! : ℝ) * ((n - m)! : ℝ) := by
@@ -2285,8 +2449,8 @@ private theorem prod_range_ite_abs_sub {m n : ℕ} (hmn : m ≤ n) :
     exact abs_of_nonneg (by linarith)
   rw [h1, h2, h3, one_mul]
 
-/-- The denominator of the `i`-th characteristic polynomial at equispaced nodes, with the node
-spacing scaled away: `∏_{j ≠ i} |i − j| = i ! (n − i)!`. -/
+/-- The denominator of the $i$-th Lagrange basis polynomial of equispaced nodes, with the node
+spacing scaled away: $\prod_{j \neq i} |i - j| = i!\, (n - i)!$. -/
 private theorem prod_erase_abs_sub (n : ℕ) (i : Fin (n + 1)) :
     ∏ j ∈ (univ : Finset (Fin (n + 1))).erase i, |((i : ℕ) : ℝ) - ((j : ℕ) : ℝ)|
       = ((i : ℕ)! : ℝ) * (((n - (i : ℕ))! : ℝ)) := by
@@ -2305,8 +2469,8 @@ private theorem prod_erase_abs_sub (n : ℕ) (i : Fin (n + 1)) :
     (fun k => if k = (i : ℕ) then (1 : ℝ) else |((i : ℕ) : ℝ) - (k : ℝ)|) (n + 1),
     prod_range_ite_abs_sub hmn]
 
-/-- The numerator of the Lebesgue function at the midpoint of the first panel, before the node
-`i` is removed: `∏_{j=0}^{n} |1/2 − j| = (2n)! / (2^{2n+1} n !)`. -/
+/-- The numerator of the Lebesgue function at the midpoint of the first panel, before the node $i$
+is removed: $\prod_{j=0}^{n} |1/2 - j| = (2n)!/(2^{2n+1}\, n!)$. -/
 private theorem prod_range_abs_half (n : ℕ) :
     ∏ j ∈ range (n + 1), |1 / 2 - (j : ℝ)| = ((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ)) := by
   induction n with
@@ -2333,8 +2497,8 @@ private theorem prod_range_abs_half (n : ℕ) :
     field_simp
     ring
 
-/-- `∑_{i=0}^{n} 1/(i ! (n − i)!) = 2^n / n !`, the binomial theorem in the form the Lebesgue
-function needs. -/
+/-- The binomial theorem in the form that the Lebesgue function needs:
+$\sum_{i=0}^{n} 1/(i!\, (n - i)!) = 2^n/n!$. -/
 private theorem sum_inv_factorial_mul (n : ℕ) :
     ∑ i ∈ range (n + 1), 1 / ((i ! : ℝ) * ((n - i)! : ℝ)) = 2 ^ n / (n ! : ℝ) := by
   have hfn : (0 : ℝ) < (n ! : ℝ) := by exact_mod_cast n.factorial_pos
@@ -2352,8 +2516,8 @@ private theorem sum_inv_factorial_mul (n : ℕ) :
   rw [Finset.sum_congr rfl key, ← Finset.sum_div, ← Nat.cast_sum, Nat.sum_range_choose]
   norm_num
 
-/-- Every factor `|1/2 − k|` of the Lebesgue function at the midpoint of the first panel is at
-least `1/2`; in particular it is positive. -/
+/-- Every factor $|1/2 - k|$ of the Lebesgue function at the midpoint of the first panel is at least
+$1/2$. -/
 private theorem half_le_abs_half_sub (k : ℕ) : (1 : ℝ) / 2 ≤ |1 / 2 - (k : ℝ)| := by
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · norm_num
@@ -2361,7 +2525,8 @@ private theorem half_le_abs_half_sub (k : ℕ) : (1 : ℝ) / 2 ≤ |1 / 2 - (k :
     rw [abs_of_nonpos (by linarith)]
     linarith
 
-/-- The largest factor `|1/2 − k|`, `k ≤ n`, is the one at `k = n`: it is `(2n − 1)/2`. -/
+/-- For $k \le n$ and $n \ge 1$, the factor $|1/2 - k|$ is at most $(2n - 1)/2$, its value at
+$k = n$. -/
 private theorem abs_half_sub_le {k n : ℕ} (hk : k ≤ n) (hn : 1 ≤ n) :
     |1 / 2 - (k : ℝ)| ≤ (2 * (n : ℝ) - 1) / 2 := by
   have hkn : (k : ℝ) ≤ n := by exact_mod_cast hk
@@ -2369,10 +2534,9 @@ private theorem abs_half_sub_le {k n : ℕ} (hk : k ≤ n) (hn : 1 ≤ n) :
   rw [abs_le]
   constructor <;> linarith
 
-/-- The arithmetic of the Schönhage bound: the value `2 (2n)! 2^n / ((2n − 1) 2^{2n+1} (n !)²)`
-that the Lebesgue function reaches at the midpoint of the first panel is
-`C(2n, n) 2^n / (4^n (2n − 1))`, and `C(2n, n) ≥ 4^n/(2n)`
-(`Nat.four_pow_le_two_mul_self_mul_centralBinom`) makes it at least `2^n/(8n²)`. -/
+/-- For $n \ge 1$, the value $2 (2n)!\, 2^n/((2n - 1)\, 2^{2n+1}\, (n!)^2)$ that the Lebesgue
+function reaches at the midpoint of the first panel is at least $2^n/(8n^2)$, by
+$\binom{2n}{n} \ge 4^n/(2n)$ (`Nat.four_pow_le_two_mul_self_mul_centralBinom`). -/
 private theorem two_pow_div_le_of_centralBinom {n : ℕ} (hn : 1 ≤ n) :
     (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2)
       ≤ 2 * (((2 * n)! : ℝ) / (2 ^ (2 * n + 1) * (n ! : ℝ))) / (2 * (n : ℝ) - 1)
@@ -2413,18 +2577,21 @@ private theorem two_pow_div_le_of_centralBinom {n : ℕ} (hn : 1 ≤ n) :
       ≤ ((Nat.centralBinom n : ℕ) : ℝ) * (8 * (n : ℝ) ^ 2) := by nlinarith [hn0]
   nlinarith [e1, e2, h2p]
 
-/-- **The equispaced Lebesgue function is exponentially large** (Schönhage;
-[quarteroni2000numerical] §8.1.3): for `n ≥ 1` and the `n + 1` equally spaced nodes
-`x_j = a + j (b − a)/n` of `[a, b]`, the Lebesgue function `∑_i |ℓ_i|` at the midpoint
-`t = a + (b − a)/(2n)` of the first panel is at least `2^n/(8 n²) = 2^{n−3}/n²`. Hence (by
-`Lagrange.norm_interpolateCLM`) the Lebesgue constant of equispaced interpolation grows
-exponentially, the one-sided half of Turetskii's asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)`.
+/-- **The equispaced Lebesgue function is exponentially large** (Schönhage). Let $a < b$, let
+$n \ge 1$, and let $\ell_0, \dots, \ell_n$ be the Lagrange basis polynomials of the $n + 1$
+equispaced nodes $x_j = a + j(b - a)/n$ of $[a, b]$. Then at the midpoint $t = a + (b - a)/(2n)$
+of the first panel
+$$\sum_{i=0}^{n} |\ell_i(t)| \ge \frac{2^n}{8n^2} = \frac{2^{n-3}}{n^2}.$$
+This is §8.1.3 of [quarteroni2000numerical].
 
-At `t` the node spacing cancels from every characteristic polynomial,
-`ℓ_i(t) = ∏_{j ≠ i} (1/2 − j)/(i − j)`; the denominators telescope into `i ! (n − i)!` and the
-common numerator into `(2n)!/(2^{2n+1} n !)`; the largest omitted factor is `(2n − 1)/2`, and
-summing `∑_i 1/(i ! (n − i)!) = 2^n/n !` gives `C(2n, n) 2^n/(4^n (2n − 1))`, which
-`Nat.four_pow_le_two_mul_self_mul_centralBinom` bounds below by `2^n/(8n²)`. -/
+So, by `Lagrange.norm_interpolateCLM`, the Lebesgue constant of equispaced interpolation grows
+exponentially. This is the one-sided half of Turetskii's asymptotics
+$\Lambda_n \simeq 2^{n+1}/(e\, n \log n)$. At $t$ the node spacing cancels from every basis
+polynomial, $\ell_i(t) = \prod_{j \neq i} (1/2 - j)/(i - j)$. The denominators give
+$i!\, (n - i)!$ and the common numerator gives $(2n)!/(2^{2n+1} n!)$; the largest omitted factor
+is $(2n - 1)/2$. Summation with $\sum_i 1/(i!\, (n - i)!) = 2^n/n!$ gives
+$\binom{2n}{n} 2^n/(4^n (2n - 1))$, which `Nat.four_pow_le_two_mul_self_mul_centralBinom` bounds
+below by $2^n/(8n^2)$. -/
 theorem two_pow_div_le_sum_abs_eval_basis_equispaced {a b : ℝ} (hab : a < b) {n : ℕ}
     (hn : 1 ≤ n) :
     (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2) ≤

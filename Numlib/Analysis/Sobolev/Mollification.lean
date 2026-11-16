@@ -15,74 +15,77 @@ import Numlib.Analysis.Sobolev.WeakDeriv
 /-!
 # Mollification on an open set
 
-Convolving a function with a smooth bump `φ` supported in the closed ball of radius `ε` smooths it,
-at the cost of moving information a distance `ε`. On an open set `Ω` that cost is a *domain*
-restriction: `(φ ⋆ f) x` depends on `f` only on `closedBall x ε`, so it is defined as soon as that
-ball lies in `Ω`, and it is only on the `ε`-erosion of `Ω` that the mollification is available at
-all. This file develops that bookkeeping, and proves the fact everything downstream rests on:
+Let $E$ be a finite-dimensional real normed space, let $\Omega \subseteq E$ be open, and let
+$\varphi$ be a smooth bump supported in the closed ball $\bar B(0, \varepsilon)$. The convolution
+$(\varphi \star f)(x) = \int \varphi(t) f(x - t) \, d\mu(t)$ depends on $f$ only on
+$\bar B(x, \varepsilon)$. So the mollification of a function $f$ given on $\Omega$ makes sense at
+the points $x$ with $\bar B(x, \varepsilon) \subseteq \Omega$, that is, on the $\varepsilon$-erosion
+of $\Omega$. This file develops this bookkeeping and proves that **the weak derivative commutes with
+mollification**: if $w$ is the weak derivative of $f$ along a tuple $y$ of directions on $\Omega$,
+then $\partial^y (\varphi \star f)(x) = (\varphi \star w)(x)$ at every point $x$ with
+$\bar B(x, \varepsilon) \subseteq \Omega$.
 
-**the weak derivative commutes with mollification**, `∂^y (φ ⋆ f) = φ ⋆ (∂^y f)` at every point
-whose closed `ε`-ball lies in `Ω`.
+From the commutation follow the local approximation of a weakly differentiable function by smooth
+functions in $L^p$, the product rule for two weakly differentiable factors, and the chain rule with
+a $C^1$ function. The classical statements are in Evans, *Partial Differential Equations*, 2nd
+edition, §C.5 and §5.3.1, and in [brezis2011functional], §4.4 and §9.1. The product rule and the
+chain rule are Propositions 7.1.11 and 7.1.12 of [han2009theoretical].
 
-For the classical statements see for instance L. C. Evans, *Partial Differential Equations*, 2nd
-edition, American Mathematical Society, 2010, §C.5 and §5.3.1, or H. Brezis, *Functional Analysis,
-Sobolev Spaces and Partial Differential Equations*, Springer, 2011, §4.4 and §9.1.
+## Main definitions
+
+* `TestFunction.compConstSub`: the reflected translate $z \mapsto \varphi(x - z)$ of a bump, as a
+  test function on $\Omega$. It turns a convolution into an instance of the defining identity of the
+  weak derivative.
 
 ## Main results
 
 * `exists_isCompact_forall_closedBall_subset` and `IsCompact.exists_pos_forall_closedBall_subset`:
-  the two forms of "a compact set sits at a positive distance from the complement of an open set
-  that contains it", which is the hypothesis every statement below needs.
-* `ContDiff.iteratedFDeriv_comp_const_sub`: the iterated derivative of the reflected translate
-  `z ↦ f (a - z)` is `(-1) ^ n` times that of `f` at `a - z`. The tuple of directions is *not*
-  reversed; see the implementation notes.
-* `TestFunction.compConstSub`: the reflected translate of a bump, bundled as a test function on
-  `Ω`. This is what turns a convolution into an instance of the defining identity of the weak
-  derivative.
-* `HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv`: the identity
-  `(∂^y φ) ⋆ f = φ ⋆ (∂^y f)`, an integration by parts under the integral sign and nothing more.
+  two forms of the fact that a compact subset of an open set has a positive distance from the
+  complement.
+* `ContDiff.iteratedFDeriv_comp_const_sub`: the $n$-th derivative of $z \mapsto f(a - z)$ at $x$ is
+  $(-1)^n$ times the $n$-th derivative of $f$ at $a - x$, with the directions in the same order.
+* `HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv`: $((\partial^y \varphi) \star f)(x) =
+  (\varphi \star w)(x)$, an integration by parts under the integral sign.
 * `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` and
-  `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`: **the commutation of the weak derivative
-  with mollification**, in the tuple-by-tuple and the bundled readings.
-* `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`: **local approximation in
-  `W^{k,p}`**, the mollifications of `f` converge to `f` and their classical derivatives to the
-  weak derivative of `f`, in `L^p` of a relatively compact open subset of `Ω`.
-* `HasWeakIteratedLineDerivOn.mul`: **the product rule** for two factors that are merely locally
-  integrable, with conjugate exponents.
-* `HasWeakIteratedLineDerivOn.contDiff_comp`: **the chain rule** against a `C^1` function with
-  bounded derivative.
-* `TopologicalSpace.Opens.exists_exhaustion` and `IsCompact.exists_contDiff_eqOn_one`: an
-  exhaustion of an open set by relatively compact opens, and the smooth Urysohn lemma. Neither is
-  used here; both are tools that the density theorems built on this file will need, and neither
-  exists in Mathlib in the vector-space namespace.
+  `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`: the weak derivative commutes with
+  mollification, for one tuple of directions and for all tuples at once.
+* `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`: local approximation in
+  $W^{k,p}$; smooth functions $g_j$ with $g_j \to f$ and $\partial^y g_j \to w$ in $L^p(V)$, for $V$
+  relatively compact in $\Omega$.
+* `HasWeakIteratedLineDerivOn.mul`: the product rule
+  $\partial(uv) = (\partial u) v + u (\partial v)$ for $u, \partial u \in L^p_{\mathrm{loc}}$ and
+  $v, \partial v \in L^q_{\mathrm{loc}}$, with conjugate exponents.
+* `HasWeakIteratedLineDerivOn.contDiff_comp`: the chain rule $\partial(f \circ v) = (f' \circ v) \,
+  \partial v$ for a $C^1$ function $f$ with bounded derivative.
+* `TopologicalSpace.Opens.exists_exhaustion` and `IsCompact.exists_contDiff_eqOn_one`: an exhaustion
+  of an open set by relatively compact open sets, and the smooth Urysohn lemma. Neither is used in
+  this file. Density theorems built on this file need them, and Mathlib does not have them for an
+  open subset of a vector space.
 
 ## Implementation notes
 
-The reflection step is the one that looks dangerous and is not. `iteratedFDeriv ℝ n` of
-`z ↦ φ (a - z)` is computed by writing that function as `(fun w ↦ φ (a + w)) ∘ (-id)` and applying
-`ContinuousLinearMap.iteratedFDeriv_comp_right`, which composes the derivative with the linear map
-in *every* slot; since `-id` contributes the same scalar `-1` in each slot, multilinearity turns
-the whole thing into `(-1) ^ n` and the directions come out in their original order. In particular
-no reversal of the tuple appears, unlike in the `iteratedFDeriv_succ_apply_left` versus
-`iteratedFDeriv_succ_apply_right` bookkeeping that `Numlib/Analysis/Sobolev/WeakDeriv.lean` warns
-about.
-
-`HasWeakIteratedLineDerivOn` asks for local integrability on `Ω` only, so `φ ⋆ f` need not be
-defined, let alone smooth, away from the erosion of `Ω`. Both places where that matters are handled
-by truncation: `f` is replaced by `K.indicator f` for a compact `K ⊆ Ω` chosen to contain
-`closedBall x' ε` for every `x'` in a neighbourhood of the point in question, which is globally
-integrable and hence has a globally smooth mollification, and which agrees with `f` wherever the
-convolution can see it. `Filter.EventuallyEq.iteratedFDeriv` then transfers the derivative, because
-an iterated derivative at a point depends only on the germ there.
-
-The product and chain rules at the end are the two consumers of the local approximation theorem,
-and they illustrate the two ways a limit can be taken. The product rule pairs an `L^p` convergence
-against a fixed `L^q` factor, so Hölder's inequality does all the work
-(`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`). The chain rule cannot: the factor
-`f' ∘ v_ε` moves with `ε` and converges only pointwise, so one term needs an almost-everywhere
-convergent subsequence (`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`) and the dominated
-convergence theorem. Extracting that subsequence is harmless because the statement being proved is
-an identity between two fixed quantities.
+* The derivative of the reflected translate looks dangerous but is not. The function
+  $z \mapsto \varphi(a - z)$ is written as $(w \mapsto \varphi(a + w)) \circ (-\mathrm{id})$, and
+  `ContinuousLinearMap.iteratedFDeriv_comp_right` composes the derivative with the linear map
+  $-\mathrm{id}$ in every slot. Each slot gives the same factor $-1$, so multilinearity gives
+  $(-1)^n$, and the directions stay in their original order. No reversal of the tuple appears,
+  unlike in the bookkeeping of `iteratedFDeriv_succ_apply_left` and
+  `iteratedFDeriv_succ_apply_right` that the module `Numlib.Analysis.Sobolev.WeakDeriv` warns about.
+* `HasWeakIteratedLineDerivOn` asks for local integrability on $\Omega$ only, so $\varphi \star f$
+  need not be defined, nor smooth, away from the erosion of $\Omega$. Both places where this matters
+  use a truncation: $f$ is replaced by $1_K f$ for a compact $K \subseteq \Omega$ that contains
+  $\bar B(x', \varepsilon)$ for every $x'$ near the point in question. The truncation is integrable
+  on $E$, so its mollification is smooth on $E$, and it agrees with $f$ wherever the convolution
+  sees it. `Filter.EventuallyEq.iteratedFDeriv` then transfers the derivative, because an iterated
+  derivative at a point depends only on the germ of the function there.
+* The product rule and the chain rule take the limit in two different ways. The product rule pairs
+  an $L^p$ convergence with a fixed $L^q$ factor, so Hölder's inequality is sufficient
+  (`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`). In the chain rule, the factor
+  $f' \circ v_\varepsilon$ moves with $\varepsilon$ and converges only pointwise. So one term needs
+  a subsequence that converges almost everywhere
+  (`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`) and the dominated convergence theorem. A
+  subsequence is sufficient, because the statement to prove is an identity between two fixed
+  quantities.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace
@@ -93,22 +96,26 @@ noncomputable section
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {n : ℕ}
 
-/-! ### Compact sets inside an open set
+/-!
+### Compact sets inside an open set
 
-Everything below needs a positive distance between a compact set and the complement of an open set
-containing it, in one of two shapes: a compact `K ⊆ Ω` that swallows `closedBall x' ε` for every
-`x'` near a given point, or a positive `ε` that works uniformly on a neighbourhood of a given
-compact set. -/
+All results below need a positive distance between a compact set and the complement of an open set
+that contains it. It is used in two forms: a compact $K \subseteq \Omega$ that contains
+$\bar B(x', \varepsilon)$ for every $x'$ near a given point, or a radius $\varepsilon > 0$ that
+works uniformly on a neighbourhood of a given compact set.
+-/
 
 section Neighbourhoods
 
 variable [FiniteDimensional ℝ E]
 
-/-- A point whose closed `ε`-ball lies in an open set `U` has a neighbourhood on which that stays
-true *uniformly*, inside a single compact subset of `U`: there are a compact `K ⊆ U` and a `δ > 0`
-with `closedBall x' ε ⊆ K` for every `x'` in the ball of radius `δ` about `x`. This is what lets a
-function that is only locally integrable on `U` be truncated to a globally integrable one without
-the convolution noticing. -/
+/-- Let $E$ be finite-dimensional, let $U \subseteq E$ be open, and let
+$\bar B(x, \varepsilon) \subseteq U$. Then there are a compact set $K \subseteq U$ and a number
+$\delta > 0$ such that $\bar B(x, \varepsilon)$ lies in the interior of $K$ and
+$\bar B(x', \varepsilon) \subseteq K$ for every $x' \in B(x, \delta)$.
+
+This lets a function that is only locally integrable on $U$ be replaced by an integrable
+truncation, without a change of its convolution near $x$. -/
 theorem exists_isCompact_forall_closedBall_subset {U : Set E} (hU : IsOpen U)
     {ε : ℝ} {x : E} (hx : closedBall x ε ⊆ U) :
     ∃ (K : Set E) (δ : ℝ), IsCompact K ∧ K ⊆ U ∧ 0 < δ ∧ closedBall x ε ⊆ interior K ∧
@@ -126,9 +133,12 @@ theorem exists_isCompact_forall_closedBall_subset {U : Set E} (hU : IsOpen U)
       rw [dist_eq_norm, show p - (p - (x' - x)) = x' - x by abel]
       exact hx'.le
 
-/-- A compact subset `K` of an open set `U` has an open neighbourhood `V`, still relatively compact
-in `U`, and a radius `ε > 0` such that `closedBall x ε ⊆ U` for every `x ∈ V`. This is the domain
-`V ⋐ U` on which mollification at scale `ε` is available. -/
+/-- Let $E$ be finite-dimensional, and let $K$ be a compact subset of an open set $U \subseteq E$.
+Then there are an open set $V \supseteq K$ and a radius $\varepsilon > 0$ such that the closure
+of $V$ is compact and contained in $U$, and $\bar B(x, \varepsilon) \subseteq U$ for every
+$x \in V$.
+
+On such a $V$ the mollification at scale $\varepsilon$ is available. -/
 theorem IsCompact.exists_pos_forall_closedBall_subset {K U : Set E} (hK : IsCompact K)
     (hU : IsOpen U) (hKU : K ⊆ U) :
     ∃ (V : Set E) (ε : ℝ), IsOpen V ∧ K ⊆ V ∧ 0 < ε ∧ IsCompact (closure V) ∧ closure V ⊆ U ∧
@@ -151,22 +161,25 @@ theorem IsCompact.exists_pos_forall_closedBall_subset {K U : Set E} (hK : IsComp
 
 end Neighbourhoods
 
-/-! ### Exhaustions and smooth cut-offs
+/-!
+### Exhaustions and smooth cut-offs
 
 Two facts about an open subset of a finite-dimensional real normed space that Mathlib has only for
-a whole space (`CompactExhaustion`) or only on a manifold (`SmoothPartitionOfUnity`). They are not
-used in this file; they are the pieces that a density theorem built on the mollification below
-needs, and are recorded here so that they exist under findable names. -/
+the whole space (`CompactExhaustion`) or only on a manifold (`SmoothPartitionOfUnity`). They are not
+used in this file. A density theorem built on the mollification below needs them.
+-/
 
 section Exhaustion
 
 variable [FiniteDimensional ℝ E]
 
-/-- **An open set is exhausted by relatively compact open subsets**: there is a sequence of open
-sets `U 0, U 1, …`, each with compact closure contained in the next, whose union is `Ω`. Mathlib's
-`CompactExhaustion` does this for a whole space; this is the version for an open subset, and the
-point of the proof is that neither `SigmaCompactSpace ↥Ω` nor `WeaklyLocallyCompactSpace ↥Ω` is
-found by instance search, so `IsOpen.locallyCompactSpace` has to be supplied by hand. -/
+/-- **An open set is exhausted by relatively compact open subsets.** Let $E$ be finite-dimensional
+and $\Omega \subseteq E$ open. Then there are open sets $U_0, U_1, \dots$ such that each closure
+$\overline{U_n}$ is compact and contained in $U_{n+1}$, and $\bigcup_n U_n = \Omega$.
+
+Mathlib's `CompactExhaustion` gives this for the whole space. In the proof, instance search
+finds neither `SigmaCompactSpace ↥Ω` nor `WeaklyLocallyCompactSpace ↥Ω`, so
+`IsOpen.locallyCompactSpace` is supplied by hand. -/
 theorem TopologicalSpace.Opens.exists_exhaustion (Ω : Opens E) :
     ∃ U : ℕ → Opens E, (∀ n, IsCompact (closure (U n : Set E))) ∧
       (∀ n, closure (U n : Set E) ⊆ U (n + 1)) ∧ (⋃ n, (U n : Set E)) = Ω := by
@@ -187,11 +200,12 @@ theorem TopologicalSpace.Opens.exists_exhaustion (Ω : Opens E) :
       obtain ⟨n, hn⟩ := K.exists_mem ⟨x, hx⟩
       exact mem_iUnion.2 ⟨n, ⟨x, hx⟩, K.subset_interior_succ n hn, rfl⟩
 
-/-- **The smooth Urysohn lemma** on a finite-dimensional real normed space: a compact set `K`
-inside an open set `V` carries a smooth function that is `1` on `K`, is supported in `V`, and takes
-values in `[0, 1]`. Mathlib proves this on a manifold, as
-`exists_contMDiffMap_zero_one_nhds_of_isClosed`; this is the vector-space reading, at `M = E` and
-`I = 𝓘(ℝ, E)`. -/
+/-- **The smooth Urysohn lemma.** Let $E$ be finite-dimensional, and let $K$ be a compact subset of
+an open set $V \subseteq E$. Then there is a smooth function $f : E \to \mathbb{R}$ with $f = 1$
+on $K$, $\operatorname{tsupport} f \subseteq V$, and $0 \le f \le 1$.
+
+Mathlib proves this on a manifold, as `exists_contMDiffMap_zero_one_nhds_of_isClosed`; this is
+the case of the model space $E$ with the model `𝓘(ℝ, E)`. -/
 theorem IsCompact.exists_contDiff_eqOn_one {K V : Set E} (hK : IsCompact K) (hV : IsOpen V)
     (hKV : K ⊆ V) :
     ∃ f : E → ℝ, ContDiff ℝ ∞ f ∧ EqOn f 1 K ∧ tsupport f ⊆ V ∧ ∀ x, f x ∈ Icc (0 : ℝ) 1 := by
@@ -204,9 +218,12 @@ theorem IsCompact.exists_contDiff_eqOn_one {K V : Set E} (hK : IsCompact K) (hV 
     closure_minimal (fun x hx hxW ↦ hx (hWf hxW)) hWopen.isClosed_compl
   exact this.trans (compl_subset_comm.2 hWsub)
 
-/-- **A smooth function equal to `1` on a compact `K` with compact support in an open `V ⊇ K`**:
-`IsCompact.exists_contDiff_eqOn_one` on the interior of a compact neighbourhood of `K` inside
-`V`. -/
+/-- Let $E$ be finite-dimensional, and let $K$ be a compact subset of an open set $V \subseteq E$.
+Then there is a smooth function $\theta : E \to \mathbb{R}$ with $\theta = 1$ on $K$, with
+compact support, and with $\operatorname{tsupport} \theta \subseteq V$.
+
+The proof applies `IsCompact.exists_contDiff_eqOn_one` to the interior of a compact
+neighbourhood of $K$ inside $V$. -/
 theorem IsCompact.exists_contDiff_eqOn_one_hasCompactSupport {K V : Set E} (hK : IsCompact K)
     (hV : IsOpen V) (hKV : K ⊆ V) :
     ∃ θ : E → ℝ, ContDiff ℝ ∞ θ ∧ EqOn θ 1 K ∧ HasCompactSupport θ ∧ tsupport θ ⊆ V := by
@@ -221,10 +238,11 @@ end Exhaustion
 
 section Reflection
 
-/-- **The iterated derivative of a reflected translate.** For `f` of class `C^N` and `n ≤ N`, the
-`n`-th derivative of `z ↦ f (a - z)` is `(-1) ^ n` times the `n`-th derivative of `f` at `a - x`,
-evaluated at the *same* tuple of directions: reflecting the argument contributes one sign per slot
-and does nothing else. -/
+/-- **The iterated derivative of a reflected translate.** Let $f : E \to F$ be of class $C^N$ and
+$n \le N$. For $a, x \in E$ and directions $y_1, \dots, y_n$,
+$$D^n \bigl(z \mapsto f(a - z)\bigr)(x)[y_1, \dots, y_n] = (-1)^n D^n f(a - x)[y_1, \dots,
+  y_n].$$
+The directions appear in the same order on both sides. -/
 theorem ContDiff.iteratedFDeriv_comp_const_sub {N : ℕ∞ω} {f : E → F} (hf : ContDiff ℝ N f)
     (hn : (n : ℕ∞ω) ≤ N) (a x : E) (y : Fin n → E) :
     iteratedFDeriv ℝ n (fun z ↦ f (a - z)) x y
@@ -252,12 +270,14 @@ namespace TestFunction
 
 variable [FiniteDimensional ℝ E]
 
-/-- The reflected translate `z ↦ φ (x - z)` of a smooth function `φ` supported in the closed ball
-of radius `ε` about the origin, as a test function on `Ω`. The hypothesis `closedBall x ε ⊆ Ω` is
-exactly what makes the support land inside `Ω`.
+/-- The reflected translate $z \mapsto \varphi(x - z)$ of a smooth function $\varphi$ with
+$\operatorname{tsupport} \varphi \subseteq \bar B(0, \varepsilon)$, as a test function on
+$\Omega$, for a point $x$ with $\bar B(x, \varepsilon) \subseteq \Omega$. The hypothesis on $x$
+puts the support inside $\Omega$.
 
-This is the bridge between the convolution `(φ ⋆ f) x = ∫ φ t • f (x - t)` and the defining
-identity of the weak derivative on `Ω`, which quantifies over test functions on `Ω`. -/
+This connects the convolution $(\varphi \star f)(x) = \int \varphi(t) f(x - t) \, dt$ with the
+defining identity of the weak derivative on $\Omega$, which quantifies over test functions on
+$\Omega$. -/
 def compConstSub (Ω : Opens E) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ (Ω : Set E)) :
     𝓓(Ω, ℝ) where
@@ -273,7 +293,7 @@ def compConstSub (Ω : Opens E) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε
     have : x - z ∈ tsupport φ := subset_tsupport _ hz
     simpa [mem_closedBall, dist_eq_norm, norm_sub_rev] using hsupp this
 
-/-- `TestFunction.compConstSub` as a function. -/
+/-- The test function `TestFunction.compConstSub` is the function $z \mapsto \varphi(x - z)$. -/
 @[simp]
 theorem compConstSub_coe (Ω : Opens E) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ (Ω : Set E)) :
@@ -291,14 +311,18 @@ open ContinuousLinearMap
 variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E}
   [μ.IsAddHaarMeasure] {y : Fin n → E} {f w : E → F}
 
-/-- **Integration by parts under the integral sign**: for a bump `φ` supported in the closed ball
-of radius `ε`, and a point `x` with `closedBall x ε ⊆ Ω`, convolving `f` against the `n`-th
-derivative of `φ` along `y` is the same as convolving the weak derivative of `f` along `y` against
-`φ` itself.
+/-- **Integration by parts under the integral sign.** Let $E$ be finite-dimensional with an additive
+Haar measure $\mu$, and let $w$ be the weak derivative of $f$ along the tuple
+$y = (y_1, \dots, y_n)$ on $\Omega$. Let $\varphi$ be smooth with $\operatorname{tsupport}
+\varphi \subseteq \bar B(0, \varepsilon)$, and let $\bar B(x, \varepsilon) \subseteq \Omega$.
+Then
+$$\bigl((\partial^y \varphi) \star f\bigr)(x) = (\varphi \star w)(x),$$
+where $\partial^y \varphi(z) = D^n \varphi(z)[y_1, \dots, y_n]$ and the convolutions are with
+respect to $\mu$.
 
-This carries all the content of the commutation of the weak derivative with mollification; what
-`HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` adds is only the identification of the
-left-hand side with a derivative of `φ ⋆ f`. -/
+This carries the content of the commutation of the weak derivative with mollification.
+`HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` adds only the identification of the left
+side with a derivative of $\varphi \star f$. -/
 theorem HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv
     (h : HasWeakIteratedLineDerivOn y f w Ω μ) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ (Ω : Set E)) :
@@ -328,17 +352,18 @@ theorem HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv
   rw [hL, hR]
   exact smul_right_injective F (pow_ne_zero n (by norm_num : (-1 : ℝ) ≠ 0)) key
 
-/-- **The weak derivative commutes with mollification**, in the reading that fixes a tuple `y` of
-directions: if `w` is the weak derivative of `f` along `y` on `Ω`, and `φ` is a smooth bump
-supported in the closed ball of radius `ε`, then at every point `x` whose closed `ε`-ball lies in
-`Ω` the mollification `φ ⋆ f` has classical derivative
+/-- **The weak derivative commutes with mollification**, for one tuple of directions. Let $E$ be
+finite-dimensional with an additive Haar measure $\mu$, and let $w$ be the weak derivative of
+$f$ along the tuple $y = (y_1, \dots, y_n)$ on $\Omega$. Let $\varphi$ be smooth with
+$\operatorname{tsupport} \varphi \subseteq \bar B(0, \varepsilon)$, and let
+$\bar B(x, \varepsilon) \subseteq \Omega$. Then the mollification $\varphi \star f$ has the
+classical derivative
+$$D^n (\varphi \star f)(x)[y_1, \dots, y_n] = (\varphi \star w)(x).$$
 
-`∂^y (φ ⋆ f) x = (φ ⋆ w) x`.
-
-Note that `f` is assumed locally integrable on `Ω` only, so `φ ⋆ f` need not be smooth, or even
-defined, elsewhere; the derivative on the left is nevertheless the honest one, because `φ ⋆ f`
-agrees near `x` with the mollification of a compactly supported truncation of `f`, which is smooth
-on the whole space. -/
+The function $f$ is only locally integrable on $\Omega$, so $\varphi \star f$ need not be
+smooth, nor defined, elsewhere. The derivative on the left is still the classical one, because
+near $x$ the function $\varphi \star f$ agrees with the mollification of a compactly supported
+truncation of $f$, which is smooth on $E$. -/
 theorem HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution
     (h : HasWeakIteratedLineDerivOn y f w Ω μ) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ (Ω : Set E)) :
@@ -369,13 +394,13 @@ theorem HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution
     hf'loc.iteratedFDeriv_convolution_left_apply n hcφ hφ x y,
     h'.convolution_iteratedFDeriv hφ hsupp hxK]
 
-/-- **The weak derivative commutes with mollification**, in the bundled reading: if `w` is the
-`n`-th weak derivative of `f` on `Ω` and `φ` is a smooth bump supported in the closed ball of
-radius `ε`, then at every point `x` whose closed `ε`-ball lies in `Ω`,
-
-`∂^n (φ ⋆ f) x = (φ ⋆ w) x`
-
-as continuous `n`-linear maps. -/
+/-- **The weak derivative commutes with mollification**, for all tuples of directions at once. Let
+$E$ be finite-dimensional with an additive Haar measure $\mu$, and let $w$ be the $n$-th weak
+derivative of $f$ on $\Omega$, with values in the continuous $n$-linear maps. Let $\varphi$ be
+smooth with $\operatorname{tsupport} \varphi \subseteq \bar B(0, \varepsilon)$, and let
+$\bar B(x, \varepsilon) \subseteq \Omega$. Then
+$$D^n (\varphi \star f)(x) = (\varphi \star w)(x)$$
+as continuous $n$-linear maps. -/
 theorem HasWeakIteratedFDerivOn.iteratedFDeriv_convolution {w : E → E [×n]→L[ℝ] F}
     (h : HasWeakIteratedFDerivOn n f w Ω μ) {φ : E → ℝ} (hφ : ContDiff ℝ ∞ φ) {ε : ℝ}
     (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ (Ω : Set E)) :
@@ -389,23 +414,25 @@ theorem HasWeakIteratedFDerivOn.iteratedFDeriv_convolution {w : E → E [×n]→
 
 end Commutation
 
-/-! ### Hölder's inequality, locally
+/-!
+### Hölder's inequality, locally
 
-The local form of Hölder's inequality that the product rule needs. Its `L^p`-limit companions --
+The local form of Hölder's inequality that the product rule needs. Its companions for $L^p$ limits,
 `MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`,
 `MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm` and
-`MeasureTheory.enorm_integral_smul_le_of_bound` -- are in
-`Numlib/Analysis/Convolution/Lp.lean`, and the `L^p` analogues of local integrability on a compact
-subset are in `Numlib/Analysis/Sobolev/WeakDeriv.lean`, beside `MeasureTheory.LocallyMemLpOn`
-itself. -/
+`MeasureTheory.enorm_integral_smul_le_of_bound`, are in `Numlib.Analysis.Convolution.Lp`. The $L^p$
+analogues of local integrability on a compact subset are in `Numlib.Analysis.Sobolev.WeakDeriv`,
+beside `MeasureTheory.LocallyMemLpOn`.
+-/
 
 namespace MeasureTheory
 
 variable {X G : Type*} [TopologicalSpace X] [MeasurableSpace X] [NormedAddCommGroup G]
   {f : X → G} {s t : Set X} {μ : Measure X} {p : ℝ≥0∞}
 
-/-- **Hölder's inequality, locally**: the product of a function locally in `L^p` on `s` with one
-locally in `L^q` on `s`, for Hölder conjugate `p` and `q`, is locally integrable on `s`. -/
+/-- **Hölder's inequality, locally.** Let $p$ and $q$ be Hölder conjugate exponents. If
+$u \in L^p_{\mathrm{loc}}(s)$ and $v \in L^q_{\mathrm{loc}}(s)$, then the product $uv$ is
+locally integrable on $s$. -/
 theorem LocallyMemLpOn.locallyIntegrableOn_mul {q : ℝ≥0∞} [ENNReal.HolderConjugate p q]
     {u v : X → ℝ} (hu : LocallyMemLpOn u p s μ) (hv : LocallyMemLpOn v q s μ) :
     LocallyIntegrableOn (fun x ↦ u x * v x) s μ := by
@@ -422,7 +449,7 @@ theorem LocallyMemLpOn.locallyIntegrableOn_mul {q : ℝ≥0∞} [ENNReal.HolderC
 
 end MeasureTheory
 
-/-! ### Local approximation in `W^{k,p}` -/
+/-! ### Local approximation in $W^{k,p}$ -/
 
 section Approximation
 
@@ -432,9 +459,11 @@ variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteS
   {μ : Measure E} [μ.IsAddHaarMeasure] {y : Fin n → E} {f w : E → F} {p : ℝ≥0∞}
 
 omit [CompleteSpace F] in
-/-- **Mollification by a normalized bump does not increase an `L^∞` bound**: if `‖h‖ ≤ M`
-almost everywhere, then `‖(φ.normed μ ⋆ h) x‖ ≤ M` at every point, `φ.normed μ` being a
-nonnegative kernel of integral one. -/
+/-- **Mollification by a normalized bump does not increase an $L^\infty$ bound.** Let $\mu$ be an
+additive Haar measure on a finite-dimensional space $E$, and let $\varphi$ be a smooth bump
+centred at $0$. If $\|h\| \le M$ almost everywhere, then $\|(\varphi_\mu \star h)(x)\| \le M$ at
+every point $x$. Here $\varphi_\mu$ is $\varphi$ normalized to integral one with respect to
+$\mu$, a nonnegative kernel. -/
 theorem ContDiffBump.norm_convolution_normed_le_of_ae_norm_le (φ : ContDiffBump (0 : E))
     {h : E → F} {M : ℝ} (hM : ∀ᵐ z ∂μ, ‖h z‖ ≤ M) (x : E) :
     ‖(φ.normed μ ⋆[lsmul ℝ ℝ, μ] h) x‖ ≤ M := by
@@ -447,16 +476,23 @@ theorem ContDiffBump.norm_convolution_normed_le_of_ae_norm_le (φ : ContDiffBump
   refine (norm_integral_le_of_norm_le (φ.integrable_normed.mul_const M) hbound).trans (le_of_eq ?_)
   rw [integral_mul_const, φ.integral_normed, one_mul]
 
-/-- **Local approximation in `W^{k,p}` by smooth functions, with an `L^∞` bound preserved.** Let
-`w` be the weak derivative of `f` along a tuple `y` of directions on an open set `Ω`, with both `f`
-and `w` in `L^p_loc(Ω)` for some `p < ∞`, and let `V` be an open set whose closure is a compact
-subset of `Ω`. Then there are globally smooth functions `g 0, g 1, …`, themselves in `L^p(V)`
-together with their derivatives `∂^y (g j)`, such that `g j → f` and `∂^y (g j) → w` in `L^p(V)`;
-and `‖g j x‖ ≤ M` for all `j` and `x` whenever `‖f‖ ≤ M` almost everywhere on `Ω`.
+/-- **Local approximation in $W^{k,p}$ by smooth functions, with an $L^\infty$ bound.** Let $E$ be
+finite-dimensional with an additive Haar measure $\mu$, let $F$ be complete, and let
+$1 \le p < \infty$. Let $w$ be the weak derivative of $f$ along the tuple
+$y = (y_1, \dots, y_n)$ on $\Omega$, with $f, w \in L^p_{\mathrm{loc}}(\Omega)$. Let $V$ be an
+open set whose closure is compact and contained in $\Omega$. Then there are smooth functions
+$g_0, g_1, \dots$ on $E$ such that
 
-The `g j` are the mollifications of a compactly supported truncation of `f`; the convergence is
-`ContDiffBump.tendsto_eLpNorm_convolution_sub`, and the identification of `∂^y (g j)` with the
-mollification of `w` on `V` is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`, and the
+* $g_j \in L^p(V)$ and $\partial^y g_j \in L^p(V)$ for every $j$;
+* $g_j \to f$ and $\partial^y g_j \to w$ in $L^p(V)$;
+* for every $M \ge 0$ with $\|f\| \le M$ almost everywhere on $\Omega$, $\|g_j(x)\| \le M$ for
+  all $j$ and all $x \in E$.
+
+Here $\partial^y g(x) = D^n g(x)[y_1, \dots, y_n]$.
+
+The $g_j$ are the mollifications of a compactly supported truncation of $f$. The convergence is
+`ContDiffBump.tendsto_eLpNorm_convolution_sub`, the identification of $\partial^y g_j$ with the
+mollification of $w$ on $V$ is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`, and the
 bound is `ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`. Without the bound, this is
 `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`. -/
 theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le
@@ -542,20 +578,20 @@ theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_
     · rw [hf'def, Set.indicator_of_notMem hzC, norm_zero]
       exact hM0
 
-/-- **Local approximation in `W^{k,p}` by smooth functions.** Let `w` be the weak derivative of `f`
-along a tuple `y` of directions on an open set `Ω`, with both `f` and `w` in `L^p_loc(Ω)` for some
-`p < ∞`, and let `V` be an open set whose closure is a compact subset of `Ω`. Then there are
-globally smooth functions `g 0, g 1, …`, themselves in `L^p(V)` together with their derivatives
-`∂^y (g j)`, such that `g j → f` and `∂^y (g j) → w` in `L^p(V)`.
+/-- **Local approximation in $W^{k,p}$ by smooth functions.** Let $E$ be finite-dimensional with an
+additive Haar measure $\mu$, let $F$ be complete, and let $1 \le p < \infty$. Let $w$ be the
+weak derivative of $f$ along the tuple $y = (y_1, \dots, y_n)$ on $\Omega$, with
+$f, w \in L^p_{\mathrm{loc}}(\Omega)$. Let $V$ be an open set whose closure is compact and
+contained in $\Omega$. Then there are smooth functions $g_0, g_1, \dots$ on $E$ with
+$g_j \in L^p(V)$ and $\partial^y g_j \in L^p(V)$, such that $g_j \to f$ and
+$\partial^y g_j \to w$ in $L^p(V)$. Here $\partial^y g(x) = D^n g(x)[y_1, \dots, y_n]$.
 
-The `g j` are the mollifications of a compactly supported truncation of `f`; the convergence is
-`ContDiffBump.tendsto_eLpNorm_convolution_sub`, and the identification of `∂^y (g j)` with the
-mollification of `w` on `V` is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`
-(`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le` also bounds the
-`g j`).
-
-This is the local, `L^p`-flavoured half of the Meyers-Serrin theorem `H = W`; what it does not do
-is patch the local approximations together over an exhaustion of `Ω`. -/
+The $g_j$ are the mollifications of a compactly supported truncation of $f$. The convergence is
+`ContDiffBump.tendsto_eLpNorm_convolution_sub`, and the identification of $\partial^y g_j$ with
+the mollification of $w$ on $V$ is `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution`.
+`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_and_norm_le` also bounds the
+$g_j$. This is the local half of the Meyers–Serrin theorem $H = W$; it does not patch the local
+approximations together over an exhaustion of $\Omega$. -/
 theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm
     (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hf : LocallyMemLpOn f p Ω μ)
     (hw : LocallyMemLpOn w p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) {V : Set E} (hVo : IsOpen V)
@@ -580,17 +616,19 @@ open ContinuousLinearMap
 variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E}
   [μ.IsAddHaarMeasure] {p q : ℝ≥0∞}
 
-/-- **The product rule for weak derivatives**, with both factors merely locally integrable: if `u`
-and its first-order weak derivative along `y` lie in `L^p_loc(Ω)`, and `v` and its first-order weak
-derivative along `y` lie in `L^q_loc(Ω)` for the Hölder conjugate exponent `q`, then `u v` has the
-weak derivative `(∂ u) v + u (∂ v)` along `y`.
+/-- **The product rule for weak derivatives.** Let $E$ be finite-dimensional with an additive Haar
+measure $\mu$, and let $y$ be a tuple of one direction. Let $1 \le p < \infty$, and let
+$q < \infty$ be the Hölder conjugate exponent of $p$ (so in fact $1 < p < \infty$). Let $w_u$ be
+the weak derivative of $u$ along $y$ on $\Omega$, and $w_v$ that of $v$, with
+$u, w_u \in L^p_{\mathrm{loc}}(\Omega)$ and $v, w_v \in L^q_{\mathrm{loc}}(\Omega)$. Then $uv$
+has the weak derivative $w_u v + u w_v$ along $y$ on $\Omega$.
 
-This is Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, Proposition 7.1.11, which the book states without proof.
-The proof mollifies `u`, applies the case of a smooth factor
+This is Proposition 7.1.11 of [han2009theoretical], which the source states without proof. The
+proof mollifies $u$, applies the case of a smooth factor
 (`HasWeakIteratedLineDerivOn.mul_contDiff`) on a relatively compact open neighbourhood of the
-support of the test function, and passes to the limit under Hölder's inequality. The tuple `y` is
-required to have length one, as in the book, because the smooth-factor case is. -/
+support of the test function, and passes to the limit with Hölder's inequality. The tuple $y$
+has length one, as in the source, because the case of a smooth factor requires it; the length is
+a variable `m` with the hypothesis `m = 1`. -/
 theorem HasWeakIteratedLineDerivOn.mul {m : ℕ} {y : Fin m → E} {u wu v wv : E → ℝ}
     (hu : HasWeakIteratedLineDerivOn y u wu Ω μ) (hm : m = 1)
     (hv : HasWeakIteratedLineDerivOn y v wv Ω μ)
@@ -699,14 +737,15 @@ theorem HasWeakIteratedLineDerivOn.mul {m : ℕ} {y : Fin m → E} {u wu v wv : 
 
 end ProductRule
 
-/-! ### The chain rule against a `C^1` function -/
+/-! ### The chain rule with a $C^1$ function -/
 
 section ChainRule
 
 variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E}
   [μ.IsAddHaarMeasure] {p : ℝ≥0∞}
 
-/-- A `C^1` function whose derivative is bounded by `M` is `M`-Lipschitz. -/
+/-- A $C^1$ function $f : \mathbb{R} \to \mathbb{R}$ with $|f'| \le M$ is $M$-Lipschitz:
+$|f(a) - f(b)| \le M |a - b|$ for all $a, b$. -/
 theorem abs_sub_le_mul_of_abs_deriv_le {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ}
     (hM : ∀ t, |deriv f t| ≤ M) (a b : ℝ) : |f a - f b| ≤ M * |a - b| := by
   have := (convex_univ (𝕜 := ℝ) (E := ℝ)).norm_image_sub_le_of_norm_deriv_le (f := f) (C := M)
@@ -715,8 +754,11 @@ theorem abs_sub_le_mul_of_abs_deriv_le {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f)
   simpa [Real.norm_eq_abs] using this
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- **The classical chain rule**, read on the first iterated derivative along a tuple of one
-direction: `∂^y (f ∘ g) = (f' ∘ g) ∂^y g`. -/
+/-- **The classical chain rule** for the first derivative along one direction. Let
+$f : \mathbb{R} \to \mathbb{R}$ be $C^1$ and $g : E \to \mathbb{R}$ smooth. Then for $x \in E$
+and a direction $y$,
+$$D(f \circ g)(x)[y] = f'(g(x)) \, Dg(x)[y].$$
+The derivatives are the first iterated derivatives, along a tuple of one direction. -/
 theorem iteratedFDeriv_one_comp {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {g : E → ℝ}
     (hg : ContDiff ℝ ∞ g) (y : Fin 1 → E) (x : E) :
     iteratedFDeriv ℝ 1 (fun z ↦ f (g z)) x y = deriv f (g x) * iteratedFDeriv ℝ 1 g x y := by
@@ -730,20 +772,22 @@ theorem iteratedFDeriv_one_comp {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {g : E
   rw [hcomp.fderiv]
   simp
 
-/-- **The chain rule for weak derivatives**: if `v` and its first-order weak derivative along `y`
-lie in `L^p_loc(Ω)` for some `p < ∞`, and `f : ℝ → ℝ` is `C^1` with derivative bounded by `M`, then
-`f ∘ v` has the weak derivative `(f' ∘ v) (∂ v)` along `y`.
+/-- **The chain rule for weak derivatives.** Let $E$ be finite-dimensional with an additive Haar
+measure $\mu$, let $y$ be a tuple of one direction, and let $1 \le p < \infty$. Let $w$ be the
+weak derivative of $v$ along $y$ on $\Omega$, with $v, w \in L^p_{\mathrm{loc}}(\Omega)$. Let
+$f : \mathbb{R} \to \mathbb{R}$ be $C^1$ with $|f'| \le M$. Then $f \circ v$ has the weak
+derivative $(f' \circ v) \, w$ along $y$ on $\Omega$.
 
-This is Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, Proposition 7.1.12, which the book states without proof
-and for `v ∈ W^{1,p}` on a bounded open set; the local hypotheses here are weaker.
+This is Proposition 7.1.12 of [han2009theoretical], which the source states without proof, for
+$v \in W^{1,p}$ on a bounded open set; the local hypotheses here are weaker. The length of $y$
+is a variable `m` with the hypothesis `m = 1`.
 
-Unlike the product rule there is no cheap special case: `f ∘ v` cannot be integrated by parts
-against a test function without first approximating `v` by smooth functions. The proof mollifies
-`v` on a relatively compact open neighbourhood of the support of the test function, uses the
-classical chain rule there, and passes to the limit -- in `L^1` for the terms that carry a bounded
-factor, and by dominated convergence along a subsequence converging almost everywhere for the term
-`(f' ∘ v_ε - f' ∘ v) ∂v`, whose convergence is not an `L^p` estimate but a pointwise one. -/
+Unlike the product rule, there is no simple special case: $f \circ v$ cannot be integrated by
+parts against a test function before $v$ is approximated by smooth functions. The proof
+mollifies $v$ on a relatively compact open neighbourhood of the support of the test function,
+uses the classical chain rule there, and passes to the limit. The terms with a bounded factor
+converge in $L^1$. The term $(f' \circ v_\varepsilon - f' \circ v) \, \partial v$ converges by
+dominated convergence, along a subsequence that converges almost everywhere. -/
 theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn y v w Ω μ) (hm : m = 1)
     {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ t, |deriv f t| ≤ M)

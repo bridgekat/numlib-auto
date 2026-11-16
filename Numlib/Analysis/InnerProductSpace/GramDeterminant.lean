@@ -17,60 +17,59 @@ import Numlib.Data.Fin.Sum
 /-!
 # Gram determinants and the distance to the span of a finite family
 
-Let `v : ι → E` be a finite family in an inner product space and let `f : E`. The **Gram
-determinant** `det (Matrix.gram 𝕜 v)` of the family, and the Gram determinant of the family
-enlarged by `f`, determine the distance from `f` to the span of `v`:
-
-`‖f - starProjection (span 𝕜 (range v)) f‖ ^ 2 = det G(v, f) / det G(v)`,
-
-the classical formula that reads a best-approximation error off two determinants. It is
-`Submodule.norm_sub_starProjection_sq_eq_det_gram_div`, with the equivalent infimum form
-`Submodule.iInf_norm_sub_sq_eq_det_gram_div` and the real-scalar restatements
-`Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real` and
-`Submodule.iInf_norm_sub_sq_eq_det_gram_div_real`. Mathlib has `Matrix.gram` and its positive
-semidefiniteness but no determinant formula of this kind.
+Let $v = (v_i)_{i \in \iota}$ be a finite family in an inner product space $E$ over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $f \in E$. Write $G(v)$ for the Gram matrix
+$(\langle v_i, v_j \rangle)_{i, j}$, $G(v, f)$ for the Gram matrix of the family $v$ enlarged by
+$f$, and $P$ for the orthogonal projection onto $\operatorname{span}\{v_i\}$. The Gram determinants
+determine the distance from $f$ to the span of $v$:
+$$\det G(v, f) = \det G(v) \, \|f - Pf\|^2, \qquad \|f - Pf\|^2 = \frac{\det G(v, f)}{\det G(v)}
+  \text{ if } v \text{ is linearly independent}.$$
+This classical formula reads the error of a best approximation off two determinants. In
+[gantmacher1959theory], Chapter IX §5, it is the recursion satisfied by the Gram determinants of a
+nested family; in [han2009theoretical], §3.1, it drives the proof of the Müntz–Szász theorem.
+Mathlib has `Matrix.gram` and its positive semidefiniteness, but no determinant formula of this
+kind.
 
 ## Main results
 
-* `Matrix.gram_sum_smul`: `gram 𝕜 (fun j ↦ ∑ i, T i j • v i) = Tᴴ * gram 𝕜 v * T`, the behaviour
-  of a Gram matrix under a linear change of the family.
-* `Matrix.det_gram_sumElim`: the *product* form, valid with no hypothesis at all,
-  `det G(v, f) = det G(v) * ‖f - P f‖ ^ 2` where `P` is the orthogonal projection onto the span
-  of `v`.
+* `Matrix.gram_sum_smul`: the Gram matrix of the family $w_j = \sum_i T_{ij} v_i$ is $T^H G(v) T$.
+* `Matrix.det_gram_sumElim`: the product form $\det G(v, f) = \det G(v) \|f - Pf\|^2$, with no
+  hypothesis on $v$.
+* `Matrix.det_gram_cons` and `Matrix.det_gram_sumElim_eq_det_gram_cons`: the same for a family
+  indexed by `Fin n` and enlarged at the front by `Fin.cons`, the form that a concrete family takes,
+  and the reindexing between the two forms.
 * `Submodule.norm_sub_starProjection_sq_eq_det_gram_div` and
-  `Submodule.iInf_norm_sub_sq_eq_det_gram_div`: the *quotient* form, for a linearly independent
-  family, where the denominator is nonzero.
-* `Matrix.det_gram_cons`: the same for a family indexed by `Fin n` and enlarged at the front by
-  `Fin.cons`, which is the form a concrete family takes, together with the reindexing
-  `Matrix.det_gram_sumElim_eq_det_gram_cons` between the two.
+  `Submodule.iInf_norm_sub_sq_eq_det_gram_div`: the quotient form, for a linearly independent
+  family, where the denominator is nonzero, with the distance written through the projection or as
+  an infimum. `Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real` and
+  `Submodule.iInf_norm_sub_sq_eq_det_gram_div_real` restate them for real scalars.
+
+## Proof outline
+
+Let $g = f - Pf$. Replacing $f$ by $g$ changes the enlarged family by a unitriangular change of
+basis $T$, which adds a combination of the $v_i$ to the last vector, and so leaves the Gram
+determinant fixed by `Matrix.gram_sum_smul`. Since $g$ is orthogonal to every $v_i$, the Gram matrix
+of the new family is block diagonal, with determinant $\det G(v) \|g\|^2$. The quotient
+$\det G(v, f) / \det G(v)$ is the Schur complement of the block $G(v)$ in $G(v, f)$, a $1 \times 1$
+matrix, but the proof does not use Schur complements. The argument above is shorter than inverting
+$G(v)$ and identifying the Schur complement with the squared error through the normal equations, and
+it needs no hypothesis on $v$.
 
 ## Implementation notes
 
-The enlarged family is `Sum.elim v (fun _ : Unit ↦ f) : ι ⊕ Unit → E`, so that its Gram matrix is
-literally a `Matrix.fromBlocks` and no reindexing equivalence appears anywhere. This is the same
-convention as `Mathlib.LinearAlgebra.Matrix.SchurComplement`.
-
-The proof does not go through a Schur complement, although the quotient `det G(v, f) / det G(v)`
-is one: it is the Schur complement of the `(1,1)` block of `G(v, f)`, a `1 × 1` matrix. Replacing
-`f` by `g = f - P f` changes the enlarged family by a *unitriangular* change of basis `T` — add a
-combination of the `v i` to the last vector — which leaves the determinant fixed by
-`Matrix.gram_sum_smul`, and makes the enlarged Gram matrix block diagonal because `g` is orthogonal
-to every `v i`. That is shorter than inverting `G(v)` and identifying the Schur complement with the
-squared error through the normal equations, and it needs no hypothesis on `v`.
-
-## References
-
-* [gantmacher1959theory] Chapter IX §5, where the formula is the recursion satisfied by the Gram
-  determinants of a nested family.
-* [han2009theoretical] §3.1, where it is the engine of the Müntz–Szász theorem.
+* The enlarged family is `Sum.elim v (fun _ : Unit ↦ f) : ι ⊕ Unit → E`, so that its Gram matrix is
+  literally a `Matrix.fromBlocks` and no reindexing equivalence appears. This is the convention of
+  `Mathlib.LinearAlgebra.Matrix.SchurComplement`.
+* The orthogonal projection is `Submodule.starProjection`, and the Gram matrix is `Matrix.gram 𝕜 v`,
+  with entries $\langle v_i, v_j \rangle$.
 -/
 
 open scoped InnerProductSpace
 
 variable {ι κ E 𝕜 : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The span of a family indexed by a finite type is finite-dimensional, hence has an orthogonal
-projection.
+/-- Let $v$ be a family indexed by a finite type in an inner product space $E$. Then the span of $v$
+is finite-dimensional, so it has an orthogonal projection.
 
 Mathlib has this instance for the span of a `Finset` (`FiniteDimensional.span_finset`) and for a
 single vector, but not for the range of a family indexed by a finite type. -/
@@ -81,8 +80,11 @@ instance Submodule.hasOrthogonalProjection_span_range [Finite ι] (v : ι → E)
 
 namespace Matrix
 
-/-- The Gram matrix of a family of linear combinations `w j = ∑ i, T i j • v i` is
-`Tᴴ * gram 𝕜 v * T`. -/
+/-- Let $v = (v_i)_{i \in \iota}$ be a finite family in $E$ and let
+$T \in \mathbb{K}^{\iota \times \kappa}$. The Gram matrix of the family of linear combinations
+$w_j = \sum_i T_{ij} v_i$, $j \in \kappa$, is
+$$G(w) = T^H G(v) T.$$
+-/
 theorem gram_sum_smul [Fintype ι] (v : ι → E) (T : Matrix ι κ 𝕜) :
     gram 𝕜 (fun j ↦ ∑ i, T i j • v i) = Tᴴ * gram 𝕜 v * T := by
   ext j k
@@ -90,8 +92,11 @@ theorem gram_sum_smul [Fintype ι] (v : ι → E) (T : Matrix ι κ 𝕜) :
     Matrix.mul_assoc]
   simp [dotProduct, mulVec, Matrix.mul_apply, conjTranspose_apply, Finset.mul_sum]
 
-/-- Adjoining a vector orthogonal to every member of a family makes the Gram matrix block
-diagonal. -/
+/-- Let $v = (v_i)_{i \in \iota}$ be a family in $E$ and let $g \in E$ satisfy
+$\langle v_i, g \rangle = 0$ for all $i$. Then the Gram matrix of $v$ enlarged by $g$ is block
+diagonal:
+$$G(v, g) = \begin{bmatrix} G(v) & 0 \\ 0 & \langle g, g \rangle \end{bmatrix}.$$
+-/
 theorem gram_sumElim_of_inner_eq_zero (v : ι → E) {g : E} (hg : ∀ i, ⟪v i, g⟫_𝕜 = 0) :
     gram 𝕜 (Sum.elim v fun _ : Unit ↦ g)
       = fromBlocks (gram 𝕜 v) 0 0 (of fun _ _ ↦ ⟪g, g⟫_𝕜) := by
@@ -102,18 +107,22 @@ section Adjoin
 
 variable [Fintype ι] [DecidableEq ι]
 
-/-- Adjoining a vector orthogonal to every member of a family multiplies the Gram determinant by
-its squared norm. -/
+/-- Let $v = (v_i)_{i \in \iota}$ be a finite family in $E$ and let $g \in E$ satisfy
+$\langle v_i, g \rangle = 0$ for all $i$. Then
+$$\det G(v, g) = \det G(v) \, \langle g, g \rangle.$$
+-/
 theorem det_gram_sumElim_of_inner_eq_zero (v : ι → E) {g : E} (hg : ∀ i, ⟪v i, g⟫_𝕜 = 0) :
     (gram 𝕜 (Sum.elim v fun _ : Unit ↦ g)).det = (gram 𝕜 v).det * ⟪g, g⟫_𝕜 := by
   rw [gram_sumElim_of_inner_eq_zero v hg, det_fromBlocks_zero₂₁,
     det_unique (of fun _ _ ↦ ⟪g, g⟫_𝕜 : Matrix Unit Unit 𝕜), of_apply]
 
-/-- **Gram's determinant formula for the distance to a span**, product form.
+/-- **Gram's determinant formula for the distance to a span**, product form. Let
+$v = (v_i)_{i \in \iota}$ be a finite family in $E$, let $f \in E$, and let $P$ be the
+orthogonal projection onto $\operatorname{span}\{v_i\}$. Then
+$$\det G(v, f) = \det G(v) \, \|f - Pf\|^2.$$
 
-Adjoining `f` to a finite family `v` multiplies the Gram determinant by the squared distance from
-`f` to the span of `v`, that distance being realized by the orthogonal projection. No hypothesis on
-`v` is needed: if `v` is linearly dependent both sides vanish. -/
+No hypothesis on $v$ is needed: if $v$ is linearly dependent, both sides vanish. The norm
+$\|f - Pf\|$ is the distance from $f$ to the span of $v$, and it is cast to $\mathbb{K}$. -/
 theorem det_gram_sumElim (v : ι → E) (f : E) :
     (gram 𝕜 (Sum.elim v fun _ : Unit ↦ f)).det
       = (gram 𝕜 v).det * (‖f - (Submodule.span 𝕜 (Set.range v)).starProjection f‖ : 𝕜) ^ 2 := by
@@ -140,8 +149,9 @@ end Adjoin
 
 section Cons
 
-/-- The two ways of enlarging a `Fin n`-indexed family by one vector — as a `Sum.elim` over
-`Fin n ⊕ Unit`, or as a `Fin.cons` over `Fin (n + 1)` — have the same Gram determinant. -/
+/-- Let $v = (v_0, \dots, v_{n-1})$ be a family in $E$ and let $f \in E$. Enlarging $v$ by $f$ at
+the end, indexed by `Fin n ⊕ Unit`, or at the front, $(f, v_0, \dots, v_{n-1})$ indexed by
+`Fin (n + 1)` through `Fin.cons`, gives the same Gram determinant. -/
 theorem det_gram_sumElim_eq_det_gram_cons {n : ℕ} (v : Fin n → E) (f : E) :
     (gram 𝕜 (Sum.elim v fun _ : Unit ↦ f)).det
       = (gram 𝕜 (Fin.cons f v : Fin (n + 1) → E)).det := by
@@ -151,8 +161,11 @@ theorem det_gram_sumElim_eq_det_gram_cons {n : ℕ} (v : Fin n → E) (f : E) :
   ext i j
   induction i using Fin.cases <;> induction j using Fin.cases <;> simp [finSuccEquivSumUnit]
 
-/-- **Gram's determinant formula for the distance to a span**, product form, for a family indexed
-by `Fin n` enlarged at the front. -/
+/-- **Gram's determinant formula for the distance to a span**, product form, for a family indexed by
+`Fin n` enlarged at the front. Let $v = (v_0, \dots, v_{n-1})$ be a family in $E$, let
+$f \in E$, and let $P$ be the orthogonal projection onto $\operatorname{span}\{v_i\}$. Then
+$$\det G(f, v_0, \dots, v_{n-1}) = \det G(v) \, \|f - Pf\|^2.$$
+-/
 theorem det_gram_cons {n : ℕ} (v : Fin n → E) (f : E) :
     (gram 𝕜 (Fin.cons f v : Fin (n + 1) → E)).det
       = (gram 𝕜 v).det * (‖f - (Submodule.span 𝕜 (Set.range v)).starProjection f‖ : 𝕜) ^ 2 := by
@@ -166,10 +179,12 @@ namespace Submodule
 
 variable [Fintype ι] [DecidableEq ι]
 
-/-- **Gram's determinant formula for the distance to a span**, quotient form.
+/-- **Gram's determinant formula for the distance to a span**, quotient form. Let
+$v = (v_i)_{i \in \iota}$ be a finite linearly independent family in $E$, let $f \in E$, and let
+$P$ be the orthogonal projection onto $\operatorname{span}\{v_i\}$. Then
+$$\|f - Pf\|^2 = \frac{\det G(v, f)}{\det G(v)}.$$
 
-For a linearly independent family `v` the squared distance from `f` to the span of `v` is the
-quotient of the Gram determinant of `v` enlarged by `f` and the Gram determinant of `v`. -/
+The norm is cast to $\mathbb{K}$. Linear independence makes the denominator nonzero. -/
 theorem norm_sub_starProjection_sq_eq_det_gram_div {v : ι → E} (hv : LinearIndependent 𝕜 v)
     (f : E) :
     (‖f - (span 𝕜 (Set.range v)).starProjection f‖ : 𝕜) ^ 2
@@ -177,8 +192,12 @@ theorem norm_sub_starProjection_sq_eq_det_gram_div {v : ι → E} (hv : LinearIn
   (eq_div_iff (Matrix.det_gram_ne_zero_iff_linearIndependent.2 hv)).2
     (by rw [Matrix.det_gram_sumElim, mul_comm])
 
-/-- **Gram's determinant formula for the distance to a span** in a real inner product space:
-the quotient form, with the distance to the span written through the orthogonal projection. -/
+/-- **Gram's determinant formula for the distance to a span**, quotient form, in a real inner
+product space. Let $v = (v_i)_{i \in \iota}$ be a finite linearly independent family in a real
+inner product space $E$, let $f \in E$, and let $P$ be the orthogonal projection onto
+$\operatorname{span}\{v_i\}$. Then
+$$\|f - Pf\|^2 = \frac{\det G(v, f)}{\det G(v)}.$$
+-/
 theorem norm_sub_starProjection_sq_eq_det_gram_div_real {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {v : ι → E} (hv : LinearIndependent ℝ v) (f : E) :
     ‖f - (span ℝ (Set.range v)).starProjection f‖ ^ 2
@@ -186,15 +205,24 @@ theorem norm_sub_starProjection_sq_eq_det_gram_div_real {E : Type*} [NormedAddCo
   norm_sub_starProjection_sq_eq_det_gram_div hv f
 
 /-- **Gram's determinant formula for the distance to a span**, quotient form, with the distance
-written as an infimum. -/
+written as an infimum. Let $v = (v_i)_{i \in \iota}$ be a finite linearly independent family in
+$E$ and let $f \in E$. Then
+$$\Bigl(\inf_{x \in \operatorname{span}\{v_i\}} \|f - x\|\Bigr)^2 = \frac{\det G(v, f)}{\det
+  G(v)}.$$
+
+The infimum is cast to $\mathbb{K}$. -/
 theorem iInf_norm_sub_sq_eq_det_gram_div {v : ι → E} (hv : LinearIndependent 𝕜 v) (f : E) :
     ((⨅ x : span 𝕜 (Set.range v), ‖f - (x : E)‖ : ℝ) : 𝕜) ^ 2
       = (Matrix.gram 𝕜 (Sum.elim v fun _ : Unit ↦ f)).det / (Matrix.gram 𝕜 v).det := by
   rw [← starProjection_minimal, norm_sub_starProjection_sq_eq_det_gram_div hv]
 
-/-- **Gram's determinant formula for the distance to a span** in a real inner product space: the
-squared distance from `f` to the span of a linearly independent family `v` is the quotient of the
-Gram determinant of `v` enlarged by `f` and the Gram determinant of `v`. -/
+/-- **Gram's determinant formula for the distance to a span**, infimum form, in a real inner product
+space. Let $v = (v_i)_{i \in \iota}$ be a finite linearly independent family in a real inner
+product space $E$ and let $f \in E$. Then the squared distance from $f$ to the span of $v$ is
+the quotient of Gram determinants:
+$$\Bigl(\inf_{x \in \operatorname{span}\{v_i\}} \|f - x\|\Bigr)^2 = \frac{\det G(v, f)}{\det
+  G(v)}.$$
+-/
 theorem iInf_norm_sub_sq_eq_det_gram_div_real {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {v : ι → E} (hv : LinearIndependent ℝ v) (f : E) :
     (⨅ x : span ℝ (Set.range v), ‖f - (x : E)‖) ^ 2

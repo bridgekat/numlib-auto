@@ -13,23 +13,36 @@ import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.MeanInequalitiesPow
 
 /-!
-# Two elementary inequalities for real powers
+# Elementary inequalities for real powers
 
-* `Real.sum_rpow_le_card_rpow_mul_sum`: `(∑ᵢ aᵢ)^r ≤ n^r ∑ᵢ aᵢ^r` for nonnegative `aᵢ`, `n` the
-  number of terms and `r ≥ 1` — the convexity of `t ↦ t^r` with uniform weights
-  (`Real.rpow_arith_mean_le_arith_mean_rpow`), the crude form of the comparison between the
-  `ℓ^1` and the `ℓ^r` norms that the `p`-Laplacian energy and the `W^{1,p}` gradient norms use.
-* `Real.one_add_rpow_le`: `(1 + t)^r ≤ 2^r (1 + t^r)` for `t ≥ 0`, `r ≥ 0`.
-* `Real.summable_mul_of_summable_sq`: the product of two square-summable real families is
-  summable, by `|a b| ≤ (a² + b²) / 2`.
-* `Real.rpow_le_tangent`: for `0 ≤ α ≤ 1` the concave power `u ↦ u ^ α` lies below its tangent
-  line at `s > 0`, `u ^ α ≤ α s ^ (α - 1) u + (1 - α) s ^ α` (weighted AM–GM).
+This file collects elementary inequalities for the real power $t \mapsto t^r$ on $[0, \infty)$. For
+$r \ge 1$ the power is convex, which compares the $\ell^1$ norm and the $\ell^r$ norm of a finite
+family: $(\sum_i a_i)^r \le n^r \sum_i a_i^r$ for $n$ nonnegative terms. This crude comparison is
+the form that the $p$-Laplacian energy and the $W^{1,p}$ gradient norms use. For
+$0 \le \alpha \le 1$ the power $u \mapsto u^\alpha$ is concave and lies below each of its tangent
+lines, which is the weighted inequality of arithmetic and geometric means. The file also gives the
+bound $(1 + t)^r \le 2^r (1 + t^r)$, a crude Young inequality $a^{p-1} b \le a^p + b^p$, and the
+summability of the product of two square-summable families.
+
+## Main results
+
+* `Real.sum_rpow_le_card_rpow_mul_sum`: $(\sum_{i \in s} a_i)^r \le |s|^r \sum_{i \in s} a_i^r$ for
+  nonnegative $a_i$ and $r \ge 1$.
+* `Real.one_add_rpow_le`: $(1 + t)^p \le 2^p (1 + t^p)$ for $t \ge 0$ and $p \ge 0$.
+* `Real.summable_mul_of_summable_sq`: the product of two square-summable real families is summable.
+* `Real.rpow_le_tangent`: for $0 \le \alpha \le 1$, $s > 0$ and $u \ge 0$, $u^\alpha \le \alpha
+  s^{\alpha - 1} u + (1 - \alpha) s^\alpha$.
+* `Real.rpow_sub_one_mul_le_add`: $a^{p-1} b \le a^p + b^p$ for $a, b \ge 0$ and $p \ge 1$.
 -/
 
 namespace Real
 
-/-- `(∑ᵢ aᵢ)^p ≤ n^p ∑ᵢ aᵢ^p` for nonnegative `aᵢ`, `n = card s` and `p ≥ 1` (the convexity of
-`t ↦ t^p`, `Real.rpow_arith_mean_le_arith_mean_rpow`, with the uniform weights). -/
+/-- Let $s$ be a finite index set, let $a_i \ge 0$ for $i \in s$, and let $r \ge 1$ be real. Then
+$$\Bigl(\sum_{i \in s} a_i\Bigr)^r \le |s|^r \sum_{i \in s} a_i^r.$$
+
+This is the convexity of $t \mapsto t^r$ with uniform weights,
+`Real.rpow_arith_mean_le_arith_mean_rpow`. The factor $|s|^r$ is cruder than the sharp factor
+$|s|^{r-1}$. If $s$ is empty, both sides are $0$. -/
 theorem sum_rpow_le_card_rpow_mul_sum {ι : Type*} (s : Finset ι) {a : ι → ℝ}
     (ha : ∀ i ∈ s, 0 ≤ a i) {r : ℝ} (hr : 1 ≤ r) :
     (∑ i ∈ s, a i) ^ r ≤ (s.card : ℝ) ^ r * ∑ i ∈ s, a i ^ r := by
@@ -56,7 +69,9 @@ theorem sum_rpow_le_card_rpow_mul_sum {ι : Type*} (s : Finset ι) {a : ι → �
         gcongr
         exact hmean.trans hle
 
-/-- The elementary bound `(1 + t)^p ≤ 2^p (1 + t^p)` for `t ≥ 0`, `p ≥ 0`. -/
+/-- Let $t \ge 0$ and $p \ge 0$ be real. Then
+$$(1 + t)^p \le 2^p (1 + t^p).$$
+-/
 theorem one_add_rpow_le {t p : ℝ} (ht : 0 ≤ t) (hp : 0 ≤ p) :
     (1 + t) ^ p ≤ 2 ^ p * (1 + t ^ p) := by
   have h1 : 1 + t ≤ 2 * max 1 t := by
@@ -73,8 +88,11 @@ theorem one_add_rpow_le {t p : ℝ} (ht : 0 ≤ t) (hp : 0 ≤ p) :
       · rw [max_eq_left h, Real.one_rpow]
         linarith [Real.rpow_nonneg ht p]
 
-/-- The product of two square-summable real families is summable: `|f k g k| ≤ (f k² + g k²) / 2`
-(the case `p = q = 2` of `Real.summable_mul_of_Lp_Lq_of_nonneg`, without the signs). -/
+/-- Let $f$ and $g$ be real families such that $\sum_k f_k^2$ and $\sum_k g_k^2$ are summable. Then
+$\sum_k f_k g_k$ is summable.
+
+The proof uses $|f_k g_k| \le (f_k^2 + g_k^2) / 2$. This is the case $p = q = 2$ of
+`Real.summable_mul_of_Lp_Lq_of_nonneg` without the sign conditions. -/
 theorem summable_mul_of_summable_sq {ι : Type*} {f g : ι → ℝ} (hf : Summable fun k => f k ^ 2)
     (hg : Summable fun k => g k ^ 2) : Summable fun k => f k * g k := by
   refine Summable.of_abs (Summable.of_nonneg_of_le (fun k => abs_nonneg _) (fun k => ?_)
@@ -83,9 +101,13 @@ theorem summable_mul_of_summable_sq {ι : Type*} {f g : ι → ℝ} (hf : Summab
   nlinarith [sq_nonneg (|f k| - |g k|), abs_nonneg (f k), abs_nonneg (g k), sq_abs (f k),
     sq_abs (g k)]
 
-/-- The tangent line to the concave power `u ↦ u ^ α` at `u = s`: `u^α ≤ α s^{α-1} u +
-(1 - α) s^α`. It is the weighted arithmetic–geometric mean inequality, and it is what replaces
-Jensen's inequality in Hölder-type estimates. -/
+/-- The concave power lies below its tangent line. Let $0 \le \alpha \le 1$, $s > 0$ and $u \ge 0$.
+Then
+$$u^\alpha \le \alpha s^{\alpha - 1} u + (1 - \alpha) s^\alpha.$$
+
+The right side is the tangent line of $u \mapsto u^\alpha$ at $u = s$. The inequality is the
+weighted inequality of arithmetic and geometric means, and it replaces Jensen's inequality in
+estimates of Hölder type. -/
 theorem rpow_le_tangent {u s α : ℝ} (hu : 0 ≤ u) (hs : 0 < s) (hα0 : 0 ≤ α)
     (hα1 : α ≤ 1) : u ^ α ≤ α * s ^ (α - 1) * u + (1 - α) * s ^ α := by
   have h := Real.geom_mean_le_arith_mean2_weighted hα0 (by linarith : (0 : ℝ) ≤ 1 - α)
@@ -100,7 +122,11 @@ theorem rpow_le_tangent {u s α : ℝ} (hu : 0 ≤ u) (hs : 0 < s) (hα0 : 0 ≤
 
 end Real
 
-/-- `a^{p−1} b ≤ a^p + b^p` for `a, b ≥ 0` and `p ≥ 1` (the crude Young inequality). -/
+/-- A crude **Young inequality**. Let $a, b \ge 0$ and $p \ge 1$ be real. Then
+$$a^{p-1} b \le a^p + b^p.$$
+
+The powers are real powers, so $a^0 = 1$ also for $a = 0$, and at $p = 1$ the inequality is
+$b \le a + b$. -/
 theorem Real.rpow_sub_one_mul_le_add {a b p : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 ≤ p) :
     a ^ (p - 1) * b ≤ a ^ p + b ^ p := by
   rcases le_total a b with hab | hab

@@ -9,30 +9,41 @@ import Mathlib.Analysis.InnerProductSpace.LinearMap
 /-!
 # Stability of approximate high-order minimizers
 
-A small Taylor-decrement measure `φ^δ_{f,S,j}(x) = taylorMeasure (ftaylorSeries ℝ f x) j δ S`
-bounds the possible decrease of `f` on the feasible part `x + S` of a neighbourhood of `x`, when
-`∇^j f` is Lipschitz continuous near `x` ([cartis2022evaluation], Theorem 12.1.8 for `S = univ`
-and no slack, Theorem 14.2.1 with a feasible set and an additive slack `η`). Applied to the
-Lagrangian `f - ⟪y, c⟫` it gives Theorem 14.3.2.
+Let $E$ be a real normed space, let $f : E \to \mathbb{R}$, let $S \subseteq E$ be a set of
+admissible displacements, and let
+$$\phi^\delta_{f,S,j}(x) = \sup_{d \in S,\ \|d\| \le \delta} \bigl(T_j(x, 0) - T_j(x, d)\bigr)$$
+be the Taylor-decrement measure, where $T_j(x, d)$ is the Taylor polynomial of $f$ of order $j$ at
+$x$ evaluated at the displacement $d$. If $\nabla^j f$ is $L$-Lipschitz near $x$, a small value of
+$\phi^\delta_{f,S,j}(x)$ bounds the decrease of $f$ on the displacements $d \in S$ with
+$\|d\| \le \delta$. This is Theorem 12.1.8 of [cartis2022evaluation] for $S = E$ without slack, and
+Theorem 14.2.1 for a feasible set and an additive slack $\eta$. Applied to the Lagrangian
+$f - \langle y, c \rangle$ of an equality-constrained problem, it gives Theorem 14.3.2.
 
 ## Main results
 
-* `le_of_taylorMeasure_le`: (12.1.39) with slack `η`;
-* `le_of_taylorMeasure_le_of_mul_le`: (14.2.6) (and (12.1.35)), radius condition written
-  multiplicatively, `L ‖d‖ ≤ (j+1) ε`, so that `L = 0` needs no division;
-* `le_of_taylorMeasure_le_of_lipschitz_zero`: (14.2.7) (and (12.1.36));
-* `le_of_lagrangian_taylorMeasure_le`: (14.3.10), with the variants
-  `le_of_lagrangian_taylorMeasure_le_of_eq` and `le_of_lagrangian_taylorMeasure_le_of_eq_zero`
-  for (14.3.12).
+* `Optimization.le_of_taylorMeasure_le`: the estimate (12.1.39), with the slack $\eta$.
+* `Optimization.le_of_taylorMeasure_le_of_mul_le`: the estimate (14.2.6), and (12.1.35), under the
+  radius condition $L \|d\| \le (j + 1) \varepsilon$.
+* `Optimization.le_of_taylorMeasure_le_of_lipschitz_zero`: the estimate (14.2.7), and (12.1.36), for
+  a constant $\nabla^j f$.
+* `Optimization.le_of_lagrangian_taylorMeasure_le`: the estimate (14.3.10) of Theorem 14.3.2, with
+  the variants `Optimization.le_of_lagrangian_taylorMeasure_le_of_eq` and
+  `Optimization.le_of_lagrangian_taylorMeasure_le_of_eq_zero` for (14.3.12).
 
 ## Implementation notes
 
-Smoothness and Lipschitz hypotheses are local, on `closedBall x δ`, in the hypothesis shape of
-`Numlib/Analysis/Calculus/MultivariateTaylor/Remainder` (implied by the book's "open
-neighbourhood of radius larger than `δ_j`"). Theorem 14.3.2's "neighbourhood of diameter `δ_j`"
-is read as radius `δ_j`: otherwise displacements of norm `δ_j` leave it. Its componentwise
-Lipschitz constant `L_{c,j}` is read as the constant of the vector-valued derivative `∇^j c`
-(operator norm into `F`); with componentwise constants an extra factor `√m` would appear.
+* The measure $\phi^\delta_{f,S,j}(x)$ is `Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ S`.
+* The smoothness and Lipschitz hypotheses are local, on the closed ball of radius $\delta$ about
+  $x$, in the form of `Numlib.Analysis.Calculus.MultivariateTaylor.Remainder`. The source assumes
+  them on an open neighborhood of radius larger than $\delta_j$, which implies this form.
+* The radius condition is written multiplicatively, $L \|d\| \le (j + 1) \varepsilon$, so that the
+  case $L = 0$ needs no division.
+* Theorem 14.3.2 of [cartis2022evaluation] assumes a "neighbourhood of diameter $\delta_j$". This is
+  read as radius $\delta_j$, because otherwise displacements of norm $\delta_j$ leave the
+  neighborhood.
+* The componentwise Lipschitz constant $L_{c,j}$ of Theorem 14.3.2 is read as the Lipschitz constant
+  of the vector-valued derivative $\nabla^j c$, with the operator norm into $F$. With componentwise
+  constants an extra factor $\sqrt{m}$ would appear.
 -/
 
 open Metric
@@ -44,10 +55,17 @@ namespace Optimization
 
 variable {f : E → ℝ} {x : E} {j : ℕ} {δ ε η L : ℝ} {S : Set E}
 
-/-- **Stability of approximate minimizers** ([cartis2022evaluation], (12.1.39), with the slack
-`η` of Theorem 14.2.1). If `f` is `C^j` near `x` with `L`-Lipschitz `∇^j f` on `closedBall x δ`
-and `φ^δ_{f,S,j}(x) ≤ ε δ^j/j! + η`, then for every `d ∈ S` with `‖d‖ ≤ δ`,
-`f(x + d) ≥ f(x) - L/(j+1)! ‖d‖ δ^j - ε δ^j/j! - η`. -/
+/-- **Stability of approximate minimizers**, the estimate (12.1.39) of [cartis2022evaluation] with
+the slack $\eta$ of Theorem 14.2.1. Let $f$ be $j$ times continuously differentiable at every
+point of the closed ball $\bar B(x, \delta)$, and let $\nabla^j f$ be $L$-Lipschitz on
+$\bar B(x, \delta)$ with $L \ge 0$. Suppose that
+$$\phi^\delta_{f,S,j}(x) \le \frac{\varepsilon \delta^j}{j!} + \eta.$$
+Then for every $d \in S$ with $\|d\| \le \delta$,
+$$f(x + d) \ge f(x) - \frac{L}{(j + 1)!} \|d\| \delta^j - \frac{\varepsilon \delta^j}{j!} -
+  \eta.$$
+
+The measure $\phi^\delta_{f,S,j}(x)$ is `Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ
+S`. -/
 theorem le_of_taylorMeasure_le (hf : ∀ y ∈ closedBall x δ, ContDiffAt ℝ j f y)
     (hL : IteratedFDerivLipschitzOn f j L (closedBall x δ)) (hL0 : 0 ≤ L)
     (h : taylorMeasure (ftaylorSeries ℝ f x) j δ S ≤ ε * δ ^ j / j ! + η)
@@ -69,9 +87,14 @@ theorem le_of_taylorMeasure_le (hf : ∀ y ∈ closedBall x δ, ContDiffAt ℝ j
     gcongr
   linarith [(abs_le.1 hrem).1]
 
-/-- **Stability with a radius condition** ([cartis2022evaluation], (14.2.6), and (12.1.35) for
-`S = univ`, `η = 0`): under the hypotheses of `le_of_taylorMeasure_le`, if moreover
-`L ‖d‖ ≤ (j+1) ε`, then `f(x + d) ≥ f(x) - 2 ε δ^j/j! - η`. -/
+/-- **Stability with a radius condition**, the estimate (14.2.6) of [cartis2022evaluation], and
+(12.1.35) for $S = E$ and $\eta = 0$. Let $f$ be $j$ times continuously differentiable at every
+point of $\bar B(x, \delta)$, let $\nabla^j f$ be $L$-Lipschitz on $\bar B(x, \delta)$ with
+$L \ge 0$, and suppose that $\phi^\delta_{f,S,j}(x) \le \varepsilon \delta^j / j! + \eta$. Then
+for every $d \in S$ with $\|d\| \le \delta$ and $L \|d\| \le (j + 1) \varepsilon$,
+$$f(x + d) \ge f(x) - \frac{2 \varepsilon \delta^j}{j!} - \eta.$$
+
+The radius condition is written as a product, so that $L = 0$ needs no division. -/
 theorem le_of_taylorMeasure_le_of_mul_le (hf : ∀ y ∈ closedBall x δ, ContDiffAt ℝ j f y)
     (hL : IteratedFDerivLipschitzOn f j L (closedBall x δ)) (hL0 : 0 ≤ L)
     (h : taylorMeasure (ftaylorSeries ℝ f x) j δ S ≤ ε * δ ^ j / j ! + η)
@@ -91,9 +114,13 @@ theorem le_of_taylorMeasure_le_of_mul_le (hf : ∀ y ∈ closedBall x δ, ContDi
   have e : 2 * ε * δ ^ j / j ! = ε * δ ^ j / j ! + ε * δ ^ j / j ! := by ring
   linarith
 
-/-- **Stability with a constant `j`-th derivative** ([cartis2022evaluation], (14.2.7), and
-(12.1.36) for `S = univ`, `η = 0`): if `∇^j f` is constant on `closedBall x δ` (Lipschitz with
-constant `0`), then `f(x + d) ≥ f(x) - ε δ^j/j! - η` for every `d ∈ S` with `‖d‖ ≤ δ`. -/
+/-- **Stability with a constant $j$-th derivative**, the estimate (14.2.7) of
+[cartis2022evaluation], and (12.1.36) for $S = E$ and $\eta = 0$. Let $f$ be $j$ times
+continuously differentiable at every point of $\bar B(x, \delta)$, let $\nabla^j f$ be constant
+on $\bar B(x, \delta)$ (Lipschitz with constant $0$), and suppose that $\phi^\delta_{f,S,j}(x)
+\le \varepsilon \delta^j / j! + \eta$. Then for every $d \in S$ with $\|d\| \le \delta$,
+$$f(x + d) \ge f(x) - \frac{\varepsilon \delta^j}{j!} - \eta.$$
+-/
 theorem le_of_taylorMeasure_le_of_lipschitz_zero
     (hf : ∀ y ∈ closedBall x δ, ContDiffAt ℝ j f y)
     (hL : IteratedFDerivLipschitzOn f j 0 (closedBall x δ))
@@ -107,14 +134,27 @@ section Lagrangian
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] {c : E → F} {y : F}
   {ε₀ Lf Lc : ℝ}
 
-/-- `1 + a ≤ √2 √(1 + a²)`, i.e. `‖(1, y)‖ ≥ (1 + ‖y‖)/√2`. -/
+/-- For every real $a$, $1 + a \le \sqrt{2} \sqrt{1 + a^2}$; with $a = \|y\|$ this is
+$\|(1, y)\| \ge (1 + \|y\|) / \sqrt{2}$. -/
 private theorem one_add_le_sqrt_two_mul_sqrt (a : ℝ) : 1 + a ≤ √2 * √(1 + a ^ 2) := by
   rw [← Real.sqrt_mul zero_le_two]
   refine Real.le_sqrt_of_sq_le ?_
   nlinarith [sq_nonneg (1 - a)]
 
-/-- Core of Theorem 14.3.2 of [cartis2022evaluation]: the stability estimate (14.3.13) for the
-Lagrangian `ℒ = f - ⟪y, c⟫`, whose `j`-th derivative is `(Lf + ‖y‖ Lc)`-Lipschitz. -/
+/-- The stability estimate (14.3.13) of [cartis2022evaluation] for the Lagrangian, the main step of
+Theorem 14.3.2. Let $F$ be a real inner product space, let $f : E \to \mathbb{R}$ and
+$c : E \to F$ be $j$ times continuously differentiable at every point of $\bar B(x, \delta)$,
+and let $\nabla^j f$ and $\nabla^j c$ be Lipschitz on $\bar B(x, \delta)$ with constants
+$L_f \ge 0$ and $L_c \ge 0$. Let $\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$ and suppose
+that
+$$\phi^\delta_{\mathcal{L},S,j}(x) \le \frac{\varepsilon \sqrt{1 + \|y\|^2} \, \delta^j}{j!} +
+  \eta.$$
+Then for every $d \in S$ with $\|d\| \le \delta$ and $\sqrt{2} \max(L_f, L_c) \|d\| \le (j + 1)
+\varepsilon$,
+$$\mathcal{L}(x + d) \ge \mathcal{L}(x) - \frac{2 \varepsilon \sqrt{1 + \|y\|^2} \,
+  \delta^j}{j!} - \eta.$$
+
+The $j$-th derivative of $\mathcal{L}$ is $(L_f + \|y\| L_c)$-Lipschitz. -/
 theorem lagrangian_le_of_taylorMeasure_le (hf : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j f z)
     (hc : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j c z)
     (hLf : IteratedFDerivLipschitzOn f j Lf (closedBall x δ))
@@ -149,13 +189,23 @@ theorem lagrangian_le_of_taylorMeasure_le (hf : ∀ z ∈ closedBall x δ, ContD
   convert this using 2
   ring
 
-/-- **Local sufficiency of the Lagrangian for approximate minimizers** ([cartis2022evaluation],
-Theorem 14.3.2, (14.3.10)). Let `f : E → ℝ` and `c : E → F` be `C^j` near `x` with `Lf`- and
-`Lc`-Lipschitz `j`-th derivatives on `closedBall x δ`, `‖c(x)‖ ≤ ε₀`, and let the Lagrangian
-`ℒ = f - ⟪y, c⟫` satisfy `φ^δ_{ℒ,V,j}(x) ≤ ε ‖(1, y)‖ δ^j/j! + η`, where
-`‖(1, y)‖ = √(1 + ‖y‖²)`. Then for every `d ∈ V` with `‖d‖ ≤ δ`, `‖c(x + d)‖ ≤ ε₀` and
-`√2 max(Lf, Lc) ‖d‖ ≤ (j+1) ε` (14.3.11),
-`f(x + d) ≥ f(x) - 2 ε₀ ‖y‖ - 2 ε ‖(1, y)‖ δ^j/j! - η`. -/
+/-- **Local sufficiency of the Lagrangian for approximate minimizers**, the estimate (14.3.10) of
+Theorem 14.3.2 of [cartis2022evaluation]. Let $F$ be a real inner product space, let
+$f : E \to \mathbb{R}$ and $c : E \to F$ be $j$ times continuously differentiable at every point
+of $\bar B(x, \delta)$, and let $\nabla^j f$ and $\nabla^j c$ be Lipschitz on
+$\bar B(x, \delta)$ with constants $L_f \ge 0$ and $L_c \ge 0$. Let
+$\|c(x)\| \le \varepsilon_0$, let $\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$, and suppose
+that
+$$\phi^\delta_{\mathcal{L},S,j}(x) \le \frac{\varepsilon \|(1, y)\| \, \delta^j}{j!} + \eta,
+  \qquad \|(1, y)\| = \sqrt{1 + \|y\|^2}.$$
+Then for every $d \in S$ with $\|d\| \le \delta$, $\|c(x + d)\| \le \varepsilon_0$ and $\sqrt{2}
+\max(L_f, L_c) \|d\| \le (j + 1) \varepsilon$ (the condition (14.3.11)),
+$$f(x + d) \ge f(x) - 2 \varepsilon_0 \|y\| - \frac{2 \varepsilon \|(1, y)\| \, \delta^j}{j!} -
+  \eta.$$
+
+The neighborhood of "diameter $\delta_j$" in the source is read as the closed ball of radius
+$\delta$, and the Lipschitz constant $L_c$ is that of the vector-valued $\nabla^j c$; see the
+module doc comment. -/
 theorem le_of_lagrangian_taylorMeasure_le (hf : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j f z)
     (hc : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j c z)
     (hLf : IteratedFDerivLipschitzOn f j Lf (closedBall x δ))
@@ -176,8 +226,11 @@ theorem le_of_lagrangian_taylorMeasure_le (hf : ∀ z ∈ closedBall x δ, ContD
       _ = 2 * ε₀ * ‖y‖ := by ring
   linarith
 
-/-- (14.3.12) of [cartis2022evaluation], first case: if `c(x + d) = c(x)`, the `ε₀` term of
-Theorem 14.3.2 can be dropped. -/
+/-- The first case of (14.3.12) of [cartis2022evaluation]: under the hypotheses of
+`Optimization.le_of_lagrangian_taylorMeasure_le`, but with $c(x + d) = c(x)$ in place of the
+bounds $\|c(x)\| \le \varepsilon_0$ and $\|c(x + d)\| \le \varepsilon_0$,
+$$f(x + d) \ge f(x) - \frac{2 \varepsilon \sqrt{1 + \|y\|^2} \, \delta^j}{j!} - \eta.$$
+The $\varepsilon_0$ term of Theorem 14.3.2 is dropped. -/
 theorem le_of_lagrangian_taylorMeasure_le_of_eq (hf : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j f z)
     (hc : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j c z)
     (hLf : IteratedFDerivLipschitzOn f j Lf (closedBall x δ))
@@ -191,8 +244,12 @@ theorem le_of_lagrangian_taylorMeasure_le_of_eq (hf : ∀ z ∈ closedBall x δ,
   rw [hcd] at h1
   linarith
 
-/-- (14.3.12) of [cartis2022evaluation], second case: if `c(x + d) = 0` and `⟪y, c(x)⟫ ≤ 0`, the
-`ε₀` term of Theorem 14.3.2 can be dropped. -/
+/-- The second case of (14.3.12) of [cartis2022evaluation]: under the hypotheses of
+`Optimization.le_of_lagrangian_taylorMeasure_le`, but with $c(x + d) = 0$ and
+$\langle y, c(x) \rangle \le 0$ in place of the bounds $\|c(x)\| \le \varepsilon_0$ and
+$\|c(x + d)\| \le \varepsilon_0$,
+$$f(x + d) \ge f(x) - \frac{2 \varepsilon \sqrt{1 + \|y\|^2} \, \delta^j}{j!} - \eta.$$
+The $\varepsilon_0$ term of Theorem 14.3.2 is dropped. -/
 theorem le_of_lagrangian_taylorMeasure_le_of_eq_zero
     (hf : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j f z)
     (hc : ∀ z ∈ closedBall x δ, ContDiffAt ℝ j c z)

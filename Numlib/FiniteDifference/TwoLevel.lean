@@ -8,42 +8,47 @@ import Mathlib.Analysis.Normed.Operator.Basic
 /-!
 # Two-level difference schemes: consistency and stability give convergence
 
-A *two-level scheme* advances an approximation by a fixed amplification operator and a source term,
-`v^{m+1} = Q v^m + h g^m`, where `h` is the step in the evolution variable.  The exact values `u^m`
-of the problem being approximated satisfy the same recursion up to a local truncation error,
-`u^{m+1} = Q u^m + h g^m + h τ^m`.  Subtracting, the error `e^m = u^m - v^m` obeys `e^{m+1} = Q e^m
-+ h τ^m` with `e^0 = 0`, whose closed form is
+A two-level scheme advances an approximation by a fixed amplification operator $Q$ and a source
+term, $v^{m+1} = Q v^m + h g^m$, where $h$ is the step in the evolution variable. The exact values
+$u^m$ of the approximated problem satisfy the same recursion up to a local truncation error,
+$u^{m+1} = Q u^m + h g^m + h \tau^m$. The error $e^m = u^m - v^m$ therefore satisfies
+$e^{m+1} = Q e^m + h \tau^m$ with $e^0 = 0$, and its closed form is
+$$e^m = h \sum_{l < m} Q^{m-1-l} \tau^l.$$
 
-  `e^m = h ∑_{l < m} Q^{m - 1 - l} τ^l`.
-
-So the whole theory of this scheme is a geometric-sum estimate: if the powers of `Q` are bounded by
-`M₀` up to step `N` (*stability*) and the truncation errors are bounded by `δ` (*consistency*), then
-over a fixed horizon `N h ≤ T` the error never exceeds `M₀ T δ`.  That is
-`FiniteDifference.norm_sub_le_of_stable`; the closed form itself is
-`FiniteDifference.sub_eq_smul_sum`, and the two are the whole content of the module.
-
-The statement is an inequality with explicit constants: no limit, no order symbol, and no family
-indexed by a mesh parameter.  Consistency, order, stability and convergence *of a family* of schemes
-as the mesh is refined are each this inequality together with a limit, and belong wherever that
-family is defined.  The space is a real normed space, because the step `h` is a real scalar acting
-on its elements.
-
-The result is Theorem 6.3.2 of [han2009theoretical], where `δ = c (h_x^{p₁} + h^{p₂})` turns it into
+The convergence theorem is a geometric-sum estimate on this formula. If the powers of $Q$ are
+bounded by $M_0$ up to step $N$ (stability) and the truncation errors are bounded by $\delta$
+(consistency), then over a finite horizon $N h \le T$ the error is at most $M_0 T \delta$. This is
+Theorem 6.3.2 of [han2009theoretical], where $\delta = c (h_x^{p_1} + h^{p_2})$ turns the bound into
 the convergence order of a scheme.
+
+## Main results
+
+* `FiniteDifference.sub_eq_smul_sum`: the discrete Duhamel formula
+  $u^k - v^k = h \sum_{l < k} Q^{k-1-l} \tau^l$.
+* `FiniteDifference.norm_sub_le_of_stable`: a stable, consistent two-level scheme has the error
+  bound $\|u^m - v^m\| \le M_0 T \delta$ for $m \le N$.
+
+## Implementation notes
+
+* The statement is an inequality with explicit constants. It has no limit, no order symbol, and no
+  family indexed by a mesh parameter. Consistency, order, stability and convergence of a family of
+  schemes as the mesh is refined are each this inequality together with a limit, and they are
+  defined with that family, as in `FiniteDifference.IsStableFamily`.
+* The space is a real normed space, because the step $h$ is a real scalar that acts on its elements.
 -/
 
 namespace FiniteDifference
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The discrete Duhamel formula.**  Subtracting the recursion satisfied by the computed values
-from the one satisfied by the exact values leaves `e^{m+1} = Q e^m + h τ^m` with `e^0 = 0`, whose
-solution is
+/-- The **discrete Duhamel formula**. Let $E$ be a real normed space, let $Q \colon E \to E$ be a
+continuous linear map, let $h \in \mathbb{R}$, and let $N \in \mathbb{N}$. Let the sequences
+$u, v, g, \tau$ in $E$ satisfy $v^{m+1} = Q v^m + h g^m$ and
+$u^{m+1} = Q u^m + h g^m + h \tau^m$ for $m < N$, and $u^0 = v^0$. Then for every $k \le N$,
+$$u^k - v^k = h \sum_{l < k} Q^{k-1-l} \tau^l.$$
 
-  `u^k - v^k = h ∑_{l < k} Q^{k - 1 - l} (τ^l)`.
-
-Nothing but linearity of `Q` is used: no bound on the powers of `Q`, none on the truncation errors,
-and no sign condition on `h`. -/
+The proof uses only the linearity of $Q$. It needs no bound on the powers of $Q$, no bound on
+the truncation errors $\tau^l$, and no sign condition on $h$. -/
 theorem sub_eq_smul_sum {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h : ℝ} {N : ℕ}
     (hv : ∀ m < N, v (m + 1) = Q (v m) + h • g m)
     (hu : ∀ m < N, u (m + 1) = Q (u m) + h • g m + h • τ m) (h0 : u 0 = v 0) {k : ℕ}
@@ -69,16 +74,19 @@ theorem sub_eq_smul_sum {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h : ℝ} {N 
       · simp
     rw [hu n hnN, hv n hnN, hstep, hn, map_smul, map_sum, hrhs, smul_add]
 
-/-- **Convergence of a stable, consistent two-level scheme.**  Let `Q : E →L[ℝ] E`, let the computed
-values `v` satisfy `v^{m+1} = Q v^m + h g^m` and the exact values `u` satisfy `u^{m+1} = Q u^m + h
-g^m + h τ^m` for `m < N`, with the same starting value.  If the scheme is stable up to step `N`, `‖Q
-^ m‖ ≤ M₀` for `m ≤ N`, the horizon is finite, `N h ≤ T`, and the local truncation errors satisfy
-`‖τ^m‖ ≤ δ`, then
+/-- **Convergence of a stable, consistent two-level scheme.** Let $E$ be a real normed space, let
+$Q \colon E \to E$ be a continuous linear map, let $h \ge 0$, $\delta \ge 0$, $T$ and $M_0$ be
+real numbers, and let $N \in \mathbb{N}$ with $N h \le T$. Let the computed values $v$ satisfy
+$v^{m+1} = Q v^m + h g^m$ and the exact values $u$ satisfy $u^{m+1} = Q u^m + h g^m + h \tau^m$
+for $m < N$, with $u^0 = v^0$. Assume that the scheme is stable up to step $N$, that is
+$\|Q^m\| \le M_0$ for $m \le N$, and that the local truncation errors satisfy
+$\|\tau^m\| \le \delta$ for $m < N$. Then
+$$\|u^m - v^m\| \le M_0 T \delta \quad \text{for every } m \le N.$$
 
-  `‖u^m - v^m‖ ≤ M₀ * T * δ`  for every `m ≤ N`.
-
-The bound is uniform in `m`: the error accumulates linearly in the number of steps, and `N h ≤ T`
-converts that into a constant depending only on the horizon. -/
+This is Theorem 6.3.2 of [han2009theoretical]. The bound is uniform in $m$: the error grows at
+most linearly in the number of steps, and the condition $N h \le T$ turns this growth into a
+constant that depends only on the horizon. The proof bounds the discrete Duhamel formula
+`FiniteDifference.sub_eq_smul_sum` term by term. -/
 theorem norm_sub_le_of_stable {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h T M₀ δ : ℝ} {N : ℕ}
     (hh : 0 ≤ h) (hδ : 0 ≤ δ) (hT : (N : ℝ) * h ≤ T)
     (hv : ∀ m < N, v (m + 1) = Q (v m) + h • g m)

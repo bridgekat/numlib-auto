@@ -11,42 +11,54 @@ import Numlib.Analysis.Fourier.FourierIntegral
 /-!
 # Periodisation of an integrable function
 
-Upstreaming candidate: nothing here is specific to numerical analysis.
+The **periodisation** of a function $g \colon \mathbb{R} \to E$ at period $T > 0$ is the
+$T$-periodic function $x \mapsto \sum_{n \in \mathbb{Z}} g(x + nT)$. Its integral over one period is
+the integral of $g$ over the line. With a $T$-periodic weight, this gives the identity on which the
+Fourier side of wavelet theory runs: the Fourier coefficients of the periodisation of $g$ are the
+values of the Fourier transform $\hat{g}$ on the dual lattice,
+$$\int_0^T e^{-2 \pi i n x / T} \sum_{k \in \mathbb{Z}} g(x + kT) \, dx = \hat{g}(n / T).$$
+The module also proves the dual statement, by Poisson summation: the Fourier transform of a sampled
+signal is the periodisation of the Fourier transform of the signal.
 
-The **periodisation** of `g : ℝ → E` at period `T` is `Σ_{n ∈ ℤ} g (x + n T)`, a `T`-periodic
-function whose integral over one period is the integral of `g` over the line.  Weighting by a
-`T`-periodic factor gives the identity the Fourier side of wavelet theory runs on: the Fourier
-coefficients of the periodisation of `g` are the values of the Fourier transform of `g` on the dual
-lattice,
+The identity is one step of the periodisation criterion for the orthonormality of the integer
+translates of a function $\varphi \in L^2(\mathbb{R})$. With $g = |\hat{\varphi}|^2$, it identifies
+the Fourier coefficients of $\sum_k |\hat{\varphi}(\cdot + k)|^2$ with the integrals
+$\int_{\mathbb{R}} |\hat{\varphi}(\xi)|^2 e^{-2 \pi i n \xi} \, d\xi$. Two steps of that criterion
+are not in this module: the identification of these integrals with the inner products
+$\langle \varphi(\cdot - n), \varphi \rangle$, which is Plancherel's theorem together with the
+translation rule for the $L^2$ Fourier transform; and the $L^1$ uniqueness theorem on the circle,
+which says that a function whose Fourier coefficients are those of the constant $1$ equals $1$
+almost everywhere.
 
-`∫_0^T 𝐞[-n x / T] (Σ_k g (x + k T)) dx = ĝ (n / T)`.
+## Main definitions
 
-This is one step of the periodisation criterion for orthonormality of the integer translates of a
-`φ ∈ L²(ℝ)`: with `g = |φ̂|²` it identifies the Fourier coefficients of `∑_k |φ̂(· + k)|²` with the
-integrals `∫_ℝ |φ̂(ξ)|² 𝐞[-nξ] dξ`.  Two steps of that criterion are *not* here: identifying those
-integrals with the inner products `⟪φ(· - n), φ⟫`, which is Plancherel together with the
-translation rule for the `L²` Fourier transform, and the `L¹` uniqueness theorem on the circle,
-that a function whose Fourier coefficients are those of the constant `1` equals `1` almost
-everywhere.
+* `zmultiplesEquivInt`: the bijection $n \mapsto nT$ from $\mathbb{Z}$ onto the lattice
+  $T \mathbb{Z}$.
+* `periodise`: the periodisation $x \mapsto \sum_{n \in \mathbb{Z}} g(x + nT)$.
 
-## Main statements
+## Main results
 
-* `integral_periodise`: `∫_{(0, T]} periodise T g = ∫_ℝ g` for integrable `g`.
-* `integral_mul_periodise`: the same with a bounded `T`-periodic weight, which passes through the
-  sum.
-* `integral_fourierChar_mul_periodise`: the Fourier-coefficient form, `T = 1`.
-* `Real.tsum_fourierIntegral_sub_div_eq_tsum_mul`: the dual statement, **the transform of a
-  sampled signal is the periodisation of its transform** — for `g` continuous with polynomial
-  decay, `∑_j ĝ(ν − j/Δt) = Δt ∑_k g(k Δt) e^{−2πiνkΔt}`, the aliasing formula of
-  [quarteroni2000numerical] (10.82), from Mathlib's Poisson summation
-  `Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable` applied to the rescaled, modulated signal.
+* `integral_periodise`: $\int_{(0, T]} \sum_n g(x + nT) \, dx = \int_{\mathbb{R}} g$ for integrable
+  $g$.
+* `integral_mul_periodise`: the same identity with a bounded $T$-periodic weight, which passes
+  through the sum.
+* `integral_fourierChar_mul_periodise`: for $T = 1$, the Fourier coefficients of the periodisation
+  of $g$ are the values $\hat{g}(n)$.
+* `Real.tsum_fourierIntegral_sub_div_eq_tsum_mul`: the aliasing formula $\sum_j \hat{g}(\nu - j /
+  \Delta t) = \Delta t \sum_k g(k \Delta t) e^{-2 \pi i \nu k \Delta t}$ of
+  [quarteroni2000numerical], (10.82), for $g$ continuous with polynomial decay.
 
 ## Implementation notes
 
-The proof is `MeasureTheory.IsAddFundamentalDomain.integral_eq_tsum''` for the fundamental domain
-`Ioc 0 T` of the lattice `T ℤ`, followed by `MeasureTheory.integral_tsum` to exchange the sum with
-the integral; the `L¹` bound the exchange needs is the same decomposition for `lintegral`, which
-needs no integrability.  The reindexing `ℤ ≃ T ℤ` is `zmultiplesEquivInt`.
+* The proof of `integral_periodise` is `MeasureTheory.IsAddFundamentalDomain.integral_eq_tsum''` for
+  the fundamental domain $(0, T]$ of the lattice $T \mathbb{Z}$, followed by
+  `MeasureTheory.integral_tsum` to exchange the sum with the integral. The $L^1$ bound that the
+  exchange needs is the same decomposition for the lower Lebesgue integral, which needs no
+  integrability. The lattice is reindexed by $\mathbb{Z}$ through `zmultiplesEquivInt`.
+* The aliasing formula is Mathlib's Poisson summation
+  `Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable`, applied to the rescaled and modulated
+  signal.
+* Nothing in this module is specific to numerical analysis.
 -/
 
 noncomputable section
@@ -55,7 +67,11 @@ open MeasureTheory Set
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The lattice `T ℤ ⊆ ℝ` is indexed by `ℤ`, for `T > 0`. -/
+/-- For $T > 0$, the bijection $n \mapsto nT$ from $\mathbb{Z}$ onto the lattice
+$T \mathbb{Z} = \{nT : n \in \mathbb{Z}\}$ of $\mathbb{R}$.
+
+The lattice is `AddSubgroup.zmultiples T`. The bijection turns the sums over the lattice that
+Mathlib's theorems on fundamental domains produce into sums over $\mathbb{Z}$. -/
 def zmultiplesEquivInt {T : ℝ} (hT : 0 < T) : ℤ ≃ AddSubgroup.zmultiples T :=
   Equiv.ofBijective
     (fun n : ℤ => (⟨n • T, AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩⟩ :
@@ -65,22 +81,30 @@ def zmultiplesEquivInt {T : ℝ} (hT : 0 < T) : ℤ ≃ AddSubgroup.zmultiples T
         obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp y.2
         exact ⟨k, Subtype.ext hk⟩⟩
 
+/-- For $T > 0$ and $n \in \mathbb{Z}$, the bijection sends $n$ to the real number $nT$. -/
 @[simp]
 theorem zmultiplesEquivInt_apply {T : ℝ} (hT : 0 < T) (n : ℤ) :
     ((zmultiplesEquivInt hT n : AddSubgroup.zmultiples T) : ℝ) = (n : ℝ) * T := by
   change n • T = _
   rw [zsmul_eq_mul]
 
-/-- The **periodisation** of `g` at period `T`: the `T`-periodic function `∑_{n ∈ ℤ} g (x + n T)`.
-The sum converges for almost every `x` when `g` is integrable, and is `0` by convention where it
-does not. -/
+/-- The **periodisation** of a function $g \colon \mathbb{R} \to E$ at period $T$: the function
+$$x \mapsto \sum_{n \in \mathbb{Z}} g(x + nT).$$
+
+The sum is a Lean `tsum`, so the value is $0$ at the points $x$ where the family $(g(x + nT))_n$
+is not summable. For $T > 0$ and integrable $g$, the sum converges for almost every $x$, and the
+periodisation is $T$-periodic. -/
 def periodise (T : ℝ) (g : ℝ → E) (x : ℝ) : E := ∑' n : ℤ, g (x + n * T)
 
 omit [NormedSpace ℝ E] in
+/-- The defining formula of the periodisation: its value at $x$ is
+$\sum_{n \in \mathbb{Z}} g(x + nT)$. -/
 theorem periodise_apply (T : ℝ) (g : ℝ → E) (x : ℝ) :
     periodise T g x = ∑' n : ℤ, g (x + n * T) := rfl
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- For $T > 0$, $n \in \mathbb{Z}$ and $x \in \mathbb{R}$, the translate of $x$ by the lattice
+element of index $n$ is $x + nT$. Hence $g$ takes the value $g(x + nT)$ there. -/
 theorem vadd_zmultiplesEquivInt {T : ℝ} (hT : 0 < T) (n : ℤ) (x : ℝ) (g : ℝ → E) :
     g ((zmultiplesEquivInt hT n) +ᵥ x) = g (x + (n : ℝ) * T) := by
   congr 1
@@ -93,8 +117,11 @@ private theorem isAddFundamentalDomain_Ioc_zero {T : ℝ} (hT : 0 < T) :
   simpa using isAddFundamentalDomain_Ioc hT 0
 
 omit [NormedSpace ℝ E] in
-/-- The `lintegral` form of `integral_periodise`, which needs no integrability: the integrals of
-`‖g (· + n T)‖ₑ` over one period add up to the integral of `‖g‖ₑ` over `ℝ`. -/
+/-- Let $T > 0$ and $g \colon \mathbb{R} \to E$. Then, for the lower Lebesgue integral of the
+extended norm,
+$$\sum_{n \in \mathbb{Z}} \int_{(0, T]} \|g(x + nT)\| \, dx = \int_{\mathbb{R}} \|g(x)\| \,
+  dx.$$
+This form of `integral_periodise` needs no integrability. -/
 theorem tsum_setLIntegral_Ioc_enorm_add_mul {T : ℝ} (hT : 0 < T) (g : ℝ → E) :
     ∑' n : ℤ, ∫⁻ x in Ioc (0 : ℝ) T, ‖g (x + n * T)‖ₑ = ∫⁻ x, ‖g x‖ₑ := by
   rw [(isAddFundamentalDomain_Ioc_zero hT).lintegral_eq_tsum'' (fun x => ‖g x‖ₑ),
@@ -103,7 +130,11 @@ theorem tsum_setLIntegral_Ioc_enorm_add_mul {T : ℝ} (hT : 0 < T) (g : ℝ → 
   exact tsum_congr fun n => lintegral_congr fun x =>
     congrArg _ (vadd_zmultiplesEquivInt hT n x g).symm
 
-/-- The integral of the periodisation of `g` over one period is the integral of `g` over `ℝ`. -/
+/-- Let $T > 0$ and let $g \colon \mathbb{R} \to E$ be integrable, where $E$ is a real normed space.
+Then the integral of the periodisation of $g$ over one period is the integral of $g$ over the
+line:
+$$\int_{(0, T]} \sum_{n \in \mathbb{Z}} g(x + nT) \, dx = \int_{\mathbb{R}} g(x) \, dx.$$
+-/
 theorem integral_periodise {T : ℝ} (hT : 0 < T) {g : ℝ → E} (hg : Integrable g) :
     ∫ x in Ioc (0 : ℝ) T, periodise T g x = ∫ x, g x := by
   have hmeas : ∀ n : ℤ, AEStronglyMeasurable (fun x : ℝ => g (x + n * T))
@@ -121,8 +152,14 @@ theorem integral_periodise {T : ℝ} (hT : 0 < T) {g : ℝ → E} (hg : Integrab
   exact tsum_congr fun n => integral_congr_ae
     (Filter.Eventually.of_forall fun x => (vadd_zmultiplesEquivInt hT n x g).symm)
 
-/-- The periodisation identity with a bounded, `T`-periodic weight: the weight passes through the
-sum, so this computes the Fourier coefficients of `periodise T g` from `g` itself. -/
+/-- Let $T > 0$, let $w \colon \mathbb{R} \to \mathbb{C}$ be $T$-periodic, almost everywhere
+strongly measurable and bounded by a constant $C$, and let $g \colon \mathbb{R} \to \mathbb{C}$
+be integrable. Then
+$$\int_{(0, T]} w(x) \sum_{n \in \mathbb{Z}} g(x + nT) \, dx = \int_{\mathbb{R}} w(x) g(x) \,
+  dx.$$
+
+The weight passes through the sum. With $w(x) = e^{-2 \pi i n x / T}$, the identity computes the
+Fourier coefficients of the periodisation of $g$ from $g$ itself. -/
 theorem integral_mul_periodise {T : ℝ} (hT : 0 < T) {w g : ℝ → ℂ} (hw : Function.Periodic w T)
     (hwm : AEStronglyMeasurable w volume) {C : ℝ} (hwb : ∀ x, ‖w x‖ ≤ C) (hg : Integrable g) :
     ∫ x in Ioc (0 : ℝ) T, w x * periodise T g x = ∫ x, w x * g x := by
@@ -136,9 +173,13 @@ theorem integral_mul_periodise {T : ℝ} (hT : 0 < T) {w g : ℝ → ℂ} (hw : 
   simpa only [hkey] using integral_periodise hT hwg
 
 open FourierTransform in
-/-- **The Fourier coefficients of the periodisation are the samples of the Fourier transform.**
-For `g` integrable on `ℝ`, the `n`-th Fourier coefficient of the `1`-periodisation of `g` is
-`ĝ(n)`. -/
+/-- **The Fourier coefficients of the periodisation are the samples of the Fourier transform.** Let
+$g \colon \mathbb{R} \to \mathbb{C}$ be integrable and let $n \in \mathbb{Z}$. Then
+$$\int_{(0, 1]} e^{-2 \pi i x n} \sum_{k \in \mathbb{Z}} g(x + k) \, dx = \int_{\mathbb{R}}
+  e^{-2 \pi i x n} g(x) \, dx,$$
+and the right side is the Fourier transform $\hat{g}(n)$.
+
+The exponential $e^{2 \pi i t}$ is `Real.fourierChar t`. -/
 theorem integral_fourierChar_mul_periodise {g : ℝ → ℂ} (hg : Integrable g) (n : ℤ) :
     ∫ x in Ioc (0 : ℝ) 1, (𝐞 (-(x * n)) : ℂ) * periodise 1 g x
       = ∫ x : ℝ, (𝐞 (-(x * n)) : ℂ) * g x := by
@@ -164,19 +205,22 @@ namespace Real
 
 open Asymptotics Filter FourierTransform
 
-/-- **The transform of a sampled signal is the periodisation of its transform**
-([quarteroni2000numerical] (10.82)). For `g : ℝ → ℂ` continuous with `g = O(|x|^{-b})` at
-infinity for some `b > 1`, a sampling step `Δt > 0` and a frequency `ν` at which the periodised
-transform `∑_j 𝓕 g (ν − j/Δt)` converges absolutely,
+/-- **The Fourier transform of a sampled signal is the periodisation of the Fourier transform.** Let
+$g \colon \mathbb{R} \to \mathbb{C}$ be continuous with $g(x) = O(|x|^{-b})$ as $|x| \to \infty$
+for some $b > 1$, let $\Delta t > 0$, and let $\nu \in \mathbb{R}$ be a frequency at which the
+family $(\hat{g}(\nu - j / \Delta t))_{j \in \mathbb{Z}}$ is summable. Then
+$$\sum_{j \in \mathbb{Z}} \hat{g}\Bigl(\nu - \frac{j}{\Delta t}\Bigr) = \Delta t \sum_{k \in
+  \mathbb{Z}} g(k \Delta t) \, e^{-2 \pi i \nu k \Delta t}.$$
+This is the aliasing formula (10.82) of [quarteroni2000numerical].
 
-`∑' j : ℤ, 𝓕 g (ν − j / Δt) = Δt * ∑' k : ℤ, g (k Δt) * exp (−2πi ν k Δt)`:
-
-the trapezoidal sum `Δt ∑_k g (k Δt) e^{−2πiνkΔt}` approximating `𝓕 g ν` is the periodic
-repetition of `𝓕 g` with period `1/Δt`, that is `periodise (1/Δt) (𝓕 g) ν` — for a `g` supported in
-`[0, T₀]` the right side is the finite trapezoidal sum of the textbook. Poisson summation
-(`Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable`) at `x = 0` for the rescaled and modulated
-signal `h t = Δt · 𝐞 (−t ν Δt) · g (Δt t)`, whose transform is `𝓕 h n = 𝓕 g (ν + n/Δt)` by the
-modulation and scaling rules of `Numlib/Analysis/Fourier/FourierIntegral`. -/
+The right side is the trapezoidal sum that approximates $\hat{g}(\nu)$. The left side is the
+periodisation of $\hat{g}$ with period $1 / \Delta t$, evaluated at $\nu$. For $g$ supported in
+$[0, T_0]$, the right side is the finite trapezoidal sum of [quarteroni2000numerical]. The
+Fourier transform $\hat{g}$ is `𝓕 g`. The proof applies the Poisson summation formula
+`Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable` at $x = 0$ to the rescaled and modulated
+signal $h(t) = \Delta t \, e^{-2 \pi i t \nu \Delta t} g(\Delta t \, t)$. Its transform is
+$\hat{h}(n) = \hat{g}(\nu + n / \Delta t)$, by the modulation and scaling rules of
+`Numlib.Analysis.Fourier.FourierIntegral`. -/
 theorem tsum_fourierIntegral_sub_div_eq_tsum_mul {g : ℝ → ℂ} (hg : Continuous g) {b : ℝ}
     (hb : 1 < b) (hdecay : g =O[cocompact ℝ] fun x : ℝ => |x| ^ (-b)) {Δt : ℝ} (hΔt : 0 < Δt)
     {ν : ℝ} (hsum : Summable fun j : ℤ => 𝓕 g (ν - j / Δt)) :

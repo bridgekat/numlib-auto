@@ -11,32 +11,45 @@ import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 /-!
 # The Heisenberg uncertainty principle
 
-For a Schwartz function `g : 𝓢(ℝ, ℂ)` the *time spread* `∫ t² |g|²` and the *frequency spread*
-`∫ ν² |𝓕g|²` cannot both be small: their product is at least `(∫ |g|²)² / (16 π²)`. Equivalently,
-with `ω = 2πν` the angular frequency, the resolutions `Δt = (∫ t²|g|²/∫|g|²)^{1/2}` and
-`Δω = (∫ ω²|G(ω)|²/∫|G(ω)|²)^{1/2}` satisfy `Δt Δω ≥ 1/2`.
-
-The proof is the classical one. Integration by parts on the whole line applied to
-`t ↦ t g(t) conj(g(t))`, whose value tends to `0` at both ends because `g` is Schwartz, gives
-
-`∫ |g|² = -2 ∫ t Re(g'(t) conj(g(t)))`;
-
-Cauchy–Schwarz (Hölder with `p = q = 2`) bounds the right-hand side by
-`2 (∫ t²|g|²)^{1/2} (∫ |g'|²)^{1/2}`; and Plancherel together with
-`𝓕(g')(ν) = 2πiν 𝓕g(ν)` turns `∫ |g'|²` into `4π² ∫ ν² |𝓕g|²`.
-
-Mathlib has no uncertainty principle (checked by grep for `Heisenberg` and `uncertainty`); it does
-have every ingredient, in particular `SchwartzMap.integral_norm_sq_fourier` (Plancherel for
-Schwartz functions) and `Real.fourier_deriv`.
+For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the time spread
+$\int t^2 |g(t)|^2 \, dt$ and the frequency spread $\int \nu^2 |\hat{g}(\nu)|^2 \, d\nu$ cannot both
+be small:
+$$\Bigl(\int |g(t)|^2 \, dt\Bigr)^2 \le 16 \pi^2 \Bigl(\int t^2 |g(t)|^2 \, dt\Bigr) \Bigl(\int
+  \nu^2 |\hat{g}(\nu)|^2 \, d\nu\Bigr).$$
+Here $\hat{g}(\nu) = \int g(t) e^{-2 \pi i \nu t} \, dt$. Equivalently, with the angular frequency
+$\omega = 2 \pi \nu$ and $G(\omega) = \hat{g}(\omega / 2\pi)$, the resolutions
+$$\Delta t = \Bigl(\frac{\int t^2 |g(t)|^2 \, dt}{\int |g(t)|^2 \, dt}\Bigr)^{1/2}, \qquad \Delta
+  \omega = \Bigl(\frac{\int \omega^2 |G(\omega)|^2 \, d\omega}{\int |G(\omega)|^2 \,
+  d\omega}\Bigr)^{1/2}$$
+satisfy $\Delta t \, \Delta \omega \ge 1/2$. This is (10.88) of [quarteroni2000numerical].
 
 ## Main results
 
-* `SchwartzMap.integral_norm_sq_add_two_mul_re` — the integration by parts identity
-  `∫ (|g|² + 2t Re(g' conj g)) = 0`.
-* `SchwartzMap.heisenberg_uncertainty_deriv` — `(∫ |g|²)² ≤ 4 (∫ t²|g|²) (∫ |g'|²)`.
-* `SchwartzMap.heisenberg_uncertainty` — `(∫ |g|²)² ≤ 16 π² (∫ t²|g|²) (∫ ν²|𝓕g|²)`.
+* `SchwartzMap.integral_norm_sq_add_two_mul_re`: the integration by parts identity $\int
+  \bigl(|g|^2 + 2t \operatorname{Re}(g' \bar{g})\bigr) = 0$.
+* `SchwartzMap.heisenberg_uncertainty_deriv`: $(\int |g|^2)^2 \le 4 (\int t^2 |g|^2) (\int |g'|^2)$.
+* `SchwartzMap.integral_norm_sq_deriv`: $\int |g'|^2 = 4 \pi^2 \int \nu^2 |\hat{g}|^2$.
+* `SchwartzMap.heisenberg_uncertainty`: $(\int |g|^2)^2 \le 16 \pi^2 (\int t^2 |g|^2) (\int \nu^2
+  |\hat{g}|^2)$.
 
-Reference: [quarteroni2000numerical] (10.88).
+## Proof outline
+
+The proof is the classical one. Integration by parts on the whole line, applied to
+$t \mapsto t \, g(t) \overline{g(t)}$, which tends to $0$ at both ends because $g$ is a Schwartz
+function, gives
+$$\int |g|^2 = -2 \int t \operatorname{Re}\bigl(g'(t) \overline{g(t)}\bigr) \, dt.$$
+The Cauchy–Schwarz inequality (Hölder's inequality with $p = q = 2$) bounds the right side by
+$2 (\int t^2 |g|^2)^{1/2} (\int |g'|^2)^{1/2}$. Plancherel's theorem together with
+$\widehat{g'}(\nu) = 2 \pi i \nu \, \hat{g}(\nu)$ turns $\int |g'|^2$ into
+$4 \pi^2 \int \nu^2 |\hat{g}|^2$.
+
+## Implementation notes
+
+* Mathlib does not state the uncertainty principle, but it has every ingredient, in particular
+  `SchwartzMap.integral_norm_sq_fourier` (Plancherel's theorem for Schwartz functions) and
+  `Real.fourier_deriv`.
+* A Schwartz function is `g : 𝓢(ℝ, ℂ)`, its derivative $g'$ is `deriv g`, and its Fourier transform
+  $\hat{g}$ is `𝓕 g`.
 -/
 
 open MeasureTheory Real Complex Filter Topology Set
@@ -45,8 +58,11 @@ open scoped FourierTransform ComplexConjugate
 
 namespace SchwartzMap
 
-/-- `t ↦ ‖t‖^k ‖g t‖ ‖h t‖` is integrable for Schwartz `g` and `h`: the factor `‖h t‖` is bounded
-and `‖t‖^k ‖g t‖` is integrable (`SchwartzMap.integrable_pow_mul`). -/
+/-- Let $g, h \colon \mathbb{R} \to \mathbb{C}$ be Schwartz functions and let $k \in \mathbb{N}$.
+Then the function $t \mapsto |t|^k |g(t)| |h(t)|$ is integrable on $\mathbb{R}$.
+
+The factor $|h(t)|$ is bounded, and $|t|^k |g(t)|$ is integrable by
+`SchwartzMap.integrable_pow_mul`. -/
 theorem integrable_pow_norm_mul_norm (g h : 𝓢(ℝ, ℂ)) (k : ℕ) :
     Integrable (fun t : ℝ => ‖t‖ ^ k * (‖g t‖ * ‖h t‖)) := by
   obtain ⟨C, hC0, hC⟩ := h.decay 0 0
@@ -60,12 +76,14 @@ theorem integrable_pow_norm_mul_norm (g h : 𝓢(ℝ, ℂ)) (k : ℕ) :
         exact hC t
     _ = C * (‖t‖ ^ k * ‖g t‖) := by ring
 
-/-- `t ↦ ‖g t‖²` is integrable for a Schwartz function. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the function $t \mapsto |g(t)|^2$
+is integrable on $\mathbb{R}$. -/
 theorem integrable_norm_sq (g : 𝓢(ℝ, ℂ)) : Integrable (fun t : ℝ => ‖g t‖ ^ 2) := by
   refine (integrable_pow_norm_mul_norm g g 0).congr (Filter.Eventually.of_forall fun t => ?_)
   simp [sq]
 
-/-- `t ↦ t² ‖g t‖²` is integrable for a Schwartz function: the time spread is finite. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the function
+$t \mapsto t^2 |g(t)|^2$ is integrable on $\mathbb{R}$: the time spread of $g$ is finite. -/
 theorem integrable_sq_mul_norm_sq (g : 𝓢(ℝ, ℂ)) :
     Integrable (fun t : ℝ => t ^ 2 * ‖g t‖ ^ 2) := by
   refine (integrable_pow_norm_mul_norm g g 2).congr (Filter.Eventually.of_forall fun t => ?_)
@@ -74,8 +92,11 @@ theorem integrable_sq_mul_norm_sq (g : 𝓢(ℝ, ℂ)) :
 
 /-! ### Integration by parts -/
 
-/-- `t ↦ t g(t) conj(g(t))` tends to `0` at infinity: `‖t‖ ‖g t‖` is bounded and `‖g t‖ → 0`. This
-is the boundary term of the integration by parts below. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$,
+$$t \, g(t) \overline{g(t)} \to 0 \quad \text{as } |t| \to \infty.$$
+
+The function $|t| |g(t)|$ is bounded, and $g(t) \to 0$. This is the boundary term of the
+integration by parts below. -/
 theorem tendsto_mul_mul_conj (g : 𝓢(ℝ, ℂ)) :
     Tendsto (fun t : ℝ => (t : ℂ) * (g t * conj (g t))) (cocompact ℝ) (𝓝 0) := by
   obtain ⟨C, hC0, hC⟩ := g.decay 1 0
@@ -90,8 +111,12 @@ theorem tendsto_mul_mul_conj (g : 𝓢(ℝ, ℂ)) :
         gcongr
         exact hC t
 
-/-- The derivative of `t ↦ t g(t) conj(g(t))` is `‖g t‖² + 2t Re(g'(t) conj(g(t)))`, a real
-quantity: the product rule, `z conj z = ‖z‖²` and `w + conj w = 2 Re w`. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$ and $t \in \mathbb{R}$, the
+function $s \mapsto s \, g(s) \overline{g(s)}$ has at $t$ the derivative
+$$|g(t)|^2 + 2t \operatorname{Re}\bigl(g'(t) \overline{g(t)}\bigr),$$
+which is a real number.
+
+The proof uses the product rule, $z \bar{z} = |z|^2$ and $w + \bar{w} = 2 \operatorname{Re} w$. -/
 theorem hasDerivAt_mul_mul_conj (g : 𝓢(ℝ, ℂ)) (t : ℝ) :
     HasDerivAt (fun s : ℝ => (s : ℂ) * (g s * conj (g s)))
       (((‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re : ℝ) : ℂ)) t := by
@@ -119,8 +144,10 @@ theorem hasDerivAt_mul_mul_conj (g : 𝓢(ℝ, ℂ)) (t : ℝ) :
   push_cast
   ring
 
-/-- `t ↦ 2t Re(g'(t) conj(g(t)))` is integrable: `‖g'‖` is bounded and `‖t‖ ‖g t‖` is
-integrable. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the function $t \mapsto 2t
+\operatorname{Re}(g'(t) \overline{g(t)})$ is integrable on $\mathbb{R}$.
+
+The derivative $g'$ is bounded, and $t \mapsto |t| |g(t)|$ is integrable. -/
 theorem integrable_two_mul_re (g : 𝓢(ℝ, ℂ)) :
     Integrable (fun t : ℝ => 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re) := by
   obtain ⟨C, hC0, hC⟩ := (derivCLM ℝ (F := ℂ) g).decay 0 0
@@ -139,12 +166,13 @@ theorem integrable_two_mul_re (g : 𝓢(ℝ, ℂ)) :
     _ ≤ 2 * ‖t‖ * (C * ‖g t‖) := by gcongr; exact hC t
     _ = 2 * C * (‖t‖ ^ 1 * ‖g t‖) := by rw [pow_one]; ring
 
-/-- **Integration by parts on the whole line.** For a Schwartz function `g`,
+/-- **Integration by parts on the whole line**: for a Schwartz function
+$g \colon \mathbb{R} \to \mathbb{C}$,
+$$\int_{\mathbb{R}} \Bigl(|g(t)|^2 + 2t \operatorname{Re}\bigl(g'(t) \overline{g(t)}\bigr)\Bigr)
+  \, dt = 0.$$
 
-`∫ (‖g t‖² + 2t Re(g'(t) conj(g(t)))) dt = 0`,
-
-because the integrand is the derivative of `t ↦ t g(t) conj(g(t))`, which is integrable and tends
-to `0` at both ends of the line. -/
+The integrand is the derivative of $t \mapsto t \, g(t) \overline{g(t)}$. It is integrable, and
+this function tends to $0$ at both ends of the line. -/
 theorem integral_norm_sq_add_two_mul_re (g : 𝓢(ℝ, ℂ)) :
     ∫ t : ℝ, (‖g t‖ ^ 2 + 2 * t * (deriv (g : ℝ → ℂ) t * conj (g t)).re) = 0 := by
   set F : ℝ → ℂ := fun s : ℝ => (s : ℂ) * (g s * conj (g s)) with hF
@@ -167,11 +195,13 @@ theorem integral_norm_sq_add_two_mul_re (g : 𝓢(ℝ, ℂ)) :
   rw [integral_complex_ofReal] at h3
   exact_mod_cast h3
 
-/-- The Schwartz map `derivCLM ℝ g` is the derivative of `g` as a function. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the Schwartz function
+`SchwartzMap.derivCLM ℝ g`, read as a function, is the derivative $g'$ of $g$. -/
 theorem coe_derivCLM (g : 𝓢(ℝ, ℂ)) : ((derivCLM ℝ (F := ℂ) g : 𝓢(ℝ, ℂ)) : ℝ → ℂ)
     = deriv (g : ℝ → ℂ) := funext fun t => derivCLM_apply ℝ g t
 
-/-- `t ↦ |t| ‖g t‖ ‖g'(t)‖` is integrable. -/
+/-- For a Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$, the function
+$t \mapsto |t| |g(t)| |g'(t)|$ is integrable on $\mathbb{R}$. -/
 theorem integrable_abs_mul_norm_mul_norm_deriv (g : 𝓢(ℝ, ℂ)) :
     Integrable (fun t : ℝ => |t| * ‖g t‖ * ‖deriv (g : ℝ → ℂ) t‖) := by
   refine (integrable_pow_norm_mul_norm g (derivCLM ℝ (F := ℂ) g) 1).congr
@@ -179,8 +209,10 @@ theorem integrable_abs_mul_norm_mul_norm_deriv (g : 𝓢(ℝ, ℂ)) :
   simp only [pow_one, Real.norm_eq_abs, derivCLM_apply]
   ring
 
-/-- The integration by parts identity in the form used below:
-`∫ ‖g‖² ≤ 2 ∫ |t| ‖g t‖ ‖g'(t)‖`. -/
+/-- The integration by parts identity in the form that the uncertainty principle uses: for a
+Schwartz function $g \colon \mathbb{R} \to \mathbb{C}$,
+$$\int |g(t)|^2 \, dt \le 2 \int |t| |g(t)| |g'(t)| \, dt.$$
+-/
 theorem integral_norm_sq_le_two_mul (g : 𝓢(ℝ, ℂ)) :
     ∫ t : ℝ, ‖g t‖ ^ 2 ≤ 2 * ∫ t : ℝ, |t| * ‖g t‖ * ‖deriv (g : ℝ → ℂ) t‖ := by
   have hsplit : (∫ t : ℝ, ‖g t‖ ^ 2)
@@ -208,12 +240,14 @@ theorem integral_norm_sq_le_two_mul (g : 𝓢(ℝ, ℂ)) :
   have := abs_le.mp hb
   linarith [hsplit, this.1, this.2]
 
-/-- **The uncertainty principle, in terms of the derivative.** For a Schwartz function `g`,
+/-- **The uncertainty principle in terms of the derivative**: for a Schwartz function
+$g \colon \mathbb{R} \to \mathbb{C}$,
+$$\Bigl(\int |g(t)|^2 \, dt\Bigr)^2 \le 4 \Bigl(\int t^2 |g(t)|^2 \, dt\Bigr) \Bigl(\int
+  |g'(t)|^2 \, dt\Bigr).$$
 
-`(∫ ‖g t‖² dt)² ≤ 4 (∫ t² ‖g t‖² dt) (∫ ‖g'(t)‖² dt)`.
-
-Integration by parts bounds `∫ ‖g‖²` by `2 ∫ |t| ‖g‖ ‖g'‖`, and Cauchy–Schwarz — Hölder's
-inequality at `p = q = 2` — bounds that by `2 (∫ t²‖g‖²)^{1/2} (∫ ‖g'‖²)^{1/2}`. -/
+Integration by parts bounds $\int |g|^2$ by $2 \int |t| |g| |g'|$. The Cauchy–Schwarz
+inequality, which is Hölder's inequality with $p = q = 2$, bounds this by
+$2 (\int t^2 |g|^2)^{1/2} (\int |g'|^2)^{1/2}$. -/
 theorem heisenberg_uncertainty_deriv (g : 𝓢(ℝ, ℂ)) :
     (∫ t : ℝ, ‖g t‖ ^ 2) ^ 2
       ≤ 4 * (∫ t : ℝ, t ^ 2 * ‖g t‖ ^ 2) * ∫ t : ℝ, ‖deriv (g : ℝ → ℂ) t‖ ^ 2 := by
@@ -254,8 +288,12 @@ theorem heisenberg_uncertainty_deriv (g : 𝓢(ℝ, ℂ)) :
         rw [mul_pow, mul_pow, Real.sq_sqrt hA0, Real.sq_sqrt hD0]
         ring
 
-/-- **Plancherel for the derivative:** `∫ ‖g'(t)‖² dt = 4π² ∫ ν² ‖𝓕g(ν)‖² dν`, from
-`𝓕(g')(ν) = 2πiν 𝓕g(ν)` (`Real.fourier_deriv`) and `SchwartzMap.integral_norm_sq_fourier`. -/
+/-- **Plancherel's theorem for the derivative**: for a Schwartz function
+$g \colon \mathbb{R} \to \mathbb{C}$,
+$$\int |g'(t)|^2 \, dt = 4 \pi^2 \int \nu^2 |\hat{g}(\nu)|^2 \, d\nu.$$
+
+The proof combines $\widehat{g'}(\nu) = 2 \pi i \nu \, \hat{g}(\nu)$ (`Real.fourier_deriv`) with
+Plancherel's theorem `SchwartzMap.integral_norm_sq_fourier`. -/
 theorem integral_norm_sq_deriv (g : 𝓢(ℝ, ℂ)) :
     ∫ t : ℝ, ‖deriv (g : ℝ → ℂ) t‖ ^ 2
       = 4 * π ^ 2 * ∫ v : ℝ, v ^ 2 * ‖𝓕 (g : ℝ → ℂ) v‖ ^ 2 := by
@@ -275,15 +313,17 @@ theorem integral_norm_sq_deriv (g : 𝓢(ℝ, ℂ)) :
         ring
     _ = 4 * π ^ 2 * ∫ v : ℝ, v ^ 2 * ‖𝓕 (g : ℝ → ℂ) v‖ ^ 2 := integral_const_mul _ _
 
-/-- **The Heisenberg uncertainty principle.** For a Schwartz function `g : 𝓢(ℝ, ℂ)`,
+/-- **The Heisenberg uncertainty principle**: for a Schwartz function
+$g \colon \mathbb{R} \to \mathbb{C}$,
+$$\Bigl(\int |g(t)|^2 \, dt\Bigr)^2 \le 16 \pi^2 \Bigl(\int t^2 |g(t)|^2 \, dt\Bigr) \Bigl(\int
+  \nu^2 |\hat{g}(\nu)|^2 \, d\nu\Bigr),$$
+where $\hat{g}(\nu) = \int g(t) e^{-2 \pi i \nu t} \, dt$. This is (10.88) of
+[quarteroni2000numerical].
 
-`(∫ ‖g t‖² dt)² ≤ 16 π² (∫ t² ‖g t‖² dt) (∫ ν² ‖𝓕g(ν)‖² dν)`.
-
-Normalising `∫ ‖g‖² = 1` and passing to the angular frequency `ω = 2πν`, in which the frequency
-spread is `4π²` times the one in `ν`, this reads `Δt Δω ≥ 1/2`: a signal cannot be localised
-simultaneously in time and in frequency.
-
-Reference: [quarteroni2000numerical] (10.88). -/
+Normalize $\int |g|^2 = 1$ and pass to the angular frequency $\omega = 2 \pi \nu$, in which the
+frequency spread is $4 \pi^2$ times the frequency spread in $\nu$. Then the inequality reads
+$\Delta t \, \Delta \omega \ge 1/2$: a signal cannot be localized in time and in frequency at
+the same time. -/
 theorem heisenberg_uncertainty (g : 𝓢(ℝ, ℂ)) :
     (∫ t : ℝ, ‖g t‖ ^ 2) ^ 2
       ≤ 16 * π ^ 2 * (∫ t : ℝ, t ^ 2 * ‖g t‖ ^ 2)

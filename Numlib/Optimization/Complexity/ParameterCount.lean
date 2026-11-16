@@ -8,33 +8,55 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # Bounding all iterations by the successful ones
 
-In trust-region and adaptive-regularization methods a positive parameter (the regularization
-weight `σ_k` or the inverse radius `1/Δ_k`) changes multiplicatively: by a factor of at least
-`γ_S ∈ (0, 1]` at successful iterations, by a factor of at least `γ_U > 1` at unsuccessful ones,
-and it does not decrease at the remaining ("neutral", e.g. accuracy-improving) iterations. If the
-parameter stays bounded above, the number of unsuccessful iterations is bounded in terms of the
-successful ones ([cartis2022evaluation], Lemmas 2.3.1, 2.4.1 and 13.1.1, used in every later
-chapter).
+Trust-region and adaptive-regularization methods update a positive parameter multiplicatively: the
+regularization weight $\sigma_k$, or the inverse radius $1/\Delta_k$. The parameter changes by a
+factor of at least $\gamma_S \in (0, 1]$ at a successful iteration and by a factor of at least
+$\gamma_U > 1$ at an unsuccessful one, and it does not decrease at the remaining ("neutral")
+iterations, for example the iterations that improve the accuracy. If the parameter stays bounded
+above, then the number of unsuccessful iterations is bounded in terms of the number of successful
+ones. This is the mechanism of Lemmas 2.3.1, 2.4.1, 13.1.1 and 13.1.9 of [cartis2022evaluation],
+which every later chapter of that book uses.
 
-* `Optimization.mul_pow_card_le`: `σ_0 γ_S^{|𝒮_k|} γ_U^{|𝒰_k|} ≤ σ_{k+1}`.
-* `Optimization.card_fail_mul_log_le`: if `σ_{k+1} ≤ σ_max`, then
-  `|𝒰_k| log γ_U ≤ log (σ_max / σ_0) + |𝒮_k| |log γ_S|`.
-* Lower-ratio (adaptive-regularization) forms: `Optimization.card_fail_le_of_lower_ratio`,
-  `Optimization.succ_le_card_successSet_of_lower_ratio` (`k + 1 ≤ |𝒮_k| (1 + |log γ_S|/log γ_U) +
-  log(σ_max/σ_0)/log γ_U`) and its form with the book's indexing
-  `Optimization.le_card_successSet_of_lower_ratio` (Lemma 2.4.1), and
-  `Optimization.card_successSet_or_le_of_lower_ratio` (Lemma 13.1.9, with neutral iterations).
-* Upper-ratio (trust-region) forms, for a radius `Δ` decreasing by at least `γ₂ ∈ (0, 1)` at
-  failures and increasing by at most `γ₃ ≥ 1` at successes, as long as `Δ ≥ Δ_min > 0`:
-  `Optimization.card_fail_le_of_upper_ratio` (sharp constant `log (Δ_0/Δ_min)`; the book's
-  `|log (Δ_min/Δ_0)|` in `Optimization.card_fail_le_of_upper_ratio_abs`),
-  `Optimization.succ_le_card_successSet_of_upper_ratio`,
-  `Optimization.le_card_successSet_of_upper_ratio` (Lemma 2.3.1) and
-  `Optimization.card_successSet_or_le_of_upper_ratio` (Lemma 13.1.1, with neutral iterations).
-  They are obtained from the lower-ratio statements applied to `σ_k = 1/Δ_k`.
+Below, $\mathcal{S}_k$ and $\mathcal{U}_k$ are the sets of iterations $j \in \{0, \dots, k\}$ that
+satisfy the predicate $\mathrm{succ}$ and the predicate $\mathrm{fail}$, respectively. The general
+statements require neither that the two predicates are complementary nor that they are disjoint. The
+neutral iterations are those that satisfy neither predicate.
 
-The predicates `succ` and `fail` need not be complementary nor even disjoint in the general
-statements; the "neutral" iterations are those satisfying neither.
+## Main results
+
+* `Optimization.mul_pow_card_le`: $\sigma_0 \gamma_S^{|\mathcal{S}_k|} \gamma_U^{|\mathcal{U}_k|}
+  \le \sigma_{k+1}$.
+* `Optimization.card_fail_mul_log_le`: if $\sigma_{k+1} \le \sigma_{\max}$, then $|\mathcal{U}_k|
+  \log \gamma_U \le \log(\sigma_{\max}/\sigma_0) + |\mathcal{S}_k| \, |\log \gamma_S|$.
+* `Optimization.card_fail_le_of_lower_ratio`: the same bound, divided by $\log \gamma_U > 0$.
+* `Optimization.succ_le_card_successSet_of_lower_ratio`: if every iteration that is not successful
+  is unsuccessful, then $k + 1 \le |\mathcal{S}_k| (1 + |\log \gamma_S| / \log \gamma_U) +
+  \log(\sigma_{\max}/\sigma_0) / \log \gamma_U$.
+* `Optimization.le_card_successSet_of_lower_ratio`: the same bound with the indexing of Lemma 2.4.1
+  of [cartis2022evaluation].
+* `Optimization.card_successSet_or_le_of_lower_ratio`: the form with neutral iterations (Lemma
+  13.1.9 of [cartis2022evaluation]).
+* `Optimization.card_fail_le_of_upper_ratio`: the trust-region form, for a radius that shrinks by at
+  least $\gamma_2 \in (0, 1)$ at failures, grows by at most $\gamma_3 \ge 1$ at successes, and stays
+  above $\Delta_{\min} > 0$, with the sharp constant $\log(\Delta_0/\Delta_{\min})$.
+* `Optimization.card_fail_le_of_upper_ratio_abs`: the same bound with the constant
+  $|\log(\Delta_{\min}/\Delta_0)|$ of the book.
+* `Optimization.succ_le_card_successSet_of_upper_ratio` and
+  `Optimization.le_card_successSet_of_upper_ratio`: the trust-region bound on all iterations (Lemma
+  2.3.1 of [cartis2022evaluation]).
+* `Optimization.card_successSet_or_le_of_upper_ratio`: the trust-region form with neutral iterations
+  (Lemma 13.1.1 of [cartis2022evaluation]).
+
+## Proof outline
+
+The product bound follows by induction on $k$. Taking logarithms gives the bound on
+$|\mathcal{U}_k|$. The trust-region statements follow from the adaptive-regularization statements
+applied to $\sigma_k = 1/\Delta_k$, $\gamma_S = 1/\gamma_3$ and $\gamma_U = 1/\gamma_2$.
+
+## Implementation notes
+
+* The sets $\mathcal{S}_k$ and $\mathcal{U}_k$ are `Optimization.successSet succ k` and
+  `Optimization.successSet fail k`. Both contain $k$ itself when it satisfies the predicate.
 -/
 
 open Finset
@@ -45,7 +67,8 @@ section lower
 
 variable {σ : ℕ → ℝ} {succ fail : ℕ → Prop} {γS γU σmax : ℝ} {k : ℕ}
 
-/-- Auxiliary form of `Optimization.mul_pow_card_le`, counting with `Nat.count` over `[0, n)`. -/
+/-- The product bound of `Optimization.mul_pow_card_le`, with the counts given by `Nat.count` over
+$\{0, \dots, n - 1\}$, together with $\sigma_n > 0$. -/
 private theorem mul_pow_count_le [DecidablePred succ] [DecidablePred fail] (hσ0 : 0 < σ 0)
     (hγS : 0 < γS) (hγS1 : γS ≤ 1) (hγU : 1 ≤ γU) (n : ℕ)
     (hsucc : ∀ j < n, succ j → γS * σ j ≤ σ (j + 1))
@@ -87,10 +110,18 @@ private theorem mul_pow_count_le [DecidablePred succ] [DecidablePred fail] (hσ0
     · have h := hneutral n n.lt_succ_self hs hf
       exact ⟨hpos.trans_le h, hle.trans h⟩
 
-/-- **Multiplicative parameter growth.** Let `σ_0 > 0`, `0 < γS ≤ 1 ≤ γU`, and for `j ≤ k`:
-`σ_{j+1} ≥ γS σ_j` if `succ j`, `σ_{j+1} ≥ γU σ_j` if `fail j`, and `σ_{j+1} ≥ σ_j` otherwise.
-Then `σ_{k+1} > 0` and `σ_0 γS^{|𝒮_k|} γU^{|𝒰_k|} ≤ σ_{k+1}`, where `𝒮_k`, `𝒰_k` are the
-iterations `j ≤ k` satisfying `succ`, resp. `fail`. -/
+/-- **Multiplicative parameter growth.** Let $\sigma_0, \sigma_1, \dots$ be real numbers with
+$\sigma_0 > 0$, and let $0 < \gamma_S \le 1 \le \gamma_U$. Suppose that for every $j \le k$:
+$$\sigma_{j+1} \ge \gamma_S \sigma_j \text{ if } \mathrm{succ}(j), \qquad \sigma_{j+1} \ge
+  \gamma_U \sigma_j \text{ if } \mathrm{fail}(j), \qquad \sigma_{j+1} \ge \sigma_j \text{ if
+  neither holds}.$$
+Then $\sigma_{k+1} > 0$ and
+$$\sigma_0 \, \gamma_S^{|\mathcal{S}_k|} \, \gamma_U^{|\mathcal{U}_k|} \le \sigma_{k+1},$$
+where $\mathcal{S}_k$ and $\mathcal{U}_k$ are the sets of iterations $j \le k$ that satisfy
+$\mathrm{succ}$ and $\mathrm{fail}$, respectively.
+
+The sets are `Optimization.successSet succ k` and `Optimization.successSet fail k`. The
+predicates need not be disjoint. -/
 theorem mul_pow_card_le (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1) (hγU : 1 ≤ γU)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
     (hfail : ∀ j ≤ k, fail j → γU * σ j ≤ σ (j + 1))
@@ -103,9 +134,13 @@ theorem mul_pow_card_le (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1) (
     (fun j hj => hsucc j (Nat.lt_succ_iff.1 hj)) (fun j hj => hfail j (Nat.lt_succ_iff.1 hj))
     (fun j hj => hneutral j (Nat.lt_succ_iff.1 hj))
 
-/-- **Counting failures through a bounded parameter** (proof of [cartis2022evaluation],
-Lemma 2.4.1, in general form). Under the hypotheses of `Optimization.mul_pow_card_le`, if
-`σ_{k+1} ≤ σmax` then `|𝒰_k| log γU ≤ log (σmax / σ_0) + |𝒮_k| |log γS|`. -/
+/-- **Counting failures through a bounded parameter.** Under the hypotheses of
+`Optimization.mul_pow_card_le` ($\sigma_0 > 0$, $0 < \gamma_S \le 1 \le \gamma_U$, and the three
+growth conditions for $j \le k$), suppose also that $\sigma_{k+1} \le \sigma_{\max}$. Then
+$$|\mathcal{U}_k| \log \gamma_U \le \log(\sigma_{\max}/\sigma_0) + |\mathcal{S}_k| \, |\log
+  \gamma_S|.$$
+
+This is the argument of the proof of Lemma 2.4.1 of [cartis2022evaluation], in general form. -/
 theorem card_fail_mul_log_le (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1) (hγU : 1 ≤ γU)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
     (hfail : ∀ j ≤ k, fail j → γU * σ j ≤ σ (j + 1))
@@ -123,8 +158,11 @@ theorem card_fail_mul_log_le (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤
     abs_of_nonpos (Real.log_nonpos hγS.le hγS1)]
   linarith
 
-/-- Lower-ratio form of `Optimization.card_fail_mul_log_le` with `γU > 1`:
-`|𝒰_k| ≤ |𝒮_k| |log γS| / log γU + log (σmax / σ_0) / log γU`. -/
+/-- **Counting failures, adaptive-regularization form.** Under the hypotheses of
+`Optimization.card_fail_mul_log_le`, with $\gamma_U > 1$ in place of $\gamma_U \ge 1$,
+$$|\mathcal{U}_k| \le |\mathcal{S}_k| \frac{|\log \gamma_S|}{\log \gamma_U} +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_U}.$$
+-/
 theorem card_fail_le_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1)
     (hγU : 1 < γU)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
@@ -138,10 +176,15 @@ theorem card_fail_le_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : 
   rw [mul_div_assoc', ← add_div, le_div_iff₀ hlog]
   linarith
 
-/-- **Lemma 2.4.1 mechanism** (adaptive-regularization form, [cartis2022evaluation]). Let
-`σ_0 > 0`, `0 < γS ≤ 1 < γU`, and for `j ≤ k`: `σ_{j+1} ≥ γS σ_j` if `succ j` and
-`σ_{j+1} ≥ γU σ_j` otherwise. If `σ_{k+1} ≤ σmax`, then
-`k + 1 ≤ |𝒮_k| (1 + |log γS| / log γU) + log (σmax / σ_0) / log γU`. -/
+/-- **Bounding all iterations, adaptive-regularization form.** Let $\sigma_0 > 0$ and
+$0 < \gamma_S \le 1 < \gamma_U$. Suppose that for every $j \le k$,
+$\sigma_{j+1} \ge \gamma_S \sigma_j$ if $\mathrm{succ}(j)$ and
+$\sigma_{j+1} \ge \gamma_U \sigma_j$ otherwise. If $\sigma_{k+1} \le \sigma_{\max}$, then
+$$k + 1 \le |\mathcal{S}_k| \left(1 + \frac{|\log \gamma_S|}{\log \gamma_U}\right) +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_U}.$$
+
+This is the mechanism of Lemma 2.4.1 of [cartis2022evaluation]. The form with the indexing of
+the book is `Optimization.le_card_successSet_of_lower_ratio`. -/
 theorem succ_le_card_successSet_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1)
     (hγU : 1 < γU)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
@@ -156,10 +199,15 @@ theorem succ_le_card_successSet_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS
   rw [failureSet] at hcard
   linarith
 
-/-- **Lemma 2.4.1** ([cartis2022evaluation]) with the book's indexing. Let `σ_0 > 0`,
-`0 < γS ≤ 1 < γU`, and for `j < k`: `σ_{j+1} ≥ γS σ_j` if `succ j` and `σ_{j+1} ≥ γU σ_j`
-otherwise. If `σ_k ≤ σmax`, then
-`k ≤ |𝒮_k| (1 + |log γS| / log γU) + log (σmax / σ_0) / log γU`. -/
+/-- **Bounding all iterations, adaptive-regularization form, with the indexing of the book.** Let
+$\sigma_0 > 0$ and $0 < \gamma_S \le 1 < \gamma_U$. Suppose that for every $j < k$,
+$\sigma_{j+1} \ge \gamma_S \sigma_j$ if $\mathrm{succ}(j)$ and
+$\sigma_{j+1} \ge \gamma_U \sigma_j$ otherwise. If $\sigma_k \le \sigma_{\max}$, then
+$$k \le |\mathcal{S}_k| \left(1 + \frac{|\log \gamma_S|}{\log \gamma_U}\right) +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_U},$$
+where $\mathcal{S}_k$ is the set of $j \in \{0, \dots, k\}$ with $\mathrm{succ}(j)$.
+
+This is Lemma 2.4.1 of [cartis2022evaluation]. -/
 theorem le_card_successSet_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1)
     (hγU : 1 < γU)
     (hsucc : ∀ j < k, succ j → γS * σ j ≤ σ (j + 1))
@@ -184,15 +232,21 @@ theorem le_card_successSet_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (h�
     push_cast
     nlinarith
 
-/-- **Lemma 13.1.9 mechanism** ([cartis2022evaluation]): adaptive-regularization counting with
-neutral iterations. Let `σ_0 > 0`, `0 < γS ≤ 1 < γU`, `succ` and `fail` incompatible, and for
-`j ≤ k`: `σ_{j+1} ≥ γS σ_j` if `succ j`, `σ_{j+1} ≥ γU σ_j` if `fail j`, `σ_{j+1} ≥ σ_j`
-otherwise. If `σ_{k+1} ≤ σmax`, the number `|𝒯_k|` of iterations `j ≤ k` that are successful or
-failed satisfies `|𝒯_k| ≤ |𝒮_k| (1 + |log γS| / log γU) + log (σmax / σ_0) / log γU`.
+/-- **Bounding the successful and failed iterations, with neutral iterations.** Let $\sigma_0 > 0$
+and $0 < \gamma_S \le 1 < \gamma_U$. Suppose that no $j \le k$ satisfies both $\mathrm{succ}$
+and $\mathrm{fail}$, and that for every $j \le k$:
+$$\sigma_{j+1} \ge \gamma_S \sigma_j \text{ if } \mathrm{succ}(j), \qquad \sigma_{j+1} \ge
+  \gamma_U \sigma_j \text{ if } \mathrm{fail}(j), \qquad \sigma_{j+1} \ge \sigma_j \text{
+  otherwise}.$$
+If $\sigma_{k+1} \le \sigma_{\max}$, then the set $\mathcal{T}_k$ of iterations $j \le k$ that
+satisfy $\mathrm{succ}$ or $\mathrm{fail}$ has
+$$|\mathcal{T}_k| \le |\mathcal{S}_k| \left(1 + \frac{|\log \gamma_S|}{\log \gamma_U}\right) +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_U}.$$
+This is the mechanism of Lemma 13.1.9 of [cartis2022evaluation].
 
-The bound is needed at `σ_{k+1}`, the parameter after iteration `k`: with it only at `σ_k` the
-statement fails for `k = 0`, an unsuccessful iteration `0` and `σmax = σ_0` (the left side is `1`,
-the right side `0`). -/
+The bound is needed at $\sigma_{k+1}$, the parameter after iteration $k$. With the bound only at
+$\sigma_k$, the statement fails for $k = 0$, an unsuccessful iteration $0$ and
+$\sigma_{\max} = \sigma_0$: the left side is $1$ and the right side is $0$. -/
 theorem card_successSet_or_le_of_lower_ratio (hσ0 : 0 < σ 0) (hγS : 0 < γS) (hγS1 : γS ≤ 1)
     (hγU : 1 < γU) (hdisj : ∀ j ≤ k, succ j → ¬ fail j)
     (hsucc : ∀ j ≤ k, succ j → γS * σ j ≤ σ (j + 1))
@@ -212,8 +266,8 @@ section upper
 
 variable {Δ : ℕ → ℝ} {succ fail : ℕ → Prop} {γ₂ γ₃ Δmin : ℝ} {k : ℕ}
 
-/-- A sequence that shrinks by at most a positive factor at each step and is positive at
-`k + 1` is positive on `[0, k + 1]`. -/
+/-- A sequence $\Delta$ with $\Delta_{k+1} > 0$ and $\Delta_{j+1} \le c_j \Delta_j$ for some
+$c_j > 0$ at each $j \le k$ is positive at all $j \le k + 1$. -/
 private theorem pos_of_le_mul (hΔ : 0 < Δ (k + 1))
     (h : ∀ j ≤ k, ∃ c, 0 < c ∧ Δ (j + 1) ≤ c * Δ j) : ∀ j ≤ k + 1, 0 < Δ j := by
   have key : ∀ m ≤ k + 1, 0 < Δ (k + 1 - m) := by
@@ -235,12 +289,20 @@ private theorem pos_of_le_mul (hΔ : 0 < Δ (k + 1))
   have := key (k + 1 - j) (by omega)
   rwa [show k + 1 - (k + 1 - j) = j by omega] at this
 
-/-- **Counting failures through a radius bounded below** (trust-region form). Let `0 < γ₂ < 1`,
-`1 ≤ γ₃` and for `j ≤ k`: `Δ_{j+1} ≤ γ₃ Δ_j` if `succ j`, `Δ_{j+1} ≤ γ₂ Δ_j` if `fail j`, and
-`Δ_{j+1} ≤ Δ_j` otherwise. If `0 < Δmin ≤ Δ_{k+1}` (positivity of `Δ_0, …, Δ_k` follows), then
-`|𝒰_k| ≤ |𝒮_k| log γ₃ / |log γ₂| + log (Δ_0 / Δmin) / |log γ₂|`. (This is the sharp form; the
-form with `|log (Δmin / Δ_0)|` is `Optimization.card_fail_le_of_upper_ratio_abs`.) Proof: apply
-`Optimization.card_fail_le_of_lower_ratio` to `σ_j = 1/Δ_j`, `γS = 1/γ₃`, `γU = 1/γ₂`. -/
+/-- **Counting failures through a radius bounded below, trust-region form.** Let
+$0 < \gamma_2 < 1 \le \gamma_3$. Suppose that for every $j \le k$:
+$$\Delta_{j+1} \le \gamma_3 \Delta_j \text{ if } \mathrm{succ}(j), \qquad \Delta_{j+1} \le
+  \gamma_2 \Delta_j \text{ if } \mathrm{fail}(j), \qquad \Delta_{j+1} \le \Delta_j \text{ if
+  neither holds}.$$
+If $0 < \Delta_{\min} \le \Delta_{k+1}$, then
+$$|\mathcal{U}_k| \le |\mathcal{S}_k| \frac{\log \gamma_3}{|\log \gamma_2|} +
+  \frac{\log(\Delta_0/\Delta_{\min})}{|\log \gamma_2|}.$$
+
+The positivity of $\Delta_0, \dots, \Delta_k$ follows from the hypotheses. This is the sharp
+form. The form with the constant $|\log(\Delta_{\min}/\Delta_0)|$ is
+`Optimization.card_fail_le_of_upper_ratio_abs`. The proof applies
+`Optimization.card_fail_le_of_lower_ratio` to $\sigma_j = 1/\Delta_j$, $\gamma_S = 1/\gamma_3$
+and $\gamma_U = 1/\gamma_2$. -/
 theorem card_fail_le_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)
     (hfail : ∀ j ≤ k, fail j → Δ (j + 1) ≤ γ₂ * Δ j)
@@ -274,12 +336,17 @@ theorem card_fail_le_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (
   simp only [Real.log_inv, abs_neg, abs_of_nonneg hl3, inv_div_inv] at h
   rwa [abs_of_neg hl2]
 
-/-- `log (a / b) ≤ |log (b / a)|`: converts the sharp trust-region bounds to the book's form. -/
+/-- For all real $a$ and $b$, $\log(a/b) \le |\log(b/a)|$. This converts the sharp trust-region
+bounds to the form of [cartis2022evaluation]. -/
 theorem log_div_le_abs_log_div (a b : ℝ) : Real.log (a / b) ≤ |Real.log (b / a)| := by
   rw [← inv_div, Real.log_inv]
   exact neg_le_abs _
 
-/-- `Optimization.card_fail_le_of_upper_ratio` with the book's constant `|log (Δmin / Δ_0)|`. -/
+/-- **Counting failures, trust-region form with the constant of the book.** Under the hypotheses of
+`Optimization.card_fail_le_of_upper_ratio`,
+$$|\mathcal{U}_k| \le |\mathcal{S}_k| \frac{\log \gamma_3}{|\log \gamma_2|} +
+  \frac{|\log(\Delta_{\min}/\Delta_0)|}{|\log \gamma_2|}.$$
+-/
 theorem card_fail_le_of_upper_ratio_abs (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)
     (hfail : ∀ j ≤ k, fail j → Δ (j + 1) ≤ γ₂ * Δ j)
@@ -291,10 +358,14 @@ theorem card_fail_le_of_upper_ratio_abs (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 
   (card_fail_le_of_upper_ratio hγ₂ hγ₂1 hγ₃ hsucc hfail hneutral hmin hΔmin).trans
     (add_le_add_right (div_le_div_of_nonneg_right (log_div_le_abs_log_div _ _) (abs_nonneg _)) _)
 
-/-- **Lemma 2.3.1 mechanism** (trust-region form, [cartis2022evaluation]). Let `0 < γ₂ < 1 ≤ γ₃`
-and for `j ≤ k`: `Δ_{j+1} ≤ γ₃ Δ_j` if `succ j` and `Δ_{j+1} ≤ γ₂ Δ_j` otherwise. If
-`0 < Δmin ≤ Δ_{k+1}`, then
-`k + 1 ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ_0)| / |log γ₂|`. -/
+/-- **Bounding all iterations, trust-region form.** Let $0 < \gamma_2 < 1 \le \gamma_3$. Suppose
+that for every $j \le k$, $\Delta_{j+1} \le \gamma_3 \Delta_j$ if $\mathrm{succ}(j)$ and
+$\Delta_{j+1} \le \gamma_2 \Delta_j$ otherwise. If $0 < \Delta_{\min} \le \Delta_{k+1}$, then
+$$k + 1 \le |\mathcal{S}_k| \left(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\right) +
+  \frac{|\log(\Delta_{\min}/\Delta_0)|}{|\log \gamma_2|}.$$
+
+This is the mechanism of Lemma 2.3.1 of [cartis2022evaluation]. The form with the indexing of
+the book is `Optimization.le_card_successSet_of_upper_ratio`. -/
 theorem succ_le_card_successSet_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)
     (hfail : ∀ j ≤ k, ¬ succ j → Δ (j + 1) ≤ γ₂ * Δ j)
@@ -309,9 +380,15 @@ theorem succ_le_card_successSet_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : �
   rw [failureSet] at hcard
   linarith
 
-/-- **Lemma 2.3.1** ([cartis2022evaluation]) with the book's indexing. Let `0 < γ₂ < 1 ≤ γ₃` and
-for `j < k`: `Δ_{j+1} ≤ γ₃ Δ_j` if `succ j` and `Δ_{j+1} ≤ γ₂ Δ_j` otherwise. If
-`0 < Δmin ≤ Δ_k`, then `k ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ_0)| / |log γ₂|`. -/
+/-- **Bounding all iterations, trust-region form, with the indexing of the book.** Let
+$0 < \gamma_2 < 1 \le \gamma_3$. Suppose that for every $j < k$,
+$\Delta_{j+1} \le \gamma_3 \Delta_j$ if $\mathrm{succ}(j)$ and
+$\Delta_{j+1} \le \gamma_2 \Delta_j$ otherwise. If $0 < \Delta_{\min} \le \Delta_k$, then
+$$k \le |\mathcal{S}_k| \left(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\right) +
+  \frac{|\log(\Delta_{\min}/\Delta_0)|}{|\log \gamma_2|},$$
+where $\mathcal{S}_k$ is the set of $j \in \{0, \dots, k\}$ with $\mathrm{succ}(j)$.
+
+This is Lemma 2.3.1 of [cartis2022evaluation]. -/
 theorem le_card_successSet_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hsucc : ∀ j < k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)
     (hfail : ∀ j < k, ¬ succ j → Δ (j + 1) ≤ γ₂ * Δ j)
@@ -334,15 +411,21 @@ theorem le_card_successSet_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ 
     push_cast
     nlinarith
 
-/-- **Lemma 13.1.1 mechanism** ([cartis2022evaluation]): trust-region counting with neutral
-iterations. Let `0 < γ₂ < 1 ≤ γ₃`, `succ` and `fail` incompatible, and for `j ≤ k`:
-`Δ_{j+1} ≤ γ₃ Δ_j` if `succ j`, `Δ_{j+1} ≤ γ₂ Δ_j` if `fail j`, `Δ_{j+1} ≤ Δ_j` otherwise. If
-`0 < Δmin ≤ Δ_{k+1}`, the number `|𝒯_k|` of iterations `j ≤ k` that are successful or failed
-satisfies `|𝒯_k| ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ_0)| / |log γ₂|`.
+/-- **Bounding the successful and failed iterations, trust-region form with neutral iterations.**
+Let $0 < \gamma_2 < 1 \le \gamma_3$. Suppose that no $j \le k$ satisfies both $\mathrm{succ}$
+and $\mathrm{fail}$, and that for every $j \le k$:
+$$\Delta_{j+1} \le \gamma_3 \Delta_j \text{ if } \mathrm{succ}(j), \qquad \Delta_{j+1} \le
+  \gamma_2 \Delta_j \text{ if } \mathrm{fail}(j), \qquad \Delta_{j+1} \le \Delta_j \text{
+  otherwise}.$$
+If $0 < \Delta_{\min} \le \Delta_{k+1}$, then the set $\mathcal{T}_k$ of iterations $j \le k$
+that satisfy $\mathrm{succ}$ or $\mathrm{fail}$ has
+$$|\mathcal{T}_k| \le |\mathcal{S}_k| \left(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\right) +
+  \frac{|\log(\Delta_{\min}/\Delta_0)|}{|\log \gamma_2|}.$$
+This is the mechanism of Lemma 13.1.1 of [cartis2022evaluation].
 
-The bound is needed at `Δ_{k+1}`, the radius after iteration `k`: with it only at `Δ_k` the
-statement fails for `k = 0`, an unsuccessful iteration `0` and `Δmin = Δ_0` (the left side is `1`,
-the right side `0`). -/
+The bound is needed at $\Delta_{k+1}$, the radius after iteration $k$. With the bound only at
+$\Delta_k$, the statement fails for $k = 0$, an unsuccessful iteration $0$ and
+$\Delta_{\min} = \Delta_0$: the left side is $1$ and the right side is $0$. -/
 theorem card_successSet_or_le_of_upper_ratio (hγ₂ : 0 < γ₂) (hγ₂1 : γ₂ < 1) (hγ₃ : 1 ≤ γ₃)
     (hdisj : ∀ j ≤ k, succ j → ¬ fail j)
     (hsucc : ∀ j ≤ k, succ j → Δ (j + 1) ≤ γ₃ * Δ j)

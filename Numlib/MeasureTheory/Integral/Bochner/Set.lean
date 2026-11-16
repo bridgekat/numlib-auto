@@ -14,17 +14,25 @@ import Mathlib.MeasureTheory.Integral.Bochner.Set
 /-!
 # Integrals over disjoint pieces of a set
 
-`MeasureTheory.sum_setIntegral_le_setIntegral_of_pairwiseDisjoint`: for a nonnegative `F`
-integrable on `J`, the integrals of `F` over finitely many pairwise disjoint measurable subsets of
-`J` add up to at most its integral over `J`.
+Let $F$ be a nonnegative real function that is integrable on a set $J$. If $I_e$, for $e$ in a
+finite set $S$, are pairwise disjoint measurable subsets of $J$, then the integrals of $F$ over the
+sets $I_e$ add up to at most its integral over $J$.
+
+## Main results
+
+* `MeasureTheory.sum_setIntegral_le_setIntegral_of_pairwiseDisjoint`: $\sum_{e \in S} \int_{I_e} F
+  \, d\mu \le \int_J F \, d\mu$.
 -/
 
 open Filter Set
 
 namespace MeasureTheory
 
-/-- A finite sum of integrals of a nonnegative function over pairwise disjoint measurable subsets
-of `J` is at most the integral over `J`. -/
+/-- Let $\mu$ be a measure on $X$, let $S$ be a finite index set, let $J \subseteq X$, and let
+$(I_e)_{e \in S}$ be pairwise disjoint measurable subsets of $J$. If $F \colon X \to \mathbb{R}$
+is integrable on $J$ and $F(x) \ge 0$ for every $x \in X$, then
+$$\sum_{e \in S} \int_{I_e} F \, d\mu \le \int_J F \, d\mu.$$
+-/
 theorem sum_setIntegral_le_setIntegral_of_pairwiseDisjoint {X ι : Type*} [MeasurableSpace X]
     {μ : Measure X} (S : Finset ι) {I : ι → Set X} {J : Set X} {F : X → ℝ}
     (hI : ∀ e ∈ S, MeasurableSet (I e)) (hIJ : ∀ e ∈ S, I e ⊆ J)

@@ -8,49 +8,49 @@ import Numlib.Analysis.Convex.Exposed
 /-!
 # Tangent half-spaces of a convex set
 
-A hyperplane is **tangent** to a closed convex set `C` at a point `y` when it is the *unique*
-supporting hyperplane to `C` at `y`, and a **tangent half-space** is a supporting half-space whose
-boundary hyperplane is tangent. The theorem proved here is that a closed convex set with nonempty
-interior is the intersection of its tangent closed half-spaces — a sharpening of the statement
-that a closed convex set is the intersection of *all* the closed half-spaces containing it.
+Let $C$ be a closed convex set in a finite-dimensional real normed space $E$. A hyperplane is
+**tangent** to $C$ at a point $y$ if it is the only supporting hyperplane to $C$ at $y$, and a
+**tangent half-space** is a supporting closed half-space whose boundary hyperplane is tangent. This
+module proves that a closed convex set with nonempty interior is the intersection of its tangent
+closed half-spaces, following §18 of [rockafellar1970convex]. This sharpens the fact that a closed
+convex set is the intersection of all the closed half-spaces that contain it.
 
-The interior hypothesis is not removable as stated: a closed convex set with empty interior lies in
-a proper affine subspace and has no tangent hyperplane anywhere, since every supporting hyperplane
-at a point can be tilted around that subspace. The right general statement intersects the tangent
-half-spaces *within the affine hull* and adds the affine hull itself.
-
-Tangency is dual to exposedness: after translating so that `0 ∈ int C`, the tangent half-spaces of
-`C` correspond exactly to the exposed points of the polar `C°`, and this correspondence carries
-the proof.
+The interior hypothesis cannot be removed from this statement. A closed convex set with empty
+interior lies in a proper affine subspace and has no tangent hyperplane at any point, because every
+supporting hyperplane at a point can be tilted around that subspace. The correct general statement
+intersects the tangent half-spaces within the affine hull and adds the affine hull itself. Tangency
+is dual to exposedness: if $0 \in \operatorname{int} C$, the tangent half-spaces of $C$ correspond
+exactly to the exposed points of the polar set $C^\circ$, and this correspondence gives the proof.
 
 ## Main definitions
 
-* `IsSupportingAt C f y` — `y ∈ C` and the linear functional `f` attains its maximum over `C` at
-  `y`, so `{z | f z ≤ f y}` is a supporting half-space and `{z | f z = f y}` a supporting
-  hyperplane.
-* `IsTangentAt C f y` — that supporting hyperplane is the only one at `y`: every nonzero
-  functional supported at `y` is a *positive* multiple of `f`.
+* `ConvexAnalysis.IsSupportingAt`: $y \in C$ and the continuous linear functional $f$ attains its
+  maximum over $C$ at $y$, so $\{z : f(z) \le f(y)\}$ is a supporting half-space and
+  $\{z : f(z) = f(y)\}$ is a supporting hyperplane.
+* `ConvexAnalysis.IsTangentAt`: $f \neq 0$ supports $C$ at $y$, and every nonzero functional that
+  supports $C$ at $y$ is a positive multiple of $f$.
 
 ## Main results
 
-* `eq_iInter_tangent_halfSpaces` — a closed convex set with nonempty interior is the intersection
-  of the closed half-spaces tangent to it.
-* `exists_isTangentAt_lt_of_zero_mem_interior` — the separating form: a point outside such a set
-  is cut off by a tangent half-space.
+* `ConvexAnalysis.exists_isTangentAt_lt_of_zero_mem_interior`: if $0 \in \operatorname{int} C$,
+  every point outside $C$ is separated from $C$ by a tangent half-space.
+* `ConvexAnalysis.eq_iInter_tangent_halfSpaces`: a closed convex set with nonempty interior is the
+  intersection of its tangent closed half-spaces.
+
+## Proof outline
+
+The proof works with the polar set and does not pass to a cone. After a translation,
+$0 \in \operatorname{int} C$, and then the polar $C^\circ$ is compact. By Minkowski's theorem,
+$C^\circ$ is the convex hull of its extreme points. By Straszewicz's theorem, these are in the
+closure of the exposed points of $C^\circ$. The exposed points of $C^\circ$ are exactly the normals
+of the tangent half-spaces of $C$. So a point outside $C$ is already excluded by the half-space of
+some exposed point of $C^\circ$.
 
 ## Implementation notes
 
-The proof stays in the polar picture rather than homogenising. After translating so that
-`0 ∈ int C`, the polar `C°` is compact; Minkowski's theorem writes it as the hull of its extreme
-points, Straszewicz's theorem puts those in the closure of its exposed points, and the exposed
-points of `C°` are exactly the normals of the tangent half-spaces to `C`. So a point outside `C` is
-already excluded by the half-space of some *exposed* point of `C°`. Identifying an exposing
-functional on `E*` with a point of `E`, which produces the point of contact, uses reflexivity
-(`Module.evalEquiv`, packaged as `exists_forall_apply_eq`) — a step invisible in `ℝⁿ`.
-
-## References
-
-* [rockafellar1970convex] §18.
+* An exposing functional on the dual $E^*$ is identified with a point of $E$, which is the point of
+  contact. This uses the reflexivity of $E$ (`Module.evalEquiv`, packaged as
+  `ConvexAnalysis.exists_forall_apply_eq`), a step that is not visible in $\mathbb{R}^n$.
 -/
 
 open Set Bornology
@@ -64,25 +64,32 @@ section Defs
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {C : Set E}
   {f : StrongDual ℝ E} {y x₁ : E}
 
-/-- `f` **supports** `C` at `y`: the point `y` belongs to `C` and maximises `f` over `C`, so that
-`{z | f z ≤ f y}` is a supporting half-space and `{z | f z = f y}` a supporting hyperplane. -/
+/-- Let $E$ be a real normed space, let $C \subseteq E$, let $f$ be a continuous linear functional
+on $E$ and let $y \in E$. The functional $f$ **supports** $C$ at $y$ if $y \in C$ and
+$f(z) \le f(y)$ for all $z \in C$. Then $\{z : f(z) \le f(y)\}$ is a supporting half-space and
+$\{z : f(z) = f(y)\}$ is a supporting hyperplane to $C$ at $y$. -/
 def IsSupportingAt (C : Set E) (f : StrongDual ℝ E) (y : E) : Prop :=
   y ∈ C ∧ ∀ z ∈ C, f z ≤ f y
 
-/-- The hyperplane `{z | f z = f y}` is **tangent** to `C` at `y`: it supports `C` at `y`, and it is
-the only supporting hyperplane there. Uniqueness is stated up to a *positive* multiple of the
-functional — a hyperplane determines its functional up to a nonzero scalar, and the supporting
-inequality fixes the sign. -/
+/-- Let $E$ be a real normed space, let $C \subseteq E$, let $f$ be a continuous linear functional
+on $E$ and let $y \in E$. The hyperplane $\{z : f(z) = f(y)\}$ is **tangent** to $C$ at $y$ if
+$f \neq 0$, $f$ supports $C$ at $y$, and every nonzero continuous linear functional $g$ with
+$g(z) \le g(y)$ for all $z \in C$ is $g = a f$ for some $a > 0$.
+
+So the tangent hyperplane is the only supporting hyperplane at $y$. Uniqueness is stated up to a
+positive multiple of the functional, because a hyperplane determines its functional up to a
+nonzero factor and the supporting inequality fixes the sign. -/
 def IsTangentAt (C : Set E) (f : StrongDual ℝ E) (y : E) : Prop :=
   f ≠ 0 ∧ IsSupportingAt C f y ∧
     ∀ g : StrongDual ℝ E, g ≠ 0 → (∀ z ∈ C, g z ≤ g y) → ∃ a : ℝ, 0 < a ∧ g = a • f
 
-/-- A tangent half-space contains `C`. -/
+/-- If $\{z : f(z) = f(y)\}$ is tangent to $C$ at $y$, then $C \subseteq \{z : f(z) \le f(y)\}$. -/
 theorem IsTangentAt.subset_halfSpace (h : IsTangentAt C f y) : C ⊆ {z : E | f z ≤ f y} :=
   fun z hz => h.2.1.2 z hz
 
 
-/-- Tangency is invariant under translation: `{z | z + x₁ ∈ C}` is `C` shifted by `-x₁`. -/
+/-- If $f$ is tangent at $y$ to the translated set $C - x_1 = \{z : z + x_1 \in C\}$, then $f$ is
+tangent to $C$ at $y + x_1$. -/
 theorem IsTangentAt.shift (h : IsTangentAt {z : E | z + x₁ ∈ C} f y) :
     IsTangentAt C f (y + x₁) := by
   obtain ⟨hf0, ⟨hyC, hymax⟩, huniq⟩ := h
@@ -106,8 +113,8 @@ section Tangent
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {C : Set E}
 
-/-- A vector rescaled to a prescribed norm lies in the corresponding ball. This is the only metric
-input to the compactness of the polar and to the nondegeneracy of a supporting functional. -/
+/-- If $x \neq 0$, $r > 0$ and $|s| = r$, then $(s / \|x\|) x$ lies in the closed ball of radius $r$
+about $0$. -/
 private theorem smul_div_norm_mem_closedBall {x : E} (hx : x ≠ 0) {r s : ℝ} (hr : 0 < r)
     (hs : |s| = r) : (s / ‖x‖) • x ∈ Metric.closedBall (0 : E) r := by
   have hxn : 0 < ‖x‖ := norm_pos_iff.2 hx
@@ -117,9 +124,14 @@ private theorem smul_div_norm_mem_closedBall {x : E} (hx : x ≠ 0) {r s : ℝ} 
 
 variable [FiniteDimensional ℝ E]
 
-/-- For a closed convex set with the origin in its interior, every point outside is cut off by a
-*tangent* half-space. The normal of that half-space is an exposed point of
-the polar `C°`, which is compact because `0 ∈ int C`. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $C \subseteq E$ be a closed convex set
+with $0 \in \operatorname{int} C$. Then for every $x_0 \notin C$ there are a continuous linear
+functional $f$ and a point $y$ such that $\{z : f(z) = f(y)\}$ is tangent to $C$ at $y$ and
+$$f(y) < f(x_0).$$
+So every point outside $C$ is separated from $C$ by a tangent half-space.
+
+The normal $f$ of this half-space is an exposed point of the polar set $C^\circ$, which is
+compact because $0 \in \operatorname{int} C$. -/
 theorem exists_isTangentAt_lt_of_zero_mem_interior (hC : Convex ℝ C) (hCcl : IsClosed C)
     (h0 : (0 : E) ∈ interior C) {x₀ : E} (hx₀ : x₀ ∉ C) :
     ∃ (f : StrongDual ℝ E) (y : E), IsTangentAt C f y ∧ f y < f x₀ := by
@@ -268,10 +280,15 @@ theorem exists_isTangentAt_lt_of_zero_mem_interior (hC : Convex ℝ C) (hCcl : I
     rw [smul_smul, mul_inv_cancel₀ (ne_of_gt hμpos), one_smul]
   exact hgeq.trans (by rw [heq])
 
-/-- **A closed convex set with nonempty interior is the intersection of the closed half-spaces
-tangent to it.** ("`n`-dimensional in `ℝⁿ`" is `(interior C).Nonempty`.) This sharpens
-Mathlib's `RCLike.iInter_halfSpaces_eq'`, which intersects *all* the closed half-spaces containing
-`C`. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $C \subseteq E$ be a closed convex set
+with nonempty interior. Then $C$ is the intersection of its tangent closed half-spaces:
+$$C = \bigcap \{ \{z : f(z) \le f(y)\} : \{z : f(z) = f(y)\} \text{ is tangent to } C \text{ at
+  } y \}.$$
+
+The intersection is over all pairs $(f, y)$ of a continuous linear functional and a point with
+`ConvexAnalysis.IsTangentAt C f y`. In $\mathbb{R}^n$, the hypothesis that $C$ is
+$n$-dimensional is the hypothesis `(interior C).Nonempty`. This sharpens Mathlib's
+`RCLike.iInter_halfSpaces_eq'`, which intersects all the closed half-spaces that contain $C$. -/
 theorem eq_iInter_tangent_halfSpaces (hC : Convex ℝ C) (hCcl : IsClosed C)
     (hint : (interior C).Nonempty) :
     ⋂ (f : StrongDual ℝ E) (y : E) (_ : IsTangentAt C f y), {z : E | f z ≤ f y} = C := by

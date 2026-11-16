@@ -16,40 +16,54 @@ import Mathlib.Analysis.Calculus.DerivativeTest
 /-!
 # The necessary second-derivative test
 
-Mathlib's `isLocalMin_of_deriv_deriv_pos` is the *sufficient* second-derivative test: a critical
-point with positive second derivative is a local minimum. This file has the *necessary* test, in
-the forms the classical maximum principles of Brezis, *Functional Analysis, Sobolev Spaces
-and Partial Differential Equations* (Remarks 26–27 of chapter 8 and Theorem 10.6) use:
+Mathlib's `isLocalMin_of_deriv_deriv_pos` is the sufficient second-derivative test: a critical point
+with positive second derivative is a local minimum. This module proves the necessary test, in the
+forms that the classical maximum principles of [brezis2011functional] use (Chapter 8, Remarks 26 and
+27, and Theorem 10.6). At an interior local maximum of a function $f : \mathbb{R} \to \mathbb{R}$
+that is continuous there, $f'' \le 0$. At an endpoint $x_0$, a function that is $C^2$ on
+$[x_0, x_0 + \delta)$, has one-sided derivative $u'(x_0^+) = 0$ and has a local maximum at $x_0$
+among the points to the right satisfies $u''(x_0^+) \le 0$. On a real normed space, the Hessian of a
+$C^2$ function is negative semidefinite at a local maximum and positive semidefinite at a local
+minimum.
 
-* `IsLocalMax.deriv_deriv_nonpos` (and `IsLocalMin.deriv_deriv_nonneg`): at an interior local
-  maximum of a function continuous there, `f'' ≤ 0` — with Mathlib's junk-value convention for
-  `deriv`, so no differentiability is assumed; the continuity cannot be dropped (`f x = x²/2` for
-  `x ≠ 0`, `f 0 = 1`, has a local maximum at `0` with `deriv f = id` and `deriv (deriv f) 0 = 1`);
-* `IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero`: the one-sided form at an endpoint, for a
-  function that is `C²` on `[x₀, x₀ + δ)`, has vanishing one-sided derivative at `x₀` and a local
-  maximum there among the points to the right — `u'' (x₀⁺) ≤ 0`. Its engine is
-  `IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici`, stated with explicit derivative data.
-* `IsLocalMax.fderiv_fderiv_apply_self_nonpos`, `IsLocalMin.fderiv_fderiv_apply_self_nonneg`:
-  the several-variable form on a real normed space, the Hessian of a `C²` function is negative
-  (positive) semidefinite at a local maximum (minimum) — the one-variable test applied to the line
-  restriction `s ↦ f (x₀ + s • v)`, whose second derivative at `0` is
-  `iteratedFDeriv ℝ 2 f x₀ ![v, v]` (`ContDiffAt.deriv_deriv_comp_add_smul`).
-
-The Laplacian form `IsLocalMax.laplacian_nonpos` is in
+The several-variable form follows from the one-variable test applied to the restriction
+$s \mapsto f(x_0 + s v)$ to a line, whose second derivative at $0$ is $D^2 f(x_0)[v, v]$. The
+Laplacian form `IsLocalMax.laplacian_nonpos` is in
 `Numlib.Analysis.Calculus.DerivativeTest.Laplacian`.
 
-## References
+## Main results
 
-[brezis2011functional], chapter 8, Remarks 26 and 27, and Theorem 10.6.
+* `IsLocalMax.deriv_deriv_nonpos`, `IsLocalMin.deriv_deriv_nonneg`: at an interior local maximum
+  (minimum) of a function continuous there, $f'' \le 0$ ($f'' \ge 0$).
+* `IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici`: the one-sided test at an endpoint, with explicit
+  derivative data.
+* `IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero`: the one-sided test at an endpoint for a
+  function that is $C^2$ to the right of it.
+* `ContDiffAt.deriv_deriv_comp_add_smul`: the second derivative of $s \mapsto f(x_0 + s v)$ at $0$
+  is $D^2 f(x_0)[v, v]$.
+* `IsLocalMax.fderiv_fderiv_apply_self_nonpos`, `IsLocalMin.fderiv_fderiv_apply_self_nonneg`: the
+  Hessian of a $C^2$ function is negative (positive) semidefinite at a local maximum (minimum).
+
+## Implementation notes
+
+* The interior test uses Mathlib's convention that `deriv` is $0$ where the derivative does not
+  exist, so no differentiability is assumed. The continuity cannot be dropped: the function with
+  $f(x) = x^2/2$ for $x \neq 0$ and $f(0) = 1$ has a local maximum at $0$, with `deriv f = id` and
+  `deriv (deriv f) 0 = 1`.
+* The one-sided derivatives at an endpoint $x_0$ are `derivWithin … (Set.Ici x₀)`.
+* The Hessian $D^2 f(x_0)[v, v]$ appears in two forms, `fderiv ℝ (fderiv ℝ f) x₀ v v` and
+  `iteratedFDeriv ℝ 2 f x₀ ![v, v]`.
 -/
 
 open Filter Set Topology
 
-/-- **The second-derivative test at an interior maximum**: if `f : ℝ → ℝ` has a local maximum at
-`x₀` and is continuous there, then `deriv (deriv f) x₀ ≤ 0`. No differentiability is assumed
-(`deriv` is `0` where it does not exist), but the continuity is needed. The proof is the
-contrapositive of Mathlib's `isLocalMin_of_deriv_deriv_pos`: a point that is both a local maximum
-and a local minimum is a point near which `f` is constant, where both derivatives vanish. -/
+/-- The **second-derivative test at an interior maximum**. Let $f : \mathbb{R} \to \mathbb{R}$ have
+a local maximum at $x_0$ and be continuous at $x_0$. Then $f''(x_0) \le 0$.
+
+The second derivative is `deriv (deriv f) x₀`, which is $0$ where a derivative does not exist,
+so no differentiability is assumed. The continuity is needed. The proof is the contrapositive of
+`isLocalMin_of_deriv_deriv_pos`: a point that is both a local maximum and a local minimum has a
+neighbourhood on which $f$ is constant, and there both derivatives vanish. -/
 theorem IsLocalMax.deriv_deriv_nonpos {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLocalMax f x₀)
     (hc : ContinuousAt f x₀) : deriv (deriv f) x₀ ≤ 0 := by
   by_contra hpos
@@ -67,9 +81,11 @@ theorem IsLocalMax.deriv_deriv_nonpos {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLoc
     rw [Filter.EventuallyEq.deriv_eq (hderiv : deriv f =ᶠ[𝓝 x₀] fun _ ↦ 0), deriv_const]
   exact absurd this hpos.ne'
 
-/-- **The second-derivative test at an interior minimum**: if `f : ℝ → ℝ` has a local minimum at
-`x₀` and is continuous there, then `0 ≤ deriv (deriv f) x₀` (`IsLocalMax.deriv_deriv_nonpos`
-applied to `-f`). -/
+/-- The **second-derivative test at an interior minimum**. Let $f : \mathbb{R} \to \mathbb{R}$ have
+a local minimum at $x_0$ and be continuous at $x_0$. Then $f''(x_0) \ge 0$.
+
+The second derivative is `deriv (deriv f) x₀`. The proof applies `IsLocalMax.deriv_deriv_nonpos`
+to $-f$. -/
 theorem IsLocalMin.deriv_deriv_nonneg {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLocalMin f x₀)
     (hc : ContinuousAt f x₀) : 0 ≤ deriv (deriv f) x₀ := by
   have h := hf.neg.deriv_deriv_nonpos hc.neg
@@ -77,11 +93,14 @@ theorem IsLocalMin.deriv_deriv_nonneg {f : ℝ → ℝ} {x₀ : ℝ} (hf : IsLoc
   rw [hd, deriv.fun_neg] at h
   linarith
 
-/-- **The one-sided second-derivative test at an endpoint, with explicit derivative data**: if
-`u` has a local maximum at `x₀` among the points of `[x₀, ∞)`, has the one-sided derivative `u' y`
-at every `y` near `x₀` in `[x₀, ∞)`, and `u'` has one-sided derivative `c` at `x₀` with
-`u' x₀ = 0`, then `c ≤ 0`. Were `c > 0`, `u'` would be positive just to the right of `x₀` and,
-by the mean value theorem, `u` would increase there. -/
+/-- The **one-sided second-derivative test at an endpoint**, with explicit derivative data. Let
+$u, u' : \mathbb{R} \to \mathbb{R}$ and $x_0, c \in \mathbb{R}$. Suppose that $u$ has a local
+maximum at $x_0$ among the points of $[x_0, \infty)$, that $u$ has the derivative $u'(y)$ within
+$[x_0, \infty)$ at every $y \ge x_0$ near $x_0$, that $u'$ has the derivative $c$ within
+$[x_0, \infty)$ at $x_0$, and that $u'(x_0) = 0$. Then $c \le 0$.
+
+If $c > 0$, then $u'$ is positive just to the right of $x_0$, and by the mean value theorem $u$
+increases there. -/
 theorem IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici {u u' : ℝ → ℝ} {x₀ c : ℝ}
     (hmax : IsLocalMaxOn u (Ici x₀) x₀)
     (hu : ∀ᶠ y in 𝓝[≥] x₀, HasDerivWithinAt u (u' y) (Ici x₀) y)
@@ -123,11 +142,16 @@ theorem IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici {u u' : ℝ → ℝ} {x₀ c
     rw [hξeq, div_mul_cancel₀ _ (sub_pos.2 htx).ne']
   nlinarith [mul_pos hξpos (sub_pos.2 htx)]
 
-/-- **The one-sided second-derivative test at an endpoint** ([brezis2011functional], chapter 8,
-Remark 27): if `u` is `C²` on `[x₀, x₀ + δ)`, its one-sided derivative `u'(x₀⁺) = 0`, and `x₀` is a
-local maximum of `u` among the points of `[x₀, ∞)`, then the one-sided second derivative
-`u''(x₀⁺) ≤ 0`. The one-sided derivatives are `derivWithin … (Ici x₀)`; when `u` is `C²` on a
-two-sided neighbourhood they are the ordinary derivatives (`derivWithin_of_mem_nhds`). -/
+/-- The **one-sided second-derivative test at an endpoint** ([brezis2011functional], Chapter 8,
+Remark 27). Let $\delta > 0$, let $u : \mathbb{R} \to \mathbb{R}$ be $C^2$ on
+$[x_0, x_0 + \delta)$, let its one-sided derivative satisfy $u'(x_0^+) = 0$, and let $x_0$ be a
+local maximum of $u$ among the points of $[x_0, \infty)$. Then the one-sided second derivative
+satisfies $u''(x_0^+) \le 0$.
+
+The one-sided derivatives are derivatives within `Set.Ici x₀`: $u'$ is
+`derivWithin u (Set.Ici x₀)` and $u''(x_0^+)$ is `derivWithin (derivWithin u (Set.Ici x₀))
+(Set.Ici x₀) x₀`. When $u$ is $C^2$ on a neighbourhood of $x_0$, they are the ordinary
+derivatives (`derivWithin_of_mem_nhds`). -/
 theorem IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero {u : ℝ → ℝ} {x₀ δ : ℝ} (hδ : 0 < δ)
     (hu : ContDiffOn ℝ 2 u (Ico x₀ (x₀ + δ))) (h0 : derivWithin u (Ici x₀) x₀ = 0)
     (hmax : IsLocalMaxOn u (Ici x₀) x₀) :
@@ -165,11 +189,14 @@ section Hessian
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The second derivative of a line restriction**: for `f` of class `C²` at `x₀`, the second
-derivative at `s = 0` of `s ↦ f (x₀ + s • v)` is `D²f (x₀) [v, v]`. The first derivative of the
-restriction is `s ↦ Df (x₀ + s • v) v` near `0` (chain rule, `f` being differentiable near `x₀`),
-and its derivative at `0` is `D²f (x₀) v v` (chain rule again, `Df` being differentiable at
-`x₀`, followed by the evaluation at `v`). -/
+/-- The **second derivative along a line**. Let $E$ be a real normed space, let
+$f : E \to \mathbb{R}$ be $C^2$ at $x_0$, and let $v \in E$. Then the second derivative at
+$s = 0$ of $s \mapsto f(x_0 + s v)$ is $D^2 f(x_0)[v, v]$.
+
+Here $D^2 f(x_0)[v, v]$ is `iteratedFDeriv ℝ 2 f x₀ ![v, v]`. Near $0$, the first derivative of
+the restriction is $s \mapsto Df(x_0 + s v)\, v$ by the chain rule, since $f$ is differentiable
+near $x_0$. Its derivative at $0$ is $D^2 f(x_0)\, v\, v$, by the chain rule again, since $Df$
+is differentiable at $x_0$. -/
 theorem ContDiffAt.deriv_deriv_comp_add_smul {f : E → ℝ} {x₀ : E} (hf : ContDiffAt ℝ 2 f x₀)
     (v : E) : deriv (deriv fun s : ℝ ↦ f (x₀ + s • v)) 0 = iteratedFDeriv ℝ 2 f x₀ ![v, v] := by
   have hline : ∀ s : ℝ, HasDerivAt (fun s : ℝ ↦ x₀ + s • v) v s := fun s => by
@@ -196,10 +223,13 @@ theorem ContDiffAt.deriv_deriv_comp_add_smul {f : E → ℝ} {x₀ : E} (hf : Co
   rw [h4.deriv, iteratedFDeriv_two_apply]
   simp
 
-/-- **The Hessian of a `C²` function is nonpositive at a local maximum**: `D²f(x₀)[v, v] ≤ 0`
-for every `v`, read as `fderiv (fderiv f) x₀ v v` — the second derivative at `0` of the line
-restriction `s ↦ f (x₀ + s v)` (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
-maximum at `0` (`IsLocalMax.deriv_deriv_nonpos`). -/
+/-- The **Hessian of a $C^2$ function is negative semidefinite at a local maximum**. Let $E$ be a
+real normed space, and let $f : E \to \mathbb{R}$ have a local maximum at $x_0$ and be $C^2$ at
+$x_0$. Then $D^2 f(x_0)[v, v] \le 0$ for every $v \in E$.
+
+The Hessian is `fderiv ℝ (fderiv ℝ f) x₀ v v`. It is the second derivative at $0$ of the
+restriction $s \mapsto f(x_0 + s v)$ (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
+maximum at $0$ (`IsLocalMax.deriv_deriv_nonpos`). -/
 theorem IsLocalMax.fderiv_fderiv_apply_self_nonpos {f : E → ℝ} {x₀ : E} (hmax : IsLocalMax f x₀)
     (hf : ContDiffAt ℝ 2 f x₀) (v : E) : fderiv ℝ (fderiv ℝ f) x₀ v v ≤ 0 := by
   have h := hf.deriv_deriv_comp_add_smul v
@@ -214,9 +244,12 @@ theorem IsLocalMax.fderiv_fderiv_apply_self_nonpos {f : E → ℝ} {x₀ : E} (h
       hline.continuousAt
   · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
 
-/-- **The Hessian of a `C²` function is nonnegative at a local minimum**: `D²f(x₀)[v, v] ≥ 0` for
-every `v`, read as `fderiv (fderiv f) x₀ v v` (`IsLocalMax.fderiv_fderiv_apply_self_nonpos`
-applied to `-f`). -/
+/-- The **Hessian of a $C^2$ function is positive semidefinite at a local minimum**. Let $E$ be a
+real normed space, and let $f : E \to \mathbb{R}$ have a local minimum at $x_0$ and be $C^2$ at
+$x_0$. Then $D^2 f(x_0)[v, v] \ge 0$ for every $v \in E$.
+
+The Hessian is `fderiv ℝ (fderiv ℝ f) x₀ v v`. The proof applies
+`IsLocalMax.fderiv_fderiv_apply_self_nonpos` to $-f$. -/
 theorem IsLocalMin.fderiv_fderiv_apply_self_nonneg {f : E → ℝ} {x₀ : E} (hmin : IsLocalMin f x₀)
     (hf : ContDiffAt ℝ 2 f x₀) (v : E) : 0 ≤ fderiv ℝ (fderiv ℝ f) x₀ v v := by
   have h := hmin.neg.fderiv_fderiv_apply_self_nonpos hf.neg v
@@ -224,15 +257,21 @@ theorem IsLocalMin.fderiv_fderiv_apply_self_nonneg {f : E → ℝ} {x₀ : E} (h
   rw [hd, fderiv_fun_neg] at h
   simpa using h
 
-/-- The Hessian test at a local minimum in the `iteratedFDeriv` form:
-`0 ≤ ∇²f(x₀)[v, v] = iteratedFDeriv ℝ 2 f x₀ ![v, v]`. -/
+/-- Let $E$ be a real normed space, and let $f : E \to \mathbb{R}$ have a local minimum at $x_0$ and
+be $C^2$ at $x_0$. Then $D^2 f(x_0)[v, v] \ge 0$ for every $v \in E$, with the second derivative
+in the form `iteratedFDeriv ℝ 2 f x₀`.
+
+The argument of the bilinear form is the constant family `fun _ => v`. -/
 theorem IsLocalMin.iteratedFDeriv_two_apply_self_nonneg {f : E → ℝ} {x₀ : E}
     (hmin : IsLocalMin f x₀) (hf : ContDiffAt ℝ 2 f x₀) (v : E) :
     0 ≤ iteratedFDeriv ℝ 2 f x₀ (fun _ => v) := by
   simpa [iteratedFDeriv_two_apply] using hmin.fderiv_fderiv_apply_self_nonneg hf v
 
-/-- The Hessian test at a local maximum in the `iteratedFDeriv` form:
-`iteratedFDeriv ℝ 2 f x₀ ![v, v] = ∇²f(x₀)[v, v] ≤ 0`. -/
+/-- Let $E$ be a real normed space, and let $f : E \to \mathbb{R}$ have a local maximum at $x_0$ and
+be $C^2$ at $x_0$. Then $D^2 f(x_0)[v, v] \le 0$ for every $v \in E$, with the second derivative
+in the form `iteratedFDeriv ℝ 2 f x₀`.
+
+The argument of the bilinear form is the constant family `fun _ => v`. -/
 theorem IsLocalMax.iteratedFDeriv_two_apply_self_nonpos {f : E → ℝ} {x₀ : E}
     (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) (v : E) :
     iteratedFDeriv ℝ 2 f x₀ (fun _ => v) ≤ 0 := by

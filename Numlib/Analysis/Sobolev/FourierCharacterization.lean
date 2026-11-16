@@ -12,43 +12,67 @@ import Numlib.Analysis.Convolution.Lp
 import Numlib.Analysis.Sobolev.Tempered
 
 /-!
-# The Fourier characterization of `H^s` on the whole space
+# The Fourier characterization of $H^s$ on the whole space
 
-For an `L²` function `v` on a finite-dimensional real inner product space `E` and `s ≥ 0`, the
-Bessel potential space `H^s(E)` of Mathlib (`TemperedDistribution.MemSobolev s 2`) is described
-on the Fourier side: `v ∈ H^s(E)` exactly when `(1 + |ξ|²)^{s/2} ℱv ∈ L²(E)`, and then the `L²`
-norm of the Bessel potential of `v` *is* `‖(1 + |ξ|²)^{s/2} ℱv‖_{L²}`. At an integer order `k`
-the Sobolev norm `[∑_{|α| ≤ k} ‖∂^α v‖²_{L²}]^{1/2}` of the weak derivatives in an orthonormal
-basis `b` is equivalent to that Fourier norm.
+Let $E$ be a finite-dimensional real inner product space, let $v \in L^2(E; \mathbb{C})$ with
+Fourier transform $\mathcal{F}v$, and let $s \ge 0$. This module describes the Bessel potential
+space $H^s(E)$ of Mathlib (`TemperedDistribution.MemSobolev s 2`) on the Fourier side:
+$v \in H^s(E)$ if and only if $(1 + |\xi|^2)^{s/2} \mathcal{F}v \in L^2(E)$, and then the $L^2$ norm
+of the Bessel potential of $v$ equals $\|(1 + |\xi|^2)^{s/2} \mathcal{F}v\|_{L^2}$. At an integer
+order $k$, the Sobolev norm $\big(\sum_{|\alpha| \le k} \|\partial^\alpha v\|_{L^2}^2\big)^{1/2}$ of
+the weak derivatives in an orthonormal basis $b$ is equivalent to this Fourier norm. The module also
+proves the Fourier side of the interpolation inequality $\|v\|_\infty^2 \lesssim \|v\|_{L^2}
+\|v\|_{H^k}$ for $2k > \dim E$. The presentation follows [han2009theoretical], §7.4: Theorem 7.4.1,
+the display (7.4.2) that defines $H^s(\mathbb{R}^d)$, the norm equivalence (7.4.1), Exercise 7.4.2,
+and the Fourier steps of Example 7.4.3.
 
-## Main statements
+For a multi-index $\alpha$ the monomial in the coordinates of $b$ is $\xi^\alpha = \prod_i \langle
+\xi, b_i \rangle^{\alpha_i}$. The Fourier transform of a weak derivative is
+$\mathcal{F}(\partial^\alpha v) = (2\pi i \xi)^\alpha \mathcal{F}v$, so by Plancherel
+$$\sum_{|\alpha| \le k} \|\partial^\alpha v\|_{L^2}^2 = \int \Big( \sum_{|\alpha| \le k}
+  (2\pi)^{2|\alpha|} |\xi^\alpha|^2 \Big) |\mathcal{F}v(\xi)|^2 \, d\xi,$$
+and the symbol inequality $c_1 \big(\sum_{|\alpha| \le k} |\xi^\alpha|^2\big)^{1/2} \le (1 +
+|\xi|^2)^{k/2} \le c_2 \big(\sum_{|\alpha| \le k} |\xi^\alpha|^2\big)^{1/2}$ compares this with
+$\int (1 + |\xi|^2)^k |\mathcal{F}v|^2$.
 
-* `TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier`: the membership criterion,
-  Mathlib's `TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier` with the
-  multiplication by the symbol read pointwise on the `L²` representative
-  (`MeasureTheory.Lp.ae_eq_symbol_mul_of_smulLeftCLM_eq`; `s ≥ 0` makes the inverse symbol
-  bounded).
-* `TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotential_eq`: the norm
-  identity, by Plancherel.
-* `OrthonormalBasis.exists_bounds_rpow_one_add_norm_sq`: the symbol inequality
-  `c₁ (∑_{|α| ≤ k} |ξ^α|²)^{1/2} ≤ (1 + |ξ|²)^{k/2} ≤ c₂ (∑_{|α| ≤ k} |ξ^α|²)^{1/2}` for the
-  monomials `ξ^α = ∏ᵢ ⟪ξ, bᵢ⟫^{αᵢ}` (`OrthonormalBasis.coordMonomial`). The lower bound needs no
-  multinomial expansion, only a coordinate of largest absolute value.
-* `OrthonormalBasis.exists_norm_equiv_eLpNorm_symbol_mul_fourier`: the norm equivalence. The
-  Fourier transform of a weak derivative is `ℱ(∂^α v) = (2πiξ)^α ℱv` (`fourier_weakDeriv_aeEq`),
-  so Plancherel turns `∑_{|α| ≤ k} ‖∂^α v‖²_{L²}` into `∫ (∑_{|α| ≤ k} (2π)^{2|α|} |ξ^α|²) |ℱv|²`
-  (`OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`), and the symbol inequality compares this with
-  `∫ (1 + |ξ|²)^k |ℱv|²`.
-* `sq_toReal_lintegral_enorm_fourier_le`: the Fourier side of the interpolation inequality
-  `‖v‖²_∞ ≲ ‖v‖_{L²} ‖v‖_{H^k}`, `2k > dim E` — the weighted Cauchy–Schwarz bound
-  (`sq_lintegral_enorm_le_mul`) against the scaled weight `(1 + λ|ξ|²)^{±k/2}`, whose integral
-  scales like `λ^{−dim E/2}` (`lintegral_ofReal_rpow_neg_one_add_mul_norm_sq`), with the optimal
-  `λ` given by `exists_rpow_neg_half_mul_add_eq`.
+## Main definitions
 
-## References
+* `OrthonormalBasis.coordMonomial`: the monomial $\xi^\alpha = \prod_i \langle \xi, b_i
+  \rangle^{\alpha_i}$.
+* `OrthonormalBasis.sumSqCoordMonomial`: the sum $\sum_{|\alpha| \le k} |\xi^\alpha|^2$.
+* `OrthonormalBasis.sobolevSymbol`: the Fourier symbol $\sum_{|\alpha| \le k} (2\pi)^{2|\alpha|}
+  |\xi^\alpha|^2$ of the Sobolev norm of order $k$.
 
-[han2009theoretical], §7.4: Theorem 7.4.1, the display (7.4.2) defining `H^s(ℝ^d)`, the norm
-equivalence (7.4.1), Exercise 7.4.2 and the Fourier steps of Example 7.4.3.
+## Main results
+
+* `TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier`: for $s \ge 0$, $v \in H^s(E)$
+  if and only if $(1 + |\xi|^2)^{s/2} \mathcal{F}v \in L^2$.
+* `TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotential_eq`: the $L^2$ norm of
+  the Bessel potential of $v$ is $\|(1 + |\xi|^2)^{s/2} \mathcal{F}v\|_{L^2}$.
+* `OrthonormalBasis.exists_bounds_rpow_one_add_norm_sq`: the symbol inequality between
+  $(1 + |\xi|^2)^{k/2}$ and $\big(\sum_{|\alpha| \le k} |\xi^\alpha|^2\big)^{1/2}$.
+* `OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`: Plancherel for the whole Sobolev norm of order
+  $k$.
+* `OrthonormalBasis.exists_norm_equiv_eLpNorm_symbol_mul_fourier`: the Sobolev norm of order $k$ and
+  the Fourier norm $\|(1 + |\xi|^2)^{k/2} \mathcal{F}v\|_{L^2}$ are equivalent.
+* `sq_lintegral_enorm_le_mul`: the weighted Cauchy–Schwarz inequality with the weights
+  $(1 + \lambda|\xi|^2)^{\pm k}$.
+* `lintegral_ofReal_rpow_neg_one_add_mul_norm_sq`: the integral of $(1 + \lambda|\xi|^2)^{-k}$
+  scales like $\lambda^{-\dim E/2}$.
+* `exists_rpow_neg_half_mul_add_eq`: the optimal choice of the scale $\lambda$.
+* `sq_toReal_lintegral_enorm_fourier_le`: the bound of $\big(\int |\mathcal{F}v|\big)^2$ by
+  $\|v\|_{L^2}^2$ and $\|(1 + |\xi|^2)^{k/2} \mathcal{F}v\|_{L^2}^2$, for every scale $\lambda > 0$.
+
+## Proof outline
+
+The membership criterion is Mathlib's
+`TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier`, with the multiplication by the
+symbol read pointwise on the $L^2$ representative; the hypothesis $s \ge 0$ makes the inverse symbol
+bounded. The norm identity is Plancherel. In the symbol inequality, the bound of $(1 + |\xi|^2)^k$
+by the sum of the squared monomials needs no multinomial expansion, only a coordinate of largest
+absolute value. The interpolation bound applies the weighted Cauchy–Schwarz inequality with the
+scaled weight $(1 + \lambda|\xi|^2)^{\pm k/2}$, whose integral scales like $\lambda^{-\dim E/2}$,
+and then chooses the scale $\lambda$ optimally.
 -/
 
 open FourierTransform LineDeriv MeasureTheory TemperedDistribution TopologicalSpace
@@ -57,7 +81,7 @@ open scoped ENNReal NNReal RealInnerProductSpace SchwartzMap
 
 noncomputable section
 
-/-! ### Multiplying an `L²` function by the symbol `(1 + |ξ|²)^{s/2}` -/
+/-! ### Multiplying an $L^2$ function by the symbol $(1 + |\xi|^2)^{s/2}$ -/
 
 section Symbol
 
@@ -65,15 +89,18 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   [MeasurableSpace E] [BorelSpace E]
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The symbol `(1 + |ξ|^2)^{s/2}` has temperate growth. -/
+/-- The symbol $\xi \mapsto (1 + |\xi|^2)^{s/2}$ has temperate growth. -/
 private theorem hasTemperateGrowth_symbol (s : ℝ) :
     (fun ξ : E ↦ (((1 + ‖ξ‖ ^ 2) ^ (s / 2) : ℝ) : ℂ)).HasTemperateGrowth := by fun_prop
 
-/-- **Reading the symbol off the `L²` representative.** If an `L²` function `w` is, as a tempered
-distribution, the product of the symbol `(1 + |ξ|²)^{s/2}` with an `L²` function `u`, and
-`s ≥ 0`, then `w` is that product almost everywhere. The hypothesis `s ≥ 0` is what makes the
-inverse symbol `(1 + |ξ|²)^{-s/2}` bounded, so that multiplying the identity by it stays inside
-`L²`. -/
+/-- **Reading the symbol off the $L^2$ representative.** Let $s \ge 0$ and
+$u, w \in L^2(E; \mathbb{C})$. If, as tempered distributions, the product of the symbol
+$(1 + |\xi|^2)^{s/2}$ with $u$ equals $w$, then
+$$w(\xi) = (1 + |\xi|^2)^{s/2}\, u(\xi) \quad \text{for almost every } \xi.$$
+
+The product of tempered distributions is Mathlib's `TemperedDistribution.smulLeftCLM`. The
+hypothesis $s \ge 0$ makes the inverse symbol $(1 + |\xi|^2)^{-s/2}$ bounded, so that
+multiplying the identity by it stays inside $L^2$. -/
 theorem MeasureTheory.Lp.ae_eq_symbol_mul_of_smulLeftCLM_eq {s : ℝ} (hs : 0 ≤ s)
     {u w : Lp ℂ 2 (volume : Measure E)}
     (h : smulLeftCLM ℂ (fun ξ : E ↦ (((1 + ‖ξ‖ ^ 2) ^ (s / 2) : ℝ) : ℂ)) (u : 𝓢'(E, ℂ)) =
@@ -111,13 +138,16 @@ theorem MeasureTheory.Lp.ae_eq_symbol_mul_of_smulLeftCLM_eq {s : ℝ} (hs : 0 �
   filter_upwards [huae] with ξ hξ
   rw [hξ, ← mul_assoc, hmul ξ, one_mul]
 
-/-- **The Fourier characterization of `H^s` for `s ≥ 0`**: an `L²` function `v` lies in the
-Bessel potential space of order `s` exactly when `(1 + |ξ|²)^{s/2} ℱv` lies in `L²`, where `ℱv` is
-the `L²` Fourier transform of `v`.
+/-- **The Fourier characterization of $H^s$ for $s \ge 0$.** Let $s \ge 0$ and
+$v \in L^2(E; \mathbb{C})$. Then $v$ lies in the Bessel potential space $H^s(E)$ if and only if
+$$(1 + |\xi|^2)^{s/2}\, \mathcal{F}v \in L^2(E),$$
+where $\mathcal{F}v$ is the $L^2$ Fourier transform of $v$.
 
-This is `TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier` with the multiplication by
-the symbol made concrete: Mathlib states it as an equality of tempered distributions, and here the
-`L²` representative is identified pointwise almost everywhere. -/
+This is the display (7.4.2) of [han2009theoretical]. The space $H^s(E)$ is Mathlib's
+`TemperedDistribution.MemSobolev s 2`. The result is
+`TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier` with the multiplication by the
+symbol made concrete: Mathlib states it as an equality of tempered distributions, and here the
+$L^2$ representative is identified pointwise almost everywhere. -/
 theorem TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier {s : ℝ} (hs : 0 ≤ s)
     (v : Lp ℂ 2 (volume : Measure E)) :
     MemSobolev s 2 (v : 𝓢'(E, ℂ)) ↔
@@ -128,9 +158,9 @@ theorem TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier {s : �
     fun hm ↦ ⟨hm.toLp _, ?_⟩⟩
   exact (toTemperedDistribution_eq_smulLeftCLM (hasTemperateGrowth_symbol s) hm.coeFn_toLp).symm
 
-/-- **The Fourier transform of the Bessel potential.** If the Bessel potential of order `s ≥ 0` of
-an `L²` function `v` is the `L²` function `w`, then `ℱw = (1 + |ξ|²)^{s/2} ℱv` almost
-everywhere. -/
+/-- **The Fourier transform of the Bessel potential.** Let $s \ge 0$ and
+$v, w \in L^2(E; \mathbb{C})$. If the Bessel potential of order $s$ of $v$ is $w$, then
+$\mathcal{F}w = (1 + |\xi|^2)^{s/2}\, \mathcal{F}v$ almost everywhere. -/
 theorem TemperedDistribution.fourier_ae_eq_symbol_mul_fourier_of_besselPotential_eq {s : ℝ}
     (hs : 0 ≤ s) {v w : Lp ℂ 2 (volume : Measure E)}
     (hw : besselPotential E ℂ s (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ))) :
@@ -140,9 +170,13 @@ theorem TemperedDistribution.fourier_ae_eq_symbol_mul_fourier_of_besselPotential
   rw [← Lp.fourier_toTemperedDistribution_eq, ← Lp.fourier_toTemperedDistribution_eq, ← hw,
     fourier_besselPotential_eq_smulLeftCLM_fourier_apply]
 
-/-- **The `H^s` norm on the Fourier side**: if the Bessel potential of order `s ≥ 0` of an `L²`
-function `v` is the `L²` function `w`, so that `‖w‖_{L²}` is the norm of `v` in `H^s`, then
-`‖w‖_{L²} = ‖(1 + |ξ|²)^{s/2} ℱv‖_{L²}`, by Plancherel. -/
+/-- **The $H^s$ norm on the Fourier side.** Let $s \ge 0$ and $v, w \in L^2(E; \mathbb{C})$. If the
+Bessel potential of order $s$ of $v$ is $w$, so that $\|w\|_{L^2}$ is the norm of $v$ in
+$H^s(E)$, then
+$$\|w\|_{L^2} = \big\| (1 + |\xi|^2)^{s/2}\, \mathcal{F}v \big\|_{L^2}.$$
+
+The proof is Plancherel's identity. The right side is the real number
+`(eLpNorm _ 2 volume).toReal`. -/
 theorem TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotential_eq {s : ℝ}
     (hs : 0 ≤ s) {v w : Lp ℂ 2 (volume : Measure E)}
     (hw : besselPotential E ℂ s (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ))) :
@@ -151,9 +185,13 @@ theorem TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotenti
   exact congrArg ENNReal.toReal
     (eLpNorm_congr_ae (fourier_ae_eq_symbol_mul_fourier_of_besselPotential_eq hs hw))
 
-/-- **The derivatives of order at most `k` of an element of `H^k` are `L²` functions**: Mathlib's
-`TemperedDistribution.MemSobolev.lineDerivOp`, iterated
-(`TemperedDistribution.MemSobolev.iteratedLineDerivOp`), at the order `0 ≤ k - n`. -/
+/-- **The derivatives of order at most $k$ of an element of $H^k$ are $L^2$ functions.** Let
+$n \le k$, let $f$ be a tempered distribution in $H^k(E)$, and let $m_1, \dots, m_n \in E$. Then
+the iterated directional derivative $\partial_{m_1} \cdots \partial_{m_n} f$ is an $L^2$
+function.
+
+The proof is Mathlib's `TemperedDistribution.MemSobolev.lineDerivOp`, iterated
+(`TemperedDistribution.MemSobolev.iteratedLineDerivOp`), at the order $0 \le k - n$. -/
 theorem TemperedDistribution.MemSobolev.exists_iteratedLineDerivOp_eq {k n : ℕ} (hn : n ≤ k)
     {f : 𝓢'(E, ℂ)} (hf : MemSobolev (k : ℝ) 2 f) (m : Fin n → E) :
     ∃ w : Lp ℂ 2 (volume : Measure E), (∂^{m} f) = (w : 𝓢'(E, ℂ)) :=
@@ -161,8 +199,8 @@ theorem TemperedDistribution.MemSobolev.exists_iteratedLineDerivOp_eq {k n : ℕ
     have : (n : ℝ) ≤ (k : ℝ) := by exact_mod_cast hn
     linarith
 
-/-- Plancherel's identity in the form of `eLpNorm`: the Fourier transform preserves the `L²`
-seminorm of the representative. -/
+/-- **Plancherel's identity** for the $L^2$ seminorm: for $w \in L^2(E; \mathbb{C})$,
+$\|\mathcal{F}w\|_{L^2} = \|w\|_{L^2}$. -/
 theorem MeasureTheory.Lp.eLpNorm_fourier_eq (w : Lp ℂ 2 (volume : Measure E)) :
     eLpNorm ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : E → ℂ) 2 volume
       = eLpNorm (w : E → ℂ) 2 volume := by
@@ -172,7 +210,9 @@ theorem MeasureTheory.Lp.eLpNorm_fourier_eq (w : Lp ℂ 2 (volume : Measure E)) 
 
 end Symbol
 
-/-- Complexification preserves the `L^p` norm. -/
+/-- The complexification of a real function preserves the $L^p$ norm: for
+$f \in L^p(X; \mathbb{R})$, the complex-valued function $x \mapsto f(x)$ has the same norm in
+$L^p(X; \mathbb{C})$. -/
 theorem MeasureTheory.Lp.norm_ofRealCLM_compLp {X : Type*} [MeasurableSpace X] {μ : Measure X}
     {p : ℝ≥0∞} (f : Lp ℝ p μ) : ‖Complex.ofRealCLM.compLp f‖ = ‖f‖ := by
   rw [Lp.norm_def, Lp.norm_def]
@@ -184,14 +224,14 @@ theorem MeasureTheory.Lp.norm_ofRealCLM_compLp {X : Type*} [MeasurableSpace X] {
 
 /-! ### Real powers with half-integer exponents -/
 
-/-- `(x ^ (k/2))² = x^k` for `x ≥ 0`. -/
+/-- $(x^{k/2})^2 = x^k$ for $x \ge 0$. -/
 private theorem sq_rpow_half_natCast {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
     (x ^ ((k : ℝ) / 2)) ^ 2 = x ^ k := by
   rw [← Real.rpow_natCast (x ^ ((k : ℝ) / 2)) 2, ← Real.rpow_mul hx, div_mul_eq_mul_div,
     mul_comm, mul_div_assoc, show ((2 : ℕ) : ℝ) * ((k : ℝ) / 2) = ((k : ℕ) : ℝ) by
       push_cast; ring, Real.rpow_natCast]
 
-/-- `x ^ (k/2) = √(x^k)` for `x ≥ 0`. -/
+/-- $x^{k/2} = \sqrt{x^k}$ for $x \ge 0$. -/
 private theorem rpow_half_eq_sqrt_pow {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
     x ^ ((k : ℝ) / 2) = Real.sqrt (x ^ k) := by
   rw [← sq_rpow_half_natCast hx k, Real.sqrt_sq (Real.rpow_nonneg hx _)]
@@ -205,20 +245,23 @@ section Monomial
 variable {ι E : Type*} [Fintype ι] [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   (b : OrthonormalBasis ι ℝ E) {k : ℕ}
 
-/-- The monomial `ξ^α = ∏ᵢ ⟪ξ, bᵢ⟫^{αᵢ}` of the multi-index `α` in the coordinates of the
-orthonormal basis `b`. -/
+/-- The **monomial** of the multi-index $\alpha$ in the coordinates of the orthonormal basis $b$:
+$$\xi^\alpha = \prod_i \langle \xi, b_i \rangle^{\alpha_i}.$$
+-/
 def coordMonomial (α : ι → ℕ) (ξ : E) : ℝ := ∏ i, ⟪ξ, b i⟫ ^ α i
 
-/-- `ξ^α` is continuous in `ξ`. -/
+/-- The monomial $\xi^\alpha$ is continuous in $\xi$. -/
 theorem continuous_coordMonomial (α : ι → ℕ) : Continuous (b.coordMonomial α) :=
   continuous_finsetProd _ fun _ _ ↦ (continuous_id.inner continuous_const).pow _
 
-/-- A coordinate in an orthonormal basis is at most the norm. -/
+/-- A coordinate in an orthonormal basis is at most the norm:
+$|\langle \xi, b_i \rangle| \le \|\xi\|$. -/
 theorem abs_inner_le_norm (ξ : E) (i : ι) : |⟪ξ, b i⟫| ≤ ‖ξ‖ := by
   have h := abs_real_inner_le_norm ξ (b i)
   rwa [b.orthonormal.1 i, mul_one] at h
 
-/-- `|ξ^α|² ≤ (1 + |ξ|²)^{|α|}`, because every coordinate is bounded by the norm. -/
+/-- $|\xi^\alpha|^2 \le (1 + |\xi|^2)^{|\alpha|}$, because every coordinate is bounded by the norm.
+-/
 theorem sq_coordMonomial_le (α : ι → ℕ) (ξ : E) :
     b.coordMonomial α ξ ^ 2 ≤ (1 + ‖ξ‖ ^ 2) ^ (∑ i, α i) := by
   rw [coordMonomial, ← Finset.prod_pow, ← Finset.prod_pow_eq_pow_sum]
@@ -228,13 +271,13 @@ theorem sq_coordMonomial_le (α : ι → ℕ) (ξ : E) :
   have := b.abs_inner_le_norm ξ i
   nlinarith [abs_nonneg ⟪ξ, b i⟫, sq_abs ⟪ξ, b i⟫, norm_nonneg ξ]
 
-/-- `|ξ^α|² ≤ (1 + |ξ|²)^k` for `|α| ≤ k`. -/
+/-- $|\xi^\alpha|^2 \le (1 + |\xi|^2)^k$ for $|\alpha| \le k$. -/
 theorem sq_coordMonomial_le_pow {α : ι → ℕ} (hα : ∑ i, α i ≤ k) (ξ : E) :
     b.coordMonomial α ξ ^ 2 ≤ (1 + ‖ξ‖ ^ 2) ^ k :=
   (b.sq_coordMonomial_le α ξ).trans (pow_le_pow_right₀ (by nlinarith [norm_nonneg ξ]) hα)
 
-/-- `|ξ^α| ≤ (1 + |ξ|²)^{k/2}` for `|α| ≤ k`: the bound that puts `ξ^α ℱv` in `L²` whenever
-`(1 + |ξ|²)^{k/2} ℱv` is. -/
+/-- $|\xi^\alpha| \le (1 + |\xi|^2)^{k/2}$ for $|\alpha| \le k$. This bound puts
+$\xi^\alpha \mathcal{F}v$ in $L^2$ whenever $(1 + |\xi|^2)^{k/2} \mathcal{F}v$ is in $L^2$. -/
 theorem abs_coordMonomial_le_rpow {α : ι → ℕ} (hα : ∑ i, α i ≤ k) (ξ : E) :
     |b.coordMonomial α ξ| ≤ (1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) := by
   have hb : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2 := by positivity
@@ -244,25 +287,33 @@ theorem abs_coordMonomial_le_rpow {α : ι → ℕ} (hα : ∑ i, α i ≤ k) (�
   exact le_of_pow_le_pow_left₀ two_ne_zero (Real.rpow_nonneg hb _) h2
 
 variable (k) in
-/-- The sum `∑_{|α| ≤ k} |ξ^α|²` of the squared monomials of order at most `k`. -/
+/-- The **sum of the squared monomials** of order at most $k$:
+$$\sum_{|\alpha| \le k} |\xi^\alpha|^2.$$
+
+The sum runs over `MultiIndexLE ι k`, the multi-indices $\alpha$ with
+$|\alpha| = \sum_i \alpha_i \le k$. -/
 def sumSqCoordMonomial (ξ : E) : ℝ :=
   ∑ α : MultiIndexLE ι k, b.coordMonomial α.1 ξ ^ 2
 
-/-- The term of `∑_{|α| ≤ k} |ξ^α|²` at `α = 0` is `1`, so the sum is at least `1`. -/
+/-- The term of $\sum_{|\alpha| \le k} |\xi^\alpha|^2$ at $\alpha = 0$ is $1$, so the sum is at
+least $1$. -/
 theorem one_le_sumSqCoordMonomial (ξ : E) : 1 ≤ b.sumSqCoordMonomial k ξ := by
   have h0 : b.coordMonomial (0 : MultiIndexLE ι k).1 ξ ^ 2 = 1 := by simp [coordMonomial]
   rw [sumSqCoordMonomial, ← h0]
   exact Finset.single_le_sum (f := fun α : MultiIndexLE ι k ↦ b.coordMonomial α.1 ξ ^ 2)
     (fun α _ ↦ sq_nonneg _) (Finset.mem_univ 0)
 
-/-- Each of the `#{α : |α| ≤ k}` terms of `∑_{|α| ≤ k} |ξ^α|²` is at most `(1 + |ξ|²)^k`. -/
+/-- $\sum_{|\alpha| \le k} |\xi^\alpha|^2 \le M (1 + |\xi|^2)^k$, where $M$ is the number of
+multi-indices $\alpha$ with $|\alpha| \le k$, because each term is at most $(1 + |\xi|^2)^k$. -/
 theorem sumSqCoordMonomial_le (ξ : E) :
     b.sumSqCoordMonomial k ξ ≤ (Fintype.card (MultiIndexLE ι k) : ℝ) * (1 + ‖ξ‖ ^ 2) ^ k := by
   rw [sumSqCoordMonomial, ← Finset.card_univ, ← nsmul_eq_mul, ← Finset.sum_const]
   exact Finset.sum_le_sum fun α _ ↦ b.sq_coordMonomial_le_pow α.2 ξ
 
-/-- For `k ≥ 1` the sum `∑_{|α| ≤ k} |ξ^α|²` dominates its terms at `α = 0` and at
-`α = k eᵢ₀`, which are `1` and `⟪ξ, bᵢ₀⟫^{2k}`. -/
+/-- For $k \ge 1$ and every index $i_0$, the sum $\sum_{|\alpha| \le k} |\xi^\alpha|^2$ is at least
+the sum of its terms at $\alpha = 0$ and at $\alpha = k e_{i_0}$:
+$$1 + \big( \langle \xi, b_{i_0} \rangle^k \big)^2 \le \sum_{|\alpha| \le k} |\xi^\alpha|^2.$$
+-/
 theorem one_add_sq_pow_le_sumSqCoordMonomial (hk : k ≠ 0) (i₀ : ι) (ξ : E) :
     1 + (⟪ξ, b i₀⟫ ^ k) ^ 2 ≤ b.sumSqCoordMonomial k ξ := by
   classical
@@ -283,10 +334,14 @@ theorem one_add_sq_pow_le_sumSqCoordMonomial (hk : k ≠ 0) (i₀ : ι) (ξ : E)
   exact hle
 
 variable (k) in
-/-- **The hard half of the symbol inequality**: `(1 + |ξ|²)^k ≤ (1 + n)^k ∑_{|α| ≤ k} |ξ^α|²`,
-`n` the dimension. With `a = ⟪ξ, bᵢ₀⟫²` at a coordinate of largest absolute value, `|ξ|² ≤ n a`,
-and `(1 + n a)^k ≤ (1 + n)^k max(1, a)^k ≤ (1 + n)^k (1 + a^k)`, whose two summands are the terms
-of the sum at `α = 0` and at `α = k eᵢ₀`. No multinomial expansion is needed. -/
+/-- **The hard half of the symbol inequality.** Let $n$ be the number of elements of the basis $b$.
+For every $\xi \in E$,
+$$(1 + |\xi|^2)^k \le (1 + n)^k \sum_{|\alpha| \le k} |\xi^\alpha|^2.$$
+
+Let $a = \langle \xi, b_{i_0} \rangle^2$ at a coordinate of largest absolute value. Then
+$|\xi|^2 \le n a$, and $(1 + n a)^k \le (1 + n)^k \max(1, a)^k \le (1 + n)^k (1 + a^k)$, whose
+two summands are the terms of the sum at $\alpha = 0$ and at $\alpha = k e_{i_0}$. No
+multinomial expansion is needed. -/
 theorem pow_one_add_norm_sq_le (ξ : E) :
     (1 + ‖ξ‖ ^ 2) ^ k ≤ ((1 : ℝ) + Fintype.card ι) ^ k * b.sumSqCoordMonomial k ξ := by
   rcases Nat.eq_zero_or_pos k with hk | hk
@@ -332,10 +387,13 @@ theorem pow_one_add_norm_sq_le (ξ : E) :
         mul_le_mul_of_nonneg_left (hmaxk.trans hlow) (by positivity)
 
 variable (k) in
-/-- **The symbol inequality** ([han2009theoretical] Exercise 7.4.2): there are `c₁, c₂ > 0` with
-`c₁ (∑_{|α| ≤ k} |ξ^α|²)^{1/2} ≤ (1 + |ξ|²)^{k/2} ≤ c₂ (∑_{|α| ≤ k} |ξ^α|²)^{1/2}` for every
-`ξ`. The constants are `c₁ = #{α : |α| ≤ k}^{-1/2}` and `c₂ = (1 + n)^{k/2}`, `n` the
-dimension. -/
+/-- **The symbol inequality.** There are constants $c_1, c_2 > 0$ such that for every $\xi \in E$
+$$c_1 \Big( \sum_{|\alpha| \le k} |\xi^\alpha|^2 \Big)^{1/2} \le (1 + |\xi|^2)^{k/2} \le c_2
+  \Big( \sum_{|\alpha| \le k} |\xi^\alpha|^2 \Big)^{1/2}.$$
+
+This is Exercise 7.4.2 of [han2009theoretical]. The proof takes $c_1 = M^{-1/2}$, where $M$ is
+the number of multi-indices $\alpha$ with $|\alpha| \le k$, and $c_2 = (1 + n)^{k/2}$, where $n$
+is the dimension. -/
 theorem exists_bounds_rpow_one_add_norm_sq :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ ξ : E,
       c₁ * Real.sqrt (b.sumSqCoordMonomial k ξ) ≤ (1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) ∧
@@ -355,26 +413,30 @@ theorem exists_bounds_rpow_one_add_norm_sq :
     exact Real.sqrt_le_sqrt (b.pow_one_add_norm_sq_le k ξ)
 
 variable (k) in
-/-- The Fourier symbol `∑_{|α| ≤ k} |(2π ξ)^α|²` of the Sobolev norm of order `k`: by Plancherel,
-`∑_{|α| ≤ k} ‖∂^α v‖²_{L²} = ∫ (∑_{|α| ≤ k} (2π)^{2|α|} |ξ^α|²) |ℱv|²`. -/
+/-- The **Fourier symbol of the Sobolev norm** of order $k$:
+$$\sum_{|\alpha| \le k} (2\pi)^{2|\alpha|} |\xi^\alpha|^2.$$
+By Plancherel, $\sum_{|\alpha| \le k} \|\partial^\alpha v\|_{L^2}^2 = \int \big( \sum_{|\alpha|
+\le k} (2\pi)^{2|\alpha|} |\xi^\alpha|^2 \big) |\mathcal{F}v|^2$; see
+`OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`. -/
 def sobolevSymbol (ξ : E) : ℝ :=
   ∑ α : MultiIndexLE ι k, (2 * Real.pi) ^ (2 * (∑ i, α.1 i)) * b.coordMonomial α.1 ξ ^ 2
 
 private theorem one_le_two_pi : (1 : ℝ) ≤ 2 * Real.pi := by nlinarith [Real.two_le_pi]
 
 variable (k) in
-/-- The Sobolev symbol is continuous. -/
+/-- The Sobolev symbol `OrthonormalBasis.sobolevSymbol` is continuous. -/
 theorem continuous_sobolevSymbol : Continuous (b.sobolevSymbol k) :=
   continuous_finsetSum _ fun α _ ↦ continuous_const.mul ((b.continuous_coordMonomial α.1).pow 2)
 
-/-- Every factor `(2π)^{2|α|}` is at least `1`, so the Sobolev symbol dominates
-`∑_{|α| ≤ k} |ξ^α|²`. -/
+/-- The Sobolev symbol dominates $\sum_{|\alpha| \le k} |\xi^\alpha|^2$, because every factor
+$(2\pi)^{2|\alpha|}$ is at least $1$. -/
 theorem sumSqCoordMonomial_le_sobolevSymbol (ξ : E) :
     b.sumSqCoordMonomial k ξ ≤ b.sobolevSymbol k ξ := by
   refine Finset.sum_le_sum fun α _ ↦ ?_
   nlinarith [one_le_pow₀ (n := 2 * (∑ i, α.1 i)) one_le_two_pi, sq_nonneg (b.coordMonomial α.1 ξ)]
 
-/-- Every factor `(2π)^{2|α|}` is at most `(2π)^{2k}`. -/
+/-- The Sobolev symbol is at most $(2\pi)^{2k} \sum_{|\alpha| \le k} |\xi^\alpha|^2$, because every
+factor $(2\pi)^{2|\alpha|}$ is at most $(2\pi)^{2k}$. -/
 theorem sobolevSymbol_le_sumSqCoordMonomial (ξ : E) :
     b.sobolevSymbol k ξ ≤ (2 * Real.pi) ^ (2 * k) * b.sumSqCoordMonomial k ξ := by
   rw [sumSqCoordMonomial, Finset.mul_sum]
@@ -382,14 +444,16 @@ theorem sobolevSymbol_le_sumSqCoordMonomial (ξ : E) :
   exact mul_le_mul_of_nonneg_right
     (pow_le_pow_right₀ one_le_two_pi (Nat.mul_le_mul_left 2 α.2)) (sq_nonneg _)
 
-/-- One half of the comparison of symbols: `(1 + |ξ|²)^k ≤ (1 + n)^k ∑_{|α| ≤ k} |(2π ξ)^α|²`. -/
+/-- One half of the comparison of symbols: $(1 + |\xi|^2)^k \le (1 + n)^k \sum_{|\alpha| \le k}
+(2\pi)^{2|\alpha|} |\xi^\alpha|^2$, where $n$ is the number of elements of the basis. -/
 theorem pow_le_sobolevSymbol (ξ : E) :
     (1 + ‖ξ‖ ^ 2) ^ k ≤ ((1 : ℝ) + Fintype.card ι) ^ k * b.sobolevSymbol k ξ :=
   (b.pow_one_add_norm_sq_le k ξ).trans
     (mul_le_mul_of_nonneg_left (b.sumSqCoordMonomial_le_sobolevSymbol ξ) (by positivity))
 
-/-- The other half of the comparison of symbols:
-`∑_{|α| ≤ k} |(2π ξ)^α|² ≤ (2π)^{2k} #{α : |α| ≤ k} (1 + |ξ|²)^k`. -/
+/-- The other half of the comparison of symbols: $\sum_{|\alpha| \le k} (2\pi)^{2|\alpha|}
+|\xi^\alpha|^2 \le (2\pi)^{2k} M (1 + |\xi|^2)^k$, where $M$ is the number of multi-indices
+$\alpha$ with $|\alpha| \le k$. -/
 theorem sobolevSymbol_le_pow (ξ : E) :
     b.sobolevSymbol k ξ ≤ ((2 * Real.pi) ^ (2 * k)
       * (Fintype.card (MultiIndexLE ι k) : ℝ)) * (1 + ‖ξ‖ ^ 2) ^ k := by
@@ -406,7 +470,7 @@ section NormEquivalence
 variable {ι E : Type*} [Fintype ι] [LinearOrder ι] [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] (b : OrthonormalBasis ι ℝ E) {k : ℕ}
 
-/-- The `ℝ≥0∞` norm of a real multiple of a complex number, squared. -/
+/-- The extended norm of a real multiple of a complex number, squared: $\|r z\|^2 = r^2 \|z\|^2$. -/
 private theorem enorm_sq_ofReal_mul (r : ℝ) (z : ℂ) :
     ‖(r : ℂ) * z‖ₑ ^ 2 = ENNReal.ofReal (r ^ 2) * ‖z‖ₑ ^ 2 := by
   rw [enorm_mul, mul_pow]
@@ -414,7 +478,8 @@ private theorem enorm_sq_ofReal_mul (r : ℝ) (z : ℂ) :
   rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg _), Complex.norm_real, Real.norm_eq_abs,
     sq_abs]
 
-/-- The `ℝ≥0∞` norm of a scalar multiple of a real multiple of a complex number, squared. -/
+/-- The extended norm of $c\,(r z)$ for $c, z \in \mathbb{C}$ and $r \in \mathbb{R}$, squared:
+$\|c\, r z\|^2 = |c|^2 r^2 \|z\|^2$. -/
 private theorem enorm_sq_mul_ofReal_mul (c : ℂ) (r : ℝ) (z : ℂ) :
     ‖c * ((r : ℂ) * z)‖ₑ ^ 2 = ENNReal.ofReal (‖c‖ ^ 2 * r ^ 2) * ‖z‖ₑ ^ 2 := by
   rw [enorm_mul, enorm_mul, mul_pow, mul_pow, ENNReal.ofReal_mul (by positivity), mul_assoc]
@@ -424,8 +489,9 @@ private theorem enorm_sq_mul_ofReal_mul (c : ℂ) (r : ℝ) (z : ℂ) :
       sq_abs]
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The symbol of `∂^α` in the orthonormal basis `b` is the monomial `ξ^α`: the tuple of directions
-naming `α` lists `bᵢ` exactly `αᵢ` times. -/
+/-- The symbol of $\partial^\alpha$ in the orthonormal basis $b$ is the monomial $\xi^\alpha$: the
+symbol $\prod_j \langle \xi, m_j \rangle$ of the tuple of directions $m$ that names $\alpha$ is
+$\xi^\alpha$, because the tuple lists $b_i$ exactly $\alpha_i$ times. -/
 theorem lineSymbol_multiIndexTuple (α : ι → ℕ) (ξ : E) :
     lineSymbol (multiIndexTuple b.toBasis α) ξ = ((b.coordMonomial α ξ : ℝ) : ℂ) := by
   rw [lineSymbol_apply,
@@ -434,7 +500,9 @@ theorem lineSymbol_multiIndexTuple (α : ι → ℕ) (ξ : E) :
   refine Finset.prod_congr rfl fun i _ ↦ ?_
   rw [OrthonormalBasis.coe_toBasis, Complex.ofReal_pow]
 
-/-- If `(1 + |ξ|²)^{k/2} ℱv` lies in `L²` then so does `ξ^α ℱv` for every `|α| ≤ k`. -/
+/-- If $(1 + |\xi|^2)^{k/2} \mathcal{F}v \in L^2$, then $\xi^\alpha \mathcal{F}v \in L^2$ for every
+multi-index $\alpha$ with $|\alpha| \le k$. Here $\xi^\alpha$ is the symbol
+`lineSymbol (multiIndexTuple b.toBasis α)`. -/
 theorem memLp_lineSymbol_mul_fourier {v : Lp ℂ 2 (volume : Measure E)}
     (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
       (volume : Measure E))
@@ -451,8 +519,11 @@ theorem memLp_lineSymbol_mul_fourier {v : Lp ℂ 2 (volume : Measure E)}
       abs_of_nonneg (Real.rpow_nonneg (by positivity : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2) _)]
     exact mul_le_mul_of_nonneg_right (b.abs_coordMonomial_le_rpow hα ξ) (norm_nonneg _)
 
-/-- **Plancherel for one weak derivative.** For `v ∈ H^k` and `|α| ≤ k`,
-`‖∂^α v‖²_{L²} = ∫ (2π)^{2|α|} |ξ^α|² |ℱv(ξ)|² dξ`. -/
+/-- **Plancherel for one weak derivative.** Let $v, w \in L^2(E; \mathbb{C})$, let $|\alpha| \le k$,
+and let $(1 + |\xi|^2)^{k/2} \mathcal{F}v \in L^2$. If $w$ is the weak derivative
+$\partial^\alpha v$ on $E$ in the basis $b$, then
+$$\|w\|_{L^2}^2 = \int (2\pi)^{2|\alpha|} |\xi^\alpha|^2 |\mathcal{F}v(\xi)|^2 \, d\xi.$$
+-/
 theorem sq_eLpNorm_eq_lintegral_of_hasWeakIteratedLineDerivOn
     {v w : Lp ℂ 2 (volume : Measure E)} {α : ι → ℕ} (hα : ∑ i, α i ≤ k)
     (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
@@ -475,7 +546,8 @@ theorem sq_eLpNorm_eq_lintegral_of_hasWeakIteratedLineDerivOn
   ring
 
 omit [LinearOrder ι] in
-/-- The integrand of the Fourier-side quadratic form is a.e.-measurable. -/
+/-- The integrand $\xi \mapsto g(\xi) |\mathcal{F}v(\xi)|^2$ of a quadratic form on the Fourier side
+is almost everywhere measurable for continuous $g$. -/
 private theorem aemeasurable_symbol_mul {g : E → ℝ} (hg : Continuous g)
     (v : Lp ℂ 2 (volume : Measure E)) :
     AEMeasurable (fun ξ ↦ ENNReal.ofReal (g ξ) * ‖(𝓕 v) ξ‖ₑ ^ 2) (volume : Measure E) :=
@@ -483,7 +555,9 @@ private theorem aemeasurable_symbol_mul {g : E → ℝ} (hg : Continuous g)
     ((Lp.aestronglyMeasurable (𝓕 v)).enorm.pow_const 2)
 
 omit [Fintype ι] [LinearOrder ι] in
-/-- `‖(1 + |ξ|²)^{k/2} ℱv‖²_{L²} = ∫ (1 + |ξ|²)^k |ℱv|²`. -/
+/-- For $v \in L^2(E; \mathbb{C})$, $\|(1 + |\xi|^2)^{k/2} \mathcal{F}v\|_{L^2}^2 = \int (1 +
+|\xi|^2)^k |\mathcal{F}v(\xi)|^2 \, d\xi$.
+-/
 theorem _root_.sq_eLpNorm_symbol_mul_fourier (v : Lp ℂ 2 (volume : Measure E)) :
     eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume ^ 2
       = ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖(𝓕 v) ξ‖ₑ ^ 2 ∂(volume : Measure E) := by
@@ -497,8 +571,14 @@ theorem _root_.sq_eLpNorm_symbol_mul_fourier (v : Lp ℂ 2 (volume : Measure E))
   refine lintegral_congr fun ξ ↦ ?_
   rw [enorm_sq_ofReal_mul, sq_rpow_half_natCast (by positivity : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2) k]
 
-/-- **Plancherel for the whole Sobolev norm**: `∑_{|α| ≤ k} ‖∂^α v‖²_{L²}` is the integral of the
-Sobolev symbol against `|ℱv|²`. -/
+/-- **Plancherel for the whole Sobolev norm.** Let $v \in L^2(E; \mathbb{C})$ with
+$(1 + |\xi|^2)^{k/2} \mathcal{F}v \in L^2$, and for every multi-index $\alpha$ with
+$|\alpha| \le k$ let $w_\alpha \in L^2(E; \mathbb{C})$ be the weak derivative
+$\partial^\alpha v$ on $E$ in the basis $b$. Then
+$$\sum_{|\alpha| \le k} \|w_\alpha\|_{L^2}^2 = \int \Big( \sum_{|\alpha| \le k}
+  (2\pi)^{2|\alpha|} |\xi^\alpha|^2 \Big) |\mathcal{F}v(\xi)|^2 \, d\xi.$$
+
+Both sides are extended nonnegative reals; the integrand is `OrthonormalBasis.sobolevSymbol`. -/
 theorem sq_eLpNorm_sum_eq_lintegral {v : Lp ℂ 2 (volume : Measure E)}
     {w : MultiIndexLE ι k → Lp ℂ 2 (volume : Measure E)}
     (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
@@ -516,17 +596,21 @@ theorem sq_eLpNorm_sum_eq_lintegral {v : Lp ℂ 2 (volume : Measure E)}
   rfl
 
 variable (k) in
-/-- **The Sobolev norm of order `k` and the Fourier norm are equivalent** ([han2009theoretical]
-(7.4.1)): there are `c₁, c₂ > 0` with
+/-- **The Sobolev norm of order $k$ and the Fourier norm are equivalent.** There are constants
+$c_1, c_2 > 0$ with the following property. Let $v \in L^2(E; \mathbb{C})$, and for every
+multi-index $\alpha$ with $|\alpha| \le k$ let $w_\alpha \in L^2(E; \mathbb{C})$ be the weak
+derivative $\partial^\alpha v$ on $E$ in the basis $b$. Then
+$$c_1 \Big( \sum_{|\alpha| \le k} \|w_\alpha\|_{L^2}^2 \Big)^{1/2} \le \big\| (1 +
+  |\xi|^2)^{k/2} \mathcal{F}v \big\|_{L^2} \le c_2 \Big( \sum_{|\alpha| \le k}
+  \|w_\alpha\|_{L^2}^2 \Big)^{1/2}.$$
 
-`c₁ [∑_{|α| ≤ k} ‖∂^α v‖²_{L²}]^{1/2} ≤ ‖(1 + |ξ|²)^{k/2} ℱv‖_{L²}
-  ≤ c₂ [∑_{|α| ≤ k} ‖∂^α v‖²_{L²}]^{1/2}`
-
-for every `v ∈ L²(E)` whose weak derivatives `∂^α v` in the basis `b`, `|α| ≤ k`, are the `L²`
-functions `w α`. The proof is Plancherel applied to each `∂^α v`, whose Fourier transform is
-`(2πi ξ)^α ℱv` (`OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`), followed by the symbol
-inequality (`OrthonormalBasis.exists_bounds_rpow_one_add_norm_sq`). The constants are
-`c₁ = ((2π)^{2k} #{α : |α| ≤ k})^{-1/2}` and `c₂ = (1 + n)^{k/2}`, `n` the dimension. -/
+This is the norm equivalence (7.4.1) of [han2009theoretical]. The proof applies Plancherel to
+each $\partial^\alpha v$, whose Fourier transform is $(2\pi i \xi)^\alpha \mathcal{F}v$
+(`OrthonormalBasis.sq_eLpNorm_sum_eq_lintegral`), and then the symbol inequality
+(`OrthonormalBasis.exists_bounds_rpow_one_add_norm_sq`). The constants are
+$c_1 = \big((2\pi)^{2k} M\big)^{-1/2}$, where $M$ is the number of multi-indices $\alpha$ with
+$|\alpha| \le k$, and $c_2 = (1 + n)^{k/2}$, where $n$ is the dimension. The Fourier norm is the
+real number `(eLpNorm _ 2 volume).toReal`. -/
 theorem exists_norm_equiv_eLpNorm_symbol_mul_fourier :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
       ∀ (v : Lp ℂ 2 (volume : Measure E)) (w : MultiIndexLE ι k → Lp ℂ 2 (volume : Measure E)),
@@ -613,11 +697,16 @@ end NormEquivalence
 
 end OrthonormalBasis
 
-/-! ### The Fourier side of the interpolation inequality `‖v‖²_∞ ≲ ‖v‖_{L²} ‖v‖_{H^k}`
+/-!
+### The Fourier side of the interpolation inequality
 
-The steps of [han2009theoretical] Example 7.4.3: `|v(x)| ≤ ∫ |ℱv|`, and `(∫ |ℱv|)²` is bounded by
-the Cauchy–Schwarz inequality against the scaled weight `(1 + λ|ξ|²)^{±k/2}`, `2k > dim E`, which
-after the choice of `λ` gives `(∫ |ℱv|)² ≲ ‖v‖_{L²} ‖(1 + |ξ|²)^{k/2} ℱv‖_{L²}`. -/
+The interpolation inequality is $\|v\|_\infty^2 \lesssim \|v\|_{L^2} \|v\|_{H^k}$ for $2k > \dim E$.
+These are the steps of Example 7.4.3 of [han2009theoretical]. One has
+$|v(x)| \le \int |\mathcal{F}v|$, and $\big(\int |\mathcal{F}v|\big)^2$ is bounded by the
+Cauchy–Schwarz inequality against the scaled weight $(1 + \lambda|\xi|^2)^{\pm k/2}$. After the
+choice of $\lambda$ this gives $\big(\int |\mathcal{F}v|\big)^2 \lesssim \|v\|_{L^2} \|(1 +
+|\xi|^2)^{k/2} \mathcal{F}v\|_{L^2}$.
+-/
 
 section Interpolation
 
@@ -626,9 +715,13 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 open Module
 
-/-- **The weighted Cauchy–Schwarz inequality** ([han2009theoretical] Example 7.4.3): for an
-a.e.-measurable `F` and `l > 0`,
-`(∫ ‖F‖)² ≤ ∫ (1 + l|ξ|²)^{−k} · ∫ (1 + l|ξ|²)^k ‖F‖²`, in `lintegral` form. -/
+/-- **The weighted Cauchy–Schwarz inequality.** Let $F : E \to G$ be almost everywhere strongly
+measurable, let $\lambda > 0$ and $k \in \mathbb{N}$. Then
+$$\Big( \int \|F\| \Big)^2 \le \int (1 + \lambda|\xi|^2)^{-k} \, d\xi \cdot \int (1 +
+  \lambda|\xi|^2)^k \|F(\xi)\|^2 \, d\xi.$$
+
+This is a step of Example 7.4.3 of [han2009theoretical]. The integrals are lower Lebesgue
+integrals with values in $[0, \infty]$. -/
 theorem sq_lintegral_enorm_le_mul {G : Type*} [NormedAddCommGroup G] {F : E → G}
     (hF : AEStronglyMeasurable F volume) {l : ℝ} (hl : 0 < l) (k : ℕ) :
     (∫⁻ ξ, ‖F ξ‖ₑ) ^ 2 ≤
@@ -674,7 +767,7 @@ theorem sq_lintegral_enorm_le_mul {G : Type*} [NormedAddCommGroup G] {F : E → 
           ← ENNReal.rpow_mul]
         norm_num
 
-/-- The integral of `(1 + |ξ|²)^{−k}` over `E` is finite for `2k > dim E`. -/
+/-- For $2k > \dim E$, the function $(1 + |\xi|^2)^{-k}$ is integrable on $E$. -/
 theorem integrable_rpow_neg_one_add_norm_sq_natCast {k : ℕ} (hk : finrank ℝ E < 2 * k) :
     Integrable (fun ξ : E ↦ (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) volume := by
   have := integrable_rpow_neg_one_add_norm_sq (E := E) (μ := volume) (r := 2 * k)
@@ -683,15 +776,18 @@ theorem integrable_rpow_neg_one_add_norm_sq_natCast {k : ℕ} (hk : finrank ℝ 
   change (1 + ‖ξ‖ ^ 2) ^ (-(2 * (k : ℝ)) / 2) = (1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))
   rw [show -(2 * (k : ℝ)) / 2 = -(k : ℝ) by ring]
 
-/-- The integral of `(1 + |ξ|²)^{−k}` over `E` is finite for `2k > dim E`, in `lintegral`
-form. -/
+/-- For $2k > \dim E$, the integral $\int_E (1 + |\xi|^2)^{-k} \, d\xi$ is finite, as a lower
+Lebesgue integral. -/
 theorem lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top {k : ℕ} (hk : finrank ℝ E < 2 * k) :
     ∫⁻ ξ : E, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ (-(k : ℝ))) ≠ ⊤ := by
   rw [← ofReal_integral_eq_lintegral_ofReal (integrable_rpow_neg_one_add_norm_sq_natCast hk)
     (Filter.Eventually.of_forall fun ξ ↦ Real.rpow_nonneg (by positivity) _)]
   exact ENNReal.ofReal_ne_top
 
-/-- The integral of `(1 + l|ξ|²)^{−k}` over `E` scales like `l^{−dim E/2}`. -/
+/-- For $\lambda > 0$ and $2k > \dim E$,
+$$\int_E (1 + \lambda|\xi|^2)^{-k} \, d\xi = \lambda^{-\dim E/2} \int_E (1 + |\xi|^2)^{-k} \,
+  d\xi.$$
+-/
 theorem lintegral_ofReal_rpow_neg_one_add_mul_norm_sq {l : ℝ} (hl : 0 < l) {k : ℕ}
     (hk : finrank ℝ E < 2 * k) :
     ∫⁻ ξ : E, ENNReal.ofReal ((1 + l * ‖ξ‖ ^ 2) ^ (-(k : ℝ)))
@@ -721,7 +817,8 @@ theorem lintegral_ofReal_rpow_neg_one_add_mul_norm_sq {l : ℝ} (hl : 0 < l) {k 
       Real.rpow_nonneg (by positivity) _),
     hcomp, ENNReal.ofReal_mul (Real.rpow_nonneg hl.le _)]
 
-/-- The elementary bound `(1 + l s)^k ≤ 2^k (1 + l^k (1 + s)^k)` for `l, s ≥ 0`. -/
+/-- The elementary bound $(1 + \lambda s)^k \le 2^k \big(1 + \lambda^k (1 + s)^k\big)$ for
+$\lambda, s \ge 0$. -/
 theorem pow_one_add_mul_le (k : ℕ) {l s : ℝ} (hl : 0 ≤ l) (hs : 0 ≤ s) :
     (1 + l * s) ^ k ≤ 2 ^ k * (1 + l ^ k * (1 + s) ^ k) := by
   have h1 : 1 + l * s ≤ 2 * max 1 (l * s) := by
@@ -741,8 +838,11 @@ theorem pow_one_add_mul_le (k : ℕ) {l s : ℝ} (hl : 0 ≤ l) (hs : 0 ≤ s) :
     _ = 2 ^ k * (max 1 (l * s)) ^ k := mul_pow _ _ _
     _ ≤ 2 ^ k * (1 + l ^ k * (1 + s) ^ k) := mul_le_mul_of_nonneg_left h2 (by positivity)
 
-/-- **The optimal scaling** of [han2009theoretical] Example 7.4.3: for `n ≠ 0`, `a, b > 0` and
-`λ = (a/b)^{1/n}`, `λ^{−n/2} (a + λ^n b) = 2 √a √b`. -/
+/-- **The optimal scaling.** For $n \ne 0$ and $a, b > 0$ there is $\lambda > 0$ with
+$$\lambda^{-n/2} (a + \lambda^n b) = 2 \sqrt{a} \sqrt{b}.$$
+
+This is the choice of the scale in Example 7.4.3 of [han2009theoretical]. The proof takes
+$\lambda = (a/b)^{1/n}$. -/
 theorem exists_rpow_neg_half_mul_add_eq {n : ℕ} (hn : n ≠ 0) {a b : ℝ} (ha : 0 < a)
     (hb : 0 < b) :
     ∃ l : ℝ, 0 < l ∧ l ^ (-(n : ℝ) / 2) * (a + l ^ n * b) = 2 * Real.sqrt a * Real.sqrt b := by
@@ -759,10 +859,13 @@ theorem exists_rpow_neg_half_mul_add_eq {n : ℕ} (hn : n ≠ 0) {a b : ℝ} (ha
   rw [div_mul_eq_mul_div, div_eq_iff hsa]
   linear_combination (-2 * Real.sqrt b) * Real.mul_self_sqrt ha.le
 
-/-- **The scaled weighted bound** ([han2009theoretical] Example 7.4.3), in `lintegral` form: for
-`2k > dim E`, an a.e.-measurable `F` (in the application `F = ℱv`) and every `λ > 0`,
-`(∫ |F|)² ≤ λ^{−dim E/2} I_k · 2^k (∫ |F|² + λ^k ∫ (1 + |ξ|²)^k |F|²)`,
-`I_k = ∫ (1 + |ξ|²)^{−k}`. -/
+/-- **The scaled weighted bound.** Let $2k > \dim E$, let $F : E \to G$ be almost everywhere
+strongly measurable, and let $\lambda > 0$. With $I_k = \int (1 + |\xi|^2)^{-k} \, d\xi$,
+$$\Big( \int \|F\| \Big)^2 \le \lambda^{-\dim E/2} I_k \cdot 2^k \Big( \int \|F\|^2 + \lambda^k
+  \int (1 + |\xi|^2)^k \|F\|^2 \Big).$$
+
+This is a step of Example 7.4.3 of [han2009theoretical], where $F = \mathcal{F}v$. The integrals
+are lower Lebesgue integrals with values in $[0, \infty]$. -/
 theorem sq_lintegral_enorm_le_mul_add {k : ℕ} (hk : finrank ℝ E < 2 * k) {G : Type*}
     [NormedAddCommGroup G] {F : E → G} (hF : AEStronglyMeasurable F volume) {l : ℝ}
     (hl : 0 < l) :
@@ -791,9 +894,14 @@ theorem sq_lintegral_enorm_le_mul_add {k : ℕ} (hk : finrank ℝ E < 2 * k) {G 
         rw [lintegral_const_mul' _ _ (by simp), lintegral_add_left' (hF.enorm.pow_const 2),
           lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
 
-/-- **The scaled Fourier bound** ([han2009theoretical] Example 7.4.3), in real form: for
-`2k > dim E`, `v ∈ L²(E)` with `(1 + |ξ|²)^{k/2} ℱv ∈ L²` (that is, `v ∈ H^k(E)`) and every
-`λ > 0`, `(∫ |ℱv|)² ≤ λ^{−dim E/2} I_k · 2^k (‖v‖²_{L²} + λ^k ‖(1 + |ξ|²)^{k/2} ℱv‖²_{L²})`. -/
+/-- **The scaled Fourier bound.** Let $2k > \dim E$, let $v \in L^2(E; \mathbb{C})$ with
+$(1 + |\xi|^2)^{k/2} \mathcal{F}v \in L^2$, that is $v \in H^k(E)$, and let $\lambda > 0$. With
+$I_k = \int (1 + |\xi|^2)^{-k} \, d\xi$,
+$$\Big( \int |\mathcal{F}v| \Big)^2 \le \lambda^{-\dim E/2} I_k \cdot 2^k \Big( \|v\|_{L^2}^2 +
+  \lambda^k \big\|(1 + |\xi|^2)^{k/2} \mathcal{F}v\big\|_{L^2}^2 \Big).$$
+
+This is a step of Example 7.4.3 of [han2009theoretical]. Both sides are real numbers: the
+integrals are lower Lebesgue integrals converted with `ENNReal.toReal`. -/
 theorem sq_toReal_lintegral_enorm_fourier_le {k : ℕ} (hk : finrank ℝ E < 2 * k)
     (v : Lp ℂ 2 (volume : Measure E))
     (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume)
@@ -835,7 +943,11 @@ theorem sq_toReal_lintegral_enorm_fourier_le {k : ℕ} (hk : finrank ℝ E < 2 *
   rw [← hJ, ← hI]
   exact h
 
-/-- `‖v‖_{L²} ≤ ‖(1 + |ξ|²)^{s/2} ℱv‖_{L²}` for `s ≥ 0`: Plancherel and `(1 + |ξ|²)^{s/2} ≥ 1`. -/
+/-- Let $s \ge 0$ and $v \in L^2(E; \mathbb{C})$ with $(1 + |\xi|^2)^{s/2} \mathcal{F}v \in L^2$.
+Then
+$$\|v\|_{L^2} \le \big\| (1 + |\xi|^2)^{s/2} \mathcal{F}v \big\|_{L^2}.$$
+
+The proof is Plancherel's identity and the bound $(1 + |\xi|^2)^{s/2} \ge 1$. -/
 theorem norm_le_toReal_eLpNorm_symbol_mul_fourier {s : ℝ} (hs : 0 ≤ s)
     (v : Lp ℂ 2 (volume : Measure E))
     (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ (s / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume) :

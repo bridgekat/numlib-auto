@@ -15,32 +15,47 @@ import Mathlib.RingTheory.MvPolynomial.Basic
 /-!
 # Total degree under substitution
 
-Substituting a polynomial for each variable multiplies the total degree by at most the degree of
-the substituted polynomials: `bind₁ f p` has total degree at most `k · deg p` when every `f i` has
-total degree at most `k`.  The case `k = 1` is a change of variables by an affine map, under which
-`Π_n = MvPolynomial.restrictTotalDegree` is therefore stable — and, when the substitution is
-invertible with an inverse of the same kind, stable both ways, so the total degree is preserved
-exactly.
+Let $R$ be a commutative semiring, let $p \in R[X_i : i \in \sigma]$, and let $f$ assign to each
+variable $X_i$ a polynomial $f_i \in R[X_j : j \in \tau]$. Write $p(f)$ for the polynomial
+`MvPolynomial.bind₁ f p` obtained by substituting $f_i$ for $X_i$, and $\deg$ for the total degree.
+If every $f_i$ has total degree at most $k$, then $\deg p(f) \le k \deg p$, and the same bound holds
+when a one-variable polynomial is evaluated at a multivariate polynomial. For $k = 1$ the
+substitution is a change of variables by an affine map, and it does not raise the total degree. If
+such a substitution has an inverse of the same kind, it preserves the total degree exactly, and it
+maps the space $\Pi_n$ of polynomials of total degree at most $n$
+(`MvPolynomial.restrictTotalDegree`) onto $\Pi_n$.
 
-The `k = 1` statements are what makes an approximation-theoretic problem on an ellipsoid the same
-problem on a ball: the affine map carrying one onto the other carries the polynomials of degree at
-most `n` onto the polynomials of degree at most `n`.
+The case $k = 1$ shows that an approximation problem on an ellipsoid is the same problem on a ball:
+the affine map that carries one onto the other carries the polynomials of degree at most $n$ onto
+the polynomials of degree at most $n$.
 
 ## Main results
 
-* `MvPolynomial.totalDegree_bind₁_le`: `deg (bind₁ f p) ≤ k · deg p`.
-* `MvPolynomial.totalDegree_aeval_le`: `deg (aeval q p) ≤ k · deg p` for a one-variable `p`.
-* `MvPolynomial.totalDegree_bind₁_eq_of_leftInverse`: exact preservation for an invertible
-  substitution by polynomials of degree at most one.
-* `MvPolynomial.restrictTotalDegree_map_bind₁`: `Π_n` maps onto `Π_n`.
+* `MvPolynomial.totalDegree_bind₁_le`: if every $f_i$ has total degree at most $k$, then
+  $\deg p(f) \le k \deg p$.
+* `MvPolynomial.totalDegree_aeval_le`: if $q$ has total degree at most $k$ and $p$ is a one-variable
+  polynomial of degree $d$, then $\deg p(q) \le k d$.
+* `MvPolynomial.totalDegree_bind₁_le_of_totalDegree_le_one`: a substitution by polynomials of total
+  degree at most one does not raise the total degree.
+* `MvPolynomial.totalDegree_bind₁_eq_of_leftInverse`: a substitution by polynomials of total degree
+  at most one that has a left inverse of the same kind preserves the total degree.
+* `MvPolynomial.restrictTotalDegree_map_bind₁`: a substitution by polynomials of total degree at
+  most one that has a two-sided inverse of the same kind maps $\Pi_n$ onto $\Pi_n$.
 -/
 
 namespace MvPolynomial
 
 variable {σ τ R : Type*} [CommSemiring R]
 
-/-- **The total degree of a substitution.**  Substituting for each variable a polynomial of total
-degree at most `k` multiplies the total degree by at most `k`. -/
+/-- The **total degree of a substitution**. Let $f$ assign to each $i \in \sigma$ a polynomial
+$f_i \in R[X_j : j \in \tau]$ of total degree at most $k$, and let
+$p \in R[X_i : i \in \sigma]$. Then the polynomial $p(f)$, obtained from $p$ by substituting
+$f_i$ for each variable $X_i$, satisfies
+$$\deg p(f) \le k \deg p,$$
+where $\deg$ is the total degree.
+
+The polynomial $p(f)$ is `MvPolynomial.bind₁ f p`, and the total degree is
+`MvPolynomial.totalDegree`. -/
 theorem totalDegree_bind₁_le {k : ℕ} {f : σ → MvPolynomial τ R} (hf : ∀ i, (f i).totalDegree ≤ k)
     (p : MvPolynomial σ R) : (bind₁ f p).totalDegree ≤ k * p.totalDegree := by
   classical
@@ -59,11 +74,16 @@ theorem totalDegree_bind₁_le {k : ℕ} {f : σ → MvPolynomial τ R} (hf : �
   rw [← Finset.mul_sum]
   exact Nat.mul_le_mul_left _ (le_totalDegree hm)
 
-/-- **The total degree of a one-variable polynomial evaluated at a multivariable one.**
-Substituting a polynomial of total degree at most `k` for the variable of a one-variable polynomial
-of degree `d` gives total degree at most `k · d`. It is the one-variable counterpart of
-`MvPolynomial.totalDegree_bind₁_le`, and the case `k = 1` says that a *ridge* polynomial — a
-one-variable polynomial of a linear form — has the degree of the one-variable polynomial. -/
+/-- The **total degree of a one-variable polynomial evaluated at a multivariate polynomial**. Let
+$q \in R[X_j : j \in \tau]$ have total degree at most $k$, and let $p \in R[X]$ be a
+one-variable polynomial of degree $d$. Then
+$$\deg p(q) \le k d,$$
+where $\deg$ is the total degree.
+
+This is the one-variable counterpart of `MvPolynomial.totalDegree_bind₁_le`. The polynomial
+$p(q)$ is `Polynomial.aeval q p`. The degree $d$ is `Polynomial.natDegree p`, which is $0$ for
+$p = 0$. The case $k = 1$ says that a ridge polynomial, a one-variable polynomial of a linear
+form, has total degree at most the degree of the one-variable polynomial. -/
 theorem totalDegree_aeval_le {k : ℕ} {q : MvPolynomial τ R} (hq : q.totalDegree ≤ k)
     (p : Polynomial R) : (Polynomial.aeval q p).totalDegree ≤ k * p.natDegree := by
   rw [Polynomial.aeval_eq_sum_range]
@@ -73,15 +93,25 @@ theorem totalDegree_aeval_le {k : ℕ} {q : MvPolynomial τ R} (hq : q.totalDegr
   calc i * q.totalDegree ≤ p.natDegree * k := Nat.mul_le_mul (by omega) hq
     _ = k * p.natDegree := Nat.mul_comm _ _
 
-/-- A substitution by polynomials of total degree at most one does not raise the total degree. -/
+/-- Let each $f_i$, $i \in \sigma$, be a polynomial of total degree at most $1$. Then for every
+$p \in R[X_i : i \in \sigma]$ the substitution $p(f)$ satisfies
+$$\deg p(f) \le \deg p.$$
+
+This is the case $k = 1$ of `MvPolynomial.totalDegree_bind₁_le`. -/
 theorem totalDegree_bind₁_le_of_totalDegree_le_one {f : σ → MvPolynomial τ R}
     (hf : ∀ i, (f i).totalDegree ≤ 1) (p : MvPolynomial σ R) :
     (bind₁ f p).totalDegree ≤ p.totalDegree := by
   simpa using totalDegree_bind₁_le hf p
 
-/-- **An invertible substitution by degree-one polynomials preserves the total degree exactly.**
-The affine changes of variables are of this kind, so a linear change of coordinates on the domain
-neither raises nor lowers the degree of a polynomial. -/
+/-- An **invertible substitution by polynomials of degree at most one preserves the total degree**.
+Let $f_i \in R[X_j : j \in \tau]$ for $i \in \sigma$ and $g_j \in R[X_i : i \in \sigma]$ for
+$j \in \tau$ all have total degree at most $1$, and suppose that $(p(f))(g) = p$ for every
+$p \in R[X_i : i \in \sigma]$. Then for every such $p$,
+$$\deg p(f) = \deg p.$$
+
+The affine changes of variables are substitutions of this kind, so an affine change of
+coordinates on the domain neither raises nor lowers the total degree of a polynomial. The
+substitution $p(f)$ is `MvPolynomial.bind₁ f p`. -/
 theorem totalDegree_bind₁_eq_of_leftInverse {f : σ → MvPolynomial τ R} {g : τ → MvPolynomial σ R}
     (hf : ∀ i, (f i).totalDegree ≤ 1) (hg : ∀ j, (g j).totalDegree ≤ 1)
     (hgf : ∀ p : MvPolynomial σ R, bind₁ g (bind₁ f p) = p) (p : MvPolynomial σ R) :
@@ -91,8 +121,17 @@ theorem totalDegree_bind₁_eq_of_leftInverse {f : σ → MvPolynomial τ R} {g 
       conv_lhs => rw [← hgf p]
       exact totalDegree_bind₁_le_of_totalDegree_le_one hg _)
 
-/-- **The polynomials of degree at most `n` are stable under an invertible substitution by
-degree-one polynomials**, and the substitution maps that space *onto* itself. -/
+/-- An **invertible substitution by polynomials of degree at most one maps $\Pi_n$ onto $\Pi_n$**.
+Let $f_i \in R[X_j : j \in \tau]$ for $i \in \sigma$ and $g_j \in R[X_i : i \in \sigma]$ for
+$j \in \tau$ all have total degree at most $1$, and suppose that $(p(f))(g) = p$ for every
+$p \in R[X_i : i \in \sigma]$ and $(q(g))(f) = q$ for every $q \in R[X_j : j \in \tau]$. Then
+for every $n \in \mathbb{N}$ the map $p \mapsto p(f)$ carries the polynomials in the variables
+$X_i$ of total degree at most $n$ onto the polynomials in the variables $X_j$ of total degree at
+most $n$.
+
+The two spaces are `MvPolynomial.restrictTotalDegree σ R n` and
+`MvPolynomial.restrictTotalDegree τ R n`, and the statement is an equality of submodules: the
+image of the first under the linear map `MvPolynomial.bind₁ f` is the second. -/
 theorem restrictTotalDegree_map_bind₁ {f : σ → MvPolynomial τ R} {g : τ → MvPolynomial σ R}
     (hf : ∀ i, (f i).totalDegree ≤ 1) (hg : ∀ j, (g j).totalDegree ≤ 1)
     (hgf : ∀ p : MvPolynomial σ R, bind₁ g (bind₁ f p) = p)

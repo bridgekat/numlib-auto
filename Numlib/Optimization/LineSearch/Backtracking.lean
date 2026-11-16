@@ -10,28 +10,49 @@ import Numlib.Optimization.LineSearch
 /-!
 # Steepest descent: backtracking-Armijo and exact line searches
 
-Step-size rules for the steepest-descent iteration `x⁺ = x - t ∇f(x)` on a real inner product
-space, as analysed in [cartis2022evaluation] §2.2, for an objective whose gradient is
-`L`-Lipschitz (`‖∇f(y) - ∇f(z)‖ ≤ L ‖y - z‖`).
+This file studies step-size rules for the steepest-descent iteration $x^+ = x - t \nabla f(x)$ on a
+real Hilbert space, as analysed in [cartis2022evaluation], §2.2. The objective $f$ is
+differentiable, and its gradient is $L$-Lipschitz: $\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$.
+The descent lemma $f(x + d) \le f(x) + \langle \nabla f(x), d\rangle + \tfrac{L}{2} \|d\|^2$ then
+shows that the Armijo condition (2.2.1)
+$$f(x - t \nabla f(x)) \le f(x) - \alpha t \|\nabla f(x)\|^2$$
+holds for every $t \in [0, 2(1 - \alpha)/L]$ (Lemma 2.2.1).
 
-* `LineSearch.le_add_inner_add_of_lipschitz_gradient` — the descent lemma
-  `f (x + d) ≤ f x + ⟪∇f(x), d⟫ + L/2 ‖d‖²` ((A.19) with `p = 1`).
-* `LineSearch.armijo_neg_gradient_of_le` — Lemma 2.2.1: the Armijo condition (2.2.1)
-  `f (x - t ∇f(x)) ≤ f x - α t ‖∇f(x)‖²` holds for every `t ∈ [0, 2(1-α)/L]`.
-* `LineSearch.backtrackingIndex` — the number of halvings of the backtracking-Armijo line search
-  of Algorithm 2.2.1: the least `i` such that the trial step `t_ini 2^{-i}` satisfies (2.2.1).
-  `LineSearch.backtrackingIndex_le` gives the book's bound (2.2.6) on it and the lower bound
-  `t ≥ min t_ini ((1-α)/L)` on the accepted step ((2.2.7)); `t ≥ (1-α)/L` holds when
-  `t_ini ≥ (1-α)/L`, but not in general, since the first trial may already be shorter.
-* `LineSearch.IsExactLineMin` (the book's exact line search (2.2.26): the first global minimizer
-  of `t ↦ f (x - t ∇f(x))` on `t ≥ 0`) and `LineSearch.IsFirstLocalLineMin` (the first stationary
-  point along the ray, the slope being negative before it). The second rule is the one realised by
-  the book's sharpness example for the exact line search (Theorem 2.2.5, Lemma B.2.6).
-  `LineSearch.IsExactLineMin.unique` and `LineSearch.exists_isExactLineMin` (continuous `f`,
-  bounded sublevel set) show that the exact line search is well defined.
-* `LineSearch.decrease_ge_of_exactLineMin` — the core of Theorem 2.2.4: for any global line
-  minimizer (`LineSearch.IsGlobalLineMin`) and for the first-local-minimizer rule, the step
-  satisfies `t ≥ 1/L` and the decrease is at least `‖∇f(x)‖² / (2L)` ((2.2.28)).
+The backtracking-Armijo line search of Algorithm 2.2.1 tries the steps $t_{\mathrm{ini}} 2^{-i}$ for
+$i = 0, 1, \dots$ and accepts the first one that satisfies (2.2.1). The file bounds the number of
+trials and the accepted step. The exact line search (2.2.26) takes the first global minimizer of
+$t \mapsto f(x - t \nabla f(x))$ on $t \ge 0$; the file shows that it is well defined, and that it
+and the first-local-minimizer rule give a decrease of at least $\|\nabla f(x)\|^2 / (2L)$, the core
+of Theorem 2.2.4.
+
+## Main definitions
+
+* `LineSearch.backtrackingIndex`: the number of halvings in Algorithm 2.2.1, the least $i$ such that
+  $t_{\mathrm{ini}} 2^{-i}$ satisfies (2.2.1).
+* `LineSearch.IsExactLineMin`: the exact line search (2.2.26), the first global minimizer of
+  $t \mapsto f(x - t \nabla f(x))$ on $t \ge 0$.
+* `LineSearch.IsFirstLocalLineMin`: the first stationary point along the ray, with negative slope
+  before it. This is the rule that the sharpness example for the exact line search (Theorem 2.2.5,
+  Lemma B.2.6) realises.
+
+## Main results
+
+* `LineSearch.le_add_inner_add_of_lipschitz_gradient`: the descent lemma, (A.19) with $p = 1$.
+* `LineSearch.armijo_neg_gradient_of_le`: Lemma 2.2.1, the Armijo condition (2.2.1) for every
+  $t \in [0, 2(1 - \alpha)/L]$.
+* `LineSearch.backtrackingIndex_le`: the bound (2.2.6) on the number of halvings, and the lower
+  bound $t \ge \min\{t_{\mathrm{ini}}, (1 - \alpha)/L\}$ on the accepted step.
+* `LineSearch.IsExactLineMin.unique` and `LineSearch.exists_isExactLineMin`: the exact line search
+  is unique, and it exists when $f$ is continuous with a bounded sublevel set.
+* `LineSearch.decrease_ge_of_exactLineMin`: for a global line minimizer or a first-local-minimizer
+  step, $t \ge 1/L$ and the decrease is at least $\|\nabla f(x)\|^2 / (2L)$, (2.2.28).
+
+## Implementation notes
+
+* The source gives the step bound (2.2.7) as $t \ge (1 - \alpha)/L$. This holds when
+  $t_{\mathrm{ini}} \ge (1 - \alpha)/L$, but not in general, because the first trial step may
+  already be shorter. `LineSearch.backtrackingIndex_le` proves
+  $t \ge \min\{t_{\mathrm{ini}}, (1 - \alpha)/L\}$.
 -/
 
 open Set
@@ -44,13 +65,13 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteS
 
 /-! ### The descent lemma -/
 
-/-- The derivative of `f` at `x` applied to `d` is `⟪∇f(x), d⟫`. -/
+/-- The derivative of $f$ at $x$ applied to $d$ is $\langle \nabla f(x), d\rangle$. -/
 theorem fderiv_apply_eq_inner_gradient (f : E → ℝ) (x d : E) :
     fderiv ℝ f x d = ⟪gradient f x, d⟫ := by
   rw [gradient, InnerProductSpace.toDual_symm_apply]
 
-/-- The operator norm of a difference of derivatives is the norm of the difference of the
-gradients. -/
+/-- The operator norm of the difference of two derivatives of $f$ is the norm of the difference of
+the gradients: $\|f'(y) - f'(z)\| = \|\nabla f(y) - \nabla f(z)\|$. -/
 theorem norm_fderiv_sub_fderiv_eq (f : E → ℝ) (y z : E) :
     ‖fderiv ℝ f y - fderiv ℝ f z‖ = ‖gradient f y - gradient f z‖ := by
   have h : fderiv ℝ f y - fderiv ℝ f z =
@@ -58,8 +79,11 @@ theorem norm_fderiv_sub_fderiv_eq (f : E → ℝ) (y z : E) :
     simp [gradient]
   rw [h, LinearIsometryEquiv.norm_map]
 
-/-- **Descent lemma** ([cartis2022evaluation] (A.19) with `p = 1`): if `f` is differentiable with
-`L`-Lipschitz gradient, then `f (x + d) ≤ f x + ⟪∇f(x), d⟫ + L/2 ‖d‖²`. -/
+/-- The **descent lemma**, (A.19) of [cartis2022evaluation] with $p = 1$. Let $f : E \to \mathbb{R}$
+be differentiable on a real Hilbert space $E$, with
+$\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$ for all $y, z$. Then for all $x, d \in E$,
+$$f(x + d) \le f(x) + \langle \nabla f(x), d\rangle + \frac{L}{2} \|d\|^2.$$
+-/
 theorem le_add_inner_add_of_lipschitz_gradient (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (x d : E) :
     f (x + d) ≤ f x + ⟪gradient f x, d⟫ + L / 2 * ‖d‖ ^ 2 := by
@@ -71,8 +95,10 @@ theorem le_add_inner_add_of_lipschitz_gradient (hf : Differentiable ℝ f)
 
 /-! ### Armijo condition along the steepest-descent direction -/
 
-/-- Along `d = -∇f(x)`, the Armijo condition `LineSearch.Armijo` with derivative `fderiv ℝ f` is
-the inequality (2.2.1) `f (x - t ∇f(x)) ≤ f x - α t ‖∇f(x)‖²`. -/
+/-- Along $d = -\nabla f(x)$, the Armijo condition `LineSearch.Armijo` with the derivative
+`fderiv ℝ f` is the inequality (2.2.1) of [cartis2022evaluation]:
+$$f(x - t \nabla f(x)) \le f(x) - \alpha t \|\nabla f(x)\|^2.$$
+-/
 theorem armijo_neg_gradient_iff {x : E} {t : ℝ} :
     Armijo f (fderiv ℝ f) α x (-gradient f x) t ↔
       f (x - t • gradient f x) ≤ f x - α * t * ‖gradient f x‖ ^ 2 := by
@@ -80,10 +106,12 @@ theorem armijo_neg_gradient_iff {x : E} {t : ℝ} :
     smul_neg, ← sub_eq_add_neg]
   constructor <;> intro h <;> linarith
 
-/-- **Lemma 2.2.1** ([cartis2022evaluation] (2.2.3)–(2.2.4)). If `f` is differentiable with
-`L`-Lipschitz gradient and `L > 0`, the Armijo condition along the steepest-descent
-direction holds for every step `t ∈ [0, 2(1-α)/L]`:
-`f (x - t ∇f(x)) ≤ f x - α t ‖∇f(x)‖²`. -/
+/-- **Lemma 2.2.1** of [cartis2022evaluation], (2.2.3)–(2.2.4). Let $f : E \to \mathbb{R}$ be
+differentiable on a real Hilbert space $E$, with $\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$
+for all $y, z$ and $L > 0$. Then for every $x \in E$ and every step
+$t \in [0, 2(1 - \alpha)/L]$, the Armijo condition along the steepest-descent direction holds:
+$$f(x - t \nabla f(x)) \le f(x) - \alpha t \|\nabla f(x)\|^2.$$
+-/
 theorem armijo_neg_gradient_of_le (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) (x : E) {t : ℝ}
     (ht0 : 0 ≤ t) (ht : t ≤ 2 * (1 - α) / L) :
@@ -97,32 +125,41 @@ theorem armijo_neg_gradient_of_le (hf : Differentiable ℝ f)
 
 /-! ### The backtracking index -/
 
-/-- The Armijo test (2.2.1) of Algorithm 2.2.1 at the `i`-th trial step `t_ini 2^{-i}`. -/
+/-- The Armijo test (2.2.1) of Algorithm 2.2.1 of [cartis2022evaluation] at the $i$-th trial step
+$t_i = t_{\mathrm{ini}} 2^{-i}$:
+$$f(x - t_i \nabla f(x)) \le f(x) - \alpha t_i \|\nabla f(x)\|^2.$$
+-/
 def BacktrackingTest (f : E → ℝ) (α tini : ℝ) (x : E) (i : ℕ) : Prop :=
   f (x - (tini * 2⁻¹ ^ i) • gradient f x) ≤ f x - α * (tini * 2⁻¹ ^ i) * ‖gradient f x‖ ^ 2
 
 open Classical in
-/-- The **backtracking index** of Algorithm 2.2.1 ([cartis2022evaluation] Steps 2–3): the least
-`i` such that the trial step `t_ini 2^{-i}` satisfies the Armijo condition (2.2.1)
-`f (x - t ∇f(x)) ≤ f x - α t ‖∇f(x)‖²` (`LineSearch.BacktrackingTest`), and `0` if there is
-none. The accepted step is `t_ini 2^{-i}`; the line search evaluates `f` `i + 1` times. -/
+/-- The **backtracking index** of Algorithm 2.2.1 of [cartis2022evaluation], Steps 2–3: the least
+$i \in \mathbb{N}$ such that the trial step $t_{\mathrm{ini}} 2^{-i}$ satisfies the Armijo
+condition (2.2.1), `LineSearch.BacktrackingTest`. If no trial step satisfies it, the value is
+$0$.
+
+The accepted step is $t_{\mathrm{ini}} 2^{-i}$, and the line search evaluates $f$ at $i + 1$
+trial points. -/
 noncomputable def backtrackingIndex (f : E → ℝ) (α tini : ℝ) (x : E) : ℕ :=
   if h : ∃ i, BacktrackingTest f α tini x i then Nat.find h else 0
 
+/-- If some trial step satisfies the Armijo test, the backtracking index is the least index whose
+trial step satisfies it, as given by `Nat.find`. -/
 theorem backtrackingIndex_eq_find {tini : ℝ} {x : E} (h : ∃ i, BacktrackingTest f α tini x i)
     [DecidablePred (BacktrackingTest f α tini x)] :
     backtrackingIndex f α tini x = Nat.find h := by
   rw [backtrackingIndex, dite_eq_left_of_eq_true (eq_true h)]
   congr
 
-/-- The accepted step satisfies the Armijo condition, as soon as some trial step does. -/
+/-- If some trial step satisfies the Armijo test, then the trial step at the backtracking index
+satisfies it. -/
 theorem backtrackingIndex_spec {tini : ℝ} {x : E} (h : ∃ i, BacktrackingTest f α tini x i) :
     BacktrackingTest f α tini x (backtrackingIndex f α tini x) := by
   classical
   rw [backtrackingIndex_eq_find h]
   exact Nat.find_spec h
 
-/-- Trial steps before the accepted one fail the Armijo condition. -/
+/-- Every trial step before the backtracking index fails the Armijo test. -/
 theorem not_backtrackingTest_of_lt {tini : ℝ} {x : E} {i : ℕ}
     (hi : i < backtrackingIndex f α tini x) : ¬ BacktrackingTest f α tini x i := by
   classical
@@ -131,28 +168,36 @@ theorem not_backtrackingTest_of_lt {tini : ℝ} {x : E} {i : ℕ}
     exact Nat.find_min h hi
   · exact fun hi' => h ⟨i, hi'⟩
 
-/-- The backtracking index is at most any index whose trial step satisfies the Armijo
-condition. -/
+/-- The backtracking index is at most every index whose trial step satisfies the Armijo test. -/
 theorem backtrackingIndex_le_of_test {tini : ℝ} {x : E} {i : ℕ}
     (hi : BacktrackingTest f α tini x i) : backtrackingIndex f α tini x ≤ i :=
   not_lt.1 fun h => not_backtrackingTest_of_lt h hi
 
-/-- If the first trial step `t_ini` is accepted, no backtracking takes place. -/
+/-- If the first trial step $t_{\mathrm{ini}}$ satisfies the Armijo test, the backtracking index is
+$0$: no backtracking takes place. -/
 theorem backtrackingIndex_eq_zero {tini : ℝ} {x : E} (h : BacktrackingTest f α tini x 0) :
     backtrackingIndex f α tini x = 0 :=
   Nat.le_zero.1 (backtrackingIndex_le_of_test h)
 
-/-- Under the hypotheses of Lemma 2.2.1 every trial step `t_ini 2^{-i} ≤ 2(1-α)/L` is accepted. -/
+/-- Under the hypotheses of Lemma 2.2.1 of [cartis2022evaluation], with $t_{\mathrm{ini}} > 0$,
+every trial step $t_{\mathrm{ini}} 2^{-i} \le 2(1 - \alpha)/L$ satisfies the Armijo test. -/
 theorem backtrackingTest_of_le (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) {tini : ℝ}
     (htini : 0 < tini) (x : E) {i : ℕ} (hi : tini * 2⁻¹ ^ i ≤ 2 * (1 - α) / L) :
     BacktrackingTest f α tini x i :=
   armijo_neg_gradient_of_le hf hL hL0 x (by positivity) hi
 
-/-- **Bounds (2.2.6)–(2.2.7)** of [cartis2022evaluation]. Under the hypotheses of Lemma 2.2.1,
-with `0 < α < 1` and `t_ini > 0`, the backtracking index satisfies
-`i ≤ ⌈log₂ (L t_ini / (2(1-α)))⌉₊`, and the accepted step `t = t_ini 2^{-i}` satisfies
-`t ≥ min t_ini ((1-α)/L)`. (The bound `t ≥ (1-α)/L` requires `t_ini ≥ (1-α)/L`.) -/
+/-- **Bounds (2.2.6)–(2.2.7)** of [cartis2022evaluation]. Let $f : E \to \mathbb{R}$ be
+differentiable on a real Hilbert space $E$, with $\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$
+for all $y, z$ and $L > 0$. Let $\alpha < 1$, $t_{\mathrm{ini}} > 0$ and $x \in E$, and let $i$
+be the backtracking index. Then
+$$i \le \left\lceil \log_2 \frac{L t_{\mathrm{ini}}}{2(1 - \alpha)} \right\rceil,$$
+and the accepted step $t = t_{\mathrm{ini}} 2^{-i}$ satisfies
+$t \ge \min\{t_{\mathrm{ini}}, (1 - \alpha)/L\}$.
+
+The source states (2.2.7) as $t \ge (1 - \alpha)/L$. That bound needs
+$t_{\mathrm{ini}} \ge (1 - \alpha)/L$, because the first trial step may already be shorter. The
+ceiling is the natural-number ceiling `Nat.ceil`, which is $0$ for a negative argument. -/
 theorem backtrackingIndex_le (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) (hα : α < 1)
     {tini : ℝ} (htini : 0 < tini) (x : E) :
@@ -188,12 +233,15 @@ theorem backtrackingIndex_le (hf : Differentiable ℝ f)
 
 /-! ### Exact line searches -/
 
-/-- `t ≥ 0` is a global minimizer of `τ ↦ f (x - τ ∇f(x))` on `[0, ∞)`. -/
+/-- A number $t \ge 0$ is a **global line minimizer** if it minimizes
+$\tau \mapsto f(x - \tau \nabla f(x))$ on $[0, \infty)$. -/
 def IsGlobalLineMin (f : E → ℝ) (x : E) (t : ℝ) : Prop :=
   0 ≤ t ∧ ∀ τ : ℝ, 0 ≤ τ → f (x - t • gradient f x) ≤ f (x - τ • gradient f x)
 
-/-- The **exact line search** (2.2.26) of [cartis2022evaluation]: `t ≥ 0` is the first global
-minimizer of `τ ↦ f (x - τ ∇f(x))` on `[0, ∞)`. -/
+/-- The **exact line search** (2.2.26) of [cartis2022evaluation]: $t \ge 0$ is the first global
+minimizer of $\tau \mapsto f(x - \tau \nabla f(x))$ on $[0, \infty)$. That is, $t$ is a global
+line minimizer, and $f(x - t \nabla f(x)) < f(x - \tau \nabla f(x))$ for every
+$\tau \in [0, t)$. -/
 def IsExactLineMin (f : E → ℝ) (x : E) (t : ℝ) : Prop :=
   IsGlobalLineMin f x t ∧ ∀ τ ∈ Ico 0 t, f (x - t • gradient f x) < f (x - τ • gradient f x)
 
@@ -202,8 +250,9 @@ theorem IsExactLineMin.isGlobalLineMin {x : E} {t : ℝ} (h : IsExactLineMin f x
     IsGlobalLineMin f x t :=
   h.1
 
-/-- The exact line-search step (2.2.26) is unique: there is only one first global minimizer on
-the ray. -/
+/-- The exact line-search step (2.2.26) of [cartis2022evaluation] is unique: if $t$ and $t'$ are
+both first global minimizers of $\tau \mapsto f(x - \tau \nabla f(x))$ on $[0, \infty)$, then
+$t = t'$. -/
 theorem IsExactLineMin.unique {x : E} {t t' : ℝ} (h : IsExactLineMin f x t)
     (h' : IsExactLineMin f x t') : t = t' := by
   by_contra hne
@@ -213,9 +262,10 @@ theorem IsExactLineMin.unique {x : E} {t t' : ℝ} (h : IsExactLineMin f x t)
   · have := h.2 t' ⟨h'.1.1, hlt⟩
     linarith [h'.1.2 t h.1.1]
 
-/-- **The exact line search (2.2.26) is well defined** when `f` is continuous and the sublevel
-set `{y | f y ≤ f x}` is bounded: the first global minimizer of `t ↦ f(x - t∇f(x))` on `t ≥ 0`
-exists. -/
+/-- **The exact line search (2.2.26) of [cartis2022evaluation] is well defined.** Let
+$f : E \to \mathbb{R}$ be continuous on a real Hilbert space $E$, and let the sublevel set
+$\{y : f(y) \le f(x)\}$ be bounded. Then a first global minimizer of
+$t \mapsto f(x - t \nabla f(x))$ on $t \ge 0$ exists. -/
 theorem exists_isExactLineMin (hf : Continuous f) {x : E}
     (hbdd : Bornology.IsBounded {y | f y ≤ f x}) : ∃ t, IsExactLineMin f x t := by
   set g := gradient f x
@@ -260,15 +310,20 @@ theorem exists_isExactLineMin (hf : Continuous f) {x : E}
     rw [← h2]; exact htM.2
   exact absurd (hleast ⟨hτ.1, this⟩) (not_le.2 hτ.2)
 
-/-- The **first-local-minimizer line search**: `t > 0` is the first stationary point of
-`φ τ = f (x - τ ∇f(x))` on `[0, ∞)` and `φ` has negative slope `φ' τ = -⟪∇f(x - τ ∇f(x)), ∇f(x)⟫`
-on `[0, t)`. This is the property of the iterates of the sharpness example of
-[cartis2022evaluation] Theorem 2.2.5 (Lemma B.2.6). -/
+/-- The **first-local-minimizer line search**: $t > 0$ is the first stationary point of
+$\varphi(\tau) = f(x - \tau \nabla f(x))$ on $[0, \infty)$, and $\varphi$ has negative slope
+before it. That is, $\langle \nabla f(x - t \nabla f(x)), \nabla f(x)\rangle = 0$, and $\langle
+\nabla f(x - \tau \nabla f(x)), \nabla f(x)\rangle > 0$ for every $\tau \in [0, t)$. The slope
+of $\varphi$ is $\varphi'(\tau) = -\langle \nabla f(x - \tau \nabla f(x)), \nabla f(x)\rangle$.
+
+The iterates of the sharpness example of Theorem 2.2.5 of [cartis2022evaluation] (Lemma B.2.6)
+have this property. -/
 def IsFirstLocalLineMin (f : E → ℝ) (x : E) (t : ℝ) : Prop :=
   0 < t ∧ ⟪gradient f (x - t • gradient f x), gradient f x⟫ = 0 ∧
     ∀ τ ∈ Ico 0 t, 0 < ⟪gradient f (x - τ • gradient f x), gradient f x⟫
 
-/-- The derivative of `τ ↦ f (x - τ ∇f(x))`. -/
+/-- If $f$ is differentiable, then $\varphi(\tau) = f(x - \tau \nabla f(x))$ has the derivative
+$\varphi'(\tau) = -\langle \nabla f(x - \tau \nabla f(x)), \nabla f(x)\rangle$. -/
 theorem hasDerivAt_lineFun (hf : Differentiable ℝ f) (x : E) (τ : ℝ) :
     HasDerivAt (fun τ : ℝ => f (x - τ • gradient f x))
       (-⟪gradient f (x - τ • gradient f x), gradient f x⟫) τ := by
@@ -277,7 +332,9 @@ theorem hasDerivAt_lineFun (hf : Differentiable ℝ f) (x : E) (τ : ℝ) :
   have h := (hf (x - τ • gradient f x)).hasFDerivAt.comp_hasDerivAt τ hl
   rwa [map_neg, fderiv_apply_eq_inner_gradient] at h
 
-/-- A global line minimizer is positive and stationary when `∇f(x) ≠ 0`. -/
+/-- Let $f$ be differentiable with $\nabla f(x) \neq 0$. Then a global line minimizer $t$ is
+positive and stationary: $t > 0$ and $\langle \nabla f(x - t \nabla f(x)), \nabla f(x)\rangle =
+0$. -/
 theorem IsGlobalLineMin.pos_and_inner_eq_zero (hf : Differentiable ℝ f) {x : E} {t : ℝ}
     (h : IsGlobalLineMin f x t) (hg : gradient f x ≠ 0) :
     0 < t ∧ ⟪gradient f (x - t • gradient f x), gradient f x⟫ = 0 := by
@@ -307,8 +364,12 @@ theorem IsGlobalLineMin.pos_and_inner_eq_zero (hf : Differentiable ℝ f) {x : E
   have := hmin.hasDerivAt_eq_zero (hasDerivAt_lineFun hf x t)
   linarith
 
-/-- On a line where `∇f` is `L`-Lipschitz, a stationary step satisfies `t ≥ 1/L`
-(from `0 = ⟪∇f(x - t∇f(x)), ∇f(x)⟫ ≥ ‖∇f(x)‖² (1 - L t)`). -/
+/-- Let $\nabla f$ be $L$-Lipschitz with $L > 0$, and let $\nabla f(x) \neq 0$. If $t \ge 0$ is a
+stationary step, $\langle \nabla f(x - t \nabla f(x)), \nabla f(x)\rangle = 0$, then
+$t \ge 1/L$.
+
+This follows from $0 = \langle \nabla f(x - t \nabla f(x)), \nabla f(x)\rangle \ge \|\nabla
+f(x)\|^2 (1 - Lt)$. -/
 theorem one_div_le_of_inner_eq_zero (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖)
     (hL0 : 0 < L) {x : E} (hg : gradient f x ≠ 0) {t : ℝ} (ht : 0 ≤ t)
     (h0 : ⟪gradient f (x - t • gradient f x), gradient f x⟫ = 0) : 1 / L ≤ t := by
@@ -325,7 +386,10 @@ theorem one_div_le_of_inner_eq_zero (hL : ∀ y z, ‖gradient f y - gradient f 
   rw [div_le_iff₀ hL0]
   linarith
 
-/-- The decrease at the step `1/L`: `f (x - ∇f(x)/L) ≤ f x - ‖∇f(x)‖²/(2L)` ((2.2.28)). -/
+/-- The decrease at the step $1/L$, (2.2.28) of [cartis2022evaluation]: if $f$ is differentiable
+with $L$-Lipschitz gradient and $L > 0$, then
+$$f(x - \nabla f(x)/L) \le f(x) - \frac{\|\nabla f(x)\|^2}{2L}.$$
+-/
 theorem le_sub_of_step_inv (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) (x : E) :
     f (x - (1 / L) • gradient f x) ≤ f x - ‖gradient f x‖ ^ 2 / (2 * L) := by
@@ -338,11 +402,14 @@ theorem le_sub_of_step_inv (hf : Differentiable ℝ f)
     ring
   linarith
 
-/-- **Theorem 2.2.4, core** ([cartis2022evaluation] proof of Theorem 2.2.4). Let `f` be
-differentiable with `L`-Lipschitz gradient, `L > 0`, and `∇f(x) ≠ 0`. If `t` is a global line
-minimizer (`IsGlobalLineMin`, e.g. the book's exact line search (2.2.26) `IsExactLineMin`) or a
-first-local-minimizer step (`IsFirstLocalLineMin`), then `t ≥ 1/L` and
-`f x - f (x - t ∇f(x)) ≥ ‖∇f(x)‖²/(2L)`. -/
+/-- **Theorem 2.2.4** of [cartis2022evaluation], core of the proof. Let $f : E \to \mathbb{R}$ be
+differentiable on a real Hilbert space $E$, with $\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$
+for all $y, z$ and $L > 0$, and let $\nabla f(x) \neq 0$. Let $t$ be a global line minimizer
+(`LineSearch.IsGlobalLineMin`, for example the exact line search (2.2.26)
+`LineSearch.IsExactLineMin`) or a first-local-minimizer step (`LineSearch.IsFirstLocalLineMin`).
+Then $t \ge 1/L$ and
+$$f(x) - f(x - t \nabla f(x)) \ge \frac{\|\nabla f(x)\|^2}{2L}.$$
+-/
 theorem decrease_ge_of_exactLineMin (hf : Differentiable ℝ f)
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖) (hL0 : 0 < L) {x : E}
     (hg : gradient f x ≠ 0) {t : ℝ} (ht : IsGlobalLineMin f x t ∨ IsFirstLocalLineMin f x t) :

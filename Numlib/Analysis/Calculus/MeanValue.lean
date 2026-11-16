@@ -11,49 +11,42 @@ import Numlib.Approximation.DividedDifference
 /-!
 # Mean value inequalities with explicit constants
 
-Four mean value statements the error analyses of this library need and Mathlib does not carry:
-the first-order inequality with the derivative frozen at a third point, the second-order
-inequality with the sharp constant, and two local statements saying that a difference quotient of
-a `C¹` function is uniformly close to the derivative near a point, and a second divided difference
-of a `C²` function uniformly close to half the second derivative.
+This module proves mean value statements that the error analyses of this library need and that
+Mathlib does not have. The first is the first-order inequality with the derivative frozen at a third
+point: if $f$ has derivative $f'(w)$ on a convex set $s$ that contains $x$ and $y$, and
+$\|f'(w) - f'(z)\| \le L \|w - z\|$ on $s$, then
+$$\|f(y) - f(x) - f'(z)(y - x)\| \le \frac{L}{2} \big(\|x - z\| + \|y - z\|\big) \|y - x\|.$$
+This is Lemma 4.1.15 of [dennis1996numerical], and the first step of each superlinear convergence
+proof for a quasi-Newton method. The second is the second-order inequality with the sharp constant,
+$\|f(y) - f(x) - f'(x)(y - x)\| \le \frac{C}{2} \|y - x\|^2$. The last two are local statements: a
+difference quotient of a $C^1$ function is uniformly close to the derivative near a point, and a
+second divided difference of a $C^2$ function is uniformly close to half the second derivative.
 
-## Real functions on the whole line
+## Main results
 
-`abs_sub_le_of_hasDerivAt`: a function `ℝ → ℝ` with derivative bounded by `C` everywhere is
-`C`-Lipschitz, in the `|g x - g y| ≤ C |x - y|` form; `contDiff_one_of_hasDerivAt`: a function with
-a continuous derivative everywhere is `C¹`.
+* `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`: the first-order inequality with the
+  derivative frozen at a third point $z$, not necessarily in $s$.
+* `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`: the sharp second-order inequality.
+* `exists_ball_abs_slope_sub_deriv_le`: for $h$ of class $C^1$ at $a$, $|(h(y) - h(x))/(y - x) -
+  h'(a)| \le \varepsilon$ on a ball around $a$.
+* `exists_ball_abs_newton_three_sub_le`: for $f$ of class $C^2$ at $a$,
+  $|f[x, y, z] - f''(a)/2| \le \eta$ at pairwise distinct nodes of a ball around $a$.
+* `abs_sub_le_of_hasDerivAt`: a function $\mathbb{R} \to \mathbb{R}$ with derivative bounded by $C$
+  everywhere satisfies $|g(x) - g(y)| \le C |x - y|$.
+* `contDiff_one_of_hasDerivAt`: a function $\mathbb{R} \to \mathbb{R}$ with a continuous derivative
+  everywhere is $C^1$.
 
-## The inequality with the derivative frozen at a third point
+## Implementation notes
 
-If `f` has derivative `f' w` on a convex set `s` containing `x` and `y`, and
-`‖f' w - f' z‖ ≤ L ‖w - z‖` on `s` for a point `z` not necessarily in `s`, then
-`‖f y - f x - f' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`
-(`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`, Dennis–Schnabel Lemma 4.1.15),
-the first step of every superlinear convergence proof for a quasi-Newton method.
-
-## The sharp second-order inequality
-
-If `f` has derivative `f' z` at every point of a convex set and `‖f' z - f' x‖ ≤ C ‖z - x‖` there,
-then `‖f y - f x - f' x (y - x)‖ ≤ C / 2 * ‖y - x‖ ^ 2`
-(`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`).
-
-Mathlib's `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` bounds the same quantity using a
-*constant* bound on `‖f' z - f' x‖`, which loses the factor `1 / 2`. The sharp form below
-integrates the variable bound along the segment instead. It is the natural candidate for
-upstreaming to `Mathlib.Analysis.Calculus.MeanValue`, and is what makes the quadratic convergence
-rate of Newton's method come out with the textbook constant.
-
-## Divided differences near a point
-
-`exists_ball_abs_slope_sub_deriv_le` bounds `|(h y - h x) / (y - x) - h'(a)|` by any prescribed
-`ε > 0` on a ball around `a`, for `h` of class `C¹`; it is the mean value inequality applied to
-`h - h'(a) · id`. `exists_ball_abs_newton_three_sub_le` is its three-node analogue for `f` of
-class `C²`, bounding `|f[x, y, z] - f''(a)/2|` at pairwise distinct nodes of a ball. Unlike the
-first it is a genuine mean value *theorem* (`DividedDifference.exists_newton_three_eq`, Rolle
-twice), because no node can be singled out to lower the order through `dslope`. Both are the form
-in which a local convergence proof of a derivative-free rootfinder
-(`Numlib/Nonlinear/Secant`) needs its divided differences controlled; neither has any rootfinding
-content of its own.
+* Mathlib's `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` bounds the same quantity as the
+  sharp second-order inequality with a constant bound of $\|f'(z) - f'(x)\|$, which loses the factor
+  $1/2$. The sharp form integrates the variable bound along the segment. This makes the quadratic
+  convergence rate of Newton's method come out with the textbook constant.
+* The first local statement is the mean value inequality applied to $h - h'(a) \cdot \mathrm{id}$.
+  The second is a mean value theorem, not an inequality (`DividedDifference.exists_newton_three_eq`,
+  Rolle's theorem twice), because no node can be singled out to lower the order through `dslope`.
+  Both give the control of divided differences that a local convergence proof of a derivative-free
+  rootfinder needs (`Numlib.Nonlinear.Secant`). Neither has content about rootfinding.
 -/
 
 /-! ### The mean value inequality with the derivative taken at a third point -/
@@ -63,16 +56,18 @@ section ThirdPoint
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- **Mean value inequality with the derivative frozen at a third point** (Dennis–Schnabel
-Lemma 4.1.15): if `f` has derivative `f' w` on a convex set `s` containing `x` and `y`, and
-`‖f' w - f' z‖ ≤ L ‖w - z‖` on `s` for some point `z` (not necessarily in `s`), then
-`‖f y - f x - f' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`.
+/-- **Mean value inequality with the derivative frozen at a third point**, Lemma 4.1.15 of
+[dennis1996numerical]. Let $E$ and $F$ be real normed spaces, let $s \subseteq E$ be convex, and
+let $f : E \to F$ have the derivative $f'(w)$ at every $w \in s$. Let $x, y \in s$, let
+$z \in E$, not necessarily in $s$, and let $\|f'(w) - f'(z)\| \le L \|w - z\|$ for all
+$w \in s$. Then
+$$\|f(y) - f(x) - f'(z)(y - x)\| \le \frac{L}{2} \big(\|x - z\| + \|y - z\|\big) \|y - x\|.$$
 
-The case `z = x` is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` of
-`Numlib/Analysis/Calculus/MeanValue`, whose proof this follows: along the segment
-`t ↦ f (x + t (y - x)) - f x - t f' z (y - x)` the derivative is bounded by
-`L ‖y - x‖ ((1 - t) ‖x - z‖ + t ‖y - z‖)`, which is the derivative of the boundary
-`L ‖y - x‖ (‖x - z‖ t + (‖y - z‖ - ‖x - z‖) t² / 2)`. -/
+The case $z = x$ is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, and the proof
+follows its proof. Along the segment, the derivative of $t \mapsto f(x + t(y - x)) - f(x) - t
+f'(z)(y - x)$ is bounded by $L \|y - x\| ((1 - t) \|x - z\| + t \|y - z\|)$. This is the
+derivative of the bounding function $t \mapsto L \|y - x\| (\|x - z\| t + (\|y - z\| - \|x -
+z\|) t^2 / 2)$. -/
 theorem Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add {f : E → F}
     {f' : E → E →L[ℝ] F} {s : Set E} (hs : Convex ℝ s) (hf : ∀ w ∈ s, HasFDerivAt f (f' w) w)
     {L : ℝ} {x y z : E} (hx : x ∈ s) (hy : y ∈ s) (hL : ∀ w ∈ s, ‖f' w - f' z‖ ≤ L * ‖w - z‖) :
@@ -168,16 +163,19 @@ variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [IsRCLikeNormedField 
   [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- Second-order mean value inequality with the sharp constant: if `f` has derivative `f' z` at
-every point of a convex set `s` and `‖f' z - f' x‖ ≤ C ‖z - x‖` on `s`, then
-`‖f y - f x - f' x (y - x)‖ ≤ C / 2 * ‖y - x‖ ^ 2` for all `x, y ∈ s`.
+/-- **Second-order mean value inequality with the sharp constant.** Let $\mathbb{K}$ be $\mathbb{R}$
+or $\mathbb{C}$, let $E$ and $F$ be normed spaces over $\mathbb{K}$, let $s \subseteq E$ be
+convex, and let $f : E \to F$ have the derivative $f'(z)$ at every $z \in s$. Let $x, y \in s$,
+and let $\|f'(z) - f'(x)\| \le C \|z - x\|$ for all $z \in s$. Then
+$$\|f(y) - f(x) - f'(x)(y - x)\| \le \frac{C}{2} \|y - x\|^2.$$
 
 Mathlib's `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` bounds the same quantity by
-`C' * ‖y - x‖` for a *constant* bound `C'` on `‖f' z - f' x‖`, which loses the factor `1 / 2`.  The
-sharp form integrates the variable bound along the segment, through
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary` with boundary `t ↦ C ‖y - x‖ ^ 2 * t ^ 2 / 2`.
-As for the first-order inequality, the scalar field must be real or complex, because the proof
-restricts scalars along the real segment from `x` to `y`. -/
+$C' \|y - x\|$ for a constant bound $C'$ of $\|f'(z) - f'(x)\|$, which loses the factor $1/2$.
+The sharp form integrates the variable bound along the segment, by
+`image_norm_le_of_norm_deriv_right_le_deriv_boundary` with the bounding function
+$t \mapsto C \|y - x\|^2 t^2 / 2$. As in the first-order inequality of Mathlib, the scalar field
+must be $\mathbb{R}$ or $\mathbb{C}$ (`IsRCLikeNormedField`), because the proof restricts
+scalars along the real segment from $x$ to $y$. Convexity is convexity over $\mathbb{R}$. -/
 theorem Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le {f : E → F} {f' : E → E →L[𝕜] F}
     {s : Set E} (hs : Convex ℝ s) (hf : ∀ z ∈ s, HasFDerivAt f (f' z) z) {C : ℝ} {x y : E}
     (hx : x ∈ s) (hy : y ∈ s) (hC : ∀ z ∈ s, ‖f' z - f' x‖ ≤ C * ‖z - x‖) :
@@ -234,9 +232,13 @@ theorem Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le {f : E → F} {f
   calc ‖f y - f x - f' x (y - x)‖ ≤ C * ‖y - x‖ ^ 2 * ((1 : ℝ) ^ 2 / 2) := key
     _ = C / 2 * ‖y - x‖ ^ 2 := by ring
 
-/-- **Difference quotients of a `C¹` function are close to its derivative** near a point: for every
-`ε > 0` there is a ball around `a` on which `|(h y - h x) / (y - x) - h'(a)| ≤ ε` for all `x ≠ y`.
-The mean value inequality for `h - h'(a) · id`, whose derivative is small on the ball. -/
+/-- **Difference quotients of a $C^1$ function are close to its derivative** near a point. Let
+$h : \mathbb{R} \to \mathbb{R}$ be $C^1$ at $a$, and let $\varepsilon > 0$. Then there is
+$\delta > 0$ such that for all $x \neq y$ in the ball of radius $\delta$ about $a$
+$$\left| \frac{h(y) - h(x)}{y - x} - h'(a) \right| \le \varepsilon.$$
+
+The proof is the mean value inequality for $h - h'(a) \cdot \mathrm{id}$, whose derivative is
+small on the ball. -/
 theorem exists_ball_abs_slope_sub_deriv_le {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) {ε : ℝ}
     (hε : 0 < ε) : ∃ δ > 0, ∀ x ∈ Metric.ball a δ, ∀ y ∈ Metric.ball a δ, x ≠ y →
       |(h y - h x) / (y - x) - deriv h a| ≤ ε := by
@@ -259,12 +261,15 @@ theorem exists_ball_abs_slope_sub_deriv_le {h : ℝ → ℝ} {a : ℝ} (hh : Con
     div_le_iff₀ (abs_pos.2 hne)]
   exact key
 
-/-- **Second divided differences of a `C²` function are close to `f''(a)/2`** near a point: for
-every `η > 0` there is a ball around `a` on which `|f[x, y, z] - f''(a)/2| ≤ η` for all pairwise
-distinct `x, y, z` in it. The three-node analogue of `exists_ball_abs_slope_sub_deriv_le`, and —
-unlike it — a genuine mean value *theorem* (`DividedDifference.exists_newton_three_eq`, Rolle
-twice) rather than a mean value inequality, because no node can be singled out to lower the order
-through `dslope`. -/
+/-- **Second divided differences of a $C^2$ function are close to $f''(a)/2$** near a point. Let
+$f : \mathbb{R} \to \mathbb{R}$ be $C^2$ at $a$, and let $\eta > 0$. Then there is $\delta > 0$
+such that for all pairwise distinct $x, y, z$ in the ball of radius $\delta$ about $a$
+$$\left| f[x, y, z] - \frac{f''(a)}{2} \right| \le \eta.$$
+
+The divided difference is `DividedDifference.newton f ![x, y, z]`. This is the three-node
+analogue of `exists_ball_abs_slope_sub_deriv_le`. Unlike that result, its proof uses a mean
+value theorem (`DividedDifference.exists_newton_three_eq`, Rolle's theorem twice) and not a mean
+value inequality, because no node can be singled out to lower the order through `dslope`. -/
 theorem exists_ball_abs_newton_three_sub_le {f : ℝ → ℝ} {a : ℝ} (hf : ContDiffAt ℝ 2 f a)
     {η : ℝ} (hη : 0 < η) :
     ∃ δ > 0, ∀ x ∈ Metric.ball a δ, ∀ y ∈ Metric.ball a δ, ∀ z ∈ Metric.ball a δ,
@@ -297,15 +302,17 @@ section Line
 
 open Set
 
-/-- **Mean value bound on the line**: a function with derivative bounded by `C` on `ℝ` is
-`C`-Lipschitz. -/
+/-- **Mean value bound on the line.** Let $g : \mathbb{R} \to \mathbb{R}$ have the derivative
+$g'(x)$ at every $x$, with $|g'(x)| \le C$ for all $x$. Then $|g(x) - g(y)| \le C |x - y|$ for
+all $x, y \in \mathbb{R}$. -/
 theorem abs_sub_le_of_hasDerivAt {g g' : ℝ → ℝ} {C : ℝ} (hg : ∀ x, HasDerivAt g (g' x) x)
     (hC : ∀ x, |g' x| ≤ C) (x y : ℝ) : |g x - g y| ≤ C * |x - y| := by
   have := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le (f := g) (f' := g') (s := univ)
     (fun x _ => (hg x).hasDerivWithinAt) (fun x _ => hC x) convex_univ (mem_univ y) (mem_univ x)
   simpa [Real.norm_eq_abs] using this
 
-/-- A function with a continuous derivative everywhere is `C¹`. -/
+/-- A function $g : \mathbb{R} \to \mathbb{R}$ that has the derivative $g'(x)$ at every $x$, with
+$g'$ continuous, is $C^1$. -/
 theorem contDiff_one_of_hasDerivAt {g g' : ℝ → ℝ} (hg : ∀ x, HasDerivAt g (g' x) x)
     (hc : Continuous g') : ContDiff ℝ 1 g := by
   rw [contDiff_one_iff_deriv]

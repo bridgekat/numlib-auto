@@ -8,57 +8,71 @@ import Numlib.Approximation.HermiteSpline
 /-!
 # Slow-convergence examples of first and second order
 
-The sharpness ("slow convergence") constructions of [cartis2022evaluation] Chapters 2 and 3:
-values and derivatives prescribed at an increasing sequence of points on the line are interpolated
-by a function whose derivatives are bounded and Lipschitz with constants **independent of the
-tolerance `ε`** (Hermite interpolation, `Hermite.exists_contDiff_interpolating_jets_bounded`), and
-then lifted to any real inner product space as a ridge function `x ↦ g ⟪e, x⟫`
-(`Numlib.Optimization.Complexity.SlowExample.Ridge`).
+This module builds the data of the sharpness ("slow convergence") examples of Chapters 2 and 3 of
+[cartis2022evaluation]. Values and derivatives are prescribed at an increasing sequence of points
+$x_0 < x_1 < \dots$ on the real line. They are interpolated by a function
+$G : \mathbb{R} \to \mathbb{R}$ whose derivatives are bounded and Lipschitz continuous with
+constants that are **independent of the tolerance $\varepsilon$**. The interpolant comes from
+Hermite interpolation, `Hermite.exists_contDiff_interpolating_jets_bounded`. It is then lifted to
+any real inner product space as a ridge function $x \mapsto G(\langle e, x \rangle)$, see
+`Numlib.Optimization.Complexity.SlowExample.Ridge`.
 
-Each data family is parametrized by a sequence of step factors `θ k ∈ [a, b]`, and its constants
-depend only on `a` and `b`. Thus a single lemma serves every method whose steps on the data are
-`θ_k` times a reference step, whatever factors the method picks.
+Each data family is parametrized by a sequence of step factors $\theta_k \in [a, b]$, and its
+constants depend only on $a$ and $b$. Thus a single lemma serves every method whose steps on the
+data are $\theta_k$ times a reference step, whatever factors the method picks.
 
-## The slow-example hierarchy
+## Main definitions
 
-The modules `Numlib.Optimization.Complexity.SlowExample.*` are organized by the
-structure they need:
-* `Ridge` — ridge functions `g ⟪e, ·⟫` and their derivatives, Hessians and Taylor data;
-* `Basic` (this file) — first- and second-order one-dimensional data (Chapters 2–3);
-* `SeparatedJets` — gluing quadratic jets at separated points of a finite-dimensional space
-  (Theorem 3.1.1);
-* `HighOrder` — data of arbitrary order with jets having one nonzero derivative (Chapter 12);
-* `ARp` — Taylor models of ridge functions at such jets and runs of the ARp method on them;
-* `Slit` — the constrained example on a hyperplane with a parallel half-space (§14.2);
-* `TRq` — explicit prefixes of runs of the trust-region method TRq continued by arbitrary runs,
-  and transfer of runs between objectives (§14.2–§14.3);
-* `ZigZag` — the two-dimensional zig-zag example of Theorem 2.2.5.
+* `Optimization.secondOrderK`, `Optimization.secondOrderF`, `Optimization.secondOrderG` and
+  `Optimization.secondOrderH`: the iteration count $k_\varepsilon = \lceil \varepsilon^{-3/2}
+  \rceil$ of (3.5.11) and the data $f_k$, $g_k$, $H_k$ of (3.5.12) of [cartis2022evaluation].
+* `Optimization.secondOrderX`: the abscissae (3.5.19) of the data (3.5.12) for given step factors.
 
-Each file states interpolation data as properties of a function of one variable (values,
-derivatives, Lipschitz constants independent of `ε`) together with the abscissae and steps of
-the run; the run predicates of the individual methods are checked against these data where the
-methods are defined.
+## Main results
 
-## Main definitions and results
-
-* `Optimization.exists_slowFirstOrder_interpolant` — the data of Theorem 2.2.3 (steepest descent,
-  and the first-order trust-region and regularization methods).
-* `Optimization.exists_slowNegCurvature_interpolant` — the data (3.2.24) of Theorem 3.2.7: slow
-  convergence to second-order criticality.
-* `Optimization.secondOrderK`, `secondOrderF`, `secondOrderG`, `secondOrderH` — the data
-  (3.5.11)–(3.5.12) with their elementary bounds, and `Optimization.ceil_rpow_facts`.
-* `Optimization.exists_slowSecondOrder_interpolant` — the data (3.5.12) of Theorem 3.5.4: slow
-  convergence to first-order criticality for second-order methods.
-* `Optimization.secondOrderX`, `Optimization.exists_slowSecondOrder_run_data` — the same data at
-  the abscissae of given step factors, with the termination test `|G'(x_k)| ≤ ε` first holding at
-  `k_ε` (Corollary 3.5.5); `Optimization.contDiff_two_rescale_bounds` — rescaling `c G(u/c)`.
+* `Optimization.exists_slowFirstOrder_interpolant`: the data of Theorem 2.2.3 of
+  [cartis2022evaluation], for steepest descent and the first-order trust-region and regularization
+  methods.
+* `Optimization.exists_slowNegCurvature_interpolant`: the data (3.2.24) of Theorem 3.2.7 of
+  [cartis2022evaluation], slow convergence to second-order criticality.
+* `Optimization.ceil_rpow_facts`: elementary bounds on $k_\varepsilon = \lceil \varepsilon^{-3/2}
+  \rceil$.
+* `Optimization.exists_slowSecondOrder_interpolant`: the data (3.5.12) of Theorem 3.5.4 of
+  [cartis2022evaluation], slow convergence to first-order criticality for second-order methods.
+* `Optimization.exists_slowSecondOrder_run_data`: the same data at the abscissae of given step
+  factors, with the termination test $|G'(x_k)| \le \varepsilon$ first holding at $k_\varepsilon$
+  (Corollary 3.5.5 of [cartis2022evaluation]).
+* `Optimization.contDiff_two_rescale_bounds`: the derivatives and constants of the rescaled function
+  $u \mapsto c \, G(u/c)$.
+* `Optimization.slowGap_nonneg`, `Optimization.slowGap_pos` and `Optimization.slowGap_le`: bounds on
+  the linearly decreasing excess $c(\kappa - k)/\kappa$.
 
 ## Implementation notes
 
-The integrality assumption of Theorem 2.2.3 (`ε⁻²` is an integer) is a hypothesis
-`k_ε ε² = 1`. In the negative-curvature example (3.2.23)–(3.2.27) the abscissae are
-`x_k = k ε` (with `θ ≡ 1`); only boundedness of `f` is used, which avoids requiring `ε⁻³` to be an
-integer.
+* The modules `Numlib.Optimization.Complexity.SlowExample.*` are organized by the structure that
+  they need. `Numlib.Optimization.Complexity.SlowExample.Ridge` treats ridge functions
+  $G(\langle e, \cdot \rangle)$ and their derivatives, Hessians and Taylor data. This module treats
+  first- and second-order data in one dimension (Chapters 2 and 3).
+  `Numlib.Optimization.Complexity.SlowExample.SeparatedJets` glues quadratic jets at separated
+  points of a finite-dimensional space (Theorem 3.1.1).
+  `Numlib.Optimization.Complexity.SlowExample.HighOrder` treats data of arbitrary order with jets
+  that have one nonzero derivative (Chapter 12). `Numlib.Optimization.Complexity.SlowExample.ARp`
+  treats Taylor models of ridge functions at such jets and runs of the ARp method on them.
+  `Numlib.Optimization.Complexity.SlowExample.Slit` treats the constrained example on a hyperplane
+  with a parallel half-space (§14.2). `Numlib.Optimization.Complexity.SlowExample.TRq` treats
+  explicit prefixes of runs of the trust-region method TRq continued by arbitrary runs, and the
+  transfer of runs between objectives (§14.2 and §14.3).
+  `Numlib.Optimization.Complexity.SlowExample.ZigZag` treats the two-dimensional zig-zag example of
+  Theorem 2.2.5.
+* Each module states the interpolation data as properties of a function of one variable (values,
+  derivatives, and Lipschitz constants independent of $\varepsilon$), together with the abscissae
+  and steps of the run. The run predicates of the individual methods are checked against these data
+  where the methods are defined.
+* The integrality assumption of Theorem 2.2.3 ($\varepsilon^{-2}$ is an integer) is the hypothesis
+  $k_\varepsilon \varepsilon^2 = 1$.
+* In the negative-curvature example (3.2.23)–(3.2.27), the abscissae are $x_k = k\varepsilon$ for
+  $\theta \equiv 1$. Only the boundedness of $f$ is used, which avoids the requirement that
+  $\varepsilon^{-3}$ is an integer.
 -/
 
 open Set
@@ -68,17 +82,27 @@ namespace Optimization
 
 /-! ### Small sums of the Hermite consistency condition -/
 
+/-- For every $\varphi : \mathbb{N} \to \mathbb{R}$, $\sum_{i=0}^{1} \varphi(i) = \varphi(0) +
+\varphi(1)$. -/
 theorem sum_Icc_zero_one (φ : ℕ → ℝ) : ∑ i ∈ Finset.Icc 0 1, φ i = φ 0 + φ 1 := by
   rw [show Finset.Icc 0 1 = {0, 1} by decide, Finset.sum_pair (by norm_num)]
 
+/-- For every $\varphi : \mathbb{N} \to \mathbb{R}$, $\sum_{i=0}^{2} \varphi(i) = \varphi(0) +
+\varphi(1) + \varphi(2)$. -/
 theorem sum_Icc_zero_two (φ : ℕ → ℝ) : ∑ i ∈ Finset.Icc 0 2, φ i = φ 0 + φ 1 + φ 2 := by
   rw [show Finset.Icc 0 2 = {0, 1, 2} by decide, Finset.sum_insert (by decide),
     Finset.sum_pair (by norm_num), add_assoc]
 
+/-- For every $\varphi : \mathbb{N} \to \mathbb{R}$, $\sum_{i=1}^{2} \varphi(i) = \varphi(1) +
+\varphi(2)$. -/
 theorem sum_Icc_one_two (φ : ℕ → ℝ) : ∑ i ∈ Finset.Icc 1 2, φ i = φ 1 + φ 2 := by
   rw [show Finset.Icc 1 2 = {1, 2} by decide, Finset.sum_pair (by norm_num)]
 
-/-- The Hermite consistency condition (A.32) for `p = 1`, in expanded form. -/
+/-- The Hermite consistency condition (A.32) of [cartis2022evaluation] for $p = 1$, in expanded
+form. Let $a_0, a_1, b_0, b_1, s, \kappa$ be real numbers with
+$|b_0 - (a_0 + a_1 s)| \le \kappa s^2$ and $|b_1 - a_1| \le \kappa s$. Then for $j \le 1$,
+$$\left| b_j - \sum_{i=j}^{1} \frac{a_i s^{i-j}}{(i-j)!} \right| \le \kappa s^{2-j}.$$
+-/
 theorem hermite_consistency_one {a b : ℕ → ℝ} {s κ : ℝ}
     (h0 : |b 0 - (a 0 + a 1 * s)| ≤ κ * s ^ 2) (h1 : |b 1 - a 1| ≤ κ * s) :
     ∀ j ≤ 1, |b j - ∑ i ∈ Finset.Icc j 1, a i * s ^ (i - j) / (i - j).factorial| ≤
@@ -88,7 +112,12 @@ theorem hermite_consistency_one {a b : ℕ → ℝ} {s κ : ℝ}
   · simpa [sum_Icc_zero_one] using h0
   · simpa using h1
 
-/-- The Hermite consistency condition (A.32) for `p = 2`, in expanded form. -/
+/-- The Hermite consistency condition (A.32) of [cartis2022evaluation] for $p = 2$, in expanded
+form. Let $a_0, a_1, a_2, b_0, b_1, b_2, s, \kappa$ be real numbers with $|b_0 - (a_0 + a_1 s +
+a_2 s^2/2)| \le \kappa s^3$, $|b_1 - (a_1 + a_2 s)| \le \kappa s^2$ and
+$|b_2 - a_2| \le \kappa s$. Then for $j \le 2$,
+$$\left| b_j - \sum_{i=j}^{2} \frac{a_i s^{i-j}}{(i-j)!} \right| \le \kappa s^{3-j}.$$
+-/
 theorem hermite_consistency_two {a b : ℕ → ℝ} {s κ : ℝ}
     (h0 : |b 0 - (a 0 + a 1 * s + a 2 * s ^ 2 / 2)| ≤ κ * s ^ 3)
     (h1 : |b 1 - (a 1 + a 2 * s)| ≤ κ * s ^ 2) (h2 : |b 2 - a 2| ≤ κ * s) :
@@ -102,15 +131,20 @@ theorem hermite_consistency_two {a b : ℕ → ℝ} {s κ : ℝ}
 
 /-! ### First-order data (Theorem 2.2.3) -/
 
-/-- **First-order slow example** ([cartis2022evaluation], proof of Theorem 2.2.3,
-(2.2.14)–(2.2.22)).
-For step factors in `[a, b]`, `0 < a ≤ b`, there are `L, B ≥ 0` depending only on `a, b` such that:
-for every `ε ∈ (0, 1]` with `k_ε = ε⁻²` an integer, every `θ` with `θ k ∈ [a, b]`, and with
-`ω_k = ε (k_ε - k)/k_ε`, `g_k = -(ε + ω_k)`, `x_0 = 0`, `x_{k+1} = x_k - θ_k g_k`, `f_0 = 4 b`,
-`f_{k+1} = f_k - θ_k g_k²`, there is a `C¹` function `G : ℝ → ℝ` with `L`-Lipschitz derivative,
-`|G|, |G'| ≤ B`, `G (x k) = f_k` and `G' (x k) = g_k` for `k ≤ k_ε`. The book's case is
-`θ ≡ t_ini`. The recurrences and the bounds on `θ` are only required for `k < k_ε`, and `x 0` is
-arbitrary. -/
+/-- **First-order slow example.** Let $0 < a \le b$. Then there are constants $L, B \ge 0$, which
+depend only on $a$ and $b$, with the following property. Let $\varepsilon \in (0, 1]$, let
+$k_\varepsilon \in \mathbb{N}$ satisfy $k_\varepsilon \varepsilon^2 = 1$, and let $\theta$, $x$
+and $f$ be real sequences. Put $\omega_k = \varepsilon (k_\varepsilon - k)/k_\varepsilon$ and
+$g_k = -(\varepsilon + \omega_k)$. Suppose that for every $k < k_\varepsilon$,
+$$\theta_k \in [a, b], \qquad x_{k+1} = x_k - \theta_k g_k, \qquad f_{k+1} = f_k - \theta_k
+  g_k^2,$$
+and that $f_0 = 4b$. Then there is a $C^1$ function $G : \mathbb{R} \to \mathbb{R}$ such that
+$G'$ is $L$-Lipschitz, $|G| \le B$ and $|G'| \le B$ everywhere, and $G(x_k) = f_k$ and
+$G'(x_k) = g_k$ for every $k \le k_\varepsilon$.
+
+This is the construction (2.2.14)–(2.2.22) in the proof of Theorem 2.2.3 of
+[cartis2022evaluation]. The case of the book is $\theta \equiv t_{\mathrm{ini}}$. The point
+$x_0$ is arbitrary. -/
 theorem exists_slowFirstOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (kε : ℕ) (θ x f : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (kε : ℝ) * ε ^ 2 = 1 → (∀ k < kε, θ k ∈ Icc a b) →
@@ -233,14 +267,19 @@ theorem exists_slowFirstOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ 
 
 /-! ### Second-order data, slow to second-order criticality (Theorem 3.2.7) -/
 
-/-- **Negative-curvature slow example** ([cartis2022evaluation], proof of Theorem 3.2.7, (3.2.23)–
-(3.2.27)). For step factors in `[a, b]`, `0 < a ≤ b`, there are `L, B ≥ 0` depending only on
-`a, b` such that: for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε⁻³⌉₊`, `c_k = 2 - k/k_ε`,
-`H_k = -ε c_k`, steps `s_k = θ_k ε` (`θ k ∈ [a, b]`), `x_{k+1} = x_k + s_k`, `f_0 = 1`,
-`f_{k+1} = f_k + H_k s_k²/2`, there is a `C²` function `G : ℝ → ℝ` with `L`-Lipschitz second
-derivative, `|G^{(j)}| ≤ B` (`j ≤ 2`), and `G (x k) = f_k`, `G' (x k) = 0`, `G'' (x k) = H_k` for
-`k ≤ k_ε`. TR2 uses `θ ≡ 1`, so that `x_k = k ε` in (3.2.25). The recurrences and the bounds on `θ`
-are only required for `k < k_ε`, and `x 0` is arbitrary. -/
+/-- **Negative-curvature slow example.** Let $0 < a \le b$. Then there are constants $L, B \ge 0$,
+which depend only on $a$ and $b$, with the following property. Let $\varepsilon \in (0, 1]$, let
+$k_\varepsilon = \lceil \varepsilon^{-3} \rceil$, and let $\theta$, $x$ and $f$ be real
+sequences. Put $c_k = 2 - k/k_\varepsilon$, $H_k = -\varepsilon c_k$ and
+$s_k = \theta_k \varepsilon$. Suppose that for every $k < k_\varepsilon$,
+$$\theta_k \in [a, b], \qquad x_{k+1} = x_k + s_k, \qquad f_{k+1} = f_k + \tfrac12 H_k s_k^2,$$
+and that $f_0 = 1$. Then there is a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$ such that
+$G''$ is $L$-Lipschitz, $|G^{(j)}| \le B$ everywhere for $j \le 2$, and
+$$G(x_k) = f_k, \qquad G'(x_k) = 0, \qquad G''(x_k) = H_k \qquad (k \le k_\varepsilon).$$
+
+This is the construction (3.2.23)–(3.2.27) in the proof of Theorem 3.2.7 of
+[cartis2022evaluation]. The method TR2 uses $\theta \equiv 1$, so that $x_k = k \varepsilon$ in
+(3.2.25). The point $x_0$ is arbitrary. -/
 theorem exists_slowNegCurvature_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ x f : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < ⌈(ε ^ 3)⁻¹⌉₊, θ k ∈ Icc a b) →
@@ -391,18 +430,23 @@ theorem exists_slowNegCurvature_interpolant {a b : ℝ} (ha : 0 < a) (hab : a �
 
 /-! ### The data (3.5.12) -/
 
-/-- `k_ε = ⌈ε^{-3/2}⌉` (3.5.11). -/
+/-- The iteration count $k_\varepsilon = \lceil \varepsilon^{-3/2} \rceil$ of (3.5.11) of
+[cartis2022evaluation].
+
+The ceiling is `Nat.ceil`, and the power is the real power `Real.rpow`. -/
 noncomputable def secondOrderK (ε : ℝ) : ℕ := ⌈ε ^ (-(3 / 2 : ℝ))⌉₊
 
-/-- The function values `f_k = 1 - k ε^{3/2}/2` of (3.5.12). -/
+/-- The function values $f_k = 1 - k \varepsilon^{3/2}/2$ of (3.5.12) of [cartis2022evaluation]. -/
 noncomputable def secondOrderF (ε : ℝ) (k : ℕ) : ℝ := 1 - k * ε ^ (3 / 2 : ℝ) / 2
 
-/-- The derivatives `g_k = -2 ε f_k` of (3.5.12). -/
+/-- The derivatives $g_k = -2 \varepsilon f_k$ of (3.5.12) of [cartis2022evaluation]. -/
 noncomputable def secondOrderG (ε : ℝ) (k : ℕ) : ℝ := -2 * ε * secondOrderF ε k
 
-/-- The second derivatives `H_k = 4 ε^{1/2} f_k²` of (3.5.12). -/
+/-- The second derivatives $H_k = 4 \varepsilon^{1/2} f_k^2$ of (3.5.12) of [cartis2022evaluation].
+-/
 noncomputable def secondOrderH (ε : ℝ) (k : ℕ) : ℝ := 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2
 
+/-- The defining equation $H_k = 4 \varepsilon^{1/2} f_k^2$ of `Optimization.secondOrderH`. -/
 theorem secondOrderH_def (ε : ℝ) (k : ℕ) :
     secondOrderH ε k = 4 * ε ^ (1 / 2 : ℝ) * secondOrderF ε k ^ 2 :=
   rfl
@@ -415,6 +459,7 @@ private theorem rpow_three_halves_mul (hε : 0 < ε) :
     ε ^ (-(3 / 2 : ℝ)) * ε ^ (3 / 2 : ℝ) = 1 := by
   rw [← Real.rpow_add hε]; simp
 
+/-- For $\varepsilon > 0$ and $k < k_\varepsilon$, $f_k > 1/2$. -/
 theorem secondOrderF_gt_half (hε : 0 < ε) {k : ℕ} (hk : k < secondOrderK ε) :
     1 / 2 < secondOrderF ε k := by
   have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
@@ -424,11 +469,13 @@ theorem secondOrderF_gt_half (hε : 0 < ε) {k : ℕ} (hk : k < secondOrderK ε)
     rwa [rpow_three_halves_mul hε] at this
   unfold secondOrderF; linarith
 
+/-- For $\varepsilon > 0$ and every $k$, $f_k \le 1$. -/
 theorem secondOrderF_le_one (hε : 0 < ε) (k : ℕ) : secondOrderF ε k ≤ 1 := by
   have : 0 ≤ (k : ℝ) * ε ^ (3 / 2 : ℝ) / 2 := by
     have := Real.rpow_pos_of_pos hε (3 / 2 : ℝ); positivity
   unfold secondOrderF; linarith
 
+/-- For $\varepsilon > 0$, $f_{k_\varepsilon} \le 1/2$. -/
 theorem secondOrderF_K_le_half (hε : 0 < ε) : secondOrderF ε (secondOrderK ε) ≤ 1 / 2 := by
   have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
   have h1 : ε ^ (-(3 / 2 : ℝ)) ≤ (secondOrderK ε : ℝ) := Nat.le_ceil _
@@ -437,6 +484,7 @@ theorem secondOrderF_K_le_half (hε : 0 < ε) : secondOrderF ε (secondOrderK ε
     rwa [rpow_three_halves_mul hε] at this
   unfold secondOrderF; linarith
 
+/-- For $0 < \varepsilon < 1$ and $k \le k_\varepsilon$, $f_k > 0$. -/
 theorem secondOrderF_pos (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k ≤ secondOrderK ε) :
     0 < secondOrderF ε k := by
   have hp : 0 < ε ^ (3 / 2 : ℝ) := Real.rpow_pos_of_pos hε _
@@ -452,7 +500,10 @@ theorem secondOrderF_pos (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k ≤ se
 
 end Data
 
-/-- Facts on `k_ε = ⌈ε^{-3/2}⌉`: `k ε^{3/2} < 1` for `k < k_ε`, and `1 ≤ k_ε ε^{3/2} ≤ 2`. -/
+/-- Facts on $k_\varepsilon = \lceil \varepsilon^{-3/2} \rceil$. Let $0 < \varepsilon \le 1$. Then
+$k \varepsilon^{3/2} < 1$ for every $k < k_\varepsilon$, and
+$$1 \le k_\varepsilon \varepsilon^{3/2} \le 2.$$
+-/
 theorem ceil_rpow_facts {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
     (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, (k : ℝ) * ε ^ (3 / 2 : ℝ) < 1) ∧
       1 ≤ (⌈ε ^ (-(3 / 2 : ℝ))⌉₊ : ℝ) * ε ^ (3 / 2 : ℝ) ∧
@@ -473,14 +524,22 @@ theorem ceil_rpow_facts {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
 
 /-! ### Second-order data, slow to first-order criticality (Theorem 3.5.4) -/
 
-/-- **Second-order slow example** ([cartis2022evaluation], (3.5.11)–(3.5.19) and the proof of
-Theorem 3.5.4 in Appendix B). For step factors in `[a, b]`, `0 < a ≤ b`, there are `L, B ≥ 0`
-depending only on `a, b` such that: for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-3/2}⌉₊`,
-`f_k = 1 - k ε^{3/2}/2`, `g_k = -2 ε f_k`, `H_k = 4 ε^{1/2} f_k²` (3.5.12) and
-`x_{k+1} = x_k + θ_k ε^{1/2}/(2 f_k)` (3.5.19) (`θ k ∈ [a, b]`), there is a `C²` function
-`G : ℝ → ℝ` with `L`-Lipschitz second derivative, `|G^{(j)}| ≤ B` (`j ≤ 2`), interpolating
-`(f_k, g_k, H_k)` at `x_k` for `k ≤ k_ε`. The recurrence and the bounds on `θ` are only required
-for `k < k_ε`, and `x 0` is arbitrary. -/
+/-- **Second-order slow example.** Let $0 < a \le b$. Then there are constants $L, B \ge 0$, which
+depend only on $a$ and $b$, with the following property. Let $\varepsilon \in (0, 1]$, let
+$k_\varepsilon = \lceil \varepsilon^{-3/2} \rceil$, and let $\theta$ and $x$ be real sequences.
+Put
+$$f_k = 1 - \tfrac12 k \varepsilon^{3/2}, \qquad g_k = -2 \varepsilon f_k, \qquad H_k = 4
+  \varepsilon^{1/2} f_k^2,$$
+as in (3.5.12). Suppose that $\theta_k \in [a, b]$ and $x_{k+1} = x_k + \theta_k
+\varepsilon^{1/2}/(2 f_k)$, as in (3.5.19), for every $k < k_\varepsilon$. Then there is a $C^2$
+function $G : \mathbb{R} \to \mathbb{R}$ such that $G''$ is $L$-Lipschitz, $|G^{(j)}| \le B$
+everywhere for $j \le 2$, and
+$$G(x_k) = f_k, \qquad G'(x_k) = g_k, \qquad G''(x_k) = H_k \qquad (k \le k_\varepsilon).$$
+
+This is the construction (3.5.11)–(3.5.19) and the proof of Theorem 3.5.4 in Appendix B of
+[cartis2022evaluation]. The point $x_0$ is arbitrary. The statement writes $f_k$, $g_k$ and
+$H_k$ out in full; `Optimization.exists_slowSecondOrder_run_data` states them with
+`Optimization.secondOrderF`, `Optimization.secondOrderG` and `Optimization.secondOrderH`. -/
 theorem exists_slowSecondOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < ⌈ε ^ (-(3 / 2 : ℝ))⌉₊, θ k ∈ Icc a b) →
@@ -681,26 +740,31 @@ theorem exists_slowSecondOrder_interpolant {a b : ℝ} (ha : 0 < a) (hab : a ≤
 
 /-! ### Runs along the data (3.5.12) -/
 
-/-- The abscissae `x_0 = 0`, `x_{k+1} = x_k + θ_k ε^{1/2}/(2 f_k)` (3.5.19) of the data (3.5.12)
-for step factors `θ`. -/
+/-- The abscissae $x_0 = 0$ and $x_{k+1} = x_k + \theta_k \varepsilon^{1/2}/(2 f_k)$ of (3.5.19) of
+[cartis2022evaluation], for the data (3.5.12) and the step factors $\theta$. Thus $x_k =
+\sum_{j<k} \theta_j \varepsilon^{1/2}/(2 f_j)$. -/
 noncomputable def secondOrderX (θ : ℕ → ℝ) (ε : ℝ) (k : ℕ) : ℝ :=
   ∑ j ∈ Finset.range k, θ j * ε ^ (1 / 2 : ℝ) / (2 * secondOrderF ε j)
 
+/-- The first abscissa is $x_0 = 0$. -/
 @[simp]
 theorem secondOrderX_zero (θ : ℕ → ℝ) (ε : ℝ) : secondOrderX θ ε 0 = 0 := by
   simp [secondOrderX]
 
+/-- The abscissae satisfy $x_{k+1} = x_k + \theta_k \varepsilon^{1/2}/(2 f_k)$. -/
 theorem secondOrderX_succ (θ : ℕ → ℝ) (ε : ℝ) (k : ℕ) :
     secondOrderX θ ε (k + 1) =
       secondOrderX θ ε k + θ k * ε ^ (1 / 2 : ℝ) / (2 * secondOrderF ε k) :=
   Finset.sum_range_succ _ _
 
+/-- The function values satisfy $f_{k+1} = f_k - \varepsilon^{3/2}/2$. -/
 theorem secondOrderF_succ (ε : ℝ) (k : ℕ) :
     secondOrderF ε (k + 1) = secondOrderF ε k - ε ^ (3 / 2 : ℝ) / 2 := by
   simp only [secondOrderF]; push_cast; ring
 
-/-- The termination test along the data (3.5.12): `|g_k| ≤ ε` holds (for `k ≤ k_ε`) exactly at
-`k = k_ε`. -/
+/-- The termination test along the data (3.5.12) of [cartis2022evaluation]. Let
+$0 < \varepsilon < 1$ and $k \le k_\varepsilon$. Then $|g_k| \le \varepsilon$ if and only if
+$k \ge k_\varepsilon$, that is, if and only if $k = k_\varepsilon$. -/
 theorem abs_secondOrderG_le_iff {ε : ℝ} (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ}
     (hk : k ≤ secondOrderK ε) : |secondOrderG ε k| ≤ ε ↔ secondOrderK ε ≤ k := by
   have hF0 := (secondOrderF_pos hε hε1 hk).le
@@ -714,11 +778,20 @@ theorem abs_secondOrderG_le_iff {ε : ℝ} (hε : 0 < ε) (hε1 : ε < 1) {k : �
     rw [le_antisymm hk h]
     nlinarith [secondOrderF_K_le_half hε]
 
-/-- **Second-order slow runs** ([cartis2022evaluation], (3.5.12), (3.5.19)): the interpolant of
-`Optimization.exists_slowSecondOrder_interpolant` at the abscissae `Optimization.secondOrderX`
-of the step factors `θ`, for `ε ∈ (0, 1)`, with the termination test `|G'(x_k)| ≤ ε` holding
-exactly at `k = k_ε`. A method whose step at `x_k` is `θ_k ε^{1/2}/(2 f_k)` runs along these
-points, whatever the factors `θ_k ∈ [a, b]` it picks. -/
+/-- **Second-order slow runs.** Let $0 < a \le b$. Then there are constants $L, B \ge 0$, which
+depend only on $a$ and $b$, with the following property. Let $\varepsilon \in (0, 1)$ and let
+$\theta$ be a real sequence with $\theta_k \in [a, b]$ for every $k < k_\varepsilon$. Let $x_k$
+be the abscissae (3.5.19) for $\theta$, with $x_0 = 0$. Then there is a $C^2$ function
+$G : \mathbb{R} \to \mathbb{R}$ such that $G''$ is $L$-Lipschitz, $|G^{(j)}| \le B$ everywhere
+for $j \le 2$, and for every $k \le k_\varepsilon$
+$$G(x_k) = f_k, \qquad G'(x_k) = g_k, \qquad G''(x_k) = H_k,$$
+and $|G'(x_k)| \le \varepsilon$ holds if and only if $k = k_\varepsilon$.
+
+This is the data (3.5.12) and (3.5.19) of [cartis2022evaluation]. A method whose step at $x_k$
+is $\theta_k \varepsilon^{1/2}/(2 f_k)$ runs along these points, whatever factors
+$\theta_k \in [a, b]$ it picks. The interpolant is that of
+`Optimization.exists_slowSecondOrder_interpolant`, and the abscissae are
+`Optimization.secondOrderX`. -/
 theorem exists_slowSecondOrder_run_data {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ : ℕ → ℝ), 0 < ε → ε < 1 →
       (∀ k < secondOrderK ε, θ k ∈ Icc a b) →
@@ -738,10 +811,12 @@ theorem exists_slowSecondOrder_run_data {a b : ℝ} (ha : 0 < a) (hab : a ≤ b)
   have h2' : deriv G (secondOrderX θ ε k) = secondOrderG ε k := h2
   exact ⟨h1, h2', h3, by rw [h2']; exact abs_secondOrderG_le_iff hε hε1 hk⟩
 
-/-- **Rescaling a second-order interpolant**: for `0 < c ≤ 1`, the function `c G₀(u/c)` of a
-`C²` function `G₀` with `L`-Lipschitz second derivative and `|G₀^{(j)}| ≤ B` (`j ≤ 2`) is `C²`
-with `j`-th derivative `c c^{-j} G₀^{(j)}(u/c)`, `L/c²`-Lipschitz second derivative and
-derivatives bounded by `B/c²`. -/
+/-- **Rescaling a second-order interpolant.** Let $0 < c \le 1$, and let
+$G_0 : \mathbb{R} \to \mathbb{R}$ be $C^2$ with $L$-Lipschitz second derivative and
+$|G_0^{(j)}| \le B$ everywhere for $j \le 2$. Then the function $G(u) = c \, G_0(u/c)$ is $C^2$,
+its derivatives are
+$$G^{(j)}(u) = c \cdot c^{-j} G_0^{(j)}(u/c) \qquad (j \le 2),$$
+its second derivative is $L/c^2$-Lipschitz, and $|G^{(j)}| \le B/c^2$ everywhere for $j \le 2$. -/
 theorem contDiff_two_rescale_bounds {G₀ : ℝ → ℝ} {c L B : ℝ} (hc0 : 0 < c) (hc1 : c ≤ 1)
     (hG₀ : ContDiff ℝ 2 G₀)
     (hGL : ∀ s t, |iteratedDeriv 2 G₀ s - iteratedDeriv 2 G₀ t| ≤ L * |s - t|)
@@ -781,26 +856,35 @@ theorem contDiff_two_rescale_bounds {G₀ : ℝ → ℝ} {c L B : ℝ} (hc0 : 0 
           mul_le_mul hpow (hGB j hj _) (abs_nonneg _) (by positivity)
       _ = B / c ^ 2 := by ring
 
-/-! ### The linearly decreasing excess of the slow examples
+/-!
+### The linearly decreasing excess of the slow examples
 
-The levels of the slow examples exceed their final value by `c (κ - k)/κ`, which decreases
-linearly from `c` at `k = 0` to `0` at `k = κ`. -/
+The levels of the slow examples exceed their final value by $c(\kappa - k)/\kappa$, which decreases
+linearly from $c$ at $k = 0$ to $0$ at $k = \kappa$.
+-/
 
-/-- The excess `c (κ - k)/κ` is nonnegative up to `κ`. -/
+/-- Let $c \ge 0$ and let $k \le \kappa$ be natural numbers. Then the excess $c(\kappa - k)/\kappa$
+is nonnegative.
+
+For $\kappa = 0$ the division by zero gives the value $0$. -/
 theorem slowGap_nonneg {c : ℝ} (hc : 0 ≤ c) {κ k : ℕ} (hk : k ≤ κ) :
     0 ≤ c * ((κ : ℝ) - k) / κ := by
   have : (k : ℝ) ≤ κ := by exact_mod_cast hk
   have : 0 ≤ (κ : ℝ) - k := by linarith
   positivity
 
-/-- The excess `c (κ - k)/κ` is positive before `κ`. -/
+/-- Let $c > 0$ and let $k < \kappa$ be natural numbers. Then the excess $c(\kappa - k)/\kappa$ is
+positive. -/
 theorem slowGap_pos {c : ℝ} (hc : 0 < c) {κ k : ℕ} (hk : k < κ) : 0 < c * ((κ : ℝ) - k) / κ := by
   have : (k : ℝ) < κ := by exact_mod_cast hk
   have : 0 < (κ : ℝ) - k := by linarith
   have : (0 : ℝ) < κ := by linarith [(k.cast_nonneg : (0 : ℝ) ≤ k)]
   positivity
 
-/-- The excess `c (κ - k)/κ` is at most `c`. -/
+/-- Let $c \ge 0$, and let $\kappa$ and $k$ be any natural numbers. Then the excess
+$c(\kappa - k)/\kappa$ is at most $c$.
+
+For $\kappa = 0$ the division by zero gives the value $0$. -/
 theorem slowGap_le {c : ℝ} (hc : 0 ≤ c) (κ k : ℕ) : c * ((κ : ℝ) - k) / κ ≤ c := by
   rcases Nat.eq_zero_or_pos κ with rfl | hκ
   · simpa using hc

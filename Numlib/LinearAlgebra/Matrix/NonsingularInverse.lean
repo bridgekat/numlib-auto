@@ -13,42 +13,52 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # The inverse of a nonsingular matrix, acting on vectors
 
-Mathlib's `Matrix.mul_nonsing_inv` and `Matrix.nonsing_inv_mul` cancel a matrix against its inverse
-inside a *product of matrices*. This module carries the same cancellation one step further, to the
-action `Matrix.mulVec` on vectors: `A *ᵥ (A⁻¹ *ᵥ u) = u` and `A⁻¹ *ᵥ (A *ᵥ u) = u` for an
-invertible `A`, and the form in which they are usually wanted, namely that `A⁻¹ *ᵥ u` is *the*
-solution of `A *ᵥ v = u`.
+Let $A$ be an invertible square matrix over a commutative ring. This file proves the cancellation of
+$A$ against $A^{-1}$ in the action on vectors: $A(A^{-1} u) = u$ and $A^{-1}(Au) = u$, and, in the
+form in which these facts are usually needed, that $A^{-1} u$ is the unique solution $v$ of
+$Av = u$. Mathlib's `Matrix.mul_nonsing_inv` and `Matrix.nonsing_inv_mul` give the same cancellation
+inside a product of matrices. Every direct solver and every preconditioned iteration writes a step
+as $A^{-1} u$ and then needs to know that an application of $A$ undoes it.
 
-Every direct solver and every preconditioned iteration writes a step as `A⁻¹ *ᵥ u` and then needs
-to know that applying `A` undoes it; without these lemmas the same
-`Matrix.mulVec_mulVec`/`Matrix.mul_nonsing_inv`/`Matrix.one_mulVec` rewrite is repeated at each such
-step. Invertibility is stated as `IsUnit A` rather than as `IsUnit A.det`, the two being
-interchangeable by `Matrix.isUnit_iff_isUnit_det`.
+The file also proves two formulas for the inverse of an updated matrix: the
+Sherman–Morrison–Woodbury formula $$(C + UBV)^{-1} = C^{-1} - C^{-1} U (I + B V C^{-1} U)^{-1} B V
+C^{-1}$$ in the form of [quarteroni2000numerical] (3.57), in which the middle factor $B$ can be
+singular, and its rank-one case, the Sherman–Morrison formula, together with the nonsingularity of
+the rank-one update.
 
-The module also carries the two rank-update formulas for the inverse: the Sherman–Morrison–Woodbury
-formula `(C + U B V)⁻¹ = C⁻¹ - C⁻¹ U (1 + B V C⁻¹ U)⁻¹ B V C⁻¹` in the form of
-[quarteroni2000numerical] (3.57), whose middle factor `B` may be singular
-(`Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add`), and its rank-one case, the
-Sherman–Morrison formula `Matrix.inv_add_vecMulVec` with the nonsingularity
-`Matrix.isUnit_add_vecMulVec` of the update.
+## Main results
+
+* `Matrix.mulVec_nonsing_inv_mulVec`, `Matrix.nonsing_inv_mulVec_mulVec`: $A(A^{-1} u) = u$ and
+  $A^{-1}(Au) = u$ for an invertible $A$.
+* `Matrix.nonsing_inv_mulVec_eq`: if $Av = u$ and $A$ is invertible, then $A^{-1} u = v$.
+* `Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add`: the Sherman–Morrison–Woodbury formula.
+* `Matrix.inv_add_vecMulVec`, `Matrix.isUnit_add_vecMulVec`: the Sherman–Morrison formula, and the
+  nonsingularity of $A + uv^T$ when $1 + v^T A^{-1} u \neq 0$.
+
+## Implementation notes
+
+* Invertibility is stated as `IsUnit A`, not as `IsUnit A.det`. The two are equivalent by
+  `Matrix.isUnit_iff_isUnit_det`.
 -/
 
 namespace Matrix
 
 variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Applying `A` undoes applying `A⁻¹`: `A (A⁻¹ u) = u` for an invertible `A`. -/
+/-- Let $A$ be an invertible $n \times n$ matrix over a commutative ring $R$ and let $u \in R^n$.
+Then $A(A^{-1} u) = u$. -/
 theorem mulVec_nonsing_inv_mulVec {A : Matrix n n R} (hA : IsUnit A) (u : n → R) :
     A *ᵥ (A⁻¹ *ᵥ u) = u := by
   rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
 
-/-- Applying `A⁻¹` undoes applying `A`: `A⁻¹ (A u) = u` for an invertible `A`. -/
+/-- Let $A$ be an invertible $n \times n$ matrix over a commutative ring $R$ and let $u \in R^n$.
+Then $A^{-1}(Au) = u$. -/
 theorem nonsing_inv_mulVec_mulVec {A : Matrix n n R} (hA : IsUnit A) (u : n → R) :
     A⁻¹ *ᵥ (A *ᵥ u) = u := by
   rw [mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
 
-/-- For an invertible `A`, the vector `A⁻¹ u` is *the* solution of `A v = u`: a `v` that solves the
-system is already `A⁻¹ u`. -/
+/-- Let $A$ be an invertible $n \times n$ matrix over a commutative ring $R$, and let $u, v \in R^n$
+with $Av = u$. Then $A^{-1} u = v$. So $A^{-1} u$ is the unique solution of $Av = u$. -/
 theorem nonsing_inv_mulVec_eq {A : Matrix n n R} (hA : IsUnit A) {u v : n → R} (h : A *ᵥ v = u) :
     A⁻¹ *ᵥ u = v := by
   rw [← h, nonsing_inv_mulVec_mulVec hA]
@@ -59,12 +69,15 @@ section Woodbury
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- **The Sherman–Morrison–Woodbury formula** in the form of [quarteroni2000numerical] (3.57): for
-`C` nonsingular and `1 + B V C⁻¹ U` nonsingular,
-`(C + U B V)⁻¹ = C⁻¹ - C⁻¹ U (1 + B V C⁻¹ U)⁻¹ B V C⁻¹`. Unlike Mathlib's
-`Matrix.add_mul_mul_inv_eq_sub`, the middle factor `B` may be singular: the book's form never
-inverts it. The proof multiplies out `(C + U B V)` against the right-hand side, using
-`U (1 + B V C⁻¹ U)⁻¹ + U B V C⁻¹ U (1 + B V C⁻¹ U)⁻¹ = U` to cancel the inner inverse. -/
+/-- The **Sherman–Morrison–Woodbury formula** in the form of [quarteroni2000numerical] (3.57). Let
+$R$ be a commutative ring, let $C \in R^{n \times n}$ be invertible, let $U \in R^{n \times m}$,
+$B \in R^{m \times m}$ and $V \in R^{m \times n}$, and let $I + B V C^{-1} U$ be invertible.
+Then $$(C + UBV)^{-1} = C^{-1} - C^{-1} U (I + B V C^{-1} U)^{-1} B V C^{-1}.$$
+
+Unlike Mathlib's `Matrix.add_mul_mul_inv_eq_sub`, the statement allows a singular middle factor
+$B$, because this form of the formula never inverts $B$. The proof multiplies $C + UBV$ by the
+right-hand side and uses $U (I + B V C^{-1} U)^{-1} + U B V C^{-1} U (I + B V C^{-1} U)^{-1} =
+U$ to cancel the inner inverse. -/
 theorem add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add {C : Matrix n n R} (hC : IsUnit C)
     (U : Matrix n m R) (B : Matrix m m R) (V : Matrix m n R)
     (hW : IsUnit (1 + B * V * C⁻¹ * U)) :
@@ -97,7 +110,8 @@ section ShermanMorrison
 
 variable {K : Type*} [Field K]
 
-/-- The product `(A + u vᵀ)` against the Sherman–Morrison candidate is the identity. -/
+/-- The product of $A + uv^T$ with the Sherman–Morrison candidate $A^{-1} - (1 + v^T A^{-1} u)^{-1}
+(A^{-1} u)(v^T A^{-1})$ is the identity. -/
 private theorem add_vecMulVec_mul_eq_one {A : Matrix n n K} (hA : IsUnit A) {u v : n → K}
     (h : 1 + v ⬝ᵥ (A⁻¹ *ᵥ u) ≠ 0) :
     (A + vecMulVec u v)
@@ -119,18 +133,22 @@ private theorem add_vecMulVec_mul_eq_one {A : Matrix n n K} (hA : IsUnit A) {u v
         abel
     _ = 1 := by rw [hc, zero_smul, add_zero]
 
-/-- **The Sherman–Morrison formula**, [quarteroni2000numerical] (3.57) for a rank-one update, as
-used in their §7.2.7: for `A` nonsingular and `1 + v ⬝ A⁻¹ u ≠ 0`,
-`(A + u vᵀ)⁻¹ = A⁻¹ - (1 + v ⬝ A⁻¹ u)⁻¹ (A⁻¹ u)(v A⁻¹)ᵀ`. Verified by multiplying out, with
-`(u vᵀ)(x yᵀ) = (v ⬝ x) (u yᵀ)`. -/
+/-- The **Sherman–Morrison formula**: the rank-one case of [quarteroni2000numerical] (3.57), as used
+in §7.2.7 of the source. Let $K$ be a field, let $A \in K^{n \times n}$ be invertible, and let
+$u, v \in K^n$ with $1 + v^T A^{-1} u \neq 0$. Then $$(A + uv^T)^{-1} = A^{-1} - \frac{1}{1 +
+v^T A^{-1} u} (A^{-1} u)(v^T A^{-1}).$$
+
+The proof multiplies out, with $(uv^T)(xy^T) = (v^T x)\, uy^T$. The rank-one matrix $uv^T$ is
+`Matrix.vecMulVec u v`. -/
 theorem inv_add_vecMulVec {A : Matrix n n K} (hA : IsUnit A) {u v : n → K}
     (h : 1 + v ⬝ᵥ (A⁻¹ *ᵥ u) ≠ 0) :
     (A + vecMulVec u v)⁻¹
       = A⁻¹ - (1 / (1 + v ⬝ᵥ (A⁻¹ *ᵥ u))) • vecMulVec (A⁻¹ *ᵥ u) (v ᵥ* A⁻¹) :=
   inv_eq_right_inv (add_vecMulVec_mul_eq_one hA h)
 
-/-- The rank-one update `A + u vᵀ` of a nonsingular `A` is nonsingular when `1 + v ⬝ A⁻¹ u ≠ 0`:
-the matrix determinant lemma, in the direction the Sherman–Morrison formula needs. -/
+/-- Let $K$ be a field, let $A \in K^{n \times n}$ be invertible, and let $u, v \in K^n$ with
+$1 + v^T A^{-1} u \neq 0$. Then $A + uv^T$ is invertible. This is the direction of the matrix
+determinant lemma that the Sherman–Morrison formula needs. -/
 theorem isUnit_add_vecMulVec {A : Matrix n n K} (hA : IsUnit A) {u v : n → K}
     (h : 1 + v ⬝ᵥ (A⁻¹ *ᵥ u) ≠ 0) : IsUnit (A + vecMulVec u v) :=
   ⟨⟨_, _, add_vecMulVec_mul_eq_one hA h, mul_eq_one_comm.1 (add_vecMulVec_mul_eq_one hA h)⟩, rfl⟩

@@ -15,30 +15,50 @@ import Mathlib.Analysis.SpecificLimits.Normed
 /-!
 # Explicit Neumann-series and perturbation bounds
 
-Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring: `‖(1 - t)⁻¹‖ ≤ 1 /
-(1 - ‖t‖)`, `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`, and the two-space version for continuous linear
-equivalences. These are the explicit forms of the classical geometric-series (Banach perturbation)
-estimates for the inverse of a small perturbation of an invertible element, and are stated as
-[han2009theoretical] (2.3.6), Theorem 2.3.5 and its displays (2.3.13) and (2.3.14).
+Let $R$ be a normed ring, and write $a^{-1}$ for `Ring.inverse a`, which is $0$ when $a$ is not a
+unit. This file gives explicit forms of the classical geometric-series (Banach perturbation)
+estimates for the inverse of a small perturbation of an invertible element. They are quantitative
+versions of Mathlib's `Units.oneSub` and `Units.add`. In a complete normed ring with $\|1\| = 1$,
+$$\|(1 - t)^{-1}\| \le \frac{1}{1 - \|t\|} \quad (\|t\| < 1), \qquad \|(x + t)^{-1}\| \le
+  \frac{\|x^{-1}\|}{1 - \|x^{-1}\| \|t\|} \quad (\|x^{-1}\| \|t\| < 1),$$
+and there is a version for isomorphisms between two normed spaces. These are (2.3.6), Theorem 2.3.5
+and its displays (2.3.13) and (2.3.14) of [han2009theoretical].
 
-The one-sided forms `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one` and
-`NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one` measure the perturbation by
-`r = ‖a⁻¹ t‖ ≤ ‖a⁻¹‖ ‖t‖` instead ([golub2013matrix] Theorem 2.3.4), and give
-`‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`, with the right twins
-`NormedRing.isUnit_add_of_norm_mul_inverse_lt_one` and
-`NormedRing.norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one` for `r = ‖t a⁻¹‖`;
-`NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub` is the contrapositive used for eigenvalue
-perturbation (`‖a⁻¹ b‖ ≥ 1` when `a - b` is singular). They, and
-`NormedRing.norm_inverse_one_sub_sub_one_le`, need neither `‖1‖ = 1` nor completeness beyond
-summable geometric series.
+The one-sided forms measure the perturbation by $r = \|a^{-1} t\| \le \|a^{-1}\| \|t\|$ instead, as
+in Theorem 2.3.4 of [golub2013matrix]: if $r < 1$, then $a + t$ is a unit and $\|(a + t)^{-1} -
+a^{-1}\| \le r \|a^{-1}\| / (1 - r)$. The right forms use $r = \|t a^{-1}\|$. As a contrapositive,
+if $a$ is a unit and $a - b$ is not, then $\|a^{-1} b\| \ge 1$; this is the step used in eigenvalue
+perturbation. The one-sided forms and the bound on $\|(1 - t)^{-1} - 1\|$ need neither $\|1\| = 1$
+nor completeness, only that geometric series with ratio of norm less than $1$ are summable.
+
+## Main results
+
+* `NormedRing.norm_inverse_one_sub_le`: $\|(1 - t)^{-1}\| \le 1 / (1 - \|t\|)$ for $\|t\| < 1$.
+* `NormedRing.norm_inverse_one_sub_sub_one_le`: $\|(1 - t)^{-1} - 1\| \le \|t\| / (1 - \|t\|)$ for
+  $\|t\| < 1$.
+* `NormedRing.isUnit_one_sub_of_norm_pow_lt_one` and
+  `NormedRing.norm_inverse_one_sub_le_of_norm_pow_lt_one`: $\|t^m\| < 1$ for one $m$ makes $1 - t$ a
+  unit, with $\|(1 - t)^{-1}\| \le \sum_{i < m} \|t^i\| / (1 - \|t^m\|)$.
+* `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one` and
+  `NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one`: the one-sided perturbation of a
+  unit and of its inverse.
+* `NormedRing.isUnit_add_of_norm_mul_inverse_lt_one` and
+  `NormedRing.norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one`: the right one-sided forms.
+* `NormedRing.one_le_norm_inverse_mul_of_not_isUnit_sub`: if $a$ is a unit and $a - b$ is not, then
+  $1 \le \|a^{-1} b\|$.
+* `Units.isUnit_add_of_norm_lt`, `Units.norm_inverse_add_le` and `Units.norm_inverse_add_sub_le`:
+  the perturbation of a unit $x$ by $t$ with $\|t\| < \|x^{-1}\|^{-1}$.
+* `ContinuousLinearEquiv.exists_symm_norm_le_of_add`: the perturbation theorem for an isomorphism
+  $e \colon E \to F$.
+* `ContinuousLinearEquiv.norm_sub_le_of_apply_eq`: consistency and stability give convergence.
 -/
 
-/-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/
+/-- For real numbers $u \le v < 1$, $1/(1 - u) \le 1/(1 - v)$. -/
 private theorem one_div_one_sub_le_one_div_one_sub {u v : ℝ} (huv : u ≤ v) (hv : v < 1) :
     1 / (1 - u) ≤ 1 / (1 - v) :=
   one_div_le_one_div_of_le (by linarith) (by linarith)
 
-/-- `u ↦ u / (1 - u)` is monotone on `[0, 1)`. -/
+/-- For real numbers $u \le v < 1$, $u/(1 - u) \le v/(1 - v)$. -/
 private theorem div_one_sub_le_div_one_sub {u v : ℝ} (huv : u ≤ v) (hv : v < 1) :
     u / (1 - u) ≤ v / (1 - v) := by
   rw [div_le_div_iff₀ (by linarith) (by linarith)]
@@ -46,8 +66,12 @@ private theorem div_one_sub_le_div_one_sub {u v : ℝ} (huv : u ≤ v) (hv : v <
 
 namespace NormedRing
 
-/-- The Neumann bound without assuming `‖1‖ = 1`; only `‖1‖ ≤ 1` is used.  This form applies to
-rings of continuous linear maps, which are not `NormOneClass` when the space is trivial. -/
+/-- Let $R$ be a normed ring in which geometric series with ratio of norm less than $1$ are
+summable, and suppose that $\|1\| \le 1$. If $t \in R$ and $\|t\| < 1$, then
+$$\|(1 - t)^{-1}\| \le \frac{1}{1 - \|t\|}.$$
+
+This form needs only $\|1\| \le 1$, not $\|1\| = 1$. It applies to rings of bounded operators,
+which are not `NormOneClass` when the space is trivial. -/
 theorem norm_inverse_one_sub_le_of_norm_one_le {R : Type*} [NormedRing R]
     [HasSummableGeomSeries R] (h₁ : ‖(1 : R)‖ ≤ 1) {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) := by
@@ -57,8 +81,12 @@ theorem norm_inverse_one_sub_le_of_norm_one_le {R : Type*} [NormedRing R]
 
 variable {R : Type*} [NormedRing R]
 
-/-- `‖(1 - t)⁻¹ - 1‖ ≤ ‖t‖ / (1 - ‖t‖)`. No `‖1‖ = 1` is needed: `(1 - t)⁻¹ - 1` is the tail
-`∑ t ^ (i + 1)` of the geometric series, whose terms have norm at most `‖t‖ ^ (i + 1)`. -/
+/-- Let $R$ be a normed ring in which geometric series with ratio of norm less than $1$ are
+summable. If $t \in R$ and $\|t\| < 1$, then
+$$\|(1 - t)^{-1} - 1\| \le \frac{\|t\|}{1 - \|t\|}.$$
+
+No $\|1\| = 1$ is needed: $(1 - t)^{-1} - 1$ is the tail $\sum_{i \ge 0} t^{i+1}$ of the
+geometric series, whose terms have norm at most $\|t\|^{i+1}$. -/
 theorem norm_inverse_one_sub_sub_one_le [HasSummableGeomSeries R] {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t) - 1‖ ≤ ‖t‖ / (1 - ‖t‖) := by
   rw [← geom_series_eq_inverse t h, ← geom_series_succ t h]
@@ -69,7 +97,10 @@ theorem norm_inverse_one_sub_sub_one_le [HasSummableGeomSeries R] {t : R} (h : �
 
 variable [NormOneClass R] [CompleteSpace R]
 
-/-- Geometric series theorem with the explicit bound `‖(1 - t)⁻¹‖ ≤ 1 / (1 - ‖t‖)`. -/
+/-- The **geometric series theorem** with an explicit bound. Let $R$ be a complete normed ring with
+$\|1\| = 1$. If $t \in R$ and $\|t\| < 1$, then
+$$\|(1 - t)^{-1}\| \le \frac{1}{1 - \|t\|}.$$
+-/
 theorem norm_inverse_one_sub_le {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖) :=
   norm_inverse_one_sub_le_of_norm_one_le norm_one.le h
@@ -81,15 +112,22 @@ private theorem commute_one_sub_geom_sum (t : R) (m : ℕ) :
     (Commute.one_left (t ^ i)).sub_left ((Commute.refl t).pow_right i)
 
 omit [NormOneClass R] in
-/-- `‖t ^ m‖ < 1` for a single `m` already suffices for `1 - t` to be a unit. -/
+/-- Let $R$ be a complete normed ring, let $t \in R$, and let $m \in \mathbb{N}$ with $\|t^m\| < 1$.
+Then $1 - t$ is a unit.
+
+A single power of $t$ with norm less than $1$ suffices, and $\|1\| = 1$ is not needed. -/
 theorem isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) : IsUnit (1 - t) := by
   have hprod : IsUnit ((1 - t) * ∑ i ∈ Finset.range m, t ^ i) := by
     rw [mul_neg_geom_sum]
     exact isUnit_one_sub_of_norm_lt_one h
   exact ((commute_one_sub_geom_sum t m).isUnit_mul_iff.mp hprod).1
 
-/-- The bound accompanying `isUnit_one_sub_of_norm_pow_lt_one`, in the form given by
-[han2009theoretical], (2.3.6): `‖(1 - t)⁻¹‖ ≤ (∑_{i < m} ‖t^i‖) / (1 - ‖t^m‖)`. -/
+/-- Let $R$ be a complete normed ring with $\|1\| = 1$, let $t \in R$, and let $m \in \mathbb{N}$
+with $\|t^m\| < 1$. Then
+$$\|(1 - t)^{-1}\| \le \frac{\sum_{i < m} \|t^i\|}{1 - \|t^m\|}.$$
+This is (2.3.6) of [han2009theoretical].
+
+This bound accompanies `NormedRing.isUnit_one_sub_of_norm_pow_lt_one`. -/
 theorem norm_inverse_one_sub_le_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ (∑ i ∈ Finset.range m, ‖t ^ i‖) / (1 - ‖t ^ m‖) := by
   have hunit : IsUnit (1 - t) := isUnit_one_sub_of_norm_pow_lt_one h
@@ -116,26 +154,33 @@ section OneSided
 
 omit [NormOneClass R] [CompleteSpace R]
 
-/-- The factorization `a + t = a (1 + a⁻¹ t)`, written with `1 - (-(a⁻¹ t))`. -/
+/-- For a unit $a$, $a + t = a (1 - (-(a^{-1} t)))$. -/
 private theorem add_eq_mul_one_sub {a t : R} (ha : IsUnit a) :
     a + t = a * (1 - -(Ring.inverse a * t)) := by
   rw [sub_neg_eq_add, mul_add, mul_one, ← mul_assoc, Ring.mul_inverse_cancel _ ha, one_mul]
 
 variable [HasSummableGeomSeries R] {a t : R}
 
-/-- **Perturbation of a unit, one-sided form**: if `a` is a unit and `‖a⁻¹ t‖ < 1`, then `a + t` is
-a unit, since `a + t = a (1 + a⁻¹ t)`. The hypothesis is weaker than the `‖a⁻¹‖ ‖t‖ < 1` of
-`Units.isUnit_add_of_norm_lt`. -/
+/-- **Perturbation of a unit, one-sided form**. Let $R$ be a normed ring in which geometric series
+with ratio of norm less than $1$ are summable. If $a \in R$ is a unit and $\|a^{-1} t\| < 1$,
+then $a + t$ is a unit.
+
+The proof writes $a + t = a (1 + a^{-1} t)$. The hypothesis is weaker than the hypothesis
+$\|a^{-1}\| \|t\| < 1$ of `Units.isUnit_add_of_norm_lt`. -/
 theorem isUnit_add_of_norm_inverse_mul_lt_one (ha : IsUnit a) (h : ‖Ring.inverse a * t‖ < 1) :
     IsUnit (a + t) := by
   rw [add_eq_mul_one_sub ha]
   exact ha.mul (isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg]))
 
-/-- **The resolvent step**: if `a` is a unit and `a - b` is not, then `‖a⁻¹ b‖ ≥ 1`, since
-otherwise `a - b = a (1 - a⁻¹ b)` would be a unit
-(`NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`). It is the step shared by every
-resolvent-based eigenvalue perturbation bound ([golub2013matrix] (7.2.1), via Lemma 2.3.3): an
-eigenvalue `μ` of `A + E` that is not one of `A` has `‖(μ - A)⁻¹ E‖ ≥ 1`. -/
+/-- Let $R$ be a normed ring in which geometric series with ratio of norm less than $1$ are
+summable. If $a \in R$ is a unit and $a - b$ is not a unit, then
+$$1 \le \|a^{-1} b\|.$$
+
+Otherwise $a - b = a (1 - a^{-1} b)$ would be a unit, by
+`NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`. This is the step shared by the
+resolvent-based eigenvalue perturbation bounds, as in (7.2.1) of [golub2013matrix] through Lemma
+2.3.3: an eigenvalue $\mu$ of $A + E$ that is not an eigenvalue of $A$ has
+$\|(\mu I - A)^{-1} E\| \ge 1$. -/
 theorem one_le_norm_inverse_mul_of_not_isUnit_sub {b : R} (ha : IsUnit a)
     (hab : ¬IsUnit (a - b)) : 1 ≤ ‖Ring.inverse a * b‖ := by
   by_contra hlt
@@ -143,7 +188,7 @@ theorem one_le_norm_inverse_mul_of_not_isUnit_sub {b : R} (ha : IsUnit a)
   rw [sub_eq_add_neg]
   exact isUnit_add_of_norm_inverse_mul_lt_one ha (by rwa [mul_neg, norm_neg, ← not_le])
 
-/-- `(a + t)⁻¹ = (1 + a⁻¹ t)⁻¹ a⁻¹` when `a` is a unit and `‖a⁻¹ t‖ < 1`. -/
+/-- If $a$ is a unit and $\|a^{-1} t\| < 1$, then $(a + t)^{-1} = (1 + a^{-1} t)^{-1} a^{-1}$. -/
 private theorem inverse_add_eq_mul (ha : IsUnit a) (h : ‖Ring.inverse a * t‖ < 1) :
     Ring.inverse (a + t) = Ring.inverse (1 - -(Ring.inverse a * t)) * Ring.inverse a := by
   obtain ⟨u, rfl⟩ := ha
@@ -152,12 +197,17 @@ private theorem inverse_add_eq_mul (ha : IsUnit a) (h : ‖Ring.inverse a * t‖
   rw [add_eq_mul_one_sub u.isUnit, ← hv, ← Units.val_mul, Ring.inverse_unit, Ring.inverse_unit,
     Ring.inverse_unit, mul_inv_rev, Units.val_mul]
 
-/-- **Perturbation of the inverse, one-sided form** ([golub2013matrix] Theorem 2.3.4): if `a` is a
-unit and `r = ‖a⁻¹ t‖ < 1`, then `‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)`, and hence
-`‖(a + t)⁻¹ - a⁻¹‖ ≤ ‖t‖ ‖a⁻¹‖² / (1 - r)`, the form printed in [golub2013matrix]. The proof writes
-`(a + t)⁻¹ - a⁻¹ = ((1 + a⁻¹ t)⁻¹ - 1) a⁻¹` and bounds the first factor by the tail of the
-geometric series (`NormedRing.norm_inverse_one_sub_sub_one_le`); no `‖1‖ = 1` is needed. Since
-`r ≤ ‖a⁻¹‖ ‖t‖`, this sharpens `Units.norm_inverse_add_sub_le`. -/
+/-- **Perturbation of the inverse, one-sided form**. Let $R$ be a normed ring in which geometric
+series with ratio of norm less than $1$ are summable. Let $a \in R$ be a unit and let
+$r = \|a^{-1} t\| < 1$. Then
+$$\|(a + t)^{-1} - a^{-1}\| \le \frac{r \|a^{-1}\|}{1 - r} \quad \text{and} \quad \|(a +
+  t)^{-1} - a^{-1}\| \le \frac{\|t\| \|a^{-1}\|^2}{1 - r}.$$
+This is Theorem 2.3.4 of [golub2013matrix], which prints the second bound.
+
+The proof writes $(a + t)^{-1} - a^{-1} = ((1 + a^{-1} t)^{-1} - 1) a^{-1}$ and bounds the first
+factor by the tail of the geometric series (`NormedRing.norm_inverse_one_sub_sub_one_le`). No
+$\|1\| = 1$ is needed. Since $r \le \|a^{-1}\| \|t\|$, this sharpens
+`Units.norm_inverse_add_sub_le`. -/
 theorem norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one (ha : IsUnit a)
     (h : ‖Ring.inverse a * t‖ < 1) :
     ‖Ring.inverse (a + t) - Ring.inverse a‖
@@ -180,19 +230,22 @@ theorem norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one (ha : IsUnit a)
     _ = ‖t‖ * ‖Ring.inverse a‖ ^ 2 := by ring
 
 omit [HasSummableGeomSeries R] in
-/-- The factorization `a + t = (1 + t a⁻¹) a`, written with `1 - (-(t a⁻¹))`. -/
+/-- For a unit $a$, $a + t = (1 - (-(t a^{-1}))) a$. -/
 private theorem add_eq_one_sub_mul (ha : IsUnit a) : a + t = (1 - -(t * Ring.inverse a)) * a := by
   rw [sub_neg_eq_add, add_mul, one_mul, mul_assoc, Ring.inverse_mul_cancel _ ha, mul_one]
 
-/-- **Perturbation of a unit, the right one-sided form**: if `a` is a unit and `‖t a⁻¹‖ < 1`, then
-`a + t` is a unit, since `a + t = (1 + t a⁻¹) a`; the twin of
+/-- **Perturbation of a unit, right one-sided form**. Let $R$ be a normed ring in which geometric
+series with ratio of norm less than $1$ are summable. If $a \in R$ is a unit and
+$\|t a^{-1}\| < 1$, then $a + t$ is a unit.
+
+The proof writes $a + t = (1 + t a^{-1}) a$. This is the mirror image of
 `NormedRing.isUnit_add_of_norm_inverse_mul_lt_one`. -/
 theorem isUnit_add_of_norm_mul_inverse_lt_one (ha : IsUnit a) (h : ‖t * Ring.inverse a‖ < 1) :
     IsUnit (a + t) := by
   rw [add_eq_one_sub_mul ha]
   exact (isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg])).mul ha
 
-/-- `(a + t)⁻¹ = a⁻¹ (1 + t a⁻¹)⁻¹` when `a` is a unit and `‖t a⁻¹‖ < 1`. -/
+/-- If $a$ is a unit and $\|t a^{-1}\| < 1$, then $(a + t)^{-1} = a^{-1} (1 + t a^{-1})^{-1}$. -/
 private theorem inverse_add_eq_mul' (ha : IsUnit a) (h : ‖t * Ring.inverse a‖ < 1) :
     Ring.inverse (a + t) = Ring.inverse a * Ring.inverse (1 - -(t * Ring.inverse a)) := by
   obtain ⟨u, rfl⟩ := ha
@@ -201,11 +254,14 @@ private theorem inverse_add_eq_mul' (ha : IsUnit a) (h : ‖t * Ring.inverse a�
   rw [add_eq_one_sub_mul u.isUnit, ← hv, ← Units.val_mul, Ring.inverse_unit, Ring.inverse_unit,
     Ring.inverse_unit, mul_inv_rev, Units.val_mul]
 
-/-- **Perturbation of the inverse, the right one-sided form**: if `a` is a unit and
-`r = ‖t a⁻¹‖ < 1`, then `‖(a + t)⁻¹ - a⁻¹‖ ≤ r ‖a⁻¹‖ / (1 - r)` and
-`‖(a + t)⁻¹ - a⁻¹‖ ≤ ‖t‖ ‖a⁻¹‖² / (1 - r)`; the twin of
-`NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one`, through
-`(a + t)⁻¹ - a⁻¹ = a⁻¹ ((1 + t a⁻¹)⁻¹ - 1)`. -/
+/-- **Perturbation of the inverse, right one-sided form**. Let $R$ be a normed ring in which
+geometric series with ratio of norm less than $1$ are summable. Let $a \in R$ be a unit and let
+$r = \|t a^{-1}\| < 1$. Then
+$$\|(a + t)^{-1} - a^{-1}\| \le \frac{r \|a^{-1}\|}{1 - r} \quad \text{and} \quad \|(a +
+  t)^{-1} - a^{-1}\| \le \frac{\|t\| \|a^{-1}\|^2}{1 - r}.$$
+
+This is the mirror image of `NormedRing.norm_inverse_add_sub_le_of_norm_inverse_mul_lt_one`,
+through $(a + t)^{-1} - a^{-1} = a^{-1} ((1 + t a^{-1})^{-1} - 1)$. -/
 theorem norm_inverse_add_sub_le_of_norm_mul_inverse_lt_one (ha : IsUnit a)
     (h : ‖t * Ring.inverse a‖ < 1) :
     ‖Ring.inverse (a + t) - Ring.inverse a‖
@@ -236,7 +292,10 @@ namespace Units
 variable {R : Type*} [NormedRing R] [NormOneClass R] [CompleteSpace R]
 
 omit [NormOneClass R] in
-/-- Perturbation of a unit: `x + t` is a unit when `‖t‖ < ‖x⁻¹‖⁻¹` (Mathlib's `Units.add`). -/
+/-- **Perturbation of a unit**. Let $R$ be a complete normed ring, let $x$ be a unit of $R$, and let
+$t \in R$ with $\|t\| < \|x^{-1}\|^{-1}$. Then $x + t$ is a unit.
+
+This is Mathlib's `Units.add`, stated with `IsUnit`. -/
 theorem isUnit_add_of_norm_lt (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     IsUnit ((x : R) + t) :=
   ⟨x.add t h, rfl⟩
@@ -254,7 +313,7 @@ private theorem norm_neg_inv_mul_lt_one {x : Rˣ} {t : R} (h : ‖t‖ < ‖(↑
     ‖(-((↑x⁻¹ : R) * t))‖ < 1 :=
   lt_of_le_of_lt (by rw [norm_neg]; exact norm_mul_le _ _) (norm_inv_mul_lt_one h)
 
-/-- Factorization `(x + t)⁻¹ = (1 + x⁻¹ t)⁻¹ x⁻¹` behind the two perturbation bounds below. -/
+/-- If $\|t\| < \|x^{-1}\|^{-1}$, then $(x + t)^{-1} = (1 + x^{-1} t)^{-1} x^{-1}$. -/
 private theorem inverse_add_eq (x : Rˣ) {t : R} (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     Ring.inverse ((x : R) + t)
       = Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R) := by
@@ -263,7 +322,10 @@ private theorem inverse_add_eq (x : Rˣ) {t : R} (h : ‖t‖ < ‖(↑x⁻¹ : 
     exact (norm_mul_le _ _).trans_lt (norm_inv_mul_lt_one h)
   simpa only [Ring.inverse_unit] using NormedRing.inverse_add_eq_mul x.isUnit h'
 
-/-- Perturbation bound for the inverse: `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`. -/
+/-- Let $R$ be a complete normed ring with $\|1\| = 1$, let $x$ be a unit of $R$, and let $t \in R$
+with $\|t\| < \|x^{-1}\|^{-1}$. Then
+$$\|(x + t)^{-1}\| \le \frac{\|x^{-1}\|}{1 - \|x^{-1}\| \|t\|}.$$
+-/
 theorem norm_inverse_add_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     ‖Ring.inverse ((x : R) + t)‖ ≤ ‖(↑x⁻¹ : R)‖ / (1 - ‖(↑x⁻¹ : R)‖ * ‖t‖) := by
   have hle : ‖(-((↑x⁻¹ : R) * t))‖ ≤ ‖(↑x⁻¹ : R)‖ * ‖t‖ := by
@@ -277,8 +339,10 @@ theorem norm_inverse_add_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)�
           (one_div_one_sub_le_one_div_one_sub hle (norm_inv_mul_lt_one h))
     _ = ‖(↑x⁻¹ : R)‖ / (1 - ‖(↑x⁻¹ : R)‖ * ‖t‖) := by ring
 
-/-- Perturbation bound for the change in the inverse: `‖(x + t)⁻¹ - x⁻¹‖ ≤ ‖x⁻¹‖² ‖t‖ / (1 - ‖x⁻¹‖
-‖t‖)`. -/
+/-- Let $R$ be a complete normed ring with $\|1\| = 1$, let $x$ be a unit of $R$, and let $t \in R$
+with $\|t\| < \|x^{-1}\|^{-1}$. Then
+$$\|(x + t)^{-1} - x^{-1}\| \le \frac{\|x^{-1}\|^2 \|t\|}{1 - \|x^{-1}\| \|t\|}.$$
+-/
 theorem norm_inverse_add_sub_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     ‖Ring.inverse ((x : R) + t) - ↑x⁻¹‖ ≤
       ‖(↑x⁻¹ : R)‖ ^ 2 * ‖t‖ / (1 - ‖(↑x⁻¹ : R)‖ * ‖t‖) := by
@@ -304,12 +368,14 @@ section OfUnit
 
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- The coercion of `ContinuousLinearEquiv.ofUnit u` is the underlying operator of `u`. -/
+/-- For a unit $u$ of the ring of bounded operators on $V$, the continuous linear equivalence
+`ContinuousLinearEquiv.ofUnit u` has underlying operator $u$. -/
 theorem coe_ofUnit (u : (V →L[𝕜] V)ˣ) :
     ((ContinuousLinearEquiv.ofUnit u : V ≃L[𝕜] V) : V →L[𝕜] V) = (u : V →L[𝕜] V) := by
   ext x; rfl
 
-/-- The inverse of `ContinuousLinearEquiv.ofUnit u` computes `Ring.inverse`. -/
+/-- For a unit $u$ of the ring of bounded operators on $V$, the inverse map of
+`ContinuousLinearEquiv.ofUnit u` is `Ring.inverse u`, the inverse of $u$. -/
 theorem coe_ofUnit_symm (u : (V →L[𝕜] V)ˣ) :
     ((ContinuousLinearEquiv.ofUnit u).symm : V →L[𝕜] V) = Ring.inverse (u : V →L[𝕜] V) := by
   rw [Ring.inverse_unit]
@@ -320,11 +386,16 @@ end OfUnit
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace E]
 
-/-- Two-space perturbation theorem, in the form of [han2009theoretical], Thm 2.3.5: if `e : E ≃L F`
-and `‖e⁻¹‖ ‖t‖ < 1` then `e + t` is invertible with `‖(e + t)⁻¹‖ ≤ ‖e⁻¹‖ / (1 - ‖e⁻¹‖ ‖t‖)`
-([han2009theoretical] (2.3.13)) and `‖(e + t)⁻¹ - e⁻¹‖ ≤ ‖e⁻¹‖² ‖t‖ / (1 - ‖e⁻¹‖ ‖t‖)`
-([han2009theoretical] (2.3.14)). Completeness of `E` suffices here, whereas [han2009theoretical] Thm
-2.3.5 assumes one of the two spaces complete. -/
+/-- The **perturbation theorem for an isomorphism**. Let $E$ be a Banach space and $F$ a normed
+space over a nontrivially normed field, let $e \colon E \to F$ be an isomorphism, and let
+$t \colon E \to F$ be bounded with $\|e^{-1}\| \|t\| < 1$. Then $e + t$ is an isomorphism, and
+$$\|(e + t)^{-1}\| \le \frac{\|e^{-1}\|}{1 - \|e^{-1}\| \|t\|}, \qquad \|(e + t)^{-1} - e^{-1}\|
+  \le \frac{\|e^{-1}\|^2 \|t\|}{1 - \|e^{-1}\| \|t\|}.$$
+This is Theorem 2.3.5 of [han2009theoretical], with the bounds (2.3.13) and (2.3.14).
+
+The isomorphism $e + t$ is given as a continuous linear equivalence $e'$ whose underlying
+operator is $e + t$. Theorem 2.3.5 of [han2009theoretical] assumes that one of the two spaces is
+complete; here the completeness of $E$ is assumed. -/
 theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
     (h : ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖ < 1) :
     ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = (e : E →L[𝕜] F) + t ∧
@@ -375,9 +446,12 @@ theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
       _ = ‖(e.symm : F →L[𝕜] E)‖ ^ 2 * ‖t‖ / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖) := by ring
 
 omit [CompleteSpace E] in
-/-- Consistency plus stability gives convergence: `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖` when `L v = Lₙ
-vₙ`, so a uniform bound on `‖Lₙ⁻¹‖` (stability) turns the consistency error `‖(L - Lₙ) v‖ → 0` into
-`vₙ → v`. -/
+/-- **Consistency and stability give convergence**. Let $L \colon E \to F$ be bounded, let
+$L_n \colon E \to F$ be an isomorphism, and let $v, v_n \in E$ with $Lv = L_n v_n$. Then
+$$\|v - v_n\| \le \|L_n^{-1}\| \, \|(L - L_n) v\|.$$
+
+So a uniform bound on $\|L_n^{-1}\|$ (stability) turns the consistency error
+$\|(L - L_n) v\| \to 0$ into $v_n \to v$. -/
 theorem norm_sub_le_of_apply_eq (L : E →L[𝕜] F) (Ln : E ≃L[𝕜] F) {v vn : E}
     (h : L v = Ln vn) : ‖v - vn‖ ≤ ‖(Ln.symm : F →L[𝕜] E)‖ * ‖(L - Ln) v‖ := by
   have hv : (Ln.symm : F →L[𝕜] E) ((L - (Ln : E →L[𝕜] F)) v) = vn - v := by simp [h]

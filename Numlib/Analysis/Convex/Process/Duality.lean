@@ -8,54 +8,65 @@ import Numlib.Analysis.Convex.Saddle.Kernel
 /-!
 # The two inner products of a convex process
 
-A convex process `A` carries two inner products,
-
-  `⟨Au, x*⟩ = sup {⟨x, x*⟩ | x ∈ A u}`  and  `⟨u, A* x*⟩ = inf {⟨u, u*⟩ | u* ∈ A* x*}`,
-
-the first a maximisation over a value of `A`, the second a minimisation over a value of `A*`. They
-are the bracket and the concave bracket of the indicator bifunction of `A` and of its adjoint, so
-everything that separates them is a partial closure. `Process/Basic.lean` proves the clauses
-needing only the closure in `u`; this module adds those needing the closure in `x*` — where
-closedness of `A` enters — and those needing relative interiors.
+Let $A$ be a convex process from $U$ to $X$, with $U$ paired with $V$ and $X$ paired with $Y$, and
+let $A^*$ be its adjoint. The process carries two inner products,
+$$\langle Au, x^* \rangle = \sup \{\langle x, x^* \rangle \mid x \in Au\} \quad\text{and}\quad
+  \langle u, A^* x^* \rangle = \inf \{\langle u, u^* \rangle \mid u^* \in A^* x^*\}.$$
+The first is a maximization over a value of $A$, the second a minimization over a value of $A^*$.
+They are the bracket of the indicator bifunction $F$ of $A$ and the concave bracket of its adjoint
+$F^*$, so everything that separates them is a partial closure. The module
+`Numlib.Analysis.Convex.Process.Basic` proves the results that need only the closure in $u$. This
+module adds the results that need the closure in $x^*$, where closedness of $A$ enters, and the
+results that need relative interiors. The presentation follows [rockafellar1970convex], §39.
 
 ## Main results
 
-* `ConvexProcess.closedConvexBifun_indicatorBifun_iff` — `A` is a closed convex process exactly when
-  its indicator bifunction is closed. `concaveDomBifun_convexAdjointBifun_indicatorBifun`:
-  `dom F* = dom A*`.
-* `ConvexProcess.partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun` —
-  `⟨Au, x*⟩ = cl_{x*} ⟨u, A* x*⟩` for a closed convex process.
-* `ConvexProcess.bracket_eq_concaveBracket_of_mem_relint_dom` and `…_of_mem_relint_dom_adjoint` —
-  `⟨Au, x*⟩ = ⟨u, A* x*⟩` whenever `u ∈ ri (dom A)` or `x* ∈ ri (dom A*)`
-  ([rockafellar1970convex] Theorem 39.3);
-  the bifunction statements they specialize,
-  `bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` and
-  `…_of_mem_relint_concaveDomBifun`, are in `Saddle/Kernel.lean`.
-* `exists_unique_convexProcess_bracket_indicatorBifun_eq` — a lower closed concave-convex `K` with
-  `K (0, 0) = 0` that is positively homogeneous in each variable separately is `⟨Au, x*⟩` for
-  exactly one closed convex process `A` ([rockafellar1970convex] Theorem 39.4).
-  `ConvexProcess.isClosed_eval` and the `…_bracket_indicatorBifun` results beside it are the four
-  properties it inverts.
-* `ConvexProcess.closedConvex_imageBifun_indicatorBifun` and the results beside it — for a closed
-  convex process `A` and a closed proper convex `f`, the image `Af` is closed, the infimum defining
-  `(Af)(x)` is attained, and `(Af)* = cl (A*⁻¹ f*)`. The open half is in `Process/Basic.lean`.
+* `ConvexAnalysis.ConvexProcess.closedConvexBifun_indicatorBifun_iff`: $A$ is a closed convex
+  process exactly when its indicator bifunction is closed.
+* `ConvexAnalysis.ConvexProcess.concaveDomBifun_convexAdjointBifun_indicatorBifun`: the effective
+  domain of $F^*$ is $\operatorname{dom} A^*$.
+* `ConvexAnalysis.ConvexProcess.partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun`:
+  $\langle Au, x^* \rangle = \operatorname{cl}_{x^*} \langle u, A^* x^* \rangle$ for a closed convex
+  process.
+* `ConvexAnalysis.ConvexProcess.bracket_eq_concaveBracket_of_mem_relint_dom`,
+  `ConvexAnalysis.ConvexProcess.bracket_eq_concaveBracket_of_mem_relint_dom_adjoint`: $\langle Au,
+  x^* \rangle = \langle u, A^* x^* \rangle$ whenever
+  $u \in \operatorname{ri}(\operatorname{dom} A)$, or $A$ is closed and $x^* \in
+  \operatorname{ri}(\operatorname{dom} A^*)$. This is Theorem 39.3 of [rockafellar1970convex]. The
+  bifunction statements that they specialize,
+  `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` and
+  `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBifun`, are
+  in `Numlib.Analysis.Convex.Saddle.Kernel`.
+* `ConvexAnalysis.exists_unique_convexProcess_bracket_indicatorBifun_eq`: a lower closed
+  concave-convex function $K$ with $K(0, 0) = 0$ that is positively homogeneous in each variable
+  separately is $\langle Au, x^* \rangle$ for exactly one closed convex process $A$. This is Theorem
+  39.4 of [rockafellar1970convex]. `ConvexAnalysis.ConvexProcess.isClosed_eval` and the properties
+  of `ConvexAnalysis.bracket` for the indicator bifunction proved before it are the properties that
+  this correspondence inverts.
+* `ConvexAnalysis.ConvexProcess.closedConvex_imageBifun_indicatorBifun` and the results after it:
+  for a closed convex process $A$ and a closed proper convex function $f$, the image $Af$ is closed,
+  the infimum that defines $(Af)(x)$ is attained, and $(Af)^* = \operatorname{cl}((A^*)^{-1} f^*)$.
+  The statement without closures is
+  `ConvexAnalysis.ConvexProcess.convexConj_imageBifun_indicatorBifun` in
+  `Numlib.Analysis.Convex.Process.Basic`.
 
 ## Implementation notes
 
-Rockafellar prefixes both halves of the last assertion with "if `A` is closed", but the `u` half
-needs only that a concave function agrees with its concave closure on the relative interior of its
-effective domain. Closedness is genuinely needed only on the `x*` side, where the closure in `x*` —
-which rests on `F** = cl F` — identifies `cl_{x*} ⟨u, A* x*⟩` with `⟨Au, x*⟩`; there it is `Y`, not
-`U`, that must be finite-dimensional.
-
-A process is closed exactly when its indicator bifunction is, since `cl δ(· | S) = δ(· | cl S)`.
-That is what lets the bifunction theorems be read for processes without a separate closedness
-argument. The correspondence is stated as a `∃!` with closedness inside it: it is between *closed*
-convex processes and kernels, so uniqueness is uniqueness among closed processes.
-
-## References
-
-* [rockafellar1970convex] §39.
+* Rockafellar puts "if $A$ is closed" before both halves of the statement $\langle Au, x^* \rangle =
+  \langle u, A^* x^* \rangle$ on relative interiors. The half for
+  $u \in \operatorname{ri}(\operatorname{dom} A)$ needs only that a concave function agrees with its
+  concave closure on the relative interior of its effective domain, so it is stated without
+  closedness. Closedness is needed only for $x^*$, where the closure in $x^*$, which rests on
+  $F^{**} = \operatorname{cl} F$, identifies $\operatorname{cl}_{x^*} \langle u, A^* x^* \rangle$
+  with $\langle Au, x^* \rangle$. In that half $Y$, not $U$, must be finite-dimensional.
+* A process is closed exactly when its indicator bifunction is closed, because $\operatorname{cl}
+  \delta(\cdot \mid S) = \delta(\cdot \mid \operatorname{cl} S)$. So the theorems about bifunctions
+  apply to processes without a separate closedness argument.
+* The correspondence with saddle functions is stated as a unique existence with closedness inside
+  it. It is a correspondence between closed convex processes and saddle functions, so uniqueness is
+  uniqueness among closed processes.
+* The pairings are `Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ` and `Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ`. The Lean variables `y` and
+  `v` stand for the dual vectors $x^* \in Y$ and $u^* \in V$.
 -/
 
 open Set
@@ -71,8 +82,11 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [TopologicalSpace U]
 
 namespace ConvexProcess
 
-/-- A convex process is closed exactly when its indicator bifunction is a closed convex bifunction:
-`ClosedConvexBifun` for an indicator bifunction *is* `closure (graph A) = graph A`. -/
+/-- Let $U$ and $X$ be topological spaces. A convex process $A$ from $U$ to $X$ has a closed graph
+if and only if its indicator bifunction is a closed convex bifunction.
+
+For an indicator bifunction, closedness of the bifunction is the equation
+$\operatorname{cl}(\operatorname{graph} A) = \operatorname{graph} A$. -/
 theorem closedConvexBifun_indicatorBifun_iff (A : ConvexProcess U X) :
     ClosedConvexBifun A.indicatorBifun ↔ IsClosed (A.graph : Set (U × X)) := by
   have hgr : ClosedConvexBifun A.indicatorBifun
@@ -90,8 +104,9 @@ theorem closedConvexBifun_indicatorBifun_iff (A : ConvexProcess U X) :
   · intro h
     rw [h]
 
-/-- Every value of a closed convex process is a closed set: `A u` is the preimage of the graph
-under the continuous map `x ↦ (u, x)`. -/
+/-- Let $U$ and $X$ be topological spaces. If the graph of $A$ is closed, then every value $Au$ is a
+closed set, because $Au$ is the preimage of the graph under the continuous map
+$x \mapsto (u, x)$. -/
 theorem isClosed_eval {A : ConvexProcess U X} (hA : IsClosed (A.graph : Set (U × X))) (u : U) :
     IsClosed (A.eval u) :=
   hA.preimage (continuous_const.prodMk continuous_id)
@@ -107,8 +122,11 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- The concave effective domain of the adjoint of an indicator bifunction is the effective domain
-of the adjoint process: `⟨u, A* x*⟩` is `+∞` exactly where `A* x*` is empty. -/
+/-- The effective domain $\{x^* \mid (F^* x^*)(u^*) \neq -\infty \text{ for some } u^*\}$ of the
+concave bifunction $F^*$, the adjoint of the indicator bifunction $F$ of $A$, is the effective
+domain of the adjoint process $A^*$.
+
+Equivalently, $\langle u, A^* x^* \rangle = +\infty$ exactly where $A^* x^*$ is empty. -/
 @[simp] theorem concaveDomBifun_convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     concaveDomBifun (convexAdjointBifun Bu Bx A.indicatorBifun) = (adjointProcess Bu Bx A).dom := by
@@ -142,12 +160,18 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **For a *closed* convex process, `⟨Au, x*⟩ = cl_{x*} ⟨u, A* x*⟩`.**
+/-- **For a closed convex process, $\langle Au, x^* \rangle = \operatorname{cl}_{x^*} \langle u, A^*
+x^* \rangle$.** Let $U$, $X$ and $Y$ be locally convex topological vector spaces, such that the
+continuous linear functionals on $U$, $X$ and $Y$ are exactly the pairings with $V$, $Y$ and
+$X$. Let $A$ be a convex process from $U$ to $X$ with closed graph. Then the convex closure in
+the second variable of $(u, x^*) \mapsto \langle u, A^* x^* \rangle$ is
+$(u, x^*) \mapsto \langle Au, x^* \rangle$.
 
-This is the closure in `x*`, which is where closedness enters: it runs through `F** = cl F = F`,
-whereas the closure in `u`, `⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`
-(`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`), holds for every convex
-process. -/
+This is the closure in $x^*$, and closedness of $A$ enters here: the proof runs through
+$F^{**} = \operatorname{cl} F = F$. The closure in $u$, $\langle u, A^* x^* \rangle =
+\operatorname{cl}_u \langle Au, x^* \rangle$
+(`ConvexAnalysis.ConvexProcess.concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`),
+holds for every convex process. -/
 theorem partialCl₂_concaveBracket_convexAdjointBifun_indicatorBifun (A : ConvexProcess U X)
     (hA : IsClosed (A.graph : Set (U × X))) :
     partialCl₂ (fun p : U × Y =>
@@ -170,11 +194,15 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
 
 namespace ConvexProcess
 
-/-- **`⟨Au, x*⟩ = ⟨u, A* x*⟩` at every relative interior point of `dom A`.**
+/-- **$\langle Au, x^* \rangle = \langle u, A^* x^* \rangle$ at every relative interior point of
+$\operatorname{dom} A$.** Let $U$ be a finite-dimensional real normed space whose continuous
+linear functionals are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$. If
+$u \in \operatorname{ri}(\operatorname{dom} A)$, then $\langle Au, x^* \rangle = \langle u, A^*
+x^* \rangle$ for every $x^* \in Y$. This is part of Theorem 39.3 of [rockafellar1970convex].
 
-Rockafellar prefixes the assertion with "if `A` is closed"; **no closedness is needed here**, the
-statement being `bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` for the indicator
-bifunction. -/
+Rockafellar puts "if $A$ is closed" before the assertion. No closedness is needed here: the
+statement is `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` for the
+indicator bifunction. -/
 theorem bracket_eq_concaveBracket_of_mem_relint_dom (A : ConvexProcess U X) {u : U}
     (hu : u ∈ ri A.dom) (y : Y) :
     bracket Bx A.indicatorBifun u y
@@ -198,10 +226,16 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **For a *closed* convex process, `⟨Au, x*⟩ = ⟨u, A* x*⟩` at every relative interior point of
-`dom A*`**, and for every `u`.
+/-- **For a closed convex process, $\langle Au, x^* \rangle = \langle u, A^* x^* \rangle$ at every
+relative interior point of $\operatorname{dom} A^*$, and for every $u$.** Let $Y$ be a
+finite-dimensional real normed space, and let $U$ and $X$ be locally convex topological vector
+spaces, such that the continuous linear functionals on $U$, $X$ and $Y$ are exactly the pairings
+with $V$, $Y$ and $X$. Let $A$ have a closed graph. If $x^* \in
+\operatorname{ri}(\operatorname{dom} A^*)$, then $\langle Au, x^* \rangle = \langle u, A^* x^*
+\rangle$ for every $u \in U$. This is part of Theorem 39.3 of [rockafellar1970convex].
 
-Unlike the `u` side, this one really does need `A` closed: it goes through the closure in `x*`. -/
+Unlike the statement for $u \in \operatorname{ri}(\operatorname{dom} A)$, this one needs $A$
+closed, because it goes through the closure in $x^*$. -/
 theorem bracket_eq_concaveBracket_of_mem_relint_dom_adjoint (A : ConvexProcess U X)
     (hA : IsClosed (A.graph : Set (U × X))) (u : U)
     {y : Y} (hy : y ∈ ri (adjointProcess Bu Bx A).dom) :
@@ -215,11 +249,14 @@ end ConvexProcess
 
 end BracketAgreeAdjoint
 
-/-! ### Which saddle-functions are inner products of processes
+/-!
+### Which saddle functions are inner products of processes
 
-The lower closed concave-convex functions on `U × Y` match the closed convex bifunctions from `U`
-to `X`. Cutting that down to *processes* costs exactly two further conditions on `K`: it vanishes
-at the origin, and it is positively homogeneous in each variable separately. -/
+The lower closed concave-convex functions on $U \times Y$ correspond to the closed convex
+bifunctions from $U$ to $X$. The functions that come from processes are exactly those that satisfy
+two further conditions: they vanish at the origin, and they are positively homogeneous in each
+variable separately.
+-/
 
 section SaddleCorrespondence
 
@@ -236,13 +273,17 @@ omit [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
   [LocallyConvexSpace ℝ U] [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
   [LocallyConvexSpace ℝ X] [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- **The inner product of a convex process is concave-convex.** -/
+/-- **The inner product of a convex process is concave-convex**:
+$(u, x^*) \mapsto \langle Au, x^* \rangle$ is concave in $u$ and convex in $x^*$. -/
 theorem concaveConvexFn_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     ConcaveConvexFn fun p : U × Y => bracket Bx A.indicatorBifun p.1 p.2 :=
   concaveConvexFn_bracket A.convexBifun_indicatorBifun Bx
 
-/-- **The inner product of a *closed* convex process is lower closed.** This is the saddle-function
-correspondence read at the indicator bifunction. -/
+/-- **The inner product of a closed convex process is lower closed.** Let $U$, $X$ and $Y$ be
+locally convex topological vector spaces, such that the continuous linear functionals on $U$,
+$X$ and $Y$ are exactly the pairings with $V$, $Y$ and $X$. If the graph of $A$ is closed, then
+$(u, x^*) \mapsto \langle Au, x^* \rangle$ is lower closed. This is the correspondence between
+bifunctions and saddle functions, applied to the indicator bifunction. -/
 theorem lowerClosedFn_bracket_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (A : ConvexProcess U X) (hA : IsClosed (A.graph : Set (U × X))) :
@@ -253,11 +294,15 @@ theorem lowerClosedFn_bracket_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
 omit [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- **A closed convex process is recovered from its inner product** by
-`A u = {x | ⟨x, x*⟩ ≤ K (u, x*) for every x*}`.
+/-- **A closed convex process is recovered from its inner product.** Let $X$ be a locally convex
+topological vector space whose continuous linear functionals are exactly
+$\langle \cdot, x^* \rangle$ for $x^* \in Y$. If the graph of $A$ is closed, then for every $u$
+$$Au = \{x \mid \langle x, x^* \rangle \le \langle Au, x^* \rangle \text{ for all } x^* \in
+  Y\}.$$
 
-This is the recovery of a closed convex set from its support function, at `A u`, whose support
-function is `⟨Au, ·⟩` (`bracket_indicatorBifun`). -/
+This is the recovery of a closed convex set from its support function, applied to $Au$, whose
+support function is $\langle Au, \cdot \rangle$
+(`ConvexAnalysis.ConvexProcess.bracket_indicatorBifun`). -/
 theorem eval_eq_supportSet_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] (A : ConvexProcess U X)
     (hA : IsClosed (A.graph : Set (U × X))) (u : U) :
@@ -267,18 +312,26 @@ theorem eval_eq_supportSet_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[�
 
 end ConvexProcess
 
-/-- **`K (u, x*) = ⟨Au, x*⟩` is a one-to-one correspondence** between the closed convex processes
-from `U` to `X` and the lower closed concave-convex functions on `U × Y` that vanish at the origin
-and are positively homogeneous in each variable separately. The inverse map is
-`A u = {x | ⟨x, x*⟩ ≤ K (u, x*) for every x*}`
-(`ConvexProcess.eval_eq_supportSet_bracket_indicatorBifun`).
+/-- **$K(u, x^*) = \langle Au, x^* \rangle$ is a one-to-one correspondence** between the closed
+convex processes from $U$ to $X$ and the lower closed concave-convex functions on $U \times Y$
+that vanish at the origin and are positively homogeneous in each variable separately. Precisely:
+let $U$, $X$ and $Y$ be locally convex topological vector spaces, such that the continuous
+linear functionals on $U$, $X$ and $Y$ are exactly the pairings with $V$, $Y$ and $X$. Let
+$K : U \times Y \to [-\infty, +\infty]$ be concave-convex and lower closed, with $K(0, 0) = 0$,
+and positively homogeneous in $u$ for each $x^*$ and in $x^*$ for each $u$. Then there is
+exactly one convex process $A$ with closed graph such that
+$$\langle Au, x^* \rangle = K(u, x^*) \quad \text{for all } u \in U,\ x^* \in Y.$$
+This is Theorem 39.4 of [rockafellar1970convex]. The inverse map is $Au = \{x \mid \langle x,
+x^* \rangle \le K(u, x^*) \text{ for all } x^*\}$
+(`ConvexAnalysis.ConvexProcess.eval_eq_supportSet_bracket_indicatorBifun`).
 
-The saddle-function correspondence does all the work on the bifunction side; what remains is that
-the closed convex bifunction it produces is an indicator bifunction. `K (0, 0) = 0` bounds `F 0`
-below by `0` and makes it finite somewhere, so the closed convex `graphFn F` cannot take `-∞`, and
-no slice `K (u, ·)` is identically `+∞`. The conjugate of a positively homogeneous function that is
-not identically `+∞` is an indicator function, so each `F u` is one; positive homogeneity in `u`
-makes the resulting set a cone, its convexity coming from convexity of `F`. -/
+The correspondence between saddle functions and bifunctions does all the work on the side of
+bifunctions. What remains is that the closed convex bifunction $F$ it produces is an indicator
+bifunction. The condition $K(0, 0) = 0$ bounds $F0$ below by $0$ and makes it finite somewhere,
+so the closed convex graph function of $F$ cannot take the value $-\infty$, and no slice
+$K(u, \cdot)$ is identically $+\infty$. The conjugate of a positively homogeneous function that
+is not identically $+\infty$ is an indicator function, so each $Fu$ is one. Positive homogeneity
+in $u$ makes the resulting set a cone, and its convexity comes from the convexity of $F$. -/
 theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
@@ -438,12 +491,21 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **For a closed convex process `A` and a closed proper convex `f`, the image `Af` is closed.**
+/-- **For a closed convex process $A$ and a closed proper convex function $f$, the image $Af$ is
+closed.** Let $U$ and $X$ be locally convex topological vector spaces whose continuous linear
+functionals are exactly the pairings with $V$ and $Y$. Let $A$ have a closed graph, and let
+$f : U \to [-\infty, +\infty]$ be closed, proper and convex. Suppose that for every $x \in X$
+the conjugate $f^*$ and the function $u^* \mapsto -\sup \{\langle x, x^* \rangle \mid x^* \in
+(A^*)^{-1} u^*\}$ add exactly (`ConvexAnalysis.IsExactSum`). Then the function
+$(Af)(x) = \inf \{f(u) \mid x \in Au\}$ is a closed convex function.
 
-This is `closedConvex_imageBifun` at the indicator bifunction of `A`, the closedness hypothesis
-passing through `closedConvexBifun_indicatorBifun_iff` and the "finite somewhere" side condition
-being `0 ∈ A 0`. Rockafellar's hypothesis `ri (dom f*) ∩ ri (dom A*⁻¹) ≠ ∅` is the `IsExactSum`
-there, one instance per `x`; `dom A*⁻¹` is `range A*`. -/
+This is `ConvexAnalysis.closedConvex_imageBifun` for the indicator bifunction of $A$. The
+closedness hypothesis passes through
+`ConvexAnalysis.ConvexProcess.closedConvexBifun_indicatorBifun_iff`, and the condition "finite
+somewhere" is $0 \in A0$. Rockafellar's hypothesis $\operatorname{ri}(\operatorname{dom} f^*)
+\cap \operatorname{ri}(\operatorname{dom} (A^*)^{-1}) \neq \emptyset$ is replaced by the
+exactness hypothesis, one instance for each $x$. Here $\operatorname{dom} (A^*)^{-1}$ is the
+range of $A^*$. -/
 theorem closedConvex_imageBifun_indicatorBifun (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f)
     (hex : ∀ x : X, IsExactSum Bu.flip (convexConj Bu f)
@@ -453,8 +515,11 @@ theorem closedConvex_imageBifun_indicatorBifun (hA : IsClosed (A.graph : Set (U 
     ((closedConvexBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
   simpa only [lowerAdjointBifun_indicatorBifun] using hex
 
-/-- **The infimum defining `(Af)(x)` is attained**, in the raw form
-`∃ u, f u + δ(x | A u) = (Af)(x)`. -/
+/-- **The infimum that defines $(Af)(x)$ is attained.** Under the hypotheses of
+`ConvexAnalysis.ConvexProcess.closedConvex_imageBifun_indicatorBifun` at the point $x$, there is
+a $u \in U$ with
+$$f(u) + \delta(x \mid Au) = (Af)(x).$$
+-/
 theorem exists_imageBifun_indicatorBifun_eq (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f) {x : X}
     (hex : IsExactSum Bu.flip (convexConj Bu f)
@@ -464,12 +529,14 @@ theorem exists_imageBifun_indicatorBifun_eq (hA : IsClosed (A.graph : Set (U × 
     ((closedConvexBifun_indicatorBifun_iff A).2 hA) A.indicatorBifun_zero_zero_ne_top hf ?_
   simpa only [lowerAdjointBifun_indicatorBifun] using hex
 
-/-- **Wherever `Af` is finite, the infimum `inf {f u | x ∈ A u}` is attained** at an actual `u`
-with `x ∈ A u`.
+/-- **Wherever $Af$ is finite, the infimum $\inf \{f(u) \mid x \in Au\}$ is attained** at a point
+$u$ with $x \in Au$. Under the hypotheses of
+`ConvexAnalysis.ConvexProcess.closedConvex_imageBifun_indicatorBifun` at the point $x$, and if
+$(Af)(x) \neq +\infty$, there is a $u$ with $x \in Au$ and $f(u) = (Af)(x)$.
 
-The raw form `exists_imageBifun_indicatorBifun_eq` produces a `u` with
-`f u + δ(x | A u) = (Af)(x)`; the indicator is `0` or `⊤`, and `⊤` is excluded because `f u ≠ ⊥`
-would then force `(Af)(x) = ⊤`. -/
+`ConvexAnalysis.ConvexProcess.exists_imageBifun_indicatorBifun_eq` gives a $u$ with
+$f(u) + \delta(x \mid Au) = (Af)(x)$. The indicator is $0$ or $+\infty$. The value $+\infty$ is
+excluded, because $f(u) \neq -\infty$ would then force $(Af)(x) = +\infty$. -/
 theorem exists_mem_eval_and_eq_imageBifun (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f) {x : X}
     (hex : IsExactSum Bu.flip (convexConj Bu f)
@@ -488,7 +555,12 @@ theorem exists_mem_eval_and_eq_imageBifun (hA : IsClosed (A.graph : Set (U × X)
 variable [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] [IsCompatiblePairing Bx.flip]
 
-/-- **`(Af)* = cl (A*⁻¹ f*)`**, for a closed convex process and a closed proper convex `f`. -/
+/-- $(Af)^* = \operatorname{cl}((A^*)^{-1} f^*)$ for a closed convex process and a closed proper
+convex function. Under the hypotheses of
+`ConvexAnalysis.ConvexProcess.closedConvex_imageBifun_indicatorBifun`, and if in addition $Y$ is
+a locally convex topological vector space whose continuous linear functionals are exactly
+$\langle x, \cdot \rangle$ for $x \in X$, the conjugate of $Af$ is the closure of the convex
+function $x^* \mapsto \inf \{f^*(u^*) \mid u^* \in A^* x^*\}$. -/
 theorem convexConj_imageBifun_indicatorBifun_eq_convexCl (hA : IsClosed (A.graph : Set (U × X)))
     (hf : ClosedProperConvexFn f)
     (hex : ∀ x : X, IsExactSum Bu.flip (convexConj Bu f)

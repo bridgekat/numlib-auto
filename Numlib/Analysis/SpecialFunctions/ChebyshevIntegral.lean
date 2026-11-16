@@ -16,40 +16,44 @@ import Numlib.Analysis.Fourier.CosineBasis
 /-!
 # Integrals of the Chebyshev polynomials of the second kind
 
-`Polynomial.Chebyshev.U n` is the Chebyshev polynomial of the second kind, characterized by
-`U_n(cos α) sin α = sin ((n + 1) α)`. This file collects what an integration against `U_n` needs:
+The Chebyshev polynomial of the second kind $U_n$ (`Polynomial.Chebyshev.U`) is characterized by
+$U_n(\cos \alpha) \sin \alpha = \sin((n + 1)\alpha)$. This file collects the facts that an
+integration against $U_n$ needs. First, $T_{n+1}/(n + 1)$ is an antiderivative of $U_n$; this is the
+identity $T_{n+1}' = (n + 1) U_n$ together with the fundamental theorem of calculus. Second, the
+substitution $t = \cos \alpha$ turns an integral over $[-1, 1]$ into an integral over $[0, \pi]$
+against $\sin \alpha$, and turns $U_n$ into a sine of frequency $n + 1$. Consequently, $U_n$ and
+$U_m$ are orthogonal on $[-1, 1]$ for the weight $\sqrt{1 - t^2}$. This is the counterpart for the
+second kind of the orthogonality of $T_n$ for the weight $1/\sqrt{1 - t^2}$.
 
-* `T_{n + 1} / (n + 1)` is an antiderivative of `U_n`, which is the formal identity
-  `derivative (T (n + 1)) = (n + 1) U_n` read through the fundamental theorem of calculus;
-* the substitution `t = cos α` turns an integral over `[-1, 1]` into one over `[0, π]` against
-  `sin α`, and turns `U_n` into the sine of frequency `n + 1`;
-* consequently `U_n` and `U_m` are orthogonal on `[-1, 1]` for the weight `√(1 - t²)`, the
-  counterpart for the second kind of the orthogonality of `T_n` for the weight `√(1 - t²)⁻¹`;
-* the *ridge* chord integral
-  `∫ U_n(t cos γ + s sin γ) ds = 2 U_n(t) U_n(cos γ) √(1 - t²) / (n + 1)`
-  over the chord `|s| ≤ √(1 - t²)` of the unit disk, which is the one-dimensional heart of the
-  Radon (chord) decomposition of an integral of a ridge polynomial over the disk.
+The last result is the chord integral of a ridge polynomial: for $|t| \le 1$,
+$$\int_{-\sqrt{1 - t^2}}^{\sqrt{1 - t^2}} U_n(t \cos \gamma + s \sin \gamma)\,ds = \frac{2}{n + 1}\,
+  U_n(t)\, U_n(\cos \gamma) \sqrt{1 - t^2}.$$
+The integral runs over the chord of the unit disk at abscissa $t$. It is the one-dimensional core of
+the Radon (chord) decomposition of an integral of a ridge polynomial over the disk. The formula
+holds for every $\gamma$. The substitution $u = t \cos \gamma + s \sin \gamma$ is available only for
+$\sin \gamma \neq 0$, but at $\sin \gamma = 0$ the integrand is constant along the chord and gives
+the same value.
 
-The chord formula is uniform in `γ`: the substitution `u = t cos γ + s sin γ` is available only for
-`sin γ ≠ 0`, but the value it produces extends continuously — and is the correct one — across
-`sin γ = 0`, where the integrand is constant along the chord.
+## Main results
 
-## Main statements
-
-* `integral_neg_one_one_eq_integral_cos` — the substitution `t = cos α`.
-* `Polynomial.Chebyshev.hasDerivAt_eval_T_add_one` and `Polynomial.Chebyshev.integral_eval_U` —
-  the antiderivative `T_{n + 1} / (n + 1)` of `U_n`.
-* `Polynomial.Chebyshev.integral_eval_U_mul_eval_U_sqrt` — orthogonality on `[-1, 1]` for the
-  weight `√(1 - t²)`.
-* `Polynomial.Chebyshev.integral_eval_U_ridge_chord` — the chord integral of a ridge polynomial.
+* `integral_neg_one_one_eq_integral_cos`: the substitution $t = \cos \alpha$, $\int_{-1}^1
+  g(t)\,dt = \int_0^\pi g(\cos \alpha) \sin \alpha\,d\alpha$.
+* `Polynomial.Chebyshev.hasDerivAt_eval_T_add_one`: the derivative of $T_{n+1}$ is $(n + 1) U_n$.
+* `Polynomial.Chebyshev.integral_eval_U`: $\int_a^b U_n(t)\,dt = (T_{n+1}(b) - T_{n+1}(a))/(n + 1)$.
+* `Polynomial.Chebyshev.integral_eval_U_mul_eval_U_sqrt`: $\int_{-1}^1 U_n U_m \sqrt{1 - t^2}\,dt$
+  is $\pi/2$ if $n = m$ and $0$ otherwise.
+* `Polynomial.Chebyshev.integral_eval_U_ridge_chord`: the chord integral of
+  $U_n(t \cos \gamma + s \sin \gamma)$ displayed above.
 -/
 
 open MeasureTheory Set
 
 open scoped Real
 
-/-- **The substitution `t = cos α`**: an integral over `[-1, 1]` is the integral over `[0, π]` of
-the composite against `sin α`. -/
+/-- The **substitution $t = \cos \alpha$**: for every continuous function
+$g : \mathbb{R} \to \mathbb{R}$,
+$$\int_{-1}^1 g(t)\,dt = \int_0^\pi \sin \alpha \; g(\cos \alpha)\,d\alpha.$$
+-/
 theorem integral_neg_one_one_eq_integral_cos {g : ℝ → ℝ} (hg : Continuous g) :
     ∫ t in (-1 : ℝ)..1, g t = ∫ α in (0 : ℝ)..π, Real.sin α * g (Real.cos α) := by
   have h := intervalIntegral.integral_deriv_smul_comp (a := (0 : ℝ)) (b := π)
@@ -67,15 +71,21 @@ theorem integral_neg_one_one_eq_integral_cos {g : ℝ → ℝ} (hg : Continuous 
 
 namespace Polynomial.Chebyshev
 
-/-- **The derivative of `T_{n + 1}` is `(n + 1) U_n`**, in the form the fundamental theorem of
-calculus consumes. It is `Polynomial.Chebyshev.T_derivative_eq_U` at the index `n + 1`. -/
+/-- For every natural number $n$ and every $x \in \mathbb{R}$, the function $y \mapsto T_{n+1}(y)$
+has derivative $(n + 1)\, U_n(x)$ at $x$.
+
+This is `Polynomial.Chebyshev.T_derivative_eq_U` at the index $n + 1$, in the form that the
+fundamental theorem of calculus uses. -/
 theorem hasDerivAt_eval_T_add_one (n : ℕ) (x : ℝ) :
     HasDerivAt (fun y => (T ℝ ((n : ℤ) + 1)).eval y) (((n : ℝ) + 1) * (U ℝ (n : ℤ)).eval x) x := by
   have h := (T ℝ ((n : ℤ) + 1)).hasDerivAt (𝕜 := ℝ) x
   rw [T_derivative_eq_U, show (n : ℤ) + 1 - 1 = (n : ℤ) by ring] at h
   simpa using h
 
-/-- **`T_{n + 1} / (n + 1)` is an antiderivative of `U_n`.** -/
+/-- The polynomial $T_{n+1}/(n + 1)$ is an antiderivative of $U_n$: for every natural number $n$ and
+all $a, b \in \mathbb{R}$,
+$$\int_a^b U_n(t)\,dt = \frac{T_{n+1}(b) - T_{n+1}(a)}{n + 1}.$$
+-/
 theorem integral_eval_U (n : ℕ) (a b : ℝ) :
     ∫ t in a..b, (U ℝ (n : ℤ)).eval t
       = ((T ℝ ((n : ℤ) + 1)).eval b - (T ℝ ((n : ℤ) + 1)).eval a) / (n + 1) := by
@@ -88,10 +98,14 @@ theorem integral_eval_U (n : ℕ) (a b : ℝ) :
   field_simp
   linarith [key]
 
-/-- **The Chebyshev polynomials of the second kind are orthogonal on `[-1, 1]` for the weight
-`√(1 - t²)`**, with `π/2` for every squared norm. Under `t = cos α` the weight is `sin α` and
-`U_n(cos α) sin α = sin ((n + 1) α)`, so this is the orthogonality of the sines of positive
-frequency on `[0, π]`. -/
+/-- The **Chebyshev polynomials of the second kind are orthogonal** on $[-1, 1]$ for the weight
+$\sqrt{1 - t^2}$: for all natural numbers $n$ and $m$,
+$$\int_{-1}^1 U_n(t)\, U_m(t) \sqrt{1 - t^2}\,dt = \begin{cases} \pi/2 & \text{if } n = m, \\ 0
+  & \text{if } n \neq m. \end{cases}$$
+
+Under $t = \cos \alpha$ the weight becomes $\sin \alpha$, and $U_n(\cos \alpha) \sin \alpha =
+\sin((n + 1)\alpha)$. So the statement is the orthogonality of the sines of positive frequency
+on $[0, \pi]$. -/
 theorem integral_eval_U_mul_eval_U_sqrt (n m : ℕ) :
     ∫ t in (-1 : ℝ)..1, (U ℝ (n : ℤ)).eval t * (U ℝ (m : ℤ)).eval t * √(1 - t ^ 2)
       = if n = m then π / 2 else 0 := by
@@ -113,14 +127,17 @@ theorem integral_eval_U_mul_eval_U_sqrt (n m : ℕ) :
   rw [intervalIntegral.integral_congr hcongr, integral_sin_nat_mul_sin_nat_mul]
   simp
 
-/-- **The chord integral of a ridge Chebyshev polynomial**: along the chord `|s| ≤ √(1 - t²)` of the
-unit disk at abscissa `t`,
-`∫ U_n(t cos γ + s sin γ) ds = 2 U_n(t) U_n(cos γ) √(1 - t²) / (n + 1)`.
+/-- The **chord integral of a ridge Chebyshev polynomial**: let $n$ be a natural number, let
+$\gamma \in \mathbb{R}$, and let $t \in \mathbb{R}$ with $|t| \le 1$. Then, along the chord
+$|s| \le \sqrt{1 - t^2}$ of the unit disk at abscissa $t$,
+$$\int_{-\sqrt{1 - t^2}}^{\sqrt{1 - t^2}} U_n(t \cos \gamma + s \sin \gamma)\,ds = \frac{2}{n +
+  1}\, U_n(t)\, U_n(\cos \gamma) \sqrt{1 - t^2}.$$
 
-For `sin γ ≠ 0` this is the substitution `u = t cos γ + s sin γ` together with the antiderivative
-`T_{n + 1} / (n + 1)`, read at `t = cos α`: the two endpoints are `cos (α ∓ γ)`, so the difference
-of the antiderivative is `2 sin ((n + 1) α) sin ((n + 1) γ)`. For `sin γ = 0` the integrand is
-constant along the chord, and the same value comes out. -/
+For $\sin \gamma \neq 0$ the proof substitutes $u = t \cos \gamma + s \sin \gamma$ and uses the
+antiderivative $T_{n+1}/(n + 1)$ at $t = \cos \alpha$: the two endpoints are
+$\cos(\alpha \mp \gamma)$, so the difference of the antiderivative is
+$2 \sin((n + 1)\alpha) \sin((n + 1)\gamma)$. For $\sin \gamma = 0$ the integrand is constant
+along the chord, and the same value results. -/
 theorem integral_eval_U_ridge_chord (n : ℕ) (γ : ℝ) {t : ℝ} (ht : |t| ≤ 1) :
     ∫ s in (-√(1 - t ^ 2))..√(1 - t ^ 2), (U ℝ (n : ℤ)).eval (t * Real.cos γ + s * Real.sin γ)
       = 2 / (n + 1) * (U ℝ (n : ℤ)).eval t * (U ℝ (n : ℤ)).eval (Real.cos γ) * √(1 - t ^ 2) := by

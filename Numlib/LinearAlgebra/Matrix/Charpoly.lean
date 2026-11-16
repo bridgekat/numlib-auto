@@ -15,33 +15,46 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 /-!
 # Symmetric spectra and the half-sum of two involutions
 
-Characteristic polynomials read off from traces of powers, and their application to the spectrum
-of the half-sum of two symmetric involutions of trace zero (Ammar–Gragg–Reichel; the spectral half
-of [golub2013matrix] §12.2.10, Fact 2).
+This file reads characteristic polynomials off the traces of matrix powers, and applies this to the
+spectrum of the half-sum of two symmetric involutions of trace zero. A Hermitian matrix $A$ whose
+odd powers have trace zero has a spectrum that is symmetric about $0$: the eigenvalues $\lambda_i$
+have vanishing odd power sums $\sum_i \lambda_i^{2j+1} = \operatorname{tr} A^{2j+1}$, so the
+multiset of the $-\lambda_i$ equals the multiset of the $\lambda_i$, and
+$\det(zI + A) = \det(zI - A)$.
+
+Let $A$ and $B$ be real symmetric matrices with $A^2 = B^2 = I$ and
+$\operatorname{tr} A = \operatorname{tr} B = 0$. Then every odd power of $A + B$ has trace zero. If
+the eigenvalues of $AB$ are the $m$ pairs $e^{\pm i \theta_k}$, then the eigenvalues of $(A + B)/2$
+are the $m$ pairs $\pm \cos(\theta_k / 2)$. This is a result of Ammar, Gragg and Reichel, and it is
+the spectral half of Fact 2 in §12.2.10 of [golub2013matrix].
 
 ## Main results
 
-* `Matrix.roots_charpoly_diagonal`, `Matrix.charpoly_unitary_conj`: the roots of the
-  characteristic polynomial of a diagonal matrix are its entries, and a unitary conjugation keeps
-  the characteristic polynomial — the two steps from a unitary diagonalization to a spectrum;
-  `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`, `Uᴴ A U = diag(λ)`, and
-  `Matrix.IsHermitian.eq_conj_diagonal`, `A = U diag(λ) Uᴴ`, for Mathlib's eigenvector unitary, and
-  the real form `Matrix.IsHermitian.transpose_eigenvectorUnitary_mul_mul`.
-* `Matrix.trace_add_pow_odd_eq_zero`: if `A² = B² = 1` and `tr A = tr B = 0`, the odd powers of
-  `A + B` are traceless.
+* `Matrix.roots_charpoly_diagonal`: the roots of the characteristic polynomial of a diagonal matrix
+  are its diagonal entries.
+* `Matrix.charpoly_unitary_conj`: a unitary conjugation $M \mapsto U M U^H$ keeps the characteristic
+  polynomial.
+* `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: $U^H A U = \operatorname{diag}(\lambda)$ for
+  the eigenvector unitary $U$ of a Hermitian matrix $A$.
+* `Matrix.IsHermitian.eq_conj_diagonal`: $A = U \operatorname{diag}(\lambda) U^H$ for the same $U$.
+* `Matrix.IsHermitian.transpose_eigenvectorUnitary_mul_mul`: the real form
+  $Q^T A Q = \operatorname{diag}(\lambda)$.
+* `Matrix.trace_add_pow_odd_eq_zero`: if $A^2 = B^2 = I$ and
+  $\operatorname{tr} A = \operatorname{tr} B = 0$, then $\operatorname{tr} (A + B)^{2j+1} = 0$.
 * `Fintype.map_neg_eq_of_sum_pow_odd`: over a field of characteristic zero, a finite family whose
-  odd power sums vanish is symmetric about `0` (as a multiset).
-* `Matrix.IsHermitian.trace_pow_eq_sum`, `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`: a
-  Hermitian matrix whose odd powers are traceless has `charpoly (-A) = charpoly A`.
-* `Matrix.card_eq_of_charpoly_eq_prod`: a characteristic polynomial that is a product of `m` monic
-  quadratics forces order `2m`.
-* `Matrix.charpoly_half_add_of_involutive`: if `A`, `B` are real symmetric involutions of trace
-  zero and the eigenvalues of `AB` are the pairs `e^{±iθ_k}`, then those of `(A + B)/2` are the
-  pairs `± cos(θ_k/2)`.
+  odd power sums vanish is symmetric about $0$, as a multiset.
+* `Matrix.IsHermitian.trace_pow_eq_sum`: $\operatorname{tr} A^k = \sum_i \lambda_i^k$ for a
+  Hermitian matrix $A$.
+* `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`: a Hermitian matrix whose odd powers have trace
+  zero satisfies $p_{-A} = p_A$.
+* `Matrix.card_eq_of_charpoly_eq_prod`: a matrix whose characteristic polynomial is a product of $m$
+  monic quadratics has order $2m$.
+* `Matrix.charpoly_half_add_of_involutive`: the eigenvalues of $(A + B)/2$ are
+  $\pm \cos(\theta_k / 2)$ when those of $AB$ are $e^{\pm i \theta_k}$.
 
-## References
+## Notation
 
-* [golub2013matrix] §12.2.10.
+* $p_M$: the characteristic polynomial $\det(XI - M)$ of a square matrix $M$, `Matrix.charpoly M`.
 -/
 
 open Finset Polynomial
@@ -50,7 +63,9 @@ namespace Matrix
 
 /-! ### Diagonal matrices and unitary conjugates -/
 
-/-- The roots of the characteristic polynomial of a diagonal matrix are its diagonal entries. -/
+/-- Let $R$ be a commutative ring without zero divisors, and let $d \in R^n$. The roots of the
+characteristic polynomial of the diagonal matrix $\operatorname{diag}(d)$, counted with
+multiplicity, are the entries $d_i$: the multiset of roots is the multiset of the $d_i$. -/
 theorem roots_charpoly_diagonal {R n : Type*} [CommRing R] [IsDomain R] [Fintype n]
     [DecidableEq n] (d : n → R) :
     (diagonal d).charpoly.roots = Multiset.map d Finset.univ.val := by
@@ -58,7 +73,8 @@ theorem roots_charpoly_diagonal {R n : Type*} [CommRing R] [IsDomain R] [Fintype
   · simp
   · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
 
-/-- The characteristic polynomial of a unitary conjugate `U M Uᴴ` is that of `M`. -/
+/-- Let $R$ be a commutative ring with a star operation, let $U \in R^{n \times n}$ be unitary, and
+let $M \in R^{n \times n}$. Then $U M U^H$ has the same characteristic polynomial as $M$. -/
 theorem charpoly_unitary_conj {R n : Type*} [CommRing R] [StarRing R] [Fintype n]
     [DecidableEq n] {U : Matrix n n R} (hU : U ∈ unitaryGroup n R) (M : Matrix n n R) :
     (U * M * star U).charpoly = M.charpoly := by
@@ -70,17 +86,27 @@ section Spectral
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The spectral decomposition of a Hermitian matrix**, unfolded: `Uᴴ A U = diag(λ)` for the
-eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary`
-without the algebra automorphism). -/
+/-- The **spectral decomposition of a Hermitian matrix**, in the form
+$U^H A U = \operatorname{diag}(\lambda)$. Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and
+let $A \in \mathbb{K}^{n \times n}$ be Hermitian, with the eigenvalues $\lambda_i$ and the
+eigenvector unitary $U$ of Mathlib. Then
+$$U^H A U = \operatorname{diag}(\lambda_1, \dots, \lambda_n).$$
+
+This is Mathlib's `Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary` without the
+algebra automorphism. The matrix $U$ is `Matrix.IsHermitian.eigenvectorUnitary`, and $\lambda$
+is `Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.star_eigenvectorUnitary_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     star (hA.eigenvectorUnitary : Matrix n n 𝕜) * A * (hA.eigenvectorUnitary : Matrix n n 𝕜) =
       diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
   simpa [Unitary.conjStarAlgAut_apply] using hA.conjStarAlgAut_star_eigenvectorUnitary
 
-/-- **The spectral decomposition of a Hermitian matrix**, unfolded the other way:
-`A = U diag(λ) Uᴴ` for the eigenvector unitary `U` (Mathlib's `Matrix.IsHermitian.spectral_theorem`
-without the algebra automorphism). -/
+/-- The **spectral decomposition of a Hermitian matrix**, in the form
+$A = U \operatorname{diag}(\lambda) U^H$. Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and
+let $A \in \mathbb{K}^{n \times n}$ be Hermitian, with the eigenvalues $\lambda_i$ and the
+eigenvector unitary $U$ of Mathlib. Then
+$$A = U \operatorname{diag}(\lambda_1, \dots, \lambda_n) U^H.$$
+
+This is Mathlib's `Matrix.IsHermitian.spectral_theorem` without the algebra automorphism. -/
 theorem IsHermitian.eq_conj_diagonal {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A = (hA.eigenvectorUnitary : Matrix n n 𝕜) * diagonal (fun i => ((hA.eigenvalues i : ℝ) : 𝕜))
       * (hA.eigenvectorUnitary : Matrix n n 𝕜)ᴴ := by
@@ -88,7 +114,10 @@ theorem IsHermitian.eq_conj_diagonal {A : Matrix n n 𝕜} (hA : A.IsHermitian) 
   rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose]
   rfl
 
-/-- The real form of `Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`: `Qᵀ A Q = diag(λ)`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, with the eigenvalues $\lambda_i$ and the
+orthogonal eigenvector matrix $Q$ of Mathlib (`Matrix.IsHermitian.eigenvectorUnitary`). Then
+$Q^T A Q = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$. This is the real form of
+`Matrix.IsHermitian.star_eigenvectorUnitary_mul_mul`. -/
 theorem IsHermitian.transpose_eigenvectorUnitary_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     (hA.eigenvectorUnitary : Matrix n n ℝ)ᵀ * A * (hA.eigenvectorUnitary : Matrix n n ℝ) =
       diagonal hA.eigenvalues := by
@@ -104,10 +133,11 @@ section Involution
 
 variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n] {A B : Matrix n n R}
 
-/-- The key step for `Matrix.trace_add_pow_odd_eq_zero`: with `Z = (A + B)²`, which commutes with
-`A` and `B`, and `D = AB − BA`, which anticommutes with `A` and commutes with `Z`,
-`tr (A Zʲ D²) = tr (D A Zʲ D) = −tr (A Zʲ D²)` vanishes; since `D² = Z² − 4Z`, the traces
-`tr (A Zʲ)` satisfy `t_{j+2} = 4 t_{j+1}`, and `t₀ = tr A`, `t₁ = 2 tr A + 2 tr B` vanish. -/
+/-- Let $R$ be a commutative ring of characteristic zero without zero divisors, and let
+$A, B \in R^{n \times n}$ with $A^2 = B^2 = I$ and
+$\operatorname{tr} A = \operatorname{tr} B = 0$. Then $\operatorname{tr}\bigl(A \, ((A +
+B)^2)^j\bigr) = 0$ for every $j \ge 0$; this is the main step for
+`Matrix.trace_add_pow_odd_eq_zero`. -/
 private theorem trace_mul_sq_pow_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A * A = 1)
     (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) (j : ℕ) :
     trace (A * ((A + B) * (A + B)) ^ j) = 0 := by
@@ -162,11 +192,16 @@ private theorem trace_mul_sq_pow_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A
     | succ j ih => exact ⟨ih.2, by rw [hrec, ih.2, smul_zero]⟩
   exact (h2 j).1
 
-/-- **Odd powers of a sum of two involutions of trace zero are traceless**: if `A² = B² = 1` and
-`tr A = tr B = 0` then `tr (A + B)^{2j+1} = 0`. Expanded, every odd word in `A` and `B` reduces
-cyclically to a single letter; the proof runs instead through `Z = (A + B)²`, which commutes with
-`A` and `B`, and the commutator `AB − BA`: the traces `tr (A Zʲ)` satisfy `t_{j+2} = 4 t_{j+1}`
-with `t₀ = t₁ = 0`. -/
+/-- Let $R$ be a commutative ring of characteristic zero without zero divisors, and let
+$A, B \in R^{n \times n}$ satisfy $A^2 = B^2 = I$ and
+$\operatorname{tr} A = \operatorname{tr} B = 0$. Then every odd power of $A + B$ has trace zero:
+$$\operatorname{tr} (A + B)^{2j+1} = 0 \quad \text{for every } j \ge 0.$$
+
+After expansion, every odd word in $A$ and $B$ reduces cyclically to a single letter. The proof
+uses instead $Z = (A + B)^2$, which commutes with $A$ and $B$, and the commutator $D = AB - BA$,
+which anticommutes with $A$ and commutes with $Z$. From $\operatorname{tr}(A Z^j D^2) =
+-\operatorname{tr}(A Z^j D^2)$ and $D^2 = Z^2 - 4Z$, the traces $t_j = \operatorname{tr}(A Z^j)$
+satisfy $t_{j+2} = 4 t_{j+1}$, and $t_0 = t_1 = 0$. -/
 theorem trace_add_pow_odd_eq_zero [NoZeroDivisors R] [CharZero R] (hA : A * A = 1)
     (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) (j : ℕ) :
     trace ((A + B) ^ (2 * j + 1)) = 0 := by
@@ -185,8 +220,12 @@ variable {ι K : Type*} [Fintype ι] [Field K]
 
 namespace Fintype
 
-/-- If the odd power sums of `μ` vanish, then every polynomial has the same sum over `μ` and over
-`-μ`: its odd part sums to zero on both. -/
+/-- Let $K$ be a field, and let $\mu_1, \dots, \mu_N \in K$ be a finite family with
+$\sum_i \mu_i^{2j+1} = 0$ for every $j \ge 0$. Then every polynomial $p \in K[X]$ has the same
+sum over the $-\mu_i$ as over the $\mu_i$:
+$$\sum_i p(-\mu_i) = \sum_i p(\mu_i).$$
+
+The odd part of $p$ sums to zero over both families. -/
 theorem sum_eval_neg_eq_of_sum_pow_odd {μ : ι → K} (h : ∀ j, ∑ i, μ i ^ (2 * j + 1) = 0)
     (p : K[X]) : ∑ i, p.eval (-μ i) = ∑ i, p.eval (μ i) := by
   simp only [eval_eq_sum_range]
@@ -197,8 +236,9 @@ theorem sum_eval_neg_eq_of_sum_pow_odd {μ : ι → K} (h : ∀ j, ∑ i, μ i ^
   · simp only [hk.neg_pow]
   · simp only [Odd.neg_pow ⟨j, rfl⟩, Finset.sum_neg_distrib, h j, neg_zero]
 
-/-- Summing a polynomial vanishing on `T` except at `v` over a family with values in `T` counts
-the members equal to `v`. -/
+/-- For a finite set $T \subseteq K$, a value $v$ and a family $\nu$ with values in $T$, the sum
+$\sum_i \prod_{w \in T \setminus \{v\}} (\nu_i - w)$ equals the number of indices $i$ with
+$\nu_i = v$, times $\prod_{w \in T \setminus \{v\}} (v - w)$. -/
 private theorem sum_eval_prod_erase [DecidableEq K] {T : Finset K} (v : K) {ν : ι → K}
     (hν : ∀ i, ν i ∈ T) :
     ∑ i, (∏ w ∈ T.erase v, (X - C w)).eval (ν i) =
@@ -212,10 +252,12 @@ private theorem sum_eval_prod_erase [DecidableEq K] {T : Finset K} (v : K) {ν :
   rw [Finset.sum_congr rfl fun i _ => h i, Finset.sum_ite, Finset.sum_const, Finset.sum_const_zero,
     add_zero]
 
-/-- **A family whose odd power sums vanish is symmetric**: over a field of characteristic zero,
-if `∑ μ_i^{2j+1} = 0` for every `j`, then the multiset of the `-μ_i` is that of the `μ_i`. Each
-multiplicity is read off by summing a polynomial that vanishes at every other value of `±μ`
-(`Fintype.sum_eval_neg_eq_of_sum_pow_odd`). -/
+/-- A **family whose odd power sums vanish is symmetric**. Let $K$ be a field of characteristic
+zero, and let $\mu_1, \dots, \mu_N \in K$ be a finite family with $\sum_i \mu_i^{2j+1} = 0$ for
+every $j \ge 0$. Then the multiset of the $-\mu_i$ equals the multiset of the $\mu_i$.
+
+The proof reads off each multiplicity: it sums a polynomial that vanishes at every other value
+of $\pm\mu$, and uses `Fintype.sum_eval_neg_eq_of_sum_pow_odd`. -/
 theorem map_neg_eq_of_sum_pow_odd [CharZero K] {μ : ι → K}
     (h : ∀ j, ∑ i, μ i ^ (2 * j + 1) = 0) :
     univ.val.map (fun i => -μ i) = univ.val.map μ := by
@@ -242,7 +284,11 @@ namespace IsHermitian
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
 
-/-- The trace of a power of a Hermitian matrix is the power sum of its eigenvalues. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{n \times n}$ be
+Hermitian with the eigenvalues $\lambda_1, \dots, \lambda_n$. Then for every $k \ge 0$,
+$$\operatorname{tr} A^k = \sum_i \lambda_i^k.$$
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`, cast from $\mathbb{R}$ to $\mathbb{K}$. -/
 theorem trace_pow_eq_sum (hA : A.IsHermitian) (k : ℕ) :
     trace (A ^ k) = ∑ i, (hA.eigenvalues i : 𝕜) ^ k := by
   conv_lhs => rw [hA.spectral_theorem]
@@ -250,10 +296,13 @@ theorem trace_pow_eq_sum (hA : A.IsHermitian) (k : ℕ) :
     Unitary.coe_star_mul_self, Matrix.one_mul, diagonal_pow, trace_diagonal]
   simp
 
-/-- **A Hermitian matrix whose odd powers are traceless has a spectrum symmetric about `0`**:
-`charpoly (-A) = charpoly A`. The odd power sums of the eigenvalues vanish
-(`Matrix.IsHermitian.trace_pow_eq_sum`), so the eigenvalue multiset is symmetric
-(`Fintype.map_neg_eq_of_sum_pow_odd`). -/
+/-- A **Hermitian matrix whose odd powers have trace zero has a spectrum symmetric about $0$**. Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{n \times n}$ be
+Hermitian with $\operatorname{tr} A^{2j+1} = 0$ for every $j \ge 0$. Then $-A$ and $A$ have the
+same characteristic polynomial.
+
+The odd power sums of the eigenvalues vanish by `Matrix.IsHermitian.trace_pow_eq_sum`, so the
+multiset of eigenvalues is symmetric by `Fintype.map_neg_eq_of_sum_pow_odd`. -/
 theorem charpoly_neg_of_trace_pow_odd (hA : A.IsHermitian)
     (h : ∀ j, trace (A ^ (2 * j + 1)) = 0) : (-A).charpoly = A.charpoly := by
   have hs : univ.val.map (fun i => -hA.eigenvalues i) = univ.val.map hA.eigenvalues :=
@@ -280,9 +329,11 @@ namespace Matrix
 section HalfSum
 
 open Complex in
-/-- The factor identity behind `Matrix.charpoly_half_add_of_involutive`: if `r₁ r₂ = 1` and
-`r₁ + r₂ = 4z² − 2`, then with `a = e^{iθ}`, `b = e^{−iθ}` (so `ab = 1`,
-`a + b = 4 cos²(θ/2) − 2`), `(r₁ − a)(r₁ − b)(r₂ − a)(r₂ − b) = 16 (z² − cos²(θ/2))²`. -/
+/-- Let $\theta \in \mathbb{R}$ and $z, r_1, r_2 \in \mathbb{C}$ with $r_1 r_2 = 1$ and
+$r_1 + r_2 = 4z^2 - 2$. Then, with $a = e^{i\theta}$ and $b = e^{-i\theta}$,
+$$(r_1 - a)(r_1 - b)(r_2 - a)(r_2 - b) = 16 \bigl((z - \cos(\theta/2))(z +
+  \cos(\theta/2))\bigr)^2;$$
+this factor identity is used for `Matrix.charpoly_half_add_of_involutive`. -/
 private theorem prod_sub_exp_mul_prod_sub_exp (θ : ℝ) {z r₁ r₂ : ℂ} (h12 : r₁ * r₂ = 1)
     (hs : r₁ + r₂ = 4 * z ^ 2 - 2) :
     (r₁ - exp (θ * I)) * (r₁ - exp (-θ * I)) * ((r₂ - exp (θ * I)) * (r₂ - exp (-θ * I))) =
@@ -309,8 +360,10 @@ private theorem prod_sub_exp_mul_prod_sub_exp (θ : ℝ) {z r₁ r₂ : ℂ} (h1
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- A matrix whose characteristic polynomial is a product of `m` monic quadratics has order
-`2m`. -/
+/-- Let $K$ be a field, let $M \in K^{n \times n}$, and let $a, b \in K^m$. If the characteristic
+polynomial of $M$ is
+$$p_M = \prod_{k=1}^{m} (X - a_k)(X - b_k),$$
+then $M$ has order $n = 2m$. -/
 theorem card_eq_of_charpoly_eq_prod {K : Type*} [Field K] {M : Matrix n n K} {m : ℕ}
     {a b : Fin m → K} (h : M.charpoly = ∏ k, (X - C (a k)) * (X - C (b k))) :
     Fintype.card n = 2 * m := by
@@ -322,17 +375,25 @@ theorem card_eq_of_charpoly_eq_prod {K : Type*} [Field K] {M : Matrix n n K} {m 
   omega
 
 open Complex in
-/-- **The spectrum of the half-sum of two symmetric involutions of trace zero**
-(Ammar–Gragg–Reichel; [golub2013matrix] §12.2.10, Fact 2): if `A`, `B` are real symmetric with
-`A² = B² = 1` and `tr A = tr B = 0`, and the eigenvalues of `AB` are the `m` pairs `e^{±iθ_k}`,
-then the eigenvalues of `(A + B)/2` are the `m` pairs `± cos(θ_k/2)`.
+/-- The **spectrum of the half-sum of two symmetric involutions of trace zero**, a result of Ammar,
+Gragg and Reichel. Let $A, B \in \mathbb{R}^{n \times n}$ be symmetric with $A^2 = B^2 = I$ and
+$\operatorname{tr} A = \operatorname{tr} B = 0$. Let $\theta_1, \dots, \theta_m \in \mathbb{R}$,
+and assume that the characteristic polynomial of $AB$, as a complex matrix, is
+$$p_{AB} = \prod_{k=1}^{m} (X - e^{i\theta_k})(X - e^{-i\theta_k}).$$
+Then the characteristic polynomial of $C = \tfrac{1}{2}(A + B)$ is
+$$p_C = \prod_{k=1}^{m} \bigl(X - \cos(\theta_k/2)\bigr)\bigl(X + \cos(\theta_k/2)\bigr).$$
+That is, if the eigenvalues of $AB$ are the $m$ pairs $e^{\pm i\theta_k}$, then the eigenvalues
+of $C$ are the $m$ pairs $\pm\cos(\theta_k/2)$. This is the spectral half of Fact 2 in §12.2.10
+of [golub2013matrix].
 
-The spectrum of `C = (A + B)/2` is symmetric about `0`: its odd powers are traceless
-(`Matrix.trace_add_pow_odd_eq_zero`, `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`), so
-`p_C(z)² = p_C(z) p_{−C}(z) = det (z² − C²)`. For `r₁ r₂ = 1`, `r₁ + r₂ = 4z² − 2`,
-`4 (z² − C²) AB = −(r₁ − AB)(r₂ − AB)`, which gives `det (z² − C²)` from the characteristic
-polynomial of `AB` at `r₁`, `r₂` (`det AB = 1`), and so `p_C² = ∏ (X² − cos²(θ_k/2))²`; both being
-monic, `p_C = ∏ (X² − cos²(θ_k/2))`. -/
+The spectrum of $C$ is symmetric about $0$, because its odd powers have trace zero
+(`Matrix.trace_add_pow_odd_eq_zero`, `Matrix.IsHermitian.charpoly_neg_of_trace_pow_odd`). Hence
+$p_C(z)^2 = p_C(z) p_{-C}(z) = \det(z^2 I - C^2)$. For $r_1 r_2 = 1$ and $r_1 + r_2 = 4z^2 - 2$,
+the identity $4 (z^2 I - C^2) AB = -(r_1 I - AB)(r_2 I - AB)$ and $\det AB = 1$ give
+$\det(z^2 I - C^2)$ from $p_{AB}(r_1)$ and $p_{AB}(r_2)$. This gives
+$p_C^2 = \prod_k (X^2 - \cos^2(\theta_k/2))^2$, and since both polynomials are monic,
+$p_C = \prod_k (X^2 - \cos^2(\theta_k/2))$. The complex matrix $AB$ is
+`(A * B).map (algebraMap ℝ ℂ)`. -/
 theorem charpoly_half_add_of_involutive {A B : Matrix n n ℝ} (hAs : A.IsSymm) (hBs : B.IsSymm)
     (hA : A * A = 1) (hB : B * B = 1) (htA : trace A = 0) (htB : trace B = 0) {m : ℕ}
     (θ : Fin m → ℝ)

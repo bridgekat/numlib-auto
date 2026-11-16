@@ -11,28 +11,34 @@ import Numlib.Analysis.Calculus.SegmentAverage
 /-!
 # The Hermite–Genocchi bound for divided differences
 
-For `f` smooth on a convex set of `𝕜 = ℝ` or `ℂ`, the divided difference of `f` at `r + 1` nodes of
-the set, repeated or not, is bounded by `M / r!`, where `M` bounds `‖f⁽ʳ⁾‖` on the set
-([golub2013matrix] (9.2.1)). Over `ℝ` this is also a consequence of the mean value form
-`f[x₀, …, x_r] = f⁽ʳ⁾(ξ)/r!`; over `ℂ` there is no mean value theorem, and the bound comes from
-the Hermite–Genocchi formula `f[x₀, …, x_r] = ∫_{Σ_r} f⁽ʳ⁾(∑ tᵢ xᵢ) dt` over the standard simplex,
-whose volume is `1/r!`.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $f$ be smooth on a convex set of
+$\mathbb{K}$. The divided difference of $f$ at $r + 1$ nodes of the set, repeated or not, satisfies
+$\|f[x_0, \dots, x_r]\| \le M / r!$, where $M$ bounds $\|f^{(r)}\|$ on the set. This is (9.2.1) of
+[golub2013matrix]. Over $\mathbb{R}$ the bound also follows from the mean value form
+$f[x_0, \dots, x_r] = f^{(r)}(\xi)/r!$. Over $\mathbb{C}$ there is no mean value theorem, and the
+bound comes from the Hermite–Genocchi formula
+$$f[x_0, \dots, x_r] = \int_{\Sigma_r} f^{(r)}\Big(\sum_i t_i x_i\Big) \, dt$$
+over the standard simplex $\Sigma_r$, whose volume is $1/r!$.
 
 ## Main results
 
-* `Hermite.norm_divDiff_le_of_contDiffOn`: the bound for `f` smooth on an open convex set `U`,
-  with `M` bounding `‖f⁽ʳ⁾‖` on a convex `Ω ⊆ U` holding the nodes.
-* `Hermite.norm_divDiff_le`: the bound for `f` analytic on a neighbourhood of a convex set.
+* `Hermite.norm_divDiff_le_of_contDiffOn`: the bound for $f$ smooth on an open convex set $U$, with
+  $M$ a bound of $\|f^{(r)}\|$ on a convex set $\Omega \subseteq U$ that contains the nodes.
+* `Hermite.norm_divDiff_le`: the bound for $f$ analytic on a neighbourhood of a convex set.
+
+## Proof outline
+
+The simplex integral is not used. The proof is by induction on the number of nodes. Removing a node
+divides by $z - a$ (`Hermite.divDiff_cons_eq_of_eventuallyEq`), which gives $f[a, s] = g[s]$ for the
+segment average $g(z) = \int_0^1 f'(a + t(z - a)) \, dt$, and $\|g^{(r-1)}\| \le M / r$ on $\Omega$.
+This is the Hermite–Genocchi formula, unrolled one simplex coordinate at a time.
 
 ## Implementation notes
 
-The simplex integral is never written down. The proof is by induction on the number of nodes:
-removing a node divides by `z - a` (`Hermite.divDiff_cons_eq_of_eventuallyEq` of
-`Numlib/Analysis/Calculus/HermiteInterpolation`), which gives `f[a, s] = g[s]` for the segment
-average `g z = ∫₀¹ f'(a + t(z - a)) dt` of `Numlib/Analysis/Calculus/SegmentAverage`, and
-`‖g⁽ʳ⁻¹⁾‖ ≤ M / r` on `Ω`; this is the Hermite–Genocchi formula unrolled one simplex coordinate
-at a time. The segment average needs `U` convex; an analytic `f` is smooth on an open convex
-neighbourhood of the (compact) convex hull of the nodes, a thickening of it.
+* The segment average is taken from `Numlib.Analysis.Calculus.SegmentAverage`, and the node removal
+  from `Numlib.Analysis.Calculus.HermiteInterpolation`.
+* The segment average needs $U$ convex. An analytic $f$ is smooth on an open convex neighbourhood of
+  the compact convex hull of the nodes, namely a thickening of that hull.
 -/
 
 open Set Filter Topology
@@ -45,8 +51,15 @@ namespace Hermite
 
 variable {𝕜 : Type*} [RCLike 𝕜] [DecidableEq 𝕜]
 
-/-- **The Hermite–Genocchi bound**, for a function smooth on an open convex set `U`: at `r + 1`
-nodes in a convex `Ω ⊆ U`, `‖f[s]‖ ≤ M / r!` when `‖f⁽ʳ⁾‖ ≤ M` on `Ω`. -/
+/-- The **Hermite–Genocchi bound** for a smooth function. Let $\mathbb{K}$ be $\mathbb{R}$ or
+$\mathbb{C}$, let $U \subseteq \mathbb{K}$ be open and convex, and let $\Omega \subseteq U$ be
+convex. Let $f : \mathbb{K} \to \mathbb{K}$ be $C^\infty$ on $U$, and let $M \in \mathbb{R}$
+satisfy $\|f^{(r)}(z)\| \le M$ for all $z \in \Omega$. Then for every multiset $s$ of $r + 1$
+nodes in $\Omega$, repeated or not,
+$$\|f[s]\| \le \frac{M}{r!}.$$
+
+Convexity is convexity over $\mathbb{R}$. The divided difference is `Hermite.divDiff`, and
+$f^{(r)}$ is `iteratedDeriv r f`. -/
 theorem norm_divDiff_le_of_contDiffOn {U Ω : Set 𝕜} (hU : IsOpen U) (hUc : Convex ℝ U)
     (hΩ : Convex ℝ Ω) (hΩU : Ω ⊆ U) {f : 𝕜 → 𝕜} (hf : ContDiffOn 𝕜 ∞ f U) {r : ℕ}
     {s : Multiset 𝕜} (hs : Multiset.card s = r + 1) (hsΩ : ∀ x ∈ s, x ∈ Ω) {M : ℝ}
@@ -92,9 +105,16 @@ theorem norm_divDiff_le_of_contDiffOn {U Ω : Set 𝕜} (hU : IsOpen U) (hUc : C
     push_cast
     ring
 
-/-- **The Hermite–Genocchi bound** ([golub2013matrix] (9.2.1)): if `f` is analytic on a
-neighbourhood of a convex set `Ω` and `‖f⁽ʳ⁾‖ ≤ M` on `Ω`, then the divided difference of `f` at
-`r + 1` nodes of `Ω`, repeated or not, satisfies `‖f[s]‖ ≤ M / r!`. -/
+/-- The **Hermite–Genocchi bound** for an analytic function, (9.2.1) of [golub2013matrix]. Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $\Omega \subseteq \mathbb{K}$ be convex, and
+let $f : \mathbb{K} \to \mathbb{K}$ be analytic on a neighbourhood of each point of $\Omega$. If
+$M \in \mathbb{R}$ satisfies $\|f^{(r)}(z)\| \le M$ for all $z \in \Omega$, then for every
+multiset $s$ of $r + 1$ nodes in $\Omega$, repeated or not,
+$$\|f[s]\| \le \frac{M}{r!}.$$
+
+Convexity is convexity over $\mathbb{R}$. The proof applies
+`Hermite.norm_divDiff_le_of_contDiffOn` on an open convex thickening of the convex hull of the
+nodes. -/
 theorem norm_divDiff_le {Ω : Set 𝕜} (hΩ : Convex ℝ Ω) {f : 𝕜 → 𝕜} (hf : AnalyticOnNhd 𝕜 f Ω)
     {r : ℕ} {s : Multiset 𝕜} (hs : Multiset.card s = r + 1) (hsΩ : ∀ x ∈ s, x ∈ Ω) {M : ℝ}
     (hM : ∀ z ∈ Ω, ‖iteratedDeriv r f z‖ ≤ M) :

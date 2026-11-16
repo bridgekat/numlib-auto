@@ -13,67 +13,92 @@ import Numlib.LinearAlgebra.Sparse.Pattern
 /-!
 # Diagonally dominant matrices
 
-Strict (row / column) diagonal dominance and irreducible diagonal dominance, and the
-nonsingularity theorems they carry ([saad2003iterative] Definition 4.5, Theorem 4.7 and
-Corollary 4.8; [kress1998numerical] (4.4)–(4.5) and Theorem 4.7; [quarteroni2000numerical]
-Definition 1.24).  This is the matrix-analytic layer only: nothing here mentions a splitting or an
-iteration.  The convergence of the Jacobi and Gauss–Seidel iterations for these matrices, the
-explicit `‖·‖_∞` contraction constants and the Gershgorin pencil arguments are in
-`Numlib/Stationary/DiagDominant.lean`, which builds on this module and on
-`Numlib/Stationary/Splitting.lean`.  The split lets the foundation modules —
-`Numlib/LinearAlgebra/Matrix/MMatrix.lean`, the LU factorization — name the dominance predicates
-without importing the theory of stationary iterations.
+Let $A = (a_{ij})$ be a square matrix over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The matrix $A$
+is **strictly diagonally dominant by rows** if $\sum_{j \ne i} |a_{ij}| < |a_{ii}|$ for every row
+$i$, and **weakly diagonally dominant by rows** if $\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$ for every
+row $i$; the column forms sum over $i \ne j$ in each column $j$. The matrix $A$ is **irreducibly
+diagonally dominant** if it is irreducible, weakly dominant in every row, and strictly dominant in
+at least one row. This module proves the nonsingularity theorems for these matrices, following
+[saad2003iterative] Definition 4.5, Theorem 4.7 and Corollary 4.8, [kress1998numerical] (4.4)–(4.5)
+and Theorem 4.7, and [quarteroni2000numerical] Definition 1.24.
+
+Besides nonsingularity, the module proves that a Hermitian strictly dominant matrix with positive
+diagonal is positive definite, that dominance with a margin $\delta$ gives $\delta \|x\| \le \|Ax\|$
+in the $1$-norm and the $\infty$-norm (Varah's bound), and that one step of Gaussian elimination
+preserves weak dominance.
 
 ## Main definitions
 
-* `Matrix.IsStrictDiagDominant`, `Matrix.IsStrictColDiagDominant`: `∑_{j ≠ i} |a_ij| < |a_ii|` for
-  every row `i`, and the same by columns.
-* `Matrix.IsDiagDominant`, `Matrix.IsColDiagDominant`: the weak forms `∑_{j ≠ i} |a_ij| ≤ |a_ii|`
-  of [quarteroni2000numerical] Definition 1.24, which the strict and the irreducible forms both
-  imply; `Matrix.IsAbsDiagDominant` is the weak row form with the absolute value of a
-  lattice-ordered group in place of the norm, for the ordered fields of the floating-point
-  analyses.
-* `Matrix.IsIrreduciblyDiagDominant`, `Matrix.IsIrreduciblyColDiagDominant`: [saad2003iterative]
-  Definition 4.5, the irreducible relaxation — weak dominance in every row, strict dominance in at
-  least one, and a strongly connected nonzero pattern (`Matrix.IsPatternIrreducible` of
-  `Numlib/LinearAlgebra/Sparse/Pattern.lean`).
+* `Matrix.IsStrictDiagDominant`, `Matrix.IsStrictColDiagDominant`: strict diagonal dominance by rows
+  and by columns.
+* `Matrix.IsDiagDominant`, `Matrix.IsColDiagDominant`: weak diagonal dominance by rows and by
+  columns, [quarteroni2000numerical] Definition 1.24; the strict and the irreducible forms both
+  imply it.
+* `Matrix.IsAbsDiagDominant`: weak row dominance with the absolute value of a lattice-ordered group
+  in place of the norm, for the ordered fields of floating-point analyses.
+* `Matrix.IsIrreduciblyDiagDominant`, `Matrix.IsIrreduciblyColDiagDominant`: irreducible diagonal
+  dominance by rows and by columns, [saad2003iterative] Definition 4.5.
 
 ## Main results
 
-* `Matrix.IsStrictDiagDominant.isUnit`, `Matrix.IsStrictColDiagDominant.isUnit`: strictly
-  diagonally dominant matrices are nonsingular (Mathlib's `Matrix.det_ne_zero_of_sum_row_lt_diag`,
-  the Gershgorin form), with `Matrix.IsStrictDiagDominant.isUnit_diagPart` for the diagonal part.
-* `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`: the engine of the irreducible
-  theory.  At a row where the modulus of a kernel vector is maximal, weak dominance is forced to be
-  an equality, and the maximum then propagates along the adjacency graph to every row.
-  `Matrix.IsPatternIrreducible.isUnit_of_dominant` and `Matrix.IsIrreduciblyDiagDominant.isUnit`
-  are [saad2003iterative] Corollary 4.8, and
-  `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` is his Theorem 4.7 — an eigenvalue of
-  an irreducible matrix on the boundary of the union of the Gershgorin discs lies on the boundary
-  of every disc.  The engine is stated for a matrix `B` dominated off the diagonal by an
-  irreducible `A`, because the convergence proofs apply it to a *pencil* (the matrix with its
-  diagonal, or its lower triangle, scaled by an eigenvalue) rather than to the matrix itself.
+* `Matrix.IsStrictDiagDominant.isUnit`, `Matrix.IsStrictColDiagDominant.isUnit`: a strictly
+  diagonally dominant matrix is nonsingular.
+* `Matrix.IsStrictDiagDominant.isUnit_diagPart`: the diagonal part of a strictly row dominant matrix
+  is nonsingular.
+* `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`: if $B$ is weakly row dominant, has a
+  nonzero entry wherever an irreducible $A$ has one off the diagonal, and has a nonzero kernel
+  vector, then every row of $B$ satisfies $\sum_{j \ne i} |b_{ij}| = |b_{ii}|$.
+* `Matrix.IsPatternIrreducible.isUnit_of_dominant`, `Matrix.IsIrreduciblyDiagDominant.isUnit`: an
+  irreducibly diagonally dominant matrix is nonsingular, [saad2003iterative] Corollary 4.8.
+* `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier`: an eigenvalue of an irreducible matrix
+  on the boundary of the union of the Gershgorin discs lies on the boundary of every disc,
+  [saad2003iterative] Theorem 4.7.
 * `Matrix.IsStrictDiagDominant.posDef`: a Hermitian strictly row dominant matrix with positive
-  diagonal is positive definite ([quarteroni2000numerical] §1.12), by Gershgorin's theorem.
-* `Matrix.mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin` and
-  `Matrix.mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin`: dominance with a margin `δ`
-  (`δ ≤ |a_jj| - ∑_{i ≠ j} |a_ij|` for every column, resp. row, a hypothesis on `A` and `δ` rather
-  than a dominance predicate) bounds `A x` from below, `δ ‖x‖₁ ≤ ‖A x‖₁` for columns and
-  `δ ‖x‖_∞ ≤ ‖A x‖_∞` for rows, which is `‖A⁻¹‖ ≤ 1 / δ` in the corresponding induced norm
-  ([golub2013matrix] Theorem 4.1.2 and its row twin, Varah's bound).
+  diagonal is positive definite ([quarteroni2000numerical] §1.12).
+* `Matrix.mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin`,
+  `Matrix.mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin`: dominance with a margin $\delta$
+  by columns gives $\delta \|x\|_1 \le \|Ax\|_1$, and by rows gives
+  $\delta \|x\|_\infty \le \|Ax\|_\infty$; hence $\|A^{-1}\| \le 1/\delta$ in the induced norm
+  ([golub2013matrix] Theorem 4.1.2 and its row form).
 * `Matrix.IsColDiagDominant.schurComplementSingle`, `Matrix.IsDiagDominant.schurComplementSingle`:
-  one step of Gaussian elimination (`Matrix.schurComplementSingle` of
-  `Numlib/LinearAlgebra/Matrix/SchurComplement.lean`) preserves weak column and weak row dominance
-  ([higham2002accuracy] Theorem 13.8 with `1 × 1` blocks; Wilkinson), and a nonsingular weakly
-  dominant matrix has a nowhere-zero diagonal (`Matrix.IsDiagDominant.diag_ne_zero_of_isUnit`).
-  These are the two facts behind the existence of the LU factorization of a nonsingular
-  diagonally dominant matrix ([quarteroni2000numerical] Property 3.2, [higham2002accuracy]
-  Theorem 9.9) in `Numlib/LinearAlgebra/Matrix/LU.lean`.
+  one step of Gaussian elimination preserves weak column and weak row dominance
+  ([higham2002accuracy] Theorem 13.8 with $1 \times 1$ blocks).
+* `Matrix.IsDiagDominant.diag_ne_zero_of_isUnit`: a nonsingular weakly row dominant matrix has no
+  zero on its diagonal.
 * `Matrix.isStrictDiagDominant_complexify`, `Matrix.isIrreduciblyDiagDominant_complexify`,
-  `Matrix.isPatternIrreducible_complexify`: complexification changes no entrywise absolute value,
-  so it preserves all three notions.  The last is here, rather than in
-  `Numlib/LinearAlgebra/Sparse/Pattern.lean` or `Numlib/LinearAlgebra/Matrix/Complexify.lean`,
-  because this is the first module that imports both.
+  `Matrix.isPatternIrreducible_complexify`: the complexification of a real matrix keeps all three
+  properties.
+
+## Proof outline
+
+The irreducible theory rests on one argument. Let $Bx = 0$ with $x \ne 0$, and let $i$ be a row
+where $|x_i|$ is maximal. Then weak dominance in row $i$ must hold with equality, and
+$|x_j| = |x_i|$ at every $j$ with $b_{ij} \ne 0$. Along the strongly connected graph of $A$, the
+maximum, and with it the equality, spreads to every row. A strictly dominant row then excludes a
+kernel vector, and a boundary point of the Gershgorin discs gives such a $B = \mu I - A$.
+
+## Implementation notes
+
+* This is the matrix-analytic layer only: nothing here mentions a splitting or an iteration. The
+  convergence of the Jacobi and Gauss–Seidel iterations for these matrices, the explicit
+  $\|\cdot\|_\infty$ contraction constants and the Gershgorin arguments for pencils are in
+  `Numlib.Stationary.DiagDominant`, which builds on this module and on
+  `Numlib.Stationary.Splitting`. With this split, `Numlib.LinearAlgebra.Matrix.MMatrix` and the LU
+  factorization can name the dominance predicates without importing the theory of stationary
+  iterations.
+* The entries are measured with the norm of an `RCLike` field, which is the absolute value or the
+  modulus. Irreducibility is `Matrix.IsPatternIrreducible` of `Numlib.LinearAlgebra.Sparse.Pattern`,
+  the strong connectivity of the graph of nonzero entries.
+* The irreducible results are stated for a matrix $B$ dominated off the diagonal by an irreducible
+  $A$, because the convergence proofs apply them to a pencil (the matrix with its diagonal, or its
+  lower triangle, scaled by an eigenvalue) and not to the matrix itself.
+* The margin results take the hypothesis $\delta \le |a_{jj}| - \sum_{i \ne j} |a_{ij}|$ directly,
+  not a dominance predicate.
+* The two Schur complement results are the two facts behind the existence of the LU factorization of
+  a nonsingular diagonally dominant matrix ([quarteroni2000numerical] Property 3.2,
+  [higham2002accuracy] Theorem 9.9) in `Numlib.LinearAlgebra.Matrix.LU`.
+* `Matrix.isPatternIrreducible_complexify` is here, and not in `Numlib.LinearAlgebra.Sparse.Pattern`
+  or `Numlib.LinearAlgebra.Matrix.Complexify`, because this is the first module that imports both.
 -/
 
 open scoped ComplexOrder
@@ -86,8 +111,8 @@ section Spectrum
 
 variable {K : Type*} [Field K]
 
-/-- A point of the spectrum of a matrix is an eigenvalue: it comes with a nonzero vector in the
-kernel of the resolvent. -/
+/-- Let $M$ be a square matrix over a field $K$. Every point $\mu$ of the spectrum of $M$ is an
+eigenvalue: there is a vector $x \ne 0$ with $(\mu I - M) x = 0$. -/
 theorem exists_mulVec_eq_zero_of_mem_spectrum {M : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K M) : ∃ x ≠ 0, (μ • (1 : Matrix n n K) - M) *ᵥ x = 0 := by
   rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
@@ -100,40 +125,53 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 
 section Strict
 
-/-- Row strict diagonal dominance: `∑_{j ≠ i} |a_ij| < |a_ii|` for every row `i`. -/
+/-- A square matrix $A$ over $\mathbb{K}$ is **strictly diagonally dominant by rows** if $$\sum_{j
+\ne i} |a_{ij}| < |a_{ii}| \quad \text{for every row } i.$$
+-/
 def IsStrictDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖
 
-/-- Column strict diagonal dominance: `∑_{i ≠ j} |a_ij| < |a_jj|` for every column `j`. -/
+/-- A square matrix $A$ over $\mathbb{K}$ is **strictly diagonally dominant by columns** if
+$$\sum_{i \ne j} |a_{ij}| < |a_{jj}| \quad \text{for every column } j.$$
+-/
 def IsStrictColDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ < ‖A j j‖
 
-/-- Column dominance of `A` is row dominance of `Aᵀ`; true by definition, and the bridge along which
-the column-dominance criterion for Jacobi is deduced from the row one. -/
+/-- A square matrix $A$ is strictly diagonally dominant by columns if and only if $A^T$ is strictly
+diagonally dominant by rows.
+
+This holds by definition. Along it, the column criterion for the Jacobi iteration follows from
+the row criterion. -/
 theorem IsStrictColDiagDominant.transpose_iff (A : Matrix n n 𝕜) :
     A.transpose.IsStrictDiagDominant ↔ A.IsStrictColDiagDominant := Iff.rfl
 
-/-- A strictly row diagonally dominant matrix has no zero on its diagonal: `|a_ii|` strictly exceeds
-a sum of norms, hence is positive. -/
+/-- If $A$ is strictly diagonally dominant by rows, then $a_{ii} \ne 0$ for every $i$, since
+$|a_{ii}|$ is greater than a sum of nonnegative numbers. -/
 theorem IsStrictDiagDominant.diag_ne_zero {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) (i : n) :
     A i i ≠ 0 :=
   norm_pos_iff.mp (lt_of_le_of_lt (Finset.sum_nonneg fun _ _ => norm_nonneg _) (hA i))
 
-/-- The diagonal part of a strictly row diagonally dominant matrix is invertible, so the Jacobi,
-Gauss–Seidel and SOR splittings of such a matrix (`Numlib/Stationary/Splitting.lean`)
-are all defined; this is the hypothesis every convergence statement about them carries. -/
+/-- If $A$ is strictly diagonally dominant by rows, then its diagonal part
+$\operatorname{diag}(a_{11}, \dots, a_{nn})$ is nonsingular.
+
+So the Jacobi, Gauss–Seidel and SOR splittings of $A$ (`Numlib.Stationary.Splitting`) are
+defined. Every convergence statement about them carries this hypothesis. -/
 theorem IsStrictDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
     IsUnit (diagPart A) :=
   (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
 
-/-- Strictly diagonally dominant matrices are invertible ([saad2003iterative], Theorem 4.6; also
-[kress1998numerical]).  Mathlib: `Matrix.det_ne_zero_of_sum_row_lt_diag`. -/
+/-- A square matrix $A$ over $\mathbb{K}$ that is strictly diagonally dominant by rows is
+nonsingular. This is Theorem 4.6 of [saad2003iterative]; see also [kress1998numerical].
+
+The proof is Mathlib's `Matrix.det_ne_zero_of_sum_row_lt_diag`. -/
 theorem IsStrictDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
     IsUnit A :=
   (isUnit_iff_isUnit_det A).mpr (isUnit_iff_ne_zero.mpr (det_ne_zero_of_sum_row_lt_diag hA))
 
-/-- Strictly column diagonally dominant matrices are invertible: the transpose is strictly row
-dominant, and a matrix and its transpose have the same determinant. -/
+/-- A square matrix $A$ over $\mathbb{K}$ that is strictly diagonally dominant by columns is
+nonsingular.
+
+The transpose of $A$ is strictly dominant by rows, and $\det A^T = \det A$. -/
 theorem IsStrictColDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsStrictColDiagDominant) :
     IsUnit A := by
   have h := ((IsStrictColDiagDominant.transpose_iff A).mpr hA).isUnit
@@ -143,29 +181,36 @@ end Strict
 
 section Irreducible
 
-/-- [saad2003iterative] *irreducibly diagonally dominant* matrices (Definition 4.5): irreducible,
-weakly row diagonally dominant, and strictly dominant in at least one row.  This is the hypothesis
-under which the Gershgorin argument still gives nonsingularity and convergence of Jacobi and
-Gauss–Seidel, with strict dominance in a single row instead of in all of them. -/
+/-- A square matrix $A$ over $\mathbb{K}$ is **irreducibly diagonally dominant** (by rows) if it is
+irreducible, $\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$ for every row $i$, and
+$\sum_{j \ne i} |a_{ij}| < |a_{ii}|$ for at least one row $i$. This is Definition 4.5 of
+[saad2003iterative].
+
+Under this hypothesis the Gershgorin argument still gives nonsingularity, and the Jacobi and
+Gauss–Seidel iterations still converge, with strict dominance in one row instead of all rows.
+Irreducibility is `Matrix.IsPatternIrreducible`: the graph of the nonzero entries is strongly
+connected. -/
 structure IsIrreduciblyDiagDominant (A : Matrix n n 𝕜) : Prop where
-  /-- The adjacency graph of the nonzero pattern is strongly connected. -/
+  /-- The graph of the nonzero entries of $A$ is strongly connected. -/
   irreducible : A.IsPatternIrreducible
-  /-- Every row is weakly diagonally dominant. -/
+  /-- Every row satisfies $\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$. -/
   dominant : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖
-  /-- At least one row is strictly diagonally dominant. -/
+  /-- At least one row satisfies $\sum_{j \ne i} |a_{ij}| < |a_{ii}|$. -/
   exists_strict : ∃ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖
 
-/-- The column form of [saad2003iterative] Definition 4.5: `A` is irreducibly diagonally dominant by
-columns when its transpose is by rows. -/
+/-- A square matrix $A$ is **irreducibly diagonally dominant by columns** if $A^T$ is irreducibly
+diagonally dominant by rows. This is the column form of Definition 4.5 of [saad2003iterative]. -/
 def IsIrreduciblyColDiagDominant (A : Matrix n n 𝕜) : Prop := Aᵀ.IsIrreduciblyDiagDominant
 
-/-- **[saad2003iterative] Theorem 4.7**, in the form its applications use.  Let `A` be irreducible
-and let `B` have a nonzero entry wherever `A` has one off the diagonal.  If `B` is weakly diagonally
-dominant and annihilates a nonzero vector, then every row of `B` is an equality row.
+/-- Let $A, B \in \mathbb{K}^{n \times n}$, let $A$ be irreducible, and let $b_{ij} \ne 0$ whenever
+$i \ne j$ and $a_{ij} \ne 0$. Suppose that $\sum_{j \ne i} |b_{ij}| \le |b_{ii}|$ for every row
+$i$, and that $Bx = 0$ for some $x \ne 0$. Then every row of $B$ is an equality row:
+$$|b_{ii}| = \sum_{j \ne i} |b_{ij}| \quad \text{for every } i.$$ This is the form of
+[saad2003iterative] Theorem 4.7 that its applications use.
 
-At a row `i` where `|x_i|` is maximal, weak dominance is forced to be an equality, and the maximum
-is attained again at every `j` with `b_ij ≠ 0`; the strong connectivity of `A` then propagates the
-maximum, hence the equality, to every row. -/
+At a row $i$ where $|x_i|$ is maximal, weak dominance must be an equality, and the maximum is
+attained again at every $j$ with $b_{ij} \ne 0$. The strong connectivity of $A$ carries the
+maximum, and so the equality, to every row. -/
 theorem IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n 𝕜}
     (hA : A.IsPatternIrreducible) (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
     (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
@@ -221,11 +266,14 @@ theorem IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n �
         (hAB a b hab' hab)
   exact (hkey i (hall i)).1
 
-/-- **[saad2003iterative] Corollary 4.8**: an irreducible matrix that is weakly diagonally dominant,
-with strict dominance in at least one row, is nonsingular.  A vector in its kernel would make every
-row an equality row by `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`, against the
-strict row.  Stated for a matrix `B` dominated off the diagonal by an irreducible `A`, which is how
-the convergence proofs of `Numlib/Stationary/DiagDominant.lean` use it. -/
+/-- Let $A, B \in \mathbb{K}^{n \times n}$, let $A$ be irreducible, and let $b_{ij} \ne 0$ whenever
+$i \ne j$ and $a_{ij} \ne 0$. If $\sum_{j \ne i} |b_{ij}| \le |b_{ii}|$ for every row $i$, with
+strict inequality for at least one row, then $B$ is nonsingular. With $B = A$ this is
+**Corollary 4.8** of [saad2003iterative].
+
+A nonzero kernel vector would make every row an equality row, by
+`Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`, against the strict row. The
+general $B$ is the form that the convergence proofs of `Numlib.Stationary.DiagDominant` use. -/
 theorem IsPatternIrreducible.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.IsPatternIrreducible)
     (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
     (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
@@ -236,15 +284,16 @@ theorem IsPatternIrreducible.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.
   obtain ⟨x, hx, hBx⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet
   exact hi.ne' (hA.norm_diag_eq_of_mulVec_eq_zero hAB hdom hx hBx i)
 
-/-- An irreducibly diagonally dominant matrix is nonsingular ([saad2003iterative], Corollary 4.8).
--/
+/-- An irreducibly diagonally dominant matrix is nonsingular. This is Corollary 4.8 of
+[saad2003iterative]. -/
 theorem IsIrreduciblyDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsIrreduciblyDiagDominant) :
     IsUnit A :=
   hA.irreducible.isUnit_of_dominant (fun _ _ _ hij => hij) hA.dominant hA.exists_strict
 
-/-- An irreducibly diagonally dominant matrix has no zero on its diagonal: a zero diagonal entry
-would force its whole row to vanish, which an irreducible matrix of size at least two forbids, while
-for a matrix of size one the strict row is the diagonal entry itself. -/
+/-- If $A$ is irreducibly diagonally dominant, then $a_{ii} \ne 0$ for every $i$.
+
+For $n \ge 2$, a zero diagonal entry would force its whole row to vanish, which irreducibility
+forbids. For $n = 1$, the strict row is the diagonal entry itself. -/
 theorem IsIrreduciblyDiagDominant.diag_ne_zero {A : Matrix n n 𝕜}
     (hA : A.IsIrreduciblyDiagDominant) (i : n) : A i i ≠ 0 := by
   intro h0
@@ -266,8 +315,8 @@ theorem IsIrreduciblyDiagDominant.diag_ne_zero {A : Matrix n n 𝕜}
     norm_zero] at hk
   exact lt_irrefl 0 hk
 
-/-- The diagonal part of an irreducibly diagonally dominant matrix is invertible, so the Jacobi,
-Gauss–Seidel and SOR splittings of such a matrix are defined. -/
+/-- If $A$ is irreducibly diagonally dominant, then its diagonal part is nonsingular, so the Jacobi,
+Gauss–Seidel and SOR splittings of $A$ are defined. -/
 theorem IsIrreduciblyDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜}
     (hA : A.IsIrreduciblyDiagDominant) : IsUnit (diagPart A) :=
   (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
@@ -276,72 +325,88 @@ end Irreducible
 
 section Weak
 
-/-- Weak row diagonal dominance ([quarteroni2000numerical] Definition 1.24):
-`∑_{j ≠ i} |a_ij| ≤ |a_ii|` for every row `i`. This is the `dominant` field of
-`Matrix.IsIrreduciblyDiagDominant`, factored out. -/
+/-- A square matrix $A$ over $\mathbb{K}$ is **weakly diagonally dominant by rows** if $$\sum_{j \ne
+i} |a_{ij}| \le |a_{ii}| \quad \text{for every row } i.$$ This is Definition 1.24 of
+[quarteroni2000numerical].
+
+It is the field `Matrix.IsIrreduciblyDiagDominant.dominant` as a separate predicate. -/
 def IsDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖
 
-/-- Weak column diagonal dominance ([quarteroni2000numerical] Definition 1.24):
-`∑_{i ≠ j} |a_ij| ≤ |a_jj|` for every column `j`. -/
+/-- A square matrix $A$ over $\mathbb{K}$ is **weakly diagonally dominant by columns** if $$\sum_{i
+\ne j} |a_{ij}| \le |a_{jj}| \quad \text{for every column } j.$$ This is Definition 1.24 of
+[quarteroni2000numerical]. -/
 def IsColDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ ≤ ‖A j j‖
 
-/-- **Weak row diagonal dominance, measured with the absolute value** of a linearly ordered
-scalar ring: `∑_{j ≠ i} |a_ij| ≤ |a_ii|` for every row `i` ([quarteroni2000numerical]
-Definition 1.24). It is `Matrix.IsDiagDominant`, which is stated with the norm of `RCLike`
-scalars, for the ordered fields of the floating-point analyses; over `ℝ` the two agree
+/-- Let $R$ be an additive commutative group with a lattice structure, so that $|a| = a \sqcup -a$
+is defined. A square matrix $A$ over $R$ is **weakly diagonally dominant by rows, measured with
+the absolute value**, if $\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$ for every row $i$
+([quarteroni2000numerical] Definition 1.24).
+
+This is `Matrix.IsDiagDominant`, which uses the norm of an `RCLike` field, for the ordered
+fields of floating-point analyses. Over $\mathbb{R}$ the two agree
 (`Matrix.isDiagDominant_iff_isAbsDiagDominant`). -/
 def IsAbsDiagDominant {m R : Type*} [Fintype m] [DecidableEq m] [Lattice R] [AddCommGroup R]
     (A : Matrix m m R) : Prop :=
   ∀ i, ∑ j ∈ Finset.univ.erase i, |A i j| ≤ |A i i|
 
-/-- Weak row dominance with the absolute value, unfolded. -/
+/-- Let $R$ be an additive commutative group with a lattice structure. A square matrix $A$ over $R$
+is weakly diagonally dominant by rows with the absolute value if and only if
+$\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$ for every row $i$. -/
 theorem isAbsDiagDominant_iff {m R : Type*} [Fintype m] [DecidableEq m] [Lattice R]
     [AddCommGroup R] {A : Matrix m m R} :
     A.IsAbsDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, |A i j| ≤ |A i i| := Iff.rfl
 
-/-- Over `ℝ`, weak row dominance with the norm is weak row dominance with the absolute value. -/
+/-- A real square matrix is weakly diagonally dominant by rows with the norm if and only if it is so
+with the absolute value. -/
 theorem isDiagDominant_iff_isAbsDiagDominant {A : Matrix n n ℝ} :
     A.IsDiagDominant ↔ A.IsAbsDiagDominant := Iff.rfl
 
 variable {A : Matrix n n 𝕜}
 
-/-- The row form of strict diagonal dominance, unfolded. -/
+/-- A square matrix $A$ is strictly diagonally dominant by rows if and only if
+$\sum_{j \ne i} |a_{ij}| < |a_{ii}|$ for every row $i$. -/
 theorem isStrictDiagDominant_iff :
     A.IsStrictDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖ := Iff.rfl
 
-/-- The column form of strict diagonal dominance, unfolded. -/
+/-- A square matrix $A$ is strictly diagonally dominant by columns if and only if
+$\sum_{j \ne i} |a_{ji}| < |a_{ii}|$ for every column $i$. -/
 theorem isStrictColDiagDominant_iff :
     A.IsStrictColDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A j i‖ < ‖A i i‖ := Iff.rfl
 
-/-- Weak row dominance, unfolded. -/
+/-- A square matrix $A$ is weakly diagonally dominant by rows if and only if
+$\sum_{j \ne i} |a_{ij}| \le |a_{ii}|$ for every row $i$. -/
 theorem isDiagDominant_iff :
     A.IsDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖ := Iff.rfl
 
-/-- Weak column dominance, unfolded. -/
+/-- A square matrix $A$ is weakly diagonally dominant by columns if and only if
+$\sum_{j \ne i} |a_{ji}| \le |a_{ii}|$ for every column $i$. -/
 theorem isColDiagDominant_iff :
     A.IsColDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A j i‖ ≤ ‖A i i‖ := Iff.rfl
 
-/-- Weak column dominance of `A` is weak row dominance of `Aᵀ`. -/
+/-- The transpose $A^T$ is weakly diagonally dominant by rows if and only if $A$ is weakly
+diagonally dominant by columns. -/
 theorem IsColDiagDominant.transpose_iff : Aᵀ.IsDiagDominant ↔ A.IsColDiagDominant := Iff.rfl
 
-/-- Weak row dominance of `A` is weak column dominance of `Aᵀ`. -/
+/-- The transpose $A^T$ is weakly diagonally dominant by columns if and only if $A$ is weakly
+diagonally dominant by rows. -/
 theorem IsDiagDominant.transpose_iff : Aᵀ.IsColDiagDominant ↔ A.IsDiagDominant := Iff.rfl
 
-/-- Strict row dominance is weak row dominance. -/
+/-- A strictly row diagonally dominant matrix is weakly row diagonally dominant. -/
 theorem IsStrictDiagDominant.isDiagDominant (hA : A.IsStrictDiagDominant) : A.IsDiagDominant :=
   fun i => (hA i).le
 
-/-- Strict column dominance is weak column dominance. -/
+/-- A strictly column diagonally dominant matrix is weakly column diagonally dominant. -/
 theorem IsStrictColDiagDominant.isColDiagDominant (hA : A.IsStrictColDiagDominant) :
     A.IsColDiagDominant := fun j => (hA j).le
 
-/-- Irreducible row dominance is weak row dominance. -/
+/-- An irreducibly diagonally dominant matrix is weakly row diagonally dominant. -/
 theorem IsIrreduciblyDiagDominant.isDiagDominant (hA : A.IsIrreduciblyDiagDominant) :
     A.IsDiagDominant := hA.dominant
 
-/-- A zero diagonal entry of a weakly row dominant matrix forces its whole row to vanish. -/
+/-- If $A$ is weakly diagonally dominant by rows and $a_{ii} = 0$, then $a_{ij} = 0$ for every $j$.
+-/
 theorem IsDiagDominant.apply_eq_zero_of_diag_eq_zero (hA : A.IsDiagDominant) {i : n}
     (hi : A i i = 0) (j : n) : A i j = 0 := by
   rcases eq_or_ne j i with rfl | hj
@@ -352,28 +417,30 @@ theorem IsDiagDominant.apply_eq_zero_of_diag_eq_zero (hA : A.IsDiagDominant) {i 
     (le_antisymm hsum (Finset.sum_nonneg fun _ _ => norm_nonneg _))
   exact norm_eq_zero.mp (hall j (Finset.mem_erase.mpr ⟨hj, Finset.mem_univ j⟩))
 
-/-- A nonsingular weakly row dominant matrix has a nowhere-zero diagonal: a zero diagonal entry
-forces a zero row (the parenthesis in the proof of [higham2002accuracy] Theorem 9.9). -/
+/-- If $A$ is weakly diagonally dominant by rows and nonsingular, then $a_{ii} \ne 0$ for every $i$.
+
+A zero diagonal entry would force a zero row. This is the remark in parentheses in the proof of
+[higham2002accuracy] Theorem 9.9. -/
 theorem IsDiagDominant.diag_ne_zero_of_isUnit (hA : A.IsDiagDominant) (hu : IsUnit A) (i : n) :
     A i i ≠ 0 := fun hi =>
   ((isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det A).mp hu)))
     (det_eq_zero_of_row_eq_zero i (hA.apply_eq_zero_of_diag_eq_zero hi))
 
-/-- A nonsingular weakly column dominant matrix has a nowhere-zero diagonal. -/
+/-- If $A$ is weakly diagonally dominant by columns and nonsingular, then $a_{ii} \ne 0$ for every
+$i$. -/
 theorem IsColDiagDominant.diag_ne_zero_of_isUnit (hA : A.IsColDiagDominant) (hu : IsUnit A)
     (i : n) : A i i ≠ 0 :=
   (IsColDiagDominant.transpose_iff.mpr hA).diag_ne_zero_of_isUnit ((isUnit_transpose A).mpr hu) i
 
 end Weak
 
-/-! ### Lower bounds for `A x` under dominance with a margin -/
+/-! ### Lower bounds for $Ax$ under dominance with a margin -/
 
 section Margin
 
 variable {A : Matrix n n 𝕜}
 
-/-- The diagonal term of `(A x)_i` is bounded by the row: `‖a_ii x_i‖ ≤ ‖(A x)_i‖ + ∑_{j ≠ i}
-‖a_ij‖ ‖x_j‖`. -/
+/-- For every row $i$, $|a_{ii}| |x_i| \le |(Ax)_i| + \sum_{j \ne i} |a_{ij}| |x_j|$. -/
 private theorem norm_diag_mul_le (A : Matrix n n 𝕜) (x : n → 𝕜) (i : n) :
     ‖A i i‖ * ‖x i‖ ≤ ‖(A *ᵥ x) i‖ + ∑ j ∈ Finset.univ.erase i, ‖A i j‖ * ‖x j‖ := by
   have h : A i i * x i = (A *ᵥ x) i - ∑ j ∈ Finset.univ.erase i, A i j * x j := by
@@ -383,11 +450,14 @@ private theorem norm_diag_mul_le (A : Matrix n n 𝕜) (x : n → 𝕜) (i : n) 
   refine (norm_sub_le _ _).trans (add_le_add le_rfl ((norm_sum_le _ _).trans_eq ?_))
   simp only [norm_mul]
 
-/-- **Column dominance with a margin bounds `A x` from below in the `1`-norm** ([golub2013matrix]
-Theorem 4.1.2, the heart of its proof): if `δ ≤ |a_jj| - ∑_{i ≠ j} |a_ij|` for every column `j`,
-then `δ ∑ⱼ |x_j| ≤ ∑ᵢ |(A x)_i|`. The diagonal terms `|a_ii x_i| ≤ |(A x)_i| + ∑_{j ≠ i} |a_ij x_j|`
-are summed over the rows, and the off-diagonal double sum is regrouped by columns. The bound
-`‖A⁻¹‖₁ ≤ 1 / δ` follows. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $\delta \in \mathbb{R}$, and suppose that
+$\delta \le |a_{jj}| - \sum_{i \ne j} |a_{ij}|$ for every column $j$. Then for every
+$x \in \mathbb{K}^n$, $$\delta \sum_j |x_j| \le \sum_i |(Ax)_i|,$$ that is,
+$\delta \|x\|_1 \le \|Ax\|_1$. This is the core of the proof of [golub2013matrix] Theorem 4.1.2.
+
+It gives $\|A^{-1}\|_1 \le 1/\delta$ for $\delta > 0$. The proof sums the bounds $|a_{ii} x_i|
+\le |(Ax)_i| + \sum_{j \ne i} |a_{ij} x_j|$ over the rows and regroups the off-diagonal double
+sum by columns. -/
 theorem mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin {δ : ℝ}
     (hδ : ∀ j, δ ≤ ‖A j j‖ - ∑ i ∈ Finset.univ.erase j, ‖A i j‖) (x : n → 𝕜) :
     δ * ∑ j, ‖x j‖ ≤ ∑ i, ‖(A *ᵥ x) i‖ := by
@@ -404,11 +474,14 @@ theorem mul_sum_norm_le_sum_norm_mulVec_of_colDiagDominantMargin {δ : ℝ}
         simp_rw [sub_mul, Finset.sum_sub_distrib]
         linarith
 
-/-- **Row dominance with a margin bounds `A x` from below in the `∞`-norm** ([golub2013matrix]
-P4.1.2; Varah 1975): if `δ ≤ |a_ii| - ∑_{j ≠ i} |a_ij|` for every row `i`, then
-`δ ‖x‖_∞ ≤ ‖A x‖_∞`, the sup norms of `n → 𝕜`. At an index `j` where `|x_j|` is largest,
-`|(A x)_j| ≥ |a_jj| |x_j| - ∑_{k ≠ j} |a_jk| |x_k| ≥ δ |x_j|`. The bound `‖A⁻¹‖_∞ ≤ 1 / δ`
-follows. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $\delta \in \mathbb{R}$, and suppose that
+$\delta \le |a_{ii}| - \sum_{j \ne i} |a_{ij}|$ for every row $i$. Then for every
+$x \in \mathbb{K}^n$, $$\delta \|x\|_\infty \le \|Ax\|_\infty.$$ This is [golub2013matrix]
+P4.1.2, Varah's bound (1975).
+
+The norm is the supremum norm of `n → 𝕜`. It gives $\|A^{-1}\|_\infty \le 1/\delta$ for
+$\delta > 0$. At an index $j$ where $|x_j|$ is largest, $|(Ax)_j| \ge |a_{jj}| |x_j| - \sum_{k
+\ne j} |a_{jk}| |x_k| \ge \delta |x_j|$. -/
 theorem mul_sup_norm_le_sup_norm_mulVec_of_diagDominantMargin {δ : ℝ}
     (hδ : ∀ i, δ ≤ ‖A i i‖ - ∑ j ∈ Finset.univ.erase i, ‖A i j‖) (x : n → 𝕜) :
     δ * ‖x‖ ≤ ‖A *ᵥ x‖ := by
@@ -433,11 +506,13 @@ end Margin
 
 section Gershgorin
 
-/-- **[saad2003iterative] Theorem 4.7**: if `A` is irreducible and an eigenvalue of `A` lies on the
-boundary of the union of the Gershgorin discs, then it lies on the boundary of *every* disc, that is
-`‖μ - a_ii‖ = ∑_{j ≠ i} ‖a_ij‖` for every `i`.  Being on the boundary of the union means being
-outside every open disc, which is the weak dominance hypothesis of
-`Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero` for the resolvent `μ 1 - A`. -/
+/-- **Theorem 4.7** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ be irreducible, and
+let $\mu$ be an eigenvalue of $A$ on the boundary of the union of the Gershgorin discs $\{z :
+|z - a_{ii}| \le \sum_{j \ne i} |a_{ij}|\}$. Then $\mu$ lies on the boundary of every disc:
+$$|\mu - a_{ii}| = \sum_{j \ne i} |a_{ij}| \quad \text{for every } i.$$
+
+A point on the boundary of the union lies outside every open disc. This is the weak dominance
+hypothesis of `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero` for $B = \mu I - A$. -/
 theorem IsPatternIrreducible.norm_sub_eq_of_mem_frontier {A : Matrix n n ℂ}
     (hA : A.IsPatternIrreducible) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i)
@@ -478,11 +553,13 @@ section PosDef
 
 variable {A : Matrix n n 𝕜}
 
-/-- A Hermitian, strictly row diagonally dominant matrix with positive diagonal is positive
-definite ([quarteroni2000numerical] §1.12, after Definition 1.24, for real symmetric matrices).
-By Gershgorin's theorem every eigenvalue lies in a disc centred at some `a_kk > 0` of radius
-`∑_{j ≠ k} |a_kj| < a_kk`, hence is positive; a Hermitian matrix with positive eigenvalues is
-positive definite. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian and strictly diagonally dominant by rows, with
+$\operatorname{Re} a_{ii} > 0$ for every $i$. Then $A$ is positive definite. This is stated for
+real symmetric matrices in [quarteroni2000numerical] §1.12, after Definition 1.24.
+
+By Gershgorin's theorem every eigenvalue lies in a disc with centre some $a_{kk} > 0$ and radius
+$\sum_{j \ne k} |a_{kj}| < a_{kk}$, so it is positive. A Hermitian matrix with positive
+eigenvalues is positive definite. -/
 theorem IsStrictDiagDominant.posDef (hA : A.IsHermitian) (hd : A.IsStrictDiagDominant)
     (hpos : ∀ i, 0 < RCLike.re (A i i)) : A.PosDef := by
   rw [hA.posDef_iff_eigenvalues_pos]
@@ -500,10 +577,12 @@ theorem IsStrictDiagDominant.posDef (hA : A.IsHermitian) (hd : A.IsStrictDiagDom
   have := (abs_lt.mp hlt).1
   linarith
 
-/-- A Hermitian, weakly row diagonally dominant matrix with nonnegative diagonal is positive
-semidefinite: by Gershgorin's theorem every eigenvalue lies in a disc centred at some `a_kk ≥ 0`
-of radius `∑_{j ≠ k} |a_kj| ≤ a_kk`, hence is nonnegative. It is the weak companion of
-`Matrix.IsStrictDiagDominant.posDef`; combined with nonsingularity
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian and weakly diagonally dominant by rows, with
+$\operatorname{Re} a_{ii} \ge 0$ for every $i$. Then $A$ is positive semidefinite.
+
+By Gershgorin's theorem every eigenvalue lies in a disc with centre some $a_{kk} \ge 0$ and
+radius $\sum_{j \ne k} |a_{kj}| \le a_{kk}$, so it is nonnegative. This is the weak form of
+`Matrix.IsStrictDiagDominant.posDef`. With nonsingularity
 (`Matrix.PosSemidef.posDef_iff_isUnit`) it gives positive definiteness. -/
 theorem IsDiagDominant.posSemidef (hA : A.IsHermitian) (hd : A.IsDiagDominant)
     (hpos : ∀ i, 0 ≤ RCLike.re (A i i)) : A.PosSemidef := by
@@ -529,23 +608,24 @@ section Complexify
 
 variable {A : Matrix n n ℝ}
 
-/-- The complexification of a real strictly row diagonally dominant matrix is strictly row
-diagonally dominant: complexification preserves every entrywise absolute value. -/
+/-- If a real square matrix $A$ is strictly diagonally dominant by rows, then its complexification
+is strictly diagonally dominant by rows, because complexification keeps every entrywise absolute
+value. -/
 theorem isStrictDiagDominant_complexify (h : A.IsStrictDiagDominant) :
     (complexify A).IsStrictDiagDominant := by
   intro i
   simpa using h i
 
-/-- The complexification of a real strictly column diagonally dominant matrix is strictly column
-diagonally dominant. -/
+/-- If a real square matrix $A$ is strictly diagonally dominant by columns, then its
+complexification is strictly diagonally dominant by columns. -/
 theorem isStrictColDiagDominant_complexify (h : A.IsStrictColDiagDominant) :
     (complexify A).IsStrictColDiagDominant := by
   intro j
   simpa using h j
 
 omit [Fintype n] [DecidableEq n] in
-/-- Complexification changes no entrywise absolute value, so it preserves irreducibility of the
-nonzero pattern. -/
+/-- If a real square matrix $A$ is irreducible, then its complexification is irreducible, because
+complexification keeps every entrywise absolute value. -/
 theorem isPatternIrreducible_complexify (h : A.IsPatternIrreducible) :
     (complexify A).IsPatternIrreducible := by
   have hmap : (complexify A).map (fun x : ℂ => ‖x‖) = A.map fun x : ℝ => ‖x‖ := by
@@ -554,7 +634,8 @@ theorem isPatternIrreducible_complexify (h : A.IsPatternIrreducible) :
   rw [hmap]
   exact h
 
-/-- Complexification preserves irreducible diagonal dominance. -/
+/-- If a real square matrix $A$ is irreducibly diagonally dominant, then its complexification is
+irreducibly diagonally dominant. -/
 theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
     (complexify A).IsIrreduciblyDiagDominant where
   irreducible := isPatternIrreducible_complexify h.irreducible
@@ -571,7 +652,9 @@ variable {K : Type*} [Field K]
 
 variable {A : Matrix n n 𝕜}
 
-/-- A sum over a subtype with one element removed, as a sum over the ambient type. -/
+/-- For a predicate $p$ on $n$, a function $f : n \to \mathbb{R}$ and an element $j$ of the subtype
+$\{i \mid p(i)\}$, the sum of $f$ over the subtype without $j$ equals the sum of $f$ over
+$\{i \mid p(i)\} \setminus \{j\}$ in $n$. -/
 theorem sum_erase_subtype_eq {p : n → Prop} [DecidablePred p] (j : {i // p i}) (f : n → ℝ) :
     ∑ i ∈ (Finset.univ : Finset {i // p i}).erase j, f i =
       ∑ i ∈ (Finset.univ.filter p).erase j.1, f i := by
@@ -579,9 +662,13 @@ theorem sum_erase_subtype_eq {p : n → Prop} [DecidablePred p] (j : {i // p i})
     Finset.sum_erase_eq_sub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, j.2⟩),
     Finset.sum_subtype (p := p) (Finset.univ.filter p) (fun i => by simp) f]
 
-/-- The one-step Schur complement of a weakly column dominant matrix, before the reindexing: for
-`j ≠ p` the column `j` of `A i j - A i p (A p p)⁻¹ A p j` is dominated by its diagonal entry
-([higham2002accuracy] Theorem 13.8 with `1 × 1` blocks; Wilkinson). -/
+/-- Let $A$ be weakly diagonally dominant by columns, let $a_{pp} \ne 0$, and let $j \ne p$. Then
+column $j$ of the matrix with entries $a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$, restricted to the
+rows $i \ne p$, is weakly dominated by its diagonal entry: $$\sum_{i \ne p, j} |a_{ij} - a_{ip}
+a_{pp}^{-1} a_{pj}| \le |a_{jj} - a_{jp} a_{pp}^{-1} a_{pj}|.$$
+
+This is `Matrix.IsColDiagDominant.schurComplementSingle` before the reindexing
+([higham2002accuracy] Theorem 13.8 with $1 \times 1$ blocks; Wilkinson). -/
 theorem IsColDiagDominant.sum_norm_sub_le (hA : A.IsColDiagDominant) {p j : n} (hp : A p p ≠ 0)
     (hj : j ≠ p) :
     ∑ i ∈ (Finset.univ.erase p).erase j, ‖A i j - A i p * (A p p)⁻¹ * A p j‖ ≤
@@ -619,10 +706,14 @@ theorem IsColDiagDominant.sum_norm_sub_le (hA : A.IsColDiagDominant) {p j : n} (
     _ = ‖A j j‖ - ‖A j p * (A p p)⁻¹ * A p j‖ := by rw [hnorm]
     _ ≤ ‖A j j - A j p * (A p p)⁻¹ * A p j‖ := norm_sub_norm_le _ _
 
-/-- One step of Gaussian elimination preserves weak column dominance ([higham2002accuracy]
-Theorem 13.8 with `1 × 1` blocks; Wilkinson): the Schur complement at a nonzero pivot of a
-weakly column dominant matrix is weakly column dominant. This is the lemma behind the existence
-of an LU factorization for column dominant matrices and the bound `2` on their growth factor. -/
+/-- Let $A$ be weakly diagonally dominant by columns and let $a_{pp} \ne 0$. Then the Schur
+complement of the pivot $a_{pp}$, the matrix with entries $a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$
+for $i, j \ne p$, is weakly diagonally dominant by columns. So one step of Gaussian elimination
+preserves weak column dominance ([higham2002accuracy] Theorem 13.8 with $1 \times 1$ blocks;
+Wilkinson).
+
+This lemma gives the existence of an LU factorization for column dominant matrices and the bound
+$2$ on their growth factor. The Schur complement is `Matrix.schurComplementSingle`. -/
 theorem IsColDiagDominant.schurComplementSingle (hA : A.IsColDiagDominant) {p : n}
     (hp : A p p ≠ 0) : (A.schurComplementSingle p).IsColDiagDominant := by
   intro j
@@ -631,8 +722,10 @@ theorem IsColDiagDominant.schurComplementSingle (hA : A.IsColDiagDominant) {p : 
   rw [Finset.filter_ne']
   exact hA.sum_norm_sub_le hp j.2
 
-/-- One step of Gaussian elimination preserves weak row dominance: the transpose of the Schur
-complement is the Schur complement of the transpose. -/
+/-- Let $A$ be weakly diagonally dominant by rows and let $a_{pp} \ne 0$. Then the Schur complement
+of the pivot $a_{pp}$ (`Matrix.schurComplementSingle`) is weakly diagonally dominant by rows.
+
+The transpose of the Schur complement is the Schur complement of the transpose. -/
 theorem IsDiagDominant.schurComplementSingle (hA : A.IsDiagDominant) {p : n} (hp : A p p ≠ 0) :
     (A.schurComplementSingle p).IsDiagDominant := by
   rw [← IsDiagDominant.transpose_iff, schurComplementSingle_transpose]

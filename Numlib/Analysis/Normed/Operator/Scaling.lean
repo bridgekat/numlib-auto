@@ -8,26 +8,38 @@ import Mathlib.Topology.MetricSpace.Bounded
 /-!
 # Operator norms from the geometry of a ball and its image
 
-Two estimates that bound the operator norm of a continuous linear map by the *size* of the sets it
-relates, rather than by a pointwise inequality:
+This file bounds the operator norm of a continuous linear map $T : E \to F$ between real normed
+spaces by the size of the sets that it relates, instead of by a pointwise inequality. If the image
+of a closed ball of radius $r$ has norms at most $C$, then $\|T\| \le C / r$. If a closed ball of
+radius $r$ lies in a set $S$ and the affine map $x \mapsto Tx + b$ sends $S$ into a bounded set $D$,
+then $\|T\| \le \operatorname{diam} D / (2r)$. The file also writes the operator norm as the
+supremum of the ratios $\|Tv\| / \|v\|$ over $v \neq 0$, and, for a real functional $f$, as the
+supremum of the signed ratios $f(v) / \|v\|$.
 
-* if the image of a closed ball of radius `r` has norms at most `C`, then `‖T‖ ≤ C / r`;
-* if a ball of radius `r` sits inside `S` and the affine map `x ↦ T x + b` sends `S` into a bounded
-  set `D`, then `‖T‖ ≤ diam D / (2 r)`.
+The second estimate is the basis of the reference element technique of the finite element method.
+For an affine map $F(\hat x) = T \hat x + b$ of a reference element $\hat K$ onto an element $K$, it
+reads $\|T\| \le h_K / \hat\rho$, with $h_K$ the diameter of $K$ and $\hat\rho$ the diameter of a
+ball inscribed in $\hat K$ ([han2009theoretical], Lemma 10.2.2). Nothing in the statement is
+specific to a simplex or to a finite element: only the inscribed ball and the diameter of the image
+enter.
 
-It also records the operator norm as the supremum of the ratios `‖T v‖ / ‖v‖` over `v ≠ 0`
-(`ContinuousLinearMap.iSup_norm_apply_div_eq_opNorm`) and, for a real functional, of the signed
-ratios `f v / ‖v‖` (`ContinuousLinearMap.iSup_apply_div_eq_opNorm`).
+## Main results
 
-The second is the estimate behind the reference element technique of the finite element method: for
-an affine map `F x̂ = T x̂ + b` of a reference element `K̂` onto an element `K`, it reads
-`‖T‖ ≤ h_K / ρ̂` with `h_K` the diameter of `K` and `ρ̂` the diameter of a ball inscribed in `K̂`
-([han2009theoretical], Lemma 10.2.2).  Nothing in the statement is specific to a simplex or to a
-finite element: only the inscribed ball and the diameter of the image enter.
+* `ContinuousLinearMap.opNorm_le_div_of_norm_le`: if $\|Tx\| \le C$ for all $\|x\| \le r$, then
+  $\|T\| \le C / r$.
+* `ContinuousLinearMap.opNorm_le_diam_div`: the affine scaling estimate
+  $\|T\| \le \operatorname{diam} D / (2r)$.
+* `ContinuousLinearMap.iSup_norm_apply_div_eq_opNorm`: $\sup_{v \neq 0} \|f v\| / \|v\| = \|f\|$.
+* `ContinuousLinearMap.iSup_apply_div_eq_opNorm`: $\sup_{v \neq 0} f(v) / \|v\| = \|f\|$ for a real
+  functional $f$.
 
-The scalars are real because the constants are sharp only when the norm of the scalar field is all
-of `ℝ≥0`; over a general nontrivially normed field the same argument loses the factor `‖c‖` of
-`ContinuousLinearMap.opNorm_le_of_shell`.
+## Implementation notes
+
+* The first two results have real scalars, because the constants are sharp only when the norm of the
+  scalar field takes all values in $[0, \infty)$. Over a general nontrivially normed field the same
+  argument loses the factor $\|c\|$ of `ContinuousLinearMap.opNorm_le_of_shell`.
+* A supremum over the nonzero vectors is an indexed supremum `⨆ v : {v // v ≠ 0}` of real numbers.
+  When the space is $\{0\}$, this supremum is $0$, which is also the norm of the map.
 -/
 
 open Metric
@@ -37,12 +49,12 @@ namespace ContinuousLinearMap
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- A uniform bound on a closed ball bounds the operator norm by the ratio: if `‖T x‖ ≤ C` for every
-`x` of norm at most `r > 0`, then `‖T‖ ≤ C / r`.
+/-- Let $T : E \to F$ be a continuous linear map between real normed spaces, and let $r > 0$ and
+$C \ge 0$. If $\|Tx\| \le C$ for every $x$ with $\|x\| \le r$, then $$\|T\| \le C / r.$$
 
-Unlike `ContinuousLinearMap.opNorm_le_of_ball`, whose hypothesis is already proportional to `‖x‖`,
-the bound here is uniform on the ball; the proportional form is recovered by scaling `x` to the
-sphere of radius `r`. -/
+Unlike `ContinuousLinearMap.opNorm_le_of_ball`, whose hypothesis is already proportional to
+$\|x\|$, the bound here is uniform on the ball. The proportional form follows by scaling $x$ to
+the sphere of radius $r$. -/
 theorem opNorm_le_div_of_norm_le (T : E →L[ℝ] F) {r C : ℝ} (hr : 0 < r) (hC : 0 ≤ C)
     (h : ∀ x : E, ‖x‖ ≤ r → ‖T x‖ ≤ C) : ‖T‖ ≤ C / r := by
   refine T.opNorm_le_bound (by positivity) fun x => ?_
@@ -59,19 +71,17 @@ theorem opNorm_le_div_of_norm_le (T : E →L[ℝ] F) {r C : ℝ} (hr : 0 < r) (h
     rw [div_mul_eq_mul_div, le_div_iff₀ hr]
     linarith
 
-/-- **The affine scaling estimate.**  Let `T` be a continuous linear map, `b` a translation, and
-suppose the affine map `x ↦ T x + b` sends a set `S` into a bounded set `D`.  If `S` contains a
-closed ball of radius `r > 0`, then
+/-- **The affine scaling estimate.** Let $T : E \to F$ be a continuous linear map between real
+normed spaces, let $b \in F$, let $S \subseteq E$, and let $D \subseteq F$ be bounded. Suppose
+that $x \mapsto Tx + b$ maps $S$ into $D$, and that $S$ contains a closed ball $\bar B(c, r)$
+with $r > 0$. Then $$\|T\| \le \frac{\operatorname{diam} D}{2r}.$$
 
-  `‖T‖ ≤ diam D / (2 r)`.
-
-Two antipodal points `c ± z` of the ball have `‖T (c + z) - T (c - z)‖ = 2 ‖T z‖`, and the affine
-map moves that difference into `D`, so `2 ‖T z‖ ≤ diam D` for every `‖z‖ ≤ r`; the previous lemma
-turns the uniform bound into a bound on the operator norm.
-
-This is [han2009theoretical], Lemma 10.2.2, with the reference element's inscribed ball of diameter
-`ρ̂ = 2 r` and the element's diameter `h_K = diam D`.  The translation `b` is unconstrained, and
-neither set is assumed convex, closed or nonempty. -/
+This is [han2009theoretical], Lemma 10.2.2, with the inscribed ball of the reference element of
+diameter $\hat\rho = 2r$ and the diameter $h_K = \operatorname{diam} D$ of the element. The
+translation $b$ is arbitrary, and neither $S$ nor $D$ is assumed convex or closed. Two antipodal
+points $c \pm z$ of the ball satisfy $\|T(c + z) - T(c - z)\| = 2\|Tz\|$, and the affine map
+moves both into $D$, so $2\|Tz\| \le \operatorname{diam} D$ for every $\|z\| \le r$; then
+`ContinuousLinearMap.opNorm_le_div_of_norm_le` applies. -/
 theorem opNorm_le_diam_div (T : E →L[ℝ] F) {S : Set E} {D : Set F} {c : E} {b : F} {r : ℝ}
     (hr : 0 < r) (hD : Bornology.IsBounded D) (hball : closedBall c r ⊆ S)
     (hmaps : ∀ x ∈ S, T x + b ∈ D) : ‖T‖ ≤ diam D / (2 * r) := by
@@ -99,7 +109,10 @@ section Supremum
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The operator norm is the supremum of the ratios**: `sup_{v ≠ 0} ‖f v‖ / ‖v‖ = ‖f‖`. -/
+/-- **The operator norm is the supremum of the ratios.** Let $E$ and $F$ be normed spaces over a
+nontrivially normed field, and let $f : E \to F$ be a continuous linear map. Then $$\sup_{v \neq
+0} \frac{\|f v\|}{\|v\|} = \|f\|.$$ When $E = \{0\}$, the supremum over the empty set is $0$,
+and so is $\|f\|$. -/
 theorem iSup_norm_apply_div_eq_opNorm (f : E →L[𝕜] F) :
     (⨆ v : {v : E // v ≠ 0}, ‖f v‖ / ‖(v : E)‖) = ‖f‖ := by
   refine le_antisymm (Real.iSup_le (fun v => f.ratio_le_opNorm v) (norm_nonneg _)) ?_
@@ -110,9 +123,12 @@ theorem iSup_norm_apply_div_eq_opNorm (f : E →L[𝕜] F) :
     exact le_ciSup (f := fun v : {v : E // v ≠ 0} => ‖f v‖ / ‖(v : E)‖)
       ⟨‖f‖, Set.forall_mem_range.2 fun v => f.ratio_le_opNorm v⟩ ⟨v, hv⟩
 
-/-- **The norm of a real functional is the supremum of the signed ratios**:
-`sup_{v ≠ 0} f(v) / ‖v‖ = ‖f‖`, with no absolute value, because `v ↦ -v` is a bijection of the
-nonzero vectors ([han2009theoretical] (8.7.2) writes the inf–sup condition this way). -/
+/-- **The norm of a real functional is the supremum of the signed ratios.** Let $X$ be a real normed
+space and let $f : X \to \mathbb{R}$ be a continuous linear functional. Then $$\sup_{v \neq 0}
+\frac{f(v)}{\|v\|} = \|f\|.$$ When $X = \{0\}$, both sides are $0$.
+
+No absolute value is needed, because $v \mapsto -v$ is a bijection of the nonzero vectors.
+[han2009theoretical], (8.7.2), writes the inf–sup condition in this form. -/
 theorem iSup_apply_div_eq_opNorm {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
     (f : X →L[ℝ] ℝ) : (⨆ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖) = ‖f‖ := by
   have hle : ∀ v : {v : X // v ≠ 0}, f v / ‖(v : X)‖ ≤ ‖f‖ := fun v =>

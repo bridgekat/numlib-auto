@@ -8,42 +8,55 @@ import Numlib.Optimization.Subproblem.Model
 /-!
 # Global optimality for the trust-region subproblem
 
-The trust-region subproblem minimizes the quadratic model `m(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` over the
-closed ball `‖s‖ ≤ Δ`. Its global minimizers are characterized by the existence of a multiplier
-`μ ≥ 0` with `(H + μ I) s = -g`, `H + μ I` positive semidefinite and `μ (‖s‖ - Δ) = 0`
-(Gay, Sorensen, Moré–Sorensen; [cartis2022evaluation] Theorem 8.2.7). The characterization is
-necessary *and* sufficient and holds on any real inner product space; only the existence of a
-minimizer uses finite dimension.
-
-Sufficiency is immediate from the shifted-system identity `quadModel_sub_eq_of_shifted`.
-Necessity is proved from first principles: an interior minimizer has zero gradient and `H ⪰ 0`;
-at a boundary minimizer the gradient is a nonpositive multiple of `s` (every inward direction
-`⟪v, s⟫ < 0` is a feasible ascent direction), and positive semidefiniteness of `H + μ I` follows by
-reflecting `s` through hyperplanes, which keeps the norm, plus a limiting argument for directions
-orthogonal to `s`.
+Let $H$ be a symmetric operator on a real inner product space $E$, let $g \in E$, and let
+$\Delta > 0$. The trust-region subproblem minimizes the quadratic model $m(s) = \langle g, s
+\rangle + \frac12 \langle s, H s \rangle$ over the closed ball $\|s\| \le \Delta$. A feasible step
+$s$ is a global minimizer if and only if there is a multiplier $\mu \ge 0$ with
+$$(H + \mu I) s = -g, \qquad H + \mu I \succeq 0, \qquad \mu (\|s\| - \Delta) = 0.$$
+This characterization is due to Gay, Sorensen, and Moré and Sorensen; it is Theorem 8.2.7 of
+[cartis2022evaluation]. Here it holds on any real inner product space; only the existence of a
+minimizer uses finite dimension. The file also proves that the multiplier is unique, that the
+minimizer is unique when $H + \mu I$ is positive definite, and the properties of the optimal value
+$m_\Delta$ as a function of the radius that §9.4.2 of [cartis2022evaluation] uses.
 
 ## Main definitions
 
-* `Subproblem.IsTrustRegionMultiplier g H Δ s μ`: `μ` is a trust-region multiplier for `s`.
-* `Subproblem.trustRegionValue g H Δ`: the optimal value `inf {m(s) : ‖s‖ ≤ Δ}`.
+* `Subproblem.IsTrustRegionMultiplier`: $\mu$ is a trust-region multiplier for the step $s$.
+* `Subproblem.trustRegionValue`: the optimal value $m_\Delta = \inf \{m(s) : \|s\| \le \Delta\}$.
 
-## Main statements
+## Main results
 
-* `Subproblem.isMinOn_closedBall_iff`: the global optimality characterization.
-* `Subproblem.exists_isMinOn_closedBall`: existence of a global minimizer in finite dimension.
-* `Subproblem.IsTrustRegionMultiplier.unique`: all global minimizers share the same multiplier.
-* `Subproblem.eq_of_isMinOn_closedBall_of_posDef`: uniqueness when `H + μ I` is positive
-  definite.
+* `Subproblem.isMinOn_closedBall_iff`: a feasible step is a global minimizer if and only if it has a
+  trust-region multiplier.
+* `Subproblem.exists_isMinOn_closedBall`: in finite dimension, a global minimizer exists.
+* `Subproblem.IsTrustRegionMultiplier.unique`: all global minimizers have the same multiplier.
+* `Subproblem.eq_of_isMinOn_closedBall_of_posDef`: the minimizer is unique when $H + \mu I$ is
+  positive definite.
+* `Subproblem.exists_shift_of_isMinOn_sphere`: a minimizer on the sphere $\|s\| = \Delta$ has a
+  shift $\mu$ with $(H + \mu I) s = -g$ and $H + \mu I \succeq 0$.
 * `Subproblem.trustRegionValue_antitone`, `Subproblem.trustRegionValue_mem_Icc`,
-  `Subproblem.trustRegionValue_le_min`: monotonicity of the optimal value in the radius and the
-  bounds (9.4.6)–(9.4.7) of [cartis2022evaluation] §9.4.2.
+  `Subproblem.trustRegionValue_le_min`: the optimal value decreases as the radius grows, and the
+  bounds (9.4.6) and (9.4.7) of [cartis2022evaluation].
+
+## Proof outline
+
+Sufficiency follows from the identity `Subproblem.quadModel_sub_eq_of_shifted` for a solution of the
+shifted system. For necessity, an interior minimizer has zero gradient and $H \succeq 0$. At a
+boundary minimizer, every inward direction $v$ with $\langle v, s \rangle < 0$ is a feasible
+direction, so it is not a descent direction; hence the gradient is a nonpositive multiple of $s$.
+The positive semidefiniteness of $H + \mu I$ follows by reflecting $s$ through hyperplanes, which
+keeps the norm, together with a limit argument for the directions orthogonal to $s$.
 
 ## Implementation notes
 
-The book's `‖s‖² - Δ²` in the complementarity condition (8.2.32) is replaced by the equivalent
-`‖s‖ - Δ`. The book's (9.4.5) states `m_{Δ₂} ≤ m_{Δ₁}` *if and only if* `Δ₂ ≥ Δ₁`; only the "if"
-direction holds (the optimal value is constant once the unconstrained minimizer is interior, and
-for `g = 0`, `H = 0`), and only that direction is formalized.
+* The complementarity condition $\mu (\|s\|^2 - \Delta^2) = 0$ of (8.2.32) of [cartis2022evaluation]
+  is replaced by the equivalent condition $\mu (\|s\| - \Delta) = 0$.
+* The source states in (9.4.5) that $m_{\Delta_2} \le m_{\Delta_1}$ if and only if
+  $\Delta_2 \ge \Delta_1$. Only the "if" direction holds: the optimal value is constant once the
+  unconstrained minimizer is interior, and also for $g = 0$, $H = 0$. Only that direction is
+  formalized (`Subproblem.trustRegionValue_antitone`).
+* `IsMinOn (Subproblem.quadModel g H) (closedBall 0 Δ) s` says that $m(s) \le m(u)$ for all $u$ in
+  the ball; it does not say that $s$ lies in the ball. Feasibility is a separate hypothesis.
 -/
 
 open Filter Topology Metric Set
@@ -57,7 +70,7 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 section Limits
 
-/-- If `a + b t + c t² ≥ 0` for all small enough `t > 0`, then `a ≥ 0`. -/
+/-- If $a + b t + c t^2 \ge 0$ for all sufficiently small $t > 0$, then $a \ge 0$. -/
 theorem nonneg_of_eventually_nonneg_quadratic {a b c : ℝ}
     (h : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 ≤ a + b * t + c * t ^ 2) : 0 ≤ a := by
   have hc : Continuous fun t : ℝ => a + b * t + c * t ^ 2 := by fun_prop
@@ -65,8 +78,9 @@ theorem nonneg_of_eventually_nonneg_quadratic {a b c : ℝ}
     simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
   exact ge_of_tendsto ht h
 
-/-- If `s + t v` stays in `S` for all small `t > 0` and `s` minimizes the quadratic model on `S`,
-then `v` is not a descent direction: `0 ≤ ⟪g + H s, v⟫`. -/
+/-- Let $H$ be symmetric, and let $s$ minimize the quadratic model $m$ on a set $S$. If
+$s + t v \in S$ for all sufficiently small $t > 0$, then $v$ is not a descent direction:
+$\langle g + H s, v \rangle \ge 0$. -/
 theorem inner_add_apply_nonneg_of_isMinOn {g : E} {H : E →L[ℝ] E}
     (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {S : Set E} {s v : E} (hmin : IsMinOn (quadModel g H) S s)
     (hv : ∀ᶠ t in 𝓝[>] (0 : ℝ), s + t • v ∈ S) : 0 ≤ ⟪g + H s, v⟫ := by
@@ -78,7 +92,8 @@ theorem inner_add_apply_nonneg_of_isMinOn {g : E} {H : E →L[ℝ] E}
   have := (mul_nonneg_iff_of_pos_left htpos).mp h'
   linarith
 
-/-- From an interior point of a closed ball, every direction stays in the ball for small steps. -/
+/-- If $\|s\| < \Delta$, then for every direction $v$, $s + t v$ lies in the closed ball of radius
+$\Delta$ for all sufficiently small $t > 0$. -/
 theorem eventually_add_smul_mem_closedBall_of_norm_lt {Δ : ℝ} {s : E} (hs : ‖s‖ < Δ) (v : E) :
     ∀ᶠ t in 𝓝[>] (0 : ℝ), s + t • v ∈ closedBall (0 : E) Δ := by
   have hc : Continuous fun t : ℝ => s + t • v := by fun_prop
@@ -87,8 +102,8 @@ theorem eventually_add_smul_mem_closedBall_of_norm_lt {Δ : ℝ} {s : E} (hs : �
   exact nhdsWithin_le_nhds ((hc.tendsto 0).eventually_mem hmem |>.mono
     fun _ h => ball_subset_closedBall h)
 
-/-- From a point of a closed ball, every strictly inward direction `⟪s, v⟫ < 0` stays in the
-ball for small steps. -/
+/-- If $\|s\| \le \Delta$ and $\langle s, v \rangle < 0$, then $s + t v$ lies in the closed ball of
+radius $\Delta$ for all sufficiently small $t > 0$. -/
 theorem eventually_add_smul_mem_closedBall_of_inner_neg {Δ : ℝ} {s v : E} (hs : ‖s‖ ≤ Δ)
     (hv : ⟪s, v⟫ < 0) : ∀ᶠ t in 𝓝[>] (0 : ℝ), s + t • v ∈ closedBall (0 : E) Δ := by
   have hc : Continuous fun t : ℝ => 2 * ⟪s, v⟫ + t * ‖v‖ ^ 2 := by fun_prop
@@ -107,39 +122,45 @@ theorem eventually_add_smul_mem_closedBall_of_inner_neg {Δ : ℝ} {s v : E} (hs
 
 end Limits
 
-/-- `μ` is a **trust-region multiplier** for the step `s` of the subproblem
-`min {m(s) : ‖s‖ ≤ Δ}`: `μ ≥ 0`, `(H + μ I) s = -g`, `H + μ I` is positive semidefinite and
-`μ (‖s‖ - Δ) = 0` ([cartis2022evaluation] (8.2.31)–(8.2.32), with the complementarity
-`μ (‖s‖² - Δ²) = 0` written in the equivalent form `μ (‖s‖ - Δ) = 0`).
+/-- A real number $\mu$ is a **trust-region multiplier** for the step $s$ of the subproblem
+$\min \{m(s) : \|s\| \le \Delta\}$ if
+$$\mu \ge 0, \qquad (H + \mu I) s = -g, \qquad H + \mu I \succeq 0, \qquad \mu (\|s\| -
+  \Delta) = 0.$$
+These are the conditions (8.2.31)–(8.2.32) of [cartis2022evaluation].
 
-Feasibility `‖s‖ ≤ Δ` is *not* part of this structure; results that need it take it as a separate
-hypothesis (see `isMinOn_closedBall_iff`). -/
+The source writes the complementarity condition as $\mu (\|s\|^2 - \Delta^2) = 0$; the form
+$\mu (\|s\| - \Delta) = 0$ is equivalent. Feasibility $\|s\| \le \Delta$ is not part of the
+structure; results that need it take it as a separate hypothesis (see
+`Subproblem.isMinOn_closedBall_iff`). Positive semidefiniteness is `LinearMap.IsPositive`, which
+includes symmetry. -/
 structure IsTrustRegionMultiplier (g : E) (H : E →L[ℝ] E) (Δ : ℝ) (s : E) (μ : ℝ) : Prop where
-  /-- The multiplier is nonnegative. -/
+  /-- The multiplier is nonnegative: $\mu \ge 0$. -/
   nonneg : 0 ≤ μ
-  /-- The step solves the shifted system. -/
+  /-- The step solves the shifted system $(H + \mu I) s = -g$. -/
   shifted : (H + μ • (1 : E →L[ℝ] E)) s = -g
-  /-- The shifted operator is positive semidefinite. -/
+  /-- The shifted operator $H + \mu I$ is positive semidefinite. -/
   isPositive : ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive
-  /-- Complementarity: the multiplier vanishes unless the constraint is active. -/
+  /-- Complementarity: $\mu (\|s\| - \Delta) = 0$, so the multiplier vanishes unless the constraint
+  is active. -/
   complementarity : μ * (‖s‖ - Δ) = 0
 
 section Optimality
 
 variable {g : E} {H : E →L[ℝ] E} {Δ μ : ℝ} {s : E}
 
-/-- A positive multiplier forces the constraint to be active: `0 < μ → ‖s‖ = Δ`. -/
+/-- A positive multiplier makes the constraint active: if $\mu > 0$, then $\|s\| = \Delta$. -/
 theorem IsTrustRegionMultiplier.norm_eq_of_pos (h : IsTrustRegionMultiplier g H Δ s μ)
     (hμ : 0 < μ) : ‖s‖ = Δ :=
   sub_eq_zero.mp ((mul_eq_zero.mp h.complementarity).resolve_left hμ.ne')
 
-/-- Complementarity as a disjunction: either `μ = 0` or the constraint is active. -/
+/-- Complementarity as a disjunction: $\mu = 0$ or $\|s\| = \Delta$. -/
 theorem IsTrustRegionMultiplier.eq_zero_or_norm_eq (h : IsTrustRegionMultiplier g H Δ s μ) :
     μ = 0 ∨ ‖s‖ = Δ :=
   (mul_eq_zero.mp h.complementarity).imp_right sub_eq_zero.mp
 
-/-- Under complementarity, the multiplier term of the shifted-system identity is nonnegative on
-the ball: `0 ≤ μ/2 (‖s‖² - ‖u‖²)` for `‖u‖ ≤ Δ`. -/
+/-- If $\mu$ is a trust-region multiplier for $s$, then $\frac{\mu}{2} (\|s\|^2 - \|u\|^2) \ge 0$
+for every $u$ with $\|u\| \le \Delta$. This is the multiplier term of the identity for the
+shifted system. -/
 theorem IsTrustRegionMultiplier.mul_sub_nonneg (h : IsTrustRegionMultiplier g H Δ s μ) {u : E}
     (hu : ‖u‖ ≤ Δ) : 0 ≤ μ / 2 * (‖s‖ ^ 2 - ‖u‖ ^ 2) := by
   rcases h.eq_zero_or_norm_eq with hμ | hs
@@ -148,18 +169,21 @@ theorem IsTrustRegionMultiplier.mul_sub_nonneg (h : IsTrustRegionMultiplier g H 
     have : 0 ≤ ‖s‖ ^ 2 - ‖u‖ ^ 2 := by linarith
     exact mul_nonneg (by linarith [h.nonneg]) this
 
-/-- Quantitative sufficiency: if `μ` is a trust-region multiplier for `s`, then on the ball
-`m(u) - m(s) ≥ ½ ⟪u - s, (H + μ I)(u - s)⟫`. -/
+/-- Quantitative sufficiency. Let $H$ be symmetric, and let $\mu$ be a trust-region multiplier for
+$s$. Then for every $u$ with $\|u\| \le \Delta$,
+$$m(u) - m(s) \ge \tfrac12 \langle u - s, (H + \mu I)(u - s) \rangle.$$
+-/
 theorem IsTrustRegionMultiplier.inner_le_quadModel_sub (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (h : IsTrustRegionMultiplier g H Δ s μ) {u : E} (hu : ‖u‖ ≤ Δ) :
     (1 / 2) * ⟪u - s, (H + μ • (1 : E →L[ℝ] E)) (u - s)⟫ ≤ quadModel g H u - quadModel g H s := by
   rw [quadModel_sub_eq_of_shifted hH h.shifted]
   linarith [h.mul_sub_nonneg hu]
 
-/-- Sufficiency: a step with a trust-region multiplier minimizes the quadratic model on the
-ball, in the sense that `m(s) ≤ m(u)` for every `u` in the ball. `IsMinOn` does not assert that
-`s` itself lies in the ball; see `IsTrustRegionMultiplier.isMinOn_of_norm_le` for the feasible
-version. -/
+/-- Sufficiency. Let $H$ be symmetric, and let $\mu$ be a trust-region multiplier for $s$. Then
+$m(s) \le m(u)$ for every $u$ with $\|u\| \le \Delta$.
+
+The conclusion `IsMinOn` does not say that $s$ lies in the ball; see
+`Subproblem.IsTrustRegionMultiplier.isMinOn_of_norm_le` for the feasible version. -/
 theorem IsTrustRegionMultiplier.isMinOn (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (h : IsTrustRegionMultiplier g H Δ s μ) : IsMinOn (quadModel g H) (closedBall 0 Δ) s := by
   intro u hu
@@ -169,15 +193,17 @@ theorem IsTrustRegionMultiplier.isMinOn (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
   simp only [mem_ofPred_eq]
   linarith
 
-/-- Sufficiency for a feasible step: `s` lies in the ball and minimizes the quadratic model
-there. -/
+/-- Sufficiency for a feasible step. Let $H$ be symmetric, let $\mu$ be a trust-region multiplier
+for $s$, and let $\|s\| \le \Delta$. Then $s$ lies in the closed ball of radius $\Delta$ and
+minimizes the quadratic model there. -/
 theorem IsTrustRegionMultiplier.isMinOn_of_norm_le (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (h : IsTrustRegionMultiplier g H Δ s μ) (hs : ‖s‖ ≤ Δ) :
     s ∈ closedBall (0 : E) Δ ∧ IsMinOn (quadModel g H) (closedBall 0 Δ) s :=
   ⟨mem_closedBall_zero_iff.mpr hs, h.isMinOn hH⟩
 
-/-- An interior global minimizer on the ball is an unconstrained critical point with `H ⪰ 0`;
-its multiplier is `0`. -/
+/-- An interior minimizer has the multiplier $0$. Let $H$ be symmetric, let $\|s\| < \Delta$, and
+let $s$ minimize the quadratic model on the closed ball of radius $\Delta$. Then $0$ is a
+trust-region multiplier for $s$: $H s = -g$ and $H \succeq 0$. -/
 theorem isTrustRegionMultiplier_zero_of_isMinOn_of_norm_lt (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (hs : ‖s‖ < Δ) (hmin : IsMinOn (quadModel g H) (closedBall 0 Δ) s) :
     IsTrustRegionMultiplier g H Δ s 0 := by
@@ -201,7 +227,9 @@ theorem isTrustRegionMultiplier_zero_of_isMinOn_of_norm_lt (hH : (H : E →ₗ[�
     have htpos' : (0 : ℝ) < t ^ 2 / 2 := by have : (0 : ℝ) < t := htpos; positivity
     simpa using nonneg_of_mul_nonneg_right (by linarith) htpos'
 
-/-- A global minimizer on the boundary `‖s‖ = Δ > 0` of the ball has a trust-region multiplier. -/
+/-- A minimizer on the boundary has a multiplier. Let $H$ be symmetric, let $\Delta > 0$ and
+$\|s\| = \Delta$, and let $s$ minimize the quadratic model on the closed ball of radius
+$\Delta$. Then $s$ has a trust-region multiplier. -/
 theorem exists_isTrustRegionMultiplier_of_isMinOn_of_norm_eq
     (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0 < Δ) (hs : ‖s‖ = Δ)
     (hmin : IsMinOn (quadModel g H) (closedBall 0 Δ) s) :
@@ -284,10 +312,18 @@ theorem exists_isTrustRegionMultiplier_of_isMinOn_of_norm_eq
     linarith
   · exact hrefl v hv
 
-/-- **Trust-region subproblem global optimality** ([cartis2022evaluation] Theorem 8.2.7). For
-symmetric `H`, `Δ > 0` and `‖s‖ ≤ Δ`, the step `s` is a global minimizer of the quadratic model
-on the ball `‖s‖ ≤ Δ` if and only if it has a trust-region multiplier: some `μ ≥ 0` with
-`(H + μ I) s = -g`, `H + μ I` positive semidefinite and `μ (‖s‖ - Δ) = 0`. -/
+/-- **Global optimality for the trust-region subproblem.** Let $H$ be symmetric, let $\Delta > 0$,
+and let $s \in E$ satisfy $\|s\| \le \Delta$. Then $s$ is a global minimizer of the quadratic
+model $m$ on the ball $\{u : \|u\| \le \Delta\}$ if and only if $s$ has a trust-region
+multiplier, that is, some $\mu \ge 0$ with
+$$(H + \mu I) s = -g, \qquad H + \mu I \succeq 0, \qquad \mu (\|s\| - \Delta) = 0.$$
+This is Theorem 8.2.7 of [cartis2022evaluation].
+
+The space $E$ is any real inner product space; finite dimension is not needed. Sufficiency is
+`Subproblem.IsTrustRegionMultiplier.isMinOn`, and necessity is
+`Subproblem.isTrustRegionMultiplier_zero_of_isMinOn_of_norm_lt` for an interior minimizer and
+`Subproblem.exists_isTrustRegionMultiplier_of_isMinOn_of_norm_eq` for a minimizer on the
+boundary. -/
 theorem isMinOn_closedBall_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0 < Δ) (hs : ‖s‖ ≤ Δ) :
     IsMinOn (quadModel g H) (closedBall 0 Δ) s ↔ ∃ μ, IsTrustRegionMultiplier g H Δ s μ := by
   refine ⟨fun hmin => ?_, fun ⟨μ, h⟩ => h.isMinOn hH⟩
@@ -295,16 +331,20 @@ theorem isMinOn_closedBall_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0
   · exact ⟨0, isTrustRegionMultiplier_zero_of_isMinOn_of_norm_lt hH hlt hmin⟩
   · exact exists_isTrustRegionMultiplier_of_isMinOn_of_norm_eq hH hΔ heq hmin
 
-/-- In finite dimension, the quadratic model attains its minimum on every closed ball of
-nonnegative radius. -/
+/-- **Existence of a minimizer.** Let $E$ be finite-dimensional, let $g \in E$, let $H$ be a
+continuous linear operator on $E$, and let $\Delta \ge 0$. Then the quadratic model attains its
+minimum on the closed ball of radius $\Delta$: there is $s$ with $\|s\| \le \Delta$ and
+$m(s) \le m(u)$ for all $u$ with $\|u\| \le \Delta$.
+
+The ball is compact and $m$ is continuous. Symmetry of $H$ is not needed. -/
 theorem exists_isMinOn_closedBall [FiniteDimensional ℝ E] (g : E) (H : E →L[ℝ] E) (hΔ : 0 ≤ Δ) :
     ∃ s, ‖s‖ ≤ Δ ∧ IsMinOn (quadModel g H) (closedBall 0 Δ) s := by
   obtain ⟨s, hs, hmin⟩ := (isCompact_closedBall (0 : E) Δ).exists_isMinOn
     (nonempty_closedBall.mpr hΔ) (continuous_quadModel g H).continuousOn
   exact ⟨s, mem_closedBall_zero_iff.mp hs, hmin⟩
 
-/-- If two feasible steps have trust-region multipliers `μ` and `μ'`, then `(μ - μ') s' = 0`:
-the second step solves the first shifted system as well. -/
+/-- Let $H$ be symmetric, and let $s$ and $s'$ be feasible steps with trust-region multipliers $\mu$
+and $\mu'$. Then $(\mu - \mu') s' = 0$: the second step also solves the first shifted system. -/
 theorem IsTrustRegionMultiplier.sub_smul_eq_zero (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (h : IsTrustRegionMultiplier g H Δ s μ) (hs : ‖s‖ ≤ Δ) {s' : E} {μ' : ℝ}
     (h' : IsTrustRegionMultiplier g H Δ s' μ') (hs' : ‖s'‖ ≤ Δ) : (μ - μ') • s' = 0 := by
@@ -318,13 +358,16 @@ theorem IsTrustRegionMultiplier.sub_smul_eq_zero (hH : (H : E →ₗ[ℝ] E).IsS
   rw [ContinuousLinearMap.coe_coe, map_sub, sub_eq_zero, h.shifted] at hk
   exact sub_smul_eq_zero_of_shifted hk h'.shifted
 
-/-- A multiplier vanishes at the zero step when `Δ > 0`. -/
+/-- If $\Delta > 0$ and $\mu$ is a trust-region multiplier for the zero step, then $\mu = 0$. -/
 theorem IsTrustRegionMultiplier.eq_zero_of_eq_zero (h : IsTrustRegionMultiplier g H Δ 0 μ)
     (hΔ : 0 < Δ) : μ = 0 :=
   h.eq_zero_or_norm_eq.resolve_right (by rw [norm_zero]; exact hΔ.ne)
 
-/-- The multiplier of a given step is unique when `Δ > 0` (no symmetry or feasibility needed):
-two multipliers `μ`, `μ'` for the same `s` coincide. -/
+/-- **The multiplier of a given step is unique.** Let $\Delta > 0$, and let $\mu$ and $\mu'$ be
+trust-region multipliers for the same step $s$. Then $\mu = \mu'$.
+
+Neither symmetry of $H$ nor feasibility of $s$ is needed. If $s = 0$, both multipliers are $0$
+by complementarity; otherwise the two shifted systems give $(\mu - \mu') s = 0$. -/
 theorem IsTrustRegionMultiplier.eq_of_same_step (hΔ : 0 < Δ)
     (h : IsTrustRegionMultiplier g H Δ s μ) {μ' : ℝ} (h' : IsTrustRegionMultiplier g H Δ s μ') :
     μ = μ' := by
@@ -333,9 +376,12 @@ theorem IsTrustRegionMultiplier.eq_of_same_step (hΔ : 0 < Δ)
   · have := sub_smul_eq_zero_of_shifted h.shifted h'.shifted
     exact sub_eq_zero.mp ((smul_eq_zero.mp this).resolve_right hs0)
 
-/-- **Uniqueness of the multiplier.** For symmetric `H` and `Δ > 0`, all feasible steps with a
-trust-region multiplier (equivalently, by `isMinOn_closedBall_iff`, all global minimizers) have
-the same multiplier (for a single step see `IsTrustRegionMultiplier.eq_of_same_step`). -/
+/-- **Uniqueness of the multiplier.** Let $H$ be symmetric and $\Delta > 0$, and let $s$ and $s'$ be
+steps with $\|s\| \le \Delta$ and $\|s'\| \le \Delta$ that have trust-region multipliers $\mu$
+and $\mu'$. Then $\mu = \mu'$.
+
+By `Subproblem.isMinOn_closedBall_iff`, all global minimizers therefore have the same
+multiplier. For a single step, see `Subproblem.IsTrustRegionMultiplier.eq_of_same_step`. -/
 theorem IsTrustRegionMultiplier.unique (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0 < Δ)
     (h : IsTrustRegionMultiplier g H Δ s μ) (hs : ‖s‖ ≤ Δ) {s' : E} {μ' : ℝ}
     (h' : IsTrustRegionMultiplier g H Δ s' μ') (hs' : ‖s'‖ ≤ Δ) : μ = μ' := by
@@ -350,9 +396,14 @@ theorem IsTrustRegionMultiplier.unique (hH : (H : E →ₗ[ℝ] E).IsSymmetric) 
     rw [smul_eq_zero] at this
     linarith [this.resolve_right hs'0]
 
-/-- **Uniqueness of the minimizer** ([cartis2022evaluation] Theorem 8.2.7, last sentence). If
-`s` is feasible with trust-region multiplier `μ` and `H + μ I` is coercive (positive definite),
-then `s` is the only global minimizer of the quadratic model on the ball. -/
+/-- **Uniqueness of the minimizer.** Let $H$ be symmetric, let $s$ satisfy $\|s\| \le \Delta$ and
+have a trust-region multiplier $\mu$, and let $H + \mu I$ be coercive (positive definite). Then
+every $u$ with $\|u\| \le \Delta$ that minimizes the quadratic model on the closed ball of
+radius $\Delta$ equals $s$. This is the last sentence of Theorem 8.2.7 of
+[cartis2022evaluation].
+
+Coercivity is `LinearMap.IsCoercive`: $\langle (H + \mu I) v, v \rangle \ge c \|v\|^2$ for some
+$c > 0$ and all $v$. -/
 theorem eq_of_isMinOn_closedBall_of_posDef (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (h : IsTrustRegionMultiplier g H Δ s μ) (hs : ‖s‖ ≤ Δ)
     (hc : ((H + μ • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsCoercive) {u : E} (hu : ‖u‖ ≤ Δ)
@@ -367,9 +418,14 @@ theorem eq_of_isMinOn_closedBall_of_posDef (hH : (H : E →ₗ[ℝ] E).IsSymmetr
   have : ‖u - s‖ ^ 2 ≤ 0 := by nlinarith
   exact sub_eq_zero.mp (norm_eq_zero.mp (by nlinarith [norm_nonneg (u - s)]))
 
-/-- At a positive-radius spherical minimizer, a scalar shift gives the stationary
-system and a positive semidefinite Hessian. Positive definiteness of this shift implies
-uniqueness on the sphere. -/
+/-- **Minimizers on the sphere.** Let $H$ be symmetric, let $\Delta > 0$, and let $s$ with
+$\|s\| = \Delta$ minimize the quadratic model on the sphere $\{u : \|u\| = \Delta\}$. Then there
+is a real number $\mu$ with
+$$(H + \mu I) s = -g \qquad \text{and} \qquad H + \mu I \succeq 0.$$
+If moreover $H + \mu I$ is coercive (positive definite), then every $u$ with $\|u\| = \Delta$
+that minimizes the quadratic model on the sphere equals $s$.
+
+The shift $\mu$ need not be nonnegative, because the constraint is an equality. -/
 theorem exists_shift_of_isMinOn_sphere (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (hΔ : 0 < Δ) (hs : ‖s‖ = Δ) (hmin : IsMinOn (quadModel g H) (sphere 0 Δ) s) :
     ∃ μ : ℝ, (H + μ • (1 : E →L[ℝ] E)) s = -g ∧
@@ -441,12 +497,18 @@ section Value
 
 variable {g : E} {H : E →L[ℝ] E}
 
-/-- The optimal value `inf {m(s) : ‖s‖ ≤ Δ}` of the trust-region subproblem
-(`m_Δ` of [cartis2022evaluation] §9.4.2). -/
+/-- The **optimal value** of the trust-region subproblem:
+$$m_\Delta = \inf \{m(s) : \|s\| \le \Delta\}.$$
+This is the value $m_\Delta$ of §9.4.2 of [cartis2022evaluation].
+
+The infimum is `sInf` on $\mathbb{R}$. It is $0$ when the ball is empty ($\Delta < 0$) or when
+the model is not bounded below on the ball; the second case does not occur in finite dimension
+(`Subproblem.bddBelow_image_closedBall`). -/
 def trustRegionValue (g : E) (H : E →L[ℝ] E) (Δ : ℝ) : ℝ :=
   sInf (quadModel g H '' closedBall 0 Δ)
 
-/-- The optimal value is attained at any global minimizer. -/
+/-- If $s$ with $\|s\| \le \Delta$ minimizes the quadratic model on the closed ball of radius
+$\Delta$, then the optimal value is $m_\Delta = m(s)$. -/
 theorem IsMinOn.trustRegionValue_eq {Δ : ℝ} {s : E} (hs : ‖s‖ ≤ Δ)
     (hmin : IsMinOn (quadModel g H) (closedBall 0 Δ) s) :
     trustRegionValue g H Δ = quadModel g H s :=
@@ -460,20 +522,25 @@ theorem bddBelow_image_closedBall (g : E) (H : E →L[ℝ] E) (Δ : ℝ) :
     BddBelow (quadModel g H '' closedBall 0 Δ) :=
   ((isCompact_closedBall (0 : E) Δ).image (continuous_quadModel g H)).bddBelow
 
-/-- The optimal value is a lower bound for the model on the ball. -/
+/-- In finite dimension, the optimal value is a lower bound for the model on the ball:
+$m_\Delta \le m(u)$ for every $u$ with $\|u\| \le \Delta$. -/
 theorem trustRegionValue_le {Δ : ℝ} {u : E} (hu : ‖u‖ ≤ Δ) :
     trustRegionValue g H Δ ≤ quadModel g H u :=
   csInf_le (bddBelow_image_closedBall g H Δ) (mem_image_of_mem _ (mem_closedBall_zero_iff.mpr hu))
 
-/-- The optimal value is antitone in the radius: `Δ₁ ≤ Δ₂ → m_{Δ₂} ≤ m_{Δ₁}`
-([cartis2022evaluation] (9.4.5), the valid direction). -/
+/-- **The optimal value decreases as the radius grows.** Let $E$ be finite-dimensional, and let
+$0 \le \Delta_1 \le \Delta_2$. Then $m_{\Delta_2} \le m_{\Delta_1}$.
+
+This is the valid direction of (9.4.5) of [cartis2022evaluation]. The source states an
+equivalence, but the converse fails; see the module documentation. -/
 theorem trustRegionValue_antitone {Δ₁ Δ₂ : ℝ} (h₁ : 0 ≤ Δ₁) (h : Δ₁ ≤ Δ₂) :
     trustRegionValue g H Δ₂ ≤ trustRegionValue g H Δ₁ :=
   csInf_le_csInf (bddBelow_image_closedBall g H Δ₂) ((nonempty_closedBall.mpr h₁).image _)
     (image_mono (closedBall_subset_closedBall h))
 
-/-- Rescaling any vector to the radius `Δ ≥ 0` gives an upper bound on the optimal value:
-`m_Δ ≤ m((Δ / ‖v‖) v)`. -/
+/-- In finite dimension, rescaling any vector $v$ to the radius $\Delta \ge 0$ gives an upper bound
+on the optimal value: $m_\Delta \le m\bigl((\Delta / \|v\|) v\bigr)$. For $v = 0$ the rescaled
+vector is $0$, by the Lean convention $\Delta / 0 = 0$. -/
 theorem trustRegionValue_le_smul {Δ : ℝ} (hΔ : 0 ≤ Δ) (v : E) :
     trustRegionValue g H Δ ≤ quadModel g H ((Δ / ‖v‖) • v) := by
   refine trustRegionValue_le ?_
@@ -482,17 +549,26 @@ theorem trustRegionValue_le_smul {Δ : ℝ} (hΔ : 0 ≤ Δ) (v : E) :
   · rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by positivity),
       div_mul_cancel₀ _ (norm_ne_zero_iff.mpr hv)]
 
-/-- Bounds from a larger radius ([cartis2022evaluation] (9.4.6)): if `0 ≤ Δ ≤ Δ⁺` and
-`‖s⁺‖ = Δ⁺` (`s⁺` need not be a minimizer for the radius `Δ⁺`), then
-`m_{Δ⁺} ≤ m_Δ ≤ m((Δ / Δ⁺) s⁺)`. -/
+/-- **Bounds from a larger radius.** Let $E$ be finite-dimensional, let $0 \le \Delta \le \Delta^+$,
+and let $s^+ \in E$ satisfy $\|s^+\| = \Delta^+$. Then
+$$m_{\Delta^+} \le m_\Delta \le m\bigl((\Delta / \Delta^+) s^+\bigr).$$
+This is (9.4.6) of [cartis2022evaluation].
+
+The vector $s^+$ need not be a minimizer for the radius $\Delta^+$. If $\Delta^+ = 0$, then
+$\Delta = 0$ and $s^+ = 0$, so the rescaled vector is $0$. -/
 theorem trustRegionValue_mem_Icc {Δ Δp : ℝ} (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp) {sp : E}
     (hsp : ‖sp‖ = Δp) :
     trustRegionValue g H Δ ∈
       Icc (trustRegionValue g H Δp) (quadModel g H ((Δ / Δp) • sp)) :=
   ⟨trustRegionValue_antitone hΔ h, hsp ▸ trustRegionValue_le_smul hΔ sp⟩
 
-/-- Bounds from a smaller radius ([cartis2022evaluation] (9.4.7)): if `0 ≤ Δ⁻ ≤ Δ` and
-`‖s⁻‖ = Δ⁻`, then `m_Δ ≤ min (m((Δ / Δ⁻) s⁻)) m_{Δ⁻}`. -/
+/-- **Bounds from a smaller radius.** Let $E$ be finite-dimensional, let
+$0 \le \Delta^- \le \Delta$, and let $s^- \in E$ satisfy $\|s^-\| = \Delta^-$. Then
+$$m_\Delta \le \min\bigl\{m\bigl((\Delta / \Delta^-) s^-\bigr), \ m_{\Delta^-}\bigr\}.$$
+This is (9.4.7) of [cartis2022evaluation].
+
+The vector $s^-$ need not be a minimizer for the radius $\Delta^-$. If $\Delta^- = 0$, then
+$s^- = 0$, so the rescaled vector is $0$ and the first bound is $m_\Delta \le m(0) = 0$. -/
 theorem trustRegionValue_le_min {Δ Δm : ℝ} (hΔm : 0 ≤ Δm) (h : Δm ≤ Δ) {sm : E}
     (hsm : ‖sm‖ = Δm) :
     trustRegionValue g H Δ ≤ min (quadModel g H ((Δ / Δm) • sm)) (trustRegionValue g H Δm) :=

@@ -41,7 +41,6 @@ id = 'IsExactImage'
 
 [[node]]
 id = 'IsExactImage.properConvex_compLin'
-desc = 'A function that pulls back exactly along `A` has proper pullback.'
 
 [[node]]
 id = 'IsExactImage.convexConj_compLin'

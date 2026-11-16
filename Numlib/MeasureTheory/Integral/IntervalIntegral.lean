@@ -22,75 +22,91 @@ import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
 
 /-!
-# Interval integrals over `(a, b)`: glue
+# Integrals over a bounded interval
 
-Small facts about functions on a compact interval `[a, b]` and their integrals over the open
-interval `(a, b)`, none of which is about any particular numerical method:
+This file collects facts about functions on a compact interval $[a, b]$ and their integrals over the
+open interval $(a, b)$, for use in numerical analysis and in the theory of differential equations.
+The endpoints do not matter for integrability or for the value of an integral, and a function
+continuous on $[a, b]$ is in $L^\infty(a, b)$ and $L^2(a, b)$ and is determined by its class there.
+The file proves the Cauchy–Schwarz inequality for integrals of products, the classical Poincaré
+inequality $\int_a^b v^2 \le \frac{(b - a)^2}{2} \int_a^b (v')^2$ for $v(a) = 0$, and the weighted
+mean value theorem $\int_a^b K f = f(\xi) \int_a^b K$ for $K \ge 0$, with $\xi$ in the open interval
+when $\int_a^b K > 0$. This form of the mean value theorem is what the Peano-kernel error formulas
+of quadrature rules need.
 
-* the endpoints do not matter: integrability on `(a, b)` gives integrability on `[a, b]` and
-  interval integrability between any two points of it
-  (`MeasureTheory.IntegrableOn.integrableOn_Icc_of_Ioo`,
-  `MeasureTheory.IntegrableOn.intervalIntegrable_of_Ioo`), two functions agreeing on `(a, b)`, or
-  almost everywhere on it, have the same interval integrals (`intervalIntegral.integral_congr_Ioo`,
-  `intervalIntegral.integral_congr_ae_Ioo_of_mem`), and `∫_a^b F = ∫_{(a, b)} F`
-  (`intervalIntegral.integral_eq_setIntegral_Ioo`); an integral over `[-a, a]` folds onto
-  `[0, a]` (`intervalIntegral.integral_fold_neg`);
-* a function continuous on `[a, b]` is essentially bounded and square integrable on `(a, b)`
-  (`ContinuousOn.memLp_top_restrict_Ioo`, `ContinuousOn.memLp_two_restrict_Ioo`), integrable
-  against an `L²` function (`MeasureTheory.integrableOn_continuousOn_mul`), and determined on
-  `[a, b]` by its class in `L²(a, b)` (`eqOn_Icc_of_ae_eq`); `‖f‖² = ∫ f²` in a real `L²(μ)`
-  (`MeasureTheory.L2.norm_sq_eq_integral_sq`); two norm bounds for `L²(a, b)`
-  (`MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound`, `MeasureTheory.Lp.norm_le_of_abs_le`);
-* **Cauchy–Schwarz** for the integral of a product, `|∫ f g| ≤ √(∫ f²) √(∫ g²)` for any measure
-  (`MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`) and for interval integrals
-  (`intervalIntegral.integral_mul_le_sqrt_mul_sqrt`; the squared form for continuous functions is
-  `intervalIntegral.sq_integral_mul_le_of_continuousOn`), with the interval integrability of the
-  product of two square integrable functions (`intervalIntegrable_mul_of_sq`,
-  `intervalIntegrable_sub_sq`);
-* **Poincaré's inequality in classical form**, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²` for a `C¹`
-  function vanishing at the left endpoint
-  (`intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`), from the Cauchy–Schwarz
-  bound on an increment, `(v(b) - v(a))² ≤ (b - a) ∫_a^b (v')²`
-  (`intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt`);
-* the primitive `x ↦ ∫_a^x w` of a function integrable on `(a, b)` is continuous on `[a, b]`
-  (`intervalIntegral.continuousOn_integral_of_integrableOn_Ioo`) and, for `w` continuous, has right
-  derivative `w` on `[a, b)` (`intervalIntegral.hasDerivWithinAt_integral_Ici`,
-  `intervalIntegral.continuousOn_integral_Icc`);
-* the **weighted mean value theorem** `∫_a^b K f = f(ξ) ∫_a^b K` for `K ≥ 0` and `f` continuous,
-  with `ξ ∈ [a, b]` (`intervalIntegral.exists_integral_mul_eq_mul_integral`) and, when `∫ K > 0`,
-  with `ξ` in the *open* interval (`intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral`),
-  which is what the Peano-kernel error formulas of quadrature rules need, together with the
-  positivity of the integral of a continuous nonnegative function positive somewhere inside
-  (`intervalIntegral.integral_pos_of_continuousOn_of_nonneg`);
-* an interval-integrable nonnegative weight is within any `L¹` distance of a continuous
-  nonnegative function (`intervalIntegral.exists_continuous_nonneg_integral_abs_sub_le`), which is
-  how an integral-form Gronwall lemma with an integrable weight follows from the continuous one;
-* a real polynomial whose square integrates to zero over a nondegenerate interval is zero
-  (`Polynomial.eq_zero_of_integral_mul_self_eq_zero`).
+The file also proves the fundamental theorem of calculus on $(0, T]$ for a function with a limit at
+$0^+$, the passage from bounded integrals on $(0, T]$ to integrability on $(0, \infty)$, a
+one-variable estimate $\int_I |f|^P \le t^P \int_J |f'|^P$ for a function that vanishes at the left
+end of an interval of length $t$, the approximation of an integrable nonnegative weight by
+continuous nonnegative functions in $L^1$, and the fact that a real polynomial whose square has
+integral $0$ over a nondegenerate interval is $0$.
+
+## Main results
+
+* `MeasureTheory.IntegrableOn.integrableOn_Icc_of_Ioo`,
+  `MeasureTheory.IntegrableOn.intervalIntegrable_of_Ioo`: integrability on $(a, b)$ gives
+  integrability on $[a, b]$ and between any two points of $[a, b]$.
+* `intervalIntegral.integral_congr_Ioo`, `intervalIntegral.integral_congr_ae_Ioo_of_mem`,
+  `intervalIntegral.integral_eq_setIntegral_Ioo`: interval integrals depend only on the integrand
+  almost everywhere on $(a, b)$, and $\int_a^b F = \int_{(a, b)} F$.
+* `intervalIntegral.integral_fold_neg`: $\int_{-a}^a H = \int_0^a (H(t) + H(-t)) \, dt$.
+* `ContinuousOn.memLp_top_restrict_Ioo`, `ContinuousOn.memLp_two_restrict_Ioo`, `eqOn_Icc_of_ae_eq`:
+  a function continuous on $[a, b]$ is in $L^\infty(a, b)$ and $L^2(a, b)$, and is determined on
+  $[a, b]$ by its class.
+* `MeasureTheory.L2.norm_sq_eq_integral_sq`: $\|f\|^2 = \int f^2 \, d\mu$ in a real $L^2(\mu)$.
+* `MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt`,
+  `intervalIntegral.integral_mul_le_sqrt_mul_sqrt`,
+  `intervalIntegral.sq_integral_mul_le_of_continuousOn`: the Cauchy–Schwarz inequality for integrals
+  of products.
+* `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`: the classical Poincaré
+  inequality.
+* `intervalIntegral.hasDerivWithinAt_integral_Ici`, `intervalIntegral.continuousOn_integral_Icc`:
+  the primitive of a function continuous on $[a, b]$ is continuous on $[a, b]$ and has the right
+  derivative $p(t)$ at $t \in [a, b)$.
+* `intervalIntegral.exists_integral_mul_eq_mul_integral`,
+  `intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral`: the weighted mean value theorem,
+  with $\xi \in [a, b]$, and with $\xi \in (a, b)$ when $\int_a^b K > 0$.
+* `intervalIntegral.exists_continuous_nonneg_integral_abs_sub_le`: an integrable nonnegative weight
+  is within any distance in $L^1(a, b)$ of a continuous nonnegative function.
+* `integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg`: if $\varphi' = -g \le 0$ on $(0, \infty)$,
+  $\varphi \ge 0$ and $\varphi(t) \to L$ as $t \to 0^+$, then $\varphi(T) + \int_0^T g = L$.
+* `lintegral_enorm_rpow_le_of_hasDerivAt`: the one-variable estimate behind the estimate on a strip.
+* `Polynomial.eq_zero_of_integral_mul_self_eq_zero`: a real polynomial $p$ with $\int_u^v p^2 = 0$
+  and $u < v$ is $0$.
+
+## Implementation notes
+
+* An integral over $(a, b)$ is the integral for the measure `volume.restrict (Ioo a b)`, and
+  $L^2(a, b)$ is `Lp ℝ 2 (volume.restrict (Ioo a b))`.
+* The approximation of a weight in $L^1$ is the step by which a Gronwall lemma in integral form with
+  an integrable weight follows from the version with a continuous weight.
 -/
 
 open Filter MeasureTheory Set Topology intervalIntegral
 open scoped ENNReal Interval
 
-/-! ### Integrability on `(a, b)` and on `[a, b]` -/
+/-! ### Integrability on $(a, b)$ and on $[a, b]$ -/
 
 section Integrability
 
 variable {a b : ℝ} {w : ℝ → ℝ}
 
-/-- A function integrable on `(a, b)` is integrable on `[a, b]`. -/
+/-- If $w \colon \mathbb{R} \to \mathbb{R}$ is integrable on $(a, b)$, then $w$ is integrable on
+$[a, b]$. -/
 theorem MeasureTheory.IntegrableOn.integrableOn_Icc_of_Ioo (hw : IntegrableOn w (Ioo a b)) :
     IntegrableOn w (Icc a b) :=
   (integrableOn_Icc_iff_integrableOn_Ioo (f := w) (μ := volume) (a := a) (b := b) enorm_ne_top
     enorm_ne_top).2 hw
 
-/-- A function integrable on `(a, b)` is interval integrable between any two points of
-`[a, b]`. -/
+/-- If $w \colon \mathbb{R} \to \mathbb{R}$ is integrable on $(a, b)$, then $w$ is interval
+integrable between any two points $x, y \in [a, b]$. -/
 theorem MeasureTheory.IntegrableOn.intervalIntegrable_of_Ioo (hw : IntegrableOn w (Ioo a b))
     {x y : ℝ} (hx : x ∈ Icc a b) (hy : y ∈ Icc a b) : IntervalIntegrable w volume x y :=
   (hw.integrableOn_Icc_of_Ioo.mono_set (uIcc_subset_Icc hx hy)).intervalIntegrable
 
-/-- The antiderivative of a function integrable on `(a, b)` is continuous on `[a, b]`. -/
+/-- Let $a \le b$, let $w \colon \mathbb{R} \to \mathbb{R}$ be integrable on $(a, b)$, and let
+$c \in \mathbb{R}$. Then the function $x \mapsto c + \int_a^x w(t) \, dt$ is continuous on
+$[a, b]$. -/
 theorem intervalIntegral.continuousOn_integral_of_integrableOn_Ioo (hab : a ≤ b)
     (hw : IntegrableOn w (Ioo a b)) (c : ℝ) :
     ContinuousOn (fun x ↦ c + ∫ t in a..x, w t) (Icc a b) :=
@@ -107,13 +123,13 @@ namespace intervalIntegral
 
 variable {a b : ℝ}
 
-/-- Two functions agreeing on the open interval have the same interval integral. -/
+/-- Let $a \le b$. If $g(t) = h(t)$ for every $t \in (a, b)$, then $\int_a^b g = \int_a^b h$. -/
 theorem integral_congr_Ioo {g h : ℝ → ℝ} (hab : a ≤ b) (hgh : ∀ t ∈ Ioo a b, g t = h t) :
     ∫ t in a..b, g t = ∫ t in a..b, h t :=
   integral_congr_Ioo_of_le hab hgh
 
-/-- Interval integrals between two points of `[a, b]` only see the integrand almost everywhere on
-`(a, b)`. -/
+/-- If $f = g$ almost everywhere on $(a, b)$, then $\int_s^t f = \int_s^t g$ for all
+$s, t \in [a, b]$. -/
 theorem integral_congr_ae_Ioo_of_mem {f g : ℝ → ℝ}
     (h : f =ᵐ[volume.restrict (Ioo a b)] g) {s t : ℝ} (hs : s ∈ Icc a b) (ht : t ∈ Icc a b) :
     ∫ r in s..t, f r = ∫ r in s..t, g r := by
@@ -124,7 +140,8 @@ theorem integral_congr_ae_Ioo_of_mem {f g : ℝ → ℝ}
   have hr' : r ∈ Icc a b := uIcc_subset_Icc hs ht (uIoc_subset_uIcc hrI)
   exact hr ⟨lt_of_le_of_ne hr'.1 (Ne.symm hra), lt_of_le_of_ne hr'.2 hrb⟩
 
-/-- `∫_a^b F = ∫_{(a, b)} F`. -/
+/-- Let $a \le b$ and $F \colon \mathbb{R} \to \mathbb{R}$. Then
+$\int_a^b F(x) \, dx = \int_{(a, b)} F(x) \, dx$. -/
 theorem integral_eq_setIntegral_Ioo (hab : a ≤ b) (F : ℝ → ℝ) :
     ∫ x in a..b, F x = ∫ x in Ioo a b, F x := by
   rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo]
@@ -133,7 +150,10 @@ end intervalIntegral
 
 /-! ### Symmetric intervals -/
 
-/-- **Folding a symmetric interval onto its right half**: `∫_{-a}^{a} H = ∫_0^a (H t + H (-t))`. -/
+/-- **Folding a symmetric interval onto its right half.** Let $E$ be a real normed space, and let
+$H \colon \mathbb{R} \to E$ be interval integrable on $[-a, 0]$ and on $[0, a]$. Then
+$$\int_{-a}^{a} H(t) \, dt = \int_0^a \big(H(t) + H(-t)\big) \, dt.$$
+-/
 theorem intervalIntegral.integral_fold_neg {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {H : ℝ → E} {a : ℝ} (h₁ : IntervalIntegrable H volume (-a) 0)
     (h₂ : IntervalIntegrable H volume 0 a) :
@@ -143,21 +163,22 @@ theorem intervalIntegral.integral_fold_neg {E : Type*} [NormedAddCommGroup E] [N
   rw [intervalIntegral.integral_add h₂ h₃, intervalIntegral.integral_comp_neg H, neg_zero,
     add_comm, intervalIntegral.integral_add_adjacent_intervals h₁ h₂]
 
-/-! ### Continuous functions on `[a, b]` in `Lp(a, b)` -/
+/-! ### Continuous functions on $[a, b]$ in $L^p(a, b)$ -/
 
 section Lp
 
 variable {a b : ℝ}
 
-/-- Two functions continuous on `[a, b]` and almost everywhere equal on `(a, b)` agree on all of
-`[a, b]`. -/
+/-- Let $a < b$. If $g_1$ and $g_2$ are continuous on $[a, b]$ and $g_1 = g_2$ almost everywhere on
+$(a, b)$, then $g_1 = g_2$ on $[a, b]$. -/
 theorem eqOn_Icc_of_ae_eq (hab : a < b) {g₁ g₂ : ℝ → ℝ} (h₁ : ContinuousOn g₁ (Icc a b))
     (h₂ : ContinuousOn g₂ (Icc a b)) (h : g₁ =ᵐ[volume.restrict (Ioo a b)] g₂) :
     EqOn g₁ g₂ (Icc a b) :=
   Measure.eqOn_of_ae_eq (by rwa [← restrict_Ioo_eq_restrict_Icc (μ := volume)]) h₁ h₂
     (by rw [interior_Icc, closure_Ioo hab.ne])
 
-/-- A function continuous on `[a, b]` is essentially bounded on `(a, b)`. -/
+/-- A function $g \colon \mathbb{R} \to \mathbb{R}$ continuous on $[a, b]$ is in $L^\infty(a, b)$.
+-/
 theorem ContinuousOn.memLp_top_restrict_Ioo {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b)) :
     MemLp g ⊤ (volume.restrict (Ioo a b)) := by
   obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hg
@@ -165,19 +186,21 @@ theorem ContinuousOn.memLp_top_restrict_Ioo {g : ℝ → ℝ} (hg : ContinuousOn
     C ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx ↦
       hC x (Ioo_subset_Icc_self hx)))
 
-/-- A function continuous on `[a, b]` lies in `L²(a, b)`. -/
+/-- A function $g \colon \mathbb{R} \to \mathbb{R}$ continuous on $[a, b]$ is in $L^2(a, b)$. -/
 theorem ContinuousOn.memLp_two_restrict_Ioo {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b)) :
     MemLp g 2 (volume.restrict (Ioo a b)) :=
   hg.memLp_top_restrict_Ioo.mono_exponent le_top
 
-/-- A function continuous on `[a, b]` is `L²(a, b)`-integrable against an `L²` function. -/
+/-- If $g \colon \mathbb{R} \to \mathbb{R}$ is continuous on $[a, b]$ and $f \in L^2(a, b)$, then
+$x \mapsto g(x) f(x)$ is integrable on $(a, b)$. -/
 theorem MeasureTheory.integrableOn_continuousOn_mul {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     IntegrableOn (fun x ↦ g x * f x) (Ioo a b) :=
   IntegrableOn.continuousOn_mul_of_subset hg ((Lp.memLp f).integrable one_le_two) isCompact_Icc
     measurableSet_Ioo Ioo_subset_Icc_self
 
-/-- `‖f‖² = ∫ f²` in a real `L²(μ)`, for any measure. -/
+/-- For every measure $\mu$ and every $f$ in the space $L^2(\mu)$ of real functions,
+$\|f\|^2 = \int f^2 \, d\mu$. -/
 theorem MeasureTheory.L2.norm_sq_eq_integral_sq {X : Type*} [MeasurableSpace X] {μ : Measure X}
     (f : Lp ℝ 2 μ) : ‖f‖ ^ 2 = ∫ x, f x ^ 2 ∂μ := by
   rw [← real_inner_self_eq_norm_sq, L2.inner_def]
@@ -185,12 +208,14 @@ theorem MeasureTheory.L2.norm_sq_eq_integral_sq {X : Type*} [MeasurableSpace X] 
   dsimp only
   rw [real_inner_self_eq_norm_sq, Real.norm_eq_abs, sq_abs]
 
-/-- `‖f‖² = ∫_a^b |f|²` in `L²(a, b)`: `MeasureTheory.L2.norm_sq_eq_integral_sq`. -/
+/-- For every $f \in L^2(a, b)$, $\|f\|^2 = \int_{(a, b)} |f(x)|^2 \, dx$. This is
+`MeasureTheory.L2.norm_sq_eq_integral_sq` for the interval. -/
 theorem norm_sq_eq_integral_sq (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ‖f‖ ^ 2 = ∫ x in Ioo a b, |f x| ^ 2 := by
   simp_rw [L2.norm_sq_eq_integral_sq, sq_abs]
 
-/-- An `L²(a, b)` function bounded by `C` has norm at most `√(b - a) C`. -/
+/-- Let $a \le b$, let $f \in L^2(a, b)$, and let $C \ge 0$ with $|f| \le C$ almost everywhere on
+$(a, b)$. Then $\|f\| \le \sqrt{b - a} \, C$. -/
 theorem MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound (hab : a ≤ b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ᵐ x ∂(volume.restrict (Ioo a b)), |f x| ≤ C) : ‖f‖ ≤ Real.sqrt (b - a) * C := by
@@ -205,8 +230,8 @@ theorem MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound (hab : a ≤ b)
     _ = (b - a) * C ^ 2 := by
         rw [setIntegral_const, Real.volume_real_Ioo_of_le hab, smul_eq_mul]
 
-/-- An `L²(a, b)` function dominated almost everywhere by `c (|g| + d |h|)` has norm at most
-`c (‖g‖ + d ‖h‖)`. -/
+/-- Let $f, g, h \in L^2(a, b)$ and $c, d \ge 0$. If $|f| \le c (|g| + d |h|)$ almost everywhere on
+$(a, b)$, then $\|f\| \le c (\|g\| + d \|h\|)$. -/
 theorem MeasureTheory.Lp.norm_le_of_abs_le (f g h : Lp ℝ 2 (volume.restrict (Ioo a b))) {c d : ℝ}
     (hc : 0 ≤ c) (hd : 0 ≤ d)
     (hle : ∀ᵐ x ∂(volume.restrict (Ioo a b)), |f x| ≤ c * (|g x| + d * |h x|)) :
@@ -229,12 +254,16 @@ theorem MeasureTheory.Lp.norm_le_of_abs_le (f g h : Lp ℝ 2 (volume.restrict (I
 
 end Lp
 
-/-! ### Cauchy–Schwarz for integrals of products -/
+/-! ### The Cauchy–Schwarz inequality for integrals of products -/
 
 section CauchySchwarz
 
-/-- **Cauchy–Schwarz for the integral of a product**: for square-integrable real `f` and `g`,
-`|∫ f g| ≤ √(∫ f²) √(∫ g²)`. This is Hölder's inequality at the conjugate pair `(2, 2)`. -/
+/-- **The Cauchy–Schwarz inequality for the integral of a product.** Let $\mu$ be a measure and let
+$f, g \in L^2(\mu)$ be real. Then
+$$\Big|\int f g \, d\mu\Big| \le \Big(\int f^2 \, d\mu\Big)^{1/2} \Big(\int g^2 \,
+  d\mu\Big)^{1/2}.$$
+
+This is Hölder's inequality for the conjugate exponents $2$ and $2$. -/
 theorem MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt {X : Type*} [MeasurableSpace X]
     {μ : Measure X} {f g : X → ℝ} (hf : MemLp f 2 μ) (hg : MemLp g 2 μ) :
     |∫ y, f y * g y ∂μ| ≤ √(∫ y, f y ^ 2 ∂μ) * √(∫ y, g y ^ 2 ∂μ) := by
@@ -258,8 +287,12 @@ theorem MeasureTheory.abs_integral_mul_le_sqrt_mul_sqrt {X : Type*} [MeasurableS
 
 variable {u v : ℝ} {f g : ℝ → ℝ}
 
-/-- **Cauchy–Schwarz for interval integrals** of square integrable functions:
-`∫_u^v f g ≤ √(∫_u^v f²) √(∫_u^v g²)`. Hölder's inequality at the conjugate pair `(2, 2)`. -/
+/-- **The Cauchy–Schwarz inequality for interval integrals.** Let $u \le v$, and let
+$f, g \colon \mathbb{R} \to \mathbb{R}$ be such that $f$, $f^2$, $g$ and $g^2$ are interval
+integrable on $[u, v]$. Then
+$$\int_u^v f g \le \Big(\int_u^v f^2\Big)^{1/2} \Big(\int_u^v g^2\Big)^{1/2}.$$
+
+This is Hölder's inequality for the conjugate exponents $2$ and $2$. -/
 theorem intervalIntegral.integral_mul_le_sqrt_mul_sqrt (huv : u ≤ v)
     (hf : IntervalIntegrable f volume u v) (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v)
     (hg : IntervalIntegrable g volume u v)
@@ -274,9 +307,12 @@ theorem intervalIntegral.integral_mul_le_sqrt_mul_sqrt (huv : u ≤ v)
     intervalIntegral.integral_of_le huv]
   exact (le_abs_self _).trans key
 
-/-- **Cauchy–Schwarz for interval integrals** of continuous functions:
-`(∫_a^b f g)² ≤ (∫_a^b f²)(∫_a^b g²)`, from the nonnegativity of `∫ (λ f + g)²` and the sign of
-its discriminant. -/
+/-- **The Cauchy–Schwarz inequality for interval integrals** of continuous functions. Let $a \le b$,
+and let $f$ and $g$ be continuous on $[a, b]$. Then
+$$\Big(\int_a^b f g\Big)^2 \le \Big(\int_a^b f^2\Big) \Big(\int_a^b g^2\Big).$$
+
+The proof uses the nonnegativity of $\int_a^b (\lambda f + g)^2$ for every $\lambda$ and the
+sign of the discriminant of this quadratic in $\lambda$. -/
 theorem intervalIntegral.sq_integral_mul_le_of_continuousOn {a b : ℝ} (hab : a ≤ b)
     (hf : ContinuousOn f (Icc a b)) (hg : ContinuousOn g (Icc a b)) :
     (∫ t in a..b, f t * g t) ^ 2 ≤ (∫ t in a..b, f t ^ 2) * ∫ t in a..b, g t ^ 2 := by
@@ -305,7 +341,8 @@ theorem intervalIntegral.sq_integral_mul_le_of_continuousOn {a b : ℝ} (hab : a
   rw [discrim] at hd
   nlinarith [hd]
 
-/-- The product of two square integrable functions is interval integrable. -/
+/-- If $f$, $f^2$, $g$ and $g^2$ are interval integrable on $[u, v]$, then $fg$ is interval
+integrable on $[u, v]$. -/
 theorem intervalIntegrable_mul_of_sq (hf : IntervalIntegrable f volume u v)
     (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v) (hg : IntervalIntegrable g volume u v)
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
@@ -315,8 +352,8 @@ theorem intervalIntegrable_mul_of_sq (hf : IntervalIntegrable f volume u v)
     ((memLp_two_iff_integrable_sq hf.2.aestronglyMeasurable).2 hf2.2).integrable_mul
       ((memLp_two_iff_integrable_sq hg.2.aestronglyMeasurable).2 hg2.2)⟩
 
-/-- The square of the difference of a square integrable function and a continuous one is
-interval integrable. -/
+/-- If $g$ and $g^2$ are interval integrable on $[u, v]$ and $p$ is continuous on the closed
+interval between $u$ and $v$, then $(g - p)^2$ is interval integrable on $[u, v]$. -/
 theorem intervalIntegrable_sub_sq {p : ℝ → ℝ} (hg : IntervalIntegrable g volume u v)
     (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) (hp : ContinuousOn p [[u, v]]) :
     IntervalIntegrable (fun s => (g s - p s) ^ 2) volume u v := by
@@ -327,12 +364,15 @@ theorem intervalIntegrable_sub_sq {p : ℝ → ℝ} (hg : IntervalIntegrable g v
 
 end CauchySchwarz
 
-/-! ### Poincaré's inequality on an interval, classical form -/
+/-! ### The Poincaré inequality on an interval, classical form -/
 
-/-- **Cauchy–Schwarz for the increment of a `C¹` function**: `(v(b) - v(a))² ≤ (b - a) ∫_a^b (v')²`
-for `v` continuous on `[a, b]` with a continuous derivative `v'` inside, from
-`v(b) - v(a) = ∫_a^b v'` and `intervalIntegral.sq_integral_mul_le_of_continuousOn` against `1`.
-The pointwise step of Poincaré's inequality
+/-- **The Cauchy–Schwarz inequality for the increment of a $C^1$ function.** Let $a \le b$, let $v$
+and $v'$ be continuous on $[a, b]$, and let $v$ have the derivative $v'(x)$ at every
+$x \in (a, b)$. Then
+$$\big(v(b) - v(a)\big)^2 \le (b - a) \int_a^b v'(x)^2 \, dx.$$
+
+The proof applies `intervalIntegral.sq_integral_mul_le_of_continuousOn` to
+$v(b) - v(a) = \int_a^b v' \cdot 1$. This is the pointwise step of the Poincaré inequality
 `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`. -/
 theorem intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt {a b : ℝ} (hab : a ≤ b)
     {v vx : ℝ → ℝ} (hv : ContinuousOn v (Icc a b)) (hvx : ContinuousOn vx (Icc a b))
@@ -345,11 +385,14 @@ theorem intervalIntegral.sq_sub_le_mul_integral_sq_of_hasDerivAt {a b : ℝ} (ha
   simp only [one_mul, one_pow, intervalIntegral.integral_const, smul_eq_mul, mul_one] at hcs
   rwa [hftc] at hcs
 
-/-- **Poincaré's inequality on an interval, classical form**: for a `C¹` function `v` on
-`[a, b]` vanishing at the left endpoint, `∫_a^b v² ≤ (b - a)²/2 ∫_a^b (v')²`. Since
-`v(y) = ∫_a^y v'`, Cauchy–Schwarz against `1` gives `v(y)² ≤ (y - a) ∫_a^b (v')²`, and
-`∫_a^b (y - a) dy = (b - a)²/2`. The constant is the `C_P = (b - a)/√2` of
-[quarteroni2000numerical] (12.16). -/
+/-- **The Poincaré inequality on an interval, classical form.** Let $a \le b$, let $v$ and $v'$ be
+continuous on $[a, b]$, let $v$ have the derivative $v'(x)$ at every $x \in (a, b)$, and let
+$v(a) = 0$. Then
+$$\int_a^b v(x)^2 \, dx \le \frac{(b - a)^2}{2} \int_a^b v'(x)^2 \, dx.$$
+
+Since $v(y) = \int_a^y v'$, the Cauchy–Schwarz inequality gives
+$v(y)^2 \le (y - a) \int_a^b (v')^2$, and $\int_a^b (y - a) \, dy = (b - a)^2/2$. The constant
+is the square of the constant $C_P = (b - a)/\sqrt{2}$ in (12.16) of [quarteroni2000numerical]. -/
 theorem intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero {a b : ℝ} (hab : a ≤ b)
     {v vx : ℝ → ℝ} (hv : ContinuousOn v (Icc a b)) (hvx : ContinuousOn vx (Icc a b))
     (hd : ∀ x ∈ Ioo a b, HasDerivAt v (vx x) x) (hva : v a = 0) :
@@ -394,9 +437,9 @@ namespace intervalIntegral
 
 variable {a b t : ℝ} {K f : ℝ → ℝ}
 
-/-- The fundamental theorem of calculus in the form a comparison argument on `Ico a b` needs: the
-primitive `u ↦ ∫_a^u p` of a function continuous on `Icc a b` has right derivative `p t` at every
-`t ∈ Ico a b`. -/
+/-- **The fundamental theorem of calculus** in the form that a comparison argument on $[a, b)$
+needs. Let $p$ be continuous on $[a, b]$ and let $t \in [a, b)$. Then the primitive
+$u \mapsto \int_a^u p(s) \, ds$ has the right derivative $p(t)$ at $t$. -/
 theorem hasDerivWithinAt_integral_Ici {p : ℝ → ℝ} (hp : ContinuousOn p (Icc a b))
     (ht : t ∈ Ico a b) : HasDerivWithinAt (fun u => ∫ s in a..u, p s) (p t) (Ici t) t := by
   have ht' : t ∈ Icc a b := Ico_subset_Icc_self ht
@@ -409,7 +452,8 @@ theorem hasDerivWithinAt_integral_Ici {p : ℝ → ℝ} (hp : ContinuousOn p (Ic
       (hp.stronglyMeasurableAtFilter_nhdsWithin measurableSet_Icc t) (hp t ht')
   exact h.mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)
 
-/-- The primitive `u ↦ ∫_a^u p` of a function continuous on `Icc a b` is continuous there. -/
+/-- If $p$ is continuous on $[a, b]$, then its primitive $u \mapsto \int_a^u p(s) \, ds$ is
+continuous on $[a, b]$. -/
 theorem continuousOn_integral_Icc {p : ℝ → ℝ} (hp : ContinuousOn p (Icc a b)) :
     ContinuousOn (fun u => ∫ s in a..u, p s) (Icc a b) := by
   rcases le_or_gt a b with hab | hab
@@ -418,9 +462,12 @@ theorem continuousOn_integral_Icc {p : ℝ → ℝ} (hp : ContinuousOn p (Icc a 
     rwa [uIcc_of_le hab] at h
   · simp [Icc_eq_empty_of_lt hab]
 
-/-- **The weighted mean value theorem for integrals.** For `K ≥ 0` and `f` continuous on
-`[a, b]`, `∫_a^b K f = f(ξ) ∫_a^b K` for some `ξ ∈ [a, b]`: the integral lies between the
-extreme values of `f` times `∫ K`, and the intermediate value theorem supplies `ξ`. -/
+/-- **The weighted mean value theorem for integrals.** Let $a \le b$, let $K$ and $f$ be continuous
+on $[a, b]$, and let $K \ge 0$ on $[a, b]$. Then there is $\xi \in [a, b]$ with
+$$\int_a^b K(t) f(t) \, dt = f(\xi) \int_a^b K(t) \, dt.$$
+
+The integral lies between the extreme values of $f$ times $\int_a^b K$, and the intermediate
+value theorem gives $\xi$. -/
 theorem exists_integral_mul_eq_mul_integral (hab : a ≤ b) (hK : ContinuousOn K (Icc a b))
     (hf : ContinuousOn f (Icc a b)) (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) :
     ∃ ξ ∈ Icc a b, ∫ t in a..b, K t * f t = f ξ * ∫ t in a..b, K t := by
@@ -444,8 +491,8 @@ theorem exists_integral_mul_eq_mul_integral (hab : a ≤ b) (hK : ContinuousOn K
     ((hf.mono hpq).mul continuousOn_const) (mem_uIcc_of_le hlow hhigh)
   exact ⟨ξ, hpq hξ, hξval.symm⟩
 
-/-- A continuous nonnegative function on `[a, b]`, positive at an interior point, has a positive
-integral. -/
+/-- Let $a < b$, let $K$ be continuous on $[a, b]$ with $K \ge 0$ on $[a, b]$, and let $K(c) > 0$
+for some $c \in (a, b)$. Then $\int_a^b K > 0$. -/
 theorem integral_pos_of_continuousOn_of_nonneg (hab : a < b) (hK : ContinuousOn K (Icc a b))
     (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) {c : ℝ} (hc : c ∈ Ioo a b) (hKc : 0 < K c) :
     0 < ∫ t in a..b, K t := by
@@ -481,11 +528,14 @@ theorem integral_pos_of_continuousOn_of_nonneg (hab : a < b) (hK : ContinuousOn 
     integral_nonneg (by linarith) fun t ht => hKnn t ⟨by linarith [ht.1], ht.2⟩
   linarith
 
-/-- **The weighted mean value theorem, with `ξ` inside the open interval.** For `K ≥ 0` with
-`∫_a^b K > 0` and `f` continuous, `∫ K f = f(ξ) ∫ K` with `ξ ∈ (a, b)`: if the mean value of `f`
-lies strictly between its extreme values, the intermediate value theorem gives an interior `ξ`;
-if it equals an extreme value, `f` takes that value wherever `K ≠ 0`, and `K ≠ 0` somewhere
-inside because its integral is positive. -/
+/-- **The weighted mean value theorem, with $\xi$ in the open interval.** Let $a < b$, let $K$ and
+$f$ be continuous on $[a, b]$, let $K \ge 0$ on $[a, b]$, and let $\int_a^b K > 0$. Then there
+is $\xi \in (a, b)$ with
+$$\int_a^b K(t) f(t) \, dt = f(\xi) \int_a^b K(t) \, dt.$$
+
+If the mean value of $f$ lies strictly between the extreme values of $f$, the intermediate value
+theorem gives an interior $\xi$. If it is equal to an extreme value, then $f$ takes that value
+wherever $K \neq 0$, and $K \neq 0$ at some interior point because its integral is positive. -/
 theorem exists_mem_Ioo_integral_mul_eq_mul_integral (hab : a < b)
     (hK : ContinuousOn K (Icc a b)) (hf : ContinuousOn f (Icc a b))
     (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) (hKpos : 0 < ∫ t in a..b, K t) :
@@ -567,7 +617,9 @@ theorem exists_mem_Ioo_integral_mul_eq_mul_integral (hab : a < b)
       (hf.mono (Icc_subset_Icc hq.1 hp.2)) ⟨hpμ', hμq'⟩
     exact ⟨ξ, ⟨lt_of_le_of_lt hq.1 hξ.1, lt_of_lt_of_le hξ.2 hp.2⟩, by rw [hμI, hξval]⟩
 
-/-- The nonpositive-kernel form of `exists_mem_Ioo_integral_mul_eq_mul_integral`. -/
+/-- **The weighted mean value theorem, with $\xi$ in the open interval**, for a nonpositive kernel.
+Let $a < b$, let $K$ and $f$ be continuous on $[a, b]$, let $K \le 0$ on $[a, b]$, and let
+$\int_a^b K < 0$. Then there is $\xi \in (a, b)$ with $\int_a^b K f = f(\xi) \int_a^b K$. -/
 theorem exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos (hab : a < b)
     (hK : ContinuousOn K (Icc a b)) (hf : ContinuousOn f (Icc a b))
     (hKnp : ∀ t ∈ Icc a b, K t ≤ 0) (hKneg : (∫ t in a..b, K t) < 0) :
@@ -579,11 +631,14 @@ theorem exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos (hab : a < b)
   rw [e, integral_neg, integral_neg] at h
   linarith
 
-/-- The `L¹` distance from an interval-integrable weight to a continuous nonnegative function can
-be made arbitrarily small: given `p` integrable on `a..b`, nonnegative on `Icc a b`, and `ε > 0`,
-there is a continuous `q ≥ 0` with `∫ s in a..b, |p s - q s| ≤ ε`. From the density of
-continuous functions in `L¹` (`Integrable.exists_hasCompactSupport_integral_sub_le`), applied to
-the indicator of `Ioc a b`, and truncation at `0`, which does not increase the distance to a
+/-- Let $a \le b$, let $p$ be interval integrable on $[a, b]$ with $p \ge 0$ on $[a, b]$, and let
+$\varepsilon > 0$. Then there is a continuous function $q \colon \mathbb{R} \to \mathbb{R}$ with
+$q \ge 0$ everywhere and
+$$\int_a^b |p(s) - q(s)| \, ds \le \varepsilon.$$
+
+The proof applies the density of continuous functions in $L^1$
+(`MeasureTheory.Integrable.exists_hasCompactSupport_integral_sub_le`) to the restriction of $p$
+to $(a, b]$, and then truncates at $0$. The truncation does not increase the distance to a
 nonnegative function. -/
 theorem exists_continuous_nonneg_integral_abs_sub_le {p : ℝ → ℝ} (hab : a ≤ b)
     (hp : IntervalIntegrable p volume a b) (hp0 : ∀ t ∈ Icc a b, 0 ≤ p t) {ε : ℝ} (hε : 0 < ε) :
@@ -613,14 +668,21 @@ theorem exists_continuous_nonneg_integral_abs_sub_le {p : ℝ → ℝ} (hab : a 
 
 end intervalIntegral
 
-/-! ### The fundamental theorem on `(0, T]` with a limit at `0⁺`, and integrability on `(0, ∞)` -/
+/-!
+### The fundamental theorem on $(0, T]$ with a limit at $0^+$, and integrability on $(0, \infty)$
+-/
 
-/-- **The fundamental theorem of calculus on `(0, T]` for a function with a nonpositive
-continuous derivative**: if `φ' = −g` on `(0, ∞)` with `g ≥ 0` continuous there, `φ ≥ 0` on
-`(0, ∞)`, and `φ(t) → L` as `t → 0⁺`, then `g` is integrable on `(0, T]` and
-`φ(T) + ∫₀ᵀ g = L`. The integrability comes from `∫_ε^T g = φ(ε) − φ(T) ≤ φ(ε)`, eventually
-bounded as `ε → 0⁺`; the identity from the fundamental theorem with one-sided limits. This is the
-pattern of every energy identity of the heat equation (`∫_ε^T`, then `ε → 0`). -/
+/-- **The fundamental theorem of calculus on $(0, T]$** for a function with a nonpositive continuous
+derivative. Let $T > 0$, and let $\varphi, g \colon \mathbb{R} \to \mathbb{R}$ be such that, for
+every $t > 0$, $\varphi$ has the derivative $-g(t)$ at $t$, $g(t) \ge 0$ and $\varphi(t) \ge 0$.
+Let $g$ be continuous on $(0, \infty)$, and let $\varphi(t) \to L$ as $t \to 0^+$. Then $g$ is
+integrable on $(0, T]$ and
+$$\varphi(T) + \int_0^T g(t) \, dt = L.$$
+
+The integrability comes from $\int_\varepsilon^T g = \varphi(\varepsilon) - \varphi(T) \le
+\varphi(\varepsilon)$, which is bounded for small $\varepsilon > 0$. The identity comes from the
+fundamental theorem of calculus with one-sided limits. Every energy identity of the heat
+equation follows this pattern: integrate over $[\varepsilon, T]$, then let $\varepsilon \to 0$. -/
 theorem integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg {φ g : ℝ → ℝ} {T L : ℝ} (hT : 0 < T)
     (hφ : ∀ t, 0 < t → HasDerivAt φ (-(g t)) t) (hg0 : ∀ t, 0 < t → 0 ≤ g t)
     (hgc : ContinuousOn g (Ioi 0)) (hφ0 : ∀ t, 0 < t → 0 ≤ φ t)
@@ -678,9 +740,10 @@ theorem integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg {φ g : ℝ → ℝ} 
   rw [intervalIntegral.integral_neg] at this
   linarith
 
-/-- **From bounded integrals on `(0, T]` to integrability on `(0, ∞)`**: a function `g ≥ 0` on
-`(0, ∞)`, integrable on every `(0, T]` with `∫₀ᵀ g ≤ L`, is integrable on `(0, ∞)` with
-`∫₀^∞ g ≤ L`. -/
+/-- **From bounded integrals on $(0, T]$ to integrability on $(0, \infty)$.** Let
+$g \colon \mathbb{R} \to \mathbb{R}$ satisfy $g(t) \ge 0$ for $t > 0$, let $g$ be integrable on
+$(0, T]$ for every $T > 0$, and let $\int_0^T g \le L$ for every $T > 0$. Then $g$ is integrable
+on $(0, \infty)$ and $\int_{(0, \infty)} g \le L$. -/
 theorem integrableOn_Ioi_and_integral_le_of_forall_integral_le {g : ℝ → ℝ} {L : ℝ}
     (hg0 : ∀ t, 0 < t → 0 ≤ g t) (hfi : ∀ T, 0 < T → IntegrableOn g (Ioc 0 T))
     (hle : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, g t ≤ L) :
@@ -697,14 +760,18 @@ theorem integrableOn_Ioi_and_integral_le_of_forall_integral_le {g : ℝ → ℝ}
   refine ⟨hgi, le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hgi hb)
     (Eventually.of_forall fun n ↦ hle ((n : ℝ) + 1) (by positivity))⟩
 
-/-- The reparametrization `t ↦ 1 − t` of `[0, 1]`. -/
+/-- The reparametrization $t \mapsto 1 - t$ of $[0, 1]$ preserves integrals:
+$\int_0^1 g(1 - t) \, dt = \int_0^1 g(t) \, dt$ for every $g \colon \mathbb{R} \to \mathbb{R}$. -/
 theorem _root_.intervalIntegral.integral_comp_one_sub (g : ℝ → ℝ) :
     ∫ t in (0 : ℝ)..1, g (1 - t) = ∫ t in (0 : ℝ)..1, g t := by
   have := intervalIntegral.integral_comp_sub_left g (a := 0) (b := 1) 1
   simp only [sub_zero, sub_self] at this
   exact this
 
-/-- Translation of a half-line integral: `∫_0^∞ φ(a + s) ds = ∫_a^∞ φ(t) dt`. -/
+/-- Translation of an integral over a half-line. Let $G$ be a real normed space, let
+$\varphi \colon \mathbb{R} \to G$, and let $a \in \mathbb{R}$. Then
+$$\int_{(0, \infty)} \varphi(a + s) \, ds = \int_{(a, \infty)} \varphi(t) \, dt.$$
+-/
 theorem integral_Ioi_comp_add_left {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     (φ : ℝ → G) (a : ℝ) : ∫ s in Ioi (0 : ℝ), φ (a + s) = ∫ t in Ioi a, φ t := by
   have h := integral_add_left_eq_self (μ := volume) (fun t ↦ (Ioi a).indicator φ t) a
@@ -716,11 +783,16 @@ theorem integral_Ioi_comp_add_left {G : Type*} [NormedAddCommGroup G] [NormedSpa
     Set.preimage_const_add_Ioi, sub_self]
   rfl
 
-/-- **The one-variable core of the strip estimate**: for `f` with `f a = 0` and continuous
-derivative `f'`, and sets `I`, `J` of the interval `(a, a + t)` with `(a, s] ⊆ J` for every
-`s ∈ I`, `∫_I |f|^P ≤ t^P ∫_J |f'|^P` for `1 ≤ P`. On `I`, `f s = ∫_a^s f'` is bounded by
-`∫_J |f'|`, which Hölder bounds by `(vol J)^{1 − 1/P} (∫_J |f'|^P)^{1/P}`
-(`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`), and `vol I, vol J ≤ t`. -/
+/-- **The one-variable estimate behind the estimate on a strip.** Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be differentiable with a continuous derivative $f'$, let
+$t > 0$, let $f(a) = 0$, and let $P \ge 1$. Let $I, J \subseteq (a, a + t)$ be sets with
+$(a, s] \subseteq J$ for every $s \in I$. Then
+$$\int_I |f(s)|^P \, ds \le t^P \int_J |f'(\tau)|^P \, d\tau,$$
+as an inequality of lower Lebesgue integrals.
+
+On $I$, $f(s) = \int_a^s f'$ is bounded by $\int_J |f'|$. Hölder's inequality
+(`MeasureTheory.eLpNorm_le_eLpNorm_mul_rpow_measure_univ`) bounds this by
+$|J|^{1 - 1/P} (\int_J |f'|^P)^{1/P}$, and the measures of $I$ and $J$ are at most $t$. -/
 theorem lintegral_enorm_rpow_le_of_hasDerivAt {f f' : ℝ → ℝ} (hf : ∀ s, HasDerivAt f (f' s) s)
     (hf' : Continuous f') {a t : ℝ} (ht : 0 < t) (hfa : f a = 0) {I J : Set ℝ}
     (hI : I ⊆ Ioo a (a + t)) (hJ : J ⊆ Ioo a (a + t)) (hIJ : ∀ s ∈ I, Ioc a s ⊆ J)
@@ -783,7 +855,7 @@ theorem lintegral_enorm_rpow_le_of_hasDerivAt {f f' : ℝ → ℝ} (hf : ∀ s, 
 
 /-! ### Polynomials -/
 
-/-- A polynomial whose square integrates to zero over a nondegenerate interval is zero. -/
+/-- Let $u < v$ and let $p$ be a real polynomial. If $\int_u^v p(s)^2 \, ds = 0$, then $p = 0$. -/
 theorem Polynomial.eq_zero_of_integral_mul_self_eq_zero {u v : ℝ} (huv : u < v) {p : Polynomial ℝ}
     (h : ∫ s in u..v, p.eval s * p.eval s = 0) : p = 0 := by
   by_contra hp

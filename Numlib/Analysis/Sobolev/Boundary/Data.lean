@@ -7,73 +7,89 @@ import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace
 
 /-!
-# Boundary data: the surface measure, the outward normal and the divergence theorem, abstractly
+# Boundary data: the surface measure, the outward normal and the divergence theorem
 
-The abstract interface of the boundary round (decision B1 of `notes/boundary/planning-brief.md`):
-the divergence `EuclideanSpace.div`, the structure `BoundaryData Ω` — a finite measure `σ` carried
-by `∂Ω`, a unit vector field `ν` defined `σ`-a.e., and the divergence theorem
-`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` for every field `F` of class `C¹(Ω̄)` — and the structure
-`BoundaryData.TraceFamily`: a bounded linear trace `W^{1,p}(Ω) → L^p(σ)` for every
-`1 ≤ p < ∞` which restricts continuous representatives, together with Green's formula
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ (Tu)(Tv) νᵢ dσ` at conjugate exponents. Every consumer of the
-Atkinson–Han, QSS and Brezis surfaces that mentions `∂Ω` is stated once over these two structures;
-the instances are `IsContDiffDomain.boundaryData` / `IsContDiffDomain.traceFamily`
-(`Boundary/ContDiffDomain.lean`) and `Triangulation.boundaryData` / `Triangulation.traceFamily`
-(`Boundary/Polygon.lean`, `Boundary/PolygonTrace.lean`).
+This module gives an abstract interface for the boundary $\partial\Omega$ of an open set
+$\Omega \subseteq \mathbb{R}^N$. It defines the divergence
+$\operatorname{div} F = \sum_i \partial_i F_i$ of a vector field and the structure `BoundaryData`: a
+finite measure $\sigma$ carried by $\partial\Omega$, a unit vector field $\nu$ defined
+$\sigma$-almost everywhere, and the divergence theorem
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu \rangle \, d\sigma$$
+for every field $F$ of class $C^1(\overline{\Omega})$. It also defines the structure
+`BoundaryData.TraceFamily`: a bounded linear trace $T \colon W^{1,p}(\Omega) \to L^p(\sigma)$ for
+every $1 \le p < \infty$ that maps a function continuous on $\overline{\Omega}$ to its restriction,
+together with Green's formula
+$$\int_\Omega \partial_i u \, v \, dx + \int_\Omega u \, \partial_i v \, dx = \int (Tu)(Tv) \, \nu_i
+  \, d\sigma$$
+at conjugate exponents. Every result about $\partial\Omega$ in the surface libraries of
+[han2009theoretical], [quarteroni2000numerical] and [brezis2011functional] is stated once over these
+two structures. The instances are `IsContDiffDomain.boundaryData` and `IsContDiffDomain.traceFamily`
+for bounded $C^1$ domains (`Numlib.Analysis.Sobolev.Boundary.ContDiffDomain`), and
+`Triangulation.boundaryData` and `Triangulation.traceFamily` for triangulated plane domains
+(`Numlib.Analysis.Sobolev.Boundary.Polygon`, `Numlib.Analysis.Sobolev.Boundary.PolygonTrace`).
 
-What the structures do *not* contain: a transversal field (a pinched polygon has none; the Nečas
-construction that uses one is `Boundary/Trace.lean`), density of smooth functions
-(`Boundary/Density.lean`), and any Hausdorff measure (`σ = μH[N−1]⌊∂Ω` is a future node needing
-the area formula). Boundedness of `Ω` is a field: every instance of this round is bounded, and it
-spares the divergence field a support hypothesis.
-
-Shared vocabulary of the graph modules, placed here so that `GraphMeasure` and `Divergence` can be
-written in parallel: the epigraph `EuclideanSpace.epigraph g = {y : g y' < y_N}` of a function of
-`d` variables with its closure and frontier for continuous `g` (so that `IsBoundaryGraphAt` reads
-`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`, `EuclideanSpace.isBoundaryGraphAt_iff`), and the
-measure preservation of a rigid motion (`AffineIsometryEquiv.measurePreserving`).
-
-Consequences proved here, all from the fields: the classical Green formulas for `C¹(Ω̄)` and
-`C²(Ω̄)` functions (Atkinson–Han §7.6 before the density argument,
-[brezis2011functional] §9.5 Example 4 Step A), `W_0^{1,p}(Ω) ⊆ ker T`, the `H²` Green formula
-with the normal trace `∂_ν u = ∑ νᵢ T(∂ᵢu)` ([brezis2011functional], Comments on chapter 9,
-7 (iii)), and the Neumann boundary condition of an `H²` weak solution (the half of
-[brezis2011functional] Theorem 9.26 that the trace gives a meaning to).
+From the fields alone, the module proves the classical Green formulas for functions in
+$C^1(\overline{\Omega})$ and $C^2(\overline{\Omega})$ ([han2009theoretical], §7.6, before the
+density argument; [brezis2011functional], §9.5, Example 4, Step A), the inclusion of
+$W_0^{1,p}(\Omega)$ in the kernel of the trace, Green's formula for $u \in H^2(\Omega)$ with the
+normal derivative $\partial_\nu u = \sum_i \nu_i T(\partial_i u)$ (item 7(iii) of the Comments on
+Chapter 9 of [brezis2011functional]), and the Neumann boundary condition of an $H^2$ weak solution
+(the part of Theorem 9.26 of [brezis2011functional] that needs a trace). It also defines the
+epigraph $\{y : g(y') < y_N\}$ of a function $g$ of $d$ variables, which the graph modules use. The
+trace theorems follow [han2009theoretical], §7.3 (Theorem 7.3.10), and [grisvard2011elliptic], §1.5
+(Theorems 1.5.1.3 and 1.5.3.1).
 
 ## Main definitions
 
-* `EuclideanSpace.div F x = ∑ i, fderiv ℝ F x (single i 1) i`, the divergence, with its
-  calculus: `div_eq_trace`, the product rule `div_smul_fun`, the affine and rotation
-  invariance `div_comp_continuousLinearEquiv`, `div_comp_affineIsometryEquiv`;
-* `BoundaryData Ω`: `σ`, `ν`, boundedness of `Ω`, finiteness of `σ`, `σ (∂Ω)ᶜ = 0`,
-  measurability and `σ`-a.e. unit length of `ν`, and the divergence identity `integral_div_eq`;
-* `BoundaryData.TraceFamily B`: `traceL p hp : W^{1,p}(Ω) →L L^p(σ)`, `traceL_ae_eq`, `green`
-  at conjugate exponents, `green_contDiff` against a fixed compactly supported `C¹` test function;
-* `BoundaryData.TraceFamily.normalTrace u = ∑ i, ν i • T(∂ᵢu)` for `u ∈ H²(Ω)`;
-* `EuclideanSpace.epigraph g`, the open region strictly above the graph of `g`.
+* `EuclideanSpace.div`: the divergence $\operatorname{div} F(x) = \sum_i \partial_i F_i(x)$ of a
+  vector field on $\mathbb{R}^N$.
+* `BoundaryData`: a surface measure $\sigma$ and a normal $\nu$ with $\Omega$ bounded, $\sigma$
+  finite, $\sigma((\partial\Omega)^c) = 0$, $\nu$ measurable with $|\nu| = 1$ $\sigma$-almost
+  everywhere, and the divergence theorem.
+* `BoundaryData.TraceFamily`: the trace $W^{1,p}(\Omega) \to L^p(\sigma)$ for $1 \le p < \infty$,
+  its value on functions continuous on $\overline{\Omega}$, Green's formula at conjugate exponents,
+  and Green's formula against a compactly supported $C^1$ test function.
+* `BoundaryData.TraceFamily.normalTrace`: the normal derivative
+  $\partial_\nu u = \sum_i \nu_i T(\partial_i u)$ of $u \in H^2(\Omega)$.
+* `EuclideanSpace.epigraph`: the open region $\{y : g(y') < y_N\}$ strictly above the graph of $g$.
 
-## Main statements
+## Main results
 
+* `EuclideanSpace.div_eq_trace`, `EuclideanSpace.div_smul_fun`,
+  `EuclideanSpace.div_comp_continuousLinearEquiv`, `EuclideanSpace.div_comp_affineIsometryEquiv`:
+  the divergence is the trace of the derivative, satisfies the product rule, and is invariant under
+  affine changes of frame.
 * `BoundaryData.integral_fderiv_mul_add_eq`, `BoundaryData.integral_laplacian_mul_add_eq`: the
-  classical Green formulas;
-* `BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero`: `W_0^{1,p}(Ω) ⊆ ker T`;
-* `BoundaryData.TraceFamily.green_laplacian`: Green's formula for `u ∈ H²`, `v ∈ H¹`;
-* `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq`: the Neumann condition
-  `∂u/∂ν = 0` of an `H²` weak solution of `−Δu + u = f`;
+  classical Green formulas.
+* `BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero`: the trace vanishes on $W_0^{1,p}(\Omega)$.
+* `BoundaryData.TraceFamily.green_laplacian`: Green's formula for $u \in H^2(\Omega)$ and
+  $v \in H^1(\Omega)$.
+* `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq`: an $H^2$ weak solution of
+  the Neumann problem $-\Delta u + u = f$ has $\partial u/\partial\nu = 0$.
 * `EuclideanSpace.closure_epigraph`, `EuclideanSpace.frontier_epigraph`,
-  `IsBoundaryGraphAt.frontier_inter_ball`;
-* `AffineIsometryEquiv.measurePreserving`.
+  `IsBoundaryGraphAt.frontier_inter_ball`: the closure and the boundary of the epigraph of a
+  continuous function, and the boundary of a set that is an epigraph inside a ball.
 
-Conventions: `E := EuclideanSpace ℝ (Fin N)`, `Ω : Opens E`,
-`W^{1,p}(Ω) := SobolevEuclidean N 1 p Ω`, `fn := SobolevMultiIndex.fn`,
-`∂ᵢ u := SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`;
-"`F ∈ C¹(Ω̄)`" is the pair `ContinuousOn F (closure Ω)`, `ContDiffOnClosure ℝ 1 F Ω`.
+## Implementation notes
 
-## References
-
-[brezis2011functional], §9.5 Example 4, §9.6 (49), Theorem 9.26, Comments on chapter 9, 7;
-Atkinson–Han §7.3 (Theorem 7.3.10) and §7.6; Grisvard, *Elliptic Problems in Nonsmooth Domains*,
-§1.5 (Theorems 1.5.1.3 and 1.5.3.1).
+* The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin N)`.
+* The open set $\Omega$ is an element of `Opens`.
+* The space $W^{1,p}(\Omega)$ is `SobolevEuclidean N 1 p Ω`.
+* The function of $u \in W^{1,p}(\Omega)$ is `SobolevMultiIndex.fn u`.
+* The weak derivative $\partial_i u$ is `SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`.
+* "$F \in C^1(\overline{\Omega})$" is the pair of hypotheses `ContinuousOn F (closure Ω)` and
+  `ContDiffOnClosure ℝ 1 F Ω`.
+* The surface measure is a measure on the ambient space, not on a subtype, so $L^p(\partial\Omega)$
+  is `Lp ℝ p σ`.
+* The structures do not contain a transversal field, because a pinched polygon has none; the trace
+  construction of Nečas that uses one is in `Numlib.Analysis.Sobolev.Boundary.Trace`. They do not
+  contain the density of smooth functions (`Numlib.Analysis.Sobolev.Boundary.Density`). They contain
+  no Hausdorff measure: identifying $\sigma$ with the $(N-1)$-dimensional Hausdorff measure on
+  $\partial\Omega$ would need the area formula.
+* Boundedness of $\Omega$ is a field: every instance is bounded, and the field spares the divergence
+  theorem a hypothesis on the support of $F$.
+* The measure preservation of a rigid motion is `AffineIsometryEquiv.measurePreserving` of
+  `Numlib.MeasureTheory.Measure.Haar.InnerProductSpace`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -87,33 +103,38 @@ namespace EuclideanSpace
 
 variable {N : ℕ}
 
-/-- **The divergence** `div F x = ∑ᵢ ∂ᵢFᵢ(x)` of a vector field `F : ℝ^N → ℝ^N`, in the shape of
-Mathlib's box divergence theorem (`∑ i, f' x (e i) i`). -/
+/-- **The divergence** of a vector field $F \colon \mathbb{R}^N \to \mathbb{R}^N$ at $x$:
+$$\operatorname{div} F(x) = \sum_i \partial_i F_i(x) = \sum_i DF(x)(e_i)_i.$$
+
+The form `∑ i, fderiv ℝ F x (single i 1) i` is the form of Mathlib's divergence theorem on a
+box. At a point where $F$ is not differentiable, `fderiv` is $0$, so the divergence is $0$. -/
 def div (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) (x : EuclideanSpace ℝ (Fin N)) :
     ℝ :=
   ∑ i, fderiv ℝ F x (EuclideanSpace.single i 1) i
 
 variable {F G : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {x : EuclideanSpace ℝ (Fin N)}
 
-/-- The divergence of a sum of differentiable fields. -/
+/-- If $F$ and $G$ are differentiable at $x$, then $\operatorname{div}(F + G)(x) =
+\operatorname{div} F(x) + \operatorname{div} G(x)$. -/
 @[simp]
 theorem div_add (hF : DifferentiableAt ℝ F x) (hG : DifferentiableAt ℝ G x) :
     div (F + G) x = div F x + div G x := by
   simp only [div, fderiv_add hF hG, add_apply, PiLp.add_apply, Finset.sum_add_distrib]
 
-/-- The divergence of the negative of a field. -/
+/-- $\operatorname{div}(-F)(x) = -\operatorname{div} F(x)$. -/
 @[simp]
 theorem div_neg : div (-F) x = -div F x := by
   simp only [div, fderiv_neg, neg_apply, PiLp.neg_apply, Finset.sum_neg_distrib]
 
-/-- The divergence of a constant multiple of a field. -/
+/-- For $c \in \mathbb{R}$, $\operatorname{div}(cF)(x) = c \operatorname{div} F(x)$. -/
 @[simp]
 theorem div_smul (c : ℝ) : div (c • F) x = c * div F x := by
   simp only [div, fderiv_const_smul_field, Pi.smul_apply, smul_apply, PiLp.smul_apply,
     smul_eq_mul, Finset.mul_sum]
 
-/-- **The divergence is the trace of the derivative**, which is what makes it invariant under
-changes of frame (`div_comp_continuousLinearEquiv`). -/
+/-- **The divergence is the trace of the derivative**: $\operatorname{div} F(x) = \operatorname{tr}
+DF(x)$. This makes the divergence invariant under changes of frame
+(`EuclideanSpace.div_comp_continuousLinearEquiv`). -/
 theorem div_eq_trace (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (x : EuclideanSpace ℝ (Fin N)) :
     div F x = LinearMap.trace ℝ _ (fderiv ℝ F x : EuclideanSpace ℝ (Fin N) →ₗ[ℝ] _) := by
@@ -121,8 +142,11 @@ theorem div_eq_trace (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin
   simp only [div, EuclideanSpace.basisFun_apply, ContinuousLinearMap.coe_coe,
     EuclideanSpace.inner_single_left, conj_trivial, one_mul]
 
-/-- **The product rule for the divergence**: `div (φ F) = ⟪∇φ, F⟫ + φ div F` at a point where the
-scalar `φ` and the field `F` are differentiable. -/
+/-- **The product rule for the divergence.** If $\varphi \colon \mathbb{R}^N \to \mathbb{R}$ and
+$F \colon \mathbb{R}^N \to \mathbb{R}^N$ are differentiable at $x$, then
+$$\operatorname{div}(\varphi F)(x) = \langle \nabla \varphi(x), F(x) \rangle + \varphi(x)
+  \operatorname{div} F(x).$$
+-/
 theorem div_smul_fun {φ : EuclideanSpace ℝ (Fin N) → ℝ} (hφ : DifferentiableAt ℝ φ x)
     (hF : DifferentiableAt ℝ F x) :
     div (fun y ↦ φ y • F y) x = ⟪gradient φ x, F x⟫_ℝ + φ x * div F x := by
@@ -138,8 +162,9 @@ theorem div_smul_fun {φ : EuclideanSpace ℝ (Fin N) → ℝ} (hφ : Differenti
     PiLp.smul_apply, smul_eq_mul]
   ring
 
-/-- The divergence of the field `u e_i` is `∂ᵢu`: the form of the product rule the classical Green
-formula `BoundaryData.integral_fderiv_mul_add_eq` uses. -/
+/-- If $u \colon \mathbb{R}^N \to \mathbb{R}$ is differentiable at $x$, then the field $u e_i$ has
+divergence $\operatorname{div}(u e_i)(x) = \partial_i u(x)$. This is the form of the product
+rule that the classical Green formula `BoundaryData.integral_fderiv_mul_add_eq` uses. -/
 theorem div_const_smul_single {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : DifferentiableAt ℝ u x)
     (i : Fin N) :
     div (fun y ↦ u y • EuclideanSpace.single i 1) x = fderiv ℝ u x (EuclideanSpace.single i 1) := by
@@ -147,10 +172,13 @@ theorem div_const_smul_single {u : EuclideanSpace ℝ (Fin N) → ℝ} (hu : Dif
     smul_eq_mul, PiLp.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
     Finset.mem_univ, ite_true]
 
-/-- **Affine invariance of the divergence** (the linear Piola identity): conjugating a field by
-the affine map `z ↦ M z + b` and its linear inverse does not change the divergence,
-`div (M⁻¹ ∘ F ∘ (M · + b)) x = div F (M x + b)`. Through `div_eq_trace`: the derivative of the
-conjugate is `M⁻¹ ∘ DF ∘ M`, and the trace is conjugation invariant. -/
+/-- **Affine invariance of the divergence** (the linear Piola identity). Let $M$ be a continuous
+linear bijection of $\mathbb{R}^N$, let $b \in \mathbb{R}^N$, and let $F$ be differentiable at
+$Mx + b$. Then
+$$\operatorname{div}\bigl(z \mapsto M^{-1} F(Mz + b)\bigr)(x) = \operatorname{div} F(Mx + b).$$
+
+By `EuclideanSpace.div_eq_trace`: the derivative of the conjugated field is
+$M^{-1} \circ DF \circ M$, and the trace is invariant under conjugation. -/
 theorem div_comp_continuousLinearEquiv
     (M : EuclideanSpace ℝ (Fin N) ≃L[ℝ] EuclideanSpace ℝ (Fin N)) (b : EuclideanSpace ℝ (Fin N))
     (hF : DifferentiableAt ℝ F (M x + b)) :
@@ -166,9 +194,10 @@ theorem div_comp_continuousLinearEquiv
   ext y
   simp
 
-/-- **Rotation invariance of the divergence**: for a rigid motion `T`, the field
-`z ↦ T.linear (F (T⁻¹ z))` has divergence `div F (T⁻¹ z)`. This is the change of frame of the
-divergence theorem on a graph chart. -/
+/-- **Rotation invariance of the divergence.** Let $T$ be a rigid motion of $\mathbb{R}^N$ with
+linear part $L$, and let $F$ be differentiable at $T^{-1} y$. Then
+$$\operatorname{div}\bigl(z \mapsto L F(T^{-1} z)\bigr)(y) = \operatorname{div} F(T^{-1} y).$$
+This is the change of frame in the divergence theorem on a graph chart. -/
 theorem div_comp_affineIsometryEquiv
     (T : EuclideanSpace ℝ (Fin N) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin N)) {y : EuclideanSpace ℝ (Fin N)}
     (hF : DifferentiableAt ℝ F (T.symm y)) :
@@ -188,7 +217,9 @@ theorem div_comp_affineIsometryEquiv
   simp only [hs, hLs] at key
   exact key
 
-/-- **The divergence of the gradient is the Laplacian**, at every point. -/
+/-- **The divergence of the gradient is the Laplacian**:
+$\operatorname{div}(\nabla u)(x) = \Delta u(x)$ for every $u \colon \mathbb{R}^N \to \mathbb{R}$
+and every $x$, with no hypothesis of differentiability. -/
 theorem div_gradient_eq_laplacian (u : EuclideanSpace ℝ (Fin N) → ℝ)
     (x : EuclideanSpace ℝ (Fin N)) : div (gradient u) x = Δ u x := by
   rw [laplacian_eq_sum_fderiv_fderiv_single, div]
@@ -201,8 +232,10 @@ theorem div_gradient_eq_laplacian (u : EuclideanSpace ℝ (Fin N) → ℝ)
   rw [h2, LinearIsometryEquiv.coe_coe'', InnerProductSpace.toDualReal_symm_apply,
     InnerProductSpace.toDual_symm_apply]
 
-/-- The divergence of a finite sum of fields differentiable at `x` is the sum of the
-divergences. -/
+/-- If the fields $G_i$, $i \in s$, are differentiable at $x$ for a finite set $s$, then
+$$\operatorname{div}\Bigl(\sum_{i \in s} G_i\Bigr)(x) = \sum_{i \in s} \operatorname{div}
+  G_i(x).$$
+-/
 theorem div_finset_sum {ι : Type*} (s : Finset ι)
     {G : ι → EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {x : EuclideanSpace ℝ (Fin N)}
     (hG : ∀ i ∈ s, DifferentiableAt ℝ (G i) x) :
@@ -210,21 +243,23 @@ theorem div_finset_sum {ι : Type*} (s : Finset ι)
   simp only [div, fderiv_fun_sum hG, sum_apply, WithLp.ofLp_sum, Finset.sum_apply]
   exact Finset.sum_comm
 
-/-- The partial derivatives `z ↦ ∂ⱼFᵢ(z)` are measurable (no differentiability assumed). -/
+/-- For every field $F \colon \mathbb{R}^N \to \mathbb{R}^N$, every vector $v$ and every coordinate
+$i$, the function $z \mapsto (DF(z) v)_i$ is measurable. No differentiability of $F$ is assumed. -/
 theorem measurable_fderiv_apply_apply (F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (v : EuclideanSpace ℝ (Fin N)) (i : Fin N) :
     Measurable fun z ↦ fderiv ℝ F z v i :=
   (EuclideanSpace.proj i).continuous.measurable.comp
     ((measurable_fderiv ℝ F).apply_continuousLinearMap v)
 
-/-- The divergence of any field is measurable (`fderiv` is measurable with no hypothesis). -/
+/-- The divergence of every field $G \colon \mathbb{R}^N \to \mathbb{R}^N$ is measurable, since
+`fderiv` is measurable with no hypothesis. -/
 theorem measurable_div (G : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)) :
     Measurable (div G) :=
   Finset.measurable_sum _ fun i _ ↦
     (EuclideanSpace.proj (𝕜 := ℝ) i).continuous.measurable.comp
       (measurable_fderiv_apply_const ℝ G (EuclideanSpace.single i 1))
 
-/-- A partial derivative is bounded by the operator norm of the derivative. -/
+/-- If $\|DF(z)\| \le C$, then every partial derivative satisfies $|\partial_i F_j(z)| \le C$. -/
 theorem norm_fderiv_apply_apply_le {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {z : EuclideanSpace ℝ (Fin N)} {C : ℝ} (hC : ‖fderiv ℝ F z‖ ≤ C) (i j : Fin N) :
     ‖fderiv ℝ F z (EuclideanSpace.single i 1) j‖ ≤ C :=
@@ -233,7 +268,8 @@ theorem norm_fderiv_apply_apply_le {F : EuclideanSpace ℝ (Fin N) → Euclidean
     _ ≤ ‖fderiv ℝ F z‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ := ContinuousLinearMap.le_opNorm _ _
     _ ≤ C := by simpa using hC
 
-/-- `|div w x| ≤ N ‖Dw(x)‖`. -/
+/-- For every field $w \colon \mathbb{R}^N \to \mathbb{R}^N$ and every $x$,
+$|\operatorname{div} w(x)| \le N \|Dw(x)\|$. -/
 theorem abs_div_le (w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (x : EuclideanSpace ℝ (Fin N)) : |EuclideanSpace.div w x| ≤ N * ‖fderiv ℝ w x‖ := by
   unfold EuclideanSpace.div
@@ -246,7 +282,9 @@ theorem abs_div_le (w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N
   refine (Finset.sum_le_sum fun i _ ↦ h i).trans ?_
   simp
 
-/-- The partial derivatives of a `C¹(s̄)` field are integrable on a bounded measurable `s`. -/
+/-- Let $s \subseteq \mathbb{R}^N$ be bounded and measurable, and let $F$ be of class
+$C^1(\overline{s})$ in the sense of `ContDiffOnClosure`. Then every partial derivative
+$\partial_i F_j$ is integrable on $s$. -/
 theorem integrableOn_fderiv_apply_apply
     {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)} {s : Set (EuclideanSpace ℝ (Fin N))}
     (hF : ContDiffOnClosure ℝ 1 F s) (hs : Bornology.IsBounded s) (hsm : MeasurableSet s)
@@ -257,7 +295,9 @@ theorem integrableOn_fderiv_apply_apply
   rw [ae_restrict_iff' hsm]
   exact Filter.Eventually.of_forall fun z hz ↦ norm_fderiv_apply_apply_le (hC z hz) i j
 
-/-- The divergence of a `C¹(s̄)` field is integrable on a bounded measurable `s`. -/
+/-- Let $s \subseteq \mathbb{R}^N$ be bounded and measurable, and let $F$ be of class
+$C^1(\overline{s})$ in the sense of `ContDiffOnClosure`. Then $\operatorname{div} F$ is
+integrable on $s$. -/
 theorem integrableOn_div {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     {s : Set (EuclideanSpace ℝ (Fin N))} (hF : ContDiffOnClosure ℝ 1 F s)
     (hs : Bornology.IsBounded s) (hsm : MeasurableSet s) : IntegrableOn (div F) s := by
@@ -266,27 +306,35 @@ theorem integrableOn_div {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ 
   exact integrable_finsetSum _ fun i _ ↦ integrableOn_fderiv_apply_apply hF hs hsm i i
 end EuclideanSpace
 
-/-- **The divergence of a `C¹(Ω̄)` field is integrable on a bounded open `Ω`**: the case of an
-open set of `EuclideanSpace.integrableOn_div`. -/
+/-- **The divergence of a $C^1(\overline{\Omega})$ field is integrable.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open and bounded, and let $F$ be of class
+$C^1(\overline{\Omega})$ in the sense of `ContDiffOnClosure`. Then $\operatorname{div} F$ is
+integrable on $\Omega$. This is `EuclideanSpace.integrableOn_div` for an open set. -/
 theorem ContDiffOnClosure.integrableOn_div {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
     {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     (hF : ContDiffOnClosure ℝ 1 F Ω) (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω) :
     IntegrableOn (EuclideanSpace.div F) Ω :=
   EuclideanSpace.integrableOn_div hF hb hΩ.measurableSet
 
-/-! ### The gradient of a `C²(s̄)` function -/
+/-! ### The gradient of a $C^2(\overline{s})$ function -/
 
 section Gradient
 
 variable {N : ℕ} {s : Set (EuclideanSpace ℝ (Fin N))}
 
-/-- The inverse Riesz map of `ℝ^N`, `(toDualReal _).symm`, locally. -/
+/-- Local notation for the inverse Riesz map $(\mathbb{R}^N)^* \to \mathbb{R}^N$,
+`(InnerProductSpace.toDualReal _).symm`. -/
 local notation "𝓡⁻¹" =>
   LinearIsometryEquiv.symm (InnerProductSpace.toDualReal (EuclideanSpace ℝ (Fin N)))
 
-/-- **The gradient of a `C²(s̄)` function, read through a continuous extension `g` of its
-derivative, is of class `C¹(s̄)`** on an open `s`: `x ↦ (toDual)⁻¹ (g x)` agrees with `∇u` on `s`,
-and its derivative `(toDual)⁻¹ ∘ D²u` extends continuously by the order-two clause. -/
+/-- **The gradient of a $C^2(\overline{s})$ function is of class $C^1(\overline{s})$.** Let
+$s \subseteq \mathbb{R}^N$ be open, let $u$ be of class $C^2(\overline{s})$ in the sense of
+`ContDiffOnClosure`, and let $g$ be continuous on $\overline{s}$ with $g = Du$ on $s$. Then the
+vector field $x \mapsto R^{-1}(g(x))$ is of class $C^1(\overline{s})$, where $R^{-1}$ is the
+inverse Riesz map of $\mathbb{R}^N$.
+
+On $s$ this field is $\nabla u$. Its derivative $R^{-1} \circ D^2 u$ extends continuously to
+$\overline{s}$ by the clause of order $2$ of `ContDiffOnClosure`. -/
 theorem ContDiffOnClosure.toDual_symm_of_eqOn_fderiv {u : EuclideanSpace ℝ (Fin N) → ℝ}
     (hs : IsOpen s) (hu : ContDiffOnClosure ℝ 2 u s)
     {g : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
@@ -315,34 +363,43 @@ end Gradient
 
 /-! ### The boundary data of an open set -/
 
-/-- **The boundary data of an open set `Ω ⊆ ℝ^N`**: a surface measure `σ` on the ambient space
-carried by `∂Ω` (decision B8: no subtype, `L^p(∂Ω)` is `Lp ℝ p σ`), an outward unit normal `ν`
-meaningful `σ`-almost everywhere, boundedness of `Ω`, and the divergence theorem (Gauss–Green)
-`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` for every field of class `C¹(Ω̄)` — `C¹` on `Ω` with the derivative
-extending continuously to `Ω̄` (`ContDiffOnClosure`), and `F` itself continuous on `Ω̄`. This is
-the regularity the books state (Atkinson–Han §7.6, QSS (12.95), [brezis2011functional] §9.5
-Example 4); `C¹` fields on `ℝ^N` are the corollary `BoundaryData.integral_div_eq_of_contDiff`.
+/-- **The boundary data of an open set** $\Omega \subseteq \mathbb{R}^N$. An element consists of a
+surface measure $\sigma$ on $\mathbb{R}^N$ carried by $\partial\Omega$, an outward unit normal
+$\nu$ defined $\sigma$-almost everywhere, and the following properties: $\Omega$ is bounded,
+$\sigma$ is finite, $\nu$ is measurable with $|\nu| = 1$ $\sigma$-almost everywhere, and the
+divergence theorem (Gauss–Green)
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu \rangle \, d\sigma$$
+holds for every field $F$ of class $C^1(\overline{\Omega})$: $F$ is continuous on
+$\overline{\Omega}$, $C^1$ on $\Omega$, and its derivative extends continuously to
+$\overline{\Omega}$.
 
-Instances: `IsContDiffDomain.boundaryData` (bounded `C¹` graph domains),
-`Triangulation.boundaryData` (triangulated plane domains), `EuclideanSpace.triangleBoundaryData`
-(a single triangle). Not a class: a domain may carry several descriptions, and the consumers take
-the data explicitly. -/
+This is the regularity of the books ([han2009theoretical], §7.6; [quarteroni2000numerical],
+(12.95); [brezis2011functional], §9.5, Example 4). The case of $C^1$ fields on $\mathbb{R}^N$ is
+the corollary `BoundaryData.integral_div_eq_of_contDiff`. The surface measure is a measure on
+the ambient space, not on a subtype, so $L^p(\partial\Omega)$ is `Lp ℝ p σ`. The instances are
+`IsContDiffDomain.boundaryData` (bounded $C^1$ graph domains), `Triangulation.boundaryData`
+(triangulated plane domains) and `EuclideanSpace.triangleBoundaryData` (a single triangle).
+`BoundaryData` is not a class: a domain can have several descriptions, and the theorems take the
+data explicitly. -/
 structure BoundaryData {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) where
-  /-- The surface measure, a measure on the ambient space carried by `∂Ω`. -/
+  /-- The surface measure, a measure on $\mathbb{R}^N$ carried by $\partial\Omega$. -/
   σ : Measure (EuclideanSpace ℝ (Fin N))
-  /-- The outward unit normal, a function on the ambient space meaningful `σ`-a.e. -/
+  /-- The outward unit normal, a function on $\mathbb{R}^N$ that is meaningful $\sigma$-almost
+  everywhere. -/
   ν : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)
-  /-- `Ω` is bounded. -/
+  /-- The set $\Omega$ is bounded. -/
   isBounded : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))
   /-- The surface measure is finite. -/
   isFiniteMeasure : IsFiniteMeasure σ
-  /-- The surface measure is carried by `∂Ω`. -/
+  /-- The surface measure is carried by $\partial\Omega$: $\sigma((\partial\Omega)^c) = 0$. -/
   measure_compl_frontier : σ (frontier (Ω : Set (EuclideanSpace ℝ (Fin N))))ᶜ = 0
-  /-- The normal is measurable. -/
+  /-- The normal is almost everywhere strongly measurable for $\sigma$. -/
   aestronglyMeasurable_ν : AEStronglyMeasurable ν σ
-  /-- The normal has unit length `σ`-a.e. -/
+  /-- The normal has unit length $\sigma$-almost everywhere. -/
   ae_norm_ν : ∀ᵐ x ∂σ, ‖ν x‖ = 1
-  /-- **The divergence theorem** for fields of class `C¹(Ω̄)`. -/
+  /-- **The divergence theorem**: $\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu
+  \rangle \, d\sigma$ for every field $F$ that is continuous on $\overline{\Omega}$ and of class
+  $C^1(\overline{\Omega})$ in the sense of `ContDiffOnClosure`. -/
   integral_div_eq : ∀ F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N),
     ContinuousOn F (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) →
     ContDiffOnClosure ℝ 1 F (Ω : Set (EuclideanSpace ℝ (Fin N))) →
@@ -355,25 +412,25 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData �
 /-- The surface measure of a `BoundaryData` is finite. -/
 instance instIsFiniteMeasure : IsFiniteMeasure B.σ := B.isFiniteMeasure
 
-/-- `σ`-almost every point lies on `∂Ω`. -/
+/-- $\sigma$-almost every point lies on $\partial\Omega$. -/
 theorem ae_mem_frontier : ∀ᵐ x ∂B.σ, x ∈ frontier (Ω : Set (EuclideanSpace ℝ (Fin N))) :=
   ae_iff.2 B.measure_compl_frontier
 
-/-- `σ`-almost every point lies outside `Ω`. -/
+/-- $\sigma$-almost every point lies outside $\Omega$. -/
 theorem ae_notMem : ∀ᵐ x ∂B.σ, x ∉ (Ω : Set (EuclideanSpace ℝ (Fin N))) :=
   B.ae_mem_frontier.mono fun x hx hxΩ ↦ hx.2 (by rwa [Ω.isOpen.interior_eq])
 
-/-- The coordinates of the normal are bounded by one `σ`-a.e. -/
+/-- Every coordinate of the normal satisfies $|\nu_i| \le 1$ $\sigma$-almost everywhere. -/
 theorem ae_abs_ν_apply_le (i : Fin N) : ∀ᵐ x ∂B.σ, |B.ν x i| ≤ 1 :=
   B.ae_norm_ν.mono fun x hx ↦ by
     rw [← Real.norm_eq_abs, ← hx]; exact PiLp.norm_apply_le _ i
 
-/-- The coordinates of the normal are measurable. -/
+/-- Every coordinate $\nu_i$ of the normal is almost everywhere strongly measurable for $\sigma$. -/
 theorem aestronglyMeasurable_ν_apply (i : Fin N) :
     AEStronglyMeasurable (fun x ↦ B.ν x i) B.σ :=
   (EuclideanSpace.proj (𝕜 := ℝ) i).continuous.comp_aestronglyMeasurable B.aestronglyMeasurable_ν
 
-/-- Multiplying an `L^p(σ)` function by a coordinate of the normal keeps it in `L^p(σ)`. -/
+/-- If $f \in L^p(\sigma)$, then $\nu_i f \in L^p(\sigma)$ for every coordinate $i$. -/
 theorem memLp_ν_apply_mul {p : ℝ≥0∞} {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : MemLp f p B.σ)
     (i : Fin N) : MemLp (fun x ↦ B.ν x i * f x) p B.σ :=
   hf.of_le ((B.aestronglyMeasurable_ν_apply i).mul hf.aestronglyMeasurable) <|
@@ -381,14 +438,16 @@ theorem memLp_ν_apply_mul {p : ℝ≥0∞} {f : EuclideanSpace ℝ (Fin N) → 
       rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
       exact mul_le_of_le_one_left (abs_nonneg _) hx
 
-/-- An integrable function times a coordinate of the normal is integrable for `σ`. -/
+/-- If $f$ is integrable for $\sigma$, then $f \nu_i$ is integrable for $\sigma$ for every
+coordinate $i$. -/
 theorem integrable_mul_ν_apply {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Integrable f B.σ)
     (i : Fin N) : Integrable (fun x ↦ f x * B.ν x i) B.σ :=
   hf.mul_bdd (B.aestronglyMeasurable_ν_apply i)
     ((B.ae_abs_ν_apply_le i).mono fun x hx ↦ by rwa [Real.norm_eq_abs])
 
-/-- **Multiplication by the coordinate `νᵢ` of the normal**, as a bounded operator on `L^p(σ)`
-of norm at most one (`|νᵢ| ≤ 1` `σ`-a.e.). -/
+/-- **Multiplication by a coordinate of the normal.** For $1 \le p \le \infty$ and a coordinate $i$,
+the map $f \mapsto \nu_i f$ is a bounded linear operator on $L^p(\sigma)$ of norm at most $1$,
+since $|\nu_i| \le 1$ $\sigma$-almost everywhere. -/
 def mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) : Lp ℝ p B.σ →L[ℝ] Lp ℝ p B.σ :=
   LinearMap.mkContinuous
     { toFun := fun f ↦ (B.memLp_ν_apply_mul (Lp.memLp f) i).toLp _
@@ -414,12 +473,16 @@ def mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) : Lp ℝ p B.σ →
       rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
       exact mul_le_of_le_one_left (abs_nonneg _) hx
 
-/-- `mulNormalL f` is the class of `νᵢ f`. -/
+/-- The operator `BoundaryData.mulNormalL` maps $f$ to the class of $\nu_i f$: its value is
+$\nu_i f$ $\sigma$-almost everywhere. -/
 theorem coeFn_mulNormalL (p : ℝ≥0∞) [Fact (1 ≤ p)] (i : Fin N) (f : Lp ℝ p B.σ) :
     (B.mulNormalL p i f : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[B.σ] fun x ↦ B.ν x i * f x :=
   MemLp.coeFn_toLp (B.memLp_ν_apply_mul (Lp.memLp f) i)
 
-/-- **The divergence theorem for `C¹` fields on `ℝ^N`**: `∫_Ω div F = ∫ ⟪F, ν⟫ dσ`. -/
+/-- **The divergence theorem for $C^1$ fields on $\mathbb{R}^N$.** If
+$F \colon \mathbb{R}^N \to \mathbb{R}^N$ is $C^1$, then
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu \rangle \, d\sigma.$$
+-/
 theorem integral_div_eq_of_contDiff {F : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N)}
     (hF : ContDiff ℝ 1 F) :
     ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), EuclideanSpace.div F x
@@ -427,7 +490,8 @@ theorem integral_div_eq_of_contDiff {F : EuclideanSpace ℝ (Fin N) → Euclidea
   B.integral_div_eq F hF.continuous.continuousOn (hF.contDiffOn.contDiffOnClosure Ω.isOpen)
 
 include B in
-/-- A function continuous on `closure Ω` is integrable on the bounded `Ω`. -/
+/-- A function that is continuous on $\overline{\Omega}$ is integrable on $\Omega$, since $\Omega$
+is bounded. -/
 theorem integrableOn_of_continuousOn {G : Type*} [NormedAddCommGroup G]
     {f : EuclideanSpace ℝ (Fin N) → G}
     (hf : ContinuousOn f (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -435,9 +499,15 @@ theorem integrableOn_of_continuousOn {G : Type*} [NormedAddCommGroup G]
   (hf.integrableOn_compact (Bornology.IsBounded.isCompact_closure B.isBounded)).mono_set
     subset_closure
 
-/-- **The classical Green formula** (Atkinson–Han §7.6, [brezis2011functional] §9.5 Example 4
-Step A) for functions `u, v ∈ C¹(Ω̄)`:
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ u v νᵢ dσ`. The divergence theorem for the field `(u v) e_i`. -/
+/-- **The classical Green formula.** Let $u, v \colon \mathbb{R}^N \to \mathbb{R}$ be of class
+$C^1(\overline{\Omega})$, and let $i$ be a coordinate. Then
+$$\int_\Omega \partial_i u \, v \, dx + \int_\Omega u \, \partial_i v \, dx = \int u v \, \nu_i
+  \, d\sigma.$$
+This is the Green formula of [han2009theoretical], §7.6, and of [brezis2011functional], §9.5,
+Example 4, Step A.
+
+Each of $u$ and $v$ is continuous on $\overline{\Omega}$ and of class $C^1(\overline{\Omega})$
+in the sense of `ContDiffOnClosure`. The proof is the divergence theorem for the field $uv e_i$. -/
 theorem integral_fderiv_mul_add_eq {u v : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : ContinuousOn u (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (hu' : ContDiffOnClosure ℝ 1 u (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -491,16 +561,24 @@ theorem integral_fderiv_mul_add_eq {u v : EuclideanSpace ℝ (Fin N) → ℝ}
   rw [hR, hL, integral_add hI₁ hI₂] at hdiv
   exact hdiv
 
-/-- The inverse Riesz map of `ℝ^N`, `(toDualReal _).symm`, locally. -/
+/-- Local notation for the inverse Riesz map $(\mathbb{R}^N)^* \to \mathbb{R}^N$,
+`(InnerProductSpace.toDualReal _).symm`. -/
 local notation "𝓡⁻¹" =>
   LinearIsometryEquiv.symm (InnerProductSpace.toDualReal (EuclideanSpace ℝ (Fin N)))
 
-/-- **Green's second-order formula for classical functions** ([brezis2011functional] §9.5
-Example 4 Step A; QSS (12.95); Atkinson–Han §7.6): for `u ∈ C²(Ω̄)` whose derivative extends
-continuously to `Ω̄` as `g`, and `v ∈ C¹(Ω̄)`,
-`∫_Ω Δu v + ∫_Ω ⟪∇u, ∇v⟫ = ∫ g(ν) v dσ`. The divergence theorem for `F = v (toDual)⁻¹ g`, which
-is `v ∇u` on `Ω`. The boundary values of `∇u` are those of the extension `g`: a function of class
-`C²(Ω̄)` in the sense of `ContDiffOnClosure` has no derivative of its own on `∂Ω`. -/
+/-- **Green's formula of second order for classical functions.** Let $u$ be of class
+$C^2(\overline{\Omega})$ in the sense of `ContDiffOnClosure`, let $g$ be continuous on
+$\overline{\Omega}$ with $g = Du$ on $\Omega$, and let $v$ be of class $C^1(\overline{\Omega})$.
+Then
+$$\int_\Omega \Delta u \, v \, dx + \int_\Omega \langle \nabla u, \nabla v \rangle \, dx = \int
+  g(\nu) \, v \, d\sigma.$$
+This is the formula of [brezis2011functional], §9.5, Example 4, Step A, of
+[quarteroni2000numerical], (12.95), and of [han2009theoretical], §7.6.
+
+The proof is the divergence theorem for the field $F = v R^{-1} g$, where $R^{-1}$ is the
+inverse Riesz map; it is $v \nabla u$ on $\Omega$. The boundary values of $\nabla u$ are those
+of the extension $g$, because a function of class $C^2(\overline{\Omega})$ in the sense of
+`ContDiffOnClosure` has no derivative of its own on $\partial\Omega$. -/
 theorem integral_laplacian_mul_add_eq {u v : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu' : ContDiffOnClosure ℝ 2 u (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {g : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
@@ -576,8 +654,12 @@ theorem integral_laplacian_mul_add_eq {u v : EuclideanSpace ℝ (Fin N) → ℝ}
   rw [hR, hL, integral_add hI₁ hI₂] at hdiv
   exact hdiv
 
-/-- Green's second-order formula in the form of the books, for `u ∈ C²(Ω̄)` whose derivative is
-continuous on `Ω̄`: `∫_Ω Δu v + ∫_Ω ⟪∇u, ∇v⟫ = ∫ ⟪∇u, ν⟫ v dσ`. -/
+/-- **Green's formula of second order in the form of the books.** Let $u$ be of class
+$C^2(\overline{\Omega})$ in the sense of `ContDiffOnClosure` with $Du$ continuous on
+$\overline{\Omega}$, and let $v$ be of class $C^1(\overline{\Omega})$. Then
+$$\int_\Omega \Delta u \, v \, dx + \int_\Omega \langle \nabla u, \nabla v \rangle \, dx = \int
+  \langle \nabla u, \nu \rangle \, v \, d\sigma.$$
+-/
 theorem integral_laplacian_mul_add_eq_of_continuousOn_fderiv {u v : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : ContinuousOn (fderiv ℝ u) (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (hu' : ContDiffOnClosure ℝ 2 u (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -599,33 +681,42 @@ namespace BoundaryData
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **The trace theorem and Green's formula on `Ω`**, as a structure over `B : BoundaryData Ω` —
-the shape every consumer of a trace uses; the two instances are `IsContDiffDomain.traceFamily` and
-`Triangulation.traceFamily`:
+/-- **The trace theorem and Green's formula on $\Omega$**, as a structure over boundary data $B$
+with surface measure $\sigma$ and normal $\nu$. An element consists of:
 
-* `traceL p hp : W^{1,p}(Ω) →L L^p(σ)`, the trace operator at every finite exponent
-  (Atkinson–Han Theorem 7.3.10 (b), Grisvard Theorem 1.5.1.3 with target `L^p(Γ)`);
-* `traceL_ae_eq`: the trace of a function continuous up to the boundary is its restriction
-  (Theorem 7.3.10 (a));
-* `green`: Green's formula `∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ (Tu)(Tv) νᵢ dσ` at conjugate exponents
-  `1 < p, q < ∞` (Grisvard Theorem 1.5.3.1, Atkinson–Han (7.6.1) and (7.6.3),
-  [brezis2011functional] Comments on chapter 9, 7 (iii));
-* `green_contDiff`: Green's formula against a fixed compactly supported `C¹` test function, valid
-  at `p = 1` too, the form the piecewise-Sobolev membership theorem (Atkinson–Han Example 7.2.7)
-  uses.
+* for every $1 \le p < \infty$, a bounded linear trace
+  $T \colon W^{1,p}(\Omega) \to L^p(\sigma)$ (Theorem 7.3.10(b) of [han2009theoretical]; Theorem
+  1.5.1.3 of [grisvard2011elliptic] with values in $L^p(\Gamma)$);
+* the property that the trace of a function continuous on $\overline{\Omega}$ is its restriction
+  (Theorem 7.3.10(a) of [han2009theoretical]);
+* Green's formula $\int_\Omega \partial_i u \, v + \int_\Omega u \, \partial_i v = \int (Tu)(Tv)
+  \, \nu_i \, d\sigma$ for $u \in W^{1,p}(\Omega)$ and $v \in W^{1,q}(\Omega)$ at finite
+  conjugate exponents (Theorem 1.5.3.1 of [grisvard2011elliptic]; (7.6.1) and (7.6.3) of
+  [han2009theoretical]; item 7(iii) of the Comments on Chapter 9 of [brezis2011functional]);
+* Green's formula $\int_\Omega \partial_i u \, \varphi + \int_\Omega u \, \partial_i \varphi =
+  \int (Tu) \varphi \, \nu_i \, d\sigma$ for $u \in W^{1,p}(\Omega)$, $1 \le p < \infty$, and a
+  compactly supported $C^1$ function $\varphi$ on $\mathbb{R}^N$. This form holds also at
+  $p = 1$, and the theorem on piecewise Sobolev functions (Example 7.2.7 of
+  [han2009theoretical]) uses it.
 
-Green's formula is a field rather than a theorem because on a polygon it is proved by summing over
-the triangles (`Triangulation.green`), not by density on `Ω`. -/
+The instances are `IsContDiffDomain.traceFamily` and `Triangulation.traceFamily`. Green's
+formula is a field and not a theorem, because on a polygon it is proved by a sum over the
+triangles (`Triangulation.green`), not by density on $\Omega$. -/
 structure TraceFamily (B : BoundaryData Ω) where
-  /-- The trace operator at every finite exponent `1 ≤ p < ∞`. -/
+  /-- The trace operator $W^{1,p}(\Omega) \to L^p(\sigma)$ at every finite exponent
+  $1 \le p < \infty$. -/
   traceL : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ⊤ → (SobolevEuclidean N 1 p Ω →L[ℝ] Lp ℝ p B.σ)
-  /-- The trace of a function continuous up to the boundary is its restriction. -/
+  /-- The trace of a function of $W^{1,p}(\Omega)$ that agrees almost everywhere on $\Omega$ with a
+  function $\tilde u$ continuous on $\overline{\Omega}$ is $\tilde u$, $\sigma$-almost
+  everywhere. -/
   traceL_ae_eq : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω)
     (ũ : EuclideanSpace ℝ (Fin N) → ℝ),
     SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ →
     ContinuousOn ũ (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) →
     (traceL p hp u : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[B.σ] ũ
-  /-- Green's formula for Sobolev functions at conjugate exponents. -/
+  /-- Green's formula $\int_\Omega \partial_i u \, v + \int_\Omega u \, \partial_i v = \int (Tu)(Tv)
+  \, \nu_i \, d\sigma$ for $u \in W^{1,p}(\Omega)$ and $v \in W^{1,q}(\Omega)$ at finite
+  conjugate exponents $p$ and $q$. -/
   green : ∀ (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q]
     (hp : p ≠ ⊤) (hq : q ≠ ⊤) (u : SobolevEuclidean N 1 p Ω) (v : SobolevEuclidean N 1 q Ω)
     (i : Fin N),
@@ -636,8 +727,9 @@ structure TraceFamily (B : BoundaryData Ω) where
           * (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x
       = ∫ x, (traceL p hp u : EuclideanSpace ℝ (Fin N) → ℝ) x
           * (traceL q hq v : EuclideanSpace ℝ (Fin N) → ℝ) x * B.ν x i ∂B.σ
-  /-- Green's formula against a fixed compactly supported `C¹` test function, at every
-  `1 ≤ p < ∞`. -/
+  /-- Green's formula $\int_\Omega \partial_i u \, \varphi + \int_\Omega u \, \partial_i \varphi =
+  \int (Tu) \varphi \, \nu_i \, d\sigma$ for $u \in W^{1,p}(\Omega)$, $1 \le p < \infty$, and a
+  compactly supported $C^1$ function $\varphi$ on $\mathbb{R}^N$. -/
   green_contDiff : ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω)
     (φ : EuclideanSpace ℝ (Fin N) → ℝ), ContDiff ℝ 1 φ → HasCompactSupport φ → ∀ i : Fin N,
     (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
@@ -651,10 +743,13 @@ namespace TraceFamily
 
 variable {B : BoundaryData Ω} (𝒯 : B.TraceFamily)
 
-/-- **`W_0^{1,p}(Ω) ⊆ ker T`**: the trace of an element of `W_0^{1,p}(Ω)`, `1 ≤ p < ∞`, vanishes
-(the easy half of [brezis2011functional] Comments on chapter 9, 7 (ii); the converse is
-`Boundary/Kernel.lean`). A test function vanishes on `∂Ω`, so its trace is zero by `traceL_ae_eq`,
-and the trace is continuous on the closure `W_0^{1,p}(Ω)` of the test functions. -/
+/-- **$W_0^{1,p}(\Omega)$ lies in the kernel of the trace.** For $1 \le p < \infty$ and
+$u \in W_0^{1,p}(\Omega)$, the trace of $u$ is $0$. This is the easy half of item 7(ii) of the
+Comments on Chapter 9 of [brezis2011functional]; the converse is in
+`Numlib.Analysis.Sobolev.Boundary.Kernel`.
+
+A test function vanishes on $\partial\Omega$, so its trace is zero by the field `traceL_ae_eq`.
+The trace is continuous, and $W_0^{1,p}(\Omega)$ is the closure of the test functions. -/
 theorem traceL_eq_zero_of_mem_zero {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     {u : SobolevEuclidean N 1 p Ω} (hu : u ∈ SobolevEuclideanZero N 1 p Ω) :
     𝒯.traceL p hp u = 0 := by
@@ -666,19 +761,26 @@ theorem traceL_eq_zero_of_mem_zero {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠
   rw [hx, Pi.zero_apply]
   exact φ.zero_on_compl hxΩ
 
-/-- **The normal derivative of an `H²` function on the boundary**,
-[brezis2011functional] Comments on chapter 9, 7 (iii): `∂u/∂ν := ∑ᵢ νᵢ T(∂ᵢu)` with
-`∂ᵢu ∈ H¹(Ω)` the typed partial derivative `SobolevMultiIndex.partialDerivL`. -/
+/-- **The normal derivative of an $H^2$ function on the boundary.** For $u \in H^2(\Omega)$,
+$$\frac{\partial u}{\partial \nu} = \sum_i \nu_i \, T(\partial_i u),$$
+where $\partial_i u \in H^1(\Omega)$ and $T$ is the trace at $p = 2$. This is the normal
+derivative of item 7(iii) of the Comments on Chapter 9 of [brezis2011functional].
+
+The partial derivative $\partial_i u$ is `SobolevMultiIndex.partialDerivL`, and $H^2(\Omega)$ is
+`SobolevEuclidean N 2 2 Ω`. The result is a function on $\mathbb{R}^N$, meaningful
+$\sigma$-almost everywhere. -/
 def normalTrace (u : SobolevEuclidean N 2 2 Ω) : EuclideanSpace ℝ (Fin N) → ℝ :=
   fun x ↦ ∑ i, B.ν x i * (𝒯.traceL 2 ENNReal.ofNat_ne_top
     (SobolevMultiIndex.partialDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume i u) :
       EuclideanSpace ℝ (Fin N) → ℝ) x
 
-/-- The normal derivative of an `H²` function lies in `L²(σ)`. -/
+/-- For $u \in H^2(\Omega)$, the normal derivative $\partial u / \partial \nu$ lies in
+$L^2(\sigma)$. -/
 theorem memLp_normalTrace (u : SobolevEuclidean N 2 2 Ω) : MemLp (𝒯.normalTrace u) 2 B.σ :=
   memLp_finsetSum _ fun i _ ↦ B.memLp_ν_apply_mul (Lp.memLp _) i
 
-/-- The normal derivative is additive, `σ`-a.e. -/
+/-- The normal derivative is additive: $\partial(u + v)/\partial\nu = \partial u/\partial\nu +
+\partial v/\partial\nu$ $\sigma$-almost everywhere. -/
 theorem normalTrace_add (u v : SobolevEuclidean N 2 2 Ω) :
     𝒯.normalTrace (u + v) =ᵐ[B.σ] 𝒯.normalTrace u + 𝒯.normalTrace v := by
   have h : ∀ i : Fin N, ∀ᵐ x ∂B.σ, (𝒯.traceL 2 ENNReal.ofNat_ne_top
@@ -695,7 +797,8 @@ theorem normalTrace_add (u v : SobolevEuclidean N 2 2 Ω) :
   filter_upwards [ae_all_iff.2 h] with x hx
   simp only [normalTrace, Pi.add_apply, hx, mul_add, Finset.sum_add_distrib]
 
-/-- The normal derivative is homogeneous, `σ`-a.e. -/
+/-- The normal derivative is homogeneous: $\partial(cu)/\partial\nu = c \, \partial u/\partial\nu$
+$\sigma$-almost everywhere. -/
 theorem normalTrace_smul (c : ℝ) (u : SobolevEuclidean N 2 2 Ω) :
     𝒯.normalTrace (c • u) =ᵐ[B.σ] c • 𝒯.normalTrace u := by
   have h : ∀ i : Fin N, ∀ᵐ x ∂B.σ, (𝒯.traceL 2 ENNReal.ofNat_ne_top
@@ -710,10 +813,14 @@ theorem normalTrace_smul (c : ℝ) (u : SobolevEuclidean N 2 2 Ω) :
   simp only [normalTrace, Pi.smul_apply, hx, smul_eq_mul, Finset.mul_sum]
   exact Finset.sum_congr rfl fun i _ ↦ by ring
 
-/-- **Green's formula for `u ∈ H²(Ω)`, `v ∈ H¹(Ω)`** ([brezis2011functional] Comments on
-chapter 9, 7 (iii); Atkinson–Han (7.6.4)):
-`∫_Ω (∑ᵢ ∂ᵢ∂ᵢu) v + ∫_Ω ∑ᵢ ∂ᵢu ∂ᵢv = ∫ (∂u/∂ν) (Tv) dσ`, the first integrand being the weak
-Laplacian. Green's formula `green` at `p = q = 2` for each `∂ᵢu` and `v`, summed over `i`. -/
+/-- **Green's formula for $u \in H^2(\Omega)$ and $v \in H^1(\Omega)$.** For $u \in H^2(\Omega)$ and
+$v \in H^1(\Omega)$,
+$$\int_\Omega \Bigl(\sum_i \partial_i \partial_i u\Bigr) v \, dx + \int_\Omega \sum_i \partial_i
+  u \, \partial_i v \, dx = \int \frac{\partial u}{\partial \nu} \, (Tv) \, d\sigma,$$
+where the first integrand is the weak Laplacian of $u$ times $v$. This is item 7(iii) of the
+Comments on Chapter 9 of [brezis2011functional] and (7.6.4) of [han2009theoretical].
+
+The proof applies the field `green` at $p = q = 2$ to $\partial_i u$ and $v$, and sums over $i$. -/
 theorem green_laplacian (u : SobolevEuclidean N 2 2 Ω) (v : SobolevEuclidean N 1 2 Ω) :
     (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (∑ i, (SobolevMultiIndex.weakDeriv
         (SobolevMultiIndex.partialDerivL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 2 Ω volume
@@ -796,17 +903,25 @@ theorem green_laplacian (u : SobolevEuclidean N 2 2 Ω) (v : SobolevEuclidean N 
         ext x
         simp only [normalTrace, Finset.sum_mul]
 
-/-- The standard basis of `ℝ^N`, locally. -/
+/-- Local notation for the standard basis of $\mathbb{R}^N$. -/
 local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
-/-- **The Neumann boundary condition of an `H²` weak solution** — the clause of
-[brezis2011functional] Theorem 9.26 that has no meaning without a trace: if `u ∈ H²(Ω)` is a
-weak solution of the Neumann problem `−Δu + u = f` ((49) of §9.6, read on its `H¹` shadow:
-`∫_Ω ∇u·∇φ + ∫_Ω u φ = ∫_Ω f φ` for every `φ ∈ H¹(Ω)`), then `∂u/∂ν = 0` `σ`-a.e. Against test
-functions the weak equation says `−Δ_w u + u = f` a.e. on `Ω`
-(`Elliptic.neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq`); against `φ ∈ C_c^∞(ℝ^N)`,
-Green's formula `green_laplacian` then leaves `∫ (∂u/∂ν) φ dσ = 0`, and `∂u/∂ν ∈ L²(σ)` vanishes
-a.e. (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+/-- **The Neumann boundary condition of an $H^2$ weak solution.** Let $u \in H^2(\Omega)$ and
+$f \in L^2(\Omega)$, and assume that
+$$\int_\Omega \nabla u \cdot \nabla \varphi \, dx + \int_\Omega u \varphi \, dx = \int_\Omega f
+  \varphi \, dx \qquad \text{for every } \varphi \in H^1(\Omega).$$
+Then $\partial u / \partial \nu = 0$ $\sigma$-almost everywhere. This is the part of Theorem
+9.26 of [brezis2011functional] that has no meaning without a trace; the hypothesis is the weak
+form (49) of the Neumann problem $-\Delta u + u = f$ of §9.6, for $u$ seen as an element of
+$H^1(\Omega)$.
+
+The left side of the hypothesis is `Elliptic.laplaceForm` and the right side is `Elliptic.load`.
+Against test functions, the weak equation gives $-\Delta_w u + u = f$ almost everywhere on
+$\Omega$ (`Elliptic.neg_weakLaplacian_add_ae_eq_of_forall_laplaceForm_eq`). For
+$\varphi \in C_c^\infty(\mathbb{R}^N)$, Green's formula
+`BoundaryData.TraceFamily.green_laplacian` then leaves $\int (\partial u/\partial\nu) \varphi \,
+d\sigma = 0$, and so $\partial u / \partial \nu \in L^2(\sigma)$ vanishes almost everywhere
+(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem normalTrace_eq_zero_of_forall_laplaceForm_eq (u : SobolevEuclidean N 2 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (hu : ∀ φ : SobolevEuclidean N 1 2 Ω, Elliptic.laplaceForm Ω
@@ -893,40 +1008,46 @@ end TraceFamily
 
 end BoundaryData
 
-/-! ### The epigraph of a function of `d` variables -/
+/-! ### The epigraph of a function of $d$ variables -/
 
 namespace EuclideanSpace
 
 variable {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
 
-/-- **The epigraph** `{y : g y' < y_N}` of `g : ℝ^d → ℝ`: the open region strictly above the graph
-of `g`, in the coordinate convention of `IsBoundaryGraphAt` (the last coordinate is the one the
-boundary is a graph over). -/
+/-- **The epigraph** of $g \colon \mathbb{R}^d \to \mathbb{R}$: the region
+$$\{y \in \mathbb{R}^{d+1} : g(y') < y_N\}$$
+strictly above the graph of $g$, where $y' \in \mathbb{R}^d$ is the vector of the first $d$
+coordinates of $y$ and $y_N$ is its last coordinate. This is the coordinate convention of
+`IsBoundaryGraphAt`: the boundary is a graph over the first $d$ coordinates. -/
 def epigraph (g : EuclideanSpace ℝ (Fin d) → ℝ) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
   {y | g (init y) < y (Fin.last d)}
 
-/-- Membership of the epigraph. -/
+/-- A point $y$ lies in the epigraph of $g$ if and only if $g(y') < y_N$. -/
 theorem mem_epigraph {y : EuclideanSpace ℝ (Fin (d + 1))} :
     y ∈ epigraph g ↔ g (init y) < y (Fin.last d) :=
   Iff.rfl
 
-/-- The point `(x', t)` lies in the epigraph iff `g x' < t`. -/
+/-- The point $(x', t)$ lies in the epigraph of $g$ if and only if $g(x') < t$. -/
 @[simp]
 theorem snocLast_mem_epigraph (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
     snocLast x' t ∈ epigraph g ↔ g x' < t := by
   simp [mem_epigraph]
 
-/-- The vertical line through `x'` meets the epigraph in the open half-line above `g x'`. -/
+/-- The vertical line through $x'$ meets the epigraph of $g$ in the open half-line
+$\{t : t > g(x')\}$. -/
 theorem epigraph_preimage_snocLast (x' : EuclideanSpace ℝ (Fin d)) :
     (fun t ↦ snocLast x' t) ⁻¹' epigraph g = Ioi (g x') := by
   ext t
   simp
 
-/-- The upper half space is the epigraph of the zero function. -/
+/-- The upper half space $\{y : y_N > 0\}$ is the epigraph of the zero function. -/
 theorem upperHalfSpace_eq_epigraph_zero : upperHalfSpace d = epigraph 0 := rfl
 
-/-- **`IsBoundaryGraphAt` in terms of the epigraph**: `Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`
-for some rigid motion `T` and some `g ∈ V`. -/
+/-- **`IsBoundaryGraphAt` in terms of the epigraph.** For a class $V$ of functions on
+$\mathbb{R}^d$, the set $\Omega$ is the region above a graph from $V$ in the ball $B(x_0, r)$ if
+and only if there are a rigid motion $T$ and a $g \in V$ with
+$$\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\operatorname{epi} g).$$
+Here $\operatorname{epi} g$ is the epigraph `EuclideanSpace.epigraph g`. -/
 theorem isBoundaryGraphAt_iff {V : Set (EuclideanSpace ℝ (Fin d) → ℝ)}
     {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} {x₀ : EuclideanSpace ℝ (Fin (d + 1))} {r : ℝ} :
     IsBoundaryGraphAt V Ω x₀ r ↔
@@ -938,8 +1059,10 @@ theorem isBoundaryGraphAt_iff {V : Set (EuclideanSpace ℝ (Fin d) → ℝ)}
 theorem isOpen_epigraph (hg : Continuous g) : IsOpen (epigraph g) :=
   isOpen_lt (hg.comp continuous_init) continuous_apply_last
 
-/-- **The closure of the epigraph** of a continuous function is the closed region on or above the
-graph: a point on the graph is the limit of the points `(y', y_N + 1/(n+1))` of the epigraph. -/
+/-- **The closure of the epigraph.** If $g$ is continuous, then the closure of its epigraph is the
+closed region $\{y : g(y') \le y_N\}$ on or above the graph.
+
+A point on the graph is the limit of the points $(y', y_N + 1/(n+1))$ of the epigraph. -/
 theorem closure_epigraph (hg : Continuous g) :
     closure (epigraph g) = {y | g (init y) ≤ y (Fin.last d)} := by
   refine Subset.antisymm (closure_lt_subset_le (hg.comp continuous_init) continuous_apply_last)
@@ -960,8 +1083,11 @@ theorem closure_epigraph (hg : Continuous g) :
   rw [snocLast_mem_epigraph]
   exact hy.trans_lt (lt_add_of_pos_right _ (by positivity))
 
-/-- The closure of `Ω` near a graph chart lies on or above the graph: if
-`Ω ∩ B = B ∩ T ⁻¹' epigraph g` for an open `B`, then `closure Ω ∩ B ⊆ T ⁻¹' {y | g y' ≤ y_N}`. -/
+/-- Let $g$ be continuous, let $T$ be a rigid motion, let $B$ be open, and assume that $\Omega \cap
+B = B \cap T^{-1}(\operatorname{epi} g)$. Then
+$$\overline{\Omega} \cap B \subseteq T^{-1}(\{y : g(y') \le y_N\}),$$
+so near a graph chart the closure of $\Omega$ lies on or above the graph. Here
+$\operatorname{epi} g$ is the epigraph `EuclideanSpace.epigraph g`. -/
 theorem closure_inter_subset_of_inter_eq (hg : Continuous g)
     {T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
     {Ω B : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hB : IsOpen B)
@@ -978,7 +1104,8 @@ theorem closure_inter_subset_of_inter_eq (hg : Continuous g)
   rw [← h4, closure_epigraph hg] at h3
   exact h3
 
-/-- **The frontier of the epigraph** of a continuous function is the graph of `g`. -/
+/-- **The boundary of the epigraph.** If $g$ is continuous, then the boundary of its epigraph is the
+graph $\{y : y_N = g(y')\}$. -/
 theorem frontier_epigraph (hg : Continuous g) :
     frontier (epigraph g) = {y | y (Fin.last d) = g (init y)} := by
   rw [(isOpen_epigraph hg).frontier_eq, closure_epigraph hg]
@@ -988,7 +1115,9 @@ theorem frontier_epigraph (hg : Continuous g) :
   · rintro ⟨h1, h2⟩; exact le_antisymm h2 h1
   · intro h; exact ⟨h.ge, h.le⟩
 
-/-- The frontier of a rotated epigraph is the rotated graph. -/
+/-- If $g$ is continuous and $T$ is a rigid motion, then the boundary of
+$T^{-1}(\operatorname{epi} g)$ is $T^{-1}(\{y : y_N = g(y')\})$. Here $\operatorname{epi} g$ is
+the epigraph `EuclideanSpace.epigraph g`. -/
 theorem frontier_preimage_epigraph (hg : Continuous g)
     (T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))) :
     frontier (T ⁻¹' epigraph g) = T ⁻¹' {y | y (Fin.last d) = g (init y)} := by
@@ -996,14 +1125,19 @@ theorem frontier_preimage_epigraph (hg : Continuous g)
   rw [AffineIsometryEquiv.coe_toHomeomorph] at h
   rw [← h, frontier_epigraph hg]
 
-/-- The point `(x', t)` lies in the closure of the epigraph iff `g x' ≤ t`. -/
+/-- If $g$ is continuous, the point $(x', t)$ lies in the closure of the epigraph of $g$ if and only
+if $g(x') \le t$. -/
 theorem snocLast_mem_closure_epigraph (hg : Continuous g) (x' : EuclideanSpace ℝ (Fin d))
     (t : ℝ) : snocLast x' t ∈ closure (epigraph g) ↔ g x' ≤ t := by
   rw [closure_epigraph hg]
   simp
 
-/-- **The chart condition is intrinsic inside the overlap of two chart balls**: two graph charts
-of the same `Ω` describe the same set there. -/
+/-- **The chart condition does not depend on the chart in the overlap of two chart balls.** Let
+$T_1, T_2$ be rigid motions, and assume that $\Omega \cap B(x_k, r_k) = B(x_k, r_k) \cap
+T_k^{-1}(\operatorname{epi} g_k)$ for $k = 1, 2$. Then
+$$B(x_1, r_1) \cap B(x_2, r_2) \cap T_1^{-1}(\operatorname{epi} g_1) = B(x_1, r_1) \cap B(x_2,
+  r_2) \cap T_2^{-1}(\operatorname{epi} g_2).$$
+Here $\operatorname{epi} g_k$ is the epigraph `EuclideanSpace.epigraph g_k`. -/
 theorem inter_inter_preimage_epigraph_eq {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
     {T₁ T₂ : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
     {g₁ g₂ : EuclideanSpace ℝ (Fin d) → ℝ} {x₁ x₂ : EuclideanSpace ℝ (Fin (d + 1))} {r₁ r₂ : ℝ}
@@ -1018,10 +1152,14 @@ theorem inter_inter_preimage_epigraph_eq {Ω : Set (EuclideanSpace ℝ (Fin (d +
   tauto
 end EuclideanSpace
 
-/-- **The boundary of a locally graphical set is the graph, inside the ball**: if
-`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g` with `g` continuous, then
-`frontier Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' {y | y_N = g y'}`. The pointwise `⊆` direction is
-`IsBoundaryGraphAt.last_eq_of_mem_frontier` of `Chart.lean`. -/
+/-- **The boundary of a set that is locally an epigraph is the graph, inside the ball.** Let $g$ be
+continuous, let $T$ be a rigid motion, and assume that $\Omega \cap B(x_0, r) = B(x_0, r) \cap
+T^{-1}(\operatorname{epi} g)$. Then
+$$\partial\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y : y_N = g(y')\}).$$
+Here $\operatorname{epi} g$ is the epigraph `EuclideanSpace.epigraph g`.
+
+The inclusion $\subseteq$ at a single point is `IsBoundaryGraphAt.last_eq_of_mem_frontier` of
+`Numlib.Analysis.Sobolev.Chart`. -/
 theorem IsBoundaryGraphAt.frontier_inter_ball {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
     (hg : Continuous g) {T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
     {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} {x₀ : EuclideanSpace ℝ (Fin (d + 1))} {r : ℝ}
@@ -1036,7 +1174,10 @@ namespace EuclideanSpace
 
 variable {d : ℕ} {g : EuclideanSpace ℝ (Fin d) → ℝ}
 
-/-- A boundary point of `Ω` inside a chart ball lies on the chart's graph. -/
+/-- Let $g$ be continuous, let $T$ be a rigid motion, and assume that $\Omega \cap B(x_0, r) =
+B(x_0, r) \cap T^{-1}(\operatorname{epi} g)$. Then every boundary point of $\Omega$ in
+$B(x_0, r)$ lies on the boundary of $T^{-1}(\operatorname{epi} g)$, that is, on the graph of the
+chart. Here $\operatorname{epi} g$ is the epigraph `EuclideanSpace.epigraph g`. -/
 theorem mem_frontier_preimage_epigraph_of_mem_frontier
     {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
     {T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1))}
@@ -1049,18 +1190,20 @@ theorem mem_frontier_preimage_epigraph_of_mem_frontier
   rw [frontier_preimage_epigraph hg]
   exact h2.2
 
-/-- **The strip of height `t` above the graph of `g`**, `{y | g y' < y_N < g y' + t}`, in the
-frame of the graph. -/
+/-- **The strip of height $t$ above the graph of $g$**: the set
+$$\{y : g(y') < y_N < g(y') + t\},$$
+in the frame of the graph. -/
 def graphStrip (g : EuclideanSpace ℝ (Fin d) → ℝ) (t : ℝ) :
     Set (EuclideanSpace ℝ (Fin (d + 1))) :=
   {y | g (init y) < y (Fin.last d) ∧ y (Fin.last d) < g (init y) + t}
 
-/-- The strip above the graph of a continuous function is open. -/
+/-- If $g$ is continuous, the strip above the graph of $g$ is open. -/
 theorem isOpen_graphStrip (hg : Continuous g) (t : ℝ) : IsOpen (graphStrip g t) :=
   (isOpen_lt (hg.comp continuous_init) continuous_apply_last).inter
     (isOpen_lt continuous_apply_last ((hg.comp continuous_init).add continuous_const))
 
-/-- The point `(x', s)` lies in the strip iff `g x' < s < g x' + t`. -/
+/-- The point $(x', s)$ lies in the strip of height $t$ above the graph of $g$ if and only if
+$g(x') < s < g(x') + t$. -/
 theorem snocLast_mem_graphStrip {t : ℝ} (x' : EuclideanSpace ℝ (Fin d)) (s : ℝ) :
     snocLast x' s ∈ graphStrip g t ↔ g x' < s ∧ s < g x' + t := by
   simp [graphStrip]

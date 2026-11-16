@@ -11,36 +11,66 @@ import Numlib.Approximation.NewtonForm
 /-!
 # Runge's phenomenon
 
-Runge's counterexample ([quarteroni2000numerical] Example 8.1): the Lagrange interpolants of
-`f(s) = 1/(1 + s²)` on `[-5, 5]` at the equispaced nodes `x_j = -5 + 10j/n`, `j = 0, …, n`, do
-not converge to `f` at every point of the interval. The point exhibited is `t = 4.9`, along the
-odd `n`, where the interpolation error is at least `1` for every odd `n ≥ 401`
-(`Runge.one_le_abs_sub_interpolate`), so that `Π_n f(t) ↛ f(t)` (`Runge.not_tendsto_interpolate`).
+This module proves Runge's counterexample, Example 8.1 of [quarteroni2000numerical]. Let
+$f(s) = 1/(1 + s^2)$ be the Runge function. For $n \ge 1$ let $x_j = -5 + 10j/n$, $j = 0, \dots, n$,
+be the equispaced nodes of $[-5, 5]$, and let $\Pi_n f$ be the polynomial of degree at most $n$ that
+interpolates $f$ at these nodes. The interpolants do not converge to $f$ at every point of the
+interval. At $t = 4.9$ the error $|f(t) - \Pi_n f(t)|$ is at least $1$ for every odd $n \ge 401$, so
+$\Pi_n f(t) \not\to f(t)$ as $n \to \infty$.
 
-## The route (real-variable, no contour integral)
+The threshold $n \ge 401$ and the constants are far from sharp: the divergence holds for every
+$|t| > 3.63\ldots$, the value that the source gives. But the statement that the interpolants do not
+converge needs only one point and one subsequence. The proof uses real variables only, and no
+contour integral.
 
-* `Runge.newton_runge`: the divided difference of `f` at distinct real nodes is
-  `Re (I / ∏_i (I - x_i))`, from the partial fraction `1/(1 + s²) = Re (I/(I - s))` and the
-  Cauchy-kernel divided difference `DividedDifference.newtonOn_inv_sub` over `ℂ`.
-* `Runge.exists_prod_I_sub_node_eq`: for `n` odd the symmetric node set makes `∏_j (I - x_j)`
-  real, and `Runge.abs_sub_interpolate_eq` gives the **exact error**
-  `|f(t) - Π_n f(t)| = ∏_j |t - x_j| / ((1 + t²) ∏_j ‖I - x_j‖)` at every non-node `t`, by
-  `DividedDifference.sub_eval_interpolate_eq_newton`.
-* The two products are `exp` of sums of logarithms, compared with integrals through Mathlib's
-  monotone Riemann-sum lemmas (`AntitoneOn.integral_le_sum`, `MonotoneOn.integral_le_sum`,
-  `MonotoneOn.sum_le_integral`) and `integral_log`: `Runge.sum_log_abs_sub_ge` bounds
-  `∑_j log|t - x_j|` below by `(n/10)(9.9 log 9.9 - 10 - 0.1 log 10) - 2 log(10n)` (the two
-  nodes nearest to `t` are handled by the separation `|t - x_j| ≥ 1/(10n)`, which is where the
-  rational `t` and the odd `n` enter), and `Runge.sum_log_one_add_abs_le` bounds
-  `∑_j log(1 + |x_j|) ≥ ∑_j log ‖I - x_j‖` above by `(n/10)(12 log 6 - 10) + 2 log 16`.
-* `Runge.margin`: the difference exceeds `log(1 + t²)` for `n ≥ 400`, with certified bounds on
-  `log 9.9`, `log 10`, `log 6`, `log 16`, `log 25.01` from `Real.exp_one_gt_d9`,
-  `Real.exp_one_lt_d9`, `Real.log_two_lt_d9`, `Real.quadratic_le_exp_of_nonneg` and
-  `Real.exp_bound'`.
+## Main definitions
 
-The threshold `n ≥ 401` and the constants are far from sharp (the divergence holds for every
-`|t| > 3.63…`, the book's figure), but the statement `¬ Tendsto` needs one point and a
-subsequence only.
+* `Runge.runge`: the Runge function $f(s) = 1/(1 + s^2)$.
+* `Runge.node`: the equispaced nodes $x_j = -5 + 10j/n$, $j = 0, \dots, n$.
+
+## Main results
+
+* `Runge.newton_runge`: at distinct real nodes $v_0, \dots, v_m$, the divided difference of $f$ is
+  $\operatorname{Re} \bigl(i / \prod_k (i - v_k)\bigr)$.
+* `Runge.exists_prod_I_sub_node_eq`: for odd $n$, the product $\prod_j (i - x_j)$ is real.
+* `Runge.abs_sub_interpolate_eq`: for odd $n$ and a point $t$ that is not a node, $|f(t) - \Pi_n
+  f(t)| = \prod_j |t - x_j| / \bigl((1 + t^2) \prod_j |i - x_j|\bigr)$.
+* `Runge.sum_log_one_add_abs_le`: for odd $n \ge 10$, $\sum_j \log(1 + |x_j|) \le (n/10)(12 \log
+  6 - 10) + 2 \log 16$.
+* `Runge.sum_log_abs_sub_ge`: for odd $n \ge 200$, $\sum_j \log|4.9 - x_j| \ge (n/10)(9.9 \log 9.9 -
+  10 - 0.1 \log 10) - 2 \log(10n)$.
+* `Runge.margin`: for $n \ge 400$, the difference of these two bounds is at least $\log(1 + 4.9^2)$.
+* `Runge.one_le_abs_sub_interpolate`: for odd $n \ge 401$, $|f(4.9) - \Pi_n f(4.9)| \ge 1$.
+* `Runge.not_tendsto_interpolate`: **Runge's phenomenon**, $\Pi_n f(4.9) \not\to f(4.9)$.
+
+## Proof outline
+
+The partial fraction $1/(1 + s^2) = \operatorname{Re} \bigl(i/(i - s)\bigr)$ and the divided
+differences of the Cauchy kernel $1/(z - s)$ over $\mathbb{C}$ give the divided differences of $f$
+at distinct real nodes. For odd $n$ the node set is symmetric about $0$ and has an even number of
+points, so $\prod_j (i - x_j)$ is real. The error formula $f(t) - \Pi_n f(t) = \prod_j (t - x_j) \,
+f[x_0, \dots, x_n, t]$ then gives the exact error at every $t$ that is not a node:
+$$|f(t) - \Pi_n f(t)| = \frac{\prod_j |t - x_j|}{(1 + t^2) \prod_j |i - x_j|}.$$
+Both products are exponentials of sums of logarithms, and $|i - x_j| \le 1 + |x_j|$. Riemann sums
+compare the sums $\sum_j \log|t - x_j|$ and $\sum_j \log(1 + |x_j|)$ with integrals of the
+logarithm. For the first sum, the two nodes nearest to $t$ are handled by the separation
+$|t - x_j| \ge 1/(10n)$; this is where the rational point $t = 4.9$ and the odd $n$ enter. For
+$n \ge 400$ the difference of the two bounds exceeds $\log(1 + t^2)$, and then the error is at least
+$1$.
+
+## Implementation notes
+
+* The interpolant $\Pi_n f$ is `Lagrange.interpolate Finset.univ (Runge.node n)` applied to the
+  values $f(x_j)$ and evaluated with `Polynomial.eval`. The imaginary unit $i$ is `Complex.I`, and
+  $|i - x_j|$ is the norm in $\mathbb{C}$.
+* The sums over the nodes use the natural-number indexing `Runge.xr` and the index set
+  `Finset.range (n + 1)`.
+* The sums are compared with integrals by Mathlib's lemmas on monotone Riemann sums
+  `AntitoneOn.integral_le_sum`, `MonotoneOn.integral_le_sum` and `MonotoneOn.sum_le_integral`,
+  together with `integral_log`.
+* The numerical bounds on $\log 9.9$, $\log 10$, $\log 6$, $\log 16$ and $\log 25.01$ are certified
+  from `Real.exp_one_gt_d9`, `Real.exp_one_lt_d9`, `Real.log_two_lt_d9`,
+  `Real.quadratic_le_exp_of_nonneg` and `Real.exp_bound'`.
 -/
 
 open Finset Set Complex
@@ -50,24 +80,31 @@ namespace Runge
 
 /-! ### The Runge function and its divided differences -/
 
-/-- **The Runge function** `f(s) = 1/(1 + s²)` of [quarteroni2000numerical] (8.12). -/
+/-- The **Runge function** $f(s) = 1/(1 + s^2)$ on $\mathbb{R}$. This is (8.12) of
+[quarteroni2000numerical]. -/
 noncomputable def runge (s : ℝ) : ℝ := 1 / (1 + s ^ 2)
 
-/-- The partial fraction `1/(1 + s²) = Re (I / (I - s))`. -/
+/-- For every real $s$, the Runge function is the real part of a simple fraction:
+$$f(s) = \operatorname{Re} \frac{i}{i - s}.$$
+-/
 theorem runge_eq_re (s : ℝ) : runge s = (I / (I - (s : ℂ))).re := by
   rw [runge, Complex.div_re]
   simp [Complex.normSq_apply]
   ring
 
-/-- `I` is not a real number. -/
+/-- The imaginary unit $i$ is not a real number: $i \neq s$ for every real $s$. -/
 theorem I_ne_ofReal (s : ℝ) : (I : ℂ) ≠ (s : ℂ) := fun h => by
   have := congrArg Complex.im h
   simp at this
 
-/-- **The divided difference of the Runge function** at distinct real nodes is the real part of
-`I / ∏_i (I - x_i)`: the partial fraction `1/(1 + s²) = Re (I/(I - s))` and the Cauchy-kernel
-divided difference `DividedDifference.newtonOn_inv_sub` over `ℂ`, the denominators of the
-explicit sum `DividedDifference.newton` being real. -/
+/-- Let $v_0, \dots, v_m$ be distinct real nodes. The divided difference of the Runge function $f$
+at these nodes is
+$$f[v_0, \dots, v_m] = \operatorname{Re} \frac{i}{\prod_{k=0}^{m} (i - v_k)}.$$
+
+The divided difference is `DividedDifference.newton`. The proof combines the partial fraction
+`Runge.runge_eq_re` with the divided difference of the Cauchy kernel $s \mapsto 1/(z - s)$ over
+$\mathbb{C}$, `DividedDifference.newtonOn_inv_sub`. The denominators of the explicit sum
+`DividedDifference.newton` are real, so the real part passes through the sum. -/
 theorem newton_runge {m : ℕ} {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) :
     DividedDifference.newton runge v = (I / ∏ i, (I - (v i : ℂ))).re := by
   classical
@@ -89,16 +126,22 @@ theorem newton_runge {m : ℕ} {v : Fin (m + 1) → ℝ} (hv : Function.Injectiv
 
 /-! ### The equispaced nodes -/
 
-/-- **The equispaced nodes** `x_j = -5 + 10 j/n`, `j = 0, …, n`, of Runge's example. -/
+/-- The **equispaced nodes** of Runge's example: $x_j = -5 + 10j/n$ for $j = 0, \dots, n$.
+
+For $n = 0$, the Lean convention $10j/0 = 0$ gives the single node $x_0 = -5$. -/
 noncomputable def node (n : ℕ) (j : Fin (n + 1)) : ℝ := -5 + 10 * (j : ℝ) / n
 
-/-- The `ℕ`-indexed node `x_j = -5 + 10 j/n`, for the sums over `Finset.range (n + 1)`. -/
+/-- The node $x_j = -5 + 10j/n$ with a natural-number index $j$, for the sums over
+`Finset.range (n + 1)`. The formula is the same for $j > n$. -/
 noncomputable def xr (n j : ℕ) : ℝ := -5 + 10 * (j : ℝ) / n
 
-/-- The two indexings agree. -/
+/-- For $j = 0, \dots, n$, the two indexings `Runge.node` and `Runge.xr` give the same node $x_j$.
+-/
 theorem node_eq_xr (n : ℕ) (j : Fin (n + 1)) : node n j = xr n j := rfl
 
-/-- The nodes are symmetric: `x_{n-j} = -x_j`. -/
+/-- For $n \ge 1$ the nodes are symmetric about $0$: $x_{n-j} = -x_j$ for $j = 0, \dots, n$.
+
+The index $n - j$ is `Fin.rev j`. -/
 theorem node_rev {n : ℕ} (hn : n ≠ 0) (j : Fin (n + 1)) : node n (Fin.rev j) = -node n j := by
   simp only [node, Fin.val_rev]
   have hj : (j : ℕ) ≤ n := Nat.lt_succ_iff.mp j.2
@@ -107,7 +150,7 @@ theorem node_rev {n : ℕ} (hn : n ≠ 0) (j : Fin (n + 1)) : node n (Fin.rev j)
   field_simp
   ring
 
-/-- The nodes are distinct. -/
+/-- For $n \ge 1$ the nodes $x_0, \dots, x_n$ are distinct. -/
 theorem node_injective {n : ℕ} (hn : n ≠ 0) : Function.Injective (node n) := fun i j h => by
   simp only [node] at h
   have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn
@@ -117,9 +160,11 @@ theorem node_injective {n : ℕ} (hn : n ≠ 0) : Function.Injective (node n) :=
     linarith
   exact Fin.ext (Nat.cast_injective this)
 
-/-- **`∏_j (I - x_j)` is real** for the symmetric equispaced nodes with `n` odd (an even number of
-nodes): its conjugate is `∏_j (-I - x_j) = ∏_j (-(I - x_{n-j}))`, which is the product itself
-because `(-1)^{n+1} = 1`. -/
+/-- For odd $n$, the product $\prod_{j=0}^{n} (i - x_j)$ over the equispaced nodes is a real number.
+
+The proof: the conjugate of the product is $\prod_j (-i - x_j) = \prod_j \bigl(-(i -
+x_{n-j})\bigr)$, by the symmetry of the nodes. This is $(-1)^{n+1}$ times the product, and
+$(-1)^{n+1} = 1$ because the number $n + 1$ of nodes is even. -/
 theorem exists_prod_I_sub_node_eq {n : ℕ} (hn : Odd n) :
     ∃ r : ℝ, ∏ j, (I - (node n j : ℂ)) = r := by
   rw [← Complex.conj_eq_iff_real, map_prod]
@@ -134,15 +179,18 @@ theorem exists_prod_I_sub_node_eq {n : ℕ} (hn : Odd n) :
     _ = ∏ j, (I - (node n j : ℂ)) := by
         rw [Finset.prod_neg, Finset.card_univ, Fintype.card_fin, (hn.add_one).neg_one_pow, one_mul]
 
-/-- **The interpolation error of the Runge function** at a point `t` which is not a node, for the
-equispaced nodes with `n` odd:
+/-- Let $n$ be odd, and let $t$ be a real number that is not one of the equispaced nodes
+$x_0, \dots, x_n$. Let $\Pi_n f$ be the polynomial of degree at most $n$ that interpolates the
+Runge function $f$ at these nodes. Then
+$$|f(t) - \Pi_n f(t)| = \frac{\prod_{j=0}^{n} |t - x_j|}{(1 + t^2) \prod_{j=0}^{n} |i - x_j|}.$$
 
-  `|f(t) - Π_n f(t)| = ∏_j |t - x_j| / ((1 + t²) ∏_j ‖I - x_j‖)`.
-
-By `DividedDifference.sub_eval_interpolate_eq_newton` the error is
-`ω_{n+1}(t) f[x_0, …, x_n, t]`, and `newton_runge` with `exists_prod_I_sub_node_eq` evaluate the
-divided difference as `Re (I / (r (I - t))) = 1/(r (1 + t²))` for the real number
-`r = ∏_j (I - x_j)`. -/
+The interpolant is `Lagrange.interpolate Finset.univ (Runge.node n)` applied to the values
+$f(x_j)$, and $|i - x_j|$ is the norm in $\mathbb{C}$. By
+`DividedDifference.sub_eval_interpolate_eq_newton` the error is
+$\omega_{n+1}(t) \, f[x_0, \dots, x_n, t]$ with $\omega_{n+1}(t) = \prod_j (t - x_j)$. Then
+`Runge.newton_runge` and `Runge.exists_prod_I_sub_node_eq` evaluate the divided difference as
+$\operatorname{Re} \bigl(i / (r (i - t))\bigr) = 1/\bigl(r (1 + t^2)\bigr)$ for the real number
+$r = \prod_j (i - x_j)$. -/
 theorem abs_sub_interpolate_eq {n : ℕ} (hn : Odd n) {t : ℝ} (ht : ∀ j, node n j ≠ t) :
     |runge t - (Lagrange.interpolate univ (node n) fun j => runge (node n j)).eval t|
       = (∏ j, |t - node n j|) / ((1 + t ^ 2) * ∏ j, ‖I - (node n j : ℂ)‖) := by
@@ -172,15 +220,18 @@ theorem abs_sub_interpolate_eq {n : ℕ} (hn : Odd n) {t : ℝ} (ht : ∀ j, nod
 
 /-! ### The two Riemann sums -/
 
-/-- The primitive `G(r) = r log r - r` of `log` is nonpositive on `(0, 1]`. -/
+/-- For $0 < a \le 1$, the primitive $G(r) = r \log r - r$ of $\log$ is nonpositive at $a$:
+$a \log a - a \le 0$. -/
 theorem primitive_log_nonpos {a : ℝ} (h0 : 0 < a) (h1 : a ≤ 1) : a * Real.log a - a ≤ 0 := by
   have : Real.log a ≤ 0 := Real.log_nonpos h0.le h1
   nlinarith
 
-/-- **The sum `∑_j log(1 + |x_j|)` over the equispaced nodes, `n` odd**, is at most
-`(n/10)(12 log 6 - 10) + 2 log 16` when `n ≥ 10`: by symmetry it is twice the sum over the
-positive nodes `h(m + 1/2)`, `m < (n+1)/2`, which is a lower Riemann sum of `log(1 + s)` on
-`[1 + h/2, 6 + h]` with step `h = 10/n`. -/
+/-- Let $n \ge 10$ be odd. The equispaced nodes $x_j = -5 + 10j/n$ satisfy
+$$\sum_{j=0}^{n} \log(1 + |x_j|) \le \frac{n}{10} (12 \log 6 - 10) + 2 \log 16.$$
+
+The nodes are `Runge.xr`. By symmetry, the sum is twice the sum over the positive nodes
+$h(m + 1/2)$, $m < (n + 1)/2$, with the step $h = 10/n$. After the substitution
+$r = 1 + h/2 + hm$, this sum is a lower Riemann sum of $\log r$ on $[1 + h/2, 6 + h]$. -/
 theorem sum_log_one_add_abs_le {n : ℕ} (hn : Odd n) (hn10 : 10 ≤ n) :
     ∑ j ∈ range (n + 1), Real.log (1 + |xr n j|)
       ≤ (n / 10) * (12 * Real.log 6 - 10) + 2 * Real.log 16 := by
@@ -279,8 +330,11 @@ theorem sum_log_one_add_abs_le {n : ℕ} (hn : Odd n) (hn10 : 10 ≤ n) :
         field_simp
         ring
 
-/-- **`t = 4.9` is separated from the equispaced nodes by `1/(10n)`** when `n` is odd:
-`t - x_j = (99n - 100j)/(10n)` with a nonzero integer numerator. -/
+/-- Let $n$ be odd. The point $t = 4.9$ has distance at least $1/(10n)$ from every node
+$x_j = -5 + 10j/n$, for every natural number $j$:
+$$|4.9 - x_j| \ge \frac{1}{10n}.$$
+
+The proof: $4.9 - x_j = (99n - 100j)/(10n)$, and the numerator is a nonzero integer. -/
 theorem sep_le_abs_sub {n : ℕ} (hn : Odd n) (j : ℕ) : 1 / (10 * n) ≤ |49 / 10 - xr n j| := by
   have hnpos : (0 : ℝ) < n := by exact_mod_cast hn.pos
   have hne : (99 * n : ℤ) - 100 * j ≠ 0 := by
@@ -297,11 +351,15 @@ theorem sep_le_abs_sub {n : ℕ} (hn : Odd n) (j : ℕ) : 1 / (10 * n) ≤ |49 /
   rw [e, abs_div, abs_of_pos (by positivity : (0 : ℝ) < 10 * n)]
   exact div_le_div_of_nonneg_right h1 (by positivity)
 
-/-- **The sum `∑_j log|t - x_j|` at `t = 4.9` over the equispaced nodes, `n` odd, `n ≥ 200`**,
-is at least `(n/10)(9.9 log 9.9 - 10 - 0.1 log 10) - 2 log(10n)`: the nodes left of `t` other
-than the nearest give an upper Riemann sum of `log(t - s)` on `[-5, x_{J-1}]`, those right of `t`
-other than the nearest one of `log(s - t)` on `[x_J, 5]`, and the two nearest nodes are handled
-by the separation `sep_le_abs_sub`. -/
+/-- Let $n \ge 200$ be odd. At $t = 4.9$, the equispaced nodes $x_j = -5 + 10j/n$ satisfy
+$$\sum_{j=0}^{n} \log|t - x_j| \ge \frac{n}{10} \Bigl(9.9 \log 9.9 - 10 - 0.1 \log 10\Bigr) - 2
+  \log(10n).$$
+
+The nodes are `Runge.xr`. Let $x_J$ be the first node to the right of $t$. The nodes to the left
+of $t$, except the nearest one, give an upper Riemann sum of $\log(t - s)$ on $[-5, x_{J-1}]$.
+The nodes to the right of $t$, except the nearest one, give an upper Riemann sum of
+$\log(s - t)$ on $[x_J, 5]$. The two nearest nodes are handled by the separation
+`Runge.sep_le_abs_sub`. -/
 theorem sum_log_abs_sub_ge {n : ℕ} (hn : Odd n) (hn200 : 200 ≤ n) :
     (n / 10) * ((99 / 10) * Real.log (99 / 10) - 10 - (1 / 10) * Real.log 10)
         - 2 * Real.log (10 * n)
@@ -447,7 +505,8 @@ theorem sum_log_abs_sub_ge {n : ℕ} (hn : Odd n) (hn200 : 200 ≤ n) :
 
 /-! ### Certified numerical constants -/
 
-/-- `log 10 ≤ 2.4`: `10 ≤ e² · e^{0.4}` with `e > 2.7182818283` and `e^{0.4} ≥ 1.48`. -/
+/-- $\log 10 \le 2.4$. The proof: $10 \le e^2 e^{0.4}$, with $e > 2.7182818283$ and
+$e^{0.4} \ge 1.48$. -/
 theorem log_ten_le : Real.log 10 ≤ 12 / 5 := by
   rw [Real.log_le_iff_le_exp (by norm_num), show (12 / 5 : ℝ) = 1 + 1 + 2 / 5 by norm_num,
     Real.exp_add, Real.exp_add]
@@ -460,7 +519,7 @@ theorem log_ten_le : Real.log 10 ≤ 12 / 5 := by
     _ ≤ Real.exp 1 * Real.exp 1 * Real.exp (2 / 5) :=
         mul_le_mul he h2 (by norm_num) (by positivity)
 
-/-- `log 3 ≤ 1.1`: `3 ≤ e · e^{0.1}` with `e^{0.1} ≥ 1.105`. -/
+/-- $\log 3 \le 1.1$. The proof: $3 \le e \cdot e^{0.1}$, with $e^{0.1} \ge 1.105$. -/
 theorem log_three_le : Real.log 3 ≤ 11 / 10 := by
   rw [Real.log_le_iff_le_exp (by norm_num), show (11 / 10 : ℝ) = 1 + 1 / 10 by norm_num,
     Real.exp_add]
@@ -470,18 +529,18 @@ theorem log_three_le : Real.log 3 ≤ 11 / 10 := by
   calc (3 : ℝ) ≤ 2.7182818283 * (1 + 1 / 10 + (1 / 10) ^ 2 / 2) := by norm_num
     _ ≤ Real.exp 1 * Real.exp (1 / 10) := mul_le_mul h1.le h2 (by norm_num) (Real.exp_pos 1).le
 
-/-- `log 6 ≤ 1.7932`, from `log 2 < 0.6931471808` and `log 3 ≤ 1.1`. -/
+/-- $\log 6 \le 1.7932$. This follows from $\log 2 < 0.6931471808$ and $\log 3 \le 1.1$. -/
 theorem log_six_le : Real.log 6 ≤ 17932 / 10000 := by
   rw [show (6 : ℝ) = 2 * 3 by norm_num, Real.log_mul two_ne_zero three_ne_zero]
   linarith [Real.log_two_lt_d9, log_three_le]
 
-/-- `log 16 = 4 log 2 ≤ 2.773`. -/
+/-- $\log 16 = 4 \log 2 \le 2.773$. -/
 theorem log_sixteen_le : Real.log 16 ≤ 2773 / 1000 := by
   rw [show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow]
   linarith [Real.log_two_lt_d9]
 
-/-- `log 9.9 ≥ 2.29`: `e^{2.29} = e² e^{0.29} ≤ 2.7182818286² · 1.3364833 < 9.9`, the last factor
-from the Taylor bound `Real.exp_bound'` at order `4`. -/
+/-- $\log 9.9 \ge 2.29$. The proof: $e^{2.29} = e^2 e^{0.29} \le 2.7182818286^2 \cdot 1.3364833 <
+9.9$, where the bound on $e^{0.29}$ comes from the Taylor bound `Real.exp_bound'` of order $4$. -/
 theorem le_log_nine_point_nine : 229 / 100 ≤ Real.log (99 / 10) := by
   rw [Real.le_log_iff_exp_le (by norm_num), show (229 / 100 : ℝ) = 1 + 1 + 29 / 100 by norm_num,
     Real.exp_add, Real.exp_add]
@@ -495,7 +554,7 @@ theorem le_log_nine_point_nine : 229 / 100 ≤ Real.log (99 / 10) := by
         mul_le_mul he (by linarith) (Real.exp_pos _).le (by norm_num)
     _ ≤ 99 / 10 := by norm_num
 
-/-- `log(1 + 4.9²) = log 25.01 ≤ 3.3`: `25.01 ≤ e³ e^{0.3}`. -/
+/-- $\log(1 + 4.9^2) = \log 25.01 \le 3.3$. The proof: $25.01 \le e^3 e^{0.3}$. -/
 theorem log_one_add_sq_le : Real.log (1 + (49 / 10) ^ 2) ≤ 33 / 10 := by
   rw [Real.log_le_iff_le_exp (by norm_num), show (33 / 10 : ℝ) = 1 + 1 + 1 + 3 / 10 by norm_num,
     Real.exp_add, Real.exp_add, Real.exp_add]
@@ -513,7 +572,8 @@ theorem log_one_add_sq_le : Real.log (1 + (49 / 10) ^ 2) ≤ 33 / 10 := by
     _ ≤ Real.exp 1 * Real.exp 1 * Real.exp 1 * Real.exp (3 / 10) :=
         mul_le_mul he3 h2 (by norm_num) (by positivity)
 
-/-- `log n ≤ n/100 + 2 log 10 - 1` for `n ≥ 1`, from `log x ≤ x - 1` at `x = n/100`. -/
+/-- For every natural number $n \ge 1$, $\log n \le n/100 + 2 \log 10 - 1$. This is
+$\log x \le x - 1$ at $x = n/100$. -/
 theorem log_nat_le (n : ℕ) (hn : 1 ≤ n) : Real.log n ≤ n / 100 + 2 * Real.log 10 - 1 := by
   have hnpos : (0 : ℝ) < n := by exact_mod_cast hn
   have := Real.log_le_sub_one_of_pos (by positivity : (0 : ℝ) < n / 100)
@@ -522,10 +582,14 @@ theorem log_nat_le (n : ℕ) (hn : 1 ≤ n) : Real.log n ≤ n / 100 + 2 * Real.
   push_cast at this
   linarith
 
-/-- **The margin of Runge's example at `t = 4.9`**: for `n ≥ 400`,
-`(n/10)(9.9 log 9.9 - 10 - 0.1 log 10) - 2 log(10n) - (n/10)(12 log 6 - 10) - 2 log 16`
-exceeds `log(1 + 4.9²)`. The coefficient of `n/10` is at least `0.91`, and the remaining terms
-are `O(1) + 2 log n ≤ O(1) + n/50`. -/
+/-- For every natural number $n \ge 400$,
+$$\log(1 + 4.9^2) \le \frac{n}{10} \Bigl(9.9 \log 9.9 - 10 - 0.1 \log 10\Bigr) - 2 \log(10n) -
+  \Bigl(\frac{n}{10} (12 \log 6 - 10) + 2 \log 16\Bigr).$$
+The right side is the lower bound of `Runge.sum_log_abs_sub_ge` minus the upper bound of
+`Runge.sum_log_one_add_abs_le`.
+
+The coefficient of $n/10$ is at least $0.91$, and the other terms are
+$O(1) + 2 \log n \le O(1) + n/50$. -/
 theorem margin (n : ℕ) (hn : 400 ≤ n) :
     Real.log (1 + (49 / 10) ^ 2)
       ≤ (n / 10) * ((99 / 10) * Real.log (99 / 10) - 10 - (1 / 10) * Real.log 10)
@@ -547,11 +611,17 @@ theorem margin (n : ℕ) (hn : 400 ≤ n) :
     linarith
   linarith
 
-/-! ### Divergence at `t = 4.9` -/
+/-! ### Divergence at $t = 4.9$ -/
 
-/-- **The interpolation error at `t = 4.9` is at least `1` for every odd `n ≥ 401`**: the exact
-error `abs_sub_interpolate_eq`, the products written as `exp` of the sums of logarithms,
-`‖I - x_j‖ ≤ 1 + |x_j|`, the two Riemann-sum bounds and the numerical margin. -/
+/-- Let $n \ge 400$ be odd, so that $n \ge 401$. The polynomial $\Pi_n f$ of degree at most $n$ that
+interpolates the Runge function $f$ at the equispaced nodes $x_j = -5 + 10j/n$,
+$j = 0, \dots, n$, has an error of at least $1$ at $t = 4.9$:
+$$|f(4.9) - \Pi_n f(4.9)| \ge 1.$$
+
+The proof starts from the exact error `Runge.abs_sub_interpolate_eq`. It writes the two products
+as exponentials of sums of logarithms, uses $|i - x_j| \le 1 + |x_j|$, and applies the two
+Riemann-sum bounds `Runge.sum_log_abs_sub_ge` and `Runge.sum_log_one_add_abs_le` and the
+numerical margin `Runge.margin`. -/
 theorem one_le_abs_sub_interpolate {n : ℕ} (hn : Odd n) (hn400 : 400 ≤ n) :
     1 ≤ |runge (49 / 10)
       - (Lagrange.interpolate univ (node n) fun j => runge (node n j)).eval (49 / 10)| := by
@@ -588,10 +658,14 @@ theorem one_le_abs_sub_interpolate {n : ℕ} (hn : Odd n) (hn400 : 400 ≤ n) :
     _ ≤ Real.exp (∑ j ∈ range (n + 1), Real.log |49 / 10 - xr n j|) :=
         Real.exp_le_exp.mpr (by linarith)
 
-/-- **Runge's phenomenon** ([quarteroni2000numerical] Example 8.1): the Lagrange interpolants of
-`f(s) = 1/(1 + s²)` at the equispaced nodes `x_j = -5 + 10j/n` do not converge to `f` at
-`t = 4.9`: along the odd `n ≥ 401` the error is at least `1`
-(`one_le_abs_sub_interpolate`). -/
+/-- **Runge's phenomenon.** Let $f(s) = 1/(1 + s^2)$, and let $\Pi_n f$ be the polynomial of degree
+at most $n$ that interpolates $f$ at the equispaced nodes $x_j = -5 + 10j/n$, $j = 0, \dots, n$.
+Then the interpolants do not converge to $f$ at $t = 4.9$:
+$$\Pi_n f(4.9) \not\to f(4.9) \quad (n \to \infty).$$
+This is Example 8.1 of [quarteroni2000numerical].
+
+The sequence is indexed by all $n \in \mathbb{N}$. The proof uses only the odd $n \ge 401$,
+where the error is at least $1$ by `Runge.one_le_abs_sub_interpolate`. -/
 theorem not_tendsto_interpolate :
     ¬ Filter.Tendsto
       (fun n => (Lagrange.interpolate univ (node n) fun j => runge (node n j)).eval (49 / 10))

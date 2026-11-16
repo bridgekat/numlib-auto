@@ -12,30 +12,40 @@ import Numlib.Optimization.Optimality.TaylorStability
 /-!
 # A slow TRq decrease when the radius is shared across the orders
 
-The trust-region method TRq ([cartis2022evaluation], Algorithm 12.2.1) uses one radius `Δ_k` for
-the approximate optimality tests of all orders `j ≤ q`. First-order failures can therefore drive
-the radius down to the scale of `ε_1`, and a following second-order step of that length decreases
-the objective by much less than `ε_2^3`. This file builds such a run for `q = 2` on the box
-`X = [-1, 1]²` for the saddle quadratic `f_a(x) = x_1²/2 - a x_2²/2`, whose derivatives of orders
-`1` and `2` have Lipschitz constants and bounds independent of `a ∈ [0, 1]`. The decrease at a
-successful iteration is thus not bounded below by `κ min_j ε_j^{j+1}` with `κ` depending only on
-the parameters and these constants; the decrease that holds is `κ ε_min^{q+1}`
+The trust-region method TRq (Algorithm 12.2.1 of [cartis2022evaluation]) uses one radius $\Delta_k$
+for the approximate optimality tests of all orders $j \le q$. Failures of the first-order test can
+therefore drive the radius down to the scale of $\varepsilon_1$, and a following second-order step
+of that length decreases the objective by much less than $\varepsilon_2^3$. This module builds such
+a run for $q = 2$ on the box $X = [-1, 1]^2$ for the saddle quadratic
+$$f_a(x) = \frac{x_1^2}{2} - a \frac{x_2^2}{2},$$
+whose derivatives of orders $1$ and $2$ have Lipschitz constants and bounds that do not depend on
+$a \in [0, 1]$. Hence the decrease at a successful iteration is not bounded below by
+$\kappa \min_j \varepsilon_j^{j+1}$ with $\kappa$ that depends only on the parameters and these
+constants. The decrease that does hold is $\kappa\, \varepsilon_{\min}^{q+1}$
 (`Optimization.IsTRqRun.taylorDecrement_ge_of_anchored`).
 
 ## Main definitions
 
-* `Optimization.halfSq`: `t ↦ t²/2`;
-* `Optimization.saddleQuad a`: `f_a(x) = x_1²/2 - a x_2²/2` on `ℝ²`;
-* `Optimization.saddleBox`: the box `[-1, 1]²`;
+* `Optimization.halfSq`: the function $t \mapsto t^2/2$.
+* `Optimization.saddleQuad`: the saddle quadratic $f_a(x) = x_1^2/2 - a x_2^2/2$ on $\mathbb{R}^2$.
+* `Optimization.saddleBox`: the box $[-1, 1]^2$.
 * `Optimization.saddleTRqParams`: the TRq parameters of the example.
 
 ## Main results
 
-* `Optimization.iteratedFDerivLipschitzOn_saddleQuad`,
-  `Optimization.norm_iteratedFDeriv_saddleQuad_le_four`: uniform constants on the ball of
-  radius `2`;
-* `Optimization.exists_isTRqRun_saddleQuad_decrease_lt`: for every `κ > 0`, a TRq run on the box
-  with a successful iteration decreasing `f_a` by less than `κ min_j ε_j^{j+1}`.
+* `Optimization.iteratedFDerivLipschitzOn_saddleQuad`: for $a \in [0, 1]$, the derivatives of orders
+  $1$ and $2$ of $f_a$ are $4$-Lipschitz on the ball of radius $2$.
+* `Optimization.norm_iteratedFDeriv_saddleQuad_le_four`: for $a \in [0, 1]$, the derivatives of
+  orders $1$ and $2$ of $f_a$ are bounded by $4$ on the ball of radius $2$.
+* `Optimization.exists_isTRqRun_saddleQuad_decrease_lt`: for every $\kappa > 0$, there is a TRq run
+  on the box with a successful iteration that decreases $f_a$ by less than
+  $\kappa \min_j \varepsilon_j^{j+1}$.
+
+## Notation
+
+* $\mathbb{R}^2$ is `EuclideanSpace ℝ (Fin 2)`. The coordinates $x_1, x_2$ of $x$ are `x 0` and
+  `x 1`, and $e_1, e_2$ are the coordinate unit vectors `EuclideanSpace.single 0 1` and
+  `EuclideanSpace.single 1 1`.
 -/
 
 open Set Metric
@@ -44,75 +54,84 @@ open scoped Nat ContDiff
 set_option hygiene false in
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
-/-- The first coordinate direction of `ℝ²`. -/
+/-- The first coordinate unit vector $e_1$ of $\mathbb{R}^2$. -/
 local notation "e₁" => EuclideanSpace.single (0 : Fin 2) (1 : ℝ)
 
-/-- The second coordinate direction of `ℝ²`. -/
+/-- The second coordinate unit vector $e_2$ of $\mathbb{R}^2$. -/
 local notation "e₂" => EuclideanSpace.single (1 : Fin 2) (1 : ℝ)
 
 namespace Optimization
 
 open EuclideanSpace (norm_smul_single)
 
-/-- `t ↦ t²/2`. -/
+/-- The function $h \colon \mathbb{R} \to \mathbb{R}$, $h(t) = t^2/2$. -/
 noncomputable def halfSq : ℝ → ℝ := fun t => t ^ 2 / 2
 
-/-- Unfolding `halfSq`. -/
+/-- For every $t \in \mathbb{R}$, $h(t) = t^2/2$, where $h$ is `Optimization.halfSq`. -/
 @[simp]
 theorem halfSq_apply (t : ℝ) : halfSq t = t ^ 2 / 2 := rfl
 
-/-- `(t²/2)' = t`. -/
+/-- The derivative of $h(t) = t^2/2$ is $h'(t) = t$. -/
 theorem deriv_halfSq : deriv halfSq = fun t => t := by
   funext t
   unfold halfSq
   have := ((hasDerivAt_pow 2 t).div_const 2)
   rw [this.deriv]; ring
 
-/-- `(t²/2)^{(1)} = t`. -/
+/-- The first iterated derivative of $h(t) = t^2/2$ is $h^{(1)}(t) = t$. -/
 theorem iteratedDeriv_halfSq_one (t : ℝ) : iteratedDeriv 1 halfSq t = t := by
   rw [iteratedDeriv_one, deriv_halfSq]
 
-/-- `(t²/2)'' = 1`. -/
+/-- The second derivative of $h(t) = t^2/2$ is $h''(t) = 1$. -/
 theorem iteratedDeriv_halfSq_two (t : ℝ) : iteratedDeriv 2 halfSq t = 1 := by
   rw [iteratedDeriv_succ, iteratedDeriv_one, deriv_halfSq, deriv_id'']
 
-/-- `(t²/2)''' = 0`. -/
+/-- The third derivative of $h(t) = t^2/2$ is $h'''(t) = 0$. -/
 theorem iteratedDeriv_halfSq_three (t : ℝ) : iteratedDeriv 3 halfSq t = 0 := by
   rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one, deriv_halfSq, deriv_id'']
   simp
 
-/-- `t ↦ t²/2` is smooth. -/
+/-- The function $h(t) = t^2/2$ is smooth. -/
 theorem contDiff_halfSq : ContDiff ℝ ∞ halfSq := by
   unfold halfSq; fun_prop
 
-/-- `‖∇ⁿ (w ↦ w_i²/2)(v)‖ ≤ |(t²/2)^{(n)}(v_i)|`. -/
+/-- For $h(t) = t^2/2$, $i \in \{1, 2\}$, $n \in \mathbb{N}$ and $v \in \mathbb{R}^2$: $\|\nabla^n
+(w \mapsto h(w_i))(v)\| \le |h^{(n)}(v_i)|$. -/
 private theorem norm_iteratedFDeriv_halfSq_comp_le (i : Fin 2) (n : ℕ) (v : ℝ²) :
     ‖iteratedFDeriv ℝ n (fun w : ℝ² => halfSq (w i)) v‖ ≤ |iteratedDeriv n halfSq (v i)| :=
   ContDiffAt.norm_iteratedFDeriv_comp_coord_le i
     (contDiff_halfSq.contDiffAt.of_le (by exact_mod_cast le_top))
 
-/-- `w ↦ w_i²/2` is smooth. -/
+/-- For $i \in \{1, 2\}$, the function $w \mapsto w_i^2/2$ on $\mathbb{R}^2$ is smooth. -/
 theorem contDiff_halfSq_comp_apply (i : Fin 2) : ContDiff ℝ ∞ (fun w : ℝ² => halfSq (w i)) :=
   contDiff_halfSq.comp (EuclideanSpace.proj i : ℝ² →L[ℝ] ℝ).contDiff
 
-/-- The saddle quadratic `f_a(x) = x_1²/2 - a x_2²/2` on `ℝ²` (`x_1 = v 0`, `x_2 = v 1`). -/
+/-- The **saddle quadratic** with parameter $a \in \mathbb{R}$ is the function
+$f_a \colon \mathbb{R}^2 \to \mathbb{R}$,
+$$f_a(x) = \frac{x_1^2}{2} - a \frac{x_2^2}{2}.$$
+
+The coordinates $x_1, x_2$ of $x$ are `x 0` and `x 1`. -/
 noncomputable def saddleQuad (a : ℝ) : ℝ² → ℝ := fun v => halfSq (v 0) - a * halfSq (v 1)
 
-/-- `f_a` as a difference of coordinate squares. -/
+/-- The function $f_a$ is $w \mapsto w_1^2/2$ minus $a$ times $w \mapsto w_2^2/2$. -/
 private theorem saddleQuad_eq_sub (a : ℝ) :
     saddleQuad a = (fun w : ℝ² => halfSq (w 0)) - a • (fun w : ℝ² => halfSq (w 1)) := by
   funext v; simp [saddleQuad]
 
-/-- `f_a` is smooth. -/
+/-- For every $a \in \mathbb{R}$, the saddle quadratic $f_a$ is smooth. -/
 theorem contDiff_saddleQuad (a : ℝ) : ContDiff ℝ ∞ (saddleQuad a) := by
   rw [saddleQuad_eq_sub]
   exact (contDiff_halfSq_comp_apply 0).sub ((contDiff_halfSq_comp_apply 1).const_smul a)
 
-/-- `f_a` is `C^n` everywhere. -/
+/-- For every $a \in \mathbb{R}$ and $n \in \mathbb{N}$, the saddle quadratic $f_a$ is of class
+$C^n$ at every point of $\mathbb{R}^2$. -/
 theorem contDiffAt_saddleQuad (a : ℝ) (n : ℕ) (y : ℝ²) : ContDiffAt ℝ n (saddleQuad a) y :=
   ((contDiff_saddleQuad a).of_le (by exact_mod_cast le_top : (n : ℕ∞ω) ≤ ∞)).contDiffAt
 
-/-- `‖∇ⁿ f_a(v)‖ ≤ |(t²/2)^{(n)}(v_1)| + a |(t²/2)^{(n)}(v_2)|` for `a ≥ 0`. -/
+/-- Let $a \ge 0$, $n \in \mathbb{N}$ and $v \in \mathbb{R}^2$, and let $h(t) = t^2/2$. Then the
+$n$-th derivative of the saddle quadratic satisfies
+$$\|\nabla^n f_a(v)\| \le |h^{(n)}(v_1)| + a\, |h^{(n)}(v_2)|.$$
+-/
 theorem norm_iteratedFDeriv_saddleQuad_le {a : ℝ} (ha : 0 ≤ a) (n : ℕ) (v : ℝ²) :
     ‖iteratedFDeriv ℝ n (saddleQuad a) v‖ ≤
       |iteratedDeriv n halfSq (v 0)| + a * |iteratedDeriv n halfSq (v 1)| := by
@@ -128,7 +147,8 @@ theorem norm_iteratedFDeriv_saddleQuad_le {a : ℝ} (ha : 0 ≤ a) (n : ℕ) (v 
   rw [norm_smul, Real.norm_of_nonneg ha]
   exact mul_le_mul_of_nonneg_left (norm_iteratedFDeriv_halfSq_comp_le 1 n v) ha
 
-/-- `∇² f_a` is constant (`0`-Lipschitz) for `a ≥ 0`. -/
+/-- Let $a \ge 0$ and let $C \subseteq \mathbb{R}^2$ be convex. Then the second derivative
+$\nabla^2 f_a$ of the saddle quadratic is $0$-Lipschitz on $C$; that is, it is constant on $C$. -/
 theorem iteratedFDerivLipschitzOn_saddleQuad_two {a : ℝ} (ha : 0 ≤ a) (C : Set ℝ²)
     (hC : Convex ℝ C) : IteratedFDerivLipschitzOn (saddleQuad a) 2 0 C :=
   iteratedFDerivLipschitzOn_of_norm_le hC
@@ -136,7 +156,10 @@ theorem iteratedFDerivLipschitzOn_saddleQuad_two {a : ℝ} (ha : 0 ≤ a) (C : S
     fun x _ => (norm_iteratedFDeriv_saddleQuad_le ha 3 x).trans (by
       rw [iteratedDeriv_halfSq_three, iteratedDeriv_halfSq_three]; simp)
 
-/-- `f_a` is quadratic: `ΔT_2(x, s) = f_a(x) - f_a(x + s)`. -/
+/-- Let $a \ge 0$ and $x, s \in \mathbb{R}^2$. The saddle quadratic is quadratic, so its Taylor
+decrement of order $2$ is the exact decrease:
+$$T_{f_a,2}(x, 0) - T_{f_a,2}(x, s) = f_a(x) - f_a(x + s).$$
+-/
 theorem taylorDecrement_two_saddleQuad {a : ℝ} (ha : 0 ≤ a) (x s : ℝ²) :
     (ftaylorSeries ℝ (saddleQuad a) x).taylorDecrement 2 s =
       saddleQuad a x - saddleQuad a (x + s) := by
@@ -149,7 +172,10 @@ theorem taylorDecrement_two_saddleQuad {a : ℝ} (ha : 0 ≤ a) (x s : ℝ²) :
   rw [sub_eq_zero] at h
   rw [h]
 
-/-- The derivative of `f_a`: `s ↦ x_1 s_1 - a x_2 s_2`. -/
+/-- For every $a \in \mathbb{R}$ and $v \in \mathbb{R}^2$, the saddle quadratic $f_a$ has at $v$ the
+Fréchet derivative
+$$s \mapsto v_1 s_1 - a v_2 s_2.$$
+-/
 theorem hasFDerivAt_saddleQuad (a : ℝ) (v : ℝ²) :
     HasFDerivAt (saddleQuad a)
       ((v 0) • (EuclideanSpace.proj 0 : ℝ² →L[ℝ] ℝ) - (a * v 1) • EuclideanSpace.proj 1) v := by
@@ -162,7 +188,10 @@ theorem hasFDerivAt_saddleQuad (a : ℝ) (v : ℝ²) :
   · funext w; simp only [saddleQuad, halfSq, Pi.sub_apply]; ring
   · ext s; simp; ring
 
-/-- `ΔT_1(x, s) = -(x_1 s_1 - a x_2 s_2)`. -/
+/-- For every $a \in \mathbb{R}$ and $x, s \in \mathbb{R}^2$, the Taylor decrement of order $1$ of
+the saddle quadratic is
+$$T_{f_a,1}(x, 0) - T_{f_a,1}(x, s) = -(x_1 s_1 - a x_2 s_2).$$
+-/
 theorem taylorDecrement_one_saddleQuad (a : ℝ) (x s : ℝ²) :
     (ftaylorSeries ℝ (saddleQuad a) x).taylorDecrement 1 s = -(x 0 * s 0 - a * x 1 * s 1) := by
   rw [FormalMultilinearSeries.taylorDecrement_one_apply]
@@ -170,13 +199,14 @@ theorem taylorDecrement_one_saddleQuad (a : ℝ) (x s : ℝ²) :
   rw [iteratedFDeriv_one_apply, (hasFDerivAt_saddleQuad a x).fderiv]
   simp
 
-/-- The box `[-1, 1]²`. -/
+/-- The box $X = [-1, 1]^2 = \{v \in \mathbb{R}^2 \mid -1 \le v_1 \le 1,\ -1 \le v_2 \le 1\}$. -/
 def saddleBox : Set ℝ² := {v | -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1}
 
-/-- Membership in the box. -/
+/-- A vector $v \in \mathbb{R}^2$ lies in the box $[-1, 1]^2$ if and only if $-1 \le v_1 \le 1$ and
+$-1 \le v_2 \le 1$. -/
 theorem mem_saddleBox {v : ℝ²} : v ∈ saddleBox ↔ -1 ≤ v 0 ∧ v 0 ≤ 1 ∧ -1 ≤ v 1 ∧ v 1 ≤ 1 := Iff.rfl
 
-/-- The box is closed. -/
+/-- The box $[-1, 1]^2$ is closed. -/
 theorem isClosed_saddleBox : IsClosed saddleBox := by
   have hc : ∀ a : ℝ, Continuous fun _ : ℝ² => a := fun a => continuous_const
   have h := ((isClosed_le (hc (-1)) (PiLp.continuous_apply 2 _ 0)).inter
@@ -188,7 +218,7 @@ theorem isClosed_saddleBox : IsClosed saddleBox := by
   simp only [saddleBox, Set.mem_ofPred_eq, Set.mem_inter_iff]
   tauto
 
-/-- The box lies in the ball of radius `2`. -/
+/-- The box $[-1, 1]^2$ lies in the open ball of radius $2$ about $0$. -/
 theorem saddleBox_subset_ball : saddleBox ⊆ ball (0 : ℝ²) 2 := by
   intro v hv
   obtain ⟨h0, h2, h3, h4⟩ := hv
@@ -197,8 +227,8 @@ theorem saddleBox_subset_ball : saddleBox ⊆ ball (0 : ℝ²) 2 := by
   have : ‖v‖ ^ 2 < 2 ^ 2 := by nlinarith
   exact lt_of_pow_lt_pow_left₀ 2 (by norm_num) this
 
-/-- For `a ∈ [0, 1]`, the derivatives of orders `1` and `2` of `f_a` are `4`-Lipschitz on the
-ball of radius `2`. -/
+/-- Let $0 \le a \le 1$ and $j \in \{1, 2\}$. Then the $j$-th derivative of the saddle quadratic
+$f_a$ is $4$-Lipschitz on the open ball of radius $2$ about $0$. -/
 theorem iteratedFDerivLipschitzOn_saddleQuad {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) {j : ℕ}
     (hj : j ∈ Finset.Icc 1 2) : IteratedFDerivLipschitzOn (saddleQuad a) j 4 (ball 0 2) := by
   have hj' : j = 1 ∨ j = 2 := by have := Finset.mem_Icc.1 hj; omega
@@ -209,8 +239,8 @@ theorem iteratedFDerivLipschitzOn_saddleQuad {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a 
   · rw [iteratedDeriv_halfSq_two, iteratedDeriv_halfSq_two]; norm_num; linarith
   · rw [iteratedDeriv_halfSq_three, iteratedDeriv_halfSq_three]; norm_num
 
-/-- For `a ∈ [0, 1]`, the derivatives of orders `1` and `2` of `f_a` are bounded by `4` on the
-ball of radius `2`. -/
+/-- Let $0 \le a \le 1$, $j \in \{1, 2\}$, and let $x$ lie in the open ball of radius $2$ about $0$.
+Then $\|\nabla^j f_a(x)\| \le 4$. -/
 theorem norm_iteratedFDeriv_saddleQuad_le_four {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) {j : ℕ}
     (hj : j ∈ Finset.Icc 1 2) {x : ℝ²} (hx : x ∈ ball (0 : ℝ²) 2) :
     ‖iteratedFDeriv ℝ j (saddleQuad a) x‖ ≤ 4 := by
@@ -224,8 +254,10 @@ theorem norm_iteratedFDeriv_saddleQuad_le_four {a : ℝ} (ha0 : 0 ≤ a) (ha1 : 
     nlinarith [abs_nonneg (x 1)]
   · rw [iteratedDeriv_halfSq_two, iteratedDeriv_halfSq_two]; norm_num; linarith
 
-/-- The TRq parameters of the example: `Δ₀ = Δ_max = 1`, `η₁ = 1/4`, `η₂ = 3/4`,
-`γ₁ = 1/4`, `γ₂ = 1/2`, `γ₃ = 2`, `ς = 1/2`. -/
+/-- The TRq parameters of the example: the initial radius $\Delta_0 = 1$, the maximal radius
+$\Delta_{\max} = 1$, the acceptance thresholds $\eta_1 = 1/4$ and $\eta_2 = 3/4$, the radius
+factors $\gamma_1 = 1/4$, $\gamma_2 = 1/2$ and $\gamma_3 = 2$, and the fraction
+$\varsigma = 1/2$ of the measure that the Step-1 displacements achieve. -/
 noncomputable def saddleTRqParams : TRqParams where
   Δ₀ := 1
   η₁ := 1 / 4
@@ -247,21 +279,22 @@ noncomputable def saddleTRqParams : TRqParams where
   ς_pos := by norm_num
   ς_le_one := by norm_num
 
-/-- Unfolding `f_a`. -/
+/-- For every $a \in \mathbb{R}$ and $v \in \mathbb{R}^2$, $f_a(v) = v_1^2/2 - a\, (v_2^2/2)$. -/
 theorem saddleQuad_apply (a : ℝ) (v : ℝ²) :
     saddleQuad a v = (v 0) ^ 2 / 2 - a * ((v 1) ^ 2 / 2) := rfl
 
-/-- At `p = b e_0`, `ΔT_1(d) = -b d_0`. -/
+/-- At the point $b e_1$, the Taylor decrement of order $1$ of $f_a$ along $d$ is $-b d_1$. -/
 private theorem saddle_taylorDecrement_one_smul_e0 (a b : ℝ) (d : ℝ²) :
     (ftaylorSeries ℝ (saddleQuad a) (b • e₁)).taylorDecrement 1 d = -(b * d 0) := by
   rw [taylorDecrement_one_saddleQuad]; simp
 
-/-- At `0`, `ΔT_1 = 0`. -/
+/-- At $0$, the Taylor decrement of order $1$ of $f_a$ vanishes. -/
 private theorem saddle_taylorDecrement_one_zero (a : ℝ) (d : ℝ²) :
     (ftaylorSeries ℝ (saddleQuad a) 0).taylorDecrement 1 d = 0 := by
   rw [taylorDecrement_one_saddleQuad]; simp
 
-/-- At `0`, `ΔT_2(d) = -d_0²/2 + a d_1²/2`. -/
+/-- For $a \ge 0$, at $0$ the Taylor decrement of order $2$ of $f_a$ along $d$ is
+$-d_1^2/2 + a d_2^2/2$. -/
 private theorem saddle_taylorDecrement_two_zero {a : ℝ} (ha : 0 ≤ a) (d : ℝ²) :
     (ftaylorSeries ℝ (saddleQuad a) 0).taylorDecrement 2 d = -((d 0) ^ 2 / 2) + a * ((d 1) ^ 2 / 2)
         := by
@@ -271,14 +304,14 @@ section Prefix
 
 variable {a b Δ : ℝ} {ε : ℕ → ℝ}
 
-/-- `b e_1 ∈ X` for `b ∈ [0, 1]` . -/
+/-- For $b \in [0, 1]$, the point $b e_1$ lies in the box $X$. -/
 private theorem saddle_smul_e0_mem {b : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) :
     b • e₁ ∈ saddleBox := by
   simp only [mem_saddleBox, PiLp.smul_apply, PiLp.single_apply]
   norm_num
   exact ⟨by linarith, hb1⟩
 
-/-- `b e_1 - Δ e_1 ∈ X` for `b, Δ ∈ [0, 1]`. -/
+/-- For $b, \Delta \in [0, 1]$, the point $b e_1 - \Delta e_1$ lies in the box $X$. -/
 private theorem saddle_neg_smul_e0_mem {b Δ : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ)
     (hΔ1 : Δ ≤ 1) :
     (-Δ) • e₁ ∈ {e | b • e₁ + e ∈ saddleBox} := by
@@ -286,8 +319,9 @@ private theorem saddle_neg_smul_e0_mem {b Δ : ℝ} (hb0 : 0 ≤ b) (hb1 : b ≤
   norm_num
   refine ⟨by linarith, by linarith⟩
 
-/-- The first-order Step 1 at `p = b e_0` with radius `Δ ≤ 1`: the displacement `-Δ e_0`
-achieves the first-order measure `b Δ`. -/
+/-- For $b, \Delta \in [0, 1]$, the displacement $-\Delta e_1$ at $b e_1$ is a first-order
+approximate optimality displacement at the radius $\min\{\Delta, 1\}$ over the box, since it
+achieves the first-order measure $b \Delta$. -/
 private theorem saddle_isApproxMeasureStep_smul_e0 (hb0 : 0 ≤ b) (hb1 : b ≤ 1) (hΔ0 : 0 ≤ Δ)
     (hΔ1 : Δ ≤ 1) :
     IsApproxMeasureStep ((ftaylorSeries ℝ (saddleQuad a) (b • e₁)).taylorDecrement 1)
@@ -313,8 +347,9 @@ private theorem saddle_isApproxMeasureStep_smul_e0 (hb0 : 0 ≤ b) (hb1 : b ≤ 
   rw [hς]
   linarith [mul_nonneg hb0 hΔ0]
 
-/-- The first-order step at `p = b e_0` with radius `Δ ≤ 1` (`ε_1 = b`): order `1` fails, the
-step is the Step-1 displacement `-Δ e_0`. -/
+/-- For $0 < b \le 1$, $0 < \Delta \le 1$ and $\varepsilon_1 = b$, the order $1$ and the step
+$-\Delta e_1$, which is the Step-1 displacement of order $1$, satisfy Step 2 of TRq at $b e_1$
+with the radius $\Delta$, because the first-order test fails. -/
 private theorem saddle_isTRqStep_smul_e0 (hb : 0 < b) (hb1 : b ≤ 1) (hΔ0 : 0 < Δ) (hΔ1 : Δ ≤ 1)
     (hε1 : ε 1 = b) (W : ℕ → ℝ²) :
     IsTRqStep (ftaylorSeries ℝ (saddleQuad a) (b • e₁)) {e | b • e₁ + e ∈
@@ -332,17 +367,18 @@ private theorem saddle_isTRqStep_smul_e0 (hb : 0 < b) (hb1 : b ≤ 1) (hΔ0 : 0 
     saddle_neg_smul_e0_mem hb.le hb1 hΔ0.le hΔ1⟩
   taylorDecrement_le := le_of_eq (by simp)
 
-/-- `f_a(b e_1) = b²/2`. -/
+/-- For all $a, b \in \mathbb{R}$, $f_a(b e_1) = b^2/2$. -/
 private theorem saddleQuad_smul_e0 (a b : ℝ) : saddleQuad a (b • e₁) = b ^ 2 / 2 := by
   rw [saddleQuad_apply]; simp
 
-/-- `f_a(b e_1 - Δ e_1) = (b - Δ)²/2`. -/
+/-- For all $a, b, \Delta \in \mathbb{R}$, $f_a(b e_1 - \Delta e_1) = (b - \Delta)^2/2$. -/
 private theorem saddleQuad_smul_e0_add (a b Δ : ℝ) :
     saddleQuad a (b • e₁ + (-Δ) • e₁) = (b - Δ) ^ 2 / 2 := by
   rw [saddleQuad_apply]; simp; ring
 
-/-- An unsuccessful first-order iteration at `p` with radius `Δ ≥ 4b`: the ratio is
-`1 - Δ/(2b) ≤ -1`, the iterate stays and the radius is divided by `4`. -/
+/-- For $b > 0$ and $\Delta \ge 4b$, the first-order iteration at $b e_1$ with the step
+$-\Delta e_1$ is unsuccessful: the ratio is $1 - \Delta/(2b) \le -1$, the iterate stays at
+$b e_1$, and the radius becomes $\Delta/4$. -/
 private theorem saddle_trAcceptance_unsucc (hb : 0 < b) (h4 : 4 * b ≤ Δ) :
     TRAcceptance saddleTRqParams.toTRParams
       (reductionRatio (saddleQuad a) (b • e₁) ((-Δ) • e₁)
@@ -362,8 +398,8 @@ private theorem saddle_trAcceptance_unsucc (hb : 0 < b) (h4 : 4 * b ≤ Δ) :
       by change Δ / 4 ≤ 1 / 2 * Δ; linarith⟩⟩⟩
   exact (ite_eq_right (not_le.2 hρ)).symm
 
-/-- The successful first-order iteration at `p` with radius `b`: the ratio is `1/2`, the step
-lands at `0` and the radius stays `b`. -/
+/-- For $b > 0$, the first-order iteration at $b e_1$ with the radius $b$ and the step $-b e_1$ is
+successful: the ratio is $1/2$, the new iterate is $0$, and the radius stays $b$. -/
 private theorem saddle_trAcceptance_succ (hb : 0 < b) :
     TRAcceptance saddleTRqParams.toTRParams
       (reductionRatio (saddleQuad a) (b • e₁) ((-b) • e₁)
@@ -383,8 +419,9 @@ private theorem saddle_trAcceptance_succ (hb : 0 < b) :
   rw [ite_eq_left (show saddleTRqParams.η₁ ≤ (1 / 2 : ℝ) by change (1 / 4 : ℝ) ≤ 1 / 2; norm_num),
     ← add_smul, add_neg_cancel, zero_smul]
 
-/-- The second-order Step 1 at `0` with radius `b ≤ 1`: `b e_2` achieves the measure
-`a b²/2`. -/
+/-- For $a \ge 0$ and $b \in [0, 1]$, the displacement $b e_2$ at $0$ is a second-order approximate
+optimality displacement at the radius $\min\{b, 1\}$ over the box, since it achieves the
+second-order measure $a b^2/2$. -/
 private theorem saddle_isApproxMeasureStep_zero (ha : 0 ≤ a) (hb0 : 0 ≤ b) (hb1 : b ≤ 1) :
     IsApproxMeasureStep ((ftaylorSeries ℝ (saddleQuad a) 0).taylorDecrement 2)
       (min b 1) {e | (0 : ℝ²) + e ∈ saddleBox} saddleTRqParams.ς (b • e₂) := by
@@ -412,8 +449,10 @@ private theorem saddle_isApproxMeasureStep_zero (ha : 0 ≤ a) (hb0 : 0 ≤ b) (
   rw [hς]
   linarith [mul_nonneg ha (sq_nonneg b)]
 
-/-- The second-order step at `0` with radius `b ≤ 1` (`ε_2 = a`): order `1` passes
-(`∇f(0) = 0`), order `2` fails, the step is the Step-1 displacement `b e_2`. -/
+/-- For $a, b > 0$ with $b \le 1$, $\varepsilon_1 \ge 0$ and $\varepsilon_2 = a$, the order $2$ and
+the step $b e_2$, which is the Step-1 displacement of order $2$, satisfy Step 2 of TRq at $0$
+with the radius $b$: the first-order test passes because $\nabla f_a(0) = 0$, and the
+second-order test fails. -/
 private theorem saddle_isTRqStep_zero (ha : 0 < a) (hb : 0 < b) (hb1 : b ≤ 1) (hε1 : 0 ≤ ε 1)
     (hε2 : ε 2 = a) (W : ℕ → ℝ²) :
     IsTRqStep (ftaylorSeries ℝ (saddleQuad a) 0) {e | (0 : ℝ²) + e ∈ saddleBox}
@@ -438,8 +477,7 @@ private theorem saddle_isTRqStep_zero (ha : 0 < a) (hb : 0 < b) (hb1 : b ≤ 1) 
     norm_num; exact ⟨by linarith, hb1⟩⟩
   taylorDecrement_le := le_of_eq (by simp)
 
-/-- The very successful second-order iteration at `0` with radius `b`: the ratio is `1`, the
-step lands at `b e_2` and the radius stays `b`. -/
+/-- For $a, b > 0$, the ratio of the second-order iteration at $0$ with the step $b e_2$ is $1$. -/
 private theorem saddle_reductionRatio_zero (ha : 0 < a) (hb : 0 < b) :
     reductionRatio (saddleQuad a) 0 (b • e₂)
       ((ftaylorSeries ℝ (saddleQuad a) 0).taylorDecrement 2 (b • e₂)) = 1 := by
@@ -448,8 +486,8 @@ private theorem saddle_reductionRatio_zero (ha : 0 < a) (hb : 0 < b) :
   rw [reductionRatio_def, taylorDecrement_two_saddleQuad ha.le, h, div_self]
   positivity
 
-/-- The very successful second-order iteration at `0` with radius `b`: the step lands at
-`b e_2` and the radius stays `b`. -/
+/-- For $a, b > 0$, the second-order iteration at $0$ with the radius $b$ and the step $b e_2$ is
+very successful: the new iterate is $b e_2$ and the radius stays $b$. -/
 private theorem saddle_trAcceptance_zero (ha : 0 < a) (hb : 0 < b) :
     TRAcceptance saddleTRqParams.toTRParams
       (reductionRatio (saddleQuad a) 0 (b • e₂)
@@ -464,20 +502,31 @@ private theorem saddle_trAcceptance_zero (ha : 0 < a) (hb : 0 < b) :
 end Prefix
 
 /-- **A successful TRq iteration with a small decrease** when the radius is shared across the
-orders. For the parameters `saddleTRqParams`, the threshold `ϑ = 1`, the box `X = [-1, 1]²` and
-every `κ > 0` there are `a ∈ (0, 1]`, tolerances `ε ∈ (0, 1]²` and a run of TRq
-([cartis2022evaluation], Algorithm 12.2.1) on `X` for `f_a(x) = x_1²/2 - a x_2²/2` with a
-successful iteration `k` before termination that decreases `f_a` by less than
-`κ min_j ε_j^{j+1}`. The derivatives of `f_a` of orders `1, 2` are `4`-Lipschitz and bounded by `4`
-on the ball of radius `2 ⊇ X`, uniformly in `a` (`iteratedFDerivLipschitzOn_saddleQuad`,
-`norm_iteratedFDeriv_saddleQuad_le_four`), so no decrease `κ min_j ε_j^{j+1}` with `κ` depending
-only on these constants holds at every successful iteration.
+orders. Let $\kappa > 0$. Then there are $a \in (0, 1]$, tolerances
+$\varepsilon_1, \varepsilon_2 \in (0, 1]$, a TRq run $(x_k, s_k, \Delta_k, j_k, d_k)$ and an
+iteration $k$ with the following properties. The run is a run of TRq (Algorithm 12.2.1 of
+[cartis2022evaluation]) for the saddle quadratic $f_a(x) = x_1^2/2 - a x_2^2/2$ with exact data,
+the order $q = 2$, the parameters `Optimization.saddleTRqParams`, the threshold $\vartheta = 1$
+and the feasible set $X = [-1, 1]^2$, and it starts at $x_0 \in X$. The run does not terminate
+at any iteration $i \le k$, the iteration $k$ is successful (its ratio is at least $\eta_1$),
+and
+$$f_a(x_k) - f_a(x_{k+1}) < \kappa \min\{1, \varepsilon_1^2, \varepsilon_2^3\}.$$
 
-With `r = 2^{-N}`, `ε_1 = r²` and `ε_2 = a = r`: `N` unsuccessful first-order iterations at
-`(r², 0)` shrink the radius from `1` to `r²`, a successful step reaches `0`, where the gradient
-vanishes and the second-order test fails, and the second-order step `r² e_2` decreases `f_a` by
-`r⁵/2`, against `κ min(ε_1², ε_2³) = κ r⁴`. The run continues as any run from `r² e_2`
-(`Optimization.exists_isTRqRun_append`). -/
+The derivatives of $f_a$ of orders $1$ and $2$ are $4$-Lipschitz and bounded by $4$ on the ball
+of radius $2$, which contains $X$, uniformly in $a$
+(`Optimization.iteratedFDerivLipschitzOn_saddleQuad`,
+`Optimization.norm_iteratedFDeriv_saddleQuad_le_four`). Hence no lower bound
+$\kappa \min_j \varepsilon_j^{j+1}$ on the decrease, with $\kappa$ that depends only on these
+constants and the parameters, holds at every successful iteration. The minimum
+$\min\{1, \varepsilon_1^2, \varepsilon_2^3\}$ is `Optimization.finMin 1 (fun j => ε j ^ (j + 1))
+2`; the term $1$ does not change it, because $\varepsilon_j \le 1$.
+
+The construction takes $r = 2^{-N}$, $\varepsilon_1 = r^2$ and $\varepsilon_2 = a = r$. Then $N$
+unsuccessful first-order iterations at $r^2 e_1$ shrink the radius from $1$ to $r^2$, and a
+successful step reaches $0$. There the gradient vanishes and the second-order test fails, and
+the second-order step $r^2 e_2$ decreases $f_a$ by $r^5/2$, against $\kappa
+\min\{\varepsilon_1^2, \varepsilon_2^3\} = \kappa r^4$. The run continues as any run from
+$r^2 e_2$ (`Optimization.exists_isTRqRun_append`). -/
 theorem exists_isTRqRun_saddleQuad_decrease_lt {κ : ℝ} (hκ : 0 < κ) :
     ∃ (a : ℝ) (ε : ℕ → ℝ) (x s : ℕ → ℝ²) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → ℝ²) (k : ℕ),
       0 < a ∧ a ≤ 1 ∧ (∀ j ∈ Finset.Icc 1 2, ε j ∈ Ioc 0 1) ∧ x 0 ∈ saddleBox ∧

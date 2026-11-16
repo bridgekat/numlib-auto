@@ -16,62 +16,71 @@ import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
-# The Kolmogorov–M. Riesz–Fréchet compactness criterion in `L^p`
+# The Kolmogorov–M. Riesz–Fréchet compactness criterion in $L^p$
 
-A bounded family `F ⊆ L^p(G)`, `1 ≤ p < ∞`, on a finite-dimensional real normed space `G` with a
-Haar measure `μ`, whose translates are uniformly continuous in `L^p`,
-`‖f (· + h) - f‖ₚ → 0` as `h → 0` uniformly in `f ∈ F`, has compact closure once restricted to any
-set `Ω` of finite measure:
-`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`. If moreover the mass
-of the family outside bounded sets is uniformly small, the family itself has compact closure in
-`L^p(G)` (`MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight`); conversely a
-relatively compact family has uniformly continuous translates and is tight
-(`MeasureTheory.Lp.uniform_translate_of_isCompact_closure`,
-`MeasureTheory.Lp.tight_of_isCompact_closure`), so that
-`MeasureTheory.Lp.isCompact_closure_iff_uniform_translate_and_tight` characterizes the
-relatively compact subsets of `L^p(G)`. The convolution with a fixed integrable kernel maps
-bounded sets to families of the first kind
-(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM`). The translation
-invariance of the `L^p` seminorm, `MeasureTheory.eLpNorm_comp_add_right`, is stated for any
-right-invariant measure.
+Let $G$ be a finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a
+finite-dimensional real normed space, and let $1 \le p < \infty$. Let
+$\mathcal{F} \subseteq L^p(G; E)$ be a bounded family whose translates are uniformly continuous in
+$L^p$:
+$$\sup_{f \in \mathcal{F}} \|f(\cdot + h) - f\|_p \to 0 \quad \text{as } h \to 0.$$
+The **Kolmogorov–M. Riesz–Fréchet theorem** states that the restrictions of the members of
+$\mathcal{F}$ to a set $\Omega$ of finite measure form a set with compact closure in $L^p(\Omega)$.
+If moreover $\mathcal{F}$ is tight, that is, the mass of the family outside bounded sets is
+uniformly small, then $\mathcal{F}$ itself has compact closure in $L^p(G)$. Conversely, a family
+with compact closure has uniformly continuous translates and is tight, so the three conditions
+characterize the sets with compact closure in $L^p(G)$. Convolution with a fixed integrable kernel
+maps bounded sets to families of the first kind. The presentation follows Theorem 4.26, Corollaries
+4.27 and 4.28, Remark 13 and Exercise 4.34 in §4.5 of [brezis2011functional].
 
 ## Main definitions
 
-* `MeasureTheory.Lp.restrictCLM 𝕜 E p μ s : Lp E p μ →L[𝕜] Lp E p (μ.restrict s)` — restriction
-  of an `L^p` class to a set, a linear map of norm at most `1`. No measurability of `s` is needed.
+* `MeasureTheory.Lp.restrictCLM`: the restriction $L^p(\mu) \to L^p(\mu|_s)$ of a class to a set
+  $s$, a continuous linear map of norm at most $1$.
 
-## The proof
+## Main results
 
-It follows [brezis2011functional] Theorem 4.26 in four steps, with the vector-valued
-generalization costing nothing.
+* `MeasureTheory.eLpNorm_comp_add_right`: translation preserves the $L^p$ seminorm for a
+  right-invariant measure.
+* `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`: the Kolmogorov–M.
+  Riesz–Fréchet theorem.
+* `MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight`: a bounded tight family with
+  uniformly continuous translates has compact closure in $L^p(G)$.
+* `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM`: the restrictions to
+  $\Omega$ of the convolutions $K * u$, for $K \in L^1$ and $u$ in a bounded set, have compact
+  closure in $L^p(\Omega)$.
+* `MeasureTheory.Lp.uniform_translate_of_isCompact_closure`,
+  `MeasureTheory.Lp.tight_of_isCompact_closure`: a family with compact closure has uniformly
+  continuous translates and is tight.
+* `MeasureTheory.Lp.isCompact_closure_iff_uniform_translate_and_tight`: a family has compact closure
+  in $L^p(G)$ if and only if it is bounded, tight and has uniformly continuous translates.
 
-1. Mollification is uniformly close on `F`: for a normalized bump function `ρ` of small enough
-   radius, `‖ρ ⋆ f - f‖ₚ ≤ ε` for all `f ∈ F`
-   (`MeasureTheory.exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate`). This is the
-   weighted Minkowski inequality of `Numlib.Analysis.Convolution.Lp`, which bounds the error of
-   mollification by the average of the translation errors over the support of `ρ`.
-2. For a fixed `ρ` the mollified family is uniformly bounded and uniformly Lipschitz
-   (`MeasureTheory.enorm_convolution_le_eLpNorm_mul_eLpNorm`,
-   `MeasureTheory.lipschitzWith_convolution_of_contDiff`): Hölder's inequality for `ρ ⋆ f` and
-   for `∇ρ ⋆ f = ∇(ρ ⋆ f)`.
-3. The mass of the mollified family outside a large ball is uniformly small on `Ω`
-   (`MeasureTheory.Lp.exists_forall_eLpNorm_indicator_compl_closedBall_le`), because `μ Ω < ∞`;
-   with step 1 this is the book's Step 3, the same statement for the family itself.
-4. On the compact ball the mollified family is precompact in the uniform norm by the
-   Arzelà–Ascoli theorem, hence, after extension by zero, totally bounded in `L^p(Ω)`; steps 1 and
-   3 put `F|_Ω` within `ε` of that set, so `F|_Ω` is totally bounded
-   (`MeasureTheory.Lp.totallyBounded_image_restrictCLM_of_uniform_translate`), and `L^p(Ω)` is
-   complete.
+## Proof outline
 
-The set `Ω` need not be measurable and need not be bounded, only of finite measure; the family
-`F` is a set of `L^p` classes and the translation hypothesis is stated on the coerced functions,
-which is the form in which the Sobolev embedding theorems produce it.
+The proof follows the four steps of the proof of Theorem 4.26 of [brezis2011functional].
 
-## References
+1. Mollification is uniformly close to the identity on $\mathcal{F}$: for a normalized bump function
+   $\rho$ of small enough radius, $\|\rho * f - f\|_p \le \varepsilon$ for all $f \in \mathcal{F}$.
+   This is the weighted Minkowski inequality of `Numlib.Analysis.Convolution.Lp`, which bounds the
+   error of mollification by the average of the errors of translation over the support of $\rho$.
+2. For a fixed $\rho$, the mollified family is uniformly bounded and uniformly Lipschitz, by
+   Hölder's inequality for $\rho * f$ and for $\nabla \rho * f = \nabla(\rho * f)$.
+3. The mass of the mollified family outside a large ball is uniformly small on $\Omega$, because
+   $\mu(\Omega) < \infty$. With step 1, the same holds for the family itself.
+4. On the compact ball, the mollified family is precompact in the uniform norm by the Arzelà–Ascoli
+   theorem. Hence, after extension by zero, it is totally bounded in $L^p(\Omega)$. Steps 1 and 3
+   put the restrictions of $\mathcal{F}$ to $\Omega$ within $\varepsilon$ of this set, so they form
+   a totally bounded set. Since $L^p(\Omega)$ is complete, its closure is compact.
 
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], §4.5: Theorem 4.26, Corollaries 4.27 and
-4.28, Lemma 4.3, Remark 13 (Exercise 4.34).
+## Implementation notes
+
+* The vector-valued generalization needs no extra work.
+* The set $\Omega$ need not be measurable and need not be bounded. It needs only finite measure.
+* The family $\mathcal{F}$ is a set of classes in `MeasureTheory.Lp`, and the hypothesis on
+  translates is stated for the functions that represent the classes. The Sobolev embedding theorems
+  produce the hypothesis in this form.
+* The translate of $f$ by $h$ is $x \mapsto f(x + h)$. The uniform continuity of translates is
+  stated as: for every $\varepsilon > 0$ there is $\delta > 0$ with
+  $\|f(\cdot + h) - f\|_p < \varepsilon$ for all $f \in \mathcal{F}$ and $\|h\| < \delta$.
 -/
 
 open Filter Function MeasureTheory MeasureTheory.Measure Metric Set Topology
@@ -82,7 +91,7 @@ noncomputable section
 
 namespace MeasureTheory
 
-/-! ### Restriction of `L^p` classes to a set -/
+/-! ### Restriction of $L^p$ classes to a set -/
 
 section Restrict
 
@@ -90,9 +99,14 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜
   [MeasurableSpace α] {p : ℝ≥0∞} {μ : Measure α}
 
 variable (𝕜 E p μ) in
-/-- **Restriction of an `L^p` class to a set** `s`, as a bounded linear map
-`Lp E p μ →L[𝕜] Lp E p (μ.restrict s)` of norm at most `1` (the book's `F|_Ω`,
-[brezis2011functional] Theorem 4.26). No measurability of `s` is needed. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $E$ be a normed space over $\mathbb{K}$,
+let $p \ge 1$, and let $s$ be a set. The **restriction** to $s$ is the continuous
+$\mathbb{K}$-linear map
+$$L^p(\mu; E) \to L^p(\mu|_s; E), \qquad f \mapsto f|_s,$$
+of norm at most $1$. It is the map $f \mapsto f|_\Omega$ of Theorem 4.26 of
+[brezis2011functional].
+
+The set $s$ need not be measurable. -/
 def Lp.restrictCLM [Fact (1 ≤ p)] (s : Set α) : Lp E p μ →L[𝕜] Lp E p (μ.restrict s) :=
   LinearMap.mkContinuous
     { toFun := fun f => ((Lp.memLp f).restrict s).toLp f
@@ -108,16 +122,17 @@ def Lp.restrictCLM [Fact (1 ≤ p)] (s : Set α) : Lp E p μ →L[𝕜] Lp E p (
       exact ENNReal.toReal_mono (Lp.memLp f).eLpNorm_ne_top
         (eLpNorm_mono_measure _ Measure.restrict_le_self)
 
-/-- The restriction of `f` to `s` is `f` almost everywhere on `s`. -/
+/-- The restriction of $f \in L^p(\mu)$ to $s$ is equal to $f$ almost everywhere on $s$. -/
 theorem Lp.coeFn_restrictCLM [Fact (1 ≤ p)] (s : Set α) (f : Lp E p μ) :
     ⇑(Lp.restrictCLM 𝕜 E p μ s f) =ᵐ[μ.restrict s] f :=
   MemLp.coeFn_toLp ((Lp.memLp f).restrict s)
 
-/-- The restriction operator has norm at most `1`. -/
+/-- The restriction to a set, as a map $L^p(\mu) \to L^p(\mu|_s)$, has operator norm at most $1$. -/
 theorem Lp.norm_restrictCLM_le [Fact (1 ≤ p)] (s : Set α) : ‖Lp.restrictCLM 𝕜 E p μ s‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
-/-- The restriction of an `L^p` class does not increase its norm. -/
+/-- For every $f \in L^p(\mu)$, the restriction of $f$ to $s$ satisfies
+$\|f|_s\|_{L^p(\mu|_s)} \le \|f\|_{L^p(\mu)}$. -/
 theorem Lp.norm_restrictCLM_apply_le [Fact (1 ≤ p)] (s : Set α) (f : Lp E p μ) :
     ‖Lp.restrictCLM 𝕜 E p μ s f‖ ≤ ‖f‖ := by
   have h := (Lp.restrictCLM 𝕜 E p μ s).le_of_opNorm_le (Lp.norm_restrictCLM_le s) f
@@ -129,7 +144,9 @@ end MeasureTheory
 
 /-! ### Total boundedness through approximation -/
 
-/-- A set which is, for every `ε > 0`, within `ε` of a totally bounded set is totally bounded. -/
+/-- Let $X$ be a pseudometric space and let $s \subseteq X$. If for every $\varepsilon > 0$ there is
+a totally bounded set $t$ such that every point of $s$ is at distance less than $\varepsilon$
+from a point of $t$, then $s$ is totally bounded. -/
 theorem Metric.totallyBounded_of_forall_exists_totallyBounded {X : Type*} [PseudoMetricSpace X]
     {s : Set X} (h : ∀ ε > 0, ∃ t : Set X, TotallyBounded t ∧ ∀ x ∈ s, ∃ y ∈ t, dist x y < ε) :
     TotallyBounded s := by
@@ -146,15 +163,18 @@ theorem Metric.totallyBounded_of_forall_exists_totallyBounded {X : Type*} [Pseud
 
 namespace MeasureTheory
 
-/-! ### Translation invariance of the `L^p` seminorm -/
+/-! ### Translation invariance of the $L^p$ seminorm -/
 
 section Translation
 
 variable {G : Type*} [Add G] [MeasurableSpace G] [MeasurableAdd G] {μ : Measure G}
   [μ.IsAddRightInvariant] {E : Type*} [NormedAddCommGroup E] {p : ℝ≥0∞}
 
-/-- **Translation preserves the `L^p` seminorm**: `‖f (· + h)‖ₚ = ‖f‖ₚ` for a right-invariant
-measure. -/
+/-- **Translation preserves the $L^p$ seminorm.** Let $\mu$ be a right-invariant measure on $G$, let
+$f \colon G \to E$ be almost everywhere strongly measurable, and let $h \in G$. Then for every
+$p \in [0, \infty]$,
+$$\|f(\cdot + h)\|_p = \|f\|_p.$$
+-/
 theorem eLpNorm_comp_add_right {f : G → E} (hf : AEStronglyMeasurable f μ) (h : G) :
     eLpNorm (fun x => f (x + h)) p μ = eLpNorm f p μ :=
   eLpNorm_comp_measurePreserving hf (measurePreserving_add_right μ h)
@@ -169,10 +189,16 @@ variable {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimension
   [MeasurableSpace G] [BorelSpace G] {μ : Measure G} [μ.IsAddHaarMeasure]
   {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {p : ℝ≥0∞}
 
-/-- **Step 1** of [brezis2011functional] Theorem 4.26: if the translates of the members of `F` are
-uniformly continuous in `L^p`, then mollification by a normalized bump function of small enough
-radius is uniformly close to the identity on `F`: there is `δ > 0` such that
-`‖ρ ⋆ f - f‖ₚ ≤ ε` for all `f ∈ F` and every normalized bump `ρ` of outer radius `< δ`. -/
+/-- **Step 1** of the proof of Theorem 4.26 of [brezis2011functional]. Let $G$ be a
+finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a real Banach space,
+let $1 \le p < \infty$, and let $\mathcal{F} \subseteq L^p(\mu; E)$ have uniformly continuous
+translates in $L^p$. Then for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$\|\rho * f - f\|_p \le \varepsilon$$
+for every $f \in \mathcal{F}$ and every normalized bump function $\rho$ centred at $0$ with
+outer radius less than $\delta$.
+
+A normalized bump function is `ContDiffBump.normed` of a `ContDiffBump` at $0$, which has
+integral $1$. -/
 theorem exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate [CompleteSpace E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)}
     (hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -204,9 +230,16 @@ theorem exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate [CompleteS
             lintegral_enorm_eq_one φ.nonneg_normed φ.integrable_normed φ.integral_normed, one_mul]
   exact (ENNReal.rpow_le_rpow_iff hq0).1 hkey
 
-/-- **Step 2** of [brezis2011functional] Theorem 4.26, the uniform bound (24): for `ρ ∈ L^q` and
-`f ∈ L^p` with `1/p + 1/q = 1`, `‖(ρ ⋆ f) x‖ ≤ ‖ρ‖_q * ‖f‖ₚ` at every point. This is Mathlib's
-`MeasureTheory.enorm_convolution_le` with the constant `‖lsmul ℝ ℝ‖ ≤ 1` removed. -/
+/-- **Step 2** of the proof of Theorem 4.26 of [brezis2011functional], the uniform bound (24). Let
+$G$ be a finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a real
+normed space, let $p, q$ be conjugate exponents, $1/p + 1/q = 1$, and let
+$\rho \colon G \to \mathbb{R}$ and $f \colon G \to E$ be almost everywhere strongly measurable.
+Then for every $x \in G$,
+$$\|(\rho * f)(x)\| \le \|\rho\|_q \, \|f\|_p,$$
+as an inequality in $[0, \infty]$.
+
+This is Mathlib's `MeasureTheory.enorm_convolution_le` without the constant
+$\|\mathrm{lsmul}\| \le 1$. -/
 theorem enorm_convolution_le_eLpNorm_mul_eLpNorm {q : ℝ≥0∞} [q.HolderConjugate p] {ρ : G → ℝ}
     {f : G → E} (hρ : AEStronglyMeasurable ρ μ) (hf : AEStronglyMeasurable f μ) (x : G) :
     ‖(ρ ⋆[lsmul ℝ ℝ, μ] f) x‖ₑ ≤ eLpNorm ρ q μ * eLpNorm f p μ := by
@@ -215,10 +248,14 @@ theorem enorm_convolution_le_eLpNorm_mul_eLpNorm {q : ℝ≥0∞} [q.HolderConju
       ≤ 1 * eLpNorm ρ q μ * eLpNorm f p μ := by gcongr; exact opENorm_lsmul_le
     _ = eLpNorm ρ q μ * eLpNorm f p μ := by rw [one_mul]
 
-/-- **Step 2** of [brezis2011functional] Theorem 4.26, the Lipschitz bound (25): for a `C¹`
-kernel `ρ` with compact support and `f ∈ L^p`, `1/p + 1/q = 1`, the convolution `ρ ⋆ f` is
-Lipschitz with constant `‖∇ρ‖_q * ‖f‖ₚ`, because `∇(ρ ⋆ f) = ∇ρ ⋆ f` is bounded by Hölder's
-inequality. -/
+/-- **Step 2** of the proof of Theorem 4.26 of [brezis2011functional], the Lipschitz bound (25). Let
+$G$ be a finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a real
+normed space, let $p, q$ be conjugate exponents, $1/p + 1/q = 1$, let
+$\rho \colon G \to \mathbb{R}$ be of class $C^1$ with compact support, and let
+$f \in L^p(\mu; E)$. Then $\rho * f$ is Lipschitz with the constant $\|D\rho\|_q \, \|f\|_p$.
+
+The derivative $D(\rho * f) = D\rho * f$ is bounded by Hölder's inequality. The constant is the
+product of the two seminorms converted to `ℝ≥0`. -/
 theorem lipschitzWith_convolution_of_contDiff {q : ℝ≥0∞} [p.HolderConjugate q]
     {ρ : G → ℝ} (hρ : ContDiff ℝ 1 ρ) (hcρ : HasCompactSupport ρ) {f : G → E} (hf : MemLp f p μ) :
     LipschitzWith ((eLpNorm (fderiv ℝ ρ) q μ).toNNReal * (eLpNorm f p μ).toNNReal)
@@ -248,9 +285,13 @@ theorem lipschitzWith_convolution_of_contDiff {q : ℝ≥0∞} [p.HolderConjugat
   exact hbound x
 
 omit [NormedSpace ℝ G] [FiniteDimensional ℝ G] [μ.IsAddHaarMeasure] [NormedSpace ℝ E] in
-/-- The mass of a uniformly bounded family outside large balls is uniformly small on a set of
-finite measure: for `M`-bounded functions `g` and `μ Ω ≠ ∞`, there is `R` with
-`‖g‖_{L^p(Ω ∖ B(0, R))} ≤ ε` for all such `g`. -/
+/-- Let $G$ be a normed group with its Borel $\sigma$-algebra and a measure $\mu$, let $E$ be a
+normed group, let $1 \le p < \infty$, let $\Omega \subseteq G$ satisfy $\mu(\Omega) < \infty$,
+let $M \in \mathbb{R}$, and let $\varepsilon > 0$. Then there is $R \in \mathbb{R}$ such that
+every almost everywhere strongly measurable $g \colon G \to E$ with $\|g(x)\| \le M$ for all $x$
+satisfies
+$$\|g \, \mathbf{1}_{G \setminus \bar B(0, R)}\|_{L^p(\Omega)} \le \varepsilon.$$
+-/
 theorem exists_forall_eLpNorm_indicator_compl_closedBall_le_of_forall_norm_le [Fact (1 ≤ p)]
     (hp : p ≠ ∞) {Ω : Set G} (hΩ : μ Ω ≠ ∞) {M : ℝ} {ε : ℝ≥0∞} (hε : 0 < ε) :
     ∃ R : ℝ, ∀ g : G → E, AEStronglyMeasurable g μ → (∀ x, ‖g x‖ ≤ M) →
@@ -299,13 +340,18 @@ theorem exists_forall_eLpNorm_indicator_compl_closedBall_le_of_forall_norm_le [F
 
 /-! ### Step 4 and the theorem -/
 
-/-- **Step 4** of [brezis2011functional] Theorem 4.26: under the hypotheses of the
-Kolmogorov–M. Riesz–Fréchet theorem, the restrictions to `Ω` of the members of `F` form a totally
-bounded subset of `L^p(Ω)`. For `ε > 0`, steps 1 and 3 give a mollifier `ρ` and a ball `K` such
-that every `f|_Ω` is within `ε` of the extension by zero of `(ρ ⋆ f)|_K`, and these extensions
-form a totally bounded set: the family `(ρ ⋆ f)|_K` is precompact in `C(K, E)` by the
-Arzelà–Ascoli theorem (step 2), and extension by zero is Lipschitz from `C(K, E)` into
-`L^p(Ω)`. -/
+/-- **Step 4** of the proof of Theorem 4.26 of [brezis2011functional]. Let $G$ be a
+finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a finite-dimensional
+real normed space, let $1 \le p < \infty$, and let $\mathcal{F} \subseteq L^p(\mu; E)$ be
+bounded with uniformly continuous translates in $L^p$. Then for every $\Omega \subseteq G$ with
+$\mu(\Omega) < \infty$, the restrictions to $\Omega$ of the members of $\mathcal{F}$ form a
+totally bounded subset of $L^p(\Omega)$.
+
+For $\varepsilon > 0$, steps 1 and 3 give a mollifier $\rho$ and a ball $K$ such that every
+$f|_\Omega$ is within $\varepsilon$ of the extension by zero of $(\rho * f)|_K$. These
+extensions form a totally bounded set: the family of the $(\rho * f)|_K$ is precompact in
+$C(K, E)$ by the Arzelà–Ascoli theorem and step 2, and extension by zero is Lipschitz from
+$C(K, E)$ to $L^p(\Omega)$. -/
 theorem Lp.totallyBounded_image_restrictCLM_of_uniform_translate [FiniteDimensional ℝ E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)} (hF : Bornology.IsBounded F)
     (hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -448,12 +494,16 @@ theorem Lp.totallyBounded_image_restrictCLM_of_uniform_translate [FiniteDimensio
           ENNReal.toReal_ofReal (by positivity)]
     _ < ε := by linarith
 
-/-- **The Kolmogorov–M. Riesz–Fréchet theorem** ([brezis2011functional] Theorem 4.26). Let `G` be
-a finite-dimensional real normed space with a Haar measure `μ`, `E` a finite-dimensional real
-normed space, `1 ≤ p < ∞`, and `F ⊆ L^p(μ, E)` a bounded family whose translates are uniformly
-continuous in `L^p`: for every `ε > 0` there is `δ > 0` with `‖f (· + h) - f‖ₚ < ε` for all
-`f ∈ F` and all `‖h‖ < δ`. Then for every set `Ω` of finite measure, measurable or not, the
-restrictions `f|_Ω`, `f ∈ F`, have compact closure in `L^p(Ω)`. -/
+/-- **The Kolmogorov–M. Riesz–Fréchet theorem.** Let $G$ be a finite-dimensional real normed space
+with a Haar measure $\mu$, let $E$ be a finite-dimensional real normed space, let
+$1 \le p < \infty$, and let $\mathcal{F} \subseteq L^p(\mu; E)$ be a bounded family whose
+translates are uniformly continuous in $L^p$: for every $\varepsilon > 0$ there is $\delta > 0$
+with
+$$\|f(\cdot + h) - f\|_p < \varepsilon \quad \text{for all } f \in \mathcal{F} \text{ and all }
+  \|h\| < \delta.$$
+Then for every set $\Omega \subseteq G$ of finite measure, measurable or not, the restrictions
+$f|_\Omega$, $f \in \mathcal{F}$, form a set with compact closure in $L^p(\Omega)$. This is
+Theorem 4.26 of [brezis2011functional]. -/
 theorem Lp.isCompact_closure_image_restrictCLM_of_uniform_translate [FiniteDimensional ℝ E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)} (hF : Bornology.IsBounded F)
     (hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -463,10 +513,16 @@ theorem Lp.isCompact_closure_image_restrictCLM_of_uniform_translate [FiniteDimen
     ⟨(Lp.totallyBounded_image_restrictCLM_of_uniform_translate hp hF hτ hΩ).closure,
       isClosed_closure.isComplete⟩
 
-/-- **Step 3** of [brezis2011functional] Theorem 4.26: under the hypotheses of the theorem, the
-mass of the family outside a large enough ball is uniformly small on `Ω`: there is `R` with
-`‖f‖_{L^p(Ω ∖ B(0, R))} ≤ ε` for all `f ∈ F`. From step 1 and the same statement for the
-mollified family. -/
+/-- **Step 3** of the proof of Theorem 4.26 of [brezis2011functional]. Let $G$ be a
+finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a real Banach space,
+let $1 \le p < \infty$, let $\mathcal{F} \subseteq L^p(\mu; E)$ be bounded with uniformly
+continuous translates in $L^p$, let $\Omega \subseteq G$ satisfy $\mu(\Omega) < \infty$, and let
+$\varepsilon > 0$. Then there is $R \in \mathbb{R}$ with
+$$\|f \, \mathbf{1}_{G \setminus \bar B(0, R)}\|_{L^p(\Omega)} \le \varepsilon \quad \text{for
+  all } f \in \mathcal{F}.$$
+
+The proof combines step 1 with the same statement for the mollified family,
+`MeasureTheory.exists_forall_eLpNorm_indicator_compl_closedBall_le_of_forall_norm_le`. -/
 theorem Lp.exists_forall_eLpNorm_indicator_compl_closedBall_le [CompleteSpace E] [Fact (1 ≤ p)]
     (hp : p ≠ ∞) {F : Set (Lp E p μ)} (hF : Bornology.IsBounded F)
     (hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -525,11 +581,16 @@ theorem Lp.exists_forall_eLpNorm_indicator_compl_closedBall_le [CompleteSpace E]
 
 /-! ### The corollaries -/
 
-/-- **Compactness in `L^p(G)` itself** ([brezis2011functional] Corollary 4.27): a bounded family
-`F ⊆ L^p(G)`, `1 ≤ p < ∞`, whose translates are uniformly continuous in `L^p` and which is
-*tight* — for every `ε > 0` there is a bounded measurable `Ω` with `‖f‖_{L^p(Ωᶜ)} < ε` for all
-`f ∈ F` — has compact closure in `L^p(G)`. The restrictions to `Ω` are totally bounded by the
-Kolmogorov–M. Riesz–Fréchet theorem, and their extensions by zero are within `ε` of `F`. -/
+/-- **Compactness in $L^p(G)$.** Let $G$ be a finite-dimensional real normed space with a Haar
+measure $\mu$, let $E$ be a finite-dimensional real normed space, let $1 \le p < \infty$, and
+let $\mathcal{F} \subseteq L^p(\mu; E)$ be a bounded family whose translates are uniformly
+continuous in $L^p$. Suppose that $\mathcal{F}$ is **tight**: for every $\varepsilon > 0$ there
+is a bounded measurable set $\Omega$ with $\|f \, \mathbf{1}_{G \setminus \Omega}\|_p <
+\varepsilon$ for all $f \in \mathcal{F}$. Then $\mathcal{F}$ has compact closure in
+$L^p(\mu; E)$. This is Corollary 4.27 of [brezis2011functional].
+
+The restrictions to $\Omega$ are totally bounded by the Kolmogorov–M. Riesz–Fréchet theorem, and
+their extensions by zero are within $\varepsilon$ of the members of $\mathcal{F}$. -/
 theorem Lp.isCompact_closure_of_uniform_translate_of_tight [FiniteDimensional ℝ E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)} (hF : Bornology.IsBounded F)
     (hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -576,12 +637,18 @@ theorem Lp.isCompact_closure_of_uniform_translate_of_tight [FiniteDimensional �
     _ = ε / 2 := ENNReal.toReal_ofReal (by positivity)
     _ < ε := by linarith
 
-/-- **Convolution with a fixed integrable kernel is compact on bounded sets, after restriction**
-([brezis2011functional] Corollary 4.28): for `K ∈ L¹(G)`, a bounded `B ⊆ L^p(G)` with
-`1 ≤ p < ∞` and any `Ω` of finite measure, the restrictions to `Ω` of the convolutions `K ⋆ u`,
-`u ∈ B`, have compact closure in `L^p(Ω)`. The family `K ⋆ B` is bounded by Young's inequality
-and its translates are uniformly continuous because `τ_h (K ⋆ u) - K ⋆ u = (τ_h K - K) ⋆ u` and
-`‖τ_h K - K‖₁ → 0` (the continuity of translation in `L¹`, [brezis2011functional] Lemma 4.3). -/
+/-- **Convolution with a fixed integrable kernel is compact on bounded sets, after restriction.**
+Let $G$ be a finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a
+finite-dimensional real normed space, let $1 \le p < \infty$, let $K \colon G \to \mathbb{R}$ be
+integrable, let $B \subseteq L^p(\mu; E)$ be bounded, and let $\Omega \subseteq G$ satisfy
+$\mu(\Omega) < \infty$. Then the restrictions to $\Omega$ of the convolutions $K * u$,
+$u \in B$, form a set with compact closure in $L^p(\Omega)$. This is Corollary 4.28 of
+[brezis2011functional].
+
+The convolution is `MeasureTheory.Lp.convolutionCLM`. The family $K * B$ is bounded by Young's
+inequality. Its translates are uniformly continuous, because
+$\tau_h(K * u) - K * u = (\tau_h K - K) * u$ and $\|\tau_h K - K\|_1 \to 0$ by the continuity of
+translation in $L^1$ (Lemma 4.3 of [brezis2011functional]). -/
 theorem Lp.isCompact_closure_image_restrictCLM_convolutionCLM [FiniteDimensional ℝ E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) {K : G → ℝ} (hK : Integrable K μ) {B : Set (Lp E p μ)}
     (hB : Bornology.IsBounded B) {Ω : Set G} (hΩ : μ Ω ≠ ∞) :
@@ -636,14 +703,21 @@ theorem Lp.isCompact_closure_image_restrictCLM_convolutionCLM [FiniteDimensional
       _ < ε := hδK (by rwa [dist_zero_right, _root_.norm_neg])
 
 
-/-! ### The converse: a relatively compact family has uniformly continuous translates, is tight -/
+/-!
+### The converse: a family with compact closure has uniformly continuous translates and is tight
+-/
 
 omit [NormedSpace ℝ E] in
-/-- **Uniform continuity of translation on a relatively compact family** ([brezis2011functional]
-Exercise 4.34): if `F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure, then its translates are
-uniformly continuous in `L^p`. Each of the finitely many centres of an `ε`-net satisfies the
-continuity of translation (`MemLp.tendsto_eLpNorm_sub_translate`), and translation is an
-isometry of `L^p` (`eLpNorm_comp_add_right`). -/
+/-- **Uniform continuity of translation on a family with compact closure.** Let $G$ be a
+finite-dimensional real normed space with a Haar measure $\mu$, let $E$ be a normed group, let
+$1 \le p < \infty$, and let $\mathcal{F} \subseteq L^p(\mu; E)$ have compact closure. Then the
+translates of $\mathcal{F}$ are uniformly continuous in $L^p$: for every $\varepsilon > 0$ there
+is $\delta > 0$ with $\|f(\cdot + h) - f\|_p < \varepsilon$ for all $f \in \mathcal{F}$ and all
+$\|h\| < \delta$. This is Exercise 4.34 of [brezis2011functional].
+
+Each of the finitely many centres of an $\varepsilon$-net has continuous translates
+(`MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`), and translation is an isometry of $L^p$
+(`MeasureTheory.eLpNorm_comp_add_right`). -/
 theorem Lp.uniform_translate_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp E p μ)} (hF : IsCompact (closure F)) :
     ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
@@ -705,11 +779,15 @@ theorem Lp.uniform_translate_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ �
     _ ≤ ε := hε'le
 
 omit [NormedSpace ℝ E] in
-/-- **Tightness of a relatively compact family** ([brezis2011functional] Exercise 4.34): if
-`F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure, then for every `ε > 0` there is a bounded
-measurable `Ω` with `‖f‖_{L^p(Ωᶜ)} < ε` for all `f ∈ F`. The finitely many centres of an `ε`-net
-are each concentrated on a compact set (`MemLp.exists_isCompact_eLpNorm_indicator_compl_le`),
-and the union of these sets works for all of `F`. -/
+/-- **Tightness of a family with compact closure.** Let $G$ be a finite-dimensional real normed
+space with a Haar measure $\mu$, let $E$ be a normed group, let $1 \le p < \infty$, and let
+$\mathcal{F} \subseteq L^p(\mu; E)$ have compact closure. Then for every $\varepsilon > 0$ there
+is a bounded measurable set $\Omega$ with $\|f \, \mathbf{1}_{G \setminus \Omega}\|_p <
+\varepsilon$ for all $f \in \mathcal{F}$. This is Exercise 4.34 of [brezis2011functional].
+
+Each of the finitely many centres of an $\varepsilon$-net is concentrated, up to $\varepsilon$,
+on a compact set (`MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le`), and the
+union of these sets works for all of $\mathcal{F}$. -/
 theorem Lp.tight_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)}
     (hF : IsCompact (closure F)) :
     ∀ ε : ℝ≥0∞, 0 < ε → ∃ Ω : Set G, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧
@@ -763,9 +841,20 @@ theorem Lp.tight_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set
         exact ENNReal.ofReal_lt_ofReal_iff'.2 ⟨by linarith, hε'pos⟩
     _ ≤ ε := hε'le
 
-/-- **The Kolmogorov–M. Riesz–Fréchet characterization** ([brezis2011functional] Corollary 4.27
-and its converse, Remark 13): a family `F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure if and
-only if it is bounded, its translates are uniformly continuous in `L^p`, and it is tight. -/
+/-- **The Kolmogorov–M. Riesz–Fréchet characterization.** Let $G$ be a finite-dimensional real
+normed space with a Haar measure $\mu$, let $E$ be a finite-dimensional real normed space, and
+let $1 \le p < \infty$. A family $\mathcal{F} \subseteq L^p(\mu; E)$ has compact closure if and
+only if the following three conditions hold:
+
+* $\mathcal{F}$ is bounded;
+* the translates of $\mathcal{F}$ are uniformly continuous in $L^p$: for every $\varepsilon > 0$
+  there is $\delta > 0$ with $\|f(\cdot + h) - f\|_p < \varepsilon$ for all $f \in \mathcal{F}$
+  and all $\|h\| < \delta$;
+* $\mathcal{F}$ is tight: for every $\varepsilon > 0$ there is a bounded measurable set $\Omega$
+  with $\|f \, \mathbf{1}_{G \setminus \Omega}\|_p < \varepsilon$ for all $f \in \mathcal{F}$.
+
+This is Corollary 4.27 of [brezis2011functional] and its converse, Remark 13 in Chapter 4 of the
+same book. -/
 theorem Lp.isCompact_closure_iff_uniform_translate_and_tight [FiniteDimensional ℝ E]
     [Fact (1 ≤ p)] (hp : p ≠ ∞) (F : Set (Lp E p μ)) :
     IsCompact (closure F) ↔

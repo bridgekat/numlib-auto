@@ -7,15 +7,48 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.EReal.Basic
 import Mathlib.Tactic.Linarith
 
-/-! # Projection onto a Euclidean box -/
+/-!
+# Projection onto a Euclidean box
+
+Let $\iota$ be a finite index set, and let $l, u \colon \iota \to [-\infty, +\infty]$ be lower and
+upper bounds. The box
+$$B = \{x \in \mathbb{R}^\iota : l_i \le x_i \le u_i \text{ for every } i\}$$
+is a closed convex subset of the Euclidean space $\mathbb{R}^\iota$. This module proves that, when
+$B$ is nonempty, the Euclidean projection onto $B$ acts coordinatewise: coordinate $i$ of the
+projection of $x$ is $x_i$ clipped to the interval $[l_i, u_i]$.
+
+## Main definitions
+
+* `euclideanBox`: the box $B$ with extended real bounds $l$ and $u$.
+* `clipCoordinate`: the clipping of a real number $x$ to the interval $[l, u]$ with extended real
+  bounds.
+
+## Main results
+
+* `bestApprox_euclideanBox_apply`: the projection onto a nonempty box is coordinatewise clipping.
+
+## Implementation notes
+
+* The bounds are extended real numbers (`EReal`), so that a coordinate can be unbounded below or
+  above.
+* The projection is the metric projection `bestApprox` of
+  `Numlib.Analysis.Normed.Module.BestApprox`.
+-/
 
 open scoped RealInnerProductSpace
 
-/-- A Euclidean box with possibly infinite coordinate bounds. -/
+/-- The **Euclidean box** with extended real bounds $l, u \colon \iota \to [-\infty, +\infty]$: the
+set of the points $x$ of the Euclidean space $\mathbb{R}^\iota$ with $l_i \le x_i \le u_i$ for
+every $i \in \iota$. -/
 def euclideanBox {ι : Type*} [Fintype ι] (l u : ι → EReal) : Set (EuclideanSpace ℝ ι) :=
   {x | ∀ i, l i ≤ (x i : EReal) ∧ (x i : EReal) ≤ u i}
 
-/-- Clip a real coordinate to an interval with extended real bounds. -/
+/-- The **clipping** of a real number $x$ to the interval $[l, u]$, for extended real bounds $l$ and
+$u$: the value is $l$ if $x < l$, it is $u$ if $u < x$ (and not $x < l$), and it is $x$
+otherwise.
+
+A bound $\pm \infty$ is never returned for a nonempty interval $[l, u] \cap \mathbb{R}$. In the
+other cases the Lean value uses `EReal.toReal`, which sends $\pm \infty$ to $0$. -/
 noncomputable def clipCoordinate (l u : EReal) (x : ℝ) : ℝ :=
   if (x : EReal) < l then l.toReal else if u < (x : EReal) then u.toReal else x
 
@@ -64,7 +97,13 @@ private theorem convex_euclideanBox {ι : Type*} [Fintype ι] (l u : ι → ERea
       · simpa [max_eq_right h] using (hy i).2
       · simpa [max_eq_left h] using (hx i).2)
 
-/-- The Euclidean projection onto a nonempty box is coordinatewise clipping. -/
+/-- **The Euclidean projection onto a nonempty box is coordinatewise clipping**: let
+$l, u \colon \iota \to [-\infty, +\infty]$ be bounds whose box $B$ is nonempty, let
+$x \in \mathbb{R}^\iota$, and let $i \in \iota$. Then coordinate $i$ of the projection of $x$
+onto $B$ is $x_i$ clipped to $[l_i, u_i]$.
+
+The projection is the metric projection `bestApprox`, which is the nearest point of $B$ to $x$
+because $B$ is nonempty, closed and convex. -/
 theorem bestApprox_euclideanBox_apply {ι : Type*} [Fintype ι] {l u : ι → EReal}
     (hne : (euclideanBox l u).Nonempty) (x : EuclideanSpace ℝ ι) (i : ι) :
     bestApprox (euclideanBox l u) x i = clipCoordinate (l i) (u i) (x i) := by

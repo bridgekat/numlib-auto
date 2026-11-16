@@ -9,47 +9,85 @@ import Numlib.Analysis.ODE.PicardLindelof
 /-!
 # The Cauchy problem on a normed space
 
-The Cauchy problem `y' = f(t, y)`, `y(t₀) = y₀` for a time-dependent field `f : ℝ → E → E` on a
-real normed space `E`, as the numerical-analysis books state it ([quarteroni2000numerical] §11.1
-and §11.9, [kress1998numerical] §10.1): a *solution on a set of times* `I` (`ODE.IsSolutionOn`,
-with the derivative taken within `I`, so that on `Icc a b` the endpoints carry one-sided
-derivatives and no case split is needed), the equivalent *integral equation*
-`y t = y₀ + ∫_{t₀}^t f(τ, y τ) dτ` for a continuous field (`isSolutionOn_iff_integral`), the
-*Liapunov stability* of the problem under simultaneous perturbations of the datum and of the
-source (`IsLiapunovStable`, `IsAsymptoticallyStable`), the estimate
-`‖y t - z t‖ ≤ (1 + (t - t₀)) ε e^{L (t - t₀)}` for a field `L`-Lipschitz in the state
-(`norm_sub_le_of_lipschitz`) with the stability it implies, and *existence and uniqueness*: global,
-on a whole compact interval, for a field continuous on `Icc a b × E` and uniformly Lipschitz in
-the state (`exists_isSolutionOn_of_lipschitz`, `existsUnique_isSolutionOn_of_lipschitz`); local,
-in the books' constants, for a field Lipschitz on a box (`exists_isSolutionOn_of_lipschitzOnWith`).
+Let $E$ be a real normed space and let $f \colon \mathbb{R} \times E \to E$ be a time-dependent
+field. The **Cauchy problem** is
+$$y'(t) = f(t, y(t)), \qquad y(t_0) = y_0,$$
+as the numerical-analysis texts state it ([quarteroni2000numerical], §11.1 and §11.9;
+[kress1998numerical], §10.1). This file defines a solution on a set of times $I$, with the
+derivative taken within $I$, and proves that for a continuous field it is equivalent to the integral
+equation $y(t) = y_0 + \int_{t_0}^t f(\tau, y(\tau)) \, d\tau$. It defines the Liapunov stability
+and the asymptotic stability of the problem under simultaneous perturbations of the datum and of the
+source. For a field that is $L$-Lipschitz in the state it proves the estimate
+$$\|y(t) - z(t)\| \le (1 + (t - t_0)) \, \varepsilon \, e^{L (t - t_0)}$$
+between a solution $y$ and a solution $z$ of a problem perturbed by at most $\varepsilon$, and the
+stability that follows.
 
-**What Mathlib has.** `ODE.picard`, `ODE.hasDerivWithinAt_picard_Icc` and
-`ODE.picard_eq_of_hasDerivAt` (`Mathlib/Analysis/ODE/PicardLindelof.lean`) are the two halves of
-the integral characterization. `IsPicardLindelof` with `Numlib/Analysis/ODE/PicardLindelof`'s
-`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt` is local existence and
-uniqueness on a ball. `norm_le_gronwallBound_of_norm_deriv_right_le`
-(`Mathlib/Analysis/ODE/Gronwall.lean`) is the differential Gronwall inequality behind the stability
-estimate; the books derive the same
-estimate from the integral form of Gronwall's lemma (`Gronwall.le_mul_exp_of_le_add_integral` in
-`Numlib/Analysis/ODE/Gronwall`), which needs the integral equation and hence continuity of the
-field — the differential route needs neither, so it is the one used.
+The file also proves existence and uniqueness of solutions. For a field continuous on
+$[a, b] \times E$ and uniformly Lipschitz in the state, a solution exists on the whole interval
+$[a, b]$, and it is unique. For a field Lipschitz on a box, a unique local solution exists, with the
+constants of [quarteroni2000numerical]. For a field Lipschitz in the state on $[t_0, \infty)$, a
+unique solution exists on the whole half-line; this is the Cauchy–Lipschitz–Picard theorem, Theorem
+7.3 of [brezis2011functional].
 
-**What it lacks.** Global existence for a globally Lipschitz field: `IsPicardLindelof` bounds the
-length of the time interval by `a / L` with `L` a bound of the field on a ball of radius `a`, and a
-globally Lipschitz field grows linearly on large balls, so the constraint caps the interval at
-`1 / K` — the artefact the books also carry (`r₀ < 1/L` in [quarteroni2000numerical] §11.1). The
-route here is the classical one: the Picard operator `α ↦ (t ↦ y₀ + ∫_{t₀}^t f(τ, α τ) dτ)` on the
-complete space `C(Icc a b, E)` has `n`-th iterate Lipschitz with constant `(K (b - a))^n / n!`
-(`dist_iterate_picardMap_le`, the estimate Mathlib proves for its `FunSpace` on the short
-interval), so some iterate is a contraction and the fixed point solves the problem.
+## Main definitions
 
-## Conventions
+* `ODE.IsSolutionOn`: $y$ solves the Cauchy problem on the set of times $I$.
+* `ODE.IsLiapunovStable`: the Liapunov stability of the Cauchy problem on $I$.
+* `ODE.IsAsymptoticallyStable`: the asymptotic stability of the Cauchy problem on $[t_0, \infty)$.
+* `ODE.picardMap`: the Picard operator $\alpha \mapsto y_0 + \int_{t_0}^t f(\tau, \alpha(\tau)) \,
+  d\tau$ on $C([a, b], E)$.
 
-Time sets are `Icc a b` with `t₀ ∈ Icc a b` where the argument is two-sided (the integral
-characterization, existence) and `Icc t₀ (t₀ + T)` where it runs forward in time (the stability
-estimate, which is a right-derivative Gronwall argument); the books' `[t₀, t₀ + T]` is the latter.
-Lipschitz constants are `ℝ≥0` as in Mathlib's `LipschitzWith`. Joint continuity of the field is
-`ContinuousOn (Function.uncurry f) (Icc a b ×ˢ univ)`.
+## Main results
+
+* `ODE.isSolutionOn_iff_integral`: for a continuous field, a continuous curve solves the problem on
+  $[a, b]$ if and only if it satisfies the integral equation.
+* `ODE.norm_sub_le_of_lipschitz`: the stability estimate for a field that is Lipschitz in the state.
+* `ODE.isLiapunovStable_of_lipschitz`: such a problem is Liapunov stable on every bounded interval
+  $[t_0, t_0 + T]$.
+* `ODE.isSolutionOn_unique_of_lipschitz`: two solutions on $[t_0, t_0 + T]$ agree.
+* `ODE.dist_iterate_picardMap_le`: the $n$-th iterate of the Picard operator is Lipschitz with
+  constant $(K (b - a))^n / n!$.
+* `ODE.exists_isSolutionOn_of_lipschitz` and `ODE.existsUnique_isSolutionOn_of_lipschitz`: global
+  existence, and existence with uniqueness, on a compact interval.
+* `ODE.exists_isSolutionOn_of_lipschitzOnWith`: local existence and uniqueness for a field that is
+  Lipschitz on a box.
+* `ODE.exists_isSolutionOn_Ici_of_lipschitz`, `ODE.isSolutionOn_unique_of_lipschitz_Ici` and
+  `ODE.existsUnique_isSolutionOn_Ici_of_lipschitz`: the Cauchy–Lipschitz–Picard theorem on the
+  half-line.
+
+## Proof outline
+
+The stability estimate comes from the differential Gronwall inequality: $w = z - y$ has right
+derivative of norm at most $L \|w\| + \varepsilon$. The texts derive the same estimate from the
+integral form of Gronwall's lemma, which needs the integral equation and hence continuity of the
+field; the differential route needs neither.
+
+Global existence on $[a, b]$ follows the classical route. The Picard operator on the complete space
+$C([a, b], E)$ has $n$-th iterate Lipschitz with constant $(K (b - a))^n / n!$, so some iterate is a
+contraction, and the fixed point solves the problem. The solution on the half-line is glued from the
+solutions on the intervals $[t_0, t_0 + n]$, which agree on overlaps by uniqueness.
+
+## Implementation notes
+
+* A solution on $I$ has its derivative taken within $I$, so on $[a, b]$ the endpoints carry
+  one-sided derivatives and no case split is needed.
+* Time sets are $[a, b]$ with $t_0 \in [a, b]$ where the argument is two-sided (the integral
+  equation, existence), and $[t_0, t_0 + T]$ where it runs forward in time (the stability estimate,
+  a right-derivative Gronwall argument). The interval $[t_0, t_0 + T]$ of the texts is the latter.
+* Lipschitz constants are in `ℝ≥0`, as in Mathlib's `LipschitzWith`. Joint continuity of the field
+  on $[a, b] \times E$ is `ContinuousOn (Function.uncurry f) (Icc a b ×ˢ univ)`.
+* Mathlib has the two halves of the integral characterization, `ODE.hasDerivWithinAt_picard_Icc` and
+  `ODE.picard_eq_of_hasDerivAt`, in `Mathlib.Analysis.ODE.PicardLindelof`. Local existence and
+  uniqueness on a ball is `IsPicardLindelof` with
+  `IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt` of
+  `Numlib.Analysis.ODE.PicardLindelof`. The differential Gronwall inequality is
+  `norm_le_gronwallBound_of_norm_deriv_right_le` of `Mathlib.Analysis.ODE.Gronwall`; the integral
+  form is `Gronwall.le_mul_exp_of_le_add_integral` of `Numlib.Analysis.ODE.Gronwall`.
+* Mathlib lacks global existence for a globally Lipschitz field. `IsPicardLindelof` bounds the
+  length of the time interval by $a / L$, with $L$ a bound of the field on a ball of radius $a$. A
+  globally $K$-Lipschitz field grows linearly on large balls, so the constraint caps the length of
+  the interval at $1/K$. The texts carry the same artefact ($r_0 < 1/L$ in §11.1 of
+  [quarteroni2000numerical]). The Picard operator on $C([a, b], E)$ removes it.
 -/
 
 open Set Filter Topology Metric Function
@@ -62,48 +100,59 @@ variable {f : ℝ → E → E} {t₀ a b T : ℝ} {y₀ : E} {I : Set ℝ} {y z 
 
 /-! ### Solutions of the Cauchy problem -/
 
-/-- `y` is a **solution of the Cauchy problem** `y' = f(t, y)`, `y(t₀) = y₀`
-([quarteroni2000numerical] (11.1), (11.78)) on the set of times `I`: `y t₀ = y₀`, and at every
-`t ∈ I` the derivative of `y` *within* `I` is `f t (y t)` (one-sided at the endpoints of an
-interval). The point `t₀` is not required to lie in `I`. -/
+/-- A **solution of the Cauchy problem** $y' = f(t, y)$, $y(t_0) = y_0$ on the set of times
+$I \subseteq \mathbb{R}$ is a curve $y \colon \mathbb{R} \to E$ with $y(t_0) = y_0$ such that,
+at every $t \in I$, the derivative of $y$ within $I$ is $f(t, y(t))$. This is the problem (11.1)
+and (11.78) of [quarteroni2000numerical].
+
+At the endpoints of an interval the derivative is one-sided. The point $t_0$ need not lie in
+$I$. -/
 def IsSolutionOn (f : ℝ → E → E) (t₀ : ℝ) (y₀ : E) (I : Set ℝ) (y : ℝ → E) : Prop :=
   y t₀ = y₀ ∧ ∀ t ∈ I, HasDerivWithinAt y (f t (y t)) I t
 
-/-- A solution takes the initial value at `t₀`. -/
+/-- A solution satisfies $y(t_0) = y_0$. -/
 theorem IsSolutionOn.apply_eq (h : IsSolutionOn f t₀ y₀ I y) : y t₀ = y₀ := h.1
 
-/-- A solution satisfies the equation within `I`. -/
+/-- A solution on $I$ has derivative $f(t, y(t))$ within $I$ at every $t \in I$. -/
 theorem IsSolutionOn.hasDerivWithinAt (h : IsSolutionOn f t₀ y₀ I y) {t : ℝ} (ht : t ∈ I) :
     HasDerivWithinAt y (f t (y t)) I t :=
   h.2 t ht
 
-/-- A solution is continuous on `I`. -/
+/-- A solution of the Cauchy problem on $I$ is continuous on $I$. -/
 theorem IsSolutionOn.continuousOn (h : IsSolutionOn f t₀ y₀ I y) : ContinuousOn y I :=
   HasDerivWithinAt.continuousOn h.2
 
-/-- A solution on `I` is a solution on every subset of `I`. -/
+/-- A solution of the Cauchy problem on $I$ is a solution on every subset $J \subseteq I$. -/
 theorem IsSolutionOn.mono (h : IsSolutionOn f t₀ y₀ I y) {J : Set ℝ} (hJ : J ⊆ I) :
     IsSolutionOn f t₀ y₀ J y :=
   ⟨h.1, fun t ht => (h.2 t (hJ ht)).mono hJ⟩
 
-/-- Being a solution on `I` only depends on the values on `I` (and at `t₀`). -/
+/-- Let $y$ solve the Cauchy problem on $I$, and let $z$ agree with $y$ on $I$ and satisfy
+$z(t_0) = y_0$. Then $z$ solves the Cauchy problem on $I$.
+
+Being a solution on $I$ depends only on the values on $I$ and at $t_0$. -/
 theorem IsSolutionOn.congr (h : IsSolutionOn f t₀ y₀ I y) (hz : EqOn z y I) (hz₀ : z t₀ = y₀) :
     IsSolutionOn f t₀ y₀ I z :=
   ⟨hz₀, fun t ht => by rw [hz ht]; exact (h.2 t ht).congr hz (hz ht)⟩
 
-/-- Along a solution of a field continuous on `I × E`, the derivative `t ↦ f t (y t)` is continuous
-on `I`: the books' `y ∈ C¹(I)`. -/
+/-- Let $y$ solve the Cauchy problem on $I$ for a field $f$ continuous on $I \times E$. Then
+$t \mapsto f(t, y(t))$ is continuous on $I$.
+
+So the derivative of $y$ is continuous: $y \in C^1(I)$ in the terms of the texts. -/
 theorem IsSolutionOn.continuousOn_deriv (h : IsSolutionOn f t₀ y₀ I y)
     (hf : ContinuousOn (uncurry f) (I ×ˢ univ)) : ContinuousOn (fun t => f t (y t)) I :=
   continuousOn_comp hf h.continuousOn (mapsTo_univ _ _)
 
-/-- **The integral form of the Cauchy problem** ([quarteroni2000numerical] (11.2)): for a field
-continuous on `Icc a b × E`, `t₀ ∈ Icc a b`, and a curve `y` continuous on `Icc a b`, `y` solves
-the Cauchy problem on `Icc a b` iff `y t = y₀ + ∫_{t₀}^t f(τ, y τ) dτ` for every `t ∈ Icc a b`.
-The forward direction is the fundamental theorem of calculus (`ODE.picard_eq_of_hasDerivAt`), the
-reverse one the differentiation of the primitive (`ODE.hasDerivWithinAt_picard_Icc`); continuity
-of `y` only enters through the integrability of `τ ↦ f τ (y τ)`, and the forward direction
-provides it. -/
+/-- The **integral form of the Cauchy problem**. Let $E$ be a Banach space, let $t_0 \in [a, b]$,
+let $f$ be continuous on $[a, b] \times E$, and let $y$ be continuous on $[a, b]$. Then $y$
+solves the Cauchy problem on $[a, b]$ if and only if
+$$y(t) = y_0 + \int_{t_0}^t f(\tau, y(\tau)) \, d\tau \quad \text{for every } t \in [a, b].$$
+This is (11.2) of [quarteroni2000numerical].
+
+The forward direction is the fundamental theorem of calculus (`ODE.picard_eq_of_hasDerivAt`),
+and the reverse direction is the differentiation of the primitive
+(`ODE.hasDerivWithinAt_picard_Icc`). The continuity of $y$ enters only through the integrability
+of $\tau \mapsto f(\tau, y(\tau))$, and the forward direction provides it. -/
 theorem isSolutionOn_iff_integral [CompleteSpace E] (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (hy : ContinuousOn y (Icc a b)) :
     IsSolutionOn f t₀ y₀ (Icc a b) y ↔ ∀ t ∈ Icc a b, y t = y₀ + ∫ τ in t₀..t, f τ (y τ) := by
@@ -122,24 +171,31 @@ theorem isSolutionOn_iff_integral [CompleteSpace E] (ht₀ : t₀ ∈ Icc a b)
 
 /-! ### Liapunov stability -/
 
-/-- **Liapunov stability** of the Cauchy problem `y' = f(t, y)`, `y(t₀) = y₀` on the set of
-times `I` ([quarteroni2000numerical] Definition 11.1): there is a constant `C > 0`, independent
-of `ε`, such that for every `ε > 0` and every perturbation `(δ₀, δ)` of the datum and of the
-source with `‖δ₀‖ < ε`, `δ` continuous on `I` and `‖δ t‖ < ε` on `I`, every solution `y` of the
-problem and every solution `z` of the perturbed problem `z' = f(t, z) + δ(t)`, `z(t₀) = y₀ + δ₀`
-((11.4)) satisfy `‖y t - z t‖ < C ε` on `I` ((11.5)). The book restricts to `ε` small enough
-for the perturbed solution to exist; quantifying over the solutions that exist makes that
-clause vacuous when none does. -/
+/-- **Liapunov stability** of the Cauchy problem $y' = f(t, y)$, $y(t_0) = y_0$ on the set of times
+$I$. The problem is Liapunov stable on $I$ if there is a constant $C > 0$ with the following
+property. For every $\varepsilon > 0$ and every perturbation $(\delta_0, \delta)$ of the datum
+and of the source with $\|\delta_0\| < \varepsilon$, $\delta$ continuous on $I$ and
+$\|\delta(t)\| < \varepsilon$ on $I$, every solution $y$ of the problem on $I$ and every
+solution $z$ on $I$ of the perturbed problem
+$$z' = f(t, z) + \delta(t), \qquad z(t_0) = y_0 + \delta_0$$
+satisfy $\|y(t) - z(t)\| < C \varepsilon$ for every $t \in I$. This is Definition 11.1 of
+[quarteroni2000numerical], with the perturbed problem (11.4) and the bound (11.5).
+
+The constant $C$ does not depend on $\varepsilon$. The source restricts to $\varepsilon$ small
+enough for the perturbed solution to exist. The definition quantifies over the solutions that
+exist, so the condition holds vacuously when none exists. -/
 def IsLiapunovStable (f : ℝ → E → E) (t₀ : ℝ) (y₀ : E) (I : Set ℝ) : Prop :=
   ∃ C : ℝ, 0 < C ∧ ∀ ε : ℝ, 0 < ε → ∀ (δ₀ : E) (δ : ℝ → E), ‖δ₀‖ < ε → ContinuousOn δ I →
     (∀ t ∈ I, ‖δ t‖ < ε) → ∀ y z : ℝ → E, IsSolutionOn f t₀ y₀ I y →
       IsSolutionOn (fun t v => f t v + δ t) t₀ (y₀ + δ₀) I z → ∀ t ∈ I, ‖y t - z t‖ < C * ε
 
-/-- **Asymptotic stability** ([quarteroni2000numerical] (11.6)): the problem is Liapunov stable
-on every bounded interval `Icc t₀ (t₀ + T)`, and for every sufficiently small perturbation —
-`‖δ₀‖ < ε` and `‖δ t‖ < ε` on `Ici t₀` for some `ε > 0` fixed by the problem, `δ` continuous —
-the solutions `y` of the problem and `z` of the perturbed problem on `Ici t₀` satisfy
-`‖y t - z t‖ → 0` as `t → +∞`. -/
+/-- **Asymptotic stability** of the Cauchy problem. The problem is asymptotically stable if it is
+Liapunov stable on every interval $[t_0, t_0 + T]$ with $T > 0$, and if there is
+$\varepsilon > 0$ with the following property. For every perturbation with
+$\|\delta_0\| < \varepsilon$, $\delta$ continuous on $[t_0, \infty)$ and
+$\|\delta(t)\| < \varepsilon$ on $[t_0, \infty)$, every solution $y$ of the problem and every
+solution $z$ of the perturbed problem on $[t_0, \infty)$ satisfy $\|y(t) - z(t)\| \to 0$ as
+$t \to \infty$. This is (11.6) of [quarteroni2000numerical]. -/
 def IsAsymptoticallyStable (f : ℝ → E → E) (t₀ : ℝ) (y₀ : E) : Prop :=
   (∀ T : ℝ, 0 < T → IsLiapunovStable f t₀ y₀ (Icc t₀ (t₀ + T))) ∧
     ∃ ε : ℝ, 0 < ε ∧ ∀ (δ₀ : E) (δ : ℝ → E), ‖δ₀‖ < ε → ContinuousOn δ (Ici t₀) →
@@ -147,9 +203,15 @@ def IsAsymptoticallyStable (f : ℝ → E → E) (t₀ : ℝ) (y₀ : E) : Prop 
         IsSolutionOn (fun t v => f t v + δ t) t₀ (y₀ + δ₀) (Ici t₀) z →
           Tendsto (fun t => ‖y t - z t‖) atTop (𝓝 0)
 
-/-- The Gronwall bound with `δ = ε` is dominated by the books' closed form:
-`gronwallBound ε K ε s ≤ (1 + s) ε e^{K s}` for `K, ε ≥ 0` and every `s`. For `K > 0` this is
-`(e^{Ks} - 1) / K ≤ s e^{Ks}`, i.e. `1 - Ks ≤ e^{-Ks}`. -/
+/-- Let $K \ge 0$ and $\varepsilon \ge 0$. For every $s \in \mathbb{R}$, Mathlib's Gronwall bound
+with $\delta = \varepsilon$ satisfies
+$$\mathtt{gronwallBound}(\varepsilon, K, \varepsilon, s) \le (1 + s) \, \varepsilon \, e^{K
+  s}.$$
+
+Here $\mathtt{gronwallBound}(\delta, K, \varepsilon, s) = \delta e^{K s} + (\varepsilon /
+K)(e^{K s} - 1)$ for $K \ne 0$ and $\delta + \varepsilon s$ for $K = 0$. For $K > 0$ the
+inequality is $(e^{K s} - 1)/K \le s e^{K s}$, that is, $1 - K s \le e^{-K s}$. The right side
+is the closed form of the texts. -/
 theorem gronwallBound_le_mul_exp {K ε s : ℝ} (hK : 0 ≤ K) (hε : 0 ≤ ε) :
     gronwallBound ε K ε s ≤ (1 + s) * ε * Real.exp (K * s) := by
   rcases eq_or_lt_of_le hK with rfl | hK
@@ -168,17 +230,20 @@ theorem gronwallBound_le_mul_exp {K ε s : ℝ} (hK : 0 ≤ K) (hε : 0 ≤ ε) 
         _ = s * ε * Real.exp (K * s) * K := by ring
     nlinarith
 
-/-- **The stability estimate of [quarteroni2000numerical] §11.1**: if `f t` is `L`-Lipschitz for
-every `t ∈ [t₀, t₀ + T]`, `‖δ₀‖ ≤ ε`, `‖δ t‖ ≤ ε` on the interval, `y` solves the Cauchy problem
-and `z` the perturbed problem `z' = f(t, z) + δ(t)`, `z(t₀) = y₀ + δ₀`, then
-`‖y t - z t‖ ≤ (1 + (t - t₀)) ε e^{L (t - t₀)}` for `t ∈ [t₀, t₀ + T]`.
+/-- The **stability estimate** of §11.1 of [quarteroni2000numerical]. Suppose that $f(t, \cdot)$ is
+$L$-Lipschitz for every $t \in [t_0, t_0 + T]$. Let $\|\delta_0\| \le \varepsilon$ and
+$\|\delta(t)\| \le \varepsilon$ for $t \in [t_0, t_0 + T]$. Let $y$ solve the Cauchy problem on
+$[t_0, t_0 + T]$, and let $z$ solve the perturbed problem $z' = f(t, z) + \delta(t)$,
+$z(t_0) = y_0 + \delta_0$ there. Then for every $t \in [t_0, t_0 + T]$,
+$$\|y(t) - z(t)\| \le (1 + (t - t_0)) \, \varepsilon \, e^{L (t - t_0)}.$$
 
-Proof: `w = z - y` has right derivative `f(t, z) + δ - f(t, y)` of norm `≤ L ‖w‖ + ε`, so
-Mathlib's `norm_le_gronwallBound_of_norm_deriv_right_le` bounds `‖w t‖` by
-`gronwallBound ε L ε (t - t₀)`, which `gronwallBound_le_mul_exp` bounds by the closed form. The
-book applies its integral Gronwall lemma (Lemma 11.1, `Gronwall.le_mul_exp_of_le_add_integral`)
-to `‖w t‖ ≤ (1 + (t - t₀)) ε + L ∫_{t₀}^t ‖w‖` instead, which needs the integral equation and hence
-continuity of `f`; no continuity of `f` or `δ` is needed here. -/
+No continuity of $f$ or $\delta$ is needed. The difference $w = z - y$ has right derivative
+$f(t, z) + \delta - f(t, y)$ of norm at most $L \|w\| + \varepsilon$. So Mathlib's
+`norm_le_gronwallBound_of_norm_deriv_right_le` bounds $\|w(t)\|$ by the Gronwall bound at
+$t - t_0$, and `ODE.gronwallBound_le_mul_exp` bounds this by the closed form. The source applies
+its integral Gronwall lemma (Lemma 11.1, here `Gronwall.le_mul_exp_of_le_add_integral`) to
+$\|w(t)\| \le (1 + (t - t_0)) \varepsilon + L \int_{t_0}^t \|w\|$ instead, which needs the
+integral equation and hence continuity of $f$. -/
 theorem norm_sub_le_of_lipschitz {L : ℝ≥0} (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t))
     {δ₀ : E} {δ : ℝ → E} {ε : ℝ} (hδ₀ : ‖δ₀‖ ≤ ε) (hδ : ∀ t ∈ Icc t₀ (t₀ + T), ‖δ t‖ ≤ ε)
     (hy : IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) y)
@@ -204,11 +269,14 @@ theorem norm_sub_le_of_lipschitz {L : ℝ≥0} (hf : ∀ t ∈ Icc t₀ (t₀ + 
   rw [norm_sub_rev]
   exact key.trans (gronwallBound_le_mul_exp L.coe_nonneg ((norm_nonneg _).trans hδ₀))
 
-/-- **A Lipschitz field gives a Liapunov stable Cauchy problem** ([quarteroni2000numerical]
-§11.1): if `f t` is `L`-Lipschitz for `t ∈ [t₀, t₀ + T]`, the problem is Liapunov stable on
-`[t₀, t₀ + T]` for every datum, with the book's constant `C = (1 + K_I) e^{L K_I}`, `K_I = T`.
-The strict inequality comes from `norm_sub_le_of_lipschitz` applied with the maximum of `‖δ₀‖`
-and of `‖δ‖` on the compact interval, which is `< ε`. -/
+/-- A **Lipschitz field gives a Liapunov stable Cauchy problem**. Let $T \ge 0$ and suppose that
+$f(t, \cdot)$ is $L$-Lipschitz for every $t \in [t_0, t_0 + T]$. Then for every datum $y_0$, the
+Cauchy problem is Liapunov stable on $[t_0, t_0 + T]$. This is §11.1 of
+[quarteroni2000numerical].
+
+The constant is the one of the source, $C = (1 + K_I) e^{L K_I}$ with $K_I = T$. The strict
+inequality comes from `ODE.norm_sub_le_of_lipschitz` applied with the maximum of $\|\delta_0\|$
+and of $\|\delta\|$ on the compact interval, which is less than $\varepsilon$. -/
 theorem isLiapunovStable_of_lipschitz (hT : 0 ≤ T) {L : ℝ≥0}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t)) (y₀ : E) :
     IsLiapunovStable f t₀ y₀ (Icc t₀ (t₀ + T)) := by
@@ -227,8 +295,11 @@ theorem isLiapunovStable_of_lipschitz (hT : 0 ≤ T) {L : ℝ≥0}
     _ = (1 + T) * Real.exp (L * T) * max ‖δ₀‖ ‖δ s‖ := by ring
     _ < (1 + T) * Real.exp (L * T) * ε := by gcongr
 
-/-- **Uniqueness for a Lipschitz field**: two solutions of the Cauchy problem on `[t₀, t₀ + T]`
-agree there. The stability estimate with `ε = 0`. -/
+/-- **Uniqueness for a Lipschitz field**. Suppose that $f(t, \cdot)$ is $K$-Lipschitz for every
+$t \in [t_0, t_0 + T]$. Then two solutions of the Cauchy problem on $[t_0, t_0 + T]$ agree on
+$[t_0, t_0 + T]$.
+
+This is the stability estimate with $\varepsilon = 0$. -/
 theorem isSolutionOn_unique_of_lipschitz (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith K (f t))
     (hy : IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) y)
     (hz : IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) z) : EqOn y z (Icc t₀ (t₀ + T)) := by
@@ -239,28 +310,35 @@ theorem isSolutionOn_unique_of_lipschitz (hf : ∀ t ∈ Icc t₀ (t₀ + T), Li
   rw [mul_zero, zero_mul] at this
   exact sub_eq_zero.1 (norm_le_zero_iff.1 this)
 
-/-! ### Global existence: the Picard operator on `C(Icc a b, E)` -/
+/-! ### Global existence: the Picard operator on $C([a, b], E)$ -/
 
 section Existence
 
-/-- The integrand `τ ↦ f τ (α τ)` of the Picard operator, for `α : C(Icc a b, E)` extended to `ℝ`
-by `Set.IccExtend`, is continuous on `Icc a b`. -/
+/-- Let $a \le b$, let $f$ be continuous on $[a, b] \times E$, and let $\alpha \in C([a, b], E)$,
+extended to $\mathbb{R}$ by `Set.IccExtend`. Then $\tau \mapsto f(\tau, \alpha(\tau))$ is
+continuous on $[a, b]$. -/
 theorem continuousOn_comp_iccExtend (hab : a ≤ b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (α : C(Icc a b, E)) :
     ContinuousOn (fun τ => f τ (IccExtend hab α τ)) (Icc a b) :=
   continuousOn_comp hf α.continuous.Icc_extend'.continuousOn (mapsTo_univ _ _)
 
-/-- The integrand of the Picard operator is interval integrable between `t₀` and any `t` in the
-interval. -/
+/-- Let $a \le b$, $t_0 \in [a, b]$, let $f$ be continuous on $[a, b] \times E$, and let
+$\alpha \in C([a, b], E)$, extended to $\mathbb{R}$ by `Set.IccExtend`. Then
+$\tau \mapsto f(\tau, \alpha(\tau))$ is interval integrable between $t_0$ and every
+$t \in [a, b]$. -/
 theorem intervalIntegrable_comp_iccExtend (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (α : C(Icc a b, E)) (t : Icc a b) :
     IntervalIntegrable (fun τ => f τ (IccExtend hab α τ)) MeasureTheory.volume t₀ t :=
   ((continuousOn_comp_iccExtend hab hf α).mono (uIcc_subset_Icc ht₀ t.2)).intervalIntegrable
 
-/-- **The Picard operator** on `C(Icc a b, E)`: `α ↦ (t ↦ y₀ + ∫_{t₀}^t f(τ, α τ) dτ)`, the
-right-hand side of the integral equation (11.2) of [quarteroni2000numerical], with `α` extended
-to `ℝ` by `Set.IccExtend`. Its fixed points are the solutions of the Cauchy problem on `Icc a b`
-(`isSolutionOn_iff_integral`). -/
+/-- The **Picard operator** on $C([a, b], E)$. Let $a \le b$, $t_0 \in [a, b]$, and let $f$ be
+continuous on $[a, b] \times E$. The Picard operator sends $\alpha \in C([a, b], E)$ to the
+continuous function
+$$t \mapsto y_0 + \int_{t_0}^t f(\tau, \alpha(\tau)) \, d\tau,$$
+the right side of the integral equation (11.2) of [quarteroni2000numerical].
+
+Inside the integral, $\alpha$ is extended to $\mathbb{R}$ by `Set.IccExtend`. The fixed points
+are the solutions of the Cauchy problem on $[a, b]$, by `ODE.isSolutionOn_iff_integral`. -/
 noncomputable def picardMap (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (y₀ : E) (α : C(Icc a b, E)) :
     C(Icc a b, E) where
@@ -276,18 +354,24 @@ noncomputable def picardMap (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
       rwa [uIcc_of_le hab] at this
     exact h.comp_continuous continuous_subtype_val fun t => t.2
 
-/-- The defining formula of the Picard operator. -/
+/-- The Picard operator sends $\alpha$ to $t \mapsto y_0 + \int_{t_0}^t f(\tau, \alpha(\tau)) \,
+d\tau$, with $\alpha$ extended to $\mathbb{R}$ by `Set.IccExtend`. -/
 theorem picardMap_apply (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (y₀ : E) (α : C(Icc a b, E))
     (t : Icc a b) :
     picardMap hab ht₀ hf y₀ α t = y₀ + ∫ τ in t₀..t, f τ (IccExtend hab α τ) :=
   rfl
 
-/-- **The factorial estimate for the Picard iterates**, pointwise: if `f t` is `K`-Lipschitz for
-`t ∈ Icc a b`, then `dist (P^n α t) (P^n β t) ≤ (K |t - t₀|)^n / n! · dist α β`, by induction on
-`n` with `∫_{t₀}^t |τ - t₀|^n dτ = |t - t₀|^{n+1} / (n + 1)`. This is the estimate of Mathlib's
-`ODE.FunSpace.dist_iterate_next_apply_le` for the Picard operator on the whole of `C(Icc a b, E)`,
-where the Lipschitz condition holds everywhere and no ball is needed. -/
+/-- The **factorial estimate for the Picard iterates**, pointwise. Let $P$ be the Picard operator on
+$C([a, b], E)$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \in [a, b]$. Then
+for all $\alpha, \beta \in C([a, b], E)$, every $n \in \mathbb{N}$ and every $t \in [a, b]$,
+$$\|P^n \alpha(t) - P^n \beta(t)\| \le \frac{(K |t - t_0|)^n}{n!} \, d(\alpha, \beta),$$
+where $d$ is the supremum distance.
+
+The proof is by induction on $n$, with $\int_{t_0}^t |\tau - t_0|^n \, d\tau = |t - t_0|^{n+1} /
+(n + 1)$. This is the estimate of Mathlib's `ODE.FunSpace.dist_iterate_next_apply_le`, for the
+Picard operator on all of $C([a, b], E)$, where the Lipschitz condition holds everywhere and no
+ball is needed. -/
 theorem dist_iterate_picardMap_apply_le (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (y₀ : E)
     (hlip : ∀ t ∈ Icc a b, LipschitzWith K (f t)) (α β : C(Icc a b, E)) (n : ℕ) (t : Icc a b) :
@@ -325,9 +409,11 @@ theorem dist_iterate_picardMap_apply_le (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a 
           abs_pow, abs_pow, abs_dist, NNReal.abs_eq, abs_abs, mul_div, div_div, ← abs_mul,
           ← Nat.cast_succ, ← Nat.cast_mul, ← Nat.factorial_succ, Nat.abs_cast, ← mul_pow]
 
-/-- **The factorial estimate for the Picard iterates** in the supremum metric of
-`C(Icc a b, E)`: the `n`-th iterate of the Picard operator is Lipschitz with constant
-`(K (b - a))^n / n!`. -/
+/-- The **factorial estimate for the Picard iterates**. Let $P$ be the Picard operator on
+$C([a, b], E)$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \in [a, b]$. Then
+for all $\alpha, \beta \in C([a, b], E)$ and every $n \in \mathbb{N}$,
+$$d(P^n \alpha, P^n \beta) \le \frac{(K (b - a))^n}{n!} \, d(\alpha, \beta),$$
+where $d$ is the supremum distance of $C([a, b], E)$. -/
 theorem dist_iterate_picardMap_le (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (y₀ : E)
     (hlip : ∀ t ∈ Icc a b, LipschitzWith K (f t)) (α β : C(Icc a b, E)) (n : ℕ) :
@@ -341,8 +427,11 @@ theorem dist_iterate_picardMap_le (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     constructor <;> linarith [t.2.1, t.2.2, ht₀.1, ht₀.2]
   gcongr
 
-/-- Some iterate of the Picard operator is a contraction, whatever the Lipschitz constant and the
-length of the interval: `(K (b - a))^n / n! → 0`. -/
+/-- Suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \in [a, b]$. Then some iterate $P^n$ of
+the Picard operator is a contraction of $C([a, b], E)$, whatever the Lipschitz constant and the
+length of the interval.
+
+The reason is $(K (b - a))^n / n! \to 0$. -/
 theorem exists_contractingWith_iterate_picardMap (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (y₀ : E)
     (hlip : ∀ t ∈ Icc a b, LipschitzWith K (f t)) :
@@ -355,12 +444,14 @@ theorem exists_contractingWith_iterate_picardMap (hab : a ≤ b) (ht₀ : t₀ �
 
 variable [CompleteSpace E]
 
-/-- **Global existence** ([quarteroni2000numerical] §11.1 item 2, Property 11.5): if `f` is
-continuous on `Icc a b × E` and `f t` is `K`-Lipschitz for every `t ∈ Icc a b`, then for every
-`t₀ ∈ Icc a b` and every datum `y₀` the Cauchy problem has a solution on the whole of `Icc a b`.
-The solution is the fixed point of the Picard operator on `C(Icc a b, E)`, some iterate of which
-is a contraction (`exists_contractingWith_iterate_picardMap`); it solves the problem by
-`isSolutionOn_iff_integral`. -/
+/-- **Global existence**. Let $E$ be a Banach space, let $t_0 \in [a, b]$, let $f$ be continuous on
+$[a, b] \times E$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \in [a, b]$.
+Then for every datum $y_0$, the Cauchy problem has a solution on the whole interval $[a, b]$.
+This is item 2 of §11.1 of [quarteroni2000numerical] (Property 11.5).
+
+The solution is the fixed point of the Picard operator on $C([a, b], E)$, some iterate of which
+is a contraction (`ODE.exists_contractingWith_iterate_picardMap`). It solves the problem by
+`ODE.isSolutionOn_iff_integral`. -/
 theorem exists_isSolutionOn_of_lipschitz (ht₀ : t₀ ∈ Icc a b)
     (hf : ContinuousOn (uncurry f) (Icc a b ×ˢ univ)) (hlip : ∀ t ∈ Icc a b, LipschitzWith K (f t))
     (y₀ : E) : ∃ y : ℝ → E, IsSolutionOn f t₀ y₀ (Icc a b) y := by
@@ -375,12 +466,15 @@ theorem exists_isSolutionOn_of_lipschitz (ht₀ : t₀ ∈ Icc a b)
   calc α ⟨t, ht⟩ = picardMap hab ht₀ hf y₀ α ⟨t, ht⟩ := by rw [hα]
     _ = y₀ + ∫ τ in t₀..t, f τ (IccExtend hab α τ) := rfl
 
-/-- **Global existence and uniqueness** ([quarteroni2000numerical] §11.1 item 2, Property 11.5):
-for `f` continuous on `[t₀, t₀ + T] × E` and `K`-Lipschitz in the state there, and every datum
-`y₀`, there is exactly one `y : ℝ → E` solving the Cauchy problem on `[t₀, t₀ + T]` and equal to
-`y₀` off the interval (the values off the interval are pinned so that uniqueness of a function on
-`ℝ` makes sense). `IsSolutionOn.continuousOn_deriv` adds that `t ↦ f t (y t)` is continuous on the
-interval, i.e. `y ∈ C¹`. -/
+/-- **Global existence and uniqueness**. Let $E$ be a Banach space, let $T \ge 0$, let $f$ be
+continuous on $[t_0, t_0 + T] \times E$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for
+every $t \in [t_0, t_0 + T]$. Then for every datum $y_0$ there is exactly one
+$y \colon \mathbb{R} \to E$ that solves the Cauchy problem on $[t_0, t_0 + T]$ and equals $y_0$
+outside this interval. This is item 2 of §11.1 of [quarteroni2000numerical] (Property 11.5).
+
+The values outside the interval are fixed so that uniqueness of a function on $\mathbb{R}$ makes
+sense. `ODE.IsSolutionOn.continuousOn_deriv` adds that $t \mapsto f(t, y(t))$ is continuous on
+the interval, that is, $y \in C^1$. -/
 theorem existsUnique_isSolutionOn_of_lipschitz (hT : 0 ≤ T)
     (hf : ContinuousOn (uncurry f) (Icc t₀ (t₀ + T) ×ˢ univ))
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith K (f t)) (y₀ : E) :
@@ -397,14 +491,19 @@ theorem existsUnique_isSolutionOn_of_lipschitz (hT : 0 ≤ T)
     exact isSolutionOn_unique_of_lipschitz hlip hz hy ht
   · rw [ite_eq_right ht, hz' t ht]
 
-/-- **Local existence and uniqueness** ([quarteroni2000numerical] §11.1 item 1) in the book's
-constants: let `f` be continuous on the box `J × Σ`, `J = [t₀ - r_J, t₀ + r_J]`,
-`Σ = closedBall y₀ r_Σ`, `K`-Lipschitz in the state on `Σ` for every time in `J`, and bounded by
-`M` on the box. Then for every `0 < r₀ ≤ r_J` with `M r₀ ≤ r_Σ` (the book's `r₀ < r_Σ / M`) the
-Cauchy problem has exactly one solution on `[t₀ - r₀, t₀ + r₀]` with values in `Σ`. This is
-Mathlib's Picard–Lindelöf theorem in the form
-`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`; the book's third bound
-`r₀ < 1 / L` is an artefact of the sup-norm contraction proof and is not needed. -/
+/-- **Local existence and uniqueness**, with the constants of the source. Let $E$ be a Banach space,
+let $J = [t_0 - r_J, t_0 + r_J]$ and $\Sigma = \bar B(y_0, r_\Sigma)$ with $r_\Sigma \ge 0$. Let
+$f$ be continuous on $J \times \Sigma$, let $f(t, \cdot)$ be $K$-Lipschitz on $\Sigma$ for every
+$t \in J$, and let $\|f(t, v)\| \le M$ for $t \in J$ and $v \in \Sigma$. Let $0 < r_0 \le r_J$
+with $M r_0 \le r_\Sigma$. Then the Cauchy problem has a solution $y$ on
+$[t_0 - r_0, t_0 + r_0]$ with values in $\Sigma$ there, and every solution $z$ on
+$[t_0 - r_0, t_0 + r_0]$ with values in $\Sigma$ there agrees with $y$ on this interval. This is
+item 1 of §11.1 of [quarteroni2000numerical].
+
+The condition $M r_0 \le r_\Sigma$ is the condition $r_0 < r_\Sigma / M$ of the source. The
+proof is Mathlib's Picard–Lindelöf theorem in the form
+`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`. The third bound $r_0 < 1/L$ of
+the source is an artefact of the proof by a contraction in the supremum norm, and is not needed. -/
 theorem exists_isSolutionOn_of_lipschitzOnWith {rJ rS r₀ M : ℝ}
     (hf : ContinuousOn (uncurry f) (Icc (t₀ - rJ) (t₀ + rJ) ×ˢ closedBall y₀ rS))
     (hlip : ∀ t ∈ Icc (t₀ - rJ) (t₀ + rJ), LipschitzOnWith K (f t) (closedBall y₀ rS))
@@ -433,20 +532,26 @@ theorem exists_isSolutionOn_of_lipschitzOnWith {rJ rS r₀ M : ℝ}
     (x := y₀) (by simp) ⟨by linarith, by linarith⟩
   exact ⟨α, ⟨hα₀, hα⟩, hmem, fun z hz hzmem => huniq z hz.1 hzmem hz.2⟩
 
-/-! ### The half-line: Cauchy–Lipschitz–Picard
+/-!
+### The half-line: the Cauchy–Lipschitz–Picard theorem
 
-[brezis2011functional] Theorem 7.3: for a field Lipschitz in the state on all of `[t₀, ∞)`, the
-Cauchy problem has exactly one solution on the whole half-line. The book runs the contraction in
-the weighted space `{u ∈ C([0, ∞); E) : sup e^{-kt} ‖u(t)‖ < ∞}` with `k > L`; here the solutions
-on the compact intervals `[t₀, t₀ + n]` of `exists_isSolutionOn_of_lipschitz` are glued instead,
-since they agree on overlaps by `isSolutionOn_unique_of_lipschitz`. -/
+Theorem 7.3 of [brezis2011functional] states that, for a field that is Lipschitz in the state on all
+of $[t_0, \infty)$, the Cauchy problem has exactly one solution on the whole half-line. The source
+runs the contraction in the weighted space $\{u \in C([0, \infty); E) : \sup_t e^{-kt} \|u(t)\| <
+\infty\}$ with $k > L$. Here the solutions on the compact intervals $[t_0, t_0 + n]$ given by
+`ODE.exists_isSolutionOn_of_lipschitz` are glued instead, since they agree on overlaps by
+`ODE.isSolutionOn_unique_of_lipschitz`.
+-/
 
-/-- **Global existence on the half-line** ([brezis2011functional] Theorem 7.3, Cauchy–Lipschitz–
-Picard, existence): for a field continuous on `[t₀, ∞) × E` and `K`-Lipschitz in the state at
-every time `t ≥ t₀`, and every datum `y₀`, the Cauchy problem has a solution on `Ici t₀`. The
-book's autonomous field `F : E → E` is `f t v := F v`. The solution is glued from the solutions on
-the intervals `[t₀, t₀ + n]`: at `t` it is the value of the solution on `[t₀, t₀ + ⌈t - t₀⌉₊ + 1]`,
-with which it agrees on that whole interval, a neighbourhood of `t` within `Ici t₀`. -/
+/-- **Global existence on the half-line**. Let $E$ be a Banach space, let $f$ be continuous on
+$[t_0, \infty) \times E$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \ge t_0$.
+Then for every datum $y_0$ the Cauchy problem has a solution on $[t_0, \infty)$. This is the
+existence part of Theorem 7.3 of [brezis2011functional] (Cauchy–Lipschitz–Picard).
+
+The autonomous field $F \colon E \to E$ of the source is $f(t, v) = F(v)$. The solution is glued
+from the solutions on the intervals $[t_0, t_0 + n]$. At $t$ it is the value of the solution on
+$[t_0, t_0 + \lceil t - t_0 \rceil + 1]$, and it agrees with that solution on this whole
+interval, which is a neighbourhood of $t$ within $[t_0, \infty)$. -/
 theorem exists_isSolutionOn_Ici_of_lipschitz (hf : ContinuousOn (uncurry f) (Ici t₀ ×ˢ univ))
     (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t)) (y₀ : E) :
     ∃ y : ℝ → E, IsSolutionOn f t₀ y₀ (Ici t₀) y := by
@@ -481,21 +586,27 @@ theorem exists_isSolutionOn_Ici_of_lipschitz (hf : ContinuousOn (uncurry f) (Ici
   exact ((hY (N t)).2 t ht').congr hcongr (hcongr t ht')
 
 omit [CompleteSpace E] in
-/-- **Uniqueness on the half-line** ([brezis2011functional] Theorem 7.3, uniqueness): two solutions
-of the Cauchy problem on `Ici t₀` for a field `K`-Lipschitz in the state at every `t ≥ t₀` agree
-on `Ici t₀`: restrict both to `[t₀, t]` and apply `isSolutionOn_unique_of_lipschitz`. -/
+/-- **Uniqueness on the half-line**. Suppose that $f(t, \cdot)$ is $K$-Lipschitz for every
+$t \ge t_0$. Then two solutions of the Cauchy problem on $[t_0, \infty)$ agree on
+$[t_0, \infty)$. This is the uniqueness part of Theorem 7.3 of [brezis2011functional].
+
+The proof restricts both solutions to $[t_0, t]$ and applies
+`ODE.isSolutionOn_unique_of_lipschitz`. -/
 theorem isSolutionOn_unique_of_lipschitz_Ici (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t))
     (hy : IsSolutionOn f t₀ y₀ (Ici t₀) y) (hz : IsSolutionOn f t₀ y₀ (Ici t₀) z) :
     EqOn y z (Ici t₀) := fun t ht =>
   isSolutionOn_unique_of_lipschitz (T := t - t₀) (fun s hs => hlip s hs.1)
     (hy.mono Icc_subset_Ici_self) (hz.mono Icc_subset_Ici_self) ⟨ht, by linarith⟩
 
-/-- **Cauchy–Lipschitz–Picard** ([brezis2011functional] Theorem 7.3): for a field continuous on
-`[t₀, ∞) × E` and `K`-Lipschitz in the state at every `t ≥ t₀`, and every datum `y₀`, there is
-exactly one `y : ℝ → E` solving the Cauchy problem on `Ici t₀` and equal to `y₀` before `t₀`
-(the values before `t₀` are pinned so that uniqueness of a function on `ℝ` makes sense, as in
-`existsUnique_isSolutionOn_of_lipschitz`). The book's `u ∈ C¹([0, ∞); E)` is
-`IsSolutionOn.continuousOn_deriv`. -/
+/-- The **Cauchy–Lipschitz–Picard theorem**. Let $E$ be a Banach space, let $f$ be continuous on
+$[t_0, \infty) \times E$, and suppose that $f(t, \cdot)$ is $K$-Lipschitz for every $t \ge t_0$.
+Then for every datum $y_0$ there is exactly one $y \colon \mathbb{R} \to E$ that solves the
+Cauchy problem on $[t_0, \infty)$ and equals $y_0$ for $t < t_0$. This is Theorem 7.3 of
+[brezis2011functional].
+
+The values before $t_0$ are fixed so that uniqueness of a function on $\mathbb{R}$ makes sense,
+as in `ODE.existsUnique_isSolutionOn_of_lipschitz`. The condition $u \in C^1([0, \infty); E)$ of
+the source is `ODE.IsSolutionOn.continuousOn_deriv`. -/
 theorem existsUnique_isSolutionOn_Ici_of_lipschitz
     (hf : ContinuousOn (uncurry f) (Ici t₀ ×ˢ univ))
     (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t)) (y₀ : E) :

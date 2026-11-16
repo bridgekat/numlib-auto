@@ -12,70 +12,131 @@ import Mathlib.Analysis.Convex.Gauge
 /-!
 # Gauges, polars of convex functions, and obverses
 
-The **gauge** of a set `C` is `γ(x ∣ C) = inf {a ≥ 0 ∣ x ∈ a • C}`: the least dilation of `C` that
-swallows `x`, and `+∞` when none does. Gauges are exactly the nonnegative positively homogeneous
-convex functions vanishing at `0`, and `C ↦ γ(· ∣ C)` is a bijection from closed convex sets
-containing `0` to closed gauges. Three polarity operations act here, each an involution on its
-class: the polar `k°(y) = inf {μ ≥ 0 ∣ ⟨x, y⟩ ≤ μ k(x)}` of a gauge, the polar
-`f°(y) = inf {μ ≥ 0 ∣ ⟨x, y⟩ ≤ 1 + μ f(x)}` of a nonnegative closed convex `f` with `f 0 = 0`, and
-the obverse `fᵒ(x) = inf {λ > 0 ∣ λ f(x / λ) ≤ 1}`. On a gauge the first two agree, and the obverse
-ties them to the Fenchel conjugate: `f* = (f°)ᵒ`. Two facts about polar *sets* are proved here too,
-because the gauge is what makes them short: the recession cone of a closed convex set containing the
-origin is the polar of its polar, and the polar of a sublevel set of a nonnegative convex function
-is within a factor of two of the corresponding sublevel set of the conjugate.
+Let $E$ and $F$ be real vector spaces paired by a bilinear form $\langle x, y \rangle = B(x, y)$.
+The **gauge** of a set $C \subseteq E$ is $\gamma(x \mid C) = \inf \{a \ge 0 : x \in aC\}$, the
+least dilate of $C$ that contains $x$, with the value $+\infty$ when no dilate does. The gauges are
+the nonnegative positively homogeneous convex functions that vanish at $0$, and
+$C \mapsto \gamma(\cdot \mid C)$ is a bijection from the closed convex sets containing $0$ to the
+closed gauges. Three operations of polarity act here, each an involution on its class: the polar
+$k^\circ(y) = \inf \{\mu \ge 0 : \langle x, y \rangle \le \mu k(x) \ \forall x\}$ of a gauge $k$,
+the polar $f^\circ(y) = \inf \{\mu \ge 0 : \langle x, y \rangle \le 1 + \mu f(x) \ \forall x\}$ of a
+nonnegative closed convex function $f$ with $f(0) = 0$, and the obverse $\operatorname{ob}(f)(x) =
+\inf \{\lambda > 0 : \lambda f(x / \lambda) \le 1\}$. On a gauge the two polars agree, and the
+obverse connects them with the Fenchel conjugate: $f^* = \operatorname{ob}(f^\circ)$. The
+presentation follows [rockafellar1970convex], §14 and §15.
+
+The module also proves facts about polar sets for which the gauge gives short proofs. For a closed
+convex set $C$ that contains $0$, the recession cone $0^+ C$ is the polar cone of $C^\circ$, the
+lineality space of $C$ is the annihilator of $C^\circ$, and in finite dimension
+$\dim C^\circ + \operatorname{lin} C = n$. For a nonnegative convex function $f$ with $f(0) \le 0$
+and $\alpha > 0$, the polar of $\{f \le \alpha\}$ and the set $\alpha^{-1} \{f^* \le \alpha\}$ agree
+up to a factor of $2$.
 
 ## Main definitions
 
-* `gaugeFn C`, `IsGauge k` — the gauge, `EReal`-valued, and its characterising properties.
-* `polarGauge B k`, `polarFn B f`, `obverse f` — the three operations above. `polarFn` infimises
-  over `epi f`; `polarFn_apply_eq` recovers the book's formula.
-* `IsPolarFn f` — nonnegative, closed, convex, `f 0 = 0`: the class `polarFn` inverts.
-* `IsNorm k` — a gauge that is finite, symmetric and positive off `0`; `IsNorm.toSeminorm` builds
-  the Mathlib `Seminorm`. `AbsorbsAll C` and `RayFree C` make `γ(· ∣ C)` a norm.
-* `epiPairing B`, `vNeg X` — the pairing of `E × ℝ` with `F × ℝ`, and vertical reflection.
-* `UpClosed S` — upward closed subsets of `ℝ`, the shape of every admissible-scalar set here.
+* `ConvexAnalysis.UpClosed`: a set $S \subseteq \mathbb{R}$ is upward closed; every set of
+  admissible scalars in this module has this form.
+* `ConvexAnalysis.gaugeFn`: the gauge $\gamma(\cdot \mid C)$ of a set, with values in
+  $[0, +\infty]$.
+* `ConvexAnalysis.IsGauge`: $k$ is nonnegative, positively homogeneous, convex, and $k(0) = 0$.
+* `ConvexAnalysis.polarGauge`: the polar $k^\circ$ of a gauge.
+* `ConvexAnalysis.polarFn`: the polar $f^\circ$ of a function, defined as an infimum over the
+  epigraph of $f$.
+* `ConvexAnalysis.IsPolarFn`: $f$ is nonnegative, closed and convex, with $f(0) = 0$; on this class
+  $f \mapsto f^\circ$ is an involution.
+* `ConvexAnalysis.obverse`: the obverse $\operatorname{ob}(f)$.
+* `ConvexAnalysis.epiPairing`, `ConvexAnalysis.vNeg`: the pairing $\langle (x, \nu), (y, \mu)
+  \rangle = \langle x, y \rangle + \nu \mu$ of $E \times \mathbb{R}$ with $F \times \mathbb{R}$, and
+  the reflection $(x, \mu) \mapsto (x, -\mu)$.
+* `ConvexAnalysis.AbsorbsAll`, `ConvexAnalysis.RayFree`: every point lies in a dilate of $C$; no ray
+  from $0$ lies in $C$.
+* `ConvexAnalysis.IsNorm`: a gauge that is finite, symmetric, and positive away from $0$.
+* `ConvexAnalysis.IsNorm.toSeminorm`: a norm in this sense as a Mathlib `Seminorm`.
 
 ## Main results
 
-* `gaugeEquiv`, `isGauge_iff` — the correspondence `k = γ(· ∣ C)`, `C = {k ≤ 1}`.
-* `recessionCone_eq_polarCone_polarSet`, `polarCone_linealitySpace` — the recession cone of `C` is
-  the polar of `C°`, and the lineality space of `C` is the annihilator of `C°`;
-  `finrank_vectorSpan_polarSet_add_lineality` and its companion read these through `finrank` as
-  `dim C° = n - lin C` and `lin C° = n - dim C`. `polarSet_setOf_le_subset_and_subset` traps
-  `α⁻¹ {f* ≤ α}` between `{f ≤ α}°` and `2 {f ≤ α}°`.
-* `polarGauge_eq_supportFn`, `polarGauge_polarGauge`, `polarGaugeEquiv` — the polar of a gauge is
-  the support function of its unit level set, and `k°° = cl k`
-  ([rockafellar1970convex] Theorem 15.1). `isNorm_iff` identifies the norms among the gauges.
-* `polarFn_polarFn`, `polarFnEquiv` — `f°° = cl f`, so `f ↦ f°` is an involution on the nonnegative
-  closed convex functions vanishing at the origin ([rockafellar1970convex] Theorem 15.4).
-* `obverse_obverse`, `convexConj_eq_obverse_polarFn`, `polarFn_eq_obverse_convexConj` — the obverse
-  is an involution, and `f°` and `f*` are obverses of each other ([rockafellar1970convex] Theorem
-  15.5); `polarFn_convexConj_eq_convexConj_polarFn` is `f*° = f°*`, and `setOf_polarFn_le` is
-  `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
+* `ConvexAnalysis.isGauge_iff`: the gauges are the functions $\gamma(\cdot \mid C)$ with $C$
+  nonempty and convex.
+* `ConvexAnalysis.gaugeEquiv`: $k = \gamma(\cdot \mid C)$ and $C = \{k \le 1\}$ is a bijection
+  between the closed convex sets that contain $0$ and the closed gauges.
+* `ConvexAnalysis.gaugeFn_polarSet`, `ConvexAnalysis.supportFn_polarSet`: $\gamma(\cdot \mid
+  C^\circ) = \delta^*(\cdot \mid C)$ and $\delta^*(\cdot \mid C^\circ) = \gamma(\cdot \mid C)$
+  (Theorem 14.5 of [rockafellar1970convex]).
+* `ConvexAnalysis.recessionCone_eq_polarCone_polarSet`, `ConvexAnalysis.polarCone_recessionCone`,
+  `ConvexAnalysis.linealitySpace_eq_setOf_pairing_eq_zero`,
+  `ConvexAnalysis.polarCone_linealitySpace`: the recession cone and the lineality space of a closed
+  convex set $C \ni 0$ as polars (Theorem 14.6 of [rockafellar1970convex]).
+* `ConvexAnalysis.finrank_vectorSpan_polarSet_add_lineality`,
+  `ConvexAnalysis.finrank_vectorSpan_add_lineality_polarSet`:
+  $\dim C^\circ + \operatorname{lin} C = n$ and $\dim C + \operatorname{lin} C^\circ = n$ (Corollary
+  14.6.1 of [rockafellar1970convex]).
+* `ConvexAnalysis.polarSet_setOf_le_subset_and_subset`: $\{f \le \alpha\}^\circ \subseteq
+  \alpha^{-1} \{f^* \le \alpha\} \subseteq 2 \{f \le \alpha\}^\circ$ (Theorem 14.7 of
+  [rockafellar1970convex]).
+* `ConvexAnalysis.polarGauge_eq_supportFn`, `ConvexAnalysis.polarGauge_polarGauge`,
+  `ConvexAnalysis.polarGaugeEquiv`: $k^\circ$ is the support function of $\{k \le 1\}$,
+  $k^{\circ\circ} = \operatorname{cl} k$, and $k \mapsto k^\circ$ is a symmetric bijection on the
+  closed gauges (Theorem 15.1 and Corollary 15.1.1 of [rockafellar1970convex]).
+* `ConvexAnalysis.isNorm_iff`: the norms are the gauges of the symmetric convex sets that absorb
+  every point and contain no ray (Theorem 15.2 of [rockafellar1970convex]).
+* `ConvexAnalysis.polarFn_polarFn`, `ConvexAnalysis.polarFnEquiv`:
+  $f^{\circ\circ} = \operatorname{cl} f$, and $f \mapsto f^\circ$ is a symmetric bijection on the
+  nonnegative closed convex functions that vanish at $0$ (Theorem 15.4 and Corollary 15.4.1 of
+  [rockafellar1970convex]).
+* `ConvexAnalysis.obverse_obverse`, `ConvexAnalysis.convexConj_eq_obverse_polarFn`,
+  `ConvexAnalysis.polarFn_eq_obverse_convexConj`: the obverse is an involution, and $f^*$ and
+  $f^\circ$ are obverses of each other (Theorem 15.5 of [rockafellar1970convex]).
+* `ConvexAnalysis.polarFn_convexConj_eq_convexConj_polarFn`: $f^{*\circ} = f^{\circ *}$ (Corollary
+  15.5.1 of [rockafellar1970convex]).
+* `ConvexAnalysis.setOf_obverse_le`, `ConvexAnalysis.setOf_polarFn_le`: $\{\operatorname{ob}(f) \le
+  \alpha\} = \alpha \{f \le \alpha^{-1}\}$ and $\{f^\circ \le \alpha^{-1}\} = \alpha^{-1} \{f^* \le
+  \alpha\}$ for $\alpha > 0$.
+
+## Proof outline
+
+The epigraph of $f^\circ$ is the reflection $(y, \mu) \mapsto (y, -\mu)$ of the polar of
+$\operatorname{epi} f$ in $F \times \mathbb{R}$, so the bipolar theorem for sets gives
+$f^{\circ\circ} = \operatorname{cl} f$. On a gauge the two polars agree, so
+$k^{\circ\circ} = \operatorname{cl} k$ is a special case. The obverse is a gauge value one dimension
+higher, $\operatorname{ob}(f)(x) = \gamma((x, 1) \mid \operatorname{epi} f)$, and its properties
+follow from those of the gauge. The identity $f^* = \operatorname{ob}(f^\circ)$ is a comparison of
+sublevel sets, and the other identities between $f^*$, $f^\circ$ and $\operatorname{ob}(f)$ follow
+from it and the two involutions. Where [rockafellar1970convex] uses the polarity of the unit
+sublevel set, a cone in $\mathbb{R}^{n+2}$, or the recession cone as the largest closed convex cone
+in $C$, the proofs here use these identifications instead.
+
+## Notation
+
+* $\langle x, y \rangle$: the pairing `B x y`.
+* $C^\circ$: the polar set `ConvexAnalysis.polarSet B C`, that is $\{y : \langle x, y \rangle \le 1
+  \ \forall x \in C\}$.
+* $\delta^*(\cdot \mid C)$: the support function `ConvexAnalysis.supportFn B C`.
+* $f^*$: the convex conjugate `ConvexAnalysis.convexConj B f`.
+* $\operatorname{cl} f$: the closure `ConvexAnalysis.convexCl f`.
+* $(f\lambda)(x) = \lambda f(\lambda^{-1} x)$: right scalar multiplication
+  `ConvexAnalysis.smulRight f λ`.
 
 ## Implementation notes
 
-`gaugeFn` is `EReal`-valued and infimises over `a ≥ 0`, so it is `+∞` off `⋃ a • C`; that is what
-makes `{γ ≤ c}` equal `c • C`. Mathlib's `gauge` infimises over `a > 0` into `ℝ` and returns `0`
-there instead — the two agree under absorbency (`gaugeFn_eq_gauge`) — while `egauge` is this same
-infimum taken in `ℝ≥0∞`, whereas every function in this library is `EReal`-valued.
-
-The book's admissible set for `f°`, `{μ ≥ 0 ∣ ⟨x, y⟩ ≤ 1 + μ f(x) ∀ x}`, is not closed: at `μ = 0`
-the convention `0 · (+∞) = 0` imposes `⟨x, y⟩ ≤ 1` where `f x = +∞`, which nearby positive `μ` do
-not. Quantifying over `epi f` gives a closed, upward closed set with the same infimum.
-
-## Divergences from the reference
-
-The sublevel-set inclusions are stated for any nonnegative convex `f` with `f 0 ≤ 0`, with no
-closedness. `isNorm_iff` uses `AbsorbsAll C` and `RayFree C` where the book has `0 ∈ int C` and `C`
-bounded — equivalent readings in `ℝⁿ` — and does not assert that a norm is closed, which the book
-obtains from the continuity of a finite convex function on `ℝⁿ`. `gaugeFn_level_one` needs only
-nonnegativity, positive homogeneity and `k 0 = 0`, and `gaugeFn_polarSet` (`γ(· ∣ C°) = δ*(· ∣ C)`)
-needs only `0 ∈ C`.
-
-## References
-
-* [rockafellar1970convex] §14 and §15.
+* All functions take values in `EReal`. `ConvexAnalysis.gaugeFn` takes the infimum over the scalars
+  $a \ge 0$, so it is $+\infty$ off $\bigcup_{a \ge 0} aC$; this makes
+  $\{\gamma(\cdot \mid C) \le c\}$ equal to $cC$ for closed $C$ and $c > 0$. Mathlib's `gauge` takes
+  the infimum over $a > 0$ in $\mathbb{R}$ and has the value $0$ where no dilate contains $x$; the
+  two agree for an absorbent set (`ConvexAnalysis.gaugeFn_eq_gauge`). Mathlib's `egauge` is the same
+  infimum with values in `ℝ≥0∞`.
+* The admissible set $\{\mu \ge 0 : \langle x, y \rangle \le 1 + \mu f(x) \ \forall x\}$ of the
+  source formula for $f^\circ$ is not closed. At $\mu = 0$ the convention $0 \cdot (+\infty) = 0$
+  imposes $\langle x, y \rangle \le 1$ where $f(x) = +\infty$, which nearby positive $\mu$ do not.
+  `ConvexAnalysis.polarFn` quantifies over $\operatorname{epi} f$ instead; this gives a closed
+  upward closed set with the same infimum (`ConvexAnalysis.polarFn_apply_eq`).
+* Several results need fewer hypotheses than [rockafellar1970convex] states. The inclusions of
+  `ConvexAnalysis.polarSet_setOf_le_subset_and_subset` hold for any nonnegative convex $f$ with
+  $f(0) \le 0$, without closedness. `ConvexAnalysis.gaugeFn_level_one` needs only nonnegativity,
+  positive homogeneity and $k(0) = 0$. `ConvexAnalysis.gaugeFn_polarSet` needs only $0 \in C$.
+* `ConvexAnalysis.isNorm_iff` uses `ConvexAnalysis.AbsorbsAll` and `ConvexAnalysis.RayFree` where
+  the source has $0 \in \operatorname{int} C$ and $C$ bounded; the two readings are equivalent in
+  $\mathbb{R}^n$. It does not assert that a norm is closed: the source obtains this from the
+  continuity of a finite convex function on $\mathbb{R}^n$, which is a finite-dimensional fact.
 -/
 
 open Set Pointwise
@@ -83,23 +144,27 @@ open scoped NNReal ENNReal
 
 namespace ConvexAnalysis
 
-/-! ### Infima of upward closed sets of reals
+/-!
+### Infima of upward closed sets of reals
 
-Every definition in this file is an infimum `⨅ a ∈ S, (a : EReal)` of a set `S ⊆ ℝ` of admissible
-scalars, and every proof about it needs to convert `⨅ a ∈ S, a ≤ c` into a statement about
-membership in `S`. The two lemmas here are that conversion: it is unconditional in the form "every
-`d > c` lies in `S`" once `S` is upward closed, and becomes "`c ∈ S`" once `S` is also closed. -/
+Every definition in this module is an infimum $\inf_{a \in S} a$ in `EReal` of a set
+$S \subseteq \mathbb{R}$ of admissible scalars. The two lemmas here convert $\inf S \le c$ into a
+statement about membership in $S$: if $S$ is upward closed, it is equivalent to "every $d > c$ is in
+$S$", and if $S$ is also closed, it is equivalent to $c \in S$.
+-/
 
 section UpClosed
 
 variable {S : Set ℝ}
 
-/-- `S ⊆ ℝ` is **upward closed**: the shape shared by the admissible-scalar sets of `gaugeFn`,
-`polarGauge`, `polarFn` and `obverse`. -/
+/-- A set $S \subseteq \mathbb{R}$ is **upward closed** if $a \in S$ and $a \le b$ imply $b \in S$.
+
+The admissible-scalar sets of `ConvexAnalysis.gaugeFn`, `ConvexAnalysis.polarGauge`,
+`ConvexAnalysis.polarFn` and `ConvexAnalysis.obverse` have this form. -/
 def UpClosed (S : Set ℝ) : Prop := ∀ ⦃a⦄, a ∈ S → ∀ ⦃b⦄, a ≤ b → b ∈ S
 
-/-- The infimum of an upward closed set of reals is `≤ c` exactly when every `d > c` belongs to
-it. -/
+/-- If $S \subseteq \mathbb{R}$ is upward closed and $c \in \mathbb{R}$, then $\inf S \le c$ in
+`EReal` if and only if every $d > c$ belongs to $S$. -/
 theorem biInf_coe_le_coe_iff_forall_lt (hS : UpClosed S) (c : ℝ) :
     (⨅ a ∈ S, (a : EReal)) ≤ (c : EReal) ↔ ∀ d : ℝ, c < d → d ∈ S := by
   constructor
@@ -117,8 +182,8 @@ theorem biInf_coe_le_coe_iff_forall_lt (hS : UpClosed S) (c : ℝ) :
     obtain ⟨d, hcd, hd⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
     exact absurd (iInf₂_le d (h d (EReal.coe_lt_coe_iff.1 hcd))) (not_le.2 hd)
 
-/-- For a closed upward closed set of reals, the infimum is `≤ c` exactly when `c` belongs to
-it. -/
+/-- If $S \subseteq \mathbb{R}$ is upward closed and closed and $c \in \mathbb{R}$, then
+$\inf S \le c$ in `EReal` if and only if $c \in S$. -/
 theorem biInf_coe_le_coe_iff (hS : UpClosed S) (hcl : IsClosed S) (c : ℝ) :
     (⨅ a ∈ S, (a : EReal)) ≤ (c : EReal) ↔ c ∈ S := by
   refine ⟨fun h => ?_, fun h => iInf₂_le c h⟩
@@ -131,50 +196,63 @@ theorem biInf_coe_le_coe_iff (hS : UpClosed S) (hcl : IsClosed S) (c : ℝ) :
   have : (0 : ℝ) < 1 / (n + 1 : ℝ) := by positivity
   linarith
 
-/-- The infimum of a nonempty upward closed set of reals bounded below by `0` is nonnegative. -/
+/-- If every element of $S \subseteq \mathbb{R}$ is nonnegative, then the infimum of $S$ in `EReal`
+is nonnegative. -/
 theorem zero_le_biInf_coe (h : ∀ a ∈ S, (0 : ℝ) ≤ a) : 0 ≤ ⨅ a ∈ S, (a : EReal) :=
   le_iInf₂ fun a ha => EReal.coe_nonneg.2 (h a ha)
 
-/-- If `z ≤ d` for every real `d` above `r`, then `z ≤ r`: Mathlib's
-`EReal.le_of_forall_lt_iff_le` with the hypothesis stated in `ℝ`. -/
+/-- Let $z \in [-\infty, +\infty]$ and $r \in \mathbb{R}$. If $z \le d$ for every real $d > r$, then
+$z \le r$. This is Mathlib's `EReal.le_of_forall_lt_iff_le` with the hypothesis stated over
+$\mathbb{R}$. -/
 theorem le_coe_of_forall_gt_le {z : EReal} {r : ℝ} (h : ∀ d : ℝ, r < d → z ≤ (d : EReal)) :
     z ≤ (r : EReal) :=
   EReal.le_of_forall_lt_iff_le.1 fun d hd => h d (EReal.coe_lt_coe_iff.1 hd)
 
 end UpClosed
 
-/-! ### The gauge of a convex set
+/-!
+### The gauge of a set
 
-`γ(x | C) = inf {a ≥ 0 | x ∈ a • C}`. The scalar `0` is admitted, and
-`0 • C = {0}` for nonempty `C`, so `γ(0 | C) = 0` for every nonempty `C` — that is what makes a
-gauge vanish at the origin even when `C` does not contain it. -/
+The gauge is $\gamma(x \mid C) = \inf \{a \ge 0 : x \in aC\}$. The scalar $a = 0$ is admitted, and
+$0 \cdot C = \{0\}$ for nonempty $C$. Hence $\gamma(0 \mid C) = 0$ for every nonempty $C$, also when
+$C$ does not contain $0$.
+-/
 
 section GaugeFn
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C D : Set E} {x : E} {a c t : ℝ}
 
-/-- **The gauge** of a set `C`: `γ(x | C) = inf {a ≥ 0 | x ∈ a • C}`.
+/-- The **gauge** of a set $C \subseteq E$ is the function $E \to [-\infty, +\infty]$
+$$\gamma(x \mid C) = \inf \{a \in \mathbb{R} : a \ge 0,\ x \in aC\},$$
+with the value $+\infty$ when no dilate $aC$ with $a \ge 0$ contains $x$.
 
-Named `gaugeFn` because it is neither of Mathlib's two Minkowski functionals; `gaugeFn_eq_gauge`
-and `gaugeFn_eq_egauge` are the bridges, and the module docstring says why the `EReal`-valued
-version is the one this development needs. -/
+The name `gaugeFn` distinguishes it from Mathlib's `gauge` and `egauge`.
+`ConvexAnalysis.gaugeFn_eq_gauge` relates it to `gauge`; the module doc comment explains why the
+values are taken in `EReal`. -/
 noncomputable def gaugeFn (C : Set E) : E → EReal :=
   fun x => ⨅ a ∈ {a : ℝ | 0 ≤ a ∧ x ∈ a • C}, (a : EReal)
 
+/-- The defining formula $\gamma(x \mid C) = \inf \{a \ge 0 : x \in aC\}$. -/
 theorem gaugeFn_apply (C : Set E) (x : E) :
     gaugeFn C x = ⨅ a ∈ {a : ℝ | 0 ≤ a ∧ x ∈ a • C}, (a : EReal) := rfl
 
+/-- If $a \ge 0$ and $x \in aC$, then $\gamma(x \mid C) \le a$. -/
 theorem gaugeFn_le_of_mem_smul (ha : 0 ≤ a) (h : x ∈ a • C) : gaugeFn C x ≤ (a : EReal) :=
   iInf₂_le a ⟨ha, h⟩
 
+/-- The gauge is nonnegative: $0 \le \gamma(x \mid C)$. -/
 theorem gaugeFn_nonneg (C : Set E) (x : E) : 0 ≤ gaugeFn C x :=
   zero_le_biInf_coe fun _ ha => ha.1
 
+/-- The gauge never takes the value $-\infty$. -/
 theorem gaugeFn_ne_bot (C : Set E) (x : E) : gaugeFn C x ≠ ⊥ :=
   fun h => by simpa [h] using gaugeFn_nonneg C x
 
-/-- **The witness extractor**: a strict upper bound for the gauge is witnessed by an admissible
-scalar. The infimum is not attained in general, so this is the only way in. -/
+/-- For $z \in [-\infty, +\infty]$, $\gamma(x \mid C) < z$ if and only if there is $a \ge 0$ with
+$x \in aC$ and $a < z$.
+
+The infimum is not attained in general, so this is the way to extract an admissible scalar from
+a bound on the gauge. -/
 theorem gaugeFn_lt_iff {z : EReal} :
     gaugeFn C x < z ↔ ∃ a : ℝ, 0 ≤ a ∧ x ∈ a • C ∧ (a : EReal) < z := by
   rw [gaugeFn_apply, iInf_lt_iff]
@@ -186,19 +264,23 @@ theorem gaugeFn_lt_iff {z : EReal} :
   · rintro ⟨a, ha0, hmem, halt⟩
     exact ⟨a, by rw [iInf_lt_iff]; exact ⟨⟨ha0, hmem⟩, halt⟩⟩
 
+/-- The gauge is antitone in the set: if $C \subseteq D$, then
+$\gamma(\cdot \mid D) \le \gamma(\cdot \mid C)$. -/
 theorem gaugeFn_anti (h : C ⊆ D) : gaugeFn D ≤ gaugeFn C :=
   fun _ => iInf₂_mono' fun a ha => ⟨a, ⟨ha.1, smul_set_mono h ha.2⟩, le_rfl⟩
 
+/-- The gauge of the empty set is the constant $+\infty$. -/
 @[simp] theorem gaugeFn_empty : gaugeFn (∅ : Set E) = fun _ => (⊤ : EReal) := by
   funext x
   simp [gaugeFn_apply]
 
-/-- **A gauge vanishes at the origin**: `0 ∈ 0 • C` as soon as `C` is nonempty. -/
+/-- If $C$ is nonempty, then $\gamma(0 \mid C) = 0$, because $0 \in 0 \cdot C$. -/
 @[simp] theorem gaugeFn_zero (hne : C.Nonempty) : gaugeFn C 0 = 0 := by
   refine le_antisymm ?_ (gaugeFn_nonneg C 0)
   obtain ⟨z, hz⟩ := hne
   simpa using gaugeFn_le_of_mem_smul (C := C) le_rfl ⟨z, hz, by simp⟩
 
+/-- For $t > 0$, $\gamma(tx \mid C) \le t\, \gamma(x \mid C)$. -/
 theorem gaugeFn_smul_le (ht : 0 < t) (C : Set E) (x : E) :
     gaugeFn C (t • x) ≤ (t : EReal) * gaugeFn C x := by
   rw [gaugeFn_apply C x, EReal.coe_mul_iInf ht]
@@ -212,6 +294,8 @@ theorem gaugeFn_smul_le (ht : 0 < t) (C : Set E) (x : E) :
   rw [mul_smul]
   exact congrArg (t • ·) hzx
 
+/-- The gauge of any set is positively homogeneous: $\gamma(tx \mid C) = t\, \gamma(x \mid C)$ for
+$t > 0$. -/
 theorem posHomogeneous_gaugeFn (C : Set E) : PosHomogeneous (gaugeFn C) := by
   intro t ht x
   refine le_antisymm (gaugeFn_smul_le ht C x) ?_
@@ -221,6 +305,7 @@ theorem posHomogeneous_gaugeFn (C : Set E) : PosHomogeneous (gaugeFn C) := by
     mul_le_mul_of_nonneg_left h (EReal.coe_nonneg.2 ht.le)
   rwa [← mul_assoc, ← EReal.coe_mul, mul_inv_cancel₀ ht.ne', EReal.coe_one, one_mul] at h2
 
+/-- The gauge of a convex set is a convex function. -/
 theorem convexFn_gaugeFn (hC : Convex ℝ C) : ConvexFn (gaugeFn C) := by
   refine convexFn_of_epi_combo fun x y μ ν hx hy a b ha hb hab => ?_
   rcases eq_or_lt_of_le ha with rfl | ha'
@@ -259,52 +344,59 @@ theorem convexFn_gaugeFn (hC : Convex ℝ C) : ConvexFn (gaugeFn C) := by
 
 end GaugeFn
 
-/-! ### Gauges
+/-!
+### Gauges
 
-A **gauge** is a nonnegative positively homogeneous convex function vanishing at the origin —
-equivalently, a function whose epigraph is a convex cone containing the origin and no `(x, μ)` with
-`μ < 0`. `isGauge_iff` is the other description: the gauges are exactly the `γ(· | C)` for nonempty
-convex `C`. -/
+A **gauge** is a nonnegative positively homogeneous convex function that vanishes at $0$.
+Equivalently, its epigraph is a convex cone that contains the origin and no point $(x, \mu)$ with
+$\mu < 0$. By `ConvexAnalysis.isGauge_iff`, the gauges are exactly the functions
+$\gamma(\cdot \mid C)$ for nonempty convex sets $C$.
+-/
 
 section IsGauge
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E} {k : E → EReal} {x : E} {a b c : ℝ}
 
-/-- **A gauge**: a nonnegative positively homogeneous convex function that vanishes at the
-origin. -/
+/-- A function $k : E \to [-\infty, +\infty]$ is a **gauge** if it is nonnegative, positively
+homogeneous and convex, and $k(0) = 0$. -/
 structure IsGauge (k : E → EReal) : Prop where
   /-- A gauge is nonnegative. -/
   nonneg : ∀ x, 0 ≤ k x
-  /-- A gauge is positively homogeneous. -/
+  /-- A gauge is positively homogeneous: $k(ax) = a\, k(x)$ for $a > 0$. -/
   posHomogeneous : PosHomogeneous k
   /-- A gauge is convex. -/
   convexFn : ConvexFn k
-  /-- A gauge vanishes at the origin. This is a genuine extra condition: it rules out `k ≡ +∞`,
-  which satisfies the other three. -/
+  /-- A gauge vanishes at the origin. This condition excludes the constant $+\infty$, which
+  satisfies the other three. -/
   map_zero : k 0 = 0
 
+/-- A gauge never takes the value $-\infty$. -/
 theorem IsGauge.ne_bot (hk : IsGauge k) (x : E) : k x ≠ ⊥ :=
   fun h => by simpa [h] using hk.nonneg x
 
+/-- The gauge $\gamma(\cdot \mid C)$ of a nonempty convex set $C$ is a gauge. -/
 theorem isGauge_gaugeFn (hC : Convex ℝ C) (hne : C.Nonempty) : IsGauge (gaugeFn C) where
   nonneg := gaugeFn_nonneg C
   posHomogeneous := posHomogeneous_gaugeFn C
   convexFn := convexFn_gaugeFn hC
   map_zero := gaugeFn_zero hne
 
+/-- The unit sublevel set $\{x : k(x) \le 1\}$ of a gauge is convex. -/
 theorem IsGauge.convex_level_one (hk : IsGauge k) : Convex ℝ {x : E | k x ≤ 1} :=
   hk.convexFn.convex_le 1
 
+/-- The unit sublevel set $\{x : k(x) \le 1\}$ of a gauge contains $0$. -/
 theorem IsGauge.zero_mem_level_one (hk : IsGauge k) : (0 : E) ∈ {x : E | k x ≤ 1} := by
   change k 0 ≤ 1
   rw [hk.map_zero]
   exact zero_le_one
 
-/-- **A gauge is the gauge of its own unit level set**: `γ(· | {k ≤ 1}) = k`. Convexity is not
-used — only nonnegativity, positive homogeneity, and `k 0 = 0`.
+/-- Let $k : E \to [-\infty, +\infty]$ be nonnegative and positively homogeneous with $k(0) = 0$.
+Then $k$ is the gauge of its unit sublevel set:
+$$\gamma(\cdot \mid \{x : k(x) \le 1\}) = k.$$
 
-This is the half of the gauge/set correspondence that needs no topology; the other half,
-`level_one_gaugeFn`, does. -/
+Convexity of $k$ is not needed. This half of the correspondence between gauges and sets needs no
+topology; the other half, `ConvexAnalysis.setOf_gaugeFn_le_one`, needs closedness. -/
 theorem gaugeFn_level_one (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
     gaugeFn {x : E | k x ≤ 1} = k := by
   set D : Set E := {x : E | k x ≤ 1} with hD
@@ -343,8 +435,11 @@ theorem gaugeFn_level_one (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 
             mul_le_mul_of_nonneg_left hz1 (EReal.coe_nonneg.2 ha0)
         _ = (a : EReal) := by rw [mul_one]
 
-/-- **The gauges are exactly the gauge functions of the nonempty convex sets.** `{x | k x ≤ 1}` is
-the canonical choice of set, and it is the only closed one containing the origin (`gaugeEquiv`). -/
+/-- A function $k : E \to [-\infty, +\infty]$ is a gauge if and only if $k = \gamma(\cdot \mid C)$
+for some nonempty convex set $C \subseteq E$.
+
+The proof takes $C = \{x : k(x) \le 1\}$. This is the only choice of $C$ that is closed and
+contains $0$ (`ConvexAnalysis.gaugeEquiv`). -/
 theorem isGauge_iff : IsGauge k ↔ ∃ C : Set E, C.Nonempty ∧ Convex ℝ C ∧ k = gaugeFn C := by
   refine ⟨fun hk => ⟨{x | k x ≤ 1}, ⟨0, hk.zero_mem_level_one⟩, hk.convex_level_one,
       (gaugeFn_level_one hk.nonneg hk.posHomogeneous hk.map_zero).symm⟩, ?_⟩
@@ -353,16 +448,19 @@ theorem isGauge_iff : IsGauge k ↔ ∃ C : Set E, C.Nonempty ∧ Convex ℝ C �
 
 end IsGauge
 
-/-! ### Gauges of sets containing the origin
+/-!
+### Gauges of sets that contain the origin
 
-The admissible-scalar set `{a ≥ 0 | x ∈ a • C}` is upward closed exactly because `a • C ⊆ b • C`
-for `0 ≤ a ≤ b` when `C` is convex and contains the origin. Everything quantitative about `gaugeFn`
-goes through that. -/
+If $C$ is convex and contains $0$, then $aC \subseteq bC$ for $0 \le a \le b$. Hence the admissible
+set $\{a \ge 0 : x \in aC\}$ is upward closed, and the sublevel sets of $\gamma(\cdot \mid C)$ are
+intersections of dilates of $C$.
+-/
 
 section ZeroMem
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E} {x : E} {a b c : ℝ}
 
+/-- If $C$ is convex and contains $0$, and $0 \le a \le b$, then $aC \subseteq bC$. -/
 theorem smul_subset_smul_of_le (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (ha : 0 ≤ a) (hab : a ≤ b) :
     a • C ⊆ b • C := by
   rintro _ ⟨z, hz, rfl⟩
@@ -374,20 +472,22 @@ theorem smul_subset_smul_of_le (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (ha : 0 
     change b • (a / b) • z = a • z
     rw [smul_smul, mul_div_cancel₀ _ hbpos.ne']
 
-/-- The admissible-scalar set of the gauge is upward closed, for a convex set containing the
-origin. -/
+/-- If $C$ is convex and contains $0$, then for every $x$ the set $\{a \ge 0 : x \in aC\}$ is upward
+closed. -/
 theorem upClosed_gaugeSet (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (x : E) :
     UpClosed {a : ℝ | 0 ≤ a ∧ x ∈ a • C} :=
   fun _ ha _ hab => ⟨ha.1.trans hab, smul_subset_smul_of_le hC h0 ha.1 hab ha.2⟩
 
-/-- **The level sets of a gauge, without closedness.** `γ(x | C) ≤ c` exactly when `x ∈ d • C` for
-every `d > c`. -/
+/-- Let $C$ be convex with $0 \in C$, and let $c \ge 0$. Then $\gamma(x \mid C) \le c$ if and only
+if $x \in dC$ for every $d > c$. -/
 theorem gaugeFn_le_coe_iff_forall_lt (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc : 0 ≤ c) :
     gaugeFn C x ≤ (c : EReal) ↔ ∀ d : ℝ, c < d → x ∈ d • C := by
   rw [gaugeFn_apply, biInf_coe_le_coe_iff_forall_lt (upClosed_gaugeSet hC h0 x)]
   exact forall₂_congr fun d hd => ⟨fun h => h.2, fun h => ⟨le_of_lt (lt_of_le_of_lt hc hd), h⟩⟩
 
-/-- The sublevel sets of a gauge, as intersections of dilates. -/
+/-- Let $C$ be convex with $0 \in C$, and let $c \ge 0$. Then
+$$\{x : \gamma(x \mid C) \le c\} = \bigcap_{d > c} dC.$$
+-/
 theorem setOf_gaugeFn_le (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc : 0 ≤ c) :
     {x : E | gaugeFn C x ≤ (c : EReal)} = ⋂ d ∈ Ioi c, d • C := by
   ext x
@@ -396,22 +496,25 @@ theorem setOf_gaugeFn_le (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc : 0 ≤ c)
 
 end ZeroMem
 
-/-! ### Closed gauges
+/-!
+### Closed gauges
 
-For a *closed* convex set containing the origin the level sets of the gauge are the dilates
-themselves, `{x | γ(x | C) ≤ c} = c • C` for `c > 0`, and the gauge is closed. `gaugeEquiv`
-packages the resulting one-to-one correspondence. -/
+If $C$ is closed and convex and contains $0$, the sublevel sets of the gauge are the dilates
+themselves, $\{x : \gamma(x \mid C) \le c\} = cC$ for $c > 0$, and the gauge is closed.
+`ConvexAnalysis.gaugeEquiv` is the resulting bijection.
+-/
 
 section ClosedGauge
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [ContinuousSMul ℝ E]
   {C : Set E} {x : E} {c : ℝ}
 
-/-- **The level sets of a closed gauge are the dilates.** `γ(x | C) ≤ c` exactly when `x ∈ c • C`,
-for `c > 0` and `C` closed convex containing the origin.
+/-- Let $E$ carry a topology in which scalar multiplication is continuous, let $C \subseteq E$ be
+closed and convex with $0 \in C$, and let $c > 0$. Then $\gamma(x \mid C) \le c$ if and only if
+$x \in cC$.
 
-The restriction to `c > 0` is essential: `{x | γ(x | C) ≤ 0}` is the recession cone of `C`, not
-`0 • C = {0}`. -/
+The condition $c > 0$ is necessary: $\{x : \gamma(x \mid C) \le 0\}$ is the recession cone of
+$C$, not $0 \cdot C = \{0\}$. -/
 theorem gaugeFn_le_coe_iff (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) (hc : 0 < c) :
     gaugeFn C x ≤ (c : EReal) ↔ x ∈ c • C := by
   refine ⟨fun h => ?_, fun h => gaugeFn_le_of_mem_smul hc.le h⟩
@@ -428,22 +531,24 @@ theorem gaugeFn_le_coe_iff (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClo
   have hd : c < c + 1 / (n + 1 : ℝ) := by linarith
   exact (mem_smul_set_iff_inv_smul_mem₀ (by linarith : c + 1 / (n + 1 : ℝ) ≠ 0) C x).1 (h _ hd)
 
-/-- The sublevel sets of a closed gauge, for a positive level. -/
+/-- Let $C$ be a closed convex set with $0 \in C$, and let $c > 0$. Then
+$\{x : \gamma(x \mid C) \le c\} = cC$. -/
 theorem setOf_gaugeFn_le_pos (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) (hc : 0 < c) :
     {x : E | gaugeFn C x ≤ (c : EReal)} = c • C :=
   Set.ext fun _ => gaugeFn_le_coe_iff hC h0 hcl hc
 
-/-- **The unit level set of the gauge recovers the set**: `{x | γ(x | C) ≤ 1} = C` for a closed
-convex set containing the origin. Together with `gaugeFn_level_one` this is the one-to-one
-correspondence between closed gauges and closed convex sets containing the origin. -/
+/-- If $C$ is a closed convex set with $0 \in C$, then $\{x : \gamma(x \mid C) \le 1\} = C$.
+
+Together with `ConvexAnalysis.gaugeFn_level_one`, this gives the bijection between the closed
+gauges and the closed convex sets that contain $0$. -/
 theorem setOf_gaugeFn_le_one (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) :
     {x : E | gaugeFn C x ≤ 1} = C := by
   have h := setOf_gaugeFn_le_pos hC h0 hcl one_pos
   rw [EReal.coe_one] at h
   rw [h, one_smul]
 
-/-- The gauge of a closed convex set containing the origin is lower semicontinuous: each of its
-sublevel sets is an intersection of dilates of `C`. -/
+/-- The gauge of a closed convex set $C$ with $0 \in C$ is lower semicontinuous, because each of its
+sublevel sets is an intersection of dilates of $C$. -/
 theorem lowerSemicontinuous_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) :
     LowerSemicontinuous (gaugeFn C) := by
   rw [lowerSemicontinuous_iff_isClosed_preimage]
@@ -475,20 +580,27 @@ theorem lowerSemicontinuous_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc
 
 variable [IsTopologicalAddGroup E]
 
+/-- Let $E$ be a topological vector space. The gauge of a closed convex set $C$ with $0 \in C$ is
+closed in the sense of `ConvexAnalysis.ClosedConvex`: it equals its closure. -/
 theorem closedConvex_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hcl : IsClosed C) :
     ClosedConvex (gaugeFn C) :=
   (closedConvex_iff_lowerSemicontinuous (gaugeFn_ne_bot C)).2
       (lowerSemicontinuous_gaugeFn hC h0 hcl)
 
 omit [Module ℝ E] [ContinuousSMul ℝ E] in
+/-- If $k$ is closed in the sense of `ConvexAnalysis.ClosedConvex`, then the sublevel set
+$\{x : k(x) \le 1\}$ is closed. -/
 theorem isClosed_setOf_le_one {k : E → EReal} (hc : ClosedConvex k) :
     IsClosed {x : E | k x ≤ 1} :=
   ClosedConvex.lowerSemicontinuous hc |>.isClosed_preimage 1
 
-/-- **The gauge correspondence**: the closed gauges on `E` are in bijection with the closed convex
-subsets of `E` containing the origin, by `C ↦ γ(· | C)` and `k ↦ {x | k x ≤ 1}`.
+/-- The **gauge correspondence**. Let $E$ be a topological vector space. The maps
+$C \mapsto \gamma(\cdot \mid C)$ and $k \mapsto \{x : k(x) \le 1\}$ are inverse bijections
+between the closed convex subsets of $E$ that contain $0$ and the closed gauges on $E$.
 
-This is the gauge analogue of `supportEquiv` (`Duality/Support.lean`). -/
+This is the counterpart for gauges of `ConvexAnalysis.supportEquiv` in
+`Numlib.Analysis.Convex.Duality.Support`. [rockafellar1970convex] states this correspondence in
+§15, before Corollary 15.1.1. -/
 noncomputable def gaugeEquiv (E : Type*) [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
     [ContinuousSMul ℝ E] [IsTopologicalAddGroup E] :
     {C : Set E // Convex ℝ C ∧ IsClosed C ∧ (0 : E) ∈ C} ≃
@@ -503,20 +615,25 @@ noncomputable def gaugeEquiv (E : Type*) [AddCommGroup E] [Module ℝ E] [Topolo
 
 end ClosedGauge
 
-/-! ### The gauge of a polar set
+/-!
+### The gauge of a polar set
 
-The gauge of `C°` is the support function of `C`. The book states this for a closed convex `C`
-containing the origin, as part of the polarity theorem; only `0 ∈ C` is used. -/
+The gauge of $C^\circ$ is the support function of $C$. [rockafellar1970convex] states this for a
+closed convex set $C$ that contains $0$; the proof here uses only $0 \in C$.
+-/
 
 section GaugePolar
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {C : Set E}
 
-/-- **The gauge of the polar set is the support function**: `γ(· | C°) = δ*(· | C)`.
+/-- Let $C \subseteq E$ with $0 \in C$. Then the gauge of the polar set is the support function of
+$C$:
+$$\gamma(\cdot \mid C^\circ) = \delta^*(\cdot \mid C).$$
+This is part of Theorem 14.5 of [rockafellar1970convex].
 
-Only `0 ∈ C` is needed — neither convexity nor closedness — because `0 ∈ C` is exactly what makes
-`δ*(· | C)` nonnegative, and the two infima then agree scalar by scalar. -/
+[rockafellar1970convex] assumes that $C$ is closed and convex. Here only $0 \in C$ is needed: it
+makes $\delta^*(\cdot \mid C)$ nonnegative, and then the two infima agree scalar by scalar. -/
 theorem gaugeFn_polarSet (h0 : (0 : E) ∈ C) : gaugeFn (polarSet B C) = supportFn B C := by
   funext y
   have hsupp0 : (0 : EReal) ≤ supportFn B C y := by
@@ -546,9 +663,14 @@ theorem gaugeFn_polarSet (h0 : (0 : E) ∈ C) : gaugeFn (polarSet B C) = support
           exact mul_le_mul_of_nonneg_left (hw x hx) ha0
       _ = a := mul_one a
 
-/-- **The support function of the polar set is the gauge**: `δ*(· | C°) = γ(· | C)` for a closed
-convex `C ∋ 0`, the dual of `gaugeFn_polarSet`. It is that lemma applied to `C°` (which always
-contains `0`), read through the bipolar theorem `C°° = C`. -/
+/-- Let $E$ be a locally convex space, let the pairing $B$ be compatible with the topology of $E$,
+and let $C \subseteq E$ be closed and convex with $0 \in C$. Then the support function of the
+polar set, taken with respect to the flipped pairing, is the gauge of $C$:
+$$\delta^*(\cdot \mid C^\circ) = \gamma(\cdot \mid C).$$
+This is part of Theorem 14.5 of [rockafellar1970convex].
+
+The proof applies `ConvexAnalysis.gaugeFn_polarSet` to $C^\circ$, which contains $0$, and uses
+the bipolar theorem $C^{\circ\circ} = C$. -/
 theorem supportFn_polarSet [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
     [LocallyConvexSpace ℝ E] [IsCompatiblePairing B] (hconv : Convex ℝ C) (hcl : IsClosed C)
     (h0 : (0 : E) ∈ C) : supportFn B.flip (polarSet B C) = gaugeFn C := by
@@ -557,12 +679,14 @@ theorem supportFn_polarSet [TopologicalSpace E] [IsTopologicalAddGroup E] [Conti
 
 end GaugePolar
 
-/-! ### The recession cone and the lineality space as polars
+/-!
+### The recession cone and the lineality space as polars
 
-`0⁺C` and the closed convex cone generated by `C°` are polar to each other, and the lineality space
-of `C` is the annihilator of `C°`. The classical proof reads the recession cone off as the largest
-closed convex cone inside `C`; the argument here identifies it directly as a polar, which needs only
-the bipolar theorem. -/
+For a closed convex set $C$ that contains $0$, the recession cone $0^+ C$ and the closed convex cone
+generated by $C^\circ$ are polar to each other, and the lineality space of $C$ is the annihilator of
+$C^\circ$. The proof in [rockafellar1970convex] identifies $0^+ C$ as the largest closed convex cone
+in $C$; the proof here identifies it directly as a polar, which needs only the bipolar theorem.
+-/
 
 section RecessionLineality
 
@@ -572,8 +696,10 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
   [LocallyConvexSpace ℝ E] in
-/-- The easy half: a recession direction of a set containing the origin is nonpositively paired
-with every element of the polar. -/
+/-- If $0 \in C$, then every recession direction $x$ of $C$ satisfies $\langle x, y \rangle \le 0$
+for every $y \in C^\circ$:
+$$0^+ C \subseteq \{x : \langle x, y \rangle \le 0 \ \forall y \in C^\circ\}.$$
+-/
 theorem recessionCone_subset_polarCone_polarSet (h0 : (0 : E) ∈ C) :
     recessionCone C ⊆ polarCone B.flip (polarSet B C) := by
   intro v hv y hy
@@ -589,8 +715,11 @@ theorem recessionCone_subset_polarCone_polarSet (h0 : (0 : E) ∈ C) :
   rw [div_lt_iff₀ hcon] at ht
   nlinarith
 
-/-- **The recession cone is the polar of the polar set**, for a closed convex set containing the
-origin. -/
+/-- Let $E$ be a locally convex space, let the pairing $B$ be compatible with the topology of $E$,
+and let $C \subseteq E$ be closed and convex with $0 \in C$. Then the recession cone of $C$ is
+the polar cone of $C^\circ$:
+$$0^+ C = \{x : \langle x, y \rangle \le 0 \ \forall y \in C^\circ\}.$$
+This is part of Theorem 14.6 of [rockafellar1970convex]. -/
 theorem recessionCone_eq_polarCone_polarSet [IsCompatiblePairing B] (hconv : Convex ℝ C)
     (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
     recessionCone C = polarCone B.flip (polarSet B C) := by
@@ -605,11 +734,14 @@ theorem recessionCone_eq_polarCone_polarSet [IsCompatiblePairing B] (hconv : Con
   have h2 : B v y ≤ 0 := hv y hy
   nlinarith
 
-/-- **The recession cone of a polar set is a polar cone**: `0⁺(C°) = C°` read as a *cone* polar
-rather than a *set* polar, for a closed convex `C` containing the origin.
+/-- Let $E$ and $F$ be locally convex spaces, let $B$ and its flip be compatible pairings, and let
+$C \subseteq E$ be closed and convex with $0 \in C$. Then the recession cone of $C^\circ$ is the
+polar cone of $C$:
+$$0^+(C^\circ) = \{y : \langle x, y \rangle \le 0 \ \forall x \in C\}.$$
 
-The previous result applied to `C°`, whose bipolar is `C` (`polarSet_polarSet`). Both spaces are
-topologised here, because the recession cone being computed lives in `F`. -/
+The proof applies `ConvexAnalysis.recessionCone_eq_polarCone_polarSet` to $C^\circ$, whose polar
+is $C$ (`ConvexAnalysis.polarSet_polarSet`). Both spaces need a topology because the recession
+cone lies in $F$. -/
 theorem recessionCone_polarSet [TopologicalSpace F] [IsTopologicalAddGroup F]
     [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hconv : Convex ℝ C) (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
@@ -618,8 +750,14 @@ theorem recessionCone_polarSet [TopologicalSpace F] [IsTopologicalAddGroup F]
     (convex_polarSet B C) isClosed_polarSet (zero_mem_polarSet B C)
   rwa [LinearMap.flip_flip, polarSet_polarSet (B := B) hconv hcl h0] at h
 
-/-- **The recession cone of `C` and the closed convex cone generated by `C°` are polar to each
-other.** -/
+/-- Let $E$ and $F$ be locally convex spaces, let $B$ and its flip be compatible pairings, and let
+$C \subseteq E$ be closed and convex with $0 \in C$. Then the polar cone of $0^+ C$ is the
+closed convex cone generated by $C^\circ$:
+$$(0^+ C)^\circ = \operatorname{cl} \operatorname{cone} C^\circ.$$
+This is part of Theorem 14.6 of [rockafellar1970convex].
+
+The cone generated by $C^\circ$ is `PointedCone.hull ℝ (polarSet B C)`, and the polar cone is
+`ConvexAnalysis.polarCone`. -/
 theorem polarCone_recessionCone [TopologicalSpace F] [IsTopologicalAddGroup F]
     [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hconv : Convex ℝ C) (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
@@ -633,8 +771,11 @@ theorem polarCone_recessionCone [TopologicalSpace F] [IsTopologicalAddGroup F]
     (isCone_coe_pointedCone _) ⟨0, (PointedCone.hull ℝ (polarSet B C)).zero_mem⟩
   rwa [LinearMap.flip_flip] at h
 
-/-- **The lineality space of a closed convex set containing the origin is the annihilator of its
-polar.** -/
+/-- Let $E$ be a locally convex space, let the pairing $B$ be compatible with the topology of $E$,
+and let $C \subseteq E$ be closed and convex with $0 \in C$. Then the lineality space of $C$ is
+the annihilator of its polar:
+$$\operatorname{lin} C = \{x : \langle x, y \rangle = 0 \ \forall y \in C^\circ\}.$$
+This is part of Theorem 14.6 of [rockafellar1970convex]. -/
 theorem linealitySpace_eq_setOf_pairing_eq_zero [IsCompatiblePairing B] (hconv : Convex ℝ C)
     (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
     linealitySpace C = {x : E | ∀ y ∈ polarSet B C, B x y = 0} := by
@@ -650,8 +791,11 @@ theorem linealitySpace_eq_setOf_pairing_eq_zero [IsCompatiblePairing B] (hconv :
     exact ⟨fun y hy => le_of_eq (h y hy), fun y hy => by
       rw [LinearMap.flip_apply, map_neg, LinearMap.neg_apply, h y hy, neg_zero]⟩
 
-/-- **The polar of the lineality space of `C` is the closed subspace generated by `C°`**, the dual
-form of the previous result. -/
+/-- Let $E$ and $F$ be locally convex spaces, let $B$ and its flip be compatible pairings, and let
+$C \subseteq E$ be closed and convex with $0 \in C$. Then the polar cone of the lineality space
+of $C$ is the closed linear span of $C^\circ$:
+$$(\operatorname{lin} C)^\circ = \operatorname{cl} \operatorname{span} C^\circ.$$
+This is part of Theorem 14.6 of [rockafellar1970convex]. -/
 theorem polarCone_linealitySpace [TopologicalSpace F] [IsTopologicalAddGroup F]
     [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hconv : Convex ℝ C) (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
@@ -676,15 +820,15 @@ theorem polarCone_linealitySpace [TopologicalSpace F] [IsTopologicalAddGroup F]
 
 end RecessionLineality
 
-/-! ### The dimension relations for a polar set
+/-!
+### The dimension relations for a polar set
 
-`dim C° = n - lin C` and `lin C° = n - dim C`. They are the orthogonality above read through
-`finrank`: the polar of a *subspace* is its annihilator, and the annihilator of a subspace of a
-finite-dimensional space has the complementary dimension. -/
-
-/-! `vectorSpan_eq_span_of_zero_mem` — the affine and linear hulls of a set through the origin
-agree — is `vectorSpan_eq_span_of_zero_mem` in `Numlib/LinearAlgebra/Subspace.lean`. It has no
-convexity in it and three unrelated developments want it. -/
+In finite dimension $n$, $\dim C^\circ = n - \operatorname{lin} C$ and
+$\operatorname{lin} C^\circ = n - \dim C$. These are the orthogonality relations above, read through
+`Module.finrank`: the polar of a subspace is its annihilator, and the annihilator of a subspace has
+the complementary dimension. For a set that contains $0$, the affine span and the linear span agree;
+this is `vectorSpan_eq_span_of_zero_mem` in `Numlib.LinearAlgebra.Subspace`.
+-/
 
 section PolarDimension
 
@@ -692,10 +836,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {C : Set E}
 
-/-- **The polar of a subspace has the complementary dimension.** This is rank–nullity for the map
-`F → M*` that a compatible pairing induces: it is onto because `B.flip` is onto `E*` (compatibility,
-plus the automatic continuity of a functional in finite dimensions) and restriction `E* → M*` is
-onto, and its kernel is the polar of `M`. -/
+/-- Let $E$ and $F$ be finite-dimensional normed spaces, let $B$ be a compatible pairing, and let
+$M \subseteq E$ be a subspace. Then the polar $M^\perp = \{y : \langle x, y \rangle = 0 \
+\forall x \in M\}$ has the complementary dimension:
+$$\dim M + \dim M^\perp = \dim F.$$
+
+The proof is the rank–nullity theorem for the map $F \to M^*$ that the pairing induces. This map
+is onto, because $y \mapsto \langle \cdot, y \rangle$ is onto $E^*$ (by compatibility, and
+because every linear functional is continuous in finite dimension) and restriction $E^* \to M^*$
+is onto. Its kernel is $M^\perp$. -/
 theorem finrank_add_finrank_polarSubmodule (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     (M : Submodule ℝ E) :
     Module.finrank ℝ M + Module.finrank ℝ (polarSubmodule B M) = Module.finrank ℝ F := by
@@ -724,12 +873,17 @@ theorem finrank_add_finrank_polarSubmodule (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
   rw [LinearMap.range_eq_top.2 hsurj, hker, finrank_top, Subspace.dual_finrank_eq] at hrk
   exact hrk
 
-/-- **`dim C° = n - lin C`** for a closed convex set containing the origin, stated without
-truncated subtraction, as `dim C° + lin C = n`.
+/-- Let $E$ and $F$ be finite-dimensional normed spaces, let $B$ and its flip be compatible
+pairings, and let $C \subseteq E$ be closed and convex with $0 \in C$. Then
+$$\dim C^\circ + \operatorname{lin} C = \dim F,$$
+where $\dim C^\circ$ is the dimension of the affine span of $C^\circ$ and $\operatorname{lin} C$
+is the dimension of the lineality space of $C$. This is
+$\dim C^\circ = n - \operatorname{lin} C$ of Corollary 14.6.1 of [rockafellar1970convex],
+written without truncated subtraction.
 
-The subspace generated by `C°` is the polar of the lineality space of `C`
-(`polarCone_linealitySpace`; the closure there is redundant in finite dimensions), and the affine
-hull of `C°` is its linear hull because `0 ∈ C°`. -/
+The linear span of $C^\circ$ is the polar of the lineality space of $C$
+(`ConvexAnalysis.polarCone_linealitySpace`; the closure is redundant in finite dimension), and
+the affine span of $C^\circ$ is its linear span because $0 \in C^\circ$. -/
 theorem finrank_vectorSpan_polarSet_add_lineality [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hconv : Convex ℝ C) (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
     Module.finrank ℝ (vectorSpan ℝ (polarSet B C)) + lineality C = Module.finrank ℝ F := by
@@ -743,11 +897,17 @@ theorem finrank_vectorSpan_polarSet_add_lineality [IsCompatiblePairing B]
   rw [hspan, ← hpol, lineality, add_comm]
   exact finrank_add_finrank_polarSubmodule B (linealitySubmodule C)
 
-/-- **`lin C° = n - dim C`**, again without truncated subtraction. It is the first relation applied
-to the polar pair the other way round, using `C°° = C`.
+/-- Let $E$ and $F$ be finite-dimensional normed spaces, let $B$ and its flip be compatible
+pairings, and let $C \subseteq E$ be closed and convex with $0 \in C$. Then
+$$\dim C + \operatorname{lin} C^\circ = \dim E,$$
+where $\dim C$ is the dimension of the affine span of $C$. This is
+$\operatorname{lin} C^\circ = n - \dim C$ of Corollary 14.6.1 of [rockafellar1970convex],
+written without truncated subtraction.
 
-The book's third relation, `rank C° = rank C`, is the difference of the two: both `dim C° + lin C`
-and `dim C + lin C°` equal `n`. -/
+The proof applies `ConvexAnalysis.finrank_vectorSpan_polarSet_add_lineality` to the polar pair
+in the other order, with $C^{\circ\circ} = C$. The third relation of the source,
+$\operatorname{rank} C^\circ = \operatorname{rank} C$, follows from the two: both
+$\dim C^\circ + \operatorname{lin} C$ and $\dim C + \operatorname{lin} C^\circ$ equal $n$. -/
 theorem finrank_vectorSpan_add_lineality_polarSet [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hconv : Convex ℝ C) (hcl : IsClosed C) (h0 : (0 : E) ∈ C) :
     Module.finrank ℝ (vectorSpan ℝ C) + lineality (polarSet B C) = Module.finrank ℝ E := by
@@ -765,33 +925,34 @@ theorem finrank_vectorSpan_add_lineality_polarSet [IsCompatiblePairing B]
 
 end PolarDimension
 
-/-! ### The polar of a sublevel set
+/-!
+### The polar of a sublevel set
 
-For a nonnegative convex function vanishing at the origin, the polar of a sublevel set and the
-corresponding sublevel set of the conjugate are within a factor of `2` of each other. -/
+For a nonnegative convex function $f$ with $f(0) \le 0$ and $\alpha > 0$, the polar of
+$\{f \le \alpha\}$ and the set $\alpha^{-1} \{f^* \le \alpha\}$ agree up to a factor of $2$.
+-/
 
 section SublevelPolar
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {α : ℝ}
 
-/-- A convex function that is nonpositive at the origin is **subhomogeneous** for factors in
-`[0, 1]`: `f (t • x) ≤ t * r` whenever `f x ≤ r`. -/
+/-- Let $f$ be convex with $f(0) \le 0$, and let $0 \le t \le 1$. If $f(x) \le r$, then
+$f(tx) \le tr$. -/
 theorem ConvexFn.smul_le_coe (hconv : ConvexFn f) (h0 : f 0 ≤ 0) {t r : ℝ} (ht0 : 0 ≤ t)
     (ht1 : t ≤ 1) {x : E} (hx : f x ≤ (r : EReal)) : f (t • x) ≤ ((t * r : ℝ) : EReal) := by
   have h0' : f 0 ≤ ((0 : ℝ) : EReal) := by rwa [EReal.coe_zero]
   have h := hconv.epi_combo hx h0' (a := t) (b := 1 - t) ht0 (by linarith) (by ring)
   simpa using h
 
-/-- The conjugate of a function that is nonpositive at the origin is nonnegative. -/
+/-- If $f(0) \le 0$, then the conjugate $f^*$ is nonnegative. -/
 theorem zero_le_convexConj (h0 : f 0 ≤ 0) (y : F) : 0 ≤ convexConj B f y := by
   refine le_trans ?_ (sub_le_convexConj B f 0 y)
   rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_sub, EReal.le_neg,
     neg_zero]
   exact h0
 
-/-- The conjugate of a nonnegative function vanishing at the origin again vanishes at the
-origin. -/
+/-- If $f$ is nonnegative and $f(0) \le 0$, then $f^*(0) = 0$. -/
 theorem convexConj_zero_eq_zero (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : convexConj B f 0 = 0 := by
   refine le_antisymm ?_ (zero_le_convexConj h0 0)
   rw [convexConj_apply]
@@ -799,11 +960,14 @@ theorem convexConj_zero_eq_zero (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : conv
   rw [map_zero, EReal.coe_zero, zero_sub, EReal.neg_le, neg_zero]
   exact hnn x
 
-/-- **The first inclusion** (in scaled form): `α • {f ≤ α}° ⊆ {f* ≤ α}`.
+/-- Let $f$ be convex and nonnegative with $f(0) \le 0$, and let $\alpha > 0$. Then
+$$\alpha \{x : f(x) \le \alpha\}^\circ \subseteq \{y : f^*(y) \le \alpha\}.$$
+This is the first inclusion of `ConvexAnalysis.polarSet_setOf_le_subset_and_subset`, scaled by
+$\alpha$.
 
-The book proves this through the positively homogeneous function generated by `f* + α`. The direct
-argument is shorter: for `f x > α` the point `(α / f x) • x` lies in the sublevel set, and rescaling
-the inequality it satisfies gives `⟨x, y⟩ ≤ f x`. -/
+[rockafellar1970convex] proves this with the positively homogeneous function generated by
+$f^* + \alpha$. The proof here is direct: if $f(x) > \alpha$, the point $(\alpha / f(x))\, x$
+lies in the sublevel set, and rescaling its inequality gives $\langle x, y \rangle \le f(x)$. -/
 theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0)
     (hα : 0 < α) :
     α • polarSet B {x : E | f x ≤ (α : EReal)} ⊆ {y : F | convexConj B f y ≤ (α : EReal)} := by
@@ -844,8 +1008,10 @@ theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f
       _ = 0 := by rw [← EReal.coe_sub, sub_self, EReal.coe_zero]
       _ ≤ (α : EReal) := EReal.coe_nonneg.2 hα.le
 
-/-- **The second inclusion** (in scaled form): `{f* ≤ α} ⊆ (2α) • {f ≤ α}°`. This half is
-Fenchel's inequality and nothing else. -/
+/-- Let $f$ be nonnegative, and let $\alpha > 0$. Then
+$$\{y : f^*(y) \le \alpha\} \subseteq 2\alpha \{x : f(x) \le \alpha\}^\circ.$$
+This is the second inclusion of `ConvexAnalysis.polarSet_setOf_le_subset_and_subset`, scaled by
+$\alpha$. Its proof uses only Fenchel's inequality. -/
 theorem setOf_convexConj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα : 0 < α) :
     {y : F | convexConj B f y ≤ (α : EReal)} ⊆ (2 * α) • polarSet B
         {x : E | f x ≤ (α : EReal)} := by
@@ -863,7 +1029,16 @@ theorem setOf_convexConj_le_subset_smul_polarSet (hnn : ∀ x, 0 ≤ f x) (hα :
   rw [hr, ← EReal.coe_sub, EReal.coe_le_coe_iff] at hsub
   linarith
 
-/-- **The two inclusions together**: `{f ≤ α}° ⊆ α⁻¹ • {f* ≤ α} ⊆ 2 • {f ≤ α}°`. -/
+/-- Let $f : E \to [-\infty, +\infty]$ be convex and nonnegative with $f(0) \le 0$, and let
+$\alpha > 0$. Then
+$$\{x : f(x) \le \alpha\}^\circ \subseteq \alpha^{-1} \{y : f^*(y) \le \alpha\} \subseteq 2 \{x
+  : f(x) \le \alpha\}^\circ.$$
+This is Theorem 14.7 of [rockafellar1970convex].
+
+[rockafellar1970convex] assumes that $f$ is closed and $f(0) = 0$; the inclusions need neither
+closedness nor more than $f(0) \le 0$. The two inclusions are
+`ConvexAnalysis.smul_polarSet_setOf_le_subset` and
+`ConvexAnalysis.setOf_convexConj_le_subset_smul_polarSet`. -/
 theorem polarSet_setOf_le_subset_and_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x)
     (h0 : f 0 ≤ 0) (hα : 0 < α) :
     polarSet B {x : E | f x ≤ (α : EReal)} ⊆ α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} ∧
@@ -887,41 +1062,56 @@ theorem polarSet_setOf_le_subset_and_subset (hconv : ConvexFn f) (hnn : ∀ x, 0
 
 end SublevelPolar
 
-/-! ### The polar of a gauge
+/-!
+### The polar of a gauge
 
-`k°(y) = inf {μ ≥ 0 | ⟨x, y⟩ ≤ μ k(x) for all x}`. The content of this section is that `k°` is the
-support function of `{k ≤ 1}`, hence a closed gauge, and that it is `γ(· | C°)` whenever
-`k = γ(· | C)`. -/
+The polar of a gauge is $k^\circ(y) = \inf \{\mu \ge 0 : \langle x, y \rangle \le \mu k(x) \ \forall
+x\}$. This section shows that $k^\circ$ is the support function of $\{k \le 1\}$, hence a closed
+gauge, and that $k^\circ = \gamma(\cdot \mid C^\circ)$ when $k = \gamma(\cdot \mid C)$.
+-/
 
 section PolarGauge
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {k : E → EReal} {C : Set E} {y : F}
 
-/-- **The polar of a gauge**: `k°(y) = inf {μ ≥ 0 | ⟨x, y⟩ ≤ μ k(x) for every x}`.
+/-- The **polar** of a function $k : E \to [-\infty, +\infty]$ with respect to the pairing $B$ is
+the function on $F$
+$$k^\circ(y) = \inf \{\mu \in \mathbb{R} : \mu \ge 0,\ \langle x, y \rangle \le \mu k(x) \
+  \forall x \in E\}.$$
+It is intended for gauges $k$.
 
-The product `μ * k x` is `EReal` multiplication, so `0 * (+∞) = 0`; that makes `μ = 0` admissible
-only when `⟨·, y⟩ ≤ 0` everywhere, which is the classical reading of the `μ* = 0` case. The infimum
-is insensitive to the convention, since the admissible set is an up-set in `[0, ∞)`. -/
+The product $\mu k(x)$ is multiplication in `EReal`, so $0 \cdot (+\infty) = 0$. Hence $\mu = 0$
+is admissible only when $\langle x, y \rangle \le 0$ for every $x$, which is the classical
+reading of the case $k^\circ(y) = 0$. The infimum does not depend on this convention, because
+the admissible set is upward closed in $[0, \infty)$. -/
 noncomputable def polarGauge (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (k : E → EReal) : F → EReal :=
   fun y => ⨅ μ ∈ {μ : ℝ | 0 ≤ μ ∧ ∀ x : E, ((B x y : ℝ) : EReal) ≤ (μ : EReal) * k x}, (μ : EReal)
 
+/-- The defining formula $k^\circ(y) = \inf \{\mu \ge 0 : \langle x, y \rangle \le \mu k(x) \
+\forall x\}$. -/
 theorem polarGauge_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (k : E → EReal) (y : F) :
     polarGauge B k y =
       ⨅ μ ∈ {μ : ℝ | 0 ≤ μ ∧ ∀ x : E, ((B x y : ℝ) : EReal) ≤ (μ : EReal) * k x}, (μ : EReal) :=
   rfl
 
+/-- If $\mu \ge 0$ and $\langle x, y \rangle \le \mu k(x)$ for every $x$, then $k^\circ(y) \le \mu$.
+-/
 theorem polarGauge_le_of_forall {μ : ℝ} (hμ : 0 ≤ μ)
     (h : ∀ x : E, ((B x y : ℝ) : EReal) ≤ (μ : EReal) * k x) : polarGauge B k y ≤ (μ : EReal) :=
   iInf₂_le μ ⟨hμ, h⟩
 
+/-- The polar $k^\circ$ of any function $k$ is nonnegative. -/
 theorem polarGauge_nonneg (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (k : E → EReal) (y : F) :
     0 ≤ polarGauge B k y :=
   zero_le_biInf_coe fun _ hμ => hμ.1
 
-/-- **The polar of a gauge is the support function of its unit level set.**
+/-- Let $k$ be nonnegative and positively homogeneous with $k(0) = 0$. Then the polar of $k$ is the
+support function of its unit sublevel set:
+$$k^\circ = \delta^*(\cdot \mid \{x : k(x) \le 1\}).$$
+This is part of Theorem 15.1 of [rockafellar1970convex].
 
-Convexity of `k` is not used; nonnegativity, positive homogeneity and `k 0 = 0` are. -/
+Convexity of $k$ is not used. -/
 theorem polarGauge_eq_supportFn (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
     polarGauge B k = supportFn B {x : E | k x ≤ 1} := by
   have h0D : (0 : E) ∈ {x : E | k x ≤ 1} := by change k 0 ≤ 1; rw [h0]; exact zero_le_one
@@ -981,7 +1171,8 @@ theorem polarGauge_eq_supportFn (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k
     rw [mul_one] at h2
     exact EReal.coe_le_coe_iff.1 (le_trans (hμk x) h2)
 
-/-- **The polar of a gauge is a gauge.** -/
+/-- Let $k$ be nonnegative and positively homogeneous with $k(0) = 0$. Then $k^\circ$ is a gauge.
+This is part of Theorem 15.1 of [rockafellar1970convex]. -/
 theorem isGauge_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
     IsGauge (polarGauge B k) := by
   have h0D : (0 : E) ∈ {x : E | k x ≤ 1} := by change k 0 ≤ 1; rw [h0]; exact zero_le_one
@@ -991,13 +1182,19 @@ theorem isGauge_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0
   have h := le_supportFn (B := B) h0D y
   rwa [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
-/-- The polar of a gauge is a **closed** gauge. -/
+/-- Let $F$ be a topological additive group, let every $\langle x, \cdot \rangle$ be continuous on
+$F$, and let $k$ be nonnegative and positively homogeneous with $k(0) = 0$. Then $k^\circ$ is
+closed in the sense of `ConvexAnalysis.ClosedConvex`. This is part of Theorem 15.1 of
+[rockafellar1970convex]. -/
 theorem closedConvex_polarGauge [TopologicalSpace F] [IsTopologicalAddGroup F]
     [IsContinuousPairing B.flip] (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
     ClosedConvex (polarGauge B k) := by
   rw [polarGauge_eq_supportFn hnn hph h0]
   exact closedConvex_supportFn
 
+/-- For every set $C \subseteq E$, the unit sublevel set of its gauge has the same polar as $C$:
+$$\{x : \gamma(x \mid C) \le 1\}^\circ = C^\circ.$$
+-/
 theorem polarSet_setOf_gaugeFn_le_one (C : Set E) :
     polarSet B {x : E | gaugeFn C x ≤ 1} = polarSet B C := by
   refine subset_antisymm (polarSet_anti fun x hx => ?_) fun y hy x hx => ?_
@@ -1015,11 +1212,13 @@ theorem polarSet_setOf_gaugeFn_le_one (C : Set E) :
     rw [← hzx, map_smul, LinearMap.smul_apply, smul_eq_mul]
     nlinarith
 
-/-- **Polarity of gauges is polarity of sets**: if `k = γ(· | C)` for a nonempty convex set `C`,
-then `k° = γ(· | C°)`.
+/-- Let $C$ be nonempty and convex. Then the polar of the gauge of $C$ is the gauge of the polar
+set:
+$$\gamma(\cdot \mid C)^\circ = \gamma(\cdot \mid C^\circ).$$
+This is part of Theorem 15.1 of [rockafellar1970convex].
 
-`C` is neither required to contain the origin nor to be closed — the polar set does not
-distinguish `C` from `{x | γ(x | C) ≤ 1}`, which does contain the origin. -/
+$C$ need not contain $0$ or be closed, because $C$ and $\{x : \gamma(x \mid C) \le 1\}$ have the
+same polar, and the second set contains $0$. -/
 theorem polarGauge_gaugeFn (hC : Convex ℝ C) (hne : C.Nonempty) :
     polarGauge B (gaugeFn C) = gaugeFn (polarSet B C) := by
   have hg := isGauge_gaugeFn hC hne
@@ -1027,27 +1226,35 @@ theorem polarGauge_gaugeFn (hC : Convex ℝ C) (hne : C.Nonempty) :
     ← polarSet_setOf_gaugeFn_le_one (B := B) C,
     gaugeFn_polarSet (B := B) (C := {x : E | gaugeFn C x ≤ 1}) hg.zero_mem_level_one]
 
-/-- For a convex set containing the origin, the gauge function and the support function of `C` are
-gauges polar to each other. -/
+/-- Let $C$ be convex with $0 \in C$. Then the polar of the gauge of $C$ is the support function of
+$C$:
+$$\gamma(\cdot \mid C)^\circ = \delta^*(\cdot \mid C).$$
+This is Corollary 15.1.2 of [rockafellar1970convex], without the closedness of $C$ that the
+source assumes. -/
 theorem polarGauge_gaugeFn_eq_supportFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) :
     polarGauge B (gaugeFn C) = supportFn B C := by
   rw [polarGauge_gaugeFn hC ⟨0, h0⟩, gaugeFn_polarSet h0]
 
 end PolarGauge
 
-/-! ### The pairing of `E × ℝ` with `F × ℝ`
+/-!
+### The pairing of $E \times \mathbb{R}$ with $F \times \mathbb{R}$
 
-Polarity of a function is polarity of its epigraph, one dimension higher, so it needs a pairing of
-`E × ℝ` with `F × ℝ`. `prodPairing` (`Duality/Pairing.lean`) supplies it once `ℝ` is paired with
-itself, and `mulPairing` is that self-pairing. -/
+The polar of a function is described by the polar of its epigraph, one dimension higher. This needs
+a pairing of $E \times \mathbb{R}$ with $F \times \mathbb{R}$. `ConvexAnalysis.prodPairing` in
+`Numlib.Analysis.Convex.Duality.Pairing` gives it from a pairing of $\mathbb{R}$ with itself, and
+`ConvexAnalysis.mulPairing` is that pairing.
+-/
 
 section EpiPairing
 
-/-- The self-pairing of `ℝ` by multiplication. -/
+/-- The pairing of $\mathbb{R}$ with itself by multiplication, $\langle a, b \rangle = ab$. -/
 def mulPairing : ℝ →ₗ[ℝ] ℝ →ₗ[ℝ] ℝ := LinearMap.mul ℝ ℝ
 
+/-- The pairing `ConvexAnalysis.mulPairing` maps $(a, b)$ to $ab$. -/
 @[simp] theorem mulPairing_apply (a b : ℝ) : mulPairing a b = a * b := rfl
 
+/-- The pairing `ConvexAnalysis.mulPairing` is its own flip. -/
 @[simp] theorem mulPairing_flip : mulPairing.flip = mulPairing :=
   LinearMap.ext fun a => LinearMap.ext fun b => mul_comm b a
 
@@ -1064,30 +1271,39 @@ instance : IsCompatiblePairing mulPairing where
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **The pairing under which epigraphs are polarised**: `⟨(x, ν), (y, μ)⟩ = ⟨x, y⟩ + ν μ`.
+/-- The pairing of $E \times \mathbb{R}$ with $F \times \mathbb{R}$ under which epigraphs are
+polarized:
+$$\langle (x, \nu), (y, \mu) \rangle = \langle x, y \rangle + \nu \mu.$$
 
-An `abbrev` so that the `prodPairing` instances of `Duality/Pairing.lean` remain visible to
-instance search (a `def` would hide them — `LinearMap.flip` is the same trap). -/
+It is an `abbrev` for `ConvexAnalysis.prodPairing B ConvexAnalysis.mulPairing`, so that instance
+search sees the instances for `ConvexAnalysis.prodPairing`; a `def` would hide them. -/
 abbrev epiPairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : (E × ℝ) →ₗ[ℝ] (F × ℝ) →ₗ[ℝ] ℝ :=
   prodPairing B mulPairing
 
+/-- The pairing `ConvexAnalysis.epiPairing B` maps $((x, \nu), (y, \mu))$ to
+$\langle x, y \rangle + \nu \mu$. -/
 @[simp] theorem epiPairing_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (p : E × ℝ) (q : F × ℝ) :
     epiPairing B p q = B p.1 q.1 + p.2 * q.2 := rfl
 
+/-- The flip of `ConvexAnalysis.epiPairing B` is `ConvexAnalysis.epiPairing` of the flip of $B$. -/
 theorem epiPairing_flip (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : (epiPairing B).flip = epiPairing B.flip := by
   rw [epiPairing, prodPairing_flip, mulPairing_flip]
 
-/-- **Vertical reflection**: `(x, μ) ↦ (x, -μ)`. -/
+/-- The **vertical reflection** of $X \times \mathbb{R}$, the linear map
+$(x, \mu) \mapsto (x, -\mu)$. -/
 def vNeg (X : Type*) [AddCommGroup X] [Module ℝ X] : (X × ℝ) →ₗ[ℝ] X × ℝ :=
   LinearMap.prodMap LinearMap.id (-LinearMap.id)
 
+/-- The vertical reflection maps $(x, \mu)$ to $(x, -\mu)$. -/
 @[simp] theorem vNeg_apply (X : Type*) [AddCommGroup X] [Module ℝ X] (p : X × ℝ) :
     vNeg X p = (p.1, -p.2) := rfl
 
+/-- The vertical reflection is an involution. -/
 @[simp] theorem vNeg_vNeg (X : Type*) [AddCommGroup X] [Module ℝ X] (p : X × ℝ) :
     vNeg X (vNeg X p) = p := by
   simp
 
+/-- The image of a set under the vertical reflection equals its preimage. -/
 theorem image_vNeg_eq_preimage (X : Type*) [AddCommGroup X] [Module ℝ X] (S : Set (X × ℝ)) :
     vNeg X '' S = vNeg X ⁻¹' S := by
   ext p
@@ -1095,14 +1311,16 @@ theorem image_vNeg_eq_preimage (X : Type*) [AddCommGroup X] [Module ℝ X] (S : 
   rintro ⟨q, hq, rfl⟩
   simpa using hq
 
+/-- Reflecting a set twice gives the set back. -/
 @[simp] theorem image_vNeg_image_vNeg (X : Type*) [AddCommGroup X] [Module ℝ X]
     (S : Set (X × ℝ)) : vNeg X '' (vNeg X '' S) = S := by
   rw [image_vNeg_eq_preimage, image_vNeg_eq_preimage]
   ext p
   simp
 
-/-- **Polarity commutes with vertical reflection**: `(A S)° = A (S°)`, because `A` is self-adjoint
-for `epiPairing`. -/
+/-- Polarity commutes with the vertical reflection $A$: for $S \subseteq E \times \mathbb{R}$, the
+polar of $AS$ with respect to `ConvexAnalysis.epiPairing` is $A(S^\circ)$. The reason is that
+$A$ is self-adjoint for this pairing. -/
 theorem polarSet_image_vNeg (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (S : Set (E × ℝ)) :
     polarSet (epiPairing B) (vNeg E '' S) = vNeg F '' polarSet (epiPairing B) S := by
   rw [image_vNeg_eq_preimage F (polarSet (epiPairing B) S)]
@@ -1112,32 +1330,46 @@ theorem polarSet_image_vNeg (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (S : Set (E ×
 
 end EpiPairing
 
-/-! ### The polar of a nonnegative convex function
+/-!
+### The polar of a nonnegative convex function
 
-`f°(y) = inf {μ ≥ 0 | ⟨x, y⟩ ≤ 1 + μ f(x) for all x}`. The definition below is the `∞`-free reading
-of that formula, quantifying over the epigraph of `f` rather than over `f` itself: `μ` is admissible
-when `⟨x, y⟩ - ν μ ≤ 1` for every `(x, ν) ∈ epi f`. This says exactly that `(y, -μ)` lies in the
-polar of `epi f`, which is what the classical proof uses, and `polarFn_apply_eq` shows it agrees
-with the original formula. -/
+The source defines $f^\circ(y) = \inf \{\mu \ge 0 : \langle x, y \rangle \le 1 + \mu f(x) \ \forall
+x\}$. The definition below avoids the value $+\infty$: it quantifies over the epigraph of $f$, and
+$\mu$ is admissible when $\langle x, y \rangle - \nu \mu \le 1$ for every
+$(x, \nu) \in \operatorname{epi} f$. This condition says that $(y, -\mu)$ lies in the polar of
+$\operatorname{epi} f$, which is what the classical proof uses. `ConvexAnalysis.polarFn_apply_eq`
+shows that the two formulas agree.
+-/
 
 section PolarFn
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {y : F} {μ : ℝ}
 
-/-- **The polar of a nonnegative convex function vanishing at the origin**:
-`f°(y) = inf {μ ≥ 0 | ⟨x, y⟩ ≤ 1 + μ f(x) for all x}`, in the epigraph form. -/
+/-- The **polar** of a function $f : E \to [-\infty, +\infty]$ is the function on $F$
+$$f^\circ(y) = \inf \{\mu \in \mathbb{R} : \langle x, y \rangle - \nu \mu \le 1 \text{ for all }
+  (x, \nu) \in \operatorname{epi} f\}.$$
+It is intended for nonnegative convex functions with $f(0) = 0$.
+
+The infimum is over all real $\mu$. If $f(0) \le 0$, every admissible $\mu$ is nonnegative
+(`ConvexAnalysis.polarFn_nonneg`). If $f$ is the constant $+\infty$, every $\mu$ is admissible
+and $f^\circ$ is the constant $-\infty$. For nonnegative $f$ with $f(0) \le 0$,
+`ConvexAnalysis.polarFn_apply_eq` gives the source formula $f^\circ(y) = \inf \{\mu \ge 0 :
+\langle x, y \rangle \le 1 + \mu f(x) \ \forall x\}$. -/
 noncomputable def polarFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) : F → EReal :=
   fun y => ⨅ μ ∈ {μ : ℝ | ∀ (x : E) (ν : ℝ), f x ≤ (ν : EReal) → B x y - ν * μ ≤ 1}, (μ : EReal)
 
+/-- The set of admissible multipliers of `ConvexAnalysis.polarFn` at $y$: the $\mu \in \mathbb{R}$
+with $\langle x, y \rangle - \nu \mu \le 1$ for every $(x, \nu) \in \operatorname{epi} f$. -/
 def polarFnSet (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (y : F) : Set ℝ :=
   {μ : ℝ | ∀ (x : E) (ν : ℝ), f x ≤ (ν : EReal) → B x y - ν * μ ≤ 1}
 
+/-- The polar $f^\circ(y)$ is the infimum of `ConvexAnalysis.polarFnSet B f y`. -/
 theorem polarFn_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (y : F) :
     polarFn B f y = ⨅ μ ∈ polarFnSet B f y, (μ : EReal) := rfl
 
-/-- The admissible-multiplier set is upward closed: the vertical coordinates of `epi f` are
-nonnegative because `f` is. -/
+/-- If $f$ is nonnegative, the set of admissible multipliers is upward closed, because the second
+coordinates of points of $\operatorname{epi} f$ are nonnegative. -/
 theorem upClosed_polarFnSet (hnn : ∀ x, 0 ≤ f x) (y : F) : UpClosed (polarFnSet B f y) := by
   intro a ha b hab x ν hν
   have hν0 : (0 : ℝ) ≤ ν := by
@@ -1146,7 +1378,8 @@ theorem upClosed_polarFnSet (hnn : ∀ x, 0 ≤ f x) (y : F) : UpClosed (polarFn
   have h := ha x ν hν
   nlinarith
 
-/-- The admissible-multiplier set is closed: it is an intersection of closed half-lines. -/
+/-- The set of admissible multipliers is closed, because it is an intersection of closed half-lines.
+-/
 theorem isClosed_polarFnSet (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (y : F) :
     IsClosed (polarFnSet B f y) := by
   have hrw : polarFnSet B f y =
@@ -1157,11 +1390,13 @@ theorem isClosed_polarFnSet (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → ERe
   exact isClosed_iInter fun x => isClosed_iInter fun ν => isClosed_iInter fun _ =>
     isClosed_le (continuous_const.sub (continuous_const.mul continuous_id)) continuous_const
 
-/-- **The defining inequality of `polarFn`.** -/
+/-- Let $f$ be nonnegative and $\mu \in \mathbb{R}$. Then $f^\circ(y) \le \mu$ if and only if
+$\langle x, y \rangle - \nu \mu \le 1$ for every $(x, \nu) \in \operatorname{epi} f$. -/
 theorem polarFn_le_coe_iff (hnn : ∀ x, 0 ≤ f x) :
     polarFn B f y ≤ (μ : EReal) ↔ ∀ (x : E) (ν : ℝ), f x ≤ (ν : EReal) → B x y - ν * μ ≤ 1 :=
   biInf_coe_le_coe_iff (upClosed_polarFnSet hnn y) (isClosed_polarFnSet B f y) μ
 
+/-- If $f(0) \le 0$, then $f^\circ$ is nonnegative. -/
 theorem polarFn_nonneg (h0 : f 0 ≤ 0) (y : F) : 0 ≤ polarFn B f y := by
   refine zero_le_biInf_coe fun a ha => ?_
   by_contra hcon
@@ -1181,7 +1416,7 @@ theorem polarFn_nonneg (h0 : f 0 ≤ 0) (y : F) : 0 ≤ polarFn B f y := by
   rw [div_mul_cancel₀ (2 : ℝ) hna.ne'] at hkey
   linarith
 
-/-- The polar of a function vanishes at the origin. -/
+/-- If $f(0) \le 0$, then $f^\circ(0) = 0$. -/
 @[simp] theorem polarFn_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (h0 : f 0 ≤ 0) :
     polarFn B f 0 = 0 := by
   refine le_antisymm ?_ (polarFn_nonneg h0 0)
@@ -1192,12 +1427,13 @@ theorem polarFn_nonneg (h0 : f 0 ≤ 0) (y : F) : 0 ≤ polarFn B f y := by
   rw [polarFn_apply, ← EReal.coe_zero]
   exact h2
 
-/-- **The original formula for the polar**, recovered from the epigraph form: `f°(y)` is the
-infimum of the `μ ≥ 0` with `⟨x, y⟩ ≤ 1 + μ f(x)` for every `x`.
+/-- Let $f$ be nonnegative with $f(0) \le 0$. Then $f^\circ$ is given by the formula of the source:
+$$f^\circ(y) = \inf \{\mu \in \mathbb{R} : \mu \ge 0,\ \langle x, y \rangle \le 1 + \mu f(x) \
+  \forall x \in E\}.$$
 
-The two admissible sets differ only at `μ = 0`, where the convention `0 · (+∞) = 0` imposes a
-condition off `dom f` that the epigraph form does not; since both are up-sets in `[0, ∞)`, the
-infima agree. -/
+The two admissible sets differ only at $\mu = 0$. There the convention $0 \cdot (+\infty) = 0$
+imposes $\langle x, y \rangle \le 1$ outside the effective domain of $f$, which the epigraph
+form does not. Both sets are upward closed in $[0, \infty)$, so the infima agree. -/
 theorem polarFn_apply_eq (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) (y : F) :
     polarFn B f y =
       ⨅ μ ∈ {μ : ℝ | 0 ≤ μ ∧ ∀ x : E, ((B x y : ℝ) : EReal) ≤ 1 + (μ : EReal) * f x},
@@ -1239,40 +1475,47 @@ theorem polarFn_apply_eq (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) (y : F) :
 
 end PolarFn
 
-/-! ### Closures of nonnegative functions
+/-!
+### Closures of nonnegative functions
 
-A nonnegative function has a nonnegative lower semicontinuous hull, so the exceptional `⊥` branch
-of `convexCl` never fires and `cl f` is computed by the closure of the epigraph. -/
+A nonnegative function has a nonnegative lower semicontinuous hull. Hence the exceptional branch of
+`ConvexAnalysis.convexCl`, where the hull takes the value $-\infty$, does not occur, and
+$\operatorname{cl} f$ is the function whose epigraph is the closure of $\operatorname{epi} f$.
+-/
 
 section NonnegClosure
 
 variable {E : Type*} [TopologicalSpace E] {f : E → EReal}
 
-/-- The closure of the epigraph of a nonnegative function stays in the upper half-space. -/
+/-- If $f$ is nonnegative, every point $(x, \nu)$ of the closure of $\operatorname{epi} f$ has
+$\nu \ge 0$. -/
 theorem nonneg_of_mem_closure_epi (hnn : ∀ x, 0 ≤ f x) {p : E × ℝ} (hp : p ∈ closure (epi f)) :
     0 ≤ p.2 := by
   refine closure_minimal (fun q hq => ?_) (isClosed_le continuous_const continuous_snd) hp
   have h : (0 : EReal) ≤ (q.2 : EReal) := le_trans (hnn q.1) hq
   exact_mod_cast h
 
+/-- The lower semicontinuous hull of a nonnegative function is nonnegative. -/
 theorem lscHull_nonneg (hnn : ∀ x, 0 ≤ f x) (x : E) : 0 ≤ lscHull f x := by
   refine le_ofEpi fun μ hμ => ?_
   have h := nonneg_of_mem_closure_epi hnn hμ
   exact_mod_cast h
 
-/-- For a nonnegative function the closure is the lower semicontinuous hull: the exceptional
-branch of `convexCl` cannot fire. -/
+/-- For a nonnegative function $f$, the closure $\operatorname{cl} f$ is the lower semicontinuous
+hull of $f$. -/
 theorem convexCl_eq_lscHull_of_nonneg (hnn : ∀ x, 0 ≤ f x) : convexCl f = lscHull f :=
   convexCl_of_forall_ne_bot fun x h => by
     have h0 := lscHull_nonneg hnn x
     rw [h, le_bot_iff] at h0
     exact absurd h0 (by simp)
 
+/-- The closure of a nonnegative function is nonnegative. -/
 theorem convexCl_nonneg (hnn : ∀ x, 0 ≤ f x) (x : E) : 0 ≤ convexCl f x := by
   rw [convexCl_eq_lscHull_of_nonneg hnn]
   exact lscHull_nonneg hnn x
 
-/-- A nonnegative function with a closed epigraph is closed. -/
+/-- A nonnegative function with a closed epigraph is closed in the sense of
+`ConvexAnalysis.ClosedConvex`. -/
 theorem closedConvex_of_isClosed_epi (hnn : ∀ x, 0 ≤ f x)
     (hcl : IsClosed (epi f)) : ClosedConvex f := by
   rw [ClosedConvex, convexCl_eq_lscHull_of_nonneg hnn]
@@ -1286,35 +1529,42 @@ section NonnegClosureGroup
 variable {E : Type*} [TopologicalSpace E] [AddCommGroup E] [IsTopologicalAddGroup E]
   {f : E → EReal}
 
-/-- For a nonnegative function the epigraph of the closure is the closure of the epigraph. -/
+/-- For a nonnegative function $f$ on a topological group, $\operatorname{epi}(\operatorname{cl} f)$
+is the closure of $\operatorname{epi} f$. -/
 theorem epi_convexCl_of_nonneg (hnn : ∀ x, 0 ≤ f x) : epi (convexCl f) = closure (epi f) := by
   rw [convexCl_eq_lscHull_of_nonneg hnn, epi_lscHull]
 
-/-- A nonnegative closed function has a closed epigraph. -/
+/-- A nonnegative function that is closed in the sense of `ConvexAnalysis.ClosedConvex` has a closed
+epigraph. -/
 theorem isClosed_epi_of_closedConvex (hnn : ∀ x, 0 ≤ f x)
     (hcl : ClosedConvex f) : IsClosed (epi f) := by
   have h : epi f = closure (epi f) := by rw [← epi_convexCl_of_nonneg hnn, hcl]
   rw [h]
   exact isClosed_closure
 
-/-- Closedness of a nonnegative function, as a statement about its epigraph. -/
+/-- A nonnegative function is closed in the sense of `ConvexAnalysis.ClosedConvex` if and only if
+its epigraph is closed. -/
 theorem closedConvex_iff_isClosed_epi (hnn : ∀ x, 0 ≤ f x) : ClosedConvex f ↔ IsClosed (epi f) :=
   ⟨isClosed_epi_of_closedConvex hnn, closedConvex_of_isClosed_epi hnn⟩
 
 end NonnegClosureGroup
 
-/-! ### The bipolar of a function
+/-!
+### The bipolar of a function
 
-The epigraph of `f°` is the vertical reflection of the polar of the epigraph of `f`, so the
-bipolar theorem of `Duality/Polar.lean`, applied in `E × ℝ`, gives `f°° = cl f` at once. -/
+The epigraph of $f^\circ$ is the vertical reflection of the polar of $\operatorname{epi} f$. The
+bipolar theorem for sets in `Numlib.Analysis.Convex.Duality.Polar`, applied in
+$E \times \mathbb{R}$, then gives $f^{\circ\circ} = \operatorname{cl} f$.
+-/
 
 section PolarEpi
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- **The epigraph of the polar**: `epi f° = A ((epi f)°)`, where `A` is the vertical reflection
-`vNeg`. -/
+/-- Let $f$ be nonnegative, and let $A$ be the vertical reflection `ConvexAnalysis.vNeg`. Then
+$$\operatorname{epi} f^\circ = A\big((\operatorname{epi} f)^\circ\big),$$
+where the polar is taken with respect to `ConvexAnalysis.epiPairing B`. -/
 theorem epi_polarFn (hnn : ∀ x, 0 ≤ f x) :
     epi (polarFn B f) = vNeg F '' polarSet (epiPairing B) (epi f) := by
   rw [image_vNeg_eq_preimage]
@@ -1331,7 +1581,8 @@ theorem epi_polarFn (hnn : ∀ x, 0 ≤ f x) :
     simp only at h2
     linarith
 
-/-- The polar of a nonnegative function is convex, being cut out by a polar set. -/
+/-- The polar of a nonnegative function is convex, because its epigraph is the reflection of a polar
+set. -/
 theorem convexFn_polarFn (hnn : ∀ x, 0 ≤ f x) : ConvexFn (polarFn B f) := by
   rw [convexFn_iff_convex_epi, epi_polarFn hnn, image_vNeg_eq_preimage]
   exact (convex_polarSet _ _).linear_preimage (vNeg F)
@@ -1343,8 +1594,10 @@ section PolarClosed
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   [TopologicalSpace F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsContinuousPairing B.flip] {f : E → EReal}
 
-/-- The polar of a nonnegative function vanishing at the origin is closed, because polar sets are
-closed. -/
+/-- Let $F$ carry a topology in which every $\langle x, \cdot \rangle$ is continuous. If $f$ is
+nonnegative and $f(0) \le 0$, then $f^\circ$ is closed in the sense of
+`ConvexAnalysis.ClosedConvex`, because polar sets are closed. This is part of Theorem 15.4 of
+[rockafellar1970convex]. -/
 theorem closedConvex_polarFn (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : ClosedConvex (polarFn B f) := by
   have : IsContinuousPairing (epiPairing B).flip := by
     rw [epiPairing_flip]
@@ -1363,10 +1616,14 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
   [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f : E → EReal}
 
-/-- **The bipolar is the closure**: for a nonnegative convex function vanishing at the origin,
-`f°° = cl f`.
+/-- Let $E$ be a locally convex space, let the pairing $B$ be compatible with the topology of $E$,
+and let $f : E \to [-\infty, +\infty]$ be convex and nonnegative with $f(0) \le 0$. Then the
+bipolar of $f$ is its closure:
+$$f^{\circ\circ} = \operatorname{cl} f.$$
+This is part of Theorem 15.4 of [rockafellar1970convex].
 
-The outer polar is taken with respect to `B.flip`, since `f°` lives on `F`. -/
+The outer polar is taken with respect to the flipped pairing, because $f^\circ$ is a function on
+$F$. -/
 theorem polarFn_polarFn (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) :
     polarFn B.flip (polarFn B f) = convexCl f := by
   have hnn' : ∀ y, 0 ≤ polarFn B f y := fun y => polarFn_nonneg h0 y
@@ -1383,30 +1640,35 @@ theorem polarFn_polarFn (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 
 
 end BipolarFn
 
-/-! ### The class on which the polar is an involution
+/-!
+### The class on which the polar is an involution
 
-The nonnegative closed convex functions that vanish at the origin. -/
+The nonnegative closed convex functions that vanish at the origin.
+-/
 
 section PolarClass
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] {f : E → EReal}
 
-/-- **The nonnegative closed convex functions vanishing at the origin.** These are exactly the
-functions that arise as polars (`isPolarFn_polarFn` and `polarFn_polarFn`), and `f ↦ f°` is an
-involution on them. -/
+/-- A function $f : E \to [-\infty, +\infty]$ is in the **polar class** if it is nonnegative, closed
+and convex, and $f(0) = 0$.
+
+These are the functions that arise as polars (`ConvexAnalysis.isPolarFn_polarFn` and
+`ConvexAnalysis.polarFn_polarFn`), and $f \mapsto f^\circ$ is an involution on them. -/
 structure IsPolarFn (f : E → EReal) : Prop where
-  /-- A polar is nonnegative. -/
+  /-- The function is nonnegative. -/
   nonneg : ∀ x, 0 ≤ f x
-  /-- A polar vanishes at the origin. -/
+  /-- The function vanishes at the origin. -/
   map_zero : f 0 = 0
-  /-- A polar is convex. -/
+  /-- The function is convex. -/
   convexFn : ConvexFn f
-  /-- A polar is closed. -/
+  /-- The function is closed in the sense of `ConvexAnalysis.ClosedConvex`. -/
   closedConvex : ClosedConvex f
 
+/-- A function in the polar class satisfies $f(0) \le 0$. -/
 theorem IsPolarFn.map_zero_le (h : IsPolarFn f) : f 0 ≤ 0 := le_of_eq h.map_zero
 
-/-- A closed gauge is an `IsPolarFn`. -/
+/-- A closed gauge is in the polar class `ConvexAnalysis.IsPolarFn`. -/
 theorem IsGauge.isPolarFn (h : IsGauge f) (hcl : ClosedConvex f) : IsPolarFn f :=
   ⟨h.nonneg, h.map_zero, h.convexFn, hcl⟩
 
@@ -1418,7 +1680,9 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
   [Module ℝ F] [TopologicalSpace F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsContinuousPairing B.flip]
   {f : E → EReal}
 
-/-- **The polar of an `IsPolarFn` is again one**: the four conditions are inherited. -/
+/-- Let $E$ and $F$ carry topologies, with every $\langle x, \cdot \rangle$ continuous on $F$. If
+$f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then so is $f^\circ$. This is part of
+Theorem 15.4 of [rockafellar1970convex]. -/
 theorem isPolarFn_polarFn (h : IsPolarFn f) : IsPolarFn (polarFn B f) where
   nonneg y := polarFn_nonneg h.map_zero_le y
   map_zero := polarFn_zero B f h.map_zero_le
@@ -1433,8 +1697,10 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
   [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] [AddCommGroup F] [Module ℝ F] [TopologicalSpace F]
   [IsTopologicalAddGroup F] [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F]
 
-/-- **`f ↦ f°` is a symmetric one-to-one correspondence** on the nonnegative closed convex
-functions vanishing at the origin. -/
+/-- Let $E$ and $F$ be locally convex spaces, and let $B$ and its flip be compatible pairings. The
+map $f \mapsto f^\circ$ is a bijection from the nonnegative closed convex functions on $E$ that
+vanish at $0$ to those on $F$, and its inverse is the polar with respect to the flipped pairing.
+This is Corollary 15.4.1 of [rockafellar1970convex]. -/
 noncomputable def polarFnEquiv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] :
     {f : E → EReal // IsPolarFn f} ≃ {g : F → EReal // IsPolarFn g} where
@@ -1453,22 +1719,27 @@ noncomputable def polarFnEquiv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatib
 
 end PolarInvolution
 
-/-! ### The involution `k°° = cl k`
+/-!
+### The involution $k^{\circ\circ} = \operatorname{cl} k$
 
-The book derives this from polarity of the unit level set. Here it is a special case of
-`polarFn_polarFn` instead: on a gauge the two polar operations agree (`polarFn_eq_polarGauge`),
-because the `1 +` in the definition of `f°` is invisible to a positively homogeneous function. -/
+[rockafellar1970convex] derives this from the polarity of the unit sublevel set. Here it is a
+special case of `ConvexAnalysis.polarFn_polarFn`, because the two polar operations agree on a gauge
+(`ConvexAnalysis.polarFn_eq_polarGauge`): the term $1 +$ in the definition of $f^\circ$ has no
+effect on a positively homogeneous function.
+-/
 
 section
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {k : E → EReal}
 
-/-- **The two polar operations agree on gauges**: the `1 +` in the definition of `f°` is invisible
-to a positively homogeneous `f`.
+/-- Let $k$ be nonnegative and positively homogeneous with $k(0) = 0$. Then the polar of $k$ as a
+function equals its polar as a gauge: `ConvexAnalysis.polarFn B k = ConvexAnalysis.polarGauge B
+k`.
 
-The admissible set of `polarGauge` is contained in that of `polarFn`, and the two differ at most
-at `0`; since both are up-sets in `[0, ∞)`, the infima agree. -/
+The admissible set of `ConvexAnalysis.polarGauge` is contained in that of
+`ConvexAnalysis.polarFn`, and the two differ at most at $0$. Both are upward closed in
+$[0, \infty)$, so the infima agree. -/
 theorem polarFn_eq_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 : k 0 = 0) :
     polarFn B k = polarGauge B k := by
   funext y
@@ -1519,7 +1790,11 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
   [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {k : E → EReal}
 
-/-- **`k°° = cl k`** for a gauge `k`. -/
+/-- Let $E$ be a locally convex space, let the pairing $B$ be compatible with the topology of $E$,
+and let $k$ be a gauge on $E$. Then
+$$k^{\circ\circ} = \operatorname{cl} k,$$
+where the outer polar is taken with respect to the flipped pairing. This is part of Theorem 15.1
+of [rockafellar1970convex]. -/
 theorem polarGauge_polarGauge (hk : IsGauge k) :
     polarGauge B.flip (polarGauge B k) = convexCl k := by
   have hpk : IsGauge (polarGauge B k) := isGauge_polarGauge hk.nonneg hk.posHomogeneous hk.map_zero
@@ -1529,7 +1804,7 @@ theorem polarGauge_polarGauge (hk : IsGauge k) :
 
 end GaugeInvolution
 
-/-! ### Polarity as a correspondence, for gauges and for sets -/
+/-! ### Polarity as a bijection, for gauges and for sets -/
 
 section GaugeCorrespondence
 
@@ -1537,7 +1812,10 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
   [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] [AddCommGroup F] [Module ℝ F] [TopologicalSpace F]
   [IsTopologicalAddGroup F] [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F]
 
-/-- **`k ↦ k°` is a symmetric one-to-one correspondence on the closed gauges.** -/
+/-- Let $E$ and $F$ be locally convex spaces, and let $B$ and its flip be compatible pairings. The
+map $k \mapsto k^\circ$ is a bijection from the closed gauges on $E$ to the closed gauges on
+$F$, and its inverse is the polar with respect to the flipped pairing. This is the first
+assertion of Corollary 15.1.1 of [rockafellar1970convex]. -/
 noncomputable def polarGaugeEquiv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] :
     {k : E → EReal // IsGauge k ∧ ClosedConvex k} ≃
@@ -1566,8 +1844,13 @@ section SetCorrespondence
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   [TopologicalSpace F] [ContinuousSMul ℝ F]
 
-/-- **Two closed convex sets containing the origin are polar to each other exactly when their
-gauges are.** -/
+/-- Let $F$ carry a topology in which scalar multiplication and every $\langle x, \cdot \rangle$ are
+continuous. Let $C \subseteq E$ be convex with $0 \in C$, and let $D \subseteq F$ be closed and
+convex with $0 \in D$. Then $C^\circ = D$ if and only if $\gamma(\cdot \mid C)^\circ =
+\gamma(\cdot \mid D)$. This is the second assertion of Corollary 15.1.1 of
+[rockafellar1970convex].
+
+The source assumes that both sets are closed; $C$ need not be. -/
 theorem polarSet_eq_iff_polarGauge_gaugeFn_eq (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
     [IsContinuousPairing B.flip] {C : Set E} {D : Set F}
     (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hD : Convex ℝ D) (hDcl : IsClosed D)
@@ -1581,35 +1864,49 @@ theorem polarSet_eq_iff_polarGauge_gaugeFn_eq (B : E →ₗ[ℝ] F →ₗ[ℝ] �
 
 end SetCorrespondence
 
-/-! ### The obverse
+/-!
+### The obverse
 
-`g(x) = inf {λ > 0 | (fλ)(x) ≤ 1}`. The observation that replaces the geometric argument of the
-book is that this is a **gauge value one dimension higher**: `g(x) = γ((x, 1) | epi f)`. Everything
-about the obverse then follows from the gauge API. -/
+The obverse is $\operatorname{ob}(f)(x) = \inf \{\lambda > 0 : (f\lambda)(x) \le 1\}$. In place of
+the geometric argument of [rockafellar1970convex], this section observes that it is a gauge value
+one dimension higher: $\operatorname{ob}(f)(x) = \gamma((x, 1) \mid \operatorname{epi} f)$. The
+properties of the obverse then follow from those of the gauge.
+-/
 
 section Obverse
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {a : ℝ}
 
+/-- Let $a > 0$. Then $(x, r) \in a \operatorname{epi} f$ if and only if $f(a^{-1} x) \le a^{-1} r$.
+-/
 theorem mk_mem_smul_epi_iff (ha : 0 < a) (f : E → EReal) (x : E) (r : ℝ) :
     (x, r) ∈ a • epi f ↔ f (a⁻¹ • x) ≤ ((a⁻¹ * r : ℝ) : EReal) := by
   rw [mem_smul_set_iff_inv_smul_mem₀ ha.ne']
   exact Iff.rfl
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- The point $(x, 1)$ lies in $\operatorname{epi} f$ if and only if $f(x) \le 1$. -/
 theorem mk_one_mem_epi_iff (f : E → EReal) (x : E) : (x, (1 : ℝ)) ∈ epi f ↔ f x ≤ 1 := by
   rw [mem_epi]
   exact_mod_cast Iff.rfl
 
-/-- **The obverse of `f`**, Rockafellar's term: `g(x) = inf {λ > 0 | (fλ)(x) ≤ 1}`. -/
+/-- The **obverse** of a function $f : E \to [-\infty, +\infty]$ is the function
+$$\operatorname{ob}(f)(x) = \inf \{\lambda \in \mathbb{R} : \lambda > 0,\ (f\lambda)(x) \le
+  1\},$$
+where $(f\lambda)(x) = \lambda f(\lambda^{-1} x)$ is right scalar multiplication. The term is
+Rockafellar's. -/
 noncomputable def obverse (f : E → EReal) : E → EReal :=
   fun x => ⨅ l ∈ {l : ℝ | 0 < l ∧ smulRight f l x ≤ 1}, (l : EReal)
 
+/-- The defining formula $\operatorname{ob}(f)(x) = \inf \{\lambda > 0 : (f\lambda)(x) \le 1\}$. -/
 theorem obverse_apply (f : E → EReal) (x : E) :
     obverse f x = ⨅ l ∈ {l : ℝ | 0 < l ∧ smulRight f l x ≤ 1}, (l : EReal) := rfl
 
-/-- The admissible set of the obverse is the admissible set of the gauge of `epi f` at height one:
-the scalar `0` is never admissible, because `(x, 1) ∉ 0 • S`. -/
+/-- The admissible set of the obverse at $x$ is the admissible set of the gauge of
+$\operatorname{epi} f$ at $(x, 1)$:
+$$\{\lambda > 0 : (f\lambda)(x) \le 1\} = \{a \ge 0 : (x, 1) \in a \operatorname{epi} f\}.$$
+The scalar $0$ is never admissible on the right, because
+$(x, 1) \notin 0 \cdot \operatorname{epi} f$. -/
 theorem obverseSet_eq (f : E → EReal) (x : E) :
     {l : ℝ | 0 < l ∧ smulRight f l x ≤ 1} = {a : ℝ | 0 ≤ a ∧ (x, (1 : ℝ)) ∈ a • epi f} := by
   ext l
@@ -1624,31 +1921,38 @@ theorem obverseSet_eq (f : E → EReal) (x : E) :
       simpa using congrArg Prod.snd hp
     · exact ⟨hl, (mk_one_mem_epi_iff _ x).1 (by rw [← epi_smulRight hl] at hmem; exact hmem)⟩
 
-/-- **The obverse is a gauge value one dimension up**: `g(x) = γ((x, 1) | epi f)`. -/
+/-- The obverse is a gauge value one dimension higher: $\operatorname{ob}(f)(x) = \gamma((x, 1) \mid
+\operatorname{epi} f)$. -/
 theorem obverse_eq_gaugeFn (f : E → EReal) (x : E) :
     obverse f x = gaugeFn (epi f) (x, (1 : ℝ)) := by
   rw [obverse_apply, gaugeFn_apply, obverseSet_eq]
 
-/-- The epigraph of the obverse is a slice of the epigraph of the gauge of `epi f`. -/
+/-- The epigraph of the obverse is a slice of the epigraph of the gauge of $\operatorname{epi} f$:
+$(x, \mu) \in \operatorname{epi} \operatorname{ob}(f)$ if and only if $((x, 1), \mu) \in
+\operatorname{epi} \gamma(\cdot \mid \operatorname{epi} f)$. -/
 theorem epi_obverse (f : E → EReal) :
     epi (obverse f) = (fun p : E × ℝ => ((p.1, (1 : ℝ)), p.2)) ⁻¹' epi (gaugeFn (epi f)) := by
   ext p
   simp only [Set.mem_preimage, mem_epi, obverse_eq_gaugeFn]
 
+/-- The obverse is nonnegative. -/
 theorem obverse_nonneg (f : E → EReal) (x : E) : 0 ≤ obverse f x := by
   rw [obverse_eq_gaugeFn]
   exact gaugeFn_nonneg _ _
 
+/-- The obverse never takes the value $-\infty$. -/
 theorem obverse_ne_bot (f : E → EReal) (x : E) : obverse f x ≠ ⊥ := by
   rw [obverse_eq_gaugeFn]
   exact gaugeFn_ne_bot _ _
 
 end Obverse
 
-/-! ### Two `EReal` lemmas used for the obverse -/
+/-! ### Two lemmas on extended reals for the obverse -/
 
 section ErealAux
 
+/-- If $z \in [-\infty, +\infty]$ and $z \ge 0$, then $\inf \{\nu \in \mathbb{R} : \nu > 0,\ z \le
+\nu\} = z$. For $z = +\infty$ the set is empty and both sides are $+\infty$. -/
 theorem biInf_coe_pos_ge_eq {z : EReal} (hz : 0 ≤ z) :
     (⨅ ν ∈ {ν : ℝ | 0 < ν ∧ z ≤ (ν : EReal)}, (ν : EReal)) = z := by
   refine le_antisymm ?_ (le_iInf₂ fun ν hν => hν.2)
@@ -1664,6 +1968,8 @@ theorem biInf_coe_pos_ge_eq {z : EReal} (hz : 0 ≤ z) :
   rw [hr]
   exact_mod_cast hd.le
 
+/-- Let $A, B \in [-\infty, +\infty]$ be nonnegative. If $A \le \nu \iff B \le \nu$ for every real
+$\nu > 0$, then $A = B$. -/
 theorem eq_of_forall_pos_le_iff {A B : EReal} (hA : 0 ≤ A) (hB : 0 ≤ B)
     (h : ∀ ν : ℝ, 0 < ν → (A ≤ (ν : EReal) ↔ B ≤ (ν : EReal))) : A = B := by
   refine le_antisymm ?_ ?_
@@ -1692,21 +1998,22 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Conti
   [IsTopologicalAddGroup E] {f : E → EReal} {ν : ℝ}
 
 omit [ContinuousSMul ℝ E] in
-/-- The epigraph of an `IsPolarFn` is convex, closed, and contains the origin — the hypotheses of
-the closed gauge theory. -/
+/-- If $f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then $\operatorname{epi} f$ is convex
+and closed and contains the origin. These are the hypotheses of the theory of closed gauges. -/
 theorem IsPolarFn.epi_closed_convex_zero (h : IsPolarFn f) :
     Convex ℝ (epi f) ∧ IsClosed (epi f) ∧ (0 : E × ℝ) ∈ epi f :=
   ⟨h.convexFn.convex_epi, isClosed_epi_of_closedConvex h.nonneg h.closedConvex, by
     rw [mem_epi]; simpa using h.map_zero.le⟩
 
-/-- **The defining inequality of the obverse**, for an `IsPolarFn`: `g(x) ≤ ν` exactly when
-`(fν)(x) ≤ 1`, for `ν > 0`. -/
+/-- Let $f$ be in the polar class `ConvexAnalysis.IsPolarFn`, and let $\nu > 0$. Then
+$\operatorname{ob}(f)(z) \le \nu$ if and only if $f(\nu^{-1} z) \le \nu^{-1}$, that is,
+$(f\nu)(z) \le 1$. -/
 theorem obverse_le_coe_iff (h : IsPolarFn f) (hν : 0 < ν) (z : E) :
     obverse f z ≤ (ν : EReal) ↔ f (ν⁻¹ • z) ≤ ((ν⁻¹ : ℝ) : EReal) := by
   obtain ⟨hC, hCcl, hC0⟩ := h.epi_closed_convex_zero
   rw [obverse_eq_gaugeFn, gaugeFn_le_coe_iff hC hC0 hCcl hν, mk_mem_smul_epi_iff hν, mul_one]
 
-/-- The obverse vanishes at the origin. -/
+/-- If $f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then $\operatorname{ob}(f)(0) = 0$. -/
 @[simp] theorem obverse_zero (h : IsPolarFn f) : obverse f 0 = 0 := by
   refine le_antisymm (le_coe_of_forall_gt_le fun d hd => ?_) (obverse_nonneg f 0)
   have hd0 : (0 : ℝ) < d := by exact_mod_cast hd
@@ -1714,6 +2021,8 @@ theorem obverse_le_coe_iff (h : IsPolarFn f) (hν : 0 < ν) (z : E) :
   exact_mod_cast le_of_lt (inv_pos.2 hd0)
 
 omit [ContinuousSMul ℝ E] [IsTopologicalAddGroup E] in
+/-- If $f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then $\operatorname{ob}(f)$ is convex.
+-/
 theorem convexFn_obverse (h : IsPolarFn f) : ConvexFn (obverse f) := by
   have hk : ConvexFn (gaugeFn (epi f)) := convexFn_gaugeFn h.convexFn.convex_epi
   refine convexFn_iff_convex_epi.2 fun p hp q hq s t hs ht hst => ?_
@@ -1726,6 +2035,8 @@ theorem convexFn_obverse (h : IsPolarFn f) : ConvexFn (obverse f) := by
   rw [hkey] at hcomb
   exact hcomb
 
+/-- If $f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then $\operatorname{ob}(f)$ is closed
+in the sense of `ConvexAnalysis.ClosedConvex`. -/
 theorem closedConvex_obverse (h : IsPolarFn f) : ClosedConvex (obverse f) := by
   obtain ⟨hC, hCcl, hC0⟩ := h.epi_closed_convex_zero
   refine closedConvex_of_isClosed_epi (obverse_nonneg f) ?_
@@ -1734,14 +2045,18 @@ theorem closedConvex_obverse (h : IsPolarFn f) : ClosedConvex (obverse f) := by
     (isClosed_epi_of_closedConvex (gaugeFn_nonneg _) (closedConvex_gaugeFn hC hC0 hCcl))
   exact (continuous_fst.prodMk continuous_const).prodMk continuous_snd
 
-/-- The obverse of a nonnegative closed convex function vanishing at the origin is another one. -/
+/-- If $f$ is in the polar class `ConvexAnalysis.IsPolarFn`, then so is its obverse. This is part of
+Theorem 15.5 of [rockafellar1970convex]. -/
 theorem isPolarFn_obverse (h : IsPolarFn f) : IsPolarFn (obverse f) where
   nonneg := obverse_nonneg f
   map_zero := obverse_zero h
   convexFn := convexFn_obverse h
   closedConvex := closedConvex_obverse h
 
-/-- **The obverse is an involution**: `f` is the obverse of its obverse. -/
+/-- Let $E$ be a topological vector space, and let $f$ be a nonnegative closed convex function on
+$E$ with $f(0) = 0$. Then the obverse is an involution:
+$$\operatorname{ob}(\operatorname{ob}(f)) = f.$$
+This is part of Theorem 15.5 of [rockafellar1970convex]. -/
 theorem obverse_obverse (h : IsPolarFn f) : obverse (obverse f) = f := by
   funext z
   rw [obverse_apply, obverseSet_eq]
@@ -1769,19 +2084,24 @@ theorem obverse_obverse (h : IsPolarFn f) : obverse (obverse f) = f := by
 
 end ObverseClosed
 
-/-! ### The polar, the conjugate and the obverse
+/-!
+### The polar, the conjugate and the obverse
 
-The book obtains these from the symmetry of a closed convex cone in `R^(n+2)` under exchanging two
-coordinates. Here the single computation `f* = (f°)ᵒ` (`convexConj_eq_obverse_polarFn`) does the
-work: it is a level-set comparison, and everything else follows from it together with
-`obverse_obverse` and `polarFn_polarFn`. -/
+[rockafellar1970convex] obtains these identities from the symmetry of a closed convex cone in
+$\mathbb{R}^{n+2}$ under the exchange of two coordinates. Here the identity
+$f^* = \operatorname{ob}(f^\circ)$ (`ConvexAnalysis.convexConj_eq_obverse_polarFn`) does the work.
+It is a comparison of sublevel sets, and the other identities follow from it with
+`ConvexAnalysis.obverse_obverse` and `ConvexAnalysis.polarFn_polarFn`.
+-/
 
 section ConjEpi
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {y : F}
 
-/-- `f*(y) ≤ ν` read off the epigraph of `f`: the `⊤` value of `f` imposes no condition. -/
+/-- Let $f$ be nonnegative and $\nu \in \mathbb{R}$. Then $f^*(y) \le \nu$ if and only if
+$\langle x, y \rangle - \alpha \le \nu$ for every $(x, \alpha) \in \operatorname{epi} f$. Points
+where $f = +\infty$ impose no condition. -/
 theorem convexConj_le_coe_iff_epi (hnn : ∀ x, 0 ≤ f x) {ν : ℝ} :
     convexConj B f y ≤ (ν : EReal) ↔ ∀ (x : E) (α : ℝ), f x ≤ (α : EReal) → B x y - α ≤ ν := by
   rw [convexConj_apply, iSup_le_iff]
@@ -1809,8 +2129,9 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
   [Module ℝ F] [TopologicalSpace F] [IsTopologicalAddGroup F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
   [IsContinuousPairing B.flip] {f : E → EReal}
 
-/-- The conjugate of an `IsPolarFn` is again one: nonnegativity, vanishing at the origin,
-convexity and closedness are all apparent from the definition of `f*`. -/
+/-- Let $E$ carry a topology, let $F$ be a topological additive group, and let every
+$\langle x, \cdot \rangle$ be continuous on $F$. If $f$ is in the polar class
+`ConvexAnalysis.IsPolarFn`, then so is $f^*$. -/
 theorem isPolarFn_convexConj (h : IsPolarFn f) : IsPolarFn (convexConj B f) where
   nonneg := zero_le_convexConj h.map_zero.le
   map_zero := convexConj_zero_eq_zero h.nonneg h.map_zero.le
@@ -1825,10 +2146,15 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [Add
   [Module ℝ F] [TopologicalSpace F] [ContinuousSMul ℝ F] [IsTopologicalAddGroup F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsContinuousPairing B.flip] {f : E → EReal}
 
-/-- **The conjugate is the obverse of the polar**: `f* = (f°)ᵒ`.
+/-- Let $F$ be a topological vector space, let every $\langle x, \cdot \rangle$ be continuous on
+$F$, and let $f$ be a nonnegative closed convex function on $E$ with $f(0) = 0$. Then the
+conjugate is the obverse of the polar:
+$$f^* = \operatorname{ob}(f^\circ).$$
+This is part of Theorem 15.5 of [rockafellar1970convex].
 
-Both sides are nonnegative, so it suffices to compare them against the positive reals, and there
-the statement unwinds to `⟨x, y⟩ - α ≤ ν` for every `(x, α) ∈ epi f`. -/
+Both sides are nonnegative, so it suffices to compare their sublevel sets at positive reals
+$\nu$. There both conditions reduce to $\langle x, y \rangle - \alpha \le \nu$ for every
+$(x, \alpha) \in \operatorname{epi} f$. -/
 theorem convexConj_eq_obverse_polarFn
     (h : IsPolarFn f) : convexConj B f = obverse (polarFn B f) := by
   funext y
@@ -1841,8 +2167,14 @@ theorem convexConj_eq_obverse_polarFn
   have hrw : ν⁻¹ * B x y - α * ν⁻¹ = ν⁻¹ * (B x y - α) := by ring
   rw [hrw, inv_mul_le_iff₀ hν, mul_one]
 
-/-- **The polar is the obverse of the conjugate**: `f° = (f*)ᵒ`. Together with
-`convexConj_eq_obverse_polarFn`, `f°` and `f*` are the obverses of each other. -/
+/-- Let $F$ be a topological vector space, let every $\langle x, \cdot \rangle$ be continuous on
+$F$, and let $f$ be a nonnegative closed convex function on $E$ with $f(0) = 0$. Then the polar
+is the obverse of the conjugate:
+$$f^\circ = \operatorname{ob}(f^*).$$
+This is part of Theorem 15.5 of [rockafellar1970convex].
+
+With `ConvexAnalysis.convexConj_eq_obverse_polarFn`, this shows that $f^\circ$ and $f^*$ are
+obverses of each other. -/
 theorem polarFn_eq_obverse_convexConj
     (h : IsPolarFn f) : polarFn B f = obverse (convexConj B f) := by
   rw [convexConj_eq_obverse_polarFn h, obverse_obverse (isPolarFn_polarFn h)]
@@ -1857,8 +2189,12 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsT
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] [IsCompatiblePairing B.flip] {f : E → EReal}
 
 omit [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] in
-/-- **The obverse of `f` is `f*°`**, the expression from which the book derives the formula
-`g(x) = inf {λ > 0 | (fλ)(x) ≤ 1}`. -/
+/-- Let $E$ be a locally convex space, let $B$ and its flip be compatible pairings, and let $f$ be
+in the polar class `ConvexAnalysis.IsPolarFn`. Then the obverse of $f$ is the polar of its
+conjugate, $\operatorname{ob}(f) = f^{*\circ}$, where the polar is taken with respect to the
+flipped pairing. This is part of Theorem 15.5 of [rockafellar1970convex], the expression from
+which the source derives the formula $\operatorname{ob}(f)(x) = \inf \{\lambda > 0 :
+(f\lambda)(x) \le 1\}$. -/
 theorem obverse_eq_polarFn_convexConj (h : IsPolarFn f) :
     obverse f = polarFn B.flip (convexConj B f) := by
   rw [polarFn_eq_obverse_convexConj (B := B.flip) (isPolarFn_convexConj (B := B) h)]
@@ -1868,7 +2204,9 @@ theorem obverse_eq_polarFn_convexConj (h : IsPolarFn f) :
     exact h.closedConvex
   rw [h2]
 
-/-- `g° = f*`, where `g` is the obverse of `f`. -/
+/-- Let $E$ and $F$ be locally convex spaces, let $B$ and its flip be compatible pairings, and let
+$f$ be in the polar class `ConvexAnalysis.IsPolarFn`. Then $\operatorname{ob}(f)^\circ = f^*$.
+This is part of Theorem 15.5 of [rockafellar1970convex]. -/
 theorem polarFn_obverse (h : IsPolarFn f) : polarFn B (obverse f) = convexConj B f := by
   have hc : IsPolarFn (convexConj B f) := isPolarFn_convexConj (B := B) h
   rw [obverse_eq_polarFn_convexConj (B := B) h]
@@ -1877,13 +2215,19 @@ theorem polarFn_obverse (h : IsPolarFn f) : polarFn B (obverse f) = convexConj B
   rw [h3]
   exact hc.closedConvex
 
-/-- `f° = g*`, where `g` is the obverse of `f`. -/
+/-- Let $E$ and $F$ be locally convex spaces, let $B$ and its flip be compatible pairings, and let
+$f$ be in the polar class `ConvexAnalysis.IsPolarFn`. Then $\operatorname{ob}(f)^* = f^\circ$.
+This is part of Theorem 15.5 of [rockafellar1970convex]. -/
 theorem convexConj_obverse (h : IsPolarFn f) : convexConj B (obverse f) = polarFn B f := by
   rw [convexConj_eq_obverse_polarFn (isPolarFn_obverse h), polarFn_obverse (B := B) h,
     ← polarFn_eq_obverse_convexConj (B := B) h]
 
 omit [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F] in
-/-- **The polar and the conjugate commute**: `f*° = f°*`. -/
+/-- Let $E$ be a locally convex space, let $B$ and its flip be compatible pairings, and let $f$ be a
+nonnegative closed convex function on $E$ with $f(0) = 0$. Then polarity and conjugacy commute:
+$$f^{*\circ} = f^{\circ *},$$
+where the outer operation on each side is taken with respect to the flipped pairing. This is
+Corollary 15.5.1 of [rockafellar1970convex]. -/
 theorem polarFn_convexConj_eq_convexConj_polarFn (h : IsPolarFn f) :
     polarFn B.flip (convexConj B f) = convexConj B.flip (polarFn B f) := by
   rw [← obverse_eq_polarFn_convexConj (B := B) h,
@@ -1891,7 +2235,10 @@ theorem polarFn_convexConj_eq_convexConj_polarFn (h : IsPolarFn f) :
     polarFn_polarFn h.convexFn h.nonneg h.map_zero_le, h.closedConvex]
 
 omit [LocallyConvexSpace ℝ E] in
-/-- **The level sets of the obverse**: `{g ≤ α} = α {f ≤ α⁻¹}` for `α > 0`. -/
+/-- Let $E$ be a topological vector space, let $f$ be a nonnegative closed convex function on $E$
+with $f(0) = 0$, and let $\alpha > 0$. Then the sublevel sets of the obverse are
+$$\{x : \operatorname{ob}(f)(x) \le \alpha\} = \alpha \{x : f(x) \le \alpha^{-1}\}.$$
+[rockafellar1970convex] states this in §15, after Theorem 15.5. -/
 theorem setOf_obverse_le (h : IsPolarFn f) {α : ℝ} (hα : 0 < α) :
     {x : E | obverse f x ≤ (α : EReal)} = α • {x : E | f x ≤ ((α⁻¹ : ℝ) : EReal)} := by
   ext z
@@ -1900,8 +2247,12 @@ theorem setOf_obverse_le (h : IsPolarFn f) {α : ℝ} (hα : 0 < α) :
 
 omit [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
   [LocallyConvexSpace ℝ F] [IsCompatiblePairing B] in
-/-- **The level sets of the polar and of the conjugate**: `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}` for
-`α > 0`. This is the middle set of `polarSet_setOf_le_subset_and_subset`. -/
+/-- Let $F$ be a topological vector space, let the flipped pairing be compatible with the topology
+of $F$, let $f$ be a nonnegative closed convex function on $E$ with $f(0) = 0$, and let
+$\alpha > 0$. Then
+$$\{y : f^\circ(y) \le \alpha^{-1}\} = \alpha^{-1} \{y : f^*(y) \le \alpha\}.$$
+[rockafellar1970convex] states this at the end of §15. It is the middle set of
+`ConvexAnalysis.polarSet_setOf_le_subset_and_subset`. -/
 theorem setOf_polarFn_le (h : IsPolarFn f) {α : ℝ} (hα : 0 < α) :
     {y : F | polarFn B f y ≤ ((α⁻¹ : ℝ) : EReal)}
       = α⁻¹ • {y : F | convexConj B f y ≤ (α : EReal)} := by
@@ -1910,53 +2261,60 @@ theorem setOf_polarFn_le (h : IsPolarFn f) {α : ℝ} (hα : 0 < α) :
 
 end PolarConjObverse
 
-/-! ### Norms
+/-!
+### Norms
 
-A gauge that is finite everywhere, symmetric, and positive away from the origin is a **norm**. The
-book states the correspondence with the *symmetric closed bounded convex sets `C` with
-`0 ∈ int C`*. Two of those three conditions on `C` are the finite-dimensional readings of conditions
-that make sense in general, and it is the general readings that are proved here:
+A gauge that is finite everywhere, symmetric, and positive away from the origin is a **norm**.
+[rockafellar1970convex] states the correspondence with the symmetric closed bounded convex sets $C$
+with $0 \in \operatorname{int} C$. Two of these conditions are finite-dimensional forms of
+conditions that make sense in general, and the general forms are proved here:
 
-* "`0 ∈ int C`", which in `Rⁿ` says that `C` contains a positive multiple of every vector, is
-  `AbsorbsAll C`;
-* "`C` is bounded", which in `Rⁿ` says that `C` contains no half-line, is `RayFree C`.
+* $0 \in \operatorname{int} C$, which in $\mathbb{R}^n$ says that $C$ contains a positive multiple
+  of every vector, becomes `ConvexAnalysis.AbsorbsAll`;
+* "$C$ is bounded", which in $\mathbb{R}^n$ says that $C$ contains no half-line from the origin,
+  becomes `ConvexAnalysis.RayFree`.
 
-Closedness is *not* part of the correspondence here. The book gets it from the continuity of a
-finite convex function on `Rⁿ`, which is genuinely finite-dimensional; in an infinite-dimensional
-space a finite symmetric positive gauge need not be lower semicontinuous. -/
+Closedness is not part of the correspondence here. The source obtains it from the continuity of a
+finite convex function on $\mathbb{R}^n$, which is a finite-dimensional fact; in an
+infinite-dimensional space a finite symmetric positive gauge need not be lower semicontinuous.
+-/
 
 section Norm
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E} {k : E → EReal}
 
-/-- `C` **absorbs every point**: every `x` lies in some nonnegative dilate of `C`. This is the
-elementary form in which absorbency enters the gauge; `absorbsAll_of_absorbent` relates it to
-Mathlib's `Absorbent`. -/
+/-- A set $C$ **absorbs every point** if every $x \in E$ lies in $aC$ for some $a \ge 0$.
+
+This is the form in which absorbency enters the gauge. `ConvexAnalysis.absorbsAll_of_absorbent`
+derives it from Mathlib's `Absorbent`. -/
 def AbsorbsAll (C : Set E) : Prop := ∀ x : E, ∃ a : ℝ, 0 ≤ a ∧ x ∈ a • C
 
-/-- `C` **contains no ray**: for every `x ≠ 0` some positive multiple of `x` is outside `C`. -/
+/-- A set $C$ **contains no ray** if for every $x \neq 0$ there is $\lambda > 0$ with
+$\lambda x \notin C$. -/
 def RayFree (C : Set E) : Prop := ∀ x : E, x ≠ 0 → ∃ l : ℝ, 0 < l ∧ l • x ∉ C
 
-/-- **A norm** in Rockafellar's sense: a gauge that is finite everywhere, symmetric, and positive
-away from the origin. -/
+/-- A **norm**, in the sense of [rockafellar1970convex], is a gauge $k$ that is finite everywhere,
+symmetric ($k(-x) = k(x)$), and positive away from the origin. -/
 structure IsNorm (k : E → EReal) : Prop extends IsGauge k where
-  /-- A norm is finite. -/
+  /-- A norm is finite everywhere. -/
   ne_top : ∀ x, k x ≠ ⊤
-  /-- A norm is symmetric. -/
+  /-- A norm is symmetric: $k(-x) = k(x)$. -/
   map_neg : ∀ x, k (-x) = k x
   /-- A norm is positive away from the origin. -/
   pos : ∀ x, x ≠ 0 → 0 < k x
 
+/-- The gauge of $-C$ at $x$ is the gauge of $C$ at $-x$. -/
 theorem gaugeFn_neg_set (C : Set E) (x : E) : gaugeFn (-C) x = gaugeFn C (-x) := by
   have hset : {a : ℝ | 0 ≤ a ∧ x ∈ a • (-C)} = {a : ℝ | 0 ≤ a ∧ -x ∈ a • C} := by
     ext a
     simp only [Set.mem_ofPred, Set.smul_set_neg, Set.mem_neg]
   rw [gaugeFn_apply, gaugeFn_apply, hset]
 
+/-- If $C$ is symmetric ($-C = C$), then $\gamma(-x \mid C) = \gamma(x \mid C)$. -/
 theorem gaugeFn_map_neg (hsymm : -C = C) (x : E) : gaugeFn C (-x) = gaugeFn C x := by
   rw [← gaugeFn_neg_set, hsymm]
 
-/-- The gauge is finite at `x` exactly when some dilate of `C` contains `x`. -/
+/-- The gauge is finite at $x$ if and only if $x \in aC$ for some $a \ge 0$. -/
 theorem gaugeFn_ne_top_iff (C : Set E) (x : E) :
     gaugeFn C x ≠ ⊤ ↔ ∃ a : ℝ, 0 ≤ a ∧ x ∈ a • C := by
   rw [← lt_top_iff_ne_top, gaugeFn_lt_iff]
@@ -1966,7 +2324,8 @@ theorem gaugeFn_ne_top_iff (C : Set E) (x : E) :
   · rintro ⟨a, ha0, hmem⟩
     exact ⟨a, ha0, hmem, EReal.coe_lt_top a⟩
 
-/-- **The gauge vanishes exactly on the rays inside `C`.** -/
+/-- Let $C$ be convex with $0 \in C$. Then $\gamma(x \mid C) = 0$ if and only if $\lambda x \in C$
+for every $\lambda > 0$: the gauge vanishes exactly on the rays in $C$. -/
 theorem gaugeFn_eq_zero_iff (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (x : E) :
     gaugeFn C x = 0 ↔ ∀ l : ℝ, 0 < l → l • x ∈ C := by
   constructor
@@ -1982,8 +2341,8 @@ theorem gaugeFn_eq_zero_iff (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (x : E) :
     rw [mem_smul_set_iff_inv_smul_mem₀ hd.ne' C x]
     exact h d⁻¹ (inv_pos.2 hd)
 
-/-- The gauge of a symmetric convex set that absorbs every point and contains no ray is a
-norm. -/
+/-- Let $C$ be convex and symmetric with $0 \in C$. If $C$ absorbs every point and contains no ray,
+then $\gamma(\cdot \mid C)$ is a norm. -/
 theorem isNorm_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hsymm : -C = C)
     (habs : AbsorbsAll C) (hray : RayFree C) : IsNorm (gaugeFn C) where
   toIsGauge := isGauge_gaugeFn hC ⟨0, h0⟩
@@ -1994,8 +2353,8 @@ theorem isNorm_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hsymm : -C = C)
     obtain ⟨l, hl, hlx⟩ := hray x hx
     exact hlx (((gaugeFn_eq_zero_iff hC h0 x).1 hcon.symm) l hl)
 
-/-- The unit level set of a norm is a symmetric convex set that absorbs every point and contains
-no ray. -/
+/-- The unit sublevel set $\{x : k(x) \le 1\}$ of a norm $k$ is convex and symmetric, contains $0$,
+absorbs every point, and contains no ray. -/
 theorem IsNorm.level_one (hk : IsNorm k) :
     Convex ℝ {x : E | k x ≤ 1} ∧ (0 : E) ∈ {x : E | k x ≤ 1} ∧ -{x : E | k x ≤ 1} =
       {x : E | k x ≤ 1} ∧ AbsorbsAll {x : E | k x ≤ 1} ∧ RayFree {x : E | k x ≤ 1} := by
@@ -2025,8 +2384,12 @@ theorem IsNorm.level_one (hk : IsNorm k) :
       ← EReal.coe_mul, EReal.coe_le_coe_iff, div_mul_cancel₀ (2 : ℝ) hcpos.ne'] at hle
     linarith
 
-/-- **The norms are exactly the gauges of the symmetric convex sets that absorb every point and
-contain no ray.** -/
+/-- A function $k$ is a norm if and only if $k = \gamma(\cdot \mid C)$ for a convex symmetric set
+$C$ with $0 \in C$ that absorbs every point and contains no ray. This is part of Theorem 15.2 of
+[rockafellar1970convex].
+
+The source states the correspondence for closed bounded sets with $0 \in \operatorname{int} C$;
+see the module doc comment for the relation between the conditions. -/
 theorem isNorm_iff :
     IsNorm k ↔ ∃ C : Set E, Convex ℝ C ∧ (0 : E) ∈ C ∧ -C = C ∧ AbsorbsAll C ∧ RayFree C ∧
       k = gaugeFn C := by
@@ -2038,18 +2401,20 @@ theorem isNorm_iff :
   · rintro ⟨C, hC, h0, hsymm, habs, hray, rfl⟩
     exact isNorm_gaugeFn hC h0 hsymm habs hray
 
-/-! #### A norm is a `Seminorm`
+/-!
+### A norm is a `Seminorm`
 
-Mathlib's `Seminorm 𝕜 E` is purely algebraic — subadditive, absolutely homogeneous, and nothing
-about a topology — so a Rockafellar norm is one on the nose. It is *not* a `NormedSpace` norm
-unless it happens to be continuous, which in general it is not; that is the distinction, and it is
-the only one. -/
+Mathlib's `Seminorm` is purely algebraic: subadditive and absolutely homogeneous, with no topology.
+Hence a norm in the sense of [rockafellar1970convex] is a `Seminorm`. It is not the norm of a
+`NormedSpace` unless it is continuous, which it need not be.
+-/
 
+/-- For a norm $k$, the real number $k(x)$, embedded back in `EReal`, is $k(x)$. -/
 theorem IsNorm.coe_toReal (hk : IsNorm k) (x : E) : (((k x).toReal : ℝ) : EReal) = k x :=
   EReal.coe_toReal (hk.ne_top x) (hk.toIsGauge.ne_bot x)
 
-/-- **A norm is absolutely homogeneous**, not merely positively homogeneous: symmetry upgrades
-`k (a • x) = a * k x` for `a > 0` to `k (a • x) = |a| * k x` for every real `a`. -/
+/-- A norm is absolutely homogeneous: $k(ax) = |a|\, k(x)$ for every real $a$. Symmetry extends
+positive homogeneity from $a > 0$ to all $a$. -/
 theorem IsNorm.apply_smul (hk : IsNorm k) (a : ℝ) (x : E) :
     k (a • x) = ((|a| : ℝ) : EReal) * k x := by
   rcases lt_trichotomy a 0 with h | h | h
@@ -2059,13 +2424,13 @@ theorem IsNorm.apply_smul (hk : IsNorm k) (a : ℝ) (x : E) :
     simp [hk.toIsGauge.map_zero]
   · rw [hk.toIsGauge.posHomogeneous a h x, abs_of_pos h]
 
-/-- **A Rockafellar norm is a `Seminorm`.** `Seminorm ℝ E` asks for subadditivity (which follows
-from convexity and positive homogeneity), invariance under negation, and absolute homogeneity —
-all three of which `IsNorm` carries, and none of which mentions a topology.
+/-- A norm $k$ in the sense of [rockafellar1970convex] defines a Mathlib `Seminorm`
+$x \mapsto k(x)$, with the values taken in $\mathbb{R}$.
 
-This is the bridge that lets a surface over `ℝⁿ` hand a Rockafellar norm to Mathlib's seminorm
-API. What it does *not* give is a `NormedSpace`: for that the norm must be continuous, and
-continuity of a finite convex function is a finite-dimensional fact. -/
+`Seminorm ℝ E` asks for subadditivity (which follows from convexity and positive homogeneity),
+invariance under negation, and absolute homogeneity. `ConvexAnalysis.IsNorm` gives all three,
+and none of them involves a topology. The construction does not give a `NormedSpace`: that needs
+a continuous norm, and the continuity of a finite convex function is a finite-dimensional fact. -/
 noncomputable def IsNorm.toSeminorm (hk : IsNorm k) : Seminorm ℝ E where
   toFun x := (k x).toReal
   map_zero' := by simp [hk.toIsGauge.map_zero]
@@ -2082,7 +2447,7 @@ noncomputable def IsNorm.toSeminorm (hk : IsNorm k) : Seminorm ℝ E where
   smul' a x := by
     rw [hk.apply_smul a x, EReal.toReal_mul, EReal.toReal_coe, Real.norm_eq_abs]
 
-/-- The `Seminorm` really is `k`. -/
+/-- The value of `ConvexAnalysis.IsNorm.toSeminorm` at $x$, embedded in `EReal`, is $k(x)$. -/
 @[simp] theorem IsNorm.coe_toSeminorm (hk : IsNorm k) (x : E) :
     ((hk.toSeminorm x : ℝ) : EReal) = k x := hk.coe_toReal x
 
@@ -2095,6 +2460,7 @@ section NormPolar
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {C : Set E}
 
+/-- If $C$ is symmetric ($-C = C$), then so is its polar: $-C^\circ = C^\circ$. -/
 theorem polarSet_neg_eq (hsymm : -C = C) : -polarSet B C = polarSet B C := by
   have hnegC : ∀ x ∈ C, -x ∈ C := fun x hx => by
     rw [← hsymm]
@@ -2113,7 +2479,8 @@ theorem polarSet_neg_eq (hsymm : -C = C) : -polarSet B C = polarSet B C := by
     have hle := h (-x) (hnegC x hx)
     rwa [← hb2] at hle
 
-/-- The polar of a set on which every `⟨·, y⟩` is bounded above absorbs every point. -/
+/-- If for every $y \in F$ the function $\langle \cdot, y \rangle$ is bounded above on $C$, then
+$C^\circ$ absorbs every point. -/
 theorem absorbsAll_polarSet (hbdd : ∀ y : F, ∃ c : ℝ, ∀ x ∈ C, B x y ≤ c) :
     AbsorbsAll (polarSet B C) := by
   intro y
@@ -2125,8 +2492,8 @@ theorem absorbsAll_polarSet (hbdd : ∀ y : F, ∃ c : ℝ, ∀ x ∈ C, B x y �
   rw [map_smul, smul_eq_mul, inv_mul_le_iff₀ hmax, mul_one]
   exact le_trans (hc x hx) (le_max_left c 1)
 
-/-- If the pairing separates the points of `F` using `C` alone, the polar of `C` contains no
-ray. -/
+/-- Let $C$ be symmetric. If for every $y \neq 0$ there is $x \in C$ with
+$\langle x, y \rangle \neq 0$, then $C^\circ$ contains no ray. -/
 theorem rayFree_polarSet (hsymm : -C = C)
     (hsep : ∀ y : F, y ≠ 0 → ∃ x ∈ C, B x y ≠ 0) : RayFree (polarSet B C) := by
   intro y hy
@@ -2143,10 +2510,14 @@ theorem rayFree_polarSet (hsymm : -C = C)
   rw [map_smul, smul_eq_mul, div_mul_cancel₀ (2 : ℝ) hzy.ne'] at h
   linarith
 
-/-- **The polar of a norm is a norm.**
+/-- Let $C$ be convex and symmetric with $0 \in C$. Assume that for every $y \in F$ the function
+$\langle \cdot, y \rangle$ is bounded above on $C$, and that for every $y \neq 0$ there is
+$x \in C$ with $\langle x, y \rangle \neq 0$. Then the polar $\gamma(\cdot \mid C)^\circ$ of the
+gauge of $C$ is a norm. This is part of Theorem 15.2 of [rockafellar1970convex].
 
-The two hypotheses are the general forms of "`C` is bounded" and "`0 ∈ int C`": boundedness in the
-pairing sense makes the polar absorbing, and separation of `F` by `C` makes the polar ray-free. -/
+The two hypotheses are general forms of "$C$ is bounded" and "$0 \in \operatorname{int} C$".
+Boundedness of the pairing on $C$ makes the polar absorb every point, and separation of the
+points of $F$ by $C$ makes the polar contain no ray. -/
 theorem isNorm_polarGauge_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hsymm : -C = C)
     (hbdd : ∀ y : F, ∃ c : ℝ, ∀ x ∈ C, B x y ≤ c)
     (hsep : ∀ y : F, y ≠ 0 → ∃ x ∈ C, B x y ≠ 0) :
@@ -2157,15 +2528,17 @@ theorem isNorm_polarGauge_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hsym
 
 end NormPolar
 
-/-! ### Bridge to Mathlib's `gauge` -/
+/-! ### Relation to Mathlib's `gauge` -/
 
 section MathlibGauge
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E}
 
-/-- **`gaugeFn` is Mathlib's `gauge`, wherever the latter is meaningful.** Mathlib's `gauge` takes
-the infimum over *positive* scalars in `ℝ`, so on a set that does not absorb `x` it returns
-`sInf ∅ = 0` rather than `+∞`; under an absorbency hypothesis the two agree. -/
+/-- If $C$ is absorbent, then $\gamma(x \mid C)$ equals Mathlib's `gauge C x`.
+
+Mathlib's `gauge` takes the infimum over positive scalars in $\mathbb{R}$, so at a point that no
+dilate of $C$ contains it has the value $\inf \emptyset = 0$ instead of $+\infty$. For an
+absorbent set there is no such point. -/
 theorem gaugeFn_eq_gauge (hC : Absorbent ℝ C) (x : E) : gaugeFn C x = (gauge C x : EReal) := by
   refine le_antisymm (le_coe_of_forall_gt_le fun d hd => ?_) ?_
   · obtain ⟨b, hb0, hbd, hbx⟩ := exists_lt_of_gauge_lt hC hd
@@ -2175,12 +2548,13 @@ theorem gaugeFn_eq_gauge (hC : Absorbent ℝ C) (x : E) : gaugeFn C x = (gauge C
       fun a ha => ?_
     exact_mod_cast gauge_le_of_mem ha.1 ha.2
 
-/-- An absorbent set has a finite gauge. -/
+/-- The gauge of an absorbent set is finite everywhere. -/
 theorem gaugeFn_lt_top_of_absorbent (hC : Absorbent ℝ C) (x : E) : gaugeFn C x < ⊤ := by
   rw [gaugeFn_eq_gauge hC]
   exact EReal.coe_lt_top _
 
-/-- Mathlib's `Absorbent` implies the elementary absorbency `AbsorbsAll`. -/
+/-- An absorbent set in the sense of Mathlib's `Absorbent` absorbs every point in the sense of
+`ConvexAnalysis.AbsorbsAll`. -/
 theorem absorbsAll_of_absorbent (hC : Absorbent ℝ C) : AbsorbsAll C := fun x => by
   obtain ⟨r, hr0, hr⟩ := (hC x).exists_pos
   exact ⟨r, hr0.le, hr r (Real.norm_of_nonneg hr0.le).ge rfl⟩

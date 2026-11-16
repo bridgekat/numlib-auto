@@ -10,60 +10,108 @@ import Numlib.Approximation.TrapezoidExactness
 /-!
 # Gauss–Lobatto quadrature and the classical Gauss rules
 
-Gauss–Lobatto quadrature: the rule with `n + 1` nodes including both endpoints of the interval
-carrying the weight, exact on the polynomials of degree at most `2n - 1`; and the closed forms of
-the Chebyshev and Legendre Gauss and Gauss–Lobatto rules and of the Gauss–Laguerre and Gauss–Hermite
-weights.
+Let $\mu$ be a weight on $\mathbb{R}$, let $p_k$ be its monic orthogonal polynomials and let
+$\|p_k\|^2 = \int p_k^2 \, d\mu$. For a weight carried by $[-1, 1]$ and $n \ge 1$, the
+**Gauss–Lobatto rule** has $n + 1$ distinct nodes $-1 = \bar x_0 < \dots < \bar x_n = 1$ and
+positive weights, and it integrates every polynomial of degree at most $2n - 1$ exactly. Its
+interior nodes are the roots of the orthogonal polynomial $q_{n-1}$ of degree $n - 1$ for the
+modified weight $(1 - x^2)\mu$, and its nodal polynomial is the **Lobatto nodal polynomial**
+$\bar\omega = (x^2 - 1) q_{n-1}$. The **Gauss–Radau rule** of a weight carried by $[a, b]$ fixes one
+node at an endpoint and is exact to degree $2n$. The file also proves the closed forms of the
+classical rules: the Legendre, Laguerre and Hermite Gauss weights, the Chebyshev–Gauss–Lobatto rule
+at the extrema $\cos(j\pi/n)$ of $T_n$, the Legendre–Gauss–Lobatto weights
+$2/(n(n+1) L_n(\bar x_j)^2)$, and the discrete Chebyshev and Legendre transforms.
 
-## The construction
+The presentation follows [quarteroni2000numerical], §10.2–10.5. The computation of the weights
+through the Christoffel–Darboux kernel follows Davis and Rabinowitz, *Methods of Numerical
+Integration*, §2.7; see also [kress1998numerical], §9.3.
 
-The Lobatto nodal polynomial is not built from the textbook ansatz "choose `a, b` so that `p_{n+1} +
-a p_n + b p_{n-1}` vanishes at `±1`" but from its equivalent: `ω̄ = (X² - 1) q_{n-1}` with `q_{n-1}`
-the `(n - 1)`-st monic orthogonal polynomial of the *modified* weight `(1 - x²) μ`
-(`OrthogonalPolynomial.lobattoMeasure`), which is again a weight carried by `[-1, 1]`. Then
-`q_{n-1}` has `n - 1` simple roots in `(-1, 1)`, `ω̄` is `μ`-orthogonal to `P_{n-2}` because `∫ ω̄ p
-∂μ = -∫ q_{n-1} p ∂((1 - x²) μ)`, and Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff` at `m =
-n - 1` gives exactness `2n - 1` for the interpolatory rule (`Quadrature.exists_gaussLobatto`).
-Positivity of the weights uses the test polynomials `(1 - x²)(q/(x - x̄_i))²` at interior nodes and
-`(1 ∓ x) q²` at the endpoints (`Quadrature.pos_of_isExactOnMeasure`). The textbook form of `ω̄` is
-recovered by expanding it in the orthogonal family (`Quadrature.lobattoNodal_eq_add_smul`), and
-conversely any such combination vanishing at `±1` is `ω̄`
-(`Quadrature.eq_lobattoNodal_of_eval_eq_zero`).
+## Main definitions
 
-The Gauss–Radau rule, with one node fixed at the left end `a` of the interval carrying the weight
-and exact to degree `2n`, is the one-endpoint sibling (`Quadrature.exists_gaussRadau`): its nodal
-polynomial is `(X - a) q_n` with `q_n` orthogonal for the modified weight `(x - a) μ`
-(`OrthogonalPolynomial.radauMeasure`). The rule with the node fixed at the right end `b` is
-that rule for the reflected weight (`Quadrature.exists_gaussRadau_right`). Both modified weights
-are weights by one lemma, `OrthogonalPolynomial.isWeight_withDensity_eval`: a nonzero polynomial
-density that is nonnegative on the carrier keeps a weight a weight.
+* `OrthogonalPolynomial.lobattoMeasure`: the modified weight $(1 - x^2)\mu$.
+* `OrthogonalPolynomial.radauMeasure`: the modified weight $(x - a)\mu$.
+* `Quadrature.lobattoNodal`: the Lobatto nodal polynomial $\bar\omega = (x^2 - 1) q_{n-1}$.
+* `Polynomial.Chebyshev.lobattoWeight`: the Chebyshev–Gauss–Lobatto weights $\pi/(d_j n)$, with
+  $d_0 = d_n = 2$ and $d_j = 1$ otherwise.
+* `Polynomial.Chebyshev.sumExtrema`: the Chebyshev–Gauss–Lobatto sum
+  $\sum_{j=0}^n \frac{\pi}{d_j n} P(\cos(j\pi/n))$.
 
-## The weights
+## Main results
 
-All closed-form weights come from one identity. For an interpolatory rule whose nodal polynomial is
-`ω = p_{n+1} + a p_n + b p_{n-1}`, the Christoffel–Darboux identity
-`OrthogonalPolynomial.christoffel_darboux` gives `p_n(x_j) ω/(X - x_j) = ‖p_n‖² K_n(x_j) - b
-‖p_{n-1}‖² K_{n-1}(x_j)`, whose integral is `‖p_n‖² - b ‖p_{n-1}‖²`; hence `w_j = (‖p_n‖² - b
-‖p_{n-1}‖²) / (p_n(x_j) ω'(x_j))` (`Quadrature.weight_eq_of_nodal_eq`). With `a = b = 0` this is the
-Gauss weight `‖p_n‖² / (p_n(x_j) p_{n+1}'(x_j))` (`Quadrature.gaussWeight_eq`), which the Legendre,
-Laguerre and Hermite identities turn into the textbook formulas; with the Lobatto nodal polynomial
-of the Legendre weight it gives `2 / (n(n+1) L_n(x̄_j)²)`.
+* `Quadrature.exists_gaussLobatto`: a weight carried by $[-1, 1]$ has a Gauss–Lobatto rule with
+  $n + 1$ nodes, positive weights and degree of exactness $2n - 1$.
+* `Quadrature.exists_gaussRadau` and `Quadrature.exists_gaussRadau_right`: a weight carried by
+  $[a, b]$ has Gauss–Radau rules with $n + 1$ nodes, the fixed node $a$ or $b$, positive weights and
+  degree of exactness $2n$.
+* `Quadrature.lobattoNodal_eq_add_smul` and `Quadrature.eq_lobattoNodal_of_eval_eq_zero`:
+  $\bar\omega = p_{n+1} + a p_n + b p_{n-1}$ for unique reals $a$ and $b$, namely the ones for which
+  the right side vanishes at $\pm 1$.
+* `Quadrature.weight_eq_of_nodal_eq`: the weights of an interpolatory rule whose nodal polynomial is
+  $p_{n+1} + a p_n + b p_{n-1}$ are $w_j = (\|p_n\|^2 - b \|p_{n-1}\|^2)/(p_n(x_j)\, \omega'(x_j))$.
+* `Quadrature.gaussWeight_eq`: the Gauss weights are $w_j = \|p_n\|^2/(p_n(x_j)\, p_{n+1}'(x_j))$.
+* `Quadrature.legendreGaussWeight_eq`, `Quadrature.laguerreGaussWeight_eq` and
+  `Quadrature.hermiteGaussWeight_eq`: the closed forms of the Legendre, Laguerre and Hermite Gauss
+  weights.
+* `Polynomial.Chebyshev.integral_eq_sumExtrema`: the Chebyshev–Gauss–Lobatto rule with $n + 1$ nodes
+  is exact on the polynomials of degree less than $2n$.
+* `Quadrature.derivative_family_jacobiMeasure`: the derivative of the monic Jacobi polynomial
+  $J_n^{(\alpha,\beta)}$ is $n J_{n-1}^{(\alpha+1,\beta+1)}$.
+* `Quadrature.legendreLobattoWeight_eq`: the Legendre–Gauss–Lobatto weights are
+  $2/(n(n+1) L_n(\bar x_j)^2)$.
+* `Polynomial.Chebyshev.interpolate_eq_sum_cdt` and `Quadrature.interpolate_eq_sum_dlt`: the
+  discrete Chebyshev and Legendre transforms.
 
-The derivative of a Jacobi polynomial is a Jacobi polynomial of the shifted weight
-(`Quadrature.derivative_family_jacobiMeasure`), by one integration by parts with `rpow` weights on
-the open interval; so the interior Lobatto nodes of a Jacobi weight are the zeros of
-`(J_n^{(α,β)})'`, and for the Legendre weight the zeros of `L_n'`
-(`Quadrature.derivative_legendre_eq_family`).
+## Proof outline
 
-The Chebyshev–Gauss–Lobatto rule at the extrema `cos (jπ/n)` of `T_n` with weights `π/(d_j n)` is
-proved by the discrete orthogonality of the cosines (`Polynomial.Chebyshev.integral_eq_sumExtrema`),
-and the discrete Chebyshev and Legendre transforms are the instances of
-`Quadrature.interpolate_eq_sum_discreteInner_smul`.
+The modified weight $(1 - x^2)\mu$ is again a weight carried by $[-1, 1]$, so $q_{n-1}$ has $n - 1$
+simple roots in $(-1, 1)$. The polynomial $\bar\omega$ is $\mu$-orthogonal to the polynomials of
+degree at most $n - 2$, because $\int \bar\omega p \, d\mu = -\int q_{n-1} p \, d((1 - x^2)\mu)$.
+Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff` with $m = n - 1$ then gives the degree of
+exactness $2n - 1$ for the interpolatory rule at the roots of $\bar\omega$. The weights are positive
+by `Quadrature.pos_of_isExactOnMeasure`, with the test polynomials $(1 \mp x) q_{n-1}^2$ at the
+endpoints and $(1 - x^2)(q_{n-1}/(x - \bar x_i))^2$ at the interior nodes. The Gauss–Radau rule has
+the nodal polynomial $(x - a) q_n$, with $q_n$ orthogonal for $(x - a)\mu$; the rule with the fixed
+node $b$ is that rule for the reflected weight.
 
-## References
+All closed-form weights come from one identity. If the nodal polynomial of an interpolatory rule is
+$\omega = p_{n+1} + a p_n + b p_{n-1}$, the Christoffel–Darboux identity
+`OrthogonalPolynomial.christoffel_darboux` gives $p_n(x_j)\, \omega/(x - x_j) = \|p_n\|^2 K_n(x_j,
+\cdot) - b \|p_{n-1}\|^2 K_{n-1}(x_j, \cdot)$, whose integral is $\|p_n\|^2 - b \|p_{n-1}\|^2$. With
+$a = b = 0$ this gives the Gauss weights, which the Legendre, Laguerre and Hermite identities turn
+into the classical formulas. With the Lobatto nodal polynomial of the Legendre weight it gives
+$2/(n(n+1) L_n(\bar x_j)^2)$. The derivative of a Jacobi polynomial is a Jacobi polynomial of the
+shifted weight, by one integration by parts; so the interior Lobatto nodes of a Jacobi weight are
+the zeros of $(J_n^{(\alpha,\beta)})'$, and for the Legendre weight the zeros of $L_n'$. The
+Chebyshev–Gauss–Lobatto rule follows from the discrete orthogonality of the cosines, and the two
+discrete transforms are instances of `Quadrature.interpolate_eq_sum_discreteInner_smul`.
 
-[quarteroni2000numerical] §10.2–10.5; Davis–Rabinowitz, *Methods of Numerical Integration*, §2.7;
-[kress1998numerical] §9.3.
+## Notation
+
+* $p_k$ is `OrthogonalPolynomial.family μ k`, the monic orthogonal polynomial of degree $k$ for
+  $\mu$, and $\|p_k\|^2$ is `OrthogonalPolynomial.normSq μ k`.
+* $L_n$ is the Legendre polynomial `Polynomial.legendre n`.
+* $\mathcal{L}_n$ is the Laguerre polynomial `Polynomial.laguerre n`.
+* $H_n$ is the physicists' Hermite polynomial `Polynomial.physHermite n`.
+* $T_n$ is the Chebyshev polynomial of the first kind `Polynomial.Chebyshev.T ℝ n`.
+* $\operatorname{lc}(P)$ is the leading coefficient of a polynomial $P$.
+
+## Implementation notes
+
+* A weight is `OrthogonalPolynomial.IsWeight`: all moments are finite and the measure is not carried
+  by a finite set. "Carried by $[-1, 1]$" is the hypothesis $\mu([-1, 1]^c) = 0$.
+* A rule is a pair of `Fin`-indexed vectors of nodes $x$ and weights $w$.
+  `Quadrature.IsExactOnMeasure μ w x d` says that the rule integrates every polynomial of degree at
+  most $d$ exactly, and `Quadrature.IsInterpolatoryMeasure μ w x` says that
+  $w_i = \int \ell_i \, d\mu$ for the Lagrange basis polynomials $\ell_i$ of the nodes.
+* The Lobatto nodal polynomial is not built from the ansatz of the source, which chooses $a$ and $b$
+  so that $p_{n+1} + a p_n + b p_{n-1}$ vanishes at $\pm 1$. It is built from the equivalent form
+  $(x^2 - 1) q_{n-1}$. The equivalence is `Quadrature.lobattoNodal_eq_add_smul` together with
+  `Quadrature.eq_lobattoNodal_of_eval_eq_zero`.
+* Both modified weights are weights by one lemma, `OrthogonalPolynomial.isWeight_withDensity_eval`:
+  a nonzero polynomial density that is nonnegative almost everywhere keeps a weight a weight.
+* The Laguerre polynomials are the unnormalized $\mathcal{L}_n$ of [quarteroni2000numerical], §10.5,
+  with leading coefficient $(-1)^n$. The Hermite polynomials are the physicists' $H_n$, with leading
+  coefficient $2^n$.
 -/
 
 open MeasureTheory Polynomial Real Set Filter Topology
@@ -76,14 +124,20 @@ namespace OrthogonalPolynomial
 
 variable {μ : Measure ℝ}
 
-/-! ### The modified weight `(1 - x²) μ` -/
+/-! ### The modified weight $(1 - x^2)\mu$ -/
 
-/-- The weight `(1 - x²) μ` whose orthogonal polynomials supply the interior Gauss–Lobatto nodes
-of `μ`. -/
+/-- The **Lobatto modified weight** of a measure $\mu$ on $\mathbb{R}$ is the measure
+$(1 - x^2)_+ \, d\mu(x)$. For a weight carried by $[-1, 1]$ it is the weight $(1 - x^2)\mu$,
+whose orthogonal polynomials supply the interior Gauss–Lobatto nodes of $\mu$.
+
+The density is `ENNReal.ofReal (1 - x ^ 2)`, so it is $0$ outside $[-1, 1]$. -/
 abbrev lobattoMeasure (μ : Measure ℝ) : Measure ℝ :=
   μ.withDensity fun x => ENNReal.ofReal (1 - x ^ 2)
 
-/-- An integral against the modified weight, for a weight carried by `[-1, 1]`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$, and let
+$f : \mathbb{R} \to \mathbb{R}$. Then $$\int f \, d((1 - x^2)\mu) = \int (1 - x^2) f(x) \,
+d\mu(x).$$
+-/
 theorem integral_lobattoMeasure (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (f : ℝ → ℝ) :
     ∫ x, f x ∂lobattoMeasure μ = ∫ x, (1 - x ^ 2) * f x ∂μ := by
   refine integral_withDensity_ofReal (by fun_prop) ?_ f
@@ -93,13 +147,15 @@ theorem integral_lobattoMeasure (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (f : ℝ 
   filter_upwards [hae] with x hx
   nlinarith [hx.1, hx.2]
 
-/-- The modified weight is carried by `[-1, 1]` when `μ` is. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$. Then the modified weight
+$(1 - x^2)\mu$ also gives no mass to the complement of $[-1, 1]$. -/
 theorem lobattoMeasure_compl_Icc (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     lobattoMeasure μ (Icc (-1 : ℝ) 1)ᶜ = 0 :=
   withDensity_absolutelyContinuous μ _ hsupp
 
-/-- The Lobatto weight of a Jacobi weight is the Jacobi weight with both exponents raised by
-one. -/
+/-- For all real $\alpha$ and $\beta$, the Lobatto modified weight of the Jacobi weight
+$(1 - x)^\alpha (1 + x)^\beta \, dx$ on $(-1, 1)$ is the Jacobi weight
+$(1 - x)^{\alpha+1} (1 + x)^{\beta+1} \, dx$. -/
 theorem lobattoMeasure_jacobiMeasure (α β : ℝ) :
     lobattoMeasure (jacobiMeasure α β) = jacobiMeasure (α + 1) (β + 1) := by
   rw [lobattoMeasure, jacobiMeasure, jacobiMeasure, ← withDensity_mul _ (by fun_prop) (by fun_prop)]
@@ -114,10 +170,13 @@ theorem lobattoMeasure_jacobiMeasure (α β : ℝ) :
   congr 1
   ring
 
-/-- **A polynomial density keeps a weight a weight.** If `q ≠ 0` is `μ`-almost everywhere
-nonnegative, the measure `q dμ` is again a weight: its moments are moments of `μ`, and if it gave no
-mass to the complement of a finite set `s`, then `μ` would give none to the complement of `s`
-together with the finitely many roots of `q`. -/
+/-- **A polynomial density keeps a weight a weight.** Let $\mu$ be a weight on $\mathbb{R}$ and let
+$q \neq 0$ be a polynomial with $q \ge 0$ $\mu$-almost everywhere. Then the measure $q \, d\mu$
+is a weight.
+
+Its moments are moments of $\mu$ times the coefficients of $q$. If it gave no mass to the
+complement of a finite set $s$, then $\mu$ would give no mass to the complement of $s$ together
+with the finitely many roots of $q$. -/
 theorem isWeight_withDensity_eval (hw : IsWeight μ) {q : ℝ[X]} (hq : q ≠ 0)
     (hnn : ∀ᵐ x ∂μ, 0 ≤ q.eval x) :
     IsWeight (μ.withDensity fun x => ENNReal.ofReal (q.eval x)) := by
@@ -137,8 +196,11 @@ theorem isWeight_withDensity_eval (hw : IsWeight μ) {q : ℝ[X]} (hq : q ≠ 0)
     · exact Or.inr (not_le.mpr hlt)
     · exact Or.inl ⟨(ENNReal.ofReal_pos.mpr hgt).ne', hx.2⟩
 
-/-- **The modified weight is a weight**: `isWeight_withDensity_eval` with the density `1 - x²`,
-nonnegative on `[-1, 1]`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$. Then the measure
+$(1 - x^2) \, d\mu(x)$ is a weight.
+
+This is `OrthogonalPolynomial.isWeight_withDensity_eval` with the density $1 - x^2$, which is
+nonnegative on $[-1, 1]$. -/
 theorem isWeight_withDensity_one_sub_sq (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     IsWeight (μ.withDensity fun x => ENNReal.ofReal (1 - x ^ 2)) := by
   have hae : ∀ᵐ x ∂μ, x ∈ Icc (-1 : ℝ) 1 := by
@@ -152,21 +214,28 @@ theorem isWeight_withDensity_one_sub_sq (hw : IsWeight μ) (hsupp : μ (Icc (-1 
     nlinarith [hx.1, hx.2])
   simpa only [eval_sub, eval_one, eval_pow, eval_X] using h
 
-/-- The modified weight of a weight carried by `[-1, 1]` is a weight. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$. Then the Lobatto modified
+weight $(1 - x^2)\mu$ is a weight. -/
 theorem isWeight_lobattoMeasure (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     IsWeight (lobattoMeasure μ) :=
   isWeight_withDensity_one_sub_sq hw hsupp
 
-/-! ### The modified weight `(x - a) μ` -/
+/-! ### The modified weight $(x - a)\mu$ -/
 
-/-- The weight `(x - a) μ` whose orthogonal polynomials supply the interior Gauss–Radau nodes of
-`μ` with the fixed node `a`: the one-endpoint sibling of `OrthogonalPolynomial.lobattoMeasure`. For
-a weight carried by `[a, b]` it is again a weight carried by `[a, b]`
-(`OrthogonalPolynomial.isWeight_radauMeasure`). -/
+/-- The **Radau modified weight** of a measure $\mu$ on $\mathbb{R}$ at the point $a$ is the measure
+$(x - a)_+ \, d\mu(x)$. For a weight carried by $[a, b]$ it is the weight $(x - a)\mu$ carried
+by $[a, b]$ (`OrthogonalPolynomial.isWeight_radauMeasure`), whose orthogonal polynomials supply
+the interior Gauss–Radau nodes of $\mu$ with the fixed node $a$.
+
+This is the one-endpoint counterpart of `OrthogonalPolynomial.lobattoMeasure`. The density is
+`ENNReal.ofReal (x - a)`, so it is $0$ to the left of $a$. -/
 abbrev radauMeasure (μ : Measure ℝ) (a : ℝ) : Measure ℝ :=
   μ.withDensity fun x => ENNReal.ofReal (x - a)
 
-/-- An integral against the modified weight, for a weight carried by `[a, b]`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu([a, b]^c) = 0$, and let
+$f : \mathbb{R} \to \mathbb{R}$. Then $$\int f \, d((x - a)\mu) = \int (x - a) f(x) \,
+d\mu(x).$$
+-/
 theorem integral_radauMeasure {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (f : ℝ → ℝ) :
     ∫ x, f x ∂radauMeasure μ a = ∫ x, (x - a) * f x ∂μ := by
   refine integral_withDensity_ofReal (by fun_prop) ?_ f
@@ -176,13 +245,17 @@ theorem integral_radauMeasure {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (f : ℝ
   filter_upwards [hae] with x hx
   linarith [hx.1]
 
-/-- The modified weight is carried by `[a, b]` when `μ` is. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu([a, b]^c) = 0$. Then the modified weight
+$(x - a)\mu$ also gives no mass to the complement of $[a, b]$. -/
 theorem radauMeasure_compl_Icc {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) :
     radauMeasure μ a (Icc a b)ᶜ = 0 :=
   withDensity_absolutelyContinuous μ _ hsupp
 
-/-- The modified weight `(x - a) μ` of a weight carried by `[a, b]` is a weight:
-`isWeight_withDensity_eval` with the density `x - a`, nonnegative on `[a, b]`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([a, b]^c) = 0$. Then the Radau modified weight
+$(x - a)\mu$ is a weight.
+
+This is `OrthogonalPolynomial.isWeight_withDensity_eval` with the density $x - a$, which is
+nonnegative on $[a, b]$. -/
 theorem isWeight_radauMeasure (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) :
     IsWeight (radauMeasure μ a) := by
   have hae : ∀ᵐ x ∂μ, x ∈ Icc a b := by
@@ -204,21 +277,27 @@ variable {μ : Measure ℝ}
 
 /-! ### The Lobatto nodal polynomial -/
 
-/-- **The Lobatto nodal polynomial** `ω̄ = (X² - 1) q_{n-1}`, with `q_{n-1}` the `(n-1)`-st monic
-orthogonal polynomial of the modified weight `(1 - x²) μ`: monic of degree `n + 1`, vanishing at
-`±1`, and `μ`-orthogonal to the polynomials of degree at most `n - 2`. Its roots are the
-Gauss–Lobatto nodes of `μ`.
+/-- The **Lobatto nodal polynomial** of a measure $\mu$ on $\mathbb{R}$ with $n + 1$ nodes is
+$$\bar\omega = (x^2 - 1)\, q_{n-1},$$ where $q_{n-1}$ is the monic orthogonal polynomial of
+degree $n - 1$ for the modified weight $(1 - x^2)\mu$. For a weight carried by $[-1, 1]$ and
+$n \ge 1$, it is monic of degree $n + 1$, it vanishes at $\pm 1$, and it is $\mu$-orthogonal to
+the polynomials of degree at most $n - 2$. Its roots are the Gauss–Lobatto nodes of $\mu$; see
+equation (10.17) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.17). -/
+$q_{n-1}$ is `OrthogonalPolynomial.family (OrthogonalPolynomial.lobattoMeasure μ) (n - 1)`. The
+index $n - 1$ is subtraction in $\mathbb{N}$, so for $n = 0$ the polynomial is $x^2 - 1$. -/
 def lobattoNodal (μ : Measure ℝ) (n : ℕ) : ℝ[X] :=
   (X ^ 2 - 1) * family (lobattoMeasure μ) (n - 1)
 
+/-- The Lobatto nodal polynomial $\bar\omega$ is monic, for every measure $\mu$ and every $n$. -/
 theorem lobattoNodal_monic (μ : Measure ℝ) (n : ℕ) : (lobattoNodal μ n).Monic := by
   have h : (X ^ 2 - 1 : ℝ[X]).Monic := by
     have := monic_X_pow_sub_C (1 : ℝ) (two_ne_zero)
     rwa [C_1] at this
   exact h.mul (monic_family _ _)
 
+/-- For every measure $\mu$ and every $n \ge 1$, the Lobatto nodal polynomial $\bar\omega$ has
+degree $n + 1$. -/
 theorem degree_lobattoNodal (μ : Measure ℝ) {n : ℕ} (hn : 1 ≤ n) :
     (lobattoNodal μ n).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
   have h : (X ^ 2 - 1 : ℝ[X]).degree = 2 := by
@@ -228,17 +307,21 @@ theorem degree_lobattoNodal (μ : Measure ℝ) {n : ℕ} (hn : 1 ≤ n) :
   norm_cast
   omega
 
+/-- The Lobatto nodal polynomial vanishes at $1$: $\bar\omega(1) = 0$. -/
 theorem lobattoNodal_eval_one (μ : Measure ℝ) (n : ℕ) : (lobattoNodal μ n).eval 1 = 0 := by
   simp [lobattoNodal]
 
+/-- The Lobatto nodal polynomial vanishes at $-1$: $\bar\omega(-1) = 0$. -/
 theorem lobattoNodal_eval_neg_one (μ : Measure ℝ) (n : ℕ) : (lobattoNodal μ n).eval (-1) = 0 := by
   simp [lobattoNodal]
 
-/-- **The Lobatto nodal polynomial is orthogonal to the polynomials of degree at most `n - 2`**:
-against `μ`, `ω̄ p = -(1 - x²) q_{n-1} p`, which is `-q_{n-1} p` against the modified weight, and
-`q_{n-1}` is orthogonal to the polynomials of degree less than `n - 1`.
+/-- **The Lobatto nodal polynomial is orthogonal to the polynomials of degree at most $n - 2$.** Let
+$\mu$ be a weight on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$, let $n \ge 2$, and let $p$ be a
+polynomial of degree at most $n - 2$. Then $$\int \bar\omega(t)\, p(t) \, d\mu(t) = 0.$$
 
-Reference: [quarteroni2000numerical] §10.2. -/
+Against $\mu$, $\bar\omega p = -(1 - x^2) q_{n-1} p$, so the integral is $-\int q_{n-1} p$
+against the modified weight, and $q_{n-1}$ is orthogonal to the polynomials of degree less than
+$n - 1$. See [quarteroni2000numerical], §10.2. -/
 theorem integral_lobattoNodal_mul_of_degree_le (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {n : ℕ} (hn : 2 ≤ n) {p : ℝ[X]} (hp : p.degree ≤ ((n - 2 : ℕ) : WithBot ℕ)) :
     ∫ t, (lobattoNodal μ n).eval t * p.eval t ∂μ = 0 := by
@@ -251,12 +334,13 @@ theorem integral_lobattoNodal_mul_of_degree_le (hw : IsWeight μ) (hsupp : μ (I
   simp only [lobattoNodal, eval_mul, eval_sub, eval_pow, eval_X, eval_one]
   ring
 
-/-- **The textbook form of the Lobatto nodal polynomial**: `ω̄ = p_{n+1} + a p_n + b p_{n-1}` for
-some reals `a`, `b`. The monic polynomial `ω̄ - p_{n+1}` of degree at most `n` expands in the
-family, and its coefficients on `p_k` for `k ≤ n - 2` vanish by
-`Quadrature.integral_lobattoNodal_mul_of_degree_le`.
+/-- **The source form of the Lobatto nodal polynomial.** Let $\mu$ be a weight on $\mathbb{R}$ with
+$\mu([-1, 1]^c) = 0$, and let $n \ge 1$. Then there are real numbers $a$ and $b$ with
+$$\bar\omega = p_{n+1} + a\, p_n + b\, p_{n-1}.$$ This is the form of equation (10.17) of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.17). -/
+The polynomial $\bar\omega - p_{n+1}$ has degree at most $n$, and its coefficients on $p_k$ for
+$k \le n - 2$ vanish by `Quadrature.integral_lobattoNodal_mul_of_degree_le`. -/
 theorem lobattoNodal_eq_add_smul (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) {n : ℕ}
     (hn : 1 ≤ n) :
     ∃ a b : ℝ, lobattoNodal μ n = family μ (n + 1) + C a * family μ n + C b * family μ (n - 1) := by
@@ -298,13 +382,15 @@ theorem lobattoNodal_eq_add_smul (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 
   simp only [smul_eq_C_mul, zero_add]
   ring
 
-/-- **Any combination `p_{n+1} + a p_n + b p_{n-1}` vanishing at `±1` is the Lobatto nodal
-polynomial**, so the coefficients `a`, `b` of `Quadrature.lobattoNodal_eq_add_smul` are unique.
-Such a combination is `(X² - 1) r` with `r` monic of degree `n - 1`, and `r` is orthogonal to the
-polynomials of degree less than `n - 1` for the modified weight because the combination is
-`μ`-orthogonal to them; so `r` is the `(n-1)`-st orthogonal polynomial of the modified weight.
+/-- **Uniqueness of the source form of the Lobatto nodal polynomial.** Let $\mu$ be a weight on
+$\mathbb{R}$ with $\mu([-1, 1]^c) = 0$, let $n \ge 1$, and let $a, b \in \mathbb{R}$. If
+$p_{n+1} + a\, p_n + b\, p_{n-1}$ vanishes at $1$ and at $-1$, then $$p_{n+1} + a\, p_n + b\,
+p_{n-1} = \bar\omega.$$ So the coefficients $a$ and $b$ of `Quadrature.lobattoNodal_eq_add_smul`
+are unique, and they are the ones of equation (10.17) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.17). -/
+Such a combination is $(x^2 - 1) r$ with $r$ monic of degree $n - 1$. The polynomial $r$ is
+orthogonal to the polynomials of degree less than $n - 1$ for the modified weight, because the
+combination is $\mu$-orthogonal to them. So $r = q_{n-1}$. -/
 theorem eq_lobattoNodal_of_eval_eq_zero (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {n : ℕ} (hn : 1 ≤ n) {a b : ℝ}
     (h1 : (family μ (n + 1) + C a * family μ n + C b * family μ (n - 1)).eval 1 = 0)
@@ -419,8 +505,13 @@ theorem eq_lobattoNodal_of_eval_eq_zero (hw : IsWeight μ) (hsupp : μ (Icc (-1 
   rw [hgr, hr_eq]
   rfl
 
-/-- An interpolatory rule whose nodal polynomial is the Lobatto nodal polynomial has degree of
-exactness `2n - 1`: Jacobi's theorem with `Quadrature.integral_lobattoNodal_mul_of_degree_le`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$ and let $n \ge 1$. Let a rule
+have $n + 1$ distinct nodes $x_i$ and weights $w_i$, let it be interpolatory for $\mu$, and let
+its nodal polynomial $\prod_i (x - x_i)$ be the Lobatto nodal polynomial $\bar\omega$. Then the
+rule integrates every polynomial of degree at most $2n - 1$ exactly against $\mu$.
+
+The proof is Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff` with
+`Quadrature.integral_lobattoNodal_mul_of_degree_le`. -/
 theorem isExactOnMeasure_of_nodal_eq_lobattoNodal {n : ℕ} (hw : IsWeight μ)
     (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (hn : 1 ≤ n) {x α : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure μ α x)
@@ -437,16 +528,19 @@ theorem isExactOnMeasure_of_nodal_eq_lobattoNodal {n : ℕ} (hw : IsWeight μ)
 
 /-! ### Positivity of weights, and the weights through the Christoffel–Darboux kernel -/
 
-/-- **The weights of a rule whose nodal polynomial is `p_{n+2} + a p_{n+1} + b p_n`.** For an
-interpolatory rule with `n + 2` distinct nodes whose nodal polynomial `ω` is that combination,
-`p_{n+1}(x_j) ≠ 0` and `w_j = (‖p_{n+1}‖² - b ‖p_n‖²) / (p_{n+1}(x_j) ω'(x_j))`, provided the
-numerator is nonzero. The Christoffel–Darboux identity at `t = x_j` gives
-`p_{n+1}(x_j) ω / (X - x_j) = ‖p_{n+1}‖² K_{n+1}(x_j) - b ‖p_n‖² K_n(x_j)`, whose integral is
-`‖p_{n+1}‖² - b ‖p_n‖²`, while `ω / (X - x_j)` is `ω'(x_j)` times the Lagrange basis polynomial.
+/-- **The weights of a rule whose nodal polynomial is $p_{n+2} + a p_{n+1} + b p_n$.** Let $\mu$ be
+a weight on $\mathbb{R}$, and let a rule be interpolatory for $\mu$ with $n + 2$ distinct nodes
+$x_j$ and weights $w_j$. Let its nodal polynomial be $\omega = p_{n+2} + a\, p_{n+1} + b\, p_n$
+for real numbers $a$ and $b$, and let $\|p_{n+1}\|^2 - b \|p_n\|^2 \neq 0$. Then for every $j$,
+$p_{n+1}(x_j) \neq 0$ and $$w_j = \frac{\|p_{n+1}\|^2 - b \|p_n\|^2}{p_{n+1}(x_j)\,
+\omega'(x_j)}.$$ This identity gives both the Gauss weights ($a = b = 0$) and the Gauss–Lobatto
+weights.
 
-This is the common source of the Gauss weights (`a = b = 0`) and of the Gauss–Lobatto weights.
-
-Reference: Davis–Rabinowitz, *Methods of Numerical Integration*, §2.7. -/
+The Christoffel–Darboux identity at $t = x_j$ gives $p_{n+1}(x_j)\, \omega/(x - x_j) =
+\|p_{n+1}\|^2 K_{n+1}(x_j, \cdot) - b \|p_n\|^2 K_n(x_j, \cdot)$, whose integral is
+$\|p_{n+1}\|^2 - b \|p_n\|^2$. On the other side, $\omega/(x - x_j)$ is $\omega'(x_j)$ times the
+Lagrange basis polynomial of $x_j$. The computation follows Davis and Rabinowitz, *Methods of
+Numerical Integration*, §2.7. -/
 theorem weight_eq_of_nodal_eq (hw : IsWeight μ) {n : ℕ} {x w : Fin (n + 2) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure μ w x) {a b : ℝ}
     (hnodal : Lagrange.nodal Finset.univ x =
@@ -505,12 +599,14 @@ theorem weight_eq_of_nodal_eq (hw : IsWeight μ) {n : ℕ} {x w : Fin (n + 2) �
   rw [integral_const_mul, ← hE, ← hintE]
   field_simp
 
-/-- **The Gauss weights through the Christoffel–Darboux kernel**: for the Gauss rule with `N + 1`
-nodes — an interpolatory rule at the roots of `p_{N+1}` — the weights are
-`w_j = ‖p_N‖² / (p_N(x_j) p_{N+1}'(x_j))`, and `p_N(x_j) ≠ 0`.
+/-- **The Gauss weights through the Christoffel–Darboux kernel.** Let $\mu$ be a weight on
+$\mathbb{R}$, and let a rule be interpolatory for $\mu$ with $N + 1$ distinct nodes $x_j$ and
+weights $w_j$, whose nodal polynomial is $p_{N+1}$. Then for every $j$, $p_N(x_j) \neq 0$ and
+$$w_j = \frac{\|p_N\|^2}{p_N(x_j)\, p_{N+1}'(x_j)}.$$
 
-Reference: Davis–Rabinowitz, *Methods of Numerical Integration*, §2.7; [quarteroni2000numerical]
-(10.32), (10.41), (10.42). -/
+This is the case $a = b = 0$ of `Quadrature.weight_eq_of_nodal_eq`. It is the common source of
+equations (10.32), (10.41) and (10.42) of [quarteroni2000numerical]; see also Davis and
+Rabinowitz, *Methods of Numerical Integration*, §2.7. -/
 theorem gaussWeight_eq (hw : IsWeight μ) {N : ℕ} {x w : Fin (N + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure μ w x)
     (hnodal : Lagrange.nodal Finset.univ x = family μ (N + 1)) (j : Fin (N + 1)) :
@@ -535,18 +631,19 @@ theorem gaussWeight_eq (hw : IsWeight μ) {N : ℕ} {x w : Fin (N + 1) → ℝ}
 
 /-! ### The Gauss–Lobatto rule -/
 
-/-- **Gauss–Lobatto quadrature.** For a weight `μ` carried by `[-1, 1]` and `n ≥ 1` there are
-`n + 1` distinct nodes in `[-1, 1]`, the first being `-1` and the last `1`, and positive weights,
-such that the rule is exact on the polynomials of degree at most `2n - 1`; the nodal polynomial is
-`Quadrature.lobattoNodal μ n` and the rule is interpolatory.
+/-- **Gauss–Lobatto quadrature.** Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([-1, 1]^c) = 0$,
+and let $n \ge 1$. Then there are $n + 1$ distinct nodes $x_0, \dots, x_n \in [-1, 1]$ with
+$x_0 = -1$ and $x_n = 1$, and positive weights $w_0, \dots, w_n$, such that the rule integrates
+every polynomial of degree at most $2n - 1$ exactly against $\mu$. Moreover, the nodal
+polynomial of the rule is the Lobatto nodal polynomial `Quadrature.lobattoNodal μ n`, and the
+rule is interpolatory. This is the rule of equations (10.17)–(10.18) of
+[quarteroni2000numerical].
 
-The interior nodes are the `n - 1` roots of the `(n-1)`-st orthogonal polynomial of the modified
-weight `(1 - x²) μ`, which lie in `(-1, 1)`; exactness is Jacobi's theorem
-`Quadrature.isExactOnMeasure_add_iff` with `Quadrature.integral_lobattoNodal_mul_of_degree_le`;
-positivity of the weights is `Quadrature.pos_of_isExactOnMeasure` with the test polynomials
-`(1 ∓ x) q²` at the endpoints and `(1 - x²) (q / (x - x̄_i))²` at the interior nodes.
-
-Reference: [quarteroni2000numerical] (10.17)–(10.18). -/
+The interior nodes are the $n - 1$ roots of $q_{n-1}$, which lie in $(-1, 1)$. Exactness is
+Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff` with
+`Quadrature.integral_lobattoNodal_mul_of_degree_le`. The weights are positive by
+`Quadrature.pos_of_isExactOnMeasure`, with the test polynomials $(1 \mp x) q_{n-1}^2$ at the
+endpoints and $(1 - x^2)(q_{n-1}/(x - \bar x_i))^2$ at the interior nodes. -/
 theorem exists_gaussLobatto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) {n : ℕ}
     (hn : 1 ≤ n) :
     ∃ x w : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧
@@ -722,19 +819,21 @@ theorem exists_gaussLobatto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ
           simp [Lagrange.eval_nodal_at_node (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ j⟩)]
   exact ⟨x, w, hxinj, hx0, hxlast, hxmem, hpos, hexact, hnodal, hint⟩
 
-/-- **Gauss–Radau quadrature.** For a weight `μ` carried by `[a, b]` and any `n` there are `n + 1`
-distinct nodes in `[a, b]`, the first being `a`, and positive weights, such that the rule is exact
-on the polynomials of degree at most `2n`; the nodal polynomial is `(X - a) q_n` with `q_n` the
-`n`-th monic orthogonal polynomial of the modified weight `(x - a) μ`
-(`OrthogonalPolynomial.radauMeasure`), and the rule is interpolatory.
+/-- **Gauss–Radau quadrature.** Let $\mu$ be a weight on $\mathbb{R}$ with $\mu([a, b]^c) = 0$, and
+let $n \in \mathbb{N}$. Then there are $n + 1$ distinct nodes $x_0, \dots, x_n \in [a, b]$ with
+$x_0 = a$, and positive weights $w_0, \dots, w_n$, such that the rule integrates every
+polynomial of degree at most $2n$ exactly against $\mu$. Moreover, the nodal polynomial of the
+rule is $(x - a) q_n$, where $q_n$ is the monic orthogonal polynomial of degree $n$ for the
+modified weight $(x - a)\mu$, and the rule is interpolatory. See equation (10.2.8) of
+[golub2013matrix] and §10.2 of [quarteroni2000numerical].
 
-The interior nodes are the `n` roots of `q_n`, which lie in `(a, b)`; exactness is Jacobi's theorem
-`Quadrature.isExactOnMeasure_add_iff` at `m = n`, since `∫ (x - a) q_n p ∂μ = ∫ q_n p ∂((x - a) μ)`
-vanishes for `deg p < n`; positivity of the weights is `Quadrature.pos_of_isExactOnMeasure` with the
-test polynomials `q_n²` at `a` and `(X - a) (q_n / (X - x_i))²` at the interior nodes. The rule with
-the fixed node at the right end is `Quadrature.exists_gaussRadau_right`.
-
-Reference: [golub2013matrix] (10.2.8); [quarteroni2000numerical] §10.2. -/
+The interior nodes are the $n$ roots of $q_n$, which lie in $(a, b)$. Exactness is Jacobi's
+theorem `Quadrature.isExactOnMeasure_add_iff` with $m = n$, since $\int (x - a) q_n p \, d\mu =
+\int q_n p \, d((x - a)\mu)$ vanishes for $\deg p < n$. The weights are positive by
+`Quadrature.pos_of_isExactOnMeasure`, with the test polynomials $q_n^2$ at $a$ and
+$(x - a)(q_n/(x - x_i))^2$ at the interior nodes. The modified weight is
+`OrthogonalPolynomial.radauMeasure μ a`. The rule with the fixed node at the right end is
+`Quadrature.exists_gaussRadau_right`. -/
 theorem exists_gaussRadau (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (n : ℕ) :
     ∃ x w : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = a ∧ (∀ i, x i ∈ Icc a b) ∧
       (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w x (2 * n) ∧
@@ -856,13 +955,15 @@ theorem exists_gaussRadau (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)�
           simp [Lagrange.eval_nodal_at_node (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ j⟩)]
   exact ⟨x, w, hxinj, hx0, hxmem, hpos, hexact, hnodal, hint⟩
 
-/-- **Gauss–Radau quadrature with the fixed node at the right end.** For a weight `μ` carried by
-`[a, b]` and any `n` there are `n + 1` distinct nodes in `[a, b]`, the first being `b`, and positive
-weights, such that the rule is exact on the polynomials of degree at most `2n`: the rule of
-`Quadrature.exists_gaussRadau` for the reflected weight `μ ∘ (−·)`, carried by `[−b, −a]`,
-transported back along `x ↦ −x` (`Quadrature.isExactOnMeasure_map_affine`).
+/-- **Gauss–Radau quadrature with the fixed node at the right end.** Let $\mu$ be a weight on
+$\mathbb{R}$ with $\mu([a, b]^c) = 0$, and let $n \in \mathbb{N}$. Then there are $n + 1$
+distinct nodes $x_0, \dots, x_n \in [a, b]$ with $x_0 = b$, and positive weights
+$w_0, \dots, w_n$, such that the rule integrates every polynomial of degree at most $2n$ exactly
+against $\mu$. See equation (10.2.9) of [golub2013matrix].
 
-Reference: [golub2013matrix] (10.2.9). -/
+The rule is the rule of `Quadrature.exists_gaussRadau` for the reflected weight
+$\mu \circ (x \mapsto -x)$, which is carried by $[-b, -a]$, transported back along
+$x \mapsto -x$ by `Quadrature.isExactOnMeasure_map_affine`. -/
 theorem exists_gaussRadau_right (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0) (n : ℕ) :
     ∃ x w : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = b ∧ (∀ i, x i ∈ Icc a b) ∧
       (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w x (2 * n) := by
@@ -890,12 +991,14 @@ theorem exists_gaussRadau_right (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc 
 
 /-! ### The classical Gauss weights -/
 
-/-- **The Legendre–Gauss weights**: for the interpolatory rule at the `n + 1` zeros of `L_{n+1}`,
-`w_j = 2 / ((1 - x_j²) L_{n+1}'(x_j)²)`. From `Quadrature.gaussWeight_eq`,
-`w_j = 2 / ((n + 1) L_n(x_j) L_{n+1}'(x_j))`, and `(1 - x_j²) L_{n+1}'(x_j) = (n + 1) L_n(x_j)` at a
-root of `L_{n+1}` by the Legendre differential identities.
+/-- **The Legendre–Gauss weights.** Let a rule be interpolatory for the Legendre weight $dx$ on
+$(-1, 1)$, with $n + 1$ distinct nodes $x_j$ that are zeros of $L_{n+1}$, and with weights
+$w_j$. Then for every $j$, $$w_j = \frac{2}{(1 - x_j^2)\, L_{n+1}'(x_j)^2}.$$ This is equation
+(10.32) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.32). -/
+`Quadrature.gaussWeight_eq` gives $w_j = 2/((n + 1) L_n(x_j) L_{n+1}'(x_j))$, and
+$(1 - x_j^2) L_{n+1}'(x_j) = (n + 1) L_n(x_j)$ at a root of $L_{n+1}$ by the Legendre
+differential identities. -/
 theorem legendreGaussWeight_eq {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hint : IsInterpolatoryMeasure legendreMeasure w x)
     (hroot : ∀ j, (Polynomial.legendre (n + 1)).eval (x j) = 0) (j : Fin (n + 1)) :
@@ -937,12 +1040,16 @@ theorem legendreGaussWeight_eq {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : Funct
     eval_mul, eval_mul, eval_C, eval_C, hlc1, hR]
   field_simp
 
-/-- **The Gauss–Laguerre weights**: for the interpolatory rule at the `n + 1` zeros of `ℒ_{n+1}`,
-`w_k = ((n + 1)!)² x_k / ℒ_{n+2}(x_k)²`. From `Quadrature.gaussWeight_eq`,
-`w_k = -(n!)² / (ℒ_n(x_k) ℒ_{n+1}'(x_k))`, and at a root of `ℒ_{n+1}` both `x_k ℒ_{n+1}'(x_k)` and
-`ℒ_{n+2}(x_k)` equal `-(n + 1)² ℒ_n(x_k)`.
+/-- **The Gauss–Laguerre weights.** Let a rule be interpolatory for the Laguerre weight
+$e^{-x} \, dx$ on $(0, \infty)$, with $n + 1$ distinct nodes $x_k$ that are zeros of
+$\mathcal{L}_{n+1}$, and with weights $w_k$. Then for every $k$, $$w_k = \frac{((n + 1)!)^2\,
+x_k}{\mathcal{L}_{n+2}(x_k)^2}.$$ This is equation (10.41) of [quarteroni2000numerical], with
+$n + 1$ nodes in place of $n$.
 
-Reference: [quarteroni2000numerical] (10.41) (with `n + 1` nodes in place of `n`). -/
+`Quadrature.gaussWeight_eq` gives $w_k = -(n!)^2/(\mathcal{L}_n(x_k) \mathcal{L}_{n+1}'(x_k))$,
+and at a root of $\mathcal{L}_{n+1}$ both $x_k \mathcal{L}_{n+1}'(x_k)$ and
+$\mathcal{L}_{n+2}(x_k)$ equal $-(n + 1)^2 \mathcal{L}_n(x_k)$. The polynomials $\mathcal{L}_k$
+are the unnormalized `Polynomial.laguerre k`, with leading coefficient $(-1)^k$. -/
 theorem laguerreGaussWeight_eq {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hint : IsInterpolatoryMeasure laguerreMeasure w x)
     (hroot : ∀ k, (Polynomial.laguerre (n + 1)).eval (x k) = 0) (k : Fin (n + 1)) :
@@ -987,12 +1094,15 @@ theorem laguerreGaussWeight_eq {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : Funct
   push_cast
   field_simp
 
-/-- **The Gauss–Hermite weights**: for the interpolatory rule at the `n + 1` zeros of `H_{n+1}`,
-`w_k = 2^{n+2} (n + 1)! √π / H_{n+2}(x_k)²`. From `Quadrature.gaussWeight_eq`,
-`w_k = 2^{n+1} n! √π / (H_n(x_k) H_{n+1}'(x_k))`, with `H_{n+1}' = 2(n + 1) H_n` and
-`H_{n+2}(x_k) = -2(n + 1) H_n(x_k)` at a root of `H_{n+1}`.
+/-- **The Gauss–Hermite weights.** Let a rule be interpolatory for the Hermite weight
+$e^{-x^2} \, dx$ on $\mathbb{R}$, with $n + 1$ distinct nodes $x_k$ that are zeros of $H_{n+1}$,
+and with weights $w_k$. Then for every $k$, $$w_k = \frac{2^{n+2} (n + 1)!\,
+\sqrt{\pi}}{H_{n+2}(x_k)^2}.$$ This is equation (10.42) of [quarteroni2000numerical], with
+$n + 1$ nodes in place of $n$.
 
-Reference: [quarteroni2000numerical] (10.42) (with `n + 1` nodes in place of `n`). -/
+`Quadrature.gaussWeight_eq` gives $w_k = 2^{n+1} n! \sqrt{\pi}/(H_n(x_k) H_{n+1}'(x_k))$, and
+$H_{n+1}' = 2(n + 1) H_n$ and $H_{n+2}(x_k) = -2(n + 1) H_n(x_k)$ at a root of $H_{n+1}$. The
+polynomials $H_k$ are the physicists' Hermite polynomials `Polynomial.physHermite k`. -/
 theorem hermiteGaussWeight_eq {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hint : IsInterpolatoryMeasure hermiteMeasure w x)
     (hroot : ∀ k, (Polynomial.physHermite (n + 1)).eval (x k) = 0) (k : Fin (n + 1)) :
@@ -1027,46 +1137,52 @@ open Quadrature
 
 variable {n : ℕ}
 
-/-- The factor `d_j` of the Chebyshev–Gauss–Lobatto rule: `2` at the endpoints `j = 0` and `j = n`,
-`1` at the interior nodes.
-
-Reference: [quarteroni2000numerical] (10.21). -/
+/-- The factor $d_j$ of the Chebyshev–Gauss–Lobatto rule with $n + 1$ nodes: $d_j = 2$ if $j = 0$ or
+$j = n$, and $d_j = 1$ otherwise. See equation (10.21) of [quarteroni2000numerical]. -/
 def lobattoFactor (n j : ℕ) : ℝ := if j = 0 ∨ j = n then 2 else 1
 
+/-- The factor $d_j$ is positive. -/
 theorem lobattoFactor_pos (n j : ℕ) : 0 < lobattoFactor n j := by
   unfold lobattoFactor
   split_ifs <;> norm_num
 
+/-- If $j \neq 0$ and $j \neq n$, then $d_j = 1$. -/
 theorem lobattoFactor_of_ne {n j : ℕ} (h0 : j ≠ 0) (hn : j ≠ n) : lobattoFactor n j = 1 := by
   rw [lobattoFactor, ite_eq_right (not_or.mpr ⟨h0, hn⟩)]
 
-/-- The Chebyshev–Gauss–Lobatto weights `π / (d_j n)`, with `d_0 = d_n = 2` and `d_j = 1` at the
-interior nodes.
+/-- The **Chebyshev–Gauss–Lobatto weights** $$w_j = \frac{\pi}{d_j\, n},$$ with $d_0 = d_n = 2$ and
+$d_j = 1$ at the interior nodes. See equation (10.21) of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.21). -/
+For $n = 0$ the Lean value is $\pi/0 = 0$. -/
 def lobattoWeight (n j : ℕ) : ℝ := π / (lobattoFactor n j * n)
 
+/-- For $n \neq 0$ every Chebyshev–Gauss–Lobatto weight $\pi/(d_j n)$ is positive. -/
 theorem lobattoWeight_pos {n : ℕ} (hn : n ≠ 0) (j : ℕ) : 0 < lobattoWeight n j :=
   div_pos pi_pos (mul_pos (lobattoFactor_pos n j) (by positivity))
 
-/-- The Chebyshev–Gauss–Lobatto sum `∑_{j ≤ n} (π / (d_j n)) P(cos (jπ/n))` over the extrema
-`Polynomial.Chebyshev.node n j` of `T_n`, the companion of Mathlib's
-`Polynomial.Chebyshev.sumZeroes`.
+/-- The **Chebyshev–Gauss–Lobatto sum** of a polynomial $P$: $$\sum_{j=0}^n \frac{\pi}{d_j\, n}\,
+P\Big(\cos\frac{j\pi}{n}\Big),$$ over the extrema $\cos(j\pi/n)$ of $T_n$. See equation (10.21)
+of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.21). -/
+The nodes are `Polynomial.Chebyshev.node n j`. The sum is the counterpart of Mathlib's
+`Polynomial.Chebyshev.sumZeroes` for the Chebyshev–Gauss rule. -/
 def sumExtrema (n : ℕ) (P : ℝ[X]) : ℝ :=
   ∑ j ∈ Finset.range (n + 1), lobattoWeight n j * P.eval (node n j)
 
+/-- The Chebyshev–Gauss–Lobatto sum is additive: the sum of $\sum_{i \in s} P_i$ is the sum over
+$i \in s$ of the sums of $P_i$. -/
 theorem sumExtrema_sum (n : ℕ) {ι : Type*} (s : Finset ι) (P : ι → ℝ[X]) :
     sumExtrema n (∑ i ∈ s, P i) = ∑ i ∈ s, sumExtrema n (P i) := by
   simp only [sumExtrema, eval_finsetSum, Finset.mul_sum]
   rw [Finset.sum_comm]
 
+/-- The Chebyshev–Gauss–Lobatto sum is homogeneous: the sum of $cP$ is $c$ times the sum of $P$. -/
 theorem sumExtrema_smul (n : ℕ) (c : ℝ) (P : ℝ[X]) : sumExtrema n (c • P) = c * sumExtrema n P := by
   simp only [sumExtrema, eval_smul, smul_eq_mul, Finset.mul_sum]
   exact Finset.sum_congr rfl fun j _ => by ring
 
-/-- The nodes are symmetric under `j ↦ 2n - j`. -/
+/-- The extrema of $T_n$ are symmetric under $j \mapsto 2n - j$: for $j \le 2n$,
+$\cos((2n - j)\pi/n) = \cos(j\pi/n)$. -/
 theorem node_two_mul_sub {n j : ℕ} (hj : j ≤ 2 * n) : node n (2 * n - j) = node n j := by
   rcases eq_or_ne n 0 with rfl | hn
   · simp [node]
@@ -1074,8 +1190,12 @@ theorem node_two_mul_sub {n j : ℕ} (hj : j ≤ 2 * n) : node n (2 * n - j) = n
   push_cast
   rw [show (2 * (n : ℝ) - j) * π / n = 2 * π - j * π / n by field_simp, cos_two_pi_sub]
 
-/-- **The Lobatto sum is a trapezoidal sum over a full period**: the endpoint half-weights are the
-two halves of the periodic trapezoidal rule, and the interior nodes appear twice in a period. -/
+/-- **The Chebyshev–Gauss–Lobatto sum is a trapezoidal sum over a full period.** For $n \neq 0$ and
+every polynomial $P$, $$\sum_{j=0}^n \frac{\pi}{d_j\, n}\, P\Big(\cos\frac{j\pi}{n}\Big) =
+\frac{\pi}{2n} \sum_{j=0}^{2n-1} P\Big(\cos\frac{j\pi}{n}\Big).$$
+
+The half weights at the endpoints are the two halves of the periodic trapezoidal rule, and each
+interior node appears twice in a period. -/
 theorem sumExtrema_eq_sum_range (hn : n ≠ 0) (P : ℝ[X]) :
     sumExtrema n P = π / (2 * n) * ∑ j ∈ Finset.range (2 * n), P.eval (node n j) := by
   have hn1 : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn
@@ -1111,7 +1231,7 @@ theorem sumExtrema_eq_sum_range (hn : n ≠ 0) (P : ℝ[X]) :
   field_simp
   ring
 
-/-- The Lobatto sum of `T_0` is `π`. -/
+/-- For $n \neq 0$, the Chebyshev–Gauss–Lobatto sum of $T_0$ is $\pi$. -/
 theorem sumExtrema_T_zero (hn : n ≠ 0) : sumExtrema n (T ℝ 0) = π := by
   rw [sumExtrema_eq_sum_range hn]
   simp only [T_zero, eval_one, Finset.sum_const, Finset.card_range, nsmul_eq_mul, mul_one]
@@ -1119,8 +1239,10 @@ theorem sumExtrema_T_zero (hn : n ≠ 0) : sumExtrema n (T ℝ 0) = π := by
   push_cast
   field_simp
 
-/-- The Lobatto sum of `T_k` vanishes for `0 < k < 2n`: over a full period it is the real part of
-a sum of `2n`-th roots of unity (`Quadrature.sum_exp_angleNode`). -/
+/-- For $n \neq 0$ and $0 < k < 2n$, the Chebyshev–Gauss–Lobatto sum of $T_k$ is $0$.
+
+Over a full period the sum is the real part of a sum of $2n$-th roots of unity, which vanishes
+by `Quadrature.sum_exp_angleNode`. -/
 theorem sumExtrema_T_of_pos_of_lt (hn : n ≠ 0) {k : ℕ} (hk0 : 0 < k) (hk : k < 2 * n) :
     sumExtrema n (T ℝ k) = 0 := by
   rw [sumExtrema_eq_sum_range hn]
@@ -1148,12 +1270,13 @@ theorem sumExtrema_T_of_pos_of_lt (hn : n ≠ 0) {k : ℕ} (hk0 : 0 < k) (hk : k
   push_cast
   ring_nf
 
-/-- **Chebyshev–Gauss–Lobatto quadrature**: for `n ≠ 0` the rule with the `n + 1` extrema
-`cos (jπ/n)` of `T_n` and the weights `π / (d_j n)` integrates every polynomial of degree less than
-`2n` exactly against the Chebyshev weight. By linearity it suffices to treat `T_k` for `k < 2n`,
-where both sides are `π` for `k = 0` and `0` otherwise.
+/-- **Chebyshev–Gauss–Lobatto quadrature.** Let $n \neq 0$ and let $P$ be a polynomial of degree
+less than $2n$. Then $$\int_{-1}^1 \frac{P(x)}{\sqrt{1 - x^2}} \, dx = \sum_{j=0}^n
+\frac{\pi}{d_j\, n}\, P\Big(\cos\frac{j\pi}{n}\Big).$$ This is equation (10.21) of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.21). -/
+The weight is Mathlib's `Polynomial.Chebyshev.measureT`. By linearity it suffices to treat $T_k$
+for $k < 2n$, where both sides are $\pi$ for $k = 0$ and $0$ otherwise. -/
 theorem integral_eq_sumExtrema {n : ℕ} {P : ℝ[X]} (hn : n ≠ 0) (hP : P.degree < 2 * n) :
     ∫ x, P.eval x ∂measureT = sumExtrema n P := by
   have hmem : P ∈ degreeLT ℝ (2 * n) := by rwa [mem_degreeLT]
@@ -1173,8 +1296,13 @@ theorem integral_eq_sumExtrema {n : ℕ} {P : ℝ[X]} (hn : n ≠ 0) (hP : P.deg
   · simp_rw [← eval_smul]
     exact fun i _ => integrable_measureT (by fun_prop)
 
-/-- The Chebyshev–Gauss–Lobatto rule as an exactness statement about the measure
-`OrthogonalPolynomial.chebyshevMeasure`, with `Fin`-indexed nodes and weights. -/
+/-- **Chebyshev–Gauss–Lobatto quadrature as an exactness statement.** For $n \neq 0$, the rule with
+the nodes $\cos(j\pi/n)$ and the weights $\pi/(d_j n)$, $j = 0, \dots, n$, integrates every
+polynomial of degree at most $2n - 1$ exactly against the Chebyshev weight
+$(1 - x^2)^{-1/2} \, dx$ on $(-1, 1)$.
+
+The statement is `Quadrature.IsExactOnMeasure` for `OrthogonalPolynomial.chebyshevMeasure`, with
+nodes and weights indexed by `Fin (n + 1)`. -/
 theorem isExactOnMeasure_lobattoWeight_node (hn : n ≠ 0) :
     IsExactOnMeasure OrthogonalPolynomial.chebyshevMeasure
       (fun j : Fin (n + 1) => lobattoWeight n j) (fun j : Fin (n + 1) => node n j) (2 * n - 1) := by
@@ -1182,7 +1310,8 @@ theorem isExactOnMeasure_lobattoWeight_node (hn : n ≠ 0) :
   rw [integral_eq_sumExtrema hn (hP.trans_lt (by exact_mod_cast (by omega : 2 * n - 1 < 2 * n))),
     sumExtrema, ← Fin.sum_univ_eq_sum_range (fun j => lobattoWeight n j * P.eval (node n j))]
 
-/-- The nodes `cos (jπ/n)`, `j ≤ n`, are distinct. -/
+/-- For every $n$, the Chebyshev–Gauss–Lobatto nodes $\cos(j\pi/n)$, $j = 0, \dots, n$, are
+distinct. -/
 theorem injective_node (n : ℕ) : Function.Injective fun j : Fin (n + 1) => node n j := by
   intro i j hij
   have hi : (i : ℕ) ∈ (↑(Finset.range (n + 1)) : Set ℕ) := by
@@ -1193,13 +1322,17 @@ theorem injective_node (n : ℕ) : Function.Injective fun j : Fin (n + 1) => nod
     exact j.is_lt
   exact Fin.ext ((strictAntiOn_node n).injOn hi hj hij)
 
-/-- **The discrete norms of the Chebyshev polynomials for the Gauss–Lobatto rule**: with
-`(f, g)_n = ∑_j (π / (d_j n)) f(x̄_j) g(x̄_j)`, the `T_k` for `k ≤ n` are orthogonal, with
-`(T_k, T_k)_n = π` for `k = 0` or `k = n` and `π / 2` for `0 < k < n`. Below the degree of exactness
-this is the continuous inner product; at `k = n` it is the direct sum `∑_j (π / (d_j n)) = π`, twice
-the continuous norm `π / 2` (the hint of [quarteroni2000numerical] Exercise 10.2).
+/-- **The discrete norms of the Chebyshev polynomials for the Gauss–Lobatto rule.** Let $n \neq 0$,
+let $\bar x_j = \cos(j\pi/n)$, and let $(f, g)_n = \sum_{j=0}^n \frac{\pi}{d_j n} f(\bar x_j)
+g(\bar x_j)$. Then for $k, l \le n$, $$(T_k, T_l)_n = \begin{cases} \pi & \text{if } k = l
+\text{ and } k \in \{0, n\}, \\ \pi/2 & \text{if } k = l \text{ and } 0 < k < n, \\ 0 & \text{if
+} k \neq l. \end{cases}$$ This is the discrete inner product of §10.3 of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] §10.3. -/
+Below the degree of exactness the discrete inner product is the continuous one. At $k = l = n$
+it is the direct sum $\sum_j \pi/(d_j n) = \pi$, twice the continuous value $\pi/2$; this is the
+hint of Exercise 10.2 of [quarteroni2000numerical]. The inner product is
+`Quadrature.discreteInner`. -/
 theorem discreteInner_T_T (hn : n ≠ 0) {k l : ℕ} (hk : k ≤ n) (hl : l ≤ n) :
     discreteInner (fun j : Fin (n + 1) => lobattoWeight n j) (fun j : Fin (n + 1) => node n j)
         (fun t => (T ℝ k).eval t) (fun t => (T ℝ l).eval t) =
@@ -1237,13 +1370,14 @@ theorem discreteInner_T_T (hn : n ≠ 0) {k l : ℕ} (hk : k ≤ n) (hl : l ≤ 
     simp only [eval_mul]
     exact integral_eval_T_real_mul_eval_T_real_measureT_of_ne hkl
 
-/-- **The Chebyshev discrete transform.** The interpolant of `f` at the Chebyshev–Gauss–Lobatto
-nodes `x̄_j = cos (jπ/n)` is `∑_{k ≤ n} f̃_k T_k` with
-`f̃_k = (2 / (n d_k)) ∑_{j ≤ n} d_j⁻¹ cos (kjπ/n) f(x̄_j)`: it is the discrete truncation
-`Quadrature.interpolate_eq_sum_discreteInner_smul` of the Chebyshev expansion, with the discrete
-norms `Polynomial.Chebyshev.discreteInner_T_T` and `T_k(x̄_j) = cos (kjπ/n)`.
+/-- **The discrete Chebyshev transform.** Let $n \neq 0$, let $\bar x_j = \cos(j\pi/n)$ and let
+$f : \mathbb{R} \to \mathbb{R}$. Then the Lagrange interpolant of $f$ at the nodes
+$\bar x_0, \dots, \bar x_n$ is $$\sum_{k=0}^n \tilde f_k T_k, \qquad \tilde f_k = \frac{2}{n\,
+d_k} \sum_{j=0}^n \frac{1}{d_j} \cos\frac{kj\pi}{n}\, f(\bar x_j).$$ This is equations
+(10.29)–(10.31) and Exercise 10.2 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.29)–(10.31), Exercise 10.2. -/
+The proof is `Quadrature.interpolate_eq_sum_discreteInner_smul` for the Chebyshev weight, with
+the discrete norms `Polynomial.Chebyshev.discreteInner_T_T` and $T_k(\bar x_j) = \cos(kj\pi/n)$. -/
 theorem interpolate_eq_sum_cdt (hn : n ≠ 0) (f : ℝ → ℝ) :
     Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => node n j) (fun j => f (node n j)) =
       ∑ k ∈ Finset.range (n + 1),
@@ -1307,11 +1441,9 @@ open OrthogonalPolynomial
 
 /-! ### The derivative of a Jacobi polynomial -/
 
-/-- The integration by parts behind Remark 10.2 of [quarteroni2000numerical]: for `p` of degree
-less than `n - 1`, `∫ (J_n^{(α,β)})' p (1-x)^{α+1} (1+x)^{β+1} dx = 0`, because it is
-`-∫ J_n^{(α,β)} [p (1-x)^{α+1} (1+x)^{β+1}]' dx`, the boundary terms vanishing as
-`α + 1, β + 1 > 0`, and the derivative in the bracket is `(1-x)^α (1+x)^β` times a polynomial of
-degree less than `n`. -/
+/-- For $\alpha, \beta > -1$ and a polynomial $p$ of degree less than $n - 1$, $\int_{-1}^1
+(J_n^{(\alpha,\beta)})'(x)\, p(x)\, (1 - x)^{\alpha+1} (1 + x)^{\beta+1} \, dx = 0$, by one
+integration by parts; this is the step behind Remark 10.2 of [quarteroni2000numerical]. -/
 private theorem integral_derivative_family_jacobiMeasure_mul {α β : ℝ} (hα : -1 < α) (hβ : -1 < β)
     {n : ℕ} {p : ℝ[X]} (hp : p.degree < ((n - 1 : ℕ) : WithBot ℕ)) :
     ∫ x, (derivative (family (jacobiMeasure α β) n)).eval x * p.eval x
@@ -1428,15 +1560,20 @@ private theorem integral_derivative_family_jacobiMeasure_mul {α β : ℝ} (hα 
   rw [rpow_add_one h1x, rpow_add_one h1x']
   ring
 
-/-- **The derivative of a Jacobi polynomial is a Jacobi polynomial of the shifted weight**:
-for `α, β > -1` and `n ≥ 1`, `(J_n^{(α,β)})' = n J_{n-1}^{(α+1,β+1)}` for the monic families. Both
-sides are `n` times a monic polynomial of degree `n - 1`, and the left side is orthogonal to the
-polynomials of degree less than `n - 1` for the weight `(1-x)^{α+1}(1+x)^{β+1}` by one integration
-by parts. Consequently the interior Gauss–Lobatto nodes of a Jacobi weight are the zeros of the
-derivative of its `n`-th orthogonal polynomial, as the modified weight
-`(1 - x²) · jacobiMeasure α β` is `jacobiMeasure (α + 1) (β + 1)`.
+/-- **The derivative of a Jacobi polynomial is a Jacobi polynomial of the shifted weight.** Let
+$\alpha, \beta > -1$ and $n \ge 1$, and let $J_k^{(\alpha,\beta)}$ be the monic orthogonal
+polynomial of degree $k$ for the Jacobi weight $(1 - x)^\alpha (1 + x)^\beta \, dx$ on
+$(-1, 1)$. Then $$\big(J_n^{(\alpha,\beta)}\big)' = n\, J_{n-1}^{(\alpha+1,\beta+1)}.$$ Since
+the Lobatto modified weight of the Jacobi weight with exponents $(\alpha, \beta)$ is the Jacobi
+weight with exponents $(\alpha + 1, \beta + 1)$, the interior Gauss–Lobatto nodes of a Jacobi
+weight are the zeros of $(J_n^{(\alpha,\beta)})'$. This is Remark 10.2 of
+[quarteroni2000numerical], with the weight read as $(1 - x)^\alpha (1 + x)^\beta$.
 
-Reference: [quarteroni2000numerical] Remark 10.2 (with the weight read as `(1-x)^α (1+x)^β`). -/
+Both sides are $n$ times a monic polynomial of degree $n - 1$. The left side is orthogonal to
+the polynomials of degree less than $n - 1$ for the shifted weight, by one integration by parts
+in which the boundary terms vanish because $\alpha + 1, \beta + 1 > 0$. The polynomial
+$J_k^{(\alpha,\beta)}$ is `OrthogonalPolynomial.family (OrthogonalPolynomial.jacobiMeasure α β)
+k`. -/
 theorem derivative_family_jacobiMeasure {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) {n : ℕ}
     (hn : 1 ≤ n) :
     derivative (family (jacobiMeasure α β) n) =
@@ -1488,7 +1625,8 @@ theorem derivative_family_jacobiMeasure {α β : ℝ} (hα : -1 < α) (hβ : -1 
         sub_zero]
   rw [← hr_eq, hr, ← mul_assoc, ← C_mul, mul_inv_cancel₀ hnR, C_1, one_mul]
 
-/-- The modified weight of the Legendre weight is the Jacobi weight with `α = β = 1`. -/
+/-- The Jacobi weight $(1 - x)(1 + x) \, dx$ on $(-1, 1)$, with $\alpha = \beta = 1$, is the Lobatto
+modified weight $(1 - x^2) \, dx$ of the Legendre weight. -/
 theorem _root_.OrthogonalPolynomial.jacobiMeasure_one_one :
     jacobiMeasure 1 1 = lobattoMeasure legendreMeasure := by
   rw [jacobiMeasure]
@@ -1499,13 +1637,13 @@ theorem _root_.OrthogonalPolynomial.jacobiMeasure_one_one :
   congr 1
   ring
 
-/-- **The interior Legendre–Gauss–Lobatto nodes are the zeros of `L_n'`**: for `n ≥ 1`,
-`L_n' = n lc(L_n) · q_{n-1}` where `q_{n-1}` is the `(n-1)`-st orthogonal polynomial of the modified
-weight `(1 - x²) dx`, so the Lobatto nodal polynomial of the Legendre weight is a multiple of
-`(1 - x²) L_n'`. This is the Legendre case `α = β = 0` of
-`Quadrature.derivative_family_jacobiMeasure`.
+/-- **The interior Legendre–Gauss–Lobatto nodes are the zeros of $L_n'$.** For $n \ge 1$, $$L_n' = n
+\operatorname{lc}(L_n)\, q_{n-1},$$ where $q_{n-1}$ is the monic orthogonal polynomial of degree
+$n - 1$ for the modified weight $(1 - x^2) \, dx$ on $(-1, 1)$. So the Lobatto nodal polynomial
+of the Legendre weight is a multiple of $(1 - x^2) L_n'$. See equation (10.33) of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.33). -/
+This is the Legendre case $\alpha = \beta = 0$ of `Quadrature.derivative_family_jacobiMeasure`. -/
 theorem derivative_legendre_eq_family {n : ℕ} (hn : 1 ≤ n) :
     derivative (Polynomial.legendre n) =
       C ((n : ℝ) * (Polynomial.legendre n).leadingCoeff) * family (lobattoMeasure legendreMeasure)
@@ -1532,7 +1670,7 @@ open OrthogonalPolynomial
 
 /-! ### The Legendre–Gauss–Lobatto weights -/
 
-/-- The identity `(X² - 1) L_{m+1}' = (m + 1)(X L_{m+1} - L_m)`, from the two Legendre differential
+/-- The identity $(x^2 - 1) L_{m+1}' = (m + 1)(x L_{m+1} - L_m)$, from the two Legendre differential
 identities. -/
 private theorem quad_mul_derivative_legendre_succ (m : ℕ) :
     (X ^ 2 - 1 : ℝ[X]) * derivative (Polynomial.legendre (m + 1)) =
@@ -1543,8 +1681,9 @@ private theorem quad_mul_derivative_legendre_succ (m : ℕ) :
   simp only [map_add, map_natCast, map_one]
   linear_combination X * h1
 
-/-- **The Lobatto nodal polynomial of the Legendre weight** is `X p_{m+1} - c p_m` with
-`c = lc(L_m) / lc(L_{m+1})`, for the monic Legendre family `p_k`. -/
+/-- The Lobatto nodal polynomial of the Legendre weight with $m + 2$ nodes is
+$x\, p_{m+1} - c\, p_m$ with $c = \operatorname{lc}(L_m)/\operatorname{lc}(L_{m+1})$, for the
+monic Legendre polynomials $p_k$. -/
 private theorem lobattoNodal_legendreMeasure_eq (m : ℕ) :
     lobattoNodal legendreMeasure (m + 1) =
       X * family legendreMeasure (m + 1) -
@@ -1584,8 +1723,8 @@ private theorem lobattoNodal_legendreMeasure_eq (m : ℕ) :
         rw [e1, mul_sub, ← mul_assoc (C _) (C _), ← C_mul, e2]
         ring
 
-/-- The derivative of the Lobatto nodal polynomial of the Legendre weight is `(m + 2) p_{m+1}`, by
-the Legendre differential equation. -/
+/-- The derivative of the Lobatto nodal polynomial of the Legendre weight with $m + 2$ nodes is
+$(m + 2)\, p_{m+1}$, by the Legendre differential equation. -/
 private theorem derivative_lobattoNodal_legendreMeasure (m : ℕ) :
     derivative (lobattoNodal legendreMeasure (m + 1)) =
       C ((m : ℝ) + 2) * family legendreMeasure (m + 1) := by
@@ -1628,10 +1767,11 @@ private theorem derivative_lobattoNodal_legendreMeasure (m : ℕ) :
   congr 2
   field_simp
 
-/-- The Christoffel–Darboux weights `Quadrature.weight_eq_of_nodal_eq` at the `m + 2`
-Legendre–Gauss–Lobatto nodes: the Lobatto nodal polynomial is `p_{m+2} + (β_m - c) p_m` with
-`c = lc(L_m)/lc(L_{m+1})`, so `p_{m+1}(x̄_j) ≠ 0` and
-`w_j = c ‖p_m‖² / (p_{m+1}(x̄_j) ω̄'(x̄_j))`. -/
+/-- At the $m + 2$ Legendre–Gauss–Lobatto nodes, `Quadrature.weight_eq_of_nodal_eq` gives
+$p_{m+1}(\bar x_j) \neq 0$ and $w_j = c \|p_m\|^2/(p_{m+1}(\bar x_j)\, \bar\omega'(\bar x_j))$
+with $c = \operatorname{lc}(L_m)/\operatorname{lc}(L_{m+1})$, since the Lobatto nodal polynomial
+is $p_{m+2} + (\beta_m - c)\, p_m$, where $\beta_m$ is the coefficient of the three-term
+recurrence of the monic Legendre polynomials. -/
 private theorem weight_eq_of_nodal_eq_lobattoNodal {m : ℕ} {x w : Fin (m + 1 + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure legendreMeasure w x)
     (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure (m + 1))
@@ -1668,15 +1808,19 @@ private theorem weight_eq_of_nodal_eq_lobattoNodal {m : ℕ} {x w : Fin (m + 1 +
     at hwj
   exact ⟨hpne, hwj⟩
 
-/-- **The Legendre–Gauss–Lobatto weights**: for the rule of `Quadrature.exists_gaussLobatto` for the
-Legendre weight with `n + 1` nodes, `n ≥ 1`, every weight is `w_j = 2 / (n (n + 1) L_n(x̄_j)²)`,
-endpoints included. The Lobatto nodal polynomial is `p_{n+1} + b p_{n-1}` with
-`b = β_{n-1} - lc(L_{n-1})/lc(L_n)`, so `Quadrature.weight_eq_of_nodal_eq` gives
-`w_j = (‖p_n‖² - b ‖p_{n-1}‖²) / (p_n(x̄_j) ω̄'(x̄_j))`, and `ω̄' = (n + 1) p_n` by the Legendre
-differential equation.
+/-- **The Legendre–Gauss–Lobatto weights.** Let $n \ge 1$, and let a rule be interpolatory for the
+Legendre weight $dx$ on $(-1, 1)$, with $n + 1$ distinct nodes $\bar x_j$ and weights $w_j$,
+whose nodal polynomial is the Lobatto nodal polynomial of the Legendre weight. Then every
+weight, at the endpoints included, is $$w_j = \frac{2}{n(n + 1)\, L_n(\bar x_j)^2}.$$ This is
+equation (10.34) of [quarteroni2000numerical]; the rule of `Quadrature.exists_gaussLobatto` for
+the Legendre weight satisfies the hypotheses.
 
-Reference: [quarteroni2000numerical] (10.34); Davis–Rabinowitz, *Methods of Numerical Integration*,
-§2.7. -/
+The Lobatto nodal polynomial is $p_{n+1} + b\, p_{n-1}$ with $b = \beta_{n-1} -
+\operatorname{lc}(L_{n-1})/\operatorname{lc}(L_n)$, where $p_k$ are the monic Legendre
+polynomials and $\beta_{n-1}$ is a coefficient of their three-term recurrence. So
+`Quadrature.weight_eq_of_nodal_eq` gives $w_j = (\|p_n\|^2 - b \|p_{n-1}\|^2)/(p_n(\bar x_j)\,
+\bar\omega'(\bar x_j))$, and $\bar\omega' = (n + 1) p_n$ by the Legendre differential equation.
+The computation follows Davis and Rabinowitz, *Methods of Numerical Integration*, §2.7. -/
 theorem legendreLobattoWeight_eq {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure legendreMeasure w x)
     (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n) (j : Fin (n + 1)) :
@@ -1700,9 +1844,11 @@ theorem legendreLobattoWeight_eq {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) →
   field_simp
   ring
 
-/-- `L_n` does not vanish at a Legendre–Gauss–Lobatto node: the Christoffel–Darboux computation
-of the weights, `Quadrature.weight_eq_of_nodal_eq`, has `p_n(x̄_j)` as a factor of a nonzero
-quantity. -/
+/-- Let $n \ge 1$, and let $\bar x_0, \dots, \bar x_n$ be distinct nodes whose nodal polynomial is
+the Lobatto nodal polynomial of the Legendre weight. Then $L_n(\bar x_j) \neq 0$ for every $j$.
+
+In the computation of the weights by `Quadrature.weight_eq_of_nodal_eq`, $p_n(\bar x_j)$ is a
+factor of a nonzero quantity. -/
 theorem legendre_eval_ne_zero_of_nodal_eq_lobattoNodal {n : ℕ} (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x)
     (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n) (j : Fin (n + 1)) :
@@ -1713,12 +1859,19 @@ theorem legendre_eval_ne_zero_of_nodal_eq_lobattoNodal {n : ℕ} (hn : 1 ≤ n) 
   rw [family_eq_legendre, eval_mul, eval_C] at hpne
   exact fun h => hpne (by rw [h, mul_zero])
 
-/-- **The discrete norms of the Legendre polynomials for the Legendre–Gauss–Lobatto rule**: with
-`(f, g)_n = ∑_j w̄_j f(x̄_j) g(x̄_j)`, the `L_k` for `k ≤ n` are orthogonal,
-`(L_k, L_k)_n = 2/(2k+1)` for `k < n` (exactness), and `(L_n, L_n)_n = 2/n` (from the weights
-`2/(n(n+1) L_n(x̄_j)²)`, the hint of [quarteroni2000numerical] Exercise 10.6).
+/-- **The discrete norms of the Legendre polynomials for the Legendre–Gauss–Lobatto rule.** Let
+$n \ge 1$, and let a rule be interpolatory for the Legendre weight, with $n + 1$ distinct nodes
+$\bar x_j$ and weights $w_j$, whose nodal polynomial is the Lobatto nodal polynomial of the
+Legendre weight and which integrates every polynomial of degree at most $2n - 1$ exactly. Let
+$(f, g)_n = \sum_j w_j f(\bar x_j) g(\bar x_j)$. Then for $k, l \le n$, $$(L_k, L_l)_n =
+\begin{cases} 2/(2k + 1) & \text{if } k = l < n, \\ 2/n & \text{if } k = l = n, \\ 0 & \text{if
+} k \neq l. \end{cases}$$ This is the discrete inner product of §10.4 of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] §10.4. -/
+For $k, l$ with $k + l \le 2n - 1$ the value follows from exactness. The value
+$(L_n, L_n)_n = 2/n$ follows from the weights $2/(n(n + 1) L_n(\bar x_j)^2)$ of
+`Quadrature.legendreLobattoWeight_eq`; this is the hint of Exercise 10.6 of
+[quarteroni2000numerical]. The inner product is `Quadrature.discreteInner`. -/
 theorem discreteInner_legendre_legendre {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (hint : IsInterpolatoryMeasure legendreMeasure w x)
     (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal legendreMeasure n)
@@ -1751,15 +1904,18 @@ theorem discreteInner_legendre_legendre {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n +
           exact_mod_cast (by omega : k + l ≤ 2 * n - 1)),
       integral_legendreMeasure, Polynomial.integral_legendre_mul_legendre, ite_eq_right hkl]
 
-/-- **The discrete Legendre transform.** The interpolant of `f` at the Legendre–Gauss–Lobatto
-nodes is `∑_{k ≤ n} f̃_k L_k` with
-`f̃_k = ((2k + 1) / (n(n+1))) ∑_j L_k(x̄_j) f(x̄_j) / L_n(x̄_j)²` for `k < n` and
-`f̃_n = (1 / (n + 1)) ∑_j f(x̄_j) / L_n(x̄_j)`: the discrete truncation
-`Quadrature.interpolate_eq_sum_discreteInner_smul` of the Legendre expansion, with the discrete
-norms `Quadrature.discreteInner_legendre_legendre` and the weights
-`Quadrature.legendreLobattoWeight_eq`.
+/-- **The discrete Legendre transform.** Let $n \ge 1$, and let a rule be interpolatory for the
+Legendre weight, with $n + 1$ distinct nodes $\bar x_i$ and positive weights $w_i$, whose nodal
+polynomial is the Lobatto nodal polynomial of the Legendre weight and which integrates every
+polynomial of degree at most $2n - 1$ exactly. Let $f : \mathbb{R} \to \mathbb{R}$. Then the
+Lagrange interpolant of $f$ at the nodes is $\sum_{k=0}^n \tilde f_k L_k$, with $$\tilde f_k =
+\frac{2k + 1}{n(n + 1)} \sum_i \frac{L_k(\bar x_i) f(\bar x_i)}{L_n(\bar x_i)^2} \quad (k < n),
+\qquad \tilde f_n = \frac{1}{n + 1} \sum_i \frac{f(\bar x_i)}{L_n(\bar x_i)}.$$ This is
+equations (10.38)–(10.40) and Exercise 10.6 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.38)–(10.40), Exercise 10.6. -/
+The proof is `Quadrature.interpolate_eq_sum_discreteInner_smul` for the Legendre weight, with
+the discrete norms `Quadrature.discreteInner_legendre_legendre` and the weights
+`Quadrature.legendreLobattoWeight_eq`. -/
 theorem interpolate_eq_sum_dlt {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (hwpos : ∀ i, 0 < w i)
     (hint : IsInterpolatoryMeasure legendreMeasure w x)

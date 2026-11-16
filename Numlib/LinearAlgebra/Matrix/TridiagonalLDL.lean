@@ -6,30 +6,46 @@ import Mathlib.Algebra.Order.Star.Real
 import Numlib.LinearAlgebra.Matrix.LU
 
 /-!
-# The `LDLᵀ` factorization of a shifted symmetric tridiagonal matrix
+# The $LDL^T$ factorization of a shifted symmetric tridiagonal matrix
 
-For a symmetric tridiagonal matrix `T` with diagonal `ρ` and off-diagonal `γ` (`γ i` couples rows
-`i - 1` and `i`), the shifted matrix `T + μ I` factors as `L D Lᵀ` with `L` unit lower bidiagonal
-and `D = diag(d)`, where the pivots satisfy the scalar recurrence
-`d₀ = ρ₀ + μ`, `d_{i+1} = ρ_{i+1} + μ - γ_{i+1}² / d_i`, and `L (i+1) i = γ_{i+1} / d_i`
-(Cartis–Gould–Toint (10.2.5)–(10.2.6), Algorithms 10.2.1–10.2.2; [golub2013matrix] §4.3.6).
-This is the symmetric case of the Thomas algorithm (`Matrix.isLU_tridiagonal_thomas`): the upper
-Thomas factor is `D Lᵀ`. Positive definiteness of `T + μ I` is detected by the pivots, and the
-factors give the forward–diagonal–backward substitution solver.
+Let $T$ be the $k \times k$ symmetric tridiagonal matrix with diagonal entries
+$\rho_0, \dots, \rho_{k-1}$ and off-diagonal entries $\gamma_1, \dots, \gamma_{k-1}$, where
+$\gamma_i$ couples rows $i - 1$ and $i$. For a shift $\mu$, the matrix $T + \mu I$ factors as
+$L D L^T$, with $L$ unit lower bidiagonal and $D = \operatorname{diag}(d_0, \dots, d_{k-1})$. The
+pivots satisfy the scalar recurrence
+$$d_0 = \rho_0 + \mu, \qquad d_{i+1} = \rho_{i+1} + \mu - \frac{\gamma_{i+1}^2}{d_i},$$
+and the subdiagonal of $L$ is $L_{i+1,i} = \gamma_{i+1} / d_i$. This is (10.2.5)–(10.2.6) and
+Algorithms 10.2.1–10.2.2 of [cartis2022evaluation]; see also [golub2013matrix] §4.3.6.
+
+The factorization is the symmetric case of the Thomas algorithm `Matrix.isLU_tridiagonal_thomas`:
+the upper Thomas factor is $D L^T$. The pivots detect positive definiteness of $T + \mu I$, and the
+factors give a solver by forward substitution, diagonal scaling and backward substitution.
 
 ## Main definitions
 
-* `Matrix.symTridiag ρ γ k`: the `k × k` symmetric tridiagonal matrix.
-* `Matrix.ldlPivot ρ γ μ i`: the pivots `dᵢ(μ)` of (10.2.6).
-* `Matrix.tridiagSolve ρ γ μ k b`: the solution of `(T + μ I) x = b` by Algorithm 10.2.2.
+* `Matrix.symTridiag`: the $k \times k$ symmetric tridiagonal matrix $T$ with diagonal $\rho$ and
+  off-diagonal $\gamma$.
+* `Matrix.ldlPivot`: the pivots $d_i(\mu)$ of (10.2.6) of [cartis2022evaluation].
+* `Matrix.tridiagSolve`: the solution of $(T + \mu I) x = b$ by Algorithm 10.2.2 of
+  [cartis2022evaluation].
 
-## Main statements
+## Main results
 
-* `Matrix.symTridiag_add_smul_one_eq_ldl`: `T + μ I = L D Lᵀ` when the pivots `d_i`, `i < k - 1`,
-  are nonzero ((10.2.6)).
-* `Matrix.posDef_symTridiag_add_iff`: `T + μ I` is positive definite iff all its pivots are
-  positive; `Matrix.posDef_symTridiag_succ_add_iff` is the update test of §10.2.1.
-* `Matrix.mulVec_tridiagSolve`: Algorithm 10.2.2 solves the system.
+* `Matrix.symTridiag_add_smul_one_eq_ldl`: $T + \mu I = L D L^T$ when the pivots $d_i$, $i < k - 1$,
+  are nonzero.
+* `Matrix.posDef_symTridiag_add_iff`: $T + \mu I$ is positive definite if and only if all its pivots
+  are positive.
+* `Matrix.posDef_symTridiag_succ_add_iff`: the update test, which decides positive definiteness of
+  the next leading block from one pivot.
+* `Matrix.mulVec_tridiagSolve`: Algorithm 10.2.2 solves $(T + \mu I) x = b$ when all pivots are
+  nonzero.
+
+## Implementation notes
+
+* Sequences are indexed by `ℕ`, and the matrices by `Fin k`. The value $\gamma_0$ is not used.
+* The pivots use the division of a field, so a zero pivot $d_i = 0$ gives $\gamma_{i+1}^2 / d_i = 0$
+  in the next step. The factorization theorems therefore assume that the relevant pivots are
+  nonzero.
 -/
 
 open Finset
@@ -42,12 +58,17 @@ section Def
 
 variable {R : Type*}
 
-/-- The `k × k` symmetric tridiagonal matrix with diagonal `ρ i` and off-diagonal entries `γ i`
-at `(i, i - 1)` and `(i - 1, i)` (`γ 0` is unused): `Matrix.tridiagonalOfNat ρ γ (γ ∘ succ) k`. -/
+/-- The $k \times k$ **symmetric tridiagonal matrix** with diagonal entries $\rho_i$ and
+off-diagonal entries $\gamma_i$ at the positions $(i, i - 1)$ and $(i - 1, i)$, for
+$1 \le i < k$.
+
+The value $\gamma_0$ is not used. The matrix is `Matrix.tridiagonalOfNat ρ γ (fun i => γ (i +
+1)) k`. -/
 def symTridiag [Zero R] (ρ γ : ℕ → R) (k : ℕ) : Matrix (Fin k) (Fin k) R :=
   tridiagonalOfNat ρ γ (fun i => γ (i + 1)) k
 
-/-- The entries of `Matrix.symTridiag`. -/
+/-- The entries of `Matrix.symTridiag ρ γ k`: the entry $(i, j)$ is $\rho_i$ if $i = j$, $\gamma_i$
+if $j + 1 = i$, $\gamma_j$ if $i + 1 = j$, and $0$ otherwise. -/
 theorem symTridiag_apply [Zero R] (ρ γ : ℕ → R) {k : ℕ} (i j : Fin k) :
     symTridiag ρ γ k i j =
       if (i : ℕ) = j then ρ i else if (j : ℕ) + 1 = i then γ i
@@ -55,14 +76,14 @@ theorem symTridiag_apply [Zero R] (ρ γ : ℕ → R) {k : ℕ} (i j : Fin k) :
   simp only [symTridiag, tridiagonalOfNat, of_apply]
   split_ifs <;> first | rfl | congr 1
 
-/-- `Matrix.symTridiag` is symmetric. -/
+/-- The matrix `Matrix.symTridiag ρ γ k` is symmetric. -/
 theorem symTridiag_transpose [Zero R] (ρ γ : ℕ → R) (k : ℕ) :
     (symTridiag ρ γ k)ᵀ = symTridiag ρ γ k := by
   ext i j
   simp only [transpose_apply, symTridiag_apply]
   split_ifs <;> first | rfl | omega | congr 1
 
-/-- `Matrix.symTridiag` is tridiagonal. -/
+/-- The matrix `Matrix.symTridiag ρ γ k` is tridiagonal. -/
 theorem isTridiagonal_symTridiag [Zero R] (ρ γ : ℕ → R) (k : ℕ) :
     (symTridiag ρ γ k).IsTridiagonal := by
   rintro i j (⟨l, hjl, hli⟩ | ⟨l, hil, hlj⟩) <;>
@@ -70,13 +91,15 @@ theorem isTridiagonal_symTridiag [Zero R] (ρ γ : ℕ → R) (k : ℕ) :
     rw [symTridiag_apply]
     split_ifs <;> first | rfl | omega
 
-/-- The leading `n × n` block of `Matrix.symTridiag ρ γ k` is `Matrix.symTridiag ρ γ n`. -/
+/-- For $n \le k$, the leading $n \times n$ block of `Matrix.symTridiag ρ γ k` is
+`Matrix.symTridiag ρ γ n`. -/
 theorem symTridiag_submatrix_castLE [Zero R] (ρ γ : ℕ → R) {n k : ℕ} (h : n ≤ k) :
     (symTridiag ρ γ k).submatrix (Fin.castLE h) (Fin.castLE h) = symTridiag ρ γ n := by
   ext i j
   simp [symTridiag_apply]
 
-/-- A shift by a multiple of the identity shifts the diagonal. -/
+/-- A shift by a multiple of the identity shifts the diagonal: $T + \mu I$ is the symmetric
+tridiagonal matrix with diagonal $\rho_i + \mu$ and the same off-diagonal $\gamma$. -/
 theorem symTridiag_add_smul_one [Ring R] (ρ γ : ℕ → R) (μ : R) (k : ℕ) :
     symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) R) = symTridiag (fun i => ρ i + μ) γ k := by
   ext i j
@@ -92,19 +115,28 @@ section Pivot
 
 variable {K : Type*} [Field K] (ρ γ : ℕ → K) (μ : K)
 
-/-- The pivots `dᵢ(μ)` of the `LDLᵀ` factorization of `T + μ I` (Cartis–Gould–Toint (10.2.6)):
-`d₀ = ρ₀ + μ`, `d_{i+1} = ρ_{i+1} + μ - γ_{i+1}² / d_i`. -/
+/-- The **pivots** $d_i(\mu)$ of the $L D L^T$ factorization of $T + \mu I$, defined by the
+recurrence
+$$d_0 = \rho_0 + \mu, \qquad d_{i+1} = \rho_{i+1} + \mu - \frac{\gamma_{i+1}^2}{d_i}.$$
+This is (10.2.6) of [cartis2022evaluation].
+
+The pivots are defined for all $i \in \mathbb{N}$, with the division of a field: if $d_i = 0$,
+then $d_{i+1} = \rho_{i+1} + \mu$. -/
 noncomputable def ldlPivot : ℕ → K
   | 0 => ρ 0 + μ
   | i + 1 => ρ (i + 1) + μ - γ (i + 1) ^ 2 / ldlPivot i
 
+/-- The first pivot is $d_0 = \rho_0 + \mu$. -/
 @[simp]
 theorem ldlPivot_zero : ldlPivot ρ γ μ 0 = ρ 0 + μ := rfl
 
+/-- The pivot recurrence: $d_{i+1} = \rho_{i+1} + \mu - \gamma_{i+1}^2 / d_i$. -/
 theorem ldlPivot_succ (i : ℕ) :
     ldlPivot ρ γ μ (i + 1) = ρ (i + 1) + μ - γ (i + 1) ^ 2 / ldlPivot ρ γ μ i := rfl
 
-/-- The pivots are the Thomas pivots of the shifted matrix. -/
+/-- The pivots $d_i(\mu)$ are the pivots `Matrix.thomasAlpha` of the Thomas algorithm for the
+shifted matrix, with diagonal $\rho_i + \mu$, subdiagonal $\gamma_i$ and superdiagonal
+$\gamma_{i+1}$. -/
 theorem ldlPivot_eq_thomasAlpha :
     ldlPivot ρ γ μ = thomasAlpha (fun i => ρ i + μ) γ (fun i => γ (i + 1)) := by
   funext i
@@ -114,23 +146,33 @@ theorem ldlPivot_eq_thomasAlpha :
     rw [ldlPivot_succ, thomasAlpha_succ, thomasBeta_succ, ← ih]
     ring
 
-/-- The multipliers `l_{i+1} = γ_{i+1} / d_i` of the `L` factor, with `l₀ = 0`; they are the
-Thomas multipliers of the shifted matrix. -/
+/-- The **multipliers** of the factor $L$: $l_0 = 0$ and $l_{i+1} = \gamma_{i+1} / d_i$. They are
+the multipliers `Matrix.thomasBeta` of the Thomas algorithm for the shifted matrix. -/
 noncomputable def ldlMult (i : ℕ) : K := thomasBeta (fun i => ρ i + μ) γ (fun i => γ (i + 1)) i
 
+/-- The multiplier recurrence: $l_{i+1} = \gamma_{i+1} / d_i$. -/
 theorem ldlMult_succ (i : ℕ) : ldlMult ρ γ μ (i + 1) = γ (i + 1) / ldlPivot ρ γ μ i := by
   rw [ldlMult, thomasBeta_succ, ldlPivot_eq_thomasAlpha]
 
-/-- The unit lower bidiagonal factor `L`, with `γ_{i+1} / d_i` at `(i + 1, i)`. -/
+/-- The unit lower bidiagonal factor $L$ of order $k$, with the multiplier
+$l_{i+1} = \gamma_{i+1} / d_i$ at the position $(i + 1, i)$. It is the lower factor
+`Matrix.thomasLower` of the Thomas algorithm for the shifted matrix. -/
 noncomputable def ldlLower (k : ℕ) : Matrix (Fin k) (Fin k) K :=
   thomasLower (fun i => ρ i + μ) γ (fun i => γ (i + 1)) k
 
-/-- `L` is unit lower bidiagonal with the multipliers on the subdiagonal. -/
+/-- The factor $L$ is the unit lower bidiagonal matrix `Matrix.lowerBidiagonalOf` with the
+multipliers $l_i$ on the subdiagonal. -/
 theorem ldlLower_eq (k : ℕ) : ldlLower ρ γ μ k = lowerBidiagonalOf (ldlMult ρ γ μ) k := rfl
 
-/-- **The `LDLᵀ` factorization** (Cartis–Gould–Toint (10.2.6)): if the pivots `d_i`, `i + 1 < k`,
-are nonzero, then `T + μ I = L D Lᵀ`, with `L = ldlLower ρ γ μ k` unit lower bidiagonal with
-`L (i+1) i = γ_{i+1} / d_i` and `D = diag(d)`. -/
+/-- The **$L D L^T$ factorization** of a shifted symmetric tridiagonal matrix. Let $T$ be the
+$k \times k$ symmetric tridiagonal matrix with diagonal $\rho$ and off-diagonal $\gamma$, and
+let $\mu$ be a scalar. If the pivots $d_i(\mu)$ are nonzero for $i + 1 < k$, then
+$$T + \mu I = L D L^T,$$
+where $L$ is unit lower bidiagonal with $L_{i+1,i} = \gamma_{i+1} / d_i$ and
+$D = \operatorname{diag}(d_0, \dots, d_{k-1})$. This is (10.2.6) of [cartis2022evaluation].
+
+The factor $L$ is `Matrix.ldlLower ρ γ μ k`. The last pivot $d_{k-1}$ may be zero. The proof
+specializes `Matrix.isLU_tridiagonal_thomas`. -/
 theorem symTridiag_add_smul_one_eq_ldl {k : ℕ} (hd : ∀ i, i + 1 < k → ldlPivot ρ γ μ i ≠ 0) :
     symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) K) =
       ldlLower ρ γ μ k * diagonal (fun i : Fin k => ldlPivot ρ γ μ i) * (ldlLower ρ γ μ k)ᵀ := by
@@ -153,8 +195,8 @@ theorem symTridiag_add_smul_one_eq_ldl {k : ℕ} (hd : ∀ i, i + 1 < k → ldlP
         mul_div_cancel₀ _ (hd i (by omega))]
     · simp [hij']
 
-/-- The determinant of `T + μ I` is the product of the pivots, when the pivots `d_i`,
-`i + 1 < k`, are nonzero. -/
+/-- If the pivots $d_i(\mu)$ are nonzero for $i + 1 < k$, then the determinant of $T + \mu I$ is the
+product $d_0 d_1 \cdots d_{k-1}$ of the pivots. -/
 theorem det_symTridiag_add_smul_one {k : ℕ} (hd : ∀ i, i + 1 < k → ldlPivot ρ γ μ i ≠ 0) :
     (symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) K)).det =
       ∏ i : Fin k, ldlPivot ρ γ μ i := by
@@ -174,7 +216,7 @@ section PosDef
 
 variable (ρ γ : ℕ → ℝ) (μ : ℝ)
 
-/-- The factor `L` is invertible: its transpose acts injectively. -/
+/-- The real matrix $L^T$ acts injectively on vectors, so the factor $L$ is invertible. -/
 theorem injective_mulVec_ldlLower_transpose (k : ℕ) :
     Function.Injective (ldlLower ρ γ μ k)ᵀ.mulVec := by
   have hL : (ldlLower ρ γ μ k).IsUnitLowerTriangular :=
@@ -184,8 +226,11 @@ theorem injective_mulVec_ldlLower_transpose (k : ℕ) :
   rw [isUnit_iff_isUnit_det, det_transpose, hL.det_eq_one]
   exact isUnit_one
 
-/-- **Positive definiteness via the pivots** (Cartis–Gould–Toint §10.2.1): `T + μ I` is positive
-definite iff all its pivots `d_i(μ)`, `i < k`, are positive. -/
+/-- **Positive definiteness via the pivots.** Let $T$ be the $k \times k$ real symmetric tridiagonal
+matrix with diagonal $\rho$ and off-diagonal $\gamma$, and let $\mu \in \mathbb{R}$. Then
+$T + \mu I$ is positive definite if and only if
+$$d_i(\mu) > 0 \quad \text{for all } i < k.$$
+This is §10.2.1 of [cartis2022evaluation]. -/
 theorem posDef_symTridiag_add_iff {k : ℕ} :
     (symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) ℝ)).PosDef ↔
       ∀ i < k, 0 < ldlPivot ρ γ μ i := by
@@ -217,8 +262,11 @@ theorem posDef_symTridiag_add_iff {k : ℕ} :
     have := hD.conjTranspose_mul_mul_same (injective_mulVec_ldlLower_transpose ρ γ μ k)
     simpa [conjTranspose_eq_transpose_of_trivial] using this
 
-/-- **The update test** (Cartis–Gould–Toint §10.2.1): if `T_{k+1} + μ I` is positive definite, then
-`T_{k+2} + μ I` is positive definite iff `ρ_{k+1} + μ > γ_{k+1}² / d_k(μ)`. -/
+/-- **The update test.** Let $T_j$ denote the $j \times j$ real symmetric tridiagonal matrix with
+diagonal $\rho$ and off-diagonal $\gamma$, and let $\mu \in \mathbb{R}$. If $T_{k+1} + \mu I$ is
+positive definite, then $T_{k+2} + \mu I$ is positive definite if and only if
+$$\rho_{k+1} + \mu > \frac{\gamma_{k+1}^2}{d_k(\mu)}.$$
+This is the update test of §10.2.1 of [cartis2022evaluation]. -/
 theorem posDef_symTridiag_succ_add_iff {k : ℕ}
     (h : (symTridiag ρ γ (k + 1) + μ • (1 : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)).PosDef) :
     (symTridiag ρ γ (k + 2) + μ • (1 : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ)).PosDef ↔
@@ -241,31 +289,37 @@ section Solve
 
 variable {K : Type*} [Field K] (ρ γ : ℕ → K) (μ : K)
 
-/-- The forward substitution `L y = b` of Algorithm 10.2.2: `y₀ = b₀`,
-`y_{i+1} = b_{i+1} - l_{i+1} y_i`. -/
+/-- The **forward substitution** $L y = b$ of Algorithm 10.2.2 of [cartis2022evaluation]:
+$y_0 = b_0$ and $y_{i+1} = b_{i+1} - l_{i+1} y_i$, for a right-hand side $b$ indexed by `ℕ`. -/
 noncomputable def ldlForward (b : ℕ → K) : ℕ → K
   | 0 => b 0
   | i + 1 => b (i + 1) - ldlMult ρ γ μ (i + 1) * ldlForward b i
 
-/-- The backward substitution `Lᵀ z = w` of Algorithm 10.2.2 on `Fin k`: `z_{k-1} = w_{k-1}`,
-`z_i = w_i - l_{i+1} z_{i+1}`. -/
+/-- The **backward substitution** $L^T z = w$ of Algorithm 10.2.2 of [cartis2022evaluation] in order
+$k$: $z_i = w_i - l_{i+1} z_{i+1}$ for $i + 1 < k$, and $z_i = w_i$ otherwise. In particular
+$z_{k-1} = w_{k-1}$. -/
 noncomputable def ldlBackward (k : ℕ) (w : ℕ → K) (i : ℕ) : K :=
   if i + 1 < k then w i - ldlMult ρ γ μ (i + 1) * ldlBackward k w (i + 1) else w i
 termination_by k - i
 
+/-- The defining equation of the backward substitution: $z_i = w_i - l_{i+1} z_{i+1}$ if
+$i + 1 < k$, and $z_i = w_i$ otherwise. -/
 theorem ldlBackward_eq (k : ℕ) (w : ℕ → K) (i : ℕ) :
     ldlBackward ρ γ μ k w i =
       if i + 1 < k then w i - ldlMult ρ γ μ (i + 1) * ldlBackward ρ γ μ k w (i + 1) else w i := by
   rw [ldlBackward]
 
-/-- **Algorithm 10.2.2** (Cartis–Gould–Toint): the solution of `(T + μ I) x = b` from the
-`LDLᵀ` factors: forward substitution with `L`, scaling by the reciprocal pivots `rᵢ = 1/dᵢ`,
-backward substitution with `Lᵀ`. -/
+/-- **Algorithm 10.2.2** of [cartis2022evaluation]: the solution of $(T + \mu I) x = b$ from the
+$L D L^T$ factors. The algorithm solves $L y = b$ by forward substitution, scales by the
+reciprocal pivots, $w_i = y_i / d_i$, and solves $L^T x = w$ by backward substitution.
+
+The right-hand side $b \in K^k$ is extended by zero to a sequence indexed by `ℕ`. -/
 noncomputable def tridiagSolve (k : ℕ) (b : Fin k → K) : Fin k → K :=
   fun i => ldlBackward ρ γ μ k
     (fun j => ldlForward ρ γ μ (fun j => if h : j < k then b ⟨j, h⟩ else 0) j / ldlPivot ρ γ μ j) i
 
-/-- `L` as a tridiagonal matrix. -/
+/-- The factor $L$ is the tridiagonal matrix `Matrix.tridiagonalOfNat` with diagonal $1$,
+subdiagonal $l_i$ and superdiagonal $0$. -/
 theorem ldlLower_eq_tridiagonalOfNat (k : ℕ) :
     ldlLower ρ γ μ k = tridiagonalOfNat 1 (ldlMult ρ γ μ) 0 k := by
   ext i j
@@ -273,7 +327,8 @@ theorem ldlLower_eq_tridiagonalOfNat (k : ℕ) :
     Pi.zero_apply]
   split_ifs <;> rfl
 
-/-- `Lᵀ` as a tridiagonal matrix. -/
+/-- The factor $L^T$ is the tridiagonal matrix `Matrix.tridiagonalOfNat` with diagonal $1$,
+subdiagonal $0$ and superdiagonal $l_{i+1}$. -/
 theorem ldlLower_transpose_eq_tridiagonalOfNat (k : ℕ) :
     (ldlLower ρ γ μ k)ᵀ = tridiagonalOfNat 1 0 (fun i => ldlMult ρ γ μ (i + 1)) k := by
   ext i j
@@ -281,9 +336,16 @@ theorem ldlLower_transpose_eq_tridiagonalOfNat (k : ℕ) :
     Pi.one_apply, Pi.zero_apply]
   split_ifs <;> first | rfl | omega | (congr 1; omega)
 
-/-- **Algorithm 10.2.2 solves the shifted system**: if the pivots `d_i`, `i < k`, are nonzero (in
-particular if `T + μ I` is positive definite, `Matrix.posDef_symTridiag_add_iff`), then
-`(T + μ I) (tridiagSolve ρ γ μ k b) = b`. -/
+/-- **Algorithm 10.2.2** of [cartis2022evaluation] solves the shifted system. Let $T$ be the
+$k \times k$ symmetric tridiagonal matrix with diagonal $\rho$ and off-diagonal $\gamma$ over a
+field, and let $\mu$ be a scalar. If the pivots $d_i(\mu)$ are nonzero for all $i < k$, then for
+every $b \in K^k$ the vector $x$ that the algorithm computes satisfies
+$$(T + \mu I)\, x = b.$$
+
+The vector $x$ is `Matrix.tridiagSolve ρ γ μ k b`.
+
+Over $\mathbb{R}$ the hypothesis holds when $T + \mu I$ is positive definite, by
+`Matrix.posDef_symTridiag_add_iff`. -/
 theorem mulVec_tridiagSolve {k : ℕ} (hd : ∀ i < k, ldlPivot ρ γ μ i ≠ 0) (b : Fin k → K) :
     (symTridiag ρ γ k + μ • (1 : Matrix (Fin k) (Fin k) K)) *ᵥ tridiagSolve ρ γ μ k b = b := by
   set b' : ℕ → K := fun j => if h : j < k then b ⟨j, h⟩ else 0 with hb'

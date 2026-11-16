@@ -9,38 +9,43 @@ import Numlib.Analysis.Convex.Caratheodory
 /-!
 # Polytopes, triangulation, and local simpliciality
 
-Every polyhedral convex set is locally simplicial. This is the result that supplies instances of
-`LocallySimplicial`, and with them the continuity theorems that consume it.
+Let $E$ be a finite-dimensional real normed space. A set $S \subseteq E$ is **locally simplicial**
+if near each of its points it agrees with a finite union of simplices contained in $S$. This module
+proves that every polyhedral convex set is locally simplicial, which is Theorem 20.5 of
+[rockafellar1970convex]. This result supplies the instances of `ConvexAnalysis.LocallySimplicial`,
+and with them the continuity theorems of `Numlib.Analysis.Convex.Simplicial`. The presentation
+follows [rockafellar1970convex], §20.
 
-Around a point `x` of a polyhedral set `C`, cut out a *bounded* polyhedral neighbourhood `V`; then
-`V ∩ C` is a bounded polyhedral convex set, hence a polytope — the direction part of
-`conv P + cone D` has to vanish — hence, by Carathéodory's theorem, a finite union of simplices,
-all of them inside `C`.
+Around a point $x$ of a polyhedral set $C$, choose a bounded polyhedral neighbourhood $V$. Then
+$V \cap C$ is a bounded polyhedral convex set. Hence it is a polytope, because the direction part of
+the representation $\operatorname{conv} P + \operatorname{cone} D$ must vanish. By Carathéodory's
+theorem a polytope is a finite union of simplices, all of them inside $C$. The module also proves
+Theorem 20.4 of [rockafellar1970convex]: a compact set inside the interior of a convex set $D$ lies
+inside the interior of a polyhedral set $P \subseteq \operatorname{int} D$.
 
 ## Main results
 
-* `exists_polyhedral_isBounded_mem_nhds` — every point has a bounded polyhedral neighbourhood: a
-  coordinate cube for a basis. This is the only place a basis is used.
-* `Polyhedral.exists_finset_convexHull` — a bounded polyhedral convex set is the convex hull of a
-  finite set.
-* `isSimplex_convexHull_coe` — the convex hull of an affinely independent `Finset` is a simplex.
-* `Polyhedral.locallySimplicial` — every polyhedral convex set is locally simplicial
-  ([rockafellar1970convex] Theorem 20.5).
-* `exists_polyhedral_between` — a compact set inside `int D` is inside `int P` for some polyhedral
-  `P ⊆ int D`.
+* `ConvexAnalysis.exists_polyhedral_isBounded_mem_nhds`: every point has a bounded polyhedral
+  neighbourhood.
+* `ConvexAnalysis.Polyhedral.exists_finset_convexHull`: a bounded polyhedral convex set is the
+  convex hull of a finite set.
+* `ConvexAnalysis.isSimplex_convexHull_coe`: the convex hull of an affinely independent finite set
+  is a simplex.
+* `ConvexAnalysis.Polyhedral.locallySimplicial`: every polyhedral convex set is locally simplicial.
+* `ConvexAnalysis.exists_polyhedral_between`: a closed bounded set
+  $C \subseteq \operatorname{int} D$, for convex $D$, satisfies $C \subseteq \operatorname{int} P$
+  for some polyhedral $P \subseteq \operatorname{int} D$.
 
 ## Implementation notes
 
-The classical proof takes `V` to be a simplex; here it is a cube, cheaper to build and all the
-argument needs — `2 n` inequalities `± bᵢ* (y - x) ≤ 1` for a basis `b`, bounded because
-`‖y - x‖ ≤ ∑ ‖bᵢ‖` on it, and a neighbourhood because the strict version is open. The
-triangulation is Mathlib's `convexHull_eq_union` read as a *finite* union: for a finite generating
-set the index set is `P.powerset`, and `Finset.equivFin` turns it into the `Fin n`-indexed family
-`LocallySimplicial` asks for.
-
-## References
-
-* [rockafellar1970convex] §20.
+* The classical proof takes $V$ to be a simplex. Here $V$ is a coordinate cube, which is cheaper to
+  build and is all that the argument needs. For a basis $b$ with coordinate functionals $b_i^*$, the
+  cube is given by the $2n$ inequalities $\pm b_i^*(y - x) \le c$ with $c > 0$. It is bounded
+  because $\|y - x\| \le c \sum_i \|b_i\|$ on it, and it is a neighbourhood of $x$ because the
+  strict version is open. This is the only place where a basis is used.
+* The triangulation is Mathlib's `convexHull_eq_union` read as a finite union. For a finite
+  generating set $P$ the index set is `P.powerset`, and `Finset.equivFin` turns it into the family
+  indexed by `Fin n` that `ConvexAnalysis.LocallySimplicial` asks for.
 -/
 
 open Set Filter Topology
@@ -52,8 +57,11 @@ section Polytope
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
-/-- Every point of a finite-dimensional space has arbitrarily small bounded polyhedral
-neighbourhoods: the coordinate cubes `{y | ∀ i, |bᵢ* (y - x)| ≤ c}` of a basis `b`. -/
+/-- Let $x \in E$ and $\varepsilon > 0$. There is a bounded polyhedral convex set $V \subseteq E$
+that is a neighbourhood of $x$ and lies in the open ball of radius $\varepsilon$ about $x$.
+
+The set $V$ is a coordinate cube $\{y \mid |b_i^*(y - x)| \le c \text{ for all } i\}$ for a
+basis $b$ of $E$ with coordinate functionals $b_i^*$. -/
 theorem exists_polyhedral_mem_nhds_subset_ball (x : E) {ε : ℝ} (hε : 0 < ε) :
     ∃ V : Set E, Polyhedral V ∧ Bornology.IsBounded V ∧ V ∈ 𝓝 x ∧ V ⊆ Metric.ball x ε := by
   classical
@@ -131,15 +139,21 @@ theorem exists_polyhedral_mem_nhds_subset_ball (x : E) {ε : ℝ} (hε : 0 < ε)
     rw [Metric.mem_ball, dist_eq_norm]
     linarith
 
-/-- Every point of a finite-dimensional space has a bounded polyhedral neighbourhood. -/
+/-- Every point $x$ of a finite-dimensional real normed space $E$ has a neighbourhood $V$ that is a
+bounded polyhedral convex set.
+
+This is `ConvexAnalysis.exists_polyhedral_mem_nhds_subset_ball` without the bound on the radius. -/
 theorem exists_polyhedral_isBounded_mem_nhds (x : E) :
     ∃ V : Set E, Polyhedral V ∧ Bornology.IsBounded V ∧ V ∈ 𝓝 x := by
   obtain ⟨V, h₁, h₂, h₃, -⟩ := exists_polyhedral_mem_nhds_subset_ball x (ε := 1) one_pos
   exact ⟨V, h₁, h₂, h₃⟩
 
-/-- A bounded polyhedral convex set is a *polytope*: the convex hull of a finite set of points.
-Minkowski–Weyl writes it as `conv P + cone D`, and boundedness kills every generator of the
-cone. -/
+/-- Let $C \subseteq E$ be a bounded polyhedral convex set. Then $C$ is a **polytope**: there is a
+finite set $P \subseteq E$ with
+$$C = \operatorname{conv} P.$$
+
+The Minkowski–Weyl theorem writes $C$ as $\operatorname{conv} P + \operatorname{cone} D$ for
+finite sets $P$ and $D$, and boundedness of $C$ removes every generator of the cone. -/
 theorem Polyhedral.exists_finset_convexHull {C : Set E} (hC : Polyhedral C)
     (hbdd : Bornology.IsBounded C) : ∃ P : Finset E, C = convexHull ℝ (P : Set E) := by
   classical
@@ -202,8 +216,11 @@ section Simplicial
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 omit [FiniteDimensional ℝ E] in
-/-- The convex hull of an affinely independent `Finset` is a simplex. The index type of
-`IsSimplex` is a `Type` (universe `0`), so the subtype `↥t` is transported to `Fin t.card`. -/
+/-- Let $t \subseteq E$ be a finite set whose points are affinely independent. Then the convex hull
+$\operatorname{conv} t$ is a simplex.
+
+The index type of `ConvexAnalysis.IsSimplex` is in universe `0`, so the subtype of $t$ is
+transported to `Fin t.card`. -/
 theorem isSimplex_convexHull_coe {t : Finset E}
     (ht : AffineIndependent ℝ ((↑) : t → E)) :
     IsSimplex (convexHull ℝ (t : Set E)) := by
@@ -221,10 +238,16 @@ theorem isSimplex_convexHull_coe {t : Finset E}
         exact ⟨t.equivFin ⟨y, hy⟩, by rw [Equiv.symm_apply_apply]⟩
     rw [hrange]
 
-/-- Every polyhedral convex set is locally simplicial — and in particular every polytope is.
+/-- Let $E$ be a finite-dimensional real normed space and $C \subseteq E$ a polyhedral convex set.
+Then $C$ is locally simplicial: each $x \in C$ has a neighbourhood $U$ and finitely many
+simplices $P_1, \dots, P_n \subseteq C$ with $U \cap (P_1 \cup \dots \cup P_n) = U \cap C$. In
+particular every polytope is locally simplicial. This is Theorem 20.5 of
+[rockafellar1970convex].
 
-This is what makes the continuity results of `Simplicial.lean` usable: until now
-`LocallySimplicial` had no supply of instances beyond simplices themselves. -/
+This result supplies locally simplicial sets other than simplices for the continuity results of
+`Numlib.Analysis.Convex.Simplicial`. The simplices are the convex hulls of the affinely
+independent subsets of a finite generating set of $V \cap C$, for a bounded polyhedral
+neighbourhood $V$ of $x$. -/
 theorem Polyhedral.locallySimplicial {C : Set E} (hC : Polyhedral C) : LocallySimplicial C := by
   classical
   intro x _
@@ -265,16 +288,18 @@ theorem Polyhedral.locallySimplicial {C : Set E} (hC : Polyhedral C) : LocallySi
         rwa [Equiv.symm_apply_apply]
     rw [hunion, ← hP, ← Set.inter_assoc, Set.inter_self]
 
-/-- A compact set inside the interior of a convex set can be separated from the boundary by a
-polyhedral convex set: there is a polyhedral `P` with `C ⊆ int P` and `P ⊆ int D`.
+/-- Let $E$ be a finite-dimensional real normed space, let $C \subseteq E$ be closed and bounded,
+and let $D \subseteq E$ be convex with $C \subseteq \operatorname{int} D$. Then there is a
+polyhedral convex set $P$ with
+$$P \subseteq \operatorname{int} D \quad\text{and}\quad C \subseteq \operatorname{int} P.$$
+This is Theorem 20.4 of [rockafellar1970convex].
 
-The classical proof covers `C` by simplices; a cover by coordinate cubes does the same job and is
-what `exists_polyhedral_mem_nhds_subset_ball` already supplies. The polyhedral set is then the
-convex hull of the finitely many cubes' vertex sets, polyhedral because a convex hull of a
-finite set is.
-
-Convexity of `C` is *not* used, and neither is nonemptiness — the classical statement assumes
-both, but the covering argument needs only that `C` is compact. -/
+The classical statement also assumes that $C$ is nonempty and convex. Neither hypothesis is
+used: the covering argument needs only that $C$ is compact. The classical proof covers $C$ by
+simplices. Here a cover by coordinate cubes from
+`ConvexAnalysis.exists_polyhedral_mem_nhds_subset_ball` does the same job. The set $P$ is the
+convex hull of the vertex sets of finitely many cubes, and it is polyhedral because the convex
+hull of a finite set is polyhedral. -/
 theorem exists_polyhedral_between {C D : Set E} (hCcl : IsClosed C)
     (hCbdd : Bornology.IsBounded C) (hD : Convex ℝ D) (hCD : C ⊆ interior D) :
     ∃ P : Set E, Polyhedral P ∧ P ⊆ interior D ∧ C ⊆ interior P := by

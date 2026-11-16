@@ -6,26 +6,33 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.MultivariateTaylor.Remainder
 
 /-!
-# Lipschitz `p`-th derivative versus bounded `(p+1)`-st derivative
+# Lipschitz $p$-th derivative versus bounded $(p+1)$-st derivative
 
-For `f : E → F` between real normed spaces, the `p`-th derivative is `L`-Lipschitz on an open convex
-set `C` iff `‖∇^{p+1} f‖ ≤ L` on `C`, when `f` is `C^{p+1}` on `C` ([cartis2022evaluation]
-Theorem A.8.5, `iteratedFDerivLipschitzOn_iff_norm_le`). With Mathlib's operator norms no identity
-for norms of symmetric tensors is needed: the derivative of `∇^p f` is `∇^{p+1} f` curried, with
-the same norm (`norm_fderiv_iteratedFDeriv`).
+Let $f : E \to F$ be a function between real normed spaces that is $C^{p+1}$ on an open convex set
+$C$, and let $L \ge 0$. Then the $p$-th derivative $\nabla^p f$ is $L$-Lipschitz on $C$ if and only
+if $\|\nabla^{p+1} f\| \le L$ on $C$. This is Theorem A.8.5 of [cartis2022evaluation]. With the
+operator norms of Mathlib, no identity for norms of symmetric tensors is needed: the derivative of
+$\nabla^p f$ is $\nabla^{p+1} f$ in curried form, with the same norm (Mathlib's
+`norm_fderiv_iteratedFDeriv`).
 
-* `iteratedFDerivLipschitzOn_of_norm_le`: a bound on `∇^{p+1} f` gives a Lipschitz `∇^p f`
-  (mean value inequality; `C` convex, not necessarily open);
-* `norm_iteratedFDeriv_succ_le_of_lipschitzOn`: a Lipschitz `∇^p f` on an open set bounds
-  `∇^{p+1} f` (no differentiability needed).
+## Main results
+
+* `iteratedFDerivLipschitzOn_of_norm_le`: a bound on $\nabla^{p+1} f$ gives a Lipschitz
+  $\nabla^p f$, by the mean value inequality. Here $C$ is convex and need not be open.
+* `norm_iteratedFDeriv_succ_le_of_lipschitzOn`: a Lipschitz $\nabla^p f$ on an open set bounds
+  $\nabla^{p+1} f$. No differentiability is needed.
+* `iteratedFDerivLipschitzOn_iff_norm_le`: the equivalence on an open convex set.
 -/
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {f : E → F} {p : ℕ} {L : ℝ} {C : Set E}
 
-/-- **Theorem A.8.5 of [cartis2022evaluation], (A.21) ⇒ (A.18).** If `C` is convex, `f` is
-`C^{p+1}` at every point of `C` and `‖∇^{p+1} f(x)‖ ≤ L` on `C`, then `∇^p f` is `L`-Lipschitz on
-`C`. (`C` need not be open.) -/
+/-- Let $C \subseteq E$ be convex, let $f$ be $C^{p+1}$ at every point of $C$, and let
+$\|\nabla^{p+1} f(x)\| \le L$ for all $x \in C$. Then $\nabla^p f$ is $L$-Lipschitz on $C$:
+$$\|\nabla^p f(x) - \nabla^p f(y)\| \le L \|x - y\| \quad \text{for all } x, y \in C.$$
+
+This is the implication (A.21) $\Rightarrow$ (A.18) of Theorem A.8.5 of [cartis2022evaluation].
+The set $C$ need not be open. The Lipschitz condition is `IteratedFDerivLipschitzOn`. -/
 theorem iteratedFDerivLipschitzOn_of_norm_le (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ (p + 1) f y)
     (hb : ∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L) : IteratedFDerivLipschitzOn f p L C := by
@@ -35,10 +42,12 @@ theorem iteratedFDerivLipschitzOn_of_norm_le (hC : Convex ℝ C)
     (fun z hz => (hf z hz).differentiableAt_iteratedFDeriv (by norm_cast; omega))
     (fun z hz => norm_fderiv_iteratedFDeriv.le.trans (hb z hz)) hC hy hx
 
-/-- **Theorem A.8.5 of [cartis2022evaluation], (A.18) ⇒ (A.21).** If `C` is open and `∇^p f` is
-`L`-Lipschitz on `C` with `L ≥ 0`, then `‖∇^{p+1} f(x)‖ ≤ L` for `x ∈ C`. (No differentiability is
-needed: where `∇^p f` is not differentiable both sides of `norm_fderiv_iteratedFDeriv` vanish.
-The sign condition on `L` is needed when `E` is trivial.) -/
+/-- Let $C \subseteq E$ be open, let $L \ge 0$, and let $\nabla^p f$ be $L$-Lipschitz on $C$. Then
+$\|\nabla^{p+1} f(x)\| \le L$ for every $x \in C$.
+
+This is the implication (A.18) $\Rightarrow$ (A.21) of Theorem A.8.5 of [cartis2022evaluation].
+No differentiability is assumed: where $\nabla^p f$ is not differentiable, both sides of
+`norm_fderiv_iteratedFDeriv` are $0$. The condition $L \ge 0$ is needed when $E$ is trivial. -/
 theorem norm_iteratedFDeriv_succ_le_of_lipschitzOn (hC : IsOpen C) (hL0 : 0 ≤ L)
     (hL : IteratedFDerivLipschitzOn f p L C) {x : E} (hx : x ∈ C) :
     ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L := by
@@ -47,16 +56,20 @@ theorem norm_iteratedFDeriv_succ_le_of_lipschitzOn (hC : IsOpen C) (hL0 : 0 ≤ 
     iteratedFDerivLipschitzOn_iff_lipschitzOnWith.1 hL
   exact norm_fderiv_le_of_lipschitzOn ℝ (hC.mem_nhds hx) hlip
 
-/-- **Theorem A.8.5 of [cartis2022evaluation].** On an open convex set `C` on which `f` is
-`C^{p+1}`, `∇^p f` is `L`-Lipschitz iff `‖∇^{p+1} f‖ ≤ L` on `C` (`L ≥ 0`). -/
+/-- Let $C \subseteq E$ be open and convex, let $L \ge 0$, and let $f$ be $C^{p+1}$ at every point
+of $C$. Then $\nabla^p f$ is $L$-Lipschitz on $C$ if and only if $\|\nabla^{p+1} f(x)\| \le L$
+for all $x \in C$.
+
+This is Theorem A.8.5 of [cartis2022evaluation]. -/
 theorem iteratedFDerivLipschitzOn_iff_norm_le (hCo : IsOpen C) (hC : Convex ℝ C) (hL0 : 0 ≤ L)
     (hf : ∀ y ∈ C, ContDiffAt ℝ (p + 1) f y) :
     IteratedFDerivLipschitzOn f p L C ↔ ∀ x ∈ C, ‖iteratedFDeriv ℝ (p + 1) f x‖ ≤ L :=
   ⟨fun hL _ hx => norm_iteratedFDeriv_succ_le_of_lipschitzOn hCo hL0 hL hx,
     iteratedFDerivLipschitzOn_of_norm_le hC hf⟩
 
-/-- For a function of one real variable, a Lipschitz `j`-th Fréchet derivative is a Lipschitz
-`j`-th derivative: `|g^{(j)}(s) - g^{(j)}(t)| ≤ L |s - t|` on `C`. -/
+/-- For a function $g : \mathbb{R} \to \mathbb{R}$, a Lipschitz $j$-th Fréchet derivative gives a
+Lipschitz $j$-th derivative: if $\nabla^j g$ is $L$-Lipschitz on $C \subseteq \mathbb{R}$, then
+$|g^{(j)}(s) - g^{(j)}(t)| \le L |s - t|$ for all $s, t \in C$. -/
 theorem IteratedFDerivLipschitzOn.abs_iteratedDeriv_sub_le {g : ℝ → ℝ} {j : ℕ} {L : ℝ}
     {C : Set ℝ} (h : IteratedFDerivLipschitzOn g j L C) {s t : ℝ} (hs : s ∈ C) (ht : t ∈ C) :
     |iteratedDeriv j g s - iteratedDeriv j g t| ≤ L * |s - t| := by

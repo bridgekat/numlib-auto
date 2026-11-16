@@ -17,27 +17,36 @@ import Mathlib.LinearAlgebra.Matrix.ToLin
 /-!
 # The determinant and the characteristic polynomial of a block diagonal matrix
 
-A matrix `Matrix.blockDiagonal' M`, assembled from a finite family of square blocks
-`M i : Matrix (m i) (m i) R` of possibly different sizes, has determinant `∏ i, (M i).det` and
-characteristic polynomial `∏ i, (M i).charpoly`.
+Let $R$ be a commutative ring, and let $M_i$ be square matrices over $R$, for $i$ in a finite index
+set, of possibly different sizes. The block diagonal matrix $\operatorname{diag}(M_i)_i$ has
+determinant $\prod_i \det M_i$ and characteristic polynomial $\prod_i \chi_{M_i}$. The module also
+shows that a block diagonal matrix acts on a vector blockwise.
 
-Mathlib has the determinant of a block *diagonal* matrix only for blocks that all have the same
-size (`Matrix.det_blockDiagonal`), and the determinant of a block *triangular* matrix as a product
-over the blocks that the ordering cuts out (`Matrix.BlockTriangular.det_fintype`). The results here
-are the missing block diagonal case with varying block sizes; they are read off the block
-triangular ones, since a block diagonal matrix is block triangular for `Sigma.fst` under any linear
-order on the index, and the block that `Matrix.toSquareBlock` cuts out over `k` is `M k` reindexed
-along `Equiv.sigmaSubtype`.
+Mathlib has the determinant of a block diagonal matrix only for blocks of equal size
+(`Matrix.det_blockDiagonal`), and the determinant of a block triangular matrix as a product over the
+blocks that the order cuts out (`Matrix.BlockTriangular.det_fintype`). The results here are the
+block diagonal case with blocks of different sizes.
 
-The characteristic polynomial then costs nothing beyond the determinant: the characteristic matrix
-of a block diagonal matrix is the block diagonal matrix of the characteristic matrices
-(`Matrix.charmatrix_blockDiagonal'`), so the identity over `R` gives the identity over `R[X]`.
+## Main results
 
-## Main statements
-
-* `Matrix.det_blockDiagonal'`: `(blockDiagonal' M).det = ∏ i, (M i).det`.
-* `Matrix.charpoly_blockDiagonal'`: `(blockDiagonal' M).charpoly = ∏ i, (M i).charpoly`.
+* `Matrix.det_blockDiagonal'`: $\det \operatorname{diag}(M_i)_i = \prod_i \det M_i$.
+* `Matrix.charpoly_blockDiagonal'`: the characteristic polynomial of $\operatorname{diag}(M_i)_i$ is
+  $\prod_i \chi_{M_i}$.
 * `Matrix.blockDiagonal'_mulVec`: a block diagonal matrix acts on a vector blockwise.
+
+## Proof outline
+
+A block diagonal matrix is block triangular for the block map `Sigma.fst` under any linear order on
+the index set. The diagonal block that `Matrix.toSquareBlock` cuts out over $k$ is $M_k$, after
+reindexing along `Equiv.sigmaSubtype`. Thus the determinant follows from
+`Matrix.BlockTriangular.det_fintype`. The characteristic matrix of a block diagonal matrix is the
+block diagonal matrix of the characteristic matrices, so the identity for determinants over $R[X]$
+gives the identity for characteristic polynomials.
+
+## Implementation notes
+
+* The block diagonal matrix with blocks of different sizes is `Matrix.blockDiagonal'`, indexed by
+  `Σ i, m i`.
 -/
 
 open Polynomial
@@ -50,16 +59,17 @@ section Zero
 
 variable [Zero R] [DecidableEq ι]
 
-/-- The diagonal block that `Matrix.toSquareBlock` cuts out of a block diagonal matrix over `k` is
-the block `M k`, reindexed along the identification of the fibre of `Sigma.fst` over `k` with
-`m k`. -/
+/-- The diagonal block that `Matrix.toSquareBlock` cuts out of $\operatorname{diag}(M_i)_i$ over the
+index $k$, for the block map `Sigma.fst`, is $M_k$, after reindexing along the identification
+`Equiv.sigmaSubtype k` of the fibre of `Sigma.fst` over $k$ with the index set of $M_k$. -/
 theorem reindex_toSquareBlock_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) (k : ι) :
     reindex (Equiv.sigmaSubtype k) (Equiv.sigmaSubtype k)
         ((blockDiagonal' M).toSquareBlock Sigma.fst k) = M k := by
   ext a b
   exact blockDiagonal'_apply_eq M k a b
 
-/-- The diagonal block of a block diagonal matrix, cut out along `Sigma.mk i` on both sides. -/
+/-- The $(i, i)$ block of a block diagonal matrix $\operatorname{diag}(M_j)_j$ is $M_i$; here the
+blocks may be rectangular. -/
 @[simp]
 theorem blockDiagonal'_submatrix_sigma_mk {n : ι → Type*} (M : ∀ i, Matrix (m i) (n i) R)
     (i : ι) : (blockDiagonal' M).submatrix (Sigma.mk i) (Sigma.mk i) = M i := by
@@ -72,8 +82,10 @@ section CommRing
 
 variable [CommRing R] [Fintype ι] [DecidableEq ι] [∀ i, Fintype (m i)] [∀ i, DecidableEq (m i)]
 
-/-- **The determinant of a block diagonal matrix** is the product of the determinants of its
-blocks, which may have different sizes. -/
+/-- **The determinant of a block diagonal matrix.** Let $R$ be a commutative ring, and let $M_i$ be
+square matrices over $R$, for $i$ in a finite index set, of possibly different sizes. Then
+$$\det \operatorname{diag}(M_i)_i = \prod_i \det M_i.$$
+-/
 theorem det_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) :
     (blockDiagonal' M).det = ∏ i, (M i).det := by
   classical
@@ -82,8 +94,9 @@ theorem det_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) :
   exact Finset.prod_congr rfl fun k _ => by
     rw [← reindex_toSquareBlock_blockDiagonal' M k, det_reindex_self]
 
-/-- The characteristic matrix of a block diagonal matrix is the block diagonal matrix of the
-characteristic matrices of its blocks. -/
+/-- Let $R$ be a commutative ring, and let $M_i$ be square matrices over $R$, for $i$ in a finite
+index set. The characteristic matrix $tI - \operatorname{diag}(M_i)_i$ over $R[t]$ is the block
+diagonal matrix of the characteristic matrices $tI - M_i$. -/
 theorem charmatrix_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) :
     charmatrix (blockDiagonal' M) = blockDiagonal' fun i => charmatrix (M i) := by
   have hfun : (fun i => charmatrix (M i))
@@ -94,8 +107,12 @@ theorem charmatrix_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) :
   · exact (blockDiagonal'_diagonal fun _ _ => (X : R[X])).symm
   · exact blockDiagonal'_map M (C : R →+* R[X]) (map_zero C)
 
-/-- **The characteristic polynomial of a block diagonal matrix** is the product of the
-characteristic polynomials of its blocks, which may have different sizes. -/
+/-- **The characteristic polynomial of a block diagonal matrix.** Let $R$ be a commutative ring, and
+let $M_i$ be square matrices over $R$, for $i$ in a finite index set, of possibly different
+sizes. Then the characteristic polynomial of $\operatorname{diag}(M_i)_i$ is the product of the
+characteristic polynomials of the blocks:
+$$\chi_{\operatorname{diag}(M_i)_i} = \prod_i \chi_{M_i}.$$
+-/
 theorem charpoly_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) R) :
     (blockDiagonal' M).charpoly = ∏ i, (M i).charpoly := by
   rw [charpoly, charmatrix_blockDiagonal', det_blockDiagonal']
@@ -107,7 +124,8 @@ section Shift
 
 variable [CommRing R] [DecidableEq ι] [∀ i, DecidableEq (m i)]
 
-/-- Shifting a block diagonal matrix by a scalar shifts each of its blocks. -/
+/-- Let $R$ be a commutative ring and $c \in R$. Shifting a block diagonal matrix by $c$ shifts each
+block: $\operatorname{diag}(M_i)_i - cI = \operatorname{diag}(M_i - cI)_i$. -/
 theorem blockDiagonal'_sub_smul_one (M : ∀ i, Matrix (m i) (m i) R) (c : R) :
     blockDiagonal' M - c • 1 = blockDiagonal' fun i => M i - c • 1 := by
   have hfun : (fun i => M i - c • (1 : Matrix (m i) (m i) R))
@@ -122,7 +140,9 @@ section Semiring
 variable [Fintype ι] [DecidableEq ι] {n : ι → Type*} [∀ i, Fintype (n i)]
   [NonUnitalNonAssocSemiring R]
 
-/-- A block diagonal matrix acts on a vector blockwise; the blocks may be rectangular. -/
+/-- A block diagonal matrix acts on a vector blockwise: for a finite family of rectangular blocks
+$M_i$ over a semiring and a vector $v$ indexed by `Σ i, n i`, the block $i$ of
+$\operatorname{diag}(M_j)_j v$ is $M_i v_i$, where $v_i$ is the block $i$ of $v$. -/
 theorem blockDiagonal'_mulVec (M : ∀ i, Matrix (m i) (n i) R) (v : (i : ι) × n i → R)
     (i : ι) (a : m i) :
     (blockDiagonal' M *ᵥ v) ⟨i, a⟩ = (M i *ᵥ fun b => v ⟨i, b⟩) a := by

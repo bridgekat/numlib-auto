@@ -9,58 +9,70 @@ import Numlib.Eigen.PowerMethod
 /-!
 # The reduced resolvent and the condition number of an eigenvector
 
-The resolvent `(A - z)⁻¹` blows up at an eigenvalue `l`, but only in the direction of the
-generalized eigenspace of `l`: on the complementary invariant subspace `ker P` — `P` the spectral
-projector of `l` — the operator `A - l` is still invertible, and its inverse there is the **reduced
-resolvent** `S(l)` of [saad2011numerical], §3.3.2.
+Let $E$ be a finite-dimensional normed space over an algebraically closed field $\mathbb{K}$ (in
+practice $\mathbb{C}$), let $A$ be a linear operator on $E$, and let $l \in \mathbb{K}$. Let $P$ be
+the spectral projector of $l$: the projection onto the generalized eigenspace of $l$ along the sum
+of the generalized eigenspaces of the other eigenvalues. The resolvent $(A - z)^{-1}$ blows up at an
+eigenvalue $l$, but only in the direction of the generalized eigenspace of $l$. On the complementary
+invariant subspace $\ker P$ the operator $A - l$ is still invertible, and its inverse there is the
+**reduced resolvent** $S(l)$ of [saad2011numerical], §3.3.2. This module defines the operator
+$S(l)(I - P)$, the reduced resolvent extended by zero across the generalized eigenspace. It is
+characterized by the identity (3.40) of the source,
+$$S(l)(I - P)(A - l) x = x - Px,$$
+and its operator norm is the condition number $\operatorname{Cond}(u)$ of an eigenvector $u$ for $l$
+(Definition 3.2 of [saad2011numerical]).
 
-The object this file defines is `S(l) (1 - P)`, the reduced resolvent extended by zero across the
-generalized eigenspace, because that is the operator every statement about it mentions: `S(l)`
-alone is a map `ker P → ker P` and cannot be composed with anything in sight. Its defining property
-is [saad2011numerical]'s (3.40),
+The name is justified by (3.43) of the source: along a differentiable branch of eigenpairs of
+$A + tB$ normalized by $P u(t) = u$, the eigenvector moves at the rate $u'(0) = -S(l)(I - P) B u$,
+so $\|u'(0)\| \le \operatorname{Cond}(u) \, \|B\| \, \|u\|$. This is the first-order term of
+Property 5.5 of [quarteroni2000numerical], whose constant
+$1 / \min_{j \neq k} |\lambda_k - \lambda_j|$ is the condition number only for a normal $A$. For a
+normal operator the condition number is computed: $\operatorname{Cond}(u) = 1 /
+\operatorname{dist}(l, \sigma(A) \setminus \{l\})$, which for a Hermitian operator is (3.45) of
+[saad2011numerical]. At an algebraically simple eigenvalue the projector is $Px = (\langle w, x
+\rangle / \langle w, u \rangle) \, u$ for a left eigenvector $w$, (3.42) of the source.
 
-`Module.End.reducedResolvent_apply_sub_smul : S(l) (1 - P) (A - l) x = x - P x`,
+## Main definitions
 
-which determines it, and its norm is the condition number of the eigenvector,
-`Module.End.eigenvectorCondNumber` ([saad2011numerical], Def 3.2). The name is earned by
-[saad2011numerical]'s (3.43): along a differentiable branch of eigenpairs of `A + t B` normalized by
-`P u(t) = u`, the eigenvector moves at the rate `u'(0) = -S(l)(1 - P) B u`, so
-`‖u'(0)‖ ≤ Cond(u) ‖B‖ ‖u‖`. Both are proved here, as
-`Module.End.deriv_eigenvector_perturbation` and
-`Module.End.norm_deriv_eigenvector_perturbation_le`; they are the first-order term of
-[quarteroni2000numerical] Property 5.5, whose constant `1 / min_{j ≠ k} |λ_k - λ_j|` is the
-condition number only for a normal `A`. At an algebraically simple eigenvalue the projector is
-`P x = (⟪w, x⟫ / ⟪w, u⟫) u` for a left eigenvector `w`
-(`Module.End.spectralProjector_apply_of_finrank_eq_one`), which identifies the normalization
-`⟪w, u(t)⟫ = ⟪w, u⟫` of the branch built in `Numlib/Eigen/Perturbation` with `P u(t) = u`.
+* `Module.End.reducedResolventEquiv`: the operator $A - l$ as an automorphism of the complementary
+  invariant subspace $\ker P$; its inverse is $S(l)$.
+* `Module.End.reducedResolvent`: the operator $S(l)(I - P)$ on $E$.
+* `Module.End.eigenvectorCondNumber`: the condition number
+  $\operatorname{Cond}(u) = \|S(l)(I - P)\|$.
 
-For a **normal** operator the condition number is computed:
-`Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` is
-`Cond(u) = 1 / dist (l, σ(A) \ {l})`, with
-`Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` the Hermitian case
-[saad2011numerical] states as (3.45).  On the eigenspace of `μ` the reduced resolvent is
-multiplication by `(μ - l)⁻¹` (`Module.End.reducedResolvent_apply_of_mem_eigenspace`, which needs no
-normality), and for a normal operator those eigenspaces are orthogonal and span, so the operator
-norm is the largest `|μ - l|⁻¹`; the spectrum is finite, so the largest is attained.  Both sides are
-`0` when `l` is the only eigenvalue.
+## Main results
+
+* `Module.End.reducedResolvent_apply_sub_smul`: $S(l)(I - P)(A - l) x = x - Px$ for every $x$.
+* `Module.End.reducedResolvent_apply_of_mem_eigenspace`: on the eigenspace of $\mu \neq l$, the
+  reduced resolvent is multiplication by $(\mu - l)^{-1}$.
+* `Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal`: for a normal $A$,
+  $\operatorname{Cond}(u) = 1 / \operatorname{dist}(l, \sigma(A) \setminus \{l\})$.
+* `Module.End.deriv_eigenvector_perturbation`: along a branch of eigenpairs of $A + tB$ normalized
+  by $P u(t) = u(0)$, $u'(0) = -S(l)(I - P) B u(0)$.
+* `Module.End.norm_deriv_eigenvector_perturbation_le`: under the same hypotheses, $\|u'(0)\| \le
+  \operatorname{Cond}(u) \, \|B\| \, \|u(0)\|$.
+* `Module.End.spectralProjector_apply_of_finrank_eq_one`: at an algebraically simple eigenvalue,
+  $Px = (\langle w, x \rangle / \langle w, u \rangle) \, u$.
 
 ## Implementation notes
 
-Everything here rests on the splitting `Krylov.isCompl_maxGenEigenspace` of
-`Numlib/Eigen/PowerMethod`, which is why this module sits above that one rather than beside
-`Numlib/Eigen/Perturbation`: the projector is the *oblique* `Module.End.spectralProjector`, not an
-orthogonal one, so no inner product is used and the ambient space is only a normed space.
-`IsAlgClosed 𝕜` and `FiniteDimensional 𝕜 E` are what make the generalized eigenspaces span and the
-restricted `A - l` surjective from injective; both are the hypotheses of the splitting.
-
-The condition number of a normal operator is evaluated in a section of its own, which reintroduces
-`E` with an inner product; no identification of `Module.End.spectralProjector` with
-`Submodule.starProjection` is needed for it, only that the projector kills the complementary
-invariant subspace.
-
-## References
-
-[saad2011numerical], §3.3.2 and Definition 3.2.
+* Every result rests on the splitting `Krylov.isCompl_maxGenEigenspace` of
+  `Numlib.Eigen.PowerMethod`, which is why this module imports that one. The projector $P$ is the
+  oblique `Module.End.spectralProjector A (· = l)`, not an orthogonal projection, so no inner
+  product is used and the space is only a normed space. The hypotheses that $\mathbb{K}$ is
+  algebraically closed and $E$ is finite-dimensional make the generalized eigenspaces span $E$, and
+  make the restricted $A - l$ surjective because it is injective.
+* `Module.End.reducedResolvent` is $S(l)(I - P)$ and not $S(l)$, because every statement uses the
+  composite: $S(l)$ alone is a map $\ker P \to \ker P$. If $l$ is not an eigenvalue, then $P = 0$
+  and the reduced resolvent is the resolvent $(A - l)^{-1}$.
+* The complementary invariant subspace $\ker P$ is `A.spectralSubspace (· ≠ l)`, the sum of the
+  generalized eigenspaces of the eigenvalues other than $l$.
+* The condition number of a normal operator is evaluated in a section that gives $E$ an inner
+  product. It needs no identification of `Module.End.spectralProjector` with an orthogonal
+  projection, only that the projector vanishes on the complementary invariant subspace.
+* The normalization $\langle w, u(t) \rangle = \langle w, u \rangle$ of the branch built in
+  `Numlib.Eigen.Perturbation` is the normalization $P u(t) = u$ used here, by
+  `Module.End.spectralProjector_apply_of_finrank_eq_one`.
 -/
 
 open Krylov
@@ -71,16 +83,18 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜
 variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (A : Module.End 𝕜 E) (l : 𝕜)
 
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
-/-- The invariant subspace complementary to the generalized eigenspace of `l` is invariant under
-`A - l`, since it is invariant under `A`. -/
+/-- Let $A$ be a linear operator on $E$ and $l \in \mathbb{K}$. The sum $\ker P$ of the generalized
+eigenspaces of the eigenvalues other than $l$ is invariant under $A - l$, because it is
+invariant under $A$. -/
 theorem mapsTo_sub_smul_one : ∀ w ∈ A.spectralSubspace (· ≠ l),
     (A - l • (1 : Module.End 𝕜 E)) w ∈ A.spectralSubspace (· ≠ l) := fun w hw => by
   simp only [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply]
   exact Submodule.sub_mem _ (apply_mem_spectralSubspace hw) (Submodule.smul_mem _ _ hw)
 
-/-- **`A - l` is injective on the complementary invariant subspace.** A vector killed by `A - l` is
-an eigenvector for `l`, hence lies in the generalized eigenspace of `l`, which meets the complement
-only in `0`. -/
+/-- The restriction of $A - l$ to the complementary invariant subspace $\ker P$ is injective.
+
+A vector that $A - l$ maps to $0$ is an eigenvector for $l$, so it lies in the generalized
+eigenspace of $l$. That eigenspace meets $\ker P$ only in $0$. -/
 theorem injective_restrict_sub_smul_one :
     Function.Injective ((A - l • (1 : Module.End 𝕜 E)).restrict (mapsTo_sub_smul_one A l)) := by
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
@@ -93,74 +107,82 @@ theorem injective_restrict_sub_smul_one :
     ⟨Module.End.eigenspace_le_maxGenEigenspace heig, hw⟩
   simpa using (disjoint_iff_inf_le.1 (Krylov.isCompl_maxGenEigenspace A l).disjoint) hmem
 
-/-- `A - l` as an automorphism of the invariant subspace complementary to the generalized
-eigenspace of `l`: injective by `Module.End.injective_restrict_sub_smul_one`, hence bijective in
-finite dimension. Its inverse is [saad2011numerical]'s reduced resolvent `S(l)`. -/
+/-- The operator $A - l$ as a linear automorphism of the complementary invariant subspace $\ker P$,
+the sum of the generalized eigenspaces of the eigenvalues other than $l$. Its inverse is the
+**reduced resolvent** $S(l)$ of [saad2011numerical], §3.3.2.
+
+The restriction is injective by `Module.End.injective_restrict_sub_smul_one`, so it is bijective
+because $E$ is finite-dimensional. -/
 noncomputable def reducedResolventEquiv :
     A.spectralSubspace (· ≠ l) ≃ₗ[𝕜] A.spectralSubspace (· ≠ l) :=
   LinearEquiv.ofBijective ((A - l • (1 : Module.End 𝕜 E)).restrict (mapsTo_sub_smul_one A l))
     ⟨injective_restrict_sub_smul_one A l,
       LinearMap.injective_iff_surjective.1 (injective_restrict_sub_smul_one A l)⟩
 
-/-- The complementary part of any vector lies in the invariant subspace the reduced resolvent acts
-on. -/
+/-- For every $x \in E$, the vector $x - Px$ lies in the complementary invariant subspace $\ker P$.
+-/
 theorem sub_spectralProjector_mem_iSup (x : E) :
     (1 - A.spectralProjector (· = l)) x ∈ A.spectralSubspace (· ≠ l) :=
   sub_spectralProjector_mem (A := A) (p := (· = l)) x
 
-/-- **The reduced resolvent of `A` at `l`, extended by zero** ([saad2011numerical], §3.3.2): the
-operator `S(l) (1 - P)` sending `x` to the unique `y` of the invariant subspace complementary to
-the generalized eigenspace of `l` with `(A - l) y = x - P x`.
+/-- The **reduced resolvent** of $A$ at $l$, extended by zero ([saad2011numerical], §3.3.2): the
+linear operator $S(l)(I - P)$ on $E$. It sends $x$ to the unique $y \in \ker P$ with
+$$(A - l) y = x - Px.$$
+Here $P$ is the spectral projector of $l$ and $\ker P$ is the sum of the generalized eigenspaces
+of the eigenvalues other than $l$.
 
-`S(l)` alone is defined only on that complement; the composite with `1 - P` is total, and it is
-what [saad2011numerical]'s Definition 3.2 and his first-order eigenvector expansion (3.43)
-use. `Module.End.reducedResolvent_apply_sub_smul` is his (3.40), the identity that characterizes
-it. -/
+$S(l)$ alone is defined only on $\ker P$. The composite with $I - P$ is defined on $E$, and
+Definition 3.2 and the eigenvector expansion (3.43) of the source use it.
+`Module.End.reducedResolvent_apply_sub_smul` is the identity (3.40) of the source, which
+characterizes it. If $l$ is not an eigenvalue of $A$, then $P = 0$ and this is the resolvent
+$(A - l)^{-1}$. -/
 noncomputable def reducedResolvent : E →ₗ[𝕜] E :=
   (A.spectralSubspace (· ≠ l)).subtype ∘ₗ
     ((reducedResolventEquiv A l).symm.toLinearMap ∘ₗ
       LinearMap.codRestrict _ (1 - A.spectralProjector (· = l))
         (sub_spectralProjector_mem_iSup A l))
 
+/-- The value of the reduced resolvent at $x$ is $S(l)$ applied to $x - Px$. -/
 theorem reducedResolvent_apply (x : E) :
     reducedResolvent A l x =
       ((reducedResolventEquiv A l).symm
         ⟨(1 - A.spectralProjector (· = l)) x, sub_spectralProjector_mem_iSup A l x⟩ : E) :=
   rfl
 
-/-- The reduced resolvent lands in the invariant subspace it inverts `A - l` on. -/
+/-- The reduced resolvent takes its values in the complementary invariant subspace $\ker P$. -/
 theorem reducedResolvent_apply_mem (x : E) :
     reducedResolvent A l x ∈ A.spectralSubspace (· ≠ l) :=
   ((reducedResolventEquiv A l).symm
     ⟨_, sub_spectralProjector_mem_iSup A l x⟩ :
       A.spectralSubspace (· ≠ l)).2
 
-/-- The spectral projector of a single eigenvalue lands in its generalized eigenspace. -/
+/-- The spectral projector $P$ of $l$ takes its values in the generalized eigenspace of $l$. -/
 theorem spectralProjector_apply_mem_maxGenEigenspace (x : E) :
     A.spectralProjector (· = l) x ∈ A.maxGenEigenspace l := by
   have h := spectralProjector_apply_mem (A := A) (p := (· = l)) x
   rwa [spectralSubspace_eq] at h
 
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
-/-- The generalized eigenspace of `l` is invariant under `A - l`. -/
+/-- The generalized eigenspace of $l$ is invariant under $A - l$. -/
 theorem sub_smul_one_apply_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEigenspace l) :
     (A - l • (1 : Module.End 𝕜 E)) y ∈ A.maxGenEigenspace l := by
   simp only [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply]
   exact Submodule.sub_mem _ (A.mapsTo_maxGenEigenspace_of_comm (Commute.refl A) l hy)
     (Submodule.smul_mem _ _ hy)
 
-/-- The spectral projector of `l` fixes the generalized eigenspace of `l`. -/
+/-- The spectral projector $P$ of $l$ fixes every vector of the generalized eigenspace of $l$. -/
 theorem spectralProjector_apply_of_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEigenspace l) :
     A.spectralProjector (· = l) y = y := by
   refine spectralProjector_apply_of_mem ?_
   rwa [spectralSubspace_eq]
 
-/-- **The defining identity of the reduced resolvent** ([saad2011numerical], (3.40)): `S(l) (1 - P)
-(A - l) x = (1 - P) x` for every `x`.
+/-- **The defining identity of the reduced resolvent.** For every $x \in E$,
+$$S(l)(I - P)(A - l) x = x - Px.$$
+This is (3.40) of [saad2011numerical].
 
-Split `x = P x + (x - P x)`. Both summands are `(A - l)`-invariant subspaces, so `1 - P` kills the
-image of the first and fixes the image of the second, leaving `(A - l) (x - P x)`; applying the
-inverse of `A - l` on the complement returns `x - P x`. -/
+Split $x = Px + (x - Px)$. Both summands lie in subspaces invariant under $A - l$, so $I - P$
+removes the image of the first and fixes the image of the second. What is left is
+$(A - l)(x - Px)$, and the inverse of $A - l$ on $\ker P$ returns $x - Px$. -/
 theorem reducedResolvent_apply_sub_smul (x : E) :
     reducedResolvent A l ((A - l • (1 : Module.End 𝕜 E)) x)
       = x - A.spectralProjector (· = l) x := by
@@ -186,8 +208,8 @@ theorem reducedResolvent_apply_sub_smul (x : E) :
     Subtype.ext (hkey.trans hval.symm)
   rw [hmk, LinearEquiv.symm_apply_apply]
 
-/-- The reduced resolvent kills the generalized eigenspace of `l`, which is where the resolvent
-itself is singular. -/
+/-- The reduced resolvent vanishes on the generalized eigenspace of $l$: $S(l)(I - P) y = 0$ for
+every $y$ in it. This is where the resolvent itself is singular. -/
 @[simp]
 theorem reducedResolvent_apply_of_mem_maxGenEigenspace {y : E} (hy : y ∈ A.maxGenEigenspace l) :
     reducedResolvent A l y = 0 := by
@@ -197,23 +219,28 @@ theorem reducedResolvent_apply_of_mem_maxGenEigenspace {y : E} (hy : y ∈ A.max
   simp only [h]
   simp [← Submodule.coe_zero]
 
-/-- **The condition number of an eigenvector** ([saad2011numerical], Def 3.2): the operator norm of
-the reduced resolvent `S(l) (1 - P)`.
+/-- **The condition number of an eigenvector** ([saad2011numerical], Definition 3.2): the operator
+norm
+$$\operatorname{Cond}(u) = \|S(l)(I - P)\|$$
+of the reduced resolvent of $A$ at $l$.
 
-It measures how far the eigenvector of a simple eigenvalue `l` moves under a perturbation of `A`:
-[saad2011numerical]'s (3.43) gives `u'(0) = -S(l)(1 - P) B u` for the branch normalized by
-`P u(t) = u`, so the first-order displacement is at most `Cond(u) ‖B‖ ‖u‖`. For a Hermitian `A` it
-is `1 / dist (l, σ(A) \ {l})`, the `1/δ` of
-`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`; in general it is not controlled by the
-spectrum alone. -/
+It measures how far the eigenvector of a simple eigenvalue $l$ moves under a perturbation of
+$A$. By (3.43) of the source, $u'(0) = -S(l)(I - P) B u$ for the branch normalized by
+$P u(t) = u$, so the first-order displacement is at most
+$\operatorname{Cond}(u) \, \|B\| \, \|u\|$. For a Hermitian $A$ it is $1 /
+\operatorname{dist}(l, \sigma(A) \setminus \{l\})$, the $1 / \delta$ of
+`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. In general the spectrum alone does not
+control it. The definition takes the norm of `LinearMap.toContinuousLinearMap` of the reduced
+resolvent, and it is defined for every $l$, also when $l$ is not an eigenvalue. -/
 noncomputable def eigenvectorCondNumber : ℝ :=
   ‖LinearMap.toContinuousLinearMap (reducedResolvent A l)‖
 
-/-- The condition number of an eigenvector is a norm, hence nonnegative. -/
+/-- The condition number of an eigenvector is nonnegative. -/
 theorem eigenvectorCondNumber_nonneg : 0 ≤ eigenvectorCondNumber A l := norm_nonneg _
 
-/-- The bound the condition number is for: the reduced resolvent moves no vector by more than
-`Cond(u)` times its length. -/
+/-- For every $x \in E$,
+$$\|S(l)(I - P) x\| \le \operatorname{Cond}(u) \, \|x\|.$$
+This is the bound for which the condition number is defined. -/
 theorem norm_reducedResolvent_apply_le (x : E) :
     ‖reducedResolvent A l x‖ ≤ eigenvectorCondNumber A l * ‖x‖ :=
   (LinearMap.toContinuousLinearMap (reducedResolvent A l)).le_opNorm x
@@ -225,9 +252,13 @@ section Normal
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {A : Module.End 𝕜 E} {l : 𝕜}
 
-/-- **On the eigenspace of `μ ≠ l` the reduced resolvent is multiplication by `(μ - l)⁻¹`**: there
-`A - l` is multiplication by `μ - l`, and the spectral projector of `l` vanishes.  No normality is
-needed for this. -/
+/-- Let $E$ be a finite-dimensional inner product space over an algebraically closed $\mathbb{K}$,
+let $A$ be a linear operator on $E$, and let $\mu \neq l$. For every $x$ in the eigenspace of
+$\mu$,
+$$S(l)(I - P) x = (\mu - l)^{-1} x.$$
+
+On this eigenspace $A - l$ is multiplication by $\mu - l$, and the spectral projector of $l$
+vanishes. No normality is needed. -/
 theorem reducedResolvent_apply_of_mem_eigenspace {μ : 𝕜} (hμ : μ ≠ l) {x : E}
     (hx : x ∈ A.eigenspace μ) : reducedResolvent A l x = (μ - l)⁻¹ • x := by
   have hμl : μ - l ≠ 0 := sub_ne_zero.2 hμ
@@ -244,8 +275,14 @@ theorem reducedResolvent_apply_of_mem_eigenspace {μ : 𝕜} (hμ : μ ≠ l) {x
   have h := reducedResolvent_apply_sub_smul A l ((μ - l)⁻¹ • x)
   rwa [hAy, hP, sub_zero] at h
 
-/-- The reduced resolvent on the eigenvector basis of a normal operator: it scales the `j`-th basis
-vector by `(λ_j - l)⁻¹`, or kills it when `λ_j = l`. -/
+/-- Let $A$ be a normal operator on a finite-dimensional inner product space $E$ of dimension $n$
+over an algebraically closed $\mathbb{K}$, with orthonormal eigenvector basis
+$e_0, \dots, e_{n-1}$ and eigenvalues $\lambda_0, \dots, \lambda_{n-1}$. Then for each $j$,
+$$S(l)(I - P) e_j = \begin{cases} 0 & \text{if } \lambda_j = l, \\ (\lambda_j - l)^{-1} e_j &
+  \text{if } \lambda_j \neq l. \end{cases}$$
+
+The basis and the eigenvalues are `LinearMap.IsStarNormal.eigenvectorBasis` and
+`LinearMap.IsStarNormal.eigenvalues`. -/
 theorem reducedResolvent_apply_eigenvectorBasis (hA : IsStarNormal A) {n : ℕ}
     (hn : Module.finrank 𝕜 E = n) (l : 𝕜) (j : Fin n) :
     reducedResolvent A l (LinearMap.IsStarNormal.eigenvectorBasis hA hn j)
@@ -263,7 +300,8 @@ theorem reducedResolvent_apply_eigenvectorBasis (hA : IsStarNormal A) {n : ℕ}
   · rw [ite_eq_right h]
     exact reducedResolvent_apply_of_mem_eigenspace h hmem
 
-/-- Every eigenvalue of the eigenvector basis lies in the spectrum. -/
+/-- Each eigenvalue in the eigenvector basis of a normal operator lies in the spectrum of the
+operator. -/
 private theorem eigenvalues_mem_spectrum (hA : IsStarNormal A) {n : ℕ}
     (hn : Module.finrank 𝕜 E = n) (j : Fin n) :
     LinearMap.IsStarNormal.eigenvalues hA hn j ∈ spectrum 𝕜 A := by
@@ -272,9 +310,13 @@ private theorem eigenvalues_mem_spectrum (hA : IsStarNormal A) {n : ℕ}
   · exact Module.End.mem_eigenspace_iff.2 (LinearMap.IsStarNormal.apply_eigenvectorBasis hA hn j)
   · exact (LinearMap.IsStarNormal.eigenvectorBasis hA hn).toBasis.ne_zero j
 
-/-- The reduced resolvent of a normal operator moves no vector by more than
-`1 / dist (l, σ(A) \ {l})` times its length: in the orthonormal eigenvector basis it is a diagonal
-operator whose entries are the `(μ - l)⁻¹`. -/
+/-- Let $A$ be a normal operator on a finite-dimensional inner product space $E$ over an
+algebraically closed $\mathbb{K}$. For every $l \in \mathbb{K}$ and $x \in E$,
+$$\|S(l)(I - P) x\| \le \frac{\|x\|}{\operatorname{dist}(l, \sigma(A) \setminus \{l\})}.$$
+
+In the orthonormal eigenvector basis the reduced resolvent is diagonal, with the entries
+$(\mu - l)^{-1}$ for the eigenvalues $\mu \neq l$ and $0$ for $\mu = l$. The distance is
+`Metric.infDist`, which is $0$ to the empty set, and the inverse of $0$ is $0$. -/
 theorem norm_reducedResolvent_apply_le_inv_infDist (hA : IsStarNormal A) (l : 𝕜) (x : E) :
     ‖reducedResolvent A l x‖ ≤ (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ * ‖x‖ := by
   classical
@@ -338,13 +380,17 @@ theorem norm_reducedResolvent_apply_le_inv_infDist (hA : IsStarNormal A) (l : �
     _ = δ⁻¹ * √(∑ j, ‖b.repr x j‖ ^ 2) := by
         rw [Real.sqrt_mul (by positivity), Real.sqrt_sq (inv_nonneg.2 hδ0)]
 
-/-- **The condition number of an eigenvector of a normal operator** ([saad2011numerical], (3.45)):
-`Cond(u) = 1 / dist (l, σ(A) \ {l})`.
+/-- **The condition number of an eigenvector of a normal operator.** Let $A$ be a normal operator on
+a finite-dimensional inner product space $E$ over an algebraically closed $\mathbb{K}$, and let
+$l \in \mathbb{K}$. Then
+$$\operatorname{Cond}(u) = \frac{1}{\operatorname{dist}(l, \sigma(A) \setminus \{l\})}.$$
+For a Hermitian operator this is (3.45) of [saad2011numerical].
 
-On the eigenspace of `μ` the reduced resolvent is multiplication by `(μ - l)⁻¹`, and the eigenspaces
-of a normal operator are orthogonal and span, so the operator norm is the largest of the `|μ - l|⁻¹`
-over the other eigenvalues; the largest is attained because the spectrum is finite.  Both sides are
-`0` when `l` is the only eigenvalue, `Metric.infDist` to the empty set being `0`. -/
+On the eigenspace of $\mu$ the reduced resolvent is multiplication by $(\mu - l)^{-1}$, and the
+eigenspaces of a normal operator are orthogonal and span $E$. So the operator norm is the
+largest of the $|\mu - l|^{-1}$ over the eigenvalues $\mu \neq l$, and the largest is attained
+because the spectrum is finite. Both sides are $0$ when $l$ is the only eigenvalue, because
+`Metric.infDist` to the empty set is $0$ and the inverse of $0$ is $0$. -/
 theorem eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal (hA : IsStarNormal A) (l : 𝕜) :
     eigenvectorCondNumber A l = (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ := by
   set δ := Metric.infDist l (spectrum 𝕜 A \ {l}) with hδ
@@ -371,11 +417,16 @@ theorem eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal (hA : IsStarNormal 
       rw [hnorm] at hle
       exact le_of_mul_le_mul_right (by linarith) hxnorm
 
-/-- **The condition number of an eigenvector of a Hermitian operator** ([saad2011numerical],
-(3.45)), the case of `Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` the source
-states: for a symmetric `A` the condition number of the eigenvector of `l` is
-`1 / dist (l, σ(A) \ {l})`, the `1 / δ` of
-`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. -/
+/-- **The condition number of an eigenvector of a Hermitian operator.** Let $A$ be a symmetric
+operator on a finite-dimensional inner product space $E$ over an algebraically closed
+$\mathbb{K}$, and let $l \in \mathbb{K}$. Then
+$$\operatorname{Cond}(u) = \frac{1}{\operatorname{dist}(l, \sigma(A) \setminus \{l\})}.$$
+This is (3.45) of [saad2011numerical].
+
+It is the case of `Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` that the
+source states. The value is the $1 / \delta$ of
+`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. As in the normal case, both sides are
+$0$ when $l$ is the only eigenvalue. -/
 theorem eigenvectorCondNumber_eq_inv_dist_of_isSymmetric (hA : A.IsSymmetric) (l : 𝕜) :
     eigenvectorCondNumber A l = (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ :=
   eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal
@@ -388,16 +439,21 @@ section Deriv
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
 
-/-- **The derivative of an eigenvector** ([saad2011numerical], (3.43); the first-order term of
-[quarteroni2000numerical] Property 5.5): along a branch `t ↦ (mu t, u t)` of eigenpairs of
-`A + t B` through `(l, u 0)`, differentiable at `0` and normalized by `P (u t) = u 0` for the
-spectral projector `P` of `l`, the eigenvector moves at the rate `u' = -S(l)(1 - P) B (u 0)`, with
-`S(l)(1 - P) = reducedResolvent A l`.
+/-- **The derivative of an eigenvector.** Let $E$ be a finite-dimensional normed space over an
+algebraically closed $\mathbb{K}$, let $A, B$ be linear operators on $E$, and let $P$ be the
+spectral projector of $l$ for $A$. Let $t \mapsto (\mu(t), u(t))$ satisfy
+$$A u(t) + t B u(t) = \mu(t) \, u(t) \quad \text{and} \quad P u(t) = u(0) \qquad \text{for all }
+  t \in \mathbb{K},$$
+with $\mu(0) = l$, and let $u$ and $\mu$ be differentiable at $0$ with derivatives $u'$ and
+$\mu'$. Then
+$$u' = -S(l)(I - P) B u(0).$$
+This is (3.43) of [saad2011numerical], and the first-order term of Property 5.5 of
+[quarteroni2000numerical].
 
-Differentiating the eigen-equation gives `(A - l) u' = mu' • u 0 - B (u 0)`, differentiating the
-normalization gives `P u' = 0`, so `u' = (1 - P) u' = S(l)(1 - P)(A - l) u'`
-(`Module.End.reducedResolvent_apply_sub_smul`), and `S(l)(1 - P)` kills `u 0`, which lies in the
-generalized eigenspace of `l`. -/
+The derivative of the eigenvalue equation at $0$ is $(A - l) u' = \mu' u(0) - B u(0)$, and the
+derivative of the normalization is $P u' = 0$. So $u' = (I - P) u' = S(l)(I - P)(A - l) u'$ by
+`Module.End.reducedResolvent_apply_sub_smul`, and $S(l)(I - P)$ vanishes at $u(0)$, which lies
+in the generalized eigenspace of $l$. -/
 theorem deriv_eigenvector_perturbation {A B : Module.End 𝕜 E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜} {u' : E}
     {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
@@ -444,13 +500,18 @@ theorem deriv_eigenvector_perturbation {A B : Module.End 𝕜 E} {u : 𝕜 → E
   rw [reducedResolvent_apply_of_mem_maxGenEigenspace A l hu0, smul_zero, zero_sub] at hkey
   exact hkey.symm
 
-/-- **The condition number of an eigenvector bounds its first-order motion**
-([saad2011numerical], §3.3.2; [quarteroni2000numerical] Property 5.5, corrected): under the
-hypotheses of `Module.End.deriv_eigenvector_perturbation`, for `A B : E →L[𝕜] E`,
-`‖u'‖ ≤ Cond(u) ‖B‖ ‖u 0‖`. With `Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric`
-this is the book's `‖x_k(ε) - x_k‖ ≤ ε ‖E‖ / min_{j ≠ k} |λ_k - λ_j| + o(ε)` for a Hermitian `A`;
-for a non-normal `A` the constant is the condition number of the eigenvector and not the reciprocal
-gap. -/
+/-- **The condition number of an eigenvector bounds its first-order motion.** Let $A, B$ be bounded
+operators on a finite-dimensional normed space $E$ over an algebraically closed $\mathbb{K}$,
+and let $\mu$, $u$, $\mu'$, $u'$ satisfy the hypotheses of
+`Module.End.deriv_eigenvector_perturbation`. Then
+$$\|u'\| \le \operatorname{Cond}(u) \, \|B\| \, \|u(0)\|.$$
+This follows [saad2011numerical], §3.3.2, and corrects Property 5.5 of
+[quarteroni2000numerical].
+
+With `Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric`, this is the bound
+$\|x_k(\varepsilon) - x_k\| \le \varepsilon \|E\| / \min_{j \neq k} |\lambda_k - \lambda_j| +
+o(\varepsilon)$ of [quarteroni2000numerical] for a Hermitian $A$. For a non-normal $A$ the
+constant is the condition number of the eigenvector, not the reciprocal gap. -/
 theorem norm_deriv_eigenvector_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜}
     {u' : E} {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
     (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
@@ -473,8 +534,13 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {A : Module.End 𝕜 E} {l : 𝕜}
 
 omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
-/-- A left eigenvector for `l` is orthogonal to every generalized eigenvector for an eigenvalue
-`μ ≠ l`: testing `(A - μ)^k z = 0` against `w` multiplies `⟪w, z⟫` by `(l - μ)^k ≠ 0`. -/
+/-- Let $E$ be an inner product space and let $w$ be a left eigenvector of $A$ for $l$:
+$\langle w, Ay \rangle = l \langle w, y \rangle$ for all $y$. Then $\langle w, z \rangle = 0$
+for every $z$ in the sum of the generalized eigenspaces of the eigenvalues $\mu \neq l$.
+
+For a generalized eigenvector $z$ with $(A - \mu)^k z = 0$, testing against $w$ multiplies
+$\langle w, z \rangle$ by $(l - \mu)^k \neq 0$. No finite dimension and no algebraic closedness
+are needed. -/
 theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E} (hw : IsLeftEigenvector A l w) {z : E}
     (hz : z ∈ A.spectralSubspace (· ≠ l)) : (inner 𝕜 w z : 𝕜) = 0 := by
   have hpow : ∀ (μ : 𝕜) (k : ℕ) (y : E),
@@ -496,13 +562,19 @@ theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E} (hw : IsLeftEigenvect
     exact (mul_eq_zero.mp h.symm).resolve_left (pow_ne_zero _ (sub_ne_zero.mpr hμ.symm))
   exact Submodule.mem_orthogonal_singleton_iff_inner_right.mp (hle hz)
 
-/-- **The spectral projector of a simple eigenvalue** in terms of a right eigenvector `u` and a
-left eigenvector `w`: `P x = (⟪w, x⟫ / ⟪w, u⟫) • u` ([saad2011numerical], (3.42)). Both sides are
-multiples of `u` that agree on `u` and vanish on the complementary invariant subspace, on which `w`
-vanishes; the denominator is nonzero by
+/-- **The spectral projector of a simple eigenvalue.** Let $E$ be a finite-dimensional inner product
+space over an algebraically closed $\mathbb{K}$. Let $u \neq 0$ satisfy $Au = lu$, let
+$w \neq 0$ be a left eigenvector of $A$ for $l$, and let the generalized eigenspace of $l$ have
+dimension $1$. Then for every $x \in E$,
+$$Px = \frac{\langle w, x \rangle}{\langle w, u \rangle} \, u.$$
+This is (3.42) of [saad2011numerical].
+
+Both sides are multiples of $u$ that agree at $u$ and vanish on the complementary invariant
+subspace, on which $w$ vanishes. The denominator is nonzero by
 `Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`. This identifies the normalization
-`⟪w, v t⟫ = ⟪w, u⟫` of the branch of `Module.End.hasDerivAt_eigenvalue_perturbation` with the
-projector normalization `P (v t) = u` of `Module.End.deriv_eigenvector_perturbation`. -/
+$\langle w, v(t) \rangle = \langle w, u \rangle$ of the branch of
+`Module.End.hasDerivAt_eigenvalue_perturbation` with the normalization $P v(t) = u$ of
+`Module.End.deriv_eigenvector_perturbation`. -/
 theorem spectralProjector_apply_of_finrank_eq_one {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
     (hw : IsLeftEigenvector A l w) (hw0 : w ≠ 0)
     (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) (x : E) :

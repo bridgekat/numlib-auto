@@ -9,45 +9,62 @@ import Numlib.Approximation.Interpolation
 /-!
 # Hermite interpolation
 
-Interpolation of a function and its derivatives at finitely many nodes: given distinct nodes `x i`
-and multiplicities `m i`, the Hermite interpolant is the polynomial of degree less than `∑ i, (m i +
-1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`. The material is
-[han2009theoretical] §3.2.2 and [kress1998numerical] §8.1.
+Hermite interpolation matches a function and some of its derivatives at finitely many nodes. Let
+$x_1, \dots, x_n \in \mathbb{R}$ be distinct nodes and let $m_1, \dots, m_n \in \mathbb{N}$. The
+Hermite interpolant of $f$ is the unique polynomial $p$ of degree less than $M = \sum_i (m_i + 1)$
+with $p^{(j)}(x_i) = f^{(j)}(x_i)$ for all $i$ and all $j \le m_i$. Its error is carried by the
+nodal polynomial $\prod_i (x - x_i)^{m_i + 1}$: for $f$ of class $C^{N+1}$ with $M = N + 1$,
+$$f(t) - p(t) = \frac{f^{(N+1)}(\xi)}{(N + 1)!} \prod_i (t - x_i)^{m_i + 1}$$ for some $\xi$ in an
+interval that contains the nodes and $t$. The material is [han2009theoretical], §3.2.2, and
+[kress1998numerical], §8.1.
+
+The main tool is Rolle's theorem with multiplicities. The module also identifies its real
+interpolant with the multiset Hermite interpolation of
+`Numlib.RingTheory.Polynomial.HermiteInterpolation`, which works over any field.
 
 ## Main definitions
 
-* `Hermite.nodal x m` is the nodal polynomial `∏ i, (X - x i) ^ (m i + 1)`, which carries the
-  interpolation error.
-* `Hermite.interpolate x m f` is the interpolant itself, with `Hermite.degree_interpolate_lt`,
-  `Hermite.eval_iterate_derivative_interpolate` and `Hermite.eq_interpolate` for its defining
-  properties, and `Hermite.interpolate_zero_eq_lagrange` for the simple-node case.
-* `Hermite.nodeMultiset x m = ∑ i, (m i + 1) • {x i}` is the multiset of nodes. The multiset
-  Hermite interpolation over any field (`Hermite.interpolateJet`,
-  `Numlib/RingTheory/Polynomial/HermiteInterpolation`) and the jets and divided differences of
-  functions on a nontrivially normed field (`Hermite.taylorJet`, `Hermite.divDiff`,
-  `Numlib/Analysis/Calculus/HermiteInterpolation`) generalize this module's real interpolant, which
-  is their instance: `Hermite.interpolate_eq_interpolateJet`, `Hermite.nodal_eq_nodalMultiset`.
+* `Hermite.nodal`: the nodal polynomial $\prod_i (x - x_i)^{m_i + 1}$.
+* `Hermite.nodeMultiset`: the multiset $\sum_i (m_i + 1) \cdot \{x_i\}$ of the nodes.
+* `Hermite.interpolate`: the Hermite interpolant of $f$.
 
 ## Main results
 
-* `Hermite.exists_iteratedDeriv_eq_zero` is **Rolle's theorem with multiplicities**: a function
-  whose zeros in `[a, b]`, counted with multiplicity, number `N + 2` has a vanishing derivative of
-  order `N + 1` somewhere in `[a, b]`. It strengthens the
-  `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of `Numlib/Approximation/Interpolation`, which is
-  the case of simple zeros, and it is the only real work of the module.
-* `Hermite.isUnisolvent` is unique solvability of the Hermite problem, the instance of
-  `Hermite.existsUnique_isJetInterpolant` (the Chinese remainder theorem in `ℝ[X]`) at the multiset
-  of nodes; `Hermite.eq_of_twoPoint_jets` is its two-point case (polynomials of degree at most
-  `2p + 1` with the same `p`-jets at two points coincide).
-* `Hermite.exists_sub_interpolate_eq` is the error formula `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t -
-  x i)^{m i + 1}`, proved from the Rolle theorem exactly as the Lagrange error formula is proved
-  from the simple one.
+* `Hermite.exists_iteratedDeriv_eq_zero`: **Rolle's theorem with multiplicities**. If a function of
+  class $C^{N+1}$ has zeros in $[a, b]$ whose multiplicities sum to $N + 2$, then its derivative of
+  order $N + 1$ vanishes somewhere in $[a, b]$.
+* `Hermite.isUnisolvent`: the Hermite interpolation problem has exactly one solution of degree less
+  than $M$.
+* `Hermite.interpolate_eq_interpolateJet` and `Hermite.nodal_eq_nodalMultiset`: the real interpolant
+  and the nodal polynomial are instances of the multiset constructions.
+* `Hermite.degree_interpolate_lt`, `Hermite.eval_iterate_derivative_interpolate` and
+  `Hermite.eq_interpolate`: the defining properties of the interpolant.
+* `Hermite.interpolate_zero_eq_lagrange`: at simple nodes the Hermite interpolant is the Lagrange
+  interpolant.
+* `Hermite.exists_sub_interpolate_eq`: the error formula.
+* `Hermite.eq_of_twoPoint_jets`: two polynomials of degree at most $2p + 1$ with the same
+  derivatives of order at most $p$ at $0$ and at a point $s \neq 0$ are equal.
+
+## Proof outline
+
+Rolle's theorem with multiplicities is proved by induction on the order of the derivative: a zero of
+multiplicity $k$ of $g$ is a zero of multiplicity $k - 1$ of $g'$, and each gap between two
+consecutive distinct zeros contributes one more zero of $g'$ by Rolle's theorem. The error formula
+then follows from it in the same way as the Lagrange error formula follows from the simple Rolle
+theorem. Unique solvability is the Chinese remainder theorem in $\mathbb{R}[X]$, in the form
+`Hermite.existsUnique_isJetInterpolant`.
 
 ## Implementation notes
 
-Divided-difference forms of the error and the Newton form of the interpolant are not developed
-here: the classical divided difference is `DividedDifference.newtonOn`
-(`Numlib/Approximation/NewtonForm`), and at repeated nodes `Hermite.divDiff`.
+* The nodes and the orders are `Fin n`-indexed functions `x` and `m`. The number $m_i$ is the
+  highest order of a derivative that is matched at $x_i$, so $x_i$ has multiplicity $m_i + 1$.
+* The multiset Hermite interpolation `Hermite.interpolateJet` of
+  `Numlib.RingTheory.Polynomial.HermiteInterpolation`, and the jets `Hermite.taylorJet` and
+  confluent divided differences `Hermite.divDiff` of
+  `Numlib.Analysis.Calculus.HermiteInterpolation`, generalize the real interpolant of this module.
+* The divided-difference form of the error and the Newton form of the interpolant are not developed
+  here. The divided difference at distinct nodes is `DividedDifference.newtonOn` in
+  `Numlib.Approximation.NewtonForm`, and at repeated nodes it is `Hermite.divDiff`.
 -/
 
 open scoped Polynomial
@@ -56,14 +73,10 @@ namespace Hermite
 
 /-! ### Rolle's theorem with multiplicities -/
 
-/-- The induction behind Rolle's theorem with multiplicities, phrased over an explicit sequence `F`
-of successive derivatives and a multiplicity function `Z`: if `F 0` vanishes at each point of `s` to
-the order `Z` prescribes, and those orders sum to `k + 1`, then `F k` vanishes somewhere in `[a,
-b]`.
-
-Each node of multiplicity `Z t` contributes a zero of multiplicity `Z t - 1` of `F 1`, and each of
-the `s.card - 1` gaps between consecutive nodes contributes one more by Rolle's theorem, so the
-orders available to `F 1` sum to `k`. -/
+/-- The induction behind Rolle's theorem with multiplicities: if $F_{j+1}$ is the derivative of
+$F_j$ for $j < k$, and $F_0$ vanishes to order $Z(t) \ge 1$ at each point $t$ of a finite set
+$s \subseteq [a, b]$ with $\sum_{t \in s} Z(t) = k + 1$, then $F_k$ vanishes somewhere in
+$[a, b]$. -/
 private theorem exists_eq_zero_mult_aux {a b : ℝ} :
     ∀ (k : ℕ) (F : ℕ → ℝ → ℝ),
       (∀ j < k, ∀ t : ℝ, HasDerivAt (F j) (F (j + 1) t) t) →
@@ -191,16 +204,16 @@ private theorem exists_eq_zero_mult_aux {a b : ℝ} :
       (fun j hj t => hF (j + 1) (by omega) t) s' Z' hpos' hsub' hzero' hsum'
     exact ⟨ξ, hξ, hξ0⟩
 
-/-- **Rolle's theorem with multiplicities.** If `g` is of class `C^{N+1}`, the nodes `x` are
-distinct points of `[a, b]`, `g` vanishes at `x i` together with its first `m i` derivatives, and
-the multiplicities `m i + 1` sum to `N + 2`, then the `(N + 1)`-st derivative of `g` vanishes
-somewhere in `[a, b]`.
+/-- **Rolle's theorem with multiplicities.** Let $g : \mathbb{R} \to \mathbb{R}$ be of class
+$C^{N+1}$. Let $x_1, \dots, x_n$ be distinct points of $[a, b]$ and let
+$m_1, \dots, m_n \in \mathbb{N}$ with $\sum_i (m_i + 1) = N + 2$. If $g^{(j)}(x_i) = 0$ for all
+$i$ and all $j \le m_i$, then there is $\xi \in [a, b]$ with $$g^{(N+1)}(\xi) = 0.$$ See
+[kress1998numerical], §8.1, and [han2009theoretical], §3.2.2.
 
-For `m = 0` and `n = N + 2` this is `exists_iteratedDeriv_eq_zero_of_forall_eq_zero`, whose
-conclusion is the sharper `Set.Ioo a b`; with multiplicities the open interval is out of reach,
-since a single node of multiplicity `N + 2` may be an endpoint.
-
-Reference: [kress1998numerical], §8.1; [han2009theoretical], §3.2.2. -/
+For $m = 0$ and $n = N + 2$ this is `exists_iteratedDeriv_eq_zero_of_forall_eq_zero`, whose
+conclusion gives the sharper $\xi \in (a, b)$. With multiplicities the open interval is not
+possible, since a single node of multiplicity $N + 2$ can be an endpoint. The derivatives are
+`iteratedDeriv`. -/
 theorem exists_iteratedDeriv_eq_zero {N n : ℕ} {a b : ℝ} {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) g) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}
@@ -249,17 +262,19 @@ section Nodal
 
 variable {n : ℕ}
 
-/-- The **nodal polynomial** of nodes `x` with multiplicities `m`: the monic polynomial `∏ i, (X - x
-i) ^ (m i + 1)`, of degree `∑ i, (m i + 1)`. It vanishes at `x i` together with its first `m i`
-derivatives, and it carries the error of Hermite interpolation. -/
+/-- The **nodal polynomial** of distinct nodes $x_1, \dots, x_n$ with orders $m_1, \dots, m_n$ is
+the monic polynomial $$\prod_i (x - x_i)^{m_i + 1}$$ of degree $\sum_i (m_i + 1)$. It vanishes
+at $x_i$ together with its derivatives of order at most $m_i$, and it carries the error of
+Hermite interpolation. -/
 noncomputable def nodal (x : Fin n → ℝ) (m : Fin n → ℕ) : ℝ[X] :=
   ∏ i, (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1)
 
-/-- The nodal polynomial is monic. -/
+/-- The nodal polynomial $\prod_i (x - x_i)^{m_i + 1}$ is monic. -/
 theorem monic_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) : (nodal x m).Monic :=
   Polynomial.monic_prod_of_monic _ _ fun i _ => (Polynomial.monic_X_sub_C (x i)).pow _
 
-/-- The nodal polynomial has degree the total number of interpolation conditions. -/
+/-- The nodal polynomial $\prod_i (x - x_i)^{m_i + 1}$ has degree $\sum_i (m_i + 1)$, the total
+number of interpolation conditions. -/
 theorem natDegree_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) :
     (nodal x m).natDegree = ∑ i, (m i + 1) := by
   rw [nodal, Polynomial.natDegree_prod _ _ fun i _ =>
@@ -267,18 +282,19 @@ theorem natDegree_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) :
   exact Finset.sum_congr rfl fun i _ => by
     rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
 
-/-- The value of the nodal polynomial, as the product it is defined by. -/
+/-- The value of the nodal polynomial at $t$ is $\prod_i (t - x_i)^{m_i + 1}$. -/
 @[simp]
 theorem eval_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) (t : ℝ) :
     (nodal x m).eval t = ∏ i, (t - x i) ^ (m i + 1) := by
   simp [nodal, Polynomial.eval_prod]
 
-/-- Each linear factor divides the nodal polynomial to its full multiplicity. -/
+/-- For each node $x_i$, the factor $(x - x_i)^{m_i + 1}$ divides the nodal polynomial. -/
 theorem pow_dvd_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) (i : Fin n) :
     (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1) ∣ nodal x m :=
   Finset.dvd_prod_of_mem _ (Finset.mem_univ i)
 
-/-- The nodal polynomial vanishes at each node together with its first `m i` derivatives. -/
+/-- For each node $x_i$ and each $j \le m_i$, the derivative of order $j$ of the nodal polynomial
+vanishes at $x_i$. -/
 theorem eval_iterate_derivative_nodal {x : Fin n → ℝ} {m : Fin n → ℕ} (i : Fin n) {j : ℕ}
     (hj : j ≤ m i) : (Polynomial.derivative^[j] (nodal x m)).eval (x i) = 0 := by
   have hdvd : (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1 - j) ∣
@@ -288,7 +304,8 @@ theorem eval_iterate_derivative_nodal {x : Fin n → ℝ} {m : Fin n → ℕ} (i
     (dvd_pow_self _ (by omega)).trans hdvd
   exact Polynomial.dvd_iff_isRoot.mp hone
 
-/-- The top iterated derivative of the nodal polynomial is `(∑ i, (m i + 1))!`. -/
+/-- If $\sum_i (m_i + 1) = M$, the derivative of order $M$ of the nodal polynomial is the constant
+$M!$. -/
 theorem iterate_derivative_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) {M : ℕ}
     (hM : ∑ i, (m i + 1) = M) :
     Polynomial.derivative^[M] (nodal x m) = Polynomial.C ((M.factorial : ℝ)) := by
@@ -304,21 +321,25 @@ section Unisolvent
 
 variable {n : ℕ}
 
-/-- The nodes `x i` with multiplicities `m i + 1`, as a multiset: the bridge from this module's
-`Fin`-indexed data to the multiset Hermite interpolation of
-`Numlib/RingTheory/Polynomial/HermiteInterpolation`. -/
+/-- The multiset of the nodes $x_i$ with the multiplicities $m_i + 1$:
+$\sum_i (m_i + 1) \cdot \{x_i\}$. It connects the `Fin`-indexed data of this module to the
+multiset Hermite interpolation of `Numlib.RingTheory.Polynomial.HermiteInterpolation`. -/
 noncomputable def nodeMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) : Multiset ℝ :=
   ∑ i, (m i + 1) • {x i}
 
+/-- The multiset of the nodes has $\sum_i (m_i + 1)$ elements. -/
 @[simp]
 theorem card_nodeMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) :
     Multiset.card (nodeMultiset x m) = ∑ i, (m i + 1) := by
   simp [nodeMultiset, Multiset.card_sum]
 
+/-- A real number $t$ is in the multiset of the nodes if and only if $t = x_i$ for some $i$. -/
 theorem mem_nodeMultiset {x : Fin n → ℝ} {m : Fin n → ℕ} {t : ℝ} :
     t ∈ nodeMultiset x m ↔ ∃ i, x i = t := by
   simp [nodeMultiset, Multiset.mem_sum, Multiset.mem_nsmul, eq_comm]
 
+/-- If the nodes are distinct, the node $x_i$ occurs $m_i + 1$ times in the multiset of the nodes.
+-/
 theorem count_nodeMultiset {x : Fin n → ℝ} (hx : Function.Injective x) (m : Fin n → ℕ)
     (i : Fin n) : (nodeMultiset x m).count (x i) = m i + 1 := by
   classical
@@ -329,13 +350,15 @@ theorem count_nodeMultiset {x : Fin n → ℝ} (hx : Function.Injective x) (m : 
       mul_zero]
   · simp
 
-/-- The nodal polynomial is the nodal polynomial of the multiset of nodes. -/
+/-- The nodal polynomial $\prod_i (x - x_i)^{m_i + 1}$ is the nodal polynomial
+`Hermite.nodalMultiset` of the multiset of the nodes. -/
 theorem nodal_eq_nodalMultiset (x : Fin n → ℝ) (m : Fin n → ℕ) :
     nodal x m = Hermite.nodalMultiset (nodeMultiset x m) := by
   simp [nodal, nodeMultiset, nodalMultiset_sum, nodalMultiset_nsmul]
 
-/-- Jet interpolation on the multiset of nodes, in this module's terms: the Taylor coefficients of
-order `j ≤ m i` at `x i` are prescribed. -/
+/-- Let the nodes $x_i$ be distinct. A polynomial $p$ interpolates the jets $y$ on the multiset of
+the nodes if and only if, for all $i$ and all $j \le m_i$, the Taylor coefficient of order $j$
+of $p$ at $x_i$ is $y(x_i, j)$. -/
 theorem isJetInterpolant_nodeMultiset_iff {x : Fin n → ℝ} (hx : Function.Injective x)
     {m : Fin n → ℕ} {y : ℝ → ℕ → ℝ} {p : ℝ[X]} :
     IsJetInterpolant (nodeMultiset x m) y p ↔
@@ -350,15 +373,14 @@ theorem isJetInterpolant_nodeMultiset_iff {x : Fin n → ℝ} (hx : Function.Inj
     rw [count_nodeMultiset hx] at hj
     exact h i j (by omega)
 
-/-- **Unisolvence of the Hermite interpolation problem**: for distinct nodes `x i` with
-multiplicities `m i` summing to `M`, and prescribed values `y i j`, there is exactly one polynomial
-of degree less than `M` whose `j`-th derivative takes the value `y i j` at `x i` for every `j ≤ m
-i`.
+/-- **Unisolvence of the Hermite interpolation problem.** Let $x_1, \dots, x_n$ be distinct real
+nodes, let $m_1, \dots, m_n \in \mathbb{N}$ with $\sum_i (m_i + 1) = M$, and let
+$y_{ij} \in \mathbb{R}$. Then there is exactly one polynomial $p$ of degree less than $M$ with
+$$p^{(j)}(x_i) = y_{ij} \qquad \text{for all } i \text{ and all } j \le m_i.$$ See
+[han2009theoretical], §3.2.2 and (3.2.6).
 
-This is the instance of `Hermite.existsUnique_isJetInterpolant` at the multiset
-`nodeMultiset x m`, with the jets `y i j / j!`.
-
-Reference: [han2009theoretical], §3.2.2 and (3.2.6). -/
+This is the instance of `Hermite.existsUnique_isJetInterpolant` for the multiset
+`Hermite.nodeMultiset x m` and the jets $y_{ij}/j!$. -/
 theorem isUnisolvent {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) {m : Fin n → ℕ}
     (hM : ∑ i, (m i + 1) = M) (y : Fin n → ℕ → ℝ) :
     ∃! p : ℝ[X], p.degree < (M : WithBot ℕ) ∧
@@ -380,8 +402,10 @@ theorem isUnisolvent {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) {
   refine ⟨p, ⟨hpdeg, (hiff p).mp hp⟩, fun q ⟨hqdeg, hq⟩ => huniq q ⟨?_, (hiff q).mpr hq⟩⟩
   rwa [card_nodeMultiset, hM]
 
-/-- **A polynomial of degree less than `∑ (m i + 1)` vanishing to order `m i + 1` at each node is
-zero**: the uniqueness half of `Hermite.isUnisolvent`, at zero data. -/
+/-- Let $x_1, \dots, x_n$ be distinct real nodes and let $m_1, \dots, m_n \in \mathbb{N}$ with
+$\sum_i (m_i + 1) = M$. If a polynomial $p$ of degree less than $M$ satisfies $p^{(j)}(x_i) = 0$
+for all $i$ and all $j \le m_i$, then $p = 0$. This is the uniqueness half of
+`Hermite.isUnisolvent`. -/
 theorem eq_zero_of_forall_eval_iterate_derivative_eq_zero {M : ℕ} {x : Fin n → ℝ}
     (hx : Function.Injective x) {m : Fin n → ℕ} (hM : ∑ i, (m i + 1) = M) {p : ℝ[X]}
     (hdeg : p.degree < (M : WithBot ℕ))
@@ -398,34 +422,35 @@ section Interpolate
 variable {n : ℕ} {x : Fin n → ℝ} {m : Fin n → ℕ} {f : ℝ → ℝ}
 
 open scoped Classical in
-/-- **The Hermite interpolant** of `f` at the nodes `x` with multiplicities `m`: the unique
-polynomial of degree less than `∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree at `x i`
-with those of `f`. It is the multiset interpolant `Hermite.interpolateJet` of the jets of `f` at
-the multiset of nodes (`Hermite.interpolate_eq_interpolateJet`), and for `m = 0` it is
-`Lagrange.interpolate` (`Hermite.interpolate_zero_eq_lagrange`).
+/-- **The Hermite interpolant** of $f : \mathbb{R} \to \mathbb{R}$ at distinct nodes
+$x_1, \dots, x_n$ with orders $m_1, \dots, m_n$: the unique polynomial $p$ of degree less than
+$\sum_i (m_i + 1)$ with $p^{(j)}(x_i) = f^{(j)}(x_i)$ for all $i$ and all $j \le m_i$. See
+[han2009theoretical], §3.2.2.
 
-It is junk (namely `0`) when the nodes are not distinct, in which case the interpolation problem is
-not solvable in general.
-
-Reference: [han2009theoretical], §3.2.2. -/
+The definition is the multiset interpolant `Hermite.interpolateJet` of the Taylor jets of $f$ on
+the multiset of the nodes (`Hermite.interpolate_eq_interpolateJet`). For $m = 0$ it is
+`Lagrange.interpolate` (`Hermite.interpolate_zero_eq_lagrange`). If the nodes are not distinct,
+the Lean value is $0$; the interpolation problem then has no solution in general. -/
 noncomputable def interpolate (x : Fin n → ℝ) (m : Fin n → ℕ) (f : ℝ → ℝ) : ℝ[X] :=
   if Function.Injective x then interpolateJet (nodeMultiset x m) (taylorJet f) else 0
 
-/-- **The real Hermite interpolant is the multiset one**: at distinct nodes `x i` with
-multiplicities `m i + 1`, `Hermite.interpolate x m f` interpolates the jets of `f` on the multiset
-`∑ i, (m i + 1) • {x i}`. -/
+/-- **The real Hermite interpolant is the multiset interpolant.** If the nodes $x_i$ are distinct,
+the Hermite interpolant of $f$ is `Hermite.interpolateJet` of the Taylor jets of $f$ on the
+multiset $\sum_i (m_i + 1) \cdot \{x_i\}$. -/
 theorem interpolate_eq_interpolateJet (hx : Function.Injective x) (m : Fin n → ℕ) (f : ℝ → ℝ) :
     interpolate x m f = interpolateJet (nodeMultiset x m) (taylorJet f) := by
   classical
   rw [interpolate, ite_eq_left_iff.mpr fun h => absurd hx h]
 
-/-- The Hermite interpolant has degree less than the number of interpolation conditions. -/
+/-- If the nodes are distinct, the Hermite interpolant has degree less than $\sum_i (m_i + 1)$, the
+number of interpolation conditions. -/
 theorem degree_interpolate_lt (hx : Function.Injective x) (m : Fin n → ℕ) (f : ℝ → ℝ) :
     (interpolate x m f).degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ) := by
   rw [interpolate_eq_interpolateJet hx, ← card_nodeMultiset]
   exact degree_interpolateJet_lt _ _
 
-/-- The Hermite interpolant matches `f` and its first `m i` derivatives at the node `x i`. -/
+/-- If the nodes are distinct, the Hermite interpolant $p$ of $f$ satisfies
+$p^{(j)}(x_i) = f^{(j)}(x_i)$ for each node $x_i$ and each $j \le m_i$. -/
 theorem eval_iterate_derivative_interpolate (hx : Function.Injective x) (i : Fin n) {j : ℕ}
     (hj : j ≤ m i) :
     (Polynomial.derivative^[j] (interpolate x m f)).eval (x i) = iteratedDeriv j f (x i) := by
@@ -433,8 +458,9 @@ theorem eval_iterate_derivative_interpolate (hx : Function.Injective x) (i : Fin
   exact isJetInterpolant_taylorJet_iff.mp (isJetInterpolant_interpolateJet _ _) (x i)
     (mem_nodeMultiset.mpr ⟨i, rfl⟩) j (by rw [count_nodeMultiset hx]; omega)
 
-/-- The Hermite interpolant is the only polynomial of degree less than `∑ (m i + 1)` matching `f`
-and its derivatives at the nodes. -/
+/-- Let the nodes be distinct. If a polynomial $p$ of degree less than $\sum_i (m_i + 1)$ satisfies
+$p^{(j)}(x_i) = f^{(j)}(x_i)$ for all $i$ and all $j \le m_i$, then $p$ is the Hermite
+interpolant of $f$. -/
 theorem eq_interpolate (hx : Function.Injective x) {p : ℝ[X]}
     (hdeg : p.degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ))
     (hval : ∀ i, ∀ j ≤ m i,
@@ -444,7 +470,9 @@ theorem eq_interpolate (hx : Function.Injective x) {p : ℝ[X]}
     ⟨hdeg, hval⟩
     ⟨degree_interpolate_lt hx m f, fun _ _ hj => eval_iterate_derivative_interpolate hx _ hj⟩
 
-/-- **At simple nodes the Hermite interpolant is the Lagrange interpolant.** -/
+/-- **At simple nodes the Hermite interpolant is the Lagrange interpolant.** If the nodes $x_i$ are
+distinct and all $m_i = 0$, the Hermite interpolant of $f$ is the Lagrange interpolant of $f$ at
+the nodes. -/
 theorem interpolate_zero_eq_lagrange (hx : Function.Injective x) (f : ℝ → ℝ) :
     interpolate x (fun _ => 0) f = Lagrange.interpolate Finset.univ x fun i => f (x i) := by
   classical
@@ -463,16 +491,17 @@ end Interpolate
 
 /-! ### The interpolation error -/
 
-/-- **The Hermite interpolation error formula.** For `f` of class `C^{N+1}` on `[a, b]`, distinct
-nodes `x i` in `[a, b]` with multiplicities `m i` summing to `N + 1`, and any `t ∈ [a, b]`, the
-error of the Hermite interpolant at `t` is `f^{(N+1)}(ξ)/(N+1)!` times the nodal polynomial `∏ i, (t
-- x i)^{m i + 1}`, for some `ξ ∈ [a, b]`.
+/-- **The Hermite interpolation error formula.** Let $f : \mathbb{R} \to \mathbb{R}$ be of class
+$C^{N+1}$. Let $x_1, \dots, x_n$ be distinct points of $[a, b]$ and let
+$m_1, \dots, m_n \in \mathbb{N}$ with $\sum_i (m_i + 1) = N + 1$. Let $p$ be the Hermite
+interpolant of $f$. Then for every $t \in [a, b]$ there is $\xi \in [a, b]$ with $$f(t) - p(t) =
+\frac{f^{(N+1)}(\xi)}{(N + 1)!} \prod_i (t - x_i)^{m_i + 1}.$$ See [han2009theoretical], §3.2.2,
+and [kress1998numerical], §8.1.
 
-As in the Lagrange case the proof subtracts a multiple of the nodal polynomial chosen so that the
-auxiliary function vanishes at `t` as well; its zeros then number `N + 2` with multiplicity, and
-`Hermite.exists_iteratedDeriv_eq_zero` applies.
-
-Reference: [han2009theoretical], §3.2.2; [kress1998numerical], §8.1. -/
+As in the Lagrange case, the proof subtracts from $f - p$ a multiple of the nodal polynomial,
+chosen so that the difference also vanishes at $t$. Its zeros then have multiplicities that sum
+to $N + 2$, and `Hermite.exists_iteratedDeriv_eq_zero` applies. The hypothesis is `ContDiff` on
+all of $\mathbb{R}$. -/
 theorem exists_sub_interpolate_eq {N n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}
@@ -568,8 +597,9 @@ theorem exists_sub_interpolate_eq {N n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
 /-! ### Two-point Hermite interpolation -/
 
-/-- **Uniqueness of two-point Hermite interpolation.** Two polynomials of degree at most `2p + 1`
-with the same `p`-jets at two distinct points coincide. -/
+/-- **Uniqueness of two-point Hermite interpolation.** Let $s \neq 0$ and let $\pi, \pi'$ be real
+polynomials of degree at most $2p + 1$. If $\pi^{(j)}(0) = \pi'^{(j)}(0)$ and
+$\pi^{(j)}(s) = \pi'^{(j)}(s)$ for all $j \le p$, then $\pi = \pi'$. -/
 theorem eq_of_twoPoint_jets {p : ℕ} {s : ℝ} (hs : s ≠ 0) {π π' : ℝ[X]}
     (hπ : π.natDegree ≤ 2 * p + 1) (hπ' : π'.natDegree ≤ 2 * p + 1)
     (h0 : ∀ j ≤ p, (Polynomial.derivative^[j] π).eval 0 = (Polynomial.derivative^[j] π').eval 0)

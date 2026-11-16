@@ -18,61 +18,73 @@ import Numlib.Approximation.TrapezoidExactness
 /-!
 # The discrete Fourier transform in matrix form
 
-The discrete Fourier transform of a vector `y : Fin n → ℂ` is classically written as the product of
-`y` with the conjugate transpose of the matrix
+Let $n \ge 1$, let $\omega = e^{2\pi i/n}$, and let $F_n = (\omega^{jk})_{j,k = 0}^{n-1}$. The
+discrete Fourier transform of a vector $y \in \mathbb{C}^n$ is $\hat y = F_n^H y$, with the entries
+$\hat y_k = \sum_j \omega^{-jk} y_j$. The classical statements are about this matrix, and not about
+the transform of a function on $\mathbb{Z}/n\mathbb{Z}$, which is the form that Mathlib has
+(`ZMod.dft`, with the inversion formula `ZMod.dft_dft`). This file defines $F_n$ as `Matrix.dft` and
+proves that the two forms agree. It proves the orthogonality relation $F_n^H F_n = n I$ with the
+inversion formula $y = n^{-1} F_n \hat y$, the entries of $F_n^H$ in real form with two index
+symmetries, and the radix-2 identity on which the fast Fourier transform rests. The presentation
+follows [han2009theoretical], §4.3: the matrix is in Section 4.3, the inversion formula is Theorem
+4.3.2, and the radix-2 identity is (4.3.8)–(4.3.9). The radix-2 identity says that a transform of
+length $2n$ is assembled from the two transforms $E$ and $O$ of length $n$ of the even-indexed and
+the odd-indexed halves of $y$, at the cost of one multiplication for each entry: with
+$\omega = e^{2\pi i/(2n)}$,
+$$\hat y_k = E_k + \omega^{-k} O_k, \qquad \hat y_{k+n} = E_k - \omega^{-k} O_k, \qquad k < n.$$
 
-`F_n = (ω ^ (j k))_{j,k}`, `ω = exp (2 π i / n)`,
+The second half of the file treats the transform of a $2\pi$-periodic function
+$f : \mathbb{R} \to \mathbb{C}$. Its discrete Fourier coefficients on $N$ equispaced nodes are the
+trapezoidal approximations of its Fourier coefficients. The discrete Fourier series with these
+coefficients interpolates $f$ at the nodes, and the coefficients are the matrix transform of
+modulated samples of $f$. For a continuous $f$ with an absolutely summable Fourier series, each
+discrete coefficient is the sum of the exact Fourier coefficients over a residue class of
+frequencies modulo $N$ (aliasing).
 
-and it is that matrix, rather than the transform of a function on `ℤ / n ℤ`, that the classical
-statements are about. Mathlib has the transform in the second form, `ZMod.dft`, with the inversion
-formula `ZMod.dft_dft`. This file adds the matrix `F_n` as `Matrix.dft`, the bridge
-`Matrix.dft_eq_zmodDft` between the two, the orthogonality relation
-`Matrix.conjTranspose_dft_mul_dft` with the inversion formula that follows from it, and the radix-2
-identity `Matrix.dft_radix_two` on which the fast Fourier transform rests.
+## Main definitions
 
-Mathlib contains the orthogonality and inversion in the `ZMod.dft` form; the radix-2 identity, and
-the real-form entries and index symmetries below, it does not. The radix-2 identity says that a
-transform of length `2 n` is assembled from the two transforms of length `n` of the even- and
-odd-indexed halves of the input, at the cost of one multiplication per output entry: with
-`E` and `O` those two transforms and `ω = exp (2 π i / (2 n))`,
+* `Matrix.dft`: the matrix $F_n = (\omega^{jk})$ with $\omega = e^{2\pi i/n}$.
+* `DFT.coeff`: the discrete Fourier coefficients of a function over a window of $N$ consecutive
+  frequencies.
+* `DFT.interp`: the discrete Fourier series, the trigonometric polynomial with these coefficients.
 
-`ŷ k = E k + ω⁻ᵏ * O k` and `ŷ (k + n) = E k - ω⁻ᵏ * O k` for `k < n`.
+## Main results
 
-An implementation of the fast Fourier transform and its operation count are algorithmic and are not
-formalized here; the theorem content is exactly the identity above.
+* `Matrix.dft_eq_zmodDft`: the transform $F_n^H y$ is Mathlib's `ZMod.dft`, transported from
+  `ZMod n` to `Fin n`.
+* `Matrix.conjTranspose_dft_mul_dft`: $F_n^H F_n = n I$.
+* `Matrix.inv_conjTranspose_dft`: $(F_n^H)^{-1} = n^{-1} F_n$ for $n \ge 1$.
+* `Matrix.dft_radix_two` and `Matrix.dft_radix_two_add`: the radix-2 (Cooley–Tukey) identity.
+* `Matrix.conjTranspose_dft_apply_eq_cos_sub_sin`: $(F_n^H)_{kj} = \cos(2\pi kj/n) - i \sin(2\pi
+  kj/n)$.
+* `DFT.interp_angleNode`: the discrete Fourier series interpolates $f$ at the nodes.
+* `DFT.coeff_eq_dft_mulVec`: the discrete Fourier coefficients are the matrix transform of the
+  modulated samples.
+* `DFT.coeff_eq_tsum_fourierCoeff`: the aliasing identity.
 
-The entries of the transform matrix `(dft n)ᴴ` in real form, `cos (2 π k j / n) − i sin (2 π k j /
-n)` (`Matrix.conjTranspose_dft_apply_eq_cos_sub_sin`, [golub2013matrix] (1.4.5)), and its two index
-symmetries — the reflection `j ↦ n − j` conjugates (`Matrix.dft_apply_sub_eq_conj`), the half shift
-`j ↦ j + n / 2` multiplies by `(−1) ^ k` (`Matrix.dft_two_mul_apply_add`) — are what the block
-structure of `F_{2m}` ([golub2013matrix] Theorem 1.4.1) and the sine and cosine transform identities
-of `Numlib.Analysis.Fourier.SineCosineTransform` are proved from. The diagonalization of circulant
-matrices by `(dft n)ᴴ` is in `Numlib.Analysis.Fourier.Circulant`.
+## Notation
 
-[han2009theoretical] state the matrix in Section 4.3, the inversion formula as Theorem 4.3.2 and the
-radix-2 identity as (4.3.8)–(4.3.9).
+* $F_n$: the matrix `Matrix.dft n` $= (\omega^{jk})$, with $\omega = e^{2\pi i/n}$. The transform
+  matrix is its conjugate transpose $F_n^H$ = `(dft n)ᴴ`. Note that [golub2013matrix] and
+  `Numlib.Analysis.Fourier.Circulant` write $F_n$ for the conjugate matrix $(\bar\omega^{jk})$,
+  which is `(dft n)ᴴ`.
+* $x_j = 2\pi j/N$: the equispaced nodes on one period, `Quadrature.angleNode N j` of
+  `Numlib.Approximation.TrapezoidExactness`.
 
-## The discrete Fourier coefficients of a periodic function
+## Implementation notes
 
-The second half of the file is the transform of a *function* rather than of a vector: for
-`f : ℝ → ℂ`, `N` equispaced nodes `x_j = 2 π j / N` of a period (`Quadrature.angleNode N j` of
-`Numlib/Approximation/TrapezoidExactness`) and a window `m, m + 1, …, m + N − 1` of integer
-frequencies, the **discrete Fourier coefficients**
-
-`DFT.coeff N m f k = N⁻¹ ∑_{j < N} f (x_j) exp (−i (k + m) x_j)`, `k < N`,
-
-are the trapezoidal approximations of the Fourier coefficients `(2π)⁻¹ ∫_0^{2π} f e^{−i (k + m) x}`,
-and the **discrete Fourier series** `DFT.interp N m f x = ∑_{k < N} coeff k · exp (i (k + m) x)` is
-the trigonometric polynomial with those coefficients. Its two properties are the ones every
-textbook records: it *interpolates* `f` at the nodes (`DFT.interp_angleNode`, from the discrete
-orthogonality `DFT.sum_exp_neg_sub` of the characters), and its coefficients are the matrix
-transform of the modulated samples `ω^{−m j} f (x_j)` (`DFT.coeff_eq_dft_mulVec`), so that the
-matrix `F_N` above and its inverse are the transform and its inverse for every window. The
-**aliasing identity** `DFT.coeff_eq_tsum_fourierCoeff` says what the discrete coefficient of a
-continuous periodic function with absolutely summable Fourier series computes: the sum of the exact
-coefficients over all frequencies congruent to `k + m` modulo `N`. The window is a parameter
-because the classical unshifted transform is `m = 0` while [quarteroni2000numerical] §10.9 uses
-`m = −N/2` for even `N`, (10.52)–(10.55) and Lemma 10.1 there.
+* Indices are $0$-based, in `Fin n`.
+* The fast Fourier transform as an algorithm, and its operation count, are not formalized. The
+  theorem content is the radix-2 identity alone.
+* Mathlib has the orthogonality and the inversion formula in the form of `ZMod.dft`. It does not
+  have the radix-2 identity, the entries in real form, or the index symmetries.
+* The entries in real form and the two index symmetries (the reflection $j \mapsto n - j$
+  conjugates, and the half shift $j \mapsto j + n/2$ multiplies by $(-1)^k$) are the facts from
+  which the block structure of $F_{2m}$ (Theorem 1.4.1 of [golub2013matrix]) and the identities of
+  the sine and cosine transforms of `Numlib.Analysis.Fourier.SineCosineTransform` are proved.
+* The window of frequencies $m, m + 1, \dots, m + N - 1$ of `DFT.coeff` is a parameter
+  $m \in \mathbb{Z}$, because the classical transform without shift is $m = 0$, while
+  [quarteroni2000numerical], §10.9, uses $m = -N/2$ for even $N$ in (10.52)–(10.55) and Lemma 10.1.
 -/
 
 open Complex
@@ -81,18 +93,20 @@ open scoped ComplexConjugate Real
 
 namespace Matrix
 
-/-- The discrete Fourier transform matrix `F_n` of order `n`, with entries `ω ^ (j k)` for `ω = exp
-(2 π i / n)` the standard primitive `n`-th root of unity. The discrete Fourier transform of `y : Fin
-n → ℂ` is `(dft n)ᴴ *ᵥ y`, whose `k`-th entry is `∑ j, ω ^ (-(j k)) * y j`. -/
+/-- The **discrete Fourier transform matrix** $F_n$ of order $n$, with the entries
+$$(F_n)_{jk} = \omega^{jk}, \qquad \omega = e^{2\pi i/n},$$
+for $j, k \in \{0, \dots, n-1\}$. Here $\omega$ is the standard primitive $n$-th root of unity.
+The discrete Fourier transform of $y \in \mathbb{C}^n$ is $F_n^H y$ = `(dft n)ᴴ *ᵥ y`, whose
+entry $k$ is $\sum_j \omega^{-jk} y_j$. -/
 noncomputable def dft (n : ℕ) : Matrix (Fin n) (Fin n) ℂ :=
   .of fun j k => Complex.exp (2 * π * I / n) ^ ((j : ℕ) * (k : ℕ))
 
-/-- The entries of the discrete Fourier transform matrix. -/
+/-- The entries of $F_n$: $(F_n)_{jk} = \omega^{jk}$ with $\omega = e^{2\pi i/n}$. -/
 theorem dft_apply {n : ℕ} (j k : Fin n) :
     dft n j k = Complex.exp (2 * π * I / n) ^ ((j : ℕ) * (k : ℕ)) :=
   rfl
 
-/-- The discrete Fourier transform matrix is symmetric. -/
+/-- The discrete Fourier transform matrix is symmetric: $F_n^T = F_n$. -/
 @[simp]
 theorem dft_transpose (n : ℕ) : (dft n)ᵀ = dft n := by
   ext j k
@@ -118,15 +132,17 @@ private theorem inv_expRoot_pow (n m : ℕ) :
   rw [inv_pow, expRoot_pow, ← Complex.exp_neg]
   ring_nf
 
-/-- The entries of the conjugate transpose of `dft n`, which is the matrix of the transform. -/
+/-- The entries of the transform matrix $F_n^H$: $(F_n^H)_{jk} = \omega^{-jk}$, written as
+$(\omega^{-1})^{jk}$. -/
 theorem conjTranspose_dft_apply {n : ℕ} (j k : Fin n) :
     (dft n)ᴴ j k = (Complex.exp (2 * π * I / n))⁻¹ ^ ((j : ℕ) * (k : ℕ)) := by
   rw [Matrix.conjTranspose_apply, dft_apply, inv_expRoot, ← map_pow,
     Nat.mul_comm (j : ℕ) (k : ℕ)]
   rfl
 
-/-- The discrete Fourier transform of `y` as an explicit sum: `((dft n)ᴴ *ᵥ y) k = ∑ j, ω ^ (-(j k))
-* y j`. -/
+/-- The discrete Fourier transform of $y \in \mathbb{C}^n$ as an explicit sum:
+$$(F_n^H y)_k = \sum_{j=0}^{n-1} \omega^{-jk} y_j.$$
+-/
 theorem conjTranspose_dft_mulVec_apply {n : ℕ} (y : Fin n → ℂ) (k : Fin n) :
     ((dft n)ᴴ *ᵥ y) k
       = ∑ j : Fin n, (Complex.exp (2 * π * I / n))⁻¹ ^ ((j : ℕ) * (k : ℕ)) * y j := by
@@ -135,12 +151,13 @@ theorem conjTranspose_dft_mulVec_apply {n : ℕ} (y : Fin n → ℂ) (k : Fin n)
 
 /-! ### The entries in real form, and two index symmetries -/
 
-/-- The entries of `dft n` are symmetric in the two indices. -/
+/-- The entries of $F_n$ are symmetric in the two indices: $(F_n)_{jk} = (F_n)_{kj}$. -/
 theorem dft_apply_comm {n : ℕ} (j k : Fin n) : dft n j k = dft n k j := by
   rw [dft_apply, dft_apply, Nat.mul_comm]
 
-/-- The entries of the transform matrix `(dft n)ᴴ` in real form: `(dft n)ᴴ k j = cos (2 π k j / n)
-- i sin (2 π k j / n)` ([golub2013matrix] (1.4.5), where `n = 2 m` and the angle is `k j π / m`). -/
+/-- The entries of the transform matrix $F_n^H$ in real form: for $k, j \in \{0, \dots, n-1\}$,
+$$(F_n^H)_{kj} = \cos(2\pi kj/n) - i \sin(2\pi kj/n).$$
+This is (1.4.5) of [golub2013matrix], where $n = 2m$ and the angle is written $kj\pi/m$. -/
 theorem conjTranspose_dft_apply_eq_cos_sub_sin {n : ℕ} (k j : Fin n) :
     (dft n)ᴴ k j = (Real.cos (2 * π * (k : ℕ) * (j : ℕ) / n) : ℂ)
       - I * (Real.sin (2 * π * (k : ℕ) * (j : ℕ) / n) : ℂ) := by
@@ -154,8 +171,10 @@ theorem conjTranspose_dft_apply_eq_cos_sub_sin {n : ℕ} (k j : Fin n) :
   push_cast
   ring
 
-/-- **Reflection of an index conjugates**: for `0 < j`, `dft n k (n - j) = conj (dft n k j)`, since
-`ω ^ (k (n - j)) = ω ^ (- k j)` by `ω ^ n = 1`, and `ω⁻¹ = conj ω` on the unit circle. -/
+/-- **Reflection of an index conjugates.** For $k, j \in \{0, \dots, n-1\}$ with $0 < j$,
+$$(F_n)_{k, n-j} = \overline{(F_n)_{kj}}.$$
+The reason is that $\omega^{k(n-j)} = \omega^{-kj}$ because $\omega^n = 1$, and
+$\omega^{-1} = \bar\omega$ because $|\omega| = 1$. -/
 theorem dft_apply_sub_eq_conj {n : ℕ} (k j : Fin n) (hj : 0 < (j : ℕ)) :
     dft n k ⟨n - j, by omega⟩ = conj (dft n k j) := by
   have hω : Complex.exp (2 * π * I / n) ^ n = 1 :=
@@ -164,14 +183,15 @@ theorem dft_apply_sub_eq_conj {n : ℕ} (k j : Fin n) (hj : 0 < (j : ℕ)) :
   refine eq_inv_of_mul_eq_one_left ?_
   rw [← pow_add, ← Nat.mul_add, Nat.sub_add_cancel j.isLt.le, Nat.mul_comm, pow_mul, hω, one_pow]
 
-/-- Reflection of an index conjugates the entries of the transform matrix `(dft n)ᴴ` as well. -/
+/-- Reflection of an index conjugates the entries of the transform matrix as well: for $0 < j$,
+$(F_n^H)_{k, n-j} = \overline{(F_n^H)_{kj}}$. -/
 theorem conjTranspose_dft_apply_sub_eq_conj {n : ℕ} (k j : Fin n) (hj : 0 < (j : ℕ)) :
     (dft n)ᴴ k ⟨n - j, by omega⟩ = conj ((dft n)ᴴ k j) := by
   rw [conjTranspose_apply, conjTranspose_apply, dft_apply_comm _ k, dft_apply_comm _ k,
     dft_apply_sub_eq_conj k j hj]
   rfl
 
-/-- The `m`-th power of the root of unity of order `2 m` is `-1`. -/
+/-- For $m \ne 0$, the $m$-th power of the root of unity $e^{2\pi i/(2m)}$ is $-1$. -/
 private theorem expRoot_two_mul_pow_self {m : ℕ} (hm : m ≠ 0) :
     Complex.exp (2 * π * I / ((2 * m : ℕ) : ℂ)) ^ m = -1 := by
   have hm' : (m : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hm
@@ -179,34 +199,39 @@ private theorem expRoot_two_mul_pow_self {m : ℕ} (hm : m ≠ 0) :
     show (m : ℂ) * (2 * π * I / ((2 * m : ℕ) : ℂ)) = π * I by push_cast; field_simp]
   exact Complex.exp_pi_mul_I
 
-/-- **The half shift multiplies by a sign**: `dft (2 m) k (m + j) = (-1) ^ k * dft (2 m) k j`, since
-`ω ^ m = -1` for the root of unity `ω` of order `2 m`. -/
+/-- **The half shift multiplies by a sign.** For $k \in \{0, \dots, 2m-1\}$ and
+$j \in \{0, \dots, m-1\}$,
+$$(F_{2m})_{k, m+j} = (-1)^k (F_{2m})_{kj}.$$
+The reason is that $\omega^m = -1$ for the root of unity $\omega = e^{2\pi i/(2m)}$. -/
 theorem dft_two_mul_apply_add {m : ℕ} (k : Fin (2 * m)) (j : Fin m) :
     dft (2 * m) k ⟨m + j, by omega⟩ = (-1) ^ (k : ℕ) * dft (2 * m) k ⟨j, by omega⟩ := by
   have hm : m ≠ 0 := by rintro rfl; exact j.elim0
   rw [dft_apply, dft_apply, Nat.mul_add, pow_add, Nat.mul_comm (k : ℕ) m, pow_mul,
     expRoot_two_mul_pow_self hm]
 
-/-- The half shift multiplies the entries of the transform matrix `(dft (2 m))ᴴ` by the same
-sign. -/
+/-- The half shift multiplies the entries of the transform matrix by the same sign:
+$(F_{2m}^H)_{k, m+j} = (-1)^k (F_{2m}^H)_{kj}$ for $j < m$. -/
 theorem conjTranspose_dft_two_mul_apply_add {m : ℕ} (k : Fin (2 * m)) (j : Fin m) :
     (dft (2 * m))ᴴ k ⟨m + j, by omega⟩ = (-1) ^ (k : ℕ) * (dft (2 * m))ᴴ k ⟨j, by omega⟩ := by
   rw [conjTranspose_apply, conjTranspose_apply, dft_apply_comm _ k, dft_apply_comm _ k,
     dft_two_mul_apply_add, star_mul', star_pow, star_neg, star_one]
 
-/-! ### The bridge to `ZMod.dft` -/
+/-! ### The relation to `ZMod.dft` -/
 
-/-- `ZMod n ≃ Fin n` through `ZMod.val`. This is `(ZMod.finEquiv n).symm` up to definitional
-unfolding, but the direct form is stated for a variable `n`, so that the value of the forward map is
-`⟨j.val, _⟩` by `rfl` rather than only after `n` is known to be a successor. -/
+/-- The bijection from `ZMod n` to `Fin n` given by `ZMod.val`, for $n \ge 1$; unlike
+`(ZMod.finEquiv n).symm`, its forward map evaluates to `⟨j.val, _⟩` by `rfl` for a variable $n$. -/
 private def zmodFinEquiv (n : ℕ) [NeZero n] : ZMod n ≃ Fin n where
   toFun j := ⟨j.val, j.val_lt⟩
   invFun l := ((l : ℕ) : ZMod n)
   left_inv j := ZMod.natCast_rightInverse j
   right_inv l := by ext; simpa using ZMod.val_cast_of_lt l.isLt
 
-/-- The bridge to Mathlib's transform on `ZMod n`: the matrix form is `ZMod.dft` transported along
-`ZMod n ≃ Fin n`, so every lemma about `ZMod.dft` applies to it. -/
+/-- The matrix form of the transform agrees with Mathlib's transform on $\mathbb{Z}/n\mathbb{Z}$.
+For $n \ge 1$, $y \in \mathbb{C}^n$ and $k \in \{0, \dots, n-1\}$,
+$$(F_n^H y)_k = \hat\Phi(k), \qquad \Phi(j) = y_{j \bmod n},$$
+where $\hat\Phi$ is `ZMod.dft Φ`. So every lemma about `ZMod.dft` applies to the matrix form.
+
+The function $\Phi$ on `ZMod n` is `fun j => y ⟨j.val, _⟩`, and $k$ is cast to `ZMod n`. -/
 theorem dft_eq_zmodDft {n : ℕ} [NeZero n] (y : Fin n → ℂ) (k : Fin n) :
     ((dft n)ᴴ *ᵥ y) k = ZMod.dft (fun j : ZMod n => y ⟨j.val, j.val_lt⟩) ((k : ℕ) : ZMod n) := by
   rw [conjTranspose_dft_mulVec_apply, ZMod.dft_apply]
@@ -235,9 +260,10 @@ private theorem inv_pow_mul_pow_pow_eq_one {a : ℂ} {n : ℕ} (h : a ^ n = 1) (
   rw [mul_pow, ← pow_mul, ← pow_mul, Nat.mul_comm i n, Nat.mul_comm j n, pow_mul, pow_mul, h1, h,
     one_pow, one_pow, one_mul]
 
-/-- **The columns of the discrete Fourier transform matrix are orthogonal**: `(dft n)ᴴ * dft n` is
-`n` times the identity. This is the content of the inversion formula for the discrete Fourier
-transform ([han2009theoretical], Theorem 4.3.2). -/
+/-- **The columns of the discrete Fourier transform matrix are orthogonal**: for every $n$,
+$$F_n^H F_n = n I.$$
+This is the content of the inversion formula for the discrete Fourier transform (Theorem 4.3.2
+of [han2009theoretical]). -/
 theorem conjTranspose_dft_mul_dft (n : ℕ) :
     (dft n)ᴴ * dft n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -263,8 +289,8 @@ theorem conjTranspose_dft_mul_dft (n : ℕ) :
   · rw [ite_eq_left (hiff.mpr hjk), ite_eq_left hjk, mul_one]
   · rw [ite_eq_right fun h => hjk (hiff.mp h), ite_eq_right hjk, mul_zero]
 
-/-- The rows of the discrete Fourier transform matrix are orthogonal: `dft n * (dft n)ᴴ` is `n`
-times the identity. The transposed form of `conjTranspose_dft_mul_dft`. -/
+/-- The rows of the discrete Fourier transform matrix are orthogonal: for every $n$,
+$F_n F_n^H = n I$. This is the transposed form of `Matrix.conjTranspose_dft_mul_dft`. -/
 theorem dft_mul_conjTranspose_dft (n : ℕ) :
     dft n * (dft n)ᴴ = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -278,24 +304,30 @@ theorem dft_mul_conjTranspose_dft (n : ℕ) :
   rw [hinv, Matrix.mul_smul] at hright
   rw [← hright, smul_smul, mul_inv_cancel₀ hn', one_smul]
 
-/-- The inverse of the matrix of the discrete Fourier transform ([han2009theoretical], (4.3.3)). -/
+/-- The inverse of the transform matrix ((4.3.3) of [han2009theoretical]): for $n \ge 1$,
+$$(F_n^H)^{-1} = n^{-1} F_n.$$
+-/
 theorem inv_conjTranspose_dft (n : ℕ) [NeZero n] :
     ((dft n)ᴴ)⁻¹ = (n : ℂ)⁻¹ • dft n := by
   have hn' : (n : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (NeZero.ne n)
   refine Matrix.inv_eq_right_inv ?_
   rw [Matrix.mul_smul, conjTranspose_dft_mul_dft, smul_smul, inv_mul_cancel₀ hn', one_smul]
 
-/-- **The inverse discrete Fourier transform** ([han2009theoretical], (4.3.4)): `y j = (1/n) * ∑ k,
-ω ^ (j k) * ŷ k`. -/
+/-- **The inverse discrete Fourier transform** ((4.3.4) of [han2009theoretical]). For
+$y \in \mathbb{C}^n$ with transform $\hat y = F_n^H y$,
+$$F_n \hat y = n y, \qquad \text{that is,} \qquad y_j = \frac{1}{n} \sum_{k=0}^{n-1} \omega^{jk}
+  \hat y_k \quad (n \ge 1).$$
+
+The Lean statement is the form $F_n F_n^H y = n y$, which needs no hypothesis on $n$. -/
 theorem dft_mulVec_conjTranspose_dft_mulVec {n : ℕ} (y : Fin n → ℂ) :
     dft n *ᵥ ((dft n)ᴴ *ᵥ y) = (n : ℂ) • y := by
   rw [Matrix.mulVec_mulVec, dft_mul_conjTranspose_dft, Matrix.smul_mulVec, Matrix.one_mulVec]
 
 /-! ### The radix-2 identity -/
 
-/-- `Fin n × Fin 2 ≃ Fin (2 n)` by `(m, r) ↦ 2 m + r`, the even-odd splitting of an index of length
-`2 n`. Mathlib's `finProdFinEquiv` is the same map into `Fin (n * 2)`; the form here avoids
-transporting along `Nat.mul_comm` in every use. -/
+/-- The bijection $\{0, \dots, n-1\} \times \{0, 1\} \to \{0, \dots, 2n-1\}$,
+$(m, r) \mapsto 2m + r$, which is Mathlib's `finProdFinEquiv` with the target `Fin (2 * n)` in
+place of `Fin (n * 2)`. -/
 private def finTwoMulEquiv (n : ℕ) : Fin n × Fin 2 ≃ Fin (2 * n) where
   toFun p := ⟨2 * (p.1 : ℕ) + (p.2 : ℕ), by omega⟩
   invFun l := (⟨(l : ℕ) / 2, by omega⟩, ⟨(l : ℕ) % 2, by omega⟩)
@@ -310,9 +342,10 @@ private theorem sum_fin_two_mul {M : Type*} [AddCommMonoid M] {n : ℕ} (g : Fin
   rw [Fin.sum_univ_two]
   rfl
 
-/-- Both halves of the radix-2 splitting at once: for `l : Fin (2 n)` with residue `k` modulo `n`,
-the length-`2 n` transform at `l` is `E k + ω⁻ˡ * O k`, where `E` and `O` are the length-`n`
-transforms of the even- and odd-indexed halves of `y`. -/
+/-- Both halves of the radix-2 identity at once: for $l \in \{0, \dots, 2n-1\}$ with
+$l \equiv k \pmod n$, the transform of length $2n$ at $l$ is $E_k + \omega^{-l} O_k$, where $E$
+and $O$ are the transforms of length $n$ of the even-indexed and the odd-indexed halves of $y$,
+and $\omega = e^{2\pi i/(2n)}$. -/
 private theorem conjTranspose_dft_mulVec_two_mul {n : ℕ} (y : Fin (2 * n) → ℂ) (l : Fin (2 * n))
     (k : Fin n) (hlk : (l : ℕ) % n = (k : ℕ)) :
     ((dft (2 * n))ᴴ *ᵥ y) l
@@ -349,10 +382,15 @@ private theorem conjTranspose_dft_mulVec_two_mul {n : ℕ} (y : Fin (2 * n) → 
   rw [hpow m]
   ring
 
-/-- **The radix-2 (Cooley–Tukey) identity**, first half ([han2009theoretical], (4.3.8)): the first
-`n` entries of a transform of length `2 n` are `E k + ω⁻ᵏ * O k`, with `E` and `O` the length-`n`
-transforms of the even- and odd-indexed halves of the input and `ω = exp (2 π i / (2 n))`. This is
-the correctness statement of the fast Fourier transform. -/
+/-- **The radix-2 (Cooley–Tukey) identity**, first half ((4.3.8) of [han2009theoretical]). Let
+$y \in \mathbb{C}^{2n}$, and let
+$$E = F_n^H (y_0, y_2, \dots, y_{2n-2}), \qquad O = F_n^H (y_1, y_3, \dots, y_{2n-1})$$
+be the transforms of length $n$ of the even-indexed and the odd-indexed halves of $y$. With
+$\omega = e^{2\pi i/(2n)}$, for $k \in \{0, \dots, n-1\}$,
+$$(F_{2n}^H y)_k = E_k + \omega^{-k} O_k.$$
+
+This is the correctness statement of the fast Fourier transform. The factor $\omega^{-k}$ is
+written `(Complex.exp (2 * π * I / (2 * n)))⁻¹ ^ k`. -/
 theorem dft_radix_two {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
     ((dft (2 * n))ᴴ *ᵥ y) ⟨(k : ℕ), by omega⟩
       = ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ), by omega⟩) k
@@ -360,9 +398,13 @@ theorem dft_radix_two {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
           * ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ) + 1, by omega⟩) k :=
   conjTranspose_dft_mulVec_two_mul y _ k (Nat.mod_eq_of_lt k.isLt)
 
-/-- **The radix-2 (Cooley–Tukey) identity**, second half ([han2009theoretical], (4.3.9)): the last
-`n` entries of a transform of length `2 n` reuse the same two length-`n` transforms and the same
-twiddle factor, with a minus sign. -/
+/-- **The radix-2 (Cooley–Tukey) identity**, second half ((4.3.9) of [han2009theoretical]). Let
+$y \in \mathbb{C}^{2n}$, and let $E$ and $O$ be the transforms of length $n$ of the even-indexed
+and the odd-indexed halves of $y$, as in `Matrix.dft_radix_two`. With
+$\omega = e^{2\pi i/(2n)}$, for $k \in \{0, \dots, n-1\}$,
+$$(F_{2n}^H y)_{k+n} = E_k - \omega^{-k} O_k.$$
+So the last $n$ entries of the transform use the same two transforms of length $n$ and the same
+factor $\omega^{-k}$ as the first $n$ entries, with a minus sign. -/
 theorem dft_radix_two_add {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
     ((dft (2 * n))ᴴ *ᵥ y) ⟨(k : ℕ) + n, by omega⟩
       = ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ), by omega⟩) k
@@ -387,47 +429,67 @@ theorem dft_radix_two_add {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
 
 end Matrix
 
-/-! ### The discrete Fourier coefficients of a periodic function -/
+/-!
+### The discrete Fourier coefficients of a periodic function
+
+This section treats the transform of a function $f : \mathbb{R} \to \mathbb{C}$, not of a vector.
+Let $x_j = 2\pi j/N$ be $N$ equispaced nodes of a period, and let $m, m + 1, \dots, m + N - 1$ be a
+window of integer frequencies. The discrete Fourier coefficients
+$$c_k = N^{-1} \sum_{j=0}^{N-1} f(x_j) e^{-i(k+m)x_j}, \qquad k < N,$$
+are the trapezoidal approximations of the Fourier coefficients $(2\pi)^{-1} \int_0^{2\pi} f(x)
+e^{-i(k+m)x} \, dx$. The discrete Fourier series $\sum_{k<N} c_k e^{i(k+m)x}$ is the trigonometric
+polynomial with these coefficients. It interpolates $f$ at the nodes, by the discrete orthogonality
+of the characters. Its coefficients are the matrix transform of the modulated samples
+$\omega^{-mj} f(x_j)$, so the matrix $F_N$ and its inverse give the transform and its inverse for
+every window.
+-/
 
 namespace DFT
 
 open Finset Matrix Quadrature
 
-/-- The **discrete Fourier coefficients** of `f : ℝ → ℂ` on the `N` equispaced nodes
-`x_j = 2 π j / N` (`Quadrature.angleNode N j`) over the window `m, m + 1, …, m + N − 1` of integer
-frequencies (`m : ℤ`):
+/-- The **discrete Fourier coefficients** of $f : \mathbb{R} \to \mathbb{C}$ on the $N$ equispaced
+nodes $x_j = 2\pi j/N$, over the window $m, m + 1, \dots, m + N - 1$ of integer frequencies
+($m \in \mathbb{Z}$):
+$$c_k = N^{-1} \sum_{j=0}^{N-1} f(x_j) \, e^{-i(k+m)x_j}.$$
+The definition is for every natural number $k$, and it is meaningful for $k < N$. Each
+coefficient is the trapezoidal approximation of the Fourier coefficient $(2\pi)^{-1}
+\int_0^{2\pi} f(x) e^{-i(k+m)x} \, dx$.
 
-`coeff N m f k = N⁻¹ ∑_{j < N} f (x_j) exp (−i (k + m) x_j)`,
-
-for `k : ℕ`, meaningful for `k < N`. The classical unshifted transform is `m = 0`; the shifted
-window of [quarteroni2000numerical] (10.52) is `m = −N/2` for even `N`. Each coefficient is the
-trapezoidal approximation of the Fourier coefficient `(2π)⁻¹ ∫_0^{2π} f (x) e^{−i (k + m) x} dx`. -/
+The classical transform without shift is $m = 0$. The shifted window of (10.52) of
+[quarteroni2000numerical] is $m = -N/2$ for even $N$. The node $x_j$ is
+`Quadrature.angleNode N j`. For $N = 0$ the coefficients are $0$, because $0^{-1} = 0$ in Lean. -/
 noncomputable def coeff (N : ℕ) (m : ℤ) (f : ℝ → ℂ) (k : ℕ) : ℂ :=
   (N : ℂ)⁻¹ * ∑ j ∈ range N,
     f (angleNode N j) * Complex.exp (-((((k : ℤ) + m : ℤ) : ℂ) * (angleNode N j : ℝ) * I))
 
+/-- The defining formula of `DFT.coeff`: $c_k = N^{-1} \sum_{j<N} f(x_j) e^{-i(k+m)x_j}$. -/
 theorem coeff_def (N : ℕ) (m : ℤ) (f : ℝ → ℂ) (k : ℕ) :
     coeff N m f k = (N : ℂ)⁻¹ * ∑ j ∈ range N,
       f (angleNode N j) * Complex.exp (-((((k : ℤ) + m : ℤ) : ℂ) * (angleNode N j : ℝ) * I)) :=
   rfl
 
-/-- The **discrete Fourier series** of order `N` of `f` over the window starting at `m`,
-
-`interp N m f x = ∑_{k < N} coeff N m f k · exp (i (k + m) x)`,
-
-a trigonometric polynomial with frequencies in the window ([quarteroni2000numerical] (10.53)),
-which interpolates `f` at the nodes by `interp_angleNode`. -/
+/-- The **discrete Fourier series** of order $N$ of $f$ over the window that starts at $m$:
+$$I_N f(x) = \sum_{k=0}^{N-1} c_k \, e^{i(k+m)x},$$
+where $c_k$ are the discrete Fourier coefficients `DFT.coeff N m f k`. It is a trigonometric
+polynomial with frequencies in the window ((10.53) of [quarteroni2000numerical]), and it
+interpolates $f$ at the nodes by `DFT.interp_angleNode`. -/
 noncomputable def interp (N : ℕ) (m : ℤ) (f : ℝ → ℂ) (x : ℝ) : ℂ :=
   ∑ k ∈ range N, coeff N m f k * Complex.exp ((((k : ℤ) + m : ℤ) : ℂ) * x * I)
 
+/-- The defining formula of `DFT.interp`: $I_N f(x) = \sum_{k<N} c_k e^{i(k+m)x}$. -/
 theorem interp_def (N : ℕ) (m : ℤ) (f : ℝ → ℂ) (x : ℝ) :
     interp N m f x
       = ∑ k ∈ range N, coeff N m f k * Complex.exp ((((k : ℤ) + m : ℤ) : ℂ) * x * I) :=
   rfl
 
-/-- **Discrete orthogonality of the characters** at two nodes: `∑_{k < N} exp (i (j − l) x_k)` is
-`N` when `j = l` and `0` otherwise, for `j, l < N`. This is `Quadrature.sum_exp_angleNode` at
-`p = j − l`, where `N ∣ j − l` forces `j = l` because `|j − l| < N`. -/
+/-- **Discrete orthogonality of the characters** at two nodes. For $N \ge 1$ and natural numbers
+$j, l < N$,
+$$\sum_{k=0}^{N-1} e^{i(j - l)x_k} = \begin{cases} N & \text{if } j = l, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+
+This is `Quadrature.sum_exp_angleNode` at $p = j - l$: the condition $N \mid j - l$ forces
+$j = l$ because $|j - l| < N$. -/
 theorem sum_exp_sub_angleNode {N : ℕ} (hN : 0 < N) {j l : ℕ} (hj : j < N) (hl : l < N) :
     ∑ k ∈ range N, Complex.exp ((((j : ℤ) - l : ℤ) : ℂ) * (angleNode N k : ℝ) * I)
       = if j = l then (N : ℂ) else 0 := by
@@ -437,12 +499,11 @@ theorem sum_exp_sub_angleNode {N : ℕ} (hN : 0 < N) {j l : ℕ} (hj : j < N) (h
   · rw [ite_eq_right fun hh => h ((Nat.modEq_iff_dvd.2 hh).eq_of_lt_of_lt hl hj).symm,
       ite_eq_right h]
 
-/-- **Discrete orthogonality of the exponentials** in the textbook's normalization
-([quarteroni2000numerical] Lemma 10.1, (10.54)): with `h = 2 π / N`, for `0 ≤ j, l < N`,
-
-`h ∑_{k < N} exp (−i (l − j) x_k) = 2 π δ_{jl}`,
-
-the discrete scalar product `(φ_l, φ_j)_N` of the characters `φ_l = e^{i l x}`. -/
+/-- **Lemma 10.1** of [quarteroni2000numerical], equation (10.54): **discrete orthogonality of the
+exponentials**. For $N \ge 1$, $h = 2\pi/N$ and natural numbers $j, l < N$,
+$$h \sum_{k=0}^{N-1} e^{-i(l - j)x_k} = 2\pi \delta_{jl}.$$
+The left side is the discrete scalar product $(\varphi_l, \varphi_j)_N$ of the characters
+$\varphi_l(x) = e^{ilx}$. -/
 theorem sum_exp_neg_sub {N : ℕ} (hN : 0 < N) {j l : ℕ} (hj : j < N) (hl : l < N) :
     ((2 * π / N : ℝ) : ℂ) * ∑ k ∈ range N,
         Complex.exp (-((((l : ℤ) - j : ℤ) : ℂ) * (angleNode N k : ℝ) * I))
@@ -461,8 +522,8 @@ theorem sum_exp_neg_sub {N : ℕ} (hN : 0 < N) {j l : ℕ} (hj : j < N) (hl : l 
     field_simp
   · rw [ite_eq_right h, ite_eq_right h, mul_zero]
 
-/-- The product of the modulations at the nodes `x_j` and `x_l` for the window frequency `k + m`
-is the modulation `exp (i m (x_j − x_l))` times the character `exp (i (j − l) x_k)`. -/
+/-- The product of the modulations at the nodes $x_j$ and $x_l$ for the frequency $k + m$ is
+$e^{i(k+m)x_j} e^{-i(k+m)x_l} = e^{im(x_j - x_l)} e^{i(j - l)x_k}$. -/
 private theorem exp_mul_exp_neg_eq {N : ℕ} (m : ℤ) (k j l : ℕ) :
     Complex.exp ((((k : ℤ) + m : ℤ) : ℂ) * (angleNode N j : ℝ) * I)
         * Complex.exp (-((((k : ℤ) + m : ℤ) : ℂ) * (angleNode N l : ℝ) * I))
@@ -478,8 +539,8 @@ private theorem exp_mul_exp_neg_eq {N : ℕ} (m : ℤ) (k j l : ℕ) :
     field_simp
     ring
 
-/-- The inner sum of the interpolation property: summed over the window, the products of the
-modulations at two nodes give `N δ_{jl}`. -/
+/-- For $N \ge 1$ and $j, l < N$, the sum over the window of the products
+$e^{i(k+m)x_j} e^{-i(k+m)x_l}$ is $N \delta_{jl}$. -/
 private theorem sum_exp_mul_exp_neg {N : ℕ} (hN : 0 < N) (m : ℤ) {j l : ℕ} (hj : j < N)
     (hl : l < N) :
     ∑ k ∈ range N, Complex.exp ((((k : ℤ) + m : ℤ) : ℂ) * (angleNode N j : ℝ) * I)
@@ -491,10 +552,13 @@ private theorem sum_exp_mul_exp_neg {N : ℕ} (hN : 0 < N) (m : ℤ) {j l : ℕ}
   · rw [ite_eq_left h, h, sub_self, mul_zero, zero_mul, Complex.exp_zero, one_mul]
   · rw [ite_eq_right h, mul_zero]
 
-/-- **The discrete Fourier series interpolates at the nodes** ([quarteroni2000numerical] (10.55)):
-for `0 < N`, every window `m`, every `f` and every `j < N`, `interp N m f (x_j) = f (x_j)`.
-Substituting the coefficients and exchanging the two finite sums, the inner sum over the window
-is the discrete orthogonality relation, in which the window offset `m` cancels. -/
+/-- **Equation (10.55)** of [quarteroni2000numerical]: **the discrete Fourier series interpolates at
+the nodes**. For $N \ge 1$, every window start $m \in \mathbb{Z}$, every
+$f : \mathbb{R} \to \mathbb{C}$ and every natural number $j < N$,
+$$I_N f(x_j) = f(x_j).$$
+
+The idea of the proof: substitute the coefficients and exchange the two finite sums. The inner
+sum over the window is the discrete orthogonality relation, in which the offset $m$ cancels. -/
 theorem interp_angleNode {N : ℕ} (hN : 0 < N) (m : ℤ) (f : ℝ → ℂ) {j : ℕ} (hj : j < N) :
     interp N m f (angleNode N j) = f (angleNode N j) := by
   have hN' : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
@@ -522,12 +586,16 @@ theorem interp_angleNode {N : ℕ} (hN : 0 < N) (m : ℤ) (f : ℝ → ℂ) {j :
     · rw [ite_eq_right h, ite_eq_right h, mul_zero]
   rw [Finset.sum_congr rfl hinner, Finset.sum_ite_eq, ite_eq_left (Finset.mem_range.mpr hj)]
 
-/-- **The matrix form of the windowed transform**: with `ω = exp (2 π i / N)`, the coefficients over
-the window starting at `m` are `N⁻¹` times the transform `(dft N)ᴴ *ᵥ ·` of the modulated samples
-`ω^{−m j} f (x_j)`; for `m = −N/2` the modulation is `(−1)^j`. So the textbook's transform matrix
-`T = N⁻¹ (ω^{−(k + m) j})_{k, j}` is `N⁻¹ (dft N)ᴴ · diag (ω^{−m j})`, and its inverse
-`C = (ω^{(j + m) k})_{j, k}` follows from `Matrix.inv_conjTranspose_dft`
-([quarteroni2000numerical], the matrices `T` and `C` after (10.55)). -/
+/-- **The matrix form of the windowed transform.** Let $\omega = e^{2\pi i/N}$. For
+$f : \mathbb{R} \to \mathbb{C}$, $m \in \mathbb{Z}$ and $k \in \{0, \dots, N-1\}$, the discrete
+Fourier coefficients over the window that starts at $m$ are
+$$c_k = N^{-1} \bigl(F_N^H g\bigr)_k, \qquad g_j = \omega^{-mj} f(x_j).$$
+For $m = -N/2$ the modulation $\omega^{-mj}$ is $(-1)^j$.
+
+So the transform matrix $T = N^{-1} (\omega^{-(k+m)j})_{k,j}$ of [quarteroni2000numerical]
+(after (10.55)) is $N^{-1} F_N^H \operatorname{diag}(\omega^{-mj})$, and its inverse
+$C = (\omega^{(j+m)k})_{j,k}$ follows from `Matrix.inv_conjTranspose_dft`. The power
+$\omega^{-mj}$ is an integer power, `Complex.exp (2 * π * I / N) ^ (-(m * j))`. -/
 theorem coeff_eq_dft_mulVec {N : ℕ} (m : ℤ) (f : ℝ → ℂ) (k : Fin N) :
     coeff N m f k = (N : ℂ)⁻¹ *
       ((dft N)ᴴ *ᵥ fun j : Fin N =>
@@ -543,8 +611,9 @@ theorem coeff_eq_dft_mulVec {N : ℕ} (m : ℤ) (f : ℝ → ℂ) (k : Fin N) :
   field_simp
   ring_nf
 
-/-- The character `exp (i p x)` is the Fourier monomial `fourier p` of the circle of circumference
-`2 π`, evaluated at the class of `x`. -/
+/-- The character $x \mapsto e^{ipx}$ is the Fourier monomial of frequency $p \in \mathbb{Z}$ on the
+circle $\mathbb{R}/2\pi\mathbb{Z}$: for every $x \in \mathbb{R}$, `fourier p` at the class of
+$x$ is $e^{ipx}$. -/
 theorem fourier_coe_two_pi (p : ℤ) (x : ℝ) :
     (fourier p (x : AddCircle (2 * π)) : ℂ) = Complex.exp ((p : ℂ) * x * I) := by
   rw [fourier_coe_apply]
@@ -554,18 +623,22 @@ theorem fourier_coe_two_pi (p : ℤ) (x : ℝ) :
   push_cast
   field_simp
 
-/-- **Aliasing.** For a continuous `2 π`-periodic function — a continuous `f` on the circle
-`AddCircle (2 π)`, composed with the projection `ℝ → AddCircle (2 π)` — whose Fourier coefficients
-`fourierCoeff f : ℤ → ℂ` are absolutely summable, the discrete coefficient over the window starting
-at `m` is the sum of the exact coefficients at all frequencies congruent to `k + m` modulo `N`:
+/-- **The aliasing identity.** Let $N \ge 1$, $m \in \mathbb{Z}$, and let $f$ be a continuous
+function on the circle $\mathbb{R}/2\pi\mathbb{Z}$ whose Fourier coefficients $\hat f(p)$ are
+absolutely summable. Then for every natural number $k$, the discrete Fourier coefficient of $f$
+over the window that starts at $m$ is the sum of the exact Fourier coefficients at all
+frequencies congruent to $k + m$ modulo $N$:
+$$c_k = \sum_{j \in \mathbb{Z}} \hat f(k + m + jN).$$
 
-`coeff N m f k = ∑' j : ℤ, fourierCoeff f (k + m + j N)`.
-
-The samples are the values of the uniformly convergent Fourier series
-(`has_pointwise_sum_fourier_series_of_summable`); exchanging the finite sum over the nodes with
-the series, the discrete orthogonality `Quadrature.sum_exp_angleNode` at `p − (k + m)` keeps
-exactly the frequencies `p ≡ k + m (mod N)`. This is the identity behind the interpolation-error
-estimates of [quarteroni2000numerical] §10.9 and the aliasing error of the trapezoidal rule. -/
+The function $f$ is `f : C(AddCircle (2 * π), ℂ)`, read on $\mathbb{R}$ through the projection
+$\mathbb{R} \to \mathbb{R}/2\pi\mathbb{Z}$, and $\hat f$ is Mathlib's `fourierCoeff f`. The
+summability hypothesis is `Summable (fourierCoeff f)`. The idea of the proof: the samples are
+values of the uniformly convergent Fourier series
+(`has_pointwise_sum_fourier_series_of_summable`), and after the finite sum over the nodes is
+exchanged with the series, the discrete orthogonality `Quadrature.sum_exp_angleNode` at
+$p - (k + m)$ keeps exactly the frequencies $p \equiv k + m \pmod N$. This identity is behind
+the estimates of the interpolation error in [quarteroni2000numerical], §10.9, and behind the
+aliasing error of the trapezoidal rule. -/
 theorem coeff_eq_tsum_fourierCoeff {N : ℕ} (hN : 0 < N) (m : ℤ) {f : C(AddCircle (2 * π), ℂ)}
     (hf : Summable (fourierCoeff f)) (k : ℕ) :
     coeff N m (fun x : ℝ => f x) k = ∑' j : ℤ, fourierCoeff f ((k : ℤ) + m + j * N) := by

@@ -7,7 +7,44 @@ import Mathlib.Analysis.Normed.Group.Constructions
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 import Mathlib.Topology.MetricSpace.Pseudo.Pi
 
-/-! # Boundary behavior of the logarithmic barrier -/
+/-!
+# Boundary behavior of the logarithmic barrier
+
+Let $\iota$ be a finite index set and $\mu \in \mathbb{R}$. The logarithmic barrier of the positive
+orthant is the function $x \mapsto -\mu \sum_{i \in \iota} \log x_i$ on $\mathbb{R}^\iota$. This
+file proves the facts about it that barrier methods use. The barrier is smooth on the open positive
+orthant, with gradient and Hessian
+$$\nabla(-\mu \textstyle\sum_i \log x_i)[d] = -\mu \sum_i \frac{d_i}{x_i}, \qquad \nabla^2(-\mu
+  \textstyle\sum_i \log x_i)[d, e] = \mu \sum_i \frac{d_i e_i}{x_i^2}.$$
+For $\mu > 0$ it tends to $+\infty$ along every bounded sequence of positive vectors whose distance
+to the boundary of the nonnegative orthant tends to $0$. The distance of a positive vector to that
+boundary is at most each of its coordinates, and a uniform lower bound $\varepsilon$ on the
+coordinates bounds the Hessian by $|\mu| \, |\iota| / \varepsilon^2$.
+
+## Main definitions
+
+* `Optimization.logBarrier`: the barrier $x \mapsto -\mu \sum_i \log x_i$.
+* `Optimization.nonnegativeOrthant`: the closed orthant $\{x \mid x_i \ge 0 \text{ for all } i\}$.
+
+## Main results
+
+* `Optimization.mem_frontier_nonnegativeOrthant`: a point is on the boundary of the nonnegative
+  orthant if and only if all its coordinates are nonnegative and one of them is $0$.
+* `Optimization.tendsto_logBarrier_of_bounded_of_infDist_frontier`: for $\mu > 0$ the barrier
+  diverges to $+\infty$ along bounded positive sequences that approach the boundary.
+* `Optimization.contDiffAt_logBarrier`: the barrier is smooth at every positive vector.
+* `Optimization.fderiv_logBarrier_apply`, `Optimization.fderiv_fderiv_logBarrier_apply`: the first
+  and second derivatives.
+* `Optimization.norm_fderiv_fderiv_logBarrier_le`: the operator-norm bound on the Hessian.
+
+## Implementation notes
+
+* The barrier is defined on all of $\mathbb{R}^\iota$ with Mathlib's `Real.log`, which satisfies
+  $\log 0 = 0$ and $\log(-t) = \log t$. Its values at vectors with a nonpositive coordinate have no
+  meaning; all results assume positive coordinates where they need them.
+* The distance to the boundary is `Metric.infDist x (frontier (Optimization.nonnegativeOrthant ι))`
+  for the sup norm of `ι → ℝ`.
+-/
 
 open Filter Metric
 open scoped BigOperators Topology ContDiff
@@ -16,16 +53,22 @@ namespace Optimization
 
 variable {ι : Type*} [Fintype ι]
 
-/-- The log barrier on the strictly positive orthant. -/
+/-- The **logarithmic barrier** with weight $\mu \in \mathbb{R}$ is the function
+$x \mapsto -\mu \sum_{i \in \iota} \log x_i$ on $\mathbb{R}^\iota$.
+
+It is meant for vectors with positive coordinates. At other vectors the value follows Mathlib's
+`Real.log`, with $\log 0 = 0$ and $\log(-t) = \log t$. -/
 noncomputable def logBarrier (μ : ℝ) (x : ι → ℝ) : ℝ :=
   -μ * ∑ i, Real.log (x i)
 
-/-- The closed nonnegative orthant. -/
+/-- The **closed nonnegative orthant** $\{x \in \mathbb{R}^\iota \mid x_i \ge 0 \text{ for all } i
+\in \iota\}$. -/
 def nonnegativeOrthant (ι : Type*) : Set (ι → ℝ) :=
   Set.univ.pi fun _ ↦ Set.Ici 0
 
 omit [Fintype ι] in
-/-- The boundary of the nonnegative orthant has a zero coordinate. -/
+/-- Let $\iota$ be finite. A vector $x \in \mathbb{R}^\iota$ lies on the boundary of the nonnegative
+orthant if and only if $x_i \ge 0$ for all $i$ and $x_i = 0$ for some $i$. -/
 theorem mem_frontier_nonnegativeOrthant [Finite ι] {x : ι → ℝ} :
     x ∈ frontier (nonnegativeOrthant ι) ↔ (∀ i, 0 ≤ x i) ∧ ∃ i, x i = 0 := by
   classical
@@ -58,8 +101,12 @@ private theorem exists_coordinate_le_boundary_distance [Nonempty ι] {x : ι →
     _ = dist (x j) (y j) := by rw [hj, Real.dist_eq, sub_zero, abs_of_pos (hx j)]
     _ ≤ dist x y := (dist_pi_le_iff dist_nonneg).mp le_rfl j
 
-/-- The logarithmic barrier diverges along a uniformly bounded positive path whose
-distance to the orthant boundary tends to zero. -/
+/-- Let $\iota$ be finite and nonempty, let $\mu > 0$ and $M \in \mathbb{R}$, and let $(x_n)$ be a
+sequence in $\mathbb{R}^\iota$ with $0 < x_{n,i} \le M$ for all $n$ and $i$. If the distance
+from $x_n$ to the boundary of the nonnegative orthant tends to $0$, then
+$$-\mu \sum_{i \in \iota} \log x_{n,i} \to +\infty \qquad (n \to \infty).$$
+
+The distance is `Metric.infDist` to `frontier (Optimization.nonnegativeOrthant ι)`. -/
 theorem tendsto_logBarrier_of_bounded_of_infDist_frontier [Nonempty ι]
     {μ M : ℝ} (hμ : 0 < μ) {x : ℕ → ι → ℝ}
     (hx : ∀ n i, 0 < x n i) (hbounded : ∀ n i, x n i ≤ M)
@@ -101,7 +148,9 @@ private def coordinate (i : ι) : (ι → ℝ) →L[ℝ] ℝ :=
 private noncomputable def logBarrierFDeriv (μ : ℝ) (x : ι → ℝ) : (ι → ℝ) →L[ℝ] ℝ :=
   (-μ) • ∑ i, (x i)⁻¹ • coordinate i
 
-/-- The log barrier is smooth at every strictly positive vector. -/
+/-- Let $\mu \in \mathbb{R}$ and let $x \in \mathbb{R}^\iota$ have positive coordinates. Then the
+logarithmic barrier $y \mapsto -\mu \sum_i \log y_i$ is $C^n$ at $x$ for every order $n$,
+including $n = \infty$ and the analytic order $\omega$. -/
 theorem contDiffAt_logBarrier (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) {n : ℕ∞ω} :
     ContDiffAt ℝ n (logBarrier μ) x := by
   have hi (i : ι) : ContDiffAt ℝ n (fun y : ι → ℝ ↦ Real.log (y i)) x :=
@@ -117,13 +166,22 @@ private theorem hasFDerivAt_logBarrier (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 
     h.comp_hasFDerivAt x (coordinate i).hasFDerivAt
   exact (HasFDerivAt.fun_sum fun i (_ : i ∈ Finset.univ) ↦ hi i).const_smul (-μ)
 
-/-- The directional derivative of the logarithmic barrier. -/
+/-- Let $\mu \in \mathbb{R}$ and let $x \in \mathbb{R}^\iota$ have positive coordinates. The
+derivative of the logarithmic barrier at $x$ in the direction $d \in \mathbb{R}^\iota$ is
+$$-\mu \sum_{i \in \iota} \frac{d_i}{x_i}.$$
+-/
 theorem fderiv_logBarrier_apply (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) (d : ι → ℝ) :
     fderiv ℝ (logBarrier μ) x d = -μ * ∑ i, (x i)⁻¹ * d i := by
   rw [(hasFDerivAt_logBarrier μ hx).fderiv]
   simp [logBarrierFDeriv, coordinate]
 
-/-- The log-barrier Hessian is diagonal, with entries `μ / xᵢ²`. -/
+/-- Let $\mu \in \mathbb{R}$ and let $x \in \mathbb{R}^\iota$ have positive coordinates. The second
+derivative of the logarithmic barrier at $x$ is diagonal: for $d, e \in \mathbb{R}^\iota$,
+$$\nabla^2 \Bigl(-\mu \sum_i \log x_i\Bigr)[d, e] = \mu \sum_{i \in \iota} \frac{d_i
+  e_i}{x_i^2}.$$
+
+The second derivative is `fderiv ℝ (fderiv ℝ (Optimization.logBarrier μ)) x`, applied to `d` and
+then to `e`. -/
 theorem fderiv_fderiv_logBarrier_apply (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (d e : ι → ℝ) :
     fderiv ℝ (fderiv ℝ (logBarrier μ)) x d e =
@@ -144,7 +202,8 @@ theorem fderiv_fderiv_logBarrier_apply (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 
   rw [hD.fderiv]
   simp [coordinate, Finset.sum_neg_distrib, mul_assoc]
 
-/-- Each coordinate of a positive vector bounds its distance to the orthant boundary. -/
+/-- Let $x \in \mathbb{R}^\iota$ have positive coordinates. Then for every $i \in \iota$ the
+distance from $x$ to the boundary of the nonnegative orthant is at most $x_i$. -/
 theorem infDist_frontier_le_coordinate {x : ι → ℝ} (hx : ∀ i, 0 < x i) (i : ι) :
     infDist x (frontier (nonnegativeOrthant ι)) ≤ x i := by
   classical
@@ -164,7 +223,15 @@ theorem infDist_frontier_le_coordinate {x : ι → ℝ} (hx : ∀ i, 0 < x i) (i
   · rw [show y j = x j from Function.update_of_ne hj 0 x, dist_self]
     exact (hx i).le
 
-/-- A coordinate lower bound gives a uniform operator-norm bound on the Hessian. -/
+/-- Let $\mu \in \mathbb{R}$ and $\varepsilon > 0$, and let $x \in \mathbb{R}^\iota$ satisfy
+$x_i \ge \varepsilon$ for all $i$. Then the second derivative of the logarithmic barrier at $x$
+has operator norm
+$$\bigl\|\nabla^2 \bigl(-\mu \textstyle\sum_i \log x_i\bigr)\bigr\| \le \frac{|\mu| \,
+  |\iota|}{\varepsilon^2},$$
+where $|\iota|$ is the number of indices.
+
+The norm is the operator norm of `fderiv ℝ (fderiv ℝ (Optimization.logBarrier μ)) x` for the sup
+norm on `ι → ℝ`. -/
 theorem norm_fderiv_fderiv_logBarrier_le (μ : ℝ) {x : ι → ℝ}
     {ε : ℝ} (hε : 0 < ε) (hx : ∀ i, ε ≤ x i) :
     ‖fderiv ℝ (fderiv ℝ (logBarrier μ)) x‖ ≤ |μ| * Fintype.card ι * (ε ^ 2)⁻¹ := by

@@ -9,75 +9,71 @@ import Numlib.Approximation.Interpolation
 /-!
 # Graded meshes for piecewise polynomial interpolation
 
-Piecewise polynomial interpolation of degree `m` on a *uniform* mesh of `n` panels converges at the
-rate `n^{-(m+1)}` only for a function whose `(m+1)`-st derivative is bounded.  A function that is
-merely Hölder continuous of exponent `γ ∈ (0, 1)` at an endpoint of the interval, smooth inside, and
-whose `(m+1)`-st derivative blows up there no faster than `(x - a)^{γ - (m+1)}` — Rice's class
-`(γ, m + 1)`, the regularity a weakly singular integral equation produces — loses that rate, and
-recovers it on a mesh *graded* towards the endpoint:
-
-`x_j = a + (j/n)^q (b - a)`,   `q ≥ (m + 1)/γ`.
-
-The grading is exactly strong enough: the panel `[x_j, x_{j+1}]` has length `𝒪(j^{q-1} n^{-q})` by
-the mean value theorem, the singular factor `(x_j - a)^{γ-(m+1)}` is `(j/n)^{q(γ-m-1)}`, and the
-powers of `j` in the product `h_j^{m+1} (x_j - a)^{γ-(m+1)}` combine into `(j/n)^{qγ-(m+1)} ≤ 1`
-precisely when `q γ ≥ m + 1`.  The panel touching the singularity, where no derivative bound is
-available, is handled by the Hölder condition alone, and `(x_1 - a)^γ = n^{-qγ} ≤ n^{-(m+1)}` is
-the same inequality again.
-
-Two meshes are treated: the one-sided mesh on `[0, 1]`, graded towards the origin, and the mesh on
-`[a, b]` graded towards *both* endpoints, `x_j = a + (2j/n)^q (b-a)/2` on the left half and
-`x_{n-j} = a + b - x_j` on the right, whose bound is stated with an explicit constant so that it
-applies uniformly to a family of functions sharing the same Hölder and derivative constants.
-
-## Main statements
-
-* `isPanelNodes_graded` — the graded mesh on `[0, 1]` together with nodes placed at fixed fractions
-  `0 = μ_0 < ⋯ < μ_m = 1` of every panel is a panel node system in the sense of
-  `IsPanelNodes`.
-* `norm_sub_piecewisePolyInterpCLM_le_graded` — **the graded-mesh interpolation error**
-  `‖u - P_n u‖_∞ ≤ C n^{-(m+1)}` for a function of Rice's class `(γ, m + 1)` at the origin, with
-  `C` independent of `n`.
-* `isPanelNodes_gradedSym`, `sub_le_gradedSym` and
-  `norm_sub_piecewisePolyInterpCLM_le_gradedSym` — the same two statements for the mesh graded
-  towards both endpoints of `[a, b]`, the last with an explicit constant, together with the bound
-  `(b - a) q / (2 r)` on the width of a panel of that mesh, which is what makes the interpolants
-  converge for a merely continuous function.
-
-## References
+Piecewise polynomial interpolation of degree $m$ on a uniform mesh of $n$ panels converges at the
+rate $n^{-(m+1)}$ only for a function whose derivative of order $m + 1$ is bounded. Consider a
+function that is Hölder continuous of exponent $\gamma \in (0, 1)$, smooth inside the interval, and
+whose derivative of order $m + 1$ grows near an endpoint $a$ no faster than
+$(x - a)^{\gamma - (m+1)}$. This is Rice's class $(\gamma, m + 1)$, the regularity that the solution
+of a weakly singular integral equation has. Such a function loses the rate on a uniform mesh, and
+recovers it on the mesh graded towards the endpoint $$x_j = a + (j/n)^q (b - a), \qquad q \ge (m +
+1)/\gamma.$$ The file treats the one-sided mesh on $[0, 1]$, graded towards the origin, and the mesh
+on $[a, b]$ graded towards both endpoints, $x_j = a + (2j/n)^q (b - a)/2$ on the left half and
+$x_{n-j} = a + b - x_j$ on the right half.
 
 The mesh and the error bound are due to John R. Rice, *On the degree of convergence of nonlinear
 spline approximation*, in *Approximations with Special Emphasis on Spline Functions*, Academic
-Press, 1969, 349–365.  Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework*, 3rd edition, Springer, 2009 ([han2009theoretical]) state the
-one-sided bound as their Lemma 12.5.5, equations (12.5.30)–(12.5.35), and the two-sided mesh in the
-paragraph preceding their Theorem 12.5.6; both without proof.
+Press, 1969, pp. 349–365. [han2009theoretical] states the one-sided bound as Lemma 12.5.5, equations
+(12.5.30)–(12.5.35), and the two-sided mesh in the paragraph before Theorem 12.5.6, both without
+proof.
+
+## Main results
+
+* `isPanelNodes_graded`: the graded mesh on $[0, 1]$, with nodes at fixed fractions
+  $0 = \mu_0 < \dots < \mu_m = 1$ of every panel, is a panel node system in the sense of
+  `IsPanelNodes`.
+* `norm_sub_piecewisePolyInterpCLM_le_graded`: the graded-mesh interpolation error
+  $\|u - P_n u\|_\infty \le C n^{-(m+1)}$ for a function of Rice's class $(\gamma, m + 1)$ at the
+  origin, with $C$ independent of $n$.
+* `isPanelNodes_gradedSym`: the mesh graded towards both endpoints of $[a, b]$, with its nodes, is a
+  panel node system.
+* `sub_le_gradedSym`: every panel of the mesh graded towards both endpoints, with $2r$ panels, has
+  width at most $(b - a) q/(2r)$. This makes the interpolants converge for every continuous
+  function.
+* `norm_sub_piecewisePolyInterpCLM_le_gradedSym`: the interpolation error on the mesh graded towards
+  both endpoints, with an explicit constant, so that the bound holds uniformly for a family of
+  functions with the same Hölder and derivative constants.
+
+## Proof outline
+
+By the mean value theorem the panel $[x_j, x_{j+1}]$ has length $O(j^{q-1} n^{-q})$, and the
+singular factor $(x_j - a)^{\gamma - (m+1)}$ is $(j/n)^{q(\gamma - m - 1)}$ times a constant. In the
+product $h_j^{m+1} (x_j - a)^{\gamma - (m+1)}$ the powers of $j$ combine into
+$(j/n)^{q\gamma - (m+1)} \le 1$ exactly when $q\gamma \ge m + 1$. The panel that touches the
+singularity has no derivative bound, and there the Hölder condition alone gives the bound, through
+$(x_1 - a)^\gamma = n^{-q\gamma} \le n^{-(m+1)}$, which is the same inequality.
 
 ## Implementation notes
 
-The helper estimates on one panel are private: they are stated in the normalized variable `j/n`
-rather than in the mesh points themselves, which is convenient for the proofs and useless outside
-them.  So are the two elementary bounds on `A^q - B^q` for `q ≥ 1` that drive them — the mean value
-bound, and its weakening which trades the sharp factor for one that survives at `B = 0`, where the
-mean value theorem gives nothing.
+* The estimates on one panel are private. They are stated in the normalized variable $j/n$ and not
+  in the mesh points, which suits the proofs but not other uses.
+* Two elementary bounds on $A^q - B^q$ for $q \ge 1$ drive these estimates: the mean value bound
+  `Real.rpow_sub_rpow_le`, and a weaker bound that replaces the sharp factor by one that holds also
+  at $B = 0$, where the mean value theorem gives nothing.
 -/
 
-/-! ### Two bounds on a real power
+/-!
+### Two bounds on a real power
 
-Both compare `A ^ q - B ^ q` with `A - B` for an exponent `q ≥ 1`.  The first is the mean value
-theorem (`Real.rpow_sub_rpow_le`, in `Numlib/Analysis/SpecialFunctions/Pow/Deriv`); the second
-trades the sharp factor `q A^{q-1}` for the cruder `q`, and in exchange holds also at `B = 0`,
-where `y ↦ y ^ q` is not differentiable for `q < 1` and where the panel of a graded mesh that
-touches the singularity lives. -/
+Both bounds compare $A^q - B^q$ with $A - B$ for an exponent $q \ge 1$. The first is the mean value
+theorem, `Real.rpow_sub_rpow_le` in `Numlib.Analysis.SpecialFunctions.Pow.Deriv`. The second
+replaces the sharp factor $q A^{q-1}$ by the cruder $q$, and in exchange it holds also at $B = 0$.
+That is where the panel of a graded mesh that touches the singularity lies.
+-/
 
 namespace Real
 
-/-- **A bound on `A ^ q - B ^ q` valid down to `B = 0`**: for `q ≥ 1` and `0 ≤ B < A ≤ 1`,
-`A ^ q - B ^ q ≤ q (A - B)`.
-
-It is `Real.rpow_sub_rpow_le` with the sharp factor `A ^ (q - 1)` weakened to `1`, which costs
-nothing when `A ≤ 1` and buys the degenerate case `B = 0`, where `y ↦ y ^ q` is not
-differentiable. -/
+/-- For $q \ge 1$ and $0 \le B < A \le 1$, $A^q - B^q \le q(A - B)$; this is `Real.rpow_sub_rpow_le`
+with the factor $A^{q-1}$ replaced by $1$, which also covers $B = 0$. -/
 private theorem rpow_sub_rpow_le_mul_sub {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 ≤ B) (hBA : B < A)
     (hA1 : A ≤ 1) : A ^ q - B ^ q ≤ q * (A - B) := by
   have hA0 : 0 < A := lt_of_le_of_lt hB hBA
@@ -96,16 +92,11 @@ private theorem rpow_sub_rpow_le_mul_sub {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 �
 
 end Real
 
-/-! ### The graded mesh on `[0, 1]` -/
+/-! ### The graded mesh on $[0, 1]$ -/
 
-/-- **The graded-mesh panel estimate**, in the normalized variable.  On the mesh
-`x_j = (j/n)^q`, if `q γ ≥ m + 1` then
-`(x_{j+1} - x_j)^{m+1} x_j^{γ - (m+1)} ≤ (q 2^{q-1})^{m+1} n^{-(m+1)}` for every panel that does
-not touch the origin.
-
-This is where the grading pays for the singularity: the panel length is `𝒪(j^{q-1} n^{-q})` by the
-mean value theorem, and the singular factor `x_j^{γ-(m+1)}` is `(j/n)^{q(γ-m-1)}`, so the powers of
-`j` combine into `(j/n)^{qγ-(m+1)} ≤ 1` exactly when `q ≥ (m+1)/γ`. -/
+/-- The graded-mesh panel estimate in the normalized variable: if $q \ge 1$, $q\gamma \ge m + 1$,
+$0 < B < A \le 1$, $A - B = 1/n$ and $A \le 2B$, then $(A^q - B^q)^{m+1} (B^q)^{\gamma - (m+1)}
+\le (q 2^{q-1})^{m+1} n^{-(m+1)}$. -/
 private theorem graded_panel_le {m : ℕ} {γ q n A B : ℝ} (hq1 : 1 ≤ q)
     (hqγ : ((m : ℝ) + 1) ≤ q * γ) (hn0 : 0 < n) (hB0 : 0 < B) (hBA : B < A) (hA1 : A ≤ 1)
     (hAB : A - B = 1 / n) (hA2B : A ≤ 2 * B) :
@@ -153,10 +144,15 @@ private theorem graded_panel_le {m : ℕ} {γ q n A B : ℝ} (hq1 : 1 ≤ q)
         mul_le_mul_of_nonneg_left hBle hc0
     _ = (q * 2 ^ (q - 1)) ^ (m + 1) / n ^ (m + 1) := mul_one _
 
-/-- **The graded mesh and its nodes form a panel node system.**  The mesh is Rice's
-`x_j = (j/n)^q` on `[0, 1]` with `n = N + 1` panels, and the nodes of the panel `[x_j, x_{j+1}]`
-are the images `x_{ji} = x_j + μ_i h_j` of a fixed partition `0 = μ_0 < ⋯ < μ_m = 1` of the unit
-interval.  [han2009theoretical], §12.5, equations (12.5.30)-(12.5.32). -/
+/-- **The graded mesh and its nodes form a panel node system.** Let $q \ge 1$, let
+$N \in \mathbb{N}$, and let $0 = \mu_0 < \mu_1 < \dots < \mu_m = 1$. Let the breakpoints in
+$[0, 1]$ be $$x_j = \Big(\frac{j}{N + 1}\Big)^q, \qquad j \le N + 1,$$ and let the nodes of the
+panel $[x_j, x_{j+1}]$ be $x_{ji} = x_j + \mu_i (x_{j+1} - x_j)$ for $j \le N$. Then the
+breakpoints and the nodes form a panel node system with $N + 1$ panels of degree $m$. This is
+the mesh of equations (12.5.30)–(12.5.32) of [han2009theoretical], §12.5.
+
+The panel node system is `IsPanelNodes N m x node`. The breakpoints and the nodes are maps into
+the subtype `Set.Icc 0 1`, and only their values at $j \le N + 1$ and $j \le N$ matter. -/
 theorem isPanelNodes_graded {m N : ℕ} {q : ℝ} (hq1 : 1 ≤ q) {μ : Fin (m + 1) → ℝ}
     (hμ0 : μ 0 = 0) (hμ1 : μ (Fin.last m) = 1) (hμmono : StrictMono μ)
     {x : ℕ → Set.Icc (0 : ℝ) 1} {node : ℕ → Fin (m + 1) → Set.Icc (0 : ℝ) 1}
@@ -204,24 +200,27 @@ theorem isPanelNodes_graded {m N : ℕ} {q : ℝ} (hq1 : 1 ≤ q) {μ : Fin (m +
     rw [hnode j hj (Fin.last m), hμ1]
     ring
 
-/-- **Rice's graded-mesh interpolation error.**  For `0 < γ < 1` let `u` be of Rice's type
-`(γ, m + 1)` on `[0, 1]` — Hölder continuous with exponent `γ`, of class `C^{m+1}` on `(0, 1]` and
-with `|u^{(m+1)}(s)| ≤ c s^{γ - (m+1)}` — and let `P_n` be piecewise polynomial interpolation of
-degree `m` on the graded mesh `x_j = (j/n)^q`, at nodes placed at fixed fractions
-`0 = μ_0 < ⋯ < μ_m = 1` of each panel.  Then for `q ≥ (m + 1)/γ`,
+/-- **Rice's graded-mesh interpolation error.** Let $0 < \gamma < 1$, let $m \in \mathbb{N}$ and let
+$q \ge (m + 1)/\gamma$. Let $0 = \mu_0 < \mu_1 < \dots < \mu_m = 1$. Let
+$U : \mathbb{R} \to \mathbb{R}$ satisfy:
 
-`‖u - P_n u‖_∞ ≤ C n^{-(m+1)}`
+* $|U(s) - U(t)| \le H |s - t|^\gamma$ for $s, t \in [0, 1]$;
+* $U$ is of class $C^{m+1}$ on $(0, \infty)$;
+* $|U^{(m+1)}(s)| \le c\, s^{\gamma - (m+1)}$ for $s \in (0, 1]$.
 
-with `C` independent of `n`.
+Let $u$ be the restriction of $U$ to $[0, 1]$. For each $N$, let $P_N$ be piecewise polynomial
+interpolation of degree $m$ on the graded mesh $x_j = (j/(N + 1))^q$, $j \le N + 1$, with the
+nodes $x_j + \mu_i (x_{j+1} - x_j)$ on the panel $[x_j, x_{j+1}]$. Then there is a constant $C$
+such that for all $N$, $$\|u - P_N u\|_\infty \le \frac{C}{(N + 1)^{m+1}}.$$ This is equation
+(12.5.35) of Lemma 12.5.5 of [han2009theoretical], §12.5, which is stated there without proof.
 
-On the first panel `[0, x_1]` only the Hölder bound is available, and `x_1^γ = n^{-qγ} ≤
-n^{-(m+1)}` is exactly what `q γ ≥ m + 1` buys; on every later panel the Lagrange error formula
-applies — `u` is smooth there — and the graded-mesh panel estimate makes
-`h_j^{m+1} x_j^{γ-(m+1)}` uniformly `𝒪(n^{-(m+1)})`.  The Lebesgue constants of the panels are
-bounded uniformly because the nodes sit at fixed fractions of every panel.
-
-This is [han2009theoretical], §12.5, Lemma 12.5.5, equation (12.5.35), stated there without
-proof. -/
+On the first panel $[0, x_1]$ only the Hölder bound is available, and $x_1^\gamma = (N +
+1)^{-q\gamma} \le (N + 1)^{-(m+1)}$ because $q\gamma \ge m + 1$. On every later panel $u$ is
+smooth, the Lagrange error formula applies, and the graded-mesh panel estimate makes
+$h_j^{m+1} x_j^{\gamma - (m+1)}$ uniformly $O((N + 1)^{-(m+1)})$. The Lebesgue constants of the
+panels are bounded uniformly because the nodes are at fixed fractions of every panel. The
+interpolation operator is `piecewisePolyInterpCLM N m (x N) (node N)`, and the norm is the
+supremum norm on `C(Set.Icc 0 1, ℝ)`. -/
 theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (hγ0 : 0 < γ)
     (hγ1 : γ < 1)
     (hq : ((m : ℝ) + 1) / γ ≤ q) {μ : Fin (m + 1) → ℝ}
@@ -388,8 +387,8 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
           linarith
 /-! ### The mesh graded towards both endpoints -/
 
-/-- The scaled form of `graded_panel_le`: the panel of the mesh `a + (j/r)^q S` obeys the same
-bound, with an extra factor `S^γ`. -/
+/-- The scaled panel estimate: under the hypotheses of the normalized estimate and $S > 0$, $(S
+A^q - S B^q)^{m+1} (S B^q)^{\gamma - (m+1)} \le S^\gamma (q 2^{q-1})^{m+1} n^{-(m+1)}$. -/
 private theorem graded_panel_le' {m : ℕ} {γ q n A B S : ℝ} (hq1 : 1 ≤ q)
     (hqγ : ((m : ℝ) + 1) ≤ q * γ) (hn0 : 0 < n) (hS0 : 0 < S) (hB0 : 0 < B) (hBA : B < A)
     (hA1 : A ≤ 1) (hAB : A - B = 1 / n) (hA2B : A ≤ 2 * B) :
@@ -418,11 +417,16 @@ private theorem graded_panel_le' {m : ℕ} {γ q n A B S : ℝ} (hq1 : 1 ≤ q)
 
 variable {a b : ℝ} {m r N : ℕ} {q : ℝ}
 
-/-- **The symmetric graded mesh and its nodes form a panel node system.**  The `n = 2 r` panels of
-`[a, b]` are graded towards both endpoints — `x_j = a + (2j/n)^q (b-a)/2` for `j ≤ n/2` and
-`x_{n-j} = a + b - x_j` — and the nodes of a panel are the images of the partition `μ` on the left
-half and of its reflection `1 - μ_{m-i}` on the right.  [han2009theoretical], §12.5, the paragraph
-preceding Theorem 12.5.6. -/
+/-- **The symmetric graded mesh and its nodes form a panel node system.** Let $a < b$, let $r > 0$,
+let $N + 1 = 2r$, let $q \ge 1$, and let $0 = \mu_0 < \mu_1 < \dots < \mu_m = 1$. Let the
+breakpoints in $[a, b]$ satisfy $$x_j = a + \Big(\frac{j}{r}\Big)^q \frac{b - a}{2}, \qquad
+x_{2r-j} = a + b - x_j, \qquad j \le r.$$ Let the nodes of the panel $[x_j, x_{j+1}]$ be
+$x_j + \mu_i (x_{j+1} - x_j)$ for $j < r$ (left half), and
+$x_j + (1 - \mu_{m-i})(x_{j+1} - x_j)$ for $r \le j \le N$ (right half). Then the breakpoints
+and the nodes form a panel node system with $N + 1 = 2r$ panels of degree $m$. This is the mesh
+of the paragraph before Theorem 12.5.6 of [han2009theoretical], §12.5.
+
+The panel node system is `IsPanelNodes N m x node`. The index $m - i$ is `i.rev`. -/
 theorem isPanelNodes_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (hq1 : 1 ≤ q)
     {μ : Fin (m + 1) → ℝ} (hμ0 : μ 0 = 0) (hμ1 : μ (Fin.last m) = 1) (hμmono : StrictMono μ)
     {x : ℕ → Set.Icc a b} {node : ℕ → Fin (m + 1) → Set.Icc a b}
@@ -513,16 +517,16 @@ theorem isPanelNodes_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (
     · rw [hnodeR j hjr hj (Fin.last m), Fin.rev_last, hμ0]
       ring
 
-/-- **The panels of the symmetric graded mesh are short.**  On the mesh graded towards both
-endpoints of `[a, b]` — `x_j = a + (j/r)^q (b-a)/2` on the left half and `x_{2r-j} = a + b - x_j`
-on the right — every one of the `2 r` panels has width at most `(b - a) q / (2 r)`.
+/-- **The panels of the symmetric graded mesh are short.** Let $a < b$, let $r > 0$, let
+$N + 1 = 2r$ and let $q \ge 1$. Let the breakpoints in $[a, b]$ satisfy
+$x_j = a + (j/r)^q (b - a)/2$ and $x_{2r-j} = a + b - x_j$ for $j \le r$. Then for every
+$j \le N$, $$x_{j+1} - x_j \le \frac{b - a}{2} \cdot \frac{q}{r}.$$
 
-The mean value theorem gives it on the left half, in the crude form `A^q - B^q ≤ q (A - B)` for
-`0 ≤ B < A ≤ 1`: unlike the sharp `q A^{q-1} (A - B)` it survives at `B = 0`, which is the panel
-touching the endpoint, where the grading is steepest.  The reflection carries it to the right
-half.  The bound is `𝒪(1/r)`, so it is the hypothesis that makes piecewise polynomial
-interpolation on the family of these meshes converge for every continuous function, by
-`tendsto_piecewisePolyInterpCLM`. -/
+On the left half this is the crude bound $A^q - B^q \le q(A - B)$ for $0 \le B < A \le 1$.
+Unlike the sharp bound $q A^{q-1}(A - B)$ it holds at $B = 0$, which is the panel that touches
+the endpoint, where the grading is steepest. The reflection carries the bound to the right half.
+The bound is $O(1/r)$, so it is the hypothesis that makes piecewise polynomial interpolation on
+these meshes converge for every continuous function, by `tendsto_piecewisePolyInterpCLM`. -/
 theorem sub_le_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (hq1 : 1 ≤ q)
     {x : ℕ → Set.Icc a b}
     (hxL : ∀ j ≤ r, (x j : ℝ) = a + ((j : ℝ) / r) ^ q * ((b - a) / 2))
@@ -570,8 +574,9 @@ theorem sub_le_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (hq1 : 
     rw [hxj, hxj1]
     linarith
 
-/-- **The interpolation error on one panel from a bound on the `(m+1)`-st derivative there.**  Only
-the smoothness of `G` on an open set containing the panel is used. -/
+/-- The interpolation error on one panel from a bound $M$ on the derivative of order $m + 1$ inside
+the panel: $|f(t) - P f(t)| \le M h^{m+1}/(m + 1)!$ for $t$ in the panel of length $h$, if $f$
+is of class $C^{m+1}$ on an open set that contains the panel. -/
 private theorem abs_sub_panel_le {a b : ℝ} {n m : ℕ} {x : ℕ → Set.Icc a b}
     {node : ℕ → Fin (m + 1) → Set.Icc a b} (h : IsPanelNodes n m x node)
     {V : Set ℝ} (hV : IsOpen V) {k : ℕ} (hk : k ≤ n)
@@ -605,20 +610,32 @@ private theorem abs_sub_panel_le {a b : ℝ} {n m : ℕ} {x : ℕ → Set.Icc a 
         exact hM ξ hξ
     _ = M * ((x (k + 1) : ℝ) - (x k : ℝ)) ^ (m + 1) / (m + 1).factorial := by ring
 
-/-- **The graded-mesh interpolation error on `[a, b]`, graded towards both endpoints.**  The
-function is Hölder of exponent `γ` on the whole interval, of class `C^{m+1}` inside, and its
-`(m+1)`-st derivative grows no faster than `(x - a)^{γ-(m+1)}` towards `a` and `(b - x)^{γ-(m+1)}`
-towards `b` — the regularity that the solution of a weakly singular integral equation of the second
-kind has ([han2009theoretical], §12.5, Theorem 12.5.4).
+/-- **The graded-mesh interpolation error on $[a, b]$, graded towards both endpoints.** Let $a < b$,
+let $r > 0$, let $N + 1 = 2r$, let $0 < \gamma < 1$, and let $q \ge (m + 1)/\gamma$. Let the
+breakpoints and the nodes be those of `isPanelNodes_gradedSym` for a partition
+$0 = \mu_0 < \dots < \mu_m = 1$, and let $\Lambda$ bound the Lebesgue constant of every panel.
+Let $W : \mathbb{R} \to \mathbb{R}$ satisfy:
 
-The two extreme panels are handled by the Hölder bound, the inner panels of the left half by the
-derivative bound towards `a` and those of the right half by the one towards `b`, the latter being
-the mirror image of the former through `x ↦ a + b - x`.  The constant is explicit, so that the
-bound may be applied uniformly over a family of functions with common `H` and `c` — which is what
-the row functions `y ↦ l (x, y) u (y)` of a product integration method are.
+* $|W(s) - W(t)| \le H |s - t|^\gamma$ for $s, t \in [a, b]$;
+* $W$ is of class $C^{m+1}$ on $(a, b)$;
+* $|W^{(m+1)}(s)| \le c\, (s - a)^{\gamma - (m+1)}$ for $s \in (a, (a + b)/2]$;
+* $|W^{(m+1)}(s)| \le c\, (b - s)^{\gamma - (m+1)}$ for $s \in [(a + b)/2, b)$.
 
-This is `norm_sub_piecewisePolyInterpCLM_le_graded` in the form that the convergence proof for
-graded-mesh product integration uses; [han2009theoretical], §12.5, Theorem 12.5.6. -/
+Let $w$ be the restriction of $W$ to $[a, b]$ and let $P$ be piecewise polynomial interpolation
+of degree $m$ on this mesh. Then $$\|w - P w\|_\infty \le \frac{1}{r^{m+1}} \Big( (1 + \Lambda)
+H \Big(\frac{b - a}{2}\Big)^\gamma + c \Big(\frac{b - a}{2}\Big)^\gamma \frac{(q
+2^{q-1})^{m+1}}{(m + 1)!} \Big).$$ This is `norm_sub_piecewisePolyInterpCLM_le_graded` in the
+form that the convergence proof for graded-mesh product integration in Theorem 12.5.6 of
+[han2009theoretical], §12.5, uses. The hypotheses on $W$ describe the regularity of the solution
+of a weakly singular integral equation of the second kind, Theorem 12.5.4 of
+[han2009theoretical].
+
+The two extreme panels are handled by the Hölder bound. The inner panels of the left half are
+handled by the derivative bound towards $a$, and those of the right half by the bound towards
+$b$, which is the mirror image under $x \mapsto a + b - x$. The constant is explicit, so that
+the bound applies uniformly to a family of functions with common $H$ and $c$; the row functions
+$y \mapsto l(x, y) u(y)$ of a product integration method are such a family. The bound $\Lambda$
+is `IsPanelLebesgueBound N m x node Λ`, and the operator is `piecewisePolyInterpCLM N m x node`. -/
 theorem norm_sub_piecewisePolyInterpCLM_le_gradedSym {a b : ℝ} {m r N : ℕ} {γ q H c Λ : ℝ}
     (hab : a < b) (hr : 0 < r)
     (hN : N + 1 = 2 * r) (hγ0 : 0 < γ) (hγ1 : γ < 1) (hq : ((m : ℝ) + 1) / γ ≤ q)

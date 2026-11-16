@@ -10,37 +10,57 @@ import Mathlib.Tactic.Positivity
 /-!
 # The full multigrid error bound
 
-Full multigrid sweeps once from the coarsest level upwards, taking as initial guess on each level
-the interpolant of the previous level's approximation and applying `μ` cycles of the multigrid
-iteration ([saad2003iterative], §13.4.4).  If the interpolation is accurate to the discretization
-order, the cycle is uniformly contractive, and the interpolation operators are bounded by `c₂
-2^{-κ}`, then the full multigrid approximation is accurate to the discretization order on *every*
-level.
+Full multigrid sweeps once through a hierarchy of grids, from the coarsest level upwards. On each
+level, it takes as initial guess the interpolant of the approximation from the previous level, and
+it applies $\mu$ cycles of the multigrid iteration ([saad2003iterative], §13.4.4). Let $u_l$ be the
+exact discrete solution and $\tilde u_l$ the full multigrid approximation on level $l$, with mesh
+size $h_l$. Suppose that the interpolation is accurate to the discretization order $\kappa$ with the
+constant $c_1$, that the cycle contracts the error by a uniform factor $\xi^\mu$, that the
+interpolation operators have norm at most $c_2 2^{-\kappa}$, and that $c_2 \xi^\mu < 1$. Then the
+full multigrid approximation is accurate to the discretization order on every level:
+$$\|u_l - \tilde u_l\| \le \frac{\xi^\mu}{1 - c_2 \xi^\mu}\, c_1 h_l^\kappa.$$
+This is Theorem 13.2 of [saad2003iterative].
 
-There is no analysis in the proof.  Its whole content is a scalar recursion: `a_{l+1} ≤ ξ^μ (c₁
-h_{l+1}^κ + c₂ 2^{-κ} a_l)` with `h_{l+1} = h_l / 2` and `a_0 = 0` implies `a_l ≤ c₃ c₁ h_l^κ` with
-`c₃ = ξ^μ / (1 - c₂ ξ^μ)`.  That recursion is `Multigrid.le_of_rec_of_half`, stated in `ℝ` alone,
-and the statement over a family of normed spaces — one per level, with continuous linear
-interpolations between consecutive levels — is `Multigrid.norm_sub_fullMultigrid_le`.  Both are
-worth having: the scalar lemma is what any other nested-iteration analysis reuses, and the
-normed-space form is the theorem itself.
+## Main results
 
-The order of accuracy `κ` is a real exponent (`Real.rpow`), since it need not be an integer.
+* `Multigrid.le_of_rec_of_half`: a real sequence with $a_0 = 0$ and $a_{l+1} \le \xi^\mu (c_1
+  h_{l+1}^\kappa + c_2 2^{-\kappa} a_l)$ for halving $h_l$ satisfies $a_l \le c_3 c_1 h_l^\kappa$
+  with $c_3 = \xi^\mu / (1 - c_2 \xi^\mu)$.
+* `Multigrid.norm_sub_fullMultigrid_le`: the full multigrid error bound on a family of normed
+  spaces, one per level.
 
-The hypotheses are *not* verified here for any concrete discretization, and cannot be: the accuracy
-of the interpolation is a statement about the solution of a differential equation, not about linear
-algebra.  They are named and assumed, following the convention of the rest of the multigrid
-development.
+## Proof outline
+
+The proof uses no analysis. With $a_l = \|u_l - \tilde u_l\|$, the hypotheses give the scalar
+recursion $a_{l+1} \le \xi^\mu (c_1 h_{l+1}^\kappa + c_2 2^{-\kappa} a_l)$ with $h_{l+1} = h_l / 2$
+and $a_0 = 0$. Induction on $l$ gives $a_l \le c_3 c_1 h_l^\kappa$.
+
+## Implementation notes
+
+* The scalar recursion `Multigrid.le_of_rec_of_half` is stated in $\mathbb{R}$ alone, so that other
+  analyses of nested iterations can use it. The normed-space form
+  `Multigrid.norm_sub_fullMultigrid_le` is the theorem itself.
+* The order of accuracy $\kappa$ is a real exponent (`Real.rpow`), since it need not be an integer.
+* The hypotheses are not verified here for any concrete discretization, and they cannot be: the
+  accuracy of the interpolation is a statement about the solution of a differential equation, not
+  about linear algebra. They are named and assumed, in the same way as the smoothing and
+  approximation properties of `Numlib.Multigrid.TwoGrid`.
 -/
 
 namespace Multigrid
 
 /-! ### The scalar recursion -/
 
-/-- **The recursion behind the full multigrid bound**: if `h` halves at every step, `a 0 = 0` and
-`a_{l+1} ≤ ξ^μ (c₁ h_{l+1}^κ + c₂ 2^{-κ} a_l)`, with `c₂ ξ^μ < 1`, then `a_l ≤ ξ^μ/(1 - c₂ ξ^μ) c₁
-h_l^κ` on every level: the sequence stays accurate to the order `κ` of the mesh size, with a
-constant independent of the level. -/
+/-- Let $(a_l)$ and $(h_l)$ be real sequences, let $c_1, c_2, \xi, \kappa \in \mathbb{R}$, and let
+$\mu \in \mathbb{N}$. Suppose that $h_l > 0$ and $h_{l+1} = h_l / 2$ for all $l$, that
+$a_0 = 0$, that $c_1, c_2, \xi \ge 0$ and $c_2 \xi^\mu < 1$, and that for all $l$
+$$a_{l+1} \le \xi^\mu \bigl(c_1 h_{l+1}^\kappa + c_2 2^{-\kappa} a_l\bigr).$$
+Then for every level $l$,
+$$a_l \le \frac{\xi^\mu}{1 - c_2 \xi^\mu}\, c_1 h_l^\kappa.$$
+
+This is the recursion behind the full multigrid bound of Theorem 13.2 of [saad2003iterative]:
+the sequence stays accurate to the order $\kappa$ of the mesh size, with a constant that does
+not depend on the level. The powers $h_l^\kappa$ and $2^{-\kappa}$ are `Real.rpow`. -/
 theorem le_of_rec_of_half {a h : ℕ → ℝ} {c₁ c₂ ξ κ : ℝ} {μ : ℕ}
     (hh : ∀ l, h (l + 1) = h l / 2) (hhpos : ∀ l, 0 < h l) (ha0 : a 0 = 0) (hc₁ : 0 ≤ c₁)
     (hc₂ : 0 ≤ c₂) (hξ : 0 ≤ ξ) (hlt : c₂ * ξ ^ μ < 1)
@@ -80,18 +100,25 @@ theorem le_of_rec_of_half {a h : ℕ → ℝ} {c₁ c₂ ξ κ : ℝ} {μ : ℕ}
 
 /-! ### The full multigrid bound -/
 
-/-- **[saad2003iterative] Theorem 13.2**, the full multigrid error bound.  On a hierarchy of levels
-— one normed space `E l` per level, with a continuous linear interpolation `I l : E l →L[ℝ] E (l+1)`
-and mesh sizes `h l` that halve — suppose that
+/-- Let $(E_l)_{l \in \mathbb{N}}$ be real normed spaces, one per level, with continuous linear
+interpolations $I_l \colon E_l \to E_{l+1}$. Let $u_l, \tilde u_l \in E_l$, let $(h_l)$ be mesh
+sizes with $h_l > 0$ and $h_{l+1} = h_l / 2$, let $c_1, c_2, \xi, \kappa \in \mathbb{R}$ with
+$c_1, \xi \ge 0$, and let $\mu \in \mathbb{N}$. Suppose that:
 
-* the coarsest problem is solved exactly, `ũ 0 = u 0`;
-* the interpolation is accurate to the discretization order, `‖u (l+1) - I l (u l)‖ ≤ c₁ h_{l+1}^κ`;
-* the `μ` cycles applied on level `l+1` contract the error by `ξ^μ`, `‖u (l+1) - ũ (l+1)‖ ≤ ξ^μ ‖u
-  (l+1) - I l (ũ l)‖`;
-* the interpolations are bounded, `‖I l‖ ≤ c₂ 2^{-κ}`.
+* the coarsest problem is solved exactly, $\tilde u_0 = u_0$;
+* the interpolation is accurate to the discretization order,
+  $\|u_{l+1} - I_l u_l\| \le c_1 h_{l+1}^\kappa$ for all $l$;
+* the $\mu$ cycles on level $l + 1$ contract the error by $\xi^\mu$, $\|u_{l+1} - \tilde
+  u_{l+1}\| \le \xi^\mu \|u_{l+1} - I_l \tilde u_l\|$ for all $l$;
+* the interpolations are bounded, $\|I_l\| \le c_2 2^{-\kappa}$ for all $l$.
 
-If moreover `c₂ ξ^μ < 1`, then the full multigrid approximation is accurate to the discretization
-order on every level, `‖u l - ũ l‖ ≤ (ξ^μ/(1 - c₂ ξ^μ)) c₁ h_l^κ`. -/
+If moreover $c_2 \xi^\mu < 1$, then the full multigrid approximation is accurate to the
+discretization order on every level:
+$$\|u_l - \tilde u_l\| \le \frac{\xi^\mu}{1 - c_2 \xi^\mu}\, c_1 h_l^\kappa.$$
+
+This is Theorem 13.2 of [saad2003iterative], the full multigrid error bound. The exact solutions
+are `u`, the approximations are `utilde`, and the interpolations are `interp`. The proof
+specializes `Multigrid.le_of_rec_of_half` to $a_l = \|u_l - \tilde u_l\|$. -/
 theorem norm_sub_fullMultigrid_le {E : ℕ → Type*} [∀ l, NormedAddCommGroup (E l)]
     [∀ l, NormedSpace ℝ (E l)] {u utilde : ∀ l, E l} {interp : ∀ l, E l →L[ℝ] E (l + 1)}
     {h : ℕ → ℝ} {c₁ c₂ ξ κ : ℝ} {μ : ℕ} (hh : ∀ l, h (l + 1) = h l / 2) (hhpos : ∀ l, 0 < h l)

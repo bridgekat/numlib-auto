@@ -7,63 +7,74 @@ import Numlib.Optimization.Constrained.TwoPhase.Complexity
 /-!
 # High-order target-following runs
 
-Phase 2 of the two-phase method TPqp-GC (Algorithm 14.3.2 of [cartis2022evaluation]) for
-`min f(x)` subject to `x ∈ X`, `c(x) = 0`, with `f : E → ℝ`, `c : E → F` on a normed space `E`
-(`F` an inner product space), follows decreasing targets `t_k` as the generic outer loop of
-`Numlib.Optimization.Constrained.TwoPhase.Run`, with the criticality test of order `q`
-(14.3.34): at the output `y` of an inner call, for a target `t` and optimality radii `δ`,
-`φ^{δ_j}_{μ,X(y),j}(y, t) ≤ ε_j ‖r(y, t)‖ δ_j^j/j!` for `j ∈ [1 : q]`, where `μ(·, t)` is the
-merit function `½ ‖r(·, t)‖²` (`Constrained.targetMerit`) and `φ` the Taylor measure on the
-feasible displacements (`Optimization.taylorMeasure`). The tolerances are `ε : ℕ → ℝ`, `ε₀ = ε 0`
-being the primal one.
+This file sets up Phase 2 of the two-phase method TPqp-GC (Algorithm 14.3.2 of
+[cartis2022evaluation]) for the problem of minimizing $f(x)$ subject to $x \in X$ and $c(x) = 0$,
+with $f : E \to \mathbb{R}$ and $c : E \to F$ on a normed space $E$. As in the generic outer loop of
+`Numlib.Optimization.Constrained.TwoPhase.Run`, Phase 2 follows decreasing targets $t_k$ and calls
+an inner method on the merit function $\mu(\cdot, t) = \frac12 \|r(\cdot, t)\|^2$
+(`Constrained.targetMerit`), where $r(x, t) = (c(x), f(x) - t)$. The criticality test is the test
+(14.3.34) of order $q$: at the output $y$ of an inner call, for a target $t$ and optimality radii
+$\delta$,
+$$\phi^{\delta_j}_{\mu, X(y), j}(y, t) \le \varepsilon_j \|r(y, t)\| \frac{\delta_j^j}{j!} \quad
+  \text{for } j = 1, \dots, q,$$
+where $\phi$ is the Taylor measure on the feasible displacements $X(y) = \{d \mid y + d \in X\}$
+(`Optimization.taylorMeasure`). The tolerances are a sequence
+$\varepsilon : \mathbb{N} \to \mathbb{R}$, and $\varepsilon_0$ is the primal tolerance.
 
-This file defines the data and the run predicate, maps them to the generic outer loop, and
-constructs runs from an inner oracle.
+The file defines the data and the run predicate, maps them to the generic outer loop, and constructs
+runs from an inner oracle. Write $\mathcal{K}_a$ and $\mathcal{K}_b$ for the outer iterations in
+case (a) and in case (b).
 
 ## Main definitions
 
-* `Constrained.targetCrit f c X q ε t y δ`: the criticality test (14.3.34);
-* `Constrained.HighOrderTargetSeq E`: outer iterates, targets, optimality radii, inner iterates,
-  call lengths and successful inner iterations;
+* `Constrained.targetCrit`: the criticality test (14.3.34).
+* `Constrained.HighOrderTargetSeq`: the outer iterates, targets, optimality radii, inner iterates,
+  call lengths and successful inner iterations.
 * `Constrained.HighOrderTargetSeq.toTargetFollowingSeq`: the data of the generic outer loop, with
-  the tests `IsKa`, `IsKb` and `targetCrit`;
+  the tests `Constrained.HighOrderTargetSeq.IsKa`, `Constrained.HighOrderTargetSeq.IsKb` and
+  `Constrained.targetCrit`.
 * `Constrained.HighOrderTargetSeq.InnerTest`: the termination test (14.3.19) of the inner method
-  called with tolerances `β ‖r(x_k, t_k)‖ ε_j`;
-* `Constrained.HighOrderTargetSeq.succCount`, `kaCount`, `kbCount`, `funEvals`, `derivEvals`,
-  `targetOut`, `goodCount`, `badCount`: the counts and the output target of Phase 2, those of the
-  generic outer loop on `toCountSeq` (the data with only the tests a count uses) or on
-  `toTargetFollowingSeq`;
-* `Constrained.IsHighOrderTargetRun f c X q θ β ε x₁ D`: `D` is a run of Phase 2 from `x₁`;
-* `Constrained.InnerCall E`: the data of one inner call.
+  called with the tolerances $\beta \|r(x_k, t_k)\| \varepsilon_j$.
+* `Constrained.HighOrderTargetSeq.succCount`, `Constrained.HighOrderTargetSeq.kaCount`,
+  `Constrained.HighOrderTargetSeq.kbCount`, `Constrained.HighOrderTargetSeq.funEvals`,
+  `Constrained.HighOrderTargetSeq.derivEvals`, `Constrained.HighOrderTargetSeq.targetOut`,
+  `Constrained.HighOrderTargetSeq.goodCount`, `Constrained.HighOrderTargetSeq.badCount`: the counts
+  and the output target of Phase 2.
+* `Constrained.IsHighOrderTargetRun`: the data form a run of Phase 2 from $x_1$.
+* `Constrained.InnerCall`: the data of one inner call.
 
 ## Main results
 
-* `Constrained.IsHighOrderTargetRun.toRun`: a run is a run of the generic outer loop;
+* `Constrained.IsHighOrderTargetRun.toRun`: a run is a run of the generic outer loop.
 * `Constrained.IsHighOrderTargetRun.output_spec`: the output satisfies (14.3.48), (14.3.49) and
-  (14.3.52);
-* `Constrained.IsHighOrderTargetRun.kaCount_le`: Lemma 7.2.4,
-  `|𝒦_a| ≤ (f_up - f_low + 1)/((1 - θ)ε₀)`;
-* `Constrained.HighOrderTargetSeq.exists_run_of_oracle`: an inner oracle producing admissible
+  (14.3.52).
+* `Constrained.IsHighOrderTargetRun.kaCount_le`: Lemma 7.2.4, $|\mathcal{K}_a| \le
+  (f_{\mathrm{up}} - f_{\mathrm{low}} + 1)/((1 - \theta)\varepsilon_0)$.
+* `Constrained.HighOrderTargetSeq.exists_run_of_oracle`: an inner oracle that produces admissible
   calls from every admissible point yields a run whose calls are produced by the oracle.
 
 ## Implementation notes
 
-The data `Constrained.HighOrderTargetSeq` only add the optimality radii and the successful inner
-iterations to those of the generic outer loop; `toTargetFollowingSeq` and
-`Constrained.IsHighOrderTargetRun.toRun` transfer every counting and termination statement of
-`Numlib.Optimization.Constrained.TwoPhase.Run` and `…Complexity` to the high-order run, and the
-termination predicates `Stop`, `Before`, `IsEnd` are reducible abbreviations of the generic ones.
-`Constrained.targetCrit` is stated in unfolded form (`targetCrit_iff`) and is the
-`(ε, δ)`-approximate criticality `Optimization.IsEpsDeltaApprox` of `μ(·, t)` with the
-tolerances scaled by `‖r(y, t)‖` (`targetCrit_iff_isEpsDeltaApprox`). The construction
-`Constrained.HighOrderTargetSeq.exists_run_of_oracle` is generic in an extra property `Good` of the
-calls, so that each realization of the inner method (regularization, trust region, …) yields runs
-whose calls carry the certificates of that method.
-
-Step 2(a) uses the strict test `‖r(x_{k+1}, t_k)‖ < θε₀` (`IsKa`). The inner calls
-are described by their iterates: `μ(·, t_k)` does not increase along a call, and a call is stopped
-as soon as `‖r(·, t_k)‖ < θε₀` (this makes every successful iteration but the last one of a call
-count in the telescoping argument).
+* The data `Constrained.HighOrderTargetSeq` add only the optimality radii and the successful inner
+  iterations to the data of the generic outer loop. Through
+  `Constrained.HighOrderTargetSeq.toTargetFollowingSeq` and
+  `Constrained.IsHighOrderTargetRun.toRun`, every counting and termination statement of
+  `Numlib.Optimization.Constrained.TwoPhase.Run` and
+  `Numlib.Optimization.Constrained.TwoPhase.Complexity` applies to a high-order run. The termination
+  predicates `Stop`, `Before` and `IsEnd` are reducible abbreviations of the generic ones.
+* The counts that use only some of the tests are taken on
+  `Constrained.HighOrderTargetSeq.toCountSeq`, the same data with only those tests.
+* `Constrained.targetCrit` is stated in unfolded form (`Constrained.targetCrit_iff`). It is the
+  $(\varepsilon, \delta)$-approximate criticality `Optimization.IsEpsDeltaApprox` of $\mu(\cdot, t)$
+  with the tolerances scaled by $\|r(y, t)\|$ (`Constrained.targetCrit_iff_isEpsDeltaApprox`).
+* The construction `Constrained.HighOrderTargetSeq.exists_run_of_oracle` is generic in an extra
+  property `Good` of the calls. So each realization of the inner method (regularization, trust
+  region, and others) yields runs whose calls carry the certificates of that method.
+* Step 2(a) uses the strict test $\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0$
+  (`Constrained.HighOrderTargetSeq.IsKa`). The inner calls are described by their iterates:
+  $\mu(\cdot, t_k)$ does not increase along a call, and a call stops as soon as
+  $\|r(\cdot, t_k)\| < \theta\varepsilon_0$. With this rule every successful iteration except the
+  last one of a call counts in the telescoping argument.
 -/
 
 open Finset
@@ -77,12 +88,18 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 section Crit
 
-/-- **The criticality test (14.3.34)** of [cartis2022evaluation] (also the third stopping test of
-(14.3.32)) at the point `y` for the target `t` with optimality radii `δ`:
-`φ^{δ_j}_{μ,X(y),j}(y, t) ≤ ε_j ‖r(y, t)‖ δ_j^j/j!` for `j ∈ [1 : q]`, where
-`μ(·, t) = targetMerit f c t` and `X(y) = {d | y + d ∈ X}` (`targetCrit_iff_isEpsDeltaApprox`:
-the `(ε', δ)`-approximate `q`-th order criticality of `μ(·, t)` for the tolerances
-`ε'_j = ε_j ‖r(y, t)‖`). -/
+/-- **The criticality test (14.3.34)** of [cartis2022evaluation] at the point $y$, for the target
+$t$ and the optimality radii $\delta$: for every $j = 1, \dots, q$,
+$$\phi^{\delta_j}_{\mu, X(y), j}(y, t) \le \varepsilon_j \|r(y, t)\| \frac{\delta_j^j}{j!},$$
+where $\phi^{\delta_j}_{\mu, X(y), j}(y, t)$ is the Taylor measure of order $j$ and radius
+$\delta_j$ of $\mu(\cdot, t) = \frac12 \|r(\cdot, t)\|^2$ at $y$ over the feasible displacements
+$X(y) = \{d \mid y + d \in X\}$.
+
+This is also the third stopping test of (14.3.32). The measure is `Optimization.taylorMeasure`
+of the Taylor series of `Constrained.targetMerit f c t` at $y$. By
+`Constrained.targetCrit_iff_isEpsDeltaApprox`, the test is the
+$(\varepsilon', \delta)$-approximate criticality of order $q$ of $\mu(\cdot, t)$ for the
+tolerances $\varepsilon'_j = \varepsilon_j \|r(y, t)\|$. -/
 def targetCrit (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (ε : ℕ → ℝ) (t : ℝ) (y : E)
     (δ : ℕ → ℝ) : Prop :=
   ∀ j ∈ Finset.Icc 1 q,
@@ -92,19 +109,27 @@ def targetCrit (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (ε : ℕ →
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {ε ε' : ℕ → ℝ} {t : ℝ} {y : E}
   {δ : ℕ → ℝ}
 
+/-- The criticality test holds if and only if $\phi^{\delta_j}_{\mu, X(y), j}(y, t) \le
+\varepsilon_j \|r(y, t)\| \delta_j^j/j!$ for every $j = 1, \dots, q$. -/
 theorem targetCrit_iff :
     targetCrit f c X q ε t y δ ↔ ∀ j ∈ Finset.Icc 1 q,
       Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c t) y) j (δ j)
         {d | y + d ∈ X} ≤ ε j * targetResidual f c t y * δ j ^ j / j ! :=
   Iff.rfl
 
+/-- The criticality test at $(y, t)$ with radii $\delta$ is the $(\varepsilon', \delta)$-approximate
+criticality of order $q$ (`Optimization.IsEpsDeltaApprox`) of $\mu(\cdot, t)$ at $y$ over the
+feasible displacements $\{d \mid y + d \in X\}$, for the tolerances
+$\varepsilon'_j = \varepsilon_j \|r(y, t)\|$. -/
 theorem targetCrit_iff_isEpsDeltaApprox :
     targetCrit f c X q ε t y δ ↔ Optimization.IsEpsDeltaApprox
       (ftaylorSeries ℝ (targetMerit f c t) y) {d | y + d ∈ X} q
       (fun j => ε j * targetResidual f c t y) δ :=
   Iff.rfl
 
-/-- The criticality test is monotone in the tolerances. -/
+/-- The criticality test is monotone in the tolerances. If the test holds with tolerances
+$\varepsilon'$, and $\varepsilon'_j \le \varepsilon_j$ and $\delta_j \ge 0$ for every
+$j = 1, \dots, q$, then the test holds with tolerances $\varepsilon$. -/
 theorem targetCrit.mono (h : targetCrit f c X q ε' t y δ) (hε : ∀ j ∈ Finset.Icc 1 q, ε' j ≤ ε j)
     (hδ : ∀ j ∈ Finset.Icc 1 q, 0 ≤ δ j) : targetCrit f c X q ε t y δ := fun j hj =>
   (h j hj).trans (by
@@ -117,23 +142,26 @@ end Crit
 
 /-! ### The data of Phase 2 -/
 
-/-- The sequences of Phase 2 of a high-order target-following method ([cartis2022evaluation],
-Algorithm 14.3.2), indexed by the outer iteration `k ≥ 1` (values at `k = 0` are unused): outer
-iterates `x k`, targets `t k`, optimality radii `δ k`, and for the `k`-th call of the inner method
-on `μ(·, t_k)` its iterates `xi k i`, its number of iterations `e k` and its successful iterations
-`succ k i`. -/
+/-- The **data of Phase 2** of a high-order target-following method (Algorithm 14.3.2 of
+[cartis2022evaluation]), indexed by the outer iteration $k \ge 1$. The data consist of the outer
+iterates $x_k$, the targets $t_k$, the optimality radii $\delta_{k,j}$, and, for the $k$-th call
+of the inner method on $\mu(\cdot, t_k)$, its iterates $x_{k,i}$, its number $e_k$ of iterations
+and its successful iterations.
+
+The values at $k = 0$ are not used. -/
 structure HighOrderTargetSeq (E : Type*) where
-  /-- The outer iterates. -/
+  /-- The outer iterates $x_k$. -/
   x : ℕ → E
-  /-- The targets. -/
+  /-- The targets $t_k$. -/
   t : ℕ → ℝ
-  /-- The optimality radii. -/
+  /-- The optimality radii $\delta_{k,j}$ for the orders $j = 1, \dots, q$. -/
   δ : ℕ → ℕ → ℝ
-  /-- The inner iterates. -/
+  /-- The iterates $x_{k,i}$ of the $k$-th inner call. -/
   xi : ℕ → ℕ → E
-  /-- The numbers of inner iterations. -/
+  /-- The number $e_k$ of iterations of the $k$-th inner call. -/
   e : ℕ → ℕ
-  /-- The successful inner iterations. -/
+  /-- The successful iterations: `succ k i` says that iteration $i$ of the $k$-th inner call is
+  successful. -/
   succ : ℕ → ℕ → Prop
 
 namespace HighOrderTargetSeq
@@ -141,18 +169,19 @@ namespace HighOrderTargetSeq
 variable (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ) (ε : ℕ → ℝ)
   (D : HighOrderTargetSeq E)
 
-/-- Outer iteration `k` is in `𝒦_a` ((14.3.36) of [cartis2022evaluation]): Step 2(a) occurs,
-`‖r(x_{k+1}, t_k)‖ < θε₀`. -/
+/-- Outer iteration $k$ is in $\mathcal{K}_a$ ((14.3.36) of [cartis2022evaluation]), that is, Step
+2(a) occurs: $\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0$. -/
 def IsKa (k : ℕ) : Prop := targetResidual f c (D.t k) (D.x (k + 1)) < θ * ε 0
 
-/-- Outer iteration `k` is in `𝒦_b`: Step 2(b) occurs, `‖r(x_{k+1}, t_k)‖ ≥ θε₀` and
-`f(x_{k+1}) < t_k`. -/
+/-- Outer iteration $k$ is in $\mathcal{K}_b$, that is, Step 2(b) occurs:
+$\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$ and $f(x_{k+1}) < t_k$. -/
 def IsKb (k : ℕ) : Prop :=
   θ * ε 0 ≤ targetResidual f c (D.t k) (D.x (k + 1)) ∧ f (D.x (k + 1)) < D.t k
 
 /-- The data of Phase 2 as data of the generic target-following outer loop
-(`Constrained.TargetFollowingSeq`): the tests are `𝒦_a`, `𝒦_b` and the criticality test
-(14.3.34) at `x_{k+1}` with the radii `δ_{k+1}`. -/
+(`Constrained.TargetFollowingSeq`). The tests are $\mathcal{K}_a$, $\mathcal{K}_b$, and, for a
+target $\tau$, the criticality test (14.3.34) at $(x_{k+1}, \tau)$ with the radii
+$\delta_{k+1}$. -/
 def toTargetFollowingSeq : TargetFollowingSeq E where
   x := D.x
   t := D.t
@@ -162,23 +191,24 @@ def toTargetFollowingSeq : TargetFollowingSeq E where
   Kb := D.IsKb f c θ ε
   crit k τ := targetCrit f c X q ε τ (D.x (k + 1)) (D.δ (k + 1))
 
-/-- The criticality test (14.3.34) at the output `x_{k+1}` of the `k`-th inner call for the old
-target `t_k`, with the radii `δ_{k+1}` (the third stopping test of (14.3.32)). -/
+/-- The criticality test (14.3.34) at the output $x_{k+1}$ of the $k$-th inner call for the old
+target $t_k$, with the radii $\delta_{k+1}$. This is the third stopping test of (14.3.32). -/
 abbrev EndCrit (k : ℕ) : Prop := targetCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))
 
-/-- Phase 2 terminates at outer iteration `k`: in case (c), or in cases (a)/(b) when (14.3.34)
-holds at `(x_{k+1}, t_{k+1})` with the radii `δ_{k+1}`. -/
+/-- Phase 2 terminates at outer iteration $k$: in case (c), or in case (a) or (b) when the
+criticality test (14.3.34) holds at $(x_{k+1}, t_{k+1})$ with the radii $\delta_{k+1}$. -/
 abbrev Stop (k : ℕ) : Prop := (D.toTargetFollowingSeq f c X q θ ε).Stop k
 
-/-- No outer iteration `j ∈ [1, k)` has terminated Phase 2. -/
+/-- Outer iteration $k$ is reached: no outer iteration $j \in [1, k)$ terminates Phase 2. -/
 abbrev Before (k : ℕ) : Prop := (D.toTargetFollowingSeq f c X q θ ε).Before k
 
-/-- Phase 2 terminates at outer iteration `kε ≥ 1`. -/
+/-- Phase 2 terminates at outer iteration $k_\varepsilon \ge 1$: the iteration $k_\varepsilon$ is
+reached and terminates Phase 2. -/
 abbrev IsEnd (kε : ℕ) : Prop := (D.toTargetFollowingSeq f c X q θ ε).IsEnd kε
 
-/-- The data of Phase 2 as data of the generic outer loop with the tests `Ka`, `Kb` and no
-criticality test, on which the counts that involve only some of the tests are taken (the counts
-of the outer loop do not involve the criticality test). -/
+/-- The data of Phase 2 as data of the generic outer loop, with given tests `Ka`, `Kb` and a
+criticality test that never holds. The counts that involve only some of the tests are taken on
+these data; no count of the outer loop involves the criticality test. -/
 def toCountSeq (Ka Kb : ℕ → Prop) : TargetFollowingSeq E where
   x := D.x
   t := D.t
@@ -188,20 +218,26 @@ def toCountSeq (Ka Kb : ℕ → Prop) : TargetFollowingSeq E where
   Kb := Kb
   crit _ _ := False
 
-/-- The output target `t_ε` of Phase 2 terminating at outer iteration `k`: `t_{k+1}` in cases
-(a)/(b) and `t_k` in case (c) (the output point is `x_ε = x_{k+1}`). -/
+/-- The **output target** $t_\varepsilon$ of Phase 2 when it terminates at outer iteration $k$:
+$t_{k+1}$ in case (a) or (b), and $t_k$ in case (c). The output point is
+$x_\varepsilon = x_{k+1}$. -/
 noncomputable abbrev targetOut (k : ℕ) : ℝ :=
   (D.toCountSeq (D.IsKa f c θ ε) (D.IsKb f c θ ε)).targetOut k
 
+/-- The output target is the output target of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem targetOut_eq (k : ℕ) :
     D.targetOut f c θ ε k = (D.toTargetFollowingSeq f c X q θ ε).targetOut k := rfl
 
-/-- **The termination test (14.3.19) of the inner method** at the end of the `k`-th call
-([cartis2022evaluation], Algorithm 14.3.2, Step 1, the call
-`INNER(μ(·, t_k), X, q, x_k, β ‖r(x_k, t_k)‖ ε)`):
-`φ^{δ_{k+1,j}}_{μ,X(x_{k+1}),j}(x_{k+1}, t_k) ≤ β ‖r(x_k, t_k)‖ ε_j δ_{k+1,j}^j/j!` for
-`j ∈ [1 : q]`. Its tolerance is at most that of (14.3.34) at `(x_{k+1}, t_k)` when `β ≤ θ` and
-`‖r(x_{k+1}, t_k)‖ ≥ θε₀`. -/
+/-- **The termination test (14.3.19) of the inner method** at the end of the $k$-th call: for every
+$j = 1, \dots, q$,
+$$\phi^{\delta_{k+1,j}}_{\mu, X(x_{k+1}), j}(x_{k+1}, t_k) \le \beta \|r(x_k, t_k)\|
+  \varepsilon_j \frac{\delta_{k+1,j}^j}{j!}.$$
+
+The $k$-th call is $\mathrm{INNER}(\mu(\cdot, t_k), X, q, x_k, \beta \|r(x_k, t_k)\|
+\varepsilon)$ of Step 1 of Algorithm 14.3.2 of [cartis2022evaluation]. When $\beta \le \theta$
+and $\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$, the tolerance of this test is at most the
+tolerance of (14.3.34) at $(x_{k+1}, t_k)$. -/
 def InnerTest (k : ℕ) : Prop :=
   ∀ j ∈ Finset.Icc 1 q,
     Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c (D.t k)) (D.x (k + 1))) j
@@ -210,60 +246,75 @@ def InnerTest (k : ℕ) : Prop :=
 
 /-! ### Counts -/
 
-/-- The number of successful iterations of the `k`-th inner call. -/
+/-- The number of successful iterations of the $k$-th inner call. -/
 noncomputable abbrev succCount (k : ℕ) : ℕ :=
   (D.toCountSeq (fun _ => False) fun _ => False).succCount D.succ k
 
-/-- The number of outer iterations of `𝒦_a` among `[1, K)`. -/
+/-- The number $|\mathcal{K}_a \cap [1, K)|$ of outer iterations in $\mathcal{K}_a$ among
+$1, \dots, K - 1$. -/
 noncomputable abbrev kaCount (K : ℕ) : ℕ :=
   (D.toCountSeq (D.IsKa f c θ ε) fun _ => False).kaCount K
 
-/-- The number of outer iterations of `𝒦_b` among `[1, K)`. -/
+/-- The number $|\mathcal{K}_b \cap [1, K)|$ of outer iterations in $\mathcal{K}_b$ among
+$1, \dots, K - 1$. -/
 noncomputable abbrev kbCount (K : ℕ) : ℕ :=
   (D.toCountSeq (fun _ => False) (D.IsKb f c θ ε)).kbCount K
 
-/-- The number of evaluations of `(f, c)` in Phase 2 up to outer iteration `k`:
-`1 + ∑_{j ∈ [1, k]} e_j` (one at `x₁` and one per inner iteration). -/
+/-- The number of evaluations of $(f, c)$ in Phase 2 up to outer iteration $k$:
+$1 + \sum_{j=1}^{k} e_j$, one evaluation at $x_1$ and one per inner iteration. -/
 noncomputable abbrev funEvals (k : ℕ) : ℕ :=
   (D.toCountSeq (fun _ => False) fun _ => False).funEvals k
 
-/-- The number of evaluations of the derivatives of `(f, c)` in Phase 2 up to outer iteration
-`k`: one at `x₁` and one per successful inner iteration. -/
+/-- The number of evaluations of the derivatives of $(f, c)$ in Phase 2 up to outer iteration $k$:
+one evaluation at $x_1$ and one per successful inner iteration. -/
 noncomputable abbrev derivEvals (k : ℕ) : ℕ :=
   (D.toCountSeq (fun _ => False) fun _ => False).derivEvals D.succ k
 
-/-- A *good* inner iteration `(k, i)` for the exemption by (14.3.34) at the old target
-([cartis2022evaluation], proof of Lemma 14.3.8): it is successful, it is not the last iteration
-of a call ending at a point passing `EndCrit`, and its new iterate has residual `≥ θε₀`. -/
+/-- A **good** inner iteration $(k, i)$ for the exemption by the criticality test (14.3.34) at the
+old target: it is successful, it is not the last iteration of a call whose output passes
+`Constrained.HighOrderTargetSeq.EndCrit`, and its new iterate has residual
+$\|r(x_{k,i+1}, t_k)\| \ge \theta\varepsilon_0$. These are the iterations that the proof of
+Lemma 14.3.8 of [cartis2022evaluation] counts. -/
 abbrev IsGood (k i : ℕ) : Prop :=
   (D.toTargetFollowingSeq f c X q θ ε).IsGood f c θ (ε 0) D.succ (D.EndCrit f c X q ε) k i
 
-/-- The number of good iterations of the `k`-th inner call. -/
+/-- The number of good iterations of the $k$-th inner call. -/
 noncomputable abbrev goodCount (k : ℕ) : ℕ :=
   (D.toTargetFollowingSeq f c X q θ ε).goodCount f c θ (ε 0) D.succ (D.EndCrit f c X q ε) k
 
-/-- A *bad* outer iteration: `k ∈ 𝒦_b` and its inner call contains no good iteration. -/
+/-- A **bad** outer iteration: $k \in \mathcal{K}_b$ and its inner call contains no good iteration.
+-/
 abbrev IsBad (k : ℕ) : Prop :=
   (D.toTargetFollowingSeq f c X q θ ε).IsBad f c θ (ε 0) D.succ (D.EndCrit f c X q ε) k
 
-/-- The number of bad outer iterations among `[1, K)`. -/
+/-- The number of bad outer iterations among $1, \dots, K - 1$. -/
 noncomputable abbrev badCount (K : ℕ) : ℕ :=
   (D.toTargetFollowingSeq f c X q θ ε).badCount f c θ (ε 0) D.succ (D.EndCrit f c X q ε) K
 
 variable {f c X q θ ε D}
 
+/-- The number of successful iterations of the $k$-th call is the one of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem succCount_eq (k : ℕ) :
     D.succCount k = (D.toTargetFollowingSeq f c X q θ ε).succCount D.succ k := rfl
 
+/-- The number of case-(a) iterations is the one of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem kaCount_eq (K : ℕ) :
     D.kaCount f c θ ε K = (D.toTargetFollowingSeq f c X q θ ε).kaCount K := rfl
 
+/-- The number of case-(b) iterations is the one of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem kbCount_eq (K : ℕ) :
     D.kbCount f c θ ε K = (D.toTargetFollowingSeq f c X q θ ε).kbCount K := rfl
 
+/-- The number of evaluations of $(f, c)$ is the one of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem funEvals_eq (k : ℕ) :
     D.funEvals k = (D.toTargetFollowingSeq f c X q θ ε).funEvals k := rfl
 
+/-- The number of derivative evaluations is the one of the generic outer loop on
+`Constrained.HighOrderTargetSeq.toTargetFollowingSeq`. -/
 theorem derivEvals_eq (k : ℕ) :
     D.derivEvals k = (D.toTargetFollowingSeq f c X q θ ε).derivEvals D.succ k := rfl
 
@@ -271,42 +322,62 @@ section Tests
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E]
 
+/-- Outer iteration $k$ is in $\mathcal{K}_a$ if and only if
+$\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0$. -/
 theorem isKa_iff {k : ℕ} :
     D.IsKa f c θ ε k ↔ targetResidual f c (D.t k) (D.x (k + 1)) < θ * ε 0 := Iff.rfl
 
+/-- Outer iteration $k$ is in $\mathcal{K}_b$ if and only if
+$\|r(x_{k+1}, t_k)\| \ge \theta\varepsilon_0$ and $f(x_{k+1}) < t_k$. -/
 theorem isKb_iff {k : ℕ} :
     D.IsKb f c θ ε k ↔
       θ * ε 0 ≤ targetResidual f c (D.t k) (D.x (k + 1)) ∧ f (D.x (k + 1)) < D.t k := Iff.rfl
 
+/-- The number of successful iterations of the $k$-th call is the cardinality of the set of
+successful $i \in [0, e_k)$, for every decidability instance of the predicate. -/
 theorem succCount_eq_card_filter (k : ℕ) [DecidablePred (D.succ k)] :
     D.succCount k = ((Finset.range (D.e k)).filter (D.succ k)).card :=
   TargetFollowingSeq.succCount_eq_card_filter k
 
+/-- In case (a) or (b), the output target of an outer iteration $k$ is $t_{k+1}$. -/
 theorem targetOut_of_ka_or_kb {k : ℕ} (h : D.IsKa f c θ ε k ∨ D.IsKb f c θ ε k) :
     D.targetOut f c θ ε k = D.t (k + 1) :=
   TargetFollowingSeq.targetOut_of_ka_or_kb h
 
+/-- In case (c), that is, neither in case (a) nor in case (b), the output target of an outer
+iteration $k$ is $t_k$. -/
 theorem targetOut_of_not {k : ℕ} (ha : ¬ D.IsKa f c θ ε k) (hb : ¬ D.IsKb f c θ ε k) :
     D.targetOut f c θ ε k = D.t k :=
   TargetFollowingSeq.targetOut_of_not ha hb
 
+/-- The number of case-(a) iterations among $1, \dots, K - 1$ is the cardinality of
+$\mathcal{K}_a \cap [1, K)$, for every decidability instance of the predicate. -/
 theorem kaCount_eq_card_filter (K : ℕ) [DecidablePred (D.IsKa f c θ ε)] :
     D.kaCount f c θ ε K = ((Finset.Ico 1 K).filter (D.IsKa f c θ ε)).card :=
   letI : DecidablePred (D.toCountSeq (D.IsKa f c θ ε) fun _ => False).Ka := ‹_›
   TargetFollowingSeq.kaCount_eq_card_filter K
 
+/-- The number of case-(b) iterations among $1, \dots, K - 1$ is the cardinality of
+$\mathcal{K}_b \cap [1, K)$, for every decidability instance of the predicate. -/
 theorem kbCount_eq_card_filter (K : ℕ) [DecidablePred (D.IsKb f c θ ε)] :
     D.kbCount f c θ ε K = ((Finset.Ico 1 K).filter (D.IsKb f c θ ε)).card :=
   letI : DecidablePred (D.toCountSeq (fun _ => False) (D.IsKb f c θ ε)).Kb := ‹_›
   TargetFollowingSeq.kbCount_eq_card_filter K
 
+/-- The number of evaluations of $(f, c)$ up to outer iteration $k$ is $1 + \sum_{j=1}^{k} e_j$. -/
 theorem funEvals_eq_sum (k : ℕ) : D.funEvals k = 1 + ∑ j ∈ Finset.Icc 1 k, D.e j := rfl
 
+/-- The number of derivative evaluations up to outer iteration $k$ is
+$1 + \sum_{j=1}^{k} |\mathcal{S}_j|$, where $|\mathcal{S}_j|$ is the number of successful
+iterations of the $j$-th call. -/
 theorem derivEvals_eq_sum (k : ℕ) :
     D.derivEvals k = 1 + ∑ j ∈ Finset.Icc 1 k, D.succCount j := rfl
 
 end Tests
 
+/-- The termination test (14.3.19) of the inner method holds at the end of the $k$-th call if and
+only if $\phi^{\delta_{k+1,j}}_{\mu, X(x_{k+1}), j}(x_{k+1}, t_k) \le \beta \|r(x_k, t_k)\|
+\varepsilon_j \delta_{k+1,j}^j/j!$ for every $j = 1, \dots, q$. -/
 theorem innerTest_iff {β : ℝ} {k : ℕ} :
     D.InnerTest f c X q β ε k ↔ ∀ j ∈ Finset.Icc 1 q,
       Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c (D.t k)) (D.x (k + 1))) j
@@ -317,53 +388,71 @@ end HighOrderTargetSeq
 
 /-! ### The run predicate -/
 
-/-- **A run of Phase 2 of a high-order target-following method** ([cartis2022evaluation],
-Phase 2 of Algorithm 14.3.2, TPqp-GC), started at `x₁ ∈ X` with `‖c(x₁)‖ ≤ θε₀`, as a predicate
-on the data `D`. Constants: `θ ∈ (0, 1)`, `β ∈ (0, θ]`, tolerances `ε_j ∈ (0, 1]`, `j ∈ [0 : q]`.
-Step 0: `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`. For every outer iteration `k ≥ 1` reached: Step 1,
-`x_{k+1} ∈ X` and radii `δ_{k+1} ∈ (0, 1]^q` satisfy (14.3.32), computed by a call of the inner
-method on `μ(·, t_k)` from `x_k` whose iterates (`x_{k,0} = x_k`, `x_{k,e_k} = x_{k+1}`) do not
-increase `μ(·, t_k)` and keep `‖r(·, t_k)‖ ≥ θε₀` before the last one; Step 2, the target updates
-(14.3.33) in case (a) and (14.3.35) in case (b). Termination is `HighOrderTargetSeq.Stop`. -/
+/-- **A run of Phase 2 of a high-order target-following method** (Phase 2 of Algorithm 14.3.2 of
+[cartis2022evaluation], TPqp-GC), started at $x_1 \in X$ with
+$\|c(x_1)\| \le \theta\varepsilon_0$. The constants satisfy $\theta \in (0, 1)$,
+$\beta \in (0, \theta]$ and $\varepsilon_j \in (0, 1]$ for $j = 0, \dots, q$. The data $D$ form
+a run if:
+
+* Step 0: $x_1$ is the first outer iterate and $t_1 = f(x_1) - \sqrt{\varepsilon_0^2 -
+  \|c(x_1)\|^2}$;
+* Step 1, for every outer iteration $k \ge 1$ that is reached: $x_{k+1} \in X$, the radii
+  satisfy $\delta_{k+1,j} \in (0, 1]$ for $j = 1, \dots, q$, and the output condition (14.3.32)
+  holds, that is, $\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0$, or $f(x_{k+1}) < t_k$, or the
+  criticality test (14.3.34) holds at $(x_{k+1}, t_k)$ with the radii $\delta_{k+1}$;
+* Step 1, the inner call: its iterates satisfy $x_{k,0} = x_k$ and $x_{k,e_k} = x_{k+1}$, they
+  do not increase $\mu(\cdot, t_k)$, and $\|r(x_{k,i}, t_k)\| \ge \theta\varepsilon_0$ for every
+  $i < e_k$;
+* Step 2: the target update is (14.3.33) in case (a) and (14.3.35) in case (b).
+
+Termination is `Constrained.HighOrderTargetSeq.Stop`. -/
 structure IsHighOrderTargetRun (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (x₁ : E) (D : HighOrderTargetSeq E) : Prop where
+  /-- $\theta > 0$. -/
   θ_pos : 0 < θ
+  /-- $\theta < 1$. -/
   θ_lt_one : θ < 1
+  /-- $\beta > 0$. -/
   β_pos : 0 < β
+  /-- $\beta \le \theta$. -/
   β_le_θ : β ≤ θ
+  /-- $\varepsilon_j > 0$ for $j = 0, \dots, q$. -/
   ε_pos : ∀ j ∈ Finset.range (q + 1), 0 < ε j
+  /-- $\varepsilon_j \le 1$ for $j = 0, \dots, q$. -/
   ε_le_one : ∀ j ∈ Finset.range (q + 1), ε j ≤ 1
-  /-- `x₁ ∈ X`. -/
+  /-- The starting point satisfies $x_1 \in X$. -/
   mem_one : x₁ ∈ X
-  /-- Phase 1 ended with `‖c(x₁)‖ ≤ θε₀`. -/
+  /-- Phase 1 ended with $\|c(x_1)\| \le \theta\varepsilon_0$. -/
   norm_one_le : ‖c x₁‖ ≤ θ * ε 0
-  /-- Phase 2 starts at `x₁`. -/
+  /-- Phase 2 starts at $x_1$. -/
   x_one : D.x 1 = x₁
-  /-- Step 0. -/
+  /-- Step 0: $t_1 = f(x_1) - \sqrt{\varepsilon_0^2 - \|c(x_1)\|^2}$. -/
   t_one : D.t 1 = f x₁ - √(ε 0 ^ 2 - ‖c x₁‖ ^ 2)
-  /-- Step 1: the new iterate is feasible. -/
+  /-- Step 1: the new iterate $x_{k+1}$ lies in $X$. -/
   mem_succ : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.x (k + 1) ∈ X
-  /-- Step 1: the radii lie in `(0, 1]`. -/
+  /-- Step 1: the radii $\delta_{k+1,j}$ lie in $(0, 1]$. -/
   radius_mem : ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
     ∀ j ∈ Finset.Icc 1 q, 0 < D.δ (k + 1) j ∧ D.δ (k + 1) j ≤ 1
-  /-- Step 1: the output condition (14.3.32). -/
+  /-- Step 1: the output condition (14.3.32) holds at $x_{k+1}$. -/
   output : ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
     targetResidual f c (D.t k) (D.x (k + 1)) < θ * ε 0 ∨ f (D.x (k + 1)) < D.t k ∨
       targetCrit f c X q ε (D.t k) (D.x (k + 1)) (D.δ (k + 1))
-  /-- Step 1: the inner call starts at `x_k`. -/
+  /-- Step 1: the inner call starts at $x_k$. -/
   inner_zero : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.xi k 0 = D.x k
-  /-- Step 1: the inner call ends at `x_{k+1}`. -/
+  /-- Step 1: the inner call ends at $x_{k+1}$. -/
   inner_end : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.xi k (D.e k) = D.x (k + 1)
-  /-- Step 1: the inner method does not increase `μ(·, t_k)`. -/
+  /-- Step 1: the inner method does not increase $\mu(\cdot, t_k)$. -/
   inner_mono : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k,
     targetMerit f c (D.t k) (D.xi k (i + 1)) ≤ targetMerit f c (D.t k) (D.xi k i)
-  /-- Step 1: the call is stopped as soon as `‖r(·, t_k)‖ < θε₀`. -/
+  /-- Step 1: the call stops as soon as $\|r(\cdot, t_k)\| < \theta\varepsilon_0$, so the residual
+  is at least $\theta\varepsilon_0$ before the last iterate. -/
   inner_residual_ge : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → ∀ i < D.e k,
     θ * ε 0 ≤ targetResidual f c (D.t k) (D.xi k i)
-  /-- Step 2(a): (14.3.33). -/
+  /-- Step 2(a): the target update (14.3.33), $t_{k+1} = f(x_{k+1}) - \sqrt{\varepsilon_0^2 -
+  \|c(x_{k+1})\|^2}$. -/
   t_succ_a : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKa f c θ ε k →
     D.t (k + 1) = f (D.x (k + 1)) - √(ε 0 ^ 2 - ‖c (D.x (k + 1))‖ ^ 2)
-  /-- Step 2(b): (14.3.35). -/
+  /-- Step 2(b): the target update (14.3.35), $t_{k+1} = 2 f(x_{k+1}) - t_k$. -/
   t_succ_b : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.IsKb f c θ ε k →
     D.t (k + 1) = 2 * f (D.x (k + 1)) - D.t k
 
@@ -373,16 +462,22 @@ variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε :
   {D : HighOrderTargetSeq E} (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
 include h
 
+/-- In a run, the primal tolerance satisfies $\varepsilon_0 > 0$. -/
 theorem ε₀_pos : 0 < ε 0 := h.ε_pos 0 (by simp)
 
+/-- In a run, $\varepsilon_j > 0$ for every $j = 1, \dots, q$. -/
 theorem ε_pos' {j : ℕ} (hj : j ∈ Finset.Icc 1 q) : 0 < ε j :=
   h.ε_pos j (Finset.mem_range.2 (Nat.lt_succ_of_le (Finset.mem_Icc.1 hj).2))
 
+/-- In a run, the primal tolerance satisfies $\varepsilon_0 \le 1$. -/
 theorem ε₀_le_one : ε 0 ≤ 1 := h.ε_le_one 0 (by simp)
 
-/-- **A high-order target-following run is a run of the generic outer loop**
-(`Constrained.IsTargetFollowingRun`), with the strict test `‖r(x_{k+1}, t_k)‖ < θε₀` of
-Step 2(a). -/
+/-- **A high-order target-following run is a run of the generic outer loop.** If $D$ is a run of
+Phase 2 of TPqp-GC, then `Constrained.HighOrderTargetSeq.toTargetFollowingSeq` of $D$ is a
+`Constrained.IsTargetFollowingRun` with the same $f$, $c$, $\theta$, $\varepsilon_0$, $X$ and
+$x_1$.
+
+The test of Step 2(a) is the strict test $\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0$. -/
 theorem toRun :
     IsTargetFollowingRun f c θ (ε 0) X x₁ (D.toTargetFollowingSeq f c X q θ ε) where
   θ_pos := h.θ_pos
@@ -405,43 +500,54 @@ theorem toRun :
   t_succ_a := h.t_succ_a
   t_succ_b := h.t_succ_b
 
-/-- `μ(·, t_k)` is nonincreasing along the `k`-th inner call. -/
+/-- In a run, $\mu(\cdot, t_k)$ is nonincreasing along the $k$-th inner call:
+$\mu(x_{k,j}, t_k) \le \mu(x_{k,i}, t_k)$ for $i \le j \le e_k$, for every outer iteration
+$k \ge 1$ that is reached. -/
 theorem inner_merit_antitone {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) {i j : ℕ}
     (hij : i ≤ j) (hj : j ≤ D.e k) :
     targetMerit f c (D.t k) (D.xi k j) ≤ targetMerit f c (D.t k) (D.xi k i) :=
   h.toRun.inner_merit_antitone hk1 hk hij hj
 
-/-- `‖r(·, t_k)‖` is nonincreasing along the `k`-th inner call. -/
+/-- In a run, $\|r(\cdot, t_k)\|$ is nonincreasing along the $k$-th inner call:
+$\|r(x_{k,j}, t_k)\| \le \|r(x_{k,i}, t_k)\|$ for $i \le j \le e_k$, for every outer iteration
+$k \ge 1$ that is reached. -/
 theorem inner_residual_antitone {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) {i j : ℕ}
     (hij : i ≤ j) (hj : j ≤ D.e k) :
     targetResidual f c (D.t k) (D.xi k j) ≤ targetResidual f c (D.t k) (D.xi k i) :=
   h.toRun.inner_residual_antitone hk1 hk hij hj
 
-/-- `‖r(x_{k+1}, t_k)‖ ≤ ‖r(x_k, t_k)‖`. -/
+/-- In a run, $\|r(x_{k+1}, t_k)\| \le \|r(x_k, t_k)\|$ for every outer iteration $k \ge 1$ that is
+reached. -/
 theorem residual_succ_le {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
     targetResidual f c (D.t k) (D.x (k + 1)) ≤ targetResidual f c (D.t k) (D.x k) :=
   h.toRun.residual_succ_le hk1 hk
 
-/-- `‖r(x_k, t_k)‖ ≤ ε₀` at every outer iteration reached. -/
+/-- In a run, $\|r(x_k, t_k)\| \le \varepsilon_0$ for every outer iteration $k \ge 1$ that is
+reached. -/
 theorem residual_le {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
     targetResidual f c (D.t k) (D.x k) ≤ ε 0 :=
   h.toRun.residual_le hk1 hk
 
-/-- The outer iterates stay in `X`. -/
+/-- In a run, $x_k \in X$ for every outer iteration $k \ge 1$ that is reached. -/
 theorem x_mem : ∀ k, 1 ≤ k → D.Before f c X q θ ε k → D.x k ∈ X :=
   h.toRun.x_mem
 
-/-- **The outer bookkeeping of Phase 2** is a target sequence (`Constrained.IsTargetSequence`) up
-to every outer iteration `K` reached; hence Lemmas 7.2.3 and 7.2.4 of [cartis2022evaluation]
-hold. -/
+/-- **The outer bookkeeping of Phase 2.** In a run, the outer iterates, the targets and the case-(a)
+test form a target sequence (`Constrained.IsTargetSequence`) up to every outer iteration $K$
+that is reached. Hence Lemmas 7.2.3 and 7.2.4 of [cartis2022evaluation] hold for the run. -/
 theorem isTargetSequence {K : ℕ} (hK : D.Before f c X q θ ε K) :
     IsTargetSequence f c θ (ε 0) D.x D.t (D.IsKa f c θ ε) K :=
   h.toRun.isTargetSequence hK
 
-/-- **The output of Phase 2** ([cartis2022evaluation], (14.3.48), (14.3.49), (14.3.52)): if
-Phase 2 terminates at outer iteration `k_ε`, the output `x_ε = x_{k_ε+1}`, `t_ε = targetOut k_ε`
-with radii `δ_ε = δ_{k_ε+1}` satisfies `θε₀ ≤ ‖r(x_ε, t_ε)‖ ≤ ε₀`, `f(x_ε) ≥ t_ε` and (14.3.34)
-at `(x_ε, t_ε)`. -/
+/-- **The output of Phase 2** ((14.3.48), (14.3.49) and (14.3.52) of [cartis2022evaluation]). Let
+Phase 2 terminate at outer iteration $k_\varepsilon$, with output point
+$x_\varepsilon = x_{k_\varepsilon + 1}$, output target $t_\varepsilon$
+(`Constrained.HighOrderTargetSeq.targetOut`) and radii $\delta_\varepsilon =
+\delta_{k_\varepsilon + 1}$. Then
+$$\theta\varepsilon_0 \le \|r(x_\varepsilon, t_\varepsilon)\| \le \varepsilon_0, \qquad
+  t_\varepsilon \le f(x_\varepsilon),$$
+and the criticality test (14.3.34) holds at $(x_\varepsilon, t_\varepsilon)$ with the radii
+$\delta_\varepsilon$. -/
 theorem output_spec {kε : ℕ} (hend : D.IsEnd f c X q θ ε kε) :
     θ * ε 0 ≤ targetResidual f c (D.targetOut f c θ ε kε) (D.x (kε + 1)) ∧
       targetResidual f c (D.targetOut f c θ ε kε) (D.x (kε + 1)) ≤ ε 0 ∧
@@ -449,9 +555,13 @@ theorem output_spec {kε : ℕ} (hend : D.IsEnd f c X q θ ε kε) :
       targetCrit f c X q ε (D.targetOut f c θ ε kε) (D.x (kε + 1)) (D.δ (kε + 1)) :=
   (h.toRun.output_spec hend).2
 
-/-- **Lemma 7.2.4 for high-order runs** ([cartis2022evaluation]): under f.B.Fb
-(`f_low ≤ f ≤ f_up` on the points of `X` with `‖c‖ ≤ ε₀`),
-`|𝒦_a ∩ [1, K)| ≤ (f_up - f_low + 1)/((1 - θ)ε₀)`. -/
+/-- **Lemma 7.2.4** of [cartis2022evaluation] for high-order runs. Assume that
+$f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every $z \in X$ with
+$\|c(z)\| \le \varepsilon_0$ (assumption f.B.Fb). Then every outer iteration $K \ge 1$ that is
+reached satisfies
+$$|\mathcal{K}_a \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{(1 -
+  \theta)\varepsilon_0}.$$
+-/
 theorem kaCount_le {flow fup : ℝ} (hB : ∀ z ∈ X, ‖c z‖ ≤ ε 0 → flow ≤ f z ∧ f z ≤ fup) {K : ℕ}
     (hK1 : 1 ≤ K) (hK : D.Before f c X q θ ε K) :
     (D.kaCount f c θ ε K : ℝ) ≤ (fup - flow + 1) / ((1 - θ) * ε 0) :=
@@ -463,28 +573,40 @@ end IsHighOrderTargetRun
 
 section Construction
 
-/-- The data of one inner call of Phase 2: iterates, length, successful iterations and returned
-optimality radii. -/
+/-- The data of one inner call of Phase 2: its iterates, its length, its successful iterations and
+its returned optimality radii. -/
 structure InnerCall (E : Type*) where
-  /-- The iterates of the call. -/
+  /-- The iterates $x_0, x_1, \dots$ of the call. -/
   xi : ℕ → E
-  /-- The number of iterations of the call. -/
+  /-- The number $e$ of iterations of the call. -/
   e : ℕ
-  /-- The successful iterations. -/
+  /-- The successful iterations of the call. -/
   succ : ℕ → Prop
-  /-- The returned radii. -/
+  /-- The returned optimality radii $\delta_j$. -/
   δ : ℕ → ℝ
 
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {θ β : ℝ} {ε : ℕ → ℝ}
 
 open Classical in
-/-- **Construction of Phase-2 runs from an inner oracle.** Let `θ ∈ (0, 1)`, `β ∈ (0, θ]`,
-`ε_j ∈ (0, 1]` (`j ∈ [0 : q]`) and `x₁ ∈ X` with `‖c(x₁)‖ ≤ θε₀`. Suppose that from every
-`(x, t)` with `x ∈ X`, `θε₀ ≤ ‖r(x, t)‖ ≤ ε₀` and `t ≤ f(x)` some call `o` (iterates from `x` not
-increasing `μ(·, t)`, stopped as soon as `‖r(·, t)‖ < θε₀`, ending at a point of `X` with radii
-in `(0, 1]` where one of the three tests of (14.3.32) holds) has the property `Good x t o`. Then
-there is a run of Phase 2 from `x₁` whose `k`-th call, for every outer iteration `k ≥ 1` reached,
-starts from an admissible point `(x_k, t_k)` and has the property `Good x_k t_k`. -/
+/-- **Construction of runs of Phase 2 from an inner oracle.** Let $\theta \in (0, 1)$,
+$\beta \in (0, \theta]$, $\varepsilon_j \in (0, 1]$ for $j = 0, \dots, q$, and $x_1 \in X$ with
+$\|c(x_1)\| \le \theta\varepsilon_0$. Let `Good` be a property of a point $x$, a target $t$ and
+a call $o$. Suppose that for every admissible pair $(x, t)$, that is, $x \in X$,
+$\theta\varepsilon_0 \le \|r(x, t)\| \le \varepsilon_0$ and $t \le f(x)$, there is a call $o$
+with $e$ iterations such that:
+
+* the call starts at $o_0 = x$ and ends at a point $o_e \in X$ with radii $\delta_j \in (0, 1]$
+  for $j = 1, \dots, q$;
+* at $o_e$ one of the three tests of (14.3.32) holds: $\|r(o_e, t)\| < \theta\varepsilon_0$, or
+  $f(o_e) < t$, or the criticality test (14.3.34) at $(o_e, t)$ with the radii $\delta$;
+* the iterates do not increase $\mu(\cdot, t)$, and $\|r(o_i, t)\| \ge \theta\varepsilon_0$ for
+  every $i < e$;
+* $\|r(o_e, t)\| \le \|r(x, t)\|$;
+* the property `Good x t o` holds.
+
+Then there is a run of Phase 2 from $x_1$ such that, for every outer iteration $k \ge 1$ that is
+reached, the pair $(x_k, t_k)$ is admissible and the $k$-th call, with the radii $\delta_{k+1}$,
+has the property `Good` at $(x_k, t_k)$. -/
 theorem HighOrderTargetSeq.exists_run_of_oracle (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β)
     (hβθ : β ≤ θ) (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) {x₁ : E} (hx₁ : x₁ ∈ X)
     (hc₁ : ‖c x₁‖ ≤ θ * ε 0) (Good : E → ℝ → InnerCall E → Prop)

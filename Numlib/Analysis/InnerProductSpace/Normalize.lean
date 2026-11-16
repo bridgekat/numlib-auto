@@ -15,16 +15,26 @@ import Mathlib.Analysis.Normed.Module.Normalize
 /-!
 # Perturbing a direction and a rank-one projection
 
-Two stability facts behind the perturbation of a Householder reflector `x ↦ x - 2 ⟪w, x⟫ w`:
+This module proves two stability facts that the perturbation analysis of a Householder reflector
+$x \mapsto x - 2 \langle w, x \rangle w$ uses. First, the directions $a / \|a\|$ and $b / \|b\|$ of
+two nearby vectors are close: $\|b / \|b\| - a / \|a\|\| \le 2 \|b - a\| / \|a\|$ for $a \neq 0$.
+Second, for two vectors $a$ and $b$ of norm at most $1$, the rank-one maps
+$x \mapsto \langle a, x \rangle a$ and $x \mapsto \langle b, x \rangle b$ differ by at most
+$2 \|b - a\|$ in operator norm. The module also records the scaling identities $\|t e\| = |t|$ and
+$\langle e, t e \rangle = t$ of a unit vector $e$.
 
-* `NormedSpace.norm_normalize_sub_normalize_le`: the directions `a / ‖a‖` and `b / ‖b‖` of two
-  nearby vectors are close, `‖b/‖b‖ - a/‖a‖‖ ≤ 2 ‖b - a‖ / ‖a‖` (with
-  `NormedSpace.norm_normalize_le_one`, `‖x / ‖x‖‖ ≤ 1` also for `x = 0`);
-* `norm_inner_smul_sub_inner_smul_le`: the rank-one maps `x ↦ ⟪a, x⟫ a` and `x ↦ ⟪b, x⟫ b` of two
-  vectors of length at most one differ by at most `2 ‖b - a‖` in operator norm.
+## Main results
 
-It also records the scaling identities of a unit vector `e`: `‖t • e‖ = |t|`
-(`norm_smul_of_norm_eq_one`) and `⟪e, t • e⟫ = t` (`inner_smul_self_of_norm_eq_one`).
+* `NormedSpace.norm_normalize_le_one`: $\|x / \|x\|\| \le 1$ for every $x$, including $x = 0$.
+* `NormedSpace.norm_normalize_sub_normalize_le`: $\|b / \|b\| - a / \|a\|\| \le 2 \|b - a\| / \|a\|$
+  for $a \neq 0$.
+* `norm_inner_smul_sub_inner_smul_le`: $\|\langle b, x \rangle b - \langle a, x \rangle a\| \le 2
+  \|b - a\| \|x\|$ for $\|a\|, \|b\| \le 1$.
+
+## Implementation notes
+
+* The direction of $x$ is Mathlib's `NormedSpace.normalize x`, which is $\|x\|^{-1} x$. It is $0$ at
+  $x = 0$, because Lean sets $0^{-1} = 0$.
 -/
 
 open scoped RealInnerProductSpace
@@ -33,13 +43,17 @@ namespace NormedSpace
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- A normalized vector has length at most one (one, or zero for the zero vector). -/
+/-- Let $E$ be a real normed space. For every $x \in E$, the normalized vector $\|x\|^{-1} x$ has
+norm at most $1$: the norm is $1$ for $x \neq 0$, and the vector is $0$ for $x = 0$. -/
 theorem norm_normalize_le_one (x : E) : ‖normalize x‖ ≤ 1 := by
   rcases eq_or_ne x 0 with rfl | hx
   · simp
   · exact (norm_normalize hx).le
 
-/-- The directions of two nearby vectors are close: `‖b/‖b‖ - a/‖a‖‖ ≤ 2 ‖b - a‖ / ‖a‖`. -/
+/-- Let $E$ be a real normed space, and let $a, b \in E$ with $a \neq 0$. Then the directions of $a$
+and $b$ satisfy
+$$\left\| \frac{b}{\|b\|} - \frac{a}{\|a\|} \right\| \le \frac{2 \|b - a\|}{\|a\|}.$$
+The bound also holds for $b = 0$, where the direction of $b$ is $0$. -/
 theorem norm_normalize_sub_normalize_le {a : E} (ha : a ≠ 0) (b : E) :
     ‖normalize b - normalize a‖ ≤ 2 * ‖b - a‖ / ‖a‖ := by
   have hpos : 0 < ‖a‖ := norm_pos_iff.2 ha
@@ -62,8 +76,11 @@ theorem norm_normalize_sub_normalize_le {a : E} (ha : a ≠ 0) (b : E) :
 
 end NormedSpace
 
-/-- Two rank-one maps `x ↦ ⟪a, x⟫ a` of vectors of length at most one differ by at most
-`2 ‖b - a‖` in operator norm. -/
+/-- Let $E$ be a real inner product space, and let $a, b \in E$ with $\|a\| \le 1$ and
+$\|b\| \le 1$. Then for every $x \in E$,
+$$\|\langle b, x \rangle b - \langle a, x \rangle a\| \le 2 \|b - a\| \|x\|,$$
+so the rank-one maps $x \mapsto \langle a, x \rangle a$ and $x \mapsto \langle b, x \rangle b$
+differ by at most $2 \|b - a\|$ in operator norm. -/
 theorem norm_inner_smul_sub_inner_smul_le {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {a b : E} (ha : ‖a‖ ≤ 1) (hb : ‖b‖ ≤ 1) (x : E) :
     ‖⟪b, x⟫ • b - ⟪a, x⟫ • a‖ ≤ 2 * ‖b - a‖ * ‖x‖ := by
@@ -83,12 +100,14 @@ theorem norm_inner_smul_sub_inner_smul_le {E : Type*} [NormedAddCommGroup E]
 
 /-! ### Unit vectors -/
 
-/-- `‖t • e‖ = |t|` for a unit vector `e`. -/
+/-- Let $E$ be a real normed space and let $e \in E$ with $\|e\| = 1$. Then $\|t e\| = |t|$ for
+every $t \in \mathbb{R}$. -/
 theorem norm_smul_of_norm_eq_one {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {e : E}
     (he : ‖e‖ = 1) (t : ℝ) : ‖t • e‖ = |t| := by
   rw [norm_smul, he, mul_one, Real.norm_eq_abs]
 
-/-- `⟪e, t • e⟫ = t` for a unit vector `e`. -/
+/-- Let $E$ be a real inner product space and let $e \in E$ with $\|e\| = 1$. Then
+$\langle e, t e \rangle = t$ for every $t \in \mathbb{R}$. -/
 theorem inner_smul_self_of_norm_eq_one {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {e : E} (he : ‖e‖ = 1) (t : ℝ) : ⟪e, t • e⟫ = t := by
   rw [real_inner_smul_right, real_inner_self_eq_norm_sq, he, one_pow, mul_one]

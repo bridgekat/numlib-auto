@@ -12,34 +12,46 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp
 
 /-!
-# Hölder's inequality for finitely many factors, and interpolation between `L^p` spaces
+# Hölder's inequality for finitely many factors, and interpolation between $L^p$ spaces
 
-Two consequences of Hölder's inequality that Mathlib states only in special forms.
+This file proves two consequences of Hölder's inequality that Mathlib states only in special forms.
+The first is **Hölder's inequality for finitely many factors**: if $1/r = \sum_i 1/p_i$, then
+$$\Big\|\prod_i f_i\Big\|_r \le \prod_i \|f_i\|_{p_i}.$$
+The second is the **interpolation inequality**: if $1/r = \theta/p + (1 - \theta)/q$ with
+$0 \le \theta \le 1$, then
+$$\|f\|_r \le \|f\|_p^\theta \, \|f\|_q^{1 - \theta}.$$
+Hence $L^p \cap L^q \subseteq L^r$ for every $r$ between $p$ and $q$. The Sobolev embedding theorems
+use this inequality to pass from the endpoint exponents to the intermediate ones. The presentation
+follows Remark 2 and Exercise 4.4 in Chapter 4 of [brezis2011functional].
 
-* **Hölder's inequality for finitely many factors**: if `1/r = ∑ᵢ 1/pᵢ` then
-  `‖∏ᵢ fᵢ‖_r ≤ ∏ᵢ ‖fᵢ‖_{pᵢ}` (`MeasureTheory.eLpNorm_finset_prod_le`). Mathlib has the membership
-  statement `MeasureTheory.MemLp.prod` and the two-factor inequality
-  `MeasureTheory.eLpNorm_smul_le_mul_eLpNorm`; the inequality for a product is the same induction
-  as the membership statement, with the two-factor inequality in place of `MemLp.mul`.
-* **The interpolation inequality**: if `1/r = θ/p + (1 - θ)/q` with `0 ≤ θ ≤ 1` then
-  `‖f‖_r ≤ ‖f‖_p ^ θ * ‖f‖_q ^ (1 - θ)` (`MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`),
-  so that `L^p ∩ L^q ⊆ L^r` for every `r` between `p` and `q` (`MeasureTheory.MemLp.interpolate`).
-  The exponents are extended nonnegative reals throughout, so the endpoints `p = ∞` and `q = ∞`
-  are included; the proof is the two-factor Hölder inequality applied to the factorization
-  `‖f‖ = ‖f‖ ^ θ * ‖f‖ ^ (1 - θ)` with the exponents `p / θ` and `q / (1 - θ)`.
+The file also states $\int^- \|f\|^p \, d\mu = \|f\|_p^p$ for $0 < p < \infty$. Every module of this
+directory that works with $p$-th powers of the $L^p$ seminorm uses it.
 
-The interpolation inequality is what the Sobolev embedding theorems use to pass from the
-endpoint exponents to the intermediate ones.
+## Main results
 
-Also here, because every module of this directory that works with `p`-th powers of the seminorm
-uses it: `MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm`, the unprimed form of Mathlib's
-`MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm'`,
-`∫⁻ ‖f‖ₑ ^ p.toReal = eLpNorm f p μ ^ p.toReal`.
+* `MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm`: $\int^- \|f\|^p \, d\mu = \|f\|_p^p$ for
+  $0 < p < \infty$.
+* `MeasureTheory.eLpNorm_finset_prod_le`: Hölder's inequality for finitely many factors.
+* `MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`: the interpolation inequality.
+* `MeasureTheory.exists_inv_eq_ofReal_mul_inv_add`: every exponent $r$ with $0 < p \le r \le q$
+  satisfies $1/r = \theta/p + (1 - \theta)/q$ for some $\theta \in [0, 1]$.
+* `MeasureTheory.MemLp.interpolate`: for $p > 0$, $L^p \cap L^q \subseteq L^r$ for every $r$ between
+  $p$ and $q$.
 
-## References
+## Proof outline
 
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], Remark 2 of chapter 4 and Exercise 4.4.
+Hölder's inequality for a product is proved by induction on the number of factors, with the
+two-factor inequality `MeasureTheory.eLpNorm_smul_le_mul_eLpNorm` in each step. This is the
+induction of Mathlib's `MeasureTheory.MemLp.prod`, with the inequality in place of
+`MeasureTheory.MemLp.mul`. The interpolation inequality is the two-factor Hölder inequality for the
+factorization $\|f\| = \|f\|^\theta \, \|f\|^{1 - \theta}$ with the exponents $p/\theta$ and
+$q/(1 - \theta)$.
+
+## Implementation notes
+
+* The exponents are in $[0, \infty]$, so the endpoints $p = \infty$ and $q = \infty$ are included.
+  The arithmetic is that of `ℝ≥0∞`, with $1/0 = \infty$ and $1/\infty = 0$.
+* The $L^p$ seminorm is the `ℝ≥0∞`-valued `MeasureTheory.eLpNorm`.
 -/
 
 open Filter Function Set
@@ -49,8 +61,13 @@ namespace MeasureTheory
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
-/-- The unprimed companion of `MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm'`:
-`∫⁻ ‖f‖ₑ ^ p.toReal = eLpNorm f p μ ^ p.toReal` for `0 < p < ∞` and measurable `f`. -/
+/-- Let $F$ be a normed group, let $0 < p < \infty$, and let $f \colon \alpha \to F$ be almost
+everywhere strongly measurable. Then
+$$\int^- \|f(a)\|^p \, d\mu(a) = \|f\|_p^p.$$
+
+This is the form without a prime of Mathlib's
+`MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm'`. The power is taken with the real exponent
+`p.toReal`. -/
 theorem lintegral_rpow_enorm_eq_rpow_eLpNorm {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0∞}
     (hp₀ : p ≠ 0) (hp : p ≠ ∞) {f : α → F} (hf : AEStronglyMeasurable f μ) :
     ∫⁻ a, ‖f a‖ₑ ^ p.toReal ∂μ = eLpNorm f p μ ^ p.toReal := by
@@ -64,9 +81,15 @@ section Prod
 variable {ι R : Type*} [NormedCommRing R] [NormOneClass R] {f : ι → α → R} {p : ι → ℝ≥0∞}
   {s : Finset ι}
 
-/-- **Hölder's inequality for finitely many factors**, with the exponent of the product written
-as `(∑ i ∈ s, (p i)⁻¹)⁻¹`: `‖∏ᵢ fᵢ‖_r ≤ ∏ᵢ ‖fᵢ‖_{pᵢ}` where `1/r = ∑ᵢ 1/pᵢ`. This is the
-inequality behind `MeasureTheory.MemLp.prod`. -/
+/-- **Hölder's inequality for finitely many factors**, with the exponent of the product written as
+$(\sum_{i \in s} p_i^{-1})^{-1}$. Let $R$ be a normed commutative ring with $\|1\| = 1$, let $s$
+be a finite index set, and let $f_i \colon \alpha \to R$ be almost everywhere strongly
+measurable and $p_i \in [0, \infty]$ for $i \in s$. Then
+$$\Big\|\prod_{i \in s} f_i\Big\|_r \le \prod_{i \in s} \|f_i\|_{p_i}, \qquad r = \Big(\sum_{i
+  \in s} p_i^{-1}\Big)^{-1}.$$
+
+The inverses are taken in `ℝ≥0∞`. This is the inequality behind Mathlib's
+`MeasureTheory.MemLp.prod`. -/
 theorem eLpNorm_finset_prod_le_of_inv (hf : ∀ i ∈ s, AEStronglyMeasurable (f i) μ) :
     eLpNorm (∏ i ∈ s, f i) (∑ i ∈ s, (p i)⁻¹)⁻¹ μ ≤ ∏ i ∈ s, eLpNorm (f i) (p i) μ := by
   induction s using Finset.cons_induction with
@@ -86,16 +109,24 @@ theorem eLpNorm_finset_prod_le_of_inv (hf : ∀ i ∈ s, AEStronglyMeasurable (f
           eLpNorm_smul_le_mul_eLpNorm hi' (Finset.aestronglyMeasurable_prod s hs)
       _ ≤ eLpNorm (f i) (p i) μ * ∏ j ∈ s, eLpNorm (f j) (p j) μ := by gcongr; exact ih hs
 
-/-- **Hölder's inequality for finitely many factors** ([brezis2011functional] Remark 2 of
-chapter 4): for exponents with `1/r = ∑ᵢ 1/pᵢ`, `‖∏ᵢ fᵢ‖_r ≤ ∏ᵢ ‖fᵢ‖_{pᵢ}`. The membership
-statement `∏ᵢ fᵢ ∈ L^r` is Mathlib's `MeasureTheory.MemLp.prod`. -/
+/-- **Hölder's inequality for finitely many factors.** Let $R$ be a normed commutative ring with
+$\|1\| = 1$, let $s$ be a finite index set, and let $f_i \colon \alpha \to R$ be almost
+everywhere strongly measurable and $p_i \in [0, \infty]$ for $i \in s$. If $r \in [0, \infty]$
+satisfies $1/r = \sum_{i \in s} 1/p_i$, then
+$$\Big\|\prod_{i \in s} f_i\Big\|_r \le \prod_{i \in s} \|f_i\|_{p_i}.$$
+This is Remark 2 in Chapter 4 of [brezis2011functional].
+
+The inverses are taken in `ℝ≥0∞`. The statement $\prod_i f_i \in L^r$ is Mathlib's
+`MeasureTheory.MemLp.prod`. -/
 theorem eLpNorm_finset_prod_le (hf : ∀ i ∈ s, AEStronglyMeasurable (f i) μ) {r : ℝ≥0∞}
     (hr : r⁻¹ = ∑ i ∈ s, (p i)⁻¹) :
     eLpNorm (∏ i ∈ s, f i) r μ ≤ ∏ i ∈ s, eLpNorm (f i) (p i) μ := by
   rw [← inv_inv r, hr]
   exact eLpNorm_finset_prod_le_of_inv hf
 
-/-- `MeasureTheory.eLpNorm_finset_prod_le` for the pointwise product `fun x => ∏ᵢ fᵢ x`. -/
+/-- The form of `MeasureTheory.eLpNorm_finset_prod_le` for the pointwise product
+$x \mapsto \prod_{i \in s} f_i(x)$: if $1/r = \sum_{i \in s} 1/p_i$, then $\|x \mapsto \prod_{i
+\in s} f_i(x)\|_r \le \prod_{i \in s} \|f_i\|_{p_i}$. -/
 theorem eLpNorm_finset_fun_prod_le (hf : ∀ i ∈ s, AEStronglyMeasurable (f i) μ) {r : ℝ≥0∞}
     (hr : r⁻¹ = ∑ i ∈ s, (p i)⁻¹) :
     eLpNorm (fun x => ∏ i ∈ s, f i x) r μ ≤ ∏ i ∈ s, eLpNorm (f i) (p i) μ := by
@@ -109,12 +140,19 @@ section Interpolation
 
 variable {E : Type*} [NormedAddCommGroup E] {f : α → E} {p q r : ℝ≥0∞}
 
-/-- **The interpolation inequality** ([brezis2011functional] Remark 2 of chapter 4, Exercise
-4.4): if `1/r = θ/p + (1 - θ)/q` with `0 ≤ θ ≤ 1`, then
-`‖f‖_r ≤ ‖f‖_p ^ θ * ‖f‖_q ^ (1 - θ)`. The exponents are in `ℝ≥0∞`, so `p = ∞` or `q = ∞` is
-allowed, and the inequality holds trivially at `θ = 0` (`r = q`) and `θ = 1` (`r = p`). For
-`0 < θ < 1` it is Hölder's inequality `MeasureTheory.eLpNorm_smul_le_mul_eLpNorm` for the
-factorization `‖f‖ = ‖f‖ ^ θ * ‖f‖ ^ (1 - θ)` with the exponents `p / θ` and `q / (1 - θ)`. -/
+/-- **The interpolation inequality.** Let $E$ be a normed group, let $f \colon \alpha \to E$ be
+almost everywhere strongly measurable, let $p, q, r \in [0, \infty]$, and let
+$0 \le \theta \le 1$. If
+$$\frac{1}{r} = \frac{\theta}{p} + \frac{1 - \theta}{q},$$
+then
+$$\|f\|_r \le \|f\|_p^\theta \, \|f\|_q^{1 - \theta}.$$
+This is Remark 2 and Exercise 4.4 in Chapter 4 of [brezis2011functional].
+
+The arithmetic is that of `ℝ≥0∞`, so $p = \infty$ or $q = \infty$ is allowed. The inequality is
+trivial for $\theta = 0$, where $r = q$, and for $\theta = 1$, where $r = p$. For
+$0 < \theta < 1$ it is Hölder's inequality `MeasureTheory.eLpNorm_smul_le_mul_eLpNorm` for the
+factorization $\|f\| = \|f\|^\theta \, \|f\|^{1 - \theta}$ with the exponents $p/\theta$ and
+$q/(1 - \theta)$. -/
 theorem eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow (hf : AEStronglyMeasurable f μ) {θ : ℝ}
     (hθ₀ : 0 ≤ θ) (hθ₁ : θ ≤ 1)
     (hr : r⁻¹ = ENNReal.ofReal θ * p⁻¹ + ENNReal.ofReal (1 - θ) * q⁻¹) :
@@ -145,8 +183,10 @@ theorem eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow (hf : AEStronglyMeasurable f μ
     ENNReal.div_mul_cancel ha0 ENNReal.ofReal_ne_top,
     ENNReal.div_mul_cancel hb0 ENNReal.ofReal_ne_top] at key
 
-/-- For `0 < p ≤ r ≤ q`, an exponent `r` between `p` and `q` is an interpolation
-`1/r = θ/p + (1 - θ)/q` for some `θ ∈ [0, 1]`. -/
+/-- Let $p, q, r \in [0, \infty]$ with $p \neq 0$ and $p \le r \le q$. Then there is
+$\theta \in [0, 1]$ with
+$$\frac{1}{r} = \frac{\theta}{p} + \frac{1 - \theta}{q},$$
+in the arithmetic of `ℝ≥0∞`. -/
 theorem exists_inv_eq_ofReal_mul_inv_add (hp : p ≠ 0) (hpr : p ≤ r) (hrq : r ≤ q) :
     ∃ θ : ℝ, 0 ≤ θ ∧ θ ≤ 1 ∧
       r⁻¹ = ENNReal.ofReal θ * p⁻¹ + ENNReal.ofReal (1 - θ) * q⁻¹ := by
@@ -178,9 +218,12 @@ theorem exists_inv_eq_ofReal_mul_inv_add (hp : p ≠ 0) (hpr : p ≤ r) (hrq : r
   field_simp
   ring
 
-/-- **Interpolation of `L^p` spaces** ([brezis2011functional] Remark 2 of chapter 4): a function
-in `L^p ∩ L^q` is in `L^r` for every `r` between `p` and `q`, provided `p ≠ 0` (for `p = 0` the
-hypothesis `MemLp f 0 μ` is only measurability and says nothing). -/
+/-- **Interpolation of $L^p$ spaces.** Let $p, q, r \in [0, \infty]$ with $p \neq 0$ and
+$p \le r \le q$. If $f \in L^p(\mu) \cap L^q(\mu)$, then $f \in L^r(\mu)$. This is Remark 2 in
+Chapter 4 of [brezis2011functional].
+
+The condition $p \neq 0$ is needed because `MemLp f 0 μ` says only that $f$ is almost everywhere
+strongly measurable. -/
 theorem MemLp.interpolate (hp : p ≠ 0) (hfp : MemLp f p μ) (hfq : MemLp f q μ) (hpr : p ≤ r)
     (hrq : r ≤ q) : MemLp f r μ := by
   obtain ⟨θ, hθ₀, hθ₁, hr⟩ := exists_inv_eq_ofReal_mul_inv_add hp hpr hrq

@@ -9,44 +9,52 @@ import Numlib.RingTheory.Polynomial.HermiteInterpolation
 /-!
 # Jets and divided differences of functions
 
-The analytic side of Hermite interpolation on a multiset of nodes, on top of the field-level
-theory of `Numlib/RingTheory/Polynomial/HermiteInterpolation`, for functions `f : 𝕜 → 𝕜` on a
-nontrivially normed field.
+This module gives the analytic side of Hermite interpolation on a multiset of nodes, for functions
+$f : \mathbb{K} \to \mathbb{K}$ on a nontrivially normed field $\mathbb{K}$. The jet of $f$ at $x$
+is the sequence of its Taylor coefficients $f^{(j)}(x)/j!$. The divided difference $f[s]$ at a
+multiset $s$ of nodes is the leading coefficient, in degree $|s| - 1$, of the Hermite interpolant of
+the jets of $f$ on $s$. A node of multiplicity $m$ prescribes the first $m$ Taylor coefficients
+there. At distinct nodes this is the classical divided difference $f[\lambda_0, \dots, \lambda_k]$
+of [golub2013matrix], §9.1.4; at repeated nodes it is the confluent divided difference. The
+field-level theory of jet interpolation is in `Numlib.RingTheory.Polynomial.HermiteInterpolation`.
 
 ## Main definitions
 
-* `Hermite.taylorJet f x j = f⁽ʲ⁾(x) / j!`: the Taylor coefficients of `f` at `x`. The definition is
-  total: where `f` is not differentiable Mathlib's junk value `0` of `iteratedDeriv` enters, and
-  every consumer carries the smoothness it needs as a hypothesis.
-* `Hermite.divDiff f s`: the divided difference of `f` at a multiset of possibly repeated nodes, the
-  coefficient of `X^{card s - 1}` in the Hermite interpolant of the jets of `f` on `s`
-  ([golub2013matrix] §9.1.4's `f[λ₀, …, λ_k]`, confluent where the nodes repeat).
+* `Hermite.taylorJet`: the Taylor coefficients $f^{(j)}(x)/j!$ of $f$ at $x$.
+* `Hermite.divDiff`: the divided difference $f[s]$ at a multiset $s$ of possibly repeated nodes.
 
 ## Main results
 
-* `Hermite.isJetInterpolant_taylorJet_iff`: in characteristic `0`, interpolating the jets of `f` is
-  agreement of derivatives, `p⁽ʲ⁾(x) = f⁽ʲ⁾(x)` for `j < count x s`.
+* `Hermite.isJetInterpolant_taylorJet_iff`: in characteristic $0$, a polynomial $p$ interpolates the
+  jets of $f$ on $s$ if and only if $p^{(j)}(x) = f^{(j)}(x)$ for each node $x$ and each $j$ less
+  than the multiplicity of $x$.
 * `Hermite.taylorJet_polynomial`: the jet of a polynomial function is its Taylor expansion.
-* `Hermite.taylorJet_add`, `Hermite.taylorJet_mul` (Leibniz): the jet calculus for smooth functions.
-* `Hermite.divDiff_congr`, `Hermite.IsJetInterpolant.divDiff_eq`: the divided difference depends
-  only on the jets it uses, and may be computed from any polynomial interpolating on more nodes.
-* `Hermite.divDiff_replicate`: at `k + 1` copies of one node, `f[x, …, x] = f⁽ᵏ⁾(x)/k!`.
-* `Hermite.divDiff_cons_cons`: the recursion
-  `f[x, x', s] = (f[x, s] - f[x', s]) / (x - x')` for `x ≠ x'`.
-* `Hermite.divDiff_cons_eq_of_eventuallyEq`: if `f z = f a + (z - a) g z` near the nodes, then
-  `f[a, s] = g[s]` — removing one node divides by `z - a`.
+* `Hermite.taylorJet_add`, `Hermite.taylorJet_mul`: jets of sums and products (Leibniz's rule) for
+  smooth functions.
+* `Hermite.divDiff_congr`: the divided difference depends only on the jets that it uses.
+* `Hermite.IsJetInterpolant.divDiff_eq`: the divided difference can be computed from any polynomial
+  that interpolates on more nodes.
+* `Hermite.divDiff_replicate`: at $k + 1$ copies of one node, $f[x, \dots, x] = f^{(k)}(x)/k!$.
+* `Hermite.divDiff_cons_cons`: the recursion $f[x, x', s] = (f[x, s] - f[x', s]) / (x - x')$ for
+  $x \neq x'$.
+* `Hermite.divDiff_cons_eq_of_eventuallyEq`: if $f(z) = f(a) + (z - a) g(z)$ near the nodes, then
+  $f[a, s] = g[s]$.
 * `Hermite.divDiff_X_pow`: the divided differences of monomials satisfy
-  `z^{m+1}[x, s] = x · z^m[x, s] + z^m[s]` (they are complete homogeneous symmetric polynomials of
-  the nodes).
+  $z^{m+1}[x, s] = x \cdot z^m[x, s] + z^m[s]$, so they are complete homogeneous symmetric
+  polynomials of the nodes.
 
 ## Implementation notes
 
-The module sits in `Analysis/Calculus` rather than beside the numerical Hermite interpolation of
-`Numlib/Approximation/Hermite`: `taylorJet` needs `iteratedDeriv`, and the primary functional
-calculus, which consumes it, must not import the numerical `Approximation` layer. The real,
-`Fin`-indexed Hermite interpolation of that module is the instance
-`Hermite.interpolate_eq_interpolateJet`, and its classical divided difference is the instance
-`DividedDifference.newtonOn_eq_divDiff` (`Numlib/Approximation/NewtonForm`).
+* `Hermite.taylorJet` is total. Where $f$ is not differentiable, the value $0$ that Mathlib gives to
+  `iteratedDeriv` enters. Each result that uses a jet has the smoothness that it needs as a
+  hypothesis.
+* The module is in `Numlib.Analysis.Calculus` and not beside the numerical Hermite interpolation of
+  `Numlib.Approximation.Hermite`. The reason is that `Hermite.taylorJet` needs `iteratedDeriv`, and
+  the primary functional calculus, which uses it, must not import the numerical
+  `Numlib.Approximation` layer.
+* The real, `Fin`-indexed Hermite interpolation of `Numlib.Approximation.Hermite` is a special case
+  of `Hermite.interpolateJet`, by `Hermite.interpolate_eq_interpolateJet`. Its classical divided
+  difference is a special case of `Hermite.divDiff`, by `DividedDifference.newtonOn_eq_divDiff`.
 -/
 
 open Polynomial
@@ -57,41 +65,61 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
 
 /-! ### Jets of functions -/
 
-/-- The **Taylor coefficients** `f⁽ʲ⁾(x) / j!` of a function on a nontrivially normed field. -/
+/-- The **Taylor coefficients** of $f : \mathbb{K} \to \mathbb{K}$ at $x$: the $j$-th coefficient is
+$f^{(j)}(x)/j!$.
+
+The definition is total: where $f$ is not $j$ times differentiable, `iteratedDeriv j f x` has
+the value that Mathlib gives it, and results that use the jet carry the smoothness that they
+need as a hypothesis. -/
 noncomputable def taylorJet (f : 𝕜 → 𝕜) (x : 𝕜) (j : ℕ) : 𝕜 :=
   iteratedDeriv j f x / j.factorial
 
+/-- The zeroth Taylor coefficient of $f$ at $x$ is $f(x)$. -/
 @[simp]
 theorem taylorJet_zero (f : 𝕜 → 𝕜) (x : 𝕜) : taylorJet f x 0 = f x := by
   simp [taylorJet]
 
-/-- The Taylor coefficients of a polynomial at `x` are the derivatives there divided by the
-factorials. -/
+/-- In characteristic $0$, the $j$-th coefficient of the Taylor expansion of a polynomial $p$ at $x$
+is $p^{(j)}(x)/j!$. -/
 theorem coeff_taylor_eq_eval_iterate_derivative_div [CharZero 𝕜] (p : 𝕜[X]) (x : 𝕜) (j : ℕ) :
     (taylor x p).coeff j = (derivative^[j] p).eval x / j.factorial := by
   have hj : (j.factorial : 𝕜) ≠ 0 := Nat.cast_ne_zero.mpr j.factorial_ne_zero
   rw [eq_div_iff hj, taylor_coeff, ← factorial_smul_hasseDeriv, LinearMap.smul_apply, eval_smul,
     nsmul_eq_mul, mul_comm]
 
-/-- **The jet of a polynomial function is its Taylor expansion.** -/
+/-- The **jet of a polynomial function is its Taylor expansion**. Let $\mathbb{K}$ have
+characteristic $0$ and let $p \in \mathbb{K}[X]$. Then the $j$-th Taylor coefficient of the
+function $z \mapsto p(z)$ at $x$ is the $j$-th coefficient of the Taylor expansion of $p$ at
+$x$, that is, of $p(X + x)$.
+
+The Taylor expansion is Mathlib's `Polynomial.taylor`. -/
 theorem taylorJet_polynomial [CharZero 𝕜] (p : 𝕜[X]) (x : 𝕜) (j : ℕ) :
     taylorJet (fun z => p.eval z) x j = (taylor x p).coeff j := by
   rw [taylorJet, Polynomial.iteratedDeriv_eval, coeff_taylor_eq_eval_iterate_derivative_div]
 
-/-- Jets are additive at points where both functions are smooth enough. -/
+/-- If $f$ and $g$ are $C^j$ at $x$, then the $j$-th Taylor coefficient of $f + g$ at $x$ is the sum
+of those of $f$ and $g$. -/
 theorem taylorJet_add {f g : 𝕜 → 𝕜} {x : 𝕜} {j : ℕ} (hf : ContDiffAt 𝕜 j f x)
     (hg : ContDiffAt 𝕜 j g x) : taylorJet (f + g) x j = taylorJet f x j + taylorJet g x j := by
   rw [taylorJet, iteratedDeriv_add hf hg, add_div, taylorJet, taylorJet]
 
+/-- If $f$ and $g$ are $C^j$ at $x$, then the $j$-th Taylor coefficient of $f - g$ at $x$ is the
+difference of those of $f$ and $g$. -/
 theorem taylorJet_sub {f g : 𝕜 → 𝕜} {x : 𝕜} {j : ℕ} (hf : ContDiffAt 𝕜 j f x)
     (hg : ContDiffAt 𝕜 j g x) : taylorJet (f - g) x j = taylorJet f x j - taylorJet g x j := by
   rw [taylorJet, iteratedDeriv_sub hf hg, sub_div, taylorJet, taylorJet]
 
+/-- The $j$-th Taylor coefficient of $c f$ at $x$ is $c$ times that of $f$, for every function $f$
+and every constant $c$. -/
 theorem taylorJet_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) (x : 𝕜) (j : ℕ) :
     taylorJet (c • f) x j = c * taylorJet f x j := by
   rw [taylorJet, iteratedDeriv_const_smul_field, smul_eq_mul, mul_div_assoc, taylorJet]
 
-/-- **Leibniz's rule for jets**: the jet of a product is the Cauchy product of the jets. -/
+/-- **Leibniz's rule for jets**. Let $\mathbb{K}$ have characteristic $0$, and let $f$ and $g$ be
+$C^n$ at $x$. Then the jet of the product is the Cauchy product of the jets:
+$$\frac{(fg)^{(n)}(x)}{n!} = \sum_{i=0}^{n} \frac{f^{(i)}(x)}{i!} \cdot
+  \frac{g^{(n-i)}(x)}{(n-i)!}.$$
+-/
 theorem taylorJet_mul [CharZero 𝕜] {f g : 𝕜 → 𝕜} {x : 𝕜} {n : ℕ} (hf : ContDiffAt 𝕜 n f x)
     (hg : ContDiffAt 𝕜 n g x) :
     taylorJet (f * g) x n =
@@ -109,9 +137,15 @@ theorem taylorJet_mul [CharZero 𝕜] {f g : 𝕜 → 𝕜} {x : 𝕜} {n : ℕ}
 
 variable [DecidableEq 𝕜]
 
-/-- In characteristic `0`, **interpolating the jets of `f` is agreement of derivatives**: `p`
-interpolates the jets of `f` on `s` exactly when `p⁽ʲ⁾(x) = f⁽ʲ⁾(x)` at every node `x` for
-`j < count x s`. -/
+/-- **Interpolating the jets of a function is agreement of derivatives.** Let $\mathbb{K}$ have
+characteristic $0$, let $s$ be a multiset of nodes, let $f : \mathbb{K} \to \mathbb{K}$, and let
+$p \in \mathbb{K}[X]$. Then $p$ interpolates the jets of $f$ on $s$ if and only if
+$$p^{(j)}(x) = f^{(j)}(x) \quad \text{for every node } x \in s \text{ and every } j < m(x),$$
+where $m(x)$ is the multiplicity of $x$ in $s$.
+
+Jet interpolation is `Hermite.IsJetInterpolant`: for each node $x$, $(X - x)^{m(x)}$ divides $p$
+minus the Taylor polynomial of order $m(x)$ of the jet of $f$ at $x$. The derivative $f^{(j)}$
+is `iteratedDeriv j f`. -/
 theorem isJetInterpolant_taylorJet_iff [CharZero 𝕜] {s : Multiset 𝕜} {f : 𝕜 → 𝕜} {p : 𝕜[X]} :
     IsJetInterpolant s (taylorJet f) p ↔
       ∀ x ∈ s, ∀ j < s.count x, (derivative^[j] p).eval x = iteratedDeriv j f x := by
@@ -120,7 +154,8 @@ theorem isJetInterpolant_taylorJet_iff [CharZero 𝕜] {s : Multiset 𝕜} {f : 
   have hj : (j.factorial : 𝕜) ≠ 0 := Nat.cast_ne_zero.mpr j.factorial_ne_zero
   rw [coeff_taylor_eq_eval_iterate_derivative_div, taylorJet, div_left_inj' hj]
 
-/-- A polynomial interpolates the jets of its own polynomial function. -/
+/-- In characteristic $0$, a polynomial $p$ interpolates the jets of the function $z \mapsto p(z)$
+on every multiset of nodes. -/
 theorem isJetInterpolant_taylorJet_polynomial [CharZero 𝕜] (s : Multiset 𝕜) (p : 𝕜[X]) :
     IsJetInterpolant s (taylorJet fun z => p.eval z) p := by
   have h : (taylorJet fun z => p.eval z) = fun x j => (taylor x p).coeff j := by
@@ -129,7 +164,8 @@ theorem isJetInterpolant_taylorJet_polynomial [CharZero 𝕜] (s : Multiset 𝕜
   rw [h]
   exact isJetInterpolant_coeff_taylor s p
 
-/-- The Hermite interpolant of the jets of `f` takes the value `f x` at every node `x`. -/
+/-- The Hermite interpolant of the jets of $f$ on $s$ takes the value $f(x)$ at every node
+$x \in s$. -/
 theorem eval_interpolateJet_taylorJet {f : 𝕜 → 𝕜} {s : Multiset 𝕜} {x : 𝕜} (hx : x ∈ s) :
     (interpolateJet s (taylorJet f)).eval x = f x := by
   have := isJetInterpolant_iff_coeff_taylor.mp (isJetInterpolant_interpolateJet s (taylorJet f))
@@ -138,53 +174,63 @@ theorem eval_interpolateJet_taylorJet {f : 𝕜 → 𝕜} {s : Multiset 𝕜} {x
 
 /-! ### Divided differences at repeated nodes -/
 
-/-- The **divided difference** of `f` at a multiset `s` of possibly repeated nodes: the coefficient
-of `X^{card s - 1}` in the Hermite interpolant of the jets of `f` on `s`. At distinct nodes it is
-the classical divided difference `f[x₀, …, x_k]`; at `k + 1` copies of one node it is `f⁽ᵏ⁾(x)/k!`
-(`Hermite.divDiff_replicate`). The value at the empty multiset is `0`. -/
+/-- The **divided difference** $f[s]$ of $f : \mathbb{K} \to \mathbb{K}$ at a multiset $s$ of
+possibly repeated nodes: the coefficient of $X^{|s| - 1}$ in the Hermite interpolant of the jets
+of $f$ on $s$.
+
+At distinct nodes $x_0, \dots, x_k$ this is the classical divided difference
+$f[x_0, \dots, x_k]$. At $k + 1$ copies of one node $x$ it is $f^{(k)}(x)/k!$
+(`Hermite.divDiff_replicate`). At the empty multiset the value is $0$, because the interpolant
+is $0$. The interpolant is `Hermite.interpolateJet s (Hermite.taylorJet f)`. -/
 noncomputable def divDiff (f : 𝕜 → 𝕜) (s : Multiset 𝕜) : 𝕜 :=
   (interpolateJet s (taylorJet f)).coeff (Multiset.card s - 1)
 
+/-- The divided difference at the empty multiset is $0$. -/
 @[simp]
 theorem divDiff_zero (f : 𝕜 → 𝕜) : divDiff f 0 = 0 := by
   simp [divDiff]
 
-/-- **The divided difference depends only on the jets it uses.** -/
+/-- The **divided difference depends only on the jets that it uses**. Let $s$ be a multiset of
+nodes, and let $f, g : \mathbb{K} \to \mathbb{K}$ satisfy $f^{(j)}(x)/j! = g^{(j)}(x)/j!$ for
+every node $x \in s$ and every $j$ less than the multiplicity of $x$ in $s$. Then $f[s] = g[s]$. -/
 theorem divDiff_congr {f g : 𝕜 → 𝕜} {s : Multiset 𝕜}
     (h : ∀ x ∈ s, ∀ j < s.count x, taylorJet f x j = taylorJet g x j) :
     divDiff f s = divDiff g s := by
   rw [divDiff, divDiff, interpolateJet_congr h]
 
-/-- The divided difference read off an interpolant: if `p` interpolates the jets of `f` on `s`,
-then `f[s]` is the coefficient of `X^{card s - 1}` of `p` reduced modulo the nodal polynomial. -/
+/-- If $p$ interpolates the jets of $f$ on $s$, then $f[s]$ is the coefficient of $X^{|s| - 1}$ in
+the remainder of $p$ modulo the nodal polynomial $\prod_{x \in s} (X - x)$. -/
 theorem IsJetInterpolant.divDiff_eq_coeff {f : 𝕜 → 𝕜} {s : Multiset 𝕜} {p : 𝕜[X]}
     (hp : IsJetInterpolant s (taylorJet f) p) :
     divDiff f s = (p %ₘ nodalMultiset s).coeff (Multiset.card s - 1) := by
   rw [divDiff, hp.modByMonic_eq_interpolateJet]
 
-/-- The divided difference of a polynomial function reads off its remainder modulo the nodal
-polynomial. -/
+/-- In characteristic $0$, the divided difference of a polynomial function $z \mapsto p(z)$ at $s$
+is the coefficient of $X^{|s| - 1}$ in the remainder of $p$ modulo the nodal polynomial
+$\prod_{x \in s} (X - x)$. -/
 theorem divDiff_polynomial [CharZero 𝕜] (p : 𝕜[X]) (s : Multiset 𝕜) :
     divDiff (fun z => p.eval z) s = (p %ₘ nodalMultiset s).coeff (Multiset.card s - 1) :=
   (isJetInterpolant_taylorJet_polynomial s p).divDiff_eq_coeff
 
-/-- **Divided differences through an interpolant on more nodes**: if `p` interpolates the jets of
-`f` on `t` and `s ≤ t`, then `f[s] = p[s]`. -/
+/-- **Divided differences through an interpolant on more nodes.** Let $\mathbb{K}$ have
+characteristic $0$, let $s \le t$ be multisets of nodes, and let $p \in \mathbb{K}[X]$
+interpolate the jets of $f$ on $t$. Then $f[s] = p[s]$, where $p[s]$ is the divided difference
+of the function $z \mapsto p(z)$. -/
 theorem IsJetInterpolant.divDiff_eq [CharZero 𝕜] {f : 𝕜 → 𝕜} {s t : Multiset 𝕜} {p : 𝕜[X]}
     (hp : IsJetInterpolant t (taylorJet f) p) (hst : s ≤ t) :
     divDiff f s = divDiff (fun z => p.eval z) s := by
   rw [(hp.of_le hst).divDiff_eq_coeff, divDiff_polynomial]
 
-/-- On a polynomial of degree `< card s`, the divided difference is the coefficient of
-`X^{card s - 1}`. -/
+/-- In characteristic $0$, if $p \in \mathbb{K}[X]$ has degree less than $|s|$, then the divided
+difference of $z \mapsto p(z)$ at $s$ is the coefficient of $X^{|s| - 1}$ in $p$. -/
 theorem divDiff_polynomial_of_degree_lt [CharZero 𝕜] {p : 𝕜[X]} {s : Multiset 𝕜}
     (hp : p.degree < Multiset.card s) :
     divDiff (fun z => p.eval z) s = p.coeff (Multiset.card s - 1) := by
   rw [divDiff_polynomial, (modByMonic_eq_self_iff (monic_nodalMultiset s)).mpr
     (by rwa [degree_nodalMultiset])]
 
-/-- Divided differences are additive in the function, for functions smooth enough at the
-nodes. -/
+/-- Divided differences are additive in the function: if $f$ and $g$ are $C^{m(x) - 1}$ at each node
+$x \in s$, where $m(x)$ is the multiplicity of $x$ in $s$, then $(f + g)[s] = f[s] + g[s]$. -/
 theorem divDiff_add {f g : 𝕜 → 𝕜} {s : Multiset 𝕜}
     (hf : ∀ x ∈ s, ContDiffAt 𝕜 (s.count x - 1 : ℕ) f x)
     (hg : ∀ x ∈ s, ContDiffAt 𝕜 (s.count x - 1 : ℕ) g x) :
@@ -195,7 +241,8 @@ theorem divDiff_add {f g : 𝕜 → 𝕜} {s : Multiset 𝕜}
     rw [Pi.add_apply, Pi.add_apply, taylorJet_add ((hf x hx).of_le hj) ((hg x hx).of_le hj)]
   rw [divDiff, interpolateJet_congr h, interpolateJet_add, coeff_add, divDiff, divDiff]
 
-/-- Divided differences are homogeneous in the function. -/
+/-- Divided differences are homogeneous in the function: $(c f)[s] = c \cdot f[s]$ for every
+function $f$, constant $c$ and multiset $s$. -/
 theorem divDiff_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) (s : Multiset 𝕜) :
     divDiff (c • f) s = c * divDiff f s := by
   have h : taylorJet (c • f) = c • taylorJet f := by
@@ -203,8 +250,11 @@ theorem divDiff_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) (s : Multiset 𝕜) :
     rw [taylorJet_const_smul, Pi.smul_apply, Pi.smul_apply, smul_eq_mul]
   rw [divDiff, h, interpolateJet_smul, coeff_smul, smul_eq_mul, divDiff]
 
-/-- At `k + 1` copies of one node, the divided difference is the Taylor coefficient
-`f⁽ᵏ⁾(x)/k!`. -/
+/-- At $k + 1$ copies of one node $x$, the divided difference is the Taylor coefficient:
+$$f[\underbrace{x, \dots, x}_{k+1}] = \frac{f^{(k)}(x)}{k!}.$$
+
+No smoothness of $f$ is assumed. Where $f$ is not $k$ times differentiable at $x$, both sides
+use the value that Mathlib gives to `iteratedDeriv`. -/
 theorem divDiff_replicate (f : 𝕜 → 𝕜) (x : 𝕜) (k : ℕ) :
     divDiff f (Multiset.replicate (k + 1) x) = taylorJet f x k := by
   have hP : IsJetInterpolant (Multiset.replicate (k + 1) x) (taylorJet f)
@@ -215,13 +265,16 @@ theorem divDiff_replicate (f : 𝕜 → 𝕜) (x : 𝕜) (k : ℕ) :
   rw [divDiff, ← eq_interpolateJet (by simpa using degree_jetPoly_lt _ x (k + 1)) hP,
     Multiset.card_replicate, Nat.add_sub_cancel, coeff_jetPoly_succ_self]
 
-/-- At a single node the divided difference is the value. -/
+/-- The divided difference at a single node $x$ is $f(x)$. -/
 @[simp]
 theorem divDiff_singleton (f : 𝕜 → 𝕜) (x : 𝕜) : divDiff f {x} = f x := by
   simpa using divDiff_replicate f x 0
 
-/-- **The recursion of divided differences** in two distinct nodes, valid at repeated nodes:
-`f[x, x', s] = (f[x, s] - f[x', s]) / (x - x')`. -/
+/-- The **recursion of divided differences**. Let $x \neq x'$ be nodes and let $s$ be a multiset of
+nodes, possibly with repetitions and possibly containing $x$ or $x'$. Then
+$$f[x, x', s] = \frac{f[x, s] - f[x', s]}{x - x'}.$$
+
+No smoothness of $f$ is assumed. -/
 theorem divDiff_cons_cons (f : 𝕜 → 𝕜) {x x' : 𝕜} (h : x ≠ x') (s : Multiset 𝕜) :
     divDiff f (x ::ₘ x' ::ₘ s) = (divDiff f (x ::ₘ s) - divDiff f (x' ::ₘ s)) / (x - x') := by
   rw [eq_div_iff (sub_ne_zero.mpr h)]
@@ -241,8 +294,11 @@ theorem divDiff_cons_cons (f : 𝕜 → 𝕜) {x x' : 𝕜} (h : x ≠ x') (s : 
   simp only [divDiff, Multiset.card_cons, Nat.add_sub_cancel]
   rw [hc]
 
-/-- **Multiplying by the identity** adds one node to the divided difference of a polynomial
-function: `(z p)[x, s] = x · p[x, s] + p[s]`. -/
+/-- **Multiplication by the identity** adds one node to the divided difference of a polynomial
+function. In characteristic $0$, for $p \in \mathbb{K}[X]$,
+$$(z \, p)[x, s] = x \cdot p[x, s] + p[s],$$
+where $p[s]$ is the divided difference of $z \mapsto p(z)$ and $(z \, p)[s]$ that of
+$z \mapsto z \, p(z)$. -/
 theorem divDiff_X_mul [CharZero 𝕜] (p : 𝕜[X]) (x : 𝕜) (s : Multiset 𝕜) :
     divDiff (fun z => z * p.eval z) (x ::ₘ s)
       = x * divDiff (fun z => p.eval z) (x ::ₘ s) + divDiff (fun z => p.eval z) s := by
@@ -290,9 +346,13 @@ theorem divDiff_X_mul [CharZero 𝕜] (p : 𝕜[X]) (x : 𝕜) (s : Multiset �
     rw [hk', coeff_X_mul, Nat.add_sub_cancel]
     ring
 
-/-- **The divided differences of monomials**: `z^{m+1}[x, s] = x · z^m[x, s] + z^m[s]`. With
-`z^m[s] = 0` for `card s > m + 1` and `z^m[s] = 1` for `card s = m + 1`, this recursion makes
-`z^m[s]` the complete homogeneous symmetric polynomial of degree `m + 1 - card s` in the nodes. -/
+/-- The **divided differences of monomials**. In characteristic $0$, for every $m \in \mathbb{N}$,
+node $x$ and multiset $s$,
+$$z^{m+1}[x, s] = x \cdot z^m[x, s] + z^m[s],$$
+where $z^m[s]$ is the divided difference of $z \mapsto z^m$ at $s$.
+
+With $z^m[s] = 0$ for $|s| > m + 1$ and $z^m[s] = 1$ for $|s| = m + 1$, this recursion makes
+$z^m[s]$ the complete homogeneous symmetric polynomial of degree $m + 1 - |s|$ in the nodes. -/
 theorem divDiff_X_pow [CharZero 𝕜] (m : ℕ) (x : 𝕜) (s : Multiset 𝕜) :
     divDiff (fun z => z ^ (m + 1)) (x ::ₘ s)
       = x * divDiff (fun z => z ^ m) (x ::ₘ s) + divDiff (fun z => z ^ m) s := by
@@ -306,9 +366,13 @@ theorem divDiff_X_pow [CharZero 𝕜] (m : ℕ) (x : 𝕜) (s : Multiset 𝕜) :
 /-! ### Removing a node -/
 
 omit [DecidableEq 𝕜] in
-/-- The remainder of `c + (X - a) p` modulo the nodal polynomial of `a :: s` has, in degree
-`card s`, the coefficient that the remainder of `p` modulo the nodal polynomial of `s` has in
-degree `card s - 1`. -/
+/-- Let $c, a \in \mathbb{K}$, let $p \in \mathbb{K}[X]$, and let $s$ be a nonempty multiset of
+nodes, with nodal polynomial $\omega_s = \prod_{x \in s} (X - x)$. Then the coefficient of
+$X^{|s|}$ in the remainder of $c + (X - a) p$ modulo $\omega_{a :: s}$ equals the coefficient of
+$X^{|s| - 1}$ in the remainder of $p$ modulo $\omega_s$.
+
+Here $a :: s$ is the multiset $s$ with one more copy of $a$. This is the polynomial form of
+`Hermite.divDiff_cons_eq_of_eventuallyEq`. -/
 theorem coeff_C_add_X_sub_C_mul_modByMonic (c a : 𝕜) (p : 𝕜[X]) {s : Multiset 𝕜} (hs : s ≠ 0) :
     ((C c + (X - C a) * p) %ₘ nodalMultiset (a ::ₘ s)).coeff (Multiset.card s)
       = (p %ₘ nodalMultiset s).coeff (Multiset.card s - 1) := by
@@ -341,8 +405,14 @@ theorem coeff_C_add_X_sub_C_mul_modByMonic (c a : 𝕜) (p : 𝕜[X]) {s : Multi
     rw [hq, hcoeff m (by omega), hcoeff (m + 1) (by omega), mul_zero, sub_zero]
   rw [hrem, hk', hq, hcoeff (k' + 1) hk'.le, mul_zero, sub_zero, Nat.add_sub_cancel]
 
-/-- **Removing a node divides by `z - a`**: if `f z = f a + (z - a) g z` near each node of
-`a :: s`, with `g` smooth enough there, then `f[a, s] = g[s]`. -/
+/-- **Removing a node divides by $z - a$.** Let $\mathbb{K}$ have characteristic $0$, let
+$a \in \mathbb{K}$, and let $s$ be a nonempty multiset of nodes. Let
+$f, g : \mathbb{K} \to \mathbb{K}$ be such that, at each node $x$ of $a :: s$, the function $g$
+is $C^{|s|}$ at $x$ and
+$$f(z) = f(a) + (z - a) \, g(z) \quad \text{for all } z \text{ near } x.$$
+Then $f[a, s] = g[s]$.
+
+Here $a :: s$ is the multiset $s$ with one more copy of $a$. -/
 theorem divDiff_cons_eq_of_eventuallyEq [CharZero 𝕜] {f g : 𝕜 → 𝕜} {a : 𝕜} {s : Multiset 𝕜}
     (hs : s ≠ 0) (hg : ∀ x ∈ a ::ₘ s, ContDiffAt 𝕜 (Multiset.card s) g x)
     (hfg : ∀ x ∈ a ::ₘ s, f =ᶠ[nhds x] fun z => f a + (z - a) * g z) :

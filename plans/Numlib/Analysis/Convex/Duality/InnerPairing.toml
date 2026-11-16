@@ -5,11 +5,9 @@ id = 'IsInnerPairing'
 
 [[node]]
 id = 'self_pairing_add'
-desc = 'The expansion of `B (x + y) (x + y)` for a self-pairing of inner-product type.'
 
 [[node]]
 id = 'self_pairing_sub'
-desc = 'The expansion of `B (x - y) (x - y)` for a self-pairing of inner-product type.'
 
 [[node]]
 id = 'self_pairing_combo_le'

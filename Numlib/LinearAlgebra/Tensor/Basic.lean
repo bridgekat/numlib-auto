@@ -16,47 +16,62 @@ import Numlib.LinearAlgebra.Matrix.Kronecker
 /-!
 # Concrete tensors
 
-A tensor with modes `ι` and mode index types `κ i` is an array of entries indexed by the tuples
-`a : ∀ i, κ i`:
+A tensor with a set of modes $\iota$ and an index type $\kappa_i$ for each mode $i$ is an array
+$\mathcal{A}$ of entries $\mathcal{A}(a)$, indexed by the tuples $a \in \prod_i \kappa_i$. An
+order-$d$ tensor $\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots \times n_d}$ of [golub2013matrix],
+§12.4, is the case $\iota = \{1, \dots, d\}$ and $\kappa_k = \{1, \dots, n_k\}$. Over $\mathbb{R}$
+or $\mathbb{C}$, tensors form an inner product space with the Frobenius inner product $\langle
+\mathcal{A}, \mathcal{B} \rangle = \sum_a \overline{\mathcal{A}(a)} \mathcal{B}(a)$ and the
+Frobenius norm $\|\mathcal{A}\| = (\sum_a |\mathcal{A}(a)|^2)^{1/2}$.
 
-`def Tensor (κ : ι → Type*) (R : Type*) := (∀ i, κ i) → R`.
-
-It is a `def`, as `Matrix` is, so that instance search sees no `Pi` structure beyond the algebraic
-one given here: in particular the norm of a tensor over `𝕜` is the Frobenius norm
-`‖A‖ = √(∑ a, ‖A a‖ ²)`, coming from a global inner product space structure
-`⟪A, B⟫ = ∑ a, conj (A a) * B a`, and not the sup norm of `Pi`. An order-`d` tensor
-`𝒜 ∈ ℝ^{n₁ × ⋯ × n_d}` of [golub2013matrix] §12.4 is a `Tensor (fun k : Fin d => Fin (n k)) ℝ`.
-
-Mathlib's abstract tensor product `⨂[R] i, (κ i → R)` (`PiTensorProduct`) is a quotient with no
-entries, while numerical statements are about entries, unfoldings and index orderings; the two
-meet at `Tensor.equivPiTensorProduct`, which sends the rank-one tensor `Tensor.rankOne z` to
-`⨂ₜ i, z i`.
+This module defines rank-one tensors $z_1 \circ \cdots \circ z_d$, outer products, subtensors
+(fibers and slices), transposition of modes, matrices as order-2 tensors, symmetric tensors, and the
+column-ordered vectorization of [golub2013matrix], §12.4. It proves that every tensor is a sum of
+rank-one tensors, and that the vectorization of an order-$(d + 1)$ tensor stacks the vectorizations
+of its slices along the last mode. It also identifies concrete tensors with Mathlib's abstract
+tensor product.
 
 ## Main definitions
 
-* `Tensor κ R`, `Tensor.of`, and the Frobenius inner product space structure with the isometry
-  `Tensor.toEuclidean` onto `EuclideanSpace 𝕜 (∀ i, κ i)`.
-* `Tensor.rankOne z`: the elementary tensor `z₁ ∘ ⋯ ∘ z_d`; `Tensor.IsRankOne`.
+* `Tensor`: the tensors with mode index types $\kappa_i$ and entries in $R$, the functions
+  $\prod_i \kappa_i \to R$.
+* `Tensor.toEuclidean`: the linear isometry from tensors with the Frobenius norm onto
+  `EuclideanSpace 𝕜 (∀ i, κ i)`.
+* `Tensor.rankOne`: the rank-one tensor $z_1 \circ \cdots \circ z_d$ with entries
+  $\prod_i z_i(a_i)$.
+* `Tensor.IsRankOne`: the property of being a rank-one tensor.
 * `Tensor.outer`: the outer product of two tensors, on the disjoint union of their modes.
-* `Tensor.restrict`: the subtensor obtained by fixing the modes outside a predicate (fibers,
-  slices).
-* `Tensor.permute`: transposition of modes.
+* `Tensor.restrict`: the subtensor obtained by fixing the indices of the modes outside a given set.
+* `Tensor.permute`: the transposition of a tensor along a bijection of modes.
 * `Tensor.ofMatrix`: a matrix as an order-2 tensor.
-* `Tensor.IsSymm`: symmetric tensors.
-* `Tensor.vecFin`: the column-ordered vectorization of a `Fin`-shaped tensor, through Mathlib's
-  little-endian `finPiFinEquiv` (the book's `col(i, n)`).
-* `Tensor.equivPiTensorProduct`: the bridge to `PiTensorProduct`.
+* `Tensor.IsSymm`: a tensor whose entries are invariant under every permutation of the modes.
+* `Tensor.vecFin`: the column-ordered vectorization of a tensor in
+  $\mathbb{R}^{n_1 \times \cdots \times n_d}$.
+* `Tensor.equivPiTensorProduct`: the linear equivalence with Mathlib's tensor product
+  $\bigotimes_i R^{\kappa_i}$.
 
-## Main statements
+## Main results
 
-* `Tensor.frobenius_norm_def`: `‖A‖ = √(∑ a, ‖A a‖ ^ 2)`.
-* `Tensor.eq_sum_rankOne_single`: every tensor is a sum of rank-one tensors.
-* `Tensor.vecFin_snoc`: the vectorization of an order-`(d + 1)` tensor stacks those of its
-  last-mode slices.
+* `Tensor.frobenius_norm_def`: $\|\mathcal{A}\| = (\sum_a |\mathcal{A}(a)|^2)^{1/2}$.
+* `Tensor.eq_sum_rankOne_single`: every tensor is the sum of its entries times the rank-one tensors
+  of standard basis vectors.
+* `Tensor.vecFin_snoc`: the vectorization of an order-$(d + 1)$ tensor stacks the vectorizations of
+  its slices along the last mode.
 
-## References
+## Implementation notes
 
-* [golub2013matrix], §12.4–12.5.
+* `Tensor κ R` is the type `(∀ i, κ i) → R`, made a `def` in the same way as `Matrix`. Instance
+  search therefore sees no `Pi` structure beyond the algebraic structure given here. In particular,
+  the norm of a tensor over `𝕜` is the Frobenius norm, which comes from a global inner product space
+  structure, and not the supremum norm of `Pi`.
+* The order-$d$ tensor $\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots \times n_d}$ is
+  `A : Tensor (fun k : Fin d => Fin (n k)) ℝ`. The entry `A i` is $\mathcal{A}(i)$. Indices are
+  0-based.
+* Mathlib's abstract tensor product `⨂[R] i, (κ i → R)` (`PiTensorProduct`) is a quotient without
+  entries. Numerical statements are about entries, unfoldings and orderings of indices. The two meet
+  at `Tensor.equivPiTensorProduct`, which sends `Tensor.rankOne z` to `⨂ₜ i, z i`.
+* The vectorization `Tensor.vecFin` uses Mathlib's little-endian equivalence `finPiFinEquiv`, which
+  is the index map $\operatorname{col}(i, n)$ of [golub2013matrix], §12.4.
 -/
 
 universe u u' v w
@@ -115,9 +130,12 @@ instance fintypeComp {α β : Type*} {f : β → Type v} [∀ b, Fintype (f b)] 
 
 end Function
 
-/-- A tensor with modes `ι` and mode index types `κ i`: an array `(∀ i, κ i) → R` of entries
-indexed by the tuples of indices. The book's order-`d` tensor `𝒜 ∈ ℝ^{n₁ × ⋯ × n_d}`
-([golub2013matrix] §12.4) is `Tensor (fun k : Fin d => Fin (n k)) ℝ`, its entry `𝒜(i)` is `A i`. -/
+/-- A **tensor** with modes $\iota$ and mode index types $\kappa_i$ is an array $\mathcal{A}$ of
+entries in $R$, indexed by the tuples $a \in \prod_i \kappa_i$ of indices.
+
+The order-$d$ tensor $\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots \times n_d}$ of
+[golub2013matrix], §12.4, is `Tensor (fun k : Fin d => Fin (n k)) ℝ`, and its entry
+$\mathcal{A}(i)$ is `A i`. -/
 def Tensor {ι : Type u} (κ : ι → Type v) (R : Type w) : Type max u v w :=
   (∀ i, κ i) → R
 
@@ -125,14 +143,16 @@ namespace Tensor
 
 variable {ι : Type u} {κ : ι → Type v} {R : Type w} {S : Type*}
 
-/-- The identification of arrays of entries with tensors. -/
+/-- The identification of the arrays $\prod_i \kappa_i \to R$ with the tensors. -/
 def of : ((∀ i, κ i) → R) ≃ Tensor κ R :=
   Equiv.refl _
 
+/-- The entries of `Tensor.of f` are the values of $f$. -/
 @[simp]
 theorem of_apply (f : (∀ i, κ i) → R) (a : ∀ i, κ i) : of f a = f a :=
   rfl
 
+/-- The entries of `Tensor.of.symm A` are the entries of $\mathcal{A}$. -/
 @[simp]
 theorem of_symm_apply (A : Tensor κ R) (a : ∀ i, κ i) : of.symm A a = A a :=
   rfl
@@ -192,28 +212,37 @@ instance [Monoid S] [AddMonoid R] [DistribMulAction S R] : DistribMulAction S (T
 instance [Semiring S] [AddCommMonoid R] [Module S R] : Module S (Tensor κ R) :=
   inferInstanceAs <| Module S ((∀ i, κ i) → R)
 
+/-- Every entry of the zero tensor is $0$. -/
 @[simp]
 theorem zero_apply [AddCommMonoid R] (a : ∀ i, κ i) : (0 : Tensor κ R) a = 0 :=
   rfl
 
+/-- Tensors are added entrywise: $(\mathcal{A} + \mathcal{B})(a) = \mathcal{A}(a) + \mathcal{B}(a)$.
+-/
 @[simp]
 theorem add_apply [AddCommMonoid R] (A B : Tensor κ R) (a : ∀ i, κ i) :
     (A + B) a = A a + B a :=
   rfl
 
+/-- Tensors are negated entrywise: $(-\mathcal{A})(a) = -\mathcal{A}(a)$. -/
 @[simp]
 theorem neg_apply [AddCommGroup R] (A : Tensor κ R) (a : ∀ i, κ i) : (-A) a = -A a :=
   rfl
 
+/-- Tensors are subtracted entrywise: $(\mathcal{A} - \mathcal{B})(a) = \mathcal{A}(a) -
+\mathcal{B}(a)$. -/
 @[simp]
 theorem sub_apply [AddCommGroup R] (A B : Tensor κ R) (a : ∀ i, κ i) :
     (A - B) a = A a - B a :=
   rfl
 
+/-- Tensors are multiplied by scalars entrywise: $(c \mathcal{A})(a) = c \, \mathcal{A}(a)$. -/
 @[simp]
 theorem smul_apply [SMul S R] (c : S) (A : Tensor κ R) (a : ∀ i, κ i) : (c • A) a = c • A a :=
   rfl
 
+/-- A finite sum of tensors is taken entrywise: $(\sum_{b \in s} \mathcal{F}_b)(a) = \sum_{b \in s}
+\mathcal{F}_b(a)$. -/
 @[simp]
 theorem sum_apply [AddCommMonoid R] {β : Type*} (s : Finset β) (f : β → Tensor κ R)
     (a : ∀ i, κ i) : (∑ b ∈ s, f b) a = ∑ b ∈ s, f b a :=
@@ -225,19 +254,24 @@ section Inner
 
 variable {𝕜 : Type*} [RCLike 𝕜] [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
 
-/-- The Frobenius inner product `⟪A, B⟫ = ∑ a, conj (A a) * B a`. -/
+/-- The **Frobenius inner product** of tensors over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ is
+$\langle \mathcal{A}, \mathcal{B} \rangle = \sum_a \overline{\mathcal{A}(a)} \mathcal{B}(a)$. -/
 instance : Inner 𝕜 (Tensor κ 𝕜) :=
   ⟨fun A B => ∑ a, conj (A a) * B a⟩
 
+/-- The Frobenius inner product is $\langle \mathcal{A}, \mathcal{B} \rangle = \sum_a
+\overline{\mathcal{A}(a)} \mathcal{B}(a)$. -/
 theorem inner_def (A B : Tensor κ 𝕜) : ⟪A, B⟫_𝕜 = ∑ a, conj (A a) * B a :=
   rfl
 
-/-- The Frobenius inner product is the dot product with the conjugate. -/
+/-- The Frobenius inner product $\langle \mathcal{A}, \mathcal{B} \rangle$ is the dot product of the
+conjugate of the array of entries of $\mathcal{A}$ with the array of entries of $\mathcal{B}$. -/
 theorem inner_eq_star_dotProduct (A B : Tensor κ 𝕜) :
     ⟪A, B⟫_𝕜 = dotProduct (star (of.symm A)) (of.symm B) :=
   rfl
 
-/-- The Frobenius inner product is the Euclidean inner product of the arrays of entries. -/
+/-- The Frobenius inner product of two tensors is the Euclidean inner product of their arrays of
+entries. -/
 theorem inner_eq_inner_toLp (A B : Tensor κ 𝕜) :
     ⟪A, B⟫_𝕜 = ⟪WithLp.toLp 2 (of.symm A), WithLp.toLp 2 (of.symm B)⟫_𝕜 := by
   simp [inner_def, PiLp.inner_apply, mul_comm]
@@ -260,29 +294,35 @@ instance : InnerProductSpace.Core 𝕜 (Tensor κ 𝕜) where
     rw [inner_eq_inner_toLp, inner_self_eq_zero] at h
     exact of.symm.injective (WithLp.toLp_injective 2 h)
 
-/-- The Frobenius norm on tensors ([golub2013matrix] §12.4.2). -/
+/-- The Frobenius norm on tensors ([golub2013matrix], §12.4.2), the norm of the Frobenius inner
+product. -/
 noncomputable instance : NormedAddCommGroup (Tensor κ 𝕜) :=
   InnerProductSpace.Core.toNormedAddCommGroup (𝕜 := 𝕜)
 
-/-- The Frobenius inner product space structure on tensors. -/
+/-- The inner product space structure on tensors given by the Frobenius inner product. -/
 noncomputable instance : InnerProductSpace 𝕜 (Tensor κ 𝕜) :=
   InnerProductSpace.ofCore _
 
-/-- The Frobenius norm is the Euclidean norm of the array of entries. -/
+/-- The Frobenius norm of a tensor is the Euclidean norm of its array of entries. -/
 theorem norm_toLp (A : Tensor κ 𝕜) : ‖WithLp.toLp 2 (of.symm A)‖ = ‖A‖ := by
   rw [@norm_eq_sqrt_re_inner 𝕜, @norm_eq_sqrt_re_inner 𝕜 (Tensor κ 𝕜), inner_eq_inner_toLp]
 
-/-- The Frobenius norm ([golub2013matrix] §12.4.2): `‖A‖ = √(∑ a, ‖A a‖ ^ 2)`. -/
+/-- The **Frobenius norm** of tensors ([golub2013matrix], §12.4.2). Let $\mathbb{K}$ be $\mathbb{R}$
+or $\mathbb{C}$, let $\iota$ and all $\kappa_i$ be finite, and let $\mathcal{A}$ be a tensor
+over $\mathbb{K}$. Then
+$$\|\mathcal{A}\| = \Bigl(\sum_a |\mathcal{A}(a)|^2\Bigr)^{1/2}.$$
+-/
 theorem frobenius_norm_def (A : Tensor κ 𝕜) : ‖A‖ = √(∑ a, ‖A a‖ ^ 2) := by
   rw [← norm_toLp, EuclideanSpace.norm_eq]
   rfl
 
-/-- The square of the Frobenius norm is the sum of the squares of the entries. -/
+/-- The square of the Frobenius norm is the sum of the squares of the absolute values of the
+entries: $\|\mathcal{A}\|^2 = \sum_a |\mathcal{A}(a)|^2$. -/
 theorem frobenius_norm_sq (A : Tensor κ 𝕜) : ‖A‖ ^ 2 = ∑ a, ‖A a‖ ^ 2 := by
   rw [frobenius_norm_def, Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
 
-/-- A tensor as a Euclidean vector: the linear isometry equivalence with
-`EuclideanSpace 𝕜 (∀ i, κ i)`. -/
+/-- A tensor as a Euclidean vector: the linear isometry equivalence of the tensors with the
+Frobenius norm with `EuclideanSpace 𝕜 (∀ i, κ i)`, which keeps the entries. -/
 noncomputable def toEuclidean : Tensor κ 𝕜 ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 (∀ i, κ i) where
   toFun A := WithLp.toLp 2 (of.symm A)
   invFun x := of x.ofLp
@@ -292,10 +332,14 @@ noncomputable def toEuclidean : Tensor κ 𝕜 ≃ₗᵢ[𝕜] EuclideanSpace �
   right_inv _ := rfl
   norm_map' := norm_toLp
 
+/-- `Tensor.toEuclidean` keeps the entries: the entry of `Tensor.toEuclidean A` at $a$ is
+$\mathcal{A}(a)$. -/
 @[simp]
 theorem toEuclidean_apply (A : Tensor κ 𝕜) (a : ∀ i, κ i) : toEuclidean A a = A a :=
   rfl
 
+/-- The inverse of `Tensor.toEuclidean` keeps the entries: the entry of `Tensor.toEuclidean.symm x`
+at $a$ is $x_a$. -/
 @[simp]
 theorem toEuclidean_symm_apply (x : EuclideanSpace 𝕜 (∀ i, κ i)) (a : ∀ i, κ i) :
     toEuclidean.symm x a = x a :=
@@ -309,30 +353,38 @@ section RankOne
 
 variable [Fintype ι]
 
-/-- The rank-one (elementary) tensor `z₁ ∘ ⋯ ∘ z_d` ([golub2013matrix] §12.4.8):
-`rankOne z a = ∏ i, z i (a i)`. -/
+/-- The **rank-one tensor** $z_1 \circ \cdots \circ z_d$ of vectors $z_i \in R^{\kappa_i}$
+([golub2013matrix], §12.4.8) is the tensor with the entries
+$$(z_1 \circ \cdots \circ z_d)(a) = \prod_i z_i(a_i).$$
+
+The set of modes $\iota$ is finite, and $R$ is a commutative monoid. -/
 def rankOne [CommMonoid R] (z : ∀ i, κ i → R) : Tensor κ R :=
   of fun a => ∏ i, z i (a i)
 
+/-- The entries of a rank-one tensor are $(z_1 \circ \cdots \circ z_d)(a) = \prod_i z_i(a_i)$. -/
 @[simp]
 theorem rankOne_apply [CommMonoid R] (z : ∀ i, κ i → R) (a : ∀ i, κ i) :
     rankOne z a = ∏ i, z i (a i) :=
   rfl
 
-/-- Rescaling the vectors of a rank-one tensor rescales it by the product of the factors. -/
+/-- Rescaling the vectors of a rank-one tensor rescales the tensor by the product of the factors:
+$(c_1 z_1) \circ \cdots \circ (c_d z_d) = (\prod_i c_i) \, z_1 \circ \cdots \circ z_d$. -/
 theorem rankOne_smul [CommMonoid R] (c : ι → R) (z : ∀ i, κ i → R) :
     (rankOne fun i => c i • z i) = (∏ i, c i) • rankOne z := by
   ext a
   simp [rankOne_apply, Finset.prod_mul_distrib, smul_apply]
 
-/-- A tensor is rank-one if it is an elementary tensor ([golub2013matrix] §12.4.8). -/
+/-- A tensor is **rank-one** if it is a rank-one tensor $z_1 \circ \cdots \circ z_d$ for some
+vectors $z_i$ ([golub2013matrix], §12.4.8). -/
 def IsRankOne [CommMonoid R] (A : Tensor κ R) : Prop :=
   ∃ z : ∀ i, κ i → R, A = rankOne z
 
+/-- A rank-one tensor $z_1 \circ \cdots \circ z_d$ is rank-one. -/
 theorem isRankOne_rankOne [CommMonoid R] (z : ∀ i, κ i → R) : (rankOne z).IsRankOne :=
   ⟨z, rfl⟩
 
-/-- The product defining an entry of a rank-one tensor, with one factor replaced. -/
+/-- Replacing the factor $z_k$ by $x$ in the product $\prod_i z_i(a_i)$ gives
+$x(a_k) \prod_{i \neq k} z_i(a_i)$. -/
 private theorem prod_update_apply [DecidableEq ι] [CommMonoid R] (z : ∀ i, κ i → R) (k : ι)
     (x : κ k → R) (a : ∀ i, κ i) :
     ∏ i, Function.update z k x i (a i) = x (a k) * ∏ i ∈ Finset.univ \ {k}, z i (a i) := by
@@ -342,7 +394,8 @@ private theorem prod_update_apply [DecidableEq ι] [CommMonoid R] (z : ∀ i, κ
   simp only [h]
   exact Finset.prod_update_of_mem (Finset.mem_univ k) _ _
 
-/-- A rank-one tensor is additive in each factor. -/
+/-- A rank-one tensor is additive in each factor: replacing $z_k$ by $x + y$ gives the sum of the
+rank-one tensors with $z_k$ replaced by $x$ and by $y$. -/
 theorem rankOne_update_add [DecidableEq ι] [CommSemiring R] (z : ∀ i, κ i → R) (k : ι)
     (x y : κ k → R) :
     rankOne (Function.update z k (x + y))
@@ -350,19 +403,23 @@ theorem rankOne_update_add [DecidableEq ι] [CommSemiring R] (z : ∀ i, κ i �
   ext a
   simp only [rankOne_apply, add_apply, prod_update_apply, Pi.add_apply, add_mul]
 
-/-- A rank-one tensor is homogeneous in each factor. -/
+/-- A rank-one tensor is homogeneous in each factor: replacing $z_k$ by $c x$ gives $c$ times the
+rank-one tensor with $z_k$ replaced by $x$. -/
 theorem rankOne_update_smul [DecidableEq ι] [CommSemiring R] (z : ∀ i, κ i → R) (k : ι) (c : R)
     (x : κ k → R) :
     rankOne (Function.update z k (c • x)) = c • rankOne (Function.update z k x) := by
   ext a
   simp only [rankOne_apply, smul_apply, prod_update_apply, Pi.smul_apply, smul_eq_mul, mul_assoc]
 
-/-- The rank-one tensor as a multilinear map of its factors. -/
+/-- The rank-one tensor $z_1 \circ \cdots \circ z_d$, as a multilinear map of the vectors
+$z_1, \dots, z_d$. -/
 def rankOneMultilinearMap [CommSemiring R] : MultilinearMap R (fun i => κ i → R) (Tensor κ R) where
   toFun := rankOne
   map_update_add' z k x y := rankOne_update_add z k x y
   map_update_smul' z k c x := rankOne_update_smul z k c x
 
+/-- The multilinear map `Tensor.rankOneMultilinearMap` sends $(z_i)_i$ to
+$z_1 \circ \cdots \circ z_d$. -/
 @[simp]
 theorem rankOneMultilinearMap_apply [CommSemiring R] (z : ∀ i, κ i → R) :
     rankOneMultilinearMap z = rankOne z :=
@@ -370,8 +427,11 @@ theorem rankOneMultilinearMap_apply [CommSemiring R] (z : ∀ i, κ i → R) :
 
 variable [DecidableEq ι] [∀ i, Fintype (κ i)] [∀ i, DecidableEq (κ i)]
 
-/-- Every tensor is a sum of rank-one tensors along the standard basis ([golub2013matrix] §12.4.8,
-`𝒜 = ∑_i 𝒜(i) I(:, i₁) ∘ ⋯ ∘ I(:, i_d)`). -/
+/-- Let $R$ be a commutative semiring, and let $\iota$ and all $\kappa_i$ be finite. Every tensor is
+the sum of its entries times the rank-one tensors of standard basis vectors ([golub2013matrix],
+§12.4.8):
+$$\mathcal{A} = \sum_a \mathcal{A}(a) \, e_{a_1} \circ \cdots \circ e_{a_d},$$
+where $e_{a_i} \in R^{\kappa_i}$ is the standard basis vector $I(:, a_i)$. -/
 theorem eq_sum_rankOne_single [CommSemiring R] (A : Tensor κ R) :
     A = ∑ a, A a • rankOne (κ := κ) (fun i => (Pi.single (a i) (1 : R) : κ i → R)) := by
   ext b
@@ -387,25 +447,33 @@ section Outer
 
 variable {ι₁ ι₂ ι₃ : Type*} {κ₁ : ι₁ → Type v} {κ₂ : ι₂ → Type v} {κ₃ : ι₃ → Type v}
 
-/-- The outer product of two tensors ([golub2013matrix] §12.4.7, `𝒜(i, j) = ℬ(i) 𝒞(j)`), on the
-disjoint union of their modes. -/
+/-- The **outer product** of tensors $\mathcal{B}$ with modes $\iota_1$ and $\mathcal{C}$ with modes
+$\iota_2$ ([golub2013matrix], §12.4.7) is the tensor $\mathcal{B} \circ \mathcal{C}$ with modes
+$\iota_1 \sqcup \iota_2$ and the entries
+$$(\mathcal{B} \circ \mathcal{C})(i, j) = \mathcal{B}(i) \, \mathcal{C}(j).$$
+-/
 def outer [Mul R] (B : Tensor κ₁ R) (C : Tensor κ₂ R) : Tensor (Sum.elim κ₁ κ₂) R :=
   of fun a => B (fun i => a (.inl i)) * C (fun j => a (.inr j))
 
+/-- The entries of the outer product are $(\mathcal{B} \circ \mathcal{C})(i, j) = \mathcal{B}(i) \,
+\mathcal{C}(j)$. -/
 @[simp]
 theorem outer_apply [Mul R] (B : Tensor κ₁ R) (C : Tensor κ₂ R) (a : ∀ i, Sum.elim κ₁ κ₂ i) :
     outer B C a = B (fun i => a (.inl i)) * C (fun j => a (.inr j)) :=
   rfl
 
-/-- The outer product is associative, entrywise: `((A ∘ B) ∘ C)(x, y, z) = (A ∘ (B ∘ C))(x, y, z)`
-(the two tensors live on `(ι₁ ⊕ ι₂) ⊕ ι₃` and `ι₁ ⊕ (ι₂ ⊕ ι₃)`). -/
+/-- The outer product is associative entrywise: $((\mathcal{A} \circ \mathcal{B}) \circ
+\mathcal{C})(x, y, z) = (\mathcal{A} \circ (\mathcal{B} \circ \mathcal{C}))(x, y, z)$. The two
+tensors have the modes $(\iota_1 \sqcup \iota_2) \sqcup \iota_3$ and
+$\iota_1 \sqcup (\iota_2 \sqcup \iota_3)$. -/
 theorem outer_outer_apply [Semigroup R] (A : Tensor κ₁ R) (B : Tensor κ₂ R) (C : Tensor κ₃ R)
     (x : ∀ i, κ₁ i) (y : ∀ i, κ₂ i) (z : ∀ i, κ₃ i) :
     outer (outer A B) C (Sum.rec (Sum.rec x y) z)
       = outer A (outer B C) (Sum.rec x (Sum.rec y z)) :=
   mul_assoc _ _ _
 
-/-- A rank-one tensor on `ι₁ ⊕ ι₂` is the outer product of its two halves. -/
+/-- A rank-one tensor with modes $\iota_1 \sqcup \iota_2$ is the outer product of the rank-one
+tensors of its vectors on $\iota_1$ and on $\iota_2$. -/
 theorem rankOne_eq_outer [CommMonoid R] [Fintype ι₁] [Fintype ι₂]
     (z : ∀ i, Sum.elim κ₁ κ₂ i → R) :
     rankOne z = outer (rankOne fun i => z (.inl i)) (rankOne fun j => z (.inr j)) := by
@@ -420,12 +488,16 @@ section Restrict
 
 variable (p : ι → Prop) [DecidablePred p]
 
-/-- The subtensor obtained by fixing the modes outside `p` to the indices `c` ([golub2013matrix]
-§12.4.2): a fiber is `restrict (· = k)`, a slice `restrict (· ∈ {k, l})`. -/
+/-- The **subtensor** of $\mathcal{A}$ obtained by fixing the indices of the modes outside a set $p$
+to $c$ ([golub2013matrix], §12.4.2). It has the modes in $p$, and its entry at $r$ is the entry
+of $\mathcal{A}$ at the tuple that agrees with $r$ on $p$ and with $c$ outside $p$.
+
+A fiber is `Tensor.restrict (· = k)`, and a slice is `Tensor.restrict (· ∈ {k, l})`. -/
 def restrict (c : ∀ i : {i // ¬p i}, κ i) (A : Tensor κ R) : Tensor (fun i : {i // p i} => κ i) R :=
   of fun r => A ((Equiv.piEquivPiSubtypeProd p κ).symm (r, c))
 
-/-- The entries of a subtensor are entries of the tensor. -/
+/-- The entries of a subtensor are entries of the tensor: the subtensor with the indices $a_i$ fixed
+outside $p$ has the entry $\mathcal{A}(a)$ at the restriction of $a$ to $p$. -/
 @[simp]
 theorem restrict_apply (A : Tensor κ R) (a : ∀ i, κ i) :
     restrict p (fun i => a i) A (fun i => a i) = A a :=
@@ -437,12 +509,17 @@ section Permute
 
 variable {ι' : Type u'} {ι'' : Type*}
 
-/-- Tensor transposition ([golub2013matrix] §12.4.4): the modes are renamed along `σ : ι' ≃ ι`,
-`permute σ A (fun k => a (σ k)) = A a`. -/
+/-- The **transposition** of a tensor ([golub2013matrix], §12.4.4). For a bijection of modes
+$\sigma \colon \iota' \to \iota$, the tensor $\mathcal{A}^{\langle \sigma \rangle}$ has the
+modes $\iota'$, with index type $\kappa_{\sigma(k)}$ at mode $k$, and
+$$\mathcal{A}^{\langle \sigma \rangle}(a \circ \sigma) = \mathcal{A}(a).$$
+-/
 def permute (σ : ι' ≃ ι) (A : Tensor κ R) : Tensor (κ ∘ σ) R :=
   of fun b => A (Equiv.piCongrLeft κ σ b)
 
-/-- The book's `𝒜^{<p>}(j(p)) = 𝒜(j)`. -/
+/-- The entry relation of transposition, $\mathcal{A}^{\langle p \rangle}(j(p)) = \mathcal{A}(j)$ in
+[golub2013matrix]: the entry of `Tensor.permute σ A` at $k \mapsto a_{\sigma(k)}$ is
+$\mathcal{A}(a)$. -/
 @[simp]
 theorem permute_apply (σ : ι' ≃ ι) (A : Tensor κ R) (a : ∀ i, κ i) :
     permute σ A (fun k => a (σ k)) = A a := by
@@ -451,11 +528,13 @@ theorem permute_apply (σ : ι' ≃ ι) (A : Tensor κ R) (a : ∀ i, κ i) :
     rw [Equiv.piCongrLeft_symm_apply]
   rw [h, permute, of_apply, Equiv.apply_symm_apply]
 
+/-- Transposition along the identity is the identity. -/
 @[simp]
 theorem permute_refl (A : Tensor κ R) : permute (Equiv.refl ι) A = A :=
   ext fun a => permute_apply (Equiv.refl ι) A a
 
-/-- Transpositions compose ([golub2013matrix] P12.4.10). -/
+/-- Transpositions compose ([golub2013matrix], P12.4.10): transposing along $\tau$ and then along
+$\sigma$ is transposing along $\tau \circ \sigma$. -/
 theorem permute_trans (σ : ι'' ≃ ι') (τ : ι' ≃ ι) (A : Tensor κ R) :
     permute (σ.trans τ) A = permute σ (permute τ A) := by
   ext b
@@ -471,7 +550,8 @@ theorem permute_trans (σ : ι'' ≃ ι') (τ : ι' ≃ ι) (A : Tensor κ R) :
 variable {𝕜 : Type*} [RCLike 𝕜] [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)]
   [Fintype ι'] [DecidableEq ι']
 
-/-- Transposition preserves the Frobenius norm. -/
+/-- Transposition preserves the Frobenius norm: $\|\mathcal{A}^{\langle \sigma \rangle}\| =
+\|\mathcal{A}\|$. -/
 theorem frobenius_norm_permute (σ : ι' ≃ ι) (A : Tensor κ 𝕜) : ‖permute σ A‖ = ‖A‖ := by
   rw [frobenius_norm_def, frobenius_norm_def]
   congr 1
@@ -485,9 +565,12 @@ section Matrix
 
 variable {κ : Fin 2 → Type v}
 
-/-- A matrix as an order-2 tensor: `ofMatrix M a = M (a 0) (a 1)`. The mode index types are any
-`κ : Fin 2 → Type*`: `![m, n]` for a rectangular `M : Matrix m n R`, `fun _ => n` for a square
-one. -/
+/-- A matrix $M$ as an order-2 tensor, with the entries $M(a_0, a_1)$. This is a linear equivalence
+between the matrices with rows indexed by $\kappa_0$ and columns indexed by $\kappa_1$ and the
+order-2 tensors with these index types.
+
+For a rectangular matrix `M : Matrix m n R`, the index types are `![m, n]`. For a square matrix,
+they are `fun _ => n`. -/
 def ofMatrix [Semiring R] : Matrix (κ 0) (κ 1) R ≃ₗ[R] Tensor κ R where
   toFun M := of fun a => M (a 0) (a 1)
   invFun A := Matrix.of fun i j => A ((piFinTwoEquiv κ).symm (i, j))
@@ -496,13 +579,14 @@ def ofMatrix [Semiring R] : Matrix (κ 0) (κ 1) R ≃ₗ[R] Tensor κ R where
   left_inv _ := rfl
   right_inv A := ext fun a => congrArg A ((piFinTwoEquiv κ).symm_apply_apply a)
 
+/-- The entries of `Tensor.ofMatrix M` are the entries of $M$: the entry at $a$ is $M(a_0, a_1)$. -/
 @[simp]
 theorem ofMatrix_apply [Semiring R] (M : Matrix (κ 0) (κ 1) R) (a : ∀ i, κ i) :
     ofMatrix M a = M (a 0) (a 1) :=
   rfl
 
 open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norms of a matrix and of the corresponding order-2 tensor agree. -/
+/-- The Frobenius norm of a matrix is the Frobenius norm of the corresponding order-2 tensor. -/
 theorem norm_ofMatrix {𝕜 : Type*} [RCLike 𝕜] [∀ i, Fintype (κ i)]
     (M : Matrix (κ 0) (κ 1) 𝕜) : ‖ofMatrix M‖ = ‖M‖ := by
   rw [frobenius_norm_def, Matrix.frobenius_norm_def, Real.sqrt_eq_rpow]
@@ -512,12 +596,15 @@ theorem norm_ofMatrix {𝕜 : Type*} [RCLike 𝕜] [∀ i, Fintype (κ i)]
 
 variable {ν : Type v}
 
-/-- A tensor all of whose modes have the same index type is symmetric if its entries are invariant
-under every permutation of the modes ([golub2013matrix] §12.5.7). -/
+/-- A tensor whose modes all have the same index type is **symmetric** if its entries are invariant
+under every permutation of the modes ([golub2013matrix], §12.5.7):
+$\mathcal{A}(a \circ \sigma) = \mathcal{A}(a)$ for every permutation $\sigma$ of $\iota$ and
+every tuple $a$. -/
 def IsSymm (A : Tensor (fun _ : ι => ν) R) : Prop :=
   ∀ (σ : Equiv.Perm ι) (a : ι → ν), A (a ∘ σ) = A a
 
-/-- An order-2 tensor is symmetric iff it is a symmetric matrix. -/
+/-- An order-2 tensor `Tensor.ofMatrix M` is symmetric if and only if the square matrix $M$ is
+symmetric. -/
 theorem isSymm_ofMatrix [Semiring R] (M : Matrix ν ν R) :
     (ofMatrix (κ := fun _ => ν) M).IsSymm ↔ M.IsSymm := by
   constructor
@@ -537,27 +624,37 @@ theorem isSymm_ofMatrix [Semiring R] (M : Matrix ν ν R) :
 
 end Matrix
 
-/-! ### Vectorization of `Fin`-shaped tensors -/
+/-! ### Vectorization of tensors of shape $n_1 \times \cdots \times n_d$ -/
 
 section VecFin
 
 variable {d : ℕ}
 
-/-- The book's `vec` of a `Fin`-shaped tensor ([golub2013matrix] (12.4.4)–(12.4.5)): entry `i`
-sits at position `col(i, n) − 1 = ∑ k, i k * ∏_{j < k} n j` (0-based), Mathlib's little-endian
-`finPiFinEquiv`. -/
+/-- The **vectorization** $\operatorname{vec}(\mathcal{A})$ of a tensor $\mathcal{A} \in R^{n_1
+\times \cdots \times n_d}$ ([golub2013matrix], (12.4.4)–(12.4.5)). It is the vector of length
+$n_1 \cdots n_d$ that has the entry $\mathcal{A}(i)$ at the position
+$$\operatorname{col}(i, n) - 1 = \sum_k i_k \prod_{j < k} n_j,$$
+with 0-based indices.
+
+The position map is Mathlib's little-endian equivalence `finPiFinEquiv`. -/
 def vecFin {n : Fin d → ℕ} (A : Tensor (fun k : Fin d => Fin (n k)) R) : Fin (∏ k, n k) → R :=
   fun t => A (finPiFinEquiv.symm t)
 
-/-- [golub2013matrix] (12.4.5): `vec(𝒜)(col(i, n)) = 𝒜(i)`. -/
+/-- Equation (12.4.5) of [golub2013matrix]: $\operatorname{vec}(\mathcal{A})(\operatorname{col}(i,
+n)) = \mathcal{A}(i)$. -/
 @[simp]
 theorem vecFin_apply {n : Fin d → ℕ} (A : Tensor (fun k : Fin d => Fin (n k)) R)
     (i : ∀ k, Fin (n k)) : vecFin A (finPiFinEquiv i) = A i := by
   simp [vecFin]
 
-/-- The vectorization of an order-`(d + 1)` tensor stacks the vectorizations of its slices along
-the last mode ([golub2013matrix] (12.4.2)–(12.4.3)): its block `x` in the positional layout
-`finProdFinEquiv` is `vecFin` of the slice `𝒜(:, …, :, x)`. -/
+/-- Let $\mathcal{A} \in R^{n_1 \times \cdots \times n_{d+1}}$, and let $N = n_1 \cdots n_d$. The
+vectorization of $\mathcal{A}$ stacks the vectorizations of the slices of $\mathcal{A}$ along
+the last mode ([golub2013matrix], (12.4.2)–(12.4.3)): for each index $x$ of the last mode and
+each $0 \le t < N$,
+$$\operatorname{vec}(\mathcal{A})(xN + t) = \operatorname{vec}(\mathcal{A}(:, \dots, :,
+  x))(t).$$
+
+The position $xN + t$ is `finProdFinEquiv (x, t)`, cast to the length $\prod_k n_k$. -/
 theorem vecFin_snoc {n : Fin (d + 1) → ℕ} (A : Tensor (fun k => Fin (n k)) R)
     (x : Fin (n (Fin.last d))) (t : Fin (∏ k : Fin d, n k.castSucc)) :
     vecFin A (Fin.cast (by rw [Fin.prod_univ_castSucc, mul_comm]) (finProdFinEquiv (x, t)))
@@ -571,8 +668,8 @@ theorem vecFin_snoc {n : Fin (d + 1) → ℕ} (A : Tensor (fun k => Fin (n k)) R
     rw [Fin.val_cast, finProdFinEquiv_apply_val, finPiFinEquiv_snoc, mul_comm]
   rw [h, vecFin_apply, vecFin_apply, of_apply]
 
-/-- For an order-2 tensor, `vecFin` is the column stacking of the matrix
-(`Matrix.vecFin`), up to the identification of the sizes `m * n = n * m`. -/
+/-- For an order-2 tensor, `Tensor.vecFin` is the column stacking `Matrix.vecFin` of the matrix, up
+to the identification of the lengths $mn = nm$. -/
 theorem vecFin_ofMatrix [Semiring R] {m n : ℕ} (M : Matrix (Fin m) (Fin n) R) :
     vecFin (ofMatrix (κ := fun k : Fin 2 => Fin (![m, n] k)) M)
       = Matrix.vecFin M ∘ Fin.cast (by simp [Fin.prod_univ_two, mul_comm]) := by
@@ -595,14 +692,20 @@ section PiTensorProduct
 
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (κ i)] [CommRing R]
 
-/-- Concrete tensors are Mathlib's abstract tensor product `⨂[R] i, (κ i → R)`. -/
+/-- Let $R$ be a commutative ring, and let $\iota$ and all $\kappa_i$ be finite. The tensors with
+mode index types $\kappa_i$ are linearly equivalent to Mathlib's abstract tensor product
+$\bigotimes_i R^{\kappa_i}$ (`PiTensorProduct`).
+
+The equivalence sends a rank-one tensor to the corresponding elementary tensor; see
+`Tensor.equivPiTensorProduct_rankOne`. -/
 noncomputable def equivPiTensorProduct : Tensor κ R ≃ₗ[R] ⨂[R] i, (κ i → R) := by
   classical
   exact (Finsupp.linearEquivFunOnFinite R R (∀ i, κ i)).symm ≪≫ₗ
     PiTensorProduct.ofFinsuppEquiv'.symm ≪≫ₗ
     PiTensorProduct.congr fun i => Finsupp.linearEquivFunOnFinite R R (κ i)
 
-/-- A rank-one tensor is an elementary tensor `⨂ₜ i, z i`. -/
+/-- The equivalence `Tensor.equivPiTensorProduct` sends the rank-one tensor
+$z_1 \circ \cdots \circ z_d$ to the elementary tensor $\bigotimes_i z_i$. -/
 theorem equivPiTensorProduct_rankOne (z : ∀ i, κ i → R) :
     equivPiTensorProduct (rankOne z) = ⨂ₜ[R] i, z i := by
   classical

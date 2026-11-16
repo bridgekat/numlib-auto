@@ -12,28 +12,56 @@ import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 /-!
 # Powers of the norm of a residual
 
-For a residual map `r : E → F` between real inner product spaces (the book's `r : ℝⁿ → ℝᵐ`) and
-a real `ℓ`, `Optimization.residualPow r ℓ x = ‖r x‖^ℓ / ℓ` is the objective `Φ_ℓ` of
-[cartis2022evaluation], (5.1.3); least squares is `ℓ = 2`.
+Let $E$ and $F$ be real inner product spaces, let $r : E \to F$ be a residual map (in the book,
+$r : \mathbb{R}^n \to \mathbb{R}^m$), and let $\ell$ be a real exponent. This file studies the
+objective
+$$\Phi_\ell(x) = \frac{1}{\ell} \|r(x)\|^\ell$$
+of (5.1.3) in [cartis2022evaluation]; the case $\ell = 2$ is nonlinear least squares. Write $J(x)$
+for the derivative of $r$ at $x$ and $J(x)^*$ for its adjoint. The file proves that $\Phi_\ell$ is
+as smooth as $r$ (Lemma 5.1.1), computes the gradient $\nabla \Phi_\ell(x) = \|r(x)\|^{\ell-2}
+J(x)^* r(x)$, and shows that the scaled gradient norm $\psi_{\ell,1}(x) = \|\nabla \Phi_\ell(x)\| /
+\|r(x)\|^{\ell-1}$ equals $\|J(x)^* r(x)\| / \|r(x)\|$ for every $\ell > 1$ (5.1.63). A lower bound
+$s_0$ on $J(x)^*$ gives $\|\nabla \Phi_\ell(x)\| \ge s_0 \|r(x)\|^{\ell-1}$ (5.1.64), and then
+$\Phi_\ell$ is measure dominated of level $\ell / (\ell - 1)$ (5.3.3).
 
-## Main statements
+The last part proves the cascading-differences inequality of Lemma 5.1.3 and the decrease of the
+potential $\|r\|^{1/2^i}$ on a successful iteration that Lemma 5.1.4 derives from it.
 
-* `Optimization.contDiff_residualPow`: Lemma 5.1.1, `Φ_ℓ` is `C^p` when `r` is, for `ℓ` an even
-  integer or `ℓ ≥ 2p`;
-* `Optimization.gradient_residualPow`, `Optimization.norm_fderiv_residualPow`,
-  `Optimization.norm_fderiv_residualPow_div`, `Optimization.norm_fderiv_residualPow_div_eq_two`:
-  the gradient `∇Φ_ℓ = ‖r‖^{ℓ-2} J^* r` and (5.1.63),
-  `‖∇Φ_ℓ‖ / ‖r‖^{ℓ-1} = ‖∇Φ_2‖ / ‖r‖ = ‖J^* r‖ / ‖r‖` (independent of `ℓ`);
-* `Optimization.norm_fderiv_residualPow_ge`: (5.1.64), (5.3.2), a lower bound `s₀` on the
-  Jacobian's adjoint (in finite dimension, its smallest singular value) gives
-  `‖∇Φ_ℓ‖ ≥ s₀ ‖r‖^{ℓ-1}`;
+## Main definitions
+
+* `Optimization.residualPow`: the objective $\Phi_\ell(x) = \|r(x)\|^\ell / \ell$ of (5.1.3).
+
+## Main results
+
+* `Optimization.contDiff_residualPow`: Lemma 5.1.1, $\Phi_\ell$ is $C^p$ when $r$ is $C^p$, if
+  $\ell$ is an even integer or $\ell \ge 2p$.
+* `Optimization.gradient_residualPow`: for $\ell > 1$, $\nabla \Phi_\ell(x) = \|r(x)\|^{\ell-2}
+  J(x)^* r(x)$.
+* `Optimization.norm_fderiv_residualPow`: for $\ell > 1$, $\|\nabla \Phi_\ell(x)\| =
+  \|r(x)\|^{\ell-2} \|J(x)^* r(x)\|$.
+* `Optimization.norm_fderiv_residualPow_div`, `Optimization.norm_fderiv_residualPow_div_eq_two`:
+  (5.1.63), for $r(x) \neq 0$ and $\ell > 1$, $\|\nabla \Phi_\ell(x)\| / \|r(x)\|^{\ell-1} =
+  \|\nabla \Phi_2(x)\| / \|r(x)\| = \|J(x)^* r(x)\| / \|r(x)\|$.
+* `Optimization.norm_fderiv_residualPow_ge`: (5.1.64) and (5.3.2), if $s_0 \|v\| \le \|J(x)^* v\|$
+  for all $v$, then $\|\nabla \Phi_\ell(x)\| \ge s_0 \|r(x)\|^{\ell-1}$.
 * `Optimization.residualPow_le_of_norm_fderiv_ge`, `Optimization.isMeasureDominated_residualPow`:
-  (5.3.3), `Φ_ℓ` is then measure dominated of level `ℓ/(ℓ-1)` for `ψ = ‖∇Φ_ℓ‖`;
-* `Optimization.rpow_inv_two_pow_sub_ge`: Lemma 5.1.3 (cascading differences);
-* `Optimization.rpow_inv_two_pow_sub_ge_min`: the resulting decrease of the potential
-  `‖r‖^{1/2^i}` on a successful iteration (Lemma 5.1.4, (5.1.20) and (5.1.27); display (6.3.3)),
-  stated for reals so that the unconstrained measure `‖∇Φ_ℓ‖` and the constrained
-  `ω_{Φ_ℓ,𝒞,1}` are both instances.
+  (5.3.3), under this bound $\Phi_\ell$ is measure dominated of level $\ell / (\ell - 1)$ for the
+  measure $\|\nabla \Phi_\ell\|$.
+* `Optimization.rpow_inv_two_pow_sub_ge`: Lemma 5.1.3 (cascading differences).
+* `Optimization.rpow_inv_two_pow_sub_ge_min`: the decrease of the potential $\|r\|^{1/2^i}$ on a
+  successful iteration, from Lemma 5.1.4, (5.1.20) and (5.1.27), and display (6.3.3).
+
+## Implementation notes
+
+* The derivative of $\Phi_\ell$ is the Fréchet derivative
+  `fderiv ℝ (Optimization.residualPow r ℓ) x`, a continuous linear functional on $E$. Its operator
+  norm is the norm of the gradient $\nabla \Phi_\ell(x)$, so the gradient vector itself does not
+  appear.
+* The adjoint $J(x)^*$ is `ContinuousLinearMap.adjoint (fderiv ℝ r x)`. The results that use it
+  assume that $E$ and $F$ are complete.
+* The potential decrease `Optimization.rpow_inv_two_pow_sub_ge_min` is stated for real numbers, so
+  that both the unconstrained first-order measure $\|\nabla \Phi_\ell\|$ and the constrained measure
+  $\omega_{\Phi_\ell, \mathcal{C}, 1}$ are instances of it.
 -/
 
 open scoped InnerProductSpace
@@ -44,22 +72,27 @@ section Def
 
 variable {E F : Type*} [NormedAddCommGroup F]
 
-/-- The objective `Φ_ℓ(x) = ‖r(x)‖^ℓ / ℓ` of [cartis2022evaluation], (5.1.3), with a real
-exponent `ℓ`. The book uses `ℓ ≥ 1` (the results here assume `ℓ > 1` or `ℓ ≥ 2p`); for the
-degenerate exponent `ℓ = 0` Lean's division gives `residualPow r 0 = 0`, and for `ℓ < 0` the
-function is not a meaningful objective. -/
+/-- The objective $\Phi_\ell(x) = \|r(x)\|^\ell / \ell$ of a map $r : E \to F$ into a normed group,
+with a real exponent $\ell$. This is (5.1.3) of [cartis2022evaluation].
+
+The book uses $\ell \ge 1$, and the results below assume $\ell > 1$ or $\ell \ge 2p$. For the
+degenerate exponent $\ell = 0$, division by zero gives $\Phi_0 = 0$. For $\ell < 0$ the function
+is not a meaningful objective. -/
 noncomputable def residualPow (r : E → F) (ℓ : ℝ) (x : E) : ℝ :=
   ‖r x‖ ^ ℓ / ℓ
 
+/-- The defining formula $\Phi_\ell(x) = \|r(x)\|^\ell / \ell$, with the real power $\|r(x)\|^\ell$.
+-/
 theorem residualPow_def (r : E → F) (ℓ : ℝ) (x : E) : residualPow r ℓ x = ‖r x‖ ^ ℓ / ℓ :=
   rfl
 
-/-- For a natural exponent, `Φ_ℓ` is the natural power. -/
+/-- For a natural exponent $n$, $\Phi_n(x) = \|r(x)\|^n / n$ with the natural power $\|r(x)\|^n$. -/
 @[simp]
 theorem residualPow_natCast (r : E → F) (n : ℕ) (x : E) :
     residualPow r n x = ‖r x‖ ^ n / n := by
   simp [residualPow, Real.rpow_natCast]
 
+/-- If $\ell \ge 0$, then $\Phi_\ell(x) \ge 0$ for every $x$. -/
 theorem residualPow_nonneg (r : E → F) {ℓ : ℝ} (hℓ : 0 ≤ ℓ) (x : E) : 0 ≤ residualPow r ℓ x :=
   div_nonneg (Real.rpow_nonneg (norm_nonneg _) _) hℓ
 
@@ -70,11 +103,16 @@ section Calculus
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup F]
   [InnerProductSpace ℝ F]
 
-/-- **Lemma 5.1.1** ([cartis2022evaluation]): if `r` is `C^p`, so is `Φ_ℓ`, provided `ℓ` is an
-even integer or a real with `ℓ ≥ 2p`. This slightly strengthens the book, which assumes the
-strict `ℓ > 2p`: its proof writes `Φ_ℓ = (‖r‖²)^{ℓ/2}/ℓ` and only needs `t ↦ t^{ℓ/2}` to be `C^p`,
-which holds for `ℓ/2 ≥ p` (`Real.contDiff_rpow_const_of_le`). (The book's remark that `ℓ > p`
-suffices is not proved there and not formalized.) -/
+/-- Let $p$ be a natural number and let $r : E \to F$ be $p$ times continuously differentiable. If
+$\ell$ is an even natural number $2m$, or $\ell$ is a real number with $\ell \ge 2p$, then
+$\Phi_\ell$ is $p$ times continuously differentiable. This is Lemma 5.1.1 of
+[cartis2022evaluation].
+
+The book assumes the strict inequality $\ell > 2p$. Its proof writes
+$\Phi_\ell = (\|r\|^2)^{\ell/2} / \ell$ and needs only that $t \mapsto t^{\ell/2}$ is $C^p$,
+which holds for $\ell / 2 \ge p$ by `Real.contDiff_rpow_const_of_le`; so the statement here is
+slightly stronger. The book also remarks that $\ell > p$ suffices; that remark is not proved
+there and is not formalized. -/
 theorem contDiff_residualPow {r : E → F} {p : ℕ} {ℓ : ℝ} (hr : ContDiff ℝ p r)
     (hℓ : (∃ m : ℕ, ℓ = 2 * m) ∨ 2 * (p : ℝ) ≤ ℓ) : ContDiff ℝ p (residualPow r ℓ) := by
   have hsq : ContDiff ℝ p fun x => ‖r x‖ ^ 2 := hr.norm_sq ℝ
@@ -94,8 +132,10 @@ theorem contDiff_residualPow {r : E → F} {p : ℕ} {ℓ : ℝ} (hr : ContDiff 
     rw [this]
     exact ((Real.contDiff_rpow_const_of_le (by linarith)).comp hsq).div_const _
 
-/-- The derivative of `Φ_ℓ` (`ℓ > 1`) along a differentiable residual:
-`DΦ_ℓ(x) = ‖r(x)‖^{ℓ-2} ⟪r(x), r'(·)⟫`. -/
+/-- Let $\ell > 1$ and let $r$ have the derivative $r'$ at $x$. Then $\Phi_\ell$ has at $x$ the
+derivative
+$$h \mapsto \|r(x)\|^{\ell-2} \langle r(x), r' h \rangle.$$
+-/
 theorem hasFDerivAt_residualPow {r : E → F} {r' : E →L[ℝ] F} {x : E} {ℓ : ℝ}
     (hr : HasFDerivAt r r' x) (hℓ : 1 < ℓ) :
     HasFDerivAt (residualPow r ℓ) (‖r x‖ ^ (ℓ - 2) • (innerSL ℝ (r x)).comp r') x := by
@@ -107,19 +147,27 @@ theorem hasFDerivAt_residualPow {r : E → F} {r' : E →L[ℝ] F} {x : E} {ℓ 
     field_simp
   · simp [residualPow, div_eq_mul_inv]
 
-/-- **The gradient of `Φ_ℓ`** ([cartis2022evaluation], (5.1.63)): for `ℓ > 1` and `r`
-differentiable at `x`, `DΦ_ℓ(x) = ‖r(x)‖^{ℓ-2} ⟪r(x), J(x)·⟫`, i.e.
-`∇Φ_ℓ(x) = ‖r(x)‖^{ℓ-2} J(x)^* r(x)`. -/
+/-- **Gradient of $\Phi_\ell$.** Let $\ell > 1$ and let $r$ be differentiable at $x$, with
+derivative $J(x)$. Then the derivative of $\Phi_\ell$ at $x$ is
+$$D\Phi_\ell(x) h = \|r(x)\|^{\ell-2} \langle r(x), J(x) h \rangle,$$
+that is, $\nabla \Phi_\ell(x) = \|r(x)\|^{\ell-2} J(x)^* r(x)$. This is the gradient formula
+behind (5.1.63) of [cartis2022evaluation].
+
+The statement is the equality of the two continuous linear functionals; it needs no completeness
+of $E$ or $F$. -/
 theorem gradient_residualPow {r : E → F} {x : E} {ℓ : ℝ} (hr : DifferentiableAt ℝ r x)
     (hℓ : 1 < ℓ) :
     fderiv ℝ (residualPow r ℓ) x = ‖r x‖ ^ (ℓ - 2) • (innerSL ℝ (r x)).comp (fderiv ℝ r x) :=
   (hasFDerivAt_residualPow hr.hasFDerivAt hℓ).fderiv
 
+/-- If $\ell > 1$ and $r$ is differentiable at $x$, then $\Phi_\ell$ is differentiable at $x$. -/
 theorem differentiableAt_residualPow {r : E → F} {x : E} {ℓ : ℝ} (hr : DifferentiableAt ℝ r x)
     (hℓ : 1 < ℓ) : DifferentiableAt ℝ (residualPow r ℓ) x :=
   (hasFDerivAt_residualPow hr.hasFDerivAt hℓ).differentiableAt
 
-/-- `⟪v, A ·⟫` is the functional `⟪A^* v, ·⟫`, of norm `‖A^* v‖`. -/
+/-- Let $E$ and $F$ be complete real inner product spaces, let $A : E \to F$ be a continuous linear
+map and let $v \in F$. Then the functional $u \mapsto \langle v, A u \rangle$ is
+$u \mapsto \langle A^* v, u \rangle$, and its norm is $\|A^* v\|$. -/
 theorem norm_innerSL_comp [CompleteSpace E] [CompleteSpace F] (A : E →L[ℝ] F) (v : F) :
     ‖(innerSL ℝ v).comp A‖ = ‖(ContinuousLinearMap.adjoint A) v‖ := by
   have : (innerSL ℝ v).comp A = innerSL ℝ ((ContinuousLinearMap.adjoint A) v) := by
@@ -127,7 +175,10 @@ theorem norm_innerSL_comp [CompleteSpace E] [CompleteSpace F] (A : E →L[ℝ] F
     simp [ContinuousLinearMap.adjoint_inner_left]
   rw [this, innerSL_apply_norm]
 
-/-- The norm of the gradient of `Φ_ℓ`: `‖∇Φ_ℓ(x)‖ = ‖r(x)‖^{ℓ-2} ‖J(x)^* r(x)‖` (`ℓ > 1`). -/
+/-- Let $E$ and $F$ be complete, let $\ell > 1$ and let $r$ be differentiable at $x$. Then the norm
+of the gradient of $\Phi_\ell$ is
+$$\|\nabla \Phi_\ell(x)\| = \|r(x)\|^{\ell-2} \, \|J(x)^* r(x)\|.$$
+-/
 theorem norm_fderiv_residualPow [CompleteSpace E] [CompleteSpace F] {r : E → F} {x : E} {ℓ : ℝ}
     (hr : DifferentiableAt ℝ r x) (hℓ : 1 < ℓ) :
     ‖fderiv ℝ (residualPow r ℓ) x‖ =
@@ -135,9 +186,12 @@ theorem norm_fderiv_residualPow [CompleteSpace E] [CompleteSpace F] {r : E → F
   rw [gradient_residualPow hr hℓ, norm_smul, norm_innerSL_comp, Real.norm_eq_abs,
     abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _)]
 
-/-- **(5.1.63)** ([cartis2022evaluation]): off the zeros of `r`, the scaled gradient norm
-`ψ_{ℓ,1}(x) = ‖∇Φ_ℓ(x)‖ / ‖r(x)‖^{ℓ-1}` equals `‖J(x)^* r(x)‖ / ‖r(x)‖` for every `ℓ > 1` (in
-particular it equals `‖∇Φ_2(x)‖ / ‖r(x)‖`). -/
+/-- Let $E$ and $F$ be complete, let $\ell > 1$, let $r$ be differentiable at $x$, and let
+$r(x) \neq 0$. Then the scaled gradient norm $\psi_{\ell,1}(x)$ does not depend on $\ell$:
+$$\psi_{\ell,1}(x) = \frac{\|\nabla \Phi_\ell(x)\|}{\|r(x)\|^{\ell-1}} = \frac{\|J(x)^*
+  r(x)\|}{\|r(x)\|}.$$
+This is the outer equality of (5.1.63) of [cartis2022evaluation]; for $\ell = 2$ the left side
+is $\|\nabla \Phi_2(x)\| / \|r(x)\|$. -/
 theorem norm_fderiv_residualPow_div [CompleteSpace E] [CompleteSpace F] {r : E → F} {x : E}
     {ℓ : ℝ} (hr : DifferentiableAt ℝ r x) (hℓ : 1 < ℓ) (hrx : r x ≠ 0) :
     ‖fderiv ℝ (residualPow r ℓ) x‖ / ‖r x‖ ^ (ℓ - 1) =
@@ -148,9 +202,11 @@ theorem norm_fderiv_residualPow_div [CompleteSpace E] [CompleteSpace F] {r : E �
   have : 0 < ‖r x‖ ^ (ℓ - 2) := Real.rpow_pos_of_pos hpos _
   field_simp
 
-/-- **(5.1.63)**, the middle equality ([cartis2022evaluation]): off the zeros of `r`, the scaled
-gradient norm of `Φ_ℓ` is that of the least-squares objective `Φ_2`,
-`‖∇Φ_ℓ(x)‖ / ‖r(x)‖^{ℓ-1} = ‖∇Φ_2(x)‖ / ‖r(x)‖`. -/
+/-- Let $E$ and $F$ be complete, let $\ell > 1$, let $r$ be differentiable at $x$, and let
+$r(x) \neq 0$. Then the scaled gradient norm of $\Phi_\ell$ equals that of the least-squares
+objective $\Phi_2$:
+$$\frac{\|\nabla \Phi_\ell(x)\|}{\|r(x)\|^{\ell-1}} = \frac{\|\nabla \Phi_2(x)\|}{\|r(x)\|}.$$
+This is the middle equality of (5.1.63) of [cartis2022evaluation]. -/
 theorem norm_fderiv_residualPow_div_eq_two [CompleteSpace E] [CompleteSpace F] {r : E → F}
     {x : E} {ℓ : ℝ} (hr : DifferentiableAt ℝ r x) (hℓ : 1 < ℓ) (hrx : r x ≠ 0) :
     ‖fderiv ℝ (residualPow r ℓ) x‖ / ‖r x‖ ^ (ℓ - 1) =
@@ -160,9 +216,12 @@ theorem norm_fderiv_residualPow_div_eq_two [CompleteSpace E] [CompleteSpace F] {
   norm_num at this
   rw [this]
 
-/-- **(5.1.64), (5.3.2)** ([cartis2022evaluation]): if the adjoint of the Jacobian satisfies
-`s₀ ‖v‖ ≤ ‖J(x)^* v‖` for all `v` (in finite dimension: `s₀` is at most its smallest singular
-value) and `ℓ > 1`, then `s₀ ‖r(x)‖^{ℓ-1} ≤ ‖∇Φ_ℓ(x)‖`, i.e. `ψ_{ℓ,1}(x) ≥ s₀` ((5.1.62)). -/
+/-- Let $E$ and $F$ be complete, let $\ell > 1$, and let $r$ be differentiable at $x$. Let $s_0$ be
+a real number with $s_0 \|v\| \le \|J(x)^* v\|$ for all $v \in F$; in finite dimension, this
+holds when $s_0$ is at most the smallest singular value of $J(x)^*$. Then
+$$s_0 \|r(x)\|^{\ell-1} \le \|\nabla \Phi_\ell(x)\|,$$
+so that $\psi_{\ell,1}(x) \ge s_0$ when $r(x) \neq 0$, which is condition (5.1.62). This is
+(5.1.64) and (5.3.2) of [cartis2022evaluation]. -/
 theorem norm_fderiv_residualPow_ge [CompleteSpace E] [CompleteSpace F] {r : E → F} {x : E}
     {ℓ s₀ : ℝ} (hr : DifferentiableAt ℝ r x) (hℓ : 1 < ℓ)
     (hs : ∀ v, s₀ * ‖v‖ ≤ ‖(ContinuousLinearMap.adjoint (fderiv ℝ r x)) v‖) :
@@ -177,9 +236,11 @@ theorem norm_fderiv_residualPow_ge [CompleteSpace E] [CompleteSpace F] {r : E �
     linarith
 
 omit [InnerProductSpace ℝ F] in
-/-- **(5.3.3)** ([cartis2022evaluation]): if `ℓ > 1`, `ψmin > 0` and
-`‖∇Φ_ℓ(x)‖ ≥ ψmin ‖r(x)‖^{ℓ-1}`, then
-`Φ_ℓ(x) ≤ (1/ℓ) ψmin^{-ℓ/(ℓ-1)} ‖∇Φ_ℓ(x)‖^{ℓ/(ℓ-1)}`. -/
+/-- Let $F$ be a normed group, let $\ell > 1$ and $\psi_{\min} > 0$, and suppose that $\|\nabla
+\Phi_\ell(x)\| \ge \psi_{\min} \|r(x)\|^{\ell-1}$. Then
+$$\Phi_\ell(x) \le \frac{\psi_{\min}^{-\ell/(\ell-1)}}{\ell} \, \|\nabla
+  \Phi_\ell(x)\|^{\ell/(\ell-1)}.$$
+This is (5.3.3) of [cartis2022evaluation]. -/
 theorem residualPow_le_of_norm_fderiv_ge {r : E → F} {x : E} {ℓ ψmin : ℝ} (hℓ : 1 < ℓ)
     (hψ : 0 < ψmin) (h : ψmin * ‖r x‖ ^ (ℓ - 1) ≤ ‖fderiv ℝ (residualPow r ℓ) x‖) :
     residualPow r ℓ x ≤
@@ -201,10 +262,17 @@ theorem residualPow_le_of_norm_fderiv_ge {r : E → F} {x : E} {ℓ ψmin : ℝ}
       field_simp
 
 omit [InnerProductSpace ℝ F] in
-/-- **Measure domination of `Φ_ℓ`** ([cartis2022evaluation], (5.3.3)): on any set `A` where
-`‖∇Φ_ℓ‖ ≥ ψmin ‖r‖^{ℓ-1}` (e.g. under the full-rank condition (5.1.62), by
-`Optimization.norm_fderiv_residualPow_ge`), `Φ_ℓ` is measure dominated of level `ℓ/(ℓ-1)` for
-`ψ = ‖∇Φ_ℓ‖`, with `f_* = 0` and `κψ = ψmin^{-ℓ/(ℓ-1)}/ℓ`. -/
+/-- **Measure domination of $\Phi_\ell$.** Let $F$ be a normed group, let $\ell > 1$ and
+$\psi_{\min} > 0$, and let $A \subseteq E$ be a set with $\|\nabla \Phi_\ell(x)\| \ge
+\psi_{\min} \|r(x)\|^{\ell-1}$ for all $x \in A$. Then $\Phi_\ell$ is measure dominated on $A$
+(`Optimization.IsMeasureDominated`) for the measure $\psi = \|\nabla \Phi_\ell\|$, with value
+$f_* = 0$, level $\ell / (\ell - 1)$ and constant $\kappa_\psi = \psi_{\min}^{-\ell/(\ell-1)} /
+\ell$: for $x \in A$,
+$$0 \le \Phi_\ell(x) \le \kappa_\psi \|\nabla \Phi_\ell(x)\|^{\ell/(\ell-1)}.$$
+This is (5.3.3) of [cartis2022evaluation].
+
+The hypothesis holds, for example, under condition (5.1.62), by
+`Optimization.norm_fderiv_residualPow_ge`. -/
 theorem isMeasureDominated_residualPow {r : E → F} {ℓ ψmin : ℝ} {A : Set E} (hℓ : 1 < ℓ)
     (hψ : 0 < ψmin)
     (h : ∀ x ∈ A, ψmin * ‖r x‖ ^ (ℓ - 1) ≤ ‖fderiv ℝ (residualPow r ℓ) x‖) :
@@ -219,7 +287,9 @@ end Calculus
 
 section Cascade
 
-/-- `a^{n+1} - b^{n+1} ≤ (n+1) a^n (a - b)` for `0 ≤ b ≤ a`. -/
+/-- For real numbers $0 \le b \le a$ and a natural number $n$,
+$$a^{n+1} - b^{n+1} \le (n+1) \, a^n (a - b).$$
+-/
 theorem pow_succ_sub_pow_succ_le {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (n : ℕ) :
     a ^ (n + 1) - b ^ (n + 1) ≤ (n + 1) * a ^ n * (a - b) := by
   have ha : 0 ≤ a := hb.trans hba
@@ -234,8 +304,9 @@ theorem pow_succ_sub_pow_succ_le {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (n :
     calc _ ≤ a * ((n + 1) * a ^ n * (a - b)) + a ^ (n + 1) * (a - b) := add_le_add h1 h2
       _ = _ := by push_cast; ring
 
-/-- Concavity of `t ↦ t^α` (`α ∈ [0, 1]`) at `a > 0`: `α a^{α-1} (a - b) ≤ a^α - b^α` for
-`0 ≤ b`. -/
+/-- Concavity of $t \mapsto t^\alpha$ for $\alpha \in [0, 1]$: if $a > 0$ and $b \ge 0$, then
+$$\alpha \, a^{\alpha-1} (a - b) \le a^\alpha - b^\alpha.$$
+-/
 theorem mul_rpow_sub_one_mul_le_rpow_sub {a b α : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (hα0 : 0 ≤ α)
     (hα1 : α ≤ 1) : α * a ^ (α - 1) * (a - b) ≤ a ^ α - b ^ α := by
   have h := rpow_one_add_le_one_add_mul_self (s := b / a - 1)
@@ -247,9 +318,11 @@ theorem mul_rpow_sub_one_mul_le_rpow_sub {a b α : ℝ} (ha : 0 < a) (hb : 0 ≤
     ring
   linarith
 
-/-- **Lemma 5.1.3** (cascading differences, [cartis2022evaluation]): for `a ≥ b ≥ 0` and
-naturals `i` and `ℓ ≥ 1`,
-`a^{1/2^i} - b^{1/2^i} ≥ (a^ℓ - b^ℓ) / (2^i ℓ a^{(2^i-1)/2^i + ℓ - 1})`. -/
+/-- The **cascading-differences inequality**. Let $0 \le b \le a$ be real numbers, and let $i$ and
+$\ell \ge 1$ be natural numbers. Then
+$$a^{1/2^i} - b^{1/2^i} \ge \frac{a^\ell - b^\ell}{2^i \, \ell \, a^{(2^i - 1)/2^i + \ell -
+  1}}.$$
+This is Lemma 5.1.3 of [cartis2022evaluation]. -/
 theorem rpow_inv_two_pow_sub_ge {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (i : ℕ) {ℓ : ℕ}
     (hℓ : 1 ≤ ℓ) :
     (a ^ ℓ - b ^ ℓ) / (2 ^ i * ℓ * a ^ (((2 : ℝ) ^ i - 1) / 2 ^ i + ℓ - 1)) ≤
@@ -283,19 +356,25 @@ theorem rpow_inv_two_pow_sub_ge {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (i : 
     rw [← ha]
     simp [zero_pow (by omega : ℓ ≠ 0)]
 
-/-- **Decrease of the potential `‖r‖^{1/2^i}`** on a successful iteration that does not
-terminate ([cartis2022evaluation], Lemma 5.1.4, (5.1.20), (5.1.27) and (5.1.28); display (6.3.3)
-for ARpLE-CC). Let `p, ℓ ≥ 1` and `i` be naturals with
-`ι₁ = (2^i - 1)/2^i - (ℓ - 1)/p ≥ 0` (5.1.21), `β ∈ (0, 1)`, `κ₁, ε₀, ε₁ > 0`, and reals
-`R ≥ a ≥ b > ε₀` (`a = ‖r(x_k)‖`, `b = ‖r(x_{k+1})‖`, `R = ‖r(x_0)‖`) and `ω > ε₁ b^{ℓ-1}` (the
-first-order measure of `Φ_ℓ` at `x_{k+1}`, which fails the termination test) with
-`a^ℓ - b^ℓ ≥ ℓ κ₁ ω^{(p+1)/p}` (the decrease of Lemma 4.1.4 / 6.2.4 for `Φ_ℓ`). Then
-`a^{1/2^i} - b^{1/2^i} ≥ min(κr0, κr1) min(ε₀^{1/2^i}, ε₁^{(p+1)/p}) / max(1, R^{ι₁})` with
-`κr0 = 1 - β^{1/2^i}` and `κr1 = κ₁ β^{(ℓ-1)(p+1)/p} / 2^i`.
+/-- **Decrease of the potential $\|r\|^{1/2^i}$** on a successful iteration that does not terminate.
+Let $p \ge 1$, $\ell \ge 1$ and $i$ be natural numbers with
+$$\iota_1 = \frac{2^i - 1}{2^i} - \frac{\ell - 1}{p} \ge 0,$$
+as in (5.1.21). Let $\beta \in (0, 1)$ and $\kappa_1, \varepsilon_0, \varepsilon_1 > 0$. Let
+$a, b, R, \omega$ be real numbers with $\varepsilon_0 < b \le a \le R$,
+$\omega > \varepsilon_1 b^{\ell-1}$ and $a^\ell - b^\ell \ge \ell \kappa_1 \omega^{(p+1)/p}$.
+Then
+$$a^{1/2^i} - b^{1/2^i} \ge \frac{\min(\kappa_{r0}, \kappa_{r1}) \min(\varepsilon_0^{1/2^i},
+  \varepsilon_1^{(p+1)/p})}{\max(1, R^{\iota_1})},$$
+where $\kappa_{r0} = 1 - \beta^{1/2^i}$ and $\kappa_{r1} = \kappa_1 \beta^{(\ell-1)(p+1)/p} /
+2^i$. This bound comes from Lemma 5.1.4 of [cartis2022evaluation], with (5.1.20), (5.1.27) and
+(5.1.28), and from display (6.3.3) for the algorithm ARpLE-CC.
 
-This is a packaged convenience, not a numbered item of the book: it combines the two cases
-(5.1.20) and (5.1.27) of Lemma 5.1.4, bounding the `ε`-dependent quantities as in the proofs of
-Theorems 5.1.7 and 6.3.1. -/
+In the application, $a = \|r(x_k)\|$, $b = \|r(x_{k+1})\|$ and $R = \|r(x_0)\|$. The number
+$\omega$ is the first-order measure of $\Phi_\ell$ at $x_{k+1}$, which fails the termination
+test, and the hypothesis on $a^\ell - b^\ell$ is the decrease of Lemmas 4.1.4 and 6.2.4 for
+$\Phi_\ell$. The theorem is not a numbered item of the book: it combines the two cases (5.1.20)
+and (5.1.27) of Lemma 5.1.4, and bounds the quantities that depend on $\varepsilon$ as in the
+proofs of Theorems 5.1.7 and 6.3.1. -/
 theorem rpow_inv_two_pow_sub_ge_min {p ℓ i : ℕ} (hp : 1 ≤ p) (hℓ : 1 ≤ ℓ)
     (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p) {β κ₁ ε₀ ε₁ R a b ω : ℝ}
     (hβ0 : 0 < β) (hβ1 : β < 1) (hκ₁ : 0 < κ₁) (hε₀ : 0 < ε₀) (hε₁ : 0 < ε₁) (hRa : a ≤ R)

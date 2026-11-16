@@ -7,23 +7,53 @@ import Numlib.Optimization.ModelBased.HighOrderStep
 import Numlib.Optimization.Optimality.HighOrder
 
 /-!
-# The detailed Step 2 of ARqp
+# The detailed step computation of ARqp
 
-Algorithm 12.2.3 of [cartis2022evaluation] computes the step of the high-order adaptive
-regularization method ARqp from the regularized model `m = regularizedModel D p σ`
-(`T_p(s) + σ ‖s‖^{p+1}/(p+1)!`): it is the instance `J = {j | 3 ≤ j}` (radii halved only at the
-orders `j ≥ 3`), without constraints, of the abstract transition system
-`Optimization.DetailedStepTrans` of `Numlib.Optimization.ModelBased.HighOrderStep`.
+Algorithm 12.2.3 of [cartis2022evaluation] computes the step of the high-order
+adaptive-regularization method ARqp. Without constraints, it works on the regularized model
+$$m(s) = T_p(s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1}, \qquad T_p(s) = \sum_{i=0}^{p} \frac{1}{i!}
+  D_i[s]^i,$$
+for derivative data $D_0, D_1, \dots$ (a `FormalMultilinearSeries`) and a weight $\sigma > 0$. The
+algorithm is the instance of the abstract transition system `Optimization.DetailedStepTrans` of
+`Numlib.Optimization.ModelBased.HighOrderStep` in which the feasible steps and displacements are all
+of $E$ and a radius $\delta_j$ can be halved only at the orders $j \ge 3$. Below,
+$\Delta T_{m,j}(s, d)$ is the decrease of the order-$j$ Taylor polynomial of $m$ at $s$ along $d$,
+$m^* = \inf_E m$, and $L \ge 0$ bounds $\|D_i\|$ for $i \in [2, p]$.
 
-This file proves, for that model:
-* `IsDetailedStepOutput.exists_arqpStep`: the outputs are admissible ARqp steps
-((12.2.27)–(12.2.29)), with unit radii at the orders `j ≤ 2`;
-* `arqpDetailedStep_radius_ge`: the radii stay above `min(1, ς θ ε_j/(8 (3 L + σ)))` ((12.2.45)),
-  since a halving only happens while the radius exceeds `ς θ ε_j/(4 (3 L + σ))` (Lemma 12.2.8);
-* `arqpDetailedStep_terminates`, `arqpDetailedStep_exists_trans`: in finite dimension every
-  execution returns (proof of Lemma 12.2.9), through the halving bound
-  (`detailedHalvingBound_regularizedModel`) and the restart gap
-  (`detailedRestartGap_regularizedModel`, by compactness at the orders `j ≤ 2`).
+The file shows that every output of the algorithm is an admissible ARqp step with unit radii at the
+orders $j \le 2$, that the radii stay above $\min\{1, \varsigma\theta\varepsilon_j/(8(3L +
+\sigma))\}$ (12.2.45), and that in finite dimension every execution is finite and can always proceed
+(Lemma 12.2.9).
+
+## Main definitions
+
+* `Optimization.ARqpDetailedTrans`: the transitions of Algorithm 12.2.3 for the model $m$.
+* `Optimization.arqpRadiusLB`: the lower bound $\underline{\delta}_j$ on the radius of order $j$,
+  which is $\min\{1, \varsigma\theta\varepsilon_j/(8(3L + \sigma))\}$ for $j \in [3, q]$ and $1$
+  otherwise.
+
+## Main results
+
+* `Optimization.IsDetailedStepOutput.exists_arqpStep`: every output satisfies the Step-2 conditions
+  (12.2.27)–(12.2.29) of ARqp and has $\delta_{s,j} = 1$ for $j \le 2$.
+* `Optimization.arqpDetailedStep_radius_ge`: every state reached has radii $\delta_j \ge \min\{1,
+  \varsigma\theta\varepsilon_j/(8(3L + \sigma))\}$ for $j \in [1, q]$.
+* `Optimization.detailedHalvingBound_regularizedModel`: a halving at order $j \in [3, q]$ only
+  happens when $\delta_j \ge 2\underline{\delta}_j$.
+* `Optimization.detailedRestartGap_regularizedModel`: in finite dimension, a restart at a short
+  trial step $s$ only happens when $m(s) - m^* \ge \eta$ for a fixed $\eta > 0$.
+* `Optimization.arqpDetailedStep_terminates`: in finite dimension, there is no infinite execution.
+* `Optimization.arqpDetailedStep_exists_trans`: in finite dimension, every state reached that is not
+  final has a successor.
+
+## Proof outline
+
+A halving at order $j$ happens only while $\delta_j > \varsigma\theta\varepsilon_j/(4(3L + \sigma))$
+(Lemma 12.2.8 of [cartis2022evaluation]), so the radii stay above $\underline{\delta}_j$. A restart
+(Step 2.4.4) at a short trial step $s$ needs $m(s) - m^* \ge \eta$: at the orders $j \ge 3$ because
+of the model decrease (12.2.37) with radii bounded below, and at the orders $j \le 2$ by
+compactness, because the order-$j$ measure of $m$ vanishes at the global minimizers of $m$. The
+abstract theorem `Optimization.detailedStep_terminates` turns these two bounds into termination.
 -/
 
 open Set Metric
@@ -33,19 +63,35 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The Taylor decrements of the model `regularizedModel D p σ` at a trial step. -/
+/-- The order-$j$ decrement of the model $m = $ `Optimization.regularizedModel D p σ` at a trial
+step $s$: the value at $d$ is $\Delta T_{m,j}(s, d) = T_{m,j}(s, 0) - T_{m,j}(s, d)$, where
+$T_{m,j}(s, \cdot)$ is the Taylor polynomial of order $j$ of $m$ at $s$. -/
 noncomputable abbrev arqpDetailedModelDec (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ) :
     ℕ → E → E → ℝ :=
   fun j s d => (ftaylorSeries ℝ (regularizedModel D p σ) s).taylorDecrement j d
 
-/-- The transitions of Algorithm 12.2.3 for the model `regularizedModel D p σ`. -/
+/-- The transition relation of the detailed Step 2 of ARqp (Algorithm 12.2.3 of
+[cartis2022evaluation]) for the model $m(s) = T_p(s) + \sigma \|s\|^{p+1}/(p+1)!$ of the
+derivative data $D$. It is `Optimization.DetailedStepTrans` with the model $m$, all of $E$ as
+the set of feasible steps and as the set of feasible displacements at every trial step, the
+decrements $\Delta T_{m,j}(s, \cdot)$ of `Optimization.arqpDetailedModelDec`, the order $q$, the
+constants $\varsigma$ and $\theta$, the tolerances $\varepsilon_j$, and the set of halved orders
+$J = \{j \mid j \ge 3\}$.
+
+Thus a radius $\delta_j$ is halved (Step 2.4.3) only at an order $j \ge 3$. At an order
+$j \le 2$ a failed check always leads to a restart (Step 2.4.4). -/
 abbrev ARqpDetailedTrans (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ) (q : ℕ) (ς θ : ℝ)
     (ε : ℕ → ℝ) : DetailedStepState E → DetailedStepState E → Prop :=
   DetailedStepTrans (regularizedModel D p σ) univ (fun _ => univ) (arqpDetailedModelDec D p σ) q ς θ
     ε {j | 3 ≤ j}
 
-/-- The lower bound on the radius of order `j`: `min(1, ς θ ε_j/(8 (3L + σ)))` at the orders
-`j ∈ [3, q]` that may be halved, `1` otherwise. -/
+/-- The lower bound on the radius of order $j$ in Algorithm 12.2.3 of [cartis2022evaluation]:
+$$\underline{\delta}_j = \begin{cases} \min\Big\{1, \dfrac{\varsigma\theta\varepsilon_j}{8(3L +
+  \sigma)}\Big\} & \text{if } 3 \le j \le q, \\ 1 & \text{otherwise}. \end{cases}$$
+
+At the orders $j \in [3, q]$ this is the bound (12.2.45). The other orders are never halved, so
+their radii stay $1$. If $3L + \sigma = 0$, the quotient is $0$ by the Lean convention for
+division by zero. -/
 noncomputable def arqpRadiusLB (q : ℕ) (ς θ L σ : ℝ) (ε : ℕ → ℝ) (j : ℕ) : ℝ :=
   if 3 ≤ j ∧ j ≤ q then min 1 (ς * θ * ε j / (8 * (3 * L + σ))) else 1
 
@@ -53,12 +99,18 @@ section
 
 variable {q : ℕ} {ς θ L σ : ℝ} {ε : ℕ → ℝ}
 
+/-- For every order $j$, $\min\{1, \varsigma\theta\varepsilon_j/(8(3L + \sigma))\} \le
+\underline{\delta}_j$, where $\underline{\delta}_j$ is
+`Optimization.arqpRadiusLB q ς θ L σ ε j`. -/
 theorem min_le_arqpRadiusLB (j : ℕ) :
     min 1 (ς * θ * ε j / (8 * (3 * L + σ))) ≤ arqpRadiusLB q ς θ L σ ε j := by
   unfold arqpRadiusLB; split_ifs
   · exact le_rfl
   · exact min_le_left _ _
 
+/-- If $\sigma > 0$, $L \ge 0$, $\varsigma > 0$, $\theta > 0$ and $\varepsilon_j > 0$ for
+$j \in [1, q]$, then the radius bound $\underline{\delta}_j$ of `Optimization.arqpRadiusLB` is
+positive for every $j$. -/
 theorem arqpRadiusLB_pos (hσ : 0 < σ) (hL : 0 ≤ L) (hς : 0 < ς) (hθ : 0 < θ)
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j) (j : ℕ) : 0 < arqpRadiusLB q ς θ L σ ε j := by
   unfold arqpRadiusLB; split_ifs with h
@@ -66,11 +118,15 @@ theorem arqpRadiusLB_pos (hσ : 0 < σ) (hL : 0 ≤ L) (hς : 0 < ς) (hθ : 0 <
     exact lt_min one_pos (by positivity)
   · exact one_pos
 
+/-- The radius bound $\underline{\delta}_j$ of `Optimization.arqpRadiusLB` is at most $1$ for every
+$j$. -/
 theorem arqpRadiusLB_le_one (j : ℕ) : arqpRadiusLB q ς θ L σ ε j ≤ 1 := by
   unfold arqpRadiusLB; split_ifs
   · exact min_le_left _ _
   · exact le_rfl
 
+/-- The radius bound $\underline{\delta}_j$ of `Optimization.arqpRadiusLB` equals $1$ for $j < 3$.
+-/
 theorem arqpRadiusLB_eq_one {j : ℕ} (hj : j < 3) : arqpRadiusLB q ς θ L σ ε j = 1 := by
   unfold arqpRadiusLB; rw [ite_eq_right (by omega)]
 
@@ -80,8 +136,12 @@ section Termination
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {p q : ℕ} {σ L ς θ : ℝ} {ε : ℕ → ℝ}
 
-/-- A halving at order `j ∈ [1, p]` (Step 2.4.3) only happens when `δ_j` exceeds
-`ς θ ε_j/(4 (3L + σ))` (Lemma 12.2.8). -/
+/-- Let $\sigma > 0$, $L \ge 0$ with $\|D_i\| \le L$ for $i \in [2, p]$, $j \in [1, p]$,
+$\|s\| < 1$, $0 \le \delta_j \le 1$ and $\|d\| \le \delta_j$; if $\Delta T_{m,j}(s, d) >
+\varsigma\theta\varepsilon_j\delta_j^j/j!$ and $m(s) - m(s + d) <
+\varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, then $\delta_j >
+\varsigma\theta\varepsilon_j/(4(3L + \sigma))$ (the argument of Lemma 12.2.8 of
+[cartis2022evaluation]). -/
 private theorem lt_radius_of_halve (hσ : 0 < σ) (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) {j : ℕ} (hj : j ∈ Finset.Icc 1 p) {s d : E}
     (hs : ‖s‖ < 1) {δj : ℝ} (hδ0 : 0 ≤ δj) (hδ1 : δj ≤ 1) (hd : ‖d‖ ≤ δj)
@@ -99,9 +159,20 @@ private theorem lt_radius_of_halve (hσ : 0 < σ) (hL : 0 ≤ L)
   have e : ς * θ * ε j / 2 * δj ^ j / j ! = ς * θ * ε j * δj ^ j / (2 * j !) := by ring
   linarith
 
-/-- **The halving bound of Algorithm 12.2.3** (proof of Lemma 12.2.9): a halving at order
-`j ∈ [3, q]` only happens when `δ_j > ς θ ε_j/(4 (3L + σ)) ≥ 2 lb_j`, with
-`lb = arqpRadiusLB` (Lemma 12.2.8). -/
+/-- Let $\sigma > 0$, let $L \ge 0$ with $\|D_i\| \le L$ for $i \in [2, p]$, let $q \le p$,
+$\varsigma > 0$ and $\theta > 0$, and let $\varepsilon_j > 0$ for $j \in [1, q]$. Then the model
+$m$ of Algorithm 12.2.3 satisfies the halving hypothesis `Optimization.DetailedHalvingBound`
+with the bounds $\underline{\delta}$ of `Optimization.arqpRadiusLB`. That is, let $s$ be a trial
+step with $\|s\| < 1$, let $j \in [3, q]$, let the radii satisfy
+$\underline{\delta}_j \le \delta_j \le 1$, and let $\|d\| \le \delta_j$. If
+$$\Delta T_{m,j}(s, d) > \frac{\varsigma\theta\varepsilon_j\delta_j^j}{j!}
+  \qquad\text{and}\qquad m(s) - m(s + d) <
+  \frac{\varsigma\theta\varepsilon_j\delta_j^j}{2\,j!},$$
+which are the conditions of a halving (Step 2.4.3), then $\delta_j \ge 2\underline{\delta}_j$.
+
+The proof shows $\delta_j > \varsigma\theta\varepsilon_j/(4(3L + \sigma))$, as in Lemma 12.2.8
+of [cartis2022evaluation], and this number is at least $2\underline{\delta}_j$. The result is a
+step of the proof of Lemma 12.2.9. -/
 theorem detailedHalvingBound_regularizedModel (hσ : 0 < σ) (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hqp : q ≤ p) (hς : 0 < ς) (hθ : 0 < θ)
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j) :
@@ -122,12 +193,18 @@ theorem detailedHalvingBound_regularizedModel (hσ : 0 < σ) (hL : 0 ≤ L)
   rw [e] at this ⊢
   linarith
 
-/-- **Radii of Algorithm 12.2.3 stay bounded below** ([cartis2022evaluation], (12.2.45), proof
-of Lemma 12.2.9). For the model `m = regularizedModel D p σ` with `σ > 0`, `‖D_i‖ ≤ L`
-(`i = 2, …, p`, `L ≥ 0`), `1 ≤ q ≤ p`, `ς > 0`, `θ > 0` and `ε_j > 0`, every state reached
-by Algorithm 12.2.3 from `μ₀ ∈ (0, 1]` and unit radii has radii
-`δ_j ≥ min(1, ς θ ε_j/(8 (3 L + σ)))` for `j ∈ [1, q]` (a halving at order `j` only happens while
-`δ_j > ς θ ε_j/(4 (3L + σ))`, Lemma 12.2.8). -/
+/-- Let $\sigma > 0$, let $L \ge 0$ with $\|D_i\| \le L$ for $i \in [2, p]$, let $1 \le q \le p$,
+$\varsigma > 0$ and $\theta > 0$, let $\varepsilon_j > 0$ for $j \in [1, q]$, and let
+$\mu_0 \in (0, 1]$. Then every state $b$ that Algorithm 12.2.3 reaches from the initial state
+with parameter $\mu_0$ and all radii $1$ has radii
+$$\delta_j \ge \min\Big\{1, \frac{\varsigma\theta\varepsilon_j}{8(3L + \sigma)}\Big\}, \qquad j
+  \in [1, q].$$
+This is the bound (12.2.45) in the proof of Lemma 12.2.9 of [cartis2022evaluation].
+
+A state reached is a state related to `findStep μ₀ (fun _ => 1)` by the reflexive transitive
+closure of `Optimization.ARqpDetailedTrans`, and its radii are
+`Optimization.DetailedStepState.radii`. The bound holds because a halving at order $j$ only
+happens while $\delta_j > \varsigma\theta\varepsilon_j/(4(3L + \sigma))$ (Lemma 12.2.8). -/
 theorem arqpDetailedStep_radius_ge (hσ : 0 < σ) (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hq : 1 ≤ q) (hqp : q ≤ p) (hς : 0 < ς)
     (hθ : 0 < θ) (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j) {μ₀ : ℝ}
@@ -138,7 +215,8 @@ theorem arqpDetailedStep_radius_ge (hσ : 0 < σ) (hL : 0 ≤ L)
     ((DetailedStepState.lb_le_radii hq (fun _ => arqpRadiusLB_le_one _)
       (detailedHalvingBound_regularizedModel hσ hL hD hqp hς hθ hε) hμ₀ h j).1)
 
-/-- The global minimal value `m* = sInf (m '' univ)` of the model is attained. -/
+/-- In finite dimension, with $\sigma > 0$ and $p \ge 1$, the model $m$ has a global minimizer
+$s_0$, and $m^* = \inf_E m = m(s_0)$. -/
 private theorem exists_eq_sInf [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 ≤ p) :
     ∃ s₀, IsMinOn (regularizedModel D p σ) univ s₀ ∧
       sInf (regularizedModel D p σ '' univ) = regularizedModel D p σ s₀ := by
@@ -146,10 +224,10 @@ private theorem exists_eq_sInf [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 
   exact ⟨s₀, hmin, IsLeast.csInf_eq ⟨⟨s₀, mem_univ _, rfl⟩,
     by rintro _ ⟨t, _, rfl⟩; exact hmin (mem_univ t)⟩⟩
 
-/-- **Gap at low orders** (proof of Lemma 12.2.9): for `j ∈ {1, 2}` and `τ > 0` there is
-`η > 0` such that `m(s) - m* ≥ η` whenever `‖s‖ ≤ 1` and `φ^1_{m,j}(s) > τ`: the set of such
-`s` lies in a compact set on which `m > m*`, since `φ^1_{m,j}` vanishes at global minimizers
-(Theorem 12.1.4). -/
+/-- In finite dimension, with $\sigma > 0$, $1 \le p$, $j \in \{1, 2\}$, $j \le p$ and $\tau > 0$,
+there is $\eta > 0$ such that $m(s) - m^* \ge \eta$ for every $s$ with $\|s\| \le 1$ and
+$\phi^1_{m,j}(s) > \tau$, because these $s$ lie in a compact set on which $m > m^*$ (the measure
+$\phi^1_{m,j}$ vanishes at the global minimizers, Theorem 12.1.4 of [cartis2022evaluation]). -/
 private theorem exists_gap_low [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 ≤ p) {j : ℕ}
     (hj : j ∈ Finset.Icc 1 2) (hjp : j ≤ p) {τ : ℝ} (hτ : 0 < τ) :
     ∃ η > 0, ∀ s : E, ‖s‖ ≤ 1 →
@@ -181,10 +259,21 @@ private theorem exists_gap_low [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 
   · have := isMinOn_iff.1 hmin₁ s ⟨mem_closedBall_zero_iff.2 hs, hτs.le⟩
     linarith
 
-/-- **The restart gap of Algorithm 12.2.3** (proof of Lemma 12.2.9): a restart (Step 2.4.4) at a
-short trial step `s` with radii above `arqpRadiusLB` needs `m(s) - m* ≥ η` for some fixed
-`η > 0` — at orders `j ≥ 3` because of the model decrease (12.2.37) with radii bounded below, at
-orders `j ≤ 2` by compactness (`exists_gap_low`). -/
+/-- Let $E$ be finite-dimensional, let $\sigma > 0$, $L \ge 0$, $1 \le q \le p$, $\varsigma > 0$ and
+$\theta > 0$, and let $\varepsilon_j > 0$ for $j \in [1, q]$. Then the model $m$ of Algorithm
+12.2.3 satisfies the restart-gap hypothesis `Optimization.DetailedRestartGap` with the bounds
+$\underline{\delta}$ of `Optimization.arqpRadiusLB`. That is, there is $\eta > 0$ with the
+following property. Let $s$ be a trial step with $\|s\| < 1$, let $j \in [1, q]$, let the radii
+satisfy $\underline{\delta}_i \le \delta_i \le 1$ for every $i$ and $\delta_i = 1$ for
+$i \le 2$, and let $\|d\| \le \delta_j$ with $\Delta T_{m,j}(s, d) >
+\varsigma\theta\varepsilon_j\delta_j^j/j!$. If $j \le 2$ or $m(s) - m(s + d) \ge
+\varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, which are the conditions of a restart (Step
+2.4.4), then $m(s) - m^* \ge \eta$, where $m^* = \inf_E m$.
+
+No bound on the derivative data $D$ is needed. At an order $j \ge 3$ the gap comes from the
+model decrease (12.2.37) with radii bounded below. At an order $j \le 2$ it comes from
+compactness, because the measure $\phi^1_{m,j}$ vanishes at the global minimizers of $m$. The
+result is a step of the proof of Lemma 12.2.9 of [cartis2022evaluation]. -/
 theorem detailedRestartGap_regularizedModel [FiniteDimensional ℝ E] (hσ : 0 < σ) (hL : 0 ≤ L)
     (hq : 1 ≤ q) (hqp : q ≤ p) (hς : 0 < ς) (hθ : 0 < θ)
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j) :
@@ -228,12 +317,17 @@ theorem detailedRestartGap_regularizedModel [FiniteDimensional ℝ E] (hσ : 0 <
   have hj : j ∈ Finset.Icc 1 q := Finset.mem_Icc.2 ⟨hj1, hjq⟩
   exact (Finset.inf'_le _ hj).trans (H j hj s δ d hs hR hd.1 hlarge hJ)
 
-/-- **Termination of Algorithm 12.2.3** ([cartis2022evaluation], Lemma 12.2.9). For the model
-`m = regularizedModel D p σ` in finite dimension with `σ > 0`, `‖D_i‖ ≤ L` (`i = 2, …, p`,
-`L ≥ 0`), `1 ≤ q ≤ p`, `0 < ς`, `θ > 0` and `ε_j > 0` (`j ∈ [1, q]`), there is no infinite
-execution of the detailed Step 2 started (Step 2.1) with `μ₀ ∈ (0, 1]` and unit radii (the
-abstract `Optimization.detailedStep_terminates` with `detailedHalvingBound_regularizedModel` and
-`detailedRestartGap_regularizedModel`). -/
+/-- Let $E$ be finite-dimensional, let $\sigma > 0$, let $L \ge 0$ with $\|D_i\| \le L$ for
+$i \in [2, p]$, let $1 \le q \le p$, $\varsigma > 0$ and $\theta > 0$, let $\varepsilon_j > 0$
+for $j \in [1, q]$, and let $\mu_0 \in (0, 1]$. Then the detailed Step 2 for the model $m$ has
+no infinite execution from the initial state (Step 2.1) with parameter $\mu_0$ and all radii
+$1$: there is no sequence of states $c_0, c_1, \dots$ such that $c_0$ is this initial state and
+$c_n \to c_{n+1}$ is a transition of `Optimization.ARqpDetailedTrans` for every $n$. This is
+Lemma 12.2.9 of [cartis2022evaluation].
+
+The proof applies the abstract `Optimization.detailedStep_terminates` with
+`Optimization.detailedHalvingBound_regularizedModel` and
+`Optimization.detailedRestartGap_regularizedModel`. -/
 theorem arqpDetailedStep_terminates [FiniteDimensional ℝ E] (hσ : 0 < σ) (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hς : 0 < ς) (hθ : 0 < θ) (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j) {μ₀ : ℝ}
@@ -247,10 +341,15 @@ theorem arqpDetailedStep_terminates [FiniteDimensional ℝ E] (hσ : 0 < σ) (hL
     (detailedHalvingBound_regularizedModel hσ hL hD hqp hς hθ hε)
     (detailedRestartGap_regularizedModel hσ hL hq hqp hς hθ hε) hμ₀
 
-/-- **Progress of Algorithm 12.2.3** ([cartis2022evaluation], Algorithm 12.2.3 is well defined):
-in finite dimension, with `σ > 0`, `1 ≤ p` and `ς ≤ 1`, every non-final state reached from
-`μ₀ ∈ (0, 1]` and unit radii has a successor: Step 2.2 can use a global minimizer of the model,
-and Step 2.4.1 an exact maximizer of the decrement on the compact ball. -/
+/-- Let $E$ be finite-dimensional, let $\sigma > 0$, $p \ge 1$ and $\varsigma \le 1$, and let
+$\mu_0 \in (0, 1]$. Then every state $b$ that Algorithm 12.2.3 of [cartis2022evaluation] reaches
+from the initial state with parameter $\mu_0$ and all radii $1$, and that is not a final state
+`done s δ`, has a successor under `Optimization.ARqpDetailedTrans`. Thus Algorithm 12.2.3 is
+well defined.
+
+Step 2.2 can use a global minimizer of the model, and Step 2.4.1 can use an exact maximizer of
+the decrement on the compact ball. The proof applies
+`Optimization.DetailedStepState.exists_trans`. -/
 theorem arqpDetailedStep_exists_trans [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 ≤ p)
     (hς1 : ς ≤ 1) {μ₀ : ℝ} (hμ₀ : μ₀ ∈ Ioc (0 : ℝ) 1) {b : DetailedStepState E}
     (h : Relation.ReflTransGen (ARqpDetailedTrans D p σ q ς θ ε) (.findStep μ₀ fun _ => 1) b)
@@ -268,10 +367,16 @@ theorem arqpDetailedStep_exists_trans [FiniteDimensional ℝ E] (hσ : 0 < σ) (
 
 end Termination
 
-/-- **The outputs of Algorithm 12.2.3 are admissible ARqp steps** ([cartis2022evaluation],
-(12.2.27)–(12.2.29)): in finite dimension, with `σ > 0` and `p ≥ 1`, every output `(s, δs)` of
-the detailed Step 2 for the model `m = regularizedModel D p σ` satisfies the Step-2 conditions of
-ARqp (with suitable displacements `d^m_j`), and its radii are `1` at the orders `j ≤ 2`. -/
+/-- Let $E$ be finite-dimensional, let $P$ be the constants of ARqp, and let $p \ge 1$, $\sigma > 0$
+and $x \in E$. If $(s, \delta_s)$ is an output of Algorithm 12.2.3 for the model $m$, that is
+`Optimization.IsDetailedStepOutput` with the constants $\varsigma$ and $\theta$ of $P$ and the
+halved orders $J = \{j \mid j \ge 3\}$, then:
+* there are displacements $d^m_j$ such that $(s, \delta_s, d^m)$ satisfies the Step-2 conditions
+  (12.2.27)–(12.2.29) of ARqp at the iterate $x$, which is `Optimization.ARqpStep` on the
+  feasible set $E$ with the model data `Optimization.ARqpData.ofTaylor D p σ`;
+* $\delta_{s,j} = 1$ for every $j \le 2$.
+
+The iterate $x$ plays no role, because the feasible set is all of $E$. -/
 theorem IsDetailedStepOutput.exists_arqpStep [FiniteDimensional ℝ E] (P : ARqpParams) {p q : ℕ}
     (hp : 1 ≤ p) {ε : ℕ → ℝ} {D : FormalMultilinearSeries ℝ E ℝ} {σ : ℝ} (hσ : 0 < σ) (x : E)
     {s : E} {δs : ℕ → ℝ}

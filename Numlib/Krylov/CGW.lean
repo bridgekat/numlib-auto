@@ -7,43 +7,57 @@ import Numlib.Krylov.CG
 /-!
 # The Concus–Golub–Widlund recurrence
 
-The recurrence of [concus1976generalized] and [widlund1978lanczos], in the form
-[saad2003iterative] §9.6 gives it.
+Let $E$ be a real inner product space, and let $B$ be a linear operator on $E$ that differs from the
+identity by a skew-adjoint operator: $B = I - S$ with $S^* = -S$, or equivalently $\langle B x, y
+\rangle + \langle x, B y \rangle = 2 \langle x, y \rangle$ for all $x, y$. Such a $B$ is not
+self-adjoint, so the theory of the conjugate gradient method in `Numlib.Krylov.CG` does not apply.
+What survives is that $B^*$ is again a polynomial of degree one in $B$, which keeps the Arnoldi
+process short. The recurrence of [concus1976generalized] and [widlund1978lanczos], in the form of
+[saad2003iterative], §9.6, runs the two-term CG recurrence with the sign of $\beta$ reversed:
+$$\alpha_k = \frac{\langle r_k, r_k \rangle}{\langle p_k, B p_k \rangle}, \quad x_{k+1} = x_k +
+  \alpha_k p_k, \quad r_{k+1} = r_k - \alpha_k B p_k, \quad \beta_k = -\frac{\langle r_{k+1},
+  r_{k+1} \rangle}{\langle r_k, r_k \rangle}, \quad p_{k+1} = r_{k+1} + \beta_k p_k,$$
+from $r_0 = p_0 = b - B x_0$.
 
-A conjugate-gradient-shaped two-term recurrence for an operator that differs from the identity by a
-*skew-adjoint* one, `B = 1 - S` with `S* = -S`, equivalently `B + B* = 2`
-(`LinearMap.IsShiftedSkewAdjoint`).  Such a `B` is not self-adjoint, so the conjugate gradient
-theory of `Numlib/Krylov/CG.lean` does not apply; what survives is that `B*` is again a polynomial
-of degree one in `B`, which keeps the Arnoldi process short and lets the same two-term recurrence be
-run with **the sign of `β` reversed**:
+The main result is that $x_k$ is the Galerkin (FOM) iterate over the Krylov subspace
+$\mathcal{K}_k(B, r_0)$, so the recurrence is a projection method, as CG is. The reversed sign is
+what makes it one: in the step that proves the one-sided $B$-conjugacy of the directions,
+$\langle p_k, B r_{k+1} \rangle$ and $\beta_k \langle p_k, B p_k \rangle$ cancel only for this sign.
+The residuals are mutually orthogonal, and the directions satisfy $\langle p_i, B p_j \rangle = 0$
+only for $i < j$.
 
-`α_k = ⟪r_k, r_k⟫ / ⟪p_k, B p_k⟫`, `x_{k+1} = x_k + α_k p_k`, `r_{k+1} = r_k - α_k B p_k`,
-`β_k = -⟪r_{k+1}, r_{k+1}⟫ / ⟪r_k, r_k⟫`, `p_{k+1} = r_{k+1} + β_k p_k`.
+## Main definitions
 
-`CGW.isGalerkinIterate` is the point of the module: the iterate is the Galerkin (FOM) iterate over
-the Krylov space, so `CGW` is a projection method exactly as CG is.  The reversed sign is what makes
-it one: in the step that proves the directions one-sidedly `B`-conjugate, `⟪p_k, B r_{k+1}⟫` and
-`β_k ⟪p_k, B p_k⟫` cancel only for that sign.
+* `LinearMap.IsShiftedSkewAdjoint`: the condition $\langle B x, y \rangle + \langle x, B y \rangle =
+  2 \langle x, y \rangle$.
+* `CGW.alpha`, `CGW.beta`, `CGW.step`, `CGW.init`, `CGW.iterate`: the coefficients, one step of the
+  recurrence, the initial state and the state after $k$ steps.
 
-## The real field
+## Main results
 
-The module is over `ℝ`.  Over `ℂ` the recurrence above is **not** a projection method, and the
-obstruction is visible already at step two: `⟪p_0, B p_1⟫ = ‖r_1‖² (conj α_0⁻¹ - α_0⁻¹)`, which
-vanishes exactly when the step length `α_0` is real.  Over `ℝ` it always is, because
-`⟪p, B p⟫ = ⟪p, p⟫` (`LinearMap.IsShiftedSkewAdjoint.inner_self`, the skew part having no quadratic
-form); over `ℂ` the quadratic form of a skew-adjoint operator is purely imaginary and generally
-nonzero, `α_0` is genuinely complex, and `⟪r_1, r_2⟫ ≠ 0`.  Concus–Golub–Widlund is an algorithm for
-real nearly symmetric systems, and this is the reason.
+* `CGW.inner_residual_eq_zero`: the residuals are mutually orthogonal.
+* `CGW.inner_direction_apply_direction_eq_zero`: the directions are $B$-conjugate in one direction,
+  $\langle p_i, B p_j \rangle = 0$ for $i < j$. Unlike for CG, this relation is not symmetric in $i$
+  and $j$, because $B$ is not.
+* `CGW.span_direction_eq`, `CGW.span_residual_eq`: the first $k$ directions and the first $k$
+  residuals each span $\mathcal{K}_k(B, r_0)$.
+* `CGW.isGalerkinIterate`: $x_k$ is the Galerkin iterate of $\mathcal{K}_k(B, r_0)$.
 
-## Main statements
+## Implementation notes
 
-* `CGW.inner_residual_eq_zero`: the residuals are mutually orthogonal;
-* `CGW.inner_direction_apply_direction_eq_zero`: the directions are `B`-conjugate in the one
-  direction `⟪p_i, B p_j⟫ = 0` for `i < j` — unlike CG this is *not* symmetric in `i` and `j`,
-  because `B` is not;
-* `CGW.span_direction_eq`, `CGW.span_residual_eq`: the directions and the residuals span the Krylov
-  spaces;
-* `CGW.isGalerkinIterate`: the iterate realises the Galerkin specification.
+* The module is over $\mathbb{R}$. Over $\mathbb{C}$ the recurrence is not a projection method, and
+  the obstruction appears already at step two: $\langle p_0, B p_1 \rangle = \|r_1\|^2
+  (\overline{\alpha_0^{-1}} - \alpha_0^{-1})$, which vanishes exactly when the step length
+  $\alpha_0$ is real. Over $\mathbb{R}$ it is always real and positive, because
+  $\langle p, B p \rangle = \langle p, p \rangle$ (`LinearMap.IsShiftedSkewAdjoint.inner_self`): the
+  skew part has no quadratic form. Over $\mathbb{C}$ the quadratic form of a skew-adjoint operator
+  is purely imaginary and in general nonzero, $\alpha_0$ is in general not real, and
+  $\langle r_1, r_2 \rangle \neq 0$. This is why the Concus–Golub–Widlund method is an algorithm for
+  real, nearly symmetric systems.
+* The states are those of CG, `CG.State`. Divisions follow the Lean convention $x / 0 = 0$, so the
+  iteration stops moving once $r_k = 0$.
+* The condition on $B$ is stated with inner products, so no adjoint operator and no completeness of
+  $E$ are needed.
 -/
 
 open Krylov
@@ -52,10 +66,14 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 namespace LinearMap
 
-/-- **A shifted skew-adjoint operator**: `B + B* = 2`, that is `B = 1 - S` with `S` skew-adjoint.
-The preconditioned operator `M⁻¹ A` of a splitting `A = M - N` with `M` the Hermitian part of `A` is
-of this shape in the `M`-inner product, which is what the Concus–Golub–Widlund algorithm
-exploits. -/
+/-- **A shifted skew-adjoint operator**: a linear operator $B$ on a real inner product space with
+$$\langle B x, y \rangle + \langle x, B y \rangle = 2 \langle x, y \rangle \quad \text{for all }
+  x, y,$$
+that is $B + B^* = 2 I$, or $B = I - S$ with $S$ skew-adjoint.
+
+For a splitting $A = M - N$ in which $M$ is the symmetric part of $A$, the preconditioned
+operator $M^{-1} A$ has this form for the inner product $\langle M x, y \rangle$. The
+Concus–Golub–Widlund method uses this. -/
 def IsShiftedSkewAdjoint (B : E →ₗ[ℝ] E) : Prop :=
   ∀ x y, inner ℝ (B x) y + inner ℝ x (B y) = 2 * inner ℝ x y
 
@@ -63,14 +81,19 @@ namespace IsShiftedSkewAdjoint
 
 variable {B : E →ₗ[ℝ] E}
 
-/-- **The skew part carries no quadratic form**: `⟪x, B x⟫ = ⟪x, x⟫`.  Over `ℝ` this is what makes
-the Concus–Golub–Widlund step length positive and the whole recurrence well posed. -/
+/-- **The skew part has no quadratic form.** If $B$ is shifted skew-adjoint, then for every $x$,
+$$\langle x, B x \rangle = \langle x, x \rangle.$$
+Over $\mathbb{R}$ this makes the step length of the Concus–Golub–Widlund method positive and the
+recurrence well posed. -/
 theorem inner_self (h : IsShiftedSkewAdjoint B) (x : E) : inner ℝ x (B x) = inner ℝ x x := by
   have h1 := h x x
   have h2 := real_inner_comm (B x) x
   linarith
 
-/-- Moving `B` across the inner product costs the shift: `⟪B x, y⟫ = 2 ⟪x, y⟫ - ⟪x, B y⟫`. -/
+/-- If $B$ is shifted skew-adjoint, then moving $B$ across the inner product costs the shift: for
+all $x, y$,
+$$\langle B x, y \rangle = 2 \langle x, y \rangle - \langle x, B y \rangle.$$
+-/
 theorem inner_left (h : IsShiftedSkewAdjoint B) (x y : E) :
     inner ℝ (B x) y = 2 * inner ℝ x y - inner ℝ x (B y) := by
   have h1 := h x y
@@ -84,53 +107,69 @@ namespace CGW
 
 open CG (State)
 
-/-- The Concus–Golub–Widlund step length `α = ⟪r, r⟫ / ⟪p, B p⟫`. -/
+/-- The **Concus–Golub–Widlund step length** of a state $(x, r, p)$:
+$$\alpha = \frac{\langle r, r \rangle}{\langle p, B p \rangle}.$$
+By the Lean convention, $\alpha = 0$ when $\langle p, B p \rangle = 0$. -/
 noncomputable def alpha (B : E →ₗ[ℝ] E) (s : State E) : ℝ :=
   inner ℝ s.r s.r / inner ℝ s.p (B s.p)
 
-/-- One Concus–Golub–Widlund step: the conjugate gradient step with the sign of `β` reversed. -/
+/-- **One Concus–Golub–Widlund step** from a state $(x, r, p)$: the conjugate gradient step with the
+sign of $\beta$ reversed. With the step length $\alpha = \langle r, r \rangle / \langle p, B p
+\rangle$, the new state $(x', r', p')$ is
+$$x' = x + \alpha p, \qquad r' = r - \alpha B p, \qquad p' = r' + \beta p, \qquad \beta =
+  -\frac{\langle r', r' \rangle}{\langle r, r \rangle}.$$
+By the Lean convention, $\beta = 0$ when $r = 0$. -/
 noncomputable def step (B : E →ₗ[ℝ] E) (s : State E) : State E :=
   let α := alpha B s
   let r' := s.r - α • B s.p
   let β : ℝ := -(inner ℝ r' r' / inner ℝ s.r s.r)
   { x := s.x + α • s.p, r := r', p := r' + β • s.p }
 
-/-- The direction update coefficient `β = -⟪r', r'⟫ / ⟪r, r⟫`, the negative of the conjugate
-gradient one. -/
+/-- The **Concus–Golub–Widlund direction coefficient** of a state $(x, r, p)$:
+$$\beta = -\frac{\langle r', r' \rangle}{\langle r, r \rangle},$$
+where $r'$ is the residual after one step. This is the negative of the CG coefficient. By the
+Lean convention, $\beta = 0$ when $r = 0$. -/
 noncomputable def beta (B : E →ₗ[ℝ] E) (s : State E) : ℝ :=
   -(inner ℝ (step B s).r (step B s).r / inner ℝ s.r s.r)
 
-/-- Initial state `x₀, r₀ = b - B x₀, p₀ = r₀`. -/
+/-- The **initial state** $(x_0, r_0, p_0)$ with $r_0 = p_0 = b - B x_0$. -/
 def init (B : E →ₗ[ℝ] E) (b x₀ : E) : State E := { x := x₀, r := b - B x₀, p := b - B x₀ }
 
-/-- The `k`-th Concus–Golub–Widlund state. -/
+/-- The **Concus–Golub–Widlund state after $k$ steps** from $x_0$, the $k$-fold application of
+`CGW.step` to `CGW.init B b x₀`. Its components are written $x_k$, $r_k$ and $p_k$. -/
 noncomputable def iterate (B : E →ₗ[ℝ] E) (b x₀ : E) (k : ℕ) : State E :=
   (step B)^[k] (init B b x₀)
 
 variable (B : E →ₗ[ℝ] E) (b x₀ : E)
 
+/-- The iterate of the initial state is $x_0$. -/
 @[simp] theorem init_x : (init B b x₀).x = x₀ := rfl
 
+/-- The residual of the initial state is $b - B x_0$. -/
 @[simp] theorem init_r : (init B b x₀).r = b - B x₀ := rfl
 
+/-- The search direction of the initial state is $b - B x_0$. -/
 @[simp] theorem init_p : (init B b x₀).p = b - B x₀ := rfl
 
+/-- The state after zero steps is the initial state. -/
 @[simp] theorem iterate_zero : iterate B b x₀ 0 = init B b x₀ := rfl
 
-/-- The recurrence: state `k + 1` is one `CGW.step` applied to state `k`. -/
+/-- The recurrence: the state after $k + 1$ steps is one `CGW.step` applied to the state after $k$
+steps. -/
 theorem iterate_succ (k : ℕ) : iterate B b x₀ (k + 1) = step B (iterate B b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- The iterate update `x' = x + α p`. -/
+/-- The iterate update of one step: $x' = x + \alpha p$. -/
 theorem step_x (s : State E) : (step B s).x = s.x + alpha B s • s.p := rfl
 
-/-- The residual update `r' = r - α B p`. -/
+/-- The residual update of one step: $r' = r - \alpha B p$. -/
 theorem step_r (s : State E) : (step B s).r = s.r - alpha B s • B s.p := rfl
 
-/-- The direction update `p' = r' + β p`. -/
+/-- The direction update of one step: $p' = r' + \beta p$. -/
 theorem step_p (s : State E) : (step B s).p = (step B s).r + beta B s • s.p := rfl
 
-/-- The state's residual field is the true residual `b - B x`. -/
+/-- The residual of the state is the true residual: for every $k$, $r_k = b - B x_k$. This holds for
+every operator $B$. -/
 theorem residual_eq (k : ℕ) : (iterate B b x₀ k).r = b - B (iterate B b x₀ k).x := by
   induction k with
   | zero => rfl
@@ -138,37 +177,40 @@ theorem residual_eq (k : ℕ) : (iterate B b x₀ k).r = b - B (iterate B b x₀
 
 /-! ### Unfolding the recurrence -/
 
-/-- `x_{k+1} = x_k + α_k p_k`. -/
+/-- The iterate update along the iteration: $x_{k+1} = x_k + \alpha_k p_k$. -/
 theorem iterate_succ_x (k : ℕ) : (iterate B b x₀ (k + 1)).x =
     (iterate B b x₀ k).x + alpha B (iterate B b x₀ k) • (iterate B b x₀ k).p := by
   rw [iterate_succ, step_x]
 
-/-- `r_{k+1} = r_k - α_k B p_k`. -/
+/-- The residual update along the iteration: $r_{k+1} = r_k - \alpha_k B p_k$. -/
 theorem iterate_succ_r (k : ℕ) : (iterate B b x₀ (k + 1)).r =
     (iterate B b x₀ k).r - alpha B (iterate B b x₀ k) • B (iterate B b x₀ k).p := by
   rw [iterate_succ, step_r]
 
-/-- `p_{k+1} = r_{k+1} + β_k p_k`. -/
+/-- The direction update along the iteration: $p_{k+1} = r_{k+1} + \beta_k p_k$. -/
 theorem iterate_succ_p (k : ℕ) : (iterate B b x₀ (k + 1)).p =
     (iterate B b x₀ (k + 1)).r + beta B (iterate B b x₀ k) • (iterate B b x₀ k).p := by
   rw [iterate_succ]; exact step_p B _
 
-/-- `β_k = -‖r_{k+1}‖² / ‖r_k‖²`, written as a quotient of inner products. -/
+/-- The direction coefficient along the iteration is a quotient of inner products: $\beta_k =
+-\langle r_{k+1}, r_{k+1} \rangle / \langle r_k, r_k \rangle$, that is
+$-\|r_{k+1}\|^2 / \|r_k\|^2$. -/
 theorem beta_iterate (k : ℕ) : beta B (iterate B b x₀ k) =
     -(inner ℝ (iterate B b x₀ (k + 1)).r (iterate B b x₀ (k + 1)).r /
       inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).r) := by
   rw [beta, iterate_succ]
 
-/-- `p₀ = r₀`. -/
+/-- The first search direction is the first residual: $p_0 = r_0$. -/
 theorem direction_zero : (iterate B b x₀ 0).p = (iterate B b x₀ 0).r := rfl
 
-/-- `α_k B p_k = r_k - r_{k+1}`: the only way `B` enters the residual recurrence. -/
+/-- The step along $B p_k$ is the change of the residual: $\alpha_k B p_k = r_k - r_{k+1}$. This is
+the only way in which $B$ enters the residual recurrence. -/
 theorem alpha_smul_apply_direction (k : ℕ) :
     alpha B (iterate B b x₀ k) • B (iterate B b x₀ k).p =
       (iterate B b x₀ k).r - (iterate B b x₀ (k + 1)).r := by
   rw [iterate_succ_r]; abel
 
-/-- If the residual vanishes so does the search direction. -/
+/-- If the residual vanishes, so does the search direction: $r_k = 0$ implies $p_k = 0$. -/
 theorem direction_eq_zero_of_residual_eq_zero {k : ℕ} (hr : (iterate B b x₀ k).r = 0) :
     (iterate B b x₀ k).p = 0 := by
   cases k with
@@ -177,13 +219,15 @@ theorem direction_eq_zero_of_residual_eq_zero {k : ℕ} (hr : (iterate B b x₀ 
     rw [iterate_succ_p, hr, beta_iterate, hr, inner_zero_left, zero_div, neg_zero, zero_smul,
       add_zero]
 
-/-- The iteration is stationary once the residual vanishes (Lean's `x / 0 = 0`). -/
+/-- A state with $r = 0$ and $p = 0$ is fixed by a step. This uses the Lean convention $x / 0 = 0$.
+-/
 theorem step_eq_self_of_residual_eq_zero (s : State E) (hr : s.r = 0) (hp : s.p = 0) :
     step B s = s := by
   obtain ⟨x, r, p⟩ := s
   simp_all [step]
 
-/-- Once the residual vanishes at step `k`, every later state equals the state at `k`. -/
+/-- Once the residual vanishes, the iteration is stationary: if $r_k = 0$, then the state after $l$
+steps equals the state after $k$ steps for every $l \ge k$. -/
 theorem iterate_eq_of_residual_eq_zero {k : ℕ} (hk : (iterate B b x₀ k).r = 0) (l : ℕ)
     (hl : k ≤ l) : iterate B b x₀ l = iterate B b x₀ k := by
   induction l with
@@ -195,14 +239,15 @@ theorem iterate_eq_of_residual_eq_zero {k : ℕ} (hk : (iterate B b x₀ k).r = 
     · obtain rfl : k = l + 1 := le_antisymm hl h
       rfl
 
-/-- `r_{k+1} = 0` as soon as `r_k = 0`. -/
+/-- If $r_k = 0$, then $r_{k+1} = 0$. -/
 theorem residual_succ_eq_zero_of_eq_zero {k : ℕ} (hr : (iterate B b x₀ k).r = 0) :
     (iterate B b x₀ (k + 1)).r = 0 := by
   rw [iterate_eq_of_residual_eq_zero B b x₀ hr (k + 1) (Nat.le_succ k), hr]
 
 /-! ### Elementary consequences of the recurrence, before any orthogonality -/
 
-/-- `β_k ⟪r_k, r_k⟫ = -⟪r_{k+1}, r_{k+1}⟫`, valid also at a breakdown. -/
+/-- The identity $\beta_k \langle r_k, r_k \rangle = -\langle r_{k+1}, r_{k+1} \rangle$, which holds
+also when $r_k = 0$. -/
 private theorem beta_mul_inner_self (k : ℕ) :
     beta B (iterate B b x₀ k) * inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).r =
       -inner ℝ (iterate B b x₀ (k + 1)).r (iterate B b x₀ (k + 1)).r := by
@@ -211,8 +256,8 @@ private theorem beta_mul_inner_self (k : ℕ) :
       inner_zero_left, neg_zero]
   · rw [beta_iterate, neg_mul, div_mul_cancel₀ _ h]
 
-/-- Each residual is a combination of two consecutive directions, so orthogonality to the directions
-gives orthogonality to the residuals. -/
+/-- If $v$ is orthogonal to $p_0, \dots, p_j$, then $v$ is orthogonal to $r_j$, because each
+residual is a combination of two consecutive directions. -/
 private theorem inner_residual_eq_zero_of_inner_direction {j : ℕ} {v : E}
     (h : ∀ l ≤ j, inner ℝ v (iterate B b x₀ l).p = 0) :
     inner ℝ v (iterate B b x₀ j).r = 0 := by
@@ -225,7 +270,7 @@ private theorem inner_residual_eq_zero_of_inner_direction {j : ℕ} {v : E}
     rw [hi, inner_sub_right, real_inner_smul_right, h _ le_rfl, h i (Nat.le_succ i), mul_zero,
       sub_zero]
 
-/-- Both `r_k` and `p_k` lie in `𝒦_{k+1}`. -/
+/-- Both $r_k$ and $p_k$ lie in $\mathcal{K}_{k+1}(B, r_0)$. -/
 private theorem residual_direction_mem_subspace (k : ℕ) :
     (iterate B b x₀ k).r ∈ subspace B (b - B x₀) (k + 1) ∧
       (iterate B b x₀ k).p ∈ subspace B (b - B x₀) (k + 1) := by
@@ -243,19 +288,21 @@ private theorem residual_direction_mem_subspace (k : ℕ) :
       rw [iterate_succ_p]
       exact Submodule.add_mem _ hr (Submodule.smul_mem _ _ (hmono ih.2))⟩
 
-/-- `r_k ∈ 𝒦_{k+1}(B, r₀)`. -/
+/-- The residual lies in a Krylov subspace: $r_k \in \mathcal{K}_{k+1}(B, r_0)$ with
+$r_0 = b - B x_0$. This holds for every operator $B$. -/
 theorem residual_mem_subspace (k : ℕ) : (iterate B b x₀ k).r ∈ subspace B (b - B x₀) (k + 1) :=
   (residual_direction_mem_subspace B b x₀ k).1
 
-/-- `p_k ∈ 𝒦_{k+1}(B, r₀)`. -/
+/-- The search direction lies in a Krylov subspace: $p_k \in \mathcal{K}_{k+1}(B, r_0)$ with
+$r_0 = b - B x_0$. This holds for every operator $B$. -/
 theorem direction_mem_subspace (k : ℕ) : (iterate B b x₀ k).p ∈ subspace B (b - B x₀) (k + 1) :=
   (residual_direction_mem_subspace B b x₀ k).2
 
-/-- The span of the first `k` search directions. -/
+/-- The span of the first $k$ search directions. -/
 private noncomputable def dirSpan (B : E →ₗ[ℝ] E) (b x₀ : E) (k : ℕ) : Submodule ℝ E :=
   Submodule.span ℝ (Set.range fun i : Fin k => (iterate B b x₀ i).p)
 
-/-- The span of the first `k` residuals. -/
+/-- The span of the first $k$ residuals. -/
 private noncomputable def resSpan (B : E →ₗ[ℝ] E) (b x₀ : E) (k : ℕ) : Submodule ℝ E :=
   Submodule.span ℝ (Set.range fun i : Fin k => (iterate B b x₀ i).r)
 
@@ -320,8 +367,9 @@ private theorem resSpan_le_dirSpan (k : ℕ) : resSpan B b x₀ k ≤ dirSpan B 
 
 variable {B}
 
-/-- `α_k ⟪p_k, B p_k⟫ = ⟪r_k, r_k⟫`, valid also at a breakdown: the denominator is `‖p_k‖²`, and
-when it vanishes `p_k = 0`, so the diagonal relation makes the numerator vanish too. -/
+/-- For a shifted skew-adjoint $B$ with $\langle r_k, p_k \rangle = \langle r_k, r_k \rangle$, the
+identity $\alpha_k \langle p_k, B p_k \rangle = \langle r_k, r_k \rangle$ holds also at a
+breakdown, because the denominator is $\|p_k\|^2$ and its vanishing forces $p_k = 0$. -/
 private theorem alpha_mul_inner_apply_direction' (hB : B.IsShiftedSkewAdjoint) (k : ℕ)
     (hdiag : inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).p =
       inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).r) :
@@ -336,7 +384,7 @@ private theorem alpha_mul_inner_apply_direction' (hB : B.IsShiftedSkewAdjoint) (
     rw [← hdiag, hp, inner_zero_right]
   · rw [alpha, div_mul_cancel₀ _ h]
 
-/-- `B p_k = 0` when the step length degenerates. -/
+/-- For a shifted skew-adjoint $B$, $\alpha_k = 0$ implies $B p_k = 0$. -/
 private theorem apply_direction_eq_zero_of_alpha_eq_zero (hB : B.IsShiftedSkewAdjoint) {k : ℕ}
     (h : alpha B (iterate B b x₀ k) = 0) : B (iterate B b x₀ k).p = 0 := by
   rcases div_eq_zero_iff.1 h with h' | h'
@@ -347,7 +395,8 @@ private theorem apply_direction_eq_zero_of_alpha_eq_zero (hB : B.IsShiftedSkewAd
       exact h'
     rw [hp, map_zero]
 
-/-- `⟪v, B p_j⟫ = 0` whenever `v` is orthogonal to `r_j` and to `r_{j+1}`. -/
+/-- For a shifted skew-adjoint $B$, $\langle v, B p_j \rangle = 0$ for every $v$ orthogonal to both
+$r_j$ and $r_{j+1}$. -/
 private theorem inner_apply_direction_eq_zero_of (hB : B.IsShiftedSkewAdjoint) {j : ℕ} {v : E}
     (h1 : inner ℝ v (iterate B b x₀ j).r = 0)
     (h2 : inner ℝ v (iterate B b x₀ (j + 1)).r = 0) :
@@ -358,15 +407,16 @@ private theorem inner_apply_direction_eq_zero_of (hB : B.IsShiftedSkewAdjoint) {
       rw [← real_inner_smul_right, alpha_smul_apply_direction, inner_sub_right, h1, h2, sub_zero]
     exact (mul_eq_zero.1 h).resolve_left hα
 
-/-- The joint invariant at step `k`: the residual is orthogonal to all earlier search directions,
-the current direction is `B`-conjugate to all earlier ones *on the right*, and
-`⟪r_k, p_k⟫ = ⟪r_k, r_k⟫`. -/
+/-- The joint invariant at step $k$: $r_k$ is orthogonal to all earlier directions,
+$\langle p_j, B p_k \rangle = 0$ for all earlier directions $p_j$, and $\langle r_k, p_k
+\rangle = \langle r_k, r_k \rangle$. -/
 private structure Invariant (B : E →ₗ[ℝ] E) (b x₀ : E) (k : ℕ) : Prop where
-  /-- `r_k ⟂ p_j` for `j < k`. -/
+  /-- The residual is orthogonal to the earlier directions: $\langle r_k, p_j \rangle = 0$ for
+  $j < k$. -/
   rp : ∀ j < k, inner ℝ (iterate B b x₀ k).r (iterate B b x₀ j).p = 0
-  /-- `⟪p_j, B p_k⟫ = 0` for `j < k`. -/
+  /-- The one-sided conjugacy $\langle p_j, B p_k \rangle = 0$ for $j < k$. -/
   pp : ∀ j < k, inner ℝ (iterate B b x₀ j).p (B (iterate B b x₀ k).p) = 0
-  /-- `⟪r_k, p_k⟫ = ⟪r_k, r_k⟫`. -/
+  /-- The diagonal identity $\langle r_k, p_k \rangle = \langle r_k, r_k \rangle$. -/
   diag : inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).p =
     inner ℝ (iterate B b x₀ k).r (iterate B b x₀ k).r
 
@@ -440,7 +490,9 @@ private theorem invariant (hB : B.IsShiftedSkewAdjoint) (k : ℕ) : Invariant B 
 variable (hB : B.IsShiftedSkewAdjoint)
 include hB
 
-/-- The residuals are mutually orthogonal, as in CG. -/
+/-- **Orthogonality of the residuals.** Let $B$ be shifted skew-adjoint. Then for all $i \neq j$,
+$$\langle r_i, r_j \rangle = 0,$$
+as for CG. -/
 theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner ℝ (iterate B b x₀ i).r (iterate B b x₀ j).r = 0 := by
   have key : ∀ m n : ℕ, n < m → inner ℝ (iterate B b x₀ m).r (iterate B b x₀ n).r = 0 :=
@@ -450,14 +502,21 @@ theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
   · rw [real_inner_comm]; exact key j i h'
   · exact key i j h'
 
-/-- **The one-sided conjugacy of the directions**: `⟪p_i, B p_j⟫ = 0` for `i < j`.  Unlike the CG
-relation this is not symmetric in `i` and `j`, because `B` is not self-adjoint; the reverse inner
-product `⟪p_j, B p_i⟫` is `2 ⟪p_j, p_i⟫ - ⟪p_i, B p_j⟫` and generally nonzero. -/
+/-- **One-sided conjugacy of the directions.** Let $B$ be shifted skew-adjoint. Then for all
+$i < j$,
+$$\langle p_i, B p_j \rangle = 0.$$
+
+Unlike the CG relation, this one is not symmetric in $i$ and $j$, because $B$ is not
+self-adjoint. The reverse inner product is $\langle p_j, B p_i \rangle = 2 \langle p_j, p_i
+\rangle - \langle p_i, B p_j \rangle$, which is in general nonzero. -/
 theorem inner_direction_apply_direction_eq_zero {i j : ℕ} (h : i < j) :
     inner ℝ (iterate B b x₀ i).p (B (iterate B b x₀ j).p) = 0 :=
   (invariant (b := b) (x₀ := x₀) hB j).pp i h
 
-/-- `⟪r_i, p_j⟫ = 0` for `j < i`. -/
+/-- Let $B$ be shifted skew-adjoint. Then the residual is orthogonal to the earlier directions: for
+$j < i$,
+$$\langle r_i, p_j \rangle = 0.$$
+-/
 theorem inner_residual_direction_eq_zero {i j : ℕ} (h : j < i) :
     inner ℝ (iterate B b x₀ i).r (iterate B b x₀ j).p = 0 :=
   (invariant (b := b) (x₀ := x₀) hB i).rp j h
@@ -508,13 +567,19 @@ private theorem subspace_le_dirSpan (k : ℕ) : subspace B (b - B x₀) k ≤ di
       rw [h']
       exact pow_apply_mem_dirSpan b x₀ hB k ih
 
-/-- `span {p_0, …, p_{k-1}} = 𝒦_k(B, r₀)`. -/
+/-- Let $B$ be shifted skew-adjoint. Then for every $k$, the first $k$ search directions span the
+Krylov subspace:
+$$\operatorname{span}\{p_0, \dots, p_{k-1}\} = \mathcal{K}_k(B, r_0), \qquad r_0 = b - B x_0.$$
+-/
 theorem span_direction_eq (k : ℕ) :
     Submodule.span ℝ (Set.range fun i : Fin k => (iterate B b x₀ i).p) =
       subspace B (b - B x₀) k :=
   le_antisymm (dirSpan_le_subspace B b x₀ k) (subspace_le_dirSpan b x₀ hB k)
 
-/-- `span {r_0, …, r_{k-1}} = 𝒦_k(B, r₀)`. -/
+/-- Let $B$ be shifted skew-adjoint. Then for every $k$, the first $k$ residuals span the Krylov
+subspace:
+$$\operatorname{span}\{r_0, \dots, r_{k-1}\} = \mathcal{K}_k(B, r_0), \qquad r_0 = b - B x_0.$$
+-/
 theorem span_residual_eq (k : ℕ) :
     Submodule.span ℝ (Set.range fun i : Fin k => (iterate B b x₀ i).r) =
       subspace B (b - B x₀) k :=
@@ -522,7 +587,9 @@ theorem span_residual_eq (k : ℕ) :
     ((subspace_le_dirSpan b x₀ hB k).trans (dirSpan_le_resSpan B b x₀ k))
 
 omit hB in
-/-- The iteration stays in the affine Krylov space: `x_k ∈ x₀ + 𝒦_k(B, r₀)`. -/
+/-- The iteration stays in the affine Krylov space: for every $k$,
+$$x_k - x_0 \in \mathcal{K}_k(B, r_0), \qquad r_0 = b - B x_0.$$
+This holds for every operator $B$. -/
 theorem iterate_sub_mem (k : ℕ) : (iterate B b x₀ k).x - x₀ ∈ subspace B (b - B x₀) k := by
   induction k with
   | zero => simp [init]
@@ -534,10 +601,13 @@ theorem iterate_sub_mem (k : ℕ) : (iterate B b x₀ k).x - x₀ ∈ subspace B
     exact Submodule.add_mem _ (subspace_mono B (b - B x₀) (Nat.le_succ k) ih)
       (Submodule.smul_mem _ _ (direction_mem_subspace B b x₀ k))
 
-/-- **The Concus–Golub–Widlund iterate is a Galerkin iterate**: it lies in `x₀ + 𝒦_k(B, r₀)` and its
-residual is orthogonal to that space.  So the recurrence is a projection method (the FOM iterate of
-the tridiagonal relation), even though `B` is not self-adjoint and no minimization property comes
-with it. -/
+/-- **The Concus–Golub–Widlund iterate is a Galerkin iterate.** Let $B$ be shifted skew-adjoint.
+Then for every $k$, with $r_0 = b - B x_0$,
+$$x_k \in x_0 + \mathcal{K}_k(B, r_0), \qquad b - B x_k \perp \mathcal{K}_k(B, r_0).$$
+
+So the recurrence is a projection method, the FOM iterate of the tridiagonal relation, although
+$B$ is not self-adjoint and no minimization property comes with it. The specification is
+`Krylov.IsGalerkinIterate`. -/
 theorem isGalerkinIterate (k : ℕ) : IsGalerkinIterate B b x₀ k (iterate B b x₀ k).x := by
   refine ⟨iterate_sub_mem b x₀ k, ?_⟩
   rw [← residual_eq, ← span_direction_eq b x₀ hB k]

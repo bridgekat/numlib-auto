@@ -10,46 +10,58 @@ import Numlib.Analysis.InnerProductSpace.EuclideanProd
 /-!
 # Convexity along the concatenation of coordinates
 
-`EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)` and `EuclideanSpace ℝ (Fin (m + n))` are
-different types, and a text written in `ℝⁿ` moves between them without comment. The move itself —
-the concatenation `euclideanProdEquiv`, its coordinates and its inner product — is
-`Numlib/Analysis/InnerProductSpace/EuclideanProd`, which knows nothing of convexity. This module is
-what a convexity statement needs on top of it: the transport along the concatenation of
-`convexConj`, `subdifferential` and `ri`.
+Let $J : \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}^{m+n}$ be the concatenation of coordinates,
+$J(x, y) = (x_1, \dots, x_m, y_1, \dots, y_n)$. A text on convex analysis in $\mathbb{R}^n$, such as
+[rockafellar1970convex], identifies $\mathbb{R}^m \times \mathbb{R}^n$ with $\mathbb{R}^{m+n}$
+without comment, but in Lean the two spaces are different types. This module shows that the
+conjugate, the subdifferential and the relative interior commute with $J$. The map $J$ itself, its
+coordinates and its inner product are in `Numlib.Analysis.InnerProductSpace.EuclideanProd`.
 
-Everything turns on `inner_euclideanProdEquiv`: concatenation adds the two inner products, so the
-form `prodPairing` that a product is paired with *is* the inner product of `ℝᵐ⁺ⁿ` read through the
-concatenation. `isAdjointPair_euclideanProdEquiv` packages that as an adjointness datum, and each
-transport lemma is one application of a general substitution rule to it —
-`convexConj_comp_linearEquiv` of `Duality/Conjugate`, `subdifferential_comp_linearEquiv` of
-`Subdifferential/Calculus`, `Convex.relint_image` of `RelativeInterior`. The two rules a statement
-about *cones* needs, `polarCone_image_of_pairing_eq` and `coe_hull_image`, are in `Duality/Polar`
-with the rest of the polarity calculus.
+All results come from one identity, `inner_euclideanProdEquiv`: $\langle J(u, x), J(v, y) \rangle =
+\langle u, v \rangle + \langle x, y \rangle$. Thus the inner product of $\mathbb{R}^{m+n}$, read
+through $J$, is the product pairing of $\mathbb{R}^m \times \mathbb{R}^n$ with itself. Each
+transport result applies a general rule for a change of variables by a linear equivalence that is
+adjoint for the two pairings: `ConvexAnalysis.convexConj_comp_linearEquiv` for the conjugate,
+`ConvexAnalysis.subdifferential_comp_linearEquiv` for the subdifferential, and `Convex.relint_image`
+for the relative interior. The corresponding rules for polar cones and cone hulls,
+`ConvexAnalysis.polarCone_image_of_pairing_eq` and `ConvexAnalysis.coe_hull_image`, are in
+`Numlib.Analysis.Convex.Duality.Polar`.
 
 ## Main results
 
-* `prodPairing_euclideanProdEquiv_symm`, `isAdjointPair_euclideanProdEquiv` — the pairing pulled
-  back along the concatenation, and the adjointness datum every transport below consumes.
-* `convexConj_comp_euclideanProdEquiv`, `subdifferential_comp_euclideanProdEquiv`,
-  `relint_image_euclideanProdEquiv`, `relint_image_euclideanProdEquiv_symm` — conjugate,
-  subdifferential and relative interior transport.
+* `ConvexAnalysis.prodPairing_euclideanProdEquiv_symm`: the product pairing of $J^{-1} z$ and $q$ is
+  $\langle z, J q \rangle$.
+* `ConvexAnalysis.isAdjointPair_euclideanProdEquiv`: $J^{-1}$ and $J$ are adjoint for the inner
+  product of $\mathbb{R}^{m+n}$ and the product pairing.
+* `ConvexAnalysis.convexConj_comp_euclideanProdEquiv`: the conjugate of $f \circ J^{-1}$ is
+  $f^* \circ J^{-1}$.
+* `ConvexAnalysis.subdifferential_comp_euclideanProdEquiv`: $\partial (f \circ J^{-1})(z) =
+  J(\partial f(J^{-1} z))$.
+* `ConvexAnalysis.relint_image_euclideanProdEquiv`,
+  `ConvexAnalysis.relint_image_euclideanProdEquiv_symm`: $J$ and $J^{-1}$ map the relative interior
+  of a convex set onto the relative interior of its image.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex].
+* The map $J$ is `euclideanProdEquiv m n`, a continuous linear equivalence from the plain product
+  `EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)` to `EuclideanSpace ℝ (Fin (m + n))`.
+* The product pairing is `ConvexAnalysis.prodPairing` of the two inner products `innerₗ`, which
+  sends $((u, x), (v, y))$ to $\langle u, v \rangle + \langle x, y \rangle$.
 -/
 
 open Set
 
 namespace ConvexAnalysis
 
-/-! ### The adjointness datum -/
+/-! ### The adjointness of the concatenation -/
 
 section Pairing
 
 variable {m n : ℕ}
 
-/-- The inner product of `ℝᵐ⁺ⁿ` pulled back along the concatenation is `prodPairing`. -/
+/-- For $z \in \mathbb{R}^{m+n}$ and $q \in \mathbb{R}^m \times \mathbb{R}^n$, the product pairing
+of $J^{-1} z$ and $q$ equals $\langle z, J q \rangle$, where $J$ is the concatenation of
+coordinates. -/
 theorem prodPairing_euclideanProdEquiv_symm (z : EuclideanSpace ℝ (Fin (m + n)))
     (q : EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)) :
     prodPairing (innerₗ (EuclideanSpace ℝ (Fin m))) (innerₗ (EuclideanSpace ℝ (Fin n)))
@@ -59,9 +71,17 @@ theorem prodPairing_euclideanProdEquiv_symm (z : EuclideanSpace ℝ (Fin (m + n)
   rw [ContinuousLinearEquiv.apply_symm_apply] at h
   exact h.symm
 
-/-- **Concatenation is an adjoint pair for the two pairings.** This is the hypothesis
-`convexConj_comp_linearEquiv` and `subdifferential_comp_linearEquiv` take, and the only mathematical
-input the transport has. -/
+/-- Let $J : \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}^{m+n}$ be the concatenation of
+coordinates. The maps $J^{-1}$ and $J$ are an **adjoint pair** for the inner product of
+$\mathbb{R}^{m+n}$ and the product pairing of $\mathbb{R}^m \times \mathbb{R}^n$: for all
+$z \in \mathbb{R}^{m+n}$ and $q \in \mathbb{R}^m \times \mathbb{R}^n$,
+$$\langle J^{-1} z, q \rangle_{\mathbb{R}^m \times \mathbb{R}^n} = \langle z, J q
+  \rangle_{\mathbb{R}^{m+n}}.$$
+
+This is the hypothesis `ConvexAnalysis.IsAdjointPair` that
+`ConvexAnalysis.convexConj_comp_linearEquiv` and
+`ConvexAnalysis.subdifferential_comp_linearEquiv` take. It is the only mathematical input of the
+transport results of this module. -/
 theorem isAdjointPair_euclideanProdEquiv :
     IsAdjointPair (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
       (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m))) (innerₗ (EuclideanSpace ℝ (Fin n))))
@@ -80,9 +100,14 @@ section Transport
 
 variable {m n : ℕ}
 
-/-- **The conjugate transports along the concatenation.** A function `f` on `ℝᵐ × ℝⁿ` read as a
-function on `ℝᵐ⁺ⁿ` has, as its conjugate for the inner product of `ℝᵐ⁺ⁿ`, the conjugate of `f` for
-`prodPairing` read the same way. -/
+/-- Let $f : \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$ and let $J$ be the
+concatenation of coordinates. Then for every $z \in \mathbb{R}^{m+n}$,
+$$(f \circ J^{-1})^*(z) = f^*(J^{-1} z),$$
+where the conjugate on the left is taken for the inner product of $\mathbb{R}^{m+n}$, and the
+conjugate on the right for the product pairing of $\mathbb{R}^m \times \mathbb{R}^n$.
+
+The proof specializes `ConvexAnalysis.convexConj_comp_linearEquiv` to
+`ConvexAnalysis.isAdjointPair_euclideanProdEquiv`. -/
 theorem convexConj_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)
     → EReal) (z : EuclideanSpace ℝ (Fin (m + n))) :
     convexConj (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
@@ -92,7 +117,14 @@ theorem convexConj_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) × Eu
   convexConj_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
     (euclideanProdEquiv m n).toLinearEquiv isAdjointPair_euclideanProdEquiv f z
 
-/-- **The subdifferential transports along the concatenation.** -/
+/-- Let $f : \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$ and let $J$ be the
+concatenation of coordinates. Then for every $z \in \mathbb{R}^{m+n}$,
+$$\partial (f \circ J^{-1})(z) = J\bigl(\partial f(J^{-1} z)\bigr),$$
+where the subdifferential on the left is taken for the inner product of $\mathbb{R}^{m+n}$, and
+the subdifferential on the right for the product pairing of $\mathbb{R}^m \times \mathbb{R}^n$.
+
+The proof specializes `ConvexAnalysis.subdifferential_comp_linearEquiv` to
+`ConvexAnalysis.isAdjointPair_euclideanProdEquiv`. -/
 theorem subdifferential_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) ×
     EuclideanSpace ℝ (Fin n) → EReal) (z : EuclideanSpace ℝ (Fin (m + n))) :
     subdifferential (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
@@ -102,13 +134,19 @@ theorem subdifferential_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) 
   subdifferential_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
     (euclideanProdEquiv m n).toLinearEquiv isAdjointPair_euclideanProdEquiv f z
 
-/-- **The relative interior transports along the concatenation.** -/
+/-- Let $C \subseteq \mathbb{R}^m \times \mathbb{R}^n$ be convex and let $J$ be the concatenation of
+coordinates. Then
+$$\operatorname{ri} J(C) = J(\operatorname{ri} C).$$
+
+The relative interior $\operatorname{ri}$ is `intrinsicInterior ℝ`. The proof specializes
+`Convex.relint_image`. -/
 theorem relint_image_euclideanProdEquiv
     {C : Set (EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n))} (hC : Convex ℝ C) :
     ri (euclideanProdEquiv m n '' C) = euclideanProdEquiv m n '' ri C :=
   Convex.relint_image hC (euclideanProdEquiv m n).toLinearEquiv.toLinearMap
 
-/-- **The relative interior transports along the concatenation**, read the other way. -/
+/-- Let $D \subseteq \mathbb{R}^{m+n}$ be convex and let $J$ be the concatenation of coordinates.
+Then $\operatorname{ri} J^{-1}(D) = J^{-1}(\operatorname{ri} D)$. -/
 theorem relint_image_euclideanProdEquiv_symm {D : Set (EuclideanSpace ℝ (Fin (m + n)))}
     (hD : Convex ℝ D) :
     ri ((euclideanProdEquiv m n).symm '' D) = (euclideanProdEquiv m n).symm '' ri D :=

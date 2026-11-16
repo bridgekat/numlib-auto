@@ -13,18 +13,30 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 /-!
 # The continuant step of a bordered determinant
 
-`Matrix.det_succ_succ_of_last_row_col`: when the last row and the last column of `M` vanish outside
-their last two entries — a tridiagonal matrix, or any matrix bordered in that shape — `det M` is
-`m_{NN} det M' - m_{N,N-1} m_{N-1,N} det M''` in terms of the two leading principal minors. It is
+Let $M$ be a square matrix of order $N$ over a commutative ring, and assume that the last row and
+the last column of $M$ are zero outside their last two entries. This holds for a tridiagonal matrix,
+and for any matrix bordered in that shape. Then
+$$\det M = m_{NN} \det M' - m_{N,N-1} \, m_{N-1,N} \det M'',$$
+where $M'$ and $M''$ are the leading principal submatrices of orders $N - 1$ and $N - 2$. This is
 the three-term recurrence of the characteristic polynomials of Jacobi matrices.
+
+## Main results
+
+* `Matrix.det_succ_succ_of_last_row_col`: the continuant step $\det M = m_{NN} \det M' - m_{N,N-1}
+  m_{N-1,N} \det M''$.
 -/
 
 namespace Matrix
 
-/-- **The continuant step**: the determinant of a matrix whose last row and last column vanish
-outside their last two entries is `m_{NN} det M' - m_{N,N-1} m_{N-1,N} det M''`, `M'` and `M''`
-the leading principal submatrices of orders `n + 1` and `n`. Laplace expansion along the last
-row, then along the last column of the off-diagonal minor. -/
+/-- **The continuant step**. Let $R$ be a commutative ring, let $N = n + 2$, and let
+$M \in R^{N \times N}$. Assume that the last row and the last column of $M$ are zero outside
+their last two entries: $m_{Ni} = 0$ and $m_{iN} = 0$ for $i \le n$. Then
+$$\det M = m_{NN} \det M' - m_{N,N-1} \, m_{N-1,N} \det M'',$$
+where $M'$ and $M''$ are the leading principal submatrices of orders $n + 1$ and $n$.
+
+The indices in the statement start at $1$; in Lean they are `Fin (n + 2)`, starting at $0$, and
+$N$ is `Fin.last (n + 1)`. The proof is a Laplace expansion along the last row, followed by an
+expansion of the off-diagonal minor along its last column. -/
 theorem det_succ_succ_of_last_row_col {R : Type*} [CommRing R] {n : ℕ}
     (M : Matrix (Fin (n + 2)) (Fin (n + 2)) R)
     (hrow : ∀ i : Fin n, M (Fin.last (n + 1)) (Fin.castSucc (Fin.castSucc i)) = 0)

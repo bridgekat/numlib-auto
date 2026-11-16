@@ -8,58 +8,59 @@ import Numlib.IntegralEquations.WeaklySingular
 /-!
 # Product integration for a weakly singular kernel
 
-A kernel that splits as `k (x, y) = l (x, y) g (x, y)`, with `l` continuous and `g` merely
-*admissible* in the sense of `Numlib/IntegralEquations/WeaklySingular` — integrable in `y`,
-uniformly in the mean, and with bounded rows — is integrated by a **product rule**: the smooth
-factor of the integrand, `y ↦ l (x, y) u (y)`, is replaced by an approximation and the singular
-factor is integrated exactly,
+Let $X$ be a compact metric space with a Borel measure $\nu$. Consider a kernel of the form
+$k(x, y) = l(x, y) \, g(x, y)$, where $l$ is continuous and $g$ is admissible in the sense of
+`IntegralOperator.IsAdmissibleKernel`: the rows of $g$ are integrable, close in $L^1$ for nearby
+points, and bounded in $L^1$. A **product integration rule** replaces the smooth factor
+$w_x = l(x, \cdot) \, u(\cdot)$ of the integrand by an approximation $P w_x$ and integrates the
+singular factor exactly:
+$$(K_n u)(x) = \int g(x, y) \, (P w_x)(y) \, d\nu(y).$$
+Here $P$ is any bounded linear operator on $C(X)$. For $P$ a piecewise polynomial interpolation
+operator, this gives the product trapezoidal rule and the product Simpson rule. The operator $K_n$
+is not a Nyström operator: its weights $\int g(x, y) \varphi_j(y) \, d\nu(y)$ depend on the point
+$x$, and for this reason the singular factor does no harm. The presentation follows
+[han2009theoretical], §12.5, equations (12.5.14)–(12.5.17).
 
-`Kₙ u (x) = ∫ P (l (x, ·) u (·)) (y) * g (x, y) dy`.
-
-`IntegralOperator.productCLM` is that operator, for an arbitrary bounded `P` on `C(X, ℝ)`; taking
-for `P` a piecewise polynomial interpolation operator gives the classical product trapezoidal and
-product Simpson rules.  It is *not* a Nyström operator: the weights `∫ g (x, y) φⱼ (y) dy` depend on
-the evaluation point `x`, which is exactly what makes the singular factor harmless.
-
-The content of the module is that the family `{Kₙ}` obtained from a sequence of `P` of uniformly
-bounded norm converging pointwise to the identity is **collectively compact and pointwise
-convergent** to the operator of the kernel `l g`, so that the perturbation theory of
-`Numlib/IntegralEquations/SecondKind` applies to `μ - Kₙ` verbatim.
+Let $(P_n)$ be a sequence of operators with uniformly bounded norms that converges pointwise to the
+identity. Then the family of product integration operators of the $P_n$ is collectively compact and
+converges pointwise to the integral operator $K$ of the kernel $l g$. So the perturbation theory of
+`Numlib.IntegralEquations.SecondKind` applies to $\mu - K_n$ without change. This is the content of
+Theorem 12.5.1 and Exercise 12.5.1 of [han2009theoretical].
 
 ## Main definitions
 
-* `IntegralOperator.prodFactor l x u` — the row function `y ↦ l (x, y) u (y)` that the rule
-  approximates, with `IntegralOperator.continuous_prodFactor` its continuity in the base point `x`,
-  which is what makes the set of row functions compact in `C(X, ℝ)`.
-* `IntegralOperator.productCLM hg l P` — the product integration operator, with
-  `IntegralOperator.productCLM_apply` its defining formula.
+* `IntegralOperator.prodFactor`: the function $w_x = l(x, \cdot) \, u(\cdot)$ that a product rule
+  approximates.
+* `IntegralOperator.productCLM`: the product integration operator $K_n$ of an admissible $g$, a
+  continuous $l$ and a bounded operator $P$.
 
-## Main statements
+## Main results
 
-* `IntegralOperator.norm_productCLM_le` — the bound `‖Kₙ‖ ≤ c_g ‖P‖ ‖l‖`, where `c_g` is the row
-  bound `IntegralOperator.rowBound` of the singular factor.
-* `IntegralOperator.productCLM_one` — with no approximation the rule is the operator of the kernel
-  `l g` itself, which is admissible by `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`.
+* `IntegralOperator.continuous_prodFactor`: $x \mapsto w_x$ is continuous into $C(X)$, so the set of
+  the $w_x$ is compact.
+* `IntegralOperator.norm_productCLM_le`: $\|K_n\| \le c_g \|P\| \|l\|$, where
+  $c_g = \sup_x \int |g(x, y)| \, d\nu(y)$ is `IntegralOperator.rowBound`.
+* `IntegralOperator.productCLM_one`: for $P = 1$, the product integration operator is the integral
+  operator $K$ of the admissible kernel $l g$.
 * `IntegralOperator.admissibleKernelCLM_sub_productCLM_apply` and
-  `IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` — the **consistency error**
-  `K - Kₙ`: pointwise it integrates the approximation error `w_x - P w_x` of the row function
-  against the singular factor, so `‖K u - Kₙ u‖_∞ ≤ c_g sup_x ‖w_x - P w_x‖`.  This is what a
-  concrete rule has to supply: an interpolation error for the row functions, uniform in the row.
-* `IntegralOperator.tendsto_productCLM` — the family converges pointwise to that operator.  The
-  estimate `|Kₙ u (x) - K u (x)| ≤ c_g ‖P (l (x, ·) u (·)) - l (x, ·) u (·)‖` is uniform in `x`
-  because the row functions form a *compact* subset of `C(X, ℝ)`, on which a pointwise convergent
-  sequence of operators converges uniformly
-  (`tendstoUniformlyOn_of_tendsto_of_isCompact`).
-* `IntegralOperator.isCollectivelyCompact_productCLM` — the family is collectively compact.
-  Uniform boundedness is `IntegralOperator.norm_productCLM_le` and equicontinuity is
-  `IntegralOperator.exists_delta_product`, so Arzelà–Ascoli in the form
-  `ContinuousMap.isCompact_closure_of_forall_norm_le` applies.
+  `IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le`: $(Ku - K_n u)(x) = \int g(x, y)
+  (w_x - P w_x)(y) \, d\nu(y)$, so $\|Ku - K_n u\|_\infty \le c_g \sup_x \|w_x - P w_x\|$.
+* `IntegralOperator.tendsto_productCLM`: if $P_n v \to v$ for every $v$, then $K_n u \to K u$ for
+  every $u$.
+* `IntegralOperator.isCollectivelyCompact_productCLM`: for uniformly bounded $P_n$, the family
+  $(K_n)$ is collectively compact.
 
-## References
+## Proof outline
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-3rd edition, Springer, 2009 ([han2009theoretical]), §12.5, equations (12.5.14)–(12.5.17); the
-convergence theorem there is Theorem 12.5.1 and the pointwise convergence is its Exercise 12.5.1.
+The consistency error $Ku - K_n u$ is the approximation error $w_x - P w_x$ integrated against
+$g(x, \cdot)$. So a concrete rule needs an interpolation error bound for the functions $w_x$ that is
+uniform in $x$. For the pointwise convergence, the bound $|(K_n u)(x) - (Ku)(x)| \le c_g \|P_n w_x -
+w_x\|$ is uniform in $x$, because the set $\{w_x : x \in X\}$ is compact in $C(X)$ and a pointwise
+convergent sequence of bounded operators converges uniformly on a compact set
+(`tendstoUniformlyOn_of_tendsto_of_isCompact`). For the collective compactness, the uniform bound is
+`IntegralOperator.norm_productCLM_le`, the equicontinuity is
+`IntegralOperator.exists_delta_product`, and the Arzelà–Ascoli theorem in the form
+`ContinuousMap.isCompact_closure_of_forall_norm_le` applies.
 -/
 
 open Filter Topology
@@ -70,24 +71,27 @@ open MeasureTheory Metric Set
 
 variable {X : Type*} [MetricSpace X] [CompactSpace X]
 
-/-! ### The row functions of a product rule -/
+/-! ### The functions that a product rule approximates -/
 
 
-/-- **The factor of the integrand that a product rule interpolates**: the continuous function
-`y ↦ l (x, y) u (y)`.  The product rule replaces it by its interpolant and integrates the result
-against the singular factor `g (x, ·)`. -/
+/-- Let $l$ be a continuous kernel on $X \times X$, let $x \in X$ and let $u \in C(X)$. The function
+that a product rule approximates is
+$$w_x(y) = l(x, y) \, u(y),$$
+as an element of $C(X)$. The product rule replaces $w_x$ by an approximation $P w_x$ and
+integrates the result against the singular factor $g(x, \cdot)$. -/
 noncomputable def prodFactor (l : C(X × X, ℝ)) (x : X) (u : C(X, ℝ)) : C(X, ℝ) :=
   ⟨fun y => l (x, y) * u y, (l.continuous.comp (by fun_prop)).mul u.continuous⟩
 
 omit [CompactSpace X] in
-/-- The defining formula of `IntegralOperator.prodFactor`. -/
+/-- The function `IntegralOperator.prodFactor l x u` maps $y$ to $l(x, y) u(y)$. -/
 @[simp]
 theorem prodFactor_apply (l : C(X × X, ℝ)) (x : X) (u : C(X, ℝ)) (y : X) :
     prodFactor l x u y = l (x, y) * u y := rfl
 
 omit [CompactSpace X] in
-/-- The row function of a product rule is additive in the function it multiplies, which is half of
-the linearity of `IntegralOperator.productCLM`. -/
+/-- The function $w_x = l(x, \cdot) u(\cdot)$ is additive in $u$: the function for $u + v$ is the
+sum of the functions for $u$ and for $v$. This is one half of the linearity of
+`IntegralOperator.productCLM`. -/
 theorem prodFactor_add (l : C(X × X, ℝ)) (x : X) (u v : C(X, ℝ)) :
     prodFactor l x (u + v) = prodFactor l x u + prodFactor l x v := by
   ext y
@@ -95,15 +99,18 @@ theorem prodFactor_add (l : C(X × X, ℝ)) (x : X) (u v : C(X, ℝ)) :
   ring
 
 omit [CompactSpace X] in
-/-- The row function of a product rule is homogeneous in the function it multiplies, which is the
-other half of the linearity of `IntegralOperator.productCLM`. -/
+/-- The function $w_x = l(x, \cdot) u(\cdot)$ is homogeneous in $u$: the function for $r u$ is $r$
+times the function for $u$. This is the other half of the linearity of
+`IntegralOperator.productCLM`. -/
 theorem prodFactor_smul (l : C(X × X, ℝ)) (x : X) (r : ℝ) (u : C(X, ℝ)) :
     prodFactor l x (r • u) = r • prodFactor l x u := by
   ext y
   simp only [prodFactor_apply, ContinuousMap.smul_apply, smul_eq_mul]
   ring
 
-/-- `‖l (x, ·) u (·)‖_∞ ≤ c_l ‖u‖_∞`. -/
+/-- For a continuous kernel $l$ on the compact space $X \times X$, $x \in X$ and $u \in C(X)$,
+$$\|l(x, \cdot) \, u(\cdot)\|_\infty \le \|l\|_\infty \, \|u\|_\infty.$$
+-/
 theorem norm_prodFactor_le (l : C(X × X, ℝ)) (x : X) (u : C(X, ℝ)) :
     ‖prodFactor l x u‖ ≤ ‖l‖ * ‖u‖ := by
   rw [ContinuousMap.norm_le _ (by positivity)]
@@ -111,7 +118,10 @@ theorem norm_prodFactor_le (l : C(X × X, ℝ)) (x : X) (u : C(X, ℝ)) :
   rw [prodFactor_apply, norm_mul]
   exact mul_le_mul (l.norm_coe_le_norm _) (u.norm_coe_le_norm _) (norm_nonneg _) (norm_nonneg _)
 
-/-- The oscillation of `l (x, ·) u (·)` in the base point `x` is controlled by that of `l`. -/
+/-- Let $l$ be a continuous kernel, let $x, z \in X$, and let $\eta \ge 0$ with
+$|l(x, y) - l(z, y)| \le \eta$ for every $y \in X$. Then for every $u \in C(X)$,
+$$\|l(x, \cdot) \, u(\cdot) - l(z, \cdot) \, u(\cdot)\|_\infty \le \eta \, \|u\|_\infty.$$
+-/
 theorem norm_prodFactor_sub_le (l : C(X × X, ℝ)) {x z : X} {η : ℝ} (hη0 : 0 ≤ η)
     (hη : ∀ y : X, |l (x, y) - l (z, y)| ≤ η) (u : C(X, ℝ)) :
     ‖prodFactor l x u - prodFactor l z u‖ ≤ η * ‖u‖ := by
@@ -123,7 +133,9 @@ theorem norm_prodFactor_sub_le (l : C(X × X, ℝ)) {x z : X} {η : ℝ} (hη0 :
   rw [hrw, norm_mul, Real.norm_eq_abs]
   exact mul_le_mul (hη y) (u.norm_coe_le_norm _) (norm_nonneg _) hη0
 
-/-- `x ↦ l (x, ·) u (·)` is continuous into `C(X, ℝ)`, by uniform continuity of `l`. -/
+/-- For a continuous kernel $l$ and $u \in C(X)$, the map $x \mapsto l(x, \cdot) \, u(\cdot)$ from
+$X$ to $C(X)$ is continuous. This follows from the uniform continuity of $l$ on the compact
+space $X \times X$. -/
 theorem continuous_prodFactor (l : C(X × X, ℝ)) (u : C(X, ℝ)) :
     Continuous fun x => prodFactor l x u := by
   refine Metric.continuous_iff.2 fun x₀ ε hε => ?_
@@ -149,10 +161,16 @@ section Kernel
 
 variable [MeasurableSpace X] [BorelSpace X] {ν : Measure X} {g : X × X → ℝ}
 
-/-- **The oscillation estimate for a product rule**: the difference of two values of `K_n u`
-splits into the contribution of the oscillation of the smooth factor `l` and that of the singular
-factor `g`.  It is the estimate behind the equicontinuity half of
-[han2009theoretical], §12.5, Theorem 12.5.1. -/
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, let $P$ be a bounded operator
+on $C(X)$, and let $u \in C(X)$. Let $x, z \in X$ and $\eta \ge 0$ with
+$|l(x, y) - l(z, y)| \le \eta$ for every $y$. Then
+$$\left| \int g(x, y) (P w_x)(y) \, d\nu(y) - \int g(z, y) (P w_z)(y) \, d\nu(y) \right| \le c_g
+  \|P\| \eta \|u\| + \left( \int |g(x, y) - g(z, y)| \, d\nu(y) \right) \|P\| \|l\| \|u\|,$$
+where $w_x = l(x, \cdot) u(\cdot)$ and $c_g$ is the row bound `IntegralOperator.rowBound ν g`.
+
+The first term comes from the variation of the smooth factor $l$ and the second from the
+variation of the singular factor $g$. This is the estimate behind the equicontinuity in the
+proof of Theorem 12.5.1 of [han2009theoretical], §12.5. -/
 theorem abs_product_sub_le (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) {x z : X} {η : ℝ} (hη0 : 0 ≤ η)
     (hη : ∀ y : X, |l (x, y) - l (z, y)| ≤ η) :
@@ -193,9 +211,16 @@ theorem abs_product_sub_le (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
   rw [hsplit]
   exact (abs_add_le _ _).trans (add_le_add h1 h2)
 
-/-- The uniform modulus of continuity of the product operators: a single `δ` serves every
-projection of norm at most `Cp` and every `u` of norm at most `Cu`.  Continuity of one `K_n u` and
-equicontinuity of the whole family `{K_n u : n, ‖u‖ ≤ 1}` are both read off it. -/
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, and let $C_P, C_u \ge 0$ and
+$\varepsilon > 0$. Then there is $\delta > 0$ such that for every bounded operator $P$ on $C(X)$
+with $\|P\| \le C_P$, every $u \in C(X)$ with $\|u\| \le C_u$, and all $x, z \in X$ with
+$d(x, z) < \delta$,
+$$\left| \int g(x, y) (P w_x)(y) \, d\nu(y) - \int g(z, y) (P w_z)(y) \, d\nu(y) \right| <
+  \varepsilon,$$
+where $w_x = l(x, \cdot) u(\cdot)$.
+
+The continuity of one function $K_n u$ and the equicontinuity of the family
+$\{K_n u : n, \|u\| \le 1\}$ both follow from this. -/
 theorem exists_delta_product (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ)) {Cp Cu ε : ℝ}
     (hCp0 : 0 ≤ Cp) (hCu0 : 0 ≤ Cu) (hε : 0 < ε) :
     ∃ δ > 0, ∀ P : C(X, ℝ) →L[ℝ] C(X, ℝ), ‖P‖ ≤ Cp → ∀ u : C(X, ℝ), ‖u‖ ≤ Cu →
@@ -256,7 +281,10 @@ theorem exists_delta_product (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
       _ = ε / 2 := by field_simp
   linarith
 
-/-- The value `K_n u (x)` depends continuously on `x`. -/
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, let $P$ be a bounded operator
+on $C(X)$, and let $u \in C(X)$. Then the function
+$x \mapsto \int g(x, y) (P w_x)(y) \, d\nu(y)$, with $w_x = l(x, \cdot) u(\cdot)$, is
+continuous. -/
 theorem continuous_product (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) :
     Continuous fun x => ∫ y, g (x, y) * (P (prodFactor l x u)) y ∂ν := by
@@ -267,12 +295,18 @@ theorem continuous_product (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
   rw [Real.dist_eq]
   exact hbound P le_rfl u le_rfl x x₀ hx
 
-/-- **The product integration operator** `K_n u (x) = ∫ P (l (x, ·) u (·)) (y) * g (x, y) dy`,
-with an arbitrary bounded `P` on `C(X, ℝ)` in place of the interpolation of a concrete rule.  This
-is equation (12.5.14) of [han2009theoretical], §12.5.
+/-- Let $X$ be a compact metric space with a Borel measure $\nu$, let $g$ be an admissible kernel,
+let $l$ be a continuous kernel on $X \times X$, and let $P$ be a bounded linear operator on
+$C(X)$. The **product integration operator** is the bounded linear operator $K_n$ on $C(X)$
+given by
+$$(K_n u)(x) = \int g(x, y) \, \big( P (l(x, \cdot) \, u(\cdot)) \big)(y) \, d\nu(y).$$
+This is equation (12.5.14) of [han2009theoretical], §12.5, with an arbitrary bounded operator
+$P$ in place of the interpolation operator of a concrete rule.
 
-It is *not* an instance of the Nyström operator `IntegralOperator.nystromCLM`: the weights
-`∫ g (x, y) φ_j (y) dy` depend on the evaluation point `x`. -/
+The operator is not an instance of the Nyström operator `IntegralOperator.nystromCLM`, because
+the weights $\int g(x, y) \varphi_j(y) \, d\nu(y)$ depend on the point $x$. It is built with the
+bound $c_g \|P\| \|l\|$, where $c_g$ is `IntegralOperator.rowBound ν g`. The argument `hg` is
+the proof that $g$ is admissible. -/
 noncomputable def productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   LinearMap.mkContinuous
@@ -309,15 +343,19 @@ noncomputable def productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
             mul_le_mul (hg.le_rowBound x) hn (norm_nonneg _) hg.rowBound_nonneg
         _ = rowBound ν g * (‖P‖ * ‖l‖) * ‖u‖ := by ring
 
-/-- The defining formula of `productCLM`. -/
+/-- The product integration operator maps $u$ to $x \mapsto \int g(x, y) \, (P w_x)(y) \, d\nu(y)$,
+where $w_x = l(x, \cdot) u(\cdot)$. -/
 @[simp]
 theorem productCLM_apply (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) (x : X) :
     productCLM hg l P u x = ∫ y, g (x, y) * (P (prodFactor l x u)) y ∂ν := rfl
 
-/-- `‖K_n‖ ≤ c_g ‖P‖ ‖l‖`: the product operators of a family of uniformly bounded `P` are
-uniformly bounded.  This is the bound of the proof of [han2009theoretical], §12.5,
-Theorem 12.5.1. -/
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, and let $P$ be a bounded
+operator on $C(X)$. Then the product integration operator satisfies
+$$\|K_n\| \le c_g \, \|P\| \, \|l\|,$$
+where $c_g = \sup_x \int |g(x, y)| \, d\nu(y)$ is `IntegralOperator.rowBound ν g`. So the
+product integration operators of a family of uniformly bounded $P$ are uniformly bounded. This
+is the bound in the proof of Theorem 12.5.1 of [han2009theoretical], §12.5. -/
 theorem norm_productCLM_le (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) :
     ‖productCLM hg l P‖ ≤ rowBound ν g * (‖P‖ * ‖l‖) := by
@@ -325,9 +363,13 @@ theorem norm_productCLM_le (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
   have := hg.rowBound_nonneg (μ := ν) (k := g)
   positivity
 
-/-- **The exact operator is the product operator of the identity**: with no approximation the
-product rule is the integral operator of the kernel `l g` itself, which by the splitting rule
-`IntegralOperator.IsAdmissibleKernel.mul_continuousMap` is admissible. -/
+/-- Let $g$ be an admissible kernel and let $l$ be a continuous kernel. Then the product integration
+operator for $P = 1$ is the integral operator of the kernel $(x, y) \mapsto g(x, y) \, l(x, y)$:
+$$\int g(x, y) \, l(x, y) \, u(y) \, d\nu(y).$$
+
+The kernel $g l$ is admissible by the splitting rule
+`IntegralOperator.IsAdmissibleKernel.mul_continuousMap`, and its operator is
+`IntegralOperator.admissibleKernelCLM`. -/
 theorem productCLM_one (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ)) :
     productCLM hg l 1 = admissibleKernelCLM (hg.mul_continuousMap l) := by
   ext u x
@@ -336,17 +378,15 @@ theorem productCLM_one (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ)) :
   simp only [one_apply_eq_self, prodFactor_apply]
   ring
 
-/-- **The consistency error of a product rule, pointwise**: at every base point the difference
-between the exact operator of the kernel `l g` and the product rule built from `P` is the
-approximation error of the row function integrated against the singular factor,
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, let $P$ be a bounded operator
+on $C(X)$, and let $K$ be the integral operator of the admissible kernel $g l$. Then for every
+$u \in C(X)$ and $x \in X$,
+$$(Ku - K_n u)(x) = \int g(x, y) \, (w_x - P w_x)(y) \, d\nu(y), \qquad w_x = l(x, \cdot) \,
+  u(\cdot).$$
 
-`(K u - K_n u) (x) = ∫ g (x, y) (w_x - P w_x) (y) dy`,   `w_x = l (x, ·) u (·)`.
-
-Nothing but linearity of the integral is used; the whole consistency estimate
-`IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` follows from it.  This is the step
-that turns an interpolation error into an operator error in Kendall Atkinson and Weimin Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009
-([han2009theoretical]), §12.5. -/
+The proof uses only the linearity of the integral, and the estimate
+`IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` follows from it. This identity
+turns an interpolation error into an operator error in [han2009theoretical], §12.5. -/
 theorem admissibleKernelCLM_sub_productCLM_apply (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) (x : X) :
     (admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l P u) x
@@ -357,17 +397,18 @@ theorem admissibleKernelCLM_sub_productCLM_apply (hg : IsAdmissibleKernel ν g) 
   simp only [ContinuousMap.sub_apply, one_apply_eq_self]
   ring
 
-/-- **The consistency error of a product rule is the approximation error of its row functions**:
-if `P` reproduces every row function `w_x = l (x, ·) u (·)` to within `C`, then
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, let $P$ be a bounded operator
+on $C(X)$, let $K$ be the integral operator of the admissible kernel $g l$, and let
+$u \in C(X)$. If $C \ge 0$ and
+$$\|w_x - P w_x\|_\infty \le C \quad \text{for every } x \in X, \qquad w_x = l(x, \cdot) \,
+  u(\cdot),$$
+then
+$$\|Ku - K_n u\|_\infty \le c_g \, C,$$
+where $c_g$ is the row bound `IntegralOperator.rowBound ν g`.
 
-`‖K u - K_n u‖_∞ ≤ c_g C`,
-
-`c_g` being the row bound `IntegralOperator.rowBound` of the singular factor.  Combined with a
-uniform bound on `‖(μ - K_n)⁻¹‖` — the stability half — this is what turns the interpolation error
-of a concrete rule into the convergence rate of `u_n` to `u` in Kendall Atkinson and Weimin Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009
-([han2009theoretical]), §12.5, both for the product trapezoidal rule and for graded-mesh product
-integration. -/
+With a uniform bound on $\|(\mu - K_n)^{-1}\|$, this turns the interpolation error of a concrete
+rule into the rate of convergence of $u_n$ to $u$, in [han2009theoretical], §12.5, for the
+product trapezoidal rule and for product integration on graded meshes. -/
 theorem norm_admissibleKernelCLM_sub_productCLM_le (hg : IsAdmissibleKernel ν g)
     (l : C(X × X, ℝ)) (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) {C : ℝ} (hC : 0 ≤ C)
     (hP : ∀ x : X, ‖prodFactor l x u - P (prodFactor l x u)‖ ≤ C) :
@@ -379,14 +420,18 @@ theorem norm_admissibleKernelCLM_sub_productCLM_le (hg : IsAdmissibleKernel ν g
   exact (hg.abs_integral_mul_le _ x).trans
     (mul_le_mul (hg.le_rowBound x) (hP x) (norm_nonneg _) hg.rowBound_nonneg)
 
-/-- **The product operators converge pointwise to the exact operator** whenever the approximations
-`P n` do.  The estimate `|K_n u (x) - K u (x)| ≤ c_g ‖P_n w_x - w_x‖` is uniform in `x` because
-`{w_x = l (x, ·) u (·) : x ∈ X}` is a *compact* subset of `C(X, ℝ)`, on which a pointwise
-convergent sequence of bounded operators converges uniformly
-(`tendstoUniformlyOn_of_tendsto_of_isCompact`).
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, and let $(P_n)$ be bounded
+operators on $C(X)$ with $P_n v \to v$ for every $v \in C(X)$. Then for every $u \in C(X)$, the
+product integration operators satisfy
+$$K_n u \to K u \quad \text{in } C(X),$$
+where $K$ is the product integration operator for $P = 1$, that is, the integral operator of
+$g l$ (`IntegralOperator.productCLM_one`). This is Exercise 12.5.1 of [han2009theoretical],
+§12.5, and assumption A2 of the theory of collectively compact operators.
 
-This is assumption A2 of the collectively compact framework; [han2009theoretical], §12.5,
-Exercise 12.5.1. -/
+The bound $|(K_n u)(x) - (Ku)(x)| \le c_g \|P_n w_x - w_x\|$ is uniform in $x$, because the set
+$\{w_x = l(x, \cdot) u(\cdot) : x \in X\}$ is compact in $C(X)$ and a pointwise convergent
+sequence of bounded operators converges uniformly on compact sets
+(`tendstoUniformlyOn_of_tendsto_of_isCompact`). -/
 theorem tendsto_productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     {P : ℕ → C(X, ℝ) →L[ℝ] C(X, ℝ)} (hP : ∀ v : C(X, ℝ), Tendsto (fun n => P n v) atTop (𝓝 v))
     (u : C(X, ℝ)) :
@@ -430,14 +475,16 @@ theorem tendsto_productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
   rw [div_lt_iff₀ (by positivity)]
   nlinarith [hε.le]
 
-/-- **The product integration operators of a uniformly bounded family of approximations are
-collectively compact.**
+/-- Let $g$ be an admissible kernel, let $l$ be a continuous kernel, and let $(P_n)$ be bounded
+operators on $C(X)$ with $\|P_n\| \le C_P$ for every $n$. Then the family of product integration
+operators $(K_n)$ of the $P_n$ is collectively compact. This is assumption A3 of the theory of
+collectively compact operators. With the pointwise convergence
+`IntegralOperator.tendsto_productCLM`, it is what the proof of Theorem 12.5.1 of
+[han2009theoretical], §12.5, verifies.
 
-Uniform boundedness of the images of the unit ball is `norm_productCLM_le` and their
-equicontinuity is `exists_delta_product`, so Arzelà–Ascoli in the form
-`ContinuousMap.isCompact_closure_of_forall_norm_le` applies.  Together with the pointwise
-convergence `tendsto_productCLM` this is assumption A3 of the collectively compact framework, and
-the two are what the proof of [han2009theoretical], §12.5, Theorem 12.5.1 verifies. -/
+The images of the unit ball are uniformly bounded by `IntegralOperator.norm_productCLM_le` and
+equicontinuous by `IntegralOperator.exists_delta_product`, so the Arzelà–Ascoli theorem in the
+form `ContinuousMap.isCompact_closure_of_forall_norm_le` applies. -/
 theorem isCollectivelyCompact_productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     {P : ℕ → C(X, ℝ) →L[ℝ] C(X, ℝ)} {Cp : ℝ} (hCp : ∀ n, ‖P n‖ ≤ Cp) :
     IsCollectivelyCompact (fun n => productCLM hg l (P n)) := by

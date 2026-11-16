@@ -9,79 +9,95 @@ import Numlib.MeasureTheory.Function.LpSeminorm.Basic
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
-# The boundary of a plane polygon through its triangles
+# The divergence theorem on a triangulated plane domain
 
-The polygonal instance of the boundary interface `BoundaryData` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` (decision B6 of `notes/boundary/planning-brief.md`):
-the **arclength measure** of a segment (`EuclideanSpace.edgeMeasure`, one-dimensional Lebesgue
-measure transported to the segment by `AffineMap.lineMap` and scaled by the length), the
-**outward edge normal** of a triangle (`EuclideanSpace.edgeNormal`, the unit normal of the edge
-pointing away from the third vertex), the **divergence theorem on a triangle** — first on the
-reference triangle `{x, y > 0, x + y < 1}` by Fubini and the one-dimensional fundamental theorem
-of calculus in each coordinate (`EuclideanSpace.integral_div_referenceTriangle`), then on every
-nondegenerate triangle by the affine transport of `Numlib/Analysis/Sobolev/Simplex.lean` and the
-linear Piola identity `EuclideanSpace.div_comp_continuousLinearEquiv`
-(`EuclideanSpace.integral_div_openTriangle`) — and, for a triangulation `𝒯 : Triangulation Ω` of
-`Numlib/Geometry/Triangulation.lean`, the **divergence theorem on a triangulated domain**
-(`Triangulation.integral_div_eq`): the sum of the triangles' theorems, in which the terms of the
-interior edges cancel in pairs because a shared edge is the same segment with opposite normals
-(`Triangulation.partner_unique`, `Finset.sum_involution`), and the terms of the boundary edges are
-the boundary integral against the surface measure `Triangulation.boundaryMeasure` and the outward
-normal `Triangulation.outwardNormal`. Hence `Triangulation.boundaryData : BoundaryData Ω` for
-*every* triangulation: no polygonal-domain hypothesis is needed for the divergence theorem, a slit
-along an interior edge being invisible to a field continuous across it.
+This module gives every triangulated plane domain $\Omega \subseteq \mathbb{R}^2$ the structure
+`BoundaryData` of `Numlib.Analysis.Sobolev.Boundary.Data`: a surface measure $\sigma$ on
+$\partial\Omega$, an outward unit normal $\nu$, and the divergence theorem $$\int_\Omega
+\operatorname{div} F \, dx = \int_{\partial\Omega} F \cdot \nu \, d\sigma$$ for every vector field
+$F \in C^1(\bar\Omega)$. The surface measure is the sum of the arclength measures of the boundary
+edges, the edges that belong to only one element. On the relative interior of a boundary edge, the
+normal $\nu$ is the unit normal of the edge that points away from the third vertex of its element.
+Triangulations are those of `Numlib.Geometry.Triangulation`, in the sense of [han2009theoretical]
+§10.2; for polygonal domains see also [grisvard2011elliptic] §1.5.2. For Green's formulas, see
+[han2009theoretical] §7.6.
 
-The regularity of the field is that of `BoundaryData`: `F ∈ C¹(Ω̄)`, i.e.
-`ContinuousOn F (closure Ω)` and `ContDiffOnClosure ℝ 1 F Ω` (the fundamental theorem of calculus
-needs continuity on the closed slice and the derivative on the open one, and the derivative is
-bounded because it extends continuously to the compact closure).
+The divergence theorem is proved in three steps. On the reference triangle
+$\hat T = \{(x, y) : x > 0, y > 0, x + y < 1\}$, it follows from Fubini's theorem and the
+fundamental theorem of calculus in each coordinate. On a nondegenerate triangle, it follows by an
+affine change of variables from the reference triangle, with the affine maps of
+`Numlib.Analysis.Sobolev.Simplex`. On a triangulated domain, it is the sum of the theorems for the
+elements: the terms of an interior edge cancel, because the two elements that share the edge give it
+the same arclength measure and opposite normals. No hypothesis on $\Omega$ beyond the axioms of a
+triangulation is needed. In particular, a slit along an interior edge does not change the integrals
+of a field that is continuous across it.
 
 ## Main definitions
 
-* `EuclideanSpace.perp v = !₂[v 1, -v 0]`, the clockwise rotation by a right angle, with the
-  transformation rule `inner_perp_map : ⟪perp (M v), M w⟫ = det M * ⟪perp v, w⟫`;
-* `EuclideanSpace.edgeMeasure P Q`, the arclength measure of `[P, Q]`;
-* `EuclideanSpace.edgeNormal P Q R`, the unit normal of `[P, Q]` pointing away from `R`;
-* `EuclideanSpace.triangleBoundaryMeasure A B C`, `EuclideanSpace.triangleNormal A B C`, the
-  boundary data of a triangle, packaged as `EuclideanSpace.triangleBoundaryData`;
+* `EuclideanSpace.perp`: the clockwise rotation $v^\perp = (v_1, -v_0)$ of $v \in \mathbb{R}^2$ by a
+  right angle.
+* `EuclideanSpace.edgeMeasure`: the arclength measure $\sigma_{PQ}$ of the segment $[P, Q]$.
+* `EuclideanSpace.edgeNormal`: the unit normal $n_{PQR}$ of $[P, Q]$ that points away from $R$.
+* `EuclideanSpace.triangleBoundaryMeasure`, `EuclideanSpace.triangleNormal`: the arclength measure
+  of the boundary of a triangle and its outward unit normal, which form the boundary data
+  `EuclideanSpace.triangleBoundaryData` of the triangle.
 * `Triangulation.IsBoundaryEdge`, `Triangulation.IsPartner`, `Triangulation.boundaryEdges`: the
-  edges of the elements that no other element has, and the partner of a shared edge;
-* `Triangulation.boundaryMeasure`, `Triangulation.outwardNormal`, `Triangulation.boundaryData`;
-* `Triangulation.InteriorEdgesSubset`, the no-slit hypothesis the *trace* theory on a polygon needs.
+  edges of the elements that no other element has, and the partner of a shared edge in the other
+  element.
+* `Triangulation.boundaryMeasure`, `Triangulation.outwardNormal`, `Triangulation.boundaryData`: the
+  surface measure, the outward unit normal and the boundary data of a triangulated domain.
+* `Triangulation.InteriorEdgesSubset`: the hypothesis that the relative interior of every interior
+  edge lies in $\Omega$, which the trace theory on a polygonal domain needs.
 
-## Main statements
+## Main results
 
+* `EuclideanSpace.inner_perp_map`: $\langle (Mv)^\perp, Mw \rangle = \det M \, \langle v^\perp, w
+  \rangle$ for a linear map $M$ of $\mathbb{R}^2$.
 * `EuclideanSpace.integral_div_referenceTriangle`,
   `EuclideanSpace.integral_div_referenceTriangle_eq_integral_inner`: the divergence theorem on the
-  reference triangle, in parametrized and in measure form;
-* `EuclideanSpace.integral_div_openTriangle`: the divergence theorem on a triangle;
-* `Triangulation.segment_subset_frontier_of_isBoundaryEdge`: a boundary edge lies in `∂Ω`, from the
-  four axioms of `Triangulation` alone;
-* `Triangulation.partner_unique`: the partner of an interior edge is unique and lies on the other
-  side of it (two triangles on the same side of a common edge overlap);
+  reference triangle, with parametrized edges and with the boundary measure.
+* `EuclideanSpace.integral_div_openTriangle`: the divergence theorem on a nondegenerate triangle.
+* `Triangulation.segment_subset_frontier_of_isBoundaryEdge`: a boundary edge lies in
+  $\partial\Omega$.
+* `Triangulation.IsPartner.inner_perp_mul_neg`: the partner of an edge lies on the other side of the
+  edge.
+* `Triangulation.partner_unique`: the partner of an interior edge is unique.
 * `Triangulation.integral_div_eq`: the divergence theorem on a triangulated domain.
+* `Triangulation.mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier`: if no interior edge is a
+  slit, every point of $\partial\Omega$ is a vertex or lies in the relative interior of a boundary
+  edge.
+
+## Notation
+
+* $v^\perp = (v_1, -v_0)$ for $v = (v_0, v_1) \in \mathbb{R}^2$; the coordinates are indexed by
+  `Fin 2`, from $0$.
+* $[P, Q]$ is the closed segment and $(P, Q)$ the open segment from $P$ to $Q$.
+* $s(P, Q, R) = \langle (Q - P)^\perp, R - P \rangle$, minus twice the signed area of the triangle
+  $PQR$. It is nonzero exactly when $P, Q, R$ are not collinear.
+* $\sigma_{PQ}$ is the arclength measure of $[P, Q]$, and $n_{PQR}$ the unit normal of $[P, Q]$ that
+  points away from $R$.
 
 ## Implementation notes
 
-The edge `a : Fin 3` of an element `T` is the segment from `T.1 a` to `T.1 (a + 1)` (the indexing
-of `Triangulation.skeleton_subset_iUnion_segment`), its third vertex is `T.1 (a + 2)`, and the
-element is `openTriangle (T.1 a) (T.1 (a + 1)) (T.1 (a + 2))` whatever `a`
-(`Triangulation.K_eq_rot`): every statement about "the edge `a` of `T`" is proved for the first
-edge `[P, Q]` of a triangle `P Q R` and rotated. The sign of `edgeNormal` is fixed by
-`⟪edgeNormal P Q R, R - P⟫ < 0`, a condition transported by `inner_perp_map`, which is how the
-non-isometric affine change of variables of `integral_div_openTriangle` combines `|det M|`, the
-edge lengths and the normals into exactly the target edge terms
-(`integral_inner_edgeNormal_affine`).
-
-What "polygonal domain" must mean for the trace is recorded as `Triangulation.InteriorEdgesSubset`:
-the existing `Triangulation.FrontierSubsetEdges` does not exclude a slit along a full interior edge,
-and neither hypothesis implies the other (see the doc comment of `InteriorEdgesSubset`).
-
-## References
-
-[han2009theoretical] §10.2 (triangulations), §7.6 (Green's formulas); Grisvard, *Elliptic Problems
-in Nonsmooth Domains*, §1.5.2 (polygons); `notes/boundary/planning-brief.md` B6 and
-`notes/boundary/plan-report.md` E5.
+* An element $T$ of a triangulation is a vertex triple $T_0, T_1, T_2$ with indices in `Fin 3`, so
+  that the arithmetic of the indices is modulo $3$. The edge $a$ of $T$ is the segment
+  $[T_a, T_{a+1}]$, as in `Triangulation.skeleton_subset_iUnion_segment`, and its third vertex is
+  $T_{a+2}$. The open element is the open triangle $T_a T_{a+1} T_{a+2}$ for every $a$
+  (`Triangulation.K_eq_rot`). Each statement about the edge $a$ of $T$ is therefore proved for the
+  first edge $[P, Q]$ of a triangle $PQR$ and then rotated.
+* The sign of $n_{PQR}$ is fixed by the condition $\langle n_{PQR}, R - P \rangle < 0$. By
+  `EuclideanSpace.inner_perp_map`, an affine map carries this condition to the image triangle. This
+  is how the change of variables in `EuclideanSpace.integral_div_openTriangle`, by a map that need
+  not be an isometry, combines $|\det M|$, the edge lengths and the normals into the edge terms of
+  the image triangle (`EuclideanSpace.integral_inner_edgeNormal_affine`).
+* The regularity of the field is that of `BoundaryData`: $F$ is continuous on $\bar\Omega$ and
+  `ContDiffOnClosure ℝ 1 F Ω`. The fundamental theorem of calculus needs continuity on the closed
+  slice and the derivative on the open slice. The derivative is bounded, because it extends
+  continuously to the compact closure.
+* The hypothesis that a triangulated domain is polygonal, as the trace theory needs it, is
+  `Triangulation.InteriorEdgesSubset`. The hypothesis `Triangulation.FrontierSubsetEdges` does not
+  exclude a slit along a whole interior edge, and neither hypothesis implies the other (see
+  `Triangulation.InteriorEdgesSubset`).
 -/
 
 open Filter MeasureTheory Set Function TopologicalSpace
@@ -95,46 +111,56 @@ namespace EuclideanSpace
 
 /-! ### The rotation by a right angle -/
 
-/-- **The clockwise rotation of `v` by a right angle**, `perp v = (v₁, −v₀)`: the normal direction
-of a segment with direction `v`. -/
+/-- The **clockwise rotation by a right angle** of $v = (v_0, v_1) \in \mathbb{R}^2$: $$v^\perp =
+(v_1, -v_0).$$ For a segment with direction $v$, the vector $v^\perp$ is a normal direction. -/
 def perp (v : 𝔼₂) : 𝔼₂ := !₂[v 1, -v 0]
 
+/-- The first coordinate of $v^\perp$ is $v_1$. -/
 @[simp] theorem perp_apply_zero (v : 𝔼₂) : perp v 0 = v 1 := rfl
 
+/-- The second coordinate of $v^\perp$ is $-v_0$. -/
 @[simp] theorem perp_apply_one (v : 𝔼₂) : perp v 1 = -v 0 := rfl
 
-/-- `⟪perp v, w⟫ = v₁ w₀ − v₀ w₁`, the negative of the determinant of `[v, w]`. -/
+/-- For $v, w \in \mathbb{R}^2$, $\langle v^\perp, w \rangle = v_1 w_0 - v_0 w_1$, the negative of
+the determinant of the matrix with columns $v$ and $w$. -/
 theorem inner_perp_eq (v w : 𝔼₂) : ⟪perp v, w⟫_ℝ = v 1 * w 0 - v 0 * w 1 := by
   simp [PiLp.inner_apply, Fin.sum_univ_two, perp]
   ring
 
-/-- `perp v` is orthogonal to `v`. -/
+/-- The vector $v^\perp$ is orthogonal to $v$. -/
 theorem inner_perp_self (v : 𝔼₂) : ⟪perp v, v⟫_ℝ = 0 := by
   rw [inner_perp_eq]; ring
 
-/-- `perp` is an isometry. -/
+/-- The rotation preserves the norm: $\|v^\perp\| = \|v\|$. -/
 theorem norm_perp (v : 𝔼₂) : ‖perp v‖ = ‖v‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
   simp [Fin.sum_univ_two, perp, add_comm]
 
+/-- The rotation commutes with negation: $(-v)^\perp = -v^\perp$. -/
 @[simp] theorem perp_neg (v : 𝔼₂) : perp (-v) = -perp v := by
   ext i; fin_cases i <;> simp [perp]
 
+/-- The rotation is additive: $(v - w)^\perp = v^\perp - w^\perp$. -/
 theorem perp_sub (v w : 𝔼₂) : perp (v - w) = perp v - perp w := by
   ext i; fin_cases i
   · simp [perp]
   · simp [perp]; ring
 
+/-- The rotation commutes with scalar multiplication: $(cv)^\perp = c \, v^\perp$. -/
 @[simp] theorem perp_smul (c : ℝ) (v : 𝔼₂) : perp (c • v) = c • perp v := by
   ext i; fin_cases i <;> simp [perp]
 
-/-- A vector of the plane is the combination of the standard basis with its coordinates. -/
+/-- A vector $v \in \mathbb{R}^2$ is $v = v_0 e_0 + v_1 e_1$, where $e_0, e_1$ is the standard
+basis. -/
 theorem eq_smul_single_add_smul_single (v : 𝔼₂) :
     v = v 0 • EuclideanSpace.single 0 1 + v 1 • EuclideanSpace.single 1 1 := by
   ext i; fin_cases i <;> simp
 
-/-- **The transformation rule of `perp`**: `⟪perp (M v), M w⟫ = det M * ⟪perp v, w⟫` for a linear
-map `M` of the plane (`det` of the `2 × 2` matrix of `M` in the standard basis). -/
+/-- The transformation rule of the rotation. Let $M : \mathbb{R}^2 \to \mathbb{R}^2$ be linear. Then
+for all $v, w \in \mathbb{R}^2$, $$\langle (Mv)^\perp, Mw \rangle = \det M \, \langle v^\perp, w
+\rangle.$$
+
+The determinant is `LinearMap.det` of $M$. -/
 theorem inner_perp_map (M : 𝔼₂ →L[ℝ] 𝔼₂) (v w : 𝔼₂) :
     ⟪perp (M v), M w⟫_ℝ = LinearMap.det (M : 𝔼₂ →ₗ[ℝ] 𝔼₂) * ⟪perp v, w⟫_ℝ := by
   rw [← LinearMap.det_toMatrix (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis, Matrix.det_fin_two]
@@ -151,7 +177,8 @@ theorem inner_perp_map (M : 𝔼₂ →L[ℝ] 𝔼₂) (v w : 𝔼₂) :
   simp only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
   ring
 
-/-- Two vectors of the plane are linearly independent iff `⟪perp v, w⟫ ≠ 0`. -/
+/-- Two vectors $v, w \in \mathbb{R}^2$ are linearly independent if and only if
+$\langle v^\perp, w \rangle \neq 0$. -/
 theorem linearIndependent_pair_iff_inner_perp_ne_zero (v w : 𝔼₂) :
     LinearIndependent ℝ ![v, w] ↔ ⟪perp v, w⟫_ℝ ≠ 0 := by
   rw [LinearIndependent.pair_iff, inner_perp_eq]
@@ -185,15 +212,16 @@ theorem linearIndependent_pair_iff_inner_perp_ne_zero (v w : 𝔼₂) :
     · exact absurd h'' hs
     rw [h', h'']; ring
 
-/-- The signed area `⟪perp (B − A), C − A⟫` of a triangle is invariant under cyclic rotation of
-the vertices. -/
+/-- The quantity $s(A, B, C) = \langle (B - A)^\perp, C - A \rangle$ does not change under a cyclic
+rotation of the vertices: $s(B, C, A) = s(A, B, C)$. -/
 theorem inner_perp_rotate (A B C : 𝔼₂) :
     ⟪perp (C - B), A - B⟫_ℝ = ⟪perp (B - A), C - A⟫_ℝ := by
   rw [inner_perp_eq, inner_perp_eq]
   simp only [PiLp.sub_apply]
   ring
 
-/-- The signed area changes sign under a transposition of the vertices. -/
+/-- The quantity $s(A, B, C) = \langle (B - A)^\perp, C - A \rangle$ changes sign when the first two
+vertices are exchanged: $s(B, A, C) = -s(A, B, C)$. -/
 theorem inner_perp_swap (A B C : 𝔼₂) :
     ⟪perp (A - B), C - B⟫_ℝ = -⟪perp (B - A), C - A⟫_ℝ := by
   rw [inner_perp_eq, inner_perp_eq]
@@ -202,19 +230,25 @@ theorem inner_perp_swap (A B C : 𝔼₂) :
 
 /-! ### Plane triangles: rotations of the vertices and barycentric coordinates -/
 
-/-- Non-collinearity is invariant under cyclic rotation of the vertices. -/
+/-- If $B - A$ and $C - A$ are linearly independent, then so are $C - B$ and $A - B$:
+noncollinearity is invariant under a cyclic rotation of the vertices. -/
 theorem linearIndependent_rotate {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C - A]) :
     LinearIndependent ℝ ![C - B, A - B] := by
   rw [linearIndependent_pair_iff_inner_perp_ne_zero] at h ⊢
   rwa [inner_perp_rotate]
 
-/-- Non-collinearity is invariant under a transposition of the vertices. -/
+/-- If $B - A$ and $C - A$ are linearly independent, then so are $A - B$ and $C - B$:
+noncollinearity is invariant under an exchange of the first two vertices. -/
 theorem linearIndependent_swap {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C - A]) :
     LinearIndependent ℝ ![A - B, C - B] := by
   rw [linearIndependent_pair_iff_inner_perp_ne_zero] at h ⊢
   rwa [inner_perp_swap, neg_ne_zero]
 
-/-- The open triangle is invariant under cyclic rotation of the vertices. -/
+/-- The open triangle does not change under a cyclic rotation of its vertices: the open triangle
+with vertices $B, C, A$ is the open triangle with vertices $A, B, C$.
+
+The open triangle is `EuclideanSpace.openTriangle`, the set of the points
+$A + s(B - A) + t(C - A)$ with $s, t > 0$ and $s + t < 1$. -/
 theorem openTriangle_rotate (A B C : 𝔼₂) : openTriangle B C A = openTriangle A B C := by
   ext x
   simp only [mem_openTriangle]
@@ -224,7 +258,7 @@ theorem openTriangle_rotate (A B C : 𝔼₂) : openTriangle B C A = openTriangl
   · rintro ⟨s, t, hs, ht, hst, rfl⟩
     exact ⟨t, 1 - s - t, ht, by linarith, by linarith, by module⟩
 
-/-- The open triangle is invariant under a transposition of the vertices. -/
+/-- The open triangle does not change when its first two vertices are exchanged. -/
 theorem openTriangle_swap (A B C : 𝔼₂) : openTriangle B A C = openTriangle A B C := by
   ext x
   simp only [mem_openTriangle]
@@ -234,7 +268,7 @@ theorem openTriangle_swap (A B C : 𝔼₂) : openTriangle B A C = openTriangle 
   · rintro ⟨s, t, hs, ht, hst, rfl⟩
     exact ⟨1 - s - t, t, by linarith, ht, by linarith, by module⟩
 
-/-- The closed triangle is invariant under cyclic rotation of the vertices. -/
+/-- The closed triangle does not change under a cyclic rotation of its vertices. -/
 theorem closedTriangle_rotate (A B C : 𝔼₂) : closedTriangle B C A = closedTriangle A B C := by
   ext x
   simp only [mem_closedTriangle]
@@ -249,13 +283,15 @@ theorem convex_closedTriangle (A B C : 𝔼₂) : Convex ℝ (closedTriangle A B
   rw [← closure_openTriangle]
   exact (convex_openTriangle A B C).closure
 
-/-- The edges of a triangle lie in the closed triangle. -/
+/-- Each segment between two vertices of a triangle lies in the closed triangle. -/
 theorem segment_subset_closedTriangle (A B C : 𝔼₂) (a b : Fin 3) :
     segment ℝ (![A, B, C] a) (![A, B, C] b) ⊆ closedTriangle A B C :=
   (convex_closedTriangle A B C).segment_subset (vertex_mem_closedTriangle A B C a)
     (vertex_mem_closedTriangle A B C b)
 
-/-- **Uniqueness of the barycentric coordinates** with respect to non-collinear vertices. -/
+/-- **Uniqueness of barycentric coordinates.** Let $A, B, C \in \mathbb{R}^2$ with $B - A$ and
+$C - A$ linearly independent. If $A + s(B - A) + t(C - A) = A + s'(B - A) + t'(C - A)$, then
+$s = s'$ and $t = t'$. -/
 theorem eq_of_affine_eq {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C - A]) {s t s' t' : ℝ}
     (e : A + s • (B - A) + t • (C - A) = A + s' • (B - A) + t' • (C - A)) : s = s' ∧ t = t' := by
   have e' : (s - s') • (B - A) + (t - t') • (C - A) = 0 := by
@@ -270,7 +306,8 @@ section EdgeGeometry
 variable {P Q R x : 𝔼₂} (h : LinearIndependent ℝ ![Q - P, R - P])
 include h
 
-/-- A point of the edge `[P, Q]` is not in the open triangle. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the edge $[P, Q]$ is not in the open triangle $PQR$.
+-/
 theorem notMem_openTriangle_of_mem_segment (hx : x ∈ segment ℝ P Q) :
     x ∉ openTriangle P Q R := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_segment_iff'.1 hx
@@ -280,12 +317,13 @@ theorem notMem_openTriangle_of_mem_segment (hx : x ∈ segment ℝ P Q) :
     (by rw [zero_smul, add_zero]; exact e)
   linarith [this.2]
 
-/-- A point of the open edge `[P, Q]` is not in the open triangle. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not in the open triangle
+$PQR$. -/
 theorem notMem_openTriangle_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) :
     x ∉ openTriangle P Q R :=
   notMem_openTriangle_of_mem_segment h (openSegment_subset_segment ℝ _ _ hx)
 
-/-- A point of the open edge `[P, Q]` is not the vertex `P`. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not the vertex $P$. -/
 theorem ne_left_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ P := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_openSegment_iff'.1 hx
   intro e
@@ -293,7 +331,7 @@ theorem ne_left_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ P :=
     (by simp only [zero_smul, add_zero]; exact e)
   linarith [this.1]
 
-/-- A point of the open edge `[P, Q]` is not the vertex `Q`. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not the vertex $Q$. -/
 theorem ne_right_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ Q := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_openSegment_iff'.1 hx
   intro e
@@ -301,7 +339,7 @@ theorem ne_right_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ Q :
     (by simp only [zero_smul, add_zero, one_smul]; rw [e]; abel)
   linarith [this.1]
 
-/-- A point of the open edge `[P, Q]` is not the third vertex `R`. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not the third vertex $R$. -/
 theorem ne_third_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ R := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_openSegment_iff'.1 hx
   intro e
@@ -309,7 +347,8 @@ theorem ne_third_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) : x ≠ R :
     (by simp only [zero_smul, add_zero, one_smul]; rw [e]; abel)
   linarith [this.1]
 
-/-- A point of the open edge `[P, Q]` is not a vertex. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is none of the three vertices.
+-/
 theorem ne_vertex_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) (i : Fin 3) :
     x ≠ ![P, Q, R] i := by
   fin_cases i
@@ -317,7 +356,8 @@ theorem ne_vertex_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) (i : Fin 3
   · exact ne_right_of_mem_openSegment h hx
   · exact ne_third_of_mem_openSegment h hx
 
-/-- A point of the open edge `[P, Q]` is not on the closed edge `[Q, R]`. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not on the closed edge
+$[Q, R]$. -/
 theorem notMem_segment_right_third_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) :
     x ∉ segment ℝ Q R := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_openSegment_iff'.1 hx
@@ -327,7 +367,8 @@ theorem notMem_segment_right_third_of_mem_openSegment (hx : x ∈ openSegment �
     (by rw [zero_smul, add_zero]; rw [e]; module)
   linarith [this.1, this.2]
 
-/-- A point of the open edge `[P, Q]` is not on the closed edge `[R, P]`. -/
+/-- Let $P, Q, R$ be noncollinear. A point of the open edge $(P, Q)$ is not on the closed edge
+$[R, P]$. -/
 theorem notMem_segment_third_left_of_mem_openSegment (hx : x ∈ openSegment ℝ P Q) :
     x ∉ segment ℝ R P := by
   obtain ⟨s, hs0, hs1, rfl⟩ := mem_openSegment_iff'.1 hx
@@ -337,8 +378,9 @@ theorem notMem_segment_third_left_of_mem_openSegment (hx : x ∈ openSegment ℝ
     (by rw [zero_smul, add_zero]; rw [e]; module)
   linarith [this.1]
 
-/-- **A point of the open edge `[P, Q]` lies on no other closed edge of the triangle**: if it lies
-on the edge between the vertices `c ≠ d`, then `{c, d} = {0, 1}`. -/
+/-- A point of an open edge lies on no other closed edge of the triangle. Let $P, Q, R$ be
+noncollinear, write $V_0 = P$, $V_1 = Q$, $V_2 = R$, and let $x \in (P, Q)$. If $c \neq d$ in
+$\{0, 1, 2\}$ and $x \in [V_c, V_d]$, then $\{c, d\} = \{0, 1\}$. -/
 theorem eq_edge_of_mem_openSegment_of_mem_segment (hx : x ∈ openSegment ℝ P Q) {c d : Fin 3}
     (hcd : c ≠ d) (hs : x ∈ segment ℝ (![P, Q, R] c) (![P, Q, R] d)) :
     (c = 0 ∧ d = 1) ∨ (c = 1 ∧ d = 0) := by
@@ -357,7 +399,8 @@ theorem eq_edge_of_mem_openSegment_of_mem_segment (hx : x ∈ openSegment ℝ P 
   · exact absurd hs hRQ
   · exact absurd rfl hcd
 
-/-- The edge `[P, Q]` lies in the frontier of the open triangle. -/
+/-- Let $P, Q, R$ be noncollinear. The edge $[P, Q]$ lies in the frontier of the open triangle
+$PQR$. -/
 theorem segment_subset_frontier_openTriangle :
     segment ℝ P Q ⊆ frontier (openTriangle P Q R) := by
   rw [(isOpen_openTriangle P Q R h).frontier_eq, closure_openTriangle]
@@ -366,7 +409,8 @@ theorem segment_subset_frontier_openTriangle :
 
 end EdgeGeometry
 
-/-- The open triangle with vertices `T 0, T 1, T 2`, read from the vertex `a`. -/
+/-- For a vertex triple $T_0, T_1, T_2$ and every $a$ modulo $3$, the open triangle $T_0 T_1 T_2$ is
+the open triangle $T_a T_{a+1} T_{a+2}$. -/
 theorem openTriangle_eq_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
     openTriangle (T 0) (T 1) (T 2) = openTriangle (T a) (T (a + 1)) (T (a + 2)) := by
   fin_cases a
@@ -374,7 +418,8 @@ theorem openTriangle_eq_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
   · exact (openTriangle_rotate (T 0) (T 1) (T 2)).symm
   · exact openTriangle_rotate (T 2) (T 0) (T 1)
 
-/-- The closed triangle with vertices `T 0, T 1, T 2`, read from the vertex `a`. -/
+/-- For a vertex triple $T_0, T_1, T_2$ and every $a$ modulo $3$, the closed triangle $T_0 T_1 T_2$
+is the closed triangle $T_a T_{a+1} T_{a+2}$. -/
 theorem closedTriangle_eq_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
     closedTriangle (T 0) (T 1) (T 2) = closedTriangle (T a) (T (a + 1)) (T (a + 2)) := by
   fin_cases a
@@ -382,7 +427,8 @@ theorem closedTriangle_eq_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
   · exact (closedTriangle_rotate (T 0) (T 1) (T 2)).symm
   · exact closedTriangle_rotate (T 2) (T 0) (T 1)
 
-/-- Non-collinearity of the vertices `T 0, T 1, T 2`, read from the vertex `a`. -/
+/-- If $T_1 - T_0$ and $T_2 - T_0$ are linearly independent, then for every $a$ modulo $3$, so are
+$T_{a+1} - T_a$ and $T_{a+2} - T_a$. -/
 theorem linearIndependent_rot {T : Fin 3 → 𝔼₂} (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0])
     (a : Fin 3) : LinearIndependent ℝ ![T (a + 1) - T a, T (a + 2) - T a] := by
   fin_cases a
@@ -390,12 +436,14 @@ theorem linearIndependent_rot {T : Fin 3 → 𝔼₂} (h : LinearIndependent ℝ
   · exact linearIndependent_rotate h
   · exact linearIndependent_rotate (linearIndependent_rotate h)
 
-/-- The vertex triple read from the vertex `a`, at the index `i`. -/
+/-- The vertex triple $(T_a, T_{a+1}, T_{a+2})$, at the index $i$, is $T_{a+i}$, with indices modulo
+$3$. -/
 theorem vecCons_rot (T : Fin 3 → 𝔼₂) (a i : Fin 3) :
     ![T a, T (a + 1), T (a + 2)] i = T (a + i) := by
   fin_cases i <;> simp
 
-/-- The vertices of a nondegenerate triangle are distinct. -/
+/-- If $T_1 - T_0$ and $T_2 - T_0$ are linearly independent, then the vertices $T_0, T_1, T_2$ are
+distinct. -/
 theorem vertex_injective {T : Fin 3 → 𝔼₂} (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) :
     Function.Injective T := by
   rw [linearIndependent_pair_iff_inner_perp_ne_zero] at h
@@ -419,28 +467,31 @@ theorem vertex_injective {T : Fin 3 → 𝔼₂} (h : LinearIndependent ℝ ![T 
     rw [e, inner_perp_self]
   · exact absurd rfl hne
 
-/-- In `Fin 3`, `a ≠ a + 1`. -/
+/-- In `Fin 3`, $a \neq a + 1$. -/
 theorem fin3_ne_add_one (a : Fin 3) : a ≠ a + 1 := by revert a; decide
 
-/-- Two distinct indices of `Fin 3` are consecutive, in one order or the other. -/
+/-- Two distinct indices $i \neq j$ in `Fin 3` are consecutive: there is an $a$ with
+$(i, j) = (a, a + 1)$ or $(i, j) = (a + 1, a)$. -/
 theorem exists_fin3_of_ne {i j : Fin 3} (hij : i ≠ j) :
     ∃ a : Fin 3, (i = a ∧ j = a + 1) ∨ (i = a + 1 ∧ j = a) := by
   revert i j; decide
 
 /-! ### Segments and the edge measure -/
 
-/-- The parametrization maps `[0, 1]` into the segment. -/
+/-- For $t \in [0, 1]$, the point $P + t(Q - P)$ lies on the segment $[P, Q]$. -/
 theorem lineMap_mem_segment' (P Q : 𝔼₂) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
     AffineMap.lineMap P Q t ∈ segment ℝ P Q := by
   rw [segment_eq_image_lineMap]; exact ⟨t, ht, rfl⟩
 
-/-- `x ↦ M x + b` maps `lineMap P Q t` to `lineMap (M P + b) (M Q + b) t`. -/
+/-- The map $x \mapsto Mx + b$, for a linear equivalence $M$ of $\mathbb{R}^2$, maps the point
+$P + t(Q - P)$ to the point $P' + t(Q' - P')$, where $P' = MP + b$ and $Q' = MQ + b$. -/
 theorem lineMap_affine (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b P Q : 𝔼₂) (t : ℝ) :
     M (AffineMap.lineMap P Q t) + b = AffineMap.lineMap (M P + b) (M Q + b) t := by
   rw [lineMap_eq, lineMap_eq, map_add, map_smul, map_sub]
   module
 
-/-- The image of a segment under `x ↦ M x + b`. -/
+/-- The map $x \mapsto Mx + b$, for a linear equivalence $M$ of $\mathbb{R}^2$, maps the segment
+$[P, Q]$ onto the segment $[MP + b, MQ + b]$. -/
 theorem image_segment_affine (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b P Q : 𝔼₂) :
     (fun x ↦ M x + b) '' segment ℝ P Q = segment ℝ (M P + b) (M Q + b) := by
   rw [segment_eq_image_lineMap, segment_eq_image_lineMap, image_image]
@@ -448,9 +499,12 @@ theorem image_segment_affine (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b P Q : 𝔼₂) :
   funext t
   exact lineMap_affine M b P Q t
 
-/-- **The arclength measure of the segment `[P, Q]`**: one-dimensional Lebesgue measure on
-`[0, 1]` transported by the parametrization `t ↦ P + t (Q − P)` and scaled by the length
-`‖Q − P‖`. -/
+/-- The **arclength measure** $\sigma_{PQ}$ of the segment $[P, Q]$ in $\mathbb{R}^2$: the image of
+Lebesgue measure on $[0, 1]$ under the parametrization $t \mapsto P + t(Q - P)$, multiplied by
+the length $\|Q - P\|$.
+
+The parametrization is `AffineMap.lineMap P Q`. For $P = Q$ the measure is zero
+(`EuclideanSpace.edgeMeasure_self`). -/
 def edgeMeasure (P Q : 𝔼₂) : Measure 𝔼₂ :=
   (‖Q - P‖).toNNReal • Measure.map (AffineMap.lineMap P Q) (volume.restrict (Icc (0 : ℝ) 1))
 
@@ -459,14 +513,16 @@ instance isFiniteMeasure_edgeMeasure (P Q : 𝔼₂) : IsFiniteMeasure (edgeMeas
   unfold edgeMeasure
   infer_instance
 
-/-- The arclength measure of a measurable set, through the parametrization. -/
+/-- For a measurable set $s$, $\sigma_{PQ}(s) = \|Q - P\| \, \lambda(\{t \in [0, 1] : P + t(Q - P)
+\in s\})$, where $\lambda$ is Lebesgue measure. -/
 theorem edgeMeasure_apply (P Q : 𝔼₂) {s : Set 𝔼₂} (hs : MeasurableSet s) :
     edgeMeasure P Q s
       = ENNReal.ofReal ‖Q - P‖ * volume ((AffineMap.lineMap P Q : ℝ → 𝔼₂) ⁻¹' s ∩ Icc 0 1) := by
   rw [edgeMeasure, Measure.smul_apply, Measure.map_apply (continuous_lineMap P Q).measurable hs,
     Measure.restrict_apply' measurableSet_Icc, ENNReal.smul_def, smul_eq_mul, ENNReal.ofReal]
 
-/-- The arclength measure is carried by the segment. -/
+/-- The arclength measure $\sigma_{PQ}$ is carried by the segment $[P, Q]$: the complement of the
+segment has measure zero. -/
 theorem edgeMeasure_compl_segment (P Q : 𝔼₂) : edgeMeasure P Q (segment ℝ P Q)ᶜ = 0 := by
   rw [edgeMeasure_apply P Q (measurableSet_segment P Q).compl]
   have : (AffineMap.lineMap P Q : ℝ → 𝔼₂) ⁻¹' (segment ℝ P Q)ᶜ ∩ Icc 0 1 = ∅ := by
@@ -476,19 +532,19 @@ theorem edgeMeasure_compl_segment (P Q : 𝔼₂) : edgeMeasure P Q (segment ℝ
     exact fun h ht ↦ h (lineMap_mem_segment' P Q ht)
   rw [this, measure_empty, mul_zero]
 
-/-- Almost every point for the arclength measure lies on the segment. -/
+/-- Almost every point for $\sigma_{PQ}$ lies on the segment $[P, Q]$. -/
 theorem ae_mem_segment (P Q : 𝔼₂) : ∀ᵐ x ∂edgeMeasure P Q, x ∈ segment ℝ P Q :=
   ae_iff.2 (edgeMeasure_compl_segment P Q)
 
-/-- Points are null for the arclength measure of a nondegenerate segment. -/
+/-- If $P \neq Q$, every point has measure zero for $\sigma_{PQ}$. -/
 theorem edgeMeasure_singleton {P Q : 𝔼₂} (h : P ≠ Q) (x : 𝔼₂) : edgeMeasure P Q {x} = 0 := by
   rw [edgeMeasure_apply P Q (measurableSet_singleton x)]
   refine mul_eq_zero_of_right _ (measure_mono_null inter_subset_left ?_)
   refine Set.Subsingleton.measure_zero (fun s hs t ht ↦ ?_) _
   exact AffineMap.lineMap_injective ℝ h (hs.trans ht.symm)
 
-/-- The complement of the open segment lies in the complement of the segment plus the
-endpoints. -/
+/-- The complement of the open segment $(P, Q)$ lies in the union of the complement of $[P, Q]$ and
+the two endpoints. -/
 theorem compl_openSegment_subset (P Q : 𝔼₂) :
     (openSegment ℝ P Q)ᶜ ⊆ (segment ℝ P Q)ᶜ ∪ {P} ∪ {Q} := by
   intro x hx
@@ -500,24 +556,24 @@ theorem compl_openSegment_subset (P Q : 𝔼₂) :
     · exact absurd hs hx
   · exact Or.inl (Or.inl hs)
 
-/-- The arclength measure of a nondegenerate segment is carried by the open segment. -/
+/-- If $P \neq Q$, the arclength measure $\sigma_{PQ}$ is carried by the open segment $(P, Q)$. -/
 theorem edgeMeasure_compl_openSegment {P Q : 𝔼₂} (h : P ≠ Q) :
     edgeMeasure P Q (openSegment ℝ P Q)ᶜ = 0 :=
   measure_mono_null (compl_openSegment_subset P Q)
     (measure_union_null (measure_union_null (edgeMeasure_compl_segment P Q)
       (edgeMeasure_singleton h P)) (edgeMeasure_singleton h Q))
 
-/-- Almost every point for the arclength measure of a nondegenerate segment lies on the open
-segment. -/
+/-- If $P \neq Q$, almost every point for $\sigma_{PQ}$ lies on the open segment $(P, Q)$. -/
 theorem ae_mem_openSegment {P Q : 𝔼₂} (h : P ≠ Q) :
     ∀ᵐ x ∂edgeMeasure P Q, x ∈ openSegment ℝ P Q :=
   ae_iff.2 (edgeMeasure_compl_openSegment h)
 
-/-- The arclength measure of a degenerate segment vanishes. -/
+/-- The arclength measure of a degenerate segment is zero: $\sigma_{PP} = 0$. -/
 theorem edgeMeasure_self (P : 𝔼₂) : edgeMeasure P P = 0 := by
   rw [edgeMeasure, sub_self, norm_zero, Real.toNNReal_zero, zero_smul]
 
-/-- The arclength measure does not depend on the orientation of the segment. -/
+/-- The arclength measure does not depend on the orientation of the segment:
+$\sigma_{QP} = \sigma_{PQ}$. -/
 theorem edgeMeasure_symm (P Q : 𝔼₂) : edgeMeasure Q P = edgeMeasure P Q := by
   unfold edgeMeasure
   rw [norm_sub_rev]
@@ -533,20 +589,22 @@ theorem edgeMeasure_symm (P Q : 𝔼₂) : edgeMeasure Q P = edgeMeasure P Q := 
     rw [← Measure.restrict_map hm measurableSet_Icc, Measure.map_sub_left_eq_self]
   rw [h1, ← Measure.map_map (continuous_lineMap P Q).measurable hm, h2]
 
-/-- A function continuous on the segment is measurable for its arclength measure. -/
+/-- A real function that is continuous on the segment $[P, Q]$ is almost everywhere strongly
+measurable for $\sigma_{PQ}$. -/
 theorem aestronglyMeasurable_edgeMeasure_of_continuousOn {f : 𝔼₂ → ℝ} {P Q : 𝔼₂}
     (hf : ContinuousOn f (segment ℝ P Q)) : AEStronglyMeasurable f (edgeMeasure P Q) := by
   have := hf.aestronglyMeasurable (μ := edgeMeasure P Q) (measurableSet_segment P Q)
   rwa [Measure.restrict_eq_self_of_ae_mem (ae_mem_segment P Q)] at this
 
-/-- A function continuous on the segment is integrable for its arclength measure. -/
+/-- A real function that is continuous on the segment $[P, Q]$ is integrable for $\sigma_{PQ}$. -/
 theorem integrable_edgeMeasure_of_continuousOn {f : 𝔼₂ → ℝ} {P Q : 𝔼₂}
     (hf : ContinuousOn f (segment ℝ P Q)) : Integrable f (edgeMeasure P Q) := by
   have : IsFiniteMeasureOnCompacts (edgeMeasure P Q) := ⟨fun _ _ ↦ measure_lt_top _ _⟩
   have := hf.integrableOn_compact (μ := edgeMeasure P Q) (isCompact_segment P Q)
   rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem (ae_mem_segment P Q)] at this
 
-/-- Almost every point for the transported Lebesgue measure lies on the segment. -/
+/-- Almost every point for the image of Lebesgue measure on $[0, 1]$ under $t \mapsto P + t(Q - P)$
+lies on the segment $[P, Q]$. -/
 theorem ae_map_lineMap_mem_segment (P Q : 𝔼₂) :
     ∀ᵐ x ∂(Measure.map (AffineMap.lineMap P Q) (volume.restrict (Icc (0 : ℝ) 1))),
       x ∈ segment ℝ P Q := by
@@ -555,8 +613,9 @@ theorem ae_map_lineMap_mem_segment (P Q : 𝔼₂) :
   rw [ae_restrict_iff' measurableSet_Icc]
   exact Filter.Eventually.of_forall fun t ht ↦ lineMap_mem_segment' P Q ht
 
-/-- **The integral against the arclength measure** is the length times the integral along the
-parametrization, for a function continuous on the segment. -/
+/-- Let $f : \mathbb{R}^2 \to \mathbb{R}$ be continuous on the segment $[P, Q]$. Then $$\int f \,
+d\sigma_{PQ} = \|Q - P\| \int_0^1 f(P + t(Q - P)) \, dt.$$
+-/
 theorem integral_edgeMeasure {f : 𝔼₂ → ℝ} {P Q : 𝔼₂} (hf : ContinuousOn f (segment ℝ P Q)) :
     ∫ x, f x ∂edgeMeasure P Q = ‖Q - P‖ * ∫ t in (0 : ℝ)..1, f (AffineMap.lineMap P Q t) := by
   have hf' : AEStronglyMeasurable f
@@ -569,7 +628,8 @@ theorem integral_edgeMeasure {f : 𝔼₂ → ℝ} {P Q : 𝔼₂} (hf : Continu
     integral_map (continuous_lineMap P Q).measurable.aemeasurable hf',
     intervalIntegral.integral_of_le zero_le_one, integral_Icc_eq_integral_Ioc]
 
-/-- An open set meeting the open segment has positive arclength measure. -/
+/-- Let $P \neq Q$ and let $U \subseteq \mathbb{R}^2$ be an open set that meets the open segment
+$(P, Q)$. Then $\sigma_{PQ}(U) > 0$. -/
 theorem edgeMeasure_pos_of_isOpen {P Q : 𝔼₂} (h : P ≠ Q) {U : Set 𝔼₂} (hU : IsOpen U)
     (hne : (U ∩ openSegment ℝ P Q).Nonempty) : 0 < edgeMeasure P Q U := by
   rw [edgeMeasure_apply P Q hU.measurableSet]
@@ -586,40 +646,52 @@ theorem edgeMeasure_pos_of_isOpen {P Q : 𝔼₂} (h : P ≠ Q) {U : Set 𝔼₂
 
 /-! ### The edge normal -/
 
-/-- **The unit normal of the edge `[P, Q]` pointing away from the third vertex `R`**: the outward
-normal of the triangle `P Q R` on that edge. The sign is fixed by `⟪edgeNormal P Q R, R − P⟫ < 0`
-(`inner_edgeNormal_third_neg`), an affine-invariant condition. -/
+/-- The **edge normal** $n_{PQR}$: the unit normal of the segment $[P, Q]$ that points away from the
+point $R$,
+$$n_{PQR} = \begin{cases}
+  (Q - P)^\perp / \|Q - P\| & \text{if } s(P, Q, R) < 0, \\
+  -(Q - P)^\perp / \|Q - P\| & \text{otherwise},
+\end{cases}$$
+where $s(P, Q, R) = \langle (Q - P)^\perp, R - P \rangle$. For a nondegenerate triangle $PQR$, it
+is the outward unit normal of the triangle on the edge $[P, Q]$.
+
+The sign is fixed by the condition $\langle n_{PQR}, R - P \rangle < 0$
+(`EuclideanSpace.inner_edgeNormal_third_neg`), which affine maps preserve. For $P = Q$ the value
+is $0$, because $\|Q - P\|^{-1}$ is read as $0$. If $P, Q, R$ are collinear and $P \neq Q$, the
+value is $-(Q - P)^\perp / \|Q - P\|$. -/
 def edgeNormal (P Q R : 𝔼₂) : 𝔼₂ :=
   if ⟪perp (Q - P), R - P⟫_ℝ < 0 then ‖Q - P‖⁻¹ • perp (Q - P)
   else -(‖Q - P‖⁻¹ • perp (Q - P))
 
-/-- A nondegenerate triangle has distinct vertices `P ≠ Q`. -/
+/-- If $s(P, Q, R) = \langle (Q - P)^\perp, R - P \rangle \neq 0$, then $P \neq Q$. -/
 theorem ne_of_inner_perp_ne_zero {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) : P ≠ Q := by
   rintro rfl
   apply h
   rw [sub_self, inner_perp_eq]
   simp
 
-/-- The edge normal of a nondegenerate triangle is a unit vector. -/
+/-- If $s(P, Q, R) \neq 0$, the edge normal $n_{PQR}$ is a unit vector. -/
 theorem norm_edgeNormal {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) :
     ‖edgeNormal P Q R‖ = 1 := by
   have hQP : ‖Q - P‖ ≠ 0 := norm_ne_zero_iff.2 (sub_ne_zero.2 (ne_of_inner_perp_ne_zero h).symm)
   unfold edgeNormal
   split_ifs <;> simp [norm_smul, norm_perp, hQP]
 
-/-- The edge normal is orthogonal to the edge. -/
+/-- The edge normal is orthogonal to the edge: $\langle n_{PQR}, Q - P \rangle = 0$. -/
 theorem inner_edgeNormal_sub (P Q R : 𝔼₂) : ⟪edgeNormal P Q R, Q - P⟫_ℝ = 0 := by
   unfold edgeNormal
   split_ifs <;> simp [inner_smul_left, inner_perp_self]
 
-/-- `⟪edgeNormal P Q R, y − x₀⟫` is constant along the edge: the fact behind the transversal
-field `x − x₀` on a convex polygon. -/
+/-- The quantity $\langle n_{PQR}, y - x_0 \rangle$ is constant for $y$ on the line through $P$ and
+$Q$: $\langle n_{PQR}, P + t(Q - P) - x_0 \rangle = \langle n_{PQR}, P - x_0 \rangle$ for every
+$t$. This is the fact behind the transversal field $x - x_0$ on a convex polygon. -/
 theorem inner_edgeNormal_lineMap_sub (P Q R x₀ : 𝔼₂) (t : ℝ) :
     ⟪edgeNormal P Q R, AffineMap.lineMap P Q t - x₀⟫_ℝ = ⟪edgeNormal P Q R, P - x₀⟫_ℝ := by
   rw [lineMap_eq, show P + t • (Q - P) - x₀ = (P - x₀) + t • (Q - P) by module, inner_add_right,
     inner_smul_right, inner_edgeNormal_sub, mul_zero, add_zero]
 
-/-- The edge normal points away from the third vertex. -/
+/-- If $s(P, Q, R) \neq 0$, the edge normal points away from the third vertex:
+$\langle n_{PQR}, R - P \rangle < 0$. -/
 theorem inner_edgeNormal_third_neg {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) :
     ⟪edgeNormal P Q R, R - P⟫_ℝ < 0 := by
   have hQP : 0 < ‖Q - P‖ := norm_pos_iff.2 (sub_ne_zero.2 (ne_of_inner_perp_ne_zero h).symm)
@@ -630,7 +702,8 @@ theorem inner_edgeNormal_third_neg {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P
   · rw [inner_neg_left, inner_smul_left, neg_lt_zero]
     simpa using mul_pos (inv_pos.2 hQP) (lt_of_le_of_ne (not_lt.1 hx) (Ne.symm h))
 
-/-- The edge normal does not depend on the orientation of the edge. -/
+/-- If $s(P, Q, R) \neq 0$, the edge normal does not depend on the orientation of the edge:
+$n_{QPR} = n_{PQR}$. -/
 theorem edgeNormal_symm {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) :
     edgeNormal Q P R = edgeNormal P Q R := by
   unfold edgeNormal
@@ -641,7 +714,8 @@ theorem edgeNormal_symm {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ ≠
   · rw [neg_neg]
   · exfalso; exact h (by linarith)
 
-/-- Third vertices on opposite sides of the edge give opposite edge normals. -/
+/-- If $R$ and $R'$ lie strictly on opposite sides of the line through $P$ and $Q$, that is,
+$s(P, Q, R) \, s(P, Q, R') < 0$, then $n_{PQR'} = -n_{PQR}$. -/
 theorem edgeNormal_eq_neg_of_mul_neg {P Q R R' : 𝔼₂}
     (h : ⟪perp (Q - P), R - P⟫_ℝ * ⟪perp (Q - P), R' - P⟫_ℝ < 0) :
     edgeNormal P Q R' = -edgeNormal P Q R := by
@@ -650,7 +724,8 @@ theorem edgeNormal_eq_neg_of_mul_neg {P Q R R' : 𝔼₂}
   · rw [ite_eq_left h2, ite_eq_right (not_lt.2 h1.le), neg_neg]
   · rw [ite_eq_right (not_lt.2 h2.le), ite_eq_left h1]
 
-/-- Third vertices on the same side of the edge give the same edge normal. -/
+/-- If $R$ and $R'$ lie strictly on the same side of the line through $P$ and $Q$, that is,
+$s(P, Q, R) \, s(P, Q, R') > 0$, then $n_{PQR'} = n_{PQR}$. -/
 theorem edgeNormal_eq_of_mul_pos {P Q R R' : 𝔼₂}
     (h : 0 < ⟪perp (Q - P), R - P⟫_ℝ * ⟪perp (Q - P), R' - P⟫_ℝ) :
     edgeNormal P Q R' = edgeNormal P Q R := by
@@ -659,8 +734,9 @@ theorem edgeNormal_eq_of_mul_pos {P Q R R' : 𝔼₂}
   · rw [ite_eq_right (not_lt.2 h2.le), ite_eq_right (not_lt.2 h1.le)]
   · rw [ite_eq_left h2, ite_eq_left h1]
 
-/-- **The edge term of a positively oriented edge**: for `⟪perp (Q − P), R − P⟫ < 0`,
-`∫ ⟪F, edgeNormal P Q R⟫ d(edgeMeasure P Q) = ∫_0^1 ⟪perp (Q − P), F (lineMap P Q t)⟫ dt` — the
+/-- The edge term of a positively oriented edge. Let $s(P, Q, R) < 0$, and let
+$F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on $[P, Q]$. Then $$\int \langle F, n_{PQR}
+\rangle \, d\sigma_{PQ} = \int_0^1 \langle (Q - P)^\perp, F(P + t(Q - P)) \rangle \, dt.$$ The
 length of the edge cancels the normalization of the normal. -/
 theorem integral_inner_edgeNormal_of_neg {P Q R : 𝔼₂} (h : ⟪perp (Q - P), R - P⟫_ℝ < 0)
     {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F (segment ℝ P Q)) :
@@ -674,7 +750,8 @@ theorem integral_inner_edgeNormal_of_neg {P Q R : 𝔼₂} (h : ⟪perp (Q - P),
 
 /-! ### Transport of an edge term by an affine map -/
 
-/-- `⟪M⁻¹ y, perp v⟫ = (det M)⁻¹ ⟪y, perp (M v)⟫`. -/
+/-- For a linear equivalence $M$ of $\mathbb{R}^2$ and $v, y \in \mathbb{R}^2$, $\langle M^{-1} y,
+v^\perp \rangle = (\det M)^{-1} \langle y, (Mv)^\perp \rangle$. -/
 theorem inner_symm_perp (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (v y : 𝔼₂) :
     ⟪M.symm y, perp v⟫_ℝ
       = (LinearMap.det ((M : 𝔼₂ →L[ℝ] 𝔼₂) : 𝔼₂ →ₗ[ℝ] 𝔼₂))⁻¹ * ⟪y, perp (M v)⟫_ℝ := by
@@ -685,9 +762,13 @@ theorem inner_symm_perp (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (v y : 𝔼₂) :
   rw [eq_inv_mul_iff_mul_eq₀ hd, real_inner_comm (perp (M v)) y, this,
     real_inner_comm (M.symm y) (perp v)]
 
-/-- **The edge normal transported by `x ↦ M x + b`**: `⟪M⁻¹ y, edgeNormal P Q R⟫` is
-`|det M|⁻¹ ‖M (Q − P)‖ ‖Q − P‖⁻¹ ⟪y, edgeNormal (M P + b) (M Q + b) (M R + b)⟫`; the sign
-condition of `edgeNormal` transports by `inner_perp_map`. -/
+/-- The edge normal under the affine map $\Phi(x) = Mx + b$. Let $M$ be a linear equivalence of
+$\mathbb{R}^2$, let $b \in \mathbb{R}^2$, and let $s(P, Q, R) \neq 0$. Write $P' = \Phi(P)$,
+$Q' = \Phi(Q)$, $R' = \Phi(R)$. Then for every $y \in \mathbb{R}^2$, $$\langle M^{-1} y, n_{PQR}
+\rangle = |\det M|^{-1} \, \frac{\|Q' - P'\|}{\|Q - P\|} \, \langle y, n_{P'Q'R'} \rangle.$$
+
+The sign condition in the definition of the edge normal is carried to the image triangle by
+`EuclideanSpace.inner_perp_map`. -/
 theorem inner_symm_edgeNormal (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b : 𝔼₂) {P Q R : 𝔼₂}
     (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) (y : 𝔼₂) :
     ⟪M.symm y, edgeNormal P Q R⟫_ℝ
@@ -724,9 +805,13 @@ theorem inner_symm_edgeNormal (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b : 𝔼₂) {P Q
       inner_neg_right, inner_smul_right, inner_neg_right, inner_smul_right, key]
     field_simp
 
-/-- **Transport of an edge term by the affine map `x ↦ M x + b`**: `|det M|` times the edge term
-of the conjugate field `M⁻¹ ∘ F ∘ (M · + b)` on the edge `[P, Q]` of the triangle `P Q R` is the
-edge term of `F` on the image edge, with the image triangle's outward normal. -/
+/-- The edge term under the affine map $\Phi(x) = Mx + b$. Let $M$ be a linear equivalence of
+$\mathbb{R}^2$, let $b \in \mathbb{R}^2$, and let $s(P, Q, R) \neq 0$. Write $P' = \Phi(P)$,
+$Q' = \Phi(Q)$, $R' = \Phi(R)$, and let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on
+$[P', Q']$. Then $$|\det M| \int \langle M^{-1} F(\Phi(x)), n_{PQR} \rangle \, d\sigma_{PQ}(x) =
+\int \langle F, n_{P'Q'R'} \rangle \, d\sigma_{P'Q'}.$$ That is, $|\det M|$ times the edge term
+of the field $M^{-1} \circ F \circ \Phi$ on $[P, Q]$ is the edge term of $F$ on the image edge,
+with the outward normal of the image triangle. -/
 theorem integral_inner_edgeNormal_affine (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b : 𝔼₂) {P Q R : 𝔼₂}
     (h : ⟪perp (Q - P), R - P⟫_ℝ ≠ 0) {F : 𝔼₂ → 𝔼₂}
     (hF : ContinuousOn F (segment ℝ (M P + b) (M Q + b))) :
@@ -753,9 +838,10 @@ theorem integral_inner_edgeNormal_affine (M : 𝔼₂ ≃L[ℝ] 𝔼₂) (b : �
 
 /-! ### The half-disc lemma -/
 
-/-- **A triangle contains a half-disc around the midpoint of each edge, on its own side**: for
-`‖v‖` small and `v` pointing to the side of the third vertex `R` (`0 < s ⟪perp (Q − P), v⟫` with
-`s := ⟪perp (Q − P), R − P⟫`), the point `midpoint P Q + v` lies in the open triangle. -/
+/-- A triangle contains a half-disc around the midpoint of each edge, on its own side of the edge.
+Let $P, Q, R$ be noncollinear. Then there is a $\delta > 0$ such that for every
+$v \in \mathbb{R}^2$ with $\|v\| < \delta$ and $s(P, Q, R) \, \langle (Q - P)^\perp, v \rangle >
+0$, the point $\frac{1}{2}(P + Q) + v$ lies in the open triangle $PQR$. -/
 theorem exists_ball_inter_subset_openTriangle {P Q R : 𝔼₂}
     (h : LinearIndependent ℝ ![Q - P, R - P]) :
     ∃ δ > 0, ∀ v : 𝔼₂, ‖v‖ < δ → 0 < ⟪perp (Q - P), R - P⟫_ℝ * ⟪perp (Q - P), v⟫_ℝ →
@@ -789,9 +875,9 @@ theorem exists_ball_inter_subset_openTriangle {P Q R : 𝔼₂}
   rw [hvw, midpoint_eq_smul_add, invOf_eq_inv, one_div]
   module
 
-/-- **Two triangles on the same side of a common edge overlap**: if the third vertices `R, R'`
-of the triangles `P Q R` and `P Q R'` lie strictly on the same side of the line `P Q`, the open
-triangles meet. -/
+/-- Two triangles on the same side of a common edge overlap. If $R$ and $R'$ lie strictly on the
+same side of the line through $P$ and $Q$, that is, $s(P, Q, R) \, s(P, Q, R') > 0$, then the
+open triangles $PQR$ and $PQR'$ meet. -/
 theorem openTriangle_inter_nonempty_of_same_side {P Q R R' : 𝔼₂}
     (hs : 0 < ⟪perp (Q - P), R - P⟫_ℝ * ⟪perp (Q - P), R' - P⟫_ℝ) :
     (openTriangle P Q R ∩ openTriangle P Q R').Nonempty := by
@@ -820,14 +906,17 @@ theorem openTriangle_inter_nonempty_of_same_side {P Q R R' : 𝔼₂}
 
 /-! ### The boundary measure and the outward normal of a triangle -/
 
-/-- **The arclength measure of the boundary of the triangle `A B C`**: the sum of the arclength
-measures of its three edges. -/
+/-- The **boundary measure of the triangle** $ABC$: the sum
+$\sigma_{AB} + \sigma_{BC} + \sigma_{CA}$ of the arclength measures of its three edges. -/
 def triangleBoundaryMeasure (A B C : 𝔼₂) : Measure 𝔼₂ :=
   edgeMeasure A B + edgeMeasure B C + edgeMeasure C A
 
 open Classical in
-/-- **The outward unit normal of the triangle `A B C`**, defined on the relative interiors of the
-three edges (the vertices are null for the boundary measure) and `0` elsewhere. -/
+/-- The **outward unit normal of the triangle** $ABC$: $n_{ABC}$ on the open edge $(A, B)$,
+$n_{BCA}$ on $(B, C)$, $n_{CAB}$ on $(C, A)$, and $0$ at every other point.
+
+The open edges are tested in this order. The vertices have measure zero for the boundary measure
+of a nondegenerate triangle, so the value there does not matter. -/
 def triangleNormal (A B C : 𝔼₂) : 𝔼₂ → 𝔼₂ := fun x ↦
   if x ∈ openSegment ℝ A B then edgeNormal A B C
   else if x ∈ openSegment ℝ B C then edgeNormal B C A
@@ -845,19 +934,21 @@ variable {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C - A])
 include h
 
 omit h in
-/-- On the open edge `[A, B]`, the normal of the triangle is the edge normal. -/
+/-- On the open edge $(A, B)$, the normal of the triangle $ABC$ is the edge normal $n_{ABC}$. -/
 theorem triangleNormal_eq_of_mem_openSegment₀₁ {x : 𝔼₂} (hx : x ∈ openSegment ℝ A B) :
     triangleNormal A B C x = edgeNormal A B C := by
   rw [triangleNormal, ite_eq_left hx]
 
-/-- On the open edge `[B, C]`, the normal of the triangle is the edge normal. -/
+/-- Let $A, B, C$ be noncollinear. On the open edge $(B, C)$, the normal of the triangle $ABC$ is
+the edge normal $n_{BCA}$. -/
 theorem triangleNormal_eq_of_mem_openSegment₁₂ {x : 𝔼₂} (hx : x ∈ openSegment ℝ B C) :
     triangleNormal A B C x = edgeNormal B C A := by
   have h1 : x ∉ openSegment ℝ A B := fun hx' ↦
     notMem_segment_right_third_of_mem_openSegment h hx' (openSegment_subset_segment ℝ _ _ hx)
   rw [triangleNormal, ite_eq_right h1, ite_eq_left hx]
 
-/-- On the open edge `[C, A]`, the normal of the triangle is the edge normal. -/
+/-- Let $A, B, C$ be noncollinear. On the open edge $(C, A)$, the normal of the triangle $ABC$ is
+the edge normal $n_{CAB}$. -/
 theorem triangleNormal_eq_of_mem_openSegment₂₀ {x : 𝔼₂} (hx : x ∈ openSegment ℝ C A) :
     triangleNormal A B C x = edgeNormal C A B := by
   have h1 : x ∉ openSegment ℝ A B := fun hx' ↦
@@ -867,21 +958,22 @@ theorem triangleNormal_eq_of_mem_openSegment₂₀ {x : 𝔼₂} (hx : x ∈ ope
       (openSegment_subset_segment ℝ _ _ hx)
   rw [triangleNormal, ite_eq_right h1, ite_eq_right h2, ite_eq_left hx]
 
-/-- The vertices of a nondegenerate triangle are distinct: `A ≠ B`. -/
+/-- The vertices of a nondegenerate triangle $ABC$ are distinct: $A \neq B$. -/
 theorem ne₀₁ : A ≠ B :=
   ne_of_inner_perp_ne_zero ((linearIndependent_pair_iff_inner_perp_ne_zero _ _).1 h)
 
-/-- The vertices of a nondegenerate triangle are distinct: `B ≠ C`. -/
+/-- The vertices of a nondegenerate triangle $ABC$ are distinct: $B \neq C$. -/
 theorem ne₁₂ : B ≠ C :=
   ne_of_inner_perp_ne_zero
     ((linearIndependent_pair_iff_inner_perp_ne_zero _ _).1 (linearIndependent_rotate h))
 
-/-- The vertices of a nondegenerate triangle are distinct: `C ≠ A`. -/
+/-- The vertices of a nondegenerate triangle $ABC$ are distinct: $C \neq A$. -/
 theorem ne₂₀ : C ≠ A :=
   ne_of_inner_perp_ne_zero ((linearIndependent_pair_iff_inner_perp_ne_zero _ _).1
     (linearIndependent_rotate (linearIndependent_rotate h)))
 
-/-- The normal of a triangle is a unit vector almost everywhere for its boundary measure. -/
+/-- Let $A, B, C$ be noncollinear. The outward normal of the triangle $ABC$ has norm $1$ almost
+everywhere for the boundary measure of the triangle. -/
 theorem ae_norm_triangleNormal :
     ∀ᵐ x ∂triangleBoundaryMeasure A B C, ‖triangleNormal A B C x‖ = 1 := by
   have h1 := (linearIndependent_pair_iff_inner_perp_ne_zero _ _).1 h
@@ -897,7 +989,8 @@ theorem ae_norm_triangleNormal :
   · rw [triangleNormal_eq_of_mem_openSegment₁₂ h hx]; exact norm_edgeNormal h2
   · rw [triangleNormal_eq_of_mem_openSegment₂₀ h hx]; exact norm_edgeNormal h3
 
-/-- The normal of a triangle is measurable for its boundary measure. -/
+/-- Let $A, B, C$ be noncollinear. The outward normal of the triangle $ABC$ is almost everywhere
+strongly measurable for the boundary measure of the triangle. -/
 theorem aestronglyMeasurable_triangleNormal :
     AEStronglyMeasurable (triangleNormal A B C) (triangleBoundaryMeasure A B C) := by
   unfold triangleBoundaryMeasure
@@ -912,7 +1005,8 @@ theorem aestronglyMeasurable_triangleNormal :
   · exact (ae_mem_openSegment (ne₂₀ h)).mono fun x hx ↦
       (triangleNormal_eq_of_mem_openSegment₂₀ h hx).symm
 
-/-- The boundary measure of a triangle is carried by the frontier of the open triangle. -/
+/-- Let $A, B, C$ be noncollinear. The boundary measure of the triangle $ABC$ is carried by the
+frontier of the open triangle: the complement of the frontier has measure zero. -/
 theorem triangleBoundaryMeasure_compl_frontier :
     triangleBoundaryMeasure A B C (frontier (openTriangle A B C))ᶜ = 0 := by
   have e1 := segment_subset_frontier_openTriangle h
@@ -929,8 +1023,9 @@ theorem triangleBoundaryMeasure_compl_frontier :
   · exact measure_mono_null (compl_subset_compl.2 e3) (edgeMeasure_compl_segment C A)
 
 omit h in
-/-- The integral against the boundary measure of a triangle is the sum of the three edge
-integrals. -/
+/-- Let $f : \mathbb{R}^2 \to \mathbb{R}$ be integrable for each of $\sigma_{AB}$, $\sigma_{BC}$ and
+$\sigma_{CA}$. Then the integral of $f$ for the boundary measure of the triangle $ABC$ is $\int
+f \, d\sigma_{AB} + \int f \, d\sigma_{BC} + \int f \, d\sigma_{CA}$. -/
 theorem integral_triangleBoundaryMeasure {f : 𝔼₂ → ℝ} (h₁ : Integrable f (edgeMeasure A B))
     (h₂ : Integrable f (edgeMeasure B C)) (h₃ : Integrable f (edgeMeasure C A)) :
     ∫ x, f x ∂triangleBoundaryMeasure A B C
@@ -938,8 +1033,12 @@ theorem integral_triangleBoundaryMeasure {f : 𝔼₂ → ℝ} (h₁ : Integrabl
   unfold triangleBoundaryMeasure
   rw [integral_add_measure (h₁.add_measure h₂) h₃, integral_add_measure h₁ h₂]
 
-/-- **The boundary integral of `⟪F, ν⟫` on a triangle is the sum of the three edge terms**, each
-with the constant outward edge normal, for `F` continuous on the closed triangle. -/
+/-- The boundary integral of $\langle F, \nu \rangle$ on a triangle is the sum of three edge terms.
+Let $A, B, C$ be noncollinear, let $\sigma$ and $\nu$ be the boundary measure and the outward
+normal of the triangle $ABC$, and let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on the
+closed triangle. Then $$\int \langle F, \nu \rangle \, d\sigma = \int \langle F, n_{ABC} \rangle
+\, d\sigma_{AB} + \int \langle F, n_{BCA} \rangle \, d\sigma_{BC} + \int \langle F, n_{CAB}
+\rangle \, d\sigma_{CA}.$$ In each edge term the normal is constant. -/
 theorem integral_inner_triangleNormal {F : 𝔼₂ → 𝔼₂}
     (hF : ContinuousOn F (closedTriangle A B C)) :
     ∫ x, ⟪F x, triangleNormal A B C x⟫_ℝ ∂triangleBoundaryMeasure A B C
@@ -974,38 +1073,47 @@ end TriangleNormal
 
 /-! ### Fubini on the reference triangle -/
 
-/-- The measurable equivalence `𝔼₂ ≃ᵐ ℝ × ℝ`, `x ↦ (x 0, x 1)`. -/
+/-- The measurable equivalence $\mathbb{R}^2 \to \mathbb{R} \times \mathbb{R}$,
+$x \mapsto (x_0, x_1)$, from the Euclidean plane to the product of two lines. -/
 def planeMeasurableEquiv : 𝔼₂ ≃ᵐ ℝ × ℝ :=
   (MeasurableEquiv.toLp 2 (Fin 2 → ℝ)).symm.trans MeasurableEquiv.finTwoArrow
 
-/-- The coordinate equivalence `𝔼₂ ≃ᵐ ℝ × ℝ` preserves Lebesgue measure. -/
+/-- The equivalence $x \mapsto (x_0, x_1)$ maps Lebesgue measure on $\mathbb{R}^2$ to Lebesgue
+measure on $\mathbb{R} \times \mathbb{R}$. -/
 theorem measurePreserving_planeMeasurableEquiv :
     MeasurePreserving planeMeasurableEquiv volume volume :=
   (EuclideanSpace.volume_preserving_symm_measurableEquiv_toLp (Fin 2)).trans
     (volume_preserving_finTwoArrow ℝ)
 
+/-- The equivalence `EuclideanSpace.planeMeasurableEquiv` maps $x$ to $(x_0, x_1)$. -/
 @[simp] theorem planeMeasurableEquiv_apply (x : 𝔼₂) : planeMeasurableEquiv x = (x 0, x 1) := rfl
 
+/-- The inverse of `EuclideanSpace.planeMeasurableEquiv` maps $(p_1, p_2)$ to the vector with
+coordinates $p_1$ and $p_2$. -/
 @[simp] theorem planeMeasurableEquiv_symm_apply (p : ℝ × ℝ) :
     planeMeasurableEquiv.symm p = !₂[p.1, p.2] := by
   ext i; fin_cases i <;> rfl
 
-/-- The reference triangle in the coordinates of `ℝ × ℝ`. -/
+/-- The reference triangle in $\mathbb{R} \times \mathbb{R}$: the set of the pairs $(x, y)$ with
+$x > 0$, $y > 0$ and $x + y < 1$. -/
 def planeTriangle : Set (ℝ × ℝ) := {p | 0 < p.1 ∧ 0 < p.2 ∧ p.1 + p.2 < 1}
 
-/-- The plane triangle is measurable. -/
+/-- The reference triangle in $\mathbb{R} \times \mathbb{R}$ is measurable. -/
 theorem measurableSet_planeTriangle : MeasurableSet planeTriangle :=
   (measurableSet_lt measurable_const measurable_fst).inter
     ((measurableSet_lt measurable_const measurable_snd).inter
     (measurableSet_lt (measurable_fst.add measurable_snd) measurable_const))
 
-/-- The reference triangle is the preimage of the plane triangle. -/
+/-- The reference triangle of $\mathbb{R}^2$ corresponds to the reference triangle of
+$\mathbb{R} \times \mathbb{R}$ under the equivalence `EuclideanSpace.planeMeasurableEquiv`. -/
 theorem preimage_referenceTriangle :
     planeMeasurableEquiv.symm ⁻¹' (referenceTriangle : Set 𝔼₂) = planeTriangle := by
   ext p
   exact Iff.rfl
 
-/-- The slice integral of the indicator of a triangle `{0 < x, 0 < y, x + y < 1}` in `y`. -/
+/-- For $x \in \mathbb{R}$ and $k : \mathbb{R} \to \mathbb{R}$, the integral over $y$ of $k$ times
+the indicator of $\{y : x > 0, y > 0, x + y < 1\}$ is $\int_0^{1-x} k(y) \, dy$ if $0 < x < 1$,
+and $0$ otherwise. -/
 theorem integral_indicator_slice (x : ℝ) (k : ℝ → ℝ) :
     ∫ y, {y : ℝ | 0 < x ∧ 0 < y ∧ x + y < 1}.indicator k y
       = (Ioo (0 : ℝ) 1).indicator (fun x ↦ ∫ y in (0 : ℝ)..(1 - x), k y) x := by
@@ -1025,12 +1133,14 @@ theorem integral_indicator_slice (x : ℝ) (k : ℝ → ℝ) :
       indicator_of_notMem (by rintro ⟨h1, h2, h3⟩; exact hx ⟨h1, by linarith⟩) _
     simp only [this, integral_zero]
 
-/-- The indicator of the plane triangle at `(x, y)`, as an indicator in `y`. -/
+/-- The indicator of the reference triangle of $\mathbb{R} \times \mathbb{R}$ at $(x, y)$, written
+as an indicator in $y$ for fixed $x$. -/
 theorem indicator_planeTriangle (g : ℝ × ℝ → ℝ) (x y : ℝ) :
     planeTriangle.indicator g (x, y)
       = {y : ℝ | 0 < x ∧ 0 < y ∧ x + y < 1}.indicator (fun y ↦ g (x, y)) y := rfl
 
-/-- The indicator of the plane triangle at `(x, y)`, as an indicator in `x`. -/
+/-- The indicator of the reference triangle of $\mathbb{R} \times \mathbb{R}$ at $(x, y)$, written
+as an indicator in $x$ for fixed $y$. -/
 theorem indicator_planeTriangle' (g : ℝ × ℝ → ℝ) (x y : ℝ) :
     planeTriangle.indicator g (x, y)
       = {x : ℝ | 0 < y ∧ 0 < x ∧ y + x < 1}.indicator (fun x ↦ g (x, y)) x := by
@@ -1042,7 +1152,9 @@ theorem indicator_planeTriangle' (g : ℝ × ℝ → ℝ) (x y : ℝ) :
         (fun (h' : x ∈ {x : ℝ | 0 < y ∧ 0 < x ∧ y + x < 1}) ↦
           h ⟨h'.2.1, h'.1, by linarith [h'.2.2]⟩)]
 
-/-- **Fubini on the plane triangle**, `x` outside. -/
+/-- Fubini's theorem on the reference triangle of $\mathbb{R} \times \mathbb{R}$, with $x$ outside:
+for $g$ integrable on the triangle, its integral over the triangle is
+$\int_0^1 \int_0^{1-x} g(x, y) \, dy \, dx$. -/
 theorem integral_planeTriangle_eq {g : ℝ × ℝ → ℝ} (hg : IntegrableOn g planeTriangle) :
     ∫ p in planeTriangle, g p = ∫ x in (0 : ℝ)..1, ∫ y in (0 : ℝ)..(1 - x), g (x, y) := by
   rw [← integral_indicator measurableSet_planeTriangle, Measure.volume_eq_prod,
@@ -1056,7 +1168,9 @@ theorem integral_planeTriangle_eq {g : ℝ × ℝ → ℝ} (hg : IntegrableOn g 
   rw [integral_indicator measurableSet_Ioo, intervalIntegral.integral_of_le zero_le_one,
     integral_Ioc_eq_integral_Ioo]
 
-/-- **Fubini on the plane triangle**, `y` outside. -/
+/-- Fubini's theorem on the reference triangle of $\mathbb{R} \times \mathbb{R}$, with $y$ outside:
+for $g$ integrable on the triangle, its integral over the triangle is
+$\int_0^1 \int_0^{1-y} g(x, y) \, dx \, dy$. -/
 theorem integral_planeTriangle_eq' {g : ℝ × ℝ → ℝ} (hg : IntegrableOn g planeTriangle) :
     ∫ p in planeTriangle, g p = ∫ y in (0 : ℝ)..1, ∫ x in (0 : ℝ)..(1 - y), g (x, y) := by
   rw [← integral_indicator measurableSet_planeTriangle, Measure.volume_eq_prod,
@@ -1070,8 +1184,10 @@ theorem integral_planeTriangle_eq' {g : ℝ × ℝ → ℝ} (hg : IntegrableOn g
   rw [integral_indicator measurableSet_Ioo, intervalIntegral.integral_of_le zero_le_one,
     integral_Ioc_eq_integral_Ioo]
 
-/-- **Fubini on the reference triangle**, `x` outside:
-`∫_T̂ h = ∫_0^1 ∫_0^{1−x} h(x, y) dy dx`. -/
+/-- Fubini's theorem on the reference triangle $\hat T = \{(x, y) : x > 0, y > 0, x + y < 1\}$ of
+$\mathbb{R}^2$, with $x$ outside. Let $h : \mathbb{R}^2 \to \mathbb{R}$ be integrable on
+$\hat T$. Then $$\int_{\hat T} h = \int_0^1 \int_0^{1-x} h(x, y) \, dy \, dx.$$
+-/
 theorem integral_referenceTriangle_eq {h : 𝔼₂ → ℝ}
     (hh : IntegrableOn h (referenceTriangle : Set 𝔼₂)) :
     ∫ x in (referenceTriangle : Set 𝔼₂), h x
@@ -1084,8 +1200,8 @@ theorem integral_referenceTriangle_eq {h : 𝔼₂ → ℝ}
     exact (measurePreserving_planeMeasurableEquiv.symm.integrableOn_comp_preimage
       planeMeasurableEquiv.symm.measurableEmbedding).2 hh
 
-/-- **Fubini on the reference triangle**, `y` outside:
-`∫_T̂ h = ∫_0^1 ∫_0^{1−y} h(x, y) dx dy`. -/
+/-- Fubini's theorem on the reference triangle $\hat T$ of $\mathbb{R}^2$, with $y$ outside: for $h$
+integrable on $\hat T$, $\int_{\hat T} h = \int_0^1 \int_0^{1-y} h(x, y) \, dx \, dy$. -/
 theorem integral_referenceTriangle_eq' {h : 𝔼₂ → ℝ}
     (hh : IntegrableOn h (referenceTriangle : Set 𝔼₂)) :
     ∫ x in (referenceTriangle : Set 𝔼₂), h x
@@ -1100,7 +1216,8 @@ theorem integral_referenceTriangle_eq' {h : 𝔼₂ → ℝ}
 
 /-! ### The divergence theorem on the reference triangle -/
 
-/-- `y ↦ !₂[f y, g y]` is continuous for continuous `f, g`. -/
+/-- If $f, g : \mathbb{R} \to \mathbb{R}$ are continuous, then
+$y \mapsto (f(y), g(y)) \in \mathbb{R}^2$ is continuous. -/
 theorem continuous_toLp₂ {f g : ℝ → ℝ} (hf : Continuous f) (hg : Continuous g) :
     Continuous fun y ↦ (!₂[f y, g y] : 𝔼₂) := by
   have : (fun y ↦ (!₂[f y, g y] : 𝔼₂))
@@ -1109,7 +1226,7 @@ theorem continuous_toLp₂ {f g : ℝ → ℝ} (hf : Continuous f) (hg : Continu
   refine (PiLp.continuous_toLp (p := 2) (β := fun _ : Fin 2 ↦ ℝ)).comp (continuous_pi fun i ↦ ?_)
   fin_cases i <;> simpa
 
-/-- The vertical line `y ↦ !₂[x, y]` has derivative `e₁`. -/
+/-- The vertical line $y \mapsto (x, y)$ has derivative $e_1$ at every point. -/
 theorem hasDerivAt_toLp_snd (x y : ℝ) :
     HasDerivAt (fun y : ℝ ↦ (!₂[x, y] : 𝔼₂)) (EuclideanSpace.single 1 1) y := by
   have : (fun y : ℝ ↦ (!₂[x, y] : 𝔼₂)) = fun y ↦ !₂[x, 0] + y • EuclideanSpace.single 1 1 := by
@@ -1118,7 +1235,7 @@ theorem hasDerivAt_toLp_snd (x y : ℝ) :
   simpa using ((hasDerivAt_id y).smul_const (EuclideanSpace.single (1 : Fin 2) (1 : ℝ))).const_add
     (!₂[x, 0] : 𝔼₂)
 
-/-- The horizontal line `x ↦ !₂[x, y]` has derivative `e₀`. -/
+/-- The horizontal line $x \mapsto (x, y)$ has derivative $e_0$ at every point. -/
 theorem hasDerivAt_toLp_fst (x y : ℝ) :
     HasDerivAt (fun x : ℝ ↦ (!₂[x, y] : 𝔼₂)) (EuclideanSpace.single 0 1) x := by
   have : (fun x : ℝ ↦ (!₂[x, y] : 𝔼₂)) = fun x ↦ !₂[0, y] + x • EuclideanSpace.single 0 1 := by
@@ -1127,23 +1244,33 @@ theorem hasDerivAt_toLp_fst (x y : ℝ) :
   simpa using ((hasDerivAt_id x).smul_const (EuclideanSpace.single (0 : Fin 2) (1 : ℝ))).const_add
     (!₂[0, y] : 𝔼₂)
 
-/-- The divergence in the plane: `div F = ∂₀F₀ + ∂₁F₁`. -/
+/-- The divergence of a plane vector field $F = (F_0, F_1)$ is $\operatorname{div} F = \partial_0
+F_0 + \partial_1 F_1$. -/
 theorem div_eq_two (F : 𝔼₂ → 𝔼₂) (z : 𝔼₂) :
     div F z = fderiv ℝ F z (EuclideanSpace.single 0 1) 0
       + fderiv ℝ F z (EuclideanSpace.single 1 1) 1 := by
   simp [div, Fin.sum_univ_two]
 
-/-- Membership of the reference triangle, in coordinates. -/
+/-- The point $(x, y)$ lies in the reference triangle if and only if $x > 0$, $y > 0$ and
+$x + y < 1$. -/
 theorem mem_referenceTriangle_toLp {x y : ℝ} :
     (!₂[x, y] : 𝔼₂) ∈ (referenceTriangle : Set 𝔼₂) ↔ 0 < x ∧ 0 < y ∧ x + y < 1 := Iff.rfl
 
-/-- Membership of the closed reference triangle, in coordinates. -/
+/-- The point $(x, y)$ lies in the closed reference triangle if and only if $x \ge 0$, $y \ge 0$ and
+$x + y \le 1$. -/
 theorem mem_closedReferenceTriangle_toLp {x y : ℝ} :
     (!₂[x, y] : 𝔼₂) ∈ closedReferenceTriangle ↔ 0 ≤ x ∧ 0 ≤ y ∧ x + y ≤ 1 := Iff.rfl
 
-/-- **The fundamental theorem of calculus along a coordinate line of the reference triangle**:
-for a curve `γ` with `γ' = e_i` running through the open triangle on `(0, L)` and through the
-closed one on `[0, L]`, `∫_0^L ∂ᵢFᵢ(γ t) dt = Fᵢ(γ L) − Fᵢ(γ 0)`. -/
+/-- The fundamental theorem of calculus along a coordinate line of the reference triangle. Let
+$F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on the closed reference triangle and of class
+$C^1$ up to the boundary on the open reference triangle $\hat T$, and let $i \in \{0, 1\}$. Let
+$\gamma : \mathbb{R} \to \mathbb{R}^2$ be continuous with $\gamma'(t) = e_i$ for every $t$, and
+let $L \ge 0$. Suppose that $\gamma(t) \in \hat T$ for $0 < t < L$ and that $\gamma(t)$ lies in
+the closed reference triangle for $0 \le t \le L$. Then $$\int_0^L \partial_i F_i(\gamma(t)) \,
+dt = F_i(\gamma(L)) - F_i(\gamma(0)).$$
+
+"Of class $C^1$ up to the boundary" is `ContDiffOnClosure ℝ 1 F referenceTriangle`. The partial
+derivative $\partial_i F_i(z)$ is the $i$-th coordinate of `fderiv ℝ F z` applied to $e_i$. -/
 theorem integral_fderiv_comp_line {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) (i : Fin 2) {γ : ℝ → 𝔼₂}
     (hγc : Continuous γ) (hγ : ∀ t, HasDerivAt γ (EuclideanSpace.single i 1) t) {L : ℝ}
@@ -1166,8 +1293,11 @@ theorem integral_fderiv_comp_line {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F
     rw [ae_restrict_iff' measurableSet_Ioo]
     exact Filter.Eventually.of_forall fun t ht ↦ norm_fderiv_apply_apply_le (hC _ (hmem t ht)) i i
 
-/-- **The fundamental theorem of calculus on a vertical slice of the reference triangle**:
-`∫_0^{1−x} ∂₁F₁(x, y) dy = F₁(x, 1 − x) − F₁(x, 0)` for `0 < x < 1`. -/
+/-- The fundamental theorem of calculus on a vertical slice of the reference triangle. Let
+$F = (F_0, F_1)$ be continuous on the closed reference triangle and of class $C^1$ up to the
+boundary on the open one, and let $0 < x < 1$. Then $$\int_0^{1-x} \partial_1 F_1(x, y) \, dy =
+F_1(x, 1 - x) - F_1(x, 0).$$
+-/
 theorem integral_fderiv_snd {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) {x : ℝ} (hx : x ∈ Ioo (0 : ℝ) 1) :
     ∫ y in (0 : ℝ)..(1 - x), fderiv ℝ F !₂[x, y] (EuclideanSpace.single 1 1) 1
@@ -1178,8 +1308,9 @@ theorem integral_fderiv_snd {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F close
     (fun y hy ↦ mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hy.2]⟩)
     (fun y hy ↦ mem_closedReferenceTriangle_toLp.2 ⟨hx.1.le, hy.1, by linarith [hy.2]⟩)
 
-/-- **The fundamental theorem of calculus on a horizontal slice of the reference triangle**:
-`∫_0^{1−y} ∂₀F₀(x, y) dx = F₀(1 − y, y) − F₀(0, y)` for `0 < y < 1`. -/
+/-- The fundamental theorem of calculus on a horizontal slice of the reference triangle: under the
+hypotheses of `EuclideanSpace.integral_fderiv_snd` and for $0 < y < 1$, $\int_0^{1-y} \partial_0
+F_0(x, y) \, dx = F_0(1 - y, y) - F_0(0, y)$. -/
 theorem integral_fderiv_fst {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) {y : ℝ} (hy : y ∈ Ioo (0 : ℝ) 1) :
     ∫ x in (0 : ℝ)..(1 - y), fderiv ℝ F !₂[x, y] (EuclideanSpace.single 0 1) 0
@@ -1190,8 +1321,10 @@ theorem integral_fderiv_fst {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F close
     (fun x hx ↦ mem_referenceTriangle_toLp.2 ⟨hx.1, hy.1, by linarith [hx.2]⟩)
     (fun x hx ↦ mem_closedReferenceTriangle_toLp.2 ⟨hx.1, hy.1.le, by linarith [hx.2]⟩)
 
-/-- A coordinate of `F` along a continuous curve in the closed reference triangle is interval
-integrable on `[0, 1]`. -/
+/-- Let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on the closed reference triangle, and let
+$f, g : \mathbb{R} \to \mathbb{R}$ be continuous with $(f(t), g(t))$ in the closed reference
+triangle for $t \in [0, 1]$. Then each coordinate of $t \mapsto F(f(t), g(t))$ is interval
+integrable on $[0, 1]$. -/
 theorem intervalIntegrable_comp_toLp {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F closedReferenceTriangle)
     {f g : ℝ → ℝ} (hf : Continuous f) (hg : Continuous g)
     (h : ∀ t ∈ Icc (0 : ℝ) 1, 0 ≤ f t ∧ 0 ≤ g t ∧ f t + g t ≤ 1) (i : Fin 2) :
@@ -1202,12 +1335,16 @@ theorem intervalIntegrable_comp_toLp {F : 𝔼₂ → 𝔼₂} (hF : ContinuousO
     (hF.comp (continuous_toLp₂ hf hg).continuousOn fun t ht ↦
       mem_closedReferenceTriangle_toLp.2 (h t ht))
 
-/-- **The divergence theorem on the reference triangle, in parametrized form**: for `F` continuous
-on the closed reference triangle and of class `C¹` up to the boundary inside,
-`∫_T̂ div F = ∫_0^1 (F₀ + F₁)(t, 1 − t) dt − ∫_0^1 F₁(t, 0) dt − ∫_0^1 F₀(0, t) dt` — the edge
-terms `∫_e ⟪F, ν⟫ ds` of the hypotenuse (`ν = (1, 1)/√2`, `ds = √2 dt`), the bottom (`ν = (0, −1)`)
-and the left side (`ν = (−1, 0)`). Fubini on the triangle and the one-dimensional fundamental
-theorem of calculus on each slice. -/
+/-- The divergence theorem on the reference triangle, with parametrized edges. Let
+$F = (F_0, F_1) : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on the closed reference triangle
+and of class $C^1$ up to the boundary on the open reference triangle $\hat T$. Then $$\int_{\hat
+T} \operatorname{div} F = \int_0^1 \bigl(F_0 + F_1\bigr)(t, 1 - t) \, dt - \int_0^1 F_1(t, 0) \,
+dt - \int_0^1 F_0(0, t) \, dt.$$
+
+The three terms on the right are the edge terms $\int_e \langle F, \nu \rangle \, ds$ of the
+hypotenuse, where $\nu = (1, 1)/\sqrt 2$ and $ds = \sqrt 2 \, dt$, of the bottom edge, where
+$\nu = (0, -1)$, and of the left edge, where $\nu = (-1, 0)$. The proof applies Fubini's theorem
+on the triangle and the fundamental theorem of calculus on each slice. -/
 theorem integral_div_referenceTriangle {F : 𝔼₂ → 𝔼₂}
     (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) :
@@ -1253,14 +1390,15 @@ theorem integral_div_referenceTriangle {F : 𝔼₂ → 𝔼₂}
     intervalIntegral.integral_add c5 c3]
   ring
 
-/-- The vertices of the reference triangle are not collinear. -/
+/-- The vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ of the reference triangle are not collinear. -/
 theorem linearIndependent_referenceTriangleVertex :
     LinearIndependent ℝ ![referenceTriangleVertex 1 - referenceTriangleVertex 0,
       referenceTriangleVertex 2 - referenceTriangleVertex 0] := by
   rw [linearIndependent_pair_iff_inner_perp_ne_zero, inner_perp_eq]
   simp [referenceTriangleVertex]
 
-/-- The affine map of the reference vertices is the identity. -/
+/-- The affine map `EuclideanSpace.triangleAffine` for the vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ of
+the reference triangle is the identity. -/
 theorem triangleAffine_referenceTriangleVertex_eq_id :
     triangleAffine (referenceTriangleVertex 0) (referenceTriangleVertex 1)
       (referenceTriangleVertex 2) = id := by
@@ -1268,24 +1406,27 @@ theorem triangleAffine_referenceTriangleVertex_eq_id :
   ext i
   fin_cases i <;> simp [triangleAffine, referenceTriangleVertex]
 
-/-- The closed triangle of the reference vertices is the closed reference triangle. -/
+/-- The closed triangle with the vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ is the closed reference
+triangle. -/
 theorem closedTriangle_referenceTriangleVertex :
     closedTriangle (referenceTriangleVertex 0) (referenceTriangleVertex 1)
       (referenceTriangleVertex 2) = closedReferenceTriangle := by
   rw [closedTriangle, triangleAffine_referenceTriangleVertex_eq_id, image_id]
 
-/-- The open triangle of the reference vertices is the reference triangle. -/
+/-- The open triangle with the vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ is the reference triangle. -/
 theorem openTriangle_referenceTriangleVertex :
     openTriangle (referenceTriangleVertex 0) (referenceTriangleVertex 1)
       (referenceTriangleVertex 2) = referenceTriangle := by
   rw [openTriangle_eq_image_triangleAffine, triangleAffine_referenceTriangleVertex_eq_id, image_id]
 
-/-- The bottom edge of the reference triangle, parametrized. -/
+/-- The bottom edge of the reference triangle, from $(0, 0)$ to $(1, 0)$, is parametrized by
+$t \mapsto (t, 0)$. -/
 theorem lineMap_referenceTriangleVertex₀₁ (t : ℝ) :
     AffineMap.lineMap (referenceTriangleVertex 0) (referenceTriangleVertex 1) t = !₂[t, 0] := by
   ext i; fin_cases i <;> simp [lineMap_eq, referenceTriangleVertex]
 
-/-- The hypotenuse of the reference triangle, parametrized. -/
+/-- The hypotenuse of the reference triangle, from $(1, 0)$ to $(0, 1)$, is parametrized by
+$t \mapsto (1 - t, t)$. -/
 theorem lineMap_referenceTriangleVertex₁₂ (t : ℝ) :
     AffineMap.lineMap (referenceTriangleVertex 1) (referenceTriangleVertex 2) t
       = !₂[1 - t, t] := by
@@ -1293,7 +1434,8 @@ theorem lineMap_referenceTriangleVertex₁₂ (t : ℝ) :
   · simp [lineMap_eq, referenceTriangleVertex]; ring
   · simp [lineMap_eq, referenceTriangleVertex]
 
-/-- The left edge of the reference triangle, parametrized. -/
+/-- The left edge of the reference triangle, from $(0, 1)$ to $(0, 0)$, is parametrized by
+$t \mapsto (0, 1 - t)$. -/
 theorem lineMap_referenceTriangleVertex₂₀ (t : ℝ) :
     AffineMap.lineMap (referenceTriangleVertex 2) (referenceTriangleVertex 0) t
       = !₂[0, 1 - t] := by
@@ -1301,9 +1443,16 @@ theorem lineMap_referenceTriangleVertex₂₀ (t : ℝ) :
   · simp [lineMap_eq, referenceTriangleVertex]
   · simp [lineMap_eq, referenceTriangleVertex]; ring
 
-/-- **The divergence theorem on the reference triangle, in measure form**: with the vertices
-`v₀ = (0, 0)`, `v₁ = (1, 0)`, `v₂ = (0, 1)`,
-`∫_T̂ div F = ∫ ⟪F, triangleNormal v₀ v₁ v₂⟫ d(triangleBoundaryMeasure v₀ v₁ v₂)`. -/
+/-- The divergence theorem on the reference triangle, with the boundary measure. Let $v_0 = (0, 0)$,
+$v_1 = (1, 0)$, $v_2 = (0, 1)$, and let $\sigma$ and $\nu$ be the boundary measure and the
+outward normal of the triangle $v_0 v_1 v_2$. Let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be
+continuous on the closed reference triangle and of class $C^1$ up to the boundary on the open
+reference triangle $\hat T$. Then $$\int_{\hat T} \operatorname{div} F = \int \langle F, \nu
+\rangle \, d\sigma.$$
+
+The vertices are `EuclideanSpace.referenceTriangleVertex`. The measure $\sigma$ is
+`EuclideanSpace.triangleBoundaryMeasure`.
+The normal $\nu$ is `EuclideanSpace.triangleNormal`. -/
 theorem integral_div_referenceTriangle_eq_integral_inner {F : 𝔼₂ → 𝔼₂}
     (hF : ContinuousOn F closedReferenceTriangle)
     (hF' : ContDiffOnClosure ℝ 1 F referenceTriangle) :
@@ -1346,13 +1495,19 @@ theorem integral_div_referenceTriangle_eq_integral_inner {F : 𝔼₂ → 𝔼�
 
 /-! ### The divergence theorem on a triangle -/
 
-/-- **The divergence theorem on a triangle**: for non-collinear `A, B, C` and a field `F`
-continuous on the closed triangle and of class `C¹` up to the boundary on the open one,
-`∫_{ABC} div F = ∫ ⟪F, triangleNormal A B C⟫ d(triangleBoundaryMeasure A B C)`. Affine transport
-from the reference triangle: with `M := triangleEquiv A B C h` and `Φ x̂ = M x̂ + A`, the change of
-variables gives `|det M| ∫_T̂ div F ∘ Φ`, the Piola identity `div_comp_continuousLinearEquiv`
-turns the integrand into `div (M⁻¹ ∘ F ∘ Φ)`, the reference theorem applies to this field, and
-`integral_inner_edgeNormal_affine` carries each edge term back. -/
+/-- The **divergence theorem on a triangle**. Let $A, B, C \in \mathbb{R}^2$ be noncollinear, let
+$K$ be the open triangle $ABC$, and let $\sigma$ and $\nu$ be its boundary measure and its
+outward normal. Let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on the closed triangle and
+of class $C^1$ up to the boundary on $K$. Then $$\int_K \operatorname{div} F = \int \langle F,
+\nu \rangle \, d\sigma.$$
+
+The proof is an affine change of variables from the reference triangle. Let $M$ be
+`EuclideanSpace.triangleEquiv A B C h` and $\Phi(\hat x) = M \hat x + A$. The change of
+variables gives $|\det M| \int_{\hat T} (\operatorname{div} F) \circ \Phi$. The Piola identity
+`EuclideanSpace.div_comp_continuousLinearEquiv` turns the integrand into
+$\operatorname{div}(M^{-1} \circ F \circ \Phi)$, the theorem on the reference triangle applies
+to this field, and `EuclideanSpace.integral_inner_edgeNormal_affine` carries each edge term back
+to $K$. -/
 theorem integral_div_openTriangle {A B C : 𝔼₂} (h : LinearIndependent ℝ ![B - A, C - A])
     {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F (closedTriangle A B C))
     (hF' : ContDiffOnClosure ℝ 1 F (openTriangle A B C)) :
@@ -1414,9 +1569,12 @@ theorem integral_div_openTriangle {A B C : 𝔼₂} (h : LinearIndependent ℝ !
     integral_inner_edgeNormal_affine M A hs hF01, integral_inner_edgeNormal_affine M A hs' hF12,
     integral_inner_edgeNormal_affine M A hs'' hF20, hv0, hv1, hv2]
 
-/-- **A triangle is a `BoundaryData`**: the open triangle with non-collinear vertices `A, B, C`,
-with the boundary measure `triangleBoundaryMeasure A B C` and the normal `triangleNormal A B C`.
--/
+/-- The **boundary data of a triangle**. For noncollinear $A, B, C \in \mathbb{R}^2$, the open
+triangle $ABC$ is a `BoundaryData`, with the boundary measure
+`EuclideanSpace.triangleBoundaryMeasure A B C` as surface measure and
+`EuclideanSpace.triangleNormal A B C` as outward unit normal.
+
+The divergence theorem of the structure is `EuclideanSpace.integral_div_openTriangle`. -/
 def triangleBoundaryData (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) :
     BoundaryData (openTriangleOpens A B C h) where
   σ := triangleBoundaryMeasure A B C
@@ -1429,16 +1587,19 @@ def triangleBoundaryData (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C
   integral_div_eq F hF hF' := integral_div_openTriangle h
     (by rwa [coe_openTriangleOpens, closure_openTriangle] at hF) hF'
 
+/-- The surface measure of the boundary data of a triangle is its boundary measure. -/
 @[simp] theorem triangleBoundaryData_σ (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) :
     (triangleBoundaryData A B C h).σ = triangleBoundaryMeasure A B C := rfl
 
+/-- The normal of the boundary data of a triangle is its outward normal. -/
 @[simp] theorem triangleBoundaryData_ν (A B C : 𝔼₂) (h : LinearIndependent ℝ ![B - A, C - A]) :
     (triangleBoundaryData A B C h).ν = triangleNormal A B C := rfl
 
 /-! ### Segments and edges of a triangle, rotated -/
 
-/-- The arclength measure of the edge `a` of the triangle `T` is dominated by the boundary
-measure of the triangle. -/
+/-- For a vertex triple $T_0, T_1, T_2$ and every $a$ modulo $3$, the arclength measure
+$\sigma_{T_a T_{a+1}}$ of the edge $a$ is at most the boundary measure of the triangle
+$T_0 T_1 T_2$. -/
 theorem edgeMeasure_le_triangleBoundaryMeasure (T : Fin 3 → 𝔼₂) (a : Fin 3) :
     edgeMeasure (T a) (T (a + 1)) ≤ triangleBoundaryMeasure (T 0) (T 1) (T 2) := by
   unfold triangleBoundaryMeasure
@@ -1447,7 +1608,9 @@ theorem edgeMeasure_le_triangleBoundaryMeasure (T : Fin 3 → 𝔼₂) (a : Fin 
   · exact Measure.le_add_right (Measure.le_add_left le_rfl)
   · exact Measure.le_add_left le_rfl
 
-/-- On the open edge `a` of the triangle `T`, the normal of the triangle is the edge normal. -/
+/-- Let $T_0, T_1, T_2$ be noncollinear and let $a$ be an index modulo $3$. On the open edge
+$(T_a, T_{a+1})$, the outward normal of the triangle $T_0 T_1 T_2$ is the edge normal
+$n_{T_a T_{a+1} T_{a+2}}$. -/
 theorem triangleNormal_eq_of_mem_openSegment_rot {T : Fin 3 → 𝔼₂}
     (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) (a : Fin 3) {x : 𝔼₂}
     (hx : x ∈ openSegment ℝ (T a) (T (a + 1))) :
@@ -1457,7 +1620,8 @@ theorem triangleNormal_eq_of_mem_openSegment_rot {T : Fin 3 → 𝔼₂}
   · exact triangleNormal_eq_of_mem_openSegment₁₂ h hx
   · exact triangleNormal_eq_of_mem_openSegment₂₀ h hx
 
-/-- The edge `a` of the triangle `T` lies in the closed triangle. -/
+/-- For a vertex triple $T_0, T_1, T_2$ and every $a$ modulo $3$, the edge $[T_a, T_{a+1}]$ lies in
+the closed triangle $T_0 T_1 T_2$. -/
 theorem segment_subset_closedTriangle_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
     segment ℝ (T a) (T (a + 1)) ⊆ closedTriangle (T 0) (T 1) (T 2) := by
   fin_cases a
@@ -1465,8 +1629,12 @@ theorem segment_subset_closedTriangle_rot (T : Fin 3 → 𝔼₂) (a : Fin 3) :
   · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 1 2
   · exact segment_subset_closedTriangle (T 0) (T 1) (T 2) 2 0
 
-/-- **The boundary integral of `f νᵢ` on a triangle is the sum of the three edge integrals**
-with the constant edge normals, for `f` integrable on the boundary of the triangle. -/
+/-- The boundary integral of $f \nu_i$ on a triangle is the sum of three edge integrals. Let
+$T_0, T_1, T_2$ be noncollinear, let $\sigma$ and $\nu$ be the boundary measure and the outward
+normal of the triangle $T_0 T_1 T_2$, let $f : \mathbb{R}^2 \to \mathbb{R}$ be integrable for
+$\sigma$, and let $i \in \{0, 1\}$. Then $$\int f \, \nu_i \, d\sigma = \sum_{a=0}^{2} \int f \,
+(n_{T_a T_{a+1} T_{a+2}})_i \, d\sigma_{T_a T_{a+1}},$$ with indices modulo $3$. In each edge
+integral the normal is constant. -/
 theorem integral_mul_triangleNormal_apply {T : Fin 3 → 𝔼₂}
     (h : LinearIndependent ℝ ![T 1 - T 0, T 2 - T 0]) {f : 𝔼₂ → ℝ}
     (hf : Integrable f (triangleBoundaryMeasure (T 0) (T 1) (T 2))) (i : Fin 2) :
@@ -1496,66 +1664,78 @@ open EuclideanSpace
 
 variable {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
 
-/-- **A boundary edge of a triangulation**: the edge `[T a, T (a + 1)]` of the element `T` is a
-boundary edge when no other element has both its endpoints as vertices. -/
+/-- A **boundary edge** of a triangulation $\mathcal{T}$. The edge $a$ of the element $T$, the
+segment $[T_a, T_{a+1}]$, is a boundary edge if no other element $T' \neq T$ has both $T_a$ and
+$T_{a+1}$ among its vertices. -/
 def IsBoundaryEdge (T : 𝒯.elems) (a : Fin 3) : Prop :=
   ∀ T' : 𝒯.elems, T' ≠ T → ∀ i j : Fin 3, ¬ (T.1 a = T'.1 i ∧ T.1 (a + 1) = T'.1 j)
 
-/-- **The partner of an edge**: the edge `a'` of another element `T'` is the same segment as the
-edge `a` of `T`, in the same or in the reversed orientation. -/
+/-- A **partner** of an edge. The edge $a'$ of the element $T'$ is a partner of the edge $a$ of the
+element $T$ if $T' \neq T$ and the two edges have the same endpoints, in the same or in the
+opposite order: $(T_a, T_{a+1}) = (T'_{a'}, T'_{a'+1})$ or
+$(T_a, T_{a+1}) = (T'_{a'+1}, T'_{a'})$. -/
 def IsPartner (T : 𝒯.elems) (a : Fin 3) (T' : 𝒯.elems) (a' : Fin 3) : Prop :=
   T' ≠ T ∧ ((T.1 a = T'.1 a' ∧ T.1 (a + 1) = T'.1 (a' + 1)) ∨
     (T.1 a = T'.1 (a' + 1) ∧ T.1 (a + 1) = T'.1 a'))
 
 open Classical in
-/-- The boundary edges of the triangulation, as pairs `(T, a)`. -/
+/-- The finite set of the boundary edges of the triangulation, as pairs $(T, a)$ of an element and
+an edge index. -/
 def boundaryEdges : Finset (𝒯.elems × Fin 3) :=
   Finset.univ.filter fun e ↦ 𝒯.IsBoundaryEdge e.1 e.2
 
 variable {𝒯}
 
-/-- Membership of `boundaryEdges`. -/
+/-- A pair $(T, a)$ lies in `Triangulation.boundaryEdges` if and only if the edge $a$ of $T$ is a
+boundary edge. -/
 theorem mem_boundaryEdges {e : 𝒯.elems × Fin 3} :
     e ∈ 𝒯.boundaryEdges ↔ 𝒯.IsBoundaryEdge e.1 e.2 := by
   classical
   simp [boundaryEdges]
 
-/-- The vertices of an element are distinct. -/
+/-- The three vertices of an element of a triangulation are distinct. -/
 theorem vertex_injective (T : 𝒯.elems) : Function.Injective T.1 :=
   EuclideanSpace.vertex_injective (𝒯.li T)
 
-/-- Non-collinearity of the vertices of an element, read from the vertex `a`. -/
+/-- For an element $T$ of a triangulation and every $a$ modulo $3$, the vectors $T_{a+1} - T_a$ and
+$T_{a+2} - T_a$ are linearly independent. -/
 theorem li_rot (T : 𝒯.elems) (a : Fin 3) :
     LinearIndependent ℝ ![T.1 (a + 1) - T.1 a, T.1 (a + 2) - T.1 a] :=
   linearIndependent_rot (𝒯.li T) a
 
-/-- The open element, read from the vertex `a`. -/
+/-- For an element $T$ of a triangulation and every $a$ modulo $3$, the open element of $T$ is the
+open triangle $T_a T_{a+1} T_{a+2}$. -/
 theorem K_eq_rot (T : 𝒯.elems) (a : Fin 3) :
     𝒯.K T = openTriangle (T.1 a) (T.1 (a + 1)) (T.1 (a + 2)) :=
   openTriangle_eq_rot T.1 a
 
-/-- The closed element, read from the vertex `a`. -/
+/-- For an element $T$ of a triangulation and every $a$ modulo $3$, the closed element of $T$ is the
+closed triangle $T_a T_{a+1} T_{a+2}$. -/
 theorem closedK_eq_rot (T : 𝒯.elems) (a : Fin 3) :
     𝒯.closedK T = closedTriangle (T.1 a) (T.1 (a + 1)) (T.1 (a + 2)) :=
   closedTriangle_eq_rot T.1 a
 
-/-- The endpoints of an edge are distinct. -/
+/-- The endpoints $T_a$ and $T_{a+1}$ of an edge of an element are distinct. -/
 theorem vertex_ne_vertex_add_one (T : 𝒯.elems) (a : Fin 3) : T.1 a ≠ T.1 (a + 1) :=
   fun e ↦ fin3_ne_add_one a (vertex_injective T e)
 
-/-- The vertex `T c`, read in the triple starting at the vertex `a`. -/
+/-- The vertex $T_c$ of an element is the entry at the index $c - a$ of the vertex triple
+$(T_a, T_{a+1}, T_{a+2})$, with indices modulo $3$. -/
 theorem vertex_eq_vecCons_rot (T : 𝒯.elems) (a c : Fin 3) :
     T.1 c = ![T.1 a, T.1 (a + 1), T.1 (a + 2)] (c - a) := by
   rw [vecCons_rot, add_sub_cancel]
 
-/-- The partner relation is symmetric. -/
+/-- The partner relation is symmetric: if the edge $a'$ of $T'$ is a partner of the edge $a$ of $T$,
+then the edge $a$ of $T$ is a partner of the edge $a'$ of $T'$. -/
 theorem IsPartner.symm {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a T' a') :
     𝒯.IsPartner T' a' T a := by
   obtain ⟨hne, h | h⟩ := h
   · exact ⟨hne.symm, Or.inl ⟨h.1.symm, h.2.symm⟩⟩
   · exact ⟨hne.symm, Or.inr ⟨h.2.symm, h.1.symm⟩⟩
 
-/-- An edge is not a boundary edge iff it has a partner. -/
+/-- The edge $a$ of an element $T$ is not a boundary edge if and only if it has a partner, that is,
+an element $T'$ and an index $a'$ such that the edge $a'$ of $T'$ is a partner of the edge $a$
+of $T$. -/
 theorem not_isBoundaryEdge_iff_exists_partner (T : 𝒯.elems) (a : Fin 3) :
     ¬ 𝒯.IsBoundaryEdge T a ↔ ∃ T' a', 𝒯.IsPartner T a T' a' := by
   constructor
@@ -1572,12 +1752,14 @@ theorem not_isBoundaryEdge_iff_exists_partner (T : 𝒯.elems) (a : Fin 3) :
     · exact hb T' hne a' (a' + 1) h
     · exact hb T' hne (a' + 1) a' h
 
-/-- An edge with a partner is not a boundary edge. -/
+/-- An edge that has a partner is not a boundary edge. -/
 theorem IsPartner.not_isBoundaryEdge {T T' : 𝒯.elems} {a a' : Fin 3}
     (h : 𝒯.IsPartner T a T' a') : ¬ 𝒯.IsBoundaryEdge T a :=
   (not_isBoundaryEdge_iff_exists_partner T a).2 ⟨T', a', h⟩
 
-/-- The triangle of the partner, on the edge of `T`, is nondegenerate. -/
+/-- If the edge $a'$ of $T'$ is a partner of the edge $a$ of $T$, then $T_{a+1} - T_a$ and
+$T'_{a'+2} - T_a$ are linearly independent: the triangle formed by the edge of $T$ and the third
+vertex of $T'$ is nondegenerate. -/
 theorem IsPartner.li {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a T' a') :
     LinearIndependent ℝ ![T.1 (a + 1) - T.1 a, T'.1 (a' + 2) - T.1 a] := by
   have hli' := 𝒯.li_rot T' a'
@@ -1586,8 +1768,9 @@ theorem IsPartner.li {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a 
   · rw [← h1, ← h2] at hli'
     exact linearIndependent_swap hli'
 
-/-- The open element of the partner, as the triangle on the edge of `T` with the partner's
-third vertex. -/
+/-- If the edge $a'$ of $T'$ is a partner of the edge $a$ of $T$, then the open element of $T'$ is
+the open triangle $T_a T_{a+1} T'_{a'+2}$, formed by the edge of $T$ and the third vertex of
+$T'$. -/
 theorem IsPartner.K_eq {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a T' a') :
     𝒯.K T' = openTriangle (T.1 a) (T.1 (a + 1)) (T'.1 (a' + 2)) := by
   rw [K_eq_rot T' a']
@@ -1595,9 +1778,14 @@ theorem IsPartner.K_eq {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T 
   · rw [h1, h2]
   · rw [h1, h2, openTriangle_swap]
 
-/-- **The partner lies on the other side of the edge**: the third vertices of an edge and of its
-partner lie strictly on opposite sides of the line through the edge (two triangles on the same
-side would overlap, against the disjointness of the open elements). -/
+/-- The partner lies on the other side of the edge. If the edge $a'$ of $T'$ is a partner of the
+edge $a$ of $T$, then the third vertices $T_{a+2}$ and $T'_{a'+2}$ lie strictly on opposite
+sides of the line through the edge: $$s(T_a, T_{a+1}, T_{a+2}) \, s(T_a, T_{a+1}, T'_{a'+2}) <
+0.$$
+
+If they were on the same side, the two open elements would meet
+(`EuclideanSpace.openTriangle_inter_nonempty_of_same_side`), against the disjointness of
+distinct open elements. -/
 theorem IsPartner.inner_perp_mul_neg {T T' : 𝒯.elems} {a a' : Fin 3}
     (h : 𝒯.IsPartner T a T' a') :
     ⟪perp (T.1 (a + 1) - T.1 a), T.1 (a + 2) - T.1 a⟫_ℝ
@@ -1611,9 +1799,13 @@ theorem IsPartner.inner_perp_mul_neg {T T' : 𝒯.elems} {a a' : Fin 3}
   obtain ⟨x, hx, hx'⟩ := openTriangle_inter_nonempty_of_same_side hpos
   exact Set.disjoint_left.1 hdisj hx hx'
 
-/-- **The partner of an interior edge is unique.** Two partners lie on the far side of the edge
-from `T`, hence on the same side of it, hence coincide; the edge index is then determined by the
-injectivity of the vertex triple. -/
+/-- The **partner of an interior edge is unique**. If the edge $a'$ of $T'$ and the edge $a''$ of
+$T''$ are both partners of the edge $a$ of $T$, then $T'' = T'$ and $a'' = a'$.
+
+Both partners lie on the far side of the edge from $T$
+(`Triangulation.IsPartner.inner_perp_mul_neg`), hence on the same side of it, hence their open
+elements meet and the elements coincide. The edge index is then determined because the vertices
+of an element are distinct. -/
 theorem partner_unique {T T' T'' : 𝒯.elems} {a a' a'' : Fin 3} (h : 𝒯.IsPartner T a T' a')
     (h' : 𝒯.IsPartner T a T'' a'') : T'' = T' ∧ a'' = a' := by
   have hTT : T'' = T' := by
@@ -1655,14 +1847,16 @@ theorem partner_unique {T T' T'' : 𝒯.elems} {a a' a'' : Fin 3} (h : 𝒯.IsPa
     clear h1 h2 h3 h4 hinj
     revert e1; revert a' a''; decide
 
-/-- The partner edge carries the same arclength measure. -/
+/-- A partner edge has the same arclength measure: if the edge $a'$ of $T'$ is a partner of the edge
+$a$ of $T$, then $\sigma_{T'_{a'} T'_{a'+1}} = \sigma_{T_a T_{a+1}}$. -/
 theorem IsPartner.edgeMeasure_eq {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a T' a') :
     edgeMeasure (T'.1 a') (T'.1 (a' + 1)) = edgeMeasure (T.1 a) (T.1 (a + 1)) := by
   obtain ⟨-, ⟨h1, h2⟩ | ⟨h1, h2⟩⟩ := h
   · rw [← h1, ← h2]
   · rw [← h1, ← h2, edgeMeasure_symm]
 
-/-- The partner edge carries the opposite outward normal. -/
+/-- A partner edge has the opposite outward normal: if the edge $a'$ of $T'$ is a partner of the
+edge $a$ of $T$, then $n_{T'_{a'} T'_{a'+1} T'_{a'+2}} = -n_{T_a T_{a+1} T_{a+2}}$. -/
 theorem IsPartner.edgeNormal_eq {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsPartner T a T' a') :
     edgeNormal (T'.1 a') (T'.1 (a' + 1)) (T'.1 (a' + 2))
       = -edgeNormal (T.1 a) (T.1 (a + 1)) (T.1 (a + 2)) := by
@@ -1674,20 +1868,23 @@ theorem IsPartner.edgeNormal_eq {T T' : 𝒯.elems} {a a' : Fin 3} (h : 𝒯.IsP
   · rw [← h1, ← h2, edgeNormal_symm hs']
     exact edgeNormal_eq_neg_of_mul_neg hneg
 
-/-- The partner of an interior edge, chosen. -/
+/-- A partner of an edge that is not a boundary edge, chosen by the axiom of choice. -/
 def partner (T : 𝒯.elems) (a : Fin 3) (h : ¬ 𝒯.IsBoundaryEdge T a) : 𝒯.elems × Fin 3 :=
   (((not_isBoundaryEdge_iff_exists_partner T a).1 h).choose,
     ((not_isBoundaryEdge_iff_exists_partner T a).1 h).choose_spec.choose)
 
-/-- The chosen partner is a partner. -/
+/-- The chosen partner `Triangulation.partner T a h` is a partner of the edge $a$ of $T$. -/
 theorem isPartner_partner (T : 𝒯.elems) (a : Fin 3) (h : ¬ 𝒯.IsBoundaryEdge T a) :
     𝒯.IsPartner T a (partner T a h).1 (partner T a h).2 :=
   ((not_isBoundaryEdge_iff_exists_partner T a).1 h).choose_spec.choose_spec
 
 /-! ### Boundary edges lie in the frontier -/
 
-/-- A point of an open edge of `T` lying in another closed element makes both endpoints of the
-edge vertices of that element. -/
+/-- Let $T' \neq T$ be elements of a triangulation, and let $x$ be a point of the open edge
+$(T_a, T_{a+1})$ that lies in the closed element of $T'$. Then both endpoints $T_a$ and
+$T_{a+1}$ are vertices of $T'$.
+
+This follows from the conformity axiom of `Triangulation`. -/
 theorem exists_eq_vertex_of_mem_closedK {T T' : 𝒯.elems} (hne : T' ≠ T) {a : Fin 3} {x : 𝔼₂}
     (hx : x ∈ openSegment ℝ (T.1 a) (T.1 (a + 1))) (hx' : x ∈ 𝒯.closedK T') :
     ∃ i j : Fin 3, T.1 a = T'.1 i ∧ T.1 (a + 1) = T'.1 j := by
@@ -1710,10 +1907,15 @@ theorem exists_eq_vertex_of_mem_closedK {T T' : 𝒯.elems} (hne : T' ≠ T) {a 
       subst hc' hd'
       exact ⟨d', c', hd, hc⟩
 
-/-- **A boundary edge lies in `∂Ω`** — from the four axioms of `Triangulation` alone. A point
-`x` of the open edge in `Ω` would either lie in another closed element, which then shares the
-edge (`conforming'`), or have a neighbourhood in `Ω` missing every other element, hence contained
-in the closed element of `T`, which the point `x − ε (R − P)` beyond the edge contradicts. -/
+/-- A **boundary edge lies in** $\partial\Omega$. If the edge $a$ of the element $T$ is a boundary
+edge of a triangulation of $\Omega$, then the segment $[T_a, T_{a+1}]$ lies in the frontier of
+$\Omega$.
+
+The proof uses only the axioms of `Triangulation`. Suppose a point $x$ of the open edge lies in
+$\Omega$. If $x$ lies in another closed element, that element shares the edge by conformity,
+against the hypothesis. Otherwise $x$ has a neighbourhood in $\Omega$ that misses every other
+closed element, so the neighbourhood lies in the closed element of $T$; the point
+$x - \varepsilon(T_{a+2} - T_a)$ beyond the edge contradicts this. -/
 theorem segment_subset_frontier_of_isBoundaryEdge {T : 𝒯.elems} {a : Fin 3}
     (h : 𝒯.IsBoundaryEdge T a) :
     segment ℝ (T.1 a) (T.1 (a + 1)) ⊆ frontier (Ω : Set 𝔼₂) := by
@@ -1753,9 +1955,13 @@ theorem segment_subset_frontier_of_isBoundaryEdge {T : 𝒯.elems} {a : Fin 3}
       (by rw [← e]; module)
     linarith [this.2]
 
-/-- **Distinct boundary edges have disjoint relative interiors**: two open edges of one element
-are disjoint by the barycentric coordinates, and a point of an open edge of `T` in another
-element makes the edge shared. -/
+/-- Distinct boundary edges have disjoint relative interiors. If the edge $a$ of $T$ and the edge
+$a'$ of $T'$ are boundary edges and $(T, a) \neq (T', a')$, then the open segments
+$(T_a, T_{a+1})$ and $(T'_{a'}, T'_{a'+1})$ are disjoint.
+
+Two open edges of one element are disjoint by the uniqueness of barycentric coordinates. A point
+of an open edge of $T$ in another closed element makes that edge shared
+(`Triangulation.exists_eq_vertex_of_mem_closedK`). -/
 theorem openSegment_disjoint_of_isBoundaryEdge {T T' : 𝒯.elems} {a a' : Fin 3}
     (h : 𝒯.IsBoundaryEdge T a) (h' : 𝒯.IsBoundaryEdge T' a') (hne : (T, a) ≠ (T', a')) :
     Disjoint (openSegment ℝ (T.1 a) (T.1 (a + 1))) (openSegment ℝ (T'.1 a') (T'.1 (a' + 1))) := by
@@ -1783,8 +1989,8 @@ theorem openSegment_disjoint_of_isBoundaryEdge {T T' : 𝒯.elems} {a a' : Fin 3
 
 variable (𝒯)
 
-/-- **The surface (arclength) measure of a triangulated domain**: the sum of the arclength
-measures of the boundary edges. -/
+/-- The **surface measure of a triangulated domain**: the sum $$\sigma = \sum_{(T, a)} \sigma_{T_a
+T_{a+1}}$$ of the arclength measures of all boundary edges $(T, a)$ of the triangulation. -/
 def boundaryMeasure : Measure 𝔼₂ :=
   ∑ e ∈ 𝒯.boundaryEdges, edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1))
 
@@ -1794,23 +2000,28 @@ instance isFiniteMeasure_boundaryMeasure : IsFiniteMeasure 𝒯.boundaryMeasure 
     rw [boundaryMeasure, Measure.finsetSum_apply]
     exact ENNReal.sum_lt_top.2 fun e _ ↦ measure_lt_top _ _⟩
 
-/-- The surface measure is carried by `∂Ω`. -/
+/-- The surface measure of a triangulated domain is carried by $\partial\Omega$: the complement of
+$\partial\Omega$ has measure zero. -/
 theorem boundaryMeasure_compl_frontier : 𝒯.boundaryMeasure (frontier (Ω : Set 𝔼₂))ᶜ = 0 := by
   rw [boundaryMeasure, Measure.finsetSum_apply]
   refine Finset.sum_eq_zero fun e he ↦ measure_mono_null (compl_subset_compl.2 ?_)
     (edgeMeasure_compl_segment _ _)
   exact segment_subset_frontier_of_isBoundaryEdge (mem_boundaryEdges.1 he)
 
-/-- The integral against the surface measure is the sum of the boundary edge integrals. -/
+/-- Let $f : \mathbb{R}^2 \to \mathbb{R}$ be integrable for the arclength measure of every boundary
+edge. Then the integral of $f$ for the surface measure is the sum over the boundary edges
+$(T, a)$ of $\int f \, d\sigma_{T_a T_{a+1}}$. -/
 theorem integral_boundaryMeasure {f : 𝔼₂ → ℝ}
     (hf : ∀ e ∈ 𝒯.boundaryEdges, Integrable f (edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)))) :
     ∫ x, f x ∂𝒯.boundaryMeasure
       = ∑ e ∈ 𝒯.boundaryEdges, ∫ x, f x ∂edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)) :=
   integral_finsetSum_measure hf
 
-/-- An open set meeting the relative interior of a boundary edge has positive surface measure.
-Unlike the `C¹` case, an open set meeting `∂Ω` only at a vertex may have surface measure zero,
-so the hypothesis names an edge. -/
+/-- Let $U \subseteq \mathbb{R}^2$ be open, and suppose that $U$ meets the open segment
+$(T_a, T_{a+1})$ of some boundary edge $(T, a)$. Then $U$ has positive surface measure.
+
+The hypothesis names an edge because, unlike on a $C^1$ domain, an open set that meets
+$\partial\Omega$ only at a vertex can have surface measure zero. -/
 theorem boundaryMeasure_pos_of_isOpen {U : Set 𝔼₂} (hU : IsOpen U)
     (hne : ∃ e ∈ 𝒯.boundaryEdges, (U ∩ openSegment ℝ (e.1.1 e.2) (e.1.1 (e.2 + 1))).Nonempty) :
     0 < 𝒯.boundaryMeasure U := by
@@ -1823,8 +2034,14 @@ theorem boundaryMeasure_pos_of_isOpen {U : Set 𝔼₂} (hU : IsOpen U)
   exact h1.trans_le h2
 
 open Classical in
-/-- **The outward unit normal of a triangulated domain**: on the relative interior of a boundary
-edge, the outward edge normal of its element; `0` elsewhere (at the vertices and off `∂Ω`). -/
+/-- The **outward unit normal of a triangulated domain**. At a point $x$ of the open segment
+$(T_a, T_{a+1})$ of a boundary edge $(T, a)$, its value is the edge normal
+$n_{T_a T_{a+1} T_{a+2}}$ of that edge in its element. At every other point, including the
+vertices and the points off $\partial\Omega$, its value is $0$.
+
+The boundary edge is chosen by the axiom of choice. By
+`Triangulation.openSegment_disjoint_of_isBoundaryEdge` it is unique, see
+`Triangulation.outwardNormal_eq_edgeNormal`. -/
 def outwardNormal : 𝔼₂ → 𝔼₂ := fun x ↦
   if h : ∃ e ∈ 𝒯.boundaryEdges, x ∈ openSegment ℝ (e.1.1 e.2) (e.1.1 (e.2 + 1)) then
     edgeNormal (h.choose.1.1 h.choose.2) (h.choose.1.1 (h.choose.2 + 1))
@@ -1833,8 +2050,11 @@ def outwardNormal : 𝔼₂ → 𝔼₂ := fun x ↦
 
 variable {𝒯}
 
-/-- On the relative interior of a boundary edge, the outward normal is the edge normal of its
-element (the edge is determined by `openSegment_disjoint_of_isBoundaryEdge`). -/
+/-- If $(T, a)$ is a boundary edge and $x$ lies on the open segment $(T_a, T_{a+1})$, then the
+outward normal at $x$ is the edge normal $n_{T_a T_{a+1} T_{a+2}}$.
+
+The boundary edge through $x$ is unique by
+`Triangulation.openSegment_disjoint_of_isBoundaryEdge`. -/
 theorem outwardNormal_eq_edgeNormal {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.IsBoundaryEdge T a)
     {x : 𝔼₂} (hx : x ∈ openSegment ℝ (T.1 a) (T.1 (a + 1))) :
     𝒯.outwardNormal x = edgeNormal (T.1 a) (T.1 (a + 1)) (T.1 (a + 2)) := by
@@ -1849,7 +2069,8 @@ theorem outwardNormal_eq_edgeNormal {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.IsBou
       (mem_boundaryEdges.1 hspec.1) h hne) hspec.2 hx
   rw [heq]
 
-/-- The outward normal is a unit vector almost everywhere for the surface measure. -/
+/-- The outward normal of a triangulated domain has norm $1$ almost everywhere for the surface
+measure. -/
 theorem ae_norm_outwardNormal : ∀ᵐ x ∂𝒯.boundaryMeasure, ‖𝒯.outwardNormal x‖ = 1 := by
   rw [boundaryMeasure, ae_finsetSum_measure_iff]
   intro e he
@@ -1857,7 +2078,8 @@ theorem ae_norm_outwardNormal : ∀ᵐ x ∂𝒯.boundaryMeasure, ‖𝒯.outwar
   rw [outwardNormal_eq_edgeNormal (mem_boundaryEdges.1 he) hx]
   exact norm_edgeNormal ((linearIndependent_pair_iff_inner_perp_ne_zero _ _).1 (𝒯.li_rot e.1 e.2))
 
-/-- The outward normal is measurable for the surface measure. -/
+/-- The outward normal of a triangulated domain is almost everywhere strongly measurable for the
+surface measure. -/
 theorem aestronglyMeasurable_outwardNormal :
     AEStronglyMeasurable 𝒯.outwardNormal 𝒯.boundaryMeasure := by
   rw [boundaryMeasure]
@@ -1869,23 +2091,29 @@ theorem aestronglyMeasurable_outwardNormal :
 
 /-! ### The divergence theorem on a triangulated domain -/
 
-/-- The edge term of the divergence theorem: the flux of `F` through the edge `a` of `T`. -/
+/-- The **edge term** of the divergence theorem: the flux $\int \langle F, n_{T_a T_{a+1} T_{a+2}}
+\rangle \, d\sigma_{T_a T_{a+1}}$ of the field $F$ through the edge $a$ of the element $T$. -/
 def edgeTerm (F : 𝔼₂ → 𝔼₂) (T : 𝒯.elems) (a : Fin 3) : ℝ :=
   ∫ x, ⟪F x, edgeNormal (T.1 a) (T.1 (a + 1)) (T.1 (a + 2))⟫_ℝ ∂edgeMeasure (T.1 a) (T.1 (a + 1))
 
-/-- The edge of an element lies in the closure of the domain. -/
+/-- For an element $T$ and indices $a, b$, the segment $[T_a, T_b]$ lies in the closure of $\Omega$.
+-/
 theorem segment_subset_closure (T : 𝒯.elems) (a b : Fin 3) :
     segment ℝ (T.1 a) (T.1 b) ⊆ closure (Ω : Set 𝔼₂) :=
   (𝒯.segment_subset_closedK T a b).trans (𝒯.closedK_subset_closure T)
 
-/-- The flux through an edge and through its partner cancel. -/
+/-- The edge terms of an edge and of its partner cancel: if the edge $a'$ of $T'$ is a partner of
+the edge $a$ of $T$, then the sum of their edge terms for $F$ is $0$, for every field $F$. -/
 theorem edgeTerm_add_edgeTerm_partner {F : 𝔼₂ → 𝔼₂} {T T' : 𝒯.elems} {a a' : Fin 3}
     (h : 𝒯.IsPartner T a T' a') : 𝒯.edgeTerm F T a + 𝒯.edgeTerm F T' a' = 0 := by
   unfold edgeTerm
   rw [h.edgeMeasure_eq, h.edgeNormal_eq]
   simp only [inner_neg_right, integral_neg, add_neg_cancel]
 
-/-- **The divergence theorem on a triangle, in edge terms.** -/
+/-- The divergence theorem on one element, in edge terms. Let $F$ be continuous on $\bar\Omega$ and
+of class $C^1$ up to the boundary on $\Omega$. Then for every element $T$, the integral of
+$\operatorname{div} F$ over the open element of $T$ is the sum of the three edge terms of $F$ on
+$T$. -/
 theorem integral_div_K_eq_sum_edgeTerm {F : 𝔼₂ → 𝔼₂}
     (hF : ContinuousOn F (closure (Ω : Set 𝔼₂))) (hF' : ContDiffOnClosure ℝ 1 F (Ω : Set 𝔼₂))
     (T : 𝒯.elems) : ∫ x in 𝒯.K T, div F x = ∑ a : Fin 3, 𝒯.edgeTerm F T a := by
@@ -1896,8 +2124,13 @@ theorem integral_div_K_eq_sum_edgeTerm {F : 𝔼₂ → 𝔼₂}
   rfl
 
 open Classical in
-/-- **A sum over the interior edges vanishes when the terms of partner edges cancel**: the map
-`partner` is a fixed-point-free involution of the interior edges. -/
+/-- A sum over the interior edges vanishes when the terms of partner edges cancel. Let $M$ be an
+additive commutative monoid and let $g$ assign an element $g(T, a) \in M$ to each edge $a$ of
+each element $T$. If $g(T, a) + g(T', a') = 0$ whenever the edge $a'$ of $T'$ is a partner of
+the edge $a$ of $T$, then the sum of $g(T, a)$ over all edges $(T, a)$ that are not boundary
+edges is $0$.
+
+The map `Triangulation.partner` is an involution without fixed points on the interior edges. -/
 theorem sum_interior_eq_zero_of_add_partner {M : Type*} [AddCommMonoid M]
     (g : 𝒯.elems → Fin 3 → M)
     (hg : ∀ T a T' a', 𝒯.IsPartner T a T' a' → g T a + g T' a' = 0) :
@@ -1919,28 +2152,38 @@ theorem sum_interior_eq_zero_of_add_partner {M : Type*} [AddCommMonoid M]
     exact Prod.ext e1 e2
 
 open Classical in
-/-- **The sum of the interior edge terms vanishes**: the map `partner` is a fixed-point-free
-involution of the interior edges under which the edge term changes sign. -/
+/-- The sum of the edge terms of a field $F$ over all interior edges is $0$, for every field $F$.
+The map `Triangulation.partner` is an involution without fixed points on the interior edges, and
+it changes the sign of the edge term. -/
 theorem sum_edgeTerm_interior_eq_zero (F : 𝔼₂ → 𝔼₂) :
     ∑ e ∈ Finset.univ.filter (fun e : 𝒯.elems × Fin 3 ↦ ¬ 𝒯.IsBoundaryEdge e.1 e.2),
       𝒯.edgeTerm F e.1 e.2 = 0 :=
   sum_interior_eq_zero_of_add_partner _ fun _ _ _ _ h ↦ edgeTerm_add_edgeTerm_partner h
 
 variable (𝒯) in
-/-- The integral over the domain is the sum of the integrals over the open elements. -/
+/-- Let $\mathcal{T}$ be a triangulation of $\Omega$ and let $A : \mathbb{R}^2 \to \mathbb{R}$ be
+integrable on $\Omega$. Then the integral of $A$ over $\Omega$ is the sum over the elements $T$
+of the integrals of $A$ over the open elements of $T$. -/
 theorem setIntegral_eq_sum_K {A : 𝔼₂ → ℝ} (hA : IntegrableOn A (Ω : Set 𝔼₂)) :
     ∫ x in (Ω : Set 𝔼₂), A x = ∑ T, ∫ x in 𝒯.K T, A x := by
   rw [← setIntegral_congr_set 𝒯.ae_eq_iUnion_K]
   exact integral_iUnion_fintype (fun T ↦ (𝒯.isOpen_K T).measurableSet) 𝒯.pairwise_disjoint_K
     fun T ↦ hA.mono_set (𝒯.K_subset T)
 
-/-- **The divergence theorem on a triangulated domain** (decision B6): for `F ∈ C¹(Ω̄)`,
-`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` with the surface measure `𝒯.boundaryMeasure` and the outward normal
-`𝒯.outwardNormal`. The integral over `Ω` is the sum over the open elements (they partition `Ω` up
-to a null set), each is the sum of its three edge terms (`integral_div_openTriangle`), the terms of
-the interior edges cancel in pairs (`sum_edgeTerm_interior_eq_zero`), and the boundary edges make
-up the surface integral. No hypothesis beyond the four axioms of `Triangulation` is needed: a slit
-along an interior edge is invisible to a field continuous across it. -/
+/-- The **divergence theorem on a triangulated domain**. Let $\mathcal{T}$ be a triangulation of the
+open set $\Omega \subseteq \mathbb{R}^2$, with surface measure $\sigma$ and outward unit normal
+$\nu$. Let $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on $\bar\Omega$ and of class $C^1$
+up to the boundary on $\Omega$. Then $$\int_\Omega \operatorname{div} F \, dx = \int \langle F,
+\nu \rangle \, d\sigma.$$
+
+No hypothesis beyond the axioms of `Triangulation` is needed: a slit along an interior edge does
+not change the integrals of a field that is continuous across it. The integral over $\Omega$ is
+the sum of the integrals over the open elements, which partition $\Omega$ up to a null set. Each
+of these is the sum of three edge terms (`EuclideanSpace.integral_div_openTriangle`), the terms
+of the interior edges cancel in pairs (`Triangulation.sum_edgeTerm_interior_eq_zero`), and the
+terms of the boundary edges make up the surface integral. The measure $\sigma$ is
+`Triangulation.boundaryMeasure`.
+The normal $\nu$ is `Triangulation.outwardNormal`. -/
 theorem integral_div_eq {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F (closure (Ω : Set 𝔼₂)))
     (hF' : ContDiffOnClosure ℝ 1 F (Ω : Set 𝔼₂)) :
     ∫ x in (Ω : Set 𝔼₂), div F x = ∫ x, ⟪F x, 𝒯.outwardNormal x⟫_ℝ ∂𝒯.boundaryMeasure := by
@@ -1971,10 +2214,13 @@ theorem integral_div_eq {F : 𝔼₂ → 𝔼₂} (hF : ContinuousOn F (closure 
 
 variable (𝒯)
 
-/-- **A triangulated domain is a `BoundaryData`**, with the surface measure `𝒯.boundaryMeasure`
-and the outward normal `𝒯.outwardNormal` — the instance the polygon consumers of Atkinson–Han
-§11.4 and §13.1 and QSS (12.95) take; its trace family is `Triangulation.traceFamily` of
-`Boundary/PolygonTrace.lean`. -/
+/-- The **boundary data of a triangulated domain**: $\Omega$ with the surface measure
+`Triangulation.boundaryMeasure` and the outward unit normal `Triangulation.outwardNormal` is a
+`BoundaryData`, whose divergence theorem is `Triangulation.integral_div_eq`.
+
+This is the boundary data that the polygonal domains of [han2009theoretical] §11.4 and §13.1 and
+of equation (12.95) of [quarteroni2000numerical] use. Its trace family is
+`Triangulation.traceFamily` of `Numlib.Analysis.Sobolev.Boundary.PolygonTrace`. -/
 def boundaryData : BoundaryData Ω where
   σ := 𝒯.boundaryMeasure
   ν := 𝒯.outwardNormal
@@ -1985,28 +2231,37 @@ def boundaryData : BoundaryData Ω where
   ae_norm_ν := ae_norm_outwardNormal
   integral_div_eq _ hF hF' := integral_div_eq hF hF'
 
+/-- The surface measure of the boundary data of a triangulated domain is
+`Triangulation.boundaryMeasure`. -/
 @[simp] theorem boundaryData_σ : 𝒯.boundaryData.σ = 𝒯.boundaryMeasure := rfl
 
+/-- The normal of the boundary data of a triangulated domain is `Triangulation.outwardNormal`. -/
 @[simp] theorem boundaryData_ν : 𝒯.boundaryData.ν = 𝒯.outwardNormal := rfl
 
 /-! ### The no-slit hypothesis of a polygonal domain -/
 
-/-- **The no-slit hypothesis of a polygonal domain**: the relative interior of every interior
-edge lies in `Ω`. It is what the trace theory on a polygon needs (the one-sided traces of a
-`W^{1,p}(Ω)` function agree across an interior edge only when `Ω` is on both sides of it) and
-what `FrontierSubsetEdges` does not give: the open square minus a closed interior edge of its
-triangulation satisfies the four axioms and `FrontierSubsetEdges` but not this; conversely a disc
-punctured at a vertex satisfies this and not `FrontierSubsetEdges`. Both hold for a polygon in the
-book's sense, and the polygon consumers carry both. -/
+/-- The **no-slit hypothesis** of a polygonal domain: for every edge $(T, a)$ that is not a boundary
+edge, the open segment $(T_a, T_{a+1})$ lies in $\Omega$.
+
+The trace theory on a polygonal domain needs this hypothesis: the one-sided traces of a function
+in $W^{1,p}(\Omega)$ agree across an interior edge only when $\Omega$ lies on both sides of the
+edge. The hypothesis `Triangulation.FrontierSubsetEdges` does not give it. The open square minus
+a closed interior edge of a triangulation of the square satisfies the axioms of `Triangulation`
+and `Triangulation.FrontierSubsetEdges`, but not this hypothesis. Conversely, a triangulated
+polygonal domain with one interior vertex removed satisfies this hypothesis but not
+`Triangulation.FrontierSubsetEdges`. A polygonal domain in the sense of [han2009theoretical]
+§10.2 satisfies both, and the results on polygonal domains assume both. -/
 def InteriorEdgesSubset : Prop :=
   ∀ (T : 𝒯.elems) (a : Fin 3), ¬ 𝒯.IsBoundaryEdge T a →
     openSegment ℝ (T.1 a) (T.1 (a + 1)) ⊆ Ω
 
 variable {𝒯}
 
-/-- **Without slits, the boundary is the vertices and the open boundary edges**: a point of `∂Ω`
-is a vertex or lies on the relative interior of a boundary edge, so that the surface measure sees
-all of `∂Ω` but finitely many points. -/
+/-- Without slits, the boundary consists of the vertices and the open boundary edges. Suppose that
+$\mathcal{T}$ satisfies `Triangulation.InteriorEdgesSubset`, and let $x \in \partial\Omega$.
+Then $x$ is a vertex of the triangulation, or $x$ lies on the open segment $(T_a, T_{a+1})$ of a
+boundary edge $(T, a)$. So the surface measure sees all of $\partial\Omega$ except finitely many
+points. -/
 theorem mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier (h : 𝒯.InteriorEdgesSubset)
     {x : 𝔼₂} (hx : x ∈ frontier (Ω : Set 𝔼₂)) :
     x ∈ 𝒯.vertices ∨ ∃ T a, 𝒯.IsBoundaryEdge T a ∧ x ∈ openSegment ℝ (T.1 a) (T.1 (a + 1)) := by
@@ -2031,20 +2286,21 @@ theorem mem_vertices_or_exists_isBoundaryEdge_of_mem_frontier (h : 𝒯.Interior
     · exact Or.inr ⟨T, a, hb, ha⟩
     · exact absurd (h T a hb ha) hxΩ
 
-/-! ### Boundary and interior integrals over the elements -/
+/-! ### Integrals over the boundary edges -/
 
 section Integrals
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- Almost everywhere for the boundary measure means almost everywhere for the arclength measure
-of every boundary edge. -/
+/-- A property holds almost everywhere for the surface measure of a triangulated domain if and only
+if it holds almost everywhere for the arclength measure of every boundary edge. -/
 theorem ae_boundaryMeasure_iff {P : 𝔼₂ → Prop} :
     (∀ᵐ x ∂𝒯.boundaryMeasure, P x) ↔
       ∀ e ∈ 𝒯.boundaryEdges, ∀ᵐ x ∂edgeMeasure (e.1.1 e.2) (e.1.1 (e.2 + 1)), P x := by
   rw [boundaryMeasure, ae_finsetSum_measure_iff]
 
-/-- The arclength measure of a boundary edge is dominated by the boundary measure. -/
+/-- If $(T, a)$ is a boundary edge, the arclength measure $\sigma_{T_a T_{a+1}}$ is at most the
+surface measure of the triangulated domain. -/
 theorem edgeMeasure_le_boundaryMeasure {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.IsBoundaryEdge T a) :
     edgeMeasure (T.1 a) (T.1 (a + 1)) ≤ 𝒯.boundaryMeasure := by
   have h2 := Finset.single_le_sum
@@ -2056,7 +2312,11 @@ theorem edgeMeasure_le_boundaryMeasure {T : 𝒯.elems} {a : Fin 3} (h : 𝒯.Is
 /-! ### The interior integrals over the elements -/
 
 include 𝒯 in
-/-- A function continuous on `closure Ω` lies in every `L^p(Ω)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^2$ be an open set that has a triangulation, and let
+$f : \mathbb{R}^2 \to \mathbb{R}$ be continuous on $\bar\Omega$. Then $f \in L^q(\Omega)$ for
+every $q \in [0, \infty]$.
+
+The triangulation makes $\Omega$ bounded, so $\bar\Omega$ is compact. -/
 theorem memLp_restrict_of_continuousOn {f : 𝔼₂ → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼₂)))
     (q : ℝ≥0∞) : MemLp f q (volume.restrict (Ω : Set 𝔼₂)) := by
   have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼₂)) :=
@@ -2067,7 +2327,9 @@ theorem memLp_restrict_of_continuousOn {f : 𝔼₂ → ℝ} (hf : ContinuousOn 
   exact hC x (subset_closure hx)
 
 include 𝒯 in
-/-- An `L^p(Ω)` function times a function continuous on `closure Ω` is integrable on `Ω`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^2$ be an open set that has a triangulation, let
+$1 \le p \le \infty$, let $f \in L^p(\Omega)$, and let $g$ be continuous on $\bar\Omega$. Then
+$fg$ is integrable on $\Omega$. -/
 theorem integrableOn_mul_of_memLp_of_continuousOn {f g : 𝔼₂ → ℝ}
     (hf : MemLp f p (volume.restrict (Ω : Set 𝔼₂))) (hg : ContinuousOn g (closure (Ω : Set 𝔼₂))) :
     IntegrableOn (fun x ↦ f x * g x) (Ω : Set 𝔼₂) := by

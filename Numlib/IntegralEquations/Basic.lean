@@ -15,54 +15,84 @@ import Numlib.Nonlinear.Nemytskii
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
-# Integral operators on a compact interval
+# Integral operators on spaces of continuous functions
 
-The Fredholm, Urysohn and Volterra integral operators on the Banach space `C(Set.Icc a b, ℝ)` of
-continuous real functions on a compact interval, and the estimates on which the classical existence
-theorems for integral equations of the second kind rest.  The operators, their norms and the
-factorial estimate are as in [han2009theoretical], §2.2, §2.3 and §5.2, which every declaration
-below cites; [kress1989linear], is the standard monograph on the same material.
+This module defines the Fredholm, Urysohn and Volterra integral operators on the Banach space
+$C[a, b]$ of continuous real functions on a compact interval, and proves the estimates on which the
+classical existence theorems for integral equations of the second kind rest. For a continuous kernel
+$k$, the Fredholm operator $(Ku)(x) = \int_a^b k(x, y) u(y) \, dy$ is bounded with norm
+$\max_x \int_a^b |k(x, y)| \, dy$, and it is compact. The Urysohn operator $u \mapsto \left( x
+\mapsto \int_a^b k(x, y, u(y)) \, dy \right)$ is Lipschitz and Fréchet differentiable under
+conditions on $k$. The iterates of a Volterra operator $u \mapsto \left( t \mapsto \int_a^t k(t, s,
+u(s)) \, ds \right)$ satisfy the factorial estimate $(M(b - a))^m / m!$, and in the Bielecki norm
+the Volterra operator itself is a contraction. The presentation follows [han2009theoretical], §2.2,
+§2.3 and §5.2; [kress1989linear] is a standard monograph on the same material.
 
-* `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on `C(X,
-  ℝ)` for a compact space `X` with a finite Borel measure `μ`, and `IntegralOperator.norm_kernelCLM`
-  computes its operator norm as `⨆ x, ∫ y, |k (x, y)| dμ`. The statement is at that generality
-  because a compact interval and a circle are both instances, and the argument uses nothing of
-  either.
-* `IntegralOperator.fredholm` is the bounded operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)`
-  attached to a continuous kernel, the case `X = Set.Icc a b` of the above
-  (`IntegralOperator.fredholm_eq_kernelCLM`), and `IntegralOperator.norm_fredholm` computes its
-  operator norm as `⨆ x, ∫ y in a..b, |k (x, y)|`.
-* `IntegralOperator.isCompactOperator_kernelCLM` and `IntegralOperator.isCompactOperator_fredholm`
-  are the compactness of those operators, by Arzelà–Ascoli: the image of the unit ball is uniformly
-  bounded and equicontinuous, the latter because
-  `IntegralOperator.abs_kernelCLM_sub_kernelCLM_le` bounds the oscillation of `K u` by the `L¹`
-  distance between two rows of the kernel. This is what lets a projection or Nyström method for an
-  equation of the second kind discharge its compactness hypothesis on a concrete operator.
-* `IntegralOperator.degenerateKernel` is the separable kernel `∑ i, β i x * γ i y`, whose operator
-  is the finite-rank map `u ↦ ∑ i, (∫ γ i u) • β i`
-  (`IntegralOperator.kernelCLM_degenerateKernel`).
-* `IntegralOperator.regionMeasure` is the ambient volume measure read on a subset `D ⊆ ℝ^d`, so
-  that the operators above act on `C(D)` for a compact region `D` and not only on an interval.
-* `IntegralOperator.iccMeasure` is Lebesgue measure on `Set.Icc a b` read on the subtype, the
-  measure the Fredholm operator integrates against
-  (`IntegralOperator.fredholm_eq_kernelCLM`); `IntegralOperator.iccToLp` is the inclusion of
-  `C(Set.Icc a b, ℝ)` into `L²(a, b)` against it, of norm at most `√(b - a)`
-  (`IntegralOperator.norm_iccToLp_le`), along which a uniform-norm approximation theorem becomes
-  an `L²` one.
-* `IntegralOperator.urysohn` is its nonlinear companion `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))`,
-  Lipschitz with constant `L * (b - a)` when the kernel is `L`-Lipschitz in its last argument
-  (`IntegralOperator.lipschitzWith_urysohn`), and Fréchet differentiable with derivative the
-  Fredholm operator of the kernel `∂_z k (x, y, u y)` when that partial derivative is continuous
-  (`IntegralOperator.hasFDerivAt_urysohn`).
-* `IntegralOperator.volterra` is the Volterra operator `u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))`, whose
-  iterates contract like `(M (b - a)) ^ m / m !` (`IntegralOperator.norm_iterate_volterra_sub_le`),
-  so that some power of it is a contraction however large the Lipschitz constant `M` is.
-* `IntegralOperator.Bielecki` is the same vector space under the weighted norm `‖u‖ = ⨆ t, exp (-(β
-  (t - a))) * |u t|`, in which a Volterra operator is already a contraction, with constant `M / β`
-  (`IntegralOperator.contractingWith_volterra_bielecki`).
+The linear operator is first defined on $C(X)$ for a compact space $X$ with a finite Borel measure
+$\mu$, as $(Ku)(x) = \int k(x, y) u(y) \, d\mu(y)$. The norm formula and the compactness are proved
+at this generality, because a compact interval and a circle are both instances and the proofs use
+nothing of either. The Fredholm operator is the case of $X = [a, b]$ with Lebesgue measure.
 
-Every operator here carries a proof `hab : a ≤ b`, which is what lets the real integration variable
-be clamped back into `Set.Icc a b` by `Set.projIcc`.
+## Main definitions
+
+* `IntegralOperator.kernelCLM`: the operator $(Ku)(x) = \int k(x, y) u(y) \, d\mu(y)$ on $C(X)$ of a
+  continuous kernel.
+* `IntegralOperator.degenerateKernel`: the degenerate kernel $\sum_i \beta_i(x) \gamma_i(y)$.
+* `IntegralOperator.regionMeasure`: the volume measure on a subset $D$ of a measure space, as a
+  measure on the subtype $D$.
+* `IntegralOperator.iccMeasure`: Lebesgue measure on $[a, b]$, as a measure on the subtype
+  `Set.Icc a b`.
+* `IntegralOperator.iccToLp`: the inclusion of $C[a, b]$ into $L^2(a, b)$.
+* `IntegralOperator.urysohn`: the Urysohn operator $u \mapsto \left( x \mapsto \int_a^b k(x, y,
+  u(y)) \, dy \right)$.
+* `IntegralOperator.fredholm`: the Fredholm operator $u \mapsto \left( x \mapsto \int_a^b k(x, y)
+  u(y) \, dy \right)$.
+* `IntegralOperator.volterra` and `IntegralOperator.volterraCLM`: the nonlinear and the linear
+  Volterra operators.
+* `IntegralOperator.Bielecki`: $C[a, b]$ with the Bielecki norm $\sup_t e^{-\beta(t - a)} |u(t)|$.
+
+## Main results
+
+* `IntegralOperator.norm_kernelCLM`: $\|K\| = \sup_x \int |k(x, y)| \, d\mu(y)$.
+* `IntegralOperator.isCompactOperator_kernelCLM`: the operator of a continuous kernel is compact.
+* `IntegralOperator.kernelCLM_degenerateKernel`: the operator of a degenerate kernel is $u \mapsto
+  \sum_i \left( \int \gamma_i u \, d\mu \right) \beta_i$, so it has finite rank.
+* `IntegralOperator.norm_iccToLp_le`: $\|f\|_{L^2(a, b)} \le \sqrt{b - a} \, \|f\|_\infty$.
+* `IntegralOperator.fredholm_eq_kernelCLM`: the Fredholm operator is the operator of Lebesgue
+  measure on $[a, b]$.
+* `IntegralOperator.norm_fredholm` and `IntegralOperator.isCompactOperator_fredholm`: the norm
+  formula and the compactness of the Fredholm operator.
+* `IntegralOperator.lipschitzWith_urysohn`: the Urysohn operator is Lipschitz with constant
+  $L(b - a)$ if $k$ is $L$-Lipschitz in its last argument.
+* `IntegralOperator.hasFDerivAt_urysohn`: the Fréchet derivative of the Urysohn operator at $u$ is
+  the Fredholm operator of the kernel $\partial_z k(x, y, u(y))$.
+* `IntegralOperator.norm_iterate_volterra_sub_le`: the $m$-th iterate of a Volterra operator is
+  Lipschitz with constant $(M(b - a))^m / m!$.
+* `IntegralOperator.exists_contractingWith_iterate_volterra`: some iterate of a Volterra operator is
+  a contraction.
+* `IntegralOperator.norm_volterraCLM_pow_le`: $\|V^m\| \le (\|k\| (b - a))^m / m!$ for a linear
+  Volterra operator $V$.
+* `IntegralOperator.contractingWith_volterra_bielecki`: in the Bielecki norm with $\beta > M$, a
+  Volterra operator is a contraction with constant $M / \beta$.
+
+## Proof outline
+
+The compactness of $K$ follows from the Arzelà–Ascoli theorem. The image of the unit ball is
+uniformly bounded, and it is equicontinuous because $|(Ku)(x) - (Ku)(x_0)| \le \|u\| \int |k(x, y) -
+k(x_0, y)| \, d\mu(y)$, where the right side is continuous in $x$ and vanishes at $x_0$. The
+factorial estimate follows by induction on $m$ from its pointwise form
+`IntegralOperator.abs_iterate_volterra_sub_apply_le`, which bounds the error at $t$ by
+$(M(t - a))^m / m!$.
+
+## Implementation notes
+
+* Every operator on $C[a, b]$ takes a proof `hab : a ≤ b`. With it, the real integration variable is
+  mapped back into `Set.Icc a b` by the clamping map `Set.projIcc a b hab`, which is the identity on
+  $[a, b]$. So the integrand $k(x, y)$ for real $y$ is `k (x, projIcc a b hab y)`.
+* The compactness of `IntegralOperator.fredholm` is the hypothesis that a projection or Nyström
+  method for an equation of the second kind needs for a concrete operator.
+* The Bielecki space is a type synonym for `C(Set.Icc a b, ℝ)` with another norm. The identity map
+  between the two is `IntegralOperator.Bielecki.equiv`.
 -/
 
 open MeasureTheory Metric Set
@@ -79,18 +109,21 @@ section Clamp
 
 variable (hab : a ≤ b)
 
-/-- A continuous function on `Set.Icc a b` composed with the clamping map is continuous on `ℝ`. -/
+/-- Let $a \le b$. For $u \in C[a, b]$, the function $y \mapsto u(\pi(y))$ on $\mathbb{R}$ is
+continuous, where $\pi = $ `Set.projIcc a b hab` is the clamping map from $\mathbb{R}$ onto
+$[a, b]$. -/
 @[fun_prop]
 theorem continuous_apply_projIcc (u : C(Icc a b, ℝ)) :
     Continuous fun y : ℝ => u (projIcc a b hab y) :=
   u.continuous.comp continuous_projIcc
 
-/-- Clamping fixes a point already in the interval, so it does not change the value there. -/
+/-- Let $a \le b$. For $u \in C[a, b]$ and $y \in [a, b]$, clamping does not change the value:
+$u(\pi(y)) = u(y)$, where $\pi$ is the clamping map `Set.projIcc a b hab`. -/
 theorem apply_projIcc_of_mem (u : C(Icc a b, ℝ)) {y : ℝ} (hy : y ∈ Icc a b) :
     u (projIcc a b hab y) = u ⟨y, hy⟩ := by
   rw [projIcc_of_mem]
 
-/-- Clamping a point of the interval returns that point. -/
+/-- Let $a \le b$. For $y \in [a, b]$, the clamping map `Set.projIcc a b hab` maps $y$ to $y$. -/
 @[simp]
 theorem coe_projIcc_of_mem {y : ℝ} (hy : y ∈ Icc a b) :
     ((projIcc a b hab y : Icc a b) : ℝ) = y := by
@@ -105,18 +138,22 @@ section Kernel
 variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- A continuous function on a compact space is integrable for every finite measure. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$. Every $u \in C(X)$ is
+$\mu$-integrable. -/
 theorem integrable_of_continuousMap (u : C(X, ℝ)) : Integrable u μ :=
   (integrable_const ‖u‖).mono' (by fun_prop)
     (Filter.Eventually.of_forall fun x => u.norm_coe_le_norm x)
 
-/-- A row `y ↦ k (x, y)` of a continuous kernel is integrable for every finite measure. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $k$ be a continuous kernel
+on $X \times X$. For every $x \in X$, the row $y \mapsto k(x, y)$ is $\mu$-integrable. -/
 theorem integrable_kernel_row (k : C(X × X, ℝ)) (x : X) : Integrable (fun y => k (x, y)) μ := by
   have hc : Continuous fun y : X => k (x, y) := k.continuous.comp (by fun_prop)
   exact (integrable_const ‖k‖).mono' hc.aestronglyMeasurable
     (Filter.Eventually.of_forall fun y => k.norm_coe_le_norm _)
 
-/-- The integrand `y ↦ k (x, y) u y` of a kernel operator is integrable for every finite measure. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous kernel on
+$X \times X$, and let $u \in C(X)$. For every $x \in X$, the function $y \mapsto k(x, y) u(y)$
+is $\mu$-integrable. -/
 theorem integrable_kernel_mul (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
     Integrable (fun y => k (x, y) * u y) μ := by
   have hc : Continuous fun y : X => k (x, y) * u y :=
@@ -126,12 +163,11 @@ theorem integrable_kernel_mul (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
   rw [norm_mul]
   exact mul_le_mul (k.norm_coe_le_norm _) (u.norm_coe_le_norm _) (norm_nonneg _) (norm_nonneg _)
 
-/-- The integral of a continuous kernel against a continuous function depends continuously on the
-row index.
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous kernel on
+$X \times X$, and let $u \in C(X)$. Then $x \mapsto \int k(x, y) u(y) \, d\mu(y)$ is continuous.
 
-A compact space carries no uniform structure to appeal to, so the uniformity in `y` that the
-estimate needs comes from the tube lemma in the form
-`IsCompact.eventually_forall_of_forall_eventually`. -/
+A compact space has no uniform structure, so the uniformity in $y$ that the estimate needs comes
+from the tube lemma, in the form `IsCompact.eventually_forall_of_forall_eventually`. -/
 theorem continuous_integral_kernel (k : C(X × X, ℝ)) (u : C(X, ℝ)) :
     Continuous fun x => ∫ y, k (x, y) * u y ∂μ := by
   refine continuous_iff_continuousAt.2 fun x₀ => Metric.tendsto_nhds.2 fun ε hε => ?_
@@ -164,18 +200,21 @@ theorem continuous_integral_kernel (k : C(X × X, ℝ)) (u : C(X, ℝ)) :
     _ = ε * c / (c + 1) := by rw [hc]; field_simp
     _ < ε := by rw [div_lt_iff₀ hc1]; nlinarith
 
-/-- The integral of a row of a continuous kernel depends continuously on the row index. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $k$ be a continuous kernel
+on $X \times X$. Then $x \mapsto \int k(x, y) \, d\mu(y)$ is continuous. -/
 theorem continuous_integral_row (k : C(X × X, ℝ)) : Continuous fun x => ∫ y, k (x, y) ∂μ := by
   simpa using continuous_integral_kernel μ k 1
 
-/-- **The kernel integral operator** `u ↦ (x ↦ ∫ y, k (x, y) u y dμ)` of a continuous kernel `k :
-C(X × X, ℝ)`, as a bounded linear operator on the Banach space `C(X, ℝ)` of continuous real
-functions on a compact space `X` carrying a finite Borel measure `μ`.
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $k$ be a continuous real
+kernel on $X \times X$. The **kernel integral operator** of $k$ is the bounded linear operator
+$K$ on $C(X)$ given by
+$$(Ku)(x) = \int k(x, y) \, u(y) \, d\mu(y).$$
 
-This is the Fredholm integral operator at the generality at which the norm formula
-`IntegralOperator.norm_kernelCLM` holds: `IntegralOperator.fredholm` is the case of a compact
-interval with Lebesgue measure (`IntegralOperator.fredholm_eq_kernelCLM`), and a convolution
-operator on a circle is another instance. -/
+This is the Fredholm integral operator at the generality of the norm formula
+`IntegralOperator.norm_kernelCLM`. The operator `IntegralOperator.fredholm` is the case of a
+compact interval with Lebesgue measure (`IntegralOperator.fredholm_eq_kernelCLM`), and a
+convolution operator on a circle is another case. The operator is built with the bound
+$\|k\|_\infty \, \mu(X)$. -/
 noncomputable def kernelCLM (k : C(X × X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   LinearMap.mkContinuous
     { toFun := fun u => ⟨fun x => ∫ y, k (x, y) * u y ∂μ, continuous_integral_kernel μ k u⟩
@@ -203,14 +242,15 @@ noncomputable def kernelCLM (k : C(X × X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ)
             norm_integral_le_of_norm_le_const (Filter.Eventually.of_forall hle)
         _ = ‖k‖ * μ.real univ * ‖u‖ := by ring
 
-/-- The defining formula of `IntegralOperator.kernelCLM`. -/
+/-- The kernel integral operator maps $u$ to $x \mapsto \int k(x, y) u(y) \, d\mu(y)$. -/
 @[simp]
 theorem kernelCLM_apply (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
     kernelCLM μ k u x = ∫ y, k (x, y) * u y ∂μ :=
   rfl
 
-/-- Every row integral of the kernel bounds the operator norm of a kernel operator from above; this
-is the easy half of `IntegralOperator.norm_kernelCLM`. -/
+/-- Let $C \ge 0$. If $\int |k(x, y)| \, d\mu(y) \le C$ for every $x \in X$, then the kernel
+integral operator has norm at most $C$. This is the easy half of
+`IntegralOperator.norm_kernelCLM`. -/
 theorem norm_kernelCLM_le {k : C(X × X, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, (∫ y, |k (x, y)| ∂μ) ≤ C) : ‖kernelCLM μ k‖ ≤ C := by
   refine ContinuousLinearMap.opNorm_le_bound _ hC fun u => ?_
@@ -228,13 +268,15 @@ theorem norm_kernelCLM_le {k : C(X × X, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     _ = (∫ y, |k (x, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
     _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (h x) (norm_nonneg u)
 
-/-- **The operator norm of a kernel integral operator** on a compact space is the largest row
-integral of its kernel, `‖K‖ = max_x ∫ |k (x, y)| dμ y` ([han2009theoretical], (2.2.8), there for a
-compact interval).
+/-- Let $X$ be a nonempty compact space with a finite Borel measure $\mu$, and let $k$ be a
+continuous kernel on $X \times X$. Then the kernel integral operator $K$ has the norm
+$$\|K\| = \sup_{x \in X} \int |k(x, y)| \, d\mu(y).$$
+This is (2.2.8) of [han2009theoretical], where it is stated for a compact interval.
 
-The lower bound comes from testing `K` against `y ↦ k (x₀, y) / (|k (x₀, y)| + δ)`, a continuous
-function of norm at most one that approximates the sign of `k (x₀, ·)`; the elementary inequality
-`t² / (|t| + δ) ≥ |t| - δ` is the whole of it, so no convergence theorem is needed. -/
+The supremum is attained, because the row integral is continuous in $x$. For the lower bound,
+$K$ is applied to $y \mapsto k(x_0, y) / (|k(x_0, y)| + \delta)$, a continuous function of norm
+at most $1$ that approximates the sign of $k(x_0, \cdot)$. The elementary inequality
+$t^2 / (|t| + \delta) \ge |t| - \delta$ then suffices, and no convergence theorem is needed. -/
 theorem norm_kernelCLM [Nonempty X] (k : C(X × X, ℝ)) :
     ‖kernelCLM μ k‖ = ⨆ x, ∫ y, |k (x, y)| ∂μ := by
   have hmnn : (0 : ℝ) ≤ μ.real univ := measureReal_nonneg
@@ -288,18 +330,21 @@ theorem norm_kernelCLM [Nonempty X] (k : C(X × X, ℝ)) :
     nlinarith
   linarith [hlow _ hd]
 
-/-! #### Compactness of a kernel operator -/
+/-! ### Compactness of a kernel operator -/
 
-/-- The `L¹` distance between two rows of a continuous kernel depends continuously on the row
-index. Together with its vanishing at `x = x₀` this is the equicontinuity estimate behind
-`IntegralOperator.isCompactOperator_kernelCLM`. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous kernel on
+$X \times X$, and let $x_0 \in X$. Then the $L^1$ distance $x \mapsto \int |k(x, y) - k(x_0, y)|
+\, d\mu(y)$ between two rows is continuous. Since it vanishes at $x = x_0$, this gives the
+equicontinuity in `IntegralOperator.isCompactOperator_kernelCLM`. -/
 theorem continuous_integral_abs_sub_row (k : C(X × X, ℝ)) (x₀ : X) :
     Continuous fun x => ∫ y, |k (x, y) - k (x₀, y)| ∂μ :=
   continuous_integral_row μ ⟨fun p => |k p - k (x₀, p.2)|, by fun_prop⟩
 
-/-- **The rows of a kernel operator are controlled by the rows of its kernel**: the values of
-`kernelCLM μ k u` at two points differ by at most `‖u‖` times the `L¹` distance between the
-corresponding rows of `k`. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous kernel on
+$X \times X$, and let $K$ be its kernel integral operator. For every $u \in C(X)$ and
+$x, x_0 \in X$,
+$$|(Ku)(x) - (Ku)(x_0)| \le \left( \int |k(x, y) - k(x_0, y)| \, d\mu(y) \right) \|u\|.$$
+-/
 theorem abs_kernelCLM_sub_kernelCLM_le (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x x₀ : X) :
     |kernelCLM μ k u x - kernelCLM μ k u x₀| ≤ (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := by
   have hsub : Integrable (fun y => k (x, y) * u y - k (x₀, y) * u y) μ :=
@@ -318,15 +363,15 @@ theorem abs_kernelCLM_sub_kernelCLM_le (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x x
         integral_mono hsub.abs (hrow.mul_const ‖u‖) hpt
     _ = (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
 
-/-- **A kernel operator with a continuous kernel is a compact operator** on `C(X, ℝ)`, for `X` a
-compact space carrying a finite Borel measure ([han2009theoretical], Example 2.8.8;
-[kress1989linear], Theorem 2.20).
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $k$ be a continuous kernel
+on $X \times X$. Then the kernel integral operator of $k$ is a compact operator on $C(X)$. This
+is Example 2.8.8 of [han2009theoretical] and Theorem 2.20 of [kress1989linear].
 
-The image of the closed unit ball is uniformly bounded by `‖kernelCLM μ k‖` and equicontinuous,
-because `IntegralOperator.abs_kernelCLM_sub_kernelCLM_le` bounds the oscillation of `K u` by the
-`L¹` distance between two rows of `k`, which is continuous in the row index and vanishes on the
-diagonal; Arzelà–Ascoli then applies. Note that no uniform structure on `X` is used: pointwise
-equicontinuity is all that `ContinuousMap.isCompact_closure_of_forall_norm_le` asks for. -/
+The image of the closed unit ball is uniformly bounded by $\|K\|$. It is equicontinuous, because
+`IntegralOperator.abs_kernelCLM_sub_kernelCLM_le` bounds the variation of $Ku$ by the $L^1$
+distance between two rows of $k$, which is continuous in the row index and vanishes on the
+diagonal. Then the Arzelà–Ascoli theorem applies. No uniform structure on $X$ is used:
+`ContinuousMap.isCompact_closure_of_forall_norm_le` needs only equicontinuity at each point. -/
 theorem isCompactOperator_kernelCLM (k : C(X × X, ℝ)) : IsCompactOperator (kernelCLM μ k) := by
   refine (isCompactOperator_iff_isCompact_closure_image_closedBall
     (kernelCLM μ k : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) one_pos).2 ?_
@@ -367,14 +412,20 @@ section Degenerate
 
 variable {X : Type*} [TopologicalSpace X] {n : ℕ}
 
-/-- **A degenerate (finite-rank) kernel** `k (x, y) = ∑ i, β i x * γ i y`, the separable kernel of
-a finite sum of products ([han2009theoretical], Example 2.8.5). Both families are taken continuous;
-the book allows the `γ i` to be merely integrable, which the continuous-kernel operator
-`IntegralOperator.kernelCLM` does not admit and which no consumer of the Example needs. -/
+/-- Let $X$ be a topological space, and let $\beta_1, \dots, \beta_n$ and
+$\gamma_1, \dots, \gamma_n$ be continuous real functions on $X$. The **degenerate kernel** of
+these functions is
+$$k(x, y) = \sum_{i=1}^n \beta_i(x) \, \gamma_i(y).$$
+This is the kernel of Example 2.8.5 of [han2009theoretical].
+
+Both families are continuous here. The source allows the $\gamma_i$ to be only integrable. The
+continuous-kernel operator `IntegralOperator.kernelCLM` does not admit such kernels, and no
+result that uses the example needs them. -/
 noncomputable def degenerateKernel (β γ : Fin n → C(X, ℝ)) : C(X × X, ℝ) :=
   ⟨fun p => ∑ i, β i p.1 * γ i p.2, by fun_prop⟩
 
-/-- The defining formula of `IntegralOperator.degenerateKernel`. -/
+/-- The degenerate kernel of $\beta$ and $\gamma$ maps $(x, y)$ to $\sum_i \beta_i(x) \gamma_i(y)$.
+-/
 @[simp]
 theorem degenerateKernel_apply (β γ : Fin n → C(X, ℝ)) (p : X × X) :
     degenerateKernel β γ p = ∑ i, β i p.1 * γ i p.2 :=
@@ -382,8 +433,11 @@ theorem degenerateKernel_apply (β γ : Fin n → C(X, ℝ)) (p : X × X) :
 
 variable [CompactSpace X] [MeasurableSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- **A degenerate kernel operator is a finite linear combination of the `β i`**, with the
-coefficients `∫ γ i u` reading off the only information about `u` the operator uses. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $\beta_1, \dots, \beta_n$
+and $\gamma_1, \dots, \gamma_n$ be in $C(X)$. Then the kernel integral operator of the
+degenerate kernel $\sum_i \beta_i(x) \gamma_i(y)$ is
+$$u \mapsto \sum_{i=1}^n \left( \int \gamma_i(y) \, u(y) \, d\mu(y) \right) \beta_i.$$
+So the operator uses $u$ only through the $n$ numbers $\int \gamma_i u \, d\mu$. -/
 theorem kernelCLM_degenerateKernel (β γ : Fin n → C(X, ℝ)) (u : C(X, ℝ)) :
     kernelCLM μ (degenerateKernel β γ) u = ∑ i, (∫ y, γ i y * u y ∂μ) • β i := by
   ext x
@@ -399,7 +453,10 @@ theorem kernelCLM_degenerateKernel (β γ : Fin n → C(X, ℝ)) (u : C(X, ℝ))
   simp only [ContinuousMap.coe_sum, Finset.sum_apply, ContinuousMap.smul_apply, smul_eq_mul]
   exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
 
-/-- The range of a degenerate kernel operator lies in the span of the `β i`. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $\beta_1, \dots, \beta_n$
+and $\gamma_1, \dots, \gamma_n$ be in $C(X)$. Then the range of the kernel integral operator of
+the degenerate kernel $\sum_i \beta_i(x) \gamma_i(y)$ is contained in the span of
+$\beta_1, \dots, \beta_n$. -/
 theorem range_kernelCLM_degenerateKernel_le (β γ : Fin n → C(X, ℝ)) :
     LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) ≤
       Submodule.span ℝ (Set.range β) := by
@@ -409,8 +466,12 @@ theorem range_kernelCLM_degenerateKernel_le (β γ : Fin n → C(X, ℝ)) :
   rw [h]
   exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
-/-- **A degenerate kernel operator has finite rank**, so it is compact by the finite-rank
-criterion `IsCompactOperator.of_finiteDimensional_range`. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $\beta_1, \dots, \beta_n$
+and $\gamma_1, \dots, \gamma_n$ be in $C(X)$. Then the kernel integral operator of the
+degenerate kernel $\sum_i \beta_i(x) \gamma_i(y)$ has a finite-dimensional range.
+
+By the finite-rank criterion `IsCompactOperator.of_finiteDimensional_range`, the operator is
+compact. -/
 theorem finiteDimensional_range_kernelCLM_degenerateKernel (β γ : Fin n → C(X, ℝ)) :
     FiniteDimensional ℝ
       (LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ))) :=
@@ -418,8 +479,11 @@ theorem finiteDimensional_range_kernelCLM_degenerateKernel (β γ : Fin n → C(
     FiniteDimensional.span_of_finite ℝ (Set.finite_range β)
   Submodule.finiteDimensional_of_le (range_kernelCLM_degenerateKernel_le μ β γ)
 
-/-- The operator norm of a degenerate kernel operator is at most `∑ i, ‖β i‖ ∫ |γ i|`
-([han2009theoretical], Example 2.8.5). -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $\beta_1, \dots, \beta_n$
+and $\gamma_1, \dots, \gamma_n$ be in $C(X)$. Then the kernel integral operator $K$ of the
+degenerate kernel $\sum_i \beta_i(x) \gamma_i(y)$ satisfies
+$$\|K\| \le \sum_{i=1}^n \|\beta_i\|_\infty \int |\gamma_i(y)| \, d\mu(y).$$
+This is the bound of Example 2.8.5 of [han2009theoretical]. -/
 theorem norm_kernelCLM_degenerateKernel_le (β γ : Fin n → C(X, ℝ)) :
     ‖kernelCLM μ (degenerateKernel β γ)‖ ≤ ∑ i, ‖β i‖ * ∫ y, |γ i y| ∂μ := by
   have hint : ∀ i : Fin n, Integrable (fun y => ‖β i‖ * |γ i y|) μ := fun i =>
@@ -447,17 +511,20 @@ end Degenerate
 
 section Region
 
-/-- The ambient volume measure of `E` restricted to a region `D ⊆ E` and read on the subtype `↥D`:
-the measure an integral operator over a region `D ⊆ ℝ^d` integrates against.
+/-- Let $E$ be a measure space with the measure `volume`, and let $D \subseteq E$. The **region
+measure** of $D$ is the measure on the subtype $D$ obtained by restricting `volume` to $D$, that
+is, the pullback of `volume` along the inclusion of $D$ into $E$. For $D \subseteq \mathbb{R}^d$
+it is the measure against which an integral operator over the region $D$ integrates.
 
-Mathlib's `MeasureTheory.Measure.Subtype.measureSpace` is this measure, but it is deliberately not
-an instance — a subtype has other natural measures — so it is named here instead of enabled
-globally. `IntegralOperator.iccMeasure` is the case `E = ℝ`, `D = Set.Icc a b`. -/
+Mathlib's `MeasureTheory.Measure.Subtype.measureSpace` is this measure, but it is not an
+instance, because a subtype has other natural measures. For this reason the measure has a name
+here. `IntegralOperator.iccMeasure` is the case $E = \mathbb{R}$, $D = [a, b]$. -/
 noncomputable def regionMeasure {E : Type*} [MeasureSpace E] (D : Set E) : Measure D :=
   Measure.comap Subtype.val volume
 
-/-- **A compact region has finite volume**, so the kernel operator theory on a compact space applies
-to `IntegralOperator.regionMeasure D` whenever `D` is compact. -/
+/-- Let $E$ be a Hausdorff topological measure space in which the measure `volume` is finite on
+compact sets, and let $D \subseteq E$ be compact. Then `IntegralOperator.regionMeasure D` is a
+finite measure. So the theory of kernel operators on a compact space applies to it. -/
 instance isFiniteMeasure_regionMeasure {E : Type*} [MeasureSpace E] [TopologicalSpace E]
     [OpensMeasurableSpace E] [T2Space E] [IsFiniteMeasureOnCompacts (volume : Measure E)]
     (D : Set E) [CompactSpace D] : IsFiniteMeasure (regionMeasure D) where
@@ -478,9 +545,14 @@ section Fredholm
 
 variable (hab : a ≤ b)
 
-/-- The Urysohn integral operator of a continuous kernel `k : Icc a b × Icc a b × ℝ → ℝ`, the
-nonlinear Fredholm operator `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))` on `C(Icc a b, ℝ)`
-([han2009theoretical], (5.2.9)). -/
+/-- Let $a \le b$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$. The **Urysohn integral operator** of $k$ is the
+nonlinear map on $C[a, b]$ given by
+$$u \mapsto \left( x \mapsto \int_a^b k(x, y, u(y)) \, dy \right).$$
+This is (5.2.9) of [han2009theoretical].
+
+The integration variable $y$ is real and is clamped into $[a, b]$ by `Set.projIcc a b hab`,
+which changes nothing on $[a, b]$. -/
 noncomputable def urysohn (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b, ℝ) where
   toFun x := ∫ y in a..b, k (x, projIcc a b hab y, u (projIcc a b hab y))
@@ -489,15 +561,20 @@ noncomputable def urysohn (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b
       (f := fun (x : Icc a b) (y : ℝ) => k (x, projIcc a b hab y, u (projIcc a b hab y)))
     exact k.continuous.comp (by fun_prop)
 
-/-- The defining formula of `IntegralOperator.urysohn`. -/
+/-- The Urysohn operator maps $u$ to $x \mapsto \int_a^b k(x, \pi(y), u(\pi(y))) \, dy$, where $\pi$
+is the clamping map `Set.projIcc a b hab`. -/
 @[simp]
 theorem urysohn_apply (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) (x : Icc a b) :
     urysohn hab k u x = ∫ y in a..b, k (x, projIcc a b hab y, u (projIcc a b hab y)) :=
   rfl
 
-/-- The Fredholm integral operator of a continuous kernel `k : Icc a b × Icc a b → ℝ`, as a bounded
-linear operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)` on `C(Icc a b, ℝ)` ([han2009theoretical],
-(5.2.7)). -/
+/-- Let $a \le b$, and let $k$ be a continuous real kernel on $[a, b] \times [a, b]$. The **Fredholm
+integral operator** of $k$ is the bounded linear operator on $C[a, b]$ given by
+$$u \mapsto \left( x \mapsto \int_a^b k(x, y) \, u(y) \, dy \right).$$
+This is (5.2.7) of [han2009theoretical].
+
+The integration variable $y$ is real and is clamped into $[a, b]$ by `Set.projIcc a b hab`. The
+operator is built with the bound $\|k\|_\infty (b - a)$. -/
 noncomputable def fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   LinearMap.mkContinuous
@@ -534,24 +611,26 @@ noncomputable def fredholm (k : C(Icc a b × Icc a b, ℝ)) :
           ≤ ‖k‖ * ‖u‖ * |b - a| := intervalIntegral.norm_integral_le_of_norm_le_const hle
         _ = ‖k‖ * (b - a) * ‖u‖ := by rw [abs_of_nonneg hba]; ring
 
-/-- The defining formula of `IntegralOperator.fredholm`. -/
+/-- The Fredholm operator maps $u$ to $x \mapsto \int_a^b k(x, \pi(y)) \, u(\pi(y)) \, dy$, where
+$\pi$ is the clamping map `Set.projIcc a b hab`. -/
 @[simp]
 theorem fredholm_apply (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ)) (x : Icc a b) :
     fredholm hab k u x = ∫ y in a..b, k (x, projIcc a b hab y) * u (projIcc a b hab y) :=
   rfl
 
-/-- The Fredholm operator is the Urysohn operator of the kernel `(x, y, z) ↦ k (x, y) * z`. -/
+/-- The Fredholm operator of a kernel $k$ is the Urysohn operator of the kernel
+$(x, y, z) \mapsto k(x, y) z$. -/
 theorem fredholm_eq_urysohn (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ)) :
     fredholm hab k u = urysohn hab ⟨fun p => k (p.1, p.2.1) * p.2.2, by fun_prop⟩ u :=
   rfl
 
-/-- Lebesgue measure on the compact interval `Set.Icc a b`, read on the subtype: the measure against
-which `IntegralOperator.fredholm` integrates. -/
+/-- **Lebesgue measure** on the compact interval $[a, b]$, as a measure on the subtype
+`Set.Icc a b`: the pullback of Lebesgue measure along the inclusion. The operator
+`IntegralOperator.fredholm` integrates against this measure. -/
 noncomputable def iccMeasure (a b : ℝ) : Measure (Icc a b) :=
   Measure.comap Subtype.val volume
 
-/-- `IntegralOperator.iccMeasure` is a finite measure, being Lebesgue measure restricted to a
-bounded interval. -/
+/-- Lebesgue measure on $[a, b]$, `IntegralOperator.iccMeasure a b`, is a finite measure. -/
 instance : IsFiniteMeasure (iccMeasure a b) where
   measure_univ_lt_top := by
     have h : (iccMeasure a b) univ = (volume.restrict (Icc a b)) univ := by
@@ -561,14 +640,18 @@ instance : IsFiniteMeasure (iccMeasure a b) where
     rw [h, Measure.restrict_apply_univ, Real.volume_Icc]
     exact ENNReal.ofReal_lt_top
 
-/-- An integral over the subtype `Set.Icc a b` is the interval integral of the clamped integrand. -/
+/-- Let $a \le b$ and $f \colon \mathbb{R} \to \mathbb{R}$. The integral of $f$ over the subtype
+`Set.Icc a b` against `IntegralOperator.iccMeasure a b` is the interval integral
+$\int_a^b f(y) \, dy$. -/
 theorem integral_iccMeasure (hab : a ≤ b) (f : ℝ → ℝ) :
     ∫ y : Icc a b, f y ∂iccMeasure a b = ∫ y in a..b, f y := by
   rw [iccMeasure, integral_subtype_comap measurableSet_Icc, integral_Icc_eq_integral_Ioc,
     ← intervalIntegral.integral_of_le hab]
 
-/-- Interval integrability on `[a, b]` is integrability against `IntegralOperator.iccMeasure`, which
-is what carries an estimate for a singular integrand from the line to the subtype `Set.Icc a b`. -/
+/-- Let $a \le b$, and let $f \colon \mathbb{R} \to \mathbb{R}$ be interval integrable on $[a, b]$.
+Then the restriction of $f$ to the subtype `Set.Icc a b` is integrable for
+`IntegralOperator.iccMeasure a b`. This carries an estimate for a singular integrand from the
+real line to the subtype. -/
 theorem integrable_iccMeasure (hab : a ≤ b) {f : ℝ → ℝ}
     (hf : IntervalIntegrable f volume a b) :
     Integrable (fun y : Icc a b => f y) (iccMeasure a b) := by
@@ -578,8 +661,8 @@ theorem integrable_iccMeasure (hab : a ≤ b) {f : ℝ → ℝ}
   rw [iccMeasure, map_comap_subtype_coe hmeas volume]
   exact (intervalIntegrable_iff_integrableOn_Icc_of_le hab).mp hf
 
-/-- Lebesgue measure on a compact interval has no atoms, which is what makes the diagonal
-negligible for a kernel that is singular only there. -/
+/-- Lebesgue measure on $[a, b]$ has no atoms: every point has measure zero. So the diagonal is
+negligible for a kernel that is singular only on the diagonal. -/
 instance : NullSingletonClass (iccMeasure a b) where
   measure_singleton x := by
     have hemb : MeasurableEmbedding ((↑) : Icc a b → ℝ) :=
@@ -587,7 +670,8 @@ instance : NullSingletonClass (iccMeasure a b) where
     rw [iccMeasure, hemb.comap_apply]
     simp
 
-/-- Almost every point of `Set.Icc a b` differs from any given one. -/
+/-- For every $x \in [a, b]$, almost every $y \in [a, b]$ for Lebesgue measure satisfies $y \neq x$.
+-/
 theorem ae_ne_iccMeasure (x : Icc a b) :
     ∀ᵐ (y : Icc a b) ∂iccMeasure a b, (y : ℝ) ≠ (x : ℝ) := by
   have h : ({x} : Set (Icc a b))ᶜ ∈ ae (iccMeasure a b) :=
@@ -596,14 +680,16 @@ theorem ae_ne_iccMeasure (x : Icc a b) :
   simp only [mem_compl_iff, mem_singleton_iff] at hy
   exact fun hc => hy (Subtype.ext hc)
 
-/-- Restricting `IntegralOperator.iccMeasure` away from one point changes nothing, which is how a
-function continuous off that point is seen to be measurable. -/
+/-- For every $x \in [a, b]$, the restriction of Lebesgue measure on $[a, b]$ to the set
+$\{y : y \neq x\}$ is equal to Lebesgue measure on $[a, b]$. This shows that a function that is
+continuous off the point $x$ is measurable. -/
 theorem restrict_ne_iccMeasure (x : Icc a b) :
     (iccMeasure a b).restrict {y : Icc a b | (y : ℝ) ≠ (x : ℝ)} = iccMeasure a b :=
   Measure.restrict_eq_self_of_ae_mem (ae_ne_iccMeasure x)
 
 include hab in
-/-- The total mass of `IntegralOperator.iccMeasure`, Lebesgue measure on `[a, b]`, is `b - a`. -/
+/-- Let $a \le b$. Then Lebesgue measure on $[a, b]$, `IntegralOperator.iccMeasure a b`, has total
+mass $b - a$. -/
 theorem measureReal_iccMeasure_univ : (iccMeasure a b).real univ = b - a := by
   have h := integral_iccMeasure hab fun _ => (1 : ℝ)
   rw [integral_const, smul_eq_mul, mul_one] at h
@@ -611,15 +697,18 @@ theorem measureReal_iccMeasure_univ : (iccMeasure a b).real univ = b - a := by
   simp
 
 variable (a b) in
-/-- **The inclusion of `C([a, b], ℝ)` into `L²(a, b)`**, against Lebesgue measure on the interval.
-It is the map along which a uniform-norm approximation theorem becomes an `L²` one, by
+/-- The **inclusion of $C[a, b]$ into $L^2(a, b)$**, as a bounded linear map, where $L^2(a, b)$ is
+taken for Lebesgue measure on $[a, b]$ (`IntegralOperator.iccMeasure a b`). Along this map, a
+uniform approximation theorem gives an $L^2$ approximation theorem, by
 `IntegralOperator.norm_iccToLp_le`. -/
 noncomputable abbrev iccToLp : C(Icc a b, ℝ) →L[ℝ] Lp ℝ 2 (iccMeasure a b) :=
   ContinuousMap.toLp (E := ℝ) 2 (iccMeasure a b) ℝ
 
 include hab in
-/-- **A uniform bound is an `L²` bound**: `‖f‖_{L²(a, b)} ≤ √(b - a) ‖f‖_∞`, the inclusion
-`IntegralOperator.iccToLp` having norm at most the square root of the total mass. -/
+/-- Let $a \le b$. For every $f \in C[a, b]$,
+$$\|f\|_{L^2(a, b)} \le \sqrt{b - a} \, \|f\|_\infty.$$
+So the inclusion `IntegralOperator.iccToLp` has norm at most the square root of the total mass
+$b - a$. -/
 theorem norm_iccToLp_le (f : C(Icc a b, ℝ)) : ‖iccToLp a b f‖ ≤ √(b - a) * ‖f‖ := by
   have hb : ∀ᵐ y ∂(iccMeasure a b), ‖(iccToLp a b f) y‖ ≤ ‖f‖ := by
     filter_upwards [ContinuousMap.coeFn_toLp (E := ℝ) (p := 2)
@@ -634,8 +723,9 @@ theorem norm_iccToLp_le (f : C(Icc a b, ℝ)) : ‖iccToLp a b f‖ ≤ √(b - 
   rw [hmu, Real.sqrt_eq_rpow]
   norm_num
 
-/-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on that
-interval**, which is what lets the interval theory specialize the general one on a compact space. -/
+/-- Let $a \le b$, and let $k$ be a continuous kernel on $[a, b] \times [a, b]$. Then the Fredholm
+operator of $k$ is the kernel integral operator `IntegralOperator.kernelCLM` of $k$ for Lebesgue
+measure on $[a, b]$. With this, the results for a compact space apply to the interval. -/
 theorem fredholm_eq_kernelCLM (k : C(Icc a b × Icc a b, ℝ)) :
     fredholm hab k = kernelCLM (iccMeasure a b) k := by
   ext u x
@@ -645,8 +735,9 @@ theorem fredholm_eq_kernelCLM (k : C(Icc a b × Icc a b, ℝ)) :
   dsimp only
   rw [projIcc_val]
 
-/-- The row integrals of the kernel operator of `IntegralOperator.iccMeasure` are the interval
-integrals of the clamped rows. -/
+/-- Let $a \le b$, let $k$ be a continuous kernel on $[a, b] \times [a, b]$, and let $x \in [a, b]$.
+Then the row integral of $|k|$ for Lebesgue measure on $[a, b]$ is the interval integral
+$\int_a^b |k(x, \pi(y))| \, dy$ of the clamped row, where $\pi$ is `Set.projIcc a b hab`. -/
 theorem integral_iccMeasure_abs (k : C(Icc a b × Icc a b, ℝ)) (x : Icc a b) :
     ∫ y, |k (x, y)| ∂iccMeasure a b = ∫ y in a..b, |k (x, projIcc a b hab y)| := by
   rw [← integral_iccMeasure hab fun y => |k (x, projIcc a b hab y)|]
@@ -654,8 +745,9 @@ theorem integral_iccMeasure_abs (k : C(Icc a b × Icc a b, ℝ)) (x : Icc a b) :
   dsimp only
   rw [projIcc_val]
 
-/-- Every row integral of the kernel bounds the operator norm of a Fredholm operator from above;
-this is the easy half of `IntegralOperator.norm_fredholm`. -/
+/-- Let $a \le b$ and $C \ge 0$. If $\int_a^b |k(x, y)| \, dy \le C$ for every $x \in [a, b]$, then
+the Fredholm operator of $k$ has norm at most $C$. This is the easy half of
+`IntegralOperator.norm_fredholm`. -/
 theorem norm_fredholm_le {k : C(Icc a b × Icc a b, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, (∫ y in a..b, |k (x, projIcc a b hab y)|) ≤ C) : ‖fredholm hab k‖ ≤ C := by
   rw [fredholm_eq_kernelCLM hab k]
@@ -663,28 +755,35 @@ theorem norm_fredholm_le {k : C(Icc a b × Icc a b, ℝ)} {C : ℝ} (hC : 0 ≤ 
   rw [integral_iccMeasure_abs hab k x]
   exact h x
 
-/-- **The operator norm of a Fredholm integral operator** is the largest row integral of its kernel,
-`‖K‖ = max_x ∫ |k (x, y)| dy` ([han2009theoretical], (2.2.8)): the specialization of
-`IntegralOperator.norm_kernelCLM` to a compact interval with Lebesgue measure. -/
+/-- Let $a \le b$, and let $k$ be a continuous kernel on $[a, b] \times [a, b]$. Then the Fredholm
+operator $K$ of $k$ has the norm
+$$\|K\| = \max_{x \in [a, b]} \int_a^b |k(x, y)| \, dy.$$
+This is (2.2.8) of [han2009theoretical].
+
+The maximum is the supremum `⨆ x`, and the integrand is the clamped row $|k(x, \pi(y))|$. The
+result is `IntegralOperator.norm_kernelCLM` for a compact interval with Lebesgue measure. -/
 theorem norm_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     ‖fredholm hab k‖ = ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)| := by
   have hne : Nonempty (Icc a b) := ⟨⟨a, left_mem_Icc.2 hab⟩⟩
   rw [fredholm_eq_kernelCLM hab k, norm_kernelCLM]
   exact iSup_congr fun x => integral_iccMeasure_abs hab k x
 
-/-- **The Fredholm operator of a continuous kernel is a compact operator** on `C(Set.Icc a b, ℝ)`
-([han2009theoretical], Example 2.8.8; [kress1989linear], Theorem 2.20): the specialization of
-`IntegralOperator.isCompactOperator_kernelCLM` to a compact interval with Lebesgue measure.
+/-- Let $a \le b$, and let $k$ be a continuous kernel on $[a, b] \times [a, b]$. Then the Fredholm
+operator of $k$ is a compact operator on $C[a, b]$. This is Example 2.8.8 of
+[han2009theoretical] and Theorem 2.20 of [kress1989linear].
 
-This is the fact that discharges the compactness hypothesis of the projection and Nyström methods
-for an integral equation of the second kind on a concrete operator. -/
+The result is `IntegralOperator.isCompactOperator_kernelCLM` for a compact interval with
+Lebesgue measure. It gives the compactness hypothesis of the projection and Nyström methods for
+an integral equation of the second kind with a concrete operator. -/
 theorem isCompactOperator_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     IsCompactOperator (fredholm hab k) := by
   rw [fredholm_eq_kernelCLM hab k]
   exact isCompactOperator_kernelCLM _ k
 
-/-- **A Urysohn operator is Lipschitz** with constant `L (b - a)` when its kernel is `L`-Lipschitz
-in its last argument, uniformly in the other two ([han2009theoretical], Theorem 5.2.2). -/
+/-- Let $a \le b$, let $L \ge 0$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that $z \mapsto k(x, y, z)$ is $L$-Lipschitz for
+all $x, y \in [a, b]$. Then the Urysohn operator of $k$ is Lipschitz on $C[a, b]$ with constant
+$L(b - a)$. This is Theorem 5.2.2 of [han2009theoretical]. -/
 theorem lipschitzWith_urysohn {k : C(Icc a b × Icc a b × ℝ, ℝ)} {L : ℝ≥0}
     (hk : ∀ x y : Icc a b, LipschitzWith L fun z => k (x, y, z)) :
     LipschitzWith (L * (b - a).toNNReal) (urysohn hab k) := by
@@ -716,31 +815,38 @@ theorem lipschitzWith_urysohn {k : C(Icc a b × Icc a b × ℝ, ℝ)} {L : ℝ�
     _ = L * (b - a) * dist u v := by
         rw [intervalIntegral.integral_const]; simp [smul_eq_mul]; ring
 
-/-- The kernel `(x, y) ↦ ∂_z k (x, y, u y)` of the Fréchet derivative of the Urysohn operator of `k`
-at `u`, where `kz` is the partial derivative of `k` in its last argument. -/
+/-- Let $a \le b$, let $k_z$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$, and let $u \in C[a, b]$. This is the kernel
+$$(x, y) \mapsto k_z(x, y, u(y))$$
+on $[a, b] \times [a, b]$. When $k_z$ is the partial derivative $\partial_z k$ of $k$ in its
+last argument, it is the kernel of the Fréchet derivative of the Urysohn operator of $k$ at $u$. -/
 noncomputable def urysohnDerivKernel (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b × Icc a b, ℝ) :=
   ⟨fun p => kz (p.1, p.2, u p.2), by fun_prop⟩
 
-/-- The defining formula of `IntegralOperator.urysohnDerivKernel`. -/
+/-- The kernel `IntegralOperator.urysohnDerivKernel kz u` maps $(x, y)$ to $k_z(x, y, u(y))$. -/
 @[simp]
 theorem urysohnDerivKernel_apply (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ))
     (x y : Icc a b) : urysohnDerivKernel kz u (x, y) = kz (x, y, u y) :=
   rfl
 
-/-- **The Fréchet derivative of a Urysohn operator** at `u` is the Fredholm operator whose kernel is
-`∂_z k (x, y, u y)` ([han2009theoretical], Example 5.3.10).
+/-- Let $a \le b$, and let $k$ and $k_z$ be continuous real functions on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that for all $x, y \in [a, b]$ and
+$z \in \mathbb{R}$, the function $t \mapsto k(x, y, t)$ has the derivative $k_z(x, y, z)$ at
+$z$. Then for every $u \in C[a, b]$, the Urysohn operator of $k$ is Fréchet differentiable at
+$u$, and its derivative is the Fredholm operator of the kernel
+$$(x, y) \mapsto k_z(x, y, u(y)) = \partial_z k(x, y, u(y)).$$
+This is Example 5.3.10 of [han2009theoretical], with the hypothesis of the source: $k$ has a
+partial derivative $k_z$ in its last argument, and $k_z$ is continuous on all of
+$[a, b] \times [a, b] \times \mathbb{R}$.
 
-The hypothesis is the one the book makes: `k` has a partial derivative `kz` in its last argument,
-and `kz` is continuous on the whole of `Icc a b × Icc a b × ℝ`.
-
-Mathlib has no differentiation-under-the-integral-sign lemma in the supremum norm, so the estimate
-is written out. Its only analytic ingredient is that `kz` is uniformly continuous on the compact
-tube `Icc a b × Icc a b × Icc (-(‖u‖ + 1)) (‖u‖ + 1)` around the graph of `u`: given `ε > 0` that
-provides a `δ` such that `‖v - u‖ < δ` forces `|k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) (v y
-- u y)| ≤ ε |v y - u y|`, by the mean value inequality applied to `z ↦ k (x, y, z) - kz (x, y, u y)
-z` on the segment from `u y` to `v y`; integrating in `y` and taking the supremum in `x` is then the
-whole of the `o(‖v - u‖)` bound. -/
+Mathlib has no lemma for differentiation under the integral sign in the supremum norm, so the
+estimate is proved directly. Its only analytic step is the uniform continuity of $k_z$ on the
+compact set $[a, b] \times [a, b] \times [-(\|u\| + 1), \|u\| + 1]$ around the graph of $u$. For
+$\varepsilon > 0$, this gives $\delta > 0$ such that $\|v - u\| < \delta$ implies $|k(x, y,
+v(y)) - k(x, y, u(y)) - k_z(x, y, u(y)) (v(y) - u(y))| \le \varepsilon |v(y) - u(y)|$, by the
+mean value inequality for $z \mapsto k(x, y, z) - k_z(x, y, u(y)) z$ on the segment from $u(y)$
+to $v(y)$. Integration in $y$ and the supremum in $x$ then give the bound $o(\|v - u\|)$. -/
 theorem hasFDerivAt_urysohn {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
@@ -828,19 +934,26 @@ section Volterra
 
 variable (hab : a ≤ b)
 
-/-- The kernel `(x, y, z) ↦ k (x, y) * z` of the linear integral operator with kernel `k`, so that
-the linear operators are instances of the nonlinear ones. -/
+/-- For a continuous kernel $k$ on $[a, b] \times [a, b]$, the function
+$(x, y, z) \mapsto k(x, y) z$ on $[a, b] \times [a, b] \times \mathbb{R}$. With this kernel, the
+linear integral operators are special cases of the nonlinear ones. -/
 def mulKernel (k : C(Icc a b × Icc a b, ℝ)) : C(Icc a b × Icc a b × ℝ, ℝ) :=
   ⟨fun p => k (p.1, p.2.1) * p.2.2, by fun_prop⟩
 
-/-- The defining formula of `IntegralOperator.mulKernel`. -/
+/-- The kernel `IntegralOperator.mulKernel k` maps $(x, y, z)$ to $k(x, y) z$. -/
 @[simp]
 theorem mulKernel_apply (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b) (z : ℝ) :
     mulKernel k (x, y, z) = k (x, y) * z :=
   rfl
 
-/-- The Volterra integral operator of a continuous kernel `k : Icc a b × Icc a b × ℝ → ℝ`, the map
-`u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))` on `C(Icc a b, ℝ)` ([han2009theoretical], Section 5.2.3). -/
+/-- Let $a \le b$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$. The **Volterra integral operator** of $k$ is the
+nonlinear map on $C[a, b]$ given by
+$$u \mapsto \left( t \mapsto \int_a^t k(t, s, u(s)) \, ds \right).$$
+This is the operator of [han2009theoretical], Section 5.2.3.
+
+The integration variable $s$ is real and is clamped into $[a, b]$ by `Set.projIcc a b hab`,
+which changes nothing on $[a, t]$. -/
 noncomputable def volterra (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b, ℝ) where
   toFun t := ∫ s in a..(t : ℝ), k (t, projIcc a b hab s, u (projIcc a b hab s))
@@ -850,15 +963,21 @@ noncomputable def volterra (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a 
       (s := fun t : Icc a b => (t : ℝ)) (k.continuous.comp (by fun_prop))
     fun_prop
 
-/-- The defining formula of `IntegralOperator.volterra`: the upper limit of integration is the
-evaluation point, which is what distinguishes a Volterra operator from a Fredholm one. -/
+/-- The Volterra operator maps $u$ to $t \mapsto \int_a^t k(t, \pi(s), u(\pi(s))) \, ds$, where
+$\pi$ is the clamping map `Set.projIcc a b hab`. The upper limit of integration is the
+evaluation point $t$; this is the difference between a Volterra operator and a Fredholm
+operator. -/
 @[simp]
 theorem volterra_apply (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) (t : Icc a b) :
     volterra hab k u t = ∫ s in a..(t : ℝ), k (t, projIcc a b hab s, u (projIcc a b hab s)) :=
   rfl
 
-/-- The linear Volterra integral operator of a continuous kernel `k : Icc a b × Icc a b → ℝ`, the
-bounded operator `u ↦ (t ↦ ∫ s in a..t, k (t, s) * u s)` on `C(Icc a b, ℝ)`. -/
+/-- Let $a \le b$, and let $k$ be a continuous real kernel on $[a, b] \times [a, b]$. The **linear
+Volterra integral operator** of $k$ is the bounded linear operator on $C[a, b]$ given by
+$$u \mapsto \left( t \mapsto \int_a^t k(t, s) \, u(s) \, ds \right).$$
+
+It is the Volterra operator of the kernel `IntegralOperator.mulKernel k`, and it is built with
+the bound $\|k\|_\infty (b - a)$. -/
 noncomputable def volterraCLM (k : C(Icc a b × Icc a b, ℝ)) :
     C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   LinearMap.mkContinuous
@@ -893,20 +1012,25 @@ noncomputable def volterraCLM (k : C(Icc a b × Icc a b, ℝ)) :
         _ ≤ ‖k‖ * ‖u‖ * (b - a) := mul_le_mul_of_nonneg_left habs (by positivity)
         _ = ‖k‖ * (b - a) * ‖u‖ := by ring
 
-/-- The defining formula of `IntegralOperator.volterraCLM`. -/
+/-- The linear Volterra operator maps $u$ to $t \mapsto \int_a^t k(t, \pi(s)) \, u(\pi(s)) \, ds$,
+where $\pi$ is the clamping map `Set.projIcc a b hab`. -/
 @[simp]
 theorem volterraCLM_apply (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ)) (t : Icc a b) :
     volterraCLM hab k u t = ∫ s in a..(t : ℝ), k (t, projIcc a b hab s) * u (projIcc a b hab s) :=
   rfl
 
-/-- The linear Volterra operator is the Volterra operator of the kernel `(t, s, z) ↦ k (t, s) * z`.
--/
+/-- As a function, the linear Volterra operator of $k$ is the Volterra operator of the kernel
+$(t, s, z) \mapsto k(t, s) z$. -/
 theorem coe_volterraCLM (k : C(Icc a b × Icc a b, ℝ)) :
     ⇑(volterraCLM hab k) = volterra hab (mulKernel k) :=
   rfl
 
-/-- The factorial estimate of `IntegralOperator.norm_iterate_volterra_sub_le`, pointwise in `t`: the
-error of the `m`-th Volterra iterate at `t` is controlled by `(M (t - a)) ^ m / m !`. -/
+/-- Let $a \le b$, let $M \ge 0$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that $z \mapsto k(t, s, z)$ is $M$-Lipschitz for
+all $t, s \in [a, b]$. Let $V$ be the Volterra operator of $k$. Then for all $u, v \in C[a, b]$,
+$m \in \mathbb{N}$ and $t \in [a, b]$,
+$$|(V^m u)(t) - (V^m v)(t)| \le \frac{(M(t - a))^m}{m!} \, \|u - v\|.$$
+This is the pointwise form of `IntegralOperator.norm_iterate_volterra_sub_le`. -/
 theorem abs_iterate_volterra_sub_apply_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (u v : C(Icc a b, ℝ)) (m : ℕ)
     (t : Icc a b) :
@@ -965,10 +1089,15 @@ theorem abs_iterate_volterra_sub_apply_le {k : C(Icc a b × Icc a b × ℝ, ℝ)
           push_cast
           field_simp
 
-/-- **The factorial estimate for the iterates of a Volterra operator** ([han2009theoretical], proof
-of Theorem 5.2.3): if the kernel is `M`-Lipschitz in its last argument, then the `m`-th iterate of
-the Volterra operator is Lipschitz with the constant `(M (b - a)) ^ m / m !`, which tends to `0`;
-hence some power of a Volterra operator is a contraction, whatever `M` is. -/
+/-- **The factorial estimate for the iterates of a Volterra operator.** Let $a \le b$, let
+$M \ge 0$, and let $k$ be a continuous real function on $[a, b] \times [a, b] \times \mathbb{R}$
+such that $z \mapsto k(t, s, z)$ is $M$-Lipschitz for all $t, s \in [a, b]$. Let $V$ be the
+Volterra operator of $k$. Then for all $u, v \in C[a, b]$ and $m \in \mathbb{N}$,
+$$\|V^m u - V^m v\| \le \frac{(M(b - a))^m}{m!} \, \|u - v\|.$$
+This is the estimate in the proof of Theorem 5.2.3 of [han2009theoretical].
+
+The constant $(M(b - a))^m / m!$ tends to $0$ as $m \to \infty$. So some iterate of a Volterra
+operator is a contraction, for every $M$. -/
 theorem norm_iterate_volterra_sub_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (u v : C(Icc a b, ℝ)) (m : ℕ) :
     ‖(volterra hab k)^[m] u - (volterra hab k)^[m] v‖
@@ -986,7 +1115,9 @@ theorem norm_iterate_volterra_sub_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M 
   refine hstep.trans ?_
   gcongr
 
-/-- A Volterra operator is itself Lipschitz, with constant `M (b - a)`. -/
+/-- Let $a \le b$, let $M \ge 0$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that $z \mapsto k(t, s, z)$ is $M$-Lipschitz for
+all $t, s \in [a, b]$. Then the Volterra operator of $k$ is Lipschitz with constant $M(b - a)$. -/
 theorem lipschitzWith_volterra {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) :
     LipschitzWith (M * (b - a).toNNReal) (volterra hab k) := by
@@ -997,8 +1128,11 @@ theorem lipschitzWith_volterra {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ�
   rw [dist_eq_norm, dist_eq_norm, NNReal.coe_mul, Real.coe_toNNReal _ hba]
   exact h
 
-/-- Some power of a Volterra operator is a contraction in the supremum norm, whatever the Lipschitz
-constant of its kernel ([han2009theoretical], Theorem 5.2.3). -/
+/-- Let $a \le b$, let $M \ge 0$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that $z \mapsto k(t, s, z)$ is $M$-Lipschitz for
+all $t, s \in [a, b]$. Then there is $m \ge 1$ such that the $m$-th iterate of the Volterra
+operator of $k$ is a contraction in the supremum norm, with constant $(M(b - a))^m / m! < 1$.
+This is Theorem 5.2.3 of [han2009theoretical]. -/
 theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) :
     ∃ m : ℕ, 0 < m ∧
@@ -1012,7 +1146,8 @@ theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ
   · rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hnn]
     exact norm_iterate_volterra_sub_le hab hk u v m
 
-/-- The kernel of a linear operator is Lipschitz in its last argument, with constant `‖k‖`. -/
+/-- For a continuous kernel $k$ on $[a, b] \times [a, b]$ and $x, y \in [a, b]$, the function
+$z \mapsto k(x, y) z$ is Lipschitz with constant $\|k\|_\infty$. -/
 theorem lipschitzWith_mulKernel (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b) :
     LipschitzWith ‖k‖₊ fun z => mulKernel k (x, y, z) := by
   refine LipschitzWith.of_dist_le_mul fun z w => ?_
@@ -1020,9 +1155,13 @@ theorem lipschitzWith_mulKernel (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b)
     ← mul_sub, abs_mul]
   exact mul_le_mul_of_nonneg_right (k.norm_coe_le_norm _) (abs_nonneg _)
 
-/-- **The factorial estimate for the powers of a linear Volterra operator** ([han2009theoretical],
-Exercise 2.3.4): `‖L ^ m‖ ≤ (‖k‖ (b - a)) ^ m / m !`, so the powers of `L` tend to `0` in norm and
-`λ - L` is invertible for every nonzero `λ`. -/
+/-- **The factorial estimate for the powers of a linear Volterra operator.** Let $a \le b$, let $k$
+be a continuous kernel on $[a, b] \times [a, b]$, and let $V$ be its linear Volterra operator.
+Then for every $m \in \mathbb{N}$,
+$$\|V^m\| \le \frac{(\|k\|_\infty (b - a))^m}{m!}.$$
+This is Exercise 2.3.4 of [han2009theoretical].
+
+As a consequence, $\|V^m\| \to 0$, and $\lambda - V$ is invertible for every $\lambda \neq 0$. -/
 theorem norm_volterraCLM_pow_le (k : C(Icc a b × Icc a b, ℝ)) (m : ℕ) :
     ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m ! := by
   have hzero : (volterra hab (mulKernel k))^[m] 0 = 0 := by
@@ -1045,46 +1184,49 @@ end Volterra
 /-! ### The Bielecki norm -/
 
 set_option linter.unusedVariables false in
-/-- The **Bielecki space**: the continuous real functions on `Set.Icc a b` under the weighted
-supremum norm `‖u‖ = ⨆ t, exp (-(β (t - a))) * |u t|`.
+/-- The **Bielecki space**: the continuous real functions on $[a, b]$ with the weighted supremum
+norm
+$$\|u\|_\beta = \sup_{t \in [a, b]} e^{-\beta(t - a)} \, |u(t)|.$$
 
-For `0 ≤ β` this norm is equivalent to the supremum norm (`Bielecki.norm_le_norm_equiv` and
-`Bielecki.exp_mul_norm_equiv_le_norm`), so the space is again a Banach space and convergence in it
-is uniform convergence; what the weight buys is that a Volterra operator becomes a contraction
-outright, with constant `M / β` ([han2009theoretical], proof of Theorem 5.2.4). -/
+For $\beta \ge 0$ this norm is equivalent to the supremum norm
+(`IntegralOperator.Bielecki.norm_le_norm_equiv` and
+`IntegralOperator.Bielecki.exp_mul_norm_equiv_le_norm`), so the space is a Banach space and
+convergence in it is uniform convergence. With the weight, a Volterra operator is a contraction,
+with constant $M / \beta$ ([han2009theoretical], proof of Theorem 5.2.4). The type is a type
+synonym for `C(Set.Icc a b, ℝ)`, and only the norm differs. -/
 def Bielecki (a b β : ℝ) : Type := C(Icc a b, ℝ)
 
 namespace Bielecki
 
 variable {a b β : ℝ}
 
-/-- The Bielecki space carries the additive group of `C(Icc a b, ℝ)`, of which it is a type synonym:
-only the norm differs. -/
+/-- The Bielecki space has the additive group structure of `C(Set.Icc a b, ℝ)`. -/
 instance : AddCommGroup (Bielecki a b β) := inferInstanceAs (AddCommGroup C(Icc a b, ℝ))
 
-/-- Likewise for the real vector space structure. -/
+/-- The Bielecki space has the real vector space structure of `C(Set.Icc a b, ℝ)`. -/
 instance : Module ℝ (Bielecki a b β) := inferInstanceAs (Module ℝ C(Icc a b, ℝ))
 
-/-- The identity linear equivalence between the Bielecki space and `C(Icc a b, ℝ)`.  It is not an
-isometry; the two norms are equivalent by `Bielecki.norm_le_norm_equiv` and
-`Bielecki.exp_mul_norm_equiv_le_norm`. -/
+/-- The identity map from the Bielecki space to `C(Set.Icc a b, ℝ)`, as a linear equivalence. It is
+not an isometry. The two norms are equivalent by `IntegralOperator.Bielecki.norm_le_norm_equiv`
+and `IntegralOperator.Bielecki.exp_mul_norm_equiv_le_norm`. -/
 def equiv : Bielecki a b β ≃ₗ[ℝ] C(Icc a b, ℝ) := LinearEquiv.refl ℝ _
 
-/-- The weighting map `u ↦ (t ↦ exp (-(β (t - a))) * u t)`, whose supremum norm is by definition the
-Bielecki norm. -/
+/-- The **weighting map** $u \mapsto \left( t \mapsto e^{-\beta(t - a)} u(t) \right)$ from the
+Bielecki space to $C[a, b]$, as a linear map. The Bielecki norm of $u$ is the supremum norm of
+its image. -/
 noncomputable def weight : Bielecki a b β →ₗ[ℝ] C(Icc a b, ℝ) where
   toFun u := ⟨fun t => Real.exp (-(β * ((t : ℝ) - a))) * equiv u t, by fun_prop⟩
   map_add' u v := by ext t; simp [mul_add]
   map_smul' c u := by ext t; simp; ring
 
-/-- The defining formula of `Bielecki.weight`. -/
+/-- The weighting map maps $u$ to $t \mapsto e^{-\beta(t - a)} u(t)$. -/
 @[simp]
 theorem weight_apply (u : Bielecki a b β) (t : Icc a b) :
     weight u t = Real.exp (-(β * ((t : ℝ) - a))) * equiv u t :=
   rfl
 
-/-- The weighting map is injective, the weight being everywhere nonzero.  This is what lets the
-Bielecki norm be induced along it. -/
+/-- The weighting map is injective, because the weight $e^{-\beta(t - a)}$ is never zero. So the
+Bielecki norm can be induced along it. -/
 theorem weight_injective : Function.Injective (weight : Bielecki a b β → C(Icc a b, ℝ)) := by
   intro u v huv
   refine equiv.injective (ContinuousMap.ext fun t => ?_)
@@ -1092,24 +1234,26 @@ theorem weight_injective : Function.Injective (weight : Bielecki a b β → C(Ic
   simp only [weight_apply] at h
   exact mul_left_cancel₀ (Real.exp_ne_zero _) h
 
-/-- The Bielecki norm `‖u‖ = ⨆ t, exp (-(β (t - a))) * |u t|`, induced from the supremum norm of
-`C(Icc a b, ℝ)` along the injective weighting map. -/
+/-- The **Bielecki norm** $\|u\|_\beta = \sup_t e^{-\beta(t - a)} |u(t)|$, induced from the supremum
+norm of $C[a, b]$ along the injective weighting map. -/
 noncomputable instance : NormedAddCommGroup (Bielecki a b β) :=
   NormedAddCommGroup.induced (Bielecki a b β) C(Icc a b, ℝ)
     (weight : Bielecki a b β →ₗ[ℝ] C(Icc a b, ℝ)).toAddMonoidHom weight_injective
 
-/-- The Bielecki norm of `u` is the supremum norm of its weighting, by construction. -/
+/-- The Bielecki norm of $u$ is the supremum norm of $t \mapsto e^{-\beta(t - a)} u(t)$. -/
 theorem norm_eq (u : Bielecki a b β) : ‖u‖ = ‖weight u‖ := rfl
 
-/-- The Bielecki norm is homogeneous, the weighting map being linear. -/
+/-- The Bielecki space is a real normed space: the Bielecki norm is homogeneous, because the
+weighting map is linear. -/
 instance : NormedSpace ℝ (Bielecki a b β) where
   norm_smul_le c u := le_of_eq (by rw [norm_eq, norm_eq, map_smul, norm_smul])
 
-/-- The weighting map is an isometry onto `C(Icc a b, ℝ)`, again by construction of the norm. -/
+/-- The weighting map is an isometry from the Bielecki space to $C[a, b]$. -/
 theorem isometry_weight : Isometry (weight : Bielecki a b β → C(Icc a b, ℝ)) :=
   AddMonoidHomClass.isometry_of_norm _ fun u => (norm_eq u).symm
 
-/-- The weighting map is surjective: divide by the weight, which is nowhere zero. -/
+/-- The weighting map is surjective: a function $v \in C[a, b]$ is the image of
+$t \mapsto e^{\beta(t - a)} v(t)$. -/
 theorem weight_surjective : Function.Surjective (weight : Bielecki a b β → C(Icc a b, ℝ)) := by
   intro v
   refine ⟨equiv.symm ⟨fun t => Real.exp (β * ((t : ℝ) - a)) * v t, by fun_prop⟩, ?_⟩
@@ -1118,30 +1262,32 @@ theorem weight_surjective : Function.Surjective (weight : Bielecki a b β → C(
     ← Real.exp_add]
   simp
 
-/-- The Bielecki space is complete, being isometrically isomorphic to `C(Icc a b, ℝ)`.  This is what
-makes it a legitimate home for the Banach fixed-point theorem. -/
+/-- The Bielecki space is complete, because the weighting map is an isometry onto the complete space
+$C[a, b]$. So the Banach fixed-point theorem applies in it. -/
 instance : CompleteSpace (Bielecki a b β) :=
   (isometry_weight.isUniformInducing.completeSpace_congr weight_surjective).2 inferInstance
 
-/-- `Bielecki.equiv` is linear, so it commutes with subtraction. -/
+/-- The identity map `IntegralOperator.Bielecki.equiv` commutes with subtraction. -/
 @[simp]
 theorem equiv_sub (u v : Bielecki a b β) : equiv (u - v) = equiv u - equiv v :=
   map_sub equiv u v
 
-/-- The Bielecki norm dominates every weighted value of the function. -/
+/-- For every $u$ in the Bielecki space and $t \in [a, b]$,
+$e^{-\beta(t - a)} |u(t)| \le \|u\|_\beta$. -/
 theorem exp_mul_abs_le_norm (u : Bielecki a b β) (t : Icc a b) :
     Real.exp (-(β * ((t : ℝ) - a))) * |equiv u t| ≤ ‖u‖ := by
   have h := (weight u).norm_coe_le_norm t
   rwa [weight_apply, Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _), ← norm_eq] at h
 
-/-- A uniform bound on the weighted values of the function bounds the Bielecki norm. -/
+/-- Let $C \ge 0$. Then $\|u\|_\beta \le C$ if and only if $e^{-\beta(t - a)} |u(t)| \le C$ for
+every $t \in [a, b]$. -/
 theorem norm_le {u : Bielecki a b β} {C : ℝ} (hC : 0 ≤ C) :
     ‖u‖ ≤ C ↔ ∀ t : Icc a b, Real.exp (-(β * ((t : ℝ) - a))) * |equiv u t| ≤ C := by
   rw [norm_eq, ContinuousMap.norm_le _ hC]
   exact forall_congr' fun t => by
     rw [weight_apply, Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _)]
 
-/-- For a nonnegative weight the Bielecki norm is at most the supremum norm. -/
+/-- Let $\beta \ge 0$. For every $u$ in the Bielecki space, $\|u\|_\beta \le \|u\|_\infty$. -/
 theorem norm_le_norm_equiv (hβ : 0 ≤ β) (u : Bielecki a b β) : ‖u‖ ≤ ‖equiv u‖ := by
   refine (norm_le (norm_nonneg _)).2 fun t => ?_
   have hexp : Real.exp (-(β * ((t : ℝ) - a))) ≤ 1 :=
@@ -1153,8 +1299,8 @@ theorem norm_le_norm_equiv (hβ : 0 ≤ β) (u : Bielecki a b β) : ‖u‖ ≤ 
     _ = |equiv u t| := one_mul _
     _ ≤ ‖equiv u‖ := habs
 
-/-- For a nonnegative weight the supremum norm is at most `exp (β (b - a))` times the Bielecki norm.
--/
+/-- Let $\beta \ge 0$. For every $u$ in the Bielecki space,
+$\|u\|_\infty \le e^{\beta(b - a)} \|u\|_\beta$. -/
 theorem norm_equiv_le (hβ : 0 ≤ β) (u : Bielecki a b β) :
     ‖equiv u‖ ≤ Real.exp (β * (b - a)) * ‖u‖ := by
   rw [ContinuousMap.norm_le _ (by positivity)]
@@ -1169,7 +1315,9 @@ theorem norm_equiv_le (hβ : 0 ≤ β) (u : Bielecki a b β) :
         mul_le_mul_of_nonneg_left (exp_mul_abs_le_norm u t) (Real.exp_pos _).le
     _ ≤ Real.exp (β * (b - a)) * ‖u‖ := mul_le_mul_of_nonneg_right h2 (norm_nonneg u)
 
-/-- **The two norms are equivalent**: `exp (-(β (b - a))) ‖u‖_∞ ≤ ‖u‖_β ≤ ‖u‖_∞` for `0 ≤ β`, so
+/-- Let $\beta \ge 0$. For every $u$ in the Bielecki space,
+$$e^{-\beta(b - a)} \, \|u\|_\infty \le \|u\|_\beta.$$
+With `IntegralOperator.Bielecki.norm_le_norm_equiv`, the two norms are equivalent, so
 convergence in the Bielecki norm is uniform convergence. -/
 theorem exp_mul_norm_equiv_le_norm (hβ : 0 ≤ β) (u : Bielecki a b β) :
     Real.exp (-(β * (b - a))) * ‖equiv u‖ ≤ ‖u‖ := by
@@ -1180,21 +1328,25 @@ theorem exp_mul_norm_equiv_le_norm (hβ : 0 ≤ β) (u : Bielecki a b β) :
 
 end Bielecki
 
-/-- The Volterra operator read on the Bielecki space, where it is a contraction with constant `M /
-β` whenever its kernel is `M`-Lipschitz in its last argument. -/
+/-- Let $a \le b$, let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$, and let $\beta \in \mathbb{R}$. This is the Volterra
+operator of $k$ as a map on the Bielecki space with weight $\beta$. If $k$ is $M$-Lipschitz in
+its last argument and $\beta > M$, it is a contraction with constant $M / \beta$
+(`IntegralOperator.contractingWith_volterra_bielecki`). -/
 noncomputable def volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ) :
     Bielecki a b β → Bielecki a b β :=
   fun u => Bielecki.equiv.symm (volterra hab k (Bielecki.equiv u))
 
-/-- The defining formula of `IntegralOperator.volterraBielecki`: read through `Bielecki.equiv` it is
-the Volterra operator itself, only the norm on the space having changed. -/
+/-- Through the identity map `IntegralOperator.Bielecki.equiv`, the Volterra operator on the
+Bielecki space is the Volterra operator on $C[a, b]$. Only the norm is different. -/
 @[simp]
 theorem equiv_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ)
     (u : Bielecki a b β) :
     Bielecki.equiv (volterraBielecki hab k β u) = volterra hab k (Bielecki.equiv u) :=
   rfl
 
-/-- The Volterra operator and its Bielecki avatar have the same iterates. -/
+/-- Through the identity map `IntegralOperator.Bielecki.equiv`, the $n$-th iterate of the Volterra
+operator on the Bielecki space is the $n$-th iterate of the Volterra operator on $C[a, b]$. -/
 theorem equiv_iterate_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ)
     (u : Bielecki a b β) (n : ℕ) :
     Bielecki.equiv ((volterraBielecki hab k β)^[n] u)
@@ -1203,8 +1355,10 @@ theorem equiv_iterate_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b
   | zero => rfl
   | succ n ih => rw [Function.iterate_succ_apply, Function.iterate_succ_apply, ih]; rfl
 
-/-- The elementary integral behind Bielecki's trick: `∫_a^t e^{β (s - a)} ds = (e^{β (t - a)} -
-1)/β`. -/
+/-- Let $\beta \neq 0$. For all real $a$ and $t$,
+$$\int_a^t e^{\beta(s - a)} \, ds = \frac{e^{\beta(t - a)} - 1}{\beta}.$$
+This is the elementary integral in the proof that a Volterra operator is a contraction in the
+Bielecki norm. -/
 theorem integral_exp_mul_sub {β : ℝ} (hβ : β ≠ 0) (a t : ℝ) :
     (∫ s in a..t, Real.exp (β * (s - a))) = (Real.exp (β * (t - a)) - 1) / β := by
   have hderiv : ∀ x ∈ uIcc a t,
@@ -1217,10 +1371,15 @@ theorem integral_exp_mul_sub {β : ℝ} (hβ : β ≠ 0) (a t : ℝ) :
     (Continuous.intervalIntegrable (by fun_prop) _ _)]
   simp [sub_div]
 
-/-- **A Volterra operator is a contraction in the Bielecki norm**, with constant `M / β`: this is
-Bielecki's proof of the Picard–Lindelöf theorem, in which the weight `e^{-β (t - a)}` absorbs the
-Lipschitz constant of the kernel instead of the factorial estimate of
-`IntegralOperator.norm_iterate_volterra_sub_le` ([han2009theoretical], proof of Theorem 5.2.4). -/
+/-- Let $a \le b$, let $M \ge 0$, and let $k$ be a continuous real function on
+$[a, b] \times [a, b] \times \mathbb{R}$ such that $z \mapsto k(t, s, z)$ is $M$-Lipschitz for
+all $t, s \in [a, b]$. If $\beta > M$, then the Volterra operator of $k$ on the Bielecki space
+with weight $\beta$ is a contraction with constant $M / \beta$. This is the argument in the
+proof of Theorem 5.2.4 of [han2009theoretical].
+
+This is Bielecki's proof of the Picard–Lindelöf theorem. The weight $e^{-\beta(t - a)}$ absorbs
+the Lipschitz constant of the kernel, in place of the factorial estimate
+`IntegralOperator.norm_iterate_volterra_sub_le`. -/
 theorem contractingWith_volterra_bielecki (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) {β : ℝ} (hβ : (M : ℝ) < β) :
     ContractingWith ((M : ℝ) / β).toNNReal (volterraBielecki hab k β) := by

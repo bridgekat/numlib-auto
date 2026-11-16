@@ -17,47 +17,78 @@ import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # Oblique projectors
 
-Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from range
-and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V` of `K`
-and `W` of `L`, the characterization of the orthogonal projectors as the projectors of norm `1`, and
-Kato's lemma `‖P‖ = ‖1 - P‖` [szyld2006many].
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. A **projector** is
+a linear map $P : E \to E$ with $P^2 = P$. For subspaces $K$ and $L$ of $E$, a projector onto $K$
+orthogonally to $L$ is a projector with range $K$ and kernel $L^\perp$; for every $x$, the vector
+$Px$ is then the unique $y \in K$ with $x - y \perp L$. This file shows that a projector is
+determined by its range and its kernel, and that a projector onto $K$ orthogonally to $L$ exists
+when $K$ and $L$ are finite-dimensional of equal dimension and $K \cap L^\perp = \{0\}$. For two
+families $V = (v_1, \dots, v_k)$ and $W = (w_1, \dots, w_k)$ in $E$ whose cross Gram matrix
+$W^H V = (\langle w_i, v_j \rangle)_{i,j}$ is invertible, the matrix form $P = V (W^H V)^{-1} W^H$
+is the projector onto $\operatorname{span} V$ orthogonally to $\operatorname{span} W$. For $W = V$
+orthonormal it is the orthogonal projection $V V^H$.
+
+For bounded projectors, the file proves that a nonzero projector has norm $1$ if and only if it is
+self-adjoint, that is, an orthogonal projection. It also proves **Kato's lemma**:
+$\|I - P\| = \|P\|$ for every bounded projector $P \neq 0, I$ [szyld2006many].
 
 ## Main definitions
 
-* `LinearMap.crossGram 𝕜 V W`, the cross Gram matrix `Wᴴ V = (⟪W i, V j⟫)` of two families;
-* `LinearMap.obliqueProjectionOfBases 𝕜 V W`, the projector `V (Wᴴ V)⁻¹ Wᴴ`.
+* `LinearMap.crossGram`: the cross Gram matrix $W^H V = (\langle w_i, v_j \rangle)_{i,j}$ of two
+  families.
+* `LinearMap.obliqueProjectionOfBases`: the linear map $V (W^H V)^{-1} W^H$.
 
-## Main statements
+## Main results
 
-* `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` and
-  `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`: a projector is determined by
-  its range and kernel, and one onto `K` along `Lᗮ` exists exactly when `K ⊓ Lᗮ = ⊥`;
+* `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq`: two projectors with the same range and the
+  same kernel are equal.
+* `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`: if $K$ and $L$ are
+  finite-dimensional of equal dimension and $K \cap L^\perp = \{0\}$, there is exactly one projector
+  with range $K$ and kernel $L^\perp$.
 * `LinearMap.obliqueProjectionOfBases_isIdempotentElem`, `LinearMap.range_obliqueProjectionOfBases`
-  and `LinearMap.ker_obliqueProjectionOfBases`: the matrix form is that projector, and reduces to
-  the orthogonal projection when `W = V` is orthonormal;
-* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric`: a nonzero projector has norm
-  `1` exactly when it is orthogonal;
-* `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`: **Kato's lemma**, `‖1 - P‖ = ‖P‖` for a
-  projector other than `0` and `1`.
+  and `LinearMap.ker_obliqueProjectionOfBases`: if $W^H V$ is invertible, $V (W^H V)^{-1} W^H$ is a
+  projector with range $\operatorname{span} V$ and kernel $(\operatorname{span} W)^\perp$.
+* `LinearMap.obliqueProjectionOfBases_self_eq_starProjection`: for orthonormal $V$,
+  $V (V^H V)^{-1} V^H$ is the orthogonal projection onto $\operatorname{span} V$.
+* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric`: a nonzero bounded projector
+  has norm $1$ if and only if it is self-adjoint.
+* `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`: Kato's lemma, $\|I - P\| = \|P\|$ for a
+  bounded projector $P \neq 0, I$.
+
+## Proof outline
+
+Kato's lemma rests on an elementary fact about inner product spaces,
+`norm_smul_add_smul_eq_norm_add`: if two vectors are rescaled by real factors $s$ and $t$ with
+$st = 1$ so that their norms are exchanged, the norm of their sum does not change. It gives the
+estimate `ContinuousLinearMap.norm_le_opNorm_mul_norm_add`: if a bounded operator $Q$ maps $u$ to
+$0$ and fixes $v$, then $\|u\| \le \|Q\| \, \|u + v\|$. For $Q = I - P$, $u = Px$ and $v = (I - P)x$
+this is $\|Px\| \le \|I - P\| \, \|x\|$, so $\|P\| \le \|I - P\|$. The same argument for $I - P$
+gives the reverse inequality.
 
 ## Implementation notes
 
-Kato's lemma rests on `norm_smul_add_smul_eq_norm_add`, an elementary fact about inner product
-spaces: rescaling two vectors so as to exchange their norms does not change the norm of their sum.
+* A projector is a linear map `P` with `IsIdempotentElem P`, and the orthogonal complement $L^\perp$
+  is `Lᗮ`.
+* The families $V$ and $W$ are indexed by a finite type `ι`. The inverse $(W^H V)^{-1}$ is the
+  matrix inverse of Mathlib, which is $0$ for a singular matrix. So
+  `LinearMap.obliqueProjectionOfBases` is the zero map when $W^H V$ is singular, and the results
+  about it assume `IsUnit (LinearMap.crossGram 𝕜 V W)`.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The span of a finite family is finite-dimensional. Mathlib has this for a `Finset`
-(`FiniteDimensional.span_finset`) and as a theorem for a finite set
-(`FiniteDimensional.span_of_finite`), but not as an instance for the range of a family. -/
+/-- The span of a finite family of vectors is finite-dimensional.
+
+Mathlib has this for a `Finset` (`FiniteDimensional.span_finset`) and as a theorem for a finite
+set (`FiniteDimensional.span_of_finite`), but not as an instance for the range of a family. -/
 instance Submodule.finiteDimensional_span_range {ι : Type*} [Finite ι] (V : ι → E) :
     FiniteDimensional 𝕜 (Submodule.span 𝕜 (Set.range V)) :=
   Module.Finite.span_of_finite 𝕜 (Set.finite_range V)
 
 namespace LinearMap
 
-/-- A projector is determined by its range and its kernel. -/
+/-- Let $P, Q : E \to E$ be linear projectors, that is, $P^2 = P$ and $Q^2 = Q$. If $P$ and $Q$ have
+the same range and the same kernel, then $P = Q$. -/
 theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     (hQ : IsIdempotentElem Q) (hr : LinearMap.range P = LinearMap.range Q)
     (hk : LinearMap.ker P = LinearMap.ker Q) : P = Q := by
@@ -75,8 +106,10 @@ theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP 
     exact LinearMap.mem_range_self P x
   rw [h2, h3]
 
-/-- `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with range `K` and
-kernel `Lᗮ`. -/
+/-- Let $P : E \to E$ be a linear projector with range $K$ and kernel $L^\perp$, for subspaces $K$
+and $L$ of $E$. Then for all $x, y \in E$,
+$$Px = y \iff y \in K \text{ and } x - y \in L^\perp.$$
+So $Px$ is the unique element $y$ of $K$ with $x - y \perp L$. -/
 theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     {K L : Submodule 𝕜 E} (hr : LinearMap.range P = K) (hk : LinearMap.ker P = Lᗮ) (x y : E) :
     P x = y ↔ y ∈ K ∧ x - y ∈ Lᗮ := by
@@ -92,8 +125,12 @@ theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentE
     rw [map_sub, (LinearMap.IsIdempotentElem.mem_range_iff hP).1 hyr, sub_eq_zero] at h
     exact h
 
-/-- A projector onto `K` orthogonal to `L` exists (uniquely) iff `K ⊓ Lᗮ = ⊥`, for
-finite-dimensional `K`, `L` of equal dimension. -/
+/-- Let $K$ and $L$ be finite-dimensional subspaces of $E$ with $\dim K = \dim L$ and
+$K \cap L^\perp = \{0\}$. Then there is exactly one linear projector $P : E \to E$ with range
+$K$ and kernel $L^\perp$.
+
+The theorem gives the existence and uniqueness under the condition $K \cap L^\perp = \{0\}$. The
+converse, that the condition is necessary, is not stated here. -/
 theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 𝕜 E}
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hKL : K ⊓ Lᗮ = ⊥) :
@@ -148,12 +185,23 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
 variable (𝕜)
 
-/-- The Gram-type matrix `Wᴴ V = (⟪W i, V j⟫)` of two families. -/
+/-- The **cross Gram matrix** of two families $V = (v_j)_{j \in \iota}$ and
+$W = (w_i)_{i \in \iota}$ in $E$, indexed by the same finite set: the matrix
+$$W^H V = \bigl(\langle w_i, v_j \rangle\bigr)_{i, j \in \iota}.$$
+
+The inner product is conjugate-linear in its first argument, so the entry $(i, j)$ is
+$w_i^H v_j$ when $E = \mathbb{K}^n$. -/
 noncomputable def crossGram (V W : ι → E) : Matrix ι ι 𝕜 :=
   Matrix.of fun i j => inner 𝕜 (W i) (V j)
 
-/-- The projector `V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W` (as a linear map; junk when
-`Wᴴ V` is singular). -/
+/-- The **oblique projector** $V (W^H V)^{-1} W^H$ of two families $V = (v_j)_{j \in \iota}$ and
+$W = (w_i)_{i \in \iota}$ in $E$: the linear map
+$$x \mapsto \sum_{j \in \iota} \bigl((W^H V)^{-1} c(x)\bigr)_j \, v_j, \qquad c(x) =
+  \bigl(\langle w_i, x \rangle\bigr)_{i \in \iota}.$$
+
+When $W^H V$ is invertible, this is the projector onto $\operatorname{span} V$ orthogonally to
+$\operatorname{span} W$. The inverse is the matrix inverse of Mathlib, which is $0$ for a
+singular matrix, so the map is $0$ when $W^H V$ is singular. -/
 noncomputable def obliqueProjectionOfBases (V W : ι → E) : E →ₗ[𝕜] E where
   toFun x := ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j
   map_add' := by
@@ -171,13 +219,14 @@ noncomputable def obliqueProjectionOfBases (V W : ι → E) : E →ₗ[𝕜] E w
 
 variable {𝕜}
 
-/-- Unfolding lemma for `obliqueProjectionOfBases`. -/
+/-- The value of `LinearMap.obliqueProjectionOfBases` at $x$ is
+$\sum_j ((W^H V)^{-1} c(x))_j \, v_j$. -/
 private theorem obliqueProjectionOfBases_apply (V W : ι → E) (x : E) :
     obliqueProjectionOfBases 𝕜 V W x =
       ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j := rfl
 
 omit [DecidableEq ι] in
-/-- The `W`-coordinates of a `V`-combination are `(Wᴴ V) c`. -/
+/-- The vector of inner products $(\langle w_i, \sum_k c_k v_k \rangle)_i$ is $(W^H V) c$. -/
 private theorem inner_sum_smul (V W : ι → E) (c : ι → 𝕜) :
     (fun i => inner 𝕜 (W i) (∑ k, c k • V k)) = (crossGram 𝕜 V W).mulVec c := by
   funext i
@@ -187,20 +236,26 @@ private theorem inner_sum_smul (V W : ι → E) (c : ι → 𝕜) :
 variable (V W : ι → E) (hVW : IsUnit (crossGram 𝕜 V W))
 include hVW
 
-/-- The projector fixes every `V`-combination. -/
+/-- If $W^H V$ is invertible, the oblique projector fixes every linear combination $\sum_k c_k v_k$.
+-/
 private theorem apply_sum_smul (c : ι → 𝕜) :
     obliqueProjectionOfBases 𝕜 V W (∑ k, c k • V k) = ∑ k, c k • V k := by
   rw [obliqueProjectionOfBases_apply, inner_sum_smul, Matrix.nonsing_inv_mulVec_mulVec hVW]
 
-/-- The projector does not change the `W`-coordinates. -/
+/-- If $W^H V$ is invertible, then $\langle w_i, Px \rangle = \langle w_i, x \rangle$ for the
+oblique projector $P$, every $x$ and every $i$. -/
 private theorem inner_apply_eq (x : E) (i : ι) :
     inner 𝕜 (W i) (obliqueProjectionOfBases 𝕜 V W x) = inner 𝕜 (W i) x := by
   have h := congrFun (inner_sum_smul V W ((crossGram 𝕜 V W)⁻¹.mulVec
     (fun k => inner 𝕜 (W k) x))) i
   rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_nonsing_inv_mulVec hVW]
 
-/-- `V (Wᴴ V)⁻¹ Wᴴ` really is a projector, as soon as the cross Gram matrix `Wᴴ V` is invertible; it
-fixes every `V`-combination, and its own values are `V`-combinations. -/
+/-- Let $V = (v_j)_{j \in \iota}$ and $W = (w_i)_{i \in \iota}$ be finite families in $E$ whose
+cross Gram matrix $W^H V$ is invertible. Then $P = V (W^H V)^{-1} W^H$ is a projector:
+$P^2 = P$.
+
+The proof uses that $P$ fixes every linear combination of the $v_j$, and that every value of $P$
+is such a combination. -/
 theorem obliqueProjectionOfBases_isIdempotentElem :
     IsIdempotentElem (obliqueProjectionOfBases 𝕜 V W) := by
   refine LinearMap.ext fun x => ?_
@@ -210,8 +265,9 @@ theorem obliqueProjectionOfBases_isIdempotentElem :
       = fun i => inner 𝕜 (W i) x from funext fun i => inner_apply_eq V W hVW x i]
   rfl
 
-/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *onto* `span V`: its range is exactly the space spanned by the columns
-of `V`. -/
+/-- Let $V = (v_j)_{j \in \iota}$ and $W = (w_i)_{i \in \iota}$ be finite families in $E$ whose
+cross Gram matrix $W^H V$ is invertible. Then the range of $V (W^H V)^{-1} W^H$ is
+$\operatorname{span} V$, the span of the $v_j$. -/
 theorem range_obliqueProjectionOfBases :
     LinearMap.range (obliqueProjectionOfBases 𝕜 V W) = Submodule.span 𝕜 (Set.range V) := by
   refine le_antisymm ?_ ?_
@@ -223,9 +279,13 @@ theorem range_obliqueProjectionOfBases :
     obtain ⟨c, rfl⟩ := Submodule.mem_span_range_iff_exists_fun 𝕜 |>.1 hy
     exact ⟨∑ k, c k • V k, apply_sum_smul V W hVW c⟩
 
-/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *along* `(span W)ᗮ`: a vector is annihilated exactly when it is
-orthogonal to every column of `W`. Together with `range_obliqueProjectionOfBases` this pins the
-projector down, by `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq`. -/
+/-- Let $V = (v_j)_{j \in \iota}$ and $W = (w_i)_{i \in \iota}$ be finite families in $E$ whose
+cross Gram matrix $W^H V$ is invertible. Then the kernel of $V (W^H V)^{-1} W^H$ is
+$(\operatorname{span} W)^\perp$: a vector is mapped to $0$ if and only if it is orthogonal to
+every $w_i$.
+
+Together with `LinearMap.range_obliqueProjectionOfBases` and
+`LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq`, this determines the projector uniquely. -/
 theorem ker_obliqueProjectionOfBases :
     LinearMap.ker (obliqueProjectionOfBases 𝕜 V W) = (Submodule.span 𝕜 (Set.range W))ᗮ := by
   ext x
@@ -240,8 +300,12 @@ theorem ker_obliqueProjectionOfBases :
       show (fun i => inner 𝕜 (W i) x) = 0 from funext h, Matrix.mulVec_zero]
     simp
 
-/-- The Petrov–Galerkin condition satisfied by the projector: the error `x - P x` is orthogonal to
-`span W`, the test space. -/
+/-- The **Petrov–Galerkin condition**. Let $V = (v_j)_{j \in \iota}$ and $W = (w_i)_{i \in \iota}$
+be finite families in $E$ whose cross Gram matrix $W^H V$ is invertible, and let
+$P = V (W^H V)^{-1} W^H$. Then for every $x \in E$ the error $x - Px$ is orthogonal to the test
+space $\operatorname{span} W$:
+$$x - Px \in (\operatorname{span} W)^\perp.$$
+-/
 theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
     x - obliqueProjectionOfBases 𝕜 V W x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ := by
   rw [Submodule.mem_orthogonal_span_range_iff]
@@ -249,7 +313,11 @@ theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
   rw [inner_sub_right, inner_apply_eq V W hVW x j, sub_self]
 
 omit hVW in
-/-- With `W = V` orthonormal, `V (Vᴴ V)⁻¹ Vᴴ = V Vᴴ` is the orthogonal projection. -/
+/-- Let $V = (v_j)_{j \in \iota}$ be a finite orthonormal family in $E$. Then $V (V^H V)^{-1} V^H$
+is the orthogonal projection onto $\operatorname{span} V$.
+
+Here $V^H V = I$, so the projector is $V V^H$. The orthogonal projection is
+`Submodule.starProjection` of the span, as a linear map. -/
 theorem obliqueProjectionOfBases_self_eq_starProjection (hV : Orthonormal 𝕜 V) :
     obliqueProjectionOfBases 𝕜 V V =
       ((Submodule.span 𝕜 (Set.range V)).starProjection : E →ₗ[𝕜] E) := by
@@ -267,19 +335,21 @@ end Bases
 
 end LinearMap
 
-/-- If `s * t = 1` and `s` rescales `u` to the norm of `v`, then `t` rescales `v` to the norm of
-`u`. -/
+/-- If $t > 0$, $st = 1$ and $s \|u\| = \|v\|$, then $\|t v\| = \|u\|$. -/
 private theorem norm_smul_eq_of_mul_eq_one {s t : ℝ} (ht : 0 < t) (hst : s * t = 1) {u v : E}
     (huv : s * ‖u‖ = ‖v‖) : ‖(t : 𝕜) • v‖ = ‖u‖ := by
   rw [norm_smul, RCLike.norm_ofReal, abs_of_pos ht]
   linear_combination (-t) * huv + ‖u‖ * hst
 
-/-- Rescaling two vectors so as to exchange their norms leaves the norm of their sum unchanged.
+/-- Let $u, v \in E$ and let $s, t$ be real numbers with $s > 0$, $st = 1$ and $s \|u\| = \|v\|$.
+Then
+$$\|s u + t v\| = \|u + v\|.$$
 
-If the real scalars `s`, `t` satisfy `s * t = 1` and `s * ‖u‖ = ‖v‖`, then `‖s • u‖ = ‖v‖` and `‖t •
-v‖ = ‖u‖`, while the cross term `re ⟪s • u, t • v⟫ = s * t * re ⟪u, v⟫` is left alone, so the two
-expansions of the squared norm agree term by term. This is the geometric ingredient of Kato's lemma
-on the norm of an oblique projection. -/
+In words: rescaling two vectors so that their norms are exchanged does not change the norm of
+their sum. Indeed $\|su\| = \|v\|$ and $\|tv\| = \|u\|$, and the cross term $\operatorname{Re}
+\langle su, tv \rangle = st \operatorname{Re} \langle u, v \rangle$ does not change, so the two
+expansions of the squared norm agree term by term. This is the geometric fact behind Kato's
+lemma `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`. -/
 theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1) (u v : E)
     (huv : s * ‖u‖ = ‖v‖) : ‖(s : 𝕜) • u + (t : 𝕜) • v‖ = ‖u + v‖ := by
   have ht : 0 < t := by nlinarith
@@ -296,7 +366,8 @@ theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1
 
 namespace ContinuousLinearMap
 
-/-- For a norm-one projector the range is orthogonal to the kernel. -/
+/-- If a bounded operator $P$ has norm $1$, $Py = y$ and $Pz = 0$, then $\langle y, z \rangle = 0$.
+-/
 private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P‖ = 1) {y z : E}
     (hy : P y = y) (hz : P z = 0) : inner 𝕜 y z = (0 : 𝕜) := by
   rcases eq_or_ne z 0 with rfl | hzne
@@ -330,7 +401,11 @@ private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P�
   have hc0 : ‖c‖ = 0 := by nlinarith [norm_nonneg c]
   exact norm_eq_zero.1 hc0
 
-/-- A nonzero projector has norm `≥ 1`, with equality iff it is orthogonal (self-adjoint). -/
+/-- Let $P : E \to E$ be a bounded linear projector with $P \neq 0$. Then $\|P\| = 1$ if and only if
+$P$ is self-adjoint, that is, $\langle Px, y \rangle = \langle x, Py \rangle$ for all
+$x, y \in E$.
+
+A self-adjoint projector is the orthogonal projection onto its range. -/
 theorem IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
     (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric := by
   have hPP : ∀ x : E, P (P x) = P x := fun x => DFunLike.congr_fun hP x
@@ -358,8 +433,9 @@ theorem IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E} (hP : 
       (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
     nlinarith [norm_nonneg (P x), norm_nonneg x]
 
-/-- The exchange estimate of `ContinuousLinearMap.norm_le_opNorm_mul_norm_add`, with the two
-rescaling factors supplied explicitly. -/
+/-- The estimate of `ContinuousLinearMap.norm_le_opNorm_mul_norm_add`, with the two rescaling
+factors $s$ and $t$ given as hypotheses: if $s > 0$, $st = 1$, $s \|u\| = \|v\|$, $Qu = 0$ and
+$Qv = v$, then $\|u\| \le \|Q\| \, \|u + v\|$. -/
 private theorem norm_le_opNorm_mul_norm_add_aux {Q : E →L[𝕜] E} {s t : ℝ} (hs : 0 < s)
     (hst : s * t = 1) {u v : E} (huv : s * ‖u‖ = ‖v‖) (hQu : Q u = 0) (hQv : Q v = v) :
     ‖u‖ ≤ ‖Q‖ * ‖u + v‖ := by
@@ -371,10 +447,13 @@ private theorem norm_le_opNorm_mul_norm_add_aux {Q : E →L[𝕜] E} {s t : ℝ}
     _ ≤ ‖Q‖ * ‖(s : 𝕜) • u + (t : 𝕜) • v‖ := Q.le_opNorm _
     _ = ‖Q‖ * ‖u + v‖ := by rw [norm_smul_add_smul_eq_norm_add hs hst u v huv]
 
-/-- Kato's exchange estimate: if a bounded operator `Q` annihilates `u` and fixes `v`, both nonzero,
-then `‖u‖ ≤ ‖Q‖ * ‖u + v‖`, even though `Q (u + v) = v` carries no information about `u`. Indeed `Q`
-maps the rescaled vector `(‖v‖/‖u‖) • u + (‖u‖/‖v‖) • v`, which by `norm_smul_add_smul_eq_norm_add`
-still has norm `‖u + v‖`, to a vector of norm exactly `‖u‖`. -/
+/-- Let $Q : E \to E$ be a bounded linear operator, and let $u, v \in E$ be nonzero with $Qu = 0$
+and $Qv = v$. Then
+$$\|u\| \le \|Q\| \, \|u + v\|.$$
+
+This holds although $Q(u + v) = v$ carries no information about $u$. The proof applies $Q$ to
+the rescaled vector $(\|v\| / \|u\|) u + (\|u\| / \|v\|) v$. By `norm_smul_add_smul_eq_norm_add`
+this vector has norm $\|u + v\|$, and its image under $Q$ has norm $\|u\|$. -/
 theorem norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0) (hv : v ≠ 0)
     (hQu : Q u = 0) (hQv : Q v = v) : ‖u‖ ≤ ‖Q‖ * ‖u + v‖ := by
   have ha : ‖u‖ ≠ 0 := norm_ne_zero_iff.2 hu
@@ -384,8 +463,7 @@ theorem norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0
   · field_simp
   · field_simp
 
-/-- Half of Kato's lemma: a bounded projector `P ≠ 1` satisfies `‖P‖ ≤ ‖1 - P‖`. Applied to `1 - P`
-as well, this gives the equality `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`. -/
+/-- A bounded linear projector $P \neq I$ satisfies $\|P\| \le \|I - P\|$. -/
 private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h1 : P ≠ 1) :
     ‖P‖ ≤ ‖1 - P‖ := by
   refine P.opNorm_le_bound (norm_nonneg _) fun x => ?_
@@ -409,13 +487,14 @@ private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem
     calc ‖P x‖ ≤ ‖1 - P‖ * ‖P x + (1 - P) x‖ := norm_le_opNorm_mul_norm_add hu hv hQu hQv
       _ = ‖1 - P‖ * ‖x‖ := by rw [hsum]
 
-/-- Kato's lemma: for a bounded projector `P ≠ 0, 1` on an inner product space, `‖P‖ = ‖1 - P‖`
-([szyld2006many]).
+/-- **Kato's lemma**. Let $P : E \to E$ be a bounded linear projector on an inner product space $E$,
+with $P \neq 0$ and $P \neq I$. Then
+$$\|I - P\| = \|P\|.$$
+See [szyld2006many].
 
-The proof is the exchange trick `ContinuousLinearMap.norm_le_opNorm_mul_norm_add` applied to the
-decomposition `x = P x + (1 - P) x`: rescaling the two components so as to swap their norms fixes
-the norm of `x` and turns `‖P x‖` into `‖(1 - P) y‖`, whence `‖P‖ ≤ ‖1 - P‖`; the reverse inequality
-is the same statement for `1 - P`. -/
+The proof applies `ContinuousLinearMap.norm_le_opNorm_mul_norm_add` with $Q = I - P$ to the
+decomposition $x = Px + (I - P)x$. This gives $\|Px\| \le \|I - P\| \, \|x\|$, so
+$\|P\| \le \|I - P\|$. The reverse inequality is the same statement for $I - P$. -/
 theorem IsIdempotentElem.norm_one_sub_eq {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h0 : P ≠ 0)
     (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖ := by
   have hQ1 : (1 : E →L[𝕜] E) - P ≠ 1 := fun h => h0 (sub_eq_self.1 h)

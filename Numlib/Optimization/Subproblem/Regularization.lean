@@ -8,27 +8,34 @@ import Numlib.Optimization.Subproblem.TrustRegion
 /-!
 # Global optimality for the regularization subproblem
 
-The regularization subproblem minimizes `m^R(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫ + σ/r ‖s‖^r` over the whole
-space, for `σ > 0` and `r > 2`. Its global minimizers are exactly the steps `s` with
-`(H + λ I) s = -g` and `H + λ I` positive semidefinite, where `λ = σ ‖s‖^{r-2}` (Griewank,
-Nesterov–Polyak, Cartis–Gould–Toint for `r = 3`, Hsia–Sheu–Yuan for general `r`;
-[cartis2022evaluation] Theorem 8.2.8). The characterization holds on any real inner product space;
-only existence uses finite dimension.
+Let $E$ be a real inner product space, let $H : E \to E$ be a symmetric continuous linear operator,
+let $g \in E$, and let $\sigma > 0$ and $r > 2$. The **regularization subproblem** minimizes the
+regularized model
+$$m^R(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle + \frac{\sigma}{r} \|s\|^r$$
+over all of $E$. Its global minimizers are exactly the steps $s$ with $(H + \lambda I) s = -g$ and
+$H + \lambda I$ positive semidefinite, where $\lambda = \sigma \|s\|^{r-2}$. This is Theorem 8.2.8
+of [cartis2022evaluation]. The result is due to Griewank, Nesterov and Polyak, and Cartis, Gould and
+Toint for $r = 3$, and to Hsia, Sheu and Yuan for general $r$. The characterization holds on every
+real inner product space. Only the existence of a minimizer uses finite dimension.
 
-The proof is derived from the trust-region theory instead of repeating the reflection argument:
-a global minimizer `s` of `m^R` minimizes the quadratic model on the ball of radius `‖s‖`
-(`isMinOn_closedBall_of_isMinOn_regModel`), so it has a trust-region multiplier, which the
-first-order condition identifies with `σ ‖s‖^{r-2}`. Sufficiency is the shifted-system identity
-plus the weighted arithmetic–geometric mean inequality `a² b^{r-2} ≤ (2/r) a^r + (1 - 2/r) b^r`.
+## Main results
 
-## Main statements
+* `Subproblem.isMinOn_regModel_iff`: $s$ is a global minimizer of $m^R$ if and only if
+  $(H + \lambda I) s = -g$ and $H + \lambda I$ is positive semidefinite, with
+  $\lambda = \sigma \|s\|^{r-2}$.
+* `Subproblem.exists_isMinOn_regModel`: in finite dimension, $m^R$ has a global minimizer.
+* `Subproblem.eq_of_isMinOn_regModel_of_posDef`: if $H + \lambda I$ is positive definite at a global
+  minimizer, then that minimizer is unique.
+* `Subproblem.norm_eq_of_isMinOn_regModel`: all global minimizers have the same norm, and hence the
+  same multiplier $\lambda$.
 
-* `Subproblem.isMinOn_regModel_iff`: the global optimality characterization.
-* `Subproblem.exists_isMinOn_regModel`: existence of a global minimizer in finite dimension.
-* `Subproblem.eq_of_isMinOn_regModel_of_posDef`: uniqueness when `H + λ I` is positive
-  definite.
-* `Subproblem.norm_eq_of_isMinOn_regModel`: all global minimizers have the same norm, hence the
-  same multiplier.
+## Proof outline
+
+The proof uses the trust-region theory instead of a separate argument. A global minimizer $s$ of
+$m^R$ minimizes the quadratic model on the ball of radius $\|s\|$. So it has a trust-region
+multiplier, and the first-order condition identifies this multiplier with $\sigma \|s\|^{r-2}$.
+Sufficiency follows from the shifted-system identity and the weighted arithmetic–geometric mean
+inequality $a^2 b^{r-2} \le \frac{2}{r} a^r + \left(1 - \frac{2}{r}\right) b^r$.
 -/
 
 open Filter Topology Metric Set
@@ -40,8 +47,9 @@ namespace Subproblem
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- Weighted arithmetic–geometric mean inequality in the form used for the regularization
-subproblem: `a² b^{r-2} ≤ (2/r) a^r + (1 - 2/r) b^r` for `a, b ≥ 0` and `r ≥ 2`. -/
+/-- A weighted arithmetic–geometric mean inequality: for $a, b \ge 0$ and $r \ge 2$,
+$$a^2 b^{r-2} \le \frac{2}{r} a^r + \left(1 - \frac{2}{r}\right) b^r.$$
+-/
 theorem sq_mul_rpow_sub_two_le {a b r : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hr : 2 ≤ r) :
     a ^ 2 * b ^ (r - 2) ≤ 2 / r * a ^ r + (1 - 2 / r) * b ^ r := by
   have hr0 : 0 < r := by linarith
@@ -52,8 +60,9 @@ theorem sq_mul_rpow_sub_two_le {a b r : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hr :
   rwa [← Real.rpow_mul ha, ← Real.rpow_mul hb, mul_div_cancel₀ _ hr0.ne', mul_sub, mul_one,
     mul_div_cancel₀ _ hr0.ne', Real.rpow_two] at h
 
-/-- The regularization term dominates the multiplier term: with `λ = σ b^{r-2}`,
-`λ/2 (b² - a²) + σ/r (a^r - b^r) ≥ 0` for `a, b ≥ 0`, `σ ≥ 0`, `r > 2`. -/
+/-- For $a, b \ge 0$, $\sigma \ge 0$ and $r > 2$, with $\lambda = \sigma b^{r-2}$,
+$$\frac{\lambda}{2} \left(b^2 - a^2\right) + \frac{\sigma}{r} \left(a^r - b^r\right) \ge 0.$$
+That is, the regularization term dominates the multiplier term. -/
 theorem mul_sub_add_div_mul_sub_nonneg {a b σ r : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hσ : 0 ≤ σ)
     (hr : 2 < r) :
     0 ≤ σ * b ^ (r - 2) / 2 * (b ^ 2 - a ^ 2) + σ / r * (a ^ r - b ^ r) := by
@@ -70,8 +79,11 @@ theorem mul_sub_add_div_mul_sub_nonneg {a b σ r : ℝ} (ha : 0 ≤ a) (hb : 0 �
 
 variable {g : E} {H : E →L[ℝ] E} {σ r : ℝ} {s : E}
 
-/-- A global minimizer of the regularized model minimizes the quadratic model on the ball of its
-own radius (`σ ≥ 0`, `r > 0`). -/
+/-- Let $\sigma \ge 0$ and $r > 0$. If $s$ is a global minimizer of the regularized model $m^R$ on
+$E$, then $s$ minimizes the quadratic model $m$ on the closed ball
+$\{u \in E : \|u\| \le \|s\|\}$.
+
+This reduces the regularization subproblem to the trust-region subproblem with radius $\|s\|$. -/
 theorem isMinOn_closedBall_of_isMinOn_regModel (hσ : 0 ≤ σ) (hr : 0 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) :
     IsMinOn (quadModel g H) (closedBall 0 ‖s‖) s := by
@@ -83,8 +95,10 @@ theorem isMinOn_closedBall_of_isMinOn_regModel (hσ : 0 ≤ σ) (hr : 0 < r)
   have : σ / r * ‖u‖ ^ r ≤ σ / r * ‖s‖ ^ r := mul_le_mul_of_nonneg_left this (by positivity)
   linarith
 
-/-- Quantitative sufficiency: if `(H + λ I) s = -g` with `λ = σ ‖s‖^{r-2}`, `σ ≥ 0`, `r > 2`,
-then `m^R(u) - m^R(s) ≥ ½ ⟪u - s, (H + λ I)(u - s)⟫` for every `u`. -/
+/-- Quantitative sufficiency. Let $H$ be symmetric, $\sigma \ge 0$ and $r > 2$, and let $s \in E$
+satisfy $(H + \lambda I) s = -g$ with $\lambda = \sigma \|s\|^{r-2}$. Then for every $u \in E$
+$$m^R(u) - m^R(s) \ge \tfrac12 \langle u - s, (H + \lambda I)(u - s) \rangle.$$
+-/
 theorem inner_le_regModel_sub_of_shifted (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 ≤ σ)
     (hr : 2 < r) (hs : (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) s = -g) (u : E) :
     (1 / 2) * ⟪u - s, (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) (u - s)⟫ ≤
@@ -94,8 +108,9 @@ theorem inner_le_regModel_sub_of_shifted (hH : (H : E →ₗ[ℝ] E).IsSymmetric
   simp only [regModel]
   linarith
 
-/-- The first-order condition at a global minimizer of the regularized model (`r > 1`):
-`(H + λ I) s = -g` with `λ = σ ‖s‖^{r-2}`. -/
+/-- The first-order condition at a global minimizer of the regularized model. Let $H$ be symmetric
+and $r > 1$. If $s$ is a global minimizer of $m^R$ on $E$, then $(H + \lambda I) s = -g$ with
+$\lambda = \sigma \|s\|^{r-2}$. -/
 theorem shifted_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hr : 1 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) :
     (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) s = -g := by
@@ -108,9 +123,11 @@ theorem shifted_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hr
   rw [eq_neg_iff_add_eq_zero, ← hv]
   abel
 
-/-- At a global minimizer `s = 0` of the regularized model with `g = 0` and `r > 2`, `H` is
-positive semidefinite: `m^R(t v) = t²/2 ⟪v, H v⟫ + σ/r t^r ‖v‖^r ≥ 0` and the second term is
-`o(t²)`. -/
+/-- Let $r > 2$ and $g = 0$. If $s = 0$ is a global minimizer of the regularized model $m^R$ on $E$,
+then $H$ is positive semidefinite: $\langle v, H v \rangle \ge 0$ for every $v \in E$.
+
+The reason is that $m^R(t v) = \frac{t^2}{2} \langle v, H v \rangle + \frac{\sigma}{r} |t|^r
+\|v\|^r \ge 0$ for all $t$, and the second term is $o(t^2)$ as $t \to 0$. -/
 theorem inner_apply_nonneg_of_isMinOn_regModel_zero (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ 0) (hg : g = 0) (v : E) : 0 ≤ ⟪v, H v⟫ := by
   have hr0 : r ≠ 0 := by linarith
@@ -138,10 +155,16 @@ theorem inner_apply_nonneg_of_isMinOn_regModel_zero (hr : 2 < r)
   have := ge_of_tendsto ht hev
   linarith
 
-/-- **Regularization subproblem global optimality** ([cartis2022evaluation] Theorem 8.2.8). For
-symmetric `H`, `σ > 0` and `r > 2`, with `λ = σ ‖s‖^{r-2}`, the step `s` is a global minimizer of
-the regularized model if and only if `(H + λ I) s = -g` and `H + λ I` is positive
-semidefinite. -/
+/-- **Global optimality for the regularization subproblem.** Let $E$ be a real inner product space,
+let $H : E \to E$ be a symmetric continuous linear operator, let $g \in E$, and let $\sigma > 0$
+and $r > 2$. For $s \in E$ put $\lambda = \sigma \|s\|^{r-2}$. Then $s$ is a global minimizer of
+the regularized model $m^R$ on $E$ if and only if
+$$(H + \lambda I) s = -g \quad \text{and} \quad H + \lambda I \text{ is positive
+  semidefinite}.$$
+
+This is Theorem 8.2.8 of [cartis2022evaluation]. The statement holds on every real inner product
+space, also of infinite dimension. Positive semidefinite is `LinearMap.IsPositive` of the
+operator $H + \lambda I$. -/
 theorem isMinOn_regModel_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 < σ) (hr : 2 < r) :
     IsMinOn (regModel g H σ r) univ s ↔
       (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) s = -g ∧
@@ -169,8 +192,9 @@ theorem isMinOn_regModel_iff (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 <
     simp only [mem_ofPred_eq]
     linarith
 
-/-- The regularized model is bounded below by a function of `‖s‖`:
-`m^R(s) ≥ σ/r ‖s‖^r - (‖g‖ + ‖H‖/2) ‖s‖²` once `‖s‖ ≥ 1`. -/
+/-- For every $s \in E$ with $\|s\| \ge 1$, the regularized model satisfies
+$$m^R(s) \ge \frac{\sigma}{r} \|s\|^r - \left(\|g\| + \frac{\|H\|}{2}\right) \|s\|^2.$$
+-/
 theorem regModel_ge (g : E) (H : E →L[ℝ] E) (σ r : ℝ) {s : E} (hs : 1 ≤ ‖s‖) :
     σ / r * ‖s‖ ^ r - (‖g‖ + ‖H‖ / 2) * ‖s‖ ^ 2 ≤ regModel g H σ r s := by
   have h1 : -(‖g‖ * ‖s‖) ≤ ⟪g, s⟫ := by
@@ -185,7 +209,9 @@ theorem regModel_ge (g : E) (H : E →L[ℝ] E) (σ r : ℝ) {s : E} (hs : 1 ≤
   simp only [regModel, quadModel]
   nlinarith
 
-/-- For `σ > 0` and `r > 2` the regularized model tends to `+∞` at infinity. -/
+/-- Let $E$ be a proper space, for example a finite-dimensional space. For $\sigma > 0$ and $r > 2$,
+the regularized model $m^R$ tends to $+\infty$ as $\|s\| \to \infty$, that is, along the
+cocompact filter. -/
 theorem tendsto_regModel_cocompact [ProperSpace E] (g : E) (H : E →L[ℝ] E) (hσ : 0 < σ)
     (hr : 2 < r) : Tendsto (regModel g H σ r) (cocompact E) atTop := by
   set C := ‖g‖ + ‖H‖ / 2
@@ -203,17 +229,27 @@ theorem tendsto_regModel_cocompact [ProperSpace E] (g : E) (H : E →L[ℝ] E) (
   filter_upwards [tendsto_norm_cocompact_atTop.eventually (eventually_ge_atTop 1)] with s hs
   exact regModel_ge g H σ r hs
 
-/-- **Existence.** In finite dimension, for `σ > 0` and `r > 2`, the regularized model has a
-global minimizer (it is continuous and coercive). -/
+/-- **Existence of a global minimizer.** Let $E$ be a finite-dimensional real inner product space,
+let $g \in E$, let $H : E \to E$ be a continuous linear operator, and let $\sigma > 0$ and
+$r > 2$. Then the regularized model $m^R$ has a global minimizer on $E$.
+
+The proof uses that $m^R$ is continuous and tends to $+\infty$ at infinity. The operator $H$
+need not be symmetric. -/
 theorem exists_isMinOn_regModel [FiniteDimensional ℝ E] (g : E) (H : E →L[ℝ] E) (hσ : 0 < σ)
     (hr : 2 < r) : ∃ s, IsMinOn (regModel g H σ r) univ s := by
   obtain ⟨s, hs⟩ := (continuous_regModel g H σ (by linarith : (0 : ℝ) ≤ r)).exists_forall_le
     (tendsto_regModel_cocompact g H hσ hr)
   exact ⟨s, fun u _ => hs u⟩
 
-/-- **Uniqueness** ([cartis2022evaluation] Theorem 8.2.8, last sentence). If `s` is a global
-minimizer of the regularized model (`σ > 0`, `r > 2`) and `H + σ ‖s‖^{r-2} I` is coercive
-(positive definite), then `s` is the only global minimizer. -/
+/-- **Uniqueness of the global minimizer.** Let $H$ be symmetric, and let $\sigma > 0$ and $r > 2$.
+Let $s$ be a global minimizer of the regularized model $m^R$ on $E$, and suppose that
+$H + \lambda I$ with $\lambda = \sigma \|s\|^{r-2}$ is coercive: there is $c > 0$ with $\langle
+(H + \lambda I) x, x \rangle \ge c \|x\|^2$ for all $x \in E$. Then every global minimizer $u$
+of $m^R$ equals $s$.
+
+This is the last sentence of Theorem 8.2.8 of [cartis2022evaluation]. Coercivity is a form of
+positive definiteness. In finite dimension the two are the same. The condition is
+`LinearMap.IsCoercive`. -/
 theorem eq_of_isMinOn_regModel_of_posDef (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 < σ)
     (hr : 2 < r) (hmin : IsMinOn (regModel g H σ r) univ s)
     (hc : ((H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E) : E →L[ℝ] E) : E →ₗ[ℝ] E).IsCoercive)
@@ -229,9 +265,11 @@ theorem eq_of_isMinOn_regModel_of_posDef (hH : (H : E →ₗ[ℝ] E).IsSymmetric
   have : ‖u - s‖ ^ 2 ≤ 0 := by nlinarith
   exact sub_eq_zero.mp (norm_eq_zero.mp (by nlinarith [norm_nonneg (u - s)]))
 
-/-- If `s` and `s'` are global minimizers of the regularized model (`σ > 0`, `r > 2`), then
-`s'` solves the shifted system of `s`: `(λ - λ') s' = 0` for the multipliers
-`λ = σ ‖s‖^{r-2}`, `λ' = σ ‖s'‖^{r-2}`. -/
+/-- Let $H$ be symmetric, and let $\sigma > 0$ and $r > 2$. If $s$ and $s'$ are global minimizers of
+the regularized model $m^R$ on $E$, then
+$$(\lambda - \lambda') s' = 0, \qquad \lambda = \sigma \|s\|^{r-2}, \quad \lambda' = \sigma
+  \|s'\|^{r-2}.$$
+So $s'$ also solves the shifted system $(H + \lambda I) s' = -g$ of $s$. -/
 theorem sub_smul_eq_zero_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 < σ)
     (hr : 2 < r) (hmin : IsMinOn (regModel g H σ r) univ s) {s' : E}
     (hmin' : IsMinOn (regModel g H σ r) univ s') :
@@ -249,8 +287,12 @@ theorem sub_smul_eq_zero_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymme
   rw [ContinuousLinearMap.coe_coe, map_sub, sub_eq_zero, hshift] at hk
   exact sub_smul_eq_zero_of_shifted hk hshift'
 
-/-- **All global minimizers have the same norm** (`σ > 0`, `r > 2`), hence the same multiplier
-`λ* = σ ‖s‖^{r-2}` ([cartis2022evaluation] §8.2.4). -/
+/-- **All global minimizers have the same norm.** Let $H$ be symmetric, and let $\sigma > 0$ and
+$r > 2$. If $s$ and $s'$ are global minimizers of the regularized model $m^R$ on $E$, then
+$$\|s\| = \|s'\|.$$
+Hence all global minimizers have the same multiplier $\lambda_* = \sigma \|s\|^{r-2}$.
+
+This is stated in Section 8.2.4 of [cartis2022evaluation]. -/
 theorem norm_eq_of_isMinOn_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) {s' : E}
     (hmin' : IsMinOn (regModel g H σ r) univ s') : ‖s‖ = ‖s'‖ := by

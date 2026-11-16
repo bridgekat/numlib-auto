@@ -8,11 +8,42 @@ import Numlib.Stationary.Splitting
 /-!
 # Regular splittings
 
-A splitting `A = M - N` of a real matrix is *regular* when `M⁻¹` and `N` are entrywise nonnegative,
-and it converges exactly when `A` is invertible with `A⁻¹` entrywise nonnegative
-([saad2003iterative], Definition 4.3 and Theorem 4.4). The engine is the nonnegative Neumann
-criterion `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` of
-`Numlib/LinearAlgebra/Matrix/MMatrix`, applied to the iteration operator `G = M⁻¹ N`.
+A splitting $A = M - N$ of a real square matrix $A$, with $M$ invertible, is **regular** if $M^{-1}$
+and $N$ are entrywise nonnegative ([saad2003iterative], Definition 4.3). A regular splitting
+converges, that is, its iteration matrix $G = M^{-1} N$ has spectral radius $\rho(G) < 1$, if and
+only if $A$ is invertible and $A^{-1}$ is entrywise nonnegative ([saad2003iterative], Theorem 4.4).
+In particular, every regular splitting of an M-matrix converges. The proofs apply the nonnegative
+Neumann criterion `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` of
+`Numlib.LinearAlgebra.Matrix.MMatrix` to the iteration matrix $G$.
+
+## Main definitions
+
+* `Stationary.Splitting.IsRegular`: the splitting $A = M - N$ has $M^{-1} \ge 0$ and $N \ge 0$
+  entrywise.
+
+## Main results
+
+* `Stationary.Splitting.IsRegular.entrywiseNonneg_iterationOperator`: the iteration matrix of a
+  regular splitting is entrywise nonnegative.
+* `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff`: a regular splitting converges
+  if and only if $A$ is invertible with $A^{-1} \ge 0$.
+* `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix`: every regular
+  splitting of an M-matrix converges.
+
+## Proof outline
+
+Both directions of the criterion use $1 - G = M^{-1} A$. If $\rho(G) < 1$, then $1 - G$ is
+invertible with a nonnegative inverse, so $A = M (1 - G)$ is invertible and
+$A^{-1} = (1 - G)^{-1} M^{-1}$ is a product of nonnegative matrices. Conversely, if $A^{-1} \ge 0$,
+the identity $(1 - G)^{-1} = A^{-1} M = 1 + A^{-1} N$ shows that $(1 - G)^{-1}$ is nonnegative. This
+identity is the relation $A^{-1} N = (1 - G)^{-1} G$ of [saad2003iterative] in a form that needs no
+inverse of $N$.
+
+## Implementation notes
+
+* The spectral radius of a real matrix is `Matrix.complexSpectralRadius`, the spectral radius of its
+  complexification.
+* The matrix $M^{-1}$ is `Ring.inverse s.m`, and $N = M - A$ is `Stationary.Splitting.n`.
 -/
 
 open scoped Matrix
@@ -23,8 +54,11 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n ℝ}
 
-/-- **Regular splitting** ([saad2003iterative], Definition 4.3): the splitting `A = M - N` is
-regular when `M⁻¹` and `N` are entrywise nonnegative. -/
+/-- A splitting $A = M - N$ of a real square matrix $A$, with $M$ invertible, is a **regular
+splitting** if $M^{-1}$ and $N$ are entrywise nonnegative. This is Definition 4.3 of
+[saad2003iterative].
+
+The matrix $M^{-1}$ is `Ring.inverse s.m`, and $N = M - A$ is `Stationary.Splitting.n`. -/
 def IsRegular (s : Splitting A) : Prop :=
   (Ring.inverse s.m).EntrywiseNonneg ∧ s.n.EntrywiseNonneg
 
@@ -33,19 +67,21 @@ namespace IsRegular
 variable {s : Splitting A} (hs : s.IsRegular)
 include hs
 
-/-- The iteration operator `G = M⁻¹ N` of a regular splitting is entrywise nonnegative. -/
+/-- Let $A = M - N$ be a regular splitting of a real square matrix $A$. Then its iteration matrix
+$G = M^{-1} N$ is entrywise nonnegative.
+
+The iteration matrix is `Stationary.Splitting.iterationOperator`, which is defined as
+$1 - M^{-1} A$. -/
 theorem entrywiseNonneg_iterationOperator : s.iterationOperator.EntrywiseNonneg := by
   rw [s.iterationOperator_eq]; exact hs.1.mul hs.2
 
-/-- **[saad2003iterative] Theorem 4.4** (*Iterative Methods for Sparse Linear Systems*): a regular
-splitting `A = M - N` converges exactly when `A` is invertible with an entrywise nonnegative
-inverse.
+/-- Let $A = M - N$ be a regular splitting of a real square matrix $A$, with iteration matrix
+$G = M^{-1} N$. Then $\rho(G) < 1$ if and only if $A$ is invertible and $A^{-1}$ is entrywise
+nonnegative. This is Theorem 4.4 of [saad2003iterative].
 
-Both directions go through the nonnegative Neumann criterion applied to `G = M⁻¹ N`, using `1 - G =
-M⁻¹ A`. Forwards, `A = M (1 - G)` is a product of units and `A⁻¹ = (1 - G)⁻¹ M⁻¹` a product of
-nonnegative matrices. Backwards, the identity `(1 - G)⁻¹ = A⁻¹ M = 1 + A⁻¹ N` — which is
-[saad2003iterative] `A⁻¹ N = (1 - G)⁻¹ G` in a form that needs no inverse of `N` — exhibits `(1 -
-G)⁻¹` as nonnegative. -/
+The spectral radius is `Matrix.complexSpectralRadius`. Both directions apply the nonnegative
+Neumann criterion `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` to $G$, with
+$1 - G = M^{-1} A$. -/
 theorem complexSpectralRadius_lt_one_iff :
     s.iterationOperator.complexSpectralRadius < 1 ↔ IsUnit A ∧ A⁻¹.EntrywiseNonneg := by
   have hMinv : Ring.inverse s.m = s.m⁻¹ := (nonsing_inv_eq_ringInverse _).symm
@@ -76,10 +112,12 @@ theorem complexSpectralRadius_lt_one_iff :
     rw [hinv]
     exact entrywiseNonneg_one.add (hnn.mul hs.2)
 
-/-- Every regular splitting of an M-matrix converges (the remark after [saad2003iterative] Theorem
-4.4 in *Iterative Methods for Sparse Linear Systems*): an M-matrix is invertible with a nonnegative
-inverse, which is exactly the right-hand side of
-`Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff`. -/
+/-- Let $A$ be a real M-matrix and let $A = M - N$ be a regular splitting of $A$. Then the iteration
+matrix satisfies $\rho(M^{-1} N) < 1$. This is the remark after Theorem 4.4 of
+[saad2003iterative].
+
+An M-matrix is invertible with an entrywise nonnegative inverse (`Matrix.IsMMatrix`). This is
+the right-hand side of `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff`. -/
 theorem complexSpectralRadius_lt_one_of_isMMatrix (hA : A.IsMMatrix) :
     s.iterationOperator.complexSpectralRadius < 1 :=
   hs.complexSpectralRadius_lt_one_iff.2 ⟨hA.isUnit, hA.inv_entrywiseNonneg⟩

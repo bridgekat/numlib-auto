@@ -14,13 +14,22 @@ import Mathlib.Analysis.InnerProductSpace.Spectrum
 /-!
 # The sorted eigenvalues of a symmetric operator from its characteristic polynomial
 
-Mathlib's `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` says that the eigenvalues
-`hT.eigenvalues hn` of a symmetric operator are the sorted roots of its characteristic polynomial.
-Read backwards (`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`), it identifies the eigenvalues
-with any antitone list of the roots, which is how a spectrum computed by other means (for instance
-the squares of the singular values from a matrix SVD) is matched with Mathlib's.
-`LinearMap.IsSymmetric.iSup_eigenspace_eq_top` restates Mathlib's
-`LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot` as "the eigenspaces span".
+Let $T$ be a symmetric operator on a finite-dimensional inner product space $E$ of dimension $n$
+over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Mathlib lists the eigenvalues of $T$ in decreasing
+order as `LinearMap.IsSymmetric.eigenvalues`, and
+`LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` says that this list is the sorted list of
+the roots of the characteristic polynomial of $T$. This file reads that theorem backwards: any
+decreasing $d_1 \ge \dots \ge d_n$ whose values are the roots of the characteristic polynomial, with
+multiplicity, is the list of eigenvalues. So a spectrum that is computed by other means, for
+instance the squares of the singular values from a matrix singular value decomposition, can be
+matched with the eigenvalues of Mathlib. The file also states that the eigenspaces of $T$ span $E$.
+
+## Main results
+
+* `LinearMap.IsSymmetric.eigenvalues_eq_of_antitone`: a decreasing list of the roots of the
+  characteristic polynomial is the list of eigenvalues.
+* `LinearMap.IsSymmetric.iSup_eigenspace_eq_top`: the eigenspaces of a symmetric operator span the
+  space.
 -/
 
 open Module
@@ -30,9 +39,15 @@ namespace LinearMap
 variable {𝕜 : Type*} [RCLike 𝕜]
 
 /-- **The sorted eigenvalues of a symmetric operator are determined by its characteristic
-polynomial**: if the roots of `T.charpoly` are the values of an antitone `d : Fin n → ℝ`, then
-`hT.eigenvalues hn = d`. This is `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` read
-backwards. -/
+polynomial.** Let $T$ be a symmetric operator on a finite-dimensional inner product space $E$ of
+dimension $n$, and let $d : \{0, \dots, n - 1\} \to \mathbb{R}$ be decreasing,
+$d_0 \ge d_1 \ge \dots \ge d_{n-1}$. If the roots of the characteristic polynomial of $T$,
+counted with multiplicity, are the numbers $d_0, \dots, d_{n-1}$, then $d$ is the list of
+eigenvalues of $T$ in decreasing order.
+
+The roots are compared as multisets in $\mathbb{K}$, with each $d_i$ embedded in $\mathbb{K}$.
+The list of eigenvalues is `LinearMap.IsSymmetric.eigenvalues`. The theorem is
+`LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` read backwards. -/
 theorem IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
     [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E}
     (hT : T.IsSymmetric) {n : ℕ} (hn : finrank 𝕜 E = n) {d : Fin n → ℝ} (hd : Antitone d)
@@ -45,8 +60,12 @@ theorem IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
   simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
   exact hd.sortedGE_ofFn
 
-/-- **The eigenspaces of a symmetric operator on a finite-dimensional space span it**: the
-`⊤` form of Mathlib's `LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot`. -/
+/-- **The eigenspaces of a symmetric operator on a finite-dimensional space span it.** Let $T$ be a
+symmetric operator on a finite-dimensional inner product space $E$. Then the sum of the
+eigenspaces $\ker(T - \mu I)$ over all $\mu \in \mathbb{K}$ is $E$.
+
+This is the form with `⊤` of
+`LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_eq_bot` in Mathlib. -/
 theorem IsSymmetric.iSup_eigenspace_eq_top {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) :
     (⨆ μ : 𝕜, Module.End.eigenspace T μ) = ⊤ :=

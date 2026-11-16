@@ -13,47 +13,68 @@ import Numlib.Analysis.Normed.Lp.PiLpDual
 import Numlib.Analysis.Sobolev.Interval.Zero
 
 /-!
-# The dual space `W^{-1,p'}(I)` of `W_0^{1,p}(I)`
+# The dual space $W^{-1,p'}(I)$ of $W_0^{1,p}(I)$
 
-The dual of `W_0^{1,p}(I)`, [brezis2011functional] §8.3, "The dual space of `W_0^{1,p}(I)`": the
-notation `W^{-1,p'}(I)`, the inclusions `W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}` (continuous, injective,
-with dense ranges), the representation of Proposition 8.14 and Remark 21
-(`⟨F, u⟩ = ∫ f₀ u + ∫ f₁ u'` with `f₀, f₁ ∈ L^{p'}(I)`) and Remark 19 (its non-uniqueness).
+Let $I \subseteq \mathbb{R}$ be open, let $1 \le p \le \infty$ and let $p'$ be the conjugate
+exponent. This module studies the dual space $W^{-1,p'}(I)$ of $W_0^{1,p}(I)$, following §8.3 of
+[brezis2011functional], "The dual space of $W_0^{1,p}(I)$". It gives the inclusions
+$$W_0^{1,p}(I) \subseteq L^2(I) \subseteq W^{-1,p'}(I),$$
+which are continuous and injective, and have dense range under conditions on $p$; at $p = 2$ these
+are the inclusions $H_0^1 \subseteq L^2 \subseteq H^{-1}$. It proves the representation of
+Proposition 8.14 and Remark 21 of [brezis2011functional]: for $1 \le p < \infty$, every
+$F \in W^{-1,p'}(I)$ has the form
+$$\langle F, u \rangle = \int_I f_0 u + \int_I f_1 u', \qquad f_0, f_1 \in L^{p'}(I),$$
+and the norm of $F$ is the norm of the pair $(f_0, f_1)$. By Remark 19 of [brezis2011functional],
+the pair $(f_0, f_1)$ is not unique.
 
-## Main definitions and statements
+## Main definitions
 
-* `SobolevIntervalLpDual p I := StrongDual ℝ (SobolevIntervalLpZero 1 p I)`, the space
-  `W^{-1,p'}(I)`, `H^{-1}(I)` at `p = 2`; a Banach space.
-* `SobolevIntervalLpZero.toL2` (`p ≤ 2`, any interval) and `SobolevIntervalLpZero.toL2OfBounded`
-  (bounded interval, any `p`): the inclusion `W_0^{1,p}(I) ⊆ L²(I)`, injective
-  (`toL2_injective`, `toL2OfBounded_injective`) and with dense range (`denseRange_toL2`,
-  `denseRange_toL2OfBounded`, `p < ∞`).
-* `SobolevIntervalLpDual.ofL2`, `ofL2OfBounded`: the inclusion `L²(I) ⊆ W^{-1,p'}(I)`,
-  `f ↦ (u ↦ ∫_I f u)`, the transpose of the previous one through the self-duality of `L²`;
-  injective (`ofL2_injective`, `p < ∞`) and with dense range for `1 < p < ∞`
-  (`denseRange_ofL2`, `denseRange_ofL2OfBounded`, by the reflexivity of `W_0^{1,p}(I)`). At
-  `p = 2` these are the book's `H_0^1 ⊆ L² ⊆ H^{-1}`.
-* `SobolevIntervalLp.exists_repr_strongDual` (**Remark 21**): for `1 ≤ p < ∞`, every continuous
-  linear functional on `W^{1,p}(I)` is `u ↦ ∫_I f₀ u + ∫_I f₁ u'` for some `f₀, f₁ ∈ L^{p'}(I)`,
-  with `‖F‖ = ‖(f₀, f₁)‖_{ℓ^{p'}}`;
-  `SobolevIntervalLpDual.exists_repr` (**Proposition 8.14**): the same for functionals on
-  `W_0^{1,p}(I)`, and `SobolevIntervalLpDual.exists_repr_of_bounded`: on a bounded interval
-  `f₀ = 0` can be taken.
-* `SobolevIntervalLpDual.repr_not_unique` (**Remark 19**): the pair `(f₀, f₁)` is not unique —
-  `(f₀ + g', f₁ + g)` represents the same functional for every test function `g`.
+* `SobolevIntervalLpDual`: the space $W^{-1,p'}(I)$, the strong dual of $W_0^{1,p}(I)$; $H^{-1}(I)$
+  at $p = 2$.
+* `SobolevIntervalLpZero.toL2`: the inclusion $W_0^{1,p}(I) \subseteq L^2(I)$ for an interval $I$
+  and $p \le 2$.
+* `SobolevIntervalLpZero.toL2OfBounded`: the inclusion $W_0^{1,p}(a, b) \subseteq L^2(a, b)$ for
+  every $p$.
+* `SobolevIntervalLpDual.ofL2` and `SobolevIntervalLpDual.ofL2OfBounded`: the inclusion
+  $L^2(I) \subseteq W^{-1,p'}(I)$, $f \mapsto (u \mapsto \int_I f u)$, the transpose of the previous
+  inclusions through the self-duality of $L^2$.
 
-## Design
+## Main results
 
-* The norm identity of Proposition 8.14 is stated for the norm the type carries: `W^{1,p}(I)`
-  sits isometrically in the `ℓ^p` product `PiLp p (Fin 2 → L^p(I))`, so the dual norm of the
-  representing pair is its `ℓ^{p'}` norm, `(‖f₀‖_{p'}^{p'} + ‖f₁‖_{p'}^{p'})^{1/p'}`
-  (`max (‖f₀‖_∞) (‖f₁‖_∞)` at `p = 1`, where the type's norm is the book's sum norm and this is
-  the book's identity). The general step is the duality of a finite `ℓ^p` product,
-  `PiLp.norm_strongDual_eq` of `Numlib/Analysis/Normed/Lp/PiLpDual.lean`.
-* The inclusion `W_0^{1,p}(I) ⊆ L²(I)` is `SobolevIntervalLp.toLp` (Remark 12) when `p ≤ 2` and
-  `SobolevIntervalLp.toLpOfBounded` on a bounded interval, restricted to `W_0^{1,p}(I)`; the
-  properties of `L² ⊆ W^{-1,p'}` are proved once for any inclusion `T : W_0^{1,p}(I) →L L²(I)`
-  whose values are the functions (`SobolevIntervalLpDual.ofL2Of T`), and specialized.
+* `SobolevIntervalLpZero.toL2_injective`, `SobolevIntervalLpZero.toL2OfBounded_injective`,
+  `SobolevIntervalLpZero.denseRange_toL2` and `SobolevIntervalLpZero.denseRange_toL2OfBounded`: the
+  inclusion $W_0^{1,p}(I) \subseteq L^2(I)$ is injective and has dense range.
+* `SobolevIntervalLpDual.ofL2_injective` and `SobolevIntervalLpDual.ofL2OfBounded_injective`: the
+  inclusion $L^2(I) \subseteq W^{-1,p'}(I)$ is injective.
+* `SobolevIntervalLpDual.denseRange_ofL2` and `SobolevIntervalLpDual.denseRange_ofL2OfBounded`: for
+  $1 < p < \infty$ the inclusion $L^2(I) \subseteq W^{-1,p'}(I)$ has dense range, by the reflexivity
+  of $W_0^{1,p}(I)$.
+* `SobolevIntervalLp.exists_repr_strongDual`: for $1 \le p < \infty$, every continuous linear
+  functional on $W^{1,p}(I)$ is $u \mapsto \int_I f_0 u + \int_I f_1 u'$ with
+  $f_0, f_1 \in L^{p'}(I)$, and its norm is the $\ell^{p'}$ norm of $(\|f_0\|, \|f_1\|)$ (Remark 21
+  of [brezis2011functional]).
+* `SobolevIntervalLpDual.exists_repr`: the same representation for $F \in W^{-1,p'}(I)$ (Proposition
+  8.14 of [brezis2011functional]).
+* `SobolevIntervalLpDual.exists_repr_of_bounded`: on a bounded interval one can take $f_0 = 0$.
+* `SobolevIntervalLpDual.repr_not_unique`: the pairs $(f_0, f_1)$ and $(f_0 + g', f_1 + g)$, $g$ a
+  test function, define the same functional (Remark 19 of [brezis2011functional]).
+
+## Implementation notes
+
+* The norm identity of Proposition 8.14 is stated for the norm of the type. The space $W^{1,p}(I)$
+  sits isometrically in the $\ell^p$ product of two copies of $L^p(I)$, so the dual norm of the
+  representing pair is its $\ell^{p'}$ norm $(\|f_0\|_{p'}^{p'} + \|f_1\|_{p'}^{p'})^{1/p'}$. At
+  $p = 1$ this is $\max\{\|f_0\|_\infty, \|f_1\|_\infty\}$; there the norm of the type is the sum
+  norm of [brezis2011functional], and the identity is the identity of the source. The general step
+  is the duality of a finite $\ell^p$ product, `PiLp.norm_strongDual_eq` in
+  `Numlib.Analysis.Normed.Lp.PiLpDual`.
+* The inclusion $W_0^{1,p}(I) \subseteq L^2(I)$ is `SobolevIntervalLp.toLp` (Remark 12 of
+  [brezis2011functional]) restricted to $W_0^{1,p}(I)$ when $p \le 2$, and
+  `SobolevIntervalLp.toLpOfBounded` restricted to $W_0^{1,p}(a, b)$ on a bounded interval. The
+  properties of $L^2 \subseteq W^{-1,p'}$ are proved once for any continuous linear map
+  $T : W_0^{1,p}(I) \to L^2(I)$ whose values are the functions (`SobolevIntervalLpDual.ofL2Of`), and
+  then specialized.
+* The conjugate exponent $p'$ is written `q`, with the hypothesis `ENNReal.HolderConjugate p q`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -61,15 +82,19 @@ open scoped ContDiff Distributions ENNReal Topology
 
 noncomputable section
 
-/-! ### The space `W^{-1,p'}(I)` -/
+/-! ### The space $W^{-1,p'}(I)$ -/
 
-/-- **The dual space `W^{-1,p'}(I)` of `W_0^{1,p}(I)`** ([brezis2011functional] §8.3, Notation),
-`H^{-1}(I)` at `p = 2`: the strong dual of `SobolevIntervalLpZero 1 p I`. A Banach space, being
-a dual. -/
+/-- **The dual space $W^{-1,p'}(I)$ of $W_0^{1,p}(I)$.** For $1 \le p \le \infty$ and an open set
+$I \subseteq \mathbb{R}$, $W^{-1,p'}(I)$ is the space of continuous linear functionals on
+$W_0^{1,p}(I)$, with the dual norm. At $p = 2$ it is $H^{-1}(I)$. This is the notation of §8.3
+of [brezis2011functional].
+
+It is the strong dual `StrongDual ℝ (SobolevIntervalLpZero 1 p I)`, and it is a Banach space
+because it is a dual space. -/
 abbrev SobolevIntervalLpDual (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) : Type :=
   StrongDual ℝ (SobolevIntervalLpZero 1 p I)
 
-/-! ### The inclusion `W_0^{1,p}(I) ⊆ L²(I)` -/
+/-! ### The inclusion $W_0^{1,p}(I) \subseteq L^2(I)$ -/
 
 namespace SobolevIntervalLpZero
 
@@ -78,14 +103,21 @@ variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {I : Opens ℝ}
 open SobolevIntervalLp
 
 variable (p I) in
-/-- **The inclusion `W_0^{1,p}(I) ⊆ L²(I)` for `p ≤ 2`** ([brezis2011functional] §8.3, the
-inclusions `W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}` on an unbounded interval, `1 ≤ p ≤ 2`): the inclusion
-`W^{1,p}(I) ⊆ L²(I)` of Remark 12 restricted to `W_0^{1,p}(I)`. -/
+/-- **The inclusion $W_0^{1,p}(I) \subseteq L^2(I)$ for $p \le 2$.** Let $I \subseteq \mathbb{R}$ be
+an open interval and $1 \le p \le 2$. This is the continuous linear map
+$W_0^{1,p}(I) \to L^2(I)$ that sends $u$ to its function. It is one of the inclusions
+$W_0^{1,p} \subseteq L^2 \subseteq W^{-1,p'}$ of §8.3 of [brezis2011functional], for an interval
+that may be unbounded.
+
+It is the inclusion $W^{1,p}(I) \subseteq L^2(I)$ of Remark 12 of [brezis2011functional],
+`SobolevIntervalLp.toLp`, restricted to $W_0^{1,p}(I)$. -/
 def toL2 (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict (I : Set ℝ)) :=
   (SobolevIntervalLp.toLp p hI hp).comp (SobolevIntervalLpZero 1 p I).subtypeL
 
-/-- The inclusion into `L²(I)` is the function, almost everywhere. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le 2$ and $u \in W_0^{1,p}(I)$. The
+image of $u$ under `SobolevIntervalLpZero.toL2` agrees almost everywhere on $I$ with the
+function of $u$. -/
 theorem coeFn_toL2 (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) (u : SobolevIntervalLpZero 1 p I) :
     ⇑(toL2 p I hI hp u) =ᵐ[volume.restrict I] fn (u : SobolevIntervalLp 1 p I) := by
   rw [toL2, ContinuousLinearMap.comp_apply, Submodule.subtypeL_apply]
@@ -94,23 +126,33 @@ theorem coeFn_toL2 (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) (u : Sobolev
 variable {a b : ℝ}
 
 variable (p) in
-/-- **The inclusion `W_0^{1,p}(a, b) ⊆ L²(a, b)`** on a bounded interval, every `1 ≤ p ≤ ∞`
-([brezis2011functional] §8.3, the inclusions `W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}` on a bounded
-interval): `SobolevIntervalLp.toLpOfBounded` restricted to `W_0^{1,p}(a, b)`. -/
+/-- **The inclusion $W_0^{1,p}(a, b) \subseteq L^2(a, b)$ on a bounded interval.** Let $a < b$ and
+$1 \le p \le \infty$. This is the continuous linear map $W_0^{1,p}(a, b) \to L^2(a, b)$ that
+sends $u$ to its function. It is one of the inclusions
+$W_0^{1,p} \subseteq L^2 \subseteq W^{-1,p'}$ of §8.3 of [brezis2011functional], for a bounded
+interval.
+
+It is `SobolevIntervalLp.toLpOfBounded` restricted to $W_0^{1,p}(a, b)$. -/
 def toL2OfBounded (hab : a < b) :
     SobolevIntervalLpZero 1 p (Opens.Ioo a b) →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   (SobolevIntervalLp.toLpOfBounded p hab 2).comp
     (SobolevIntervalLpZero 1 p (Opens.Ioo a b)).subtypeL
 
-/-- The inclusion into `L²(a, b)` is the function, almost everywhere. -/
+/-- Let $a < b$, $1 \le p \le \infty$ and $u \in W_0^{1,p}(a, b)$. The image of $u$ under
+`SobolevIntervalLpZero.toL2OfBounded` agrees almost everywhere on $(a, b)$ with the function of
+$u$. -/
 theorem coeFn_toL2OfBounded (hab : a < b) (u : SobolevIntervalLpZero 1 p (Opens.Ioo a b)) :
     ⇑(toL2OfBounded p hab u) =ᵐ[volume.restrict (Ioo a b)]
       fn (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) := by
   rw [toL2OfBounded, ContinuousLinearMap.comp_apply, Submodule.subtypeL_apply]
   exact coeFn_toLpOfBounded hab 2 (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
 
-/-- An inclusion `W_0^{1,p}(I) → L²(I)` whose values are the functions is injective: two
-elements with the same function are equal (`SobolevMultiIndex.ext_of_fn_ae_eq`). -/
+/-- Let $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. Let $T : W_0^{1,p}(I) \to L^2(I)$
+be a continuous linear map such that $Tu$ agrees almost everywhere on $I$ with the function of
+$u$, for every $u$. Then $T$ is injective.
+
+Two elements of $W^{1,p}(I)$ with the same function are equal
+(`SobolevMultiIndex.ext_of_fn_ae_eq`). -/
 theorem injective_of_coeFn_ae_eq (T : SobolevIntervalLpZero 1 p I →L[ℝ]
       Lp ℝ 2 (volume.restrict (I : Set ℝ)))
     (hT : ∀ u, ⇑(T u) =ᵐ[volume.restrict I] fn (u : SobolevIntervalLp 1 p I)) :
@@ -121,17 +163,22 @@ theorem injective_of_coeFn_ae_eq (T : SobolevIntervalLpZero 1 p I →L[ℝ]
   rw [huv]
   exact hT v
 
-/-- `W_0^{1,p}(I) ⊆ L²(I)` is injective. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le 2$. The inclusion
+$W_0^{1,p}(I) \subseteq L^2(I)$ is injective. -/
 theorem toL2_injective (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     Function.Injective (toL2 p I hI hp) :=
   injective_of_coeFn_ae_eq _ (coeFn_toL2 hI hp)
 
-/-- `W_0^{1,p}(a, b) ⊆ L²(a, b)` is injective. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The inclusion $W_0^{1,p}(a, b) \subseteq L^2(a, b)$ is
+injective. -/
 theorem toL2OfBounded_injective (hab : a < b) : Function.Injective (toL2OfBounded p hab) :=
   injective_of_coeFn_ae_eq _ (coeFn_toL2OfBounded hab)
 
-/-- An inclusion `W_0^{1,p}(I) → L²(I)` whose values are the functions has dense range: its range
-contains the test functions, which are dense in `L²(I)`
+/-- Let $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. Let $T : W_0^{1,p}(I) \to L^2(I)$
+be a continuous linear map such that $Tu$ agrees almost everywhere on $I$ with the function of
+$u$, for every $u$. Then $T$ has dense range.
+
+The range of $T$ contains the test functions, which are dense in $L^2(I)$
 (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
 theorem denseRange_of_coeFn_ae_eq (T : SobolevIntervalLpZero 1 p I →L[ℝ]
       Lp ℝ 2 (volume.restrict (I : Set ℝ)))
@@ -148,18 +195,20 @@ theorem denseRange_of_coeFn_ae_eq (T : SobolevIntervalLpZero 1 p I →L[ℝ]
   rw [hφ]
   exact hfg.symm
 
-/-- **`W_0^{1,p}(I) ⊆ L²(I)` has dense range**, `1 ≤ p ≤ 2`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le 2$. The inclusion
+$W_0^{1,p}(I) \subseteq L^2(I)$ has dense range. -/
 theorem denseRange_toL2 (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     DenseRange (toL2 p I hI hp) :=
   denseRange_of_coeFn_ae_eq _ (coeFn_toL2 hI hp)
 
-/-- **`W_0^{1,p}(a, b) ⊆ L²(a, b)` has dense range**, `1 ≤ p ≤ ∞`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The inclusion $W_0^{1,p}(a, b) \subseteq L^2(a, b)$ has
+dense range. -/
 theorem denseRange_toL2OfBounded (hab : a < b) : DenseRange (toL2OfBounded p hab) :=
   denseRange_of_coeFn_ae_eq _ (coeFn_toL2OfBounded hab)
 
 end SobolevIntervalLpZero
 
-/-! ### The inclusion `L²(I) ⊆ W^{-1,p'}(I)` -/
+/-! ### The inclusion $L^2(I) \subseteq W^{-1,p'}(I)$ -/
 
 namespace SobolevIntervalLpDual
 
@@ -167,23 +216,32 @@ variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {I : Opens ℝ}
 
 open SobolevIntervalLp
 
-/-- **The inclusion `L²(I) ⊆ W^{-1,p'}(I)` along an inclusion `T : W_0^{1,p}(I) → L²(I)`**:
-`f ↦ (u ↦ ∫_I f (T u))`, the transpose of `T` composed with the self-duality of `L²(I)`
-(the `L^p`–`L^q` pairing `MeasureTheory.Lp.toDualCLM` at `p = q = 2`). -/
+/-- **The inclusion $L^2(I) \subseteq W^{-1,p'}(I)$ along a map $T$.** Let $I \subseteq \mathbb{R}$
+be open, $1 \le p \le \infty$, and let $T : W_0^{1,p}(I) \to L^2(I)$ be a continuous linear map.
+This is the continuous linear map $L^2(I) \to W^{-1,p'}(I)$ given by
+$$f \mapsto \Big(u \mapsto \int_I f \cdot Tu\Big).$$
+
+It is the transpose of $T$ composed with the self-duality of $L^2(I)$, the $L^p$–$L^q$ pairing
+`MeasureTheory.Lp.toDualCLM` at $p = q = 2$. -/
 def ofL2Of (T : SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict (I : Set ℝ))) :
     Lp ℝ 2 (volume.restrict (I : Set ℝ)) →L[ℝ] SobolevIntervalLpDual p I :=
   ((ContinuousLinearMap.compL ℝ (SobolevIntervalLpZero 1 p I)
     (Lp ℝ 2 (volume.restrict (I : Set ℝ))) ℝ).flip T).comp
     (Lp.toDualCLM ℝ 2 2 (volume.restrict (I : Set ℝ)))
 
-/-- `ofL2Of T f u = ∫_I f (T u)`. -/
+/-- Let $T : W_0^{1,p}(I) \to L^2(I)$ be a continuous linear map, $f \in L^2(I)$ and
+$u \in W_0^{1,p}(I)$. Then the functional `SobolevIntervalLpDual.ofL2Of T f` takes at $u$ the
+value $\int_I f \cdot Tu$. -/
 theorem ofL2Of_apply (T : SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict (I : Set ℝ)))
     (f : Lp ℝ 2 (volume.restrict (I : Set ℝ))) (u : SobolevIntervalLpZero 1 p I) :
     ofL2Of T f u = ∫ x in (I : Set ℝ), f x * T u x := by
   simp only [ofL2Of, ContinuousLinearMap.comp_apply, ContinuousLinearMap.flip_apply,
     ContinuousLinearMap.compL_apply, Lp.toDualCLM_apply]
 
-/-- `ofL2Of T f u = ∫_I f u` when `T` is an inclusion whose values are the functions. -/
+/-- Let $T : W_0^{1,p}(I) \to L^2(I)$ be a continuous linear map such that $Tu$ agrees almost
+everywhere on $I$ with the function of $u$, for every $u$. Then for $f \in L^2(I)$ and
+$u \in W_0^{1,p}(I)$, the functional `SobolevIntervalLpDual.ofL2Of T f` takes at $u$ the value
+$\int_I f u$. -/
 theorem ofL2Of_apply_eq_integral_mul_fn
     (T : SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict (I : Set ℝ)))
     (hT : ∀ u, ⇑(T u) =ᵐ[volume.restrict I] fn (u : SobolevIntervalLp 1 p I))
@@ -192,8 +250,12 @@ theorem ofL2Of_apply_eq_integral_mul_fn
   rw [ofL2Of_apply]
   exact integral_congr_ae ((hT u).mono fun x hx ↦ by simp only [hx])
 
-/-- **`L²(I) ⊆ W^{-1,p'}(I)` is injective**: a function of `L²(I)` whose integral against every
-test function vanishes is zero. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$, and let
+$T : W_0^{1,p}(I) \to L^2(I)$ be a continuous linear map such that $Tu$ agrees almost everywhere
+on $I$ with the function of $u$, for every $u$. Then the map $L^2(I) \to W^{-1,p'}(I)$,
+$f \mapsto (u \mapsto \int_I f u)$, is injective.
+
+A function of $L^2(I)$ whose integral against every test function vanishes is zero. -/
 theorem ofL2Of_injective
     (T : SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict (I : Set ℝ)))
     (hT : ∀ u, ⇑(T u) =ᵐ[volume.restrict I] fn (u : SobolevIntervalLp 1 p I)) :
@@ -216,10 +278,14 @@ theorem ofL2Of_injective
       ((TestFunction.fn_toSobolevIntervalLp_ae_eq (p := p) φ).mono fun x hx ↦ ?_)
     simp only [smul_eq_mul, mul_comm, hx]
 
-/-- **`L²(I) ⊆ W^{-1,p'}(I)` has dense range for `1 < p < ∞`**: a functional on `W^{-1,p'}(I)`
-vanishing on the range is, by the reflexivity of `W_0^{1,p}(I)`
-(`SobolevMultiIndexZero.instIsReflexive`), evaluation at some `v ∈ W_0^{1,p}(I)`, so
-`∫_I f v = 0` for all `f ∈ L²(I)`, in particular for `f = T v`, so `T v = 0` and `v = 0`; a
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 < p < \infty$, and let $T : W_0^{1,p}(I) \to L^2(I)$ be
+a continuous linear map such that $Tu$ agrees almost everywhere on $I$ with the function of $u$,
+for every $u$. Then the map $L^2(I) \to W^{-1,p'}(I)$, $f \mapsto (u \mapsto \int_I f u)$, has
+dense range.
+
+By the reflexivity of $W_0^{1,p}(I)$ (`SobolevMultiIndexZero.instIsReflexive`), a functional on
+$W^{-1,p'}(I)$ that vanishes on the range is the evaluation at some $v \in W_0^{1,p}(I)$. Then
+$\int_I f v = 0$ for all $f \in L^2(I)$, in particular for $f = Tv$, so $Tv = 0$ and $v = 0$. A
 closed proper subspace would be separated from a point by a nonzero functional
 (`Submodule.exists_dual_eq_zero_of_notMem`). -/
 theorem denseRange_ofL2Of [Fact (1 < p)] [Fact (p ≠ ⊤)]
@@ -257,25 +323,32 @@ theorem denseRange_ofL2Of [Fact (1 < p)] [Fact (p ≠ ⊤)]
   rw [DenseRange, hrange, Submodule.dense_iff_topologicalClosure_eq_top, ← hM, hMtop]
 
 variable (p I) in
-/-- **The inclusion `L²(I) ⊆ W^{-1,p'}(I)` for `p ≤ 2`**: `f ↦ (u ↦ ∫_I f u)`, the transpose of
-`SobolevIntervalLpZero.toL2` through the self-duality of `L²(I)`
-([brezis2011functional] §8.3, the inclusions `W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}`). -/
+/-- **The inclusion $L^2(I) \subseteq W^{-1,p'}(I)$ for $p \le 2$.** Let $I \subseteq \mathbb{R}$ be
+an open interval and $1 \le p \le 2$. This is the continuous linear map
+$L^2(I) \to W^{-1,p'}(I)$, $f \mapsto (u \mapsto \int_I f u)$. It is one of the inclusions
+$W_0^{1,p} \subseteq L^2 \subseteq W^{-1,p'}$ of §8.3 of [brezis2011functional].
+
+It is the transpose of `SobolevIntervalLpZero.toL2` through the self-duality of $L^2(I)$. -/
 def ofL2 (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     Lp ℝ 2 (volume.restrict (I : Set ℝ)) →L[ℝ] SobolevIntervalLpDual p I :=
   ofL2Of (SobolevIntervalLpZero.toL2 p I hI hp)
 
-/-- `ofL2 f u = ∫_I f u`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval, $1 \le p \le 2$, $f \in L^2(I)$ and
+$u \in W_0^{1,p}(I)$. Then the functional `SobolevIntervalLpDual.ofL2 p I hI hp f` takes at $u$
+the value $\int_I f u$. -/
 theorem ofL2_apply (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2)
     (f : Lp ℝ 2 (volume.restrict (I : Set ℝ))) (u : SobolevIntervalLpZero 1 p I) :
     ofL2 p I hI hp f u = ∫ x in (I : Set ℝ), f x * fn (u : SobolevIntervalLp 1 p I) x :=
   ofL2Of_apply_eq_integral_mul_fn _ (SobolevIntervalLpZero.coeFn_toL2 hI hp) f u
 
-/-- `L²(I) ⊆ W^{-1,p'}(I)` is injective. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 \le p \le 2$. The inclusion
+$L^2(I) \subseteq W^{-1,p'}(I)$ is injective. -/
 theorem ofL2_injective (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     Function.Injective (ofL2 p I hI hp) :=
   ofL2Of_injective _ (SobolevIntervalLpZero.coeFn_toL2 hI hp)
 
-/-- **`L²(I) ⊆ W^{-1,p'}(I)` has dense range** for `1 < p ≤ 2`. -/
+/-- Let $I \subseteq \mathbb{R}$ be an open interval and $1 < p \le 2$. The inclusion
+$L^2(I) \subseteq W^{-1,p'}(I)$ has dense range. -/
 theorem denseRange_ofL2 [Fact (1 < p)] (hI : (I : Set ℝ).OrdConnected) (hp : p ≤ 2) :
     DenseRange (ofL2 p I hI hp) :=
   have : Fact (p ≠ ⊤) := ⟨ne_top_of_le_ne_top ENNReal.ofNat_ne_top hp⟩
@@ -284,26 +357,30 @@ theorem denseRange_ofL2 [Fact (1 < p)] (hI : (I : Set ℝ).OrdConnected) (hp : p
 variable {a b : ℝ}
 
 variable (p) in
-/-- **The inclusion `L²(a, b) ⊆ W^{-1,p'}(a, b)`** on a bounded interval, every `1 ≤ p ≤ ∞`:
-`f ↦ (u ↦ ∫_a^b f u)`, the transpose of `SobolevIntervalLpZero.toL2OfBounded`. -/
+/-- **The inclusion $L^2(a, b) \subseteq W^{-1,p'}(a, b)$ on a bounded interval.** Let $a < b$ and
+$1 \le p \le \infty$. This is the continuous linear map $L^2(a, b) \to W^{-1,p'}(a, b)$,
+$f \mapsto (u \mapsto \int_a^b f u)$, the transpose of `SobolevIntervalLpZero.toL2OfBounded`. -/
 def ofL2OfBounded (hab : a < b) :
     Lp ℝ 2 (volume.restrict (Ioo a b)) →L[ℝ] SobolevIntervalLpDual p (Opens.Ioo a b) :=
   ofL2Of (SobolevIntervalLpZero.toL2OfBounded p hab)
 
-/-- `ofL2OfBounded f u = ∫_a^b f u`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, $f \in L^2(a, b)$ and $u \in W_0^{1,p}(a, b)$. Then the
+functional `SobolevIntervalLpDual.ofL2OfBounded p hab f` takes at $u$ the value $\int_a^b f u$. -/
 theorem ofL2OfBounded_apply (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     (u : SobolevIntervalLpZero 1 p (Opens.Ioo a b)) :
     ofL2OfBounded p hab f u
       = ∫ x in Ioo a b, f x * fn (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) x :=
   ofL2Of_apply_eq_integral_mul_fn _ (SobolevIntervalLpZero.coeFn_toL2OfBounded hab) f u
 
-/-- `L²(a, b) ⊆ W^{-1,p'}(a, b)` is injective. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The inclusion $L^2(a, b) \subseteq W^{-1,p'}(a, b)$ is
+injective. -/
 theorem ofL2OfBounded_injective (hab : a < b) :
     Function.Injective (ofL2OfBounded p hab) :=
   ofL2Of_injective _ (SobolevIntervalLpZero.coeFn_toL2OfBounded hab)
 
-/-- **`L²(a, b) ⊆ W^{-1,p'}(a, b)` has dense range** for `1 < p < ∞`
-([brezis2011functional] §8.3, "dense injections when `1 < p < ∞`"). -/
+/-- Let $a < b$ and $1 < p < \infty$. The inclusion $L^2(a, b) \subseteq W^{-1,p'}(a, b)$ has dense
+range. This is the statement "dense injections when $1 < p < \infty$" of §8.3 of
+[brezis2011functional]. -/
 theorem denseRange_ofL2OfBounded [Fact (1 < p)] [Fact (p ≠ ⊤)] (hab : a < b) :
     DenseRange (ofL2OfBounded p hab) :=
   denseRange_ofL2Of _ (SobolevIntervalLpZero.coeFn_toL2OfBounded hab)
@@ -318,16 +395,21 @@ variable {p q : ℝ≥0∞} [Fact (1 ≤ p)] {I : Opens ℝ}
 
 namespace SobolevIntervalLp
 
-/-- **Remark 21 of [brezis2011functional], Chapter 8** (with the norm identity of Proposition
-8.14): for `1 ≤ p < ∞`, `q` the conjugate exponent and a continuous linear functional `F` on
-`W^{1,p}(I)`, there are `f₀, f₁ ∈ L^q(I)` — the pair `f` — with
-`F u = ∫_I f₀ u + ∫_I f₁ u'` for every `u ∈ W^{1,p}(I)` and `‖F‖ = ‖f‖`, the `ℓ^q` norm of the
-pair. `W^{1,p}(I)` is a closed subspace of the `ℓ^p` product of two copies of `L^p(I)`; `F`
-extends to the product with the same norm (Hahn–Banach, `exists_extension_norm_eq`), the
-restrictions of the extension to the two factors are represented by `f₀, f₁` through the Riesz
-representation theorem (`MeasureTheory.Lp.exists_forall_eq_integral`), and the norm of a
-functional on an `ℓ^p` product is the `ℓ^q` norm of the norms of its restrictions
-(`PiLp.norm_strongDual_eq`). -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 \le p < \infty$ and let $q$ be the conjugate
+exponent. Let $F$ be a continuous linear functional on $W^{1,p}(I)$. Then there are
+$f_0, f_1 \in L^q(I)$ such that
+$$F(u) = \int_I f_0 u + \int_I f_1 u' \quad \text{for every } u \in W^{1,p}(I),$$
+and $\|F\| = \|(f_0, f_1)\|$, the norm in the $\ell^q$ product of two copies of $L^q(I)$. This
+is Remark 21 of [brezis2011functional], Chapter 8, with the norm identity of Proposition 8.14
+there.
+
+The space $W^{1,p}(I)$ is a closed subspace of the $\ell^p$ product of two copies of $L^p(I)$.
+The functional $F$ extends to the product with the same norm (the Hahn–Banach theorem,
+`exists_extension_norm_eq`). The restrictions of the extension to the two factors are
+represented by $f_0$ and $f_1$ by the Riesz representation theorem
+(`MeasureTheory.Lp.exists_forall_eq_integral`). The norm of a functional on an $\ell^p$ product
+is the $\ell^q$ norm of the norms of its restrictions (`PiLp.norm_strongDual_eq`). The pair is
+an element `f` of `PiLp q (fun _ : Fin 2 ↦ Lp ℝ q _)`, with $f_0$ = `f 0` and $f_1$ = `f 1`. -/
 theorem exists_repr_strongDual [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤)
     (F : StrongDual ℝ (SobolevIntervalLp 1 p I)) :
     ∃ f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict (I : Set ℝ))),
@@ -362,13 +444,17 @@ namespace SobolevIntervalLpDual
 
 open SobolevIntervalLp
 
-/-- **Proposition 8.14 of [brezis2011functional]**: for `1 ≤ p < ∞`, `q` the conjugate exponent
-and `F ∈ W^{-1,q}(I)`, there are `f₀, f₁ ∈ L^q(I)` — the pair `f` — with
-`⟨F, u⟩ = ∫_I f₀ u + ∫_I f₁ u'` for every `u ∈ W_0^{1,p}(I)` and `‖F‖ = ‖f‖`, the `ℓ^q` norm
-of the pair (the book's `max (‖f₀‖, ‖f₁‖)` for its sum norm, which is the norm of the type at
-`p = 1`). `F` extends from the closed subspace `W_0^{1,p}(I)` to `W^{1,p}(I)` with the same norm
-(`exists_extension_norm_eq`), and Remark 21 (`SobolevIntervalLp.exists_repr_strongDual`)
-represents the extension. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $1 \le p < \infty$ and let $q$ be the conjugate
+exponent. For $F \in W^{-1,q}(I)$ there are $f_0, f_1 \in L^q(I)$ such that
+$$\langle F, u \rangle = \int_I f_0 u + \int_I f_1 u' \quad \text{for every } u \in
+  W_0^{1,p}(I),$$
+and $\|F\| = \|(f_0, f_1)\|$, the norm in the $\ell^q$ product of two copies of $L^q(I)$. This
+is Proposition 8.14 of [brezis2011functional].
+
+At $p = 1$ the norm of the type is the sum norm of [brezis2011functional], and the norm of the
+pair is $\max\{\|f_0\|, \|f_1\|\}$ as in the source. The functional $F$ extends from the closed
+subspace $W_0^{1,p}(I)$ to $W^{1,p}(I)$ with the same norm (`exists_extension_norm_eq`), and
+Remark 21 (`SobolevIntervalLp.exists_repr_strongDual`) represents the extension. -/
 theorem exists_repr [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (F : SobolevIntervalLpDual p I) :
     ∃ f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict (I : Set ℝ))),
       (∀ u : SobolevIntervalLpZero 1 p I,
@@ -380,13 +466,17 @@ theorem exists_repr [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (F : SobolevI
 
 variable {a b : ℝ}
 
-/-- **Proposition 8.14 of [brezis2011functional], bounded interval**: for `a < b`, `1 ≤ p < ∞`,
-`q` the conjugate exponent and `F ∈ W^{-1,q}(a, b)`, there is `f₁ ∈ L^q(a, b)` with
-`⟨F, u⟩ = ∫_a^b f₁ u'` for every `u ∈ W_0^{1,p}(a, b)` ("when `I` is bounded we can take
-`f₀ = 0`"). By Poincaré's inequality (Proposition 8.13,
-`SobolevIntervalLpZero.norm_le_mul_norm_deriv`) `u ↦ u'` is injective on `W_0^{1,p}(a, b)` with
-`‖u‖ ≤ C ‖u'‖_p`, so `F ∘ (u ↦ u')⁻¹` is a bounded functional on the range of `u ↦ u'` in
-`L^p(a, b)`; it extends to `L^p(a, b)` and is represented by `f₁`. -/
+/-- Let $a < b$, let $1 \le p < \infty$ and let $q$ be the conjugate exponent. For
+$F \in W^{-1,q}(a, b)$ there is $f_1 \in L^q(a, b)$ such that
+$$\langle F, u \rangle = \int_a^b f_1 u' \quad \text{for every } u \in W_0^{1,p}(a, b).$$
+This is the statement "when $I$ is bounded we can take $f_0 = 0$" after Proposition 8.14 of
+[brezis2011functional].
+
+By the Poincaré inequality (Proposition 8.13 of [brezis2011functional],
+`SobolevIntervalLpZero.norm_le_mul_norm_deriv`), the map $u \mapsto u'$ is injective on
+$W_0^{1,p}(a, b)$ with $\|u\| \le C \|u'\|_{L^p}$. So $F \circ (u \mapsto u')^{-1}$ is a bounded
+functional on the range of $u \mapsto u'$ in $L^p(a, b)$. It extends to $L^p(a, b)$ and is
+represented by $f_1$. -/
 theorem exists_repr_of_bounded [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (hab : a < b)
     (F : SobolevIntervalLpDual p (Opens.Ioo a b)) :
     ∃ f₁ : Lp ℝ q (volume.restrict (Ioo a b)), ∀ u : SobolevIntervalLpZero 1 p (Opens.Ioo a b),
@@ -450,10 +540,13 @@ namespace SobolevIntervalLpDual
 open SobolevIntervalLp
 
 omit [Fact (1 ≤ p)] in
-/-- **Remark 19 of [brezis2011functional], Chapter 8**: the pair `(f₀, f₁)` representing a
-functional on `W_0^{1,p}(I)` (or on `W^{1,p}(I)`) is not unique — for every test function `g` on
-`I`, the pairs `(f₀, f₁)` and `(f₀ + g', f₁ + g)` define the same functional, since
-`∫_I g' u = −∫_I g u'` for `u ∈ W^{1,p}(I)` (the definition of the weak derivative). -/
+/-- Let $I \subseteq \mathbb{R}$ be open, let $q$ be the conjugate exponent of $p$, let
+$f_0, f_1 \in L^q(I)$, let $g$ be a test function on $I$ and let $u \in W^{1,p}(I)$. Then
+$$\int_I (f_0 + g') u + \int_I (f_1 + g) u' = \int_I f_0 u + \int_I f_1 u'.$$
+Hence the pair $(f_0, f_1)$ that represents a functional on $W^{1,p}(I)$ or on $W_0^{1,p}(I)$ is
+not unique. This is Remark 19 of [brezis2011functional], Chapter 8.
+
+The identity is $\int_I g' u = -\int_I g u'$, the definition of the weak derivative. -/
 theorem repr_not_unique [ENNReal.HolderConjugate p q] {f₀ f₁ : ℝ → ℝ}
     (hf₀ : MemLp f₀ q (volume.restrict I)) (hf₁ : MemLp f₁ q (volume.restrict I)) (g : 𝓓(I, ℝ))
     (u : SobolevIntervalLp 1 p I) :

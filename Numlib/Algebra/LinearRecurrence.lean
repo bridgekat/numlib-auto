@@ -15,63 +15,98 @@ import Mathlib.RingTheory.Polynomial.Pochhammer
 /-!
 # Closed forms for linear recurrences with constant coefficients
 
-Upstreaming candidate; natural home: `Mathlib.Algebra.LinearRecurrence`.
+A linear recurrence of order $k$ with coefficients $c_0, \dots, c_{k-1}$ in a commutative ring $R$
+is the relation $u_{n+k} = \sum_{i<k} c_i u_{n+i}$ for sequences $u \colon \mathbb{N} \to R$. Its
+characteristic polynomial is $\Pi(X) = X^k - \sum_{i<k} c_i X^i$. Mathlib's `LinearRecurrence`
+provides the solution space `LinearRecurrence.solSpace` of rank $k$, the solution
+`LinearRecurrence.mkSol` with prescribed initial values, and the fact that $q^n$ is a solution if
+and only if $\Pi(q) = 0$. This module adds the closed forms that the theory of linear difference
+equations needs. It follows [quarteroni2000numerical], §11.4.
 
-Mathlib's `LinearRecurrence R` is the relation `u (n + k) = ∑ i : Fin k, coeffs i * u (n + i)` with
-its solution space `solSpace` (a submodule of `ℕ → R` of rank `k`, `solSpace_rank`), the solution
-`mkSol init` with prescribed initial data, and the characteristic polynomial
-`charPoly = X ^ k - ∑ i, coeffs i * X ^ i` with `geom_sol_iff_root_charPoly`: the geometric sequence
-`q ^ n` is a solution iff `q` is a root. Its header says that closed forms are "currently not
-implemented"; this module implements the part that the theory of linear difference equations
-needs, [quarteroni2000numerical] §11.4 being the account followed.
+The module treats the inhomogeneous recurrence $u_{n+k} = \sum_i c_i u_{n+i} + \varphi_{n+k}$ and
+proves existence and uniqueness of its solutions and the discrete Duhamel formula, which writes
+every solution with the fundamental solutions $\psi_j$ of Kronecker initial values
+$\psi_j(i) = \delta_{ij}$. For a root $r$ of $\Pi$ of multiplicity $m$, the sequences $n^s r^n$ and
+the binomial sequences $\binom{n}{s} r^{n-s}$, $s < m$, are solutions over every commutative ring.
+Over a field, the binomial sequences of all roots are linearly independent, and they span the
+solution space when $\Pi$ splits. In characteristic zero and with $\Pi(0) \neq 0$, this gives the
+general solution $u_n = \sum_j p_j(n) r_j^n$ with $\deg p_j < m_j$ of [quarteroni2000numerical],
+(11.33). For $k$ distinct roots, the general solution is $u_n = \sum_j \gamma_j r_j^n$ with a unique
+$\gamma$.
 
-## Contents
+## Main definitions
 
-* **The inhomogeneous recurrence.** `IsSolutionWith φ u` is
-  `u (n + k) = ∑ i, coeffs i * u (n + i) + φ (n + k)`, the book's (11.28) with source `φ` indexed
-  at `n + k`; `mkSolWith φ init` is its solution with initial data `init`, unique
-  (`eq_mkSolWith_of_isSolutionWith_of_eq_init`), and the solutions with a given source form a coset
-  of `solSpace` (`isSolutionWith_sub`, `isSolutionWith_add`).
-* **The Kronecker fundamental solutions** `kroneckerSol j = mkSol (Pi.single j 1)`, with
-  `ψ_j (i) = δ_ij` for `i < k` (the book's (11.34)); every solution is
-  `u n = ∑ j, u j * ψ_j n` (`eq_sum_kroneckerSol`, (11.35)), and every solution of the
-  inhomogeneous recurrence is that plus the discrete convolution
-  `∑_{l = k}^{n} φ l * ψ_{k-1} (n - l + (k - 1))` of the source with the last fundamental solution
-  (`eq_sum_kroneckerSol_add_sum`, the discrete Duhamel formula (11.42)).
-* **The solutions attached to a root of multiplicity `m`.** Two families are provided, both valid
-  over every commutative ring. The book's sequences `n ^ s * q ^ n`, `s < m`, are solutions
-  (`isSolution_pow_mul_pow`; `isSolution_mul_pow_of_one_lt_rootMultiplicity` is the case `s = 1`).
-  The *binomial* sequences `chooseMulPow q s = n ↦ n.choose s * q ^ (n - s)`, the `s`-th Hasse
-  derivative of `q ↦ q ^ n`, are solutions as well (`isSolution_chooseMulPow`), and they are the
-  family used for the basis, because they behave uniformly at the root `q = 0` — where
-  `chooseMulPow 0 s` is the Kronecker sequence `δ_{n s}` while `n ^ s * 0 ^ n` is the zero sequence
-  for `s ≥ 1` — and because the shift `S u = u (· + 1)` lowers them, `(S - q) e_s = e_{s-1}`,
-  which is what makes their independence a triangular computation.
-* **The fundamental system (11.33).** Over a field, `RootIndex` is the set of pairs `(r, s)` with
-  `r` a root of the characteristic polynomial and `s < rootMultiplicity r`, and
-  `fundamentalSol (r, s) = chooseMulPow r s`. The family is linearly independent
-  (`linearIndependent_fundamentalSol`: the pieces at distinct roots lie in distinct generalized
-  eigenspaces of the shift, `Module.End.independent_genEigenspace`) and, when the characteristic
-  polynomial splits, it spans `solSpace` (`span_fundamentalSol_eq_solSpace`: a dimension count,
-  `card RootIndex = ∑ mult = card roots = order`). Neither statement needs `CharZero` or a nonzero
-  constant coefficient. The book's form of the general solution, `∑_j p_j (n) r_j ^ n` with
-  `deg p_j < m_j`, is `exists_eq_sum_eval_mul_pow_of_splits`, which needs both (the binomial
-  coefficient is a polynomial in `n` only in characteristic zero, and `n ^ s * 0 ^ n` vanishes).
-* **Simple roots (11.32), (11.37).** The matrix `R = (r_m ^ i)` of the book is the transpose of
-  Mathlib's `Matrix.vandermonde`, nonsingular for distinct `r_m`
-  (`det_vandermonde_transpose_ne_zero`); when the `k` distinct roots `r_j` are given, every solution
-  is `∑ j, γ j • r j ^ n` for a unique `γ`, the solution of the Vandermonde system
-  (`eq_sum_smul_pow_of_injective_roots`).
+* `Polynomial.eulerOp`: the Euler operator $\theta p = X p'$ on polynomials.
+* `LinearRecurrence.IsSolutionWith`: $u$ solves the inhomogeneous recurrence with source $\varphi$.
+* `LinearRecurrence.mkSolWith`: the solution of the inhomogeneous recurrence with given initial
+  values.
+* `LinearRecurrence.kroneckerSol`: the fundamental solution $\psi_j$ with $\psi_j(i) = \delta_{ij}$
+  for $i < k$.
+* `LinearRecurrence.shift`: the shift operator $(Su)_n = u_{n+1}$ on sequences.
+* `LinearRecurrence.chooseMulPow`: the binomial sequence $n \mapsto \binom{n}{s} r^{n-s}$.
+* `LinearRecurrence.map`: the recurrence with coefficients pushed forward along a ring homomorphism.
+* `LinearRecurrence.RootIndex`: the pairs $(r, s)$ with $r$ a root of $\Pi$ and $s$ less than its
+  multiplicity.
+* `LinearRecurrence.fundamentalSol`: the binomial sequence attached to a pair $(r, s)$.
 
-## Conventions
+## Main results
 
-Mathlib's: `IsSolution u ↔ ∀ n, u (n + k) = ∑ i : Fin k, coeffs i * u (n + i)`, so the book's
-`u_{n+k} + α_{k-1} u_{n+k-1} + … + α_0 u_n = 0` has `coeffs i = -α_i`, and `charPoly` is the book's
-`Π`. The sequences are indexed by `ℕ`; the book's `ψ_{k-1}^{(i)} = 0` for `i < 0` in (11.42) is
-encoded by summing over `l ∈ Icc k n` only, where `n - l + (k - 1)` is an honest natural number.
+* `LinearRecurrence.eq_mkSolWith_of_isSolutionWith_of_eq_init'`: a solution of the inhomogeneous
+  recurrence is determined by its first $k$ values.
+* `LinearRecurrence.isSolutionWith_sub`: the difference of two solutions with the same source solves
+  the homogeneous recurrence.
+* `LinearRecurrence.eq_sum_kroneckerSol`: every solution is $u_n = \sum_j u_j \psi_j(n)$ ((11.35) of
+  [quarteroni2000numerical]).
+* `LinearRecurrence.eq_sum_kroneckerSol_add_sum`: the discrete Duhamel formula ((11.42) of
+  [quarteroni2000numerical]).
+* `LinearRecurrence.isSolution_pow_mul_pow`: if $s$ is less than the multiplicity of the root $q$ of
+  $\Pi$, then $n^s q^n$ is a solution.
+* `LinearRecurrence.isSolution_chooseMulPow`: if $s$ is less than the multiplicity of the root $r$
+  of $\Pi$, then $\binom{n}{s} r^{n-s}$ is a solution.
+* `LinearRecurrence.linearIndependent_fundamentalSol`: over a field, the fundamental system is
+  linearly independent.
+* `LinearRecurrence.span_fundamentalSol_eq_solSpace`: if $\Pi$ splits, the fundamental system spans
+  the solution space ((11.33) of [quarteroni2000numerical]).
+* `LinearRecurrence.exists_eq_sum_eval_mul_pow_of_splits`: in characteristic zero, if $\Pi$ splits
+  and $\Pi(0) \neq 0$, then every solution is $\sum_j p_j(n) r_j^n$ with $\deg p_j < m_j$.
+* `LinearRecurrence.eq_sum_smul_pow_of_injective_roots`: if $\Pi$ has $k$ distinct roots $r_j$, then
+  every solution is $\sum_j \gamma_j r_j^n$ for a unique $\gamma$ ((11.32) of
+  [quarteroni2000numerical]).
 
-The polynomial lemmas at the top (`Polynomial.eulerOp`, the vanishing of Hasse derivatives and of
-iterated Euler operators at a multiple root) are Mathlib-shaped and independent of recurrences.
+## Proof outline
+
+The sequences $n^s q^n$ solve the recurrence because the iterated Euler operator $\theta^s$ of
+$X^n \Pi$ vanishes at a root $q$ of multiplicity greater than $s$. In the same way, the binomial
+sequences solve it because the Hasse derivatives of $X^n \Pi$ of order less than the multiplicity
+vanish at the root. The shift $S$ lowers the binomial sequences, $(S - r) e_{s+1} = e_s$ for
+$e_s = \binom{n}{s} r^{n-s}$. So the binomial sequences of one root lie in the generalized
+eigenspace of $S$ for the eigenvalue $r$, and the functionals $u \mapsto ((S - r)^j u)_0$ form a
+dual family to them. This gives the linear independence for one root. Generalized eigenspaces for
+distinct eigenvalues are independent, and this gives the linear independence for all roots. When
+$\Pi$ splits, the number of pairs $(r, s)$ is the sum of the multiplicities, which is $k$, the
+dimension of the solution space.
+
+## Implementation notes
+
+* The module is written to Mathlib conventions, and its natural home is
+  `Mathlib.Algebra.LinearRecurrence`. The polynomial lemmas at the top (the Euler operator, and the
+  vanishing of Hasse derivatives and of iterated Euler operators at a multiple root) do not depend
+  on recurrences.
+* Mathlib's `LinearRecurrence.IsSolution` is $u_{n+k} = \sum_{i<k} c_i u_{n+i}$. The equation
+  $u_{n+k} + \alpha_{k-1} u_{n+k-1} + \dots + \alpha_0 u_n = 0$ of [quarteroni2000numerical] has
+  $c_i = -\alpha_i$, and `LinearRecurrence.charPoly` is the polynomial $\Pi$ of the source.
+* Sequences are indexed by $\mathbb{N}$. The convention $\psi_{k-1}(i) = 0$ for $i < 0$ in (11.42)
+  of [quarteroni2000numerical] is encoded by a sum over $k \le l \le n$ only, where the index
+  $n - l + k - 1$ is a natural number.
+* The fundamental system uses the binomial sequences $\binom{n}{s} r^{n-s}$, not the sequences
+  $n^s r^n$ of the source. The binomial sequences behave uniformly at the root $r = 0$: there
+  $\binom{n}{s} 0^{n-s}$ is the Kronecker sequence $\delta_{ns}$, while $n^s 0^n$ is the zero
+  sequence for $s \ge 1$. The shift lowers them, which makes their independence a triangular
+  computation. Neither the independence nor the spanning statement needs characteristic zero or
+  $\Pi(0) \neq 0$. The form $\sum_j p_j(n) r_j^n$ of the source needs both, because $\binom{n}{s}$
+  is a polynomial in $n$ only in characteristic zero, and $n^s 0^n$ vanishes.
+* The matrix $(r_m^i)$ of (11.37) of [quarteroni2000numerical] is the transpose of Mathlib's
+  `Matrix.vandermonde`.
 -/
 
 open Polynomial Finset
@@ -80,8 +115,12 @@ namespace Polynomial
 
 variable {R : Type*} [CommRing R]
 
-/-- If `(X - C a) ^ m ∣ p`, the Hasse derivatives of `p` of order `< m` vanish at `a`: the Taylor
-expansion of `p` at `a` starts at order `m`. -/
+/-- Let $R$ be a commutative ring, let $p \in R[X]$, $a \in R$ and $s < m$. If $(X - a)^m$ divides
+$p$, then the $s$-th Hasse derivative of $p$ vanishes at $a$:
+$$\bigl(D^{(s)} p\bigr)(a) = 0.$$
+
+The Hasse derivative $D^{(s)}$ is `Polynomial.hasseDeriv s`. In other words, the Taylor
+expansion of $p$ at $a$ starts at order $m$. -/
 theorem eval_hasseDeriv_eq_zero_of_pow_sub_dvd {p : R[X]} {a : R} {m s : ℕ}
     (h : (X - C a) ^ m ∣ p) (hs : s < m) : (hasseDeriv s p).eval a = 0 := by
   obtain ⟨q, rfl⟩ := h
@@ -89,20 +128,22 @@ theorem eval_hasseDeriv_eq_zero_of_pow_sub_dvd {p : R[X]} {a : R} {m s : ℕ}
     coeff_X_pow_mul']
   simp [not_le.mpr hs]
 
-/-- The Hasse derivatives of order `< rootMultiplicity a p` vanish at `a`. -/
+/-- Let $p \in R[X]$ and $a \in R$. If $s$ is less than the multiplicity of $a$ as a root of $p$,
+then the $s$-th Hasse derivative of $p$ vanishes at $a$. -/
 theorem eval_hasseDeriv_eq_zero_of_lt_rootMultiplicity {p : R[X]} {a : R} {s : ℕ}
     (hs : s < p.rootMultiplicity a) : (hasseDeriv s p).eval a = 0 :=
   eval_hasseDeriv_eq_zero_of_pow_sub_dvd (p.pow_rootMultiplicity_dvd a) hs
 
-/-- The Euler operator `θ p = X * p'`, as a linear map. It multiplies the monomial `X ^ n` by `n`,
-so `θ ^ s` multiplies it by `n ^ s`: it is the operator behind the sequences `n ^ s * q ^ n`. -/
+/-- The **Euler operator** $\theta p = X p'$ on $R[X]$, as an $R$-linear map. It multiplies the
+monomial $X^n$ by $n$, so $\theta^s$ multiplies it by $n^s$. It is the operator behind the
+sequences $n^s q^n$. -/
 noncomputable def eulerOp : R[X] →ₗ[R] R[X] :=
   (LinearMap.mulLeft R (X : R[X])).comp derivative
 
-/-- The Euler operator is `X` times the derivative. -/
+/-- The Euler operator is $\theta p = X p'$. -/
 theorem eulerOp_apply (p : R[X]) : eulerOp p = X * derivative p := rfl
 
-/-- The Euler operator multiplies the monomial `X ^ n` by `n`. -/
+/-- The Euler operator maps the monomial $a X^n$ to $n a X^n$. -/
 @[simp]
 theorem eulerOp_monomial (n : ℕ) (a : R) : eulerOp (monomial n a) = monomial n (n * a) := by
   rw [eulerOp_apply, derivative_monomial]
@@ -110,19 +151,21 @@ theorem eulerOp_monomial (n : ℕ) (a : R) : eulerOp (monomial n a) = monomial n
   · simp
   · rw [X_mul_monomial, Nat.add_sub_cancel, mul_comm]
 
-/-- The `s`-th iterate of the Euler operator multiplies the monomial `X ^ n` by `n ^ s`. -/
+/-- The $s$-th iterate of the Euler operator maps the monomial $a X^n$ to $n^s a X^n$. -/
 theorem iterate_eulerOp_monomial (s n : ℕ) (a : R) :
     (⇑eulerOp)^[s] (monomial n a) = monomial n ((n : R) ^ s * a) := by
   induction s generalizing a with
   | zero => simp
   | succ s ih => rw [Function.iterate_succ_apply, eulerOp_monomial, ih, pow_succ]; ring_nf
 
-/-- The Euler operator lowers the multiplicity of a factor by at most one. -/
+/-- Let $p, q \in R[X]$. If $q^n$ divides $p$, then $q^{n-1}$ divides $\theta p$, where $n - 1 = 0$
+for $n = 0$. -/
 theorem pow_sub_one_dvd_eulerOp_of_pow_dvd {p q : R[X]} {n : ℕ} (h : q ^ n ∣ p) :
     q ^ (n - 1) ∣ eulerOp p :=
   (pow_sub_one_dvd_derivative_of_pow_dvd h).mul_left _
 
-/-- The `s`-th iterate of the Euler operator lowers the multiplicity of a factor by at most `s`. -/
+/-- Let $p, q \in R[X]$ and $s \in \mathbb{N}$. If $q^n$ divides $p$, then $q^{n-s}$ divides
+$\theta^s p$, where $n - s = 0$ for $n \le s$. -/
 theorem pow_sub_dvd_iterate_eulerOp_of_pow_dvd {p q : R[X]} {n : ℕ} (s : ℕ) (h : q ^ n ∣ p) :
     q ^ (n - s) ∣ (⇑eulerOp)^[s] p := by
   induction s generalizing p with
@@ -131,7 +174,11 @@ theorem pow_sub_dvd_iterate_eulerOp_of_pow_dvd {p q : R[X]} {n : ℕ} (s : ℕ) 
     rw [Function.iterate_succ_apply', Nat.sub_succ']
     exact pow_sub_one_dvd_eulerOp_of_pow_dvd (ih h)
 
-/-- If `(X - C a) ^ m ∣ p`, the iterated Euler operators `θ ^ s p`, `s < m`, vanish at `a`. -/
+/-- Let $R$ be a commutative ring, let $p \in R[X]$, $a \in R$ and $s < m$. If $(X - a)^m$ divides
+$p$, then the $s$-th iterate of the Euler operator $\theta = X \frac{d}{dX}$ applied to $p$
+vanishes at $a$:
+$$\bigl(\theta^s p\bigr)(a) = 0.$$
+-/
 theorem eval_iterate_eulerOp_eq_zero_of_pow_sub_dvd {p : R[X]} {a : R} {m s : ℕ}
     (h : (X - C a) ^ m ∣ p) (hs : s < m) : ((⇑eulerOp)^[s] p).eval a = 0 := by
   have := pow_sub_dvd_iterate_eulerOp_of_pow_dvd s h
@@ -147,22 +194,31 @@ section CommSemiring
 
 variable {R : Type*} [CommSemiring R] (E : LinearRecurrence R)
 
-/-- `u` solves the inhomogeneous recurrence with source `φ`:
-`u (n + k) = ∑ i, coeffs i * u (n + i) + φ (n + k)` for every `n`, where `k` is the order. This is
-the linear difference equation `u_{n+k} + α_{k-1} u_{n+k-1} + … + α_0 u_n = φ_{n+k}` of
-[quarteroni2000numerical] (11.28), with `coeffs i = -α_i`; the source is indexed at `n + k` as in
-the book, so that `φ 0, …, φ (k - 1)` are never read. -/
+/-- Let $E$ be a linear recurrence of order $k$ with coefficients $c_i$ over a commutative semiring
+$R$, and let $\varphi, u \colon \mathbb{N} \to R$. The sequence $u$ **solves the inhomogeneous
+recurrence with source $\varphi$** if
+$$u_{n+k} = \sum_{i<k} c_i u_{n+i} + \varphi_{n+k} \quad \text{for every } n \in \mathbb{N}.$$
+
+This is the linear difference equation $u_{n+k} + \alpha_{k-1} u_{n+k-1} + \dots + \alpha_0
+u_n = \varphi_{n+k}$ of [quarteroni2000numerical], (11.28), with $c_i = -\alpha_i$. The source
+is indexed at $n + k$ as in the source text, so that the values
+$\varphi_0, \dots, \varphi_{k-1}$ are never used. -/
 def IsSolutionWith (φ u : ℕ → R) : Prop :=
   ∀ n, u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)
 
-/-- The inhomogeneous recurrence with source `0` is the homogeneous one. -/
+/-- The inhomogeneous recurrence with source $0$ is the homogeneous recurrence: $u$ solves it if and
+only if $u$ is a solution of $E$. -/
 @[simp]
 theorem isSolutionWith_zero_iff (u : ℕ → R) : E.IsSolutionWith 0 u ↔ E.IsSolution u := by
   simp [IsSolutionWith, IsSolution]
 
-/-- The solution of the inhomogeneous recurrence with source `φ` and initial values `init`,
-computed by the recursion `u (n + k) = ∑ i, coeffs i * u (n + i) + φ (n + k)`; the unique such
-solution (`eq_mkSolWith_of_isSolutionWith_of_eq_init'`). -/
+/-- The solution of the inhomogeneous recurrence with source $\varphi$ and initial values
+$\mathrm{init}_0, \dots, \mathrm{init}_{k-1}$. It is defined by $u_n = \mathrm{init}_n$ for
+$n < k$ and by the recursion
+$$u_n = \sum_{i<k} c_i u_{n-k+i} + \varphi_n \quad \text{for } n \ge k.$$
+
+It is the unique such solution, by
+`LinearRecurrence.eq_mkSolWith_of_isSolutionWith_of_eq_init'`. -/
 def mkSolWith (φ : ℕ → R) (init : Fin E.order → R) : ℕ → R
   | n =>
     if h : n < E.order then init ⟨n, h⟩
@@ -171,21 +227,24 @@ def mkSolWith (φ : ℕ → R) (init : Fin E.order → R) : ℕ → R
         have _ : n - E.order + k < n := by omega
         E.coeffs k * mkSolWith φ init (n - E.order + k)) + φ n
 
-/-- `mkSolWith φ init` solves the inhomogeneous recurrence with source `φ`. -/
+/-- The sequence `LinearRecurrence.mkSolWith` $\varphi$ $\mathrm{init}$ solves the inhomogeneous
+recurrence with source $\varphi$. -/
 theorem isSolutionWith_mkSolWith (φ : ℕ → R) (init : Fin E.order → R) :
     E.IsSolutionWith φ (E.mkSolWith φ init) := by
   intro n
   rw [mkSolWith]
   simp
 
-/-- The first `E.order` values of `mkSolWith φ init` are `init`. -/
+/-- The first $k$ values of `LinearRecurrence.mkSolWith` $\varphi$ $\mathrm{init}$ are the initial
+values: $u_n = \mathrm{init}_n$ for $n < k$. -/
 theorem mkSolWith_eq_init (φ : ℕ → R) (init : Fin E.order → R) (n : Fin E.order) :
     E.mkSolWith φ init n = init n := by
   rw [mkSolWith]
   simp only [n.is_lt, dite_eq_left, Fin.mk_val]
 
-/-- Uniqueness for the inhomogeneous recurrence, pointwise: a solution with source `φ` whose first
-`E.order` values are `init` is `mkSolWith φ init` at every `n`. -/
+/-- Uniqueness for the inhomogeneous recurrence, pointwise. Let $u$ solve the inhomogeneous
+recurrence with source $\varphi$, and let $u_n = \mathrm{init}_n$ for $n < k$. Then for every
+$n$, $u_n$ is the $n$-th value of `LinearRecurrence.mkSolWith` $\varphi$ $\mathrm{init}$. -/
 theorem eq_mkSolWith_of_isSolutionWith_of_eq_init {φ u : ℕ → R} {init : Fin E.order → R}
     (h : E.IsSolutionWith φ u) (heq : ∀ n : Fin E.order, u n = init n) :
     ∀ n, u n = E.mkSolWith φ init n := by
@@ -200,22 +259,24 @@ theorem eq_mkSolWith_of_isSolutionWith_of_eq_init {φ u : ℕ → R} {init : Fin
     rw [eq_mkSolWith_of_isSolutionWith_of_eq_init h heq (n - E.order + k)]
     simp
 
-/-- Uniqueness for the inhomogeneous recurrence: a solution with source `φ` whose first `E.order`
-values are `init` is `mkSolWith φ init`. -/
+/-- Uniqueness for the inhomogeneous recurrence. Let $u$ solve the inhomogeneous recurrence with
+source $\varphi$, and let $u_n = \mathrm{init}_n$ for $n < k$. Then $u$ is the sequence
+`LinearRecurrence.mkSolWith` $\varphi$ $\mathrm{init}$. -/
 theorem eq_mkSolWith_of_isSolutionWith_of_eq_init' {φ u : ℕ → R} {init : Fin E.order → R}
     (h : E.IsSolutionWith φ u) (heq : ∀ n : Fin E.order, u n = init n) :
     u = E.mkSolWith φ init :=
   funext (E.eq_mkSolWith_of_isSolutionWith_of_eq_init h heq)
 
 variable {E} in
-/-- Two solutions with the same source and the same first `E.order` values are equal. -/
+/-- Let $u$ and $v$ solve the inhomogeneous recurrence with the same source $\varphi$. If
+$u_n = v_n$ for all $n < k$, then $u = v$. -/
 theorem IsSolutionWith.eq_of_eqOn_range_order {φ u v : ℕ → R} (hu : E.IsSolutionWith φ u)
     (hv : E.IsSolutionWith φ v) (h : ∀ n : Fin E.order, u n = v n) : u = v :=
   (E.eq_mkSolWith_of_isSolutionWith_of_eq_init' hu (init := fun n => v n) h).trans
     (E.eq_mkSolWith_of_isSolutionWith_of_eq_init' hv fun _ => rfl).symm
 
-/-- Adding a solution of the homogeneous recurrence to a solution with source `φ` gives a solution
-with source `φ`. -/
+/-- Let $u$ solve the inhomogeneous recurrence with source $\varphi$, and let $w$ solve the
+homogeneous recurrence. Then $u + w$ solves the inhomogeneous recurrence with source $\varphi$. -/
 theorem isSolutionWith_add {φ u w : ℕ → R} (hu : E.IsSolutionWith φ u) (hw : E.IsSolution w) :
     E.IsSolutionWith φ (u + w) := by
   intro n
@@ -224,34 +285,38 @@ theorem isSolutionWith_add {φ u w : ℕ → R} (hu : E.IsSolutionWith φ u) (hw
 
 /-! ### The Kronecker fundamental solutions -/
 
-/-- The fundamental solution `ψ_j` with Kronecker initial data `ψ_j (i) = δ_ij`, `i, j < k`
-([quarteroni2000numerical] (11.34)). -/
+/-- The **Kronecker fundamental solution** $\psi_j$, for $j < k$: the solution of the homogeneous
+recurrence with the initial values $\psi_j(i) = \delta_{ij}$ for $i < k$
+([quarteroni2000numerical], (11.34)). -/
 noncomputable def kroneckerSol (j : Fin E.order) : ℕ → R :=
   E.mkSol (Pi.single j 1)
 
-/-- The Kronecker fundamental solutions are solutions. -/
+/-- The Kronecker fundamental solutions solve the homogeneous recurrence. -/
 theorem isSolution_kroneckerSol (j : Fin E.order) : E.IsSolution (E.kroneckerSol j) :=
   E.is_sol_mkSol _
 
-/-- The Kronecker initial data (11.34): `ψ_j (i) = δ_ij` for `i < k`. -/
+/-- The Kronecker initial values (11.34) of [quarteroni2000numerical]: for $i < k$, $\psi_j(i)$ is
+$1$ if $i = j$ and $0$ otherwise. -/
 theorem kroneckerSol_apply_of_lt (j : Fin E.order) {i : ℕ} (hi : i < E.order) :
     E.kroneckerSol j i = if i = j then 1 else 0 := by
   have := E.mkSol_eq_init (Pi.single j 1) ⟨i, hi⟩
   rw [kroneckerSol, this, Pi.single_apply]
   simp only [Fin.ext_iff]
 
-/-- `ψ_j (j) = 1`. -/
+/-- The Kronecker fundamental solution satisfies $\psi_j(j) = 1$. -/
 @[simp]
 theorem kroneckerSol_apply_self (j : Fin E.order) : E.kroneckerSol j j = 1 := by
   simp [E.kroneckerSol_apply_of_lt j j.is_lt]
 
-/-- `ψ_j (i) = 0` for `i < k`, `i ≠ j`. -/
+/-- For $i < k$ with $i \neq j$, the Kronecker fundamental solution satisfies $\psi_j(i) = 0$. -/
 theorem kroneckerSol_apply_of_ne (j : Fin E.order) {i : ℕ} (hi : i < E.order) (hij : i ≠ j) :
     E.kroneckerSol j i = 0 := by
   simp [E.kroneckerSol_apply_of_lt j hi, hij]
 
-/-- A combination of the Kronecker fundamental solutions has the coefficients as its first
-`E.order` values. -/
+/-- Let $c_0, \dots, c_{k-1} \in R$. For $i < k$, the combination of the Kronecker fundamental
+solutions with these coefficients has the value $c_i$ at $i$:
+$$\sum_{j<k} c_j \psi_j(i) = c_i.$$
+-/
 theorem sum_mul_kroneckerSol_apply_of_lt (c : Fin E.order → R) {i : ℕ} (hi : i < E.order) :
     ∑ j : Fin E.order, c j * E.kroneckerSol j i = c ⟨i, hi⟩ := by
   rw [sum_eq_single ⟨i, hi⟩ (fun j _ hj => ?_) (by simp)]
@@ -259,7 +324,8 @@ theorem sum_mul_kroneckerSol_apply_of_lt (c : Fin E.order → R) {i : ℕ} (hi :
     simp
   · rw [E.kroneckerSol_apply_of_ne j hi fun h => hj (Fin.ext h.symm), mul_zero]
 
-/-- A combination of the Kronecker fundamental solutions is a solution. -/
+/-- For all $c_0, \dots, c_{k-1} \in R$, the sequence $n \mapsto \sum_{j<k} c_j \psi_j(n)$ solves
+the homogeneous recurrence. -/
 theorem isSolution_sum_mul_kroneckerSol (c : Fin E.order → R) :
     E.IsSolution fun n => ∑ j : Fin E.order, c j * E.kroneckerSol j n := by
   have : (fun n => ∑ j : Fin E.order, c j * E.kroneckerSol j n) =
@@ -268,8 +334,10 @@ theorem isSolution_sum_mul_kroneckerSol (c : Fin E.order → R) :
   rw [this, is_sol_iff_mem_solSpace]
   exact E.solSpace.sum_mem fun j _ => E.solSpace.smul_mem (c j) (E.isSolution_kroneckerSol j)
 
-/-- Every solution is the combination of the Kronecker fundamental solutions weighted by its
-initial values: `u n = ∑ j, u j * ψ_j n` ([quarteroni2000numerical] (11.35)). -/
+/-- Every solution $u$ of the homogeneous recurrence is the combination of the Kronecker fundamental
+solutions with its initial values as coefficients:
+$$u_n = \sum_{j<k} u_j \psi_j(n) \quad \text{for every } n \in \mathbb{N}.$$
+This is (11.35) of [quarteroni2000numerical]. -/
 theorem eq_sum_kroneckerSol {u : ℕ → R} (hu : E.IsSolution u) (n : ℕ) :
     u n = ∑ j : Fin E.order, u j * E.kroneckerSol j n := by
   refine congrFun ((E.eq_iff_eqOn_range_order u _ hu
@@ -285,8 +353,8 @@ section Duhamel
 variable {E} {φ : ℕ → R} (hk : 0 < E.order)
 include hk
 
-/-- The convolution part of the Duhamel formula, in the form `n + (k - 1) - l` of the index that
-makes the extension by zero transparent. -/
+/-- For $k \ge 1$, the convolution $w_n = \sum_{l=k}^{n} \varphi_l \psi_{k-1}(n + (k - 1) - l)$
+satisfies $w_{m+k} = \sum_{i<k} c_i w_{m+i} + \varphi_{m+k}$ for every $m$. -/
 private theorem duhamel_conv_succ (m : ℕ) :
     ∑ l ∈ Icc E.order (m + E.order),
         φ l * E.kroneckerSol ⟨E.order - 1, by omega⟩ (m + E.order + (E.order - 1) - l) =
@@ -323,12 +391,17 @@ private theorem duhamel_conv_succ (m : ℕ) :
         rw [mem_Icc, not_and, not_le] at hl'
         rw [hψ0 _ (by have := hl' hl.1; omega), mul_zero]
 
-/-- The discrete Duhamel formula: the solution of the inhomogeneous recurrence of order `k ≥ 1`
-with source `φ` is the homogeneous solution with the same initial data plus the convolution of the
-source with the last Kronecker fundamental solution,
-`u n = ∑ j, u j * ψ_j n + ∑_{l = k}^{n} φ l * ψ_{k-1} (n - l + (k - 1))`
-([quarteroni2000numerical] (11.42), where `ψ_{k-1}^{(i)} = 0` for `i < 0` — here the sum runs over
-`l ≤ n` only, so the index `n - l + (k - 1)` is an honest natural number). -/
+/-- The **discrete Duhamel formula**. Let $E$ be a linear recurrence of order $k \ge 1$ over a
+commutative semiring, and let $u$ solve the inhomogeneous recurrence with source $\varphi$. Then
+$u$ is the solution of the homogeneous recurrence with the same initial values plus the
+convolution of the source with the last Kronecker fundamental solution:
+$$u_n = \sum_{j<k} u_j \psi_j(n) + \sum_{l=k}^{n} \varphi_l \, \psi_{k-1}(n - l + k - 1) \quad
+  \text{for every } n \in \mathbb{N}.$$
+This is (11.42) of [quarteroni2000numerical].
+
+The source text sets $\psi_{k-1}(i) = 0$ for $i < 0$. Here the second sum runs over
+$k \le l \le n$ only, so the index $n - l + k - 1$ is a natural number. For $n < k$ the second
+sum is empty. -/
 theorem eq_sum_kroneckerSol_add_sum {u : ℕ → R} (hu : E.IsSolutionWith φ u) (n : ℕ) :
     u n = (∑ j : Fin E.order, u j * E.kroneckerSol j n) +
       ∑ l ∈ Icc E.order n,
@@ -363,50 +436,57 @@ end Duhamel
 /-! ### The shift operator and the binomial sequences -/
 
 variable (R) in
-/-- The shift operator `S u = u (· + 1)` on sequences, as an endomorphism of `ℕ → R`. A sequence
-solves `E` iff `E.charPoly (S) u = 0`; the fundamental solutions are organized by its generalized
-eigenspaces. -/
+/-- The **shift operator** $(Su)_n = u_{n+1}$ on sequences $u \colon \mathbb{N} \to R$, as an
+$R$-linear endomorphism of $R^{\mathbb{N}}$. A sequence solves the recurrence $E$ if and only if
+$\Pi(S) u = 0$, and the fundamental solutions are organized by the generalized eigenspaces of
+$S$. -/
 def shift : Module.End R (ℕ → R) where
   toFun u n := u (n + 1)
   map_add' _ _ := rfl
   map_smul' _ _ := rfl
 
-/-- The shift operator evaluated: `(S u) n = u (n + 1)`. -/
+/-- The shift operator satisfies $(Su)_n = u_{n+1}$. -/
 @[simp]
 theorem shift_apply (u : ℕ → R) (n : ℕ) : shift R u n = u (n + 1) := rfl
 
-/-- The binomial sequence `n ↦ n.choose s * r ^ (n - s)` attached to `r` and `s`: the `s`-th Hasse
-derivative of `r ↦ r ^ n`, the coefficient of `X ^ s` in `(X + r) ^ n`. For `s = 0` it is the
-geometric sequence `r ^ n`, for `r = 0` the Kronecker sequence `δ_{n s}`, and for `r ≠ 0` in
-characteristic zero it spans, together with the lower `s`, the same space as `n ^ s * r ^ n`. It
-is a solution of every recurrence whose characteristic polynomial has `r` as a root of multiplicity
-`> s` (`isSolution_chooseMulPow`). -/
+/-- The **binomial sequence** attached to $r \in R$ and $s \in \mathbb{N}$:
+$$e_s(n) = \binom{n}{s} r^{n-s},$$
+with $n - s = 0$ for $n < s$ (where the binomial coefficient is $0$). It is the $s$-th Hasse
+derivative of $r \mapsto r^n$, and the coefficient of $X^s$ in $(X + r)^n$. For $s = 0$ it is
+the geometric sequence $r^n$, and for $r = 0$ it is the Kronecker sequence $\delta_{ns}$. For
+$r \neq 0$ in characteristic zero, the sequences $e_0, \dots, e_s$ span the same space as the
+sequences $n^j r^n$, $j \le s$. The binomial sequence solves every recurrence whose
+characteristic polynomial has $r$ as a root of multiplicity greater than $s$
+(`LinearRecurrence.isSolution_chooseMulPow`). -/
 def chooseMulPow (r : R) (s : ℕ) : ℕ → R := fun n => (n.choose s : R) * r ^ (n - s)
 
-/-- The binomial sequence evaluated. -/
+/-- The binomial sequence has the value $\binom{n}{s} r^{n-s}$ at $n$. -/
 theorem chooseMulPow_apply (r : R) (s n : ℕ) :
     chooseMulPow r s n = (n.choose s : R) * r ^ (n - s) := rfl
 
-/-- The binomial sequence with `s = 0` is the geometric sequence `r ^ n`. -/
+/-- The binomial sequence with $s = 0$ is the geometric sequence $n \mapsto r^n$. -/
 @[simp]
 theorem chooseMulPow_zero (r : R) : chooseMulPow r 0 = fun n => r ^ n := by
   ext n; simp [chooseMulPow]
 
-/-- The binomial sequence with index `s` takes the value `1` at `n = s`. -/
+/-- The binomial sequence with index $s$ has the value $1$ at $n = s$. -/
 @[simp]
 theorem chooseMulPow_apply_self (r : R) (s : ℕ) : chooseMulPow r s s = 1 := by
   simp [chooseMulPow]
 
-/-- The binomial sequence with index `s` vanishes at `n < s`. -/
+/-- The binomial sequence with index $s$ vanishes at every $n < s$. -/
 theorem chooseMulPow_apply_of_lt (r : R) {s n : ℕ} (h : n < s) : chooseMulPow r s n = 0 := by
   simp [chooseMulPow, Nat.choose_eq_zero_of_lt h]
 
-/-- The binomial sequence with index `s` beyond `s`: `(n + s).choose s * r ^ n`. -/
+/-- The binomial sequence with index $s$ has the value $\binom{n+s}{s} r^n$ at $n + s$. -/
 theorem chooseMulPow_apply_add (r : R) (s n : ℕ) :
     chooseMulPow r s (n + s) = ((n + s).choose s : R) * r ^ n := by
   simp [chooseMulPow]
 
-/-- The binomial sequences at `r = 0` are the Kronecker sequences. -/
+/-- The binomial sequences at $r = 0$ are the Kronecker sequences:
+$\binom{n}{s} 0^{n-s} = \delta_{ns}$ for all $n$ and $s$.
+
+Here $0^0 = 1$. -/
 theorem chooseMulPow_zero_left (s : ℕ) : chooseMulPow (0 : R) s = Pi.single s 1 := by
   ext n
   rcases lt_trichotomy n s with h | rfl | h
@@ -420,23 +500,28 @@ section CommRing
 
 variable {R : Type*} [CommRing R] (E : LinearRecurrence R)
 
-/-- The difference of two solutions with the same source solves the homogeneous recurrence: the
-solutions with source `φ` form a coset of `solSpace`. -/
+/-- Let $E$ be a linear recurrence over a commutative ring. If $u$ and $v$ solve the inhomogeneous
+recurrence with the same source $\varphi$, then $u - v$ solves the homogeneous recurrence. So
+the solutions with source $\varphi$ form a coset of the solution space. -/
 theorem isSolutionWith_sub {φ u v : ℕ → R} (hu : E.IsSolutionWith φ u)
     (hv : E.IsSolutionWith φ v) : E.IsSolution (u - v) := by
   intro n
   simp only [Pi.sub_apply, hu n, hv n, mul_sub, sum_sub_distrib]
   ring
 
-/-- `X ^ n * charPoly` as a combination of monomials. -/
+/-- For every $n \in \mathbb{N}$, $X^n \Pi = X^{n+k} - \sum_{i<k} c_i X^{n+i}$. -/
 theorem X_pow_mul_charPoly (n : ℕ) :
     X ^ n * E.charPoly =
       monomial (n + E.order) 1 - ∑ i : Fin E.order, monomial (n + i) (E.coeffs i) := by
   simp only [charPoly, mul_sub, mul_sum, X_pow_mul_monomial, add_comm]
 
-/-- The binomial sequences of a multiple root are solutions: if `s < rootMultiplicity r`, then
-`n ↦ n.choose s * r ^ (n - s)` solves `E`. Over any commutative ring; the identity is the
-vanishing at `r` of the `s`-th Hasse derivative of `X ^ n * charPoly`. -/
+/-- Let $E$ be a linear recurrence over a commutative ring $R$ with characteristic polynomial $\Pi$,
+and let $r \in R$. If $s$ is less than the multiplicity of $r$ as a root of $\Pi$, then the
+binomial sequence
+$$n \mapsto \binom{n}{s} r^{n-s}$$
+solves $E$.
+
+The recurrence at $n$ is the vanishing at $r$ of the $s$-th Hasse derivative of $X^n \Pi$. -/
 theorem isSolution_chooseMulPow {r : R} {s : ℕ} (hs : s < E.charPoly.rootMultiplicity r) :
     E.IsSolution (chooseMulPow r s) := by
   intro n
@@ -445,9 +530,15 @@ theorem isSolution_chooseMulPow {r : R} {s : ℕ} (hs : s < E.charPoly.rootMulti
   rw [X_pow_mul_charPoly, map_sub, map_sum, eval_sub, eval_finsetSum, sub_eq_zero] at h
   simpa [hasseDeriv_monomial, eval_monomial, chooseMulPow, mul_assoc, mul_left_comm] using h
 
-/-- The multiple-root fundamental solutions of [quarteroni2000numerical] §11.4: if
-`s < rootMultiplicity q`, then `n ↦ n ^ s * q ^ n` solves `E`. Over any commutative ring; the
-identity is the vanishing at `q` of `θ ^ s (X ^ n * charPoly)`, `θ = X d/dX` the Euler operator. -/
+/-- Let $E$ be a linear recurrence over a commutative ring $R$ with characteristic polynomial $\Pi$,
+and let $q \in R$. If $s$ is less than the multiplicity of $q$ as a root of $\Pi$, then the
+sequence
+$$n \mapsto n^s q^n$$
+solves $E$. These are the fundamental solutions of a multiple root in [quarteroni2000numerical],
+§11.4.
+
+The recurrence at $n$ is the vanishing at $q$ of $\theta^s(X^n \Pi)$, where
+$\theta = X \frac{d}{dX}$ is the Euler operator `Polynomial.eulerOp`. Here $0^0 = 1$. -/
 theorem isSolution_pow_mul_pow {q : R} {s : ℕ} (hs : s < E.charPoly.rootMultiplicity q) :
     E.IsSolution fun n => (n : R) ^ s * q ^ n := by
   intro n
@@ -458,14 +549,18 @@ theorem isSolution_pow_mul_pow {q : R} {s : ℕ} (hs : s < E.charPoly.rootMultip
   simp only [Module.End.pow_apply, iterate_eulerOp_monomial, eval_monomial] at h
   simpa [mul_assoc, mul_left_comm] using h
 
-/-- The case `s = 1`: if `q` is a root of multiplicity at least `2` of the characteristic polynomial
-(equivalently, `Π (q) = Π' (q) = 0`, `Polynomial.one_lt_rootMultiplicity_iff_isRoot`), then
-`n ↦ n * q ^ n` solves `E`. -/
+/-- Let $q \in R$ be a root of multiplicity at least $2$ of the characteristic polynomial $\Pi$,
+that is, $\Pi(q) = \Pi'(q) = 0$. Then the sequence $n \mapsto n q^n$ solves $E$.
+
+The equivalence of the two forms of the hypothesis is
+`Polynomial.one_lt_rootMultiplicity_iff_isRoot`. This is the case $s = 1$ of
+`LinearRecurrence.isSolution_pow_mul_pow`. -/
 theorem isSolution_mul_pow_of_one_lt_rootMultiplicity {q : R}
     (hq : 1 < E.charPoly.rootMultiplicity q) : E.IsSolution fun n => (n : R) * q ^ n := by
   simpa using E.isSolution_pow_mul_pow hq
 
-/-- The shift minus `r` lowers the binomial sequences: `(S - r) e_{s+1} = e_s`, Pascal's rule. -/
+/-- Let $r \in R$ and let $e_s$ be the binomial sequences at $r$. Then $(S - r) e_{s+1} = e_s$ for
+every $s$, where $S$ is the shift operator. This is Pascal's rule. -/
 theorem shift_sub_smul_chooseMulPow_succ (r : R) (s : ℕ) :
     (shift R - r • 1) (chooseMulPow r (s + 1)) = chooseMulPow r s := by
   ext n
@@ -482,12 +577,17 @@ theorem shift_sub_smul_chooseMulPow_succ (r : R) (s : ℕ) :
     push_cast
     ring
 
-/-- The geometric sequence `r ^ n` is killed by `S - r`. -/
+/-- The shift operator satisfies $(S - r) e_0 = 0$: it maps the geometric sequence $r^n$ to
+$r^{n+1}$. -/
 theorem shift_sub_smul_chooseMulPow_zero (r : R) :
     (shift R - r • 1) (chooseMulPow r 0) = 0 := by
   ext n; simp [pow_succ, mul_comm]
 
-/-- Iterated lowering: `(S - r) ^ j e_s = e_{s - j}` for `j ≤ s`, and `0` for `j > s`. -/
+/-- Let $r \in R$ and let $e_s$ be the binomial sequences at $r$. Then for all
+$j, s \in \mathbb{N}$,
+$$(S - r)^j e_s = \begin{cases} e_{s-j} & \text{if } j \le s, \\ 0 & \text{if } j > s.
+  \end{cases}$$
+-/
 theorem shift_sub_smul_pow_chooseMulPow (r : R) (j s : ℕ) :
     ((shift R - r • 1) ^ j) (chooseMulPow r s) =
       if j ≤ s then chooseMulPow r (s - j) else 0 := by
@@ -500,7 +600,9 @@ theorem shift_sub_smul_pow_chooseMulPow (r : R) (j s : ℕ) :
     · rw [shift_sub_smul_chooseMulPow_succ, ih]
       simp only [Nat.add_le_add_iff_right, Nat.add_sub_add_right]
 
-/-- The functionals `u ↦ ((S - r) ^ j u) 0` form a dual family to the binomial sequences. -/
+/-- For all $j, s \in \mathbb{N}$, the value of $(S - r)^j e_s$ at $0$ is $1$ if $j = s$ and $0$
+otherwise. So the functionals $u \mapsto ((S - r)^j u)_0$ form a dual family to the binomial
+sequences. -/
 theorem shift_sub_smul_pow_chooseMulPow_apply_zero (r : R) (j s : ℕ) :
     ((shift R - r • 1) ^ j) (chooseMulPow r s) 0 = if j = s then 1 else 0 := by
   rw [shift_sub_smul_pow_chooseMulPow]
@@ -510,8 +612,8 @@ theorem shift_sub_smul_pow_chooseMulPow_apply_zero (r : R) (j s : ℕ) :
   · omega
   · rfl
 
-/-- The binomial sequences at `r` lie in the generalized eigenspace of the shift for the
-eigenvalue `r`. -/
+/-- For every $s$, the binomial sequence $e_s$ at $r$ lies in the generalized eigenspace of the
+shift operator for the eigenvalue $r$, that is, $(S - r)^j e_s = 0$ for some $j$. -/
 theorem chooseMulPow_mem_genEigenspace (r : R) (s : ℕ) :
     chooseMulPow r s ∈ (shift R).genEigenspace r ⊤ := by
   rw [Module.End.mem_genEigenspace_top]
@@ -519,9 +621,10 @@ theorem chooseMulPow_mem_genEigenspace (r : R) (s : ℕ) :
   rw [LinearMap.mem_ker, shift_sub_smul_pow_chooseMulPow]
   simp
 
-/-- For a fixed `r`, the binomial sequences `chooseMulPow r s`, `s < m`, are linearly independent
-(over any commutative ring): the dual family
-`shift_sub_smul_pow_chooseMulPow_apply_zero`. -/
+/-- Let $R$ be a commutative ring, let $r \in R$ and $m \in \mathbb{N}$. Then the binomial sequences
+$e_s(n) = \binom{n}{s} r^{n-s}$, $s < m$, are linearly independent over $R$.
+
+The proof uses the dual family of `LinearRecurrence.shift_sub_smul_pow_chooseMulPow_apply_zero`. -/
 theorem linearIndependent_chooseMulPow (r : R) (m : ℕ) :
     LinearIndependent R fun s : Fin m => chooseMulPow r s := by
   rw [Fintype.linearIndependent_iff]
@@ -536,36 +639,40 @@ theorem linearIndependent_chooseMulPow (r : R) (m : ℕ) :
 
 /-! ### Change of coefficients -/
 
-/-- The recurrence with the same order and the coefficients pushed forward along a ring
-homomorphism: the bridge from a real recurrence to the complex one whose roots are discussed. -/
+/-- Let $f \colon R \to S$ be a homomorphism of commutative rings. The recurrence $E$ **pushed
+forward along $f$** has the same order $k$ and the coefficients $f(c_i)$. It carries a real
+recurrence to the complex recurrence whose roots the theory discusses. -/
 def map {S : Type*} [CommRing S] (f : R →+* S) : LinearRecurrence S :=
   ⟨E.order, fun i => f (E.coeffs i)⟩
 
-/-- The pushed-forward recurrence has the same order. -/
+/-- The recurrence pushed forward along $f$ has the same order as $E$. -/
 @[simp]
 theorem map_order {S : Type*} [CommRing S] (f : R →+* S) : (E.map f).order = E.order := rfl
 
-/-- The coefficients of the pushed-forward recurrence. -/
+/-- The recurrence pushed forward along $f$ has the coefficients $f(c_i)$. -/
 @[simp]
 theorem map_coeffs {S : Type*} [CommRing S] (f : R →+* S) (i : Fin (E.map f).order) :
     (E.map f).coeffs i = f (E.coeffs i) := rfl
 
-/-- The characteristic polynomial of the pushed-forward recurrence is the image of the
-characteristic polynomial. -/
+/-- Let $f \colon R \to S$ be a homomorphism of commutative rings. The characteristic polynomial of
+the recurrence pushed forward along $f$ is the image under $f$ of the characteristic polynomial
+of $E$. -/
 theorem charPoly_map {S : Type*} [CommRing S] (f : R →+* S) :
     (E.map f).charPoly = E.charPoly.map f := by
   simp only [charPoly, Polynomial.map_sub, Polynomial.map_sum, Polynomial.map_monomial, map_one]
   rfl
 
-/-- The image of a solution under a ring homomorphism solves the pushed-forward recurrence. -/
+/-- Let $f \colon R \to S$ be a homomorphism of commutative rings. If $u$ solves $E$, then
+$f \circ u$ solves the recurrence pushed forward along $f$. -/
 theorem isSolution_map {S : Type*} [CommRing S] (f : R →+* S) {u : ℕ → R} (hu : E.IsSolution u) :
     (E.map f).IsSolution (f ∘ u) := by
   intro n
   simp only [Function.comp_apply, map_order, hu n, map_sum, map_mul]
   rfl
 
-/-- The image of a solution of the inhomogeneous recurrence under a ring homomorphism solves the
-pushed-forward recurrence with the pushed-forward source. -/
+/-- Let $f \colon R \to S$ be a homomorphism of commutative rings. If $u$ solves the inhomogeneous
+recurrence $E$ with source $\varphi$, then $f \circ u$ solves the recurrence pushed forward
+along $f$ with source $f \circ \varphi$. -/
 theorem isSolutionWith_map {S : Type*} [CommRing S] (f : R →+* S) {φ u : ℕ → R}
     (hu : E.IsSolutionWith φ u) : (E.map f).IsSolutionWith (f ∘ φ) (f ∘ u) := by
   intro n
@@ -580,29 +687,38 @@ section Field
 
 variable {K : Type*} [Field K] (E : LinearRecurrence K)
 
-/-- The solution space is finite-dimensional: it has the basis `E.basis` indexed by `Fin order`. -/
+/-- Over a field, the solution space of a recurrence is finite-dimensional, since it has the basis
+`LinearRecurrence.basis` indexed by $\{0, \dots, k-1\}$. -/
 instance : FiniteDimensional K E.solSpace := Module.Finite.of_basis E.basis
 
-/-- The solution space of a recurrence of order `k` over a field has dimension `k`
-(Mathlib's `solSpace_rank`, as a `finrank`). -/
+/-- Let $E$ be a linear recurrence of order $k$ over a field $K$. Then the solution space of $E$ has
+dimension $k$.
+
+This is Mathlib's `LinearRecurrence.solSpace_rank`, stated with `Module.finrank`. -/
 theorem finrank_solSpace : Module.finrank K E.solSpace = E.order := by
   rw [Module.finrank_eq_card_basis E.basis, Fintype.card_fin]
 
 /-! ### Simple roots -/
 
-/-- The matrix `R = (r_m ^ i)_{i m}` of [quarteroni2000numerical] (11.37) — the transpose of
-Mathlib's `Matrix.vandermonde r` — is nonsingular when the `r_m` are distinct (Exercise 5 of
-chapter 11). -/
+/-- Let $K$ be a field and let $r_0, \dots, r_{n-1} \in K$ be distinct. Then the matrix
+$(r_m^i)_{i,m}$ is nonsingular.
+
+This is the matrix $R$ of [quarteroni2000numerical], (11.37), and the result is Exercise 5 of
+Chapter 11. The matrix is the transpose of `Matrix.vandermonde r`. -/
 theorem det_vandermonde_transpose_ne_zero {n : ℕ} {r : Fin n → K} (hr : Function.Injective r) :
     (Matrix.vandermonde r).transpose.det ≠ 0 := by
   rw [Matrix.det_transpose]
   exact Matrix.det_vandermonde_ne_zero_iff.2 hr
 
-/-- The closed form for simple roots ([quarteroni2000numerical] (11.32), Exercise 4 of
-chapter 11): if `r : Fin k → K` enumerates `k` distinct roots of the characteristic polynomial of a
-recurrence of order `k`, every solution is `u n = ∑ j, γ j • r j ^ n` for a unique `γ`, the
-solution of the Vandermonde system `∑ j, γ j * r j ^ i = u i`, `i < k`. (The hypotheses force the
-characteristic polynomial to split with simple roots.) -/
+/-- The **closed form for simple roots**. Let $E$ be a linear recurrence of order $k$ over a field
+$K$, and let $r_0, \dots, r_{k-1}$ be distinct roots of its characteristic polynomial. Then for
+every solution $u$ of $E$ there is a unique $\gamma \in K^k$ such that
+$$u_n = \sum_{j<k} \gamma_j r_j^n \quad \text{for every } n \in \mathbb{N}.$$
+This is (11.32) of [quarteroni2000numerical], and Exercise 4 of Chapter 11.
+
+At $n = i < k$, the formula is the Vandermonde system $\sum_j \gamma_j r_j^i = u_i$, which
+determines $\gamma$. The hypotheses force the characteristic polynomial to split with simple
+roots. -/
 theorem eq_sum_smul_pow_of_injective_roots {r : Fin E.order → K}
     (hr : Function.Injective r) (hroot : ∀ j, E.charPoly.IsRoot (r j)) {u : ℕ → K}
     (hu : E.IsSolution u) : ∃! γ : Fin E.order → K, ∀ n, u n = ∑ j, γ j • r j ^ n := by
@@ -634,11 +750,15 @@ theorem eq_sum_smul_pow_of_injective_roots {r : Fin E.order → K}
     ext i
     exact (hγ' i).symm
 
-/-! ### The book's form of the general solution -/
+/-! ### The general solution as polynomials times powers -/
 
-/-- For `r ≠ 0` in characteristic zero, the binomial sequence is a polynomial in `n` of degree `s`
-times `r ^ n`: `n.choose s * r ^ (n - s) = q (n) * r ^ n` with
-`q = C (1 / (s! * r ^ s)) * descPochhammer K s`. -/
+/-- Let $K$ be a field of characteristic zero, let $r \in K$ with $r \neq 0$, and let
+$s, n \in \mathbb{N}$. Then the binomial sequence is a polynomial in $n$ of degree $s$ times
+$r^n$:
+$$\binom{n}{s} r^{n-s} = q(n) \, r^n, \qquad q = \frac{1}{s! \, r^s} X (X - 1) \cdots (X - s +
+  1).$$
+
+The falling factorial $X (X - 1) \cdots (X - s + 1)$ is `descPochhammer K s`. -/
 theorem chooseMulPow_eq_eval_mul_pow [CharZero K] {r : K} (hr : r ≠ 0) (s n : ℕ) :
     chooseMulPow r s n =
       (C (1 / (s.factorial * r ^ s)) * descPochhammer K s).eval (n : K) * r ^ n := by
@@ -654,28 +774,32 @@ section RootIndex
 
 variable [DecidableEq K]
 
-/-- The index set of the fundamental system: the pairs `(r, s)` with `r` a root of the
-characteristic polynomial and `s < rootMultiplicity r`. When the characteristic polynomial splits
-it has `order` elements (`card_rootIndex`). -/
+/-- The index set of the fundamental system of a recurrence over a field: the pairs $(r, s)$ with
+$r$ a root of the characteristic polynomial and $s$ less than the multiplicity of $r$. When the
+characteristic polynomial splits, it has $k$ elements (`LinearRecurrence.card_rootIndex`). -/
 abbrev RootIndex (E : LinearRecurrence K) : Type _ :=
   Σ r : E.charPoly.roots.toFinset, Fin (E.charPoly.rootMultiplicity (r : K))
 
-/-- The fundamental solution attached to the root index `(r, s)`: the binomial sequence
-`n ↦ n.choose s * r ^ (n - s)` (`chooseMulPow`). -/
+/-- The **fundamental solution** attached to the pair $(r, s)$: the binomial sequence
+$n \mapsto \binom{n}{s} r^{n-s}$ (`LinearRecurrence.chooseMulPow`). -/
 noncomputable def fundamentalSol (E : LinearRecurrence K) (p : E.RootIndex) : ℕ → K :=
   chooseMulPow (p.1 : K) p.2
 
-/-- The fundamental solution evaluated. -/
+/-- The fundamental solution attached to $(r, s)$ has the value $\binom{n}{s} r^{n-s}$ at $n$. -/
 theorem fundamentalSol_apply (p : E.RootIndex) (n : ℕ) :
     E.fundamentalSol p n = (n.choose p.2 : K) * (p.1 : K) ^ (n - p.2) := rfl
 
-/-- The fundamental solutions are solutions (`isSolution_chooseMulPow`). -/
+/-- The fundamental solutions solve the recurrence (`LinearRecurrence.isSolution_chooseMulPow`). -/
 theorem isSolution_fundamentalSol (p : E.RootIndex) : E.IsSolution (E.fundamentalSol p) :=
   E.isSolution_chooseMulPow p.2.is_lt
 
-/-- The fundamental system is linearly independent, over any field: within a root by the dual
-family of `linearIndependent_chooseMulPow`, across roots because the pieces lie in the generalized
-eigenspaces of the shift for distinct eigenvalues, which are independent
+/-- Let $E$ be a linear recurrence over a field $K$. Then the fundamental solutions
+$n \mapsto \binom{n}{s} r^{n-s}$, for all roots $r$ of the characteristic polynomial and all $s$
+less than the multiplicity of $r$, are linearly independent over $K$.
+
+Within one root, the proof uses the dual family of
+`LinearRecurrence.linearIndependent_chooseMulPow`. Across roots, the fundamental solutions lie
+in the generalized eigenspaces of the shift for distinct eigenvalues, which are independent
 (`Module.End.independent_genEigenspace`). -/
 theorem linearIndependent_fundamentalSol : LinearIndependent K E.fundamentalSol := by
   refine linearIndependent_iUnion_finite (ιs := fun r : E.charPoly.roots.toFinset =>
@@ -693,8 +817,10 @@ theorem linearIndependent_fundamentalSol : LinearIndependent K E.fundamentalSol 
     rintro _ ⟨s, rfl⟩
     exact chooseMulPow_mem_genEigenspace _ _
 
-/-- When the characteristic polynomial splits, the fundamental system has `order` elements:
-`∑_r mult r = card roots = natDegree = order`. -/
+/-- Let $E$ be a linear recurrence of order $k$ over a field. If the characteristic polynomial
+splits, then the index set of the fundamental system has $k$ elements.
+
+The proof is the count $\sum_r m_r = \#\text{roots} = \deg \Pi = k$. -/
 theorem card_rootIndex (hs : E.charPoly.Splits) : Fintype.card E.RootIndex = E.order := by
   rw [Fintype.card_sigma]
   simp only [Fintype.card_fin]
@@ -703,8 +829,9 @@ theorem card_rootIndex (hs : E.charPoly.Splits) : Fintype.card E.RootIndex = E.o
   rw [Multiset.toFinset_sum_count_eq, splits_iff_card_roots.mp hs,
     natDegree_eq_of_degree_eq_some E.charPoly_degree_eq_order]
 
-/-- The general solution of a linear recurrence whose characteristic polynomial splits
-([quarteroni2000numerical] (11.33)): the fundamental system spans the solution space. -/
+/-- The **general solution** of a linear recurrence whose characteristic polynomial splits
+([quarteroni2000numerical], (11.33)). Let $E$ be a linear recurrence over a field $K$ whose
+characteristic polynomial splits. Then the fundamental solutions span the solution space of $E$. -/
 theorem span_fundamentalSol_eq_solSpace (hs : E.charPoly.Splits) :
     Submodule.span K (Set.range E.fundamentalSol) = E.solSpace := by
   refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
@@ -714,21 +841,28 @@ theorem span_fundamentalSol_eq_solSpace (hs : E.charPoly.Splits) :
   · rw [finrank_span_eq_card E.linearIndependent_fundamentalSol, E.card_rootIndex hs,
       E.finrank_solSpace]
 
-/-- Every solution of a recurrence whose characteristic polynomial splits is a finite combination
-of the fundamental solutions. -/
+/-- Let $E$ be a linear recurrence over a field $K$ whose characteristic polynomial splits. Then
+every solution $u$ of $E$ is a linear combination of the fundamental solutions: $u = \sum_{(r,
+s)} c_{(r,s)} \binom{n}{s} r^{n-s}$ for some coefficients $c$. -/
 theorem exists_eq_sum_smul_fundamentalSol (hs : E.charPoly.Splits) {u : ℕ → K}
     (hu : E.IsSolution u) : ∃ c : E.RootIndex → K, u = ∑ p, c p • E.fundamentalSol p := by
   obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun K).1
     ((E.span_fundamentalSol_eq_solSpace hs).symm ▸ (E.is_sol_iff_mem_solSpace u).1 hu)
   exact ⟨c, hc.symm⟩
 
-/-- The general solution in the form of [quarteroni2000numerical] (11.33): in characteristic zero,
-when the characteristic polynomial splits and `0` is not a root (the book's `α_0 ≠ 0`), every
-solution is `u n = ∑_j p_j (n) * r_j ^ n` over the distinct roots `r_j`, with polynomials `p_j`
-of degree less than the multiplicity `m_j` — the book's `p_j (n) = ∑_{s < m_j} γ_{s j} n ^ s`.
-Without `α_0 ≠ 0` the statement fails (`n ^ s * 0 ^ n = 0` for `s ≥ 1`), and without
-characteristic zero the binomial coefficient is not a polynomial in `n`; the fundamental system
-`fundamentalSol` needs neither. -/
+/-- The **general solution** in the form of [quarteroni2000numerical], (11.33). Let $K$ be a field
+of characteristic zero, and let $E$ be a linear recurrence over $K$ whose characteristic
+polynomial $\Pi$ splits and has $\Pi(0) \neq 0$. Let $u$ solve $E$. Then there are polynomials
+$p_r \in K[X]$, one for each $r \in K$, with $\deg p_r$ less than the multiplicity $m_r$ of $r$
+as a root of $\Pi$, such that
+$$u_n = \sum_{r} p_r(n) \, r^n \quad \text{for every } n \in \mathbb{N},$$
+where the sum runs over the distinct roots $r$ of $\Pi$.
+
+The condition $\Pi(0) \neq 0$ is the condition $\alpha_0 \neq 0$ of the source. In the source,
+$p_j(n) = \sum_{s < m_j} \gamma_{sj} n^s$. For $r$ not a root, $m_r = 0$ and so $p_r = 0$. The
+statement fails without $\Pi(0) \neq 0$, because $n^s 0^n = 0$ for $s \ge 1$. It fails without
+characteristic zero, because then $\binom{n}{s}$ is not a polynomial in $n$. The fundamental
+system `LinearRecurrence.fundamentalSol` needs neither condition. -/
 theorem exists_eq_sum_eval_mul_pow_of_splits [CharZero K] (hs : E.charPoly.Splits)
     (h0 : ¬ E.charPoly.IsRoot 0) {u : ℕ → K} (hu : E.IsSolution u) :
     ∃ p : K → K[X], (∀ r, (p r).degree < (E.charPoly.rootMultiplicity r : WithBot ℕ)) ∧

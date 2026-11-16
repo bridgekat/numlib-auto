@@ -12,10 +12,34 @@ import Mathlib.Tactic.Positivity
 /-!
 # Projected rays in a Hilbert space
 
-The projection of a ray onto a closed convex set becomes constant when its direction is
-normal to the set at the projected point. For a feasible starting point the displacement
-norm is nondecreasing. The tangent projection of the direction is bounded by the
-displacement norm divided by the ray parameter.
+Let $C$ be a nonempty closed convex subset of a real Hilbert space $E$, with metric projection
+$P_C$. For a base point $x$ and a direction $d$, the **projected ray** is the path
+$p(t) = P_C(x + t d)$. This file proves three facts about it. The path becomes constant from a
+parameter $s$ on when $d$ is normal to $C$ at $p(s)$. The displacement $\|p(t) - x\|$ is
+nondecreasing for $t \ge 0$. The projection of $d$ onto the tangent cone of $C$ at $p(t)$ has norm
+at most $\|p(t) - x\| / t$.
+
+## Main definitions
+
+* `Optimization.projectedRay`: the path $t \mapsto P_C(x + t d)$.
+* `Optimization.normalDirections`: the normal cone $N_C(x) = \{ v : \langle v, y - x \rangle \le 0
+  \text{ for all } y \in C \}$.
+* `Optimization.tangentDirections`: the tangent cone $T_C(x)$, the polar cone of $N_C(x)$.
+
+## Main results
+
+* `Optimization.projectedRay_eq_of_normal`: if $s \le t$ and $d \in N_C(p(s))$, then $p(t) = p(s)$.
+* `Optimization.projectedRay_eq_self_iff`: for $x \in C$, $p(t) = x$ for all $t \ge 0$ if and only
+  if $d \in N_C(x)$.
+* `Optimization.norm_projectedRay_sub_le`: $\|p(s) - x\| \le \|p(t) - x\|$ for $0 \le s \le t$.
+* `Optimization.norm_tangentProjection_projectedRay_le`: $\|P_{T_C(p(t))}(d)\| \le \|p(t) - x\| / t$
+  for $t > 0$.
+
+## Implementation notes
+
+* The metric projection is `bestApprox`. The normal cone is `ConvexAnalysis.normalCone` and the
+  polar cone is `ConvexAnalysis.polarCone`, both for the pairing `innerₗ E`.
+* The normal cone is defined at every point, also at a point outside $C$.
 -/
 
 open scoped RealInnerProductSpace
@@ -25,18 +49,26 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The projection onto `C` of the ray with base point `x` and direction `d`. -/
+/-- The **projected ray** with base point $x$ and direction $d$: the path $t \mapsto P_C(x + t d)$,
+where $P_C$ is the metric projection `bestApprox C` onto $C$. -/
 noncomputable def projectedRay (C : Set E) (x d : E) (t : ℝ) : E :=
   bestApprox C (x + t • d)
 
-/-- The normal cone of a convex set, using the real inner product pairing. -/
+/-- The **normal cone** of $C$ at $x$:
+$$N_C(x) = \{ v \in E : \langle v, y - x \rangle \le 0 \text{ for all } y \in C \}.$$
+It is `ConvexAnalysis.normalCone` for the real inner product pairing, and it is defined also for
+$x \notin C$. -/
 noncomputable abbrev normalDirections (C : Set E) (x : E) : Set E :=
   normalCone (innerₗ E) C x
 
-/-- The tangent cone of a convex set, as the polar of the normal cone. -/
+/-- The **tangent cone** of $C$ at $x$: the polar cone of the normal cone,
+$$T_C(x) = \{ w \in E : \langle v, w \rangle \le 0 \text{ for all } v \in N_C(x) \}.$$
+-/
 noncomputable abbrev tangentDirections (C : Set E) (x : E) : Set E :=
   polarCone (innerₗ E) (normalDirections C x)
 
+/-- A vector $d$ is in the normal cone $N_C(x)$ if and only if $\langle d, y - x \rangle \le 0$ for
+all $y \in C$. -/
 theorem mem_normalDirections {C : Set E} {x d : E} :
     d ∈ normalDirections C x ↔ ∀ y ∈ C, ⟪d, y - x⟫ ≤ 0 := by
   simp only [normalDirections, mem_normalCone, innerₗ_apply_apply, real_inner_comm]
@@ -47,14 +79,22 @@ variable [CompleteSpace E] {C : Set E} (hne : C.Nonempty) (hclosed : IsClosed C)
   (hconv : Convex ℝ C)
 include hne hclosed hconv
 
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space. Every point $P_C(x + t d)$
+of the projected ray is in $C$. -/
 theorem projectedRay_mem (x d : E) (t : ℝ) : projectedRay C x d t ∈ C :=
   bestApprox_mem hne hclosed hconv _
 
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space, and let $p = P_C(x + t d)$.
+The residual $x + t d - p$ is in the normal cone $N_C(p)$. -/
 theorem projectedRay_residual_mem_normal (x d : E) (t : ℝ) :
     x + t • d - projectedRay C x d t ∈ normalDirections C (projectedRay C x d t) :=
   mem_normalDirections.mpr (inner_sub_bestApprox_le_zero hne hclosed hconv _)
 
-/-- Once the ray direction is normal at a projected point, all later projections coincide. -/
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space $E$, let $x, d \in E$, and
+let $p(t) = P_C(x + t d)$. If $s \le t$ and the direction $d$ is in the normal cone $N_C(p(s))$,
+then
+$$p(t) = p(s).$$
+Thus the projected ray stops once its direction is normal to $C$ at the projected point. -/
 theorem projectedRay_eq_of_normal {x d : E} {s t : ℝ} (hst : s ≤ t)
     (hd : d ∈ normalDirections C (projectedRay C x d s)) :
     projectedRay C x d t = projectedRay C x d s := by
@@ -67,7 +107,9 @@ theorem projectedRay_eq_of_normal {x d : E} {s t : ℝ} (hst : s ≤ t)
   exact add_nonpos hr (mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.mpr hst)
     (mem_normalDirections.mp hd y hy))
 
-/-- A feasible base point is fixed by the projected ray exactly when its direction is normal. -/
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space $E$, let $x \in C$ and
+$d \in E$, and let $p(t) = P_C(x + t d)$. Then $p(t) = x$ for all $t \ge 0$ if and only if $d$
+is in the normal cone $N_C(x)$. -/
 theorem projectedRay_eq_self_iff {x d : E} (hx : x ∈ C) :
     (∀ t : ℝ, 0 ≤ t → projectedRay C x d t = x) ↔ d ∈ normalDirections C x := by
   constructor
@@ -82,8 +124,12 @@ theorem projectedRay_eq_self_iff {x d : E} (hx : x ∈ C) :
     rw [add_sub_cancel_left, real_inner_smul_left]
     exact mul_nonpos_of_nonneg_of_nonpos ht (mem_normalDirections.mp h y hy)
 
-/-- Distance from the base point along a projected ray is nondecreasing for nonnegative
-parameters. -/
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space $E$, let $x, d \in E$, and
+let $p(t) = P_C(x + t d)$. The distance from the base point along the projected ray is
+nondecreasing: if $0 \le s \le t$, then
+$$\|p(s) - x\| \le \|p(t) - x\|.$$
+
+The base point $x$ need not be in $C$. -/
 theorem norm_projectedRay_sub_le {x d : E} {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
     ‖projectedRay C x d s - x‖ ≤ ‖projectedRay C x d t - x‖ := by
   rcases hst.eq_or_lt with rfl | hst
@@ -125,8 +171,14 @@ theorem norm_projectedRay_sub_le {x d : E} {s t : ℝ} (hs : 0 ≤ s) (hst : s �
     rw [pow_two] at hh
     exact le_of_mul_le_mul_left hh (norm_pos_iff.mpr hu)
 
-/-- The projection of a ray direction onto the tangent cone at its projected point is
-bounded by the displacement divided by the positive ray parameter. -/
+/-- Let $C$ be a nonempty closed convex subset of a real Hilbert space $E$, let $x, d \in E$, let
+$t > 0$, and let $p = P_C(x + t d)$. The projection of $d$ onto the tangent cone $T_C(p)$ is
+bounded by the displacement divided by the parameter:
+$$\|P_{T_C(p)}(d)\| \le \frac{\|p - x\|}{t}.$$
+
+The projection onto the tangent cone is `bestApprox (Optimization.tangentDirections C p) d`. The
+proof uses that $(x + t d - p)/t$ is in $N_C(p)$, that the projection of a normal vector onto
+$T_C(p)$ is $0$, and that the projection onto a closed convex set is $1$-Lipschitz. -/
 theorem norm_tangentProjection_projectedRay_le (x d : E) {t : ℝ} (ht : 0 < t) :
     ‖bestApprox (tangentDirections C (projectedRay C x d t)) d‖ ≤
       ‖projectedRay C x d t - x‖ / t := by

@@ -15,35 +15,48 @@ import Numlib.Analysis.Normed.Module.DualSeparable
 /-!
 # When is the sum of two closed subspaces closed?
 
-For closed subspaces `G`, `L` of a Banach space `E` over `RCLike 𝕜`, the following are equivalent
-([brezis2011functional], Theorem 2.16):
+Let $G$ and $L$ be closed subspaces of a Banach space $E$ over $\mathbb{R}$ or $\mathbb{C}$. Write
+$M^\perp \subseteq E^*$ for the annihilator of a subspace $M \subseteq E$, and $N^\perp \subseteq E$
+for the coannihilator of a subspace $N \subseteq E^*$, as in
+`Numlib.Analysis.Normed.Module.Annihilator`. Theorem 2.16 of [brezis2011functional] says that the
+following four conditions are equivalent:
 
-* `G + L` is closed in `E`;
-* `G^⊥ + L^⊥` is closed in `E*`;
-* `G + L = (G^⊥ ∩ L^⊥)^⊥`;
-* `G^⊥ + L^⊥ = (G ∩ L)^⊥`.
+* (a) $G + L$ is closed in $E$;
+* (b) $G^\perp + L^\perp$ is closed in $E^*$;
+* (c) $G + L = (G^\perp \cap L^\perp)^\perp$;
+* (d) $G^\perp + L^\perp = (G \cap L)^\perp$.
 
-The annihilators are those of `Numlib.Analysis.Normed.Module.Annihilator`; this is a child module
-because the proof consumes the open mapping theorem in the form of
-`Submodule.exists_add_eq_norm_le_of_isClosed_sup` and
-`Submodule.exists_infDist_inf_le_of_isClosed_sup` (`Numlib.Analysis.Normed.Module.Complemented`) and
-`ContinuousLinearMap.exists_preimage_norm_le_of_approx`
-(`Numlib.Analysis.Normed.Operator.Unbounded.Basic`), which the parent module and its many
-consumers should not have to import.
+This module proves the theorem.
 
-## Main statements
+## Main results
 
-* `Submodule.strongDualAnnihilator_inf_of_isClosed_sup` — (a) ⇒ (d): if `G + L` is closed then
-  `(G ∩ L)^⊥ = G^⊥ + L^⊥`, by extending `a + b ↦ f a` from `G + L` (bounded thanks to the
-  bounded decomposition of a closed sum) to all of `E`.
-* `Submodule.closedBall_inter_topologicalClosure_sup_subset_closure_add` — the separation step
-  of (b) ⇒ (a): if `‖f|_{closure (G+L)}‖ ≤ C (‖f|_G‖ + ‖f|_L‖)` for every functional `f`, then the
-  ball of radius `1/C` of `closure (G + L)` lies in the closure of `B_G + B_L`.
-* `Submodule.isClosed_sup_of_isClosed_sup_strongDualAnnihilator` — (b) ⇒ (a): if `G^⊥ + L^⊥`
-  is closed then so is `G + L`. The distance inequality of `Complemented` applied in `E*` to
-  `G^⊥`, `L^⊥` and the formula `dist (f, M^⊥) = ‖f|_M‖` give the hypothesis of the separation
-  step, and the open-mapping step then makes `(x, y) ↦ x + y` onto `closure (G + L)`.
-* `Submodule.tfae_isClosed_sup` — the four equivalent statements.
+* `Submodule.strongDualAnnihilator_inf_of_isClosed_sup`: (a) implies (d).
+* `Submodule.closedBall_inter_topologicalClosure_sup_subset_closure_add`: the separation step of the
+  proof that (b) implies (a). If $\|f|_{\overline{G + L}}\| \le C (\|f|_G\| + \|f|_L\|)$ for every
+  functional $f$, then the ball of radius $1/C$ of $\overline{G + L}$ lies in the closure of
+  $B_G + B_L$, where $B_G$ and $B_L$ are the closed unit balls of $G$ and $L$.
+* `Submodule.isClosed_sup_of_isClosed_sup_strongDualAnnihilator`: (b) implies (a).
+* `Submodule.tfae_isClosed_sup`: the four conditions are equivalent.
+
+## Proof outline
+
+For (a) ⇒ (d), a functional $f \in (G \cap L)^\perp$ gives the functional $a + b \mapsto f(a)$ on
+$G + L$. It is bounded because a closed sum has a bounded decomposition, and its extension to $E$
+splits $f$ into a part in $G^\perp$ and a part in $L^\perp$. For (b) ⇒ (a), the distance inequality
+for closed sums, applied in $E^*$ to $G^\perp$ and $L^\perp$, and the formula
+$\operatorname{dist}(f, M^\perp) = \|f|_M\|$ give the hypothesis of the separation step. An
+open-mapping argument then shows that $(x, y) \mapsto x + y$ maps $G \times L$ onto
+$\overline{G + L}$. The other implications follow from the formulas of Corollary 2.15 of
+[brezis2011functional].
+
+## Implementation notes
+
+* This is a separate module from `Numlib.Analysis.Normed.Module.Annihilator` because the proof uses
+  the open mapping theorem, in the form of `Submodule.exists_add_eq_norm_le_of_isClosed_sup` and
+  `Submodule.exists_infDist_inf_le_of_isClosed_sup` (`Numlib.Analysis.Normed.Module.Complemented`)
+  and of `ContinuousLinearMap.exists_preimage_norm_le_of_approx`
+  (`Numlib.Analysis.Normed.Operator.Unbounded.Basic`). The parent module and its many users should
+  not have to import these.
 -/
 
 open Metric
@@ -54,11 +67,15 @@ namespace Submodule
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **`(G ∩ L)^⊥ = G^⊥ + L^⊥` when `G + L` is closed** ([brezis2011functional], Theorem 2.16,
-(a) ⇒ (d)). Given `f ∈ (G ∩ L)^⊥`, the functional `a + b ↦ f a` on `G + L` is well defined
-(two decompositions differ by an element of `G ∩ L`) and bounded by the bounded decomposition
-`Submodule.exists_add_eq_norm_le_of_isClosed_sup`; a norm-preserving extension `ψ` of it to `E`
-satisfies `f - ψ ∈ G^⊥` and `ψ ∈ L^⊥`. -/
+/-- Let $E$ be a Banach space over $\mathbb{R}$ or $\mathbb{C}$, and let $G$ and $L$ be closed
+subspaces of $E$ such that $G + L$ is closed. Then
+$$(G \cap L)^\perp = G^\perp + L^\perp.$$
+This is the implication (a) ⇒ (d) of Theorem 2.16 of [brezis2011functional].
+
+Given $f \in (G \cap L)^\perp$, the functional $a + b \mapsto f(a)$ on $G + L$ is well defined,
+because two decompositions differ by an element of $G \cap L$. It is bounded by the bounded
+decomposition `Submodule.exists_add_eq_norm_le_of_isClosed_sup`. A norm-preserving extension
+$\psi$ of it to $E$ satisfies $f - \psi \in G^\perp$ and $\psi \in L^\perp$. -/
 theorem strongDualAnnihilator_inf_of_isClosed_sup [CompleteSpace E] {G L : Submodule 𝕜 E}
     (hG : IsClosed (G : Set E)) (hL : IsClosed (L : Set E))
     (hGL : IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)) :
@@ -118,15 +135,18 @@ theorem strongDualAnnihilator_inf_of_isClosed_sup [CompleteSpace E] {G L : Submo
   exact add_mem_sup h1 h2
 
 open scoped ComplexOrder in
-/-- **The separation step of Theorem 2.16** ([brezis2011functional], formula (25)). Let `G`, `L`
-be subspaces of a normed space over `RCLike 𝕜`, `Y := closure (G + L)`, and suppose
-`‖f|_Y‖ ≤ C (‖f|_G‖ + ‖f|_L‖)` for every `f ∈ E*`. Then every `x ∈ Y` with `‖x‖ ≤ 1 / C` lies in
-the closure of `B_G + B_L`, the sum of the closed unit balls of `G` and `L`.
+/-- The separation step of Theorem 2.16 of [brezis2011functional], formula (25). Let $G$ and $L$ be
+subspaces of a normed space $E$ over $\mathbb{R}$ or $\mathbb{C}$, let $Y = \overline{G + L}$,
+and let $C > 0$. Suppose that every $f \in E^*$ satisfies
+$$\|f|_Y\| \le C (\|f|_G\| + \|f|_L\|).$$
+Then every $x \in Y$ with $\|x\| \le 1/C$ lies in the closure of $B_G + B_L$, where $B_G$ and
+$B_L$ are the closed unit balls of $G$ and $L$.
 
-If not, `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` separates `x` from that closed
-absolutely convex set by `f₀` with `‖f₀‖ ≤ 1` on it and `1 < ‖f₀ x‖`; rotating `a ∈ B_G` and
-`b ∈ B_L` by unimodular scalars gives `‖f₀ a‖ + ‖f₀ b‖ = ‖f₀ (a' + b')‖ ≤ 1`, hence
-`‖f₀|_G‖ + ‖f₀|_L‖ ≤ 1` and `‖f₀ x‖ ≤ ‖f₀|_Y‖ ‖x‖ ≤ C · (1 / C) = 1`, a contradiction. -/
+If not, `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` separates $x$ from this
+closed absolutely convex set by a functional $f_0$ with $|f_0| \le 1$ on the set and
+$|f_0(x)| > 1$. Rotating $a \in B_G$ and $b \in B_L$ by scalars of modulus $1$ gives
+$|f_0(a)| + |f_0(b)| = |f_0(a' + b')| \le 1$. Hence $\|f_0|_G\| + \|f_0|_L\| \le 1$ and
+$|f_0(x)| \le \|f_0|_Y\| \, \|x\| \le C \cdot (1/C) = 1$, a contradiction. -/
 theorem closedBall_inter_topologicalClosure_sup_subset_closure_add (G L : Submodule 𝕜 E) {C : ℝ}
     (hC : 0 < C)
     (h : ∀ f : StrongDual 𝕜 E, ‖f.comp (G ⊔ L).topologicalClosure.subtypeL‖ ≤
@@ -208,17 +228,19 @@ theorem closedBall_inter_topologicalClosure_sup_subset_closure_add (G L : Submod
       _ = 1 := by field_simp
   linarith
 
-/-- **`G + L` is closed when `G^⊥ + L^⊥` is** ([brezis2011functional], Theorem 2.16, (b) ⇒ (a)).
-For closed subspaces `G`, `L` of a Banach space over `RCLike 𝕜` with `G^⊥ + L^⊥` closed in
-`E*`, the sum `G + L` is closed in `E`.
+/-- Let $E$ be a Banach space over $\mathbb{R}$ or $\mathbb{C}$, and let $G$ and $L$ be closed
+subspaces of $E$ such that $G^\perp + L^\perp$ is closed in $E^*$. Then $G + L$ is closed in
+$E$. This is the implication (b) ⇒ (a) of Theorem 2.16 of [brezis2011functional].
 
-The distance inequality `Submodule.exists_infDist_inf_le_of_isClosed_sup` in the Banach space
-`E*` for `G^⊥`, `L^⊥`, read through `dist (f, M^⊥) = ‖f|_M‖`, gives
-`‖f|_Y‖ ≤ C (‖f|_G‖ + ‖f|_L‖)` for `Y := closure (G + L)`; the separation step
-`closedBall_inter_topologicalClosure_sup_subset_closure_add` then puts the ball of radius `1/C`
-of `Y` inside `closure (B_G + B_L)`, which is the approximation hypothesis of the open-mapping
-step `ContinuousLinearMap.exists_preimage_norm_le_of_approx` for `(x, y) ↦ x + y : G × L → Y`;
-that map is therefore onto `Y`, i.e. `G + L = closure (G + L)`. -/
+Let $Y = \overline{G + L}$. The distance inequality
+`Submodule.exists_infDist_inf_le_of_isClosed_sup` in the Banach space $E^*$ for $G^\perp$ and
+$L^\perp$, read through $\operatorname{dist}(f, M^\perp) = \|f|_M\|$, gives
+$\|f|_Y\| \le C (\|f|_G\| + \|f|_L\|)$. The separation step
+`Submodule.closedBall_inter_topologicalClosure_sup_subset_closure_add` then puts the ball of
+radius $1/C$ of $Y$ inside the closure of $B_G + B_L$. This is the approximation hypothesis of
+the open-mapping step `ContinuousLinearMap.exists_preimage_norm_le_of_approx` for the map
+$G \times L \to Y$, $(x, y) \mapsto x + y$. So this map is onto $Y$, that is,
+$G + L = \overline{G + L}$. -/
 theorem isClosed_sup_of_isClosed_sup_strongDualAnnihilator [CompleteSpace E]
     {G L : Submodule 𝕜 E} (hG : IsClosed (G : Set E)) (hL : IsClosed (L : Set E))
     (h : IsClosed ((G.strongDualAnnihilator ⊔ L.strongDualAnnihilator :
@@ -289,10 +311,11 @@ theorem isClosed_sup_of_isClosed_sup_strongDualAnnihilator [CompleteSpace E]
   rw [le_antisymm hGY hYle]
   exact isClosed_topologicalClosure _
 
-/-- **Closed sums and annihilators** ([brezis2011functional], Theorem 2.16). For closed subspaces
-`G`, `L` of a Banach space over `RCLike 𝕜`, the following are equivalent:
-(a) `G + L` is closed; (b) `G^⊥ + L^⊥` is closed in `E*`; (c) `G + L = (G^⊥ ∩ L^⊥)^⊥`;
-(d) `G^⊥ + L^⊥ = (G ∩ L)^⊥`. -/
+/-- Closed sums and annihilators. Let $E$ be a Banach space over $\mathbb{R}$ or $\mathbb{C}$, and
+let $G$ and $L$ be closed subspaces of $E$. The following conditions are equivalent: (a) $G + L$
+is closed; (b) $G^\perp + L^\perp$ is closed in $E^*$; (c)
+$G + L = (G^\perp \cap L^\perp)^\perp$; (d) $G^\perp + L^\perp = (G \cap L)^\perp$. This is
+Theorem 2.16 of [brezis2011functional]. -/
 theorem tfae_isClosed_sup [CompleteSpace E] {G L : Submodule 𝕜 E} (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) :
     [IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E),

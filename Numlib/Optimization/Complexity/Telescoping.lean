@@ -9,20 +9,35 @@ import Mathlib.Algebra.BigOperators.Intervals
 /-!
 # Telescoping sums over successful iterations
 
-The total decrease of the objective over the successful iterations of a method is at most
-`f(x_0) - f_low` ([cartis2022evaluation], (2.2.12)–(2.2.13) and every "bound on the number of
-successful iterations" lemma). The statements are for real sequences `φ k = f (x k)` whose value is
-unchanged at unsuccessful iterations (the iterate is not updated).
+Let $(\varphi_k)_{k \ge 0}$ be a real sequence, typically $\varphi_k = f(x_k)$ for the iterates
+$x_k$ of a method, and let a predicate mark some iterations as successful. Let $\mathcal{S}_k = \{j
+\in [0, k] \mid j \text{ is successful}\}$. If $\varphi$ is unchanged at unsuccessful iterations,
+the decreases over $\mathcal{S}_k$ telescope:
+$$\sum_{j \in \mathcal{S}_k} (\varphi_j - \varphi_{j+1}) = \varphi_0 - \varphi_{k+1}.$$
+Hence, if every successful iteration decreases $\varphi$ by at least $c$ and
+$\varphi_{k+1} \ge \varphi_{\mathrm{low}}$, then $c |\mathcal{S}_k| \le \varphi_0 -
+\varphi_{\mathrm{low}}$. This is the argument of (2.2.12)–(2.2.13) of [cartis2022evaluation] and of
+every lemma there that bounds the number of successful iterations.
 
-* `Optimization.sum_successSet_sub_eq`: `∑_{j ∈ 𝒮_k} (φ_j - φ_{j+1}) = φ_0 - φ_{k+1}`.
-* `Optimization.card_successSet_mul_le_of_decrease`: if every successful iteration decreases `φ`
-  by at least `c`, then `c |𝒮_k| ≤ φ_0 - φ_low` (division form
-  `Optimization.card_successSet_le_div_of_decrease`).
-* `Optimization.card_mul_le_sub_of_decrease`, `Optimization.card_mul_le_of_decrease`: the same
-  for any subset `T` of iterations of a nonincreasing sequence (e.g. "good" successful
-  iterations).
-* `Optimization.exists_last_succ`: if unsuccessful steps do not move, a final point different
-  from the first one was reached by a successful step.
+## Main results
+
+* `Optimization.sum_successSet_sub_eq`: if $\varphi$ is unchanged at unsuccessful iterations, then
+  $\sum_{j \in \mathcal{S}_k} (\varphi_j - \varphi_{j+1}) = \varphi_0 - \varphi_{k+1}$.
+* `Optimization.card_successSet_mul_le_of_decrease`: if, in addition, every successful iteration
+  decreases $\varphi$ by at least $c$, then $c |\mathcal{S}_k| \le \varphi_0 -
+  \varphi_{\mathrm{low}}$.
+* `Optimization.card_successSet_le_div_of_decrease`: the same bound in the form $|\mathcal{S}_k| \le
+  (\varphi_0 - \varphi_{\mathrm{low}})/c$ for $c > 0$.
+* `Optimization.card_mul_le_of_decrease`: for a nonincreasing $\varphi$ and any set $T$ of
+  iterations (for example the "good" successful iterations) at which $\varphi$ decreases by at least
+  $c$, $c |T| \le \varphi_0 - \varphi_{\mathrm{low}}$.
+* `Optimization.exists_last_succ`: if unsuccessful steps do not move a sequence, a final point
+  different from the first one was reached by a successful step.
+
+## Implementation notes
+
+* The successful iterations are given by a predicate `succ : ℕ → Prop`, and $\mathcal{S}_k$ is
+  `Optimization.successSet succ k`, which contains $k$ itself if $k$ is successful.
 -/
 
 open Finset
@@ -31,8 +46,13 @@ namespace Optimization
 
 variable {φ : ℕ → ℝ} {succ : ℕ → Prop} {k : ℕ} {c φlow : ℝ}
 
-/-- If `φ` is unchanged at unsuccessful iterations `j ≤ k`, the decreases over the successful
-iterations `𝒮_k` telescope: `∑_{j ∈ 𝒮_k} (φ_j - φ_{j+1}) = φ_0 - φ_{k+1}`. -/
+/-- Let $(\varphi_j)$ be a real sequence and $k \in \mathbb{N}$. If $\varphi_{j+1} = \varphi_j$ for
+every unsuccessful iteration $j \le k$, then the decreases over the successful iterations
+$\mathcal{S}_k$ telescope:
+$$\sum_{j \in \mathcal{S}_k} (\varphi_j - \varphi_{j+1}) = \varphi_0 - \varphi_{k+1}.$$
+
+Here $\mathcal{S}_k$ is `Optimization.successSet succ k`, the set of $j \in [0, k]$ with
+`succ j`. -/
 theorem sum_successSet_sub_eq (h : ∀ j ≤ k, ¬ succ j → φ (j + 1) = φ j) :
     ∑ j ∈ successSet succ k, (φ j - φ (j + 1)) = φ 0 - φ (k + 1) := by
   classical
@@ -41,8 +61,14 @@ theorem sum_successSet_sub_eq (h : ∀ j ≤ k, ¬ succ j → φ (j + 1) = φ j)
   by_contra hs
   exact hne (by rw [h j (Nat.lt_succ_iff.1 (mem_range.1 hj)) hs, sub_self])
 
-/-- If `φ` is unchanged at unsuccessful iterations `j ≤ k`, decreases by at least `c` at the
-successful ones, and `φlow ≤ φ_{k+1}`, then `c |𝒮_k| ≤ φ_0 - φlow`. -/
+/-- Let $(\varphi_j)$ be a real sequence, $k \in \mathbb{N}$ and
+$c, \varphi_{\mathrm{low}} \in \mathbb{R}$. Suppose that $\varphi_{j+1} = \varphi_j$ for every
+unsuccessful iteration $j \le k$, that $\varphi_j - \varphi_{j+1} \ge c$ for every successful
+iteration $j \le k$, and that $\varphi_{\mathrm{low}} \le \varphi_{k+1}$. Then
+$$c \, |\mathcal{S}_k| \le \varphi_0 - \varphi_{\mathrm{low}}.$$
+
+Here $\mathcal{S}_k$ is `Optimization.successSet succ k`. The proof applies
+`Optimization.sum_successSet_sub_eq`. -/
 theorem card_successSet_mul_le_of_decrease (h : ∀ j ≤ k, ¬ succ j → φ (j + 1) = φ j)
     (hdec : ∀ j ≤ k, succ j → c ≤ φ j - φ (j + 1)) (hlow : φlow ≤ φ (k + 1)) :
     c * (successSet succ k).card ≤ φ 0 - φlow := by
@@ -53,8 +79,13 @@ theorem card_successSet_mul_le_of_decrease (h : ∀ j ≤ k, ¬ succ j → φ (j
   rw [sum_successSet_sub_eq h, sum_const, nsmul_eq_mul] at hsum
   linarith
 
-/-- Division form of `Optimization.card_successSet_mul_le_of_decrease`:
-`|𝒮_k| ≤ (φ_0 - φlow) / c` for `c > 0`. -/
+/-- Let $(\varphi_j)$ be a real sequence, $k \in \mathbb{N}$, $c > 0$ and
+$\varphi_{\mathrm{low}} \in \mathbb{R}$. Suppose that $\varphi_{j+1} = \varphi_j$ for every
+unsuccessful iteration $j \le k$, that $\varphi_j - \varphi_{j+1} \ge c$ for every successful
+iteration $j \le k$, and that $\varphi_{\mathrm{low}} \le \varphi_{k+1}$. Then
+$$|\mathcal{S}_k| \le \frac{\varphi_0 - \varphi_{\mathrm{low}}}{c}.$$
+
+This is `Optimization.card_successSet_mul_le_of_decrease` divided by $c$. -/
 theorem card_successSet_le_div_of_decrease (hc : 0 < c)
     (h : ∀ j ≤ k, ¬ succ j → φ (j + 1) = φ j)
     (hdec : ∀ j ≤ k, succ j → c ≤ φ j - φ (j + 1)) (hlow : φlow ≤ φ (k + 1)) :
@@ -62,9 +93,10 @@ theorem card_successSet_le_div_of_decrease (hc : 0 < c)
   rw [le_div_iff₀ hc, mul_comm]
   exact card_successSet_mul_le_of_decrease h hdec hlow
 
-/-- If `φ` is nonincreasing
-on `[0, N]` and decreases by at least `c` at every iteration of `T ⊆ [0, N)`, then
-`|T| c ≤ φ_0 - φ_N`. -/
+/-- Let $(\varphi_j)$ be a real sequence, $N \in \mathbb{N}$, $c \in \mathbb{R}$ and
+$T \subseteq [0, N)$ a finite set of indices. If $\varphi_{j+1} \le \varphi_j$ for all $j < N$
+and $\varphi_j - \varphi_{j+1} \ge c$ for all $j \in T$, then
+$|T| \, c \le \varphi_0 - \varphi_N$. -/
 theorem card_mul_le_sub_of_decrease {T : Finset ℕ} {N : ℕ} (hT : T ⊆ range N)
     (hmono : ∀ j < N, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1)) :
     (T.card : ℝ) * c ≤ φ 0 - φ N := by
@@ -74,8 +106,15 @@ theorem card_mul_le_sub_of_decrease {T : Finset ℕ} {N : ℕ} (hT : T ⊆ range
   rw [sum_range_sub', sum_const, nsmul_eq_mul] at *
   linarith
 
-/-- If `φ` is nonincreasing on `[0, k + 1]`, decreases by at least `c` at every iteration of a
-set `T ⊆ [0, k]`, and `φlow ≤ φ_{k+1}`, then `c |T| ≤ φ_0 - φlow`. -/
+/-- Let $(\varphi_j)$ be a real sequence, $k \in \mathbb{N}$,
+$c, \varphi_{\mathrm{low}} \in \mathbb{R}$ and $T \subseteq [0, k]$ a finite set of indices.
+Suppose that $\varphi_{j+1} \le \varphi_j$ for all $j \le k$, that
+$\varphi_j - \varphi_{j+1} \ge c$ for all $j \in T$, and that
+$\varphi_{\mathrm{low}} \le \varphi_{k+1}$. Then
+$$c \, |T| \le \varphi_0 - \varphi_{\mathrm{low}}.$$
+
+A typical $T$ is a subset of the successful iterations, such as the successful iterations at
+which a stronger decrease condition holds. -/
 theorem card_mul_le_of_decrease {T : Finset ℕ} (hT : T ⊆ range (k + 1))
     (hmono : ∀ j ≤ k, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1))
     (hlow : φlow ≤ φ (k + 1)) :
@@ -83,8 +122,11 @@ theorem card_mul_le_of_decrease {T : Finset ℕ} (hT : T ⊆ range (k + 1))
   have := card_mul_le_sub_of_decrease hT (fun j hj => hmono j (Nat.lt_succ_iff.1 hj)) hdec
   linarith
 
-/-- Division form of `Optimization.card_mul_le_of_decrease`: `|T| ≤ (φ_0 - φlow) / c` for
-`c > 0`. -/
+/-- Let $(\varphi_j)$ be a real sequence, $k \in \mathbb{N}$, $c > 0$,
+$\varphi_{\mathrm{low}} \in \mathbb{R}$ and $T \subseteq [0, k]$ a finite set of indices. If
+$\varphi_{j+1} \le \varphi_j$ for all $j \le k$, $\varphi_j - \varphi_{j+1} \ge c$ for all
+$j \in T$, and $\varphi_{\mathrm{low}} \le \varphi_{k+1}$, then
+$|T| \le (\varphi_0 - \varphi_{\mathrm{low}})/c$. -/
 theorem card_le_div_of_decrease {T : Finset ℕ} (hc : 0 < c) (hT : T ⊆ range (k + 1))
     (hmono : ∀ j ≤ k, φ (j + 1) ≤ φ j) (hdec : ∀ j ∈ T, c ≤ φ j - φ (j + 1))
     (hlow : φlow ≤ φ (k + 1)) :
@@ -92,8 +134,9 @@ theorem card_le_div_of_decrease {T : Finset ℕ} (hc : 0 < c) (hT : T ⊆ range 
   rw [le_div_iff₀ hc, mul_comm]
   exact card_mul_le_of_decrease hT hmono hdec hlow
 
-/-- In a sequence whose unsuccessful steps do not move, a final point different from the first one
-was reached by a successful step: some successful `i < N` has `y_{i+1} = y_N`. -/
+/-- Let $(y_i)$ be a sequence in a type $\alpha$ and $N \in \mathbb{N}$. If $y_{i+1} = y_i$ for
+every unsuccessful $i < N$ and $y_N \neq y_0$, then some successful $i < N$ has $y_{i+1} = y_N$:
+the final point was reached by a successful step. -/
 theorem exists_last_succ {α : Type*} {y : ℕ → α} {succ : ℕ → Prop} :
     ∀ N, (∀ i < N, ¬ succ i → y (i + 1) = y i) → y N ≠ y 0 →
       ∃ i < N, succ i ∧ y (i + 1) = y N := by

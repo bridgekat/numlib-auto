@@ -15,55 +15,67 @@ import Numlib.Analysis.Normed.Module.WeakClosed
 /-!
 # Kakutani's theorem, and the lemmas of Helly and Goldstine
 
-A normed space `E` is reflexive (`NormedSpace.IsReflexive 𝕜 E`, the parent module) iff its closed
-unit ball is compact in the weak topology: this is Kakutani's theorem,
-`NormedSpace.isReflexive_iff_isCompact_image_toWeakSpace_closedBall`. The forward direction is the
-Banach–Alaoglu theorem in the bidual transported along the canonical embedding, all of which
-Mathlib has (`NormedSpace.isCompact_closure_of_isBounded`, whose range condition is trivial when
-the embedding is onto). The converse is **Goldstine's lemma** (`NormedSpace.goldstine`): the image
-`J(B_E)` of the unit ball is weak-∗ dense in the unit ball of the bidual, so if it is also weak-∗
-compact — hence closed — it is the whole bidual ball, and `J` is onto.
+Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with closed unit ball
+$B_E$ and canonical embedding $J \colon E \to E^{**}$. **Kakutani's theorem** states that $E$ is
+reflexive if and only if $B_E$ is compact in the weak topology. **Goldstine's lemma** states that
+$J(B_E)$ is dense in the closed unit ball of $E^{**}$ for the weak-$*$ topology. **Helly's lemma**
+characterizes the finite systems of equations $f_i(x) = \gamma_i$ that can be solved approximately
+with $\|x\| \le 1$. The file also proves that a bounded closed convex subset of a reflexive space is
+weakly compact, and that a Banach space is reflexive if and only if its dual is reflexive. It covers
+Lemma 3.3, Lemma 3.4, Theorem 3.17, Corollaries 3.21 and 3.22, Remarks 15 and 16, and Problem 9 of
+§3.5 of [brezis2011functional].
 
-Goldstine's lemma is proved here by separation rather than through Helly's lemma: a point `ξ` of
-the bidual ball outside the weak-∗ closure `K` of `J(B_E)` — a closed convex subset of the locally
-convex space `WeakDual 𝕜 (StrongDual 𝕜 E)` — is strictly separated from `K` by an evaluation at
-some `f ∈ E'` (`WeakDual.geometric_hahn_banach_closed_point`, the weak-∗ Hahn–Banach theorem
-of `Numlib.Analysis.Normed.Module.WeakClosed`); then `re (f x) < α` on the ball gives `‖f‖ ≤ α`
-(`ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt`, the rotation argument), whereas
-`α < re (ξ f) ≤ ‖ξ‖ ‖f‖ ≤ ‖f‖`. Helly's lemma (`NormedSpace.helly_iff`) is proved by the same
-separation argument in `ι → 𝕜`; nothing here depends on it.
+## Main results
 
-## Main statements
+* `NormedSpace.helly_iff`: **Helly's lemma**. For $f_1, \dots, f_n \in E^*$ and
+  $\gamma \in \mathbb{K}^n$, every $\varepsilon > 0$ admits $x$ with $\|x\| \le 1$ and
+  $|f_i(x) - \gamma_i| < \varepsilon$ for all $i$ if and only if $|\sum_i \beta_i \gamma_i| \le
+  \|\sum_i \beta_i f_i\|$ for all $\beta \in \mathbb{K}^n$.
+* `NormedSpace.goldstine`: **Goldstine's lemma**. The weak-$*$ closure of $J(B_E)$ is the closed
+  unit ball of $E^{**}$.
+* `NormedSpace.denseRange_toWeakDual_inclusionInDoubleDual`: $J(E)$ is weak-$*$ dense in $E^{**}$.
+* `NormedSpace.isCompact_image_toWeakSpace_closedBall`: the closed balls of a reflexive space are
+  weakly compact.
+* `NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`: a normed space whose closed
+  unit ball is weakly compact is reflexive.
+* `NormedSpace.isReflexive_iff_isCompact_image_toWeakSpace_closedBall`: **Kakutani's theorem**, for
+  any normed space.
+* `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`: a bounded closed convex subset of a
+  reflexive space is weakly compact.
+* `NormedSpace.instIsReflexiveStrongDual`, `NormedSpace.isReflexive_of_isReflexive_strongDual` and
+  `NormedSpace.isReflexive_strongDual_iff`: a Banach space is reflexive if and only if its dual is
+  reflexive.
 
-* `NormedSpace.goldstine`, `NormedSpace.denseRange_toWeakDual_inclusionInDoubleDual` — `J(B_E)`
-  is weak-∗ dense in the bidual ball, and `J(E)` in the bidual.
-* `NormedSpace.isCompact_image_toWeakSpace_closedBall`,
-  `NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`,
-  `NormedSpace.isReflexive_iff_isCompact_image_toWeakSpace_closedBall` — **Kakutani's theorem**,
-  both directions and the equivalence, for any normed space (a space with weakly compact ball is
-  reflexive, hence complete, so completeness need not be assumed).
-* `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed` — a bounded closed convex subset
-  of a reflexive space is weakly compact.
-* `NormedSpace.instIsReflexiveStrongDual`, `NormedSpace.isReflexive_of_isReflexive_strongDual`,
-  `NormedSpace.isReflexive_strongDual_iff` — a Banach space is reflexive iff its dual is; the
-  backward direction is where completeness enters, through the norm closedness of `J(E)`
-  (`NormedSpace.isClosed_range_inclusionInDoubleDual`).
-* `NormedSpace.helly_iff` — **Helly's lemma**: `γ` is approximable by `(f i x)ᵢ` with `‖x‖ ≤ 1`
-  iff `‖∑ β i γ i‖ ≤ ‖∑ β i • f i‖` for all `β`.
+## Proof outline
+
+The forward direction of Kakutani's theorem is the Banach–Alaoglu theorem in $E^{**}$, transported
+along $J$; Mathlib has all of it (`NormedSpace.isCompact_closure_of_isBounded`, whose range
+condition is trivial when $J$ is onto). For the converse, $J(B_E)$ is weak-$*$ compact, hence
+weak-$*$ closed. By Goldstine's lemma it is then the whole unit ball of $E^{**}$, so $J$ is onto. A
+space with weakly compact unit ball is reflexive, hence complete, so completeness is not assumed in
+Kakutani's theorem.
+
+Goldstine's lemma is proved by separation, not through Helly's lemma. Let $\xi$ be in the unit ball
+of $E^{**}$ but outside the weak-$*$ closure $K$ of $J(B_E)$. The set $K$ is closed and convex in
+the locally convex space $E^{**}$ with the weak-$*$ topology, so $\xi$ is strictly separated from
+$K$ by the evaluation at some $f \in E^*$: $\operatorname{Re} \eta(f) < \alpha$ on $K$ and
+$\alpha < \operatorname{Re} \xi(f)$. The first bound gives $\operatorname{Re} f(x) < \alpha$ on
+$B_E$, hence $\|f\| \le \alpha$ by a rotation argument, whereas $\alpha < \operatorname{Re} \xi(f)
+\le \|\xi\| \|f\| \le \|f\|$. Helly's lemma is proved by the same separation argument in
+$\mathbb{K}^n$. Nothing here depends on it.
 
 ## Implementation notes
 
-"Weakly compact" is `IsCompact (toWeakSpace 𝕜 E '' s)`; the bidual with its weak-∗ topology is
-`WeakDual 𝕜 (StrongDual 𝕜 E)`, and the image of `E` in it is
-`(StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E) '' s`. Everything is over
-`RCLike 𝕜`; the real convexity that the separation arguments need is obtained inside the proofs
-by restricting scalars (`NormedSpace.restrictScalars ℝ 𝕜 E`), so no `[NormedSpace ℝ E]` hypothesis
-appears except in the corollary about convex sets, where the convexity is a hypothesis.
-
-## References
-
-[brezis2011functional] §3.5: Lemma 3.3 (Helly), Lemma 3.4 (Goldstine), Theorem 3.17 (Kakutani),
-Corollaries 3.21 and 3.22, Remarks 15 and 16, Problem 9.
+* "Weakly compact" is `IsCompact (toWeakSpace 𝕜 E '' s)`. The bidual with its weak-$*$ topology is
+  `WeakDual 𝕜 (StrongDual 𝕜 E)`, and the image of a set $s \subseteq E$ in it is
+  `(StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E) '' s`.
+* The scalars are `RCLike 𝕜` throughout. The real convexity that the separation arguments need is
+  obtained inside the proofs by restriction of scalars (`NormedSpace.restrictScalars ℝ 𝕜 E`). So no
+  hypothesis `[NormedSpace ℝ E]` appears, except in the result on convex sets, where convexity is a
+  hypothesis.
+* The weak-$*$ separation theorem is `WeakDual.geometric_hahn_banach_closed_point` of
+  `Numlib.Analysis.Normed.Module.WeakClosed`, and the rotation argument is
+  `ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt`.
 -/
 
 open Filter Topology Metric Set Function
@@ -72,10 +84,13 @@ section OpNorm
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **A functional whose real part is bounded by `u` on the closed unit ball has norm at most
-`u`**: rotating `x` by the unimodular scalar `‖f x‖ / f x` makes `f x` a nonnegative real, so the
-real-part bound is a modulus bound on the ball. This is the step that turns a Hahn–Banach
-separation into a norm estimate. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $f \in E^*$, and
+let $u \in \mathbb{R}$. If $\operatorname{Re} f(x) < u$ for every $x$ with $\|x\| \le 1$, then
+$\|f\| \le u$.
+
+Rotation of $x$ by the unimodular scalar $|f(x)| / f(x)$ makes $f(x)$ a nonnegative real number,
+so the bound on the real part is a bound on the modulus on the ball. This step turns a
+Hahn–Banach separation into a norm estimate. -/
 theorem ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt {f : StrongDual 𝕜 E} {u : ℝ}
     (h : ∀ x, ‖x‖ ≤ 1 → RCLike.re (f x) < u) : ‖f‖ ≤ u := by
   have hu : 0 < u := by simpa using h 0 (by simp)
@@ -96,23 +111,27 @@ namespace NormedSpace
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-!
-### The image of a Banach space in its bidual is norm closed
--/
+/-! ### The image of a Banach space in its bidual is norm closed -/
 
 section Range
 
 variable [CompleteSpace E]
 
-/-- **The image of a Banach space in its bidual is norm closed**: the canonical embedding is an
-isometry from a complete space, hence a closed embedding. -/
+/-- Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then the range $J(E)$
+of the canonical embedding $J \colon E \to E^{**}$ is norm closed.
+
+The embedding $J$ is an isometry from a complete space, hence a closed embedding. -/
 theorem isClosed_range_inclusionInDoubleDual :
     IsClosed (Set.range (inclusionInDoubleDual 𝕜 E)) :=
   (inclusionInDoubleDualLi 𝕜 (E := E)).isometry.isClosedEmbedding.isClosed_range
 
-/-- `J(B_E)` is norm closed in the bidual of a Banach space, being the image of a closed set
-under a closed embedding. It is therefore not norm dense in the bidual ball unless `E` is
-reflexive, in contrast with its weak-∗ density (`goldstine`). -/
+/-- Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$r \in \mathbb{R}$. Then the image $J(\bar B(0, r))$ of the closed ball of radius $r$ under the
+canonical embedding is norm closed in $E^{**}$.
+
+It is the image of a closed set under a closed embedding. So $J(B_E)$ is not norm dense in the
+unit ball of $E^{**}$ unless $E$ is reflexive, in contrast with its weak-$*$ density
+(`NormedSpace.goldstine`). -/
 theorem isClosed_image_inclusionInDoubleDual_closedBall (r : ℝ) :
     IsClosed (inclusionInDoubleDual 𝕜 E '' closedBall 0 r) :=
   (inclusionInDoubleDualLi 𝕜 (E := E)).isometry.isClosedEmbedding.isClosed_iff_image_isClosed.1
@@ -120,19 +139,25 @@ theorem isClosed_image_inclusionInDoubleDual_closedBall (r : ℝ) :
 
 end Range
 
-/-!
-### Helly's lemma
--/
+/-! ### Helly's lemma -/
 
-/-- **Helly's lemma.** For finitely many functionals `f i` and scalars `γ i`, the following are
-equivalent: for every `ε > 0` some `x` with `‖x‖ ≤ 1` has `‖f i x - γ i‖ < ε` for all `i`; and
-`‖∑ β i * γ i‖ ≤ ‖∑ β i • f i‖` for every `β`.
+/-- **Helly's lemma.** Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$f_i \in E^*$ and $\gamma_i \in \mathbb{K}$ for $i$ in a finite index set $\iota$. The following
+are equivalent:
 
-The first implies the second by the triangle inequality. Conversely, the first condition says
-that `γ` lies in the closure of the image of the unit ball under `x ↦ (f i x)ᵢ`; if it does not,
-that closed convex subset of `ι → 𝕜` is separated from `γ` by a functional `z ↦ ∑ β i * z i`, and
-the rotation argument `ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt` gives
-`‖∑ β i • f i‖ ≤ u < ‖∑ β i * γ i‖`, contradicting the second condition. No completeness is used,
+* for every $\varepsilon > 0$ there is $x \in E$ with $\|x\| \le 1$ and
+  $|f_i(x) - \gamma_i| < \varepsilon$ for all $i \in \iota$;
+* $\bigl|\sum_i \beta_i \gamma_i\bigr| \le \bigl\|\sum_i \beta_i f_i\bigr\|$ for every
+  $\beta \in \mathbb{K}^\iota$.
+
+This is Lemma 3.3 of [brezis2011functional].
+
+The first condition implies the second by the triangle inequality. Conversely, the first
+condition says that $\gamma$ lies in the closure of the image of the unit ball under
+$x \mapsto (f_i(x))_i$. If it does not, this closed convex subset of $\mathbb{K}^\iota$ is
+separated from $\gamma$ by a functional $z \mapsto \sum_i \beta_i z_i$, and
+`ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt` gives $\|\sum_i \beta_i f_i\| \le u <
+|\sum_i \beta_i \gamma_i|$, which contradicts the second condition. Completeness is not used,
 and the complex case reads as the real one with moduli. -/
 theorem helly_iff {ι : Type*} [Fintype ι] (f : ι → StrongDual 𝕜 E) (γ : ι → 𝕜) :
     (∀ ε > 0, ∃ x : E, ‖x‖ ≤ 1 ∧ ∀ i, ‖f i x - γ i‖ < ε) ↔
@@ -201,19 +226,21 @@ theorem helly_iff {ι : Type*} [Fintype ι] (f : ι → StrongDual 𝕜 E) (γ :
       exact huγ.trans_le (RCLike.re_le_norm _)
     linarith [h β]
 
-/-!
-### Goldstine's lemma
--/
+/-! ### Goldstine's lemma -/
 
-/-- **Goldstine's lemma**: the image `J(B_E)` of the closed unit ball is weak-∗ dense in the
-closed unit ball of the bidual, `closure (J '' B_E) = B_{E''}` in `WeakDual 𝕜 (StrongDual 𝕜 E)`.
+/-- **Goldstine's lemma.** Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$,
+with canonical embedding $J \colon E \to E^{**}$. Then the closure of $J(B_E)$ in the weak-$*$
+topology of $E^{**}$ is the closed unit ball of $E^{**}$: $$\overline{J(B_E)}^{\,\sigma(E^{**},
+E^*)} = B_{E^{**}}.$$ This is Lemma 3.4 of [brezis2011functional].
 
-`⊆` holds because the bidual ball is weak-∗ closed and `J` is an isometry. For `⊇`, a `ξ` of norm
-at most `1` outside the closed convex set `K = closure (J '' B_E)` is separated from `K` by an
-evaluation at some `f ∈ E'` (`WeakDual.geometric_hahn_banach_closed_point`): `re (η f) < α` on
-`K` and `α < re (ξ f)`. The first gives `re (f x) < α` on the ball, hence `‖f‖ ≤ α` by
-`ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt`; but `α < re (ξ f) ≤ ‖ξ‖ ‖f‖ ≤ ‖f‖`. No
-completeness is needed. -/
+The closure is taken in `WeakDual 𝕜 (StrongDual 𝕜 E)`. The inclusion $\subseteq$ holds because
+the unit ball of $E^{**}$ is weak-$*$ closed and $J$ is an isometry. For $\supseteq$, a point
+$\xi$ of norm at most $1$ outside the closed convex set $K = \overline{J(B_E)}$ is separated
+from $K$ by the evaluation at some $f \in E^*$ (`WeakDual.geometric_hahn_banach_closed_point`):
+$\operatorname{Re} \eta(f) < \alpha$ on $K$ and $\alpha < \operatorname{Re} \xi(f)$. The first
+bound gives $\operatorname{Re} f(x) < \alpha$ on $B_E$, hence $\|f\| \le \alpha$ by
+`ContinuousLinearMap.opNorm_le_of_forall_re_apply_lt`, but $\alpha < \operatorname{Re} \xi(f)
+\le \|\xi\| \|f\| \le \|f\|$. Completeness is not needed. -/
 theorem goldstine :
     closure ((StrongDual.toWeakDual ∘ inclusionInDoubleDual 𝕜 E) '' closedBall (0 : E) 1) =
       WeakDual.toStrongDual ⁻¹' closedBall (0 : StrongDual 𝕜 (StrongDual 𝕜 E)) 1 := by
@@ -250,8 +277,11 @@ theorem goldstine :
       _ = α := one_mul α
   linarith
 
-/-- **`J(E)` is weak-∗ dense in the bidual**: every `ξ` is `r • η` with `η` in the bidual ball,
-where Goldstine's lemma applies, and scaling is a weak-∗ homeomorphism preserving the range. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $J(E)$ is dense
+in $E^{**}$ for the weak-$*$ topology.
+
+Every $\xi \in E^{**}$ is $r \eta$ with $\eta$ in the unit ball of $E^{**}$, where Goldstine's
+lemma applies, and scaling is a weak-$*$ homeomorphism that preserves $J(E)$. -/
 theorem denseRange_toWeakDual_inclusionInDoubleDual :
     DenseRange (StrongDual.toWeakDual ∘ inclusionInDoubleDual 𝕜 E) := by
   intro ξ
@@ -275,14 +305,16 @@ theorem denseRange_toWeakDual_inclusionInDoubleDual :
   rintro _ ⟨_, ⟨x, -, rfl⟩, rfl⟩
   exact ⟨((r : ℝ) : 𝕜) • x, by rw [hJ, comp_apply, map_smul, map_smul]; rfl⟩
 
-/-!
-### Kakutani's theorem
--/
+/-! ### Kakutani's theorem -/
 
-/-- **Kakutani, forward direction: the closed balls of a reflexive space are weakly compact.**
-Mathlib's `isCompact_closure_of_isBounded` gives weak compactness of the closure of a bounded set
-whose weak-∗ closure in the bidual lies in the range of the embedding; the range is everything by
-reflexivity, and the ball is weakly closed (`isClosed_image_toWeakSpace_closedBall`). -/
+/-- Let $E$ be a reflexive normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$r \in \mathbb{R}$. Then the closed ball $\bar B(0, r)$ of $E$ is weakly compact. This is the
+forward direction of Kakutani's theorem.
+
+The Mathlib theorem `NormedSpace.isCompact_closure_of_isBounded` gives weak compactness of the
+weak closure of a bounded set whose weak-$*$ closure in $E^{**}$ lies in $J(E)$. Here
+$J(E) = E^{**}$ by reflexivity, and the ball is weakly closed
+(`isClosed_image_toWeakSpace_closedBall`). -/
 theorem isCompact_image_toWeakSpace_closedBall [IsReflexive 𝕜 E] (r : ℝ) :
     IsCompact (toWeakSpace 𝕜 E '' closedBall (0 : E) r) := by
   have h := isCompact_closure_of_isBounded 𝕜 E (toWeakSpace 𝕜 E '' closedBall (0 : E) r)
@@ -298,11 +330,14 @@ theorem isCompact_image_toWeakSpace_closedBall [IsReflexive 𝕜 E] (r : ℝ) :
         exact hx⟩)
   rwa [(isClosed_image_toWeakSpace_closedBall 0 r).closure_eq] at h
 
-/-- **Kakutani, converse direction: a normed space whose closed unit ball is weakly compact is
-reflexive.** The embedding of the weak space into the weak-∗ bidual is continuous, so `J(B_E)`
-is weak-∗ compact, hence closed, hence equal to its weak-∗ closure, which is the bidual ball by
-Goldstine's lemma; scaling then puts every element of the bidual in the range of `J`. No
-completeness is assumed (it follows). -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the closed unit
+ball $B_E$ is weakly compact, then $E$ is reflexive. This is the converse direction of
+Kakutani's theorem.
+
+The embedding of $E$ with the weak topology into $E^{**}$ with the weak-$*$ topology is
+continuous, so $J(B_E)$ is weak-$*$ compact, hence closed. So it equals its weak-$*$ closure,
+which is the unit ball of $E^{**}$ by Goldstine's lemma. Scaling then puts every element of
+$E^{**}$ in $J(E)$. Completeness is not assumed; it follows. -/
 theorem isReflexive_of_isCompact_image_toWeakSpace_closedBall
     (h : IsCompact (toWeakSpace 𝕜 E '' closedBall (0 : E) 1)) : IsReflexive 𝕜 E := by
   set J : E → WeakDual 𝕜 (StrongDual 𝕜 E) := StrongDual.toWeakDual ∘ inclusionInDoubleDual 𝕜 E
@@ -328,15 +363,24 @@ theorem isReflexive_of_isCompact_image_toWeakSpace_closedBall
   rw [map_smul, hx', smul_smul, ← RCLike.ofReal_mul, mul_inv_cancel₀ hξ0.ne', RCLike.ofReal_one,
     one_smul]
 
-/-- **Kakutani's theorem**: a normed space is reflexive iff its closed unit ball is weakly
-compact. -/
+/-- **Kakutani's theorem.** Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$. Then $E$ is reflexive if and only if its closed unit ball $B_E$ is weakly compact.
+This is Theorem 3.17 of [brezis2011functional].
+
+Completeness is not assumed, because a space with weakly compact unit ball is reflexive, hence
+complete. The two directions are `NormedSpace.isCompact_image_toWeakSpace_closedBall` and
+`NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`. -/
 theorem isReflexive_iff_isCompact_image_toWeakSpace_closedBall :
     IsReflexive 𝕜 E ↔ IsCompact (toWeakSpace 𝕜 E '' closedBall (0 : E) 1) :=
   ⟨fun _ => isCompact_image_toWeakSpace_closedBall 1,
     isReflexive_of_isCompact_image_toWeakSpace_closedBall⟩
 
-/-- **A bounded closed convex subset of a reflexive space is weakly compact**: it is weakly
-closed by Mazur's theorem and contained in a weakly compact ball. -/
+/-- Let $E$ be a reflexive normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$K \subseteq E$ be bounded, closed and convex. Then $K$ is weakly compact.
+
+The set $K$ is weakly closed by Mazur's theorem and lies in a weakly compact closed ball. The
+real structure of $E$ is given by the hypotheses `[NormedSpace ℝ E] [IsScalarTower ℝ 𝕜 E]`, and
+convexity is over $\mathbb{R}$. -/
 theorem _root_.Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed [NormedSpace ℝ E]
     [IsScalarTower ℝ 𝕜 E] [IsReflexive 𝕜 E] {K : Set E} (hK : Convex ℝ K)
     (hb : Bornology.IsBounded K) (hc : IsClosed K) : IsCompact (toWeakSpace 𝕜 E '' K) := by
@@ -344,22 +388,25 @@ theorem _root_.Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed [Norm
   exact (isCompact_image_toWeakSpace_closedBall m).of_isClosed_subset
     (hK.isClosed_image_toWeakSpace_iff.2 hc) (image_mono hm)
 
-/-!
-### Reflexivity of the dual
--/
+/-! ### Reflexivity of the dual -/
 
-/-- **The dual of a reflexive space is reflexive.** A functional `φ` on `E''` restricts along `J`
-to `f := φ ∘ J ∈ E'`, and since every `ξ ∈ E''` is some `J x`, `φ ξ = f x = ξ f`: `φ` is the
-evaluation at `f`. -/
+/-- Let $E$ be a reflexive normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then the
+dual $E^*$ is reflexive.
+
+A functional $\varphi \in E^{***}$ restricts along $J$ to $f = \varphi \circ J \in E^*$. Since
+every $\xi \in E^{**}$ is $Jx$ for some $x$, we get $\varphi(\xi) = f(x) = \xi(f)$, so $\varphi$
+is the evaluation at $f$. -/
 instance instIsReflexiveStrongDual [IsReflexive 𝕜 E] : IsReflexive 𝕜 (StrongDual 𝕜 E) := by
   refine ⟨fun φ => ⟨φ.comp (inclusionInDoubleDual 𝕜 E), ?_⟩⟩
   ext ξ
   obtain ⟨x, rfl⟩ := surjective_inclusionInDoubleDual (𝕜 := 𝕜) (V := E) ξ
   rfl
 
-/-- **A Banach space whose dual is reflexive is reflexive.** The bidual is then reflexive, `J(E)`
-is a closed subspace of it (this is where completeness enters), hence reflexive, and `E` is
-isometrically isomorphic to `J(E)`. -/
+/-- Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the dual $E^*$ is
+reflexive, then $E$ is reflexive.
+
+The bidual $E^{**}$ is then reflexive, and $J(E)$ is a closed subspace of it, hence reflexive;
+this is where completeness enters. The space $E$ is isometrically isomorphic to $J(E)$. -/
 theorem isReflexive_of_isReflexive_strongDual [CompleteSpace E]
     [IsReflexive 𝕜 (StrongDual 𝕜 E)] : IsReflexive 𝕜 E := by
   have : IsReflexive 𝕜 (StrongDual 𝕜 (StrongDual 𝕜 E)) := instIsReflexiveStrongDual
@@ -372,7 +419,8 @@ theorem isReflexive_of_isReflexive_strongDual [CompleteSpace E]
   exact (isReflexive_congr
     (inclusionInDoubleDualLi 𝕜 (E := E)).equivRange.toContinuousLinearEquiv).2 this
 
-/-- **A Banach space is reflexive iff its dual is.** -/
+/-- Let $E$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then the dual $E^*$ is
+reflexive if and only if $E$ is reflexive. This is Corollary 3.21 of [brezis2011functional]. -/
 theorem isReflexive_strongDual_iff [CompleteSpace E] :
     IsReflexive 𝕜 (StrongDual 𝕜 E) ↔ IsReflexive 𝕜 E :=
   ⟨fun _ => isReflexive_of_isReflexive_strongDual, fun _ => instIsReflexiveStrongDual⟩

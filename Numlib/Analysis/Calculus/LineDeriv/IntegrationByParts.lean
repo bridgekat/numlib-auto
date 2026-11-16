@@ -14,11 +14,22 @@ import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 /-!
 # The integral of a directional derivative of a compactly supported function vanishes
 
-For `f : E → ℝ` differentiable with compact support and `∂_v f` integrable for an additive Haar
-measure `μ`, `∫ ∂_v f dμ = 0` (`integral_fderiv_apply_eq_zero_of_hasCompactSupport`): Mathlib's
-integration by parts `integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` against the constant
-`1`. Continuity of `fderiv ℝ f` is not needed, only its integrability, which is what the Leibniz
-step of the divergence theorem on an epigraph has.
+Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$. If
+$f : E \to \mathbb{R}$ is differentiable with compact support and the directional derivative
+$\partial_v f$ is integrable, then $\int_E \partial_v f \, d\mu = 0$. This is Mathlib's integration
+by parts `integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` against the constant function $1$.
+
+## Main results
+
+* `integral_fderiv_apply_eq_zero_of_hasCompactSupport`: the statement for a differentiable $f$ with
+  integrable $\partial_v f$.
+* `integral_fderiv_apply_eq_zero_of_contDiff`: the statement for a $C^1$ function $f$.
+
+## Implementation notes
+
+* The first result needs only the integrability of $\partial_v f$, not the continuity of the
+  derivative of $f$. The Leibniz step of the divergence theorem on an epigraph
+  (`EuclideanSpace.integral_fderiv_castSucc_epigraph`) has only this integrability.
 -/
 
 open MeasureTheory
@@ -26,12 +37,16 @@ open MeasureTheory
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure]
 
-/-- **The integral of a derivative of a compactly supported function vanishes**: for `f : E → ℝ`
-differentiable with compact support and `∂_v f` integrable, `∫ ∂_v f dμ = 0` for every additive
-Haar measure `μ`. Mathlib's integration by parts
-`integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` against the constant `1`. Continuity of
-`fderiv ℝ f` is not needed, only its integrability — which is what the Leibniz step
-`EuclideanSpace.integral_fderiv_castSucc_epigraph` has. -/
+/-- **The integral of a directional derivative of a compactly supported function vanishes.** Let $E$
+be a finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$v \in E$. If $f : E \to \mathbb{R}$ is differentiable, has compact support, and
+$x \mapsto Df(x)[v]$ is $\mu$-integrable, then
+$$\int_E Df(x)[v] \, d\mu(x) = 0.$$
+
+The proof is Mathlib's integration by parts
+`integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable` against the constant $1$. The continuity
+of the derivative of $f$ is not needed, only the integrability of $Df(\cdot)[v]$. This is what
+the Leibniz step `EuclideanSpace.integral_fderiv_castSucc_epigraph` has. -/
 theorem integral_fderiv_apply_eq_zero_of_hasCompactSupport {f : E → ℝ} (hf : Differentiable ℝ f)
     (hfc : HasCompactSupport f) {v : E} (hf' : Integrable (fun x ↦ fderiv ℝ f x v) μ) :
     ∫ x, fderiv ℝ f x v ∂μ = 0 := by
@@ -41,7 +56,9 @@ theorem integral_fderiv_apply_eq_zero_of_hasCompactSupport {f : E → ℝ} (hf :
     (fun x _ ↦ differentiableAt_const _) (fun x _ ↦ hf x)
   simpa using h
 
-/-- The integral of a derivative of a compactly supported `C¹` function vanishes. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$. If
+$f : E \to \mathbb{R}$ is $C^1$ with compact support, then $\int_E Df(x)[v] \, d\mu(x) = 0$ for
+every $v \in E$. -/
 theorem integral_fderiv_apply_eq_zero_of_contDiff {f : E → ℝ} (hf : ContDiff ℝ 1 f)
     (hfc : HasCompactSupport f) (v : E) : ∫ x, fderiv ℝ f x v ∂μ = 0 :=
   integral_fderiv_apply_eq_zero_of_hasCompactSupport (hf.differentiable one_ne_zero) hfc

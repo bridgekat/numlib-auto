@@ -8,49 +8,56 @@ import Numlib.Conditioning.LinearSystem
 /-!
 # Perturbation theory for least-squares problems
 
-How the least-squares solution `x = A⁺ b` of a system with linearly independent columns, and its
-residual `r = b - A x`, move when `A` and `b` are perturbed, and the same for the minimal-norm
-solution of a system with linearly independent rows ([golub2013matrix] §5.3.6 Theorem 5.3.1,
-§5.3.2 (5.3.4), §5.6.3 Theorem 5.6.1; [higham2002accuracy] Theorem 20.1).
+Let $A \in \mathbb{K}^{m \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A^+$ be
+its pseudoinverse. If $A$ has linearly independent columns, $x = A^+ b$ is the least-squares
+solution of $Ax = b$ and $r = b - Ax$ is its residual. If $A$ has linearly independent rows,
+$x = A^+ b$ is the solution of $Ax = b$ of minimal norm. This module shows how these solutions and
+the residual move when $A$ and $b$ are perturbed to $\hat A = A + \delta A$ and $b + \delta b$. It
+proves exact identities for the changes, such as $$\hat x - x = \hat A^+ (\delta b - \delta A \,
+x) + (\hat A^H \hat A)^{-1} \delta A^H r,$$ and derives from them the bounds of Theorems 5.3.1 and
+5.6.1 of [golub2013matrix] in a rigorous form, without the $O(\varepsilon^2)$ terms of the source.
+It also bounds the error of the method of normal equations, (5.3.4) of [golub2013matrix], and
+computes the derivatives of $t \mapsto (A + tE)^+ (b + tf)$ that the first-order proofs of the
+source use. The presentation follows [golub2013matrix], §5.3 and §5.6, and [higham2002accuracy],
+Theorem 20.1.
 
 ## Main results
 
-* `Matrix.leastSquares_sub_eq`, `Matrix.leastSquares_residual_sub_eq`: the exact perturbation
-  identities `x̂ - x = Â⁺ (δb - δA x) + (Âᴴ Â)⁻¹ δAᴴ r` and
-  `r̂ - r = (1 - Â Â⁺)(δb - δA x) - Â⁺ᴴ δAᴴ r`, `Â = A + δA`.
-* `Matrix.norm_leastSquares_sub_le`, `Matrix.norm_leastSquares_residual_sub_le`: [golub2013matrix]
-  Theorem 5.3.1 in rigorous form, with `σ_min(A) - ‖δA‖₂` in place of the book's `σ_min(A)` and no
-  `O(ε²)` term.
-* `Matrix.norm_normalEquations_sub_le`: the accuracy of the method of normal equations (5.3.4).
-* `Matrix.mul_pinv_of_linearIndependent`: for linearly independent rows `A A⁺ = 1`, so the
+* `Matrix.leastSquares_sub_eq`, `Matrix.leastSquares_residual_sub_eq`: the exact identities $\hat
+  x - x = \hat A^+ (\delta b - \delta A \, x) + (\hat A^H \hat A)^{-1} \delta A^H r$ and $\hat r -
+  r = (I - \hat A \hat A^+)(\delta b - \delta A \, x) - (\hat A^+)^H \delta A^H r$.
+* `Matrix.norm_leastSquares_sub_le`, `Matrix.norm_leastSquares_residual_sub_le`: Theorem 5.3.1 of
+  [golub2013matrix] in rigorous form, with $\sigma_{\min}(A) - \|\delta A\|_2$ in place of the
+  $\sigma_{\min}(A)$ of the source and no $O(\varepsilon^2)$ term.
+* `Matrix.norm_normalEquations_sub_le`: the accuracy of the method of normal equations, (5.3.4) of
+  [golub2013matrix].
+* `Matrix.mul_pinv_of_linearIndependent`: for linearly independent rows, $A A^+ = I$, so the
   minimal-norm solution solves the system (`Matrix.toEuclideanLin_pinv_of_linearIndependent`).
-* `Matrix.minNorm_sub_eq`, `Matrix.norm_minNorm_sub_le`: [golub2013matrix] Theorem 5.6.1 in
+* `Matrix.minNorm_sub_eq`, `Matrix.norm_minNorm_sub_le`: Theorem 5.6.1 of [golub2013matrix] in
   rigorous form.
 * `Matrix.hasDerivAt_pinv_mulVec_line`, `Matrix.hasDerivAt_minNorm_line`: the derivatives (5.3.15)
-  and (5.6.2) of `t ↦ (A + tE)⁺ (b + tf)` that the book's first-order proofs use, over `ℝ`; along
-  the line the columns (rows) stay independent
-  (`Matrix.eventually_linearIndependent_transpose_add_smul`,
-  `Matrix.eventually_linearIndependent_add_smul`, with the other stability facts of full rank in
-  `Numlib.Analysis.Matrix.SingularValues`).
+  and (5.6.2) of [golub2013matrix] of $t \mapsto (A + tE)^+ (b + tf)$ at $t = 0$, over $\mathbb{R}$.
 
 ## Implementation notes
 
-The book proves Theorems 5.3.1 and 5.6.1 by differentiating `t ↦ x(t)` at `0` and states them up to
-`O(ε²)`. Here the exact identities are proved instead, and the bounds follow from the norms of the
-pseudoinverse and of the inverse Gram matrix of `Â`
-(`Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`,
-`Matrix.l2_opNorm_inv_conjTranspose_mul_self`),
-together with Weyl's bound
-`σ_min(A + δA) ≥ σ_min(A) - ‖δA‖₂` (`Matrix.sub_l2_opNorm_le_iInf_colSingularValues_add`), which
-also shows that `A + δA` keeps independent columns. `σ_min` is the column-indexed
-`⨅ i, A.colSingularValues i`, the least stretch of `A`. Vectors live in `EuclideanSpace`, matrices
-act through `Matrix.toEuclideanLin`, and matrix norms are the scoped `Matrix.Norms.L2Operator` ones.
-
-## References
-
-* [golub2013matrix] G. H. Golub and C. F. Van Loan, *Matrix Computations*, 4th ed., §5.3, §5.6.
-* [higham2002accuracy] N. J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd ed.,
-  Chapter 20.
+* The source proves Theorems 5.3.1 and 5.6.1 by differentiating $t \mapsto x(t)$ at $0$, and states
+  them up to $O(\varepsilon^2)$. This module proves the exact identities instead. The bounds follow
+  from the norms of the pseudoinverse and of the inverse Gram matrix of $\hat A$
+  (`Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`,
+  `Matrix.l2_opNorm_inv_conjTranspose_mul_self`), together with Weyl's bound $\sigma_{\min}(A +
+  \delta A) \ge \sigma_{\min}(A) - \|\delta A\|_2$
+  (`Matrix.sub_l2_opNorm_le_iInf_colSingularValues_add`), which also shows that $A + \delta A$ keeps
+  independent columns.
+* $\sigma_{\min}(A)$ is `⨅ i, A.colSingularValues i`, the infimum of the singular values indexed by
+  the columns, which is the least stretch $\min_{\|v\| = 1} \|Av\|$ of $A$.
+* Vectors are elements of `EuclideanSpace`, matrices act through `Matrix.toEuclideanLin`, and matrix
+  norms are the spectral norms of the scoped `Matrix.Norms.L2Operator` instance. The condition
+  number $\kappa_2(A) = \|A\|_2 \|A^+\|_2$ of a rectangular matrix is `Matrix.pinvCondNumberLp 2 A`.
+* The derivatives are stated over $\mathbb{R}$. Over $\mathbb{C}$ the conjugate transpose makes the
+  map not holomorphic in a complex parameter. Along the line $A + tE$ the columns (or rows) stay
+  independent for small $t$ (`Matrix.eventually_linearIndependent_transpose_add_smul`,
+  `Matrix.eventually_linearIndependent_add_smul`); the other stability facts of full rank are in
+  `Numlib.Analysis.Matrix.SingularValues`.
 -/
 
 open scoped Matrix.Norms.L2Operator
@@ -66,21 +73,26 @@ section FullColumnRank
 
 variable {A δA : Matrix m n 𝕜} {b δb r r' : EuclideanSpace 𝕜 m} {x x' : EuclideanSpace 𝕜 n}
 
-/-- The residual of the least-squares solution is orthogonal to the columns: `Aᴴ r = 0`. -/
+/-- If $x = A^+ b$, then the residual is orthogonal to the columns of $A$: $A^H (b - Ax) = 0$. -/
 private theorem toEuclideanLin_conjTranspose_residual (hx : x = toEuclideanLin A.pinv b) :
     toEuclideanLin Aᴴ (b - toEuclideanLin A x) = 0 := by
   rw [hx, map_sub, ← toEuclideanLin_mul_apply, normalEquations_pinv, sub_self]
 
-/-- A left inverse undoes the matrix. -/
+/-- If $A$ has linearly independent columns, then $A^+ A z = z$ for every $z$. -/
 private theorem toEuclideanLin_pinv_apply_toEuclideanLin (hA : LinearIndependent 𝕜 Aᵀ)
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A.pinv (toEuclideanLin A z) = z := by
   rw [← toEuclideanLin_mul_apply, pinv_mul_self_of_linearIndependent hA, toEuclideanLin_one,
     LinearMap.id_apply]
 
-/-- **The exact perturbation identity of the least-squares solution**: if `A` and `Â = A + δA` have
-linearly independent columns, `x = A⁺ b`, `x̂ = Â⁺ (b + δb)` and `r = b - A x`, then
-`x̂ - x = Â⁺ (δb - δA x) + (Âᴴ Â)⁻¹ δAᴴ r`. `Â⁺ Â = 1` gives `x̂ - x = Â⁺ (b + δb - Â x)`, which is
-`Â⁺ (r + δb - δA x)`, and `Â⁺ r = (Âᴴ Â)⁻¹ Âᴴ r = (Âᴴ Â)⁻¹ δAᴴ r` because `Aᴴ r = 0`. -/
+/-- **The exact perturbation identity of the least-squares solution.** Let
+$A, \delta A \in \mathbb{K}^{m \times n}$, and suppose that $\hat A = A + \delta A$ has linearly
+independent columns. Let $x = A^+ b$, $\hat x = \hat A^+ (b + \delta b)$ and $r = b - Ax$. Then
+$$\hat x - x = \hat A^+ (\delta b - \delta A \, x) + (\hat A^H \hat A)^{-1} \delta A^H r.$$
+
+No hypothesis on the columns of $A$ is needed. The proof uses $\hat A^+ \hat A = I$, which gives
+$\hat x - x = \hat A^+ (b + \delta b - \hat A x) = \hat A^+ (r + \delta b - \delta A \, x)$, and
+$\hat A^+ r = (\hat A^H \hat A)^{-1} \hat A^H r = (\hat A^H \hat A)^{-1} \delta A^H r$, because
+$A^H r = 0$. -/
 theorem leastSquares_sub_eq (hA' : LinearIndependent 𝕜 (A + δA)ᵀ)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) :
@@ -102,10 +114,12 @@ theorem leastSquares_sub_eq (hA' : LinearIndependent 𝕜 (A + δA)ᵀ)
         abel
     _ = _ := by rw [map_add, hPr, add_comm]
 
-/-- **The exact perturbation identity of the least-squares residual**: under the hypotheses of
-`Matrix.leastSquares_sub_eq`, with `r̂ = (b + δb) - Â x̂`,
-`r̂ - r = (1 - Â Â⁺)(δb - δA x) - Â⁺ᴴ δAᴴ r`. Apply `Â` to the identity for `x̂ - x`; `Â (Âᴴ Â)⁻¹`
-is `Â⁺ᴴ`. -/
+/-- **The exact perturbation identity of the least-squares residual.** Under the hypotheses of
+`Matrix.leastSquares_sub_eq`, let $\hat r = (b + \delta b) - \hat A \hat x$. Then $$\hat r - r =
+(I - \hat A \hat A^+)(\delta b - \delta A \, x) - (\hat A^+)^H \delta A^H r.$$
+
+The proof applies $\hat A$ to the identity for $\hat x - x$, and uses
+$\hat A (\hat A^H \hat A)^{-1} = (\hat A^+)^H$. -/
 theorem leastSquares_residual_sub_eq (hA' : LinearIndependent 𝕜 (A + δA)ᵀ)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) (hr' : r' = (b + δb) - toEuclideanLin (A + δA) x') :
@@ -138,13 +152,18 @@ theorem leastSquares_residual_sub_eq (hA' : LinearIndependent 𝕜 (A + δA)ᵀ)
     LinearMap.sub_apply, toEuclideanLin_one, LinearMap.id_apply,
     toEuclideanLin_mul_apply (A + δA) (A + δA).pinv]
 
-/-- **[golub2013matrix] Theorem 5.3.1 (solution), rigorous form**: if `A` has linearly independent
-columns, `σ = σ_min(A)` and `‖δA‖₂ < σ`, then `A + δA` has linearly independent columns and, with
-`x = A⁺ b`, `x̂ = (A + δA)⁺ (b + δb)` and `r = b - A x`,
-`‖x̂ - x‖ ≤ (‖δb‖ + ‖δA‖₂ ‖x‖) / (σ - ‖δA‖₂) + ‖δA‖₂ ‖r‖ / (σ - ‖δA‖₂)²`. From
-`Matrix.leastSquares_sub_eq`, `‖Â⁺‖₂ = 1/σ_min(Â)`, `‖(Âᴴ Â)⁻¹‖₂ = 1/σ_min(Â)²` and
-`σ_min(Â) ≥ σ - ‖δA‖₂`. The book's (5.3.11) is the relative form of this bound with `σ` in place of
-`σ - ‖δA‖₂`. -/
+/-- **Theorem 5.3.1** of [golub2013matrix], the bound on the solution, in rigorous form. Let
+$A, \delta A \in \mathbb{K}^{m \times n}$, let $\sigma = \sigma_{\min}(A)$, and suppose that
+$\|\delta A\|_2 < \sigma$ (so $A$ has linearly independent columns). Let $x = A^+ b$,
+$\hat x = (A + \delta A)^+ (b + \delta b)$ and $r = b - Ax$. Then $A + \delta A$ has linearly
+independent columns, and $$\|\hat x - x\| \le \frac{\|\delta b\| + \|\delta A\|_2
+\|x\|}{\sigma - \|\delta A\|_2} + \frac{\|\delta A\|_2 \|r\|}{(\sigma - \|\delta A\|_2)^2}.$$
+
+The bound (5.3.11) of the source is the relative form of this bound, with $\sigma$ in place of
+$\sigma - \|\delta A\|_2$ and up to $O(\varepsilon^2)$. The proof combines
+`Matrix.leastSquares_sub_eq` with $\|\hat A^+\|_2 = 1 / \sigma_{\min}(\hat A)$, $\|(\hat A^H
+\hat A)^{-1}\|_2 = 1 / \sigma_{\min}(\hat A)^2$ and $\sigma_{\min}(\hat A) \ge \sigma - \|\delta
+A\|_2$. Here $\sigma_{\min}(A)$ is `⨅ i, A.colSingularValues i`. -/
 theorem norm_leastSquares_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) :
@@ -183,11 +202,14 @@ theorem norm_leastSquares_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingularValues 
         rw [div_eq_inv_mul, div_eq_inv_mul, inv_pow]
         ring
 
-/-- **[golub2013matrix] Theorem 5.3.1 (residual), rigorous form**: under the hypotheses of
-`Matrix.norm_leastSquares_sub_le`, with `r̂ = (b + δb) - (A + δA) x̂`,
-`‖r̂ - r‖ ≤ ‖δb‖ + ‖δA‖₂ ‖x‖ + ‖δA‖₂ ‖r‖ / (σ - ‖δA‖₂)`. From
-`Matrix.leastSquares_residual_sub_eq`, `‖1 - Â Â⁺‖₂ ≤ 1` and `‖Â⁺ᴴ‖₂ = ‖Â⁺‖₂`. The book's (5.3.12)
-is its relative form. -/
+/-- **Theorem 5.3.1** of [golub2013matrix], the bound on the residual, in rigorous form. Under the
+hypotheses of `Matrix.norm_leastSquares_sub_le`, let $\hat r = (b + \delta b) - (A + \delta A)
+\hat x$. Then $$\|\hat r - r\| \le \|\delta b\| + \|\delta A\|_2 \|x\| + \frac{\|\delta A\|_2
+\|r\|}{\sigma - \|\delta A\|_2}.$$
+
+The bound (5.3.12) of the source is the relative form of this bound. The proof combines
+`Matrix.leastSquares_residual_sub_eq` with $\|I - \hat A \hat A^+\|_2 \le 1$ and
+$\|(\hat A^+)^H\|_2 = \|\hat A^+\|_2$. -/
 theorem norm_leastSquares_residual_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i)
     (hx : x = toEuclideanLin A.pinv b) (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb))
     (hr : r = b - toEuclideanLin A x) (hr' : r' = (b + δb) - toEuclideanLin (A + δA) x') :
@@ -221,12 +243,18 @@ theorem norm_leastSquares_residual_sub_le (hδA : ‖δA‖ < ⨅ i, A.colSingul
         ring
 
 open scoped ComplexOrder in
-/-- **The accuracy of the method of normal equations** ([golub2013matrix] (5.3.4)): if `A` has
-linearly independent columns, `x = A⁺ b`, `(Aᴴ A + E) x̂ = Aᴴ b` with `‖E‖₂ ≤ η ‖Aᴴ A‖₂` and
-`η κ₂(A)² < 1`, then `‖x̂ - x‖ / ‖x‖ ≤ η κ₂(A)² / (1 - η κ₂(A)²)`, `κ₂` the rectangular condition
-number `Matrix.pinvCondNumberLp 2`. The linear-system bound `relative_error_le_norm_inverse` for
-`Aᴴ A`, whose condition number is `κ₂(A)²` (`Matrix.pinvCondNumberLp_two_conjTranspose_mul_self`).
-The book's "`≈ u κ₂(A)²`" is this with `η = c u` from the Cholesky backward error. -/
+/-- **The accuracy of the method of normal equations**, (5.3.4) of [golub2013matrix]. Let
+$A \in \mathbb{K}^{m \times n}$ have linearly independent columns, let $x = A^+ b$ with
+$x \neq 0$, and let $\hat x$ solve the perturbed normal equations $(A^H A + E) \hat x = A^H b$.
+If $\|E\|_2 \le \eta \|A^H A\|_2$ and $\eta \kappa_2(A)^2 < 1$, then $$\frac{\|\hat x -
+x\|}{\|x\|} \le \frac{\eta \kappa_2(A)^2}{1 - \eta \kappa_2(A)^2}.$$
+
+Here $\kappa_2(A) = \|A\|_2 \|A^+\|_2$ is the condition number of a rectangular matrix,
+`Matrix.pinvCondNumberLp 2 A`. The proof applies the linear-system bound
+`relative_error_le_norm_inverse` to $A^H A$, whose condition number is $\kappa_2(A)^2$
+(`Matrix.pinvCondNumberLp_two_conjTranspose_mul_self`). The estimate "$\approx u \kappa_2(A)^2$"
+of the source is this bound with $\eta = c u$ from the backward error of the Cholesky
+factorization. -/
 theorem norm_normalEquations_sub_le (hA : LinearIndependent 𝕜 Aᵀ) {E : Matrix n n 𝕜}
     {x y : EuclideanSpace 𝕜 n} (hx : x = toEuclideanLin A.pinv b)
     (hy : toEuclideanLin (Aᴴ * A + E) y = toEuclideanLin Aᴴ b) {η : ℝ}
@@ -282,31 +310,39 @@ section FullRowRank
 variable {A δA : Matrix m n 𝕜} {b δb : EuclideanSpace 𝕜 m} {x x' : EuclideanSpace 𝕜 n}
 
 open scoped ComplexOrder in
-/-- For linearly independent rows the pseudoinverse is a right inverse, `A A⁺ = 1`: the dual of
-`Matrix.pinv_mul_self_of_linearIndependent`, through `A⁺ = Aᴴ (A Aᴴ)⁻¹`. -/
+/-- If $A \in \mathbb{K}^{m \times n}$ has linearly independent rows, then the pseudoinverse is a
+right inverse: $A A^+ = I$.
+
+This is the dual of `Matrix.pinv_mul_self_of_linearIndependent`, through
+$A^+ = A^H (A A^H)^{-1}$. -/
 theorem mul_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 A) : A * A.pinv = 1 := by
   rw [pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose hA, ← Matrix.mul_assoc,
     mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp
       (posDef_self_mul_conjTranspose_of_linearIndependent hA).isUnit)]
 
-/-- The minimal-norm solution solves the system: `A (A⁺ b) = b` for independent rows. -/
+/-- If $A \in \mathbb{K}^{m \times n}$ has linearly independent rows, then the minimal-norm solution
+solves the system: $A (A^+ b) = b$. -/
 theorem toEuclideanLin_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 A) :
     toEuclideanLin A (toEuclideanLin A.pinv b) = b := by
   rw [← toEuclideanLin_mul_apply, mul_pinv_of_linearIndependent hA, toEuclideanLin_one,
     LinearMap.id_apply]
 
-/-- `A⁺ A` is `Aᴴ (Aᴴ)⁺`, so `1 - A⁺ A` is the projection onto the orthogonal complement of the
-range of `Aᴴ`. -/
+/-- For every matrix $A$, $A^+ A = A^H (A^H)^+$, so $I - A^+ A$ is the orthogonal projection onto
+the orthogonal complement of the range of $A^H$. -/
 private theorem pinv_mul_self_eq_conjTranspose_mul_pinv (A : Matrix m n 𝕜) :
     A.pinv * A = Aᴴ * Aᴴ.pinv := by
   rw [pinv_conjTranspose, ← conjTranspose_mul, A.isHermitian_pinv_mul.eq]
 
-/-- **The exact perturbation identity of the minimal-norm solution**: if `A` has linearly
-independent rows, `x = A⁺ b` and `x̂ = Â⁺ (b + δb)` with `Â = A + δA`, then
-`x̂ - x = Â⁺ (δb - δA x) + (1 - Â⁺ Â) δAᴴ (A Aᴴ)⁻¹ b`. With `y = (A Aᴴ)⁻¹ b`, `x = Aᴴ y` solves
-`A x = b`, so `Â⁺ (δb - δA x) = x̂ - Â⁺ Â x`; and `(1 - Â⁺ Â) Âᴴ = 0` turns
-`Â⁺ Â x - x = -(1 - Â⁺ Â)(Âᴴ - δAᴴ) y` into `(1 - Â⁺ Â) δAᴴ y`. (The sign of the second term is
-`+`, as in the derivative (5.6.2).) -/
+/-- **The exact perturbation identity of the minimal-norm solution.** Let
+$A, \delta A \in \mathbb{K}^{m \times n}$, and suppose that $A$ has linearly independent rows.
+Let $\hat A = A + \delta A$, $x = A^+ b$ and $\hat x = \hat A^+ (b + \delta b)$. Then $$\hat x -
+x = \hat A^+ (\delta b - \delta A \, x) + (I - \hat A^+ \hat A) \, \delta A^H (A A^H)^{-1} b.$$
+
+The sign of the second term is $+$, as in the derivative (5.6.2) of [golub2013matrix]. The proof
+sets $y = (A A^H)^{-1} b$. Then $x = A^H y$ solves $Ax = b$, so $\hat A^+ (\delta b - \delta A
+\, x) = \hat x - \hat A^+ \hat A x$, and $(I - \hat A^+ \hat A) \hat A^H = 0$ turns $\hat A^+
+\hat A x - x = -(I - \hat A^+ \hat A)(\hat A^H - \delta A^H) y$ into
+$(I - \hat A^+ \hat A) \, \delta A^H y$. -/
 theorem minNorm_sub_eq (hA : LinearIndependent 𝕜 A) (hx : x = toEuclideanLin A.pinv b)
     (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) :
     x' - x = toEuclideanLin (A + δA).pinv (δb - toEuclideanLin δA x) +
@@ -337,22 +373,30 @@ theorem minNorm_sub_eq (hA : LinearIndependent 𝕜 A) (hx : x = toEuclideanLin 
   abel
 
 omit [DecidableEq n] in
-/-- A positive least stretch of `Aᴴ` bounds `y` by `Aᴴ y`. -/
+/-- If $m \ge 1$ and the least singular value $\sigma_{\min}(A^H)$ is positive, then
+$\|y\| \le \|A^H y\| / \sigma_{\min}(A^H)$ for every $y \in \mathbb{K}^m$. -/
 private theorem norm_le_of_iInf_colSingularValues_conjTranspose [Nonempty m]
     (h : 0 < ⨅ i, Aᴴ.colSingularValues i) (y : EuclideanSpace 𝕜 m) :
     ‖y‖ ≤ ‖toEuclideanLin Aᴴ y‖ / ⨅ i, Aᴴ.colSingularValues i := by
   rw [le_div_iff₀ h, mul_comm]
   exact Aᴴ.iInf_colSingularValues_mul_norm_le y
 
-/-- **[golub2013matrix] Theorem 5.6.1, rigorous form**: if `A` has linearly independent rows,
-`σ = σ_min(Aᴴ)` (the least singular value `σ_m`), `‖δA‖₂ < σ` and `b ≠ 0`, then `A + δA` has
-linearly independent rows and, with `x = A⁺ b`, `x̂ = (A + δA)⁺ (b + δb)`, `ε_A = ‖δA‖₂/‖A‖₂` and
-`ε_b = ‖δb‖/‖b‖`,
-`‖x̂ - x‖ / ‖x‖ ≤ ‖A‖₂ / (σ - ‖δA‖₂) (ε_A + ε_b) + (κ₂(A) ε_A if m < n, else 0)`, `κ₂` the
-rectangular condition number `Matrix.pinvCondNumberLp 2`. From `Matrix.minNorm_sub_eq`,
-`‖Â⁺‖₂ ≤ 1/(σ - ‖δA‖₂)`, `‖1 - Â⁺ Â‖₂ ≤ 1` (and `= 0` for a square `A`),
-`‖(A Aᴴ)⁻¹ b‖ ≤ ‖x‖/σ` and `‖b‖ ≤ ‖A‖₂ ‖x‖`. Its first-order form is the book's
-`κ₂(A)(ε_A min{2, n - m + 1} + ε_b) + O(ε²)`. -/
+/-- **Theorem 5.6.1** of [golub2013matrix], in rigorous form. Let
+$A, \delta A \in \mathbb{K}^{m \times n}$, suppose that $A$ has linearly independent rows, let
+$\sigma = \sigma_{\min}(A^H)$ (the least singular value $\sigma_m$ of $A$), and suppose that
+$\|\delta A\|_2 < \sigma$. Let $b \neq 0$, $x = A^+ b$,
+$\hat x = (A + \delta A)^+ (b + \delta b)$, $\varepsilon_A = \|\delta A\|_2 / \|A\|_2$ and
+$\varepsilon_b = \|\delta b\| / \|b\|$. Then $A + \delta A$ has linearly independent rows, and
+$$\frac{\|\hat x - x\|}{\|x\|} \le \frac{\|A\|_2}{\sigma - \|\delta A\|_2} (\varepsilon_A +
+\varepsilon_b) + \begin{cases} \kappa_2(A) \, \varepsilon_A & \text{if } m < n, \\ 0 &
+\text{otherwise.} \end{cases}$$
+
+Here $\kappa_2(A) = \|A\|_2 \|A^+\|_2$ is `Matrix.pinvCondNumberLp 2 A`, and $\sigma$ is
+`⨅ i, Aᴴ.colSingularValues i`. The first-order form of this bound is the bound $\kappa_2(A)
+(\varepsilon_A \min\{2, n - m + 1\} + \varepsilon_b) + O(\varepsilon^2)$ of the source. The
+proof combines `Matrix.minNorm_sub_eq` with $\|\hat A^+\|_2 \le 1 / (\sigma - \|\delta A\|_2)$,
+$\|I - \hat A^+ \hat A\|_2 \le 1$ (and $= 0$ for a square $A$),
+$\|(A A^H)^{-1} b\| \le \|x\| / \sigma$ and $\|b\| \le \|A\|_2 \|x\|$. -/
 theorem norm_minNorm_sub_le (hA : LinearIndependent 𝕜 A) (hδA : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i)
     (hb : b ≠ 0) (hx : x = toEuclideanLin A.pinv b)
     (hx' : x' = toEuclideanLin (A + δA).pinv (b + δb)) :
@@ -481,7 +525,8 @@ section Derivative
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- A quadratic in a real parameter has derivative its linear coefficient at `0`. -/
+/-- A quadratic $t \mapsto c_0 + t c_1 + t^2 c_2$ in a real parameter has the derivative $c_1$ at
+$t = 0$. -/
 private theorem hasDerivAt_quadratic {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     (c₀ c₁ c₂ : F) : HasDerivAt (fun t : ℝ => c₀ + t • c₁ + t ^ 2 • c₂) c₁ 0 := by
   have h1 := (hasDerivAt_id (0 : ℝ)).smul_const c₁
@@ -491,21 +536,26 @@ private theorem hasDerivAt_quadratic {F : Type*} [NormedAddCommGroup F] [NormedS
   · simp
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in
-/-- The Gram matrix along a line is quadratic in the parameter. -/
+/-- The Gram matrix along a line is quadratic in the parameter: $(A + tE)^H (A + tE) = A^H A + t
+(E^H A + A^H E) + t^2 E^H E$. -/
 private theorem conjTranspose_mul_self_line (A E : Matrix m n ℝ) (t : ℝ) :
     (A + t • E)ᴴ * (A + t • E) = Aᴴ * A + t • (Eᴴ * A + Aᴴ * E) + t ^ 2 • (Eᴴ * E) := by
   simp only [conjTranspose_add, conjTranspose_smul, star_trivial, Matrix.add_mul,
     Matrix.mul_add, Matrix.smul_mul, Matrix.mul_smul, smul_add, smul_smul]
   module
 
-/-- **The derivative of the least-squares solution along a line** ([golub2013matrix] (5.3.15)):
-for a real `A` with linearly independent columns, `E`, `b` and `f`, the map
-`t ↦ (A + t E)⁺ (b + t f)` has derivative `A⁺ (f - E x) + (Aᴴ A)⁻¹ Eᴴ r` at `0`, where
-`x = A⁺ b` and `r = b - A x` (the book writes `A⁺ = (Aᴴ A)⁻¹ Aᴴ`). Near `0` the columns stay
-independent (`Matrix.eventually_linearIndependent_transpose_add_smul`), so the map is
-`t ↦ G(t)⁻¹ h(t)` with the quadratics `G(t) = (A + tE)ᴴ(A + tE)` and `h(t) = (A + tE)ᴴ(b + tf)`,
-and the derivative of the inverse is `-G⁻¹ G' G⁻¹` (`hasFDerivAt_ringInverse`). (Stated over `ℝ`:
-over `ℂ` the conjugate transpose makes the map non-holomorphic in a complex parameter.) -/
+/-- **The derivative of the least-squares solution along a line**, (5.3.15) of [golub2013matrix].
+Let $A \in \mathbb{R}^{m \times n}$ have linearly independent columns, and let
+$E \in \mathbb{R}^{m \times n}$ and $b, f \in \mathbb{R}^m$. Let $x = A^+ b$ and $r = b - Ax$.
+Then the map $t \mapsto (A + tE)^+ (b + tf)$ has at $t = 0$ the derivative $$A^+ (f - E x) +
+(A^H A)^{-1} E^H r.$$
+
+The source writes $A^+ = (A^H A)^{-1} A^H$. Near $0$ the columns of $A + tE$ stay independent
+(`Matrix.eventually_linearIndependent_transpose_add_smul`), so the map is
+$t \mapsto G(t)^{-1} h(t)$ with the quadratics $G(t) = (A + tE)^H (A + tE)$ and
+$h(t) = (A + tE)^H (b + tf)$, and the derivative of the inverse is $-G^{-1} G' G^{-1}$
+(`hasFDerivAt_ringInverse`). The theorem is stated over $\mathbb{R}$, because over $\mathbb{C}$
+the conjugate transpose makes the map not holomorphic in a complex parameter. -/
 theorem hasDerivAt_pinv_mulVec_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
     HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))
@@ -576,15 +626,17 @@ theorem hasDerivAt_pinv_mulVec_line {A : Matrix m n ℝ} (hA : LinearIndependent
   abel
 
 omit [Fintype m] [DecidableEq m] [DecidableEq n] in
-/-- The Gram matrix of the rows along a line is quadratic in the parameter. -/
+/-- The Gram matrix of the rows along a line is quadratic in the parameter: $(A + tE)(A + tE)^H = A
+A^H + t (E A^H + A E^H) + t^2 E E^H$. -/
 private theorem mul_conjTranspose_self_line (A E : Matrix m n ℝ) (t : ℝ) :
     (A + t • E) * (A + t • E)ᴴ = A * Aᴴ + t • (E * Aᴴ + A * Eᴴ) + t ^ 2 • (E * Eᴴ) := by
   simp only [conjTranspose_add, conjTranspose_smul, star_trivial, Matrix.add_mul,
     Matrix.mul_add, Matrix.smul_mul, Matrix.mul_smul, smul_add, smul_smul]
   module
 
-/-- The derivative of `t ↦ M(t)ᴴ H(t)⁻¹ (b + tf)`, `M(t) = A + tE`, `H(t) = M(t) M(t)ᴴ`, for
-independent rows: the product rule and the derivative `-H⁻¹ H' H⁻¹` of the inverse. -/
+/-- If $A \in \mathbb{R}^{m \times n}$ has linearly independent rows, let $M(t) = A + tE$ and
+$H(t) = M(t) M(t)^H$. Then $t \mapsto M(t)^H H(t)^{-1} (b + tf)$ has at $t = 0$ the derivative
+$(I - A^H (A A^H)^{-1} A) E^H (A A^H)^{-1} b + A^H (A A^H)^{-1} (f - E A^H (A A^H)^{-1} b)$. -/
 private theorem hasDerivAt_conjTranspose_mul_inv_line {A : Matrix m n ℝ}
     (hA : LinearIndependent ℝ A)
     (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
@@ -655,14 +707,18 @@ private theorem hasDerivAt_conjTranspose_mul_inv_line {A : Matrix m n ℝ}
     LinearMap.sub_apply, LinearMap.add_apply, toEuclideanLin_one, LinearMap.id_apply]
   abel
 
-/-- **The derivative of the minimal-norm solution along a line** ([golub2013matrix] (5.6.2)): for a
-real `A` with linearly independent rows, `E`, `b` and `f`, the map `t ↦ (A + tE)⁺ (b + t f)` has
-derivative `(1 - A⁺ A) Eᴴ (A Aᴴ)⁻¹ b + A⁺ (f - E x)` at `0`, where `x = A⁺ b` (the book writes
-`A⁺ = Aᴴ (A Aᴴ)⁻¹`). Near `0` the rows stay independent
-(`Matrix.eventually_linearIndependent_add_smul`), and the map is `t ↦ M(t)ᴴ H(t)⁻¹ (b + tf)` with
-`M(t) = A + tE` and the quadratic `H(t) = M(t) M(t)ᴴ`; the product rule and the derivative
-`-H⁻¹ H' H⁻¹` of the inverse give the formula. (Stated over `ℝ`, as
-`Matrix.hasDerivAt_pinv_mulVec_line`.) -/
+/-- **The derivative of the minimal-norm solution along a line**, (5.6.2) of [golub2013matrix]. Let
+$A \in \mathbb{R}^{m \times n}$ have linearly independent rows, and let
+$E \in \mathbb{R}^{m \times n}$ and $b, f \in \mathbb{R}^m$. Let $x = A^+ b$. Then the map
+$t \mapsto (A + tE)^+ (b + tf)$ has at $t = 0$ the derivative $$(I - A^+ A) E^H (A A^H)^{-1} b +
+A^+ (f - E x).$$
+
+The source writes $A^+ = A^H (A A^H)^{-1}$. Near $0$ the rows of $A + tE$ stay independent
+(`Matrix.eventually_linearIndependent_add_smul`), and the map is
+$t \mapsto M(t)^H H(t)^{-1} (b + tf)$ with $M(t) = A + tE$ and the quadratic
+$H(t) = M(t) M(t)^H$. The product rule and the derivative $-H^{-1} H' H^{-1}$ of the inverse
+give the formula. The theorem is stated over $\mathbb{R}$, as
+`Matrix.hasDerivAt_pinv_mulVec_line` is. -/
 theorem hasDerivAt_minNorm_line {A : Matrix m n ℝ} (hA : LinearIndependent ℝ A)
     (E : Matrix m n ℝ) (b f : EuclideanSpace ℝ m) :
     HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))

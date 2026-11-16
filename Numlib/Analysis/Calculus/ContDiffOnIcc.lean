@@ -14,35 +14,39 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-!
-# Calculus of `Cⁿ` functions on a compact interval
+# Calculus of $C^n$ functions on a compact interval
 
-Real functions of class `C²` or `C³` on a compact interval `Icc a b`, and the passage between the
-three ways of naming their derivatives: the derivatives *within* the interval
-(`derivWithin`, `iteratedDerivWithin`), which exist at the endpoints as well; the ordinary
-derivatives (`deriv`, `iteratedDeriv`), which agree with them at interior points; and explicit
-derivative *data* `HasDerivWithinAt u (u₁ x) (Icc a b) x`, which is what the error analyses of
-one-step methods and the weak formulations of boundary value problems have to hand.
+This module treats real functions of class $C^2$ or $C^3$ on a compact interval $[a, b]$. It passes
+between three ways to name their derivatives. The derivatives within the interval (`derivWithin`,
+`iteratedDerivWithin`) exist at the endpoints as well. The ordinary derivatives (`deriv`,
+`iteratedDeriv`) agree with them at interior points. Explicit derivative data, such as a function
+$u_1$ with the derivative $u_1(x)$ of $u$ within $[a, b]$ at each $x$, are what the error analyses
+of one-step methods and the weak formulations of boundary value problems have at hand.
 
 ## Main results
 
-* `contDiffOn_two_of_hasDerivWithinAt`: `ContDiffOn ℝ 2` on a set of unique differentiability
-  from explicit within-derivative data with a continuous second derivative.
-* `iteratedDeriv_two_eq_of_hasDerivWithinAt`: at interior points the ordinary second derivative
-  is the second within-derivative datum.
-* `hasDerivAt_of_contDiffOn_two`: at interior points a `C²` function on `[a, b]` has the ordinary
-  derivative `derivWithin u (Icc a b)`, which in turn has the derivative `iteratedDeriv 2 u`.
+* `contDiffOn_two_of_hasDerivWithinAt`: explicit derivative data $u' = u_1$ and $u_1' = u_2$ within
+  a set of unique differentiability, with $u_2$ continuous, make $u$ a $C^2$ function on the set.
+* `iteratedDeriv_two_eq_of_hasDerivWithinAt`: at interior points, the ordinary second derivative is
+  the second derivative datum $u_2$.
+* `hasDerivAt_of_contDiffOn_two`: at an interior point, a $C^2$ function on $[a, b]$ has the
+  ordinary derivative given by its derivative within $[a, b]$, and that function has the ordinary
+  derivative $u''$.
 * `hasDerivWithinAt_derivWithin_of_contDiffOn_two`,
-  `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`: a `C²` (resp. `C³`) function on
-  `[a, b]` has, within `[a, b]` and at every point of it, the derivatives named by `derivWithin` and
+  `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`,
+  `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn`: a $C^2$, $C^3$ or $C^k$ function on $[a, b]$
+  has, within $[a, b]$ and at every point of it, the derivatives given by `derivWithin` and
   `iteratedDerivWithin`.
-* `eqOn_zero_of_hasDerivAt_zero`: a continuous function on `[a, b]` whose derivative has
-  derivative `0` in the interior and which vanishes at both ends vanishes identically.
+* `eqOn_zero_of_hasDerivAt_zero`: a continuous function on $[a, b]$ whose derivative has derivative
+  $0$ in the interior, and which vanishes at both ends, vanishes on $[a, b]$.
 -/
 
 open Set Filter Topology intervalIntegral
 
-/-- A function with a derivative `u₁` within `s` at every point of `s`, where `u₁` in turn has a
-continuous derivative `u₂` within `s`, is `C²` on `s`. -/
+/-- Let $s \subseteq \mathbb{R}$ be a set of unique differentiability, and let
+$u, u_1, u_2 : \mathbb{R} \to \mathbb{R}$. If at every point $x \in s$ the function $u$ has the
+derivative $u_1(x)$ within $s$ and $u_1$ has the derivative $u_2(x)$ within $s$, and $u_2$ is
+continuous on $s$, then $u$ is $C^2$ on $s$. -/
 theorem contDiffOn_two_of_hasDerivWithinAt {u u₁ u₂ : ℝ → ℝ} {s : Set ℝ} (hs : UniqueDiffOn ℝ s)
     (h₁ : ∀ x ∈ s, HasDerivWithinAt u (u₁ x) s x) (h₂ : ∀ x ∈ s, HasDerivWithinAt u₁ (u₂ x) s x)
     (h₃ : ContinuousOn u₂ s) : ContDiffOn ℝ 2 u s := by
@@ -54,8 +58,11 @@ theorem contDiffOn_two_of_hasDerivWithinAt {u u₁ u₂ : ℝ → ℝ} {s : Set 
   rw [contDiffOn_one_iff_derivWithin hs]
   exact ⟨fun x hx => (h₂ x hx).differentiableWithinAt, h₃.congr hd₂⟩
 
-/-- If `u` has derivative `u₁` within `[a, b]` and `u₁` has derivative `u₂` within `[a, b]` at
-every point of `[a, b]`, then at interior points `u'' = u₂`. -/
+/-- Let $u, u_1, u_2 : \mathbb{R} \to \mathbb{R}$. If at every point of $[a, b]$ the function $u$
+has the derivative $u_1$ within $[a, b]$ and $u_1$ has the derivative $u_2$ within $[a, b]$,
+then $u''(x) = u_2(x)$ for every interior point $x \in (a, b)$.
+
+The second derivative $u''$ is the ordinary derivative `iteratedDeriv 2 u`. -/
 theorem iteratedDeriv_two_eq_of_hasDerivWithinAt {u u₁ u₂ : ℝ → ℝ} {a b x : ℝ}
     (h₁ : ∀ x ∈ Icc a b, HasDerivWithinAt u (u₁ x) (Icc a b) x)
     (h₂ : ∀ x ∈ Icc a b, HasDerivWithinAt u₁ (u₂ x) (Icc a b) x) (hx : x ∈ Ioo a b) :
@@ -66,8 +73,11 @@ theorem iteratedDeriv_two_eq_of_hasDerivWithinAt {u u₁ u₂ : ℝ → ℝ} {a 
   rw [iteratedDeriv_succ, iteratedDeriv_one, heq.deriv_eq]
   exact ((h₂ x (Ioo_subset_Icc_self hx)).hasDerivAt (Icc_mem_nhds hx.1 hx.2)).deriv
 
-/-- A `C²` function on `[a, b]` has, at every interior point, the derivative
-`derivWithin u (Icc a b)`, and that function has there the derivative `u''`. -/
+/-- Let $u$ be $C^2$ on $[a, b]$, and let $x \in (a, b)$. Then $u$ has the ordinary derivative
+$u'(x)$ at $x$, where $u'$ is the derivative of $u$ within $[a, b]$, and $u'$ has the ordinary
+derivative $u''(x)$ at $x$.
+
+Here $u'$ is `derivWithin u (Icc a b)` and $u''$ is `iteratedDeriv 2 u`. -/
 theorem hasDerivAt_of_contDiffOn_two {u : ℝ → ℝ} {a b x : ℝ}
     (hu : ContDiffOn ℝ 2 u (Icc a b)) (hx : x ∈ Ioo a b) :
     HasDerivAt u (derivWithin u (Icc a b) x) x ∧
@@ -86,8 +96,11 @@ theorem hasDerivAt_of_contDiffOn_two {u : ℝ → ℝ} {a b x : ℝ}
   rw [iteratedDeriv_succ, iteratedDeriv_one]
   exact hd.congr_of_eventuallyEq heq
 
-/-- A continuous function `w` on `[a, b]` with a continuous derivative `w₁` in the interior, where
-`w₁` has derivative `0`, is affine; if moreover `w(a) = w(b) = 0` then `w = 0` on `[a, b]`. -/
+/-- Let $a \le b$, let $w$ and $w_1$ be continuous on $[a, b]$, and suppose that at every
+$x \in (a, b)$ the function $w$ has the derivative $w_1(x)$ and $w_1$ has the derivative $0$. If
+$w(a) = w(b) = 0$, then $w = 0$ on $[a, b]$.
+
+The hypotheses make $w$ affine on $[a, b]$. -/
 theorem eqOn_zero_of_hasDerivAt_zero {w w₁ : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
     (hw : ContinuousOn w (Icc a b)) (hw₁ : ContinuousOn w₁ (Icc a b))
     (h₁ : ∀ x ∈ Ioo a b, HasDerivAt w (w₁ x) x) (h₂ : ∀ x ∈ Ioo a b, HasDerivAt w₁ 0 x)
@@ -124,9 +137,12 @@ theorem eqOn_zero_of_hasDerivAt_zero {w w₁ : ℝ → ℝ} {a b : ℝ} (hab : a
     intro x hx
     rw [Pi.zero_apply, hw' x hx, hzero, mul_zero]
 
-/-- A `C²` function on `[a, b]`, `a < b`, has the derivatives `y' = derivWithin y [a, b]` and
-`y'' = iteratedDerivWithin 2 y [a, b]` within `[a, b]` at every point of `[a, b]`: the bridge from
-a `ContDiffOn` hypothesis to the explicit-derivative hypotheses of `Numlib/ODE/OneStep`. -/
+/-- Let $a < b$, and let $y$ be $C^2$ on $[a, b]$. Then at every point $s \in [a, b]$, the function
+$y$ has the derivative $y'(s)$ within $[a, b]$, and $y'$ has the derivative $y''(s)$ within
+$[a, b]$.
+
+Here $y'$ is `derivWithin y (Icc a b)` and $y''$ is `iteratedDerivWithin 2 y (Icc a b)`. This
+turns a `ContDiffOn` hypothesis into the explicit derivative hypotheses of `Numlib.ODE.OneStep`. -/
 theorem hasDerivWithinAt_derivWithin_of_contDiffOn_two {a b : ℝ} (hlt : a < b) {y : ℝ → ℝ}
     (hy : ContDiffOn ℝ 2 y (Icc a b)) :
     (∀ s ∈ Icc a b, HasDerivWithinAt y (derivWithin y (Icc a b) s) (Icc a b) s) ∧
@@ -138,9 +154,13 @@ theorem hasDerivWithinAt_derivWithin_of_contDiffOn_two {a b : ℝ} (hlt : a < b)
   have := ((hy.2.2.differentiableOn one_ne_zero) s hs).hasDerivWithinAt
   rwa [iteratedDerivWithin_succ, iteratedDerivWithin_one]
 
-/-- A `C³` function on `[a, b]`, `a < b`, has the derivatives `y'`, `y''`, `y'''` within `[a, b]`
-given by `derivWithin` and `iteratedDerivWithin`; the three-level form of
-`hasDerivWithinAt_derivWithin_of_contDiffOn_two`. -/
+/-- Let $a < b$, and let $y$ be $C^3$ on $[a, b]$. Then at every point $s \in [a, b]$, within
+$[a, b]$, the function $y$ has the derivative $y'(s)$, $y'$ has the derivative $y''(s)$, and
+$y''$ has the derivative $y'''(s)$.
+
+Here $y'$ is `derivWithin y (Icc a b)`, and $y''$ and $y'''$ are
+`iteratedDerivWithin 2 y (Icc a b)` and `iteratedDerivWithin 3 y (Icc a b)`. This is the
+three-level form of `hasDerivWithinAt_derivWithin_of_contDiffOn_two`. -/
 theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three {a b : ℝ} (hlt : a < b)
     {y : ℝ → ℝ} (hy : ContDiffOn ℝ 3 y (Icc a b)) :
     (∀ s ∈ Icc a b, HasDerivWithinAt y (derivWithin y (Icc a b) s) (Icc a b) s) ∧
@@ -162,9 +182,12 @@ theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three {a b : ℝ} (hl
         iteratedDerivWithin 2 (derivWithin y (Icc a b)) (Icc a b) from
         iteratedDerivWithin_succ']
 
-/-- A `C^k` function on `[a, b]`, `a < b`, has within `[a, b]` the derivative
-`iteratedDerivWithin (j + 1) y [a, b]` of `iteratedDerivWithin j y [a, b]` for every `j < k`: the
-general form of `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`. -/
+/-- Let $a < b$, let $k \in \mathbb{N} \cup \{\infty, \omega\}$, let $y$ be $C^k$ on $[a, b]$, and
+let $j < k$ be a natural number. Then at every point $s \in [a, b]$, the $j$-th derivative
+$y^{(j)}$ of $y$ within $[a, b]$ has the derivative $y^{(j+1)}(s)$ within $[a, b]$.
+
+The derivatives are `iteratedDerivWithin j y (Icc a b)`. This is the general form of
+`hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`. -/
 theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn {a b : ℝ} (hlt : a < b) {y : ℝ → ℝ}
     {k : WithTop ℕ∞} (hy : ContDiffOn ℝ k y (Icc a b)) {j : ℕ} (hj : (j : WithTop ℕ∞) < k)
     {s : ℝ} (hs : s ∈ Icc a b) :

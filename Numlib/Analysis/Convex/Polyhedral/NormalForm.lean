@@ -7,44 +7,49 @@ import Numlib.Analysis.Convex.Polyhedral.Function
 /-!
 # The normal form of a polyhedral convex function
 
-A polyhedral convex function is exactly a pointwise maximum of finitely many affine functions,
-restricted to a polyhedral convex set: `f = h + δ(· | C)` with
+A polyhedral convex function that never takes the value $-\infty$ is exactly a pointwise maximum of
+finitely many affine functions, restricted to a polyhedral convex set ([rockafellar1970convex],
+§19). That is, $f = h + \delta(\cdot \mid C)$ with $$h(x) = \max \{ \varphi_1(x) - \beta_1, \dots,
+\varphi_k(x) - \beta_k \}, \qquad C = \{ x \mid \varphi_j(x) \le \beta_j,\ j = k + 1, \dots, m \},$$
+where the $\varphi_i$ are linear functionals and the $\beta_i$ are real numbers.
 
-`h x = max {⟨x, b₁⟩ - β₁, …, ⟨x, b_k⟩ - β_k}` and `C = {x | ⟨x, b_j⟩ ≤ β_j, j = k+1, …, m}`.
-
-The two descriptions are the two kinds of closed half-space that can appear in a polyhedral
-description of `epi f ⊆ E × ℝ`: those whose bounding hyperplane is *non-vertical*, which are the
-epigraphs of affine functions, and those that are *vertical*, which constrain only `x`. There is
-no third kind, because `epi f` is upward closed and so no constraint can bound the vertical
-variable above; reading a polyhedral system for `epi f` off in the two groups is the whole proof.
+The two parts come from the two kinds of closed half-space in a polyhedral description of
+$\operatorname{epi} f \subseteq E \times \mathbb{R}$. A half-space with a non-vertical bounding
+hyperplane is the epigraph of an affine function. A half-space with a vertical bounding hyperplane
+constrains only $x$. There is no third kind, because the vertical sections of $\operatorname{epi} f$
+are closed upwards, so no constraint bounds the vertical variable from above. The proof sorts a
+polyhedral system for $\operatorname{epi} f$ into these two groups.
 
 ## Main definitions
 
-* `maxAffineFn s` — the pointwise maximum `x ↦ ⨆ q ∈ s, (q.1 x - q.2)` of a finite family of
-  affine functions, valued in `EReal`. The empty family gives the constant `⊥`.
+* `ConvexAnalysis.maxAffineFn`: the pointwise maximum $x \mapsto \max_{(\varphi, \beta) \in s}
+  (\varphi(x) - \beta)$ of a finite family of affine functions, with values in $[-\infty, +\infty]$.
+  The empty family gives the constant $-\infty$.
 
 ## Main results
 
-* `polyhedralFn_maxAffineFn`, `polyhedralFn_maxAffineFn_add_indicatorFn` — a normal form is always
-  polyhedral, with no hypothesis: the degenerate `s = ∅` gives `⊥`, whose epigraph is everything.
-* `PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom` — every polyhedral convex function
-  that nowhere takes `⊥` is in normal form, with `dom f` itself as the set. The vertical
-  inequalities cut out a polyhedral set that may be strictly larger than `dom f`, but off `dom f`
-  the function is `⊤` anyway.
-* `polyhedralFn_iff_maxAffineFn_add_indicatorFn` — the two together, as an iff.
+* `ConvexAnalysis.polyhedralFn_maxAffineFn`,
+  `ConvexAnalysis.polyhedralFn_maxAffineFn_add_indicatorFn`: a function in normal form is always
+  polyhedral. No hypothesis is needed: for $s = \emptyset$ the function is $-\infty$, whose epigraph
+  is the whole space.
+* `ConvexAnalysis.PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom`: every polyhedral
+  convex function that never takes the value $-\infty$ is in normal form, with
+  $C = \operatorname{dom} f$. The vertical inequalities cut out a polyhedral set that can be larger
+  than $\operatorname{dom} f$, but $f$ is $+\infty$ off $\operatorname{dom} f$ in any case.
+* `ConvexAnalysis.polyhedralFn_iff_maxAffineFn_add_indicatorFn`: the two results together, as an
+  equivalence.
 
 ## Implementation notes
 
-The `⊥`-freeness hypothesis is not decoration: `EReal` has `⊥ + ⊤ = ⊥`, so a normal form can take
-the value `⊥` only on `C`. The function that is `⊥` on a proper nonempty polyhedral `C` and `⊤`
-elsewhere is convex with polyhedral epigraph `C ×ˢ univ` and has no normal form. The classical
-convention makes polyhedral convex functions proper, so `∀ x, f x ≠ ⊥` is the weaker hypothesis.
-The forward direction needs no finite-dimensionality; only the converse uses Minkowski–Weyl,
-through `PolyhedralFn.add`.
-
-## References
-
-* [rockafellar1970convex] §19.
+* The hypothesis that $f$ never takes the value $-\infty$ is necessary. A function in normal form
+  never takes the value $-\infty$ if the family is nonempty, and it is the constant $-\infty$ if the
+  family is empty, because $-\infty + (+\infty) = -\infty$ in `EReal`. The function that is
+  $-\infty$ on a nonempty polyhedral set $C \ne E$ and $+\infty$ elsewhere is convex with the
+  polyhedral epigraph $C \times \mathbb{R}$, but it has no normal form.
+  The classical convention makes polyhedral convex functions proper, so this hypothesis is weaker
+  than the classical one.
+* The direction from polyhedral functions to the normal form needs no finite dimension. Only the
+  converse uses the Minkowski–Weyl theorem, through `ConvexAnalysis.PolyhedralFn.add`.
 -/
 
 open Set
@@ -55,33 +60,39 @@ section MaxAffine
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- The pointwise maximum of the finite family of affine functions `x ↦ q.1 x - q.2`, `q ∈ s`,
-valued in `EReal`. The empty family gives the constant `⊥`, which is the value the extended
-arithmetic assigns to an empty supremum. -/
+/-- For a finite set $s$ of pairs $(\varphi, \beta)$ of a linear functional $\varphi$ on $E$ and a
+real number $\beta$, the pointwise maximum of the affine functions
+$x \mapsto \varphi(x) - \beta$: $$x \mapsto \sup_{(\varphi, \beta) \in s} \big( \varphi(x) -
+\beta \big) \in [-\infty, +\infty].$$
+
+For $s = \emptyset$ the function is the constant $-\infty$, which is the value of an empty
+supremum in `EReal`. -/
 noncomputable def maxAffineFn (s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) : E → EReal :=
   fun x => ⨆ q ∈ s, ((q.1 x - q.2 : ℝ) : EReal)
 
 variable {s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)} {x : E} {c : ℝ}
 
-/-- A real number bounds a finite maximum of affine functions exactly when it bounds each of
-them. -/
+/-- For $c \in \mathbb{R}$, the maximum of the affine functions of $s$ at $x$ is at most $c$ if and
+only if $\varphi(x) - \beta \le c$ for every $(\varphi, \beta) \in s$. -/
 theorem maxAffineFn_le_coe : maxAffineFn s x ≤ (c : EReal) ↔ ∀ q ∈ s, q.1 x - q.2 ≤ c := by
   rw [maxAffineFn, iSup₂_le_iff]
   exact forall₂_congr fun _ _ => EReal.coe_le_coe_iff
 
-/-- Every value of a finite maximum of affine functions is a lower bound for that family. -/
+/-- For every $(\varphi, \beta) \in s$ and every $x$, $\varphi(x) - \beta$ is at most the maximum of
+the affine functions of $s$ at $x$. -/
 theorem coe_le_maxAffineFn {q : (E →ₗ[ℝ] ℝ) × ℝ} (hq : q ∈ s) :
     ((q.1 x - q.2 : ℝ) : EReal) ≤ maxAffineFn s x :=
   le_iSup₂ (f := fun q (_ : q ∈ s) => ((q.1 x - q.2 : ℝ) : EReal)) q hq
 
-/-- A non-empty family of affine functions has a maximum that is nowhere `⊥`. -/
+/-- If $s$ is nonempty, then the maximum of the affine functions of $s$ never takes the value
+$-\infty$. -/
 theorem maxAffineFn_ne_bot (hs : s.Nonempty) (x : E) : maxAffineFn s x ≠ ⊥ := by
   obtain ⟨q, hq⟩ := hs
   intro h
   have hle : ((q.1 x - q.2 : ℝ) : EReal) ≤ ⊥ := h ▸ coe_le_maxAffineFn hq
   exact absurd (le_bot_iff.1 hle) (EReal.coe_ne_bot _)
 
-/-- An empty family of affine functions has the constant `⊥` as its maximum. -/
+/-- For $s = \emptyset$, the maximum of the affine functions of $s$ is the constant $-\infty$. -/
 @[simp] theorem maxAffineFn_empty : maxAffineFn (∅ : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) = fun _ : E => ⊥ :=
   funext fun _ => by simp [maxAffineFn]
 
@@ -93,8 +104,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- A finite maximum of affine functions is a polyhedral convex function: its epigraph is cut out
-by the system `q.1 x - μ ≤ q.2`. -/
+/-- For every finite family $s$ of affine functions, the maximum of the family is a polyhedral
+convex function. Its epigraph is cut out by the inequalities $\varphi(x) - \mu \le \beta$,
+$(\varphi, \beta) \in s$. -/
 theorem polyhedralFn_maxAffineFn (s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) :
     PolyhedralFn (maxAffineFn s) := by
   classical
@@ -111,19 +123,22 @@ theorem polyhedralFn_maxAffineFn (s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) :
     linarith
 
 omit [FiniteDimensional ℝ E] in
-/-- The constant `⊥` is a polyhedral convex function: its epigraph is everything. -/
+/-- The constant function $-\infty$ is a polyhedral convex function, because its epigraph is all of
+$E \times \mathbb{R}$. -/
 theorem polyhedralFn_bot : PolyhedralFn (fun _ : E => (⊥ : EReal)) := by
   have h : epi (fun _ : E => (⊥ : EReal)) = (Set.univ : Set (E × ℝ)) := by
     ext p; simp
   rw [PolyhedralFn, h]
   exact polyhedral_univ
 
-/-- **The normal form is always polyhedral.** For any finite family of affine functions and any
-polyhedral convex set `C`, the function `h + δ(· | C)` is a polyhedral convex function.
+/-- **A function in normal form is polyhedral.** Let $E$ be a finite-dimensional real normed space,
+let $s$ be a finite family of affine functions with maximum $h$, and let $C \subseteq E$ be a
+polyhedral convex set. Then $h + \delta(\cdot \mid C)$ is a polyhedral convex function.
 
-For a non-empty family this is `PolyhedralFn.add` applied to `polyhedralFn_maxAffineFn` and
-`polyhedralFn_indicatorFn`; for the empty family `h + δ(· | C)` is the constant `⊥`, because
-`⊥ + ⊤ = ⊥`. -/
+For a nonempty family this is `ConvexAnalysis.PolyhedralFn.add` applied to
+`ConvexAnalysis.polyhedralFn_maxAffineFn` and `ConvexAnalysis.polyhedralFn_indicatorFn`. For the
+empty family, $h + \delta(\cdot \mid C)$ is the constant $-\infty$, because
+$-\infty + (+\infty) = -\infty$ in `EReal`. -/
 theorem polyhedralFn_maxAffineFn_add_indicatorFn (s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) {C : Set E}
     (hC : Polyhedral C) : PolyhedralFn (maxAffineFn s + indicatorFn C) := by
   rcases Finset.eq_empty_or_nonempty s with rfl | hs
@@ -138,8 +153,9 @@ theorem polyhedralFn_maxAffineFn_add_indicatorFn (s : Finset ((E →ₗ[ℝ] ℝ
   · exact PolyhedralFn.add (polyhedralFn_maxAffineFn s) (polyhedralFn_indicatorFn hC)
       (maxAffineFn_ne_bot hs) (indicatorFn_ne_bot C)
 
-/-- A negative coefficient on the vertical variable turns an inequality `A + μ c ≤ b` into the
-epigraph inequality of the affine function with slope `(-c)⁻¹ A` and constant `(-c)⁻¹ b`. -/
+/-- If $c < 0$, then $A + \mu c \le b$ if and only if $(-c)^{-1} A - (-c)^{-1} b \le \mu$: a
+negative coefficient on the vertical variable turns the inequality into the epigraph inequality
+of an affine function. -/
 private theorem affine_le_iff_of_neg {A b c μ : ℝ} (hc : c < 0) :
     A + μ * c ≤ b ↔ (-c)⁻¹ * A - (-c)⁻¹ * b ≤ μ := by
   have hc' : (0 : ℝ) < -c := by linarith
@@ -165,15 +181,19 @@ private theorem affine_le_iff_of_neg {A b c μ : ℝ} (hc : c < 0) :
     linarith
 
 omit [FiniteDimensional ℝ E] in
-/-- **The normal form of a polyhedral convex function.** A polyhedral convex function that nowhere
-takes the value `⊥` is a pointwise maximum of finitely many affine functions plus the indicator of
-a polyhedral convex set, and the set may be taken to be `dom f`.
+/-- **The normal form of a polyhedral convex function.** Let $E$ be a real normed space and let
+$f \colon E \to [-\infty, +\infty]$ be a polyhedral convex function that never takes the value
+$-\infty$. Then there is a finite family of affine functions with maximum $h$ such that $$f =
+h + \delta(\cdot \mid \operatorname{dom} f).$$
 
-The affine pieces come from the *non-vertical* inequalities of a polyhedral system for `epi f`,
-each rescaled by minus its (negative) coefficient on the vertical variable. The *vertical*
-inequalities constrain `x` alone and hold throughout `dom f`, which is why `dom f` itself serves as
-the set; it is polyhedral by `PolyhedralFn.polyhedral_convexDom`. No inequality can have a
-*positive* vertical coefficient, since `epi f` is upward closed. -/
+The affine functions come from the non-vertical inequalities of a polyhedral system for
+$\operatorname{epi} f$, each divided by minus its coefficient on the vertical variable, which is
+negative. The vertical inequalities constrain only $x$ and hold on all of
+$\operatorname{dom} f$, which is why $\operatorname{dom} f$ itself serves as the set. In finite
+dimensions $\operatorname{dom} f$ is polyhedral by
+`ConvexAnalysis.PolyhedralFn.polyhedral_convexDom`. No inequality has a positive coefficient on
+the vertical variable, because the vertical sections of $\operatorname{epi} f$ are closed
+upwards. -/
 theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom (hf : PolyhedralFn f)
     (hb : ∀ x, f x ≠ ⊥) :
     ∃ s : Finset ((E →ₗ[ℝ] ℝ) × ℝ), f = maxAffineFn s + indicatorFn (convexDom f) := by
@@ -310,9 +330,11 @@ theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_convexDom (hf : Polyhedr
     rw [htop, indicatorFn_of_notMem hx]
     exact (EReal.add_top_of_ne_bot (maxAffineFn_ne_bot hsne x)).symm
 
-/-- **The normal form characterises polyhedral convex functions.** A function that nowhere takes
-the value `⊥` is polyhedral convex exactly when it is a pointwise maximum of finitely many affine
-functions plus the indicator of a polyhedral convex set. -/
+/-- **The normal form characterizes polyhedral convex functions.** Let $E$ be a finite-dimensional
+real normed space and let $f \colon E \to [-\infty, +\infty]$ never take the value $-\infty$.
+Then $f$ is a polyhedral convex function if and only if there are a finite family of affine
+functions with maximum $h$ and a polyhedral convex set $C \subseteq E$ such that
+$f = h + \delta(\cdot \mid C)$. -/
 theorem polyhedralFn_iff_maxAffineFn_add_indicatorFn (hb : ∀ x, f x ≠ ⊥) :
     PolyhedralFn f ↔ ∃ (s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) (C : Set E), Polyhedral C ∧
       f = maxAffineFn s + indicatorFn C := by

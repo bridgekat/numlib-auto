@@ -13,41 +13,59 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpIDAExistence
 /-!
 # Slow runs of the dynamic-accuracy regularization methods
 
-The slow regularization examples of [cartis2022evaluation], Theorems 12.2.15 and 12.2.17, lifted
-to `ℝ¹` along the coordinate direction `e₁` (ridges `x ↦ g ⟪e₁, x⟫`), give runs of the
-dynamic-accuracy regularization methods ARqpIDA and ARqpEDA ([cartis2022evaluation],
-Algorithms 13.1.2 and 13.3.2, `Optimization.IsARqpIDARun`, `Optimization.IsARqpEDARun`) with exact
-derivatives (and values) whose first approximately optimal iterate is `x_{k_ε}`, for each mode of
-the radii control (`Optimization.ARqpDARadiiControl`). The class constants (`f_low`, the Lipschitz
-constant `L`, the bound `ε₀` on `ε`) do not depend on `ε`.
-
-The runs are built as follows.
-
-* **Unit radii** (`q ≤ 2`, the example of Theorem 12.2.15, `σ₀ = p!/(q-1)!`, unit initial radii,
-  `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`). The Step-1 radius of order `q` is the dyadic radius `2^{-m}` at
-  the scale of the step: the model-decrease condition (13.1.54) holds at it and fails at twice it,
-  so the halving loop of Step 1 stops there. This needs `ε ≤ ε₀(p, q)`.
-* **Lower bounds, ARqpEDA** (the example of Theorem 12.2.17 with `r = p`, radii `ε`,
-  `k_ε = ⌈ε^{-q(p+1)/p}⌉`). The weight is `σ₀ = (3/(p+2))^p/2`, and the Step-1 displacements
-  achieve exactly the fraction `ς` of the measures.
-* **Lower bounds, ARqpIDA, `q = p ≥ 3`** (pure `p`-th order spikes, `σ₀ = p`, initial radii `ε`,
-  `k_ε = ⌈ε^{-(p+1)}⌉`). The Step-2 radii are `ε/p`, at which the model measures at the step
-  vanish.
-
-ARqpEDA is run on `f/2` so that it terminates at `k_ε`. ARqpIDA has no termination rule; after
-`k_ε` its run continues by ARqpIDA iterations from the state at `k_ε`
-(`Optimization.exists_arqpDA_steps`), spliced with `Optimization.ARqpDAStep.seqAppend`. The initial
-accuracies are assumed to pass the accuracy test (13.1.46) along the steps and, for ARqpEDA, the
-termination test (13.3.17).
+The slow regularization examples of Theorems 12.2.15 and 12.2.17 of [cartis2022evaluation] can be
+lifted to $\mathbb{R}^1$ along the coordinate direction $e_1$, as ridge functions
+$x \mapsto g(\langle e_1, x \rangle)$. This module shows that they give runs of the dynamic-accuracy
+regularization methods ARqpIDA and ARqpEDA (Algorithms 13.1.2 and 13.3.2 of [cartis2022evaluation])
+with exact derivatives and exact function values, whose first approximately optimal iterate is
+$x_{k_\varepsilon}$. There is such a run for each mode of the radii control (13.1.69)–(13.1.70). The
+constants of the function class (the lower bound $f_{\mathrm{low}}$, the Lipschitz constant $L$, and
+the bound $\varepsilon_0$ on $\varepsilon$) do not depend on $\varepsilon$. The initial accuracies
+are assumed to pass the accuracy test (13.1.46) along the steps and, for ARqpEDA, the termination
+test (13.3.17).
 
 ## Main results
 
-* `Optimization.exists_isARqpIDARun_slow`, `Optimization.exists_isARqpEDARun_slow`: unit-radii
-  runs with `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, `q ≤ 2`, satisfying both modes of the radii control;
-* `Optimization.exists_isARqpEDARun_slowGrad`: an ARqpEDA run in the lower-bound mode with
-  `k_ε = ⌈ε^{-q(p+1)/p}⌉`, for every `1 ≤ q ≤ p`;
-* `Optimization.exists_isARqpIDARun_slowTop`: an ARqpIDA run in the lower-bound mode with
-  `k_ε = ⌈ε^{-(p+1)}⌉`, for `q = p ≥ 3`.
+* `Optimization.exists_isARqpIDARun_slow` and `Optimization.exists_isARqpEDARun_slow`: runs with
+  unit radii for $q \le 2$, with $k_\varepsilon = \lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$, that
+  satisfy both modes of the radii control.
+* `Optimization.exists_isARqpEDARun_slowGrad`: a run of ARqpEDA in the lower-bound mode, with
+  $k_\varepsilon = \lceil \varepsilon^{-q(p+1)/p} \rceil$, for every $1 \le q \le p$.
+* `Optimization.exists_isARqpIDARun_slowTop`: a run of ARqpIDA in the lower-bound mode, with
+  $k_\varepsilon = \lceil \varepsilon^{-(p+1)} \rceil$, for $q = p \ge 3$.
+
+## Proof outline
+
+The runs are built in three ways.
+
+* **Unit radii.** This uses the example of Theorem 12.2.15 for $q \le 2$, with
+  $\sigma_0 = p!/(q-1)!$, unit initial radii and $k_\varepsilon = \lceil
+  \varepsilon^{-(p+1)/(p-q+1)} \rceil$. The Step-1 radius of order $q$ is the dyadic radius $2^{-m}$
+  at the scale of the step. The model-decrease condition (13.1.54) holds at this radius and fails at
+  twice this radius, so the halving loop of Step 1 stops there. This needs
+  $\varepsilon \le \varepsilon_0(p, q)$.
+* **Lower bounds, ARqpEDA.** This uses the example of Theorem 12.2.17 with $r = p$, radii
+  $\varepsilon$ and $k_\varepsilon = \lceil \varepsilon^{-q(p+1)/p} \rceil$. The weight is
+  $\sigma_0 = (3/(p+2))^p/2$, and the Step-1 displacements achieve exactly the fraction $\varsigma$
+  of the measures.
+* **Lower bounds, ARqpIDA, $q = p \ge 3$.** This uses pure spikes of order $p$, with $\sigma_0 = p$,
+  initial radii $\varepsilon$ and $k_\varepsilon = \lceil \varepsilon^{-(p+1)} \rceil$. The Step-2
+  radii are $\varepsilon/p$, at which the model measures at the step vanish.
+
+ARqpEDA is run on $f/2$, so that it terminates at $k_\varepsilon$. ARqpIDA has no termination rule.
+After $k_\varepsilon$ its run continues by ARqpIDA iterations from the state at $k_\varepsilon$
+(`Optimization.exists_arqpDA_steps`), spliced with `Optimization.ARqpDAStep.seqAppend`.
+
+## Implementation notes
+
+* The runs are `Optimization.IsARqpIDARun` and `Optimization.IsARqpEDARun`, with no constraints and
+  the starting point $x_0 = 0$. The radii control is `Optimization.ARqpDARadiiControl u`: the mode
+  `u = True` asks for unit radii, and the mode `u = False` asks for the lower bound.
+* The criterion of ARqpIDA is `Optimization.arqpIDATest`, and the termination test of ARqpEDA is
+  `Optimization.edaStopAR`. The evaluation counts are `Optimization.derivEvalCount` and
+  `Optimization.edaFunEvalCount`.
+* The Lipschitz conditions on the derivatives of orders $0, \dots, p$ are `LipschitzDerivsAnchored f
+  univ univ 0 p (fun _ => L)`.
 -/
 
 open Set Metric
@@ -58,17 +76,16 @@ namespace Optimization
 open EuclideanSpace (norm_single_one inner_single_smul_self norm_smul_single
   norm_eq_abs_inner_single)
 
-/-- The coordinate direction of `ℝ¹`. -/
+/-- The coordinate direction $e_1$ of $\mathbb{R}^1$. -/
 local notation "e₀" => EuclideanSpace.single (0 : Fin 1) (1 : ℝ)
 
-/-- **The slow regularization example on `ℝ¹`** (the data of [cartis2022evaluation],
-Theorem 12.2.15, lifted along `e₁` and scaled by `λ ∈ (0, 1]`). For `1 ≤ q ≤ p` there are
-`f_low` and `L ≥ 1` such that, for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`,
-`a_k = λ (ε + ε (k_ε - k)/k_ε)` and points `x_{k+1} = x_k + a_k^{1/(p-q+1)}`, there is a `C^p`
-function `g` of one variable whose ridge `f = g(⟪e₁, ·⟫)` is bounded below by `f_low` and has
-`L`-Lipschitz derivatives of orders `0, …, p`, with spike jets `g^{(q)}(x_k) = -a_k` (other
-derivatives of orders `1, …, p` zero) for `k ≤ k_ε` and
-`g(x_{k+1}) = g(x_k) - a_k (x_{k+1} - x_k)^q/q!` for `k < k_ε`. -/
+/-- The data of the slow regularization example of Theorem 12.2.15 of [cartis2022evaluation], scaled
+by $\lambda \in (0, 1]$: for $k_\varepsilon = \lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$,
+$a_k = \lambda(\varepsilon + \varepsilon (k_\varepsilon - k)/k_\varepsilon)$ and points
+$x_{k+1} = x_k + a_k^{1/(p-q+1)}$, there is a $C^p$ function $g$ whose ridge is bounded below by
+$f_{\mathrm{low}}$, has $L$-Lipschitz derivatives of orders $0, \dots, p$, has spike jets
+$g^{(q)}(x_k) = -a_k$ for $k \le k_\varepsilon$, and satisfies
+$g(x_{k+1}) = g(x_k) - a_k (x_{k+1} - x_k)^q/q!$ for $k < k_\varepsilon$. -/
 private theorem exists_slowARqp_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {lam : ℝ}
     (hlam : 0 < lam) (hlam1 : lam ≤ 1) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ xr : ℕ → ℝ,
@@ -95,19 +112,11 @@ private theorem exists_slowARqp_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
   simp only [hg]
   rw [hGf k hk]; ring
 
-/-- **The slow regularization run up to `k_ε`** (the example of [cartis2022evaluation],
-Theorem 12.2.15 on `ℝ¹`, `f` scaled by `λ ∈ [½, 1]`, as a run of the ARqpIDA/ARqpEDA steps
-with unit radii, `q ≤ 2`). There are `f_low`, `L ≥ 1` and `ε₀ ∈ (0, ¼]` such that for every
-`ε ∈ (0, ε₀]` and constants with `σ₀ = p!/(q-1)!`, with `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, some
-`f ≥ f_low` with `L`-Lipschitz derivatives of orders `0, …, p`, iterates
-`x_k` from `0`, radii `δ^{(1)}_k`, displacements `d_k`, steps `s_k` and levels `a_k` satisfy:
-`a_k > λ ε` for `k < k_ε` and `a_{k_ε} = λ ε`; the measures at `x_k` (`k ≤ k_ε`) are `0` below
-order `q` and `(a_k/q!) δ^q` at order `q`; the steps are short and their Taylor decrease is the
-decrease of `f`; (13.1.53) fails at order `q` before `k_ε`; Step 1 at `k_ε` keeps the unit radii
-with displacements achieving exactly the fraction `ς` of the measures; and for accuracies `h_k = h₀`
-passing (13.1.46) along the steps (`h_{0,i} ≤ κ_s (ε/2)^{p-i+1}`), no accuracy-improving iteration
-and ratios `ρ_k = 1` before `k_ε`, every iteration `k < k_ε` is an `ARqpDAStep` with `σ_k = σ₀`,
-unit radii `δ_k = δ_{s_k} = 1`, `j_k = q` and exact Taylor data. -/
+/-- The run of the slow regularization example of Theorem 12.2.15 of [cartis2022evaluation] up to
+$k_\varepsilon$, with $f$ scaled by $\lambda \in [1/2, 1]$ and $q \le 2$: every iteration
+$k < k_\varepsilon$ is a step of ARqpIDA and ARqpEDA with $\sigma_k = \sigma_0 = p!/(q-1)!$,
+unit radii, $j_k = q$ and exact Taylor data, and the levels $a_k$, measures, Step-1 radii and
+displacements at $k_\varepsilon$ have the form needed to continue the run. -/
 private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p)
     {lam : ℝ} (hlam : 1 / 2 ≤ lam) (hlam1 : lam ≤ 1) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ε₀ ≤ 1 / 4 ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ →
@@ -358,22 +367,35 @@ private theorem exists_slowARqp_run {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (
     refine (hh₀ i hi).trans (mul_le_mul_of_nonneg_left ?_ P.κs_pos.le)
     exact pow_le_pow_left₀ (by positivity) (ht_ge k hk.le) _
 
-/-- **A slow ARqpIDA run with unit radii** on `X = ℝ¹` with exact derivatives (`κ_{∇,i} = 0`),
-for `q ∈ {1, 2}`. For `1 ≤ q ≤ min(2, p)` there are `f_low`, `L ≥ 1` and `ε₀ > 0` such that, for
-every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA constants with orders `p, q`,
-`σ₀ = p!/(q-1)!`, unit initial radii and initial accuracies `0 < h_{0,i} ≤ κ_s (ε/2)^{p-i+1}` (so
-that the accuracy test (13.1.46) passes along the steps), there is a `C^p` function `f ≥ f_low`
-with `L`-Lipschitz derivatives of orders `0, …, p` and an ARqpIDA run with exact derivatives from
-`x₀ = 0` satisfying the radii control in both modes (`Optimization.ARqpDARadiiControl u` for every
-`u` and every `L̄ ≥ 1`: unit radii after every short trial step), whose first iterate that is
-`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is
-`x_{k_ε}`, `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` function and
-derivative evaluations. The run follows the slow example of [cartis2022evaluation],
-Theorem 12.2.15 (spike jets `f^{(q)}(x_k) = -(ε + ω_k)`, steps the global model minimizers,
-`σ_k = σ₀`, `ρ_k = 1`, no accuracy-improving iteration) up to `k_ε`, the Step-1 radius of order
-`q` being halved to the scale of the step (where (13.1.54) holds), and continues as any ARqpIDA
-run from the state at `k_ε` (`Optimization.exists_arqpDA_steps`). For `q = 1` and for `q = p = 2`
-the order `(p+1)/(p-q+1)` is also the order `q(p+1)/p` of the lower-bound mode. -/
+/-- **A slow ARqpIDA run with unit radii.** Let $1 \le q \le \min\{2, p\}$. Then there are
+$f_{\mathrm{low}} \in \mathbb{R}$, $L \ge 1$ and $\varepsilon_0 > 0$ with the following
+property. Let $\varepsilon \in (0, \varepsilon_0]$, with all tolerances
+$\varepsilon_j = \varepsilon$, and let $P$ be constants of ARqpIDA with orders $p$ and $q$,
+initial weight $\sigma_0 = p!/(q-1)!$, unit initial radii $\delta_{0,j} = 1$ for
+$j \in \{1, \dots, q\}$, and initial accuracies $0 < h_{0,i} \le \kappa_s
+(\varepsilon/2)^{p-i+1}$ for $i \in \{1, \dots, p\}$, so that the accuracy test (13.1.46) passes
+along the steps. Then there are a function $f : \mathbb{R}^1 \to \mathbb{R}$ with
+$f \ge f_{\mathrm{low}}$ whose derivatives of orders $0, \dots, p$ are $L$-Lipschitz, and a run
+of ARqpIDA for $f$ on $\mathbb{R}^1$ from $x_0 = 0$ with exact derivatives (the oracle constants
+are $0$), with the following properties:
+
+* the run satisfies the radii control in both modes, for every $\bar L \ge 1$: the radii are $1$
+  after every short trial step;
+* its first iterate that is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer of $f$
+  for some radii $\delta \in (0, 1]^q$ is $x_{k_\varepsilon}$, where $k_\varepsilon = \lceil
+  \varepsilon^{-(p+1)/(p-q+1)} \rceil$;
+* up to that iterate, both the number of function evaluations ($1$ plus the number of trial
+  iterations before $k_\varepsilon$) and the number of derivative evaluations ($1$ plus the
+  number of iterations before $k_\varepsilon$ that are accuracy-improving or successful trial
+  iterations) are at least $\varepsilon^{-(p+1)/(p-q+1)} + 1$.
+
+The run follows the slow example of Theorem 12.2.15 of [cartis2022evaluation] up to
+$k_\varepsilon$: spike jets $f^{(q)}(x_k) = -(\varepsilon + \omega_k)$, the global model
+minimizers as steps, $\sigma_k = \sigma_0$, $\rho_k = 1$, and no accuracy-improving iteration.
+The Step-1 radius of order $q$ is halved to the scale of the step, where (13.1.54) holds. After
+$k_\varepsilon$, the run continues as any run of ARqpIDA from the state at $k_\varepsilon$
+(`Optimization.exists_arqpDA_steps`). For $q = 1$ and for $q = p = 2$, the order $(p+1)/(p-q+1)$
+equals the order $q(p+1)/p$ of the lower-bound mode. -/
 theorem exists_isARqpIDARun_slow {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = q → P.σ₀ = (p ! : ℝ) / (q - 1)! → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = 1) →
@@ -473,23 +495,37 @@ theorem exists_isARqpIDARun_slow {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp
       rw [hρ1 i hi]; exact P.η₁_le_η₂.trans P.η₂_lt_one.le⟩]
     push_cast at hκge ⊢; linarith
 
-/-- **A slow ARqpEDA run with unit radii** on `X = ℝ¹` with exact derivatives and function
-values, for `q ∈ {1, 2}`. For `1 ≤ q ≤ min(2, p)` there are `f_low`, `L ≥ 1` and `ε₀ > 0` such
-that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpEDA constants with orders `p, q`,
-`σ₀ = p!/(q-1)!`, unit initial radii, (13.3.13) `κ_s ≤ min(η₁, 1 - η₂)/4`, initial accuracies
-passing the accuracy test (13.1.46) along the steps (`h_{0,i} ≤ κ_s (ε/2)^{p-i+1}`) and the
-termination test (13.3.17) at unit radii (`∑_{i=1}^j h_{0,i}/i! ≤ ½ ς ε/j!`), there is a `C^p`
-function `f ≥ f_low` with `L`-Lipschitz derivatives of orders `0, …, p` and an ARqpEDA run with
-exact derivatives and function values from `x₀ = 0` satisfying the radii control in both modes
-(`Optimization.ARqpDARadiiControl u` for every `u` and every `L̄ ≥ 1`), which first terminates
-at `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, after `2 k_ε ≥ 2 ε^{-(p+1)/(p-q+1)}` function evaluations (each
-value recomputed) and `k_ε + 1 ≥ ε^{-(p+1)/(p-q+1)} + 1` derivative evaluations. The run is the
-slow example of [cartis2022evaluation], Theorem 12.2.15 with `f` halved (spike jets
-`f^{(q)}(x_k) = -(ε + ω_k)/2`, steps the global model minimizers, `σ_k = σ₀`, `ρ_k = 1`, no
-accuracy-improving iteration, the Step-1 radius of order `q` halved to the scale of the step), the
-halving making the test (13.1.53), whose threshold is half that of ARqp, pass exactly at `k_ε`.
-For `q = 1` and for `q = p = 2` the order `(p+1)/(p-q+1)` is also the order `q(p+1)/p` of the
-lower-bound mode. -/
+/-- **A slow ARqpEDA run with unit radii.** Let $1 \le q \le \min\{2, p\}$. Then there are
+$f_{\mathrm{low}} \in \mathbb{R}$, $L \ge 1$ and $\varepsilon_0 > 0$ with the following
+property. Let $\varepsilon \in (0, \varepsilon_0]$, with all tolerances
+$\varepsilon_j = \varepsilon$, and let $P$ be constants of ARqpEDA with orders $p$ and $q$ such
+that:
+
+* the initial weight is $\sigma_0 = p!/(q-1)!$, and the initial radii are $\delta_{0,j} = 1$ for
+  $j \in \{1, \dots, q\}$;
+* (13.3.13) holds: $\kappa_s \le \min\{\eta_1, 1 - \eta_2\}/4$;
+* the initial accuracies pass the accuracy test (13.1.46) along the steps,
+  $h_{0,i} \le \kappa_s (\varepsilon/2)^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the initial accuracies pass the termination test (13.3.17) at unit radii, $\sum_{i=1}^j
+  h_{0,i}/i! \le \tfrac12 \varsigma \varepsilon / j!$ for $j \in \{1, \dots, q\}$.
+
+Then there are a function $f : \mathbb{R}^1 \to \mathbb{R}$ with $f \ge f_{\mathrm{low}}$ whose
+derivatives of orders $0, \dots, p$ are $L$-Lipschitz, and a run of ARqpEDA for $f$ on
+$\mathbb{R}^1$ from $x_0 = 0$ with exact derivatives and exact function values, with the
+following properties:
+
+* the run satisfies the radii control in both modes, for every $\bar L \ge 1$;
+* it first terminates at $k_\varepsilon = \lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$;
+* up to $k_\varepsilon$, the number of function evaluations, with each recomputed value counted,
+  is at least $2 \varepsilon^{-(p+1)/(p-q+1)}$, and the number of derivative evaluations is at
+  least $\varepsilon^{-(p+1)/(p-q+1)} + 1$.
+
+The run is the slow example of Theorem 12.2.15 of [cartis2022evaluation] with $f$ halved: spike
+jets $f^{(q)}(x_k) = -(\varepsilon + \omega_k)/2$, the global model minimizers as steps,
+$\sigma_k = \sigma_0$, $\rho_k = 1$, no accuracy-improving iteration, and the Step-1 radius of
+order $q$ halved to the scale of the step. The halving of $f$ makes the test (13.1.53), whose
+threshold is half that of ARqp, pass exactly at $k_\varepsilon$. For $q = 1$ and for
+$q = p = 2$, the order $(p+1)/(p-q+1)$ equals the order $q(p+1)/p$ of the lower-bound mode. -/
 theorem exists_isARqpEDARun_slow {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = q → P.σ₀ = (p ! : ℝ) / (q - 1)! → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = 1) →
@@ -589,17 +625,16 @@ theorem exists_isARqpEDARun_slow {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp
       rw [← hρ, hρ1 i hi]; exact P.η₁_le_η₂.trans P.η₂_lt_one.le⟩]
     push_cast at hκge ⊢; linarith
 
-/-- The weight `σ = (3/(p+2))^p` of the gradient interpolant. -/
+/-- The weight $(3/(p+2))^p$ of the gradient interpolant is positive. -/
 private theorem slowGrad_sigma_pos (p : ℕ) : (0 : ℝ) < (3 / ((p : ℝ) + 2)) ^ p := by positivity
 
-/-- **The slow gradient example on `ℝ¹`** (the data of [cartis2022evaluation], Theorem 12.2.17
-with `r = p` and the weight `σ = (3/(p+2))^p`, lifted along `e₁` and halved). For `1 ≤ q ≤ p`
-there are `f_low` and `L ≥ 1` such that, for every `ε ∈ (0, 1]`, with `k_ε = ⌈ε^{-q(p+1)/p}⌉`,
-`β_k = (ε^q + ε^{qp/p} (k_ε - k)/k_ε)/q!` and points `x_{k+1} = x_k + (p! β_k/σ)^{1/p}`, there is a
-`C^p` function `g` of one variable whose ridge `f = g(⟪e₁, ·⟫)` is bounded below by `f_low` and
-has `L`-Lipschitz derivatives of orders `0, …, p`, with spike jets `g'(x_k) = -β_k/2` (other
-derivatives of orders `2, …, p` zero) for `k ≤ k_ε` and
-`g(x_{k+1}) = g(x_k) - β_k/2 (x_{k+1} - x_k)` for `k < k_ε`. -/
+/-- The data of the slow gradient example of Theorem 12.2.17 of [cartis2022evaluation], with $r = p$
+and the weight $\sigma = (3/(p+2))^p$, halved: for $k_\varepsilon = \lceil
+\varepsilon^{-q(p+1)/p} \rceil$, $\beta_k = (\varepsilon^q + \varepsilon^{qp/p} (k_\varepsilon -
+k)/k_\varepsilon)/q!$ and points $x_{k+1} = x_k + (p! \beta_k/\sigma)^{1/p}$, there is a $C^p$
+function $g$ whose ridge is bounded below by $f_{\mathrm{low}}$, has $L$-Lipschitz derivatives
+of orders $0, \dots, p$, has gradient spikes $g'(x_k) = -\beta_k/2$ for $k \le k_\varepsilon$,
+and satisfies $g(x_{k+1}) = g(x_k) - (\beta_k/2)(x_{k+1} - x_k)$ for $k < k_\varepsilon$. -/
 private theorem exists_slowGrad_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ xr : ℕ → ℝ,
       (∀ k < ⌈ε ^ (-((q : ℝ) * (p + 1) / p))⌉₊, xr (k + 1) = xr k + (p ! *
@@ -631,24 +666,41 @@ private theorem exists_slowGrad_ridge {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
   · simp only [hg]
     rw [hGf k hk]; ring
 
-/-- **A slow ARqpEDA run in the lower-bound mode** of the radii control on `X = ℝ¹` with exact
-derivatives and function values, for every `1 ≤ q ≤ p`. There are `f_low`, `L ≥ 1` and `ε₀ > 0`
-such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpEDA constants with orders `p, q`,
-weight `σ₀ = (3/(p+2))^p/2`, initial radii `δ₀ = ε`, (13.3.13) `κ_s ≤ min(η₁, 1 - η₂)/4`, initial
-accuracies passing the accuracy test (13.1.46) along the steps (`h_{0,i} ≤ κ_s ε^{p-i+1}`) and the
-termination test (13.3.17) at radius `ε` (`∑_{i=1}^j h_{0,i} ε^i/i! ≤ ½ ς ε ε^j/j!`), there is a
-`C^p` function `f ≥ f_low` with `L`-Lipschitz derivatives of orders `0, …, p` and an ARqpEDA run
-with exact derivatives and function values from `x₀ = 0` satisfying the radii control in the
-lower-bound mode (`Optimization.ARqpDARadiiControl False` for every `L̄ ≥ 1`; all radii are `ε`),
-which first terminates at `k_ε = ⌈ε^{-q(p+1)/p}⌉`, after `2 k_ε ≥ 2 ε^{-q(p+1)/p}` function
-evaluations (each value recomputed) and `k_ε + 1 ≥ ε^{-q(p+1)/p} + 1` derivative evaluations.
-The run is the slow example of [cartis2022evaluation], Theorem 12.2.17 (with `r = p`) with `f`
-halved and a smaller weight: gradient spikes
-`f'(x_k) = -β_k/2`, `β_k = (ε^q + ω_k)/q!`, steps the global model minimizers, `σ_k = σ₀`,
-`ρ_k = 1`, no accuracy-improving iteration, and Step-1 displacements achieving exactly the
-fraction `ς` of the measures; the weight is small enough for (13.1.54) to hold at these
-displacements (unlike with the weight (12.2.85) of Theorem 12.2.17) and for the measures of the
-model at its minimizer to vanish at radius `ε` ([cartis2022evaluation], Example 12.1.3). -/
+/-- **A slow ARqpEDA run in the lower-bound mode.** Let $1 \le q \le p$. Then there are
+$f_{\mathrm{low}} \in \mathbb{R}$, $L \ge 1$ and $\varepsilon_0 > 0$ with the following
+property. Let $\varepsilon \in (0, \varepsilon_0]$, with all tolerances
+$\varepsilon_j = \varepsilon$, and let $P$ be constants of ARqpEDA with orders $p$ and $q$ such
+that:
+
+* the initial weight is $\sigma_0 = (3/(p+2))^p/2$, and the initial radii are
+  $\delta_{0,j} = \varepsilon$ for $j \in \{1, \dots, q\}$;
+* (13.3.13) holds: $\kappa_s \le \min\{\eta_1, 1 - \eta_2\}/4$;
+* the initial accuracies pass the accuracy test (13.1.46) along the steps,
+  $h_{0,i} \le \kappa_s \varepsilon^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the initial accuracies pass the termination test (13.3.17) at radius $\varepsilon$,
+  $\sum_{i=1}^j h_{0,i} \varepsilon^i/i! \le \tfrac12 \varsigma \varepsilon \cdot \varepsilon^j
+  / j!$ for $j \in \{1, \dots, q\}$.
+
+Then there are a function $f : \mathbb{R}^1 \to \mathbb{R}$ with $f \ge f_{\mathrm{low}}$ whose
+derivatives of orders $0, \dots, p$ are $L$-Lipschitz, and a run of ARqpEDA for $f$ on
+$\mathbb{R}^1$ from $x_0 = 0$ with exact derivatives and exact function values, with the
+following properties:
+
+* the run satisfies the radii control in the lower-bound mode, for every $\bar L \ge 1$; all its
+  radii are $\varepsilon$;
+* it first terminates at $k_\varepsilon = \lceil \varepsilon^{-q(p+1)/p} \rceil$;
+* up to $k_\varepsilon$, the number of function evaluations, with each recomputed value counted,
+  is at least $2 \varepsilon^{-q(p+1)/p}$, and the number of derivative evaluations is at least
+  $\varepsilon^{-q(p+1)/p} + 1$.
+
+The run is the slow example of Theorem 12.2.17 of [cartis2022evaluation], with $r = p$, with $f$
+halved and a smaller weight: gradient spikes $f'(x_k) = -\beta_k/2$ with
+$\beta_k = (\varepsilon^q + \omega_k)/q!$, the global model minimizers as steps,
+$\sigma_k = \sigma_0$, $\rho_k = 1$, no accuracy-improving iteration, and Step-1 displacements
+that achieve exactly the fraction $\varsigma$ of the measures. The weight is small enough for
+(13.1.54) to hold at these displacements, unlike the weight (12.2.85) of Theorem 12.2.17, and
+for the measures of the model at its minimizer to vanish at radius $\varepsilon$ (Example 12.1.3
+of [cartis2022evaluation]). -/
 theorem exists_isARqpEDARun_slowGrad {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = q → P.σ₀ = (3 / ((p : ℝ) + 2)) ^ p / 2 → (∀ j ∈ Finset.Icc 1 q, P.δ₀ j = ε) →
@@ -940,21 +992,36 @@ theorem exists_isARqpEDARun_slowGrad {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) 
       rw [← hρ, hρ1 i hi]; exact P.η₁_le_η₂.trans P.η₂_lt_one.le⟩, Nat.cast_add, Nat.cast_one]
     linarith only [hκge]
 
-/-- **A slow ARqpIDA run in the lower-bound mode** of the radii control on `X = ℝ¹` with exact
-derivatives, for `q = p ≥ 3` (order `q(p+1)/p = p+1`). There are `f_low`, `L ≥ 1` and `ε₀ > 0`
-such that, for every `ε ∈ (0, ε₀]` (all `ε_j = ε`) and all ARqpIDA constants with `q = p`, weight
-`σ₀ = p`, initial radii `δ₀ = ε` and initial accuracies `0 < h_{0,i} ≤ κ_s ε^{p-i+1}`, there is a
-`C^p` function `f ≥ f_low` with `L`-Lipschitz derivatives of orders `0, …, p` and an ARqpIDA run
-with exact derivatives from `x₀ = 0` satisfying the radii control in the lower-bound mode
-(`Optimization.ARqpDARadiiControl False`), whose first iterate that is `(ε, δ)`-approximately
-optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest`) is `x_{k_ε}`,
-`k_ε = ⌈ε^{-(p+1)}⌉`, after `k_ε + 1 ≥ ε^{-(p+1)} + 1` function and derivative evaluations. The
-run follows the slow example of [cartis2022evaluation], Theorem 12.2.15 with `q = p` (pure
-`p`-th order spikes `f^{(p)}(x_k) = -(ε + ω_k)`, which fail the criterion at every radius; steps
-the global model minimizers `t*_k = ε + ω_k`, `σ_k = σ₀`, `ρ_k = 1`) with Step-2 radii
-`δ_{s_k} = ε/p`, at which the model measures at its minimizer vanish
-(`Optimization.taylorMeasure_topMonomialRegModel_eq_zero`), and continues after `k_ε` as any
-ARqpIDA iteration from the state at `k_ε` (`Optimization.exists_arqpDA_steps`). -/
+/-- **A slow ARqpIDA run in the lower-bound mode.** Let $p \ge 3$ and $q = p$, so that the order
+$q(p+1)/p$ is $p + 1$. Then there are $f_{\mathrm{low}} \in \mathbb{R}$, $L \ge 1$ and
+$\varepsilon_0 > 0$ with the following property. Let $\varepsilon \in (0, \varepsilon_0]$, with
+all tolerances $\varepsilon_j = \varepsilon$, and let $P$ be constants of ARqpIDA with orders
+$p$ and $q = p$, initial weight $\sigma_0 = p$, initial radii $\delta_{0,j} = \varepsilon$ for
+$j \in \{1, \dots, p\}$, and initial accuracies $0 < h_{0,i} \le \kappa_s \varepsilon^{p-i+1}$
+for $i \in \{1, \dots, p\}$. Then there are a function $f : \mathbb{R}^1 \to \mathbb{R}$ with
+$f \ge f_{\mathrm{low}}$ whose derivatives of orders $0, \dots, p$ are $L$-Lipschitz, and a run
+of ARqpIDA for $f$ on $\mathbb{R}^1$ from $x_0 = 0$ with exact derivatives (the oracle constants
+are $0$), with the following properties:
+
+* the run satisfies the radii control in the lower-bound mode, with
+  $\bar L = L_f + \kappa_{\nabla,\max} \kappa_h$, which here is $L$;
+* its first iterate that is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer of $f$
+  for some radii $\delta \in (0, 1]^q$ is $x_{k_\varepsilon}$, where $k_\varepsilon = \lceil
+  \varepsilon^{-(p+1)} \rceil$;
+* up to that iterate, both the number of function evaluations and the number of derivative
+  evaluations are at least $\varepsilon^{-(p+1)} + 1$.
+
+The run follows the slow example of Theorem 12.2.15 of [cartis2022evaluation] with $q = p$. It
+has pure spikes of order $p$, $f^{(p)}(x_k) = -(\varepsilon + \omega_k)$, which fail the
+criterion at every radius. Its steps are the global model minimizers
+$t^*_k = \varepsilon + \omega_k$, with $\sigma_k = \sigma_0$ and $\rho_k = 1$. The Step-2 radii
+are $\delta_{s_k} = \varepsilon/p$, at which the model measures at its minimizer vanish
+(`Optimization.taylorMeasure_topMonomialRegModel_eq_zero`). After $k_\varepsilon$, the run
+continues as any ARqpIDA iteration from the state at $k_\varepsilon$
+(`Optimization.exists_arqpDA_steps`).
+
+The constant $\bar L$ is `Optimization.lipMax (fun _ => L) P.p + Optimization.ordMax P.p (fun
+_ => 0) * P.κh`. -/
 theorem exists_isARqpIDARun_slowTop {p : ℕ} (hp : 3 ≤ p) :
     ∃ flow L ε₀ : ℝ, 1 ≤ L ∧ 0 < ε₀ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ ε₀ → ∀ P : ARqpIDAParams,
       P.p = p → P.q = p → P.σ₀ = p → (∀ j ∈ Finset.Icc 1 p, P.δ₀ j = ε) →

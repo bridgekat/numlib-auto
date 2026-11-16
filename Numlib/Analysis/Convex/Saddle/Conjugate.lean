@@ -7,47 +7,70 @@ import Numlib.Analysis.Convex.Saddle.Minimax
 /-!
 # The two conjugates of a saddle-function form a closure pair
 
-The lower and upper conjugates `K̲*`, `K̄*` of a saddle-function in the class `Ω (F)` of a closed
-convex bifunction `F` are the two brackets of one and the same convex bifunction, `F_*^*`. So they
-are a **closure pair**: equivalent, sharing an effective domain `C* × D*`, and agreeing wherever
-one coordinate is a relative interior point of it. In particular the origin in `ri C*` or `ri D*`
-forces the saddle-value of `K` to exist.
+Let $U$ be paired with $V$ and $X$ with $Y$, by bilinear pairings $\langle u, v \rangle$ and
+$\langle x, y \rangle$. Let $F$ be a closed convex bifunction from $U$ to $X$, and let
+$K : U \times Y \to [-\infty, +\infty]$ lie in the class $\Omega(F)$, so that $\langle Fu, y \rangle
+\le K(u, y) \le \langle u, F^* y \rangle$ for all $(u, y)$. Here $\langle Fu, y \rangle = (Fu)^*(y)$
+is the lower bracket and $\langle u, F^* y \rangle$ is the concave bracket of the adjoint $F^*$ of
+$F$. The **lower conjugate** and the **upper conjugate** of $K$ are the functions on $V \times X$
+$$\underline{K}^*(v, x) = \sup_y \inf_u \{\langle u, v \rangle + \langle x, y \rangle - K(u, y)\},
+  \qquad \overline{K}^*(v, x) = \inf_u \sup_y
+  \{\langle u, v \rangle + \langle x, y \rangle - K(u, y)\}.$$
+This module shows that $\underline{K}^*$ and $\overline{K}^*$ are the two brackets of one convex
+bifunction $F_*^*$ from $V$ to $Y$, the adjoint of the inverse bifunction $(F_* x)(u) = -F(u, x)$.
+Therefore they form a **closure pair**: $\operatorname{cl}_1 \underline{K}^* = \overline{K}^*$ and
+$\operatorname{cl}_2 \overline{K}^* = \underline{K}^*$. They are equivalent, they have a common
+effective domain $C^* \times D^*$, and they agree wherever one coordinate lies in the relative
+interior of its factor. That the two conjugates form a closure pair is Corollary 37.1.2 of
+[rockafellar1970convex]. Because $\underline{K}^*(0, 0) = -\inf_y \sup_u K$ and
+$\overline{K}^*(0, 0) = -\sup_u \inf_y K$, the condition $0 \in \operatorname{ri} C^*$ or
+$0 \in \operatorname{ri} D^*$ implies that the saddle-value of $K$ exists.
 
-The one algebraic fact needed beyond the bracket theory is the **biadjoint identity**
-`(F_*^*)^* = F_*`, `convexAdjointBifun_flip_lowerAdjointBifun` in `Extremum/Adjoint.lean`: since
-`F ↦ F_*` intertwines the convex and the concave adjoint, it is involutivity of the adjoint read
-through that intertwining.
-
-The rest of the file computes the effective domains. `D*` is the projection of `dom F` on `X`, and
-its support function is a supremum of recession functions of the slices `K (u, ·)`;
-`Saddle/Existence.lean` turns that into criteria for `0 ∈ int D*`, `0 ∈ int C*` and for the
-saddle-value to exist.
+The second half of the module computes the effective domains. The set $D^*$ is the projection of
+$\operatorname{dom} F$ on $X$, and its support function is the supremum over $u \in
+\operatorname{ri} (\operatorname{dom}_1 K)$ of the recession functions of the slices $K(u, \cdot)$.
+This is Theorem 37.2 of [rockafellar1970convex]. The module
+`Numlib.Analysis.Convex.Saddle.Existence` turns it into criteria for $0 \in \operatorname{int} D^*$,
+for $0 \in \operatorname{int} C^*$, and for the existence of the saddle-value.
 
 ## Main results
 
-* `saddleLagrangian_eq_concaveBracket` — the Lagrangian *is* the concave bracket of `F_*`.
-* `partialCl₁_lowerConjSaddle`, `partialCl₂_upperConjSaddle`, `saddleClass_conjSaddle`,
-  `domSaddle_conjSaddle_eq`, `lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁` — the two
-  conjugates are a closure pair ([rockafellar1970convex] Corollary 37.1.2);
-  `properSaddleFn_saddleLagrangian` — conjugates of closed proper saddle-functions are proper.
-* `hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle` and
-  `exists_maximin_eq_coe_of_mem_relint_domSaddle` — the origin in the relative interior of `C*` or
-  of `D*` gives the saddle-value, and in both gives a finite one.
-* `dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass` — `C = dom F` for every member of `Ω (F)`.
-* `supportFn_dom₂_upperConjSaddle` — the support function of `D*` ([rockafellar1970convex]
-  Theorem 37.2).
+* `ConvexAnalysis.saddleLagrangian_eq_concaveBracket`: the Lagrangian $L(v, x) = \inf_u \{\langle u,
+  v \rangle + F(u, x)\}$ is the concave bracket $\langle v, F_* x \rangle$ of the inverse
+  bifunction.
+* `ConvexAnalysis.partialCl₁_lowerConjSaddle`, `ConvexAnalysis.partialCl₂_upperConjSaddle`,
+  `ConvexAnalysis.saddleClass_conjSaddle`, `ConvexAnalysis.domSaddle_conjSaddle_eq`,
+  `ConvexAnalysis.lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁`: the two conjugates form a
+  closure pair, their class is $\Omega(F_*^*)$, they have the same effective domain, and they agree
+  over the relative interior.
+* `ConvexAnalysis.properSaddleFn_saddleLagrangian`: the Lagrangian of a closed proper convex
+  bifunction is a proper saddle-function.
+* `ConvexAnalysis.hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle`,
+  `ConvexAnalysis.exists_maximin_eq_coe_of_mem_relint_domSaddle`: if the origin lies in
+  $\operatorname{ri} C^*$ or in $\operatorname{ri} D^*$, the saddle-value of $K$ exists, and if it
+  lies in both, the saddle-value is finite.
+* `ConvexAnalysis.dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass`: every concave-convex
+  $K \in \Omega(F)$ with $\operatorname{dom}_2 K \neq \emptyset$ has
+  $\operatorname{dom}_1 K = \operatorname{dom} F$.
+* `ConvexAnalysis.supportFn_dom₂_upperConjSaddle`: the support function of $D^*$ is $\delta^*(w \mid
+  D^*) = \sup_{u \in \operatorname{ri} C} \sup_{y \in D} \{K(u, y + w) - K(u, y)\}$, with
+  $C = \operatorname{dom}_1 K$ and $D = \operatorname{dom}_2 K$.
 
 ## Implementation notes
 
-`K̲*` and `K̄*` live on `V × X` and the bifunction behind them goes from `V` to `Y`, so every
-bracket lemma is used at the flipped pairings, whence the `.flip` compatibility instances
-throughout. Properness of the conjugate splits unevenly: `dom₂ K̄* ≠ ∅` is one line from properness
-of the graph function, while `dom₁ K̄* ≠ ∅` is the existence of an affine minorant of it — which is
-what makes closedness of `F` a genuine hypothesis rather than a convenience.
-
-## References
-
-* [rockafellar1970convex] §30, §34, §37.
+* The conjugates $\underline{K}^*$ and $\overline{K}^*$ live on $V \times X$, and the bifunction
+  $F_*^*$ behind them goes from $V$ to $Y$. So every bracket lemma is used at the flipped pairings
+  `Bu.flip` and `Bx.flip`, and the compatibility instances `ConvexAnalysis.IsCompatiblePairing` are
+  required for the flipped pairings too.
+* The one fact needed beyond the theory of brackets is the **biadjoint identity** $(F_*^*)^* = F_*$,
+  which is `ConvexAnalysis.convexAdjointBifun_flip_lowerAdjointBifun` in
+  `Numlib.Analysis.Convex.Extremum.Adjoint`. Since $F \mapsto F_*$ intertwines the convex and the
+  concave adjoint, it is the involutivity of the adjoint read through that intertwining.
+* The two halves of properness of the conjugate are of different depth. The condition
+  $\operatorname{dom}_2 \overline{K}^* \neq \emptyset$ follows at once from the properness of the
+  graph function of $F$. The condition $\operatorname{dom}_1 \overline{K}^* \neq \emptyset$ is the
+  existence of an affine minorant of the graph function, and this is why the closedness of $F$ is a
+  real hypothesis.
 -/
 
 namespace ConvexAnalysis
@@ -58,8 +81,11 @@ section LagrangianBracket
 
 variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
 
-/-- `L (v, x) = ⟨v, F_* x⟩` — the Lagrangian of `(P)` is the concave bracket of the inverse
-bifunction `F_*`, for the flipped pairing. The identity itself is an unfolding. -/
+/-- Let $U$ be paired with $V$ and let $F$ be a bifunction from $U$ to $X$. For all $v \in V$ and
+$x \in X$, the concave bracket of the inverse bifunction $F_*$, taken with the flipped pairing,
+is the Lagrangian of $F$:
+$$\langle v, F_* x \rangle = L(v, x) = \inf_u \{\langle u, v \rangle + F(u, x)\}.$$
+The identity is an unfolding of the definitions. -/
 theorem concaveBracket_inverseBifun_eq_lagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X)
     (v : V) (x : X) :
     concaveBracket Bu.flip (inverseBifun F) v x = lagrangian Bu F v x := by
@@ -67,8 +93,14 @@ theorem concaveBracket_inverseBifun_eq_lagrangian (Bu : U →ₗ[ℝ] V →ₗ[�
   refine iInf_congr fun u => ?_
   rw [inverseBifun_apply, sub_eq_add_neg, neg_neg, LinearMap.flip_apply]
 
-/-- The saddle-function form of `concaveBracket_inverseBifun_eq_lagrangian`: the Lagrangian read
-on `V × X` is the upper bracket of `F_*`. -/
+/-- Let $U$ be paired with $V$ and let $F$ be a bifunction from $U$ to $X$. The Lagrangian of $F$,
+read as a function on $V \times X$, is the concave bracket of the inverse bifunction $F_*$:
+$$L(v, x) = \inf_u \{\langle u, v \rangle + F(u, x)\} = \langle v, F_* x \rangle
+  \quad \text{for all } (v, x) \in V \times X.$$
+
+This is `ConvexAnalysis.concaveBracket_inverseBifun_eq_lagrangian` in uncurried form. The
+Lagrangian on $V \times X$ is `ConvexAnalysis.saddleLagrangian`, and the bracket is
+`ConvexAnalysis.concaveBracket` for the flipped pairing `Bu.flip`. -/
 theorem saddleLagrangian_eq_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) :
     saddleLagrangian Bu F
       = fun q : V × X => concaveBracket Bu.flip (inverseBifun F) q.1 q.2 :=
@@ -76,7 +108,7 @@ theorem saddleLagrangian_eq_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ
 
 end LagrangianBracket
 
-/-! ### The two conjugates are the two brackets of `F_*^*` -/
+/-! ### The two conjugates are the two brackets of $F_*^*$ -/
 
 section ConjugateBrackets
 
@@ -90,10 +122,16 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 omit [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
   [LocallyConvexSpace ℝ V] in
-/-- **The upper conjugate is the *upper* bracket of `F_*^*`**, companion of
-`lowerConjSaddle_eq_bracket_lowerAdjointBifun`. The upper conjugate is the Lagrangian of `F`, that
-is the concave bracket of `F_*`, and the biadjoint identity rewrites `F_*` as the adjoint of
-`F_*^*`. -/
+/-- Let $U$, $X$ and $Y$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$, where
+the pairings are compatible with the topologies of $U$, $X$ and $Y$. Let $F$ be a closed convex
+bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the upper conjugate of $K$ is the
+concave bracket of the adjoint of $F_*^*$:
+$$\overline{K}^*(v, x) = \langle v, (F_*^*)^* x \rangle \quad \text{for all } (v, x) \in V
+  \times X,$$
+where the adjoint $(F_*^*)^*$ is taken for the flipped pairings. This is the companion of
+`ConvexAnalysis.lowerConjSaddle_eq_bracket_lowerAdjointBifun` for the lower conjugate. The upper
+conjugate is the Lagrangian of $F$, that is the concave bracket of $F_*$, and the biadjoint
+identity rewrites $F_*$ as the adjoint of $F_*^*$. -/
 theorem upperConjSaddle_eq_concaveBracket_convexAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -104,8 +142,15 @@ theorem upperConjSaddle_eq_concaveBracket_convexAdjointBifun (Bu : U →ₗ[ℝ]
     convexAdjointBifun_flip_lowerAdjointBifun (Bu := Bu) (Bx := Bx) hF hcl,
     saddleLagrangian_eq_concaveBracket]
 
-/-- **`cl₁ K̲* = K̄*`.** Both conjugates are brackets of the single closed convex bifunction
-`F_*^*`, so this is the first bracket-closure equation, at the flipped pairings. -/
+/-- Let $U$, $V$, $X$ and $Y$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of all four spaces. Let $F$ be a closed
+convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the concave closure in the
+first variable of the lower conjugate is the upper conjugate:
+$$\operatorname{cl}_1 \underline{K}^* = \overline{K}^*.$$
+
+Both conjugates are brackets of the single closed convex bifunction $F_*^*$, so this is the
+first bracket-closure equation of
+`ConvexAnalysis.concaveBracket_convexAdjointBifun_eq_partialCl₁`, at the flipped pairings. -/
 theorem partialCl₁_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -116,8 +161,15 @@ theorem partialCl₁_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsC
     partialCl₁_bracket Bu.flip Bx.flip hG,
     upperConjSaddle_eq_concaveBracket_convexAdjointBifun Bu Bx hF hcl hK]
 
-/-- **`cl₂ K̄* = K̲*`**, the second bracket-closure equation; it is where closedness of `F_*^*` is
-used. -/
+/-- Let $U$, $V$, $X$ and $Y$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of all four spaces. Let $F$ be a closed
+convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the convex closure in the
+second variable of the upper conjugate is the lower conjugate:
+$$\operatorname{cl}_2 \overline{K}^* = \underline{K}^*.$$
+
+This is the second bracket-closure equation of
+`ConvexAnalysis.partialCl₂_concaveBracket_convexAdjointBifun`, at the flipped pairings. The
+proof uses that $F_*^*$ is closed. -/
 theorem partialCl₂_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -130,8 +182,13 @@ theorem partialCl₂_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsC
     partialCl₂_concaveBracket_adjoint Bu.flip Bx.flip hG hGcl,
     lowerConjSaddle_eq_bracket_lowerAdjointBifun Bu Bx hF hK]
 
-/-- The class conjugate to `Ω (F)` is `Ω (F_*^*)`, its two ends being the lower and the upper
-conjugate of any member of `Ω (F)`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of all four spaces. Let $F$ be a closed
+convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the class $\Omega(F_*^*)$,
+taken for the flipped pairings, consists of the functions $L$ on $V \times X$ with
+$$\underline{K}^* \le L \le \overline{K}^*.$$
+So the class conjugate to $\Omega(F)$ is $\Omega(F_*^*)$, and its two ends are the lower and the
+upper conjugate of any member of $\Omega(F)$. -/
 theorem saddleClass_conjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -141,8 +198,12 @@ theorem saddleClass_conjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompati
   rw [bifunSaddleClass, lowerConjSaddle_eq_bracket_lowerAdjointBifun Bu Bx hF hK,
     upperConjSaddle_eq_concaveBracket_convexAdjointBifun Bu Bx hF hcl hK]
 
-/-- The two conjugates are equivalent saddle-functions, hence have the same iterated extrema and
-the same saddle-points. -/
+/-- Let $U$, $V$, $X$ and $Y$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of all four spaces. Let $F$ be a closed
+convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the two conjugates are
+equivalent: $\operatorname{cl}_1 \underline{K}^* = \operatorname{cl}_1 \overline{K}^*$ and
+$\operatorname{cl}_2 \underline{K}^* = \operatorname{cl}_2 \overline{K}^*$. Hence they have the
+same iterated extrema and the same saddle-points. -/
 theorem saddleEquiv_lowerConjSaddle_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -164,11 +225,18 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X]
   {F : Bifun U X}
 
-/-- A saddle-function conjugate to a closed proper one is again proper.
+/-- Let $U$ and $X$ be locally convex spaces, with $U$ paired with $V$ and $X$ with $Y$, where the
+pairings are compatible with the topologies of $U$ and $X$. Let $F$ be a closed convex
+bifunction from $U$ to $X$ whose graph function is proper. Then the Lagrangian
+$$L(v, x) = \inf_u \{\langle u, v \rangle + F(u, x)\}$$
+is a proper saddle-function on $V \times X$: both $\operatorname{dom}_1 L$ and
+$\operatorname{dom}_2 L$ are nonempty. Since the Lagrangian is the upper conjugate of every
+member of $\Omega(F)$, a saddle-function conjugate to a closed proper one is again proper.
 
-The two halves are quite different. `dom₂ L ≠ ∅` needs only a point where the graph function is
-finite. `dom₁ L ≠ ∅` is the existence of an affine minorant of the graph function
-(`properConvex_convexConj`), which is where closedness enters. -/
+The two halves are of different depth. The condition $\operatorname{dom}_2 L \neq \emptyset$
+needs only a point where the graph function is finite. The condition
+$\operatorname{dom}_1 L \neq \emptyset$ is the existence of an affine minorant of the graph
+function (`ConvexAnalysis.properConvex_convexConj`), and this is where closedness enters. -/
 theorem properSaddleFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F)) :
@@ -214,11 +282,19 @@ section ClosurePairRelint
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {Klow Kup : U × X → EReal}
 
-/-- **A closure pair agrees over `ri (dom₁ K̲)`**: if `cl₁ K̲ = K̄` and `cl₂ K̄ = K̲` then the two
-coincide there. Because the closure relations hold on the nose the hypotheses are lighter than in
-the version for a closed saddle-function: `K̲ (·, x)` is `cl₂ K̄ (·, x)`, whose concave effective
-domain is `dom₁ K̄`, and a concave function meets its closure on the relative interior of that
-domain. Only `dom₂ K̄ ≠ ∅` is needed. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces and let $\underline{K}, \overline{K} :
+U \times X \to [-\infty, +\infty]$ form a closure pair: $\operatorname{cl}_1 \underline{K} =
+\overline{K}$ and $\operatorname{cl}_2 \overline{K} = \underline{K}$. Suppose that
+$\overline{K}$ is concave-convex and $\operatorname{dom}_2 \overline{K} \neq \emptyset$. Then
+$\underline{K}(u, x) = \overline{K}(u, x)$ for every $u \in \operatorname{ri}
+(\operatorname{dom}_1 \underline{K})$ and every $x \in X$.
+
+The closure relations hold exactly, so the hypotheses are lighter than in the version for a
+closed saddle-function. The slice $\underline{K}(\cdot, x)$ is
+$\operatorname{cl}_2 \overline{K}(\cdot, x)$, its concave effective domain is
+$\operatorname{dom}_1 \overline{K}$, and a concave function agrees with its closure on the
+relative interior of its effective domain. Only $\operatorname{dom}_2 \overline{K} \neq
+\emptyset$ is needed of properness. -/
 theorem eq_of_mem_relint_dom₁_of_closure_pair (hup : ConcaveConvexFn Kup)
     (hne : (dom₂ Kup).Nonempty) (h1 : partialCl₁ Klow = Kup) (h2 : partialCl₂ Kup = Klow)
     {u : U} (hu : u ∈ ri (dom₁ Klow)) (x : X) : Klow (u, x) = Kup (u, x) := by
@@ -235,9 +311,16 @@ theorem eq_of_mem_relint_dom₁_of_closure_pair (hup : ConcaveConvexFn Kup)
     _ = partialCl₁ Klow (u, x) := (congrFun (partialCl₁_slice Klow x) u).symm
     _ = Kup (u, x) := by rw [h1]
 
-/-- The mirror of `eq_of_mem_relint_dom₁_of_closure_pair`: a closure pair agrees over
-`ri (dom₂ K̄)`. It is that statement read at `saddleSwap`, which exchanges `cl₁` with `cl₂` and the
-two members of the pair; the half of properness it needs becomes `dom₁ K̲ ≠ ∅`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces and let $\underline{K}, \overline{K} :
+U \times X \to [-\infty, +\infty]$ form a closure pair: $\operatorname{cl}_1 \underline{K} =
+\overline{K}$ and $\operatorname{cl}_2 \overline{K} = \underline{K}$. Suppose that
+$\underline{K}$ is concave-convex and $\operatorname{dom}_1 \underline{K} \neq \emptyset$. Then
+$\underline{K}(u, x) = \overline{K}(u, x)$ for every $x \in \operatorname{ri}
+(\operatorname{dom}_2 \overline{K})$ and every $u \in U$.
+
+This is `ConvexAnalysis.eq_of_mem_relint_dom₁_of_closure_pair` applied to the swap
+$(x, u) \mapsto -K(u, x)$, which exchanges $\operatorname{cl}_1$ with $\operatorname{cl}_2$ and
+the two members of the pair. -/
 theorem eq_of_mem_relint_dom₂_of_closure_pair (hlow : ConcaveConvexFn Klow)
     (hne : (dom₁ Klow).Nonempty) (h1 : partialCl₁ Klow = Kup) (h2 : partialCl₂ Kup = Klow)
     {x : X} (hx : x ∈ ri (dom₂ Kup)) (u : U) : Klow (u, x) = Kup (u, x) := by
@@ -259,8 +342,10 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] {F : Bifun U X} {K : U × Y → EReal}
 
 omit [FiniteDimensional ℝ V] [FiniteDimensional ℝ X] in
-/-- The upper conjugate of a member of `Ω (F)` is proper when `F` is a closed proper convex
-bifunction. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of $U$, $X$ and $Y$. Let $F$ be a closed
+proper convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the upper conjugate
+$\overline{K}^*$ is a proper saddle-function. -/
 theorem properSaddleFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F))
@@ -269,8 +354,11 @@ theorem properSaddleFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [I
   exact properSaddleFn_saddleLagrangian Bu Bx hF hcl hpr
 
 omit [FiniteDimensional ℝ V] in
-/-- The lower conjugate is proper as well — it is `cl₂` of the upper one, and `cl₂` preserves
-properness. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $X$ finite-dimensional, with $U$ paired
+with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all four
+spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$.
+Then the lower conjugate $\underline{K}^*$ is a proper saddle-function. It is
+$\operatorname{cl}_2$ of the upper conjugate, and $\operatorname{cl}_2$ preserves properness. -/
 theorem properSaddleFn_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -281,8 +369,11 @@ theorem properSaddleFn_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [I
     (properSaddleFn_upperConjSaddle Bu Bx hF hcl hpr hK)
 
 omit [FiniteDimensional ℝ V] in
-/-- `C*`, the first half of the common effective domain, does not depend on which of the two
-conjugates it is read from. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $X$ finite-dimensional, with $U$ paired
+with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all four
+spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$.
+Then $\operatorname{dom}_1 \underline{K}^* = \operatorname{dom}_1 \overline{K}^*$. This common
+set is $C^*$, the first factor of the common effective domain. -/
 theorem dom₁_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -292,7 +383,11 @@ theorem dom₁_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatibl
   exact dom₁_partialCl₂ (concaveConvexFn_upperConjSaddle Bu Bx hF hcl hK)
     (properSaddleFn_upperConjSaddle Bu Bx hF hcl hpr hK).dom₂_nonempty
 
-/-- The same for `D*`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. Then $\operatorname{dom}_2 \underline{K}^* = \operatorname{dom}_2
+\overline{K}^*$. This common set is $D^*$, the second factor of the common effective domain. -/
 theorem dom₂_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -302,7 +397,14 @@ theorem dom₂_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatibl
   exact (dom₂_partialCl₁ (concaveConvexFn_lowerConjSaddle Bu Bx hF hK)
     (properSaddleFn_lowerConjSaddle Bu Bx hF hcl hpr hK).dom₁_nonempty).symm
 
-/-- `C* × D*` is the effective domain of *both* conjugates. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. Then the two conjugates have the same effective domain:
+$$\operatorname{dom}_1 \underline{K}^* \times \operatorname{dom}_2 \underline{K}^*
+  = \operatorname{dom}_1 \overline{K}^* \times \operatorname{dom}_2 \overline{K}^* = C^*
+  \times D^*.$$
+-/
 theorem domSaddle_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -311,7 +413,13 @@ theorem domSaddle_conjSaddle_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompat
   rw [domSaddle, domSaddle, dom₁_conjSaddle_eq Bu Bx hF hcl hpr hK,
     dom₂_conjSaddle_eq Bu Bx hF hcl hpr hK]
 
-/-- The two conjugates agree wherever the first coordinate is a relative interior point of `C*`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. Then
+$$\underline{K}^*(v, x) = \overline{K}^*(v, x)
+  \quad \text{for all } v \in \operatorname{ri} C^* \text{ and } x \in X,$$
+where $C^* = \operatorname{dom}_1 \underline{K}^*$. -/
 theorem lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -323,7 +431,13 @@ theorem lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁ (Bu : U →ₗ[�
     (partialCl₁_lowerConjSaddle Bu Bx hF hcl hK) (partialCl₂_upperConjSaddle Bu Bx hF hcl hK)
     hv x
 
-/-- And wherever the second coordinate is a relative interior point of `D*`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. Then
+$$\underline{K}^*(v, x) = \overline{K}^*(v, x)
+  \quad \text{for all } x \in \operatorname{ri} D^* \text{ and } v \in V,$$
+where $D^* = \operatorname{dom}_2 \underline{K}^*$. -/
 theorem lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₂ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -336,9 +450,16 @@ theorem lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₂ (Bu : U →ₗ[�
     ?_ v
   rwa [← dom₂_conjSaddle_eq Bu Bx hF hcl hpr hK]
 
-/-- If the origin of the dual of the concave variable lies in `ri C*`, the saddle-value of `K`
-exists. The two iterated extrema of `K` are the two conjugates at the origin, and the closure pair
-makes them agree there. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. If $0 \in \operatorname{ri} C^*$, where
+$C^* = \operatorname{dom}_1 \underline{K}^*$, then the saddle-value of $K$ exists:
+$$\sup_u \inf_y K(u, y) = \inf_y \sup_u K(u, y).$$
+
+The two iterated extrema of $K$ are the negatives of the two conjugates at the origin, and
+`ConvexAnalysis.lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁` makes the conjugates
+agree there. -/
 theorem hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -347,7 +468,13 @@ theorem hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle (Bu : U →ₗ[ℝ] 
   (hasSaddleValue_iff_conjSaddle_zero_eq Bu Bx K).2
     (lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁ Bu Bx hF hcl hpr hK h0 0).symm
 
-/-- The mirror half: the origin in `ri D*` suffices as well. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. If $0 \in \operatorname{ri} D^*$, where
+$D^* = \operatorname{dom}_2 \underline{K}^*$, then the saddle-value of $K$ exists:
+$$\sup_u \inf_y K(u, y) = \inf_y \sup_u K(u, y).$$
+-/
 theorem hasSaddleValue_of_mem_relint_dom₂_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -356,9 +483,15 @@ theorem hasSaddleValue_of_mem_relint_dom₂_lowerConjSaddle (Bu : U →ₗ[ℝ] 
   (hasSaddleValue_iff_conjSaddle_zero_eq Bu Bx K).2
     (lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₂ Bu Bx hF hcl hpr hK h0 0).symm
 
-/-- If the origin lies in the relative interior of *both* halves of `C* × D*`, the saddle-value is
-finite — it is a value of the conjugate on its own effective domain, where a saddle-function is
-finite by definition. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $V$ and $X$ finite-dimensional, with $U$
+paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of all
+four spaces. Let $F$ be a closed proper convex bifunction from $U$ to $X$ and let
+$K \in \Omega(F)$. If $0 \in \operatorname{ri} C^*$ and $0 \in \operatorname{ri} D^*$, where
+$C^* \times D^*$ is the effective domain of $\underline{K}^*$, then the saddle-value of $K$ is a
+real number: $\sup_u \inf_y K(u, y) = r$ for some $r \in \mathbb{R}$.
+
+The saddle-value is minus the value of the conjugate at the origin, which lies in its effective
+domain, and a saddle-function is finite on its effective domain. -/
 theorem exists_maximin_eq_coe_of_mem_relint_domSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -380,22 +513,28 @@ theorem exists_maximin_eq_coe_of_mem_relint_domSaddle (Bu : U →ₗ[ℝ] V →�
 
 end CommonDom
 
-/-! ### The effective domains of the conjugate saddle-functions
+/-!
+### The effective domains of the conjugate saddle-functions
 
-The support functions of `C* = dom₁ K*` and `D* = dom₂ K*`, for `K ∈ Ω (F)`, can be computed in
-terms of `K` itself. The `D*` half is the one with content: `D*` is the projection on `X` of
-`dom F`, and the support function of that projection is assembled from the support functions of
-the individual slices `dom (F u)`, each of which is a recession function. The lemmas before it are
-bookkeeping: support functions do not see relative interiors, and the relative interior of a
-projection is the union of those of the slices. -/
+For $K \in \Omega(F)$, the support functions of $C^* = \operatorname{dom}_1 K^*$ and
+$D^* = \operatorname{dom}_2 K^*$ can be computed from $K$ itself. The half for $D^*$ is the one with
+content. The set $D^*$ is the projection on $X$ of $\operatorname{dom} F$, and the support function
+of this projection is assembled from the support functions of the slices $\operatorname{dom} (F u)$,
+each of which is a recession function. The lemmas before it are auxiliary: support functions do not
+see relative interiors, and the relative interior of a projection is the union of the relative
+interiors of the slices.
+-/
 
 section DomLagrangian
 
 variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
 
-/-- **The set `D*`**: the second effective domain of the Lagrangian
-`L (v, x) = inf_u {⟨u, v⟩ + F (u, x)}` is the projection of `dom F` on `X`, with no hypotheses on
-`F` whatsoever. `L (v, x) ≤ ⟨u, v⟩ + F (u, x)` gives `⊇`; for `⊆` it is enough to test `v = 0`. -/
+/-- Let $U$ be paired with $V$ and let $F$ be any bifunction from $U$ to $X$. The second effective
+domain of the Lagrangian $L(v, x) = \inf_u \{\langle u, v \rangle + F(u, x)\}$ is the projection
+on $X$ of the effective domain of the graph function of $F$:
+$$\operatorname{dom}_2 L = \{x \mid F(u, x) < +\infty \text{ for some } u\}.$$
+No hypothesis on $F$ is needed. The inequality $L(v, x) \le \langle u, v \rangle + F(u, x)$
+gives the inclusion $\supseteq$, and for $\subseteq$ it is enough to test $v = 0$. -/
 theorem dom₂_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) :
     dom₂ (saddleLagrangian Bu F) = Prod.snd '' convexDom (graphFn F) := by
   ext x
@@ -421,8 +560,9 @@ section DomProjection
 
 variable {U X : Type*}
 
-/-- `dom F ⊆ U` is the projection on `U` of the effective domain of the graph function: both say
-that some value `F (u, x)` is `< ⊤`. -/
+/-- The effective domain $\operatorname{dom} F = \{u \mid F(u, x) < +\infty \text{ for some } x\}$
+of a bifunction $F$ from $U$ to $X$ is the projection on $U$ of the effective domain of its
+graph function. -/
 theorem convexDomBifun_eq_image_fst
     (F : Bifun U X) : convexDomBifun F = Prod.fst '' convexDom (graphFn F) := by
   ext u
@@ -438,8 +578,10 @@ section DomBracket
 
 variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- The first effective domain of the lower bracket `⟨Fu, y⟩` is `dom F`: the bracket is `-∞`
-exactly where the slice `F u` is identically `+∞`, uniformly in `y` (`concaveDom_bracket`). -/
+/-- Let $X$ be paired with $Y$ and let $F$ be a bifunction from $U$ to $X$. The first effective
+domain of the lower bracket $(u, y) \mapsto \langle Fu, y \rangle = (Fu)^*(y)$ is
+$\operatorname{dom} F$. The bracket is $-\infty$ exactly where $F u$ is identically $+\infty$,
+for every $y$ (`ConvexAnalysis.concaveDom_bracket`). -/
 theorem dom₁_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) :
     dom₁ (fun p : U × Y => bracket Bx F p.1 p.2) = convexDomBifun F := by
   ext u
@@ -459,8 +601,11 @@ section SupportRelint
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [AddCommGroup F] [Module ℝ F]
 
-/-- **The support function does not see the relative interior**: `δ*(· | ri C) = δ*(· | C)` for
-convex `C`, since it does not see closures and `cl (ri C) = cl C`. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $B$ be a pairing of $E$ with $F$ that
+is continuous in its first variable. For a convex set $C \subseteq E$, the support function does
+not see the relative interior: $\delta^*(\cdot \mid \operatorname{ri} C) = \delta^*(\cdot \mid
+C)$. This holds because the support function does not see closures and $\operatorname{cl}
+(\operatorname{ri} C) = \operatorname{cl} C$. -/
 theorem supportFn_relint (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsContinuousPairing B] {C : Set E}
     (hC : Convex ℝ C) : supportFn B (ri C) = supportFn B C := by
   rw [← supportFn_closure (B := B) (ri C), Convex.closure_relint hC, supportFn_closure]
@@ -472,9 +617,14 @@ section RelintProjection
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
 
-/-- **The relative interior of a projection**: for a convex `S ⊆ U × X` that of the projection on
-`X` is the union, over `u` in the relative interior of the projection on `U`, of the relative
-interiors of the slices of `S`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces and let $S \subseteq U \times X$ be
+convex. The relative interior of the projection of $S$ on $X$ is the union, over $u$ in the
+relative interior of the projection of $S$ on $U$, of the relative interiors of the slices of
+$S$:
+$$\operatorname{ri} \{x \mid (u, x) \in S \text{ for some } u\}
+  = \bigcup_{u \in \operatorname{ri} \{u \mid (u, x) \in S \text{ for some } x\}} \operatorname{ri}
+  \{x \mid (u, x) \in S\}.$$
+-/
 theorem relint_image_snd_eq_iUnion {S : Set (U × X)} (hS : Convex ℝ S) :
     ri (Prod.snd '' S) = ⋃ u ∈ ri (Prod.fst '' S), ri {x | (u, x) ∈ S} := by
   have hsnd : ri (Prod.snd '' S) = Prod.snd '' ri S := by
@@ -496,6 +646,10 @@ section SupportUnion
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
+/-- The support function of a union is the supremum of the support functions: for a family of sets
+$t_i \subseteq E$ indexed by $i \in s$,
+$$\delta^*\Bigl(y \Bigm| \bigcup_{i \in s} t_i\Bigr) = \sup_{i \in s} \delta^*(y \mid t_i).$$
+-/
 theorem supportFn_biUnion {ι : Type*} (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Set ι) (t : ι → Set E)
     (y : F) : supportFn B (⋃ i ∈ s, t i) y = ⨆ i ∈ s, supportFn B (t i) y := by
   simp only [supportFn_iUnion]
@@ -511,9 +665,18 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
   {F : Bifun U X} {K : U × Y → EReal}
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- **The first effective domain of any `K ∈ Ω (F)` is `dom F`**, an identification the book makes
-silently. `cl₂` does not move `dom₁`, and on `Ω (F)` it is constant at the lower bracket, whose
-`dom₁` is `dom F` because `⟨Fu, y⟩ = -∞` exactly where `F u ≡ +∞`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $Y$ finite-dimensional, with $U$ paired
+with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of $U$, $X$ and
+$Y$. Let $F$ be a closed convex bifunction from $U$ to $X$, and let $K \in \Omega(F)$ be
+concave-convex with $\operatorname{dom}_2 K \neq \emptyset$. Then the first effective domain of
+$K$ is the effective domain of $F$:
+$$\operatorname{dom}_1 K = \operatorname{dom} F.$$
+Rockafellar uses this identification without comment.
+
+The operator $\operatorname{cl}_2$ does not change $\operatorname{dom}_1$, and on $\Omega(F)$ it
+is constant, equal to the lower bracket. The first effective domain of the lower bracket is
+$\operatorname{dom} F$, because $\langle Fu, y \rangle = -\infty$ exactly where
+$F u \equiv +\infty$. -/
 theorem dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -524,10 +687,16 @@ theorem dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass (Bu : U →ₗ[ℝ] V �
   rw [← dom₁_partialCl₂ hKcc hne, hcl₂, dom₁_bracket]
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] [FiniteDimensional ℝ Y] in
-/-- **The support function of `dom (F u)` is the recession function of `K (u, ·)`**, for `u` in
-`ri (dom₁ K)` and `F = bifunOfSaddle Bx K`. Over `ri (dom₁ K)` the slice is closed proper convex
-and `F u` is its conjugate, and the support function of the domain of a conjugate is the recession
-function of the original. -/
+/-- Let $X$ be paired with $Y$ by a pairing compatible with the topology of $Y$. Let
+$K : U \times Y \to [-\infty, +\infty]$ be concave-convex with the slice structure
+`ConvexAnalysis.ConvexSliceStructure` of a closed proper saddle-function, and let $F$ be the
+bifunction $F u = K(u, \cdot)^*$. For $u \in \operatorname{ri} (\operatorname{dom}_1 K)$, the
+recession function of the slice $K(u, \cdot)$ is the support function of
+$\operatorname{dom} (F u)$:
+$$K(u, \cdot) 0^+ = \delta^*(\cdot \mid \operatorname{dom} (F u)).$$
+Over $\operatorname{ri} (\operatorname{dom}_1 K)$ the slice is closed proper convex and $F u$ is
+its conjugate, and the support function of the effective domain of a conjugate is the recession
+function of the original function. -/
 theorem recessionFn_slice_eq_supportFn_convexDom (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx.flip] (hK : ConcaveConvexFn K) (hs : ConvexSliceStructure K) {u : U}
     (hu : u ∈ ri (dom₁ K)) :
@@ -539,11 +708,15 @@ theorem recessionFn_slice_eq_supportFn_convexDom (Bx : X →ₗ[ℝ] Y →ₗ[�
   rwa [LinearMap.flip_flip] at h
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] [FiniteDimensional ℝ Y] in
-/-- **The inner half**: for `u` in `ri (dom₁ K)` the support function of the slice `dom (F u)` —
-where `F = bifunOfSaddle Bx K` — is the difference-quotient supremum
-`sup_{y ∈ D} {K (u, y + w) - K (u, y)}`. The support function of `dom (K (u, ·)*)` is the
-recession function of `K (u, ·)`, which is in turn the supremum of the difference quotients over
-the effective domain. -/
+/-- Let $X$ be paired with $Y$ by a pairing compatible with the topology of $Y$. Let
+$K : U \times Y \to [-\infty, +\infty]$ be concave-convex with the slice structure
+`ConvexAnalysis.ConvexSliceStructure` of a closed proper saddle-function, and let $F$ be the
+bifunction $F u = K(u, \cdot)^*$. For $u \in \operatorname{ri} (\operatorname{dom}_1 K)$ and
+$w \in Y$,
+$$\delta^*(w \mid \operatorname{dom} (F u))
+  = \sup_{y \in \operatorname{dom}_2 K} \{K(u, y + w) - K(u, y)\}.$$
+The support function of $\operatorname{dom} (K(u, \cdot)^*)$ is the recession function of
+$K(u, \cdot)$, which is the supremum of the difference quotients over the effective domain. -/
 theorem supportFn_convexDom_bifunOfSaddle_eq_iSup_sub (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx.flip] (hK : ConcaveConvexFn K) (hs : ConvexSliceStructure K) {u : U}
     (hu : u ∈ ri (dom₁ K)) (w : Y) :
@@ -555,22 +728,34 @@ theorem supportFn_convexDom_bifunOfSaddle_eq_iSup_sub (Bx : X →ₗ[ℝ] Y →�
     recessionFn_apply_eq_iSup_sub hconv hp.ne_bot w, hs.convexDom_slice u hu]
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] [FiniteDimensional ℝ Y] in
-/-- The second effective domain of the upper conjugate is the projection of `dom F` on `X`: the
-upper conjugate is the Lagrangian of `F`, and `dom₂_saddleLagrangian` applies. -/
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces, with $U$ paired with $V$ and $X$ with $Y$,
+where the pairings are compatible with the topologies of $U$, $X$ and $Y$. Let $F$ be a closed
+convex bifunction from $U$ to $X$ and let $K \in \Omega(F)$. Then the second effective domain of
+the upper conjugate is the projection of $\operatorname{dom} F$ on $X$:
+$$D^* = \operatorname{dom}_2 \overline{K}^* = \{x \mid F(u, x) < +\infty \text{ for some } u\}.$$
+The upper conjugate is the Lagrangian of $F$, and `ConvexAnalysis.dom₂_saddleLagrangian`
+applies. -/
 theorem dom₂_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
     dom₂ (upperConjSaddle Bu Bx K) = Prod.snd '' convexDom (graphFn F) := by
   rw [upperConjSaddle_eq_saddleLagrangian Bu Bx hF hcl hK, dom₂_saddleLagrangian]
 
-/-- **The support function of `D*`**: that of the second effective domain of the conjugate
-saddle-function is
+/-- Let $U$, $V$, $X$ and $Y$ be real normed spaces with $U$, $X$ and $Y$ finite-dimensional, with
+$U$ paired with $V$ and $X$ with $Y$, where the pairings are compatible with the topologies of
+$U$, $X$ and $Y$. Let $F$ be a closed convex bifunction from $U$ to $X$, and let
+$K \in \Omega(F)$ be concave-convex with $\operatorname{dom}_2 K \neq \emptyset$ and with the
+slice structure `ConvexAnalysis.ConvexSliceStructure` of a closed proper saddle-function. Write
+$C = \operatorname{dom}_1 K$, $D = \operatorname{dom}_2 K$ and
+$D^* = \operatorname{dom}_2 \overline{K}^*$. Then for every $w \in Y$
+$$\delta^*(w \mid D^*) = \sup_{u \in \operatorname{ri} C} \sup_{y \in D}
+  \{K(u, y + w) - K(u, y)\}.$$
+This is Theorem 37.2 of [rockafellar1970convex].
 
-`δ*(w | D*) = sup_{u ∈ ri C} sup_{y ∈ D} {K (u, y + w) - K (u, y)}`,
-
-where `C = dom₁ K` and `D = dom₂ K`. `D*` is the projection of `dom F` on `X`; a support function
-does not see the relative interior, so it is the supremum over `u ∈ ri C` of the support functions
-of the slices `dom (F u)`. -/
+The set $D^*$ is the projection of $\operatorname{dom} F$ on $X$. A support function does not
+see the relative interior, so $\delta^*(\cdot \mid D^*)$ is the supremum over
+$u \in \operatorname{ri} C$ of the support functions of the slices $\operatorname{dom} (F u)$,
+and `ConvexAnalysis.supportFn_convexDom_bifunOfSaddle_eq_iSup_sub` computes each of them. -/
 theorem supportFn_dom₂_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F)
@@ -600,8 +785,11 @@ theorem supportFn_dom₂_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) 
         rw [hslice, supportFn_relint Bx (ConvexFn.convex_convexDom hconvu)]
         exact supportFn_convexDom_bifunOfSaddle_eq_iSup_sub Bx hKcc hs hu w
 
-/-- The same in recession-function form: the support function of `D*` is the pointwise supremum,
-over `u ∈ ri C`, of the recession functions of the slices `K (u, ·)`. -/
+/-- In the setting of `ConvexAnalysis.supportFn_dom₂_upperConjSaddle`, the support function of $D^*$
+is the pointwise supremum of the recession functions of the slices:
+$$\delta^*(w \mid D^*) = \sup_{u \in \operatorname{ri} C} (K(u, \cdot) 0^+)(w)
+  \quad \text{for every } w \in Y.$$
+-/
 theorem supportFn_dom₂_upperConjSaddle_eq_iSup_recessionFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)

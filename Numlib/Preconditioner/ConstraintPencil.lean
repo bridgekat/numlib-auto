@@ -10,10 +10,40 @@ import Numlib.LinearAlgebra.Matrix.SaddlePoint
 /-!
 # The primal block pencil
 
-For the pencil `(diag(E, 0), [I, Bᴴ; B, -C])`, the equation at zero leaves the multiplier
-free. At a nonzero eigenvalue, the lower block equation is `Bx = Cy`, so the denominator
-of the eigenvalue's Rayleigh quotient is `xᴴx + yᴴCy`. It is positive when `C` is positive
-semidefinite and `Bᴴ` is injective.
+This file studies the generalized eigenvalue problem
+$$\begin{bmatrix} E & 0 \\ 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}
+  = \gamma \begin{bmatrix} I & B^H \\ B & -C \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix},
+  \qquad (x, y) \neq 0,$$
+for $E \in \mathbb{C}^{n \times n}$, $B \in \mathbb{C}^{m \times n}$ and
+$C \in \mathbb{C}^{m \times m}$. A triple $(\gamma, x, y)$ that satisfies it is called an eigenpair
+below. The problem describes the spectrum of a saddle-point matrix after constraint preconditioning,
+as in Lemma 10.2 of [benzi2005numerical].
+
+The eigenvalue $\gamma = 0$ puts no condition on $y$. For $\gamma \neq 0$ the second block row gives
+$Bx = Cy$, and then $\gamma = x^H E x / (x^H x + y^H C y)$. The denominator is positive when $C$ is
+positive semidefinite and $B^H$ is injective.
+
+## Main results
+
+* `Matrix.hasPencilEigenvector_primalBlock_zero_iff`: $(0, x, y)$ is an eigenpair if and only if
+  $(x, y) \neq 0$ and $Ex = 0$.
+* `Matrix.finrank_ker_fromBlocks_primal`: the kernel of $\operatorname{diag}(E, 0)$ has dimension
+  $\dim \ker E + m$.
+* `Matrix.HasPencilEigenvector.primalBlock_eq_zero_iff`: if $C$ is positive semidefinite and $B^H$
+  is injective, an eigenpair has $\gamma = 0$ if and only if $Ex = 0$.
+* `Matrix.HasPencilEigenvector.primalBlock_eq_rayleigh`: if $C$ is positive definite, $B^H$ is
+  injective and $Ex \neq 0$, then $\gamma = x^H E x / x^H (I + B^H C^{-1} B) x$ and $\gamma \neq 0$.
+* `Matrix.HasPencilEigenvector.primalBlock_mem_interval`: if $C$ is positive semidefinite, $B^H$ is
+  injective, $E$ is Hermitian with $a \|v\|^2 \le v^H E v \le b \|v\|^2$ for all $v$, and
+  $\gamma \neq 0$, then $\gamma$ is real and $\min\{0, a\} \le \gamma \le \max\{0, b\}$.
+
+## Implementation notes
+
+* An eigenpair is `Matrix.HasPencilEigenvector (fromBlocks E 0 0 0) (fromBlocks 1 Bᴴ B (-C)) γ
+  (Sum.elim x y)`. Block matrices are indexed by `n ⊕ m`, and the pair $(x, y)$ is `Sum.elim x y`.
+* The first two results hold over any field. The first holds for any second matrix of the pencil.
+* The bounds $a$ and $b$ on $E$ are stated as `LinearMap.IsSymmetricBoundedBy` for
+  `Matrix.toEuclideanLin E`. They need not be eigenvalues of $E$.
 -/
 
 open scoped ComplexOrder
@@ -34,15 +64,22 @@ section Zero
 
 variable [Field K]
 
-/-- At zero, a primal block pencil has exactly the nonzero pairs `(x,y)` with `E x = 0`.
-The second matrix of the pencil is immaterial. -/
+/-- Let $K$ be a field, let $E \in K^{n \times n}$, and let $P$ be any matrix of order $n + m$ over
+$K$. Then $(0, (x, y))$ is an eigenpair of the pencil $(\operatorname{diag}(E, 0), P)$ if and
+only if $(x, y) \neq 0$ and $Ex = 0$.
+
+The second matrix $P$ of the pencil does not matter, because the eigenvalue is $0$. The vector
+$(x, y)$ is `Sum.elim x y`. -/
 theorem hasPencilEigenvector_primalBlock_zero_iff
     (E : Matrix n n K) (P : Matrix (n ⊕ m) (n ⊕ m) K) (x : n → K) (y : m → K) :
     HasPencilEigenvector (fromBlocks E 0 0 0) P 0 (Sum.elim x y) ↔
       Sum.elim x y ≠ 0 ∧ E *ᵥ x = 0 := by
   simp [HasPencilEigenvector, fromBlocks_mulVec_sumElim_eq_zero_iff]
 
-/-- The kernel of `diag(E, 0)` has dimension `nullity(E) + m`. -/
+/-- Let $K$ be a field and $E \in K^{n \times n}$. The kernel of the block matrix
+$\operatorname{diag}(E, 0)$ of order $n + m$ has dimension
+$$\dim \ker \operatorname{diag}(E, 0) = \dim \ker E + m.$$
+-/
 theorem finrank_ker_fromBlocks_primal (E : Matrix n n K) :
     Module.finrank K (LinearMap.ker
       (fromBlocks E 0 0 (0 : Matrix m m K)).mulVecLin) =
@@ -108,8 +145,13 @@ private theorem primalBlock_denom_pos (hC : C.PosSemidef) (hx : x ≠ 0) :
     0 < star x ⬝ᵥ x + star y ⬝ᵥ (C *ᵥ y) :=
   add_pos_of_pos_of_nonneg (dotProduct_star_self_pos_iff.mpr hx) (hC.dotProduct_mulVec_nonneg y)
 
-/-- For an eigenpair of the primal block pencil, the eigenvalue is zero exactly when `E x = 0`.
-There is no condition on `y` beyond the requirement that the pair be nonzero. -/
+/-- Let $B \in \mathbb{C}^{m \times n}$ with $B^H$ injective, let $C \in \mathbb{C}^{m \times m}$ be
+positive semidefinite, and let $E \in \mathbb{C}^{n \times n}$. If $(\gamma, x, y)$ is an
+eigenpair of the primal block pencil, then
+$$\gamma = 0 \iff Ex = 0.$$
+
+There is no condition on $y$, apart from the condition $(x, y) \neq 0$ in the definition of an
+eigenpair. -/
 theorem HasPencilEigenvector.primalBlock_eq_zero_iff (hB : Function.Injective Bᴴ.mulVec)
     (hC : C.PosSemidef)
     (h : HasPencilEigenvector (fromBlocks E 0 0 0) (fromBlocks 1 Bᴴ B (-C)) γ
@@ -126,8 +168,13 @@ theorem HasPencilEigenvector.primalBlock_eq_zero_iff (hB : Function.Injective B�
       smul_eq_mul] at hform
     exact (mul_ne_zero hγ (primalBlock_denom_pos hC hx).ne') hform.symm
 
-/-- With positive definite `C` and `E x ≠ 0`, eliminate the multiplier to recover the
-eigenvalue as a generalized Rayleigh quotient. -/
+/-- Let $B \in \mathbb{C}^{m \times n}$ with $B^H$ injective, let $C \in \mathbb{C}^{m \times m}$ be
+positive definite, and let $E \in \mathbb{C}^{n \times n}$. If $(\gamma, x, y)$ is an eigenpair
+of the primal block pencil and $Ex \neq 0$, then $\gamma \neq 0$ and $\gamma$ is the generalized
+Rayleigh quotient
+$$\gamma = \frac{x^H E x}{x^H (I + B^H C^{-1} B) x}.$$
+
+The proof eliminates the multiplier $y = C^{-1} B x$. -/
 theorem HasPencilEigenvector.primalBlock_eq_rayleigh [DecidableEq m]
     (hB : Function.Injective Bᴴ.mulVec) (hC : C.PosDef)
     (h : HasPencilEigenvector (fromBlocks E 0 0 0) (fromBlocks 1 Bᴴ B (-C)) γ
@@ -146,9 +193,18 @@ theorem HasPencilEigenvector.primalBlock_eq_rayleigh [DecidableEq m]
     exact (primalBlock_denom_pos hC.posSemidef hx).ne'
   · rw [hD, htop, dotProduct_smul, smul_eq_mul]
 
-/-- The nonzero eigenvalues of the primal block pencil are real. If the spectrum of the
-Hermitian primal block is enclosed by `[a,b]`, the eigenvalues of the pencil are enclosed by
-`[min 0 a, max 0 b]`. The denominator can exceed the squared norm of the primal component. -/
+/-- Let $B \in \mathbb{C}^{m \times n}$ with $B^H$ injective, let $C \in \mathbb{C}^{m \times m}$ be
+positive semidefinite, and let $E \in \mathbb{C}^{n \times n}$ be Hermitian with
+$$a \|v\|^2 \le v^H E v \le b \|v\|^2 \quad \text{for all } v \in \mathbb{C}^n.$$
+If $(\gamma, x, y)$ is an eigenpair of the primal block pencil and $\gamma \neq 0$, then
+$\gamma$ is real and
+$$\min\{0, a\} \le \gamma \le \max\{0, b\}.$$
+
+The bounds include $0$ because the denominator $x^H x + y^H C y$ of the Rayleigh quotient can be
+larger than $\|x\|^2$, and this moves $\gamma$ towards $0$. The hypothesis on $E$ is
+`LinearMap.IsSymmetricBoundedBy a b` for `Matrix.toEuclideanLin E`, which includes that $E$ is
+Hermitian. The conclusion is membership in the image of the real interval under
+`Complex.ofReal`. -/
 theorem HasPencilEigenvector.primalBlock_mem_interval
     (hB : Function.Injective Bᴴ.mulVec) (hC : C.PosSemidef)
     {a b : ℝ} (hbounds : E.toEuclideanLin.IsSymmetricBoundedBy a b) (hγ : γ ≠ 0)

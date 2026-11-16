@@ -16,59 +16,101 @@ import Numlib.Analysis.Calculus.Taylor
 import Numlib.Approximation.GaussLobatto
 
 /-!
-# Finite-difference approximation of derivatives
+# Finite difference approximation of derivatives
 
-The forward, backward and centred difference quotients and the second centred difference of a
-function of one real variable, each with its truncation error in mean-value form; the general
-implicit ("compact") three-point scheme for the first derivative, its consistency error and the
-order conditions; and the differentiation matrix `D i j = ℓ_j'(x i)` of Lagrange interpolation,
-through which the derivative of the interpolant at the nodes is a matrix–vector product.
+This file defines the forward, backward and centred difference quotients and the second centred
+difference of a function $f : \mathbb{R} \to \mathbb{R}$,
+$$\frac{f(x + h) - f(x)}{h}, \quad \frac{f(x) - f(x - h)}{h}, \quad \frac{f(x + h) - f(x - h)}{2h},
+  \quad \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2},$$
+and proves their truncation errors in mean-value form: $O(h)$ for the one-sided quotients and
+$O(h^2)$ for the centred ones. It also treats the implicit ("compact") three-point schemes for the
+first derivative, with their consistency error and order conditions, and the differentiation matrix
+$D_{ij} = \ell_j'(x_i)$ of Lagrange interpolation, through which the derivative of the interpolant
+at the nodes is a matrix–vector product. At the Chebyshev–Gauss–Lobatto nodes the file computes this
+matrix explicitly. The material is [quarteroni2000numerical] §10.10; the same quotients are the
+stencils of the finite difference schemes of chapters 12 and 13 there and of [kress1998numerical]
+§9.5.
 
-**Truncation errors.** Every mean-value error is Taylor's theorem with the Lagrange remainder
-(`taylor_mean_remainder_lagrange`) at one or two expansion points. The two one-sided quotients are
-stated for a function that is `C²` on the closed interval between the two points only, so the
-derivative being approximated is the one-sided `derivWithin` at the endpoint
-(`FiniteDifference.derivWithin_sub_forwardDiff_eq`); the two-sided `deriv` needs differentiability
-at the point as an extra hypothesis (`FiniteDifference.deriv_sub_forwardDiff_eq`). For the two
-centred quotients the base point is interior and everything is two-sided. Where the book states a
-single intermediate point for a two-sided difference, the two Lagrange remainders are averaged and
-the intermediate value theorem for the continuous top derivative supplies the point
-(`FiniteDifference.deriv_sub_centredDiff_eq`,
-`FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq_one_point`).
+The compact scheme with parameters $\alpha$, $\beta$, $\gamma$ is $\alpha u_{i-1} + u_i + \alpha
+u_{i+1} = (\beta/2h)(f_{i+1} - f_{i-1}) + (\gamma/4h)(f_{i+2} - f_{i-2})$ for approximations $u_i$
+of $f'(x_i)$. Its consistency error is $2\alpha + 1 - \beta - \gamma$ times $f'(x)$, plus terms of
+order $h^2$, $h^4$ and $h^6$; three linear order conditions on $(\alpha, \beta, \gamma)$ make it
+$O(h^2)$, $O(h^4)$ or $O(h^6)$.
 
-**Compact schemes.** The scheme `α u_{i-1} + u_i + α u_{i+1} = (β/2h)(f_{i+1} - f_{i-1}) +
-(γ/4h)(f_{i+2} - f_{i-2})` has the consistency error `FiniteDifference.compactError`, obtained by
-forcing `f` itself to satisfy it. Its expansion `FiniteDifference.compactError_expansion` is an
-`IsBigO` statement along `𝓝[≠] 0` in the step — the error divides by the step, so it is junk at
-`h = 0` and the punctured neighbourhood is the correct filter — and the three order conditions
-`compactError_isBigO_pow_two`, `_four`, `_six` read off its coefficients. The coefficients here are
-the correct ones; the printed expansion of [quarteroni2000numerical] §10.10.2 carries a spurious
-factor `1/2` on both `h²` terms, which does not affect the order conditions.
+## Main definitions
 
-**The differentiation matrix** `Lagrange.derivMatrix v` is stated for any finite family of nodes
-over any field, and `Lagrange.eval_derivative_interpolate_node` needs no injectivity: it is
-linearity of `derivative` and `eval` over the Lagrange basis expansion of the interpolant. Its
-entries are the derivatives of the Lagrange basis polynomials at the nodes, which the nodal
-polynomial `ω = ∏ (X - x_k)` expresses as `ℓ_j'(x_l) = ω'(x_l) / ((x_l - x_j) ω'(x_j))` off the
-diagonal and `ℓ_j'(x_j) = ω''(x_j) / (2 ω'(x_j))` on it (`Lagrange.eval_derivative_basis_of_ne`,
-`Lagrange.eval_derivative_basis_self_of_injOn`); both formulas are invariant under scaling `ω`, so
-any nonzero multiple of the nodal polynomial serves.
+* `FiniteDifference.forwardDiff`, `FiniteDifference.backwardDiff`, `FiniteDifference.centredDiff`,
+  `FiniteDifference.secondCentredDiff`: the four difference quotients.
+* `FiniteDifference.compactError`: the consistency error of the compact scheme.
+* `Lagrange.derivMatrix`: the differentiation matrix of a family of nodes.
+* `Polynomial.Chebyshev.lobattoNodalT`: the polynomial $(X^2 - 1) T_n'$, a multiple of the nodal
+  polynomial of the Chebyshev–Gauss–Lobatto nodes.
 
-**The Chebyshev–Gauss–Lobatto matrix.** At the nodes `x_j = cos (jπ/n)`, `j = 0, …, n`
-(Mathlib's `Polynomial.Chebyshev.node`), the nodal polynomial is a multiple of
-`(X² - 1) T_n'`, whose derivatives at the nodes come from the Chebyshev differential equation
-`(1 - X²) T_n'' = X T_n' - n² T_n` and the values `T_n(x_j) = (-1)^j`, `T_n'(1) = n²`,
-`T_n'(-1) = -(-1)^n n²`. The result, `Lagrange.chebyshevLobattoDerivMatrix_apply`, is the formula
-of Canuto–Hussaini–Quarteroni–Zang, *Spectral Methods in Fluid Dynamics* (1988), p. 69:
-`D_{lj} = (d_l/d_j) (-1)^{l+j}/(x_l - x_j)` for `l ≠ j`, `D_{jj} = -x_j/(2(1 - x_j²))` at the
-interior nodes, `D_{00} = (2n² + 1)/6` and `D_{nn} = -(2n² + 1)/6`, with `d_0 = d_n = 2` and
-`d_j = 1` otherwise. [quarteroni2000numerical] (10.73) states it at the reflected nodes
-`x̄_j = -x_j`, where the whole matrix changes sign (`Lagrange.derivMatrix_neg`): the off-diagonal
-and interior-diagonal formulas keep their form, `D̄_{00} = -(2n² + 1)/6` and
-`D̄_{nn} = (2n² + 1)/6` — the book prints `D̄_{nn} = (2n² + 1)/3`, an erratum (`D` has zero trace).
+## Main results
 
-The material is [quarteroni2000numerical] §10.10; the same quotients are the stencils of the
-finite-difference schemes of chapters 12 and 13 there and of [kress1998numerical] §9.5.
+* `FiniteDifference.derivWithin_sub_forwardDiff_eq`,
+  `FiniteDifference.derivWithin_sub_backwardDiff_eq`: the errors $\mp (h/2) f''(\xi)$ of the
+  one-sided quotients.
+* `FiniteDifference.deriv_sub_centredDiff_eq`: the error $-(h^2/6) f'''(\xi)$ of the centred
+  quotient.
+* `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq_one_point`: the error
+  $-(h^2/12) f''''(\xi)$ of the second centred difference.
+* `FiniteDifference.abs_secondDiff_sub_le`: a bound $K h^4/12$ for the second difference that uses
+  only one-sided derivatives at the ends of an interval.
+* `FiniteDifference.compactError_expansion`: the Taylor expansion of the consistency error of the
+  compact scheme.
+* `FiniteDifference.compactError_isBigO_pow_two`, `FiniteDifference.compactError_isBigO_pow_four`,
+  `FiniteDifference.compactError_isBigO_pow_six`: the order conditions.
+* `FiniteDifference.order_six_unique`: the unique sixth-order scheme has $\alpha = 1/3$,
+  $\beta = 14/9$, $\gamma = 1/9$.
+* `Lagrange.eval_derivative_interpolate_node`: the derivative of the interpolant at the nodes is the
+  differentiation matrix times the nodal values.
+* `Lagrange.eval_derivative_basis_of_ne`, `Lagrange.eval_derivative_basis_self_of_injOn`: the
+  entries of the differentiation matrix in terms of the nodal polynomial.
+* `Lagrange.derivMatrix_neg`: reflecting the nodes changes the sign of the differentiation matrix.
+* `Lagrange.chebyshevLobattoDerivMatrix_apply`: the Chebyshev–Gauss–Lobatto differentiation matrix.
+
+## Proof outline
+
+Every mean-value error is Taylor's theorem with the Lagrange remainder
+(`taylor_mean_remainder_lagrange`) at one or two expansion points. Where the source states a single
+intermediate point for a two-sided difference, the two Lagrange remainders are averaged, and the
+intermediate value theorem for the continuous top derivative gives the point. For the
+differentiation matrix, the nodal polynomial $\omega = \prod_k (X - x_k)$ gives $\ell_j'(x_l) =
+\omega'(x_l) / ((x_l - x_j) \omega'(x_j))$ for $l \neq j$ and $\ell_j'(x_j) = \omega''(x_j) / (2
+\omega'(x_j))$. Both formulas are invariant under scaling of $\omega$, so any nonzero multiple of
+the nodal polynomial serves. At the nodes $x_j = \cos(j\pi/n)$, $j = 0, \dots, n$, the nodal
+polynomial is a multiple of $(X^2 - 1) T_n'$. Its derivatives at the nodes come from the Chebyshev
+differential equation $(1 - x^2) T_n'' = x T_n' - n^2 T_n$ and the values $T_n(x_j) = (-1)^j$,
+$T_n'(1) = n^2$, $T_n'(-1) = -(-1)^n n^2$.
+
+## Implementation notes
+
+* The one-sided quotients are stated for a function that is $C^2$ on the closed interval between the
+  two points only. The derivative that they approximate is then the one-sided derivative
+  `derivWithin` at the endpoint (`FiniteDifference.derivWithin_sub_forwardDiff_eq`). The two-sided
+  `deriv` needs differentiability at the point as an extra hypothesis
+  (`FiniteDifference.deriv_sub_forwardDiff_eq`). For the centred quotients the base point is
+  interior, and all derivatives are two-sided.
+* The quotients take the step $h$ as a free argument and are $0$ at $h = 0$, by Lean's convention
+  $x / 0 = 0$.
+* The expansion `FiniteDifference.compactError_expansion` is an `Asymptotics.IsBigO` statement along
+  the punctured neighbourhood `𝓝[≠] 0` of the step. The consistency error divides by the step, so
+  its value at $h = 0$ has no meaning, and the punctured neighbourhood is the correct filter.
+* The differentiation matrix `Lagrange.derivMatrix` is defined for any finite family of nodes over
+  any field. `Lagrange.eval_derivative_interpolate_node` needs no injectivity of the nodes: it is
+  the linearity of `Polynomial.derivative` and `Polynomial.eval` over the Lagrange basis expansion
+  of the interpolant.
+* The Chebyshev–Gauss–Lobatto nodes are `Polynomial.Chebyshev.node`, and the factors
+  $d_0 = d_n = 2$, $d_j = 1$ otherwise are `Polynomial.Chebyshev.lobattoFactor`. The formula
+  `Lagrange.chebyshevLobattoDerivMatrix_apply` is the one on p. 69 of Canuto, Hussaini, Quarteroni
+  and Zang, *Spectral Methods in Fluid Dynamics* (1988). [quarteroni2000numerical] (10.73) states
+  the matrix at the reflected nodes $\bar x_j = -x_j$, where the whole matrix changes sign
+  (`Lagrange.derivMatrix_neg`).
+* Two statements differ from the printed text of [quarteroni2000numerical]. The printed expansion of
+  the compact-scheme error in §10.10.2 has a spurious factor $1/2$ on the $h^2$ terms; this does not
+  affect the order conditions. In (10.73) the book prints $\bar D_{nn} = (2n^2 + 1)/3$; the correct
+  value is $(2n^2 + 1)/6$, as the zero trace of the matrix also shows.
 -/
 
 open Set Filter Topology Asymptotics Finset Polynomial Matrix
@@ -82,41 +124,56 @@ section Quotients
 
 variable {f : ℝ → ℝ} {x h : ℝ}
 
-/-- The forward difference quotient `(f (x + h) - f x) / h` ([quarteroni2000numerical] (10.59)).
--/
+/-- The **forward difference quotient** ([quarteroni2000numerical] (10.59)) of
+$f : \mathbb{R} \to \mathbb{R}$ at $x$ with step $h$:
+$$\frac{f(x + h) - f(x)}{h}.$$
+It is $0$ at $h = 0$. -/
 noncomputable def forwardDiff (f : ℝ → ℝ) (h x : ℝ) : ℝ := (f (x + h) - f x) / h
 
-/-- The backward difference quotient `(f x - f (x - h)) / h` ([quarteroni2000numerical] (10.63)).
--/
+/-- The **backward difference quotient** ([quarteroni2000numerical] (10.63)) of
+$f : \mathbb{R} \to \mathbb{R}$ at $x$ with step $h$:
+$$\frac{f(x) - f(x - h)}{h}.$$
+It is $0$ at $h = 0$. -/
 noncomputable def backwardDiff (f : ℝ → ℝ) (h x : ℝ) : ℝ := (f x - f (x - h)) / h
 
-/-- The centred difference quotient `(f (x + h) - f (x - h)) / (2 h)`
-([quarteroni2000numerical] (10.61)). -/
+/-- The **centred difference quotient** ([quarteroni2000numerical] (10.61)) of
+$f : \mathbb{R} \to \mathbb{R}$ at $x$ with step $h$:
+$$\frac{f(x + h) - f(x - h)}{2h}.$$
+It is $0$ at $h = 0$. -/
 noncomputable def centredDiff (f : ℝ → ℝ) (h x : ℝ) : ℝ := (f (x + h) - f (x - h)) / (2 * h)
 
-/-- The second centred difference `(f (x + h) - 2 f x + f (x - h)) / h²`
-([quarteroni2000numerical] (10.65)). -/
+/-- The **second centred difference** ([quarteroni2000numerical] (10.65)) of
+$f : \mathbb{R} \to \mathbb{R}$ at $x$ with step $h$:
+$$\frac{f(x + h) - 2 f(x) + f(x - h)}{h^2}.$$
+It is $0$ at $h = 0$. -/
 noncomputable def secondCentredDiff (f : ℝ → ℝ) (h x : ℝ) : ℝ :=
   (f (x + h) - 2 * f x + f (x - h)) / h ^ 2
 
-/-- Unfolding `forwardDiff`. -/
+/-- The forward difference quotient is $(f(x + h) - f(x))/h$. -/
 theorem forwardDiff_apply : forwardDiff f h x = (f (x + h) - f x) / h := rfl
 
-/-- Unfolding `backwardDiff`. -/
+/-- The backward difference quotient is $(f(x) - f(x - h))/h$. -/
 theorem backwardDiff_apply : backwardDiff f h x = (f x - f (x - h)) / h := rfl
 
-/-- Unfolding `centredDiff`. -/
+/-- The centred difference quotient is $(f(x + h) - f(x - h))/(2h)$. -/
 theorem centredDiff_apply : centredDiff f h x = (f (x + h) - f (x - h)) / (2 * h) := rfl
 
-/-- Unfolding `secondCentredDiff`. -/
+/-- The second centred difference is $(f(x + h) - 2 f(x) + f(x - h))/h^2$. -/
 theorem secondCentredDiff_apply :
     secondCentredDiff f h x = (f (x + h) - 2 * f x + f (x - h)) / h ^ 2 := rfl
 
-/-- The backward quotient with step `h` is the forward quotient with step `-h`. -/
+/-- For every $f$, $x$ and $h$, the backward quotient with step $h$ is the forward quotient with
+step $-h$:
+$$\frac{f(x) - f(x - h)}{h} = \frac{f(x + (-h)) - f(x)}{-h}.$$
+-/
 theorem backwardDiff_eq_forwardDiff_neg : backwardDiff f h x = forwardDiff f (-h) x := by
   rw [backwardDiff, forwardDiff, ← sub_eq_add_neg, div_neg, ← neg_div, neg_sub]
 
-/-- The centred quotient is the mean of the forward and backward quotients. -/
+/-- For every $f$, $x$ and $h$, the centred quotient is the mean of the forward and backward
+quotients:
+$$\frac{f(x + h) - f(x - h)}{2h}
+  = \frac12 \Big(\frac{f(x + h) - f(x)}{h} + \frac{f(x) - f(x - h)}{h}\Big).$$
+-/
 theorem centredDiff_eq_add_div_two :
     centredDiff f h x = (forwardDiff f h x + backwardDiff f h x) / 2 := by
   simp only [centredDiff, forwardDiff, backwardDiff]
@@ -125,7 +182,10 @@ theorem centredDiff_eq_add_div_two :
   · field_simp
     ring
 
-/-- The second centred difference is the forward difference of the backward difference. -/
+/-- For every $f$, $x$ and $h$, the second centred difference is the forward difference quotient of
+the backward difference quotient: with $g(t) = (f(t) - f(t - h))/h$,
+$$\frac{f(x + h) - 2 f(x) + f(x - h)}{h^2} = \frac{g(x + h) - g(x)}{h}.$$
+-/
 theorem secondCentredDiff_eq_forwardDiff_backwardDiff :
     secondCentredDiff f h x = forwardDiff (backwardDiff f h) h x := by
   simp only [secondCentredDiff, forwardDiff, backwardDiff, add_sub_cancel_right]
@@ -134,9 +194,13 @@ theorem secondCentredDiff_eq_forwardDiff_backwardDiff :
   · field_simp
     ring
 
-/-- **The forward difference error** ([quarteroni2000numerical] (10.60)): for `f` of class `C²`
-on `[x, x + h]`, `f'(x) - (f (x + h) - f x)/h = -(h/2) f''(ξ)` for some `ξ ∈ (x, x + h)`. The
-derivative at the left endpoint is the one-sided `derivWithin`. -/
+/-- The **forward difference error** ([quarteroni2000numerical] (10.60)). Let $h > 0$ and let $f$ be
+of class $C^2$ on $[x, x + h]$. Then there is $\xi \in (x, x + h)$ with
+$$f'_+(x) - \frac{f(x + h) - f(x)}{h} = -\frac{h}{2} f''(\xi),$$
+where $f'_+(x)$ is the derivative of $f$ at $x$ within $[x, x + h]$.
+
+The derivative $f'_+(x)$ is `derivWithin f (Set.Icc x (x + h)) x`, a one-sided derivative at the
+left endpoint. -/
 theorem derivWithin_sub_forwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc x (x + h))) :
     ∃ ξ ∈ Ioo x (x + h),
       derivWithin f (Icc x (x + h)) x - forwardDiff f h x = -(h / 2) * iteratedDeriv 2 f ξ := by
@@ -154,9 +218,11 @@ theorem derivWithin_sub_forwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Ic
   field_simp
   ring
 
-/-- **The forward difference error** for `f` differentiable at `x` and `C²` on `[x, x + h]`:
-`deriv f x - forwardDiff f h x = -(h/2) f''(ξ)` for some `ξ ∈ (x, x + h)`
-([quarteroni2000numerical] (10.60)). -/
+/-- The **forward difference error** with the two-sided derivative ([quarteroni2000numerical]
+(10.60)). Let $h > 0$, let $f$ be of class $C^2$ on $[x, x + h]$ and differentiable at $x$. Then
+there is $\xi \in (x, x + h)$ with
+$$f'(x) - \frac{f(x + h) - f(x)}{h} = -\frac{h}{2} f''(\xi).$$
+-/
 theorem deriv_sub_forwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc x (x + h)))
     (hd : DifferentiableAt ℝ f x) :
     ∃ ξ ∈ Ioo x (x + h), deriv f x - forwardDiff f h x = -(h / 2) * iteratedDeriv 2 f ξ := by
@@ -165,9 +231,13 @@ theorem deriv_sub_forwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc x (x
       (left_mem_Icc.2 (by linarith)))]
   exact derivWithin_sub_forwardDiff_eq hh hf
 
-/-- **The backward difference error** ([quarteroni2000numerical] (10.64)): for `f` of class `C²`
-on `[x - h, x]`, `f'(x) - (f x - f (x - h))/h = (h/2) f''(ξ)` for some `ξ ∈ (x - h, x)`. The
-derivative at the right endpoint is the one-sided `derivWithin`. -/
+/-- The **backward difference error** ([quarteroni2000numerical] (10.64)). Let $h > 0$ and let $f$
+be of class $C^2$ on $[x - h, x]$. Then there is $\xi \in (x - h, x)$ with
+$$f'_-(x) - \frac{f(x) - f(x - h)}{h} = \frac{h}{2} f''(\xi),$$
+where $f'_-(x)$ is the derivative of $f$ at $x$ within $[x - h, x]$.
+
+The derivative $f'_-(x)$ is `derivWithin f (Set.Icc (x - h) x) x`, a one-sided derivative at the
+right endpoint. -/
 theorem derivWithin_sub_backwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (x - h) x)) :
     ∃ ξ ∈ Ioo (x - h) x,
       derivWithin f (Icc (x - h) x) x - backwardDiff f h x = (h / 2) * iteratedDeriv 2 f ξ := by
@@ -185,8 +255,11 @@ theorem derivWithin_sub_backwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (I
   field_simp
   ring
 
-/-- **The backward difference error** for `f` differentiable at `x` and `C²` on `[x - h, x]`
-([quarteroni2000numerical] (10.64)). -/
+/-- The **backward difference error** with the two-sided derivative ([quarteroni2000numerical]
+(10.64)). Let $h > 0$, let $f$ be of class $C^2$ on $[x - h, x]$ and differentiable at $x$. Then
+there is $\xi \in (x - h, x)$ with
+$$f'(x) - \frac{f(x) - f(x - h)}{h} = \frac{h}{2} f''(\xi).$$
+-/
 theorem deriv_sub_backwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (x - h) x))
     (hd : DifferentiableAt ℝ f x) :
     ∃ ξ ∈ Ioo (x - h) x, deriv f x - backwardDiff f h x = (h / 2) * iteratedDeriv 2 f ξ := by
@@ -195,13 +268,14 @@ theorem deriv_sub_backwardDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (x 
       (right_mem_Icc.2 (by linarith)))]
   exact derivWithin_sub_backwardDiff_eq hh hf
 
-/-- A function `C^n` on `Icc (x - h) (x + h)` is `C^n` at every point of the open interval. -/
+/-- A function of class $C^n$ on $[x - h, x + h]$ is of class $C^n$ at every point of
+$(x - h, x + h)$. -/
 private theorem contDiffAt_of_mem_Ioo {n : ℕ} (hf : ContDiffOn ℝ n f (Icc (x - h) (x + h)))
     {y : ℝ} (hy : y ∈ Ioo (x - h) (x + h)) : ContDiffAt ℝ n f y :=
   hf.contDiffAt (Icc_mem_nhds hy.1 hy.2)
 
-/-- The `n`-th derivative of a function `C^n` on `Icc (x - h) (x + h)` is continuous on the open
-interval. -/
+/-- For $h > 0$, the $n$-th derivative of a function of class $C^n$ on $[x - h, x + h]$ is
+continuous on $(x - h, x + h)$. -/
 private theorem continuousOn_iteratedDeriv_Ioo {n : ℕ} (hh : 0 < h)
     (hf : ContDiffOn ℝ n f (Icc (x - h) (x + h))) :
     ContinuousOn (iteratedDeriv n f) (Ioo (x - h) (x + h)) := by
@@ -211,8 +285,8 @@ private theorem continuousOn_iteratedDeriv_Ioo {n : ℕ} (hh : 0 < h)
   exact (iteratedDerivWithin_eq_iteratedDeriv hs (contDiffAt_of_mem_Ioo hf hy)
     (Ioo_subset_Icc_self hy)).symm
 
-/-- The mean of two values of a function continuous on an interval is attained between the two
-points: the intermediate value theorem in the form the two-sided difference errors use. -/
+/-- If $g$ is continuous on $(a, b)$ and $s, t \in (a, b)$, then $g(\xi) = (g(s) + g(t))/2$ for some
+$\xi \in (a, b)$. -/
 private theorem exists_eq_add_div_two {g : ℝ → ℝ} {a b s t : ℝ}
     (hg : ContinuousOn g (Ioo a b)) (hs : s ∈ Ioo a b) (ht : t ∈ Ioo a b) :
     ∃ ξ ∈ Ioo a b, g ξ = (g s + g t) / 2 := by
@@ -224,11 +298,14 @@ private theorem exists_eq_add_div_two {g : ℝ → ℝ} {a b s t : ℝ}
   obtain ⟨ξ, hξ, hgξ⟩ := intermediate_value_uIcc (hg.mono hsub) hmem
   exact ⟨ξ, hsub hξ, hgξ⟩
 
-/-- **Taylor expansions to both sides of `x`**: for `f` of class `C^{n+1}` on `[x - h, x + h]`
-there are `ξ ∈ (x - h, x)` and `η ∈ (x, x + h)` with
-`f (x + h) = ∑_{k ≤ n} hᵏ/k! f⁽ᵏ⁾(x) + f⁽ⁿ⁺¹⁾(η) h^{n+1}/(n+1)!` and
-`f (x - h) = ∑_{k ≤ n} (-h)ᵏ/k! f⁽ᵏ⁾(x) + f⁽ⁿ⁺¹⁾(ξ) (-h)^{n+1}/(n+1)!`: the two Lagrange
-remainders behind the two-point forms of the centred difference errors. -/
+/-- **Taylor expansions to both sides of $x$.** Let $h > 0$ and let $f$ be of class $C^{n+1}$ on
+$[x - h, x + h]$. Then there are $\xi \in (x - h, x)$ and $\eta \in (x, x + h)$ with
+$$f(x + h) = \sum_{k=0}^{n} \frac{h^k}{k!} f^{(k)}(x) +
+  f^{(n+1)}(\eta) \frac{h^{n+1}}{(n + 1)!},$$
+$$f(x - h) = \sum_{k=0}^{n} \frac{(-h)^k}{k!} f^{(k)}(x) +
+  f^{(n+1)}(\xi) \frac{(-h)^{n+1}}{(n + 1)!}.$$
+
+These two Lagrange remainders give the two-point forms of the centred difference errors. -/
 theorem exists_taylor_add_sub {n : ℕ} (hh : 0 < h)
     (hf : ContDiffOn ℝ (n + 1) f (Icc (x - h) (x + h))) :
     ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
@@ -252,10 +329,11 @@ theorem exists_taylor_add_sub {n : ℕ} (hh : 0 < h)
   simp only [add_sub_cancel_left, sub_sub_cancel_left] at hTp hTm
   exact ⟨ξ, hξ, η, hη, hTp, hTm⟩
 
-/-- **The centred difference error in two-point form**: for `f` of class `C³` on
-`[x - h, x + h]`, `f'(x) - (f (x + h) - f (x - h))/(2h) = -(h²/12)(f'''(ξ) + f'''(η))` with
-`ξ ∈ (x - h, x)` and `η ∈ (x, x + h)`, the two Lagrange remainders of the Taylor expansions at
-`x`. -/
+/-- The **centred difference error in two-point form**. Let $h > 0$ and let $f$ be of class $C^3$ on
+$[x - h, x + h]$. Then there are $\xi \in (x - h, x)$ and $\eta \in (x, x + h)$ with
+$$f'(x) - \frac{f(x + h) - f(x - h)}{2h} = -\frac{h^2}{12} \big(f'''(\xi) + f'''(\eta)\big).$$
+
+The points $\xi$ and $\eta$ come from the Lagrange remainders of the Taylor expansions at $x$. -/
 theorem deriv_sub_centredDiff_eq_two_points (hh : 0 < h)
     (hf : ContDiffOn ℝ 3 f (Icc (x - h) (x + h))) :
     ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
@@ -269,9 +347,11 @@ theorem deriv_sub_centredDiff_eq_two_points (hh : 0 < h)
   field_simp
   ring
 
-/-- **The centred difference error** ([quarteroni2000numerical] (10.62)): for `f` of class `C³`
-on `[x - h, x + h]`, `f'(x) - (f (x + h) - f (x - h))/(2h) = -(h²/6) f'''(ξ)` for some
-`ξ ∈ (x - h, x + h)`. The two remainders of `deriv_sub_centredDiff_eq_two_points` are averaged
+/-- The **centred difference error** ([quarteroni2000numerical] (10.62)). Let $h > 0$ and let $f$ be
+of class $C^3$ on $[x - h, x + h]$. Then there is $\xi \in (x - h, x + h)$ with
+$$f'(x) - \frac{f(x + h) - f(x - h)}{2h} = -\frac{h^2}{6} f'''(\xi).$$
+
+The proof averages the two remainders of `FiniteDifference.deriv_sub_centredDiff_eq_two_points`
 by the intermediate value theorem. -/
 theorem deriv_sub_centredDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 3 f (Icc (x - h) (x + h))) :
     ∃ ξ ∈ Ioo (x - h) (x + h),
@@ -283,10 +363,13 @@ theorem deriv_sub_centredDiff_eq (hh : 0 < h) (hf : ContDiffOn ℝ 3 f (Icc (x -
   rw [hT, hgζ]
   ring
 
-/-- **The second centred difference error in two-point form**: for `f` of class `C⁴` on
-`[x - h, x + h]`, `f''(x) - (f (x + h) - 2 f x + f (x - h))/h² = -(h²/24)(f⁗(ξ) + f⁗(η))` with
-`ξ ∈ (x - h, x)` and `η ∈ (x, x + h)`, the two Lagrange remainders of the third-order Taylor
-expansions at `x` (the odd terms cancel). -/
+/-- The **second centred difference error in two-point form**. Let $h > 0$ and let $f$ be of class
+$C^4$ on $[x - h, x + h]$. Then there are $\xi \in (x - h, x)$ and $\eta \in (x, x + h)$ with
+$$f''(x) - \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2}
+  = -\frac{h^2}{24} \big(f''''(\xi) + f''''(\eta)\big).$$
+
+The points $\xi$ and $\eta$ come from the Lagrange remainders of the third-order Taylor
+expansions at $x$, in which the odd terms cancel. -/
 theorem iteratedDeriv_two_sub_secondCentredDiff_eq_two_points (hh : 0 < h)
     (hf : ContDiffOn ℝ 4 f (Icc (x - h) (x + h))) :
     ∃ ξ ∈ Ioo (x - h) x, ∃ η ∈ Ioo x (x + h),
@@ -300,10 +383,12 @@ theorem iteratedDeriv_two_sub_secondCentredDiff_eq_two_points (hh : 0 < h)
   field_simp
   ring
 
-/-- **The second centred difference error** ([quarteroni2000numerical] (10.66), in the book's
-form): for `f` of class `C⁴` on `[x - h, x + h]`,
-`f''(x) - (f (x + h) - 2 f x + f (x - h))/h² = -(h²/24)(f⁗(x + θ h) + f⁗(x - ω h))` for some
-`θ, ω ∈ (0, 1)`. -/
+/-- The **second centred difference error** in the form of [quarteroni2000numerical] (10.66). Let
+$h > 0$ and let $f$ be of class $C^4$ on $[x - h, x + h]$. Then there are
+$\theta, \omega \in (0, 1)$ with
+$$f''(x) - \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2}
+  = -\frac{h^2}{24} \big(f''''(x + \theta h) + f''''(x - \omega h)\big).$$
+-/
 theorem iteratedDeriv_two_sub_secondCentredDiff_eq (hh : 0 < h)
     (hf : ContDiffOn ℝ 4 f (Icc (x - h) (x + h))) :
     ∃ θ ∈ Ioo (0 : ℝ) 1, ∃ ω ∈ Ioo (0 : ℝ) 1,
@@ -317,10 +402,12 @@ theorem iteratedDeriv_two_sub_secondCentredDiff_eq (hh : 0 < h)
   · rw [hT, div_mul_cancel₀ _ hh.ne', div_mul_cancel₀ _ hh.ne', add_sub_cancel, sub_sub_cancel,
       add_comm]
 
-/-- **The second centred difference error in one-point form**: for `f` of class `C⁴` on
-`[x - h, x + h]`, `f''(x) - (f (x + h) - 2 f x + f (x - h))/h² = -(h²/12) f⁗(ξ)` for some
-`ξ ∈ (x - h, x + h)`, by the intermediate value theorem applied to
-`iteratedDeriv_two_sub_secondCentredDiff_eq_two_points`. -/
+/-- The **second centred difference error in one-point form**. Let $h > 0$ and let $f$ be of class
+$C^4$ on $[x - h, x + h]$. Then there is $\xi \in (x - h, x + h)$ with
+$$f''(x) - \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2} = -\frac{h^2}{12} f''''(\xi).$$
+
+The proof applies the intermediate value theorem to
+`FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq_two_points`. -/
 theorem iteratedDeriv_two_sub_secondCentredDiff_eq_one_point (hh : 0 < h)
     (hf : ContDiffOn ℝ 4 f (Icc (x - h) (x + h))) :
     ∃ ξ ∈ Ioo (x - h) (x + h),
@@ -332,13 +419,16 @@ theorem iteratedDeriv_two_sub_secondCentredDiff_eq_one_point (hh : 0 < h)
   rw [hT, hgζ]
   ring
 
-/-- **The second centred difference error as a bound, for a tower of one-sided derivatives**: if
-`y 0, …, y 4` is a tower of derivatives within `[a, b]` (`y (m + 1)` is the derivative of `y m`
-within `[a, b]`, one-sided at its ends), `|y 4| ≤ K` on `[a, b]`, and `x - h, x + h ∈ [a, b]` with
-`h ≥ 0`, then `|y 0 (x + h) - 2 y 0 x + y 0 (x - h) - h² y 2 x| ≤ K h⁴ / 12`. The two third-order
-Taylor bounds at `x` (`norm_sub_sum_smul_le`) are added, and the odd terms cancel. Only the
-derivatives within the interval are used, so the bound holds up to its ends, and no continuity of
-`y 4` is needed ([quarteroni2000numerical] (10.66), [han2009theoretical] Example 6.3.3). -/
+/-- The **second centred difference error as a bound, for one-sided derivatives**
+([quarteroni2000numerical] (10.66), [han2009theoretical] Example 6.3.3). Let
+$y_0, \dots, y_4 : \mathbb{R} \to \mathbb{R}$ be such that, for $m < 4$, $y_{m+1}(s)$ is the
+derivative of $y_m$ at $s$ within $[a, b]$ for every $s \in [a, b]$. Let $|y_4| \le K$ on
+$[a, b]$, let $h \ge 0$, and let $x - h, x + h \in [a, b]$. Then
+$$\big|y_0(x + h) - 2 y_0(x) + y_0(x - h) - h^2 y_2(x)\big| \le \frac{K h^4}{12}.$$
+
+The derivatives within $[a, b]$ are one-sided at the ends, so the bound holds up to the ends of
+the interval, and $y_4$ need not be continuous. The proof adds the two third-order Taylor bounds
+at $x$ (`norm_sub_sum_smul_le`), in which the odd terms cancel. -/
 theorem abs_secondDiff_sub_le {y : ℕ → ℝ → ℝ} {a b K : ℝ}
     (hy : ∀ m < 4, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
     (hK : ∀ s ∈ Icc a b, |y 4 s| ≤ K) (hxl : x - h ∈ Icc a b) (hxr : x + h ∈ Icc a b)
@@ -369,27 +459,38 @@ section Compact
 
 variable {α β γ : ℝ} {f : ℝ → ℝ} {x : ℝ}
 
-/-- **The consistency error of the compact scheme** with parameters `α, β, γ` at `x` with step
-`h` ([quarteroni2000numerical] (10.67)–(10.68)): the residual
-`α f'(x - h) + f'(x) + α f'(x + h) - ((β/2h)(f(x + h) - f(x - h)) + (γ/4h)(f(x + 2h) - f(x - 2h)))`
-obtained by forcing `f` to satisfy the scheme. -/
+/-- The **consistency error of the compact scheme** with parameters $\alpha$, $\beta$, $\gamma$
+([quarteroni2000numerical] (10.67)–(10.68)). For $f : \mathbb{R} \to \mathbb{R}$, a point $x$
+and a step $h$, it is the residual obtained by putting the exact derivatives of $f$ into the
+scheme:
+$$\alpha f'(x - h) + f'(x) + \alpha f'(x + h) -
+  \Big(\frac{\beta}{2h} \big(f(x + h) - f(x - h)\big) +
+  \frac{\gamma}{4h} \big(f(x + 2h) - f(x - 2h)\big)\Big).$$
+
+The derivatives are `deriv f`. At $h = 0$ the two difference terms are $0$. -/
 noncomputable def compactError (α β γ : ℝ) (f : ℝ → ℝ) (x h : ℝ) : ℝ :=
   α * deriv f (x - h) + deriv f x + α * deriv f (x + h)
     - (β / (2 * h) * (f (x + h) - f (x - h)) + γ / (4 * h) * (f (x + 2 * h) - f (x - 2 * h)))
 
-/-- The compact scheme with `α = γ = 0`, `β = 1` is the centred difference: its consistency error
-is the centred difference error. -/
+/-- For every $f$, $x$ and $h$, the compact scheme with $\alpha = \gamma = 0$ and $\beta = 1$ is the
+centred difference: its consistency error is $f'(x) - (f(x + h) - f(x - h))/(2h)$. -/
 theorem compactError_zero_one_zero (h : ℝ) :
     compactError 0 1 0 f x h = deriv f x - centredDiff f h x := by
   simp only [compactError, centredDiff, zero_mul, zero_add, add_zero, zero_div]
   ring
 
-/-- **The Taylor expansion of the consistency error** of the compact scheme
-([quarteroni2000numerical] §10.10.2, with the printed spurious factor `1/2` on the `h²` terms
-removed): for `f` of class `C⁷` at `x`,
-`σ(h) = (2α + 1 - β - γ) f'(x) + h² (α - β/6 - 2γ/3) f'''(x) + h⁴ (α/12 - β/120 - 2γ/15) f⁽⁵⁾(x)
-+ O(h⁶)` as `h → 0`, `h ≠ 0`. The even powers of `h` cancel in the antisymmetric differences and
-the odd ones in the symmetric sum of `f'`. -/
+/-- The **Taylor expansion of the consistency error** of the compact scheme
+([quarteroni2000numerical] §10.10.2). Let $f$ be of class $C^7$ at $x$, and let $\sigma(h)$ be
+the consistency error of `FiniteDifference.compactError` with parameters $\alpha$, $\beta$,
+$\gamma$. Then, as $h \to 0$ with $h \neq 0$,
+$$\sigma(h) = (2\alpha + 1 - \beta - \gamma) f'(x) +
+  h^2 \Big(\alpha - \frac{\beta}{6} - \frac{2\gamma}{3}\Big) f'''(x) +
+  h^4 \Big(\frac{\alpha}{12} - \frac{\beta}{120} - \frac{2\gamma}{15}\Big) f^{(5)}(x) + O(h^6).$$
+
+The book prints this expansion with a spurious factor $1/2$ on the $h^2$ terms; the coefficients
+here are the correct ones. The even powers of $h$ cancel in the antisymmetric differences, and
+the odd powers cancel in the symmetric sum of the values of $f'$. The $O(h^6)$ is an
+`Asymptotics.IsBigO` along the punctured neighbourhood `𝓝[≠] 0`. -/
 theorem compactError_expansion (hf : ContDiffAt ℝ 7 f x) :
     (fun h => compactError α β γ f x h
         - ((2 * α + 1 - β - γ) * deriv f x
@@ -488,8 +589,9 @@ theorem compactError_expansion (hf : ContDiffAt ℝ 7 f x) :
         rw [← e2', ← e3']; exact add_le_add (add_le_add e1 e2) e3
     _ = M * (|α| / 360 + |β| / 5040 + |γ| * 64 / 5040) * |h| ^ 6 := by ring
 
-/-- **Second-order compact schemes** ([quarteroni2000numerical] §10.10.2): if `2α + 1 = β + γ`
-then the consistency error is `O(h²)` for `f` of class `C⁷` at `x`. -/
+/-- **Second-order compact schemes** ([quarteroni2000numerical] §10.10.2). Let $f$ be of class $C^7$
+at $x$. If $2\alpha + 1 = \beta + \gamma$, then the consistency error of the compact scheme is
+$O(h^2)$ as $h \to 0$ with $h \neq 0$. -/
 theorem compactError_isBigO_pow_two (h₁ : 2 * α + 1 = β + γ) (hf : ContDiffAt ℝ 7 f x) :
     (fun h => compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 2 := by
   have e1 : 2 * α + 1 - β - γ = 0 := by linarith
@@ -504,8 +606,9 @@ theorem compactError_isBigO_pow_two (h₁ : 2 * α + 1 = β + γ) (hf : ContDiff
   rw [e1]
   ring
 
-/-- **Fourth-order compact schemes** ([quarteroni2000numerical] §10.10.2): if `2α + 1 = β + γ`
-and `6α = β + 4γ` then the consistency error is `O(h⁴)` for `f` of class `C⁷` at `x`. -/
+/-- **Fourth-order compact schemes** ([quarteroni2000numerical] §10.10.2). Let $f$ be of class $C^7$
+at $x$. If $2\alpha + 1 = \beta + \gamma$ and $6\alpha = \beta + 4\gamma$, then the consistency
+error of the compact scheme is $O(h^4)$ as $h \to 0$ with $h \neq 0$. -/
 theorem compactError_isBigO_pow_four (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α = β + 4 * γ)
     (hf : ContDiffAt ℝ 7 f x) :
     (fun h => compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 4 := by
@@ -520,9 +623,10 @@ theorem compactError_isBigO_pow_four (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * �
   rw [e1, e2]
   ring
 
-/-- **Sixth-order compact schemes** ([quarteroni2000numerical] §10.10.2): if `2α + 1 = β + γ`,
-`6α = β + 4γ` and `10α = β + 16γ` then the consistency error is `O(h⁶)` for `f` of class `C⁷` at
-`x`. -/
+/-- **Sixth-order compact schemes** ([quarteroni2000numerical] §10.10.2). Let $f$ be of class $C^7$
+at $x$. If $2\alpha + 1 = \beta + \gamma$, $6\alpha = \beta + 4\gamma$ and
+$10\alpha = \beta + 16\gamma$, then the consistency error of the compact scheme is $O(h^6)$ as
+$h \to 0$ with $h \neq 0$. -/
 theorem compactError_isBigO_pow_six (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α = β + 4 * γ)
     (h₃ : 10 * α = β + 16 * γ) (hf : ContDiffAt ℝ 7 f x) :
     (fun h => compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 6 := by
@@ -533,8 +637,12 @@ theorem compactError_isBigO_pow_six (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α
   rw [e1, e2, e3]
   ring
 
-/-- **The unique sixth-order compact scheme** ([quarteroni2000numerical] (10.69)): the three
-order conditions have the unique solution `α = 1/3`, `β = 14/9`, `γ = 1/9`. -/
+/-- The **unique sixth-order compact scheme** ([quarteroni2000numerical] (10.69)). If
+$\alpha, \beta, \gamma \in \mathbb{R}$ satisfy the three order conditions
+$2\alpha + 1 = \beta + \gamma$, $6\alpha = \beta + 4\gamma$ and $10\alpha = \beta + 16\gamma$,
+then
+$$\alpha = \frac13, \qquad \beta = \frac{14}{9}, \qquad \gamma = \frac19.$$
+-/
 theorem order_six_unique (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α = β + 4 * γ)
     (h₃ : 10 * α = β + 16 * γ) : α = 1 / 3 ∧ β = 14 / 9 ∧ γ = 1 / 9 := by
   refine ⟨?_, ?_, ?_⟩ <;> linarith
@@ -551,22 +659,30 @@ section DerivMatrix
 
 variable {F : Type*} [Field F] {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- **The differentiation matrix** of a family of nodes `v : ι → F`: `D i j = ℓ_j'(v i)`, the
-derivative of the `j`-th Lagrange basis polynomial at the `i`-th node
-([quarteroni2000numerical] §10.10.3, the pseudo-spectral differentiation matrix when the nodes are
-the Chebyshev–Gauss–Lobatto points). -/
+/-- The **differentiation matrix** of a family of nodes $(x_i)_{i \in \iota}$ in a field $F$, with
+$\iota$ finite. Its entries are
+$$D_{ij} = \ell_j'(x_i),$$
+the derivative of the $j$-th Lagrange basis polynomial at the $i$-th node. When the nodes are
+the Chebyshev–Gauss–Lobatto points, this is the pseudo-spectral differentiation matrix of
+[quarteroni2000numerical] §10.10.3.
+
+The Lagrange basis polynomial $\ell_j$ is `Lagrange.basis Finset.univ v j`. -/
 noncomputable def derivMatrix (v : ι → F) : Matrix ι ι F :=
   Matrix.of fun i j => (derivative (Lagrange.basis Finset.univ v j)).eval (v i)
 
-/-- The entries of the differentiation matrix. -/
+/-- The entry $(i, j)$ of the differentiation matrix is $\ell_j'(x_i)$. -/
 theorem derivMatrix_apply (v : ι → F) (i j : ι) :
     derivMatrix v i j = (derivative (Lagrange.basis Finset.univ v j)).eval (v i) := rfl
 
-/-- **The derivative of the interpolant at the nodes is the differentiation matrix applied to the
-nodal values** ([quarteroni2000numerical] (10.72)): for the interpolant of the values `r` at the
-nodes `v`, `(interpolate v r)'(v i) = (derivMatrix v *ᵥ r) i`. With `r = f ∘ v` this is the
-pseudo-spectral derivative of `f` at the nodes. No injectivity of the nodes is needed: the identity
-is linearity of `derivative` and `eval` over the Lagrange basis. -/
+/-- The **derivative of the interpolant at the nodes is the differentiation matrix applied to the
+nodal values** ([quarteroni2000numerical] (10.72)). Let $(x_i)_{i \in \iota}$ be a finite family
+of nodes in a field $F$, let $r \in F^\iota$, and let $p$ be the Lagrange interpolant of the
+values $r$ at the nodes. Then for every $i$,
+$$p'(x_i) = (D r)_i.$$
+With $r_i = f(x_i)$ this is the pseudo-spectral derivative of $f$ at the nodes.
+
+The nodes need not be distinct: the identity is the linearity of the derivative and of
+evaluation over the Lagrange basis. -/
 theorem eval_derivative_interpolate_node (v : ι → F) (r : ι → F) (i : ι) :
     (derivative (interpolate Finset.univ v r)).eval (v i) = (derivMatrix v *ᵥ r) i := by
   simp only [interpolate_apply, derivative_sum, derivative_C_mul, eval_finsetSum, eval_mul, eval_C,
@@ -575,14 +691,19 @@ theorem eval_derivative_interpolate_node (v : ι → F) (r : ι → F) (i : ι) 
 
 end DerivMatrix
 
-/-! #### Derivatives of the Lagrange basis at the nodes -/
+/-! ### Derivatives of the Lagrange basis at the nodes -/
 
 section BasisDerivative
 
 variable {F : Type*} [Field F] {ι : Type*} [DecidableEq ι] {s : Finset ι} {v : ι → F} {i j : ι}
 
-/-- `(X - x_i) ℓ_i = ω / ω'(x_i)`: the Lagrange basis polynomial times its missing factor is the
-nodal polynomial divided by the nodal weight's inverse. -/
+/-- Let $s$ be a finite set of indices, $(x_k)$ nodes in a field and $i \in s$. Then the Lagrange
+basis polynomial $\ell_i$ times its missing factor is a multiple of the nodal polynomial
+$\omega = \prod_{k \in s} (X - x_k)$:
+$$(X - x_i)\, \ell_i = w_i\, \omega,
+  \qquad w_i = \prod_{k \in s,\, k \neq i} (x_i - x_k)^{-1}.$$
+
+The number $w_i$ is `Lagrange.nodalWeight s v i`. For distinct nodes, $w_i = 1/\omega'(x_i)$. -/
 theorem X_sub_C_mul_basis (hi : i ∈ s) :
     (X - C (v i)) * Lagrange.basis s v i = C (nodalWeight s v i) * nodal s v := by
   rw [basis_eq_prod_sub_inv_mul_nodal_div hi, ← nodal_erase_eq_nodal_div hi,
@@ -590,8 +711,8 @@ theorem X_sub_C_mul_basis (hi : i ∈ s) :
   ring
 
 omit [DecidableEq ι] in
-/-- The derivative of the nodal polynomial does not vanish at a node (the nodes being distinct).
--/
+/-- Let the nodes $(x_k)_{k \in s}$ be distinct and let $i \in s$. Then the derivative of the nodal
+polynomial does not vanish at $x_i$: $\omega'(x_i) \neq 0$. -/
 theorem eval_derivative_nodal_ne_zero (hvs : Set.InjOn v s) (hi : i ∈ s) :
     (derivative (nodal s v)).eval (v i) ≠ 0 := by
   classical
@@ -599,9 +720,12 @@ theorem eval_derivative_nodal_ne_zero (hvs : Set.InjOn v s) (hi : i ∈ s) :
   rw [nodalWeight_eq_eval_derivative_nodal hi] at this
   exact fun h => this (by rw [h, _root_.inv_zero])
 
-/-- **The derivative of a Lagrange basis polynomial at another node**:
-`ℓ_i'(x_j) = ω'(x_j) / ((x_j - x_i) ω'(x_i))` for `i ≠ j`, from differentiating
-`(X - x_i) ℓ_i = ω / ω'(x_i)` and evaluating at `x_j`, where `ℓ_i` vanishes. -/
+/-- **The derivative of a Lagrange basis polynomial at another node.** Let the nodes
+$(x_k)_{k \in s}$ be distinct, and let $i, j \in s$ with $i \neq j$. Then
+$$\ell_i'(x_j) = \frac{\omega'(x_j)}{(x_j - x_i)\, \omega'(x_i)}.$$
+
+The proof differentiates $(X - x_i) \ell_i = \omega / \omega'(x_i)$ and evaluates at $x_j$,
+where $\ell_i$ vanishes. -/
 theorem eval_derivative_basis_of_ne (hvs : Set.InjOn v s) (hi : i ∈ s) (hj : j ∈ s)
     (hij : i ≠ j) :
     (derivative (Lagrange.basis s v i)).eval (v j)
@@ -617,9 +741,12 @@ theorem eval_derivative_basis_of_ne (hvs : Set.InjOn v s) (hi : i ∈ s) (hj : j
   field_simp
   linear_combination h
 
-/-- **The derivative of a Lagrange basis polynomial at its own node**, in the form valid in every
-characteristic: `2 ℓ_i'(x_i) ω'(x_i) = ω''(x_i)`, from differentiating `(X - x_i) ℓ_i = ω / ω'(x_i)`
-twice and evaluating at `x_i`. -/
+/-- **The derivative of a Lagrange basis polynomial at its own node**, in a form valid in every
+characteristic. Let the nodes $(x_k)_{k \in s}$ be distinct and let $i \in s$. Then
+$$2\, \ell_i'(x_i)\, \omega'(x_i) = \omega''(x_i).$$
+
+The proof differentiates $(X - x_i) \ell_i = \omega / \omega'(x_i)$ twice and evaluates at
+$x_i$. -/
 theorem two_mul_eval_derivative_basis_self_mul (hvs : Set.InjOn v s) (hi : i ∈ s) :
     2 * (derivative (Lagrange.basis s v i)).eval (v i) * (derivative (nodal s v)).eval (v i)
       = (derivative (derivative (nodal s v))).eval (v i) := by
@@ -632,8 +759,10 @@ theorem two_mul_eval_derivative_basis_self_mul (hvs : Set.InjOn v s) (hi : i ∈
   rw [nodalWeight_eq_eval_derivative_nodal hi, inv_mul_eq_div, eq_div_iff hω] at h
   linear_combination h
 
-/-- **The derivative of a Lagrange basis polynomial at its own node**:
-`ℓ_i'(x_i) = ω''(x_i) / (2 ω'(x_i))`. -/
+/-- **The derivative of a Lagrange basis polynomial at its own node.** Let $F$ be a field with
+$2 \neq 0$, let the nodes $(x_k)_{k \in s}$ be distinct and let $i \in s$. Then
+$$\ell_i'(x_i) = \frac{\omega''(x_i)}{2\, \omega'(x_i)}.$$
+-/
 theorem eval_derivative_basis_self_of_injOn [NeZero (2 : F)] (hvs : Set.InjOn v s) (hi : i ∈ s) :
     (derivative (Lagrange.basis s v i)).eval (v i)
       = (derivative (derivative (nodal s v))).eval (v i)
@@ -643,8 +772,10 @@ theorem eval_derivative_basis_self_of_injOn [NeZero (2 : F)] (hvs : Set.InjOn v 
   rw [eq_div_iff (mul_ne_zero h2 hω), ← two_mul_eval_derivative_basis_self_mul hvs hi]
   ring
 
-/-- `eval_derivative_basis_of_ne` with the nodal polynomial replaced by any nonzero multiple
-`p = c ω` of it: the formula `ℓ_i'(x_j) = p'(x_j) / ((x_j - x_i) p'(x_i))` is scale invariant. -/
+/-- Let the nodes $(x_k)_{k \in s}$ be distinct, let $i, j \in s$ with $i \neq j$, and let
+$p = c\, \omega$ with $c \neq 0$. Then $\ell_i'(x_j) = p'(x_j) / ((x_j - x_i)\, p'(x_i))$. This
+is `Lagrange.eval_derivative_basis_of_ne` for any nonzero multiple of the nodal polynomial: the
+formula is invariant under scaling. -/
 theorem eval_derivative_basis_of_ne_of_eq_C_mul_nodal (hvs : Set.InjOn v s) (hi : i ∈ s)
     (hj : j ∈ s) (hij : i ≠ j) {p : F[X]} {c : F} (hc : c ≠ 0) (hp : p = C c * nodal s v) :
     (derivative (Lagrange.basis s v i)).eval (v j)
@@ -652,8 +783,10 @@ theorem eval_derivative_basis_of_ne_of_eq_C_mul_nodal (hvs : Set.InjOn v s) (hi 
   rw [eval_derivative_basis_of_ne hvs hi hj hij, hp, derivative_C_mul, eval_mul, eval_C, eval_mul,
     eval_C, mul_left_comm (v j - v i), mul_div_mul_left _ _ hc]
 
-/-- `eval_derivative_basis_self_of_injOn` with the nodal polynomial replaced by any nonzero
-multiple `p = c ω` of it: `ℓ_i'(x_i) = p''(x_i) / (2 p'(x_i))`. -/
+/-- Let $F$ be a field with $2 \neq 0$, let the nodes $(x_k)_{k \in s}$ be distinct, let $i \in s$,
+and let $p = c\, \omega$ with $c \neq 0$. Then $\ell_i'(x_i) = p''(x_i) / (2\, p'(x_i))$. This
+is `Lagrange.eval_derivative_basis_self_of_injOn` for any nonzero multiple of the nodal
+polynomial. -/
 theorem eval_derivative_basis_self_of_eq_C_mul_nodal [NeZero (2 : F)] (hvs : Set.InjOn v s)
     (hi : i ∈ s) {p : F[X]} {c : F} (hc : c ≠ 0) (hp : p = C c * nodal s v) :
     (derivative (Lagrange.basis s v i)).eval (v i)
@@ -661,8 +794,9 @@ theorem eval_derivative_basis_self_of_eq_C_mul_nodal [NeZero (2 : F)] (hvs : Set
   rw [eval_derivative_basis_self_of_injOn hvs hi, hp, derivative_C_mul, derivative_C_mul, eval_mul,
     eval_C, eval_mul, eval_C, mul_left_comm (2 : F), mul_div_mul_left _ _ hc]
 
-/-- The Lagrange basis at the reflected nodes `-v` is the reflection of the Lagrange basis:
-`ℓ̄_i(t) = ℓ_i(-t)`. -/
+/-- The Lagrange basis at the reflected nodes $(-x_k)$ is the reflection of the Lagrange basis: if
+$\bar\ell_i$ is the $i$-th basis polynomial for the nodes $(-x_k)_{k \in s}$, then
+$\bar\ell_i(t) = \ell_i(-t)$ as polynomials. -/
 theorem basis_neg (s : Finset ι) (v : ι → F) (i : ι) :
     Lagrange.basis s (-v) i = (Lagrange.basis s v i).comp (-X) := by
   simp only [Lagrange.basis, Pi.neg_apply]
@@ -672,10 +806,13 @@ theorem basis_neg (s : Finset ι) (v : ι → F) (i : ι) :
   rw [neg_sub_neg, ← neg_sub (v i), inv_neg, C_neg, C_neg]
   ring
 
-/-- **Reflecting the nodes changes the sign of the differentiation matrix**:
-`derivMatrix (-v) = -derivMatrix v`, because `ℓ̄_j(t) = ℓ_j(-t)` has derivative `-ℓ_j'(-t)`. This is
-how a formula at the Chebyshev–Gauss–Lobatto nodes `cos (jπ/n)` transfers to the reversed nodes
-`-cos (jπ/n)` of [quarteroni2000numerical] §10.3. -/
+/-- **Reflecting the nodes changes the sign of the differentiation matrix.** For a finite family of
+nodes $(x_i)$ in a field, the differentiation matrix of the nodes $(-x_i)$ is $-D$, where $D$ is
+the differentiation matrix of $(x_i)$.
+
+The reason is that $\bar\ell_j(t) = \ell_j(-t)$ has the derivative $-\ell_j'(-t)$. This
+transfers a formula at the Chebyshev–Gauss–Lobatto nodes $\cos(j\pi/n)$ to the reversed nodes
+$-\cos(j\pi/n)$ of [quarteroni2000numerical] §10.3. -/
 theorem derivMatrix_neg [Fintype ι] (v : ι → F) : derivMatrix (-v) = -derivMatrix v := by
   ext i j
   rw [Matrix.neg_apply, derivMatrix_apply, derivMatrix_apply, basis_neg, derivative_comp,
@@ -694,7 +831,10 @@ open Real
 
 variable {n : ℕ}
 
-/-- `T_n'` vanishes at the interior Chebyshev–Gauss–Lobatto nodes, the extrema of `T_n`. -/
+/-- Let $0 < j < n$. Then $T_n'$ vanishes at the interior Chebyshev–Gauss–Lobatto node
+$x_j = \cos(j\pi/n)$, which is an extremum of $T_n$:
+$$T_n'(x_j) = 0.$$
+-/
 theorem eval_derivative_T_node_of_pos_of_lt {j : ℕ} (hj0 : 0 < j) (hjn : j < n) :
     (derivative (T ℝ n)).eval (node n j) = 0 := by
   have hn : (n : ℝ) ≠ 0 := by exact_mod_cast (by omega : n ≠ 0)
@@ -712,16 +852,17 @@ theorem eval_derivative_T_node_of_pos_of_lt {j : ℕ} (hj0 : 0 < j) (hjn : j < n
   rw [T_derivative_eq_U, node, eval_mul, eval_intCast, (mul_eq_zero.1 hU).resolve_right hsin,
     mul_zero]
 
-/-- `T_n'(1) = n²`, for a natural `n`. -/
+/-- For a natural number $n$, $T_n'(1) = n^2$. -/
 theorem derivative_T_natCast_eval_one : (derivative (T ℝ n)).eval 1 = (n : ℝ) ^ 2 := by
   have := derivative_T_eval_one (R := ℝ) (n : ℤ)
   exact_mod_cast this
 
-/-- `T_n(-1) = (-1)^n`, for a natural `n`. -/
+/-- For a natural number $n$, $T_n(-1) = (-1)^n$. -/
 theorem T_natCast_eval_neg_one : (T ℝ n).eval (-1) = (-1) ^ n := by
   rw [T_eval_neg_one, Int.cast_negOnePow_natCast]
 
-/-- `T_n'(-1) = -(-1)^n n²`, from the Chebyshev differential equation at `x = -1`. -/
+/-- For a natural number $n$, $T_n'(-1) = -n^2 (-1)^n$. This follows from the Chebyshev differential
+equation at $x = -1$. -/
 theorem derivative_T_natCast_eval_neg_one :
     (derivative (T ℝ n)).eval (-1) = -(n : ℝ) ^ 2 * (-1) ^ n := by
   have h := one_sub_X_sq_mul_iterate_derivative_T_eval (R := ℝ) (n : ℤ) 0 (-1)
@@ -731,7 +872,8 @@ theorem derivative_T_natCast_eval_neg_one :
   push_cast at h
   linear_combination h
 
-/-- The differentiated Chebyshev equation at `x = ±1`: `3 x T_n''(x) = (n² - 1) T_n'(x)`. -/
+/-- The differentiated Chebyshev equation at $x = \pm 1$: if $x^2 = 1$, then
+$3x\, T_n''(x) = (n^2 - 1)\, T_n'(x)$. -/
 theorem three_mul_eval_derivative_derivative_T_of_sq_eq_one {x : ℝ} (hx : x ^ 2 = 1) :
     3 * x * (derivative (derivative (T ℝ n))).eval x
       = ((n : ℝ) ^ 2 - 1) * (derivative (T ℝ n)).eval x := by
@@ -741,8 +883,8 @@ theorem three_mul_eval_derivative_derivative_T_of_sq_eq_one {x : ℝ} (hx : x ^ 
   push_cast at h
   linear_combination -h
 
-/-- The Chebyshev differential equation at a point: `(1 - x²) T_n''(x) = x T_n'(x) - n² T_n(x)`.
--/
+/-- The **Chebyshev differential equation**: for every real $x$, $(1 - x^2)\, T_n''(x) = x\,
+T_n'(x) - n^2\, T_n(x)$. -/
 theorem one_sub_sq_mul_eval_derivative_derivative_T (x : ℝ) :
     (1 - x ^ 2) * (derivative (derivative (T ℝ n))).eval x
       = x * (derivative (T ℝ n)).eval x - (n : ℝ) ^ 2 * (T ℝ n).eval x := by
@@ -752,11 +894,13 @@ theorem one_sub_sq_mul_eval_derivative_derivative_T (x : ℝ) :
   push_cast at h
   linear_combination h
 
-/-- The polynomial `(X² - 1) T_n'`, which vanishes exactly at the Chebyshev–Gauss–Lobatto nodes and
-is therefore a constant multiple of their nodal polynomial (`lobattoNodalT_eq_C_mul_nodal`). -/
+/-- The polynomial $(X^2 - 1)\, T_n'$ over $\mathbb{R}$. It vanishes exactly at the
+Chebyshev–Gauss–Lobatto nodes $\cos(j\pi/n)$, $j = 0, \dots, n$, and is therefore a constant
+multiple of their nodal polynomial (`Polynomial.Chebyshev.lobattoNodalT_eq_C_mul_nodal`). -/
 noncomputable def lobattoNodalT (n : ℕ) : ℝ[X] := (X ^ 2 - 1) * derivative (T ℝ n)
 
-/-- `((X² - 1) T_n')' = X T_n' + n² T_n`, by the Chebyshev differential equation. -/
+/-- The derivative of $(X^2 - 1)\, T_n'$ is $X\, T_n' + n^2\, T_n$, by the Chebyshev differential
+equation. -/
 theorem derivative_lobattoNodalT :
     derivative (lobattoNodalT n) = X * derivative (T ℝ n) + (n : ℝ[X]) ^ 2 * T ℝ n := by
   have h := one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T (R := ℝ) (n : ℤ)
@@ -766,7 +910,7 @@ theorem derivative_lobattoNodalT :
   push_cast at h ⊢
   linear_combination (norm := ring_nf) -h
 
-/-- `((X² - 1) T_n')'' = (n² + 1) T_n' + X T_n''`. -/
+/-- The second derivative of $(X^2 - 1)\, T_n'$ is $(n^2 + 1)\, T_n' + X\, T_n''$. -/
 theorem derivative_derivative_lobattoNodalT :
     derivative (derivative (lobattoNodalT n))
       = ((n : ℝ[X]) ^ 2 + 1) * derivative (T ℝ n) + X * derivative (derivative (T ℝ n)) := by
@@ -775,7 +919,7 @@ theorem derivative_derivative_lobattoNodalT :
     derivative_natCast, mul_zero, zero_mul, zero_add]
   ring
 
-/-- `(X² - 1) T_n'` vanishes at every Chebyshev–Gauss–Lobatto node. -/
+/-- For $j \le n$, the polynomial $(X^2 - 1)\, T_n'$ vanishes at the node $\cos(j\pi/n)$. -/
 theorem eval_lobattoNodalT_node {j : ℕ} (hj : j ≤ n) : (lobattoNodalT n).eval (node n j) = 0 := by
   rcases Nat.eq_zero_or_pos j with rfl | hj0
   · simp [lobattoNodalT, node_eq_one]
@@ -784,7 +928,8 @@ theorem eval_lobattoNodalT_node {j : ℕ} (hj : j ≤ n) : (lobattoNodalT n).eva
     simp [lobattoNodalT]
   · simp [lobattoNodalT, eval_derivative_T_node_of_pos_of_lt hj0 (lt_of_le_of_ne hj hjn)]
 
-/-- `(X² - 1) T_n' ≠ 0` for `n ≥ 1`: its derivative at `1` is `2n²`. -/
+/-- For $n \ge 1$, the polynomial $(X^2 - 1)\, T_n'$ is not zero, because its derivative at $1$ is
+$2n^2$. -/
 theorem lobattoNodalT_ne_zero (hn : n ≠ 0) : lobattoNodalT n ≠ 0 := by
   intro h
   have h1 := congr_arg (fun p => (derivative p).eval 1) h
@@ -794,7 +939,7 @@ theorem lobattoNodalT_ne_zero (hn : n ≠ 0) : lobattoNodalT n ≠ 0 := by
   have : (n : ℝ) ^ 2 + (n : ℝ) ^ 2 ≠ 0 := by positivity
   exact this h1
 
-/-- `(X² - 1) T_n'` has degree at most `n + 1`. -/
+/-- For $n \ge 1$, the polynomial $(X^2 - 1)\, T_n'$ has degree at most $n + 1$. -/
 theorem natDegree_lobattoNodalT_le (hn : n ≠ 0) : (lobattoNodalT n).natDegree ≤ n + 1 := by
   refine natDegree_mul_le.trans ?_
   have h1 : (X ^ 2 - 1 : ℝ[X]).natDegree ≤ 2 := by
@@ -805,8 +950,11 @@ theorem natDegree_lobattoNodalT_le (hn : n ≠ 0) : (lobattoNodalT n).natDegree 
     simp
   omega
 
-/-- **The nodal polynomial of the Chebyshev–Gauss–Lobatto nodes** is a nonzero constant multiple
-of `(X² - 1) T_n'`: the latter has degree at most `n + 1` and vanishes at the `n + 1` distinct
+/-- **The nodal polynomial of the Chebyshev–Gauss–Lobatto nodes.** Let $n \ge 1$ and
+$x_j = \cos(j\pi/n)$ for $j = 0, \dots, n$. Then there is $c \neq 0$ with
+$$(X^2 - 1)\, T_n' = c \prod_{j=0}^{n} (X - x_j).$$
+
+The reason is that the left side has degree at most $n + 1$ and vanishes at the $n + 1$ distinct
 nodes. -/
 theorem lobattoNodalT_eq_C_mul_nodal (hn : n ≠ 0) :
     ∃ c : ℝ, c ≠ 0 ∧ lobattoNodalT n
@@ -830,8 +978,11 @@ theorem lobattoNodalT_eq_C_mul_nodal (hn : n ≠ 0) :
   rw [hq, mul_comm]
   congr 1
 
-/-- `((X² - 1) T_n')'(x_l) = d_l n² (-1)^l` at the node `x_l = cos (lπ/n)`, with
-`d_l = lobattoFactor n l` (`2` at the endpoints, `1` inside). -/
+/-- Let $p = (X^2 - 1)\, T_n'$ and $l \le n$. At the node $x_l = \cos(l\pi/n)$,
+$$p'(x_l) = d_l\, n^2 (-1)^l,$$
+where $d_0 = d_n = 2$ and $d_l = 1$ otherwise.
+
+The factor $d_l$ is `Polynomial.Chebyshev.lobattoFactor n l`. -/
 theorem eval_derivative_lobattoNodalT_node {l : ℕ} (hl : l ≤ n) :
     (derivative (lobattoNodalT n)).eval (node n l)
       = lobattoFactor n l * (n : ℝ) ^ 2 * (-1) ^ l := by
@@ -850,7 +1001,8 @@ theorem eval_derivative_lobattoNodalT_node {l : ℕ} (hl : l ≤ n) :
       lobattoFactor_of_ne hl0.ne' hln]
     ring
 
-/-- `(1 - x_l²) ((X² - 1) T_n')''(x_l) = -x_l n² (-1)^l` at an interior node. -/
+/-- Let $p = (X^2 - 1)\, T_n'$ and $0 < l < n$. At the interior node $x_l = \cos(l\pi/n)$,
+$(1 - x_l^2)\, p''(x_l) = -x_l\, n^2 (-1)^l$. -/
 theorem one_sub_sq_mul_eval_derivative_derivative_lobattoNodalT_node {l : ℕ} (hl0 : 0 < l)
     (hln : l < n) :
     (1 - node n l ^ 2) * (derivative (derivative (lobattoNodalT n))).eval (node n l)
@@ -862,7 +1014,7 @@ theorem one_sub_sq_mul_eval_derivative_derivative_lobattoNodalT_node {l : ℕ} (
   rw [eval_derivative_T_node_of_pos_of_lt hl0 hln, eval_T_real_node (Finset.mem_Iic.2 hln.le)] at h
   linear_combination node n l * h
 
-/-- `((X² - 1) T_n')''(1) = n² (4n² + 2)/3`. -/
+/-- Let $p = (X^2 - 1)\, T_n'$. Then $p''(1) = n^2 (4n^2 + 2)/3$. -/
 theorem eval_derivative_derivative_lobattoNodalT_one :
     (derivative (derivative (lobattoNodalT n))).eval 1
       = (n : ℝ) ^ 2 * (4 * (n : ℝ) ^ 2 + 2) / 3 := by
@@ -873,7 +1025,7 @@ theorem eval_derivative_derivative_lobattoNodalT_one :
   rw [derivative_T_natCast_eval_one] at h
   linear_combination h / 3
 
-/-- `((X² - 1) T_n')''(-1) = -(-1)^n n² (4n² + 2)/3`. -/
+/-- Let $p = (X^2 - 1)\, T_n'$. Then $p''(-1) = -(-1)^n n^2 (4n^2 + 2)/3$. -/
 theorem eval_derivative_derivative_lobattoNodalT_neg_one :
     (derivative (derivative (lobattoNodalT n))).eval (-1)
       = -((n : ℝ) ^ 2 * (-1) ^ n * (4 * (n : ℝ) ^ 2 + 2) / 3) := by
@@ -892,10 +1044,14 @@ open Polynomial.Chebyshev
 
 variable {n : ℕ}
 
-/-- **The off-diagonal entries of the Chebyshev–Gauss–Lobatto differentiation matrix**
-(Canuto–Hussaini–Quarteroni–Zang p. 69; [quarteroni2000numerical] (10.73) at the reflected nodes):
-at the nodes `x_j = cos (jπ/n)`, `D_{lj} = (d_l/d_j) (-1)^{l+j} / (x_l - x_j)` for `l ≠ j`, with
-`d_0 = d_n = 2` and `d_j = 1` otherwise. -/
+/-- **The off-diagonal entries of the Chebyshev–Gauss–Lobatto differentiation matrix.** Let
+$n \ge 1$, let $x_j = \cos(j\pi/n)$ for $j = 0, \dots, n$, and let $D$ be the differentiation
+matrix of these nodes. Then for $l \neq j$,
+$$D_{lj} = \frac{d_l}{d_j} \frac{(-1)^{l+j}}{x_l - x_j},$$
+where $d_0 = d_n = 2$ and $d_j = 1$ otherwise.
+
+This is the formula on p. 69 of Canuto, Hussaini, Quarteroni and Zang, *Spectral Methods in
+Fluid Dynamics*, and [quarteroni2000numerical] (10.73) at the reflected nodes. -/
 theorem derivMatrix_node_of_ne (hn : n ≠ 0) {l j : Fin (n + 1)} (hlj : l ≠ j) :
     derivMatrix (fun j : Fin (n + 1) => node n j) l j
       = lobattoFactor n l / lobattoFactor n j * (-1) ^ ((l : ℕ) + j) / (node n l - node n j) := by
@@ -912,8 +1068,10 @@ theorem derivMatrix_node_of_ne (hn : n ≠ 0) {l j : Fin (n + 1)} (hlj : l ≠ j
   field_simp
   linear_combination (-(-1 : ℝ) ^ (l : ℕ)) * hj1
 
-/-- **The interior diagonal entries of the Chebyshev–Gauss–Lobatto differentiation matrix**:
-`D_{jj} = -x_j / (2 (1 - x_j²))` for `0 < j < n`. -/
+/-- **The interior diagonal entries of the Chebyshev–Gauss–Lobatto differentiation matrix.** Let
+$n \ge 1$, $x_j = \cos(j\pi/n)$ and $0 < j < n$. Then
+$$D_{jj} = -\frac{x_j}{2 (1 - x_j^2)}.$$
+-/
 theorem derivMatrix_node_self_of_pos_of_lt (hn : n ≠ 0) {j : Fin (n + 1)} (hj0 : 0 < (j : ℕ))
     (hjn : (j : ℕ) < n) :
     derivMatrix (fun j : Fin (n + 1) => node n j) j j = -node n j / (2 * (1 - node n j ^ 2)) := by
@@ -931,8 +1089,10 @@ theorem derivMatrix_node_self_of_pos_of_lt (hn : n ≠ 0) {j : Fin (n + 1)} (hj0
   rw [div_eq_div_iff (by positivity) (by positivity)]
   linear_combination 2 * h
 
-/-- **The first diagonal entry of the Chebyshev–Gauss–Lobatto differentiation matrix**:
-`D_{00} = (2n² + 1)/6` at the node `x_0 = 1`. -/
+/-- **The first diagonal entry of the Chebyshev–Gauss–Lobatto differentiation matrix.** Let
+$n \ge 1$. At the node $x_0 = 1$,
+$$D_{00} = \frac{2n^2 + 1}{6}.$$
+-/
 theorem derivMatrix_node_zero_zero (hn : n ≠ 0) :
     derivMatrix (fun j : Fin (n + 1) => node n j) 0 0 = (2 * (n : ℝ) ^ 2 + 1) / 6 := by
   obtain ⟨c, hc, hp⟩ := lobattoNodalT_eq_C_mul_nodal hn
@@ -945,8 +1105,10 @@ theorem derivMatrix_node_zero_zero (hn : n ≠ 0) :
   field_simp
   ring
 
-/-- **The last diagonal entry of the Chebyshev–Gauss–Lobatto differentiation matrix**:
-`D_{nn} = -(2n² + 1)/6` at the node `x_n = -1`. -/
+/-- **The last diagonal entry of the Chebyshev–Gauss–Lobatto differentiation matrix.** Let
+$n \ge 1$. At the node $x_n = -1$,
+$$D_{nn} = -\frac{2n^2 + 1}{6}.$$
+-/
 theorem derivMatrix_node_last_last (hn : n ≠ 0) :
     derivMatrix (fun j : Fin (n + 1) => node n j) (Fin.last n) (Fin.last n)
       = -((2 * (n : ℝ) ^ 2 + 1) / 6) := by
@@ -961,19 +1123,23 @@ theorem derivMatrix_node_last_last (hn : n ≠ 0) :
   field_simp
   ring
 
-/-- **The Chebyshev–Gauss–Lobatto differentiation matrix** (Canuto–Hussaini–Quarteroni–Zang,
-*Spectral Methods in Fluid Dynamics*, p. 69; [quarteroni2000numerical] (10.73)): at the nodes
-`x_j = cos (jπ/n)`, `j = 0, …, n`, `n ≥ 1`,
+/-- **The Chebyshev–Gauss–Lobatto differentiation matrix** ([quarteroni2000numerical] (10.73)). Let
+$n \ge 1$, let $x_j = \cos(j\pi/n)$ for $j = 0, \dots, n$, and let $D$ be the differentiation
+matrix of these nodes. Then
+$$D_{lj} = \begin{cases}
+  \dfrac{d_l}{d_j} \dfrac{(-1)^{l+j}}{x_l - x_j} & l \neq j, \\[1ex]
+  -\dfrac{x_j}{2(1 - x_j^2)} & l = j,\ 0 < j < n, \\[1ex]
+  \dfrac{2n^2 + 1}{6} & l = j = 0, \\[1ex]
+  -\dfrac{2n^2 + 1}{6} & l = j = n,
+\end{cases}$$
+with $d_0 = d_n = 2$ and $d_j = 1$ otherwise.
 
-  `D_{lj} = (d_l/d_j) (-1)^{l+j} / (x_l - x_j)` for `l ≠ j`,
-  `D_{jj} = -x_j / (2 (1 - x_j²))` for `0 < j < n`,
-  `D_{00} = (2n² + 1)/6`, `D_{nn} = -(2n² + 1)/6`,
-
-with `d_0 = d_n = 2` and `d_j = 1` otherwise (`Polynomial.Chebyshev.lobattoFactor`). The book
-states the matrix at the reflected nodes `x̄_j = -x_j`, where it is `-D`
-(`Lagrange.derivMatrix_neg`): the two entry formulas keep their form and the corner entries change
-sign, so the book's `D̄_{00} = -(2n² + 1)/6` and, correcting its printed `(2n² + 1)/3`,
-`D̄_{nn} = (2n² + 1)/6`. -/
+This is the formula on p. 69 of Canuto, Hussaini, Quarteroni and Zang, *Spectral Methods in
+Fluid Dynamics* (1988). The book [quarteroni2000numerical] states the matrix at the reflected
+nodes $\bar x_j = -x_j$, where it is $-D$ (`Lagrange.derivMatrix_neg`). There the two entry
+formulas keep their form and the corner entries change sign: $\bar D_{00} = -(2n^2 + 1)/6$ and
+$\bar D_{nn} = (2n^2 + 1)/6$. The book prints $\bar D_{nn} = (2n^2 + 1)/3$, which is an erratum.
+The factors $d_j$ are `Polynomial.Chebyshev.lobattoFactor`. -/
 theorem chebyshevLobattoDerivMatrix_apply (hn : n ≠ 0) (l j : Fin (n + 1)) :
     derivMatrix (fun j : Fin (n + 1) => node n j) l j
       = if l = j then

@@ -13,12 +13,18 @@ import Mathlib.Combinatorics.Quiver.Path
 /-!
 # Prefunctors preserve the length of paths
 
-`Prefunctor.length_mapPath`: the image of a path under a prefunctor has the same length.
+A prefunctor $F$ between quivers maps each path $p$ to a path $F(p)$. This module shows that $F(p)$
+has the same length as $p$.
+
+## Main results
+
+* `Prefunctor.length_mapPath`: the image of a path under a prefunctor has the same length.
 -/
 
 namespace Prefunctor
 
-/-- A prefunctor preserves the length of a path. -/
+/-- Let $F \colon U \to W$ be a prefunctor between quivers, and let $p$ be a path from $a$ to $b$ in
+$U$. Then the image path $F(p)$ from $F(a)$ to $F(b)$ has the same length as $p$. -/
 @[simp]
 theorem length_mapPath {U W : Type*} [Quiver U] [Quiver W] (F : U ⥤q W) {a b : U}
     (p : Quiver.Path a b) : (F.mapPath p).length = p.length := by

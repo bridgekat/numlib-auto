@@ -14,20 +14,28 @@ import Mathlib.Analysis.RCLike.Basic
 /-!
 # Coordinates in a finite linearly independent family
 
-`LinearIndependent.exists_forall_sum_norm_le`: the coordinates of a vector in the span of a finite
-linearly independent family `x` of a normed space are bounded in ℓ¹ by a fixed multiple `κ` of its
-norm, `∑ ‖c j‖ ≤ κ ‖∑ c j x j‖`. The constant measures how far from orthonormal the family is; it
-is what turns per-vector estimates into subspace estimates
-(`Submodule.gap_le_of_forall_norm_sub_le`).
+Let $x_1, \dots, x_m$ be a finite linearly independent family in a normed space $F$ over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. This file shows that the coordinates of a vector in the
+span of the family are bounded in $\ell^1$ by a fixed multiple $\kappa$ of its norm: $$\sum_j |c_j|
+\le \kappa \, \Bigl\| \sum_j c_j x_j \Bigr\|.$$ The constant $\kappa$ measures how far the family is
+from orthonormal. It turns estimates for single vectors into estimates for subspaces, as in
+`Submodule.gap_le_of_forall_norm_sub_le`.
+
+## Main results
+
+* `LinearIndependent.exists_forall_sum_norm_le`: there is a constant $\kappa > 0$ with
+  $\sum_j |c_j| \le \kappa \|\sum_j c_j x_j\|$ for all coefficients $c$.
 -/
 
-/-- **The ℓ¹ conditioning constant of a finite linearly independent family**: the coordinates of a
-vector in the span are bounded by a fixed multiple of its norm.
+/-- Let $F$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$(x_j)_{j \in \iota}$ be a linearly independent family in $F$ indexed by a finite type $\iota$.
+Then there is a constant $\kappa > 0$ such that $$\sum_{j \in \iota} |c_j| \le \kappa \, \Bigl\|
+\sum_{j \in \iota} c_j x_j \Bigr\| \quad \text{for all } c \in \mathbb{K}^\iota.$$
 
-The constant depends on the family and not only on its cardinality, and it is what measures how far
-from orthonormal the family is. It comes from `LinearMap.exists_antilipschitzWith`, the injective
-linear map here being `c ↦ ∑ c j • x j` on the finite-dimensional space `ι → 𝕜`; no finite
-dimensionality of the ambient space is needed. -/
+The constant depends on the family and not only on its cardinality; it measures how far the
+family is from orthonormal. The space $F$ need not be finite-dimensional. The constant comes
+from `LinearMap.exists_antilipschitzWith`, applied to the injective linear map
+$c \mapsto \sum_j c_j x_j$ on the finite-dimensional space $\mathbb{K}^\iota$. -/
 theorem LinearIndependent.exists_forall_sum_norm_le {𝕜 F ι : Type*} [RCLike 𝕜]
     [NormedAddCommGroup F] [NormedSpace 𝕜 F] [Fintype ι] {x : ι → F}
     (hx : LinearIndependent 𝕜 x) :

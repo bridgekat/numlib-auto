@@ -11,16 +11,23 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 /-!
-# Integrals of `cos (m x)` and `sin (m x)` over a full period
+# Integrals of $\cos(mx)$ and $\sin(mx)$ over a full period
 
-Over `[0, 2π]` the modes `cos (m x)`, `m ≠ 0`, and `sin (m x)` integrate to zero
-(`integral_cos_nat_mul_eq_zero`, `integral_sin_nat_mul_eq_zero`), by Mathlib's `integral_cos`
-and `integral_sin` after the change of variables `x ↦ m x`.
+For a natural number $m$, this file proves that $\int_0^{2\pi} \cos(mx)\,dx = 0$ when $m \neq 0$,
+and that $\int_0^{2\pi} \sin(mx)\,dx = 0$ for every $m$. The proofs use Mathlib's `integral_cos` and
+`integral_sin` after the change of variables $x \mapsto mx$.
+
+## Main results
+
+* `integral_cos_nat_mul_eq_zero`: $\int_0^{2\pi} \cos(mx)\,dx = 0$ for a natural number $m \neq 0$.
+* `integral_sin_nat_mul_eq_zero`: $\int_0^{2\pi} \sin(mx)\,dx = 0$ for every natural number $m$.
 -/
 
 open Real
 
-/-- `∫_0^{2π} cos (m x) dx = 0` for a nonzero natural frequency `m`. -/
+/-- Let $m \neq 0$ be a natural number. Then
+$$\int_0^{2\pi} \cos(mx)\,dx = 0.$$
+-/
 theorem integral_cos_nat_mul_eq_zero {m : ℕ} (hm : m ≠ 0) :
     ∫ y in (0 : ℝ)..(2 * π), Real.cos ((m : ℝ) * y) = 0 := by
   have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hm
@@ -29,7 +36,9 @@ theorem integral_cos_nat_mul_eq_zero {m : ℕ} (hm : m ≠ 0) :
     Real.sin_nat_mul_pi]
   simp
 
-/-- `∫_0^{2π} sin (m x) dx = 0` for every natural frequency `m`. -/
+/-- Let $m$ be a natural number. Then
+$$\int_0^{2\pi} \sin(mx)\,dx = 0.$$
+-/
 theorem integral_sin_nat_mul_eq_zero (m : ℕ) :
     ∫ y in (0 : ℝ)..(2 * π), Real.sin ((m : ℝ) * y) = 0 := by
   rcases eq_or_ne m 0 with rfl | hm

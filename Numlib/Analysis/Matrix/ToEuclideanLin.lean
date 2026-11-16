@@ -18,60 +18,101 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 
 /-!
-# Matrices as operators on `EuclideanSpace`
+# Matrices as operators on Euclidean space
 
-Glue between `Matrix m n 𝕜` and `Matrix.toEuclideanLin A : EuclideanSpace 𝕜 n →ₗ EuclideanSpace 𝕜 m`
-used by every matrix-level surface statement: multiplicativity, powers, adjoint = conjugate
-transpose, eigenvalues, and the `‖A‖₂ = ‖toEuclideanLin A‖` identification. (Symmetric ↔ Hermitian
-is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, and its one-directional form for a symmetric
-matrix over a trivial-star field — the real symmetric case — is
-`Matrix.IsSymm.isSymmetric_toEuclideanLin` here; `Matrix.PosDef` ↔ symmetric coercive is
-`Matrix.posDef_iff_isSymmetricCoercive`; reading a Krylov subspace of `toEuclideanLin A` as a span
-of columns is `Matrix.krylov_subspace_toEuclideanLin` in `Numlib.Krylov.ToEuclideanLin`, which this
-module cannot depend on.)
+A matrix $A \in \mathbb{K}^{m \times n}$, $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, acts as a
+linear operator $x \mapsto A x$ from the Euclidean space $\mathbb{K}^n$ to $\mathbb{K}^m$; in Lean
+this operator is `Matrix.toEuclideanLin A`. This file collects the facts that move a statement
+between the matrix and the operator. Matrix multiplication is composition, powers and polynomials of
+a square matrix are those of its operator, and the conjugate transpose is the adjoint: $\langle A^H
+y, x \rangle = \langle y, A x \rangle$. The eigenvalues of a square matrix are those of its
+operator, and the algebraic multiplicity of an eigenvalue is the dimension of the generalized
+eigenspace. The spectral norm of a square matrix is the operator norm of its operator.
 
-Everything that makes sense for a rectangular matrix is stated for one, over arbitrary `Fintype`
-index types: composition `toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B` and its
-applied form, the adjoint identities `⟪Aᴴ y, x⟫ = ⟪y, A x⟫` and `⟪x, Aᴴ y⟫ = ⟪A x, y⟫` (with their
-real forms for `Aᵀ`, `Matrix.toEuclideanLin_transpose_inner_left` and `_right`, and the real inner
-product of coordinate vectors `EuclideanSpace.inner_toLp_toLp_real`), and the
-coordinate identifications `WithLp.ofLp (toEuclideanLin A x) = A *ᵥ WithLp.ofLp x` and
-`toEuclideanLin A (WithLp.toLp 2 v) = WithLp.toLp 2 (A *ᵥ v)`, which are `rfl` but are what `rw`
-needs to move between the operator picture and `Matrix.mulVec`.
+The file also treats matrices with orthonormal columns. The range of a matrix is the span of its
+columns, $Q^H Q = I$ holds if and only if the columns of $Q$ are orthonormal, and such a $Q$ acts as
+a linear isometry. A unitary matrix preserves the Euclidean norm and inner product, and the two
+column blocks of a unitary matrix span orthogonal complements. Further sections treat the inverse of
+a matrix, the shift $A + r I$, the rank-one matrix $u v^T$, and real matrices as operators on
+$\mathbb{C}^n$.
 
-It also contains the fact that a unitary matrix acts as an isometry of `EuclideanSpace`,
-`‖U *ᵥ v‖₂ = ‖v‖₂`: transport `U` along the star algebra equivalence `Matrix.toEuclideanCLM`
-and use that a unitary continuous linear endomorphism of a Hilbert space preserves the norm
-(`ContinuousLinearMap.norm_map_of_mem_unitary`).
+## Main definitions
 
-Five further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
-transported to the operator picture:
+* `Matrix.unitaryLinearIsometryEquiv`: a unitary matrix $U$ as a linear isometry equivalence of
+  $\mathbb{K}^n$.
+* `Matrix.toEuclideanLinearIsometry`: a matrix $V$ with $V^H V = I$ as a linear isometry.
+* `Matrix.toEuclideanLinearIsometryEquiv`: a matrix $V$ with $V^H V = I$ and $V V^H = I$ as a linear
+  isometry equivalence.
+* `Matrix.toEuclideanComplex`: a real vector as a vector of $\mathbb{C}^n$.
 
-* the *applied* forms of the linear-equivalence laws, `toEuclideanLin (A - B) v =
-  toEuclideanLin A v - toEuclideanLin B v` and its companions for `0`, `1`, `-` and `•`, which are
-  `map_sub` and friends followed by the pointwise definition of the operations on linear maps;
-* *inversion*, `toEuclideanCLM A⁻¹ = Ring.inverse (toEuclideanCLM A)` for an invertible `A`,
-  reconciling Mathlib's junk-valued `Matrix.inv` with `Ring.inverse` on the operator algebra,
-  together with the two cancellations `toEuclideanLin A (toEuclideanLin A⁻¹ z) = z` and
-  `toEuclideanLin A⁻¹ (toEuclideanLin A z) = z` it gives;
-* the *shift* `A + r I` of a matrix by a multiple of the identity, the shape of a resolvent and of
-  every regularized or shifted system, whose image is the shift `toEuclideanCLM A + r • 1` of the
-  operator;
-* *column spaces*: `ran A` is the span of the columns (`Matrix.range_toEuclideanLin_eq_span_col`),
-  `Qᴴ Q = 1` says the columns are orthonormal
-  (`Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal`), the two column blocks of a unitary
-  `[Q_α Q_β]` span orthogonal complements (`Matrix.range_eq_orthogonal_of_fromCols`, and
-  `Matrix.range_submatrix_eq_orthogonal` for complementary column selections), a unitary `V`
-  carries `ran M` to `ran (V M)` isometrically
-  (`Matrix.range_mul_eq_map_of_mul_conjTranspose_eq_one`), and orthonormal columns span a space of
-  their number (`Matrix.finrank_range_of_conjTranspose_mul_self_eq_one`);
-* *injectivity* of `Matrix.toEuclideanCLM` for the coercion its applications use
-  (`Matrix.toEuclideanCLM_injective`), because `StarAlgEquiv.injective` speaks about the underlying
-  ring equivalence and leaves a goal phrased in `toRingEquiv`.
+## Main results
+
+* `Matrix.toEuclideanLin_mul`: the operator of $A B$ is the composition of the operators of $A$ and
+  $B$.
+* `Matrix.toEuclideanLin_aeval`: the operator of $p(A)$ is $p$ of the operator of $A$, for a
+  polynomial $p$.
+* `Matrix.finrank_maxGenEigenspace_toEuclideanLin`: the algebraic multiplicity of an eigenvalue is
+  the dimension of its generalized eigenspace.
+* `Matrix.toEuclideanLin_conjTranspose_inner_left`: $\langle A^H y, x \rangle = \langle y, A x
+  \rangle$.
+* `Matrix.hasEigenvalue_toEuclideanLin_iff`: the eigenvalues of the operator are the points of the
+  spectrum of the matrix.
+* `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`: a Hermitian matrix whose eigenvalues lie
+  in $[\lambda_{\min}, \lambda_{\max}]$ has its quadratic form between $\lambda_{\min} \|x\|^2$ and
+  $\lambda_{\max} \|x\|^2$.
+* `Matrix.range_toEuclideanLin_eq_span_col`: the range of a matrix is the span of its columns.
+* `Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal`: $Q^H Q = I$ if and only if the columns of
+  $Q$ are orthonormal.
+* `Matrix.range_eq_orthogonal_of_fromCols`: the two column blocks of a unitary matrix span
+  orthogonal complements.
+* `Matrix.l2_opNorm_eq_norm_toEuclideanLin`: the spectral norm of a square matrix is the operator
+  norm of its operator.
+* `Matrix.norm_toLp_mulVec_of_mem_unitaryGroup`: a unitary matrix preserves the Euclidean norm.
+* `Matrix.range_mul_eq_map_of_mul_conjTranspose_eq_one`: a unitary $V$ maps the range of $M$
+  isometrically onto the range of $V M$.
+* `Matrix.toEuclideanCLM_nonsing_inv`: the operator of $A^{-1}$ is the inverse of the operator of an
+  invertible $A$.
+* `Matrix.toEuclideanCLM_add_smul_one`: the operator of $A + r I$ is the operator of $A$ plus $r$
+  times the identity.
+* `Matrix.PosDef.isSymmetricCoercive_toEuclideanCLM_complexify`: a real positive definite matrix
+  acts on $\mathbb{C}^n$ as a symmetric coercive operator.
+
+## Notation
+
+* $\langle x, y \rangle$: the Euclidean inner product, conjugate-linear in the first argument, as in
+  Mathlib.
+* $A^H$: the conjugate transpose `Aᴴ`. Over $\mathbb{R}$ it is the transpose $A^T$.
+* $\operatorname{ran} A$: the range `LinearMap.range (Matrix.toEuclideanLin A)`.
+
+## Implementation notes
+
+* A vector of $\mathbb{K}^n$ is a term of `EuclideanSpace 𝕜 n`, and `WithLp.toLp 2` and
+  `WithLp.ofLp` pass between it and a function `n → 𝕜`. The identities `Matrix.ofLp_toEuclideanLin`
+  and `Matrix.toEuclideanLin_toLp` hold by definition, and they are stated so that `rw` can pass
+  between the operator and `Matrix.mulVec`.
+* Everything that makes sense for a rectangular matrix is stated for one, with arbitrary finite
+  index types.
+* The equivalence of symmetric matrices and symmetric operators is Mathlib's
+  `Matrix.isSymmetric_toEuclideanLin_iff`. Its direction for a real symmetric matrix is
+  `Matrix.IsSymm.isSymmetric_toEuclideanLin`. The equivalence of positive definite matrices and
+  symmetric coercive operators is `Matrix.posDef_iff_isSymmetricCoercive`. The reading of a Krylov
+  subspace of `Matrix.toEuclideanLin A` as a span of columns is
+  `Matrix.krylov_subspace_toEuclideanLin` in `Numlib.Krylov.ToEuclideanLin`, because this module
+  cannot depend on the Krylov theory.
+* Mathlib's matrix inverse $A^{-1}$ is $0$ for a singular $A$, and the operator algebra has the
+  inverse `Ring.inverse`, which is also $0$ at a non-invertible element. The two agree under
+  `Matrix.toEuclideanCLM` for an invertible $A$, and the results on inverses assume that $A$ is
+  invertible.
+* `Matrix.toEuclideanCLM_injective` states injectivity for the coercion that applications use,
+  because `StarAlgEquiv.injective` is stated for the underlying ring equivalence and leaves a goal
+  phrased in `toRingEquiv`.
 -/
 
-/-- The real inner product of two coordinate vectors is their dot product: Mathlib's
-`EuclideanSpace.inner_toLp_toLp` with the trivial star dropped and the factors in order. -/
+/-- The real inner product of two coordinate vectors $u, v \in \mathbb{R}^\iota$ is their dot
+product: $\langle u, v \rangle = u \cdot v$.
+
+This is Mathlib's `EuclideanSpace.inner_toLp_toLp` with the trivial conjugation removed and the
+factors in this order. -/
 theorem EuclideanSpace.inner_toLp_toLp_real {ι : Type*} [Fintype ι] (u v : ι → ℝ) :
     inner ℝ (WithLp.toLp 2 u : EuclideanSpace ℝ ι) (WithLp.toLp 2 v) = u ⬝ᵥ v := by
   rw [EuclideanSpace.inner_toLp_toLp, star_trivial, dotProduct_comm]
@@ -80,31 +121,43 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The identity matrix acts as the identity operator. -/
+/-- The identity matrix acts as the identity operator: the operator of
+$I \in \mathbb{K}^{n \times n}$ is the identity of $\mathbb{K}^n$. -/
 @[simp]
 theorem toEuclideanLin_one : toEuclideanLin (1 : Matrix n n 𝕜) = LinearMap.id :=
   toLpLin_one 2
 
-/-- Matrix multiplication is composition of the operators, for rectangular matrices as well; on
-square ones it makes `toEuclideanLin` a morphism of algebras and not merely a linear map. -/
+/-- Matrix multiplication is composition of operators. Let $A \in \mathbb{K}^{m \times n}$ and
+$B \in \mathbb{K}^{n \times o}$. Then the operator of $A B$ is the operator of $A$ composed with
+the operator of $B$.
+
+On square matrices this makes `Matrix.toEuclideanLin` a morphism of algebras. -/
 theorem toEuclideanLin_mul {m o : Type*} [Fintype o] [DecidableEq o] (A : Matrix m n 𝕜)
     (B : Matrix n o 𝕜) : toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B :=
   toLpLin_mul_same 2 A B
 
-/-- Applying a product of matrices is applying them one after the other: the applied form of
-`Matrix.toEuclideanLin_mul`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{n \times o}$ and $x \in \mathbb{K}^o$.
+Then $(A B) x = A (B x)$, where each matrix acts as its operator.
+
+This is the applied form of `Matrix.toEuclideanLin_mul`. -/
 theorem toEuclideanLin_mul_apply {m o : Type*} [Fintype o] [DecidableEq o] (A : Matrix m n 𝕜)
     (B : Matrix n o 𝕜) (x : EuclideanSpace 𝕜 o) :
     toEuclideanLin (A * B) x = toEuclideanLin A (toEuclideanLin B x) := by
   rw [toEuclideanLin_mul, LinearMap.comp_apply]
 
-/-- Powers of a matrix act as powers of the operator; this is what lets a Krylov subspace of a
-matrix be read as a Krylov subspace of `toEuclideanLin A`. -/
+/-- Powers of a matrix act as powers of its operator. Let $A \in \mathbb{K}^{n \times n}$ and let
+$k$ be a natural number. Then the operator of $A^k$ is the $k$-th power of the operator of $A$.
+
+This lets a Krylov subspace of a matrix be read as a Krylov subspace of
+`Matrix.toEuclideanLin A`. -/
 theorem toEuclideanLin_pow (A : Matrix n n 𝕜) (k : ℕ) :
     toEuclideanLin (A ^ k) = toEuclideanLin A ^ k :=
   toLpLin_pow 2 A k
 
-/-- `p(A)` as an operator is `p` of the operator: `Matrix.toEuclideanLin` is an algebra map. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and let $p$ be a polynomial over $\mathbb{K}$. Then the
+operator of the matrix $p(A)$ is $p(T)$, where $T$ is the operator of $A$.
+
+The polynomial evaluation is `Polynomial.aeval`. -/
 theorem toEuclideanLin_aeval (A : Matrix n n 𝕜) (p : Polynomial 𝕜) :
     toEuclideanLin (Polynomial.aeval A p) = Polynomial.aeval (toEuclideanLin A) p := by
   induction p using Polynomial.induction_on' with
@@ -113,78 +166,108 @@ theorem toEuclideanLin_aeval (A : Matrix n n 𝕜) (p : Polynomial 𝕜) :
     rw [Polynomial.aeval_monomial, Polynomial.aeval_monomial, ← Algebra.smul_def,
       ← Algebra.smul_def, map_smul, toEuclideanLin_pow]
 
-/-- The algebraic multiplicity of an eigenvalue of a matrix, the multiplicity of `μ` as a root of
-the characteristic polynomial, is the dimension of the generalized eigenspace of
-`toEuclideanLin A`: Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` read through
-`Matrix.charpoly_toLin`. -/
+/-- The algebraic multiplicity of an eigenvalue is the dimension of its generalized eigenspace. Let
+$A \in \mathbb{K}^{n \times n}$ and $\mu \in \mathbb{K}$. Then the multiplicity of $\mu$ as a
+root of the characteristic polynomial of $A$ is the dimension of the generalized eigenspace
+$\bigcup_k \ker (T - \mu I)^k$ of the operator $T$ of $A$.
+
+The generalized eigenspace is `Module.End.maxGenEigenspace`. The proof is Mathlib's
+`LinearMap.finrank_maxGenEigenspace_eq`, read through `Matrix.charpoly_toLin`. -/
 theorem finrank_maxGenEigenspace_toEuclideanLin (A : Matrix n n 𝕜) (μ : 𝕜) :
     Module.finrank 𝕜 (Module.End.maxGenEigenspace (toEuclideanLin A) μ) =
       A.charpoly.rootMultiplicity μ := by
   rw [LinearMap.finrank_maxGenEigenspace_eq, toEuclideanLin_eq_toLin_orthonormal, charpoly_toLin]
 
-/-- `⟪Aᴴ y, x⟫ = ⟪y, A x⟫`: the conjugate transpose moves across the inner product as the adjoint
-does (`LinearMap.adjoint_inner_left`). -/
+/-- The conjugate transpose moves across the inner product as the adjoint does. Let
+$A \in \mathbb{K}^{m \times n}$, $x \in \mathbb{K}^n$ and $y \in \mathbb{K}^m$. Then
+$$\langle A^H y, x \rangle = \langle y, A x \rangle.$$
+
+The proof is `LinearMap.adjoint_inner_left`. -/
 theorem toEuclideanLin_conjTranspose_inner_left {m : Type*} [Fintype m] [DecidableEq m]
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 (toEuclideanLin Aᴴ y) x = inner 𝕜 y (toEuclideanLin A x) := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_left]
 
-/-- `⟪x, Aᴴ y⟫ = ⟪A x, y⟫`: the conjugate transpose moves across the inner product as the adjoint
-does (`LinearMap.adjoint_inner_right`). -/
+/-- The conjugate transpose moves across the inner product as the adjoint does. Let
+$A \in \mathbb{K}^{m \times n}$, $x \in \mathbb{K}^n$ and $y \in \mathbb{K}^m$. Then
+$$\langle x, A^H y \rangle = \langle A x, y \rangle.$$
+
+The proof is `LinearMap.adjoint_inner_right`. -/
 theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [DecidableEq m]
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.adjoint_inner_right]
 
-/-- The quadratic form of a congruence `Xᴴ A X` at `y` is that of `A` at `X y`. -/
+/-- The quadratic form of a congruence. Let $A \in \mathbb{K}^{m \times m}$,
+$X \in \mathbb{K}^{m \times n}$ and $y \in \mathbb{K}^n$. Then
+$$\langle X^H A X y, y \rangle = \langle A (X y), X y \rangle.$$
+-/
 theorem inner_toEuclideanLin_conjTranspose_mul_mul_apply {m : Type*} [Fintype m] [DecidableEq m]
     (A : Matrix m m 𝕜) (X : Matrix m n 𝕜) (y : EuclideanSpace 𝕜 n) :
     inner 𝕜 (toEuclideanLin (Xᴴ * A * X) y) y =
       inner 𝕜 (toEuclideanLin A (toEuclideanLin X y)) (toEuclideanLin X y) := by
   rw [toEuclideanLin_mul_apply, toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left]
 
-/-- Over a field with trivial star (`ℝ`), the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᵀ`,
-for rectangular matrices too: `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` with `Aᴴ = Aᵀ`. -/
+/-- Over a field with trivial conjugation, such as $\mathbb{R}$, the adjoint of the operator of
+$A \in \mathbb{K}^{m \times n}$ is the operator of $A^T$.
+
+This is `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` with $A^H = A^T$. -/
 theorem toEuclideanLin_transpose_eq_adjoint [TrivialStar 𝕜] {m : Type*} [Fintype m]
     [DecidableEq m] (A : Matrix m n 𝕜) :
     toEuclideanLin Aᵀ = LinearMap.adjoint (toEuclideanLin A) := by
   rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_eq_adjoint]
 
-/-- `⟪Aᵀ y, x⟫ = ⟪y, A x⟫` over a field with trivial star: the real form of
-`Matrix.toEuclideanLin_conjTranspose_inner_left`. -/
+/-- Over a field with trivial conjugation, for $A \in \mathbb{K}^{m \times n}$, $x \in \mathbb{K}^n$
+and $y \in \mathbb{K}^m$, $\langle A^T y, x \rangle = \langle y, A x \rangle$. This is the real
+form of `Matrix.toEuclideanLin_conjTranspose_inner_left`. -/
 theorem toEuclideanLin_transpose_inner_left [TrivialStar 𝕜] {m : Type*} [Fintype m]
     [DecidableEq m] (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 (toEuclideanLin Aᵀ y) x = inner 𝕜 y (toEuclideanLin A x) := by
   rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_left]
 
-/-- `⟪x, Aᵀ y⟫ = ⟪A x, y⟫` over a field with trivial star: the real form of
-`Matrix.toEuclideanLin_conjTranspose_inner_right`. -/
+/-- Over a field with trivial conjugation, for $A \in \mathbb{K}^{m \times n}$, $x \in \mathbb{K}^n$
+and $y \in \mathbb{K}^m$, $\langle x, A^T y \rangle = \langle A x, y \rangle$. This is the real
+form of `Matrix.toEuclideanLin_conjTranspose_inner_right`. -/
 theorem toEuclideanLin_transpose_inner_right [TrivialStar 𝕜] {m : Type*} [Fintype m]
     [DecidableEq m] (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 x (toEuclideanLin Aᵀ y) = inner 𝕜 (toEuclideanLin A x) y := by
   rw [← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_inner_right]
 
-/-- A symmetric matrix over a field with trivial star — a real symmetric matrix, in practice —
-acts as a symmetric operator on `EuclideanSpace`. This is the direction of Mathlib's
-`Matrix.isSymmetric_toEuclideanLin_iff` that a real statement needs, with the symmetric-is-Hermitian
-step (`Matrix.isHermitian_iff_isSymm`) already taken. -/
+/-- Let $\mathbb{K}$ have trivial conjugation, as $\mathbb{R}$ does, and let
+$A \in \mathbb{K}^{n \times n}$ be symmetric, $A^T = A$. Then the operator of $A$ is symmetric:
+$\langle A x, y \rangle = \langle x, A y \rangle$ for all $x, y$.
+
+This is the direction of Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff` that a real statement
+needs, with the step from symmetric to Hermitian (`Matrix.isHermitian_iff_isSymm`) already
+taken. -/
 theorem IsSymm.isSymmetric_toEuclideanLin [TrivialStar 𝕜] {A : Matrix n n 𝕜} (hA : A.IsSymm) :
     (toEuclideanLin A).IsSymmetric :=
   isSymmetric_toEuclideanLin_iff.mpr (isHermitian_iff_isSymm.mpr hA)
 
-/-- Eigenvalues of the operator are the eigenvalues of the matrix. -/
+/-- The eigenvalues of the operator are the eigenvalues of the matrix. Let
+$A \in \mathbb{K}^{n \times n}$ and $\mu \in \mathbb{K}$. Then $\mu$ is an eigenvalue of the
+operator of $A$ if and only if $\mu$ is in the spectrum of $A$. -/
 theorem hasEigenvalue_toEuclideanLin_iff (A : Matrix n n 𝕜) (μ : 𝕜) :
     Module.End.HasEigenvalue (toEuclideanLin A) μ ↔ μ ∈ spectrum 𝕜 A := by
   rw [Module.End.hasEigenvalue_iff_mem_spectrum, spectrum_toLpLin]
 
-/-- For Hermitian `A`, the eigenvalues of `toEuclideanLin A` are Mathlib's
-`Matrix.IsHermitian.eigenvalues`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian and let $\mu \in \mathbb{K}$. Then $\mu$ is an
+eigenvalue of the operator of $A$ if and only if $\mu = \lambda_i$ for some $i$, where
+$(\lambda_i)$ are Mathlib's eigenvalues `Matrix.IsHermitian.eigenvalues` of $A$. -/
 theorem IsHermitian.hasEigenvalue_toEuclideanLin_iff {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (μ : 𝕜) : Module.End.HasEigenvalue (toEuclideanLin A) μ ↔ ∃ i, (hA.eigenvalues i : 𝕜) = μ := by
   rw [Matrix.hasEigenvalue_toEuclideanLin_iff, hA.spectrum_eq_image_range]
   simp [eq_comm]
 
-/-- The quadratic-form bounds of a Hermitian matrix are its extreme eigenvalues. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be Hermitian, and let
+$\lambda_{\min}, \lambda_{\max} \in \mathbb{R}$ be such that every eigenvalue of $A$ lies in
+$[\lambda_{\min}, \lambda_{\max}]$. Then the operator of $A$ is symmetric and
+$$\lambda_{\min} \|x\|^2 \le \operatorname{Re} \langle A x, x \rangle \le \lambda_{\max}
+  \|x\|^2$$
+for all $x \in \mathbb{K}^n$.
+
+The conclusion is `LinearMap.IsSymmetricBoundedBy`, and the eigenvalues are
+`Matrix.IsHermitian.eigenvalues`. -/
 theorem IsHermitian.isSymmetricBoundedBy_toEuclideanLin {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (h : ∀ i, hA.eigenvalues i ∈ Set.Icc lmin lmax) :
     (toEuclideanLin A).IsSymmetricBoundedBy lmin lmax := by
@@ -204,22 +287,28 @@ direction. -/
 
 variable {m : Type*}
 
-/-- `Matrix.toEuclideanLin` in coordinates: under `WithLp.ofLp`, the action of a matrix on a
-Euclidean vector is `Matrix.mulVec`. -/
+/-- In coordinates, the operator of $A \in \mathbb{K}^{m \times n}$ is matrix-vector multiplication:
+the coordinate vector of $A x$ is `A *ᵥ WithLp.ofLp x`. -/
 theorem ofLp_toEuclideanLin (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) :
     WithLp.ofLp (toEuclideanLin A x) = A *ᵥ WithLp.ofLp x := rfl
 
-/-- `Matrix.toEuclideanLin` in coordinates, in the `WithLp.toLp` direction. -/
+/-- In coordinates, the operator of $A \in \mathbb{K}^{m \times n}$ is matrix-vector multiplication:
+the operator applied to the vector with coordinates $v$ is the vector with coordinates `A *ᵥ v`. -/
 theorem toEuclideanLin_toLp (A : Matrix m n 𝕜) (v : n → 𝕜) :
     toEuclideanLin A (WithLp.toLp 2 v) = WithLp.toLp 2 (A *ᵥ v) := rfl
 
-/-- `Matrix.toEuclideanLin` unfolded on an arbitrary vector. -/
+/-- The operator of $A \in \mathbb{K}^{m \times n}$ applied to $x$ is the vector with coordinates
+`A *ᵥ WithLp.ofLp x`. -/
 theorem toEuclideanLin_apply (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) :
     toEuclideanLin A x = WithLp.toLp 2 (A *ᵥ WithLp.ofLp x) := rfl
 
 omit [Fintype n] [DecidableEq n] in
-/-- `V y = ∑ y_j • (column j of V)`: moving between the book's `V_m y` and the backbone's
-`∑ y_j • vec j`. -/
+/-- Let $V \in \mathbb{K}^{n \times m}$ have columns $v_1, \dots, v_m$, and let
+$y \in \mathbb{K}^m$. Then
+$$V y = \sum_j y_j v_j.$$
+
+This passes between a matrix-vector product $V y$ and the linear combination $\sum_j y_j v_j$ of
+the columns of $V$. -/
 theorem toEuclideanLin_apply_eq_sum [Fintype m] [DecidableEq m] (V : Matrix n m 𝕜) (y : m → 𝕜) :
     toEuclideanLin V (WithLp.toLp 2 y) =
       ∑ j, y j • (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace 𝕜 n) := by
@@ -228,8 +317,9 @@ theorem toEuclideanLin_apply_eq_sum [Fintype m] [DecidableEq m] (V : Matrix n m 
 
 end Coordinates
 
-/-- Mathlib's quadratic form `x ↦ x ⬝ᵥ A x` of a real matrix is the quadratic form of its Euclidean
-operator. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$. Then Mathlib's quadratic form
+$x \cdot A x$ (`Matrix.toQuadraticForm'`) is $\operatorname{Re} \langle A x, x \rangle$ for the
+operator of $A$. -/
 theorem toQuadraticForm'_ofLp (A : Matrix n n ℝ) (x : EuclideanSpace ℝ n) :
     Matrix.toQuadraticForm' A (WithLp.ofLp x) = RCLike.re (inner ℝ (toEuclideanLin A x) x) := by
   rw [Matrix.toQuadraticForm', LinearMap.BilinMap.toQuadraticMap_apply, toLinearMap₂'_apply',
@@ -242,7 +332,7 @@ section Columns
 variable {m : Type*}
 
 omit [Fintype n] [DecidableEq n] in
-/-- The range of `toEuclideanLin M` is the span of the columns of `M`. -/
+/-- The range of a matrix $M \in \mathbb{K}^{n \times m}$ is the span of its columns. -/
 theorem range_toEuclideanLin_eq_span_col [Fintype m] [DecidableEq m] (M : Matrix n m 𝕜) :
     LinearMap.range (toEuclideanLin M) =
       Submodule.span 𝕜 (Set.range fun j => WithLp.toLp 2 (M.col j)) := by
@@ -257,7 +347,10 @@ theorem range_toEuclideanLin_eq_span_col [Fintype m] [DecidableEq m] (M : Matrix
     exact ⟨WithLp.toLp 2 (Pi.single j 1), by rw [toEuclideanLin_toLp, mulVec_single_one]⟩
 
 omit [Fintype n] [DecidableEq n] in
-/-- The column space of a one-column matrix is the line through its column. -/
+/-- Let $m$ be nonempty and let $x \in \mathbb{K}^n$. The range of the matrix whose columns all
+equal $x$ is the line $\mathbb{K} x$.
+
+The matrix is `Matrix.replicateCol m x`. -/
 theorem range_toEuclideanLin_replicateCol [Fintype m] [DecidableEq m] [Nonempty m] (x : n → 𝕜) :
     LinearMap.range (toEuclideanLin (replicateCol m x)) = 𝕜 ∙ WithLp.toLp 2 x := by
   rw [range_toEuclideanLin_eq_span_col]
@@ -266,7 +359,8 @@ theorem range_toEuclideanLin_replicateCol [Fintype m] [DecidableEq m] [Nonempty 
   rw [h, Set.range_const]
 
 omit [DecidableEq n] in
-/-- `Qᴴ Q = 1` iff the columns of `Q` are orthonormal in `EuclideanSpace`. -/
+/-- Let $Q \in \mathbb{K}^{n \times m}$. Then $Q^H Q = I$ if and only if the columns of $Q$ are
+orthonormal in $\mathbb{K}^n$. -/
 theorem conjTranspose_mul_self_eq_one_iff_orthonormal [DecidableEq m] {Q : Matrix n m 𝕜} :
     Qᴴ * Q = 1 ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
   rw [orthonormal_iff_ite, ← Matrix.ext_iff]
@@ -275,7 +369,8 @@ theorem conjTranspose_mul_self_eq_one_iff_orthonormal [DecidableEq m] {Q : Matri
   rfl
 
 omit [DecidableEq n] in
-/-- `Qᴴ r = 0` iff `r` is orthogonal to the columns of `Q`. -/
+/-- Let $Q \in \mathbb{K}^{n \times m}$ and $r \in \mathbb{K}^n$. Then $Q^H r = 0$ if and only if
+$r$ is orthogonal to every column of $Q$. -/
 theorem conjTranspose_mulVec_eq_zero_iff {Q : Matrix n m 𝕜} {r : n → 𝕜} :
     Qᴴ *ᵥ r = 0 ↔ ∀ j, inner 𝕜 (WithLp.toLp 2 (Q.col j)) (WithLp.toLp 2 r) = 0 := by
   rw [funext_iff]
@@ -283,7 +378,11 @@ theorem conjTranspose_mulVec_eq_zero_iff {Q : Matrix n m 𝕜} {r : n → 𝕜} 
   rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
   rfl
 
-/-- For a unitary `Q = [Q_α Q_β]` split into two column blocks, `ran Q_β = (ran Q_α)ᗮ`. -/
+/-- The two column blocks of a unitary matrix span orthogonal complements. Let
+$Q_\alpha \in \mathbb{K}^{n \times r}$ and $Q_\beta \in \mathbb{K}^{n \times s}$, and suppose
+that $Q = [Q_\alpha \; Q_\beta]$ satisfies $Q^H Q = I$ and $Q Q^H = I$. Then
+$$\operatorname{ran} Q_\beta = (\operatorname{ran} Q_\alpha)^\perp.$$
+-/
 theorem range_eq_orthogonal_of_fromCols {r s : Type*} [Fintype r] [DecidableEq r] [Fintype s]
     [DecidableEq s] {Qα : Matrix n r 𝕜} {Qβ : Matrix n s 𝕜}
     (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1)
@@ -312,11 +411,15 @@ theorem range_eq_orthogonal_of_fromCols {r s : Type*} [Fintype r] [DecidableEq r
       toLpLin_one, LinearMap.id_apply] at h
     exact h
 
-/-- **Complementary column selections of a unitary matrix span orthogonal complements**: if
-`Sum.elim f g` is a bijection onto the columns of a unitary `V`, then
-`ran V(:, g) = (ran V(:, f))ᗮ` ([golub2013matrix] §2.1.5, after Theorem 2.1.1). The selections
-put side by side are `V` with its columns permuted, so this is
-`Matrix.range_eq_orthogonal_of_fromCols`. -/
+/-- Complementary column selections of a unitary matrix span orthogonal complements. Let
+$V \in \mathbb{K}^{n \times n}$ be unitary, and let $f : r \to n$ and $g : s \to n$ be such that
+the map on $r \sqcup s$ given by $f$ and $g$ is a bijection onto the column indices. Then
+$$\operatorname{ran} V(:, g) = (\operatorname{ran} V(:, f))^\perp,$$
+where the $i$-th column of $V(:, f)$ is the column $f(i)$ of $V$.
+
+This is [golub2013matrix], §2.1.5, after Theorem 2.1.1. The column selection $V(:, f)$ is
+`V.submatrix id f`, and the bijection is `Sum.elim f g`. The two selections side by side are $V$
+with its columns permuted, so the result follows from `Matrix.range_eq_orthogonal_of_fromCols`. -/
 theorem range_submatrix_eq_orthogonal {r s : Type*} [Fintype r] [DecidableEq r] [Fintype s]
     [DecidableEq s] {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜) {f : r → n} {g : s → n}
     (hfg : Function.Bijective (Sum.elim f g)) :
@@ -334,7 +437,10 @@ theorem range_submatrix_eq_orthogonal {r s : Type*} [Fintype r] [DecidableEq r] 
 end Columns
 
 open scoped Matrix.Norms.L2Operator in
-/-- The `2`-operator norm of a matrix is the operator norm of `toEuclideanLin A`. -/
+/-- The spectral norm of $A \in \mathbb{K}^{n \times n}$ is the operator norm of its operator on
+$\mathbb{K}^n$.
+
+The spectral norm is the norm of the scoped instance `Matrix.Norms.L2Operator`. -/
 theorem l2_opNorm_eq_norm_toEuclideanLin (A : Matrix n n 𝕜) :
     ‖A‖ = ‖LinearMap.toContinuousLinearMap (toEuclideanLin A)‖ :=
   l2_opNorm_def A
@@ -343,25 +449,36 @@ section Unitary
 
 variable {U : Matrix n n 𝕜}
 
-/-- A unitary matrix becomes a unitary operator on `EuclideanSpace 𝕜 n`. -/
+/-- A unitary matrix $U \in \mathbb{K}^{n \times n}$ gives a unitary element
+`Matrix.toEuclideanCLM U` of the algebra of continuous linear operators on $\mathbb{K}^n$. -/
 theorem toEuclideanCLM_mem_unitary (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) U ∈
       unitary (EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n) :=
   Unitary.map_mem _ hU
 
-/-- A unitary matrix acts as an isometry of `EuclideanSpace 𝕜 n`. -/
+/-- A unitary matrix $U \in \mathbb{K}^{n \times n}$ is an isometry: $\|U x\| = \|x\|$ for all
+$x \in \mathbb{K}^n$, with $U$ acting through `Matrix.toEuclideanCLM`. -/
 theorem norm_toEuclideanCLM_apply_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜)
     (x : EuclideanSpace 𝕜 n) : ‖toEuclideanCLM (n := n) (𝕜 := 𝕜) U x‖ = ‖x‖ :=
   ContinuousLinearMap.norm_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) x
 
-/-- A unitary matrix preserves the Euclidean norm: `‖U *ᵥ v‖₂ = ‖v‖₂`. -/
+/-- A unitary matrix preserves the Euclidean norm. Let $U \in \mathbb{K}^{n \times n}$ be unitary
+and let $v \in \mathbb{K}^n$. Then
+$$\|U v\|_2 = \|v\|_2.$$
+
+The proof transports $U$ along the star algebra equivalence `Matrix.toEuclideanCLM` and uses
+that a unitary continuous linear operator on a Hilbert space preserves the norm
+(`ContinuousLinearMap.norm_map_of_mem_unitary`). -/
 theorem norm_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) (v : n → 𝕜) :
     ‖(WithLp.toLp 2 (U *ᵥ v) : EuclideanSpace 𝕜 n)‖ =
       ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ := by
   rw [← toEuclideanCLM_toLp U v]
   exact norm_toEuclideanCLM_apply_of_mem_unitaryGroup hU _
 
-/-- A unitary matrix preserves Euclidean inner products. -/
+/-- A unitary matrix preserves the Euclidean inner product. Let $U \in \mathbb{K}^{n \times n}$ be
+unitary and let $v, w \in \mathbb{K}^n$. Then
+$$\langle U v, U w \rangle = \langle v, w \rangle.$$
+-/
 theorem inner_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) (v w : n → 𝕜) :
     inner 𝕜 (WithLp.toLp 2 (U *ᵥ v) : EuclideanSpace 𝕜 n)
         (WithLp.toLp 2 (U *ᵥ w) : EuclideanSpace 𝕜 n) =
@@ -369,16 +486,18 @@ theorem inner_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 
   rw [← toEuclideanCLM_toLp U v, ← toEuclideanCLM_toLp U w]
   exact ContinuousLinearMap.inner_map_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) _ _
 
-/-- A unitary matrix acts isometrically on `EuclideanSpace`, in the `toEuclideanLin` form. -/
+/-- A unitary matrix acts as an isometry. Let $U \in \mathbb{K}^{n \times n}$ be unitary. Then
+$\|U x\| = \|x\|$ for all $x \in \mathbb{K}^n$, with $U$ acting through `Matrix.toEuclideanLin`. -/
 theorem norm_toEuclideanLin_apply_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜)
     (x : EuclideanSpace 𝕜 n) : ‖toEuclideanLin U x‖ = ‖x‖ := by
   rw [toEuclideanLin_apply, norm_toLp_mulVec_of_mem_unitaryGroup hU]
 
-/-- A unitary matrix is a unit, with inverse `star Q`. -/
+/-- A unitary matrix $U \in \mathbb{K}^{n \times n}$ is invertible. Its inverse is $U^H$. -/
 theorem isUnit_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) : IsUnit U :=
   ⟨⟨U, star U, mem_unitaryGroup_iff.mp hU, mem_unitaryGroup_iff'.mp hU⟩, rfl⟩
 
-/-- The similarity `Uᴴ A U` by a unitary matrix does not change the spectrum. -/
+/-- A unitary similarity does not change the spectrum. Let $U \in \mathbb{K}^{n \times n}$ be
+unitary and let $A \in \mathbb{K}^{n \times n}$. Then $U^H A U$ and $A$ have the same spectrum. -/
 theorem spectrum_conjTranspose_mul_mul {A : Matrix n n 𝕜} (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
     spectrum 𝕜 (Uᴴ * A * U) = spectrum 𝕜 A := by
   have hu : IsUnit U := isUnit_of_mem_unitaryGroup hU
@@ -387,17 +506,22 @@ theorem spectrum_conjTranspose_mul_mul {A : Matrix n n 𝕜} (hU : U ∈ Matrix.
   have h := spectrum.units_conjugate' (R := 𝕜) (a := A) (u := hu.unit)
   rwa [coe_units_inv, IsUnit.unit_spec, hinv] at h
 
-/-- A unitary matrix `U` as a linear isometry equivalence of `EuclideanSpace 𝕜 n`, acting as
-`toEuclideanLin U`, with inverse `toEuclideanLin Uᴴ`. -/
+/-- A unitary matrix $U \in \mathbb{K}^{n \times n}$ as a linear isometry equivalence of
+$\mathbb{K}^n$. It acts as $U$, and its inverse acts as $U^H$.
+
+The two actions are `Matrix.unitaryLinearIsometryEquiv_apply` and
+`Matrix.unitaryLinearIsometryEquiv_symm_apply`. -/
 noncomputable def unitaryLinearIsometryEquiv (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
     EuclideanSpace 𝕜 n ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 n :=
   Unitary.linearIsometryEquiv ⟨toEuclideanCLM (n := n) (𝕜 := 𝕜) U, toEuclideanCLM_mem_unitary hU⟩
 
-/-- The isometry of a unitary matrix acts as the matrix. -/
+/-- The isometry `Matrix.unitaryLinearIsometryEquiv` of a unitary matrix $U$ acts as $U$: it sends
+$x$ to $U x$. -/
 theorem unitaryLinearIsometryEquiv_apply (hU : U ∈ Matrix.unitaryGroup n 𝕜)
     (x : EuclideanSpace 𝕜 n) : unitaryLinearIsometryEquiv hU x = toEuclideanLin U x := rfl
 
-/-- The inverse of the isometry of a unitary matrix acts as its conjugate transpose. -/
+/-- The inverse of the isometry `Matrix.unitaryLinearIsometryEquiv` of a unitary matrix $U$ acts as
+$U^H$: it sends $x$ to $U^H x$. -/
 theorem unitaryLinearIsometryEquiv_symm_apply (hU : U ∈ Matrix.unitaryGroup n 𝕜)
     (x : EuclideanSpace 𝕜 n) : (unitaryLinearIsometryEquiv hU).symm x = toEuclideanLin Uᴴ x := by
   change (star (toEuclideanCLM (n := n) (𝕜 := 𝕜) U)) x = _
@@ -410,8 +534,8 @@ section Isometry
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- A matrix `V` with orthonormal columns, `Vᴴ V = 1`, acts as a linear isometry
-`EuclideanSpace 𝕜 m →ₗᵢ EuclideanSpace 𝕜 n`. -/
+/-- A matrix $V \in \mathbb{K}^{n \times m}$ with orthonormal columns, $V^H V = I$, as a linear
+isometry from $\mathbb{K}^m$ to $\mathbb{K}^n$. It acts as $V$. -/
 noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
     EuclideanSpace 𝕜 m →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
   toLinearMap := toEuclideanLin V
@@ -422,14 +546,16 @@ noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V
     rw [← sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _), ← inner_self_eq_norm_sq (𝕜 := 𝕜),
       ← inner_self_eq_norm_sq (𝕜 := 𝕜), h]
 
-/-- The isometry of `Matrix.toEuclideanLinearIsometry` acts as `toEuclideanLin V`. -/
+/-- The isometry `Matrix.toEuclideanLinearIsometry` of a matrix $V$ with $V^H V = I$ acts as $V$: it
+sends $y$ to $V y$. -/
 @[simp]
 theorem toEuclideanLinearIsometry_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
     (y : EuclideanSpace 𝕜 m) : toEuclideanLinearIsometry hV y = toEuclideanLin V y := rfl
 
-/-- A matrix `V` with `Vᴴ V = 1` and `V Vᴴ = 1` (a unitary matrix whose rows and columns are
-indexed by different types) acts as a linear isometry equivalence
-`EuclideanSpace 𝕜 m ≃ₗᵢ EuclideanSpace 𝕜 n`. -/
+/-- A matrix $V \in \mathbb{K}^{n \times m}$ with $V^H V = I$ and $V V^H = I$, as a linear isometry
+equivalence from $\mathbb{K}^m$ onto $\mathbb{K}^n$. It acts as $V$.
+
+Such a $V$ is a unitary matrix whose rows and columns are indexed by different types. -/
 noncomputable def toEuclideanLinearIsometryEquiv {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
     (hV' : V * Vᴴ = 1) : EuclideanSpace 𝕜 m ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 n :=
   LinearIsometryEquiv.ofSurjective (toEuclideanLinearIsometry hV) fun y =>
@@ -437,16 +563,21 @@ noncomputable def toEuclideanLinearIsometryEquiv {V : Matrix n m 𝕜} (hV : V�
       rw [toEuclideanLinearIsometry_apply, ← toEuclideanLin_mul_apply, hV', toEuclideanLin_one,
         LinearMap.id_apply]⟩
 
-/-- The isometry equivalence of `Matrix.toEuclideanLinearIsometryEquiv` acts as
-`toEuclideanLin V`. -/
+/-- The isometry equivalence `Matrix.toEuclideanLinearIsometryEquiv` of a matrix $V$ with
+$V^H V = I$ and $V V^H = I$ acts as $V$: it sends $y$ to $V y$. -/
 @[simp]
 theorem toEuclideanLinearIsometryEquiv_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
     (hV' : V * Vᴴ = 1) (y : EuclideanSpace 𝕜 m) :
     toEuclideanLinearIsometryEquiv hV hV' y = toEuclideanLin V y := rfl
 
-/-- **Column spaces under a unitary change of coordinates**: for `V` with `Vᴴ V = 1` and
-`V Vᴴ = 1`, `ran (V M)` is the image of `ran M` under the isometry equivalence `V`, so metric
-quantities of column spaces (gaps, angles, distances) are unchanged by `M ↦ V M`. -/
+/-- Column spaces under a unitary change of coordinates. Let $V \in \mathbb{K}^{n \times m}$ satisfy
+$V^H V = I$ and $V V^H = I$, and let $M \in \mathbb{K}^{m \times k}$. Then
+$\operatorname{ran}(V M)$ is the image of $\operatorname{ran} M$ under the isometry equivalence
+of $V$.
+
+Therefore the metric quantities of column spaces, such as gaps, angles and distances, do not
+change under $M \mapsto V M$. The isometry equivalence is
+`Matrix.toEuclideanLinearIsometryEquiv`. -/
 theorem range_mul_eq_map_of_mul_conjTranspose_eq_one {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
     (hV' : V * Vᴴ = 1) {k : Type*} [Fintype k] [DecidableEq k] (M : Matrix m k 𝕜) :
     LinearMap.range (toEuclideanLin (V * M)) =
@@ -457,7 +588,8 @@ theorem range_mul_eq_map_of_mul_conjTranspose_eq_one {V : Matrix n m 𝕜} (hV :
   rfl
 
 omit [DecidableEq n] in
-/-- The range of a matrix with orthonormal columns has dimension the number of columns. -/
+/-- Let $V \in \mathbb{K}^{n \times m}$ satisfy $V^H V = I$. Then $\operatorname{ran} V$ has
+dimension $m$, the number of columns. -/
 theorem finrank_range_of_conjTranspose_mul_self_eq_one {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
     Module.finrank 𝕜 (LinearMap.range (toEuclideanLin V)) = Fintype.card m := by
   classical
@@ -476,37 +608,42 @@ corresponding operation on linear maps, in the form in which a proof about a vec
 
 variable {m : Type*}
 
-/-- The zero matrix sends every vector to `0`. -/
+/-- The zero matrix of size $m \times n$ sends every vector $v \in \mathbb{K}^n$ to $0$. -/
 theorem toEuclideanLin_zero_apply (v : EuclideanSpace 𝕜 n) :
     toEuclideanLin (0 : Matrix m n 𝕜) v = 0 := by
   rw [map_zero]; rfl
 
-/-- The negated matrix acts as the negated operator. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $v \in \mathbb{K}^n$. Then $(-A) v = -(A v)$. -/
 theorem toEuclideanLin_neg_apply (A : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
     toEuclideanLin (-A) v = -toEuclideanLin A v := by
   rw [map_neg]; rfl
 
-/-- A difference of matrices acts as the difference of the operators. -/
+/-- Let $A, B \in \mathbb{K}^{m \times n}$ and $v \in \mathbb{K}^n$. Then $(A - B) v = A v - B v$.
+-/
 theorem toEuclideanLin_sub_apply (A B : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
     toEuclideanLin (A - B) v = toEuclideanLin A v - toEuclideanLin B v := by
   rw [map_sub]; rfl
 
-/-- A scalar multiple of a matrix acts as the scalar multiple of the operator. -/
+/-- Let $r \in \mathbb{K}$, $A \in \mathbb{K}^{m \times n}$ and $v \in \mathbb{K}^n$. Then
+$(r A) v = r (A v)$. -/
 theorem toEuclideanLin_smul_apply (r : 𝕜) (A : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
     toEuclideanLin (r • A) v = r • toEuclideanLin A v := by
   rw [map_smul]; rfl
 
 end Applied
 
-/-- The identity matrix fixes every vector; the applied form of `Matrix.toEuclideanLin_one`. -/
+/-- The identity matrix fixes every vector: $I v = v$ for $v \in \mathbb{K}^n$. This is the applied
+form of `Matrix.toEuclideanLin_one`. -/
 theorem toEuclideanLin_one_apply (v : EuclideanSpace 𝕜 n) :
     toEuclideanLin (1 : Matrix n n 𝕜) v = v := by
   rw [toEuclideanLin_one]; rfl
 
-/-- `Matrix.toEuclideanCLM` is injective: two matrices that act as the same operator on
-`EuclideanSpace` are equal.  This is the injectivity of a star algebra equivalence, stated for the
-coercion its applications use; `StarAlgEquiv.injective` is stated for the underlying ring
-equivalence instead, and a goal closed by it comes out phrased in `toRingEquiv`. -/
+/-- Two matrices $A, B \in \mathbb{K}^{n \times n}$ that act as the same continuous linear operator
+on $\mathbb{K}^n$ are equal: `Matrix.toEuclideanCLM` is injective.
+
+This is the injectivity of a star algebra equivalence, stated for the coercion that applications
+use. `StarAlgEquiv.injective` is stated for the underlying ring equivalence instead, and a goal
+closed by it is phrased in `toRingEquiv`. -/
 theorem toEuclideanCLM_injective :
     Function.Injective (toEuclideanCLM (n := n) (𝕜 := 𝕜)) :=
   EmbeddingLike.injective' _
@@ -522,8 +659,11 @@ invertible matrices, which is all that is ever needed; on singular ones both sid
 `Matrix.inv` and `Ring.inverse` alike, but the operator side does not know that its argument came
 from a matrix, so the hypothesis stays. -/
 
-/-- A star algebra equivalence carries `Ring.inverse` to `Ring.inverse`: the image of the inverse of
-an invertible matrix is the inverse of its image. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be invertible. Then the operator of `Ring.inverse A` is
+`Ring.inverse` of the operator of $A$, which is its inverse operator.
+
+A star algebra equivalence carries `Ring.inverse` to `Ring.inverse`, and the operator is
+`Matrix.toEuclideanCLM A`. -/
 theorem toEuclideanCLM_ringInverse {A : Matrix n n 𝕜} (hA : IsUnit A) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) (Ring.inverse A)
       = Ring.inverse (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := by
@@ -531,15 +671,22 @@ theorem toEuclideanCLM_ringInverse {A : Matrix n n 𝕜} (hA : IsUnit A) :
   refine hu.mul_left_cancel ?_
   rw [← map_mul, Ring.mul_inverse_cancel _ hA, map_one, Ring.mul_inverse_cancel _ hu]
 
-/-- The operator of the inverse of an invertible matrix is the inverse operator, with Mathlib's
-junk-valued `Matrix.inv` on the left and `Ring.inverse` on the right. -/
+/-- The operator of the inverse is the inverse operator. Let $A \in \mathbb{K}^{n \times n}$ be
+invertible. Then the operator of $A^{-1}$ is the inverse of the operator of $A$.
+
+On the left, $A^{-1}$ is Mathlib's matrix inverse, which is $0$ for a singular matrix. On the
+right, the inverse is `Ring.inverse` in the algebra of continuous linear operators. The
+operators are `Matrix.toEuclideanCLM`. -/
 theorem toEuclideanCLM_nonsing_inv {A : Matrix n n 𝕜} (hA : IsUnit A) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) A⁻¹
       = Ring.inverse (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := by
   rw [nonsing_inv_eq_ringInverse, toEuclideanCLM_ringInverse hA]
 
-/-- For a nonsingular `M`, `toEuclideanLin M` is a unit of `Module.End` with `Ring.inverse` equal
-to `toEuclideanLin M⁻¹`: the `Module.End` form of `Matrix.toEuclideanCLM_nonsing_inv`. -/
+/-- Let $M \in \mathbb{K}^{n \times n}$ be invertible. Then the operator of $M$ is invertible, and
+its inverse `Ring.inverse` is the operator of $M^{-1}$.
+
+This is the form of `Matrix.toEuclideanCLM_nonsing_inv` for linear maps, with the operators
+`Matrix.toEuclideanLin`. -/
 theorem ringInverse_toEuclideanLin {M : Matrix n n 𝕜} (hM : IsUnit M) :
     IsUnit (toEuclideanLin M) ∧ Ring.inverse (toEuclideanLin M) = toEuclideanLin M⁻¹ := by
   have hdet := (isUnit_iff_isUnit_det M).mp hM
@@ -551,21 +698,26 @@ theorem ringInverse_toEuclideanLin {M : Matrix n n 𝕜} (hM : IsUnit M) :
         toEuclideanLin_one, Module.End.one_eq_id]⟩
   exact ⟨⟨u, rfl⟩, Ring.inverse_unit u⟩
 
-/-- Applying an invertible matrix undoes applying its inverse, on `EuclideanSpace`: the applied
-form of `Matrix.mul_nonsing_inv`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be invertible and let $z \in \mathbb{K}^n$. Then
+$A (A^{-1} z) = z$.
+
+This is the applied form of `Matrix.mul_nonsing_inv`. -/
 theorem toEuclideanLin_mul_nonsing_inv_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A (toEuclideanLin A⁻¹ z) = z := by
   rw [← toEuclideanLin_mul_apply, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA),
     toEuclideanLin_one_apply]
 
-/-- Applying the inverse of an invertible matrix undoes applying the matrix, on `EuclideanSpace`:
-the applied form of `Matrix.nonsing_inv_mul`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be invertible and let $z \in \mathbb{K}^n$. Then
+$A^{-1} (A z) = z$.
+
+This is the applied form of `Matrix.nonsing_inv_mul`. -/
 theorem toEuclideanLin_nonsing_inv_mul_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A⁻¹ (toEuclideanLin A z) = z := by
   rw [← toEuclideanLin_mul_apply, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA),
     toEuclideanLin_one_apply]
 
-/-- A nonsingular matrix acts surjectively. -/
+/-- An invertible matrix $S \in \mathbb{K}^{n \times n}$ acts surjectively: its range is
+$\mathbb{K}^n$. -/
 theorem range_toEuclideanLin_eq_top_of_isUnit {S : Matrix n n 𝕜} (hS : IsUnit S) :
     LinearMap.range (toEuclideanLin S) = ⊤ :=
   LinearMap.range_eq_top.2 fun z => ⟨_, toEuclideanLin_mul_nonsing_inv_apply hS z⟩
@@ -574,25 +726,36 @@ end Inverse
 
 section Shift
 
-/-! ### Shifts by a multiple of the identity
+/-!
+### Shifts by a multiple of the identity
 
-The shift `A + r I` is the shape of a resolvent, of a regularized system and of the half-steps of an
-alternating-direction sweep; its image under `Matrix.toEuclideanCLM` is the corresponding shift of
-the operator. -/
+The shift $A + r I$ is the form of a resolvent, of a regularized system and of the half-steps of an
+alternating-direction iteration. Its image under `Matrix.toEuclideanCLM` is the corresponding shift
+of the operator.
+-/
 
-/-- The shift `A + r I` of a matrix acts as the shift `toEuclideanCLM A + r • 1` of the operator. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $r \in \mathbb{K}$. Then the operator of $A + r I$ is
+$T + r \cdot 1$, where $T$ is the operator of $A$.
+
+The operators are `Matrix.toEuclideanCLM`. -/
 theorem toEuclideanCLM_add_smul_one (A : Matrix n n 𝕜) (r : 𝕜) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) (A + r • 1)
       = toEuclideanCLM (n := n) (𝕜 := 𝕜) A + r • 1 := by
   rw [map_add, map_smul, map_one]
 
-/-- The shift `A - r I` of a matrix acts as the shift `toEuclideanCLM A - r • 1` of the operator. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $r \in \mathbb{K}$. Then the operator of $A - r I$ is
+$T - r \cdot 1$, where $T$ is the operator of $A$.
+
+The operators are `Matrix.toEuclideanCLM`. -/
 theorem toEuclideanCLM_sub_smul_one (A : Matrix n n 𝕜) (r : 𝕜) :
     toEuclideanCLM (n := n) (𝕜 := 𝕜) (A - r • 1)
       = toEuclideanCLM (n := n) (𝕜 := 𝕜) A - r • 1 := by
   rw [map_sub, map_smul, map_one]
 
-/-- A nonsingular shift `A + r I` gives an invertible shifted operator. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $r \in \mathbb{K}$ be such that $A + r I$ is invertible.
+Then the shifted operator $T + r \cdot 1$ is invertible, where $T$ is the operator of $A$.
+
+The operator is `Matrix.toEuclideanCLM A`. -/
 theorem isUnit_toEuclideanCLM_add_smul_one {A : Matrix n n 𝕜} {r : 𝕜}
     (hA : IsUnit (A + r • (1 : Matrix n n 𝕜))) :
     IsUnit (toEuclideanCLM (n := n) (𝕜 := 𝕜) A + r • 1) := by
@@ -605,8 +768,11 @@ section RankOne
 
 open WithLp
 
-/-- The outer product `u vᵀ` acts on `EuclideanSpace ℝ n` as the rank-one operator
-`w ↦ ⟪v, w⟫ u`. -/
+/-- Let $u, v \in \mathbb{R}^n$. Then the outer product $u v^T$ acts on $\mathbb{R}^n$ as the
+rank-one operator $w \mapsto \langle v, w \rangle u$.
+
+The outer product is `Matrix.vecMulVec u v`, and the rank-one operator is
+`InnerProductSpace.rankOne`. -/
 theorem toEuclideanCLM_vecMulVec (u v : n → ℝ) :
     toEuclideanCLM (𝕜 := ℝ) (vecMulVec u v)
       = InnerProductSpace.rankOne ℝ (toLp 2 u) (toLp 2 v) := by
@@ -624,11 +790,12 @@ A real matrix reaches the complex Hilbert-space theory (self-adjointness, coerci
 spectral radius) through `Matrix.complexify` and `Matrix.toEuclideanCLM`; a real vector is read in
 `EuclideanSpace ℂ n` through `Matrix.toEuclideanComplex`. -/
 
-/-- A real vector as a vector of `EuclideanSpace ℂ n`. -/
+/-- A real vector $e \in \mathbb{R}^n$ as the vector of $\mathbb{C}^n$ with the same coordinates. -/
 def toEuclideanComplex (e : n → ℝ) : EuclideanSpace ℂ n := WithLp.toLp 2 fun i => (e i : ℂ)
 
 omit [Fintype n] [DecidableEq n] in
-/-- A real vector is zero iff its complex Euclidean image is. -/
+/-- A real vector $e$ is zero if and only if its image in $\mathbb{C}^n$ under
+`Matrix.toEuclideanComplex` is zero. -/
 theorem toEuclideanComplex_eq_zero_iff {e : n → ℝ} : toEuclideanComplex e = 0 ↔ e = 0 := by
   constructor
   · intro h
@@ -639,15 +806,23 @@ theorem toEuclideanComplex_eq_zero_iff {e : n → ℝ} : toEuclideanComplex e = 
     ext i
     simp [toEuclideanComplex]
 
-/-- The Euclidean operator of the complexification of `A` acts on a real vector as `A` does. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ and $e \in \mathbb{R}^n$. Then the operator of $A$, viewed
+as a complex matrix, sends the image of $e$ in $\mathbb{C}^n$ to the image of $A e$.
+
+The complex matrix is `Matrix.complexify A`, its operator is `Matrix.toEuclideanCLM`, and the
+image of a real vector is `Matrix.toEuclideanComplex`. -/
 theorem toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
     toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e)
       = toEuclideanComplex (A *ᵥ e) := by
   rw [toEuclideanComplex, toEuclideanCLM_toLp, complexify_mulVec_ofReal]
   rfl
 
-/-- The quadratic form of the Euclidean operator of `complexify A` at a real vector is the real
-quadratic form `(A e) ⬝ e`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ and $e \in \mathbb{R}^n$. Then the quadratic form of $A$
+viewed as a complex matrix, at the image of $e$ in $\mathbb{C}^n$, has real part
+$(A e) \cdot e$.
+
+The complex matrix is `Matrix.complexify A`, and the image of a real vector is
+`Matrix.toEuclideanComplex`. -/
 theorem re_inner_toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
     RCLike.re (inner ℂ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e))
       (toEuclideanComplex e)) = (A *ᵥ e) ⬝ᵥ e := by
@@ -655,7 +830,10 @@ theorem re_inner_toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n �
     EuclideanSpace.inner_eq_star_dotProduct]
   simp [dotProduct, mul_comm]
 
-/-- The Euclidean operator of a real symmetric matrix is a symmetric operator. -/
+/-- Let $X \in \mathbb{R}^{n \times n}$ be symmetric. Then $X$, viewed as a complex matrix, acts on
+$\mathbb{C}^n$ as a symmetric operator.
+
+The complex matrix is `Matrix.complexify X`, and its operator is `Matrix.toEuclideanCLM`. -/
 theorem IsHermitian.isSymmetric_toEuclideanCLM_complexify {X : Matrix n n ℝ}
     (hX : X.IsHermitian) :
     ((toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify X) :
@@ -664,7 +842,12 @@ theorem IsHermitian.isSymmetric_toEuclideanCLM_complexify {X : Matrix n n ℝ}
   rw [coe_toEuclideanCLM_eq_toEuclideanLin]
   exact isSymmetric_toEuclideanLin_iff.mpr ((isHermitian_complexify_iff X).mpr hX)
 
-/-- The Euclidean operator of a real positive definite matrix is symmetric coercive. -/
+/-- Let $X \in \mathbb{R}^{n \times n}$ be positive definite. Then $X$, viewed as a complex matrix,
+acts on $\mathbb{C}^n$ as a symmetric coercive operator: it is symmetric and $\operatorname{Re}
+\langle X z, z \rangle \ge c \|z\|^2$ for some $c > 0$ and all $z$.
+
+The complex matrix is `Matrix.complexify X`, its operator is `Matrix.toEuclideanCLM`, and the
+conclusion is `LinearMap.IsSymmetricCoercive`. -/
 theorem PosDef.isSymmetricCoercive_toEuclideanCLM_complexify {X : Matrix n n ℝ}
     (hX : X.PosDef) :
     ((toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify X) :
@@ -673,8 +856,12 @@ theorem PosDef.isSymmetricCoercive_toEuclideanCLM_complexify {X : Matrix n n ℝ
   rw [coe_toEuclideanCLM_eq_toEuclideanLin]
   exact (posDef_iff_isSymmetricCoercive _).mp (posDef_complexify_iff.mpr hX)
 
-/-- The real spectrum of the Euclidean operator of a complexified real matrix is the real
-spectrum of the matrix. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$. Then the real spectrum of the operator of $A$ on
+$\mathbb{C}^n$ is the real spectrum of $A$: a real number $\lambda$ is in one if and only if it
+is in the other.
+
+The operator is `Matrix.toEuclideanCLM (Matrix.complexify A)`, and the real spectrum is
+`spectrum ℝ`. -/
 theorem spectrum_real_toEuclideanCLM_complexify (A : Matrix n n ℝ) :
     spectrum ℝ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A)) = spectrum ℝ A := by
   ext t

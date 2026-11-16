@@ -7,52 +7,61 @@ import Numlib.Analysis.Convex.Subdifferential.Existence
 /-!
 # Monotonicity of the subdifferential
 
-The subdifferential of a proper convex function is not merely *monotone* —
-`⟨x₁ - x₂, y₁ - y₂⟩ ≥ 0` whenever `yᵢ ∈ ∂f xᵢ` — but **cyclically monotone**: every finite cycle
-`(x₀, y₀), …, (x_m, y_m)` in its graph satisfies
-
-```
-⟨x₁ - x₀, y₀⟩ + ⟨x₂ - x₁, y₁⟩ + ⋯ + ⟨x₀ - x_m, y_m⟩ ≤ 0.
-```
-
-That is the whole story: a multivalued mapping is cyclically monotone exactly when it is contained
-in the subdifferential of a closed proper convex function, and that function can be written down as
-the supremum of the telescoping sums above, read as affine functions of a free endpoint. Since a
-closed proper convex function is determined by its subdifferential up to an additive constant, the
-maximal cyclically monotone mappings are precisely the subdifferentials — a different condition
-from maximal monotonicity, neither implying the other.
+Let $B$ be a pairing of real vector spaces $E$ and $F$, written $\langle x, y \rangle$. The
+subdifferential of a proper convex function $f \colon E \to [-\infty, +\infty]$ is **monotone**:
+$\langle x_1 - x_2, y_1 - y_2 \rangle \ge 0$ whenever $y_i \in \partial f(x_i)$. It is even
+**cyclically monotone**: every finite cycle $(x_0, y_0), \dots, (x_m, y_m)$ in its graph satisfies
+$$\langle x_1 - x_0, y_0 \rangle + \langle x_2 - x_1, y_1 \rangle + \dots + \langle x_0 - x_m, y_m
+  \rangle \le 0.$$
+Conversely, a nonempty cyclically monotone multivalued mapping is contained in the subdifferential
+of a closed proper convex function. This function is the supremum of the telescoping sums above,
+read as affine functions of a free endpoint. A closed proper convex function is determined by its
+subdifferential up to an additive constant, so on a finite-dimensional space the maximal cyclically
+monotone mappings are exactly the subdifferentials of the closed proper convex functions. This is a
+different condition from maximal monotonicity. The characterization is due to Rockafellar (Pacific
+J. Math. 17 (1966), 497–510), and the presentation follows [rockafellar1970convex], §24.
 
 ## Main definitions
 
-* `IsMonotoneRel`, `IsMaximalMonotoneRel`, `IsCyclicallyMonotone`, `IsMaximalCyclicallyMonotone`.
-* `cyclicPotential B ρ s` — the convex function reconstructed from a cyclically monotone `ρ`.
+* `ConvexAnalysis.IsMonotoneRel`, `ConvexAnalysis.IsCyclicallyMonotone`: monotone and cyclically
+  monotone multivalued mappings.
+* `ConvexAnalysis.IsMaximalMonotoneRel`, `ConvexAnalysis.IsMaximalCyclicallyMonotone`: maximal
+  monotone and maximal cyclically monotone multivalued mappings.
+* `ConvexAnalysis.cyclicPotential`: the convex function reconstructed from a cyclically monotone
+  mapping.
 
 ## Main results
 
-* `isCyclicallyMonotone_iff_exists_convexFn` — cyclic monotonicity *is* containment in some `∂f`.
-* `isClosed_subgradientRel` — the graph of `∂f` is closed.
-* `eq_add_coe_of_subgradientRel_subset` — rigidity: `∂f ⊆ ∂g` forces `g = f + α`, by subdivision.
-* `isMaximalCyclicallyMonotone_iff_exists_closedProperConvexFn` — the maximal cyclically monotone
-  mappings are exactly the subdifferentials.
+* `ConvexAnalysis.isCyclicallyMonotone_iff_exists_convexFn`: a nonempty mapping is cyclically
+  monotone if and only if it is contained in the subdifferential of a closed proper convex function.
+* `ConvexAnalysis.isClosed_subgradientRel`: the graph of $\partial f$ is closed.
+* `ConvexAnalysis.eq_add_coe_of_subgradientRel_subset`: if $\partial f \subseteq \partial g$ for
+  closed proper convex $f$ and $g$, then $g = f + \alpha$ for a real constant $\alpha$.
+* `ConvexAnalysis.isMaximalCyclicallyMonotone_iff_exists_closedProperConvexFn`: the maximal
+  cyclically monotone mappings are exactly the subdifferentials of the closed proper convex
+  functions.
+
+## Notation
+
+* `ConvexAnalysis.chainVal B s l x`: the telescoping sum $\langle x_1 - x_0, y_0 \rangle + \dots +
+  \langle x - x_m, y_m \rangle$ along the chain that starts at $s = (x_0, y_0)$, runs through
+  $l = [(x_1, y_1), \dots, (x_m, y_m)]$ and ends at $x$.
 
 ## Implementation notes
 
-A cycle is a `List (E × F)` with the starting pair carried separately, so that every proof is a
-list induction. `chainVal B s l x` keeps the free endpoint last, which makes `cyclicPotential` a
-supremum of affine functions of `x` and the cycle condition read `chainVal B s l s.1 ≤ 0`.
-Closedness of the graph asks for *joint* continuity of the pairing,
-`Continuous fun p : E × F => B p.1 p.2`: continuity of `⟨·, y⟩` for each fixed `y` is not enough to
-pass to the limit in `⟨z - xᵢ, yᵢ⟩` when both arguments move. In `ℝⁿ` the hypothesis is automatic.
-
-Maximal monotonicity of `∂f` for a closed proper convex `f` is not here: it is
-`isMaximalMonotoneRel_subgradientRel` in `Extremum/Prox.lean`, because its proof is Moreau's
-theorem and that file is downstream of this one.
-
-## References
-
-* [rockafellar1970convex] §24.
-* R. T. Rockafellar, *Characterization of the subdifferentials of convex functions*, Pacific J.
-  Math. **17** (1966) 497–510.
+* A cycle is a `List (E × F)` with the starting pair given separately, so that every proof is an
+  induction on a list. `ConvexAnalysis.chainVal` has the free endpoint last. Then
+  `ConvexAnalysis.cyclicPotential` is a supremum of affine functions of $x$, and the cycle condition
+  is `chainVal B s l s.1 ≤ 0`.
+* The closedness of the graph needs joint continuity of the pairing,
+  `Continuous fun p : E × F => B p.1 p.2`. Continuity of $\langle \cdot, y \rangle$ for each fixed
+  $y$ is not enough to pass to the limit in $\langle z - x_i, y_i \rangle$ when both arguments move.
+  In $\mathbb{R}^n$ the hypothesis holds automatically.
+* The uniqueness up to a constant is proved by subdivision of segments, not by integration of
+  one-sided derivatives.
+* Maximal monotonicity of $\partial f$ for a closed proper convex $f$ is
+  `ConvexAnalysis.isMaximalMonotoneRel_subgradientRel` in `Numlib.Analysis.Convex.Extremum.Prox`.
+  Its proof uses Moreau's theorem, and that module imports this one.
 -/
 
 open Set Filter Topology
@@ -65,37 +74,38 @@ section Chain
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- The telescoping sum along a finite chain in the graph of a multivalued mapping. The chain
-starts at the pair `s = (x₀, y₀)`, runs through `l = [(x₁, y₁), …, (x_m, y_m)]` and ends at the
-free point `x`:
-
-```
-chainVal B s l x = ⟨x₁ - x₀, y₀⟩ + ⟨x₂ - x₁, y₁⟩ + ⋯ + ⟨x - x_m, y_m⟩.
-```
-
-Taking `x = x₀` closes the chain into a cycle. -/
+/-- The **telescoping sum** along a finite chain in $E \times F$. The chain starts at the pair
+$s = (x_0, y_0)$, runs through $l = [(x_1, y_1), \dots, (x_m, y_m)]$ and ends at the free point
+$x \in E$:
+$$\operatorname{chainVal}(s, l, x) = \langle x_1 - x_0, y_0 \rangle + \langle x_2 - x_1, y_1
+  \rangle + \dots + \langle x - x_m, y_m \rangle.$$
+For $x = x_0$ the chain is a closed cycle. -/
 def chainVal (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : E × F → List (E × F) → E → ℝ
   | s, [], x => B (x - s.1) s.2
   | s, q :: l, x => B (q.1 - s.1) s.2 + chainVal B q l x
 
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
 
+/-- The telescoping sum of the chain with no further pairs is $\langle x - x_0, y_0 \rangle$. -/
 @[simp] theorem chainVal_nil (s : E × F) (x : E) : chainVal B s [] x = B (x - s.1) s.2 := rfl
 
+/-- The telescoping sum of the chain $s, q, l$ ending at $x$ is $\langle q_1 - s_1, s_2 \rangle$
+plus the telescoping sum of the chain $q, l$ ending at $x$. -/
 @[simp] theorem chainVal_cons (s q : E × F) (l : List (E × F)) (x : E) :
     chainVal B s (q :: l) x = B (q.1 - s.1) s.2 + chainVal B q l x := rfl
 
-/-- Appending one more edge to a chain: the value along `l ++ [q]` ending at `z` is the value along
-`l` ending at `q.1`, plus the last edge. This is the step that makes a chain into a longer chain in
-the reconstruction below. -/
+/-- Appending one pair $q = (q_1, q_2)$ to a chain: the telescoping sum along $l$ followed by $q$,
+ending at $z$, is the telescoping sum along $l$ ending at $q_1$, plus
+$\langle z - q_1, q_2 \rangle$. -/
 theorem chainVal_append_singleton (s q : E × F) (l : List (E × F)) (z : E) :
     chainVal B s (l ++ [q]) z = chainVal B s l q.1 + B (z - q.1) q.2 := by
   induction l generalizing s with
   | nil => simp
   | cons r l ih => simp only [List.cons_append, chainVal_cons, ih]; ring
 
-/-- A chain is affine in its free endpoint: `chainVal B s l x = ⟨x, y⟩ - c` for a `(y, c)` that
-depends only on the chain. This is why `cyclicPotential` is a supremum of affine functions. -/
+/-- A telescoping sum is affine in its free endpoint: for each chain there are $y \in F$ and
+$c \in \mathbb{R}$ with $\operatorname{chainVal}(s, l, x) = \langle x, y \rangle - c$ for every
+$x$. -/
 theorem exists_chainVal_eq (l : List (E × F)) (s : E × F) :
     ∃ (y : F) (c : ℝ), ∀ x, chainVal B s l x = B x y - c := by
   induction l generalizing s with
@@ -117,37 +127,47 @@ section Monotone
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ρ σ : SetRel E F}
 
-/-- A multivalued mapping is **monotone** when `⟨x₁ - x₂, y₁ - y₂⟩ ≥ 0` for all pairs in its
-graph. -/
+/-- A multivalued mapping $\rho \subseteq E \times F$ is **monotone** if
+$$\langle x_1 - x_2, y_1 - y_2 \rangle \ge 0 \qquad \text{for all } (x_1, y_1), (x_2, y_2) \in
+  \rho.$$
+-/
 def IsMonotoneRel (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) : Prop :=
   ∀ p ∈ ρ, ∀ q ∈ ρ, 0 ≤ B (p.1 - q.1) (p.2 - q.2)
 
-/-- A multivalued mapping is **cyclically monotone** when every finite cycle in its graph has
-non-positive telescoping sum. The cycle is written as a starting pair `s` followed by a list `l`;
-`chainVal B s l s.1` is the sum around it. -/
+/-- A multivalued mapping $\rho \subseteq E \times F$ is **cyclically monotone** if every finite
+cycle in $\rho$ has a telescoping sum that is at most $0$: for all
+$(x_0, y_0), \dots, (x_m, y_m) \in \rho$,
+$$\langle x_1 - x_0, y_0 \rangle + \langle x_2 - x_1, y_1 \rangle + \dots + \langle x_0 - x_m,
+  y_m \rangle \le 0.$$
+
+The cycle is a starting pair $s \in \rho$ and a list $l$ of pairs in $\rho$, and its sum is
+`ConvexAnalysis.chainVal B s l s.1`. -/
 def IsCyclicallyMonotone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) : Prop :=
   ∀ s ∈ ρ, ∀ l : List (E × F), (∀ q ∈ l, q ∈ ρ) → chainVal B s l s.1 ≤ 0
 
-/-- A monotone mapping is **maximal** when no strictly larger monotone mapping contains it. -/
+/-- A multivalued mapping $\rho$ is **maximal monotone** if it is monotone and every monotone
+mapping $\sigma \supseteq \rho$ is equal to $\rho$. -/
 def IsMaximalMonotoneRel (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) : Prop :=
   IsMonotoneRel B ρ ∧ ∀ σ : SetRel E F, IsMonotoneRel B σ → ρ ⊆ σ → σ ⊆ ρ
 
-/-- A cyclically monotone mapping is **maximal** when no strictly larger cyclically monotone
-mapping contains it. These turn out to be exactly the subdifferentials. -/
+/-- A multivalued mapping $\rho$ is **maximal cyclically monotone** if it is cyclically monotone and
+every cyclically monotone mapping $\sigma \supseteq \rho$ is equal to $\rho$. On a
+finite-dimensional space these are exactly the subdifferentials of the closed proper convex
+functions (`ConvexAnalysis.isMaximalCyclicallyMonotone_iff_exists_closedProperConvexFn`). -/
 def IsMaximalCyclicallyMonotone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) : Prop :=
   IsCyclicallyMonotone B ρ ∧ ∀ σ : SetRel E F, IsCyclicallyMonotone B σ → ρ ⊆ σ → σ ⊆ ρ
 
-/-- Monotonicity passes to sub-mappings. -/
+/-- A subset of a monotone mapping is monotone. -/
 theorem IsMonotoneRel.mono (h : IsMonotoneRel B σ) (hsub : ρ ⊆ σ) : IsMonotoneRel B ρ :=
   fun p hp q hq => h p (hsub hp) q (hsub hq)
 
-/-- Cyclic monotonicity passes to sub-mappings. -/
+/-- A subset of a cyclically monotone mapping is cyclically monotone. -/
 theorem IsCyclicallyMonotone.mono (h : IsCyclicallyMonotone B σ) (hsub : ρ ⊆ σ) :
     IsCyclicallyMonotone B ρ :=
   fun s hs l hl => h s (hsub hs) l fun q hq => hsub (hl q hq)
 
-/-- **Cyclic monotonicity implies monotonicity**: a two-element cycle is exactly the monotonicity
-inequality. -/
+/-- A cyclically monotone mapping is monotone: the monotonicity inequality is the cycle condition
+for a cycle of two pairs. -/
 theorem IsCyclicallyMonotone.isMonotoneRel (h : IsCyclicallyMonotone B ρ) : IsMonotoneRel B ρ := by
   intro p hp q hq
   have hcyc := h p hp [q] (by simpa using hq)
@@ -158,8 +178,8 @@ theorem IsCyclicallyMonotone.isMonotoneRel (h : IsCyclicallyMonotone B ρ) : IsM
   rw [hexp]
   linarith
 
-/-- A one-element mapping is cyclically monotone: every cycle in it has all its edges equal to
-zero. Used only to see that a maximal cyclically monotone mapping is nonempty. -/
+/-- A mapping with one pair is cyclically monotone: every cycle in it has all its terms equal to
+$0$. -/
 theorem isCyclicallyMonotone_singleton (p : E × F) : IsCyclicallyMonotone B {p} := by
   have key : ∀ l : List (E × F), (∀ q ∈ l, q ∈ ({p} : Set (E × F))) → chainVal B p l p.1 = 0 := by
     intro l
@@ -176,8 +196,8 @@ theorem isCyclicallyMonotone_singleton (p : E × F) : IsCyclicallyMonotone B {p}
   subst hs
   exact le_of_eq (key l hl)
 
-/-- A maximal cyclically monotone mapping is nonempty: the empty mapping is strictly contained in
-the cyclically monotone `{(0, 0)}`. -/
+/-- A maximal cyclically monotone mapping is nonempty, because the empty mapping is strictly
+contained in the cyclically monotone mapping $\{(0, 0)\}$. -/
 theorem IsMaximalCyclicallyMonotone.nonempty (h : IsMaximalCyclicallyMonotone B ρ) :
     ρ.Nonempty := by
   rcases ρ.eq_empty_or_nonempty with hem | hne
@@ -189,16 +209,17 @@ theorem IsMaximalCyclicallyMonotone.nonempty (h : IsMaximalCyclicallyMonotone B 
 
 end Monotone
 
-/-! ### Necessity: `∂f` is cyclically monotone -/
+/-! ### The subdifferential is cyclically monotone -/
 
 section Necessity
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- The telescoping estimate: walking a chain of subgradients from `s` to `x` cannot gain more than
-the increase of `f`. The chain of inequalities
-`⟨x_{i+1} - x_i, y_i⟩ ≤ f x_{i+1} - f x_i`, summed. -/
+/-- The telescoping estimate. Let $s = (x_0, y_0)$ and all pairs of the list $l$ be in the graph of
+$\partial f$. Then for every $x \in E$,
+$$f(x_0) + \operatorname{chainVal}(s, l, x) \le f(x).$$
+It is the sum of the inequalities $\langle x_{i+1} - x_i, y_i \rangle \le f(x_{i+1}) - f(x_i)$. -/
 theorem le_of_chain_mem_subgradientRel :
     ∀ (l : List (E × F)) (s : E × F), s ∈ subgradientRel B f →
       (∀ q ∈ l, q ∈ subgradientRel B f) →
@@ -217,8 +238,9 @@ theorem le_of_chain_mem_subgradientRel :
       _ ≤ f q.1 + ((chainVal B q l x : ℝ) : EReal) := add_le_add h₁ (le_refl _)
       _ ≤ f x := h₂
 
-/-- The graph of `∂f` is cyclically monotone. Convexity of `f` is not used; properness is, and
-only to know that `f` is finite at the base point of the cycle. -/
+/-- If $f \colon E \to [-\infty, +\infty]$ is proper, then the graph of $\partial f$ is cyclically
+monotone. Convexity is not used. Properness is used only to know that $f$ is finite at the
+starting point of the cycle. -/
 theorem isCyclicallyMonotone_subgradientRel (hp : ProperConvex f) :
     IsCyclicallyMonotone B (subgradientRel B f) := by
   intro s hs l hl
@@ -233,40 +255,50 @@ theorem isCyclicallyMonotone_subgradientRel (hp : ProperConvex f) :
   rw [← hcoe, ← EReal.coe_add, EReal.coe_le_coe_iff] at hkey
   linarith
 
-/-- **The subdifferential is monotone**, the classical inequality
-`⟨x₁ - x₂, y₁ - y₂⟩ ≥ 0`. -/
+/-- If $f \colon E \to [-\infty, +\infty]$ is proper, then $\partial f$ is monotone:
+$\langle x_1 - x_2, y_1 - y_2 \rangle \ge 0$ whenever $y_1 \in \partial f(x_1)$ and
+$y_2 \in \partial f(x_2)$. -/
 theorem isMonotoneRel_subgradientRel (hp : ProperConvex f) :
     IsMonotoneRel B (subgradientRel B f) :=
   (isCyclicallyMonotone_subgradientRel hp).isMonotoneRel
 
 end Necessity
 
-/-! ### Sufficiency: the potential -/
+/-! ### A potential for a cyclically monotone mapping -/
 
 section Potential
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ρ : SetRel E F} {s : E × F}
 
-/-- The potential of a multivalued mapping `ρ`: the supremum of the telescoping sums of all finite
-chains in `ρ` that start at `s` and end at `x`. Being a supremum of affine functions of `x` it is a
-closed convex function, and cyclic monotonicity of `ρ` is exactly what keeps it from being `+∞` at
-`s.1`. -/
+/-- The **potential** of a multivalued mapping $\rho \subseteq E \times F$ with the base pair $s$:
+the supremum, over all finite lists $l$ of pairs in $\rho$, of the telescoping sums of the
+chains that start at $s$, run through $l$ and end at $x$,
+$$x \mapsto \sup_l \operatorname{chainVal}(s, l, x).$$
+
+As a supremum of affine functions of $x$, it is a closed convex function. If $\rho$ is
+cyclically monotone and $s \in \rho$, the potential is $0$ at the first component of $s$, so it
+is proper. -/
 noncomputable def cyclicPotential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) (s : E × F)
     (x : E) : EReal :=
   ⨆ l ∈ {l : List (E × F) | ∀ q ∈ l, q ∈ ρ}, ((chainVal B s l x : ℝ) : EReal)
 
+/-- The telescoping sum of every chain in $\rho$ that starts at $s$ and ends at $x$ is at most the
+potential at $x$. -/
 theorem le_cyclicPotential {l : List (E × F)} (hl : ∀ q ∈ l, q ∈ ρ) (s : E × F) (x : E) :
     ((chainVal B s l x : ℝ) : EReal) ≤ cyclicPotential B ρ s x :=
   le_iSup₂ (f := fun l (_ : l ∈ {l : List (E × F) | ∀ q ∈ l, q ∈ ρ}) =>
     ((chainVal B s l x : ℝ) : EReal)) l hl
 
+/-- If the telescoping sum of every chain in $\rho$ that starts at $s$ and ends at $x$ is at most
+$c$, then the potential at $x$ is at most $c$. -/
 theorem cyclicPotential_le {c : EReal} {x : E}
     (h : ∀ l : List (E × F), (∀ q ∈ l, q ∈ ρ) → ((chainVal B s l x : ℝ) : EReal) ≤ c) :
     cyclicPotential B ρ s x ≤ c :=
   iSup₂_le h
 
-/-- The potential is convex: it is a supremum of affine functions. -/
+/-- The potential of a multivalued mapping is convex, because it is a supremum of affine functions.
+-/
 theorem convexFn_cyclicPotential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) (s : E × F) :
     ConvexFn (cyclicPotential B ρ s) := by
   refine convexFn_biSup fun l _ => ?_
@@ -277,8 +309,8 @@ theorem convexFn_cyclicPotential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : Set
   rw [hfun]
   exact convexFn_affineFn y c
 
-/-- The potential never takes the value `-∞`: the empty chain already gives it a real lower
-bound. -/
+/-- The potential never takes the value $-\infty$: the chain with no further pairs gives a real
+lower bound. -/
 theorem cyclicPotential_ne_bot (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRel E F) (s : E × F) (x : E) :
     cyclicPotential B ρ s x ≠ ⊥ := by
   intro h
@@ -286,8 +318,9 @@ theorem cyclicPotential_ne_bot (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRe
   rw [h, le_bot_iff] at hle
   exact EReal.coe_ne_bot _ hle
 
-/-- **Cyclic monotonicity is exactly what makes the potential finite at its base point**, where it
-vanishes. -/
+/-- If $\rho$ is cyclically monotone and $s = (x_0, y_0) \in \rho$, then the potential with the base
+pair $s$ is $0$ at $x_0$. Cyclic monotonicity is exactly the condition that makes the potential
+finite at $x_0$. -/
 theorem cyclicPotential_eq_zero (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ) :
     cyclicPotential B ρ s s.1 = 0 := by
   refine le_antisymm (cyclicPotential_le fun l hl => ?_) ?_
@@ -295,7 +328,8 @@ theorem cyclicPotential_eq_zero (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ
   · have hle := le_cyclicPotential (B := B) (ρ := ρ) (l := []) (by simp) s s.1
     simpa using hle
 
-/-- The potential is proper. -/
+/-- If $\rho$ is cyclically monotone and $s \in \rho$, then the potential with the base pair $s$ is
+proper. -/
 theorem properConvex_cyclicPotential (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ) :
     ProperConvex (cyclicPotential B ρ s) := by
   refine ⟨⟨s.1, ?_⟩, cyclicPotential_ne_bot B ρ s⟩
@@ -303,9 +337,11 @@ theorem properConvex_cyclicPotential (hρ : IsCyclicallyMonotone B ρ) (hs : s �
   rw [cyclicPotential_eq_zero hρ hs, ← EReal.coe_zero]
   exact EReal.coe_lt_top 0
 
-/-- **Every pair of `ρ` is a subgradient of the potential.** A chain
-ending at `x` followed by the edge `(x, y)` is again a chain, so the supremum defining
-`f z` dominates `chainVal … x + ⟨z - x, y⟩` for every chain, hence `f x + ⟨z - x, y⟩ ≤ f z`. -/
+/-- Every pair $(x, y) \in \rho$ is a subgradient pair of the potential $f$: $y \in \partial f(x)$.
+
+A chain that ends at $x$, followed by the pair $(x, y)$, is again a chain. Therefore the
+supremum that defines $f(z)$ is at least $\operatorname{chainVal}(s, l, x) + \langle z - x, y
+\rangle$ for every chain, and so $f(x) + \langle z - x, y \rangle \le f(z)$. -/
 theorem mem_subdifferential_cyclicPotential {p : E × F} (hp : p ∈ ρ) :
     p.2 ∈ subdifferential B (cyclicPotential B ρ s) p.1 := by
   intro z
@@ -337,8 +373,12 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
   {ρ : SetRel E F}
 
-/-- A nonempty cyclically monotone multivalued mapping is contained in the subdifferential of a
-closed proper convex function. -/
+/-- Let $E$ be a real vector space with a topology that makes it a topological additive group, and
+let $B$ be a pairing of $E$ and $F$ such that $\langle \cdot, y \rangle$ is continuous for each
+$y$. Every nonempty cyclically monotone multivalued mapping $\rho \subseteq E \times F$ is
+contained in the graph of $\partial f$ for some closed proper convex function
+$f \colon E \to [-\infty, +\infty]$. The function $f$ is the potential
+`ConvexAnalysis.cyclicPotential`. -/
 theorem exists_convexFn_subgradientRel_of_isCyclicallyMonotone [IsContinuousPairing B]
     (hρ : IsCyclicallyMonotone B ρ) (hne : ρ.Nonempty) :
     ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ ⊆ subgradientRel B f := by
@@ -354,16 +394,25 @@ theorem exists_convexFn_subgradientRel_of_isCyclicallyMonotone [IsContinuousPair
   rw [hfun]
   exact lowerSemicontinuous_affineFn (continuous_pairing B y)
 
-/-- For a nonempty multivalued mapping, being contained in a subdifferential and being
-cyclically monotone are the same thing. -/
+/-- Let $E$ be a real vector space with a topology that makes it a topological additive group, let
+$B$ be a pairing of $E$ and $F$ such that $\langle \cdot, y \rangle$ is continuous for each $y$,
+and let $\rho \subseteq E \times F$ be a nonempty multivalued mapping. Then
+$$\rho \text{ is cyclically monotone} \iff \rho \subseteq \partial f \text{ for some closed
+  proper convex } f \colon E \to [-\infty, +\infty].$$
+
+Here $\partial f$ is the graph `ConvexAnalysis.subgradientRel B f`. The forward direction is
+`ConvexAnalysis.exists_convexFn_subgradientRel_of_isCyclicallyMonotone`, and the backward
+direction is `ConvexAnalysis.isCyclicallyMonotone_subgradientRel`. -/
 theorem isCyclicallyMonotone_iff_exists_convexFn [IsContinuousPairing B] (hne : ρ.Nonempty) :
     IsCyclicallyMonotone B ρ ↔
       ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ ⊆ subgradientRel B f :=
   ⟨fun h => exists_convexFn_subgradientRel_of_isCyclicallyMonotone h hne,
     fun ⟨_, _, _, hp, hsub⟩ => (isCyclicallyMonotone_subgradientRel hp).mono hsub⟩
 
-/-- The half the reconstruction gives at once: a maximal cyclically monotone multivalued mapping
-*is* the subdifferential of a closed proper convex function. -/
+/-- Let $E$ be a real vector space with a topology that makes it a topological additive group, and
+let $B$ be a pairing of $E$ and $F$ such that $\langle \cdot, y \rangle$ is continuous for each
+$y$. Every maximal cyclically monotone mapping $\rho \subseteq E \times F$ is equal to the graph
+of $\partial f$ for some closed proper convex function $f$. -/
 theorem exists_eq_subgradientRel_of_isMaximalCyclicallyMonotone [IsContinuousPairing B]
     (h : IsMaximalCyclicallyMonotone B ρ) :
     ∃ f : E → EReal, ConvexFn f ∧ ClosedConvex f ∧ ProperConvex f ∧ ρ = subgradientRel B f := by
@@ -374,17 +423,21 @@ theorem exists_eq_subgradientRel_of_isMaximalCyclicallyMonotone [IsContinuousPai
 
 end Main
 
-/-! ### The graph of `∂f` is closed -/
+/-! ### The graph of the subdifferential is closed -/
 
 section GraphClosed
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [AddCommGroup F]
   [Module ℝ F] [TopologicalSpace F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- The graph of `∂f` is closed in `E × F`; equivalently `xᵢ* ∈ ∂f xᵢ`,
-`xᵢ → x` and `xᵢ* → x*` force `x* ∈ ∂f x`. Convexity of `f` is not used. Lower semicontinuity is,
-and so is joint continuity of the pairing: the subgradient inequality at `xᵢ` involves
-`⟨z - xᵢ, xᵢ*⟩`, where both arguments move. -/
+/-- Let $E$ be a real vector space with a topology that makes it a topological additive group, let
+$F$ be a topological space, and let the pairing $(x, y) \mapsto \langle x, y \rangle$ be jointly
+continuous on $E \times F$. If $f \colon E \to [-\infty, +\infty]$ is proper and lower
+semicontinuous, then the graph of $\partial f$ is closed in $E \times F$. Equivalently, if
+$y_i \in \partial f(x_i)$, $x_i \to x$ and $y_i \to y$, then $y \in \partial f(x)$.
+
+Convexity is not used. The joint continuity is needed because the subgradient inequality at
+$x_i$ contains $\langle z - x_i, y_i \rangle$, where both arguments move. -/
 theorem isClosed_subgradientRel [IsTopologicalAddGroup E]
     (hB : Continuous fun p : E × F => B p.1 p.2) (hp : ProperConvex f)
     (hlsc : LowerSemicontinuous f) : IsClosed (subgradientRel B f) := by
@@ -423,8 +476,9 @@ section Increment
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
-/-- One half of the subgradient inequality, read as a bound on an increment of `f`: a subgradient
-at the *left* endpoint underestimates the increment. -/
+/-- Let $f(p) = a$ and $f(q) = b$ be real, and let $u \in \partial f(p)$. Then
+$\langle q - p, u \rangle \le b - a$: a subgradient at the left endpoint underestimates the
+increment. -/
 theorem pairing_le_sub_of_mem_subdifferential {p q : E} {a b : ℝ} {u : F}
     (hp : f p = (a : EReal)) (hq : f q = (b : EReal)) (hu : u ∈ subdifferential B f p) :
     B (q - p) u ≤ b - a := by
@@ -432,7 +486,9 @@ theorem pairing_le_sub_of_mem_subdifferential {p q : E} {a b : ℝ} {u : F}
   rw [hp, hq, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
   linarith
 
-/-- The other half: a subgradient at the *right* endpoint overestimates the increment. -/
+/-- Let $f(p) = a$ and $f(q) = b$ be real, and let $v \in \partial f(q)$. Then
+$b - a \le \langle q - p, v \rangle$: a subgradient at the right endpoint overestimates the
+increment. -/
 theorem sub_le_pairing_of_mem_subdifferential {p q : E} {a b : ℝ} {v : F}
     (hp : f p = (a : EReal)) (hq : f q = (b : EReal)) (hv : v ∈ subdifferential B f q) :
     b - a ≤ B (q - p) v := by
@@ -444,11 +500,14 @@ theorem sub_le_pairing_of_mem_subdifferential {p q : E} {a b : ℝ} {v : F}
   rw [hexp] at h
   linarith
 
-/-- The subdivision estimate. Along a chain of equally spaced points `x 0, …, x N` with common
-step `d`, with `v i ∈ ∂f (x i)` and `∂f ⊆ ∂g`, the increments of `f` and of `g` across the chain
-differ by at most `⟨d, v N - v 0⟩`: both are trapped between the *same* two telescoping sums, since
-the subgradients of `f` serve `g` as well. Halving the step halves the bound while leaving the ends
-of the chain alone, which is what forces the two increments to agree. -/
+/-- The subdivision estimate. Let $\partial f \subseteq \partial g$, and let $x_0, \dots, x_N$ be
+points with $x_{i+1} = x_i + d$ for $i < N$. Let $v_i \in \partial f(x_i)$, $f(x_i) = a_i$ and
+$g(x_i) = b_i$ be real for $i \le N$. Then
+$$|(a_N - a_0) - (b_N - b_0)| \le \langle d, v_N - v_0 \rangle.$$
+
+Both increments lie between the same two telescoping sums, because the subgradients of $f$ are
+also subgradients of $g$. A halving of the step halves the bound and does not move the ends of
+the chain. This forces the two increments to agree. -/
 theorem abs_sub_increment_le (hsub : subgradientRel B f ⊆ subgradientRel B g)
     {x : ℕ → E} {v : ℕ → F} {a b : ℕ → ℝ} {d : E} {N : ℕ}
     (hx : ∀ i < N, x (i + 1) = x i + d)
@@ -494,10 +553,9 @@ section AddConst
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **Raising a function by a real constant lowers its conjugate by that constant.** This is the
-one piece of conjugacy the rigidity argument needs beyond Fenchel–Moreau: `∂f ⊆ ∂g` pins `g` to
-`f + α` only after the same relation on the conjugate side has been turned back into an inequality
-on `E`. -/
+/-- For $f \colon E \to [-\infty, +\infty]$ and $\alpha \in \mathbb{R}$,
+$$(f + \alpha)^* = f^* - \alpha.$$
+-/
 theorem convexConj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) :
     convexConj B (fun x => f x + (α : EReal)) = fun y => convexConj B f y + ((-α : ℝ) : EReal) := by
   funext y
@@ -506,7 +564,7 @@ theorem convexConj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → ERea
 
 end AddConst
 
-/-! ### `∂f` determines `f` up to an additive constant -/
+/-! ### The subdifferential determines the function up to a constant -/
 
 section Uniqueness
 
@@ -514,7 +572,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- A point at which a proper function is subdifferentiable is a point where it is finite. -/
+/-- If $g$ is proper and $\partial g(x)$ is nonempty, then $g(x)$ is a real number. -/
 theorem exists_coe_of_subdifferential_nonempty (hpg : ProperConvex g) {x : E}
     (h : (subdifferential B g x).Nonempty) : ∃ c : ℝ, g x = (c : EReal) := by
   have hxdom : x ∈ convexDom g := by
@@ -523,12 +581,16 @@ theorem exists_coe_of_subdifferential_nonempty (hpg : ProperConvex g) {x : E}
     exact absurd h Set.not_nonempty_empty
   exact EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x) hxdom
 
-/-- The analytic core: if `∂f ⊆ ∂g` then `f` and `g` have the same increments between relative
-interior points of `dom f`. The classical proof integrates the common one-sided derivative along
-the segment, through the one-dimensional theory; the argument here needs none of it. Subdivide
-`[x₁, x₂]` into `N` equal steps and pick `v i ∈ ∂f (x i)` at each node; each step
-traps both increments in `[⟨d, v i⟩, ⟨d, v (i+1)⟩]`, so the two differ by at most the telescoping
-total `N⁻¹ ⟨x₂ - x₁, v N - v 0⟩`, which tends to `0`. -/
+/-- Let $E$ be a finite-dimensional real normed space with a pairing $B$ that is compatible with its
+topology. Let $f$ be a proper convex function and $g$ a proper function on $E$ with
+$\partial f \subseteq \partial g$. Let $x_1, x_2 \in \operatorname{ri}(\operatorname{dom} f)$
+with $f(x_i) = a_i$ and $g(x_i) = b_i$ real. Then
+$$a_2 - a_1 = b_2 - b_1.$$
+
+The classical proof integrates the common one-sided derivative along the segment. This proof
+does not use it. It divides $[x_1, x_2]$ into $N$ equal steps and chooses
+$v_i \in \partial f(x_i)$ at each node. By `ConvexAnalysis.abs_sub_increment_le`, the two
+increments differ by at most $N^{-1} \langle x_2 - x_1, v_N - v_0 \rangle$, which tends to $0$. -/
 theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
     (hf : ConvexFn f) (hpf : ProperConvex f) (hpg : ProperConvex g)
     (hsub : subgradientRel B f ⊆ subgradientRel B g)
@@ -622,10 +684,17 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
   have hzero := abs_nonpos_iff.1 hle
   linarith
 
-/-- The geometric half: if `∂f ⊆ ∂g` then `g ≤ f + α` for a real constant `α`, with equality on
-`cl (dom f)`. Agreement of the increments on `ri (dom f)` fixes `α`, and a closed convex function
-is the limit of its values along a segment running into a boundary point, which carries the
-identity out to `cl (dom f)`. Off `cl (dom f)` the right-hand side is `⊤`. -/
+/-- Let $E$ be a finite-dimensional real normed space with a pairing $B$ that is compatible with its
+topology. Let $f$ be a closed proper convex function, let $g$ be a lower semicontinuous proper
+convex function, and let $\partial f \subseteq \partial g$. Then there is
+$\alpha \in \mathbb{R}$ with
+$$g \le f + \alpha \quad \text{on } E, \qquad g = f + \alpha \quad \text{on }
+  \operatorname{cl}(\operatorname{dom} f).$$
+
+The agreement of the increments on $\operatorname{ri}(\operatorname{dom} f)$ fixes $\alpha$. A
+closed convex function is the limit of its values along a segment that runs into a boundary
+point, and this carries the identity to $\operatorname{cl}(\operatorname{dom} f)$. Outside
+$\operatorname{cl}(\operatorname{dom} f)$ the right-hand side $f + \alpha$ is $+\infty$. -/
 theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B]
     (hf : ConvexFn f) (hpf : ProperConvex f) (hcf : ClosedConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) (hlg : LowerSemicontinuous g)
@@ -730,7 +799,8 @@ section MaximalCyclic
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- Raising a function by a real constant does not change its subdifferential. -/
+/-- Adding a real constant to a function does not change its subdifferential:
+$\partial(f + \alpha)(x) = \partial f(x)$. -/
 @[simp] theorem subdifferential_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) (x : E) :
     subdifferential B (fun x => f x + (α : EReal)) x = subdifferential B f x := by
   ext y
@@ -739,7 +809,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   rw [add_right_comm]
   exact (EReal.addLECancellable_coe α).add_le_add_iff_right
 
-/-- The graph form of `subdifferential_add_coe`. -/
+/-- Adding a real constant to a function does not change the graph of its subdifferential. -/
 theorem subgradientRel_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) :
     subgradientRel B (fun x => f x + (α : EReal)) = subgradientRel B f :=
   Set.ext fun p => by
@@ -753,13 +823,20 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
-/-- A closed proper convex function is determined by its subdifferential up to an additive
-constant, and already by the *inclusion* `∂f ⊆ ∂g`.
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing $B$ such that the
+continuous linear functionals on $E$ are the maps $\langle \cdot, y \rangle$ and those on $F$
+are the maps $\langle x, \cdot \rangle$. Let $f, g \colon E \to [-\infty, +\infty]$ be closed
+proper convex functions with $\partial f \subseteq \partial g$. Then there is
+$\alpha \in \mathbb{R}$ with
+$$g = f + \alpha.$$
+So a closed proper convex function is determined by its subdifferential up to an additive
+constant, and already by the inclusion $\partial f \subseteq \partial g$.
 
-The geometric half gives `g ≤ f + α` with equality on `cl (dom f)`; inverting the subdifferential
-turns `∂f ⊆ ∂g` into `∂f* ⊆ ∂g*` and repeats it on the conjugate side, giving `g* ≤ f* + β`.
-Equality in Fenchel's inequality at a pair of the graph of `∂f`, where both hold, forces `β = -α`,
-and conjugating `g* ≤ (f + α)*` back gives `g ≥ f + α`. -/
+`ConvexAnalysis.exists_forall_le_add_coe_of_subgradientRel_subset` gives $g \le f + \alpha$. The
+inversion $\partial f^* = (\partial f)^{-1}$ turns $\partial f \subseteq \partial g$ into
+$\partial f^* \subseteq \partial g^*$, and the same result gives $g^* \le f^* + \beta$. Equality
+in Fenchel's inequality at a pair of the graph of $\partial f$ gives $\beta = -\alpha$, and the
+conjugate of $g^* \le (f + \alpha)^*$ gives $g \ge f + \alpha$. -/
 theorem eq_add_coe_of_subgradientRel_subset [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
     (hsub : subgradientRel B f ⊆ subgradientRel B g) :
@@ -820,9 +897,14 @@ theorem eq_add_coe_of_subgradientRel_subset [IsCompatiblePairing B] [IsCompatibl
   rw [hbih, hbcg] at hge
   exact ⟨α, fun x => le_antisymm (hle x) (Pi.le_def.1 hge x)⟩
 
-/-- The subdifferential of a closed proper convex function is a *maximal* cyclically monotone
-mapping. If `∂f ⊆ σ` with `σ` cyclically monotone then the reconstruction puts `σ ⊆ ∂g` for some
-closed proper convex `g`; uniqueness makes `g = f + α`, and a constant does not change a
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing $B$ such that the
+continuous linear functionals on $E$ are the maps $\langle \cdot, y \rangle$ and those on $F$
+are the maps $\langle x, \cdot \rangle$. If $f \colon E \to [-\infty, +\infty]$ is a closed
+proper convex function, then the graph of $\partial f$ is maximal cyclically monotone.
+
+If $\partial f \subseteq \sigma$ with $\sigma$ cyclically monotone, then
+$\sigma \subseteq \partial g$ for a closed proper convex $g$. Then $g = f + \alpha$ by
+`ConvexAnalysis.eq_add_coe_of_subgradientRel_subset`, and the constant does not change the
 subdifferential. -/
 theorem isMaximalCyclicallyMonotone_subgradientRel [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ClosedProperConvexFn f) :
@@ -839,8 +921,14 @@ theorem isMaximalCyclicallyMonotone_subgradientRel [IsCompatiblePairing B]
   rw [hgeq, subgradientRel_add_coe] at hgsub
   exact hgsub
 
-/-- In full: on a finite-dimensional space the maximal cyclically monotone mappings are exactly
-the subdifferentials of the closed proper convex functions. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing $B$ such that the
+continuous linear functionals on $E$ are the maps $\langle \cdot, y \rangle$ and those on $F$
+are the maps $\langle x, \cdot \rangle$. Then a multivalued mapping $\rho \subseteq E \times F$
+is maximal cyclically monotone if and only if
+$$\rho = \partial f \text{ for some closed proper convex } f \colon E \to [-\infty, +\infty].$$
+
+Here $\partial f$ is the graph `ConvexAnalysis.subgradientRel B f`, and the hypotheses on $B$
+are `[IsCompatiblePairing B]` and `[IsCompatiblePairing B.flip]`. -/
 theorem isMaximalCyclicallyMonotone_iff_exists_closedProperConvexFn [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] {ρ : SetRel E F} :
     IsMaximalCyclicallyMonotone B ρ ↔

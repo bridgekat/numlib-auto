@@ -8,34 +8,47 @@ import Numlib.LinearAlgebra.Matrix.KrylovDecomposition
 /-!
 # Implicit restarting of the Arnoldi process
 
-Implicit restarting (Sorensen 1992; [golub2013matrix] §10.5.2–10.5.4) compresses an `m`-step
-Arnoldi decomposition `A Q = Q H + r e_mᵀ` to a `j`-step one whose starting vector has been filtered
-by a polynomial `p(A) = ∏ (A − μ_i)`, without restarting the process from scratch. Two ingredients,
-kept apart because the first is pure algebra:
+Let $A \in \mathbb{K}^{n \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Implicit
+restarting (Sorensen, 1992) compresses an $m$-step Arnoldi decomposition $A Q = Q H + r e_m^T$ to a
+$j$-step one whose starting vector is filtered by a polynomial $p(A) = \prod_i (A - \mu_i I)$,
+without restarting the Arnoldi process from the beginning. The presentation follows §10.5.2–10.5.4
+of [golub2013matrix]. A chain of $p$ shifted QR steps $H_i - \mu_i I = V_i R_i$,
+$H_{i+1} = R_i V_i + \mu_i I$ (`Matrix.IsShiftedQrChain` of `Numlib.Eigen.QRAlgorithm`) gives the
+change of basis $V = V_0 \cdots V_{p-1}$. The leading $j + 1$ columns of $Q V$ then form an Arnoldi
+decomposition, and $p(A) q_1$ is a multiple of its first column.
 
-* **the shifted-QR chain** `Matrix.IsShiftedQrChain H V R μ p` of `Numlib/Eigen/QRAlgorithm`
-  (`H_i − μ_i I = V_i R_i`, `H_{i+1} = R_i V_i + μ_i I`), whose product identity
-  `Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` is [golub2013matrix] Theorem 10.5.1, and whose
-  accumulated factor `V = V_0 ⋯ V_{p−1}` is unitary with `H_p = Vᴴ H_0 V`, has lower bandwidth `p`
-  when the `V_i` are Hessenberg, and carries the filter polynomial in its first column;
-* **what the chain does to an Arnoldi decomposition**: the change of basis
-  `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self` ((10.5.9)) followed by the truncation
-  `Matrix.IsKrylovDecomposition.leading` to the leading `j + 1` columns
-  (`Matrix.IsArnoldiDecomposition.implicitRestart`), whose first column is the filtered starting
-  vector (`Matrix.IsArnoldiDecomposition.implicitRestart_first`).
+Krylov–Schur restarting (§10.5.4 of [golub2013matrix], after Stewart, 2001) is the same truncation
+applied to a block upper triangular change of basis, such as an ordered Schur form, followed by a
+Hessenberg reduction with a prescribed last row.
 
-Krylov–Schur restarting ([golub2013matrix] §10.5.4, Stewart 2001) is the same truncation applied
-to a block-triangular (ordered Schur) change of basis, followed by a Hessenberg reduction with
-prescribed last row (`Matrix.IsArnoldiDecomposition.krylovSchur`); its truncation keeps the
-residual vector and restricts the residual row
-(`Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero`).
+## Main results
 
-Indices: a decomposition with `j + p + 1` columns is the book's `m`-step one with `m = j + p + 1`;
-it is truncated to `j + 1` columns (the book's `j`), `p` being the number of shifts.
+* `Matrix.IsArnoldiDecomposition.implicitRestart`: the leading $j + 1$ columns of
+  $Q V_0 \cdots V_{p-1}$ form an Arnoldi decomposition with the leading block of $H_p$.
+* `Matrix.IsArnoldiDecomposition.implicitRestart_first`: $p(A) q_1$ is a multiple of the first
+  column of $Q V_0 \cdots V_{p-1}$.
+* `Matrix.IsArnoldiDecomposition.krylovSchur`: Krylov–Schur restarting, first to a Krylov
+  decomposition and then to an Arnoldi decomposition.
 
-## References
+## Proof outline
 
-* [golub2013matrix] §10.5.
+The proofs separate the algebra of the shifted QR chain from its effect on the Arnoldi
+decomposition. For the chain, the product identity
+`Matrix.prod_mul_prod_reverse_eq_prod_sub_smul_one` is Theorem 10.5.1 of [golub2013matrix]: the
+accumulated factor $V$ is unitary with $H_p = V^H H_0 V$, has lower bandwidth $p$ when the $V_i$ are
+upper Hessenberg, and carries the filter polynomial in its first column. For the decomposition, the
+change of basis `Matrix.IsKrylovDecomposition.mul_of_conjTranspose_mul_self` ((10.5.9)) is followed
+by the truncation `Matrix.IsKrylovDecomposition.leading` to the leading $j + 1$ columns. In
+Krylov–Schur restarting, the truncation `Matrix.IsKrylovDecomposition.leading_of_apply_eq_zero`
+keeps the residual vector and restricts the residual row.
+
+## Implementation notes
+
+* A decomposition with $j + p + 1$ columns is the $m$-step decomposition of the source with
+  $m = j + p + 1$. It is truncated to $j + 1$ columns, the $j$ of the source, and $p$ is the number
+  of shifts. Columns are indexed from $0$.
+* An Arnoldi decomposition is `Matrix.IsArnoldiDecomposition`: $Q$ has orthonormal columns, $r$ is
+  orthogonal to them, $H$ is upper Hessenberg and $A Q = Q H + r e_{\mathrm{last}}^T$.
 -/
 
 open Finset
@@ -49,12 +62,17 @@ namespace IsArnoldiDecomposition
 variable {A : Matrix n n 𝕜} {r : n → 𝕜}
 
 omit [DecidableEq n] in
-/-- **Implicit restart** ([golub2013matrix] §10.5.3). Let `A Q = Q H + r e_lastᵀ` be an Arnoldi
-decomposition with `j + p + 1` columns and `H_0 = H, H_1, …, H_p` a chain of `p ≥ 1` shifted QR
-steps with unitary upper Hessenberg `V_i` and upper triangular `R_i` ((10.5.4)). Put
-`V = V_0 ⋯ V_{p−1}`, `W = Q V` and `H₊ = H_p = Vᴴ H V`. Then the leading `j + 1` columns of `W`
-form a `(j + 1)`-column Arnoldi decomposition with matrix the leading block of `H₊` and residual
-`H₊(j+1, j) w_{j+1} + V(last, j) r`. The book's residual `v_{mj} r_c` misses the first term. -/
+/-- **Implicit restart** (§10.5.3 of [golub2013matrix]). Let $A Q = Q H + r e_{\mathrm{last}}^T$ be
+an Arnoldi decomposition with $j + p + 1$ columns, with $p \ge 1$. Let
+$H_0 = H, H_1, \dots, H_p$ be a chain of $p$ shifted QR steps $H_i - \mu_i I = V_i R_i$,
+$H_{i+1} = R_i V_i + \mu_i I$ ((10.5.4)), where each $V_i$ is unitary and upper Hessenberg and
+each $R_i$ is upper triangular. Let $V = V_0 \cdots V_{p-1}$ and $W = Q V$, with columns
+$w_0, w_1, \dots$. Then the leading $j + 1$ columns of $W$ form an Arnoldi decomposition with
+the leading $(j + 1) \times (j + 1)$ block of $H_p$ and the residual
+$$r_+ = (H_p)_{j+1, j}\, w_{j+1} + V_{\mathrm{last}, j}\, r.$$
+
+The source writes the residual as $v_{mj} r_c$, which misses the first term. The chain is
+`Matrix.IsShiftedQrChain`, and $H_p = V^H H V$ holds by Theorem 10.5.1. -/
 theorem implicitRestart {j p : ℕ} {Q : Matrix n (Fin (j + p + 1)) 𝕜}
     {H : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) 𝕜} (h : IsArnoldiDecomposition A Q H r)
     {Hs V R : ℕ → Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) 𝕜} {μ : ℕ → 𝕜}
@@ -99,11 +117,16 @@ theorem implicitRestart {j p : ℕ} {Q : Matrix n (Fin (j + p + 1)) 𝕜}
   rw [hres] at hA
   exact hA
 
-/-- **The restarted starting vector is filtered** ([golub2013matrix] §10.5.3, `q₊ = p(A) q₁` up to
-a scalar): in the setting of `Matrix.IsArnoldiDecomposition.implicitRestart`,
-`p(A) (Q e₀) = (R_{p−1} ⋯ R_0)₀₀ · W e₀` with `p = ∏_{i<p} (X − μ_i)` and `W = Q V_0 ⋯ V_{p−1}`.
-So the truncated decomposition is the `(j + 1)`-step Arnoldi decomposition started from `p(A) q₁`
-(when that vector is nonzero), and the iteration continues at step `j + 1`. -/
+/-- **The restarted starting vector is filtered** (§10.5.3 of [golub2013matrix], $q_+ = p(A) q_1$ up
+to a scalar). Let $A Q = Q H + r e_{\mathrm{last}}^T$ be an Arnoldi decomposition with
+$j + p + 1$ columns, and let $H_0 = H, \dots, H_p$ be a chain of $p$ shifted QR steps
+$H_i - \mu_i I = V_i R_i$, $H_{i+1} = R_i V_i + \mu_i I$ with each $R_i$ upper triangular. Let
+$p(X) = \prod_{i < p} (X - \mu_i)$ and $W = Q V_0 \cdots V_{p-1}$. Then
+$$p(A)\,(Q e_0) = (R_{p-1} \cdots R_0)_{00}\; W e_0.$$
+
+So the truncated decomposition of `Matrix.IsArnoldiDecomposition.implicitRestart` is the
+$(j + 1)$-step Arnoldi decomposition started from $p(A) q_1$ when that vector is nonzero, and
+the iteration continues at step $j + 1$. This statement does not need the $V_i$ to be unitary. -/
 theorem implicitRestart_first {j p : ℕ} {Q : Matrix n (Fin (j + p + 1)) 𝕜}
     {H : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) 𝕜} (h : IsArnoldiDecomposition A Q H r)
     {Hs V R : ℕ → Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) 𝕜} {μ : ℕ → 𝕜}
@@ -133,18 +156,22 @@ theorem implicitRestart_first {j p : ℕ} {Q : Matrix n (Fin (j + p + 1)) 𝕜}
   rw [h.aeval_mulVec_first hdeg, haeval, hfirst, mulVec_smul, mulVec_mulVec]
 
 omit [DecidableEq n] in
-/-- **Krylov–Schur restarting** ([golub2013matrix] §10.5.4, Stewart 2001). Let
-`A Q = Q H + r e_lastᵀ` be an Arnoldi decomposition with `k + 1` columns and `U` unitary with
-`T = Uᴴ H U` block upper triangular with respect to the split after index `j` (an ordered Schur
-form; triangularity itself is not needed). Then:
+/-- **Krylov–Schur restarting** (§10.5.4 of [golub2013matrix], after Stewart, 2001). Let
+$A Q = Q H + r e_{\mathrm{last}}^T$ be an Arnoldi decomposition with $k + 1$ columns, let $U$ be
+unitary, and let $T = U^H H U$ be block upper triangular for the split after index $j$, that is,
+$T_{il} = 0$ for $l \le j < i$. Let $T_{11}$ be the leading $(j + 1) \times (j + 1)$ block of
+$T$, and let $u$ be the vector of the first $j + 1$ entries of the last row of $U$.
+* (a) The leading $j + 1$ columns of $Q U$ form a Krylov decomposition with the matrix $T_{11}$,
+  the same residual $r$, and the residual row $u$.
+* (b) Let $Z \in \mathbb{K}^{(j+1) \times (j+1)}$ be unitary and $\tau \in \mathbb{K}$, with
+  $Z^H T_{11} Z$ upper Hessenberg and $Z^H \bar{u} = \tau e_{\mathrm{last}}$. Then the leading
+  $j + 1$ columns of $Q U$, multiplied by $Z$, form an Arnoldi decomposition with the matrix
+  $Z^H T_{11} Z$ and the residual $\bar{\tau} r$.
 
-(a) the leading `j + 1` columns of `Q U` form a Krylov decomposition with the leading block `T₁₁`
-of `T`, the same residual `r`, and residual row `u` the leading part of the last row of `U`;
-
-(b) if moreover `Z` is unitary with `Zᴴ T₁₁ Z` upper Hessenberg and `Zᴴ ū = τ e_last` — such a `Z`
-exists by `Matrix.exists_isUpperHessenberg_conj_lastCol` ([golub2013matrix] P10.5.2) applied to
-`ū` — then `(Q U)(:, :j+1) Z` is an Arnoldi decomposition with matrix `Zᴴ T₁₁ Z` and residual
-`τ̄ r` (the book's "`τ r_m`", real there). -/
+The block $T$ is an ordered Schur form in the source, but its triangularity is not needed. A
+matrix $Z$ as in (b) exists by `Matrix.exists_isUpperHessenberg_conj_lastCol` (P10.5.2 of
+[golub2013matrix]) applied to $\bar{u}$. The source writes the residual as $\tau r_m$, where
+$\tau$ is real. -/
 theorem krylovSchur {k : ℕ} {Q : Matrix n (Fin (k + 1)) 𝕜}
     {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} (h : IsArnoldiDecomposition A Q H r)
     {U : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} (hU : U ∈ unitaryGroup (Fin (k + 1)) 𝕜)

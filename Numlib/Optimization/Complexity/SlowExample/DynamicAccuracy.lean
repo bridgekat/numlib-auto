@@ -10,28 +10,41 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqIDA
 /-!
 # Slow iterations of the dynamic-accuracy methods
 
-The slow examples of [cartis2022evaluation], §12.2 (Theorems 12.2.6, 12.2.15 and 12.2.17), lifted
-along a unit vector `e` of a real inner product space (ridge functions `x ↦ g ⟪e, x⟫`), give
-iterations of the dynamic-accuracy trust-region and regularization steps of Chapter 13
-(`Optimization.TRqDAStep`, `Optimization.ARqpDAStep`) with exact Taylor data. Each lemma below
-checks one iteration from the shape of the Taylor decrements at the iterate (a monomial
-`a ⟪e, d⟫^q` of a single order, or a linear form), the Step-1 radii and displacements, the step
-and the ratio; the sharpness theorems of §14.2 splice these iterations into runs.
+The slow examples of §12.2 of [cartis2022evaluation] (Theorems 12.2.6, 12.2.15 and 12.2.17) can be
+lifted along a unit vector $e$ of a real inner product space, as ridge functions
+$x \mapsto g(\langle e, x \rangle)$. This module shows that the iterations of these examples are
+iterations of the dynamic-accuracy trust-region and regularization methods of Chapter 13, with exact
+Taylor data. Each lemma checks one iteration from the shape of the Taylor decrements at the iterate,
+the radii and displacements of Step 1, the step and the ratio. The Taylor decrements have the form
+$a \langle e, d \rangle^q$ of a single order, or are a linear form. The sharpness theorems of §14.2
+splice these iterations into runs.
 
-The slit example (§14.2, a line and a parallel half-plane, `Optimization.slitSet`) adds a second
-unit vector `e₂ ⊥ e₁` along which the Taylor models decrease linearly.
+The slit example of §14.2 uses the feasible set formed by a line and a parallel half-plane
+(`Optimization.slitSet`). It adds a second unit vector $e_2 \perp e_1$, along which the Taylor
+models decrease linearly.
 
 ## Main results
 
-* `Optimization.slowTRq_trqDAStep`: an iteration of the slow trust-region example
-  (Theorem 12.2.6) is a TRqIDA/TRqEDA step;
-* `Optimization.slowARqp_arqpDAStep`, `Optimization.slowARqpTop_arqpDAStep`: iterations of the
-  slow regularization example (Theorem 12.2.15) with a halved Step-1 radius, or with small radii,
-  are ARqpIDA/ARqpEDA steps;
-* `Optimization.slowGrad_arqpDAStep`: an iteration of the slow gradient example
-  (Theorem 12.2.17) is an ARqpIDA/ARqpEDA step;
-* `Optimization.slit_arqpDAStep`, `Optimization.slit_arqpDAStep_of_acc`: trial and
-  accuracy-improving iterations of the slit example on `slitSet e₂ ρ`.
+* `Optimization.slowTRq_trqDAStep`: an iteration of the slow trust-region example (Theorem 12.2.6)
+  is a step of TRqIDA and TRqEDA.
+* `Optimization.slowARqp_arqpDAStep` and `Optimization.slowARqpTop_arqpDAStep`: iterations of the
+  slow regularization example (Theorem 12.2.15), with a halved Step-1 radius or with small radii,
+  are steps of ARqpIDA and ARqpEDA.
+* `Optimization.slowGrad_arqpDAStep`: an iteration of the slow gradient example (Theorem 12.2.17) is
+  a step of ARqpIDA and ARqpEDA.
+* `Optimization.slit_arqpDAStep` and `Optimization.slit_arqpDAStep_of_acc`: the trial iterations and
+  the accuracy-improving iterations of the slit example on `Optimization.slitSet e₂ ρ`.
+
+## Implementation notes
+
+* One iteration of TRqIDA or TRqEDA is `Optimization.TRqDAStep`, and one iteration of ARqpIDA or
+  ARqpEDA is `Optimization.ARqpDAStep`. The predicate `acc k` says that iteration $k$ is
+  accuracy-improving.
+* The Taylor decrement $\Delta T_j(d)$ of order $j$ of the derivative data $D_k$ is
+  `(D k).taylorDecrement j d`, and the Taylor measure $\phi^\delta_j$ over the ball of radius
+  $\delta$ is `Optimization.taylorMeasure (D k) j δ univ`.
+* The Step-1 displacements $d_{k,j}$ are approximate optimality displacements
+  (`Optimization.IsApproxMeasureStep`).
 -/
 
 open Set Metric
@@ -41,8 +54,10 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {e : E}
 
-/-- In finite dimension, without constraints, there are approximate optimality displacements for
-a Taylor decrement achieving exactly the fraction `ς ∈ [0, 1]` of the measure. -/
+/-- Let $E$ be finite-dimensional, let $D$ be derivative data, let $\delta \ge 0$ and let
+$\varsigma \in [0, 1]$. Then without constraints there is an approximate optimality displacement
+$d$ for the Taylor decrement of order $j$, with radius $\delta$ and fraction $\varsigma$, whose
+decrease is exactly $\Delta T_j(d) = \varsigma \phi^\delta_j$. -/
 theorem exists_isApproxMeasureStep_eq_mul_taylorMeasure [FiniteDimensional ℝ E]
     (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) {δ ς : ℝ} (hδ : 0 ≤ δ) (hς : ς ∈ Icc (0 : ℝ) 1) :
     ∃ d, IsApproxMeasureStep (D.taylorDecrement j) δ univ ς d ∧
@@ -57,8 +72,13 @@ variable {P : TRqIDAParams} {ε lam c : ℝ} {x : ℕ → E} {Δ : ℕ → ℝ}
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
-/-- The Step-1 decreases along the slow example: `ς a_j ε^q` with `a_q = λ ε c` and `a_j = 0`
-otherwise. -/
+/-- The Step-1 decreases along the slow trust-region example. Let $\|e\| = 1$, $\varepsilon > 0$ and
+$\lambda \varepsilon c \ge 0$. Suppose that for $j \in \{1, \dots, q\}$ the Taylor decrements at
+$x_k$ are $\Delta T_j(d) = a_j \langle e, d \rangle^q$ with $a_q = \lambda \varepsilon c$ and
+$a_j = 0$ for $j \neq q$, and that the displacements $d_{k,j}$ are approximate optimality
+displacements with radius $\varepsilon$ and fraction $\varsigma$ with $\Delta T_j(d_{k,j}) =
+\varsigma \phi^\varepsilon_j$. Then $\Delta T_j(d_{k,j}) = \varsigma a_j \varepsilon^q$ for
+$j \in \{1, \dots, q\}$. -/
 theorem slowTRq_taylorDecrement_eq (he : ‖e‖ = 1) (hε : 0 < ε) (hA : 0 ≤ lam * ε * c)
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
       (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪e, d⟫ ^ P.q)
@@ -71,7 +91,14 @@ theorem slowTRq_taylorDecrement_eq (he : ‖e‖ = 1) (hε : 0 < ε) (hA : 0 ≤
       [exact hA; exact le_rfl]) hε.le
     (hdec j hj)]
 
-/-- Along the slow example the test (13.1.14) holds at order `q` (`λ c > ½`). -/
+/-- Along the slow trust-region example, the inequality (13.1.14) of [cartis2022evaluation] holds at
+order $q$, so that the test does not certify approximate optimality. Let $\|e\| = 1$,
+$\varepsilon > 0$, $\vartheta = \varepsilon$, $\Delta_k = \varepsilon$ and $\lambda c > 1/2$,
+and let the decrements and displacements be as in `Optimization.slowTRq_taylorDecrement_eq`.
+Then with the tolerances $\varepsilon_j = j! \, \varepsilon$,
+$$\Delta T_q(d_{k,q}) > \tfrac12 \varsigma \varepsilon_q \delta_k^q / q!, \qquad \delta_k =
+  \min\{\Delta_k, \vartheta\}.$$
+-/
 theorem slowTRq_trqDAFail (he : ‖e‖ = 1) (hε : 0 < ε) (hϑ : P.ϑ = ε) (hlamc : 1 < 2 * (lam * c))
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
       (D k).taylorDecrement j d = (if j = P.q then lam * ε * c else 0) * ⟪e, d⟫ ^ P.q)
@@ -91,10 +118,26 @@ theorem slowTRq_trqDAFail (he : ‖e‖ = 1) (hε : 0 < ε) (hϑ : P.ϑ = ε) (h
   have h0 : 0 < P.ς * ε ^ P.q * ε := by positivity
   nlinarith
 
-/-- **One iteration of the slow example is a TRqIDA/TRqEDA step** (`X = univ`, exact Taylor data
-`D k`): with `ϑ = Δ_k = Δ_{k+1} = ε`, decrements `a_j ⟪e, d⟫^q` (`a_q = λ ε c`, `λ c > ½`),
-Step-1 displacements achieving the fraction `ς` of the measures, the step `s_k = ε e` along
-which the iterate moves, `j_k = q`, accuracies passing (13.1.9) and the ratio `ρ_k = 1`. -/
+/-- **One iteration of the slow trust-region example is a step of TRqIDA and TRqEDA.** Let
+$\|e\| = 1$ and $\varepsilon > 0$, and let the parameters satisfy
+$\vartheta = \varepsilon \le \Delta_{\max}$. Let $\lambda c > 1/2$ and
+$\lambda \varepsilon c \ge 0$. Suppose that at iteration $k$, with exact Taylor data $D_k$ and
+no constraints:
+
+* for $j \in \{1, \dots, q\}$ the Taylor decrements are
+  $\Delta T_j(d) = a_j \langle e, d \rangle^q$, with $a_q = \lambda \varepsilon c$ and $a_j = 0$
+  for $j \neq q$;
+* the Step-1 displacements $d_{k,j}$ are approximate optimality displacements with radius
+  $\varepsilon$ and fraction $\varsigma$ with $\Delta T_j(d_{k,j}) = \varsigma
+  \phi^\varepsilon_j$;
+* the radii are $\Delta_k = \Delta_{k+1} = \varepsilon$;
+* the accuracies are kept, $h_{k+1} = h_k$, and pass the test (13.1.9),
+  $h_{k,i} \le \kappa_s \varepsilon^{q-i+1}$ for $i \in \{1, \dots, q\}$;
+* $j_k = q$, the step is $s_k = \varepsilon e$, the iteration is not accuracy-improving,
+  $x_{k+1} = x_k + \varepsilon e$, and the ratio is $\rho_k = 1$.
+
+Then iteration $k$ is a step of TRqIDA and TRqEDA (Algorithm 13.1.1 of [cartis2022evaluation])
+on the whole space, with the tolerances $\varepsilon_j = j! \, \varepsilon$. -/
 theorem slowTRq_trqDAStep (he : ‖e‖ = 1) (hε : 0 < ε) (hϑ : P.ϑ = ε) (hΔmax : ε ≤ P.Δmax)
     (hlamc : 1 < 2 * (lam * c)) (hA : 0 ≤ lam * ε * c)
     (hdec : ∀ j ∈ Finset.Icc 1 P.q, ∀ d,
@@ -140,8 +183,11 @@ theorem slowTRq_trqDAStep (he : ‖e‖ = 1) (hε : 0 < ε) (hϑ : P.ϑ = ε) (h
 
 end SlowStep
 
-/-- The ratio of a slow iteration is `1`: the decrease `λ ε^{q+1} c` of `f` equals the decrease
-`λ ε c ε^q` of the Taylor model along `s_k = ε e`. -/
+/-- The ratio of an iteration of the slow trust-region example is $1$. Let
+$\varepsilon, \lambda, c > 0$, $j_k = q$ and $s_k = \varepsilon e$. If the Taylor decrement is
+$\Delta T_q(\varepsilon e) = \lambda \varepsilon c \, \varepsilon^q$ and the objective decreases
+by $f(x_k) - f(x_k + \varepsilon e) = \lambda \varepsilon^{q+1} c$, then the ratio of TRq is
+$\rho_k = 1$. -/
 theorem slowTRq_trqRatio_eq_one {f : E → ℝ}
     {D : ℕ → FormalMultilinearSeries ℝ E ℝ}
     {x s : ℕ → E} {jk : ℕ → ℕ} {k q : ℕ} {ε lam c : ℝ} (hε : 0 < ε)
@@ -163,8 +209,10 @@ variable {P : ARqpIDAParams} {ε a r : ℝ} {x : ℕ → E} {σ : ℕ → ℝ}
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
-/-- The Step-1 measures along the slow regularization example: `0` below `q` and `(a/q!) δ^q`
-at order `q`. -/
+/-- The Step-1 measures along the slow regularization example. Let $\|e\| = 1$ and $a \ge 0$, and
+suppose that for $j \le q$ the Taylor decrements at $x_k$ are
+$\Delta T_j(d) = a_j \langle e, d \rangle^q$, with $a_q = a/q!$ and $a_j = 0$ for $j \neq q$.
+Then for $j \le q$ and $t \ge 0$, the Taylor measure is $\phi^t_j = a_j t^q$. -/
 theorem slowARqp_taylorMeasure_eq (he : ‖e‖ = 1) (ha : 0 ≤ a)
     (hdec : ∀ j ≤ P.q, ∀ d, (D k).taylorDecrement j d =
       (if j = P.q then a / P.q ! else 0) * ⟪e, d⟫ ^ P.q) {j : ℕ} (hj : j ≤ P.q) {t : ℝ}
@@ -173,7 +221,8 @@ theorem slowARqp_taylorMeasure_eq (he : ‖e‖ = 1) (ha : 0 ≤ a)
   taylorMeasure_eq_mul_pow_of_inner_pow he (by split_ifs <;> positivity) ht (hdec
       j hj)
 
-/-- `½ ς ε t/c < (a/c) t` for `a > ε/2`, `ς ≤ 1`, `t, c > 0`. -/
+/-- Let $\varsigma \le 1$, $\varepsilon > 0$, $a > \varepsilon/2$ and $t, c > 0$. Then
+$\varsigma \varepsilon t / (2c) < (a/c) \, t$. -/
 theorem slowARqp_half_lt {ς ε a t c : ℝ} (hς1 : ς ≤ 1) (hε : 0 < ε) (ha : ε / 2 < a)
     (ht : 0 < t) (hc : 0 < c) : ς * ε * t / c / 2 < a / c * t := by
   rw [show ς * ε * t / c / 2 = ς * ε / 2 * t / c by ring, show a / c * t = a * t / c by ring]
@@ -181,8 +230,11 @@ theorem slowARqp_half_lt {ς ε a t c : ℝ} (hς1 : ς ≤ 1) (hε : 0 < ε) (h
   have : ς * ε / 2 ≤ ε / 2 := by nlinarith
   nlinarith
 
-/-- Along the slow regularization example the test (13.1.53) fails at order `q` with the
-displacement `r e` (`a > ε/2`). -/
+/-- Along the slow regularization example, the test (13.1.53) of [cartis2022evaluation] fails at
+order $q$ with the displacement $re$. Let $\varepsilon > 0$, $a > \varepsilon/2$ and $r > 0$,
+and suppose that $\delta^{(1)}_{k,q} = r$, $d_{k,q} = re$ and $\Delta T_q(re) = a r^q / q!$.
+Then with the tolerances $\varepsilon_j = \varepsilon$, $\Delta T_q(d_{k,q}) > \tfrac12
+\varsigma \varepsilon (\delta^{(1)}_{k,q})^q / q!$. -/
 theorem slowARqp_not_arqpDAPass (hε : 0 < ε) (ha : ε / 2 < a) (hr : 0 < r)
     (hδ₁ : δ₁ k P.q = r) (hdd : dd k P.q = r • e)
     (hdq : (D k).taylorDecrement P.q (r • e) = a / P.q ! * r ^ P.q) :
@@ -190,12 +242,31 @@ theorem slowARqp_not_arqpDAPass (hε : 0 < ε) (ha : ε / 2 < a) (hr : 0 < r)
   rw [arqpDAPass, hδ₁, hdd, hdq]
   exact not_le.2 (slowARqp_half_lt P.ς_le_one hε ha (by positivity) (by positivity))
 
-/-- **One iteration of the slow regularization example is an ARqpIDA/ARqpEDA step** (`X = univ`,
-`q ≤ 2`, tolerances `ε_j = ε`): with unit radii `δ_k = δ_{k+1} = δ_{s_k} = 1`, decrements
-`(a/q!) ⟪e, d⟫^q` at orders `q` and `p` (none below `q`) with `a > ε/2`, a Step-1 radius
-`δ^{(1)}_{k,q} = r` at which (13.1.54) holds while it fails at `2 r ≤ 1` (the halving loop stops at
-`r`), the Step-1 displacements `r e` (order `q`) and `0` (below), a global minimizer `s_k` of the
-model as step with `‖s_k‖ < 1`, accuracies passing (13.1.46), and the ratio `ρ_k = 1`. -/
+/-- **One iteration of the slow regularization example is a step of ARqpIDA and ARqpEDA.** Let
+$\|e\| = 1$, $q \le 2$, $\varepsilon > 0$ and $a > \varepsilon/2$. Let $r > 0$ with $2r \le 1$
+and $r = 2^{-m}$ for some $m \in \mathbb{N}$. Suppose that at iteration $k$, with no constraints
+and the tolerances $\varepsilon_j = \varepsilon$:
+
+* the condition (13.1.54) holds at $r$ and fails at $2r$:
+$$\frac{\sigma_k}{(p+1)!} r^{p+1} \le \frac{a - \varsigma\varepsilon/4}{q!} r^q, \qquad
+  \frac{a - \varsigma\varepsilon/4}{q!} (2r)^q < \frac{\sigma_k}{(p+1)!} (2r)^{p+1},$$
+so that the halving loop of Step 1 stops at $r$;
+* the radii are $\delta_{k,j} = \delta_{s_k,j} = 1$ for $j \in \{1, \dots, q\}$ and
+  $\delta_{k+1} = \delta_{s_k}$, and the Step-1 radii are $\delta^{(1)}_{k,q} = r$ and
+  $\delta^{(1)}_{k,j} = 1$ for $j \neq q$;
+* the Step-1 displacements are $d_{k,q} = re$ and $d_{k,j} = 0$ for $j \neq q$, and $j_k = q$;
+* for $j \le q$ the Taylor decrements are $\Delta T_j(d) = a_j \langle e, d \rangle^q$, with
+  $a_q = a/q!$ and $a_j = 0$ for $j \neq q$, and
+  $\Delta T_p(d) = (a/q!) \langle e, d \rangle^q$;
+* the step $s_k$ is a global minimizer of the model $m_k$ with weight $\sigma_k$, and
+  $\|s_k\| < 1$;
+* the accuracies are kept, $h_{k+1} = h_k$, and pass the test (13.1.46),
+  $h_{k,i} \le \kappa_s \|s_k\|^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the iteration is not accuracy-improving, $x_{k+1} = x_k + s_k$,
+  $\sigma_{k+1} = \sigma_k \ge \sigma_{\min}$, and the ratio is $\rho_k = 1$.
+
+Then iteration $k$ is a step of ARqpIDA and ARqpEDA (Algorithm 13.1.2 of [cartis2022evaluation])
+on the whole space. -/
 theorem slowARqp_arqpDAStep (he : ‖e‖ = 1) (hq2 : P.q ≤ 2) (hε : 0 < ε) (ha : ε / 2 < a)
     (hr : 0 < r) (h2r : 2 * r ≤ 1) (hrd : ∃ m : ℕ, r = 1 / 2 ^ m)
     (hr54 : σ k / ((P.p + 1)! : ℝ) * r ^ (P.p + 1) ≤ (a - P.ς * ε / 4) / P.q ! * r ^ P.q)
@@ -328,13 +399,29 @@ theorem slowARqp_arqpDAStep (he : ‖e‖ = 1) (hq2 : P.q ≤ 2) (hε : 0 < ε) 
     exact arAcceptance_of_one_le P.toARParams le_rfl _ _ hσk hσ0
   · rw [hδ1, hρ, ite_eq_left ⟨hη, hs1⟩]
 
-/-- **One iteration of the slow regularization example with small radii** (`X = univ`, any
-`q ≤ p`, tolerances `ε_j = ε`): with Step-1 radii `δ_k = δ^{(1)}_k = r` at every order (no
-halving) at which (13.1.54) holds, decrements `(a/q!) ⟪e, d⟫^q` at orders `q` and `p` (none
-below `q`) with `a > ε/2`, the Step-1 displacements `r e` (order `q`) and `0` (below), a global
-minimizer `s_k` of the model as step, short, whose model decrements of orders `1, …, q` are
-nonpositive on the ball of radius `r'` (the Step-2 radii `δ_{s_k} = r' = δ_{k+1}`), accuracies
-passing (13.1.46), and the ratio `ρ_k = 1`. -/
+/-- **One iteration of the slow regularization example with small radii.** Let $\|e\| = 1$,
+$\varepsilon > 0$, $a > \varepsilon/2$, $r > 0$ and $0 < r' \le 1$. The order $q \le p$ is
+arbitrary. Suppose that at iteration $k$, with no constraints and the tolerances
+$\varepsilon_j = \varepsilon$:
+
+* the condition (13.1.54) holds at $r$: $\sigma_k r^{p+1}/(p+1)! \le (a -
+  \varsigma\varepsilon/4) r^q/q!$;
+* the radii are $\delta_{k,j} = r$ and $\delta_{s_k,j} = r'$ for $j \in \{1, \dots, q\}$,
+  $\delta^{(1)}_k = \delta_k$ (no halving) and $\delta_{k+1} = \delta_{s_k}$;
+* the Step-1 displacements are $d_{k,q} = re$ and $d_{k,j} = 0$ for $j \neq q$, and $j_k = q$;
+* for $j \le q$ the Taylor decrements are $\Delta T_j(d) = a_j \langle e, d \rangle^q$, with
+  $a_q = a/q!$ and $a_j = 0$ for $j \neq q$, and
+  $\Delta T_p(d) = (a/q!) \langle e, d \rangle^q$;
+* the step $s_k$ is a global minimizer of the model $m_k$ with weight $\sigma_k$, $\|s_k\| < 1$,
+  and the Taylor decrements of orders $1, \dots, q$ of $m_k$ at $s_k$ are nonpositive on the
+  ball of radius $r'$;
+* the accuracies are kept, $h_{k+1} = h_k$, and pass the test (13.1.46),
+  $h_{k,i} \le \kappa_s \|s_k\|^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the iteration is not accuracy-improving, $x_{k+1} = x_k + s_k$,
+  $\sigma_{k+1} = \sigma_k \ge \sigma_{\min}$, and the ratio is $\rho_k = 1$.
+
+Then iteration $k$ is a step of ARqpIDA and ARqpEDA (Algorithm 13.1.2 of [cartis2022evaluation])
+on the whole space. -/
 theorem slowARqpTop_arqpDAStep (he : ‖e‖ = 1) {r' : ℝ} (hε : 0 < ε) (ha : ε / 2 < a) (hr : 0 < r)
     (hr' : 0 < r') (hr'1 : r' ≤ 1)
     (hr54 : σ k / ((P.p + 1)! : ℝ) * r ^ (P.p + 1) ≤ (a - P.ς * ε / 4) / P.q ! * r ^ P.q)
@@ -439,7 +526,13 @@ variable {P : ARqpIDAParams} {ε β : ℝ} {x : ℕ → E} {σ : ℕ → ℝ}
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
-/-- The Step-1 decreases along the slow gradient example: `ς β ε` at every order. -/
+/-- The Step-1 decreases along the slow gradient example. Let $\|e\| = 1$, $\varepsilon > 0$ and
+$\beta > 0$. Suppose that the Taylor decrements at $x_k$ are
+$\Delta T_j(d) = \beta \langle e, d \rangle$ for $j \in \{1, \dots, p\}$, and that the
+displacements $d_{k,j}$, $j \in \{1, \dots, q\}$, are approximate optimality displacements with
+radius $\varepsilon$ and fraction $\varsigma$ with $\Delta T_j(d_{k,j}) = \varsigma
+\phi^\varepsilon_j$. Then $\Delta T_j(d_{k,j}) = \varsigma \beta \varepsilon$ for
+$j \in \{1, \dots, q\}$. -/
 theorem slowGrad_taylorDecrement_eq (he : ‖e‖ = 1) (hε : 0 < ε) (hβ : 0 < β)
     (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = β * ⟪e, d⟫)
     (hdd : ∀ j ∈ Finset.Icc 1 P.q,
@@ -451,7 +544,11 @@ theorem slowGrad_taylorDecrement_eq (he : ‖e‖ = 1) (hε : 0 < ε) (hβ : 0 <
       fun d => by
     rw [hdec j (P.Icc_q_subset hj), pow_one], pow_one]
 
-/-- Along the slow gradient example the test (13.1.53) fails at order `q` (`β > ε^q/(2 q!)`). -/
+/-- Along the slow gradient example, the test (13.1.53) of [cartis2022evaluation] fails at order
+$q$. Let $\varepsilon > 0$ and $\beta > \varepsilon^q/(2 \, q!)$, and suppose that
+$\delta^{(1)}_{k,q} = \varepsilon$ and $\Delta T_q(d_{k,q}) = \varsigma \beta \varepsilon$. Then
+with the tolerances $\varepsilon_j = \varepsilon$, $\Delta T_q(d_{k,q}) > \tfrac12 \varsigma
+\varepsilon (\delta^{(1)}_{k,q})^q / q!$. -/
 theorem slowGrad_not_arqpDAPass (hε : 0 < ε) (hβ : ε ^ P.q / P.q ! / 2 < β)
     (hδ₁ : δ₁ k P.q = ε) (hdq : (D k).taylorDecrement P.q (dd k P.q) = P.ς * (β * ε)) :
     ¬ arqpDAPass P (fun _ => ε) D δ₁ dd k P.q := by
@@ -463,13 +560,30 @@ theorem slowGrad_not_arqpDAPass (hε : 0 < ε) (hβ : ε ^ P.q / P.q ! / 2 < β)
   rw [e]
   exact mul_lt_mul_of_pos_left this P.ς_pos
 
-/-- **One iteration of the slow gradient example is an ARqpIDA/ARqpEDA step** (`X = univ`,
-tolerances `ε_j = ε ≤ ½`): with radii `δ_k = δ^{(1)}_k = δ_{k+1} = δ_{s_k} = ε`, decrements
-`β ⟪e, d⟫` at all orders `1, …, p` with `ε^q/(2 q!) < β ≤ ε^q/q!`, a weight with
-`σ_k/(p+1)! ≤ 1/(4 q!)`, Step-1 displacements achieving the fraction `ς` of the measures, a global
-minimizer `s_k` of the model as step, short, with nonpositive model decrements of orders
-`1, …, q` on the ball of radius `ε` around it, accuracies passing (13.1.46), and the ratio
-`ρ_k = 1`. -/
+/-- **One iteration of the slow gradient example is a step of ARqpIDA and ARqpEDA.** Let
+$\|e\| = 1$, let $E$ be spanned by $e$ in the sense that $\|v\| = |\langle e, v \rangle|$ for
+all $v$, let $0 < \varepsilon \le 1/2$, and let $\varepsilon^q/(2 \, q!) < \beta \le
+\varepsilon^q/q!$. Suppose that at iteration $k$, with no constraints and the tolerances
+$\varepsilon_j = \varepsilon$:
+
+* the weight satisfies $\sigma_k/(p+1)! \le 1/(4 \, q!)$;
+* the radii are $\delta_{k,j} = \delta_{s_k,j} = \varepsilon$ for $j \in \{1, \dots, q\}$,
+  $\delta^{(1)}_k = \delta_k$ and $\delta_{k+1} = \delta_{s_k}$, and $j_k = q$;
+* the Taylor decrements are $\Delta T_j(d) = \beta \langle e, d \rangle$ for
+  $j \in \{1, \dots, p\}$;
+* the Step-1 displacements $d_{k,j}$, $j \in \{1, \dots, q\}$, are approximate optimality
+  displacements with radius $\varepsilon$ and fraction $\varsigma$ with $\Delta T_j(d_{k,j}) =
+  \varsigma \phi^\varepsilon_j$;
+* the step $s_k$ is a global minimizer of the model $m_k$ with weight $\sigma_k$, $\|s_k\| < 1$,
+  and the Taylor decrements of orders $1, \dots, q$ of $m_k$ at $s_k$ are nonpositive on the
+  ball of radius $\varepsilon$;
+* the accuracies are kept, $h_{k+1} = h_k$, and pass the test (13.1.46),
+  $h_{k,i} \le \kappa_s \|s_k\|^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the iteration is not accuracy-improving, $x_{k+1} = x_k + s_k$,
+  $\sigma_{k+1} = \sigma_k \ge \sigma_{\min}$, and the ratio is $\rho_k = 1$.
+
+Then iteration $k$ is a step of ARqpIDA and ARqpEDA (Algorithm 13.1.2 of [cartis2022evaluation])
+on the whole space. -/
 theorem slowGrad_arqpDAStep (he : ‖e‖ = 1) (hspan : ∀ v : E, ‖v‖ = |⟪e, v⟫|) (hε : 0 < ε)
     (hε2 : ε ≤ 1 / 2)
     (hβ : ε ^ P.q / P.q ! / 2 < β) (hβ1 : β ≤ ε ^ P.q / P.q !)
@@ -578,13 +692,33 @@ variable {e₁ e₂ : E} {P : ARqpIDAParams} {ε β ρ t : ℝ} {x : ℕ → E} 
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {ρr : ℕ → ℝ} {k : ℕ}
 
-/-- **One trial iteration of the slit example is an ARqpIDA-SC step** on `X = slitSet e₂ ρ`
-(tolerances `ε_j = ε ≤ 1/4`, `ε < ρ`): at a point of the line with Taylor decrements
-`β ⟪e₁, d⟫ + ⟪e₂, d⟫` at all orders `1, …, p`, `ε^q/q! < β ≤ 2 ε^q/q!`, radii
-`δ_k = δ^{(1)}_k = δ_{s_k} = ε` (no halving), Step-1 displacements `ς ε e₁` (the fraction `ς` of
-the measures `β ε`), a weight with `σ_k/(p+1)! ≤ 1/(2 q!)`, a short step `s_k = t e₁` minimizing
-the model on the line, whose model decrements of orders `1, …, q` along the line are nonpositive
-on the ball of radius `ε`, accuracies passing (13.1.46), and the ratio `ρ_k = 1`. -/
+/-- **One trial iteration of the slit example is a step of ARqpIDA on the slit set.** Let $e_1, e_2$
+be orthogonal unit vectors, let $0 < \varepsilon \le 1/4$ with $\varepsilon < \rho$, and let
+$\varepsilon^q/q! \le \beta \le 2 \varepsilon^q/q!$. Let $X = \{v : \langle e_2, v \rangle = 0\}
+\cup \{v : \langle e_2, v \rangle \ge \rho\}$ be the slit set. Suppose that at iteration $k$,
+with the tolerances $\varepsilon_j = \varepsilon$:
+
+* the iterate lies on the line, $\langle e_2, x_k \rangle = 0$, and the weight satisfies
+  $\sigma_k/(p+1)! \le 1/(2 \, q!)$;
+* the radii are $\delta_{k,j} = \delta_{s_k,j} = \varepsilon$ for $j \in \{1, \dots, q\}$,
+  $\delta^{(1)}_k = \delta_k$ (no halving) and $\delta_{k+1} = \delta_{s_k}$;
+* the Step-1 displacements are $d_{k,j} = \varsigma \varepsilon e_1$ for every $j$, and
+  $j_k = q$;
+* the Taylor decrements are $\Delta T_j(d) = \beta \langle e_1, d \rangle + \langle e_2, d
+  \rangle$ for $j \in \{1, \dots, p\}$;
+* the step is $s_k = t e_1$ with $\|s_k\| < 1$, it minimizes the model $m_k$ with weight
+  $\sigma_k$ on the line $\{c e_1 : c \in \mathbb{R}\}$, and the Taylor decrements of orders
+  $1, \dots, q$ of $m_k$ at $s_k$ are nonpositive at every $d$ with $\|d\| \le \varepsilon$ and
+  $\langle e_2, d \rangle = 0$;
+* the accuracies are kept, $h_{k+1} = h_k$, and pass the test (13.1.46),
+  $h_{k,i} \le \kappa_s \|s_k\|^{p-i+1}$ for $i \in \{1, \dots, p\}$;
+* the iteration is not accuracy-improving, $x_{k+1} = x_k + s_k$,
+  $\sigma_{k+1} = \sigma_k \ge \sigma_{\min}$, and the ratio is $\rho_k = 1$.
+
+Then iteration $k$ is a step of ARqpIDA (Algorithm 13.1.2 of [cartis2022evaluation]) on $X$.
+
+The displacements $\varsigma \varepsilon e_1$ achieve the fraction $\varsigma$ of the measures
+$\beta \varepsilon$. The slit set is `Optimization.slitSet e₂ ρ`. -/
 theorem slit_arqpDAStep (he₁ : ‖e₁‖ = 1) (he₂ : ‖e₂‖ = 1) (h12 : ⟪e₁, e₂⟫ = 0)
     (hε : 0 < ε) (hε4 : ε ≤ 1 / 4) (hερ : ε < ρ)
     (hβ : ε ^ P.q / P.q ! ≤ β) (hβ1 : β ≤ 2 * ε ^ P.q / P.q !)
@@ -713,11 +847,23 @@ theorem slit_arqpDAStep (he₁ : ‖e₁‖ = 1) (he₂ : ‖e₂‖ = 1) (h12 :
     exact arAcceptance_of_one_le P.toARParams le_rfl _ _ hσk hσ0
   · rw [hδ1, hρ, ite_eq_left ⟨hη, hs1⟩]
 
-/-- **An accuracy-improving iteration at a flat point of the line** (the continuation of the slit
-example): at a point of the line where the Taylor decrements are `⟪e₂, d⟫` at all orders
-`1, …, p`, with radii `δ_k = δ^{(1)}_k = ε < ρ` and zero Step-1 displacements, the test (13.1.53)
-holds at every order, and Step 5 keeps the iterate, the weight and the radii and multiplies the
-accuracies by `γ_h`. -/
+/-- **An accuracy-improving iteration at a flat point of the line.** Let $\|e_2\| \le 1$,
+$\varepsilon > 0$ and $\varepsilon < \rho$, and let $X = \{v : \langle e_2, v \rangle = 0\} \cup
+\{v : \langle e_2, v \rangle \ge \rho\}$ be the slit set. Suppose that at iteration $k$, with
+the tolerances $\varepsilon_j = \varepsilon$:
+
+* the iterate lies on the line, $\langle e_2, x_k \rangle = 0$;
+* the radii are $\delta_{k,j} = \varepsilon$ for $j \in \{1, \dots, q\}$ and
+  $\delta^{(1)}_k = \delta_k$, and the Step-1 displacements are $d_{k,j} = 0$;
+* the Taylor decrements are $\Delta T_j(d) = \langle e_2, d \rangle$ for
+  $j \in \{1, \dots, p\}$;
+* the iteration is accuracy-improving, $x_{k+1} = x_k$, $\delta_{k+1} = \delta_k$,
+  $\sigma_{k+1} = \sigma_k$, and $h_{k+1,i} = \gamma_h h_{k,i}$ for every $i$.
+
+Then iteration $k$ is a step of ARqpIDA (Algorithm 13.1.2 of [cartis2022evaluation]) on $X$.
+
+This is the continuation of the slit example. The test (13.1.53) holds at every order, so Step 5
+keeps the iterate, the weight and the radii, and multiplies the accuracies by $\gamma_h$. -/
 theorem slit_arqpDAStep_of_acc (he₂ : ‖e₂‖ ≤ 1) (hε : 0 < ε) (hερ : ε < ρ) (hx : ⟪e₂, x k⟫ = 0)
     (hδ : ∀ j ∈ Finset.Icc 1 P.q, δ k j = ε) (hδ₁ : δ₁ k = δ k) (hdd : ∀ j, dd k j = 0)
     (hdec : ∀ j ∈ Finset.Icc 1 P.p, ∀ d, (D k).taylorDecrement j d = ⟪e₂, d⟫)

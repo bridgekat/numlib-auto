@@ -19,81 +19,101 @@ import Mathlib.LinearAlgebra.Matrix.PosDef
 /-!
 # Coercive and symmetric coercive operators
 
-An operator `A` on an inner product space is *coercive* when its quadratic form is bounded below
-by a positive multiple of `‖x‖²`. This module defines the hypothesis in three strengths — a named
-constant, an unnamed one, and a two-sided version enclosing the quadratic form in an interval —
-and proves what each buys: injectivity, positivity in Mathlib's sense, the Rayleigh dictionary
-between the bounds and the eigenvalues in finite dimension, invertibility on a Hilbert space
-(Lax–Milgram), and the reduction of coercivity of a nonsymmetric `A` to coercivity of its
-Hermitian part.
-
-Mathlib's own `IsCoercive` is the same notion for a *bilinear form* `V →L[ℝ] V →L[ℝ] ℝ` over the
-reals; the definitions here are for an operator, over an `RCLike` field, and are the form the
-convergence analysis of iterative methods uses.
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with the inner
+product $\langle x, y \rangle$ conjugate-linear in $x$. An operator $A$ on $E$ is **coercive with
+constant $c$** if its quadratic form satisfies $c \|x\|^2 \le \operatorname{Re} \langle Ax, x
+\rangle$ for all $x$. This module defines the hypothesis in three strengths: with a named constant,
+with some constant $c > 0$, and in a two-sided form that encloses the quadratic form between
+$l_{\min} \|x\|^2$ and $l_{\max} \|x\|^2$. It proves what each strength gives: injectivity,
+positivity in the sense of Mathlib, the equivalence between the quadratic-form bounds and bounds on
+the eigenvalues in finite dimension, invertibility on a Hilbert space (the Lax–Milgram theorem), the
+location of the real spectrum, and the reduction of coercivity of a nonsymmetric $A$ to coercivity
+of its Hermitian part $\frac{1}{2}(A + A^*)$.
 
 ## Main definitions
 
-* `LinearMap.IsCoerciveWith A c`: `c ‖x‖² ≤ re ⟪A x, x⟫` for all `x`.
-* `LinearMap.IsCoercive A`: `IsCoerciveWith A c` for some `c > 0`. This is what the numerical
-  linear algebra literature calls a "positive definite" matrix when no symmetry is required, and
-  the linear case of a "strongly monotone" operator.
-* `LinearMap.IsSymmetricCoercive A`: symmetric and coercive — SPD/HPD in finite dimension
-  (`Matrix.PosDef`), strongly positive self-adjoint operators on Hilbert spaces.
-* `LinearMap.IsSymmetricBoundedBy A lmin lmax`: symmetric with
-  `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` — the quadratic-form way of saying "the spectrum lies in
-  `[lmin, lmax]`", the hypothesis of the Kantorovich inequality and of every Chebyshev-type
-  convergence bound for a symmetric positive definite operator.
+* `LinearMap.IsCoerciveWith`: $c \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle$ for all $x$.
+* `LinearMap.IsCoercive`: coercivity with some constant $c > 0$. The numerical linear algebra
+  literature calls such a matrix "positive definite" when no symmetry is required; it is the linear
+  case of a strongly monotone operator.
+* `LinearMap.IsSymmetricCoercive`: symmetric and coercive. In finite dimension these are the
+  symmetric or Hermitian positive definite matrices (`Matrix.PosDef`); on a Hilbert space they are
+  the strongly positive self-adjoint operators.
+* `LinearMap.IsSymmetricBoundedBy`: $A$ is symmetric and $l_{\min} \|x\|^2 \le \operatorname{Re}
+  \langle Ax, x \rangle \le l_{\max} \|x\|^2$ for all $x$. This is the quadratic-form way to say
+  that the spectrum lies in $[l_{\min}, l_{\max}]$, and it is the hypothesis of the Kantorovich
+  inequality and of the Chebyshev-type convergence bounds for symmetric positive definite operators.
 
-## Main statements
+## Main results
 
 * `LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue` and
-  `LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`: in finite dimension the
-  quadratic-form bounds are exactly bounds on the eigenvalues;
-* `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`: **Lax–Milgram** for a not necessarily
-  symmetric bounded coercive operator on a Hilbert space, with `‖A⁻¹‖ ≤ 1 / c`;
-* `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`: coercivity of `A` is coercivity of
-  `½ (A + A†)`;
-* `Matrix.posDef_iff_isSymmetricCoercive`: `Matrix.PosDef` is symmetric coercivity of the
-  Euclidean operator;
-* `LinearMap.isSymmetric_iff_of_inner_map_eq`, `LinearMap.isPositive_iff_of_inner_map_eq`,
-  `LinearMap.isSymmetricCoercive_iff_of_inner_map_eq`: these properties are transported along a
-  linear equivalence `Φ` (not necessarily an isometry) with `⟪T (Φ x), Φ y⟫ = ⟪S x, y⟫`.
+  `LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`: in finite dimension, the
+  quadratic-form bounds of a symmetric operator are exactly bounds on its eigenvalues.
+* `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`: the **Lax–Milgram theorem** for a bounded
+  coercive operator on a Hilbert space, not necessarily symmetric: $A$ is invertible and
+  $\|A^{-1}\| \le 1/c$.
+* `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`: $A$ is coercive with constant $c$ if and
+  only if $\frac{1}{2}(A + A^*)$ is.
+* `ContinuousLinearMap.mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy`: on a complex Hilbert
+  space, the real spectrum of a symmetric operator with quadratic form enclosed in
+  $[\gamma, \delta]$ lies in $[\gamma, \delta]$.
+* `Matrix.posDef_iff_isSymmetricCoercive`: a matrix is positive definite if and only if its
+  Euclidean operator is symmetric coercive.
+* `LinearMap.isSymmetric_iff_of_inner_map_eq`, `LinearMap.isPositive_iff_of_inner_map_eq` and
+  `LinearMap.isSymmetricCoercive_iff_of_inner_map_eq`: symmetry, positivity and symmetric coercivity
+  are transported along a linear equivalence $\Phi$, not necessarily an isometry, with $\langle
+  T(\Phi x), \Phi y \rangle = \langle Sx, y \rangle$.
+
+## Implementation notes
+
+* Mathlib's `IsCoercive` is the same notion for a real bilinear form `V →L[ℝ] V →L[ℝ] ℝ`. The
+  definitions here are for an operator over an `RCLike` field, which is the form that the
+  convergence analysis of iterative methods uses.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 namespace LinearMap
 
-/-- `c ‖x‖² ≤ re ⟪A x, x⟫` for all `x`. -/
+/-- An operator $A$ on $E$ is **coercive with constant $c$** if $c \|x\|^2 \le \operatorname{Re}
+\langle Ax, x \rangle$ for all $x \in E$.
+
+No sign condition on $c$ is part of the definition. -/
 def IsCoerciveWith (A : E →ₗ[𝕜] E) (c : ℝ) : Prop :=
   ∀ x, c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x)
 
-/-- Coercive: `IsCoerciveWith A c` for some `c > 0`. -/
+/-- An operator $A$ on $E$ is **coercive** if it is coercive with some constant $c > 0$, that is, $c
+\|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle$ for all $x \in E$. -/
 def IsCoercive (A : E →ₗ[𝕜] E) : Prop := ∃ c : ℝ, 0 < c ∧ A.IsCoerciveWith c
 
-/-- Symmetric and coercive (SPD / HPD / strongly positive self-adjoint). -/
+/-- An operator $A$ on $E$ is **symmetric coercive** if it is symmetric and coercive. In finite
+dimension these are the symmetric or Hermitian positive definite matrices; on a Hilbert space
+they are the strongly positive self-adjoint operators. -/
 structure IsSymmetricCoercive (A : E →ₗ[𝕜] E) : Prop where
-  /-- The operator is symmetric. -/
+  /-- The operator is symmetric: $\langle Ax, y \rangle = \langle x, Ay \rangle$ for all $x, y$. -/
   isSymmetric : A.IsSymmetric
   /-- The operator is coercive. -/
   isCoercive : A.IsCoercive
 
 section Aux
 
-/-- The quadratic form of `A` is `2`-homogeneous for real scalars. -/
+/-- The quadratic form of $A$ is homogeneous of degree $2$ for real scalars: $\operatorname{Re}
+\langle A(tx), tx \rangle = t^2 \operatorname{Re} \langle Ax, x \rangle$. -/
 private theorem re_inner_apply_smul (A : E →ₗ[𝕜] E) (t : ℝ) (x : E) :
     RCLike.re (inner 𝕜 (A ((t : 𝕜) • x)) ((t : 𝕜) • x)) = t ^ 2 * RCLike.re (inner 𝕜 (A x) x) := by
   rw [map_smul, inner_smul_left, inner_smul_right, RCLike.conj_ofReal, RCLike.re_ofReal_mul,
     RCLike.re_ofReal_mul]
   ring
 
-/-- The quadratic form of `A` at an eigenvector `A x = μ • x` is `re μ * ‖x‖ ^ 2`. -/
+/-- If $Ax = \mu x$, then $\operatorname{Re} \langle Ax, x \rangle = \operatorname{Re}(\mu)
+\|x\|^2$. -/
 theorem re_inner_apply_self_of_eq_smul {A : E →ₗ[𝕜] E} {μ : 𝕜} {x : E} (h : A x = μ • x) :
     RCLike.re (inner 𝕜 (A x) x) = RCLike.re μ * ‖x‖ ^ 2 := by
   rw [h, inner_smul_left, inner_self_eq_norm_sq_to_K, ← RCLike.ofReal_pow, RCLike.mul_re]
   simp
 
-/-- Coercivity only has to be checked on the unit sphere. -/
+/-- Coercivity with constant $c$ follows from $c \le \operatorname{Re} \langle Ax, x \rangle$ on the
+unit sphere. -/
 private theorem isCoerciveWith_of_forall_sphere {A : E →ₗ[𝕜] E} {c : ℝ}
     (h : ∀ x : E, ‖x‖ = 1 → c ≤ RCLike.re (inner 𝕜 (A x) x)) : A.IsCoerciveWith c := by
   intro x
@@ -109,7 +129,8 @@ private theorem isCoerciveWith_of_forall_sphere {A : E →ₗ[𝕜] E} {c : ℝ}
       = RCLike.re (inner 𝕜 (A x) x) := by field_simp
   rwa [h4] at h3
 
-/-- `|re ⟪A x, x⟫| ≤ ‖A‖ ‖x‖²` for a bounded operator. -/
+/-- Let $A$ be a bounded operator on $E$. Then $|\operatorname{Re} \langle Ax, x \rangle| \le \|A\|
+\|x\|^2$ for all $x \in E$. -/
 theorem _root_.ContinuousLinearMap.abs_re_inner_apply_self_le (A : E →L[𝕜] E) (x : E) :
     |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖A‖ * ‖x‖ ^ 2 :=
   calc |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖inner 𝕜 (A x) x‖ := RCLike.abs_re_le_norm _
@@ -121,32 +142,40 @@ end Aux
 
 variable {A : E →ₗ[𝕜] E}
 
-/-- The quadratic form of a coercive operator is strictly positive away from the origin. -/
+/-- Let $A$ be a coercive operator on $E$ and let $x \neq 0$. Then
+$\operatorname{Re} \langle Ax, x \rangle > 0$. -/
 theorem IsCoercive.inner_self_pos (hA : A.IsCoercive) {x : E} (hx : x ≠ 0) :
     0 < RCLike.re (inner 𝕜 (A x) x) := by
   obtain ⟨c, hc, h⟩ := hA
   exact lt_of_lt_of_le (mul_pos hc (pow_pos (norm_pos_iff.2 hx) 2)) (h x)
 
-/-- A coercive operator is injective: it cannot annihilate a nonzero vector, whose quadratic
-form is strictly positive. No completeness or finite dimension is needed. -/
+/-- A coercive operator on $E$ is injective.
+
+The quadratic form of a nonzero vector is strictly positive, so $A$ cannot annihilate it.
+Neither completeness nor finite dimension is needed. -/
 theorem IsCoercive.injective (hA : A.IsCoercive) : Function.Injective A := by
   refine (injective_iff_map_eq_zero A).2 fun x hx => ?_
   by_contra hx0
   simpa [hx] using hA.inner_self_pos hx0
 
-/-- A coercive operator has trivial kernel, the submodule form of `IsCoercive.injective`. -/
+/-- A coercive operator on $E$ has trivial kernel, $\ker A = \{0\}$.
+
+This is the submodule form of `LinearMap.IsCoercive.injective`. -/
 theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ :=
   LinearMap.ker_eq_bot.2 hA.injective
 
-/-- The defining inequality of `IsCoerciveWith`, as a lemma: `c ‖x‖² ≤ re ⟪A x, x⟫`. Useful where
-the bundled hypothesis is more convenient to apply by name than to unfold. -/
+/-- If $A$ is coercive with constant $c$, then $c \|x\|^2 \le \operatorname{Re} \langle Ax, x
+\rangle$ for every $x \in E$. This is the defining inequality of `LinearMap.IsCoerciveWith`,
+stated as a lemma that can be applied by name. -/
 theorem IsCoerciveWith.re_inner_apply_self {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := h x
 
-/-- A coercive operator is bounded below: `c ‖x‖ ≤ ‖A x‖`. Cauchy–Schwarz turns the quadratic-form
-bound into a bound on the norm, so that the error of an approximate solution is controlled by its
-residual, `c ‖x - x*‖ ≤ ‖b - A x‖`, and a coercivity constant bounds the inverse,
-`‖A⁻¹ y‖ ≤ ‖y‖ / c`. No sign condition on `c` is needed. -/
+/-- If $A$ is coercive with constant $c$, then $A$ is bounded below: $c \|x\| \le \|Ax\|$ for every
+$x \in E$. No sign condition on $c$ is needed.
+
+The Cauchy–Schwarz inequality turns the quadratic-form bound into a bound on the norm. So the
+error of an approximate solution is controlled by its residual, $c \|x - x^*\| \le \|b - Ax\|$,
+and a coercivity constant bounds the inverse, $\|A^{-1} y\| \le \|y\| / c$. -/
 theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ≤ ‖A x‖ := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -157,8 +186,12 @@ theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : A.IsCoerciveWith c) (x 
   have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
   nlinarith
 
-/-- In finite dimension, coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`: compactness of the unit
-sphere supplies a uniform constant `c > 0`. -/
+/-- Let $E$ be finite-dimensional and let $A$ be an operator on $E$. Then $A$ is coercive if and
+only if
+$$\operatorname{Re} \langle Ax, x \rangle > 0 \quad \text{for all } x \neq 0.$$
+
+The unit sphere is compact, so the quadratic form attains a positive minimum on it, which is a
+uniform constant $c > 0$. -/
 theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) :
     A.IsCoercive ↔ ∀ x ≠ 0, 0 < RCLike.re (inner 𝕜 (A x) x) := by
   refine ⟨fun hA x hx => hA.inner_self_pos hx, fun h => ?_⟩
@@ -178,9 +211,10 @@ theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜]
   refine ⟨_, h x₀ fun hz => by simp [hz] at hx₀1, isCoerciveWith_of_forall_sphere fun x hx1 => ?_⟩
   exact isMinOn_iff.1 hmin x (by simpa using hx1)
 
-/-- A symmetric coercive operator is positive in Mathlib's sense, `LinearMap.IsPositive`, so
-the whole positive-operator API applies to it. The converse fails: a positive operator need not
-have a strictly positive coercivity constant. -/
+/-- A symmetric coercive operator is positive in the sense of Mathlib, `LinearMap.IsPositive`.
+
+So the positive-operator API of Mathlib applies to it. The converse fails: a positive operator
+need not have a strictly positive coercivity constant. -/
 theorem IsSymmetricCoercive.isPositive (hA : A.IsSymmetricCoercive) : A.IsPositive :=
   ⟨hA.isSymmetric, fun x => by
     rcases eq_or_ne x 0 with rfl | hx
@@ -191,7 +225,8 @@ section Rayleigh
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- The Rayleigh quotients of a linear map in finite dimension are bounded below. -/
+/-- In finite dimension the Rayleigh quotients $\operatorname{Re} \langle Ay, y \rangle / \|y\|^2$,
+$y \neq 0$, are bounded below. -/
 private theorem bddBelow_rayleigh (A : E →ₗ[𝕜] E) :
     BddBelow (Set.range fun y : {y : E // y ≠ 0} =>
       RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
@@ -201,7 +236,8 @@ private theorem bddBelow_rayleigh (A : E →ₗ[𝕜] E) :
   rw [abs_le] at h
   simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using h.1
 
-/-- The Rayleigh quotients of a linear map in finite dimension are bounded above. -/
+/-- In finite dimension the Rayleigh quotients $\operatorname{Re} \langle Ay, y \rangle / \|y\|^2$,
+$y \neq 0$, are bounded above. -/
 private theorem bddAbove_rayleigh (A : E →ₗ[𝕜] E) :
     BddAbove (Set.range fun y : {y : E // y ≠ 0} =>
       RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
@@ -211,7 +247,9 @@ private theorem bddAbove_rayleigh (A : E →ₗ[𝕜] E) :
   rw [abs_le] at h
   simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using h.2
 
-/-- A lower eigenvalue bound is a lower quadratic-form bound (Rayleigh, finite dimension). -/
+/-- In finite dimension, if every eigenvalue $\mu$ of a symmetric $A$ has
+$c \le \operatorname{Re} \mu$, then $c \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle$ for
+all $x$. -/
 private theorem le_re_inner_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : ℝ}
     (h : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → c ≤ RCLike.re μ) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := by
@@ -224,7 +262,9 @@ private theorem le_re_inner_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : �
   rw [← le_div_iff₀ (pow_pos (norm_pos_iff.2 hx) 2)]
   exact hc.trans (ciInf_le (bddBelow_rayleigh A) ⟨x, hx⟩)
 
-/-- An upper eigenvalue bound is an upper quadratic-form bound (Rayleigh, finite dimension). -/
+/-- In finite dimension, if every eigenvalue $\mu$ of a symmetric $A$ has
+$\operatorname{Re} \mu \le c$, then $\operatorname{Re} \langle Ax, x \rangle \le c \|x\|^2$ for
+all $x$. -/
 private theorem re_inner_le_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : ℝ}
     (h : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ≤ c) (x : E) :
     RCLike.re (inner 𝕜 (A x) x) ≤ c * ‖x‖ ^ 2 := by
@@ -239,8 +279,12 @@ private theorem re_inner_le_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : �
 
 end Rayleigh
 
-/-- For symmetric `A`, coercivity is equivalent to all eigenvalues being `≥ c` (finite
-dimension); the best constant is the smallest eigenvalue. -/
+/-- Let $E$ be finite-dimensional, let $A$ be a symmetric operator on $E$, and let
+$c \in \mathbb{R}$. Then $A$ is coercive with constant $c$ if and only if every eigenvalue $\mu$
+of $A$ satisfies $c \le \operatorname{Re} \mu$.
+
+So the best coercivity constant is the smallest eigenvalue. The eigenvalues of a symmetric
+operator are real, so $\operatorname{Re} \mu = \mu$. -/
 theorem IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue [FiniteDimensional 𝕜 E]
     (hA : A.IsSymmetric) (c : ℝ) :
     A.IsCoerciveWith c ↔ ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → c ≤ RCLike.re μ := by
@@ -251,7 +295,8 @@ theorem IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue [FiniteDimensional �
   rw [re_inner_apply_self_of_eq_smul hx] at h1
   exact le_of_mul_le_mul_right (by linarith) (pow_pos (norm_pos_iff.2 hx0) 2)
 
-/-- Symmetric coercive operators have positive real eigenvalues. -/
+/-- Every eigenvalue $\mu$ of a symmetric coercive operator satisfies $\operatorname{Re} \mu > 0$.
+-/
 theorem IsSymmetricCoercive.re_pos_of_hasEigenvalue (hA : A.IsSymmetricCoercive) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) : 0 < RCLike.re μ := by
   obtain ⟨x, hx, hx0⟩ := hμ.exists_hasEigenvector
@@ -260,18 +305,26 @@ theorem IsSymmetricCoercive.re_pos_of_hasEigenvalue (hA : A.IsSymmetricCoercive)
   rw [re_inner_apply_self_of_eq_smul hx] at h1
   exact (mul_pos_iff_of_pos_right (pow_pos (norm_pos_iff.2 hx0) 2)).mp h1
 
-/-- `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` for symmetric `A`: "the spectrum of `A` lies in
-`[lmin, lmax]`" stated through the quadratic form; for a symmetric positive definite matrix one
-may take `lmin = λmin` and `lmax = λmax`. In finite dimension it is equivalent to all eigenvalues
-lying in `[lmin, lmax]` (`IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`); it makes
-sense in any inner product space, passes to compressions, and is the hypothesis of all
+/-- An operator $A$ on $E$ is **symmetric and bounded by $l_{\min}$ and $l_{\max}$** if $A$ is
+symmetric and
+$$l_{\min} \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le l_{\max} \|x\|^2 \quad
+  \text{for all } x \in E.$$
+
+This states through the quadratic form that the spectrum of $A$ lies in $[l_{\min}, l_{\max}]$.
+For a symmetric positive definite matrix one can take $l_{\min} = \lambda_{\min}$ and
+$l_{\max} = \lambda_{\max}$. In finite dimension the condition is equivalent to all eigenvalues
+lying in $[l_{\min}, l_{\max}]$
+(`LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`). The condition makes
+sense in any inner product space, passes to compressions, and is the hypothesis of the
 Chebyshev-type convergence bounds. -/
 structure IsSymmetricBoundedBy (A : E →ₗ[𝕜] E) (lmin lmax : ℝ) : Prop where
   /-- The operator is symmetric. -/
   isSymmetric : A.IsSymmetric
-  /-- The quadratic form is bounded below by `lmin ‖x‖²`. -/
+  /-- The quadratic form is bounded below: $l_{\min} \|x\|^2 \le \operatorname{Re} \langle Ax, x
+  \rangle$ for all $x$. -/
   le_re_inner : ∀ x, lmin * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x)
-  /-- The quadratic form is bounded above by `lmax ‖x‖²`. -/
+  /-- The quadratic form is bounded above: $\operatorname{Re} \langle Ax, x \rangle \le l_{\max}
+  \|x\|^2$ for all $x$. -/
   re_inner_le : ∀ x, RCLike.re (inner 𝕜 (A x) x) ≤ lmax * ‖x‖ ^ 2
 
 namespace IsSymmetricBoundedBy
@@ -279,21 +332,26 @@ namespace IsSymmetricBoundedBy
 variable {lmin lmax : ℝ} (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hA
 
-/-- The lower bound of the enclosing interval is a coercivity constant. -/
+/-- If $A$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$, then $A$ is coercive with constant
+$l_{\min}$. -/
 theorem isCoerciveWith : A.IsCoerciveWith lmin := hA.le_re_inner
 
-/-- An operator whose quadratic form is enclosed in `[lmin, lmax]` with `lmin > 0` is symmetric
-coercive, i.e. symmetric positive definite. -/
+/-- If $A$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$, and $l_{\min} > 0$, then $A$ is
+symmetric coercive, that is, symmetric positive definite. -/
 theorem isSymmetricCoercive (hl : 0 < lmin) : A.IsSymmetricCoercive :=
   ⟨hA.isSymmetric, lmin, hl, hA.le_re_inner⟩
 
-/-- Rayleigh quotients lie in `[lmin, lmax]`. -/
+/-- If $A$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$, then the Rayleigh quotient of
+every $x \neq 0$ lies in the interval:
+$$\frac{\operatorname{Re} \langle Ax, x \rangle}{\|x\|^2} \in [l_{\min}, l_{\max}].$$
+-/
 theorem rayleigh_mem_Icc {x : E} (hx : x ≠ 0) :
     RCLike.re (inner 𝕜 (A x) x) / ‖x‖ ^ 2 ∈ Set.Icc lmin lmax := by
   have hx2 : (0 : ℝ) < ‖x‖ ^ 2 := pow_pos (norm_pos_iff.2 hx) 2
   exact ⟨(le_div_iff₀ hx2).2 (hA.le_re_inner x), (div_le_iff₀ hx2).2 (hA.re_inner_le x)⟩
 
-/-- Eigenvalues lie in `[lmin, lmax]`. -/
+/-- If $A$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$, then every eigenvalue $\mu$ of $A$
+satisfies $\operatorname{Re} \mu \in [l_{\min}, l_{\max}]$. -/
 theorem re_mem_Icc_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ) :
     RCLike.re μ ∈ Set.Icc lmin lmax := by
   obtain ⟨x, hx, hx0⟩ := hμ.exists_hasEigenvector
@@ -302,17 +360,23 @@ theorem re_mem_Icc_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue 
   rwa [re_inner_apply_self_of_eq_smul hx, mul_div_assoc,
     div_self (pow_pos (norm_pos_iff.2 hx0) 2).ne', mul_one] at h
 
-/-- The enclosing interval may be widened: bounds valid on `[lmin, lmax]` hold on any larger
-interval. Convergence estimates stated for a wider interval are therefore weaker, which is what
-makes `lmin`, `lmax` usable as computable estimates of the extreme eigenvalues. -/
+/-- If $A$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$, and $l'_{\min} \le l_{\min}$ and
+$l_{\max} \le l'_{\max}$, then $A$ is symmetric and bounded by $l'_{\min}$ and $l'_{\max}$.
+
+So a convergence estimate stated for a wider interval is weaker. This is what makes $l_{\min}$
+and $l_{\max}$ usable as computable estimates of the extreme eigenvalues. -/
 theorem mono {lmin' lmax' : ℝ} (h₁ : lmin' ≤ lmin) (h₂ : lmax ≤ lmax') :
     A.IsSymmetricBoundedBy lmin' lmax' :=
   ⟨hA.isSymmetric,
     fun x => (mul_le_mul_of_nonneg_right h₁ (sq_nonneg _)).trans (hA.le_re_inner x),
     fun x => (hA.re_inner_le x).trans (mul_le_mul_of_nonneg_right h₂ (sq_nonneg _))⟩
 
-/-- The bounds pass to any symmetric `B` on a space isometrically embedded in `E` whose
-quadratic form agrees with that of `A` (restrictions to invariant subspaces, compressions). -/
+/-- Let $A$ be symmetric and bounded by $l_{\min}$ and $l_{\max}$ on $E$. Let $F$ be an inner
+product space with a linear isometry $\iota : F \to E$, and let $B$ be a symmetric operator on
+$F$ with $\langle Bx, x \rangle = \langle A(\iota x), \iota x \rangle$ for all $x \in F$. Then
+$B$ is symmetric and bounded by $l_{\min}$ and $l_{\max}$.
+
+This covers restrictions to invariant subspaces and compressions. -/
 theorem of_inner_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] {B : F →ₗ[𝕜] F}
     (hB : B.IsSymmetric) (ι : F →ₗᵢ[𝕜] E)
     (h : ∀ x, inner 𝕜 (B x) x = inner 𝕜 (A (ι x)) (ι x)) : B.IsSymmetricBoundedBy lmin lmax := by
@@ -322,8 +386,14 @@ theorem of_inner_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F
 
 end IsSymmetricBoundedBy
 
-/-- In finite dimension the quadratic-form bounds are equivalent to eigenvalue bounds
-(Rayleigh: `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and `_iInf_`). -/
+/-- Let $E$ be finite-dimensional, let $A$ be a symmetric operator on $E$, and let
+$l_{\min}, l_{\max} \in \mathbb{R}$. Then $A$ is symmetric and bounded by $l_{\min}$ and
+$l_{\max}$ if and only if every eigenvalue $\mu$ of $A$ satisfies
+$\operatorname{Re} \mu \in [l_{\min}, l_{\max}]$.
+
+The proof uses the Rayleigh characterization of the extreme eigenvalues,
+`LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and
+`LinearMap.IsSymmetric.hasEigenvalue_iInf_of_finiteDimensional`. -/
 theorem IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue [FiniteDimensional 𝕜 E]
     (hA : A.IsSymmetric) (lmin lmax : ℝ) :
     A.IsSymmetricBoundedBy lmin lmax ↔
@@ -332,7 +402,8 @@ theorem IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue [FiniteDimensi
     ⟨hA, le_re_inner_of_forall_hasEigenvalue hA fun μ hμ => (h μ hμ).1,
       re_inner_le_of_forall_hasEigenvalue hA fun μ hμ => (h μ hμ).2⟩⟩
 
-/-- A bounded symmetric operator is bounded by `± ‖A‖`. -/
+/-- Let $A$ be a bounded symmetric operator on $E$. Then $A$ is symmetric and bounded by $-\|A\|$
+and $\|A\|$. -/
 theorem IsSymmetric.isSymmetricBoundedBy_neg_norm_norm {A : E →L[𝕜] E}
     (hA : (A : E →ₗ[𝕜] E).IsSymmetric) : (A : E →ₗ[𝕜] E).IsSymmetricBoundedBy (-‖A‖) ‖A‖ := by
   refine ⟨hA, fun x => ?_, fun x => ?_⟩
@@ -340,10 +411,15 @@ theorem IsSymmetric.isSymmetricBoundedBy_neg_norm_norm {A : E →L[𝕜] E}
     exact (abs_le.1 (A.abs_re_inner_apply_self_le x)).1
   · exact (abs_le.1 (A.abs_re_inner_apply_self_le x)).2
 
-/-- **Adjoint pairs for the inner products**: `A` and `Astar` are an adjoint pair for the inner
-products of `E` and `F` (`LinearMap.IsAdjointPair` of the flipped `innerₛₗ`, the form of
-Mathlib's `LinearMap.isAdjointPair_inner`) iff `⟪Astar u, x⟫ = ⟪u, A x⟫` for all `u`, `x`. Here
-`Astar` is any map with the adjoint property; the adjoint `A†` itself needs finite dimension. -/
+/-- **Adjoint pairs for the inner products.** Let $F$ be a second inner product space, and let
+$A : E \to F$ and $A^\star : F \to E$ be maps. Then $A$ and $A^\star$ form an adjoint pair for
+the inner products of $E$ and $F$ if and only if
+$$\langle A^\star u, x \rangle = \langle u, Ax \rangle \quad \text{for all } u \in F, \ x \in
+  E.$$
+
+An adjoint pair is `LinearMap.IsAdjointPair` for the flipped forms `innerₛₗ`, the form of
+Mathlib's `LinearMap.isAdjointPair_inner`. Here $A^\star$ is any map with the adjoint property;
+the adjoint `LinearMap.adjoint` itself needs finite dimension. -/
 theorem isAdjointPair_inner_iff {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
     {A : E → F} {Astar : F → E} :
     IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar ↔
@@ -351,8 +427,13 @@ theorem isAdjointPair_inner_iff {F : Type*} [NormedAddCommGroup F] [InnerProduct
   simp only [IsAdjointPair, flip_apply, innerₛₗ_apply_apply]
   exact ⟨fun h u x => (h x u).symm, fun h x u => (h u x).symm⟩
 
-/-- **Adjoint pairs for the inner products**, the relation moving `A` to the right:
-`⟪A x, u⟫ = ⟪x, Astar u⟫` for all `x`, `u`. -/
+/-- **Adjoint pairs for the inner products**, with $A$ moved to the left. Let $F$ be a second inner
+product space, and let $A : E \to F$ and $A^\star : F \to E$ be maps. Then $A$ and $A^\star$
+form an adjoint pair for the inner products of $E$ and $F$ if and only if
+$$\langle Ax, u \rangle = \langle x, A^\star u \rangle \quad \text{for all } x \in E, \ u \in
+  F.$$
+
+An adjoint pair is `LinearMap.IsAdjointPair` for the flipped forms `innerₛₗ`. -/
 theorem isAdjointPair_inner_iff' {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
     {A : E → F} {Astar : F → E} :
     IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar ↔
@@ -362,25 +443,32 @@ theorem isAdjointPair_inner_iff' {F : Type*} [NormedAddCommGroup F] [InnerProduc
   · rw [← inner_conj_symm, ← h, inner_conj_symm]
   · rw [← inner_conj_symm, ← h, inner_conj_symm]
 
-/-- The adjoint relation of an adjoint pair for the inner products, `⟪Astar u, x⟫ = ⟪u, A x⟫`. -/
+/-- Let $F$ be a second inner product space, and let $A : E \to F$ and $A^\star : F \to E$ form an
+adjoint pair for the inner products. Then $\langle A^\star u, x \rangle = \langle u, Ax \rangle$
+for all $u \in F$ and $x \in E$.
+
+An adjoint pair is `LinearMap.IsAdjointPair` for the flipped forms `innerₛₗ`. -/
 theorem IsAdjointPair.inner_apply_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
     {A : E → F} {Astar : F → E}
     (hadj : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) (u : F)
     (x : E) : inner 𝕜 (Astar u) x = inner 𝕜 u (A x) :=
   isAdjointPair_inner_iff.1 hadj u x
 
-/-- The adjoint relation read the other way: if `A` and `Astar` are an adjoint pair for the inner
-products, then `⟪A x, u⟫ = ⟪x, Astar u⟫`. Mathlib's `LinearMap.adjoint_inner_right` is the case
-of the adjoint `A†`, which needs finite dimension; here `Astar` is any map with the adjoint
-property. -/
+/-- Let $F$ be a second inner product space, and let the linear maps $A : E \to F$ and
+$A^\star : F \to E$ form an adjoint pair for the inner products. Then $\langle Ax, u \rangle =
+\langle x, A^\star u \rangle$ for all $x \in E$ and $u \in F$.
+
+Mathlib's `LinearMap.adjoint_inner_right` is the case of the adjoint `LinearMap.adjoint`, which
+needs finite dimension. Here $A^\star$ is any map with the adjoint property. -/
 theorem inner_apply_eq_inner_apply_of_adjoint {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace 𝕜 F] {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
     (hadj : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) (x : E)
     (u : F) : inner 𝕜 (A x) u = inner 𝕜 x (Astar u) := by
   rw [← inner_conj_symm, ← hadj.inner_apply_eq, inner_conj_symm]
 
-/-- **An adjoint pair for the inner products, swapped**: if `Astar` is an adjoint of `A`, then `A`
-is an adjoint of `Astar`. -/
+/-- Let $F$ be a second inner product space, and let $A : E \to F$ and $A^\star : F \to E$ form an
+adjoint pair for the inner products of $E$ and $F$. Then $A^\star$ and $A$ form an adjoint pair
+for the inner products of $F$ and $E$. -/
 theorem IsAdjointPair.swap_inner {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
     {A : E → F} {Astar : F → E}
     (h : IsAdjointPair (innerₛₗ 𝕜 (E := E)).flip (innerₛₗ 𝕜 (E := F)).flip A Astar) :
@@ -391,10 +479,12 @@ end LinearMap
 
 section Richardson
 
-/-- The damped-Richardson contraction estimate for a bounded operator with
-`c ‖x‖² ≤ re ⟪A x, x⟫`: `‖x - θ A x‖² ≤ (1 - 2θc + θ²‖A‖²) ‖x‖²`. For `0 < θ < 2c/‖A‖²` the
-factor on the right is `< 1`, which is the standard convergence proof for the Richardson
-iteration `x ↦ x - θ (A x - b)`. -/
+/-- The **contraction estimate of the damped Richardson iteration**. Let $A$ be a bounded operator
+on $E$ that is coercive with constant $c$, and let $\theta \ge 0$. Then for every $x \in E$
+$$\|x - \theta A x\|^2 \le (1 - 2 \theta c + \theta^2 \|A\|^2) \|x\|^2.$$
+
+For $c > 0$ and $0 < \theta < 2c / \|A\|^2$ the factor on the right is less than $1$. This is
+the standard convergence proof for the Richardson iteration $x \mapsto x - \theta (Ax - b)$. -/
 theorem ContinuousLinearMap.norm_sub_smul_apply_sq_le {A : E →L[𝕜] E} {c : ℝ}
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {θ : ℝ} (hθ : 0 ≤ θ) (x : E) :
     ‖x - (θ : 𝕜) • A x‖ ^ 2 ≤ (1 - 2 * θ * c + θ ^ 2 * ‖A‖ ^ 2) * ‖x‖ ^ 2 := by
@@ -413,9 +503,12 @@ end Richardson
 
 namespace ContinuousLinearMap
 
-/-- **A symmetric operator whose quadratic form is enclosed in `[-M, M]` has norm at most `M`**:
-its norm is the supremum of the absolute Rayleigh quotients
-(`ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`), each of which lies in `[-M, M]`. -/
+/-- Let $T$ be a bounded operator on $E$, let $M \ge 0$, and let $T$ be symmetric and bounded by
+$-M$ and $M$. Then $\|T\| \le M$.
+
+The norm of a symmetric operator is the supremum of the absolute values of its Rayleigh
+quotients (`ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`), and each of them lies in
+$[-M, M]$. -/
 theorem norm_le_of_isSymmetricBoundedBy {T : E →L[𝕜] E} {M : ℝ} (hM : 0 ≤ M)
     (hb : (T : E →ₗ[𝕜] E).IsSymmetricBoundedBy (-M) M) : ‖T‖ ≤ M := by
   rw [ContinuousLinearMap.norm_eq_iSup_rayleighQuotient T hb.isSymmetric]
@@ -428,8 +521,14 @@ theorem norm_le_of_isSymmetricBoundedBy {T : E →L[𝕜] E} {M : ℝ} (hM : 0 �
 
 variable [CompleteSpace E]
 
-/-- A bounded coercive operator on a Hilbert space is invertible with `‖A⁻¹‖ ≤ 1 / c`. This is
-the Lax–Milgram theorem, for an operator that need not be symmetric. -/
+/-- The **Lax–Milgram theorem** for an operator. Let $E$ be a Hilbert space, let $c > 0$, and let
+$A$ be a bounded operator on $E$ that is coercive with constant $c$. Then $A$ is invertible as a
+bounded operator, and its inverse satisfies
+$$\|A^{-1}\| \le \frac{1}{c}.$$
+
+The operator $A$ need not be symmetric. The conclusion is stated as the existence of a
+continuous linear equivalence $e$ of $E$ whose underlying operator is $A$ and whose inverse has
+norm at most $1/c$. -/
 theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) :
     ∃ e : E ≃L[𝕜] E, (e : E →L[𝕜] E) = A ∧ ‖(e.symm : E →L[𝕜] E)‖ ≤ 1 / c := by
@@ -465,7 +564,11 @@ theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < 
   rw [div_mul_eq_mul_div, one_mul, le_div_iff₀ hc]
   linarith [h]
 
-/-- The Hermitian part `½ (A + A†)` has the same quadratic form as `A`. -/
+/-- Let $E$ be a Hilbert space and let $A$ be a bounded operator on $E$. The Hermitian part
+$\frac{1}{2}(A + A^*)$ has the same quadratic form as $A$:
+$$\operatorname{Re} \left\langle \tfrac{1}{2}(A + A^*) x, x \right\rangle = \operatorname{Re}
+  \langle Ax, x \rangle \quad \text{for all } x \in E.$$
+-/
 theorem re_inner_hermitianPart_apply (A : E →L[𝕜] E) (x : E) :
     RCLike.re (inner 𝕜 (((2⁻¹ : 𝕜) • (A + adjoint A)) x) x) = RCLike.re (inner 𝕜 (A x) x) := by
   have h2 : (2⁻¹ : 𝕜) = ((2⁻¹ : ℝ) : 𝕜) := by rw [RCLike.ofReal_inv, RCLike.ofReal_ofNat]
@@ -475,9 +578,13 @@ theorem re_inner_hermitianPart_apply (A : E →L[𝕜] E) (x : E) :
     RCLike.re_ofReal_mul, map_add, RCLike.conj_re]
   ring
 
-/-- Coercivity of `A` is coercivity of its Hermitian part; in particular the best coercivity
-constant of `A` is `λmin(½ (A + A†))`, the constant that governs the convergence rate of the
-Richardson and steepest-descent iterations for a nonsymmetric `A`. -/
+/-- Let $E$ be a Hilbert space, let $A$ be a bounded operator on $E$, and let $c \in \mathbb{R}$.
+Then $A$ is coercive with constant $c$ if and only if its Hermitian part $\frac{1}{2}(A + A^*)$
+is coercive with constant $c$.
+
+So the best coercivity constant of $A$ is $\lambda_{\min}\bigl(\frac{1}{2}(A + A^*)\bigr)$. This
+constant governs the convergence rate of the Richardson and steepest-descent iterations for a
+nonsymmetric $A$. -/
 theorem isCoerciveWith_iff_hermitianPart (A : E →L[𝕜] E) (c : ℝ) :
     (A : E →ₗ[𝕜] E).IsCoerciveWith c ↔
       (((2⁻¹ : 𝕜) • (A + adjoint A) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith c := by
@@ -485,8 +592,9 @@ theorem isCoerciveWith_iff_hermitianPart (A : E →L[𝕜] E) (c : ℝ) :
     re_inner_hermitianPart_apply]
 
 omit [CompleteSpace E] in
-/-- `A + r` is coercive with constant `c + r`, since the shift adds `r ‖x‖²` to the quadratic form.
--/
+/-- Let $A$ be a bounded operator on $E$ that is coercive with constant $c$, and let
+$r \in \mathbb{R}$. Then $A + rI$ is coercive with constant $c + r$, because the shift adds
+$r \|x\|^2$ to the quadratic form. -/
 theorem isCoerciveWith_add_smul_one {A : E →L[𝕜] E} {c : ℝ}
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} :
     ((A + (r : 𝕜) • (1 : E →L[𝕜] E) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith (c + r) := by
@@ -503,8 +611,12 @@ section Complex
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
 
-/-- The real spectrum of a coercive operator with constant `c` lies in `[c, ∞)`: for `t < c` the
-shift `A - t` is coercive, hence invertible by Lax–Milgram. -/
+/-- Let $F$ be a complex Hilbert space and let $A$ be a bounded operator on $F$ that is coercive
+with constant $c$. Then every real number $t$ in the spectrum of $A$ satisfies $c \le t$.
+
+For $t < c$ the shift $A - tI$ is coercive with the constant $c - t > 0$, so it is invertible by
+the Lax–Milgram theorem (`ContinuousLinearMap.exists_equiv_of_isCoerciveWith`). The spectrum is
+`spectrum ℝ A`, the real spectrum. -/
 theorem le_of_mem_spectrum_real_of_isCoerciveWith {A : F →L[ℂ] F} {c : ℝ}
     (hA : (A : F →ₗ[ℂ] F).IsCoerciveWith c) {t : ℝ} (ht : t ∈ spectrum ℝ A) : c ≤ t := by
   by_contra hlt
@@ -525,9 +637,12 @@ theorem le_of_mem_spectrum_real_of_isCoerciveWith {A : F →L[ℂ] F} {c : ℝ}
   rw [this]
   exact hu.neg
 
-/-- The real spectrum of an operator whose quadratic form is enclosed in `[γ, δ]` lies in `[γ, δ]`
-(both bounds by `ContinuousLinearMap.le_of_mem_spectrum_real_of_isCoerciveWith`, the upper one
-applied to `-A`); no finite dimension is needed. -/
+/-- Let $F$ be a complex Hilbert space and let $A$ be a bounded operator on $F$ that is symmetric
+and bounded by $\gamma$ and $\delta$. Then every real number $t$ in the spectrum of $A$
+satisfies $\gamma \le t \le \delta$. No finite dimension is needed.
+
+Both bounds come from `ContinuousLinearMap.le_of_mem_spectrum_real_of_isCoerciveWith`; the upper
+bound applies it to $-A$. -/
 theorem mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy {A : F →L[ℂ] F} {γ δ : ℝ}
     (hA : (A : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ) {t : ℝ} (ht : t ∈ spectrum ℝ A) :
     t ∈ Set.Icc γ δ := by
@@ -550,7 +665,7 @@ open scoped ComplexOrder
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The quadratic form of `toEuclideanLin M` is `xᴴ M x`. -/
+/-- The quadratic form of `Matrix.toEuclideanLin M` is $\operatorname{Re}(x^H M x)$. -/
 private theorem re_inner_toEuclideanLin (M : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
     RCLike.re (inner 𝕜 (Matrix.toEuclideanLin M x) x)
       = RCLike.re (star (WithLp.ofLp x) ⬝ᵥ (M *ᵥ WithLp.ofLp x)) := by
@@ -560,7 +675,11 @@ private theorem re_inner_toEuclideanLin (M : Matrix n n 𝕜) (x : EuclideanSpac
     simp [dotProduct, map_sum, RCLike.star_def, mul_comm]
   rw [EuclideanSpace.inner_eq_star_dotProduct, h1, h2, RCLike.conj_re]
 
-/-- `Matrix.PosDef` is symmetric coercivity of the Euclidean operator. -/
+/-- Let $M \in \mathbb{K}^{n \times n}$. Then $M$ is positive definite if and only if its Euclidean
+operator $x \mapsto Mx$ on $\mathbb{K}^n$ is symmetric coercive.
+
+Positive definiteness is `Matrix.PosDef`, and the Euclidean operator is
+`Matrix.toEuclideanLin M`. -/
 theorem posDef_iff_isSymmetricCoercive (M : Matrix n n 𝕜) :
     M.PosDef ↔ (Matrix.toEuclideanLin M).IsSymmetricCoercive := by
   rw [Matrix.posDef_iff_dotProduct_mulVec]
@@ -580,8 +699,9 @@ theorem posDef_iff_isSymmetricCoercive (M : Matrix n n 𝕜) :
     rw [re_inner_toEuclideanLin] at h
     simpa using h
 
-/-- The Euclidean operator of a positive definite matrix is symmetric coercive; dot-notation form
-of `Matrix.posDef_iff_isSymmetricCoercive`. -/
+/-- The Euclidean operator $x \mapsto Mx$ of a positive definite matrix
+$M \in \mathbb{K}^{n \times n}$ is symmetric coercive. This is one direction of
+`Matrix.posDef_iff_isSymmetricCoercive`, in a form usable with dot notation. -/
 theorem PosDef.isSymmetricCoercive_toEuclideanLin {M : Matrix n n 𝕜} (hM : M.PosDef) :
     (toEuclideanLin M).IsSymmetricCoercive :=
   (Matrix.posDef_iff_isSymmetricCoercive M).1 hM
@@ -598,7 +718,8 @@ open scoped RealInnerProductSpace
 
 namespace ContinuousLinearMap
 
-/-- For symmetric `H`, the shifted operator `H + μ I` is symmetric. -/
+/-- Let $F$ be a real inner product space and let $H$ be a bounded symmetric operator on $F$. Then
+$H + \mu I$ is symmetric for every $\mu \in \mathbb{R}$. -/
 theorem isSymmetric_add_smul_one {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ] F).IsSymmetric) (μ : ℝ) :
     ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsSymmetric := by
   intro x y
@@ -606,8 +727,9 @@ theorem isSymmetric_add_smul_one {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ] F)
     inner_add_left, inner_add_right, inner_smul_left, inner_smul_right, conj_trivial]
   rw [show ⟪H x, y⟫ = ⟪x, H y⟫ from hH x y]
 
-/-- For symmetric `H`, positive semidefiniteness of `H + μ I` is nonnegativity of its quadratic
-form. -/
+/-- Let $F$ be a real inner product space, let $H$ be a bounded symmetric operator on $F$, and let
+$\mu \in \mathbb{R}$. Then $H + \mu I$ is positive semidefinite if and only if
+$\langle v, (H + \mu I) v \rangle \ge 0$ for all $v \in F$. -/
 theorem isPositive_add_smul_one_iff {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ] F).IsSymmetric) (μ : ℝ) :
     ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsPositive ↔
       ∀ v, 0 ≤ ⟪v, (H + μ • (1 : F →L[ℝ] F)) v⟫ := by
@@ -615,7 +737,9 @@ theorem isPositive_add_smul_one_iff {H : F →L[ℝ] F} (hH : (H : F →ₗ[ℝ]
   · rw [real_inner_comm]; exact h.inner_nonneg_left v
   · simpa [real_inner_comm] using h v
 
-/-- The quadratic form of a positive semidefinite shifted operator is nonnegative. -/
+/-- Let $F$ be a real inner product space and let $H$ be a bounded operator on $F$ such that
+$H + \mu I$ is positive semidefinite. Then $\langle v, (H + \mu I) v \rangle \ge 0$ for every
+$v \in F$. -/
 theorem inner_apply_nonneg_of_isPositive {H : F →L[ℝ] F} {μ : ℝ}
     (h : ((H + μ • (1 : F →L[ℝ] F) : F →L[ℝ] F) : F →ₗ[ℝ] F).IsPositive) (v : F) :
     0 ≤ ⟪v, (H + μ • (1 : F →L[ℝ] F)) v⟫ := by
@@ -623,8 +747,8 @@ theorem inner_apply_nonneg_of_isPositive {H : F →L[ℝ] F} {μ : ℝ}
 
 end ContinuousLinearMap
 
-/-- A positive semidefinite operator kills every vector on which its quadratic form vanishes:
-`⟪T d, d⟫ = 0 → T d = 0`. -/
+/-- Let $F$ be a real inner product space and let $T$ be a positive semidefinite operator on $F$. If
+$\langle Td, d \rangle = 0$, then $Td = 0$. -/
 theorem LinearMap.IsPositive.apply_eq_zero_of_inner_eq_zero {T : F →ₗ[ℝ] F} (hT : T.IsPositive)
     {d : F} (hd : ⟪T d, d⟫ = 0) : T d = 0 := by
   have key : ∀ w : F, ∀ t : ℝ, 0 ≤ 2 * t * ⟪T d, w⟫ + t ^ 2 * ⟪T w, w⟫ := by
@@ -666,7 +790,10 @@ variable {F F' : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [Normed
   (hST : ∀ x y, ⟪T (Φ x), Φ y⟫ = ⟪S x, y⟫)
 include hST
 
-/-- Symmetry is transported along a linear equivalence that carries the bilinear forms. -/
+/-- Let $F$ and $F'$ be real inner product spaces, let $S$ be an operator on $F$, let $T$ be an
+operator on $F'$, and let $\Phi : F \to F'$ be a linear equivalence with $\langle T(\Phi x),
+\Phi y \rangle = \langle Sx, y \rangle$ for all $x, y \in F$. Then $S$ is symmetric if and only
+if $T$ is symmetric. -/
 theorem isSymmetric_iff_of_inner_map_eq : S.IsSymmetric ↔ T.IsSymmetric := by
   constructor
   · intro hS u v
@@ -678,7 +805,10 @@ theorem isSymmetric_iff_of_inner_map_eq : S.IsSymmetric ↔ T.IsSymmetric := by
     rw [← hST, hT, real_inner_comm (T (Φ y)), hST]
     exact real_inner_comm _ _
 
-/-- Positivity is transported along a linear equivalence that carries the bilinear forms. -/
+/-- Let $F$ and $F'$ be real inner product spaces, let $S$ be an operator on $F$, let $T$ be an
+operator on $F'$, and let $\Phi : F \to F'$ be a linear equivalence with $\langle T(\Phi x),
+\Phi y \rangle = \langle Sx, y \rangle$ for all $x, y \in F$. Then $S$ is positive if and only
+if $T$ is positive. -/
 theorem isPositive_iff_of_inner_map_eq : S.IsPositive ↔ T.IsPositive := by
   rw [isPositive_iff, isPositive_iff, isSymmetric_iff_of_inner_map_eq Φ hST]
   refine and_congr_right fun _ => ⟨fun h u => ?_, fun h x => ?_⟩
@@ -686,8 +816,13 @@ theorem isPositive_iff_of_inner_map_eq : S.IsPositive ↔ T.IsPositive := by
     rw [hST]; exact h x
   · rw [← hST]; exact h (Φ x)
 
-/-- Symmetric coercivity (positive definiteness) is transported along a linear equivalence that
-carries the bilinear forms, in finite dimension. -/
+/-- Let $F$ and $F'$ be finite-dimensional real inner product spaces, let $S$ be an operator on $F$,
+let $T$ be an operator on $F'$, and let $\Phi : F \to F'$ be a linear equivalence with $\langle
+T(\Phi x), \Phi y \rangle = \langle Sx, y \rangle$ for all $x, y \in F$. Then $S$ is symmetric
+coercive if and only if $T$ is symmetric coercive.
+
+The map $\Phi$ need not be an isometry, so a coercivity constant is not transported; finite
+dimension supplies one through `LinearMap.isCoercive_iff_forall_pos`. -/
 theorem isSymmetricCoercive_iff_of_inner_map_eq [FiniteDimensional ℝ F] [FiniteDimensional ℝ F'] :
     S.IsSymmetricCoercive ↔ T.IsSymmetricCoercive := by
   have hc : S.IsCoercive ↔ T.IsCoercive := by

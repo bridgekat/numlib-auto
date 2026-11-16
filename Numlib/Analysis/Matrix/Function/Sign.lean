@@ -11,47 +11,76 @@ import Numlib.Analysis.Normed.Ring.Inverse
 /-!
 # The matrix sign function and Newton's iteration
 
-The matrix sign function ([golub2013matrix] §9.4.1; Higham, *Functions of Matrices*, Ch. 5)
-`sign(A) = pfc (z ↦ sign (Re z)) A` of a complex matrix with no eigenvalue on the imaginary axis
-(junk otherwise). The scalar function is locally constant off the axis, so the primary functional
-calculus computes it as `∑ ±E_λ` (`Matrix.matrixSign_eq_sum`): minus the spectral projector of the
-open left half-plane plus that of the right. Newton's iteration `S₀ = A`,
-`S_{k+1} = (S_k + S_k⁻¹)/2` ([golub2013matrix] (9.4.1)) is `Matrix.newtonSignIterate A k`.
+Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis. The **matrix sign
+function** is $\operatorname{sign}(A) = f(A)$ for $f(z) = \operatorname{sign}(\operatorname{Re} z)$,
+in the primary functional calculus. The function $f$ is locally constant off the imaginary axis, so
+$$\operatorname{sign}(A) = \sum_{\operatorname{Re} \lambda > 0} E_\lambda
+  - \sum_{\operatorname{Re} \lambda < 0} E_\lambda,$$
+where $E_\lambda$ are the spectral idempotents of $A$. Thus $\operatorname{sign}(A)$ is the spectral
+projector of the open right half-plane minus the spectral projector of the open left half-plane.
+Newton's iteration $S_0 = A$, $S_{k+1} = (S_k + S_k^{-1})/2$ converges quadratically to
+$\operatorname{sign}(A)$. The presentation follows [golub2013matrix], §9.4.1, and N. J. Higham,
+*Functions of Matrices*, Chapter 5.
+
+## Main definitions
+
+* `Matrix.matrixSign`: the matrix sign function.
+* `Matrix.newtonSignIterate`: Newton's iteration (9.4.1) of [golub2013matrix] for the sign.
 
 ## Main results
 
-* `Matrix.matrixSign_eq_sum`, `Matrix.matrixSign_sq`, `Matrix.isUnit_add_matrixSign`,
-  `Matrix.spectrum_matrixSign_subset`: the spectral form of `sign(A)`, `sign(A)² = 1`, and the
-  nonsingularity of `A + sign(A)`.
-* `Matrix.matrixSign_conj_fromBlocks`: the Jordan-ordered form `sign(A) = X diag(-1, 1) X⁻¹`.
-* `Matrix.range_one_add_matrixSign`: `(1 + sign(A))/2` projects onto the invariant subspace of the
-  eigenvalues in the right half-plane.
-* `half_smul_add_inverse_sub_eq_of_commute`, … : the algebraic identities (9.4.2)–(9.4.4), in any
-  algebra over a field of characteristic `≠ 2`.
+* `Matrix.matrixSign_eq_sum`: the spectral form of $\operatorname{sign}(A)$.
+* `Matrix.matrixSign_sq`: $\operatorname{sign}(A)^2 = I$.
+* `Matrix.spectrum_matrixSign_subset`: every eigenvalue of $\operatorname{sign}(A)$ is $-1$ or $1$.
+* `Matrix.isUnit_add_matrixSign`: $A + \operatorname{sign}(A)$ is nonsingular.
+* `Matrix.matrixSign_conj_fromBlocks`: if $X^{-1} A X = \operatorname{diag}(J_1, J_2)$, with the
+  eigenvalues of $J_1$ in the open left half-plane and those of $J_2$ in the open right half-plane,
+  then $\operatorname{sign}(A) = X \operatorname{diag}(-I, I) X^{-1}$.
+* `Matrix.range_one_add_matrixSign`: $(I + \operatorname{sign}(A))/2$ is the projector onto the
+  invariant subspace of the eigenvalues in the open right half-plane.
+* `half_smul_add_inverse_sub_eq_of_commute`, `half_smul_add_inverse_add_eq_of_commute`: the
+  identities (9.4.2) and (9.4.3) of [golub2013matrix], in any algebra over a field of characteristic
+  not $2$.
 * `Matrix.isUnit_newtonSignIterate`, `Matrix.matrixSign_newtonSignIterate`: every Newton iterate
-  is a nonsingular rational function of `A` with the same sign.
-* `Matrix.tendsto_newtonSignIterate`: the iteration converges to `sign(A)`, quadratically
-  (`Matrix.norm_newtonSignIterate_sub_le`).
+  $S_k$ is nonsingular and has the same sign as $A$.
+* `Matrix.norm_newtonSignIterate_sub_le`: $\|S_{k+1} - \operatorname{sign}(A)\|_2 \le \frac12
+  \|S_k^{-1}\|_2 \|S_k - \operatorname{sign}(A)\|_2^2$.
+* `Matrix.tendsto_newtonSignIterate`: $S_k \to \operatorname{sign}(A)$.
+
+## Proof outline
+
+The convergence proof is that of [golub2013matrix]. Let $S = \operatorname{sign}(A)$ and
+$G_k = (S_k - S)(S_k + S)^{-1}$. Then $G_{k+1} = G_k^2$, and $G_0 = g(A)$ for $g(z) = (z -
+\operatorname{sign}(\operatorname{Re} z))/(z + \operatorname{sign}(\operatorname{Re} z))$. The
+spectral radius of $G_0$ is less than $1$, so the powers of $G_0$ tend to $0$
+(`tendsto_pow_of_spectralRadius_lt_one`).
 
 ## Implementation notes
 
-The name is `matrixSign`, not `sign`, to avoid the root `SignType.sign` under `open Matrix`. The
-convergence proof is the book's: with `S = sign(A)` and `G_k = (S_k - S)(S_k + S)⁻¹`,
-`G_{k+1} = G_k²` and `G_0 = g(A)` for `g(z) = (z - sign z)/(z + sign z)`, whose spectral radius is
-`< 1`; the powers of `G_0` tend to `0` (`tendsto_pow_of_spectralRadius_lt_one`, in the spectral
-norm of `open scoped Matrix.Norms.L2Operator`, whose topology is the usual one on matrices).
+* The name is `Matrix.matrixSign`, not `sign`, to avoid a clash with the root `SignType.sign` under
+  `open Matrix`.
+* `Matrix.matrixSign A` has a value for every $A$. It is the sign function only when no eigenvalue
+  of $A$ lies on the imaginary axis, and the theorems assume this.
+* The quadratic convergence bound uses the spectral norm of `Matrix.Norms.L2Operator`. Its topology
+  is the usual topology of matrices.
+* The inverse in Newton's iteration is the Mathlib matrix inverse, which is $0$ at a singular
+  matrix.
 -/
 
 open Polynomial Filter Topology
 
-/-! ### The algebraic identities (9.4.2)–(9.4.4) -/
+/-! ### The algebraic identities (9.4.2) and (9.4.3) -/
 
 section Algebra
 
 variable {K R : Type*} [Field K] [NeZero (2 : K)] [Ring R] [Algebra K R]
 
-/-- **[golub2013matrix] (9.4.2)**: for a unit `s` and an involution `S` (`S² = 1`) commuting with
-it, `½(s + s⁻¹) - S = ½ s⁻¹ (s - S)²`. -/
+/-- Let $K$ be a field of characteristic not $2$, and let $R$ be a $K$-algebra. Let $s \in R$ be a
+unit, and let $S \in R$ satisfy $S^2 = 1$ and commute with $s$. Then
+$$\tfrac12 (s + s^{-1}) - S = \tfrac12 s^{-1} (s - S)^2.$$
+This is (9.4.2) of [golub2013matrix].
+
+The inverse is `Ring.inverse`. -/
 theorem half_smul_add_inverse_sub_eq_of_commute {s S : R} (hs : IsUnit s) (hS : S * S = 1)
     (hc : Commute s S) :
     (2 : K)⁻¹ • (s + Ring.inverse s) - S = (2 : K)⁻¹ • (Ring.inverse s * (s - S) ^ 2) := by
@@ -66,7 +95,12 @@ theorem half_smul_add_inverse_sub_eq_of_commute {s S : R} (hs : IsUnit s) (hS : 
     abel
   rw [key, smul_sub, smul_smul, inv_mul_cancel₀ (NeZero.ne (2 : K)), one_smul]
 
-/-- **[golub2013matrix] (9.4.3)**: `½(s + s⁻¹) + S = ½ s⁻¹ (s + S)²`. -/
+/-- Let $K$ be a field of characteristic not $2$, and let $R$ be a $K$-algebra. Let $s \in R$ be a
+unit, and let $S \in R$ satisfy $S^2 = 1$ and commute with $s$. Then
+$$\tfrac12 (s + s^{-1}) + S = \tfrac12 s^{-1} (s + S)^2.$$
+This is (9.4.3) of [golub2013matrix].
+
+The inverse is `Ring.inverse`. -/
 theorem half_smul_add_inverse_add_eq_of_commute {s S : R} (hs : IsUnit s) (hS : S * S = 1)
     (hc : Commute s S) :
     (2 : K)⁻¹ • (s + Ring.inverse s) + S = (2 : K)⁻¹ • (Ring.inverse s * (s + S) ^ 2) := by
@@ -76,7 +110,9 @@ theorem half_smul_add_inverse_add_eq_of_commute {s S : R} (hs : IsUnit s) (hS : 
 
 end Algebra
 
-/-- The scalar sign function `z ↦ sign (Re z)` is locally constant off the imaginary axis. -/
+/-- Let $\mu \in \mathbb{C}$ with $\operatorname{Re} \mu \neq 0$. Then the function $z \mapsto
+\operatorname{sign}(\operatorname{Re} z)$ is constant, with the value
+$\operatorname{sign}(\operatorname{Re} \mu)$, on a neighborhood of $\mu$. -/
 theorem Complex.sign_re_eventuallyEq {μ : ℂ} (hμ : μ.re ≠ 0) :
     (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) =ᶠ[𝓝 μ]
       fun _ => ((SignType.sign μ.re : SignType) : ℂ) := by
@@ -90,15 +126,28 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The matrix sign function** ([golub2013matrix] §9.4.1): `sign(A) = pfc (z ↦ sign (Re z)) A`,
-meaningful when no eigenvalue of `A` is purely imaginary. -/
+/-- The **matrix sign function** of $A \in \mathbb{C}^{n \times n}$:
+$$\operatorname{sign}(A) = f(A), \qquad f(z) = \operatorname{sign}(\operatorname{Re} z),$$
+in the primary functional calculus `pfc`. This is the sign function of [golub2013matrix],
+§9.4.1.
+
+The definition gives a value for every $A$, but this value is the sign function only when no
+eigenvalue of $A$ lies on the imaginary axis. The scalar sign is `SignType.sign`, so $f(z) = 0$
+when $\operatorname{Re} z = 0$. -/
 noncomputable def matrixSign (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc (fun z : ℂ => ((SignType.sign z.re : SignType) : ℂ)) A
 
 variable {A : Matrix n n ℂ}
 
-/-- **The spectral form of the sign** ([golub2013matrix] §9.4.1): with no purely imaginary
-eigenvalue, `sign(A) = ∑_{Re λ > 0} E_λ - ∑_{Re λ < 0} E_λ`, the spectral idempotents. -/
+/-- **The spectral form of the sign.** Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the
+imaginary axis. Then
+$$\operatorname{sign}(A) = \sum_{\operatorname{Re} \lambda > 0} E_\lambda -
+  \sum_{\operatorname{Re} \lambda < 0} E_\lambda,$$
+where $\lambda$ runs over the distinct eigenvalues of $A$ and $E_\lambda$ is the spectral
+idempotent of $A$ at $\lambda$. This is in [golub2013matrix], §9.4.1.
+
+The eigenvalues are the distinct roots of the minimal polynomial of $A$, and $E_\lambda$ is
+`spectralIdempotent A λ`. -/
 theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     matrixSign A = ∑ μ ∈ (minpoly ℂ A).roots.toFinset with 0 < μ.re, spectralIdempotent A μ -
       ∑ μ ∈ (minpoly ℂ A).roots.toFinset with μ.re < 0, spectralIdempotent A μ := by
@@ -119,7 +168,8 @@ theorem matrixSign_eq_sum (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
         neg_one_smul]
     · rw [ite_eq_right (not_not.mpr h), ite_eq_right (not_lt.mpr h.le)]
 
-/-- `sign(A)² = 1` ([golub2013matrix] §9.4.1). -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis. Then
+$\operatorname{sign}(A)^2 = I$. This is in [golub2013matrix], §9.4.1. -/
 theorem matrixSign_sq (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : matrixSign A ^ 2 = 1 := by
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
     Complex.sign_re_eventuallyEq (hA μ (spectrum.mem_of_mem_roots_minpoly hμ))
@@ -133,16 +183,19 @@ theorem matrixSign_sq (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : matrixSign
   · simp [sign_neg h]
   · simp [sign_pos h]
 
-/-- `A` commutes with `sign(A)`. -/
+/-- Every $A \in \mathbb{C}^{n \times n}$ commutes with $\operatorname{sign}(A)$. -/
 theorem commute_matrixSign (A : Matrix n n ℂ) : Commute A (matrixSign A) :=
   commute_pfc A _
 
-/-- Similarity: `sign(P A P⁻¹) = P sign(A) P⁻¹`. -/
+/-- Let $P \in \mathbb{C}^{n \times n}$ be nonsingular. Then for every
+$A \in \mathbb{C}^{n \times n}$, $\operatorname{sign}(P A P^{-1}) = P \operatorname{sign}(A)
+P^{-1}$. -/
 theorem matrixSign_conj {P : Matrix n n ℂ} (hP : IsUnit P) (A : Matrix n n ℂ) :
     matrixSign (P * A * P⁻¹) = P * matrixSign A * P⁻¹ :=
   pfc_conj hP _ A
 
-/-- The eigenvalues of `sign(A)` are `±1`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis. Then every
+eigenvalue of $\operatorname{sign}(A)$ is $-1$ or $1$. -/
 theorem spectrum_matrixSign_subset (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     spectrum ℂ (matrixSign A) ⊆ {-1, 1} := by
   rw [matrixSign, spectrum_pfc (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _)]
@@ -151,8 +204,11 @@ theorem spectrum_matrixSign_subset (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
   · simp [sign_neg h]
   · simp [sign_pos h]
 
-/-- **`A + sign(A)` is nonsingular** ([golub2013matrix] §9.4.1): its eigenvalues are
-`λ + sign(Re λ) ≠ 0`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis. Then
+**$A + \operatorname{sign}(A)$ is nonsingular**. This is in [golub2013matrix], §9.4.1.
+
+The eigenvalues of $A + \operatorname{sign}(A)$ are the numbers $\lambda +
+\operatorname{sign}(\operatorname{Re} \lambda) \neq 0$ for the eigenvalues $\lambda$ of $A$. -/
 theorem isUnit_add_matrixSign (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) : IsUnit (A + matrixSign A) := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
   have hev := fun μ (hμ : μ ∈ (minpoly ℂ A).roots) =>
@@ -178,17 +234,26 @@ section Blocks
 
 variable {l m : Type*} [Fintype l] [DecidableEq l] [Fintype m] [DecidableEq m]
 
-/-- A function constant near every eigenvalue of `B` takes that value at `B`. -/
+/-- If $f$ is constant, with the value $c$, on a neighborhood of every eigenvalue of $B$, then
+$f(B) = cI$. -/
 private theorem pfc_eq_algebraMap_of_eventuallyEq {k : Type*} [Fintype k] [DecidableEq k]
     {B : Matrix k k ℂ} {f : ℂ → ℂ} {c : ℂ} (h : ∀ μ ∈ spectrum ℂ B, f =ᶠ[𝓝 μ] fun _ => c) :
     pfc f B = algebraMap ℂ _ c :=
   (pfc_congr_of_eventuallyEq h).trans
     (pfc_const (Algebra.IsIntegral.isIntegral _) (IsAlgClosed.splits _) c)
 
-/-- **The Jordan-ordered form of the sign** ([golub2013matrix] §9.4.1): if
-`X⁻¹ A X = diag(J₁, J₂)` with the eigenvalues of `J₁` in the open left half-plane and those of `J₂`
-in the open right half-plane, then `sign(A) = X diag(-1, 1) X⁻¹`. No Jordan structure of the
-blocks is used. -/
+/-- **The Jordan-ordered form of the sign.** Let $A, X \in \mathbb{C}^{n \times n}$ with $X$
+nonsingular, and let $J_1 \in \mathbb{C}^{l \times l}$ and $J_2 \in \mathbb{C}^{m \times m}$,
+where the index set of $A$ is identified with the disjoint union of the index sets of $J_1$ and
+$J_2$. Suppose that
+$$X^{-1} A X = \begin{bmatrix} J_1 & 0 \\ 0 & J_2 \end{bmatrix},$$
+that every eigenvalue of $J_1$ has negative real part, and that every eigenvalue of $J_2$ has
+positive real part. Then
+$$\operatorname{sign}(A) = X \begin{bmatrix} -I & 0 \\ 0 & I \end{bmatrix} X^{-1}.$$
+This is in [golub2013matrix], §9.4.1, where $J_1$ and $J_2$ come from the Jordan form of $A$.
+
+The proof uses no Jordan structure of $J_1$ and $J_2$. The identification of the index sets is
+the equivalence `e : l ⊕ m ≃ n`, applied with `Matrix.reindex`. -/
 theorem matrixSign_conj_fromBlocks (e : l ⊕ m ≃ n) {A X : Matrix n n ℂ} (hX : IsUnit X)
     {J₁ : Matrix l l ℂ} {J₂ : Matrix m m ℂ}
     (h : X⁻¹ * A * X = reindex e e (fromBlocks J₁ 0 0 J₂))
@@ -211,11 +276,16 @@ theorem matrixSign_conj_fromBlocks (e : l ⊕ m ≃ n) {A X : Matrix n n ℂ} (h
     pfc_eq_algebraMap_of_eventuallyEq e1, pfc_eq_algebraMap_of_eventuallyEq e2, map_neg, map_one,
     map_one]
 
-/-- **`(1 + sign(A))/2` is the spectral projector onto the right half-plane**
-([golub2013matrix] §9.4.1, `X₂Y₂ᴴ = (I + sign(A))/2`): in the setting of
-`Matrix.matrixSign_conj_fromBlocks`, with `X₂` the columns of `X` belonging to `J₂` and `Y₂` the
-corresponding rows of `X⁻¹`, `(1 + sign(A))/2 = X₂ Y₂`; it is idempotent, and its range is
-spanned by the columns of `X₂`, a subspace of dimension `card m`. -/
+/-- **$(I + \operatorname{sign}(A))/2$ is the spectral projector onto the right half-plane.** In the
+setting of `Matrix.matrixSign_conj_fromBlocks`, let $X_2$ consist of the columns of $X$ that
+belong to $J_2$, and let $Y_2$ consist of the corresponding rows of $X^{-1}$. Then
+$$\tfrac12 (I + \operatorname{sign}(A)) = X_2 Y_2,$$
+this matrix is idempotent, its range is the span of the columns of $X_2$, and the dimension of
+this range is the order of $J_2$. This is in [golub2013matrix], §9.4.1, which writes the rows of
+$X^{-1}$ as $Y_2^H$ and the identity as $X_2 Y_2^H = (I + \operatorname{sign}(A))/2$.
+
+$X_2$ is `X.submatrix id (e ∘ Sum.inr)`, and $Y_2$ is `X⁻¹.submatrix (e ∘ Sum.inr) id`. The
+range is that of the linear map `Matrix.mulVecLin`, and the order of $J_2$ is `Fintype.card m`. -/
 theorem range_one_add_matrixSign (e : l ⊕ m ≃ n) {A X : Matrix n n ℂ} (hX : IsUnit X)
     {J₁ : Matrix l l ℂ} {J₂ : Matrix m m ℂ}
     (h : X⁻¹ * A * X = reindex e e (fromBlocks J₁ 0 0 J₂))
@@ -269,25 +339,34 @@ end Blocks
 
 /-! ### Newton's iteration -/
 
-/-- **Newton's iteration for the sign** ([golub2013matrix] (9.4.1)): `S₀ = A`,
-`S_{k+1} = (S_k + S_k⁻¹)/2`. -/
+/-- **Newton's iteration for the sign**: for $A \in \mathbb{C}^{n \times n}$,
+$$S_0 = A, \qquad S_{k+1} = \tfrac12 (S_k + S_k^{-1}).$$
+This is (9.4.1) of [golub2013matrix].
+
+The inverse is the Mathlib matrix inverse, which is $0$ at a singular matrix. If $A$ has no
+eigenvalue on the imaginary axis, then every $S_k$ is nonsingular
+(`Matrix.isUnit_newtonSignIterate`). -/
 noncomputable def newtonSignIterate (A : Matrix n n ℂ) : ℕ → Matrix n n ℂ
   | 0 => A
   | k + 1 => (2 : ℂ)⁻¹ • (newtonSignIterate A k + (newtonSignIterate A k)⁻¹)
 
+/-- Newton's sign iteration starts at $S_0 = A$. -/
 @[simp]
 theorem newtonSignIterate_zero (A : Matrix n n ℂ) : newtonSignIterate A 0 = A := rfl
 
+/-- Newton's sign iteration satisfies $S_{k+1} = (S_k + S_k^{-1})/2$. -/
 theorem newtonSignIterate_succ (A : Matrix n n ℂ) (k : ℕ) :
     newtonSignIterate A (k + 1) =
       (2 : ℂ)⁻¹ • (newtonSignIterate A k + (newtonSignIterate A k)⁻¹) := rfl
 
-/-- The scalar Newton map `r₀ = id`, `r_{k+1} = (r_k + 1/r_k)/2`. -/
+/-- The scalar Newton iterates $r_0(z) = z$ and $r_{k+1}(z) = (r_k(z) + 1/r_k(z))/2$. -/
 private noncomputable def signFun : ℕ → ℂ → ℂ
   | 0 => fun z => z
   | k + 1 => fun z => (2 : ℂ)⁻¹ * (signFun k z + (signFun k z)⁻¹)
 
-/-- `Re ((w + w⁻¹)/2)` has the sign of `Re w`. -/
+/-- For $w \in \mathbb{C}$, $\operatorname{Re}((w + w^{-1})/2) = \frac{\operatorname{Re} w}{2} (1 +
+|w|^{-2})$, which has the sign of $\operatorname{Re} w$.
+-/
 private theorem re_half_add_inv (w : ℂ) :
     ((2 : ℂ)⁻¹ * (w + w⁻¹)).re = w.re / 2 * (1 + (Complex.normSq w)⁻¹) := by
   have h2 : ((2 : ℂ)⁻¹).re = 2⁻¹ := by norm_num
@@ -341,12 +420,14 @@ private theorem signFun_re_ne_zero (k : ℕ) {z : ℂ} (hz : z.re ≠ 0) : (sign
 private theorem signFun_ne_zero (k : ℕ) {z : ℂ} (hz : z.re ≠ 0) : signFun k z ≠ 0 :=
   fun h => signFun_re_ne_zero k hz (by rw [h, Complex.zero_re])
 
-/-- Functions agreeing off the imaginary axis agree at a matrix without imaginary eigenvalues. -/
+/-- If $f$ and $g$ agree off the imaginary axis and $A$ has no eigenvalue on the imaginary axis,
+then $f(A) = g(A)$. -/
 private theorem pfc_congr_of_re_ne_zero {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     {f g : ℂ → ℂ} (h : ∀ z : ℂ, z.re ≠ 0 → f z = g z) : pfc f A = pfc g A :=
   pfc_congr_of_eqOn (isOpen_ne_fun Complex.continuous_re continuous_const) hA h
 
-/-- Each Newton iterate is a rational function of `A`. -/
+/-- If $A$ has no eigenvalue on the imaginary axis, then $S_k = r_k(A)$ in the primary functional
+calculus, so $S_k$ is a rational function of $A$. -/
 private theorem newtonSignIterate_eq_pfc {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) : newtonSignIterate A k = pfc (signFun k) A := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -364,9 +445,13 @@ private theorem newtonSignIterate_eq_pfc {A : Matrix n n ℂ} (hA : ∀ μ ∈ s
         fun μ hμ => (hsmooth k μ hμ).inv (hne k μ hμ), ← pfc_const_smul]
     rfl
 
-/-- **The Newton iterates are nonsingular** ([golub2013matrix] §9.4.1): with no purely imaginary
-eigenvalue, every `S_k` is invertible (so the iteration is well defined) and has no purely
-imaginary eigenvalue; it is a rational function of `A`. -/
+/-- **The Newton iterates are nonsingular.** Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue
+on the imaginary axis. Then for every $k$, the Newton sign iterate $S_k$ is nonsingular and has
+no eigenvalue on the imaginary axis. So the iteration is well defined. This is in
+[golub2013matrix], §9.4.1.
+
+The proof shows that $S_k = r_k(A)$ in the primary functional calculus, for a rational function
+$r_k$. -/
 theorem isUnit_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) (k : ℕ) :
     IsUnit (newtonSignIterate A k) ∧ ∀ μ ∈ spectrum ℂ (newtonSignIterate A k), μ.re ≠ 0 := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -378,8 +463,11 @@ theorem isUnit_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum 
   · rintro _ ⟨μ, hμ, rfl⟩
     exact signFun_re_ne_zero k (hA μ hμ)
 
-/-- **The Newton iterates have the sign of `A`** ([golub2013matrix] §9.4.1): `sign(S_k) = sign(A)`,
-since `z ↦ (z + 1/z)/2` preserves the sign of the real part. -/
+/-- **The Newton iterates have the sign of $A$.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on the imaginary axis. Then for every $k$, $\operatorname{sign}(S_k) =
+\operatorname{sign}(A)$. This is in [golub2013matrix], §9.4.1.
+
+The proof uses that the map $z \mapsto (z + 1/z)/2$ preserves the sign of the real part. -/
 theorem matrixSign_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) : matrixSign (newtonSignIterate A k) = matrixSign A := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -396,8 +484,11 @@ theorem matrixSign_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spect
   · simp [Function.comp_apply, sign_pos h, sign_pos (this.2.1.mpr h)]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Quadratic convergence** ([golub2013matrix] §9.4.1, from (9.4.2)): in the spectral norm,
-`‖S_{k+1} - sign(A)‖ ≤ ½ ‖S_k⁻¹‖ ‖S_k - sign(A)‖²`. -/
+/-- **Quadratic convergence of Newton's sign iteration.** Let $A \in \mathbb{C}^{n \times n}$ have
+no eigenvalue on the imaginary axis. Then for every $k$, in the spectral norm,
+$$\|S_{k+1} - \operatorname{sign}(A)\|_2
+  \le \tfrac12 \|S_k^{-1}\|_2\, \|S_k - \operatorname{sign}(A)\|_2^2.$$
+This is in [golub2013matrix], §9.4.1, and follows from (9.4.2). -/
 theorem norm_newtonSignIterate_sub_le {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     ‖newtonSignIterate A (k + 1) - matrixSign A‖ ≤
@@ -413,14 +504,15 @@ theorem norm_newtonSignIterate_sub_le {A : Matrix n n ℂ} (hA : ∀ μ ∈ spec
   gcongr
   exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_left (norm_pow_le' _ two_pos) (norm_nonneg _))
 
-/-- `A` commutes with its Newton sign iterates. -/
+/-- Every $A \in \mathbb{C}^{n \times n}$ commutes with its Newton sign iterates $S_k$. -/
 theorem commute_newtonSignIterate (A : Matrix n n ℂ) (k : ℕ) :
     Commute A (newtonSignIterate A k) := by
   induction k with
   | zero => exact Commute.refl A
   | succ k ih => exact (ih.add_right (commute_nonsing_inv_right ih)).smul_right _
 
-/-- A matrix with all eigenvalues in the open right half-plane has sign `1`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have all its eigenvalues in the open right half-plane. Then
+$\operatorname{sign}(A) = I$. -/
 theorem matrixSign_eq_one_of_re_pos {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
     matrixSign A = 1 := by
   rw [matrixSign, pfc_eq_algebraMap_of_eventuallyEq (c := 1) fun μ hμ => ?_, map_one]
@@ -429,7 +521,8 @@ theorem matrixSign_eq_one_of_re_pos {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectr
 
 /-! ### Convergence of Newton's iteration -/
 
-/-- The Cayley-type contraction `g(z) = (z - sign z)/(z + sign z)` of [golub2013matrix] §9.4.1. -/
+/-- The function $g(z) = (z - \operatorname{sign}(\operatorname{Re} z))/(z +
+\operatorname{sign}(\operatorname{Re} z))$ of [golub2013matrix], §9.4.1. -/
 private noncomputable def contraction (z : ℂ) : ℂ :=
   (z - ((SignType.sign z.re : SignType) : ℂ)) / (z + ((SignType.sign z.re : SignType) : ℂ))
 
@@ -463,7 +556,8 @@ private theorem contDiffAt_contraction {μ : ℂ} (hμ : μ.re ≠ 0) :
   filter_upwards [hev] with z hz
   simp only [contraction, hz]
 
-/-- The closed form `r_k = sign · (1 + g^{2^k}) / (1 - g^{2^k})` of the scalar Newton map. -/
+/-- Off the imaginary axis, the scalar Newton iterates have the closed form $r_k(z) =
+\operatorname{sign}(\operatorname{Re} z)\, (1 + g(z)^{2^k}) (1 - g(z)^{2^k})^{-1}$. -/
 private theorem signFun_eq (k : ℕ) {z : ℂ} (hz : z.re ≠ 0) :
     signFun k z = ((SignType.sign z.re : SignType) : ℂ) * (1 + contraction z ^ 2 ^ k) *
       (1 - contraction z ^ 2 ^ k)⁻¹ := by
@@ -497,9 +591,13 @@ private theorem signFun_eq (k : ℕ) {z : ℂ} (hz : z.re ≠ 0) :
     set q := contraction z ^ 2 ^ k
     rcases sign_cases hz with ⟨-, hs⟩ | ⟨-, hs⟩ <;> rw [hs] <;> field_simp <;> ring
 
-/-- **Convergence of Newton's iteration** ([golub2013matrix] §9.4.1): with no purely imaginary
-eigenvalue, `S_k → sign(A)`. With `G = g(A)`, `g(z) = (z - sign z)/(z + sign z)` of spectral radius
-`< 1`, the iterates are `S_k = sign(A) (1 + G^{2^k}) (1 - G^{2^k})⁻¹`. -/
+/-- **Convergence of Newton's sign iteration.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on the imaginary axis. Then $S_k \to \operatorname{sign}(A)$ as $k \to \infty$. This
+is in [golub2013matrix], §9.4.1.
+
+Let $G = g(A)$ for $g(z) = (z - \operatorname{sign}(\operatorname{Re} z))/(z +
+\operatorname{sign}(\operatorname{Re} z))$. The spectral radius of $G$ is less than $1$, and the
+iterates are $S_k = \operatorname{sign}(A) (I + G^{2^k}) (I - G^{2^k})^{-1}$. -/
 theorem tendsto_newtonSignIterate {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     Tendsto (newtonSignIterate A) atTop (𝓝 (matrixSign A)) := by
   rcases isEmpty_or_nonempty n with hn | hn

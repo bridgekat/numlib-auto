@@ -13,34 +13,69 @@ import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
-# Stationary (affine) iterations
+# Stationary iterations
 
-`Stationary.step G f x = G x + f`. Convergence for all data iff the spectral radius satisfies `ρ(G)
-< 1` ([saad2003iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite dimension for
-`⇐`; [kress1998numerical] Thm 4.1), the contraction case `‖G‖ < 1` with a priori / a posteriori
-bounds ([kress1998numerical] Thm 3.48, [han2009theoretical] §5.2.2), and the error propagation `x_k
-- x* = G^k (x₀ - x*)`.
+Let $E$ be a normed space over a nontrivially normed field, let $G \colon E \to E$ be a continuous
+linear map and let $f \in E$. The **stationary iteration** with iteration operator $G$ and constant
+term $f$ is $x_{k+1} = G x_k + f$. If $x^*$ is a fixed point, $G x^* + f = x^*$, then the errors
+satisfy $x_k - x^* = G^k (x_0 - x^*)$, and every convergence statement of this module follows from
+this identity. The iteration converges for all data if and only if the spectral radius satisfies
+$\rho(G) < 1$ ([saad2003iterative], Theorem 4.1; [kress1998numerical], Theorem 4.1). The direction
+from $\rho(G) < 1$ to convergence holds in every complex Banach space, and the converse is proved in
+finite dimension. In the contraction case $\|G\| < 1$ there are a priori and a posteriori error
+bounds ([kress1998numerical], Theorem 3.48; [han2009theoretical], §5.2.2).
 
-The spectral radius is also the *sharp* asymptotic convergence factor: no starting vector decays
-faster than `ρ(G)` in the sense of the limsup of `(‖G^k d₀‖/‖d₀‖)^{1/k}`
-(`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an eigenvector
-of a dominant eigenvalue attains it
-(`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`).
+The spectral radius is also the sharp asymptotic convergence factor. For every starting error $d_0$,
+the limit superior of $(\|G^k d_0\| / \|d_0\|)^{1/k}$ is at most $\rho(G)$, and in finite dimension
+an eigenvector for an eigenvalue of maximal modulus attains this bound. The module also gives the
+increments $x_{k+1} - x_k = G^k (x_1 - x_0)$ and the closed form $x_k = G^k x_0 + \sum_{j<k} G^j f$;
+the convergence factor $\|G^m\|$, the average convergence factor $\|G^m\|^{1/m}$ and the average
+convergence rate $R_m(G) = -\frac{1}{m} \log \|G^m\|$ of [quarteroni2000numerical], Definition 4.2,
+with Gelfand's formula read as $\|G^m\|^{1/m} \to \rho(G)$ and $R_m(G) \to R(G) = -\log \rho(G)$
+([quarteroni2000numerical], (4.5)); and the iteration $x_{k+1} = G x_k + f_k$ with a step-dependent
+forcing term, which is the form of a stationary iteration run in finite precision, with its error
+decomposition ([quarteroni2000numerical], §4.2.4).
 
-Three further groups of facts about the affine iteration:
+## Main definitions
 
-* the *increments* `x_{k+1} - x_k = G^k (x₁ - x₀)` (`Stationary.step_iterate_succ_sub`) and the
-  closed form `x_k = G^k x₀ + ∑_{j<k} G^j f` (`Stationary.step_iterate_eq_pow_add_sum`);
-* the *convergence factor* `‖G^m‖`, the *average convergence factor* `‖G^m‖^{1/m}` and the
-  *average convergence rate* `R_m(G) = -(1/m) log ‖G^m‖` of [quarteroni2000numerical] Definition
-  4.2, with Gelfand's formula read as their limits: `‖G^m‖^{1/m} → ρ(G)`
-  (`Stationary.tendsto_averageConvergenceFactor`) and `R_m(G) → R(G) = -log ρ(G)`
-  (`Stationary.tendsto_averageConvergenceRate`, [quarteroni2000numerical] (4.5));
-* the iteration with a step-dependent forcing term `x_{k+1} = G x_k + f_k`
-  (`Stationary.forcedIterate`), the shape of a stationary iteration run in finite precision, with
-  its discrete variation-of-constants formula (`Stationary.forcedIterate_eq`) and the error
-  decomposition `x* - x̂_{k+1} = G^{k+1} (x* - x₀) + ∑_{j≤k} G^j ζ_{k-j}`
-  (`Stationary.sub_forcedIterate_eq`, [quarteroni2000numerical] §4.2.4).
+* `Stationary.step`: the affine step $x \mapsto G x + f$.
+* `Stationary.forcedIterate`: the sequence $x_{k+1} = G x_k + f_k$ with a step-dependent forcing
+  term.
+* `Stationary.convergenceFactor`: the convergence factor $\|G^m\|$ after $m$ steps.
+* `Stationary.averageConvergenceFactor`: the average convergence factor $\|G^m\|^{1/m}$.
+* `Stationary.averageConvergenceRate`: the average convergence rate
+  $R_m(G) = -\frac{1}{m} \log \|G^m\|$.
+* `Stationary.asymptoticConvergenceRate`: the asymptotic convergence rate $R(G) = -\log \rho(G)$.
+
+## Main results
+
+* `Stationary.step_iterate_sub`: the error propagation identity $x_k - x^* = G^k (x_0 - x^*)$.
+* `Stationary.norm_iterate_sub_le` and `Stationary.norm_iterate_sub_le'`: the a priori and the a
+  posteriori error bounds for $\|G\| < 1$.
+* `Stationary.step_iterate_succ_sub`: the increments satisfy $x_{k+1} - x_k = G^k (x_1 - x_0)$.
+* `Stationary.step_iterate_eq_pow_add_sum`: the closed form $x_k = G^k x_0 + \sum_{j<k} G^j f$.
+* `Stationary.sub_forcedIterate_eq`: the error decomposition of a perturbed stationary iteration.
+* `Stationary.tendsto_of_spectralRadius_lt_one`: in a complex Banach space, $\rho(G) < 1$ implies
+  convergence to $(1 - G)^{-1} f$ from every $x_0$.
+* `Stationary.forall_tendsto_iff_spectralRadius_lt_one`: in finite dimension, the iteration
+  converges for all $f$ and $x_0$ if and only if $\rho(G) < 1$.
+* `Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius` and
+  `Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`: $\rho(G)$ is the sharp
+  asymptotic convergence factor.
+* `Stationary.tendsto_averageConvergenceFactor`: Gelfand's formula $\|G^m\|^{1/m} \to \rho(G)$.
+* `Stationary.tendsto_averageConvergenceRate`: $R_m(G) \to R(G)$ when $\rho(G) \neq 0$.
+
+## Implementation notes
+
+* The spectral results are stated for operators on a complex normed space, because the spectral
+  radius must be the complex one. A real matrix reaches them through `Matrix.complexify` and
+  `Matrix.toEuclideanCLM`.
+* The spectral radius `spectralRadius ℂ G` is an extended nonnegative real. Statements that compare
+  it with real numbers use its real value.
+* At $m = 0$ the average convergence factor is $1$ and the average convergence rate is $0$. Because
+  `Real.log 0 = 0`, the average convergence rate is $0$ when $G^m = 0$, and the asymptotic
+  convergence rate is $0$ when $\rho(G) = 0$, for example for a nilpotent $G$. The source has
+  $+\infty$ in both cases.
 -/
 
 open Filter Topology
@@ -49,11 +84,18 @@ namespace Stationary
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- One affine step `x ↦ G x + f`. -/
+/-- The **affine step** with iteration operator $G$ and constant term $f$ is the map
+$x \mapsto G x + f$. Its iterates from $x_0$, $x_{k+1} = G x_k + f$, form the stationary
+iteration.
+
+The $k$-th iterate is `(Stationary.step G f)^[k] x₀`. -/
 def step (G : E →L[𝕜] E) (f : E) (x : E) : E := G x + f
 
-/-- Submultiplicativity of the operator norm, including the exponent `0`, where `NormOneClass` is
-unavailable because `E` may be trivial. -/
+/-- For a continuous linear map $G$ on a normed space and every $k \in \mathbb{N}$,
+$\|G^k\| \le \|G\|^k$.
+
+The case $k = 0$ is included. There `NormOneClass` is not available, because the space may be
+the zero space. -/
 theorem _root_.ContinuousLinearMap.norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) :
     ‖G ^ k‖ ≤ ‖G‖ ^ k := by
   induction k with
@@ -66,8 +108,11 @@ theorem _root_.ContinuousLinearMap.norm_pow_le_pow_norm (G : E →L[𝕜] E) (k 
 
 variable (G : E →L[𝕜] E) (f : E)
 
-/-- Error propagation: the error after `k` steps is `G^k` applied to the initial error, for any
-fixed point `x'` of the step.  Every convergence statement below is read off this identity. -/
+/-- The **error propagation identity**. Let $x^* \in E$ satisfy $G x^* + f = x^*$. Then for every
+$x_0 \in E$ and every $k \in \mathbb{N}$, the iterates of the stationary iteration satisfy
+$$x_k - x^* = G^k (x_0 - x^*).$$
+
+Every convergence statement of this module follows from this identity. -/
 theorem step_iterate_sub {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
     (step G f)^[k] x₀ - x' = (G ^ k) (x₀ - x') := by
   have hf : f - x' = -G x' := by rw [eq_sub_of_add_eq' hfix]; abel
@@ -77,20 +122,25 @@ theorem step_iterate_sub {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
     rw [Function.iterate_succ_apply', pow_succ', mul_apply_eq_comp, ← ih, step, map_sub,
       add_sub_assoc, hf, ← sub_eq_add_neg]
 
-/-- Fixed points of the step are solutions of `(1 - G) x = f`. -/
+/-- A vector $x$ is a fixed point of the affine step, $G x + f = x$, if and only if $(1 - G) x = f$.
+-/
 theorem step_fixed_iff (x : E) : step G f x = x ↔ (1 - G) x = f := by
   rw [step, sub_apply, one_apply_eq_self, sub_eq_iff_eq_add, eq_comm, add_comm f]
 
-/-- Contraction case `‖G‖ < 1`: the affine step is a contraction with constant `‖G‖`
-([kress1998numerical], Thm 3.48; [han2009theoretical], §5.2.2). -/
+/-- The contraction case. If $\|G\| < 1$, then the affine step $x \mapsto G x + f$ is a contraction
+with Lipschitz constant $\|G\|$. This is the setting of [kress1998numerical], Theorem 3.48, and
+of [han2009theoretical], §5.2.2.
+
+The conclusion is Mathlib's `ContractingWith`, with the constant $\|G\|$ as a nonnegative real
+number. -/
 theorem contractingWith (hG : ‖G‖ < 1) :
     ContractingWith ⟨‖G‖, norm_nonneg _⟩ (step G f) := by
   refine ⟨by exact_mod_cast hG, LipschitzWith.of_dist_le_mul fun x y => ?_⟩
   simp only [step, dist_eq_norm, add_sub_add_right_eq_sub, ← map_sub]
   exact G.le_opNorm _
 
-/-- The distance to a fixed point is controlled by a single step; the estimate behind both the a
-priori and the a posteriori bound. -/
+/-- If $\|G\| < 1$ and $G x^* + f = x^*$, then $\|x_0 - x^*\| \le \|x_1 - x_0\| / (1 - \|G\|)$ with
+$x_1 = G x_0 + f$; this one-step estimate gives both the a priori and the a posteriori bound. -/
 private theorem norm_sub_fixed_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x') (x₀ : E) :
     ‖x₀ - x'‖ ≤ ‖step G f x₀ - x₀‖ / (1 - ‖G‖) := by
   have h1 : step G f x₀ - x' = G (x₀ - x') := by
@@ -103,7 +153,10 @@ private theorem norm_sub_fixed_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f =
   rw [le_div_iff₀ (by linarith)]
   nlinarith
 
-/-- A priori bound `‖x_k - x*‖ ≤ ‖G‖^k / (1 - ‖G‖) ‖x₁ - x₀‖` for `‖G‖ < 1`. -/
+/-- The **a priori bound**. Let $\|G\| < 1$ and let $x^* \in E$ satisfy $G x^* + f = x^*$. Then for
+every $x_0 \in E$ and every $k \in \mathbb{N}$,
+$$\|x_k - x^*\| \le \frac{\|G\|^k}{1 - \|G\|} \, \|x_1 - x_0\|.$$
+-/
 theorem norm_iterate_sub_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
     (x₀ : E) (k : ℕ) :
     ‖(step G f)^[k] x₀ - x'‖ ≤ ‖G‖ ^ k / (1 - ‖G‖) * ‖step G f x₀ - x₀‖ := by
@@ -115,7 +168,10 @@ theorem norm_iterate_sub_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
         · exact norm_sub_fixed_le G f hG hfix x₀
     _ = ‖G‖ ^ k / (1 - ‖G‖) * ‖step G f x₀ - x₀‖ := by ring
 
-/-- A posteriori bound `‖x_k - x*‖ ≤ ‖G‖ / (1 - ‖G‖) ‖x_k - x_{k-1}‖`. -/
+/-- The **a posteriori bound**. Let $\|G\| < 1$ and let $x^* \in E$ satisfy $G x^* + f = x^*$. Then
+for every $x_0 \in E$ and every $k \in \mathbb{N}$,
+$$\|x_{k+1} - x^*\| \le \frac{\|G\|}{1 - \|G\|} \, \|x_{k+1} - x_k\|.$$
+-/
 theorem norm_iterate_sub_le' (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
     (x₀ : E) (k : ℕ) :
     ‖(step G f)^[k + 1] x₀ - x'‖ ≤
@@ -130,18 +186,25 @@ theorem norm_iterate_sub_le' (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x')
         exact norm_sub_fixed_le G f hG hfix y
     _ = ‖G‖ / (1 - ‖G‖) * ‖step G f y - y‖ := by ring
 
-/-- The error after `k` steps is bounded by the norm of `G^k` times the initial error:
-`‖x_k - x*‖ ≤ ‖G^k‖ ‖x₀ - x*‖`.  This is the estimate `‖e_k‖ / ‖e_0‖ ≤ ‖G^k‖` that names `‖G^k‖`
-the convergence factor after `k` steps ([quarteroni2000numerical] Definition 4.2 and §4.6). -/
+/-- Let $x^* \in E$ satisfy $G x^* + f = x^*$. Then for every $x_0 \in E$ and every
+$k \in \mathbb{N}$,
+$$\|x_k - x^*\| \le \|G^k\| \, \|x_0 - x^*\|.$$
+
+So $\|G^k\|$ bounds the error reduction $\|e_k\| / \|e_0\|$ after $k$ steps. For this reason
+[quarteroni2000numerical], Definition 4.2 and §4.6, calls $\|G^k\|$ the convergence factor after
+$k$ steps. -/
 theorem norm_step_iterate_sub_le {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
     ‖(step G f)^[k] x₀ - x'‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := by
   rw [step_iterate_sub G f hfix]
   exact (G ^ k).le_opNorm _
 
-/-- **The increment recursion**: `x_{k+1} - x_k = G^k (x₁ - x₀)`, so that consecutive increments
-satisfy `x_{k+1} - x_k = G (x_k - x_{k-1})`.  No fixed point is needed; this is what makes the
-increments a computable proxy for the error ([quarteroni2000numerical] §4.6.1, `δ_{k+1} ≤ ‖G‖
-δ_k`). -/
+/-- The **increment recursion**. For every $x_0 \in E$ and every $k \in \mathbb{N}$, the iterates of
+the stationary iteration satisfy
+$$x_{k+1} - x_k = G^k (x_1 - x_0).$$
+So consecutive increments satisfy $x_{k+1} - x_k = G (x_k - x_{k-1})$. No fixed point is needed.
+
+This makes the increments a computable substitute for the error. For their norms $\delta_k$ it
+gives $\delta_{k+1} \le \|G\| \delta_k$, as in [quarteroni2000numerical], §4.6.1. -/
 theorem step_iterate_succ_sub (x₀ : E) (k : ℕ) :
     (step G f)^[k + 1] x₀ - (step G f)^[k] x₀ = (G ^ k) (step G f x₀ - x₀) := by
   induction k with
@@ -155,10 +218,13 @@ theorem step_iterate_succ_sub (x₀ : E) (k : ℕ) :
     simp only [step]
     rw [add_sub_add_right_eq_sub, map_sub]
 
-/-- **The closed form of the affine iteration**: `x_k = G^k x₀ + ∑_{j<k} G^j f`; in particular
-`k` steps from `0` give the truncated Neumann series `∑_{j<k} G^j f`.  This is what turns `m`
-inner sweeps of a stationary method started from `0` into a single composite step
-([quarteroni2000numerical] Exercise 7.1 and the Newton–SOR step (7.8)). -/
+/-- The **closed form of the stationary iteration**. For every $x_0 \in E$ and every
+$k \in \mathbb{N}$,
+$$x_k = G^k x_0 + \sum_{j=0}^{k-1} G^j f.$$
+In particular, $k$ steps from $x_0 = 0$ give the truncated Neumann series $\sum_{j<k} G^j f$.
+
+This turns $m$ inner sweeps of a stationary method started from $0$ into one composite step, as
+in [quarteroni2000numerical], Exercise 7.1 and the Newton–SOR step (7.8). -/
 theorem step_iterate_eq_pow_add_sum (x₀ : E) (k : ℕ) :
     (step G f)^[k] x₀ = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) f := by
   induction k with
@@ -171,32 +237,38 @@ theorem step_iterate_eq_pow_add_sum (x₀ : E) (k : ℕ) :
 
 /-! ### The iteration with a step-dependent forcing term -/
 
-/-- The affine iteration with a step-dependent forcing term: `x₀` given, `x_{k+1} = G x_k + f_k`.
-It is the shape of a stationary iteration run in finite precision — [quarteroni2000numerical]
-(4.20), `P x̂_{k+1} = N x̂_k + b - ζ_k`, is `f_k = P⁻¹ b - P⁻¹ ζ_k` — and of a stationary
-iteration with a variable right-hand side; `Stationary.step G f` is the constant case
+/-- Let $(f_k)_{k \in \mathbb{N}}$ be a sequence in $E$ and let $x_0 \in E$. The **forced
+iteration** is the sequence that starts at $x_0$ and satisfies $x_{k+1} = G x_k + f_k$.
+
+This is the form of a stationary iteration run in finite precision: the perturbed iteration
+$P \hat x_{k+1} = N \hat x_k + b - \zeta_k$ of [quarteroni2000numerical], (4.20), is the case
+$f_k = P^{-1} b - P^{-1} \zeta_k$. It is also the form of a stationary iteration with a variable
+right-hand side. The case of a constant forcing term is `Stationary.step`
 (`Stationary.forcedIterate_const`). -/
 noncomputable def forcedIterate (f : ℕ → E) (x₀ : E) : ℕ → E
   | 0 => x₀
   | k + 1 => G (forcedIterate f x₀ k) + f k
 
-/-- The forced iteration starts at `x₀`. -/
+/-- The forced iteration starts at $x_0$. -/
 @[simp]
 theorem forcedIterate_zero (f : ℕ → E) (x₀ : E) : forcedIterate G f x₀ 0 = x₀ := rfl
 
-/-- One step of the forced iteration: `x_{k+1} = G x_k + f_k`. -/
+/-- One step of the forced iteration: $x_{k+1} = G x_k + f_k$. -/
 theorem forcedIterate_succ (f : ℕ → E) (x₀ : E) (k : ℕ) :
     forcedIterate G f x₀ (k + 1) = G (forcedIterate G f x₀ k) + f k := rfl
 
-/-- With a constant forcing term the forced iteration is the affine iteration `Stationary.step`. -/
+/-- If $f_k = f$ for every $k$, then for every $k \in \mathbb{N}$ the $k$-th term of the forced
+iteration from $x_0$ is the $k$-th iterate of the affine step $x \mapsto G x + f$ from $x_0$. -/
 theorem forcedIterate_const (x₀ : E) (k : ℕ) :
     forcedIterate G (fun _ => f) x₀ k = (step G f)^[k] x₀ := by
   induction k with
   | zero => rfl
   | succ k ih => rw [forcedIterate_succ, ih, Function.iterate_succ_apply', step]
 
-/-- **Discrete variation of constants**: `x_k = G^k x₀ + ∑_{j<k} G^j f_{k-1-j}`
-([quarteroni2000numerical] §4.2.4, the display for `x̂^{(k+1)}`). -/
+/-- The **discrete variation-of-constants formula**. For every sequence $(f_k)$ in $E$, every
+$x_0 \in E$ and every $k \in \mathbb{N}$, the forced iteration satisfies
+$$x_k = G^k x_0 + \sum_{j=0}^{k-1} G^j f_{k-1-j}.$$
+This is the display for $\hat x^{(k+1)}$ in [quarteroni2000numerical], §4.2.4. -/
 theorem forcedIterate_eq (f : ℕ → E) (x₀ : E) (k : ℕ) :
     forcedIterate G f x₀ k = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) (f (k - 1 - j)) := by
   induction k with
@@ -209,11 +281,16 @@ theorem forcedIterate_eq (f : ℕ → E) (x₀ : E) (k : ℕ) :
     rw [forcedIterate_succ, ih, map_add, map_sum, Finset.sum_range_succ', hs, pow_zero,
       one_apply_eq_self, Nat.add_sub_cancel, Nat.sub_zero, pow_succ', mul_apply_eq_comp, add_assoc]
 
-/-- **The error of a perturbed stationary iteration** ([quarteroni2000numerical] §4.2.4): if `x*`
-is a fixed point of `x ↦ G x + f` and the computed sequence obeys `x̂_{k+1} = G x̂_k + f - ζ_k`,
-then `x* - x̂_{k+1} = G^{k+1} (x* - x₀) + ∑_{j≤k} G^j ζ_{k-j}`.  The first term is the
-exact-arithmetic error (`Stationary.step_iterate_sub`), the second the propagated perturbation,
-which `‖G‖ < 1` and `‖ζ_j‖ ≤ ε` bound by `ε / (1 - ‖G‖)`. -/
+/-- The **error of a perturbed stationary iteration**. Let $x^* \in E$ satisfy $G x^* + f = x^*$,
+let $(\zeta_k)$ be a sequence in $E$, and let $\hat x_k$ be the forced iteration from $x_0$ with
+the forcing terms $f - \zeta_k$, so that $\hat x_{k+1} = G \hat x_k + f - \zeta_k$. Then for
+every $k \in \mathbb{N}$,
+$$x^* - \hat x_{k+1} = G^{k+1} (x^* - x_0) + \sum_{j=0}^{k} G^j \zeta_{k-j}.$$
+This is the error decomposition of [quarteroni2000numerical], §4.2.4.
+
+The first term is the error in exact arithmetic (`Stationary.step_iterate_sub`), and the second
+term is the propagated perturbation. If $\|G\| < 1$ and $\|\zeta_j\| \le \varepsilon$ for every
+$j$, the second term has norm at most $\varepsilon / (1 - \|G\|)$. -/
 theorem sub_forcedIterate_eq {x' : E} (hfix : G x' + f = x') (ζ : ℕ → E) (x₀ : E) (k : ℕ) :
     x' - forcedIterate G (fun j => f - ζ j) x₀ (k + 1) =
       (G ^ (k + 1)) (x' - x₀) + ∑ j ∈ Finset.range (k + 1), (G ^ j) (ζ (k - j)) := by
@@ -239,32 +316,42 @@ theorem sub_forcedIterate_eq {x' : E} (hfix : G x' + f = x') (ζ : ℕ → E) (x
 
 /-! ### Convergence factors and rates -/
 
-/-- The convergence factor after `m` steps, `‖G^m‖` ([quarteroni2000numerical] Definition 4.2 (1)):
-the worst-case reduction of the error over `m` steps, `‖x_m - x*‖ ≤ ‖G^m‖ ‖x₀ - x*‖`
-(`Stationary.norm_step_iterate_sub_le`).  For a matrix `G` acting on `EuclideanSpace` through
-`Matrix.toEuclideanCLM` it is the `ℓ²` operator norm of `G^m`
-(`Matrix.l2_opNorm_eq_norm_toEuclideanLin`). -/
+/-- The **convergence factor** after $m$ steps is $\|G^m\|$ ([quarteroni2000numerical], Definition
+4.2 (1)). It is the worst-case reduction of the error over $m$ steps:
+$\|x_m - x^*\| \le \|G^m\| \, \|x_0 - x^*\|$ (`Stationary.norm_step_iterate_sub_le`).
+
+For a matrix $G$ that acts on `EuclideanSpace` through `Matrix.toEuclideanCLM`, it is the
+$\ell^2$ operator norm of $G^m$ (`Matrix.l2_opNorm_eq_norm_toEuclideanLin`). -/
 noncomputable def convergenceFactor (m : ℕ) : ℝ := ‖G ^ m‖
 
-/-- The average convergence factor after `m` steps, `‖G^m‖^{1/m}` ([quarteroni2000numerical]
-Definition 4.2 (2)).  At `m = 0` the real power is `‖1‖^0 = 1`, a harmless junk value. -/
+/-- The **average convergence factor** after $m$ steps is $\|G^m\|^{1/m}$
+([quarteroni2000numerical], Definition 4.2 (2)).
+
+At $m = 0$ the exponent $1/m$ is $0$ in Lean, so the value is $\|1\|^0 = 1$. -/
 noncomputable def averageConvergenceFactor (m : ℕ) : ℝ := ‖G ^ m‖ ^ (1 / m : ℝ)
 
-/-- The average convergence rate after `m` steps, `R_m(G) = -(1/m) log ‖G^m‖`
-([quarteroni2000numerical] Definition 4.2 (3)).  Since `Real.log 0 = 0`, a nilpotent `G` gets the
-value `0` where the book's quantity is `+∞`; statements about it therefore carry `ρ(G) ≠ 0`. -/
+/-- The **average convergence rate** after $m$ steps is
+$$R_m(G) = -\frac{1}{m} \log \|G^m\|$$
+([quarteroni2000numerical], Definition 4.2 (3)).
+
+Because `Real.log 0 = 0`, the value is $0$ when $G^m = 0$, where the source has $+\infty$.
+Statements about the rate therefore assume $\rho(G) \neq 0$. At $m = 0$ the value is $0$. -/
 noncomputable def averageConvergenceRate (m : ℕ) : ℝ := -(1 / m : ℝ) * Real.log ‖G ^ m‖
 
-/-- The average convergence factor is the `m`-th root of the convergence factor. -/
+/-- The average convergence factor after $m$ steps is the convergence factor after $m$ steps raised
+to the power $1/m$. -/
 theorem averageConvergenceFactor_eq (m : ℕ) :
     averageConvergenceFactor G m = convergenceFactor G m ^ (1 / m : ℝ) := rfl
 
-/-- The average convergence rate in terms of the convergence factor. -/
+/-- The average convergence rate after $m$ steps is $-\frac{1}{m}$ times the logarithm of the
+convergence factor after $m$ steps. -/
 theorem averageConvergenceRate_eq (m : ℕ) :
     averageConvergenceRate G m = -(1 / m : ℝ) * Real.log (convergenceFactor G m) := rfl
 
-/-- The average convergence rate is minus the logarithm of the average convergence factor, for
-`m ≠ 0` (also when `‖G^m‖ = 0`, where both sides vanish). -/
+/-- For $m \neq 0$, the average convergence rate is minus the logarithm of the average convergence
+factor:
+$$R_m(G) = -\log \bigl(\|G^m\|^{1/m}\bigr).$$
+This holds also when $\|G^m\| = 0$, where both sides are $0$. -/
 theorem averageConvergenceRate_eq_neg_log {m : ℕ} (hm : m ≠ 0) :
     averageConvergenceRate G m = -Real.log (averageConvergenceFactor G m) := by
   rw [averageConvergenceRate, averageConvergenceFactor]
@@ -277,18 +364,25 @@ section Complex
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 
-/-- Neumann: a spectral radius `ρ(G) < 1` makes `1 - G` invertible, so the affine iteration has the
-unique fixed point `(1 - G)⁻¹ f`.  The Banach-algebra form
-`_root_.isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`, which `F →L[ℂ] F` satisfies
-only for nontrivial `F`; on a trivial `F` every operator is a unit anyway. -/
+/-- Let $F$ be a complex Banach space and let $G$ be a continuous linear operator on $F$ with
+spectral radius $\rho(G) < 1$. Then $1 - G$ is invertible. By `Stationary.step_fixed_iff`, the
+stationary iteration $x \mapsto G x + f$ therefore has the unique fixed point $(1 - G)^{-1} f$.
+
+The Banach-algebra form `isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`. The
+algebra `F →L[ℂ] F` satisfies it only for a nonzero space $F$; on the zero space every operator
+is invertible. -/
 theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) : IsUnit (1 - G) := by
   rcases subsingleton_or_nontrivial F with _ | _
   · exact isUnit_of_subsingleton _
   · exact _root_.isUnit_one_sub_of_spectralRadius_lt_one hG
 
-/-- [saad2003iterative], Thm 4.1 (⇒), in any complex Banach space: a spectral radius `ρ(G) < 1`
-gives convergence for every `f, x₀` to the unique fixed point `(1 - G)⁻¹ f`. -/
+/-- Let $F$ be a complex Banach space, let $G$ be a continuous linear operator on $F$ with spectral
+radius $\rho(G) < 1$, and let $f, x_0 \in F$. Then the iterates $x_{k+1} = G x_k + f$ converge
+to $(1 - G)^{-1} f$. This is the direction from $\rho(G) < 1$ to convergence of
+[saad2003iterative], Theorem 4.1, in an arbitrary complex Banach space.
+
+The limit is `Ring.inverse (1 - G) f`. -/
 theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) (f x₀ : F) :
     Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 (Ring.inverse (1 - G) f)) := by
@@ -306,8 +400,10 @@ theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     refine squeeze_zero_norm (fun k => (G ^ k).le_opNorm _) ?_
     simpa using hpow.norm.mul_const ‖x₀ - Ring.inverse (1 - G) f‖
 
-/-- [saad2003iterative], Thm 4.1 (⇐), in finite dimension: convergence of `G^k x₀ → 0` for all `x₀`
-forces the spectral radius to satisfy `ρ(G) < 1`. -/
+/-- Let $F$ be a finite-dimensional complex normed space and let $G$ be a linear operator on $F$. If
+$G^k x_0 \to 0$ for every $x_0 \in F$, then the spectral radius satisfies $\rho(G) < 1$. This is
+the direction from convergence to $\rho(G) < 1$ of [saad2003iterative], Theorem 4.1, in finite
+dimension. -/
 theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F →L[ℂ] F)
     (h : ∀ x₀, Tendsto (fun k => (G ^ k) x₀) atTop (𝓝 0)) : spectralRadius ℂ G < 1 := by
   have : CompleteSpace F := FiniteDimensional.complete ℂ F
@@ -334,8 +430,12 @@ theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F
     intro i
     simpa [Function.comp_def, hΦ] using h (b i)
 
-/-- [saad2003iterative], Thm 4.1 as an equivalence in finite dimension: the iteration converges from
-every `f` and `x₀` iff the spectral radius satisfies `ρ(G) < 1`. -/
+/-- Let $F$ be a finite-dimensional complex normed space and let $G$ be a linear operator on $F$.
+The stationary iteration $x_{k+1} = G x_k + f$ converges for every $f \in F$ and every
+$x_0 \in F$ if and only if the spectral radius satisfies $\rho(G) < 1$. This is
+[saad2003iterative], Theorem 4.1, as an equivalence.
+
+Convergence means that the sequence of iterates has a limit in $F$; the limit is not specified. -/
 theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] (G : F →L[ℂ] F) :
     (∀ f x₀, ∃ x, Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 x)) ↔
       spectralRadius ℂ G < 1 := by
@@ -366,7 +466,12 @@ theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] (G : 
     simpa only [hiter, hx0] using hx
   · exact fun hG f x₀ => ⟨_, tendsto_of_spectralRadius_lt_one G hG f x₀⟩
 
-/-- Geometric convergence rate: for every `r > ρ(G)`, `‖x_k - x*‖ ≤ C r^k ‖x₀ - x*‖`. -/
+/-- **Geometric convergence.** Let $F$ be a complex Banach space, let $G$ be a continuous linear
+operator on $F$, let $r \ge 0$ be a real number with $\rho(G) < r$, let $f \in F$, and let
+$x^* \in F$ satisfy $G x^* + f = x^*$. Then there is a constant $C$ such that for every
+$x_0 \in F$ and every $k \in \mathbb{N}$,
+$$\|x_k - x^*\| \le C r^k \|x_0 - x^*\|.$$
+-/
 theorem exists_norm_iterate_sub_le [CompleteSpace F] (G : F →L[ℂ] F) {r : NNReal}
     (hr : spectralRadius ℂ G < r) (f : F) {x' : F} (hfix : G x' + f = x') :
     ∃ C : ℝ, ∀ x₀ k, ‖(step G f)^[k] x₀ - x'‖ ≤ C * (r : ℝ) ^ k * ‖x₀ - x'‖ := by
@@ -378,12 +483,16 @@ theorem exists_norm_iterate_sub_le [CompleteSpace F] (G : F →L[ℂ] F) {r : NN
     calc ‖(G ^ k) (x₀ - x')‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := (G ^ k).le_opNorm _
       _ ≤ C * (r : ℝ) ^ k * ‖x₀ - x'‖ := by gcongr; exact hC k
 
-/-- **No starting vector beats the spectral radius.**  The limsup of the `k`-th root of the relative
-growth `‖G^k d₀‖ / ‖d₀‖` is at most `ρ(G)`, for every `d₀`: the geometric bound `‖G^k‖ ≤ C r^k`
-valid for each `r > ρ(G)` gives `(‖G^k d₀‖/‖d₀‖)^{1/k} ≤ C^{1/k} r → r`.
+/-- Let $F$ be a complex Banach space, let $G$ be a continuous linear operator on $F$, and let
+$d_0 \in F$. Then
+$$\limsup_{k \to \infty} \left( \frac{\|G^k d_0\|}{\|d_0\|} \right)^{1/k} \le \rho(G).$$
+So every starting error decays asymptotically at least as fast as $\rho(G)^k$.
 
-`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius` exhibits a `d₀` attaining the
-bound, so `ρ(G)` is the sharp asymptotic convergence factor of the stationary iteration. -/
+The proof uses the geometric bound $\|G^k\| \le C r^k$ for each $r > \rho(G)$, which gives
+$(\|G^k d_0\| / \|d_0\|)^{1/k} \le C^{1/k} r \to r$. The bound is attained
+(`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`), so $\rho(G)$ is the sharp
+asymptotic convergence factor of the stationary iteration. For $d_0 = 0$ the quotient is $0$ in
+Lean, and the right-hand side is the real value of the spectral radius. -/
 theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F →L[ℂ] F) (d₀ : F) :
     limsup (fun k : ℕ => (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)) atTop
       ≤ (spectralRadius ℂ G).toReal := by
@@ -434,10 +543,14 @@ theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F �
     hlim.eventually_lt_const (by rw [one_mul]; exact hrc')] with k hk1 hk2
   exact (hbound k hk1).trans hk2.le
 
-/-- **The sharp convergence factor of a stationary iteration.**  In finite dimension the bound of
-`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius` is attained: an eigenvector of a dominant
-eigenvalue is a starting error whose asymptotic decay rate is exactly `ρ(G)`.  Together the two say
-that the spectral radius *is* the worst-case asymptotic convergence factor of the iteration. -/
+/-- The **sharp convergence factor of a stationary iteration**. Let $F$ be a nonzero
+finite-dimensional complex normed space and let $G$ be a linear operator on $F$. Then there is
+$d_0 \neq 0$ in $F$ with
+$$\limsup_{k \to \infty} \left( \frac{\|G^k d_0\|}{\|d_0\|} \right)^{1/k} = \rho(G).$$
+
+An eigenvector for an eigenvalue of maximal modulus is such a $d_0$. Together with
+`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`, this says that the spectral radius is
+the worst-case asymptotic convergence factor of the iteration. -/
 theorem exists_limsup_norm_pow_apply_rpow_eq_spectralRadius [FiniteDimensional ℂ F] [Nontrivial F]
     (G : F →L[ℂ] F) :
     ∃ d₀ : F, d₀ ≠ 0 ∧
@@ -462,23 +575,35 @@ theorem exists_limsup_norm_pow_apply_rpow_eq_spectralRadius [FiniteDimensional �
   rw [Filter.limsup_congr (v := fun _ : ℕ => ‖μ‖) hconst, limsup_const, ← hμρ]
   simp
 
-/-- The asymptotic convergence rate `R(G) = -log ρ(G)` ([quarteroni2000numerical] (4.5)), over `ℂ`
-because the spectral radius has to be the complex one — a real matrix reaches it through
-`Matrix.complexify` and `Matrix.toEuclideanCLM`.  `Real.log 0 = 0` gives a nilpotent `G` the value
-`0` where the book's is `+∞`. -/
+/-- The **asymptotic convergence rate** of a continuous linear operator $G$ on a complex normed
+space is
+$$R(G) = -\log \rho(G)$$
+([quarteroni2000numerical], (4.5)).
+
+It is defined over $\mathbb{C}$ because the spectral radius must be the complex one. A real
+matrix reaches it through `Matrix.complexify` and `Matrix.toEuclideanCLM`. Because
+`Real.log 0 = 0`, the value is $0$ when $\rho(G) = 0$, for example for a nilpotent $G$, where
+the source has $+\infty$. -/
 noncomputable def asymptoticConvergenceRate (G : F →L[ℂ] F) : ℝ :=
   -Real.log (spectralRadius ℂ G).toReal
 
-/-- **Gelfand's formula as a statement about the average convergence factor**: `‖G^m‖^{1/m} → ρ(G)`
-([quarteroni2000numerical] Property 1.13 and the sentence after Definition 4.2), so the spectral
-radius is the asymptotic convergence factor.  On a trivial `F` both sides are `0`. -/
+/-- **Gelfand's formula** for the average convergence factor. Let $G$ be a continuous linear
+operator on a complex Banach space. Then
+$$\|G^m\|^{1/m} \to \rho(G) \quad (m \to \infty)$$
+([quarteroni2000numerical], Property 1.13 and the sentence after Definition 4.2). So the
+spectral radius is the asymptotic convergence factor.
+
+On the zero space both sides are $0$. -/
 theorem tendsto_averageConvergenceFactor [CompleteSpace F] (G : F →L[ℂ] F) :
     Tendsto (averageConvergenceFactor G) atTop (𝓝 (spectralRadius ℂ G).toReal) :=
   spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius G
 
-/-- **The average convergence rate tends to the asymptotic one**, `R_m(G) → R(G) = -log ρ(G)`
-([quarteroni2000numerical] (4.5)), provided `ρ(G) ≠ 0`: it is Gelfand's formula composed with the
-continuity of `log` at the positive limit. -/
+/-- Let $G$ be a continuous linear operator on a complex Banach space with $\rho(G) \neq 0$. Then
+the average convergence rate tends to the asymptotic one:
+$$R_m(G) \to R(G) = -\log \rho(G) \quad (m \to \infty)$$
+([quarteroni2000numerical], (4.5)).
+
+The proof composes Gelfand's formula with the continuity of $\log$ at the positive limit. -/
 theorem tendsto_averageConvergenceRate [CompleteSpace F] (G : F →L[ℂ] F)
     (hρ : spectralRadius ℂ G ≠ 0) :
     Tendsto (averageConvergenceRate G) atTop (𝓝 (asymptoticConvergenceRate G)) := by

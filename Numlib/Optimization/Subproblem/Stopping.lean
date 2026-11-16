@@ -7,29 +7,45 @@ import Numlib.Optimization.Subproblem.Multiplier
 /-!
 # Early termination of the regularization subproblem
 
-Algorithms for the regularization subproblem `min m^R(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫ + σ/r ‖s‖^r` need
-not solve it exactly: the adaptive-regularization methods of [cartis2022evaluation] only require a
-step `s` with
+Let $H$ be an operator on a real inner product space, $g$ a vector, $\sigma > 0$ and $r > 2$, and
+let
+$$m^R(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle + \tfrac{\sigma}{r} \|s\|^r$$
+be the regularized model. The adaptive-regularization methods of [cartis2022evaluation] need not
+minimize $m^R$ exactly. They only require a step $s$ that satisfies the stopping rules (9.3.14) with
+constants $\theta_1, \theta_2$:
 
-* (9.3.14a) `m^R(s) ≤ m^R(0) = 0`,
-* (9.3.14b) `‖∇m^R(s)‖ ≤ ½ θ₁ ‖s‖²`,
-* (9.3.14c) `λ_min[∇²m^R(s)] ≥ -θ₂ ‖s‖`,
+* (9.3.14a) $m^R(s) \le m^R(0) = 0$;
+* (9.3.14b) $\|\nabla m^R(s)\| \le \frac12 \theta_1 \|s\|^2$;
+* (9.3.14c) $\lambda_{\min}[\nabla^2 m^R(s)] \ge -\theta_2 \|s\|$.
 
-(`Subproblem.RegStoppingRules`). Theorem 9.3.2 gives a test, checkable from the secular function
-alone, under which the step `s(λ) = -(H + λ)⁻¹ g` of a shift `λ ∈ 𝓕 = (λₛ, ∞)` satisfies them.
+Theorem 9.3.2 of [cartis2022evaluation] gives a test, which uses only the secular function
+$\pi(\lambda) = \|s(\lambda)\|^2$, under which the step $s(\lambda) = -(H + \lambda)^{-1} g$ of a
+shift $\lambda \in \mathcal{F} = (\lambda_s, \infty)$ satisfies these rules. This file proves the
+theorem, and proves that every global minimizer of $m^R$ satisfies the rules.
 
-The book's `‖·‖_{M⁻¹}` dual norm of the gradient and the generalized eigenvalue
-`λ_min[∇²m^R, M]` become, in the inner product space `E` (which carries the `M`-inner product), the
-plain norm and the least value of the quadratic form `⟪v, ∇²m^R(s) v⟫` on unit vectors.
+## Main definitions
 
-## Main statements
+* `Subproblem.RegStoppingRules`: the stopping rules (9.3.14) for a step $s$.
 
-* `Subproblem.regStoppingRules_of_shifted`: the stopping rules hold at any solution of a shifted
-  system `(H + λ) s = -g` with `H + λ ⪰ 0`, under the conditions on `‖s‖` of the proof
-  of Theorem 9.3.2.
-* `Subproblem.regStoppingRules_step`: Theorem 9.3.2, the same in terms of `π(λ) = ‖s(λ)‖²`
-  ((9.3.15a)–(9.3.15c)).
-* `Subproblem.regStoppingRules_of_isMinOn`: global minimizers satisfy the stopping rules.
+## Main results
+
+* `Subproblem.RegStoppingRules.iff_gradient`: for symmetric $H$, the rules with the gradient of
+  $m^R$ written as the Mathlib `gradient`.
+* `Subproblem.regStoppingRules_of_shifted`: the rules hold at a solution of a shifted system
+  $(H + \lambda) s = -g$ with $H + \lambda$ positive semidefinite, under the conditions on $\|s\|$
+  of the proof of Theorem 9.3.2.
+* `Subproblem.regStoppingRules_of_isMinOn`: global minimizers satisfy the rules.
+* `Subproblem.regStoppingRules_step`: Theorem 9.3.2, the same in terms of $\pi(\lambda)$, with the
+  conditions (9.3.15a)–(9.3.15c).
+
+## Implementation notes
+
+* The space $E$ carries the $M$-inner product of the source. So the dual norm $\|\cdot\|_{M^{-1}}$
+  of the gradient becomes the norm of $E$, and the generalized eigenvalue
+  $\lambda_{\min}[\nabla^2 m^R, M]$ becomes the least value of the quadratic form
+  $\langle v, \nabla^2 m^R(s) v \rangle$ on unit vectors.
+* The gradient in (9.3.14b) is written as the explicit expression $g + H s + \sigma \|s\|^{r-2} s$,
+  which is the gradient of $m^R$ for symmetric $H$ (`Subproblem.hasGradientAt_regModel`).
 -/
 
 open Set
@@ -39,25 +55,37 @@ namespace Subproblem
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **Stopping rules for the regularization subproblem** ([cartis2022evaluation] (9.3.14)) for the
-step `s`, with constants `θ₁, θ₂`:
-(9.3.14a) the model decreases, `m^R(s) ≤ m^R(0)`;
-(9.3.14b) `‖g + H s + σ ‖s‖^{r-2} s‖ ≤ ½ θ₁ ‖s‖²` (the gradient of `m^R`, `hasGradientAt_regModel`);
-(9.3.14c) `⟪v, ∇²m^R(s) v⟫ ≥ -θ₂ ‖s‖ ‖v‖²` for all `v`, i.e. the least eigenvalue of the Hessian
-`regModelHessian H σ r s` is at least `-θ₂ ‖s‖`. -/
+/-- The **stopping rules for the regularization subproblem**, (9.3.14) of [cartis2022evaluation]. A
+step $s$ satisfies them, for $g$, $H$, $\sigma$, $r$ and constants $\theta_1, \theta_2$, if
+
+* (9.3.14a) the model does not increase: $m^R(s) \le m^R(0)$;
+* (9.3.14b) $\|g + H s + \sigma \|s\|^{r-2} s\| \le \frac12 \theta_1 \|s\|^2$;
+* (9.3.14c) $\langle v, \nabla^2 m^R(s) v \rangle \ge -\theta_2 \|s\| \|v\|^2$ for all $v$, that
+  is, the least eigenvalue of the Hessian is at least $-\theta_2 \|s\|$.
+
+The model $m^R$ is `Subproblem.regModel g H σ r`, and the Hessian $\nabla^2 m^R(s)$ is
+`Subproblem.regModelHessian H σ r s`. The vector in (9.3.14b) is the gradient of $m^R$ when $H$
+is symmetric (`Subproblem.hasGradientAt_regModel`). -/
 structure RegStoppingRules (g : E) (H : E →L[ℝ] E) (σ r θ₁ θ₂ : ℝ) (s : E) : Prop where
-  /-- (9.3.14a): the model does not increase. -/
+  /-- (9.3.14a): the model does not increase, $m^R(s) \le m^R(0)$. -/
   decrease : regModel g H σ r s ≤ regModel g H σ r 0
-  /-- (9.3.14b): the gradient `g + H s + σ ‖s‖^{r-2} s` of the regularized model is small
-  (`RegStoppingRules.iff_gradient` for the form with `gradient`). -/
+  /-- (9.3.14b): the gradient $g + H s + \sigma \|s\|^{r-2} s$ of the regularized model satisfies
+  $\|g + H s + \sigma \|s\|^{r-2} s\| \le \frac12 \theta_1 \|s\|^2$. The form with the Mathlib
+  `gradient` is `Subproblem.RegStoppingRules.iff_gradient`. -/
   gradient : ‖g + H s + (σ * ‖s‖ ^ (r - 2)) • s‖ ≤ (1 / 2) * θ₁ * ‖s‖ ^ 2
-  /-- (9.3.14c): the Hessian is almost positive semidefinite. -/
+  /-- (9.3.14c): the Hessian is almost positive semidefinite, $\langle v, \nabla^2 m^R(s) v \rangle
+  \ge -\theta_2 \|s\| \|v\|^2$ for all $v$. -/
   curvature : ∀ v, -(θ₂ * ‖s‖) * ‖v‖ ^ 2 ≤ ⟪v, regModelHessian H σ r s v⟫
 
 variable {g : E} {H : E →L[ℝ] E} {σ r θ₁ θ₂ lam : ℝ} {s : E}
 
-/-- For symmetric `H` and `r > 1`, the stopping rules (9.3.14) with the gradient `∇m^R(s)` written
-as Mathlib's `gradient` of `regModel g H σ r` (`hasGradientAt_regModel`). -/
+/-- The stopping rules with the Mathlib gradient. Let $E$ be complete, let $H$ be symmetric, and let
+$r > 1$. Then $s$ satisfies the stopping rules (9.3.14) if and only if $m^R(s) \le m^R(0)$,
+$\|\nabla m^R(s)\| \le \frac12 \theta_1 \|s\|^2$, and $\langle v, \nabla^2 m^R(s) v \rangle \ge
+-\theta_2 \|s\| \|v\|^2$ for all $v$.
+
+Here $\nabla m^R(s)$ is `_root_.gradient (Subproblem.regModel g H σ r) s`. The proof identifies
+it with $g + H s + \sigma \|s\|^{r-2} s$ by `Subproblem.hasGradientAt_regModel`. -/
 theorem RegStoppingRules.iff_gradient [CompleteSpace E] (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (hr : 1 < r) :
     RegStoppingRules g H σ r θ₁ θ₂ s ↔
@@ -67,10 +95,19 @@ theorem RegStoppingRules.iff_gradient [CompleteSpace E] (hH : (H : E →ₗ[ℝ]
   rw [(hasGradientAt_regModel hH σ hr s).gradient]
   exact ⟨fun h => ⟨h.decrease, h.gradient, h.curvature⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩⟩
 
-/-- **The stopping rules at a shifted solution** (proof of [cartis2022evaluation] Theorem 9.3.2).
-Let `σ > 0`, `r > 2`, `(H + λ) s = -g` with `H + λ` positive semidefinite. If
-(a) `σ/r ‖s‖^{r-2} ≤ λ/2`, (b) `|σ‖s‖^{r-2} - λ| ≤ ½ θ₁ ‖s‖` and (c) `σ‖s‖^{r-2} - λ ≥ -θ₂ ‖s‖`,
-then `s` satisfies the stopping rules (9.3.14). -/
+/-- **The stopping rules at a shifted solution.** Let $\sigma > 0$ and $r > 2$, and let $s$ solve
+the shifted system $(H + \lambda) s = -g$, where $H + \lambda$ is positive semidefinite. Assume
+that
+
+* (a) $\frac{\sigma}{r} \|s\|^{r-2} \le \frac{\lambda}{2}$;
+* (b) $\bigl|\sigma \|s\|^{r-2} - \lambda\bigr| \le \frac12 \theta_1 \|s\|$;
+* (c) $\sigma \|s\|^{r-2} - \lambda \ge -\theta_2 \|s\|$.
+
+Then $s$ satisfies the stopping rules (9.3.14). This is the argument of the proof of Theorem
+9.3.2 of [cartis2022evaluation].
+
+Positive semidefiniteness is `LinearMap.IsPositive`, which includes the symmetry of
+$H + \lambda$. -/
 theorem regStoppingRules_of_shifted (hσ : 0 < σ) (hr : 2 < r)
     (hs : (H + lam • (1 : E →L[ℝ] E)) s = -g)
     (hpos : ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive)
@@ -102,13 +139,14 @@ theorem regStoppingRules_of_shifted (hσ : 0 < σ) (hr : 2 < r)
       mul_le_mul_of_nonneg_right hc (sq_nonneg _)
     linarith
 
-/-- `(‖s‖²)^{a/2} = ‖s‖^a`. -/
+/-- For $x \ge 0$ and $a \in \mathbb{R}$, $(x^2)^{a/2} = x^a$. -/
 private theorem sq_rpow_half (x : ℝ) (hx : 0 ≤ x) (a : ℝ) : (x ^ 2) ^ (a / 2) = x ^ a := by
   rw [← Real.rpow_natCast, ← Real.rpow_mul hx]; congr 1; push_cast; ring
 
-/-- **Global minimizers satisfy the stopping rules** (the remark after (9.3.14)): for `σ > 0`,
-`r > 2` and `θ₁, θ₂ ≥ 0`, every global minimizer of `regModel g H σ r` satisfies
-`RegStoppingRules g H σ r θ₁ θ₂`. -/
+/-- **Global minimizers satisfy the stopping rules.** Let $H$ be symmetric, $\sigma > 0$, $r > 2$,
+and $\theta_1, \theta_2 \ge 0$. Then every global minimizer of the regularized model $m^R$ on
+$E$ satisfies the stopping rules (9.3.14). This is the remark after (9.3.14) in
+[cartis2022evaluation]. -/
 theorem regStoppingRules_of_isMinOn (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hσ : 0 < σ) (hr : 2 < r)
     (hθ₁ : 0 ≤ θ₁) (hθ₂ : 0 ≤ θ₂) (hmin : IsMinOn (regModel g H σ r) univ s) :
     RegStoppingRules g H σ r θ₁ θ₂ s := by
@@ -122,12 +160,21 @@ theorem regStoppingRules_of_isMinOn (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (h�
 
 variable [FiniteDimensional ℝ E] {hH : (H : E →ₗ[ℝ] E).IsSymmetric}
 
-/-- **Theorem 9.3.2** (constructive early termination test). Let `σ > 0`, `r > 2`, `λc ∈ 𝓕`, i.e.
-`λc > λₛ`, `s = s(λc) = step g H λc` and `π = π(λc) = ‖s‖²`. If
-(9.3.15a) `π ≤ (r/2)^{2/(r-2)} (λc/σ)^{2/(r-2)}`,
-(9.3.15b) `|π^{(r-2)/2} - λc/σ| ≤ θ₁/(2σ) π^{1/2}`, and
-(9.3.15c) `π^{(r-2)/2} - λc/σ ≥ -(θ₂/σ) π^{1/2}`,
-then `s` satisfies the stopping rules (9.3.14). -/
+/-- **Theorem 9.3.2** of [cartis2022evaluation] (a constructive early termination test). Let $E$ be
+finite-dimensional and $H$ symmetric, let $\sigma > 0$ and $r > 2$, and let
+$\lambda_c \in \mathcal{F}$, that is, $\lambda_c > \lambda_s = \max(0, -\lambda_1)$. Let
+$s = s(\lambda_c)$ and $\pi = \pi(\lambda_c) = \|s\|^2$. If
+
+* (9.3.15a) $\pi \le (r/2)^{2/(r-2)} (\lambda_c / \sigma)^{2/(r-2)}$,
+* (9.3.15b) $\bigl|\pi^{(r-2)/2} - \lambda_c / \sigma\bigr| \le \frac{\theta_1}{2\sigma}
+  \pi^{1/2}$, and
+* (9.3.15c) $\pi^{(r-2)/2} - \lambda_c / \sigma \ge -\frac{\theta_2}{\sigma} \pi^{1/2}$,
+
+then $s$ satisfies the stopping rules (9.3.14).
+
+The step is `Subproblem.step g H lam`, where `lam` stands for $\lambda_c$. The secular function
+is `Subproblem.secular`. The proof reduces the three conditions to those of
+`Subproblem.regStoppingRules_of_shifted`, using $\pi^{a/2} = \|s\|^a$. -/
 theorem regStoppingRules_step (hσ : 0 < σ) (hr : 2 < r) (hlam : shiftThreshold hH < lam)
     (ha : secular g H lam ≤ (r / 2) ^ (2 / (r - 2)) * (lam / σ) ^ (2 / (r - 2)))
     (hb : |secular g H lam ^ ((r - 2) / 2) - lam / σ| ≤

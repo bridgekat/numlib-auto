@@ -8,27 +8,35 @@ import Numlib.Analysis.Convex.Duality.Conjugate
 /-!
 # Conjugates of polyhedral convex functions
 
-The conjugate of a polyhedral convex function is polyhedral.
+Let $E$ and $F$ be real vector spaces with a bilinear pairing $\langle x, y \rangle$. The conjugate
+of $f \colon E \to [-\infty, +\infty]$ is $f^*(y) = \sup_x ( \langle x, y \rangle - f(x) )$. This
+module proves that if $E$ is finite-dimensional and $f$ is a polyhedral convex function, then $f^*$
+is polyhedral ([rockafellar1970convex], Theorem 19.2).
 
-The proof uses the Minkowski–Weyl dictionary once in each direction. Write `epi f = conv P + cone D`
-with `P` and `D` finite. An affine function `x ↦ ⟨x, y⟩ - c` lies below
-`f` exactly when the linear functional `p ↦ ⟨p.1, y⟩ - p.2` is bounded by `c` on `epi f`, and on a
-sum of a convex hull and a cone that is two *finite* families of conditions: `⟨p.1, y⟩ - c ≤ p.2`
-for the generating points `p ∈ P`, and `⟨d.1, y⟩ ≤ d.2` for the generating directions `d ∈ D`.
-Both are linear in `(y, c)`, so they cut `epi (convexConj B f)` out of `F × ℝ` as a polyhedral set.
+The proof uses the Minkowski–Weyl theorem in both directions. Write $\operatorname{epi} f =
+\operatorname{conv} P + \operatorname{cone} D$ with $P$ and $D$ finite. The affine function
+$x \mapsto \langle x, y \rangle - c$ lies below $f$ exactly when the linear functional
+$(x, \mu) \mapsto \langle x, y \rangle - \mu$ is bounded by $c$ on $\operatorname{epi} f$. On a sum
+of a convex hull and a cone, this is two finite families of conditions:
+$\langle x, y \rangle - c \le \mu$ for the generating points $(x, \mu) \in P$, and
+$\langle x, y \rangle \le \mu$ for the generating directions $(x, \mu) \in D$. Both are linear in
+$(y, c)$, so they cut out $\operatorname{epi} f^*$ as a polyhedral subset of $F \times \mathbb{R}$.
 
 ## Main results
 
-* `mem_epi_convexConj_iff` — the epigraph of `convexConj B f`, read off `epi f`, with no hypothesis
-  on `f`. In particular none excluding `f x = ⊥`: in that case both sides are false.
-* `PolyhedralFn.convexConj` — the conjugate of a polyhedral convex function is polyhedral
-  ([rockafellar1970convex] Theorem 19.2). The case `P = ∅` is separate: then `f ≡ ⊤` and
-  `epi (convexConj B f)` is all of `F × ℝ`, whereas the generator argument needs a base point to
-  slide along a recession direction.
+* `ConvexAnalysis.mem_epi_convexConj_iff`: $(y, c) \in \operatorname{epi} f^*$ if and only if
+  $\langle x, y \rangle - c \le \mu$ for every $(x, \mu) \in \operatorname{epi} f$. No hypothesis on
+  $f$ is needed.
+* `ConvexAnalysis.PolyhedralFn.convexConj`: the conjugate of a polyhedral convex function on a
+  finite-dimensional space is polyhedral.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §19.
+* `ConvexAnalysis.mem_epi_convexConj_iff` has no hypothesis that excludes the value $-\infty$. If
+  $f(x) = -\infty$ for some $x$, then both sides are false.
+* The case $P = \emptyset$ of `ConvexAnalysis.PolyhedralFn.convexConj` is treated separately. Then
+  $f \equiv +\infty$ and $\operatorname{epi} f^*$ is all of $F \times \mathbb{R}$, while the
+  argument with generators needs a base point from which to move along a direction of recession.
 -/
 
 open Set
@@ -40,29 +48,34 @@ section Functionals
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- The linear functional `(y, c) ↦ ⟨x, y⟩ - c` on `F × ℝ`, one for each generating *point* `x`
-of `epi f`. -/
+/-- For $x \in E$, the linear functional $(y, c) \mapsto \langle x, y \rangle - c$ on
+$F \times \mathbb{R}$. There is one such functional for each generating point of
+$\operatorname{epi} f$. -/
 def epiFunctional (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x : E) : (F × ℝ) →ₗ[ℝ] ℝ :=
   (B x).comp (LinearMap.fst ℝ F ℝ) - LinearMap.snd ℝ F ℝ
 
+/-- The functional for a generating point maps $(y, c)$ to $\langle x, y \rangle - c$. -/
 @[simp] theorem epiFunctional_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x : E) (q : F × ℝ) :
     epiFunctional B x q = B x q.1 - q.2 := by
   simp [epiFunctional]
 
-/-- The linear functional `(y, c) ↦ ⟨x, y⟩` on `F × ℝ`, one for each generating *direction* `x`
-of `epi f`. -/
+/-- For $x \in E$, the linear functional $(y, c) \mapsto \langle x, y \rangle$ on
+$F \times \mathbb{R}$. There is one such functional for each generating direction of
+$\operatorname{epi} f$. -/
 def dirFunctional (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x : E) : (F × ℝ) →ₗ[ℝ] ℝ :=
   (B x).comp (LinearMap.fst ℝ F ℝ)
 
+/-- The functional for a generating direction maps $(y, c)$ to $\langle x, y \rangle$. -/
 @[simp] theorem dirFunctional_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x : E) (q : F × ℝ) :
     dirFunctional B x q = B x q.1 := by
   simp [dirFunctional]
 
-/-- The linear functional `p ↦ ⟨p.1, y⟩ - p.2` on `E × ℝ`, whose boundedness on `epi f` is what
-the conjugate measures. -/
+/-- For $y \in F$, the linear functional $(x, \mu) \mapsto \langle x, y \rangle - \mu$ on
+$E \times \mathbb{R}$. The conjugate $f^*(y)$ is its supremum on $\operatorname{epi} f$. -/
 def recFunctional (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (y : F) : (E × ℝ) →ₗ[ℝ] ℝ :=
   (B.flip y).comp (LinearMap.fst ℝ E ℝ) - LinearMap.snd ℝ E ℝ
 
+/-- The functional for $y$ maps $(x, \mu)$ to $\langle x, y \rangle - \mu$. -/
 @[simp] theorem recFunctional_apply (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (y : F) (p : E × ℝ) :
     recFunctional B y p = B p.1 y - p.2 := by
   simp [recFunctional]
@@ -74,9 +87,14 @@ section Conj
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- **The epigraph of a conjugate.** `(y, c)` lies over `convexConj B f` exactly when the linear
-functional `p ↦ ⟨p.1, y⟩ - p.2` is bounded by `c` on `epi f`. This is `convexConj_le_coe_iff` with
-the affine minorant traded for its epigraph, and it holds with no hypothesis on `f`. -/
+/-- **The epigraph of a conjugate.** Let $f \colon E \to [-\infty, +\infty]$, let $y \in F$ and let
+$c \in \mathbb{R}$. Then $(y, c) \in \operatorname{epi} f^*$ if and only if $$\langle x, y
+\rangle - c \le \mu \quad \text{for every } (x, \mu) \in \operatorname{epi} f.$$ No hypothesis
+on $f$ is needed.
+
+This is `ConvexAnalysis.convexConj_le_coe_iff`, with the condition that the affine function
+$x \mapsto \langle x, y \rangle - c$ lies below $f$ written as a condition on
+$\operatorname{epi} f$. -/
 theorem mem_epi_convexConj_iff {q : F × ℝ} :
     q ∈ epi (convexConj B f) ↔ ∀ p ∈ epi f, B p.1 q.1 - q.2 ≤ p.2 := by
   rw [mem_epi, convexConj_le_coe_iff]
@@ -96,10 +114,15 @@ theorem mem_epi_convexConj_iff {q : F × ℝ} :
 
 variable [FiniteDimensional ℝ E]
 
-/-- The conjugate of a polyhedral convex function is polyhedral.
+/-- Let $E$ be a finite-dimensional real normed space, let $F$ be a real normed space, and let
+$\langle \cdot, \cdot \rangle$ be a bilinear pairing of $E$ and $F$. If
+$f \colon E \to [-\infty, +\infty]$ is a polyhedral convex function, then its conjugate $f^*$ is
+a polyhedral convex function on $F$.
 
-`epi f = conv P + cone D` turns the condition "`x ↦ ⟨x, y⟩ - c` lies below `f`" into finitely
-many linear inequalities on `(y, c)`: one per generating point, one per generating direction. -/
+This is Theorem 19.2 of [rockafellar1970convex]. Write $\operatorname{epi} f =
+\operatorname{conv} P + \operatorname{cone} D$. Then the condition that
+$x \mapsto \langle x, y \rangle - c$ lies below $f$ is a finite system of linear inequalities in
+$(y, c)$, with one inequality for each generating point and one for each generating direction. -/
 theorem PolyhedralFn.convexConj (hf : PolyhedralFn f) : PolyhedralFn (convexConj B f) := by
   classical
   obtain ⟨P, D, hPD⟩ := Polyhedral.finitelyGenerated hf

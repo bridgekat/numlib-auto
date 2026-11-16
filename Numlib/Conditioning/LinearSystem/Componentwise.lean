@@ -8,39 +8,62 @@ import Numlib.Conditioning.LinearSystem
 /-!
 # Componentwise perturbation theory for linear systems
 
-The componentwise perturbation theory of `A x = b` for real square matrices:
-[quarteroni2000numerical] §3.1.2, (3.14)–(3.16), §3.1.4 and Remark 3.7; [higham2002accuracy]
-§7.2, Theorem 7.4; [Ske79]. Everything is in the entrywise order and absolute value of
-`Numlib/LinearAlgebra/Matrix/Order`, with the sup norm `‖·‖_∞` of the `Pi` type on vectors and
-the maximum absolute row sum, Mathlib's scoped `Matrix.Norms.Operator` instance, on matrices.
+This module studies the linear system $Ax = b$ for a real square matrix $A$ under componentwise
+perturbations: perturbations $\Delta A$ and $\Delta b$ bounded entrywise, $|\Delta A| \le \gamma E$
+and $|\Delta b| \le \gamma f$. Here $|A|$ is the matrix of the absolute values of the entries of
+$A$, and the inequalities are entrywise. The main quantities are the **Skeel condition numbers**
+$$\operatorname{cond}(A, x) = \frac{\| |A^{-1}| \, |A| \, |x| \|_\infty}{\|x\|_\infty}, \qquad
+\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty,$$ which, unlike $\kappa(A)$, do not change
+under a row scaling $A \mapsto DA$. The module proves the componentwise perturbation theorem, the
+bounds (3.15) and (3.16) of [quarteroni2000numerical], the a posteriori bound of §3.1.4 of the
+source, the bound $\operatorname{cond}(A) \le \kappa_\infty(A)$, and the Oettli–Prager theorem with
+the componentwise backward error. The sources are [quarteroni2000numerical], §3.1.2, §3.1.4 and
+Remark 3.7, [higham2002accuracy], §7.2, and [golub2013matrix], §2.6.5; the theory goes back to
+Skeel.
 
-* The **Skeel condition numbers** `cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞`
-  (`Matrix.skeelCondAt`) and `cond(A) = ‖|A⁻¹| |A|‖_∞` (`Matrix.skeelCond`) of Remark 3.7, whose
-  printed display is read with the missing absolute values restored; `cond(A) = sup_x cond(A, x)`
-  (`Matrix.skeelCond_eq_iSup_skeelCondAt`), and the invariance of `cond(A, x)` under row scaling
-  `A ↦ D A` (`Matrix.skeelCondAt_diagonal_mul`), which `κ(A)` lacks.
-* **The componentwise perturbation theorem**, [higham2002accuracy] Theorem 7.4
-  (`Matrix.norm_sub_le_of_abs_le`): `|ΔA| ≤ γ E`, `|Δb| ≤ γ f`, `γ ‖|A⁻¹| E‖_∞ < 1` give
-  `‖δx‖_∞ / ‖x‖_∞ ≤ γ ‖|A⁻¹| (E |x| + f)‖_∞ / ((1 - γ ‖|A⁻¹| E‖_∞) ‖x‖_∞)`; with `E = |A|`,
-  `f = |b|` this is (3.15) (`Matrix.norm_sub_le_of_abs_le_abs`), whose second inequality reads
-  `‖δx‖_∞ / ‖x‖_∞ ≤ 2 γ cond(A) / (1 - γ cond(A))`.
-* **The row-by-row bounds (3.16)** with `r_(i)ᵀ = e_iᵀ A⁻¹` the rows of `A⁻¹`
-  (`Matrix.abs_sub_apply_le_of_abs_le_abs`, `Matrix.abs_sub_apply_div_le_of_abs_le_abs`),
-  immediate from `δx = -A⁻¹ ΔA (x + δx)` and `δx = A⁻¹ Δb`.
-* **The LAPACK a posteriori bound** of §3.1.4 (`Matrix.norm_sub_le_of_computedResidual`):
-  `‖e‖_∞ ≤ ‖|A⁻¹| (|r̂| + γ_{n+1} (|A| |y| + |b|))‖_∞` when the computed residual satisfies
-  `r̂ = r + δr`, `|δr| ≤ γ_{n+1} (|A| |y| + |b|)`, which is what
-  `FloatingPoint.exists_roundsAffineStep_eq_add` of `Numlib/FloatingPoint/Stationary` delivers for
-  `r̂ = fl(b - A y)`; the bound is stated for an arbitrary constant `c` in place of `γ_{n+1}`.
+## Main definitions
 
-* **Skeel against `κ_∞`** ([golub2013matrix] §2.6.5): `Matrix.skeelCond_le_condNumberLp_top`.
-* **The Oettli–Prager theorem** ([golub2013matrix] (2.6.13), [higham2002accuracy] Theorem 7.3,
-  `Matrix.exists_perturbation_iff_abs_residual_le`) for rectangular systems, and the componentwise
-  backward error `Matrix.componentwiseBackwardError` with its attainment
-  `Matrix.isLeast_componentwiseBackwardError`.
+* `Matrix.skeelCondAt`, `Matrix.skeelCond`: the Skeel condition numbers $\operatorname{cond}(A, x)$
+  and $\operatorname{cond}(A)$ of Remark 3.7 of [quarteroni2000numerical].
+* `Matrix.componentwiseBackwardError`: the componentwise backward error
+  $\max_i |b - Ax|_i / (|E| |x| + |f|)_i$.
 
-This module is separate from `Numlib/Conditioning/LinearSystem` because that one is
-operator-level and norm-only; everything here needs entries.
+## Main results
+
+* `Matrix.skeelCond_eq_iSup_skeelCondAt`: $\operatorname{cond}(A) = \sup_x \operatorname{cond}(A,
+  x)$.
+* `Matrix.skeelCondAt_diagonal_mul`: $\operatorname{cond}(DA, x) = \operatorname{cond}(A, x)$ for a
+  nonsingular diagonal $D$.
+* `Matrix.norm_sub_le_of_abs_le`: the componentwise perturbation theorem, Theorem 7.4 of
+  [higham2002accuracy].
+* `Matrix.norm_sub_le_of_abs_le_abs`: the bound (3.15) of [quarteroni2000numerical], with $\|\delta
+  x\|_\infty / \|x\|_\infty \le 2 \gamma \operatorname{cond}(A) / (1 - \gamma
+  \operatorname{cond}(A))$.
+* `Matrix.abs_sub_apply_le_of_abs_le_abs`, `Matrix.abs_sub_apply_div_le_of_abs_le_abs`: the
+  row-by-row bounds (3.16) of [quarteroni2000numerical].
+* `Matrix.norm_sub_le_of_computedResidual`: the LAPACK a posteriori bound of §3.1.4 of
+  [quarteroni2000numerical].
+* `Matrix.skeelCond_le_condNumberLp_top`: $\operatorname{cond}(A) \le \kappa_\infty(A)$, from §2.6.5
+  of [golub2013matrix].
+* `Matrix.exists_perturbation_iff_abs_residual_le`: the Oettli–Prager theorem, for rectangular
+  systems.
+* `Matrix.isLeast_componentwiseBackwardError`: the componentwise backward error is the least
+  admissible $\omega$.
+
+## Implementation notes
+
+* The entrywise order and absolute value are those of `Numlib.LinearAlgebra.Matrix.Order`:
+  `Matrix.abs` is $|A|$, and `≤ₑ` is the entrywise order on matrices. On vectors the order and the
+  absolute value are those of the function type.
+* Vectors carry the sup norm $\|\cdot\|_\infty$ of the function type, and matrices carry the maximum
+  absolute row sum, which is the operator norm induced by $\|\cdot\|_\infty$ (Mathlib's scoped
+  `Matrix.Norms.Operator` instance).
+* The hypothesis on the computed residual in `Matrix.norm_sub_le_of_computedResidual` is what
+  `FloatingPoint.exists_roundsAffineStep_eq_add` of `Numlib.FloatingPoint.Stationary` gives for the
+  computed residual $\hat r = \mathrm{fl}(b - Ay)$. The bound is stated for an arbitrary constant
+  $c$ in place of $\gamma_{n+1}$.
+* This module is separate from `Numlib.Conditioning.LinearSystem` because that module works with
+  operators and norms only, and everything here needs matrix entries.
 -/
 
 open Finset
@@ -57,31 +80,43 @@ section Skeel
 
 variable (A : Matrix n n ℝ)
 
-/-- **Skeel's condition number of a system**, [quarteroni2000numerical] Remark 3.7 (read as
-`cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞`), [higham2002accuracy] (7.11): the amplification of a
-componentwise relative perturbation of `A` in the sup norm of the solution `x`. -/
+/-- **Skeel's condition number of a system.** For a real square matrix $A$ and a vector $x$,
+$$\operatorname{cond}(A, x) = \frac{\| |A^{-1}| \, |A| \, |x| \|_\infty}{\|x\|_\infty},$$ where
+$|\cdot|$ is the entrywise absolute value. It measures how much a componentwise relative
+perturbation of $A$ is amplified in the sup norm of the solution $x$. It is $0$ for $x = 0$.
+
+This is the number of Remark 3.7 of [quarteroni2000numerical] and (7.11) of
+[higham2002accuracy]. The inverse $A^{-1}$ is Mathlib's matrix inverse, which is $0$ for a
+singular $A$. The printed display of Remark 3.7 of [quarteroni2000numerical] lacks some of the
+absolute values; the definition reads it with these absolute values restored. -/
 noncomputable def skeelCondAt (x : n → ℝ) : ℝ := ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ / ‖x‖
 
-/-- **Skeel's condition number of a matrix**, [quarteroni2000numerical] Remark 3.7,
-[higham2002accuracy] (7.11): `cond(A) = ‖|A⁻¹| |A|‖_∞`, the supremum of `cond(A, x)` over `x`
-(`Matrix.skeelCond_eq_iSup_skeelCondAt`). -/
+/-- **Skeel's condition number of a matrix.** For a real square matrix $A$,
+$$\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty,$$ where $|\cdot|$ is the entrywise
+absolute value and $\|\cdot\|_\infty$ is the maximum absolute row sum. It is the supremum of
+$\operatorname{cond}(A, x)$ over $x$ (`Matrix.skeelCond_eq_iSup_skeelCondAt`). This is the
+number of Remark 3.7 of [quarteroni2000numerical] and (7.11) of [higham2002accuracy]. -/
 noncomputable def skeelCond : ℝ := ‖A⁻¹.abs * A.abs‖
 
 variable {A}
 
-/-- `cond(A, x) ≤ cond(A)`. -/
+/-- For every vector $x$, $\operatorname{cond}(A, x) \le \operatorname{cond}(A)$. -/
 theorem skeelCondAt_le_skeelCond (x : n → ℝ) : skeelCondAt A x ≤ skeelCond A := by
   rcases eq_or_ne x 0 with rfl | hx
   · simp [skeelCondAt, skeelCond]
   rw [skeelCondAt, skeelCond, div_le_iff₀ (norm_pos_iff.2 hx), mulVec_mulVec, ← norm_abs_eq x]
   exact linfty_opNorm_mulVec _ _
 
-/-- `cond(A, x)` is nonnegative. -/
+/-- For every vector $x$, $\operatorname{cond}(A, x) \ge 0$. -/
 theorem skeelCondAt_nonneg (x : n → ℝ) : 0 ≤ skeelCondAt A x :=
   div_nonneg (norm_nonneg _) (norm_nonneg _)
 
-/-- **`cond(A)` is the supremum of the `cond(A, x)`** ([quarteroni2000numerical] Remark 3.7): the
-supremum is attained at the vector of ones, where `|A⁻¹| |A| 𝟙` is the vector of row sums. -/
+/-- **$\operatorname{cond}(A)$ is the supremum of the $\operatorname{cond}(A, x)$** (Remark 3.7 of
+[quarteroni2000numerical]). If $A$ has at least one row, then $$\operatorname{cond}(A) = \sup_x
+\operatorname{cond}(A, x).$$
+
+The supremum is attained at the vector of ones $\mathbb{1}$, where
+$|A^{-1}| \, |A| \, \mathbb{1}$ is the vector of the row sums of $|A^{-1}| \, |A|$. -/
 theorem skeelCond_eq_iSup_skeelCondAt [Nonempty n] : skeelCond A = ⨆ x, skeelCondAt A x := by
   have hbdd : BddAbove (Set.range fun x => skeelCondAt A x) :=
     ⟨skeelCond A, by rintro _ ⟨x, rfl⟩; exact skeelCondAt_le_skeelCond x⟩
@@ -93,22 +128,27 @@ theorem skeelCond_eq_iSup_skeelCondAt [Nonempty n] : skeelCond A = ⨆ x, skeelC
   rw [skeelCondAt, h1, mulVec_mulVec, h2, div_one, skeelCond,
     norm_mulVec_one_of_entrywiseNonneg ((entrywiseNonneg_abs _).mul (entrywiseNonneg_abs _))]
 
-/-- The absolute value of a matrix scaled by a diagonal matrix on the left. -/
+/-- For a vector $d$ and a square matrix $B$, $|\operatorname{diag}(d) \, B| =
+\operatorname{diag}(|d_i|) \, |B|$. -/
 theorem abs_diagonal_mul (d : n → ℝ) (B : Matrix n n ℝ) :
     (diagonal d * B).abs = diagonal (fun i => |d i|) * B.abs := by
   ext i j
   simp [diagonal_mul, abs_mul]
 
-/-- The absolute value of a matrix scaled by a diagonal matrix on the right. -/
+/-- For a square matrix $B$ and a vector $d$, $|B \operatorname{diag}(d)| = |B|
+\operatorname{diag}(|d_i|)$. -/
 theorem abs_mul_diagonal (B : Matrix n n ℝ) (d : n → ℝ) :
     (B * diagonal d).abs = B.abs * diagonal (fun i => |d i|) := by
   ext i j
   simp [mul_diagonal, abs_mul]
 
-/-- **Row scaling invariance of Skeel's condition number** ([quarteroni2000numerical] Remark
-3.7): for a nonsingular diagonal `D = diag d`, `cond(D A, x) = cond(A, x)`, since
-`|(D A)⁻¹| |D A| = |A⁻¹| |D⁻¹| |D| |A| = |A⁻¹| |A|`. This is what `κ(A)` lacks, and why `cond(A)`
-measures the ill-conditioning of a matrix irrespective of a row scaling. -/
+/-- **Row scaling invariance of Skeel's condition number** (Remark 3.7 of
+[quarteroni2000numerical]). Let $D = \operatorname{diag}(d)$ with $d_i \neq 0$ for all $i$. Then
+for every vector $x$, $$\operatorname{cond}(DA, x) = \operatorname{cond}(A, x).$$
+
+The reason is $|(DA)^{-1}| \, |DA| = |A^{-1}| \, |D^{-1}| \, |D| \, |A| = |A^{-1}| \, |A|$. The
+condition number $\kappa(A)$ does not have this invariance; this is why $\operatorname{cond}(A)$
+measures the ill-conditioning of a matrix independently of a row scaling. -/
 theorem skeelCondAt_diagonal_mul {d : n → ℝ} (hd : ∀ i, d i ≠ 0) (x : n → ℝ) :
     skeelCondAt (diagonal d * A) x = skeelCondAt A x := by
   have hinv : (diagonal d)⁻¹ = diagonal fun i => (d i)⁻¹ :=
@@ -130,7 +170,9 @@ section Perturbation
 
 variable {A ΔA : Matrix n n ℝ} {b Δb x y : n → ℝ}
 
-/-- The error of a perturbed solve, `y - x = A⁻¹ (Δb - ΔA y)`. -/
+/-- Let $A$ be invertible. If $Ax = b$ and $(A + \Delta A) y = b + \Delta b$, then the error of the
+perturbed solution is $$y - x = A^{-1} (\Delta b - \Delta A \, y).$$
+-/
 theorem sub_eq_inv_mulVec_of_mulVec_eq (hA : IsUnit A) (hx : A *ᵥ x = b)
     (hy : (A + ΔA) *ᵥ y = b + Δb) : y - x = A⁻¹ *ᵥ (Δb - ΔA *ᵥ y) := by
   have hAd : IsUnit A.det := (isUnit_iff_isUnit_det A).1 hA
@@ -140,12 +182,16 @@ theorem sub_eq_inv_mulVec_of_mulVec_eq (hA : IsUnit A) (hx : A *ᵥ x = b)
     abel
   rw [← h1, mulVec_mulVec, nonsing_inv_mul A hAd, one_mulVec]
 
-/-- **The componentwise perturbation theorem** ([higham2002accuracy] Theorem 7.4, after
-[Ske79]): if `A x = b` and `(A + ΔA) y = b + Δb` with `|ΔA| ≤ γ E`, `|Δb| ≤ γ f` for entrywise
-nonnegative `E`, `f`, and `γ ‖|A⁻¹| E‖_∞ < 1`, then
-`‖y - x‖_∞ / ‖x‖_∞ ≤ γ ‖|A⁻¹| (E |x| + f)‖_∞ / ((1 - γ ‖|A⁻¹| E‖_∞) ‖x‖_∞)`.
-From `y - x = A⁻¹ (Δb - ΔA y)`: `|y - x| ≤ γ |A⁻¹| (f + E |x|) + γ |A⁻¹| E |y - x|`, and the sup
-norm is taken. -/
+/-- **The componentwise perturbation theorem**, Theorem 7.4 of [higham2002accuracy], after Skeel.
+Let $A$ be an invertible real square matrix, let $E$ be an entrywise nonnegative matrix, let $f$
+be a vector, and let $\gamma \ge 0$ with $\gamma \| |A^{-1}| E \|_\infty < 1$. If $Ax = b$ with
+$x \neq 0$, $(A + \Delta A) y = b + \Delta b$, $|\Delta A| \le \gamma E$ and
+$|\Delta b| \le \gamma f$ entrywise, then $$\frac{\|y - x\|_\infty}{\|x\|_\infty} \le
+\frac{\gamma \, \| |A^{-1}| (E |x| + f) \|_\infty}{(1 - \gamma \| |A^{-1}| E \|_\infty) \,
+\|x\|_\infty}.$$
+
+The proof starts from $y - x = A^{-1} (\Delta b - \Delta A \, y)$, which gives $|y - x| \le
+\gamma |A^{-1}| (f + E |x|) + \gamma |A^{-1}| E \, |y - x|$, and then takes the sup norm. -/
 theorem norm_sub_le_of_abs_le (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA) *ᵥ y = b + Δb)
     {E : Matrix n n ℝ} {f : n → ℝ} {γ : ℝ} (hγ : 0 ≤ γ) (hE : E.EntrywiseNonneg)
     (hΔA : ΔA.abs ≤ₑ γ • E) (hΔb : |Δb| ≤ γ • f) (hsmall : γ * ‖A⁻¹.abs * E‖ < 1) (hx0 : x ≠ 0) :
@@ -198,18 +244,25 @@ theorem norm_sub_le_of_abs_le (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA
   rw [div_le_div_iff₀ hxn (mul_pos hpos hxn)]
   nlinarith [norm_nonneg (y - x)]
 
-/-- The vector `|A⁻¹| |b|` is dominated by `|A⁻¹| |A| |x|` when `A x = b`. -/
+/-- If $Ax = b$, then $|A^{-1}| \, |b| \le |A^{-1}| \, |A| \, |x|$ entrywise. -/
 theorem abs_inv_mulVec_abs_le (hx : A *ᵥ x = b) :
     A⁻¹.abs *ᵥ |b| ≤ A⁻¹.abs *ᵥ (A.abs *ᵥ |x|) := by
   refine (entrywiseNonneg_abs A⁻¹).mulVec_mono ?_
   rw [← hx]
   exact abs_mulVec_le A x
 
-/-- **[quarteroni2000numerical] (3.15)**, both inequalities: for perturbations `|ΔA| ≤ γ |A|`,
-`|Δb| ≤ γ |b|` with `γ cond(A) < 1`,
-`‖δx‖_∞ / ‖x‖_∞ ≤ γ ‖|A⁻¹| |A| |x| + |A⁻¹| |b|‖_∞ / ((1 - γ cond(A)) ‖x‖_∞)`
-and `‖δx‖_∞ / ‖x‖_∞ ≤ 2 γ cond(A) / (1 - γ cond(A))`, with `cond(A) = ‖|A⁻¹| |A|‖_∞` the Skeel
-condition number. -/
+/-- **The bound (3.15)** of [quarteroni2000numerical], both inequalities. Let $A$ be an invertible
+real square matrix and $\gamma \ge 0$ with $\gamma \operatorname{cond}(A) < 1$, where
+$\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty$ is Skeel's condition number. If $Ax = b$
+with $x \neq 0$, $(A + \Delta A) y = b + \Delta b$, $|\Delta A| \le \gamma |A|$ and
+$|\Delta b| \le \gamma |b|$ entrywise, then $$\frac{\|y - x\|_\infty}{\|x\|_\infty} \le
+\frac{\gamma \, \| |A^{-1}| \, |A| \, |x| + |A^{-1}| \, |b| \|_\infty}{(1 - \gamma
+\operatorname{cond}(A)) \, \|x\|_\infty} \quad \text{and} \quad \frac{\|y -
+x\|_\infty}{\|x\|_\infty} \le \frac{2 \gamma \operatorname{cond}(A)}{1 - \gamma
+\operatorname{cond}(A)}.$$
+
+This is `Matrix.norm_sub_le_of_abs_le` with $E = |A|$ and $f = |b|$. The source writes
+$\delta x$ for $y - x$. -/
 theorem norm_sub_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA) *ᵥ y = b + Δb)
     {γ : ℝ} (hγ : 0 ≤ γ) (hΔA : ΔA.abs ≤ₑ γ • A.abs) (hΔb : |Δb| ≤ γ • |b|)
     (hsmall : γ * skeelCond A < 1) (hx0 : x ≠ 0) :
@@ -242,9 +295,12 @@ theorem norm_sub_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A +
           ((1 - γ * ‖A⁻¹.abs * A.abs‖) * ‖x‖) := by
         field_simp
 
-/-- **[quarteroni2000numerical] (3.16), the first bound**: if `A x = b`, `(A + ΔA) y = b` and
-`|ΔA| ≤ γ |A|`, then `|y_i - x_i| ≤ γ |r_(i)ᵀ| |A| |y|` with `r_(i)ᵀ = e_iᵀ A⁻¹` the `i`-th row
-of `A⁻¹`, since `y - x = -A⁻¹ ΔA y`. -/
+/-- **The bound (3.16)** of [quarteroni2000numerical], the first inequality. Let $A$ be an
+invertible real square matrix, and let $r_{(i)}^T = e_i^T A^{-1}$ be the $i$-th row of $A^{-1}$.
+If $Ax = b$, $(A + \Delta A) y = b$ and $|\Delta A| \le \gamma |A|$ entrywise, then for every
+$i$, $$|y_i - x_i| \le \gamma \, |r_{(i)}^T| \, |A| \, |y|.$$
+
+The proof uses $y - x = -A^{-1} \Delta A \, y$. -/
 theorem abs_sub_apply_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA) *ᵥ y = b)
     {γ : ℝ} (hΔA : ΔA.abs ≤ₑ γ • A.abs) (i : n) :
     |y i - x i| ≤ γ * (|A⁻¹ i| ⬝ᵥ (A.abs *ᵥ |y|)) := by
@@ -269,9 +325,13 @@ theorem abs_sub_apply_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (hy :
         rw [mulVec_smul]
         rfl
 
-/-- **[quarteroni2000numerical] (3.16), the second bound**: if `A x = b`, `A y = b + Δb` and
-`|Δb| ≤ γ |b|`, then `|y_i - x_i| / |x_i| ≤ γ |r_(i)ᵀ| |b| / |r_(i)ᵀ b|`, since `x_i = r_(i)ᵀ b`
-and `y_i - x_i = r_(i)ᵀ Δb`. -/
+/-- **The bound (3.16)** of [quarteroni2000numerical], the second inequality. Let $A$ be an
+invertible real square matrix, and let $r_{(i)}^T = e_i^T A^{-1}$ be the $i$-th row of $A^{-1}$.
+If $Ax = b$, $Ay = b + \Delta b$ and $|\Delta b| \le \gamma |b|$ entrywise, then for every $i$,
+$$\frac{|y_i - x_i|}{|x_i|} \le \frac{\gamma \, |r_{(i)}^T| \, |b|}{|r_{(i)}^T b|}.$$ Both sides
+are $0$ when their denominator is $0$.
+
+The proof uses $x_i = r_{(i)}^T b$ and $y_i - x_i = r_{(i)}^T \Delta b$. -/
 theorem abs_sub_apply_div_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : A *ᵥ y = b + Δb)
     {γ : ℝ} (hΔb : |Δb| ≤ γ • |b|) (i : n) :
     |y i - x i| / |x i| ≤ γ * (|A⁻¹ i| ⬝ᵥ |b|) / |A⁻¹ i ⬝ᵥ b| := by
@@ -296,12 +356,16 @@ theorem abs_sub_apply_div_le_of_abs_le_abs (hA : IsUnit A) (hx : A *ᵥ x = b) (
   rw [abs_mul, mul_left_comm]
   exact mul_le_mul_of_nonneg_left this (abs_nonneg _)
 
-/-- **The LAPACK a posteriori bound**, [quarteroni2000numerical] §3.1.4: if `A x = b` and the
-computed residual of an approximate solution `y` is `r̂ = (b - A y) + δr` with
-`|δr| ≤ c (|A| |y| + |b|)`, then `‖y - x‖_∞ ≤ ‖|A⁻¹| (|r̂| + c (|A| |y| + |b|))‖_∞`, from
-`y - x = -A⁻¹ r` and `|r| ≤ |r̂| + |δr|`. The book's display follows on dividing by `‖y‖_∞`; the
-hypothesis on `r̂` is what `FloatingPoint.exists_roundsAffineStep_eq_add` provides for
-`r̂ = fl(b - A y)`, with `c = γ_{n+1}`. -/
+/-- **The LAPACK a posteriori bound**, §3.1.4 of [quarteroni2000numerical]. Let $A$ be an invertible
+real square matrix with $Ax = b$, let $y$ be an approximate solution, and let $c$ be real.
+Suppose that the computed residual is $\hat r = (b - Ay) + \delta r$ with
+$|\delta r| \le c \, (|A| \, |y| + |b|)$ entrywise. Then $$\|y - x\|_\infty \le \| |A^{-1}| \,
+(|\hat r| + c \, (|A| \, |y| + |b|)) \|_\infty.$$
+
+The display of the source follows on division by $\|y\|_\infty$. The proof uses
+$y - x = -A^{-1} r$ with $r = b - Ay$, and $|r| \le |\hat r| + |\delta r|$. The hypothesis on
+$\hat r$ is what `FloatingPoint.exists_roundsAffineStep_eq_add` gives for
+$\hat r = \mathrm{fl}(b - Ay)$, with $c = \gamma_{n+1}$. -/
 theorem norm_sub_le_of_computedResidual (hA : IsUnit A) (hx : A *ᵥ x = b) {rhat δr : n → ℝ}
     {c : ℝ} (hr : rhat = (b - A *ᵥ y) + δr) (hδr : |δr| ≤ c • (A.abs *ᵥ |y| + |b|)) :
     ‖y - x‖ ≤ ‖A⁻¹.abs *ᵥ (|rhat| + c • (A.abs *ᵥ |y| + |b|))‖ := by
@@ -324,11 +388,14 @@ theorem norm_sub_le_of_computedResidual (hA : IsUnit A) (hx : A *ᵥ x = b) {rha
 
 end Perturbation
 
-/-! ### Skeel against `κ_∞` -/
+/-! ### Skeel's condition number against $\kappa_\infty$ -/
 
-/-- **Skeel's condition number never exceeds `κ_∞`** ([golub2013matrix] §2.6.5):
-`cond(A) = ‖|A⁻¹| |A|‖_∞ ≤ ‖|A⁻¹|‖_∞ ‖|A|‖_∞ = ‖A⁻¹‖_∞ ‖A‖_∞ = κ_∞(A)`, by submultiplicativity and
-the invariance of the `∞`-norm under entrywise absolute values. -/
+/-- **Skeel's condition number never exceeds $\kappa_\infty$** (§2.6.5 of [golub2013matrix]). For
+every real square matrix $A$, $$\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty \le \|
+|A^{-1}| \|_\infty \, \| |A| \|_\infty = \|A^{-1}\|_\infty \|A\|_\infty = \kappa_\infty(A).$$
+
+The condition number $\kappa_\infty(A)$ is `Matrix.condNumberLp ⊤ A`. The proof uses
+submultiplicativity and the invariance of the $\infty$-norm under entrywise absolute values. -/
 theorem skeelCond_le_condNumberLp_top (A : Matrix n n ℝ) : skeelCond A ≤ condNumberLp ⊤ A := by
   rw [skeelCond, condNumberLp, lpOpNorm_top, lpOpNorm_top, mul_comm (‖A‖)]
   refine (linfty_opNorm_mul _ _).trans ?_
@@ -340,19 +407,24 @@ section OettliPrager
 
 variable {m p : Type*} [Fintype p]
 
-/-- `|sign t| ≤ 1`. -/
+/-- For every real $t$, $|\operatorname{sign} t| \le 1$. -/
 private theorem abs_sign_le_one (t : ℝ) : |(SignType.sign t : ℝ)| ≤ 1 := by
   rcases lt_trichotomy t 0 with h | h | h
   · simp [sign_neg h]
   · simp [h]
   · simp [sign_pos h]
 
-/-- **The Oettli–Prager theorem** ([golub2013matrix] (2.6.13); [higham2002accuracy] Theorem 7.3,
-after Oettli and Prager 1964): for `ω ≥ 0`, the vector `x` solves exactly a perturbed system
-`(A + ΔA) x = b + Δb` with `|ΔA| ≤ ω |E|` and `|Δb| ≤ ω |f|` if and only if the residual satisfies
-`|b - A x| ≤ ω (|E| |x| + |f|)` entrywise. `→` bounds `b - A x = ΔA x - Δb`; `←` takes, row by
-row with `r = b - A x` and `s = |E| |x| + |f|`, `ΔA i j = (r i / s i) |E i j| sign (x j)` and
-`Δb i = -(r i / s i) |f i|`, a row with `s i = 0` having `r i = 0`. -/
+/-- **The Oettli–Prager theorem**, (2.6.13) of [golub2013matrix] and Theorem 7.3 of
+[higham2002accuracy], after Oettli and Prager (1964). Let $A, E$ be real $m \times p$ matrices
+with $p$ finite, let $b, f \in \mathbb{R}^m$ and $x \in \mathbb{R}^p$, and let $\omega \ge 0$.
+Then there are $\Delta A$ and $\Delta b$ with $$(A + \Delta A) x = b + \Delta b, \qquad |\Delta
+A| \le \omega |E|, \qquad |\Delta b| \le \omega |f|$$ if and only if the residual satisfies
+$$|b - Ax| \le \omega \, (|E| \, |x| + |f|).$$ All inequalities are entrywise.
+
+The forward direction bounds $b - Ax = \Delta A \, x - \Delta b$. For the converse, let
+$r = b - Ax$ and $s = |E| \, |x| + |f|$, and take, row by row, $\Delta A_{ij} = (r_i / s_i)
+|E_{ij}| \operatorname{sign}(x_j)$ and $\Delta b_i = -(r_i / s_i) |f_i|$; a row with $s_i = 0$
+has $r_i = 0$. -/
 theorem exists_perturbation_iff_abs_residual_le (A E : Matrix m p ℝ) (b f : m → ℝ) (x : p → ℝ)
     {ω : ℝ} (hω : 0 ≤ ω) :
     (∃ (ΔA : Matrix m p ℝ) (Δb : m → ℝ), (A + ΔA) *ᵥ x = b + Δb ∧ ΔA.abs ≤ₑ ω • E.abs ∧
@@ -412,21 +484,30 @@ theorem exists_perturbation_iff_abs_residual_le (A E : Matrix m p ℝ) (b f : m 
     · rw [Pi.abs_apply, Pi.smul_apply, Pi.abs_apply, smul_eq_mul, abs_neg, abs_mul, abs_abs]
       exact mul_le_mul_of_nonneg_right (hcω i) (abs_nonneg _)
 
-/-- **The componentwise backward error** of `x` for `A x = b`, relative to the tolerances `E` on
-`A` and `f` on `b` ([golub2013matrix] §2.6.5, `ω_min`; [higham2002accuracy] (7.8)):
-`max_i |b - A x|_i / (|E| |x| + |f|)_i`, with `r / 0 = 0` in a row where the denominator vanishes.
-By `Matrix.isLeast_componentwiseBackwardError` it is the least `ω` for which `x` solves exactly a
-perturbed system with `|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|`, when such an `ω` exists. The normwise
-counterpart is the root `backwardError` of `Numlib/Conditioning/LinearSystem` (Rigal–Gaches). -/
+/-- The **componentwise backward error** of $x$ for $Ax = b$, with the tolerances $E$ on $A$ and $f$
+on $b$: $$\omega_{\min} = \max_i \frac{|b - Ax|_i}{(|E| \, |x| + |f|)_i},$$ where a row with
+zero denominator contributes $0$. This is $\omega_{\min}$ of §2.6.5 of [golub2013matrix] and
+(7.8) of [higham2002accuracy].
+
+By `Matrix.isLeast_componentwiseBackwardError` it is the least $\omega$ for which $x$ solves
+exactly a perturbed system with $|\Delta A| \le \omega |E|$ and $|\Delta b| \le \omega |f|$,
+when such an $\omega$ exists. The maximum is the real supremum `⨆ i`, which is meaningful for
+finitely many rows. The normwise counterpart is the Rigal–Gaches `backwardError` of
+`Numlib.Conditioning.LinearSystem`. -/
 noncomputable def componentwiseBackwardError (A E : Matrix m p ℝ) (b f : m → ℝ) (x : p → ℝ) :
     ℝ :=
   ⨆ i, |(b - A *ᵥ x) i| / (E.abs *ᵥ |x| + |f|) i
 
-/-- **The componentwise backward error is attained** ([golub2013matrix] §2.6.5;
-[higham2002accuracy] Theorem 7.3): if every row with `(|E| |x| + |f|)_i = 0` has zero residual,
-`componentwiseBackwardError A E b f x` is the least `ω ≥ 0` for which some perturbation with
-`|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|` makes `x` an exact solution. (Otherwise no `ω` works; the book
-writes `ω_min = ∞`.) From `Matrix.exists_perturbation_iff_abs_residual_le`, row by row. -/
+/-- **The componentwise backward error is attained** (§2.6.5 of [golub2013matrix], Theorem 7.3 of
+[higham2002accuracy]). Let $A, E$ be real $m \times p$ matrices with $m$ and $p$ finite, and
+$b, f \in \mathbb{R}^m$, $x \in \mathbb{R}^p$. Suppose that every row $i$ with
+$(|E| \, |x| + |f|)_i = 0$ has $(b - Ax)_i = 0$. Then $\omega_{\min}$
+(`Matrix.componentwiseBackwardError`) is the least $\omega \ge 0$ for which there are $\Delta A$
+and $\Delta b$ with $(A + \Delta A) x = b + \Delta b$, $|\Delta A| \le \omega |E|$ and
+$|\Delta b| \le \omega |f|$ entrywise.
+
+If the hypothesis fails, no $\omega$ works, and the source writes $\omega_{\min} = \infty$. The
+proof applies `Matrix.exists_perturbation_iff_abs_residual_le` row by row. -/
 theorem isLeast_componentwiseBackwardError [Finite m] (A E : Matrix m p ℝ) (b f : m → ℝ)
     (x : p → ℝ) (hz : ∀ i, (E.abs *ᵥ |x| + |f|) i = 0 → (b - A *ᵥ x) i = 0) :
     IsLeast {ω : ℝ | 0 ≤ ω ∧ ∃ (ΔA : Matrix m p ℝ) (Δb : m → ℝ),

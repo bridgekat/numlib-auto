@@ -9,28 +9,41 @@ import Numlib.Analysis.Convex.Polyhedral.Separation
 /-!
 # Closedness of a sum with a polyhedral set
 
-The general criterion keeps `C₁ + C₂` closed only when every cancelling pair of recession
-directions lies in *both* lineality spaces. If `C₁` is polyhedral, the requirement on the `C₁` side
-disappears altogether.
+Let $E$ and $F$ be finite-dimensional real normed spaces in duality through a pairing
+$\langle x, y \rangle$, and let $C_1, C_2 \subseteq E$ be nonempty convex sets with $C_2$ closed.
+The general criterion for the closedness of $C_1 + C_2$ asks that every direction of recession $v$
+of $C_1$ with $-v$ a direction of recession of $C_2$ lies in the lineality spaces of both sets. If
+$C_1$ is polyhedral, the condition on $C_1$ disappears: it is enough that $C_2$ is linear in each
+such direction, that is, that $v$ is also a direction of recession of $C_2$. This is Theorem 20.3 of
+[rockafellar1970convex]. A consequence is a strong separation theorem for a polyhedral set and a
+closed convex set.
+
+The proof uses the barrier cones $\operatorname{dom} \delta^*(\cdot \mid C_i)$, the effective
+domains of the support functions. Polyhedral separation of the two barrier cones gives the
+constraint qualification that the barrier cone of $C_1$ meets the relative interior of the barrier
+cone of $C_2$.
 
 ## Main results
 
-* `isClosed_add_of_polyhedral` — a nonempty polyhedral set plus a nonempty closed convex set is
-  closed as soon as `C₂` is linear in every direction of recession the two share
-  ([rockafellar1970convex] Theorem 20.3); `separatesStrongly_of_polyhedral_of_recession` is the
-  separation form.
-* `nonempty_convexDom_supportFn_inter_relint` — the constraint qualification that carries it, read
-  off from polyhedral separation applied to the two barrier cones.
+* `ConvexAnalysis.isClosed_add_of_polyhedral`: if $C_1$ is a nonempty polyhedral set, $C_2$ is a
+  nonempty closed convex set, and $C_2$ is linear in every direction of recession $v$ of $C_1$ with
+  $-v$ a direction of recession of $C_2$, then $C_1 + C_2$ is closed.
+* `ConvexAnalysis.separatesStrongly_of_polyhedral_of_recession`: the same hypotheses, for disjoint
+  sets and with $v$ in place of $-v$, give strong separation of $C_1$ and $C_2$.
+* `ConvexAnalysis.nonempty_convexDom_supportFn_inter_relint`: under the hypotheses of the first
+  result, the barrier cone of $C_1$ meets the relative interior of the barrier cone of $C_2$.
 
 ## Implementation notes
 
-Closedness is read off effective domains rather than from an infimal convolution formula: once
-`IsExactSum.of_polyhedral` gives `(δ*(· | C₁) + δ*(· | C₂))* = δ(· | C₁) □ δ(· | C₂)`, the left
-side is `δ(· | cl (C₁ + C₂))` and the domain of the right side is `C₁ + C₂`.
-
-## References
-
-* [rockafellar1970convex] §20.
+* Closedness is read off effective domains, not from a formula for an infimal convolute.
+  `ConvexAnalysis.IsExactSum.of_polyhedral_closed` gives $\big(\delta^*(\cdot \mid C_1) +
+  \delta^*(\cdot \mid C_2)\big)^* = \delta(\cdot \mid C_1) \mathbin{\square} \delta(\cdot \mid
+  C_2)$. The left side is $\delta(\cdot \mid \operatorname{cl}(C_1 + C_2))$, and the effective
+  domain of the right side is $C_1 + C_2$.
+* The pairing is a bilinear map `B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ`. The hypotheses
+  `ConvexAnalysis.IsCompatiblePairing B` and `ConvexAnalysis.IsCompatiblePairing B.flip` say that
+  every continuous linear functional on $E$ is $\langle \cdot, y \rangle$ for some $y \in F$, and
+  every continuous linear functional on $F$ is $\langle x, \cdot \rangle$ for some $x \in E$.
 -/
 
 open Set
@@ -45,9 +58,12 @@ variable {E F : Type*}
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {C₁ C₂ : Set E}
 
-/-- The barrier cone of a polyhedral convex set is polyhedral: its support function is the
-conjugate of a polyhedral indicator, hence polyhedral, and the effective domain of a polyhedral
-function is polyhedral. -/
+/-- If $C_1$ is polyhedral, then its barrier cone $\operatorname{dom} \delta^*(\cdot \mid C_1)$ is
+polyhedral.
+
+The support function $\delta^*(\cdot \mid C_1)$ is the conjugate of the indicator function of
+$C_1$, which is polyhedral. So the support function is polyhedral, and the effective domain of a
+polyhedral function is polyhedral. -/
 theorem polyhedral_convexDom_supportFn (h₁ : Polyhedral C₁) :
     Polyhedral (convexDom (supportFn B C₁)) := by
   have hfn : PolyhedralFn (supportFn B C₁) := by
@@ -56,15 +72,23 @@ theorem polyhedral_convexDom_supportFn (h₁ : Polyhedral C₁) :
   exact hfn.polyhedral_convexDom
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
+/-- If $C_1$ is nonempty, then $0$ is in its barrier cone: $\delta^*(0 \mid C_1) < +\infty$. -/
 theorem zero_mem_convexDom_supportFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (hne : C₁.Nonempty) :
     (0 : F) ∈ convexDom (supportFn B C₁) := by
   rw [mem_convexDom, supportFn_zero hne]
   exact EReal.zero_lt_top
 
-/-- **The constraint qualification.** Under the recession hypothesis the barrier cone of `C₁` meets
-the *relative interior* of the barrier cone of `C₂`. This is where polyhedrality of `C₁` is spent:
-otherwise polyhedral separation separates the two barrier cones by a hyperplane, whose normal is a
-recession direction violating the hypothesis. -/
+/-- **The constraint qualification.** Let $E$ and $F$ be finite-dimensional real normed spaces with
+a pairing under which each space represents all continuous linear functionals on the other. Let
+$C_1$ be a nonempty polyhedral set and let $C_2$ be a nonempty closed convex set. Suppose that
+every direction of recession $v$ of $C_1$ such that $-v$ is a direction of recession of $C_2$ is
+also a direction of recession of $C_2$. Then the barrier cone of $C_1$ meets the relative
+interior of the barrier cone of $C_2$: $$\operatorname{dom} \delta^*(\cdot \mid C_1) \cap
+\operatorname{ri} \operatorname{dom} \delta^*(\cdot \mid C_2) \ne \emptyset.$$
+
+The proof uses the polyhedrality of $C_1$ here. If the intersection were empty, polyhedral
+separation would separate the two barrier cones by a hyperplane, and the normal of this
+hyperplane would be a direction of recession that violates the hypothesis. -/
 theorem nonempty_convexDom_supportFn_inter_relint [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip]
     (h₁ : Polyhedral C₁) (hne₁ : C₁.Nonempty)
@@ -109,11 +133,16 @@ theorem nonempty_convexDom_supportFn_inter_relint [IsCompatiblePairing B]
     exact h3
   exact hv₃ (hrec v hv₁ hv₂)
 
-/-- Let `C₁` be a nonempty polyhedral convex set and `C₂` a nonempty closed convex set. If every
-direction of recession of `C₁` whose opposite recedes `C₂` is itself a direction of recession of
-`C₂` — that is, a direction in which `C₂` is linear — then `C₁ + C₂` is closed. The general
-criterion asks in addition that such a direction lie in the lineality space of `C₁`; polyhedrality
-of `C₁` removes that requirement. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing under which each space
+represents all continuous linear functionals on the other. Let $C_1 \subseteq E$ be a nonempty
+polyhedral convex set and let $C_2 \subseteq E$ be a nonempty closed convex set. Suppose that
+every direction of recession $v$ of $C_1$ such that $-v$ is a direction of recession of $C_2$ is
+also a direction of recession of $C_2$, that is, a direction in which $C_2$ is linear. Then
+$C_1 + C_2$ is closed.
+
+This is Theorem 20.3 of [rockafellar1970convex]. The general criterion asks in addition that
+such a direction lie in the lineality space of $C_1$. The polyhedrality of $C_1$ removes this
+condition. -/
 theorem isClosed_add_of_polyhedral [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (h₁ : Polyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hcl₂ : IsClosed C₂) (hne₂ : C₂.Nonempty)
@@ -138,10 +167,18 @@ theorem isClosed_add_of_polyhedral [IsCompatiblePairing B] [IsCompatiblePairing 
       convexDom_indicatorFn] at hdom
   exact closure_eq_iff_isClosed.1 hdom
 
-/-- Two disjoint sets, one polyhedral and the other closed, can be separated *strongly* as soon as
-their only common direction of recession is one in which the closed one is linear. The general
-criterion asks for no common direction of recession at all; when both sets are polyhedral
-(`separatesStrongly_of_polyhedral`) no recession hypothesis is needed. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces with a pairing under which each space
+represents all continuous linear functionals on the other. Let $C_1 \subseteq E$ be a nonempty
+polyhedral convex set and let $C_2 \subseteq E$ be a nonempty closed convex set, disjoint from
+$C_1$. Suppose that for every direction of recession $v$ of $C_1$ that is also a direction of
+recession of $C_2$, the direction $-v$ is a direction of recession of $C_2$. Then $C_1$ and
+$C_2$ can be separated strongly: there are a continuous linear functional $f$ on $E$ and a real
+number $c$ with $$\sup_{x \in C_1} f(x) < c < \inf_{x \in C_2} f(x).$$
+
+The hypothesis says that the only common directions of recession of $C_1$ and $C_2$ are
+directions in which $C_2$ is linear. The general criterion asks that the two sets have no common
+direction of recession. When both sets are polyhedral, no condition on recession is needed
+(`ConvexAnalysis.separatesStrongly_of_polyhedral`). -/
 theorem separatesStrongly_of_polyhedral_of_recession [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip]
     (h₁ : Polyhedral C₁) (hne₁ : C₁.Nonempty)

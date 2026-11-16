@@ -13,65 +13,87 @@ import Numlib.LinearAlgebra.Matrix.SVD
 /-!
 # Least-squares solutions of linear systems
 
-Least-squares solutions of `A x = b` for a rectangular `A : Matrix m n 𝕜`, in the operator picture
-of `Numlib/LinearAlgebra/Matrix/SVD`: `Matrix.toEuclideanLin A` acting on `EuclideanSpace`, so
-that the pseudoinverse results there apply verbatim ([quarteroni2000numerical] §3.13).
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $A \in \mathbb{K}^{m \times n}$ and
+$b \in \mathbb{K}^m$. A vector $x \in \mathbb{K}^n$ is a **least-squares solution** of $Ax = b$ if
+it minimizes the Euclidean norm $\|Ay - b\|$ of the residual over all $y \in \mathbb{K}^n$. It is
+the **least-squares solution of least norm** if in addition $\|x\| \le \|y\|$ for every
+least-squares solution $y$. This module proves that the least-squares solutions are the solutions of
+the normal equations $A^H A x = A^H b$, and that the least-squares solution of least norm is
+$A^+ b$, where $A^+$ is the Moore–Penrose pseudoinverse. If $A$ has full column rank, the
+least-squares solution is unique and equals $(A^H A)^{-1} A^H b = \tilde R^{-1} \tilde Q^H b$ for
+every reduced QR factorization $A = \tilde Q \tilde R$. The presentation follows
+[quarteroni2000numerical], §3.4.3 and §3.13, and [golub2013matrix], §5.2, §5.3 and §5.5.
+
+The module also proves facts about the geometry of the problem: the gradient of
+$\frac{1}{2} \|Ax - b\|^2$ is $A^T (Ax - b)$, the set of least-squares solutions is convex, the
+augmented matrix $\begin{bmatrix} I & A \\ A^H & 0 \end{bmatrix}$ is nonsingular exactly for full
+column rank, and the trailing columns of a full QR factor span $\operatorname{ran}(A)^\perp$. It
+solves the matrix problems $\min_X \|AX - I\|_F$ and $\min_F \|A - F K^H\|_F$. The modules
+`Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted` (row and column weights, the augmented system,
+Paige's generalized least squares), `Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized` (ridge
+regression, general-form Tikhonov regularization, cross-validation),
+`Numlib.LinearAlgebra.Matrix.LeastSquares.Constrained` (quadratic inequality and linear equality
+constraints) and `Numlib.LinearAlgebra.Matrix.LeastSquares.Total` (total least squares) refine the
+problem after [golub2013matrix], §6.1–6.3.
 
 ## Main definitions
 
-* `Matrix.IsLeastSquaresSolution A b x`: `x` minimizes `‖A y - b‖` over `y`,
-  [quarteroni2000numerical] (3.73).
-* `Matrix.IsMinNormLeastSquaresSolution A b x`: a least-squares solution of least norm, (3.76).
+* `Matrix.IsLeastSquaresSolution`: $x$ minimizes $\|Ay - b\|$ over all $y$, equation (3.73) of
+  [quarteroni2000numerical].
+* `Matrix.IsMinNormLeastSquaresSolution`: $x$ is a least-squares solution of least norm, equation
+  (3.76) of [quarteroni2000numerical].
 
 ## Main results
 
-* `Matrix.isLeastSquaresSolution_iff_normalEquations`: the least-squares solutions are the
-  solutions of the normal equations `Aᴴ A x = Aᴴ b` ((3.74)). Both directions are the Pythagorean
-  identity `‖A y - b‖² = ‖A x - b‖² + ‖A (y - x)‖²` for a solution `x` of the normal equations
-  (`Matrix.norm_toEuclideanLin_sub_sq_eq_of_normalEquations`); for "minimizer ⇒ normal equations"
-  the identity is applied with `x = A⁺ b`, which solves them.
-* `Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`,
-  `Matrix.existsUnique_isLeastSquaresSolution`,
-  `Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`,
-  `Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent`: for full column rank the
-  normal equations are positive definite, the solution is unique, and it is `(Aᴴ A)⁻¹ Aᴴ b = A⁺ b`.
-* `Matrix.isLeastSquaresSolution_of_qr`, `Matrix.IsQR.isLeastSquaresSolution`,
-  `Matrix.norm_sub_sq_eq_of_isQR`, `Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`:
-  [quarteroni2000numerical] Theorem 3.8, the solution `R̃⁻¹ Q̃ᴴ b` through any reduced
-  factorization and the value of the minimum, `∑_{i ≥ n} |(Qᴴ b)_i|²`.
-* `Matrix.isMinNormLeastSquaresSolution_pinv`, `Matrix.IsMinNormLeastSquaresSolution.eq_pinv`:
-  [quarteroni2000numerical] Theorem 3.9, the least-squares solution of least norm is `A⁺ b`, and
-  only it.
-* `Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose`: for full row rank
-  `A⁺ = Aᴴ (A Aᴴ)⁻¹`, the minimal-norm solution of an underdetermined system.
-* The geometry of the problem ([golub2013matrix] §5.3.1, §5.5.1): the gradient of `‖A x - b‖²/2`
-  is `Aᵀ (A x - b)` (`Matrix.hasGradientAt_leastSquaresObjective`), the solutions form a convex set
-  (`Matrix.convex_setOf_isLeastSquaresSolution`) and differ by null vectors
-  (`Matrix.IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero`); the augmented system
-  `[1 A; Aᴴ 0]` is nonsingular exactly for full column rank (`Matrix.isUnit_augmented_iff`,
-  [golub2013matrix] (5.3.20)); `ran(A)⊥` is spanned by the trailing columns of a QR factor
-  (`Matrix.IsQR.range_orthogonal_eq_span_lastColumns`, [golub2013matrix] Theorem 5.2.2); a matrix
-  with orthonormal columns projects onto its range
-  (`Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection`).
-* `Matrix.isMinOn_norm_sub_mul_conjTranspose_iff`: least squares with a matrix unknown on the left,
-  `F ↦ ‖A - F Kᴴ‖_F`, row by row ([golub2013matrix] (12.5.16)–(12.5.20)).
-
-The children refine the problem: `LeastSquares/Weighted` (row and column weights, the augmented
-system, Paige's generalized least squares), `LeastSquares/Regularized` (ridge regression and
-general-form Tikhonov, cross-validation), `LeastSquares/Constrained` (LSQI and LSE),
-`LeastSquares/Total` (total least squares) — [golub2013matrix] §6.1–6.3.
+* `Matrix.norm_toEuclideanLin_sub_sq_eq_of_normalEquations`: if $A^H A x = A^H b$, then
+  $\|Ay - b\|^2 = \|Ax - b\|^2 + \|A(y - x)\|^2$ for every $y$.
+* `Matrix.isLeastSquaresSolution_iff_normalEquations`: $x$ is a least-squares solution if and only
+  if $A^H A x = A^H b$.
+* `Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`: for full column rank, $A^H A$ is
+  positive definite.
+* `Matrix.existsUnique_isLeastSquaresSolution`: for full column rank, the least-squares solution
+  exists and is unique.
+* `Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`: for full column rank,
+  $A^+ = (A^H A)^{-1} A^H$.
+* `Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent`: for full column rank, the
+  least-squares solution is $A^+ b$.
+* `Matrix.isLeastSquaresSolution_of_qr`: for a reduced QR factorization $A = \tilde Q \tilde R$ with
+  nonsingular $\tilde R$, the vector $\tilde R^{-1} \tilde Q^H b$ is a least-squares solution.
+* `Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`: for full column rank and a full QR
+  factorization $A = QR$, the least squared residual is $\sum_{i = n+1}^{m} |(Q^H b)_i|^2$.
+* `Matrix.isMinNormLeastSquaresSolution_pinv`: $A^+ b$ is a least-squares solution of least norm.
+* `Matrix.IsMinNormLeastSquaresSolution.eq_pinv`: every least-squares solution of least norm equals
+  $A^+ b$.
+* `Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose`: for full row rank,
+  $A^+ = A^H (A A^H)^{-1}$.
+* `Matrix.hasGradientAt_leastSquaresObjective`: over $\mathbb{R}$, the gradient of
+  $\frac{1}{2} \|Ax - b\|^2$ is $A^T (Ax - b)$.
+* `Matrix.convex_setOf_isLeastSquaresSolution`: the least-squares solutions form a convex set.
+* `Matrix.isUnit_augmented_iff`: the augmented matrix
+  $\begin{bmatrix} I & A \\ A^H & 0 \end{bmatrix}$ is nonsingular if and only if $A$ has full column
+  rank.
+* `Matrix.IsQR.range_orthogonal_eq_span_lastColumns`: for full column rank,
+  $\operatorname{ran}(A)^\perp$ is spanned by the last $m - n$ columns of a full QR factor $Q$.
+* `Matrix.isMinOn_norm_mul_sub_one_pinv`: $A^+$ minimizes $\|AX - I\|_F$, and it is the unique
+  minimizer of least Frobenius norm.
+* `Matrix.isMinOn_norm_sub_mul_conjTranspose_iff`: $F$ minimizes $\|A - G K^H\|_F$ over $G$ if and
+  only if $F K^H K = A K$.
+* `Matrix.pinv_eq_of_isThinQR_conjTranspose`: if $A^H = QR$ is a thin QR factorization with $R$
+  nonsingular, then $A^+ = Q (R^H)^{-1}$.
 
 ## Implementation notes
 
-Vectors are `EuclideanSpace 𝕜 m`, never `m → 𝕜`, because the norm is the point; the
-`Matrix.toEuclideanLin_*` glue of `Numlib/Analysis/Matrix/ToEuclideanLin` moves between the two.
-The index types are arbitrary `Fintype`s wherever the statement makes sense; `Fin M`, `Fin N` enter
-only with the *full* QR factorization `Matrix.IsQR` of `Numlib/LinearAlgebra/Matrix/QR`, whose
-reduced factors are the first `N` columns and rows.
-
-## References
-
-* [quarteroni2000numerical] §3.4.3, §3.13; [golub2013matrix] §5.2–5.3, §5.5.
+* Vectors are elements of `EuclideanSpace 𝕜 m`, not functions `m → 𝕜`, because the statements are
+  about the Euclidean norm. A matrix acts on them through `Matrix.toEuclideanLin`. The lemmas of
+  `Numlib.Analysis.Matrix.ToEuclideanLin` move between the two forms.
+* The pseudoinverse $A^+$ is `Matrix.pinv` of `Numlib.LinearAlgebra.Matrix.SVD`, so the results on
+  it there apply directly.
+* "Full column rank" is `LinearIndependent 𝕜 Aᵀ` (the columns of $A$ are linearly independent), and
+  "full row rank" is `LinearIndependent 𝕜 A`.
+* The index types are arbitrary finite types wherever the statement makes sense. The types `Fin M`
+  and `Fin N` appear only with the full QR factorization `Matrix.IsQR` of
+  `Numlib.LinearAlgebra.Matrix.QR`. Its reduced factors $\tilde Q$ and $\tilde R$ are the first $N$
+  columns of $Q$ (`Matrix.firstColumns`) and the first $N$ rows of $R$ (`Matrix.firstRows`).
 -/
 
 open Finset
@@ -85,24 +107,33 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 
 section NormalEquations
 
-/-- **A least-squares solution** of `A x = b`, [quarteroni2000numerical] (3.73): `x` minimizes the
-Euclidean norm of the residual `A y - b` over all `y`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. A vector $x \in \mathbb{K}^n$ is a
+**least-squares solution** of $Ax = b$ if
+$$\|Ax - b\| \le \|Ay - b\| \quad \text{for all } y \in \mathbb{K}^n.$$
+This is equation (3.73) of [quarteroni2000numerical].
+
+The norms are the Euclidean norms of `EuclideanSpace`, and $A$ acts through
+`Matrix.toEuclideanLin`. -/
 def IsLeastSquaresSolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
     Prop :=
   ∀ y, ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖
 
 variable {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
 
-/-- The definition of a least-squares solution, unfolded. -/
+/-- A vector $x$ is a least-squares solution of $Ax = b$ if and only if $\|Ax - b\| \le \|Ay - b\|$
+for every $y$. This is the definition of `Matrix.IsLeastSquaresSolution`. -/
 theorem isLeastSquaresSolution_iff :
     IsLeastSquaresSolution A b x ↔ ∀ y, ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y - b‖ :=
   Iff.rfl
 
 variable [DecidableEq m]
 
-/-- **The Pythagorean identity of least squares**: if `x` solves the normal equations
-`Aᴴ A x = Aᴴ b`, then the residual `A x - b` is orthogonal to the range of `A`, so
-`‖A y - b‖² = ‖A x - b‖² + ‖A (y - x)‖²` for every `y`. -/
+/-- The **Pythagorean identity of least squares**. Let $A \in \mathbb{K}^{m \times n}$ and
+$b \in \mathbb{K}^m$, and let $x \in \mathbb{K}^n$ solve the normal equations $A^H A x = A^H b$.
+Then for every $y \in \mathbb{K}^n$,
+$$\|Ay - b\|^2 = \|Ax - b\|^2 + \|A(y - x)\|^2.$$
+
+The identity holds because the residual $Ax - b$ is orthogonal to the range of $A$. -/
 theorem norm_toEuclideanLin_sub_sq_eq_of_normalEquations
     (hx : toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ b) (y : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A y - b‖ ^ 2 =
@@ -115,15 +146,21 @@ theorem norm_toEuclideanLin_sub_sq_eq_of_normalEquations
     abel
   rw [hsplit, sq, norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ hperp, sq, sq]
 
-/-- The pseudoinverse solves the normal equations: `Aᴴ A (A⁺ b) = Aᴴ b`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The vector $A^+ b$ solves the
+normal equations: $A^H A (A^+ b) = A^H b$. -/
 theorem normalEquations_pinv (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     toEuclideanLin (Aᴴ * A) (toEuclideanLin A.pinv b) = toEuclideanLin Aᴴ b := by
   rw [← toEuclideanLin_mul_apply, Matrix.mul_assoc, conjTranspose_mul_mul_pinv]
 
-/-- **The normal equations**, [quarteroni2000numerical] (3.74): `x` is a least-squares solution
-of `A x = b` if and only if `Aᴴ A x = Aᴴ b`. Backwards, the Pythagorean identity; forwards, the
-identity at the solution `A⁺ b` of the normal equations gives `‖A (x - A⁺ b)‖ = 0`, so
-`A x = A A⁺ b` and `x` solves the normal equations too. -/
+/-- The **normal equations**. Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. A vector
+$x \in \mathbb{K}^n$ is a least-squares solution of $Ax = b$ if and only if
+$$A^H A x = A^H b.$$
+This is equation (3.74) of [quarteroni2000numerical].
+
+The direction from the normal equations to the minimum is
+`Matrix.norm_toEuclideanLin_sub_sq_eq_of_normalEquations`. For the other direction, the same
+identity at the solution $A^+ b$ of the normal equations gives $\|A(x - A^+ b)\| = 0$, so
+$Ax = A A^+ b$, and $x$ solves the normal equations too. -/
 theorem isLeastSquaresSolution_iff_normalEquations :
     IsLeastSquaresSolution A b x ↔ toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ b := by
   constructor
@@ -139,7 +176,8 @@ theorem isLeastSquaresSolution_iff_normalEquations :
     rw [norm_toEuclideanLin_sub_sq_eq_of_normalEquations hx y]
     exact le_add_of_nonneg_right (sq_nonneg _)
 
-/-- The pseudoinverse gives a least-squares solution, for every right-hand side. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The vector $A^+ b$ is a
+least-squares solution of $Ax = b$. -/
 theorem isLeastSquaresSolution_pinv (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     IsLeastSquaresSolution A b (toEuclideanLin A.pinv b) :=
   isLeastSquaresSolution_iff_normalEquations.2 (normalEquations_pinv A b)
@@ -153,34 +191,43 @@ section FullRank
 variable {A : Matrix m n 𝕜}
 
 omit [Fintype m] [DecidableEq n] in
-/-- A matrix with linearly independent columns is injective on vectors. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns. Then the map
+$x \mapsto Ax$ is injective. -/
 theorem mulVec_injective_of_linearIndependent_transpose (hA : LinearIndependent 𝕜 Aᵀ) :
     Function.Injective A.mulVec :=
   mulVec_injective_iff.2 hA
 
 omit [Fintype n] [DecidableEq n] in
-/-- A matrix with linearly independent rows is injective on covectors. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent rows. Then the map
+$y \mapsto y^T A$ on row vectors is injective. -/
 theorem vecMul_injective_of_linearIndependent (hA : LinearIndependent 𝕜 A) :
     Function.Injective A.vecMul :=
   vecMul_injective_iff.2 hA
 
 omit [Fintype n] [DecidableEq n] in
-/-- [quarteroni2000numerical] §3.13: for a matrix of full column rank the Gram matrix `Aᴴ A` of
-the normal equations is positive definite. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns. Then the matrix $A^H A$
+of the normal equations is positive definite. This is stated in §3.13 of
+[quarteroni2000numerical]. -/
 theorem posDef_conjTranspose_mul_self_of_linearIndependent [Finite n]
     (hA : LinearIndependent 𝕜 Aᵀ) : (Aᴴ * A).PosDef := by
   cases nonempty_fintype n
   exact PosDef.conjTranspose_mul_self A (mulVec_injective_of_linearIndependent_transpose hA)
 
 omit [Fintype m] [DecidableEq n] in
-/-- For a matrix of full row rank, `A Aᴴ` is positive definite. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent rows. Then $A A^H$ is positive
+definite. -/
 theorem posDef_self_mul_conjTranspose_of_linearIndependent [Finite m]
     (hA : LinearIndependent 𝕜 A) : (A * Aᴴ).PosDef := by
   cases nonempty_fintype m
   exact PosDef.mul_conjTranspose_self A (vecMul_injective_of_linearIndependent hA)
 
-/-- [quarteroni2000numerical] §3.13, after (3.74): for a matrix of full column rank the
-least-squares solution exists and is unique, namely `(Aᴴ A)⁻¹ Aᴴ b`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns, and let
+$b \in \mathbb{K}^m$. Then $Ax = b$ has exactly one least-squares solution. This is stated in
+§3.13 of [quarteroni2000numerical], after equation (3.74).
+
+The solution is $(A^H A)^{-1} A^H b = A^+ b$, by
+`Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose` and
+`Matrix.isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent`. -/
 theorem existsUnique_isLeastSquaresSolution (hA : LinearIndependent 𝕜 Aᵀ)
     (b : EuclideanSpace 𝕜 m) : ∃! x, IsLeastSquaresSolution A b x := by
   classical
@@ -194,8 +241,10 @@ theorem existsUnique_isLeastSquaresSolution (hA : LinearIndependent 𝕜 Aᵀ)
     rw [toEuclideanLin_mul_apply, ← hx, ← toEuclideanLin_mul_apply,
       nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hG), toEuclideanLin_one, LinearMap.id_apply]
 
-/-- For a matrix of full column rank the pseudoinverse is `(Aᴴ A)⁻¹ Aᴴ`: both satisfy the Penrose
-conditions (`Matrix.pinv_unique`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns. Then
+$$A^+ = (A^H A)^{-1} A^H.$$
+
+Both sides satisfy the four Penrose conditions, so `Matrix.pinv_unique` applies. -/
 theorem pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose (hA : LinearIndependent 𝕜 Aᵀ) :
     A.pinv = (Aᴴ * A)⁻¹ * Aᴴ := by
   have hG : IsUnit (Aᴴ * A).det :=
@@ -214,7 +263,9 @@ theorem pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose (hA : LinearIndepen
 
 variable [DecidableEq m]
 
-/-- For a matrix of full column rank, the least-squares solution is `A⁺ b`, and only it. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns, and let
+$b \in \mathbb{K}^m$. Then $x$ is a least-squares solution of $Ax = b$ if and only if
+$x = A^+ b$. -/
 theorem isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent (hA : LinearIndependent 𝕜 Aᵀ)
     {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n} :
     IsLeastSquaresSolution A b x ↔ x = toEuclideanLin A.pinv b := by
@@ -230,15 +281,19 @@ section MinNorm
 
 variable {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
 
-/-- **The least-squares solution of least norm**, [quarteroni2000numerical] (3.76): a
-least-squares solution whose norm is at most that of every other one. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. A vector $x \in \mathbb{K}^n$ is a
+**least-squares solution of least norm** of $Ax = b$ if $x$ is a least-squares solution and
+$\|x\| \le \|y\|$ for every least-squares solution $y$. This is equation (3.76) of
+[quarteroni2000numerical]. -/
 def IsMinNormLeastSquaresSolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m)
     (x : EuclideanSpace 𝕜 n) : Prop :=
   IsLeastSquaresSolution A b x ∧ ∀ y, IsLeastSquaresSolution A b y → ‖x‖ ≤ ‖y‖
 
 variable [DecidableEq m]
 
-/-- A least-squares solution differs from `A⁺ b` by an element of the kernel of `A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. If $x$ solves the normal equations
+$A^H A x = A^H b$, then $A(x - A^+ b) = 0$. That is, $x$ differs from $A^+ b$ by an element of
+the kernel of $A$. -/
 theorem toEuclideanLin_sub_pinv_eq_zero_of_normalEquations
     (hx : toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ b) :
     toEuclideanLin A (x - toEuclideanLin A.pinv b) = 0 := by
@@ -249,7 +304,10 @@ theorem toEuclideanLin_sub_pinv_eq_zero_of_normalEquations
   rw [hgram, inner_zero_right] at h
   exact inner_self_eq_zero.1 h
 
-/-- `A⁺ b` is orthogonal to the kernel of `A`: it lies in the range of `A⁺ = A⁺ A A⁺`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. If $Ad = 0$, then
+$\langle A^+ b, d \rangle = 0$. That is, $A^+ b$ is orthogonal to the kernel of $A$.
+
+The vector $A^+ b$ lies in the range of $A^+ = A^+ A A^+$. -/
 theorem inner_pinv_eq_zero_of_toEuclideanLin_eq_zero (b : EuclideanSpace 𝕜 m)
     {d : EuclideanSpace 𝕜 n} (hd : toEuclideanLin A d = 0) :
     (inner 𝕜 (toEuclideanLin A.pinv b) d : 𝕜) = 0 := by
@@ -258,8 +316,10 @@ theorem inner_pinv_eq_zero_of_toEuclideanLin_eq_zero (b : EuclideanSpace 𝕜 m)
   rw [← hpp, inner_toEuclideanLin_of_isHermitian A.isHermitian_pinv_mul,
     toEuclideanLin_mul_apply, hd, map_zero, inner_zero_right]
 
-/-- **The Pythagorean identity of the minimal-norm solution**: for a solution `x` of the normal
-equations, `‖x‖² = ‖A⁺ b‖² + ‖x - A⁺ b‖²`. -/
+/-- The **Pythagorean identity of the least-norm solution**. Let $A \in \mathbb{K}^{m \times n}$ and
+$b \in \mathbb{K}^m$. If $x$ solves the normal equations $A^H A x = A^H b$, then
+$$\|x\|^2 = \|A^+ b\|^2 + \|x - A^+ b\|^2.$$
+-/
 theorem norm_sq_eq_norm_pinv_sq_add_of_normalEquations
     (hx : toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ b) :
     ‖x‖ ^ 2 = ‖toEuclideanLin A.pinv b‖ ^ 2 + ‖x - toEuclideanLin A.pinv b‖ ^ 2 := by
@@ -269,16 +329,21 @@ theorem norm_sq_eq_norm_pinv_sq_add_of_normalEquations
     (inner_pinv_eq_zero_of_toEuclideanLin_eq_zero b
       (toEuclideanLin_sub_pinv_eq_zero_of_normalEquations hx)), sq, sq]
 
-/-- **[quarteroni2000numerical] Theorem 3.9, existence**: `A⁺ b` is a least-squares solution of
-least norm. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. Then $A^+ b$ is a least-squares
+solution of least norm of $Ax = b$. This is the existence part of Theorem 3.9 of
+[quarteroni2000numerical]. -/
 theorem isMinNormLeastSquaresSolution_pinv (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     IsMinNormLeastSquaresSolution A b (toEuclideanLin A.pinv b) :=
   ⟨isLeastSquaresSolution_pinv A b, fun _ hy =>
     norm_pinv_le_of_normalEquations A b (isLeastSquaresSolution_iff_normalEquations.1 hy)⟩
 
-/-- **[quarteroni2000numerical] Theorem 3.9, uniqueness**: the least-squares solution of least
-norm is `A⁺ b`. Minimality against `A⁺ b` gives `‖x‖ ≤ ‖A⁺ b‖`, and the Pythagorean identity
-`‖x‖² = ‖A⁺ b‖² + ‖x - A⁺ b‖²` then forces `x = A⁺ b`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. If $x$ is a least-squares solution
+of least norm of $Ax = b$, then $x = A^+ b$. This is the uniqueness part of Theorem 3.9 of
+[quarteroni2000numerical].
+
+Minimality against $A^+ b$ gives $\|x\| \le \|A^+ b\|$, and the identity
+$\|x\|^2 = \|A^+ b\|^2 + \|x - A^+ b\|^2$ of
+`Matrix.norm_sq_eq_norm_pinv_sq_add_of_normalEquations` then forces $x = A^+ b$. -/
 theorem IsMinNormLeastSquaresSolution.eq_pinv (h : IsMinNormLeastSquaresSolution A b x) :
     x = toEuclideanLin A.pinv b := by
   have h1 := norm_sq_eq_norm_pinv_sq_add_of_normalEquations
@@ -289,16 +354,20 @@ theorem IsMinNormLeastSquaresSolution.eq_pinv (h : IsMinNormLeastSquaresSolution
   exact h3
 
 omit [DecidableEq m] in
-/-- A least-squares solution of least norm is unique. -/
+/-- Two least-squares solutions of least norm of the same system $Ax = b$ are equal. -/
 theorem IsMinNormLeastSquaresSolution.unique {y : EuclideanSpace 𝕜 n}
     (hx : IsMinNormLeastSquaresSolution A b x) (hy : IsMinNormLeastSquaresSolution A b y) :
     x = y := by
   classical
   rw [hx.eq_pinv, hy.eq_pinv]
 
-/-- **The underdetermined case** ([quarteroni2000numerical] §3.13, last paragraph): for a matrix
-of full row rank, `A⁺ = Aᴴ (A Aᴴ)⁻¹`, so the solution of least norm of the (consistent) system
-`A x = b` is `Aᴴ (A Aᴴ)⁻¹ b`. Both sides satisfy the Penrose conditions. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent rows. Then
+$$A^+ = A^H (A A^H)^{-1}.$$
+Hence the least-squares solution of least norm of $Ax = b$ is $A^H (A A^H)^{-1} b$, and by
+`Matrix.toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose` it solves $Ax = b$. This is
+the underdetermined case in the last paragraph of §3.13 of [quarteroni2000numerical].
+
+Both sides satisfy the four Penrose conditions, so `Matrix.pinv_unique` applies. -/
 theorem pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose (hA : LinearIndependent 𝕜 A) :
     A.pinv = Aᴴ * (A * Aᴴ)⁻¹ := by
   have hG : IsUnit (A * Aᴴ).det :=
@@ -314,7 +383,9 @@ theorem pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose (hA : LinearIndepen
   · rw [IsHermitian, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose, hH.eq,
       Matrix.mul_assoc]
 
-/-- For a matrix of full row rank, `Aᴴ (A Aᴴ)⁻¹ b` solves `A x = b`: the system is consistent. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent rows. Then
+$A \bigl(A^H (A A^H)^{-1} b\bigr) = b$ for every $b \in \mathbb{K}^m$. In particular, the system
+$Ax = b$ is consistent. -/
 theorem toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose (hA : LinearIndependent 𝕜 A)
     (b : EuclideanSpace 𝕜 m) :
     toEuclideanLin A (toEuclideanLin (Aᴴ * (A * Aᴴ)⁻¹) b) = b := by
@@ -331,10 +402,17 @@ section QRSolve
 
 variable {o : Type*} [Fintype o] [LinearOrder o] [DecidableEq m]
 
-/-- **[quarteroni2000numerical] Theorem 3.8, (3.75)**: through any reduced QR factorization
-`A = Q̃ R̃` with `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular with nowhere-zero diagonal (in particular
-the one of `Matrix.exists_isThinQR`), `x = R̃⁻¹ Q̃ᴴ b` is a least-squares solution of `A x = b`: it
-solves the normal equations, `Aᴴ A x = R̃ᴴ Q̃ᴴ Q̃ R̃ R̃⁻¹ Q̃ᴴ b = R̃ᴴ Q̃ᴴ b = Aᴴ b`. -/
+/-- Let $A, \tilde Q \in \mathbb{K}^{m \times n}$ and $\tilde R \in \mathbb{K}^{n \times n}$ with
+$A = \tilde Q \tilde R$, $\tilde Q^H \tilde Q = I$, and $\tilde R$ upper triangular with nonzero
+diagonal entries. Then for every $b \in \mathbb{K}^m$, the vector
+$$x = \tilde R^{-1} \tilde Q^H b$$
+is a least-squares solution of $Ax = b$. This is Theorem 3.8 of [quarteroni2000numerical],
+equation (3.75).
+
+The column index type is any finite linearly ordered type. The reduced factorization of
+`Matrix.exists_isThinQR` satisfies the hypotheses. The vector $x$ solves the normal equations:
+$A^H A x = \tilde R^H \tilde Q^H \tilde Q \tilde R \tilde R^{-1} \tilde Q^H b = \tilde R^H
+\tilde Q^H b = A^H b$. -/
 theorem isLeastSquaresSolution_of_qr {A Q : Matrix m o 𝕜} {R : Matrix o o 𝕜} (hA : A = Q * R)
     (hQ : Qᴴ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, R i i ≠ 0) (b : EuclideanSpace 𝕜 m) :
     IsLeastSquaresSolution A b (toEuclideanLin (R⁻¹ * Qᴴ) b) := by
@@ -357,8 +435,14 @@ section FullQR
 variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
 variable {R : Matrix (Fin M) (Fin N) 𝕜}
 
-/-- **[quarteroni2000numerical] Theorem 3.8**, through a full QR factorization with `N ≤ M`: the
-least-squares solution of `A x = b` is `R̃⁻¹ Q̃ᴴ b`, for `A` of full column rank. -/
+/-- Let $A \in \mathbb{K}^{M \times N}$ with $N \le M$ have linearly independent columns, and let
+$A = QR$ be a full QR factorization. Let $\tilde Q$ be the first $N$ columns of $Q$, and let
+$\tilde R$ be the first $N$ rows of $R$. Then for every $b \in \mathbb{K}^M$, the vector
+$\tilde R^{-1} \tilde Q^H b$ is a least-squares solution of $Ax = b$. This is Theorem 3.8 of
+[quarteroni2000numerical].
+
+The full QR factorization is `Matrix.IsQR`: $Q$ is unitary and $R$ is upper trapezoidal. The
+reduced factors are `Matrix.firstColumns Q hNM` and `Matrix.firstRows R hNM`. -/
 theorem IsQR.isLeastSquaresSolution (h : IsQR A Q R) (hNM : N ≤ M) (hA : LinearIndependent 𝕜 Aᵀ)
     (b : EuclideanSpace 𝕜 (Fin M)) :
     IsLeastSquaresSolution A b
@@ -367,8 +451,10 @@ theorem IsQR.isLeastSquaresSolution (h : IsQR A Q R) (hNM : N ≤ M) (hA : Linea
     (h.conjTranspose_firstColumns_mul_self hNM) (h.isUpperTriangular_firstRows hNM)
     (h.firstRows_diag_ne_zero_of_linearIndependent hNM hA) b
 
-/-- Through a full QR factorization the residual is `Q (R x - Qᴴ b)`, whose norm is
-`‖R x - Qᴴ b‖`. -/
+/-- Let $A = QR$ be a full QR factorization of $A \in \mathbb{K}^{M \times N}$. Then for every
+$b \in \mathbb{K}^M$ and $x \in \mathbb{K}^N$,
+$$\|Ax - b\| = \|Rx - Q^H b\|.$$
+-/
 theorem IsQR.norm_sub_eq (h : IsQR A Q R) (b : EuclideanSpace 𝕜 (Fin M))
     (x : EuclideanSpace 𝕜 (Fin N)) :
     ‖toEuclideanLin A x - b‖ = ‖toEuclideanLin R x - toEuclideanLin Qᴴ b‖ := by
@@ -379,9 +465,13 @@ theorem IsQR.norm_sub_eq (h : IsQR A Q R) (b : EuclideanSpace 𝕜 (Fin M))
   rw [this]
   exact norm_toEuclideanCLM_apply_of_mem_unitaryGroup h.mem_unitaryGroup _
 
-/-- **[quarteroni2000numerical] Theorem 3.8, the display in its proof**: through a full QR
-factorization with `N ≤ M`, for every `x`,
-`‖A x - b‖² = ‖R̃ x - Q̃ᴴ b‖² + ∑_{i ≥ N} |(Qᴴ b)_i|²`. -/
+/-- Let $A = QR$ be a full QR factorization of $A \in \mathbb{K}^{M \times N}$ with $N \le M$, and
+let $\tilde Q$ and $\tilde R$ be the first $N$ columns of $Q$ and the first $N$ rows of $R$.
+Then for every $b \in \mathbb{K}^M$ and $x \in \mathbb{K}^N$,
+$$\|Ax - b\|^2 = \|\tilde R x - \tilde Q^H b\|^2 + \sum_{i = N+1}^{M} |(Q^H b)_i|^2.$$
+This is the identity in the proof of Theorem 3.8 of [quarteroni2000numerical].
+
+Lean indices start at $0$, so the sum is over the `i : Fin M` with `N ≤ i`. -/
 theorem norm_sub_sq_eq_of_isQR (h : IsQR A Q R) (hNM : N ≤ M) (b : EuclideanSpace 𝕜 (Fin M))
     (x : EuclideanSpace 𝕜 (Fin N)) :
     ‖toEuclideanLin A x - b‖ ^ 2 =
@@ -408,9 +498,14 @@ theorem norm_sub_sq_eq_of_isQR (h : IsQR A Q R) (hNM : N ≤ M) (b : EuclideanSp
       exact Finset.sum_eq_zero fun j _ => by rw [h.apply_eq_zero_of_le hi', zero_mul]
     rw [PiLp.sub_apply, hRx, zero_sub, norm_neg]
 
-/-- **[quarteroni2000numerical] Theorem 3.8, the value of the minimum**: for `A` of full column
-rank, the least-squares solution `x*` has residual `‖A x* - b‖² = ∑_{i ≥ N} |(Qᴴ b)_i|²`, since
-`R̃ x* = Q̃ᴴ b`. -/
+/-- Let $A \in \mathbb{K}^{M \times N}$ with $N \le M$ have linearly independent columns, and let
+$A = QR$ be a full QR factorization. If $x$ is a least-squares solution of $Ax = b$, then
+$$\|Ax - b\|^2 = \sum_{i = N+1}^{M} |(Q^H b)_i|^2.$$
+This is the value of the minimum in Theorem 3.8 of [quarteroni2000numerical].
+
+At the solution, $\tilde R x = \tilde Q^H b$, so the first term of
+`Matrix.norm_sub_sq_eq_of_isQR` vanishes. Lean indices start at $0$, so the sum is over the
+`i : Fin M` with `N ≤ i`. -/
 theorem norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution (h : IsQR A Q R) (hNM : N ≤ M)
     (hA : LinearIndependent 𝕜 Aᵀ) {b : EuclideanSpace 𝕜 (Fin M)} {x : EuclideanSpace 𝕜 (Fin N)}
     (hx : IsLeastSquaresSolution A b x) :
@@ -433,8 +528,10 @@ section Solutions
 
 variable {A : Matrix m n 𝕜} {b : EuclideanSpace 𝕜 m} {x : EuclideanSpace 𝕜 n}
 
-/-- **Two least-squares solutions differ by a null vector** ([golub2013matrix] §5.3.1): both
-differ from `A⁺ b` by an element of the kernel
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. If $x$ and $y$ are least-squares
+solutions of $Ax = b$, then $A(y - x) = 0$. This is stated in §5.3.1 of [golub2013matrix].
+
+Both solutions differ from $A^+ b$ by an element of the kernel of $A$
 (`Matrix.toEuclideanLin_sub_pinv_eq_zero_of_normalEquations`). -/
 theorem IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero {y : EuclideanSpace 𝕜 n}
     (hx : IsLeastSquaresSolution A b x) (hy : IsLeastSquaresSolution A b y) :
@@ -448,8 +545,11 @@ theorem IsLeastSquaresSolution.toEuclideanLin_sub_eq_zero {y : EuclideanSpace �
   rw [sub_eq_zero] at h1 h2
   rw [h1, h2, sub_self]
 
-/-- **The least-squares solutions form a convex set** ([golub2013matrix] §5.5.1), indeed the
-affine subspace of solutions of the normal equations. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The set of least-squares solutions
+of $Ax = b$ is convex. This is stated in §5.5.1 of [golub2013matrix].
+
+Convexity is over $\mathbb{R}$. The set is the affine subspace of solutions of the normal
+equations. -/
 theorem convex_setOf_isLeastSquaresSolution (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     Convex ℝ {x | IsLeastSquaresSolution A b x} := by
   classical
@@ -459,9 +559,14 @@ theorem convex_setOf_isLeastSquaresSolution (A : Matrix m n 𝕜) (b : Euclidean
     hac, one_smul]
 
 open scoped ComplexOrder in
-/-- **The augmented system is nonsingular exactly for full column rank** ([golub2013matrix]
-(5.3.20)): `det [1 A; Aᴴ 0] = (-1)^n det (Aᴴ A)`, and `Aᴴ A` is nonsingular iff the columns of `A`
-are independent. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The augmented matrix
+$$\begin{bmatrix} I & A \\ A^H & 0 \end{bmatrix}$$
+is nonsingular if and only if the columns of $A$ are linearly independent. This matrix is the
+matrix of the augmented system (5.3.20) of [golub2013matrix].
+
+The matrix is `Matrix.fromBlocks 1 A Aᴴ 0`, indexed by `m ⊕ n`. Its determinant is
+$(-1)^n \det(A^H A)$, and $A^H A$ is nonsingular if and only if the columns of $A$ are linearly
+independent. -/
 theorem isUnit_augmented_iff [DecidableEq m] (A : Matrix m n 𝕜) :
     IsUnit (fromBlocks 1 A Aᴴ 0) ↔ LinearIndependent 𝕜 Aᵀ := by
   rw [isUnit_iff_isUnit_det, det_fromBlocks_one₁₁, zero_sub, det_neg, IsUnit.mul_iff,
@@ -476,8 +581,11 @@ theorem isUnit_augmented_iff [DecidableEq m] (A : Matrix m n 𝕜) :
   · intro h
     exact (posDef_conjTranspose_mul_self_of_linearIndependent h).isUnit
 
-/-- **A matrix with orthonormal columns gives the orthogonal projection onto its range**,
-`V Vᴴ` ([golub2013matrix] §2.5.1): the case `V⁺ = Vᴴ` of `Matrix.mul_pinv_eq_starProjection`. -/
+/-- Let $V \in \mathbb{K}^{m \times k}$ have orthonormal columns, $V^H V = I$. Then $V V^H$ is the
+orthogonal projection onto the range of $V$. This is stated in §2.5.1 of [golub2013matrix].
+
+This is the case $V^+ = V^H$ of `Matrix.mul_pinv_eq_starProjection`. The projection is
+`Submodule.starProjection`. -/
 theorem toEuclideanLin_mul_conjTranspose_eq_starProjection {k : Type*} [Fintype k]
     [DecidableEq k] [DecidableEq m] {V : Matrix m k 𝕜} (hV : Vᴴ * V = 1) :
     toEuclideanLin (V * Vᴴ) = ((LinearMap.range (toEuclideanLin V)).starProjection :
@@ -488,7 +596,8 @@ theorem toEuclideanLin_mul_conjTranspose_eq_starProjection {k : Type*} [Fintype 
   rw [← hp, mul_pinv_eq_starProjection]
 
 omit [Fintype m] in
-/-- The dimension of the range of `toEuclideanLin A` is the rank of `A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The range of $A$, as a map from $\mathbb{K}^n$ to
+$\mathbb{K}^m$, has dimension $\operatorname{rank} A$. -/
 theorem finrank_range_toEuclideanLin [Finite m] (A : Matrix m n 𝕜) :
     Module.finrank 𝕜 (LinearMap.range (toEuclideanLin A)) = A.rank := by
   classical
@@ -502,9 +611,11 @@ section Gradient
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n] [DecidableEq m]
 
-/-- **The gradient of the least-squares objective** ([golub2013matrix] §5.3.1): over `ℝ`, the
-function `x ↦ ‖A x - b‖² / 2` has gradient `Aᵀ (A x - b)`, so the normal equations say that the
-gradient vanishes. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$. At every $x \in \mathbb{R}^n$, the
+function $f(y) = \frac{1}{2} \|Ay - b\|^2$ has the gradient
+$$\nabla f(x) = A^T (Ax - b).$$
+Hence the normal equations say that the gradient vanishes. This is stated in §5.3.1 of
+[golub2013matrix]. -/
 theorem hasGradientAt_leastSquaresObjective (A : Matrix m n ℝ) (b : EuclideanSpace ℝ m)
     (x : EuclideanSpace ℝ n) :
     HasGradientAt (fun y => ‖toEuclideanLin A y - b‖ ^ 2 / 2)
@@ -538,10 +649,15 @@ section RangeComplement
 variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
   {R : Matrix (Fin M) (Fin N) 𝕜}
 
-/-- **`ran(A)⊥` is spanned by the trailing columns of `Q`** ([golub2013matrix] Theorem 5.2.2): for
-a full QR factorization of `A` with independent columns, the last `M - N` columns `q_i`
-(`Matrix.lastColumns`) are orthogonal to the range (`Aᴴ q_i = Rᴴ e_i = 0`), and they are `M - N`
-orthonormal vectors in a complement of dimension `M - N`. -/
+/-- Let $A \in \mathbb{K}^{M \times N}$ with $N \le M$ have linearly independent columns, and let
+$A = QR$ be a full QR factorization with columns $q_1, \dots, q_M$ of $Q$. Then the orthogonal
+complement of the range of $A$ is spanned by the last $M - N$ columns of $Q$:
+$$\operatorname{ran}(A)^\perp = \operatorname{span}\{q_{N+1}, \dots, q_M\}.$$
+This follows Theorem 5.2.2 of [golub2013matrix].
+
+The last columns are `Matrix.lastColumns Q`. They are orthogonal to the range, since
+$A^H q_i = R^H e_i = 0$ for $i > N$, and they are $M - N$ orthonormal vectors in a complement of
+dimension $M - N$. -/
 theorem IsQR.range_orthogonal_eq_span_lastColumns (h : IsQR A Q R) (hNM : N ≤ M)
     (hA : LinearIndependent 𝕜 Aᵀ) :
     (LinearMap.range (toEuclideanLin A))ᗮ
@@ -604,11 +720,14 @@ variable {p q : Type*} [Fintype p] [Fintype q]
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- **The pseudoinverse solves the matrix least-squares problem `min_X ‖A X - I‖_F` with least
-Frobenius norm** ([golub2013matrix] (5.5.3), where `X` is `n × m`): `‖A A⁺ - I‖_F ≤ ‖A X - I‖_F`
-for every `X`, and among the minimizers `A⁺` is the unique one of least Frobenius norm. Column
-`j` of `X` is a least-squares problem with right-hand side `e_j`, whose minimal-norm solution is
-`A⁺ e_j`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, and let the norm be the Frobenius norm. The pseudoinverse
+minimizes $X \mapsto \|AX - I\|_F$ over $X \in \mathbb{K}^{n \times m}$, and it is the unique
+minimizer of least norm: $\|A A^+ - I\|_F \le \|AX - I\|_F$ for every $X$, and every $X$ with
+$\|AX - I\|_F = \|A A^+ - I\|_F$ satisfies $\|A^+\|_F \le \|X\|_F$, with equality only for
+$X = A^+$. This is the problem (5.5.3) of [golub2013matrix].
+
+Column $j$ of $X$ is a least-squares problem with the right-hand side $e_j$, and its
+least-squares solution of least norm is $A^+ e_j$. -/
 theorem isMinOn_norm_mul_sub_one_pinv (A : Matrix m n 𝕜) :
     IsMinOn (fun X : Matrix n m 𝕜 => ‖A * X - 1‖) Set.univ A.pinv ∧
       ∀ X : Matrix n m 𝕜, ‖A * X - 1‖ = ‖A * A.pinv - 1‖ →
@@ -691,7 +810,8 @@ open scoped Matrix.Norms.Frobenius
 variable {r : Type*} [Fintype r] [DecidableEq r]
 
 omit [Fintype m] [Fintype r] [DecidableEq r] in
-/-- The rows of `A - F Kᴴ` are the residuals `a_i - K̄ f_i`, with `K̄ = K.map star`. -/
+/-- Row $i$ of $A - F K^H$ is $-(\bar K f_i - a_i)$, where $f_i$ and $a_i$ are the rows of $F$ and
+$A$ and $\bar K$ is the entrywise conjugate of $K$. -/
 private theorem toLp_sub_mul_conjTranspose_row (A : Matrix m r 𝕜) (K : Matrix r n 𝕜)
     (F : Matrix m n 𝕜) (i : m) :
     (WithLp.toLp 2 ((A - F * Kᴴ) i) : EuclideanSpace 𝕜 r)
@@ -705,7 +825,8 @@ private theorem toLp_sub_mul_conjTranspose_row (A : Matrix m r 𝕜) (K : Matrix
   exact Finset.sum_congr rfl fun l _ => mul_comm _ _
 
 omit [DecidableEq r] in
-/-- The squared Frobenius residual splits into row least-squares residuals. -/
+/-- The squared Frobenius norm $\|A - F K^H\|_F^2$ is the sum over $i$ of the squared residuals
+$\|\bar K f_i - a_i\|^2$ of the rows. -/
 private theorem norm_sub_mul_conjTranspose_sq (A : Matrix m r 𝕜) (K : Matrix r n 𝕜)
     (F : Matrix m n 𝕜) :
     ‖A - F * Kᴴ‖ ^ 2 = ∑ i, ‖toEuclideanLin (K.map star) (WithLp.toLp 2 (F i))
@@ -715,11 +836,17 @@ private theorem norm_sub_mul_conjTranspose_sq (A : Matrix m r 𝕜) (K : Matrix 
   exact Finset.sum_congr rfl fun i _ => by rw [toLp_sub_mul_conjTranspose_row, norm_neg]
 
 omit [DecidableEq n] [DecidableEq r] in
-/-- **Least squares with a matrix unknown on the left** (the normal equations of one CP-ALS update,
-[golub2013matrix] (12.5.16)–(12.5.20)): `F` minimizes `F ↦ ‖A - F Kᴴ‖_F` iff
-`F (Kᴴ K) = A K`. Row by row, `‖A - F Kᴴ‖_F² = ∑_i ‖K̄ f_i - a_i‖²` with `K̄ = K.map star`, and each
-row is an ordinary least-squares problem (`Matrix.isLeastSquaresSolution_iff_normalEquations`);
-a row that is not optimal can be replaced alone. -/
+/-- Let $A \in \mathbb{K}^{m \times r}$, $K \in \mathbb{K}^{r \times n}$ and
+$F \in \mathbb{K}^{m \times n}$, and let the norm be the Frobenius norm. Then $F$ minimizes
+$G \mapsto \|A - G K^H\|_F$ over all $G \in \mathbb{K}^{m \times n}$ if and only if
+$$F K^H K = A K.$$
+These are the normal equations of one update of the alternating least-squares method for the CP
+decomposition, [golub2013matrix] (12.5.16)–(12.5.20).
+
+Row by row, $\|A - F K^H\|_F^2 = \sum_i \|\bar K f_i - a_i\|^2$ with $\bar K$ the entrywise
+conjugate of $K$ (`K.map star`), so each row is an ordinary least-squares problem
+(`Matrix.isLeastSquaresSolution_iff_normalEquations`). A row that is not optimal can be replaced
+alone. -/
 theorem isMinOn_norm_sub_mul_conjTranspose_iff (A : Matrix m r 𝕜)
     (K : Matrix r n 𝕜) (F : Matrix m n 𝕜) :
     IsMinOn (fun G : Matrix m n 𝕜 => ‖A - G * Kᴴ‖) Set.univ F ↔ F * (Kᴴ * K) = A * K := by
@@ -768,8 +895,11 @@ theorem isMinOn_norm_sub_mul_conjTranspose_iff (A : Matrix m r 𝕜)
     exact pow_le_pow_left₀ (norm_nonneg _) (((hrow i).2 (congrFun h i)) _) 2
 
 omit [DecidableEq n] [DecidableEq r] [Fintype m] in
-/-- **The matrix least-squares problem `min_F ‖A - F Kᴴ‖_F` has a solution**: row `i` of `F` is
-`K̄⁺ a_i`, the pseudoinverse solution of its row problem. -/
+/-- Let $A \in \mathbb{K}^{m \times r}$ and $K \in \mathbb{K}^{r \times n}$. Then some
+$F \in \mathbb{K}^{m \times n}$ satisfies $F K^H K = A K$, so the problem
+$\min_F \|A - F K^H\|_F$ has a solution.
+
+Row $i$ of $F$ can be taken to be $\bar K^+ a_i$, the pseudoinverse solution of its row problem. -/
 theorem exists_mul_conjTranspose_mul_self_eq [Finite m] (A : Matrix m r 𝕜)
     (K : Matrix r n 𝕜) : ∃ F : Matrix m n 𝕜, F * (Kᴴ * K) = A * K := by
   classical
@@ -785,17 +915,22 @@ theorem exists_mul_conjTranspose_mul_self_eq [Finite m] (A : Matrix m r 𝕜)
 
 end MatrixUnknown
 
-/-! ### Underdetermined systems through a QR factorization of `Aᴴ` -/
+/-! ### Underdetermined systems through a QR factorization of $A^H$ -/
 
 section ThinQR
 
 variable {N : ℕ} [DecidableEq m]
 
-/-- **Minimal-norm solutions of a full-row-rank system through a QR factorization of `Aᴴ`**
-([golub2013matrix] §5.6.2, Algorithm 5.6.2): if `Aᴴ = Q R` is a thin QR factorization with `R`
-nonsingular, then `A⁺ = Q (Rᴴ)⁻¹`, so `x = Q (Rᴴ)⁻¹ b` is the minimal-norm solution of `A x = b`
-(`Matrix.isMinNormLeastSquaresSolution_pinv`). With `A = Rᴴ Qᴴ`, `A (Q (Rᴴ)⁻¹) = 1` and
-`Q (Rᴴ)⁻¹ A = Q Qᴴ`, so the four Penrose conditions hold. -/
+/-- Let $A \in \mathbb{K}^{N \times m}$, and let $A^H = QR$ be a thin QR factorization:
+$Q \in \mathbb{K}^{m \times N}$ with $Q^H Q = I$, and $R \in \mathbb{K}^{N \times N}$ upper
+triangular. If $R$ is nonsingular, then
+$$A^+ = Q (R^H)^{-1}.$$
+Hence $x = Q (R^H)^{-1} b$ is the least-squares solution of least norm of $Ax = b$
+(`Matrix.isMinNormLeastSquaresSolution_pinv`). This is the method of §5.6.2 of
+[golub2013matrix], Algorithm 5.6.2, for a matrix of full row rank.
+
+The thin QR factorization is `Matrix.IsThinQR`. With $A = R^H Q^H$, we have $A Q (R^H)^{-1} = I$
+and $Q (R^H)^{-1} A = Q Q^H$, so the four Penrose conditions hold. -/
 theorem pinv_eq_of_isThinQR_conjTranspose {A : Matrix (Fin N) m 𝕜} {Q : Matrix m (Fin N) 𝕜}
     {R : Matrix (Fin N) (Fin N) 𝕜} (h : IsThinQR Aᴴ Q R) (hR : IsUnit R) :
     A.pinv = Q * (Rᴴ)⁻¹ := by

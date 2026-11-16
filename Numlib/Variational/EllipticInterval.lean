@@ -9,74 +9,81 @@ import Numlib.Variational.Galerkin
 /-!
 # The elliptic two-point boundary value problem in weak form
 
-The weak formulation of the one-dimensional elliptic problem
+This file gives the weak formulation of the one-dimensional elliptic problem $$-(\alpha u')' + \beta
+u' + \gamma u = f \quad \text{on } (a, b),$$ with Dirichlet, Neumann or mixed boundary conditions,
+following [quarteroni2000numerical], §12.4.1 and §12.4.3–12.4.4. The bilinear form is $$a(u, v) =
+\int_a^b (\alpha u' v' + \beta u' v + \gamma u v)$$ on $H^1(a, b)$, with coefficients
+$\alpha, \beta, \gamma \in L^\infty(a, b)$, and the load functional is
+$v \mapsto (f, v) = \int_a^b f v$ for $f \in L^2(a, b)$. The file proves the boundedness and the
+coercivity of the form, the existence and uniqueness of the weak solution in $H^1_0(a, b)$ by the
+Lax–Milgram theorem with the stability estimate (12.51), the $H^2$ regularity of the weak solution,
+and the Galerkin error bounds: Céa's lemma with the constant of Theorem 12.3, and the Aubin–Nitsche
+$L^2$ estimate behind (12.60). Below, $C_P = (b - a)/\sqrt{2}$ is the Poincaré constant,
+$|v|_{H^1} = \|v'\|_{L^2}$ is the $H^1$ seminorm, and $\|\alpha\|_\infty$ is the norm of
+$L^\infty(a, b)$.
 
-`-(α u')' + β u' + γ u = f` on `(a, b)`
-
-with Dirichlet, Neumann or mixed boundary conditions ([quarteroni2000numerical] §12.4.1,
-§12.4.3–12.4.4): the bilinear form `a(u, v) = ∫_a^b (α u' v' + β u' v + γ u v)` on
-`H^1(a, b)`, its boundedness and coercivity constants, existence and uniqueness of the weak
-solution in `H^1_0(a, b)` by Lax–Milgram with the stability estimate (12.51), the `H²`
-regularity of the weak solution, and the Galerkin error bounds — Céa's lemma with the constant
-of Theorem 12.3, and the Aubin–Nitsche `L²` estimate behind (12.60).
-
-The regularity of weak solutions and the boundary conditions other than the homogeneous
-Dirichlet one (the inhomogeneous Dirichlet, Neumann, mixed, Robin and periodic problems of
-[brezis2011functional] §8.4, and the problem on `ℝ`) are in `EllipticInterval/BoundaryConditions`,
-the maximum principle for the two-point boundary value problem in
-`EllipticInterval/MaximumPrinciple`, and the Sturm–Liouville eigenvalue problem in
-`EllipticInterval/SturmLiouville`; this module is their common base.
+This module is the common base of three others. Regularity results for weak solutions and the
+boundary conditions other than the homogeneous Dirichlet one (the inhomogeneous Dirichlet, Neumann,
+mixed, Robin and periodic problems of [brezis2011functional], §8.4, and the problem on $\mathbb{R}$)
+are in `Numlib.Variational.EllipticInterval.BoundaryConditions`. The maximum principle for the
+two-point boundary value problem is in `Numlib.Variational.EllipticInterval.MaximumPrinciple`, and
+the Sturm–Liouville eigenvalue problem is in `Numlib.Variational.EllipticInterval.SturmLiouville`.
 
 ## Main definitions
 
-* `EllipticInterval.form a b α β γ`, the bilinear form `(12.44)` as a `SesqForm ℝ (H^1(a, b))`,
-  for coefficients `α β γ ∈ L^∞(a, b)` (the book has them continuous on `[a, b]`; `L^∞` costs
-  nothing and covers piecewise constant coefficients);
-* `EllipticInterval.load a b f`, the load functional `v ↦ ∫_a^b f v` for `f ∈ L²(a, b)`;
-* `EllipticInterval.modelForm a b = form a b 1 0 1`, the form of the model operator `−u'' + u`,
-  which is the `H¹(a, b)` inner product (`modelForm_eq_innerSL`);
-* the weak problem is posed on `H^1_0(a, b)` through `SesqForm.restrict a K`, the restriction
-  of a bounded form to a subspace (`Numlib/Variational/Forms.lean`).
+* `EllipticInterval.form`: the bilinear form $a$ of (12.44), as a
+  `SesqForm ℝ (SobolevInterval 1 a b)`, for coefficients $\alpha, \beta, \gamma \in L^\infty(a, b)$.
+* `EllipticInterval.load`: the load functional $v \mapsto \int_a^b f v$ for $f \in L^2(a, b)$.
+* `EllipticInterval.modelForm`: the form of the model operator $-u'' + u$, which is the inner
+  product of $H^1(a, b)$.
+* `EllipticInterval.constLinf`: a real constant as an element of $L^\infty(a, b)$.
 
-The weak problem on `H^1_0(a, b)` — find `u ∈ H^1_0` with `a(u, v) = (f, v)` for all
-`v ∈ H^1_0` — is `IsGalerkinSolution (form a b α β γ) (load a b f) (SobolevIntervalZero a b) u`,
-the Galerkin problem of `Numlib/Variational/Galerkin.lean` with the whole of `H^1_0(a, b)` as
-trial space; a Galerkin approximation in a subspace `K ≤ H^1_0(a, b)` is the same predicate with
-`K`. Nothing here distinguishes the continuous problem from its discretizations, which is what
-lets the stability estimate (12.51) and Céa's lemma be stated once.
-
-## Main statements
+## Main results
 
 * `EllipticInterval.form_apply`: the form is the integral (12.44).
-* `EllipticInterval.form_isBoundedWith`: boundedness `|a(u, v)| ≤ (‖α‖_∞ + ‖β‖_∞ + ‖γ‖_∞) ‖u‖ ‖v‖`
-  in the `H^1` norm, and `EllipticInterval.abs_form_le_seminorm`, boundedness on `H^1_0(a, b)`
-  in the seminorm with the constant `‖α‖_∞ + C_P ‖β‖_∞ + C_P² ‖γ‖_∞`, `C_P = (b - a)/√2`.
-* `EllipticInterval.form_isCoerciveWith_seminorm`: coercivity `α₀ |v|² ≤ a(v, v)` in the
-  seminorm for `α ≥ α₀`, `β = 0`, `γ ≥ 0`, and `EllipticInterval.form_isCoerciveWith_seminorm_of_le`
-  under the book's condition (12.50), `-β'/2 + γ ≥ 0`, for `v ∈ H^1_0(a, b)`.
-* `EllipticInterval.existsUnique_isWeakSolution`: **existence and uniqueness of the weak
-  solution** by Lax–Milgram, with `EllipticInterval.seminorm_le_of_isGalerkinSolution`, the
-  stability estimate `|u|_{H^1} ≤ (C_P/α₀) ‖f‖_{L²}` (12.51) for the solution in any subspace.
-* `EllipticInterval.isWeakSolution_of_classical`: **a classical solution is a weak solution**,
-  the derivation of (12.43); `EllipticInterval.isWeakSolution_of_classical_neumann`, the same
-  for the Neumann and mixed problems, with the boundary terms.
-* `EllipticInterval.galerkin_seminorm_sub_le`: **Céa's lemma with the constant of
-  Theorem 12.3**, `|u - u_h| ≤ α₀⁻¹ (‖α‖_∞ + C_P² ‖γ‖_∞) |u - w_h|`.
-* `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` (**`H²` regularity** from the
-  weak equation tested against `H^1_0(a, b)` alone, `u` not assumed to vanish at the endpoints;
-  Brezis, §8.4, Steps C and D) and its cases
-  `EllipticInterval.isWeakSolution_mem_sobolevInterval_two`: **`H²` regularity** of the weak
-  solution when `α` is `C¹`, and `EllipticInterval.galerkin_norm_sub_le_l2`, the Aubin–Nitsche
-  `L²` estimate.
+* `EllipticInterval.form_isBoundedWith`: $|a(u, v)| \le (\|\alpha\|_\infty + \|\beta\|_\infty +
+  \|\gamma\|_\infty) \|u\|_{H^1} \|v\|_{H^1}$.
+* `EllipticInterval.abs_form_le_seminorm`: on $H^1_0(a, b)$, $|a(u, v)| \le (\|\alpha\|_\infty + C_P
+  \|\beta\|_\infty + C_P^2 \|\gamma\|_\infty) |u|_{H^1} |v|_{H^1}$.
+* `EllipticInterval.form_isCoerciveWith_seminorm`: if $\beta = 0$, $\alpha \ge \alpha_0$ and
+  $\gamma \ge 0$, then $\alpha_0 |v|_{H^1}^2 \le a(v, v)$.
+* `EllipticInterval.form_isCoerciveWith_seminorm_of_le`: the same bound on $H^1_0(a, b)$ under the
+  condition (12.50), $-\beta'/2 + \gamma \ge 0$.
+* `EllipticInterval.existsUnique_isWeakSolution`: existence and uniqueness of the weak solution of
+  the Dirichlet problem, by the Lax–Milgram theorem.
+* `EllipticInterval.seminorm_le_of_isGalerkinSolution`: the stability estimate (12.51),
+  $|u|_{H^1} \le (C_P/\alpha_0) \|f\|_{L^2}$, for the solution in any subspace of $H^1_0(a, b)$.
+* `EllipticInterval.isWeakSolution_of_classical`: a classical solution of the Dirichlet problem is a
+  weak solution; this is the derivation of (12.43).
+* `EllipticInterval.isWeakSolution_of_classical_neumann`: the same for the Neumann and mixed
+  problems, with the boundary terms.
+* `EllipticInterval.galerkin_seminorm_sub_le`: Céa's lemma with the constant of Theorem 12.3, $|u -
+  u_h|_{H^1} \le \alpha_0^{-1} (\|\alpha\|_\infty + C_P^2 \|\gamma\|_\infty) |u - w_h|_{H^1}$.
+* `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`: $H^2$ regularity of a solution
+  of the weak equation tested against $H^1_0(a, b)$ alone, with no boundary condition on $u$, as in
+  Steps C and D of [brezis2011functional], §8.4.
+* `EllipticInterval.isWeakSolution_mem_sobolevInterval_two`: $H^2$ regularity of the weak solution
+  when $\alpha$ is $C^1$ and does not vanish.
+* `EllipticInterval.galerkin_norm_sub_le_l2`: the Aubin–Nitsche $L^2$ estimate.
 
 ## Implementation notes
 
-The form is assembled from three `L²` pairings `⟪T u^{(i)}, v^{(j)}⟫` of the components of
-`H^1(a, b)`, where `T` is multiplication by an `L^∞` coefficient — Mathlib's Hölder product
-`ContinuousLinearMap.holderL` at the exponents `(2, ∞, 2)` — so that continuity in both slots
-is inherited and `form_apply` is a computation of inner products. The coefficients are
-elements of `Lp ℝ ⊤`; a continuous coefficient enters through
-`ContinuousOn.memLp_top_restrict_Ioo`, and the book's `‖α‖_∞` is the norm of `Lp ℝ ⊤`.
+* The weak problem on $H^1_0(a, b)$ is to find $u \in H^1_0(a, b)$ with $a(u, v) = (f, v)$ for all
+  $v \in H^1_0(a, b)$. In Lean it is `IsGalerkinSolution (EllipticInterval.form a b α β γ)
+  (EllipticInterval.load a b f) (SobolevIntervalZero a b) u`, the Galerkin problem of
+  `Numlib.Variational.Galerkin` with all of $H^1_0(a, b)$ as trial space. A Galerkin approximation
+  in a subspace $K \le H^1_0(a, b)$ is the same predicate with $K$. So the continuous problem and
+  its discretizations are one predicate, and the stability estimate (12.51) and Céa's lemma are
+  stated once. The restriction of a form to a subspace is `SesqForm.restrict`.
+* The source takes continuous coefficients on $[a, b]$. Here the coefficients are in
+  $L^\infty(a, b)$, which costs nothing and covers piecewise constant coefficients. They are
+  elements of `Lp ℝ ⊤`, and $\|\alpha\|_\infty$ is the norm of this space. A continuous
+  coefficient enters through `ContinuousOn.memLp_top_restrict_Ioo`.
+* The form is the sum of three $L^2$ pairings $\langle T u^{(i)}, v^{(j)} \rangle$ of the
+  derivatives of elements of $H^1(a, b)$, where $T$ is the multiplication by an $L^\infty$
+  coefficient. This multiplication is Mathlib's Hölder product `ContinuousLinearMap.holderL` at the
+  exponents $(2, \infty, 2)$. So the form is continuous in both arguments, and
+  `EllipticInterval.form_apply` is a computation of inner products.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -90,20 +97,24 @@ variable {a b : ℝ}
 
 /-! ### The bilinear form -/
 
-/-- Multiplication by an `L^∞(a, b)` coefficient, as a continuous linear map on `L²(a, b)`:
-Mathlib's Hölder product at the exponents `(2, ∞, 2)`. -/
+/-- Multiplication by a coefficient $\alpha \in L^\infty(a, b)$, as the continuous linear map
+$f \mapsto \alpha f$ on $L^2(a, b)$.
+
+It is Mathlib's Hölder product `ContinuousLinearMap.holderL` at the exponents $(2, \infty, 2)$. -/
 def mulL (α : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
     Lp ℝ 2 (volume.restrict (Ioo a b)) →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b)) :=
   ((ContinuousLinearMap.mul ℝ ℝ).holderL (volume.restrict (Ioo a b)) 2 ⊤ 2).flip α
 
-/-- `EllipticInterval.mulL α f` is the pointwise product `α f` almost everywhere. -/
+/-- For $\alpha \in L^\infty(a, b)$ and $f \in L^2(a, b)$, `EllipticInterval.mulL α f` is the
+pointwise product $\alpha f$ almost everywhere on $(a, b)$. -/
 theorem coeFn_mulL (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     mulL α f =ᵐ[volume.restrict (Ioo a b)] fun x ↦ α x * f x := by
   refine ((ContinuousLinearMap.mul ℝ ℝ).coeFn_holder f α).trans (Eventually.of_forall fun x ↦ ?_)
   simp [mul_comm]
 
-/-- `‖α f‖_{L²} ≤ ‖α‖_∞ ‖f‖_{L²}`. -/
+/-- For $\alpha \in L^\infty(a, b)$ and $f \in L^2(a, b)$, $\|\alpha f\|_{L^2} \le \|\alpha\|_\infty
+\|f\|_{L^2}$. -/
 theorem norm_mulL_apply_le (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : ‖mulL α f‖ ≤ ‖α‖ * ‖f‖ := by
   refine ((ContinuousLinearMap.mul ℝ ℝ).norm_holder_apply_apply_le f α).trans ?_
@@ -113,19 +124,22 @@ theorem norm_mulL_apply_le (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
 
 /-! ### Constant coefficients -/
 
-/-- **A constant, as an element of `L^∞(a, b)`**: the coefficients of the elliptic form
-`EllipticInterval.form` live in `L^∞(a, b)`, and the constant-coefficient problems — the model
-problem of [quarteroni2000numerical] §12.2, the advection-diffusion problem of §12.5 and the
-heat equation of §13.2 — need the constants in that space. -/
+/-- A real constant $c$ as an element of $L^\infty(a, b)$.
+
+The coefficients of `EllipticInterval.form` are elements of $L^\infty(a, b)$, and the problems
+with constant coefficients need the constants in that space: the model problem of
+[quarteroni2000numerical], §12.2, the advection–diffusion problem of §12.5 and the heat equation
+of §13.2. -/
 def constLinf (a b : ℝ) (c : ℝ) : Lp ℝ ⊤ (volume.restrict (Ioo a b)) :=
   (memLp_top_const c).toLp _
 
-/-- The function of `EllipticInterval.constLinf a b c` is the constant `c`. -/
+/-- The function of `EllipticInterval.constLinf a b c` is the constant $c$ almost everywhere on
+$(a, b)$. -/
 theorem coeFn_constLinf (a b c : ℝ) :
     constLinf a b c =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ c :=
   MemLp.coeFn_toLp _
 
-/-- The `L^∞(a, b)` norm of a constant is its absolute value. -/
+/-- If $a < b$, then the $L^\infty(a, b)$ norm of the constant $c$ is $|c|$. -/
 theorem norm_constLinf (hab : a < b) (c : ℝ) : ‖constLinf a b c‖ = |c| := by
   have hμ : volume.restrict (Ioo a b) ≠ 0 := by
     rw [Ne, Measure.restrict_eq_zero, Real.volume_Ioo, ENNReal.ofReal_eq_zero, not_le]
@@ -135,7 +149,7 @@ theorem norm_constLinf (hab : a < b) (c : ℝ) : ‖constLinf a b c‖ = |c| := 
     eLpNormEssSup_const c hμ]
   simp [Real.norm_eq_abs]
 
-/-- The zero constant is the zero element of `L^∞(a, b)`. -/
+/-- The constant $0$ is the zero element of $L^\infty(a, b)$. -/
 @[simp]
 theorem constLinf_zero (a b : ℝ) : constLinf a b 0 = 0 := by
   refine Lp.ext ?_
@@ -144,7 +158,8 @@ theorem constLinf_zero (a b : ℝ) : constLinf a b 0 = 0 := by
   rw [h1, h2]
   rfl
 
-/-- Multiplication by a constant coefficient is the scalar multiple. -/
+/-- Multiplication by the constant coefficient $c$ is the scalar multiplication $f \mapsto c f$ on
+$L^2(a, b)$. -/
 theorem mulL_constLinf (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     mulL (constLinf a b c) f = c • f := by
   refine Lp.ext ?_
@@ -153,35 +168,42 @@ theorem mulL_constLinf (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
   rw [h1, h2, h3, Pi.smul_apply, smul_eq_mul]
 
 variable (a b) in
-/-- The pairing `(u, v) ↦ ⟪T u^{(i)}, v^{(j)}⟫_{L²(a, b)}` of the derivatives of orders `i, j` of
-elements of `H^1(a, b)` through a bounded operator `T` on `L²(a, b)`, as a bounded bilinear
-form on `H^1(a, b)`. -/
+/-- Let $T$ be a bounded operator on $L^2(a, b)$ and $i, j \in \{0, 1\}$. The bounded bilinear form
+$(u, v) \mapsto \langle T u^{(i)}, v^{(j)} \rangle_{L^2(a, b)}$ on $H^1(a, b)$, where $u^{(i)}$
+is the derivative of order $i$. -/
 def pairing (T : Lp ℝ 2 (volume.restrict (Ioo a b)) →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b)))
     (i j : Fin 2) : SesqForm ℝ (SobolevInterval 1 a b) :=
   (((innerSL ℝ).comp (T.comp (SobolevInterval.derivL 1 a b i))).flip.comp
     (SobolevInterval.derivL 1 a b j)).flip
 
-/-- `EllipticInterval.pairing` is the inner product it was built from. -/
+/-- The pairing `EllipticInterval.pairing a b T i j` at $(u, v)$ is the inner product
+$\langle T u^{(i)}, v^{(j)} \rangle_{L^2(a, b)}$. -/
 theorem pairing_apply
     (T : Lp ℝ 2 (volume.restrict (Ioo a b)) →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b)))
     (i j : Fin 2) (u v : SobolevInterval 1 a b) :
     pairing a b T i j u v = ⟪T (SobolevInterval.deriv u i), SobolevInterval.deriv v j⟫_ℝ := rfl
 
 variable (a b) in
-/-- **The bilinear form of the two-point boundary value problem**,
-`a(u, v) = ∫_a^b (α u' v' + β u' v + γ u v)`, [quarteroni2000numerical] (12.44), as a bounded
-bilinear form on `H^1(a, b)`, for coefficients `α β γ ∈ L^∞(a, b)`. -/
+/-- The **bilinear form of the two-point boundary value problem**: for coefficients
+$\alpha, \beta, \gamma \in L^\infty(a, b)$, $$a(u, v) = \int_a^b (\alpha u' v' + \beta u' v +
+\gamma u v),$$ as a bounded bilinear form on $H^1(a, b)$. This is (12.44) of
+[quarteroni2000numerical].
+
+The form is the sum of three `EllipticInterval.pairing` terms with the multiplication operators
+`EllipticInterval.mulL`. -/
 def form (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) : SesqForm ℝ (SobolevInterval 1 a b) :=
   pairing a b (mulL α) 1 1 + pairing a b (mulL β) 1 0 + pairing a b (mulL γ) 0 0
 
-/-- The form as a sum of three `L²` inner products. -/
+/-- The form is a sum of three $L^2$ inner products: $a(u, v) = \langle \alpha u', v' \rangle +
+\langle \beta u', v \rangle + \langle \gamma u, v \rangle$. -/
 theorem form_apply_inner (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (u v : SobolevInterval 1 a b) :
     form a b α β γ u v = ⟪mulL α (SobolevInterval.deriv u 1), SobolevInterval.deriv v 1⟫_ℝ +
       ⟪mulL β (SobolevInterval.deriv u 1), SobolevInterval.deriv v 0⟫_ℝ +
       ⟪mulL γ (SobolevInterval.deriv u 0), SobolevInterval.deriv v 0⟫_ℝ := rfl
 
-/-- `⟪α f, g⟫_{L²} = ∫_a^b α f g`. -/
+/-- For $\alpha \in L^\infty(a, b)$ and $f, g \in L^2(a, b)$, $\langle \alpha f, g \rangle_{L^2} =
+\int_a^b \alpha f g$. -/
 theorem inner_mulL_eq_integral (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f g : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ⟪mulL α f, g⟫_ℝ = ∫ x in Ioo a b, α x * f x * g x := by
@@ -190,7 +212,8 @@ theorem inner_mulL_eq_integral (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
   simp only [hx, RCLike.inner_apply, conj_trivial]
   ring
 
-/-- The product of an `L^∞` coefficient and two `L²` functions is integrable on `(a, b)`. -/
+/-- For $\alpha \in L^\infty(a, b)$ and $f, g \in L^2(a, b)$, the product $\alpha f g$ is integrable
+on $(a, b)$. -/
 theorem integrable_mul_mul (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f g : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     Integrable (fun x ↦ α x * f x * g x) (volume.restrict (Ioo a b)) := by
@@ -198,8 +221,11 @@ theorem integrable_mul_mul (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
   simp only [hx, RCLike.inner_apply, conj_trivial]
   ring
 
-/-- **The bilinear form is the integral (12.44)**:
-`a(u, v) = ∫_a^b (α u' v' + β u' v + γ u v)`. -/
+/-- **The bilinear form is the integral (12.44)**: for all $u, v \in H^1(a, b)$, $$a(u, v) =
+\int_a^b (\alpha u' v' + \beta u' v + \gamma u v).$$
+
+Here $u$ and $u'$ are the functions of the components `SobolevInterval.deriv u 0` and
+`SobolevInterval.deriv u 1`. -/
 theorem form_apply (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (u v : SobolevInterval 1 a b) :
     form a b α β γ u v = ∫ x in Ioo a b,
       (α x * SobolevInterval.deriv u 1 x * SobolevInterval.deriv v 1 x
@@ -214,40 +240,43 @@ theorem form_apply (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (u v : So
     ← integral_add h12 (integrable_mul_mul _ _ _)]
 
 variable (a b) in
-/-- **The load functional** `v ↦ (f, v) = ∫_a^b f v` for `f ∈ L²(a, b)`, as a continuous linear
-functional on `H^1(a, b)`. -/
+/-- The **load functional** $v \mapsto (f, v) = \int_a^b f v$ for $f \in L^2(a, b)$, as a continuous
+linear functional on $H^1(a, b)$. -/
 def load (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : SobolevInterval 1 a b →L[ℝ] ℝ :=
   (innerSL ℝ f).comp (SobolevInterval.derivL 1 a b 0)
 
-/-- The load functional is the `L²` inner product with `f`. -/
+/-- The load functional is the $L^2$ inner product with $f$: $(f, v) = \langle f, v \rangle_{L^2}$.
+-/
 theorem load_apply_inner (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (v : SobolevInterval 1 a b) :
     load a b f v = ⟪f, SobolevInterval.deriv v 0⟫_ℝ := rfl
 
-/-- The load functional is the integral `∫_a^b f v`. -/
+/-- The load functional is the integral $(f, v) = \int_a^b f v$. -/
 theorem load_apply (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (v : SobolevInterval 1 a b) :
     load a b f v = ∫ x in Ioo a b, f x * SobolevInterval.deriv v 0 x := by
   rw [load_apply_inner, L2.inner_def]
   refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
   simp [RCLike.inner_apply, mul_comm]
 
-/-- `|(f, v)| ≤ ‖f‖_{L²} ‖v‖_{L²}`. -/
+/-- For $f \in L^2(a, b)$ and $v \in H^1(a, b)$, $|(f, v)| \le \|f\|_{L^2} \|v\|_{L^2}$. -/
 theorem abs_load_le (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (v : SobolevInterval 1 a b) :
     |load a b f v| ≤ ‖f‖ * ‖SobolevInterval.deriv v 0‖ := by
   rw [load_apply_inner]; exact abs_real_inner_le_norm _ _
 
-/-- The load functional has norm at most `‖f‖_{L²}`. -/
+/-- The load functional of $f$ has operator norm at most $\|f\|_{L^2}$ on $H^1(a, b)$. -/
 theorem norm_load_le (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : ‖load a b f‖ ≤ ‖f‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v ↦ ?_
   rw [Real.norm_eq_abs]
   exact (abs_load_le f v).trans (by gcongr; exact SobolevInterval.norm_deriv_le v 0)
 
-/-- The load functional is additive in `f`. -/
+/-- The load functional is additive in $f$: the functional of $f + g$ is the sum of the functionals
+of $f$ and $g$. -/
 theorem load_add (f g : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     load a b (f + g) = load a b f + load a b g := by
   ext v
   rw [add_apply, load_apply_inner, load_apply_inner, load_apply_inner, inner_add_left]
 
-/-- The load functional is homogeneous in `f`. -/
+/-- The load functional is homogeneous in $f$: the functional of $c f$ is $c$ times the functional
+of $f$. -/
 theorem load_smul (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     load a b (c • f) = c • load a b f := by
   ext v
@@ -257,43 +286,48 @@ theorem load_smul (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
 /-! ### The model form -/
 
 variable (a b) in
-/-- **The form of the model operator `−u'' + u`**: `form a b 1 0 1`,
-`a(u, v) = ∫_a^b (u' v' + u v)`, which is the `H¹(a, b)` inner product
-(`EllipticInterval.modelForm_eq_innerSL`). It is the form of every problem of
-[brezis2011functional] §8.4 except the Sturm–Liouville Example 2. -/
+/-- The **form of the model operator** $-u'' + u$: the form `EllipticInterval.form` with
+$\alpha = 1$, $\beta = 0$ and $\gamma = 1$, $$a(u, v) = \int_a^b (u' v' + u v).$$ It is the
+inner product of $H^1(a, b)$ (`EllipticInterval.modelForm_eq_innerSL`). It is the form of every
+problem of [brezis2011functional], §8.4, except the Sturm–Liouville Example 2. -/
 abbrev modelForm : SesqForm ℝ (SobolevInterval 1 a b) :=
   form a b (constLinf a b 1) 0 (constLinf a b 1)
 
-/-- Multiplication by the zero coefficient is zero. -/
+/-- Multiplication by the zero coefficient is the zero map: $0 \cdot f = 0$ for $f \in L^2(a, b)$.
+-/
 theorem mulL_zero (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : mulL (0 : Lp ℝ ⊤ _) f = 0 := by
   rw [← constLinf_zero a b, mulL_constLinf, zero_smul]
 
-/-- The model form is the `H¹` inner product. -/
+/-- The model form is the inner product of $H^1(a, b)$: $\int_a^b (u' v' + u v) = \langle u, v
+\rangle_{H^1}$. -/
 theorem modelForm_apply (u v : SobolevInterval 1 a b) : modelForm a b u v = ⟪u, v⟫_ℝ := by
   rw [modelForm, form_apply_inner, mulL_constLinf, mulL_constLinf, mulL_zero, one_smul, one_smul,
     inner_zero_left, add_zero, SobolevInterval.inner_eq, Fin.sum_univ_two, add_comm]
 
-/-- The model form is `innerSL ℝ`. -/
+/-- The model form equals the inner product `innerSL ℝ` of $H^1(a, b)$, as a bounded bilinear form.
+-/
 theorem modelForm_eq_innerSL : modelForm a b = innerSL ℝ := by
   ext u v
   exact modelForm_apply u v
 
-/-- The model form is coercive with constant `1`. -/
+/-- The model form is coercive with constant $1$: $\|v\|_{H^1}^2 \le a(v, v)$ for every
+$v \in H^1(a, b)$. -/
 theorem modelForm_isCoerciveWith : (modelForm a b).IsCoerciveWith 1 := by
   rw [modelForm_eq_innerSL]; exact SesqForm.innerSL_isCoerciveWith
 
-/-- The model form is symmetric. -/
+/-- The model form is Hermitian, that is, symmetric. -/
 theorem modelForm_isHermitian : (modelForm a b).IsHermitian := by
   rw [modelForm_eq_innerSL]; exact SesqForm.innerSL_isHermitian
 
-/-- The model form is symmetric, unbundled. -/
+/-- The model form is symmetric: $a(u, v) = a(v, u)$ for all $u, v \in H^1(a, b)$. -/
 theorem modelForm_comm (u v : SobolevInterval 1 a b) : modelForm a b u v = modelForm a b v u := by
   rw [modelForm_apply, modelForm_apply, real_inner_comm]
 
 /-! ### Boundedness and coercivity -/
 
-/-- Each pairing through a multiplication operator is bounded by the `L^∞` norm of the
-coefficient times the `L²` norms of the derivatives. -/
+/-- For $\alpha \in L^\infty(a, b)$ and $i, j \in \{0, 1\}$, $$|\langle \alpha u^{(i)}, v^{(j)}
+\rangle| \le \|\alpha\|_\infty \|u^{(i)}\|_{L^2} \|v^{(j)}\|_{L^2}.$$
+-/
 theorem abs_pairing_mulL_le (α : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (i j : Fin 2)
     (u v : SobolevInterval 1 a b) :
     |pairing a b (mulL α) i j u v|
@@ -301,8 +335,9 @@ theorem abs_pairing_mulL_le (α : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (i j :
   rw [pairing_apply]
   exact (abs_real_inner_le_norm _ _).trans (by gcongr; exact norm_mulL_apply_le α _)
 
-/-- **Boundedness of the form in the `H^1` norm**, [quarteroni2000numerical] (12.55):
-`|a(u, v)| ≤ (‖α‖_∞ + ‖β‖_∞ + ‖γ‖_∞) ‖u‖_{H^1} ‖v‖_{H^1}`. -/
+/-- **Boundedness of the form in the $H^1$ norm**: for all $u, v \in H^1(a, b)$, $$|a(u, v)| \le
+(\|\alpha\|_\infty + \|\beta\|_\infty + \|\gamma\|_\infty) \|u\|_{H^1} \|v\|_{H^1}.$$ This is
+(12.55) of [quarteroni2000numerical]. -/
 theorem form_isBoundedWith (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
     (form a b α β γ).IsBoundedWith (‖α‖ + ‖β‖ + ‖γ‖) := by
   intro u v
@@ -323,10 +358,14 @@ theorem form_isBoundedWith (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
     _ = (‖α‖ + ‖β‖ + ‖γ‖) * ‖u‖ * ‖v‖ := by ring
 
 open SobolevInterval SobolevIntervalZero in
-/-- **Boundedness of the form in the `H^1` seminorm on `H^1_0(a, b)`**, with the constant
-`‖α‖_∞ + C_P ‖β‖_∞ + C_P² ‖γ‖_∞`, `C_P = (b - a)/√2` — the `M_h = ε_h + |β| C_P` of the proof of
-[quarteroni2000numerical] Theorem 12.4, and for `β = 0` the constant of Theorem 12.3. Poincaré's
-inequality converts the `L²` norms of `u, v` into their seminorms. -/
+/-- **Boundedness of the form in the $H^1$ seminorm on $H^1_0(a, b)$.** Let $a < b$ and
+$C_P = (b - a)/\sqrt{2}$. Then for all $u, v \in H^1_0(a, b)$, $$|a(u, v)| \le
+(\|\alpha\|_\infty + C_P \|\beta\|_\infty + C_P^2 \|\gamma\|_\infty)\, |u|_{H^1} |v|_{H^1}.$$
+
+For constant coefficients $\varepsilon_h$, $\beta$, $0$ the constant is the
+$M_h = \varepsilon_h + |\beta| C_P$ of the proof of Theorem 12.4 of [quarteroni2000numerical],
+and for $\beta = 0$ it is the constant of Theorem 12.3. The Poincaré inequality turns the $L^2$
+norms of $u$ and $v$ into their seminorms. -/
 theorem abs_form_le_seminorm (hab : a < b) (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {u v : SobolevInterval 1 a b} (hu : u ∈ SobolevIntervalZero a b)
     (hv : v ∈ SobolevIntervalZero a b) :
@@ -352,9 +391,11 @@ theorem abs_form_le_seminorm (hab : a < b) (α β γ : Lp ℝ ⊤ (volume.restri
         * ‖deriv u 1‖ * ‖deriv v 1‖ := by ring
 
 open SobolevInterval in
-/-- **Coercivity in the `H^1` seminorm**, the case `β = 0`, `γ ≥ 0` of
-[quarteroni2000numerical] §12.4.4: if `α ≥ α₀` and `γ ≥ 0` almost everywhere on `(a, b)`, then
-`α₀ |v|²_{H^1} ≤ a(v, v)` for every `v ∈ H^1(a, b)`. -/
+/-- **Coercivity in the $H^1$ seminorm**, the case $\beta = 0$ of [quarteroni2000numerical],
+§12.4.4. If $\alpha \ge \alpha_0$ and $\gamma \ge 0$ almost everywhere on $(a, b)$, then for the
+form with coefficients $\alpha$, $0$, $\gamma$, $$\alpha_0 |v|_{H^1}^2 \le a(v, v) \qquad
+\text{for every } v \in H^1(a, b).$$
+-/
 theorem form_isCoerciveWith_seminorm (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α₀ : ℝ}
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γ x) (v : SobolevInterval 1 a b) :
@@ -375,9 +416,13 @@ theorem form_isCoerciveWith_seminorm (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a
 /-! ### Lax–Milgram and Céa -/
 
 open SobolevInterval SobolevIntervalZero in
-/-- **Coercivity in the `H^1` norm on `H^1_0(a, b)`**: the restriction of the form to
-`H^1_0(a, b)` is coercive with constant `α₀ / (1 + C_P²)`, `C_P = (b - a)/√2`, by Poincaré's
-inequality; this is what Lax–Milgram consumes for the Dirichlet problem. -/
+/-- **Coercivity in the $H^1$ norm on $H^1_0(a, b)$.** Let $a < b$ and $\alpha_0 \ge 0$, and let
+$\alpha \ge \alpha_0$ and $\gamma \ge 0$ almost everywhere on $(a, b)$. Then the restriction to
+$H^1_0(a, b)$ of the form with coefficients $\alpha$, $0$, $\gamma$ is coercive with constant
+$\alpha_0/(1 + C_P^2)$, where $C_P^2 = (b - a)^2/2$.
+
+The proof uses the Poincaré inequality. This coercivity is the hypothesis of the Lax–Milgram
+theorem for the Dirichlet problem. -/
 theorem form_isCoerciveWith_restrict (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γ x) (hα₀ : 0 ≤ α₀) :
@@ -399,9 +444,14 @@ theorem form_isCoerciveWith_restrict (hab : a < b) (α γ : Lp ℝ ⊤ (volume.r
     _ ≤ _ := h1
 
 open SobolevInterval in
-/-- **Coercivity in the `H^1` norm on all of `H^1(a, b)`** when `γ ≥ γ₀ > 0`, with constant
-`min α₀ γ₀`: the case of the Neumann problem, whose test space is `H^1(a, b)` itself
-([quarteroni2000numerical] §12.4.1). -/
+/-- **Coercivity in the $H^1$ norm on all of $H^1(a, b)$.** If $\alpha \ge \alpha_0$ and
+$\gamma \ge \gamma_0$ almost everywhere on $(a, b)$, then the form with coefficients $\alpha$,
+$0$, $\gamma$ is coercive on $H^1(a, b)$ with constant $\min(\alpha_0, \gamma_0)$. This is the
+case of the Neumann problem, whose test space is $H^1(a, b)$ itself, [quarteroni2000numerical],
+§12.4.1.
+
+The statement has no sign condition on $\alpha_0$ and $\gamma_0$; it is useful when both are
+positive. -/
 theorem form_isCoerciveWith_of_pos (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α₀ γ₀ : ℝ}
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), γ₀ ≤ γ x) :
@@ -428,10 +478,15 @@ theorem form_isCoerciveWith_of_pos (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b
     simpa [Real.norm_eq_abs] using this
 
 open SobolevInterval in
-/-- **The stability estimate**, [quarteroni2000numerical] (12.51): the solution of the weak
-problem in any subspace `K ≤ H^1_0(a, b)` — the continuous problem for `K = H^1_0(a, b)`, the
-Galerkin approximation for a finite element space — satisfies `|u|_{H^1} ≤ (C_P/α₀) ‖f‖_{L²}`,
-uniformly in the subspace: `α₀ |u|² ≤ a(u, u) = (f, u) ≤ ‖f‖ ‖u‖_{L²} ≤ C_P ‖f‖ |u|`. -/
+/-- **Stability estimate.** Let $a < b$ and $\alpha_0 > 0$, let $\alpha \ge \alpha_0$ and
+$\gamma \ge 0$ almost everywhere on $(a, b)$, let $f \in L^2(a, b)$, and let $K \le H^1_0(a, b)$
+be a subspace. If $u$ is the Galerkin solution in $K$ for the form with coefficients $\alpha$,
+$0$, $\gamma$ and the load $f$, then $$|u|_{H^1} \le \frac{C_P}{\alpha_0} \|f\|_{L^2}, \qquad
+C_P = (b - a)/\sqrt{2}.$$ This is (12.51) of [quarteroni2000numerical].
+
+The bound is uniform in the subspace: $K = H^1_0(a, b)$ gives the continuous problem, and a
+finite element space gives the Galerkin approximation. Proof: $\alpha_0 |u|^2 \le a(u, u) = (f,
+u) \le \|f\| \|u\|_{L^2} \le C_P \|f\| |u|$. -/
 theorem seminorm_le_of_isGalerkinSolution (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γ x) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
@@ -452,12 +507,15 @@ theorem seminorm_le_of_isGalerkinSolution (hab : a < b) (α γ : Lp ℝ ⊤ (vol
     nlinarith
 
 open SobolevInterval in
-/-- **Existence and uniqueness of the weak solution** of the Dirichlet problem, the Lax–Milgram
-paragraph of [quarteroni2000numerical] §12.4.4: for `α ≥ α₀ > 0`, `γ ≥ 0` and `f ∈ L²(a, b)`
-there is exactly one `u ∈ H^1_0(a, b)` with `a(u, v) = (f, v)` for all `v ∈ H^1_0(a, b)`, that
-is, exactly one Galerkin solution in the trial space `H^1_0(a, b)`. Lax–Milgram
-(`SesqForm.laxMilgram`) applies to the restriction of the form to the Hilbert space
-`H^1_0(a, b)`, which is coercive by `EllipticInterval.form_isCoerciveWith_restrict`. -/
+/-- **Existence and uniqueness of the weak solution** of the Dirichlet problem. Let $a < b$ and
+$\alpha_0 > 0$, let $\alpha \ge \alpha_0$ and $\gamma \ge 0$ almost everywhere on $(a, b)$, and
+let $f \in L^2(a, b)$. Then there is exactly one $u \in H^1_0(a, b)$ with $a(u, v) = (f, v)$ for
+every $v \in H^1_0(a, b)$, where $a$ is the form with coefficients $\alpha$, $0$, $\gamma$. This
+is the Lax–Milgram paragraph of [quarteroni2000numerical], §12.4.4.
+
+The weak problem is the Galerkin problem with trial space $H^1_0(a, b)$. The proof applies the
+Lax–Milgram theorem `SesqForm.laxMilgram` to the restriction of the form to the Hilbert space
+$H^1_0(a, b)$, which is coercive by `EllipticInterval.form_isCoerciveWith_restrict`. -/
 theorem existsUnique_isWeakSolution (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γ x) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
@@ -471,10 +529,14 @@ theorem existsUnique_isWeakSolution (hab : a < b) (α γ : Lp ℝ ⊤ (volume.re
   exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z ↦ hy (z : SobolevInterval 1 a b) z.2)
 
 open SobolevInterval in
-/-- **Céa's lemma with the constant of [quarteroni2000numerical] Theorem 12.3**: for the weak
-solution `u ∈ H^1_0(a, b)` and the Galerkin solution `uh` in a subspace `K ≤ H^1_0(a, b)`,
-`|u - uh|_{H^1} ≤ α₀⁻¹ (‖α‖_∞ + C_P² ‖γ‖_∞) |u - w|_{H^1}` for every `w ∈ K`, with
-`C_P = (b - a)/√2`. The `H^1`-norm form (12.56) with the constant `M/α₀` is
+/-- **Céa's lemma with the constant of Theorem 12.3** of [quarteroni2000numerical]. Let $a < b$ and
+$\alpha_0 > 0$, let $\alpha \ge \alpha_0$ and $\gamma \ge 0$ almost everywhere on $(a, b)$, and
+let $f \in L^2(a, b)$. For the form with coefficients $\alpha$, $0$, $\gamma$ and the load $f$,
+let $u \in H^1_0(a, b)$ be the weak solution and $u_h$ the Galerkin solution in a subspace
+$K \le H^1_0(a, b)$. Then for every $w \in K$, $$|u - u_h|_{H^1} \le \alpha_0^{-1}
+(\|\alpha\|_\infty + C_P^2 \|\gamma\|_\infty)\, |u - w|_{H^1}, \qquad C_P = (b - a)/\sqrt{2}.$$
+
+The form (12.56) of the source, in the $H^1$ norm with the constant $M/\alpha_0$, is
 `IsGalerkinSolution.norm_sub_le`. -/
 theorem galerkin_seminorm_sub_le (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ α x)
@@ -495,33 +557,45 @@ theorem galerkin_seminorm_sub_le (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restr
 
 /-! ### Classical solutions are weak solutions -/
 
-/-- The element of `H^1(a, b)` carried by `u ∈ C²[a, b]`. -/
+/-- Let $a < b$. The element of $H^1(a, b)$ given by a function $u \in C^2[a, b]$. -/
 def ofContDiffMapIcc (hab : a < b) (u : ContDiffMapIcc hab.le 2) : SobolevInterval 1 a b :=
   SobolevInterval.inclusionCLM 1 a b (ContDiffMapIcc.toSobolevInterval hab.le hab 2 u)
 
-/-- The function of the element carried by `u ∈ C²[a, b]` is `u` almost everywhere. -/
+/-- The function of the element of $H^1(a, b)$ given by $u \in C^2[a, b]$ is $u$ almost everywhere
+on $(a, b)$.
+
+Here $u$ is extended to $\mathbb{R}$ by constants (`ContDiffMapIcc.extend`). -/
 theorem deriv_ofContDiffMapIcc_zero (hab : a < b) (u : ContDiffMapIcc hab.le 2) :
     (SobolevInterval.deriv (ofContDiffMapIcc hab u) 0 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo a b)] u.extend :=
   u.coeFn_derivLp 0
 
-/-- The weak derivative of the element carried by `u ∈ C²[a, b]` is `u'` almost everywhere. -/
+/-- The weak derivative of the element of $H^1(a, b)$ given by $u \in C^2[a, b]$ is $u'$ almost
+everywhere on $(a, b)$. -/
 theorem deriv_ofContDiffMapIcc_one (hab : a < b) (u : ContDiffMapIcc hab.le 2) :
     (SobolevInterval.deriv (ofContDiffMapIcc hab u) 1 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo a b)] u.shift.extend :=
   u.coeFn_derivLp 1
 
-/-- The continuous representative of the element carried by `u ∈ C²[a, b]` is `u`. -/
+/-- The continuous representative of the element of $H^1(a, b)$ given by $u \in C^2[a, b]$ is $u$ on
+$[a, b]$. -/
 theorem rep_ofContDiffMapIcc (hab : a < b) (u : ContDiffMapIcc hab.le 2) :
     EqOn (SobolevInterval.rep (ofContDiffMapIcc hab u)) u.extend (Icc a b) :=
   SobolevInterval.rep_eq_of_continuousOn hab _ u.extend.continuous.continuousOn
     (deriv_ofContDiffMapIcc_zero hab u)
 
 open SobolevInterval in
-/-- **Green's formula for a classical solution**: for `u ∈ C²[a, b]` with
-`-(α u')' + β u' + γ u = f` on `(a, b)` and any `v ∈ H^1(a, b)`,
-`a(u, v) = ∫_a^b f g_v + [α u' g_v]_a^b`, the identity of [quarteroni2000numerical] §12.4.1
-before the boundary condition on the test function is imposed. -/
+/-- **Green's formula for a classical solution.** Let $a < b$, let $\alpha$ be $C^1$ on $[a, b]$,
+let $\beta$ and $\gamma$ be continuous on $[a, b]$, and let
+$\alpha_L, \beta_L, \gamma_L \in L^\infty(a, b)$ agree with them almost everywhere on $(a, b)$.
+Let $u \in C^2[a, b]$ satisfy $-(\alpha u')' + \beta u' + \gamma u = f$ on $(a, b)$. Then for
+every $v \in H^1(a, b)$, with continuous representative $\tilde v$, $$a(u, v) = \int_a^b f
+\tilde v + \big[\alpha u' \tilde v\big]_a^b.$$ This is the identity of
+[quarteroni2000numerical], §12.4.1, before the boundary condition on the test function is
+imposed.
+
+The form $a$ has the coefficients $\alpha_L$, $\beta_L$, $\gamma_L$, and $u$ stands for its
+element of $H^1(a, b)$, `EllipticInterval.ofContDiffMapIcc`. -/
 theorem form_ofContDiffMapIcc_eq (hab : a < b) {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α)
     (hβL : βL =ᵐ[volume.restrict (Ioo a b)] β) (hγL : γL =ᵐ[volume.restrict (Ioo a b)] γ)
@@ -574,10 +648,13 @@ theorem form_ofContDiffMapIcc_eq (hab : a < b) {α β γ f : ℝ → ℝ}
   ring
 
 open SobolevInterval in
-/-- **Classical solutions are weak solutions** ([quarteroni2000numerical] (12.43)): if
-`u ∈ C²[a, b]` satisfies `-(α u')' + β u' + γ u = f` on `(a, b)` and `u(a) = u(b) = 0`, then the
-element `U` of `H^1(a, b)` it carries lies in `H^1_0(a, b)` and `a(U, v) = (f, v)` for every
-`v ∈ H^1_0(a, b)`: `U` is the weak solution of the Dirichlet problem. -/
+/-- **Classical solutions are weak solutions**, (12.43) of [quarteroni2000numerical]. Let $a < b$,
+let $\alpha$ be $C^1$ on $[a, b]$, let $\beta$ and $\gamma$ be continuous on $[a, b]$, and let
+$\alpha_L, \beta_L, \gamma_L \in L^\infty(a, b)$ and $f_L \in L^2(a, b)$ agree almost everywhere
+on $(a, b)$ with $\alpha$, $\beta$, $\gamma$ and $f$. If $u \in C^2[a, b]$ satisfies
+$-(\alpha u')' + \beta u' + \gamma u = f$ on $(a, b)$ and $u(a) = u(b) = 0$, then the element
+$U$ of $H^1(a, b)$ given by $u$ lies in $H^1_0(a, b)$, and $a(U, v) = (f_L, v)$ for every
+$v \in H^1_0(a, b)$. So $U$ is the weak solution of the Dirichlet problem. -/
 theorem isWeakSolution_of_classical (hab : a < b) {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (fL : Lp ℝ 2 (volume.restrict (Ioo a b)))
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hβL : βL =ᵐ[volume.restrict (Ioo a b)] β)
@@ -602,11 +679,15 @@ theorem isWeakSolution_of_classical (hab : a < b) {α β γ f : ℝ → ℝ}
   rw [h1, deriv_zero, h2]
 
 open SobolevInterval in
-/-- **The Neumann and mixed problems** ([quarteroni2000numerical] §12.4.1, Exercise 12.12): for
-a classical solution with the flux values `α u'(a) = w₀`, `α u'(b) = w₁`, the element `U` of
-`H^1(a, b)` satisfies `a(U, v) = (f, v) + w₁ g_v(b) - w₀ g_v(a)` for every `v ∈ H^1(a, b)`. The
-homogeneous Neumann problem is `w₀ = w₁ = 0`, and the mixed problem tests against the `v` with
-`g_v(b) = 0`. -/
+/-- **The Neumann and mixed problems**, [quarteroni2000numerical], §12.4.1 and Exercise 12.12. Under
+the hypotheses of `EllipticInterval.form_ofContDiffMapIcc_eq`, let $f_L \in L^2(a, b)$ agree
+with $f$ almost everywhere on $(a, b)$, and let the flux values be $\alpha(a) u'(a) = w_0$ and
+$\alpha(b) u'(b) = w_1$. Then the element $U$ of $H^1(a, b)$ given by $u$ satisfies $$a(U, v) =
+(f_L, v) + w_1 \tilde v(b) - w_0 \tilde v(a) \qquad \text{for every } v \in H^1(a, b),$$ where
+$\tilde v$ is the continuous representative of $v$.
+
+The homogeneous Neumann problem is the case $w_0 = w_1 = 0$. The mixed problem tests against the
+$v$ with $\tilde v(b) = 0$. -/
 theorem isWeakSolution_of_classical_neumann (hab : a < b) {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (fL : Lp ℝ 2 (volume.restrict (Ioo a b)))
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hβL : βL =ᵐ[volume.restrict (Ioo a b)] β)
@@ -627,9 +708,11 @@ theorem isWeakSolution_of_classical_neumann (hab : a < b) {α β γ f : ℝ → 
   rw [this]
   ring
 
-/-- **The nonhomogeneous Dirichlet lifting** ([quarteroni2000numerical] §12.4.1): if `U` solves
-`a(U, v) = (f, v)` on `H^1_0(a, b)`, then for any lifting `W ∈ H^1(a, b)` of the boundary
-values, `U - W` solves `a(U - W, v) = (f, v) - a(W, v)` on `H^1_0(a, b)`. -/
+/-- **Lifting of nonhomogeneous Dirichlet data**, [quarteroni2000numerical], §12.4.1. If
+$U \in H^1(a, b)$ satisfies $a(U, v) = (f, v)$ for every $v \in H^1_0(a, b)$, then for every
+$W \in H^1(a, b)$ and every $v \in H^1_0(a, b)$, $$a(U - W, v) = (f, v) - a(W, v).$$
+
+In the application, $W$ is a lifting of the boundary values. -/
 theorem form_sub_eq_of_forall (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {U : SobolevInterval 1 a b}
     (hU : ∀ v ∈ SobolevIntervalZero a b, form a b α β γ U v = load a b f v)
@@ -640,8 +723,10 @@ theorem form_sub_eq_of_forall (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))
 /-! ### Coercivity under the condition (12.50) -/
 
 open SobolevInterval in
-/-- `∫_a^b β (v²)' = -∫_a^b β' v²` for `v ∈ H^1_0(a, b)` and `β` absolutely continuous:
-the identity behind the coercivity condition (12.50). -/
+/-- Let $a < b$, let $\beta$ be absolutely continuous on $[a, b]$, and let $v \in H^1_0(a, b)$ have
+the continuous representative $\tilde v$. Then $$\int_a^b \beta\, v' \tilde v = -\frac{1}{2}
+\int_a^b \beta' \tilde v^2.$$ This identity is behind the coercivity condition (12.50) of
+[quarteroni2000numerical]. -/
 theorem integral_mul_deriv_mul_rep_eq (hab : a < b) {β : ℝ → ℝ}
     (hβ : AbsolutelyContinuousOnInterval β a b) {v : SobolevInterval 1 a b}
     (hv : v ∈ SobolevIntervalZero a b) :
@@ -670,11 +755,17 @@ theorem integral_mul_deriv_mul_rep_eq (hab : a < b) {β : ℝ → ℝ}
   linarith
 
 open SobolevInterval SobolevIntervalZero in
-/-- **Coercivity under the book's condition (12.50)**, [quarteroni2000numerical] §12.4.4: if
-`α ≥ α₀`, `β` is `C¹` on `[a, b]` and `-β'/2 + γ ≥ 0` almost everywhere on `(a, b)`, then
-`α₀ |v|²_{H^1} ≤ a(v, v)` for every `v ∈ H^1_0(a, b)`. Since `∫ β v' v = -½ ∫ β' v²`
-(`EllipticInterval.integral_mul_deriv_mul_rep_eq`), `a(v, v) = ∫ α v'² + ∫ (γ - β'/2) v²`. For a
-constant `β` this is the identity `a_h(v, v) = ε_h |v|²` of §12.5.3. -/
+/-- **Coercivity under the condition (12.50)** of [quarteroni2000numerical], §12.4.4. Let $a < b$
+and $\alpha_L, \beta_L, \gamma_L \in L^\infty(a, b)$. Suppose that $\alpha_L \ge \alpha_0$
+almost everywhere on $(a, b)$, that $\beta_L$ agrees almost everywhere with a function $\beta$
+that is $C^1$ on $[a, b]$, and that $\beta'/2 \le \gamma_L$, that is,
+$-\beta'/2 + \gamma_L \ge 0$, almost everywhere on $(a, b)$. Then $$\alpha_0 |v|_{H^1}^2 \le
+a(v, v) \qquad \text{for every } v \in H^1_0(a, b).$$
+
+By `EllipticInterval.integral_mul_deriv_mul_rep_eq`,
+$\int \beta v' v = -\frac{1}{2} \int \beta' v^2$, so $a(v, v) = \int \alpha v'^2 + \int
+(\gamma - \beta'/2) v^2$. For a constant $\beta$ this is the identity
+$a_h(v, v) = \varepsilon_h |v|^2$ of §12.5.3 of the source. -/
 theorem form_isCoerciveWith_seminorm_of_le (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α₀ : ℝ}
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ αL x) {β : ℝ → ℝ}
@@ -732,11 +823,12 @@ theorem form_isCoerciveWith_seminorm_of_le (hab : a < b)
     nlinarith
   linarith
 
-/-! ### `H²` regularity -/
+/-! ### $H^2$ regularity -/
 
 open SobolevInterval in
-/-- The weak derivative of an element of `H^1(a, b)` whose function is a test function is the
-classical derivative of the test function. -/
+/-- Let $v \in H^1(a, b)$, and suppose that its function agrees almost everywhere on $(a, b)$ with a
+test function $\varphi \in C_c^\infty(a, b)$. Then the weak derivative of $v$ is $\varphi'$
+almost everywhere on $(a, b)$. -/
 theorem deriv_ae_eq_of_fn_ae_eq {v : SobolevInterval 1 a b}
     (φ : 𝓓(Opens.Ioo a b, ℝ)) (hv : fn v =ᵐ[volume.restrict (Ioo a b)] φ) :
     (deriv v 1 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] _root_.deriv φ := by
@@ -747,9 +839,13 @@ theorem deriv_ae_eq_of_fn_ae_eq {v : SobolevInterval 1 a b}
   exact (ae_restrict_iff' measurableSet_Ioo).2 (h1.ae_eq h2)
 
 open SobolevInterval in
-/-- **The flux `α u'` of a weak solution has a weak derivative** `β u' + γ u - f ∈ L²`, for `u`
-satisfying the weak equation tested against `H_0^1(a, b)` only (`u` itself need not lie in
-`H_0^1`); `EllipticInterval.hasWeakDerivOn_mulL_deriv` is the case of a weak solution. -/
+/-- **The flux $\alpha u'$ has a weak derivative.** Let $\alpha, \beta, \gamma \in L^\infty(a, b)$
+and $f \in L^2(a, b)$, and let $u \in H^1(a, b)$ satisfy $a(u, v) = (f, v)$ for every
+$v \in H^1_0(a, b)$. Then on $(a, b)$ the flux $\alpha u'$ has the weak derivative
+$\beta u' + \gamma u - f$.
+
+The function $u$ itself need not lie in $H^1_0(a, b)$.
+`EllipticInterval.hasWeakDerivOn_mulL_deriv` is the case of a weak solution. -/
 theorem hasWeakDerivOn_mulL_deriv_of_forall (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, form a b αL βL γL u v = load a b f v) :
@@ -805,9 +901,12 @@ theorem hasWeakDerivOn_mulL_deriv_of_forall (αL βL γL : Lp ℝ ⊤ (volume.re
   linarith
 
 open SobolevInterval in
-/-- **The flux `α u'` of a weak solution has a weak derivative**, namely `β u' + γ u - f ∈ L²`:
-testing the weak formulation `a(u, v) = (f, v)` against the test functions
-(`EllipticInterval.hasWeakDerivOn_mulL_deriv_of_forall`). -/
+/-- **The flux $\alpha u'$ of a weak solution has a weak derivative.** If $u \in H^1_0(a, b)$ is the
+weak solution of $a(u, v) = (f, v)$, then on $(a, b)$ the flux $\alpha u'$ has the weak
+derivative $\beta u' + \gamma u - f$.
+
+The proof tests the weak equation against the test functions, by
+`EllipticInterval.hasWeakDerivOn_mulL_deriv_of_forall`. -/
 theorem hasWeakDerivOn_mulL_deriv (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : IsGalerkinSolution (form a b αL βL γL) (load a b f) (SobolevIntervalZero a b) u) :
@@ -816,12 +915,16 @@ theorem hasWeakDerivOn_mulL_deriv (αL βL γL : Lp ℝ ⊤ (volume.restrict (Io
   hasWeakDerivOn_mulL_deriv_of_forall αL βL γL f hu.2
 
 open SobolevInterval in
-/-- **Step C, general form (`H²` regularity from the test functions alone)**, the "Steps C and D"
-paragraph of [brezis2011functional] §8.4: if the coefficient `α` is `C¹` on `[a, b]` and does not
-vanish there, `f ∈ L²(a, b)`, and `u ∈ H¹(a, b)` satisfies `a(u, v) = (f, v)` for every
-`v ∈ H_0^1(a, b)` — `u` itself is *not* assumed to vanish at the endpoints, so this covers the
-inhomogeneous Dirichlet, Neumann, mixed, Robin and periodic problems — then `u ∈ H²(a, b)`.
-`EllipticInterval.isWeakSolution_mem_sobolevInterval_two` is the case `u ∈ H_0^1`. -/
+/-- **$H^2$ regularity from the test functions alone.** Let $a < b$, let
+$\alpha_L \in L^\infty(a, b)$ agree almost everywhere on $(a, b)$ with a function $\alpha$ that
+is $C^1$ on $[a, b]$ and does not vanish on $[a, b]$, let
+$\beta_L, \gamma_L \in L^\infty(a, b)$, and let $f \in L^2(a, b)$. If $u \in H^1(a, b)$
+satisfies $a(u, v) = (f, v)$ for every $v \in H^1_0(a, b)$, then $u \in H^2(a, b)$. This is Step
+C, in general form, of the paragraph on Steps C and D in [brezis2011functional], §8.4.
+
+The function $u$ is not assumed to vanish at the endpoints, so the result covers the
+inhomogeneous Dirichlet, Neumann, mixed, Robin and periodic problems.
+`EllipticInterval.isWeakSolution_mem_sobolevInterval_two` is the case $u \in H^1_0(a, b)$. -/
 theorem mem_sobolevInterval_two_of_forall_testFunction (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
@@ -865,12 +968,15 @@ theorem mem_sobolevInterval_two_of_forall_testFunction (hab : a < b)
   exact memSobolevInterval_succ_iff.2 ⟨Lp.memLp _, deriv u 1, hasWeakDerivOn_fn u, hu'⟩
 
 open SobolevInterval in
-/-- **`H²` regularity of the weak solution in one dimension**: if the coefficient `α` is `C¹`
-on `[a, b]` and does not vanish there, then the weak solution `u ∈ H^1_0(a, b)` of
-`-(α u')' + β u' + γ u = f` with `f ∈ L²(a, b)` lies in `H²(a, b)`: the case of a weak solution
-of `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`. This is what the
-Aubin–Nitsche `L²` estimate needs of the dual problem; [quarteroni2000numerical] quotes it from
-[QV94] for (12.60). -/
+/-- **$H^2$ regularity of the weak solution in one dimension.** Let $a < b$, and let $\alpha_L$
+agree almost everywhere on $(a, b)$ with a function $\alpha$ that is $C^1$ on $[a, b]$ and does
+not vanish on $[a, b]$. Then the weak solution $u \in H^1_0(a, b)$ of
+$-(\alpha u')' + \beta u' + \gamma u = f$, with $f \in L^2(a, b)$, lies in $H^2(a, b)$.
+
+This is the case of a weak solution of
+`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`. The Aubin–Nitsche $L^2$
+estimate needs this result for the dual problem; [quarteroni2000numerical] quotes it from
+another reference (QV94 there) for (12.60). -/
 theorem isWeakSolution_mem_sobolevInterval_two (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
@@ -880,12 +986,12 @@ theorem isWeakSolution_mem_sobolevInterval_two (hab : a < b)
     MemSobolevInterval (fn u) 2 a b :=
   mem_sobolevInterval_two_of_forall_testFunction hab αL βL γL hαL hα hα0 f hu.2
 
-/-! ### The `H²` estimate -/
+/-! ### The $H^2$ estimate -/
 
 open SobolevInterval in
-/-- An element `u ∈ H^1(a, b)` whose derivative `u'` is the function of an element
-`U₁ ∈ H^1(a, b)` is the inclusion of an element `Φ ∈ H²(a, b)`, whose second derivative is
-`U₁'`. -/
+/-- Let $u, U_1 \in H^1(a, b)$, and suppose that the function of $U_1$ is $u'$ almost everywhere on
+$(a, b)$. Then $u$ is the image of an element $\Phi \in H^2(a, b)$ whose second derivative is
+$U_1'$. -/
 theorem exists_sobolevInterval_two (u U₁ : SobolevInterval 1 a b)
     (hU₁ : fn U₁ =ᵐ[volume.restrict (Ioo a b)] deriv u 1) :
     ∃ Φ : SobolevInterval 2 a b, inclusionCLM 1 a b Φ = u ∧ deriv Φ 2 = deriv U₁ 1 := by
@@ -906,8 +1012,9 @@ theorem exists_sobolevInterval_two (u U₁ : SobolevInterval 1 a b)
   fin_cases j <;> rfl
 
 open SobolevInterval in
-/-- The `C¹` coefficient `α` as an element of `H^1(a, b)`, with its representative and weak
-derivative. -/
+/-- Let $a < b$ and let $\alpha$ be $C^1$ on $[a, b]$. Then there is an $A \in H^1(a, b)$ whose
+continuous representative is $\alpha$ on $[a, b]$ and whose weak derivative is the derivative of
+$\alpha$ within $[a, b]$, almost everywhere on $(a, b)$. -/
 theorem exists_sobolevInterval_of_contDiffOn (hab : a < b) {α : ℝ → ℝ}
     (hα : ContDiffOn ℝ 1 α (Icc a b)) :
     ∃ A : SobolevInterval 1 a b, EqOn (rep A) α (Icc a b) ∧
@@ -927,12 +1034,16 @@ theorem exists_sobolevInterval_of_contDiffOn (hab : a < b) {α : ℝ → ℝ}
     rw [iteratedDerivWithin_one]
 
 open SobolevInterval in
-/-- **Step C with the equation**: under the hypotheses of
-`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`, `u` is the inclusion of an
-element `Φ ∈ H²(a, b)` whose second derivative satisfies the flux identity
-`α u'' = β u' + γ u − f − α' u'` almost everywhere (with `α' = derivWithin α (Icc a b)`): the two
-weak derivatives `(α u')' = β u' + γ u − f` and `(α u')' = α' u' + α u''` of the flux agree. For
-the model operator, `u'' = β u' + γ u − f`. -/
+/-- **$H^2$ regularity with the equation.** Under the hypotheses of
+`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`, $u$ is the image of an
+element $\Phi \in H^2(a, b)$ whose second derivative $u''$ satisfies $$\alpha u'' = \beta u' +
+\gamma u - f - \alpha' u'$$ almost everywhere on $(a, b)$, where $\alpha'$ is the derivative of
+$\alpha$ within $[a, b]$.
+
+The identity says that the two weak derivatives $(\alpha u')' = \beta u' + \gamma u - f$ and
+$(\alpha u')' = \alpha' u' + \alpha u''$ of the flux agree; this is Step C of
+[brezis2011functional], §8.4, with the equation. For $\alpha = 1$ it reads
+$u'' = \beta u' + \gamma u - f$. -/
 theorem exists_sobolevInterval_two_of_forall_testFunction (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
@@ -970,12 +1081,17 @@ theorem exists_sobolevInterval_two_of_forall_testFunction (hab : a < b)
   linarith
 
 open SobolevInterval in
-/-- **`H²` regularity of the weak solution, with the estimate**: under the hypotheses of
-`EllipticInterval.isWeakSolution_mem_sobolevInterval_two`, with `α ≥ α₀ > 0` and `|α'| ≤ A₁` on
-`[a, b]`, the weak solution `u` is the inclusion of an element `Φ ∈ H²(a, b)` with
-`‖u''‖_{L²} ≤ α₀⁻¹ (‖β‖_∞ ‖u'‖ + ‖γ‖_∞ ‖u‖ + ‖f‖ + A₁ ‖u'‖)`: the flux identity
-`α u'' = β u' + γ u - f - α' u'` of
-`EllipticInterval.exists_sobolevInterval_two_of_forall_testFunction`, integrated. -/
+/-- **$H^2$ regularity of the weak solution, with an estimate.** Let $a < b$, and let $\alpha_L$
+agree almost everywhere on $(a, b)$ with a function $\alpha$ that is $C^1$ on $[a, b]$, with
+$\alpha \ge \alpha_0 > 0$ and $|\alpha'| \le A_1$ on $[a, b]$, where $\alpha'$ is the derivative
+within $[a, b]$. Let $f \in L^2(a, b)$, and let $u \in H^1_0(a, b)$ be the weak solution. Then
+$u$ is the image of an element $\Phi \in H^2(a, b)$ with $$\|u''\|_{L^2} \le \alpha_0^{-1}
+\big(\|\beta\|_\infty \|u'\|_{L^2} + \|\gamma\|_\infty \|u\|_{L^2} + \|f\|_{L^2} + A_1
+\|u'\|_{L^2}\big).$$
+
+Here $u''$ is the second derivative of $\Phi$. The proof integrates the identity $\alpha u'' =
+\beta u' + \gamma u - f - \alpha' u'$ of
+`EllipticInterval.exists_sobolevInterval_two_of_forall_testFunction`. -/
 theorem exists_sobolevInterval_two_of_isWeakSolution (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
     (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
@@ -1030,9 +1146,9 @@ theorem exists_sobolevInterval_two_of_isWeakSolution (hab : a < b)
     _ = α x * |deriv Φ 2 x| := mul_comm _ _
     _ ≤ _ := hbound
 
-/-! ### The Aubin–Nitsche `L²` estimate -/
+/-! ### The Aubin–Nitsche $L^2$ estimate -/
 
-/-- The form with `β = 0` is symmetric. -/
+/-- If $\beta = 0$, the form is symmetric: $a(u, v) = a(v, u)$ for all $u, v \in H^1(a, b)$. -/
 theorem form_comm (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (u v : SobolevInterval 1 a b) :
     form a b αL 0 γL u v = form a b αL 0 γL v u := by
   rw [form_apply, form_apply]
@@ -1042,8 +1158,8 @@ theorem form_comm (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (u v : Sobo
   ring
 
 open SobolevInterval in
-/-- The norm of an element of `H²(a, b)` is at most the sum of the `L²` norms of its three
-derivatives. -/
+/-- For $\Phi \in H^2(a, b)$, $\|\Phi\|_{H^2} \le \|\Phi\|_{L^2} + \|\Phi'\|_{L^2} +
+\|\Phi''\|_{L^2}$. -/
 theorem norm_le_sum_norm_deriv (Φ : SobolevInterval 2 a b) :
     ‖Φ‖ ≤ ‖deriv Φ 0‖ + ‖deriv Φ 1‖ + ‖deriv Φ 2‖ := by
   rw [← pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero, norm_sq_eq,
@@ -1051,17 +1167,25 @@ theorem norm_le_sum_norm_deriv (Φ : SobolevInterval 2 a b) :
   nlinarith [norm_nonneg (deriv Φ 0), norm_nonneg (deriv Φ 1), norm_nonneg (deriv Φ 2)]
 
 open SobolevInterval in
-/-- **The Aubin–Nitsche `L²` estimate** in one dimension, the engine of (12.60)
-([quarteroni2000numerical] §12.4.4): for `α ≥ α₀ > 0` of class `C¹`, `γ ≥ 0`, `β = 0`, and a
-subspace `K ≤ H^1_0(a, b)` with the approximation property
-`∀ Φ ∈ H² ∩ H^1_0, ∃ v ∈ K, |Φ - v|_{H¹} ≤ δ ‖Φ‖_{H²}`, the Galerkin error satisfies
-`‖u - u_h‖_{L²} ≤ M_s C_reg δ |u - u_h|_{H¹}`, where `M_s` is the seminorm bound of the form
-on `H^1_0` and `C_reg` the constant of the `H²` estimate for the dual problem.
+/-- **The Aubin–Nitsche $L^2$ estimate** in one dimension, the basis of (12.60) in
+[quarteroni2000numerical], §12.4.4. Let $a < b$. Let $\alpha_L$ agree almost everywhere on
+$(a, b)$ with a function $\alpha$ that is $C^1$ on $[a, b]$, with $\alpha \ge \alpha_0 > 0$ and
+$|\alpha'| \le A_1$ on $[a, b]$, let $\gamma \ge 0$ almost everywhere on $(a, b)$, let
+$\beta = 0$, and let $f \in L^2(a, b)$. Let $\delta \ge 0$, and let $K \le H^1_0(a, b)$ be a
+subspace with the approximation property: for every $\Phi \in H^2(a, b)$ whose image lies in
+$H^1_0(a, b)$ there is a $v \in K$ with $|\Phi - v|_{H^1} \le \delta \|\Phi\|_{H^2}$. Let $u$ be
+the weak solution and $u_h$ the Galerkin solution in $K$. Then $$\|u - u_h\|_{L^2} \le M_s\,
+C_{reg}\, \delta\, |u - u_h|_{H^1},$$ where $M_s = \|\alpha\|_\infty + C_P^2 \|\gamma\|_\infty$
+is the seminorm bound of the form on $H^1_0(a, b)$, $$C_{reg} = \frac{C_P^2}{\alpha_0} +
+\frac{C_P}{\alpha_0} + \alpha_0^{-1} \Big(\|\gamma\|_\infty \frac{C_P^2}{\alpha_0} + 1 + A_1
+\frac{C_P}{\alpha_0}\Big)$$ is the constant of the $H^2$ estimate for the dual problem, and
+$C_P = (b - a)/\sqrt{2}$.
 
-Proof: with `e = u - u_h` and `φ ∈ H^1_0` the solution of the dual problem `a(v, φ) = (v, e)`,
-`‖e‖² = a(e, φ) = a(e, φ - v)` for every `v ∈ K` by Galerkin orthogonality (the form is
-symmetric for `β = 0`), and `φ` lies in `H²` with `‖φ‖_{H²} ≤ C_reg ‖e‖` by
-`exists_sobolevInterval_two_of_isWeakSolution`. -/
+Proof idea: let $e = u - u_h$, and let $\varphi \in H^1_0(a, b)$ solve the dual problem
+$a(v, \varphi) = (v, e)$. Then $\|e\|^2 = a(e, \varphi) = a(e, \varphi - v)$ for every $v \in K$
+by Galerkin orthogonality, since the form is symmetric for $\beta = 0$. By
+`EllipticInterval.exists_sobolevInterval_two_of_isWeakSolution`, $\varphi$ lies in $H^2$ with
+$\|\varphi\|_{H^2} \le C_{reg} \|e\|$. -/
 theorem galerkin_norm_sub_le_l2 (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α : ℝ → ℝ} (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
     {α₀ A₁ : ℝ} (hα₀ : 0 < α₀) (hαpos : ∀ x ∈ Icc a b, α₀ ≤ α x)

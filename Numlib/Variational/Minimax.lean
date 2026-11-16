@@ -16,75 +16,70 @@ import Numlib.Variational.WeakMinimization
 /-!
 # Saddle points of convex–concave functions on reflexive spaces
 
-Sion's minimax theorem — Mathlib's `Sion.exists_isSaddlePointOn`, by Komiya's elementary proof —
-produces a saddle point of `f : E → F → ℝ` on `X × Y` when `X` and `Y` are *compact* convex
-subsets of topological vector spaces, `f (·, y)` is lower semicontinuous and quasiconvex on `X` and
-`f (x, ·)` is upper semicontinuous and quasiconcave on `Y`. In an infinite-dimensional normed
-space a closed bounded convex set is never norm-compact, but in a *reflexive* space it is compact
-for the weak topology (Kakutani's theorem,
-`Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`), and a lower semicontinuous
-function with convex sublevel sets is weakly lower semicontinuous (Mazur's theorem,
-`Convex.isClosed_image_toWeakSpace_iff`). So Sion's theorem applies in the weak topologies of the
-two spaces, and yields the existence theorem of Ekeland and Temam for saddle points of a
-convex–concave function on bounded closed convex subsets of reflexive spaces
-(`exists_isSaddlePointOn_of_isBounded`).
+Let $V$ and $Q$ be reflexive real normed spaces, $A \subseteq V$ and $B \subseteq Q$ closed convex
+sets, and $L : V \times Q \to \mathbb{R}$. A **saddle point** of $L$ on $A \times B$ is a pair
+$(u, p)$ with
+$$L(u, q) \le L(v, p) \quad \text{for all } v \in A, \ q \in B.$$
+Sion's minimax theorem ([sion1958general], with the elementary proof of [komiya1988elementary])
+gives a saddle point when $A$ and $B$ are compact and $L$ is lower semicontinuous and quasiconvex in
+$v$ and upper semicontinuous and quasiconcave in $q$. In an infinite-dimensional normed space a
+closed bounded convex set is never compact in norm. In a reflexive space it is weakly compact
+(Kakutani's theorem), and a lower semicontinuous function with convex sublevel sets is weakly lower
+semicontinuous (Mazur's theorem). So Sion's theorem applies in the weak topologies, and it gives the
+existence theorem of Ekeland and Temam for saddle points on bounded closed convex subsets of
+reflexive spaces. The presentation follows Chapter VI of [ekeland1999convex], Propositions 1.2 and
+2.1–2.3, and Theorem 8.6.3 of [han2009theoretical].
 
-Boundedness is then traded for coercivity by truncation: a saddle point of the problem cut down
-to a large closed ball whose components lie strictly inside the ball is a saddle point of the
-original problem (`IsSaddlePointOn.of_inter_closedBall_left`, `…_right`, an argument along the
-segment from the saddle point to a far point), and a coercivity condition keeps the components
-of the truncated saddle points inside a fixed ball
-(`exists_isSaddlePointOn_of_isCoerciveFunctionalOn`).
-The two one-sided variants in which coercivity is asked of `sup_{q ∈ B} L (v, q)` or of
-`inf_{v ∈ A} L (v, q)` instead of a single slice are `exists_isSaddlePointOn_of_sup_coercive` and
-`exists_isSaddlePointOn_of_inf_coercive`. Asking both at once is **not** enough: `L (v, q) = q - v`
-on `ℝ × ℝ` satisfies both (each `sup` is `+∞`, each `inf` is `-∞`) and has no saddle point.
+For convex–concave $L$, boundedness can be replaced by coercivity. A saddle point of the problem
+restricted to a large closed ball, with components strictly inside the ball, is a saddle point of
+the original problem. A coercivity condition keeps the components of these saddle points inside a
+fixed ball. Coercivity may be asked of one slice $L(\cdot, q_0)$ or of $\sup_{q \in B} L(\cdot, q)$
+for the first variable, and of one slice $-L(v_0, \cdot)$ or of $-\inf_{v \in A} L(v, \cdot)$ for
+the second, but not in the supremum form for the first variable and the infimum form for the second
+at once: $L(v, q) = q - v$ on $\mathbb{R} \times \mathbb{R}$ satisfies both conditions (each
+supremum is $+\infty$ and each infimum is $-\infty$) and has no saddle point.
 
-A saddle point is Mathlib's `IsSaddlePointOn X Y f a b`, that is `f a y ≤ f x b` for all `x ∈ X`
-and `y ∈ Y`: the first variable is minimized and the second maximized, the convention of
-Ekeland–Temam and of Atkinson–Han; Rockafellar's opposite convention is
-`ConvexAnalysis.IsSaddlePointOn` of `Numlib.Analysis.Convex.Saddle.Minimax`, for the transposed
-kernel. `isSaddlePointOn_swap_neg_iff` exchanges the two variables.
+## Main results
 
-## Main statements
-
-* `exists_isSaddlePointOn_of_isBounded` — **Sion's theorem in a reflexive space**: on bounded
-  closed convex sets, a function lower semicontinuous and quasiconvex in its first variable, upper
-  semicontinuous and quasiconcave in its second, has a saddle point.
-* `IsSaddlePointOn.of_inter_closedBall_left`, `IsSaddlePointOn.of_inter_closedBall_right` — the
-  truncation lemmas.
-* `exists_isSaddlePointOn_of_isCoerciveFunctionalOn` — **existence of a saddle point under
-  coercivity**: closed convex sets, convex lower semicontinuous / concave upper semicontinuous
-  slices, some slice `L (·, q₀)` coercive on `A` and some slice `-L (v₀, ·)` coercive on `B`.
-  Bounded sets satisfy the coercivity conditions vacuously (`IsCoerciveFunctionalOn.of_isBounded`),
-  so this covers the four combinations "bounded or coercive" of the classical statement.
-* `exists_isSaddlePointOn_of_sup_coercive`, `exists_isSaddlePointOn_of_inf_coercive` — the
-  variants with `sup_{q ∈ B} L (v, q) → ∞` as `‖v‖ → ∞`, respectively `inf_{v ∈ A} L (v, q) → -∞`
-  as `‖q‖ → ∞`, the other side keeping its pointwise condition.
-* `IsSaddlePointOn.fst_eq_of_strictConvexOn`, `IsSaddlePointOn.snd_eq_of_strictConcaveOn` — the
-  first component of a saddle point is unique when `L (·, p)` is strictly convex, the second when
-  `L (u, ·)` is strictly concave.
+* `isSaddlePointOn_swap_neg_iff`: exchanging the variables and negating $L$ exchanges the minimized
+  and the maximized variable.
+* `exists_isSaddlePointOn_of_isBounded`: **Sion's theorem in a reflexive space**. On nonempty
+  bounded closed convex sets, a function that is lower semicontinuous and quasiconvex in its first
+  variable and upper semicontinuous and quasiconcave in its second variable has a saddle point.
+* `IsSaddlePointOn.of_inter_closedBall_left`, `IsSaddlePointOn.of_inter_closedBall_right`: a saddle
+  point of the problem restricted to a ball, with a component strictly inside the ball, is a saddle
+  point of the original problem.
+* `exists_isSaddlePointOn_of_isCoerciveFunctionalOn`: **existence of a saddle point under
+  coercivity**, with one slice $L(\cdot, q_0)$ coercive on $A$ and one slice $-L(v_0, \cdot)$
+  coercive on $B$.
+* `exists_isSaddlePointOn_of_sup_coercive`, `exists_isSaddlePointOn_of_inf_coercive`: the variants
+  with $\sup_{q \in B} L(v, q) \to \infty$ as $\|v\| \to \infty$, or with
+  $\inf_{v \in A} L(v, q) \to -\infty$ as $\|q\| \to \infty$.
+* `IsSaddlePointOn.fst_eq_of_strictConvexOn`, `IsSaddlePointOn.snd_eq_of_strictConcaveOn`: the first
+  component of a saddle point is unique when $L(\cdot, p)$ is strictly convex, and the second when
+  $L(u, \cdot)$ is strictly concave.
 
 ## Implementation notes
 
-The weak topology is Mathlib's `WeakSpace ℝ E`, and a subset of `E` is read there as its image
-under the linear equivalence `toWeakSpace ℝ E`, never through the definitional equality
-`WeakSpace ℝ E = E`. The bounded theorem is stated with quasiconvexity, as Sion's theorem is; the
-coercive theorems need convexity proper, because the truncation lemma does (a quasiconvex
-function can have a local minimum in a ball that is not a minimum outside it).
-
-Reflexivity is `NormedSpace.IsReflexive ℝ V`; the sequential class `WeaklySeqCompactSpace` of
-`Numlib.Variational.WeakMinimization` is derived from it by instance search where
-`exists_isMinOn_of_convexOn` and `exists_isMaxOn_of_concaveOn` are used. The transfer of
-semicontinuity and quasiconvexity on a closed set to the weak topology is
-`LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn` and its concave twin
-(`Numlib.Analysis.Normed.Module.WeakClosed`).
-
-## References
-
-* [ekeland1999convex] Chapter VI, Propositions 1.2 and 2.1–2.3.
-* [sion1958general]; [komiya1988elementary].
-* [han2009theoretical] Theorem 8.6.3.
+* A saddle point is Mathlib's `IsSaddlePointOn A B L u p`: the first variable is minimized and the
+  second is maximized. This is the convention of [ekeland1999convex] and [han2009theoretical]. The
+  opposite convention of [rockafellar1970convex] is `ConvexAnalysis.IsSaddlePointOn` of
+  `Numlib.Analysis.Convex.Saddle.Minimax`, for the transposed function.
+* The weak topology is Mathlib's `WeakSpace ℝ E`. A subset of $E$ is read there as its image under
+  the linear equivalence `toWeakSpace ℝ E`, and never through the definitional equality of
+  `WeakSpace ℝ E` with $E$.
+* Kakutani's theorem is `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`, and Mazur's
+  theorem is `Convex.isClosed_image_toWeakSpace_iff`. The transfer of semicontinuity and
+  quasiconvexity on a closed set to the weak topology is
+  `LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn` and its concave counterpart in
+  `Numlib.Analysis.Normed.Module.WeakClosed`.
+* Sion's theorem is Mathlib's `Sion.exists_isSaddlePointOn`.
+* The bounded theorem assumes quasiconvexity, as Sion's theorem does. The coercive theorems assume
+  convexity, because the truncation lemmas need it: a quasiconvex function can have a local minimum
+  in a ball that is not a minimum outside it.
+* Reflexivity is `NormedSpace.IsReflexive ℝ V`. The class `WeaklySeqCompactSpace` of
+  `Numlib.Variational.WeakMinimization` follows from it by instance search where
+  `exists_isMinOn_of_convexOn` and `exists_isMaxOn_of_concaveOn` are used.
 -/
 
 open Bornology Filter Metric Set Topology
@@ -96,9 +91,10 @@ section Swap
 variable {E F β : Type*} [AddCommGroup β] [PartialOrder β] [IsOrderedAddMonoid β]
   {X : Set E} {Y : Set F} {f : E → F → β} {a : E} {b : F}
 
-/-- Exchanging the two variables and negating the function exchanges the minimized and the
-maximized variable: `(b, a)` is a saddle point of `(y, x) ↦ -f x y` on `Y × X` iff `(a, b)` is a
-saddle point of `f` on `X × Y`. -/
+/-- Let $X \subseteq E$, $Y \subseteq F$ and $f : E \times F \to \beta$, with values in an ordered
+additive group. Then $(b, a)$ is a saddle point of $(y, x) \mapsto -f(x, y)$ on $Y \times X$ if
+and only if $(a, b)$ is a saddle point of $f$ on $X \times Y$. So exchanging the two variables
+and negating the function exchanges the minimized and the maximized variable. -/
 theorem isSaddlePointOn_swap_neg_iff :
     IsSaddlePointOn Y X (fun y x => -f x y) b a ↔ IsSaddlePointOn X Y f a b := by
   constructor
@@ -117,16 +113,18 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace.I
   [NormedAddCommGroup Q] [NormedSpace ℝ Q] [NormedSpace.IsReflexive ℝ Q]
   {A : Set V} {B : Set Q} {L : V → Q → ℝ}
 
-/-- **Sion's minimax theorem in reflexive spaces** ([ekeland1999convex] Chapter VI,
-Proposition 2.1). Let `A ⊆ V` and `B ⊆ Q` be nonempty bounded
-closed convex subsets of reflexive real normed spaces, and let `L : V → Q → ℝ` be lower
-semicontinuous and quasiconvex in its first variable on `A` for every `q ∈ B`, upper semicontinuous
-and quasiconcave in its second variable on `B` for every `v ∈ A`. Then `L` has a saddle point
-`(u, p) ∈ A × B`: `L u q ≤ L v p` for all `v ∈ A`, `q ∈ B`.
+/-- **Sion's minimax theorem in reflexive spaces.** Let $V$ and $Q$ be reflexive real normed spaces,
+and let $A \subseteq V$ and $B \subseteq Q$ be nonempty, bounded, closed and convex. Let
+$L : V \times Q \to \mathbb{R}$ be such that for every $q \in B$ the function $L(\cdot, q)$ is
+quasiconvex and lower semicontinuous on $A$, and for every $v \in A$ the function $L(v, \cdot)$
+is quasiconcave and upper semicontinuous on $B$. Then $L$ has a saddle point
+$(u, p) \in A \times B$:
+$$L(u, q) \le L(v, p) \quad \text{for all } v \in A, \ q \in B.$$
+This is Proposition 2.1 of Chapter VI of [ekeland1999convex].
 
-`A` and `B` are weakly compact by Kakutani's theorem, the semicontinuity hypotheses transfer to the
-weak topologies by Mazur's theorem, and Sion's theorem applies in the topological vector spaces
-`WeakSpace ℝ V` and `WeakSpace ℝ Q`. -/
+The sets $A$ and $B$ are weakly compact by Kakutani's theorem, the semicontinuity hypotheses
+transfer to the weak topologies by Mazur's theorem, and Sion's theorem applies in the
+topological vector spaces `WeakSpace ℝ V` and `WeakSpace ℝ Q`. -/
 theorem exists_isSaddlePointOn_of_isBounded (hAne : A.Nonempty) (hAcl : IsClosed A)
     (hAconv : Convex ℝ A) (hAbd : IsBounded A) (hBne : B.Nonempty) (hBcl : IsClosed B)
     (hBconv : Convex ℝ B) (hBbd : IsBounded B)
@@ -177,11 +175,14 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddComm
   [NormedSpace ℝ Q] {A : Set V} {B : Set Q} {L : V → Q → ℝ} {u : V} {p : Q} {r : ℝ}
 
 omit [NormedAddCommGroup Q] [NormedSpace ℝ Q] in
-/-- **Truncation, first variable.** A saddle point `(u, p)` of `L` on `(A ∩ closedBall 0 r) × B`
-with `‖u‖ < r` is a saddle point on `A × B`, provided `A` is convex and `L (·, p)` is convex on
-`A`: for `v ∈ A` outside the ball, the point `w` of the segment `[u, v]` on the sphere of radius
-`r` lies in the truncated set, so `L u p ≤ L w p ≤ (1 - t) L u p + t L v p`, whence
-`L u p ≤ L v p`. -/
+/-- **Truncation in the first variable.** Let $V$ be a real normed space, let $A \subseteq V$ be
+convex, let $B$ be a set, and let $r \in \mathbb{R}$. Let $(u, p)$ be a saddle point of $L$ on
+$(A \cap \{v : \|v\| \le r\}) \times B$, with $u \in A$, $p \in B$ and $\|u\| < r$, and let
+$L(\cdot, p)$ be convex on $A$. Then $(u, p)$ is a saddle point of $L$ on $A \times B$.
+
+For $v \in A$ outside the ball, the point $w$ of the segment $[u, v]$ on the sphere of radius
+$r$ lies in the truncated set, so $L(u, p) \le L(w, p) \le (1 - t) L(u, p) + t L(v, p)$, and
+therefore $L(u, p) \le L(v, p)$. -/
 theorem IsSaddlePointOn.of_inter_closedBall_left (hAconv : Convex ℝ A)
     (hL : ConvexOn ℝ A fun v => L v p) (hu : u ∈ A) (hp : p ∈ B) (hur : ‖u‖ < r)
     (h : IsSaddlePointOn (A ∩ closedBall 0 r) B L u p) : IsSaddlePointOn A B L u p := by
@@ -217,9 +218,12 @@ theorem IsSaddlePointOn.of_inter_closedBall_left (hAconv : Convex ℝ A)
   exact (h u hu' q hq).trans h3
 
 omit [NormedAddCommGroup V] [NormedSpace ℝ V] in
-/-- **Truncation, second variable.** A saddle point `(u, p)` of `L` on `A × (B ∩ closedBall 0 r)`
-with `‖p‖ < r` is a saddle point on `A × B`, provided `B` is convex and `L (u, ·)` is concave on
-`B`. This is `IsSaddlePointOn.of_inter_closedBall_left` for the transposed, negated kernel. -/
+/-- **Truncation in the second variable.** Let $Q$ be a real normed space, let $B \subseteq Q$ be
+convex, let $A$ be a set, and let $r \in \mathbb{R}$. Let $(u, p)$ be a saddle point of $L$ on
+$A \times (B \cap \{q : \|q\| \le r\})$, with $u \in A$, $p \in B$ and $\|p\| < r$, and let
+$L(u, \cdot)$ be concave on $B$. Then $(u, p)$ is a saddle point of $L$ on $A \times B$.
+
+This is `IsSaddlePointOn.of_inter_closedBall_left` for the transposed and negated function. -/
 theorem IsSaddlePointOn.of_inter_closedBall_right (hBconv : Convex ℝ B)
     (hL : ConcaveOn ℝ B (L u)) (hu : u ∈ A) (hp : p ∈ B) (hpr : ‖p‖ < r)
     (h : IsSaddlePointOn A (B ∩ closedBall 0 r) L u p) : IsSaddlePointOn A B L u p := by
@@ -236,23 +240,25 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace.I
   [NormedAddCommGroup Q] [NormedSpace ℝ Q] [NormedSpace.IsReflexive ℝ Q]
   {A : Set V} {B : Set Q} {L : V → Q → ℝ}
 
-/-- **Existence of a saddle point under coercivity** ([ekeland1999convex] Chapter VI,
-Proposition 2.2; [han2009theoretical] Theorem 8.6.3). Let
-`A ⊆ V` and `B ⊆ Q` be closed convex subsets of reflexive real normed spaces, and let
-`L : V → Q → ℝ` be convex and lower semicontinuous in its first variable on `A` for every `q ∈ B`,
-concave and upper semicontinuous in its second variable on `B` for every `v ∈ A`. If some slice
-`L (·, q₀)`, `q₀ ∈ B`, is coercive on `A` and some slice `-L (v₀, ·)`, `v₀ ∈ A`, is coercive on
-`B`, then `L` has a saddle point `(u, p) ∈ A × B`.
+/-- **Existence of a saddle point under coercivity.** Let $V$ and $Q$ be reflexive real normed
+spaces, and let $A \subseteq V$ and $B \subseteq Q$ be closed and convex. Let
+$L : V \times Q \to \mathbb{R}$ be such that for every $q \in B$ the function $L(\cdot, q)$ is
+convex and lower semicontinuous on $A$, and for every $v \in A$ the function $L(v, \cdot)$ is
+concave and upper semicontinuous on $B$. Assume that some slice $L(\cdot, q_0)$ with $q_0 \in B$
+is coercive on $A$, and that some slice $-L(v_0, \cdot)$ with $v_0 \in A$ is coercive on $B$.
+Then $L$ has a saddle point $(u, p) \in A \times B$. This is Proposition 2.2 of Chapter VI of
+[ekeland1999convex] and Theorem 8.6.3 of [han2009theoretical].
 
-A bounded set makes every functional coercive on it (`IsCoerciveFunctionalOn.of_isBounded`), so
-the hypotheses cover "`A` bounded or `L (v, q₀) → ∞` as `‖v‖ → ∞` in `A`" and the symmetric
-condition on `B`; nonemptiness of `A` and `B` is part of them.
+Coercivity is `IsCoerciveFunctionalOn`. Every functional is coercive on a bounded set
+(`IsCoerciveFunctionalOn.of_isBounded`), so the hypotheses cover the cases "$A$ is bounded, or
+$L(v, q_0) \to \infty$ as $\|v\| \to \infty$ in $A$", and the same for $B$. The hypotheses imply
+that $A$ and $B$ are nonempty.
 
-The proof truncates both sets by the closed ball of a radius `r` and takes a saddle point `(u, p)`
-of the truncated problem (`exists_isSaddlePointOn_of_isBounded`). With `m = min_A L (·, q₀)` and
-`M = max_B L (v₀, ·)` — both attained, by the direct method —
-`m ≤ L u q₀ ≤ L v₀ p ≤ M`, so coercivity confines `u` and `p` to fixed balls; for `r` beyond their
-radii the truncation lemmas make `(u, p)` a saddle point of the original problem. -/
+The proof restricts both sets to the closed ball of radius $r$ and takes a saddle point $(u, p)$
+of the restricted problem (`exists_isSaddlePointOn_of_isBounded`). With
+$m = \min_A L(\cdot, q_0)$ and $M = \max_B L(v_0, \cdot)$, both attained by the direct method,
+$m \le L(u, q_0) \le L(v_0, p) \le M$. So coercivity keeps $u$ and $p$ in fixed balls, and for
+large $r$ the truncation lemmas make $(u, p)$ a saddle point of the original problem. -/
 theorem exists_isSaddlePointOn_of_isCoerciveFunctionalOn (hAcl : IsClosed A)
     (hAconv : Convex ℝ A) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hLv : ∀ q ∈ B, ConvexOn ℝ A fun v => L v q)
@@ -307,18 +313,22 @@ theorem exists_isSaddlePointOn_of_isCoerciveFunctionalOn (hAcl : IsClosed A)
     h.of_inter_closedBall_right hBconv (hLq u hu) ⟨hu, hur⟩ hp (hpr'.trans hR₂r)
   exact h'.of_inter_closedBall_left hAconv (hLv p hp) hu hp (hur'.trans hR₁r)
 
-/-- **Existence of a saddle point, coercivity of the supremum** ([ekeland1999convex] Chapter VI,
-Remark after Proposition 2.3; [han2009theoretical] Theorem 8.6.3, condition (f)'). The pointwise
-coercivity of a slice `L (·, q₀)` on `A` may be replaced by the coercivity of
-`v ↦ sup_{q ∈ B} L (v, q)`, stated without a supremum as: for every `M` there is `R` such that
-every `v ∈ A` with `R ≤ ‖v‖` has some `q ∈ B` with `M ≤ L v q` (so the supremum, possibly `+∞`,
-tends to `+∞`). The condition on `B` stays pointwise.
+/-- **Existence of a saddle point, with coercivity of the supremum.** Let $V$, $Q$, $A$, $B$ and $L$
+be as in `exists_isSaddlePointOn_of_isCoerciveFunctionalOn`, with $B$ nonempty. Replace the
+coercivity of a slice $L(\cdot, q_0)$ by the coercivity of $v \mapsto \sup_{q \in B} L(v, q)$ on
+$A$: for every $M$ there is $R$ such that every $v \in A$ with $\|v\| \ge R$ has some $q \in B$
+with $L(v, q) \ge M$. Keep the condition that some slice $-L(v_0, \cdot)$ with $v_0 \in A$ is
+coercive on $B$. Then $L$ has a saddle point $(u, p) \in A \times B$. This is the remark after
+Proposition 2.3 of Chapter VI of [ekeland1999convex], and condition (f)' of Theorem 8.6.3 of
+[han2009theoretical].
 
-Truncating `A` alone, `exists_isSaddlePointOn_of_isCoerciveFunctionalOn` gives a saddle point
-`(u, p)` of `L` on `(A ∩ closedBall 0 r) × B`; then `L u q ≤ L v₀ p ≤ max_B L (v₀, ·)` for every
-`q ∈ B`, which by the hypothesis confines `u` to a fixed ball, and the truncation lemma applies.
-The condition on `B` cannot be replaced by its supremum form at the same time: see the module
-documentation. -/
+The condition is stated without a supremum, which can be $+\infty$. The proof restricts $A$
+alone to a ball, and `exists_isSaddlePointOn_of_isCoerciveFunctionalOn` gives a saddle point
+$(u, p)$ on $(A \cap \{v : \|v\| \le r\}) \times B$. Then
+$L(u, q) \le L(v_0, p) \le \max_B L(v_0, \cdot)$ for every $q \in B$, so the hypothesis keeps
+$u$ in a fixed ball, and the truncation lemma applies. The condition on $B$ cannot be replaced
+at the same time by the infimum condition of `exists_isSaddlePointOn_of_inf_coercive`; see the
+module documentation. -/
 theorem exists_isSaddlePointOn_of_sup_coercive (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hLv : ∀ q ∈ B, ConvexOn ℝ A fun v => L v q)
@@ -354,12 +364,15 @@ theorem exists_isSaddlePointOn_of_sup_coercive (hAcl : IsClosed A) (hAconv : Con
     linarith
   exact ⟨u, hu, p, hp, h.of_inter_closedBall_left hAconv (hLv p hp) hu hp (hur'.trans hRr)⟩
 
-/-- **Existence of a saddle point, coercivity of the infimum** ([han2009theoretical]
-Theorem 8.6.3, condition (g)'): the pointwise coercivity of a slice `-L (v₀, ·)` on `B` may be
-replaced by `inf_{v ∈ A} L (v, q) → -∞` as `‖q‖ → ∞` in `B`, stated as: for every `M` there is
-`R` such that every `q ∈ B` with `R ≤ ‖q‖` has some `v ∈ A` with `L v q ≤ M`. The condition on
-`A` stays pointwise. This is `exists_isSaddlePointOn_of_sup_coercive` for the transposed, negated
-kernel. -/
+/-- **Existence of a saddle point, with coercivity of the infimum.** Let $V$, $Q$, $A$, $B$ and $L$
+be as in `exists_isSaddlePointOn_of_isCoerciveFunctionalOn`, with $A$ nonempty. Replace the
+coercivity of a slice $-L(v_0, \cdot)$ by $\inf_{v \in A} L(v, q) \to -\infty$ as
+$\|q\| \to \infty$ in $B$: for every $M$ there is $R$ such that every $q \in B$ with
+$\|q\| \ge R$ has some $v \in A$ with $L(v, q) \le M$. Keep the condition that some slice
+$L(\cdot, q_0)$ with $q_0 \in B$ is coercive on $A$. Then $L$ has a saddle point
+$(u, p) \in A \times B$. This is condition (g)' of Theorem 8.6.3 of [han2009theoretical].
+
+This is `exists_isSaddlePointOn_of_sup_coercive` for the transposed and negated function. -/
 theorem exists_isSaddlePointOn_of_inf_coercive (hAne : A.Nonempty) (hAcl : IsClosed A)
     (hAconv : Convex ℝ A) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hLv : ∀ q ∈ B, ConvexOn ℝ A fun v => L v q)
@@ -396,10 +409,12 @@ variable {V Q : Type*} [AddCommMonoid V] [SMul ℝ V] [AddCommMonoid Q] [SMul �
   {A : Set V} {B : Set Q} {L : V → Q → ℝ} {u u' : V} {p p' : Q}
 
 omit [AddCommMonoid Q] [SMul ℝ Q] in
-/-- **Uniqueness of the first component**: if `(u, p)` and `(u', p')` are saddle points of `L` on
-`A × B` and `L (·, p)` is strictly convex on `A`, then `u = u'`. Both `u` and `u'` minimize
-`L (·, p)` on `A`, the second because `(u', p)` is again a saddle point
-(`IsSaddlePointOn.swap_right`). -/
+/-- **Uniqueness of the first component.** Let $(u, p)$ and $(u', p')$ be saddle points of $L$ on
+$A \times B$ with $u, u' \in A$ and $p, p' \in B$. If $L(\cdot, p)$ is strictly convex on $A$,
+then $u = u'$.
+
+Both $u$ and $u'$ minimize $L(\cdot, p)$ on $A$, the second because $(u', p)$ is also a saddle
+point (`IsSaddlePointOn.swap_right`). -/
 theorem IsSaddlePointOn.fst_eq_of_strictConvexOn (hL : StrictConvexOn ℝ A fun v => L v p)
     (hu : u ∈ A) (hu' : u' ∈ A) (hp : p ∈ B) (hp' : p' ∈ B) (h : IsSaddlePointOn A B L u p)
     (h' : IsSaddlePointOn A B L u' p') : u = u' := by
@@ -408,8 +423,9 @@ theorem IsSaddlePointOn.fst_eq_of_strictConvexOn (hL : StrictConvexOn ℝ A fun 
     (isMinOn_iff.2 fun v hv => h'' v hv p hp) hu hu'
 
 omit [AddCommMonoid V] [SMul ℝ V] in
-/-- **Uniqueness of the second component**: if `(u, p)` and `(u', p')` are saddle points of `L`
-on `A × B` and `L (u, ·)` is strictly concave on `B`, then `p = p'`. -/
+/-- **Uniqueness of the second component.** Let $(u, p)$ and $(u', p')$ be saddle points of $L$ on
+$A \times B$ with $u, u' \in A$ and $p, p' \in B$. If $L(u, \cdot)$ is strictly concave on $B$,
+then $p = p'$. -/
 theorem IsSaddlePointOn.snd_eq_of_strictConcaveOn (hL : StrictConcaveOn ℝ B (L u))
     (hu : u ∈ A) (hu' : u' ∈ A) (hp : p ∈ B) (hp' : p' ∈ B) (h : IsSaddlePointOn A B L u p)
     (h' : IsSaddlePointOn A B L u' p') : p = p' := by

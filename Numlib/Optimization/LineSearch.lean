@@ -10,32 +10,57 @@ import Numlib.Optimization.Descent
 /-!
 # Inexact line searches: Armijo, Wolfe and Goldstein conditions, Zoutendijk's theorem
 
-The step-size conditions of inexact line searches for a descent method `x_{k+1} = x_k + α_k d_k`
-([quarteroni2000numerical] §7.2.3 and §7.2.6; Nocedal–Wright, *Numerical Optimization*, §3.1–3.2),
-as predicates on a step `α` along a direction `d` at a point `x`: the Armijo sufficient-decrease
-condition (7.31) `f (x + α d) ≤ f x + σ α f' x d` (`LineSearch.Armijo`), the weak (7.33) and strong
-(7.32) Wolfe curvature conditions (`LineSearch.WolfeCurvature`, `LineSearch.StrongWolfeCurvature`),
-and the Goldstein conditions (7.34) (`LineSearch.Goldstein`). Then the two existence facts and the
-global convergence theorem:
+This file gives the step-size conditions of inexact line searches for a descent method
+$x_{k+1} = x_k + \alpha_k d_k$, following [quarteroni2000numerical], §7.2.3 and §7.2.6, and
+[nocedal2006numerical], §3.1–3.2. For a function $f$ with derivative $f'$, a point $x$, a direction
+$d$ and a step $\alpha$, the conditions are the Armijo sufficient-decrease condition (7.31)
+$$f(x + \alpha d) \le f(x) + \sigma \alpha\, f'(x)\,d,$$
+the weak Wolfe curvature condition (7.33) $\beta f'(x)\,d \le f'(x + \alpha d)\,d$, the strong Wolfe
+curvature condition (7.32) $|f'(x + \alpha d)\,d| \le \beta |f'(x)\,d|$, and the two-sided Goldstein
+conditions (7.34).
 
-* backtracking terminates — every small enough positive step satisfies the Armijo condition along a
-  descent direction (`LineSearch.eventually_armijo_of_isDescentDirection`);
-* [quarteroni2000numerical] Property 7.5 (Nocedal–Wright Lemma 3.1): if `f` is bounded below along
-  the ray, a whole interval `[c, C]` of steps satisfies the Armijo condition together with both
-  Wolfe conditions (`LineSearch.exists_Icc_armijo_wolfe`);
-* **Zoutendijk's theorem** (Nocedal–Wright Theorem 3.2), the content of [quarteroni2000numerical]
-  Property 7.7: for a descent sequence with Armijo–Wolfe steps, a Lipschitz derivative and `f`
-  bounded below on the iterates, `∑ (f' x_k d_k / ‖d_k‖)² < ∞` (`LineSearch.zoutendijk`), whence
-  either `f (x_k) → -∞` or `f' x_k d_k / ‖d_k‖ → 0` (`LineSearch.tendsto_atBot_or_tendsto_zero`).
+Three results follow. Backtracking terminates: along a descent direction, every small enough
+positive step satisfies the Armijo condition. If $f$ is bounded below along the ray, a whole
+interval $[c, C]$ of steps satisfies the Armijo condition and both Wolfe conditions (Property 7.5 of
+[quarteroni2000numerical], Lemma 3.1 of [nocedal2006numerical]). **Zoutendijk's theorem** (Theorem
+3.2 of [nocedal2006numerical], the content of Property 7.7 of [quarteroni2000numerical]): for a
+descent sequence with Armijo–Wolfe steps, a Lipschitz derivative and $f$ bounded below on the
+iterates, $\sum_k (f'(x_k)\,d_k / \|d_k\|)^2 < \infty$. Hence either $f(x_k) \to -\infty$ or
+$f'(x_k)\,d_k / \|d_k\| \to 0$.
 
-Everything is stated on a real normed space with the derivative as data `f' : E → E →L[ℝ] ℝ` and
-the descent method as `Descent.IsDescentSequence` (`Numlib/Optimization/Descent`); the book's
-Lipschitz condition `‖∇f(x) − ∇f(y)‖₂ ≤ L ‖x − y‖₂` is the operator-norm Lipschitz condition on
-`f'`. The book's restriction `σ ∈ (0, 1/2)` is nowhere needed: Property 7.5 holds for
-`0 < σ < β < 1` and Zoutendijk's theorem for `0 < σ` and `β < 1`. The first alternative of
-Property 7.7, `∇f(x_k) = 0` for some `k`, is the termination case excluded by
-`IsDescentSequence.descent`; the book's (7.31) is printed with an outer `0 ≥ v_M(x_{k+1})`, which
-is a consequence of the inner inequality formalized here.
+## Main definitions
+
+* `LineSearch.Armijo`: the Armijo condition $f(x + \alpha d) \le f(x) + \sigma \alpha\, f'(x)\,d$.
+* `LineSearch.WolfeCurvature`: the weak Wolfe condition $\beta f'(x)\,d \le f'(x + \alpha d)\,d$.
+* `LineSearch.StrongWolfeCurvature`: the strong Wolfe condition
+  $|f'(x + \alpha d)\,d| \le \beta |f'(x)\,d|$.
+* `LineSearch.Goldstein`: the Goldstein conditions $f(x) + (1 - \sigma) \alpha\, f'(x)\,d \le f(x +
+  \alpha d) \le f(x) + \sigma \alpha\, f'(x)\,d$.
+
+## Main results
+
+* `LineSearch.eventually_armijo_of_isDescentDirection`: along a descent direction with $\sigma < 1$,
+  every small enough step $\alpha > 0$ satisfies the Armijo condition.
+* `LineSearch.exists_Icc_armijo_wolfe`: if $f$ is bounded below along the ray and
+  $0 < \sigma < \beta < 1$, an interval $[c, C]$ with $0 < c < C$ of steps satisfies the Armijo
+  condition and both Wolfe conditions.
+* `LineSearch.zoutendijk`: Zoutendijk's theorem, $\sum_k (f'(x_k)\,d_k / \|d_k\|)^2 < \infty$.
+* `LineSearch.tendsto_atBot_or_tendsto_zero`: either $f(x_k) \to -\infty$ or
+  $f'(x_k)\,d_k / \|d_k\| \to 0$.
+
+## Implementation notes
+
+* All results are stated on a real normed space, with the derivative as data `f' : E → E →L[ℝ] ℝ`
+  and the descent method as `Descent.IsDescentSequence`.
+* The Lipschitz condition $\|\nabla f(x) - \nabla f(y)\|_2 \le L \|x - y\|_2$ of
+  [quarteroni2000numerical] is the Lipschitz condition on $f'$ in the operator norm.
+* The restriction $\sigma \in (0, 1/2)$ of [quarteroni2000numerical] is not needed. Property 7.5
+  holds for $0 < \sigma < \beta < 1$, and Zoutendijk's theorem holds for $0 < \sigma$ and
+  $\beta < 1$.
+* The alternative $\nabla f(x_k) = 0$ for some $k$ in Property 7.7 of [quarteroni2000numerical] is
+  the termination case, which `Descent.IsDescentSequence.descent` excludes.
+* The source prints (7.31) with an outer inequality $0 \ge v_M(x_{k+1})$. This is a consequence of
+  the inner inequality, which is the one formalized here.
 -/
 
 open Filter Topology Metric Set
@@ -44,30 +69,40 @@ namespace LineSearch
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The **Armijo (sufficient decrease) condition** ([quarteroni2000numerical] (7.31)):
-`f (x + α d) ≤ f x + σ α f' x d`; for `α > 0` it says that the average descent rate
-`(f x - f (x + α d)) / α` is at least the fraction `-σ f' x d` of the initial rate. -/
+/-- The **Armijo condition** (sufficient decrease), (7.31) of [quarteroni2000numerical]. The step
+$\alpha$ along $d$ at $x$ satisfies it with parameter $\sigma$ if
+$$f(x + \alpha d) \le f(x) + \sigma \alpha\, f'(x)\,d.$$
+For $\alpha > 0$, this says that the average rate of descent $(f(x) - f(x + \alpha d))/\alpha$
+is at least the fraction $\sigma$ of the initial rate $-f'(x)\,d$. -/
 def Armijo (f : E → ℝ) (f' : E → E →L[ℝ] ℝ) (σ : ℝ) (x d : E) (α : ℝ) : Prop :=
   f (x + α • d) ≤ f x + σ * α * f' x d
 
-/-- The **(weak) Wolfe curvature condition** ([quarteroni2000numerical] (7.33)):
-`β f' x d ≤ f' (x + α d) d`, the slope along `d` at the new point is not more negative than the
-fraction `β` of the initial slope. -/
+/-- The **weak Wolfe curvature condition**, (7.33) of [quarteroni2000numerical]. The step $\alpha$
+along $d$ at $x$ satisfies it with parameter $\beta$ if
+$$\beta f'(x)\,d \le f'(x + \alpha d)\,d,$$
+that is, the slope along $d$ at the new point is not more negative than the fraction $\beta$ of
+the initial slope. -/
 def WolfeCurvature (f' : E → E →L[ℝ] ℝ) (β : ℝ) (x d : E) (α : ℝ) : Prop :=
   β * f' x d ≤ f' (x + α • d) d
 
-/-- The **strong Wolfe curvature condition** ([quarteroni2000numerical] (7.32)):
-`|f' (x + α d) d| ≤ β |f' x d|`; it implies `WolfeCurvature` when `f' x d < 0`. -/
+/-- The **strong Wolfe curvature condition**, (7.32) of [quarteroni2000numerical]. The step $\alpha$
+along $d$ at $x$ satisfies it with parameter $\beta$ if
+$$|f'(x + \alpha d)\,d| \le \beta |f'(x)\,d|.$$
+When $f'(x)\,d < 0$ it implies the weak Wolfe condition `LineSearch.WolfeCurvature`. -/
 def StrongWolfeCurvature (f' : E → E →L[ℝ] ℝ) (β : ℝ) (x d : E) (α : ℝ) : Prop :=
   |f' (x + α • d) d| ≤ β * |f' x d|
 
-/-- The **Goldstein conditions** ([quarteroni2000numerical] (7.34)):
-`f x + (1 - σ) α f' x d ≤ f (x + α d) ≤ f x + σ α f' x d`, which for `f' x d < 0` and `α > 0` read
-`σ ≤ (f (x + α d) - f x) / (α f' x d) ≤ 1 - σ`. The second inequality is the Armijo condition. -/
+/-- The **Goldstein conditions**, (7.34) of [quarteroni2000numerical]. The step $\alpha$ along $d$
+at $x$ satisfies them with parameter $\sigma$ if
+$$f(x) + (1 - \sigma) \alpha\, f'(x)\,d \le f(x + \alpha d) \le f(x) + \sigma \alpha\,
+  f'(x)\,d.$$
+For $f'(x)\,d < 0$ and $\alpha > 0$, they read $\sigma \le (f(x + \alpha d) - f(x)) / (\alpha
+f'(x)\,d) \le 1 - \sigma$. The second inequality is the Armijo condition. -/
 def Goldstein (f : E → ℝ) (f' : E → E →L[ℝ] ℝ) (σ : ℝ) (x d : E) (α : ℝ) : Prop :=
   f x + (1 - σ) * α * f' x d ≤ f (x + α • d) ∧ f (x + α • d) ≤ f x + σ * α * f' x d
 
-/-- The strong Wolfe condition implies the weak one along a descent direction. -/
+/-- If $d$ is a descent direction at $x$, then a step that satisfies the strong Wolfe condition with
+parameter $\beta$ also satisfies the weak Wolfe condition with parameter $\beta$. -/
 theorem StrongWolfeCurvature.wolfeCurvature {f' : E → E →L[ℝ] ℝ} {β : ℝ} {x d : E} {α : ℝ}
     (hd : Descent.IsDescentDirection f' x d) (h : StrongWolfeCurvature f' β x d α) :
     WolfeCurvature f' β x d α := by
@@ -77,15 +112,20 @@ theorem StrongWolfeCurvature.wolfeCurvature {f' : E → E →L[ℝ] ℝ} {β : �
   change β * f' x d ≤ f' (x + α • d) d
   linarith
 
-/-- The Goldstein conditions contain the Armijo condition. -/
+/-- A step that satisfies the Goldstein conditions with parameter $\sigma$ satisfies the Armijo
+condition with parameter $\sigma$. -/
 theorem Goldstein.armijo {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {σ : ℝ} {x d : E} {α : ℝ}
     (h : Goldstein f f' σ x d α) : Armijo f f' σ x d α :=
   h.2
 
-/-- **Backtracking terminates** ([quarteroni2000numerical] §7.2.3, Program 62): along a descent
-direction, with `σ < 1`, every small enough positive step satisfies the Armijo condition, because
-the derivative of `t ↦ f (x + t d) - f x - σ t f' x d` at `0` is `(1 - σ) f' x d < 0`. Hence the
-Armijo rule `α_k = β^{m_k} ᾱ` finds an admissible `m_k` after finitely many reductions. -/
+/-- **Backtracking terminates**, §7.2.3 and Program 62 of [quarteroni2000numerical]. Let
+$f : E \to \mathbb{R}$ be differentiable at $x$ with derivative $f'(x)$, let $d$ be a descent
+direction at $x$, and let $\sigma < 1$. Then every small enough step $\alpha > 0$ satisfies the
+Armijo condition with parameter $\sigma$.
+
+The reason is that $t \mapsto f(x + td) - f(x) - \sigma t\, f'(x)\,d$ has derivative
+$(1 - \sigma) f'(x)\,d < 0$ at $0$. Hence the Armijo rule $\alpha_k = \beta^{m_k} \bar\alpha$
+finds an admissible $m_k$ after finitely many reductions. -/
 theorem eventually_armijo_of_isDescentDirection {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : E} {σ : ℝ}
     (hf : HasFDerivAt f (f' x) x) (hd : Descent.IsDescentDirection f' x d) (hσ : σ < 1) :
     ∀ᶠ α in 𝓝[>] (0 : ℝ), Armijo f f' σ x d α := by
@@ -97,18 +137,23 @@ theorem eventually_armijo_of_isDescentDirection {f : E → ℝ} {f' : E → E �
   change f (x + t • d) ≤ f x + σ * t * f' x d
   linarith
 
-/-- **Existence of an interval of admissible steps** ([quarteroni2000numerical] Property 7.5;
-Nocedal–Wright Lemma 3.1): if `f` is differentiable with continuous derivative, bounded below along
-the ray `x + t d`, `d` is a descent direction at `x`, and `0 < σ < β < 1`, then there is an
-interval `[c, C]` with `0 < c < C` on which the Armijo condition and both the weak and the strong
-Wolfe curvature conditions hold.
+/-- **Existence of an interval of admissible steps**, Property 7.5 of [quarteroni2000numerical] and
+Lemma 3.1 of [nocedal2006numerical]. Let $f : E \to \mathbb{R}$ have derivative $f'(y)$ at every
+$y$, with $f'$ continuous. Let $d$ be a descent direction at $x$, let $f(x + td) \ge M$ for all
+$t \in \mathbb{R}$, and let $0 < \sigma < \beta < 1$. Then there are $c, C$ with $0 < c < C$
+such that every $\alpha \in [c, C]$ satisfies the Armijo condition with parameter $\sigma$ and
+both the weak and the strong Wolfe conditions with parameter $\beta$.
 
-Proof: `φ t = f (x + t d)` and `l t = f x + σ t f' x d`; `φ - l` is negative just to the right of
-`0` (`σ < 1`) and nonnegative far out (`l → -∞`, `φ ≥ M`), so it has a first zero `α' > 0`, and
-the Armijo condition holds on `(0, α']`. The mean value theorem gives `α'' ∈ (0, α')` with
-`φ' α'' = σ f' x d`, which is `> β f' x d` and has `|φ' α''| < β |f' x d|` because `σ < β`;
-continuity of `φ'` extends both to a closed interval around `α''` inside `(0, α')`. The book's
-`σ < 1/2` is not needed. -/
+The restriction $\sigma < 1/2$ of [quarteroni2000numerical] is not needed.
+
+Proof idea: let $\varphi(t) = f(x + td)$ and $l(t) = f(x) + \sigma t\, f'(x)\,d$. The function
+$\varphi - l$ is negative just to the right of $0$, because $\sigma < 1$, and nonnegative far
+out, because $l \to -\infty$ and $\varphi \ge M$. So it has a first zero $\alpha' > 0$, and the
+Armijo condition holds on $(0, \alpha']$. The mean value theorem gives
+$\alpha'' \in (0, \alpha')$ with $\varphi'(\alpha'') = \sigma f'(x)\,d$. This value is greater
+than $\beta f'(x)\,d$ and satisfies $|\varphi'(\alpha'')| < \beta |f'(x)\,d|$, because
+$\sigma < \beta$. Continuity of $\varphi'$ extends both inequalities to a closed interval around
+$\alpha''$ inside $(0, \alpha')$. -/
 theorem exists_Icc_armijo_wolfe {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : E} {M σ β : ℝ}
     (hf : ∀ y, HasFDerivAt f (f' y) y) (hcont : Continuous f')
     (hM : ∀ t : ℝ, M ≤ f (x + t • d)) (hd : Descent.IsDescentDirection f' x d)
@@ -212,15 +257,20 @@ theorem exists_Icc_armijo_wolfe {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x 
   · obtain ⟨h1, h2, h3⟩ := hηsub (hmemη t ht)
     exact ⟨harm t ⟨h3.1, h3.2.le⟩, h1.le, h2.le⟩
 
-/-- **Zoutendijk's theorem** (Nocedal–Wright Theorem 3.2; the content of
-[quarteroni2000numerical] Property 7.7): for a descent sequence `x_{k+1} = x_k + α_k d_k` whose
-steps satisfy the Armijo and (weak) Wolfe conditions, with `f'` Lipschitz of constant `L` and `f`
-bounded below on the iterates, the series `∑ (f' x_k d_k / ‖d_k‖)²` converges.
+/-- **Zoutendijk's theorem**, Theorem 3.2 of [nocedal2006numerical], the content of Property 7.7 of
+[quarteroni2000numerical]. Let $f : E \to \mathbb{R}$ and $f' : E \to E^*$ with
+$\|f'(y) - f'(z)\| \le L \|y - z\|$ for all $y, z$. Let $x_{k+1} = x_k + \alpha_k d_k$ be a
+descent sequence (`Descent.IsDescentSequence`) whose steps satisfy the Armijo condition with
+parameter $\sigma > 0$ and the weak Wolfe condition with parameter $\beta < 1$, and let
+$f(x_k) \ge M$ for all $k$. Then the series
+$$\sum_k \left(\frac{f'(x_k)\,d_k}{\|d_k\|}\right)^2$$
+converges.
 
-Proof: the curvature condition and the Lipschitz bound give
-`(β - 1) f' x_k d_k ≤ L α_k ‖d_k‖²`, hence a lower bound on `α_k`; the Armijo condition then gives
-`f x_{k+1} ≤ f x_k - (σ (1 - β) / L) (f' x_k d_k / ‖d_k‖)²`, and the sum telescopes to
-`f x_0 - M`. Differentiability of `f` is not used: only the three inequalities are. -/
+Proof idea: the curvature condition and the Lipschitz bound give $(\beta - 1) f'(x_k)\,d_k \le L
+\alpha_k \|d_k\|^2$, which is a lower bound on $\alpha_k$. The Armijo condition then gives
+$f(x_{k+1}) \le f(x_k) - (\sigma (1 - \beta) / L)(f'(x_k)\,d_k / \|d_k\|)^2$, and the sum
+telescopes to at most $f(x_0) - M$. Differentiability of $f$ is not used, only these three
+inequalities. -/
 theorem zoutendijk {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : ℕ → E} {α : ℕ → ℝ} {L σ β M : ℝ}
     (hL : ∀ y z, ‖f' y - f' z‖ ≤ L * ‖y - z‖) (hseq : Descent.IsDescentSequence f' x d α)
     (harmijo : ∀ k, Armijo f f' σ (x k) (d k) (α k))
@@ -291,12 +341,15 @@ theorem zoutendijk {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : ℕ → E
   rw [htel, ← Finset.mul_sum] at hsum
   linarith [hM n]
 
-/-- **Global convergence of descent methods with Armijo–Wolfe steps**
-([quarteroni2000numerical] Property 7.7): under the hypotheses of `LineSearch.zoutendijk` without
-the lower bound on `f`, either `f (x_k) → -∞` or `f' x_k d_k / ‖d_k‖ → 0`. Indeed `f (x_k)` is
-decreasing; if it is unbounded below it tends to `-∞`, and otherwise Zoutendijk's theorem applies
-and the summands tend to `0`. The book's third alternative, `∇f(x_k) = 0` for some `k`, is the
-termination case excluded by `IsDescentSequence.descent`. -/
+/-- **Global convergence of descent methods with Armijo–Wolfe steps**, Property 7.7 of
+[quarteroni2000numerical]. Under the hypotheses of `LineSearch.zoutendijk` without the lower
+bound on $f$, either $f(x_k) \to -\infty$ or
+$$\frac{f'(x_k)\,d_k}{\|d_k\|} \to 0.$$
+
+The sequence $f(x_k)$ is decreasing. If it is unbounded below, it tends to $-\infty$. Otherwise
+Zoutendijk's theorem applies, and the summands tend to $0$. The third alternative of the source,
+$\nabla f(x_k) = 0$ for some $k$, is the termination case, which
+`Descent.IsDescentSequence.descent` excludes. -/
 theorem tendsto_atBot_or_tendsto_zero {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : ℕ → E}
     {α : ℕ → ℝ} {L σ β : ℝ} (hL : ∀ y z, ‖f' y - f' z‖ ≤ L * ‖y - z‖)
     (hseq : Descent.IsDescentSequence f' x d α)

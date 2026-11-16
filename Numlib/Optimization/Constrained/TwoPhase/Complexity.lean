@@ -7,49 +7,71 @@ import Numlib.Optimization.Constrained.TwoPhase.Run
 /-!
 # Evaluation complexity of the outer loop of two-phase target-following methods
 
-For a run of Phase 2 of a two-phase target-following method (`Constrained.IsTargetFollowingRun`)
-whose inner calls satisfy a contract (`Constrained.TargetFollowingSeq.IsInnerContract`), this file
-bounds the number of outer iterations and the evaluation counts ([cartis2022evaluation],
-Lemmas 7.2.6 and 14.3.8, Theorems 7.2.7 and 14.3.9).
+This file bounds the number of outer iterations and the numbers of evaluations of Phase 2 of a
+two-phase target-following method, for the problem of minimizing $f(x)$ subject to $x \in X$ and
+$c(x) = 0$. The run is a `Constrained.IsTargetFollowingRun`: outer iterates $x_k$, targets $t_k$,
+and for each outer iteration $k \ge 1$ an inner call with iterates
+$x_{k,0} = x_k, \dots, x_{k,e_k} = x_{k+1}$ on the residual $\|r(\cdot, t_k)\|$, where
+$r(x, t) = (c(x), f(x) - t)$. The inner calls satisfy a contract
+(`Constrained.TargetFollowingSeq.IsInnerContract`): a bound on the length of a call by its number of
+successful iterations, no move at unsuccessful iterations, and a residual decrease of at least
+$\delta$ at every good iteration. The results are Lemmas 7.2.6 and 14.3.8 and Theorems 7.2.7 and
+14.3.9 of [cartis2022evaluation] for Phase 2.
 
-The argument: an inner iteration is *good* if it is successful, its new residual is at least
-`θε₀`, and it is not the last iteration of a call that ends at a point passing the *exemption
-test* `exempt k` (`TargetFollowingSeq.IsGood`). The contract guarantees that good iterations lower
-the residual `‖r(·, t_k)‖` by at least `δ`; telescoping the residual above `θε₀` over the blocks of
-outer iterations between consecutive case-(a) iterations bounds their total number by
-`(1 - θ)ε₀/δ · (|𝒦_a| + 1)`. Every successful inner iteration but the last one of its call is
-good, every case-(b) iteration whose call does not end at an exempt point contains a good
-iteration, and `|𝒦_a| ≤ N_a = (f_up - f_low + 1)/((1 - θ)ε₀)` (Lemma 7.2.4). The remaining
-*bad* outer iterations (case (b), no good iteration; their calls end at exempt points) are not
-bounded by this argument; their number is a parameter of the complexity theorem. A
-margin argument bounds them when the exemption test at the old target is incompatible with the
-failure of the criticality test at the new one unless the target drops by a fixed amount
-(`IsTargetFollowingRun.card_kb_le_of_margin`).
+Fix an exemption test, a predicate on the outer iterations. An inner iteration $(k, i)$ is **good**
+if it is successful, its new iterate has residual $\|r(x_{k,i+1}, t_k)\| \ge \theta\varepsilon_0$,
+and it is not the last iteration of a call whose output passes the exemption test. An outer
+iteration is **bad** if it is in case (b) and its call has no good iteration. Write $\mathcal{K}_a$
+and $\mathcal{K}_b$ for the outer iterations in case (a) and in case (b), $\mathcal{S}_k$ and
+$\mathcal{G}_k$ for the successful and the good iterations of the $k$-th call, $n_{\mathrm{bad}}(K)$
+for the number of bad outer iterations in $[1, K)$, and $N_a = (f_{\mathrm{up}} - f_{\mathrm{low}} +
+1)/((1 - \theta)\varepsilon_0)$. Here $f_{\mathrm{low}} \le f \le f_{\mathrm{up}}$ on the points of
+$X$ with $\|c\| \le \varepsilon_0$ (assumption f.B.Fb of [cartis2022evaluation]). The main bound is
+$K \le (N_a + 1)(G + 1) + n_{\mathrm{bad}}(K)$ for every outer iteration $K$ that is reached, where
+$G \ge (1 - \theta)\varepsilon_0/\delta$.
 
 ## Main definitions
 
-* `Constrained.TargetFollowingSeq.succCount`, `funEvals`, `derivEvals`, `kaCount`, `kbCount`:
-  the counts of Phase 2;
-* `Constrained.TargetFollowingSeq.IsGood`, `goodCount`, `IsBad`, `badCount`: good inner iterations
-  and bad outer iterations for an exemption test;
-* `Constrained.TargetFollowingSeq.IsInnerContract`: the contract of the inner method;
-* `Constrained.kbMargin`: the margin `θ(1 - θ)ε₀/(1 + θ)`.
+* `Constrained.TargetFollowingSeq.succCount`, `Constrained.TargetFollowingSeq.funEvals`,
+  `Constrained.TargetFollowingSeq.derivEvals`, `Constrained.TargetFollowingSeq.kaCount`,
+  `Constrained.TargetFollowingSeq.kbCount`: the counts of Phase 2.
+* `Constrained.TargetFollowingSeq.IsGood`, `Constrained.TargetFollowingSeq.goodCount`,
+  `Constrained.TargetFollowingSeq.IsBad`, `Constrained.TargetFollowingSeq.badCount`: the good inner
+  iterations and the bad outer iterations for an exemption test.
+* `Constrained.TargetFollowingSeq.IsInnerContract`: the contract of the inner method.
+* `Constrained.kbMargin`: the margin $\eta = \theta(1 - \theta)\varepsilon_0/(1 + \theta)$.
 
 ## Main results
 
 * `Constrained.TargetFollowingSeq.IsInnerContract.sum_goodCount_le`: the good inner iterations of
-  `[1, K]` number at most `(1 - θ)ε₀/δ · (|𝒦_a ∩ [1, K)| + 1)` ((7.2.39), (14.3.71));
-* `Constrained.TargetFollowingSeq.le_counts`: `K ≤ |𝒦_a| + ∑_k |good_k| + n_bad + 1`;
-* `Constrained.TargetFollowingSeq.IsInnerContract.complexity`: Theorems 7.2.7 and 14.3.9
-  (Phase 2) with the number of bad iterations as a parameter;
-* `Constrained.TargetFollowingSeq.IsInnerContract.complexity_of_badCount_le`: termination and
-  evaluation bounds given a bound on the bad iterations;
-* `Constrained.IsTargetFollowingRun.exempt_of_isBad`: if unsuccessful inner iterations do not
-  move, the call of a bad outer iteration ends at an exempt point;
-* `Constrained.IsTargetFollowingRun.kbCount_le_of_drop`, `card_kb_le_of_drop`: bounds on the
-  case-(b) iterations that lower the target by a fixed amount;
-  `Constrained.IsTargetFollowingRun.card_kb_le_of_margin`: the same when only the iterations with
-  a large margin lower the target, one small-margin iteration per block being allowed.
+  the calls $1, \dots, K$ number at most $(1 - \theta)\varepsilon_0/\delta \cdot (|\mathcal{K}_a
+  \cap [1, K)| + 1)$ ((7.2.39) and (14.3.71) of [cartis2022evaluation]).
+* `Constrained.TargetFollowingSeq.le_counts`: $K \le |\mathcal{K}_a \cap [1, K)| + \sum_{k=1}^{K}
+  |\mathcal{G}_k| + n_{\mathrm{bad}}(K) + 1$.
+* `Constrained.TargetFollowingSeq.IsInnerContract.complexity`: Theorems 7.2.7 and 14.3.9 of
+  [cartis2022evaluation] for Phase 2, with the number of bad outer iterations as a parameter.
+* `Constrained.TargetFollowingSeq.IsInnerContract.complexity_of_badCount_le`: termination and the
+  evaluation bounds, given a bound on the bad outer iterations.
+* `Constrained.IsTargetFollowingRun.exempt_of_isBad`: if unsuccessful inner iterations do not move,
+  the call of a bad outer iteration ends at a point that passes the exemption test.
+* `Constrained.IsTargetFollowingRun.kbCount_le_of_drop`,
+  `Constrained.IsTargetFollowingRun.card_kb_le_of_drop`: bounds on the case-(b) iterations that
+  lower the target by a fixed amount.
+* `Constrained.IsTargetFollowingRun.card_kb_le_of_margin`: the same bound when only the case-(b)
+  iterations with a large margin lower the target; one iteration with a small margin is allowed
+  between consecutive case-(a) iterations.
+
+## Proof outline
+
+The contract makes every good iteration lower $\|r(\cdot, t_k)\|$ by at least $\delta$. Between two
+consecutive case-(a) iterations the residual above $\theta\varepsilon_0$ telescopes over the block
+of outer iterations, so the good iterations number at most $(1 - \theta)\varepsilon_0/\delta \cdot
+(|\mathcal{K}_a| + 1)$. Every successful inner iteration except the last one of its call is good.
+Every case-(b) iteration whose call does not end at an exempt point contains a good iteration. Lemma
+7.2.4 of [cartis2022evaluation] gives $|\mathcal{K}_a| \le N_a$. The bad outer iterations are not
+bounded by this argument. A margin argument bounds them when the exemption test at the old target is
+incompatible with the failure of the criticality test at the new target, unless the target drops by
+a fixed amount (`Constrained.IsTargetFollowingRun.card_kb_le_of_margin`).
 -/
 
 open Finset
@@ -58,12 +80,18 @@ namespace Constrained
 
 variable {E F : Type*} [NormedAddCommGroup F]
 
-/-- The margin `η = θ(1 - θ)ε₀/(1 + θ)` of the bound on the case-(b) iterations
-(`Constrained.IsTargetFollowingRun.card_kb_le_of_margin`). -/
+/-- The **margin** $\eta = \theta(1 - \theta)\varepsilon_0/(1 + \theta)$ of the bound on the
+case-(b) iterations in `Constrained.IsTargetFollowingRun.card_kb_le_of_margin`.
+
+It is the value of $\eta$ for which $\theta\varepsilon_0 - \theta(\theta\varepsilon_0 + \eta) =
+\eta$. -/
 noncomputable def kbMargin (θ ε₀ : ℝ) : ℝ := θ * (1 - θ) * ε₀ / (1 + θ)
 
+/-- The margin is $\eta = \theta(1 - \theta)\varepsilon_0/(1 + \theta)$. -/
 theorem kbMargin_def (θ ε₀ : ℝ) : kbMargin θ ε₀ = θ * (1 - θ) * ε₀ / (1 + θ) := rfl
 
+/-- For $0 \le \theta \le 1$ and $\varepsilon_0 \ge 0$, the margin
+$\theta(1 - \theta)\varepsilon_0/(1 + \theta)$ is nonnegative. -/
 theorem kbMargin_nonneg {θ ε₀ : ℝ} (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ 1) (hε₀ : 0 ≤ ε₀) :
     0 ≤ kbMargin θ ε₀ := by
   unfold kbMargin
@@ -77,109 +105,147 @@ variable (S : TargetFollowingSeq E)
 section Counts
 
 open Classical in
-/-- The number of successful iterations (`succ k i`) of the `k`-th inner call. -/
+/-- The number $|\mathcal{S}_k|$ of **successful iterations** of the $k$-th inner call: the number
+of $i \in [0, e_k)$ with `succ k i`. -/
 noncomputable def succCount (succ : ℕ → ℕ → Prop) (k : ℕ) : ℕ :=
   ((range (S.e k)).filter (succ k)).card
 
-/-- The number of function evaluations of Phase 2 up to outer iteration `k`:
-`1 + ∑_{j ∈ [1, k]} e_j` (one at `x₁` and one per inner iteration). -/
+/-- The number of **function evaluations** of Phase 2 up to outer iteration $k$:
+$1 + \sum_{j=1}^{k} e_j$, one evaluation at $x_1$ and one per inner iteration. -/
 noncomputable def funEvals (k : ℕ) : ℕ := 1 + ∑ j ∈ Icc 1 k, S.e j
 
-/-- The number of derivative evaluations of Phase 2 up to outer iteration `k`: one at `x₁` and
-one per successful inner iteration. -/
+/-- The number of **derivative evaluations** of Phase 2 up to outer iteration $k$:
+$1 + \sum_{j=1}^{k} |\mathcal{S}_j|$, one evaluation at $x_1$ and one per successful inner
+iteration. -/
 noncomputable def derivEvals (succ : ℕ → ℕ → Prop) (k : ℕ) : ℕ :=
   1 + ∑ j ∈ Icc 1 k, S.succCount succ j
 
 open Classical in
-/-- The number of case-(a) iterations among the outer iterations `[1, K)`. -/
+/-- The number $|\mathcal{K}_a \cap [1, K)|$ of **case-(a) iterations** among the outer iterations
+$1, \dots, K - 1$. -/
 noncomputable def kaCount (K : ℕ) : ℕ := ((Ico 1 K).filter S.Ka).card
 
 open Classical in
-/-- The number of case-(b) iterations among the outer iterations `[1, K)`. -/
+/-- The number $|\mathcal{K}_b \cap [1, K)|$ of **case-(b) iterations** among the outer iterations
+$1, \dots, K - 1$. -/
 noncomputable def kbCount (K : ℕ) : ℕ := ((Ico 1 K).filter S.Kb).card
 
 variable (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (succ : ℕ → ℕ → Prop) (exempt : ℕ → Prop)
 
-/-- A *good* inner iteration `(k, i)` for the exemption test `exempt` (the iterations counted by
-the proofs of Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]): it is successful, it is not the
-last iteration of a call whose output passes `exempt k`, and its new iterate has residual
-`‖r(x_{k,i+1}, t_k)‖ ≥ θε₀`. -/
+/-- A **good** inner iteration $(k, i)$ for the exemption test `exempt`: $i < e_k$, the iteration is
+successful, either $i + 1 < e_k$ or the output of the $k$-th call fails the exemption test, and
+the new iterate has residual $\|r(x_{k,i+1}, t_k)\| \ge \theta\varepsilon_0$.
+
+These are the iterations that the proofs of Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]
+count. The predicate `exempt k` says that the output $x_{k+1}$ of the $k$-th call passes the
+exemption test. -/
 def IsGood (k i : ℕ) : Prop :=
   i < S.e k ∧ succ k i ∧ (i + 1 < S.e k ∨ ¬ exempt k) ∧
     θ * ε₀ ≤ targetResidual f c (S.t k) (S.xi k (i + 1))
 
 open Classical in
-/-- The number of good iterations of the `k`-th inner call. -/
+/-- The number $|\mathcal{G}_k|$ of good iterations of the $k$-th inner call: the number of
+$i \in [0, e_k)$ for which $(k, i)$ is good. -/
 noncomputable def goodCount (k : ℕ) : ℕ :=
   ((range (S.e k)).filter (S.IsGood f c θ ε₀ succ exempt k)).card
 
-/-- A *bad* outer iteration: case (b) and no good iteration in its call. -/
+/-- A **bad** outer iteration $k$: $k \in \mathcal{K}_b$ and the $k$-th call has no good iteration.
+-/
 def IsBad (k : ℕ) : Prop := S.Kb k ∧ S.goodCount f c θ ε₀ succ exempt k = 0
 
 open Classical in
-/-- The number of bad outer iterations among `[1, K)`. -/
+/-- The number $n_{\mathrm{bad}}(K)$ of bad outer iterations among $1, \dots, K - 1$. -/
 noncomputable def badCount (K : ℕ) : ℕ :=
   ((Ico 1 K).filter (S.IsBad f c θ ε₀ succ exempt)).card
 
 /-- **The contract of the inner method** of Phase 2, for the successful iterations `succ`, the
-exemption test `exempt`, a residual decrease `δ` and per-call constants `κ_uns`, `κ_unc`: for
-every outer iteration `k ≥ 1` reached,
-* (count) `e_k ≤ κ_uns |𝒮_k| + κ_unc` (Lemma 2.4.1 or (14.2.13) of [cartis2022evaluation]);
-* (stay) unsuccessful inner iterations do not move;
-* (decrease) every good inner iteration lowers the residual `‖r(·, t_k)‖` by at least `δ`
-  (from the merit decreases of Lemmas 6.2.4 or 14.2.2, via `Constrained.sub_ge_of_residual_decrease`
-  or `Constrained.sub_ge_of_merit_decrease`). -/
+exemption test `exempt`, a residual decrease $\delta$ and constants $\kappa_{\mathrm{uns}}$,
+$\kappa_{\mathrm{unc}}$. It holds if, for every outer iteration $k \ge 1$ that is reached:
+
+* (count) $e_k \le \kappa_{\mathrm{uns}} |\mathcal{S}_k| + \kappa_{\mathrm{unc}}$, as in Lemma
+  2.4.1 or (14.2.13) of [cartis2022evaluation];
+* (stay) every unsuccessful inner iteration $i < e_k$ has $x_{k,i+1} = x_{k,i}$;
+* (decrease) every good inner iteration $(k, i)$ has $\|r(x_{k,i}, t_k)\| - \|r(x_{k,i+1},
+  t_k)\| \ge \delta$.
+
+The decrease follows from the merit decreases of Lemmas 6.2.4 or 14.2.2 of
+[cartis2022evaluation], through `Constrained.sub_ge_of_residual_decrease` or
+`Constrained.sub_ge_of_merit_decrease`. An outer iteration $k$ is reached if no outer iteration
+in $[1, k)$ terminates Phase 2 (`Constrained.TargetFollowingSeq.Before`). -/
 structure IsInnerContract (δ κuns κunc : ℝ) : Prop where
+  /-- The length of each call is at most $\kappa_{\mathrm{uns}} |\mathcal{S}_k| +
+  \kappa_{\mathrm{unc}}$. -/
   count : ∀ k, 1 ≤ k → S.Before k → (S.e k : ℝ) ≤ κuns * S.succCount succ k + κunc
+  /-- Unsuccessful inner iterations do not move the iterate. -/
   stay : ∀ k, 1 ≤ k → S.Before k → ∀ i < S.e k, ¬ succ k i → S.xi k (i + 1) = S.xi k i
+  /-- Every good inner iteration lowers the residual $\|r(\cdot, t_k)\|$ by at least $\delta$. -/
   decrease : ∀ k, 1 ≤ k → S.Before k → ∀ i, S.IsGood f c θ ε₀ succ exempt k i →
     δ ≤ targetResidual f c (S.t k) (S.xi k i) - targetResidual f c (S.t k) (S.xi k (i + 1))
 
 variable {S f c θ ε₀ succ exempt}
 
+/-- An inner iteration $(k, i)$ is good if and only if $i < e_k$, it is successful, either
+$i + 1 < e_k$ or the output of the $k$-th call fails the exemption test, and
+$\|r(x_{k,i+1}, t_k)\| \ge \theta\varepsilon_0$. -/
 theorem isGood_iff {k i : ℕ} :
     S.IsGood f c θ ε₀ succ exempt k i ↔ i < S.e k ∧ succ k i ∧ (i + 1 < S.e k ∨ ¬ exempt k) ∧
       θ * ε₀ ≤ targetResidual f c (S.t k) (S.xi k (i + 1)) :=
   Iff.rfl
 
+/-- An outer iteration is bad if and only if it is in $\mathcal{K}_b$ and its call has no good
+iteration. -/
 theorem isBad_iff {k : ℕ} :
     S.IsBad f c θ ε₀ succ exempt k ↔ S.Kb k ∧ S.goodCount f c θ ε₀ succ exempt k = 0 :=
   Iff.rfl
 
+/-- The number of good iterations of the $k$-th call is the cardinality of the set of good
+$i \in [0, e_k)$, for every decidability instance of the predicate. -/
 theorem goodCount_eq_card_filter (k : ℕ) [DecidablePred (S.IsGood f c θ ε₀ succ exempt k)] :
     S.goodCount f c θ ε₀ succ exempt k =
       ((range (S.e k)).filter (S.IsGood f c θ ε₀ succ exempt k)).card := by
   unfold goodCount; congr
 
+/-- The $k$-th call has no good iteration if and only if no $i < e_k$ gives a good iteration
+$(k, i)$. -/
 theorem goodCount_eq_zero_iff {k : ℕ} :
     S.goodCount f c θ ε₀ succ exempt k = 0 ↔ ∀ i < S.e k, ¬ S.IsGood f c θ ε₀ succ exempt k i := by
   classical
   rw [goodCount_eq_card_filter, card_eq_zero, filter_eq_empty_iff]
   exact ⟨fun h i hi => h (mem_range.2 hi), fun h i hi => h i (mem_range.1 hi)⟩
 
+/-- The number of bad outer iterations among $1, \dots, K - 1$ is the cardinality of the set of bad
+$k \in [1, K)$, for every decidability instance of the predicate. -/
 theorem badCount_eq_card_filter (K : ℕ) [DecidablePred (S.IsBad f c θ ε₀ succ exempt)] :
     S.badCount f c θ ε₀ succ exempt K = ((Ico 1 K).filter (S.IsBad f c θ ε₀ succ exempt)).card := by
   unfold badCount; congr
 
+/-- The number of successful iterations of the $k$-th call is the cardinality of the set of
+successful $i \in [0, e_k)$, for every decidability instance of the predicate. -/
 theorem succCount_eq_card_filter (k : ℕ) [DecidablePred (succ k)] :
     S.succCount succ k = ((range (S.e k)).filter (succ k)).card := by
   unfold succCount; congr
 
+/-- The number of case-(a) iterations among $1, \dots, K - 1$ is the cardinality of
+$\mathcal{K}_a \cap [1, K)$, for every decidability instance of the predicate. -/
 theorem kaCount_eq_card_filter (K : ℕ) [DecidablePred S.Ka] :
     S.kaCount K = ((Ico 1 K).filter S.Ka).card := by
   unfold kaCount; congr
 
+/-- The number of case-(b) iterations among $1, \dots, K - 1$ is the cardinality of
+$\mathcal{K}_b \cap [1, K)$, for every decidability instance of the predicate. -/
 theorem kbCount_eq_card_filter (K : ℕ) [DecidablePred S.Kb] :
     S.kbCount K = ((Ico 1 K).filter S.Kb).card := by
   unfold kbCount; congr
 
+/-- The number of derivative evaluations up to outer iteration $k$ is
+$1 + \sum_{j=1}^{k} |\mathcal{S}_j|$, as a real number. -/
 theorem derivEvals_eq (k : ℕ) :
     (S.derivEvals succ k : ℝ) = 1 + ∑ j ∈ Icc 1 k, (S.succCount succ j : ℝ) := by
   unfold derivEvals
   push_cast
   rfl
 
-/-- A bad outer iteration is in case (b): `n_bad(K) ≤ |𝒦_b ∩ [1, K)|`. -/
+/-- A bad outer iteration is in case (b): $n_{\mathrm{bad}}(K) \le |\mathcal{K}_b \cap [1, K)|$. -/
 theorem badCount_le_kbCount (K : ℕ) : S.badCount f c θ ε₀ succ exempt K ≤ S.kbCount K := by
   classical
   unfold badCount kbCount
@@ -187,9 +253,12 @@ theorem badCount_le_kbCount (K : ℕ) : S.badCount f c θ ε₀ succ exempt K �
     rw [mem_filter] at hk ⊢
     exact ⟨hk.1, hk.2.1⟩
 
-/-- **Counting the outer iterations**: each outer iteration `k ∈ [1, K)` before termination is in
-case (a), bad, or contains a good inner iteration, so
-`K ≤ |𝒦_a ∩ [1, K)| + ∑_{k ∈ [1, K]} |good_k| + n_bad(K) + 1`. -/
+/-- **Counting the outer iterations.** If the outer iteration $K$ is reached, then
+$$K \le |\mathcal{K}_a \cap [1, K)| + \sum_{k=1}^{K} |\mathcal{G}_k| + n_{\mathrm{bad}}(K) +
+  1.$$
+
+Each outer iteration $k \in [1, K)$ does not terminate Phase 2, so it is in case (a), or it is
+bad, or its call contains a good inner iteration. -/
 theorem le_counts {K : ℕ} (hK : S.Before K) :
     K ≤ S.kaCount K + ∑ k ∈ Icc 1 K, S.goodCount f c θ ε₀ succ exempt k +
       S.badCount f c θ ε₀ succ exempt K + 1 := by
@@ -216,8 +285,11 @@ open TargetFollowingSeq
 variable {f : E → ℝ} {c : E → F} {θ ε₀ : ℝ} {X : Set E} {x₁ : E} {S : TargetFollowingSeq E}
   {succ : ℕ → ℕ → Prop} {exempt : ℕ → Prop}
 
-/-- Every successful inner iteration except possibly the last one of its call is good:
-`|𝒮_k| ≤ |good_k| + 1`. -/
+/-- Let $S$ be a run of Phase 2, and let $k \ge 1$ be an outer iteration that is reached. Then every
+successful inner iteration of the $k$-th call except possibly the last one is good, for every
+exemption test:
+$$|\mathcal{S}_k| \le |\mathcal{G}_k| + 1.$$
+-/
 theorem succCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {k : ℕ} (hk1 : 1 ≤ k)
     (hk : S.Before k) :
     S.succCount succ k ≤ S.goodCount f c θ ε₀ succ exempt k + 1 := by
@@ -232,7 +304,8 @@ theorem succCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {k : ℕ} 
   · exact Or.inr ⟨hi.1, hi.1, hi.2, Or.inl hi1, h.inner_residual_ge k hk1 hk (i + 1) hi1⟩
   · left; omega
 
-/-- `∑_{k ∈ [1, K]} |𝒮_k| ≤ ∑_{k ∈ [1, K]} |good_k| + K`. -/
+/-- For a run of Phase 2 and an outer iteration $K$ that is reached, $\sum_{k=1}^{K} |\mathcal{S}_k|
+\le \sum_{k=1}^{K} |\mathcal{G}_k| + K$. -/
 theorem sum_succCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {K : ℕ} (hK : S.Before K) :
     (∑ k ∈ Icc 1 K, (S.succCount succ k : ℝ)) ≤
       ∑ k ∈ Icc 1 K, (S.goodCount f c θ ε₀ succ exempt k : ℝ) + K := by
@@ -242,8 +315,13 @@ theorem sum_succCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {K : �
   rw [sum_add_distrib, sum_const, Nat.card_Icc, smul_eq_mul, mul_one, Nat.add_sub_cancel] at this
   exact_mod_cast this
 
-/-- **Lemma 7.2.4** for a run ([cartis2022evaluation]): under f.B.Fb (`f_low ≤ f ≤ f_up` on the
-points of `X` with `‖c‖ ≤ ε₀`), `|𝒦_a ∩ [1, K)| ≤ (f_up - f_low + 1)/((1 - θ)ε₀)`. -/
+/-- **Lemma 7.2.4** of [cartis2022evaluation] for a run of Phase 2. Assume that
+$f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every $z \in X$ with
+$\|c(z)\| \le \varepsilon_0$ (assumption f.B.Fb). Then every outer iteration $K \ge 1$ that is
+reached satisfies
+$$|\mathcal{K}_a \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{(1 -
+  \theta)\varepsilon_0}.$$
+-/
 theorem kaCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) {K : ℕ} (hK1 : 1 ≤ K)
     (hK : S.Before K) : (S.kaCount K : ℝ) ≤ (fup - flow + 1) / ((1 - θ) * ε₀) := by
@@ -253,14 +331,17 @@ theorem kaCount_le (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : 
   unfold kaCount
   convert this
 
-/-- `f_low ≤ f(x₁) ≤ f_up` under f.B.Fb, so `f_up - f_low + 1 > 0`. -/
+/-- Under assumption f.B.Fb, $f_{\mathrm{low}} \le f(x_1) \le f_{\mathrm{up}}$, so
+$f_{\mathrm{up}} - f_{\mathrm{low}} + 1 > 0$. -/
 theorem sub_add_one_pos (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) : 0 < fup - flow + 1 := by
   have := hB x₁ h.mem_one (h.norm_one_le.trans (mul_le_of_le_one_left h.ε₀_pos.le h.θ_lt_one.le))
   linarith [this.1, this.2]
 
-/-- **Telescoping the targets of a run**: if every outer iteration of `S' ⊆ [1, K)` lowers the
-target by at least `τ`, then `|S'| τ ≤ f_up - f_low + 1` under f.B.Fb. -/
+/-- **Telescoping the targets of a run.** Under assumption f.B.Fb, let $K \ge 1$ be an outer
+iteration that is reached, and let $S' \subseteq [1, K)$ be a set of outer iterations with
+$t_k - t_{k+1} \ge \tau$ for every $k \in S'$. Then $|S'| \tau \le f_{\mathrm{up}} -
+f_{\mathrm{low}} + 1$. -/
 theorem card_mul_le_of_target_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) {K : ℕ} (hK1 : 1 ≤ K)
     (hK : S.Before K) {S' : Finset ℕ} (hS : S' ⊆ Ico 1 K) {τ : ℝ}
@@ -269,9 +350,13 @@ theorem card_mul_le_of_target_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁
     hK1 (fun k hk1 hkK => h.x_mem k hk1 (hK.mono hkK)) hB hS hτ
 
 open Classical in
-/-- **The case-(b) iterations of a class `P` from target drops**: if every case-(b) outer
-iteration of `P` before termination lowers the target by at least `τ > 0`, then they number at
-most `(f_up - f_low + 1)/τ` in `[1, K)` under f.B.Fb. -/
+/-- **The case-(b) iterations of a class $P$, from target drops.** Under assumption f.B.Fb, let
+$\tau > 0$, and suppose that every outer iteration $k \ge 1$ in $\mathcal{K}_b$ with $P(k)$ that
+does not terminate Phase 2 has $t_k - t_{k+1} \ge \tau$. Then every outer iteration $K \ge 1$
+that is reached satisfies
+$$|\{k \in [1, K) \mid k \in \mathcal{K}_b,\ P(k)\}| \le \frac{f_{\mathrm{up}} -
+  f_{\mathrm{low}} + 1}{\tau}.$$
+-/
 theorem card_kb_le_of_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) {P : ℕ → Prop} {τ : ℝ} (hτ0 : 0 < τ)
     (hdrop : ∀ k, 1 ≤ k → S.Before (k + 1) → S.Kb k → P k → τ ≤ S.t k - S.t (k + 1)) {K : ℕ}
@@ -282,9 +367,12 @@ theorem card_kb_le_of_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flo
   rw [mem_filter, mem_Ico] at hk
   exact hdrop k hk.1.1 (hK.mono hk.1.2) hk.2.1 hk.2.2
 
-/-- **The number of case-(b) iterations from target drops**: if every case-(b) outer iteration
-before termination lowers the target by at least `τ > 0`, then
-`|𝒦_b ∩ [1, K)| ≤ (f_up - f_low + 1)/τ` under f.B.Fb. -/
+/-- **The number of case-(b) iterations, from target drops.** Under assumption f.B.Fb, let
+$\tau > 0$, and suppose that every outer iteration $k \ge 1$ in $\mathcal{K}_b$ that does not
+terminate Phase 2 has $t_k - t_{k+1} \ge \tau$. Then every outer iteration $K \ge 1$ that is
+reached satisfies
+$$|\mathcal{K}_b \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+-/
 theorem kbCount_le_of_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) {τ : ℝ} (hτ0 : 0 < τ)
     (hdrop : ∀ k, 1 ≤ k → S.Before (k + 1) → S.Kb k → τ ≤ S.t k - S.t (k + 1)) {K : ℕ}
@@ -296,16 +384,23 @@ theorem kbCount_le_of_drop (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flo
   exact hdrop k hk.1.1 (hK.mono hk.1.2) hk.2
 
 open Classical in
-/-- **The case-(b) iterations of a class `P` with a target-drop guarantee at large margins**
-(the margin argument behind the bound on the case-(b) iterations of TPqp-GC). Let `0 ≤ β ≤ θ`
-and suppose that every case-(b) iteration `k` of `P` before termination whose margin
-`‖r(x_{k+1}, t_k)‖ - β ‖r(x_k, t_k)‖` is at least `η = kbMargin θ ε₀` lowers the target by at
-least `τ > 0`. Then the case-(b) iterations of `P` in `[1, K)` number at most
-`|𝒦_a ∩ [1, K)| + 1 + (f_up - f_low + 1)/τ`: between consecutive case-(a) iterations at most one
-of them has a smaller margin. Indeed, if `k < k'` both have margin `< η` with no case-(a)
-iteration in between, then `‖r(x_{k+1}, t_k)‖ < θε₀ + η`, the residual does not increase from
-`k + 1` to `k'` (`IsTargetFollowingRun.residual_le_of_forall_kb`), and the margin at `k'` is at
-least `θε₀ - θ(θε₀ + η) = η`. -/
+/-- **The case-(b) iterations of a class $P$, with a target drop at large margins.** Under
+assumption f.B.Fb, let $0 \le \beta \le \theta$ and $\tau > 0$, and write $\eta = \theta(1 -
+\theta)\varepsilon_0/(1 + \theta)$ (`Constrained.kbMargin`). Suppose that every outer iteration
+$k \ge 1$ in $\mathcal{K}_b$ with $P(k)$ that does not terminate Phase 2 and whose margin
+satisfies
+$$\|r(x_{k+1}, t_k)\| - \beta \|r(x_k, t_k)\| \ge \eta$$
+has $t_k - t_{k+1} \ge \tau$. Then every outer iteration $K \ge 1$ that is reached satisfies
+$$|\{k \in [1, K) \mid k \in \mathcal{K}_b,\ P(k)\}| \le |\mathcal{K}_a \cap [1, K)| + 1 +
+  \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{\tau}.$$
+
+This is the margin argument behind the bound on the case-(b) iterations of TPqp-GC. Between two
+consecutive case-(a) iterations, at most one of these iterations has a margin smaller than
+$\eta$. Indeed, let $k < k'$ both have margin smaller than $\eta$, with no case-(a) iteration
+between them. Then $\|r(x_{k+1}, t_k)\| < \theta\varepsilon_0 + \eta$, the residual does not
+increase from $k + 1$ to $k'$ (`Constrained.IsTargetFollowingRun.residual_le_of_forall_kb`), and
+the margin at $k'$ is at least $\theta\varepsilon_0 - \theta(\theta\varepsilon_0 + \eta) =
+\eta$. -/
 theorem card_kb_le_of_margin (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {flow fup : ℝ}
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) {P : ℕ → Prop} {β : ℝ} (hβ : 0 ≤ β)
     (hβθ : β ≤ θ) {τ : ℝ} (hτ0 : 0 < τ)
@@ -391,8 +486,11 @@ theorem card_kb_le_of_margin (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {f
   have : (Sm.card : ℝ) ≤ S.kaCount K + 1 := by exact_mod_cast hSm
   linarith
 
-/-- A case-(b) iteration whose call does not end at an exempt point contains a good inner
-iteration: its call moved (`f(x_{k+1}) < t_k ≤ f(x_k)`), and its last successful iteration is
+/-- Let the unsuccessful inner iterations of a run not move the iterate. If an outer iteration
+$k \ge 1$ that is reached is in case (b), and its call does not end at a point that passes the
+exemption test, then the call contains a good inner iteration: $|\mathcal{G}_k| \ge 1$.
+
+The call has moved, since $f(x_{k+1}) < t_k \le f(x_k)$, and its last successful iteration is
 good. -/
 theorem one_le_goodCount (h : IsTargetFollowingRun f c θ ε₀ X x₁ S)
     (hstay : ∀ k, 1 ≤ k → S.Before k → ∀ i < S.e k, ¬ succ k i → S.xi k (i + 1) = S.xi k i)
@@ -414,7 +512,8 @@ theorem one_le_goodCount (h : IsTargetFollowingRun f c θ ε₀ X x₁ S)
   unfold goodCount
   exact card_pos.2 ⟨i, mem_filter.2 ⟨mem_range.2 hi, hg⟩⟩
 
-/-- The call of a bad outer iteration ends at an exempt point. -/
+/-- Let the unsuccessful inner iterations of a run not move the iterate. Then the call of a bad
+outer iteration $k \ge 1$ that is reached ends at a point that passes the exemption test. -/
 theorem exempt_of_isBad (h : IsTargetFollowingRun f c θ ε₀ X x₁ S)
     (hstay : ∀ k, 1 ≤ k → S.Before k → ∀ i < S.e k, ¬ succ k i → S.xi k (i + 1) = S.xi k i)
     {k : ℕ} (hk1 : 1 ≤ k) (hk : S.Before k)
@@ -425,8 +524,11 @@ theorem exempt_of_isBad (h : IsTargetFollowingRun f c θ ε₀ X x₁ S)
   exact absurd this (by norm_num)
 
 open Classical in
-/-- A bad outer iteration is a case-(b) iteration whose call ends at an exempt point:
-`n_bad(K) ≤ |{k ∈ [1, K) | k ∈ 𝒦_b, exempt k}|`. -/
+/-- Let the unsuccessful inner iterations of a run not move the iterate. Then a bad outer iteration
+is a case-(b) iteration whose call ends at an exempt point: for every outer iteration $K$ that
+is reached,
+$$n_{\mathrm{bad}}(K) \le |\{k \in [1, K) \mid k \in \mathcal{K}_b,\ k \text{ is exempt}\}|.$$
+-/
 theorem badCount_le_card (h : IsTargetFollowingRun f c θ ε₀ X x₁ S)
     (hstay : ∀ k, 1 ≤ k → S.Before k → ∀ i < S.e k, ¬ succ k i → S.xi k (i + 1) = S.xi k i)
     {K : ℕ} (hK : S.Before K) :
@@ -445,8 +547,11 @@ open TargetFollowingSeq
 variable {f : E → ℝ} {c : E → F} {θ ε₀ : ℝ} {X : Set E} {x₁ : E} {S : TargetFollowingSeq E}
   {succ : ℕ → ℕ → Prop} {exempt : ℕ → Prop} {δ κuns κunc : ℝ}
 
-/-- The good iterations of one call telescope:
-`|good_k| δ ≤ max(‖r(x_k, t_k)‖, θε₀) - max(‖r(x_{k+1}, t_k)‖, θε₀)`. -/
+/-- Under the contract, the good iterations of one call telescope: for every outer iteration
+$k \ge 1$ that is reached,
+$$|\mathcal{G}_k| \, \delta \le \max(\|r(x_k, t_k)\|, \theta\varepsilon_0) - \max(\|r(x_{k+1},
+  t_k)\|, \theta\varepsilon_0).$$
+-/
 theorem goodCount_mul_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κunc)
     (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) {k : ℕ} (hk1 : 1 ≤ k) (hk : S.Before k) :
     (S.goodCount f c θ ε₀ succ exempt k : ℝ) * δ ≤
@@ -468,10 +573,14 @@ theorem goodCount_mul_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κu
   unfold goodCount
   exact this
 
-/-- **The good inner iterations of Phase 2** ((7.2.39) and (14.3.71) of
-[cartis2022evaluation], summed over the blocks of outer iterations between consecutive case-(a)
-iterations): for every outer iteration `K ≥ 1` reached, the good inner iterations of `[1, K]`
-number at most `(1 - θ)ε₀/δ · (|𝒦_a ∩ [1, K)| + 1)`. -/
+/-- **The good inner iterations of Phase 2.** Let the inner calls of a run of Phase 2 satisfy the
+contract with residual decrease $\delta > 0$. Then every outer iteration $K \ge 1$ that is
+reached satisfies
+$$\sum_{k=1}^{K} |\mathcal{G}_k| \le \frac{(1 - \theta)\varepsilon_0}{\delta}
+  \bigl(|\mathcal{K}_a \cap [1, K)| + 1\bigr).$$
+
+This is (7.2.39) and (14.3.71) of [cartis2022evaluation], summed over the blocks of outer
+iterations between consecutive case-(a) iterations. -/
 theorem sum_goodCount_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κunc)
     (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) (hδ : 0 < δ) {K : ℕ} (hK1 : 1 ≤ K)
     (hK : S.Before K) :
@@ -489,7 +598,11 @@ theorem sum_goodCount_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κu
   rw [div_mul_eq_mul_div, le_div_iff₀ hδ, hka]
   linarith
 
-/-- The total number of inner iterations (function evaluations) from the per-call contract. -/
+/-- Under the contract, the number of function evaluations up to an outer iteration $K$ that is
+reached satisfies
+$$\mathrm{funEvals}(K) \le 1 + \kappa_{\mathrm{uns}} \sum_{k=1}^{K} |\mathcal{S}_k| +
+  \kappa_{\mathrm{unc}} K.$$
+-/
 theorem funEvals_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κunc) {K : ℕ}
     (hK : S.Before K) :
     (S.funEvals K : ℝ) ≤ 1 + κuns * ∑ k ∈ Icc 1 K, (S.succCount succ k : ℝ) + κunc * K := by
@@ -502,15 +615,23 @@ theorem funEvals_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κ
     nsmul_eq_mul] at hF
   linarith
 
-/-- **Evaluation complexity of Phase 2** ([cartis2022evaluation], Theorems 7.2.7 and 14.3.9 for
-Phase 2). Let `S` be a run whose inner calls satisfy the contract with residual
-decrease `δ > 0` and `κ_uns ≥ 0`; assume f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with
-`‖c‖ ≤ ε₀`), and let `G ≥ (1 - θ)ε₀/δ` and `N_a = (f_up - f_low + 1)/((1 - θ)ε₀)`. Then
-(i) every outer iteration `K ≥ 1` reached satisfies `K ≤ (N_a + 1)(G + 1) + n_bad(K)`, `n_bad(K)`
-the number of bad outer iterations in `[1, K)`;
-(ii) if `n_bad` is bounded by `B`, Phase 2 terminates at some `k_ε ≤ (N_a + 1)(G + 1) + B`;
-(iii) if Phase 2 terminates at `k_ε`, it uses at most `1 + G (N_a + 1) + k_ε` derivative
-evaluations and at most `1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` function evaluations. -/
+/-- **Evaluation complexity of Phase 2.** Let the inner calls of a run of Phase 2 satisfy the
+contract with residual decrease $\delta > 0$ and $\kappa_{\mathrm{uns}} \ge 0$. Assume that
+$f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every $z \in X$ with
+$\|c(z)\| \le \varepsilon_0$ (assumption f.B.Fb). Let $G \ge (1 - \theta)\varepsilon_0/\delta$,
+and write $N_a = (f_{\mathrm{up}} - f_{\mathrm{low}} + 1)/((1 - \theta)\varepsilon_0)$. Then:
+
+* (i) every outer iteration $K \ge 1$ that is reached satisfies
+  $K \le (N_a + 1)(G + 1) + n_{\mathrm{bad}}(K)$;
+* (ii) if $n_{\mathrm{bad}}(K) \le B$ for every outer iteration $K$ that is reached, then Phase
+  2 terminates at some outer iteration $k_\varepsilon \le (N_a + 1)(G + 1) + B$;
+* (iii) if Phase 2 terminates at $k_\varepsilon$, it uses at most
+  $1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+  \kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+  function evaluations.
+
+This is Theorems 7.2.7 and 14.3.9 of [cartis2022evaluation] for Phase 2, with the number of bad
+outer iterations as a parameter. -/
 theorem complexity (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κunc)
     (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) (hδ : 0 < δ) {G : ℝ}
     (hG : (1 - θ) * ε₀ / δ ≤ G) (hκuns : 0 ≤ κuns) {flow fup : ℝ}
@@ -553,11 +674,14 @@ theorem complexity (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κu
     mul_le_mul_of_nonneg_left (hsucc.trans (by linarith)) hκuns
   linarith
 
-/-- **Evaluation complexity of Phase 2 given a bound on the bad iterations**: under the
-assumptions of `complexity`, if `n_bad(K) ≤ N_b` for every outer iteration `K ≥ 1` reached, then
-every such `K` satisfies `K ≤ (N_a + 1)(G + 1) + N_b`, and Phase 2 terminates at some
-`k_ε ≤ (N_a + 1)(G + 1) + N_b`, using at most `1 + G (N_a + 1) + k_ε` derivative evaluations and
-`1 + κ_uns (G (N_a + 1) + k_ε) + κ_unc k_ε` function evaluations. -/
+/-- **Evaluation complexity of Phase 2, given a bound on the bad iterations.** Under the assumptions
+of `Constrained.TargetFollowingSeq.IsInnerContract.complexity`, suppose that
+$n_{\mathrm{bad}}(K) \le N_b$ for every outer iteration $K \ge 1$ that is reached. Then every
+such $K$ satisfies $K \le (N_a + 1)(G + 1) + N_b$. Moreover Phase 2 terminates at some outer
+iteration $k_\varepsilon \le (N_a + 1)(G + 1) + N_b$, and it uses at most
+$1 + G(N_a + 1) + k_\varepsilon$ derivative evaluations and at most $1 +
+\kappa_{\mathrm{uns}}(G(N_a + 1) + k_\varepsilon) + \kappa_{\mathrm{unc}} k_\varepsilon$
+function evaluations. -/
 theorem complexity_of_badCount_le (hc : S.IsInnerContract f c θ ε₀ succ exempt δ κuns κunc)
     (h : IsTargetFollowingRun f c θ ε₀ X x₁ S) (hδ : 0 < δ) {G : ℝ}
     (hG : (1 - θ) * ε₀ / δ ≤ G) (hκuns : 0 ≤ κuns) {flow fup : ℝ}

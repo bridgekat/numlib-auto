@@ -12,52 +12,73 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.LebesgueDifferentiationTh
 /-!
 # The Laplace transform
 
-The Laplace transform `L(s) = ∫_0^∞ e^{-st} f(t) dt` of a function `f : ℝ → E` into a complex
-normed space, in the *conditional* (improper) sense of the textbooks — the limit of the truncated
-integrals `∫_0^T` as `T → ∞` — with its region of convergence and abscissa of convergence, the
-relation to the Fourier transform, the transform of the unit step and of a derivative, the
-transform of a sample-and-hold function, and the Z-transform of a sampled sequence as the discrete
-Laplace transform. The material is [quarteroni2000numerical] §10.11.3–10.11.4 (Definitions
-10.2–10.3, Property 10.4, Examples 10.8–10.9); the convergence theory follows
-D. V. Widder, *The Laplace Transform*, Chapter II.
-
-Mathlib has no Laplace transform (the closest object is the Mellin transform
-`Mathlib/Analysis/MellinTransform.lean`, an absolutely convergent Bochner integral); the
-substitution `t = e^{-u}` relating the two is not used here because the conditional convergence
-of Property 10.4 is the point.
+Let $E$ be a complex normed space and $f : \mathbb{R} \to E$. The Laplace transform of $f$ is
+$$\mathcal{L}[f](s) = \int_0^\infty e^{-st} f(t)\,dt, \qquad s \in \mathbb{C},$$
+taken in the conditional (improper) sense of the textbooks: the limit of the truncated integrals
+$\int_0^T$ as $T \to \infty$. This file defines the transform, its region of convergence and its
+abscissa of convergence. It proves that convergence at $s_0$ implies convergence on the half-plane
+$\operatorname{Re} s > \operatorname{Re} s_0$, the relation to the Fourier transform, the transforms
+of the unit step and of a derivative, and the transform of a sample-and-hold function. It also
+defines the Z-transform of a sampled sequence and identifies it with the discrete Laplace transform.
+The material is [quarteroni2000numerical], §10.11.3–10.11.4 (Definitions 10.2–10.3, Property 10.4,
+Examples 10.8–10.9). The convergence theory follows D. V. Widder, *The Laplace Transform*, Chapter
+II.
 
 ## Main definitions
 
-* `LaplaceTransform.truncated f s T` — the truncated Laplace integral `∫_0^T e^{-st} • f t dt`.
-* `LaplaceTransform.Converges f s` — the Laplace integral converges at `s`: the truncated
-  integrals have a limit as `T → ∞`.
-* `LaplaceTransform.laplaceTransform f s` — that limit, the Laplace transform `ℒ[f](s)`, and `0`
-  where the integral does not converge.
-* `LaplaceTransform.abscissaOfConvergence f : EReal` — the infimum `λ` of the real parts at which
-  the Laplace integral converges.
-* `zTransform f Δt z` — the Z-transform `∑_{n ≥ 0} f(nΔt) z^{-n}` of the samples of `f`.
+* `LaplaceTransform.truncated`: the truncated Laplace integral $\int_0^T e^{-st} f(t)\,dt$.
+* `LaplaceTransform.Converges`: the Laplace integral converges at $s$, that is, the truncated
+  integrals have a limit as $T \to \infty$.
+* `LaplaceTransform.laplaceTransform`: that limit, the Laplace transform $\mathcal{L}[f](s)$, and
+  $0$ where the integral does not converge.
+* `LaplaceTransform.abscissaOfConvergence`: the infimum $\lambda \in [-\infty, \infty]$ of the real
+  parts of the points at which the Laplace integral converges.
+* `zTransform`: the Z-transform $Z(z) = \sum_{n \ge 0} f(n\Delta t) z^{-n}$ of the samples of $f$.
 
-## Main statements
+## Main results
 
-* `LaplaceTransform.laplaceTransform_eq_integral`, `LaplaceTransform.integrableOn_of_re_le` — under
-  absolute convergence the transform is the Bochner integral over `(0, ∞)`, and absolute
-  convergence propagates to the right.
-* `LaplaceTransform.converges_of_re_lt`, `LaplaceTransform.converges_of_abscissaOfConvergence_lt` —
-  **Property 10.4**: convergence at `s₀` gives convergence at every `s` with `Re s > Re s₀`, so
-  the integral converges on the open half-plane `Re s > λ`. The proof is Widder's integration by
-  parts against the bounded, convergent primitive `φ(T) = ∫_0^T e^{-s₀t} f`; the integration by
-  parts with a merely locally integrable `f` is `integral_smul_eq_smul_integral_sub`, proved
-  through absolutely continuous functions and the Lebesgue differentiation theorem.
-* `LaplaceTransform.laplaceTransform_eq_fourier` — `L(σ + iω) = 𝓕(e^{-σt} f̃)(ω/2π)` with `f̃` the
-  extension of `f` by zero.
-* `LaplaceTransform.laplaceTransform_indicator_Ioi`, `LaplaceTransform.converges_indicator_Ioi_iff`
-  — Example 10.8, the unit step: `ℒ[1_{(0,∞)}](s) = 1/s`, and the integral converges exactly when
-  `Re s > 0`.
-* `LaplaceTransform.laplaceTransform_deriv` — Example 10.9, `ℒ[y'](s) = s ℒ[y](s) − y(0)`.
-* `LaplaceTransform.laplaceTransform_stepFun`, `zTransform_eq_discreteLaplace` — the transform of
-  the sample-and-hold function `f₀ = f(nΔt)` on `[nΔt, (n+1)Δt)` is `((1 − e^{-sΔt})/s)` times the
-  discrete Laplace transform `∑_n f(nΔt) e^{-nsΔt}`, which is the Z-transform at `z = e^{sΔt}`.
-* `summable_zTransform` — the Cauchy–Hadamard root test for the Z-transform.
+* `LaplaceTransform.laplaceTransform_eq_integral`: under absolute convergence, the transform is the
+  Lebesgue integral over $(0, \infty)$.
+* `LaplaceTransform.integrableOn_of_re_le`: absolute convergence at $s_0$ implies absolute
+  convergence at every $s$ with $\operatorname{Re} s \ge \operatorname{Re} s_0$.
+* `LaplaceTransform.converges_of_re_lt`: Property 10.4 of [quarteroni2000numerical], convergence at
+  $s_0$ implies convergence at every $s$ with $\operatorname{Re} s > \operatorname{Re} s_0$.
+* `LaplaceTransform.converges_of_abscissaOfConvergence_lt`: the Laplace integral converges on the
+  open half-plane $\operatorname{Re} s > \lambda$.
+* `LaplaceTransform.laplaceTransform_eq_fourier`: $\mathcal{L}[f](\sigma + i\omega) =
+  \mathcal{F}(e^{-\sigma t} \tilde f)(\omega/2\pi)$, with $\tilde f$ the extension of $f$ by zero.
+* `LaplaceTransform.laplaceTransform_indicator_Ioi`, `LaplaceTransform.converges_indicator_Ioi_iff`:
+  Example 10.8, the unit step has transform $1/s$, and its integral converges exactly when
+  $\operatorname{Re} s > 0$.
+* `LaplaceTransform.laplaceTransform_deriv`: Example 10.9, $\mathcal{L}[y'](s) =
+  s\,\mathcal{L}[y](s) - y(0)$.
+* `LaplaceTransform.laplaceTransform_stepFun`: the transform of the sample-and-hold function $f_0$
+  is $\frac{1 - e^{-s\Delta t}}{s} \sum_{n \ge 0} f(n\Delta t) e^{-ns\Delta t}$.
+* `summable_zTransform`: the Cauchy–Hadamard root test for the Z-transform.
+* `zTransform_eq_discreteLaplace`: the Z-transform at $z = e^{s\Delta t}$ is the discrete Laplace
+  transform $\sum_{n \ge 0} f(n\Delta t) e^{-ns\Delta t}$.
+
+## Proof outline
+
+For Property 10.4, let $\varphi(T) = \int_0^T e^{-s_0 t} f(t)\,dt$, which is continuous, bounded and
+convergent. Widder's integration by parts against $\varphi$ writes $\int_0^T e^{-st} f$ as
+$e^{-\delta T} \varphi(T) + \delta \int_0^T e^{-\delta t} \varphi(t)\,dt$ with $\delta = s - s_0$,
+and both terms converge when $\operatorname{Re} \delta > 0$. Since $f$ is only locally integrable,
+the integration by parts (`LaplaceTransform.integral_smul_eq_smul_integral_sub`) is proved with
+absolutely continuous functions and the Lebesgue differentiation theorem.
+
+## Implementation notes
+
+* Mathlib has no Laplace transform. The closest object is the Mellin transform in
+  `Mathlib.Analysis.MellinTransform`, which is an absolutely convergent Bochner integral. The
+  substitution $t = e^{-u}$ that relates the two is not used here, because Property 10.4 is about
+  conditional convergence.
+* The transform takes the junk value $0$ where the Laplace integral does not converge.
+* The abscissa of convergence is an extended real number (`EReal`): $+\infty$ when the integral
+  converges nowhere, and $-\infty$ when it converges at points of arbitrarily negative real part.
+* [quarteroni2000numerical], §10.11.4, prints the substitution between the Z-transform and the
+  discrete Laplace transform as $z = e^{-s\Delta t}$. With $Z(z) = \sum f(n\Delta t) z^{-n}$, the
+  correct substitution is $z = e^{s\Delta t}$, which `zTransform_eq_discreteLaplace` uses.
 -/
 
 open MeasureTheory Filter Function Topology Complex Set
@@ -70,68 +91,90 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
 
 /-! ### Definitions -/
 
-/-- **The truncated Laplace integral** `∫_0^T e^{-st} • f t dt` of `f : ℝ → E`, `E` a complex
-normed space, at `s : ℂ`. -/
+/-- The **truncated Laplace integral**: for a complex normed space $E$, a function
+$f : \mathbb{R} \to E$, $s \in \mathbb{C}$ and $T \in \mathbb{R}$,
+$$\int_0^T e^{-st} f(t)\,dt.$$
+
+For $T < 0$ this is the oriented integral $-\int_T^0$. -/
 noncomputable def truncated (f : ℝ → E) (s : ℂ) (T : ℝ) : E :=
   ∫ t in (0 : ℝ)..T, Complex.exp (-(s * t)) • f t
 
+/-- The defining formula of `LaplaceTransform.truncated`: the truncated integral at $T$ is
+$\int_0^T e^{-st} f(t)\,dt$. -/
 theorem truncated_def (f : ℝ → E) (s : ℂ) (T : ℝ) :
     truncated f s T = ∫ t in (0 : ℝ)..T, Complex.exp (-(s * t)) • f t := rfl
 
-/-- **The Laplace integral converges at `s`** in the sense of [quarteroni2000numerical]
-Definition 10.2: the truncated integrals `∫_0^T e^{-st} • f t dt` have a limit as `T → ∞`. This
-is *conditional* (improper) convergence; the stronger
-`IntegrableOn (fun t => e^{-st} • f t) (Ioi 0)` is absolute convergence, and implies it
-(`converges_of_integrableOn`). -/
+/-- The **Laplace integral converges at $s$**: there is $L \in E$ such that the truncated integrals
+$\int_0^T e^{-st} f(t)\,dt$ tend to $L$ as $T \to \infty$. This is the convergence of Definition
+10.2 of [quarteroni2000numerical].
+
+This is conditional (improper) convergence. Absolute convergence, the integrability of
+$t \mapsto e^{-st} f(t)$ on $(0, \infty)$, is stronger and implies it
+(`LaplaceTransform.converges_of_integrableOn`). -/
 def Converges (f : ℝ → E) (s : ℂ) : Prop :=
   ∃ L : E, Tendsto (truncated f s) atTop (𝓝 L)
 
 open Classical in
-/-- **The Laplace transform** `L(s) = ∫_0^∞ e^{-st} f(t) dt` of [quarteroni2000numerical]
-Definition 10.2, as the limit of the truncated integrals (`tendsto_truncated`), and `0` where the
-integral does not converge. Under absolute convergence it is the Bochner integral over `(0, ∞)`
-(`laplaceTransform_eq_integral`). -/
+/-- The **Laplace transform** of Definition 10.2 of [quarteroni2000numerical]:
+$$\mathcal{L}[f](s) = \int_0^\infty e^{-st} f(t)\,dt = \lim_{T \to \infty} \int_0^T e^{-st}
+  f(t)\,dt$$
+where the Laplace integral converges at $s$, and $\mathcal{L}[f](s) = 0$ where it does not
+converge.
+
+The limit is chosen from `LaplaceTransform.Converges`; `LaplaceTransform.tendsto_truncated`
+shows that it is the limit. Under absolute convergence the transform is the Lebesgue integral
+over $(0, \infty)$ (`LaplaceTransform.laplaceTransform_eq_integral`). -/
 noncomputable def laplaceTransform (f : ℝ → E) (s : ℂ) : E :=
   if h : Converges f s then h.choose else 0
 
-/-- Where the Laplace integral converges, the truncated integrals tend to the transform. -/
+/-- If the Laplace integral of $f$ converges at $s$, then the truncated integrals
+$\int_0^T e^{-st} f(t)\,dt$ tend to $\mathcal{L}[f](s)$ as $T \to \infty$. -/
 theorem tendsto_truncated {f : ℝ → E} {s : ℂ} (h : Converges f s) :
     Tendsto (truncated f s) atTop (𝓝 (laplaceTransform f s)) := by
   rw [laplaceTransform, dite_eq_left h]
   exact h.choose_spec
 
-/-- The transform is the limit of the truncated integrals, whenever there is one. -/
+/-- If the truncated integrals $\int_0^T e^{-st} f(t)\,dt$ tend to $L$ as $T \to \infty$, then
+$\mathcal{L}[f](s) = L$. -/
 theorem laplaceTransform_eq_of_tendsto {f : ℝ → E} {s : ℂ} {L : E}
     (h : Tendsto (truncated f s) atTop (𝓝 L)) : laplaceTransform f s = L :=
   tendsto_nhds_unique (tendsto_truncated ⟨L, h⟩) h
 
-/-- Where the Laplace integral does not converge, the transform is `0` by convention. -/
+/-- If the Laplace integral of $f$ does not converge at $s$, then $\mathcal{L}[f](s) = 0$. -/
 theorem laplaceTransform_of_not_converges {f : ℝ → E} {s : ℂ} (h : ¬ Converges f s) :
     laplaceTransform f s = 0 := by
   rw [laplaceTransform, dite_eq_right h]
 
-/-- Absolute convergence of the Laplace integral implies its convergence. -/
+/-- If $t \mapsto e^{-st} f(t)$ is integrable on $(0, \infty)$, then the Laplace integral of $f$
+converges at $s$. -/
 theorem converges_of_integrableOn {f : ℝ → E} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • f t) (Ioi 0)) : Converges f s :=
   ⟨_, intervalIntegral_tendsto_integral_Ioi 0 h tendsto_id⟩
 
-/-- **Under absolute convergence the transform is the Bochner integral over `(0, ∞)`**,
-`MeasureTheory.intervalIntegral_tendsto_integral_Ioi`. -/
+/-- **Under absolute convergence the transform is the Lebesgue integral**: if
+$t \mapsto e^{-st} f(t)$ is integrable on $(0, \infty)$, then
+$$\mathcal{L}[f](s) = \int_{(0, \infty)} e^{-st} f(t)\,dt.$$
+
+The proof uses `MeasureTheory.intervalIntegral_tendsto_integral_Ioi`. -/
 theorem laplaceTransform_eq_integral {f : ℝ → E} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • f t) (Ioi 0)) :
     laplaceTransform f s = ∫ t : ℝ in Ioi 0, Complex.exp (-(s * t)) • f t :=
   laplaceTransform_eq_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 h tendsto_id)
 
-/-- `‖e^{-s t}‖ = e^{-Re s · t}`. -/
+/-- For $s \in \mathbb{C}$ and $t \in \mathbb{R}$, $|e^{-st}| = e^{-(\operatorname{Re} s)\,t}$. -/
 theorem norm_exp_neg_mul (s : ℂ) (t : ℝ) :
     ‖Complex.exp (-(s * t))‖ = Real.exp (-(s.re * t)) := by
   rw [Complex.norm_exp]
   congr 1
   simp
 
-/-- **Absolute convergence propagates to the right**: if `e^{-s₀t} • f` is integrable on `(0, ∞)`
-and `f` is a.e.-strongly measurable there, then so is `e^{-st} • f` for every `s` with
-`Re s₀ ≤ Re s`, since `‖e^{-st}‖ = e^{-Re s · t} ≤ e^{-Re s₀ · t}` for `t ≥ 0`. -/
+/-- **Absolute convergence propagates to the right**: let $s_0, s \in \mathbb{C}$ with
+$\operatorname{Re} s_0 \le \operatorname{Re} s$. If $t \mapsto e^{-s_0 t} f(t)$ is integrable on
+$(0, \infty)$ and $f$ is almost everywhere strongly measurable on $(0, \infty)$, then
+$t \mapsto e^{-st} f(t)$ is integrable on $(0, \infty)$.
+
+The proof uses $|e^{-st}| = e^{-(\operatorname{Re} s)\,t} \le e^{-(\operatorname{Re} s_0)\,t}$
+for $t \ge 0$. -/
 theorem integrableOn_of_re_le {f : ℝ → E} {s₀ s : ℂ}
     (h₀ : IntegrableOn (fun t : ℝ => Complex.exp (-(s₀ * t)) • f t) (Ioi 0))
     (hf : AEStronglyMeasurable f (volume.restrict (Ioi 0))) (hs : s₀.re ≤ s.re) :
@@ -142,24 +185,29 @@ theorem integrableOn_of_re_le {f : ℝ → E} {s₀ s : ℂ}
   gcongr
   exact le_of_lt ht
 
-/-- **The abscissa of convergence** `λ` of [quarteroni2000numerical] Property 10.4: the infimum
-of the real parts of the `s` at which the Laplace integral converges, as an extended real — `⊤`
-when the integral converges nowhere, `⊥` when it converges at points of arbitrarily negative
-real part. The integral converges on the open half-plane `Re s > λ`
-(`converges_of_abscissaOfConvergence_lt`). -/
+/-- The **abscissa of convergence** $\lambda$ of Property 10.4 of [quarteroni2000numerical]: the
+infimum, in the extended reals $[-\infty, \infty]$, of the real parts of the points
+$s \in \mathbb{C}$ at which the Laplace integral of $f$ converges.
+
+It is $+\infty$ when the integral converges nowhere, and $-\infty$ when it converges at points
+of arbitrarily negative real part. The integral converges on the open half-plane
+$\operatorname{Re} s > \lambda$ (`LaplaceTransform.converges_of_abscissaOfConvergence_lt`). -/
 noncomputable def abscissaOfConvergence (f : ℝ → E) : EReal :=
   sInf ((fun s : ℂ => (s.re : EReal)) '' {s | Converges f s})
 
 /-! ### The relation to the Fourier transform, and the unit step -/
 
-/-- **The relation to the Fourier transform** ([quarteroni2000numerical], after Definition 10.2):
-for `f : ℝ → ℂ` with `e^{-st} f` integrable on `(0, ∞)`,
+/-- **The relation to the Fourier transform**, stated after Definition 10.2 of
+[quarteroni2000numerical]: let $f : \mathbb{R} \to \mathbb{C}$ and
+$s = \sigma + i\omega \in \mathbb{C}$, and suppose that $t \mapsto e^{-st} f(t)$ is integrable
+on $(0, \infty)$. Then
+$$\mathcal{L}[f](\sigma + i\omega) = \mathcal{F}\bigl(e^{-\sigma t} \tilde
+  f\bigr)\Bigl(\frac{\omega}{2\pi}\Bigr),$$
+where $\tilde f$ equals $f$ on $t > 0$ and $0$ on $t \le 0$.
 
-`L(σ + iω) = 𝓕 (e^{-σt} f̃) (ω / 2π)`,
-
-where `f̃` is `f` on `t > 0` and `0` on `t ≤ 0`; the argument is `ω / 2π` because
-`Real.fourierIntegral` carries the kernel `e^{-2πiνt}` (the textbook writes `F(e^{-σt} f̃)` with no
-argument). -/
+Here $\mathcal{F}$ is Mathlib's Fourier transform `𝓕`, whose kernel is $e^{-2\pi i \nu t}$; this
+is why the argument is $\omega/2\pi$. The source writes $\mathcal{F}(e^{-\sigma t} \tilde f)$
+with no argument. -/
 theorem laplaceTransform_eq_fourier {f : ℝ → ℂ} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) * f t) (Ioi 0)) :
     laplaceTransform f s =
@@ -178,8 +226,11 @@ theorem laplaceTransform_eq_fourier {f : ℝ → ℂ} {s : ℂ}
     apply Complex.ext <;> simp [mul_comm]
   · rw [Set.indicator_of_notMem ht, Set.indicator_of_notMem ht, mul_zero, mul_zero]
 
-/-- **The Laplace transform of the unit step** ([quarteroni2000numerical] Example 10.8): for
-`Re s > 0`, `ℒ[1_{(0,∞)}](s) = ∫_0^∞ e^{-st} dt = 1 / s`. -/
+/-- **The Laplace transform of the unit step**, Example 10.8 of [quarteroni2000numerical]: for
+$s \in \mathbb{C}$ with $\operatorname{Re} s > 0$, the indicator function
+$\mathbf{1}_{(0, \infty)}$ has the transform
+$$\mathcal{L}[\mathbf{1}_{(0, \infty)}](s) = \int_0^\infty e^{-st}\,dt = \frac{1}{s}.$$
+-/
 theorem laplaceTransform_indicator_Ioi {s : ℂ} (hs : 0 < s.re) :
     laplaceTransform (fun t : ℝ => Set.indicator (Ioi 0) (fun _ => (1 : ℂ)) t) s = 1 / s := by
   have hint : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • (Ioi 0).indicator
@@ -202,9 +253,12 @@ section IBP
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The primitive `x ↦ ∫_c^x h` of an interval integrable vector-valued function is absolutely
-continuous — Mathlib's `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`, which
-is stated for real-valued `h`, transferred through `‖∫_x^y h‖ ≤ |∫_x^y ‖h‖|`. -/
+/-- Let $F$ be a real normed space and $h : \mathbb{R} \to F$ be integrable on the interval between
+$a$ and $b$, and let $c$ lie in that interval. Then the primitive $x \mapsto \int_c^x h$ is
+absolutely continuous on the interval between $a$ and $b$.
+
+This extends Mathlib's `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`,
+which is stated for real-valued $h$, through the bound $\|\int_x^y h\| \le |\int_x^y \|h\||$. -/
 theorem _root_.IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral'
     {h : ℝ → F} {a b c : ℝ} (hh : IntervalIntegrable h volume a b) (hc : c ∈ uIcc a b) :
     AbsolutelyContinuousOnInterval (fun x => ∫ v in c..x, h v) a b := by
@@ -226,15 +280,17 @@ end IBP
 
 variable [CompleteSpace E]
 
-/-- **Integration by parts against a primitive**: for `g` interval integrable on `[0, T]`, `u`
-differentiable with continuous derivative `u'`, and `Φ(t) = ∫_0^t g`,
+/-- **Integration by parts against a primitive.** Let $E$ be a complete complex normed space, let
+$T \ge 0$, let $g : \mathbb{R} \to E$ be integrable on $[0, T]$, and let
+$u : \mathbb{R} \to \mathbb{C}$ be differentiable with a continuous derivative $u'$. With
+$\Phi(t) = \int_0^t g$,
+$$\int_0^T u(t)\, g(t)\,dt = u(T)\, \Phi(T) - \int_0^T u'(t)\, \Phi(t)\,dt.$$
 
-`∫_0^T u • g = u(T) • Φ(T) − ∫_0^T u' • Φ`.
-
-Since `g` is merely integrable, `Φ` is differentiable only almost everywhere (the Lebesgue
-differentiation theorem `IntervalIntegrable.ae_hasDerivAt_integral`); the difference of the two
-sides is an absolutely continuous function with almost everywhere vanishing derivative, hence
-constant (`AbsolutelyContinuousOnInterval.const_of_ae_hasDerivAt_zero`), and it vanishes at `0`. -/
+Since $g$ is only integrable, $\Phi$ is differentiable only almost everywhere, by the Lebesgue
+differentiation theorem `IntervalIntegrable.ae_hasDerivAt_integral`. The difference of the two
+sides is an absolutely continuous function of $T$ whose derivative vanishes almost everywhere.
+So it is constant (`AbsolutelyContinuousOnInterval.const_of_ae_hasDerivAt_zero`), and it
+vanishes at $0$. -/
 theorem integral_smul_eq_smul_integral_sub {g : ℝ → E} {u u' : ℝ → ℂ} {T : ℝ} (hT : 0 ≤ T)
     (hg : IntervalIntegrable g volume 0 T) (hu : ∀ x, HasDerivAt u (u' x) x)
     (hu' : Continuous u') :
@@ -303,8 +359,8 @@ theorem integral_smul_eq_smul_integral_sub {g : ℝ → E} {u u' : ℝ → ℂ} 
   abel
 
 omit [CompleteSpace E] in
-/-- For `f` locally integrable on `[0, ∞)`, the integrand `e^{-st} • f t` of the Laplace integral
-is interval integrable on every `[0, T]`. -/
+/-- If $f$ is locally integrable on $[0, \infty)$, then for every $s \in \mathbb{C}$ and $T \ge 0$
+the integrand $t \mapsto e^{-st} f(t)$ of the Laplace integral is integrable on $[0, T]$. -/
 theorem intervalIntegrable_exp_smul {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 0)) (s : ℂ)
     {T : ℝ} (hT : 0 ≤ T) :
     IntervalIntegrable (fun t : ℝ => Complex.exp (-(s * t)) • f t) volume 0 T := by
@@ -315,8 +371,8 @@ theorem intervalIntegrable_exp_smul {f : ℝ → E} (hf : LocallyIntegrableOn f 
   exact h2.continuousOn_smul (Continuous.continuousOn (by fun_prop))
 
 omit [CompleteSpace E] in
-/-- For `f` locally integrable on `[0, ∞)`, the truncated Laplace integral is a continuous
-function of the truncation point `T ∈ [0, ∞)`. -/
+/-- If $f$ is locally integrable on $[0, \infty)$, then for every $s \in \mathbb{C}$ the truncated
+Laplace integral $T \mapsto \int_0^T e^{-st} f(t)\,dt$ is continuous on $[0, \infty)$. -/
 theorem continuousOn_truncated {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 0)) (s : ℂ) :
     ContinuousOn (truncated f s) (Ici 0) := by
   intro x hx
@@ -328,17 +384,19 @@ theorem continuousOn_truncated {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 
   refine (h x ⟨hx', by linarith⟩).mono_of_mem_nhdsWithin (mem_nhdsWithin.mpr ?_)
   exact ⟨Iio (x + 1), isOpen_Iio, by simp, fun y hy => ⟨hy.2, hy.1.le⟩⟩
 
-/-- **Property 10.4 of [quarteroni2000numerical], first clause** (Widder, *The Laplace Transform*,
-Theorem II.1): for `f : ℝ → E` locally integrable on `[0, ∞)`, `E` complete, if the Laplace
-integral converges at `s₀` then it converges at every `s` with `Re s > Re s₀`.
+/-- **Property 10.4 of [quarteroni2000numerical]**, first part: let $E$ be a complete complex normed
+space, and let $f : \mathbb{R} \to E$ be locally integrable on $[0, \infty)$. If the Laplace
+integral of $f$ converges at $s_0 \in \mathbb{C}$, then it converges at every $s \in \mathbb{C}$
+with $\operatorname{Re} s > \operatorname{Re} s_0$. This is Theorem II.1 of Widder, *The Laplace
+Transform*.
 
-With `δ = s − s₀` and `φ(T) = ∫_0^T e^{-s₀t} • f`, which is continuous, bounded and convergent,
-integration by parts (`integral_smul_eq_smul_integral_sub`) gives
-
-`∫_0^T e^{-st} • f = e^{-δT} • φ(T) + δ • ∫_0^T e^{-δt} • φ(t) dt`;
-
-the first term tends to `0` and the integral converges absolutely because `φ` is bounded and
-`Re δ > 0`. -/
+Let $\delta = s - s_0$ and $\varphi(T) = \int_0^T e^{-s_0 t} f(t)\,dt$, which is continuous,
+bounded and convergent. Integration by parts
+(`LaplaceTransform.integral_smul_eq_smul_integral_sub`) gives
+$$\int_0^T e^{-st} f(t)\,dt = e^{-\delta T} \varphi(T) + \delta \int_0^T e^{-\delta t}
+  \varphi(t)\,dt.$$
+The first term tends to $0$, and the integral converges absolutely because $\varphi$ is bounded
+and $\operatorname{Re} \delta > 0$. -/
 theorem converges_of_re_lt {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 0)) {s₀ s : ℂ}
     (h₀ : Converges f s₀) (hs : s₀.re < s.re) : Converges f s := by
   obtain ⟨L, hL⟩ := h₀
@@ -409,10 +467,13 @@ theorem converges_of_re_lt {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 0)) 
   filter_upwards [eventually_ge_atTop (0 : ℝ)] with T hT
   exact (hIBP T hT).symm
 
-/-- **Property 10.4 of [quarteroni2000numerical], second clause**: for `f` locally integrable on
-`[0, ∞)`, `E` complete, the Laplace integral converges at every `s` with
-`Re s > abscissaOfConvergence f` — on the open half-plane to the right of the abscissa of
-convergence, and everywhere when the abscissa is `⊥`. -/
+/-- **Property 10.4 of [quarteroni2000numerical]**, second part: let $E$ be a complete complex
+normed space, and let $f : \mathbb{R} \to E$ be locally integrable on $[0, \infty)$. Then the
+Laplace integral of $f$ converges at every $s \in \mathbb{C}$ with
+$\operatorname{Re} s > \lambda$, where $\lambda$ is the abscissa of convergence of $f$.
+
+So the integral converges on the open half-plane to the right of the abscissa of convergence,
+and everywhere when $\lambda = -\infty$. -/
 theorem converges_of_abscissaOfConvergence_lt {f : ℝ → E} (hf : LocallyIntegrableOn f (Ici 0))
     {s : ℂ} (hs : abscissaOfConvergence f < (s.re : EReal)) : Converges f s := by
   have hne : ((fun s : ℂ => (s.re : EReal)) '' {s | Converges f s}).Nonempty := by
@@ -425,14 +486,14 @@ theorem converges_of_abscissaOfConvergence_lt {f : ℝ → E} (hf : LocallyInteg
 
 /-! ### The unit step and the transform of a derivative -/
 
-/-- **The transform of a derivative** ([quarteroni2000numerical] Example 10.9, (10.83)): for
-`y : ℝ → E` of class `C¹` such that `e^{-st} • y` and `e^{-st} • y'` are integrable on `(0, ∞)` and
-`e^{-st} • y(t) → 0` as `t → ∞`,
+/-- **The transform of a derivative**, Example 10.9 and (10.83) of [quarteroni2000numerical]: let
+$E$ be a complete complex normed space, let $y : \mathbb{R} \to E$ be of class $C^1$, and let
+$s \in \mathbb{C}$. Suppose that $t \mapsto e^{-st} y(t)$ and $t \mapsto e^{-st} y'(t)$ are
+integrable on $(0, \infty)$, and that $e^{-st} y(t) \to 0$ as $t \to \infty$. Then
+$$\mathcal{L}[y'](s) = s\,\mathcal{L}[y](s) - y(0).$$
 
-`ℒ[y'](s) = s • ℒ[y](s) − y(0)`.
-
-Integration by parts on `[0, T]` and the limit `T → ∞`. Consequently the solution of
-`y' + a y = g`, `y(0) = y₀`, satisfies `(s + a) Y(s) = G(s) + y₀` wherever the three transforms
+The proof integrates by parts on $[0, T]$ and lets $T \to \infty$. Consequently, the solution of
+$y' + ay = g$, $y(0) = y_0$, satisfies $(s + a) Y(s) = G(s) + y_0$ wherever the three transforms
 converge absolutely. -/
 theorem laplaceTransform_deriv {y : ℝ → E} {s : ℂ} (hy : ContDiff ℝ 1 y)
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • y t) (Ioi 0))
@@ -469,12 +530,14 @@ theorem laplaceTransform_deriv {y : ℝ → E} {s : ℂ} (hy : ContDiff ℝ 1 y)
   rw [this]
   abel
 
-/-- **The region of convergence of the unit step** ([quarteroni2000numerical] Example 10.8): the
-Laplace integral of `1_{(0,∞)}` converges exactly when `Re s > 0`, so its abscissa of convergence
-is `0`. For `Re s ≤ 0` the truncated integral is `T` when `s = 0`, and otherwise
-`(1 − e^{-sT})/s`, whose convergence would force `e^{-sT}` to converge to a limit `M` of norm at
-least `1`; then `e^{-sh} M = M` for every shift `h`, so `h ↦ e^{-sh}` is constant and its derivative
-`−s` at `0` vanishes. -/
+/-- **The region of convergence of the unit step**, Example 10.8 of [quarteroni2000numerical]: for
+$s \in \mathbb{C}$, the Laplace integral of $\mathbf{1}_{(0, \infty)}$ converges at $s$ if and
+only if $\operatorname{Re} s > 0$. So its abscissa of convergence is $0$.
+
+For $\operatorname{Re} s \le 0$ the truncated integral is $T$ when $s = 0$, and otherwise
+$(1 - e^{-sT})/s$. Its convergence would force $e^{-sT}$ to converge to a limit $M$ with
+$|M| \ge 1$. Then $e^{-sh} M = M$ for every shift $h$, so $h \mapsto e^{-sh}$ is constant, and
+its derivative $-s$ at $0$ vanishes. -/
 theorem converges_indicator_Ioi_iff {s : ℂ} :
     Converges (fun t : ℝ => Set.indicator (Ioi 0) (fun _ => (1 : ℂ)) t) s ↔ 0 < s.re := by
   constructor
@@ -549,7 +612,8 @@ theorem converges_indicator_Ioi_iff {s : ℂ} :
 
 /-! ### The sample-and-hold function and the Z-transform -/
 
-/-- The sampling intervals `[n Δt, (n + 1) Δt)`, `n : ℕ`, cover `[0, ∞)`. -/
+/-- For $\Delta t > 0$, the sampling intervals $[n\Delta t, (n + 1)\Delta t)$, $n \in \mathbb{N}$,
+cover $[0, \infty)$. -/
 theorem iUnion_Ico_nat_mul {Δt : ℝ} (hΔt : 0 < Δt) :
     ⋃ n : ℕ, Ico ((n : ℝ) * Δt) ((n + 1) * Δt) = Ici 0 := by
   ext t
@@ -564,7 +628,8 @@ theorem iUnion_Ico_nat_mul {Δt : ℝ} (hΔt : 0 < Δt) :
     · rw [← div_lt_iff₀ hΔt]
       exact Nat.lt_floor_add_one _
 
-/-- The sampling intervals `[n Δt, (n + 1) Δt)` are pairwise disjoint. -/
+/-- For $\Delta t > 0$, the sampling intervals $[n\Delta t, (n + 1)\Delta t)$, $n \in \mathbb{N}$,
+are pairwise disjoint. -/
 theorem pairwise_disjoint_Ico_nat_mul {Δt : ℝ} (hΔt : 0 < Δt) :
     Pairwise (Disjoint on fun n : ℕ => Ico ((n : ℝ) * Δt) ((n + 1) * Δt)) := by
   intro m n hmn
@@ -579,15 +644,19 @@ theorem pairwise_disjoint_Ico_nat_mul {Δt : ℝ} (hΔt : 0 < Δt) :
       exact_mod_cast h
     exact (min_le_right _ _).trans (this.trans (le_max_left _ _))
 
-/-- **The Laplace transform of the sample-and-hold function** ([quarteroni2000numerical]
-§10.11.4): for `Δt > 0`, the piecewise constant `f₀(t) = f(⌊t/Δt⌋ Δt)`, equal to `f(nΔt)` on
-`[nΔt, (n+1)Δt)`, and `s` with `Re s > 0` at which `∑_n ‖f(nΔt)‖ e^{-n Re s Δt}` converges,
+/-- **The Laplace transform of the sample-and-hold function**, §10.11.4 of
+[quarteroni2000numerical]: let $f : \mathbb{R} \to \mathbb{C}$, let $\Delta t > 0$, and let
+$f_0(t) = f(\lfloor t/\Delta t \rfloor \Delta t)$, which equals $f(n\Delta t)$ on
+$[n\Delta t, (n + 1)\Delta t)$. Let $s \in \mathbb{C}$ with $\operatorname{Re} s > 0$, and
+suppose that $\sum_{n \ge 0} |f(n\Delta t)|\, e^{-n (\operatorname{Re} s) \Delta t}$ converges.
+Then
+$$\mathcal{L}[f_0](s) = \frac{1 - e^{-s\Delta t}}{s} \sum_{n \ge 0} f(n\Delta t)\, e^{-ns\Delta
+  t}.$$
 
-`ℒ[f₀](s) = ((1 − e^{-sΔt}) / s) · ∑_{n ≥ 0} f(nΔt) e^{-nsΔt}`.
-
-The integral over `(0, ∞)` splits over the sampling intervals, on each of which `e^{-st}`
-integrates to `(e^{-nsΔt} − e^{-(n+1)sΔt})/s`. The series is the *discrete Laplace transform* of
-`f₀`, and the Z-transform of the samples at `z = e^{sΔt}` (`zTransform_eq_discreteLaplace`). -/
+The integral over $(0, \infty)$ splits over the sampling intervals. On the $n$-th interval
+$e^{-st}$ integrates to $(e^{-ns\Delta t} - e^{-(n+1)s\Delta t})/s$. The series is the discrete
+Laplace transform of $f_0$, and it is the Z-transform of the samples at $z = e^{s\Delta t}$
+(`zTransform_eq_discreteLaplace`). -/
 theorem laplaceTransform_stepFun {f : ℝ → ℂ} {Δt : ℝ} (hΔt : 0 < Δt) {s : ℂ} (hs : 0 < s.re)
     (hsum : Summable fun n : ℕ => ‖f (n * Δt)‖ * Real.exp (-(n * s.re * Δt))) :
     laplaceTransform (fun t : ℝ => f (⌊t / Δt⌋ * Δt)) s
@@ -678,18 +747,29 @@ theorem laplaceTransform_stepFun {f : ℝ → ℂ} {Δt : ℝ} (hΔt : 0 < Δt) 
 
 end LaplaceTransform
 
-/-- **The Z-transform** of the samples `f(nΔt)` ([quarteroni2000numerical] Definition 10.3,
-(10.84)): `Z(z) = ∑_{n ≥ 0} f(nΔt) z^{-n}`, a power series in `z⁻¹`; it converges for
-`‖z‖ > limsup_n ‖f(nΔt)‖^{1/n}` (`summable_zTransform`). -/
+/-- The **Z-transform** of the samples $f(n\Delta t)$, Definition 10.3 and (10.84) of
+[quarteroni2000numerical]: for $f : \mathbb{R} \to \mathbb{C}$, $\Delta t \in \mathbb{R}$ and
+$z \in \mathbb{C}$,
+$$Z(z) = \sum_{n \ge 0} f(n\Delta t)\, z^{-n}.$$
+This is a power series in $z^{-1}$, and it converges for $|z| > \limsup_n |f(n\Delta t)|^{1/n}$
+(`summable_zTransform`).
+
+The sum is Mathlib's `tsum`, which is $0$ where the series is not summable. At $z = 0$ the Lean
+convention $0^{-1} = 0$ applies. -/
 noncomputable def zTransform (f : ℝ → ℂ) (Δt : ℝ) (z : ℂ) : ℂ :=
   ∑' n : ℕ, f (n * Δt) * z⁻¹ ^ n
 
-/-- **The Cauchy–Hadamard root test for the Z-transform**: the series `∑ f(nΔt) z^{-n}` converges
-when `‖z‖ > R = limsup_n ‖f(nΔt)‖^{1/n}`, the limsup taken in `[0, ∞]` (as `ℝ≥0∞`, through
-`‖·‖ₑ`) so that an unbounded sequence of roots gives `R = ∞` and no `z` — in `ℝ` the `limsup` of
-an unbounded sequence is the junk value `0`, and the statement would be false. Choosing
-`R < r < ‖z‖`, eventually `‖f(nΔt)‖ ≤ r^n`, and the terms are dominated by the geometric series
-`(r/‖z‖)^n`. -/
+/-- **The Cauchy–Hadamard root test for the Z-transform**: let $f : \mathbb{R} \to \mathbb{C}$,
+$\Delta t \in \mathbb{R}$ and $z \in \mathbb{C}$. If
+$$R = \limsup_{n \to \infty} |f(n\Delta t)|^{1/n} < |z|,$$
+with the limit superior taken in $[0, \infty]$, then the series
+$\sum_{n \ge 0} f(n\Delta t)\, z^{-n}$ is summable.
+
+The limit superior is taken in `ℝ≥0∞`, through the extended norm `‖·‖ₑ`. So an unbounded
+sequence of roots gives $R = \infty$ and no $z$. In $\mathbb{R}$, the `limsup` of an unbounded
+sequence is the junk value $0$, and the statement would be false. The proof chooses
+$R < r < |z|$; then $|f(n\Delta t)| \le r^n$ eventually, and the geometric series
+$\sum (r/|z|)^n$ dominates the terms. -/
 theorem summable_zTransform {f : ℝ → ℂ} {Δt : ℝ} {z : ℂ}
     (hz : Filter.limsup (fun n : ℕ => ‖f (n * Δt)‖ₑ ^ (1 / (n : ℝ))) atTop < ‖z‖ₑ) :
     Summable fun n : ℕ => f (n * Δt) * z⁻¹ ^ n := by
@@ -722,11 +802,15 @@ theorem summable_zTransform {f : ℝ → ℂ} {Δt : ℝ} {z : ℂ}
     (summable_geometric_of_lt_one (by positivity) ((div_lt_one hz0).mpr hρz)) ?_
   rwa [Nat.cofinite_eq_atTop]
 
-/-- **The Z-transform is the discrete Laplace transform** under `z = e^{sΔt}`:
-`Z(e^{sΔt}) = ∑_{n ≥ 0} f(nΔt) e^{-nsΔt}`, the series of `laplaceTransform_stepFun`. So under the
-hypotheses of that theorem `ℒ[f₀](s) = ((1 − e^{-sΔt})/s) · Z(e^{sΔt})`. Erratum:
-[quarteroni2000numerical] §10.11.4 prints the substitution as `z = e^{-sΔt}`; with
-`Z(z) = ∑ f(nΔt) z^{-n}` and `Z^d(s) = ∑ f(nΔt) e^{-nsΔt}` it is `z = e^{sΔt}`. -/
+/-- **The Z-transform is the discrete Laplace transform** under $z = e^{s\Delta t}$: for
+$f : \mathbb{R} \to \mathbb{C}$, $\Delta t \in \mathbb{R}$ and $s \in \mathbb{C}$,
+$$Z(e^{s\Delta t}) = \sum_{n \ge 0} f(n\Delta t)\, e^{-ns\Delta t},$$
+which is the series of `LaplaceTransform.laplaceTransform_stepFun`. So, under the hypotheses of
+that theorem, $\mathcal{L}[f_0](s) = \frac{1 - e^{-s\Delta t}}{s}\, Z(e^{s\Delta t})$.
+
+[quarteroni2000numerical], §10.11.4, prints the substitution as $z = e^{-s\Delta t}$. With
+$Z(z) = \sum f(n\Delta t) z^{-n}$ and the discrete Laplace transform
+$Z^d(s) = \sum f(n\Delta t) e^{-ns\Delta t}$, the correct substitution is $z = e^{s\Delta t}$. -/
 theorem zTransform_eq_discreteLaplace (f : ℝ → ℂ) {Δt : ℝ} (s : ℂ) :
     zTransform f Δt (Complex.exp (s * Δt))
       = ∑' n : ℕ, f (n * Δt) * Complex.exp (-(n * s * Δt)) := by

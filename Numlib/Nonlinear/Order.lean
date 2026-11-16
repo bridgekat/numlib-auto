@@ -9,50 +9,85 @@ import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Nonlinear.FixedPoint
 
 /-!
-# Order of convergence, Aitken's Δ² extrapolation and Steffensen's method
+# Order of convergence, Aitken's $\Delta^2$ extrapolation and Steffensen's method
 
-The order of convergence of a sequence in a normed group and of a fixed-point iteration
-([quarteroni2000numerical] Definition 6.1), the ratio lemmas behind the convergence-order theory of
-one-step iterations, Aitken's Δ² extrapolation and Steffensen's method ([quarteroni2000numerical]
-§6.6.1, Exercise 6.5; [isaacson1994analysis] §3.3), and the increment stopping criterion
-([quarteroni2000numerical] §6.5).
+A sequence $(x_k)$ in a normed group converges to $\alpha$ with order $p$ if $x_k \to \alpha$ and
+$\|x_{k+1} - \alpha\| \le C \|x_k - \alpha\|^p$ for some $C > 0$ and all large $k$ (Definition 6.1
+of [quarteroni2000numerical]). The order $p$ is real, so that non-integer orders such as the golden
+ratio are allowed. A fixed-point iteration $x \mapsto \varphi(x)$ has order $p$ at $\alpha$ if every
+orbit that starts close to $\alpha$ converges to $\alpha$ with order $p$. These notions are stated
+in a normed group, so that the methods for $\mathbb{R}^n$ of Chapter 7 of [quarteroni2000numerical]
+can use them, together with $Q$-superlinear convergence. For a scalar iteration the module reads the
+order off the ratio limit $(\varphi(x) - \alpha)/(x - \alpha)^n \to c$, and proves Property 6.4 of
+[quarteroni2000numerical], the increment stopping criterion (6.31) of §6.5, Aitken's $\Delta^2$
+extrapolation with its order (Property 6.7), and Steffensen's method (§6.6.1 and Exercise 6.5 of
+[quarteroni2000numerical]; §3.3 of [isaacson1994analysis]).
 
-`ConvergesWithOrder x α p` — `x → α` with `‖x (k+1) - α‖ ≤ C ‖x k - α‖ ^ p` eventually, `p : ℝ` a
-real power so that non-integer orders such as the golden ratio are allowed — and
-`HasIterationOrder φ α p` (every orbit of `φ` from a ball around `α` converges with order `p`) are
-stated for a normed additive group, so that the `ℝⁿ` methods of [quarteroni2000numerical] chapter 7
-reuse them. The derivative-based results are scalar. Every error-ratio limit carries the hypothesis
-`x k ≠ α`: an orbit that hits the fixed point is constant from then on and the ratios are `0 / 0`.
-`ConvergesSuperlinearly x α` (`‖x (k+1) - α‖ ≤ c k ‖x k - α‖` with `c k → 0`) is `Q`-superlinear
-convergence, equivalent to the ratio form away from `α`
-(`convergesSuperlinearly_iff_tendsto_ratio`).
+Three statements of [quarteroni2000numerical] are repaired here. The remark after Definition 6.1
+calls a factor $C < 1$ necessary for convergence of order $1$; it is sufficient
+(`tendsto_of_eventually_norm_sub_succ_le`). In Property 6.4 the range $0 \le i \le p$ must read
+$1 \le i \le p$. The last clause of Property 6.7, that Aitken's method at a multiple root converges
+linearly with factor $1 - 1/m$, is false as printed, since $\varphi_\Delta'(\alpha) = 0$ for every
+$\varphi$ with $\varphi'(\alpha) \neq 1$; it is the statement of [isaacson1994analysis] about
+Steffensen's method, and it is proved as `tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`.
 
-## Design
+## Main definitions
 
-* The order of a one-step scalar method is read off a **ratio limit**
-  `(φ x - α) / (x - α) ^ n → c` as `x → α`, `x ≠ α`. Two generic lemmas turn such a limit (or the
-  eventual bound `|φ x - α| ≤ C |x - α| ^ n` it implies) into `HasIterationOrder φ α n`:
-  `hasIterationOrder_of_eventually_norm_sub_le` for `n ≥ 2`, where the bound alone gives local
-  convergence, and `hasIterationOrder_one_of_tendsto_sub_div` for `n = 1` with `|c| < 1`, where
-  Ostrowski's theorem does. Property 6.4, Aitken's method, Steffensen's method and Newton's method
-  (`Numlib/Nonlinear/ScalarNewton`) are all instances.
-* The ratio limits are computed with Mathlib's `dslope` (`φ x - α = (x - α) · dslope φ α x`, with
-  `dslope φ α` continuous at `α` when `φ` is differentiable there and `C¹` when `φ` is `C²`, by
-  Hadamard's lemma `ContDiffAt.dslope_same`) and, for higher orders, with the Taylor factorization
-  `IsRootOfMultiplicity.exists_eq_pow_mul` of `Numlib/Analysis/Calculus/RootMultiplicity`.
-* Aitken's iteration function `φ_Δ` is extended by `x` itself where its denominator vanishes, so
-  that a fixed point of `φ` is a fixed point of `φ_Δ`; the identity
-  `φ_Δ x - α = ((x - α) (φ (φ x) - α) - (φ x - α)²) / (φ (φ x) - 2 φ x + x)` reduces everything
-  about it to the expansions of `φ x - α` and `φ (φ x) - α`.
+* `ConvergesWithOrder`: convergence of a sequence with order $p$.
+* `HasIterationOrder`: a fixed-point iteration has local order $p$.
+* `ConvergesSuperlinearly`: $Q$-superlinear convergence.
+* `aitkenRatio`: the ratio $(x_{k+2} - x_{k+1})/(x_{k+1} - x_k)$ of successive increments.
+* `aitkenExtrapolation`: Aitken's extrapolation formula.
+* `aitkenIterationFunction`: Aitken's iteration function $\varphi_\Delta$.
+* `steffensenStep`: Steffensen's step $x - f(x)^2 / (f(x + f(x)) - f(x))$.
 
-## Errata
+## Main results
 
-The remark after Definition 6.1 says a factor `C < 1` is *necessary* for convergence when `p = 1`;
-it is sufficient (`tendsto_of_eventually_norm_sub_succ_le`). Property 6.4's range `0 ≤ i ≤ p` must
-read `1 ≤ i ≤ p`. The last clause of Property 6.7 (Aitken at a multiple root converges linearly
-with factor `1 - 1/m`) is false as printed — `φ_Δ'(α) = 0` for every `φ` with `φ'(α) ≠ 1` — and is
-[isaacson1994analysis]'s statement about Steffensen's method, proved here as
-`tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`.
+* `tendsto_of_eventually_norm_sub_succ_le`: a linear error bound with factor $C < 1$ forces
+  convergence.
+* `hasIterationOrder_of_eventually_norm_sub_le`: a bound
+  $\|\varphi(x) - \alpha\| \le C \|x - \alpha\|^n$ near $\alpha$ with $n \ge 2$ gives order $n$.
+* `hasIterationOrder_one_of_tendsto_sub_div`: a ratio limit $|c| < 1$ gives order $1$.
+* `tendsto_sub_div_sub_of_hasDerivAt`: the error ratios of a convergent orbit tend to
+  $\varphi'(\alpha)$.
+* `tendsto_sub_div_sub_succ_of_hasDerivAt`: the increment test (6.31).
+* `hasIterationOrder_of_iteratedDeriv_eq_zero`: Property 6.4, order $p + 1$ when
+  $\varphi^{(i)}(\alpha) = 0$ for $1 \le i \le p$.
+* `tendsto_aitkenRatio`: the increment ratios tend to the limit of the error ratios (6.34).
+* `hasDerivAt_aitkenIterationFunction_zero`: $\varphi_\Delta'(\alpha) = 0$ when
+  $\varphi'(\alpha) \neq 1$.
+* `hasIterationOrder_aitkenIterationFunction_two`: Property 6.7 for $p = 1$, order $2$.
+* `hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero`: Property 6.7 for $p \ge 2$,
+  order $2p - 1$.
+* `hasIterationOrder_steffensenStep_two`: Steffensen's method has order $2$ at a simple root.
+* `tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`: at a root of multiplicity $m \ge 2$,
+  Steffensen's method is linear with factor $1 - 1/m$.
+
+## Proof outline
+
+The order of a one-step scalar method comes from a ratio limit
+$(\varphi(x) - \alpha)/(x - \alpha)^n \to c$ as $x \to \alpha$, $x \neq \alpha$. For $n \ge 2$ the
+bound $|\varphi(x) - \alpha| \le C |x - \alpha|^n$ that the limit implies is enough for local
+convergence. For $n = 1$ with $|c| < 1$, Ostrowski's theorem gives local convergence. Property 6.4,
+Aitken's method, Steffensen's method and Newton's method (`Numlib.Nonlinear.ScalarNewton`) are all
+instances. The ratio limits come from the slope function
+$s(x) = (\varphi(x) - \alpha)/(x - \alpha)$, which is continuous at $\alpha$ when $\varphi$ is
+differentiable there and $C^1$ when $\varphi$ is $C^2$ (Hadamard's lemma), and for higher orders
+from the Taylor factorization of a function with vanishing derivatives.
+
+## Implementation notes
+
+* Every limit of error ratios assumes $x_k \neq \alpha$: an orbit that reaches the fixed point is
+  constant from then on, and its ratios are $0/0$.
+* The slope function is Mathlib's `dslope φ α`, and Hadamard's lemma is `ContDiffAt.dslope_same`.
+  The Taylor factorization is `IsRootOfMultiplicity.exists_eq_pow_mul` of
+  `Numlib.Analysis.Calculus.RootMultiplicity`.
+* Aitken's iteration function $\varphi_\Delta$ is extended by $x$ itself where its denominator
+  vanishes, so that a fixed point of $\varphi$ is a fixed point of $\varphi_\Delta$. The identity
+  $\varphi_\Delta(x) - \alpha = ((x - \alpha)(\varphi(\varphi(x)) - \alpha) - (\varphi(x) -
+  \alpha)^2) / (\varphi(\varphi(x)) - 2\varphi(x) + x)$ (`aitkenIterationFunction_sub_eq`) reduces
+  all statements about $\varphi_\Delta$ to the expansions of $\varphi(x) - \alpha$ and
+  $\varphi(\varphi(x)) - \alpha$.
 -/
 
 open Filter Topology Set
@@ -62,29 +97,42 @@ section NormedGroup
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- `x` converges to `α` with order `p` ([quarteroni2000numerical] Definition 6.1): `x → α` and,
-for some `C > 0` and all large `k`, `‖x (k+1) - α‖ ≤ C ‖x k - α‖ ^ p`. The second conjunct is the
-displayed inequality (6.2) of the definition, the first the word "converges" in it; the exponent is
-the real power, so non-integer orders are allowed, and the definition does not force `p ≥ 1`. -/
+/-! ### Order of convergence in a normed group -/
+
+/-- Let $E$ be a normed additive group, $(x_k)$ a sequence in $E$, $\alpha \in E$ and
+$p \in \mathbb{R}$. The sequence **converges to $\alpha$ with order $p$** if $x_k \to \alpha$
+and there is $C > 0$ such that
+$$\|x_{k+1} - \alpha\| \le C \|x_k - \alpha\|^p \qquad \text{for all sufficiently large } k.$$
+
+This is Definition 6.1 of [quarteroni2000numerical]: the inequality is (6.2) of the definition,
+and the condition $x_k \to \alpha$ is the word "converges" in it. The power is the real power,
+so non-integer orders are allowed, and the definition does not require $p \ge 1$. -/
 def ConvergesWithOrder (x : ℕ → E) (α : E) (p : ℝ) : Prop :=
   Tendsto x atTop (𝓝 α) ∧ ∃ C > 0, ∀ᶠ k in atTop, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖ ^ p
 
-/-- A fixed-point iteration `x ↦ φ x` has (local) order `p` at `α` if from every start close
-enough to `α` the orbit converges to `α` with order `p`: the sense in which
-[quarteroni2000numerical] says "a fixed-point method has order `p`" (the sentence before its
-Property 6.4). -/
+/-- Let $E$ be a normed additive group, $\varphi \colon E \to E$ and $\alpha \in E$. The iteration
+$x \mapsto \varphi(x)$ has **(local) order $p$ at $\alpha$** if there is $\varepsilon > 0$ such
+that for every $x_0 \in B(\alpha, \varepsilon)$ the orbit $(\varphi^k(x_0))_k$ converges to
+$\alpha$ with order $p$ in the sense of `ConvergesWithOrder`.
+
+This is the sense in which [quarteroni2000numerical] says that a fixed-point method has order
+$p$, in the sentence before Property 6.4. -/
 def HasIterationOrder (φ : E → E) (α : E) (p : ℝ) : Prop :=
   ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, ConvergesWithOrder (fun k => φ^[k] x₀) α p
 
-/-- A convergent sequence of order `p` converges. -/
+/-- If $(x_k)$ converges to $\alpha$ with order $p$, then $x_k \to \alpha$. -/
 theorem ConvergesWithOrder.tendsto {x : ℕ → E} {α : E} {p : ℝ} (h : ConvergesWithOrder x α p) :
     Tendsto x atTop (𝓝 α) :=
   h.1
 
-/-- **A linear error bound with factor below one forces convergence**: if
-`‖x (k+1) - α‖ ≤ C ‖x k - α‖` eventually with `C < 1`, then `x → α`. This is the sufficient
-direction of the remark after [quarteroni2000numerical] Definition 6.1, whose word "necessary" is a
-slip. -/
+/-- **A linear error bound with factor below one forces convergence.** Let $E$ be a normed additive
+group, $(x_k)$ a sequence in $E$, $\alpha \in E$ and $C < 1$. If
+$\|x_{k+1} - \alpha\| \le C \|x_k - \alpha\|$ for all sufficiently large $k$, then
+$x_k \to \alpha$.
+
+The remark after Definition 6.1 of [quarteroni2000numerical] calls the condition $C < 1$
+necessary for convergence when $p = 1$. It is sufficient, as this theorem shows; the word
+"necessary" is a slip. -/
 theorem tendsto_of_eventually_norm_sub_succ_le {x : ℕ → E} {α : E} {C : ℝ} (hC : C < 1)
     (h : ∀ᶠ k in atTop, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖) : Tendsto x atTop (𝓝 α) := by
   obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 h
@@ -105,17 +153,23 @@ theorem tendsto_of_eventually_norm_sub_succ_le {x : ℕ → E} {α : E} {C : ℝ
   refine tendsto_iff_norm_sub_tendsto_zero.2 (squeeze_zero (fun n => norm_nonneg _) hbound ?_)
   simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hC'0 hC'1).mul_const ‖x N - α‖
 
-/-- **Linear convergence with factor `C`**: a bound `‖x (k+1) - α‖ ≤ C ‖x k - α‖` with
-`0 < C < 1` is convergence of order `1` in the sense of Definition 6.1, `C` being the convergence
-factor. -/
+/-- **Linear convergence with factor $C$.** Let $E$ be a normed additive group, $(x_k)$ a sequence
+in $E$, $\alpha \in E$ and $0 < C < 1$. If $\|x_{k+1} - \alpha\| \le C \|x_k - \alpha\|$ for all
+sufficiently large $k$, then $(x_k)$ converges to $\alpha$ with order $1$ in the sense of
+Definition 6.1 of [quarteroni2000numerical], and $C$ is the convergence factor. -/
 theorem convergesWithOrder_one_of_eventually_norm_sub_succ_le {x : ℕ → E} {α : E} {C : ℝ}
     (hC0 : 0 < C) (hC : C < 1) (h : ∀ᶠ k in atTop, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖) :
     ConvergesWithOrder x α 1 :=
   ⟨tendsto_of_eventually_norm_sub_succ_le hC h, C, hC0, h.mono fun k hk => by rwa [Real.rpow_one]⟩
 
-/-- If the error ratio `‖x (k+1) - α‖ / ‖x k - α‖ ^ p` has a finite limit along a sequence that
-eventually avoids `α`, then the order bound of Definition 6.1 holds (with `C = |c| + 1`). This is
-how every ratio-limit theorem yields an order in the sense of `ConvergesWithOrder`. -/
+/-- Let $E$ be a normed additive group, $(x_k)$ a sequence in $E$, $\alpha \in E$ and
+$p, c \in \mathbb{R}$. If $x_k \neq \alpha$ for all sufficiently large $k$ and
+$$\frac{\|x_{k+1} - \alpha\|}{\|x_k - \alpha\|^p} \to c,$$
+then there is $C > 0$ with $\|x_{k+1} - \alpha\| \le C \|x_k - \alpha\|^p$ for all sufficiently
+large $k$.
+
+The proof takes $C = |c| + 1$. Every theorem that gives a ratio limit yields an order in the
+sense of `ConvergesWithOrder` in this way. -/
 theorem exists_eventually_norm_sub_succ_le_of_tendsto_ratio {x : ℕ → E} {α : E} {p c : ℝ}
     (hx : ∀ᶠ k in atTop, x k ≠ α)
     (h : Tendsto (fun k => ‖x (k + 1) - α‖ / ‖x k - α‖ ^ p) atTop (𝓝 c)) :
@@ -126,9 +180,11 @@ theorem exists_eventually_norm_sub_succ_le_of_tendsto_ratio {x : ℕ → E} {α 
   have hpos : 0 < ‖x k - α‖ ^ p := Real.rpow_pos_of_pos (norm_pos_iff.2 (sub_ne_zero.2 hk)) _
   exact (div_le_iff₀ hpos).1 hlt.le
 
-/-- Order `p` implies order `q` whenever `0 ≤ q ≤ p`: once the errors are below `1`,
-`‖x k - α‖ ^ p ≤ ‖x k - α‖ ^ q`. This is why Definition 6.1 speaks of "order at least `p`" in
-practice. -/
+/-- Let $E$ be a normed additive group and $0 \le q \le p$. If $(x_k)$ converges to $\alpha$ with
+order $p$, then it converges to $\alpha$ with order $q$.
+
+Once the errors are below $1$, $\|x_k - \alpha\|^p \le \|x_k - \alpha\|^q$. This is why
+Definition 6.1 of [quarteroni2000numerical] is in practice read as "order at least $p$". -/
 theorem ConvergesWithOrder.of_le {x : ℕ → E} {α : E} {p q : ℝ} (hq : 0 ≤ q) (hpq : q ≤ p)
     (h : ConvergesWithOrder x α p) : ConvergesWithOrder x α q := by
   obtain ⟨hlim, C, hC, hbound⟩ := h
@@ -139,8 +195,11 @@ theorem ConvergesWithOrder.of_le {x : ℕ → E} {α : E} {p q : ℝ} (hq : 0 �
   exact hk.trans (mul_le_mul_of_nonneg_left
     (Real.rpow_le_rpow_of_exponent_ge' (norm_nonneg _) hk1 hq hpq) hC.le)
 
-/-- An eventual bound `‖φ x - α‖ ≤ C ‖x - α‖ ^ p` near `α` together with local convergence of the
-orbits gives `HasIterationOrder φ α p`. -/
+/-- Let $E$ be a normed additive group, $\varphi \colon E \to E$, $\alpha \in E$, $p \in \mathbb{R}$
+and $C > 0$. Suppose that $\|\varphi(x) - \alpha\| \le C \|x - \alpha\|^p$ for all $x$ in a
+neighbourhood of $\alpha$, and that there is $\delta > 0$ such that the orbit
+$(\varphi^k(x_0))_k$ converges to $\alpha$ for every $x_0 \in B(\alpha, \delta)$. Then the
+iteration $x \mapsto \varphi(x)$ has order $p$ at $\alpha$. -/
 theorem hasIterationOrder_of_eventually_of_tendsto {φ : E → E} {α : E} {p C : ℝ} (hC : 0 < C)
     (hbound : ∀ᶠ x in 𝓝 α, ‖φ x - α‖ ≤ C * ‖x - α‖ ^ p)
     (hconv : ∃ δ > 0, ∀ x₀ ∈ Metric.ball α δ, Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α)) :
@@ -150,10 +209,14 @@ theorem hasIterationOrder_of_eventually_of_tendsto {φ : E → E} {α : E} {p C 
   filter_upwards [(hconv x₀ hx₀).eventually hbound] with k hk
   rwa [Function.iterate_succ_apply']
 
-/-- **Order `n ≥ 2` from the bound alone**: if `‖φ x - α‖ ≤ C ‖x - α‖ ^ n` near `α` with `n ≥ 2`,
-then `φ` has iteration order `n` at `α`. The bound makes `φ` contract by the factor `1/2` on a
-small enough ball, so orbits stay in it and converge; `φ α = α` is forced by the bound at
-`x = α`. -/
+/-- **Order $n \ge 2$ from a bound alone.** Let $E$ be a normed additive group,
+$\varphi \colon E \to E$, $\alpha \in E$, $C \in \mathbb{R}$, and $n \ge 2$ a natural number. If
+$\|\varphi(x) - \alpha\| \le C \|x - \alpha\|^n$ for all $x$ in a neighbourhood of $\alpha$,
+then the iteration $x \mapsto \varphi(x)$ has order $n$ at $\alpha$.
+
+The bound at $x = \alpha$ forces $\varphi(\alpha) = \alpha$. On a small enough ball the bound
+makes $\varphi$ contract towards $\alpha$ by the factor $1/2$, so orbits stay in the ball and
+converge. -/
 theorem hasIterationOrder_of_eventually_norm_sub_le {φ : E → E} {α : E} {C : ℝ} {n : ℕ}
     (hn : 2 ≤ n) (h : ∀ᶠ x in 𝓝 α, ‖φ x - α‖ ≤ C * ‖x - α‖ ^ n) : HasIterationOrder φ α n := by
   obtain ⟨δ, hδ, hball⟩ := Metric.eventually_nhds_iff.1 h
@@ -192,12 +255,15 @@ theorem hasIterationOrder_of_eventually_norm_sub_le {φ : E → E} {α : E} {C :
     simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num)
       (by norm_num)).mul_const ‖x₀ - α‖
 
-/-- `x` converges `Q`-superlinearly to `α`: `‖x (k+1) - α‖ ≤ c k ‖x k - α‖` for all `k`, for some
-factors `c k → 0`. Sequences reaching `α` in finitely many steps are included. -/
+/-- Let $E$ be a normed additive group, $(x_k)$ a sequence in $E$ and $\alpha \in E$. The sequence
+**converges $Q$-superlinearly to $\alpha$** if there are reals $c_k \to 0$ with
+$\|x_{k+1} - \alpha\| \le c_k \|x_k - \alpha\|$ for all $k$.
+
+Sequences that reach $\alpha$ after finitely many steps are included. -/
 def ConvergesSuperlinearly (x : ℕ → E) (α : E) : Prop :=
   ∃ c : ℕ → ℝ, Tendsto c atTop (𝓝 0) ∧ ∀ k, ‖x (k + 1) - α‖ ≤ c k * ‖x k - α‖
 
-/-- A `Q`-superlinearly convergent sequence converges. -/
+/-- If $(x_k)$ converges $Q$-superlinearly to $\alpha$, then $x_k \to \alpha$. -/
 theorem ConvergesSuperlinearly.tendsto {x : ℕ → E} {α : E} (h : ConvergesSuperlinearly x α) :
     Tendsto x atTop (𝓝 α) := by
   obtain ⟨c, hc, hle⟩ := h
@@ -205,7 +271,8 @@ theorem ConvergesSuperlinearly.tendsto {x : ℕ → E} {α : E} (h : ConvergesSu
   filter_upwards [hc.eventually (gt_mem_nhds (by norm_num : (0 : ℝ) < 1 / 2))] with k hk
   exact (hle k).trans (mul_le_mul_of_nonneg_right hk.le (norm_nonneg _))
 
-/-- `Q`-superlinear convergence implies convergence of order `1` (with constant `1`). -/
+/-- If $(x_k)$ converges $Q$-superlinearly to $\alpha$, then it converges to $\alpha$ with order
+$1$, with constant $C = 1$. -/
 theorem ConvergesSuperlinearly.convergesWithOrder_one {x : ℕ → E} {α : E}
     (h : ConvergesSuperlinearly x α) : ConvergesWithOrder x α 1 := by
   refine ⟨h.tendsto, 1, one_pos, ?_⟩
@@ -214,8 +281,8 @@ theorem ConvergesSuperlinearly.convergesWithOrder_one {x : ℕ → E} {α : E}
   rw [Real.rpow_one]
   exact (hle k).trans (mul_le_mul_of_nonneg_right hk.le (norm_nonneg _))
 
-/-- For a sequence that never reaches `α`, `Q`-superlinear convergence is the ratio form
-`‖x (k+1) - α‖ / ‖x k - α‖ → 0`. -/
+/-- Let $(x_k)$ be a sequence with $x_k \neq \alpha$ for all $k$. Then $(x_k)$ converges
+$Q$-superlinearly to $\alpha$ if and only if $\|x_{k+1} - \alpha\| / \|x_k - \alpha\| \to 0$. -/
 theorem convergesSuperlinearly_iff_tendsto_ratio {x : ℕ → E} {α : E} (hne : ∀ k, x k ≠ α) :
     ConvergesSuperlinearly x α ↔
       Tendsto (fun k => ‖x (k + 1) - α‖ / ‖x k - α‖) atTop (𝓝 0) := by
@@ -233,8 +300,15 @@ section Scalar
 
 variable {φ : ℝ → ℝ} {α : ℝ}
 
-/-- From a ratio limit `(φ x - α) / (x - α) ^ n → c` at `α` and `φ α = α`, the eventual bound
-`|φ x - α| ≤ (|c| + 1) |x - α| ^ n` on a full neighbourhood of `α`. -/
+/-!
+### Ratio limits for scalar iterations
+
+In this section $\varphi \colon \mathbb{R} \to \mathbb{R}$ and $\alpha \in \mathbb{R}$.
+-/
+
+/-- Let $\varphi(\alpha) = \alpha$, let $c \in \mathbb{R}$ and $n \in \mathbb{N}$, and suppose that
+$(\varphi(x) - \alpha)/(x - \alpha)^n \to c$ as $x \to \alpha$, $x \neq \alpha$. Then
+$|\varphi(x) - \alpha| \le (|c| + 1) |x - \alpha|^n$ for all $x$ in a neighbourhood of $\alpha$. -/
 theorem eventually_abs_sub_le_mul_abs_pow_of_tendsto (hα : φ α = α) {c : ℝ} {n : ℕ}
     (h : Tendsto (fun x => (φ x - α) / (x - α) ^ n) (𝓝[≠] α) (𝓝 c)) :
     ∀ᶠ x in 𝓝 α, |φ x - α| ≤ (|c| + 1) * |x - α| ^ n := by
@@ -249,17 +323,22 @@ theorem eventually_abs_sub_le_mul_abs_pow_of_tendsto (hα : φ α = α) {c : ℝ
     rw [← abs_pow, ← div_le_iff₀ hpos, ← abs_div]
     exact abs_le.2 ⟨(hx2 hxα).le, (hx1 hxα).le⟩
 
-/-- **Order `n ≥ 2` from a ratio limit**: if `(φ x - α) / (x - α) ^ n → c` as `x → α`, `x ≠ α`,
-with `n ≥ 2` and `φ α = α`, then `φ` has iteration order `n` at `α`. -/
+/-- **Order $n \ge 2$ from a ratio limit.** Let $\varphi(\alpha) = \alpha$, let $c \in \mathbb{R}$,
+let $n \ge 2$ be a natural number, and suppose that
+$$\frac{\varphi(x) - \alpha}{(x - \alpha)^n} \to c \qquad \text{as } x \to \alpha,\ x \neq
+  \alpha.$$
+Then the iteration $x \mapsto \varphi(x)$ has order $n$ at $\alpha$. -/
 theorem hasIterationOrder_of_tendsto_sub_div_pow (hα : φ α = α) {c : ℝ} {n : ℕ} (hn : 2 ≤ n)
     (h : Tendsto (fun x => (φ x - α) / (x - α) ^ n) (𝓝[≠] α) (𝓝 c)) :
     HasIterationOrder φ α n :=
   hasIterationOrder_of_eventually_norm_sub_le hn
     (by simpa [Real.norm_eq_abs] using eventually_abs_sub_le_mul_abs_pow_of_tendsto hα h)
 
-/-- **Order `1` from a ratio limit below one**: if `(φ x - α) / (x - α) → c` as `x → α`, `x ≠ α`,
-with `|c| < 1` and `φ α = α`, then `φ` has iteration order `1` at `α` (Ostrowski's theorem gives
-the convergence; the limit is `φ'(α)`). -/
+/-- **Order $1$ from a ratio limit below one.** Let $\varphi(\alpha) = \alpha$, let $|c| < 1$, and
+suppose that $(\varphi(x) - \alpha)/(x - \alpha) \to c$ as $x \to \alpha$, $x \neq \alpha$. Then
+the iteration $x \mapsto \varphi(x)$ has order $1$ at $\alpha$.
+
+The limit $c$ is $\varphi'(\alpha)$, and Ostrowski's theorem gives the convergence. -/
 theorem hasIterationOrder_one_of_tendsto_sub_div (hα : φ α = α) {c : ℝ} (hc : |c| < 1)
     (h : Tendsto (fun x => (φ x - α) / (x - α)) (𝓝[≠] α) (𝓝 c)) : HasIterationOrder φ α 1 := by
   have hderiv : HasDerivAt φ c α := by
@@ -274,10 +353,13 @@ theorem hasIterationOrder_one_of_tendsto_sub_div (hα : φ α = α) {c : ℝ} (h
   · obtain ⟨δ, hδ, hconv⟩ := tendsto_iterate_of_abs_deriv_lt_one hα hderiv hc
     exact ⟨δ, hδ, fun x₀ hx₀ => hconv x₀ (by simpa [Metric.mem_ball, Real.dist_eq] using hx₀)⟩
 
-/-- **(6.18) of [quarteroni2000numerical] Theorem 6.1, from differentiability at the fixed point
-alone**: along a convergent orbit `x (k+1) = φ (x k)` that never hits `α`, the error ratios
-`(x (k+1) - α) / (x k - α)` tend to `φ'(α)`. The book derives it with the mean value theorem under
-`φ ∈ C¹[a, b]`; neither `C¹` nor the interval is needed. -/
+/-- **The error ratios tend to $\varphi'(\alpha)$.** Let $\varphi$ have derivative $\varphi'$ at
+$\alpha$, with $\varphi(\alpha) = \alpha$. Let $(x_k)$ be a sequence with
+$x_{k+1} = \varphi(x_k)$ and $x_k \neq \alpha$ for all $k$, and with $x_k \to \alpha$. Then
+$$\frac{x_{k+1} - \alpha}{x_k - \alpha} \to \varphi'.$$
+
+This is (6.18) in Theorem 6.1 of [quarteroni2000numerical]. The source derives it with the mean
+value theorem for $\varphi \in C^1[a, b]$; differentiability at the fixed point is enough. -/
 theorem tendsto_sub_div_sub_of_hasDerivAt {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ α = α)
     {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k)) (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :
@@ -287,9 +369,14 @@ theorem tendsto_sub_div_sub_of_hasDerivAt {φ' : ℝ} (hφ : HasDerivAt φ φ' �
   refine this.congr fun k => ?_
   simp [slope, hx, hα, Function.comp, vsub_eq_sub, div_eq_inv_mul]
 
-/-- **(6.18) from a derivative within a set**: along an orbit `x (k+1) = φ (x k)` converging to
-`α = φ α` inside a set `s` on which `φ` has derivative `φ'` at `α`, and never equal to `α`, the
-error ratios tend to `φ' α`. This is the form needed when `α` is an endpoint of `[a, b]`. -/
+/-- **The error ratios tend to the derivative within a set.** Let $s \subseteq \mathbb{R}$, and let
+$\varphi$ have derivative $\varphi'_\alpha$ at $\alpha$ within $s$, with
+$\varphi(\alpha) = \alpha$. Let $(x_k)$ be a sequence in $s$ with $x_{k+1} = \varphi(x_k)$ and
+$x_k \neq \alpha$ for all $k$, and with $x_k \to \alpha$. Then $(x_{k+1} - \alpha)/(x_k -
+\alpha) \to \varphi'_\alpha$.
+
+This form of (6.18) of [quarteroni2000numerical] is needed when $\alpha$ is an endpoint of
+$[a, b]$. -/
 theorem tendsto_sub_div_sub_of_hasDerivWithinAt {s : Set ℝ} {φ'α : ℝ}
     (hφ : HasDerivWithinAt φ φ'α s α) (hα : φ α = α) {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k))
     (hs : ∀ k, x k ∈ s) (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
@@ -300,8 +387,11 @@ theorem tendsto_sub_div_sub_of_hasDerivWithinAt {s : Set ℝ} {φ'α : ℝ}
   refine this.congr fun k => ?_
   simp [slope, hx, hα, Function.comp, vsub_eq_sub, div_eq_inv_mul]
 
-/-- Along a sequence avoiding `α` whose error ratios tend to `l ≠ 1`, the increments
-`x (k+1) - x k` are eventually nonzero: `x (k+1) - x k = (x k - α) (r k - 1)` with `r k → l`. -/
+/-- Let $(x_k)$ be a real sequence with $x_k \neq \alpha$ for all $k$, and suppose that
+$(x_{k+1} - \alpha)/(x_k - \alpha) \to l$ with $l \neq 1$. Then $x_{k+1} - x_k \neq 0$ for all
+sufficiently large $k$.
+
+The proof writes $x_{k+1} - x_k = (x_k - \alpha)(r_k - 1)$ with $r_k \to l$. -/
 theorem eventually_sub_succ_ne_zero_of_tendsto_ratio {x : ℕ → ℝ} {l : ℝ} (hne : ∀ k, x k ≠ α)
     (h : Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 l)) (hl : l ≠ 1) :
     ∀ᶠ k in atTop, x (k + 1) - x k ≠ 0 := by
@@ -311,10 +401,13 @@ theorem eventually_sub_succ_ne_zero_of_tendsto_ratio {x : ℕ → ℝ} {l : ℝ}
   apply hk
   rw [show x (k + 1) - α = x k - α by linarith, div_self he]
 
-/-- **The increment test, [quarteroni2000numerical] (6.31), from a ratio limit**: if the error
-ratios tend to `l ≠ 1`, then `(α - x k) / (x (k+1) - x k) → 1 / (1 - l)`. The error `e_k = α - x_k`
-(the book's sign convention, which makes the constant come out as printed) is asymptotically
-`1 / (1 - l)` times the last increment. -/
+/-- **The increment test from a ratio limit.** Let $(x_k)$ be a real sequence with $x_k \neq \alpha$
+for all $k$, and suppose that $(x_{k+1} - \alpha)/(x_k - \alpha) \to l$ with $l \neq 1$. Then
+$$\frac{\alpha - x_k}{x_{k+1} - x_k} \to \frac{1}{1 - l}.$$
+
+This is the stopping criterion (6.31) of [quarteroni2000numerical]: the error $\alpha - x_k$ is
+asymptotically $1/(1 - l)$ times the last increment. The error has the sign convention of the
+source, which gives the constant as printed. -/
 theorem tendsto_sub_div_sub_succ_of_tendsto_ratio {x : ℕ → ℝ} {l : ℝ} (hne : ∀ k, x k ≠ α)
     (h : Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 l)) (hl : l ≠ 1) :
     Tendsto (fun k => (α - x k) / (x (k + 1) - x k)) atTop (𝓝 (1 / (1 - l))) := by
@@ -327,10 +420,15 @@ theorem tendsto_sub_div_sub_succ_of_tendsto_ratio {x : ℕ → ℝ} {l : ℝ} (h
   rw [show x k - α - (x (k + 1) - α) = -(x (k + 1) - x k) by ring, div_neg,
     show α - x k = -(x k - α) by ring, neg_div]
 
-/-- **The increment test, [quarteroni2000numerical] (6.31)**: along a convergent orbit
-`x (k+1) = φ (x k)` avoiding the fixed point `α`, with `φ'(α) ≠ 1`, the increments are eventually
-nonzero and `(α - x k) / (x (k+1) - x k) → 1 / (1 - φ'(α))`. The test is reliable when `φ'(α)` is
-far from `1`, and optimal for second-order methods, where `φ'(α) = 0`. -/
+/-- **The increment test.** Let $\varphi$ have derivative $\varphi' \neq 1$ at $\alpha$, with
+$\varphi(\alpha) = \alpha$. Let $(x_k)$ be a sequence with $x_{k+1} = \varphi(x_k)$ and
+$x_k \neq \alpha$ for all $k$, and with $x_k \to \alpha$. Then $x_{k+1} - x_k \neq 0$ for all
+sufficiently large $k$, and
+$$\frac{\alpha - x_k}{x_{k+1} - x_k} \to \frac{1}{1 - \varphi'}.$$
+
+This is the stopping criterion (6.31) of [quarteroni2000numerical]. The test is reliable when
+$\varphi'(\alpha)$ is far from $1$, and optimal for methods of second order, where
+$\varphi'(\alpha) = 0$. -/
 theorem tendsto_sub_div_sub_succ_of_hasDerivAt {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ α = α)
     (h1 : φ' ≠ 1) {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k)) (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :
@@ -347,10 +445,15 @@ section Taylor
 
 variable {f : ℝ → ℝ} {α : ℝ}
 
-/-- **Taylor's theorem with Peano remainder at a point**, with `iteratedDeriv`: if `f` is `C^n`
-at `α` then `(f x - ∑_{i ≤ n} f^{(i)}(α)/i! (x - α)^i) / (x - α)^n → 0` as `x → α`. Mathlib's
-`Real.taylor_tendsto` on a ball, with `iteratedDerivWithin` on the open ball replaced by
-`iteratedDeriv`. -/
+/-! ### Taylor expansion and Property 6.4 -/
+
+/-- **Taylor's theorem with Peano remainder at a point.** Let $f \colon \mathbb{R} \to \mathbb{R}$
+be $C^n$ at $\alpha$. Then
+$$\frac{f(x) - \sum_{i=0}^{n} \frac{f^{(i)}(\alpha)}{i!} (x - \alpha)^i}{(x - \alpha)^n} \to 0
+  \qquad \text{as } x \to \alpha.$$
+
+This is Mathlib's `Real.taylor_tendsto` on a ball, with the derivatives within the open ball
+replaced by the derivatives `iteratedDeriv`. -/
 theorem tendsto_sub_taylor_div_pow {n : ℕ} (hf : ContDiffAt ℝ n f α) :
     Tendsto (fun x => (f x - ∑ i ∈ Finset.range (n + 1),
       iteratedDeriv i f α / i.factorial * (x - α) ^ i) / (x - α) ^ n) (𝓝 α) (𝓝 0) := by
@@ -365,11 +468,15 @@ theorem tendsto_sub_taylor_div_pow {n : ℕ} (hf : ContDiffAt ℝ n f α) :
   rw [iteratedDerivWithin_of_isOpen Metric.isOpen_ball (Metric.mem_ball_self hr), smul_eq_mul]
   ring
 
-/-- **[quarteroni2000numerical] Property 6.4, the limit (6.21), as a statement about `φ`**: if `φ`
-is `C^{p+1}` at `α = φ α` and `φ^{(i)}(α) = 0` for `1 ≤ i ≤ p`, then
-`(φ x - α) / (x - α)^{p+1} → φ^{(p+1)}(α) / (p+1)!` as `x → α`, `x ≠ α`. (The book's range
-`0 ≤ i ≤ p` is a misprint: `i = 0` would say `φ α = 0`.) Taylor's theorem with all intermediate
-terms vanishing. -/
+/-- **The limit (6.21) of Property 6.4, as a statement about $\varphi$.** Let $p \in \mathbb{N}$,
+let $\varphi \colon \mathbb{R} \to \mathbb{R}$ be $C^{p+1}$ at $\alpha$ with
+$\varphi(\alpha) = \alpha$, and let $\varphi^{(i)}(\alpha) = 0$ for $1 \le i \le p$. Then
+$$\frac{\varphi(x) - \alpha}{(x - \alpha)^{p+1}} \to \frac{\varphi^{(p+1)}(\alpha)}{(p+1)!}
+  \qquad \text{as } x \to \alpha,\ x \neq \alpha.$$
+
+Property 6.4 of [quarteroni2000numerical] prints the range $0 \le i \le p$. This is a misprint,
+since $i = 0$ would say $\varphi(\alpha) = 0$. The proof is Taylor's theorem with all
+intermediate terms zero. -/
 theorem tendsto_sub_div_pow_nhdsNE_of_iteratedDeriv_eq_zero {φ : ℝ → ℝ} {p : ℕ}
     (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i ≤ p → iteratedDeriv i φ α = 0) :
@@ -393,11 +500,16 @@ theorem tendsto_sub_div_pow_nhdsNE_of_iteratedDeriv_eq_zero {φ : ℝ → ℝ} {
   field_simp
   ring
 
-/-- **[quarteroni2000numerical] Property 6.4, the limit (6.21)** along an orbit: under the
-hypotheses of `tendsto_sub_div_pow_nhdsNE_of_iteratedDeriv_eq_zero`, for every orbit
-`x (k+1) = φ (x k)` converging to `α` with `x k ≠ α`,
-`(x (k+1) - α) / (x k - α)^{p+1} → φ^{(p+1)}(α) / (p+1)!`. The hypothesis
-`φ^{(p+1)}(α) ≠ 0` is not needed for the limit; it makes the order exactly `p + 1`. -/
+/-- **The limit (6.21) of Property 6.4 along an orbit.** Let $p \in \mathbb{N}$, let
+$\varphi \colon \mathbb{R} \to \mathbb{R}$ be $C^{p+1}$ at $\alpha$ with
+$\varphi(\alpha) = \alpha$, and let $\varphi^{(i)}(\alpha) = 0$ for $1 \le i \le p$. Let $(x_k)$
+be a sequence with $x_{k+1} = \varphi(x_k)$ and $x_k \neq \alpha$ for all $k$, and with
+$x_k \to \alpha$. Then
+$$\frac{x_{k+1} - \alpha}{(x_k - \alpha)^{p+1}} \to \frac{\varphi^{(p+1)}(\alpha)}{(p+1)!}.$$
+
+This is Property 6.4 of [quarteroni2000numerical], with the range $1 \le i \le p$ in place of
+the misprinted $0 \le i \le p$. The hypothesis $\varphi^{(p+1)}(\alpha) \neq 0$ of the source is
+not needed for the limit; it makes the order exactly $p + 1$. -/
 theorem tendsto_sub_div_pow_of_iteratedDeriv_eq_zero {φ : ℝ → ℝ} {p : ℕ}
     (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i ≤ p → iteratedDeriv i φ α = 0)
@@ -410,10 +522,13 @@ theorem tendsto_sub_div_pow_of_iteratedDeriv_eq_zero {φ : ℝ → ℝ} {p : ℕ
   refine this.congr fun k => ?_
   simp [Function.comp, hx]
 
-/-- **[quarteroni2000numerical] Property 6.4, the order statement**: for `1 ≤ p`, `φ` `C^{p+1}` at
-`α = φ α` with `φ^{(i)}(α) = 0` for `1 ≤ i ≤ p`, the iteration `x ↦ φ x` has order `p + 1` at `α`.
-The case `p = 0` is excluded because the property presupposes convergence, which only `|φ'(α)| < 1`
-would supply. -/
+/-- **Property 6.4, the order.** Let $p \ge 1$, let $\varphi \colon \mathbb{R} \to \mathbb{R}$ be
+$C^{p+1}$ at $\alpha$ with $\varphi(\alpha) = \alpha$, and let $\varphi^{(i)}(\alpha) = 0$ for
+$1 \le i \le p$. Then the iteration $x \mapsto \varphi(x)$ has order $p + 1$ at $\alpha$.
+
+This is Property 6.4 of [quarteroni2000numerical], with the range $1 \le i \le p$ in place of
+the misprinted $0 \le i \le p$. The case $p = 0$ is excluded, because the property presupposes
+convergence, and for $p = 0$ only $|\varphi'(\alpha)| < 1$ would give it. -/
 theorem hasIterationOrder_of_iteratedDeriv_eq_zero {φ : ℝ → ℝ} {p : ℕ} (hp : 1 ≤ p)
     (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i ≤ p → iteratedDeriv i φ α = 0) :
@@ -428,16 +543,31 @@ section Aitken
 
 variable {φ : ℝ → ℝ} {α : ℝ}
 
-/-- The ratio `λ^{(k+2)} = (x^{(k+2)} - x^{(k+1)}) / (x^{(k+1)} - x^{(k)})` of successive increments
-([quarteroni2000numerical] (6.33), shifted to start at `k = 0`): what estimates the asymptotic
-convergence factor from the iterates alone and, in §6.6.2, the multiplicity of a root. -/
+/-!
+### Aitken's $\Delta^2$ extrapolation
+
+In this section $\varphi \colon \mathbb{R} \to \mathbb{R}$ and $\alpha \in \mathbb{R}$. Aitken's
+iteration function is $\varphi_\Delta$ of (6.38) of [quarteroni2000numerical].
+-/
+
+/-- The **ratio of successive increments** of a real sequence $(x_k)$:
+$$\lambda_k = \frac{x_{k+2} - x_{k+1}}{x_{k+1} - x_k},$$
+with $\lambda_k = 0$ when $x_{k+1} = x_k$.
+
+This is $\lambda^{(k+2)}$ of (6.33) of [quarteroni2000numerical], with the index shifted to
+start at $k = 0$. It estimates the asymptotic convergence factor from the iterates alone and, in
+§6.6.2 of the source, the multiplicity of a root. -/
 noncomputable def aitkenRatio (x : ℕ → ℝ) (k : ℕ) : ℝ :=
   (x (k + 2) - x (k + 1)) / (x (k + 1) - x k)
 
-/-- **[quarteroni2000numerical] (6.34)**: if the error ratios of a sequence avoiding `α` tend to
-`l ≠ 1`, so do the increment ratios: `aitkenRatio x k = r k (r (k+1) - 1) / (r k - 1)` with
-`r k = (x (k+1) - α) / (x k - α)`. Combined with `tendsto_sub_div_sub_of_hasDerivAt` for a
-fixed-point orbit, `λ^{(k)} → φ'(α)`. -/
+/-- Let $(x_k)$ be a real sequence with $x_k \neq \alpha$ for all $k$, and suppose that
+$(x_{k+1} - \alpha)/(x_k - \alpha) \to l$ with $l \neq 1$. Then the increment ratios
+`aitkenRatio x k` also tend to $l$.
+
+This is (6.34) of [quarteroni2000numerical]. With $r_k = (x_{k+1} - \alpha)/(x_k - \alpha)$, the
+increment ratio is $r_k (r_{k+1} - 1)/(r_k - 1)$. Together with
+`tendsto_sub_div_sub_of_hasDerivAt`, it gives $\lambda_k \to \varphi'(\alpha)$ for a fixed-point
+orbit. -/
 theorem tendsto_aitkenRatio {x : ℕ → ℝ} {l : ℝ} (hne : ∀ k, x k ≠ α)
     (h : Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 l)) (hl : l ≠ 1) :
     Tendsto (aitkenRatio x) atTop (𝓝 l) := by
@@ -455,37 +585,53 @@ theorem tendsto_aitkenRatio {x : ℕ → ℝ} {l : ℝ} (hne : ∀ k, x k ≠ α
   · field_simp
     ring
 
-/-- **Aitken's extrapolation formula** ([quarteroni2000numerical] (6.36)) producing `x̂^{(k+2)}`
-from `x^{(k)}, x^{(k+1)}, x^{(k+2)}`; when the second difference vanishes Lean's `a / 0 = 0` returns
-`x^{(k+2)}` itself. -/
+/-- **Aitken's extrapolation formula**: from $x_k$, $x_{k+1}$, $x_{k+2}$ it produces
+$$\hat x_{k+2} = x_{k+2} - \frac{(x_{k+2} - x_{k+1})^2}{(x_{k+2} - x_{k+1}) - (x_{k+1} -
+  x_k)}.$$
+When the denominator is zero, the value is $x_{k+2}$.
+
+This is (6.36) of [quarteroni2000numerical]. The value at a zero denominator comes from the
+convention $a/0 = 0$. -/
 noncomputable def aitkenExtrapolation (x : ℕ → ℝ) (k : ℕ) : ℝ :=
   x (k + 2) - (x (k + 2) - x (k + 1)) ^ 2 / ((x (k + 2) - x (k + 1)) - (x (k + 1) - x k))
 
-/-- **The Δ² form** ([quarteroni2000numerical] (6.37)) of Aitken's formula with Mathlib's forward
-difference `Δ_[1]`: `x̂^{(k+2)} = x^{(k+2)} - (Δx^{(k+1)})² / Δ²x^{(k)}`. The book writes the same
-identity with its backward-shifted convention `Δx^{(k)} = x^{(k)} - x^{(k-1)}`. -/
+/-- **The $\Delta^2$ form of Aitken's formula.** With the forward difference
+$\Delta x_j = x_{j+1} - x_j$ and $\Delta^2 x_k = \Delta x_{k+1} - \Delta x_k$,
+$$\hat x_{k+2} = x_{k+2} - \frac{(\Delta x_{k+1})^2}{\Delta^2 x_k}.$$
+
+This is (6.37) of [quarteroni2000numerical]. The source writes the same identity with the
+backward difference $\Delta x^{(k)} = x^{(k)} - x^{(k-1)}$. The forward difference is Mathlib's
+`Δ_[1]`. -/
 theorem aitkenExtrapolation_eq_sub_div_fwdDiff (x : ℕ → ℝ) (k : ℕ) :
     aitkenExtrapolation x k = x (k + 2) - (Δ_[1] x (k + 1)) ^ 2 / (Δ_[1]^[2] x k) := by
   simp only [aitkenExtrapolation, fwdDiff, Function.iterate_succ, Function.iterate_zero,
     Function.comp, id]
 
-/-- **Aitken's iteration function** `φ_Δ` ([quarteroni2000numerical] (6.38)),
-`φ_Δ x = (x φ(φ x) - φ(x)²) / (φ(φ x) - 2 φ x + x)`, extended by `x` itself where the denominator
-vanishes, so that a fixed point of `φ` (where `0 / 0` occurs) is a fixed point of `φ_Δ`. One step of
-the Aitken-accelerated method is Aitken's formula applied to `x, φ x, φ (φ x)`. -/
+/-- **Aitken's iteration function**:
+$$\varphi_\Delta(x) = \frac{x \varphi(\varphi(x)) - \varphi(x)^2}{\varphi(\varphi(x)) -
+  2\varphi(x) + x},$$
+with $\varphi_\Delta(x) = x$ where the denominator is zero.
+
+This is (6.38) of [quarteroni2000numerical]. At a fixed point of $\varphi$ the formula is $0/0$,
+and the extension by $x$ makes every fixed point of $\varphi$ a fixed point of $\varphi_\Delta$.
+One step of the accelerated method is Aitken's formula applied to $x$, $\varphi(x)$ and
+$\varphi(\varphi(x))$. -/
 noncomputable def aitkenIterationFunction (φ : ℝ → ℝ) (x : ℝ) : ℝ :=
   if φ (φ x) - 2 * φ x + x = 0 then x
   else (x * φ (φ x) - φ x ^ 2) / (φ (φ x) - 2 * φ x + x)
 
-/-- A fixed point of `φ` is a fixed point of `φ_Δ` (the guarded branch). -/
+/-- If $\varphi(\alpha) = \alpha$, then $\varphi_\Delta(\alpha) = \alpha$. -/
 theorem aitkenIterationFunction_apply_self (hα : φ α = α) :
     aitkenIterationFunction φ α = α := by
   have : α - 2 * α + α = 0 := by ring
   simp [aitkenIterationFunction, hα, this]
 
-/-- Where the denominator does not vanish, the fixed points of `φ_Δ` are those of `φ`:
-`φ_Δ x - x = -(φ x - x)² / (φ (φ x) - 2 φ x + x)` ([quarteroni2000numerical] §6.6.1;
-[isaacson1994analysis] pp. 104–106). -/
+/-- Let $x \in \mathbb{R}$ with $\varphi(\varphi(x)) - 2\varphi(x) + x \neq 0$. Then
+$\varphi_\Delta(x) = x$ if and only if $\varphi(x) = x$.
+
+The proof uses the identity $\varphi_\Delta(x) - x = -(\varphi(x) - x)^2 /
+(\varphi(\varphi(x)) - 2\varphi(x) + x)$ (§6.6.1 of [quarteroni2000numerical]; pp. 104–106 of
+[isaacson1994analysis]). -/
 theorem aitkenIterationFunction_eq_self_iff {x : ℝ} (h : φ (φ x) - 2 * φ x + x ≠ 0) :
     aitkenIterationFunction φ x = x ↔ φ x = x := by
   simp only [aitkenIterationFunction, h, ↓reduceIte]
@@ -498,8 +644,11 @@ theorem aitkenIterationFunction_eq_self_iff {x : ℝ} (h : φ (φ x) - 2 * φ x 
     rw [hx]
     ring
 
-/-- The error of Aitken's step in terms of the errors of `x`, `φ x`, `φ (φ x)`:
-`φ_Δ x - α = ((x - α) (φ (φ x) - α) - (φ x - α)²) / (φ (φ x) - 2 φ x + x)`. -/
+/-- Let $x \in \mathbb{R}$ with $\varphi(\varphi(x)) - 2\varphi(x) + x \neq 0$, and let
+$\alpha \in \mathbb{R}$. Then
+$$\varphi_\Delta(x) - \alpha = \frac{(x - \alpha)(\varphi(\varphi(x)) - \alpha) - (\varphi(x) -
+  \alpha)^2}{\varphi(\varphi(x)) - 2\varphi(x) + x}.$$
+-/
 theorem aitkenIterationFunction_sub_eq {x : ℝ} (h : φ (φ x) - 2 * φ x + x ≠ 0) (α : ℝ) :
     aitkenIterationFunction φ x - α =
       ((x - α) * (φ (φ x) - α) - (φ x - α) ^ 2) / (φ (φ x) - 2 * φ x + x) := by
@@ -507,10 +656,17 @@ theorem aitkenIterationFunction_sub_eq {x : ℝ} (h : φ (φ x) - 2 * φ x + x �
   rw [eq_div_iff h, sub_mul, div_mul_cancel₀ _ h]
   ring
 
-/-- **The `dslope` form of Aitken's error.** With `s₁ = dslope φ α`, `s₂ = dslope φ α ∘ φ` and
-`Q = s₁ s₂ - 2 s₁ + 1`, for `x ≠ α` with `Q x ≠ 0` the denominator is `(x - α) Q x ≠ 0` and
-`φ_Δ x - α = (x - α) s₁ x (s₂ x - s₁ x) / Q x`. Since `s₁, s₂ → φ'(α)` and `Q → (φ'(α) - 1)²`, this
-is the whole local analysis of Aitken's method. -/
+/-- **The slope form of Aitken's error.** Let $\varphi(\alpha) = \alpha$, and let $s$ be the slope
+function of $\varphi$ at $\alpha$: $s(y) = (\varphi(y) - \alpha)/(y - \alpha)$ for
+$y \neq \alpha$, and $s(\alpha)$ the derivative of $\varphi$ at $\alpha$. Put
+$Q(x) = s(x) s(\varphi(x)) - 2 s(x) + 1$. If $x \neq \alpha$ and $Q(x) \neq 0$, then
+$\varphi(\varphi(x)) - 2\varphi(x) + x \neq 0$ and
+$$\varphi_\Delta(x) - \alpha = \frac{(x - \alpha) s(x) \bigl(s(\varphi(x)) -
+  s(x)\bigr)}{Q(x)}.$$
+
+The slope function is `dslope φ α`. The denominator of $\varphi_\Delta$ is $(x - \alpha) Q(x)$.
+Since $s(x), s(\varphi(x)) \to \varphi'(\alpha)$ and $Q(x) \to (\varphi'(\alpha) - 1)^2$, this
+identity carries the whole local analysis of Aitken's method. -/
 theorem aitkenIterationFunction_sub_eq_dslope (hα : φ α = α) {x : ℝ} (hx : x ≠ α)
     (hQ : dslope φ α x * dslope φ α (φ x) - 2 * dslope φ α x + 1 ≠ 0) :
     φ (φ x) - 2 * φ x + x ≠ 0 ∧
@@ -534,8 +690,11 @@ theorem aitkenIterationFunction_sub_eq_dslope (hα : φ α = α) {x : ℝ} (hx :
   rw [aitkenIterationFunction_sub_eq hD' α, hD, h2, h1]
   field_simp
 
-/-- The limits of `s₁ = dslope φ α`, of `s₂ = s₁ ∘ φ` and of `Q = s₁ s₂ - 2 s₁ + 1` at a fixed
-point `α` where `φ` has derivative `φ'`: `φ'`, `φ'` and `(φ' - 1)²`. -/
+/-- Let $\varphi$ have derivative $\varphi'$ at $\alpha$, with $\varphi(\alpha) = \alpha$, and let
+$s$ be the slope function `dslope φ α`. Then, as $x \to \alpha$,
+$$s(x) \to \varphi', \qquad s(\varphi(x)) \to \varphi', \qquad s(x) s(\varphi(x)) - 2 s(x) + 1
+  \to (\varphi' - 1)^2.$$
+-/
 theorem tendsto_dslope_aitken {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ α = α) :
     Tendsto (dslope φ α) (𝓝 α) (𝓝 φ') ∧ Tendsto (fun x => dslope φ α (φ x)) (𝓝 α) (𝓝 φ') ∧
       Tendsto (fun x => dslope φ α x * dslope φ α (φ x) - 2 * dslope φ α x + 1) (𝓝 α)
@@ -550,8 +709,9 @@ theorem tendsto_dslope_aitken {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ
   convert this using 2
   ring
 
-/-- Near a fixed point `α` with `φ'(α) ≠ 1`, the denominator of Aitken's iteration function does
-not vanish away from `α`, so the guard of `aitkenIterationFunction` is never taken there. -/
+/-- Let $\varphi$ have derivative $\varphi' \neq 1$ at $\alpha$, with $\varphi(\alpha) = \alpha$.
+Then $\varphi(\varphi(x)) - 2\varphi(x) + x \neq 0$ for all $x \neq \alpha$ in a neighbourhood
+of $\alpha$, so the guard in `aitkenIterationFunction` is not used there. -/
 theorem eventually_aitken_denom_ne_zero {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ α = α)
     (h1 : φ' ≠ 1) : ∀ᶠ x in 𝓝[≠] α, φ (φ x) - 2 * φ x + x ≠ 0 := by
   obtain ⟨-, -, hQ⟩ := tendsto_dslope_aitken hφ hα
@@ -560,11 +720,15 @@ theorem eventually_aitken_denom_ne_zero {φ' : ℝ} (hφ : HasDerivAt φ φ' α)
     nhdsWithin_le_nhds (hQ.eventually (isOpen_ne.mem_nhds hQne))] with x hx hQx
   exact (aitkenIterationFunction_sub_eq_dslope hα hx hQx).1
 
-/-- **`φ_Δ` is differentiable at `α` with derivative `0`** as soon as `φ` is differentiable at `α`
-with `φ'(α) ≠ 1`: Aitken's iteration is superlinear from mere differentiability, and in particular
-`φ_Δ` is continuous at `α` (the book's "continuous extension at `α`" by L'Hôpital,
-[quarteroni2000numerical] §6.6.1). From `aitkenIterationFunction_sub_eq_dslope`, the slope of `φ_Δ`
-at `α` is `s₁ (s₂ - s₁) / Q → φ'(φ' - φ') / (φ' - 1)² = 0`. -/
+/-- **Aitken's iteration function has derivative $0$ at the fixed point.** Let $\varphi$ have
+derivative $\varphi' \neq 1$ at $\alpha$, with $\varphi(\alpha) = \alpha$. Then $\varphi_\Delta$
+has derivative $0$ at $\alpha$.
+
+So Aitken's iteration converges superlinearly under differentiability alone, and in particular
+$\varphi_\Delta$ is continuous at $\alpha$; the source obtains this continuous extension at
+$\alpha$ by L'Hôpital's rule (§6.6.1 of [quarteroni2000numerical]). By
+`aitkenIterationFunction_sub_eq_dslope`, the slope of $\varphi_\Delta$ at $\alpha$ is
+$s(x)(s(\varphi(x)) - s(x))/Q(x) \to \varphi'(\varphi' - \varphi')/(\varphi' - 1)^2 = 0$. -/
 theorem hasDerivAt_aitkenIterationFunction_zero {φ' : ℝ} (hφ : HasDerivAt φ φ' α) (hα : φ α = α)
     (h1 : φ' ≠ 1) : HasDerivAt (aitkenIterationFunction φ) 0 α := by
   obtain ⟨hs₁, hs₂, hQ⟩ := tendsto_dslope_aitken hφ hα
@@ -583,12 +747,17 @@ theorem hasDerivAt_aitkenIterationFunction_zero {φ' : ℝ} (hφ : HasDerivAt φ
   have he : x - α ≠ 0 := sub_ne_zero.2 hx
   field_simp
 
-/-- **[quarteroni2000numerical] Property 6.7 for `p = 1`, the sharp constant**: if `φ` is `C²` at
-`α = φ α` with `φ'(α) ≠ 1`, then `(φ_Δ x - α) / (x - α)² → φ'(α) φ''(α) / (2 (φ'(α) - 1))` as
-`x → α`, `x ≠ α`. Hence Aitken's method has order exactly `2` when `φ'(α) φ''(α) ≠ 0`, and it
-converges locally *even when `|φ'(α)| > 1`*: the book's "convergent even if the fixed-point method
-is not". The proof writes `s₂ - s₁ = (x - α) (s₁ · t ∘ φ - t)` with `t = dslope s₁ α`, which is
-continuous at `α` with value `φ''(α) / 2` by Hadamard's lemma. -/
+/-- **Property 6.7 for $p = 1$, the sharp constant.** Let $\varphi \colon \mathbb{R} \to \mathbb{R}$
+be $C^2$ at $\alpha$, with $\varphi(\alpha) = \alpha$ and $\varphi'(\alpha) \neq 1$. Then
+$$\frac{\varphi_\Delta(x) - \alpha}{(x - \alpha)^2} \to \frac{\varphi'(\alpha)
+  \varphi''(\alpha)}{2(\varphi'(\alpha) - 1)} \qquad \text{as } x \to \alpha,\ x \neq \alpha.$$
+
+Hence Aitken's method has order exactly $2$ when $\varphi'(\alpha) \varphi''(\alpha) \neq 0$,
+and it converges locally even when $|\varphi'(\alpha)| > 1$; this is the remark of
+[quarteroni2000numerical] that the method converges even if the fixed-point method does not. The
+proof writes $s(\varphi(x)) - s(x) = (x - \alpha)(s(x) \, t(\varphi(x)) - t(x))$, where $t$ is
+the slope function of $s$ at $\alpha$, which is continuous at $\alpha$ with value
+$\varphi''(\alpha)/2$ by Hadamard's lemma. -/
 theorem tendsto_aitkenIterationFunction_sub_div_sq (hφ : ContDiffAt ℝ 2 φ α) (hα : φ α = α)
     (h1 : deriv φ α ≠ 1) :
     Tendsto (fun x => (aitkenIterationFunction φ x - α) / (x - α) ^ 2) (𝓝[≠] α)
@@ -638,20 +807,29 @@ theorem tendsto_aitkenIterationFunction_sub_div_sq (hφ : ContDiffAt ℝ 2 φ α
   rw [hformula, hdiff]
   field_simp
 
-/-- **[quarteroni2000numerical] Property 6.7 for `p = 1`, as an order statement**: if `φ` is `C²`
-at `α = φ α` with `φ'(α) ≠ 1`, then Aitken's method has iteration order `2` at `α`. -/
+/-- **Property 6.7 for $p = 1$, the order.** Let $\varphi \colon \mathbb{R} \to \mathbb{R}$ be $C^2$
+at $\alpha$, with $\varphi(\alpha) = \alpha$ and $\varphi'(\alpha) \neq 1$. Then the iteration
+$x \mapsto \varphi_\Delta(x)$ has order $2$ at $\alpha$.
+
+This is Property 6.7 of [quarteroni2000numerical] for a method $x \mapsto \varphi(x)$ of order
+$1$. -/
 theorem hasIterationOrder_aitkenIterationFunction_two (hφ : ContDiffAt ℝ 2 φ α) (hα : φ α = α)
     (h1 : deriv φ α ≠ 1) : HasIterationOrder (aitkenIterationFunction φ) α 2 := by
   have := hasIterationOrder_of_tendsto_sub_div_pow (aitkenIterationFunction_apply_self hα) le_rfl
     (tendsto_aitkenIterationFunction_sub_div_sq hφ hα h1)
   simpa using this
 
-/-- **[quarteroni2000numerical] Property 6.7 for `p ≥ 2`, the limit**: if the iteration `x ↦ φ x`
-has order `p ≥ 2` at `α` in the sense of Property 6.4 (`φ^{(i)}(α) = 0` for `1 ≤ i < p`,
-`φ^{(p)}(α) ≠ 0`, `φ` `C^p` at `α`), then `(φ_Δ x - α) / (x - α)^{2p-1} → -(φ^{(p)}(α) / p!)²` as
-`x → α`, `x ≠ α`. With `φ x - α = e^p h x` (`h` continuous, `h α = c`), `φ (φ x) - α = O(e^{p²})`,
-so the numerator of Aitken's error is `-c² e^{2p} + o(e^{2p})` and the denominator `e (1 + o(1))`.
--/
+/-- **Property 6.7 for $p \ge 2$, the limit.** Let $p \ge 2$, let
+$\varphi \colon \mathbb{R} \to \mathbb{R}$ be $C^p$ at $\alpha$ with $\varphi(\alpha) = \alpha$,
+let $\varphi^{(i)}(\alpha) = 0$ for $1 \le i < p$, and let $\varphi^{(p)}(\alpha) \neq 0$. Then
+$$\frac{\varphi_\Delta(x) - \alpha}{(x - \alpha)^{2p-1}} \to
+  -\Bigl(\frac{\varphi^{(p)}(\alpha)}{p!}\Bigr)^2 \qquad \text{as } x \to \alpha,\ x \neq
+  \alpha.$$
+
+The hypotheses say that $x \mapsto \varphi(x)$ has order $p$ in the sense of Property 6.4 of
+[quarteroni2000numerical]. With $e = x - \alpha$, write $\varphi(x) - \alpha = e^p h(x)$ with
+$h$ continuous and $h(\alpha) = c$. Then $\varphi(\varphi(x)) - \alpha = O(e^{p^2})$, so the
+numerator of Aitken's error is $-c^2 e^{2p} + o(e^{2p})$ and the denominator is $e(1 + o(1))$. -/
 theorem tendsto_aitkenIterationFunction_sub_div_pow_of_iteratedDeriv_eq_zero {p : ℕ}
     (hp : 2 ≤ p) (hφ : ContDiffAt ℝ p φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i < p → iteratedDeriv i φ α = 0) (hp' : iteratedDeriv p φ α ≠ 0) :
@@ -711,9 +889,13 @@ theorem tendsto_aitkenIterationFunction_sub_div_pow_of_iteratedDeriv_eq_zero {p 
   field_simp
   ring
 
-/-- **[quarteroni2000numerical] Property 6.7 for `p ≥ 2`**: if the iteration `x ↦ φ x` has order
-`p ≥ 2` at `α` in the sense of Property 6.4, Aitken's method has iteration order `2p - 1` at `α`.
-Stated without proof in the book ([isaacson1994analysis] pp. 104–108). -/
+/-- **Property 6.7 for $p \ge 2$, the order.** Let $p \ge 2$, let
+$\varphi \colon \mathbb{R} \to \mathbb{R}$ be $C^p$ at $\alpha$ with $\varphi(\alpha) = \alpha$,
+let $\varphi^{(i)}(\alpha) = 0$ for $1 \le i < p$, and let $\varphi^{(p)}(\alpha) \neq 0$. Then
+the iteration $x \mapsto \varphi_\Delta(x)$ has order $2p - 1$ at $\alpha$.
+
+This is Property 6.7 of [quarteroni2000numerical], which the source states without proof (pp.
+104–108 of [isaacson1994analysis]). -/
 theorem hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero {p : ℕ} (hp : 2 ≤ p)
     (hφ : ContDiffAt ℝ p φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i < p → iteratedDeriv i φ α = 0) (hp' : iteratedDeriv p φ α ≠ 0) :
@@ -729,19 +911,32 @@ section Steffensen
 
 variable {f : ℝ → ℝ} {α : ℝ}
 
-/-- **Steffensen's step** ([quarteroni2000numerical] Exercise 6.5),
-`x - f x / ((f (x + f x) - f x) / f x)`: Newton's step with `f'(x)` replaced by the difference
-quotient over the step `f x`. -/
+/-!
+### Steffensen's method
+
+In this section $f \colon \mathbb{R} \to \mathbb{R}$ and $\alpha \in \mathbb{R}$.
+-/
+
+/-- **Steffensen's step** for $f$:
+$$x \mapsto x - \frac{f(x)}{\bigl(f(x + f(x)) - f(x)\bigr) / f(x)},$$
+which is Newton's step with $f'(x)$ replaced by the difference quotient over the step $f(x)$.
+Where $f(x) = 0$ or $f(x + f(x)) = f(x)$, the value is $x$.
+
+This is Exercise 6.5 of [quarteroni2000numerical]. The value at a zero denominator comes from
+the convention $a/0 = 0$. -/
 noncomputable def steffensenStep (f : ℝ → ℝ) (x : ℝ) : ℝ :=
   x - f x / ((f (x + f x) - f x) / f x)
 
-/-- A root of `f` is a fixed point of Steffensen's step. -/
+/-- If $f(\alpha) = 0$, then $\alpha$ is a fixed point of Steffensen's step. -/
 theorem steffensenStep_apply_self (hα : f α = 0) : steffensenStep f α = α := by
   simp [steffensenStep, hα]
 
-/-- **Steffensen is Aitken's Δ² applied to the iteration function `x ↦ x + f x`**, wherever
-`f (x + f x) - f x ≠ 0`: the denominators agree, `φ (φ x) - 2 φ x + x = f (x + f x) - f x`, and so
-do the numerators after clearing `f x`. -/
+/-- **Steffensen's method is Aitken's method for $x \mapsto x + f(x)$.** For every $x$ with
+$f(x + f(x)) - f(x) \neq 0$, Steffensen's step at $x$ equals $\varphi_\Delta(x)$ for
+$\varphi(y) = y + f(y)$.
+
+The denominators agree, $\varphi(\varphi(x)) - 2\varphi(x) + x = f(x + f(x)) - f(x)$, and so do
+the numerators after the factor $f(x)$ is cleared. -/
 theorem steffensenStep_eq_aitkenIterationFunction (f : ℝ → ℝ) (x : ℝ)
     (h : f (x + f x) - f x ≠ 0) :
     steffensenStep f x = aitkenIterationFunction (fun y => y + f y) x := by
@@ -753,12 +948,14 @@ theorem steffensenStep_eq_aitkenIterationFunction (f : ℝ → ℝ) (x : ℝ)
     ring, eq_div_iff h, sub_mul, div_mul_cancel₀ _ h]
   ring
 
-/-- **[quarteroni2000numerical] Exercise 6.5: Steffensen's method is of second order at a simple
-root.** If `f α = 0`, `f` is `C²` at `α` and `f'(α) ≠ 0`, then `steffensenStep f` has iteration
-order `2` at `α`. With `φ = id + f`, `φ'(α) = 1 + f'(α) ≠ 1`, so
-`hasIterationOrder_aitkenIterationFunction_two` applies through
-`steffensenStep_eq_aitkenIterationFunction`; the asymptotic constant is
-`(1 + f'(α)) f''(α) / (2 f'(α))`. -/
+/-- **Steffensen's method has order $2$ at a simple root.** Let $f(\alpha) = 0$, let $f$ be $C^2$ at
+$\alpha$, and let $f'(\alpha) \neq 0$. Then the iteration of Steffensen's step has order $2$ at
+$\alpha$.
+
+This is Exercise 6.5 of [quarteroni2000numerical]. With $\varphi(y) = y + f(y)$, one has
+$\varphi'(\alpha) = 1 + f'(\alpha) \neq 1$, so `hasIterationOrder_aitkenIterationFunction_two`
+applies through `steffensenStep_eq_aitkenIterationFunction`. The asymptotic constant is
+$(1 + f'(\alpha)) f''(\alpha) / (2 f'(\alpha))$. -/
 theorem hasIterationOrder_steffensenStep_two (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) : HasIterationOrder (steffensenStep f) α 2 := by
   set φ : ℝ → ℝ := fun y => y + f y with hφdef
@@ -786,7 +983,9 @@ section SteffensenMultiple
 
 variable {f : ℝ → ℝ} {α : ℝ}
 
-/-- The slope of `w ↦ (1 + w) ^ n` at `0` tends to `n`. -/
+/-! ### Steffensen's method at a multiple root -/
+
+/-- As $w \to 0$ with $w \neq 0$, $((1 + w)^n - 1)/w \to n$. -/
 private theorem tendsto_one_add_pow_sub_one_div (n : ℕ) :
     Tendsto (fun w : ℝ => ((1 + w) ^ n - 1) / w) (𝓝[≠] 0) (𝓝 n) := by
   have hd : HasDerivAt (fun w : ℝ => (1 + w) ^ n) ((n : ℝ) * (1 + 0) ^ (n - 1) * 1) 0 :=
@@ -796,20 +995,26 @@ private theorem tendsto_one_add_pow_sub_one_div (n : ℕ) :
   refine this.congr fun w => ?_
   simp [slope_def_field]
 
-/-- **[quarteroni2000numerical] Property 6.7, last clause, read correctly**: at a root of
-multiplicity `m ≥ 2` of a `C^{m+1}` function, Steffensen's iteration converges only linearly,
-with factor `1 - 1/m`: `(steffensenStep f x - α) / (x - α) → 1 - 1/m` as `x → α`, `x ≠ α`. This is
-[isaacson1994analysis]'s statement that the book paraphrases; as printed ("the method `x ↦ φ x` is
-first-order convergent") it cannot be right, since for any `φ` with `φ'(α) ≠ 1` Aitken's method is
-superlinear by `hasDerivAt_aitkenIterationFunction_zero` — the degeneracy occurs precisely because
-`φ = id + f` has `φ'(α) = 1` at a multiple root.
+/-- **Steffensen's method at a multiple root.** Let $m \ge 2$, let
+$f \colon \mathbb{R} \to \mathbb{R}$ be $C^{m+1}$ at $\alpha$, and let $\alpha$ be a root of $f$
+of multiplicity $m$, that is, $f^{(i)}(\alpha) = 0$ for $i < m$ and $f^{(m)}(\alpha) \neq 0$.
+Then Steffensen's iteration converges only linearly, with factor $1 - 1/m$:
+$$\frac{\operatorname{St}(x) - \alpha}{x - \alpha} \to 1 - \frac{1}{m} \qquad \text{as } x \to
+  \alpha,\ x \neq \alpha,$$
+where $\operatorname{St}$ is Steffensen's step `steffensenStep f`.
 
-Proof: with `f x = e^m h x` (`h` `C¹`, hence Lipschitz near `α`, `h α = c ≠ 0`) and
-`w = e^{m-1} h x`, one has `x + f x - α = e (1 + w)`, so
-`f (x + f x) - f x = e^m [((1 + w)^m - 1) h(x + f x) + (h(x + f x) - h x)]`, where the bracket is
-`e^{m-1} (m c² + o(1))` — the first term by the slope of `(1 + w)^m` at `0`, the second by the
-Lipschitz bound `|h(x + f x) - h x| ≤ K |f x|`. Hence
-`(steffensenStep f x - α)/e = 1 - h x² / (m c² + o(1)) → 1 - 1/m`. -/
+This is the correct reading of the last clause of Property 6.7 of [quarteroni2000numerical],
+which says that Aitken's method converges linearly with factor $1 - 1/m$ at a multiple root. As
+printed, the clause cannot hold: for every $\varphi$ with $\varphi'(\alpha) \neq 1$, Aitken's
+method is superlinear by `hasDerivAt_aitkenIterationFunction_zero`. The statement proved here is
+that of [isaacson1994analysis], which the source paraphrases. The degenerate behaviour occurs
+because $\varphi = \mathrm{id} + f$ has $\varphi'(\alpha) = 1$ at a multiple root.
+
+With $e = x - \alpha$, write $f(x) = e^m h(x)$, where $h$ is $C^1$, hence Lipschitz near
+$\alpha$, with $h(\alpha) = c \neq 0$, and put $w = e^{m-1} h(x)$. Then
+$x + f(x) - \alpha = e(1 + w)$, so $f(x + f(x)) - f(x) = e^m [((1 + w)^m - 1) h(x + f(x)) +
+(h(x + f(x)) - h(x))]$, where the bracket is $e^{m-1}(m c^2 + o(1))$. Hence
+$(\operatorname{St}(x) - \alpha)/e = 1 - h(x)^2 / (m c^2 + o(1)) \to 1 - 1/m$. -/
 theorem tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity {m : ℕ} (hm : 2 ≤ m)
     (hf : ContDiffAt ℝ (m + 1 : ℕ) f α) (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => (steffensenStep f x - α) / (x - α)) (𝓝[≠] α) (𝓝 (1 - 1 / m)) := by

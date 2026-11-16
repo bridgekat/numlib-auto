@@ -16,58 +16,85 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 /-!
 # The discrete sine and cosine transforms
 
-The discrete sine and cosine transforms as matrices, their computation through the discrete
-Fourier transform of an odd, respectively even, extension, their inversion formulas, and the
-second-difference matrices they diagonalize.
+This module defines the matrices of the discrete sine transforms DST-I and DST-II and of the
+discrete cosine transforms DCT-I and DCT-II, following §1.4.2, §4.8.5, §4.8.6 and (12.1.13) of
+[golub2013matrix]. It proves that the DST-I and the DCT-I are computed by the discrete Fourier
+transform of an odd, respectively even, extension of the input vector. It proves the inversion
+formulas $S_r^2 = \frac{r + 1}{2} I$ and $\mathrm{DCT}(m + 1)^2 = \frac{m}{2} I$, which make the
+inverse transforms as fast as the forward ones ([golub2013matrix], §4.8.5). It also proves that
+these matrices diagonalize second-difference matrices: the DST-II diagonalizes the Dirichlet–Neumann
+second difference, the DCT-I the Neumann–Neumann second difference ([golub2013matrix], §4.8.6), and
+the DCT-II the corner-modified tridiagonal matrix $Y_{1,1}$ of (12.1.13).
 
-## The four transform matrices
+All indices start at $0$, while the matrices of [golub2013matrix] are indexed from $1$. With $k$ the
+row index and $j$ the column index, the matrices are:
+$$\begin{aligned}
+  (S_r)_{kj} &= \sin\bigl((k + 1)(j + 1) \pi / (r + 1)\bigr), & k, j &< r, \\
+  \mathrm{DST2}(n)_{kj} &= \sin\bigl((k + 1)(2j + 1) \pi / (2n)\bigr), & k, j &< n, \\
+  \mathrm{DCT}(m + 1)_{kj} &= c_j \cos(k j \pi / m), & k, j &\le m, \\
+  \mathrm{DCT2}(n)_{kj} &= \cos\bigl(k (2j + 1) \pi / (2n)\bigr), & k, j &< n,
+\end{aligned}$$
+with $c_0 = c_m = 1/2$ and $c_j = 1$ otherwise. The transform matrix of the numerical literature is
+$F_N = (\omega_N^{kj})$ with $\omega_N = e^{-2 \pi i / N}$. The matrix `Matrix.dft N` of
+`Numlib.Analysis.Fourier.DFT` uses the opposite root $e^{+2 \pi i / N}$, so that $F_N$ is its
+conjugate transpose.
 
-One naming scheme, in `0`-based indexing (the book's matrices are `1`-based):
+## Main definitions
 
-* `Matrix.dst1 r : Matrix (Fin r) (Fin r) ℝ`, `(k, j) ↦ sin ((k + 1) (j + 1) π / (r + 1))` — the
-  DST-I matrix, the `S_r` of [golub2013matrix] (1.4.6) and `DST(r)` of (1.4.8); column `j` is the
-  eigenvector `Matrix.sineVec r j` of the tridiagonal Toeplitz matrix
-  (`Matrix.dst1_apply_eq_sineVec`);
-* `Matrix.dst2 n`, `(k, j) ↦ sin ((k + 1) (2 j + 1) π / (2 n))` — the DST-II matrix `DST2(n)` of
-  [golub2013matrix] §1.4.2, the eigenvector matrix of the Dirichlet–Neumann second difference;
-* `Matrix.dct1 m : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ`, `(k, j) ↦ c_j cos (k j π / m)` with
-  `c_0 = c_m = 1 / 2`, `c_j = 1` otherwise — the DCT-I matrix `DCT(m + 1)` of [golub2013matrix]
-  (1.4.4) and (1.4.10);
-* `Matrix.dct2 n`, `(k, j) ↦ cos (k (2 j + 1) π / (2 n))` — the DCT-II matrix, whose rows are the
-  vectors `Matrix.cosineIIVec n k`, the eigenvectors of the corner-modified `Y_{1,1}` of
-  [golub2013matrix] (12.1.13);
-* and the auxiliary `Matrix.cosMatrix r`, the `C_r` of (1.4.6), the interior block of
-  `dct1 (r + 1)`.
+* `Matrix.dst1`: the DST-I matrix $S_r$ of [golub2013matrix] (1.4.6), also $\mathrm{DST}(r)$ of
+  (1.4.8). Its columns are the discrete sine vectors `Matrix.sineVec`.
+* `Matrix.dst2`: the DST-II matrix $\mathrm{DST2}(n)$ of [golub2013matrix] §1.4.2, the eigenvector
+  matrix of the Dirichlet–Neumann second difference.
+* `Matrix.dct1`: the DCT-I matrix $\mathrm{DCT}(m + 1)$ of [golub2013matrix] (1.4.4) and (1.4.10).
+* `Matrix.dct2`: the DCT-II matrix. Its rows are the vectors `Matrix.cosineIIVec`, the eigenvectors
+  of $Y_{1,1}$ in [golub2013matrix] (12.1.13).
+* `Matrix.cosMatrix`: the matrix $C_r = (\cos((k + 1)(j + 1) \pi / (r + 1)))$ of [golub2013matrix]
+  (1.4.6), the interior block of $\mathrm{DCT}(r + 2)$.
+* `Matrix.oddExtensionVec`: the odd extension $x_{\sin} = [0; x; 0; -Ex]$ of [golub2013matrix]
+  (1.4.9), where $E$ reverses the order of the entries.
+* `Matrix.evenExtensionVec`: the even extension $x_{\cos} = [x_0; \tilde{x}; x_m; E \tilde{x}]$ of
+  [golub2013matrix] (1.4.11).
 
-## Through the discrete Fourier transform
+## Main results
 
-`Matrix.dft n` of `Numlib.Analysis.Fourier.DFT` has the root `exp (+2 π i / n)`; the transform
-matrix of the numerical literature, `F_n = (ω_n ^ (k j))` with `ω_n = exp (-2 π i / n)`, is
-`(dft n)ᴴ`. The two correctness identities of the fast transforms are
+* `Matrix.dst1_mulVec_eq_dft`: $S_r x = \frac{i}{2} (F_{2m} x_{\sin})_{1 : m - 1}$ with $m = r + 1$.
+* `Matrix.dct1_mulVec_eq_dft`: $\mathrm{DCT}(m + 1) x = \frac{1}{2} (F_{2m} x_{\cos})_{0 : m}$ for
+  $m > 0$.
+* `Matrix.dst1_mul_self`: $S_r^2 = \frac{r + 1}{2} I$.
+* `Matrix.dct1_mul_self`: $\mathrm{DCT}(m + 1)^2 = \frac{m}{2} I$ for $m > 0$.
+* `Matrix.transpose_dst2_mul_dst2`: $\mathrm{DST2}(n)^T \mathrm{DST2}(n) = \frac{n}{2} I +
+  \frac{1}{2} v v^T$ with $v = ((-1)^j)_j$, Problem P4.8.11(a) of [golub2013matrix].
+* `Matrix.isUnit_dst2`, `Matrix.isUnit_dct1` and `Matrix.isUnit_dct2`: the DST-II, the DCT-I (for
+  $m > 0$) and the DCT-II are nonsingular.
+* `Matrix.dct2_mul_transpose`: $\mathrm{DCT2}(n) \mathrm{DCT2}(n)^T = \operatorname{diag}(n, n/2,
+  \dots, n/2)$.
+* `Matrix.dct2_mul_cornerTridiagonal_one_one_mul_inv`: $\mathrm{DCT2}(n) Y_{1,1}
+  \mathrm{DCT2}(n)^{-1} = \operatorname{diag}(2 \cos(k \pi / n))$.
+* `Matrix.inv_dst2_mul_secondDifferenceDN_mul_dst2`: $\mathrm{DST2}(n)^{-1} \mathcal{T}^{(DN)}_n
+  \mathrm{DST2}(n) = \operatorname{diag}(4 \sin^2((2j + 1) \pi / (4n)))$ for $n \ge 2$.
+* `Matrix.secondDifferenceNN_mul_dct1_mul_diagonal`: $\mathcal{T}^{(NN)}_{m + 1} V = V
+  \operatorname{diag}(4 \sin^2(j \pi / (2m)))$ for $V = \mathrm{DCT}(m + 1) \operatorname{diag}(2,
+  1, \dots, 1, 2)$ and $m > 0$.
 
-* `Matrix.dst1_mulVec_eq_dft`: `S x = (i / 2) (F_{2m} x_sin)(1 : m − 1)` for the odd extension
-  `x_sin = [0; x; 0; −E x]` (`Matrix.oddExtensionVec`, [golub2013matrix] (1.4.9));
-* `Matrix.dct1_mulVec_eq_dft`: `DCT(m + 1) x = ½ (F_{2m} x_cos)(0 : m)` for the even extension
-  `x_cos = [x_0; x̃; x_m; E x̃]` (`Matrix.evenExtensionVec`, (1.4.11)),
+## Proof outline
 
-which with the radix-2 identity `Matrix.dft_radix_two` make the DST and the DCT `O(m log m)`
-([golub2013matrix] Algorithms 1.4.2–1.4.3). The proof pairs the terms at `l` and `2 m − l`: the
-entries of `F_{2m}` there are complex conjugates (`Matrix.conjTranspose_dft_apply_sub_eq_conj`), so
-the odd extension keeps only the sine parts, doubled, and the even extension only the cosine parts.
+The two identities through the discrete Fourier transform pair the terms at $l$ and $2m - l$. The
+entries of $F_{2m}$ there are complex conjugates (`Matrix.conjTranspose_dft_apply_sub_eq_conj`), so
+the odd extension keeps only the sine parts, doubled, and the even extension keeps only the cosine
+parts. With the radix-2 identity `Matrix.dft_radix_two`, they give the $O(m \log m)$ algorithms for
+the DST and the DCT, Algorithms 1.4.2 and 1.4.3 of [golub2013matrix]. The inversion formula for
+$S_r$ follows from the orthogonality of the sine vectors. The inversion formula for
+$\mathrm{DCT}(m + 1)$ follows from the exactness of the trapezoidal rule on trigonometric
+polynomials (`Quadrature.sum_exp_angleNode`).
 
-## Inversion and eigensystems
+## Implementation notes
 
-The inversion formulas `S_r² = ((r + 1) / 2) I` (`Matrix.dst1_mul_self`, from the orthogonality of
-the sine vectors) and `DCT(m + 1)² = (m / 2) I` (`Matrix.dct1_mul_self`, from the exactness of the
-trapezoidal rule on trigonometric polynomials, `Quadrature.sum_exp_angleNode`) make the inverse
-transforms fast too ([golub2013matrix] §4.8.5); the DST-II has the Gram matrix
-`(n / 2) I + ½ v vᵀ`, `v = ((−1) ^ j)_j` (`Matrix.transpose_dst2_mul_dst2`, the book's P4.8.11),
-and is nonsingular (`Matrix.isUnit_dst2`); the DCT-II has orthogonal rows
-(`Matrix.dct2_mul_transpose`).
-The eigensystems of the Dirichlet–Neumann and Neumann–Neumann second differences of
-`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` by the DST-II and the DCT-I
-([golub2013matrix] §4.8.6) and that of `Y_{1,1}` by the DCT-II (12.1.13) close the file; the
-periodic second difference and the circulants are in `Numlib.Analysis.Fourier.Circulant`.
+* The second-difference matrices $\mathcal{T}^{(DN)}_n$ and $\mathcal{T}^{(NN)}_n$ and the
+  corner-modified matrix $Y_{1,1}$ are `Matrix.secondDifferenceDN`, `Matrix.secondDifferenceNN`
+  and `Matrix.cornerTridiagonal n 1 1` of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`. The
+  periodic second difference and the circulant matrices are in `Numlib.Analysis.Fourier.Circulant`.
+* The identities through the discrete Fourier transform are stated entrywise, for the real matrices
+  embedded in the complex matrices.
 -/
 
 open Finset
@@ -79,31 +106,37 @@ variable {r n m : ℕ}
 
 /-! ### The transform matrices -/
 
-/-- The DST-I matrix `S_r` ([golub2013matrix] (1.4.6), `DST(r)` of (1.4.8)), `0`-based:
-`dst1 r k j = sin ((k + 1) (j + 1) π / (r + 1))`. -/
+/-- The **DST-I matrix** $S_r$ of [golub2013matrix] (1.4.6), also written $\mathrm{DST}(r)$ in
+(1.4.8), with indices from $0$: the $r \times r$ real matrix with entries
+$$(S_r)_{kj} = \sin\Bigl(\frac{(k + 1)(j + 1) \pi}{r + 1}\Bigr).$$
+-/
 noncomputable def dst1 (r : ℕ) : Matrix (Fin r) (Fin r) ℝ :=
   of fun (k j : Fin r) => Real.sin (((k : ℕ) + 1) * ((j : ℕ) + 1) * π / (r + 1))
 
-/-- The entries of the DST-I matrix. -/
+/-- The entries of the DST-I matrix: $(S_r)_{kj} = \sin((k + 1)(j + 1) \pi / (r + 1))$. -/
 theorem dst1_apply (k j : Fin r) :
     dst1 r k j = Real.sin (((k : ℕ) + 1) * ((j : ℕ) + 1) * π / (r + 1)) := rfl
 
-/-- The DST-I matrix is symmetric. -/
+/-- The DST-I matrix is symmetric: $S_r^T = S_r$. -/
 theorem dst1_transpose (r : ℕ) : (dst1 r)ᵀ = dst1 r := by
   ext k j
   rw [transpose_apply, dst1_apply, dst1_apply]
   congr 1
   ring
 
-/-- The columns of the DST-I matrix are the discrete sine vectors, the eigenvectors of the
-tridiagonal Toeplitz matrices: `dst1 r k j = sineVec r j k`. -/
+/-- The columns of the DST-I matrix are the discrete sine vectors, the eigenvectors of the symmetric
+tridiagonal Toeplitz matrices: for $k, j < r$, the entry $(S_r)_{kj}$ is entry $k$ of
+`Matrix.sineVec r j`. -/
 theorem dst1_apply_eq_sineVec (k j : Fin r) : dst1 r k j = sineVec r j k := by
   rw [dst1_apply, sineVec_apply]
   congr 1
   ring
 
-/-- **The DST-I is its own inverse up to a factor**: `S_r² = ((r + 1) / 2) I` ([golub2013matrix]
-§4.8.5, `S_{m-1}⁻¹ = (2 / m) S_{m-1}`); entry `(k, l)` is `sineVec r k ⬝ᵥ sineVec r l`. -/
+/-- **The DST-I is its own inverse up to a factor**: for every $r \in \mathbb{N}$,
+$$S_r^2 = \frac{r + 1}{2} I.$$
+In [golub2013matrix], §4.8.5, this is $S_{m - 1}^{-1} = \frac{2}{m} S_{m - 1}$.
+
+Entry $(k, l)$ of $S_r^2$ is the dot product of `Matrix.sineVec r k` and `Matrix.sineVec r l`. -/
 theorem dst1_mul_self (r : ℕ) :
     dst1 r * dst1 r = (((r : ℝ) + 1) / 2) • (1 : Matrix (Fin r) (Fin r) ℝ) := by
   ext k l
@@ -115,16 +148,19 @@ theorem dst1_mul_self (r : ℕ) :
   rw [h, dotProduct_sineVec, Matrix.smul_apply, Matrix.one_apply, smul_eq_mul]
   split_ifs <;> simp
 
-/-- The DST-II matrix `DST2(n)` of [golub2013matrix] §1.4.2 (the `V^{(DN)}_n` of §4.8.6),
-`0`-based: `dst2 n k j = sin ((k + 1) (2 j + 1) π / (2 n))`. -/
+/-- The **DST-II matrix** $\mathrm{DST2}(n)$ of [golub2013matrix] §1.4.2, also $V^{(DN)}_n$ of
+§4.8.6, with indices from $0$: the $n \times n$ real matrix with entries
+$$\mathrm{DST2}(n)_{kj} = \sin\Bigl(\frac{(k + 1)(2j + 1) \pi}{2n}\Bigr).$$
+-/
 noncomputable def dst2 (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun (k j : Fin n) => Real.sin (((k : ℕ) + 1) * (2 * (j : ℕ) + 1) * π / (2 * n))
 
-/-- The entries of the DST-II matrix. -/
+/-- The entries of the DST-II matrix: $\mathrm{DST2}(n)_{kj} = \sin((k + 1)(2j + 1) \pi / (2n))$. -/
 theorem dst2_apply (k j : Fin n) :
     dst2 n k j = Real.sin (((k : ℕ) + 1) * (2 * (j : ℕ) + 1) * π / (2 * n)) := rfl
 
-/-- Column `j` of the DST-II matrix is the sine vector at the angle `(2 j + 1) π / (2 n)`. -/
+/-- Column $j$ of the DST-II matrix is the sine vector $s(\theta_j)$, with entries
+$s(\theta)_k = \sin((k + 1) \theta)$, at the angle $\theta_j = (2j + 1) \pi / (2n)$. -/
 theorem dst2_col_eq_sinAngleVec (j : Fin n) :
     (fun k => dst2 n k j) = sinAngleVec n ((2 * (j : ℕ) + 1) * π / (2 * n)) := by
   funext k
@@ -132,64 +168,79 @@ theorem dst2_col_eq_sinAngleVec (j : Fin n) :
   congr 1
   ring
 
-/-- The DCT-II matrix, `0`-based: `dct2 n k j = cos (k (2 j + 1) π / (2 n))`. Its rows are the
-DCT-II vectors `cosineIIVec n k`; the `𝒞_n` of [golub2013matrix] (12.1.13) is `(dct2 n)ᵀ` with the
-column normalization `√(2 / n)` (`√(1 / n)` for `k = 0`). -/
+/-- The **DCT-II matrix** with indices from $0$: the $n \times n$ real matrix with entries
+$$\mathrm{DCT2}(n)_{kj} = \cos\Bigl(\frac{k (2j + 1) \pi}{2n}\Bigr).$$
+
+Its rows are the DCT-II vectors `Matrix.cosineIIVec n k`. The matrix $\mathcal{C}_n$ of
+[golub2013matrix] (12.1.13) is $\mathrm{DCT2}(n)^T$ with its columns scaled by $\sqrt{2/n}$, and
+by $\sqrt{1/n}$ for $k = 0$. -/
 noncomputable def dct2 (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun (k j : Fin n) => Real.cos ((k : ℕ) * (2 * (j : ℕ) + 1) * π / (2 * n))
 
-/-- The entries of the DCT-II matrix are those of the DCT-II vectors. -/
+/-- The entries of the DCT-II matrix are those of the DCT-II vectors: $\mathrm{DCT2}(n)_{kj}$ is
+entry $j$ of `Matrix.cosineIIVec n k`. -/
 theorem dct2_apply (k j : Fin n) : dct2 n k j = cosineIIVec n k j := by
   rw [dct2, of_apply, cosineIIVec_apply]
   congr 1
   ring
 
-/-- The auxiliary matrix `C_r` of [golub2013matrix] (1.4.6), `0`-based:
-`cosMatrix r k j = cos ((k + 1) (j + 1) π / (r + 1))`, the interior block of `dct1 (r + 1)`. -/
+/-- The auxiliary matrix $C_r$ of [golub2013matrix] (1.4.6), with indices from $0$: the $r \times r$
+real matrix with entries
+$$(C_r)_{kj} = \cos\Bigl(\frac{(k + 1)(j + 1) \pi}{r + 1}\Bigr).$$
+It is the interior block of the DCT-I matrix $\mathrm{DCT}(r + 2)$. -/
 noncomputable def cosMatrix (r : ℕ) : Matrix (Fin r) (Fin r) ℝ :=
   of fun (k j : Fin r) => Real.cos (((k : ℕ) + 1) * ((j : ℕ) + 1) * π / (r + 1))
 
-/-- The entries of `C_r`. -/
+/-- The entries of $C_r$: $(C_r)_{kj} = \cos((k + 1)(j + 1) \pi / (r + 1))$. -/
 theorem cosMatrix_apply (k j : Fin r) :
     cosMatrix r k j = Real.cos (((k : ℕ) + 1) * ((j : ℕ) + 1) * π / (r + 1)) := rfl
 
-/-- `C_r` is symmetric. -/
+/-- The matrix $C_r$ is symmetric: $C_r^T = C_r$. -/
 theorem cosMatrix_transpose (r : ℕ) : (cosMatrix r)ᵀ = cosMatrix r := by
   ext k j
   rw [transpose_apply, cosMatrix_apply, cosMatrix_apply]
   congr 1
   ring
 
-/-- The DCT-I matrix `DCT(m + 1)` ([golub2013matrix] (1.4.10)), `0`-based:
-`dct1 m k j = c_j cos (k j π / m)` with `c_0 = c_m = 1 / 2` and `c_j = 1` otherwise — the matrix of
-the transform (1.4.4) `y_k = x_0 / 2 + ∑_{j=1}^{m-1} cos (k j π / m) x_j + (−1)^k x_m / 2`. For
-`m = 0` the formula degenerates to `[[1 / 2]]`. -/
+/-- The **DCT-I matrix** $\mathrm{DCT}(m + 1)$ of [golub2013matrix] (1.4.10), with indices from $0$:
+the $(m + 1) \times (m + 1)$ real matrix with entries
+$$\mathrm{DCT}(m + 1)_{kj} = c_j \cos\Bigl(\frac{k j \pi}{m}\Bigr), \qquad c_0 = c_m =
+  \frac{1}{2}, \quad c_j = 1 \text{ otherwise}.$$
+It is the matrix of the transform (1.4.4)
+$$y_k = \frac{x_0}{2} + \sum_{j = 1}^{m - 1} \cos\Bigl(\frac{k j \pi}{m}\Bigr) x_j +
+  \frac{(-1)^k x_m}{2}.$$
+
+For $m = 0$ the formula gives the $1 \times 1$ matrix $(1/2)$. -/
 noncomputable def dct1 (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ :=
   of fun (k j : Fin (m + 1)) =>
     (if (j : ℕ) = 0 ∨ (j : ℕ) = m then 1 / 2 else 1) * Real.cos ((k : ℕ) * (j : ℕ) * π / m)
 
-/-- The entries of the DCT-I matrix. -/
+/-- The entries of the DCT-I matrix: $\mathrm{DCT}(m + 1)_{kj} = c_j \cos(k j \pi / m)$, with
+$c_0 = c_m = 1/2$ and $c_j = 1$ otherwise. -/
 theorem dct1_apply (k j : Fin (m + 1)) :
     dct1 m k j
       = (if (j : ℕ) = 0 ∨ (j : ℕ) = m then 1 / 2 else 1) * Real.cos ((k : ℕ) * (j : ℕ) * π / m) :=
   rfl
 
-/-- The odd extension of `x : Fin r → ℝ` to length `2 (r + 1)`, the `x_sin = [0; x; 0; −E x]` of
-[golub2013matrix] (1.4.9) with `m = r + 1`: entry `l` is `x (l − 1)` for `1 ≤ l ≤ r`,
-`− x (2 r + 1 − l)` for `r + 2 ≤ l`, and `0` at `l = 0` and `l = r + 1`. -/
+/-- The **odd extension** of $x \in \mathbb{R}^r$ to a vector of length $2(r + 1)$: the vector
+$x_{\sin} = [0; x; 0; -Ex]$ of [golub2013matrix] (1.4.9) with $m = r + 1$, where $E$ reverses
+the order of the entries. With indices from $0$, entry $l$ is $x_{l - 1}$ for $1 \le l \le r$,
+$-x_{2r + 1 - l}$ for $l \ge r + 2$, and $0$ for $l = 0$ and $l = r + 1$. -/
 noncomputable def oddExtensionVec (x : Fin r → ℝ) : Fin (2 * (r + 1)) → ℝ := fun l =>
   if h : 0 < (l : ℕ) ∧ (l : ℕ) ≤ r then x ⟨(l : ℕ) - 1, by omega⟩
   else if h' : r + 2 ≤ (l : ℕ) then -x ⟨2 * r + 1 - (l : ℕ), by have := l.isLt; omega⟩ else 0
 
-/-- The even extension of `x : Fin (m + 1) → ℝ` to length `2 m`, the `x_cos = [x_0; x̃; x_m; E x̃]`
-of [golub2013matrix] (1.4.11): entry `l` is `x l` for `l ≤ m` and `x (2 m − l)` for `l > m`. -/
+/-- The **even extension** of $x \in \mathbb{R}^{m + 1}$ to a vector of length $2m$: the vector
+$x_{\cos} = [x_0; \tilde{x}; x_m; E \tilde{x}]$ of [golub2013matrix] (1.4.11), where $\tilde{x}$
+is the interior of $x$ and $E$ reverses the order of the entries. With indices from $0$, entry
+$l$ is $x_l$ for $l \le m$ and $x_{2m - l}$ for $l > m$. -/
 noncomputable def evenExtensionVec (x : Fin (m + 1) → ℝ) : Fin (2 * m) → ℝ := fun l =>
   if h : (l : ℕ) ≤ m then x ⟨l, by omega⟩ else x ⟨2 * m - (l : ℕ), by omega⟩
 
 /-! ### Folding a sum over a full period -/
 
-/-- A sum over `0, …, 2 m + 1` folded onto `0, …, m + 1`: the unpaired terms `0` and `m + 1`, and
-the pairs `(i + 1, 2 m + 1 − i)`. -/
+/-- A sum over $0, \dots, 2m + 1$ equals the sum of the unpaired terms at $0$ and $m + 1$ and of the
+pairs at $i + 1$ and $2m + 1 - i$ for $i < m$. -/
 private theorem sum_range_two_mul_succ {M : Type*} [AddCommMonoid M] (f : ℕ → M) (m : ℕ) :
     ∑ l ∈ range (2 * (m + 1)), f l
       = f 0 + f (m + 1) + ∑ i ∈ range m, (f (i + 1) + f (2 * m + 1 - i)) := by
@@ -203,14 +254,14 @@ private theorem sum_range_two_mul_succ {M : Type*} [AddCommMonoid M] (f : ℕ �
   rw [Finset.sum_congr rfl h]
   abel
 
-/-- A sum over `Fin (m + 2)` split into its two end terms and the interior. -/
+/-- A sum over $m + 2$ indices equals the sum of its two end terms and of the $m$ interior terms. -/
 private theorem sum_fin_succ_succ {M : Type*} [AddCommMonoid M] (f : Fin (m + 2) → M) :
     ∑ j, f j = f 0 + f (Fin.last (m + 1)) + ∑ i : Fin m, f i.castSucc.succ := by
   rw [Fin.sum_univ_succ, Fin.sum_univ_castSucc, Fin.succ_last]
   abel
 
-/-- The entries of the transform matrix in the conjugate pair of a period: `F (2m - l) = conj F l`
-for the entries of row `k` of `(dft (2 (m + 1)))ᴴ`, at `l = i + 1`. -/
+/-- In row $k$ of $F_{2(m + 1)}$, the entry in column $2(m + 1) - l$ is the complex conjugate of the
+entry in column $l$, for $l = i + 1$ with $i < m$. -/
 private theorem conjTranspose_dft_apply_reflect {m : ℕ} (k : Fin (2 * (m + 1))) {i : ℕ}
     (hi : i < m) :
     (dft (2 * (m + 1)))ᴴ k ⟨2 * m + 1 - i, by omega⟩
@@ -220,14 +271,14 @@ private theorem conjTranspose_dft_apply_reflect {m : ℕ} (k : Fin (2 * (m + 1))
   simp only
   omega
 
-/-- The real and imaginary parts of an entry of the transform matrix, at a row `k` and a column
-`l` given as natural numbers. -/
+/-- Entry $(k, l)$ of $F_N$ is $\cos(2 \pi k l / N) - i \sin(2 \pi k l / N)$, for a column $l < N$
+given as a natural number. -/
 private theorem conjTranspose_dft_apply_eq {N : ℕ} (k : Fin N) {l : ℕ} (hl : l < N) :
     (dft N)ᴴ k ⟨l, hl⟩ = (Real.cos (2 * π * (k : ℕ) * l / N) : ℂ)
       - Complex.I * (Real.sin (2 * π * (k : ℕ) * l / N) : ℂ) :=
   conjTranspose_dft_apply_eq_cos_sub_sin k ⟨l, hl⟩
 
-/-- `z + conj z = 2 Re z` and `z − conj z = 2 i Im z` for `z = c − i s`. -/
+/-- For real $c$ and $s$, the number $z = c - is$ satisfies $z + \bar{z} = 2c$. -/
 private theorem cos_sub_I_mul_sin_add_conj (c s : ℝ) :
     ((c : ℂ) - Complex.I * s) + conj ((c : ℂ) - Complex.I * s) = 2 * c := by
   simp only [map_sub, map_mul, Complex.conj_ofReal, Complex.conj_I]
@@ -240,10 +291,15 @@ private theorem cos_sub_I_mul_sin_sub_conj (c s : ℝ) :
 
 /-! ### The sine and cosine transforms through the discrete Fourier transform -/
 
-/-- **The DST through the DFT** ([golub2013matrix] §1.4.2, the display after (1.4.9); the
-correctness of Algorithm 1.4.2): the discrete sine transform of `x : Fin r → ℝ` is a scaled
-subvector of the discrete Fourier transform of its odd extension,
-`S x = (i / 2) (F_{2m} x_sin)(1 : m − 1)` with `m = r + 1`. -/
+/-- **The DST through the DFT**: the discrete sine transform of a vector is a scaled part of the
+discrete Fourier transform of its odd extension. Let $x \in \mathbb{R}^r$ and $m = r + 1$. Then,
+for $0 \le k < r$,
+$$(S_r x)_k = \frac{i}{2} \, (F_{2m} x_{\sin})_{k + 1},$$
+that is, $S_r x = \frac{i}{2} (F_{2m} x_{\sin})_{1 : m - 1}$. This is the display after (1.4.9)
+in [golub2013matrix], §1.4.2, and the correctness of Algorithm 1.4.2.
+
+The odd extension is `Matrix.oddExtensionVec x`, embedded in the complex vectors. The transform
+matrix is `(dft (2 * (r + 1)))ᴴ`. -/
 theorem dst1_mulVec_eq_dft (x : Fin r → ℝ) (k : Fin r) :
     (((dst1 r *ᵥ x) k : ℝ) : ℂ) = (Complex.I / 2) * (((dft (2 * (r + 1)))ᴴ *ᵥ
       fun l => (oddExtensionVec x l : ℂ)) ⟨(k : ℕ) + 1, by omega⟩) := by
@@ -296,10 +352,15 @@ theorem dst1_mulVec_eq_dft (x : Fin r → ℝ) (k : Fin r) :
   linear_combination ((Real.sin (((k : ℕ) + 1) * ((i : ℕ) + 1) * π / (r + 1)) : ℂ)
     * (x i : ℂ)) * Complex.I_sq
 
-/-- **The DCT through the DFT** ([golub2013matrix] §1.4.2, the display after (1.4.11); the
-correctness of Algorithm 1.4.3): for `0 < m`, the discrete cosine transform of `x : Fin (m + 1) → ℝ`
-is a scaled subvector of the discrete Fourier transform of its even extension,
-`DCT(m + 1) x = ½ (F_{2m} x_cos)(0 : m)`. -/
+/-- **The DCT through the DFT**: the discrete cosine transform of a vector is a scaled part of the
+discrete Fourier transform of its even extension. Let $m > 0$ and $x \in \mathbb{R}^{m + 1}$.
+Then, for $0 \le k \le m$,
+$$(\mathrm{DCT}(m + 1) x)_k = \frac{1}{2} \, (F_{2m} x_{\cos})_k,$$
+that is, $\mathrm{DCT}(m + 1) x = \frac{1}{2} (F_{2m} x_{\cos})_{0 : m}$. This is the display
+after (1.4.11) in [golub2013matrix], §1.4.2, and the correctness of Algorithm 1.4.3.
+
+The even extension is `Matrix.evenExtensionVec x`, embedded in the complex vectors. The
+transform matrix is `(dft (2 * m))ᴴ`. -/
 theorem dct1_mulVec_eq_dft (hm : 0 < m) (x : Fin (m + 1) → ℝ) (k : Fin (m + 1)) :
     (((dct1 m *ᵥ x) k : ℝ) : ℂ) = (1 / 2) * (((dft (2 * m))ᴴ *ᵥ
       fun l => (evenExtensionVec x l : ℂ)) ⟨k, by omega⟩) := by
@@ -376,9 +437,9 @@ theorem dct1_mulVec_eq_dft (hm : 0 < m) (x : Fin (m + 1) → ℝ) (k : Fin (m + 
 
 /-! ### Inversion -/
 
-/-- The trapezoidal rule over a full period is exact for `cos (p l π / m)`: summed over
-`l = 0, …, 2 m − 1` it gives `2 m` when `2 m ∣ p` and `0` otherwise
-(`Quadrature.sum_exp_angleNode`, real part). -/
+/-- The trapezoidal rule over a full period is exact for $\cos(p l \pi / m)$: for $m > 0$ and
+$p \in \mathbb{Z}$, $\sum_{l = 0}^{2m - 1} \cos(p l \pi / m)$ is $2m$ if $2m$ divides $p$ and
+$0$ otherwise. -/
 private theorem sum_range_cos_int_mul (hm : 0 < m) (p : ℤ) :
     ∑ l ∈ range (2 * m), Real.cos (p * l * π / m)
       = if (2 * m : ℤ) ∣ p then (2 * m : ℝ) else 0 := by
@@ -401,8 +462,9 @@ private theorem sum_range_cos_int_mul (hm : 0 < m) (p : ℤ) :
   push_cast
   split_ifs <;> simp
 
-/-- The trapezoidal rule is exact for `cos (p j π / m)`: summed with the weights `½, 1, …, 1, ½` of
-the DCT-I over `j = 0, …, m`, it gives `m` when `2 m ∣ p` and `0` otherwise. -/
+/-- The trapezoidal rule with the weights $\frac{1}{2}, 1, \dots, 1, \frac{1}{2}$ of the DCT-I is
+exact for $\cos(p j \pi / m)$: for $m > 0$ and $p \in \mathbb{Z}$, the weighted sum over
+$j = 0, \dots, m$ is $m$ if $2m$ divides $p$ and $0$ otherwise. -/
 private theorem sum_dct1Weight_mul_cos (hm : 0 < m) (p : ℤ) :
     ∑ j : Fin (m + 1), (if (j : ℕ) = 0 ∨ (j : ℕ) = m then (1 / 2 : ℝ) else 1)
         * Real.cos (p * (j : ℕ) * π / m) = if (2 * m : ℤ) ∣ p then (m : ℝ) else 0 := by
@@ -440,10 +502,14 @@ private theorem sum_dct1Weight_mul_cos (hm : 0 < m) (p : ℤ) :
   push_cast at hfull ⊢
   split_ifs at hfull ⊢ <;> linarith
 
-/-- **The DCT-I is its own inverse up to a factor**: `DCT(m + 1)² = (m / 2) I` for `0 < m`
-([golub2013matrix] §4.8.5, `DCT(m + 1)⁻¹ = (2 / m) DCT(m + 1)`), the twin of `dst1_mul_self`. Entry
-`(k, l)` is `c_l ∑_j c_j cos (k j π / m) cos (j l π / m)`, and the product of cosines is half the
-sum of `cos ((k ∓ l) j π / m)`, whose weighted sums are exact trapezoidal rules. -/
+/-- **The DCT-I is its own inverse up to a factor**: for $m > 0$,
+$$\mathrm{DCT}(m + 1)^2 = \frac{m}{2} I.$$
+In [golub2013matrix], §4.8.5, this is $\mathrm{DCT}(m + 1)^{-1} = \frac{2}{m} \mathrm{DCT}(m +
+1)$. It is the counterpart of `Matrix.dst1_mul_self`.
+
+Entry $(k, l)$ is $c_l \sum_j c_j \cos(k j \pi / m) \cos(j l \pi / m)$. The product of the
+cosines is half the sum of $\cos((k - l) j \pi / m)$ and $\cos((k + l) j \pi / m)$, and the
+weighted sums of these are exact trapezoidal rules. -/
 theorem dct1_mul_self (hm : 0 < m) :
     dct1 m * dct1 m = ((m : ℝ) / 2) • (1 : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) := by
   ext k l
@@ -503,14 +569,17 @@ theorem dct1_mul_self (hm : 0 < m) :
       ite_eq_right hkl]
     ring
 
-/-- The DCT-I matrix is nonsingular for `0 < m`: its square is `(m / 2) I`. -/
+/-- For $m > 0$, the DCT-I matrix $\mathrm{DCT}(m + 1)$ is nonsingular, because its square is
+$\frac{m}{2} I$. -/
 theorem isUnit_dct1 (hm : 0 < m) : IsUnit (dct1 m) := by
   have hm' : (m : ℝ) / 2 ≠ 0 := by positivity
   rw [isUnit_iff_isUnit_det]
   refine isUnit_det_of_right_inverse (B := ((m : ℝ) / 2)⁻¹ • dct1 m) ?_
   rw [Matrix.mul_smul, dct1_mul_self hm, smul_smul, inv_mul_cancel₀ hm', one_smul]
 
-/-- `∑_{k<n} cos ((k + 1) a π / n) = ((−1)^a − 1) / 2` for `0 < a < 2 n`. -/
+/-- For $0 < a < 2n$,
+$$\sum_{k < n} \cos\Bigl(\frac{(k + 1) a \pi}{n}\Bigr) = \frac{(-1)^a - 1}{2}.$$
+-/
 private theorem sum_cos_succ_mul_nat {a : ℕ} (ha0 : 0 < a) (ha : a < 2 * n) :
     ∑ k ∈ range n, Real.cos (((k : ℝ) + 1) * ((a : ℝ) * π / n)) = ((-1) ^ a - 1) / 2 := by
   have hn : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
@@ -527,7 +596,9 @@ private theorem sum_cos_succ_mul_nat {a : ℕ} (ha0 : 0 < a) (ha : a < 2 * n) :
   rw [h]
   ring
 
-/-- `∑_{k<n} cos ((k + 1) (j − l) π / n) = ((−1)^(j+l) − 1) / 2` for `j ≠ l` below `n`. -/
+/-- For $j, l < n$ with $j \neq l$,
+$$\sum_{k < n} \cos\Bigl(\frac{(k + 1)(j - l) \pi}{n}\Bigr) = \frac{(-1)^{j + l} - 1}{2}.$$
+-/
 private theorem sum_cos_succ_mul_sub {j l : ℕ} (hj : j < n) (hl : l < n) (hjl : j ≠ l) :
     ∑ k ∈ range n, Real.cos (((k : ℝ) + 1) * (((j : ℝ) - l) * π / n))
       = ((-1) ^ (j + l) - 1) / 2 := by
@@ -547,11 +618,15 @@ private theorem sum_cos_succ_mul_sub {j l : ℕ} (hj : j < n) (hl : l < n) (hjl 
     rw [Finset.sum_congr rfl hterm, sum_cos_succ_mul_nat (by omega) (by omega),
       show j + l = (j - l) + 2 * l by omega, pow_add, pow_mul, neg_one_sq, one_pow, mul_one]
 
-/-- **The Gram matrix of the DST-II** (the book's P4.8.11(a), [golub2013matrix] §4.8.6):
-`DST2(n)ᵀ DST2(n) = (n / 2) I + ½ v vᵀ` with `v = ((−1)^j)_j`. Entry `(j, l)` is
-`∑_k sin ((k + 1) θ_j) sin ((k + 1) θ_l) =
-½ ∑_k (cos ((k + 1)(θ_j − θ_l)) − cos ((k + 1)(θ_j + θ_l)))`
-with `θ_j = (2 j + 1) π / (2 n)`, and both cosine sums telescope. -/
+/-- **The Gram matrix of the DST-II**: for every $n \in \mathbb{N}$,
+$$\mathrm{DST2}(n)^T \mathrm{DST2}(n) = \frac{n}{2} I + \frac{1}{2} v v^T, \qquad v =
+  ((-1)^j)_{j < n}.$$
+This is Problem P4.8.11(a) of [golub2013matrix], §4.8.6.
+
+Entry $(j, l)$ is
+$$\sum_k \sin((k + 1) \theta_j) \sin((k + 1) \theta_l) = \frac{1}{2} \sum_k \bigl(\cos((k +
+  1)(\theta_j - \theta_l)) - \cos((k + 1)(\theta_j + \theta_l))\bigr)$$
+with $\theta_j = (2j + 1) \pi / (2n)$, and both sums of cosines telescope. -/
 theorem transpose_dst2_mul_dst2 (n : ℕ) :
     (dst2 n)ᵀ * dst2 n = ((n : ℝ) / 2) • (1 : Matrix (Fin n) (Fin n) ℝ)
       + (1 / 2 : ℝ) • vecMulVec (fun j : Fin n => (-1 : ℝ) ^ (j : ℕ))
@@ -594,8 +669,11 @@ theorem transpose_dst2_mul_dst2 (n : ℕ) :
       show (j : ℕ) + (l : ℕ) + 1 = ((j : ℕ) + (l : ℕ)) + 1 by ring, pow_succ]
     ring
 
-/-- **The DST-II is nonsingular**: `DST2(n) x = 0` gives `0 = xᵀ DST2(n)ᵀ DST2(n) x =
-(n / 2) ‖x‖² + ½ (v ⬝ x)²`, so `x = 0`. -/
+/-- **The DST-II is nonsingular**: for every $n \in \mathbb{N}$, the matrix $\mathrm{DST2}(n)$ is
+invertible.
+
+If $\mathrm{DST2}(n) x = 0$, then $0 = x^T \mathrm{DST2}(n)^T \mathrm{DST2}(n) x = \frac{n}{2}
+\|x\|^2 + \frac{1}{2} (v \cdot x)^2$, so $x = 0$. -/
 theorem isUnit_dst2 (n : ℕ) : IsUnit (dst2 n) := by
   rw [← mulVec_injective_iff_isUnit]
   intro x y hxy
@@ -619,8 +697,10 @@ theorem isUnit_dst2 (n : ℕ) : IsUnit (dst2 n) := by
     nlinarith
   exact sub_eq_zero.mp (dotProduct_self_eq_zero.mp hzz)
 
-/-- **The DCT-II has orthogonal rows**: `DCT2(n) DCT2(n)ᵀ = diag (n, n / 2, …, n / 2)`
-(`Matrix.dotProduct_cosineIIVec`). -/
+/-- **The DCT-II has orthogonal rows**: for every $n \in \mathbb{N}$,
+$$\mathrm{DCT2}(n) \, \mathrm{DCT2}(n)^T = \operatorname{diag}(n, n/2, \dots, n/2).$$
+
+The proof is `Matrix.dotProduct_cosineIIVec`. -/
 theorem dct2_mul_transpose (n : ℕ) :
     dct2 n * (dct2 n)ᵀ = diagonal fun k : Fin n => if (k : ℕ) = 0 then (n : ℝ) else n / 2 := by
   ext k l
@@ -630,7 +710,7 @@ theorem dct2_mul_transpose (n : ℕ) :
     rw [transpose_apply, dct2_apply, dct2_apply]
   rw [h, dotProduct_cosineIIVec, diagonal_apply]
 
-/-- The DCT-II matrix is nonsingular. -/
+/-- For every $n \in \mathbb{N}$, the DCT-II matrix $\mathrm{DCT2}(n)$ is nonsingular. -/
 theorem isUnit_dct2 (n : ℕ) : IsUnit (dct2 n) := by
   have hD : IsUnit (diagonal fun k : Fin n => if (k : ℕ) = 0 then (n : ℝ) else n / 2) := by
     rw [isUnit_diagonal, Pi.isUnit_iff]
@@ -644,9 +724,17 @@ theorem isUnit_dct2 (n : ℕ) : IsUnit (dct2 n) := by
 
 /-! ### Eigensystems of the second-difference matrices -/
 
-/-- **The DCT-II diagonalizes `Y_{1,1}`** ([golub2013matrix] (12.1.13)):
-`DCT2(n) Y_{1,1} DCT2(n)⁻¹ = diag (2 cos (k π / n))`; row `k` of `DCT2(n) Y_{1,1}` is
-`(Y_{1,1} q_k)ᵀ = 2 cos (k π / n) q_kᵀ` since `Y_{1,1}` is symmetric. -/
+/-- **The DCT-II diagonalizes $Y_{1,1}$**: for every $n \in \mathbb{N}$,
+$$\mathrm{DCT2}(n) \, Y_{1,1} \, \mathrm{DCT2}(n)^{-1} = \operatorname{diag}\bigl(2 \cos(k \pi /
+  n)\bigr)_{k < n}.$$
+Here $Y_{1,1}$ is the tridiagonal matrix with ones on the two off-diagonals, $1$ at the two
+diagonal corners $(0, 0)$ and $(n - 1, n - 1)$ and $0$ elsewhere on the diagonal, as in
+[golub2013matrix] (12.1.13). For $n = 1$ the two corners coincide, and $Y_{1,1}$ is the
+$1 \times 1$ matrix $(2)$.
+
+The matrix $Y_{1,1}$ is `Matrix.cornerTridiagonal n 1 1`. Row $k$ of $\mathrm{DCT2}(n) Y_{1,1}$
+is $(Y_{1,1} q_k)^T = 2 \cos(k \pi / n) q_k^T$, where $q_k$ is row $k$ of $\mathrm{DCT2}(n)$,
+because $Y_{1,1}$ is symmetric. -/
 theorem dct2_mul_cornerTridiagonal_one_one_mul_inv (n : ℕ) :
     dct2 n * cornerTridiagonal n 1 1 * (dct2 n)⁻¹
       = diagonal fun k : Fin n => 2 * Real.cos ((k : ℕ) * π / n) := by
@@ -659,10 +747,17 @@ theorem dct2_mul_cornerTridiagonal_one_one_mul_inv (n : ℕ) :
   rw [hrow, Matrix.mul_assoc,
     mul_nonsing_inv (dct2 n) ((isUnit_iff_isUnit_det _).mp (isUnit_dct2 n)), Matrix.mul_one]
 
-/-- **The Dirichlet–Neumann eigensystem** ([golub2013matrix] §4.8.6): column `j` of `DST2(n)`, the
-sine vector at `θ_j = (2 j + 1) π / (2 n)`, is an eigenvector of `𝒯^{(DN)}_n` with eigenvalue
-`4 sin² (θ_j / 2)`; the residual `sin ((n + 1) θ_j) − sin ((n − 1) θ_j) = 2 cos (n θ_j) sin θ_j`
-of (4.8.18) vanishes because `n θ_j = (2 j + 1) π / 2`. -/
+/-- **The Dirichlet–Neumann eigensystem**: let $n \ge 2$ and $j < n$. Column $j$ of
+$\mathrm{DST2}(n)$, the sine vector at $\theta_j = (2j + 1) \pi / (2n)$, is an eigenvector of
+the Dirichlet–Neumann second difference $\mathcal{T}^{(DN)}_n$ with the eigenvalue
+$4 \sin^2(\theta_j / 2)$:
+$$\mathcal{T}^{(DN)}_n \, s(\theta_j) = 4 \sin^2\Bigl(\frac{(2j + 1) \pi}{4n}\Bigr)
+  s(\theta_j).$$
+This is in [golub2013matrix], §4.8.6.
+
+The matrix $\mathcal{T}^{(DN)}_n$ is `Matrix.secondDifferenceDN n`. The residual $\sin((n + 1)
+\theta_j) - \sin((n - 1) \theta_j) = 2 \cos(n \theta_j) \sin \theta_j$ of (4.8.18) vanishes
+because $n \theta_j = (2j + 1) \pi / 2$. -/
 theorem secondDifferenceDN_mulVec_dst2_col (hn : 2 ≤ n) (j : Fin n) :
     secondDifferenceDN n *ᵥ (fun k => dst2 n k j)
       = (4 * Real.sin ((2 * (j : ℕ) + 1) * π / (4 * n)) ^ 2) • fun k => dst2 n k j := by
@@ -679,25 +774,37 @@ theorem secondDifferenceDN_mulVec_dst2_col (hn : 2 ≤ n) (j : Fin n) :
   rw [dst2_col_eq_sinAngleVec, secondDifferenceDN_mulVec_sinAngleVec hn, ← hθ, hres, zero_smul,
     add_zero, show θ / 2 = (2 * (j : ℕ) + 1) * π / (4 * n) by rw [hθ]; field_simp; ring]
 
-/-- The DST-II diagonalizes the Dirichlet–Neumann second difference:
-`𝒯^{(DN)}_n DST2(n) = DST2(n) diag (4 sin² ((2 j + 1) π / (4 n)))`. -/
+/-- The DST-II diagonalizes the Dirichlet–Neumann second difference: for $n \ge 2$,
+$$\mathcal{T}^{(DN)}_n \, \mathrm{DST2}(n) = \mathrm{DST2}(n) \operatorname{diag}\Bigl(4
+  \sin^2\Bigl(\frac{(2j + 1) \pi}{4n}\Bigr)\Bigr)_{j < n}.$$
+-/
 theorem secondDifferenceDN_mul_dst2 (hn : 2 ≤ n) :
     secondDifferenceDN n * dst2 n
       = dst2 n * diagonal fun j : Fin n => 4 * Real.sin ((2 * (j : ℕ) + 1) * π / (4 * n)) ^ 2 :=
   mul_eq_mul_diagonal_of_forall_mulVec_col (secondDifferenceDN_mulVec_dst2_col hn)
 
-/-- **The Dirichlet–Neumann second difference, diagonalized** ([golub2013matrix] §4.8.6):
-`DST2(n)⁻¹ 𝒯^{(DN)}_n DST2(n) = diag (4 sin² ((2 j + 1) π / (4 n)))`. -/
+/-- **The Dirichlet–Neumann second difference, diagonalized**: for $n \ge 2$,
+$$\mathrm{DST2}(n)^{-1} \, \mathcal{T}^{(DN)}_n \, \mathrm{DST2}(n) = \operatorname{diag}\Bigl(4
+  \sin^2\Bigl(\frac{(2j + 1) \pi}{4n}\Bigr)\Bigr)_{j < n}.$$
+This is in [golub2013matrix], §4.8.6. -/
 theorem inv_dst2_mul_secondDifferenceDN_mul_dst2 (hn : 2 ≤ n) :
     (dst2 n)⁻¹ * secondDifferenceDN n * dst2 n
       = diagonal fun j : Fin n => 4 * Real.sin ((2 * (j : ℕ) + 1) * π / (4 * n)) ^ 2 := by
   rw [Matrix.mul_assoc, secondDifferenceDN_mul_dst2 hn, ← Matrix.mul_assoc,
     nonsing_inv_mul (dst2 n) ((isUnit_iff_isUnit_det _).mp (isUnit_dst2 n)), Matrix.one_mul]
 
-/-- **The Neumann–Neumann eigensystem** ([golub2013matrix] §4.8.6, with `n = m + 1`): the cosine
-vector at `θ_j = j π / m` is an eigenvector of `𝒯^{(NN)}_{m+1}` with eigenvalue
-`4 sin² (j π / (2 m))`; the residual `cos ((m + 1) θ_j) − cos ((m − 1) θ_j) =
-−2 sin (m θ_j) sin θ_j` of (4.8.19) vanishes because `m θ_j = j π`. -/
+/-- **The Neumann–Neumann eigensystem**: let $m > 0$ and $j \le m$. The cosine vector
+$c(\theta_j) \in \mathbb{R}^{m + 1}$, with entries $c(\theta)_k = \cos(k \theta)$, at the angle
+$\theta_j = j \pi / m$ is an eigenvector of the Neumann–Neumann second difference
+$\mathcal{T}^{(NN)}_{m + 1}$ with the eigenvalue $4 \sin^2(j \pi / (2m))$:
+$$\mathcal{T}^{(NN)}_{m + 1} \, c(\theta_j) = 4 \sin^2\Bigl(\frac{j \pi}{2m}\Bigr)
+  c(\theta_j).$$
+This is in [golub2013matrix], §4.8.6, with $n = m + 1$.
+
+The matrix $\mathcal{T}^{(NN)}_{m + 1}$ is `Matrix.secondDifferenceNN (m + 1)`, and $c(\theta)$
+is `Matrix.cosAngleVec (m + 1) θ`. The residual $\cos((m + 1) \theta_j) - \cos((m - 1)
+\theta_j) = -2 \sin(m \theta_j) \sin \theta_j$ of (4.8.19) vanishes because
+$m \theta_j = j \pi$. -/
 theorem secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div (hm : 0 < m) (j : Fin (m + 1)) :
     secondDifferenceNN (m + 1) *ᵥ cosAngleVec (m + 1) ((j : ℕ) * π / m)
       = (4 * Real.sin ((j : ℕ) * π / (2 * m)) ^ 2) • cosAngleVec (m + 1) ((j : ℕ) * π / m) := by
@@ -714,8 +821,9 @@ theorem secondDifferenceNN_mulVec_cosAngleVec_mul_pi_div (hm : 0 < m) (j : Fin (
   rw [secondDifferenceNN_mulVec_cosAngleVec (by omega), hres, zero_smul, add_zero,
     show θ / 2 = (j : ℕ) * π / (2 * m) by rw [hθ]; field_simp]
 
-/-- The columns of `DCT(m + 1) · diag (2, 1, …, 1, 2)` (the book's `V^{(NN)}_{m+1}`) are the cosine
-vectors at `θ_j = j π / m`. -/
+/-- The columns of $V = \mathrm{DCT}(m + 1) \operatorname{diag}(2, 1, \dots, 1, 2)$, the matrix
+$V^{(NN)}_{m + 1}$ of [golub2013matrix] §4.8.6, are the cosine vectors at the angles
+$\theta_j = j \pi / m$: $V_{kj} = \cos(k j \pi / m)$. -/
 theorem dct1_mul_diagonal_apply (k j : Fin (m + 1)) :
     (dct1 m * diagonal fun j : Fin (m + 1) => if (j : ℕ) = 0 ∨ (j : ℕ) = m then (2 : ℝ) else 1) k j
       = cosAngleVec (m + 1) ((j : ℕ) * π / m) k := by
@@ -723,9 +831,13 @@ theorem dct1_mul_diagonal_apply (k j : Fin (m + 1)) :
   rw [show ((k : ℕ) : ℝ) * ((j : ℕ) * π / m) = (k : ℕ) * (j : ℕ) * π / m by ring]
   split_ifs <;> ring
 
-/-- **The Neumann–Neumann second difference, diagonalized** ([golub2013matrix] §4.8.6):
-`𝒯^{(NN)}_{m+1} V = V diag (4 sin² (j π / (2 m)))` for `V = DCT(m + 1) · diag (2, 1, …, 1, 2)`,
-which is nonsingular (`Matrix.isUnit_dct1`). -/
+/-- **The Neumann–Neumann second difference, diagonalized**: for $m > 0$ and $V =
+\mathrm{DCT}(m + 1) \operatorname{diag}(2, 1, \dots, 1, 2)$,
+$$\mathcal{T}^{(NN)}_{m + 1} V = V \operatorname{diag}\Bigl(4 \sin^2\Bigl(\frac{j
+  \pi}{2m}\Bigr)\Bigr)_{j \le m}.$$
+This is in [golub2013matrix], §4.8.6.
+
+The matrix $V$ is nonsingular by `Matrix.isUnit_dct1`, so this is a diagonalization. -/
 theorem secondDifferenceNN_mul_dct1_mul_diagonal (hm : 0 < m) :
     secondDifferenceNN (m + 1)
         * (dct1 m * diagonal fun j : Fin (m + 1) => if (j : ℕ) = 0 ∨ (j : ℕ) = m then 2 else 1)

@@ -9,46 +9,53 @@ import Numlib.Analysis.Convex.Saddle.Existence
 /-!
 # The subdifferential of a saddle-function as a monotone mapping
 
-For a closed proper saddle-function `K`, the graph of `∂K` is homeomorphic to the underlying space
-under `(u, v, u*, v*) ↦ (u - u*, v + v*)`, and the mapping
-`ρ : (u, v) ↦ {(-u*, v*) | (u*, v*) ∈ ∂K (u, v)}` is *maximal monotone*.
+Let $U, V, X, Y$ be real vector spaces with pairings $\langle \cdot, \cdot \rangle$ of $U$ with $V$
+and of $X$ with $Y$, and let $K : U \times Y \to [-\infty, +\infty]$ be a saddle-function in the
+class $\Omega(F)$ of a closed convex bifunction $F$ with graph function $f(u, x) = (F u)(x)$. The
+subdifferential $\partial K(u, y) \subseteq V \times X$ is then the **partial inversion** of
+$\partial f$: the map $((u, y), (v, x)) \mapsto ((u, x), (-v, y))$ carries the graph of $\partial K$
+onto the graph of $\partial f$. Partial inversion exchanges the second component of the argument of
+a relation with that of its value, and it preserves the form that defines monotonicity. The facts
+about $\partial K$ in this module are therefore the matching facts about the subdifferential of a
+closed proper convex function. The presentation follows [rockafellar1970convex], §37.
 
-Both come from the identification of `∂K` with the **partial inversion** of `∂f`, `f` the graph
-function of a convex bifunction representing the class of `K`. Partial inversion exchanges the
-second component of a relation's argument with that of its value and preserves the monotonicity
-form, so each is the matching fact about the subdifferential of a closed proper convex function.
+For finite-dimensional inner product spaces $U$ and $X$ and a closed proper $K$, the graph of
+$\partial K$ is homeomorphic to $U \times X$ under $((u, x), (u^*, x^*)) \mapsto (u - u^*, x +
+x^*)$, and the mapping
+$$\rho(u, x) = \{(-u^*, x^*) \mid (u^*, x^*) \in \partial K(u, x)\}$$
+is maximal monotone.
 
 ## Main definitions
 
-* `partialInvertEquiv` — the involution `((u, y), (v, x)) ↦ ((u, x), (v, y))`.
-* `partialInvertNegHomeomorph` — the same with the sign flip, a linear homeomorphism.
-* `saddleMonotoneRel Bu Bx K` — Rockafellar's `ρ`, as a relation.
+* `ConvexAnalysis.partialInvertEquiv`: the involution $((u, y), (v, x)) \mapsto ((u, x), (v, y))$.
+* `ConvexAnalysis.partialInvertNegHomeomorph`: the map $((u, y), (v, x)) \mapsto ((u, x), (-v, y))$,
+  as a homeomorphism.
+* `ConvexAnalysis.saddleMonotoneRel`: the mapping $\rho$, as a relation.
 
 ## Main results
 
-* `prodPairing_sub_partialInvertEquiv` — partial inversion preserves the monotonicity form, so
-  `IsMaximalMonotoneRel.preimage_partialInvertEquiv` transfers maximal monotonicity across it.
-* `saddleSubdifferentialHomeomorph` — the graph of `∂K` is homeomorphic to the underlying space
-  ([rockafellar1970convex] Corollary 37.5.1).
-* `isMaximalMonotoneRel_saddleMonotoneRel` — `ρ` is maximal monotone
-  ([rockafellar1970convex] Corollary 37.5.2).
-* `isMaximalMonotoneRel_setOf_hasSaddleGradientAt` — for a finite differentiable `K` the mapping is
-  `(u, v) ↦ (-∇₁K (u, v), ∇₂K (u, v))`.
+* `ConvexAnalysis.prodPairing_sub_partialInvertEquiv`: partial inversion preserves the monotonicity
+  form, so maximal monotonicity transfers across it
+  (`ConvexAnalysis.IsMaximalMonotoneRel.preimage_partialInvertEquiv`).
+* `ConvexAnalysis.saddleSubdifferentialHomeomorph`: the graph of $\partial K$ is homeomorphic to
+  $U \times X$; this is Corollary 37.5.1 of [rockafellar1970convex].
+* `ConvexAnalysis.isMaximalMonotoneRel_saddleMonotoneRel`: $\rho$ is maximal monotone; this is
+  Corollary 37.5.2 of [rockafellar1970convex].
+* `ConvexAnalysis.isMaximalMonotoneRel_setOf_hasSaddleGradientAt`: for a finite differentiable
+  concave-convex $K$, the mapping $(u, x) \mapsto (-\nabla_1 K(u, x), \nabla_2 K(u, x))$ is maximal
+  monotone.
 
 ## Implementation notes
 
-The transfer lemmas need no symmetry and hold for arbitrary pairings. An inner product enters only
-where the corresponding facts about `∂f` do, and there as a self-pairing rather than an
-`InnerProductSpace` instance: `U × X` carries the supremum norm, but
-`prodPairing (innerₗ U) (innerₗ X)` is a continuous inner pairing on it.
-
-Two subdifferentials are in play — `saddleSubdifferentialOn C D K` for a real-valued `K` on an open
-rectangle, `saddleSubdifferential Bu Bx K` for an `EReal`-valued one on the whole space — and they
-agree at `C = D = univ`, which is what the differentiable clause below needs.
-
-## References
-
-* [rockafellar1970convex] §37.
+* The transfer lemmas need no symmetry and hold for arbitrary pairings. An inner product enters only
+  where the corresponding facts about $\partial f$ need it, and there as a self-pairing rather than
+  an `InnerProductSpace` instance: `U × X` carries the supremum norm, but
+  `ConvexAnalysis.prodPairing (innerₗ U) (innerₗ X)` is a continuous inner pairing on it.
+* Two subdifferentials are in play: `ConvexAnalysis.saddleSubdifferentialOn C D K` for a real-valued
+  `K` on an open rectangle, and `ConvexAnalysis.saddleSubdifferential Bu Bx K` for an `EReal`-valued
+  `K` on the whole space. They agree at $C = U$, $D = X$
+  (`ConvexAnalysis.saddleSubdifferential_eq_saddleSubdifferentialOn`), which the differentiable case
+  needs.
 -/
 
 namespace ConvexAnalysis
@@ -59,18 +66,24 @@ section PartialInversion
 
 variable {U V X Y : Type*}
 
-/-- **Partial inversion**, Rockafellar's word: the involution exchanging the second component of a
-relation's argument with that of its value, `((u, y), (v, x)) ↦ ((u, x), (v, y))`. -/
+/-- **Partial inversion**: the involution
+$$((u, y), (v, x)) \mapsto ((u, x), (v, y))$$
+of $(U \times Y) \times (V \times X)$ onto $(U \times X) \times (V \times Y)$. It exchanges the
+second component of the argument of a relation with the second component of its value. The term
+is Rockafellar's. -/
 def partialInvertEquiv : ((U × Y) × (V × X)) ≃ ((U × X) × (V × Y)) where
   toFun r := ((r.1.1, r.2.2), (r.2.1, r.1.2))
   invFun s := ((s.1.1, s.2.2), (s.2.1, s.1.2))
   left_inv _ := rfl
   right_inv _ := rfl
 
+/-- `ConvexAnalysis.partialInvertEquiv` sends $((u, y), (v, x))$ to $((u, x), (v, y))$. -/
 @[simp] theorem partialInvertEquiv_apply (r : (U × Y) × (V × X)) :
     (partialInvertEquiv : ((U × Y) × (V × X)) ≃ ((U × X) × (V × Y))) r
       = ((r.1.1, r.2.2), (r.2.1, r.1.2)) := rfl
 
+/-- The inverse of `ConvexAnalysis.partialInvertEquiv` sends $((u, x), (v, y))$ to
+$((u, y), (v, x))$. -/
 @[simp] theorem partialInvertEquiv_symm_apply (s : (U × X) × (V × Y)) :
     (partialInvertEquiv : ((U × Y) × (V × X)) ≃ ((U × X) × (V × Y))).symm s
       = ((s.1.1, s.2.2), (s.2.1, s.1.2)) := rfl
@@ -78,9 +91,16 @@ def partialInvertEquiv : ((U × Y) × (V × X)) ≃ ((U × X) × (V × Y)) where
 variable [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- **Partial inversion preserves the monotonicity form.** No symmetry is needed: the `X`-half of
-the form is `Bx.flip (y₁ - y₂) (x₁ - x₂)` on the source and `Bx (x₁ - x₂) (y₁ - y₂)` on the target,
-which is the same number. -/
+/-- **Partial inversion preserves the monotonicity form.** Let $B_u$ pair $U$ with $V$ and $B_x$
+pair $X$ with $Y$. For $r = ((u_1, y_1), (v_1, x_1))$ and $s = ((u_2, y_2), (v_2, x_2))$,
+$$B_u(u_1 - u_2, v_1 - v_2) + B_x(x_1 - x_2, y_1 - y_2)$$
+is the same number whether it is read as the product pairing of $U \times Y$ with $V \times X$
+(with $B_x$ transposed) at $r - s$, or as the product pairing of $U \times X$ with $V \times Y$
+at the partial inversions of $r$ and $s$.
+
+No symmetry of the pairings is needed. The pairing on the left is
+`ConvexAnalysis.prodPairing Bu Bx.flip`, and the pairing on the right is
+`ConvexAnalysis.prodPairing Bu Bx`. -/
 theorem prodPairing_sub_partialInvertEquiv (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (r s : (U × Y) × (V × X)) :
     prodPairing Bu Bx.flip (r.1 - s.1) (r.2 - s.2)
@@ -92,6 +112,9 @@ theorem prodPairing_sub_partialInvertEquiv (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ
 
 variable {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {σ : SetRel (U × X) (V × Y)}
 
+/-- A relation $\sigma \subseteq (U \times X) \times (V \times Y)$ is monotone for the product
+pairing of $B_u$ and $B_x$ if and only if its preimage under partial inversion is monotone for
+the product pairing of $B_u$ and the transpose of $B_x$. -/
 theorem isMonotoneRel_preimage_partialInvertEquiv :
     IsMonotoneRel (prodPairing Bu Bx.flip) (partialInvertEquiv ⁻¹' σ)
       ↔ IsMonotoneRel (prodPairing Bu Bx) σ := by
@@ -108,8 +131,13 @@ theorem isMonotoneRel_preimage_partialInvertEquiv :
     rw [prodPairing_sub_partialInvertEquiv]
     exact h _ hr _ hs
 
-/-- **Maximal** monotonicity transfers across partial inversion. This is the whole content of the
-maximal monotonicity of `ρ`, once `ρ` is identified with a partially inverted `∂f`. -/
+/-- **Maximal monotonicity transfers across partial inversion.** If $\sigma \subseteq (U \times X)
+\times (V \times Y)$ is maximal monotone for the product pairing of $B_u$ and $B_x$, then its
+preimage under `ConvexAnalysis.partialInvertEquiv` is maximal monotone for the product pairing
+of $B_u$ and the transpose of $B_x$.
+
+This is the whole content of the maximal monotonicity of $\rho$, once $\rho$ is identified with
+a partially inverted $\partial f$ (`ConvexAnalysis.saddleMonotoneRel_eq_preimage`). -/
 theorem IsMaximalMonotoneRel.preimage_partialInvertEquiv
     (h : IsMaximalMonotoneRel (prodPairing Bu Bx) σ) :
     IsMaximalMonotoneRel (prodPairing Bu Bx.flip) (partialInvertEquiv ⁻¹' σ) := by
@@ -137,8 +165,10 @@ section Homeo
 variable {U V X Y : Type*} [TopologicalSpace U] [TopologicalSpace X] [TopologicalSpace Y]
   [AddCommGroup V] [TopologicalSpace V] [IsTopologicalAddGroup V]
 
-/-- **Partial inversion with a sign flip** on the first dual component,
-`((u, y), (v, x)) ↦ ((u, x), (-v, y))`: the map along which `∂K` is a preimage of `∂f`. -/
+/-- **Partial inversion with a sign flip** on the first dual component: the homeomorphism
+$$((u, y), (v, x)) \mapsto ((u, x), (-v, y))$$
+of $(U \times Y) \times (V \times X)$ onto $(U \times X) \times (V \times Y)$. The graph of
+$\partial K$ is the preimage of the graph of $\partial f$ under this map. -/
 def partialInvertNegHomeomorph : ((U × Y) × (V × X)) ≃ₜ ((U × X) × (V × Y)) where
   toFun r := ((r.1.1, r.2.2), (-r.2.1, r.1.2))
   invFun s := ((s.1.1, s.2.2), (-s.2.1, s.1.2))
@@ -151,26 +181,33 @@ def partialInvertNegHomeomorph : ((U × Y) × (V × X)) ≃ₜ ((U × X) × (V �
   continuous_toFun := by fun_prop
   continuous_invFun := by fun_prop
 
+/-- `ConvexAnalysis.partialInvertNegHomeomorph` sends $((u, y), (v, x))$ to $((u, x), (-v, y))$. -/
 @[simp] theorem partialInvertNegHomeomorph_apply (r : (U × Y) × (V × X)) :
     (partialInvertNegHomeomorph : ((U × Y) × (V × X)) ≃ₜ ((U × X) × (V × Y))) r
       = ((r.1.1, r.2.2), (-r.2.1, r.1.2)) := rfl
 
 end Homeo
 
-/-! ### Rockafellar's `ρ` -/
+/-! ### The mapping $\rho$ -/
 
 section Rho
 
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- **Rockafellar's `ρ`**: the subdifferential of `K` with the sign of its concave half reversed,
-`ρ (u, y) = {(-v, x) | (v, x) ∈ ∂K (u, y)}`. The sign is what makes `ρ` monotone rather than
-monotone in one variable and antitone in the other. -/
+/-- **Rockafellar's mapping $\rho$**: the subdifferential of the saddle-function
+$K : U \times Y \to [-\infty, +\infty]$ with the sign of its concave half reversed. A pair
+$((u, y), (v, x))$ belongs to $\rho$ when $(-v, x) \in \partial K(u, y)$, so that
+$$\rho(u, y) = \{(-v, x) \mid (v, x) \in \partial K(u, y)\}.$$
+The sign makes $\rho$ monotone, instead of monotone in one variable and antitone in the other.
+
+Here $\partial K$ is `ConvexAnalysis.saddleSubdifferential Bu Bx.flip K`, with values in
+$V \times X$. -/
 def saddleMonotoneRel (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     SetRel (U × Y) (V × X) :=
   {r | (-r.2.1, r.2.2) ∈ saddleSubdifferential Bu Bx.flip K r.1}
 
+/-- A pair $((u, y), (v, x))$ belongs to $\rho$ if and only if $(-v, x) \in \partial K(u, y)$. -/
 @[simp] theorem mem_saddleMonotoneRel {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
     {K : U × Y → EReal} {r : (U × Y) × (V × X)} :
     r ∈ saddleMonotoneRel Bu Bx K ↔ (-r.2.1, r.2.2) ∈ saddleSubdifferential Bu Bx.flip K r.1 :=
@@ -178,7 +215,7 @@ def saddleMonotoneRel (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ]
 
 end Rho
 
-/-! ### `ρ` as a preimage of the subdifferential of `f` -/
+/-! ### $\rho$ as a preimage of the subdifferential of $f$ -/
 
 section Corollaries
 
@@ -186,7 +223,11 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
   [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup X] [NormedSpace ℝ X]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] {F : Bifun U X} {K : U × Y → EReal}
 
-/-- The graph of `∂K` is the preimage of the graph of `∂f` along `partialInvertNegHomeomorph`. -/
+/-- Let $F$ be a closed convex bifunction from $U$ to $X$, let $f$ be its graph function, and let
+$K$ be in the class $\Omega(F)$, where $B_u$, $B_x$ and their transposes are compatible
+pairings. Then the graph $\{((u, y), (v, x)) \mid (v, x) \in \partial K(u, y)\}$ of $\partial K$
+is the preimage of the graph of $\partial f$ under $((u, y), (v, x)) \mapsto ((u, x), (-v, y))$.
+In other words, $(v, x) \in \partial K(u, y)$ if and only if $(-v, y) \in \partial f(u, x)$. -/
 theorem setOf_mem_saddleSubdifferential_eq_preimage_homeomorph (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
@@ -196,8 +237,13 @@ theorem setOf_mem_saddleSubdifferential_eq_preimage_homeomorph (Bu : U →ₗ[�
         ⁻¹' subgradientRel (prodPairing Bu Bx) (graphFn F) :=
   setOf_mem_saddleSubdifferential_eq_preimage Bu Bx hF hcl hK
 
-/-- **`ρ` is the graph of `∂f`, partially inverted.** The sign flip is absorbed into `ρ`, which is
-why no sign survives on the right. -/
+/-- **$\rho$ is the graph of $\partial f$, partially inverted.** Under the hypotheses of
+`ConvexAnalysis.setOf_mem_saddleSubdifferential_eq_preimage_homeomorph`, the relation $\rho$ is
+the preimage of the graph of $\partial f$ under `ConvexAnalysis.partialInvertEquiv`:
+$((u, y), (v, x)) \in \rho$ if and only if $(v, y) \in \partial f(u, x)$.
+
+The sign flip of `ConvexAnalysis.partialInvertNegHomeomorph` is absorbed into $\rho$, so no sign
+remains on the right. -/
 theorem saddleMonotoneRel_eq_preimage (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -222,7 +268,10 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X]
   {F : Bifun U X} {K : U × X → EReal}
 
-/-- The same preimage description for a space paired with itself, where `Bx.flip` is `Bx`. -/
+/-- The case $V = U$, $Y = X$ of
+`ConvexAnalysis.setOf_mem_saddleSubdifferential_eq_preimage_homeomorph`, for finite-dimensional
+real inner product spaces $U$ and $X$ paired with themselves by the inner product. Here the
+transpose of the pairing on $X$ is the pairing itself. -/
 theorem setOf_mem_saddleSubdifferential_innerL_eq_preimage (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
     {r : (U × X) × (U × X) | r.2 ∈ saddleSubdifferential (innerₗ U) (innerₗ X) K r.1}
@@ -231,9 +280,15 @@ theorem setOf_mem_saddleSubdifferential_innerL_eq_preimage (hF : ConvexBifun F)
   have h := setOf_mem_saddleSubdifferential_eq_preimage_homeomorph (innerₗ U) (innerₗ X) hF hcl hK
   rwa [flip_eq_self] at h
 
-/-- The graph of `∂K` is homeomorphic to `U × X` under `((u, y), (v, x)) ↦ (u - v, x + y)`: it is
-the graph of `∂f` partially inverted, and the graph of `∂f` maps onto `U × X` by
-`(z, z*) ↦ z + z*`. -/
+/-- Let $U$ and $X$ be finite-dimensional real inner product spaces, let $F$ be a closed convex
+bifunction from $U$ to $X$ whose graph function $f$ is proper, and let $K$ be in the class
+$\Omega(F)$. Then the graph of $\partial K$ is homeomorphic to $U \times X$ under
+$$((u, x), (u^*, x^*)) \mapsto (u - u^*, x + x^*).$$
+This is Corollary 37.5.1 of [rockafellar1970convex].
+
+The graph of $\partial K$ is the graph of $\partial f$ partially inverted, and the graph of
+$\partial f$ maps homeomorphically onto $U \times X$ by $(z, z^*) \mapsto z + z^*$
+(`ConvexAnalysis.subgradientRelHomeomorph`). -/
 noncomputable def saddleSubdifferentialHomeomorph (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
     ↥{r : (U × X) × (U × X) | r.2 ∈ saddleSubdifferential (innerₗ U) (innerₗ X) K r.1} ≃ₜ (U × X) :=
@@ -241,6 +296,8 @@ noncomputable def saddleSubdifferentialHomeomorph (hF : ConvexBifun F) (hcl : Cl
       (setOf_mem_saddleSubdifferential_innerL_eq_preimage hF hcl hK)).trans
     (subgradientRelHomeomorph (B := prodPairing (innerₗ U) (innerₗ X)) ⟨hF, hcl, hpr⟩)
 
+/-- `ConvexAnalysis.saddleSubdifferentialHomeomorph` sends $((u, x), (u^*, x^*))$ to
+$(u - u^*, x^* + x)$. -/
 @[simp] theorem saddleSubdifferentialHomeomorph_apply (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F)
@@ -249,9 +306,17 @@ noncomputable def saddleSubdifferentialHomeomorph (hF : ConvexBifun F) (hcl : Cl
       = (r.1.1.1 - r.1.2.1, r.1.2.2 + r.1.1.2) := by
   refine Prod.ext ?_ ?_ <;> simp [saddleSubdifferentialHomeomorph, sub_eq_add_neg]
 
-/-- `ρ : (u, v) ↦ {(-u*, v*) | (u*, v*) ∈ ∂K (u, v)}` is maximal monotone: it is the partial
-inversion of `∂f`, partial inversion preserves the monotonicity form, and the subdifferential of a
-closed proper convex function is maximal monotone. -/
+/-- Let $U$ and $X$ be finite-dimensional real inner product spaces, let $F$ be a closed convex
+bifunction from $U$ to $X$ whose graph function is proper, and let $K$ be in the class
+$\Omega(F)$. Then the mapping
+$$\rho(u, x) = \{(-u^*, x^*) \mid (u^*, x^*) \in \partial K(u, x)\}$$
+is maximal monotone for the pairing $\langle (u, x), (u', x') \rangle = \langle u, u' \rangle +
+\langle x, x' \rangle$. This is Corollary 37.5.2 of [rockafellar1970convex].
+
+The mapping $\rho$ is the partial inversion of $\partial f$
+(`ConvexAnalysis.saddleMonotoneRel_eq_preimage`), partial inversion preserves maximal
+monotonicity (`ConvexAnalysis.IsMaximalMonotoneRel.preimage_partialInvertEquiv`), and the
+subdifferential of a closed proper convex function is maximal monotone. -/
 theorem isMaximalMonotoneRel_saddleMonotoneRel (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
     IsMaximalMonotoneRel (prodPairing (innerₗ U) (innerₗ X))
@@ -269,8 +334,9 @@ section Differentiable
 
 variable {U X : Type*}
 
-/-- A finite saddle-function is its own lower simple extension over the whole space: the bridge
-between the real-valued `K` and the `EReal`-valued one. -/
+/-- For a finite function $K : U \times X \to \mathbb{R}$, the lower simple extension of $K$
+relative to $U \times X$ is $K$ itself, read in `EReal`. This links a real-valued $K$ with an
+`EReal`-valued one. -/
 theorem lowerSimpleExt_univ (K : U × X → ℝ) :
     lowerSimpleExt (Set.univ : Set U) (Set.univ : Set X) K = fun p => ((K p : ℝ) : EReal) :=
   funext fun _ => lowerSimpleExt_of_mem (Set.mem_univ _) (Set.mem_univ _)
@@ -280,7 +346,9 @@ variable [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ
 
 omit [FiniteDimensional ℝ U] [NormedAddCommGroup X] [InnerProductSpace ℝ X]
   [FiniteDimensional ℝ X] in
-/-- The concave subdifferential of the `EReal` reading of a finite saddle-function is `∂₁K`. -/
+/-- For a finite $K : U \times X \to \mathbb{R}$ and a point $p = (u, x)$, the superdifferential of
+the concave slice $K(\cdot, x)$ at $u$, read in `EReal`, is the set $\partial_1 K(p)$ of
+`ConvexAnalysis.superdifferentialFstOn` relative to all of $U$. -/
 theorem superdifferential_eq_superdifferentialFstOn (K : U × X → ℝ) (p : U × X) :
     superdifferential (innerₗ U) (fun u => ((K (u, p.2) : ℝ) : EReal)) p.1
       = superdifferentialFstOn Set.univ K p := by
@@ -290,7 +358,9 @@ theorem superdifferential_eq_superdifferentialFstOn (K : U × X → ℝ) (p : U 
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [FiniteDimensional ℝ X] in
-/-- The subdifferential of the `EReal` reading of a finite saddle-function is `∂₂K`. -/
+/-- For a finite $K : U \times X \to \mathbb{R}$ and a point $p = (u, x)$, the subdifferential of
+the convex slice $K(u, \cdot)$ at $x$, read in `EReal`, is the set $\partial_2 K(p)$ of
+`ConvexAnalysis.subdifferentialSndOn` relative to all of $X$. -/
 theorem subdifferential_eq_subdifferentialSndOn (K : U × X → ℝ) (p : U × X) :
     subdifferential (innerₗ X) (fun x => ((K (p.1, x) : ℝ) : EReal)) p.2
       = subdifferentialSndOn Set.univ K p := by
@@ -299,8 +369,10 @@ theorem subdifferential_eq_subdifferentialSndOn (K : U × X → ℝ) (p : U × X
     innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Over the whole space the `EReal`-valued and the real-valued `∂K` are the same set; the
-definitions differ only in where their junk values live. -/
+/-- For a finite $K : U \times X \to \mathbb{R}$, the subdifferential
+`ConvexAnalysis.saddleSubdifferential` of $K$ read in `EReal` is equal at every point to
+`ConvexAnalysis.saddleSubdifferentialOn` relative to all of $U \times X$. The two definitions
+differ only in their values at degenerate arguments. -/
 theorem saddleSubdifferential_eq_saddleSubdifferentialOn (K : U × X → ℝ) (p : U × X) :
     saddleSubdifferential (innerₗ U) (innerₗ X) (fun q => ((K q : ℝ) : EReal)) p
       = saddleSubdifferentialOn Set.univ Set.univ K p := by
@@ -311,8 +383,9 @@ theorem saddleSubdifferential_eq_saddleSubdifferentialOn (K : U × X → ℝ) (p
   rfl
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- For the `EReal`-valued subdifferential as well: where a finite concave-convex `K` has a
-gradient, `∂K` is the single point `(∇₁K, ∇₂K)`. -/
+/-- Let $K : U \times X \to \mathbb{R}$ be concave-convex on all of $U \times X$. If $K$ has the
+gradient $\nabla K(p) = q$ at $p$, then the subdifferential of $K$, read in `EReal`, at $p$ is
+the single point $q = (\nabla_1 K(p), \nabla_2 K(p))$. -/
 theorem saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt
     (hK : ConcaveConvexOn (Set.univ : Set U) (Set.univ : Set X) K) {q p : U × X}
     (hd : HasSaddleGradientAt K q p) :
@@ -321,8 +394,12 @@ theorem saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt
   exact saddleSubdifferentialOn_eq_singleton_of_hasSaddleGradientAt isOpen_univ isOpen_univ hK
     (Set.mem_univ _) (Set.mem_univ _) hd
 
-/-- **Rockafellar's `ρ` for a differentiable `K`** is the graph of
-`(u, v) ↦ (-∇₁K (u, v), ∇₂K (u, v))`. -/
+/-- **Rockafellar's $\rho$ for a differentiable $K$.** Let $U$ and $X$ be finite-dimensional real
+inner product spaces, and let $K : U \times X \to \mathbb{R}$ be concave-convex on all of
+$U \times X$ and differentiable at every point. Then $\rho$, formed from $K$ read in `EReal`, is
+the graph of
+$$(u, x) \mapsto (-\nabla_1 K(u, x), \nabla_2 K(u, x)).$$
+-/
 theorem saddleMonotoneRel_eq_setOf_hasSaddleGradientAt
     (hK : ConcaveConvexOn (Set.univ : Set U) (Set.univ : Set X) K)
     (hdiff : ∀ p : U × X, DifferentiableAt ℝ K p) :
@@ -338,9 +415,17 @@ theorem saddleMonotoneRel_eq_setOf_hasSaddleGradientAt
   rw [saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq] at hsing
   exact (Set.singleton_eq_singleton_iff.1 hsing).symm
 
-/-- If `K` is everywhere finite and differentiable, `(u, v) ↦ (-∇₁K (u, v), ∇₂K (u, v))` is
-maximal monotone. Differentiability collapses `∂K` to a point, so `ρ` is the graph of that mapping;
-the representing bifunction comes from the lower simple extension at `C = D = univ`. -/
+/-- Let $U$ and $X$ be finite-dimensional real inner product spaces, and let
+$K : U \times X \to \mathbb{R}$ be concave-convex on all of $U \times X$ and differentiable at
+every point. Then the mapping
+$$(u, x) \mapsto (-\nabla_1 K(u, x), \nabla_2 K(u, x))$$
+is maximal monotone for the pairing $\langle (u, x), (u', x') \rangle = \langle u, u' \rangle +
+\langle x, x' \rangle$.
+
+The mapping is stated as the set of pairs $(p, (a, b))$ with
+`ConvexAnalysis.HasSaddleGradientAt K (-a, b) p`. Differentiability reduces $\partial K$ to a
+point, so $\rho$ is the graph of this mapping. The bifunction that represents the class of $K$
+comes from the lower simple extension of $K$ relative to $U \times X$. -/
 theorem isMaximalMonotoneRel_setOf_hasSaddleGradientAt
     (hK : ConcaveConvexOn (Set.univ : Set U) (Set.univ : Set X) K)
     (hdiff : ∀ p : U × X, DifferentiableAt ℝ K p) :

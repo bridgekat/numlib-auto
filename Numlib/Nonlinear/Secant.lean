@@ -12,105 +12,163 @@ import Numlib.Nonlinear.ScalarNewton
 /-!
 # The chord, secant, regula falsi and Muller methods
 
-The derivative-free one-dimensional rootfinders that replace `f'(x_k)` in Newton's step by a slope
-`q_k` ([quarteroni2000numerical] §6.2.2, §6.3.1, §6.4.3; [kress1998numerical] §6.2;
-[isaacson1994analysis] §3.3): the chord method (`q_k = q` fixed; namespace `Chord`), the secant
-method (`q_k` the difference quotient over the last two iterates; `Secant`), regula falsi (the
-difference quotient over the last two iterates bracketing the root; `RegulaFalsi`) and Muller's
-method (the zero of the quadratic interpolant through the last three iterates; `Muller`).
+This module studies four derivative-free methods for a root $\alpha$ of a function
+$f \colon \mathbb{R} \to \mathbb{R}$. Each method replaces the derivative $f'(x_k)$ in Newton's step
+by a slope $q_k$ and sets $x_{k+1} = x_k - f(x_k)/q_k$. The **chord method** uses a fixed slope $q$.
+The **secant method** uses the difference quotient over the last two iterates. **Regula falsi** uses
+the difference quotient over $x_k$ and the latest earlier iterate $x_{k'}$ with
+$f(x_{k'}) f(x_k) < 0$. **Muller's method** takes the zero nearest to $x_k$ of the quadratic
+interpolant of $f$ at the last three iterates. The presentation follows [quarteroni2000numerical],
+§6.2.2, §6.3.1 and §6.4.3, together with [kress1998numerical], §6.2, and [isaacson1994analysis],
+§3.3. Below, $e_k = x_k - \alpha$ is the error, $f[x_0, \dots, x_m]$ is the Newton divided
+difference `DividedDifference.newton`, and $I$ is the closed interval with the endpoints $x_{-1}$
+and $x_0$. "Order $p$" is `ConvergesWithOrder`: $x_k \to \alpha$, and $|e_{k+1}| \le C |e_k|^p$ for
+some $C > 0$ and all large $k$.
 
-The secant, regula falsi and Muller iterations carry state (a pair of points, a triple for
-Muller), so they are `step` functions on `ℝ × ℝ` (on `ℝ × ℝ × ℝ`) with `iterate f x₋₁ x₀ k` reading
-off the `k`-th point, as `Numlib/Nonlinear/Bisection` does with brackets. Lean's `a / 0 = 0` makes a
-secant step with `f x_k = f x_{k-1}` stall at `x_k`; the theorems assume what excludes it.
+The chord method converges locally when $0 < f'(\alpha)/q < 2$. Near a simple root of a function
+that is $C^2$ at the root, the secant method converges, and it has the order
+$\varphi = (1 + \sqrt 5)/2$ when also $f''(\alpha) \neq 0$. This is Property 6.2 of
+[quarteroni2000numerical], which omits the hypothesis $f'(\alpha) \neq 0$; this hypothesis is
+necessary, because at a multiple root the secant method converges only linearly. Regula falsi
+converges for every continuous $f$ with a bracketing pair of starting values and a unique zero
+between them, and it converges linearly when in addition $f$ is $C^2$ at the root and
+$f'(\alpha) \neq 0$. Near a simple root of a $C^3$ function with $f'''(\alpha) \neq 0$, Muller's
+method has the order $\tau \approx 1.8393$, the real root of $\tau^3 = \tau^2 + \tau + 1$.
 
-## The secant error analysis
+## Main definitions
 
-The whole analysis rests on the divided-difference identity
-`x_{k+1} - α = (x_k - α)(x_{k-1} - α) f[x_{k-1}, x_k, α] / f[x_{k-1}, x_k]`
-(`Secant.sub_root_eq_mul_newton`), an algebraic identity in the values of `f` with
-`DividedDifference.newton` of `Numlib/Approximation/DividedDifference` — the interpolation-error
-formula `DividedDifference.sub_eval_interpolate_eq_newton` of the secant line at the node `α`.
-Near a simple root of a `C²` function the first divided difference is bounded away from `0` and
-the second is bounded (`exists_ball_bounds`), both by the mean value inequality
-(`exists_ball_abs_slope_sub_deriv_le`) — for the second one through the identity
-`f[x, y, α] = g[x, y]` with `g = dslope f α`, which is `C¹` by Hadamard's lemma
-(`Numlib/Analysis/Calculus/RootMultiplicity`). The two-sided bound
-`c |e_k| |e_{k-1}| ≤ |e_{k+1}| ≤ C |e_k| |e_{k-1}|` then gives local convergence
-(`exists_ball_tendsto_iterate`, through the Fibonacci decay `E_k ≤ θ^{F_{k+1}}`) and, when
-`f''(α) ≠ 0`, the order `(1 + √5) / 2` (`exists_ball_convergesWithOrder_goldenRatio`,
-[quarteroni2000numerical] Property 6.2): in logarithmic variables `s_k = log(|e_{k+1}| / |e_k|^φ)`
-the two bounds combine into the linear recursion `s_{k+2} ≤ log A + θ s_k` with `θ = 1 - 1/φ < 1`,
-whose solutions are bounded above ([isaacson1994analysis] pp. 99–101, in the bound form rather
-than the limit form). The hypothesis `f'(α) ≠ 0`, missing from the book's Property 6.2, is needed:
-at a multiple root the secant method is only linear.
+* `Chord.step`: the chord step $x \mapsto x - f(x)/q$.
+* `Secant.step` and `Secant.iterate`: the secant step on the pair $(x_{k-1}, x_k)$, and the secant
+  iterates $x_k$.
+* `Secant.LocalBounds`: two-sided bounds on $|f[x, y]|$ and $|f[x, y, \alpha]|$ on a ball around
+  $\alpha$.
+* `RegulaFalsi.step` and `RegulaFalsi.iterate`: the regula falsi step on the state $(x_k, x_{k'})$,
+  and the regula falsi iterates.
+* `Muller.interp`: the quadratic interpolant $p_2(t) = f(x_k) + w (t - x_k) + d (t - x_k)^2$ at the
+  last three iterates, with the coefficients $w$ (`Muller.linCoeff`) and $d$ (`Muller.quadCoeff`).
+* `Muller.next`, `Muller.step` and `Muller.iterate`: the new point $x_{k+1} = x_k - 2 f(x_k) / (w
+  \pm \sqrt{w^2 - 4 f(x_k) d})$, the step on triples, and the Muller iterates.
+* `Muller.LocalData` and `Muller.Small`: the local bounds on the divided differences of $f$, and the
+  smallness conditions on the radius and the tolerance, that the Muller step estimates use.
 
-Chord convergence is the scalar Ostrowski theorem (`Numlib/Nonlinear/FixedPoint`) applied to
-`φ_chord = x - f x / q`; it is the `𝕜 = ℝ` case of `Newton.chordStep` (`Chord.step_eq_chordStep`).
+## Main results
 
-## Regula falsi
+* `Chord.tendsto_iterate`: if $f(\alpha) = 0$ and $0 < f'(\alpha)/q < 2$, the chord iterates from
+  every start near $\alpha$ converge to $\alpha$.
+* `Chord.tendsto_sub_div_sub`: along a convergent chord orbit, $e_{k+1}/e_k \to 1 - f'(\alpha)/q$.
+* `Secant.sub_root_eq_mul_newton`: the secant error identity $e_{k+1} = e_k e_{k-1} f[x_{k-1}, x_k,
+  \alpha] / f[x_{k-1}, x_k]$.
+* `Secant.exists_ball_tendsto_iterate`: local convergence of the secant method at a simple root of a
+  function that is $C^2$ at the root.
+* `Secant.exists_le_mul_rpow_goldenRatio`: a positive sequence with
+  $c e_{k+1} e_k \le e_{k+2} \le C e_{k+1} e_k$ satisfies $e_{k+1} \le B e_k^\varphi$.
+* `Secant.exists_ball_convergesWithOrder_goldenRatio`: the secant method has the order $\varphi$
+  when also $f''(\alpha) \neq 0$.
+* `RegulaFalsi.iterate_mem_uIcc`: the regula falsi iterates stay in the starting interval $I$.
+* `RegulaFalsi.tendsto_iterate`: regula falsi converges for a continuous $f$ with a bracketing start
+  and a unique zero in $I$.
+* `RegulaFalsi.convergesWithOrder_one_iterate`: regula falsi converges with order $1$ when also $f$
+  is $C^2$ at the root and $f'(\alpha) \neq 0$.
+* `Muller.interp_next_eq_zero`: the Muller step lands on a zero of the quadratic interpolant.
+* `Muller.sub_next_mul_eq`: Muller's error identity.
+* `Muller.exists_le_mul_rpow_tribonacci`: a positive sequence with $c e_{k+2} e_{k+1} e_k \le
+  e_{k+3} \le C e_{k+2} e_{k+1} e_k$ satisfies $e_{k+1} \le B e_k^\tau$.
+* `Muller.exists_ball_convergesWithOrder`: Muller's method has the order $\tau$ at a simple root of
+  a $C^3$ function with $f'''(\alpha) \neq 0$.
 
-Regula falsi needs no differentiability at all: `RegulaFalsi.tendsto_iterate` derives convergence
-from continuity on the starting interval, a bracketing pair and the *uniqueness* of the zero
-there. The brackets are nested (`RegulaFalsi.state_mem_uIcc`), so their two ends converge to
-`l ≤ r`; the secant points, written symmetrically as chord zeros (`RegulaFalsi.chord`,
-`RegulaFalsi.chord_comm`), converge to the chord zero of `(l, f l)` and `(r, f r)`, which is a
-convex combination of `l` and `r` and at the same time an end of the limiting bracket, hence `l`
-or `r`, with the corresponding value of `f` vanishing. Its linear *order*
-(`RegulaFalsi.convergesWithOrder_one_iterate`) needs `f` twice continuously differentiable at
-the root with `f'(α) ≠ 0`, but no convexity and no identification of the endpoint that is
-eventually frozen: the two divided differences of the secant error identity are bounded
-*uniformly over the bracket*, from below by the minimum of `|dslope f α|` on it and from above
-by splitting on whether the two points of the bracket are close together or far apart.
+## Proof outline
 
-## Muller's method
+The convergence of the chord method is Ostrowski's theorem `tendsto_iterate_of_abs_deriv_lt_one` of
+`Numlib.Nonlinear.FixedPoint` for the iteration function $x \mapsto x - f(x)/q$, whose derivative at
+$\alpha$ is $1 - f'(\alpha)/q$.
 
-Muller's method replaces the secant line by the quadratic `Muller.interp` interpolating the last
-*three* iterates and takes the zero of it nearest the last one, `Muller.next`
-([quarteroni2000numerical] (6.30)). The library's theorem is about the **real** regime near a
-simple real root, and that is a decision, not an oversight: there the radicand `w² - 4 f(x_k) d`
-under the square root of (6.30) is automatically nonnegative
-(`Muller.LocalData.nonneg_radicand`), so `Real.sqrt` is the right square root and `Muller.next` is
-a genuine zero of the interpolant (`Muller.interp_next_eq_zero`). The complex regime the book
-actually exploits — Muller's method started from real data finding complex roots of a polynomial —
-is out of scope: a negative radicand is exactly a complex-conjugate pair of zeros of the parabola,
-and pursuing it would mean running the whole iteration over `ℂ`.
+The secant analysis rests on the divided-difference identity
+$$x_{k+1} - \alpha = (x_k - \alpha)(x_{k-1} - \alpha) \frac{f[x_{k-1}, x_k, \alpha]}{f[x_{k-1},
+  x_k]},$$
+which is the interpolation-error formula `DividedDifference.sub_eval_interpolate_eq_newton` for the
+secant line at the node $\alpha$, and an algebraic identity in the values of $f$. Near a simple root
+of a function that is $C^2$ at the root, the first divided difference is bounded away from $0$ and
+the second one is bounded, both by the mean value inequality `exists_ball_abs_slope_sub_deriv_le`.
+For the second one, the proof uses $f[x, y, \alpha] = g[x, y]$ with
+$g = \operatorname{dslope} f \alpha$, which is $C^1$ by Hadamard's lemma in
+`Numlib.Analysis.Calculus.RootMultiplicity`. The two-sided bound $c |e_k| |e_{k-1}| \le |e_{k+1}|
+\le C |e_k| |e_{k-1}|$ then gives local convergence, through the Fibonacci decay
+$E_k \le \theta^{F_{k+1}}$, and, when $f''(\alpha) \neq 0$, the order $\varphi$. In the logarithmic
+variables $s_k = \log(|e_{k+1}| / |e_k|^\varphi)$ the two bounds combine into the linear recursion
+$s_{k+2} \le \log A + \theta s_k$ with $\theta = 1 - 1/\varphi < 1$, whose solutions are bounded
+above.
 
-The error analysis mirrors the secant one with one term more. Expanding the interpolant about the
-new point, rather than naming the second zero of the parabola, gives Muller's error identity
-(`Muller.sub_next_mul_eq`)
-`e_{k+1} (w + d (α + x_{k+1} - 2 x_k)) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`,
-whose left-hand factor tends to `f'(α) ≠ 0`. The sign rule of (6.30) is used exactly there, through
-`|w| ≤ |den|` (`Muller.abs_linCoeff_le_abs_den`), to keep the step `x_{k+1} - x_k` short and so to
-exclude the far zero of the parabola. Bounding the divided differences now needs second divided
-differences at three *arbitrary* nodes, where no node can be singled out to play the role `α` plays
-for the secant method; `exists_ball_abs_newton_three_sub_le` supplies them from the mean value form
-`f[x, y, z] = f''(ξ)/2` (`DividedDifference.exists_newton_three_eq`: Rolle's theorem twice on `f`
-minus its Newton interpolant). The resulting two-sided bound
-`c |e_{k-2} e_{k-1} e_k| ≤ |e_{k+1}| ≤ C |e_{k-2} e_{k-1} e_k|` gives convergence and, when
-`f⁽³⁾(α) ≠ 0`, the order `Real.tribonacci ≈ 1.8393` (`Muller.exists_ball_convergesWithOrder`,
-[quarteroni2000numerical] §6.4.3, quoted there from Hildebrand without proof and printed as
-`p ≃ 1.84`). The tribonacci constant is not in Mathlib; it is
-`Numlib/Analysis/SpecialFunctions/Tribonacci`. In logarithmic variables the two bounds combine into
-`s_{k+3} ≤ L + (2 - p) s_{k+1} + ((p - 1)/p) s_k`, whose two coefficients are positive and sum to
-`1 - (p - 1)²/p < 1`, so the same monotone induction as for the golden ratio bounds the solutions
-(`Muller.exists_le_mul_rpow_tribonacci`) — the companion matrix never has to be diagonalized.
+Regula falsi needs no differentiability for convergence. The brackets are nested, so their two ends
+converge to limits $l \le r$. The iterates, written symmetrically as chord zeros, converge to the
+chord zero of $(l, f(l))$ and $(r, f(r))$. This point is a convex combination of $l$ and $r$ and
+also an end of the limiting bracket, hence $l$ or $r$, and the corresponding value of $f$ is $0$.
+For the linear order, the two divided differences of the secant error identity are bounded uniformly
+over the bracket: from below by the minimum of $|\operatorname{dslope} f \alpha|$ on $I$, and from
+above by a case split on whether the two points of the bracket are close together or far apart.
+
+Muller's error analysis follows the secant one with one more factor. The expansion of the
+interpolant about the new point gives Muller's error identity $e_{k+1} (w + d (\alpha + x_{k+1} - 2
+x_k)) = -f[x_{k-2}, x_{k-1}, x_k, \alpha]\, e_{k-2} e_{k-1} e_k$ (with $e_j = \alpha - x_j$), whose
+left factor tends to $f'(\alpha) \neq 0$. The sign rule of (6.30) of [quarteroni2000numerical]
+enters only through $|w| \le |w \pm \sqrt{w^2 - 4 f(x_k) d}|$, which keeps the step $x_{k+1} - x_k$
+short and so excludes the far zero of the parabola. The bounds on the divided differences need
+second divided differences at three arbitrary nodes, where no node can play the role that $\alpha$
+plays for the secant method. They come from the mean value form $f[x, y, z] = f''(\xi)/2$ of
+`DividedDifference.exists_newton_three_eq` (Rolle's theorem twice for $f$ minus its interpolant).
+The resulting two-sided bound $c |e_{k-2} e_{k-1} e_k| \le |e_{k+1}| \le C |e_{k-2} e_{k-1} e_k|$
+gives convergence and, when $f'''(\alpha) \neq 0$, the order $\tau$. In logarithmic variables the
+two bounds combine into $s_{k+3} \le L + (2 - \tau) s_{k+1} + ((\tau - 1)/\tau) s_k$. The two
+coefficients are positive with sum $1 - (\tau - 1)^2/\tau < 1$, so the monotone induction of the
+golden-ratio case bounds the solutions, and the companion matrix of the recursion is never
+diagonalized.
+
+## Implementation notes
+
+* The secant, regula falsi and Muller iterations carry a state: a pair of points, or a triple for
+  Muller's method. Each `step` acts on `ℝ × ℝ` or on `ℝ × ℝ × ℝ`, and `iterate f x₋₁ x₀ k` reads off
+  the $k$-th point, as `Numlib.Nonlinear.Bisection` does with brackets.
+* Lean defines $a / 0 = 0$. A secant step with $f(x_k) = f(x_{k-1})$ therefore stalls at $x_k$, and
+  the theorems assume what excludes it. A chord step with $q = 0$ is the identity, and a Muller step
+  with a zero denominator stalls at $x_k$.
+* The chord step is the case $\mathbb{K} = \mathbb{R}$ of the Banach-space chord step
+  `Newton.chordStep` (`Chord.step_eq_chordStep`).
+* Muller's method is formalized only in the real regime near a simple real root, by design. There
+  the radicand $w^2 - 4 f(x_k) d$ is nonnegative (`Muller.LocalData.nonneg_radicand`), so
+  `Real.sqrt` is the right square root and `Muller.next` is a zero of the interpolant
+  (`Muller.interp_next_eq_zero`). The complex regime, in which Muller's method started from real
+  data finds the complex roots of a polynomial, is out of scope: a negative radicand is exactly a
+  pair of complex-conjugate zeros of the parabola, and this regime needs the whole iteration over
+  `ℂ`.
+* The order theorems have the bound form of `ConvergesWithOrder`. [isaacson1994analysis], pp.
+  99–101, gives the golden-ratio order of the secant method in a limit form.
+  [quarteroni2000numerical], §6.4.3, prints the order of Muller's method as $p \simeq 1.84$, quotes
+  it from Hildebrand without proof, and states the limit form $|e_{k+1}| / |e_k|^p \to
+  |f'''(\alpha)/f'(\alpha)|/6$; the bound form proved here does not claim this limit.
+* The tribonacci constant $\tau$ is not in Mathlib. It is `Real.tribonacci` of
+  `Numlib.Analysis.SpecialFunctions.Tribonacci`.
 -/
 
 open Filter Topology Set
+
+/-! ### The chord method -/
 
 namespace Chord
 
 variable {f : ℝ → ℝ} {q : ℝ}
 
-/-- One step of the **chord method** with fixed slope `q`, `x ↦ x - f x / q`
-([quarteroni2000numerical] (6.12), where the book's slope is `q = (f b - f a) / (b - a)`). -/
+/-- One step of the **chord method** with the fixed slope $q$:
+$$x \mapsto x - \frac{f(x)}{q}.$$
+
+This is (6.12) of [quarteroni2000numerical], where the slope is $q = (f(b) - f(a))/(b - a)$. For
+$q = 0$ the step is the identity, since Lean defines $a / 0 = 0$. -/
 noncomputable def step (f : ℝ → ℝ) (q : ℝ) (x : ℝ) : ℝ := x - f x / q
 
-/-- The scalar chord method is the Banach-space chord method `Newton.chordStep` of
-`Numlib/Nonlinear/Newton` with the frozen derivative `A : ℝ ≃L[ℝ] ℝ`, `A 1 = q` (multiplication by
-`q`): `A.symm y = y / q`. Through this identity `Newton.tendsto_chordIterate` applies to the scalar
-chord method. -/
+/-- Let $q \in \mathbb{R}$ and let $A \colon \mathbb{R} \to \mathbb{R}$ be a continuous linear
+equivalence with $A(1) = q$. Then the chord step with slope $q$ equals the Banach-space chord
+step with the frozen derivative $A$: $x - f(x)/q = x - A^{-1}(f(x))$ for every $x$.
+
+The map $A$ is multiplication by $q$, so $A^{-1}(y) = y/q$. Through this identity the
+convergence theorem `Newton.tendsto_chordIterate` applies to the scalar chord method. -/
 theorem step_eq_chordStep (A : ℝ ≃L[ℝ] ℝ) (hA : A 1 = q) (x : ℝ) :
     step f q x = Newton.chordStep f A x := by
   have hq : q ≠ 0 := by
@@ -123,36 +181,49 @@ theorem step_eq_chordStep (A : ℝ ≃L[ℝ] ℝ) (hA : A 1 = q) (x : ℝ) :
   symm
   rw [A.symm_apply_eq, hAy, div_mul_cancel₀ _ hq]
 
-/-- The derivative of the chord iteration function: `HasDerivAt f f' x` gives
-`φ_chord'(x) = 1 - f' / q`; at a root `α`, `φ_chord'(α) = 1 - f'(α) / q`, which is `1` when
-`f'(α) = 0` ([quarteroni2000numerical] §6.3.1). -/
+/-- Let $f$ have the derivative $f'$ at $x$. Then the chord step $\phi(x) = x - f(x)/q$ has the
+derivative $1 - f'/q$ at $x$.
+
+At a root $\alpha$ this gives $\phi'(\alpha) = 1 - f'(\alpha)/q$, which is $1$ when
+$f'(\alpha) = 0$ ([quarteroni2000numerical], §6.3.1). For $q = 0$ the step is the identity and
+both sides equal $1$, since Lean defines $f'/0 = 0$. -/
 theorem hasDerivAt_step {f' x : ℝ} (hf : HasDerivAt f f' x) :
     HasDerivAt (step f q) (1 - f' / q) x :=
   (hasDerivAt_id x).sub (hf.div_const q)
 
-/-- The local convergence condition of the chord method in the book's form: `|1 - f' / q| < 1`
-iff `0 < f' / q < 2`, i.e. `q` has the sign of `f'` and `|q| > |f'| / 2`
-([quarteroni2000numerical] §6.3.1). -/
+/-- For real numbers $f'$ and $q$,
+$$\left|1 - \frac{f'}{q}\right| < 1 \iff 0 < \frac{f'}{q} < 2.$$
+
+This is the local convergence condition of the chord method in the form of
+[quarteroni2000numerical], §6.3.1: $q$ has the sign of $f'$ and $|q| > |f'|/2$. -/
 theorem abs_one_sub_div_lt_one_iff {f' q : ℝ} : |1 - f' / q| < 1 ↔ 0 < f' / q ∧ f' / q < 2 := by
   rw [abs_lt]
   constructor
   · rintro ⟨h1, h2⟩; constructor <;> linarith
   · rintro ⟨h1, h2⟩; constructor <;> linarith
 
-/-- **Local linear convergence of the chord method** ([quarteroni2000numerical] §6.3.1): if
-`f α = 0`, `f` is differentiable at `α` and `0 < f'(α) / q < 2`, then every orbit of
-`x ↦ x - f x / q` started close enough to `α` converges to `α`. Ostrowski's theorem
-(`tendsto_iterate_of_abs_deriv_lt_one`) for `φ_chord`, whose derivative at `α` is
-`1 - f'(α) / q`. -/
+/-- **Local convergence of the chord method.** Let $f(\alpha) = 0$, let $f$ have the derivative
+$f'(\alpha)$ at $\alpha$, and let $0 < f'(\alpha)/q < 2$. Then there is $\delta > 0$ such that
+for every $x_0$ with $|x_0 - \alpha| < \delta$ the chord iterates $x_{k+1} = x_k - f(x_k)/q$
+converge to $\alpha$.
+
+This is the local convergence result of [quarteroni2000numerical], §6.3.1. The proof applies
+Ostrowski's theorem `tendsto_iterate_of_abs_deriv_lt_one` to the chord step, whose derivative at
+$\alpha$ is $1 - f'(\alpha)/q$. -/
 theorem tendsto_iterate {α f' : ℝ} (hα : f α = 0) (hf : HasDerivAt f f' α) (h0 : 0 < f' / q)
     (h2 : f' / q < 2) :
     ∃ δ > 0, ∀ x₀, |x₀ - α| < δ → Tendsto (fun k => (step f q)^[k] x₀) atTop (𝓝 α) :=
   tendsto_iterate_of_abs_deriv_lt_one (by simp [step, hα]) (hasDerivAt_step hf)
     (abs_one_sub_div_lt_one_iff.2 ⟨h0, h2⟩)
 
-/-- **The error ratios of the chord method** tend to `1 - f'(α) / q` along a convergent orbit
-avoiding `α` ((6.18) of [quarteroni2000numerical] Theorem 6.1 for `φ_chord`): linear convergence
-with factor `|1 - f'(α) / q|`, and the "lucky case" `f'(α) = q` of superlinear convergence. -/
+/-- **The error ratios of the chord method.** Let $f(\alpha) = 0$ and let $f$ have the derivative
+$f'(\alpha)$ at $\alpha$. Let $(x_k)$ be a sequence of chord iterates,
+$x_{k+1} = x_k - f(x_k)/q$, with $x_k \neq \alpha$ for all $k$ and $x_k \to \alpha$. Then
+$$\frac{x_{k+1} - \alpha}{x_k - \alpha} \to 1 - \frac{f'(\alpha)}{q}.$$
+
+This is (6.18) of Theorem 6.1 of [quarteroni2000numerical] for the chord step. It gives linear
+convergence with the factor $|1 - f'(\alpha)/q|$, and superlinear convergence in the case
+$f'(\alpha) = q$. -/
 theorem tendsto_sub_div_sub {α f' : ℝ} (hα : f α = 0) (hf : HasDerivAt f f' α) {x : ℕ → ℝ}
     (hx : ∀ k, x (k + 1) = step f q (x k)) (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
     Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 (1 - f' / q)) :=
@@ -160,34 +231,46 @@ theorem tendsto_sub_div_sub {α f' : ℝ} (hα : f α = 0) (hf : HasDerivAt f f'
 
 end Chord
 
+/-!
+### The secant method
+
+The secant iteration acts on the pair $(x_{k-1}, x_k)$ of the last two iterates.
+-/
+
 namespace Secant
 
 variable {f : ℝ → ℝ} {α : ℝ}
 
-/-- One secant step on the pair `(x_{k-1}, x_k)`: the new pair is `(x_k, x_{k+1})` with
-`x_{k+1} = x_k - (x_k - x_{k-1}) / (f x_k - f x_{k-1}) * f x_k` ([quarteroni2000numerical] (6.14)).
-When `f x_k = f x_{k-1}` Lean's `a / 0 = 0` makes the step stall at `x_k`. -/
+/-- One **secant step** on the pair $(x_{k-1}, x_k)$. The new pair is $(x_k, x_{k+1})$ with
+$$x_{k+1} = x_k - \frac{x_k - x_{k-1}}{f(x_k) - f(x_{k-1})} f(x_k).$$
+
+This is (6.14) of [quarteroni2000numerical]. When $f(x_k) = f(x_{k-1})$, the convention
+$a / 0 = 0$ of Lean makes the step stall at $x_k$. -/
 noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ :=
   (s.2, s.2 - (s.2 - s.1) / (f s.2 - f s.1) * f s.2)
 
-/-- The secant iterates: `iterate f xm1 x₀ k = x_k`, with `x_{-1} = xm1`, `x_0 = x₀` the two
-initial values. -/
+/-- The **secant iterates** $x_k$ from the two initial values $x_{-1}$ and $x_0$: the second
+component of the $k$-th iterate of `Secant.step` from the pair $(x_{-1}, x_0)$.
+
+The value `iterate f xm1 x₀ k` is $x_k$; here `xm1` is the initial value $x_{-1}$. -/
 noncomputable def iterate (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
   ((step f)^[k] (xm1, x₀)).2
 
-/-- The secant iterate of index `0` is the initial value `x₀`. -/
+/-- The secant iterate of index $0$ is the initial value $x_0$. -/
 @[simp]
 theorem iterate_zero (f : ℝ → ℝ) (xm1 x₀ : ℝ) : iterate f xm1 x₀ 0 = x₀ := rfl
 
-/-- The first component of the `(k+1)`-st pair is the `k`-th iterate: the pairs are
-`(x_{k-1}, x_k)`. -/
+/-- The first component of the $(k+1)$-st pair of the secant iteration is the $k$-th iterate $x_k$.
+So the pairs are $(x_{k-1}, x_k)$. -/
 theorem fst_iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
     ((step f)^[k + 1] (xm1, x₀)).1 = iterate f xm1 x₀ k := by
   rw [Function.iterate_succ_apply']
   rfl
 
-/-- **The secant recurrence** ([quarteroni2000numerical] (6.14)) in terms of the pair
-`(x_{k-1}, x_k) = (step f)^[k] (xm1, x₀)`. -/
+/-- **The secant recurrence** (6.14) of [quarteroni2000numerical], in terms of the pair
+$(u, v) = (x_{k-1}, x_k)$ after $k$ steps:
+$$x_{k+1} = v - \frac{v - u}{f(v) - f(u)} f(v).$$
+-/
 theorem iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
     iterate f xm1 x₀ (k + 1) = ((step f)^[k] (xm1, x₀)).2 -
       (((step f)^[k] (xm1, x₀)).2 - ((step f)^[k] (xm1, x₀)).1) /
@@ -195,13 +278,17 @@ theorem iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
         f ((step f)^[k] (xm1, x₀)).2 := by
   simp [iterate, Function.iterate_succ_apply', step]
 
-/-- The first secant iterate from the two initial values. -/
+/-- The first secant iterate is
+$$x_1 = x_0 - \frac{x_0 - x_{-1}}{f(x_0) - f(x_{-1})} f(x_0).$$
+-/
 theorem iterate_one (f : ℝ → ℝ) (xm1 x₀ : ℝ) :
     iterate f xm1 x₀ 1 = x₀ - (x₀ - xm1) / (f x₀ - f xm1) * f x₀ :=
   iterate_succ f xm1 x₀ 0
 
-/-- **The secant recurrence in terms of the iterates** ([quarteroni2000numerical] (6.14)):
-`x_{k+2} = x_{k+1} - (x_{k+1} - x_k) / (f x_{k+1} - f x_k) * f x_{k+1}`. -/
+/-- **The secant recurrence** (6.14) of [quarteroni2000numerical] in terms of the iterates: for
+every $k \ge 0$,
+$$x_{k+2} = x_{k+1} - \frac{x_{k+1} - x_k}{f(x_{k+1}) - f(x_k)} f(x_{k+1}).$$
+-/
 theorem iterate_add_two (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
     iterate f xm1 x₀ (k + 2) = iterate f xm1 x₀ (k + 1) -
       (iterate f xm1 x₀ (k + 1) - iterate f xm1 x₀ k) /
@@ -209,11 +296,14 @@ theorem iterate_add_two (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
   rw [iterate_succ f xm1 x₀ (k + 1), fst_iterate_succ]
   rfl
 
-/-- **The secant error identity.** For a root `α` of `f` and distinct `x, y`, both different from
-`α`, with `f x ≠ f y`, the new iterate `z = y - (y - x) / (f y - f x) * f y` satisfies
-`z - α = (y - α) (x - α) f[x, y, α] / f[x, y]`. It is the divided-difference form of the error of
-the secant line (the interpolant of `f` at `x, y`) at the node `α`, and needs no smoothness: an
-algebraic identity in the values `f x, f y` and `f α = 0`. -/
+/-- **The secant error identity.** Let $f(\alpha) = 0$, and let $x \neq y$ be real numbers, both
+different from $\alpha$, with $f(x) \neq f(y)$. Then the new secant point
+$z = y - \frac{y - x}{f(y) - f(x)} f(y)$ satisfies
+$$z - \alpha = (y - \alpha)(x - \alpha) \frac{f[x, y, \alpha]}{f[x, y]}.$$
+
+This is the divided-difference form of the error of the secant line, the interpolant of $f$ at
+$x$ and $y$, at the node $\alpha$. It needs no smoothness: it is an algebraic identity in the
+values $f(x)$, $f(y)$ and $f(\alpha) = 0$. -/
 theorem sub_root_eq_mul_newton (hα : f α = 0) {x y : ℝ} (hxy : x ≠ y) (hxα : x ≠ α)
     (hyα : y ≠ α) (hf : f x ≠ f y) :
     (y - (y - x) / (f y - f x) * f y) - α =
@@ -228,8 +318,12 @@ theorem sub_root_eq_mul_newton (hα : f α = 0) {x y : ℝ} (hxy : x ≠ y) (hx�
   field_simp
   ring
 
-/-- **The upper error bound of a secant step.** Under the hypotheses of `sub_root_eq_mul_newton`,
-if `0 < m₁ ≤ |f[x, y]|` and `|f[x, y, α]| ≤ M₂`, then `|z - α| ≤ (M₂ / m₁) |y - α| |x - α|`. -/
+/-- **The upper error bound of a secant step.** Let $f(\alpha) = 0$, and let $x \neq y$ be real
+numbers, both different from $\alpha$. Let $0 < m_1 \le |f[x, y]|$ and
+$|f[x, y, \alpha]| \le M_2$. Then the new secant point $z = y - \frac{y - x}{f(y) - f(x)} f(y)$
+satisfies
+$$|z - \alpha| \le \frac{M_2}{m_1} |y - \alpha| |x - \alpha|.$$
+-/
 theorem abs_sub_root_le (hα : f α = 0) {x y m₁ M₂ : ℝ} (hxy : x ≠ y) (hxα : x ≠ α) (hyα : y ≠ α)
     (hm : 0 < m₁) (h1 : m₁ ≤ |DividedDifference.newton f ![x, y]|)
     (h2 : |DividedDifference.newton f ![x, y, α]| ≤ M₂) :
@@ -248,9 +342,13 @@ theorem abs_sub_root_le (hα : f α = 0) {x y m₁ M₂ : ℝ} (hxy : x ≠ y) (
         have : 0 ≤ M₂ := le_trans (abs_nonneg _) h2
         positivity
 
-/-- **The lower error bound of a secant step.** Under the hypotheses of `sub_root_eq_mul_newton`,
-if `|f[x, y]| ≤ M₁` with `0 < M₁` and `m₂ ≤ |f[x, y, α]|`, then
-`(m₂ / M₁) |y - α| |x - α| ≤ |z - α|`. With `0 < m₂` this makes `z ≠ α`. -/
+/-- **The lower error bound of a secant step.** Let $f(\alpha) = 0$, and let $x \neq y$ be real
+numbers, both different from $\alpha$, with $f(x) \neq f(y)$. Let $|f[x, y]| \le M_1$ with
+$0 < M_1$, and let $m_2 \le |f[x, y, \alpha]|$. Then the new secant point
+$z = y - \frac{y - x}{f(y) - f(x)} f(y)$ satisfies
+$$\frac{m_2}{M_1} |y - \alpha| |x - \alpha| \le |z - \alpha|.$$
+
+With $0 < m_2$ this gives $z \neq \alpha$. -/
 theorem le_abs_sub_root (hα : f α = 0) {x y M₁ m₂ : ℝ} (hxy : x ≠ y) (hxα : x ≠ α) (hyα : y ≠ α)
     (hf : f x ≠ f y) (hM : 0 < M₁) (h1 : |DividedDifference.newton f ![x, y]| ≤ M₁)
     (h2 : m₂ ≤ |DividedDifference.newton f ![x, y, α]|) :
@@ -271,19 +369,26 @@ theorem le_abs_sub_root (hα : f α = 0) {x y M₁ m₂ : ℝ} (hxy : x ≠ y) (
       _ = |y - α| * |x - α| * m₂ := by field_simp
       _ ≤ |y - α| * |x - α| * |DividedDifference.newton f ![x, y, α]| := by gcongr
 
+/-! ### Local bounds on the divided differences -/
+
 section Local
 
 open DividedDifference
 
 variable {ε m₁ M₁ m₂ M₂ : ℝ}
 
-/-- **Local bounds on the divided differences near a simple root of a `C²` function.** If
-`f'(α) ≠ 0` then, for every `η > 0`, on a ball around `α` the first divided difference at distinct
-nodes satisfies `|f'(α)| / 2 ≤ |f[x, y]| ≤ 3 |f'(α)| / 2` and the second divided difference at
-distinct nodes different from `α` satisfies `|f[x, y, α] - f''(α) / 2| ≤ η`. The first is
-`exists_ball_abs_slope_sub_deriv_le` for `f`; the second is the same lemma for `g = dslope f α`,
-which is `C¹` at `α` with `g'(α) = f''(α) / 2` by Hadamard's lemma, through
-`f[x, y, α] = g[x, y]`. -/
+/-- **Local bounds on the divided differences near a simple root.** Let $f$ be $C^2$ at $\alpha$
+with $f'(\alpha) \neq 0$, and let $\eta > 0$. Then there is $\delta > 0$ such that for all
+distinct $x, y$ in the ball $(\alpha - \delta, \alpha + \delta)$
+$$\frac{|f'(\alpha)|}{2} \le |f[x, y]| \le \frac{3 |f'(\alpha)|}{2},$$
+and if moreover $x \neq \alpha$ and $y \neq \alpha$, then
+$$\left| f[x, y, \alpha] - \frac{f''(\alpha)}{2} \right| \le \eta.$$
+
+The hypothesis $f(\alpha) = 0$ is not needed. The first bound is
+`exists_ball_abs_slope_sub_deriv_le` for $f$. The second is the same lemma for
+$g = \operatorname{dslope} f \alpha$, which is $C^1$ at $\alpha$ with
+$g'(\alpha) = f''(\alpha)/2$ by Hadamard's lemma, through the identity
+$f[x, y, \alpha] = g[x, y]$. -/
 theorem exists_ball_bounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) {η : ℝ} (hη : 0 < η) :
     ∃ δ > 0, ∀ x ∈ Metric.ball α δ, ∀ y ∈ Metric.ball α δ, x ≠ y →
       (|deriv f α| / 2 ≤ |newton f ![x, y]| ∧ |newton f ![x, y]| ≤ 3 * |deriv f α| / 2) ∧
@@ -310,27 +415,37 @@ theorem exists_ball_bounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0)
     have := h₂ x hx' y hy' hxy
     rwa [newton_three_eq_newton_two_dslope _ α hxy hxα hyα, newton_two_eq _ hxy, ← hg']
 
-/-- **The local bounds driving the secant analysis** on `ball α ε`: the first divided difference at
-distinct nodes lies in `[m₁, M₁]` in absolute value, and the second divided difference through
-`α` at distinct nodes different from `α` lies in `[m₂, M₂]`. `exists_localBounds` produces them
-near a simple root of a `C²` function. -/
+/-- **Local bounds for the secant analysis** on the ball $B = (\alpha - \varepsilon, \alpha +
+\varepsilon)$. They hold if, for all distinct $x, y \in B$,
+$$m_1 \le |f[x, y]| \le M_1,$$
+and, for all distinct $x, y \in B$ that are both different from $\alpha$,
+$$m_2 \le |f[x, y, \alpha]| \le M_2.$$
+
+The theorem `Secant.exists_localBounds` gives such bounds near a simple root of a function that
+is $C^2$ at the root. -/
 structure LocalBounds (f : ℝ → ℝ) (α ε m₁ M₁ m₂ M₂ : ℝ) : Prop where
-  /-- The two-sided bound on `|f[x, y]|`. -/
+  /-- For distinct $x, y$ in the ball, $m_1 \le |f[x, y]| \le M_1$. -/
   two : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y →
     m₁ ≤ |newton f ![x, y]| ∧ |newton f ![x, y]| ≤ M₁
-  /-- The two-sided bound on `|f[x, y, α]|`. -/
+  /-- For distinct $x, y$ in the ball, both different from $\alpha$,
+  $m_2 \le |f[x, y, \alpha]| \le M_2$. -/
   three : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y → x ≠ α → y ≠ α →
     m₂ ≤ |newton f ![x, y, α]| ∧ |newton f ![x, y, α]| ≤ M₂
 
-/-- Local bounds persist on a smaller ball. -/
+/-- If local bounds hold on a ball of radius $\varepsilon$ and $\varepsilon' \le \varepsilon$, then
+the same bounds hold on the ball of radius $\varepsilon'$. -/
 theorem LocalBounds.mono (hb : LocalBounds f α ε m₁ M₁ m₂ M₂) {ε' : ℝ} (h : ε' ≤ ε) :
     LocalBounds f α ε' m₁ M₁ m₂ M₂ :=
   ⟨fun x hx y hy => hb.two x (Metric.ball_subset_ball h hx) y (Metric.ball_subset_ball h hy),
     fun x hx y hy => hb.three x (Metric.ball_subset_ball h hx) y (Metric.ball_subset_ball h hy)⟩
 
-/-- Near a simple root of a `C²` function, for every `η > 0` there are local bounds with
-`m₁ = |f'(α)| / 2`, `M₁ = 3 |f'(α)| / 2`, `m₂ = |f''(α)| / 2 - η` and `M₂ = |f''(α)| / 2 + η`;
-`m₂ > 0` when `f''(α) ≠ 0` and `η < |f''(α)| / 2`. -/
+/-- Let $f$ be $C^2$ at $\alpha$ with $f'(\alpha) \neq 0$, and let $\eta > 0$. Then there is
+$\varepsilon > 0$ such that the local bounds `Secant.LocalBounds` hold on
+$(\alpha - \varepsilon, \alpha + \varepsilon)$ with
+$$m_1 = \frac{|f'(\alpha)|}{2}, \quad M_1 = \frac{3 |f'(\alpha)|}{2}, \quad m_2 =
+  \frac{|f''(\alpha)|}{2} - \eta, \quad M_2 = \frac{|f''(\alpha)|}{2} + \eta.$$
+
+The lower bound $m_2$ is positive when $f''(\alpha) \neq 0$ and $\eta < |f''(\alpha)|/2$. -/
 theorem exists_localBounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) {η : ℝ}
     (hη : 0 < η) :
     ∃ ε > 0, LocalBounds f α ε (|deriv f α| / 2) (3 * |deriv f α| / 2)
@@ -344,24 +459,30 @@ theorem exists_localBounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0)
   rw [abs_div, abs_two] at h1 h2
   constructor <;> linarith
 
-/-- A pair `(x_{k-1}, x_k)` of consecutive secant iterates is **admissible** in `ball α ε` when
-both points lie in the ball, are distinct, and differ from `α`: exactly what the error identity
-`sub_root_eq_mul_newton` needs. A start equal to `α` stops the method at once, and two equal
-starts make the step stall. -/
+/-- A pair $(u, v) = (x_{k-1}, x_k)$ of consecutive secant iterates is **admissible** in the ball
+$(\alpha - \varepsilon, \alpha + \varepsilon)$ if both points lie in the ball, $u \neq v$,
+$u \neq \alpha$ and $v \neq \alpha$.
+
+These are exactly the hypotheses of the error identity `Secant.sub_root_eq_mul_newton` apart
+from $f(u) \neq f(v)$. A start equal to $\alpha$ stops the method at once, and two equal
+starting values make the step stall. -/
 structure IsAdmissible (α ε : ℝ) (s : ℝ × ℝ) : Prop where
-  /-- The older point is in the ball. -/
+  /-- The older point $u$ lies in the ball. -/
   fst_mem : s.1 ∈ Metric.ball α ε
-  /-- The newer point is in the ball. -/
+  /-- The newer point $v$ lies in the ball. -/
   snd_mem : s.2 ∈ Metric.ball α ε
   /-- The two points are distinct. -/
   ne : s.1 ≠ s.2
-  /-- The older point is not the root. -/
+  /-- The older point is not the root $\alpha$. -/
   fst_ne : s.1 ≠ α
-  /-- The newer point is not the root. -/
+  /-- The newer point is not the root $\alpha$. -/
   snd_ne : s.2 ≠ α
 
-/-- The last iterate of an admissible pair is not a root of `f` when `f` is injective on the ball
-in the sense of the lower bound `0 < m₁ ≤ |f[x, y]|`. -/
+/-- Let $f(\alpha) = 0$, let local bounds hold on the ball $B$ of radius $\varepsilon > 0$ around
+$\alpha$, and let $0 < m_1$. Then $f(v) \neq 0$ for every $v \in B$ with $v \neq \alpha$.
+
+The proof uses $f(v) = (v - \alpha) f[\alpha, v]$ and the lower bound
+$0 < m_1 \le |f[\alpha, v]|$. -/
 theorem LocalBounds.apply_ne_zero (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
     (hε : 0 < ε) (hm₁ : 0 < m₁) {v : ℝ} (hv : v ∈ Metric.ball α ε) (hvα : v ≠ α) : f v ≠ 0 := by
   intro h0
@@ -369,10 +490,16 @@ theorem LocalBounds.apply_ne_zero (hα : f α = 0) (hb : LocalBounds f α ε m�
   rw [newton_two_eq _ hvα.symm, h0, hα, sub_self, zero_div, abs_zero] at this
   exact absurd this (not_le.2 hm₁)
 
-/-- **One secant step from an admissible pair.** Under local bounds with `0 < m₁`, `0 < M₁` and
-`(M₂ / m₁) ε ≤ 1`, the new point `w = (step f s).2` satisfies the two-sided error bound
-`(m₂ / M₁) |v - α| |u - α| ≤ |w - α| ≤ (M₂ / m₁) |v - α| |u - α|`, lies in the ball, and differs
-from `v`. It differs from `α` too when `0 < m₂` (`LocalBounds.isAdmissible_step`). -/
+/-- **One secant step from an admissible pair.** Let $f(\alpha) = 0$, and let local bounds hold on
+the ball $B$ of radius $\varepsilon > 0$ around $\alpha$, with $0 < m_1$, $0 < M_1$ and
+$(M_2/m_1) \varepsilon \le 1$. Let $(u, v)$ be an admissible pair, and let $w$ be the new point
+of the secant step from $(u, v)$. Then
+$$\frac{m_2}{M_1} |v - \alpha| |u - \alpha| \le |w - \alpha| \le \frac{M_2}{m_1} |v - \alpha|
+  |u - \alpha|,$$
+$w \in B$, and $w \neq v$.
+
+When $0 < m_2$, the new point also differs from $\alpha$
+(`Secant.LocalBounds.isAdmissible_step`). -/
 theorem LocalBounds.step_bounds (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂) (hε : 0 < ε)
     (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hCε : M₂ / m₁ * ε ≤ 1) {s : ℝ × ℝ}
     (hs : IsAdmissible α ε s) :
@@ -407,16 +534,20 @@ theorem LocalBounds.step_bounds (hα : f α = 0) (hb : LocalBounds f α ε m₁ 
     · exact hf h.symm
     · exact hfv h
 
-/-- After a secant step from an admissible pair, the new pair is admissible iff the new point is
-not the root. -/
+/-- Under the hypotheses of `Secant.LocalBounds.step_bounds`, the pair $(v, w)$ after a secant step
+from an admissible pair $(u, v)$ is admissible if and only if the new point $w$ is different
+from $\alpha$. -/
 theorem LocalBounds.isAdmissible_step_iff (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
     (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hCε : M₂ / m₁ * ε ≤ 1) {s : ℝ × ℝ}
     (hs : IsAdmissible α ε s) : IsAdmissible α ε (step f s) ↔ (step f s).2 ≠ α := by
   obtain ⟨-, -, hmem, hne⟩ := hb.step_bounds hα hε hm₁ hM₁ hCε hs
   exact ⟨fun h => h.snd_ne, fun h => ⟨hs.snd_mem, hmem, hne.symm, hs.snd_ne, h⟩⟩
 
-/-- With `0 < m₂` (the second divided difference bounded away from `0`, as near a root with
-`f''(α) ≠ 0`), admissibility is preserved by the secant step. -/
+/-- Under the hypotheses of `Secant.LocalBounds.step_bounds` and with $0 < m_2$, the secant step
+maps an admissible pair to an admissible pair.
+
+The condition $0 < m_2$ says that the second divided difference is bounded away from $0$, as it
+is near a root with $f''(\alpha) \neq 0$. -/
 theorem LocalBounds.isAdmissible_step (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
     (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hm₂ : 0 < m₂) (hCε : M₂ / m₁ * ε ≤ 1)
     {s : ℝ × ℝ} (hs : IsAdmissible α ε s) : IsAdmissible α ε (step f s) := by
@@ -430,18 +561,24 @@ theorem LocalBounds.isAdmissible_step (hα : f α = 0) (hb : LocalBounds f α ε
     positivity
   linarith
 
-/-- Once an iterate is the root, all later ones are: `f α = 0` makes the step stall at `α`. -/
+/-- If $f(\alpha) = 0$ and the newer point of a pair is $\alpha$, then the new point of the secant
+step is $\alpha$ again. So once an iterate is the root, all later iterates are the root. -/
 theorem snd_step_eq_of_snd_eq (hα : f α = 0) {s : ℝ × ℝ} (h : s.2 = α) : (step f s).2 = α := by
   simp [step, h, hα]
 
 end Local
 
+/-! ### Two recursive inequalities -/
+
 section Sequences
 
-/-- **Fibonacci decay.** If `0 ≤ E k`, `E 0, E 1 ≤ θ < 1` and `E (k+2) ≤ E (k+1) E k`, then
-`E k ≤ θ ^ fib (k+1)` and so `E k → 0`. This is how the upper bound
-`|e_{k+1}| ≤ C |e_k| |e_{k-1}|` alone gives convergence of the secant method (an R-order, not yet
-the order of Definition 6.1). -/
+/-- **Fibonacci decay.** Let $(E_k)$ be a sequence of nonnegative real numbers, and let $\theta < 1$
+with $E_0 \le \theta$ and $E_1 \le \theta$. If $E_{k+2} \le E_{k+1} E_k$ for all $k$, then
+$E_k \to 0$.
+
+The proof shows $E_k \le \theta^{F_{k+1}}$, with $F_k$ the Fibonacci numbers. This is how the
+upper bound $|e_{k+1}| \le C |e_k| |e_{k-1}|$ alone gives the convergence of the secant method:
+an R-order, which is weaker than the order of `ConvergesWithOrder`. -/
 theorem tendsto_zero_of_le_mul {E : ℕ → ℝ} {θ : ℝ} (hE : ∀ k, 0 ≤ E k) (hθ : θ < 1)
     (h0 : E 0 ≤ θ) (h1 : E 1 ≤ θ) (hrec : ∀ k, E (k + 2) ≤ E (k + 1) * E k) :
     Tendsto E atTop (𝓝 0) := by
@@ -463,14 +600,19 @@ theorem tendsto_zero_of_le_mul {E : ℕ → ℝ} {θ : ℝ} (hE : ∀ k, 0 ≤ E
     exact (by omega : b ≤ n + 1).trans (Nat.le_fib_self (by omega))
   exact squeeze_zero hE (fun k => (hfib k).1) hlim
 
-/-- **The golden-ratio order from a two-sided product recursion.** If a positive sequence
-satisfies `c e_{k+1} e_k ≤ e_{k+2} ≤ C e_{k+1} e_k` with `0 < c`, then
-`e_{k+1} ≤ B e_k ^ φ` for all `k`, `φ = (1 + √5) / 2`. In the logarithmic variables
-`u_k = log e_k` and `s_k = u_{k+1} - φ u_k`, the upper bound gives
-`s_{k+2} ≤ log C + u_{k+1} - φ⁻¹ u_{k+2}` (since `1 - φ = -φ⁻¹`) and the lower bound turns this
-into `s_{k+2} ≤ L + θ s_k` with `θ = 1 - φ⁻¹ ∈ (0, 1)` (since `φ θ = φ⁻¹`), a recursion whose
-solutions stay below `max (L / (1 - θ)) (max s_0 s_1)`, `1 - θ = φ⁻¹`. [isaacson1994analysis]
-pp. 99–101 give the limit form; this is the bound form the order of Definition 6.1 asks for. -/
+/-- **The golden-ratio order from a two-sided product recursion.** Let $(e_k)$ be a sequence of
+positive real numbers, and let $0 < c$ and $C$ be real numbers with
+$$c\, e_{k+1} e_k \le e_{k+2} \le C\, e_{k+1} e_k$$
+for all $k$. Then there is $B > 0$ with $e_{k+1} \le B e_k^\varphi$ for all $k$, where
+$\varphi = (1 + \sqrt 5)/2$ is `Real.goldenRatio`.
+
+In the logarithmic variables $u_k = \log e_k$ and $s_k = u_{k+1} - \varphi u_k$, the upper bound
+gives $s_{k+2} \le \log C + u_{k+1} - \varphi^{-1} u_{k+2}$, since
+$1 - \varphi = -\varphi^{-1}$. The lower bound turns this into $s_{k+2} \le L + \theta s_k$ with
+$\theta = 1 - \varphi^{-1} \in (0, 1)$, since $\varphi \theta = \varphi^{-1}$. The solutions of
+this recursion stay below $\max(L / (1 - \theta), s_0, s_1)$, where $1 - \theta = \varphi^{-1}$.
+[isaacson1994analysis], pp. 99–101, gives the limit form; this is the bound form that
+`ConvergesWithOrder` needs. -/
 theorem exists_le_mul_rpow_goldenRatio {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c) (hpos : ∀ k, 0 < e k)
     (hupper : ∀ k, e (k + 2) ≤ C * (e (k + 1) * e k))
     (hlower : ∀ k, c * (e (k + 1) * e k) ≤ e (k + 2)) :
@@ -538,21 +680,31 @@ theorem exists_le_mul_rpow_goldenRatio {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c
 
 end Sequences
 
+/-! ### Local convergence and order of the secant method -/
+
 section Convergence
 
 open DividedDifference
 
 variable {ε m₁ M₁ m₂ M₂ xm1 x₀ : ℝ}
 
-/-- The errors of the pair sequence: `E k = |((step f)^[k] (xm1, x₀)).1 - α|`, so that
-`E 0 = |xm1 - α|` and `E (k + 1) = |iterate f xm1 x₀ k - α|`. -/
+/-- For every $k$, the first component of the $(k+1)$-st pair of the secant iteration from
+$(x_{-1}, x_0)$ has the error $|x_k - \alpha|$.
+
+So the errors $E_k$ of the first components of the pairs satisfy $E_0 = |x_{-1} - \alpha|$ and
+$E_{k+1} = |x_k - \alpha|$. -/
 theorem abs_fst_iterate_succ_sub (f : ℝ → ℝ) (xm1 x₀ α : ℝ) (k : ℕ) :
     |((step f)^[k + 1] (xm1, x₀)).1 - α| = |iterate f xm1 x₀ k - α| := by
   rw [fst_iterate_succ]
 
-/-- **Convergence from an admissible start under local bounds with `(M₂ / m₁) ε ≤ 1 / 2`.** Either
-every pair stays admissible, and the Fibonacci decay of `E_k = (M₂ / m₁) |e_{k-1}|` gives
-convergence, or some iterate is exactly the root and the method stays there. -/
+/-- **Convergence of the secant method under local bounds.** Let $f(\alpha) = 0$, and let local
+bounds hold on the ball $B$ of radius $\varepsilon > 0$ around $\alpha$, with $0 < m_1$,
+$0 < M_1$, $0 < M_2$ and $(M_2/m_1) \varepsilon \le 1/2$. Let the starting pair $(x_{-1}, x_0)$
+be admissible. Then all secant iterates $x_k$ lie in $B$, and $x_k \to \alpha$.
+
+Either every pair stays admissible, and the Fibonacci decay of $E_k = (M_2/m_1) |e_{k-1}|$
+(`Secant.tendsto_zero_of_le_mul`) gives the convergence, or some iterate equals the root and the
+method stays there. -/
 theorem LocalBounds.tendsto_iterate (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
     (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hM₂ : 0 < M₂) (hCε : M₂ / m₁ * ε ≤ 1 / 2)
     (hs : IsAdmissible α ε (xm1, x₀)) :
@@ -616,11 +768,16 @@ theorem LocalBounds.tendsto_iterate (hα : f α = 0) (hb : LocalBounds f α ε m
     · rw [hconst i hi]
       exact Metric.mem_ball_self hε
 
-/-- **Local convergence of the secant method** ([quarteroni2000numerical] §6.2.2): if `f α = 0`,
-`f` is `C²` at `α` and `f'(α) ≠ 0`, then there is `ε > 0` such that from any two distinct
-starting values in `(α - ε, α + ε)` different from `α` the secant iterates stay in the interval and
-converge to `α`. The two "`≠ α`" hypotheses exclude the trivial case in which the method stops at
-the root immediately; convergence holds there too, but the pair is not admissible. -/
+/-- **Local convergence of the secant method.** Let $f(\alpha) = 0$, let $f$ be $C^2$ at $\alpha$,
+and let $f'(\alpha) \neq 0$. Then there is $\varepsilon > 0$ with the following property. For
+all starting values $x_{-1}, x_0 \in (\alpha - \varepsilon, \alpha + \varepsilon)$ with
+$x_{-1} \neq x_0$, $x_{-1} \neq \alpha$ and $x_0 \neq \alpha$, all secant iterates lie in
+$(\alpha - \varepsilon, \alpha + \varepsilon)$, and they converge to $\alpha$.
+
+This is the local convergence result of [quarteroni2000numerical], §6.2.2. The two hypotheses
+$x_{-1} \neq \alpha$ and $x_0 \neq \alpha$ exclude the trivial case in which the method stops at
+the root at once; the iterates converge in that case too, but the starting pair is not
+admissible. -/
 theorem exists_ball_tendsto_iterate (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) :
     ∃ ε > 0, ∀ xm1 ∈ Metric.ball α ε, ∀ x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
@@ -641,14 +798,18 @@ theorem exists_ball_tendsto_iterate (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α
   exact (hb.mono (min_le_left _ _)).tendsto_iterate hα hε hm₁ hM₁ hM₂ hCε
     ⟨hxm1, hx₀, hne, h1, h2⟩
 
-/-- **Property 6.2 of [quarteroni2000numerical]: the secant method has order `(1 + √5) / 2`.** If
-`f α = 0`, `f` is `C²` at `α`, `f'(α) ≠ 0` and `f''(α) ≠ 0`, then there is `ε > 0` such that from
-any two distinct starting values in `(α - ε, α + ε)` different from `α` the secant iterates
-converge to `α` with order the golden ratio in the sense of `ConvergesWithOrder`. The book cites
-[isaacson1994analysis] pp. 99–101 without proof and omits `f'(α) ≠ 0`, which is needed: at a
-multiple root the method is linear. With `f''(α) ≠ 0` every pair of iterates stays admissible
-(`LocalBounds.isAdmissible_step`), the two-sided bound holds at every step, and
-`exists_le_mul_rpow_goldenRatio` turns it into the order bound. -/
+/-- **The secant method has the order $(1 + \sqrt 5)/2$.** Let $f(\alpha) = 0$, let $f$ be $C^2$ at
+$\alpha$, and let $f'(\alpha) \neq 0$ and $f''(\alpha) \neq 0$. Then there is $\varepsilon > 0$
+with the following property. For all starting values $x_{-1}, x_0 \in (\alpha - \varepsilon,
+\alpha + \varepsilon)$ with $x_{-1} \neq x_0$, $x_{-1} \neq \alpha$ and $x_0 \neq \alpha$, the
+secant iterates converge to $\alpha$ with the order $\varphi = (1 + \sqrt 5)/2$ in the sense of
+`ConvergesWithOrder`. This is Property 6.2 of [quarteroni2000numerical].
+
+The source cites [isaacson1994analysis], pp. 99–101, without proof, and omits the hypothesis
+$f'(\alpha) \neq 0$. This hypothesis is needed: at a multiple root the secant method converges
+only linearly. With $f''(\alpha) \neq 0$ every pair of iterates stays admissible
+(`Secant.LocalBounds.isAdmissible_step`), so the two-sided error bound holds at every step, and
+`Secant.exists_le_mul_rpow_goldenRatio` turns it into the order bound. -/
 theorem exists_ball_convergesWithOrder_goldenRatio (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) (hf'' : iteratedDeriv 2 f α ≠ 0) :
     ∃ ε > 0, ∀ xm1 ∈ Metric.ball α ε, ∀ x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
@@ -698,45 +859,60 @@ end Convergence
 
 end Secant
 
+/-!
+### Regula falsi
+
+The regula falsi iteration acts on the state $(x_k, x_{k'})$, where $x_{k'}$ is the latest earlier
+iterate with $f(x_{k'}) f(x_k) < 0$.
+-/
+
 namespace RegulaFalsi
 
 variable {f : ℝ → ℝ} {xm1 x₀ : ℝ}
 
-/-- The secant point of a pair `(x, x')`: the zero `x - (x - x') / (f x - f x') * f x` of the
-secant line through `(x, f x)` and `(x', f x')`. -/
+/-- The **secant point** of a pair $(x, x')$: the zero
+$$x - \frac{x - x'}{f(x) - f(x')} f(x)$$
+of the secant line through $(x, f(x))$ and $(x', f(x'))$. For $f(x) = f(x')$ it is $x$, since
+Lean defines $a / 0 = 0$. -/
 noncomputable def secantPoint (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ :=
   s.1 - (s.1 - s.2) / (f s.1 - f s.2) * f s.1
 
-/-- One **regula falsi** step on the state `(x_k, x_{k'})`, `x_{k'}` the latest earlier iterate
-with `f x_{k'} f x_k < 0` ([quarteroni2000numerical] (6.15)): the new iterate is the secant
-point `z`, and the bracket partner becomes `x_k` if `f z · f x_k < 0` and stays `x_{k'}`
-otherwise — the book's "maximum index `k' < k + 1` with `f(x_{k'}) f(x_{k+1}) < 0`", since
-`f z · f x_{k'} < 0` exactly when `f z · f x_k ≥ 0` and `f z ≠ 0`. -/
+/-- One **regula falsi step** on the state $(x_k, x_{k'})$. The new iterate is the secant point $z$
+of the state. The new state is $(z, x_k)$ if $f(z) f(x_k) < 0$, and $(z, x_{k'})$ otherwise.
+
+This is (6.15) of [quarteroni2000numerical]. The source takes as partner the iterate $x_{k'}$
+with the maximum index $k' < k + 1$ such that $f(x_{k'}) f(x_{k+1}) < 0$. The step agrees with
+this rule, because when $f(x_{k'}) f(x_k) < 0$, the inequality $f(z) f(x_{k'}) < 0$ holds
+exactly when $f(z) f(x_k) \ge 0$ and $f(z) \neq 0$. -/
 noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ :=
   if f (secantPoint f s) * f s.1 < 0 then (secantPoint f s, s.1) else (secantPoint f s, s.2)
 
-/-- The regula falsi iterates: `iterate f xm1 x₀ k = x_k` from the bracketing pair
-`x_{-1} = xm1`, `x_0 = x₀`. -/
+/-- The **regula falsi iterates** $x_k$ from the bracketing pair $x_{-1}$, $x_0$: the first
+component of the $k$-th iterate of `RegulaFalsi.step` from the state $(x_0, x_{-1})$.
+
+The value `iterate f xm1 x₀ k` is $x_k$; here `xm1` is the initial value $x_{-1}$. -/
 noncomputable def iterate (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
   ((step f)^[k] (x₀, xm1)).1
 
-/-- The regula falsi iterate of index `0` is the initial value `x₀`. -/
+/-- The regula falsi iterate of index $0$ is the initial value $x_0$. -/
 @[simp]
 theorem iterate_zero (f : ℝ → ℝ) (xm1 x₀ : ℝ) : iterate f xm1 x₀ 0 = x₀ := rfl
 
-/-- The new iterate is the secant point, whichever partner is kept. -/
+/-- The new iterate of a regula falsi step is the secant point of the state, whichever partner the
+step keeps. -/
 theorem fst_step (f : ℝ → ℝ) (s : ℝ × ℝ) : (step f s).1 = secantPoint f s := by
   unfold step
   split_ifs <;> rfl
 
-/-- The recurrence: `x_{k+1}` is the secant point of the `k`-th state. -/
+/-- The regula falsi recurrence: the iterate $x_{k+1}$ is the secant point of the $k$-th state. -/
 theorem iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
     iterate f xm1 x₀ (k + 1) = secantPoint f ((step f)^[k] (x₀, xm1)) := by
   rw [iterate, Function.iterate_succ_apply', fst_step]
 
-/-- **The secant point of a bracketing pair lies between its points**: for `f x · f x' < 0`,
-`secantPoint f (x, x') ∈ [[x, x']]`. It is `x + t (x' - x)` with the weight
-`t = f x / (f x - f x') ∈ [0, 1]`. -/
+/-- **The secant point of a bracketing pair lies between its points.** If $f(x) f(x') < 0$, then the
+secant point of $(x, x')$ lies in the closed interval with the endpoints $x$ and $x'$.
+
+The secant point is $x + t (x' - x)$ with the weight $t = f(x) / (f(x) - f(x')) \in [0, 1]$. -/
 theorem secantPoint_mem_uIcc {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) :
     secantPoint f s ∈ uIcc s.1 s.2 := by
   have heq : secantPoint f s = s.1 + (f s.1 / (f s.1 - f s.2)) • (s.2 - s.1) := by
@@ -751,8 +927,9 @@ theorem secantPoint_mem_uIcc {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) :
     · rw [div_le_one (by linarith)]; linarith
     · rw [div_le_one_of_neg (by linarith)]; linarith
 
-/-- **Bracketing is preserved by one step** when the secant point is not an exact root: from
-`f x · f x' < 0` and `f z ≠ 0`, the new state again has `f · f < 0`. -/
+/-- **One step preserves the bracketing.** If $f(x) f(x') < 0$ for the state $(x, x')$, and the
+secant point $z$ of the state satisfies $f(z) \neq 0$, then the new state $(z, x'')$ satisfies
+$f(z) f(x'') < 0$. -/
 theorem mul_neg_step {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) (hz : f (secantPoint f s) ≠ 0) :
     f (step f s).1 * f (step f s).2 < 0 := by
   unfold step
@@ -764,8 +941,10 @@ theorem mul_neg_step {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) (hz : f (secantPoi
       lt_of_le_of_ne (not_lt.1 hlt) (Ne.symm (mul_ne_zero hz h1))
     nlinarith [mul_pos hpos (neg_pos.2 h), sq_nonneg (f s.1)]
 
-/-- **Bracketing is preserved** ([quarteroni2000numerical] §6.2.2): if `f x₀ · f x_{-1} < 0` and no
-iterate is an exact root, every state `(x_k, x_{k'})` has `f x_k · f x_{k'} < 0`. -/
+/-- **The bracketing is preserved.** If $f(x_0) f(x_{-1}) < 0$ and no iterate is a zero of $f$, then
+every state $(x_k, x_{k'})$ satisfies $f(x_k) f(x_{k'}) < 0$.
+
+This is stated in [quarteroni2000numerical], §6.2.2. -/
 theorem mul_neg_iterate (h : f x₀ * f xm1 < 0) (hroot : ∀ k, f (iterate f xm1 x₀ k) ≠ 0) (k : ℕ) :
     f ((step f)^[k] (x₀, xm1)).1 * f ((step f)^[k] (x₀, xm1)).2 < 0 := by
   induction k with
@@ -776,16 +955,18 @@ theorem mul_neg_iterate (h : f x₀ * f xm1 < 0) (hroot : ∀ k, f (iterate f xm
     rw [iterate_succ] at hz
     exact mul_neg_step ih hz
 
-/-- **The zero of the chord** through `(u, f u)` and `(v, f v)`, the secant point written
-symmetrically in its two points: `u - f(u) (v - u)/(f v - f u)`. -/
+/-- **The zero of the chord** through $(u, f(u))$ and $(v, f(v))$, written as
+$$u - f(u) \frac{v - u}{f(v) - f(u)}.$$
+This is the secant point, written so that its symmetry in $u$ and $v$ can be stated. -/
 noncomputable def chord (f : ℝ → ℝ) (u v : ℝ) : ℝ := u - f u * ((v - u) / (f v - f u))
 
-/-- The secant point of a state is the chord zero of its two points. -/
+/-- The secant point of a state $(u, v)$ is the chord zero of $u$ and $v$. -/
 theorem secantPoint_eq_chord (f : ℝ → ℝ) (s : ℝ × ℝ) : secantPoint f s = chord f s.1 s.2 := by
   rw [secantPoint, chord, ← neg_sub (f s.2) (f s.1), ← neg_sub s.2 s.1, neg_div_neg_eq]
   ring
 
-/-- **The chord zero is symmetric** in its two points, as long as the two values differ. -/
+/-- **The chord zero is symmetric** in its two points: if $f(u) \neq f(v)$, the chord zero of $u$
+and $v$ equals the chord zero of $v$ and $u$. -/
 theorem chord_comm {u v : ℝ} (hne : f u ≠ f v) : chord f u v = chord f v u := by
   have h : f v - f u ≠ 0 := sub_ne_zero.mpr (Ne.symm hne)
   have h' : f u - f v ≠ 0 := sub_ne_zero.mpr hne
@@ -793,24 +974,27 @@ theorem chord_comm {u v : ℝ} (hne : f u ≠ f v) : chord f u v = chord f v u :
   field_simp
   ring
 
-/-- **A state whose iterate is an exact root is a fixed point of the step**: the iteration stalls
-there. -/
+/-- **The step stalls at an exact root.** If the iterate $x$ of the state $(x, x')$ satisfies
+$f(x) = 0$, then the regula falsi step maps the state to itself. -/
 theorem step_eq_self {s : ℝ × ℝ} (hz : f s.1 = 0) : step f s = s := by
   have hp : secantPoint f s = s.1 := by simp [secantPoint, hz]
   unfold step
   rw [hp, hz, zero_mul]
   simp
 
-/-- The bracket partner of the next state is one of the two points of the present one. -/
+/-- The bracket partner of the next state is one of the two points of the present state. -/
 theorem snd_step_eq (f : ℝ → ℝ) (s : ℝ × ℝ) : (step f s).2 = s.1 ∨ (step f s).2 = s.2 := by
   unfold step
   split_ifs
   · exact Or.inl rfl
   · exact Or.inr rfl
 
-/-- **The whole state stays in the starting interval** ([quarteroni2000numerical] §6.2.2): for
-`f x₀ · f x_{-1} < 0`, both points of every state lie in `[[x_{-1}, x_0]]`, and each state either
-brackets the root or has an exact root as its iterate (in which case the method stays there). -/
+/-- **The states stay in the starting interval.** Let $f(x_0) f(x_{-1}) < 0$, and let $I$ be the
+closed interval with the endpoints $x_{-1}$ and $x_0$. Then for every $k$, both points of the
+$k$-th state $(x_k, x_{k'})$ lie in $I$, and either $f(x_k) = 0$ or $f(x_k) f(x_{k'}) < 0$.
+
+This is stated in [quarteroni2000numerical], §6.2.2. When $f(x_k) = 0$, the method stays at
+$x_k$. -/
 theorem state_mem_uIcc (h : f x₀ * f xm1 < 0) (k : ℕ) :
     ((step f)^[k] (x₀, xm1)).1 ∈ uIcc xm1 x₀ ∧ ((step f)^[k] (x₀, xm1)).2 ∈ uIcc xm1 x₀ ∧
       (f ((step f)^[k] (x₀, xm1)).1 = 0 ∨
@@ -835,26 +1019,29 @@ theorem state_mem_uIcc (h : f x₀ * f xm1 < 0) (k : ℕ) :
         · exact Or.inl (by rw [fst_step]; exact hfz)
         · exact Or.inr (mul_neg_step h3 hfz)
 
-/-- **The iterates stay in the starting interval** ([quarteroni2000numerical] §6.2.2, "unlike the
-secant method, the iterates generated by (6.15) are all contained within the starting interval
-`[x^{(-1)}, x^{(0)}]`"). -/
+/-- **The iterates stay in the starting interval.** If $f(x_0) f(x_{-1}) < 0$, then every regula
+falsi iterate $x_k$ lies in the closed interval with the endpoints $x_{-1}$ and $x_0$.
+
+[quarteroni2000numerical], §6.2.2, states: "unlike the secant method, the iterates generated by
+(6.15) are all contained within the starting interval $[x^{(-1)}, x^{(0)}]$". -/
 theorem iterate_mem_uIcc (h : f x₀ * f xm1 < 0) (k : ℕ) :
     iterate f xm1 x₀ k ∈ uIcc xm1 x₀ :=
   (state_mem_uIcc h k).1
 
-/-- **Convergence of regula falsi** ([quarteroni2000numerical] §6.2.2): from a bracketing pair
-`f x_0 · f x_{-1} < 0` of a function continuous on `[[x_{-1}, x_0]]` with a *unique* zero `α`
-there, the iterates converge to `α`.
+/-- **Convergence of regula falsi.** Let $I$ be the closed interval with the endpoints $x_{-1}$ and
+$x_0$, let $f$ be continuous on $I$ with $f(x_0) f(x_{-1}) < 0$, and let $\alpha$ be the only
+zero of $f$ in $I$: every $y \in I$ with $f(y) = 0$ equals $\alpha$. Then the regula falsi
+iterates converge to $\alpha$.
 
-The two ends of the bracket are monotone and bounded, so they converge to `l ≤ r`, and the chord
-zeros — the iterates — converge to the chord zero `z` of `(l, f l)` and `(r, f r)` as soon as
-`f l ≠ f r`. Every chord zero becomes an end of the next bracket, hence lies outside `(l, r)`, so
-`z` does too; being a convex combination of `l` and `r` it is then `l` or `r`, and in either case
-the corresponding value of `f` vanishes, so `z = α` by uniqueness. If instead `f l = f r` then
-`f l · f r ≤ 0` forces `f l = f r = 0` and `l = r = α`, and the iterates are squeezed.
-
-An iterate that is an exact root is a fixed point of the step (`step_eq_self`), so that case is
-separate and immediate. -/
+This is the convergence result of [quarteroni2000numerical], §6.2.2. The two ends of the bracket
+are monotone and bounded, so they converge to limits $l \le r$. When $f(l) \neq f(r)$, the
+iterates, which are chord zeros, converge to the chord zero $z$ of $(l, f(l))$ and $(r, f(r))$.
+Every chord zero becomes an end of the next bracket, so it lies outside $(l, r)$, and so does
+$z$. As a convex combination of $l$ and $r$, the point $z$ is then $l$ or $r$, the corresponding
+value of $f$ is $0$, and $z = \alpha$ by uniqueness. When $f(l) = f(r)$, the inequality
+$f(l) f(r) \le 0$ gives $f(l) = f(r) = 0$, so $l = r = \alpha$ and the iterates are squeezed. An
+iterate that is an exact root is a fixed point of the step (`RegulaFalsi.step_eq_self`), so that
+case is separate. -/
 theorem tendsto_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm1 < 0) {α : ℝ}
     (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) :
     Tendsto (iterate f xm1 x₀) atTop (𝓝 α) := by
@@ -1029,42 +1216,47 @@ theorem tendsto_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm
       intro k
       rw [hx, hchord k]
 
-/-! #### The linear order of convergence
+/-!
+### The linear order of convergence of regula falsi
 
-The order statement needs the divided-difference error identity of the secant method
-(`Secant.abs_sub_root_le`) applied to the bracketing pair `(x_k, x_{k'})`:
-`|e_{k+1}| ≤ (M₂ / m₁) |e_k| |e_{k'}|`, with `m₁` a lower bound for the first divided difference
-`f[x_{k'}, x_k]` and `M₂` an upper bound for the second, `f[x_{k'}, x_k, α]`. Since `|e_{k'}|` is at
-most the length of the starting interval, that is linear convergence. The two bounds are uniform
-over the bracket rather than local, which is what removes the need to identify the endpoint that is
-eventually frozen:
+The order statement applies the secant error bound `Secant.abs_sub_root_le` to the bracketing pair
+$(x_k, x_{k'})$: $|e_{k+1}| \le (M_2/m_1) |e_k| |e_{k'}|$, with $m_1$ a lower bound for the first
+divided difference $f[x_{k'}, x_k]$ and $M_2$ an upper bound for the second one,
+$f[x_{k'}, x_k, \alpha]$. Since $|e_{k'}|$ is at most the length of the starting interval $I$, this
+is linear convergence. The two bounds are uniform over the bracket rather than local, and so the
+proof does not need to know which endpoint is eventually frozen. Let
+$g = \operatorname{dslope} f \alpha$.
 
-* **below**, `f[u, v] ≥ min_{[[x_{-1}, x_0]]} |g|` with `g = dslope f α`, because
-  `f u = (u - α) g u` and `f v = (v - α) g v` with `(u - α)(v - α) < 0` (the root separates a
-  bracketing pair) force `g u` and `g v` to have the same sign, so the numerator of
-  `f[u, v] = ((v - α) g v - (u - α) g u) / (v - u)` is a sum of two terms of equal sign; and `g`,
-  continuous and zero-free on the compact bracket (zero-free because `α` is the only root and
-  `g α = f'(α) ≠ 0`), is bounded away from `0` there;
-* **above**, `f[u, v, α] = g[u, v]`, bounded by `|g'(α)| + 1` when `u` and `v` are both in a small
-  ball around `α` (the mean value inequality for the `C¹` function `g`,
-  `exists_ball_abs_slope_sub_deriv_le`) and by `4 sup|g| / δ` when they are `δ / 2` apart. The
-  iterates converge to `α`, so eventually `x_k` is in the small ball and one of the two cases
-  applies.
+* The lower bound is $|f[u, v]| \ge \min_I |g|$. Indeed $f(u) = (u - \alpha) g(u)$ and
+  $f(v) = (v - \alpha) g(v)$ with $(u - \alpha)(v - \alpha) < 0$, because the root separates a
+  bracketing pair. So $g(u)$ and $g(v)$ have the same sign, and the numerator of $f[u, v] = ((v -
+  \alpha) g(v) - (u - \alpha) g(u)) / (v - u)$ is a sum of two terms of the same sign. The function
+  $g$ is continuous and has no zero on the compact interval $I$, because $\alpha$ is the only root
+  and $g(\alpha) = f'(\alpha) \neq 0$; so $|g|$ is bounded away from $0$ on $I$.
+* The upper bound uses $f[u, v, \alpha] = g[u, v]$. This is at most $|g'(\alpha)| + 1$ when $u$ and
+  $v$ both lie in a small ball around $\alpha$, by the mean value inequality
+  `exists_ball_abs_slope_sub_deriv_le` for the $C^1$ function $g$, and at most
+  $4 \sup_I |g| / \delta$ when $u$ and $v$ are at least $\delta/2$ apart. The iterates converge to
+  $\alpha$, so eventually $x_k$ lies in the small ball and one of the two cases applies.
 
-No convexity and no hypothesis on `f''(α)` enter: `ContDiffAt ℝ 2 f α` is used only to make
-`dslope f α` continuously differentiable at `α` (Hadamard's lemma). -/
+No convexity and no hypothesis on $f''(\alpha)$ enter. The hypothesis that $f$ is $C^2$ at $\alpha$
+is used only to make $g$ continuously differentiable at $\alpha$, by Hadamard's lemma.
+-/
 
-/-- **The method stalls at an exact root**: if the `k`-th iterate is a zero of `f`, every later
-state equals the `k`-th one. -/
+/-- **The method stalls at an exact root.** If the $k$-th regula falsi iterate is a zero of $f$,
+then the $j$-th state equals the $k$-th state for every $j \ge k$. -/
 theorem state_eq_of_apply_eq_zero {k : ℕ} (hk : f ((step f)^[k] (x₀, xm1)).1 = 0) {j : ℕ}
     (hj : k ≤ j) : (step f)^[j] (x₀, xm1) = (step f)^[k] (x₀, xm1) := by
   induction j, hj using Nat.le_induction with
   | base => rfl
   | succ j hj ih => rw [Function.iterate_succ_apply', ih, step_eq_self hk]
 
-/-- **The root separates a bracketing pair**: if `α` is the only zero of `f` in `[[x_{-1}, x_0]]`
-and `u, v` in that interval satisfy `f u · f v < 0`, then `(u - α)(v - α) < 0`. The theorem of
-zeros gives a zero strictly between `u` and `v`, and uniqueness identifies it with `α`. -/
+/-- **The root separates a bracketing pair.** Let $I$ be the closed interval with the endpoints
+$x_{-1}$ and $x_0$, let $f$ be continuous on $I$, and let $\alpha$ be the only zero of $f$ in
+$I$. If $u, v \in I$ satisfy $f(u) f(v) < 0$, then $(u - \alpha)(v - \alpha) < 0$.
+
+The intermediate value theorem gives a zero strictly between $u$ and $v$, and uniqueness
+identifies it with $\alpha$. -/
 theorem sub_mul_sub_neg_of_mul_neg (hf : ContinuousOn f (uIcc xm1 x₀)) {α u v : ℝ}
     (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hu : u ∈ uIcc xm1 x₀) (hv : v ∈ uIcc xm1 x₀)
     (hfuv : f u * f v < 0) : (u - α) * (v - α) < 0 := by
@@ -1084,11 +1276,15 @@ theorem sub_mul_sub_neg_of_mul_neg (hf : ContinuousOn f (uIcc xm1 x₀)) {α u v
   · rw [min_eq_right hle', max_eq_left hle'] at hβ
     nlinarith [hβ.1, hβ.2]
 
-/-- **The first divided difference at a bracketing pair is at least `min |dslope f α|`.** With
-`g = dslope f α` one has `f u = (u - α) g u` and `f v = (v - α) g v` (`sub_smul_dslope`), so
-`f u · f v < 0` together with `(u - α)(v - α) < 0` forces `g u · g v > 0`; the numerator of
-`f[u, v] = ((v - α) g v - (u - α) g u) / (v - u)` is then a sum of two terms of the same sign, and
-`|f[u, v]|² ≥ m² |v - u|² / |v - u|²`. -/
+/-- **A lower bound for the first divided difference at a bracketing pair.** Let $f(\alpha) = 0$,
+let $u \neq v$ with $(u - \alpha)(v - \alpha) < 0$ and $f(u) f(v) < 0$, and let $m > 0$ satisfy
+$m \le |g(u)|$ and $m \le |g(v)|$, where $g = \operatorname{dslope} f \alpha$. Then
+$m \le |f[u, v]|$.
+
+The identities $f(u) = (u - \alpha) g(u)$ and $f(v) = (v - \alpha) g(v)$ (`sub_smul_dslope`) and
+the two sign conditions give $g(u) g(v) > 0$. Then the numerator of $f[u, v] = ((v - \alpha)
+g(v) - (u - \alpha) g(u)) / (v - u)$ is a sum of two terms of the same sign, of total modulus at
+least $m |v - u|$. -/
 theorem le_abs_newton_two_of_mul_neg {α m u v : ℝ} (hα : f α = 0) (huv : u ≠ v)
     (hsign : (u - α) * (v - α) < 0) (hfuv : f u * f v < 0) (hm : 0 < m)
     (hgu : m ≤ |dslope f α u|) (hgv : m ≤ |dslope f α v|) :
@@ -1125,15 +1321,18 @@ theorem le_abs_newton_two_of_mul_neg {α m u v : ℝ} (hα : f α = 0) (huv : u 
       mul_nonneg (neg_nonneg.2 hsign.le) (sub_nonneg.2 hsq3)]
   nlinarith [abs_nonneg ((v - α) * gv - (u - α) * gu), sq_abs ((v - α) * gv - (u - α) * gu)]
 
-/-- **Regula falsi converges linearly** ([quarteroni2000numerical] §6.2.2, "the Regula Falsi method
-has linear convergence order", quoted there from Ralston and Rabinowitz without proof): under the
-hypotheses of `tendsto_iterate` together with `f` twice continuously differentiable at the root and
-`f'(α) ≠ 0`, the iterates converge to `α` with order `1` in the sense of
-[quarteroni2000numerical] Definition 6.1.
+/-- **Regula falsi converges linearly.** Let $I$ be the closed interval with the endpoints $x_{-1}$
+and $x_0$, let $f$ be continuous on $I$ with $f(x_0) f(x_{-1}) < 0$, and let $\alpha$ be the
+only zero of $f$ in $I$. Let $f$ be $C^2$ at $\alpha$ with $f'(\alpha) \neq 0$. Then the regula
+falsi iterates converge to $\alpha$ with the order $1$ in the sense of `ConvergesWithOrder`,
+that is, Definition 6.1 of [quarteroni2000numerical].
 
-The constant produced is `M₂ |x_0 - x_{-1}| / m₁`, with `m₁` and `M₂` the uniform bounds on the two
-divided differences described above; the book's hypothesis `f''(α) ≠ 0` is not needed, and neither
-is any convexity assumption identifying the endpoint that is eventually frozen. -/
+[quarteroni2000numerical], §6.2.2, states that "the Regula Falsi method has linear convergence
+order", and quotes it from Ralston and Rabinowitz without proof. The hypothesis
+$f''(\alpha) \neq 0$ of the source is not needed, and neither is a convexity assumption that
+identifies the endpoint that is eventually frozen. The constant of the proof is
+$M_2 |x_0 - x_{-1}| / m_1$, with $m_1$ and $M_2$ the uniform bounds on the two divided
+differences described in the section comment above. -/
 theorem convergesWithOrder_one_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm1 < 0)
     {α : ℝ} (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hC : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) : ConvergesWithOrder (iterate f xm1 x₀) α 1 := by
@@ -1275,59 +1474,83 @@ namespace Muller
 
 open DividedDifference
 
-/-! ### The quadratic interpolant -/
+/-!
+### The quadratic interpolant
 
-/-- The **leading coefficient of the Muller interpolant**, the second divided difference
-`d = f[x_k, x_{k-1}, x_{k-2}]` of [quarteroni2000numerical] §6.4.3. -/
+Muller's method interpolates $f$ by a quadratic at the last three iterates $x_{k-2}, x_{k-1}, x_k$.
+In the Lean code these are the arguments `x₀ x₁ x₂`.
+-/
+
+/-- The **leading coefficient of the Muller interpolant**: the second divided difference
+$$d = f[x_k, x_{k-1}, x_{k-2}]$$
+of [quarteroni2000numerical], §6.4.3. -/
 noncomputable def quadCoeff (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ := newton f ![x₂, x₁, x₀]
 
-/-- The **linear coefficient of the Muller interpolant** at `x_k`, the `w` of
-[quarteroni2000numerical] §6.4.3: `w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) f[x_k, x_{k-1}, x_{k-2}]`,
-so that the interpolant reads `p₂(x) = f(x_k) + w (x - x_k) + d (x - x_k)²`. -/
+/-- The **linear coefficient of the Muller interpolant** at $x_k$: the number
+$$w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) f[x_k, x_{k-1}, x_{k-2}]$$
+of [quarteroni2000numerical], §6.4.3. With it, the interpolant is
+$p_2(x) = f(x_k) + w (x - x_k) + d (x - x_k)^2$. -/
 noncomputable def linCoeff (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
   newton f ![x₂, x₁] + (x₂ - x₁) * quadCoeff f x₀ x₁ x₂
 
-/-- The **radicand** `w² - 4 f(x_k) d` under the square root of (6.30). It is nonnegative near a
-simple real root (`Muller.LocalData.nonneg_radicand`), where `w → f'(α) ≠ 0` and `f(x_k) → 0`, but
-not in general: a negative radicand is exactly the case of a complex-conjugate pair of zeros of the
-parabola, which is what makes the complex form of the method find complex roots. -/
+/-- The **radicand** $w^2 - 4 f(x_k) d$ under the square root of (6.30) of
+[quarteroni2000numerical].
+
+It is nonnegative near a simple real root (`Muller.LocalData.nonneg_radicand`), where
+$w \to f'(\alpha) \neq 0$ and $f(x_k) \to 0$, but not in general. A negative radicand is exactly
+the case of a pair of complex-conjugate zeros of the parabola, which is what lets the complex
+form of the method find complex roots. -/
 noncomputable def radicand (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
   linCoeff f x₀ x₁ x₂ ^ 2 - 4 * f x₂ * quadCoeff f x₀ x₁ x₂
 
-/-- The **denominator** of (6.30), `w ± √(w² - 4 f(x_k) d)` with the sign chosen to maximize its
-modulus. The choice is what makes the step pick the zero of the parabola *nearest* to `x_k`, and it
-enters the analysis through `Muller.abs_linCoeff_le_abs_den`. -/
+/-- The **denominator** of (6.30) of [quarteroni2000numerical]: $w + r$ if $|w - r| \le |w + r|$,
+and $w - r$ otherwise, where $r = \sqrt{w^2 - 4 f(x_k) d}$. So the sign is chosen to maximize
+the modulus of $w \pm r$.
+
+This choice makes the step pick the zero of the parabola nearest to $x_k$. It enters the
+analysis through `Muller.abs_linCoeff_le_abs_den`. The square root is `Real.sqrt`, which is $0$
+for a negative radicand; then the denominator is $w$. -/
 noncomputable def den (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
   if |linCoeff f x₀ x₁ x₂ - Real.sqrt (radicand f x₀ x₁ x₂)|
       ≤ |linCoeff f x₀ x₁ x₂ + Real.sqrt (radicand f x₀ x₁ x₂)| then
     linCoeff f x₀ x₁ x₂ + Real.sqrt (radicand f x₀ x₁ x₂)
   else linCoeff f x₀ x₁ x₂ - Real.sqrt (radicand f x₀ x₁ x₂)
 
-/-- The **new point of a Muller step**, `x_{k+1} = x_k - 2 f(x_k) / den`
-([quarteroni2000numerical] (6.30), with the numerator rationalized). -/
+/-- The **new point of a Muller step**:
+$$x_{k+1} = x_k - \frac{2 f(x_k)}{w \pm \sqrt{w^2 - 4 f(x_k) d}},$$
+with the denominator `Muller.den`. This is (6.30) of [quarteroni2000numerical] with the
+numerator rationalized. When the denominator is $0$, the new point is $x_k$, since Lean defines
+$a / 0 = 0$. -/
 noncomputable def next (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ := x₂ - 2 * f x₂ / den f x₀ x₁ x₂
 
-/-- The **quadratic interpolant** of `f` at `x_{k-2}, x_{k-1}, x_k` in Newton's form based at
-`x_k`, `p₂(t) = f(x_k) + w (t - x_k) + d (t - x_k)²` ([quarteroni2000numerical] §6.4.3). It
-interpolates (`Muller.interp_apply_node`) and `Muller.next` is one of its zeros
+/-- The **quadratic interpolant** of $f$ at $x_{k-2}, x_{k-1}, x_k$ in Newton's form based at $x_k$:
+$$p_2(t) = f(x_k) + w (t - x_k) + d (t - x_k)^2.$$
+
+This is the interpolant of [quarteroni2000numerical], §6.4.3. It interpolates $f$ at the three
+nodes (`Muller.interp_apply_node`), and `Muller.next` is one of its zeros
 (`Muller.interp_next_eq_zero`). -/
 noncomputable def interp (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (t : ℝ) : ℝ :=
   f x₂ + linCoeff f x₀ x₁ x₂ * (t - x₂) + quadCoeff f x₀ x₁ x₂ * (t - x₂) ^ 2
 
 variable {f : ℝ → ℝ} {α ε η x₀ x₁ x₂ : ℝ}
 
-/-- One **Muller step** ([quarteroni2000numerical] (6.30)) from the triple
-`(x_{k-2}, x_{k-1}, x_k)` to `(x_{k-1}, x_k, x_{k+1})`, where `x_{k+1} = Muller.next` is the zero
-`x_k - 2 f(x_k) / (w ± √(w² - 4 f(x_k) d))` of the quadratic interpolant nearest to `x_k`, the sign
-maximizing the modulus of the denominator. Real arithmetic only: the square root is `Real.sqrt`,
-junk `0` for a negative radicand (a complex pair of zeros of the parabola), where the complex
-version that finds complex roots of polynomials would continue with `Complex.cpow`. -/
+/-- One **Muller step** from the triple $(x_{k-2}, x_{k-1}, x_k)$ to the triple
+$(x_{k-1}, x_k, x_{k+1})$, where $x_{k+1}$ is `Muller.next`, the zero
+$$x_k - \frac{2 f(x_k)}{w \pm \sqrt{w^2 - 4 f(x_k) d}}$$
+of the quadratic interpolant nearest to $x_k$, with the sign that maximizes the modulus of the
+denominator. This is (6.30) of [quarteroni2000numerical].
+
+The arithmetic is real. The square root is `Real.sqrt`, which is $0$ for a negative radicand,
+that is, for a pair of complex zeros of the parabola. The complex form of the method, which
+finds complex roots of polynomials, would continue there with the complex power `Complex.cpow`. -/
 noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : ℝ × ℝ × ℝ :=
   (s.2.1, s.2.2, next f s.1 s.2.1 s.2.2)
 
-/-- **The Newton form interpolates**: `p₂` takes the value of `f` at each of the three nodes, for
-distinct nodes. This is what makes `Muller.interp` *the* quadratic interpolant, and it is the piece
-that ties `Muller.step` to [quarteroni2000numerical] §6.4.3. -/
+/-- **The Newton form interpolates.** If $x_{k-2}$, $x_{k-1}$ and $x_k$ are pairwise distinct, then
+$p_2(x_j) = f(x_j)$ for $j = k-2, k-1, k$.
+
+So `Muller.interp` is the quadratic interpolant of $f$ at the three nodes, and `Muller.step` is
+the method of [quarteroni2000numerical], §6.4.3. -/
 theorem interp_apply_node (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂) :
     interp f x₀ x₁ x₂ x₀ = f x₀ ∧ interp f x₀ x₁ x₂ x₁ = f x₁ ∧
       interp f x₀ x₁ x₂ x₂ = f x₂ := by
@@ -1342,10 +1565,13 @@ theorem interp_apply_node (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x�
       field_simp
       ring
 
-/-- **The sign rule makes the denominator at least as large as `w`**: `|w| ≤ |den|`, because
-`2|w| = |(w + r) + (w - r)| ≤ |w + r| + |w - r|` and `den` is whichever of `w ± r` has the larger
-modulus. This one inequality is the whole content of the sign rule for the error analysis: it is
-what keeps `x_{k+1}` near `x_k` rather than at the far zero of the parabola. -/
+/-- **The sign rule makes the denominator at least as large as $w$.** For all $x_{k-2}$, $x_{k-1}$
+and $x_k$, the linear coefficient $w$ and the denominator of the Muller step satisfy
+$|w| \le |w \pm r|$, with $r = \sqrt{w^2 - 4 f(x_k) d}$ and the sign of `Muller.den`.
+
+The proof is $2|w| = |(w + r) + (w - r)| \le |w + r| + |w - r|$, and the denominator is the one
+of $w \pm r$ with the larger modulus. This inequality is the whole content of the sign rule for
+the error analysis: it keeps $x_{k+1}$ near $x_k$ rather than at the far zero of the parabola. -/
 theorem abs_linCoeff_le_abs_den (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) :
     |linCoeff f x₀ x₁ x₂| ≤ |den f x₀ x₁ x₂| := by
   rw [den]
@@ -1358,8 +1584,11 @@ theorem abs_linCoeff_le_abs_den (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) :
   · linarith
   · linarith [not_le.1 h]
 
-/-- **The denominator solves `den² - 2 w den + 4 d f(x_k) = 0`** when the radicand is nonnegative,
-since `den = w ± r` with `r² = w² - 4 f(x_k) d`. -/
+/-- **The quadratic equation of the denominator.** If the radicand $w^2 - 4 f(x_k) d$ is
+nonnegative, then the denominator $D$ of the Muller step satisfies
+$$D^2 - 2 w D + 4 d f(x_k) = 0.$$
+
+This holds because $D = w \pm r$ with $r^2 = w^2 - 4 f(x_k) d$. -/
 theorem den_quadratic (hrad : 0 ≤ radicand f x₀ x₁ x₂) :
     den f x₀ x₁ x₂ ^ 2 - 2 * linCoeff f x₀ x₁ x₂ * den f x₀ x₁ x₂ +
       4 * quadCoeff f x₀ x₁ x₂ * f x₂ = 0 := by
@@ -1369,11 +1598,13 @@ theorem den_quadratic (hrad : 0 ≤ radicand f x₀ x₁ x₂) :
   rw [den]
   split_ifs <;> linear_combination hr
 
-/-- **The Muller step lands on a zero of the quadratic interpolant** — this is the defining
-property of the method, and it needs the radicand to be nonnegative (real arithmetic) and the
-denominator to be nonzero. With `h = -2 f(x_k)/den`,
-`p₂(x_k + h) = f(x_k) (den² - 2 w den + 4 d f(x_k)) / den²`, which vanishes by
-`Muller.den_quadratic`. -/
+/-- **The Muller step lands on a zero of the quadratic interpolant.** If the radicand
+$w^2 - 4 f(x_k) d$ is nonnegative and the denominator $D$ of the step is nonzero, then
+$p_2(x_{k+1}) = 0$.
+
+This is the defining property of the method. With $h = -2 f(x_k)/D$ one has $p_2(x_k + h) =
+f(x_k) (D^2 - 2 w D + 4 d f(x_k)) / D^2$, which is $0$ by `Muller.den_quadratic`. The
+nonnegative radicand restricts this to real arithmetic. -/
 theorem interp_next_eq_zero (hrad : 0 ≤ radicand f x₀ x₁ x₂) (hden : den f x₀ x₁ x₂ ≠ 0) :
     interp f x₀ x₁ x₂ (next f x₀ x₁ x₂) = 0 := by
   have hkey := den_quadratic (f := f) (x₀ := x₀) (x₁ := x₁) (x₂ := x₂) hrad
@@ -1381,11 +1612,14 @@ theorem interp_next_eq_zero (hrad : 0 ≤ radicand f x₀ x₁ x₂) (hden : den
   field_simp
   linear_combination f x₂ * hkey
 
-/-- **The value of the interpolant at the root** is the divided-difference form of the
-interpolation error there: for `f α = 0` and distinct nodes different from `α`,
-`p₂(α) = -f[x_{k-2}, x_{k-1}, x_k, α] (α - x_{k-2})(α - x_{k-1})(α - x_k)`. The four-node analogue
-of `Secant.sub_root_eq_mul_newton`, and like it an algebraic identity in the values of `f`
-([han2009theoretical] (3.2.5) written out). -/
+/-- **The value of the interpolant at the root.** Let $f(\alpha) = 0$, and let $x_{k-2}$, $x_{k-1}$
+and $x_k$ be pairwise distinct and different from $\alpha$. Then
+$$p_2(\alpha) = -f[x_{k-2}, x_{k-1}, x_k, \alpha] (\alpha - x_{k-2})(\alpha - x_{k-1})(\alpha -
+  x_k).$$
+
+This is the divided-difference form of the interpolation error at $\alpha$, the formula (3.2.5)
+of [han2009theoretical] written out. It is the four-node analogue of
+`Secant.sub_root_eq_mul_newton`, and like it an algebraic identity in the values of $f$. -/
 theorem interp_root_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂)
     (h0 : x₀ ≠ α) (h1 : x₁ ≠ α) (h2 : x₂ ≠ α) :
     interp f x₀ x₁ x₂ α =
@@ -1406,16 +1640,18 @@ theorem interp_root_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x�
   field_simp
   ring
 
-/-- **Muller's error identity.** With `e_j = α - x_j` and `d, w` the coefficients of the
-interpolant, the new error satisfies
+/-- **Muller's error identity.** Let $f(\alpha) = 0$, and let $x_{k-2}$, $x_{k-1}$ and $x_k$ be
+pairwise distinct and different from $\alpha$. Let the radicand $w^2 - 4 f(x_k) d$ be
+nonnegative and the denominator of the step be nonzero. With $e_j = \alpha - x_j$, the new error
+satisfies
+$$e_{k+1} \bigl(w + d (\alpha + x_{k+1} - 2 x_k)\bigr) = -f[x_{k-2}, x_{k-1}, x_k, \alpha]\,
+  e_{k-2} e_{k-1} e_k.$$
 
-`e_{k+1} (w + d (α + x_{k+1} - 2 x_k)) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`.
-
-The factor on the left is `p₂'(x_{k+1}) + d e_{k+1}`, which tends to `f'(α) ≠ 0`; the second zero
-of the parabola is eliminated not by naming it but by expanding `p₂` about `x_{k+1}`, where
-`p₂(x_{k+1}) = 0` (`Muller.interp_next_eq_zero`) leaves `p₂(α) = e_{k+1} (p₂'(x_{k+1}) + d e_{k+1})`
-exactly. Compare `Secant.sub_root_eq_mul_newton`, where the corresponding relation is linear in the
-new error. -/
+The factor on the left is $p_2'(x_{k+1}) + d e_{k+1}$, which tends to $f'(\alpha) \neq 0$. The
+proof does not name the second zero of the parabola. It expands $p_2$ about $x_{k+1}$, where
+$p_2(x_{k+1}) = 0$ (`Muller.interp_next_eq_zero`), and this leaves exactly $p_2(\alpha) =
+e_{k+1} (p_2'(x_{k+1}) + d e_{k+1})$. In the secant identity `Secant.sub_root_eq_mul_newton`,
+the corresponding relation is linear in the new error. -/
 theorem sub_next_mul_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂)
     (h0 : x₀ ≠ α) (h1 : x₁ ≠ α) (h2 : x₂ ≠ α)
     (hrad : 0 ≤ radicand f x₀ x₁ x₂) (hden : den f x₀ x₁ x₂ ≠ 0) :
@@ -1429,22 +1665,33 @@ theorem sub_next_mul_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x
 
 /-! ### Local bounds -/
 
-/-- **The local bounds driving the Muller analysis** on `ball α ε`, all with the same tolerance
-`η`: the first divided difference at distinct nodes is within `η` of `f'(α)`, the second at three
-distinct nodes within `η` of `f''(α)/2`, the third through `α` within `η` of `f⁽³⁾(α)/6`, and
-`dslope f α` within `η` of `f'(α)`. `Muller.exists_localData` produces them near a simple root of a
-`C³` function. -/
+/-- **Local bounds for the Muller analysis** on the ball $B = (\alpha - \varepsilon, \alpha +
+\varepsilon)$, all with the same tolerance $\eta$. They hold if, for all $x, y, z \in B$:
+* $|f[x, y] - f'(\alpha)| \le \eta$ when $x \neq y$;
+* $|f[x, y, z] - f''(\alpha)/2| \le \eta$ when $x, y, z$ are pairwise distinct;
+* $|f[x, y, z, \alpha] - f'''(\alpha)/6| \le \eta$ when $x, y, z$ are pairwise distinct and
+  different from $\alpha$;
+* $|g(x) - f'(\alpha)| \le \eta$, where $g = \operatorname{dslope} f \alpha$.
+
+The theorem `Muller.exists_localData` gives such bounds near every point at which $f$ is $C^3$. -/
 structure LocalData (f : ℝ → ℝ) (α ε η : ℝ) : Prop where
+  /-- For distinct $x, y$ in the ball, $|f[x, y] - f'(\alpha)| \le \eta$. -/
   first : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y →
     |newton f ![x, y] - deriv f α| ≤ η
+  /-- For pairwise distinct $x, y, z$ in the ball, $|f[x, y, z] - f''(\alpha)/2| \le \eta$. -/
   second : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, ∀ z ∈ Metric.ball α ε,
     x ≠ y → x ≠ z → y ≠ z → |newton f ![x, y, z] - iteratedDeriv 2 f α / 2| ≤ η
+  /-- For pairwise distinct $x, y, z$ in the ball, all different from $\alpha$,
+  $|f[x, y, z, \alpha] - f'''(\alpha)/6| \le \eta$. -/
   third : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, ∀ z ∈ Metric.ball α ε,
     x ≠ y → x ≠ z → y ≠ z → x ≠ α → y ≠ α → z ≠ α →
     |newton f ![x, y, z, α] - iteratedDeriv 3 f α / 6| ≤ η
+  /-- For $x$ in the ball, $|\operatorname{dslope} f \alpha\, x - f'(\alpha)| \le \eta$. -/
   base : ∀ x ∈ Metric.ball α ε, |dslope f α x - deriv f α| ≤ η
 
-/-- Local bounds persist on a smaller ball. -/
+/-- If the Muller local bounds hold on a ball of radius $\varepsilon$ and
+$\varepsilon' \le \varepsilon$, then they hold on the ball of radius $\varepsilon'$ with the
+same tolerance. -/
 theorem LocalData.mono (h : LocalData f α ε η) {ε' : ℝ} (hle : ε' ≤ ε) : LocalData f α ε' η :=
   ⟨fun x hx y hy => h.first x (Metric.ball_subset_ball hle hx) y (Metric.ball_subset_ball hle hy),
    fun x hx y hy z hz => h.second x (Metric.ball_subset_ball hle hx) y
@@ -1453,50 +1700,77 @@ theorem LocalData.mono (h : LocalData f α ε η) {ε' : ℝ} (hle : ε' ≤ ε)
       (Metric.ball_subset_ball hle hy) z (Metric.ball_subset_ball hle hz),
    fun x hx => h.base x (Metric.ball_subset_ball hle hx)⟩
 
-/-- **The smallness conditions** on the ball radius `ε` and the tolerance `η` that the Muller step
-estimates need, all relative to `|f'(α)|` and the bound `|f''(α)|/2 + η` on the second divided
-difference: `8 η ≤ |f'(α)|` keeps `w` within `|f'(α)|/4` of `f'(α)`, the second makes the
-`(x_k - x_{k-1}) d` term of `w` small, and the third makes `4 f(x_k) d` small enough for the
-radicand to stay nonnegative and the step `x_{k+1} - x_k` short. -/
+/-- **The smallness conditions** on the radius $\varepsilon$ and the tolerance $\eta$ that the
+Muller step estimates need. They hold if $\varepsilon > 0$, $\eta > 0$, $f'(\alpha) \neq 0$, and
+$$8 \eta \le |f'(\alpha)|, \qquad 16 \varepsilon \Bigl(\frac{|f''(\alpha)|}{2} + \eta\Bigr) \le
+  |f'(\alpha)|, \qquad 32 \varepsilon (|f'(\alpha)| + \eta) \Bigl(\frac{|f''(\alpha)|}{2} +
+  \eta\Bigr) \le |f'(\alpha)|^2.$$
+
+The number $|f''(\alpha)|/2 + \eta$ bounds the second divided difference. The first inequality
+keeps $w$ within $|f'(\alpha)|/4$ of $f'(\alpha)$. The second makes the term $(x_k - x_{k-1}) d$
+of $w$ small. The third makes $4 f(x_k) d$ small enough that the radicand stays nonnegative and
+the step $x_{k+1} - x_k$ stays short. -/
 structure Small (f : ℝ → ℝ) (α ε η : ℝ) : Prop where
+  /-- The radius is positive: $0 < \varepsilon$. -/
   eps_pos : 0 < ε
+  /-- The tolerance is positive: $0 < \eta$. -/
   eta_pos : 0 < η
+  /-- The root is simple: $f'(\alpha) \neq 0$. -/
   deriv_ne : deriv f α ≠ 0
+  /-- The tolerance is small: $8 \eta \le |f'(\alpha)|$. -/
   eta_le : 8 * η ≤ |deriv f α|
+  /-- The radius is small: $16 \varepsilon (|f''(\alpha)|/2 + \eta) \le |f'(\alpha)|$. -/
   eps_le : 16 * (ε * (|iteratedDeriv 2 f α| / 2 + η)) ≤ |deriv f α|
+  /-- The radius is small: $32 \varepsilon (|f'(\alpha)| + \eta)(|f''(\alpha)|/2 + \eta) \le
+  |f'(\alpha)|^2$.
+  -/
   eps_le' : 32 * (ε * ((|deriv f α| + η) * (|iteratedDeriv 2 f α| / 2 + η))) ≤ |deriv f α| ^ 2
 
-/-- A triple `(x_{k-2}, x_{k-1}, x_k)` of consecutive Muller iterates is **admissible** in
-`ball α ε` when all three points lie in the ball, are pairwise distinct, and differ from `α`:
-exactly what the error identity `Muller.sub_next_mul_eq` needs. -/
+/-- A triple $(x_{k-2}, x_{k-1}, x_k)$ of consecutive Muller iterates is **admissible** in the ball
+$(\alpha - \varepsilon, \alpha + \varepsilon)$ if all three points lie in the ball, are pairwise
+distinct, and are different from $\alpha$.
+
+These are exactly the conditions on the nodes in the error identity `Muller.sub_next_mul_eq`. -/
 structure IsAdmissible (α ε x₀ x₁ x₂ : ℝ) : Prop where
+  /-- The oldest point lies in the ball. -/
   mem₀ : x₀ ∈ Metric.ball α ε
+  /-- The middle point lies in the ball. -/
   mem₁ : x₁ ∈ Metric.ball α ε
+  /-- The newest point lies in the ball. -/
   mem₂ : x₂ ∈ Metric.ball α ε
+  /-- The oldest and the middle point are distinct. -/
   ne₀₁ : x₀ ≠ x₁
+  /-- The oldest and the newest point are distinct. -/
   ne₀₂ : x₀ ≠ x₂
+  /-- The middle and the newest point are distinct. -/
   ne₁₂ : x₁ ≠ x₂
+  /-- The oldest point is not the root $\alpha$. -/
   ne₀ : x₀ ≠ α
+  /-- The middle point is not the root $\alpha$. -/
   ne₁ : x₁ ≠ α
+  /-- The newest point is not the root $\alpha$. -/
   ne₂ : x₂ ≠ α
 
-/-- The oldest point of an admissible triple is within `ε` of the root. -/
+/-- The oldest point $x_{k-2}$ of an admissible triple satisfies $|x_{k-2} - \alpha| < \varepsilon$.
+-/
 theorem IsAdmissible.abs_lt₀ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₀ - α| < ε := by
   rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₀
 
-/-- An admissible triple exists only in a ball of positive radius. -/
+/-- If an admissible triple exists in the ball of radius $\varepsilon$, then $\varepsilon > 0$. -/
 theorem IsAdmissible.eps_pos (hs : IsAdmissible α ε x₀ x₁ x₂) : 0 < ε :=
   lt_of_le_of_lt (abs_nonneg _) hs.abs_lt₀
 
-/-- The middle point of an admissible triple is within `ε` of the root. -/
+/-- The middle point $x_{k-1}$ of an admissible triple satisfies $|x_{k-1} - \alpha| < \varepsilon$.
+-/
 theorem IsAdmissible.abs_lt₁ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₁ - α| < ε := by
   rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₁
 
-/-- The newest point of an admissible triple is within `ε` of the root. -/
+/-- The newest point $x_k$ of an admissible triple satisfies $|x_k - \alpha| < \varepsilon$. -/
 theorem IsAdmissible.abs_lt₂ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₂ - α| < ε := by
   rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₂
 
-/-- The leading coefficient of the interpolant is bounded by `|f''(α)|/2 + η`. -/
+/-- Under the Muller local bounds, the leading coefficient of the interpolant at an admissible
+triple satisfies $|d| \le |f''(\alpha)|/2 + \eta$. -/
 theorem LocalData.abs_quadCoeff_le (hdata : LocalData f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) :
     |quadCoeff f x₀ x₁ x₂| ≤ |iteratedDeriv 2 f α| / 2 + η := by
@@ -1506,7 +1780,10 @@ theorem LocalData.abs_quadCoeff_le (hdata : LocalData f α ε η)
   rw [quadCoeff]
   linarith
 
-/-- `|f(x_k)| ≤ ε (|f'(α)| + η)` on the ball, from `f(x) = (x - α) · dslope f α x`. -/
+/-- Let $f(\alpha) = 0$. Under the Muller local bounds, the newest point $x_k$ of an admissible
+triple satisfies $|f(x_k)| \le \varepsilon (|f'(\alpha)| + \eta)$.
+
+The proof uses $f(x) = (x - \alpha) \operatorname{dslope} f \alpha\, x$. -/
 theorem LocalData.abs_apply_le (hα : f α = 0) (hdata : LocalData f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) : |f x₂| ≤ ε * (|deriv f α| + η) := by
   have hds : f x₂ = (x₂ - α) * dslope f α x₂ := by
@@ -1520,9 +1797,12 @@ theorem LocalData.abs_apply_le (hα : f α = 0) (hdata : LocalData f α ε η)
   rw [hds, abs_mul]
   exact mul_le_mul hs.abs_lt₂.le hdsb (abs_nonneg _) hs.eps_pos.le
 
-/-- **The linear coefficient is close to `f'(α)`**: `|w - f'(α)| ≤ |f'(α)|/4`, since
-`w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d` with the first term within `η` of `f'(α)` and
-`|x_k - x_{k-1}| < 2ε`. -/
+/-- **The linear coefficient is close to $f'(\alpha)$.** Under the Muller local bounds and the
+smallness conditions, the linear coefficient at an admissible triple satisfies
+$$|w - f'(\alpha)| \le \frac{|f'(\alpha)|}{4}.$$
+
+This holds because $w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d$, the first term is within $\eta$ of
+$f'(\alpha)$, and $|x_k - x_{k-1}| < 2\varepsilon$. -/
 theorem LocalData.abs_linCoeff_sub_le (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) :
     |linCoeff f x₀ x₁ x₂ - deriv f α| ≤ |deriv f α| / 4 := by
@@ -1541,7 +1821,8 @@ theorem LocalData.abs_linCoeff_sub_le (hdata : LocalData f α ε η) (hsm : Smal
     exact abs_add_le _ _
   linarith [hsm.eta_le, hsm.eps_le]
 
-/-- `3 |f'(α)| / 4 ≤ |w|`. -/
+/-- Under the Muller local bounds and the smallness conditions, the linear coefficient at an
+admissible triple satisfies $3 |f'(\alpha)|/4 \le |w|$. -/
 theorem LocalData.le_abs_linCoeff (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) : 3 * |deriv f α| / 4 ≤ |linCoeff f x₀ x₁ x₂| := by
   have h := hdata.abs_linCoeff_sub_le hsm hs
@@ -1549,16 +1830,21 @@ theorem LocalData.le_abs_linCoeff (hdata : LocalData f α ε η) (hsm : Small f 
   rw [abs_sub_comm] at h2
   linarith
 
-/-- `|w| ≤ 5 |f'(α)| / 4`. -/
+/-- Under the Muller local bounds and the smallness conditions, the linear coefficient at an
+admissible triple satisfies $|w| \le 5 |f'(\alpha)|/4$. -/
 theorem LocalData.abs_linCoeff_le (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) : |linCoeff f x₀ x₁ x₂| ≤ 5 * |deriv f α| / 4 := by
   have h := hdata.abs_linCoeff_sub_le hsm hs
   have h2 := abs_sub_abs_le_abs_sub (linCoeff f x₀ x₁ x₂) (deriv f α)
   linarith
 
-/-- **The radicand is nonnegative near a simple real root**, so the real form of Muller's method
-is the right one there: `w² ≥ 9 f'(α)²/16` while `|4 f(x_k) d| ≤ |f'(α)|²/8`. This is the
-hypothesis of `Muller.interp_next_eq_zero` discharged. -/
+/-- **The radicand is nonnegative near a simple real root.** Let $f(\alpha) = 0$. Under the Muller
+local bounds and the smallness conditions, the radicand at an admissible triple satisfies
+$0 \le w^2 - 4 f(x_k) d$.
+
+So the real form of Muller's method is the right one there. The proof uses
+$w^2 \ge 9 f'(\alpha)^2/16$ and $|4 f(x_k) d| \le |f'(\alpha)|^2/8$. This discharges the
+hypothesis of `Muller.interp_next_eq_zero`. -/
 theorem LocalData.nonneg_radicand (hα : f α = 0) (hdata : LocalData f α ε η)
     (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) : 0 ≤ radicand f x₀ x₁ x₂ := by
   have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
@@ -1577,12 +1863,16 @@ theorem LocalData.nonneg_radicand (hα : f α = 0) (hdata : LocalData f α ε η
   rw [radicand]
   linarith [(abs_le.1 hprod).2, hsm.eps_le', sq_nonneg (deriv f α), sq_abs (deriv f α)]
 
-/-- `3 |f'(α)| / 4 ≤ |den|`, by the sign rule (`Muller.abs_linCoeff_le_abs_den`). -/
+/-- Under the Muller local bounds and the smallness conditions, the denominator $D$ of the Muller
+step at an admissible triple satisfies $3 |f'(\alpha)|/4 \le |D|$.
+
+The proof uses the sign rule `Muller.abs_linCoeff_le_abs_den`. -/
 theorem LocalData.le_abs_den (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) : 3 * |deriv f α| / 4 ≤ |den f x₀ x₁ x₂| :=
   (hdata.le_abs_linCoeff hsm hs).trans (abs_linCoeff_le_abs_den f x₀ x₁ x₂)
 
-/-- The denominator of a Muller step from an admissible triple is nonzero. -/
+/-- Under the Muller local bounds and the smallness conditions, the denominator of the Muller step
+at an admissible triple is nonzero. -/
 theorem LocalData.den_ne_zero (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     (hs : IsAdmissible α ε x₀ x₁ x₂) : den f x₀ x₁ x₂ ≠ 0 := fun h => by
   have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
@@ -1590,8 +1880,12 @@ theorem LocalData.den_ne_zero (hdata : LocalData f α ε η) (hsm : Small f α �
   rw [h, abs_zero] at h2
   linarith
 
-/-- **The step is short**: `|d| |x_{k+1} - x_k| ≤ |f'(α)| / 12`, since
-`|x_{k+1} - x_k| |den| = 2 |f(x_k)|` with `|f(x_k)|` of order `ε` and `|den|` bounded below. -/
+/-- **The step is short.** Let $f(\alpha) = 0$. Under the Muller local bounds and the smallness
+conditions, a Muller step from an admissible triple satisfies
+$$|d| |x_{k+1} - x_k| \le \frac{|f'(\alpha)|}{12}.$$
+
+This holds because $|x_{k+1} - x_k| |D| = 2 |f(x_k)|$, where $|f(x_k)|$ is of order
+$\varepsilon$ and the denominator $D$ is bounded away from $0$. -/
 theorem LocalData.abs_quadCoeff_mul_next_sub_le (hα : f α = 0) (hdata : LocalData f α ε η)
     (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) :
     |quadCoeff f x₀ x₁ x₂| * |next f x₀ x₁ x₂ - x₂| ≤ |deriv f α| / 12 := by
@@ -1616,10 +1910,15 @@ theorem LocalData.abs_quadCoeff_mul_next_sub_le (hα : f α = 0) (hdata : LocalD
   refine le_of_mul_le_mul_right ?_ (show (0:ℝ) < 3 * |deriv f α| / 4 by positivity)
   linarith [e1, hsm.eps_le', sq_abs (deriv f α)]
 
-/-- **The factor in Muller's error identity is close to `f'(α)`**:
-`|f'(α)|/2 ≤ |w + d (α + x_{k+1} - 2 x_k)| ≤ 3 |f'(α)|/2`, because `α + x_{k+1} - 2 x_k` is
-`(α - x_k) + (x_{k+1} - x_k)`, both short. This is where the sign rule of (6.30) is used: it is
-what bounds `x_{k+1} - x_k`, and hence excludes the far zero of the parabola. -/
+/-- **The factor in Muller's error identity is close to $f'(\alpha)$.** Let $f(\alpha) = 0$. Under
+the Muller local bounds and the smallness conditions, a Muller step from an admissible triple
+satisfies
+$$\frac{|f'(\alpha)|}{2} \le \bigl|w + d (\alpha + x_{k+1} - 2 x_k)\bigr| \le \frac{3
+  |f'(\alpha)|}{2}.$$
+
+This holds because $\alpha + x_{k+1} - 2 x_k = (\alpha - x_k) + (x_{k+1} - x_k)$, and both terms
+are short. Here the sign rule of (6.30) of [quarteroni2000numerical] is used: it bounds
+$x_{k+1} - x_k$, and so excludes the far zero of the parabola. -/
 theorem LocalData.effSlope_bounds (hα : f α = 0) (hdata : LocalData f α ε η)
     (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) :
     |deriv f α| / 2 ≤ |linCoeff f x₀ x₁ x₂ +
@@ -1656,12 +1955,15 @@ theorem LocalData.effSlope_bounds (hα : f α = 0) (hdata : LocalData f α ε η
       (quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂))
     linarith
 
-/-- **Local bounds near a simple root of a `C³` function.** For every `η > 0` there is a ball
-around `α` carrying `Muller.LocalData`. The third divided difference is handled by
-`DividedDifference.newton_four_eq_newton_three_dslope`, which turns `f[x, y, z, α]` into the second
-divided difference of `g = dslope f α`, a `C²` function at `α` with
-`g''(α)/2 = f⁽³⁾(α)/6` (Hadamard's lemma, `ContDiffAt.dslope_same` and
-`iteratedDeriv_dslope_same`). -/
+/-- **Local bounds near a point where $f$ is $C^3$.** If $f$ is $C^3$ at $\alpha$ and $\eta > 0$,
+then there is $\varepsilon > 0$ such that the Muller local bounds `Muller.LocalData` hold on
+$(\alpha - \varepsilon, \alpha + \varepsilon)$ with the tolerance $\eta$.
+
+The third divided difference is handled by
+`DividedDifference.newton_four_eq_newton_three_dslope`, which turns $f[x, y, z, \alpha]$ into
+the second divided difference of $g = \operatorname{dslope} f \alpha$. By Hadamard's lemma
+(`ContDiffAt.dslope_same` and `iteratedDeriv_dslope_same`), $g$ is $C^2$ at $\alpha$ with
+$g''(\alpha)/2 = f'''(\alpha)/6$. -/
 theorem exists_localData (hf : ContDiffAt ℝ 3 f α) (hη : 0 < η) :
     ∃ ε > 0, LocalData f α ε η := by
   have hf1 : ContDiffAt ℝ 1 f α := hf.of_le (by norm_num)
@@ -1699,14 +2001,18 @@ theorem exists_localData (hf : ContDiffAt ℝ 3 f α) (hη : 0 < η) :
 
 /-! ### One step -/
 
-/-- **One Muller step from an admissible triple.** Under the local bounds and the smallness
-conditions, with `m` and `M` chosen so that `m (3|f'(α)|/2) ≤ |f⁽³⁾(α)|/6 - η` and
-`|f⁽³⁾(α)|/6 + η ≤ M (|f'(α)|/2)` and `M ε² ≤ 1/2`, the new point obeys the two-sided error bound
+/-- **One Muller step from an admissible triple.** Let $f(\alpha) = 0$, and let the Muller local
+bounds and the smallness conditions hold. Let $m$ and $M$ be real numbers with
+$$m \cdot \frac{3 |f'(\alpha)|}{2} \le \frac{|f'''(\alpha)|}{6} - \eta, \qquad
+  \frac{|f'''(\alpha)|}{6} + \eta \le M \cdot \frac{|f'(\alpha)|}{2}, \qquad M \varepsilon^2 \le
+  \frac12.$$
+Then for every admissible triple $(x_{k-2}, x_{k-1}, x_k)$ the new point $x_{k+1}$ satisfies
+$$m |e_{k-2} e_{k-1} e_k| \le |e_{k+1}| \le M |e_{k-2} e_{k-1} e_k|,$$
+lies in the ball $(\alpha - \varepsilon, \alpha + \varepsilon)$, and differs from $x_{k-1}$ and
+from $x_k$.
 
-`m |e_{k-2} e_{k-1} e_k| ≤ |e_{k+1}| ≤ M |e_{k-2} e_{k-1} e_k|`,
-
-stays in the ball and differs from the two previous iterates. Muller's error identity
-(`Muller.sub_next_mul_eq`) divided by the factor bounded in `Muller.LocalData.effSlope_bounds`. -/
+The proof divides Muller's error identity `Muller.sub_next_mul_eq` by the factor that
+`Muller.LocalData.effSlope_bounds` bounds. -/
 theorem LocalData.step_bounds (hα : f α = 0) (hdata : LocalData f α ε η) (hsm : Small f α ε η)
     {m M : ℝ} (hm : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η)
     (hM : |iteratedDeriv 3 f α| / 6 + η ≤ M * (|deriv f α| / 2)) (hMε : M * ε ^ 2 ≤ 1 / 2)
@@ -1792,8 +2098,11 @@ theorem LocalData.step_bounds (hα : f α = 0) (hdata : LocalData f α ε η) (h
   · rw [h] at hsmall₂
     linarith [abs_pos.2 (sub_ne_zero.2 hs.ne₂)]
 
-/-- With `0 < m` (which needs `f⁽³⁾(α) ≠ 0` and `η < |f⁽³⁾(α)|/6`), admissibility is preserved by
-a Muller step. -/
+/-- Under the hypotheses of `Muller.LocalData.step_bounds` and with $0 < m$, the Muller step maps an
+admissible triple $(x_{k-2}, x_{k-1}, x_k)$ to an admissible triple $(x_{k-1}, x_k, x_{k+1})$.
+
+A number $m > 0$ with the required bound exists when $f'''(\alpha) \neq 0$ and
+$\eta < |f'''(\alpha)|/6$. -/
 theorem LocalData.isAdmissible_step (hα : f α = 0) (hdata : LocalData f α ε η)
     (hsm : Small f α ε η) {m M : ℝ} (hm0 : 0 < m)
     (hm : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η)
@@ -1814,24 +2123,30 @@ theorem LocalData.isAdmissible_step (hα : f α = 0) (hdata : LocalData f α ε 
 
 /-! ### The orbit -/
 
-/-- The **Muller iteration** from three starting values: `iterate f x₀ x₁ x₂ k` is the book's
-`x^{(k+2)}`, so that `iterate f x₀ x₁ x₂ 0 = x₂` and each further value is one application of
-`Muller.step` ([quarteroni2000numerical] (6.30)). -/
+/-- The **Muller iterates** from the three starting values $x_0$, $x_1$ and $x_2$: the last
+component of the $k$-th iterate of `Muller.step` from the triple $(x_0, x_1, x_2)$.
+
+The value `iterate f x₀ x₁ x₂ k` is the iterate $x^{(k+2)}$ of [quarteroni2000numerical],
+(6.30), so `iterate f x₀ x₁ x₂ 0` is $x_2$. -/
 noncomputable def iterate (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
   ((step f)^[k] (x₀, x₁, x₂)).2.2
 
-/-- One more Muller step shifts the state and appends `Muller.next`. -/
+/-- For every triple $s$ and every $k$, the $(k+1)$-st Muller state is obtained from the $k$-th
+state $(a, b, c)$ by dropping $a$ and appending `Muller.next` of $(a, b, c)$: it is
+$(b, c, \operatorname{next}(a, b, c))$. -/
 theorem iterate_succ_state (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) (k : ℕ) :
     (step f)^[k + 1] s = (((step f)^[k] s).2.1, ((step f)^[k] s).2.2,
       next f ((step f)^[k] s).1 ((step f)^[k] s).2.1 ((step f)^[k] s).2.2) := by
   rw [Function.iterate_succ_apply']
   rfl
 
-/-- **Decay in steps of three.** If `E k ≥ 0` and `E (k+3) ≤ E k / 2` then `E k → 0`: each residue
-class mod `3` decays geometrically. This is how the upper bound
-`|e_{k+1}| ≤ M |e_{k-2} e_{k-1} e_k| ≤ M ε² |e_{k-2}|` alone gives convergence of Muller's method,
-the three-term analogue of `Secant.tendsto_zero_of_le_mul` (for which the sharper Fibonacci decay
-was available, since there both factors could be taken small). -/
+/-- **Decay in steps of three.** Let $(E_k)$ be a sequence of nonnegative real numbers with
+$E_{k+3} \le E_k/2$ for all $k$. Then $E_k \to 0$.
+
+Each residue class modulo $3$ decays geometrically. This is how the upper bound $|e_{k+1}| \le M
+|e_{k-2} e_{k-1} e_k| \le M \varepsilon^2 |e_{k-2}|$ alone gives the convergence of Muller's
+method. It is the three-term analogue of `Secant.tendsto_zero_of_le_mul`, where the sharper
+Fibonacci decay was available, because there both factors could be taken small. -/
 theorem tendsto_zero_of_le_half {E : ℕ → ℝ} (hE : ∀ k, 0 ≤ E k)
     (hrec : ∀ k, E (k + 3) ≤ E k / 2) : Tendsto E atTop (𝓝 0) := by
   set C := max (E 0) (max (E 1) (E 2)) with hC
@@ -1866,23 +2181,24 @@ theorem tendsto_zero_of_le_half {E : ℕ → ℝ} (hE : ∀ k, 0 ≤ E k)
     rw [one_div, inv_pow, ← div_eq_mul_inv]
   refine h1.comp (tendsto_atTop_atTop.2 fun b => ⟨3 * b, fun n hn => by omega⟩)
 
-/-- **The tribonacci order from a two-sided triple-product recursion.** If a positive sequence
-satisfies `c e_k e_{k+1} e_{k+2} ≤ e_{k+3} ≤ C e_k e_{k+1} e_{k+2}` with `0 < c`, then
-`e_{k+1} ≤ B e_k ^ T` for all `k`, `T = Real.tribonacci` the root of `T³ = T² + T + 1`.
+/-- **The tribonacci order from a two-sided triple-product recursion.** Let $(e_k)$ be a sequence of
+positive real numbers, and let $0 < c$ and $C$ be real numbers with
+$$c\, e_{k+2} e_{k+1} e_k \le e_{k+3} \le C\, e_{k+2} e_{k+1} e_k$$
+for all $k$. Then there is $B > 0$ with $e_{k+1} \le B e_k^\tau$ for all $k$, where $\tau$ is
+`Real.tribonacci`, the real root of $\tau^3 = \tau^2 + \tau + 1$.
 
-In the logarithmic variables `u_k = log e_k` and `s_k = u_{k+1} - T u_k`, the upper bound gives
-`s_{k+3} ≤ log C + (1 - T) u_{k+3} + u_{k+2} + u_{k+1}` and the lower bound — used with the
-*negative* coefficient `1 - T` — turns this into
-
-`s_{k+3} ≤ L + (2 - T) s_{k+1} + ((T - 1)/T) s_k`,
-
-where the two identities `(2 - T)(T + 1) = (T - 1)/T` and `1 - (2 - T) - (T - 1)/T = (T - 1)²/T`
-are the cubic read twice. Both coefficients are positive and sum to less than `1` — exactly because
-`T ≠ 1` — so the same monotone induction as in the golden-ratio case
-(`Secant.exists_le_mul_rpow_goldenRatio`) bounds `s` above by
-`max (L / (1 - a - b)) (max (s 0) (max (s 1) (s 2)))`, and no spectral-radius argument for the
-two-dimensional recursion is needed. [isaacson1994analysis] pp. 99-101 give the golden-ratio
-analogue in limit form; this is the bound form the order of Definition 6.1 asks for. -/
+In the logarithmic variables $u_k = \log e_k$ and $s_k = u_{k+1} - \tau u_k$, the upper bound
+gives $s_{k+3} \le \log C + (1 - \tau) u_{k+3} + u_{k+2} + u_{k+1}$. The lower bound, used with
+the negative coefficient $1 - \tau$, turns this into
+$$s_{k+3} \le L + (2 - \tau) s_{k+1} + \frac{\tau - 1}{\tau} s_k.$$
+The two identities $(2 - \tau)(\tau + 1) = (\tau - 1)/\tau$ and $1 - (2 - \tau) - (\tau -
+1)/\tau = (\tau - 1)^2/\tau$ both come from the cubic. Both coefficients $a = 2 - \tau$ and
+$b = (\tau - 1)/\tau$ are positive, and their sum is less than $1$ exactly because
+$\tau \neq 1$. So the monotone induction of the golden-ratio case
+(`Secant.exists_le_mul_rpow_goldenRatio`) bounds $s$ above by
+$\max(L / (1 - a - b), s_0, s_1, s_2)$, and no spectral-radius argument for the two-dimensional
+recursion is needed. [isaacson1994analysis], pp. 99–101, gives the golden-ratio analogue in
+limit form; this is the bound form that `ConvergesWithOrder` needs. -/
 theorem exists_le_mul_rpow_tribonacci {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c) (hpos : ∀ k, 0 < e k)
     (hupper : ∀ k, e (k + 3) ≤ C * (e (k + 2) * e (k + 1) * e k))
     (hlower : ∀ k, c * (e (k + 2) * e (k + 1) * e k) ≤ e (k + 3)) :
@@ -1963,21 +2279,25 @@ theorem exists_le_mul_rpow_tribonacci {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c)
     _ = Real.exp S * e k ^ p := by
         rw [Real.exp_add, Real.rpow_def_of_pos (hpos k), mul_comm (Real.log _)]
 
-/-! ### Local convergence with order the tribonacci constant -/
+/-! ### Local convergence with the tribonacci order -/
 
-/-- **Muller's method has order the tribonacci constant `p ≈ 1.8393`**
-([quarteroni2000numerical] §6.4.3, where it is printed as `p ≃ 1.84` and quoted from [Hil87]
-without proof). If `f α = 0`, `f` is `C³` at `α`, `f'(α) ≠ 0` and `f⁽³⁾(α) ≠ 0`, then there is
-`ε > 0` such that from any three distinct starting values in `(α - ε, α + ε)`, none of them `α`,
-the Muller iterates converge to `α` with order `Real.tribonacci` in the sense of
-`ConvergesWithOrder`.
+/-- **Muller's method has the order of the tribonacci constant $\tau \approx 1.8393$.** Let
+$f(\alpha) = 0$, let $f$ be $C^3$ at $\alpha$, and let $f'(\alpha) \neq 0$ and
+$f'''(\alpha) \neq 0$. Then there is $\varepsilon > 0$ with the following property. For all
+pairwise distinct starting values $x_0, x_1, x_2 \in (\alpha - \varepsilon, \alpha +
+\varepsilon)$, all different from $\alpha$, the Muller iterates converge to $\alpha$ with the
+order `Real.tribonacci` in the sense of `ConvergesWithOrder`.
 
-The hypothesis `f⁽³⁾(α) ≠ 0` is what the *order* needs, exactly as `f''(α) ≠ 0` is needed for the
-secant method's golden-ratio order (`Secant.exists_ball_convergesWithOrder_goldenRatio`): without a
-lower bound on the error the two-sided recursion degenerates. The book states the sharper limit
-form `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6`, which this bound form does not claim; the
-constant is visible in `Muller.LocalData.step_bounds`, whose `m` and `M` both tend to
-`|f⁽³⁾(α)/(6 f'(α))|` as `ε, η → 0`. -/
+This is the order stated in [quarteroni2000numerical], §6.4.3, where it is printed as
+$p \simeq 1.84$ and quoted from Hildebrand without proof. The hypothesis $f'''(\alpha) \neq 0$
+is what the order needs, as $f''(\alpha) \neq 0$ is needed for the golden-ratio order of the
+secant method (`Secant.exists_ball_convergesWithOrder_goldenRatio`): without a lower bound on
+the error the two-sided recursion degenerates. The source states the sharper limit form
+$|e_{k+1}| / |e_k|^p \to |f'''(\alpha)/f'(\alpha)|/6$, which this bound form does not claim. The
+proof applies `Muller.LocalData.step_bounds` with $m = 2 (|f'''(\alpha)|/6 - \eta) / (3
+|f'(\alpha)|)$ and $M = 2 (|f'''(\alpha)|/6 + \eta) / |f'(\alpha)|$. As
+$\varepsilon, \eta \to 0$ these tend to $|f'''(\alpha)| / (9 |f'(\alpha)|)$ and
+$|f'''(\alpha)| / (3 |f'(\alpha)|)$, which enclose the limit constant of the source. -/
 theorem exists_ball_convergesWithOrder (hα : f α = 0) (hf : ContDiffAt ℝ 3 f α)
     (hf' : deriv f α ≠ 0) (hf3 : iteratedDeriv 3 f α ≠ 0) :
     ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, ∀ x₁ ∈ Metric.ball α ε, ∀ x₂ ∈ Metric.ball α ε,

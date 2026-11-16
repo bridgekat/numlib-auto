@@ -16,16 +16,36 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 /-!
 # Smooth functions constant off a compact set
 
-`IsContDiffConstOffCompact n c` says that the real function `c` on a normed space is of class
-`C^n` and agrees with a constant off a compact set. This class of *multipliers* contains the
-`C^n` compactly supported functions (`IsContDiffConstOffCompact.of_hasCompactSupport`) and the
-constants (`const`), and is closed under sums, products, scalar multiples, finite sums, partial
-derivatives (`fderiv_apply`, one order down) and inversion of members bounded below by a
-positive constant (`inv`); its members are bounded (`exists_bound`), and so are their
-derivatives (`exists_bound_fderiv`). Consequently every derivative of every order of a member
-is bounded, which is what makes them multipliers of the Sobolev spaces `H^k` in the
-higher-order regularity theory of elliptic equations ([brezis2011functional] §9.6, the
-extended coefficients `χ a + (1 − χ) δ` of the proof of Theorem 9.25).
+Let $E$ be a real normed space and $n \in \mathbb{N}$. A function $c : E \to \mathbb{R}$ is a
+**multiplier of class $C^n$** here if $c$ is $C^n$ on $E$ and agrees with a constant off a compact
+set. The multipliers include the $C^n$ functions with compact support and the constants. They are
+closed under sums, products, scalar multiples and finite sums, under partial derivatives (with the
+order lowered by one), and under inversion of a member that is bounded below by a positive constant.
+Every multiplier is bounded, and so is its derivative. Consequently every derivative of every order
+of a multiplier is bounded.
+
+This is what makes multipliers act on the Sobolev spaces $H^k$ in the higher-order regularity theory
+of elliptic equations ([brezis2011functional], §9.6). An example is the extended coefficient
+$\chi a + (1 - \chi) \delta$ in the proof of Theorem 9.25 of [brezis2011functional].
+
+## Main definitions
+
+* `IsContDiffConstOffCompact`: $c$ is $C^n$ and agrees with a constant off a compact set.
+
+## Main results
+
+* `IsContDiffConstOffCompact.of_hasCompactSupport`, `IsContDiffConstOffCompact.const`: $C^n$
+  functions with compact support and constants are multipliers.
+* `IsContDiffConstOffCompact.add`, `IsContDiffConstOffCompact.mul`,
+  `IsContDiffConstOffCompact.finset_sum`: sums, products and finite sums of multipliers are
+  multipliers.
+* `IsContDiffConstOffCompact.fderiv_apply`: a partial derivative of a multiplier of class $C^{n+1}$
+  is a multiplier of class $C^n$.
+* `IsContDiffConstOffCompact.inv`: $1/c$ is a multiplier if $c$ is one and $c \ge \alpha > 0$.
+* `IsContDiffConstOffCompact.exists_bound`, `IsContDiffConstOffCompact.exists_bound_fderiv`: a
+  multiplier and its derivative are bounded.
+* `HasCompactSupport.iteratedDeriv`: the iterated derivatives of a compactly supported function of
+  one variable have compact support.
 -/
 
 open scoped ContDiff
@@ -34,32 +54,35 @@ section ConstOffCompact
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- `IsContDiffConstOffCompact n c`: the real function `c` is of class `C^n` on the whole space
-and agrees with a constant off a compact set. This is the class of multipliers used in the
-higher-order regularity theory: it contains the smooth compactly supported functions, the
-constants, the extended coefficients `χ a + (1 − χ) δ`, and it is closed under partial
-derivatives, products and inversion of positive members, so that every derivative of every order
-of a member is bounded. -/
+/-- Let $E$ be a real normed space and $n \in \mathbb{N}$. A function $c : E \to \mathbb{R}$ is a
+**multiplier of class $C^n$** if $c$ is $C^n$ on $E$ and there is a constant
+$\kappa \in \mathbb{R}$ such that $c - \kappa$ has compact support.
+
+This is the class of multipliers of the higher-order regularity theory. It contains the smooth
+compactly supported functions, the constants and the extended coefficients
+$\chi a + (1 - \chi) \delta$. It is closed under partial derivatives, products and inversion of
+positive members, so that every derivative of every order of a member is bounded. -/
 structure IsContDiffConstOffCompact (n : ℕ) (c : E → ℝ) : Prop where
-  /-- A multiplier is `C^n`. -/
+  /-- A multiplier is $C^n$ on $E$. -/
   contDiff : ContDiff ℝ n c
-  /-- A multiplier agrees with a constant off a compact set. -/
+  /-- There is a constant $\kappa$ such that $c - \kappa$ has compact support. -/
   exists_hasCompactSupport_sub : ∃ κ : ℝ, HasCompactSupport fun x ↦ c x - κ
 
 namespace IsContDiffConstOffCompact
 
 variable {n : ℕ} {c : E → ℝ}
 
-/-- A `C^n` function with compact support is a multiplier. -/
+/-- A $C^n$ function $c : E \to \mathbb{R}$ with compact support is a multiplier of class $C^n$. -/
 theorem of_hasCompactSupport (hc : ContDiff ℝ n c) (hcs : HasCompactSupport c) :
     IsContDiffConstOffCompact n c :=
   ⟨hc, 0, by simpa using hcs⟩
 
-/-- A constant is a multiplier. -/
+/-- For every $\kappa \in \mathbb{R}$, the constant function $\kappa$ is a multiplier of class
+$C^n$. -/
 theorem const (κ : ℝ) : IsContDiffConstOffCompact n fun _ : E ↦ κ :=
   ⟨contDiff_const, κ, by simp [HasCompactSupport, tsupport]⟩
 
-/-- A multiplier of class `C^n` is one of class `C^m` for `m ≤ n`. -/
+/-- A multiplier of class $C^n$ is a multiplier of class $C^m$ for every $m \le n$. -/
 theorem of_le {m : ℕ} (h : IsContDiffConstOffCompact n c) (hmn : m ≤ n) :
     IsContDiffConstOffCompact m c :=
   ⟨h.contDiff.of_le (by exact_mod_cast hmn), h.exists_hasCompactSupport_sub⟩
@@ -67,7 +90,7 @@ theorem of_le {m : ℕ} (h : IsContDiffConstOffCompact n c) (hmn : m ≤ n) :
 /-- A multiplier is continuous. -/
 theorem continuous (h : IsContDiffConstOffCompact n c) : Continuous c := h.contDiff.continuous
 
-/-- A multiplier is bounded. -/
+/-- A multiplier $c$ is bounded: there is $C$ with $|c(x)| \le C$ for all $x \in E$. -/
 theorem exists_bound (h : IsContDiffConstOffCompact n c) : ∃ C, ∀ x, |c x| ≤ C := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
   obtain ⟨C, hC⟩ := hκ.exists_bound_of_continuous (h.continuous.sub continuous_const)
@@ -78,7 +101,7 @@ theorem exists_bound (h : IsContDiffConstOffCompact n c) : ∃ C, ∀ x, |c x| �
     _ ≤ |c x - κ| + |κ| := abs_add_le _ _
     _ ≤ C + |κ| := by linarith
 
-/-- The sum of two multipliers is a multiplier. -/
+/-- The sum $c + c'$ of two multipliers of class $C^n$ is a multiplier of class $C^n$. -/
 theorem add {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
     (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x + c' x := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
@@ -91,7 +114,7 @@ theorem add {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
   rw [e]
   exact hκ.add hκ'
 
-/-- The product of two multipliers is a multiplier. -/
+/-- The product $c c'$ of two multipliers of class $C^n$ is a multiplier of class $C^n$. -/
 theorem mul {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
     (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x * c' x := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
@@ -107,23 +130,25 @@ theorem mul {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
   rw [e]
   exact h1.add h2
 
-/-- A scalar multiple of a multiplier is a multiplier. -/
+/-- For a multiplier $c$ of class $C^n$ and $r \in \mathbb{R}$, the function $r c$ is a multiplier
+of class $C^n$. -/
 theorem const_mul (h : IsContDiffConstOffCompact n c) (r : ℝ) :
     IsContDiffConstOffCompact n fun x ↦ r * c x :=
   (const r).mul h
 
-/-- The negative of a multiplier is a multiplier. -/
+/-- The negative $-c$ of a multiplier of class $C^n$ is a multiplier of class $C^n$. -/
 theorem neg (h : IsContDiffConstOffCompact n c) : IsContDiffConstOffCompact n fun x ↦ -c x := by
   have := h.const_mul (-1)
   simpa using this
 
-/-- The difference of two multipliers is a multiplier. -/
+/-- The difference $c - c'$ of two multipliers of class $C^n$ is a multiplier of class $C^n$. -/
 theorem sub {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
     (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x - c' x := by
   have := h.add h'.neg
   simpa [sub_eq_add_neg] using this
 
-/-- A finite sum of multipliers is a multiplier. -/
+/-- Let $s$ be a finite set and let $c_i$ be a multiplier of class $C^n$ for every $i \in s$. Then
+$\sum_{i \in s} c_i$ is a multiplier of class $C^n$. -/
 theorem finset_sum {κ : Type*} (s : Finset κ) {c : κ → E → ℝ}
     (h : ∀ i ∈ s, IsContDiffConstOffCompact n (c i)) :
     IsContDiffConstOffCompact n fun x ↦ ∑ i ∈ s, c i x := by
@@ -134,8 +159,11 @@ theorem finset_sum {κ : Type*} (s : Finset κ) {c : κ → E → ℝ}
     simp only [Finset.sum_insert ha]
     exact (h a (Finset.mem_insert_self a s)).add (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
 
-/-- The partial derivative of a multiplier of class `C^{n+1}` is a multiplier of class `C^n`,
-with compact support. -/
+/-- Let $c$ be a multiplier of class $C^{n+1}$ and let $y \in E$. Then the partial derivative
+$x \mapsto Dc(x)\, y$ in the direction $y$ is a multiplier of class $C^n$.
+
+Since $c$ is constant off a compact set, the partial derivative vanishes off that set; the
+statement records only that it is a multiplier. -/
 theorem fderiv_apply (h : IsContDiffConstOffCompact (n + 1) c) (y : E) :
     IsContDiffConstOffCompact n fun x ↦ fderiv ℝ c x y := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
@@ -148,7 +176,8 @@ theorem fderiv_apply (h : IsContDiffConstOffCompact (n + 1) c) (y : E) :
     rw [e]
     exact this
 
-/-- The inverse of a multiplier bounded below by a positive constant is a multiplier. -/
+/-- Let $c$ be a multiplier of class $C^n$, and let $\alpha > 0$ with $c(x) \ge \alpha$ for all
+$x \in E$. Then $1/c$ is a multiplier of class $C^n$. -/
 theorem inv (h : IsContDiffConstOffCompact n c) {α : ℝ} (hα : 0 < α) (hc : ∀ x, α ≤ c x) :
     IsContDiffConstOffCompact n fun x ↦ (c x)⁻¹ := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
@@ -161,7 +190,8 @@ theorem inv (h : IsContDiffConstOffCompact n c) {α : ℝ} (hα : 0 < α) (hc : 
   have : c x = κ := by linarith
   rw [this, sub_self]
 
-/-- A multiplier of class `C^{n+1}` has a bounded derivative. -/
+/-- Let $c$ be a multiplier of class $C^{n+1}$. Then its derivative is bounded: there is $C$ with
+$\|Dc(x)\| \le C$ for all $x \in E$, in the operator norm. -/
 theorem exists_bound_fderiv (h : IsContDiffConstOffCompact (n + 1) c) :
     ∃ C, ∀ x, ‖fderiv ℝ c x‖ ≤ C := by
   obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
@@ -173,8 +203,11 @@ theorem exists_bound_fderiv (h : IsContDiffConstOffCompact (n + 1) c) :
 
 end IsContDiffConstOffCompact
 
-/-- A `C^n` function with support in an open set `Q` times a `C^n` function on `Q` is `C^n`
-everywhere. -/
+/-- Let $n \in \mathbb{N} \cup \{\infty, \omega\}$, let $Q \subseteq E$ be open, let
+$\chi : E \to \mathbb{R}$ be $C^n$ on $E$ with the closure of its support in $Q$, and let
+$f : E \to \mathbb{R}$ be $C^n$ on $Q$. Then $\chi f$ is $C^n$ on all of $E$.
+
+The order $n$ is a term of `WithTop ℕ∞`, and the closed support is `tsupport χ`. -/
 theorem ContDiff.mul_contDiffOn_of_tsupport_subset {n : WithTop ℕ∞} {χ f : E → ℝ}
     (hχ : ContDiff ℝ n χ) {Q : Set E} (hQ : IsOpen Q) (hf : ContDiffOn ℝ n f Q)
     (hχQ : tsupport χ ⊆ Q) : ContDiff ℝ n fun y ↦ χ y * f y := by
@@ -191,7 +224,11 @@ end ConstOffCompact
 
 /-! ### Iterated derivatives of compactly supported functions of one variable -/
 
-/-- The iterated derivatives of a compactly supported function have compact support. -/
+/-- Let $f : \mathbb{R} \to \mathbb{R}$ have compact support. Then for every $k \in \mathbb{N}$, the
+$k$-th derivative $f^{(k)}$ has compact support.
+
+The derivative is `iteratedDeriv k f`, which is defined for every $f$; no differentiability is
+assumed. -/
 theorem HasCompactSupport.iteratedDeriv {f : ℝ → ℝ} (hf : HasCompactSupport f) (k : ℕ) :
     HasCompactSupport (iteratedDeriv k f) := by
   induction k with

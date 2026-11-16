@@ -8,50 +8,76 @@ import Numlib.Approximation.NewtonForm
 /-!
 # Vandermonde systems and the Björck–Pereyra factorization
 
-The Vandermonde system `Vᵀ a = f` of polynomial interpolation and its fast solution by the
-Björck–Pereyra algorithm ([golub2013matrix] §4.6; Björck and Pereyra 1970; [higham2002accuracy]
-§22.2).
+Let $x_0, \dots, x_n$ be nodes in a field $K$. The Vandermonde matrix $V = V(x_0, \dots, x_n)$ of
+[golub2013matrix] §4.6 has the entries $v_{ij} = x_j^i$, and the Vandermonde system $V^T a = f$ asks
+for the coefficients $a$ of the polynomial $p(t) = \sum_j a_j t^j$ with $p(x_i) = f_i$. This module
+proves the factorization of Björck and Pereyra (1970), which solves this system for distinct nodes
+by two sweeps of elementary matrices; see also [higham2002accuracy] §22.2.
 
-Mathlib's `Matrix.vandermonde x : Matrix (Fin (n + 1)) (Fin (n + 1)) K` has entries `x i ^ j` (the
-nodes index the rows); the book's `V(x₀, …, x_n)` is its transpose. The interpolation system of the
-book is therefore `vandermonde x *ᵥ a = f`: the polynomial with coefficients `a` takes the values
-`f` at the nodes (`Matrix.vandermonde_mulVec_eq_eval`).
+The sweeps are products of the elementary lower bidiagonal matrices $L_k(\alpha)$, the identity with
+$-\alpha$ on the subdiagonal from column $k$ on, and of diagonal matrices $D_k$ of node differences.
+The divided-difference sweep $c = U^T f$, with $U^T = D_{n-1}^{-1} L_{n-1}(1) \cdots D_0^{-1}
+L_0(1)$, computes the coefficients $c_k = f[x_0, \dots, x_k]$ of the Newton form of the interpolant.
+The Newton-to-monomial sweep $a = L^T c$, with $L^T = L_0(x_0)^T \cdots L_{n-1}(x_{n-1})^T$,
+converts the Newton form to monomial coefficients. Together they give $V^{-T} = L^T U^T$.
 
-Björck and Pereyra solve it in two sweeps, each a product of elementary bidiagonal matrices
-`L_k(α)` (`BjorckPereyra.lowerBidiag`) and diagonal matrices `D_k` (`BjorckPereyra.diffScale`):
+## Main definitions
 
-* the **divided-difference sweep** `c = Uᵀ f`, `Uᵀ = D_{n−1}⁻¹ L_{n−1}(1) ⋯ D_0⁻¹ L_0(1)`
-  (`BjorckPereyra.upperFactorT`), computes the coefficients `c_k = f[x₀, …, x_k]` of the Newton
-  form of the interpolant (`BjorckPereyra.upperFactorT_mulVec_eq_newtonOn`);
-* the **Newton-to-monomial sweep** `a = Lᵀ c`, `Lᵀ = L_0(x_0)ᵀ ⋯ L_{n−1}(x_{n−1})ᵀ`
-  (`BjorckPereyra.lowerFactorT`), converts a Newton form to monomial coefficients
-  (`BjorckPereyra.lowerFactorT_mulVec_newtonCoeff`).
+* `BjorckPereyra.lowerBidiag`: the elementary lower bidiagonal matrix $L_k(\alpha)$.
+* `BjorckPereyra.lowerFactorT`: the factor $L^T = L_0(x_0)^T \cdots L_{n-1}(x_{n-1})^T$.
+* `BjorckPereyra.diffScale`: the diagonal matrix $D_k$ of node differences.
+* `BjorckPereyra.upperFactorT`: the factor $U^T = D_{n-1}^{-1} L_{n-1}(1) \cdots D_0^{-1} L_0(1)$.
 
-Together they give **`V⁻ᵀ = Lᵀ Uᵀ`** (`BjorckPereyra.inv_vandermonde_eq`), which is what the
-surface Algorithms 4.6.1–4.6.2 are proved against.
+## Main results
 
-## Design
+* `Matrix.vandermonde_mulVec_eq_eval`: entry $i$ of $V^T a$ is the value at $x_i$ of the polynomial
+  with coefficients $a$ (4.6.1).
+* `BjorckPereyra.lowerBidiag_mulVec_apply` and `BjorckPereyra.vecMul_transpose_lowerBidiag_apply`:
+  $L_k(\alpha)$, applied to a column vector, and $L_k(\alpha)^T$, applied to a row vector, subtract
+  $\alpha$ times the previous entry from each entry after position $k$.
+* `BjorckPereyra.pow_vecMul_lowerFactorT`: the row $(1, t, \dots, t^n)$ times $L^T$ is the row of
+  Newton basis values $\prod_{l < j} (t - x_l)$.
+* `BjorckPereyra.vandermonde_mul_lowerFactorT`: $V^T L^T$ is the Newton basis matrix with entries
+  $\prod_{l < j} (x_i - x_l)$.
+* `BjorckPereyra.lowerFactorT_mulVec_newtonCoeff`: the polynomial with coefficients $L^T c$ is the
+  Newton form with coefficients $c$.
+* `BjorckPereyra.inv_diffScale`: for distinct nodes, $D_k^{-1}$ is the diagonal matrix of the
+  reciprocals of the diagonal of $D_k$.
+* `BjorckPereyra.upperFactorT_mulVec_eq_newtonOn`: for distinct nodes,
+  $(U^T f)_k = f[x_0, \dots, x_k]$.
+* `BjorckPereyra.inv_vandermonde_eq`: for distinct nodes, $V^{-T} = L^T U^T$.
 
-The second sweep is proved as a statement about row vectors, uniformly in a commutative ring:
-the row of powers `(1, t, …, tⁿ)` times `Lᵀ` is the row of Newton basis values
-`(∏_{l<j} (t − x_l))_j` (`BjorckPereyra.pow_vecMul_lowerFactorT`). At `t = x_i` this is the
-product `V Lᵀ` (`BjorckPereyra.vandermonde_mul_lowerFactorT`), and at `t = X` over the polynomial
-ring it is the polynomial identity of the Newton-to-monomial conversion. The first sweep is proved
-by induction on the number of factors applied, with the divided differences over the windows
-`[i − k, i]` of consecutive nodes (`ℕ`-indexed, truncated at `0`) as invariant.
+## Proof outline
 
-## References
+The second sweep is proved as a statement about row vectors, uniformly over a commutative ring: the
+row of powers $(1, t, \dots, t^n)$ times $L^T$ is the row of Newton basis values
+$\bigl(\prod_{l < j} (t - x_l)\bigr)_j$. At $t = x_i$ this gives the product $V^T L^T$, and at
+$t = X$ over the polynomial ring it gives the polynomial identity of the Newton-to-monomial
+conversion. The first sweep is proved by induction on the number of factors applied. The invariant
+is that entry $i$ holds the divided difference over the window $[i - k, i]$ of consecutive nodes,
+with the indices in $\mathbb{N}$ and the window truncated at $0$.
 
-* [golub2013matrix] §4.6.
-* [higham2002accuracy] §22.2.
+## Implementation notes
+
+* Mathlib's `Matrix.vandermonde x : Matrix (Fin (n + 1)) (Fin (n + 1)) K` has the entries $x_i^j$,
+  so the nodes index the rows; it is the transpose $V^T$ of the matrix of the book. The
+  interpolation system of the book is therefore `vandermonde x *ᵥ a = f`.
+* The results on $L_k(\alpha)$ and $L^T$ hold over any commutative ring; the results on $D_k$ and
+  $U^T$ need a field.
+* The surface library proves Algorithms 4.6.1 and 4.6.2 of [golub2013matrix] from
+  `BjorckPereyra.inv_vandermonde_eq`.
 -/
 
 open Matrix Polynomial Finset
 
 open scoped Fin.NatCast
 
-/-- **Vandermonde systems are interpolation problems** ([golub2013matrix] (4.6.1)): the `i`-th
-entry of `vandermonde x *ᵥ a` is the value at `x i` of the polynomial with coefficients `a`. -/
+/-- Vandermonde systems are interpolation problems. Let $R$ be a commutative ring and let
+$x, a \in R^n$. Then entry $i$ of $V^T a$ is the value at $x_i$ of the polynomial with
+coefficients $a$: $$(V^T a)_i = p(x_i), \qquad p = \sum_j a_j X^j.$$ This is (4.6.1) of
+[golub2013matrix].
+
+The matrix $V^T$ is Mathlib's `Matrix.vandermonde x`, with the entries $x_i^j$. -/
 theorem Matrix.vandermonde_mulVec_eq_eval {R : Type*} [CommRing R] {n : ℕ} (x : Fin n → R)
     (a : Fin n → R) (i : Fin n) :
     (vandermonde x *ᵥ a) i = (∑ j, C (a j) * X ^ (j : ℕ)).eval (x i) := by
@@ -64,12 +90,18 @@ section Ring
 
 variable {R : Type*} [CommRing R] {n : ℕ}
 
-/-- The elementary lower bidiagonal matrix `L_k(α)` of [golub2013matrix] §4.6.2: the identity with
-`-α` on the subdiagonal positions `(i + 1, i)` for `i ≥ k`. -/
+/-- The **elementary lower bidiagonal matrix** $L_k(\alpha)$ of [golub2013matrix] §4.6.2. Let $R$ be
+a commutative ring, $n, k \in \mathbb{N}$ and $\alpha \in R$. Then $L_k(\alpha)$ is the
+$(n+1) \times (n+1)$ identity matrix with $-\alpha$ in the subdiagonal positions $(i + 1, i)$
+for $i \ge k$: $$L_k(\alpha)_{ij} = \begin{cases} 1 & \text{if } i = j, \\ -\alpha & \text{if }
+i = j + 1 \text{ and } j \ge k, \\ 0 & \text{otherwise.} \end{cases}$$ For $k \ge n$ it is the
+identity matrix. -/
 def lowerBidiag (n k : ℕ) (α : R) : Matrix (Fin (n + 1)) (Fin (n + 1)) R :=
   of fun i j => if i = j then 1 else if (i : ℕ) = j + 1 ∧ k ≤ (j : ℕ) then -α else 0
 
-/-- `L_k(α)` subtracts `α` times the previous entry from every entry below position `k`. -/
+/-- Applied to a vector, $L_k(\alpha)$ subtracts $\alpha$ times the previous entry from each entry
+after position $k$: for $c \in R^{n+1}$, $(L_k(\alpha) c)_i = c_i - \alpha c_{i-1}$ if
+$i \ge k + 1$, and $(L_k(\alpha) c)_i = c_i$ otherwise. -/
 theorem lowerBidiag_mulVec_apply (k : ℕ) (α : R) (c : Fin (n + 1) → R) (i : Fin (n + 1)) :
     (lowerBidiag n k α *ᵥ c) i =
       if h : k + 1 ≤ (i : ℕ) then c i - α * c ⟨i - 1, by omega⟩ else c i := by
@@ -96,20 +128,24 @@ theorem lowerBidiag_mulVec_apply (k : ℕ) (α : R) (c : Fin (n + 1) → R) (i :
       simp [h1, h2]
     · simp
 
-/-- `L_k(α)ᵀ` acting on a row vector: `α` times the previous entry is subtracted from every entry
-below position `k`. -/
+/-- Applied to a row vector, $L_k(\alpha)^T$ acts in the same way: for $w \in R^{n+1}$,
+$(w^T L_k(\alpha)^T)_j = w_j - \alpha w_{j-1}$ if $j \ge k + 1$, and
+$(w^T L_k(\alpha)^T)_j = w_j$ otherwise. -/
 theorem vecMul_transpose_lowerBidiag_apply (k : ℕ) (α : R) (w : Fin (n + 1) → R)
     (j : Fin (n + 1)) :
     (w ᵥ* (lowerBidiag n k α)ᵀ) j =
       if h : k + 1 ≤ (j : ℕ) then w j - α * w ⟨j - 1, by omega⟩ else w j := by
   rw [vecMul_transpose, lowerBidiag_mulVec_apply]
 
-/-- The factor `Lᵀ = L_0(x_0)ᵀ ⋯ L_{n−1}(x_{n−1})ᵀ` of [golub2013matrix] §4.6.2, the
-Newton-to-monomial sweep; its transpose is the book's unit lower triangular `L`. -/
+/-- The factor $L^T$ of the Newton-to-monomial sweep of [golub2013matrix] §4.6.2. For nodes
+$x_0, \dots, x_n$ in a commutative ring, $$L^T = L_0(x_0)^T L_1(x_1)^T \cdots
+L_{n-1}(x_{n-1})^T.$$ Its transpose is the unit lower triangular matrix $L$ of the book.
+
+The node $x_n$ is not used. For $n = 0$ the product is empty and $L^T$ is the identity. -/
 def lowerFactorT (x : Fin (n + 1) → R) : Matrix (Fin (n + 1)) (Fin (n + 1)) R :=
   ((List.range n).map fun k => (lowerBidiag n k (x k))ᵀ).prod
 
-/-- The partial products `L_0(x_0)ᵀ ⋯ L_{k−1}(x_{k−1})ᵀ`. -/
+/-- The partial product $L_0(x_0)^T \cdots L_{k-1}(x_{k-1})^T$. -/
 private def lowerFactorTPartial (x : Fin (n + 1) → R) (k : ℕ) :
     Matrix (Fin (n + 1)) (Fin (n + 1)) R :=
   ((List.range k).map fun k => (lowerBidiag n k (x k))ᵀ).prod
@@ -118,7 +154,8 @@ private theorem lowerFactorTPartial_succ (x : Fin (n + 1) → R) (k : ℕ) :
     lowerFactorTPartial x (k + 1) = lowerFactorTPartial x k * (lowerBidiag n k (x k))ᵀ := by
   simp [lowerFactorTPartial, List.range_succ]
 
-/-- The row of powers after `k` factors of the second sweep. -/
+/-- After $k \le n$ factors of the second sweep, entry $j$ of the row of powers $(1, t, \dots, t^n)$
+is $t^{j - \min(j, k)} \prod_{l < \min(j, k)} (t - x_l)$. -/
 private theorem pow_vecMul_lowerFactorTPartial (x : Fin (n + 1) → R) (t : R) {k : ℕ}
     (hk : k ≤ n) (j : Fin (n + 1)) :
     ((fun j : Fin (n + 1) => t ^ (j : ℕ)) ᵥ* lowerFactorTPartial x k) j =
@@ -138,9 +175,10 @@ private theorem pow_vecMul_lowerFactorTPartial (x : Fin (n + 1) → R) (t : R) {
     · rw [ih (by omega), min_eq_left (by omega : (j : ℕ) ≤ k),
         min_eq_left (by omega : (j : ℕ) ≤ k + 1)]
 
-/-- **The Newton-to-monomial sweep, row form** ([golub2013matrix] (4.6.4)): the row of powers
-`(1, t, …, tⁿ)` times `Lᵀ` is the row of Newton basis values `(∏_{l<j} (t − x_l))_j`, in any
-commutative ring. -/
+/-- The Newton-to-monomial sweep in row form. Let $R$ be a commutative ring, let
+$x_0, \dots, x_n \in R$, and let $t \in R$. Then the row of powers $(1, t, \dots, t^n)$ times
+$L^T$ is the row of Newton basis values: $$\bigl((1, t, \dots, t^n) \, L^T\bigr)_j = \prod_{l <
+j} (t - x_l), \qquad 0 \le j \le n.$$ This is (4.6.4) of [golub2013matrix]. -/
 theorem pow_vecMul_lowerFactorT (x : Fin (n + 1) → R) (t : R) (j : Fin (n + 1)) :
     ((fun j : Fin (n + 1) => t ^ (j : ℕ)) ᵥ* lowerFactorT x) j =
       ∏ l ∈ range j, (t - x l) := by
@@ -148,17 +186,22 @@ theorem pow_vecMul_lowerFactorT (x : Fin (n + 1) → R) (t : R) (j : Fin (n + 1)
   rw [min_eq_left (by omega : (j : ℕ) ≤ n), Nat.sub_self, pow_zero, one_mul] at this
   exact this
 
-/-- `V Lᵀ` is the Newton basis matrix: `(vandermonde x * lowerFactorT x) i j = ∏_{l<j} (x_i − x_l)`
-([golub2013matrix] §4.6.2). -/
+/-- The product $V^T L^T$ is the Newton basis matrix. For nodes $x_0, \dots, x_n$ in a commutative
+ring, $$(V^T L^T)_{ij} = \prod_{l < j} (x_i - x_l).$$ This is §4.6.2 of [golub2013matrix].
+
+The matrix $V^T$ is `Matrix.vandermonde x`. The identity is
+`BjorckPereyra.pow_vecMul_lowerFactorT` at $t = x_i$. -/
 theorem vandermonde_mul_lowerFactorT (x : Fin (n + 1) → R) :
     vandermonde x * lowerFactorT x = of fun i (j : Fin (n + 1)) => ∏ l ∈ range j, (x i - x l) := by
   ext i j
   rw [of_apply, ← pow_vecMul_lowerFactorT x (x i) j]
   rfl
 
-/-- **The Newton-to-monomial sweep is `a = Lᵀ c`** ([golub2013matrix] (4.6.4) and the recursion
-`p_k = c_k + (x − x_k) p_{k+1}` before it): the polynomial with coefficients `Lᵀ c` is the Newton
-form `∑_k c_k ∏_{i<k} (X − x_i)`. -/
+/-- The Newton-to-monomial sweep is $a = L^T c$. Let $R$ be a commutative ring, let
+$x_0, \dots, x_n \in R$, and let $c \in R^{n+1}$. Then the polynomial with coefficients $L^T c$
+is the Newton form with coefficients $c$: $$\sum_{j=0}^n (L^T c)_j X^j = \sum_{k=0}^n c_k
+\prod_{i < k} (X - x_i).$$ This is (4.6.4) of [golub2013matrix], with the recursion
+$p_k = c_k + (x - x_k) p_{k+1}$ that precedes it. -/
 theorem lowerFactorT_mulVec_newtonCoeff (x : Fin (n + 1) → R) (c : Fin (n + 1) → R) :
     ∑ j, C ((lowerFactorT x *ᵥ c) j) * X ^ (j : ℕ) =
       ∑ k : Fin (n + 1), C (c k) * ∏ i ∈ range k, (X - C (x i)) := by
@@ -187,7 +230,8 @@ theorem lowerFactorT_mulVec_newtonCoeff (x : Fin (n + 1) → R) (c : Fin (n + 1)
         exact sum_congr rfl fun j _ => by ring
     _ = _ := by simp only [key]
 
-/-- The nodes as an `ℕ`-indexed family (the last node repeated past the end is never read). -/
+/-- The nodes as a family indexed by $\mathbb{N}$: an index is cast into `Fin (n + 1)` modulo
+$n + 1$, and the values past $n$ are never read. -/
 private def nodeN (x : Fin (n + 1) → R) (i : ℕ) : R := x i
 
 omit [CommRing R] in
@@ -211,17 +255,24 @@ section Field
 
 variable {K : Type*} [Field K] {n : ℕ}
 
-/-- The diagonal factor `D_k = diag(1, …, 1, x_{k+1} − x_0, …, x_n − x_{n−k−1})` (`k + 1` ones) of
-[golub2013matrix] §4.6.2. -/
+/-- The diagonal factor $D_k$ of [golub2013matrix] §4.6.2. For nodes $x_0, \dots, x_n$ in a field
+and $k \in \mathbb{N}$, $$D_k = \operatorname{diag}(1, \dots, 1, x_{k+1} - x_0, \dots, x_n -
+x_{n-k-1}),$$ with $k + 1$ ones: entry $i$ is $1$ for $i \le k$ and $x_i - x_{i-k-1}$ for
+$i > k$. For $k \ge n$, $D_k$ is the identity matrix. -/
 def diffScale (x : Fin (n + 1) → K) (k : ℕ) : Matrix (Fin (n + 1)) (Fin (n + 1)) K :=
   diagonal fun i => if (i : ℕ) ≤ k then 1 else x i - x ⟨i - k - 1, by omega⟩
 
-/-- The factor `Uᵀ = D_{n−1}⁻¹ L_{n−1}(1) ⋯ D_0⁻¹ L_0(1)` of [golub2013matrix] §4.6.2, the
-divided-difference sweep; its transpose is the book's upper triangular `U`. -/
+/-- The factor $U^T$ of the divided-difference sweep of [golub2013matrix] §4.6.2. For nodes
+$x_0, \dots, x_n$ in a field, $$U^T = D_{n-1}^{-1} L_{n-1}(1) \cdots D_0^{-1} L_0(1).$$ Its
+transpose is the upper triangular matrix $U$ of the book.
+
+The inverse is Mathlib's matrix inverse, which is $0$ for a singular matrix. For distinct nodes
+each $D_k$ is invertible (`BjorckPereyra.inv_diffScale`). -/
 noncomputable def upperFactorT (x : Fin (n + 1) → K) : Matrix (Fin (n + 1)) (Fin (n + 1)) K :=
   ((List.range n).map fun k => (diffScale x k)⁻¹ * lowerBidiag n k 1).reverse.prod
 
-/-- For distinct nodes, `D_k` is invertible with the reciprocal diagonal. -/
+/-- For distinct nodes, $D_k^{-1}$ is the diagonal matrix of the reciprocals of the diagonal entries
+of $D_k$. -/
 theorem inv_diffScale {x : Fin (n + 1) → K} (hx : Function.Injective x) (k : ℕ) :
     (diffScale x k)⁻¹ =
       diagonal fun i : Fin (n + 1) =>
@@ -235,7 +286,7 @@ theorem inv_diffScale {x : Fin (n + 1) → K} (hx : Function.Injective x) (k : �
   · exact one_ne_zero
   · exact sub_ne_zero.mpr fun h' => by have := congrArg Fin.val (hx h'); simp at this; omega
 
-/-- The partial products `D_{k−1}⁻¹ L_{k−1}(1) ⋯ D_0⁻¹ L_0(1)`. -/
+/-- The partial product $D_{k-1}^{-1} L_{k-1}(1) \cdots D_0^{-1} L_0(1)$. -/
 private noncomputable def upperFactorTPartial (x : Fin (n + 1) → K) (k : ℕ) :
     Matrix (Fin (n + 1)) (Fin (n + 1)) K :=
   ((List.range k).map fun k => (diffScale x k)⁻¹ * lowerBidiag n k 1).reverse.prod
@@ -245,8 +296,9 @@ private theorem upperFactorTPartial_succ (x : Fin (n + 1) → K) (k : ℕ) :
       (diffScale x k)⁻¹ * lowerBidiag n k 1 * upperFactorTPartial x k := by
   simp [upperFactorTPartial, List.range_succ]
 
-/-- The invariant of the divided-difference sweep: after `k` factors, entry `i` holds the divided
-difference over the window `[i − k, i]` (truncated at `0`). -/
+/-- The invariant of the divided-difference sweep: for distinct nodes and $k \le n$, entry $i$ of
+the vector $(g(x_j))_j$ after $k$ factors is the divided difference of $g$ over the nodes $x_l$
+with $\max(i - k, 0) \le l \le i$. -/
 private theorem upperFactorTPartial_mulVec {x : Fin (n + 1) → K} (hx : Function.Injective x)
     (g : K → K) {k : ℕ} (hk : k ≤ n) (i : Fin (n + 1)) :
     (upperFactorTPartial x k *ᵥ fun j => g (x j)) i =
@@ -288,9 +340,13 @@ private theorem upperFactorTPartial_mulVec {x : Fin (n + 1) → K} (hx : Functio
       omega
     · exfalso; omega
 
-/-- **The divided-difference sweep is `c = Uᵀ f`** ([golub2013matrix] §4.6.2, "it is easy to
-verify from (4.6.3)"): for distinct nodes, `(Uᵀ f)_k = f[x₀, …, x_k]`, where `g` is any function
-with `g (x i) = f i`. -/
+/-- The divided-difference sweep is $c = U^T f$. Let $K$ be a field, let $x_0, \dots, x_n \in K$ be
+distinct, and let $g : K \to K$ and $f_i = g(x_i)$. Then for $0 \le k \le n$, $$(U^T f)_k =
+g[x_0, \dots, x_k],$$ the divided difference of $g$ at the nodes $x_0, \dots, x_k$. This is
+§4.6.2 of [golub2013matrix], where the book says that "it is easy to verify from (4.6.3)".
+
+The divided difference is `DividedDifference.newtonOn (Finset.Iic k) x g`, which is $\sum_{i \le
+k} g(x_i) / \prod_{j \le k, \, j \ne i} (x_i - x_j)$. -/
 theorem upperFactorT_mulVec_eq_newtonOn {x : Fin (n + 1) → K} (hx : Function.Injective x)
     (g : K → K) (k : Fin (n + 1)) :
     (upperFactorT x *ᵥ fun j => g (x j)) k = DividedDifference.newtonOn (Iic k) x g := by
@@ -306,10 +362,12 @@ theorem upperFactorT_mulVec_eq_newtonOn {x : Fin (n + 1) → K} (hx : Function.I
   funext l
   exact nodeN_val x l
 
-/-- **The Björck–Pereyra factorization `V⁻ᵀ = Lᵀ Uᵀ`** ([golub2013matrix] §4.6.2): for distinct
-nodes, `(vandermonde x)⁻¹ = lowerFactorT x * upperFactorT x` (the book's `V` is
-`(vandermonde x)ᵀ`, so this is `V⁻ᵀ = Lᵀ Uᵀ`, and its transpose `V⁻¹ = U L` is what Algorithm
-4.6.2 applies). -/
+/-- The **Björck–Pereyra factorization**. For distinct nodes $x_0, \dots, x_n$ in a field,
+$$V^{-T} = L^T U^T.$$ This is §4.6.2 of [golub2013matrix].
+
+The Lean statement is `(vandermonde x)⁻¹ = lowerFactorT x * upperFactorT x`, because Mathlib's
+`Matrix.vandermonde x` is the matrix $V^T$ of the book. Its transpose $V^{-1} = UL$ is the form
+that Algorithm 4.6.2 applies. -/
 theorem inv_vandermonde_eq {x : Fin (n + 1) → K} (hx : Function.Injective x) :
     (vandermonde x)⁻¹ = lowerFactorT x * upperFactorT x := by
   refine inv_eq_right_inv ?_

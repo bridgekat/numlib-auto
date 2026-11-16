@@ -8,31 +8,36 @@ import Numlib.Analysis.Convex.Subdifferential.Monotone
 /-!
 # Local boundedness of the subdifferential
 
-A proper convex function is Lipschitz on every compact subset `S` of the interior of its effective
-domain, and *the same constant* bounds its subgradients and its directional derivatives there:
-there is a `K ≥ 0` with `f` Lipschitz on `S` with constant `K`, with
-`⟨z, y⟩ ≤ K ‖z‖` for every `x ∈ S`, every `y ∈ ∂f x` and every direction `z`, and with
-`f'(x; z) ≤ K ‖z‖` for every `x ∈ S`. When `f` is in addition closed, the image
-`∂f(S) = ⋃ {∂f x | x ∈ S}` is nonempty and compact.
+Let $E$ be a finite-dimensional real normed space, and let $f : E \to [-\infty, +\infty]$ be proper
+and convex. Then $f$ is Lipschitz on every compact subset $S$ of
+$\operatorname{int}(\operatorname{dom} f)$, and one constant bounds its subgradients and its
+directional derivatives on $S$: there is $K \ge 0$ such that $f$ is Lipschitz on $S$ with constant
+$K$,
+$$\langle z, y \rangle \le K \|z\| \quad \text{and} \quad f'(x; z) \le K \|z\|$$
+for every $x \in S$, every $y \in \partial f(x)$ and every $z \in E$. When $E$ is an inner product
+space paired with itself and $f$ is also closed, the image $\partial f(S) = \bigcup_{x \in S}
+\partial f(x)$ is compact, and it is nonempty when $S$ is nonempty. The presentation follows
+[rockafellar1970convex], §24.
 
 ## Main results
 
-* `exists_lipschitz_forall_pairing_le_of_isCompact` — the three bounds with one constant, over an
-  arbitrary pairing ([rockafellar1970convex] Theorem 24.7); `exists_forall_norm_le_of_isCompact`
-  gives `‖y‖ ≤ K`.
-* `isCompact_subdifferential`, `isCompact_image_subgradientRel` — `∂f x` and `∂f(S)` are compact,
-  hence closed and bounded, and `∂f(S)` is non-empty.
+* `ConvexAnalysis.exists_lipschitz_forall_pairing_le_of_isCompact`: the three bounds with one
+  constant, for any pairing. This is Theorem 24.7 of [rockafellar1970convex].
+* `ConvexAnalysis.exists_forall_norm_le_of_isCompact`: in an inner product space, $\|y\| \le K$ for
+  all subgradients $y$ at points of $S$.
+* `ConvexAnalysis.isCompact_subdifferential`, `ConvexAnalysis.isCompact_image_subgradientRel`:
+  $\partial f(x)$ is compact for $x \in \operatorname{int}(\operatorname{dom} f)$, and
+  $\partial f(S)$ is compact for closed $f$.
 
 ## Implementation notes
 
-The bound on subgradients is stated as `⟨z, y⟩ ≤ K ‖z‖` for all `z`, which asks for no norm on the
-dual side; when `F = E` is an inner-product space, reading it at `z = y` gives `‖y‖ ≤ K`. The
-compactness statements are for a real inner-product space paired with itself, and closedness of `f`
-is used only for them.
-
-## References
-
-* [rockafellar1970convex] §24.
+* The bound on subgradients is stated as $\langle z, y \rangle \le K \|z\|$ for all $z$, which needs
+  no norm on the dual space $F$. When $F = E$ is an inner product space, the bound at $z = y$ gives
+  $\|y\| \le K$.
+* The compactness statements are for a real inner product space paired with itself by `innerₗ E`.
+  Closedness of $f$ is used only for the compactness of $\partial f(S)$.
+* The function $f$ is Lipschitz in the sense of its real values `(f x).toReal`, which agree with $f$
+  on $\operatorname{int}(\operatorname{dom} f)$.
 -/
 
 open Set Filter Topology
@@ -40,7 +45,7 @@ open scoped NNReal RealInnerProductSpace
 
 namespace ConvexAnalysis
 
-/-! ### The quantitative half -/
+/-! ### Bounds with one constant -/
 
 section Bound
 
@@ -48,8 +53,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- Moving a point of `S` a distance `δ` in any direction keeps it inside the collar
-`cthickening δ S`. -/
+/-- Let $S \subseteq E$, $x \in S$, $\delta > 0$ and $z \ne 0$. Then $x + (\delta / \|z\|) z$ lies
+in the closed $\delta$-neighbourhood `Metric.cthickening δ S` of $S$. -/
 theorem mem_cthickening_add_smul {S : Set E} {x : E} (hx : x ∈ S) {δ : ℝ} (hδ : 0 < δ) {z : E}
     (hz : z ≠ 0) : x + (δ / ‖z‖) • z ∈ Metric.cthickening δ S := by
   have hznorm : 0 < ‖z‖ := norm_pos_iff.2 hz
@@ -58,11 +63,21 @@ theorem mem_cthickening_add_smul {S : Set E} {x : E} (hx : x ∈ S) {δ : ℝ} (
     abs_of_pos (div_pos hδ hznorm)]
   field_simp
 
-/-- **The quantitative half**. On a compact `S ⊆ int (dom f)` a single constant `K` is
-simultaneously a Lipschitz constant for `f`, a bound `⟨z, y⟩ ≤ K ‖z‖` for every subgradient at
-every point of `S`, and a bound `f'(x; z) ≤ K ‖z‖` for the directional derivatives. `K` is taken to
-be a Lipschitz constant on a compact collar `cthickening δ S ⊆ int (dom f)`, and the other two
-bounds are read off it at the point `x + (δ / ‖z‖) • z`, which stays in the collar. -/
+/-- **Local boundedness with one constant.** Let $E$ be a finite-dimensional real normed space
+paired with a real vector space $F$, let $f : E \to [-\infty, +\infty]$ be proper and convex,
+and let $S \subseteq \operatorname{int}(\operatorname{dom} f)$ be compact. Then there is a
+constant $K \ge 0$ such that
+
+* $f$ is Lipschitz on $S$ with constant $K$;
+* $\langle z, y \rangle \le K \|z\|$ for every $x \in S$, every $y \in \partial f(x)$ and every
+  $z \in E$;
+* $f'(x; z) \le K \|z\|$ for every $x \in S$ and every $z \in E$.
+
+This is Theorem 24.7 of [rockafellar1970convex]. No continuity of the pairing is assumed. The
+Lipschitz condition is for the real values `(f x).toReal`. The constant $K$ is a Lipschitz
+constant on a compact neighbourhood `Metric.cthickening δ S` of $S$ in
+$\operatorname{int}(\operatorname{dom} f)$, and the other two bounds follow from the values of
+$f$ at $x + (\delta / \|z\|) z$, which lies in that neighbourhood. -/
 theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f)
     {S : Set E} (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     ∃ K : ℝ≥0, LipschitzOnWith K (fun x => (f x).toReal) S ∧
@@ -123,15 +138,19 @@ theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : 
 
 end Bound
 
-/-! ### The topological half -/
+/-! ### Compactness of the subdifferential -/
 
 section Image
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- The norm form of the subgradient bound: on a compact `S ⊆ int (dom f)` a single constant bounds
-`‖y‖` for every subgradient `y` at every point of `S`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex, and let $S \subseteq \operatorname{int}(\operatorname{dom} f)$ be compact.
+Then there is $K \ge 0$ with
+$$\|y\| \le K \quad \text{for every } x \in S \text{ and every } y \in \partial f(x).$$
+
+The subdifferential is taken for the inner product `innerₗ E`. -/
 theorem exists_forall_norm_le_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f) {S : Set E}
     (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     ∃ K : ℝ, 0 ≤ K ∧ ∀ x ∈ S, ∀ y ∈ subdifferential (innerₗ E) f x, ‖y‖ ≤ K := by
@@ -144,8 +163,12 @@ theorem exists_forall_norm_le_of_isCompact (hf : ConvexFn f) (hp : ProperConvex 
   rw [innerₗ_apply_apply, real_inner_self_eq_norm_mul_norm] at h
   exact le_of_mul_le_mul_right (by linarith) (norm_pos_iff.2 hy0)
 
-/-- `∂f x` is compact at every interior point of `dom f`: closed because it is an intersection of
-closed half-spaces, and bounded by the constant above. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex, and let $x \in \operatorname{int}(\operatorname{dom} f)$. Then
+$\partial f(x)$ is compact.
+
+It is closed because it is an intersection of closed half-spaces, and bounded by
+`ConvexAnalysis.exists_forall_norm_le_of_isCompact` for $S = \{x\}$. -/
 theorem isCompact_subdifferential (hf : ConvexFn f) (hp : ProperConvex f) {x : E}
     (hx : x ∈ interior (convexDom f)) : IsCompact (subdifferential (innerₗ E) f x) := by
   have : IsContinuousPairing ((innerₗ E).flip) := by rw [flip_innerₗ]; infer_instance
@@ -156,7 +179,8 @@ theorem isCompact_subdifferential (hf : ConvexFn f) (hp : ProperConvex f) {x : E
   rw [Metric.mem_closedBall, dist_zero_right]
   exact hK x rfl y hy
 
-/-- **Nonemptiness**: `∂f(S) ≠ ∅` for a nonempty `S ⊆ int (dom f)`. -/
+/-- Let $f$ be proper and convex, and let $S \subseteq \operatorname{int}(\operatorname{dom} f)$ be
+nonempty. Then $\partial f(S) = \bigcup_{x \in S} \partial f(x)$ is nonempty. -/
 theorem image_subgradientRel_nonempty (hf : ConvexFn f) (hp : ProperConvex f) {S : Set E}
     (hne : S.Nonempty) (hSD : S ⊆ interior (convexDom f)) :
     ((subgradientRel (innerₗ E) f).image S).Nonempty := by
@@ -165,9 +189,16 @@ theorem image_subgradientRel_nonempty (hf : ConvexFn f) (hp : ProperConvex f) {S
     (Convex.interior_subset_relint (hSD hx))
   exact ⟨y, x, hx, hy⟩
 
-/-- **The topological half**: `∂f(S)` is compact for a closed proper convex `f` and a compact
-`S ⊆ int (dom f)`. The graph of `∂f` is closed, so it meets the compact box
-`S ×ˢ closedBall 0 K` in a compact set of which `∂f(S)` is the projection. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+closed, proper and convex, and let $S \subseteq \operatorname{int}(\operatorname{dom} f)$ be
+compact. Then
+$$\partial f(S) = \bigcup_{x \in S} \partial f(x)$$
+is compact.
+
+The set $\partial f(S)$ is the image of $S$ under the relation `ConvexAnalysis.subgradientRel`.
+The graph of $\partial f$ is closed, so its intersection with the compact set
+$S \times \{y \mid \|y\| \le K\}$ is compact, and $\partial f(S)$ is the projection of that
+intersection. -/
 theorem isCompact_image_subgradientRel (hf : ClosedProperConvexFn f) {S : Set E}
     (hS : IsCompact S) (hSD : S ⊆ interior (convexDom f)) :
     IsCompact ((subgradientRel (innerₗ E) f).image S) := by

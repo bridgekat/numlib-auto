@@ -10,49 +10,50 @@ import Numlib.IntegralEquations.Basic
 /-!
 # Nyström operators
 
-The **Nyström operator** of a quadrature rule `(w, x)` and a continuous kernel `k` is
-
-`K_n u (t) = ∑ j, w j * k (t, x j) * u (x j)`,
-
-the operator obtained from the kernel integral operator `IntegralOperator.kernelCLM` by replacing
-the integral with the rule. It is a finite-rank operator on `C(X, ℝ)`, and the family of Nyström
-operators attached to a sequence of rules with uniformly bounded absolute weight sums is
-*collectively compact* — it converges pointwise to the integral operator without converging in
-operator norm, which is precisely the situation Anselone's theory was built for.
-
-Everything here is one observation: for a fixed row index `t`, both `kernelCLM μ k u t` and
-`nystromCLM w x k u t` are *bounded linear functionals evaluated at the same integrand*
-`IntegralOperator.rowMul k u t : C(X, ℝ)`, namely `y ↦ k (t, y) * u y`. The integrand depends
-continuously on `t`, so it ranges over a compact subset of `C(X, ℝ)`, on which pointwise
-convergence of functionals is uniform (`tendstoUniformlyOn_of_tendsto_of_isCompact`). That single
-argument gives the pointwise convergence `K_n u → K u` in the *uniform* norm and the uniform
-convergence of the composition kernels below.
+Let $X$ be a compact space with a finite Borel measure $\mu$, and let $k$ be a continuous real
+kernel on $X \times X$. A quadrature rule with weights $w_1, \dots, w_m$ and nodes
+$x_1, \dots, x_m \in X$ gives the **Nyström operator**
+$$(K_n u)(t) = \sum_j w_j \, k(t, x_j) \, u(x_j)$$
+on $C(X)$. It is the integral operator $(Ku)(t) = \int k(t, y) u(y) \, d\mu(y)$ of
+`IntegralOperator.kernelCLM` with the integral replaced by the rule. The Nyström operator has finite
+rank. For a sequence of rules with uniformly bounded sums of absolute weights, the Nyström operators
+form a collectively compact family. If the rules converge, the family converges pointwise to $K$,
+but in general not in operator norm. Anselone's theory of collectively compact operators
+[anselone1971collectively] is made for this situation. The presentation follows
+[han2009theoretical], §12.4 (Lemma 12.4.2 and Theorem 12.4.4); see also [kress1989linear], §12.2.
 
 ## Main definitions
 
-* `IntegralOperator.integralCLM` — integration against a finite measure, as a functional on
-  `C(X, ℝ)`; it is the target functional of which a quadrature rule is an approximation.
-* `IntegralOperator.nystromCLM` — the Nyström operator, with `IntegralOperator.norm_nystromCLM`
-  computing its operator norm as `max_t ∑ j |w j * k (t, x j)|`.
-* `IntegralOperator.compKernel` — the kernel `e (t, s) = ∫ k (t, v) k (v, s) dv - ∑ j w j k (t, x j)
-  k (x j, s)` measuring the quadrature error on the composed kernel.
+* `IntegralOperator.integralCLM`: integration against $\mu$, as a bounded linear functional on
+  $C(X)$.
+* `IntegralOperator.nystromCLM`: the Nyström operator $K_n$ of a quadrature rule and a kernel.
+* `IntegralOperator.compKernel`: the kernel $e(t, s) = \int k(t, v) k(v, s) \, d\mu(v) - \sum_j w_j
+  k(t, x_j) k(x_j, s)$, the quadrature error for the composed kernel.
 
-## Main statements
+## Main results
 
-* `IntegralOperator.tendsto_nystromCLM` — a convergent quadrature rule makes `K_n u → K u` in
-  `C(X, ℝ)`, uniformly in the argument.
-* `IntegralOperator.isCollectivelyCompact_nystromCLM` — uniformly bounded absolute weight sums make
-  the family collectively compact, by Arzelà–Ascoli.
+* `IntegralOperator.norm_nystromCLM`: $\|K_n\| = \max_t \sum_j |w_j k(t, x_j)|$ for distinct nodes.
+* `IntegralOperator.tendsto_norm_of_tendsto_functional`: pointwise convergence of functionals on
+  $C(X)$ is uniform along a continuous family of integrands.
+* `IntegralOperator.tendsto_nystromCLM`: for a convergent sequence of quadrature rules,
+  $K_n u \to K u$ in $C(X)$ for every $u$.
+* `IntegralOperator.isCollectivelyCompact_nystromCLM`: uniformly bounded sums of absolute weights
+  make the Nyström family collectively compact.
 * `IntegralOperator.kernelCLM_sub_nystromCLM_comp_kernelCLM` and
-  `IntegralOperator.kernelCLM_sub_nystromCLM_comp_nystromCLM` — the two composition identities
-  `(K - K_n) K = kernelCLM e` and `(K - K_n) K_n = nystromCLM e`, which turn the operator norms of
-  the compositions into norms of the single kernel `e`.
-* `IntegralOperator.tendsto_norm_compKernel` — and `‖e‖ → 0` for a convergent rule.
+  `IntegralOperator.kernelCLM_sub_nystromCLM_comp_nystromCLM`: $(K - K_n) K$ is the integral
+  operator of $e$, and $(K - K_n) K_n$ is the Nyström operator of $e$.
+* `IntegralOperator.tendsto_norm_compKernel`: for a convergent sequence of quadrature rules,
+  $\|e\| \to 0$.
 
-## References
+## Proof outline
 
-[han2009theoretical], §12.4 (Lemma 12.4.2 and Theorem 12.4.4); [anselone1971collectively];
-[kress1989linear], §12.2.
+For a fixed $t$, both $(Ku)(t)$ and $(K_n u)(t)$ are bounded linear functionals evaluated at the
+same integrand $y \mapsto k(t, y) u(y)$ in $C(X)$ (`IntegralOperator.rowMul`). This integrand
+depends continuously on $t$, so it takes values in a compact subset of $C(X)$. On a compact set, a
+pointwise convergent sequence of bounded functionals converges uniformly
+(`tendstoUniformlyOn_of_tendsto_of_isCompact`). This one argument gives the convergence
+$K_n u \to K u$ in the uniform norm, and the uniform convergence $\|e\| \to 0$ of the composed
+kernels.
 -/
 
 open Filter MeasureTheory Metric Set Topology
@@ -63,39 +64,45 @@ variable {X : Type*} [TopologicalSpace X] [CompactSpace X]
 
 /-! ### Rows and columns of a kernel -/
 
-/-- The **row** `y ↦ k (t, y)` of a continuous kernel, as a continuous family of continuous
-functions indexed by the row index. -/
+/-- The **row** $y \mapsto k(t, y)$ of a continuous kernel $k$ on $X \times X$, as a continuous map
+from the row index $t \in X$ to $C(X)$. -/
 noncomputable def row (k : C(X × X, ℝ)) : C(X, C(X, ℝ)) := k.curry
 
 omit [CompactSpace X] in
+/-- The row of $k$ at $t$, evaluated at $s$, is $k(t, s)$. -/
 @[simp]
 theorem row_apply (k : C(X × X, ℝ)) (t s : X) : row k t s = k (t, s) := rfl
 
-/-- The **column** `t ↦ k (t, s)` of a continuous kernel. -/
+/-- The **column** $t \mapsto k(t, s)$ of a continuous kernel $k$ on $X \times X$, as an element of
+$C(X)$. -/
 def col (k : C(X × X, ℝ)) (s : X) : C(X, ℝ) :=
   ⟨fun t => k (t, s), by fun_prop⟩
 
 omit [CompactSpace X] in
+/-- The column of $k$ at $s$, evaluated at $t$, is $k(t, s)$. -/
 @[simp]
 theorem col_apply (k : C(X × X, ℝ)) (s t : X) : col k s t = k (t, s) := rfl
 
-/-- The integrand `y ↦ k (t, y) * u y` of a kernel operator, as a continuous family indexed by the
-row index `t`. Both the integral operator and its Nyström approximation are a bounded functional
-applied to this family. -/
+/-- For a continuous kernel $k$ and $u \in C(X)$, the integrand $y \mapsto k(t, y) u(y)$ of a kernel
+operator, as a continuous map from the row index $t \in X$ to $C(X)$. The integral operator and
+its Nyström approximation are both a bounded functional applied to this integrand. -/
 noncomputable def rowMul (k : C(X × X, ℝ)) (u : C(X, ℝ)) : C(X, C(X, ℝ)) :=
   ContinuousMap.curry ⟨fun p => k p * u p.2, by fun_prop⟩
 
 omit [CompactSpace X] in
+/-- The integrand `IntegralOperator.rowMul k u` at $t$, evaluated at $s$, is $k(t, s) u(s)$. -/
 @[simp]
 theorem rowMul_apply (k : C(X × X, ℝ)) (u : C(X, ℝ)) (t s : X) :
     rowMul k u t s = k (t, s) * u s := rfl
 
-/-- The integrand `v ↦ k (t, v) * k (v, s)` of the composed kernel, as a continuous family indexed
-by the pair `(t, s)`. -/
+/-- For a continuous kernel $k$, the integrand $v \mapsto k(t, v) k(v, s)$ of the composed kernel,
+as a continuous map from the pair $(t, s) \in X \times X$ to $C(X)$. -/
 noncomputable def rowCol (k : C(X × X, ℝ)) : C(X × X, C(X, ℝ)) :=
   ContinuousMap.curry ⟨fun p : (X × X) × X => k (p.1.1, p.2) * k (p.2, p.1.2), by fun_prop⟩
 
 omit [CompactSpace X] in
+/-- The integrand `IntegralOperator.rowCol k` at $(t, s)$, evaluated at $v$, is $k(t, v) k(v, s)$.
+-/
 @[simp]
 theorem rowCol_apply (k : C(X × X, ℝ)) (p : X × X) (v : X) :
     rowCol k p v = k (p.1, v) * k (v, p.2) := rfl
@@ -106,9 +113,12 @@ section Integral
 
 variable [MeasurableSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- **Integration against a finite measure**, as a bounded linear functional on the continuous
-functions of a compact space. A quadrature rule (`Quadrature.functional`) is an approximation to
-this functional. -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$. **Integration against $\mu$** is
+the bounded linear functional
+$$u \mapsto \int u(y) \, d\mu(y)$$
+on $C(X)$. A quadrature rule (`Quadrature.functional`) is an approximation of this functional.
+
+The functional is built with the bound $\mu(X)$, so its norm is at most $\mu(X)$. -/
 noncomputable def integralCLM : C(X, ℝ) →L[ℝ] ℝ :=
   LinearMap.mkContinuous
     { toFun := fun u => ∫ y, u y ∂μ
@@ -126,19 +136,23 @@ noncomputable def integralCLM : C(X, ℝ) →L[ℝ] ℝ :=
               (Filter.Eventually.of_forall fun y => u.norm_coe_le_norm y)
         _ = μ.real univ * ‖u‖ := mul_comm _ _
 
+/-- `IntegralOperator.integralCLM μ u` is the integral $\int u \, d\mu$. -/
 @[simp]
 theorem integralCLM_apply (u : C(X, ℝ)) : integralCLM μ u = ∫ y, u y ∂μ := rfl
 
-/-- A continuous function on a compact space is integrable for every finite measure; the unbundled
-form of `IntegralOperator.integrable_of_continuousMap`. -/
+/-- A continuous real function on a compact space is integrable for every finite measure. This is
+the form of `IntegralOperator.integrable_of_continuousMap` for an unbundled function. -/
 theorem integrable_of_continuous {f : X → ℝ} (hf : Continuous f) : Integrable f μ :=
   integrable_of_continuousMap μ ⟨f, hf⟩
 
-/-- A kernel operator is integration applied to the row integrands. -/
+/-- The kernel operator of $k$ at the point $t$ is integration against $\mu$ applied to the
+integrand $y \mapsto k(t, y) u(y)$:
+$$(Ku)(t) = \int k(t, y) u(y) \, d\mu(y).$$
+-/
 theorem kernelCLM_apply_eq_integralCLM (k : C(X × X, ℝ)) (u : C(X, ℝ)) (t : X) :
     kernelCLM μ k u t = integralCLM μ (rowMul k u t) := rfl
 
-/-- Negating the kernel negates the kernel operator. -/
+/-- The kernel operator of $-k$ is the negative of the kernel operator of $k$. -/
 @[simp]
 theorem kernelCLM_neg (k : C(X × X, ℝ)) : kernelCLM μ (-k) = -kernelCLM μ k := by
   refine ContinuousLinearMap.ext fun u => ContinuousMap.ext fun t => ?_
@@ -153,19 +167,21 @@ section Nystrom
 
 variable {m : ℕ} {w : Fin m → ℝ} {x : Fin m → X} {k : C(X × X, ℝ)}
 
-/-- **The Nyström operator** of a quadrature rule with weights `w` and nodes `x` and a continuous
-kernel `k`: the finite-rank operator
+/-- Let $X$ be a compact space, let $k$ be a continuous real kernel on $X \times X$, and let a
+quadrature rule have weights $w_1, \dots, w_m \in \mathbb{R}$ and nodes $x_1, \dots, x_m \in X$.
+The **Nyström operator** is the bounded linear operator on $C(X)$ given by
+$$(K_n u)(t) = \sum_{j=1}^m w_j \, k(t, x_j) \, u(x_j).$$
+This is (12.4.4) of [han2009theoretical]. It is the kernel operator `IntegralOperator.kernelCLM`
+with the integral replaced by the quadrature rule.
 
-`K_n u (t) = ∑ j, w j * k (t, x j) * u (x j)`
-
-on `C(X, ℝ)`, obtained from `IntegralOperator.kernelCLM` by replacing the integral with the rule.
-
-Reference: [han2009theoretical], (12.4.4). -/
+The operator is the sum over $j$ of the rank-one operators
+$u \mapsto w_j u(x_j) \, k(\cdot, x_j)$, so it has finite rank. -/
 noncomputable def nystromCLM {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)) :
     C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   ∑ j, (w j • ContinuousMap.evalCLM ℝ (x j)).smulRight (col k (x j))
 
-/-- The defining formula of the Nyström operator. -/
+/-- The Nyström operator of the weights $w$, the nodes $x$ and the kernel $k$ maps $u$ to
+$t \mapsto \sum_j w_j \, k(t, x_j) \, u(x_j)$. -/
 @[simp]
 theorem nystromCLM_apply (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)) (u : C(X, ℝ)) (t : X) :
     nystromCLM w x k u t = ∑ j, w j * k (t, x j) * u (x j) := by
@@ -174,7 +190,7 @@ theorem nystromCLM_apply (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, �
     ContinuousMap.evalCLM_apply, ContinuousMap.smul_apply, smul_eq_mul, col_apply]
   exact Finset.sum_congr rfl fun j _ => by ring
 
-/-- Negating the kernel negates the Nyström operator. -/
+/-- The Nyström operator of $-k$ is the negative of the Nyström operator of $k$. -/
 @[simp]
 theorem nystromCLM_neg (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)) :
     nystromCLM w x (-k) = -nystromCLM w x k := by
@@ -183,16 +199,17 @@ theorem nystromCLM_neg (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)
     ← Finset.sum_neg_distrib]
   exact Finset.sum_congr rfl fun j _ => by simp
 
-/-- The Nyström operator is the quadrature rule applied to the row integrands, exactly as the
-kernel operator is the integral applied to them. -/
+/-- The Nyström operator at the point $t$ is the quadrature rule applied to the integrand
+$y \mapsto k(t, y) u(y)$, in the same way as the kernel operator at $t$ is the integral of this
+integrand. -/
 theorem nystromCLM_apply_eq_functional (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ))
     (u : C(X, ℝ)) (t : X) :
     nystromCLM w x k u t = Quadrature.functional w x (rowMul k u t) := by
   rw [Quadrature.functional_apply, nystromCLM_apply]
   exact Finset.sum_congr rfl fun j _ => by rw [rowMul_apply, mul_assoc]
 
-/-- Every uniform bound on the absolute sums `∑ j |w j k (t, x j)|` bounds the operator norm of a
-Nyström operator; this is the easy half of `IntegralOperator.norm_nystromCLM`. -/
+/-- Let $C \ge 0$. If $\sum_j |w_j \, k(t, x_j)| \le C$ for every $t \in X$, then the Nyström
+operator has norm at most $C$. This is the easy half of `IntegralOperator.norm_nystromCLM`. -/
 theorem norm_nystromCLM_le {C : ℝ} (hC : 0 ≤ C) (h : ∀ t, ∑ j, |w j * k (t, x j)| ≤ C) :
     ‖nystromCLM w x k‖ ≤ C := by
   refine ContinuousLinearMap.opNorm_le_bound _ hC fun u => ?_
@@ -208,15 +225,17 @@ theorem norm_nystromCLM_le {C : ℝ} (hC : 0 ≤ C) (h : ∀ t, ∑ j, |w j * k 
     _ = (∑ j, |w j * k (t, x j)|) * ‖u‖ := by rw [Finset.sum_mul]
     _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (h t) (norm_nonneg u)
 
-/-- **The operator norm of a Nyström operator** is the largest absolute weight sum of its rows,
-`‖K_n‖ = max_t ∑ j |w j k (t, x j)|`, the exact analogue of
+/-- Let $X$ be a nonempty compact Hausdorff space, let $k$ be a continuous real kernel on
+$X \times X$, and let the quadrature rule have weights $w_1, \dots, w_m$ and distinct nodes
+$x_1, \dots, x_m$. Then the Nyström operator $K_n$ has the norm
+$$\|K_n\| = \max_{t \in X} \sum_{j=1}^m |w_j \, k(t, x_j)|.$$
+This is (12.4.17) of [han2009theoretical], and it is the analogue of
 `IntegralOperator.norm_kernelCLM` for a quadrature rule in place of an integral.
 
-The lower bound is `Quadrature.norm_functional`, applied to the rule with weights
-`w j * k (t₀, x j)` at a row index `t₀` maximizing the sum: that rule is the Nyström operator read
-off at `t₀`, so its norm is at most `‖K_n‖`.
-
-Reference: [han2009theoretical], (12.4.17). -/
+The maximum is the supremum `⨆ t`. For the lower bound, take $t_0$ where the sum is largest and
+apply `Quadrature.norm_functional` to the rule with weights $w_j k(t_0, x_j)$. This rule is the
+Nyström operator evaluated at $t_0$, so its norm is at most $\|K_n\|$. The nodes must be
+distinct for `Quadrature.norm_functional`. -/
 theorem norm_nystromCLM [T2Space X] [Nonempty X] (hx : Function.Injective x) :
     ‖nystromCLM w x k‖ = ⨆ t, ∑ j, |w j * k (t, x j)| := by
   set g : C(X, ℝ) :=
@@ -247,14 +266,14 @@ end Nystrom
 
 /-! ### Uniform convergence along a continuous family of integrands -/
 
-/-- **Pointwise convergence of functionals is uniform along a continuous family of integrands.**
-If `A n → L` pointwise on `C(X, ℝ)` and `F` is a continuous family of integrands indexed by a
-compact space, then `sup_y |L (F y) - A n (F y)| → 0`.
+/-- Let $X$ and $Y$ be compact spaces, let $A_n$ and $L$ be bounded linear functionals on $C(X)$
+with $A_n v \to L v$ for every $v \in C(X)$, and let $F \colon Y \to C(X)$ be continuous. Let
+$g_n \in C(Y)$ be the functions $g_n(y) = L(F(y)) - A_n(F(y))$. Then
+$$\sup_{y \in Y} |L(F(y)) - A_n(F(y))| = \|g_n\| \to 0.$$
 
-The range of `F` is a compact subset of `C(X, ℝ)`, and a pointwise convergent sequence of bounded
-operators converges uniformly on compact sets
-(`tendstoUniformlyOn_of_tendsto_of_isCompact`). This is the only analytic ingredient of the
-Nyström theory below. -/
+The range of $F$ is a compact subset of $C(X)$, and a pointwise convergent sequence of bounded
+operators converges uniformly on compact sets (`tendstoUniformlyOn_of_tendsto_of_isCompact`).
+This is the only analytic step of the Nyström theory in this module. -/
 theorem tendsto_norm_of_tendsto_functional {Y : Type*} [TopologicalSpace Y] [CompactSpace Y]
     {A : ℕ → C(X, ℝ) →L[ℝ] ℝ} {L : C(X, ℝ) →L[ℝ] ℝ}
     (hA : ∀ v, Tendsto (fun n => A n v) atTop (𝓝 (L v))) (F : C(Y, C(X, ℝ)))
@@ -283,11 +302,15 @@ section Family
 variable [MeasurableSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
   {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → X} {k : C(X × X, ℝ)}
 
-/-- **A convergent quadrature rule makes the Nyström operators converge pointwise** to the integral
-operator, in the uniform norm of `C(X, ℝ)`.
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous real
+kernel on $X \times X$, and let a sequence of quadrature rules with weights $w^{(n)}$ and nodes
+$x^{(n)}$ converge: $\sum_j w^{(n)}_j v(x^{(n)}_j) \to \int v \, d\mu$ for every $v \in C(X)$.
+Then for every $u \in C(X)$, the Nyström operators satisfy
+$$K_n u \to K u \quad \text{in } C(X),$$
+that is, uniformly on $X$.
 
-This is assumption A2 of the collectively compact framework; note that it is *not* accompanied by
-convergence in operator norm, which fails. [han2009theoretical], §12.4.1. -/
+This is assumption A2 of the theory of collectively compact operators ([han2009theoretical],
+§12.4.1). In general $K_n$ does not converge to $K$ in operator norm. -/
 theorem tendsto_nystromCLM
     (hQ : ∀ v : C(X, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
       (𝓝 (integralCLM μ v))) (u : C(X, ℝ)) :
@@ -302,13 +325,17 @@ theorem tendsto_nystromCLM
   simpa only [norm_sub_rev] using h
 
 omit [MeasurableSpace X] [BorelSpace X] in
-/-- **The Nyström family of a sequence of rules with uniformly bounded absolute weight sums is
-collectively compact.**
+/-- Let $X$ be a compact space, let $k$ be a continuous real kernel on $X \times X$, and let
+$(w^{(n)}, x^{(n)})$ be a sequence of quadrature rules with $\sum_j |w^{(n)}_j| \le W$ for every
+$n$. Then the sequence of Nyström operators of these rules and $k$ is collectively compact.
 
-The images of the closed unit ball are uniformly bounded by `W ‖k‖` and equicontinuous, because
-the oscillation of `K_n u` between two row indices is at most `W ‖u‖` times the uniform distance
-between the corresponding rows of `k`; Arzelà–Ascoli then applies. This is assumption A3, and the
-book's (12.4.3) is exactly the hypothesis `hW`. [han2009theoretical], §12.4.1. -/
+This is assumption A3 of the theory of collectively compact operators, and the hypothesis on the
+weights is (12.4.3) of [han2009theoretical], §12.4.1.
+
+The images of the closed unit ball are uniformly bounded by $W \|k\|$. They are equicontinuous,
+because the difference of $K_n u$ at two points $t, t'$ is at most $W \|u\|$ times the uniform
+distance between the rows $k(t, \cdot)$ and $k(t', \cdot)$. The Arzelà–Ascoli theorem then gives
+compactness. -/
 theorem isCollectivelyCompact_nystromCLM (k : C(X × X, ℝ)) {W : ℝ}
     (hW : ∀ n, ∑ j, |w n j| ≤ W) :
     IsCollectivelyCompact (fun n => nystromCLM (w n) (x n) k) := by
@@ -382,20 +409,22 @@ section Composition
 
 variable [MeasurableSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- **The quadrature error of the composed kernel**,
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous real
+kernel on $X \times X$, and let a quadrature rule have weights $w_j$ and nodes $x_j$. The
+**composition kernel** is the quadrature error for the composed kernel,
+$$e(t, s) = \int k(t, v) \, k(v, s) \, d\mu(v) - \sum_j w_j \, k(t, x_j) \, k(x_j, s).$$
+This is (12.4.15) of [han2009theoretical].
 
-`e (t, s) = ∫ k (t, v) k (v, s) dv - ∑ j w j k (t, x j) k (x j, s)`.
-
-The two compositions `(K - K_n) K` and `(K - K_n) K_n` are the kernel operator and the Nyström
-operator of this single kernel, so their operator norms are read off it.
-
-Reference: [han2009theoretical], (12.4.15). -/
+The two compositions $(K - K_n) K$ and $(K - K_n) K_n$ are the kernel operator and the Nyström
+operator of this kernel, so their norms are given by $e$. -/
 noncomputable def compKernel {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)) :
     C(X × X, ℝ) :=
   ⟨fun p => integralCLM μ (rowCol k p) - Quadrature.functional w x (rowCol k p), by
     exact ((integralCLM μ).continuous.comp (map_continuous (rowCol k))).sub
       ((Quadrature.functional w x).continuous.comp (map_continuous (rowCol k)))⟩
 
+/-- The defining formula of `IntegralOperator.compKernel`: $e(t, s) = \int k(t, v) k(v, s) \,
+d\mu(v) - \sum_j w_j k(t, x_j) k(x_j, s)$. -/
 @[simp]
 theorem compKernel_apply {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ)) (p : X × X) :
     compKernel μ w x k p =
@@ -404,9 +433,15 @@ theorem compKernel_apply {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (k : C(
   rw [integralCLM_apply, Quadrature.functional_apply]
   simp only [rowCol_apply]
 
-/-- **The quadrature error of the composed kernel tends to zero uniformly** for a convergent
-quadrature rule: the integrands `v ↦ k (t, v) k (v, s)` form a continuous family indexed by the
-compact space `X × X`. [han2009theoretical], (12.4.18). -/
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous real
+kernel on $X \times X$, and let a sequence of quadrature rules with weights $w^{(n)}$ and nodes
+$x^{(n)}$ converge: $\sum_j w^{(n)}_j v(x^{(n)}_j) \to \int v \, d\mu$ for every $v \in C(X)$.
+Then the composition kernels $e_n$ of these rules satisfy
+$$\|e_n\| = \max_{t, s \in X} |e_n(t, s)| \to 0.$$
+This is (12.4.18) of [han2009theoretical].
+
+The integrands $v \mapsto k(t, v) k(v, s)$ form a continuous family indexed by the compact space
+$X \times X$, so `IntegralOperator.tendsto_norm_of_tendsto_functional` applies. -/
 theorem tendsto_norm_compKernel {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → X}
     (k : C(X × X, ℝ))
     (hQ : ∀ v : C(X, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -416,14 +451,16 @@ theorem tendsto_norm_compKernel {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ}
 
 variable {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (k : C(X × X, ℝ))
 
-/-- **The first composition identity**: `(K - K_n) K` is the kernel operator of the composition
-kernel `e`.
+/-- Let $X$ be a compact second-countable space with a finite Borel measure $\mu$, let $k$ be a
+continuous real kernel on $X \times X$, and let $K_n$ be the Nyström operator of a quadrature
+rule. Then
+$$(K - K_n) K = K_e,$$
+where $K_e$ is the kernel operator of the composition kernel $e$. This is (12.4.14) of
+[han2009theoretical].
 
-This is where Fubini's theorem enters, and the only place: the double integral
-`∫ k (t, v) ∫ k (v, s) u s ds dv` is rewritten with the order of integration reversed, which is why
-a second-countable domain is assumed here and nowhere else.
-
-Reference: [han2009theoretical], (12.4.14). -/
+This is the only place where the Fubini theorem is used: the double integral $\int k(t, v) \int
+k(v, s) u(s) \, d\mu(s) \, d\mu(v)$ is rewritten with the order of integration reversed. For
+this reason $X$ is second-countable here, and nowhere else in the module. -/
 theorem kernelCLM_sub_nystromCLM_comp_kernelCLM [SecondCountableTopology X] :
     (kernelCLM μ k - nystromCLM w x k) ∘L kernelCLM μ k = kernelCLM μ (compKernel μ w x k) := by
   refine ContinuousLinearMap.ext fun u => ContinuousMap.ext fun t => ?_
@@ -481,11 +518,14 @@ theorem kernelCLM_sub_nystromCLM_comp_kernelCLM [SecondCountableTopology X] :
       (sub_mul (∫ v, k (t, v) * k (v, s) ∂μ) (∑ j, w j * (k (t, x j) * k (x j, s))) (u s))),
     integral_sub hA hB, ← hfub, ← hsum]
 
-/-- **The second composition identity**: `(K - K_n) K_n` is the *Nyström* operator of the same
-composition kernel `e`. Only linearity of the integral over a finite sum is used, so no
-second-countability is needed here.
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, let $k$ be a continuous real
+kernel on $X \times X$, and let $K_n$ be the Nyström operator of a quadrature rule. Then
+$$(K - K_n) K_n$$
+is the Nyström operator, for the same rule, of the composition kernel $e$. This is (12.4.14) of
+[han2009theoretical].
 
-Reference: [han2009theoretical], (12.4.14). -/
+The proof uses only the linearity of the integral over a finite sum, so $X$ need not be
+second-countable. -/
 theorem kernelCLM_sub_nystromCLM_comp_nystromCLM :
     (kernelCLM μ k - nystromCLM w x k) ∘L nystromCLM w x k
       = nystromCLM w x (compKernel μ w x k) := by

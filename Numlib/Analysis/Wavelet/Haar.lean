@@ -11,50 +11,80 @@ import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 
 /-!
-# The Haar system on `L²(ℝ)`
+# The Haar system on $L^2(\mathbb{R})$
 
-The Haar scaling functions `2^(j/2) φ(2^j x - k)` for the unit step `φ = 1_[0,1)`, the scaling
-spaces `V j`, the Haar wavelet `ψ = φ(2 ·) - φ(2 · - 1)`, the wavelet spaces `W j`, and the
-decomposition and reconstruction formulas relating consecutive levels.
+Let $\varphi = \mathbf{1}_{[0,1)}$ be the unit step and $\psi(x) = \varphi(2x) - \varphi(2x - 1)$
+the Haar wavelet. For integers $j$ and $k$, the Haar scaling function
+$\varphi_{j,k}(x) = 2^{j/2} \varphi(2^j x - k)$ is the normalized indicator of the dyadic interval
+$I_{j,k} = [k 2^{-j}, (k + 1) 2^{-j})$, and the Haar wavelet
+$\psi_{j,k}(x) = 2^{j/2} \psi(2^j x - k)$ takes the values $\pm 2^{j/2}$ on the two halves of
+$I_{j,k}$. The scaling space $V_j$ and the wavelet space $W_j$ are the closed spans in
+$L^2(\mathbb{R})$ of the $\varphi_{j,k}$ and of the $\psi_{j,k}$, $k \in \mathbb{Z}$. The
+presentation follows [han2009theoretical], §4.4 (Theorems 4.4.1–4.4.4 and Exercise 4.4.4).
 
-Two design points fix the shape of the module.
-
-*The spaces are closed subspaces, not spans of finite combinations.* The scaling space of a level is
-defined here as `(span ℝ (range (scalingFun j))).topologicalClosure`, so that "orthonormal basis",
-the nesting `V j ≤ V (j+1)`, `⨅ j, V j = ⊥` and the density of `⨆ j, V j` all read in `L²`; the set
-of *finite* linear combinations of the scaling functions is its dense subspace.
-
-*Dilation is a unitary of `L²(ℝ)`, and it comes first.* `MeasureTheory.Lp.dilationₗᵢ c` sends `f` to
-`x ↦ |c| ^ (1/2) * f (c * x)`; every scale-invariance statement goes through it. Mathlib has
-`MeasureTheory.Lp.compMeasurePreserving`, but a scaling is not measure preserving, only
-quasi-measure preserving, so the underlying map on `α →ₘ[μ] β` is built from
-`MeasureTheory.AEEqFun.compQuasiMeasurePreserving`.
+The module proves that the spaces $V_j$ are orthonormally generated, scale invariant, nested, dense
+in union and trivial in intersection; that $V_{j+1}$ is the orthogonal direct sum of $V_j$ and
+$W_j$; the decomposition and reconstruction formulas that relate the coefficients of consecutive
+levels; and that the wavelets $\psi_{j,k}$ of all levels form a Hilbert basis of $L^2(\mathbb{R})$.
+All scale-invariance statements use the unitary dilation $(D_c f)(x) = |c|^{1/2} f(cx)$, $c \neq 0$,
+of $L^2(\mathbb{R})$, which the module defines first. $P_S$ denotes the orthogonal projection onto a
+closed subspace $S$.
 
 ## Main definitions
 
-* `MeasureTheory.Lp.dilationₗᵢ`: the dilation, as an element of `L²(ℝ) ≃ₗᵢ[ℝ] L²(ℝ)`.
-* `Haar.scalingFun`, `Haar.waveletFun`: the Haar scaling and wavelet functions.
-* `Haar.V`, `Haar.W`: the scaling and wavelet spaces, with their Hilbert bases.
-* `Haar.hilbertBasis`: the wavelets of all levels together, as a Hilbert basis of `L²(ℝ)`.
+* `MeasureTheory.Lp.dilationₗᵢ`: the dilation $D_c$, as a linear isometric equivalence of
+  $L^2(\mathbb{R})$.
+* `Haar.dyadic`: the dyadic interval $I_{j,k}$.
+* `Haar.scalingFun`, `Haar.waveletFun`: the Haar scaling functions $\varphi_{j,k}$ and wavelets
+  $\psi_{j,k}$.
+* `Haar.V`, `Haar.W`: the scaling spaces $V_j$ and the wavelet spaces $W_j$; `Haar.hilbertBasis_V`
+  and `Haar.hilbertBasis_W` are their Hilbert bases.
+* `Haar.hilbertBasis`: the wavelets $\psi_{j,k}$ of all levels, as a Hilbert basis of
+  $L^2(\mathbb{R})$.
 
-## Main statements
+## Main results
 
-* `Haar.orthonormal_scalingFun`, `Haar.V_eq_map_dilation`, `Haar.V_le_V_succ`,
-  `Haar.topologicalClosure_iSup_V`, `Haar.iInf_V_eq_bot`: the multiresolution properties of the
-  scaling spaces.
-* `Haar.mem_W_iff`, `Haar.isCompl_V_W`: `V (j+1)` is the orthogonal direct sum of `V j` and `W j`.
-* `Haar.decomposition`, `Haar.reconstruction`: the analysis and synthesis formulas for the
-  coefficients of one level in terms of the next.
-* `Haar.starProjection_V_eq_sum`: the multi-level decomposition, one analysis step iterated, which
-  splits the projection onto `V j` into a coarse part in `V i` and the detail parts in the
-  intermediate wavelet spaces.
-* `Haar.orthonormal_waveletFun_prod`, `Haar.hilbertBasis`: the wavelets of all levels are
-  orthonormal and complete.
+* `Haar.orthonormal_scalingFun`: for each $j$, the functions $\varphi_{j,k}$, $k \in \mathbb{Z}$,
+  are orthonormal.
+* `Haar.V_eq_map_dilation`: $V_j = D_{2^j}(V_0)$.
+* `Haar.V_le_V_succ`: $V_j \subseteq V_{j+1}$.
+* `Haar.topologicalClosure_iSup_V`: $\bigcup_j V_j$ is dense in $L^2(\mathbb{R})$.
+* `Haar.iInf_V_eq_bot`: $\bigcap_j V_j = \{0\}$.
+* `Haar.mem_W_iff`: $f \in W_j$ if and only if $f \in V_{j+1}$ and $f$ is orthogonal to every
+  $\varphi_{j,k}$.
+* `Haar.isCompl_V_W`: $V_j$ and $W_j$ are complementary subspaces of $V_{j+1}$.
+* `Haar.decomposition`, `Haar.reconstruction`: the scaling and wavelet coefficients of level $j$ in
+  terms of the scaling coefficients of level $j + 1$, and back.
+* `Haar.starProjection_V_eq_sum`: for $i \le j$, $P_{V_j} f = P_{V_i} f + \sum_{l=i}^{j-1} P_{W_l}
+  f$.
+* `Haar.orthonormal_waveletFun_prod`: the wavelets of all levels are orthonormal.
 
-## References
+## Proof outline
 
-The material is [han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4 and Exercise 4.4.4). None of it
-is in Mathlib.
+Density is the only approximation argument: a continuous function with compact support is the $L^2$
+limit of its dyadic step functions, which lie in the $V_j$, and such functions are dense in
+$L^2(\mathbb{R})$. Separation follows from the bound $|\langle \varphi_{i,k}, f \rangle| \le
+2^{(j-i)/2} \|f\|$ for $f \in V_j$ and $j \le i$, which tends to $0$ as $j \to -\infty$.
+Completeness of the wavelets follows from the multi-level decomposition: if $f$ is orthogonal to
+every wavelet, all its projections $P_{V_j} f$ are equal, so they lie in $\bigcap_j V_j = \{0\}$,
+and density gives $f = 0$.
+
+## Implementation notes
+
+* The spaces $V_j$ and $W_j$ are closed subspaces: `Haar.V j` is `(Submodule.span ℝ (Set.range
+  (Haar.scalingFun j))).topologicalClosure`, so that "Hilbert basis", the nesting,
+  $\bigcap_j V_j = \{0\}$ and the density of $\bigcup_j V_j$ are statements in $L^2(\mathbb{R})$.
+  The space $V_j$ of [han2009theoretical], the set of finite linear combinations of the
+  $\varphi_{j,k}$, is a dense subspace of `Haar.V j`.
+* The union $\bigcup_j V_j$ is the supremum `⨆ j, Haar.V j` of submodules, and the intersection is
+  the infimum `⨅ j, Haar.V j`.
+* Mathlib has `MeasureTheory.Lp.compMeasurePreserving`, but a scaling $x \mapsto cx$ is not measure
+  preserving, only quasi-measure-preserving. The map on almost-everywhere classes that underlies
+  `MeasureTheory.Lp.dilationₗᵢ` is therefore built from
+  `MeasureTheory.AEEqFun.compQuasiMeasurePreserving`.
+* The coefficients are inner products with the normalized functions: the scaling and wavelet
+  coefficients of $f$ are $\langle \varphi_{j,k}, f \rangle$ and $\langle \psi_{j,k}, f \rangle$.
+* None of this material is in Mathlib.
 -/
 
 open scoped ENNReal Pointwise
@@ -65,22 +95,25 @@ namespace MeasureTheory.Lp
 
 variable {c d : ℝ}
 
-/-! ### Auxiliary facts about the scaling `x ↦ c * x` of `ℝ` -/
+/-! ### Auxiliary facts about the scaling $x \mapsto cx$ of $\mathbb{R}$ -/
 
-/-- Multiplication by a nonzero constant is quasi-measure-preserving for the Lebesgue measure on
-`ℝ`. -/
+/-- Multiplication $x \mapsto cx$ by a constant $c \neq 0$ is quasi-measure-preserving for Lebesgue
+measure on $\mathbb{R}$. -/
 private theorem qmp_const_mul (hc : c ≠ 0) :
     QuasiMeasurePreserving (fun x : ℝ => c * x) volume volume := by
   refine ⟨measurable_const_mul c, ?_⟩
   rw [Real.map_volume_mul_left hc]
   exact Measure.smul_absolutelyContinuous
 
-/-- Almost-everywhere equality is preserved by precomposition with `x ↦ c * x` for `c ≠ 0`. -/
+/-- Let $c \neq 0$. If $g = g'$ almost everywhere on $\mathbb{R}$, then $x \mapsto g(cx)$ and
+$x \mapsto g'(cx)$ are equal almost everywhere. -/
 theorem ae_comp_const_mul (hc : c ≠ 0) {g g' : ℝ → ℝ} (h : g =ᵐ[volume] g') :
     (fun x => g (c * x)) =ᵐ[volume] fun x => g' (c * x) :=
   h.comp_tendsto (qmp_const_mul hc).tendsto_ae
 
-/-- The `L²` seminorm of `x ↦ g (c * x)`, for `c ≠ 0`. -/
+/-- Let $c \neq 0$ and let $g : \mathbb{R} \to \mathbb{R}$ be almost everywhere strongly measurable.
+The $L^2$ seminorm of $x \mapsto g(cx)$ is $|c^{-1}|^{1/2} \|g\|_{L^2}$, as an element of
+$[0, \infty]$. -/
 theorem _root_.MeasureTheory.eLpNorm_comp_const_mul (hc : c ≠ 0) {g : ℝ → ℝ}
     (hg : AEStronglyMeasurable g volume) :
     eLpNorm (fun x => g (c * x)) 2 volume
@@ -95,13 +128,15 @@ theorem _root_.MeasureTheory.eLpNorm_comp_const_mul (hc : c ≠ 0) {g : ℝ → 
   rw [h2, smul_eq_mul, Function.comp_def] at h1
   exact h1.symm
 
-/-- The preimage of a set of finite measure under `x ↦ c * x`, `c ≠ 0`, has finite measure. -/
+/-- Let $c \neq 0$. If $s \subseteq \mathbb{R}$ has finite Lebesgue measure, then its preimage under
+$x \mapsto cx$ has finite Lebesgue measure. -/
 theorem volume_preimage_const_mul_ne_top (hc : c ≠ 0) {s : Set ℝ} (hμs : volume s ≠ ∞) :
     volume ((fun x : ℝ => c * x) ⁻¹' s) ≠ ∞ := by
   rw [Real.volume_preimage_mul_left hc]
   exact ENNReal.mul_ne_top ENNReal.ofReal_ne_top hμs
 
-/-- The preimage of `s` under the scaling `x ↦ c * x`, `c ≠ 0`, is the rescaled set `c⁻¹ • s`. -/
+/-- For $c \neq 0$ and $s \subseteq \mathbb{R}$, the preimage of $s$ under $x \mapsto cx$ is the
+rescaled set $c^{-1} s$. -/
 theorem preimage_const_mul_eq_inv_smul (hc : c ≠ 0) (s : Set ℝ) :
     (fun x : ℝ => c * x) ⁻¹' s = c⁻¹ • s := by
   ext x
@@ -119,7 +154,8 @@ private theorem mem_Lp_compQMP (hc : c ≠ 0) (f : Lp ℝ 2 (volume : Measure �
   exact ENNReal.mul_lt_top
     (ENNReal.rpow_lt_top_of_nonneg (by norm_num) ENNReal.ofReal_ne_top) (eLpNorm_lt_top f)
 
-/-- Precomposition of an `L²(ℝ)` function with the scaling `x ↦ c * x`, for `c ≠ 0`. -/
+/-- For $c \neq 0$, the precomposition $f \mapsto f(c\,\cdot)$ with the scaling by $c$, as a linear
+map of $L^2(\mathbb{R})$. -/
 private noncomputable def compConstMul (c : ℝ) (hc : c ≠ 0) :
     Lp ℝ 2 (volume : Measure ℝ) →ₗ[ℝ] Lp ℝ 2 (volume : Measure ℝ) where
   toFun f := ⟨f.1.compQuasiMeasurePreserving _ (qmp_const_mul hc), mem_Lp_compQMP hc f⟩
@@ -138,7 +174,8 @@ private theorem norm_compConstMul (hc : c ≠ 0) (f : Lp ℝ 2 (volume : Measure
 
 /-! ### The dilation as a linear map -/
 
-/-- The dilation `f ↦ (x ↦ |c| ^ (1/2) * f (c * x))` of `L²(ℝ)`, as a linear map. -/
+/-- For $c \neq 0$, the dilation $f \mapsto |c|^{1/2} f(c\,\cdot)$ of $L^2(\mathbb{R})$, as a linear
+map. -/
 private noncomputable def dilationₗ (c : ℝ) (hc : c ≠ 0) :
     Lp ℝ 2 (volume : Measure ℝ) →ₗ[ℝ] Lp ℝ 2 (volume : Measure ℝ) :=
   (|c| ^ (1 / 2 : ℝ)) • compConstMul c hc
@@ -181,9 +218,16 @@ private theorem dilationₗ_comp (hc : c ≠ 0) (hd : d ≠ 0) (f : Lp ℝ 2 (vo
   congr 1
   rw [← Real.mul_rpow (abs_nonneg c) (abs_nonneg d), ← abs_mul, mul_comm c d]
 
-/-! ### The unitary dilation of `L²(ℝ)` -/
+/-! ### The unitary dilation of $L^2(\mathbb{R})$ -/
 
-/-- For `c ≠ 0`, the unitary dilation of `L²(ℝ)`: `f ↦ (x ↦ |c| ^ (1/2) * f (c * x))`. -/
+/-- For $c \in \mathbb{R}$ with $c \neq 0$, the **dilation** $D_c$ of $L^2(\mathbb{R})$ is
+$$(D_c f)(x) = |c|^{1/2} f(cx).$$
+It is a linear isometric equivalence of $L^2(\mathbb{R})$ onto itself, with inverse
+$D_{c^{-1}}$. It is the scaling of [han2009theoretical], §4.4.
+
+The factor $|c|^{1/2}$ makes $D_c$ preserve the $L^2$ norm. The inverse is given by
+`MeasureTheory.Lp.dilationₗᵢ_symm`, and the composition rule $D_c D_d = D_{dc}$ by
+`MeasureTheory.Lp.dilationₗᵢ_trans`. -/
 noncomputable def dilationₗᵢ (c : ℝ) (hc : c ≠ 0) :
     Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ) where
   toFun := dilationₗ c hc
@@ -200,23 +244,29 @@ noncomputable def dilationₗᵢ (c : ℝ) (hc : c ≠ 0) :
     exact dilationₗ_one _ f
   norm_map' := norm_dilationₗ hc
 
+/-- For $c \neq 0$ and $f \in L^2(\mathbb{R})$, $(D_c f)(x) = |c|^{1/2} f(cx)$ for almost every
+$x \in \mathbb{R}$. -/
 theorem dilationₗᵢ_apply (c : ℝ) (hc : c ≠ 0) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     dilationₗᵢ c hc f =ᵐ[volume] fun x => |c| ^ (1 / 2 : ℝ) * f (c * x) :=
   coeFn_dilationₗ c hc f
 
+/-- Two dilations compose into one: $D_c (D_d f) = D_{dc} f$ for $c, d \neq 0$ and
+$f \in L^2(\mathbb{R})$. -/
 theorem dilationₗᵢ_trans (c d : ℝ) (hc : c ≠ 0) (hd : d ≠ 0)
     (f : Lp ℝ 2 (volume : Measure ℝ)) :
     dilationₗᵢ c hc (dilationₗᵢ d hd f) = dilationₗᵢ (d * c) (mul_ne_zero hd hc) f :=
   dilationₗ_comp hc hd f
 
+/-- For $c \neq 0$, the inverse of the dilation $D_c$ is $D_{c^{-1}}$. -/
 theorem dilationₗᵢ_symm (c : ℝ) (hc : c ≠ 0) :
     (dilationₗᵢ c hc).symm = dilationₗᵢ c⁻¹ (inv_ne_zero hc) :=
   LinearIsometryEquiv.ext fun _ => rfl
 
 /-! ### Action on indicator functions -/
 
-/-- The dilation of `r` times the indicator of `s` is `|c| ^ (1/2) * r` times the indicator of the
-rescaled set `(fun x => c * x) ⁻¹' s = c⁻¹ • s`. -/
+/-- Let $c \neq 0$, let $s \subseteq \mathbb{R}$ be measurable with finite measure, and let
+$r \in \mathbb{R}$. Then $D_c (r \mathbf{1}_s) = |c|^{1/2} r \mathbf{1}_{c^{-1} s}$, where
+$c^{-1} s$ is the preimage of $s$ under $x \mapsto cx$. -/
 theorem dilationₗᵢ_indicatorConstLp (c : ℝ) (hc : c ≠ 0) {s : Set ℝ} (hs : MeasurableSet s)
     (hμs : volume s ≠ ∞) (r : ℝ) :
     dilationₗᵢ c hc (indicatorConstLp 2 hs hμs r)
@@ -242,7 +292,8 @@ namespace MeasureTheory
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α} {p : ℝ≥0∞} {s t : Set α}
 
-/-- Rescaling the constant of an `indicatorConstLp`. -/
+/-- Let $s$ be a measurable set of finite measure and $c, a \in \mathbb{R}$. In $L^p(\mu)$,
+$c \cdot (a \mathbf{1}_s) = (ca) \mathbf{1}_s$. -/
 theorem smul_indicatorConstLp (c : ℝ) (hs : MeasurableSet s) (hμs : μ s ≠ ⊤) (a : ℝ) :
     c • indicatorConstLp p hs hμs a = indicatorConstLp p hs hμs (c * a) := by
   refine Lp.ext ?_
@@ -253,7 +304,8 @@ theorem smul_indicatorConstLp (c : ℝ) (hs : MeasurableSet s) (hμs : μ s ≠ 
   by_cases hx : x ∈ s <;>
     simp [Set.indicator_of_mem, Set.indicator_of_notMem, hx]
 
-/-- Transporting an `indicatorConstLp` along an equality of sets. -/
+/-- If $s = t$, then $c \mathbf{1}_s$ and $c \mathbf{1}_t$ are the same element of $L^p(\mu)$,
+whatever the proofs that the sets are measurable with finite measure. -/
 theorem indicatorConstLp_congr_set (hs : MeasurableSet s) (hμs : μ s ≠ ⊤) (ht : MeasurableSet t)
     (hμt : μ t ≠ ⊤) (h : s = t) (c : ℝ) :
     indicatorConstLp p hs hμs c = indicatorConstLp p ht hμt c := by
@@ -268,23 +320,28 @@ namespace Haar
 
 open MeasureTheory Real
 
-/-- The dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, the support of the Haar scaling function
-`Haar.scalingFun j k`. -/
+/-- The **dyadic interval** of level $j \in \mathbb{Z}$ and index $k \in \mathbb{Z}$ is
+$I_{j,k} = [k 2^{-j}, (k + 1) 2^{-j})$. It is the support of the Haar scaling function
+$\varphi_{j,k}$. -/
 def dyadic (j k : ℤ) : Set ℝ := Set.Ico ((k : ℝ) * 2 ^ (-j)) (((k : ℝ) + 1) * 2 ^ (-j))
 
+/-- The dyadic interval $I_{j,k}$ is measurable. -/
 theorem measurableSet_dyadic (j k : ℤ) : MeasurableSet (dyadic j k) := measurableSet_Ico
 
+/-- The dyadic interval $I_{j,k}$ has Lebesgue measure $2^{-j}$. -/
 @[simp]
 theorem volume_dyadic (j k : ℤ) : volume (dyadic j k) = ENNReal.ofReal ((2 : ℝ) ^ (-j)) := by
   rw [dyadic, Real.volume_Ico]
   congr 1
   ring
 
+/-- The dyadic interval $I_{j,k}$ has finite Lebesgue measure. -/
 theorem volume_dyadic_ne_top (j k : ℤ) : volume (dyadic j k) ≠ ⊤ := by
   rw [volume_dyadic]
   exact ENNReal.ofReal_ne_top
 
-/-- Distinct dyadic intervals of the same level are disjoint. -/
+/-- Distinct dyadic intervals of the same level are disjoint: $I_{j,k} \cap I_{j,l} = \emptyset$ for
+$k \neq l$. -/
 theorem dyadic_inter_dyadic (j : ℤ) {k l : ℤ} (h : k ≠ l) : dyadic j k ∩ dyadic j l = ∅ := by
   have ht : (0 : ℝ) < 2 ^ (-j) := by positivity
   rw [dyadic, dyadic, Set.Ico_inter_Ico]
@@ -295,24 +352,31 @@ theorem dyadic_inter_dyadic (j : ℤ) {k l : ℤ} (h : k ≠ l) : dyadic j k ∩
   · have hkl' : ((l : ℝ) + 1) ≤ (k : ℝ) := by exact_mod_cast (by omega : l + 1 ≤ k)
     exact le_trans (min_le_right _ _) (le_trans (by nlinarith) (le_max_left _ _))
 
+/-- The dyadic interval $I_{0,0}$ is $[0, 1)$. -/
 @[simp]
 theorem dyadic_zero_zero : dyadic 0 0 = Set.Ico 0 1 := by
   simp [dyadic]
 
-/-- The Haar scaling function `2 ^ (j / 2) φ (2 ^ j x - k)` for the unit step `φ = 1_[0,1)`: the
-normalized indicator of the dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, as an element of
-`L²(ℝ)` ([han2009theoretical], (4.4.1)). -/
+/-- Let $\varphi = \mathbf{1}_{[0,1)}$ be the unit step. The **Haar scaling function** of level
+$j \in \mathbb{Z}$ and index $k \in \mathbb{Z}$ is
+$$\varphi_{j,k}(x) = 2^{j/2} \varphi(2^j x - k) = 2^{j/2} \mathbf{1}_{I_{j,k}}(x),$$
+the normalized indicator of the dyadic interval $I_{j,k} = [k 2^{-j}, (k + 1) 2^{-j})$. This is
+the function of (4.4.1) in [han2009theoretical].
+
+The function is the element `MeasureTheory.indicatorConstLp` of $L^2(\mathbb{R})$ for the set
+`Haar.dyadic j k` and the constant $\sqrt{2^j} = 2^{j/2}$. -/
 def scalingFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   indicatorConstLp 2 (measurableSet_dyadic j k) (volume_dyadic_ne_top j k) (√((2 : ℝ) ^ j))
 
-/-- At level `0` and index `0` the scaling function is the unit step `φ = 1_[0,1)`. -/
+/-- The scaling function $\varphi_{0,0}$ is the unit step $\varphi = \mathbf{1}_{[0,1)}$. -/
 theorem scalingFun_zero_zero :
     scalingFun 0 0 =
       indicatorConstLp 2 (measurableSet_dyadic 0 0) (volume_dyadic_ne_top 0 0) 1 := by
   rw [scalingFun]
   norm_num
 
-/-- Every scaling function is a dilation of a scaling function of level `0`. -/
+/-- Every scaling function is a dilation of a scaling function of level $0$:
+$\varphi_{j,k} = D_{2^j} \varphi_{0,k}$. -/
 theorem scalingFun_eq_dilation (j k : ℤ) :
     scalingFun j k = Lp.dilationₗᵢ ((2 : ℝ) ^ j) (zpow_ne_zero j two_ne_zero) (scalingFun 0 k) := by
   have hpos : (0 : ℝ) < 2 ^ j := by positivity
@@ -327,8 +391,11 @@ theorem scalingFun_eq_dilation (j k : ℤ) :
   rw [abs_of_pos hpos, ← Real.sqrt_eq_rpow]
   simp
 
-/-- [han2009theoretical], Theorem 4.4.1 (1): the scaling functions of a fixed level are orthonormal
-in `L²(ℝ)`. -/
+/-- For each level $j \in \mathbb{Z}$, the scaling functions $\varphi_{j,k}$, $k \in \mathbb{Z}$,
+are orthonormal in $L^2(\mathbb{R})$. This is Theorem 4.4.1(1) of [han2009theoretical].
+
+The functions of one level have norm $1$ and disjoint supports $I_{j,k}$; see
+`Haar.inner_scalingFun_self` and `Haar.inner_scalingFun_of_ne`. -/
 theorem orthonormal_scalingFun (j : ℤ) : Orthonormal ℝ (scalingFun j) := by
   have hpos : (0 : ℝ) < 2 ^ j := by positivity
   rw [orthonormal_iff_ite]
@@ -345,39 +412,49 @@ theorem orthonormal_scalingFun (j : ℤ) : Orthonormal ℝ (scalingFun j) := by
   · rw [dyadic_inter_dyadic j h]
     simp [h]
 
-/-- `⟪s_{j,k}, s_{j,k}⟫ = 1`. -/
+/-- Each scaling function has norm one: $\langle \varphi_{j,k}, \varphi_{j,k} \rangle = 1$. -/
 theorem inner_scalingFun_self (j k : ℤ) :
     inner ℝ (scalingFun j k) (scalingFun j k) = (1 : ℝ) := by
   have h := orthonormal_scalingFun j
   rw [orthonormal_iff_ite] at h
   simpa using h k k
 
-/-- `⟪s_{j,k}, s_{j,l}⟫ = 0` for `k ≠ l`. -/
+/-- Scaling functions of the same level with different indices are orthogonal: $\langle
+\varphi_{j,k}, \varphi_{j,l} \rangle = 0$ for $k \neq l$. -/
 theorem inner_scalingFun_of_ne (j : ℤ) {k l : ℤ} (h : k ≠ l) :
     inner ℝ (scalingFun j k) (scalingFun j l) = (0 : ℝ) := by
   have hon := orthonormal_scalingFun j
   rw [orthonormal_iff_ite] at hon
   simpa [h] using hon k l
 
-/-- The normalizing constant of the two-scale relation. -/
+/-- The identity $(\sqrt{2})^{-1} (\sqrt{2})^{-1} \cdot 2 = 1$, the normalization of the two-scale
+relation. -/
 private theorem inv_sqrt_two_mul_self : (√2)⁻¹ * (√2)⁻¹ * 2 = 1 := by
   rw [← mul_inv, Real.mul_self_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
   norm_num
 
 /-! ### The scaling spaces -/
 
-/-- The level-`j` Haar scaling space: the closed span in `L²(ℝ)` of the scaling functions of level
-`j`. [han2009theoretical] `V_j`, the set of *finite* linear combinations, is its dense subspace. -/
+/-- The **Haar scaling space** of level $j \in \mathbb{Z}$ is the closed linear span
+$$V_j = \overline{\operatorname{span}} \{\varphi_{j,k} : k \in \mathbb{Z}\}$$
+in $L^2(\mathbb{R})$.
+
+In [han2009theoretical], §4.4, $V_j$ is the set of finite linear combinations of the
+$\varphi_{j,k}$; that set is a dense subspace of the space defined here. With the closure, $V_j$
+is a Hilbert space with the Hilbert basis `Haar.hilbertBasis_V`. -/
 def V (j : ℤ) : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ)) :=
   (Submodule.span ℝ (Set.range (scalingFun j))).topologicalClosure
 
+/-- The scaling space $V_j$ is closed in $L^2(\mathbb{R})$. -/
 theorem isClosed_V (j : ℤ) : IsClosed (V j : Set (Lp ℝ 2 (volume : Measure ℝ))) :=
   Submodule.isClosed_topologicalClosure _
 
+/-- The scaling function $\varphi_{j,k}$ lies in the scaling space $V_j$. -/
 theorem scalingFun_mem_V (j k : ℤ) : scalingFun j k ∈ V j :=
   Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self k))
 
-/-- Membership in `(V j)ᗮ` is orthogonality to every scaling function of level `j`. -/
+/-- A function $f \in L^2(\mathbb{R})$ lies in the orthogonal complement $V_j^\perp$ if and only if
+$\langle \varphi_{j,k}, f \rangle = 0$ for every $k \in \mathbb{Z}$. -/
 theorem mem_orthogonal_V_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     f ∈ (V j)ᗮ ↔ ∀ k : ℤ, inner ℝ (scalingFun j k) f = 0 := by
   refine ⟨fun h k => (Submodule.mem_orthogonal _ _).1 h _ (scalingFun_mem_V j k), fun h => ?_⟩
@@ -385,12 +462,13 @@ theorem mem_orthogonal_V_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   rw [Submodule.orthogonal_closure]
   exact Submodule.mem_orthogonal_span_range h
 
-/-- The scaling functions of level `j` form a Hilbert basis of the scaling space `V j`. -/
+/-- The scaling functions $\varphi_{j,k}$, $k \in \mathbb{Z}$, of level $j$, as a Hilbert basis of
+the scaling space $V_j$. -/
 def hilbertBasis_V (j : ℤ) : HilbertBasis ℤ ℝ (V j) :=
   (orthonormal_scalingFun j).hilbertBasisTopologicalClosure
 
-/-- The image of the closure of a subspace under a surjective linear isometry is the closure of the
-image. -/
+/-- Let $D$ be a linear isometric equivalence of $L^2(\mathbb{R})$ onto itself and $K$ a subspace of
+$L^2(\mathbb{R})$. Then $D(\overline{K}) = \overline{D(K)}$. -/
 theorem map_topologicalClosure
     (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ))
     (K : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))) :
@@ -401,8 +479,9 @@ theorem map_topologicalClosure
     Submodule.map_coe]
   exact D.toHomeomorph.image_closure _
 
-/-- The image of the closed span of a family under a surjective linear isometry `D` is the closed
-span of the image family `g = D ∘ f`. -/
+/-- Let $D$ be a linear isometric equivalence of $L^2(\mathbb{R})$ onto itself, and let $(f_i)$ and
+$(g_i)$ be families in $L^2(\mathbb{R})$ with $D f_i = g_i$ for every $i$. Then $D$ maps the
+closed linear span of the $f_i$ onto the closed linear span of the $g_i$. -/
 theorem map_topologicalClosure_span_range
     (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ)) {ι : Type*}
     {f g : ι → Lp ℝ 2 (volume : Measure ℝ)} (hfg : ∀ i, D (f i) = g i) :
@@ -413,15 +492,21 @@ theorem map_topologicalClosure_span_range
     exact congrArg Set.range (funext hfg)
   rw [map_topologicalClosure, Submodule.map_span, himg]
 
-/-- [han2009theoretical], Theorem 4.4.1 (2), scale invariance: `V j` is the image of `V 0` under the
-dilation by `2 ^ j`. -/
+/-- The scaling spaces are **scale invariant**: for each $j \in \mathbb{Z}$, $V_j$ is the image of
+$V_0$ under the dilation by $2^j$,
+$$V_j = D_{2^j}(V_0) = \{x \mapsto 2^{j/2} f(2^j x) : f \in V_0\}.$$
+This is Theorem 4.4.1(2) of [han2009theoretical].
+
+$D_{2^j}$ is `MeasureTheory.Lp.dilationₗᵢ (2 ^ j)`. The proof applies
+`Haar.map_topologicalClosure_span_range` to `Haar.scalingFun_eq_dilation`. -/
 theorem V_eq_map_dilation (j : ℤ) :
     V j = (V 0).map
       (Lp.dilationₗᵢ ((2 : ℝ) ^ j) (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap :=
   (map_topologicalClosure_span_range _ fun k => (scalingFun_eq_dilation j k).symm).symm
 
-/-- The two-scale relation: a scaling function of level `j` is the normalized sum of the two scaling
-functions of level `j + 1` supported on its two halves. -/
+/-- The **two-scale relation**: $\varphi_{j,k} = \frac{1}{\sqrt{2}} (\varphi_{j+1,2k} +
+\varphi_{j+1,2k+1})$. The two functions on the right are supported on the two halves of
+$I_{j,k}$. -/
 theorem scalingFun_two_scale (j k : ℤ) :
     scalingFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) + scalingFun (j + 1) (2 * k + 1)) := by
   have ht : (0 : ℝ) < 2 ^ (-(j + 1)) := by positivity
@@ -446,7 +531,10 @@ theorem scalingFun_two_scale (j k : ℤ) :
   rw [zpow_add_one₀ (two_ne_zero' ℝ), Real.sqrt_mul (by positivity)]
   field_simp
 
-/-- [han2009theoretical], Theorem 4.4.1 (3), nesting. -/
+/-- The scaling spaces are **nested**: $V_j \subseteq V_{j+1}$ for every $j \in \mathbb{Z}$. This is
+Theorem 4.4.1(3) of [han2009theoretical].
+
+It follows from the two-scale relation `Haar.scalingFun_two_scale`. -/
 theorem V_le_V_succ (j : ℤ) : V j ≤ V (j + 1) := by
   refine Submodule.topologicalClosure_minimal _ ?_ (isClosed_V (j + 1))
   rw [Submodule.span_le]
@@ -498,8 +586,8 @@ private theorem coeFn_sum_indicatorConstLp (j : ℤ) (s : Finset ℤ) (c : ℤ �
 
 /-! ### The dyadic step approximation -/
 
-/-- The level-`j` dyadic step function of `g`, cut off outside the window `[-M 2 ^ (-j), M 2 ^
-(-j))`. -/
+/-- The dyadic step function $x \mapsto \sum_{k=-M}^{M-1} g(k 2^{-j}) \mathbf{1}_{I_{j,k}}(x)$ of
+$g$ at level $j$, which vanishes outside $[-M 2^{-j}, M 2^{-j})$. -/
 private def stepFun (g : ℝ → ℝ) (j M : ℤ) : ℝ → ℝ := fun x =>
   ∑ k ∈ Finset.Ico (-M) M, (dyadic j k).indicator (fun _ => g ((k : ℝ) * 2 ^ (-j))) x
 
@@ -508,7 +596,8 @@ private theorem stepFun_apply (g : ℝ → ℝ) (j M : ℤ) (x : ℝ) :
       ∑ k ∈ Finset.Ico (-M) M, (dyadic j k).indicator (fun _ => g ((k : ℝ) * 2 ^ (-j))) x :=
   rfl
 
-/-- The step function of `g`, as an element of `L²(ℝ)` lying in `V j`. -/
+/-- The dyadic step function of $g$ at level $j$, as a finite combination of the $\varphi_{j,k}$ in
+$L^2(\mathbb{R})$; it lies in $V_j$. -/
 private def stepLp (g : ℝ → ℝ) (j M : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   ∑ k ∈ Finset.Ico (-M) M, (g ((k : ℝ) * 2 ^ (-j)) * √((2 : ℝ) ^ (-j))) • scalingFun j k
 
@@ -530,8 +619,8 @@ private theorem coeFn_stepLp (g : ℝ → ℝ) (j M : ℤ) :
   rw [stepLp_eq_sum]
   exact coeFn_sum_indicatorConstLp j _ _
 
-/-- A continuous function with compact support is approximated in `L²` by its dyadic step functions.
--/
+/-- A continuous function $g$ with compact support is within $\varepsilon$ in the $L^2$ seminorm of
+one of its dyadic step functions. -/
 private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs : HasCompactSupport g)
     {ε : ℝ} (hε : 0 < ε) :
     ∃ j M : ℤ, eLpNorm (g - stepFun g j M) 2 volume ≤ ENNReal.ofReal ε := by
@@ -650,8 +739,13 @@ private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs :
 
 /-! ### Density -/
 
-/-- [han2009theoretical], Theorem 4.4.1 (4), density: the union of the scaling spaces is dense in
-`L²(ℝ)`. -/
+/-- The scaling spaces are **dense**: their union is dense in $L^2(\mathbb{R})$,
+$$\overline{\textstyle\bigcup_{j \in \mathbb{Z}} V_j} = L^2(\mathbb{R}).$$
+This is Theorem 4.4.1(4) of [han2009theoretical].
+
+The union is the supremum `⨆ j, Haar.V j` of submodules. The proof approximates $f$ by a
+continuous function with compact support, and that function by its dyadic step functions, which
+lie in the $V_j$. -/
 theorem topologicalClosure_iSup_V : (⨆ j : ℤ, V j).topologicalClosure = ⊤ := by
   refine Submodule.dense_iff_topologicalClosure_eq_top.mp fun f => ?_
   rw [Metric.mem_closure_iff]
@@ -687,13 +781,15 @@ theorem topologicalClosure_iSup_V : (⨆ j : ℤ, V j).topologicalClosure = ⊤ 
 
 /-! ### Separation -/
 
-/-- A vector orthogonal to every level-`j` scaling function is orthogonal to `V j`. -/
+/-- If $u \in V_j$ and $v$ is orthogonal to every $\varphi_{j,k}$, $k \in \mathbb{Z}$, then
+$\langle u, v \rangle = 0$. -/
 private theorem inner_eq_zero_of_mem_V {j : ℤ} {u v : Lp ℝ 2 (volume : Measure ℝ)}
     (hu : u ∈ V j) (h : ∀ k : ℤ, inner ℝ (scalingFun j k) v = (0 : ℝ)) :
     inner ℝ u v = (0 : ℝ) :=
   (Submodule.mem_orthogonal _ _).1 ((mem_orthogonal_V_iff j v).2 h) u hu
 
-/-- The scale factor relating two levels. -/
+/-- The identity $2^{-i} \sqrt{2^j} \sqrt{2^i} = \sqrt{2^{j-i}}$, which relates the scaling
+functions of the levels $j$ and $i$. -/
 private theorem sqrt_zpow_mul (j i : ℤ) :
     (2 : ℝ) ^ (-i) * (√((2 : ℝ) ^ j) * √((2 : ℝ) ^ i)) = √((2 : ℝ) ^ (j - i)) := by
   have hi : (0 : ℝ) < 2 ^ i := by positivity
@@ -709,7 +805,8 @@ private theorem sqrt_zpow_mul (j i : ℤ) :
     _ = ((2 : ℝ) ^ (-i) * 2 ^ i) * √((2 : ℝ) ^ (j - i)) := by rw [hsi]; ring
     _ = √((2 : ℝ) ^ (j - i)) := by rw [← zpow_add₀ (two_ne_zero' ℝ)]; simp
 
-/-- For `j ≤ i` each level-`i` dyadic interval sits inside a level-`j` one. -/
+/-- For $j \le i$, each dyadic interval $I_{i,k}$ of level $i$ lies in some dyadic interval
+$I_{j,l}$ of level $j$. -/
 private theorem exists_dyadic_subset {j i : ℤ} (hji : j ≤ i) (k : ℤ) :
     ∃ l : ℤ, dyadic i k ⊆ dyadic j l := by
   have hmi : (((i - j).toNat : ℤ)) = i - j := Int.toNat_of_nonneg (by omega)
@@ -769,8 +866,8 @@ private theorem inner_scalingFun_cross_zero {j i l k m : ℤ} (hsub : dyadic i k
     hempty]
   simp
 
-/-- The level-`i` scaling coefficients of an element of `V j`, `j ≤ i`, are controlled by `2 ^ ((j -
-i) / 2)`. -/
+/-- For $j \le i$, $f \in V_j$ and $k \in \mathbb{Z}$, the coefficient of level $i$ satisfies
+$|\langle \varphi_{i,k}, f \rangle| \le 2^{(j-i)/2} \|f\|$. -/
 private theorem abs_inner_scalingFun_le {j i : ℤ} (hji : j ≤ i) (k : ℤ)
     {f : Lp ℝ 2 (volume : Measure ℝ)} (hf : f ∈ V j) :
     |inner ℝ (scalingFun i k) f| ≤ √((2 : ℝ) ^ (j - i)) * ‖f‖ := by
@@ -816,7 +913,13 @@ private theorem inner_scalingFun_eq_zero_of_mem_iInf {f : Lp ℝ 2 (volume : Mea
     rwa [div_mul_cancel₀ _ (by positivity : (‖f‖ + 1) ≠ 0)] at h1
   linarith
 
-/-- [han2009theoretical], Theorem 4.4.1 (5), separation: the scaling spaces intersect in `0`. -/
+/-- The scaling spaces are **separated**: their intersection is zero,
+$$\bigcap_{j \in \mathbb{Z}} V_j = \{0\}.$$
+This is Theorem 4.4.1(5) of [han2009theoretical].
+
+The intersection is the infimum `⨅ j, Haar.V j` of submodules. For $f$ in every $V_j$ and
+$j \le i$, the coefficient $\langle \varphi_{i,k}, f \rangle$ is bounded by $2^{(j-i)/2} \|f\|$
+in absolute value, and this bound tends to $0$ as $j \to -\infty$. -/
 theorem iInf_V_eq_bot : (⨅ j : ℤ, V j) = ⊥ := by
   rw [Submodule.eq_bot_iff]
   intro f hf
@@ -835,19 +938,27 @@ theorem iInf_V_eq_bot : (⨅ j : ℤ, V j) = ⊥ := by
 
 /-! ### The wavelet functions and wavelet spaces -/
 
-/-- The Haar wavelet `2 ^ (j / 2) ψ (2 ^ j x - k)` for `ψ = φ (2 ·) - φ (2 · - 1)`: the difference
-of the two level-`(j + 1)` scaling functions supported on the halves of the dyadic interval `[k 2 ^
-(-j), (k + 1) 2 ^ (-j))`, normalized. [han2009theoretical], (4.4.2). -/
+/-- Let $\varphi = \mathbf{1}_{[0,1)}$ and $\psi(x) = \varphi(2x) - \varphi(2x - 1)$. The **Haar
+wavelet** of level $j \in \mathbb{Z}$ and index $k \in \mathbb{Z}$ is
+$$\psi_{j,k}(x) = 2^{j/2} \psi(2^j x - k) = \frac{1}{\sqrt{2}} \bigl(\varphi_{j+1,2k}(x) -
+  \varphi_{j+1,2k+1}(x)\bigr).$$
+It equals $2^{j/2}$ on the left half of the dyadic interval $I_{j,k}$ and $-2^{j/2}$ on the
+right half. This is the function of (4.4.2) in [han2009theoretical].
+
+The definition is the second expression. `Haar.waveletFun_eq_sub_indicator` gives the closed
+form. -/
 def waveletFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   (√2)⁻¹ • (scalingFun (j + 1) (2 * k) - scalingFun (j + 1) (2 * k + 1))
 
+/-- The defining formula of the Haar wavelet: $\psi_{j,k} = \frac{1}{\sqrt{2}} (\varphi_{j+1,2k} -
+\varphi_{j+1,2k+1})$. -/
 theorem waveletFun_eq (j k : ℤ) :
     waveletFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) - scalingFun (j + 1) (2 * k + 1)) :=
   rfl
 
-/-- The Haar wavelet in closed form: it is `√(2 ^ j)` on the left half of the dyadic interval `[k 2
-^ (-j), (k + 1) 2 ^ (-j))` and `-√(2 ^ j)` on the right half, which is `2 ^ (j / 2) ψ (2 ^ j x - k)`
-for `ψ = 1_[0,1/2) - 1_[1/2,1)`. -/
+/-- The Haar wavelet in closed form: $\psi_{j,k} = 2^{j/2} \mathbf{1}_{I_{j+1,2k}} - 2^{j/2}
+\mathbf{1}_{I_{j+1,2k+1}}$. The two intervals are the left and right halves of $I_{j,k}$, so
+this is $2^{j/2} \psi(2^j x - k)$ with $\psi = \mathbf{1}_{[0,1/2)} - \mathbf{1}_{[1/2,1)}$. -/
 theorem waveletFun_eq_sub_indicator (j k : ℤ) :
     waveletFun j k =
       indicatorConstLp 2 (measurableSet_dyadic (j + 1) (2 * k))
@@ -860,7 +971,7 @@ theorem waveletFun_eq_sub_indicator (j k : ℤ) :
   rw [waveletFun, smul_sub]
   simp only [scalingFun, smul_indicatorConstLp, hconst]
 
-/-- The wavelets of a fixed level are orthonormal. -/
+/-- For each level $j$, the wavelets $\psi_{j,k}$, $k \in \mathbb{Z}$, are orthonormal. -/
 theorem orthonormal_waveletFun (j : ℤ) : Orthonormal ℝ (waveletFun j) := by
   rw [orthonormal_iff_ite]
   intro k l
@@ -879,18 +990,27 @@ theorem orthonormal_waveletFun (j : ℤ) : Orthonormal ℝ (waveletFun j) := by
       show (if k = l then (1 : ℝ) else 0) = 0 from by simp [h]]
     ring
 
-/-- The level-`j` Haar wavelet space: the closed span in `L²(ℝ)` of the wavelets of level `j`. -/
+/-- The **Haar wavelet space** of level $j \in \mathbb{Z}$ is the closed linear span
+$$W_j = \overline{\operatorname{span}} \{\psi_{j,k} : k \in \mathbb{Z}\}$$
+in $L^2(\mathbb{R})$. It corresponds to the wavelet space $W_j$ of [han2009theoretical], §4.4.
+
+As for `Haar.V`, the space is closed by definition. `Haar.W_eq_inf_orthogonal` shows that it is
+the orthogonal complement of $V_j$ in $V_{j+1}$. -/
 def W (j : ℤ) : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ)) :=
   (Submodule.span ℝ (Set.range (waveletFun j))).topologicalClosure
 
+/-- The wavelet $\psi_{j,k}$ lies in the wavelet space $W_j$. -/
 theorem waveletFun_mem_W (j k : ℤ) : waveletFun j k ∈ W j :=
   Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self k))
 
-/-- The wavelets of level `j` form a Hilbert basis of the wavelet space `W j`. -/
+/-- The wavelets $\psi_{j,k}$, $k \in \mathbb{Z}$, of level $j$, as a Hilbert basis of the wavelet
+space $W_j$. -/
 def hilbertBasis_W (j : ℤ) : HilbertBasis ℤ ℝ (W j) :=
   (orthonormal_waveletFun j).hilbertBasisTopologicalClosure
 
-/-- The level-`(j + 1)` scaling functions in terms of the level-`j` scaling function and wavelet. -/
+/-- The scaling functions of level $j + 1$ in terms of level $j$: $\varphi_{j+1,2k} =
+\frac{1}{\sqrt{2}} (\varphi_{j,k} + \psi_{j,k})$ and $\varphi_{j+1,2k+1} = \frac{1}{\sqrt{2}}
+(\varphi_{j,k} - \psi_{j,k})$. -/
 theorem scalingFun_succ_eq (j k : ℤ) :
     scalingFun (j + 1) (2 * k) = (√2)⁻¹ • (scalingFun j k + waveletFun j k) ∧
       scalingFun (j + 1) (2 * k + 1) = (√2)⁻¹ • (scalingFun j k - waveletFun j k) := by
@@ -910,6 +1030,7 @@ theorem scalingFun_succ_eq (j k : ℤ) :
   · rw [waveletFun, scalingFun_two_scale j k]
     exact (key _ _).2.symm
 
+/-- The wavelet space $W_j$ is closed in $L^2(\mathbb{R})$. -/
 theorem isClosed_W (j : ℤ) : IsClosed (W j : Set (Lp ℝ 2 (volume : Measure ℝ))) :=
   Submodule.isClosed_topologicalClosure _
 
@@ -917,7 +1038,8 @@ instance (j : ℤ) : CompleteSpace (V j) := (isClosed_V j).completeSpace_coe
 
 instance (j : ℤ) : CompleteSpace (W j) := (isClosed_W j).completeSpace_coe
 
-/-- A scaling function and a wavelet of the same level are orthogonal. -/
+/-- A scaling function and a wavelet of the same level are orthogonal:
+$\langle \varphi_{j,k}, \psi_{j,l} \rangle = 0$ for all $k, l \in \mathbb{Z}$. -/
 theorem inner_scalingFun_waveletFun (j k l : ℤ) :
     inner ℝ (scalingFun j k) (waveletFun j l) = 0 := by
   simp only [waveletFun, scalingFun_two_scale j k, real_inner_smul_left, real_inner_smul_right,
@@ -933,19 +1055,21 @@ theorem inner_scalingFun_waveletFun (j k l : ℤ) :
       inner_scalingFun_of_ne (j + 1) (by omega : 2 * k + 1 ≠ 2 * l + 1)]
     ring
 
+/-- The wavelet $\psi_{j,k}$ lies in the scaling space $V_{j+1}$. -/
 theorem waveletFun_mem_V_succ (j k : ℤ) : waveletFun j k ∈ V (j + 1) :=
   Submodule.smul_mem _ _
     (Submodule.sub_mem _ (scalingFun_mem_V _ _) (scalingFun_mem_V _ _))
 
-/-- The wavelet space of level `j` sits inside the scaling space of level `j + 1`. -/
+/-- The wavelet space of level $j$ lies in the scaling space of level $j + 1$:
+$W_j \subseteq V_{j+1}$. -/
 theorem W_le_V_succ (j : ℤ) : W j ≤ V (j + 1) := by
   refine Submodule.topologicalClosure_minimal _ ?_ (isClosed_V (j + 1))
   rw [Submodule.span_le]
   rintro _ ⟨k, rfl⟩
   exact waveletFun_mem_V_succ j k
 
-/-- Every element of the scaling space of level `j` is orthogonal to the wavelet space of the same
-level. -/
+/-- Every element of the scaling space $V_j$ is orthogonal to the wavelet space $W_j$:
+$V_j \subseteq W_j^\perp$. -/
 theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   simp only [W]
   rw [Submodule.orthogonal_closure]
@@ -955,13 +1079,13 @@ theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   exact Submodule.mem_orthogonal_span_range fun l => by
     rw [real_inner_comm]; exact inner_scalingFun_waveletFun j k l
 
-/-- The wavelet space of level `j` is orthogonal to the scaling space of the same level, the other
-reading of `V_le_orthogonal_W`. -/
+/-- Every element of the wavelet space $W_j$ is orthogonal to the scaling space $V_j$:
+$W_j \subseteq V_j^\perp$. This is `Haar.V_le_orthogonal_W` read the other way. -/
 theorem W_le_orthogonal_V (j : ℤ) : W j ≤ (V j)ᗮ :=
   (Submodule.le_orthogonal_orthogonal _).trans (Submodule.orthogonal_le (V_le_orthogonal_W j))
 
-/-- The level-`(j + 1)` scaling functions lie in `V j ⊔ W j`, so `V (j + 1)` is contained in the
-closure of that sum. -/
+/-- The scaling space $V_{j+1}$ lies in the closure of $V_j + W_j$, because every $\varphi_{j+1,k}$
+lies in $V_j + W_j$. -/
 private theorem V_succ_le_topologicalClosure_sup (j : ℤ) :
     V (j + 1) ≤ (V j ⊔ W j).topologicalClosure := by
   refine Submodule.topologicalClosure_minimal _ ?_ (Submodule.isClosed_topologicalClosure _)
@@ -980,9 +1104,14 @@ private theorem V_succ_le_topologicalClosure_sup (j : ℤ) :
       (Submodule.mem_sup_left (scalingFun_mem_V j k))
       (Submodule.mem_sup_right (waveletFun_mem_W j k))))
 
-/-- [han2009theoretical], Theorem 4.4.2: an element of `V (j + 1)` lies in `W j` exactly when it is
-orthogonal to every scaling function of level `j`; in terms of the coefficients `a k = ⟪scalingFun
-(j+1) k, f⟫` this says `a (2k+1) = -a (2k)`. -/
+/-- Let $j \in \mathbb{Z}$ and $f \in L^2(\mathbb{R})$. Then $f \in W_j$ if and only if
+$f \in V_{j+1}$ and
+$$\langle \varphi_{j,k}, f \rangle = 0 \quad \text{for every } k \in \mathbb{Z}.$$
+This is Theorem 4.4.2 of [han2009theoretical].
+
+In terms of the coefficients $a_k = \langle \varphi_{j+1,k}, f \rangle$, the condition says
+$a_{2k+1} = -a_{2k}$ for every $k$, because $\langle \varphi_{j,k}, f \rangle = (a_{2k} +
+a_{2k+1}) / \sqrt{2}$ by the two-scale relation. -/
 theorem mem_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     f ∈ W j ↔ f ∈ V (j + 1) ∧ ∀ k : ℤ, inner ℝ (scalingFun j k) f = 0 := by
   refine ⟨fun h => ⟨W_le_V_succ j h, (mem_orthogonal_V_iff j f).1 (W_le_orthogonal_V j h)⟩,
@@ -1005,12 +1134,14 @@ theorem mem_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     exact this _ ⟨hr3, hr5⟩
   rwa [sub_eq_zero.mp this]
 
-/-- `W j` is the part of `V (j + 1)` orthogonal to `V j`. -/
+/-- The wavelet space is the orthogonal complement of $V_j$ in $V_{j+1}$:
+$W_j = V_{j+1} \cap V_j^\perp$. -/
 theorem W_eq_inf_orthogonal (j : ℤ) : W j = V (j + 1) ⊓ (V j)ᗮ := by
   ext f
   rw [mem_W_iff, Submodule.mem_inf, mem_orthogonal_V_iff]
 
-/-- The scaling and wavelet spaces of level `j` span the scaling space of level `j + 1`. -/
+/-- The scaling and wavelet spaces of level $j$ span the scaling space of level $j + 1$:
+$V_j + W_j = V_{j+1}$, with no closure needed. -/
 theorem sup_V_W (j : ℤ) : V j ⊔ W j = V (j + 1) := by
   refine le_antisymm (sup_le (V_le_V_succ j) (W_le_V_succ j)) fun f hf => ?_
   set g := (V j).starProjection f with hg
@@ -1023,7 +1154,7 @@ theorem sup_V_W (j : ℤ) : V j ⊔ W j = V (j + 1) := by
     (Submodule.mem_sup_right hrW)
   rwa [add_sub_cancel] at this
 
-/-- The scaling and wavelet spaces of the same level meet only in `0`. -/
+/-- The scaling and wavelet spaces of the same level meet only in zero: $V_j \cap W_j = \{0\}$. -/
 theorem disjoint_V_W (j : ℤ) : Disjoint (V j) (W j) := by
   rw [disjoint_iff, Submodule.eq_bot_iff]
   rintro f ⟨hV, hW⟩
@@ -1031,7 +1162,14 @@ theorem disjoint_V_W (j : ℤ) : Disjoint (V j) (W j) := by
   rw [Submodule.eq_bot_iff] at this
   exact this _ ⟨hV, W_le_orthogonal_V j hW⟩
 
-/-- `V (j + 1)` is the orthogonal direct sum of `V j` and `W j`. -/
+/-- For each $j \in \mathbb{Z}$, the subspaces $V_j$ and $W_j$ of $V_{j+1}$ are complementary:
+$$V_j \cap W_j = \{0\}, \qquad V_j + W_j = V_{j+1}.$$
+Since $V_j \perp W_j$, the space $V_{j+1}$ is the orthogonal direct sum $V_j \oplus W_j$. See
+[han2009theoretical], §4.4.
+
+The Lean statement is `IsCompl` in the lattice of subspaces of $V_{j+1}$, with $V_j$ and $W_j$
+pulled back along the inclusion of $V_{j+1}$ by `Submodule.comap`. The orthogonality
+$V_j \perp W_j$ is `Haar.V_le_orthogonal_W`. -/
 theorem isCompl_V_W (j : ℤ) :
     IsCompl ((V j).comap (V (j + 1)).subtype) ((W j).comap (V (j + 1)).subtype) := by
   have hinj : Function.Injective (V (j + 1)).subtype := Subtype.coe_injective
@@ -1046,8 +1184,15 @@ theorem isCompl_V_W (j : ℤ) :
 
 /-! ### Decomposition and reconstruction -/
 
-/-- [han2009theoretical], Theorem 4.4.3, the decomposition (analysis) step: the level-`j` scaling
-and wavelet coefficients of `f` from its level-`(j + 1)` scaling coefficients. -/
+/-- The **decomposition** (analysis) step. Let $f \in L^2(\mathbb{R})$ and $j, k \in \mathbb{Z}$,
+and write $a^j_k = \langle \varphi_{j,k}, f \rangle$ and $b^j_k = \langle \psi_{j,k}, f \rangle$
+for the scaling and wavelet coefficients of $f$. Then
+$$a^j_k = \frac{1}{\sqrt{2}} \bigl(a^{j+1}_{2k} + a^{j+1}_{2k+1}\bigr), \qquad b^j_k =
+  \frac{1}{\sqrt{2}} \bigl(a^{j+1}_{2k} - a^{j+1}_{2k+1}\bigr).$$
+This is Theorem 4.4.3 of [han2009theoretical].
+
+The coefficients are inner products with the normalized functions $\varphi_{j,k}$ and
+$\psi_{j,k}$. -/
 theorem decomposition (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     inner ℝ (scalingFun j k) f =
         (√2)⁻¹ * (inner ℝ (scalingFun (j + 1) (2 * k)) f +
@@ -1059,8 +1204,12 @@ theorem decomposition (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   · rw [scalingFun_two_scale j k, real_inner_smul_left, inner_add_left]
   · rw [waveletFun, real_inner_smul_left, inner_sub_left]
 
-/-- [han2009theoretical], Theorem 4.4.4, the reconstruction (synthesis) step, inverse to
-`Haar.decomposition`. -/
+/-- The **reconstruction** (synthesis) step, inverse to `Haar.decomposition`. Let
+$f \in L^2(\mathbb{R})$ and $j, k \in \mathbb{Z}$, and write
+$a^j_k = \langle \varphi_{j,k}, f \rangle$ and $b^j_k = \langle \psi_{j,k}, f \rangle$. Then
+$$a^{j+1}_{2k} = \frac{1}{\sqrt{2}} \bigl(a^j_k + b^j_k\bigr), \qquad a^{j+1}_{2k+1} =
+  \frac{1}{\sqrt{2}} \bigl(a^j_k - b^j_k\bigr).$$
+This is Theorem 4.4.4 of [han2009theoretical]. -/
 theorem reconstruction (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     inner ℝ (scalingFun (j + 1) (2 * k)) f =
         (√2)⁻¹ * (inner ℝ (scalingFun j k) f + inner ℝ (waveletFun j k) f) ∧
@@ -1073,13 +1222,16 @@ theorem reconstruction (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
 
 /-! ### The multi-level decomposition -/
 
-/-- The scaling spaces increase with the level, by iterating `Haar.V_le_V_succ`. -/
+/-- The scaling spaces increase with the level: if $i \le j$, then $V_i \subseteq V_j$.
+
+The proof iterates `Haar.V_le_V_succ`. -/
 theorem V_mono {i j : ℤ} (h : i ≤ j) : V i ≤ V j := by
   induction j, h using Int.leInduction with
   | base => exact le_rfl
   | succ n _ ih => exact ih.trans (V_le_V_succ n)
 
-/-- Membership in `(W j)ᗮ` is orthogonality to every wavelet of level `j`. -/
+/-- A function $f \in L^2(\mathbb{R})$ lies in $W_j^\perp$ if and only if
+$\langle \psi_{j,k}, f \rangle = 0$ for every $k \in \mathbb{Z}$. -/
 theorem mem_orthogonal_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     f ∈ (W j)ᗮ ↔ ∀ k : ℤ, inner ℝ (waveletFun j k) f = 0 := by
   refine ⟨fun h k => (Submodule.mem_orthogonal _ _).1 h _ (waveletFun_mem_W j k), fun h => ?_⟩
@@ -1087,9 +1239,10 @@ theorem mem_orthogonal_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   rw [Submodule.orthogonal_closure]
   exact Submodule.mem_orthogonal_span_range h
 
-/-- **One analysis step, as a splitting of the projection.** Since `V (j + 1)` is the orthogonal
-direct sum of `V j` and `W j`, the projection onto it is the sum of the projections onto the two
-summands. -/
+/-- **One analysis step**, as a splitting of the projection: for $f \in L^2(\mathbb{R})$ and
+$j \in \mathbb{Z}$,
+$$P_{V_{j+1}} f = P_{V_j} f + P_{W_j} f.$$
+It holds because $V_{j+1}$ is the orthogonal direct sum of $V_j$ and $W_j$. -/
 theorem starProjection_V_succ (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     (V (j + 1)).starProjection f = (V j).starProjection f + (W j).starProjection f := by
   obtain ⟨g, hg⟩ : ∃ g, (V (j + 1)).starProjection f = g := ⟨_, rfl⟩
@@ -1119,15 +1272,17 @@ theorem starProjection_V_succ (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   rw [hg, ← hVg, ← hWg, hWval]
   abel
 
-/-- **The multi-level Haar decomposition** ([han2009theoretical], (4.4.9)–(4.4.13) and (4.4.18)):
-iterating one analysis step from level `j` down to level `i` splits the projection onto `V j` into
-the coarse part in `V i` and the detail parts in the intermediate wavelet spaces,
+/-- The **multi-level Haar decomposition**. Let $i \le j$ be integers and $f \in L^2(\mathbb{R})$.
+Then
+$$P_{V_j} f = P_{V_i} f + \sum_{l=i}^{j-1} P_{W_l} f,$$
+the splitting of the projection onto $V_j$ into the coarse part in $V_i$ and the detail parts in
+the intermediate wavelet spaces. This is the content of (4.4.9)–(4.4.13) and (4.4.18) of
+[han2009theoretical].
 
-`P_{V j} f = P_{V i} f + ∑_{i ≤ l < j} P_{W l} f`.
-
-This is the Haar transform as an algorithm: `j - i` rounds of `Haar.decomposition` produce exactly
-these summands, each expanded in its own orthonormal system by `Haar.hilbertBasis_V` and
-`Haar.hilbertBasis_W`. -/
+The projection $P_S$ is `Submodule.starProjection`, and the sum runs over `Finset.Ico i j`. The
+formula iterates `Haar.starProjection_V_succ`. It is the Haar transform as an algorithm: $j - i$
+rounds of `Haar.decomposition` produce exactly these summands, and each summand is expanded in
+its own orthonormal system by `Haar.hilbertBasis_V` and `Haar.hilbertBasis_W`. -/
 theorem starProjection_V_eq_sum {i j : ℤ} (h : i ≤ j) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     (V j).starProjection f
       = (V i).starProjection f + ∑ l ∈ Finset.Ico i j, (W l).starProjection f := by
@@ -1136,24 +1291,31 @@ theorem starProjection_V_eq_sum {i j : ℤ} (h : i ≤ j) (f : Lp ℝ 2 (volume 
   | succ n hn ih =>
       rw [starProjection_V_succ, ih, ← Finset.sum_Ico_add_eq_sum_Ico_add_one hn, add_assoc]
 
-/-- The coarse part of `f` at level `j`, expanded in the level-`j` scaling functions: this is the
-book's `f_j = ∑_k a_k^j φ(2^j x - k)` with `a_k^j` its scaling coefficients. -/
+/-- The coarse part of $f$ at level $j$, expanded in the scaling functions of level $j$:
+$$P_{V_j} f = \sum_{k \in \mathbb{Z}} \langle \varphi_{j,k}, f \rangle \varphi_{j,k},$$
+with unconditional convergence in $L^2(\mathbb{R})$. It corresponds to the expansion
+$f_j = \sum_k a^j_k \varphi(2^j x - k)$ of [han2009theoretical], §4.4; here the coefficients are
+taken against the normalized functions $\varphi_{j,k}$. -/
 theorem hasSum_inner_smul_starProjection_V (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     HasSum (fun k : ℤ => (inner ℝ (scalingFun j k) f) • scalingFun j k)
       ((V j).starProjection f) :=
   (orthonormal_scalingFun j).hasSum_inner_smul_starProjection f
 
-/-- The detail part of `f` at level `j`, expanded in the level-`j` wavelets: this is the book's
-`w_j = ∑_k b_k^j ψ(2^j x - k)` with `b_k^j` its wavelet coefficients. -/
+/-- The detail part of $f$ at level $j$, expanded in the wavelets of level $j$:
+$$P_{W_j} f = \sum_{k \in \mathbb{Z}} \langle \psi_{j,k}, f \rangle \psi_{j,k},$$
+with unconditional convergence in $L^2(\mathbb{R})$. It corresponds to the expansion
+$w_j = \sum_k b^j_k \psi(2^j x - k)$ of [han2009theoretical], §4.4; here the coefficients are
+taken against the normalized functions $\psi_{j,k}$. -/
 theorem hasSum_inner_smul_starProjection_W (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     HasSum (fun k : ℤ => (inner ℝ (waveletFun j k) f) • waveletFun j k)
       ((W j).starProjection f) :=
   (orthonormal_waveletFun j).hasSum_inner_smul_starProjection f
 
-/-! ### The Haar wavelets as a basis of `L²(ℝ)` -/
+/-! ### The Haar wavelets as a basis of $L^2(\mathbb{R})$ -/
 
-/-- Wavelets of different levels are orthogonal: the level-`i` wavelet space sits inside `V j` for
-`i < j`, and `V j` is orthogonal to `W j`. -/
+/-- Wavelets of different levels are orthogonal: for $i < j$ and $k, l \in \mathbb{Z}$,
+$\langle \psi_{i,k}, \psi_{j,l} \rangle = 0$. The reason is that
+$W_i \subseteq V_{i+1} \subseteq V_j$ and $V_j \perp W_j$. -/
 theorem inner_waveletFun_of_lt {i j : ℤ} (hij : i < j) (k l : ℤ) :
     inner ℝ (waveletFun i k) (waveletFun j l) = 0 := by
   have hmem : waveletFun i k ∈ (W j)ᗮ :=
@@ -1161,7 +1323,8 @@ theorem inner_waveletFun_of_lt {i j : ℤ} (hij : i < j) (k l : ℤ) :
   rw [real_inner_comm]
   exact (Submodule.mem_orthogonal _ _).1 hmem _ (waveletFun_mem_W j l)
 
-/-- The Haar wavelets of all levels and translations together are orthonormal. -/
+/-- The Haar wavelets $\psi_{j,k}$ of all levels and indices, $(j, k) \in \mathbb{Z}^2$, are
+orthonormal. -/
 theorem orthonormal_waveletFun_prod :
     Orthonormal ℝ fun p : ℤ × ℤ => waveletFun p.1 p.2 := by
   rw [orthonormal_iff_ite]
@@ -1175,7 +1338,8 @@ theorem orthonormal_waveletFun_prod :
     · rw [ite_eq_right hkl, ite_eq_right (by simp [Prod.ext_iff, hkl])]
   · rw [real_inner_comm, inner_waveletFun_of_lt hij, ite_eq_right (by simp [Prod.ext_iff]; omega)]
 
-/-- A function orthogonal to every Haar wavelet is zero: the wavelet spaces span `L²(ℝ)`. -/
+/-- A function orthogonal to every Haar wavelet is zero: the orthogonal complement of the span of
+$\{\psi_{j,k} : j, k \in \mathbb{Z}\}$ is $\{0\}$. -/
 theorem orthogonal_span_waveletFun_prod_eq_bot :
     (Submodule.span ℝ (Set.range fun p : ℤ × ℤ => waveletFun p.1 p.2))ᗮ = ⊥ := by
   rw [Submodule.eq_bot_iff]
@@ -1216,13 +1380,18 @@ theorem orthogonal_span_waveletFun_prod_eq_bot :
   rw [Submodule.mem_orthogonal_singleton_iff_inner_right] at hfmem
   exact inner_self_eq_zero.mp hfmem
 
-/-- **The Haar wavelets are an orthonormal basis of `L²(ℝ)`** ([han2009theoretical], Exercise
-4.4.4): the family `2 ^ (j/2) ψ (2 ^ j x - k)`, over all levels `j` and translations `k`, is a
-Hilbert basis. -/
+/-- The **Haar basis**: the wavelets
+$$\psi_{j,k}(x) = 2^{j/2} \psi(2^j x - k), \qquad (j, k) \in \mathbb{Z}^2,$$
+form a Hilbert basis of $L^2(\mathbb{R})$. This is Exercise 4.4.4 of [han2009theoretical].
+
+The basis is built by `HilbertBasis.mkOfOrthogonalEqBot` from `Haar.orthonormal_waveletFun_prod`
+and `Haar.orthogonal_span_waveletFun_prod_eq_bot`. `Haar.coe_hilbertBasis` identifies its
+elements. -/
 noncomputable def hilbertBasis : HilbertBasis (ℤ × ℤ) ℝ (Lp ℝ 2 (volume : Measure ℝ)) :=
   HilbertBasis.mkOfOrthogonalEqBot orthonormal_waveletFun_prod
     orthogonal_span_waveletFun_prod_eq_bot
 
+/-- The element of `Haar.hilbertBasis` at $(j, k)$ is the wavelet $\psi_{j,k}$. -/
 @[simp]
 theorem coe_hilbertBasis : ⇑hilbertBasis = fun p : ℤ × ℤ => waveletFun p.1 p.2 :=
   HilbertBasis.coe_mkOfOrthogonalEqBot _ _

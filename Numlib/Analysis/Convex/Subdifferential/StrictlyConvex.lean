@@ -8,43 +8,56 @@ import Numlib.Analysis.Convex.Duality.InnerPairing
 /-!
 # Essential strict convexity
 
-A closed proper convex function is *essentially strictly convex* — strictly convex on every convex
-subset of `dom ∂f` — exactly when its conjugate is essentially smooth. Together with the matching
-characterisation of essential smoothness this is the duality that makes the Legendre transformation
-an involution: strict convexity on one side is smoothness on the other. Since `∂f*` is the inverse
-of `∂f`, single-valuedness of `∂f*` *is* the statement that distinct points never share a
-subgradient of `f`, and `essentiallyStrictlyConvex_iff_pairwise_disjoint` identifies that with
-essential strict convexity.
+Let $\langle \cdot, \cdot \rangle$ be a bilinear pairing of real vector spaces $E$ and $F$, and let
+$f \colon E \to [-\infty, +\infty]$. The function $f$ is **essentially strictly convex** if it is
+strictly convex on every convex subset of $\operatorname{dom} \partial f = \{x : \partial f(x) \neq
+\emptyset\}$. This module proves that a proper convex function is essentially strictly convex if and
+only if no two distinct points share a subgradient. On a finite-dimensional real inner product
+space, $\partial f^*$ is the inverse of $\partial f$ for a closed convex $f$, so this condition says
+that $\partial f^*$ is single-valued.
+
+From this follows Theorem 26.3 of [rockafellar1970convex]: a closed proper convex function is
+essentially strictly convex if and only if its conjugate $f^*$ is essentially smooth, and $f^*$ is
+essentially strictly convex if and only if $f$ is essentially smooth. This duality is what makes the
+Legendre transformation an involution: strict convexity on one side corresponds to smoothness on the
+other.
 
 ## Main definitions
 
-* `StrictConvexOnFn f C` — `f` satisfies the convexity inequality *strictly* between distinct
-  points of `C`.
-* `EssentiallyStrictlyConvex f` — `f` is strictly convex on every convex subset of `dom ∂f`.
+* `ConvexAnalysis.StrictConvexOnFn`: $f$ satisfies the convexity inequality strictly between any two
+  distinct points of a set $C$.
+* `ConvexAnalysis.EssentiallyStrictlyConvex`: $f$ is strictly convex on every convex subset of
+  $\operatorname{dom} \partial f$.
 
 ## Main results
 
-* `mem_subdifferential_of_combo`, `le_combo_of_mem_subdifferential` — a subgradient shared by two
-  points is a subgradient at every point between them, and `f` is affine along that segment.
-* `mem_subdifferential_convexConj_innerL_iff`, `pairwise_disjoint_subdifferential_convexConj_iff` —
-  `∂f*` inverts `∂f` for the self-pairing, and the transfer it gives between single-valuedness and
-  injectivity.
-* `essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex` and
-  `essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth` — the duality, both ways round
-  ([rockafellar1970convex] Theorem 26.3).
-* `subdifferential_injective_iff` — `∂f` is one-to-one exactly when `f` is essentially smooth and
-  strictly convex on `int (dom f)`.
+* `ConvexAnalysis.mem_subdifferential_of_combo` and
+  `ConvexAnalysis.le_combo_of_mem_subdifferential`: a subgradient shared by two points is a
+  subgradient at every point between them, and $f$ is affine on the segment between them.
+* `ConvexAnalysis.essentiallyStrictlyConvex_iff_pairwise_disjoint`: a proper convex $f$ is
+  essentially strictly convex if and only if distinct points have disjoint subdifferentials.
+* `ConvexAnalysis.mem_subdifferential_convexConj_innerL_iff`: for a closed convex $f$,
+  $u \in \partial f^*(w)$ if and only if $w \in \partial f(u)$.
+* `ConvexAnalysis.subsingleton_subdifferential_convexConj_iff` and
+  `ConvexAnalysis.pairwise_disjoint_subdifferential_convexConj_iff`: $\partial f^*$ is single-valued
+  if and only if $\partial f$ is injective, and $\partial f^*$ is injective if and only if
+  $\partial f$ is single-valued.
+* `ConvexAnalysis.essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex` and
+  `ConvexAnalysis.essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth`: the duality of
+  Theorem 26.3 of [rockafellar1970convex], in both directions.
+* `ConvexAnalysis.subdifferential_injective_iff`: $\partial f$ is single-valued and injective if and
+  only if $f$ is essentially smooth and strictly convex on
+  $\operatorname{int}(\operatorname{dom} f)$.
 
 ## Implementation notes
 
-Every value in sight is finite, so the arithmetic is real: points of `dom ∂f` lie in `dom f` and
-`f` is proper. The only `EReal` case split is on `f z` at the *test* point of the subgradient
-inequality, where `f z = ⊤` makes it trivial. The definitions need only a real vector space;
-The duality needs an inner-product space, because `EssentiallySmooth` does.
-
-## References
-
-* [rockafellar1970convex] §26.
+* The definitions need only a real vector space with a pairing. The duality results need a
+  finite-dimensional real inner product space, because `ConvexAnalysis.EssentiallySmooth` does, and
+  they use the pairing `innerₗ E` of $E$ with itself.
+* For a proper $f$, every point of $\operatorname{dom} \partial f$ is in $\operatorname{dom} f$, so
+  all values of $f$ in the proofs are finite and the arithmetic is real. The only case distinction
+  in `EReal` is on $f(z)$ at the test point $z$ of the subgradient inequality, where
+  $f(z) = +\infty$ makes the inequality trivial.
 -/
 
 namespace ConvexAnalysis
@@ -56,23 +69,31 @@ section Defs
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- **Strict convexity on a set.** Between two *distinct* points of `C` the convexity inequality
-is strict. Nothing is asked off `C`, and nothing is asked about the finiteness of `f`. -/
+/-- Let $E$ be a real vector space, let $f \colon E \to [-\infty, +\infty]$ and let $C \subseteq E$.
+The function $f$ is **strictly convex on $C$** if for all distinct $x, y \in C$ and all
+$a, b > 0$ with $a + b = 1$,
+$$f(a x + b y) < a f(x) + b f(y).$$
+
+The condition says nothing about points outside $C$ and does not ask $f$ to be finite. The
+arithmetic is in `EReal`. -/
 def StrictConvexOnFn (f : E → EReal) (C : Set E) : Prop :=
   ∀ ⦃x⦄, x ∈ C → ∀ ⦃y⦄, y ∈ C → x ≠ y → ∀ ⦃a b : ℝ⦄, 0 < a → 0 < b → a + b = 1 →
     f (a • x + b • y) < (a : EReal) * f x + (b : EReal) * f y
 
-/-- Strict convexity is inherited by subsets. -/
+/-- If $f$ is strictly convex on $C$ and $D \subseteq C$, then $f$ is strictly convex on $D$. -/
 theorem StrictConvexOnFn.mono {C D : Set E} (h : StrictConvexOnFn f C) (hDC : D ⊆ C) :
     StrictConvexOnFn f D := fun _ hx _ hy hne _ _ ha hb hab =>
   h (hDC hx) (hDC hy) hne ha hb hab
 
-/-- **The bridge to Mathlib's `StrictConvexOn`.** On a convex set where `f` is finite, strict
-convexity of the `EReal`-valued `f` and of its real trace are the same condition — and so the only
-way in for a *concrete* function, since Mathlib's strict-convexity API and its second-derivative
-criteria are stated for real-valued functions. Finiteness is needed in both directions: where
-`f x = ⊤` the `EReal` inequality is vacuous and the real one is not, and where `f x = ⊥` the real
-one is vacuous and the `EReal` one is not. -/
+/-- Let $C$ be a convex set on which $f$ takes neither the value $-\infty$ nor the value $+\infty$.
+Then $f$ is strictly convex on $C$ if and only if its real trace $x \mapsto f(x)$ is strictly
+convex on $C$ in the sense of Mathlib's `StrictConvexOn`.
+
+This is the way to apply the definition to a concrete function, because Mathlib's results on
+strict convexity, such as the second-derivative criteria, are stated for real functions.
+Finiteness is needed in both directions. Where $f(x) = +\infty$, the `EReal` inequality is
+vacuous and the real one is not. Where $f(x) = -\infty$, the real one is vacuous and the `EReal`
+one is not. -/
 theorem strictConvexOnFn_iff_strictConvexOn {C : Set E} (hC : Convex ℝ C)
     (hbot : ∀ x ∈ C, f x ≠ ⊥) (htop : ∀ x ∈ C, f x ≠ ⊤) :
     StrictConvexOnFn f C ↔ StrictConvexOn ℝ C (fun x => (f x).toReal) := by
@@ -90,14 +111,22 @@ theorem strictConvexOnFn_iff_strictConvexOn {C : Set E} (hC : Convex ℝ C)
       ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_lt_coe_iff]
     simpa using hlt
 
-/-- **Essential strict convexity**: `f` is strictly convex on every convex subset of `dom ∂f`.
-This is *weaker* than strict convexity on `dom f` and *stronger* than strict convexity on
-`ri (dom f)`, and examples separate it from both. -/
+/-- Let $\langle \cdot, \cdot \rangle$ be a pairing of $E$ with $F$ and let
+$f \colon E \to [-\infty, +\infty]$. The function $f$ is **essentially strictly convex** if it
+is strictly convex on every convex set $C \subseteq \operatorname{dom} \partial f$, where
+$\operatorname{dom} \partial f$ is the set of points at which $f$ has a subgradient.
+
+For a proper convex $f$, this is weaker than strict convexity on $\operatorname{dom} f$ and
+stronger than strict convexity on the relative interior of $\operatorname{dom} f$, and there are
+examples that separate it from both. The pairing is the implicit argument `B`, through
+`ConvexAnalysis.domSubdifferential B f`. -/
 def EssentiallyStrictlyConvex (f : E → EReal) : Prop :=
   ∀ ⦃C : Set E⦄, Convex ℝ C → C ⊆ domSubdifferential B f → StrictConvexOnFn f C
 
-/-- **The subgradient inequality between real numbers.** Both values are finite — `f x` because a
-subgradient exists there, `f z` by hypothesis — so the `EReal` inequality is a real one. -/
+/-- Let $f$ be proper, let $v \in \partial f(x)$ and let $z \in \operatorname{dom} f$. Then
+$$f(x) + \langle z - x, v \rangle \le f(z)$$
+as an inequality between real numbers. Both values are finite: $f(x)$ because $f$ has a
+subgradient at $x$, and $f(z)$ because $z \in \operatorname{dom} f$. -/
 theorem sub_le_of_mem_subdifferential (hp : ProperConvex f) {v : F} {x z : E}
     (h : v ∈ subdifferential B f x) (hz : z ∈ convexDom f) :
     (f x).toReal + B (z - x) v ≤ (f z).toReal := by
@@ -108,9 +137,10 @@ theorem sub_le_of_mem_subdifferential (hp : ProperConvex f) {v : F} {x z : E}
     ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
   exact hle
 
-/-- The subgradient inequality, in the direction that has to be *proved*: a real bound at every
-point of `dom f` is the `EReal` subgradient inequality everywhere, since off `dom f` it reads
-`≤ ⊤`. -/
+/-- Let $f$ be proper and let $x \in \operatorname{dom} f$. If
+$f(x) + \langle z - x, v \rangle \le f(z)$ as real numbers for every
+$z \in \operatorname{dom} f$, then $v \in \partial f(x)$. Outside $\operatorname{dom} f$, the
+subgradient inequality holds because $f(z) = +\infty$. -/
 theorem mem_subdifferential_of_forall_sub_le (hp : ProperConvex f) {v : F} {x : E}
     (hx : x ∈ convexDom f)
     (h : ∀ z ∈ convexDom f, (f x).toReal + B (z - x) v ≤ (f z).toReal) : v
@@ -131,8 +161,10 @@ section Segment
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {v : F} {x₁ x₂ : E} {a b : ℝ}
 
-/-- The pairing at a convex combination splits, because `z - (a x₁ + b x₂)` is the same
-combination of `z - x₁` and `z - x₂`. -/
+/-- If $a + b = 1$, then for all $z \in E$ and $v \in F$,
+$$\langle z - (a x_1 + b x_2), v \rangle = a \langle z - x_1, v \rangle + b \langle z - x_2, v
+  \rangle.$$
+-/
 theorem pairing_sub_combo (hab : a + b = 1) (z : E) :
     B (z - (a • x₁ + b • x₂)) v = a * B (z - x₁) v + b * B (z - x₂) v := by
   have hsplit : z - (a • x₁ + b • x₂) = a • (z - x₁) + b • (z - x₂) := by
@@ -141,7 +173,8 @@ theorem pairing_sub_combo (hab : a + b = 1) (z : E) :
   rw [hsplit, map_add, LinearMap.add_apply, map_smul, map_smul,
     LinearMap.smul_apply, LinearMap.smul_apply, smul_eq_mul, smul_eq_mul]
 
-/-- The pairing from a convex combination back to the first endpoint. -/
+/-- If $a + b = 1$, then $\langle a x_1 + b x_2 - x_1, v \rangle = b \langle x_2 - x_1, v \rangle$.
+-/
 theorem pairing_combo_sub_left (hab : a + b = 1) :
     B (a • x₁ + b • x₂ - x₁) v = b * B (x₂ - x₁) v := by
   have hsplit : a • x₁ + b • x₂ - x₁ = b • (x₂ - x₁) := by
@@ -149,7 +182,8 @@ theorem pairing_combo_sub_left (hab : a + b = 1) :
     match_scalars <;> linarith [hab]
   rw [hsplit, map_smul, LinearMap.smul_apply, smul_eq_mul]
 
-/-- The pairing from a convex combination back to the second endpoint. -/
+/-- If $a + b = 1$, then $\langle a x_1 + b x_2 - x_2, v \rangle = -a \langle x_2 - x_1, v \rangle$.
+-/
 theorem pairing_combo_sub_right (hab : a + b = 1) :
     B (a • x₁ + b • x₂ - x₂) v = -(a * B (x₂ - x₁) v) := by
   have hsplit : a • x₁ + b • x₂ - x₂ = (-a) • (x₂ - x₁) := by
@@ -158,9 +192,15 @@ theorem pairing_combo_sub_right (hab : a + b = 1) :
   rw [hsplit, map_smul, LinearMap.smul_apply, smul_eq_mul]
   ring
 
-/-- **A subgradient shared by two points is a subgradient all along the segment between them.**
-The graph of `⟨·, v⟩ - f*(v)` is a supporting hyperplane touching `epi f` at both endpoints, so it
-touches it along the whole segment. -/
+/-- Let $f$ be a proper convex function on $E$, let $v \in \partial f(x_1) \cap \partial f(x_2)$,
+and let $a, b > 0$ with $a + b = 1$. Then
+$$v \in \partial f(a x_1 + b x_2).$$
+So a subgradient shared by two points is a subgradient at every point of the segment between
+them.
+
+Geometrically, the graph of $z \mapsto \langle z, v \rangle - f^*(v)$ is a supporting hyperplane
+to the epigraph of $f$ that touches it at both endpoints, so it touches it along the whole
+segment. -/
 theorem mem_subdifferential_of_combo (hf : ConvexFn f) (hp : ProperConvex f)
     (h₁ : v ∈ subdifferential B f x₁) (h₂ : v ∈ subdifferential B f x₂)
     (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1) :
@@ -184,8 +224,11 @@ theorem mem_subdifferential_of_combo (hf : ConvexFn f) (hp : ProperConvex f)
     rw [← add_mul, hab, one_mul]
   linarith
 
-/-- **A shared subgradient makes `f` affine along the segment**, so the convexity inequality there
-is an *equality* and strict convexity fails. -/
+/-- Let $f$ be proper, let $v \in \partial f(x_1) \cap \partial f(x_2)$, let $a, b > 0$ with
+$a + b = 1$, and let $a x_1 + b x_2 \in \operatorname{dom} f$. Then
+$$a f(x_1) + b f(x_2) \le f(a x_1 + b x_2).$$
+For a convex $f$, the convexity inequality on the segment is therefore an equality, so $f$ is
+affine on the segment and is not strictly convex there. -/
 theorem le_combo_of_mem_subdifferential (hp : ProperConvex f) (h₁ : v ∈ subdifferential B f x₁)
     (h₂ : v ∈ subdifferential B f x₂) (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
     (hcomb : a • x₁ + b • x₂ ∈ convexDom f) :
@@ -206,10 +249,15 @@ theorem le_combo_of_mem_subdifferential (hp : ProperConvex f) (h₁ : v ∈ subd
     ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff]
   linarith
 
-/-- **The converse computation**: if `f` fails to be strictly convex between `x₁` and `x₂` and has
-a subgradient at the point between them, that subgradient serves at both endpoints.
+/-- Let $f$ be proper, let $x_1, x_2 \in \operatorname{dom} f$, let $a, b > 0$ with $a + b = 1$, and
+let $v \in \partial f(a x_1 + b x_2)$. If
+$$a f(x_1) + b f(x_2) \le f(a x_1 + b x_2)$$
+as real numbers, then $v \in \partial f(x_1)$ and $v \in \partial f(x_2)$. So if $f$ is not
+strictly convex between $x_1$ and $x_2$ and has a subgradient at a point between them, that
+subgradient is a subgradient at both endpoints.
 
-The two endpoint inequalities add up to the failed strict inequality, so neither can be strict. -/
+The two subgradient inequalities at the endpoints add up to the reverse of the hypothesis, so
+neither of them can be strict. -/
 theorem mem_subdifferential_endpoints_of_le_combo (hp : ProperConvex f) (hx₁ : x₁ ∈ convexDom f)
     (hx₂ : x₂ ∈ convexDom f) (hv : v ∈ subdifferential B f (a • x₁ + b • x₂))
     (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
@@ -256,11 +304,16 @@ section Reformulation
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- **The reformulation the duality runs on**: a proper convex function is essentially strictly
-convex exactly when two distinct points never share a subgradient. Forwards, a shared subgradient
-makes the whole segment lie in `dom ∂f` and `f` affine on it, so strict convexity fails there.
-Backwards, a failure of strict convexity on a convex `C ⊆ dom ∂f` puts a subgradient at a point
-between two points of `C`, and the failed inequality forces it to serve at both of them. -/
+/-- Let $\langle \cdot, \cdot \rangle$ be a pairing of $E$ with $F$ and let $f$ be a proper convex
+function on $E$. Then $f$ is essentially strictly convex if and only if for all $x_1 \neq x_2$
+the subdifferentials $\partial f(x_1)$ and $\partial f(x_2)$ are disjoint.
+
+If two distinct points share a subgradient, the segment between them lies in
+$\operatorname{dom} \partial f$ and $f$ is affine on it, so $f$ is not strictly convex there.
+Conversely, if $f$ is not strictly convex on a convex set
+$C \subseteq \operatorname{dom} \partial f$, then a subgradient at a point between two points of
+$C$ is, by `ConvexAnalysis.mem_subdifferential_endpoints_of_le_combo`, a subgradient at both of
+them. -/
 theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : ProperConvex f) :
     EssentiallyStrictlyConvex (B := B) f ↔
       ∀ x₁ x₂ : E, x₁ ≠ x₂ → Disjoint (subdifferential B f x₁) (subdifferential B f x₂) := by
@@ -314,8 +367,14 @@ section Conjugate
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- **`∂f*` is the inverse of `∂f`**, for the self-pairing of an inner-product space. The flip of
-`innerₗ E` is discharged once here so that no later rewrite has to reach inside `convexConj`. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed convex function
+on $E$. Then for all $u, w \in E$,
+$$u \in \partial f^*(w) \iff w \in \partial f(u),$$
+so $\partial f^*$ is the inverse of $\partial f$.
+
+The conjugate and both subdifferentials are taken for the pairing `innerₗ E`. The statement is
+written with `convexConj (innerₗ E)` so that later rewrites need not deal with the flip of
+`innerₗ E`. -/
 theorem mem_subdifferential_convexConj_innerL_iff (hf : ConvexFn f) (hcl : ClosedConvex f)
     (u w : E) :
     u ∈ subdifferential (innerₗ E) (convexConj (innerₗ E) f) w ↔ w
@@ -325,7 +384,10 @@ theorem mem_subdifferential_convexConj_innerL_iff (hf : ConvexFn f) (hcl : Close
         (y := w) hf hcl
   rwa [flip_innerₗ] at h
 
-/-- Single-valuedness of `∂f*` is injectivity of `∂f`. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed convex function
+on $E$. Then $\partial f^*(w)$ has at most one element for every $w$ if and only if
+$\partial f(x_1)$ and $\partial f(x_2)$ are disjoint for all $x_1 \neq x_2$. That is,
+$\partial f^*$ is single-valued if and only if $\partial f$ is injective. -/
 theorem subsingleton_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl : ClosedConvex f) :
     (∀ w : E, (subdifferential (innerₗ E) (convexConj (innerₗ E) f) w).Subsingleton) ↔
       ∀ x₁ x₂ : E, x₁ ≠ x₂ →
@@ -342,8 +404,11 @@ theorem subsingleton_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl : Clo
       ((mem_subdifferential_convexConj_innerL_iff hf hcl x₁ v).1 hx₁)
       ((mem_subdifferential_convexConj_innerL_iff hf hcl x₂ v).1 hx₂)
 
-/-- Injectivity of `∂f*` is single-valuedness of `∂f` — the mirror of
-`subsingleton_subdifferential_convexConj_iff`. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed convex function
+on $E$. Then $\partial f^*(y_1)$ and $\partial f^*(y_2)$ are disjoint for all $y_1 \neq y_2$ if
+and only if $\partial f(z)$ has at most one element for every $z$. That is, $\partial f^*$ is
+injective if and only if $\partial f$ is single-valued. This is the mirror image of
+`ConvexAnalysis.subsingleton_subdifferential_convexConj_iff`. -/
 theorem pairwise_disjoint_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl : ClosedConvex f) :
     (∀ y₁ y₂ : E, y₁ ≠ y₂ →
         Disjoint (subdifferential (innerₗ E) (convexConj (innerₗ E) f) y₁)
@@ -361,8 +426,15 @@ theorem pairwise_disjoint_subdifferential_convexConj_iff (hf : ConvexFn f) (hcl 
     exact hne (h z ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₁).1 hz₁)
       ((mem_subdifferential_convexConj_innerL_iff hf hcl z y₂).1 hz₂))
 
-/-- A closed proper convex function is essentially strictly convex exactly when its conjugate is
-essentially smooth. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed proper convex
+function on $E$. Then the conjugate $f^*$ is essentially smooth if and only if $f$ is
+essentially strictly convex.
+
+This is one direction of Theorem 26.3 of [rockafellar1970convex]. The conjugate and the
+subdifferentials are taken for the pairing `innerₗ E`. The proof combines
+`ConvexAnalysis.subsingleton_subdifferential_convexConj_iff` with
+`ConvexAnalysis.essentiallyStrictlyConvex_iff_pairwise_disjoint` and the characterization of
+essential smoothness by single-valued subdifferentials. -/
 theorem essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex (hf : ConvexFn f)
     (hp : ProperConvex f)
     (hcl : ClosedConvex f) :
@@ -375,16 +447,20 @@ theorem essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex (hf : ConvexF
     essentiallyStrictlyConvex_iff_pairwise_disjoint hf hp,
     subsingleton_subdifferential_convexConj_iff hf hcl]
 
-/-- `f** = f` for the self-pairing of an inner-product space, with the flip of `innerₗ E`
-discharged so that the equation is stated in terms of `convexConj (innerₗ E)` twice. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed convex function
+on $E$. Then $f^{**} = f$, where both conjugates are taken for the pairing `innerₗ E`. -/
 theorem convexConj_convexConj_innerL (hf : ConvexFn f) (hcl : ClosedConvex f) :
     convexConj (innerₗ E) (convexConj (innerₗ E) f) = f := by
   have h : convexConj ((innerₗ E).flip) (convexConj (innerₗ E) f) = f := convexBiconj_eq_self hf hcl
   rwa [flip_innerₗ] at h
 
-/-- The same duality read in the other direction: the conjugate of a closed proper convex function
-is essentially strictly convex exactly when the function itself is essentially smooth. This is the
-previous theorem applied to `f*`, together with `f** = f`. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed proper convex
+function on $E$. Then $f^*$ is essentially strictly convex if and only if $f$ is essentially
+smooth.
+
+This is the other direction of Theorem 26.3 of [rockafellar1970convex]. It is
+`ConvexAnalysis.essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex` applied to $f^*$,
+together with $f^{**} = f$. -/
 theorem essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth (hf : ConvexFn f)
     (hp : ProperConvex f)
     (hcl : ClosedConvex f) :
@@ -393,10 +469,17 @@ theorem essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth (hf : ConvexF
     (properConvex_convexConj ⟨hf, hcl, hp⟩) closedConvex_convexConj,
         convexConj_convexConj_innerL hf hcl]
 
-/-- `∂f` is a one-to-one mapping — single-valued and injective — exactly when `f` is essentially
-smooth and strictly convex on `int (dom f)`. Under essential smoothness `dom ∂f` *is*
-`int (dom f)`, so essential strict convexity, which quantifies over all convex subsets of
-`dom ∂f`, collapses to strict convexity on that one set. -/
+/-- Let $E$ be a finite-dimensional real inner product space and let $f$ be a closed proper convex
+function on $E$. Then the following are equivalent:
+
+* $\partial f$ is single-valued and injective: $\partial f(z)$ has at most one element for every
+  $z$, and $\partial f(x_1)$, $\partial f(x_2)$ are disjoint for all $x_1 \neq x_2$;
+* $f$ is essentially smooth and strictly convex on $\operatorname{int}(\operatorname{dom} f)$.
+
+If $f$ is essentially smooth, then $\operatorname{dom} \partial f =
+\operatorname{int}(\operatorname{dom} f)$, so essential strict convexity, which is about all
+convex subsets of $\operatorname{dom} \partial f$, reduces to strict convexity on this one
+convex set. -/
 theorem subdifferential_injective_iff (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) :
     ((∀ z : E, (subdifferential (innerₗ E) f z).Subsingleton) ∧

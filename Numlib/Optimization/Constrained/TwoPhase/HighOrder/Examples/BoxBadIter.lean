@@ -5,45 +5,67 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.Box
 
 /-!
-# Runs on the square problem with one bad outer iteration per call
+# A slow Phase-2 run on the square that satisfies the inner-test contract
 
-On the problem of `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.Box` with the
-objective `f(x) = x₁ - x₂`, `X = [-1, 1]²`, `c(x) = x₁²/2`, `θ = 3/4` and `q = 1`, a run of
-Phase 2 of a high-order target-following method (`Constrained.IsHighOrderTargetRun`) whose inner
-calls make one successful iteration each and satisfy the inner-test contract
-(`Constrained.HighOrderTargetSeq.IsInnerTestContract`), yet needs `N ∼ (ε₀ ε₁)^{-1}` outer
-iterations: every outer iteration but the last is a case-(b) iteration whose call ends at a point
-passing the inner test.
+This module gives runs of Phase 2 of the two-phase method TPqp-GC of [cartis2022evaluation],
+Algorithm 14.3.2 (`Constrained.IsHighOrderTargetRun`), whose inner calls make one successful
+iteration each and satisfy the inner-test contract
+`Constrained.HighOrderTargetSeq.IsInnerTestContract`, and which nevertheless need
+$N \sim (\varepsilon_0 \varepsilon_1)^{-1}$ outer iterations. The problem is that of
+`Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.Box` with the objective
+$f(x) = x_1 - x_2$, the set $X = [-1, 1]^2$ and the constraint $c(x) = x_1^2/2$, with $\theta = 3/4$
+and $q = 1$. Every outer iteration but the last is a case-(b) iteration whose call ends at a point
+that passes the inner test (14.3.19). The run refutes Theorem 14.3.9 of [cartis2022evaluation] as
+printed, for a nonspecific inner method (`CartisGouldToint.Chapter14.theorem_14_3_9_false`), and its
+first call shows that the cost hypothesis of that theorem cannot be met for $\pi_1 < 2$
+(`CartisGouldToint.Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`).
 
-For `u ∈ (0, 1/7]` and `u³ N ≤ 1`, the tolerances are `ε₀ = u²/2 + u³/2`, `ε₁ = 3u/2`
-(`Constrained.TwoPhaseExample.BoxBadIter.tol`). Phase 2 starts at `x₁ = (0, -1)` with
-`t₁ = 1 - ε₀`; the `k`-th call moves to `x_{k+1} = (u, ·)` with `f(x_{k+1}) = t_k - E_{k+1}`,
-`E_j = (u³/2)(1 - j/(4(N + 1))) ∈ [3u³/8, u³/2]`, for `k < N`. At `x_{k+1}` the gradient
-`∇μ(x_{k+1}, t_k) = (u³/2 - E_{k+1}, E_{k+1})` has norm at most `u³/2 ≤ β ‖r(x_k, t_k)‖ ε₁`
-(the inner test, using `‖r(x_k, t_k)‖ ≥ u²/2`), while after the reflection (14.3.35) the decrease
-along `-e₁` is `u³/2 + E_{k+1} ≥ 7u³/8 > ε₁ ‖r(x_{k+1}, t_{k+1})‖`, so the criticality test
-(14.3.34) fails. The targets drop by `2E_{k+1} ≈ u³`, so `N ≈ u⁻³` such iterations fit in `X`; the
-last call lands on its target, `f(x_{N+1}) = t_N`, where the criticality test holds (case (c)).
+Let $u \in (0, 1/7]$ and $N \ge 1$ with $u^3 N \le 1$. The tolerances are
+$\varepsilon_0 = u^2/2 + u^3/2$ and $\varepsilon_j = 3u/2$ for $j \ge 1$. Phase 2 starts at
+$x_1 = (0, -1)$ with $t_1 = 1 - \varepsilon_0$. For $k < N$, the $k$-th call moves to a point
+$x_{k+1} = (u, \cdot)$ with $f(x_{k+1}) = t_k - E_{k+1}$, where $E_j = \tfrac{u^3}{2} (1 - j/(4(N +
+1))) \in [3u^3/8, u^3/2]$. At $x_{k+1}$ the gradient $\nabla \mu(x_{k+1}, t_k) = (u^3/2 - E_{k+1},
+E_{k+1})$ has norm at most $u^3/2 \le \beta \|r(x_k, t_k)\| \varepsilon_1$, since
+$\|r(x_k, t_k)\| \ge u^2/2$; this is the inner test. After the reflection (14.3.35) of the target,
+the decrease along $-e_1$ is $u^3/2 + E_{k+1} \ge 7u^3/8 > \varepsilon_1 \|r(x_{k+1}, t_{k+1})\|$,
+so the criticality test (14.3.34) fails. The targets drop by $2 E_{k+1} \approx u^3$, so about
+$u^{-3}$ such iterations fit in $X$. The last call lands on its target, $f(x_{N+1}) = t_N$, where
+the criticality test holds, and Phase 2 stops at $N$ in case (c).
 
 ## Main definitions
 
-* `Constrained.TwoPhaseExample.BoxBadIter.tol u`, `target u N`, `iter u N`: the tolerances,
-  targets and outer iterates;
-* `Constrained.TwoPhaseExample.BoxBadIter.seq u N`: the Phase-2 data, with one-step calls
+* `Constrained.TwoPhaseExample.BoxBadIter.tol`, `Constrained.TwoPhaseExample.BoxBadIter.target`,
+  `Constrained.TwoPhaseExample.BoxBadIter.iter`: the tolerances, the targets and the outer iterates.
+* `Constrained.TwoPhaseExample.BoxBadIter.seq`: the Phase-2 data, with one-step inner calls
   (`Constrained.HighOrderTargetSeq.oneStep`).
 
 ## Main results
 
-* `Constrained.TwoPhaseExample.BoxBadIter.isHighOrderTargetRun`: the data form a run;
-* `Constrained.TwoPhaseExample.BoxBadIter.isEnd`: it terminates at the outer iteration `N`;
-* `Constrained.TwoPhaseExample.BoxBadIter.isInnerTestContract`: its calls satisfy the
-  inner-test contract with every constant;
-* `Constrained.TwoPhaseExample.BoxBadIter.exists_params`: for every `C` there are `u`, `N` with
-  `N > C max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` for all `π ≤ 3/2`;
-* `Constrained.TwoPhaseExample.BoxBadIter.exists_seq`: the run, its counts and its properties
-  for a given `C`;
-* `Constrained.TwoPhaseExample.BoxBadIter.exists_tol_start_lt_taylorMeasure`: tolerances for
-  which the first call costs one evaluation more than a cost bound of order `ε₀^{2-π₁}` allows.
+* `Constrained.TwoPhaseExample.BoxBadIter.innerTest`: every call ends at a point that passes the
+  inner test (14.3.19).
+* `Constrained.TwoPhaseExample.BoxBadIter.isEnd`: Phase 2 terminates at the outer iteration $N$.
+* `Constrained.TwoPhaseExample.BoxBadIter.isHighOrderTargetRun`: the data form a run of Phase 2.
+* `Constrained.TwoPhaseExample.BoxBadIter.isInnerTestContract`: the calls satisfy the inner-test
+  contract for $\beta \ge 2/3$ and all constants with $\kappa_{\mathrm{uns}} + \kappa_{\mathrm{unc}}
+  \ge 1$ and $\rho_1 \le 1$.
+* `Constrained.TwoPhaseExample.BoxBadIter.lt_taylorMeasure_start`: the inner test fails at the start
+  of every call.
+* `Constrained.TwoPhaseExample.BoxBadIter.two_le_costBound`: the cost bound of every call is at
+  least $2$ for $\pi_1 \ge 4/3$.
+* `Constrained.TwoPhaseExample.BoxBadIter.exists_params`: for every $C$ there are $u$ and $N$ with
+  $N > C \max(\varepsilon_0^{-1}, \varepsilon_0^{1-\pi} \varepsilon_1^{-\pi})$ for all
+  $\pi \le 3/2$.
+* `Constrained.TwoPhaseExample.BoxBadIter.exists_seq`: the run for a given $C$, with its counts and
+  its properties.
+* `Constrained.TwoPhaseExample.BoxBadIter.exists_tol_start_lt_taylorMeasure`: tolerances for which
+  the first call costs at least one evaluation, while a cost bound of order
+  $\varepsilon_0^{2-\pi_1}$ is smaller than $1$.
+
+## Implementation notes
+
+* The coordinates $x_1$ and $x_2$ of $x \in \mathbb{R}^2$ are `x 0` and `x 1`. The objective is
+  `Constrained.TwoPhaseExample.Box.obj 1`.
+* The results take $q = 1$, $\theta = 3/4$ and all optimality radii $1$.
 -/
 
 open Set Metric
@@ -59,30 +81,42 @@ section Run
 
 variable (u : ℝ) (N : ℕ)
 
-/-- The tolerances `ε₀ = u²/2 + u³/2`, `ε_j = 3u/2` (`j ≥ 1`). -/
+/-- The **tolerances** $\varepsilon_0 = u^2/2 + u^3/2$ and $\varepsilon_j = 3u/2$ for $j \ge 1$, for
+a parameter $u \in \mathbb{R}$. -/
 noncomputable def tol : ℕ → ℝ := fun j => if j = 0 then u ^ 2 / 2 + u ^ 3 / 2 else 3 * u / 2
 
-/-- The overshoot `E_j = (u³/2)(1 - j/(4(N + 1)))` of the `(j-1)`-th inner call below its
-target. -/
+/-- The overshoot $E_j = \tfrac{u^3}{2} \bigl(1 - j/(4(N + 1))\bigr)$: the $(j - 1)$-th inner call
+ends this far below its target. -/
 noncomputable def overshoot (j : ℕ) : ℝ := u ^ 3 / 2 * (1 - j / (4 * (N + 1)))
 
-/-- The targets `t_k = 1 - ε₀ - u³ (k - 1) + u³ (k (k + 1) - 2)/(8 (N + 1))`, so that
-`t_{k+1} = t_k - 2 E_{k+1}`. -/
+/-- The **targets**
+$$t_k = 1 - \varepsilon_0 - u^3 (k - 1) + \frac{u^3 (k (k + 1) - 2)}{8 (N + 1)}, \qquad
+  \varepsilon_0 = u^2/2 + u^3/2.$$
+
+They satisfy $t_{k+1} = t_k - 2 E_{k+1}$ (`Constrained.TwoPhaseExample.BoxBadIter.target_succ`). -/
 noncomputable def target (k : ℕ) : ℝ :=
   1 - (u ^ 2 / 2 + u ^ 3 / 2) - u ^ 3 * ((k : ℝ) - 1) +
     u ^ 3 * ((k : ℝ) * (k + 1) - 2) / (8 * (N + 1))
 
 open Classical in
-/-- The amount `t_k - f(x_{k+1})` of the `k`-th call: `E_{k+1}` for `k < N`, `0` for `k = N`. -/
+/-- The amount $t_k - f(x_{k+1})$ by which the $k$-th call ends below its target: $E_{k+1}$ for
+$k < N$, and $0$ for $k \ge N$. -/
 noncomputable def gap (k : ℕ) : ℝ := if k < N then overshoot u N (k + 1) else 0
 
-/-- The outer iterates: `x₁ = (0, -1)`, `x_{k+1} = (u, u - t_k + gap_k)` for `k ≥ 1`. -/
+/-- The **outer iterates**: $x_1 = (0, -1)$, and $x_{k+1} = (u, u - t_k + g_k)$ for $k \ge 1$, where
+$g_k$ is `Constrained.TwoPhaseExample.BoxBadIter.gap`. Then $f(x_{k+1}) = t_k - g_k$.
+
+The unused value at $k = 0$ is also $(0, -1)$. -/
 noncomputable def iter : ℕ → ℝ²
   | 0 => pt 0 (-1)
   | k + 1 => if k = 0 then pt 0 (-1) else pt u (u - (target u N k - gap u N k))
 
-/-- The Phase-2 data: iterates `iter`, targets `target`, radii `1`, and the `k`-th inner call
-makes one successful iteration from `x_k` to `x_{k+1}`. -/
+/-- The **Phase-2 data** of the run: the outer iterates of
+`Constrained.TwoPhaseExample.BoxBadIter.iter`, the targets of
+`Constrained.TwoPhaseExample.BoxBadIter.target`, all optimality radii equal to $1$, and for each
+$k$ an inner call that makes one successful iteration, from $x_k$ to $x_{k+1}$.
+
+It is `Constrained.HighOrderTargetSeq.oneStep`. -/
 noncomputable def seq : HighOrderTargetSeq ℝ² :=
   HighOrderTargetSeq.oneStep (iter u N) (target u N)
 
@@ -92,16 +126,16 @@ section Facts
 
 variable {u : ℝ} {N : ℕ}
 
-/-- `ε₀ = u²/2 + u³/2`. -/
+/-- $\varepsilon_0 = u^2/2 + u^3/2$. -/
 theorem tol_zero : tol u 0 = u ^ 2 / 2 + u ^ 3 / 2 := by simp [tol]
 
-/-- `ε₁ = 3u/2`. -/
+/-- $\varepsilon_1 = 3u/2$. -/
 theorem tol_one : tol u 1 = 3 * u / 2 := by simp [tol]
 
-/-- `t₁ = 1 - ε₀`. -/
+/-- $t_1 = 1 - \varepsilon_0$. -/
 theorem target_one : target u N 1 = 1 - (u ^ 2 / 2 + u ^ 3 / 2) := by simp [target]; norm_num
 
-/-- The target update of case (b): `t_{k+1} = t_k - 2 E_{k+1}`. -/
+/-- The target update of case (b): $t_{k+1} = t_k - 2 E_{k+1}$ for every $k$. -/
 theorem target_succ (k : ℕ) : target u N (k + 1) = target u N k - 2 * overshoot u N (k + 1) := by
   unfold target overshoot
   have : (8 * ((N : ℝ) + 1)) ≠ 0 := by positivity
@@ -109,40 +143,42 @@ theorem target_succ (k : ℕ) : target u N (k + 1) = target u N k - 2 * overshoo
   field_simp
   ring
 
-/-- `x₁ = (0, -1)`. -/
+/-- $x_1 = (0, -1)$. -/
 theorem iter_one : iter u N 1 = pt 0 (-1) := by simp [iter]
 
-/-- `x_{k+1} = (u, u - t_k + gap_k)` for `k ≥ 1`. -/
+/-- $x_{k+1} = (u, u - t_k + g_k)$ for $k \ge 1$, where $g_k$ is
+`Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem iter_succ {k : ℕ} (hk : 1 ≤ k) :
     iter u N (k + 1) = pt u (u - (target u N k - gap u N k)) := by
   simp [iter, show k ≠ 0 by omega]
 
-/-- The first coordinate of `x_{k+1}`, `k ≥ 1`, is `u`. -/
+/-- The first coordinate of $x_{k+1}$ is $u$ for $k \ge 1$. -/
 theorem iter_succ_zero {k : ℕ} (hk : 1 ≤ k) : iter u N (k + 1) 0 = u := by
   rw [iter_succ hk, pt_zero]
 
-/-- `f(x_{k+1}) = t_k - gap_k` for `k ≥ 1`. -/
+/-- $f(x_{k+1}) = t_k - g_k$ for $k \ge 1$, where $g_k$ is
+`Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem obj_iter_succ {k : ℕ} (hk : 1 ≤ k) :
     Box.obj 1 (iter u N (k + 1)) = target u N k - gap u N k := by
   rw [iter_succ hk, Box.obj_one_pt]; ring
 
-/-- `gap_k = E_{k+1}` for `k < N`. -/
+/-- $g_k = E_{k+1}$ for $k < N$, where $g_k$ is `Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem gap_of_lt {k : ℕ} (hk : k < N) : gap u N k = overshoot u N (k + 1) := by simp [gap, hk]
 
-/-- `gap_N = 0`: the last call lands on its target. -/
+/-- $g_N = 0$: the last call lands on its target. -/
 theorem gap_self : gap u N N = 0 := by simp [gap]
 
 variable (hu : 0 < u)
 include hu
 
-/-- `E_j ≤ u³/2`. -/
+/-- For $u > 0$, $E_j \le u^3/2$ for every $j$. -/
 theorem overshoot_le (j : ℕ) : overshoot u N j ≤ u ^ 3 / 2 := by
   unfold overshoot
   have : 0 ≤ (j : ℝ) / (4 * (N + 1)) := by positivity
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `E_j ≥ 3u³/8` for `j ≤ N + 1`. -/
+/-- For $u > 0$, $E_j \ge 3u^3/8$ for $j \le N + 1$. -/
 theorem le_overshoot {j : ℕ} (hj : j ≤ N + 1) : 3 / 4 * (u ^ 3 / 2) ≤ overshoot u N j := by
   unfold overshoot
   have hN : (0 : ℝ) < 4 * (N + 1) := by positivity
@@ -153,7 +189,7 @@ theorem le_overshoot {j : ℕ} (hj : j ≤ N + 1) : 3 / 4 * (u ^ 3 / 2) ≤ over
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `E_{j+1} ≤ E_j`. -/
+/-- For $u > 0$, $E_{j+1} \le E_j$ for every $j$. -/
 theorem overshoot_succ_le (j : ℕ) : overshoot u N (j + 1) ≤ overshoot u N j := by
   unfold overshoot
   have hN : (0 : ℝ) < 4 * (N + 1) := by positivity
@@ -162,7 +198,7 @@ theorem overshoot_succ_le (j : ℕ) : overshoot u N (j + 1) ≤ overshoot u N j 
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `E_{j+1} < E_j`. -/
+/-- For $u > 0$, $E_{j+1} < E_j$ for every $j$. -/
 theorem overshoot_succ_lt (j : ℕ) : overshoot u N (j + 1) < overshoot u N j := by
   unfold overshoot
   have hN : (0 : ℝ) < 4 * (N + 1) := by positivity
@@ -171,28 +207,29 @@ theorem overshoot_succ_lt (j : ℕ) : overshoot u N (j + 1) < overshoot u N j :=
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `gap_k < E_k` for `k ≤ N`. -/
+/-- For $u > 0$, $g_k < E_k$ for $k \le N$, where $g_k$ is
+`Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem gap_lt_overshoot {k : ℕ} (hk : k ≤ N) : gap u N k < overshoot u N k := by
   unfold gap
   split_ifs with h
   · exact overshoot_succ_lt hu k
   · exact (by positivity : (0 : ℝ) < 3 / 4 * (u ^ 3 / 2)).trans_le (le_overshoot hu (by omega))
 
-/-- `gap_k ≥ 0`. -/
+/-- For $u > 0$, $g_k \ge 0$ for every $k$. -/
 theorem gap_nonneg (k : ℕ) : 0 ≤ gap u N k := by
   unfold gap
   split_ifs with h
   · exact (by positivity : (0 : ℝ) ≤ 3 / 4 * (u ^ 3 / 2)).trans (le_overshoot hu (by omega))
   · exact le_rfl
 
-/-- `gap_k ≤ u³/2`. -/
+/-- For $u > 0$, $g_k \le u^3/2$ for every $k$. -/
 theorem gap_le (k : ℕ) : gap u N k ≤ u ^ 3 / 2 := by
   unfold gap
   split_ifs
   · exact overshoot_le hu _
   · positivity
 
-/-- `1 - ε₀ - u³ N ≤ t_k ≤ 1 - ε₀` for `k ∈ [1, N]`. -/
+/-- For $u > 0$ and $k \in [1, N]$, $1 - \varepsilon_0 - u^3 N \le t_k \le 1 - \varepsilon_0$. -/
 theorem target_mem {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     1 - (u ^ 2 / 2 + u ^ 3 / 2) - u ^ 3 * N ≤ target u N k ∧
       target u N k ≤ 1 - (u ^ 2 / 2 + u ^ 3 / 2) := by
@@ -219,19 +256,20 @@ variable {u : ℝ} {N : ℕ} (hu : 0 < u) (hu7 : u ≤ 1 / 7) (hNu : u ^ 3 * N �
 include hu
 
 omit hu in
-/-- `f(x_{k+1}) - t_{k+1} = E_{k+1}` for `k ∈ [1, N)`. -/
+/-- For $k \in [1, N)$, $f(x_{k+1}) - t_{k+1} = E_{k+1}$. -/
 theorem obj_iter_succ_sub_target_succ {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
     Box.obj 1 (iter u N (k + 1)) - target u N (k + 1) = overshoot u N (k + 1) := by
   rw [obj_iter_succ hk1, gap_of_lt hkN, target_succ]; ring
 
 omit hu in
-/-- `t_k - f(x_{k+1}) = gap_k`. -/
+/-- For $k \ge 1$, $f(x_{k+1}) - t_k = -g_k$, where $g_k$ is
+`Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem obj_iter_succ_sub_target {k : ℕ} (hk1 : 1 ≤ k) :
     Box.obj 1 (iter u N (k + 1)) - target u N k = -gap u N k := by
   rw [obj_iter_succ hk1]; ring
 
 include hu7 hNu in
-/-- The iterates `x_k`, `k ∈ [1, N + 1]`, lie in `X`. -/
+/-- Let $0 < u \le 1/7$ and $u^3 N \le 1$. The iterates $x_k$ with $k \in [1, N + 1]$ lie in $X$. -/
 theorem iter_mem {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N + 1) : iter u N k ∈ Box.square := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
   rcases Nat.eq_zero_or_pos j with rfl | hj
@@ -246,26 +284,28 @@ theorem iter_mem {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N + 1) : iter u N k ∈ 
     refine ⟨abs_le.2 ⟨by linarith, by linarith⟩, abs_le.2 ⟨by nlinarith, by nlinarith⟩⟩
 
 omit hu in
-/-- `‖r(y, t)‖² = (u²/2)² + (f(y) - t)²` at the points with first coordinate `u`. -/
+/-- At a point $y$ with first coordinate $u$, $\|r(y, t)\|^2 = (u^2/2)^2 + (f(y) - t)^2$ for every
+target $t$. -/
 theorem targetResidual_sq_of_apply_zero {y : ℝ²} (hy : y 0 = u) (t : ℝ) :
     targetResidual (Box.obj 1) Box.con t y ^ 2 = (u ^ 2 / 2) ^ 2 + (Box.obj 1 y - t) ^ 2 := by
   rw [Box.targetResidual_sq, hy]
 
 omit hu in
-/-- `‖r(x_{k+1}, t_k)‖² = (u²/2)² + gap_k²`. -/
+/-- For $k \ge 1$, $\|r(x_{k+1}, t_k)\|^2 = (u^2/2)^2 + g_k^2$, where $g_k$ is
+`Constrained.TwoPhaseExample.BoxBadIter.gap`. -/
 theorem targetResidual_end_sq {k : ℕ} (hk1 : 1 ≤ k) :
     targetResidual (Box.obj 1) Box.con (target u N k) (iter u N (k + 1)) ^ 2 =
       (u ^ 2 / 2) ^ 2 + gap u N k ^ 2 := by
   rw [targetResidual_sq_of_apply_zero (iter_succ_zero hk1), obj_iter_succ_sub_target hk1]; ring
 
 omit hu in
-/-- `‖r(x_{k+1}, t_{k+1})‖² = (u²/2)² + E_{k+1}²` for `k ∈ [1, N)`. -/
+/-- For $k \in [1, N)$, $\|r(x_{k+1}, t_{k+1})\|^2 = (u^2/2)^2 + E_{k+1}^2$. -/
 theorem targetResidual_new_sq {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
     targetResidual (Box.obj 1) Box.con (target u N (k + 1)) (iter u N (k + 1)) ^ 2 =
       (u ^ 2 / 2) ^ 2 + overshoot u N (k + 1) ^ 2 := by
   rw [targetResidual_sq_of_apply_zero (iter_succ_zero hk1), obj_iter_succ_sub_target_succ hk1 hkN]
 
-/-- `‖r(x_k, t_k)‖² ≥ (u²/2)² + E_k²` for `k ∈ [1, N]`. -/
+/-- For $u > 0$ and $k \in [1, N]$, $\|r(x_k, t_k)\|^2 \ge (u^2/2)^2 + E_k^2$. -/
 theorem le_targetResidual_sq {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     (u ^ 2 / 2) ^ 2 + overshoot u N k ^ 2 ≤
       targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) ^ 2 := by
@@ -280,7 +320,7 @@ theorem le_targetResidual_sq {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
   · rw [targetResidual_new_sq hj (by omega)]
 
 omit hu in
-/-- `‖r(x₁, t₁)‖ = ε₀ = u²/2 + u³/2`. -/
+/-- For $u > 0$, $\|r(x_1, t_1)\| = \varepsilon_0 = u^2/2 + u^3/2$. -/
 theorem targetResidual_one (hu : 0 < u) :
     targetResidual (Box.obj 1) Box.con (target u N 1) (iter u N 1) = u ^ 2 / 2 + u ^ 3 / 2 := by
   rw [Constrained.targetResidual_def, iter_one, Box.norm_con, target_one, Box.obj_one_pt]
@@ -288,7 +328,8 @@ theorem targetResidual_one (hu : 0 < u) :
   rw [show ((0 : ℝ) ^ 2 / 2) ^ 2 + (0 - -1 - (1 - (u ^ 2 / 2 + u ^ 3 / 2))) ^ 2 =
     (u ^ 2 / 2 + u ^ 3 / 2) ^ 2 by ring, Real.sqrt_sq (by positivity)]
 
-/-- `u²/2 ≤ ‖r(x_k, t_k)‖ ≤ u²/2 + u³/2 = ε₀` for `k ∈ [1, N]`. -/
+/-- For $u > 0$ and $k \in [1, N]$, $u^2/2 \le \|r(x_k, t_k)\| \le u^2/2 + u^3/2 = \varepsilon_0$.
+-/
 theorem targetResidual_mem {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     u ^ 2 / 2 ≤ targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) ∧
       targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) ≤
@@ -302,18 +343,18 @@ theorem targetResidual_mem {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
         (le_overshoot hu (N := N) (j := j + 1) (by omega)))
     exact ⟨h.1, h.2.trans (by linarith [overshoot_le hu (N := N) (j + 1)])⟩
 
-/-- `‖r(x_k, t_k)‖ ≥ u²/2` for `k ∈ [1, N]`. -/
+/-- For $u > 0$ and $k \in [1, N]$, $\|r(x_k, t_k)\| \ge u^2/2$. -/
 theorem le_targetResidual {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     u ^ 2 / 2 ≤ targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) :=
   (targetResidual_mem hu hk1 hkN).1
 
-/-- `‖r(x_k, t_k)‖ ≤ u²/2 + u³/2 = ε₀` for `k ∈ [1, N]`. -/
+/-- For $u > 0$ and $k \in [1, N]$, $\|r(x_k, t_k)\| \le u^2/2 + u^3/2 = \varepsilon_0$. -/
 theorem targetResidual_le {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) ≤ u ^ 2 / 2 + u ^ 3 / 2 :=
   (targetResidual_mem hu hk1 hkN).2
 
 omit hu in
-/-- `‖r(x_{k+1}, t_k)‖ ≥ u²/2`. -/
+/-- For $k \ge 1$, $\|r(x_{k+1}, t_k)\| \ge u^2/2$. -/
 theorem le_targetResidual_end {k : ℕ} (hk1 : 1 ≤ k) :
     u ^ 2 / 2 ≤ targetResidual (Box.obj 1) Box.con (target u N k) (iter u N (k + 1)) := by
   have h := targetResidual_end_sq (u := u) (N := N) hk1
@@ -322,8 +363,15 @@ theorem le_targetResidual_end {k : ℕ} (hk1 : 1 ≤ k) :
   nlinarith [sq_nonneg (gap u N k)]
 
 include hu7 hNu in
-/-- **The inner test (14.3.19) holds at the end of every call** `k ∈ [1, N]`, for `β ≥ 2/3`:
-`‖∇μ(x_{k+1}, t_k)‖ ≤ u³/2 ≤ β ‖r(x_k, t_k)‖ ε₁`. -/
+/-- **The inner test holds at the end of every call.** Let $0 < u \le 1/7$, $u^3 N \le 1$ and
+$\beta \ge 2/3$. For every $k \in [1, N]$, the inner test (14.3.19) holds at the end $x_{k+1}$
+of the $k$-th call, with $q = 1$ and the radius $1$:
+$$\phi^1_{\mu, X(x_{k+1}), 1}(x_{k+1}, t_k) \le \beta\, \|r(x_k, t_k)\|\, \varepsilon_1.$$
+
+The left side is the first-order measure of $\mu(\cdot, t_k)$ at $x_{k+1}$ with radius $1$ on
+$X(x_{k+1}) = \{d : x_{k+1} + d \in X\}$. It is at most
+$\|\nabla \mu(x_{k+1}, t_k)\| \le u^3/2$, and $u^3/2 \le \beta \|r(x_k, t_k)\| \varepsilon_1$.
+The test is `Constrained.HighOrderTargetSeq.InnerTest`. -/
 theorem innerTest {β : ℝ} (hβ : 2 / 3 ≤ β) {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     (seq u N).InnerTest (Box.obj 1) Box.con Box.square 1 β (tol u) k := by
   intro j hj
@@ -350,8 +398,9 @@ theorem innerTest {β : ℝ} (hβ : 2 / 3 ≤ β) {k : ℕ} (hk1 : 1 ≤ k) (hkN
   nlinarith
 
 include hu7 hNu in
-/-- **(14.3.34) fails at `(x_{k+1}, t_{k+1})`** for `k ∈ [1, N)`: along `d = -e₁` the decrease
-is `u³/2 + E_{k+1} ≥ 7u³/8 > ε₁ ‖r(x_{k+1}, t_{k+1})‖`. -/
+/-- Let $0 < u \le 1/7$ and $u^3 N \le 1$. For $k \in [1, N)$, the criticality test (14.3.34) fails
+at $(x_{k+1}, t_{k+1})$ with $q = 1$ and the radius $1$: along $d = -e_1$ the decrease is
+$u^3/2 + E_{k+1} \ge 7u^3/8 > \varepsilon_1 \|r(x_{k+1}, t_{k+1})\|$. -/
 theorem not_targetCrit_new {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
     ¬ targetCrit (Box.obj 1) Box.con Box.square 1 (tol u) (target u N (k + 1)) (iter u N (k + 1))
       (fun _ => 1) := by
@@ -378,8 +427,9 @@ theorem not_targetCrit_new {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
   linarith
 
 include hu7 hNu in
-/-- The third test of (14.3.32) holds at `(x_{N+1}, t_N)`: `‖∇μ(x_{N+1}, t_N)‖ = u³/2 ≤
-ε₁ ‖r(x_{N+1}, t_N)‖ = 3u³/4`. -/
+/-- Let $0 < u \le 1/7$, $u^3 N \le 1$ and $N \ge 1$. The criticality test (14.3.34), the third test
+of (14.3.32), holds at $(x_{N+1}, t_N)$ with $q = 1$ and the radius $1$: $\|\nabla \mu(x_{N+1},
+t_N)\| = u^3/2 \le \varepsilon_1 \|r(x_{N+1}, t_N)\| = 3u^3/4$. -/
 theorem targetCrit_end (hN : 1 ≤ N) :
     targetCrit (Box.obj 1) Box.con Box.square 1 (tol u) (target u N N) (iter u N (N + 1))
       (fun _ => 1) := by
@@ -400,7 +450,8 @@ theorem targetCrit_end (hN : 1 ≤ N) :
     gcongr
   nlinarith
 
-/-- **`μ(·, t_k)` decreases strictly along every call** `k ∈ [1, N]`. -/
+/-- For $u > 0$, the merit function $\mu(\cdot, t_k)$ decreases strictly along every call
+$k \in [1, N]$: $\mu(x_{k+1}, t_k) < \mu(x_k, t_k)$. -/
 theorem targetMerit_lt {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     targetMerit (Box.obj 1) Box.con (target u N k) (iter u N (k + 1)) <
       targetMerit (Box.obj 1) Box.con (target u N k) (iter u N k) := by
@@ -411,22 +462,22 @@ theorem targetMerit_lt {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
   nlinarith
 
 include hu7 in
-/-- `θ ε₀ ≤ u²/2` for `θ = 3/4`. -/
+/-- For $0 < u \le 1/7$, $\theta \varepsilon_0 \le u^2/2$ with $\theta = 3/4$. -/
 theorem three_quarters_mul_tol_le : 3 / 4 * tol u 0 ≤ u ^ 2 / 2 := by
   rw [tol_zero]; nlinarith [pow_pos hu 2]
 
 omit hu in
-/-- The tolerances are positive. -/
+/-- For $u > 0$, the tolerances are positive: $\varepsilon_j > 0$ for every $j$. -/
 theorem tol_pos (hu : 0 < u) (j : ℕ) : 0 < tol u j := by
   unfold tol; split_ifs <;> positivity
 
 include hu7 in
-/-- The tolerances are at most `1`. -/
+/-- For $0 < u \le 1/7$, the tolerances are at most $1$: $\varepsilon_j \le 1$ for every $j$. -/
 theorem tol_le_one (j : ℕ) : tol u j ≤ 1 := by
   unfold tol; split_ifs <;> nlinarith [pow_pos hu 2, pow_pos hu 3]
 
 include hu7 in
-/-- No outer iteration `k ≥ 1` is in `𝒦_a`. -/
+/-- For $0 < u \le 1/7$, no outer iteration $k \ge 1$ is in $\mathcal{K}_a$ for $\theta = 3/4$. -/
 theorem not_isKa {k : ℕ} (hk1 : 1 ≤ k) :
     ¬ (seq u N).IsKa (Box.obj 1) Box.con (3 / 4) (tol u) k := by
   rw [Constrained.HighOrderTargetSeq.isKa_iff]
@@ -434,7 +485,8 @@ theorem not_isKa {k : ℕ} (hk1 : 1 ≤ k) :
   exact (three_quarters_mul_tol_le hu hu7).trans (le_targetResidual_end hk1)
 
 include hu7 in
-/-- The outer iterations `k ∈ [1, N)` are in `𝒦_b`. -/
+/-- For $0 < u \le 1/7$, the outer iterations $k \in [1, N)$ are in $\mathcal{K}_b$ for
+$\theta = 3/4$. -/
 theorem isKb {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
     (seq u N).IsKb (Box.obj 1) Box.con (3 / 4) (tol u) k := by
   refine ⟨(three_quarters_mul_tol_le hu hu7).trans (le_targetResidual_end hk1), ?_⟩
@@ -445,7 +497,8 @@ theorem isKb {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
   linarith
 
 omit hu in
-/-- The outer iteration `N` is not in `𝒦_b`: `f(x_{N+1}) = t_N`. -/
+/-- For $N \ge 1$, the outer iteration $N$ is not in $\mathcal{K}_b$ for $\theta = 3/4$, since
+$f(x_{N+1}) = t_N$. -/
 theorem not_isKb_self (hN : 1 ≤ N) : ¬ (seq u N).IsKb (Box.obj 1) Box.con (3 / 4) (tol u) N := by
   intro h
   have h2 := h.2
@@ -454,13 +507,15 @@ theorem not_isKb_self (hN : 1 ≤ N) : ¬ (seq u N).IsKb (Box.obj 1) Box.con (3 
   linarith
 
 include hu7 in
-/-- Phase 2 stops at `N` (case (c)). -/
+/-- For $0 < u \le 1/7$ and $N \ge 1$, Phase 2 stops at the outer iteration $N$, in case (c), for
+$q = 1$ and $\theta = 3/4$. -/
 theorem stop_self (hN : 1 ≤ N) :
     (seq u N).Stop (Box.obj 1) Box.con Box.square 1 (3 / 4) (tol u) N :=
   Or.inl ⟨not_isKa hu hu7 hN, not_isKb_self hN⟩
 
 include hu7 hNu in
-/-- Phase 2 does not stop at `k ∈ [1, N)`. -/
+/-- Let $0 < u \le 1/7$ and $u^3 N \le 1$. Phase 2 does not stop at the outer iterations
+$k \in [1, N)$, for $q = 1$ and $\theta = 3/4$. -/
 theorem not_stop {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
     ¬ (seq u N).Stop (Box.obj 1) Box.con Box.square 1 (3 / 4) (tol u) k := by
   rintro (⟨-, hb⟩ | ⟨-, hm⟩)
@@ -468,25 +523,33 @@ theorem not_stop {k : ℕ} (hk1 : 1 ≤ k) (hkN : k < N) :
   · exact not_targetCrit_new hu hu7 hNu hk1 hkN hm
 
 include hu7 hNu in
-/-- Phase 2 does not stop before `N`. -/
+/-- Let $0 < u \le 1/7$ and $u^3 N \le 1$. No outer iteration $j \in [1, N)$ terminates Phase 2, for
+$q = 1$ and $\theta = 3/4$. -/
 theorem before_self : (seq u N).Before (Box.obj 1) Box.con Box.square 1 (3 / 4) (tol u) N :=
   fun _ hj1 hjN => not_stop hu hu7 hNu hj1 hjN
 
 include hu7 in
-/-- Every outer iteration reached is at most `N`. -/
+/-- Let $0 < u \le 1/7$ and $N \ge 1$. Every outer iteration $k$ that is reached, for $q = 1$ and
+$\theta = 3/4$, satisfies $k \le N$. -/
 theorem le_of_before (hN : 1 ≤ N) {k : ℕ}
     (h : (seq u N).Before (Box.obj 1) Box.con Box.square 1 (3 / 4) (tol u) k) : k ≤ N := by
   by_contra hk
   exact h N hN (by omega) (stop_self hu hu7 hN)
 
 include hu7 hNu in
-/-- Phase 2 terminates at the outer iteration `N`. -/
+/-- **Phase 2 terminates at $N$.** Let $0 < u \le 1/7$, $N \ge 1$ and $u^3 N \le 1$. For the data
+`Constrained.TwoPhaseExample.BoxBadIter.seq u N` with $q = 1$, $\theta = 3/4$ and the tolerances
+`Constrained.TwoPhaseExample.BoxBadIter.tol u`, Phase 2 terminates at the outer iteration $N$
+(`Constrained.HighOrderTargetSeq.IsEnd`). -/
 theorem isEnd (hN : 1 ≤ N) : (seq u N).IsEnd (Box.obj 1) Box.con Box.square 1 (3 / 4) (tol u) N :=
   ⟨hN, stop_self hu hu7 hN, before_self hu hu7 hNu⟩
 
 include hu7 hNu in
-/-- **The data form a run of Phase 2** from `x₁ = (0, -1)`, for `θ = 3/4` and every
-`β ∈ (0, θ]`. -/
+/-- **The data form a run of Phase 2.** Let $0 < u \le 1/7$, $N \ge 1$ and $u^3 N \le 1$, and let
+$0 < \beta \le 3/4$. The data `Constrained.TwoPhaseExample.BoxBadIter.seq u N` form a run of
+Phase 2 (`Constrained.IsHighOrderTargetRun`) for the objective $f(x) = x_1 - x_2$, the
+constraint $c$ and the set $X$, from $x_1 = (0, -1)$, with $q = 1$, $\theta = 3/4$, the constant
+$\beta$ and the tolerances `Constrained.TwoPhaseExample.BoxBadIter.tol u`. -/
 theorem isHighOrderTargetRun (hN : 1 ≤ N) {β : ℝ} (hβ : 0 < β) (hβθ : β ≤ 3 / 4) :
     IsHighOrderTargetRun (Box.obj 1) Box.con Box.square 1 (3 / 4) β (tol u) (pt 0 (-1))
       (seq u N) := by
@@ -514,10 +577,17 @@ theorem isHighOrderTargetRun (hN : 1 ≤ N) {β : ℝ} (hβ : 0 < β) (hβθ : �
     ring
 
 include hu7 hNu in
-/-- **The inner calls satisfy the inner-test contract** `HighOrderTargetSeq.IsInnerTestContract`
-for every `β ∈ [2/3, 3/4]`, every `κ_decr`, exponents `π`, `κ_uns + κ_unc ≥ 1` and radii
-`ρ₁ ≤ 1`: each call makes one successful iteration and ends at a point passing the inner test, so
-no decrease is required. -/
+/-- **The inner calls satisfy the inner-test contract.** Let $0 < u \le 1/7$, $N \ge 1$ and
+$u^3 N \le 1$. Let $\beta \ge 2/3$, let $\kappa_{\mathrm{decr}}$ be any constant, let $\pi_j$ be
+any exponents, let $\kappa_{\mathrm{uns}} + \kappa_{\mathrm{unc}} \ge 1$, and let the radii
+$\rho_j$ satisfy $\rho_1 \le 1$. Then the inner calls of
+`Constrained.TwoPhaseExample.BoxBadIter.seq u N` satisfy the inner-test contract
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with these constants, for $q = 1$ and
+$\theta = 3/4$.
+
+Each call makes one successful iteration and ends at a point that passes the inner test
+(`Constrained.TwoPhaseExample.BoxBadIter.innerTest`), so no decrease is required, and the
+returned radii are $1 \ge \rho_1$. -/
 theorem isInnerTestContract (hN : 1 ≤ N) {β : ℝ} (hβ : 2 / 3 ≤ β) {κdecr κuns κunc : ℝ}
     {π ρ : ℕ → ℝ} (hκ : 1 ≤ κuns + κunc) (hρ : ρ 1 ≤ 1) :
     (seq u N).IsInnerTestContract (Box.obj 1) Box.con Box.square 1 (3 / 4) β (tol u) κdecr κuns
@@ -528,9 +598,14 @@ theorem isInnerTestContract (hN : 1 ≤ N) {β : ℝ} (hβ : 2 / 3 ≤ β) {κde
     fun k hk1 hk => innerTest hu hu7 hNu hβ hk1 (le_of_before hu hu7 hN hk)
 
 include hu7 hNu in
-/-- **The inner test fails at the start of every call** `k ∈ [1, N]` for `β ≤ 3/4`: along `-e₁`
-the decrease of the linear model of `μ(·, t_k)` at `x_k` exceeds `β ‖r(x_k, t_k)‖ ε₁`. So an inner
-method terminating only at points passing its test moves in every call. -/
+/-- **The inner test fails at the start of every call.** Let $0 < u \le 1/7$, $u^3 N \le 1$ and
+$\beta \le 3/4$. For every $k \in [1, N]$,
+$$\beta\, \|r(x_k, t_k)\|\, \varepsilon_1 < \phi^1_{\mu, X(x_k), 1}(x_k, t_k),$$
+the first-order measure of $\mu(\cdot, t_k)$ at $x_k$ with radius $1$ on
+$X(x_k) = \{d : x_k + d \in X\}$.
+
+The bound is the decrease of the linear model of $\mu(\cdot, t_k)$ at $x_k$ along $-e_1$. So an
+inner method that terminates only at points that pass its test moves in every call. -/
 theorem lt_taylorMeasure_start {β : ℝ} (hβ : β ≤ 3 / 4) {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     β * targetResidual (Box.obj 1) Box.con (target u N k) (iter u N k) * tol u 1 <
       Optimization.taylorMeasure
@@ -567,11 +642,14 @@ theorem lt_taylorMeasure_start {β : ℝ} (hβ : β ≤ 3 / 4) {k : ℕ} (hk1 : 
     nlinarith [le_overshoot hu (N := N) (j := j + 1) (by omega)]
 
 include hu7 in
-/-- **A cost bound of every call** `k ∈ [1, N]` is at least `2`: for `β ∈ (0, 3/4]`, `κ ≥ 8`
-and `π₁ ≥ 4/3`, `κ μ(x_k, t_k) (β ‖r(x_k, t_k)‖ ε₁)^{-π₁} ≥ 2` (the cost bound of an inner method
-on `μ(·, t_k)` from `x_k` with tolerance `β ‖r(x_k, t_k)‖ ε₁` and the lower bound `0` of `μ`).
-With `R = ‖r(x_k, t_k)‖ ≥ u²/2` and `w = β R ε₁`, one has `w ≤ 1` and `w⁴ ≤ (2R²)³`, so
-`w^{π₁} ≤ w^{4/3} ≤ 2R²` and the bound is `≥ κ/4`. -/
+/-- **The cost bound of every call is at least $2$.** Let $0 < u \le 1/7$, $0 < \beta \le 3/4$,
+$\kappa \ge 8$, and let the exponents $\pi_j$ satisfy $\pi_1 \ge 4/3$. For every $k \in [1, N]$,
+$$2 \le \kappa\, \mu(x_k, t_k)\, \bigl(\beta \|r(x_k, t_k)\| \varepsilon_1\bigr)^{-\pi_1}.$$
+
+The right side is the cost bound of an inner method on $\mu(\cdot, t_k)$ from $x_k$ with the
+tolerance $\beta \|r(x_k, t_k)\| \varepsilon_1$ and the lower bound $0$ of $\mu$. With
+$R = \|r(x_k, t_k)\| \ge u^2/2$ and $w = \beta R \varepsilon_1$, one has $w \le 1$ and
+$w^4 \le (2R^2)^3$, so $w^{\pi_1} \le w^{4/3} \le 2R^2$ and the bound is at least $\kappa/4$. -/
 theorem two_le_costBound {β : ℝ} (hβ : 0 < β) (hβθ : β ≤ 3 / 4) {κ : ℝ} (hκ : 8 ≤ κ)
     {π : ℕ → ℝ} (hπ : 4 / 3 ≤ π 1) {k : ℕ} (hk1 : 1 ≤ k) (hkN : k ≤ N) :
     2 ≤ κ * targetMerit (Box.obj 1) Box.con (target u N k) (iter u N k) *
@@ -608,10 +686,10 @@ theorem two_le_costBound {β : ℝ} (hβ : 0 < β) (hβθ : β ≤ 3 / 4) {κ : 
 
 end Run2
 
-/-! ### The order -/
+/-! ### The order of the number of outer iterations -/
 
-/-- With `u = 1/m`, `m ≥ 7`, and `π ≤ 3/2`, the order `max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` is at most
-`2 m² √m`. -/
+/-- Let $u = 1/m$ with $m \ge 7$, and let $\pi \le 3/2$. Then $\max(\varepsilon_0^{-1},
+\varepsilon_0^{1-\pi} \varepsilon_1^{-\pi}) \le 2 m^2 \sqrt m$. -/
 theorem order_le {m : ℕ} (hm : 7 ≤ m) {π : ℝ} (hπ : π ≤ 3 / 2) :
     max (tol (1 / m) 0)⁻¹ (tol (1 / m) 0 ^ (1 - π) * tol (1 / m) 1 ^ (-π)) ≤
       2 * (m : ℝ) ^ 2 * √m := by
@@ -663,7 +741,8 @@ theorem order_le {m : ℕ} (hm : 7 ≤ m) {π : ℝ} (hπ : π ≤ 3 / 2) :
         mul_le_mul hA hB (by positivity) (by positivity)
     _ = 2 * (m : ℝ) ^ 2 * √m := by ring
 
-/-- For `m > 4C²`, `C · 2 m² √m < m³`. -/
+/-- Let $m \ge 7$ and $C \in \mathbb{R}$ with $4C^2 < m$. Every $x$ with $0 \le x \le 2 m^2 \sqrt m$
+satisfies $C x < m^3$. -/
 theorem lt_cube {m : ℕ} {C : ℝ} (hm : 7 ≤ m) (hC : 4 * C ^ 2 < m) {x : ℝ} (hx0 : 0 ≤ x)
     (hx : x ≤ 2 * (m : ℝ) ^ 2 * √m) : C * x < ((m ^ 3 : ℕ) : ℝ) := by
   have hm7 : (7 : ℝ) ≤ m := by exact_mod_cast hm
@@ -681,8 +760,15 @@ theorem lt_cube {m : ℕ} {C : ℝ} (hm : 7 ≤ m) (hC : 4 * C ^ 2 < m) {x : ℝ
           gcongr
       _ = (m : ℝ) ^ 3 := by rw [hsq]; ring
 
-/-- **The parameters for a constant `C`**: `u = 1/m`, `N = m³` with `m = ⌈4C²⌉ + 7`, so that
-the tolerances vanish as `C` grows and `N > C max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` for `π ≤ 3/2`. -/
+/-- **The parameters for a constant $C$.** For every $C \in \mathbb{R}$ there are $u \in \mathbb{R}$
+and $N \in \mathbb{N}$ with $0 < u \le 1/7$, $u^3 N \le 1$ and $N \ge 1$ such that, for the
+tolerances `Constrained.TwoPhaseExample.BoxBadIter.tol u`:
+
+* if $C \ge 1$, then $\varepsilon_0 \le C^{-1}$ and $\varepsilon_1 \le C^{-1}$;
+* for every $\pi \le 3/2$, $C \max(\varepsilon_0^{-1}, \varepsilon_0^{1-\pi}
+  \varepsilon_1^{-\pi}) < N$.
+
+The proof takes $u = 1/m$ and $N = m^3$ with $m = \lceil 4C^2 \rceil + 7$. -/
 theorem exists_params (C : ℝ) : ∃ (u : ℝ) (N : ℕ), 0 < u ∧ u ≤ 1 / 7 ∧ u ^ 3 * N ≤ 1 ∧ 1 ≤ N ∧
     (1 ≤ C → tol u 0 ≤ C⁻¹ ∧ tol u 1 ≤ C⁻¹) ∧
     ∀ π : ℝ, π ≤ 3 / 2 → C * max (tol u 0)⁻¹ (tol u 0 ^ (1 - π) * tol u 1 ^ (-π)) < N := by
@@ -710,15 +796,35 @@ theorem exists_params (C : ℝ) : ∃ (u : ℝ) (N : ℕ), 0 < u ∧ u ≤ 1 / 7
       (inv_pos.2 (tol_pos hu 0)).le.trans (le_max_left _ _)
     exact lt_cube hm hC hx0 (order_le hm hπ)
 
-/-- **The run for a constant `C`**: tolerances `ε_j ∈ (0, 1]` (at most `C⁻¹` for `j ∈ {0, 1}` when
-`C ≥ 1`) and Phase-2 data `D` with one-step calls, terminating at an outer iteration `kε` with
-`kε > C max(ε₀^{-1}, ε₀^{1-π} ε₁^{-π})` for every `π ≤ 3/2`, `kε + 1` evaluations and all radii
-`1`, such that
-`μ(·, t_k)` decreases strictly along every call, `D` is a run from `x₁ = (0, -1)` for every
-`β ∈ (0, 3/4]`, and for `β ∈ [2/3, 3/4]` every call ends at a point passing the inner test, every
-iteration before `kε` is in `𝒦_b`, the inner test fails at the start of every call, and the calls
-satisfy the inner-test contract with every constant; moreover every cost bound
-`κ μ(x_k, t_k) (β ‖r(x_k, t_k)‖ ε₁)^{-π₁}` with `κ ≥ 8`, `π₁ ≥ 4/3` is at least `2`. -/
+/-- **The run for a constant $C$.** For every $C \in \mathbb{R}$ there are tolerances $\varepsilon$,
+Phase-2 data $D$ on $\mathbb{R}^2$ and an outer iteration $k_\varepsilon$ with the following
+properties, where $q = 1$ and $\theta = 3/4$ throughout.
+
+* $0 < \varepsilon_j \le 1$ for every $j$, and if $C \ge 1$, then $\varepsilon_0 \le C^{-1}$ and
+  $\varepsilon_1 \le C^{-1}$.
+* For every $\pi \le 3/2$, $C \max(\varepsilon_0^{-1}, \varepsilon_0^{1-\pi}
+  \varepsilon_1^{-\pi}) < k_\varepsilon$.
+* Phase 2 with the data $D$ terminates at $k_\varepsilon$, and the numbers of evaluations of
+  $(f, c)$ and of their derivatives up to $k_\varepsilon$ are both $k_\varepsilon + 1$.
+* All optimality radii are $1$, and every inner call has one iteration, which is successful.
+* For every $k \in [1, k_\varepsilon]$, $x_{k+1} \in X$, $\delta_{k+1, 1} = 1$ and
+  $\mu(x_{k+1}, t_k) < \mu(x_k, t_k)$.
+* For every $\beta \in (0, 3/4]$, $D$ is a run of Phase 2 from $x_1 = (0, -1)$ with the constant
+  $\beta$.
+* For every $\beta \in [2/3, 3/4]$: every call $k \in [1, k_\varepsilon]$ ends at a point that
+  passes the inner test (14.3.19); every $k \in [1, k_\varepsilon)$ is in $\mathcal{K}_b$; every
+  $k \in [1, k_\varepsilon]$ satisfies $\beta \|r(x_k, t_k)\| \varepsilon_1 < \phi^1_{\mu,
+  X(x_k), 1}(x_k, t_k)$; and the calls satisfy the inner-test contract for every
+  $\kappa_{\mathrm{decr}}$, all exponents $\pi_j$, all
+  $\kappa_{\mathrm{uns}}, \kappa_{\mathrm{unc}}$ with $\kappa_{\mathrm{uns}} +
+  \kappa_{\mathrm{unc}} \ge 1$, and all radii $\rho_j$ with $\rho_1 \le 1$.
+* For every $\beta \in (0, 3/4]$, every $\kappa \ge 8$, all exponents $\pi_j$ with
+  $\pi_1 \ge 4/3$ and every $k \in [1, k_\varepsilon]$, $2 \le \kappa\, \mu(x_k, t_k) (\beta
+  \|r(x_k, t_k)\| \varepsilon_1)^{-\pi_1}$.
+
+The objects are `Constrained.TwoPhaseExample.BoxBadIter.tol u`,
+`Constrained.TwoPhaseExample.BoxBadIter.seq u N` and $k_\varepsilon = N$ for the parameters $u$
+and $N$ of `Constrained.TwoPhaseExample.BoxBadIter.exists_params`. -/
 theorem exists_seq (C : ℝ) :
     ∃ (ε : ℕ → ℝ) (D : HighOrderTargetSeq ℝ²) (kε : ℕ),
       (∀ j, 0 < ε j ∧ ε j ≤ 1) ∧ (1 ≤ C → ε 0 ≤ C⁻¹ ∧ ε 1 ≤ C⁻¹) ∧
@@ -762,11 +868,20 @@ theorem exists_seq (C : ℝ) :
   · exact lt_taylorMeasure_start hu hu7 hNu hβθ (Finset.mem_Icc.1 hk).1 (Finset.mem_Icc.1 hk).2
   · exact two_le_costBound hu hu7 hβ hβθ hκ hπ (Finset.mem_Icc.1 hk).1 (Finset.mem_Icc.1 hk).2
 
-/-- **Cheap first calls**: for `π₁ < 2`, `β ∈ (0, 1)` and every `κ` there are tolerances
-`ε_j ∈ (0, 1]` (`ε₁ = 1`, `ε₀` small) such that, from the feasible point `x₁ = (0, -1)` with
-`c(x₁) = 0` and the target `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`, the first-order test with tolerance
-`β ‖r(x₁, t₁)‖ ε₁` fails at `x₁` for every radius `δ ∈ (0, 1]` (the decrease along `-δ e₁` is
-`ε₀ δ`), while `κ μ(x₁, t₁) (β ‖r(x₁, t₁)‖ ε₁)^{-π₁} = (κ/2) β^{-π₁} ε₀^{2-π₁} < 1`. -/
+/-- **Cheap first calls.** Let the exponents $\pi_j$ satisfy $\pi_1 < 2$, let $0 < \beta < 1$, and
+let $\kappa \in \mathbb{R}$. Write $x_1 = (0, -1)$ and $t_1 = f(x_1) - \sqrt{\varepsilon_0^2 -
+\|c(x_1)\|^2}$. There are tolerances $\varepsilon$ with $0 < \varepsilon_j \le 1$ for every $j$
+such that:
+
+* $x_1 \in X$ and $\|c(x_1)\| = 0$;
+* for every radius $\delta \in (0, 1]$, the first-order test with the tolerance
+  $\beta \|r(x_1, t_1)\| \varepsilon_1$ fails at $x_1$: $\beta \|r(x_1, t_1)\| \varepsilon_1
+  \delta / 1! < \phi^\delta_{\mu, X(x_1), 1}(x_1, t_1)$;
+* $\kappa\, \mu(x_1, t_1) \bigl(\beta \|r(x_1, t_1)\| \varepsilon_1\bigr)^{-\pi_1} < 1$.
+
+The proof takes $\varepsilon_1 = 1$ and $\varepsilon_0$ small. The decrease along $-\delta e_1$
+is $\varepsilon_0 \delta$, and the cost bound equals $(\kappa/2) \beta^{-\pi_1}
+\varepsilon_0^{2-\pi_1}$, which tends to $0$ with $\varepsilon_0$. -/
 theorem exists_tol_start_lt_taylorMeasure (π : ℕ → ℝ) (hπ : π 1 < 2) {β : ℝ}
     (hβ : 0 < β) (hβ1 : β < 1) (κ : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j, 0 < ε j ∧ ε j ≤ 1) ∧ pt 0 (-1) ∈ Box.square ∧ ‖Box.con (pt 0 (-1))‖ = 0 ∧

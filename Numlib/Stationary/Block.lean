@@ -10,42 +10,61 @@ import Numlib.Stationary.Splitting
 /-!
 # Block splittings and block relaxation
 
-The block form of the classical iterations ([saad2003iterative] §4.1.1, (4.15)–(4.17), Algorithms
-4.1–4.2 in the non-overlapping case). The block structure is a *labelling* `π : n → ι` of the index
-set by a linearly ordered type of block labels, and the block-diagonal, strict block-lower and
-strict block-upper parts of `A` are the entries with `π i = π j`, `π j < π i` and `π i < π j`
-respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`, defined
-beside their pointwise versions in `Numlib/LinearAlgebra/Matrix/Triangular.lean`). They add up
-to `A` (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is
-[saad2003iterative] `A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and
-`F = -blockStrictUpper π A`. When the index set is a sigma type labelled by its first component,
-a genuinely block diagonal summand lands entirely in the block diagonal part
-(`Matrix.blockDiagPart_sub_blockDiagonal'`, `Matrix.blockStrictLower_sub_blockDiagonal'`).
+This module gives the block form of the classical iterations ([saad2003iterative], §4.1.1,
+(4.15)–(4.17), and Algorithms 4.1–4.2 in the non-overlapping case). The block structure is a
+labelling $\pi \colon n \to \iota$ of the index set by a linearly ordered type $\iota$ of block
+labels. For a square matrix $A$, the **block diagonal part** $D$, the **strict block-lower part**
+$-E$ and the **strict block-upper part** $-F$ of $A$ keep the entries $a_{ij}$ with
+$\pi(i) = \pi(j)$, with $\pi(j) < \pi(i)$ and with $\pi(i) < \pi(j)$, respectively, and set the
+other entries to $0$. They give $A = D - E - F$, which is (4.15) of [saad2003iterative]. The point
+splittings are the case $\pi = \mathrm{id}$. The block Jacobi, block Gauss–Seidel and block SOR
+splittings ([saad2003iterative], (4.16) and Algorithms 4.1–4.2) are built here as the point
+splittings are, under the hypothesis that $D$ is invertible.
 
-The point splittings of `Numlib/Stationary/Splitting.lean` are the case `π = id`
-(`Matrix.blockDiagPart_id`, `Matrix.blockStrictLower_id`, `Matrix.blockStrictUpper_id`), and the
-block Jacobi, Gauss–Seidel and SOR splittings ([saad2003iterative] (4.16), Algorithms 4.1–4.2) are
-built here exactly as the point ones are, under the invertibility of the block diagonal.
+The last section reads block Jacobi and block Gauss–Seidel as projection processes over the blocks
+([saad2003iterative], §5.4). Each block $i$ gives a Petrov–Galerkin pair whose trial and test space
+is the coordinate subspace $V_i$ of the vectors supported in block $i$. The pair is nondegenerate
+because $D$ is invertible. Then one block Jacobi step is one step of the additive projection process
+over these pairs, with unit weights, and one block Gauss–Seidel sweep is one sweep of the
+multiplicative projection process over them, in increasing order of the label.
 
-The last section reads the two of them as *projection processes* over the blocks
-([saad2003iterative] §5.4): each block gives a Petrov–Galerkin pair whose trial and test space is
-the coordinate subspace of the block (`EuclideanSpace.blockSubspace`), nondegenerate exactly because
-the block diagonal is invertible (`Matrix.isNondegeneratePair_blockSubspace`), and then one block
-Jacobi step is one *additive* step over those pairs with unit weights
-(`Matrix.blockJacobiSplitting_step_eq_additiveStep`) while one block Gauss–Seidel sweep is the
-*multiplicative* sweep over them in increasing order of the block label
-(`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`).
+## Main definitions
+
+* `Matrix.blockJacobiSplitting`: the block Jacobi splitting, $M = D$.
+* `Matrix.blockGaussSeidelSplitting`: the block Gauss–Seidel splitting, $M = D - E$.
+* `Matrix.blockSORSplitting`: the block SOR splitting, $M = \omega^{-1} (D - \omega E)$.
+
+## Main results
+
+* `Matrix.blockDiagPart_sub_blockDiagonal'` and `Matrix.blockStrictLower_sub_blockDiagonal'`: for an
+  index set that is a sigma type labelled by its first component, subtracting a block diagonal
+  matrix changes only the block diagonal part.
+* `Matrix.isUnit_blockDiagPart_add_blockStrictLower`: if $D$ is invertible, then $D - E$ is
+  invertible.
+* `Matrix.isNondegeneratePair_blockSubspace`: if $D$ is invertible, each pair $(V_i, V_i)$ is a
+  nondegenerate Petrov–Galerkin pair for $A$.
+* `Matrix.blockJacobiSplitting_step_eq_additiveStep`: one block Jacobi step is one additive
+  projection step over the blocks.
+* `Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`: one block Gauss–Seidel sweep is one
+  multiplicative projection sweep over the blocks.
 
 ## Implementation notes
 
-Invertibility of the block-lower factor `D - ω E` rests on `Matrix.BlockTriangular.det`, which
-factors the determinant of a block triangular matrix as the product of the determinants of its
-diagonal blocks over `Finset.univ.image π`: adding the strict block-lower part changes no diagonal
-block, hence changes no determinant. So no finiteness of the label type `ι` is needed, only a
-`LinearOrder` on it.
-
-Overlapping blocks — [saad2003iterative] general Algorithm 4.1, in which the index sets need not
-partition `n` — are not formalized; the book proves no theorem about them.
+* The three parts of $A$ are `Matrix.blockDiagPart π A`, `Matrix.blockStrictLower π A` and
+  `Matrix.blockStrictUpper π A` of `Numlib.LinearAlgebra.Matrix.Triangular`, so $E$ is
+  `-blockStrictLower π A` and $F$ is `-blockStrictUpper π A`. Their sum is $A$
+  (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), and for $\pi = \mathrm{id}$
+  they are the point parts (`Matrix.blockDiagPart_id`, `Matrix.blockStrictLower_id`,
+  `Matrix.blockStrictUpper_id`).
+* The invertibility of $D - \omega E$ rests on `Matrix.BlockTriangular.det`, which factors the
+  determinant of a block triangular matrix as the product of the determinants of its diagonal
+  blocks. Adding the strict block-lower part changes no diagonal block, and so it does not change
+  the determinant. Therefore the label type $\iota$ needs only a linear order, and need not be
+  finite.
+* Overlapping blocks, as in the general Algorithm 4.1 of [saad2003iterative], where the index sets
+  need not partition the index set, are not formalized. The source proves no theorem about them.
+* The coordinate subspace $V_i$ is `EuclideanSpace.blockSubspace 𝕜 π i`, and a matrix acts on
+  vectors through `Matrix.toEuclideanLin`.
 -/
 
 namespace Matrix
@@ -60,8 +79,13 @@ section BlockDiagonal
 
 variable {m' : ι → Type*} [AddGroup R]
 
-/-- Subtracting a block diagonal matrix changes the block diagonal part by exactly that matrix: the
-labelling by the block index sees a block diagonal matrix as diagonal. -/
+/-- Let the index set be a sigma type $\Sigma_i m_i$, labelled by the first component, let $A$ be a
+square matrix on it, and let $\operatorname{diag}(D_i)$ be the block diagonal matrix with the
+blocks $D_i$. Then the block diagonal part of $A - \operatorname{diag}(D_i)$ is the block
+diagonal part of $A$ minus $\operatorname{diag}(D_i)$.
+
+The block diagonal matrix is `Matrix.blockDiagonal' D`. For this labelling, it is its own block
+diagonal part. -/
 theorem blockDiagPart_sub_blockDiagonal' [DecidableEq ι]
     (A : Matrix ((i : ι) × m' i) ((i : ι) × m' i) R) (D : ∀ i, Matrix (m' i) (m' i) R) :
     blockDiagPart Sigma.fst (A - blockDiagonal' D)
@@ -72,7 +96,9 @@ theorem blockDiagPart_sub_blockDiagonal' [DecidableEq ι]
   · subst h; simp
   · rw [blockDiagonal'_apply_ne _ a b h]; simp [h]
 
-/-- Subtracting a block diagonal matrix leaves the strict block-lower part unchanged. -/
+/-- Let the index set be a sigma type $\Sigma_i m_i$, labelled by the first component, let $A$ be a
+square matrix on it, and let $\operatorname{diag}(D_i)$ be the block diagonal matrix with the
+blocks $D_i$. Then $A - \operatorname{diag}(D_i)$ and $A$ have the same strict block-lower part. -/
 theorem blockStrictLower_sub_blockDiagonal' [LinearOrder ι]
     (A : Matrix ((i : ι) × m' i) ((i : ι) × m' i) R) (D : ∀ i, Matrix (m' i) (m' i) R) :
     blockStrictLower Sigma.fst (A - blockDiagonal' D) = blockStrictLower Sigma.fst A := by
@@ -92,15 +118,16 @@ variable {𝕜 : Type*} [Field 𝕜] [Fintype n] [DecidableEq n] [LinearOrder ι
 variable {A : Matrix n n 𝕜}
 
 omit [Fintype n] [DecidableEq n] in
-/-- A scaled block diagonal plus the strict block-lower part is block triangular for the reversed
-labelling. -/
+/-- For every scalar $c$, the matrix $cD - E$ is block triangular for the reverse order of the
+labels. -/
 private theorem blockTriangular_smul_add_blockStrictLower (c : 𝕜) (A : Matrix n n 𝕜) :
     BlockTriangular (c • blockDiagPart π A + blockStrictLower π A) (OrderDual.toDual ∘ π) := by
   intro i j hij
   have h : π i < π j := hij
   simp [h.ne, asymm h]
 
-/-- Adding the strict block-lower part changes no diagonal block, hence no determinant. -/
+/-- For every scalar $c$, $\det(cD - E) = \det(cD)$, because adding the strict block-lower part
+changes no diagonal block. -/
 private theorem det_smul_add_blockStrictLower (c : 𝕜) (A : Matrix n n 𝕜) :
     (c • blockDiagPart π A + blockStrictLower π A).det = (c • blockDiagPart π A).det := by
   have hD : BlockTriangular (c • blockDiagPart π A) (OrderDual.toDual ∘ π) := by
@@ -116,9 +143,11 @@ private theorem det_smul_add_blockStrictLower (c : 𝕜) (A : Matrix n n 𝕜) :
     = (c • blockDiagPart π A) i.1 j.1
   simp [hij]
 
-/-- **The block-lower factor of a block relaxation is invertible** as soon as the block diagonal is:
-it is block triangular with the same diagonal blocks. This is what makes the block Gauss–Seidel and
-block SOR splittings well defined. -/
+/-- Let $c \neq 0$ be a scalar and let the block diagonal part $D$ of $A$ be invertible. Then
+$cD - E$ is invertible, where $-E$ is the strict block-lower part of $A$.
+
+The matrix $cD - E$ is block triangular with the same diagonal blocks as $cD$. This makes the
+block Gauss–Seidel and block SOR splittings well defined. -/
 theorem isUnit_smul_blockDiagPart_add_blockStrictLower {c : 𝕜} (hc : c ≠ 0)
     (h : IsUnit (blockDiagPart π A)) :
     IsUnit (c • blockDiagPart π A + blockStrictLower π A) := by
@@ -126,33 +155,42 @@ theorem isUnit_smul_blockDiagPart_add_blockStrictLower {c : 𝕜} (hc : c ≠ 0)
   rw [det_smul_add_blockStrictLower, det_smul, isUnit_iff_ne_zero] at *
   exact mul_ne_zero (pow_ne_zero _ hc) h
 
-/-- `D - E`, the block-lower part of `A` in [saad2003iterative] letters, is invertible as soon as
-the block diagonal of `A` is. -/
+/-- Let the block diagonal part $D$ of a square matrix $A$ over a field be invertible. Then the
+block-lower part $D - E$ of $A$ is invertible.
+
+In Lean, $D - E$ is `blockDiagPart π A + blockStrictLower π A`. -/
 theorem isUnit_blockDiagPart_add_blockStrictLower (h : IsUnit (blockDiagPart π A)) :
     IsUnit (blockDiagPart π A + blockStrictLower π A) := by
   simpa using isUnit_smul_blockDiagPart_add_blockStrictLower (c := (1 : 𝕜)) one_ne_zero h
 
-/-- **Block Jacobi** ([saad2003iterative], (4.16)): `M = D`, the block diagonal part. With `π = id`
-it is `Matrix.jacobiSplitting`. -/
+/-- Let $A$ be a square matrix over a field whose block diagonal part $D$ for the labelling $\pi$ is
+invertible. The **block Jacobi splitting** of $A$ is the splitting $A = M - N$ with $M = D$
+([saad2003iterative], (4.16)).
+
+For $\pi = \mathrm{id}$ it is `Matrix.jacobiSplitting`. -/
 noncomputable def blockJacobiSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) : Splitting A :=
   ⟨blockDiagPart π A, h⟩
 
-/-- The complementary part of the block Jacobi splitting is `-(E + F)`. -/
+/-- The block Jacobi splitting has $N = E + F$, the negative of the sum of the strict block-lower
+part and the strict block-upper part of $A$. -/
 theorem blockJacobiSplitting_n (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit (blockDiagPart π A)) :
     (blockJacobiSplitting π A h).n = -(blockStrictLower π A + blockStrictUpper π A) := by
   change blockDiagPart π A - A = -(blockStrictLower π A + blockStrictUpper π A)
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub, ← add_assoc,
     blockDiagPart_add_blockStrictLower_add_blockStrictUpper, sub_self]
 
-/-- **Block Gauss–Seidel** ([saad2003iterative], Algorithm 4.1): `M = D - E`, the block-lower part.
-With `π = id` it is `Matrix.gaussSeidelSplitting`. -/
+/-- Let $A$ be a square matrix over a field whose block diagonal part $D$ for the labelling $\pi$ is
+invertible. The **block Gauss–Seidel splitting** of $A$ is the splitting $A = M - N$ with
+$M = D - E$, the block-lower part of $A$ ([saad2003iterative], Algorithm 4.1).
+
+For $\pi = \mathrm{id}$ it is `Matrix.gaussSeidelSplitting`. -/
 noncomputable def blockGaussSeidelSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) : Splitting A :=
   ⟨blockDiagPart π A + blockStrictLower π A, isUnit_blockDiagPart_add_blockStrictLower h⟩
 
-/-- The complementary part of the block Gauss–Seidel splitting is `-F`: the forward sweep absorbs
-the whole block-lower triangle. -/
+/-- The block Gauss–Seidel splitting has $N = F$, the negative of the strict block-upper part of
+$A$: the forward sweep takes the whole block-lower triangle. -/
 theorem blockGaussSeidelSplitting_n (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) :
     (blockGaussSeidelSplitting π A h).n = -blockStrictUpper π A := by
@@ -160,14 +198,19 @@ theorem blockGaussSeidelSplitting_n (π : n → ι) (A : Matrix n n 𝕜)
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub,
     blockDiagPart_add_blockStrictLower_add_blockStrictUpper, sub_self]
 
-/-- **Block SOR** ([saad2003iterative], Algorithm 4.2) with parameter `ω`: `M = ω⁻¹ (D - ω E)`. With
-`π = id` it is `Matrix.sorSplitting`. -/
+/-- Let $A$ be a square matrix over a field whose block diagonal part $D$ for the labelling $\pi$ is
+invertible, and let $\omega \neq 0$. The **block SOR splitting** of $A$ with relaxation
+parameter $\omega$ is the splitting $A = M - N$ with
+$$M = \omega^{-1} (D - \omega E) = \omega^{-1} D - E$$
+([saad2003iterative], Algorithm 4.2).
+
+For $\pi = \mathrm{id}$ it is `Matrix.sorSplitting`. -/
 noncomputable def blockSORSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) {ω : 𝕜} (hω : ω ≠ 0) : Splitting A :=
   ⟨ω⁻¹ • blockDiagPart π A + blockStrictLower π A,
     isUnit_smul_blockDiagPart_add_blockStrictLower (inv_ne_zero hω) h⟩
 
-/-- Block Gauss–Seidel is block SOR with `ω = 1`. -/
+/-- The block SOR splitting with $\omega = 1$ is the block Gauss–Seidel splitting. -/
 theorem blockSORSplitting_one (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit (blockDiagPart π A)) :
     blockSORSplitting π A h (one_ne_zero (α := 𝕜)) = blockGaussSeidelSplitting π A h := by
   ext : 1
@@ -186,11 +229,12 @@ open EuclideanSpace Projection
 variable {𝕜 : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] [LinearOrder ι]
 variable {π : n → ι} {A : Matrix n n 𝕜}
 
-/-- Entries of `toEuclideanLin M v` are the entries of `M *ᵥ v`. -/
+/-- The $k$-th entry of `toEuclideanLin M v` is $\sum_j M_{kj} v_j$. -/
 private theorem toEuclideanLin_apply_eq_sum_mul (M : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n)
     (k : n) : toEuclideanLin M v k = ∑ j, M k j * v j := rfl
 
-/-- The restriction of `v` to the `i`-th block: the entries of `v` on the block, zero elsewhere. -/
+/-- The restriction of $v$ to block $i$: the vector with the entries of $v$ on block $i$ and $0$
+elsewhere. -/
 private def blockRestrict (π : n → ι) (i : ι) (v : EuclideanSpace 𝕜 n) : EuclideanSpace 𝕜 n :=
   WithLp.toLp 2 fun j => if π j = i then v j else 0
 
@@ -209,7 +253,7 @@ private theorem sum_blockRestrict [Fintype ι] (v : EuclideanSpace 𝕜 n) :
   refine PiLp.ext fun j => ?_
   simp [WithLp.ofLp_sum]
 
-/-- On a vector supported in the `i`-th block, a row of that block sees only the block diagonal. -/
+/-- If $v$ is supported in block $i$ and row $k$ belongs to block $i$, then $(Dv)_k = (Av)_k$. -/
 private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k = i) :
     toEuclideanLin (blockDiagPart π A) v k = toEuclideanLin A v k := by
@@ -219,7 +263,7 @@ private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}
   · rw [blockDiagPart_apply, ite_eq_left (hk.trans hj.symm)]
   · rw [hv j hj, mul_zero, mul_zero]
 
-/-- Outside the `i`-th block the block diagonal annihilates a vector supported in that block. -/
+/-- If $v$ is supported in block $i$ and row $k$ does not belong to block $i$, then $(Dv)_k = 0$. -/
 private theorem blockDiag_apply_of_ne {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k ≠ i) :
     toEuclideanLin (blockDiagPart π A) v k = 0 := by
@@ -229,7 +273,8 @@ private theorem blockDiag_apply_of_ne {i : ι} {v : EuclideanSpace 𝕜 n}
   · rw [blockDiagPart_apply, ite_eq_right (by rw [hj]; exact hk), zero_mul]
   · rw [hv j hj, mul_zero]
 
-/-- The block diagonal does not see the entries of `v` outside the block of the row. -/
+/-- If row $k$ belongs to block $i$, then $(Dv)_k$ is not changed when $v$ is replaced by its
+restriction to block $i$. -/
 private theorem blockDiag_blockRestrict_apply (i : ι) (v : EuclideanSpace 𝕜 n) {k : n}
     (hk : π k = i) : toEuclideanLin (blockDiagPart π A) (blockRestrict π i v) k
       = toEuclideanLin (blockDiagPart π A) v k := by
@@ -240,9 +285,8 @@ private theorem blockDiag_blockRestrict_apply (i : ι) (v : EuclideanSpace 𝕜 
   · rw [blockDiagPart_apply, ite_eq_right (by rw [hk]; exact fun hc => hj hc.symm), zero_mul,
       zero_mul]
 
-/-- On a vector supported in the `i`-th block, a row whose label is at least `i` sees the same in
-the block-lower part `D - E` as in `A` itself: the diagonal block contributes for a row of block
-`i` and the strict block-lower part for a row below it. -/
+/-- If $v$ is supported in block $i$ and the label of row $k$ is at least $i$, then
+$((D - E) v)_k = (Av)_k$. -/
 private theorem blockLower_apply_of_le {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : i ≤ π k) :
     toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = toEuclideanLin A v k := by
@@ -257,8 +301,8 @@ private theorem blockLower_apply_of_le {i : ι} {v : EuclideanSpace 𝕜 n}
         ite_eq_right (by rw [hj, heq]; exact lt_irrefl _), add_zero]
   · rw [hv j hj, mul_zero, mul_zero]
 
-/-- A vector supported on blocks with labels above `i` is annihilated by the block-lower part
-`D - E` in every row whose label is at most `i`. -/
+/-- If $v$ vanishes on every block with label at most $i$, then $((D - E) v)_k = 0$ for every row
+$k$ with label at most $i$. -/
 private theorem blockLower_apply_eq_zero {i : ι} {v : EuclideanSpace 𝕜 n}
     (hv : ∀ j, ¬ i < π j → v j = 0) {k : n} (hk : π k ≤ i) :
     toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = 0 := by
@@ -270,10 +314,15 @@ private theorem blockLower_apply_eq_zero {i : ι} {v : EuclideanSpace 𝕜 n}
       ite_eq_right (asymm h1), add_zero, zero_mul]
   · rw [hv j hj, mul_zero]
 
-/-- **Each block is a nondegenerate Petrov–Galerkin pair** as soon as the block diagonal is
-invertible: on a vector supported in the block, the rows of the block reproduce the diagonal block,
-which is therefore what has to be inverted.  This is the hypothesis under which the block
-relaxations are projection processes ([saad2003iterative], §5.4). -/
+/-- Let $A$ be a square matrix over $\mathbb{R}$ or $\mathbb{C}$ whose block diagonal part is
+invertible, and let $i$ be a label. Let $V_i$ be the subspace of the vectors supported in block
+$i$. Then $(V_i, V_i)$ is a nondegenerate Petrov–Galerkin pair for $A$: the trial space and the
+test space have the same dimension, and if $z \in V_i$ and $Az \perp V_i$, then $z = 0$.
+
+On a vector supported in block $i$, the rows of block $i$ reproduce the diagonal block of $A$,
+so this diagonal block is the matrix that must be inverted. This is the hypothesis under which
+the block relaxations are projection processes ([saad2003iterative], §5.4). The pair condition
+is `Projection.IsNondegeneratePair` for `Matrix.toEuclideanLin A`. -/
 theorem isNondegeneratePair_blockSubspace (h : IsUnit (blockDiagPart π A)) (i : ι) :
     IsNondegeneratePair (toEuclideanLin A) (blockSubspace 𝕜 π i) (blockSubspace 𝕜 π i) where
   finrank_eq := rfl
@@ -293,12 +342,16 @@ theorem isNondegeneratePair_blockSubspace (h : IsUnit (blockDiagPart π A)) (i :
           rw [Matrix.toLpLin_mul_same, LinearMap.comp_apply]
       _ = 0 := by rw [hzero, map_zero]
 
-/-- **[saad2003iterative], §5.4**: one **block Jacobi** step is one step of the *additive*
-projection process over the blocks, with all relaxation weights equal to `1`.  Each block
-contributes the Petrov–Galerkin correction of the pair `K i = L i = ` the coordinate subspace of
-the block, and the corrections are added at once because they are all computed from the same
-iterate; their sum is the block Jacobi correction `D⁻¹ (b - A x)`, which is [saad2003iterative]
-(4.17) read as (5.7). -/
+/-- Let the set of labels be finite, let $A$ be a square matrix over $\mathbb{R}$ or $\mathbb{C}$
+whose block diagonal part $D$ is invertible, and let $b$ and $x$ be vectors. Then one step of
+the additive projection process over the pairs $(V_i, V_i)$, with all relaxation weights equal
+to $1$, maps $x$ to
+$$x + D^{-1} (b - Ax),$$
+which is one block Jacobi step. This is §5.4 of [saad2003iterative]: (4.17) read as (5.7).
+
+Each block contributes the Petrov–Galerkin correction of its pair. The corrections are added
+together because they are all computed from the same iterate $x$. The additive step is
+`Projection.additiveStep`, and $D$ is the matrix `(Matrix.blockJacobiSplitting π A h).m`. -/
 theorem blockJacobiSplitting_step_eq_additiveStep [Fintype ι] (h : IsUnit (blockDiagPart π A))
     (b x : EuclideanSpace 𝕜 n) :
     additiveStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
@@ -328,12 +381,9 @@ theorem blockJacobiSplitting_step_eq_additiveStep [Fintype ι] (h : IsUnit (bloc
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hstep i, Pi.one_apply, one_smul, add_sub_cancel_left]
 
-/-- The invariant of a partial multiplicative sweep over an increasing list `l` of block labels:
-the correction it has accumulated is supported on the blocks of `l`, and in every row of those
-blocks it satisfies the block Gauss–Seidel equation `(D - E) δ = b - A x`.  The second clause is
-what makes the sweep a *solve* with the block-lower factor: at the moment block `i` is processed
-the blocks below it are already updated and the ones above it are still at their old values, which
-is exactly the pattern of the rows of `D - E`. -/
+/-- After a multiplicative sweep over a strictly increasing list $l$ of labels, the accumulated
+correction $\delta$ is supported on the blocks in $l$ and satisfies
+$((D - E) \delta)_k = (b - Ax)_k$ in every row $k$ of these blocks. -/
 private theorem multiplicativeStep_invariant (h : IsUnit (blockDiagPart π A))
     (b : EuclideanSpace 𝕜 n) (l : List ι) (hl : l.Pairwise (· < ·)) (x : EuclideanSpace 𝕜 n) :
     (∀ j, π j ∉ l → (multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π)
@@ -378,11 +428,19 @@ private theorem multiplicativeStep_invariant (h : IsUnit (blockDiagPart π A))
           PiLp.sub_apply, PiLp.sub_apply]
         ring
 
-/-- **[saad2003iterative], §5.4, Algorithm 5.6**: one **block Gauss–Seidel** sweep is one sweep of
-the *multiplicative* projection process over the blocks, taken in increasing order of the block
-label.  Unlike the additive process each correction is computed from the iterate the previous one
-produced, and the accumulated correction therefore solves the block-lower system
-`(D - E) δ = b - A x`, which is the block Gauss–Seidel step. -/
+/-- Let the set of labels be finite, let $A$ be a square matrix over $\mathbb{R}$ or $\mathbb{C}$
+whose block diagonal part $D$ is invertible, and let $b$ and $x$ be vectors. Then one sweep of
+the multiplicative projection process over the pairs $(V_i, V_i)$, taken in increasing order of
+the label, maps $x$ to
+$$x + (D - E)^{-1} (b - Ax),$$
+which is one block Gauss–Seidel step. This is §5.4 and Algorithm 5.6 of [saad2003iterative].
+
+Unlike the additive process, each correction is computed from the iterate that the previous
+correction produced. When block $i$ is processed, the blocks below it are already updated and
+the blocks above it still have their old values, which is the pattern of the rows of $D - E$. So
+the accumulated correction solves $(D - E) \delta = b - Ax$. The sweep is
+`Projection.multiplicativeStep` over the list `Finset.sort Finset.univ` of all labels, and
+$D - E$ is the matrix `(Matrix.blockGaussSeidelSplitting π A h).m`. -/
 theorem blockGaussSeidelSplitting_step_eq_multiplicativeStep [Fintype ι]
     (h : IsUnit (blockDiagPart π A)) (b x : EuclideanSpace 𝕜 n) :
     multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)

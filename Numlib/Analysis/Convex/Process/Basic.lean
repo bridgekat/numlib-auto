@@ -8,67 +8,104 @@ import Numlib.Analysis.Convex.Recession.Closedness
 /-!
 # Convex processes
 
-A **convex process** from `U` to `X` is a multivalued map `A : u ↦ A u` with
-`A (u₁ + u₂) ⊇ A u₁ + A u₂`, `A (λ u) = λ (A u)` for `λ > 0`, and `0 ∈ A 0`. These conditions say
-exactly that the graph `{(u, x) | x ∈ A u}` is a convex cone containing the origin, so that is what
-`ConvexProcess` *is*: a bundled `PointedCone ℝ (U × X)`, with `A.eval u` the `u`-slice of the cone
-and every elementary property a `Submodule` fact in disguise. Processes sit between linear
-transformations and convex bifunctions — `ofLinearMap` embeds the former, `indicatorBifun` embeds a
-process into the latter — and carry the adjoint, sum, product and inverse of that algebra.
+Let $U$ and $X$ be real vector spaces. A **convex process** from $U$ to $X$ is a multivalued map
+$A : u \mapsto Au \subseteq X$ with $A(u_1 + u_2) \supseteq Au_1 + Au_2$,
+$A(\lambda u) = \lambda (Au)$ for $\lambda > 0$, and $0 \in A0$. These conditions say exactly that
+the graph $\{(u, x) \mid x \in Au\}$ is a convex cone that contains the origin. Convex processes lie
+between linear transformations and convex bifunctions: a linear transformation is a convex process,
+and a convex process $A$ gives the convex bifunction $(Fu)(x) = \delta(x \mid Au)$. The sum
+$A_1 + A_2$, the multiple $\lambda A$, the product $BA$ and the inverse $A^{-1}$ are convex
+processes again. The presentation follows [rockafellar1970convex], §39.
 
-The adjoint `A*` is the polar of the graph with a sign flip on one factor: `(y, v) ∈ graph A*` iff
-`(-v, y) ∈ (graph A)°` (`mem_graph_adjointProcess_iff_mem_polarCone`), the sign convention
-`convexAdjointBifun` uses, so everything topological about `A*` comes from the theory of polar
-cones.
-
-Rockafellar carries "supremum oriented" and "infimum oriented" as extra data on a convex set and
-defines the adjoint of an infimum-oriented process by reversing the inequality. Here the two are two
-definitions, `adjointProcess` and `coadjointProcess`, and `A**` uses one of each: with
-`adjointProcess` twice the sign flips *add* instead of cancelling, giving
-`{p | ∀ w ∈ K°, 0 ≤ ⟨p, w⟩}` in place of the bipolar `K°°`. Reflection through the origin
-(`reflect`) exchanges the two adjoints and commutes with sums and products, so every
-infimum-oriented statement below — they carry a `co` in their names — is the supremum-oriented one
-read back through it. The inner products are the exception: reflection flips the *dual* variable
-only, and `coBracket_eq_neg_bracket` records the sign.
+Let $U$ be paired with a space $V$ and $X$ with a space $Y$, and write $u^* \in V$ and $x^* \in Y$
+for the dual variables. The **adjoint** of $A$ is the convex process $A^*$ from $Y$ to $V$ with
+$$A^* x^* = \{u^* \mid \langle x, x^* \rangle \le \langle u, u^* \rangle \text{ for all } (u, x) \in
+  \operatorname{graph} A\}.$$
+Thus $(x^*, u^*) \in \operatorname{graph} A^*$ if and only if $(-u^*, x^*)$ lies in the polar cone
+of $\operatorname{graph} A$, and every topological fact about $A^*$ comes from the theory of polar
+cones. The module proves that $A^*$ is closed and that $A^{**} = \operatorname{cl} A$, gives the
+inner products $\langle Au, x^* \rangle = \sup \{\langle x, x^* \rangle \mid x \in Au\}$ and
+$\langle u, A^* x^* \rangle = \inf \{\langle u, u^* \rangle \mid u^* \in A^* x^*\}$, and computes
+the adjoints of sums, multiples and products and the conjugate of the image of a convex function.
 
 ## Main definitions
 
-* `ConvexProcess U X` — a convex process, carried by its graph. `eval`, `dom`, `range`, `image`,
-  `inv` are `A u`, `dom A`, `range A`, `A C`, `A⁻¹`; `comp` with the `Add` and `SMul` instances are
-  `B A`, `A₁ + A₂` and `λ A`. `ofLinearMap` embeds a linear transformation, and `indicatorBifun` is
-  the bifunction `(F u)(x) = δ(x | A u)`.
-* `ConvexProcess.adjointProcess`, `coadjointProcess`, `reflect` — the two adjoints and the
-  reflection exchanging them; `coBracket` is the inner product `⟨Au, x*⟩ = inf {⟨x, x*⟩ | x ∈ A u}`
-  of an infimum-oriented process.
+* `ConvexAnalysis.ConvexProcess`: a convex process from $U$ to $X$, given by its graph, a pointed
+  convex cone in $U \times X$.
+* `ConvexAnalysis.ConvexProcess.eval`, `ConvexAnalysis.ConvexProcess.dom`,
+  `ConvexAnalysis.ConvexProcess.range`, `ConvexAnalysis.ConvexProcess.image`,
+  `ConvexAnalysis.ConvexProcess.inv`: the value $Au$, the domain $\operatorname{dom} A$, the range
+  of $A$, the image $AC$ of a set, and the inverse $A^{-1}$.
+* `ConvexAnalysis.ConvexProcess.comp`: the product $(BA)u = B(Au)$; the instances `Add` and `SMul`
+  give $A_1 + A_2$ and $\lambda A$.
+* `ConvexAnalysis.ConvexProcess.ofLinearMap`: a linear transformation as a convex process.
+* `ConvexAnalysis.ConvexProcess.indicatorBifun`: the convex bifunction
+  $(Fu)(x) = \delta(x \mid Au)$.
+* `ConvexAnalysis.ConvexProcess.adjointProcess`, `ConvexAnalysis.ConvexProcess.coadjointProcess`:
+  the adjoint of a supremum-oriented and of an infimum-oriented process.
+* `ConvexAnalysis.ConvexProcess.reflect`: the reflection of the graph through the origin, which
+  exchanges the two adjoints.
+* `ConvexAnalysis.ConvexProcess.coBracket`: the inner product $\langle Au, x^* \rangle = \inf
+  \{\langle x, x^* \rangle \mid x \in Au\}$ of an infimum-oriented process.
 
 ## Main results
 
-* `exists_linearMap_of_isBounded` — a convex process with full domain and bounded `A 0` is a
-  linear transformation ([rockafellar1970convex] Theorem 39.1).
-* `isClosed_graph_adjointProcess`, `coadjointProcess_adjointProcess_eq_self_iff` — `A*` is always
-  closed, `A** = cl A`, and `A** = A` exactly for closed `A`.
-* `bracket_indicatorBifun` and the results beside it — `⟨Au, x*⟩` is the support function of `A u`,
-  hence closed convex in `x*` and concave in `u`, and `⟨u, A* x*⟩` is its convex closure in `u`
-  ([rockafellar1970convex] Theorem 39.3).
-* `adjointProcess_add`, `adjointProcess_comp`, `adjointProcess_smul` — `(A₁ + A₂)* = A₁* + A₂*`,
-  `(BA)* = A* B*` and `(λ A)* = λ (A*)` for `λ > 0`; `isClosed_graph_add`,
-  `graph_adjointProcess_add_eq_closure` and the `comp` analogues are the closed halves.
-* `conj_imageBifun_indicatorBifun` — `(Af)* = A*⁻¹ f*`, the infimum attained
-  ([rockafellar1970convex] Theorem 39.7).
-* `isClosed_image` — `A C` is closed for closed `A`, nonempty closed convex `C`, and no non-zero
-  vector of `A⁻¹ 0` receding `C`.
-* `exists_pairing_sandwich` — Fenchel duality at a positively homogeneous pair: a concave `p` below
-  a convex `q`, both straddling `0` at the origin, admit a linear `⟨·, y⟩` between them.
+* `ConvexAnalysis.ConvexProcess.exists_linearMap_of_isBounded`: a convex process with domain $U$ and
+  bounded $A0$ is a linear transformation. This is Theorem 39.1 of [rockafellar1970convex].
+* `ConvexAnalysis.ConvexProcess.isClosed_graph_adjointProcess`,
+  `ConvexAnalysis.ConvexProcess.coadjointProcess_adjointProcess_eq_self_iff`: $A^*$ is always
+  closed, $A^{**} = \operatorname{cl} A$, and $A^{**} = A$ exactly when $A$ is closed.
+* `ConvexAnalysis.ConvexProcess.bracket_indicatorBifun` and the results after it:
+  $\langle Au, x^* \rangle$ is the support function of $Au$, hence closed, convex and positively
+  homogeneous in $x^*$, concave and positively homogeneous in $u$, and $\langle u, A^* x^* \rangle$
+  is its concave closure in $u$. This is Theorem 39.3 of [rockafellar1970convex].
+* `ConvexAnalysis.ConvexProcess.adjointProcess_add`,
+  `ConvexAnalysis.ConvexProcess.adjointProcess_comp`,
+  `ConvexAnalysis.ConvexProcess.adjointProcess_smul`: $(A_1 + A_2)^* = A_1^* + A_2^*$,
+  $(BA)^* = A^* B^*$, and $(\lambda A)^* = \lambda A^*$ for $\lambda > 0$.
+* `ConvexAnalysis.ConvexProcess.isClosed_graph_add`,
+  `ConvexAnalysis.ConvexProcess.graph_adjointProcess_add_eq_closure`,
+  `ConvexAnalysis.ConvexProcess.isClosed_graph_comp`,
+  `ConvexAnalysis.ConvexProcess.graph_adjointProcess_comp_eq_closure`: for closed processes,
+  $A_1 + A_2$ and $BA$ are closed, and $(A_1 + A_2)^*$ and $(BA)^*$ are the closures of
+  $A_1^* + A_2^*$ and $A^* B^*$.
+* `ConvexAnalysis.ConvexProcess.convexConj_imageBifun_indicatorBifun`: $(Af)^* = (A^*)^{-1} f^*$,
+  and the infimum that defines the right side is attained. This is Theorem 39.7 of
+  [rockafellar1970convex].
+* `ConvexAnalysis.ConvexProcess.isClosed_image`: $AC$ is closed if $A$ is closed, $C$ is nonempty,
+  closed and convex, and no nonzero vector of $A^{-1} 0$ is a direction of recession of $C$.
+* `ConvexAnalysis.exists_pairing_sandwich`: if $p \le q$, $q$ and $-p$ add exactly, and
+  $p(0) \ge 0 \ge q(0)$, then some linear function $\langle \cdot, y \rangle$ lies between $p$ and
+  $q$.
+
+## Conventions
+
+* The pairings are bilinear maps `Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ` and `Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ`. The Lean
+  variables `y` and `v` stand for the dual vectors $x^* \in Y$ and $u^* \in V$.
+* Rockafellar treats "supremum oriented" and "infimum oriented" as extra data on a convex process,
+  and defines the adjoint of an infimum-oriented process by reversing the inequality. Here the two
+  adjoints are two definitions, `ConvexAnalysis.ConvexProcess.adjointProcess` and
+  `ConvexAnalysis.ConvexProcess.coadjointProcess`, and $A^{**}$ uses one of each. The results about
+  infimum-oriented processes have `co` in their names.
 
 ## Implementation notes
 
-The adjoints of a sum and of a product take an `IsExactSum` hypothesis, one instance per dual
-vector, where Rockafellar assumes `ri (dom A₁) ∩ ri (dom A₂) ≠ ∅`. `IsExactSum` also requires both
-summands proper, so the hypothesis carried here is stronger than the book's.
-
-## References
-
-* [rockafellar1970convex] §39.
+* `ConvexAnalysis.ConvexProcess` is a bundled `PointedCone ℝ (U × X)`: the value `A.eval u` is the
+  slice of the cone at $u$, and every elementary property is a fact about submodules.
+* With `ConvexAnalysis.ConvexProcess.adjointProcess` used twice, the two sign changes add instead of
+  cancelling, and the result is $\{p \mid 0 \le \langle p, w \rangle \text{ for all } w \in
+  K^\circ\}$ in place of the bipolar $K^{\circ\circ}$ of the graph $K$. For this reason the second
+  adjoint is the infimum-oriented one.
+* Reflection through the origin (`ConvexAnalysis.ConvexProcess.reflect`) exchanges the two adjoints
+  and commutes with sums and products. So every infimum-oriented statement is the supremum-oriented
+  one read back through the reflection. The inner products are the exception: there the reflection
+  changes the dual variable only, and `ConvexAnalysis.ConvexProcess.coBracket_eq_neg_bracket`
+  records the sign.
+* The adjoints of a sum and of a product take an `ConvexAnalysis.IsExactSum` hypothesis, one
+  instance for each dual vector, where Rockafellar assumes $\operatorname{ri}(\operatorname{dom}
+  A_1) \cap \operatorname{ri}(\operatorname{dom} A_2) \neq \emptyset$. Because
+  `ConvexAnalysis.IsExactSum` also requires both summands to be proper, this hypothesis is stronger
+  than the one of the source.
 -/
 
 open Pointwise Set
@@ -81,48 +118,60 @@ section Defs
 
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
 
-/-- A **convex process** from `U` to `X`: a multivalued map `A : u ↦ Au` with
+/-- A **convex process** from $U$ to $X$ is a multivalued map $A : u \mapsto Au \subseteq X$ with
 
-* `A (u₁ + u₂) ⊇ A u₁ + A u₂`,
-* `A (λ u) = λ (A u)` for `λ > 0`,
-* `0 ∈ A 0`,
+* $A(u_1 + u_2) \supseteq Au_1 + Au_2$,
+* $A(\lambda u) = \lambda (Au)$ for $\lambda > 0$,
+* $0 \in A0$.
 
-which Rockafellar shows is the same thing as a convex cone in `U × X` containing the origin — that
-is, a `PointedCone ℝ (U × X)`, read as a relation. -/
+These conditions hold exactly when the graph of $A$ is a convex cone in $U \times X$ that
+contains the origin. A convex process is therefore given here by its graph, a
+`PointedCone ℝ (U × X)`, read as a relation. -/
 structure ConvexProcess (U X : Type*) [AddCommGroup U] [Module ℝ U] [AddCommGroup X]
     [Module ℝ X] where
-  /-- The graph of the process. -/
+  /-- The graph $\{(u, x) \mid x \in Au\}$ of the process, a convex cone that contains the origin.
+  -/
   graph : PointedCone ℝ (U × X)
 
 namespace ConvexProcess
 
 variable {A : ConvexProcess U X} {u u₁ u₂ : U} {x x₁ x₂ : X}
 
-/-- The value `A u` of the process at `u`: the `u`-slice of its graph. -/
+/-- The value $Au = \{x \mid (u, x) \in \operatorname{graph} A\}$ of the process at $u$: the slice
+of the graph at $u$. -/
 def eval (A : ConvexProcess U X) (u : U) : Set X := {x | (u, x) ∈ A.graph}
 
+/-- $x \in Au$ if and only if $(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_eval : x ∈ A.eval u ↔ (u, x) ∈ A.graph := Iff.rfl
 
-/-- The graph of a convex process, as a relation. -/
+/-- The graph of a convex process, as a relation from $U$ to $X$. -/
 def toSetRel (A : ConvexProcess U X) : SetRel U X := (A.graph : Set (U × X))
 
+/-- A pair lies in the relation of $A$ if and only if it lies in the graph of $A$. -/
 @[simp] theorem mem_toSetRel {p : U × X} : p ∈ A.toSetRel ↔ p ∈ A.graph := Iff.rfl
 
-/-- The **effective domain** of a convex process: the `u` at which `A u` is nonempty. -/
+/-- The **effective domain** $\operatorname{dom} A = \{u \mid Au \neq \emptyset\}$ of a convex
+process. -/
 def dom (A : ConvexProcess U X) : Set U := {u | (A.eval u).Nonempty}
 
+/-- $u \in \operatorname{dom} A$ if and only if $Au$ is nonempty. -/
 @[simp] theorem mem_dom : u ∈ A.dom ↔ (A.eval u).Nonempty := Iff.rfl
 
-/-- The **range** of a convex process. -/
+/-- The **range** of a convex process: the set of $x$ with $(u, x) \in \operatorname{graph} A$ for
+some $u$. -/
 def range (A : ConvexProcess U X) : Set X := {x | ∃ u, (u, x) ∈ A.graph}
 
+/-- $x$ lies in the range of $A$ if and only if $(u, x) \in \operatorname{graph} A$ for some $u$. -/
 @[simp] theorem mem_range : x ∈ A.range ↔ ∃ u, (u, x) ∈ A.graph := Iff.rfl
 
-/-- The **image** of a set under a convex process: `A C = ⋃ {A u | u ∈ C}`. -/
+/-- The **image** of a set $C \subseteq U$ under a convex process:
+$AC = \bigcup \{Au \mid u \in C\}$. -/
 def image (A : ConvexProcess U X) (C : Set U) : Set X := {x | ∃ u ∈ C, (u, x) ∈ A.graph}
 
+/-- $x \in AC$ if and only if $(u, x) \in \operatorname{graph} A$ for some $u \in C$. -/
 @[simp] theorem mem_image {C : Set U} : x ∈ A.image C ↔ ∃ u ∈ C, (u, x) ∈ A.graph := Iff.rfl
 
+/-- The image of the whole space $U$ under $A$ is the range of $A$. -/
 theorem image_univ (A : ConvexProcess U X) : A.image univ = A.range := by
   ext x; simp
 
@@ -133,8 +182,8 @@ theorem image_univ (A : ConvexProcess U X) : A.image univ = A.range := by
   simp only [ConvexProcess.mk.injEq]
   exact h
 
-/-- A linear transformation, read as a convex process. Its graph is the graph of `T`, a linear
-subspace and hence in particular a pointed convex cone. -/
+/-- A linear transformation $T : U \to X$, read as a convex process. Its graph $\{(u, Tu)\}$ is a
+linear subspace, and so in particular a convex cone that contains the origin. -/
 def ofLinearMap (T : U →ₗ[ℝ] X) : ConvexProcess U X where
   graph :=
     { carrier := {p : U × X | p.2 = T p.1}
@@ -149,18 +198,23 @@ def ofLinearMap (T : U →ₗ[ℝ] X) : ConvexProcess U X where
         change (c : ℝ) • x = T ((c : ℝ) • u)
         rw [map_smul, h] }
 
+/-- $(u, x)$ lies in the graph of the process of $T$ if and only if $x = Tu$. -/
 @[simp] theorem mem_graph_ofLinearMap {T : U →ₗ[ℝ] X} {p : U × X} :
     p ∈ (ofLinearMap T).graph ↔ p.2 = T p.1 := Iff.rfl
 
+/-- The process of a linear transformation $T$ has the values $Au = \{Tu\}$. -/
 @[simp] theorem eval_ofLinearMap (T : U →ₗ[ℝ] X) (u : U) : (ofLinearMap T).eval u = {T u} := by
   ext x
   simp [eval]
 
+/-- The process of a linear transformation has domain $U$. -/
 @[simp] theorem dom_ofLinearMap (T : U →ₗ[ℝ] X) : (ofLinearMap T).dom = univ := by
   ext u
   simp
 
-/-- The **inverse** of a convex process, again a convex process. -/
+/-- The **inverse** of a convex process $A$ from $U$ to $X$: the convex process $A^{-1}$ from $X$ to
+$U$ with $(x, u) \in \operatorname{graph} A^{-1}$ if and only if
+$(u, x) \in \operatorname{graph} A$. -/
 def inv (A : ConvexProcess U X) : ConvexProcess X U where
   graph :=
     { carrier := {p : X × U | (p.2, p.1) ∈ A.graph}
@@ -168,42 +222,52 @@ def inv (A : ConvexProcess U X) : ConvexProcess X U where
       add_mem' := fun h₁ h₂ => A.graph.add_mem h₁ h₂
       smul_mem' := fun c _ h => Submodule.smul_mem A.graph c h }
 
+/-- $(x, u) \in \operatorname{graph} A^{-1}$ if and only if $(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_graph_inv {p : X × U} : p ∈ A.inv.graph ↔ (p.2, p.1) ∈ A.graph := Iff.rfl
 
+/-- $u \in A^{-1} x$ if and only if $(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_eval_inv : u ∈ A.inv.eval x ↔ (u, x) ∈ A.graph := Iff.rfl
 
+/-- $(A^{-1})^{-1} = A$. -/
 theorem inv_inv (A : ConvexProcess U X) : A.inv.inv = A := by
   ext p
   rfl
 
+/-- The domain of $A^{-1}$ is the range of $A$. -/
 theorem dom_inv (A : ConvexProcess U X) : A.inv.dom = A.range := by
   ext x
   simp only [mem_dom, mem_range, Set.Nonempty, mem_eval_inv]
 
+/-- The range of $A^{-1}$ is the domain of $A$. -/
 theorem range_inv (A : ConvexProcess U X) : A.inv.range = A.dom := by
   ext u
   simp only [mem_range, mem_dom, Set.Nonempty, mem_eval, mem_graph_inv]
 
 /-! ### Elementary structure -/
 
+/-- The graph of a convex process is a convex set. -/
 theorem convex_graph (A : ConvexProcess U X) : Convex ℝ (A.graph : Set (U × X)) :=
   ((A.graph : ConvexCone ℝ (U × X))).convex
 
-/-- Membership of a nonnegative multiple, in the form the `PointedCone` coercion hides. -/
+/-- If $a \ge 0$ and $p \in \operatorname{graph} A$, then $a p \in \operatorname{graph} A$. This is
+the form of membership that the coercion of a `PointedCone` hides. -/
 theorem smul_mem_graph {a : ℝ} (ha : 0 ≤ a) {p : U × X} (hp : p ∈ A.graph) : a • p ∈ A.graph := by
   have h := Submodule.smul_mem A.graph (⟨a, ha⟩ : {c : ℝ // 0 ≤ c}) hp
   exact h
 
+/-- The graph of a convex process is closed under addition. -/
 theorem add_mem_graph {p q : U × X} (hp : p ∈ A.graph) (hq : q ∈ A.graph) : p + q ∈ A.graph :=
   A.graph.add_mem hp hq
 
+/-- The graph of a convex process contains $(0, 0)$. -/
 theorem zero_mem_graph (A : ConvexProcess U X) : ((0 : U), (0 : X)) ∈ A.graph :=
   A.graph.zero_mem
 
+/-- $0 \in A0$. -/
 @[simp] theorem zero_mem_eval_zero (A : ConvexProcess U X) : (0 : X) ∈ A.eval 0 :=
   A.zero_mem_graph
 
-/-- Each value `A u` of a convex process is a convex set. -/
+/-- Each value $Au$ of a convex process is a convex set. -/
 theorem convex_eval (A : ConvexProcess U X) (u : U) : Convex ℝ (A.eval u) := by
   intro x₁ h₁ x₂ h₂ a b ha hb hab
   have h : a • ((u, x₁) : U × X) + b • (u, x₂) ∈ A.graph :=
@@ -212,14 +276,14 @@ theorem convex_eval (A : ConvexProcess U X) (u : U) : Convex ℝ (A.eval u) := b
     rw [Prod.smul_mk, Prod.smul_mk, Prod.mk_add_mk, ← add_smul, hab, one_smul]
   rwa [hfst] at h
 
-/-- `A 0` is a cone: it is stable under multiplication by a nonnegative scalar. -/
+/-- $A0$ is a cone: if $a \ge 0$ and $x \in A0$, then $a x \in A0$. -/
 theorem smul_mem_eval_zero (A : ConvexProcess U X) {a : ℝ} (ha : 0 ≤ a) (hx : x ∈ A.eval 0) :
     a • x ∈ A.eval 0 := by
   have h := smul_mem_graph ha hx
   rwa [Prod.smul_mk, smul_zero] at h
 
-/-- `A u + A 0 ⊆ A u`, so `A 0` is a set of directions along which every value of the process is
-invariant. -/
+/-- $Au + A0 \subseteq Au$ for every $u$, so every value of the process is invariant along the
+directions in $A0$. -/
 theorem add_eval_zero_subset (A : ConvexProcess U X) (u : U) :
     A.eval u + A.eval 0 ⊆ A.eval u := by
   rintro _ ⟨x, hx, y, hy, rfl⟩
@@ -233,13 +297,14 @@ theorem convex_dom (A : ConvexProcess U X) : Convex ℝ A.dom := by
     by simpa [Prod.smul_mk, Prod.mk_add_mk] using
       add_mem_graph (smul_mem_graph ha h₁) (smul_mem_graph hb h₂)⟩
 
+/-- The range of a convex process is convex. -/
 theorem convex_range (A : ConvexProcess U X) : Convex ℝ A.range := by
   rintro x₁ ⟨u₁, h₁⟩ x₂ ⟨u₂, h₂⟩ a b ha hb hab
   exact ⟨a • u₁ + b • u₂,
     by simpa [Prod.smul_mk, Prod.mk_add_mk] using
       add_mem_graph (smul_mem_graph ha h₁) (smul_mem_graph hb h₂)⟩
 
-/-- The image of a convex set under a convex process is convex. -/
+/-- The image $AC$ of a convex set $C$ under a convex process is convex. -/
 theorem convex_image (A : ConvexProcess U X) {C : Set U} (hC : Convex ℝ C) :
     Convex ℝ (A.image C) := by
   rintro x₁ ⟨u₁, hu₁, h₁⟩ x₂ ⟨u₂, hu₂, h₂⟩ a b ha hb hab
@@ -247,8 +312,9 @@ theorem convex_image (A : ConvexProcess U X) {C : Set U} (hC : Convex ℝ C) :
   simpa [Prod.smul_mk, Prod.mk_add_mk] using
     add_mem_graph (smul_mem_graph ha h₁) (smul_mem_graph hb h₂)
 
-/-- The image `A C` is the projection of `graph A ∩ (C × X)` on the second factor. This is what
-turns closedness of `A C` into a statement about the image of a convex set under a linear map. -/
+/-- The image $AC$ is the projection of $\operatorname{graph} A \cap (C \times X)$ on the second
+factor. This turns closedness of $AC$ into a statement about the image of a convex set under a
+linear map. -/
 theorem image_eq_image_snd (A : ConvexProcess U X) (C : Set U) :
     A.image C = (LinearMap.snd ℝ U X) '' ((A.graph : Set (U × X)) ∩ C ×ˢ (univ : Set X)) := by
   ext x
@@ -268,10 +334,11 @@ section IndicatorInjective
 
 variable {W : Type*}
 
-/-- The indicator function determines its set.
+/-- The indicator function determines its set: if $\delta(\cdot \mid S) = \delta(\cdot \mid T)$,
+then $S = T$.
 
-Proof idea: `δ(· | S)` takes the value `0` exactly on `S` and `⊤` off it, and `0 ≠ ⊤` in
-`EReal`. -/
+The function $\delta(\cdot \mid S)$ takes the value $0$ exactly on $S$ and $+\infty$ off $S$,
+and $0 \neq +\infty$ in `EReal`. -/
 theorem indicatorFn_injective : Function.Injective (indicatorFn : Set W → W → EReal) := by
   intro S T h
   ext w
@@ -295,16 +362,18 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module 
 
 namespace ConvexProcess
 
-/-- The **indicator bifunction** of a supremum-oriented convex process: `(F u)(x) = δ(x | A u)`.
-This is the dictionary entry making every result about processes one about bifunctions. -/
+/-- The **indicator bifunction** of a supremum-oriented convex process $A$: the bifunction $F$ with
+$(Fu)(x) = \delta(x \mid Au)$. Through it every result about convex bifunctions applies to
+convex processes. -/
 noncomputable def indicatorBifun (A : ConvexProcess U X) : Bifun U X :=
   fun u => indicatorFn (A.eval u)
 
+/-- The indicator bifunction of $A$ at $(u, x)$ is $\delta(x \mid Au)$. -/
 theorem indicatorBifun_apply (A : ConvexProcess U X) (u : U) (x : X) :
     A.indicatorBifun u x = indicatorFn (A.eval u) x := rfl
 
-/-- The graph function of the indicator bifunction of `A` is the indicator function of the graph
-of `A`. -/
+/-- The graph function $(u, x) \mapsto (Fu)(x)$ of the indicator bifunction of $A$ is the indicator
+function of the graph of $A$. -/
 @[simp] theorem graphFn_indicatorBifun (A : ConvexProcess U X) :
     graphFn A.indicatorBifun = indicatorFn (A.graph : Set (U × X)) := by
   funext p
@@ -314,12 +383,17 @@ of `A`. -/
   · rw [indicatorFn_of_mem (show x ∈ A.eval u from h), indicatorFn_of_mem h]
   · rw [indicatorFn_of_notMem (show x ∉ A.eval u from h), indicatorFn_of_notMem h]
 
+/-- The indicator bifunction of a convex process never takes the value $-\infty$. -/
 theorem indicatorBifun_ne_bot (A : ConvexProcess U X) (u : U) (x : X) :
     A.indicatorBifun u x ≠ ⊥ := indicatorFn_ne_bot _ _
 
-/-- **A convex process is determined by its indicator bifunction.** A process *is* its graph, and
-the indicator function of a set determines the set, so this is `indicatorFn_injective` read through
-`graphFn_indicatorBifun`. It is what makes the correspondence with bifunctions one-to-one. -/
+/-- **A convex process is determined by its indicator bifunction**: if two convex processes have the
+same indicator bifunction, they are equal.
+
+A process is given by its graph, and the indicator function of a set determines the set. So this
+is `ConvexAnalysis.indicatorFn_injective` read through
+`ConvexAnalysis.ConvexProcess.graphFn_indicatorBifun`. It makes the correspondence between
+processes and bifunctions one-to-one. -/
 theorem indicatorBifun_injective :
     Function.Injective (indicatorBifun : ConvexProcess U X → Bifun U X) := by
   intro A₁ A₂ h
@@ -331,7 +405,7 @@ theorem convexBifun_indicatorBifun (A : ConvexProcess U X) : ConvexBifun A.indic
   rw [convexBifun_iff, graphFn_indicatorBifun]
   exact convexFn_indicatorFn.2 A.convex_graph
 
-/-- The effective domain of the indicator bifunction is the effective domain of the process. -/
+/-- The effective domain of the indicator bifunction of $A$ is the effective domain of $A$. -/
 @[simp] theorem convexDomBifun_indicatorBifun (A : ConvexProcess U X) :
     convexDomBifun A.indicatorBifun = A.dom := by
   ext u
@@ -344,16 +418,19 @@ theorem convexBifun_indicatorBifun (A : ConvexProcess U X) : ConvexBifun A.indic
   · rintro ⟨x, hx⟩
     exact ⟨x, by rw [indicatorFn_of_mem hx]; simp⟩
 
-/-- Positive multiples do not move the graph of a convex process: it is a cone. -/
+/-- For $a > 0$, the multiple $a \cdot \operatorname{graph} A$ is $\operatorname{graph} A$, because
+the graph is a cone. -/
 theorem smul_graph (A : ConvexProcess U X) {a : ℝ} (ha : 0 < a) :
     a • (A.graph : Set (U × X)) = (A.graph : Set (U × X)) :=
   smul_coe_pointedCone A.graph a ha
 
-/-- **`A (λ u) = λ (A u)` for `λ > 0`**, the positive-homogeneity axiom of a convex process.
+/-- For $a > 0$ and $u \in U$,
+$$A(a u) = a (Au).$$
+This is the axiom of positive homogeneity of a convex process.
 
-Both inclusions are one application of `smul_mem_graph`, to `a` and to `a⁻¹`: a cone is stable
-under *both* directions of a positive scaling, which is what turns the inclusion Rockafellar's
-axiom would give into an equality. -/
+Both inclusions are one application of `ConvexAnalysis.ConvexProcess.smul_mem_graph`, to $a$ and
+to $a^{-1}$. A cone is stable under positive scaling in both directions, and this turns the
+inclusion that one scaling gives into an equality. -/
 theorem eval_smul_arg (A : ConvexProcess U X) {a : ℝ} (ha : 0 < a) (u : U) :
     A.eval (a • u) = a • A.eval u := by
   ext x
@@ -383,7 +460,7 @@ variable {U X Z : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- The **sum** of two convex processes, `(A₁ + A₂) u = A₁ u + A₂ u`. -/
+/-- The **sum** of two convex processes: $(A_1 + A_2) u = A_1 u + A_2 u$. -/
 instance : Add (ConvexProcess U X) where
   add A₁ A₂ :=
     { graph :=
@@ -398,9 +475,12 @@ instance : Add (ConvexProcess U X) where
             exact ⟨(c : ℝ) • x, smul_mem_graph c.2 hx, (c : ℝ) • y, smul_mem_graph c.2 hy,
               smul_add (c : ℝ) x y⟩ } }
 
+/-- $(u, z) \in \operatorname{graph}(A_1 + A_2)$ if and only if $z = x + y$ for some $x \in A_1 u$
+and $y \in A_2 u$. -/
 @[simp] theorem mem_graph_add {A₁ A₂ : ConvexProcess U X} {p : U × X} :
     p ∈ (A₁ + A₂).graph ↔ ∃ x ∈ A₁.eval p.1, ∃ y ∈ A₂.eval p.1, p.2 = x + y := Iff.rfl
 
+/-- $(A_1 + A_2) u = A_1 u + A_2 u$. -/
 @[simp] theorem eval_add (A₁ A₂ : ConvexProcess U X) (u : U) :
     (A₁ + A₂).eval u = A₁.eval u + A₂.eval u := by
   ext x
@@ -410,7 +490,8 @@ instance : Add (ConvexProcess U X) where
   · rintro ⟨a, ha, b, hb, rfl⟩
     exact ⟨a, ha, b, hb, rfl⟩
 
-/-- **The effective domain of a sum is the intersection**: `dom (A₁ + A₂) = dom A₁ ∩ dom A₂`. -/
+/-- **The effective domain of a sum is the intersection**: $\operatorname{dom}(A_1 + A_2) =
+\operatorname{dom} A_1 \cap \operatorname{dom} A_2$. -/
 @[simp] theorem dom_add (A₁ A₂ : ConvexProcess U X) : (A₁ + A₂).dom = A₁.dom ∩ A₂.dom := by
   ext u
   constructor
@@ -419,12 +500,14 @@ instance : Add (ConvexProcess U X) where
   · rintro ⟨⟨x, hx⟩, ⟨y, hy⟩⟩
     exact ⟨x + y, x, hx, y, hy, rfl⟩
 
-/-- The **scalar multiple** `λ A`, defined by `(λ A) u = λ (A u)`.
+/-- The **scalar multiple** $\lambda A$ of a convex process, defined by
+$(\lambda A) u = \lambda (Au)$.
 
-The graph `{(u, λ x) | (u, x) ∈ graph A}` is a pointed convex cone for *every* real `λ`, so the
-definition needs no positivity; `λ > 0` is needed only from `adjointProcess_smul` on, where the
-inverse scaling is used. The action is a `MulAction` — `1 • A = A` and `(ab) • A = a • (b • A)`
-both hold — but it is not additive: `2 • A` and `A + A` differ. -/
+The graph $\{(u, \lambda x) \mid (u, x) \in \operatorname{graph} A\}$ is a convex cone that
+contains the origin for every real $\lambda$, so the definition needs no positivity. The
+condition $\lambda > 0$ is needed only from `ConvexAnalysis.ConvexProcess.adjointProcess_smul`
+on, where the inverse scaling is used. The action satisfies $1 A = A$ and $(ab) A = a (b A)$,
+but it is not additive: $2 A$ and $A + A$ differ. -/
 instance : SMul ℝ (ConvexProcess U X) where
   smul a A :=
     { graph :=
@@ -444,10 +527,13 @@ instance : SMul ℝ (ConvexProcess U X) where
             change (c : ℝ) • z = a • (c : ℝ) • x
             rw [hz', smul_comm] } }
 
+/-- $(u, z) \in \operatorname{graph}(\lambda A)$ if and only if $z = \lambda x$ for some $x$ with
+$(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_graph_smul {a : ℝ} {A : ConvexProcess U X} {p : U × X} :
     p ∈ (a • A).graph ↔ ∃ x, (p.1, x) ∈ A.graph ∧ p.2 = a • x := Iff.rfl
 
-/-- **`(λ A) u = λ (A u)`**, the defining equation of the scalar multiple. -/
+/-- For every real $\lambda$, $(\lambda A) u = \lambda (Au)$: the defining equation of the scalar
+multiple. -/
 @[simp] theorem eval_smul (a : ℝ) (A : ConvexProcess U X) (u : U) :
     (a • A).eval u = a • A.eval u := by
   ext x
@@ -459,7 +545,8 @@ instance : SMul ℝ (ConvexProcess U X) where
     have hx' : a • z = x := hx
     exact ⟨z, hz, hx'.symm⟩
 
-/-- The **product** of convex processes, `(B A) u = B (A u)`. -/
+/-- The **product** of convex processes $A$ from $U$ to $X$ and $B$ from $X$ to $Z$: the convex
+process $BA$ from $U$ to $Z$ with $(BA) u = B(Au)$. -/
 def comp (B : ConvexProcess X Z) (A : ConvexProcess U X) : ConvexProcess U Z where
   graph :=
     { carrier := {p : U × Z | ∃ x, (p.1, x) ∈ A.graph ∧ (x, p.2) ∈ B.graph}
@@ -471,21 +558,25 @@ def comp (B : ConvexProcess X Z) (A : ConvexProcess U X) : ConvexProcess U Z whe
         rintro c ⟨u, z⟩ ⟨x, h, k⟩
         exact ⟨(c : ℝ) • x, smul_mem_graph c.2 h, smul_mem_graph c.2 k⟩ }
 
+/-- $(u, z) \in \operatorname{graph}(BA)$ if and only if there is an $x$ with
+$(u, x) \in \operatorname{graph} A$ and $(x, z) \in \operatorname{graph} B$. -/
 @[simp] theorem mem_graph_comp {B : ConvexProcess X Z} {A : ConvexProcess U X} {p : U × Z} :
     p ∈ (B.comp A).graph ↔ ∃ x, (p.1, x) ∈ A.graph ∧ (x, p.2) ∈ B.graph := Iff.rfl
 
+/-- $(BA) u$ is the image $B(Au)$ of the set $Au$ under $B$. -/
 @[simp] theorem eval_comp (B : ConvexProcess X Z) (A : ConvexProcess U X) (u : U) :
     (B.comp A).eval u = B.image (A.eval u) := by
   ext z
   exact Iff.rfl
 
-/-- **The inverse of a product is the product of the inverses**: `(B A)⁻¹ = A⁻¹ B⁻¹`. -/
+/-- **The inverse of a product is the product of the inverses**: $(BA)^{-1} = A^{-1} B^{-1}$. -/
 theorem inv_comp (B : ConvexProcess X Z) (A : ConvexProcess U X) :
     (B.comp A).inv = A.inv.comp B.inv := by
   ext p
   constructor <;> rintro ⟨x, h, k⟩ <;> exact ⟨x, k, h⟩
 
-/-- The indicator bifunction of `A₁ + A₂` is the infimal convolute `F₁ □ F₂`. -/
+/-- The indicator bifunction of $A_1 + A_2$ is the infimal convolution $F_1 \mathbin{\square} F_2$
+of the indicator bifunctions $F_1$ and $F_2$ of $A_1$ and $A_2$. -/
 theorem indicatorBifun_add (A₁ A₂ : ConvexProcess U X) :
     (A₁ + A₂).indicatorBifun = infConvBifun A₁.indicatorBifun A₂.indicatorBifun := by
   funext u
@@ -493,7 +584,8 @@ theorem indicatorBifun_add (A₁ A₂ : ConvexProcess U X) :
     = infConv (indicatorFn (A₁.eval u)) (indicatorFn (A₂.eval u))
   rw [eval_add, infConv_indicatorFn]
 
-/-- The indicator bifunction of `B A` is the product `G F` of the indicator bifunctions. -/
+/-- The indicator bifunction of $BA$ is the product $GF$ of the indicator bifunctions $F$ of $A$ and
+$G$ of $B$. -/
 theorem indicatorBifun_comp (B : ConvexProcess X Z) (A : ConvexProcess U X) :
     (B.comp A).indicatorBifun = compBifun B.indicatorBifun A.indicatorBifun := by
   funext u z
@@ -538,9 +630,11 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- The **adjoint** of a supremum-oriented convex process:
-`A* x* = {u* | ⟨u, u*⟩ ≥ ⟨x, x*⟩ for every x ∈ A u and every u}`. It is a convex process from `Y`
-to `V`, and it is infimum oriented. -/
+/-- The **adjoint** of a supremum-oriented convex process $A$ from $U$ to $X$: the convex process
+$A^*$ from $Y$ to $V$ with
+$$A^* x^* = \{u^* \in V \mid \langle x, x^* \rangle \le \langle u, u^* \rangle \text{ for all }
+  (u, x) \in \operatorname{graph} A\}.$$
+The adjoint is infimum oriented. -/
 def adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     ConvexProcess Y V where
   graph :=
@@ -560,8 +654,15 @@ def adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y 
         rw [map_smul, map_smul, smul_eq_mul, smul_eq_mul]
         exact mul_le_mul_of_nonneg_left (h p hp) c.2 }
 
-/-- The **adjoint of an infimum-oriented convex process**: the same definition with the inequality
-reversed. Keeping the two apart is what makes `A** = cl A` come out right. -/
+/-- The **adjoint of an infimum-oriented convex process** $A$ from $U$ to $X$: the convex process
+from $Y$ to $V$ with value
+$$\{u^* \in V \mid \langle u, u^* \rangle \le \langle x, x^* \rangle \text{ for all } (u, x) \in
+  \operatorname{graph} A\}$$
+at $x^*$, which is the definition of `ConvexAnalysis.ConvexProcess.adjointProcess` with the
+inequality reversed.
+
+The two adjoints are kept apart so that $A^{**} = \operatorname{cl} A$ holds with the right
+signs. -/
 def coadjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     ConvexProcess Y V where
   graph :=
@@ -581,28 +682,37 @@ def coadjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] 
         rw [map_smul, map_smul, smul_eq_mul, smul_eq_mul]
         exact mul_le_mul_of_nonneg_left (h p hp) c.2 }
 
+/-- $(x^*, u^*) \in \operatorname{graph} A^*$ if and only if $\langle x, x^* \rangle \le \langle u,
+u^* \rangle$ for all $(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_graph_adjointProcess {q : Y × V} :
     q ∈ (adjointProcess Bu Bx A).graph ↔ ∀ p : U × X, p ∈ A.graph → Bx p.2 q.1 ≤ Bu p.1 q.2 :=
   Iff.rfl
 
+/-- $(x^*, u^*)$ lies in the graph of the infimum-oriented adjoint of $A$ if and only if $\langle u,
+u^* \rangle \le \langle x, x^* \rangle$ for all $(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_graph_coadjointProcess {q : Y × V} :
     q ∈ (coadjointProcess Bu Bx A).graph ↔ ∀ p : U × X, p ∈ A.graph → Bu p.1 q.2 ≤ Bx p.2 q.1 :=
   Iff.rfl
 
-/-- **The infimum-oriented adjoint is the supremum-oriented one for the negated pairings**:
-negating both pairings reverses the defining inequality. Every `co*` identity that is purely
-algebraic in the pairings is read off its plain twin through this. -/
+/-- **The infimum-oriented adjoint is the supremum-oriented adjoint for the negated pairings**:
+negating both pairings reverses the defining inequality. Every identity for the infimum-oriented
+adjoint that is purely algebraic in the pairings follows from its supremum-oriented counterpart
+through this. -/
 theorem coadjointProcess_eq_adjointProcess_neg :
     coadjointProcess Bu Bx A = adjointProcess (-Bu) (-Bx) A := by
   refine ConvexProcess.ext (SetLike.ext fun q => ?_)
   simp only [mem_graph_coadjointProcess, mem_graph_adjointProcess, LinearMap.neg_apply,
     neg_le_neg_iff]
 
+/-- $u^* \in A^* x^*$ if and only if $\langle x, x^* \rangle \le \langle u, u^* \rangle$ for all
+$(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem mem_eval_adjointProcess {y : Y} {v : V} :
     v ∈ (adjointProcess Bu Bx A).eval y ↔ ∀ p : U × X, p ∈ A.graph → Bx p.2 y ≤ Bu p.1 v :=
   Iff.rfl
 
-/-- The graph of `A*` is the polar of the graph of `A`, up to the sign flip on the first factor
+/-- $(x^*, u^*) \in \operatorname{graph} A^*$ if and only if $(-u^*, x^*)$ lies in the polar cone
+$\{(v, y) \mid \langle u, v \rangle + \langle x, y \rangle \le 0 \text{ for all } (u, x) \in
+\operatorname{graph} A\}$ of the graph of $A$. The sign change on the first factor is the one
 that the adjoint of a bifunction carries. -/
 theorem mem_graph_adjointProcess_iff_mem_polarCone {q : Y × V} :
     q ∈ (adjointProcess Bu Bx A).graph ↔
@@ -617,9 +727,11 @@ theorem mem_graph_adjointProcess_iff_mem_polarCone {q : Y × V} :
     have := h p hp
     linarith
 
-/-- **The adjoint of the indicator bifunction of `A` is the indicator bifunction of `A*`.** `A*`
-carries the opposite orientation, which is why the indicator appears negated: an infimum-oriented
-set is identified with `-δ(· | ·)`. -/
+/-- **The adjoint of the indicator bifunction of $A$ is the negative of the indicator bifunction of
+$A^*$**: if $F$ is the indicator bifunction of $A$, then
+$$(F^* x^*)(u^*) = -\delta(u^* \mid A^* x^*).$$
+The negation appears because $A^*$ has the opposite orientation: an infimum-oriented set is
+identified with the concave function $-\delta(\cdot \mid \cdot)$. -/
 theorem convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) (y : Y) (v : V) :
     convexAdjointBifun Bu Bx A.indicatorBifun y v =
@@ -637,8 +749,9 @@ theorem convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
       indicatorFn_of_notMem (show v ∉ (adjointProcess Bu Bx A).eval y from fun hc =>
         h (mem_graph_adjointProcess_iff_mem_polarCone.1 hc))]
 
-/-- The graph of `A**` is the bipolar of the graph of `A`. The two sign flips cancel, which is why
-the second adjoint must be the *infimum-oriented* one. -/
+/-- The graph of $A^{**}$, the infimum-oriented adjoint of $A^*$, is the bipolar
+$(\operatorname{graph} A)^{\circ\circ}$ of the graph of $A$. The two sign changes cancel, and
+for this reason the second adjoint must be the infimum-oriented one. -/
 theorem graph_coadjointProcess_adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     ((coadjointProcess Bx.flip Bu.flip (adjointProcess Bu Bx A)).graph : Set (U × X))
@@ -660,12 +773,14 @@ theorem graph_coadjointProcess_adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] 
     simp only [map_neg] at hb
     linarith
 
-/-- **The adjoint of a scalar multiple**: `(λ A)* = λ (A*)` for `λ > 0`.
+/-- **The adjoint of a scalar multiple**: for $\lambda > 0$,
+$$(\lambda A)^* = \lambda A^*.$$
 
-Rockafellar deduces this from the adjoint formula for `Fλ`. It is cheaper here as a direct
-computation on cones: `(y, v) ∈ graph (λA)*` says `λ⟨x, y⟩ ≤ ⟨u, v⟩` on `graph A`, which is
-`(y, λ⁻¹ v) ∈ graph A*` after dividing by `λ`, and that is exactly `v ∈ λ (A* y)`. Positivity of
-`λ` is used only to divide. -/
+Rockafellar deduces this from the adjoint formula for $F\lambda$. Here it is a direct
+computation on cones: $(x^*, u^*) \in \operatorname{graph}(\lambda A)^*$ says that $\lambda
+\langle x, x^* \rangle \le \langle u, u^* \rangle$ on $\operatorname{graph} A$. After division
+by $\lambda$ this is $(x^*, \lambda^{-1} u^*) \in \operatorname{graph} A^*$, which is
+$u^* \in \lambda (A^* x^*)$. The positivity of $\lambda$ is used only for the division. -/
 theorem adjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {a : ℝ}
     (ha : 0 < a) (A : ConvexProcess U X) :
     adjointProcess Bu Bx (a • A) = a • adjointProcess Bu Bx A := by
@@ -687,8 +802,9 @@ theorem adjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →�
     simp only [map_smul, LinearMap.smul_apply, smul_eq_mul]
     exact mul_le_mul_of_nonneg_left hle ha.le
 
-/-- **The adjoint of a scalar multiple, for an infimum-oriented process**: `(λ A)* = λ (A*)`, with
-the adjoint taken in the reversed sense: `adjointProcess_smul` at the negated pairings. -/
+/-- **The adjoint of a scalar multiple, for an infimum-oriented process**: for $\lambda > 0$,
+$(\lambda A)^* = \lambda A^*$, where both adjoints are the infimum-oriented ones. This is
+`ConvexAnalysis.ConvexProcess.adjointProcess_smul` for the negated pairings. -/
 theorem coadjointProcess_smul (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {a : ℝ}
     (ha : 0 < a) (A : ConvexProcess U X) :
     coadjointProcess Bu Bx (a • A) = a • coadjointProcess Bu Bx A := by
@@ -699,7 +815,7 @@ end ConvexProcess
 
 end Adjoint
 
-/-! ### `A*` is closed, and `A** = cl A` -/
+/-! ### $A^*$ is closed, and $A^{**} = \operatorname{cl} A$ -/
 
 section AdjointTopology
 
@@ -712,8 +828,10 @@ section Closed
 
 variable [TopologicalSpace V] [TopologicalSpace Y]
 
-/-- **The adjoint of a convex process is a *closed* convex process**, being an intersection of
-homogeneous closed half-spaces. -/
+/-- **The adjoint of a convex process is a closed convex process.** Let $V$ and $Y$ be topological
+spaces such that $\langle u, \cdot \rangle$ is continuous on $V$ for each $u \in U$ and
+$\langle x, \cdot \rangle$ is continuous on $Y$ for each $x \in X$. Then the graph of $A^*$ is
+closed in $Y \times V$, because it is an intersection of closed half-spaces through the origin. -/
 theorem isClosed_graph_adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsContinuousPairing Bu.flip] [IsContinuousPairing Bx.flip] (A : ConvexProcess U X) :
     IsClosed ((adjointProcess Bu Bx A).graph : Set (Y × V)) := by
@@ -734,8 +852,13 @@ variable [TopologicalSpace U] [TopologicalSpace X] [IsTopologicalAddGroup U]
   [IsTopologicalAddGroup X] [ContinuousSMul ℝ U] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ U]
   [LocallyConvexSpace ℝ X]
 
-/-- **`A** = cl A`.** Read through `graph_coadjointProcess_adjointProcess`, this is exactly the
-bipolar theorem `K°° = cl K` for the graph. -/
+/-- $A^{**} = \operatorname{cl} A$. Let $U$ and $X$ be locally convex topological vector spaces
+whose continuous linear functionals are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$ and
+$\langle \cdot, x^* \rangle$ for $x^* \in Y$. Then the graph of the infimum-oriented adjoint of
+$A^*$ is the closure of the graph of $A$.
+
+Through `ConvexAnalysis.ConvexProcess.graph_coadjointProcess_adjointProcess`, this is the
+bipolar theorem $K^{\circ\circ} = \operatorname{cl} K$ for the graph $K$ of $A$. -/
 theorem graph_coadjointProcess_adjointProcess_eq_closure (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     (A : ConvexProcess U X) :
@@ -745,7 +868,11 @@ theorem graph_coadjointProcess_adjointProcess_eq_closure (Bu : U →ₗ[ℝ] V �
   exact polarCone_polarCone A.convex_graph (isCone_iff_smul_eq.2 fun a ha => A.smul_graph ha)
     ⟨0, A.zero_mem_graph⟩
 
-/-- **A convex process is closed exactly when it is its own second adjoint.** -/
+/-- **A convex process is closed exactly when it is its own second adjoint.** Let $U$ and $X$ be
+locally convex topological vector spaces whose continuous linear functionals are exactly
+$\langle \cdot, u^* \rangle$ for $u^* \in V$ and $\langle \cdot, x^* \rangle$ for $x^* \in Y$.
+Then $A^{**} = A$, with the second adjoint infimum oriented, if and only if the graph of $A$ is
+closed. -/
 theorem coadjointProcess_adjointProcess_eq_self_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     (A : ConvexProcess U X) :
@@ -765,11 +892,14 @@ end ConvexProcess
 
 end AdjointTopology
 
-/-! ### The two inner products
+/-!
+### The two inner products
 
-`⟨Au, x*⟩` is the bracket of the indicator bifunction of `A`, and `⟨u, A* x*⟩` is the concave
-bracket of its adjoint. Both are ordinary extremum problems over the values of a process: a
-maximisation of `⟨·, x*⟩` over `A u`, and a minimisation of `⟨u, ·⟩` over `A* x*`. -/
+The inner product $\langle Au, x^* \rangle$ is the bracket of the indicator bifunction of $A$, and
+$\langle u, A^* x^* \rangle$ is the concave bracket of its adjoint. Both are extremum problems over
+the values of a process: a maximization of $\langle \cdot, x^* \rangle$ over $Au$, and a
+minimization of $\langle u, \cdot \rangle$ over $A^* x^*$.
+-/
 
 section Bracket
 
@@ -778,34 +908,42 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- **The inner product `⟨Au, x*⟩` is the support function of the convex set `A u`.** Every clause
-about the `x*` variable below is then a property of support functions; the identity itself is
-`supportFn_eq_convexConj_indicatorFn` read backwards, since `⟨Fu, ·⟩` is by definition the conjugate
-of `F u = δ(· | A u)`. -/
+/-- **The inner product $\langle Au, x^* \rangle$ is the support function of the convex set $Au$**:
+for the indicator bifunction $F$ of $A$, the bracket $\langle Fu, \cdot \rangle = (Fu)^*$ is
+$\delta^*(\cdot \mid Au)$.
+
+Every property of $\langle Au, x^* \rangle$ in the variable $x^*$ is then a property of support
+functions. The identity is `ConvexAnalysis.supportFn_eq_convexConj_indicatorFn` read backwards,
+because $\langle Fu, \cdot \rangle$ is by definition the conjugate of
+$Fu = \delta(\cdot \mid Au)$. -/
 theorem bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     bracket Bx A.indicatorBifun u = supportFn Bx (A.eval u) :=
   (supportFn_eq_convexConj_indicatorFn Bx (A.eval u)).symm
 
-/-- The first of Rockafellar's two extremum problems: `⟨Au, x*⟩ = sup {⟨x, x*⟩ | x ∈ A u}`. -/
+/-- The first of Rockafellar's two extremum problems: $\langle Au, x^* \rangle = \sup \{\langle x,
+x^* \rangle \mid x \in Au\}$. -/
 theorem bracket_indicatorBifun_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U)
     (y : Y) : bracket Bx A.indicatorBifun u y = ⨆ x ∈ A.eval u, ((Bx x y : ℝ) : EReal) := by
   rw [bracket_indicatorBifun, supportFn_apply]
 
-/-- **`⟨Au, ·⟩` is positively homogeneous**, being a support function. -/
+/-- The function $x^* \mapsto \langle Au, x^* \rangle$ is positively homogeneous, because it is a
+support function. -/
 theorem posHomogeneous_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X)
     (u : U) : PosHomogeneous (bracket Bx A.indicatorBifun u) := by
   rw [bracket_indicatorBifun]
   exact posHomogeneous_supportFn Bx _
 
-/-- **`⟨Au, ·⟩` is convex**, being a conjugate. -/
+/-- The function $x^* \mapsto \langle Au, x^* \rangle$ is convex, because it is a conjugate. -/
 theorem convexFn_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     ConvexFn (bracket Bx A.indicatorBifun u) :=
   convexFn_bracket Bx A.indicatorBifun u
 
-/-- **`⟨A ·, x*⟩` is positively homogeneous.** This is the one clause that uses the definition of a
-convex process rather than the general theory of brackets: `A (λ u) = λ (A u)` (`eval_smul_arg`),
-and the support function of a positive multiple of a set is the corresponding multiple of the
-support function. -/
+/-- The function $u \mapsto \langle Au, x^* \rangle$ is positively homogeneous.
+
+This is the one property that uses the definition of a convex process and not the general theory
+of brackets: $A(\lambda u) = \lambda (Au)$ (`ConvexAnalysis.ConvexProcess.eval_smul_arg`), and
+the support function of a positive multiple of a set is the same multiple of the support
+function. -/
 theorem posHomogeneous_bracket_indicatorBifun_arg (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) (y : Y) :
     PosHomogeneous fun u => bracket Bx A.indicatorBifun u y := by
@@ -813,14 +951,14 @@ theorem posHomogeneous_bracket_indicatorBifun_arg (Bx : X →ₗ[ℝ] Y →ₗ[�
   change bracket Bx A.indicatorBifun (a • u) y = (a : EReal) * bracket Bx A.indicatorBifun u y
   rw [bracket_indicatorBifun, bracket_indicatorBifun, eval_smul_arg A ha, supportFn_smul Bx ha]
 
-/-- **`⟨A ·, x*⟩` is concave**, the bracket of a convex bifunction being concave in its first
-variable. -/
+/-- The function $u \mapsto \langle Au, x^* \rangle$ is concave, because the bracket of a convex
+bifunction is concave in its first variable. -/
 theorem concaveFn_bracket_indicatorBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X)
     (y : Y) : ConcaveFn fun u => bracket Bx A.indicatorBifun u y :=
   concaveFn_bracket A.convexBifun_indicatorBifun Bx y
 
-/-- **The inner product `⟨Au, x*⟩` vanishes at the origin**, because `A 0` contains `0` and the
-support function of a nonempty set is `0` at `0`. -/
+/-- $\langle A0, 0 \rangle = 0$, because $A0$ contains $0$ and the support function of a nonempty
+set is $0$ at $0$. -/
 @[simp] theorem bracket_indicatorBifun_zero_zero (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) : bracket Bx A.indicatorBifun 0 (0 : Y) = 0 := by
   rw [bracket_indicatorBifun]
@@ -838,7 +976,9 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- **`⟨Au, ·⟩` is closed** as well as convex and positively homogeneous. -/
+/-- Let $Y$ be a topological additive group such that $\langle x, \cdot \rangle$ is continuous on
+$Y$ for each $x \in X$. Then the function $x^* \mapsto \langle Au, x^* \rangle$ is a closed
+convex function. -/
 theorem closedConvex_bracket_indicatorBifun (A : ConvexProcess U X) (u : U) :
     ClosedConvex (bracket Bx A.indicatorBifun u) :=
   closedConvex_bracket (F := A.indicatorBifun) u
@@ -854,12 +994,16 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- The second of Rockafellar's two extremum problems: `⟨u, A* x*⟩ = inf {⟨u, u*⟩ | u* ∈ A* x*}`.
+/-- The second of Rockafellar's two extremum problems: $\langle u, A^* x^* \rangle = \inf \{\langle
+u, u^* \rangle \mid u^* \in A^* x^*\}$, where $\langle u, A^* x^* \rangle$ is the concave
+bracket of the adjoint $F^*$ of the indicator bifunction $F$ of $A$.
 
-Together with `bracket_indicatorBifun_apply` this is a dual pair of linear programs; the two values
-differ only by a closure in `u` (`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`).
-The proof is the definition of the concave bracket plus `convexAdjointBifun_indicatorBifun`: the
-indicator of `A* x*` turns the unrestricted infimum into a restricted one. -/
+Together with `ConvexAnalysis.ConvexProcess.bracket_indicatorBifun_apply` this is a dual pair of
+linear programs. The two values differ only by a closure in $u$
+(`ConvexAnalysis.ConvexProcess.concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁`).
+The proof is the definition of the concave bracket together with
+`ConvexAnalysis.ConvexProcess.convexAdjointBifun_indicatorBifun`: the indicator of $A^* x^*$
+turns the unrestricted infimum into a restricted one. -/
 theorem concaveBracket_convexAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
     concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y
@@ -885,11 +1029,16 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **`⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`**: the two inner products differ by a closure in `u`.
+/-- $\langle u, A^* x^* \rangle = \operatorname{cl}_u \langle Au, x^* \rangle$: the two inner
+products differ by a closure in $u$. Let $U$ be a locally convex topological vector space whose
+continuous linear functionals are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$. Then for
+each $x^* \in Y$ the function $u \mapsto \langle u, A^* x^* \rangle$ is the concave closure of
+$u \mapsto \langle Au, x^* \rangle$.
 
-The concave closure in the first variable is the *only* difference between them, for every convex
-process — closedness of `A` plays no part. This is `concaveBracket_convexAdjointBifun_eq_partialCl₁`
-applied to the indicator bifunction. -/
+The concave closure in the first variable is the only difference between the two inner products,
+for every convex process: closedness of $A$ plays no part. This is
+`ConvexAnalysis.concaveBracket_convexAdjointBifun_eq_partialCl₁` applied to the indicator
+bifunction. -/
 theorem concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁ (A : ConvexProcess U X)
     (y : Y) :
     (fun u => concaveBracket Bu (convexAdjointBifun Bu Bx A.indicatorBifun) u y)
@@ -909,11 +1058,15 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **The adjoint of a sum is the sum of the adjoints**: `(A₁ + A₂)* = A₁* + A₂*`.
+/-- **The adjoint of a sum is the sum of the adjoints.** Suppose that for every $x^* \in Y$ the
+functions $u \mapsto -\langle A_1 u, x^* \rangle$ and $u \mapsto -\langle A_2 u, x^* \rangle$
+add exactly (`ConvexAnalysis.IsExactSum`). Then
+$$(A_1 + A_2)^* = A_1^* + A_2^*.$$
 
-Where the book assumes `ri (dom A₁) ∩ ri (dom A₂) ≠ ∅`, the hypothesis here is exactness of the
-sum of the two support functions `u ↦ ⟨Aᵢ u, y⟩`, one instance per `y`. Since `IsExactSum` also
-requires both summands proper, this is stronger than the book's hypothesis. -/
+Where the source assumes $\operatorname{ri}(\operatorname{dom} A_1) \cap
+\operatorname{ri}(\operatorname{dom} A_2) \neq \emptyset$, the hypothesis here is the exactness
+of the sum, one instance for each $x^*$. Because `ConvexAnalysis.IsExactSum` also requires both
+summands to be proper, this hypothesis is stronger than the one of the source. -/
 theorem adjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A₁ A₂ : ConvexProcess U X)
     (hex : ∀ y : Y, IsExactSum Bu (fun u => -(supportFn Bx (A₁.eval u) y))
@@ -965,13 +1118,17 @@ section Sandwich
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 
-/-- **A linear sandwich.** If a concave `p` lies below a convex `q`, the two add exactly, and each
-straddles `0` at the origin from its own side, then some `⟨·, y⟩` runs between them.
+/-- **A linear sandwich.** Let $E$ be paired with $F$, and let $p, q : E \to [-\infty, +\infty]$.
+Suppose that $q$ and $-p$ add exactly (`ConvexAnalysis.IsExactSum`), that $p(x) \le q(x)$ for
+all $x$, and that $p(0) \ge 0 \ge q(0)$. Then there is a $y \in F$ with
+$$p(x) \le \langle x, y \rangle \le q(x) \quad \text{for all } x \in E.$$
 
-This is Fenchel's duality theorem read at a *positively homogeneous* pair. The two extrema are
-`p*(y) ≤ 0` and `q*(y) ≥ 0` for free, so the attained dual value `p*(y) - q*(y) ≥ 0` forces both to
-vanish, and `p*(y) = 0` and `q*(y) = 0` say precisely `p ≤ ⟨·, y⟩` and `⟨·, y⟩ ≤ q`. No convexity
-hypothesis appears: `IsExactSum` already carries it. -/
+This is Fenchel's duality theorem in the case $p(0) \ge 0 \ge q(0)$. There the concave conjugate
+satisfies $p_*(y) \le 0$ and the convex conjugate satisfies $q^*(y) \ge 0$ for every $y$, so the
+attained dual value $p_*(y) - q^*(y) \ge 0$ forces both to vanish. The equations $p_*(y) = 0$
+and $q^*(y) = 0$ say exactly that $p \le \langle \cdot, y \rangle$ and
+$\langle \cdot, y \rangle \le q$. No convexity hypothesis appears; the exactness hypothesis
+takes its place. -/
 theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E → EReal}
     (hex : IsExactSum B q fun x => -(p x)) (hle : ∀ x, p x ≤ q x)
     (hp0 : (0 : EReal) ≤ p 0) (hq0 : q 0 ≤ 0) :
@@ -1031,10 +1188,12 @@ variable {U V X Y Z W : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] 
 
 namespace ConvexProcess
 
-/-- **The inclusion that costs nothing**: `A* B* ⊆ (BA)*`.
+/-- For convex processes $A$ from $U$ to $X$ and $B$ from $X$ to $Z$, the graph of $A^* B^*$ is
+contained in the graph of $(BA)^*$. No hypothesis is needed.
 
-A pair `(z*, u*)` that factors through `B*` and then `A*` chains the two defining inequalities,
-`⟨z, z*⟩ ≤ ⟨x, x*⟩ ≤ ⟨u, u*⟩`, for every factorisation `u ↦ x ↦ z` in `BA`. -/
+A pair $(z^*, u^*)$ that factors through $B^*$ and then $A^*$ chains the two defining
+inequalities, $\langle z, z^* \rangle \le \langle x, x^* \rangle \le \langle u, u^* \rangle$,
+for every factorization $u \mapsto x \mapsto z$ in $BA$. -/
 theorem comp_adjointProcess_le (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (B : ConvexProcess X Z) :
     ((adjointProcess Bu Bx A).comp (adjointProcess Bx Bz B)).graph
@@ -1042,16 +1201,25 @@ theorem comp_adjointProcess_le (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X �
   rintro ⟨w, v⟩ ⟨y, hwy, hyv⟩ ⟨u, z⟩ ⟨x, hux, hxz⟩
   exact le_trans (hwy (x, z) hxz) (hyv (u, x) hux)
 
-/-- **The adjoint of a product is the product of the adjoints**: `(BA)* = A* B*`.
+/-- **The adjoint of a product is the product of the adjoints.** Let $A$ be a convex process from
+$U$ to $X$ and $B$ one from $X$ to $Z$, and let $Z$ be paired with $W$. Suppose that for every
+$z^* \in W$ and $u^* \in V$ the functions
+$$x \mapsto \inf \{\langle u, u^* \rangle \mid u \in A^{-1} x\} \quad\text{and}\quad x \mapsto
+  -\sup \{\langle z, z^* \rangle \mid z \in Bx\}$$
+add exactly (`ConvexAnalysis.IsExactSum`). Then
+$$(BA)^* = A^* B^*.$$
 
-Read directly this is a *sandwich*: `(x*, u*) ∈ (BA)*` says the concave `x ↦ ⟨Bx, z*⟩` lies below
-the convex `x ↦ ⟨u*, A⁻¹x⟩`, and a factorisation through `A*` and `B*` is exactly a linear
-functional running between them, which `exists_pairing_sandwich` supplies.
+Where the source assumes $\operatorname{ri}(\operatorname{range} A) \cap
+\operatorname{ri}(\operatorname{dom} B) \neq \emptyset$, the hypothesis here is that condition
+in the form of exactness, one instance for each $(z^*, u^*)$: the effective domains of the two
+functions are $\operatorname{range} A$ and $\operatorname{dom} B$. Because
+`ConvexAnalysis.IsExactSum` also requires both summands to be proper, this hypothesis is
+stronger than the one of the source.
 
-Where the book assumes `ri (range A) ∩ ri (dom B) ≠ ∅`, the hypothesis here is that condition in
-`IsExactSum` form, one instance per `(z*, u*)` — the two effective domains involved *are*
-`range A` and `dom B`. As `IsExactSum` also requires both summands proper, it is stronger than the
-book's hypothesis. -/
+The pair $(z^*, u^*)$ lies in $\operatorname{graph}(BA)^*$ when the concave function
+$x \mapsto \langle Bx, z^* \rangle$ lies below the convex function
+$x \mapsto \langle u^*, A^{-1} x \rangle$. A factorization through $A^*$ and $B^*$ is a linear
+function between the two, which `ConvexAnalysis.exists_pairing_sandwich` supplies. -/
 theorem adjointProcess_comp (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (B : ConvexProcess X Z)
     (hex : ∀ (w : W) (v : V), IsExactSum Bx
@@ -1095,8 +1263,9 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- The indicator bifunction of `A⁻¹` is the indicator bifunction of `A` read backwards: both
-values are `δ(· | ·)` of the same membership `(u, x) ∈ graph A`. -/
+/-- The indicator bifunction of $A^{-1}$ is the indicator bifunction of $A$ with the arguments
+exchanged: both values at $(x, u)$ are $\delta$ of the condition
+$(u, x) \in \operatorname{graph} A$. -/
 @[simp] theorem indicatorBifun_inv (A : ConvexProcess U X) (x : X) (u : U) :
     A.inv.indicatorBifun x u = A.indicatorBifun u x := by
   rw [indicatorBifun_apply, indicatorBifun_apply]
@@ -1106,40 +1275,49 @@ values are `δ(· | ·)` of the same membership `(u, x) ∈ graph A`. -/
   · rw [indicatorFn_of_notMem (show u ∉ A.inv.eval x from h),
       indicatorFn_of_notMem (show x ∉ A.eval u from h)]
 
-/-- **`(A⁻¹)* = A*⁻¹`.** The inverse of a supremum-oriented process is infimum oriented, so its
-adjoint is the `coadjointProcess`; with that reading the identity is an unfolding, both sides
-being `{(v, y) | ⟨x, y⟩ ≤ ⟨u, v⟩ for every (u, x) ∈ graph A}`. -/
+/-- $(A^{-1})^* = (A^*)^{-1}$. The inverse of a supremum-oriented process is infimum oriented, so
+its adjoint is the infimum-oriented one. With that reading the identity is an unfolding of
+definitions: both sides have the graph $\{(u^*, x^*) \mid \langle x, x^* \rangle \le \langle u,
+u^* \rangle \text{ for all } (u, x) \in \operatorname{graph} A\}$. -/
 theorem coadjointProcess_inv (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) :
     coadjointProcess Bx Bu A.inv = (adjointProcess Bu Bx A).inv := by
   refine ConvexProcess.ext (SetLike.ext fun q => ?_)
   exact ⟨fun h p hp => h (p.2, p.1) hp, fun h p hp => h (p.2, p.1) hp⟩
 
-/-- **The `F⁎*` entry of the process/bifunction dictionary**: the lower adjoint of the indicator
-bifunction of `A` is the indicator bifunction of `A*⁻¹`.
+/-- The lower adjoint $F_*^*$ of the indicator bifunction $F$ of $A$ is the indicator bifunction of
+$(A^*)^{-1}$.
 
-This is `convexAdjointBifun_indicatorBifun` with the two negations of `lowerAdjointBifun` cancelling
-against the negation the opposite orientation of `A*` puts on its indicator, and the reversal
-`indicatorBifun_inv` absorbing the transposition. It is the last thing `(Af)* = A*⁻¹ f*` needs. -/
+This is `ConvexAnalysis.ConvexProcess.convexAdjointBifun_indicatorBifun`: the two negations in
+`ConvexAnalysis.lowerAdjointBifun` cancel the negation that the opposite orientation of $A^*$
+puts on its indicator, and `ConvexAnalysis.ConvexProcess.indicatorBifun_inv` absorbs the
+exchange of the arguments. It is the last ingredient of $(Af)^* = (A^*)^{-1} f^*$. -/
 theorem lowerAdjointBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) :
     lowerAdjointBifun Bu Bx A.indicatorBifun = (adjointProcess Bu Bx A).inv.indicatorBifun := by
   funext v y
   rw [lowerAdjointBifun_apply, convexAdjointBifun_indicatorBifun, neg_neg, indicatorBifun_inv]
 
-/-- The indicator bifunction of a convex process is finite at the origin, `0` being in `A 0`.
-This is the "finite somewhere" side condition the closed-image results ask of `F`. -/
+/-- The indicator bifunction of a convex process is finite at $(0, 0)$, because $0 \in A0$. This is
+the condition "finite somewhere" that the results on closed images ask of a bifunction. -/
 theorem indicatorBifun_zero_zero_ne_top (A : ConvexProcess U X) :
     A.indicatorBifun 0 0 ≠ ⊤ := by
   rw [indicatorBifun_apply, indicatorFn_of_mem A.zero_mem_eval_zero]
   simp
 
-/-- **`(Af)* = A*⁻¹ f*`**, where `Af` is the image `Ff` of `f` under the indicator bifunction `F`
-of `A`, i.e. `(Af)(x) = inf {f u | x ∈ A u}`.
+/-- Let $f : U \to [-\infty, +\infty]$ be a proper convex function and let $x^* \in Y$. Write $Af$
+for the image of $f$ under the indicator bifunction of $A$, that is,
+$(Af)(x) = \inf \{f(u) \mid x \in Au\}$. Suppose that $f$ and
+$u \mapsto -\langle Au, x^* \rangle$ add exactly (`ConvexAnalysis.IsExactSum`). Then
+$$(Af)^*(x^*) = ((A^*)^{-1} f^*)(x^*) = \inf \{f^*(u^*) \mid u^* \in A^* x^*\}.$$
+This is Theorem 39.7 of [rockafellar1970convex].
 
-This specialises the conjugate of an image under a bifunction; the only work is the dictionary
-`lowerAdjointBifun_indicatorBifun`. Rockafellar's `ri (dom f) ∩ ri (dom A) ≠ ∅` becomes the
-`IsExactSum` of `convexConj_imageBifun`, `dom F` being `dom A`. -/
+This specializes the conjugate of an image under a bifunction; the only work is
+`ConvexAnalysis.ConvexProcess.lowerAdjointBifun_indicatorBifun`. The condition
+$\operatorname{ri}(\operatorname{dom} f) \cap \operatorname{ri}(\operatorname{dom} A) \neq
+\emptyset$ of the source becomes the exactness hypothesis of
+`ConvexAnalysis.convexConj_imageBifun`, because the domain of the indicator bifunction is
+$\operatorname{dom} A$. -/
 theorem convexConj_imageBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) {f : U → EReal} (hf : ProperConvex f) {y : Y}
     (hex : IsExactSum Bu f (fun u => -(bracket Bx A.indicatorBifun u y))) :
@@ -1148,8 +1326,10 @@ theorem convexConj_imageBifun_indicatorBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
   rw [← lowerAdjointBifun_indicatorBifun]
   exact convexConj_imageBifun_eq_imageBifun A.indicatorBifun_ne_bot hf hex
 
-/-- **The infimum defining `(A*⁻¹ f*)(x*)` is attained.** This is `exists_convexConj_imageBifun_eq`
-read through the same dictionary. -/
+/-- Under the hypotheses of `ConvexAnalysis.ConvexProcess.convexConj_imageBifun_indicatorBifun`, the
+infimum that defines $((A^*)^{-1} f^*)(x^*)$ is attained: some $u^* \in V$ satisfies $f^*(u^*) +
+\delta(x^* \mid (A^*)^{-1} u^*) = ((A^*)^{-1} f^*)(x^*)$. This is
+`ConvexAnalysis.exists_convexConj_imageBifun_eq` read through the same identification. -/
 theorem exists_imageBifun_indicatorBifun_adjointProcess_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) {f : U → EReal} (hf : ProperConvex f) {y : Y}
     (hex : IsExactSum Bu f (fun u => -(bracket Bx A.indicatorBifun u y))) :
@@ -1176,7 +1356,8 @@ variable {A : ConvexProcess U X}
 
 namespace ConvexProcess
 
-/-- `A 0` is a convex cone containing the origin, so if it is bounded it is `{0}`. -/
+/-- Let $X$ be a real normed space. If $A0$ is bounded, then $A0 = \{0\}$, because $A0$ is a convex
+cone that contains the origin. -/
 theorem eval_zero_eq_zero_of_isBounded (A : ConvexProcess U X)
     (hb : Bornology.IsBounded (A.eval 0)) : A.eval 0 = {0} := by
   obtain ⟨R, hR⟩ := hb.exists_norm_le
@@ -1190,7 +1371,8 @@ theorem eval_zero_eq_zero_of_isBounded (A : ConvexProcess U X)
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hc0, div_mul_cancel₀ _ (ne_of_gt hxn)] at hle
   linarith
 
-/-- If `A 0` is bounded and `A` has full domain, every value of `A` is a single point. -/
+/-- Let $X$ be a real normed space. If $\operatorname{dom} A = U$ and $A0$ is bounded, then every
+value $Au$ is a single point. -/
 theorem exists_eval_eq_singleton (A : ConvexProcess U X) (hdom : A.dom = univ)
     (hb : Bornology.IsBounded (A.eval 0)) (u : U) : ∃ x, A.eval u = {x} := by
   obtain ⟨x, hx⟩ : (A.eval u).Nonempty := by rw [← mem_dom, hdom]; trivial
@@ -1205,12 +1387,15 @@ theorem exists_eval_eq_singleton (A : ConvexProcess U X) (hdom : A.dom = univ)
   rw [A.eval_zero_eq_zero_of_isBounded hb, Set.mem_singleton_iff] at hzy hxy
   exact Set.mem_singleton_iff.2 (add_right_cancel (hzy.trans hxy.symm))
 
-/-- **A convex process whose domain is everything and whose value at the origin is bounded is
-(the graph of) a linear transformation.**
+/-- Let $U$ be a real vector space, $X$ a real normed space, and $A$ a convex process from $U$ to
+$X$ with $\operatorname{dom} A = U$ and $A0$ bounded. Then there is a linear transformation
+$T : U \to X$ with
+$$Au = \{Tu\} \quad \text{for all } u \in U.$$
+This is Theorem 39.1 of [rockafellar1970convex].
 
-Linear transformations are exactly the convex processes all of whose values are nonempty and
-bounded; the converse direction is `ConvexProcess.dom_ofLinearMap` together with
-`ConvexProcess.eval_ofLinearMap`. -/
+So the linear transformations are exactly the convex processes whose values are all nonempty and
+bounded. The converse direction is `ConvexAnalysis.ConvexProcess.dom_ofLinearMap` together with
+`ConvexAnalysis.ConvexProcess.eval_ofLinearMap`. -/
 theorem exists_linearMap_of_isBounded (A : ConvexProcess U X) (hdom : A.dom = univ)
     (hb : Bornology.IsBounded (A.eval 0)) : ∃ T : U →ₗ[ℝ] X, ∀ u, A.eval u = {T u} := by
   choose T hT using A.exists_eval_eq_singleton hdom hb
@@ -1265,14 +1450,16 @@ variable {A : ConvexProcess U X} {C : Set U}
 
 namespace ConvexProcess
 
-/-- **If `A` is a closed convex process, `C` is a nonempty closed convex set, and no non-zero
-vector of `A⁻¹ 0` recedes `C`, then `A C` is closed.** In particular this holds when `C` is
-bounded, since then `0⁺C = {0}`.
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $A$ be a convex process from $U$
+to $X$ with closed graph, and let $C \subseteq U$ be a nonempty closed convex set. Suppose that
+every $v$ with $(v, 0) \in \operatorname{graph} A$ and $v \in 0^+ C$ is $0$. Then the image $AC$
+is closed. In particular this holds when $C$ is bounded, because then $0^+ C = \{0\}$.
 
-This is the recession-cone criterion for a linear image, at the projection `(u, x) ↦ x`: `A C` is
-the image of `graph A ∩ (C × X)`, whose recession cone is `graph A ∩ (0⁺C × X)` — the graph is its
-own recession cone, being a pointed convex cone — and whose intersection with the kernel of the
-projection is `{(v, 0) | v ∈ A⁻¹ 0 ∩ 0⁺C}`. No duality is needed. -/
+This is the recession-cone criterion for a linear image, applied to the projection
+$(u, x) \mapsto x$. The set $AC$ is the image of $\operatorname{graph} A \cap (C \times X)$. The
+recession cone of this set is $\operatorname{graph} A \cap (0^+ C \times X)$, because the graph
+is its own recession cone, and its intersection with the kernel of the projection is
+$\{(v, 0) \mid v \in A^{-1} 0 \cap 0^+ C\}$. No duality is needed. -/
 theorem isClosed_image (hA : IsClosed (A.graph : Set (U × X))) (hC : Convex ℝ C)
     (hC' : IsClosed C) (hCne : C.Nonempty)
     (h : ∀ v : U, (v, (0 : X)) ∈ A.graph → v ∈ recessionCone C → v = 0) :
@@ -1299,8 +1486,9 @@ theorem isClosed_image (hA : IsClosed (A.graph : Set (U × X))) (hC : Convex ℝ
   subst hv
   simp
 
-/-- **The image of a nonempty compact convex set under a closed convex process is closed**, the
-bounded case of `isClosed_image`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces. The image of a nonempty closed bounded
+convex set under a convex process with closed graph is closed. This is the bounded case of
+`ConvexAnalysis.ConvexProcess.isClosed_image`. -/
 theorem isClosed_image_of_isBounded (hA : IsClosed (A.graph : Set (U × X))) (hC : Convex ℝ C)
     (hC' : IsClosed C) (hCne : C.Nonempty) (hb : Bornology.IsBounded C) :
     IsClosed (A.image C) := by
@@ -1322,15 +1510,17 @@ variable {U X Z : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- The **reflection** of a convex process: the process whose graph is the reflection of
-`graph A` through the origin, so that `(A.reflect) u = -(A (-u))`.
+/-- The **reflection** of a convex process $A$: the process whose graph is
+$-\operatorname{graph} A$, the reflection of the graph of $A$ through the origin. Its values are
+$u \mapsto -A(-u)$.
 
-Reflection is what exchanges the two orientations: reversing the inequality in the definition of
-the adjoint is the same as reflecting the graph, so
-`adjointProcess Bu Bx A.reflect = coadjointProcess Bu Bx A` (`adjointProcess_reflect`). Read the
-other way round (`coadjointProcess_eq_reflect_adjointProcess`) it puts the reflection on the
-*conclusion*, where `reflect_add` and `reflect_comp` cancel it, so the infimum-oriented mirrors
-carry the supremum-oriented hypotheses unchanged. -/
+Reflection exchanges the two orientations. Reversing the inequality in the definition of the
+adjoint is the same as reflecting the graph, so the adjoint of the reflection of $A$ is the
+infimum-oriented adjoint of $A$ (`ConvexAnalysis.ConvexProcess.adjointProcess_reflect`). Read
+the other way (`ConvexAnalysis.ConvexProcess.coadjointProcess_eq_reflect_adjointProcess`), this
+puts the reflection on the conclusion, where `ConvexAnalysis.ConvexProcess.reflect_add` and
+`ConvexAnalysis.ConvexProcess.reflect_comp` cancel it. So the infimum-oriented results carry the
+hypotheses of the supremum-oriented ones unchanged. -/
 def reflect (A : ConvexProcess U X) : ConvexProcess U X where
   graph :=
     { carrier := {p : U × X | -p ∈ A.graph}
@@ -1349,27 +1539,34 @@ def reflect (A : ConvexProcess U X) : ConvexProcess U X where
         rw [← smul_neg]
         exact Submodule.smul_mem A.graph c hp }
 
+/-- $p$ lies in the graph of the reflection of $A$ if and only if $-p \in \operatorname{graph} A$.
+-/
 @[simp] theorem mem_graph_reflect {A : ConvexProcess U X} {p : U × X} :
     p ∈ A.reflect.graph ↔ -p ∈ A.graph := Iff.rfl
 
+/-- Reflection is an involution on convex processes. -/
 theorem reflect_involutive :
     Function.Involutive (reflect : ConvexProcess U X → ConvexProcess U X) := fun A => by
   refine ConvexProcess.ext (SetLike.ext fun p => ?_)
   rw [mem_graph_reflect, mem_graph_reflect, _root_.neg_neg]
 
+/-- Reflecting twice gives the original process. -/
 @[simp] theorem reflect_reflect (A : ConvexProcess U X) : A.reflect.reflect = A :=
   reflect_involutive A
 
+/-- Reflection is injective on convex processes. -/
 theorem reflect_injective :
     Function.Injective (reflect : ConvexProcess U X → ConvexProcess U X) :=
   reflect_involutive.injective
 
+/-- The reflection of $A$ has the value $-A(-u)$ at $u$. -/
 theorem eval_reflect (A : ConvexProcess U X) (u : U) : A.reflect.eval u = -(A.eval (-u)) := by
   ext x
   change -((u, x) : U × X) ∈ A.graph ↔ x ∈ -(A.eval (-u))
   rw [Set.mem_neg]
   exact Iff.rfl
 
+/-- The reflection of $A_1 + A_2$ is the sum of the reflections of $A_1$ and $A_2$. -/
 theorem reflect_add (A₁ A₂ : ConvexProcess U X) :
     (A₁ + A₂).reflect = A₁.reflect + A₂.reflect := by
   refine ConvexProcess.ext (SetLike.ext fun p => ?_)
@@ -1377,6 +1574,7 @@ theorem reflect_add (A₁ A₂ : ConvexProcess U X) :
   rw [← mem_eval, ← mem_eval, eval_reflect, eval_add, eval_add, eval_reflect, eval_reflect,
     _root_.neg_add]
 
+/-- The reflection of $BA$ is the product of the reflections of $B$ and $A$, in the same order. -/
 theorem reflect_comp (B : ConvexProcess X Z) (A : ConvexProcess U X) :
     (B.comp A).reflect = B.reflect.comp A.reflect := by
   refine ConvexProcess.ext (SetLike.ext fun p => ?_)
@@ -1386,10 +1584,11 @@ theorem reflect_comp (B : ConvexProcess X Z) (A : ConvexProcess U X) :
   · rintro ⟨x, h, k⟩
     exact ⟨-x, by simpa using h, by simpa using k⟩
 
-/-- Reflection **bundled**: an additive automorphism of the convex processes from `U` to `X`.
+/-- Reflection, as an additive automorphism of the convex processes from $U$ to $X$.
 
-It is involutive (`reflect_involutive`) and additive (`reflect_add`), so `.injective`, `.eq_iff`
-and `.toPerm` come from the bundled form instead of being re-proved. -/
+Reflection is an involution (`ConvexAnalysis.ConvexProcess.reflect_involutive`) and is additive
+(`ConvexAnalysis.ConvexProcess.reflect_add`), so injectivity and the other properties of a
+bijection come from the bundled form. -/
 def reflectAut : AddAut (ConvexProcess U X) where
   toFun := reflect
   invFun := reflect
@@ -1397,6 +1596,8 @@ def reflectAut : AddAut (ConvexProcess U X) where
   right_inv := reflect_involutive
   map_add' := reflect_add
 
+/-- The additive automorphism `ConvexAnalysis.ConvexProcess.reflectAut` sends $A$ to its reflection.
+-/
 @[simp] theorem reflectAut_apply (A : ConvexProcess U X) : reflectAut A = A.reflect := rfl
 
 end ConvexProcess
@@ -1411,7 +1612,7 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 namespace ConvexProcess
 
 /-- **Reversing the inequality is reflecting the graph**: the supremum-oriented adjoint of the
-reflected process is the infimum-oriented adjoint of the original one. -/
+reflection of $A$ is the infimum-oriented adjoint of $A$. -/
 theorem adjointProcess_reflect (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) :
     adjointProcess Bu Bx A.reflect = coadjointProcess Bu Bx A := by
@@ -1431,16 +1632,17 @@ theorem adjointProcess_reflect (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X �
     rw [hx p, hu p] at hpp
     linarith
 
-/-- The mirror of `adjointProcess_reflect`: reflection also carries the infimum-oriented adjoint
-back to the supremum-oriented one. -/
+/-- The infimum-oriented adjoint of the reflection of $A$ is the supremum-oriented adjoint of $A$.
+-/
 theorem coadjointProcess_reflect (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A : ConvexProcess U X) :
     coadjointProcess Bu Bx A.reflect = adjointProcess Bu Bx A := by
   rw [← adjointProcess_reflect Bu Bx A.reflect, reflect_reflect]
 
-/-- The infimum-oriented adjoint is the reflection of the supremum-oriented one. Together with
-`adjointProcess_reflect` this is the whole content of "the adjoint of an infimum-oriented process
-is defined in the same way, except that the inequality is reversed". -/
+/-- The infimum-oriented adjoint of $A$ is the reflection of the supremum-oriented adjoint of $A$.
+Together with `ConvexAnalysis.ConvexProcess.adjointProcess_reflect`, this is the whole content
+of the rule that the adjoint of an infimum-oriented process is defined in the same way with the
+inequality reversed. -/
 theorem coadjointProcess_eq_reflect_adjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     coadjointProcess Bu Bx A = (adjointProcess Bu Bx A).reflect := by
@@ -1475,7 +1677,9 @@ section ReflectClosed
 variable [TopologicalSpace U] [IsTopologicalAddGroup U] [TopologicalSpace X]
   [IsTopologicalAddGroup X]
 
-/-- Reflection preserves closedness: it is a preimage under the homeomorphism `p ↦ -p`. -/
+/-- Let $U$ and $X$ be topological additive groups. If the graph of $A$ is closed, then the graph of
+its reflection is closed, because it is the preimage of the graph under the homeomorphism
+$p \mapsto -p$. -/
 theorem isClosed_graph_reflect {A : ConvexProcess U X}
     (hA : IsClosed (A.graph : Set (U × X))) : IsClosed (A.reflect.graph : Set (U × X)) :=
   hA.preimage (continuous_neg (G := U × X))
@@ -1487,8 +1691,10 @@ section CoadjointClosed
 variable [TopologicalSpace V] [IsTopologicalAddGroup V] [TopologicalSpace Y]
   [IsTopologicalAddGroup Y]
 
-/-- **The adjoint of an infimum-oriented convex process is closed**, as in the supremum-oriented
-case. -/
+/-- **The adjoint of an infimum-oriented convex process is closed.** Let $V$ and $Y$ be topological
+additive groups such that $\langle u, \cdot \rangle$ is continuous on $V$ for each $u \in U$ and
+$\langle x, \cdot \rangle$ is continuous on $Y$ for each $x \in X$. Then the graph of the
+infimum-oriented adjoint of $A$ is closed in $Y \times V$. -/
 theorem isClosed_graph_coadjointProcess (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsContinuousPairing Bu.flip] [IsContinuousPairing Bx.flip] (A : ConvexProcess U X) :
     IsClosed ((coadjointProcess Bu Bx A).graph : Set (Y × V)) := by
@@ -1503,11 +1709,15 @@ variable [TopologicalSpace U] [TopologicalSpace X] [IsTopologicalAddGroup U]
   [IsTopologicalAddGroup X] [ContinuousSMul ℝ U] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ U]
   [LocallyConvexSpace ℝ X]
 
-/-- **Taking the infimum-oriented adjoint and then the supremum-oriented one also returns `cl A`.**
+/-- Let $U$ and $X$ be locally convex topological vector spaces whose continuous linear functionals
+are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$ and $\langle \cdot, x^* \rangle$ for
+$x^* \in Y$. Then the supremum-oriented adjoint of the infimum-oriented adjoint of $A$ has the
+graph $\operatorname{cl}(\operatorname{graph} A)$.
 
-This is `graph_coadjointProcess_adjointProcess_eq_closure` read through
-`adjointProcess_reflect`; the two sign flips still cancel, and it is what turns the closed halves
-of the sum and product theorems into corollaries of their open halves. -/
+This is `ConvexAnalysis.ConvexProcess.graph_coadjointProcess_adjointProcess_eq_closure` read
+through `ConvexAnalysis.ConvexProcess.adjointProcess_reflect`: the two sign changes still
+cancel. It makes the closed halves of the sum and product theorems corollaries of their other
+halves. -/
 theorem graph_adjointProcess_coadjointProcess_eq_closure (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     (A : ConvexProcess U X) :
@@ -1516,8 +1726,11 @@ theorem graph_adjointProcess_coadjointProcess_eq_closure (Bu : U →ₗ[ℝ] V �
   rw [coadjointProcess_eq_reflect_adjointProcess, adjointProcess_reflect]
   exact graph_coadjointProcess_adjointProcess_eq_closure Bu Bx A
 
-/-- **A convex process is closed exactly when the supremum-oriented adjoint of its
-infimum-oriented adjoint is itself.** -/
+/-- **A convex process is closed exactly when the supremum-oriented adjoint of its infimum-oriented
+adjoint is itself.** Let $U$ and $X$ be locally convex topological vector spaces whose
+continuous linear functionals are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$ and
+$\langle \cdot, x^* \rangle$ for $x^* \in Y$. Then this second adjoint equals $A$ if and only if
+the graph of $A$ is closed. -/
 theorem adjointProcess_coadjointProcess_eq_self_iff (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     (A : ConvexProcess U X) :
@@ -1542,12 +1755,15 @@ variable {U V X Y Z W : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] 
 
 namespace ConvexProcess
 
-/-- **The adjoint of a sum, for two *infimum-oriented* processes**: `(A₁ + A₂)* = A₁* + A₂*`.
+/-- **The adjoint of a sum, for two infimum-oriented processes.** Under the hypothesis of
+`ConvexAnalysis.ConvexProcess.adjointProcess_add`, the infimum-oriented adjoints satisfy
+$$(A_1 + A_2)^* = A_1^* + A_2^*.$$
 
 Rockafellar states the result for two processes "with the same orientation" and leaves the
 infimum-oriented case implicit. It is the supremum-oriented theorem read through
-`coadjointProcess_eq_reflect_adjointProcess`, reflection distributing over sums; the hypothesis is
-`adjointProcess_add`'s own, verbatim. -/
+`ConvexAnalysis.ConvexProcess.coadjointProcess_eq_reflect_adjointProcess`, because reflection
+distributes over sums. The hypothesis is the same as in
+`ConvexAnalysis.ConvexProcess.adjointProcess_add`. -/
 theorem coadjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (A₁ A₂ : ConvexProcess U X)
     (hex : ∀ y : Y, IsExactSum Bu (fun u => -(supportFn Bx (A₁.eval u) y))
@@ -1559,11 +1775,14 @@ theorem coadjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →�
     coadjointProcess_eq_reflect_adjointProcess Bu Bx A₂,
     adjointProcess_add Bu Bx A₁ A₂ hex, reflect_add]
 
-/-- **The adjoint of a product, for two *infimum-oriented* processes**: `(BA)* = A* B*`.
+/-- **The adjoint of a product, for two infimum-oriented processes.** Under the hypothesis of
+`ConvexAnalysis.ConvexProcess.adjointProcess_comp`, the infimum-oriented adjoints satisfy
+$$(BA)^* = A^* B^*.$$
 
-Like `coadjointProcess_add`, this reflects the *adjoints* rather than the processes, so the
-hypothesis is `adjointProcess_comp`'s own; `reflect_comp` is what makes the product come out in
-the same order. -/
+As in `ConvexAnalysis.ConvexProcess.coadjointProcess_add`, the proof reflects the adjoints and
+not the processes, so the hypothesis is the same as in
+`ConvexAnalysis.ConvexProcess.adjointProcess_comp`. `ConvexAnalysis.ConvexProcess.reflect_comp`
+makes the product come out in the same order. -/
 theorem coadjointProcess_comp (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (B : ConvexProcess X Z)
     (hex : ∀ (w : W) (v : V), IsExactSum Bx
@@ -1593,9 +1812,14 @@ variable {U V X Y Z W : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] 
 
 namespace ConvexProcess
 
-/-- The sum of two closed convex processes is the infimum-oriented adjoint of the sum of their
-adjoints, provided the two adjoints add exactly. This is the identity both closed-half results
-about sums come from. -/
+/-- Let $U$ and $X$ be locally convex topological vector spaces whose continuous linear functionals
+are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$ and $\langle \cdot, x^* \rangle$ for
+$x^* \in Y$, and let $A_1$ and $A_2$ be convex processes with closed graphs. Suppose that for
+every $u \in U$ the functions $x^* \mapsto -\sup \{\langle u, u^* \rangle \mid u^* \in A_i^*
+x^*\}$, for $i = 1, 2$, add exactly (`ConvexAnalysis.IsExactSum`). Then $A_1 + A_2$ is the
+infimum-oriented adjoint of $A_1^* + A_2^*$.
+
+Both closed-half results about sums follow from this identity. -/
 theorem add_eq_coadjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bx] {A₁ A₂ : ConvexProcess U X}
     (hA₁ : IsClosed (A₁.graph : Set (U × X))) (hA₂ : IsClosed (A₂.graph : Set (U × X)))
@@ -1608,8 +1832,9 @@ theorem add_eq_coadjointProcess_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx :
     (coadjointProcess_adjointProcess_eq_self_iff Bu Bx A₁).2 hA₁,
     (coadjointProcess_adjointProcess_eq_self_iff Bu Bx A₂).2 hA₂]
 
-/-- **The sum of two closed convex processes is closed.** It is an adjoint, and an adjoint is
-always closed. -/
+/-- **The sum of two closed convex processes is closed.** Under the hypotheses of
+`ConvexAnalysis.ConvexProcess.add_eq_coadjointProcess_add`, the graph of $A_1 + A_2$ is closed.
+The sum is an adjoint, and an adjoint is always closed. -/
 theorem isClosed_graph_add (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bx] {A₁ A₂ : ConvexProcess U X}
     (hA₁ : IsClosed (A₁.graph : Set (U × X))) (hA₂ : IsClosed (A₂.graph : Set (U × X)))
@@ -1638,7 +1863,14 @@ variable {U V X Y Z W : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] 
 
 namespace ConvexProcess
 
-/-- **`(A₁ + A₂)*` is the closure of `A₁* + A₂*`**, for closed `A₁` and `A₂`. -/
+/-- $(A_1 + A_2)^*$ is the closure of $A_1^* + A_2^*$. Let $U$, $X$, $V$ and $Y$ be locally convex
+topological vector spaces such that the continuous linear functionals on each of them are
+exactly the pairings with its partner space, and let $A_1$ and $A_2$ be convex processes with
+closed graphs. Suppose that for every $u \in U$ the functions $x^* \mapsto -\sup \{\langle u,
+u^* \rangle \mid u^* \in A_i^* x^*\}$, for $i = 1, 2$, add exactly
+(`ConvexAnalysis.IsExactSum`). Then
+$$\operatorname{graph}(A_1 + A_2)^* = \operatorname{cl} \operatorname{graph}(A_1^* + A_2^*).$$
+-/
 theorem graph_adjointProcess_add_eq_closure (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bx] [IsCompatiblePairing Bu.flip]
     [IsCompatiblePairing Bx.flip] {A₁ A₂ : ConvexProcess U X}
@@ -1668,8 +1900,16 @@ variable {U V X Y Z W : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] 
 
 namespace ConvexProcess
 
-/-- The product of two closed convex processes is the infimum-oriented adjoint of the product of
-their adjoints. This is the identity both closed-half results about products come from. -/
+/-- Let $U$, $X$ and $Z$ be locally convex topological vector spaces whose continuous linear
+functionals are exactly the pairings with $V$, $Y$ and $W$, and let $A$ from $U$ to $X$ and $B$
+from $X$ to $Z$ be convex processes with closed graphs. Suppose that for every $u \in U$ and
+$z \in Z$ the functions
+$$x^* \mapsto \inf \{\langle z, z^* \rangle \mid z^* \in (B^*)^{-1} x^*\} \quad\text{and}\quad
+  x^* \mapsto -\sup \{\langle u, u^* \rangle \mid u^* \in A^* x^*\}$$
+add exactly (`ConvexAnalysis.IsExactSum`). Then $BA$ is the infimum-oriented adjoint of
+$A^* B^*$.
+
+Both closed-half results about products follow from this identity. -/
 theorem comp_eq_coadjointProcess_comp (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bz] {A : ConvexProcess U X} {B : ConvexProcess X Z}
@@ -1683,7 +1923,8 @@ theorem comp_eq_coadjointProcess_comp (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx
     (coadjointProcess_adjointProcess_eq_self_iff Bx Bz B).2 hB,
     (coadjointProcess_adjointProcess_eq_self_iff Bu Bx A).2 hA]
 
-/-- **The product of two closed convex processes is closed.** -/
+/-- **The product of two closed convex processes is closed.** Under the hypotheses of
+`ConvexAnalysis.ConvexProcess.comp_eq_coadjointProcess_comp`, the graph of $BA$ is closed. -/
 theorem isClosed_graph_comp (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bz] {A : ConvexProcess U X} {B : ConvexProcess X Z}
@@ -1715,7 +1956,14 @@ namespace ConvexProcess
 
 omit [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- **`(BA)*` is the closure of `A* B*`**, for closed `A` and `B`. -/
+/-- $(BA)^*$ is the closure of $A^* B^*$. Let $U$, $X$, $Z$, $V$ and $W$ be locally convex
+topological vector spaces. Suppose that the continuous linear functionals on $U$, $X$ and $Z$
+are exactly the pairings with $V$, $Y$ and $W$, and those on $V$ and $W$ are exactly the
+pairings with $U$ and $Z$. Let $A$ from $U$ to $X$ and $B$ from $X$ to $Z$ be convex processes
+with closed graphs, under the exactness hypothesis of
+`ConvexAnalysis.ConvexProcess.comp_eq_coadjointProcess_comp`. Then
+$$\operatorname{graph}(BA)^* = \operatorname{cl} \operatorname{graph}(A^* B^*).$$
+-/
 theorem graph_adjointProcess_comp_eq_closure (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (Bz : Z →ₗ[ℝ] W →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu] [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bz] [IsCompatiblePairing Bu.flip] [IsCompatiblePairing Bz.flip]
@@ -1736,13 +1984,15 @@ end ConvexProcess
 
 end ClosedHalvesCompAdjoint
 
-/-! ### The two inner products for infimum-oriented processes
+/-!
+### The two inner products for infimum-oriented processes
 
-For an infimum-oriented process the indicator bifunction is the *concave* function `-δ(· | A u)`,
-and the inner product `⟨Au, x*⟩` is its concave conjugate: an infimum over `A u` rather than a
-supremum. As with `adjointProcess`/`coadjointProcess`, the two orientations are separate
-definitions rather than two branches of one flag, and the whole mirror is driven by the single
-sign dictionary `coBracket_eq_neg_bracket`. -/
+For an infimum-oriented process the indicator bifunction is the concave function
+$-\delta(\cdot \mid Au)$, and the inner product $\langle Au, x^* \rangle$ is its concave conjugate:
+an infimum over $Au$ instead of a supremum. As with the two adjoints, the two orientations are
+separate definitions and not two branches of one flag. All results below follow from the single sign
+identity `ConvexAnalysis.ConvexProcess.coBracket_eq_neg_bracket`.
+-/
 
 section CoBracket
 
@@ -1751,24 +2001,27 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- The inner product `⟨Au, x*⟩` of an **infimum-oriented** convex process:
-`⟨Au, x*⟩ = inf {⟨x, x*⟩ | x ∈ A u}`.
+/-- The inner product of an **infimum-oriented** convex process:
+$$\langle Au, x^* \rangle = \inf \{\langle x, x^* \rangle \mid x \in Au\}.$$
 
-This is the concave conjugate of the concave indicator `-δ(· | A u)`, exactly as
-`bracket _ A.indicatorBifun u` is the convex conjugate of `δ(· | A u)`. -/
+This is the concave conjugate of the concave indicator $-\delta(\cdot \mid Au)$, in the same way
+as the bracket of `ConvexAnalysis.ConvexProcess.indicatorBifun` is the convex conjugate of
+$\delta(\cdot \mid Au)$. -/
 noncomputable def coBracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
     EReal :=
   ⨅ x ∈ A.eval u, ((Bx x y : ℝ) : EReal)
 
-/-- The first of the two extremum problems, in infimum-oriented form:
-`⟨Au, x*⟩ = inf {⟨x, x*⟩ | x ∈ A u}`. -/
+/-- The first of the two extremum problems, in infimum-oriented form: $\langle Au, x^* \rangle =
+\inf \{\langle x, x^* \rangle \mid x \in Au\}$. -/
 theorem coBracket_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
     coBracket Bx A u y = ⨅ x ∈ A.eval u, ((Bx x y : ℝ) : EReal) := rfl
 
-/-- The **sign dictionary** between the two orientations: the infimum-oriented inner product is
-minus the supremum-oriented one, read at the reflected dual vector. Note that only the dual
-variable is reflected — the primal variable `u` is untouched, because reversing the orientation
-of a process does not reverse its argument. -/
+/-- The sign identity between the two orientations: the infimum-oriented inner product is minus the
+supremum-oriented one at the reflected dual vector,
+$$\inf \{\langle x, x^* \rangle \mid x \in Au\} = -\sup \{\langle x, -x^* \rangle \mid x \in
+  Au\}.$$
+Only the dual variable is reflected. The primal variable $u$ is unchanged, because reversing the
+orientation of a process does not reverse its argument. -/
 theorem coBracket_eq_neg_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U)
     (y : Y) : coBracket Bx A u y = -(bracket Bx A.indicatorBifun u (-y)) := by
   rw [coBracket_apply, bracket_indicatorBifun_apply, EReal.neg_iSup]
@@ -1777,19 +2030,23 @@ theorem coBracket_eq_neg_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : Con
   refine iInf_congr fun _ => ?_
   rw [← EReal.coe_neg, map_neg (Bx x) y, _root_.neg_neg]
 
+/-- `ConvexAnalysis.ConvexProcess.coBracket_eq_neg_bracket` as an equation of functions of $u$: for
+fixed $x^*$, the infimum-oriented inner product $u \mapsto \langle Au, x^* \rangle$ is the
+negative of $u \mapsto \sup \{\langle x, -x^* \rangle \mid x \in Au\}$. -/
 theorem coBracket_eq_neg_bracket_fun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (y : Y) :
     (fun u => coBracket Bx A u y) = fun u => -(bracket Bx A.indicatorBifun u (-y)) :=
   funext fun u => coBracket_eq_neg_bracket Bx A u y
 
-/-- The infimum-oriented inner product is minus a support function, read at the reflected dual
-vector. -/
+/-- The infimum-oriented inner product is minus a support function at the reflected dual vector:
+$\inf \{\langle x, x^* \rangle \mid x \in Au\} = -\delta^*(-x^* \mid Au)$. -/
 theorem coBracket_eq_neg_supportFn (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U)
     (y : Y) : coBracket Bx A u y = -(supportFn Bx (A.eval u) (-y)) := by
   rw [coBracket_eq_neg_bracket, bracket_indicatorBifun]
 
-/-- The negative of `⟨Au, ·⟩` is the supremum-oriented inner product composed with the linear
-reflection `x* ↦ -x*`. This is the form in which the sign dictionary feeds the convexity and
-closedness lemmas for a composition with a linear map. -/
+/-- The negative of the infimum-oriented inner product $x^* \mapsto \langle Au, x^* \rangle$ is the
+supremum-oriented inner product composed with the linear reflection $x^* \mapsto -x^*$. In this
+form the sign identity feeds the convexity and closedness results for a composition with a
+linear map. -/
 theorem neg_coBracket_eq_compLin (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     (fun y => -(coBracket Bx A u y))
       = compLin (bracket Bx A.indicatorBifun u) (-LinearMap.id : Y →ₗ[ℝ] Y) := by
@@ -1797,20 +2054,23 @@ theorem neg_coBracket_eq_compLin (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : Con
   rw [coBracket_eq_neg_bracket, _root_.neg_neg]
   simp only [compLin, Function.comp_apply, LinearMap.neg_apply, LinearMap.id_coe, id_eq]
 
-/-- **`⟨Au, ·⟩` is positively homogeneous**, in the infimum-oriented mirror. -/
+/-- For an infimum-oriented process, the function $x^* \mapsto \langle Au, x^* \rangle$ is
+positively homogeneous. -/
 theorem posHomogeneous_coBracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     PosHomogeneous (coBracket Bx A u) := by
   intro a ha y
   rw [coBracket_eq_neg_bracket, coBracket_eq_neg_bracket, ← smul_neg,
     posHomogeneous_bracket_indicatorBifun Bx A u a ha (-y), ← _root_.mul_neg]
 
-/-- **`⟨Au, ·⟩` is concave** in the infimum-oriented mirror, being a concave conjugate. -/
+/-- For an infimum-oriented process, the function $x^* \mapsto \langle Au, x^* \rangle$ is concave,
+because it is a concave conjugate. -/
 theorem concaveFn_coBracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) :
     ConcaveFn (coBracket Bx A u) := by
   rw [concaveFn_iff_convexFn_neg, neg_coBracket_eq_compLin]
   exact convexFn_compLin _ (convexFn_bracket_indicatorBifun Bx A u)
 
-/-- **`⟨A ·, x*⟩` is positively homogeneous**, in the infimum-oriented mirror. -/
+/-- For an infimum-oriented process, the function $u \mapsto \langle Au, x^* \rangle$ is positively
+homogeneous. -/
 theorem posHomogeneous_coBracket_arg (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (y : Y) :
     PosHomogeneous fun u => coBracket Bx A u y := by
   intro a ha u
@@ -1818,15 +2078,15 @@ theorem posHomogeneous_coBracket_arg (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A :
   rw [coBracket_eq_neg_bracket, coBracket_eq_neg_bracket, _root_.mul_neg]
   exact congrArg Neg.neg (posHomogeneous_bracket_indicatorBifun_arg Bx A (-y) a ha u)
 
-/-- **`⟨A ·, x*⟩` is convex** in the infimum-oriented mirror, where in the supremum-oriented case
-it is concave. Reversing the orientation of a process exchanges convexity and concavity in both
-variables at once. -/
+/-- For an infimum-oriented process, the function $u \mapsto \langle Au, x^* \rangle$ is convex; in
+the supremum-oriented case it is concave. Reversing the orientation of a process exchanges
+convexity and concavity in both variables at once. -/
 theorem convexFn_coBracket_arg (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (y : Y) :
     ConvexFn fun u => coBracket Bx A u y := by
   rw [coBracket_eq_neg_bracket_fun]
   exact concaveFn_iff_convexFn_neg.1 (concaveFn_bracket_indicatorBifun Bx A (-y))
 
-/-- **The inner product vanishes at the origin**, in the infimum-oriented mirror. -/
+/-- For an infimum-oriented process, $\langle A0, 0 \rangle = 0$. -/
 @[simp] theorem coBracket_zero_zero (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) :
     coBracket Bx A 0 (0 : Y) = 0 := by
   rw [coBracket_eq_neg_bracket, _root_.neg_zero, bracket_indicatorBifun_zero_zero,
@@ -1844,8 +2104,10 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
 
 namespace ConvexProcess
 
-/-- **`⟨Au, ·⟩` is a closed concave function** in the infimum-oriented mirror, the reflection
-`x* ↦ -x*` being a homeomorphism. -/
+/-- Let $Y$ be a topological additive group such that $\langle x, \cdot \rangle$ is continuous on
+$Y$ for each $x \in X$. For an infimum-oriented process, the function
+$x^* \mapsto \langle Au, x^* \rangle$ is a closed concave function, because the reflection
+$x^* \mapsto -x^*$ is a homeomorphism. -/
 theorem closedConcave_coBracket (A : ConvexProcess U X) (u : U) :
     ClosedConcave (coBracket Bx A u) := by
   rw [closedConcave_iff_closedConvex_neg, neg_coBracket_eq_compLin]
@@ -1862,9 +2124,12 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- The second of the two extremum problems, in infimum-oriented form:
-`⟨u, A* x*⟩ = sup {⟨u, u*⟩ | u* ∈ A* x*}`, where `A*` is now the infimum-oriented adjoint
-`coadjointProcess`, whose values are the reflections of those of `adjointProcess`. -/
+/-- The second of the two extremum problems, in infimum-oriented form: with $A^*$ the
+infimum-oriented adjoint,
+$$\sup \{\langle u, u^* \rangle \mid u^* \in A^* x^*\} = -\langle u, F^*(-x^*) \rangle,$$
+where the right side is minus the concave bracket of the adjoint $F^*$ of the indicator
+bifunction $F$ of $A$ at $(u, -x^*)$. The values of the infimum-oriented adjoint are the
+reflections of the values of the supremum-oriented one. -/
 theorem iSup_coadjointProcess_eq_neg_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (u : U) (y : Y) :
     ⨆ v ∈ (coadjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal)
@@ -1889,12 +2154,18 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 namespace ConvexProcess
 
-/-- **`⟨u, A* x*⟩ = cl_u ⟨Au, x*⟩`**, the infimum-oriented mirror.
+/-- $\langle u, A^* x^* \rangle = \operatorname{cl}_u \langle Au, x^* \rangle$, in infimum-oriented
+form. Let $U$ be a locally convex topological vector space whose continuous linear functionals
+are exactly $\langle \cdot, u^* \rangle$ for $u^* \in V$, and let $A^*$ be the infimum-oriented
+adjoint. Then for each $x^* \in Y$ the function $u \mapsto \sup \{\langle u, u^* \rangle \mid
+u^* \in A^* x^*\}$ is the closure of the convex function $u \mapsto \inf \{\langle x, x^*
+\rangle \mid x \in Au\}$.
 
-The closure is now the ordinary convex closure `convexCl`, because `⟨A ·, x*⟩` is convex rather than
-concave (`convexFn_coBracket_arg`); in the supremum-oriented statement
-`concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁` it is the concave closure
-`concaveCl` packaged as `partialCl₁`. As there, closedness of `A` plays no part. -/
+The closure is the convex closure `ConvexAnalysis.convexCl`, because $u \mapsto \inf \{\langle
+x, x^* \rangle \mid x \in Au\}$ is convex and not concave
+(`ConvexAnalysis.ConvexProcess.convexFn_coBracket_arg`). In the supremum-oriented statement
+`ConvexAnalysis.ConvexProcess.concaveBracket_convexAdjointBifun_indicatorBifun_eq_partialCl₁` it
+is the concave closure. As there, closedness of $A$ plays no part. -/
 theorem iSup_coadjointProcess_eq_convexCl (A : ConvexProcess U X) (y : Y) :
     (fun u => ⨆ v ∈ (coadjointProcess Bu Bx A).eval y, ((Bu u v : ℝ) : EReal))
       = fun u => convexCl (fun u' => coBracket Bx A u' y) u := by

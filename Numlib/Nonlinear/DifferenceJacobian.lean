@@ -9,30 +9,44 @@ import Numlib.Analysis.Normed.Lp.PiLp
 /-!
 # Difference approximations of the Jacobian matrix
 
-The forward-difference Jacobian `J_h` of a map `F : ℝⁿ → ℝⁿ` at `x` with increments `h j` along
-the canonical basis vectors ([quarteroni2000numerical] §7.1.2, (7.9)),
+Let $F : \mathbb{R}^n \to \mathbb{R}^n$, let $x \in \mathbb{R}^n$, and let $h_1, \dots, h_n$ be
+nonzero increments. The **forward-difference Jacobian** $J_h$ of $F$ at $x$ is the matrix whose
+column $j$ is the difference quotient along the canonical basis vector $e_j$,
+$$(J_h)_j = \frac{F(x + h_j e_j) - F(x)}{h_j}.$$
+This is (7.9) in §7.1.2 of [quarteroni2000numerical]. The module bounds the error of $J_h$ against
+the derivative $F'(x)$. If $F'$ is $L$-Lipschitz around $x$, then column by column
+$\|(J_h - F'(x)) e_j\| \le (L/2)|h_j|$, and in the operator norm
+$$\|J_h - F'(x)\| \le \sqrt{n}\, \frac{L}{2} \max_j |h_j|.$$
 
-  `(J_h)_j = (F (x + h_j e_j) - F x) / h_j`,
+The theorems on Newton-like iterations with approximate derivatives in `Numlib.Nonlinear.Newton`
+(`Newton.norm_approxStep_sub_le`, `Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le`,
+`Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul`) take an arbitrary approximation $B_k$ of
+$F'(x_k)$. The matrix `Matrix.toEuclideanCLM (Matrix.differenceJacobian F (x k) (h k))` is an
+instance of $B_k$. The convergence of the Newton method with difference Jacobians, Property 7.1 of
+[quarteroni2000numerical], is the combination of these theorems with the bounds of this module.
 
-and its error against the true derivative `F' x`: column by column,
-`‖(J_h - F' x) e_j‖ ≤ (L / 2) |h_j|` when `F'` is `L`-Lipschitz around `x` (the sharp second-order
-mean value inequality `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` of
-`Numlib/Analysis/Calculus/MeanValue`), and in the operator norm,
-`‖J_h - F' x‖ ≤ √n (L / 2) max_j |h_j|`.
+## Main definitions
 
-The module lives on `EuclideanSpace ℝ ι` with the matrix read as an operator through
-`Matrix.toEuclideanCLM`, because a difference Jacobian needs coordinates: `Numlib/Nonlinear/Newton`
-is a Banach-space file with no basis, and its theorems on Newton-like iterations with approximate
-derivatives (`Newton.norm_approxStep_sub_le`,
-`Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le`,
-`Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul`) take an arbitrary approximation `B k` of
-`F' (x k)`, of which `toEuclideanCLM (differenceJacobian F (x k) (h k))` is the instance. The
-convergence of the difference-Jacobian Newton method ([quarteroni2000numerical] Property 7.1) is
-the combination of the two.
+* `Matrix.differenceJacobian`: the forward-difference Jacobian $J_h$ of $F$ at $x$.
 
-[quarteroni2000numerical] states Property 7.1 in the `‖·‖₁` norm, where the column-wise bound gives
-`‖J_h - F' x‖₁ ≤ (L / 2) max_j |h_j|` with no dimensional factor; in the Euclidean norm used here
-the factor `√n` appears (`∑ |v_j| ≤ √n ‖v‖₂`), which is irrelevant to the convergence conclusions.
+## Main results
+
+* `Matrix.toEuclideanCLM_differenceJacobian_single`: $J_h e_j = (F(x + h_j e_j) - F(x))/h_j$.
+* `Matrix.norm_differenceJacobian_col_sub_le`: $\|(J_h - F'(x)) e_j\| \le (L/2)|h_j|$.
+* `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`:
+  $\|J_h - F'(x)\| \le \sqrt{n}\,(L/2)\,\eta$ when $|h_j| \le \eta$ for all $j$.
+
+## Implementation notes
+
+* The space is `EuclideanSpace ℝ ι`, and a matrix acts on it through `Matrix.toEuclideanCLM`. A
+  difference Jacobian needs coordinates, and `Numlib.Nonlinear.Newton` works in Banach spaces with
+  no basis.
+* The column-wise bound is the sharp second-order mean value inequality
+  `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` of `Numlib.Analysis.Calculus.MeanValue`.
+* [quarteroni2000numerical] states Property 7.1 in the norm $\|\cdot\|_1$. There the column-wise
+  bound gives $\|J_h - F'(x)\|_1 \le (L/2) \max_j |h_j|$ with no factor that depends on the
+  dimension. In the Euclidean norm of this module the factor $\sqrt{n}$ appears, from
+  $\sum_j |v_j| \le \sqrt{n}\, \|v\|_2$. The factor does not change the convergence conclusions.
 -/
 
 open scoped InnerProductSpace
@@ -41,23 +55,28 @@ namespace Matrix
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- The forward-difference Jacobian of `F : ℝⁿ → ℝⁿ` at `x` with increments `h`
-([quarteroni2000numerical] (7.9)): column `j` is the difference quotient
-`(F (x + h_j e_j) - F x) / h_j` along the `j`-th canonical basis vector. An increment `h j = 0`
-gives the junk column `0`. -/
+/-- The **forward-difference Jacobian** of $F : \mathbb{R}^n \to \mathbb{R}^n$ at $x$ with
+increments $h \in \mathbb{R}^n$. It is the matrix with entries
+$$(J_h)_{ij} = \frac{F_i(x + h_j e_j) - F_i(x)}{h_j},$$
+so that column $j$ is the difference quotient of $F$ along the $j$-th canonical basis vector
+$e_j$. This is (7.9) of [quarteroni2000numerical].
+
+An increment $h_j = 0$ gives the column $0$, because division by zero gives $0$ in Lean. -/
 noncomputable def differenceJacobian (F : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι)
     (x : EuclideanSpace ℝ ι) (h : ι → ℝ) : Matrix ι ι ℝ :=
   Matrix.of fun i j => (F (x + h j • EuclideanSpace.single j 1) i - F x i) / h j
 
 omit [Fintype ι] in
-/-- The entries of the difference Jacobian. -/
+/-- The entry $(i, j)$ of the difference Jacobian is $(F_i(x + h_j e_j) - F_i(x))/h_j$. -/
 theorem differenceJacobian_apply (F : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι)
     (x : EuclideanSpace ℝ ι) (h : ι → ℝ) (i j : ι) :
     differenceJacobian F x h i j = (F (x + h j • EuclideanSpace.single j 1) i - F x i) / h j :=
   rfl
 
-/-- Column `j` of the difference Jacobian, read as the image of the basis vector `e_j` under the
-matrix acting on `EuclideanSpace ℝ ι`: the difference quotient of `F` along `e_j`. -/
+/-- Column $j$ of the difference Jacobian, read as the image of the basis vector $e_j$ under the
+matrix acting on $\mathbb{R}^n$, is the difference quotient of $F$ along $e_j$:
+$$J_h e_j = h_j^{-1} \bigl(F(x + h_j e_j) - F(x)\bigr).$$
+This holds for every $h$; for $h_j = 0$ both sides are $0$. -/
 theorem toEuclideanCLM_differenceJacobian_single (F : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι)
     (x : EuclideanSpace ℝ ι) (h : ι → ℝ) (j : ι) :
     toEuclideanCLM (𝕜 := ℝ) (differenceJacobian F x h) (EuclideanSpace.single j 1)
@@ -65,10 +84,16 @@ theorem toEuclideanCLM_differenceJacobian_single (F : EuclideanSpace ℝ ι → 
   ext i
   simp [ofLp_toEuclideanCLM, differenceJacobian, div_eq_inv_mul]
 
-/-- **Column-wise error of the difference Jacobian.** If `F` is differentiable on `ball x r` with
-`‖F' y - F' x‖ ≤ L ‖y - x‖` there, and `0 < |h j| < r`, then
-`‖(J_h - F' x) e_j‖ ≤ (L / 2) |h j|`: the difference quotient along `e_j` is within `(L / 2) |h j|`
-of the directional derivative, by the sharp second-order mean value inequality. -/
+/-- **Column-wise error of the difference Jacobian.** Let $F : \mathbb{R}^n \to \mathbb{R}^n$, let
+$x \in \mathbb{R}^n$ and $r, L \in \mathbb{R}$. Assume that $F$ has the derivative $F'(y)$ at
+every $y$ in the open ball $B(x, r)$, with
+$$\|F'(y) - F'(x)\| \le L \|y - x\| \quad \text{for } y \in B(x, r).$$
+Let $h \in \mathbb{R}^n$ and $j$ an index with $h_j \neq 0$ and $|h_j| < r$. Then
+$$\|(J_h - F'(x)) e_j\| \le \frac{L}{2} |h_j|.$$
+
+The difference quotient along $e_j$ is within $(L/2)|h_j|$ of the directional derivative
+$F'(x) e_j$, by the sharp second-order mean value inequality
+`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`. -/
 theorem norm_differenceJacobian_col_sub_le {F : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι}
     {F' : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι}
     {x : EuclideanSpace ℝ ι} {r L : ℝ} (hF : ∀ y ∈ Metric.ball x r, HasFDerivAt F (F' y) y)
@@ -97,13 +122,18 @@ theorem norm_differenceJacobian_col_sub_le {F : EuclideanSpace ℝ ι → Euclid
   calc |h j|⁻¹ * ‖F (x + v) - F x - F' x v‖ ≤ |h j|⁻¹ * (L / 2 * |h j| ^ 2) := by gcongr
     _ = L / 2 * |h j| := by field_simp
 
-/-- **Operator-norm error of the difference Jacobian.** Under the hypotheses of
-`Matrix.norm_differenceJacobian_col_sub_le` for every column, with all increments bounded by `η`,
-`‖J_h - F' x‖ ≤ √n (L / 2) η` on `EuclideanSpace ℝ ι`, `n = card ι`. The proof expands `v` in the
-canonical basis, `‖(J_h - F' x) v‖ ≤ ∑_j |v_j| ‖(J_h - F' x) e_j‖ ≤ (L / 2) η ∑_j |v_j|`, and uses
-`∑_j |v_j| ≤ √n ‖v‖` (`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`). In the `‖·‖₁` norm of
-[quarteroni2000numerical] Property 7.1 the last step is an equality and the factor `√n` is
-absent. -/
+/-- **Operator-norm error of the difference Jacobian.** Let $F : \mathbb{R}^n \to \mathbb{R}^n$, let
+$x \in \mathbb{R}^n$ and $r, L \in \mathbb{R}$. Assume that $F$ has the derivative $F'(y)$ at
+every $y$ in the open ball $B(x, r)$, with $\|F'(y) - F'(x)\| \le L \|y - x\|$ there. Let
+$h \in \mathbb{R}^n$ with $h_j \neq 0$ and $|h_j| < r$ for every $j$, and let $|h_j| \le \eta$
+for every $j$. Then, in the operator norm on Euclidean space,
+$$\|J_h - F'(x)\| \le \sqrt{n}\, \frac{L}{2}\, \eta.$$
+
+Here $n$ is the cardinality of the index type `ι`. The proof expands $v$ in the canonical basis,
+uses $\|(J_h - F'(x)) v\| \le \sum_j |v_j| \|(J_h - F'(x)) e_j\| \le (L/2)\, \eta \sum_j |v_j|$,
+and bounds $\sum_j |v_j| \le \sqrt{n}\, \|v\|$ with
+`PiLp.norm_toLp_one_le_sqrt_card_mul_norm_toLp_two`. In the norm $\|\cdot\|_1$ of Property 7.1
+of [quarteroni2000numerical] the last step is an equality, and the factor $\sqrt{n}$ is absent. -/
 theorem opNorm_toEuclideanCLM_differenceJacobian_sub_le
     {F : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι}
     {F' : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι}

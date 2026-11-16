@@ -15,36 +15,71 @@ import Numlib.Stationary.Sweep
 /-!
 # Convergence of Jacobi and Gauss–Seidel for diagonally dominant matrices
 
-The convergence of the Jacobi and Gauss–Seidel iterations for strictly and irreducibly diagonally
-dominant matrices ([saad2003iterative] Theorem 4.9 and Corollary 4.8; [kress1998numerical]
-Theorems 4.2–4.3 and Corollary 4.4, with the explicit `‖·‖_∞` contraction constants, and
-Theorem 4.7; [han2009theoretical] Example 5.2.2).  The dominance predicates themselves and their
-nonsingularity theorems are in `Numlib/LinearAlgebra/Matrix/DiagDominant.lean`; the splittings are
-those of `Numlib/Stationary/Splitting.lean`.
+Let $A = (a_{ij})$ be a square matrix over $\mathbb{R}$ or $\mathbb{C}$, indexed by a finite
+linearly ordered set, and write $A = D - E - F$, where $D$ is the diagonal of $A$ and $-E$ and $-F$
+are its strictly lower and strictly upper triangular parts. This module proves that the Jacobi
+iteration matrix $G_J = D^{-1}(E + F)$ and the Gauss–Seidel iteration matrix
+$G_{GS} = (D - E)^{-1} F$ have spectral radius less than $1$ when $A$ is strictly or irreducibly
+diagonally dominant ([saad2003iterative], Theorem 4.9 and Corollary 4.8; [kress1998numerical],
+Theorems 4.2–4.3, Corollary 4.4 and Theorem 4.7; [han2009theoretical], Example 5.2.2). It also
+proves the convergence of SOR for $0 < \omega \le 1$ under strict row dominance
+([quarteroni2000numerical], Property 4.3).
 
-The two explicit constants are [kress1998numerical].  The *Jacobi constant* `q_∞ = max_i ∑_{j ≠ i}
-|a_ij| / |a_ii|` is exactly `‖G_J‖_∞`, the `‖·‖_∞` operator norm of the Jacobi iteration matrix
-`G_J`.  The *Sassenfeld numbers* `p_i`, defined by the recursion `p_i = (∑_{j < i} |a_ij| p_j + ∑_{j
-> i} |a_ij|) / |a_ii|`, bound the corresponding norm `‖G_GS‖_∞ ≤ max_i p_i` of the Gauss–Seidel
-iteration matrix `G_GS`.  Under strict row dominance both constants are `< 1`, so both iterations
-converge.
+Two explicit constants of [kress1998numerical] bound the iteration matrices in the maximum norm
+$\|\cdot\|_\infty$. The **Jacobi constant** $q_\infty = \max_i \sum_{j \neq i} |a_{ij}| / |a_{ii}|$
+is exactly $\|G_J\|_\infty$. The **Sassenfeld numbers** $p_i$, defined by the recursion $p_i =
+(\sum_{j<i} |a_{ij}| p_j + \sum_{j>i} |a_{ij}|) / |a_{ii}|$, bound
+$\|G_{GS}\|_\infty \le \max_i p_i$. Under strict row dominance both constants are less than $1$.
+Strict dominance in every row is more than convergence needs: a matrix that is irreducible, weakly
+dominant in every row and strictly dominant in one row is still nonsingular, and Jacobi and
+Gauss–Seidel still converge for it.
 
-Strict dominance in *every* row is more than convergence needs.  A matrix that is only weakly
-dominant, but is *irreducible* and strictly dominant in one row
-(`Matrix.IsIrreduciblyDiagDominant`) is still nonsingular, and Jacobi and Gauss–Seidel still
-converge for it ([saad2003iterative] Theorem 4.9).  The engine is
-`Matrix.IsPatternIrreducible.isUnit_of_dominant`, applied to a *pencil* — the matrix `A` with its
-diagonal, or its whole lower triangle, scaled by the eigenvalue in question — which for an
-eigenvalue of modulus at least one inherits the dominance of `A`, and is therefore nonsingular; so
-no such eigenvalue exists.  The same pencil, with strict column dominance in place of
-irreducibility, gives Gauss–Seidel under column dominance
-(`Matrix.gaussSeidel_spectralRadius_lt_one_of_col`).
+## Main definitions
 
-Everything spectral is stated over `ℂ`.  The last section reads the six statements back for a
-*real* matrix through `Matrix.complexSpectralRadius`, the spectral radius of the complexification
-(`Matrix.jacobi_complexSpectralRadius_lt_one` and its companions), since the classical splittings
-commute with `Matrix.complexify` (`Matrix.complexify_jacobi_iterationOperator`,
-`Matrix.complexify_gaussSeidel_iterationOperator`).
+* `Matrix.jacobiContraction`: the Jacobi constant $q_\infty$.
+* `Matrix.sassenfeld`: the Sassenfeld numbers $p_i$.
+
+## Main results
+
+* `Matrix.linfty_opNorm_jacobi_iterMatrix`: $\|G_J\|_\infty = q_\infty$.
+* `Matrix.IsStrictDiagDominant.jacobiContraction_lt_one`: strict row dominance gives $q_\infty < 1$.
+* `Matrix.linfty_opNorm_gaussSeidel_iterMatrix_le`: Sassenfeld's criterion
+  $\|G_{GS}\|_\infty \le \max_i p_i$.
+* `Matrix.sassenfeld_le_jacobiContraction`: strict row dominance gives $p_i \le q_\infty$.
+* `Matrix.jacobi_spectralRadius_lt_one` and `Matrix.gaussSeidel_spectralRadius_lt_one`: strict row
+  dominance gives $\rho(G_J) < 1$ and $\rho(G_{GS}) < 1$.
+* `Matrix.jacobi_spectralRadius_lt_one_of_col` and
+  `Matrix.gaussSeidel_spectralRadius_lt_one_of_col`: the same under strict column dominance.
+* `Matrix.sorSplitting_spectralRadius_lt_one_of_le_one`: strict row dominance gives
+  $\rho(G_\omega) < 1$ for $0 < \omega \le 1$.
+* `Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one` and
+  `Matrix.IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one`: irreducible diagonal
+  dominance gives $\rho(G_J) < 1$ and $\rho(G_{GS}) < 1$.
+* `Matrix.jacobi_complexSpectralRadius_lt_one` and its companions: the same statements for real
+  matrices.
+
+## Proof outline
+
+The irreducible and the column-dominant cases use a pencil: the matrix $A$ with its diagonal, or
+with its whole lower triangle, scaled by an eigenvalue $\mu$ of the iteration matrix. If
+$|\mu| \ge 1$, the pencil inherits the dominance of $A$, so it is nonsingular by
+`Matrix.IsPatternIrreducible.isUnit_of_dominant` or by strict column dominance. But it annihilates
+the eigenvector, so no such eigenvalue exists. The strictly row-dominant cases compare the moduli in
+the row where an eigenvector attains its maximum norm.
+
+## Implementation notes
+
+* The dominance predicates and their nonsingularity theorems are in
+  `Numlib.LinearAlgebra.Matrix.DiagDominant`, and the splittings are those of
+  `Numlib.Stationary.Splitting`.
+* The spectral statements are made for complex matrices. The last section states them for a real
+  matrix through `Matrix.complexSpectralRadius`, the spectral radius of the complexification,
+  because the classical splittings commute with `Matrix.complexify`
+  (`Matrix.complexify_jacobi_iterationOperator`, `Matrix.complexify_gaussSeidel_iterationOperator`).
+* The norm $\|\cdot\|_\infty$ of a matrix is the operator norm of the scoped instance
+  `Matrix.Norms.Operator`, the maximum absolute row sum.
+* The Jacobi constant and the maximum of the Sassenfeld numbers need an index set with at least one
+  element.
 -/
 
 namespace Matrix
@@ -57,58 +92,71 @@ section Def
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The Jacobi contraction constant `q_∞ = max_i ∑_{j ≠ i} |a_ij| / |a_ii|` ([kress1998numerical],
-Thm 4.2). -/
+/-- The **Jacobi constant** of a square matrix $A$ of order $n \ge 1$ is
+$$q_\infty = \max_i \frac{1}{|a_{ii}|} \sum_{j \neq i} |a_{ij}|$$
+([kress1998numerical], Theorem 4.2).
+
+Division by $|a_{ii}| = 0$ gives $0$ in Lean. -/
 noncomputable def jacobiContraction [Nonempty n] (A : Matrix n n 𝕜) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty fun i => (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖
 
 omit [LinearOrder n] in
-/-- Strict row dominance says exactly that each row quotient `∑_{j ≠ i} |a_ij| / |a_ii|` is `< 1`,
-so their maximum `q_∞` is too.  With `Matrix.linfty_opNorm_jacobi_iterMatrix`, which identifies
-`q_∞` with `‖G_J‖_∞`, this makes the Jacobi iteration a contraction in the `‖·‖_∞` norm. -/
+/-- Let $A$ be a square matrix of order $n \ge 1$ that is strictly diagonally dominant by rows,
+$\sum_{j \neq i} |a_{ij}| < |a_{ii}|$ for every $i$. Then the Jacobi constant satisfies
+$q_\infty < 1$.
+
+With `Matrix.linfty_opNorm_jacobi_iterMatrix`, which identifies $q_\infty$ with
+$\|G_J\|_\infty$, this makes the Jacobi iteration a contraction in the norm $\|\cdot\|_\infty$. -/
 theorem IsStrictDiagDominant.jacobiContraction_lt_one [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsStrictDiagDominant) : jacobiContraction A < 1 := by
   rw [jacobiContraction, Finset.sup'_lt_iff]
   exact fun i _ => (div_lt_one (norm_pos_iff.mpr (hA.diag_ne_zero i))).mpr (hA i)
 
 omit [LinearOrder n] in
-/-- Every row quotient `∑_{j ≠ i} |a_ij| / |a_ii|` is at most the Jacobi constant `q_∞`, of which it
-is the defining supremum. -/
+/-- For every row $i$, the quotient $\sum_{j \neq i} |a_{ij}| / |a_{ii}|$ is at most the Jacobi
+constant $q_\infty$. -/
 theorem div_le_jacobiContraction [Nonempty n] (A : Matrix n n 𝕜) (i : n) :
     (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖ ≤ jacobiContraction A :=
   Finset.le_sup' (fun i => (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖) (Finset.mem_univ i)
 
 omit [LinearOrder n] in
-/-- The Jacobi constant `q_∞` is nonnegative, being a supremum of quotients of norms. -/
+/-- The Jacobi constant is nonnegative: $q_\infty \ge 0$. -/
 theorem jacobiContraction_nonneg [Nonempty n] (A : Matrix n n 𝕜) : 0 ≤ jacobiContraction A := by
   obtain ⟨i⟩ := ‹Nonempty n›
   refine le_trans ?_ (div_le_jacobiContraction A i)
   positivity
 
-/-- Sassenfeld numbers `p_i = (∑_{j < i} |a_ij| p_j + ∑_{j > i} |a_ij|) / |a_ii|`
-([kress1998numerical], Thm 4.3), obtained as the solution of the lower-triangular system `(|D| -
-|L|) p = |U| 𝟙`. -/
+/-- The **Sassenfeld numbers** of a square matrix $A$ are the solution $p$ of the lower triangular
+system
+$$p_i = \frac{1}{|a_{ii}|} \Bigl(\sum_{j<i} |a_{ij}| p_j + \sum_{j>i} |a_{ij}|\Bigr)$$
+([kress1998numerical], Theorem 4.3).
+
+The definition is $p = (|D| - |L|)^{-1} s$, where the lower triangular matrix $|D| - |L|$ has
+the entries $|a_{ii}|$ on the diagonal and $-|a_{ij}|$ below it, and
+$s_i = \sum_{j>i} |a_{ij}|$. The recursion holds when the diagonal of $A$ is invertible
+(`Matrix.sassenfeld_eq`). Otherwise the matrix inverse is Mathlib's value $0$, and $p = 0$. -/
 noncomputable def sassenfeld (A : Matrix n n 𝕜) : n → ℝ :=
   (Matrix.of fun i j => if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0)⁻¹ *ᵥ
     fun i => ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖
 
-/-- The lower-triangular matrix `|D| - |L|` defining the Sassenfeld numbers. -/
+/-- The lower triangular matrix $|D| - |L|$, with the entries $|a_{ii}|$ on the diagonal,
+$-|a_{ij}|$ below it and $0$ above it. -/
 private def sassenfeldMatrix (A : Matrix n n 𝕜) : Matrix n n ℝ :=
   Matrix.of fun i j => if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0
 
 omit [Fintype n] in
-/-- Entries of the Sassenfeld matrix `|D| - |L|`. -/
+/-- The entries of the matrix $|D| - |L|$. -/
 private theorem sassenfeldMatrix_apply (A : Matrix n n 𝕜) (i j : n) :
     sassenfeldMatrix A i j = if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0 := rfl
 
-/-- The Sassenfeld numbers as the solution of the lower-triangular system `(|D| - |L|) p = |U| 𝟙`.
--/
+/-- The Sassenfeld numbers are $(|D| - |L|)^{-1}$ applied to the vector of the upper row sums
+$\sum_{j>i} |a_{ij}|$. -/
 private theorem sassenfeld_def (A : Matrix n n 𝕜) :
     sassenfeld A =
       (sassenfeldMatrix A)⁻¹ *ᵥ fun i => ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖ := rfl
 
-/-- The Sassenfeld matrix is lower triangular with `|a_ii|` on its diagonal, hence nonsingular
-whenever the diagonal of `A` is. -/
+/-- If the diagonal of $A$ is invertible, then so is the lower triangular matrix $|D| - |L|$, whose
+diagonal entries are $|a_{ii}|$. -/
 private theorem isUnit_sassenfeldMatrix {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
     IsUnit (sassenfeldMatrix A) := by
   have hd := (isUnit_diagPart_iff A).mp h
@@ -120,7 +168,9 @@ private theorem isUnit_sassenfeldMatrix {A : Matrix n n 𝕜} (h : IsUnit (diagP
   exact Finset.prod_ne_zero_iff.mpr fun i _ => by
     simpa [sassenfeldMatrix_apply] using norm_ne_zero_iff.mpr (hd i)
 
-/-- The defining recursion of the Sassenfeld numbers. -/
+/-- If the diagonal of $A$ is invertible, then the Sassenfeld numbers satisfy, for every $i$,
+$$p_i = \frac{1}{|a_{ii}|} \Bigl(\sum_{j<i} |a_{ij}| p_j + \sum_{j>i} |a_{ij}|\Bigr).$$
+-/
 theorem sassenfeld_eq {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
     sassenfeld A i = ((∑ j ∈ Finset.univ.filter (· < i), ‖A i j‖ * sassenfeld A j) +
       ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖) / ‖A i i‖ := by
@@ -144,7 +194,7 @@ theorem sassenfeld_eq {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
   rw [eq_div_iff (norm_ne_zero_iff.mpr (hd i))]
   linarith [hi]
 
-/-- Row `i` of `(diagPart A + strictLower A) *ᵥ v`, with the diagonal term separated off. -/
+/-- Row $i$ of $(D - E) v$ is $a_{ii} v_i + \sum_{j<i} a_{ij} v_j$. -/
 private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
     ((diagPart A + strictLower A) *ᵥ v) i =
       A i i * v i + ∑ j ∈ Finset.univ.filter (· < i), A i j * v j := by
@@ -153,7 +203,8 @@ private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v :
     ← Finset.sum_filter]
 
 omit [Fintype n] [DecidableEq n] [LinearOrder n] in
-/-- `‖∑_{j ∈ s} a_ij x_j‖ ≤ (∑_{j ∈ s} ‖a_ij‖) ‖x‖_∞`. -/
+/-- If $|v_j| \le c$ for every $j$, then $|\sum_{j \in s} a_{ij} v_j| \le (\sum_{j \in s} |a_{ij}|)
+\, c$. -/
 private theorem norm_sum_mul_le (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) (s : Finset n) {c : ℝ}
     (hc : ∀ j, ‖v j‖ ≤ c) : ‖∑ j ∈ s, A i j * v j‖ ≤ (∑ j ∈ s, ‖A i j‖) * c :=
   calc ‖∑ j ∈ s, A i j * v j‖ ≤ ∑ j ∈ s, ‖A i j * v j‖ := norm_sum_le _ _
@@ -169,7 +220,8 @@ open scoped Matrix.Norms.Operator
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- Entries of the Jacobi iteration matrix. -/
+/-- The entries of the Jacobi iteration matrix are $0$ on the diagonal and $-a_{ij} / a_{ii}$ off
+the diagonal. -/
 private theorem jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (i j : n) : (jacobiSplitting A h).iterationOperator i j =
       if i = j then 0 else -((A i i)⁻¹ * A i j) := by
@@ -179,15 +231,16 @@ private theorem jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit
   · simp [diagonal_mul]
   · simp [diagonal_mul, hlt, hlt.ne', asymm hlt]
 
-/-- Off-diagonal entries of the Jacobi iteration matrix have norm `|a_ij| / |a_ii|`. -/
+/-- The off-diagonal entries of the Jacobi iteration matrix have absolute value
+$|a_{ij}| / |a_{ii}|$. -/
 private theorem norm_jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     {i j : n} (hij : j ≠ i) :
     ‖(jacobiSplitting A h).iterationOperator i j‖ = ‖A i j‖ / ‖A i i‖ := by
   rw [jacobi_iterationOperator_apply, ite_eq_right (Ne.symm hij), norm_neg, norm_mul, norm_inv,
     div_eq_inv_mul]
 
-/-- The absolute row sums of the Jacobi iteration matrix are the row quotients whose supremum is the
-Jacobi constant. -/
+/-- The absolute row sums of the Jacobi iteration matrix are the quotients
+$\sum_{j \neq i} |a_{ij}| / |a_{ii}|$. -/
 private theorem sum_norm_jacobi_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (i : n) : ∑ j, ‖(jacobiSplitting A h).iterationOperator i j‖ =
       (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖ := by
@@ -196,8 +249,13 @@ private theorem sum_norm_jacobi_iterationOperator (A : Matrix n n 𝕜) (h : IsU
   exact Finset.sum_congr rfl fun j hj =>
     norm_jacobi_iterationOperator_apply A h (Finset.ne_of_mem_erase hj)
 
-/-- [kress1998numerical], Thm 4.2: `‖G_J‖_∞ = q_∞` for the Jacobi iteration matrix, with `q_∞` the
-Jacobi constant `jacobiContraction`. -/
+/-- Let $A$ be a square matrix of order $n \ge 1$ with invertible diagonal. Then the Jacobi
+iteration matrix satisfies
+$$\|G_J\|_\infty = q_\infty,$$
+where $q_\infty$ is the Jacobi constant `Matrix.jacobiContraction` ([kress1998numerical],
+Theorem 4.2).
+
+The norm is the operator norm $\|\cdot\|_\infty$ of the scoped instance `Matrix.Norms.Operator`. -/
 theorem linfty_opNorm_jacobi_iterMatrix [Nonempty n] (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     ‖(jacobiSplitting A h).iterationOperator‖ = jacobiContraction A := by
   rw [linfty_opNorm_def, ← Finset.sup'_eq_sup Finset.univ_nonempty,
@@ -206,7 +264,7 @@ theorem linfty_opNorm_jacobi_iterMatrix [Nonempty n] (A : Matrix n n 𝕜) (h : 
   refine Finset.sup'_congr _ rfl fun i _ => ?_
   simpa using sum_norm_jacobi_iterationOperator A h i
 
-/-- `(D - E) G_GS = F`, i.e. `(D + L) G = -U` in the `strictLower`/`strictUpper` letters. -/
+/-- $(D - E) \, G_{GS} = F$. -/
 private theorem diagPart_add_strictLower_mul_gaussSeidel (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) :
     (diagPart A + strictLower A) * (gaussSeidelSplitting A h).iterationOperator =
@@ -215,7 +273,7 @@ private theorem diagPart_add_strictLower_mul_gaussSeidel (A : Matrix n n 𝕜)
     show (gaussSeidelSplitting A h).m = diagPart A + strictLower A from rfl,
     Ring.mul_inverse_cancel _ (isUnit_diagPart_add_strictLower h), one_mul]
 
-/-- The Sassenfeld numbers are nonnegative. -/
+/-- If the diagonal of $A$ is invertible, then the Sassenfeld numbers are nonnegative. -/
 theorem sassenfeld_nonneg {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
     0 ≤ sassenfeld A i := by
   induction i using WellFoundedLT.induction with
@@ -225,10 +283,14 @@ theorem sassenfeld_nonneg {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n
       (Finset.sum_nonneg fun _ _ => norm_nonneg _)) (norm_nonneg _)
     exact mul_nonneg (norm_nonneg _) (ih j (by simpa using (Finset.mem_filter.mp hj).2))
 
-/-- Sassenfeld's criterion ([kress1998numerical], Thm 4.3): `‖G_GS‖_∞ ≤ max_i p_i`, with `p` the
-Sassenfeld numbers `sassenfeld`.  For `y = G_GS x` the relation `(D - E) y = F x` gives `|y_i| ≤
-(∑_{j<i} |a_ij| |y_j| + ∑_{j>i} |a_ij| ‖x‖_∞) / |a_ii|`, so `|y_i| ≤ p_i ‖x‖_∞` by induction along
-the order of the index type. -/
+/-- **Sassenfeld's criterion.** Let $A$ be a square matrix of order $n \ge 1$ with invertible
+diagonal. Then the Gauss–Seidel iteration matrix satisfies
+$$\|G_{GS}\|_\infty \le \max_i p_i,$$
+where $p$ are the Sassenfeld numbers `Matrix.sassenfeld` ([kress1998numerical], Theorem 4.3).
+
+For $y = G_{GS} x$, the relation $(D - E) y = F x$ gives $|y_i| \le (\sum_{j<i} |a_{ij}| |y_j| +
+\sum_{j>i} |a_{ij}| \|x\|_\infty) / |a_{ii}|$. So $|y_i| \le p_i \|x\|_\infty$, by induction
+along the order of the indices. -/
 theorem linfty_opNorm_gaussSeidel_iterMatrix_le [Nonempty n] (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) :
     ‖(gaussSeidelSplitting A h).iterationOperator‖ ≤
@@ -278,7 +340,7 @@ theorem linfty_opNorm_gaussSeidel_iterMatrix_le [Nonempty n] (A : Matrix n n �
   exact fun i => (hyi i).trans
     (mul_le_mul_of_nonneg_right (Finset.le_sup' (sassenfeld A) (Finset.mem_univ i)) hxnn)
 
-/-- Splitting a row sum over `j ≠ i` into the parts below and above the diagonal. -/
+/-- A sum over $j \neq i$ is the sum over $j < i$ plus the sum over $j > i$. -/
 private theorem sum_erase_eq_sum_lt_add_sum_gt (f : n → ℝ) (i : n) :
     ∑ j ∈ Finset.univ.erase i, f j =
       (∑ j ∈ Finset.univ.filter (· < i), f j) + ∑ j ∈ Finset.univ.filter (i < ·), f j := by
@@ -288,8 +350,9 @@ private theorem sum_erase_eq_sum_lt_add_sum_gt (f : n → ℝ) (i : n) :
   refine Finset.sum_congr (Finset.ext fun j => ?_) fun _ _ => rfl
   simp [Finset.mem_erase, lt_or_lt_iff_ne]
 
-/-- [kress1998numerical], Cor 4.4: under strict row dominance the Sassenfeld numbers are `≤ q_∞ <
-1`, so Gauss–Seidel converges at least as fast as the Jacobi bound. -/
+/-- Let $A$ be a square matrix of order $n \ge 1$ that is strictly diagonally dominant by rows. Then
+$p_i \le q_\infty$ for every $i$ ([kress1998numerical], Corollary 4.4). Since $q_\infty < 1$,
+the bound for Gauss–Seidel is at least as good as the bound for Jacobi. -/
 theorem sassenfeld_le_jacobiContraction [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsStrictDiagDominant) (i : n) :
     sassenfeld A i ≤ jacobiContraction A := by
@@ -319,8 +382,8 @@ section Pencil
 variable {𝕜 : Type*} [RCLike 𝕜]
 
 omit [Fintype n] in
-/-- Entries of the pencil `μ D + E' + F'` whose singularity detects the eigenvalue `μ` of the Jacobi
-iteration matrix: the diagonal of `A` is scaled by `μ` and nothing else changes. -/
+/-- The entries of the pencil $\mu D - E - F$ are $\mu a_{ii}$ on the diagonal and $a_{ij}$ off the
+diagonal; its singularity detects the eigenvalue $\mu$ of the Jacobi iteration matrix. -/
 private theorem jacobiPencil_apply (A : Matrix n n 𝕜) (μ : 𝕜) (i j : n) :
     (μ • diagPart A + strictLower A + strictUpper A) i j =
       if i = j then μ * A i i else A i j := by
@@ -330,8 +393,9 @@ private theorem jacobiPencil_apply (A : Matrix n n 𝕜) (μ : 𝕜) (i j : n) :
   · simp [hlt, hlt.ne', asymm hlt]
 
 omit [Fintype n] in
-/-- Entries of the pencil `λ (D + L') + F'` whose singularity detects the eigenvalue `λ` of the
-Gauss–Seidel iteration matrix: the lower triangle of `A`, diagonal included, is scaled by `λ`. -/
+/-- The entries of the pencil $\lambda (D - E) - F$ are $\lambda a_{ij}$ for $j \le i$ and $a_{ij}$
+for $j > i$; its singularity detects the eigenvalue $\lambda$ of the Gauss–Seidel iteration
+matrix. -/
 private theorem gaussSeidelPencil_apply (A : Matrix n n 𝕜) (l : 𝕜) (i j : n) :
     (l • (diagPart A + strictLower A) + strictUpper A) i j =
       if j ≤ i then l * A i j else A i j := by
@@ -340,8 +404,7 @@ private theorem gaussSeidelPencil_apply (A : Matrix n n 𝕜) (l : 𝕜) (i j : 
   · simp
   · simp [hlt, hlt.ne', asymm hlt, hlt.le]
 
-/-- `D (μ 1 - G_J) = μ D + E' + F'`: multiplying by the diagonal turns the Jacobi resolvent into a
-pencil with the entries of `A` off the diagonal. -/
+/-- $D (\mu I - G_J) = \mu D - E - F$. -/
 private theorem diagPart_mul_jacobi_resolvent (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (μ : 𝕜) :
     diagPart A * (μ • (1 : Matrix n n 𝕜) - (jacobiSplitting A h).iterationOperator) =
@@ -350,7 +413,7 @@ private theorem diagPart_mul_jacobi_resolvent (A : Matrix n n 𝕜) (h : IsUnit 
     ← mul_assoc, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp h), one_mul]
   module
 
-/-- `(D + L') (λ 1 - G_GS) = λ (D + L') + F'`. -/
+/-- $(D - E)(\lambda I - G_{GS}) = \lambda (D - E) - F$. -/
 private theorem diagPart_add_strictLower_mul_gaussSeidel_resolvent (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) (l : 𝕜) :
     (diagPart A + strictLower A) *
@@ -359,15 +422,15 @@ private theorem diagPart_add_strictLower_mul_gaussSeidel_resolvent (A : Matrix n
   rw [mul_sub, mul_smul_comm, mul_one, diagPart_add_strictLower_mul_gaussSeidel, sub_neg_eq_add]
 
 omit [LinearOrder n] in
-/-- A vector annihilated by a unit is zero; the `IsUnit` phrasing of Mathlib's
-`Matrix.eq_zero_of_mulVec_eq_zero`. -/
+/-- A vector that an invertible matrix maps to $0$ is $0$; this is Mathlib's
+`Matrix.eq_zero_of_mulVec_eq_zero` stated with `IsUnit`. -/
 private theorem eq_zero_of_isUnit_of_mulVec_eq_zero {B : Matrix n n 𝕜} (hB : IsUnit B)
     {x : n → 𝕜} (hBx : B *ᵥ x = 0) : x = 0 :=
   eq_zero_of_mulVec_eq_zero (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det B).mp hB)) hBx
 
 omit [LinearOrder n] in
-/-- Weak row dominance is inherited by a matrix whose entries are dominated by `c` times those of
-`A`, with equality on the diagonal. -/
+/-- Let $c \ge 0$, let $|b_{ij}| \le c |a_{ij}|$ for $i \neq j$ and $|b_{ii}| = c |a_{ii}|$; if
+every row of $A$ is weakly diagonally dominant, then so is every row of $B$. -/
 private theorem dominant_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     (hoff : ∀ i j, i ≠ j → ‖B i j‖ ≤ c * ‖A i j‖) (hdiag : ∀ i, ‖B i i‖ = c * ‖A i i‖)
     (hc : 0 ≤ c) (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖) (i : n) :
@@ -380,7 +443,8 @@ private theorem dominant_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     _ = ‖B i i‖ := (hdiag i).symm
 
 omit [LinearOrder n] in
-/-- Strict row dominance is inherited in the same way, for `c > 0`. -/
+/-- Let $c > 0$, let $|b_{ij}| \le c |a_{ij}|$ for $i \neq j$ and $|b_{ii}| = c |a_{ii}|$; if row
+$i$ of $A$ is strictly diagonally dominant, then so is row $i$ of $B$. -/
 private theorem strict_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     (hoff : ∀ i j, i ≠ j → ‖B i j‖ ≤ c * ‖A i j‖) (hdiag : ∀ i, ‖B i i‖ = c * ‖A i i‖)
     (hc : 0 < c) {i : n} (hstrict : ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖) :
@@ -393,7 +457,8 @@ private theorem strict_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     _ = ‖B i i‖ := (hdiag i).symm
 
 omit [LinearOrder n] in
-/-- Strict column dominance is inherited in the same way, for `c > 0`. -/
+/-- Let $c > 0$, let $|b_{ij}| \le c |a_{ij}|$ for $i \neq j$ and $|b_{ii}| = c |a_{ii}|$; if $A$ is
+strictly diagonally dominant by columns, then so is $B$. -/
 private theorem isStrictColDiagDominant_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     (hoff : ∀ i j, i ≠ j → ‖B i j‖ ≤ c * ‖A i j‖) (hdiag : ∀ i, ‖B i i‖ = c * ‖A i i‖)
     (hc : 0 < c) (hA : A.IsStrictColDiagDominant) : B.IsStrictColDiagDominant := fun j => by
@@ -405,28 +470,28 @@ private theorem isStrictColDiagDominant_of_norm_le {A B : Matrix n n 𝕜} {c : 
     _ = ‖B j j‖ := (hdiag j).symm
 
 omit [Fintype n] in
-/-- The Jacobi pencil scales the diagonal only, so its off-diagonal entries are bounded by `‖μ‖`
-times those of `A` as soon as `‖μ‖ ≥ 1`. -/
+/-- If $|\mu| \ge 1$, the off-diagonal entries of $\mu D - E - F$ have absolute value at most
+$|\mu|$ times those of $A$. -/
 private theorem jacobiPencil_norm_le {A : Matrix n n 𝕜} {μ : 𝕜} (hμ : 1 ≤ ‖μ‖) (i j : n)
     (hij : i ≠ j) : ‖(μ • diagPart A + strictLower A + strictUpper A) i j‖ ≤ ‖μ‖ * ‖A i j‖ := by
   rw [jacobiPencil_apply, ite_eq_right hij]
   nlinarith [norm_nonneg (A i j)]
 
 omit [Fintype n] in
-/-- The diagonal of the Jacobi pencil is `μ` times that of `A`. -/
+/-- The diagonal entries of $\mu D - E - F$ have absolute value $|\mu| \, |a_{ii}|$. -/
 private theorem jacobiPencil_norm_diag (A : Matrix n n 𝕜) (μ : 𝕜) (i : n) :
     ‖(μ • diagPart A + strictLower A + strictUpper A) i i‖ = ‖μ‖ * ‖A i i‖ := by
   rw [jacobiPencil_apply, ite_eq_left rfl, norm_mul]
 
 omit [Fintype n] in
-/-- The Jacobi pencil has the same off-diagonal nonzero pattern as `A`. -/
+/-- An off-diagonal entry of $\mu D - E - F$ is nonzero where the entry of $A$ is nonzero. -/
 private theorem jacobiPencil_ne_zero {A : Matrix n n 𝕜} (μ : 𝕜) {i j : n} (hij : i ≠ j)
     (hAij : A i j ≠ 0) : (μ • diagPart A + strictLower A + strictUpper A) i j ≠ 0 := by
   rwa [jacobiPencil_apply, ite_eq_right hij]
 
 omit [Fintype n] in
-/-- The Gauss–Seidel pencil scales the whole lower triangle, so its off-diagonal entries are bounded
-by `‖λ‖` times those of `A` as soon as `‖λ‖ ≥ 1`. -/
+/-- If $|\lambda| \ge 1$, the off-diagonal entries of $\lambda (D - E) - F$ have absolute value at
+most $|\lambda|$ times those of $A$. -/
 private theorem gaussSeidelPencil_norm_le {A : Matrix n n 𝕜} {l : 𝕜} (hl : 1 ≤ ‖l‖) (i j : n)
     (_hij : i ≠ j) :
     ‖(l • (diagPart A + strictLower A) + strictUpper A) i j‖ ≤ ‖l‖ * ‖A i j‖ := by
@@ -436,13 +501,14 @@ private theorem gaussSeidelPencil_norm_le {A : Matrix n n 𝕜} {l : 𝕜} (hl :
   · nlinarith [norm_nonneg (A i j)]
 
 omit [Fintype n] in
-/-- The diagonal of the Gauss–Seidel pencil is `λ` times that of `A`. -/
+/-- The diagonal entries of $\lambda (D - E) - F$ have absolute value $|\lambda| \, |a_{ii}|$. -/
 private theorem gaussSeidelPencil_norm_diag (A : Matrix n n 𝕜) (l : 𝕜) (i : n) :
     ‖(l • (diagPart A + strictLower A) + strictUpper A) i i‖ = ‖l‖ * ‖A i i‖ := by
   rw [gaussSeidelPencil_apply, ite_eq_left le_rfl, norm_mul]
 
 omit [Fintype n] in
-/-- The Gauss–Seidel pencil has the same nonzero pattern as `A` for `λ ≠ 0`. -/
+/-- For $\lambda \neq 0$, an entry of $\lambda (D - E) - F$ is nonzero where the entry of $A$ is
+nonzero. -/
 private theorem gaussSeidelPencil_ne_zero {A : Matrix n n 𝕜} {l : 𝕜} (hl : l ≠ 0) (i j : n)
     (hAij : A i j ≠ 0) : (l • (diagPart A + strictLower A) + strictUpper A) i j ≠ 0 := by
   rw [gaussSeidelPencil_apply]
@@ -455,7 +521,7 @@ end Pencil
 section Spectral
 
 omit [LinearOrder n] in
-/-- Every point of the spectrum of a matrix is an eigenvalue of the associated endomorphism. -/
+/-- Every point of the spectrum of a complex square matrix is an eigenvalue of its linear map. -/
 private theorem hasEigenvalue_toLin'_of_mem_spectrum {M : Matrix n n ℂ} {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ M) : Module.End.HasEigenvalue (Matrix.toLin' M) μ := by
   rw [Module.End.hasEigenvalue_iff_mem_spectrum,
@@ -463,7 +529,8 @@ private theorem hasEigenvalue_toLin'_of_mem_spectrum {M : Matrix n n ℂ} {μ : 
   exact hμ
 
 omit [LinearOrder n] in
-/-- If every point of the spectrum has norm at most `r < 1`, the spectral radius is `< 1`. -/
+/-- If $0 \le r < 1$ and every point of the spectrum of a complex square matrix has modulus at most
+$r$, then its spectral radius is less than $1$. -/
 private theorem spectralRadius_lt_one_of_forall_norm_le {M : Matrix n n ℂ} {r : ℝ} (hr0 : 0 ≤ r)
     (hr1 : r < 1) (h : ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ r) : spectralRadius ℂ M < 1 := by
   have hrn : (r.toNNReal : ℝ) = r := Real.coe_toNNReal r hr0
@@ -477,15 +544,18 @@ private theorem spectralRadius_lt_one_of_forall_norm_le {M : Matrix n n ℂ} {r 
   exact hr1
 
 omit [LinearOrder n] [DecidableEq n] in
-/-- Over an empty index type every matrix is a unit, so the spectrum is empty and the spectral
-radius is `0`. -/
+/-- Over an empty index set every matrix is invertible, so its spectrum is empty and its spectral
+radius is $0$. -/
 private theorem spectralRadius_lt_one_of_isEmpty [IsEmpty n] (M : Matrix n n ℂ) :
     spectralRadius ℂ M < 1 := by
   have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
   simp
 
-/-- [saad2003iterative], Thm 4.9 (Jacobi): the spectral radius satisfies `ρ(G_J) < 1` for strictly
-diagonally dominant `A`. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is strictly diagonally dominant
+by rows. Then the Jacobi iteration matrix has spectral radius $\rho(G_J) < 1$. This is the
+Jacobi part of [saad2003iterative], Theorem 4.9.
+
+The matrix $G_J$ is the iteration operator of `Matrix.jacobiSplitting`. -/
 theorem jacobi_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) : spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
   rcases isEmpty_or_nonempty n with _ | _
@@ -500,12 +570,15 @@ theorem jacobi_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDo
   exact Finset.sum_congr rfl fun j hj =>
     norm_jacobi_iterationOperator_apply A h (Finset.ne_of_mem_erase hj)
 
-/-- [saad2003iterative], Thm 4.9 (Gauss–Seidel): the spectral radius satisfies `ρ(G_GS) < 1` for
-strictly diagonally dominant `A`. [saad2003iterative] eigenvector argument: in the letters `A = D -
-E - F` (diagonal, negated strictly lower, negated strictly upper), if `G_GS x = μ x` then `-F x = μ
-(D - E) x`, and comparing the row where `‖x‖_∞` is attained gives `|μ| (|a_ii| - σ₁) ≤ σ₂` with `σ₁
-= ∑_{j<i} |a_ij|`, `σ₂ = ∑_{j>i} |a_ij|`; strict dominance then forces `|μ| ≤ q_∞ < 1` for the
-Jacobi constant `q_∞ = jacobiContraction A`. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is strictly diagonally dominant
+by rows. Then the Gauss–Seidel iteration matrix has spectral radius $\rho(G_{GS}) < 1$. This is
+the Gauss–Seidel part of [saad2003iterative], Theorem 4.9.
+
+The proof is the eigenvector argument of [saad2003iterative]. If $G_{GS} x = \mu x$, then
+$F x = \mu (D - E) x$. At a row $i$ where $\|x\|_\infty$ is attained, this gives
+$|\mu| (|a_{ii}| - \sigma_1) \le \sigma_2$ with $\sigma_1 = \sum_{j<i} |a_{ij}|$ and
+$\sigma_2 = \sum_{j>i} |a_{ij}|$. Then strict dominance gives $|\mu| \le q_\infty < 1$ for the
+Jacobi constant $q_\infty$ (`Matrix.jacobiContraction`). -/
 theorem gaussSeidel_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -569,8 +642,12 @@ theorem gaussSeidel_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictD
   refine le_of_mul_le_mul_right ?_ hpos
   nlinarith [norm_nonneg μ, mul_nonneg (by linarith : (0:ℝ) ≤ 1 - jacobiContraction A) hs1nn]
 
-/-- Column dominance also suffices for Jacobi ([kress1998numerical], Problem 4.4): the Jacobi matrix
-of `A` is similar (via `D`) to the transpose of the Jacobi matrix of `Aᵀ`, which is row dominant. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is strictly diagonally dominant
+by columns, $\sum_{i \neq j} |a_{ij}| < |a_{jj}|$ for every $j$. Then the Jacobi iteration
+matrix has spectral radius $\rho(G_J) < 1$ ([kress1998numerical], Problem 4.4).
+
+The Jacobi iteration matrix of $A$ is similar, through $D$, to the transpose of the Jacobi
+iteration matrix of $A^T$, and $A^T$ is strictly diagonally dominant by rows. -/
 theorem jacobi_spectralRadius_lt_one_of_col (A : Matrix n n ℂ) (hA : A.IsStrictColDiagDominant)
     (h : IsUnit (diagPart A)) : spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
   have hAT : Aᵀ.IsStrictDiagDominant := (IsStrictColDiagDominant.transpose_iff A).mpr hA
@@ -597,13 +674,19 @@ theorem jacobi_spectralRadius_lt_one_of_col (A : Matrix n n ℂ) (hA : A.IsStric
         simp only [spectralRadius_eq_of_unital, hspec]
     _ < 1 := jacobi_spectralRadius_lt_one Aᵀ hAT hT
 
-/-- **SOR under strict row dominance** ([quarteroni2000numerical] Property 4.3, last sentence): for
-a strictly row diagonally dominant `A` and `0 < ω ≤ 1`, `ρ(G_ω) < 1`.  The pencil argument of
-`Matrix.gaussSeidel_spectralRadius_lt_one`: an eigenpair `G_ω x = λ x` gives
-`((1 - ω) D - ω U) x = λ (D + ω L) x`, and at a row `i` where `‖x‖_∞` is attained
-`|λ - (1 - ω)| |a_ii| ≤ ω σ₂ + |λ| ω σ₁` with `σ₁ = ∑_{j<i} |a_ij|`, `σ₂ = ∑_{j>i} |a_ij|`; for
-`|λ| ≥ 1` the left side is at least `ω |λ| |a_ii|` and the right side at most `ω |λ| (σ₁ + σ₂)`,
-contradicting strict dominance. -/
+/-- **SOR under strict row dominance.** Let $A$ be a complex square matrix with invertible diagonal
+that is strictly diagonally dominant by rows, and let $\omega$ be real with $0 < \omega \le 1$.
+Then the SOR iteration matrix has spectral radius $\rho(G_\omega) < 1$
+([quarteroni2000numerical], Property 4.3, last sentence).
+
+The proof is the argument of `Matrix.gaussSeidel_spectralRadius_lt_one`. An eigenpair
+$G_\omega x = \lambda x$ gives $((1 - \omega) D + \omega F) x = \lambda (D - \omega E) x$. At a
+row $i$ where $\|x\|_\infty$ is attained, $|\lambda - (1 - \omega)| \, |a_{ii}| \le \omega
+\sigma_2 + |\lambda| \omega \sigma_1$, with $\sigma_1 = \sum_{j<i} |a_{ij}|$ and
+$\sigma_2 = \sum_{j>i} |a_{ij}|$. For $|\lambda| \ge 1$, the left side is at least
+$\omega |\lambda| \, |a_{ii}|$ and the right side is at most
+$\omega |\lambda| (\sigma_1 + \sigma_2)$, which contradicts strict dominance. The matrix
+$G_\omega$ is the iteration operator of `Matrix.sorSplitting` at the complex number $\omega$. -/
 theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
     (hA : A.IsStrictDiagDominant) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
     spectralRadius ℂ
@@ -678,10 +761,16 @@ theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
     mul_le_mul_of_nonneg_left hcon (mul_nonneg hω0.le hs2nn),
     mul_lt_mul_of_pos_left hdom (mul_pos hω0 hμpos)]
 
-/-- [saad2003iterative], Thm 4.9, the irreducible half for Jacobi: an irreducibly diagonally
-dominant matrix has `ρ(G_J) < 1`.  An eigenvalue `μ` of `G_J` with `‖μ‖ ≥ 1` would make the pencil
-`μ D + E' + F'` — the matrix `A` with its diagonal scaled by `μ` — irreducibly diagonally dominant,
-hence nonsingular by Cor 4.8, whereas it annihilates the eigenvector. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is irreducibly diagonally
+dominant: its nonzero pattern is irreducible, every row is weakly diagonally dominant, and at
+least one row is strictly diagonally dominant. Then the Jacobi iteration matrix has spectral
+radius $\rho(G_J) < 1$. This is the irreducible part of [saad2003iterative], Theorem 4.9, for
+Jacobi.
+
+The hypothesis is `Matrix.IsIrreduciblyDiagDominant`. An eigenvalue $\mu$ of $G_J$ with
+$|\mu| \ge 1$ would make the pencil $\mu D - E - F$, which is $A$ with its diagonal scaled by
+$\mu$, irreducibly diagonally dominant. Then the pencil is nonsingular by Corollary 4.8 of
+[saad2003iterative], but it maps the eigenvector to $0$. -/
 theorem IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one {A : Matrix n n ℂ}
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
@@ -700,10 +789,13 @@ theorem IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one {A : Matrix n n �
       ⟨i₀, strict_of_norm_le (jacobiPencil_norm_le hge) (jacobiPencil_norm_diag A μ) hpos hi₀⟩
   exact hx (eq_zero_of_isUnit_of_mulVec_eq_zero hunit hBx)
 
-/-- [saad2003iterative], Thm 4.9, the irreducible half for Gauss–Seidel: an irreducibly diagonally
-dominant matrix has `ρ(G_GS) < 1`.  The pencil is now `λ (D + L') + F'`, the matrix `A` with its
-whole lower triangle scaled by `λ`; for `‖λ‖ ≥ 1` it is again irreducibly diagonally dominant, hence
-nonsingular by Cor 4.8. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is irreducibly diagonally
+dominant. Then the Gauss–Seidel iteration matrix has spectral radius $\rho(G_{GS}) < 1$. This is
+the irreducible part of [saad2003iterative], Theorem 4.9, for Gauss–Seidel.
+
+The pencil is now $\lambda (D - E) - F$, which is $A$ with its whole lower triangle scaled by
+$\lambda$. For $|\lambda| \ge 1$ it is again irreducibly diagonally dominant, so it is
+nonsingular by Corollary 4.8 of [saad2003iterative]. -/
 theorem IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one {A : Matrix n n ℂ}
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -725,9 +817,12 @@ theorem IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one {A : Matrix 
         hpos hi₀⟩
   exact hx (eq_zero_of_isUnit_of_mulVec_eq_zero hunit hBx)
 
-/-- Gauss–Seidel converges under strict *column* diagonal dominance ([saad2003iterative], Thm 4.9
-read by columns; [kress1998numerical], Problem 4.4).  The same pencil `λ (D + L') + F'` is used: for
-`‖λ‖ ≥ 1` it is strictly column diagonally dominant, hence nonsingular. -/
+/-- Let $A$ be a complex square matrix with invertible diagonal that is strictly diagonally dominant
+by columns. Then the Gauss–Seidel iteration matrix has spectral radius $\rho(G_{GS}) < 1$
+([saad2003iterative], Theorem 4.9 read by columns; [kress1998numerical], Problem 4.4).
+
+For $|\lambda| \ge 1$, the pencil $\lambda (D - E) - F$ is strictly diagonally dominant by
+columns, so it is nonsingular. -/
 theorem gaussSeidel_spectralRadius_lt_one_of_col (A : Matrix n n ℂ)
     (hA : A.IsStrictColDiagDominant) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -748,18 +843,21 @@ end Spectral
 
 section Real
 
-/-! ### The real-matrix forms
+/-!
+### The real-matrix forms
 
-For a real matrix the spectral radius is `Matrix.complexSpectralRadius`, that of the
-complexification, and each complex statement above transports along
-`Matrix.complexify_jacobi_iterationOperator` / `Matrix.complexify_gaussSeidel_iterationOperator`
-once the dominance hypothesis is carried to `ℂ` by the `Matrix.*_complexify` lemmas of
-`Numlib/LinearAlgebra/Matrix/DiagDominant.lean`. -/
+For a real matrix the spectral radius is `Matrix.complexSpectralRadius`, the spectral radius of the
+complexification. Each complex statement above transports along
+`Matrix.complexify_jacobi_iterationOperator` and `Matrix.complexify_gaussSeidel_iterationOperator`,
+once the dominance hypothesis is carried to $\mathbb{C}$ by the complexification lemmas of
+`Numlib.LinearAlgebra.Matrix.DiagDominant`.
+-/
 
 variable {A : Matrix n n ℝ}
 
-/-- [saad2003iterative], Theorem 4.9 (Jacobi) for a real matrix: `ρ(G_J) < 1` for strictly row
-diagonally dominant `A`. -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is strictly diagonally dominant by
+rows. Then the Jacobi iteration matrix has complex spectral radius $\rho(G_J) < 1$. This is the
+Jacobi part of [saad2003iterative], Theorem 4.9, for a real matrix. -/
 theorem jacobi_complexSpectralRadius_lt_one (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) :
     complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1 := by
@@ -767,8 +865,9 @@ theorem jacobi_complexSpectralRadius_lt_one (hA : A.IsStrictDiagDominant)
   rw [complexSpectralRadius, complexify_jacobi_iterationOperator A h h']
   exact jacobi_spectralRadius_lt_one _ (isStrictDiagDominant_complexify hA) h'
 
-/-- [saad2003iterative], Theorem 4.9 (Gauss–Seidel) for a real matrix: `ρ(G_GS) < 1` for strictly
-row diagonally dominant `A`. -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is strictly diagonally dominant by
+rows. Then the Gauss–Seidel iteration matrix has complex spectral radius $\rho(G_{GS}) < 1$.
+This is the Gauss–Seidel part of [saad2003iterative], Theorem 4.9, for a real matrix. -/
 theorem gaussSeidel_complexSpectralRadius_lt_one (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) :
     complexSpectralRadius (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -776,8 +875,10 @@ theorem gaussSeidel_complexSpectralRadius_lt_one (hA : A.IsStrictDiagDominant)
   rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A h h']
   exact gaussSeidel_spectralRadius_lt_one _ (isStrictDiagDominant_complexify hA) h'
 
-/-- **SOR under strict row dominance, for a real matrix** ([quarteroni2000numerical] Property 4.3,
-last sentence): `ρ(G_ω) < 1` for `0 < ω ≤ 1`. -/
+/-- **SOR under strict row dominance, for a real matrix.** Let $A$ be a real square matrix with
+invertible diagonal that is strictly diagonally dominant by rows, and let $0 < \omega \le 1$.
+Then the SOR iteration matrix has complex spectral radius $\rho(G_\omega) < 1$
+([quarteroni2000numerical], Property 4.3, last sentence). -/
 theorem sorSplitting_complexSpectralRadius_lt_one_of_le_one (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
     complexSpectralRadius (sorSplitting A h hω0.ne').iterationOperator < 1 := by
@@ -786,8 +887,9 @@ theorem sorSplitting_complexSpectralRadius_lt_one_of_le_one (hA : A.IsStrictDiag
   exact sorSplitting_spectralRadius_lt_one_of_le_one _ (isStrictDiagDominant_complexify hA) h'
     hω0 hω1
 
-/-- Jacobi under strict *column* dominance, for a real matrix
-(`Matrix.jacobi_spectralRadius_lt_one_of_col`). -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is strictly diagonally dominant by
+columns. Then the Jacobi iteration matrix has complex spectral radius $\rho(G_J) < 1$. This is
+`Matrix.jacobi_spectralRadius_lt_one_of_col` for a real matrix. -/
 theorem jacobi_complexSpectralRadius_lt_one_of_col (hA : A.IsStrictColDiagDominant)
     (h : IsUnit (diagPart A)) :
     complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1 := by
@@ -795,8 +897,9 @@ theorem jacobi_complexSpectralRadius_lt_one_of_col (hA : A.IsStrictColDiagDomina
   rw [complexSpectralRadius, complexify_jacobi_iterationOperator A h h']
   exact jacobi_spectralRadius_lt_one_of_col _ (isStrictColDiagDominant_complexify hA) h'
 
-/-- Gauss–Seidel under strict *column* dominance, for a real matrix
-(`Matrix.gaussSeidel_spectralRadius_lt_one_of_col`). -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is strictly diagonally dominant by
+columns. Then the Gauss–Seidel iteration matrix has complex spectral radius $\rho(G_{GS}) < 1$.
+This is `Matrix.gaussSeidel_spectralRadius_lt_one_of_col` for a real matrix. -/
 theorem gaussSeidel_complexSpectralRadius_lt_one_of_col (hA : A.IsStrictColDiagDominant)
     (h : IsUnit (diagPart A)) :
     complexSpectralRadius (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -804,8 +907,9 @@ theorem gaussSeidel_complexSpectralRadius_lt_one_of_col (hA : A.IsStrictColDiagD
   rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A h h']
   exact gaussSeidel_spectralRadius_lt_one_of_col _ (isStrictColDiagDominant_complexify hA) h'
 
-/-- [saad2003iterative], Theorem 4.9, the irreducible half for Jacobi, for a real matrix: an
-irreducibly diagonally dominant `A` has `ρ(G_J) < 1`. -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is irreducibly diagonally
+dominant. Then the Jacobi iteration matrix has complex spectral radius $\rho(G_J) < 1$. This is
+the irreducible part of [saad2003iterative], Theorem 4.9, for Jacobi and a real matrix. -/
 theorem IsIrreduciblyDiagDominant.jacobi_complexSpectralRadius_lt_one
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1 := by
@@ -813,8 +917,10 @@ theorem IsIrreduciblyDiagDominant.jacobi_complexSpectralRadius_lt_one
   rw [complexSpectralRadius, complexify_jacobi_iterationOperator A h h']
   exact (isIrreduciblyDiagDominant_complexify hA).jacobi_spectralRadius_lt_one h'
 
-/-- [saad2003iterative], Theorem 4.9, the irreducible half for Gauss–Seidel, for a real matrix: an
-irreducibly diagonally dominant `A` has `ρ(G_GS) < 1`. -/
+/-- Let $A$ be a real square matrix with invertible diagonal that is irreducibly diagonally
+dominant. Then the Gauss–Seidel iteration matrix has complex spectral radius $\rho(G_{GS}) < 1$.
+This is the irreducible part of [saad2003iterative], Theorem 4.9, for Gauss–Seidel and a real
+matrix. -/
 theorem IsIrreduciblyDiagDominant.gaussSeidel_complexSpectralRadius_lt_one
     (hA : A.IsIrreduciblyDiagDominant) (h : IsUnit (diagPart A)) :
     complexSpectralRadius (gaussSeidelSplitting A h).iterationOperator < 1 := by

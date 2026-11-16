@@ -11,52 +11,88 @@ import Numlib.FiniteDifference.Stencil
 /-!
 # Von Neumann stability analysis on the periodic grid
 
-A constant-coefficient explicit two-level scheme on the periodic grid of `N` nodes is the
-circulant matrix `Matrix.circulant c` of its stencil (`FiniteDifference.periodicScheme`). The
-discrete Fourier modes `j ↦ ω^{jk}`, the columns of `Matrix.dft N`, are its common eigenvectors
-(`FiniteDifference.fourierMode`), with eigenvalues the **amplification factors** `γ_k = ∑_s c s
-ω^{-sk}`, the discrete Fourier transform of the stencil (`FiniteDifference.amplificationFactor`,
-`FiniteDifference.periodicScheme_mulVec_fourierMode`). Iterating,
-`Qⁿ e_k = γ_kⁿ e_k` ([quarteroni2000numerical] (13.52)). This is the diagonalization of circulant
-matrices of `Numlib.Analysis.Fourier.Circulant` in the convention whose eigenvectors are the
-columns of `dft N` (`Matrix.circulant_mulVec_dft_col`), the complex conjugate of the textbook
-convention of numerical linear algebra.
+A constant-coefficient explicit two-level scheme on the periodic grid of $N$ nodes is the circulant
+matrix $Q$ of its stencil $c \in \mathbb{C}^N$, with $(Qu)_j = \sum_s c_s u_{j-s}$ and indices
+modulo $N$. Let $\omega = e^{2\pi i / N}$. The discrete Fourier modes
+$e_k \colon j \mapsto \omega^{jk}$, the columns of the Fourier matrix $F = (\omega^{jk})_{j,k}$, are
+common eigenvectors of all such $Q$. The eigenvalues are the **amplification factors**
+$\gamma_k = \sum_s c_s \omega^{-sk}$, the discrete Fourier transform of the stencil, and so
+$Q^n e_k = \gamma_k^n e_k$ ([quarteroni2000numerical], (13.52)). A matrix $A$ with
+$A e_k = \gamma_k e_k$ for every $k$ is $N^{-1} F \operatorname{diag}(\gamma) F^H$, and the discrete
+Parseval identity $\|F^H y\|^2 = N \|y\|^2$ then gives $\|Au\|_2 \le \max_k |\gamma_k| \, \|u\|_2$,
+with equality on the modes. This gives the two halves of the classical criterion. **Von Neumann's
+sufficient condition** ([quarteroni2000numerical], Theorem 13.1): if $|\gamma_k| \le 1$ for every
+$k$, then $\|Q^n u\|_2 \le \|u\|_2$ for every $n$, which is stability in $\|\cdot\|_{\Delta, 2}$
+with constant $1$. **The necessary condition**: stability over a horizon $T$, $\|Q^n\| \le C$ for
+$n \Delta t \le T$, forces $|\gamma_k| \le 1 + 2 (C - 1) \Delta t / T$. This is the argument by
+which [quarteroni2000numerical], §13.8.4, conclude that the forward Euler/centred scheme, whose
+factors satisfy $|\gamma_k| > 1$ independently of the mesh, is unconditionally unstable.
 
-**The `ℓ²` norm of the powers.** Any matrix `A` with `A e_k = γ_k e_k` for every mode is
-`N⁻¹ F diag(γ) Fᴴ` (`FiniteDifference.eq_dft_mul_diagonal_of_forall_mulVec_fourierMode`), and the
-discrete Parseval identity `‖Fᴴ y‖² = N ‖y‖²`
-(`FiniteDifference.sum_normSq_conjTranspose_dft_mulVec`, the orthogonality `Fᴴ F = N` of
-[quarteroni2000numerical] Lemma 10.1) then gives `‖A u‖₂ ≤ (max_k |γ_k|) ‖u‖₂`
-(`FiniteDifference.norm_toEuclideanLin_le_of_forall_mulVec_fourierMode`), with equality attained on
-the modes (`FiniteDifference.norm_amplificationFactor_pow_le`). Hence the two halves of the
-classical criterion:
+The implicit two-level scheme $B u^{n+1} = C u^n$ with circulant $B$ and $C$ has the solution
+operator $B^{-1} C$, whose amplification factors are the quotients $\gamma^C_k / \gamma^B_k$. A
+multi-level scheme is a two-level scheme for a vector of unknowns. Its periodic form is a block
+circulant, and the modes diagonalize it into the $m \times m$ **amplification matrices**
+$G_k = \sum_s \omega^{-sk} G_s$. Finally, a stencil on the line from
+`Numlib.FiniteDifference.Stencil` wraps onto the periodic grid. The wrapped scheme agrees with the
+stencil on $N$-periodic grid functions, and its amplification factors are the symbol of the stencil
+sampled at $\varphi_k = 2\pi k / N$. For a three-point stencil this gives $\gamma_k = c_0 + c_-
+e^{-i\varphi_k} + c_+ e^{i\varphi_k}$, the formula behind every entry of the stability column of
+[quarteroni2000numerical], Table 13.1.
 
-* **Von Neumann's sufficient condition** ([quarteroni2000numerical] Theorem 13.1): `|γ_k| ≤ 1` for
-  all `k` gives `‖Qⁿ u‖₂ ≤ ‖u‖₂` for every `n` — stability in `‖·‖_{Δ,2}` with constant `1`
-  (`FiniteDifference.norm_toEuclideanLin_periodicScheme_pow_le`);
-* **the necessary condition**: stability over a horizon `T`, `‖Qⁿ‖ ≤ C` for `n Δt ≤ T`, forces
-  `|γ_k| ≤ 1 + 2 (C - 1) Δt / T`
-  (`FiniteDifference.norm_amplificationFactor_le_one_add_of_forall_norm_pow_le`, Bernoulli's
-  inequality) — the argument by which [quarteroni2000numerical] §13.8.4 conclude that the forward
-  Euler/centred scheme, whose factors satisfy `|γ_k| > 1` independently of the mesh, is
-  unconditionally unstable.
+## Main definitions
 
-**Implicit and multi-level schemes.** The two-level scheme `B u^{n+1} = C u^n` with circulant `B`
-and `C` is `B⁻¹ C` (`FiniteDifference.periodicTwoLevel`), whose amplification factors are the
-quotients `γ^C_k / γ^B_k` (`FiniteDifference.periodicTwoLevel_mulVec_fourierMode`); the norm results
-above apply verbatim, since they are stated for any matrix with the modes as eigenvectors. A
-multi-level scheme is a two-level scheme for a vector of unknowns; its periodic form is the block
-circulant `FiniteDifference.periodicBlockScheme`, diagonalized modewise into the `m × m`
-amplification matrices `G_k = ∑_s ω^{-sk} G_s` (`FiniteDifference.amplificationMatrix`,
-`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`).
+* `FiniteDifference.periodicScheme`: the circulant matrix of a stencil on $N$ points.
+* `FiniteDifference.fourierMode`: the Fourier mode $e_k \colon j \mapsto \omega^{jk}$.
+* `FiniteDifference.amplificationFactor`: the amplification factor
+  $\gamma_k = \sum_s c_s \omega^{-sk}$.
+* `FiniteDifference.periodicTwoLevel`: the solution operator $B^{-1} C$ of the implicit scheme
+  $B u^{n+1} = C u^n$.
+* `FiniteDifference.amplificationFactor₂`: the quotient $\gamma^C_k / \gamma^B_k$.
+* `FiniteDifference.Stencil.toPeriodic`: a stencil on $\mathbb{Z}$ wrapped onto $N$ points.
+* `FiniteDifference.periodicBlockScheme`: the block circulant of a stencil of $m \times m$ blocks.
+* `FiniteDifference.amplificationMatrix`: the amplification matrix $G_k = \sum_s \omega^{-sk} G_s$.
+* `FiniteDifference.modeTensor`: the tensored mode $(j, p) \mapsto \omega^{jk} v_p$.
 
-**From the line to the circle.** A stencil `c : ℤ →₀ ℝ` of `Numlib.FiniteDifference.Stencil` wraps
-onto the periodic grid as `Stencil.toPeriodic N c`; the periodic scheme agrees with the stencil on
-`N`-periodic grid functions (`Stencil.periodicScheme_toPeriodic_mulVec`), and its amplification
-factors are the symbol sampled at `φ_k = 2πk/N`
-(`Stencil.amplificationFactor_toPeriodic_eq_symbol`); for a three-point stencil,
-`γ_k = c0 + cm e^{-iφ_k} + cp e^{iφ_k}` (`Stencil.amplificationFactor_toPeriodic_threePoint`), the
-formula behind every entry of the stability column of [quarteroni2000numerical] Table 13.1.
+## Main results
+
+* `FiniteDifference.periodicScheme_pow_mulVec_fourierMode`: $Q^n e_k = \gamma_k^n e_k$.
+* `FiniteDifference.eq_dft_mul_diagonal_of_forall_mulVec_fourierMode`: a matrix with every mode as
+  an eigenvector is $N^{-1} F \operatorname{diag}(\gamma) F^H$.
+* `FiniteDifference.sum_normSq_conjTranspose_dft_mulVec`: the discrete Parseval identity
+  $\|F^H y\|^2 = N \|y\|^2$.
+* `FiniteDifference.norm_toEuclideanLin_le_of_forall_mulVec_fourierMode`:
+  $\|Au\|_2 \le \rho \|u\|_2$ when $A e_k = \gamma_k e_k$ and $|\gamma_k| \le \rho$.
+* `FiniteDifference.norm_toEuclideanLin_periodicScheme_pow_le`: von Neumann's sufficient condition.
+* `FiniteDifference.norm_amplificationFactor_pow_le`: $|\gamma_k|^n \le \|Q^n\|_2$.
+* `FiniteDifference.norm_amplificationFactor_le_one_add_of_forall_norm_pow_le`: von Neumann's
+  necessary condition.
+* `FiniteDifference.periodicTwoLevel_mulVec_fourierMode`:
+  $B^{-1} C e_k = (\gamma^C_k / \gamma^B_k) e_k$.
+* `FiniteDifference.Stencil.periodicScheme_toPeriodic_mulVec`: the wrapped scheme agrees with the
+  stencil on periodic grid functions.
+* `FiniteDifference.Stencil.amplificationFactor_toPeriodic_eq_symbol`: the amplification factors of
+  a wrapped stencil are its symbol at $2\pi k / N$.
+* `FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint`: the amplification factors of
+  a three-point stencil.
+* `FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`:
+  $B^n (e_k \otimes v) = e_k \otimes (G_k^n v)$.
+* `FiniteDifference.norm_toEuclideanLin_periodicBlockScheme_pow_le` and
+  `FiniteDifference.norm_toEuclideanCLM_amplificationMatrix_pow_le`: the $\ell^2$ norm of $B^n$ is
+  the maximum over $k$ of the norms of $G_k^n$.
+
+## Implementation notes
+
+* The stencil of a periodic scheme is a complex vector `Fin N → ℂ`, and the scheme is
+  `Matrix.circulant c`, whose entry $(j, l)$ is $c_{j-l}$ with the subtraction modulo $N$.
+* The diagonalization of circulant matrices is the one of `Numlib.Analysis.Fourier.Circulant`, in
+  the convention whose eigenvectors are the columns of `Matrix.dft N`
+  (`Matrix.circulant_mulVec_dft_col`). This is the complex conjugate of the usual convention of
+  numerical linear algebra.
+* The $\ell^2$ norm is the norm of `EuclideanSpace ℂ (Fin N)`, and a matrix acts on it through
+  `Matrix.toEuclideanLin` and `Matrix.toEuclideanCLM`. The discrete norm $\|\cdot\|_{\Delta, 2}$ is
+  a constant multiple of this norm, so the stability constants are the same.
+* The norm bounds are stated for any matrix that has the Fourier modes as eigenvectors. They
+  therefore apply without change to the implicit two-level schemes.
 -/
 
 open Complex Matrix Finset
@@ -68,12 +104,16 @@ variable {N : ℕ}
 
 /-! ### The periodic scheme, the Fourier modes and the amplification factors -/
 
-/-- **The explicit constant-coefficient scheme on the periodic grid** `Fin N` with stencil `c`:
-the circulant matrix `(Q u) j = ∑ s, c s * u (j - s)` (subtraction in `Fin N`). -/
+/-- **The explicit constant-coefficient scheme on the periodic grid.** For a stencil
+$c \in \mathbb{C}^N$ on the grid $\{0, \dots, N-1\}$, the scheme is the circulant matrix $Q$
+with
+$$(Qu)_j = \sum_s c_s u_{j-s},$$
+where the subtraction $j - s$ is modulo $N$. -/
 noncomputable abbrev periodicScheme (c : Fin N → ℂ) : Matrix (Fin N) (Fin N) ℂ :=
   Matrix.circulant c
 
-/-- The action of the periodic scheme: `(Q u) j = ∑ s, c s * u (j - s)`. -/
+/-- The action of the periodic scheme: $(Qu)_j = \sum_s c_s u_{j-s}$, with the subtraction modulo
+$N$. -/
 theorem periodicScheme_mulVec_apply (c : Fin N → ℂ) (u : Fin N → ℂ) (j : Fin N) :
     (periodicScheme c *ᵥ u) j = ∑ s, c s * u (j - s) := by
   have := NeZero.of_pos j.pos
@@ -82,39 +122,52 @@ theorem periodicScheme_mulVec_apply (c : Fin N → ℂ) (u : Fin N → ℂ) (j :
   exact (Equiv.sum_comp (Equiv.subLeft j) fun l => c (j - l) * u l).symm.trans
     (Finset.sum_congr rfl fun s _ => by simp)
 
-/-- **The `k`-th Fourier mode** on the grid of `N` points, `j ↦ ω^{jk}` with `ω = exp (2πi/N)`:
-the grid values `e^{ikjh}`, `h = 2π/N`, of the `k`-th harmonic; the `k`-th column of `Matrix.dft N`.
--/
+/-- **The $k$-th Fourier mode** on the grid of $N$ points: the vector $e_k$ with
+$e_k(j) = \omega^{jk}$, where $\omega = e^{2\pi i / N}$. These are the grid values $e^{ikjh}$,
+$h = 2\pi / N$, of the $k$-th harmonic, and $e_k$ is the $k$-th column of the Fourier matrix
+`Matrix.dft N`. -/
 noncomputable def fourierMode (N : ℕ) (k : Fin N) : Fin N → ℂ := fun j => Matrix.dft N j k
 
-/-- The entries of a Fourier mode: `e_k j = ω^{jk}`. -/
+/-- The entries of a Fourier mode: $e_k(j) = \omega^{jk}$ with $\omega = e^{2\pi i / N}$, where $j$
+and $k$ are taken as natural numbers in $\{0, \dots, N-1\}$. -/
 theorem fourierMode_apply (k j : Fin N) :
     fourierMode N k j = Complex.exp (2 * π * I / N) ^ ((j : ℕ) * (k : ℕ)) := rfl
 
-/-- **The amplification factor** of the `k`-th mode under the scheme with stencil `c`:
-`γ_k = ∑ s, c s ω^{-sk}`, the discrete Fourier transform of the stencil at `k`. -/
+/-- **The amplification factor** of the $k$-th mode under the scheme with stencil
+$c \in \mathbb{C}^N$:
+$$\gamma_k = \sum_s c_s \omega^{-sk},$$
+the discrete Fourier transform of the stencil at $k$. It is the $k$-th entry of $F^H c$, where
+$F$ is the Fourier matrix. -/
 noncomputable def amplificationFactor (c : Fin N → ℂ) (k : Fin N) : ℂ :=
   ((Matrix.dft N)ᴴ *ᵥ c) k
 
-/-- The amplification factor as an explicit sum: `γ_k = ∑ s, ω^{-sk} c s`. -/
+/-- The amplification factor as an explicit sum: $\gamma_k = \sum_s (\omega^{-1})^{sk} c_s$, where
+$s$ and $k$ are taken as natural numbers in $\{0, \dots, N-1\}$. -/
 theorem amplificationFactor_eq_sum (c : Fin N → ℂ) (k : Fin N) :
     amplificationFactor c k
       = ∑ s : Fin N, (Complex.exp (2 * π * I / N))⁻¹ ^ ((s : ℕ) * (k : ℕ)) * c s :=
   Matrix.conjTranspose_dft_mulVec_apply c k
 
-/-- A Fourier mode evaluated at a difference of grid points: `e_k (j - s) = e_k j ω^{-sk}`. -/
+/-- A Fourier mode at a difference of grid points: for $j, s, k \in \{0, \dots, N-1\}$,
+$e_k(j - s) = e_k(j) \, (\omega^{-1})^{sk}$, with the subtraction $j - s$ modulo $N$. -/
 theorem fourierMode_sub (k j s : Fin N) :
     fourierMode N k (j - s)
       = fourierMode N k j * (Complex.exp (2 * π * I / N))⁻¹ ^ ((s : ℕ) * k) := by
   rw [fourierMode, fourierMode, Matrix.dft_apply_sub, conjTranspose_dft_apply, Nat.mul_comm]
 
-/-- **The Fourier modes are eigenvectors of every circulant scheme**, with eigenvalues the
-amplification factors: `Q e_k = γ_k e_k` ([quarteroni2000numerical] (13.52) at one step). -/
+/-- **The Fourier modes are eigenvectors of every circulant scheme** ([quarteroni2000numerical],
+(13.52) for one step). For a stencil $c \in \mathbb{C}^N$ and every $k$, the periodic scheme $Q$
+satisfies
+$$Q e_k = \gamma_k e_k,$$
+where $\gamma_k$ is the amplification factor. -/
 theorem periodicScheme_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) :
     periodicScheme c *ᵥ fourierMode N k = amplificationFactor c k • fourierMode N k :=
   Matrix.circulant_mulVec_dft_col c k
 
-/-- `Qⁿ e_k = γ_kⁿ e_k` ([quarteroni2000numerical] (13.52)): the recursion on one harmonic. -/
+/-- **The recursion on one harmonic** ([quarteroni2000numerical], (13.52)). For a stencil
+$c \in \mathbb{C}^N$, every $k$ and every $n \in \mathbb{N}$, the periodic scheme $Q$ satisfies
+$$Q^n e_k = \gamma_k^n e_k.$$
+-/
 theorem periodicScheme_pow_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) (n : ℕ) :
     (periodicScheme c ^ n) *ᵥ fourierMode N k
       = amplificationFactor c k ^ n • fourierMode N k := by
@@ -126,15 +179,19 @@ theorem periodicScheme_pow_mulVec_fourierMode (c : Fin N → ℂ) (k : Fin N) (n
 
 /-! ### Spectral decomposition and discrete Parseval -/
 
-/-- A matrix having every Fourier mode as an eigenvector, `A e_k = γ_k e_k`, satisfies
-`A F = F diag(γ)`. -/
+/-- Let $A \in \mathbb{C}^{N \times N}$ and $\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$
+for every Fourier mode $e_k$. Then $AF = F \operatorname{diag}(\gamma)$, where $F$ is the
+Fourier matrix. -/
 theorem mul_dft_eq_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ} {γ : Fin N → ℂ}
     (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) :
     A * Matrix.dft N = Matrix.dft N * diagonal γ :=
   Matrix.mul_eq_mul_diagonal_of_forall_mulVec_col hA
 
-/-- **Spectral decomposition through the discrete Fourier transform**: a matrix with every Fourier
-mode as an eigenvector, `A e_k = γ_k e_k`, is `N⁻¹ F diag(γ) Fᴴ`. -/
+/-- **Spectral decomposition through the discrete Fourier transform.** Let
+$A \in \mathbb{C}^{N \times N}$ and $\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$ for
+every Fourier mode $e_k$. Then
+$$A = N^{-1} F \operatorname{diag}(\gamma) F^H,$$
+where $F$ is the Fourier matrix. -/
 theorem eq_dft_mul_diagonal_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) :
     A = (N : ℂ)⁻¹ • (Matrix.dft N * diagonal γ * (Matrix.dft N)ᴴ) := by
@@ -145,15 +202,19 @@ theorem eq_dft_mul_diagonal_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fi
     Matrix.dft_mul_conjTranspose_dft, Matrix.mul_smul, Matrix.mul_one, smul_smul,
     inv_mul_cancel₀ hN', one_smul]
 
-/-- **Spectral decomposition of a circulant**: `Q = N⁻¹ F diag(γ) Fᴴ`, with `γ` the amplification
-factors. -/
+/-- **Spectral decomposition of a circulant.** For a stencil $c \in \mathbb{C}^N$, the periodic
+scheme is
+$$Q = N^{-1} F \operatorname{diag}(\gamma) F^H,$$
+where $F$ is the Fourier matrix and $\gamma$ is the vector of amplification factors. -/
 theorem periodicScheme_eq_dft_mul_diagonal (c : Fin N → ℂ) :
     periodicScheme c
       = (N : ℂ)⁻¹ • (Matrix.dft N * diagonal (amplificationFactor c) * (Matrix.dft N)ᴴ) :=
   Matrix.circulant_eq_dft_mul_diagonal_mul_conjTranspose_dft c
 
-/-- Parseval for a matrix with orthogonal columns: `Mᴴ M = N • 1` gives
-`∑ k, ‖(M y) k‖² = N ∑ j, ‖y j‖²`. -/
+/-- Parseval's identity for a matrix with orthogonal columns. Let $M \in \mathbb{C}^{N \times N}$
+satisfy $M^H M = N \cdot 1$. Then for every $y \in \mathbb{C}^N$,
+$$\sum_k |(My)_k|^2 = N \sum_j |y_j|^2.$$
+-/
 theorem sum_normSq_mulVec_of_conjTranspose_mul {M : Matrix (Fin N) (Fin N) ℂ}
     (hM : Mᴴ * M = (N : ℂ) • (1 : Matrix (Fin N) (Fin N) ℂ)) (y : Fin N → ℂ) :
     ∑ k, ‖(M *ᵥ y) k‖ ^ 2 = N * ∑ j, ‖y j‖ ^ 2 := by
@@ -165,34 +226,43 @@ theorem sum_normSq_mulVec_of_conjTranspose_mul {M : Matrix (Fin N) (Fin N) ℂ}
   rw [h', h', ← Complex.ofReal_sum, ← Complex.ofReal_sum] at h
   exact_mod_cast h
 
-/-- **Discrete Parseval** ([quarteroni2000numerical] Lemma 10.1 in norm form):
-`∑ k, ‖(Fᴴ y) k‖² = N ∑ j, ‖y j‖²`. -/
+/-- **The discrete Parseval identity** ([quarteroni2000numerical], Lemma 10.1, in norm form). For
+the Fourier matrix $F$ and every $y \in \mathbb{C}^N$,
+$$\sum_k |(F^H y)_k|^2 = N \sum_j |y_j|^2.$$
+
+The proof uses the orthogonality $F^H F = N \cdot 1$. -/
 theorem sum_normSq_conjTranspose_dft_mulVec (y : Fin N → ℂ) :
     ∑ k, ‖((Matrix.dft N)ᴴ *ᵥ y) k‖ ^ 2 = N * ∑ j, ‖y j‖ ^ 2 :=
   sum_normSq_mulVec_of_conjTranspose_mul
     (by rw [conjTranspose_conjTranspose, Matrix.dft_mul_conjTranspose_dft]) y
 
-/-- **Discrete Parseval** for the inverse transform: `∑ k, ‖(F y) k‖² = N ∑ j, ‖y j‖²`. -/
+/-- **The discrete Parseval identity** for the inverse transform. For the Fourier matrix $F$ and
+every $y \in \mathbb{C}^N$,
+$$\sum_k |(F y)_k|^2 = N \sum_j |y_j|^2.$$
+-/
 theorem sum_normSq_dft_mulVec (y : Fin N → ℂ) :
     ∑ k, ‖(Matrix.dft N *ᵥ y) k‖ ^ 2 = N * ∑ j, ‖y j‖ ^ 2 :=
   sum_normSq_mulVec_of_conjTranspose_mul (Matrix.conjTranspose_dft_mul_dft N) y
 
-/-- The Euclidean norm of `Fᴴ y` is `√N ‖y‖`. -/
+/-- For the Fourier matrix $F$ and every $y \in \mathbb{C}^N$, the Euclidean norm satisfies
+$\|F^H y\| = \sqrt{N} \|y\|$. -/
 theorem norm_toEuclideanLin_conjTranspose_dft (y : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin (Matrix.dft N)ᴴ y‖ = √N * ‖y‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Real.sqrt_mul (Nat.cast_nonneg N),
     ← sum_normSq_conjTranspose_dft_mulVec]
   rfl
 
-/-- The Euclidean norm of `F y` is `√N ‖y‖`. -/
+/-- For the Fourier matrix $F$ and every $y \in \mathbb{C}^N$, the Euclidean norm satisfies
+$\|F y\| = \sqrt{N} \|y\|$. -/
 theorem norm_toEuclideanLin_dft (y : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin (Matrix.dft N) y‖ = √N * ‖y‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Real.sqrt_mul (Nat.cast_nonneg N),
     ← sum_normSq_dft_mulVec]
   rfl
 
-/-- A diagonal matrix with entries of modulus at most `ρ` is bounded by `ρ` in the Euclidean norm.
--/
+/-- Let $\gamma \in \mathbb{C}^N$ and $\rho \ge 0$ satisfy $|\gamma_k| \le \rho$ for every $k$. Then
+$\|\operatorname{diag}(\gamma) y\| \le \rho \|y\|$ in the Euclidean norm, for every
+$y \in \mathbb{C}^N$. -/
 theorem norm_toEuclideanLin_diagonal_le {γ : Fin N → ℂ} {ρ : ℝ} (hγ : ∀ k, ‖γ k‖ ≤ ρ) (hρ : 0 ≤ ρ)
     (y : EuclideanSpace ℂ (Fin N)) : ‖toEuclideanLin (diagonal γ) y‖ ≤ ρ * ‖y‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Real.sqrt_sq hρ,
@@ -201,11 +271,17 @@ theorem norm_toEuclideanLin_diagonal_le {γ : Fin N → ℂ} {ρ : ℝ} (hγ : �
   rw [toEuclideanLin_apply, WithLp.ofLp_toLp, mulVec_diagonal, norm_mul, mul_pow]
   exact mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (norm_nonneg _) (hγ k) 2) (sq_nonneg _)
 
-/-! ### The `ℓ²` norm of the powers -/
+/-! ### The $\ell^2$ norm of the powers -/
 
-/-- **The `ℓ²` bound through the eigenvalues on the Fourier modes**: if `A e_k = γ_k e_k` for every
-mode and `‖γ_k‖ ≤ ρ`, then `‖A u‖₂ ≤ ρ ‖u‖₂`. Through the decomposition `A = N⁻¹ F diag(γ) Fᴴ`
-and Parseval twice: `‖A u‖ = N⁻¹ √N ‖diag(γ) (Fᴴ u)‖ ≤ N⁻¹ √N ρ √N ‖u‖`. -/
+/-- **The $\ell^2$ bound through the eigenvalues on the Fourier modes.** Let
+$A \in \mathbb{C}^{N \times N}$ and $\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$ for
+every Fourier mode $e_k$, and let $\rho \ge 0$ with $|\gamma_k| \le \rho$ for every $k$. Then
+for every $u \in \mathbb{C}^N$,
+$$\|Au\|_2 \le \rho \|u\|_2.$$
+
+The proof uses the decomposition $A = N^{-1} F \operatorname{diag}(\gamma) F^H$ and the discrete
+Parseval identity twice: $\|Au\| = N^{-1} \sqrt{N} \|\operatorname{diag}(\gamma) F^H u\| \le
+N^{-1} \sqrt{N} \rho \sqrt{N} \|u\|$. -/
 theorem norm_toEuclideanLin_le_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) {ρ : ℝ}
     (hγ : ∀ k, ‖γ k‖ ≤ ρ) (hρ : 0 ≤ ρ) (u : EuclideanSpace ℂ (Fin N)) :
@@ -226,7 +302,8 @@ theorem norm_toEuclideanLin_le_of_forall_mulVec_fourierMode {A : Matrix (Fin N) 
         field_simp
         linear_combination ρ * ‖u‖ * this
 
-/-- Powers preserve the eigenvector relation: `Aⁿ e_k = γ_kⁿ e_k`. -/
+/-- Powers keep the eigenvector relation: if $A e_k = \gamma_k e_k$ for every Fourier mode $e_k$,
+then $A^n e_k = \gamma_k^n e_k$ for every $n \in \mathbb{N}$ and every $k$. -/
 theorem pow_mulVec_fourierMode_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) (n : ℕ) (k : Fin N) :
     (A ^ n) *ᵥ fourierMode N k = γ k ^ n • fourierMode N k := by
@@ -234,8 +311,12 @@ theorem pow_mulVec_fourierMode_of_forall_mulVec_fourierMode {A : Matrix (Fin N) 
   | zero => simp
   | succ n ih => rw [pow_succ', ← mulVec_mulVec, ih, mulVec_smul, hA, smul_smul, pow_succ]
 
-/-- **The `ℓ²` norm of the powers** of a matrix with the Fourier modes as eigenvectors:
-`‖Aⁿ u‖₂ ≤ ρⁿ ‖u‖₂` when `‖γ_k‖ ≤ ρ` for every mode. -/
+/-- **The $\ell^2$ norm of the powers** of a matrix with the Fourier modes as eigenvectors. Let
+$A \in \mathbb{C}^{N \times N}$ and $\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$ for
+every Fourier mode $e_k$, and let $\rho \ge 0$ with $|\gamma_k| \le \rho$ for every $k$. Then
+for every $n \in \mathbb{N}$ and every $u \in \mathbb{C}^N$,
+$$\|A^n u\|_2 \le \rho^n \|u\|_2.$$
+-/
 theorem norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) {ρ : ℝ}
     (hγ : ∀ k, ‖γ k‖ ≤ ρ) (hρ : 0 ≤ ρ) (n : ℕ) (u : EuclideanSpace ℂ (Fin N)) :
@@ -244,36 +325,46 @@ theorem norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode {A : Matrix (Fin
     (pow_mulVec_fourierMode_of_forall_mulVec_fourierMode hA n)
     (fun k => by rw [norm_pow]; exact pow_le_pow_left₀ (norm_nonneg _) (hγ k) n) (by positivity) u
 
-/-- `‖Qⁿ u‖₂ ≤ ρⁿ ‖u‖₂` whenever every amplification factor has modulus at most `ρ`. -/
+/-- Let $c \in \mathbb{C}^N$ be a stencil and let $\rho \ge 0$ with $|\gamma_k| \le \rho$ for every
+amplification factor. Then the periodic scheme $Q$ satisfies $\|Q^n u\|_2 \le \rho^n \|u\|_2$
+for every $n \in \mathbb{N}$ and every $u \in \mathbb{C}^N$. -/
 theorem norm_toEuclideanLin_periodicScheme_pow (c : Fin N → ℂ) (n : ℕ) {ρ : ℝ}
     (hρ : ∀ k, ‖amplificationFactor c k‖ ≤ ρ) (hρ0 : 0 ≤ ρ) (u : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin (periodicScheme c ^ n) u‖ ≤ ρ ^ n * ‖u‖ :=
   norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode (periodicScheme_mulVec_fourierMode c)
     hρ hρ0 n u
 
-/-- **Von Neumann's sufficient condition** ([quarteroni2000numerical] Theorem 13.1): if
-`|γ_k| ≤ 1` for every `k`, the scheme is stable in `‖·‖_{Δ,2}` with constant `1` and for every
-number of steps, `‖Qⁿ u‖₂ ≤ ‖u‖₂`. -/
+/-- **Von Neumann's sufficient condition** ([quarteroni2000numerical], Theorem 13.1). Let
+$c \in \mathbb{C}^N$ be a stencil whose amplification factors satisfy $|\gamma_k| \le 1$ for
+every $k$. Then the periodic scheme $Q$ satisfies, for every $n \in \mathbb{N}$ and every
+$u \in \mathbb{C}^N$,
+$$\|Q^n u\|_2 \le \|u\|_2.$$
+So the scheme is stable in $\|\cdot\|_{\Delta, 2}$ with constant $1$, for every number of steps. -/
 theorem norm_toEuclideanLin_periodicScheme_pow_le (c : Fin N → ℂ)
     (h : ∀ k, ‖amplificationFactor c k‖ ≤ 1) (n : ℕ) (u : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin (periodicScheme c ^ n) u‖ ≤ ‖u‖ := by
   simpa using norm_toEuclideanLin_periodicScheme_pow c n h zero_le_one u
 
-/-- The operator-norm form of von Neumann's sufficient condition: `‖Qⁿ‖₂ ≤ 1` when `|γ_k| ≤ 1` for
-every `k`. -/
+/-- Von Neumann's sufficient condition, operator norm form. If the stencil $c \in \mathbb{C}^N$ has
+amplification factors with $|\gamma_k| \le 1$ for every $k$, then the periodic scheme $Q$
+satisfies $\|Q^n\|_2 \le 1$ for every $n \in \mathbb{N}$. -/
 theorem norm_toEuclideanCLM_periodicScheme_pow_le (c : Fin N → ℂ)
     (h : ∀ k, ‖amplificationFactor c k‖ ≤ 1) (n : ℕ) :
     ‖toEuclideanCLM (𝕜 := ℂ) (periodicScheme c ^ n)‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun u => by
     rw [one_mul]; exact norm_toEuclideanLin_periodicScheme_pow_le c h n u
 
-/-- A Fourier mode is not the zero vector (its value at `j = 0` is `1`). -/
+/-- A Fourier mode is not the zero vector: its value at $j = 0$ is $1$. -/
 theorem fourierMode_ne_zero (k : Fin N) : fourierMode N k ≠ 0 := fun h => by
   have := congrFun h ⟨0, k.pos⟩
   simp [fourierMode_apply] at this
 
-/-- **The eigenvalues bound the operator norm from below**: `‖γ_k‖ⁿ ≤ ‖Aⁿ‖₂` for any matrix with
-`A e_k = γ_k e_k`, by testing `Aⁿ` on the mode `e_k`. -/
+/-- **The eigenvalues bound the operator norm from below.** Let $A \in \mathbb{C}^{N \times N}$ and
+$\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$ for every Fourier mode $e_k$. Then for
+every $k$ and every $n \in \mathbb{N}$,
+$$|\gamma_k|^n \le \|A^n\|_2.$$
+
+The proof tests $A^n$ on the mode $e_k$. -/
 theorem norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) (k : Fin N) (n : ℕ) :
     ‖γ k‖ ^ n ≤ ‖toEuclideanCLM (𝕜 := ℂ) (A ^ n)‖ := by
@@ -285,15 +376,23 @@ theorem norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode {A : Matrix (F
     norm_smul, norm_pow] at h
   exact le_of_mul_le_mul_right h (norm_pos_iff.mpr hek)
 
-/-- **The amplification factors bound the norm of the powers from below**: `‖γ_k‖ⁿ ≤ ‖Qⁿ‖₂`. -/
+/-- **The amplification factors bound the norm of the powers from below.** For a stencil
+$c \in \mathbb{C}^N$, every $k$ and every $n \in \mathbb{N}$, the periodic scheme $Q$ satisfies
+$$|\gamma_k|^n \le \|Q^n\|_2.$$
+-/
 theorem norm_amplificationFactor_pow_le (c : Fin N → ℂ) (k : Fin N) (n : ℕ) :
     ‖amplificationFactor c k‖ ^ n ≤ ‖toEuclideanCLM (𝕜 := ℂ) (periodicScheme c ^ n)‖ :=
   norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode (periodicScheme_mulVec_fourierMode c)
     k n
 
-/-- **Von Neumann's necessary condition**: if `‖Aⁿ‖₂ ≤ C` for every `n` with `n Δt ≤ T`, where
-`1 ≤ C`, `0 < Δt ≤ T/2` and `A e_k = γ_k e_k`, then `‖γ_k‖ ≤ 1 + 2 (C - 1) Δt / T`. With
-`n = ⌊T/Δt⌋ ≥ 1`, `‖γ_k‖ⁿ ≤ C ≤ (1 + (C - 1)/n)ⁿ` by Bernoulli's inequality, and `1/n ≤ 2Δt/T`. -/
+/-- **Von Neumann's necessary condition.** Let $A \in \mathbb{C}^{N \times N}$ and
+$\gamma \in \mathbb{C}^N$ satisfy $A e_k = \gamma_k e_k$ for every Fourier mode $e_k$. Let
+$C \ge 1$ and $0 < \Delta t \le T / 2$, and assume $\|A^n\|_2 \le C$ for every
+$n \in \mathbb{N}$ with $n \Delta t \le T$. Then for every $k$,
+$$|\gamma_k| \le 1 + \frac{2 (C - 1) \Delta t}{T}.$$
+
+With $n = \lfloor T / \Delta t \rfloor \ge 1$, Bernoulli's inequality gives
+$|\gamma_k|^n \le C \le (1 + (C - 1) / n)^n$, and $1 / n \le 2 \Delta t / T$. -/
 theorem norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode {A : Matrix (Fin N) (Fin N) ℂ}
     {γ : Fin N → ℂ} (hA : ∀ k, A *ᵥ fourierMode N k = γ k • fourierMode N k) {C Δt T : ℝ}
     (hC : 1 ≤ C) (hΔt : 0 < Δt) (hΔT : Δt ≤ T / 2)
@@ -338,11 +437,15 @@ theorem norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode {A : Matrix 
     nlinarith
   linarith
 
-/-- **Von Neumann's necessary condition** for the periodic scheme: stability over a horizon `T`,
-`‖Qⁿ‖₂ ≤ C` for `n Δt ≤ T`, forces `‖γ_k‖ ≤ 1 + 2 (C - 1) Δt / T` for every amplification
-factor. A mode with `‖γ_k‖ ≥ 1 + ε` independently of the mesh therefore makes the family
-unstable, which is how [quarteroni2000numerical] §13.8.4 conclude that the forward Euler/centred
-scheme is unconditionally unstable. -/
+/-- **Von Neumann's necessary condition** for the periodic scheme. Let $c \in \mathbb{C}^N$ be a
+stencil, let $C \ge 1$ and $0 < \Delta t \le T / 2$, and assume that the periodic scheme $Q$
+satisfies $\|Q^n\|_2 \le C$ for every $n \in \mathbb{N}$ with $n \Delta t \le T$. Then every
+amplification factor satisfies
+$$|\gamma_k| \le 1 + \frac{2 (C - 1) \Delta t}{T}.$$
+
+So a mode with $|\gamma_k| \ge 1 + \varepsilon$ independently of the mesh makes the family
+unstable. This is how [quarteroni2000numerical], §13.8.4, conclude that the forward
+Euler/centred scheme is unconditionally unstable. -/
 theorem norm_amplificationFactor_le_one_add_of_forall_norm_pow_le (c : Fin N → ℂ) {C Δt T : ℝ}
     (hC : 1 ≤ C) (hΔt : 0 < Δt) (hΔT : Δt ≤ T / 2)
     (hstab : ∀ n : ℕ, (n : ℝ) * Δt ≤ T → ‖toEuclideanCLM (𝕜 := ℂ) (periodicScheme c ^ n)‖ ≤ C)
@@ -352,16 +455,21 @@ theorem norm_amplificationFactor_le_one_add_of_forall_norm_pow_le (c : Fin N →
 
 /-! ### Implicit two-level schemes -/
 
-/-- **The implicit two-level scheme** `B u^{n+1} = C u^n` with circulant `B = circulant b` and
-`C = circulant c`: the solution operator `B⁻¹ C`. -/
+/-- **The implicit two-level scheme** $B u^{n+1} = C u^n$ with the circulant matrices $B$ and $C$ of
+the stencils $b, c \in \mathbb{C}^N$: its solution operator is $B^{-1} C$.
+
+The inverse is `Matrix.inv`, which is $0$ when $B$ is singular. -/
 noncomputable def periodicTwoLevel (b c : Fin N → ℂ) : Matrix (Fin N) (Fin N) ℂ :=
   (periodicScheme b)⁻¹ * periodicScheme c
 
-/-- The amplification factors of the implicit two-level scheme: the quotients `γ^C_k / γ^B_k`. -/
+/-- The amplification factors of the implicit two-level scheme: the quotients
+$\gamma^C_k / \gamma^B_k$ of the amplification factors of the stencils $c$ and $b$. The quotient
+is $0$ when $\gamma^B_k = 0$. -/
 noncomputable def amplificationFactor₂ (b c : Fin N → ℂ) (k : Fin N) : ℂ :=
   amplificationFactor c k / amplificationFactor b k
 
-/-- A circulant whose amplification factors all differ from zero is invertible. -/
+/-- A circulant matrix whose amplification factors are all nonzero is invertible: if
+$\gamma^B_k \neq 0$ for every $k$, then the periodic scheme of $b$ is invertible. -/
 theorem isUnit_periodicScheme_of_forall_ne_zero {b : Fin N → ℂ}
     (hb : ∀ k, amplificationFactor b k ≠ 0) : IsUnit (periodicScheme b) := by
   rcases Nat.eq_zero_or_pos N with rfl | hN
@@ -383,8 +491,9 @@ theorem isUnit_periodicScheme_of_forall_ne_zero {b : Fin N → ℂ}
   rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero]
   exact mul_ne_zero (pow_ne_zero _ (inv_ne_zero hN')) (isUnit_iff_ne_zero.1 hprod)
 
-/-- The inverse of a circulant with nonzero amplification factors has the Fourier modes as
-eigenvectors, with the reciprocal factors. -/
+/-- The inverse of a circulant matrix with nonzero amplification factors has the Fourier modes as
+eigenvectors, with the reciprocal factors: if $\gamma^B_k \neq 0$ for every $k$, then
+$B^{-1} e_k = (\gamma^B_k)^{-1} e_k$. -/
 theorem inv_periodicScheme_mulVec_fourierMode {b : Fin N → ℂ}
     (hb : ∀ k, amplificationFactor b k ≠ 0) (k : Fin N) :
     (periodicScheme b)⁻¹ *ᵥ fourierMode N k = (amplificationFactor b k)⁻¹ • fourierMode N k := by
@@ -401,19 +510,26 @@ theorem inv_periodicScheme_mulVec_fourierMode {b : Fin N → ℂ}
   conv_rhs => rw [h2]
   rw [smul_smul, inv_mul_cancel₀ (hb k), one_smul]
 
-/-- **The Fourier modes are eigenvectors of the implicit two-level scheme**, with the quotient
-amplification factors: `B⁻¹ C e_k = (γ^C_k / γ^B_k) e_k` when no `γ^B_k` vanishes. The `ℓ²` bounds
-`norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode`,
-`norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode` and
-`norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode` then apply to it verbatim. -/
+/-- **The Fourier modes are eigenvectors of the implicit two-level scheme.** Let
+$b, c \in \mathbb{C}^N$ be stencils with $\gamma^B_k \neq 0$ for every $k$. Then for every $k$,
+$$B^{-1} C e_k = \frac{\gamma^C_k}{\gamma^B_k} e_k.$$
+
+The $\ell^2$ bounds `FiniteDifference.norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode`,
+`FiniteDifference.norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode` and
+`FiniteDifference.norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode` therefore apply
+to $B^{-1} C$ without change. -/
 theorem periodicTwoLevel_mulVec_fourierMode {b : Fin N → ℂ}
     (hb : ∀ k, amplificationFactor b k ≠ 0) (c : Fin N → ℂ) (k : Fin N) :
     periodicTwoLevel b c *ᵥ fourierMode N k = amplificationFactor₂ b c k • fourierMode N k := by
   rw [periodicTwoLevel, ← mulVec_mulVec, periodicScheme_mulVec_fourierMode, mulVec_smul,
     inv_periodicScheme_mulVec_fourierMode hb, smul_smul, amplificationFactor₂, div_eq_mul_inv]
 
-/-- Von Neumann's sufficient condition for the implicit two-level scheme: if
-`‖γ^C_k / γ^B_k‖ ≤ 1` for every `k` (and no `γ^B_k` vanishes), then `‖(B⁻¹ C)ⁿ u‖₂ ≤ ‖u‖₂`. -/
+/-- Von Neumann's sufficient condition for the implicit two-level scheme. Let
+$b, c \in \mathbb{C}^N$ be stencils with $\gamma^B_k \neq 0$ and
+$|\gamma^C_k / \gamma^B_k| \le 1$ for every $k$. Then for every $n \in \mathbb{N}$ and every
+$u \in \mathbb{C}^N$,
+$$\|(B^{-1} C)^n u\|_2 \le \|u\|_2.$$
+-/
 theorem norm_toEuclideanLin_periodicTwoLevel_pow_le {b : Fin N → ℂ}
     (hb : ∀ k, amplificationFactor b k ≠ 0) (c : Fin N → ℂ)
     (h : ∀ k, ‖amplificationFactor₂ b c k‖ ≤ 1) (n : ℕ) (u : EuclideanSpace ℂ (Fin N)) :
@@ -425,16 +541,21 @@ theorem norm_toEuclideanLin_periodicTwoLevel_pow_le {b : Fin N → ℂ}
 
 namespace Stencil
 
-/-- **A stencil wrapped onto the periodic grid** of `N` points: the weight of `j : Fin N` is the sum
-of the weights `c s` over the `s ≡ j (mod N)`. -/
+/-- **A stencil wrapped onto the periodic grid** of $N \ge 1$ points. For a stencil $c$ on
+$\mathbb{Z}$, the wrapped stencil has at $j \in \{0, \dots, N-1\}$ the weight
+$$\sum_{s \equiv j \ (\mathrm{mod}\ N)} c_s.$$
+-/
 noncomputable def toPeriodic (N : ℕ) [NeZero N] (c : Stencil) : Fin N → ℂ :=
   fun j => ∑ s ∈ c.support, if (s : Fin N) = j then (c s : ℂ) else 0
 
 variable [NeZero N]
 
-/-- **The periodic scheme agrees with the stencil on periodic grid functions**: for `v : Fin N → ℂ`
-and its `N`-periodic extension `i ↦ v (i : Fin N)` to `ℤ`,
-`(periodicScheme (toPeriodic N c) *ᵥ v) j = (c u) j`. -/
+/-- **The periodic scheme agrees with the stencil on periodic grid functions.** Let $N \ge 1$, let
+$c$ be a stencil on $\mathbb{Z}$, let $v \in \mathbb{C}^N$, and let
+$u \colon \mathbb{Z} \to \mathbb{C}$ be its $N$-periodic extension, $u_i = v_{i \bmod N}$. Then
+for every $j \in \mathbb{Z}$, the periodic scheme $Q$ of the wrapped stencil satisfies
+$$(Qv)_{j \bmod N} = (cu)_j.$$
+-/
 theorem periodicScheme_toPeriodic_mulVec (c : Stencil) (v : Fin N → ℂ) (j : ℤ) :
     (periodicScheme (toPeriodic N c) *ᵥ v) (j : Fin N)
       = apply c (fun i : ℤ => v (i : Fin N)) j := by
@@ -445,7 +566,8 @@ theorem periodicScheme_toPeriodic_mulVec (c : Stencil) (v : Fin N → ℂ) (j : 
   rw [Complex.real_smul, Int.cast_sub, Finset.sum_ite_eq Finset.univ (s : Fin N)]
   simp
 
-/-- The natural-number value of the wrap of `s : ℤ` onto `Fin N` is congruent to `s` modulo `N`. -/
+/-- For $s \in \mathbb{Z}$ and $k \in \{0, \dots, N-1\}$, let $\bar s \in \{0, \dots, N-1\}$ be the
+residue of $s$ modulo $N$. Then $(\omega^{-1})^{\bar s k} = e^{-is \cdot 2\pi k / N}$. -/
 private theorem exp_val_intCast (s : ℤ) (k : Fin N) :
     (Complex.exp (2 * π * I / N))⁻¹ ^ (((s : Fin N) : ℕ) * (k : ℕ))
       = Complex.exp (-(I * s * (2 * π * k / N))) := by
@@ -465,8 +587,11 @@ private theorem exp_val_intCast (s : ℤ) (k : Fin N) :
       = -(((s % N : ℤ) : ℂ) * (k : ℕ) * (2 * π * I / N)) + (-(s / N) * k : ℤ) * (2 * π * I) by
     push_cast; field_simp; ring, Complex.exp_add, Complex.exp_int_mul_two_pi_mul_I, mul_one]
 
-/-- **The amplification factors of a wrapped stencil are its symbol sampled at `φ_k = 2πk/N`**:
-`amplificationFactor (toPeriodic N c) k = symbol c (2πk/N)`. -/
+/-- **The amplification factors of a wrapped stencil are its symbol at $\varphi_k = 2\pi k / N$.**
+Let $N \ge 1$ and let $c$ be a stencil on $\mathbb{Z}$ with symbol $\sigma$. Then for every
+$k \in \{0, \dots, N-1\}$, the amplification factor of the wrapped stencil is
+$$\gamma_k = \sigma(2\pi k / N).$$
+-/
 theorem amplificationFactor_toPeriodic_eq_symbol (c : Stencil) (k : Fin N) :
     amplificationFactor (toPeriodic N c) k = symbol c (2 * π * k / N) := by
   rw [amplificationFactor_eq_sum, symbol]
@@ -479,10 +604,13 @@ theorem amplificationFactor_toPeriodic_eq_symbol (c : Stencil) (k : Fin N) :
   push_cast
   ring_nf
 
-/-- **The three-point amplification factor**: for the stencil `j ↦ cm u_{j-1} + c0 u_j + cp u_{j+1}`
-wrapped onto `N` points, `γ_k = c0 + cm e^{-iφ_k} + cp e^{iφ_k}` with `φ_k = 2πk/N`. Every entry of
-the stability column of [quarteroni2000numerical] Table 13.1 is this formula plus a modulus
-computation. -/
+/-- **The three-point amplification factor.** Let $N \ge 1$, and wrap the three-point stencil
+$j \mapsto c_- u_{j-1} + c_0 u_j + c_+ u_{j+1}$, with $c_-, c_0, c_+ \in \mathbb{R}$, onto $N$
+points. Then for every $k \in \{0, \dots, N-1\}$, with $\varphi_k = 2\pi k / N$,
+$$\gamma_k = c_0 + c_- e^{-i\varphi_k} + c_+ e^{i\varphi_k}.$$
+
+Every entry of the stability column of [quarteroni2000numerical], Table 13.1, is this formula
+followed by a computation of the modulus. -/
 theorem amplificationFactor_toPeriodic_threePoint (cm c0 cp : ℝ) (k : Fin N) :
     amplificationFactor (toPeriodic N (threePoint cm c0 cp)) k
       = c0 + cm * Complex.exp (-(I * (2 * π * k / N)))
@@ -499,23 +627,32 @@ section Block
 
 variable {m : ℕ}
 
-/-- **A multi-level scheme as a block circulant**: for a stencil of `m × m` blocks
-`G : Fin N → Matrix (Fin m) (Fin m) ℂ`, the matrix on `Fin N × Fin m` with block `(j, l)` equal to
-`G (j - l)`. Leap-frog for the wave equation is the case `m = 2` with unknowns `(u^{n+1}, u^n)`. -/
+/-- **A multi-level scheme as a block circulant.** For a stencil of $m \times m$ blocks $G_0, \dots,
+G_{N-1} \in \mathbb{C}^{m \times m}$, the block circulant is the matrix on
+$\{0, \dots, N-1\} \times \{0, \dots, m-1\}$ whose block $(j, l)$ is $G_{j-l}$, with the
+subtraction modulo $N$.
+
+The leap-frog scheme for the wave equation is the case $m = 2$ with the unknowns
+$(u^{n+1}, u^n)$. -/
 noncomputable def periodicBlockScheme (G : Fin N → Matrix (Fin m) (Fin m) ℂ) :
     Matrix (Fin N × Fin m) (Fin N × Fin m) ℂ :=
   Matrix.of fun jp lq => G (jp.1 - lq.1) jp.2 lq.2
 
-/-- **The amplification matrix** of mode `k` of a block scheme: `G_k = ∑ s, ω^{-sk} • G s`. -/
+/-- **The amplification matrix** of the mode $k$ of a block scheme with blocks
+$G_s \in \mathbb{C}^{m \times m}$:
+$$G_k = \sum_s \omega^{-sk} G_s.$$
+-/
 noncomputable def amplificationMatrix (G : Fin N → Matrix (Fin m) (Fin m) ℂ) (k : Fin N) :
     Matrix (Fin m) (Fin m) ℂ :=
   ∑ s : Fin N, (Complex.exp (2 * π * I / N))⁻¹ ^ ((s : ℕ) * (k : ℕ)) • G s
 
-/-- The mode `e_k` tensored with a block vector `v`: `(j, p) ↦ e_k j * v p`. -/
+/-- The mode $e_k$ tensored with a block vector $v \in \mathbb{C}^m$: the vector $e_k \otimes v$
+with $(e_k \otimes v)(j, p) = e_k(j) v_p$. -/
 noncomputable def modeTensor (N : ℕ) (k : Fin N) (v : Fin m → ℂ) : Fin N × Fin m → ℂ :=
   fun jp => fourierMode N k jp.1 * v jp.2
 
-/-- The action of a block scheme: `(B u) (j, p) = ∑ l, (G (j - l) *ᵥ u (l, ·)) p`. -/
+/-- The action of a block scheme $B$ with blocks $G_s$:
+$(Bu)(j, p) = \sum_l (G_{j-l} u(l, \cdot))_p$, with the subtraction modulo $N$. -/
 theorem periodicBlockScheme_mulVec_apply (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     (u : Fin N × Fin m → ℂ) (j : Fin N) (p : Fin m) :
     (periodicBlockScheme G *ᵥ u) (j, p) = ∑ l, (G (j - l) *ᵥ fun q => u (l, q)) p := by
@@ -523,7 +660,10 @@ theorem periodicBlockScheme_mulVec_apply (G : Fin N → Matrix (Fin m) (Fin m) �
   rfl
 
 /-- **The tensored modes are eigenvectors of a block scheme**, with the amplification matrix acting
-on the block: `B (e_k ⊗ v) = e_k ⊗ (G_k v)`. -/
+on the block. For blocks $G_s \in \mathbb{C}^{m \times m}$, every $k$ and every
+$v \in \mathbb{C}^m$, the block scheme $B$ satisfies
+$$B (e_k \otimes v) = e_k \otimes (G_k v).$$
+-/
 theorem periodicBlockScheme_mulVec_modeTensor (G : Fin N → Matrix (Fin m) (Fin m) ℂ) (k : Fin N)
     (v : Fin m → ℂ) :
     periodicBlockScheme G *ᵥ modeTensor N k v = modeTensor N k (amplificationMatrix G k *ᵥ v) := by
@@ -541,10 +681,12 @@ theorem periodicBlockScheme_mulVec_modeTensor (G : Fin N → Matrix (Fin m) (Fin
   refine Finset.sum_congr rfl fun q _ => ?_
   ring
 
-/-- **The powers of a block scheme on the tensored modes**: `Bⁿ (e_k ⊗ v) = e_k ⊗ (G_kⁿ v)`
-(the multi-level analogue of [quarteroni2000numerical] (13.52)), so the `ℓ²` stability of a
-multi-level scheme is the uniform boundedness of the powers of its `m × m` amplification
-matrices. -/
+/-- **The powers of a block scheme on the tensored modes** (the multi-level analogue of
+[quarteroni2000numerical], (13.52)). For blocks $G_s \in \mathbb{C}^{m \times m}$, every $k$,
+every $v \in \mathbb{C}^m$ and every $n \in \mathbb{N}$, the block scheme $B$ satisfies
+$$B^n (e_k \otimes v) = e_k \otimes (G_k^n v).$$
+So the $\ell^2$ stability of a multi-level scheme is the uniform boundedness of the powers of
+its $m \times m$ amplification matrices. -/
 theorem periodicBlockScheme_pow_mulVec_fourierMode (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     (k : Fin N) (v : Fin m → ℂ) (n : ℕ) :
     (periodicBlockScheme G ^ n) *ᵥ modeTensor N k v
@@ -555,14 +697,16 @@ theorem periodicBlockScheme_pow_mulVec_fourierMode (G : Fin N → Matrix (Fin m)
     rw [pow_succ', ← mulVec_mulVec, ih, periodicBlockScheme_mulVec_modeTensor, pow_succ',
       ← mulVec_mulVec]
 
-/-! #### The `ℓ²` norm of the powers of a block scheme
+/-!
+### The $\ell^2$ norm of the powers of a block scheme
 
-The scalar argument transposes: expanding a block grid function in the tensored modes
-`e_k ⊗ v` diagonalizes the block circulant into the `m × m` amplification matrices, and the
-discrete Parseval identity applied to each block component turns the `ℓ²` norm of the powers into
-the maximum of the norms of the powers of the amplification matrices. -/
+The scalar argument carries over. Expanding a block grid function in the tensored modes
+$e_k \otimes v$ diagonalizes the block circulant into the $m \times m$ amplification matrices. The
+discrete Parseval identity, applied to each block component, then turns the $\ell^2$ norm of the
+powers into the maximum of the norms of the powers of the amplification matrices.
+-/
 
-/-- The modulus of an entry of a Fourier mode is `1`. -/
+/-- Each entry of a Fourier mode has modulus $1$. -/
 private theorem norm_fourierMode (k j : Fin N) : ‖fourierMode N k j‖ = 1 := by
   rw [fourierMode_apply, norm_pow]
   have h : Complex.exp (2 * π * I / N) = Complex.exp (((2 * π / N : ℝ) : ℂ) * I) := by
@@ -571,8 +715,8 @@ private theorem norm_fourierMode (k j : Fin N) : ‖fourierMode N k j‖ = 1 := 
     ring
   rw [h, Complex.norm_exp_ofReal_mul_I, one_pow]
 
-/-- **Blockwise Parseval**: `∑_{k,p} |û(k, p)|² = N ∑_{j,p} |u(j, p)|²` for the componentwise
-transform `û(k, p) = (Fᴴ u(·, p))(k)`. -/
+/-- The blockwise discrete Parseval identity: $\sum_{k, p} |\hat u(k, p)|^2 = N \sum_{j, p} |u(j,
+p)|^2$ for the componentwise transform $\hat u(k, p) = (F^H u(\cdot, p))_k$. -/
 private theorem sum_normSq_blockDft (u : Fin N × Fin m → ℂ) :
     (∑ kp : Fin N × Fin m, ‖((Matrix.dft N)ᴴ *ᵥ fun j => u (j, kp.2)) kp.1‖ ^ 2)
       = N * ∑ jp : Fin N × Fin m, ‖u jp‖ ^ 2 := by
@@ -582,7 +726,8 @@ private theorem sum_normSq_blockDft (u : Fin N × Fin m → ℂ) :
   rw [Fintype.sum_prod_type_right, Fintype.sum_prod_type_right, Finset.mul_sum]
   exact Finset.sum_congr rfl fun p _ => h p
 
-/-- **Blockwise Parseval** for the inverse transform. -/
+/-- The blockwise discrete Parseval identity for the inverse transform: $\sum_{j, p} |(F v(\cdot,
+p))_j|^2 = N \sum_{k, p} |v(k, p)|^2$. -/
 private theorem sum_normSq_blockExpand (v : Fin N × Fin m → ℂ) :
     (∑ jp : Fin N × Fin m, ‖(Matrix.dft N *ᵥ fun k => v (k, jp.2)) jp.1‖ ^ 2)
       = N * ∑ kp : Fin N × Fin m, ‖v kp‖ ^ 2 := by
@@ -592,14 +737,16 @@ private theorem sum_normSq_blockExpand (v : Fin N × Fin m → ℂ) :
   rw [Fintype.sum_prod_type_right, Fintype.sum_prod_type_right, Finset.mul_sum]
   exact Finset.sum_congr rfl fun p _ => h p
 
-/-- A superposition of tensored modes is the inverse transform of its coefficients, componentwise.
--/
+/-- A sum of tensored modes is the inverse transform of its coefficients, componentwise: $(\sum_k
+e_k \otimes w_k)(j, p) = (F w_{\cdot, p})_j$. -/
 private theorem sum_modeTensor_apply (w : Fin N → Fin m → ℂ) (jp : Fin N × Fin m) :
     (∑ k : Fin N, modeTensor N k (w k)) jp = (Matrix.dft N *ᵥ fun k => w k jp.2) jp.1 := by
   rw [Finset.sum_apply, mulVec, dotProduct]
   rfl
 
-/-- The squared `ℓ²` norm of a tensored mode: `‖e_k ⊗ w‖² = N ‖w‖²`. -/
+/-- The squared $\ell^2$ norm of a tensored mode: $\sum_{j, p} |(e_k \otimes w)(j, p)|^2 = N \sum_p
+|w_p|^2$.
+-/
 private theorem sum_normSq_modeTensor (k : Fin N) (w : Fin m → ℂ) :
     (∑ jp : Fin N × Fin m, ‖modeTensor N k w jp‖ ^ 2) = N * ∑ p, ‖w p‖ ^ 2 := by
   have h : ∀ j : Fin N, (∑ p, ‖modeTensor N k w (j, p)‖ ^ 2) = ∑ p, ‖w p‖ ^ 2 := by
@@ -609,7 +756,8 @@ private theorem sum_normSq_modeTensor (k : Fin N) (w : Fin m → ℂ) :
   rw [Fintype.sum_prod_type, Finset.sum_congr rfl fun j _ => h j, Finset.sum_const,
     Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
-/-- An operator-norm bound on a matrix, in the form of a bound between sums of squares. -/
+/-- A bound $\|M\|_2 \le \rho$ on the operator norm of a matrix gives
+$\sum_p |(Mw)_p|^2 \le \rho^2 \sum_p |w_p|^2$. -/
 private theorem sum_normSq_mulVec_le {M : Matrix (Fin m) (Fin m) ℂ} {ρ : ℝ}
     (hρ : ‖toEuclideanCLM (𝕜 := ℂ) M‖ ≤ ρ) (w : Fin m → ℂ) :
     (∑ p, ‖(M *ᵥ w) p‖ ^ 2) ≤ ρ ^ 2 * ∑ p, ‖w p‖ ^ 2 := by
@@ -623,8 +771,8 @@ private theorem sum_normSq_mulVec_le {M : Matrix (Fin m) (Fin m) ℂ} {ρ : ℝ}
     nlinarith [Real.sq_sqrt ha, Real.sq_sqrt hb, Real.sqrt_nonneg a, Real.sqrt_nonneg b]
   exact key _ _ (by positivity) (by positivity) (by simpa [EuclideanSpace.norm_eq] using h2)
 
-/-- The squared `ℓ²` norm of the image of a block grid function under the powers of a block
-scheme, bounded through the amplification matrices. -/
+/-- For $N \ge 1$, if $\|G_k^n\|_2 \le \rho$ for every $k$, then $\sum_{j, p} |(B^n y)(j, p)|^2 \le
+\rho^2 \sum_{j, p} |y(j, p)|^2$ for the block scheme $B$. -/
 private theorem sum_normSq_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     {ρ : ℝ} {n : ℕ} (hN : 0 < N)
     (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ)
@@ -676,11 +824,16 @@ private theorem sum_normSq_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin
         mul_le_mul_of_nonneg_left h2 (by positivity)
     _ = ρ ^ 2 * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2 := by field_simp
 
-/-- **The `ℓ²` bound for the powers of a block scheme**: if every amplification matrix satisfies
-`‖G_kⁿ‖₂ ≤ ρ`, then `‖Bⁿ u‖₂ ≤ ρ ‖u‖₂`. Expanding `u` in the tensored modes diagonalizes `Bⁿ`
-into the blocks `G_kⁿ` (`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`), and
-discrete Parseval applied to each block component of the transform turns the modewise bounds into
-the global one. -/
+/-- **The $\ell^2$ bound for the powers of a block scheme.** Let $G_s \in \mathbb{C}^{m \times m}$
+be the blocks of a block scheme $B$, let $n \in \mathbb{N}$, and let $\rho \in \mathbb{R}$
+satisfy $\|G_k^n\|_2 \le \rho$ for every amplification matrix $G_k$. Then for every
+$u \in \mathbb{C}^{N \times m}$,
+$$\|B^n u\|_2 \le \rho \|u\|_2.$$
+
+The expansion of $u$ in the tensored modes diagonalizes $B^n$ into the blocks $G_k^n$
+(`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`), and the discrete Parseval
+identity, applied to each block component of the transform, turns the bounds for each mode into
+the global bound. -/
 theorem norm_toEuclideanLin_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     {ρ : ℝ} {n : ℕ} (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ)
     (u : EuclideanSpace ℂ (Fin N × Fin m)) :
@@ -694,8 +847,9 @@ theorem norm_toEuclideanLin_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fi
   refine Real.sqrt_le_sqrt ?_
   exact sum_normSq_periodicBlockScheme_pow_le G hN hρ (WithLp.ofLp u)
 
-/-- The operator-norm form: `‖Bⁿ‖₂ ≤ ρ` when every amplification matrix satisfies `‖G_kⁿ‖₂ ≤ ρ`.
--/
+/-- The operator norm form of the $\ell^2$ bound for a block scheme. Let $n \in \mathbb{N}$ and
+$\rho \ge 0$ satisfy $\|G_k^n\|_2 \le \rho$ for every amplification matrix $G_k$. Then the block
+scheme $B$ satisfies $\|B^n\|_2 \le \rho$. -/
 theorem norm_toEuclideanCLM_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     {ρ : ℝ} {n : ℕ} (hρ0 : 0 ≤ ρ)
     (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ) :
@@ -703,11 +857,15 @@ theorem norm_toEuclideanCLM_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fi
   ContinuousLinearMap.opNorm_le_bound _ hρ0 fun u =>
     norm_toEuclideanLin_periodicBlockScheme_pow_le G hρ u
 
-/-- **The amplification matrices bound the norm of the powers from below**:
-`‖G_kⁿ‖₂ ≤ ‖Bⁿ‖₂` for every mode `k`, by testing `Bⁿ` on the tensored modes `e_k ⊗ v`, whose norm
-is `√N ‖v‖`. With `norm_toEuclideanCLM_periodicBlockScheme_pow_le` this makes the `ℓ²` stability
-of a multi-level scheme exactly the uniform boundedness of the powers of its `m × m`
-amplification matrices. -/
+/-- **The amplification matrices bound the norm of the powers from below.** For blocks
+$G_s \in \mathbb{C}^{m \times m}$, every $k$ and every $n \in \mathbb{N}$, the block scheme $B$
+satisfies
+$$\|G_k^n\|_2 \le \|B^n\|_2.$$
+
+The proof tests $B^n$ on the tensored modes $e_k \otimes v$, whose norm is $\sqrt{N} \|v\|$.
+Together with `FiniteDifference.norm_toEuclideanCLM_periodicBlockScheme_pow_le`, this makes the
+$\ell^2$ stability of a multi-level scheme exactly the uniform boundedness of the powers of its
+$m \times m$ amplification matrices. -/
 theorem norm_toEuclideanCLM_amplificationMatrix_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
     (k : Fin N) (n : ℕ) :
     ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖

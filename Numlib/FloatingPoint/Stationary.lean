@@ -9,32 +9,41 @@ import Numlib.Stationary.Basic
 /-!
 # Stationary iterations in finite precision
 
-A stationary iteration `x ↦ G x + c` run in floating-point arithmetic is the exact iteration
-perturbed at every step, and its accuracy is limited by the size of that perturbation rather than by
-the number of steps. This module separates the two halves of [higham2002accuracy] Theorem 17.1
-[higham2002accuracy].
+A stationary iteration $x \mapsto Gx + c$ run in floating-point arithmetic is the exact iteration
+perturbed at every step. Its accuracy is limited by the size of that perturbation, not by the number
+of steps. This module proves the two halves of Theorem 17.1 of [higham2002accuracy] separately. The
+first half is a statement in exact arithmetic about rounding-free perturbations: a sequence with
+$x_{k+1} = G x_k + f + \xi_k$, $\|\xi_k\| \le \varepsilon$ and $\|G\| < 1$ stays within
+$\|G\|^k \|x_0 - x'\| + \varepsilon/(1 - \|G\|)$ of the fixed point $x'$. The first term tends to
+$0$ and the second does not, so the limiting accuracy of the iteration is $\varepsilon/(1 - \|G\|)$.
+The second half is about finite precision: one computed step, formed as a matrix–vector product
+followed by a rounded addition, is the exact step plus a perturbation bounded entrywise by
+$\gamma_{n+1} (|G| |x| + |c|)$, which is (17.5)–(17.6) of [higham2002accuracy].
 
-* `Stationary.norm_perturbed_iterate_sub_le` is the exact-arithmetic half, and knows nothing about
-  rounding: a sequence obeying `x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤ ε` and `‖G‖ < 1` stays
-  within `‖G‖^k ‖x_0 - x'‖ + ε / (1 - ‖G‖)` of the fixed point `x'`. The first term dies and the
-  second does not: `Stationary.limsup_norm_perturbed_iterate_sub_le` is the *limiting accuracy* `ε /
-  (1 - ‖G‖)`, which is what the theorem is about.
-* `FloatingPoint.exists_roundsAffineStep_eq_add` is the finite-precision half: one computed step,
-  formed as a matrix–vector product followed by a rounded addition, is the exact step plus a
-  perturbation bounded entrywise by `γ_{n+1} (|G| |x| + |c|)`, which is [higham2002accuracy]
-  (17.5)–(17.6).
+## Main definitions
 
-The two meet at `‖ξ_k‖ ≤ ε`, which needs a norm; the finite-precision half is stated over an
-abstract ordered field, in the entrywise order of `Numlib/LinearAlgebra/Matrix/Order.lean`, and
-`FloatingPoint.abs_sub_le_of_roundsMulVec_of_abs_le` of `Numlib/FloatingPoint/InnerProduct.lean` is
-the row-sum form for a reader who wants the `∞`-norm shape without instantiating at `ℝ`.
+* `FloatingPoint.RoundsAffineStep`: $y$ is an admissible computed value of the affine step $Gx + c$.
 
-The splitting form of the computed step — `M x_{k+1} = N x_k + b` with `M` triangular, solved by
-substitution — is **not** covered, and the reason is that a model of substitution is missing:
-`Numlib/FloatingPoint/InnerProduct.lean` has recursive summation, inner products and matrix
-products, but no triangular solve, so there is nothing to bound the error of the solve with. The
-affine form here covers every splitting whose iteration operator has already been formed, which is
-the form the exact-arithmetic half consumes.
+## Main results
+
+* `Stationary.norm_perturbed_iterate_sub_le`: the error bound $\|x_k - x'\| \le \|G\|^k \|x_0 -
+  x'\| + \varepsilon/(1 - \|G\|)$ for a perturbed stationary iteration.
+* `Stationary.limsup_norm_perturbed_iterate_sub_le`: the limiting accuracy $\limsup_k \|x_k - x'\|
+  \le \varepsilon/(1 - \|G\|)$.
+* `FloatingPoint.exists_roundsAffineStep_eq_add`: a computed affine step is $Gx + c + \xi$ with
+  $|\xi| \le \gamma_{n+1} (|G| |x| + |c|)$ entrywise.
+
+## Implementation notes
+
+* The two halves meet at the bound $\|\xi_k\| \le \varepsilon$, which needs a norm. The
+  finite-precision half is stated over an ordered field, in the entrywise order of
+  `Numlib.LinearAlgebra.Matrix.Order`. For a reader who wants the shape of an $\infty$-norm bound
+  without passing to $\mathbb{R}$, `FloatingPoint.abs_sub_le_of_roundsMulVec_of_abs_le` of
+  `Numlib.FloatingPoint.InnerProduct` gives the bound in terms of row sums.
+* The splitting form of the computed step, $M x_{k+1} = N x_k + b$ with $M$ triangular and solved by
+  substitution, is not covered by this module. The affine form here covers every splitting whose
+  iteration operator $G$ has already been formed, and this is the form that the exact-arithmetic
+  half uses.
 -/
 
 open scoped Matrix
@@ -43,16 +52,17 @@ namespace Stationary
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **The error of a perturbed stationary iteration.** If `x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤
-ε`, if `‖G‖ < 1` and if `x'` is a fixed point of the unperturbed step, then
+/-- **The error of a perturbed stationary iteration.** Let $E$ be a normed space over a nontrivially
+normed field, let $G$ be a continuous linear operator on $E$ with $\|G\| < 1$, and let
+$f \in E$. Let $(x_k)$ and $(\xi_k)$ be sequences in $E$ with $$x_{k+1} = G x_k + f + \xi_k,
+\qquad \|\xi_k\| \le \varepsilon$$ for every $k$. If $x'$ is a fixed point of the unperturbed
+step, $Gx' + f = x'$, then for every $k$ $$\|x_k - x'\| \le \|G\|^k \|x_0 - x'\| +
+\frac{\varepsilon}{1 - \|G\|}.$$
 
-`‖x_k - x'‖ ≤ ‖G‖ ^ k ‖x_0 - x'‖ + ε / (1 - ‖G‖)`.
-
-This is the exact-arithmetic core of [higham2002accuracy] Theorem 17.1: the transient decays
-geometrically and the perturbation contributes the *limiting accuracy* `ε / (1 - ‖G‖)`
-(`Stationary.limsup_norm_perturbed_iterate_sub_le`).
-
-Reference: [higham2002accuracy], Theorem 17.1. -/
+This is the exact-arithmetic core of Theorem 17.1 of [higham2002accuracy]. The transient term
+decays geometrically, and the perturbation contributes the limiting accuracy
+$\varepsilon/(1 - \|G\|)$ (see `Stationary.limsup_norm_perturbed_iterate_sub_le`). The norm
+$\|G\|$ is the operator norm. -/
 theorem norm_perturbed_iterate_sub_le {G : E →L[𝕜] E} {f : E} {x ξ : ℕ → E}
     (hstep : ∀ k, x (k + 1) = G (x k) + f + ξ k) {ε : ℝ} (hξ : ∀ k, ‖ξ k‖ ≤ ε) (hG : ‖G‖ < 1)
     {x' : E} (hfix : G x' + f = x') (k : ℕ) :
@@ -85,11 +95,13 @@ theorem norm_perturbed_iterate_sub_le {G : E →L[𝕜] E} {f : E} {x ξ : ℕ �
     have h3 : ‖G‖ * (‖G‖ ^ k * ‖x 0 - x'‖) = ‖G‖ ^ (k + 1) * ‖x 0 - x'‖ := by ring
     linarith
 
-/-- **The limiting accuracy of a perturbed stationary iteration**, [higham2002accuracy] Theorem
-17.1: the error of a contracting iteration perturbed by at most `ε` at every step is asymptotically
-at most `ε / (1 - ‖G‖)`, however many steps are taken.
-
-Reference: [higham2002accuracy], Theorem 17.1. -/
+/-- **The limiting accuracy of a perturbed stationary iteration** (Theorem 17.1 of
+[higham2002accuracy]). Under the hypotheses of `Stationary.norm_perturbed_iterate_sub_le` (a
+continuous linear $G$ with $\|G\| < 1$, $x_{k+1} = G x_k + f + \xi_k$ with
+$\|\xi_k\| \le \varepsilon$, and $Gx' + f = x'$), $$\limsup_{k \to \infty} \|x_k - x'\| \le
+\frac{\varepsilon}{1 - \|G\|}.$$ So the error of a contracting iteration that is perturbed by at
+most $\varepsilon$ at every step is asymptotically at most $\varepsilon/(1 - \|G\|)$, however
+many steps are taken. -/
 theorem limsup_norm_perturbed_iterate_sub_le {G : E →L[𝕜] E} {f : E} {x ξ : ℕ → E}
     (hstep : ∀ k, x (k + 1) = G (x k) + f + ξ k) {ε : ℝ} (hξ : ∀ k, ‖ξ k‖ ≤ ε) (hG : ‖G‖ < 1)
     {x' : E} (hfix : G x' + f = x') :
@@ -112,11 +124,12 @@ namespace FloatingPoint
 
 variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {μ ν : Type*}
 
-/-- `RoundsAffineStep m G c x y`: `y` is an admissible computed value of the affine step `G x + c`,
-evaluated as the matrix–vector product `G x` — itself an inner product per row, as in
-`FloatingPoint.RoundsMulVec` — followed by one rounded addition of `c` in each entry.
+/-- Let $m$ be a rounding model, $G \in K^{\mu \times \nu}$, $c \in K^\mu$ and $x \in K^\nu$. A
+vector $y \in K^\mu$ is an **admissible computed affine step** $Gx + c$ if there is an
+admissible computed matrix–vector product $z$ of $G$ and $x$ (`FloatingPoint.RoundsMulVec`, one
+inner product per row) such that $y_i$ is an admissible rounding of $z_i + c_i$ for every $i$.
 
-This is one step of a stationary iteration whose iteration operator `G` and constant `c` have
+This is one step of a stationary iteration whose iteration operator $G$ and constant $c$ have
 already been formed. -/
 def RoundsAffineStep (m : RoundingModel K) (G : Matrix μ ν K) (c : μ → K) (x : ν → K)
     (y : μ → K) : Prop :=
@@ -125,14 +138,15 @@ def RoundsAffineStep (m : RoundingModel K) (G : Matrix μ ν K) (c : μ → K) (
 variable [Fintype ν]
 
 /-- **One computed step of a stationary iteration is the exact step plus a small perturbation**
-([higham2002accuracy], (17.5)–(17.6)): a computed affine step satisfies `ŷ = G x + c + ξ` with `|ξ|
-≤ γ_{n+1} (|G| |x| + |c|)` entrywise, `n` being the inner dimension.
+([higham2002accuracy], (17.5)–(17.6)). Let $m$ be a rounding model with unit roundoff $u < 1$,
+let $n = |\nu|$ be the inner dimension, and let $(n + 1)u < 1$. If $y$ is an admissible computed
+affine step $Gx + c$, then there is $\xi \in K^\mu$ with $$y = Gx + c + \xi, \qquad |\xi| \le
+\gamma_{n+1} (|G| |x| + |c|),$$ where the absolute values and the inequality are entrywise.
 
-Fed to `Stationary.norm_perturbed_iterate_sub_le`, this is the finite-precision half of
-[higham2002accuracy] Theorem 17.1: the perturbation is proportional to the data of the step and not
-to the number of steps taken, so the iteration has a limiting accuracy.
-
-Reference: [higham2002accuracy], Theorems 17.1–17.2. -/
+With `Stationary.norm_perturbed_iterate_sub_le`, this gives the finite-precision half of Theorem
+17.1 of [higham2002accuracy]: the perturbation is proportional to the data of the step and not
+to the number of steps, so the iteration has a limiting accuracy. The matrix $|G|$ is
+`Matrix.abs G`. See also Theorems 17.1–17.2 of [higham2002accuracy]. -/
 theorem exists_roundsAffineStep_eq_add {m : RoundingModel K} (hu : m.u < 1)
     (hcard : ((Fintype.card ν + 1 : ℕ) : K) * m.u < 1) {G : Matrix μ ν K} {c : μ → K}
     {x : ν → K} {y : μ → K} (h : RoundsAffineStep m G c x y) :

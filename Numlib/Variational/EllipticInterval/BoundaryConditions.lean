@@ -8,84 +8,126 @@ import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Inequality.Basic
 
 /-!
-# Boundary value problems on an interval: regularity, and the other boundary conditions
+# Boundary value problems on an interval: regularity and other boundary conditions
 
-The boundary value problems of [brezis2011functional] §8.4 beyond the homogeneous Dirichlet
-problem that `Numlib/Variational/EllipticInterval.lean` treats: the regularity "Steps C and D"
-in the generality every example needs (a weak solution tested against `H_0^1` alone is in `H²`;
-it is `C²` when the data are continuous; a `C²` weak solution is classical; `f ∈ H^k ⇒ u ∈ H^{k+2}`,
-Remark 23), the recovery of natural boundary conditions from a weak formulation on a space larger
-than `H_0^1` (the one lemma behind Examples 3–7), the inhomogeneous Dirichlet lift and the closed
-convex Dirichlet class of Example 1, the Neumann load of Example 4, the mixed, Robin and periodic
-spaces and the Robin form of Examples 5–7, and the problem on `ℝ` of Example 8 in `H¹(ℝ)`.
+This module treats the boundary value problems of [brezis2011functional], §8.4, other than the
+homogeneous Dirichlet problem of `Numlib.Variational.EllipticInterval`. On a bounded interval
+$(a, b)$ the bilinear form is $a(u, v) = \int_a^b (\alpha u' v' + \beta u' v + \gamma u v)$ on
+$H^1(a, b)$, and the model operator $-u'' + u$ has the form $a(u, v) = \int_a^b (u' v' + u v)$,
+which is the inner product of $H^1(a, b)$. For $v \in H^1(a, b)$, $v(a)$ and $v(b)$ are the values
+of its continuous representative. For $\Phi \in H^2(a, b)$, $\Phi'(a)$ and $\Phi'(b)$ are the values
+of the continuous representative of $\Phi' \in H^1(a, b)$.
 
-## Vocabulary
+The module proves the regularity Steps C and D of the source in the generality that the examples
+need: a weak solution tested against $H^1_0(a, b)$ alone is in $H^2(a, b)$; it is $C^2$ when the
+data are continuous; a $C^2$ weak solution is a classical solution; and $f \in H^k$ implies
+$u \in H^{k+2}$ (Remark 23). It recovers the natural boundary conditions from a weak formulation on
+a space larger than $H^1_0(a, b)$, which is the common step of Examples 3–7. It then solves the
+inhomogeneous Dirichlet problem of Example 1 (Proposition 8.16), the Neumann problems (Propositions
+8.17 and 8.18), the mixed, Robin and periodic problems of Examples 5–7, and the problem
+$-u'' + u = f$ on $\mathbb{R}$ of Example 8 in $H^1(\mathbb{R})$. Each strong problem on $(a, b)$
+has exactly one solution in $H^2(a, b)$, the solution is $C^2$ when $f$ is continuous, and the
+variational characterizations hold.
 
-Everything is on `SobolevInterval 1 a b = H¹(a, b)`: the parent module's form
-`EllipticInterval.form a b α β γ` with coefficients in `L^∞(a, b)`, its load `load a b f`, and
-the boundary functionals `SobolevInterval.evalCLM hab ⟨a, _⟩`, `⟨b, _⟩` (point evaluation of the
-continuous representative `SobolevInterval.rep`). The model operator `−u'' + u` is
-`EllipticInterval.modelForm a b = form a b 1 0 1`, which is the `H¹` inner product
-(`modelForm_eq_innerSL`). The `H²` conclusions are elements `Φ : SobolevInterval 2 a b` with
-`inclusionCLM 1 a b Φ = u`, the second derivative `deriv Φ 2` and the value
-`rep (derivCLM 1 a b Φ) x` of the continuous representative of `Φ' ∈ H¹` at an endpoint
-(footnote 13 of the book: `u ∈ H²` makes `u'(0)`, `u'(1)` meaningful). "`u ∈ C²(Ī)`" is an
-element `v : ContDiffMapIcc hab.le 2` of `Numlib/Analysis/Calculus/ContDiffMapIcc.lean` carrying
-`u` (`ofContDiffMapIcc hab v = u`), and
-"`v` is a classical solution" is the parent's pointwise form
-`∀ x ∈ Ioo a b, -(α v')' x + β x v' x + γ x v x = f x`. Example 8 lives on
-`SobolevIntervalLp 1 2 ⊤ = H¹(ℝ)` of `Numlib/Analysis/Sobolev/Interval/Basic.lean`, where the
-bilinear form is the inner product and Lax–Milgram is the Riesz representation.
+## Main definitions
 
-## Main statements
+* `EllipticInterval.affineLift`: the affine function with the values $\alpha$ at $a$ and $\beta$ at
+  $b$, as an element of $H^m(a, b)$.
+* `EllipticInterval.dirichletSet`: the closed convex set $\{v \in H^1(a, b) : v(a) = \alpha, v(b) =
+  \beta\}$ of Example 1.
+* `EllipticInterval.mixedSpace`, `EllipticInterval.robinSpace`, `EllipticInterval.periodicSpace`:
+  the closed subspaces $\{v(a) = 0\}$, $\{v(b) = 0\}$ and $\{v(a) = v(b)\}$ of $H^1(a, b)$ for
+  Examples 5–7.
+* `EllipticInterval.neumannLoad`: the load $v \mapsto \int_a^b f v - \alpha v(a) + \beta v(b)$ of
+  the inhomogeneous Neumann problem.
+* `EllipticInterval.robinForm`: the form $\int_a^b (u' v' + u v) + k u(a) v(a)$ of the Robin
+  problem.
+* `EllipticInterval.Line.solution`: the weak solution in $H^1(\mathbb{R})$ of $-u'' + u = f$ on
+  $\mathbb{R}$.
+* `EllipticInterval.Line.translateLp`, `EllipticInterval.Line.translate`: the translations
+  $f \mapsto f(\cdot + h)$ of $L^2(\mathbb{R})$ and of $H^1(\mathbb{R})$.
 
-* `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`,
-  `exists_sobolevInterval_two_of_forall_testFunction` (now in the parent module; **Step C**, `H²`
-  regularity from the test
-  functions alone): `u ∈ H¹` with `a(u, v) = (f, v)` for every `v ∈ H_0^1` lies in `H²`, with
-  `α u'' = β u' + γ u − f − α' u'` almost everywhere;
-  `exists_contDiffMapIcc_of_continuous` (Step C, the `C²` clause): it is `C²` when `f`, `β`, `γ`
-  are continuous, and then a classical solution.
-* `EllipticInterval.isClassicalSolution_of_contDiffMapIcc` (**Step D**): a `C²` weak solution is
-  a classical solution; `isClassicalSolution_of_forall_testFunction` is the same from the weak
-  equation tested against the test functions only.
-* `EllipticInterval.memSobolevInterval_add_two_of_isWeakSolution` (Remark 23):
-  `f ∈ H^k ⇒ u ∈ H^{k+2}` for the model problem.
-* `EllipticInterval.natural_boundary_eq_of_forall`, with `natural_boundary_neumann`,
-  `natural_boundary_mixed`, `natural_boundary_periodic`: a solution of a weak problem on a space
-  `K ⊇ H_0^1` satisfies the equation and the *natural* boundary conditions that `K` leaves free.
-* `EllipticInterval.modelForm_inclusionCLM_eq` (Green's formula for `H²`): the converse, from which
-  every uniqueness statement below follows.
-* `EllipticInterval.existsUnique_dirichletSet_of_variationalInequality` (Proposition 8.16,
-  Method 2), `existsUnique_neumann` (Proposition 8.17), `existsUnique_neumann_inhomogeneous`
-  (Proposition 8.18), `existsUnique_mixed`, `existsUnique_robin`, `existsUnique_periodic`
-  (Examples 5–7): the strong problems of §8.4 are uniquely solvable in `H²(a, b)`, the solution
-  is `C²` when `f` is continuous, and the variational characterizations hold.
-* `EllipticInterval.Line.solution` (Example 8): the weak solution of `−u'' + u = f` on `ℝ`;
-  `Line.memSobolevIntervalLp_of_classical`: a classical solution tending to `0` at infinity lies in
-  `H¹(ℝ)` and is the weak solution; `Line.exists_classical_solution`: for `f ∈ L²(ℝ) ∩ C(ℝ)` the
-  weak solution is the unique classical solution, and lies in `H²(ℝ)`;
-  `Line.solution_translateLp`: the solution operator commutes with the translations
-  `Line.translateLp` of `L²(ℝ)` and `Line.translate` of `H¹(ℝ)` (the whole-line instances of
-  the isometries of `Numlib/Analysis/Sobolev/Translate.lean`), `Line.solution_eq_zero_iff`:
-  it is injective, and `Line.not_tendsto_translateLp`: the translates of a nonzero `L²(ℝ)`
-  function have no limit — which makes the solution operator non-compact on `L²(ℝ)`
-  (Remark 30 of Chapter 8, stated in the surface).
+## Main results
 
-## Design
+* `EllipticInterval.exists_contDiffMapIcc_of_continuous`: Step C, the $C^2$ part. A weak solution is
+  $C^2$ when $f$, $\beta$, $\gamma$ are continuous and $\alpha$ is $C^1$ and does not vanish on
+  $[a, b]$, and it is then a classical solution. The $H^2$ part of Step C is
+  `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` and
+  `EllipticInterval.exists_sobolevInterval_two_of_forall_testFunction` in
+  `Numlib.Variational.EllipticInterval`.
+* `EllipticInterval.isClassicalSolution_of_contDiffMapIcc`: Step D. A $C^2$ weak solution is a
+  classical solution. `EllipticInterval.isClassicalSolution_of_forall_testFunction` is the same from
+  the weak equation tested against test functions only.
+* `EllipticInterval.memSobolevInterval_add_two_of_isWeakSolution`: Remark 23. For the model problem,
+  $f \in H^k$ implies $u \in H^{k+2}$.
+* `EllipticInterval.modelForm_inclusionCLM_eq`: Green's formula for $\Phi \in H^2(a, b)$. All the
+  uniqueness statements below follow from it.
+* `EllipticInterval.natural_boundary_eq_of_forall`, with
+  `EllipticInterval.natural_boundary_neumann`, `EllipticInterval.natural_boundary_mixed`,
+  `EllipticInterval.natural_boundary_robin` and `EllipticInterval.natural_boundary_periodic`: a
+  solution of a weak problem on a space $K \supseteq H^1_0(a, b)$ satisfies the equation and the
+  natural boundary conditions that $K$ leaves free.
+* `EllipticInterval.existsUnique_dirichletSet_of_variationalInequality`,
+  `EllipticInterval.existsUnique_dirichlet_inhomogeneous`: Proposition 8.16, the inhomogeneous
+  Dirichlet problem.
+* `EllipticInterval.existsUnique_neumann`, `EllipticInterval.existsUnique_neumann_inhomogeneous`:
+  Propositions 8.17 and 8.18, the Neumann problems.
+* `EllipticInterval.existsUnique_mixed`, `EllipticInterval.existsUnique_robin`,
+  `EllipticInterval.existsUnique_periodic`: Examples 5–7, the mixed, Robin and periodic problems.
+* `EllipticInterval.Line.memSobolevIntervalLp_of_classical`,
+  `EllipticInterval.Line.isWeakSolution_of_classical`: Example 8. A classical solution on
+  $\mathbb{R}$ that tends to $0$ at infinity is in $H^1(\mathbb{R})$ and is the weak solution.
+* `EllipticInterval.Line.exists_classical_solution`: for $f \in L^2(\mathbb{R}) \cap C(\mathbb{R})$,
+  the problem on $\mathbb{R}$ has exactly one classical solution that tends to $0$ at infinity. By
+  `EllipticInterval.Line.memSobolevIntervalLp_two_solution`, the weak solution is in
+  $H^2(\mathbb{R})$.
+* `EllipticInterval.Line.solution_translateLp`, `EllipticInterval.Line.solution_eq_zero_iff`,
+  `EllipticInterval.Line.not_tendsto_translateLp`: the solution operator on $\mathbb{R}$ commutes
+  with the translations and is injective, and the translates of a nonzero function of
+  $L^2(\mathbb{R})$ have no convergent subsequence. These facts make the solution operator
+  non-compact on $L^2(\mathbb{R})$, which is Remark 30 of Chapter 8 of [brezis2011functional].
+  Remark 30 itself is stated in `NumlibSurface.Brezis.Chapter08.Section06`.
 
-* The regularity lemmas of the parent, `mem_sobolevInterval_two_of_forall_testFunction` and
-  `exists_sobolevInterval_two_of_forall_testFunction`, take the weak equation as the only hypothesis
-  (the parent asks `u ∈ H_0^1` as well, which Examples 1 and 3–8 do not have); the parent's
-  versions are their instances.
-* The `C²` clause is proved through the continuous representative of `u' ∈ H¹` and Remark 6
-  (`SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`) rather than through the book's
-  "`(u')' ∈ C(Ī)` hence `u' ∈ C¹(Ī)`" in words; the `C¹` coefficient `α` is handled by the flux
-  identity `α u'' = β u' + γ u − f − α' u'`, so that the Sturm–Liouville case of §8.6 needs no
-  separate argument.
-* Every strong problem is stated for `Φ ∈ H²(a, b)` with the equation almost everywhere and the
-  boundary conditions on the continuous representatives; uniqueness reduces through Green's
-  formula to the uniqueness of the weak solution, so no maximum principle is needed.
+## Proof outline
+
+Every strong problem is stated for $\Phi \in H^2(a, b)$, with the equation almost everywhere and the
+boundary conditions on the continuous representatives. Existence comes from the Lax–Milgram theorem
+(or the variational inequality, for the Dirichlet class), then Step C, then the recovery of the
+natural boundary conditions. Uniqueness reduces through Green's formula to the uniqueness of the
+weak solution, so no maximum principle is needed.
+
+## Implementation notes
+
+* All the problems on $(a, b)$ are posed on `SobolevInterval 1 a b`, which is $H^1(a, b)$. The form
+  is `EllipticInterval.form a b α β γ`, with coefficients in $L^\infty(a, b)$, and the load is
+  `EllipticInterval.load a b f`. The boundary functionals are `SobolevInterval.evalCLM`, the
+  evaluations of the continuous representative `SobolevIntervalLp.rep`. The model form is
+  `EllipticInterval.modelForm a b`, which is `EllipticInterval.form a b 1 0 1` and equals the inner
+  product of $H^1(a, b)$ by `EllipticInterval.modelForm_eq_innerSL`.
+* An $H^2$ conclusion is an element `Φ : SobolevInterval 2 a b` with
+  `SobolevInterval.inclusionCLM 1 a b Φ = u`. Its second derivative is `SobolevInterval.deriv Φ 2`.
+  The value $\Phi'(x)$ at an endpoint is the value at $x$ of the continuous representative
+  `SobolevIntervalLp.rep` of `SobolevInterval.derivCLM 1 a b Φ`. Footnote 13 of the source observes
+  that $u \in H^2$ gives a meaning to $u'(a)$ and $u'(b)$.
+* "$u \in C^2[a, b]$" is an element `v : ContDiffMapIcc hab.le 2` of
+  `Numlib.Analysis.Calculus.ContDiffMapIcc` with `EllipticInterval.ofContDiffMapIcc hab v = u`. "$v$
+  is a classical solution" is the pointwise equation $-(\alpha v')'(x) + \beta(x) v'(x) + \gamma(x)
+  v(x) = f(x)$ for every $x \in (a, b)$, as in `Numlib.Variational.EllipticInterval`.
+* The regularity lemmas `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` and
+  `EllipticInterval.exists_sobolevInterval_two_of_forall_testFunction` of
+  `Numlib.Variational.EllipticInterval` take the weak equation against $H^1_0(a, b)$ as the only
+  hypothesis. They do not ask $u \in H^1_0(a, b)$, which Examples 1 and 3–8 do not have. The
+  versions for $u \in H^1_0(a, b)$, such as
+  `EllipticInterval.isWeakSolution_mem_sobolevInterval_two`, are special cases of them.
+* The $C^2$ part of Step C goes through the continuous representative of $u' \in H^1$ and Remark 6
+  of the source (`SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`), and not through the
+  words "$(u')' \in C(\bar I)$, hence $u' \in C^1(\bar I)$" of the source. A $C^1$ coefficient
+  $\alpha$ is handled by the flux identity $\alpha u'' = \beta u' + \gamma u - f - \alpha' u'$, so
+  the Sturm–Liouville case of §8.6 needs no separate argument.
+* Example 8 is posed on `SobolevIntervalLp 1 2 ⊤`, which is $H^1(\mathbb{R})$, from
+  `Numlib.Analysis.Sobolev.Interval.Basic`. There the bilinear form is the inner product, and the
+  Lax–Milgram theorem is the Riesz representation theorem. The translations are the whole-line cases
+  of the isometries of `Numlib.Analysis.Sobolev.Translate`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -93,13 +135,14 @@ open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
 
-/-! ### The two continuous representatives agree -/
+/-! ### The continuous representative of a difference -/
 
 section Bridge
 
 variable {a b : ℝ}
 
-/-- The continuous representative of a difference. -/
+/-- Let $a < b$ and $u, v \in H^1(a, b)$. The continuous representative of $u - v$ is the difference
+of the continuous representatives of $u$ and $v$ on $[a, b]$. -/
 theorem SobolevInterval.rep_sub (hab : a < b) (u v : SobolevInterval 1 a b) :
     EqOn (SobolevInterval.rep (u - v)) (SobolevInterval.rep u - SobolevInterval.rep v) (Icc a b) :=
   SobolevInterval.rep_eq_of_continuousOn hab (u - v)
@@ -113,23 +156,32 @@ namespace EllipticInterval
 
 variable {a b : ℝ}
 
-/-! ### Step C: the `C²` clause -/
+/-! ### Step C: the $C^2$ part -/
 
 open SobolevInterval in
-/-- The derivatives of the inclusion of `Φ ∈ H²(a, b)`. -/
+/-- Let $\Phi \in H^2(a, b)$ and $u \in H^1(a, b)$, with $u$ the inclusion of $\Phi$ in $H^1(a, b)$.
+Then for $j = 0, 1$, the $j$-th weak derivative of $u$ is the $j$-th weak derivative of $\Phi$. -/
 theorem deriv_inclusionCLM_eq {Φ : SobolevInterval 2 a b} {u : SobolevInterval 1 a b}
     (hΦ : inclusionCLM 1 a b Φ = u) (j : Fin 2) : deriv u j = deriv Φ j.castSucc := by
   rw [← hΦ, deriv_inclusionCLM]
 
 open SobolevInterval in
-/-- **Step C, the `C²` clause** ([brezis2011functional] §8.4, "Steps C and D"): if in addition to
-the hypotheses of `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` the data
-`β`, `γ`, `f` are continuous on `[a, b]`, then the weak solution `u` is carried by an element
-`v ∈ C²[a, b]` (`ofContDiffMapIcc hab v = u`, so `rep u = v` on `[a, b]`), which is a classical
-solution of `-(α v')' + β v' + γ v = f` on `(a, b)`. The second derivative
-`u'' = (β u' + γ u − f − α' u')/α` is almost everywhere a function continuous on `[a, b]`, so `u'`
-is `C¹` there by Remark 6 (`SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`), and so is
-`u` with derivative `u'`. -/
+/-- **Step C, the $C^2$ part.** Let $a < b$, let $\alpha, \beta, \gamma \in L^\infty(a, b)$ and
+$f \in L^2(a, b)$, and let them agree almost everywhere on $(a, b)$ with functions, also written
+$\alpha, \beta, \gamma, f$, such that $\alpha \in C^1[a, b]$, $\alpha(x) \neq 0$ for every
+$x \in [a, b]$, and $\beta, \gamma, f$ are continuous on $[a, b]$. Let $u \in H^1(a, b)$ satisfy
+$$\int_a^b (\alpha u' v' + \beta u' v + \gamma u v) = \int_a^b f v
+  \quad \text{for every } v \in H^1_0(a, b).$$
+Then there is $v \in C^2[a, b]$ that carries $u$, and
+$$-(\alpha v')'(x) + \beta(x) v'(x) + \gamma(x) v(x) = f(x)
+  \quad \text{for every } x \in (a, b).$$
+This is part of Steps C and D in §8.4 of [brezis2011functional].
+
+"$v$ carries $u$" is `EllipticInterval.ofContDiffMapIcc hab v = u`, so the continuous
+representative of $u$ is $v$ on $[a, b]$. The proof: almost everywhere, $u'' = (\beta u' +
+\gamma u - f - \alpha' u') / \alpha$, which is a function continuous on $[a, b]$. So $u'$ is
+$C^1$ on $[a, b]$ by Remark 6 of the source
+(`SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`), and so is $u$, with derivative $u'$. -/
 theorem exists_contDiffMapIcc_of_continuous (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (fL : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {α β γ f : ℝ → ℝ} (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α)
@@ -223,12 +275,17 @@ theorem exists_contDiffMapIcc_of_continuous (hab : a < b)
     field_simp [hα0 x hx']
     ring
 
-/-! ### Step D: a `C²` weak solution is a classical solution -/
+/-! ### Step D: a $C^2$ weak solution is a classical solution -/
 
-/-- **The a.e.-to-everywhere step of Step D**: if the flux `α v'` of `v ∈ C²[a, b]` has the weak
-derivative `β v' + γ v − f` on `(a, b)`, with `α ∈ C¹[a, b]` and `β`, `γ`, `f` continuous on
-`[a, b]`, then `-(α v')' + β v' + γ v = f` holds at every point of `(a, b)`: the classical and the
-weak derivative of the flux agree almost everywhere, and both sides are continuous. -/
+/-- **The step from almost everywhere to everywhere in Step D.** Let $a < b$, let
+$\alpha \in C^1[a, b]$, let $\beta, \gamma, f$ be continuous on $[a, b]$, and let
+$v \in C^2[a, b]$. If the flux $\alpha v'$ has the weak derivative $\beta v' + \gamma v - f$ on
+$(a, b)$, then
+$$-(\alpha v')'(x) + \beta(x) v'(x) + \gamma(x) v(x) = f(x)
+  \quad \text{for every } x \in (a, b).$$
+
+The classical and the weak derivative of the flux agree almost everywhere, and both sides are
+continuous. -/
 theorem forall_ode_of_hasWeakDerivOn (hab : a < b) {α β γ f : ℝ → ℝ}
     (hα : ContDiffOn ℝ 1 α (Icc a b)) (hβ : ContinuousOn β (Icc a b))
     (hγ : ContinuousOn γ (Icc a b)) (hf : ContinuousOn f (Icc a b)) (v : ContDiffMapIcc hab.le 2)
@@ -260,10 +317,14 @@ theorem forall_ode_of_hasWeakDerivOn (hab : a < b) {α β γ f : ℝ → ℝ}
   simp only at this
   linarith
 
-/-- **Step D (a `C²` weak solution is a classical solution)**, [brezis2011functional] §8.1 and
-the converse of `EllipticInterval.isWeakSolution_of_classical`: if `v ∈ C²[a, b]` satisfies the
-weak equation `a(v, w) = (f, w)` for every `w ∈ H_0^1(a, b)`, with `α ∈ C¹[a, b]` and `β`, `γ`, `f`
-continuous on `[a, b]`, then `-(α v')' + β v' + γ v = f` at every point of `(a, b)`. -/
+/-- **Step D: a $C^2$ weak solution is a classical solution.** Let $a < b$, let
+$\alpha, \beta, \gamma \in L^\infty(a, b)$ and $f \in L^2(a, b)$, and let them agree almost
+everywhere on $(a, b)$ with functions $\alpha \in C^1[a, b]$ and $\beta, \gamma, f$ continuous
+on $[a, b]$. Let $v \in C^2[a, b]$ satisfy
+$$\int_a^b (\alpha v' w' + \beta v' w + \gamma v w) = \int_a^b f w
+  \quad \text{for every } w \in H^1_0(a, b).$$
+Then $-(\alpha v')' + \beta v' + \gamma v = f$ at every point of $(a, b)$. This is part of §8.1
+of [brezis2011functional], and the converse of `EllipticInterval.isWeakSolution_of_classical`. -/
 theorem isClassicalSolution_of_contDiffMapIcc (hab : a < b)
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) (fL : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {α β γ f : ℝ → ℝ} (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α)
@@ -283,16 +344,21 @@ theorem isClassicalSolution_of_contDiffMapIcc (hab : a < b)
       deriv_ofContDiffMapIcc_zero hab v] with x h1 h2 h3 h4 h5
     rw [h1, h2, h3, h4, h5]
 
-/-- A function continuous on `[a, b]` is locally integrable on `(a, b)`. -/
+/-- A function continuous on $[a, b]$ is locally integrable on $(a, b)$. -/
 theorem _root_.ContinuousOn.locallyIntegrableOn_Ioo {g : ℝ → ℝ}
     (hg : ContinuousOn g (Icc a b)) : LocallyIntegrableOn g (Ioo a b) :=
   (hg.integrableOn_Icc.mono_set Ioo_subset_Icc_self).locallyIntegrableOn
 
-/-- **Step D from the test functions only** ([brezis2011functional] §8.1, the derivation of
-`-u'' + u = f` a.e. from (2)): if `v ∈ C²[a, b]` satisfies
-`∫_a^b (α v' φ' + β v' φ + γ v φ) = ∫_a^b f φ` for every test function `φ ∈ C_c^∞((a, b))`, then
-`-(α v')' + β v' + γ v = f` at every point of `(a, b)`. This is the form the provisional weak
-solutions of §8.1 (tested against `C¹` functions vanishing at the endpoints) reduce to. -/
+/-- **Step D from the test functions only.** Let $a < b$, let $\alpha \in C^1[a, b]$, let
+$\beta, \gamma, f$ be continuous on $[a, b]$, and let $v \in C^2[a, b]$ satisfy
+$$\int_a^b (\alpha v' \varphi' + \beta v' \varphi + \gamma v \varphi) = \int_a^b f \varphi
+  \quad \text{for every } \varphi \in C_c^\infty((a, b)).$$
+Then $-(\alpha v')' + \beta v' + \gamma v = f$ at every point of $(a, b)$. This is the
+derivation in §8.1 of [brezis2011functional] of $-u'' + u = f$ almost everywhere from equation
+(2).
+
+The provisional weak solutions of §8.1, which are tested against $C^1$ functions that vanish at
+the endpoints, reduce to this form. -/
 theorem isClassicalSolution_of_forall_testFunction (hab : a < b) {α β γ f : ℝ → ℝ}
     (hα : ContDiffOn ℝ 1 α (Icc a b)) (hβ : ContinuousOn β (Icc a b))
     (hγ : ContinuousOn γ (Icc a b)) (hf : ContinuousOn f (Icc a b)) (v : ContDiffMapIcc hab.le 2)
@@ -336,7 +402,7 @@ theorem isClassicalSolution_of_forall_testFunction (hab : a < b) {α β γ f : �
 
 /-! ### Remark 23: higher regularity for the model problem -/
 
-/-- `H^k(a, b)` is closed under subtraction, as a predicate on functions. -/
+/-- If $g$ and $h$ are in $H^k(a, b)$, then $g - h$ is in $H^k(a, b)$. -/
 theorem _root_.MemSobolevInterval.sub {k : ℕ} {g h : ℝ → ℝ} (hg : MemSobolevInterval g k a b)
     (hh : MemSobolevInterval h k a b) : MemSobolevInterval (fun x ↦ g x - h x) k a b := by
   obtain ⟨G, hG⟩ := MemSobolevMultiIndex.exists_sobolevMultiIndex hg
@@ -350,9 +416,11 @@ theorem _root_.MemSobolevInterval.sub {k : ℕ} {g h : ℝ → ℝ} (hg : MemSob
   rw [h2, h3]
 
 open SobolevInterval in
-/-- The derivative `u'` of a weak solution of the model problem has the weak derivative
-`u − f` on `(a, b)`: `EllipticInterval.hasWeakDerivOn_mulL_deriv_of_forall` for `α = γ = 1`,
-`β = 0`. -/
+/-- Let $f \in L^2(a, b)$, and let $u \in H^1(a, b)$ satisfy $\int_a^b (u' v' + u v) = \int_a^b f v$
+for every $v \in H^1_0(a, b)$. Then $u'$ has the weak derivative $u - f$ on $(a, b)$.
+
+This is `EllipticInterval.hasWeakDerivOn_mulL_deriv_of_forall` for $\alpha = \gamma = 1$ and
+$\beta = 0$. -/
 theorem hasWeakDerivOn_deriv_of_forall_modelForm (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b f v) :
@@ -365,10 +433,14 @@ theorem hasWeakDerivOn_deriv_of_forall_modelForm (f : Lp ℝ 2 (volume.restrict 
     rw [h1, h2, Pi.zero_apply, zero_mul, one_mul, zero_add, deriv_zero]
 
 open SobolevInterval in
-/-- **Remark 23 of [brezis2011functional]** (higher regularity of the model problem): if `u ∈ H¹`
-satisfies `∫ u' v' + ∫ u v = ∫ f v` for every `v ∈ H_0^1(a, b)` and `f ∈ H^k(a, b)`, then
-`u ∈ H^{k+2}(a, b)`. By induction on `k`: `u'' = u − f` weakly, and `u − f ∈ H^{k+1}` once
-`u ∈ H^{k+2}`. -/
+/-- **Higher regularity for the model problem.** Let $f \in L^2(a, b)$, and let $u \in H^1(a, b)$
+satisfy
+$$\int_a^b (u' v' + u v) = \int_a^b f v \quad \text{for every } v \in H^1_0(a, b).$$
+If $f \in H^k(a, b)$ for some $k \in \mathbb{N}$, then $u \in H^{k+2}(a, b)$. This is Remark 23
+of [brezis2011functional].
+
+The proof is by induction on $k$: $u'' = u - f$ weakly, and $u - f \in H^{k+1}$ once
+$u \in H^{k+2}$. -/
 theorem memSobolevInterval_add_two_of_isWeakSolution
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b f v) {k : ℕ}
@@ -385,13 +457,16 @@ theorem memSobolevInterval_add_two_of_isWeakSolution
     exact _root_.MemSobolevInterval.sub
       (hu2.mono_order (Nat.le_succ (k + 1)) : MemSobolevInterval (fn u) (k + 1) a b) hf
 
-/-! ### Green's formula for `H²(a, b)`, and the natural boundary conditions -/
+/-! ### Green's formula for $H^2(a, b)$, and the natural boundary conditions -/
 
 open SobolevInterval in
-/-- **Green's formula for `Φ ∈ H²(a, b)`** (the identity (23) of [brezis2011functional], proof of
-Proposition 8.17): for every `v ∈ H¹(a, b)`,
-`∫ Φ' v' + ∫ Φ v = ∫ (Φ − Φ'') v + Φ'(b) v(b) − Φ'(a) v(a)`, where `Φ'(x)` is the value of the
-continuous representative of `Φ' ∈ H¹(a, b)`. -/
+/-- **Green's formula for $\Phi \in H^2(a, b)$.** Let $a < b$, $\Phi \in H^2(a, b)$ and
+$v \in H^1(a, b)$. Then
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b (\Phi - \Phi'') v + \Phi'(b) v(b) - \Phi'(a) v(a).$$
+This is the identity (23) in the proof of Proposition 8.17 of [brezis2011functional].
+
+Here $\Phi'(x)$ is the value of the continuous representative of $\Phi' \in H^1(a, b)$, and $v$
+in the integral is the continuous representative of $v$. -/
 theorem modelForm_inclusionCLM_eq (hab : a < b) (Φ : SobolevInterval 2 a b)
     (v : SobolevInterval 1 a b) :
     modelForm a b (inclusionCLM 1 a b Φ) v
@@ -446,9 +521,11 @@ theorem modelForm_inclusionCLM_eq (hab : a < b) (Φ : SobolevInterval 2 a b)
   linarith
 
 open SobolevInterval in
-/-- **Green's formula for a solution of the model equation**: if `Φ ∈ H²(a, b)` satisfies
-`−Φ'' + Φ = f` almost everywhere, then `a(Φ, v) = (f, v) + Φ'(b) v(b) − Φ'(a) v(a)` for every
-`v ∈ H¹(a, b)`. -/
+/-- **Green's formula for a solution of the model equation.** Let $a < b$, $f \in L^2(a, b)$, and
+let $\Phi \in H^2(a, b)$ satisfy $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$. Then for
+every $v \in H^1(a, b)$,
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v + \Phi'(b) v(b) - \Phi'(a) v(a).$$
+-/
 theorem modelForm_inclusionCLM_eq_of_deriv_two (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {Φ : SobolevInterval 2 a b}
     (hΦ : (deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ x - f x)
@@ -464,8 +541,11 @@ theorem modelForm_inclusionCLM_eq_of_deriv_two (hab : a < b)
   ring
 
 open SobolevInterval in
-/-- A solution of the model equation satisfies the weak equation against `H_0^1(a, b)`,
-whatever its boundary values: the boundary terms of Green's formula vanish. -/
+/-- Let $a < b$, $f \in L^2(a, b)$, and let $\Phi \in H^2(a, b)$ satisfy $-\Phi'' + \Phi = f$ almost
+everywhere on $(a, b)$, whatever its boundary values. Then
+$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v$ for every $v \in H^1_0(a, b)$.
+
+The boundary terms of Green's formula vanish. -/
 theorem modelForm_inclusionCLM_eq_load_of_mem (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {Φ : SobolevInterval 2 a b}
     (hΦ : (deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ x - f x)
@@ -476,7 +556,7 @@ theorem modelForm_inclusionCLM_eq_load_of_mem (hab : a < b)
   ring
 
 open SobolevInterval in
-/-- Two elements of `H²(a, b)` with the same inclusion in `H¹(a, b)` and the same second
+/-- Two elements of $H^2(a, b)$ with the same inclusion in $H^1(a, b)$ and the same second
 derivative are equal. -/
 theorem sobolevInterval_two_ext {Φ₁ Φ₂ : SobolevInterval 2 a b}
     (h : inclusionCLM 1 a b Φ₁ = inclusionCLM 1 a b Φ₂) (h2 : deriv Φ₁ 2 = deriv Φ₂ 2) :
@@ -490,7 +570,9 @@ theorem sobolevInterval_two_ext {Φ₁ Φ₂ : SobolevInterval 2 a b}
   · exact h2
 
 open SobolevInterval in
-/-- Two solutions of the model equation with the same inclusion in `H¹(a, b)` are equal. -/
+/-- Let $f \in L^2(a, b)$. Two elements $\Phi_1, \Phi_2 \in H^2(a, b)$ that satisfy
+$-\Phi_i'' + \Phi_i = f$ almost everywhere on $(a, b)$ and have the same inclusion in
+$H^1(a, b)$ are equal. -/
 theorem eq_of_inclusionCLM_eq_of_deriv_two (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {Φ₁ Φ₂ : SobolevInterval 2 a b}
     (h₁ : (deriv Φ₁ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ₁ x - f x)
@@ -503,8 +585,9 @@ theorem eq_of_inclusionCLM_eq_of_deriv_two (f : Lp ℝ 2 (volume.restrict (Ioo a
   rw [hfn]
 
 open SobolevInterval in
-/-- **Step C for the model problem**: `u ∈ H¹(a, b)` with `∫ u' v' + ∫ u v = ∫ f v` for every
-`v ∈ H_0^1(a, b)` is the inclusion of a `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost everywhere. -/
+/-- **Step C for the model problem.** Let $f \in L^2(a, b)$, and let $u \in H^1(a, b)$ satisfy
+$\int_a^b (u' v' + u v) = \int_a^b f v$ for every $v \in H^1_0(a, b)$. Then $u$ is the inclusion
+of some $\Phi \in H^2(a, b)$ with $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$. -/
 theorem exists_sobolevInterval_two_of_forall_modelForm
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b f v) :
@@ -524,12 +607,18 @@ theorem exists_sobolevInterval_two_of_forall_modelForm
   rw [hx, ← fn_inclusionCLM Φ, hΦ]
 
 open SobolevInterval in
-/-- **Recovery of the natural boundary conditions** (the common step of Examples 3–7 and
-Propositions 8.17–8.18 of [brezis2011functional]): if `Φ ∈ H²(a, b)` satisfies
-`a(Φ, v) = (f, v) + w₁ v(b) − w₀ v(a)` for every `v` in a subspace `K ⊇ H_0^1(a, b)`, then
-(i) `−Φ'' + Φ = f` almost everywhere, and (ii) the boundary terms that remain satisfy
-`(Φ'(b) − w₁) v(b) = (Φ'(a) − w₀) v(a)` for every `v ∈ K`. The choice of `K` and of `v` then
-gives the Neumann, mixed, Robin and periodic conditions. -/
+/-- **Recovery of the natural boundary conditions.** Let $a < b$, $f \in L^2(a, b)$,
+$w_0, w_1 \in \mathbb{R}$, and let $K$ be a subspace of $H^1(a, b)$ that contains $H^1_0(a, b)$.
+Let $\Phi \in H^2(a, b)$ satisfy
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v + w_1 v(b) - w_0 v(a)
+  \quad \text{for every } v \in K.$$
+Then
+
+* $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, and
+* $(\Phi'(b) - w_1) v(b) = (\Phi'(a) - w_0) v(a)$ for every $v \in K$.
+
+This is the common step of Examples 3–7 and Propositions 8.17–8.18 of [brezis2011functional].
+The choice of $K$ and of $v$ then gives the Neumann, mixed, Robin and periodic conditions. -/
 theorem natural_boundary_eq_of_forall (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {w₀ w₁ : ℝ} {K : Submodule ℝ (SobolevInterval 1 a b)} (hK : SobolevIntervalZero a b ≤ K)
     (Φ : SobolevInterval 2 a b) (h : ∀ v ∈ K, modelForm a b (inclusionCLM 1 a b Φ) v
@@ -556,15 +645,20 @@ theorem natural_boundary_eq_of_forall (hab : a < b) (f : Lp ℝ 2 (volume.restri
 /-! ### The affine lift, the Dirichlet class, and the spaces of Examples 5–7 -/
 
 open SobolevInterval in
-/-- **The affine function with prescribed endpoint values** `x ↦ α + (β − α)(x − a)/(b − a)`, as
-an element of `H^m(a, b)`: the smooth lift `u₀` of Example 1, Method 1, of
-[brezis2011functional] §8.4 (footnote 12: affine). -/
+/-- **The affine lift**: for $a < b$, $m \in \mathbb{N}$ and $\alpha, \beta \in \mathbb{R}$, the
+affine function
+$$x \mapsto \alpha + (\beta - \alpha) \frac{x - a}{b - a},$$
+as an element of $H^m(a, b)$. It takes the value $\alpha$ at $a$ and $\beta$ at $b$.
+
+It is the smooth lift $u_0$ of Example 1, Method 1, in §8.4 of [brezis2011functional]. Footnote
+12 of the source says that $u_0$ can be taken affine. -/
 def affineLift (hab : a < b) (m : ℕ) (α β : ℝ) : SobolevInterval m a b :=
   ContDiffMapIcc.toSobolevInterval hab.le hab m (ContDiffMapIcc.ofContDiff hab.le
     (show ContDiff ℝ m fun x ↦ α + (β - α) * ((x - a) / (b - a)) by fun_prop))
 
 open SobolevInterval in
-/-- The function of the affine lift is the affine function. -/
+/-- The function of the affine lift is the affine function $x \mapsto \alpha + (\beta - \alpha)(x -
+a)/(b - a)$, almost everywhere on $(a, b)$. -/
 theorem fn_affineLift_ae_eq (hab : a < b) (m : ℕ) (α β : ℝ) :
     fn (affineLift hab m α β) =ᵐ[volume.restrict (Ioo a b)]
       fun x ↦ α + (β - α) * ((x - a) / (b - a)) := by
@@ -574,19 +668,20 @@ theorem fn_affineLift_ae_eq (hab : a < b) (m : ℕ) (α β : ℝ) :
   exact ContDiffMapIcc.coe_ofContDiff hab.le _ ⟨x, Ioo_subset_Icc_self hx⟩
 
 open SobolevInterval in
-/-- The continuous representative of the affine lift is the affine function on `[a, b]`. -/
+/-- The continuous representative of the affine lift in $H^1(a, b)$ is the affine function $x
+\mapsto \alpha + (\beta - \alpha)(x - a)/(b - a)$ on $[a, b]$. -/
 theorem rep_affineLift (hab : a < b) (α β : ℝ) :
     EqOn (rep (affineLift hab 1 α β)) (fun x ↦ α + (β - α) * ((x - a) / (b - a))) (Icc a b) :=
   rep_eq_of_continuousOn hab _ (by fun_prop) (fn_affineLift_ae_eq hab 1 α β)
 
 open SobolevInterval in
-/-- The affine lift takes the value `α` at `a`. -/
+/-- The affine lift takes the value $\alpha$ at $a$. -/
 theorem rep_affineLift_left (hab : a < b) (α β : ℝ) : rep (affineLift hab 1 α β) a = α := by
   rw [rep_affineLift hab α β (left_mem_Icc.2 hab.le)]
   simp
 
 open SobolevInterval in
-/-- The affine lift takes the value `β` at `b`. -/
+/-- The affine lift takes the value $\beta$ at $b$. -/
 theorem rep_affineLift_right (hab : a < b) (α β : ℝ) : rep (affineLift hab 1 α β) b = β := by
   rw [rep_affineLift hab α β (right_mem_Icc.2 hab.le)]
   simp only
@@ -594,14 +689,15 @@ theorem rep_affineLift_right (hab : a < b) (α β : ℝ) : rep (affineLift hab 1
   ring
 
 open SobolevInterval in
-/-- The inclusion of the affine lift of order `2` is the affine lift of order `1`. -/
+/-- The inclusion in $H^1(a, b)$ of the affine lift in $H^2(a, b)$ is the affine lift in
+$H^1(a, b)$. -/
 theorem inclusionCLM_affineLift (hab : a < b) (α β : ℝ) :
     inclusionCLM 1 a b (affineLift hab 2 α β) = affineLift hab 1 α β :=
   SobolevMultiIndex.ext_of_fn_ae_eq ((fn_affineLift_ae_eq hab 2 α β).trans
     (fn_affineLift_ae_eq hab 1 α β).symm)
 
 open SobolevInterval in
-/-- The second derivative of the affine lift vanishes. -/
+/-- The second derivative of the affine lift in $H^2(a, b)$ is $0$. -/
 theorem deriv_affineLift_two (hab : a < b) (α β : ℝ) : deriv (affineLift hab 2 α β) 2 = 0 := by
   have h1 : _root_.deriv (fun x ↦ α + (β - α) * ((x - a) / (b - a)))
       = fun _ ↦ (β - α) * (b - a)⁻¹ := by
@@ -622,17 +718,21 @@ theorem deriv_affineLift_two (hab : a < b) (α β : ℝ) : deriv (affineLift hab
   change ContDiffMapIcc.deriv _ 2 (projIcc a b hab.le x) = 0
   rw [ContDiffMapIcc.deriv_ofContDiff, show ((2 : Fin 3) : ℕ) = 2 from rfl, h2]
 
-/-- **The Dirichlet class of Example 1, Method 2** of [brezis2011functional] §8.4:
-`K = {v ∈ H¹(a, b) : v(a) = α, v(b) = β}`. -/
+/-- **The Dirichlet class** of Example 1, Method 2, in §8.4 of [brezis2011functional]: for
+$\alpha, \beta \in \mathbb{R}$,
+$$K = \{v \in H^1(a, b) : v(a) = \alpha, v(b) = \beta\}.$$
+-/
 def dirichletSet (a b : ℝ) (α β : ℝ) : Set (SobolevInterval 1 a b) :=
   {v | SobolevInterval.rep v a = α ∧ SobolevInterval.rep v b = β}
 
-/-- Membership in the Dirichlet class. -/
+/-- $v \in K$ if and only if $v(a) = \alpha$ and $v(b) = \beta$. -/
 theorem mem_dirichletSet_iff (α β : ℝ) (v : SobolevInterval 1 a b) :
     v ∈ dirichletSet a b α β ↔ SobolevInterval.rep v a = α ∧ SobolevInterval.rep v b = β :=
   Iff.rfl
 
-/-- The Dirichlet class is closed: it is cut out by the two evaluation functionals. -/
+/-- For $a < b$, the Dirichlet class $K$ is closed in $H^1(a, b)$.
+
+It is cut out by the two evaluation functionals at $a$ and at $b$, which are continuous. -/
 theorem isClosed_dirichletSet (hab : a < b) (α β : ℝ) : IsClosed (dirichletSet a b α β) := by
   have h1 : IsClosed {v : SobolevInterval 1 a b | SobolevInterval.rep v a = α} :=
     isClosed_singleton.preimage (SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩).continuous
@@ -641,8 +741,8 @@ theorem isClosed_dirichletSet (hab : a < b) (α β : ℝ) : IsClosed (dirichletS
   exact h1.inter h2
 
 open SobolevInterval in
-/-- Membership in the Dirichlet class, through the affine lift: `v ∈ K` iff
-`v − u₀ ∈ H_0^1(a, b)`. -/
+/-- Let $a < b$ and let $u_0$ be the affine lift with the values $\alpha$ at $a$ and $\beta$ at $b$.
+Then $v \in K$ if and only if $v - u_0 \in H^1_0(a, b)$. -/
 theorem mem_dirichletSet_iff_sub_mem (hab : a < b) (α β : ℝ) (v : SobolevInterval 1 a b) :
     v ∈ dirichletSet a b α β ↔ v - affineLift hab 1 α β ∈ SobolevIntervalZero a b := by
   have h : v - affineLift hab 1 α β ∈ SobolevIntervalZero a b
@@ -654,7 +754,7 @@ theorem mem_dirichletSet_iff_sub_mem (hab : a < b) (α β : ℝ) (v : SobolevInt
   rw [h, mem_dirichletSet_iff, ha, hb, rep_affineLift_left, rep_affineLift_right, sub_eq_zero,
     sub_eq_zero]
 
-/-- The Dirichlet class is convex. -/
+/-- For $a < b$, the Dirichlet class $K$ is convex. -/
 theorem convex_dirichletSet (hab : a < b) (α β : ℝ) : Convex ℝ (dirichletSet a b α β) := by
   intro v hv w hw s t hs ht hst
   rw [mem_dirichletSet_iff_sub_mem hab] at hv hw ⊢
@@ -667,78 +767,82 @@ theorem convex_dirichletSet (hab : a < b) (α β : ℝ) : Convex ℝ (dirichletS
   exact (SobolevIntervalZero a b).add_mem ((SobolevIntervalZero a b).smul_mem s hv)
     ((SobolevIntervalZero a b).smul_mem t hw)
 
-/-- The Dirichlet class is nonempty: it contains the affine lift. -/
+/-- For $a < b$, the affine lift lies in the Dirichlet class $K$. -/
 theorem affineLift_mem_dirichletSet (hab : a < b) (α β : ℝ) :
     affineLift hab 1 α β ∈ dirichletSet a b α β :=
   ⟨rep_affineLift_left hab α β, rep_affineLift_right hab α β⟩
 
-/-- The Dirichlet class is nonempty. -/
+/-- For $a < b$, the Dirichlet class $K$ is nonempty. -/
 theorem nonempty_dirichletSet (hab : a < b) (α β : ℝ) : (dirichletSet a b α β).Nonempty :=
   ⟨_, affineLift_mem_dirichletSet hab α β⟩
 
-/-- **The space of the mixed problem** (Example 5 of [brezis2011functional] §8.4):
-`{v ∈ H¹(a, b) : v(a) = 0}`, the kernel of evaluation at `a`. -/
+/-- **The space of the mixed problem** of Example 5 in §8.4 of [brezis2011functional]: the subspace
+$$\{v \in H^1(a, b) : v(a) = 0\},$$
+which is the kernel of the evaluation at $a$. -/
 def mixedSpace (hab : a < b) : Submodule ℝ (SobolevInterval 1 a b) :=
   LinearMap.ker ((SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩ :
     SobolevInterval 1 a b →L[ℝ] ℝ) : SobolevInterval 1 a b →ₗ[ℝ] ℝ)
 
-/-- **The space of the Robin problem** (Example 6 of [brezis2011functional] §8.4):
-`{v ∈ H¹(a, b) : v(b) = 0}`, the kernel of evaluation at `b`. -/
+/-- **The space of the Robin problem** of Example 6 in §8.4 of [brezis2011functional]: the subspace
+$$\{v \in H^1(a, b) : v(b) = 0\},$$
+which is the kernel of the evaluation at $b$. -/
 def robinSpace (hab : a < b) : Submodule ℝ (SobolevInterval 1 a b) :=
   LinearMap.ker ((SobolevInterval.evalCLM hab ⟨b, right_mem_Icc.2 hab.le⟩ :
     SobolevInterval 1 a b →L[ℝ] ℝ) : SobolevInterval 1 a b →ₗ[ℝ] ℝ)
 
-/-- **The space of the periodic problem** (Example 7 of [brezis2011functional] §8.4):
-`{v ∈ H¹(a, b) : v(a) = v(b)}`. -/
+/-- **The space of the periodic problem** of Example 7 in §8.4 of [brezis2011functional]: the
+subspace
+$$\{v \in H^1(a, b) : v(a) = v(b)\}.$$
+-/
 def periodicSpace (hab : a < b) : Submodule ℝ (SobolevInterval 1 a b) :=
   LinearMap.ker ((SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩
     - SobolevInterval.evalCLM hab ⟨b, right_mem_Icc.2 hab.le⟩ :
     SobolevInterval 1 a b →L[ℝ] ℝ) : SobolevInterval 1 a b →ₗ[ℝ] ℝ)
 
-/-- Membership in the mixed space. -/
+/-- $v$ is in the space of the mixed problem if and only if $v(a) = 0$. -/
 theorem mem_mixedSpace_iff (hab : a < b) (v : SobolevInterval 1 a b) :
     v ∈ mixedSpace hab ↔ SobolevInterval.rep v a = 0 :=
   LinearMap.mem_ker (f := ((SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩ :
     SobolevInterval 1 a b →L[ℝ] ℝ) : SobolevInterval 1 a b →ₗ[ℝ] ℝ))
 
-/-- Membership in the Robin space. -/
+/-- $v$ is in the space of the Robin problem if and only if $v(b) = 0$. -/
 theorem mem_robinSpace_iff (hab : a < b) (v : SobolevInterval 1 a b) :
     v ∈ robinSpace hab ↔ SobolevInterval.rep v b = 0 :=
   LinearMap.mem_ker (f := ((SobolevInterval.evalCLM hab ⟨b, right_mem_Icc.2 hab.le⟩ :
     SobolevInterval 1 a b →L[ℝ] ℝ) : SobolevInterval 1 a b →ₗ[ℝ] ℝ))
 
-/-- Membership in the periodic space. -/
+/-- $v$ is in the space of the periodic problem if and only if $v(a) = v(b)$. -/
 theorem mem_periodicSpace_iff (hab : a < b) (v : SobolevInterval 1 a b) :
     v ∈ periodicSpace hab ↔ SobolevInterval.rep v a = SobolevInterval.rep v b := by
   rw [periodicSpace, LinearMap.mem_ker, ContinuousLinearMap.coe_coe, sub_apply, sub_eq_zero]
   rfl
 
-/-- The mixed space is closed. -/
+/-- The space of the mixed problem is closed in $H^1(a, b)$. -/
 theorem isClosed_mixedSpace (hab : a < b) :
     IsClosed (mixedSpace hab : Set (SobolevInterval 1 a b)) :=
   ContinuousLinearMap.isClosed_ker _
 
-/-- The Robin space is closed. -/
+/-- The space of the Robin problem is closed in $H^1(a, b)$. -/
 theorem isClosed_robinSpace (hab : a < b) :
     IsClosed (robinSpace hab : Set (SobolevInterval 1 a b)) :=
   ContinuousLinearMap.isClosed_ker _
 
-/-- The periodic space is closed. -/
+/-- The space of the periodic problem is closed in $H^1(a, b)$. -/
 theorem isClosed_periodicSpace (hab : a < b) :
     IsClosed (periodicSpace hab : Set (SobolevInterval 1 a b)) :=
   ContinuousLinearMap.isClosed_ker _
 
-/-- `H_0^1(a, b)` lies in the mixed space. -/
+/-- $H^1_0(a, b)$ is contained in the space of the mixed problem. -/
 theorem sobolevIntervalZero_le_mixedSpace (hab : a < b) :
     SobolevIntervalZero a b ≤ mixedSpace hab := fun _ hv ↦
   (mem_mixedSpace_iff hab _).2 (SobolevIntervalZero.rep_left_eq_zero hab hv)
 
-/-- `H_0^1(a, b)` lies in the Robin space. -/
+/-- $H^1_0(a, b)$ is contained in the space of the Robin problem. -/
 theorem sobolevIntervalZero_le_robinSpace (hab : a < b) :
     SobolevIntervalZero a b ≤ robinSpace hab := fun _ hv ↦
   (mem_robinSpace_iff hab _).2 (SobolevIntervalZero.rep_right_eq_zero hab hv)
 
-/-- `H_0^1(a, b)` lies in the periodic space. -/
+/-- $H^1_0(a, b)$ is contained in the space of the periodic problem. -/
 theorem sobolevIntervalZero_le_periodicSpace (hab : a < b) :
     SobolevIntervalZero a b ≤ periodicSpace hab := fun _ hv ↦
   (mem_periodicSpace_iff hab _).2 (by
@@ -747,8 +851,11 @@ theorem sobolevIntervalZero_le_periodicSpace (hab : a < b) :
 /-! ### The natural boundary conditions, case by case -/
 
 open SobolevInterval in
-/-- **The Neumann conditions** are natural: a solution of the weak problem on all of `H¹(a, b)`
-with the boundary data `w₀`, `w₁` satisfies `Φ'(a) = w₀` and `Φ'(b) = w₁`. -/
+/-- **The Neumann conditions are natural.** Let $a < b$, $f \in L^2(a, b)$,
+$w_0, w_1 \in \mathbb{R}$, and let $\Phi \in H^2(a, b)$ satisfy
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v + w_1 v(b) - w_0 v(a)
+  \quad \text{for every } v \in H^1(a, b).$$
+Then $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, $\Phi'(a) = w_0$ and $\Phi'(b) = w_1$. -/
 theorem natural_boundary_neumann (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {w₀ w₁ : ℝ} (Φ : SobolevInterval 2 a b) (h : ∀ v, modelForm a b (inclusionCLM 1 a b Φ) v
       = load a b f v + w₁ * rep v b - w₀ * rep v a) :
@@ -764,8 +871,14 @@ theorem natural_boundary_neumann (hab : a < b) (f : Lp ℝ 2 (volume.restrict (I
     linarith
 
 open SobolevInterval in
-/-- **The mixed conditions**: a solution of the weak problem on `{v : v(a) = 0}` satisfies
-`Φ(a) = 0` (essential, by membership) and `Φ'(b) = w₁` (natural). -/
+/-- **The natural condition of the mixed problem.** Let $a < b$, $f \in L^2(a, b)$,
+$w_1 \in \mathbb{R}$, and let $\Phi \in H^2(a, b)$ satisfy
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v + w_1 v(b)
+  \quad \text{for every } v \in H^1(a, b) \text{ with } v(a) = 0.$$
+Then $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, and $\Phi'(b) = w_1$.
+
+The other condition of the mixed problem, $\Phi(a) = 0$, is essential: it comes from the
+membership of $\Phi$ in the space, which this statement does not assume. -/
 theorem natural_boundary_mixed (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {w₁ : ℝ} (Φ : SobolevInterval 2 a b) (h : ∀ v ∈ mixedSpace hab,
       modelForm a b (inclusionCLM 1 a b Φ) v = load a b f v + w₁ * rep v b) :
@@ -779,8 +892,11 @@ theorem natural_boundary_mixed (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo
   linarith
 
 open SobolevInterval in
-/-- **The Robin condition**: a solution of the weak problem on `{v : v(b) = 0}` with the boundary
-datum `w₀` at `a` satisfies `Φ'(a) = w₀`. -/
+/-- **The natural condition of the Robin problem.** Let $a < b$, $f \in L^2(a, b)$,
+$w_0 \in \mathbb{R}$, and let $\Phi \in H^2(a, b)$ satisfy
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v - w_0 v(a)
+  \quad \text{for every } v \in H^1(a, b) \text{ with } v(b) = 0.$$
+Then $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, and $\Phi'(a) = w_0$. -/
 theorem natural_boundary_robin (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {w₀ : ℝ} (Φ : SobolevInterval 2 a b) (h : ∀ v ∈ robinSpace hab,
       modelForm a b (inclusionCLM 1 a b Φ) v = load a b f v - w₀ * rep v a) :
@@ -794,8 +910,14 @@ theorem natural_boundary_robin (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo
   linarith
 
 open SobolevInterval in
-/-- **The periodic conditions**: a solution of the weak problem on `{v : v(a) = v(b)}` satisfies
-`Φ(a) = Φ(b)` (essential, by membership) and `Φ'(a) = Φ'(b)` (natural). -/
+/-- **The natural condition of the periodic problem.** Let $a < b$, $f \in L^2(a, b)$, and let
+$\Phi \in H^2(a, b)$ satisfy
+$$\int_a^b (\Phi' v' + \Phi v) = \int_a^b f v
+  \quad \text{for every } v \in H^1(a, b) \text{ with } v(a) = v(b).$$
+Then $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, and $\Phi'(a) = \Phi'(b)$.
+
+The other condition of the periodic problem, $\Phi(a) = \Phi(b)$, is essential: it comes from
+the membership of $\Phi$ in the space, which this statement does not assume. -/
 theorem natural_boundary_periodic (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     (Φ : SobolevInterval 2 a b) (h : ∀ v ∈ periodicSpace hab,
       modelForm a b (inclusionCLM 1 a b Φ) v = load a b f v) :
@@ -811,10 +933,13 @@ theorem natural_boundary_periodic (hab : a < b) (f : Lp ℝ 2 (volume.restrict (
 
 /-! ### Proposition 8.16: the inhomogeneous Dirichlet problem -/
 
-/-- **Proposition 8.16 of [brezis2011functional], Method 2 (Stampacchia)**: for `f ∈ L²(a, b)` and
-`α, β ∈ ℝ` there is exactly one `u` in the Dirichlet class `K = {v ∈ H¹ : v(a) = α, v(b) = β}`
-satisfying the variational inequality (17), `∫ f (v − u) ≤ ∫ u' (v − u)' + ∫ u (v − u)` for every
-`v ∈ K`. -/
+/-- **The inhomogeneous Dirichlet problem by Stampacchia's method.** Let $a < b$, $f \in L^2(a, b)$
+and $\alpha, \beta \in \mathbb{R}$, and let $K = \{v \in H^1(a, b) : v(a) = \alpha, v(b) =
+\beta\}$. Then there is exactly one $u \in K$ with
+$$\int_a^b f (v - u) \le \int_a^b u' (v - u)' + \int_a^b u (v - u)
+  \quad \text{for every } v \in K.$$
+This is the variational inequality (17) of Proposition 8.16, Method 2, of
+[brezis2011functional]. -/
 theorem existsUnique_dirichletSet_of_variationalInequality (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (α β : ℝ) :
     ∃! u, u ∈ dirichletSet a b α β ∧
@@ -827,8 +952,11 @@ theorem existsUnique_dirichletSet_of_variationalInequality (hab : a < b)
   simp only [IsVariationalInequalitySolution, SesqForm.inner_rieszRep, SesqForm.inner_toOperator,
     add_zero, sub_zero]
 
-/-- A solution of the variational inequality (17) satisfies the weak equation against
-`H_0^1(a, b)`: test with `v = u ± w`. -/
+/-- Let $a < b$, $f \in L^2(a, b)$, and let $u$ be in the Dirichlet class $K$ and solve the
+variational inequality (17). Then $\int_a^b (u' w' + u w) = \int_a^b f w$ for every
+$w \in H^1_0(a, b)$.
+
+The proof tests the inequality with $v = u \pm w$. -/
 theorem forall_modelForm_eq_load_of_variationalInequality (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {α β : ℝ} {u : SobolevInterval 1 a b}
     (hu : u ∈ dirichletSet a b α β)
@@ -848,11 +976,14 @@ theorem forall_modelForm_eq_load_of_variationalInequality (hab : a < b)
   rw [sub_sub_cancel_left, map_neg, map_neg] at e2
   linarith
 
-/-- **Proposition 8.16 of [brezis2011functional] (the inhomogeneous Dirichlet problem)**: for
-`f ∈ L²(a, b)` and `α, β ∈ ℝ` there is exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost
-everywhere, `Φ(a) = α` and `Φ(b) = β`. Existence through the variational inequality of Method 2
-and Step C; uniqueness because a solution satisfies the weak equation against `H_0^1` (Green's
-formula), hence the variational inequality, which has one solution. -/
+/-- **The inhomogeneous Dirichlet problem.** Let $a < b$, $f \in L^2(a, b)$ and
+$\alpha, \beta \in \mathbb{R}$. Then there is exactly one $\Phi \in H^2(a, b)$ with
+$-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, $\Phi(a) = \alpha$ and $\Phi(b) = \beta$.
+This is Proposition 8.16 of [brezis2011functional].
+
+Existence comes from the variational inequality of Method 2 and Step C. For uniqueness, a
+solution satisfies the weak equation against $H^1_0(a, b)$ by Green's formula, hence the
+variational inequality, which has one solution. -/
 theorem existsUnique_dirichlet_inhomogeneous (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (α β : ℝ) :
     ∃! Φ : SobolevInterval 2 a b,
@@ -875,9 +1006,10 @@ theorem existsUnique_dirichlet_inhomogeneous (hab : a < b)
   have := huniq _ ⟨hΨK, hΨvi⟩
   exact eq_of_inclusionCLM_eq_of_deriv_two f hΨeq heq (this.trans hΦ.symm)
 
-/-- The solution of the variational inequality (17) minimizes the energy
-`½ ∫ (v'² + v²) − ∫ f v` over the Dirichlet class, and conversely (Dirichlet's principle for
-the inhomogeneous problem). -/
+/-- **Dirichlet's principle for the inhomogeneous problem.** Let $a < b$, $f \in L^2(a, b)$, and let
+$u$ be in the Dirichlet class $K$. Then $u$ minimizes the energy
+$$E(v) = \frac{1}{2} \int_a^b (v'^2 + v^2) - \int_a^b f v$$
+over $K$ if and only if $u$ solves the variational inequality (17). -/
 theorem dirichletSet_isMinOn_energy_iff (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {α β : ℝ} {u : SobolevInterval 1 a b} (hu : u ∈ dirichletSet a b α β) :
     IsMinOn ((modelForm a b).energy (load a b f)) (dirichletSet a b α β) u ↔
@@ -887,15 +1019,17 @@ theorem dirichletSet_isMinOn_energy_iff (hab : a < b) (f : Lp ℝ 2 (volume.rest
 
 /-! ### Propositions 8.17 and 8.18: the Neumann problems -/
 
-/-- **The weak Neumann problem** (Proposition 8.17 of [brezis2011functional], the Lax–Milgram
-step): for every continuous functional `ℓ` on `H¹(a, b)` there is exactly one `u ∈ H¹(a, b)` with
-`∫ u' v' + ∫ u v = ℓ(v)` for every `v ∈ H¹(a, b)`. -/
+/-- **The weak Neumann problem.** For every continuous linear functional $\ell$ on $H^1(a, b)$ there
+is exactly one $u \in H^1(a, b)$ with
+$$\int_a^b (u' v' + u v) = \ell(v) \quad \text{for every } v \in H^1(a, b).$$
+This is the Lax–Milgram step of Proposition 8.17 of [brezis2011functional]. -/
 theorem existsUnique_neumann_weak (ℓ : SobolevInterval 1 a b →L[ℝ] ℝ) :
     ∃! u : SobolevInterval 1 a b, ∀ v, modelForm a b u v = ℓ v :=
   SesqForm.laxMilgram (modelForm a b) ℓ one_pos modelForm_isCoerciveWith
 
-/-- **Dirichlet's principle for the Neumann problem**: `u` solves the weak Neumann problem with
-functional `ℓ` iff it minimizes `½ ∫ (v'² + v²) − ℓ(v)` over all of `H¹(a, b)`. -/
+/-- **Dirichlet's principle for the Neumann problem.** Let $\ell$ be a continuous linear functional
+on $H^1(a, b)$. Then $u \in H^1(a, b)$ minimizes $\frac{1}{2} \int_a^b (v'^2 + v^2) - \ell(v)$
+over $H^1(a, b)$ if and only if $\int_a^b (u' v' + u v) = \ell(v)$ for every $v \in H^1(a, b)$. -/
 theorem neumann_isMinOn_energy_iff (ℓ : SobolevInterval 1 a b →L[ℝ] ℝ)
     (u : SobolevInterval 1 a b) :
     IsMinOn ((modelForm a b).energy ℓ) univ u ↔ ∀ v, modelForm a b u v = ℓ v := by
@@ -906,11 +1040,13 @@ theorem neumann_isMinOn_energy_iff (ℓ : SobolevInterval 1 a b →L[ℝ] ℝ)
   exact ⟨fun h v ↦ h v Submodule.mem_top, fun h v _ ↦ h v⟩
 
 open SobolevInterval in
-/-- **Proposition 8.17 of [brezis2011functional] (the homogeneous Neumann problem)**: for
-`f ∈ L²(a, b)` there is exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost everywhere and
-`Φ'(a) = Φ'(b) = 0`. Existence from the weak solution on `H¹(a, b)` (Lax–Milgram), Step C and
-the natural boundary conditions; uniqueness because such a `Φ` is the weak solution (Green's
-formula). -/
+/-- **The homogeneous Neumann problem.** Let $a < b$ and $f \in L^2(a, b)$. Then there is exactly
+one $\Phi \in H^2(a, b)$ with $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$ and
+$\Phi'(a) = \Phi'(b) = 0$. This is Proposition 8.17 of [brezis2011functional].
+
+Existence comes from the weak solution on $H^1(a, b)$ (Lax–Milgram), Step C and the natural
+boundary conditions. Uniqueness holds because such a $\Phi$ is the weak solution, by Green's
+formula. -/
 theorem existsUnique_neumann (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ∃! Φ : SobolevInterval 2 a b,
       ((deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ x - f x) ∧
@@ -924,15 +1060,17 @@ theorem existsUnique_neumann (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a
     rw [modelForm_inclusionCLM_eq_of_deriv_two hab f hΨeq v, hΨa, hΨb]; ring
   exact eq_of_inclusionCLM_eq_of_deriv_two f hΨeq hnat.1 ((huniq _ hΨ).trans hΦ.symm)
 
-/-- **The inhomogeneous Neumann load** of Example 4 of [brezis2011functional] §8.4,
-`v ↦ ∫ f v − α v(a) + β v(b)`, a continuous linear functional on `H¹(a, b)` by the embedding
-`H¹ ↪ C[a, b]` (Theorem 8.8). -/
+/-- **The inhomogeneous Neumann load** of Example 4 in §8.4 of [brezis2011functional]: for $a < b$,
+$f \in L^2(a, b)$ and $\alpha, \beta \in \mathbb{R}$, the continuous linear functional
+$$v \mapsto \int_a^b f v - \alpha v(a) + \beta v(b)$$
+on $H^1(a, b)$. It is continuous by the embedding $H^1(a, b) \hookrightarrow C[a, b]$ (Theorem
+8.8 of the source). -/
 def neumannLoad (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (α β : ℝ) :
     SobolevInterval 1 a b →L[ℝ] ℝ :=
   load a b f - α • SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩
     + β • SobolevInterval.evalCLM hab ⟨b, right_mem_Icc.2 hab.le⟩
 
-/-- The inhomogeneous Neumann load, evaluated. -/
+/-- The inhomogeneous Neumann load at $v$ is $\int_a^b f v - \alpha v(a) + \beta v(b)$. -/
 theorem neumannLoad_apply (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (α β : ℝ)
     (v : SobolevInterval 1 a b) :
     neumannLoad hab f α β v
@@ -941,10 +1079,13 @@ theorem neumannLoad_apply (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)
     SobolevInterval.evalCLM_apply]
 
 open SobolevInterval in
-/-- **Proposition 8.18 of [brezis2011functional] (the inhomogeneous Neumann problem)**: for
-`f ∈ L²(a, b)` and `α, β ∈ ℝ` there is exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost
-everywhere, `Φ'(a) = α` and `Φ'(b) = β`; its inclusion is the weak solution with the load
-`v ↦ ∫ f v − α v(a) + β v(b)`. -/
+/-- **The inhomogeneous Neumann problem.** Let $a < b$, $f \in L^2(a, b)$ and
+$\alpha, \beta \in \mathbb{R}$. Then there is exactly one $\Phi \in H^2(a, b)$ with
+$-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, $\Phi'(a) = \alpha$ and $\Phi'(b) = \beta$.
+This is Proposition 8.18 of [brezis2011functional].
+
+The inclusion of $\Phi$ in $H^1(a, b)$ is the weak solution with the load $v \mapsto \int_a^b f
+v - \alpha v(a) + \beta v(b)$. -/
 theorem existsUnique_neumann_inhomogeneous (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) (α β : ℝ) :
     ∃! Φ : SobolevInterval 2 a b,
@@ -965,8 +1106,12 @@ theorem existsUnique_neumann_inhomogeneous (hab : a < b)
 
 /-! ### Examples 5–7: the mixed, Robin and periodic problems -/
 
-/-- The weak problem on a closed subspace `K` of `H¹(a, b)` for a coercive form has exactly one
-solution (Lax–Milgram on `K`). -/
+/-- Let $V$ be a real Hilbert space, let $a$ be a bounded bilinear form on $V$ with
+$a(v, v) \ge c \|v\|^2$ for every $v$ and a constant $c > 0$, let $\ell$ be a continuous linear
+functional on $V$, and let $K$ be a closed subspace of $V$. Then there is exactly one $u \in K$
+with $a(u, v) = \ell(v)$ for every $v \in K$.
+
+This is the Lax–Milgram theorem on $K$. -/
 theorem existsUnique_isGalerkinSolution_of_isClosed {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] [CompleteSpace V] {a : SesqForm ℝ V} {c : ℝ} (hc : 0 < c)
     (ha : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) {K : Submodule ℝ V} (hK : IsClosed (K : Set V)) :
@@ -975,9 +1120,12 @@ theorem existsUnique_isGalerkinSolution_of_isClosed {V : Type*} [NormedAddCommGr
   IsGalerkinSolution.existsUnique hc ha
 
 open SobolevInterval in
-/-- **Example 5 of [brezis2011functional] §8.4 (the mixed problem)**: for `f ∈ L²(a, b)` there is
-exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost everywhere, `Φ(a) = 0` and `Φ'(b) = 0`.
-Lax–Milgram on the closed subspace `{v : v(a) = 0}`, Step C, and the natural condition at `b`. -/
+/-- **The mixed problem.** Let $a < b$ and $f \in L^2(a, b)$. Then there is exactly one
+$\Phi \in H^2(a, b)$ with $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$, $\Phi(a) = 0$ and
+$\Phi'(b) = 0$. This is Example 5 in §8.4 of [brezis2011functional].
+
+The proof applies the Lax–Milgram theorem on the closed subspace $\{v : v(a) = 0\}$, then Step
+C, and then the natural condition at $b$. -/
 theorem existsUnique_mixed (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ∃! Φ : SobolevInterval 2 a b,
       ((deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ x - f x) ∧
@@ -996,14 +1144,16 @@ theorem existsUnique_mixed (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b
     ring
   exact eq_of_inclusionCLM_eq_of_deriv_two f hΨeq hnat.1 ((huniq _ hΨ).trans hΦ.symm)
 
-/-- **The Robin form** of Example 6 of [brezis2011functional] §8.4:
-`a(u, v) = ∫ u' v' + ∫ u v + k u(a) v(a)`. -/
+/-- **The Robin form** of Example 6 in §8.4 of [brezis2011functional]: for $a < b$ and
+$k \in \mathbb{R}$, the bilinear form
+$$a(u, v) = \int_a^b (u' v' + u v) + k \, u(a) v(a)$$
+on $H^1(a, b)$. -/
 def robinForm (hab : a < b) (k : ℝ) : SesqForm ℝ (SobolevInterval 1 a b) :=
   modelForm a b + k • (((innerSL ℝ).comp
     (SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩)).flip.comp
     (SobolevInterval.evalCLM hab ⟨a, left_mem_Icc.2 hab.le⟩)).flip
 
-/-- The Robin form, evaluated. -/
+/-- The Robin form at $(u, v)$ is $\int_a^b (u' v' + u v) + k \, u(a) v(a)$. -/
 theorem robinForm_apply (hab : a < b) (k : ℝ) (u v : SobolevInterval 1 a b) :
     robinForm hab k u v
       = modelForm a b u v + k * (SobolevInterval.rep u a * SobolevInterval.rep v a) := by
@@ -1012,28 +1162,34 @@ theorem robinForm_apply (hab : a < b) (k : ℝ) (u v : SobolevInterval 1 a b) :
     conj_trivial, SobolevInterval.evalCLM_apply]
   ring
 
-/-- The Robin form is symmetric. -/
+/-- The Robin form is Hermitian, that is, symmetric. -/
 theorem robinForm_isHermitian (hab : a < b) (k : ℝ) : (robinForm hab k).IsHermitian := fun u v ↦ by
   rw [robinForm_apply, robinForm_apply, modelForm_comm, mul_comm (SobolevInterval.rep u a)]
   rfl
 
-/-- The Robin form is symmetric, unbundled. -/
+/-- The Robin form is symmetric: $a(u, v) = a(v, u)$ for all $u, v \in H^1(a, b)$. -/
 theorem robinForm_comm (hab : a < b) (k : ℝ) (u v : SobolevInterval 1 a b) :
     robinForm hab k u v = robinForm hab k v u :=
   robinForm_isHermitian hab k u v
 
-/-- **The Robin form is coercive for `k ≥ 0`**, with constant `1`: `a(v, v) = ‖v‖² + k v(a)²`. -/
+/-- **The Robin form is coercive for $k \ge 0$**, with constant $1$: $a(v, v) \ge \|v\|_{H^1}^2$ for
+every $v \in H^1(a, b)$.
+
+The reason is that $a(v, v) = \|v\|_{H^1}^2 + k \, v(a)^2$. -/
 theorem robinForm_isCoerciveWith (hab : a < b) {k : ℝ} (hk : 0 ≤ k) :
     (robinForm hab k).IsCoerciveWith 1 := fun v ↦ by
   rw [RCLike.re_to_real, robinForm_apply, modelForm_apply, real_inner_self_eq_norm_sq, one_mul]
   nlinarith [mul_self_nonneg (SobolevInterval.rep v a)]
 
 open SobolevInterval in
-/-- **Example 6 of [brezis2011functional] §8.4 (the Robin problem)**: for `f ∈ L²(a, b)` and
-`k ≥ 0` there is exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost everywhere,
-`Φ'(a) = k Φ(a)` and `Φ(b) = 0`. Lax–Milgram for the Robin form on the closed subspace
-`{v : v(b) = 0}`, Step C, and the natural condition at `a`, where the boundary term
-`k u(a) v(a)` of the form becomes the datum `w₀ = k u(a)`. -/
+/-- **The Robin problem.** Let $a < b$, $f \in L^2(a, b)$ and $k \ge 0$. Then there is exactly one
+$\Phi \in H^2(a, b)$ with $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$,
+$\Phi'(a) = k \, \Phi(a)$ and $\Phi(b) = 0$. This is Example 6 in §8.4 of
+[brezis2011functional].
+
+The proof applies the Lax–Milgram theorem for the Robin form on the closed subspace
+$\{v : v(b) = 0\}$, then Step C, and then the natural condition at $a$. The boundary term
+$k \, u(a) v(a)$ of the form becomes the datum $w_0 = k \, u(a)$. -/
 theorem existsUnique_robin (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {k : ℝ}
     (hk : 0 ≤ k) :
     ∃! Φ : SobolevInterval 2 a b,
@@ -1061,10 +1217,13 @@ theorem existsUnique_robin (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b
   exact eq_of_inclusionCLM_eq_of_deriv_two f hΨeq hnat.1 ((huniq _ hΨ).trans hΦ.symm)
 
 open SobolevInterval in
-/-- **Example 7 of [brezis2011functional] §8.4 (the periodic problem)**: for `f ∈ L²(a, b)` there
-is exactly one `Φ ∈ H²(a, b)` with `−Φ'' + Φ = f` almost everywhere, `Φ(a) = Φ(b)` and
-`Φ'(a) = Φ'(b)`. Lax–Milgram on the closed subspace `{v : v(a) = v(b)}`, Step C, and the natural
-condition, which is the periodicity of the derivative. -/
+/-- **The periodic problem.** Let $a < b$ and $f \in L^2(a, b)$. Then there is exactly one
+$\Phi \in H^2(a, b)$ with $-\Phi'' + \Phi = f$ almost everywhere on $(a, b)$,
+$\Phi(a) = \Phi(b)$ and $\Phi'(a) = \Phi'(b)$. This is Example 7 in §8.4 of
+[brezis2011functional].
+
+The proof applies the Lax–Milgram theorem on the closed subspace $\{v : v(a) = v(b)\}$, then
+Step C, and then the natural condition, which is the periodicity of the derivative. -/
 theorem existsUnique_periodic (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     ∃! Φ : SobolevInterval 2 a b,
       ((deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ fn Φ x - f x) ∧
@@ -1085,14 +1244,20 @@ theorem existsUnique_periodic (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo 
     ring
   exact eq_of_inclusionCLM_eq_of_deriv_two f hΨeq hnat.1 ((huniq _ hΨ).trans hΦ.symm)
 
-/-! ### The `C²` clause for the model problem -/
+/-! ### The $C^2$ part for the model problem -/
 
 open SobolevInterval in
-/-- **A solution of the model equation with continuous datum is `C²`**: if `Φ ∈ H²(a, b)` has
-`−Φ'' + Φ = f` almost everywhere with `f` continuous on `[a, b]`, then `Φ` is carried by a
-`v ∈ C²[a, b]` (`ofContDiffMapIcc hab v = inclusionCLM Φ`) with `−v'' + v = f` at every point of
-`(a, b)`. The `C²` clause of Propositions 8.16–8.18 and Examples 5–7 of
-[brezis2011functional] §8.4. -/
+/-- **A solution of the model equation with continuous datum is $C^2$.** Let $a < b$, let
+$f \in L^2(a, b)$ agree almost everywhere on $(a, b)$ with a function $f$ that is continuous on
+$[a, b]$, and let $\Phi \in H^2(a, b)$ satisfy $-\Phi'' + \Phi = f$ almost everywhere on
+$(a, b)$. Then there is $v \in C^2[a, b]$ that carries the inclusion of $\Phi$ in $H^1(a, b)$,
+with
+$$-v''(x) + v(x) = f(x) \quad \text{for every } x \in (a, b).$$
+This is the $C^2$ part of Propositions 8.16–8.18 and Examples 5–7 in §8.4 of
+[brezis2011functional].
+
+"$v$ carries the inclusion of $\Phi$" means
+`EllipticInterval.ofContDiffMapIcc hab v = SobolevInterval.inclusionCLM 1 a b Φ`. -/
 theorem exists_contDiffMapIcc_of_deriv_two (hab : a < b) (fL : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {f : ℝ → ℝ} (hfL : fL =ᵐ[volume.restrict (Ioo a b)] f) (hf : ContinuousOn f (Icc a b))
     {Φ : SobolevInterval 2 a b}
@@ -1109,47 +1274,52 @@ theorem exists_contDiffMapIcc_of_deriv_two (hab : a < b) (fL : Lp ℝ 2 (volume.
   simp only [one_mul, zero_mul, add_zero] at this
   exact this
 
-/-! ### Example 8: the problem on `ℝ` -/
+/-! ### Example 8: the problem on $\mathbb{R}$ -/
 
 namespace Line
 
-/-- Hölder's exponents `(2, 2, 1)`: the product of two `L²` functions is integrable. -/
+/-- The Hölder exponents $(2, 2, 1)$ satisfy $\frac{1}{2} + \frac{1}{2} = \frac{1}{1}$, so the
+product of two $L^2$ functions is integrable. -/
 theorem holderTriple_two_two_one : ENNReal.HolderTriple 2 2 1 :=
   ⟨by rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
 
-/-- **The form of Example 8** of [brezis2011functional] §8.4: `a(u, v) = ∫_ℝ u' v' + ∫_ℝ u v`,
-the inner product of `H¹(ℝ)`, coercive with constant `1`. -/
+/-- **The form of Example 8** in §8.4 of [brezis2011functional]: the bilinear form
+$$a(u, v) = \int_{\mathbb{R}} u' v' + \int_{\mathbb{R}} u v$$
+on $H^1(\mathbb{R})$. It is the inner product of $H^1(\mathbb{R})$, and it is coercive with
+constant $1$. -/
 def form : SesqForm ℝ (SobolevIntervalLp 1 2 ⊤) := innerSL ℝ
 
-/-- The form is the `H¹(ℝ)` inner product. -/
+/-- The form of Example 8 is the inner product of $H^1(\mathbb{R})$:
+$a(u, v) = \langle u, v \rangle$. -/
 theorem form_apply (u v : SobolevIntervalLp 1 2 ⊤) : form u v = ⟪u, v⟫_ℝ := rfl
 
 open SobolevIntervalLp in
-/-- The form as an integral over `ℝ`. -/
+/-- The form of Example 8 is the integral $a(u, v) = \int_{\mathbb{R}} (u v + u' v')$. -/
 theorem form_apply_integral (u v : SobolevIntervalLp 1 2 ⊤) :
     form u v = ∫ x, (fn u x * fn v x + deriv u 1 x * deriv v 1 x) := by
   rw [form_apply, SobolevIntervalLp.inner_eq_integral]
   exact setIntegral_univ
 
-/-- The form is coercive with constant `1`. -/
+/-- The form of Example 8 is coercive with constant $1$: $a(v, v) \ge \|v\|_{H^1}^2$. -/
 theorem form_isCoerciveWith : form.IsCoerciveWith 1 := SesqForm.innerSL_isCoerciveWith
 
-/-- The form is symmetric. -/
+/-- The form of Example 8 is symmetric. -/
 theorem form_isHermitian : form.IsHermitian := SesqForm.innerSL_isHermitian
 
-/-- **The load of Example 8**: `v ↦ ∫_ℝ f v` for `f ∈ L²(ℝ)`, as a continuous linear functional
-on `H¹(ℝ)`. -/
+/-- **The load of Example 8**: for $f \in L^2(\mathbb{R})$, the continuous linear functional
+$v \mapsto \int_{\mathbb{R}} f v$ on $H^1(\mathbb{R})$. -/
 def load (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     SobolevIntervalLp 1 2 ⊤ →L[ℝ] ℝ :=
   (innerSL ℝ f).comp (SobolevIntervalLp.derivL 1 2 ⊤ 0)
 
 open SobolevIntervalLp in
-/-- The load is the `L²(ℝ)` inner product with `f`. -/
+/-- The load of Example 8 is the inner product of $L^2(\mathbb{R})$ with $f$:
+$v \mapsto \langle f, v \rangle_{L^2}$. -/
 theorem load_apply_inner (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (v : SobolevIntervalLp 1 2 ⊤) : load f v = ⟪f, deriv v 0⟫_ℝ := rfl
 
 open SobolevIntervalLp in
-/-- The load is the integral `∫_ℝ f v`. -/
+/-- The load of Example 8 at $v$ is the integral $\int_{\mathbb{R}} f(x) v(x) \, dx$. -/
 theorem load_apply (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (v : SobolevIntervalLp 1 2 ⊤) : load f v = ∫ x, f x * fn v x := by
   rw [load_apply_inner, L2.inner_def]
@@ -1157,28 +1327,36 @@ theorem load_apply (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))
     (setIntegral_univ (μ := volume) (f := fun x ↦ f x * fn v x))
   simp [RCLike.inner_apply, mul_comm, deriv_zero]
 
-/-- **The weak solution of Example 8**: the unique `u ∈ H¹(ℝ)` with `⟪u, v⟫ = ∫ f v` for every
-`v ∈ H¹(ℝ)`, by the Riesz–Fréchet representation theorem (which is Lax–Milgram for the inner
-product). -/
+/-- **The weak solution of Example 8**: for $f \in L^2(\mathbb{R})$, the unique
+$u \in H^1(\mathbb{R})$ with
+$$\langle u, v \rangle_{H^1} = \int_{\mathbb{R}} f v
+  \quad \text{for every } v \in H^1(\mathbb{R}).$$
+
+It is given by the Riesz–Fréchet representation theorem, which is the Lax–Milgram theorem for
+the inner product. -/
 def solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) : SobolevIntervalLp 1 2 ⊤ :=
   (InnerProductSpace.toDual ℝ (SobolevIntervalLp 1 2 ⊤)).symm (load f)
 
-/-- The weak solution solves the weak problem. -/
+/-- The weak solution $u$ of Example 8 solves the weak problem: $a(u, v) = \int_{\mathbb{R}} f v$
+for every $v \in H^1(\mathbb{R})$. -/
 theorem form_solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (v : SobolevIntervalLp 1 2 ⊤) : form (solution f) v = load f v := by
   change ⟪solution f, v⟫_ℝ = load f v
   exact InnerProductSpace.toDual_symm_apply
 
-/-- The weak problem has exactly one solution. -/
+/-- The weak problem of Example 8 has exactly one solution: if $u \in H^1(\mathbb{R})$ and
+$a(u, v) = \int_{\mathbb{R}} f v$ for every $v \in H^1(\mathbb{R})$, then $u$ is the weak
+solution `EllipticInterval.Line.solution f`. -/
 theorem eq_solution_of_forall {f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))}
     {u : SobolevIntervalLp 1 2 ⊤} (hu : ∀ v, form u v = load f v) : u = solution f := by
   rw [solution, LinearIsometryEquiv.eq_symm_apply]
   ext v
   exact hu v
 
-/-! #### A classical solution lies in `H¹(ℝ)` -/
+/-! ### Example 8: a classical solution lies in $H^1(\mathbb{R})$ -/
 
-/-- A continuous function tending to `0` at infinity is bounded. -/
+/-- A continuous function $u : \mathbb{R} \to \mathbb{R}$ that tends to $0$ at infinity is bounded:
+there is $M$ with $|u(x)| \le M$ for every $x$. -/
 theorem exists_forall_abs_le_of_tendsto_cocompact {u : ℝ → ℝ} (hu : Continuous u)
     (h : Tendsto u (cocompact ℝ) (𝓝 0)) : ∃ M, ∀ x, |u x| ≤ M := by
   obtain ⟨K, hK, hKu⟩ := Filter.hasBasis_cocompact.eventually_iff.1
@@ -1191,16 +1369,20 @@ theorem exists_forall_abs_le_of_tendsto_cocompact {u : ℝ → ℝ} (hu : Contin
     rw [dist_zero_right, Real.norm_eq_abs] at this
     exact this.le.trans (le_max_right _ _)
 
-/-- The pointwise inequality behind the a priori estimate: `η² u f − 2 η η' u u'` is at most
-`½ η² f² + ½ η² (u² + u'²) + 2 η'² u²`, by `2ab ≤ a² + b²` twice. -/
+/-- The pointwise inequality behind the a priori estimate: for all real numbers
+$\eta, \eta', u, u', f$,
+$$\eta^2 u f - 2 \eta \eta' u u'
+  \le \tfrac{1}{2} \eta^2 f^2 + \tfrac{1}{2} \eta^2 (u^2 + u'^2) + 2 \eta'^2 u^2.$$
+
+The proof uses $2 x y \le x^2 + y^2$ twice. -/
 theorem amgm_aux (η η' uu uu' ff : ℝ) :
     η ^ 2 * uu * ff - 2 * η * η' * uu * uu'
       ≤ 1 / 2 * (η ^ 2 * ff ^ 2) + 1 / 2 * (η ^ 2 * (uu ^ 2 + uu' ^ 2))
         + 2 * (η' ^ 2 * uu ^ 2) := by
   nlinarith [sq_nonneg (η * uu - η * ff), sq_nonneg (η * uu' + 2 * η' * uu)]
 
-/-- The derivative of the cut-off vanishes where the cut-off vanishes identically, off
-`[-2(n+1), 2(n+1)]`. -/
+/-- Let $\zeta_n$ be the cut-off `SobolevIntervalLp.cutoffFn n`, which vanishes off
+$(-2(n+1), 2(n+1))$. If $|x| > 2(n+1)$, then $\zeta_n'(x) = 0$. -/
 theorem deriv_cutoffFn_of_lt_abs {n : ℕ} {x : ℝ} (hx : 2 * ((n : ℝ) + 1) < |x|) :
     _root_.deriv (SobolevIntervalLp.cutoffFn n) x = 0 := by
   have h : SobolevIntervalLp.cutoffFn n =ᶠ[𝓝 x] fun _ ↦ (0 : ℝ) := by
@@ -1211,15 +1393,19 @@ theorem deriv_cutoffFn_of_lt_abs {n : ℕ} {x : ℝ} (hx : 2 * ((n : ℝ) + 1) <
   rw [h.deriv_eq, deriv_const]
 
 open SobolevIntervalLp in
-/-- **The a priori estimate for a classical solution of `−u'' + u = f` on `ℝ`**
-([brezis2011functional] §8.4, Example 8, the cut-off argument): if `u ∈ C²(ℝ)` is bounded,
-`f ∈ L²(ℝ)` and `−u'' + u = f`, then `∫_{-n-1}^{n+1} (u² + u'²)` is bounded uniformly in `n`.
-Multiplying the equation by `ζ_n² u` and integrating by parts once,
-`∫ ζ_n² (u² + u'²) = ∫ ζ_n² u f − 2 ∫ ζ_n ζ_n' u u'`, and the right side is at most
-`½ ∫ f² + ½ ∫ ζ_n² (u² + u'²) + 2 ∫ ζ_n'² u²`, where the last term is bounded through
-`|ζ_n'| ≤ C/(n+1)` and the boundedness of `u`. (The book's cut-off `ζ_n` is replaced by `ζ_n²`, so
-that no second derivative of the cut-off is needed; the hypothesis `u → 0` at infinity enters only
-through the boundedness of `u`.) -/
+/-- **The a priori estimate for a classical solution of $-u'' + u = f$ on $\mathbb{R}$.** Let
+$u \in C^2(\mathbb{R})$ be bounded, $|u| \le M$, let $f \in L^2(\mathbb{R})$, and let
+$-u'' + u = f$ at every point. Then there is $K$ with
+$$\int_{-n-1}^{n+1} (u^2 + u'^2) \le K \quad \text{for every } n \in \mathbb{N}.$$
+This is the cut-off argument of Example 8 in §8.4 of [brezis2011functional].
+
+Multiply the equation by $\zeta_n^2 u$ and integrate by parts once: $\int \zeta_n^2 (u^2 +
+u'^2) = \int \zeta_n^2 u f - 2 \int \zeta_n \zeta_n' u u'$. The right side is at most
+$\frac{1}{2} \int f^2 + \frac{1}{2} \int \zeta_n^2 (u^2 + u'^2) + 2 \int \zeta_n'^2 u^2$, and
+the last term is bounded by $|\zeta_n'| \le C/(n+1)$ and the bound on $u$. The source multiplies
+by $\zeta_n u$; the proof here uses $\zeta_n^2$, so that no second derivative of the cut-off is
+needed. The hypothesis $u \to 0$ at infinity of the source enters only through the boundedness
+of $u$. -/
 theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u)
     (hf : MemLp f 2 volume) (hode : ∀ x, -_root_.deriv (_root_.deriv u) x + u x = f x) {M : ℝ}
     (hM : ∀ x, |u x| ≤ M) :
@@ -1402,8 +1588,10 @@ theorem exists_forall_setIntegral_sq_add_sq_le {u f : ℝ → ℝ} (hu : ContDif
     _ = (∫ x, η x ^ 2 * u x ^ 2) + ∫ x, η x ^ 2 * _root_.deriv u x ^ 2 := integral_add i1 i2
     _ ≤ _ := hAB
 
-/-- A continuous function whose squares have bounded integrals over the intervals `[-n-1, n+1]`
-lies in `L²(ℝ)`, by monotone convergence. -/
+/-- A continuous function $g : \mathbb{R} \to \mathbb{R}$ with $\int_{-n-1}^{n+1} g^2 \le K$ for
+every $n \in \mathbb{N}$ lies in $L^2(\mathbb{R})$.
+
+The proof uses monotone convergence. -/
 theorem memLp_two_of_forall_setIntegral_sq_le {g : ℝ → ℝ} (hg : Continuous g) {K : ℝ}
     (h : ∀ n : ℕ, ∫ x in Icc (-((n : ℝ) + 1)) ((n : ℝ) + 1), g x ^ 2 ≤ K) :
     MemLp g 2 volume := by
@@ -1442,8 +1630,10 @@ theorem memLp_two_of_forall_setIntegral_sq_le {g : ℝ → ℝ} (hg : Continuous
   rw [e]
   exact ENNReal.ofReal_le_ofReal (h n)
 
-/-- **A classical solution of `−u'' + u = f` on `ℝ` tending to `0` at infinity lies in `H¹(ℝ)`**
-([brezis2011functional] §8.4, Example 8): both `u` and `u'` are in `L²(ℝ)`. -/
+/-- **A classical solution of $-u'' + u = f$ on $\mathbb{R}$ that tends to $0$ at infinity is square
+integrable.** Let $u \in C^2(\mathbb{R})$ satisfy $-u'' + u = f$ at every point, with
+$f \in L^2(\mathbb{R})$, and let $u(x) \to 0$ as $|x| \to \infty$. Then $u$ and $u'$ are in
+$L^2(\mathbb{R})$. This is part of Example 8 in §8.4 of [brezis2011functional]. -/
 theorem memLp_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u) (hf : MemLp f 2 volume)
     (hode : ∀ x, -_root_.deriv (_root_.deriv u) x + u x = f x)
     (hlim : Tendsto u (cocompact ℝ) (𝓝 0)) :
@@ -1470,9 +1660,10 @@ theorem memLp_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u) (hf : Mem
       integral_nonneg fun x ↦ sq_nonneg _
     linarith
 
-/-- **A classical solution of Example 8 lies in `H¹(ℝ)`** ([brezis2011functional] §8.4,
-Example 8, first step): if `u ∈ C²(ℝ)` satisfies `−u'' + u = f` with `f ∈ L²(ℝ)` and
-`u(x) → 0` as `|x| → ∞`, then `u ∈ H¹(ℝ)`. -/
+/-- **A classical solution of Example 8 lies in $H^1(\mathbb{R})$.** Let $u \in C^2(\mathbb{R})$
+satisfy $-u'' + u = f$ at every point, with $f \in L^2(\mathbb{R})$, and let $u(x) \to 0$ as
+$|x| \to \infty$. Then $u \in H^1(\mathbb{R})$. This is the first step of Example 8 in §8.4 of
+[brezis2011functional]. -/
 theorem memSobolevIntervalLp_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u)
     (hf : MemLp f 2 volume) (hode : ∀ x, -_root_.deriv (_root_.deriv u) x + u x = f x)
     (hlim : Tendsto u (cocompact ℝ) (𝓝 0)) : MemSobolevIntervalLp u 1 2 ⊤ := by
@@ -1481,12 +1672,15 @@ theorem memSobolevIntervalLp_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ
     (SobolevIntervalLp.memLp_restrict_top_iff.2 h1)
     (SobolevIntervalLp.memLp_restrict_top_iff.2 h2)).1
 
-/-! #### Integration by parts on the line, and the weak equation -/
+/-! ### Example 8: integration by parts on the line, and the weak equation -/
 
 open SobolevIntervalLp in
-/-- **Integration by parts on `ℝ` for `H¹(ℝ)`**: for `U, v ∈ H¹(ℝ)`,
-`∫_ℝ (U' ṽ + Ũ v') = 0`, the boundary terms of Corollary 8.10 vanishing at infinity by
-Corollary 8.9. -/
+/-- **Integration by parts on $\mathbb{R}$ for $H^1(\mathbb{R})$.** For $U, v \in H^1(\mathbb{R})$,
+with continuous representatives $\tilde U, \tilde v$,
+$$\int_{\mathbb{R}} (U' \tilde v + \tilde U v') = 0.$$
+
+The boundary terms of Corollary 8.10 of [brezis2011functional] vanish at infinity by Corollary
+8.9 of the source. -/
 theorem integral_deriv_mul_rep_add_rep_mul_deriv_eq_zero (U v : SobolevIntervalLp 1 2 ⊤) :
     ∫ x, (deriv U 1 x * rep v x + rep U x * deriv v 1 x) = 0 := by
   have hI := Opens.ordConnected_top
@@ -1526,11 +1720,15 @@ theorem integral_deriv_mul_rep_add_rep_mul_deriv_eq_zero (U v : SobolevIntervalL
   exact tendsto_nhds_unique hlim hlim'
 
 open SobolevIntervalLp in
-/-- **A classical solution of Example 8 is the weak solution** ([brezis2011functional] §8.4,
-Example 8): if `u ∈ C²(ℝ)` satisfies `−u'' + u = f` with `f ∈ L²(ℝ)` and `u(x) → 0` as
-`|x| → ∞`, then the element of `H¹(ℝ)` it carries is `Line.solution f`. The book's density
-argument is replaced by integration by parts on `ℝ` for `u' ∈ H¹(ℝ)`
-(`Line.integral_deriv_mul_rep_add_rep_mul_deriv_eq_zero`). -/
+/-- **A classical solution of Example 8 is the weak solution.** Let $u \in C^2(\mathbb{R})$ satisfy
+$-u'' + u = f$ at every point, let $f \in L^2(\mathbb{R})$, and let $u(x) \to 0$ as
+$|x| \to \infty$. Then the weak solution $U$ of `EllipticInterval.Line.solution f` has the
+continuous representative $u$, and $U = u$ almost everywhere. This is part of Example 8 in §8.4
+of [brezis2011functional].
+
+The source uses a density argument. The proof here uses integration by parts on $\mathbb{R}$ for
+$u' \in H^1(\mathbb{R})$,
+`EllipticInterval.Line.integral_deriv_mul_rep_add_rep_mul_deriv_eq_zero`. -/
 theorem isWeakSolution_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u)
     (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (hfL : fL =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] f)
@@ -1607,13 +1805,15 @@ theorem isWeakSolution_of_classical {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u)
 
 end Line
 
-/-! #### Regularity of the weak solution on the line, and the classical solution -/
+/-! ### Example 8: regularity of the weak solution, and the classical solution -/
 
 namespace Line
 
 open SobolevIntervalLp in
-/-- **The weak solution of Example 8 has `u'' = u − f` weakly**: testing the weak equation
-against the test functions on `ℝ`. -/
+/-- **The weak solution of Example 8 has $u'' = u - f$ weakly.** For $f \in L^2(\mathbb{R})$, the
+derivative $u'$ of the weak solution $u$ has the weak derivative $u - f$ on $\mathbb{R}$.
+
+The proof tests the weak equation against the test functions on $\mathbb{R}$. -/
 theorem hasWeakDerivOn_deriv_solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     HasWeakDerivOn (deriv (solution f) 1) (fun x ↦ fn (solution f) x - f x) ⊤ := by
   set u := solution f with hudef
@@ -1662,8 +1862,9 @@ theorem hasWeakDerivOn_deriv_solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Ope
   linarith
 
 open SobolevIntervalLp in
-/-- **The weak solution of Example 8 lies in `H²(ℝ)`** ([brezis2011functional] §8.4, Example 8:
-"one easily verifies that the weak solution `u` belongs to `H²(ℝ)`"). -/
+/-- **The weak solution of Example 8 lies in $H^2(\mathbb{R})$**, for every $f \in L^2(\mathbb{R})$.
+In Example 8 of [brezis2011functional], §8.4: "one easily verifies that the weak solution $u$
+belongs to $H^2(\mathbb{R})$". -/
 theorem memSobolevIntervalLp_two_solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     MemSobolevIntervalLp (fn (solution f)) 2 2 ⊤ :=
   memSobolevIntervalLp_succ_iff.2 ⟨Lp.memLp _, deriv (solution f) 1, hasWeakDerivOn_fn _,
@@ -1671,17 +1872,23 @@ theorem memSobolevIntervalLp_two_solution (f : Lp ℝ 2 (volume.restrict ((⊤ :
       (Lp.memLp (deriv (solution f) 0)).sub (Lp.memLp f)⟩⟩
 
 open SobolevIntervalLp in
-/-- **The weak solution of Example 8 tends to `0` at infinity** (Corollary 8.9 of
-[brezis2011functional]). -/
+/-- **The weak solution of Example 8 tends to $0$ at infinity**: its continuous representative
+$\tilde u$ satisfies $\tilde u(x) \to 0$ as $|x| \to \infty$. This is Corollary 8.9 of
+[brezis2011functional]. -/
 theorem tendsto_rep_solution_cocompact (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     Tendsto (rep (solution f)) (cocompact ℝ) (𝓝 0) := by
   have := tendsto_rep_cocompact Opens.ordConnected_top (by norm_num : (2 : ℝ≥0∞) ≠ ⊤) (solution f)
   rwa [Opens.coe_top, principal_univ, inf_top_eq] at this
 
 open SobolevIntervalLp in
-/-- **The weak solution of Example 8 is `C²` when `f` is continuous**, and solves `−u'' + u = f`
-at every point: `u'' = u − f` almost everywhere is continuous, so `u' ∈ C¹(ℝ)` by Remark 6, and
-then `u ∈ C²(ℝ)`. -/
+/-- **The weak solution of Example 8 is $C^2$ when $f$ is continuous.** Let $f \in L^2(\mathbb{R})$
+agree almost everywhere with a continuous function $f$. Then the continuous representative
+$\tilde u$ of the weak solution is in $C^2(\mathbb{R})$, and $-\tilde u'' + \tilde u = f$ at
+every point.
+
+The weak second derivative $u'' = u - f$ agrees almost everywhere with a continuous function, so
+$u' \in C^1(\mathbb{R})$ by Remark 6 of [brezis2011functional], and then
+$u \in C^2(\mathbb{R})$. -/
 theorem contDiff_rep_solution (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) {f : ℝ → ℝ}
     (hfL : fL =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] f) (hf : Continuous f) :
     ContDiff ℝ 2 (rep (solution fL)) ∧
@@ -1727,10 +1934,15 @@ theorem contDiff_rep_solution (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ)
   · rw [hderiv0, hderiv1, hgdef]
     ring
 
-/-- **Example 8 of [brezis2011functional] §8.4, conclusion**: for `f ∈ L²(ℝ) ∩ C(ℝ)` the problem
-`−u'' + u = f` on `ℝ`, `u(x) → 0` as `|x| → ∞`, has exactly one classical solution — the
-continuous representative of the weak solution `Line.solution f`, which lies in `H²(ℝ)`
-(`Line.memSobolevIntervalLp_two_solution`). -/
+/-- **Example 8 in §8.4 of [brezis2011functional], conclusion.** Let $f \in L^2(\mathbb{R})$ agree
+almost everywhere with a continuous function $f$. Then there is exactly one
+$w \in C^2(\mathbb{R})$ with
+$$-w'' + w = f \text{ on } \mathbb{R}, \qquad w(x) \to 0 \text{ as } |x| \to \infty.$$
+
+By `EllipticInterval.Line.eq_rep_solution_of_classical`, $w$ is the continuous representative of
+the weak solution `EllipticInterval.Line.solution f`. By
+`EllipticInterval.Line.memSobolevIntervalLp_two_solution`, the weak solution lies in
+$H^2(\mathbb{R})$. -/
 theorem exists_classical_solution (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     {f : ℝ → ℝ} (hfL : fL =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] f) (hf : Continuous f) :
     ∃! w : ℝ → ℝ, ContDiff ℝ 2 w ∧ (∀ x, -_root_.deriv (_root_.deriv w) x + w x = f x) ∧
@@ -1742,7 +1954,10 @@ theorem exists_classical_solution (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens 
   funext x
   rw [← hUrep x, hU]
 
-/-- A classical solution of Example 8 is the representative of the weak solution. -/
+/-- Let $f \in L^2(\mathbb{R})$ agree almost everywhere with a function $f$, and let
+$w \in C^2(\mathbb{R})$ satisfy $-w'' + w = f$ at every point and $w(x) \to 0$ as
+$|x| \to \infty$. Then $w$ is the continuous representative of the weak solution
+`EllipticInterval.Line.solution f`. -/
 theorem eq_rep_solution_of_classical (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     {f w : ℝ → ℝ} (hfL : fL =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] f) (hw : ContDiff ℝ 2 w)
     (hode : ∀ x, -_root_.deriv (_root_.deriv w) x + w x = f x)
@@ -1753,79 +1968,92 @@ theorem eq_rep_solution_of_classical (fL : Lp ℝ 2 (volume.restrict ((⊤ : Ope
 
 end Line
 
-/-! #### Translations, and the non-compactness of the solution operator -/
+/-! ### Example 8: translations, and the non-compactness of the solution operator -/
 
 namespace Line
 
 open SobolevIntervalLp
 
-/-- The whole line is invariant under every translation. -/
+/-- The whole line $\mathbb{R}$ is invariant under the translation by every $h \in \mathbb{R}$. -/
 theorem isTranslationInvariant_top (h : ℝ) :
     IsTranslationInvariant ((⊤ : Opens ℝ) : Set ℝ) h := fun _ ↦ Iff.rfl
 
-/-- **Translation by `h` on `L²(ℝ)`**, `f ↦ f(· + h)`, a linear isometry
-(`MeasureTheory.Lp.translate` on the whole line). -/
+/-- **The translation by $h$ on $L^2(\mathbb{R})$**, $\tau_h f = f(\cdot + h)$, as a linear
+isometry.
+
+It is `MeasureTheory.Lp.translate` on the whole line. -/
 abbrev translateLp (h : ℝ) : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →ₗᵢ[ℝ]
     Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
   Lp.translate ℝ 2 (isTranslationInvariant_top h)
 
-/-- **Translation by `h` on `H¹(ℝ)`**, `u ↦ u(· + h)`, a linear isometry
-(`SobolevMultiIndex.translateL` on the whole line). -/
+/-- **The translation by $h$ on $H^1(\mathbb{R})$**, $\tau_h u = u(\cdot + h)$, as a linear
+isometry.
+
+It is `SobolevMultiIndex.translateL` on the whole line. -/
 abbrev translate (h : ℝ) : SobolevIntervalLp 1 2 ⊤ →ₗᵢ[ℝ] SobolevIntervalLp 1 2 ⊤ :=
   SobolevMultiIndex.translateL ℝ (Module.Basis.singleton Unit ℝ) 1 2 volume
     (isTranslationInvariant_top h)
 
-/-- `τ_h f = f(· + h)` almost everywhere. -/
+/-- For $f \in L^2(\mathbb{R})$, $\tau_h f = f(\cdot + h)$ almost everywhere. -/
 theorem coeFn_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     ⇑(translateLp h f) =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] fun x ↦ f (x + h) :=
   Lp.coeFn_translate _ f
 
-/-- The weak derivatives of `τ_h u` are the translates of those of `u`. -/
+/-- For $u \in H^1(\mathbb{R})$ and $j = 0, 1$, the $j$-th weak derivative of $\tau_h u$ is the
+translate $\tau_h (u^{(j)})$. -/
 theorem deriv_translate (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) (j : Fin 2) :
     deriv (translate h u) j = translateLp h (deriv u j) :=
   rfl
 
-/-- Translating by `-h` and then by `h` is the identity on `L²(ℝ)`. -/
+/-- $\tau_h \tau_{-h} f = f$ for every $f \in L^2(\mathbb{R})$. -/
 theorem translateLp_translateLp_neg (h : ℝ)
     (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     translateLp h (translateLp (-h) f) = f := by
   have := Lp.translate_neg_translate (isTranslationInvariant_top (-h)) f
   simpa using this
 
-/-- Translating by `-h` and then by `h` is the identity on `H¹(ℝ)`. -/
+/-- $\tau_h \tau_{-h} u = u$ for every $u \in H^1(\mathbb{R})$. -/
 theorem translate_translate_neg (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) :
     translate h (translate (-h) u) = u :=
   SobolevIntervalLp.ext fun j ↦ by
     rw [deriv_translate, deriv_translate, translateLp_translateLp_neg]
 
-/-- **The translations are each other's adjoints on `L²(ℝ)`**: `⟪τ_h f, g⟫ = ⟪f, τ_{-h} g⟫`. -/
+/-- **The translations are adjoint to each other on $L^2(\mathbb{R})$**: $\langle \tau_h f, g
+\rangle = \langle f, \tau_{-h} g \rangle$ for all $f, g \in L^2(\mathbb{R})$. -/
 theorem inner_translateLp_left (h : ℝ)
     (f g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     ⟪translateLp h f, g⟫_ℝ = ⟪f, translateLp (-h) g⟫_ℝ :=
   Lp.inner_translate (isTranslationInvariant_top h) f g
 
-/-- **The translations are each other's adjoints on `H¹(ℝ)`**: `⟪τ_h u, v⟫ = ⟪u, τ_{-h} v⟫`. -/
+/-- **The translations are adjoint to each other on $H^1(\mathbb{R})$**: $\langle \tau_h u, v
+\rangle = \langle u, \tau_{-h} v \rangle$ for all $u, v \in H^1(\mathbb{R})$. -/
 theorem inner_translate_left (h : ℝ) (u v : SobolevIntervalLp 1 2 ⊤) :
     ⟪translate h u, v⟫_ℝ = ⟪u, translate (-h) v⟫_ℝ := by
   conv_lhs => rw [← translate_translate_neg h v]
   exact (translate h).inner_map_map u (translate (-h) v)
 
-/-- The load of a translate: `∫ (τ_h f) v = ∫ f (τ_{-h} v)`. -/
+/-- The load of a translate: $\int_{\mathbb{R}} (\tau_h f) v = \int_{\mathbb{R}} f \, (\tau_{-h} v)$
+for $f \in L^2(\mathbb{R})$ and $v \in H^1(\mathbb{R})$. -/
 theorem load_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (v : SobolevIntervalLp 1 2 ⊤) : load (translateLp h f) v = load f (translate (-h) v) := by
   rw [load_apply_inner, load_apply_inner, inner_translateLp_left, deriv_translate]
 
-/-- **The solution operator of `−u'' + u = f` on `ℝ` commutes with translations**:
-`u(τ_h f) = τ_h u(f)`, by the uniqueness of the weak solution and the translation invariance of
-the `H¹(ℝ)` inner product ([brezis2011functional] Chapter 8, Remark 30). -/
+/-- **The solution operator of $-u'' + u = f$ on $\mathbb{R}$ commutes with the translations**: the
+weak solution for the datum $\tau_h f$ is $\tau_h$ of the weak solution for $f$. This is used in
+Remark 30 of Chapter 8 of [brezis2011functional].
+
+The proof uses the uniqueness of the weak solution and the translation invariance of the inner
+product of $H^1(\mathbb{R})$. -/
 theorem solution_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     solution (translateLp h f) = translate h (solution f) :=
   (eq_solution_of_forall fun v ↦ by
     rw [form_apply, inner_translate_left, ← form_apply, form_solution, load_translateLp]).symm
 
-/-- **The solution operator is injective**: `u(f) = 0` only for `f = 0`, since then `∫ f φ = 0`
-for every test function `φ`, so `f = 0` almost everywhere
-(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+/-- **The solution operator on $\mathbb{R}$ is injective**: the weak solution for
+$f \in L^2(\mathbb{R})$ is $0$ if and only if $f = 0$.
+
+If the solution is $0$, then $\int f \varphi = 0$ for every test function $\varphi$, so $f = 0$
+almost everywhere (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem solution_eq_zero_iff (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     solution f = 0 ↔ f = 0 := by
   refine ⟨fun h0 ↦ ?_, fun h0 ↦ ?_⟩
@@ -1846,9 +2074,14 @@ theorem solution_eq_zero_iff (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) :
     exact (eq_solution_of_forall fun v ↦ by
       rw [map_zero, zero_apply, load_apply_inner, inner_zero_left]).symm
 
-/-- **The pairing of a compactly supported `ψ` with a translate `τ_h g` is controlled by the tail
-of `g`**: if `ψ = 0` for `|x| ≥ R`, then `|⟪ψ, τ_h g⟫| ≤ ‖ψ‖ ‖g‖_{L²(|x| > h − R − 1)}`, since
-`⟪ψ, τ_h g⟫ = ⟪g, τ_{-h} ψ⟫` and `τ_{-h} ψ` vanishes where `|x| ≤ h − R − 1`. -/
+/-- **The pairing of a compactly supported $\psi$ with a translate $\tau_h g$ is controlled by the
+tail of $g$.** Let $\psi \in L^2(\mathbb{R})$ with $\psi(x) = 0$ for $|x| \ge R$, and let
+$g \in L^2(\mathbb{R})$ and $h \in \mathbb{R}$. Then
+$$|\langle \psi, \tau_h g \rangle|
+  \le \|\psi\| \, \|g\|_{L^2(\mathbb{R} \setminus [-(h - R - 1), \, h - R - 1])}.$$
+
+The proof uses $\langle \psi, \tau_h g \rangle = \langle g, \tau_{-h} \psi \rangle$, and
+$\tau_{-h} \psi$ vanishes where $|x| \le h - R - 1$. -/
 theorem abs_inner_translateLp_le {ψ : ℝ → ℝ} {R : ℝ} (hR : ∀ x, R ≤ |x| → ψ x = 0)
     (hψL : MemLp ψ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) (h : ℝ) :
@@ -1889,8 +2122,8 @@ theorem abs_inner_translateLp_le {ψ : ℝ → ℝ} {R : ℝ} (hR : ∀ x, R ≤
       rw [LinearIsometry.norm_map, Lp.norm_toLp,
         eLpNorm_indicator_eq_eLpNorm_restrict hS.nullMeasurableSet, mul_comm]
 
-/-- The pairing of a compactly supported `ψ ∈ L²(ℝ)` with the translates `τ_{r k} g`, `r k → ∞`,
-tends to `0`. -/
+/-- Let $\psi \in L^2(\mathbb{R})$ have compact support, let $g \in L^2(\mathbb{R})$, and let
+$r_k \to \infty$. Then $\langle \psi, \tau_{r_k} g \rangle \to 0$ as $k \to \infty$. -/
 theorem tendsto_inner_translateLp_atTop {ψ : ℝ → ℝ} (hψc : HasCompactSupport ψ)
     (hψL : MemLp ψ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
     (g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) {r : ℕ → ℝ}
@@ -1909,11 +2142,15 @@ theorem tendsto_inner_translateLp_atTop {ψ : ℝ → ℝ} (hψc : HasCompactSup
   have := abs_inner_translateLp_le hR hψL g (r k)
   simpa [sub_eq_add_neg, add_assoc] using this
 
-/-- **The translates of a nonzero `L²(ℝ)` function have no limit**: if `τ_{φ k} g → a` in
-`L²(ℝ)` along a strictly increasing `φ`, then `‖a‖ = ‖g‖` (the translations are isometries) while
-`⟪ψ, a⟫ = lim ⟪ψ, τ_{φ k} g⟫ = 0` for every smooth compactly supported `ψ`, so `a = 0`
-(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`) — the argument of [brezis2011functional]
-Chapter 8, Remark 10 (c) and Remark 30. -/
+/-- **The translates of a nonzero function of $L^2(\mathbb{R})$ have no limit.** Let
+$g \in L^2(\mathbb{R})$, $g \neq 0$, let $\varphi : \mathbb{N} \to \mathbb{N}$ be strictly
+increasing, and let $a \in L^2(\mathbb{R})$. Then $\tau_{\varphi(k)} g$ does not converge to $a$
+as $k \to \infty$. This is the argument of Remark 10(c) and Remark 30 of Chapter 8 of
+[brezis2011functional].
+
+If $\tau_{\varphi(k)} g \to a$, then $\|a\| = \|g\|$, because the translations are isometries.
+But $\langle \psi, a \rangle = \lim_k \langle \psi, \tau_{\varphi(k)} g \rangle = 0$ for every
+smooth compactly supported $\psi$, so $a = 0$ (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem not_tendsto_translateLp {g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))}
     (hg : g ≠ 0) {φ : ℕ → ℕ} (hφ : StrictMono φ)
     (a : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :

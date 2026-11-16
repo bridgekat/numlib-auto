@@ -7,37 +7,44 @@ import Numlib.FiniteElement.Interpolation
 import Numlib.Variational.Galerkin
 
 /-!
-# The finite element method on triangulations: convergence and error estimates
+# Finite element error estimates on triangulations
 
-The a priori error of the Galerkin method on finite element spaces over a regular family of
-triangulations of a plane domain: Céa's lemma (`IsGalerkinSolution.norm_sub_le`) with the
-interpolant `v_h = Π_h u` as competitor, and the global interpolation estimate
-`Triangulation.sobolevNorm_sub_globalInterp_le` at `m = 1`. The one-dimensional counterpart is
-`Numlib/FiniteElement/Interval.lean`.
+This file proves the a priori error estimate of the Galerkin method on finite element spaces over a
+regular family of triangulations of a plane domain $\Omega \subseteq \mathbb{R}^2$, following
+Theorem 10.4.1 and Example 10.4.2 of [han2009theoretical] and Property 12.2 of
+[quarteroni2000numerical]. The setting is a subspace $V \subseteq H^1(\Omega)$, a bilinear form $a$
+on $V$ that is bounded and coercive, the solution $u \in V$ of $a(u, v) = \ell(v)$ for all
+$v \in V$, and Galerkin solutions $u_h$ on subspaces $V_h \subseteq V$. The proof combines Céa's
+lemma `IsGalerkinSolution.norm_sub_le`, with the global nodal interpolant $v_h = \Pi_h u$ as
+competitor, and the global interpolation estimate `Triangulation.sobolevNorm_sub_globalInterp_le` at
+$m = 1$. The one-dimensional counterpart is `Numlib.FiniteElement.Interval`.
 
-The setting is the backbone's: a subspace `V ⊆ H¹(Ω)` (`SobolevEuclidean 2 1 2 Ω`), a bounded
-coercive form `a : SesqForm ℝ V` (`SesqForm.IsBoundedWith`, `SesqForm.IsCoerciveWith`), and Galerkin
-solutions `IsGalerkinSolution a ℓ V_h u_h` on subspaces `V_h ⊆ V`. The finite element space enters
-only through `Π_h u ∈ V_h`, a hypothesis; for `V = H¹₀(Ω)` and `V_h` the continuous piecewise
-polynomials vanishing on `∂Ω` (`Triangulation.polySpaceZero`) it is
-`LagrangeElement.exists_mem_polySpaceZero_globalInterp`. The regularity of the solution is read on
-a representative `ũ` continuous up to the boundary, as in the interpolation estimates.
+The finite element space enters only through the hypothesis $\Pi_h u \in V_h$. For
+$V = H^1_0(\Omega)$ and $V_h$ the space of continuous piecewise polynomials that vanish on
+$\partial\Omega$ (`Triangulation.polySpaceZero`), this hypothesis is
+`LagrangeElement.exists_mem_polySpaceZero_globalInterp`. The regularity of the solution is read on a
+representative $\tilde u$ that is continuous up to the boundary, as in the interpolation estimates.
 
 ## Main results
 
-* `FiniteElement.norm_sub_le_of_isGalerkinSolution` — `‖u − u_h‖_V ≤ c h^k |u|_{k+1,Ω}` for an
-  element reproducing `ℙ_k`, conforming on a regular family of triangulations.
-* `FiniteElement.tendsto_norm_sub_of_isGalerkinSolution` — `‖u − u_h‖_V → 0` along the family,
-  when `u` is approximated in `V` by functions of `H^{k+1}(Ω) ∩ C(Ω̄)` with interpolants in `V_h`.
-* `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` — the Poisson problem
-  `−Δu = f`, `u = 0` on `∂Ω`, on a polygon with the `ℙ_k` Lagrange element:
-  `‖u − u_h‖_{H¹₀} ≤ (M/α₀) C h^s ‖u‖_{s+1,Ω}`, `1 ≤ s ≤ k`, with `M = 1` and
-  `α₀ = (1 + (2R)²)⁻¹` for `Ω ⊆ B(0, R)`.
+* `FiniteElement.norm_sub_le_of_isGalerkinSolution`: $\|u - u_h\|_V \le c\, h^k |u|_{k+1,\Omega}$
+  for a conforming element that reproduces $\mathbb{P}_k$, on a regular family of triangulations.
+* `FiniteElement.tendsto_norm_sub_of_isGalerkinSolution`: $\|u - u_h\|_V \to 0$ along the family,
+  when $u$ can be approximated in $V$ by functions of $H^{k+1}(\Omega) \cap C(\bar\Omega)$ whose
+  interpolants lie in $V_h$.
+* `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`: for the Poisson problem
+  $-\Delta u = f$, $u = 0$ on $\partial\Omega$, on a polygon with the $\mathbb{P}_k$ Lagrange
+  element, $\|u - u_h\|_{H^1_0} \le (M/\alpha_0)\, C h^s \|u\|_{s+1,\Omega}$ for $1 \le s \le k$,
+  with $M = 1$ and $\alpha_0 = (1 + (2R)^2)^{-1}$ for $\Omega \subseteq B(0, R)$.
 
-## References
+## Implementation notes
 
-* [han2009theoretical] Theorem 10.4.1, Example 10.4.2.
-* [quarteroni2000numerical] Property 12.2, (12.96).
+* The space $H^1(\Omega)$ is `SobolevEuclidean 2 1 2 Ω`, with the norm built from multi-indices. The
+  interpolation estimates use the tensor Sobolev norm `sobolevNorm`, and
+  `FiniteElement.exists_norm_le_sobolevNorm` compares the two norms.
+* Boundedness and coercivity of the form are `SesqForm.IsBoundedWith` and `SesqForm.IsCoerciveWith`,
+  and a Galerkin solution is `IsGalerkinSolution`.
+* A family of triangulations is indexed along an arbitrary filter.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace EuclideanSpace Topology Metric
@@ -47,11 +54,16 @@ namespace FiniteElement
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-! ### Norms of `H¹(Ω)` against the tensor Sobolev norm -/
+/-! ### Comparison of the norm of $H^1(\Omega)$ with the tensor Sobolev norm -/
 
-/-- The norm of `H¹(Ω)` (the multi-index space `SobolevEuclidean N 1 2 Ω`) is bounded by the
-tensor Sobolev norm `‖·‖_{1,Ω}` of the function, up to a constant depending on the dimension
-only: `SobolevMultiIndex.ofReal_norm_le_sobolevNorm` in real form. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open. There is a constant $C \ge 0$ such that every
+$w \in H^1(\Omega)$ satisfies $$\|w\|_{H^1(\Omega)} \le C\, \|w\|_{1,\Omega},$$ where the left
+side is the norm of `SobolevEuclidean N 1 2 Ω` and the right side is the tensor Sobolev norm of
+the function of $w$.
+
+The right side is `sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume`, converted to a real
+number. The proof is `SobolevMultiIndex.ofReal_norm_le_sobolevNorm` in real form, and its
+constant depends only on $N$. -/
 theorem exists_norm_le_sobolevNorm {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ w : SobolevEuclidean N 1 2 Ω,
       ‖w‖ ≤ C * (sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume).toReal := by
@@ -68,8 +80,10 @@ theorem exists_norm_le_sobolevNorm {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fi
   have h := ENNReal.toReal_mono (ENNReal.mul_ne_top hC₂fin hfin) (hC₂ w)
   rwa [ENNReal.toReal_ofReal (norm_nonneg _), ENNReal.toReal_mul] at h
 
-/-- The distance in a subspace `V ⊆ H¹(Ω)` between two elements is bounded by the tensor
-Sobolev norm of the difference of (representatives of) their functions. -/
+/-- Let $C$ be a constant with $\|w\|_{H^1(\Omega)} \le C \|w\|_{1,\Omega}$ for every
+$w \in H^1(\Omega)$, and let $V \subseteq H^1(\Omega)$ be a subspace. If $w, w_h \in V$, and the
+functions $w'$ and $g$ agree almost everywhere on $\Omega$ with the functions of $w$ and $w_h$,
+then $\|w - w_h\| \le C \|w' - g\|_{1,\Omega}$. -/
 theorem norm_sub_le_of_fn_ae_eq {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {C : ℝ}
     (hC : ∀ w : SobolevEuclidean N 1 2 Ω,
       ‖w‖ ≤ C * (sobolevNorm (SobolevMultiIndex.fn w) 1 2 Ω volume).toReal)
@@ -89,8 +103,11 @@ theorem norm_sub_le_of_fn_ae_eq {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N
   rw [sobolevNorm_congr_ae hfn] at h
   exact h
 
-/-- The global interpolation estimate at `m = 1`, in real form:
-`‖v − Π_h v‖_{1,Ω} ≤ c h^k |v|_{k+1,Ω}`. -/
+/-- The global interpolation estimate at $m = 1$, in real form. Let $\mathcal{T}$ be a triangulation
+of $\Omega$ with mesh parameter $h$, let $\Pi_h$ be the global interpolant of a reference
+element, let $c \ge 0$ and let $v \in H^{k+1}(\Omega)$. If $\|v - \Pi_h v\|_{1,\Omega} \le c\,
+h^{(k+1)-1} |v|_{k+1,\Omega}$ holds in $[0, \infty]$, then the real values satisfy $\|v - \Pi_h
+v\|_{1,\Omega} \le c\, h^k |v|_{k+1,\Omega}$. -/
 theorem toReal_sobolevNorm_sub_globalInterp_le {k : ℕ} {I : ℕ} {xhat : Fin I → 𝔼₂}
     {φhat : Fin I → 𝔼₂ → ℝ} {Ω : Opens 𝔼₂} {𝒯 : Triangulation Ω} {c : ℝ} (hc : 0 ≤ c)
     {v : 𝔼₂ → ℝ} (hv : MemSobolev v (k + 1) 2 Ω volume)
@@ -105,20 +122,30 @@ theorem toReal_sobolevNorm_sub_globalInterp_le {k : ℕ} {I : ℕ} {xhat : Fin I
 
 /-! ### The error estimate and the convergence -/
 
-/-- **The finite element error estimate** ([han2009theoretical] Theorem 10.4.1, (10.4.4)). Let
-`V ⊆ H¹(Ω)` be a subspace carrying a bounded, coercive form `a`, let `{𝒯_h}` be a regular family
-of triangulations of `Ω` with mesh parameters at most `H`, and let the finite element be the
-reference triangle with nodes `x̂ᵢ ∈ K̂̄`, `C¹` shape functions and the polynomial invariance
-`ℙ_k(K̂) ⊆ X̂`, `k ≥ 1`, conforming on every `𝒯_h`. Then there is a constant `c` such that for
-every solution `u ∈ V` of `a(u, v) = ℓ(v)` and every family of Galerkin solutions `u_h` on
-subspaces `V_h ⊆ V` containing the interpolants `Π_h u`, if `u ∈ H^{k+1}(Ω)` (read on its
-representative `ũ`, continuous up to the boundary) then
+/-- **Finite element error estimate.** Let $\Omega \subseteq \mathbb{R}^2$ be open, and let
+$\{\mathcal{T}_h\}$ be a regular family of triangulations of $\Omega$, indexed along a filter,
+whose mesh parameters $h$ are at most $H$. Let the reference element on the reference triangle
+$\hat K$ have nodes $\hat x_i \in \overline{\hat K}$ and $C^1$ shape functions $\hat\varphi_i$.
+Let it reproduce $\mathbb{P}_k(\hat K)$ for some $k \ge 1$, that is, the nodal interpolant of
+every polynomial of total degree at most $k$ equals the polynomial on $\hat K$, and let it be
+conforming on every $\mathcal{T}_h$. Let $V \subseteq H^1(\Omega)$ be a subspace, and let $a$ be
+a bilinear form on $V$ that is bounded with constant $M$ and coercive with constant $c_0 > 0$.
+Then there is a constant $c \ge 0$ with the following property. Let $\ell$ be a continuous
+linear functional on $V$, let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and for
+every $h$ let $u_h$ be a Galerkin solution on a subspace $V_h \subseteq V$. Let $\tilde u$ agree
+almost everywhere on $\Omega$ with the function of $u$, with $\tilde u \in H^{k+1}(\Omega)$ and
+$\tilde u$ continuous on $\bar\Omega$, and assume that for every $h$ the interpolant
+$\Pi_h \tilde u$ is the function of an element of $V_h$. Then for every $h$ $$\|u - u_h\|_V \le
+c\, h^k |\tilde u|_{k+1,\Omega}.$$ This is Theorem 10.4.1, estimate (10.4.4), of
+[han2009theoretical].
 
-  `‖u − u_h‖_V ≤ c h^k |u|_{k+1,Ω}`.
-
-Céa's lemma with `v_h = Π_h u` (`IsGalerkinSolution.norm_sub_le`), then the interpolation
-estimate at `m = 1` (`Triangulation.sobolevNorm_sub_globalInterp_le`), with the norm of
-`V ⊆ H¹(Ω)` compared to the tensor norm by `exists_norm_le_sobolevNorm`. -/
+The constant $c$ does not depend on $\ell$, $u$, $\tilde u$ or $h$. Here $h$ is
+`Triangulation.meshSize`, the interpolant is `Triangulation.globalInterp`, regularity is
+`FiniteElement.IsRegularFamily` for the sets of open elements, conformity is
+`Triangulation.IsConformingElement`, and the seminorm is `sobolevSeminorm`. The proof is Céa's
+lemma `IsGalerkinSolution.norm_sub_le` with $v_h = \Pi_h u$, followed by the interpolation
+estimate `Triangulation.sobolevNorm_sub_globalInterp_le` at $m = 1$, with the norm of $V$
+compared to the tensor norm by `FiniteElement.exists_norm_le_sobolevNorm`. -/
 theorem norm_sub_le_of_isGalerkinSolution {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼₂)
     (φhat : Fin I → 𝔼₂ → ℝ) (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
     (hφ : ∀ i, ContDiff ℝ 1 (φhat i))
@@ -160,11 +187,18 @@ theorem norm_sub_le_of_isGalerkinSolution {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xh
         exact h1.trans (mul_le_mul_of_nonneg_left h2 hC0)
     _ = _ := by ring
 
-/-- **Convergence of the finite element method** ([han2009theoretical] Theorem 10.4.1, the
-convergence): under the assumptions of `norm_sub_le_of_isGalerkinSolution`, if the solution
-`u ∈ V` can be approximated in `V` by functions in `H^{k+1}(Ω) ∩ C(Ω̄)` whose interpolants lie in
-the `V_h`, then `‖u − u_h‖_V → 0` along the family. The family is indexed by an arbitrary filter,
-so the `ε`-argument of `IsGalerkinSolution.tendsto` is redone. -/
+/-- **Convergence of the finite element method.** Assume the hypotheses of
+`FiniteElement.norm_sub_le_of_isGalerkinSolution` on $\Omega$, the family $\{\mathcal{T}_h\}$,
+the reference element, $V$ and $a$. Let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$,
+and let $u_h$ be Galerkin solutions on subspaces $V_h \subseteq V$. Assume that for every
+$\varepsilon > 0$ there are $w \in V$ with $\|u - w\| < \varepsilon$ and a function $w'$ that
+agrees almost everywhere on $\Omega$ with the function of $w$, with $w' \in H^{k+1}(\Omega)$,
+$w'$ continuous on $\bar\Omega$, and $\Pi_h w'$ the function of an element of $V_h$ for every
+$h$. Then $\|u - u_h\|_V \to 0$ along the family. This is the convergence statement of Theorem
+10.4.1 of [han2009theoretical].
+
+The family is indexed along an arbitrary filter, so the proof repeats the $\varepsilon$-argument
+of `IsGalerkinSolution.tendsto` instead of applying it. -/
 theorem tendsto_norm_sub_of_isGalerkinSolution {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼₂)
     (φhat : Fin I → 𝔼₂ → ℝ) (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
     (hφ : ∀ i, ContDiff ℝ 1 (φhat i))
@@ -227,29 +261,36 @@ theorem tendsto_norm_sub_of_isGalerkinSolution {k : ℕ} (hk : 1 ≤ k) {I : ℕ
     _ = M' * (2 * δ) := by ring
     _ < ε := hδε
 
-/-! ### The Poisson problem with the `ℙ_k` Lagrange element -/
+/-! ### The Poisson problem with the $\mathbb{P}_k$ Lagrange element -/
 
-/-- The Dirichlet form restricted to `H¹₀(Ω)` is bounded with `M = 1`. -/
+/-- The Dirichlet form $a_0(u, v) = \int_\Omega \nabla u \cdot \nabla v$, restricted to
+$H^1_0(\Omega)$, is bounded with constant $M = 1$: $|a_0(u, v)| \le \|u\| \|v\|$. -/
 theorem dirichletForm_restrict_isBoundedWith (Ω : Opens 𝔼₂) :
     ((Elliptic.dirichletForm Ω).restrict (SobolevEuclideanZero 2 1 2 Ω)).IsBoundedWith 1 :=
   fun u v ↦ Elliptic.dirichletForm_isBoundedWith Ω u v
 
-/-- **The finite element error for the Poisson problem** ([han2009theoretical] Example 10.4.2,
-[quarteroni2000numerical] Property 12.2, (12.96)). Let `u ∈ H¹₀(Ω)` solve
-`∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)` (`Elliptic.dirichletForm`, `Elliptic.load`), on a
-polygon `Ω ⊆ B(0, R)` triangulated by a regular family `{𝒯_h}` (mesh parameters at most `H`,
-`∂Ω` a union of element edges), and let `u_h` be the Galerkin solutions on the spaces
-`V_h = Triangulation.polySpaceZero 2 k` of continuous piecewise polynomials of degree at most
-`k ≥ 1` vanishing on `∂Ω`. If `u ∈ H^{s+1}(Ω)` for some `1 ≤ s ≤ k`, read on a representative `ũ`
-continuous up to the boundary with `ũ = 0` on `∂Ω`, then
+/-- **Finite element error for the Poisson problem.** Let $\Omega \subseteq \mathbb{R}^2$ be open
+with $\Omega \subseteq B(0, R)$ for some $R \ge 0$. Let $\{\mathcal{T}_h\}$ be a regular family
+of triangulations of $\Omega$, indexed along a filter, with mesh parameters at most $H$, such
+that $\partial\Omega$ is a union of element edges of every $\mathcal{T}_h$. Let $1 \le s \le k$.
+Then there is a constant $C \ge 0$ with the following property. Let $f \in L^2(\Omega)$, and let
+$u \in H^1_0(\Omega)$ satisfy $$\int_\Omega \nabla u \cdot \nabla v = \int_\Omega f v \quad
+\text{for all } v \in H^1_0(\Omega).$$ For every $h$ let $u_h$ be the Galerkin solution on the
+space $V_h$ of continuous piecewise polynomials of degree at most $k$ that vanish on
+$\partial\Omega$. Let $\tilde u$ agree almost everywhere on $\Omega$ with the function of $u$,
+with $\tilde u \in H^{s+1}(\Omega)$, $\tilde u$ continuous on $\bar\Omega$ and $\tilde u = 0$ on
+$\partial\Omega$. Then for every $h$ $$\|u - u_h\|_{H^1_0(\Omega)} \le \frac{M}{\alpha_0}\, C\,
+h^s \|\tilde u\|_{s+1,\Omega},$$ where $M = 1$ is the continuity constant of the form and
+$\alpha_0 = (1 + (2R)^2)^{-1}$ is its coercivity constant on $H^1_0(\Omega)$ from the Poincaré
+inequality. The constant $C$ does not depend on $h$, $f$ or $u$. This is Example 10.4.2 of
+[han2009theoretical] and Property 12.2, estimate (12.96), of [quarteroni2000numerical].
 
-  `‖u − u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C h^s ‖u‖_{s+1,Ω}`,
-
-with `M = 1` the continuity constant of the form and `α₀ = (1 + (2R)²)⁻¹` its coercivity constant
-on `H¹₀(Ω)` (Poincaré), and `C` independent of `h`, `f` and `u`. It is
-`norm_sub_le_of_isGalerkinSolution` with the `ℙ_k` Lagrange element, whose interpolant `Π_h ũ`
-lies in `V_h` (`LagrangeElement.exists_mem_polySpaceZero_globalInterp`), and the seminorm bounded
-by the norm. -/
+The form is `Elliptic.dirichletForm` restricted to `SobolevEuclideanZero 2 1 2 Ω`, the
+right-hand side is `Elliptic.load`, $V_h$ is `Triangulation.polySpaceZero 2 k`, and the
+condition on $\partial\Omega$ is `Triangulation.FrontierSubsetEdges`. The proof applies
+`FiniteElement.norm_sub_le_of_isGalerkinSolution` to the $\mathbb{P}_k$ Lagrange element, whose
+interpolant $\Pi_h \tilde u$ lies in $V_h$ by
+`LagrangeElement.exists_mem_polySpaceZero_globalInterp`, and bounds the seminorm by the norm. -/
 theorem norm_sub_le_of_isGalerkinSolution_dirichletForm {k s : ℕ} (hs : 1 ≤ s) (hsk : s ≤ k)
     {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
     (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)

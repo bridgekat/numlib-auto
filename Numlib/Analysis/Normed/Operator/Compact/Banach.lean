@@ -19,51 +19,67 @@ import Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange
 /-!
 # Compact operators on Banach spaces: Schauder's theorem, the Fredholm alternative, the spectrum
 
-The Banach-space half of [brezis2011functional] §6.1–§6.3, on top of the closure properties,
-eigenvalue accumulation and closed-range results of `Numlib.Analysis.Normed.Operator.Compact`
-and the Riesz ascent–descent theory of `Numlib.Analysis.Normed.Operator.Riesz`.
+This file proves the Banach-space part of [brezis2011functional], §6.1–§6.3, on top of the closure
+properties, the accumulation of eigenvalues and the closed range of
+`Numlib.Analysis.Normed.Operator.Compact`, and the Riesz theory of ascent and descent of
+`Numlib.Analysis.Normed.Operator.Riesz`. Let $T^*$ denote the Banach adjoint of a bounded operator
+$T : E \to F$, the map $F^* \to E^*$ with $T^* v = v \circ T$. Then $T$ is compact if and only if
+$T^*$ is compact, when $F$ is complete (Schauder's theorem, Theorem 6.4). A compact operator maps
+weakly convergent sequences to norm-convergent ones, and on a reflexive domain this property
+characterizes compactness (Remark 2 of §6.1).
 
-## Main statements
+For a compact operator $T$ on a Banach space $X$ and $\mu \neq 0$, the operator $\mu I - T$ is
+Fredholm of index zero, and a compact perturbation of a Fredholm operator is Fredholm with the same
+index (property (c) in the Comments on Chapter 6). This gives the Fredholm alternative in Banach
+form, $\dim N(\mu I - T) = \dim N(\mu I - T^*)$ and $R(\mu I - T) = N(\mu I - T^*)^\perp$ (Theorem
+6.6(d) and (b)). Finally, $0 \in \sigma(T)$ in infinite dimension, and $\sigma(T) \setminus \{0\}$
+is finite or a sequence of eigenvalues that tends to $0$ (Theorem 6.8 and Lemma 6.2).
+
+## Main results
 
 * `IsCompactOperator.strongDualMap`, `IsCompactOperator.of_strongDualMap`,
-  `isCompactOperator_strongDualMap_iff` — **Schauder's theorem**: `T` is compact iff its Banach
-  adjoint `T* = ContinuousLinearMap.strongDualMap T` is (Theorem 6.4). The direct half is a
-  total-boundedness argument: the functionals of the unit ball of `F*` are `1`-Lipschitz on the
-  totally bounded set `T(B_E)`, so finitely many values determine `T* v` up to `ε`. The converse
-  goes through `T**` and the isometric embedding of `F` into `F**`.
-* `IsCompactOperator.tendsto_of_tendsto_toWeakSpace`,
-  `IsCompactOperator.of_forall_tendsto_of_tendsto_toWeakSpace` — a compact operator maps weakly
-  convergent sequences to norm-convergent ones, and on a reflexive domain this characterizes
-  compactness (Remark 2 of §6.1).
-* `IsCompactOperator.isFredholm_smul_one_sub`, `IsCompactOperator.index_smul_one_sub` —
-  `μ • 1 - T` is a **Fredholm operator of index zero** for `T` compact and `μ ≠ 0`, in the sense
-  of Mathlib's `ContinuousLinearMap.IsFredholm` and `LinearMap.index`; with
-  `ContinuousLinearMap.IsFredholm.add_isCompactOperator` and
-  `ContinuousLinearMap.IsFredholm.index_add_isCompactOperator` — a compact perturbation of a
-  Fredholm operator is Fredholm with the same index (the Comments on Chapter 6, property (c),
-  which Mathlib's Fredholm theory does not have). The index is constant along the homotopy
-  `A + t • T`, `t ∈ [0, 1]`, by `ContinuousLinearMap.index_continuousOn_isFredholm`.
-* `IsCompactOperator.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap` and
-  `IsCompactOperator.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap` — the
-  **Fredholm alternative** in Banach form, `dim N(I - T) = dim N(I - T*)` and
-  `R(I - T) = N(I - T*)^⊥` (Theorem 6.6 (d) and (b)); the dimension count goes through
-  `ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range`, the identification
-  of `N(A*)` with the dual of the cokernel of a closed-range operator
-  (`Numlib.Analysis.Normed.Module.Quotient`).
-* `IsCompactOperator.zero_mem_spectrum`, `IsCompactOperator.countable_setOf_hasEigenvalue`,
-  `IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue`,
-  `IsCompactOperator.finite_or_exists_enumeration_spectrum` — the **spectrum of a compact
-  operator** (Theorem 6.8 and Lemma 6.2): `0 ∈ σ(T)` in infinite dimension, and `σ(T) ∖ {0}` is
-  finite or a sequence of eigenvalues tending to `0`.
+  `isCompactOperator_strongDualMap_iff`: **Schauder's theorem**, $T$ is compact if and only if $T^*$
+  is compact.
+* `IsCompactOperator.tendsto_of_tendsto_toWeakSpace`: a compact operator maps weakly convergent
+  sequences to norm-convergent ones.
+* `IsCompactOperator.of_forall_tendsto_of_tendsto_toWeakSpace`: on a reflexive space, an operator
+  that maps weakly convergent sequences to norm-convergent ones is compact.
+* `IsCompactOperator.isFredholm_smul_one_sub`, `IsCompactOperator.index_smul_one_sub`: $\mu I - T$
+  is a Fredholm operator of index zero for compact $T$ and $\mu \neq 0$.
+* `ContinuousLinearMap.IsFredholm.add_isCompactOperator`,
+  `ContinuousLinearMap.IsFredholm.index_add_isCompactOperator`: a compact perturbation of a Fredholm
+  operator is Fredholm with the same index.
+* `ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range`: for an operator $A$
+  with closed range, $\dim N(A^*)$ is the codimension of $R(A)$.
+* `IsCompactOperator.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap`:
+  $\dim N(\mu I - T) = \dim N(\mu I - T^*)$.
+* `IsCompactOperator.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap`:
+  $R(\mu I - T) = N(\mu I - T^*)^\perp$.
+* `IsCompactOperator.zero_mem_spectrum`: $0 \in \sigma(T)$ in infinite dimension.
+* `IsCompactOperator.countable_setOf_hasEigenvalue`: the nonzero eigenvalues are countable.
+* `IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue`: a sequence of distinct
+  eigenvalues tends to $0$.
+* `IsCompactOperator.finite_or_exists_enumeration_spectrum`: $\sigma(T) \setminus \{0\}$ is finite
+  or the range of an injective sequence that tends to $0$.
 
-## Conventions
+## Implementation notes
 
-The Banach adjoint is `ContinuousLinearMap.strongDualMap T` (Mathlib's `precomp 𝕜 T`) of
-`Numlib.Analysis.Normed.Operator.Unbounded.Adjoint`; annihilators are
-`Submodule.strongDualAnnihilator` and `Submodule.strongDualCoannihilator`. Scalars are `RCLike 𝕜`
-where the dual, Hahn–Banach or a real homotopy enters (Schauder, the weak-convergence
-characterization, the index), a complete nontrivially normed field for the Fredholm property
-itself (through the Riesz decomposition, without Hahn–Banach) and for the spectrum.
+* The Banach adjoint $T^*$ is `ContinuousLinearMap.strongDualMap T` (Mathlib's
+  `ContinuousLinearMap.precomp 𝕜 T`) from `Numlib.Analysis.Normed.Operator.Unbounded.Adjoint`. The
+  annihilators are `Submodule.strongDualAnnihilator` and `Submodule.strongDualCoannihilator`.
+* $\mu I - T$ is `μ • (1 : X →L[𝕜] X) - T`. Fredholm operators and the index are Mathlib's
+  `ContinuousLinearMap.IsFredholm` and `LinearMap.index`, with index
+  $= \dim N - \operatorname{codim} R$.
+* The scalars are `RCLike 𝕜` where the dual, the Hahn–Banach theorem or a real homotopy enters:
+  Schauder's theorem, the characterization by weak convergence, and the index. The Fredholm property
+  itself is proved over a complete nontrivially normed field, through the Riesz decomposition and
+  without the Hahn–Banach theorem, and so are the results on the spectrum.
+* The index is constant along the path $A + tT$, $t \in \mathbb{R}$, by Mathlib's
+  `ContinuousLinearMap.index_continuousOn_isFredholm`; Mathlib's Fredholm theory does not have the
+  invariance of the index under compact perturbations.
+* `ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range` identifies $N(A^*)$ with
+  the dual of the cokernel of a closed-range operator, using
+  `Numlib.Analysis.Normed.Module.Quotient`.
 -/
 
 open Filter Topology Metric Set Module
@@ -78,15 +94,17 @@ section Schauder
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **Schauder's theorem**, direct half ([brezis2011functional] Theorem 6.4): the Banach adjoint
-of a compact operator between normed spaces is compact. No completeness of `E` or `F` is
-needed.
+/-- **Schauder's theorem, direct half.** Let $E$ and $F$ be normed spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T : E \to F$ be a compact operator. Then the
+Banach adjoint $T^* : F^* \to E^*$ is a compact operator. This is the direct half of Theorem 6.4
+of [brezis2011functional]; no completeness of $E$ or $F$ is needed.
 
-`T* '' B_{F*}` is totally bounded in the complete space `E*`: cover the totally bounded set
-`T(B_E)` by finitely many balls of radius `ε` with centers `y ∈ t`; the values `v ↦ (v y)_{y ∈ t}`
-of the unit ball of `F*` form a bounded, hence totally bounded, subset of the finite-dimensional
-`t → 𝕜`, so finitely many functionals `v_w` are `ε`-close to every `v ∈ B_{F*}` at all `y ∈ t`,
-and then `‖(v - v_w) (T u)‖ ≤ ‖v - v_w‖ ‖T u - y‖ + ‖(v - v_w) y‖ < 3 ε` on `B_E`. -/
+The set $T^*(B_{F^*})$ is totally bounded in the complete space $E^*$. Cover the totally bounded
+set $T(B_E)$ by finitely many balls of radius $\varepsilon$ with centres $y \in t$. The values
+$(v(y))_{y \in t}$ of the functionals $v$ of the unit ball of $F^*$ form a bounded, hence
+totally bounded, subset of the finite-dimensional space $\mathbb{K}^t$. So finitely many
+functionals $v_w$ are $\varepsilon$-close to every $v \in B_{F^*}$ at all $y \in t$, and then
+$|(v - v_w)(Tu)| \le \|v - v_w\| \, \|Tu - y\| + |(v - v_w)(y)| < 3\varepsilon$ on $B_E$. -/
 theorem strongDualMap {T : E →L[𝕜] F} (hT : IsCompactOperator T) :
     IsCompactOperator T.strongDualMap := by
   classical
@@ -160,10 +178,14 @@ theorem strongDualMap {T : E →L[𝕜] F} (hT : IsCompactOperator T) :
         · exact (hclose ⟨y, hy⟩).le
     _ = 4 * ε' := by ring
 
-/-- **Schauder's theorem**, converse ([brezis2011functional] Theorem 6.4): if the Banach adjoint
-of `T : E →L[𝕜] F` is compact, with `F` complete, then `T` is compact. `T** ∘ J_E = J_F ∘ T` with
-`J_E`, `J_F` the canonical embeddings into the biduals, `T**` is compact by the direct half, so
-`J_F(T(B_E))` lies in a compact set, and `J_F` is a closed embedding (`F` complete). -/
+/-- **Schauder's theorem, converse half.** Let $E$ be a normed space and $F$ a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T : E \to F$ be a bounded linear operator.
+If the Banach adjoint $T^*$ is a compact operator, then $T$ is a compact operator. This is the
+converse half of Theorem 6.4 of [brezis2011functional].
+
+Let $J_E$ and $J_F$ be the canonical embeddings into the biduals. Then $T^{**} J_E = J_F T$, and
+$T^{**}$ is compact by the direct half. So $J_F(T(B_E))$ lies in a compact set, and $J_F$ is a
+closed embedding because $F$ is complete. -/
 theorem of_strongDualMap [CompleteSpace F] {T : E →L[𝕜] F}
     (hT : IsCompactOperator T.strongDualMap) : IsCompactOperator T := by
   have key := isCompactOperator_iff_isCompact_closure_image_closedBall (T : E →ₗ[𝕜] F) one_pos
@@ -184,8 +206,10 @@ theorem of_strongDualMap [CompleteSpace F] {T : E →L[𝕜] F}
   · ext v
     rfl
 
-/-- **Schauder's theorem** ([brezis2011functional] Theorem 6.4): for `T : E →L[𝕜] F` with `F`
-complete, `T*` is compact iff `T` is. -/
+/-- **Schauder's theorem.** Let $E$ be a normed space and $F$ a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T : E \to F$ be a bounded linear operator.
+Then $T^*$ is a compact operator if and only if $T$ is a compact operator. This is Theorem 6.4
+of [brezis2011functional]. -/
 theorem _root_.isCompactOperator_strongDualMap_iff [CompleteSpace F] (T : E →L[𝕜] F) :
     IsCompactOperator T.strongDualMap ↔ IsCompactOperator T :=
   ⟨of_strongDualMap, strongDualMap⟩
@@ -199,11 +223,14 @@ section Weak
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **A compact operator maps weakly convergent sequences to norm-convergent ones**
-([brezis2011functional] §6.1, Remark 2): if `u n ⇀ x` then `T (u n) → T x`. The sequence is
-bounded (`exists_norm_le_of_tendsto_toWeakSpace`), so its image lies in a compact set; every
-subsequence of `T (u n)` has a further subsequence converging to some `w`, and `w = T x` because
-the functionals separate points. -/
+/-- **A compact operator maps weakly convergent sequences to norm-convergent ones.** Let $E$ and $F$
+be normed spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : E \to F$ be a compact
+operator, and let $u_n \rightharpoonup x$ weakly in $E$. Then $T u_n \to T x$ in norm. This is
+Remark 2 of §6.1 of [brezis2011functional].
+
+The sequence is bounded (`exists_norm_le_of_tendsto_toWeakSpace`), so its image lies in a
+compact set. Every subsequence of $(T u_n)$ has a further subsequence that converges to some
+$w$, and $w = Tx$ because the functionals separate points. -/
 theorem tendsto_of_tendsto_toWeakSpace {T : E →L[𝕜] F} (hT : IsCompactOperator T) {u : ℕ → E}
     {x : E} (hu : Tendsto (fun n => toWeakSpace 𝕜 E (u n)) atTop (𝓝 (toWeakSpace 𝕜 E x))) :
     Tendsto (fun n => T (u n)) atTop (𝓝 (T x)) := by
@@ -225,11 +252,15 @@ theorem tendsto_of_tendsto_toWeakSpace {T : E →L[𝕜] F} (hT : IsCompactOpera
   rw [← hw]
   exact hlim
 
-/-- **The converse on a reflexive domain** ([brezis2011functional] §6.1, Remark 2, which cites
-Exercise 6.7): an operator on a reflexive space that maps weakly convergent sequences to
-norm-convergent ones is compact. A bounded sequence has a weakly convergent subsequence
-(`NormedSpace.exists_subseq_forall_dual_tendsto`), whose image converges by hypothesis, so
-`closure (T(B_E))` is sequentially compact, hence compact. -/
+/-- **The converse on a reflexive domain.** Let $E$ be a reflexive space and $F$ a normed space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T : E \to F$ be a bounded linear operator
+such that $u_n \rightharpoonup x$ weakly implies $T u_n \to T x$ in norm, for every sequence
+$(u_n)$ and every $x$. Then $T$ is a compact operator. This is the converse in Remark 2 of §6.1
+of [brezis2011functional], which cites Exercise 6.7.
+
+A bounded sequence has a weakly convergent subsequence
+(`NormedSpace.exists_subseq_forall_dual_tendsto`), whose image converges by hypothesis. So the
+closure of $T(B_E)$ is sequentially compact, hence compact. -/
 theorem of_forall_tendsto_of_tendsto_toWeakSpace [NormedSpace.IsReflexive 𝕜 E] (T : E →L[𝕜] F)
     (h : ∀ (u : ℕ → E) (x : E), Tendsto (fun n => toWeakSpace 𝕜 E (u n)) atTop
       (𝓝 (toWeakSpace 𝕜 E x)) → Tendsto (fun n => T (u n)) atTop (𝓝 (T x))) :
@@ -257,7 +288,7 @@ theorem of_forall_tendsto_of_tendsto_toWeakSpace [NormedSpace.IsReflexive 𝕜 E
 
 end Weak
 
-/-! ### The Fredholm alternative: `μ • 1 - T` is Fredholm of index zero -/
+/-! ### The Fredholm alternative: $\mu I - T$ is Fredholm of index zero -/
 
 section Fredholm
 
@@ -266,15 +297,19 @@ open LinearMap.FiniteRangeSetoid
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup X]
   [NormedSpace 𝕜 X] [CompleteSpace X]
 
-/-- **`μ • 1 - T` is a Fredholm operator** for `T` compact on a Banach space and `μ ≠ 0`, in the
-sense of Mathlib's `ContinuousLinearMap.IsFredholm` ([brezis2011functional] Comments on
-Chapter 6, 1: "`A = I - T` with `T ∈ K(E)` is a Fredholm operator"). By the Riesz decomposition
-`X = N(A^ν) ⊕ R(A^ν)` (`IsCompactOperator.exists_riesz_index`): `R(A^ν)` is closed, of finite
-codimension (its complement `N(A^ν)` is finite-dimensional), invariant under `A`, and `A`
-restricts to a bijection of it (injective because `N(A) ∩ R(A^ν) ⊆ N(A^ν) ∩ R(A^ν) = 0`,
-onto because `R(A^(ν+1)) = R(A^ν)`), hence to an isomorphism by the open mapping theorem; this is
-Mathlib's criterion `ContinuousLinearMap.IsFredholm.of_isInvertible_restrict`. No Hahn–Banach is
-used. -/
+/-- **$\mu I - T$ is a Fredholm operator.** Let $X$ be a Banach space over a complete nontrivially
+normed field, let $T : X \to X$ be a compact operator, and let $\mu \neq 0$. Then $\mu I - T$ is
+a Fredholm operator in the sense of `ContinuousLinearMap.IsFredholm`. This is a statement in the
+Comments on Chapter 6 of [brezis2011functional], item 1: "$A = I - T$ with $T \in K(E)$ is a
+Fredholm operator".
+
+No Hahn–Banach theorem is used. Let $A = \mu I - T$, with Riesz decomposition
+$X = N(A^\nu) \oplus R(A^\nu)$ (`IsCompactOperator.exists_riesz_index`). The subspace $R(A^\nu)$
+is closed, of finite codimension because its complement $N(A^\nu)$ is finite-dimensional, and
+invariant under $A$. The operator $A$ restricts to a bijection of $R(A^\nu)$: it is injective
+because $N(A) \cap R(A^\nu) \subseteq N(A^\nu) \cap R(A^\nu) = 0$, and onto because
+$R(A^{\nu+1}) = R(A^\nu)$. By the open mapping theorem the restriction is an isomorphism, and
+Mathlib's criterion `ContinuousLinearMap.IsFredholm.of_isInvertible_restrict` applies. -/
 theorem isFredholm_smul_one_sub {T : X →L[𝕜] X} (hT : IsCompactOperator T) {μ : 𝕜}
     (hμ : μ ≠ 0) : (μ • (1 : X →L[𝕜] X) - T).IsFredholm := by
   set A : X →L[𝕜] X := μ • (1 : X →L[𝕜] X) - T with hA
@@ -322,11 +357,15 @@ open LinearMap.FiniteRangeSetoid
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup X]
   [NormedSpace 𝕜 X] [CompleteSpace X]
 
-/-- **A compact perturbation of a Fredholm operator is Fredholm** ([brezis2011functional]
-Comments on Chapter 6, 1, property (c), first clause). With `B` a quasi-inverse of `A`
-(`B ∘ A = 1 + R`, `R` of finite rank), `B ∘ (A + T)` agrees with `1 + B ∘ T` modulo finite rank,
-and `1 + B ∘ T` is Fredholm since `B ∘ T` is compact
-(`IsCompactOperator.isFredholm_smul_one_sub`); `B` is Fredholm too, so `A + T` is. -/
+/-- **A compact perturbation of a Fredholm operator is Fredholm.** Let $X$ be a Banach space over a
+complete nontrivially normed field, let $A : X \to X$ be a Fredholm operator, and let
+$T : X \to X$ be a compact operator. Then $A + T$ is a Fredholm operator. This is the first
+clause of property (c) in the Comments on Chapter 6 of [brezis2011functional], item 1.
+
+Let $B$ be a quasi-inverse of $A$, with $BA = I + R$ and $R$ of finite rank. Then $B(A + T)$
+agrees with $I + BT$ up to an operator of finite rank, and $I + BT$ is Fredholm because $BT$ is
+compact (`IsCompactOperator.isFredholm_smul_one_sub`). The operator $B$ is Fredholm too, so
+$A + T$ is Fredholm. -/
 theorem IsFredholm.add_isCompactOperator {A T : X →L[𝕜] X} (hA : A.IsFredholm)
     (hT : IsCompactOperator T) : (A + T).IsFredholm := by
   obtain ⟨B, hB⟩ := hA.exists_isQuasiInverse
@@ -354,11 +393,16 @@ open LinearMap.FiniteRangeSetoid
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X] [CompleteSpace X]
 
-/-- **A compact perturbation does not change the Fredholm index** ([brezis2011functional]
-Comments on Chapter 6, 1, property (c), second clause): `(A + T).index = A.index` for `A`
-Fredholm and `T` compact. The path `t ↦ A + t • T`, `t ∈ ℝ`, consists of Fredholm operators
-(`IsFredholm.add_isCompactOperator`), and the index is locally constant on the Fredholm operators
-(`ContinuousLinearMap.index_continuousOn_isFredholm`), hence constant on the connected `ℝ`. -/
+/-- **A compact perturbation does not change the Fredholm index.** Let $X$ be a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $A : X \to X$ be a Fredholm operator, and let
+$T : X \to X$ be a compact operator. Then $$\operatorname{ind}(A + T) = \operatorname{ind}(A).$$
+This is the second clause of property (c) in the Comments on Chapter 6 of
+[brezis2011functional], item 1.
+
+The path $t \mapsto A + tT$, $t \in \mathbb{R}$, consists of Fredholm operators
+(`ContinuousLinearMap.IsFredholm.add_isCompactOperator`). The index is locally constant on the
+Fredholm operators (`ContinuousLinearMap.index_continuousOn_isFredholm`), and hence constant on
+the connected set $\mathbb{R}$. -/
 theorem IsFredholm.index_add_isCompactOperator {A T : X →L[𝕜] X} (hA : A.IsFredholm)
     (hT : IsCompactOperator T) : (A + T).index = A.index := by
   let γ : ℝ → X →L[𝕜] X := fun t => A + ((t : 𝕜) • T)
@@ -370,9 +414,14 @@ theorem IsFredholm.index_add_isCompactOperator {A T : X →L[𝕜] X} (hA : A.Is
   have h := PreconnectedSpace.constant inferInstance hcont (x := (1 : ℝ)) (y := 0)
   simpa [γ] using h
 
-/-- **`μ • 1 - T` has Fredholm index zero** for `T` compact and `μ ≠ 0` ([brezis2011functional]
-Comments on Chapter 6, 1: "`A = I - T` … is a Fredholm operator of index zero"): the index of
-the invertible `μ • 1` is zero, and the compact perturbation `-T` does not change it. -/
+/-- **$\mu I - T$ has Fredholm index zero.** Let $X$ be a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $\operatorname{ind}(\mu I - T) = 0$. This is a statement in the Comments on
+Chapter 6 of [brezis2011functional], item 1: "$A = I - T$ … is a Fredholm operator of index
+zero".
+
+The index of the invertible operator $\mu I$ is zero, and the compact perturbation $-T$ does not
+change it. -/
 theorem _root_.IsCompactOperator.index_smul_one_sub {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {μ : 𝕜} (hμ : μ ≠ 0) :
     (μ • (1 : X →L[𝕜] X) - T).index = 0 := by
@@ -402,12 +451,17 @@ section Cokernel
 variable {𝕜 X Y : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
   [NormedAddCommGroup Y] [NormedSpace 𝕜 Y]
 
-/-- **The kernel of the adjoint of a closed-range operator has the dimension of the cokernel**:
-`dim N(A*) = dim (Y ⧸ R(A))` for `A : X →L[𝕜] Y` with closed range, both sides being `0` when
-infinite. This is the step "`R(I - T) = N(I - T*)^⊥` has finite codimension `d*`" of the proof
-of [brezis2011functional] Theorem 6.6 (d): `N(A*) = R(A)^⊥`
-(`ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`) and `codim M = dim M^⊥` for a
-closed `M` (`Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator`). -/
+/-- **The kernel of the adjoint of a closed-range operator has the dimension of the cokernel.** Let
+$X$ and $Y$ be normed spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A : X \to Y$ be a bounded linear operator with closed range. Then $$\dim N(A^*) = \dim (Y /
+R(A)),$$ where a dimension is taken to be $0$ when the space is infinite-dimensional
+(`Module.finrank`).
+
+This is the step "$R(I - T) = N(I - T^*)^\perp$ has finite codimension $d^*$" in the proof of
+Theorem 6.6(d) of [brezis2011functional]. It combines $N(A^*) = R(A)^\perp$
+(`ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`) with
+$\operatorname{codim} M = \dim M^\perp$ for a closed subspace $M$
+(`Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator`). -/
 theorem finrank_ker_strongDualMap_eq_finrank_quotient_range (A : X →L[𝕜] Y)
     (hA : IsClosed (A.range : Set Y)) :
     finrank 𝕜 A.strongDualMap.ker = finrank 𝕜 (Y ⧸ A.range) := by
@@ -426,7 +480,9 @@ section FredholmAlternative
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X] [CompleteSpace X]
 
 omit [CompleteSpace X] in
-/-- The adjoint of `μ • 1 - T` is `μ • 1 - T*`. -/
+/-- Let $X$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : X \to X$ be a
+bounded linear operator, and let $\mu \in \mathbb{K}$. Then the Banach adjoint of $\mu I - T$ is
+$\mu I - T^*$. -/
 theorem _root_.ContinuousLinearMap.strongDualMap_smul_one_sub (T : X →L[𝕜] X) (μ : 𝕜) :
     (μ • (1 : X →L[𝕜] X) - T).strongDualMap =
       μ • (1 : StrongDual 𝕜 X →L[𝕜] StrongDual 𝕜 X) - T.strongDualMap := by
@@ -434,11 +490,14 @@ theorem _root_.ContinuousLinearMap.strongDualMap_smul_one_sub (T : X →L[𝕜] 
     ContinuousLinearMap.one_def, ContinuousLinearMap.strongDualMap_id]
   rfl
 
-/-- **The Fredholm alternative, clause (d), Banach form** ([brezis2011functional]
-Theorem 6.6 (d)): `dim N(μ - T) = dim N(μ - T*)` for `T` compact on a Banach space and `μ ≠ 0`.
-The index of `μ • 1 - T` is zero, so `dim N(μ - T) = dim (X ⧸ R(μ - T))`, and the cokernel has
-the dimension of `N((μ - T)*)`
-(`ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range`). -/
+/-- **The Fredholm alternative, clause (d), in Banach form.** Let $X$ be a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $$\dim N(\mu I - T) = \dim N(\mu I - T^*).$$ This is Theorem 6.6(d) of
+[brezis2011functional], with $\mu I$ in place of $I$.
+
+The index of $\mu I - T$ is zero, so $\dim N(\mu I - T) = \dim (X / R(\mu I - T))$, and the
+cokernel has the dimension of $N((\mu I - T)^*)$ by
+`ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range`. -/
 theorem finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {μ : 𝕜} (hμ : μ ≠ 0) :
     finrank 𝕜 (μ • (1 : X →L[𝕜] X) - T).ker =
@@ -451,12 +510,17 @@ theorem finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap {T : X →L[𝕜] 
   exact_mod_cast h
 
 omit [CompleteSpace X] in
-/-- **The Fredholm alternative, clause (b), Banach form** ([brezis2011functional]
-Theorem 6.6 (b), second clause): `R(μ - T) = N(μ - T*)^⊥` for `T` compact on a normed space
-and `μ ≠ 0` — the equation `(μ - T) u = f` is solvable iff `v f = 0` for every `v ∈ X*` with
-`T* v = μ v`. The range is closed (`IsCompactOperator.isClosed_range_smul_sub`), so
-`ContinuousLinearMap.range_eq_strongDualCoannihilator_ker_strongDualMap` applies; no
-completeness is needed. -/
+/-- **The Fredholm alternative, clause (b), in Banach form.** Let $X$ be a normed space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $T : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $$R(\mu I - T) = N(\mu I - T^*)^\perp = \{x \in X : v(x) = 0 \text{ for every
+} v \in X^* \text{ with } T^* v = \mu v\}.$$ So the equation $(\mu I - T) u = f$ is solvable if
+and only if $v(f) = 0$ for every $v \in X^*$ with $T^* v = \mu v$. This is the second clause of
+Theorem 6.6(b) of [brezis2011functional], with $\mu I$ in place of $I$.
+
+No completeness is needed. The range is closed (`IsCompactOperator.isClosed_range_smul_sub`), so
+`ContinuousLinearMap.range_eq_strongDualCoannihilator_ker_strongDualMap` applies. The orthogonal
+$N^\perp$ of a subspace $N \subseteq X^*$ is `Submodule.strongDualCoannihilator`, a subspace of
+$X$. -/
 theorem range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {μ : 𝕜} (hμ : μ ≠ 0) :
     (μ • (1 : X →L[𝕜] X) - T).range =
@@ -478,9 +542,14 @@ open Module.End
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup X]
   [NormedSpace 𝕜 X]
 
-/-- **`0` is in the spectrum of a compact operator on an infinite-dimensional normed space**
-([brezis2011functional] Theorem 6.8 (a)): otherwise `T` would be invertible and `1 = T⁻¹ ∘ T`
-compact, which forces finite dimension (`isCompactOperator_id_iff_finiteDimensional`). -/
+/-- **$0$ is in the spectrum of a compact operator on an infinite-dimensional space.** Let $X$ be a
+normed space over a complete, locally compact, nontrivially normed field, and suppose that $X$
+is not finite-dimensional. If $T : X \to X$ is a compact operator, then $0 \in \sigma(T)$. This
+is Theorem 6.8(a) of [brezis2011functional].
+
+Otherwise $T$ would be invertible, and $I = T^{-1} T$ would be compact, which forces finite
+dimension (`isCompactOperator_id_iff_finiteDimensional`). The spectrum is `spectrum 𝕜 T` in the
+algebra of bounded operators on $X$. -/
 theorem zero_mem_spectrum [LocallyCompactSpace 𝕜] {T : X →L[𝕜] X}
     (hT : IsCompactOperator T)
     (hX : ¬ FiniteDimensional 𝕜 X) : (0 : 𝕜) ∈ spectrum 𝕜 T := by
@@ -493,9 +562,12 @@ theorem zero_mem_spectrum [LocallyCompactSpace 𝕜] {T : X →L[𝕜] X}
   rw [← h1, h2]
   exact hT.clm_comp _
 
-/-- **The nonzero eigenvalues of a compact operator are countable** (the bookkeeping behind
-[brezis2011functional] Theorem 6.8 (c)): they are the union over `n` of the finite sets of
-eigenvalues of modulus at least `1 / (n + 1)`
+/-- **The nonzero eigenvalues of a compact operator are countable.** Let $X$ be a normed space over
+a complete nontrivially normed field, and let $T : X \to X$ be a compact operator. Then the set
+of nonzero eigenvalues of $T$ is countable.
+
+This is the counting step behind Theorem 6.8(c) of [brezis2011functional]. The set is the union
+over $n$ of the finite sets of eigenvalues of modulus at least $1/(n + 1)$
 (`IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`). -/
 theorem countable_setOf_hasEigenvalue {T : X →L[𝕜] X} (hT : IsCompactOperator T) :
     {μ : 𝕜 | HasEigenvalue (T : Module.End 𝕜 X) μ ∧ μ ≠ 0}.Countable := by
@@ -507,10 +579,14 @@ theorem countable_setOf_hasEigenvalue {T : X →L[𝕜] X} (hT : IsCompactOperat
   exact (countable_iUnion fun n =>
     (hT.finite_setOf_hasEigenvalue_norm_le (by positivity)).countable).mono hcov
 
-/-- **A sequence of distinct eigenvalues of a compact operator tends to `0`**
-([brezis2011functional] Lemma 6.2, in the strengthened form that the sequence converges, to
-`0`): for `ε > 0` only finitely many eigenvalues have modulus at least `ε`, so an injective
-sequence of eigenvalues eventually has modulus below `ε`. -/
+/-- **A sequence of distinct eigenvalues of a compact operator tends to $0$.** Let $X$ be a normed
+space over a complete nontrivially normed field, let $T : X \to X$ be a compact operator, and
+let $(\mu_n)_{n \in \mathbb{N}}$ be an injective sequence of eigenvalues of $T$. Then
+$\mu_n \to 0$. This is a strengthened form of Lemma 6.2 of [brezis2011functional], in which the
+convergence of the sequence, to $0$, is part of the conclusion.
+
+For $\varepsilon > 0$ only finitely many eigenvalues have modulus at least $\varepsilon$, so an
+injective sequence of eigenvalues eventually has modulus less than $\varepsilon$. -/
 theorem tendsto_zero_of_injective_of_forall_hasEigenvalue {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {f : ℕ → 𝕜} (hf : Function.Injective f)
     (hev : ∀ n, HasEigenvalue (T : Module.End 𝕜 X) (f n)) : Tendsto f atTop (𝓝 0) := by
@@ -525,11 +601,16 @@ theorem tendsto_zero_of_injective_of_forall_hasEigenvalue {T : X →L[𝕜] X}
     ⟨hev n, not_lt.1 h⟩
   exact absurd (hN hmem) (by omega)
 
-/-- **The nonzero spectrum of a compact operator is finite or a sequence tending to `0`**
-([brezis2011functional] Theorem 6.8 (c); the book's case `σ(T) = {0}` is the empty instance of
-"finite"): `σ(T) ∖ {0}` consists of eigenvalues
-(`IsCompactOperator.hasEigenvalue_iff_mem_spectrum`), is countable, and when infinite it is
-enumerated injectively by `ℕ`, the enumeration tending to `0` by
+/-- **The nonzero spectrum of a compact operator is finite or a sequence that tends to $0$.** Let
+$X$ be a Banach space over a complete nontrivially normed field, and let $T : X \to X$ be a
+compact operator. Then either $\sigma(T) \setminus \{0\}$ is finite, or there is an injective
+sequence $(\mu_n)_{n \in \mathbb{N}}$ with $\{\mu_n : n \in \mathbb{N}\} = \sigma(T) \setminus
+\{0\}$ and $\mu_n \to 0$. This is Theorem 6.8(c) of [brezis2011functional]; the case
+$\sigma(T) = \{0\}$ of the book is the case of the empty finite set.
+
+The set $\sigma(T) \setminus \{0\}$ consists of eigenvalues
+(`IsCompactOperator.hasEigenvalue_iff_mem_spectrum`) and is countable. When it is infinite, it
+has an injective enumeration by $\mathbb{N}$, which tends to $0$ by
 `IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue`. -/
 theorem finite_or_exists_enumeration_spectrum [CompleteSpace X] {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) :

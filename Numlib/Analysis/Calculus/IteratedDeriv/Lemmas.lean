@@ -16,25 +16,27 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 /-!
 # Iterated derivatives: polynomials, conjugation, open sets and compositions
 
-One-variable facts about `iteratedDeriv` that Mathlib lacks, for functions on a nontrivially
-normed field `𝕜`.
+This module proves facts about the iterated derivative $f^{(j)}$ (`iteratedDeriv`) of a function of
+one variable on a nontrivially normed field $\mathbb{K}$ that are not in Mathlib. They concern
+polynomial functions, conjugation, functions of class $C^N$ on an open set, and compositions.
 
 ## Main results
 
-* `Polynomial.iteratedDeriv_eval`: the iterated derivative of a polynomial function is the
-  function of the iterated `Polynomial.derivative`.
-* `iteratedDeriv_conj_conj`: the iterated derivatives of `conj ∘ f ∘ conj` are
-  `conj ∘ f⁽ʲ⁾ ∘ conj`.
+* `Polynomial.iteratedDeriv_eval`: the iterated derivative of a polynomial function is the function
+  of the iterated formal derivative.
+* `iteratedDeriv_conj_conj`: the iterated derivatives of $\bar{f}(z) = \overline{f(\bar z)}$ are
+  $\overline{f^{(j)}(\bar z)}$.
 * `ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen`,
-  `ContDiffOn.continuousOn_iteratedDeriv_of_isOpen`: on an open set where `f` is `C^N`, the
-  iterated derivatives are the successive derivatives, and the last one is continuous.
+  `ContDiffOn.continuousOn_iteratedDeriv_of_isOpen`: on an open set where $f$ is $C^N$, the iterated
+  derivatives are the successive derivatives, and the last one is continuous.
 * `contDiffOn_of_hasDerivAt_chain`: conversely, a chain of functions on an open set, each the
-  derivative of the previous one and the last continuous, is the chain of iterated derivatives
-  of a `C^n` function.
-* `iteratedDeriv_comp_congr`: the jets of a composition depend only on the jets of the factors
-  (the formal content of Faà di Bruno's formula), through
-  `FormalMultilinearSeries.taylorComp_congr`: the Taylor composition at order `n` reads only the
-  terms of order `≤ n`.
+  derivative of the one before and the last continuous, is the chain of iterated derivatives of a
+  $C^n$ function.
+* `iteratedDeriv_comp_congr`: the derivatives up to order $n$ of a composition at a point depend
+  only on the derivatives up to order $n$ of the factors. This is the formal content of Faà di
+  Bruno's formula.
+* `FormalMultilinearSeries.taylorComp_congr`: the Taylor composition of two series at order $n$
+  reads only the terms of order at most $n$.
 -/
 
 open Polynomial
@@ -43,8 +45,10 @@ section Polynomial
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
 
-/-- The iterated derivative of a polynomial function is the function of the iterated
-`derivative`. -/
+/-- The iterated derivative of a polynomial function is the function of the iterated formal
+derivative: for $p \in \mathbb{K}[X]$ and $n \in \mathbb{N}$, the $n$-th derivative of
+$x \mapsto p(x)$ is $x \mapsto p^{(n)}(x)$, with $p^{(n)}$ the $n$-th formal derivative
+`Polynomial.derivative^[n] p`. -/
 theorem Polynomial.iteratedDeriv_eval (p : 𝕜[X]) (n : ℕ) :
     iteratedDeriv n (fun x => p.eval x) = fun x => (derivative^[n] p).eval x := by
   induction n with
@@ -62,8 +66,12 @@ open ComplexConjugate
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [StarRing 𝕜] [NormedStarGroup 𝕜]
 
-/-- The iterated derivatives of `conj ∘ f ∘ conj` are `conj ∘ f⁽ʲ⁾ ∘ conj`, junk values
-included. -/
+/-- Let $\mathbb{K}$ carry a star operation $z \mapsto \bar z$ that preserves the norm. For every
+$f : \mathbb{K} \to \mathbb{K}$ and $j \in \mathbb{N}$, the $j$-th derivative of
+$z \mapsto \overline{f(\bar z)}$ is $z \mapsto \overline{f^{(j)}(\bar z)}$.
+
+No differentiability of $f$ is assumed: where $f$ is not differentiable, both sides use the
+value that Mathlib gives to `iteratedDeriv`. -/
 theorem iteratedDeriv_conj_conj (f : 𝕜 → 𝕜) (j : ℕ) :
     iteratedDeriv j (conj ∘ f ∘ conj) = conj ∘ iteratedDeriv j f ∘ conj := by
   induction j with
@@ -77,8 +85,9 @@ section OpenSet
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {F : Type*} [NormedAddCommGroup F]
   [NormedSpace 𝕜 F] {f : 𝕜 → F} {U : Set 𝕜}
 
-/-- On an open set where `f` is `C^N`, the `j`-th derivative (`j < N`) is differentiable with the
-`(j + 1)`-st derivative as its derivative. -/
+/-- Let $U \subseteq \mathbb{K}$ be open and let $f : \mathbb{K} \to F$ be $C^N$ on $U$, with
+$N \in \mathbb{N}$. For $j < N$ and $b \in U$, the function $f^{(j)}$ has the derivative
+$f^{(j+1)}(b)$ at $b$. -/
 theorem ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen (hU : IsOpen U) {N : ℕ}
     (hf : ContDiffOn 𝕜 N f U) {j : ℕ} (hj : j < N) {b : 𝕜} (hb : b ∈ U) :
     HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f b) b := by
@@ -89,15 +98,17 @@ theorem ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen (hU : IsOpen U) {N : ℕ}
   rw [iteratedDeriv_succ]
   exact (hd'.differentiableAt (hU.mem_nhds hb)).hasDerivAt
 
-/-- On an open set where `f` is `C^N`, the `j`-th derivative (`j ≤ N`) is continuous. -/
+/-- Let $U \subseteq \mathbb{K}$ be open and let $f : \mathbb{K} \to F$ be $C^N$ on $U$, with
+$N \in \mathbb{N}$. For $j \le N$, the function $f^{(j)}$ is continuous on $U$. -/
 theorem ContDiffOn.continuousOn_iteratedDeriv_of_isOpen (hU : IsOpen U) {N : ℕ}
     (hf : ContDiffOn 𝕜 N f U) {j : ℕ} (hj : j ≤ N) : ContinuousOn (iteratedDeriv j f) U :=
   (hf.continuousOn_iteratedDerivWithin (by exact_mod_cast hj) hU.uniqueDiffOn).congr
     (iteratedDerivWithin_of_isOpen hU).symm
 
-/-- A chain `G 0, G 1, …, G n` of functions on an open set, each the derivative of the previous
-one and the last continuous, makes `G 0` a `C^n` function whose iterated derivatives are the
-`G k`. -/
+/-- Let $U \subseteq \mathbb{K}$ be open, let $n \in \mathbb{N}$, and let
+$G_0, G_1, \dots : \mathbb{K} \to F$ be functions such that for each $k < n$ and $b \in U$ the
+function $G_k$ has the derivative $G_{k+1}(b)$ at $b$, and $G_n$ is continuous on $U$. Then
+$G_0$ is $C^n$ on $U$, and $G_0^{(k)} = G_k$ on $U$ for every $k \le n$. -/
 theorem contDiffOn_of_hasDerivAt_chain {G : ℕ → 𝕜 → F} (hU : IsOpen U) {n : ℕ}
     (hd : ∀ k < n, ∀ b ∈ U, HasDerivAt (G k) (G (k + 1) b) b) (hc : ContinuousOn (G n) U) :
     ContDiffOn 𝕜 n (G 0) U ∧ ∀ k ≤ n, Set.EqOn (iteratedDeriv k (G 0)) (G k) U := by
@@ -127,8 +138,9 @@ end OpenSet
 
 section Composition
 
-/-- The Faà di Bruno composition of two Taylor series at order `n` reads only the terms of order
-`≤ n`. -/
+/-- Let $p, p'$ be formal multilinear series from $E$ to $F$ and $q, q'$ from $F$ to $G$, with
+$q_k = q'_k$ and $p_k = p'_k$ for all $k \le n$. Then the Taylor compositions
+(`FormalMultilinearSeries.taylorComp`) of $q$ with $p$ and of $q'$ with $p'$ agree at order $n$. -/
 theorem FormalMultilinearSeries.taylorComp_congr {𝕜 E F G : Type*} [NontriviallyNormedField 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
     [NormedAddCommGroup G] [NormedSpace 𝕜 G] {q q' : FormalMultilinearSeries 𝕜 F G}
@@ -141,10 +153,14 @@ theorem FormalMultilinearSeries.taylorComp_congr {𝕜 E F G : Type*} [Nontrivia
   funext m
   exact hp _ (c.partSize_le m)
 
-/-- **The jets of a composition depend only on the jets of the factors**: if `f, f'` agree with
-their derivatives to order `n` at `x`, and `g, g'` agree to order `n` at `f x`, then
-`(g ∘ f)⁽ⁿ⁾(x) = (g' ∘ f')⁽ⁿ⁾(x)` (all four `Cⁿ` there). The formal content of Faà di Bruno's
-formula (`iteratedFDeriv_comp`). -/
+/-- The **derivatives of a composition depend only on the derivatives of the factors.** Let
+$f, f', g, g' : \mathbb{K} \to \mathbb{K}$, let $f$ and $f'$ be $C^n$ at $x$, and let $g$ and
+$g'$ be $C^n$ at $f(x)$. Suppose that $f^{(k)}(x) = f'^{(k)}(x)$ and
+$g^{(k)}(f(x)) = g'^{(k)}(f(x))$ for every $k \le n$. Then
+$$(g \circ f)^{(n)}(x) = (g' \circ f')^{(n)}(x).$$
+
+This is the formal content of Faà di Bruno's formula, Mathlib's `iteratedFDeriv_comp`. Note that
+$f(x) = f'(x)$ is the case $k = 0$ of the hypothesis on $f$. -/
 theorem iteratedDeriv_comp_congr {𝕜 : Type*} [NontriviallyNormedField 𝕜] {f f' g g' : 𝕜 → 𝕜}
     {x : 𝕜} {n : ℕ} (hf : ContDiffAt 𝕜 n f x) (hf' : ContDiffAt 𝕜 n f' x)
     (hg : ContDiffAt 𝕜 n g (f x)) (hg' : ContDiffAt 𝕜 n g' (f x))

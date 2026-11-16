@@ -16,53 +16,59 @@ import Mathlib.Topology.Algebra.Module.LinearPMap
 /-!
 # Closed operators between normed spaces
 
-Unbounded (partially defined) linear operators `A : D(A) ⊆ E → F` are Mathlib's `LinearPMap`,
-`E →ₗ.[𝕜] F`, and `A` is *closed* (`LinearPMap.IsClosed`) when its graph is closed in `E × F`.
-This file collects what can be said about closed operators between normed spaces without any
-dual space: the sequential criterion for closedness, the closedness of the kernel, the graph as a
-Banach space, the second step of the open mapping theorem for a closed operator, and the closed
-range criteria. Everything is over a `NontriviallyNormedField`, except the two "ball" forms of the
-open-mapping step, which scale a vector to a prescribed norm and therefore ask the field to be
-`DenselyNormedField` (as `ℝ` and `ℂ` are).
+Let $E$ and $F$ be normed spaces over a nontrivially normed field $\mathbb{K}$. An unbounded
+(partially defined) linear operator $A \colon D(A) \subseteq E \to F$ is **closed** if its graph
+$G(A) = \{(u, Au) : u \in D(A)\}$ is closed in $E \times F$. Write $N(A) = \{u \in D(A) : Au = 0\}$
+for its kernel and $R(A) = A(D(A))$ for its range. This file proves the facts about closed operators
+that need no dual space, following [brezis2011functional], §2.3, §2.6, §2.7 and Exercise 2.14: the
+sequential criterion for closedness, the closedness of $N(A)$, the completeness of the graph, the
+second step of the proof of the open mapping theorem for a closed operator, and the closed range
+criteria.
 
-## Conventions
+The second step of the open mapping theorem turns approximate preimages into exact ones: if every
+$y \in F$ has some $u \in D(A)$ with $\|Au - y\| \le \frac{1}{2} \|y\|$ and $\|u\| \le C \|y\|$,
+then every $y$ has some $u \in D(A)$ with $Au = y$ and $\|u\| \le 2C \|y\|$. The closed range
+criterion states that, for a closed operator between Banach spaces, $R(A)$ is closed if and only if
+$\operatorname{dist}(u, N(A)) \le C \|Au\|$ for some constant $C$ and all $u \in D(A)$. An a priori
+estimate $\|u\| \le C \|Au\|$ gives $N(A) = \{0\}$ and, when $E$ is complete, a closed range.
 
-The range of `A` is `LinearMap.range A.toFun : Submodule 𝕜 F`, its kernel `A.ker : Submodule 𝕜 E`.
-"`D(A)` with the graph norm" is never a new type: it is the closed subspace `↥A.graph` of `E × F`,
-which carries the sup norm `max ‖u‖ ‖A u‖` (equivalent to `‖u‖ + ‖A u‖`) and is complete when
-`E` and `F` are (`LinearPMap.IsClosed.completeSpace_graph`); the operator itself becomes the
-bounded map `(ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL`. That spelling is how the
-closed range criterion for closed operators reduces to the one for bounded operators.
+## Main results
 
-## Main statements
+* `LinearPMap.isClosed_iff_seq`: $A$ is closed if and only if $u_n \in D(A)$, $u_n \to x$ and
+  $Au_n \to y$ imply $x \in D(A)$ and $Ax = y$.
+* `LinearPMap.IsClosed.isClosed_ker`: the kernel of a closed operator is closed.
+* `LinearPMap.IsClosed.completeSpace_graph`: the graph of a closed operator between Banach spaces is
+  complete.
+* `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx`: the second step of the open mapping
+  theorem for a closed operator, with the bound $2C$.
+* `LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` and
+  `ContinuousLinearMap.ball_subset_image_of_ball_subset_closure_image`: the same step in the form
+  $B(0, c) \subseteq \overline{A(B_{D(A)})} \Rightarrow B(0, c/2) \subseteq A(B_{D(A)})$.
+* `ContinuousLinearMap.exists_preimage_norm_le_of_approx`: the same step for a bounded operator.
+* `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le`: a bounded operator $T$ between
+  Banach spaces has closed range if and only if $\operatorname{dist}(x, N(T)) \le C \|Tx\|$ for some
+  $C$ and all $x$.
+* `LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le`: the same criterion for a closed
+  operator.
+* `LinearPMap.IsClosed.isClosed_range_of_norm_le` and `LinearPMap.ker_eq_bot_of_norm_le`: the
+  estimate $\|u\| \le C \|Au\|$ gives a closed range and a trivial kernel.
 
-* `LinearPMap.isClosed_iff_seq` — `A` is closed iff whenever `uₙ ∈ D(A)`, `uₙ → x` and
-  `A uₙ → y`, one has `x ∈ D(A)` and `A x = y` ([brezis2011functional], Remark 2.11).
-* `LinearPMap.IsClosed.isClosed_ker` — the kernel of a closed operator is closed (Remark 2.12).
-* `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx` — **Step 2 of the open mapping
-  theorem for a closed operator**: if every `y` has an approximate preimage `u ∈ D(A)` with
-  `‖A u - y‖ ≤ ½ ‖y‖` and `‖u‖ ≤ C ‖y‖`, then every `y` has an exact preimage with
-  `‖u‖ ≤ 2 C ‖y‖`. Mathlib proves this inside `ContinuousLinearMap.exists_preimage_norm_le` for a
-  bounded operator and does not expose it; here the closedness of the graph replaces the
-  continuity of the operator in the last line, and only the completeness of `E` is used.
-* `LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image`,
-  `ContinuousLinearMap.ball_subset_image_of_ball_subset_closure_image` — the same step in the
-  book's form: `closure (A(B_{D(A)})) ⊇ B(0, c)` implies `A(B_{D(A)}) ⊇ B(0, c / 2)`.
-* `ContinuousLinearMap.exists_preimage_norm_le_of_approx` — the same step for a bounded operator.
-* `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` — the **closed range
-  criterion** for a bounded operator between Banach spaces: `R(T)` is closed iff
-  `dist (x, N(T)) ≤ C ‖T x‖` for all `x` (through the normed quotient `E ⧸ N(T)` and
-  `ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective`).
-* `LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le` — the same for a closed
-  operator: `R(A)` is closed iff `dist (u, N(A)) ≤ C ‖A u‖` on `D(A)` (Remark 2.18 and
-  Exercise 2.14 of [brezis2011functional]), through the Banach space `↥A.graph`.
-* `LinearPMap.IsClosed.isClosed_range_of_norm_le`, `LinearPMap.ker_eq_bot_of_norm_le` — an a
-  priori estimate `‖u‖ ≤ C ‖A u‖` gives closed range and trivial kernel (Theorem 2.21 (b) ⇒ (c)).
+## Implementation notes
 
-## References
-
-[brezis2011functional], §2.3 (proof of Theorem 2.6, Step 2), §2.6 (Remarks 11–12), §2.7
-(Remark 18) and Exercise 2.14.
+* An unbounded operator is Mathlib's `LinearPMap`, written `E →ₗ.[𝕜] F`, and closedness is
+  `LinearPMap.IsClosed`. The range of $A$ is `LinearMap.range A.toFun`, a subspace of $F$, and the
+  kernel is `A.ker`, a subspace of $E$.
+* The space "$D(A)$ with the graph norm" is not a new type. It is the closed subspace `↥A.graph` of
+  $E \times F$, with the norm $\max(\|u\|, \|Au\|)$, which is equivalent to $\|u\| + \|Au\|$. It is
+  complete when $E$ and $F$ are (`LinearPMap.IsClosed.completeSpace_graph`). On it the operator
+  becomes the bounded map `(ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL`. This is how the
+  closed range criterion for closed operators reduces to the one for bounded operators.
+* Mathlib proves the second step of the open mapping theorem only inside the proof of
+  `ContinuousLinearMap.exists_preimage_norm_le`, and does not state it. Here the closedness of the
+  graph replaces the continuity of the operator, and only the completeness of $E$ is used.
+* All results hold over a `NontriviallyNormedField`, except the two forms with balls. These scale a
+  vector to a prescribed norm and therefore need a `DenselyNormedField`, such as $\mathbb{R}$ or
+  $\mathbb{C}$.
 -/
 
 open Filter Function Metric Topology
@@ -74,11 +80,13 @@ section NontriviallyNormedField
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The sequential criterion for closedness.** An operator `A : D(A) ⊆ E → F` between normed
-spaces is closed iff for every sequence `uₙ ∈ D(A)` with `uₙ → x` in `E` and `A uₙ → y` in `F`,
-one has `x ∈ D(A)` and `A x = y`. This is how closedness is checked in practice
-([brezis2011functional], Remark 2.11): closedness of the graph in the metrizable space `E × F` is
-sequential closedness. -/
+/-- The **sequential criterion for closedness**. Let $A \colon D(A) \subseteq E \to F$ be a linear
+operator between normed spaces. Then $A$ is closed if and only if, for every sequence $(u_n)$ in
+$D(A)$ and all $x \in E$, $y \in F$ with $u_n \to x$ in $E$ and $Au_n \to y$ in $F$, one has
+$x \in D(A)$ and $Ax = y$. This is Remark 2.11 of [brezis2011functional].
+
+The graph lies in the metrizable space $E \times F$, so it is closed if and only if it is
+sequentially closed. -/
 theorem isClosed_iff_seq (A : E →ₗ.[𝕜] F) :
     A.IsClosed ↔ ∀ (u : ℕ → A.domain) (x : E) (y : F),
       Tendsto (fun n => (u n : E)) atTop (𝓝 x) → Tendsto (fun n => A (u n)) atTop (𝓝 y) →
@@ -99,9 +107,12 @@ theorem isClosed_iff_seq (A : E →ₗ.[𝕜] F) :
       (by simpa only [hAu] using hpq.snd_nhds)
     exact (mem_graph_iff A).2 ⟨⟨q.1, hx⟩, rfl, hy⟩
 
-/-- **The kernel of a closed operator is closed** ([brezis2011functional], Remark 2.12): `N(A)` is
-the preimage of the closed graph under the continuous map `x ↦ (x, 0)`. The range of a closed
-operator need not be closed. -/
+/-- The **kernel of a closed operator is closed**. Let $A \colon D(A) \subseteq E \to F$ be a closed
+operator between normed spaces. Then $N(A) = \{u \in D(A) : Au = 0\}$ is a closed subset of $E$.
+This is Remark 2.12 of [brezis2011functional].
+
+The kernel is the preimage of the closed graph under the continuous map $x \mapsto (x, 0)$. The
+range of a closed operator need not be closed. -/
 theorem IsClosed.isClosed_ker {A : E →ₗ.[𝕜] F} (hA : A.IsClosed) :
     _root_.IsClosed (A.ker : Set E) := by
   have hA' : _root_.IsClosed (A.graph : Set (E × F)) := hA
@@ -116,24 +127,30 @@ theorem IsClosed.isClosed_ker {A : E →ₗ.[𝕜] F} (hA : A.IsClosed) :
   rw [this]
   exact hA'.preimage (continuous_id.prodMk continuous_const)
 
-/-- **The graph of a closed operator between Banach spaces is a Banach space.** The closed
-subspace `↥A.graph ⊆ E × F`, with the sup norm `max ‖u‖ ‖A u‖`, is what stands for "`D(A)` with
-the graph norm `‖u‖ + ‖A u‖`" throughout the project ([brezis2011functional], proof of
-Theorem 2.9 and Exercise 2.14); the operator becomes the bounded map
-`(ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL`. -/
+/-- The **graph of a closed operator between Banach spaces is a Banach space**. Let $E$ and $F$ be
+Banach spaces and let $A \colon D(A) \subseteq E \to F$ be closed. Then the graph
+$G(A) \subseteq E \times F$, with the norm $\|(u, Au)\| = \max(\|u\|, \|Au\|)$, is complete.
+
+The subspace `↥A.graph` is the Lean form of "$D(A)$ with the graph norm $\|u\| + \|Au\|$", as in
+the proof of Theorem 2.9 and in Exercise 2.14 of [brezis2011functional]; the two norms are
+equivalent. On it the operator becomes the bounded map `(ContinuousLinearMap.snd 𝕜 E F).comp
+A.graph.subtypeL`. -/
 theorem IsClosed.completeSpace_graph [CompleteSpace E] [CompleteSpace F] {A : E →ₗ.[𝕜] F}
     (hA : A.IsClosed) : CompleteSpace A.graph :=
   (show _root_.IsClosed (A.graph : Set (E × F)) from hA).completeSpace_coe
 
-/-- **Step 2 of the open mapping theorem, for a closed operator.** If every `y : F` has an
-approximate preimage `u ∈ D(A)` with `‖A u - y‖ ≤ ½ ‖y‖` and `‖u‖ ≤ C ‖y‖`, then every `y` has an
-exact preimage `u ∈ D(A)`, `A u = y`, with `‖u‖ ≤ 2 C ‖y‖`. Only the completeness of `E` is used.
+/-- The **second step of the open mapping theorem, for a closed operator**. Let $E$ be a Banach
+space, let $F$ be a normed space, let $A \colon D(A) \subseteq E \to F$ be closed, and let
+$C \in \mathbb{R}$. Suppose that every $y \in F$ has an approximate preimage $u \in D(A)$ with
+$$\|Au - y\| \le \tfrac{1}{2} \|y\| \quad \text{and} \quad \|u\| \le C \|y\|.$$
+Then every $y \in F$ has an exact preimage $u \in D(A)$ with $Au = y$ and $\|u\| \le 2C \|y\|$.
+This is Step 2 of the proof of Theorem 2.6 of [brezis2011functional].
 
-This is the second half of the proof of Mathlib's `ContinuousLinearMap.exists_preimage_norm_le`
-([brezis2011functional], proof of Theorem 2.6, Step 2), which Mathlib does not state on its own:
-iterating the approximation gives a series `u = ∑ₙ uₙ` converging absolutely in `E`, whose partial
-sums lie in `D(A)` and satisfy `A (∑_{k < n} uₖ) → y`; since the graph of `A` is closed, the limit
-`u` lies in `D(A)` with `A u = y`. The bound is the geometric series `∑ 2⁻ⁿ C ‖y‖ = 2 C ‖y‖`. -/
+Mathlib proves this step inside the proof of `ContinuousLinearMap.exists_preimage_norm_le` and
+does not state it. The completeness of $F$ is not needed. Iterating the approximation gives a
+series $u = \sum_n u_n$ that converges absolutely in $E$; its partial sums lie in $D(A)$ and
+their images converge to $y$, so the closed graph gives $u \in D(A)$ and $Au = y$. The bound is
+the geometric series $\sum_n 2^{-n} C \|y\| = 2C \|y\|$. -/
 theorem IsClosed.exists_preimage_norm_le_of_approx [CompleteSpace E] {A : E →ₗ.[𝕜] F}
     (hA : A.IsClosed) {C : ℝ}
     (hC : ∀ y : F, ∃ u : A.domain, dist (A u) y ≤ 1 / 2 * ‖y‖ ∧ ‖(u : E)‖ ≤ C * ‖y‖) (y : F) :
@@ -202,10 +219,13 @@ theorem IsClosed.exists_preimage_norm_le_of_approx [CompleteSpace E] {A : E →�
   obtain ⟨z, hz, hzy⟩ := hgraph
   exact ⟨z, hzy, hz ▸ x_ineq⟩
 
-/-- **An a priori estimate gives closed range.** If `A` is closed and `‖u‖ ≤ C ‖A u‖` on `D(A)`,
-then `R(A)` is closed in `F` ([brezis2011functional], Theorem 2.21 (b) ⇒ (c), the range clause):
-a convergent sequence `A uₙ → y` has `(uₙ)` Cauchy by the estimate, `uₙ → u` by completeness of
-`E`, and the closed graph identifies `y = A u`. Completeness of `F` is not needed. -/
+/-- An **a priori estimate gives a closed range**. Let $E$ be a Banach space, let $F$ be a normed
+space, let $A \colon D(A) \subseteq E \to F$ be closed, and let $C \in \mathbb{R}$ with
+$\|u\| \le C \|Au\|$ for every $u \in D(A)$. Then $R(A)$ is closed in $F$. This is the range
+clause of Theorem 2.21, (b) $\Rightarrow$ (c), of [brezis2011functional].
+
+The completeness of $F$ is not needed. If $Au_n \to y$, the estimate makes $(u_n)$ a Cauchy
+sequence, so $u_n \to u$ in $E$, and the closed graph gives $y = Au$. -/
 theorem IsClosed.isClosed_range_of_norm_le [CompleteSpace E] {A : E →ₗ.[𝕜] F} (hA : A.IsClosed)
     {C : ℝ} (h : ∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖) :
     _root_.IsClosed (LinearMap.range A.toFun : Set F) := by
@@ -238,9 +258,12 @@ theorem IsClosed.isClosed_range_of_norm_le [CompleteSpace E] {A : E →ₗ.[𝕜
   obtain ⟨z, -, hz⟩ := hgraph
   exact ⟨z, hz⟩
 
-/-- **An a priori estimate gives a trivial kernel**: `‖u‖ ≤ C ‖A u‖` on `D(A)` forces
-`N(A) = {0}` ([brezis2011functional], Theorem 2.21 (b) ⇒ (c), the kernel clause). No closedness
-is needed. -/
+/-- An **a priori estimate gives a trivial kernel**. Let $A \colon D(A) \subseteq E \to F$ be a
+linear operator between normed spaces, and let $C \in \mathbb{R}$ with $\|u\| \le C \|Au\|$ for
+every $u \in D(A)$. Then $N(A) = \{0\}$. This is the kernel clause of Theorem 2.21, (b)
+$\Rightarrow$ (c), of [brezis2011functional].
+
+Neither closedness of $A$ nor completeness is needed. -/
 theorem ker_eq_bot_of_norm_le {A : E →ₗ.[𝕜] F} {C : ℝ}
     (h : ∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖) : A.ker = ⊥ := by
   rw [ker_eq_bot']
@@ -256,10 +279,15 @@ section DenselyNormedField
 variable {𝕜 E F : Type*} [DenselyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The approximation hypothesis of `exists_preimage_norm_le_of_approx`, obtained by scaling from
-the inclusion `B(0, c) ⊆ closure (A(B_{D(A)}))`: for every `0 < s < c` and every `y`, there is
-`u ∈ D(A)` with `‖A u - y‖ ≤ ½ ‖y‖` and `‖u‖ ≤ s⁻¹ ‖y‖`. The field is asked to be densely normed
-so that `y` can be scaled to a norm strictly between `s` and `c`. -/
+/-- Let $\mathbb{K}$ be a densely normed field, let $A \colon D(A) \subseteq E \to F$ be a linear
+operator between normed spaces, and let $B_{D(A)} = \{u \in D(A) : \|u\| < 1\}$. Suppose that
+the open ball $B(0, c)$ of $F$ is contained in the closure of $A(B_{D(A)})$. Then for every $s$
+with $0 < s < c$ and every $y \in F$ there is $u \in D(A)$ with
+$$\|Au - y\| \le \tfrac{1}{2} \|y\| \quad \text{and} \quad \|u\| \le s^{-1} \|y\|.$$
+
+This is the approximation hypothesis of `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx`,
+obtained by scaling. The field is densely normed so that $y$ can be scaled to a norm strictly
+between $s$ and $c$. -/
 theorem exists_dist_le_of_ball_subset_closure_image (A : E →ₗ.[𝕜] F) {c : ℝ}
     (h : ball (0 : F) c ⊆ _root_.closure ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1}))
     {s : ℝ} (hs : 0 < s) (hsc : s < c) (y : F) :
@@ -291,10 +319,16 @@ theorem exists_dist_le_of_ball_subset_closure_image (A : E →ₗ.[𝕜] F) {c :
       _ ≤ (s / ‖y‖)⁻¹ * 1 := by gcongr
       _ = s⁻¹ * ‖y‖ := by field_simp
 
-/-- **Step 2 of the open mapping theorem in the book's form**, for a closed operator: if
-`closure (A(B_{D(A)})) ⊇ B(0, c)` then `A(B_{D(A)}) ⊇ B(0, c / 2)`, where `B_{D(A)}` is the open
-unit ball of `D(A)` ([brezis2011functional], (8) ⇒ (11) in the proof of Theorem 2.6, and the
-step (25) ⇒ (26) of the proof of Theorem 2.16). Only the completeness of `E` is used. -/
+/-- The **second step of the open mapping theorem, in the form with balls, for a closed operator**.
+Let $\mathbb{K}$ be a densely normed field, let $E$ be a Banach space, let $F$ be a normed
+space, let $A \colon D(A) \subseteq E \to F$ be closed, and let
+$B_{D(A)} = \{u \in D(A) : \|u\| < 1\}$ be the open unit ball of $D(A)$. If the open ball
+$B(0, c)$ of $F$ is contained in the closure of $A(B_{D(A)})$, then
+$B(0, c/2) \subseteq A(B_{D(A)})$. This is the step (8) $\Rightarrow$ (11) of the proof of
+Theorem 2.6 of [brezis2011functional], and the step (25) $\Rightarrow$ (26) of the proof of
+Theorem 2.16.
+
+Only the completeness of $E$ is used. -/
 theorem IsClosed.ball_subset_image_of_ball_subset_closure_image [CompleteSpace E]
     {A : E →ₗ.[𝕜] F} (hA : A.IsClosed) {c : ℝ}
     (h : ball (0 : F) c ⊆ _root_.closure ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1})) :
@@ -316,7 +350,8 @@ end DenselyNormedField
 
 end LinearPMap
 
-/-- The range of a linear map restricted to the whole space, as a `LinearPMap`, is its range. -/
+/-- Let $f \colon E \to F$ be a linear map between modules over a ring. The range of $f$, viewed as
+a partially defined operator with domain all of $E$, is the range of $f$. -/
 theorem LinearMap.range_toPMap_top {R E F : Type*} [Ring R] [AddCommGroup E] [Module R E]
     [AddCommGroup F] [Module R F] (f : E →ₗ[R] F) :
     LinearMap.range (f.toPMap ⊤).toFun = LinearMap.range f := by
@@ -330,8 +365,10 @@ section NontriviallyNormedField
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- A bounded operator restricted to a closed subspace is a closed operator: its graph is the
-closed set `{(x, T x) | x ∈ p}`. -/
+/-- Let $T \colon E \to F$ be a bounded operator between normed spaces, and let $p$ be a closed
+subspace of $E$. Then the restriction of $T$ to $p$, as an operator with domain $p$, is closed.
+
+Its graph is the closed set $\{(x, Tx) : x \in p\}$. -/
 theorem isClosed_toPMap (T : E →L[𝕜] F) {p : Submodule 𝕜 E} (hp : IsClosed (p : Set E)) :
     ((T : E →ₗ[𝕜] F).toPMap p).IsClosed := by
   have : (((T : E →ₗ[𝕜] F).toPMap p).graph : Set (E × F)) =
@@ -348,11 +385,15 @@ theorem isClosed_toPMap (T : E →L[𝕜] F) {p : Submodule 𝕜 E} (hp : IsClos
   exact (hp.preimage continuous_fst).inter
     (isClosed_eq (T.continuous.comp continuous_fst) continuous_snd)
 
-/-- **Step 2 of the open mapping theorem, for a bounded operator** out of a Banach space: if every
-`y` has an approximate preimage `x` with `‖T x - y‖ ≤ ½ ‖y‖` and `‖x‖ ≤ C ‖y‖`, then every `y` has
-an exact preimage with `‖x‖ ≤ 2 C ‖y‖`. This is the second half of the proof of Mathlib's
-`ContinuousLinearMap.exists_preimage_norm_le`, stated on its own; it is the closed-operator
-statement `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx` for `T` on its full domain. -/
+/-- The **second step of the open mapping theorem, for a bounded operator**. Let $E$ be a Banach
+space, let $F$ be a normed space, let $T \colon E \to F$ be bounded, and let $C \in \mathbb{R}$.
+Suppose that every $y \in F$ has some $x \in E$ with $\|Tx - y\| \le \frac{1}{2} \|y\|$ and
+$\|x\| \le C \|y\|$. Then every $y \in F$ has some $x \in E$ with $Tx = y$ and
+$\|x\| \le 2C \|y\|$. This is Step 2 of the proof of Theorem 2.6 of [brezis2011functional].
+
+This is the second half of the proof of Mathlib's `ContinuousLinearMap.exists_preimage_norm_le`,
+stated on its own. It is `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx` for $T$ on its
+full domain. -/
 theorem exists_preimage_norm_le_of_approx [CompleteSpace E] (T : E →L[𝕜] F) {C : ℝ}
     (hC : ∀ y : F, ∃ x : E, dist (T x) y ≤ 1 / 2 * ‖y‖ ∧ ‖x‖ ≤ C * ‖y‖) (y : F) :
     ∃ x : E, T x = y ∧ ‖x‖ ≤ 2 * C * ‖y‖ := by
@@ -362,14 +403,17 @@ theorem exists_preimage_norm_le_of_approx [CompleteSpace E] (T : E →L[𝕜] F)
     exact ⟨⟨x, trivial⟩, hx, hxn⟩) y
   exact ⟨u, hu, hnorm⟩
 
-/-- **The closed range criterion for a bounded operator** between Banach spaces
-([brezis2011functional], Exercise 2.14, part 1): `R(T)` is closed iff there is `C` with
-`dist (x, N(T)) ≤ C ‖T x‖` for every `x`.
+/-- The **closed range criterion for a bounded operator**. Let $E$ and $F$ be Banach spaces and let
+$T \colon E \to F$ be bounded. Then $R(T)$ is closed if and only if there is $C \in \mathbb{R}$
+with
+$$\operatorname{dist}(x, N(T)) \le C \|Tx\| \quad \text{for every } x \in E.$$
+This is the first part of Exercise 2.14 of [brezis2011functional].
 
-The kernel is closed, so `E ⧸ N(T)` is a Banach space with `‖[x]‖ = dist (x, N(T))`, and `T`
-descends to an injective bounded operator on it with the same range; by
-`ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective` that range is closed iff the
-descended operator is bounded below, which is the displayed inequality. -/
+The distance is `Metric.infDist`. The kernel is closed, so $E / N(T)$ is a Banach space with
+$\|[x]\| = \operatorname{dist}(x, N(T))$, and $T$ descends to an injective bounded operator on
+it with the same range. By `ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective`,
+that range is closed if and only if the descended operator is bounded below, which is the
+displayed inequality. -/
 theorem isClosed_range_iff_exists_infDist_ker_le [CompleteSpace E] [CompleteSpace F]
     (T : E →L[𝕜] F) :
     IsClosed (Set.range T) ↔ ∃ C : ℝ, ∀ x, infDist x (T.ker : Set E) ≤ C * ‖T x‖ := by
@@ -414,10 +458,13 @@ section DenselyNormedField
 variable {𝕜 E F : Type*} [DenselyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **Step 2 of the open mapping theorem in the book's form**, for a bounded operator out of a
-Banach space: if `closure (T(B(0, 1))) ⊇ B(0, c)` then `T(B(0, 1)) ⊇ B(0, c / 2)`
-([brezis2011functional], (8) ⇒ (11) in the proof of Theorem 2.6). This is the shape in which the
-proof of Theorem 2.16 applies it. -/
+/-- The **second step of the open mapping theorem, in the form with balls, for a bounded operator**.
+Let $\mathbb{K}$ be a densely normed field, let $E$ be a Banach space, let $F$ be a normed
+space, and let $T \colon E \to F$ be bounded. If the open ball $B(0, c)$ of $F$ is contained in
+the closure of $T(B(0, 1))$, then $B(0, c/2) \subseteq T(B(0, 1))$. This is the step (8)
+$\Rightarrow$ (11) of the proof of Theorem 2.6 of [brezis2011functional].
+
+This is the form in which the proof of Theorem 2.16 of [brezis2011functional] uses the step. -/
 theorem ball_subset_image_of_ball_subset_closure_image [CompleteSpace E] (T : E →L[𝕜] F) {c : ℝ}
     (h : ball (0 : F) c ⊆ closure (T '' ball 0 1)) : ball (0 : F) (c / 2) ⊆ T '' ball 0 1 := by
   have h' : ball (0 : F) c ⊆ closure ((fun u : (⊤ : Submodule 𝕜 E) =>
@@ -439,14 +486,17 @@ namespace LinearPMap
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The closed range criterion for a closed operator** between Banach spaces
-([brezis2011functional], Remark 2.18 and Exercise 2.14, part 2): `R(A)` is closed iff there is
-`C` with `dist (u, N(A)) ≤ C ‖A u‖` for every `u ∈ D(A)`.
+/-- The **closed range criterion for a closed operator**. Let $E$ and $F$ be Banach spaces and let
+$A \colon D(A) \subseteq E \to F$ be closed. Then $R(A)$ is closed if and only if there is
+$C \in \mathbb{R}$ with
+$$\operatorname{dist}(u, N(A)) \le C \|Au\| \quad \text{for every } u \in D(A).$$
+This is Remark 2.18 and the second part of Exercise 2.14 of [brezis2011functional].
 
-This is the bounded criterion `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le`
-applied to `(u, A u) ↦ A u` on the Banach space `↥A.graph` ("`D(A)` with the graph norm"), whose
-kernel is `{(u, 0) | u ∈ N(A)}` and whose distances compare with those of `E` through
-`dist (u, N(A)) ≤ dist ((u, A u), N) ≤ dist (u, N(A)) + ‖A u‖`. -/
+The proof applies `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` to the bounded
+map $(u, Au) \mapsto Au$ on the Banach space `↥A.graph` ("$D(A)$ with the graph norm"). Its
+kernel is $\{(u, 0) : u \in N(A)\}$, and the distances compare with those in $E$ through
+$\operatorname{dist}(u, N(A)) \le \operatorname{dist}((u, Au), N) \le \operatorname{dist}(u,
+N(A)) + \|Au\|$. -/
 theorem IsClosed.isClosed_range_iff_exists_infDist_ker_le [CompleteSpace E] [CompleteSpace F]
     {A : E →ₗ.[𝕜] F} (hA : A.IsClosed) :
     _root_.IsClosed (LinearMap.range A.toFun : Set F) ↔

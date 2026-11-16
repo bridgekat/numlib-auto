@@ -32,104 +32,110 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # The singular value decomposition
 
-The singular values of `A : Matrix m n 𝕜` are the square roots of the eigenvalues of the positive
-semidefinite matrix `Aᴴ A`, and an orthonormal eigenbasis `u` of `Aᴴ A` is a family of *right
-singular vectors*: the images `A u_i` are pairwise orthogonal of norm `σ_i`, so the normalized
-nonzero ones are an orthonormal family `v` of *left singular vectors*, and `A x = ∑ σ_i ⟪u_i, x⟫
-v_i`. That is the *singular system* of [kress1998numerical] (Theorem 5.4), and
-`Matrix.exists_singularSystem` states it.
+Let $A \in \mathbb{K}^{m \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The singular
+values $\sigma_i$ of $A$ are the square roots of the eigenvalues of the positive semidefinite matrix
+$A^H A$. An orthonormal eigenbasis $(u_i)$ of $A^H A$ is a family of *right singular vectors*: the
+images $A u_i$ are pairwise orthogonal with $\|A u_i\| = \sigma_i$, so the normalized nonzero images
+form an orthonormal family $(v_i)$ of *left singular vectors*, and $Ax = \sum_i \sigma_i \langle
+u_i, x \rangle v_i$. This is the *singular system* of [kress1998numerical], §5.2, Theorem 5.4. The
+full factorization $U^H A V = \Sigma$, with unitary $U$ and $V$ and the sorted singular values on
+the diagonal of the rectangular diagonal matrix $\Sigma$, is Property 1.7 of
+[quarteroni2000numerical], §1.9, and Theorem 2.4.1 of [golub2013matrix], §2.4.
 
-Two things are built on it. The **Moore–Penrose pseudoinverse** `A⁺ = (Aᴴ A)⁺ Aᴴ`, obtained by
-inverting the nonzero eigenvalues of the Gram matrix and leaving the zero ones alone, is the unique
-matrix satisfying the four Penrose conditions, `A⁺ y` is the least-squares solution of `A x = y`
-of smallest norm, and `A A⁺`, `A⁺ A` are the orthogonal projections onto the ranges of `A` and
-`Aᴴ`. The **spectral condition number** of a nonsingular matrix is the ratio of its extreme
-singular values. (Tikhonov regularization, which Kress builds on the same singular system, is in
-`Numlib/LinearAlgebra/Matrix/LeastSquares/Regularized`.)
-
-The **full factorization** `Uᴴ A V = Σ` comes next, with the sorted singular values of Mathlib's
-`LinearMap.singularValues` on the diagonal, and its specification `Matrix.IsSVD A U σ V`, which
-every consequence of "an SVD" takes as its hypothesis, since the factors are not unique.
+Two constructions use the singular system. The **Moore–Penrose pseudoinverse** $A^+ = (A^H A)^+ A^H$
+inverts the nonzero eigenvalues of $A^H A$ and keeps the zero ones. It is the unique matrix that
+satisfies the four Penrose conditions, $A^+ y$ is the least-squares solution of $Ax = y$ of smallest
+norm, and $A A^+$ and $A^+ A$ are the orthogonal projections onto the ranges of $A$ and $A^H$
+([golub2013matrix], §5.5). The **spectral condition number** of a nonsingular matrix is the ratio
+$\sigma_{\max} / \sigma_{\min}$ of its extreme singular values. Every consequence of a factorization
+$U^H A V = \Sigma$ is stated for an arbitrary such factorization, because the factors are not
+unique.
 
 ## Main definitions
 
-* `Matrix.colSingularValues`, `Matrix.rightSingularBasis`: the singular values indexed by the
-  columns of `A` (unsorted), and the orthonormal eigenbasis of `Aᴴ A` they come from;
+* `Matrix.colSingularValues` and `Matrix.rightSingularBasis`: the singular values indexed by the
+  columns of $A$ (not sorted), and the orthonormal eigenbasis of $A^H A$ that they come from.
   `Matrix.rightSingularUnitary` is the same eigenbasis as a unitary matrix.
-* `Matrix.sortedSingularValues`: the singular values in nonincreasing order, `0`-based, an
-  abbreviation for Mathlib's `(toEuclideanLin A).singularValues`.
-* `Matrix.gramPinv` and `Matrix.pinv`: the Moore–Penrose pseudoinverse of `Aᴴ A` and of `A`.
-* `Matrix.rectDiagonal`: the rectangular diagonal matrix `diag(σ₀, σ₁, …) ∈ 𝕜^{m × n}` of a
-  factorization `Uᴴ A V = Σ`, `Matrix.shiftedRectDiagonal k σ` with `σ j` at `(j - k, j)` (the `D_B`
-  of a generalized SVD), and `Matrix.sortedRightSingularVec`, the right singular vectors sorted by
-  decreasing singular value.
-* `Matrix.unitaryOfBasis b`: the unitary matrix whose columns are the vectors of an orthonormal
-  basis `b` of a Euclidean space, the form in which `Matrix.exists_svd` produces its factors.
-* `Matrix.IsSVD A U σ V`: a singular value decomposition, as a specification;
-  `Matrix.svdTruncation U σ V k`: its rank-`k` truncation `∑_{i<k} σ_i u_i v_iᴴ`.
+* `Matrix.sortedSingularValues`: the singular values $\sigma_0 \ge \sigma_1 \ge \dots$ in
+  nonincreasing order, indexed from $0$.
+* `Matrix.gramPinv` and `Matrix.pinv`: the Moore–Penrose pseudoinverses of $A^H A$ and of $A$.
+* `Matrix.rectDiagonal`: the rectangular diagonal matrix $\operatorname{diag}(\sigma_0, \sigma_1,
+  \dots) \in \mathbb{K}^{m \times n}$. `Matrix.shiftedRectDiagonal k σ` has $\sigma_j$ at the
+  entries $(j - k, j)$.
+* `Matrix.sortedRightSingularVec`: the right singular vectors sorted by decreasing singular value.
+* `Matrix.unitaryOfBasis`: the unitary matrix whose columns are the vectors of an orthonormal basis
+  of $\mathbb{K}^n$.
+* `Matrix.IsSVD`: the property that $U^H A V = \operatorname{diag}(\sigma)$ is a singular value
+  decomposition.
+* `Matrix.svdTruncation`: the rank-$k$ truncation $\sum_{i < k} \sigma_i u_i v_i^H$ of a
+  factorization.
 
 ## Main results
 
-* `Matrix.exists_singularSystem`: the singular system of `A` and the expansion of `A` along it;
-  `Matrix.norm_sq_toEuclideanLin_apply` is the Parseval identity behind every bound here.
-* `Matrix.pinv_unique`: the four Penrose conditions characterize `A⁺`;
-  `Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf` and `Matrix.norm_pinv_le_of_normalEquations`: it is
-  the least-squares solution of least norm; `Matrix.mul_pinv_eq_starProjection` and
-  `Matrix.pinv_mul_eq_starProjection`: the two projectors.
-* `Matrix.l2_opNorm_eq_iSup_colSingularValues`,
-  `Matrix.l2_opNorm_inv_eq_inv_iInf_colSingularValues` and
-  `Matrix.condNumber_l2_eq_div_colSingularValues`: the spectral condition number is `σmax/σmin`.
-* `Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`: the two readings of the singular
-  values are one multiset; `Matrix.sortedSingularValues_zero_eq_l2_opNorm` (`σ₁ = ‖A‖₂`),
-  `Matrix.sortedSingularValues_eq_zero_iff_rank_le` (the rank counts the positive ones) and
-  `Matrix.iInf_colSingularValues_eq_iInf_norm` (the least one is the least stretch)
-  ([golub2013matrix] §2.4).
+* `Matrix.exists_singularSystem`: the singular system of $A$ and the expansion of $A$ along it.
+  `Matrix.norm_sq_toEuclideanLin_apply` is the Parseval identity $\|Ax\|^2 = \sum_i \sigma_i^2
+  |\langle u_i, x \rangle|^2$.
+* `Matrix.pinv_unique`: the four Penrose conditions characterize $A^+$.
+  `Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf` and `Matrix.norm_pinv_le_of_normalEquations`:
+  $A^+ y$ is the least-squares solution of least norm. `Matrix.mul_pinv_eq_starProjection` and
+  `Matrix.pinv_mul_eq_starProjection`: the two orthogonal projections.
+* `Matrix.l2_opNorm_eq_iSup_colSingularValues`, `Matrix.l2_opNorm_inv_eq_inv_iInf_colSingularValues`
+  and `Matrix.condNumber_l2_eq_div_colSingularValues`: $\|A\|_2 = \sigma_{\max}$,
+  $\|A^{-1}\|_2 = 1/\sigma_{\min}$ and $\kappa_2(A) = \sigma_{\max}/\sigma_{\min}$.
+* `Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`: the column-indexed and the sorted
+  singular values are the same multiset. `Matrix.sortedSingularValues_zero_eq_l2_opNorm`
+  ($\sigma_0 = \|A\|_2$), `Matrix.sortedSingularValues_eq_zero_iff_rank_le` (the rank counts the
+  positive singular values) and `Matrix.iInf_colSingularValues_eq_iInf_norm` (the least singular
+  value is the least stretch $\min_{\|x\| = 1} \|Ax\|$), from [golub2013matrix], §2.4.
 * `Matrix.exists_mem_unitaryGroup_submatrix_eq`: orthonormal columns extend to a unitary matrix
-  ([golub2013matrix] Theorem 2.1.1).
-* `Matrix.exists_svd`: the full factorization `Uᴴ A V = Σ` with square unitary factors and the
-  sorted singular values of Mathlib's `LinearMap.singularValues` on the diagonal
-  ([quarteroni2000numerical] Property 1.7), and the thin factorization `Matrix.exists_thin_svd`;
-  from any such factorization, `Matrix.pinv_eq_of_svd` (`A⁺ = V Σ⁺ Uᴴ`, their Definition 1.15),
-  `Matrix.ker_mulVecLin_eq_span_of_svd` and `Matrix.range_mulVecLin_eq_span_of_svd`, and the
-  uniqueness of the singular values `Matrix.singularValues_eq_of_svd`, each restated for
-  `Matrix.IsSVD` (`Matrix.IsSVD.pinv_eq`, …, `Matrix.IsSVD.singularValues_eq`);
-  `Matrix.IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues` is the Hermitian case
-  `σ_i = |λ_i|`, an instance of
-  `Matrix.exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq`
-  (`Aᴴ A = U diag(dᵢ²) Uᴴ` with `d ≥ 0` makes the `dᵢ` the singular values).
-* `Matrix.sortedSingularValues_unitary_mul_mul`: the sorted singular values are unitarily
-  invariant; `Matrix.isUnit_of_iInf_colSingularValues_pos` and
-  `Matrix.exists_colSingularValues_eq_of_mulVec`: a positive least singular value makes a square
-  matrix invertible, and an eigenvector of `Aᴴ A` for `s²` makes `s` a singular value.
-* `Matrix.exists_eq_sum_sortedSingularValues_smul_vecMulVec`: the sorted singular expansion
-  `M = ∑_{k < rank M} σ_k u_k v_kᴴ` with orthonormal `u`, `v` and positive `σ_k`, over any finite
-  index types.
-* `Matrix.svdTruncation_eq_sum`: the truncation `U Σ_k Vᴴ` is `∑_{i<k} σ_i u_i v_iᴴ`
-  ([golub2013matrix] (2.4.3)); `Matrix.exists_wide_thin_svd` is the thin factorization of a wide
-  matrix.
-* `Matrix.IsSVD.norm_sq_toEuclideanLin_apply` (`‖A x‖² = ∑ σ_i² |(Vᴴ x)_i|²`),
-  `Matrix.IsSVD.norm_toEuclideanLin_eq_iff_mem_span`: for a tall matrix, `‖A x‖ = σ_min ‖x‖`
-  exactly on the span of the right singular vectors of the smallest singular value
-  ([golub2013matrix] §6.3.2).
+  ([golub2013matrix], Theorem 2.1.1).
+* `Matrix.exists_svd`: the full factorization $U^H A V = \Sigma$ with square unitary factors and the
+  sorted singular values on the diagonal ([quarteroni2000numerical], Property 1.7), and
+  `Matrix.exists_thin_svd`, the thin factorization.
+* `Matrix.pinv_eq_of_svd` ($A^+ = V \Sigma^+ U^H$, Definition 1.15 of [quarteroni2000numerical]),
+  `Matrix.ker_mulVecLin_eq_span_of_svd`, `Matrix.range_mulVecLin_eq_span_of_svd` and
+  `Matrix.singularValues_eq_of_svd` (uniqueness of the singular values): the consequences of any
+  factorization, each also stated for `Matrix.IsSVD` (`Matrix.IsSVD.pinv_eq`, …,
+  `Matrix.IsSVD.singularValues_eq`).
+* `Matrix.IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues`: the singular values of a
+  Hermitian matrix are the moduli $|\lambda_i|$ of its eigenvalues. It is a case of
+  `Matrix.exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq`: if
+  $A^H A = U \operatorname{diag}(d_i^2) U^H$ with $d \ge 0$, then the $d_i$ are the singular values.
+* `Matrix.sortedSingularValues_unitary_mul_mul`: the sorted singular values are unitarily invariant.
+  `Matrix.isUnit_of_iInf_colSingularValues_pos`: a square matrix with positive least singular value
+  is invertible. `Matrix.exists_colSingularValues_eq_of_mulVec`: if $A^H A g = s^2 g$ with
+  $g \neq 0$ and $s \ge 0$, then $s$ is a singular value.
+* `Matrix.exists_eq_sum_sortedSingularValues_smul_vecMulVec`: the sorted singular expansion $M =
+  \sum_{k < \operatorname{rank} M} \sigma_k u_k v_k^H$ with orthonormal $u$, $v$ and positive
+  $\sigma_k$.
+* `Matrix.svdTruncation_eq_sum`: the truncation $U \Sigma_k V^H$ is
+  $\sum_{i < k} \sigma_i u_i v_i^H$ ([golub2013matrix], (2.4.3)). `Matrix.exists_wide_thin_svd` is
+  the thin factorization of a wide matrix.
+* `Matrix.IsSVD.norm_sq_toEuclideanLin_apply` ($\|Ax\|^2 = \sum_i \sigma_i^2 |(V^H x)_i|^2$) and
+  `Matrix.IsSVD.norm_toEuclideanLin_eq_iff_mem_span`: for a tall matrix,
+  $\|Ax\| = \sigma_{\min} \|x\|$ exactly on the span of the right singular vectors of the smallest
+  singular value ([golub2013matrix], §6.3.2).
 
 ## Implementation notes
 
-`Matrix.colSingularValues` is indexed by the columns of `A`, not sorted, because that is how Mathlib
-indexes `Matrix.IsHermitian.eigenvalues`, and because every consumer here wants the value attached
-to a given right singular vector rather than the `j`-th largest; over the columns, `⨅ i` and `⨆ i`
-are `σ_min` and `σ_max` for every shape. The `col` prefix marks that indexing and keeps the bare
-name `singularValues` for the sorted reading: Mathlib's `LinearMap.singularValues` is the sorted
-`ℕ`-indexed sequence, spelled `A.sortedSingularValues i` whenever an index matters (`σ_k`,
-truncations, Eckart–Young), and `Matrix.singularValues_eq_of_svd` and
-`Matrix.IsSVD.singularValues_eq` are about it. The coordinate-free facts about it are in
-`Numlib/Analysis/InnerProductSpace/SingularValues`, and the singular-value inequalities (Weyl,
-Mirsky, Eckart–Young) and Wedin's bound on `‖B⁺ - A⁺‖_F` in `Numlib/Analysis/Matrix/SingularValues`:
-everything measured in the Frobenius norm needs `Numlib/Analysis/Matrix/OperatorNorm`, which
-imports this file.
-
-## References
-
-* [kress1998numerical] §5.2; [quarteroni2000numerical] §1.9; [golub2013matrix] §2.4, §5.5.
+* `Matrix.colSingularValues` is indexed by the columns of $A$ and is not sorted, because Mathlib
+  indexes `Matrix.IsHermitian.eigenvalues` this way, and because most uses need the value that
+  belongs to a given right singular vector rather than the $j$-th largest one. Over the columns, the
+  infimum and the supremum of the singular values are $\sigma_{\min}$ and $\sigma_{\max}$ for every
+  shape. The prefix `col` marks this indexing.
+* The sorted reading is Mathlib's `LinearMap.singularValues`, an $\mathbb{N}$-indexed sequence,
+  written `A.sortedSingularValues i` where an index matters ($\sigma_k$, truncations, Eckart–Young).
+  `Matrix.singularValues_eq_of_svd` and `Matrix.IsSVD.singularValues_eq` are about it.
+* A matrix acts on Euclidean space through `Matrix.toEuclideanLin`, and its norm is the operator
+  norm of the scope `Matrix.Norms.L2Operator`.
+* The pseudoinverse uses $0^{-1} = 0$, so that no case split on the rank is needed.
+* The coordinate-free facts about singular values are in
+  `Numlib.Analysis.InnerProductSpace.SingularValues`. The singular value inequalities (Weyl, Mirsky,
+  Eckart–Young) and the bound of Wedin on $\|B^+ - A^+\|_F$ are in
+  `Numlib.Analysis.Matrix.SingularValues`, because the Frobenius norm needs
+  `Numlib.Analysis.Matrix.OperatorNorm`, which imports this module. Tikhonov regularization, which
+  [kress1998numerical] builds on the same singular system, is in
+  `Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized`.
 -/
 
 open Module
@@ -140,31 +146,43 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 
 /-! ### Singular values and right singular vectors -/
 
-/-- The **singular values** of `A`, indexed by the columns of `A`: `A.colSingularValues i` is the
-square root of the `i`-th eigenvalue of the positive semidefinite matrix `Aᴴ A`. They are listed
-with multiplicity but in no particular order, matching `Matrix.IsHermitian.eigenvalues`; the sorted
-sequence is Mathlib's `LinearMap.singularValues`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **singular values** of $A$, indexed by the columns of
+$A$, are
+$$\sigma_i = \sqrt{\lambda_i(A^H A)}, \qquad i \in n,$$
+where $\lambda_i(A^H A)$ is the eigenvalue of index $i$ of the positive semidefinite matrix
+$A^H A$.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`, listed with multiplicity but in no
+particular order, and so are the singular values. The sorted sequence is
+`Matrix.sortedSingularValues`, which is Mathlib's `LinearMap.singularValues`. -/
 noncomputable def colSingularValues (A : Matrix m n 𝕜) (i : n) : ℝ :=
   Real.sqrt ((isHermitian_conjTranspose_mul_self A).eigenvalues i)
 
-/-- The **right singular vectors** of `A`: an orthonormal eigenbasis of `Aᴴ A`, paired with
-`Matrix.colSingularValues` index by index. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **right singular vectors** of $A$ are an orthonormal
+eigenbasis $(u_i)_{i \in n}$ of $A^H A$, with $A^H A u_i = \sigma_i^2 u_i$ for the singular
+value $\sigma_i$ = `Matrix.colSingularValues A i` of the same index.
+
+The basis is `Matrix.IsHermitian.eigenvectorBasis` of $A^H A$. -/
 noncomputable def rightSingularBasis (A : Matrix m n 𝕜) :
     OrthonormalBasis n 𝕜 (EuclideanSpace 𝕜 n) :=
   (isHermitian_conjTranspose_mul_self A).eigenvectorBasis
 
 variable (A : Matrix m n 𝕜)
 
-/-- Singular values are nonnegative, being square roots. -/
+/-- Every singular value `Matrix.colSingularValues A i` is nonnegative. -/
 theorem colSingularValues_nonneg (i : n) : 0 ≤ A.colSingularValues i := Real.sqrt_nonneg _
 
-/-- The square of a singular value is the corresponding eigenvalue of the Gram matrix. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. For every column index $i$, the square of the singular
+value $\sigma_i$ is the eigenvalue of the same index of $A^H A$:
+$$\sigma_i^2 = \lambda_i(A^H A).$$
+-/
 theorem sq_colSingularValues (i : n) :
     A.colSingularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i :=
   Real.sq_sqrt (eigenvalues_conjTranspose_mul_self_nonneg A i)
 
-/-- **An eigenvector of the Gram matrix gives a singular value**: if `Aᴴ A g = s² g` for some
-`g ≠ 0` and `s ≥ 0`, then `s` is one of the singular values of `A`. -/
+/-- **An eigenvector of the Gram matrix gives a singular value.** Let
+$A \in \mathbb{K}^{m \times n}$, let $g \in \mathbb{K}^n$ be nonzero and let $s \ge 0$. If
+$A^H A g = s^2 g$, then $s = \sigma_i$ for some column index $i$. -/
 theorem exists_colSingularValues_eq_of_mulVec {g : n → 𝕜} (hg : g ≠ 0) {s : ℝ} (hs : 0 ≤ s)
     (h : (Aᴴ * A) *ᵥ g = ((s : 𝕜) ^ 2) • g) : ∃ i, A.colSingularValues i = s := by
   have hspec : ((s ^ 2 : ℝ) : 𝕜) ∈ spectrum 𝕜 (Aᴴ * A) := by
@@ -180,7 +198,8 @@ theorem exists_colSingularValues_eq_of_mulVec {g : n → 𝕜} (hg : g ≠ 0) {s
   refine ⟨i, (sq_eq_sq₀ (colSingularValues_nonneg _ _) hs).1 ?_⟩
   rw [sq_colSingularValues, he]
 
-/-- The right singular vectors are eigenvectors of `Aᴴ A`, for the squared singular values. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. Every right singular vector $u_i$ is an eigenvector of
+$A^H A$ for the squared singular value: $A^H A u_i = \sigma_i^2 u_i$. -/
 theorem toEuclideanLin_conjTranspose_mul_self_rightSingularBasis (i : n) :
     toEuclideanLin (Aᴴ * A) (A.rightSingularBasis i)
       = ((A.colSingularValues i ^ 2 : ℝ) : 𝕜) • A.rightSingularBasis i := by
@@ -190,7 +209,8 @@ theorem toEuclideanLin_conjTranspose_mul_self_rightSingularBasis (i : n) :
   rw [WithLp.ofLp_smul, ← RCLike.real_smul_eq_coe_smul (K := 𝕜), toLpLin_apply, WithLp.ofLp_toLp]
   exact h
 
-/-- The inner product of two images is the quadratic form of the Gram matrix `Aᴴ A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. For $x, y \in \mathbb{K}^n$, $\langle Ax, Ay \rangle =
+\langle x, A^H A y \rangle$. -/
 theorem inner_toEuclideanLin_apply (x y : EuclideanSpace 𝕜 n) :
     (inner 𝕜 (toEuclideanLin A x) (toEuclideanLin A y) : 𝕜)
       = inner 𝕜 x (toEuclideanLin (Aᴴ * A) y) := by
@@ -198,8 +218,12 @@ theorem inner_toEuclideanLin_apply (x y : EuclideanSpace 𝕜 n) :
   rw [toLpLin_mul_same, LinearMap.comp_apply, toEuclideanLin_conjTranspose_eq_adjoint,
     LinearMap.adjoint_inner_right]
 
-/-- **The images of the right singular vectors are pairwise orthogonal**, with squared norms the
-squared singular values. This is the whole of the singular value decomposition. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with right singular vectors $u_i$ and singular values
+$\sigma_i$. **The images of the right singular vectors are pairwise orthogonal**, with the
+squared singular values as squared norms:
+$$\langle A u_i, A u_j \rangle = \begin{cases} \sigma_i^2 & \text{if } i = j, \\
+  0 & \text{otherwise.} \end{cases}$$
+This fact is the core of the singular value decomposition. -/
 theorem inner_toEuclideanLin_rightSingularBasis (i j : n) :
     (inner 𝕜 (toEuclideanLin A (A.rightSingularBasis i))
         (toEuclideanLin A (A.rightSingularBasis j)) : 𝕜)
@@ -210,7 +234,8 @@ theorem inner_toEuclideanLin_rightSingularBasis (i j : n) :
   · rw [h, mul_one]
   · rw [mul_zero]
 
-/-- The image of a right singular vector has the corresponding singular value as its norm. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The image of a right singular vector has the singular value
+of the same index as its norm: $\|A u_i\| = \sigma_i$. -/
 @[simp]
 theorem norm_toEuclideanLin_rightSingularBasis (i : n) :
     ‖toEuclideanLin A (A.rightSingularBasis i)‖ = A.colSingularValues i := by
@@ -223,12 +248,14 @@ theorem norm_toEuclideanLin_rightSingularBasis (i : n) :
     exact_mod_cast h
   exact (pow_left_inj₀ (norm_nonneg _) (A.colSingularValues_nonneg i) two_ne_zero).1 h2
 
-/-- A right singular vector with singular value `0` lies in the kernel. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. If the singular value $\sigma_i$ is $0$, then the right
+singular vector $u_i$ is in the kernel of $A$: $A u_i = 0$. -/
 theorem toEuclideanLin_rightSingularBasis_eq_zero {i : n} (hi : A.colSingularValues i = 0) :
     toEuclideanLin A (A.rightSingularBasis i) = 0 := by
   rw [← norm_eq_zero, norm_toEuclideanLin_rightSingularBasis, hi]
 
-/-- `A x` expanded along the right singular basis. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. For $x \in \mathbb{K}^n$,
+$Ax = \sum_i \langle u_i, x \rangle A u_i$, where $(u_i)$ are the right singular vectors. -/
 theorem toEuclideanLin_eq_sum_rightSingularBasis (x : EuclideanSpace 𝕜 n) :
     toEuclideanLin A x = ∑ i, (inner 𝕜 (A.rightSingularBasis i) x : 𝕜) •
       toEuclideanLin A (A.rightSingularBasis i) := by
@@ -236,8 +263,10 @@ theorem toEuclideanLin_eq_sum_rightSingularBasis (x : EuclideanSpace 𝕜 n) :
   rw [map_sum]
   exact Finset.sum_congr rfl fun i _ => map_smul _ _ _
 
-/-- **Parseval for the singular values**: the squared norm of `A x` is the weighted sum of the
-squared coefficients of `x` in the right singular basis. -/
+/-- **Parseval's identity for the singular values.** Let $A \in \mathbb{K}^{m \times n}$. For
+$x \in \mathbb{K}^n$,
+$$\|Ax\|^2 = \sum_i \sigma_i^2 \, |\langle u_i, x \rangle|^2,$$
+where $(u_i)$ are the right singular vectors and $\sigma_i$ the singular values. -/
 theorem norm_sq_toEuclideanLin_apply (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A x‖ ^ 2 =
       ∑ i, A.colSingularValues i ^ 2 * ‖(inner 𝕜 (A.rightSingularBasis i) x : 𝕜)‖ ^ 2 := by
@@ -272,7 +301,8 @@ theorem norm_sq_toEuclideanLin_apply (x : EuclideanSpace 𝕜 n) :
 /-! ### The singular system -/
 
 open scoped ComplexOrder in
-/-- The number of nonzero singular values is the rank of `A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The number of column indices $i$ with $\sigma_i \neq 0$ is
+the rank of $A$. -/
 theorem card_colSingularValues_ne_zero :
     Fintype.card {i : n // A.colSingularValues i ≠ 0} = A.rank := by
   classical
@@ -285,15 +315,20 @@ theorem card_colSingularValues_ne_zero :
       rw [← sq_colSingularValues, ne_eq, ne_eq, pow_eq_zero_iff two_ne_zero]
   rw [Fintype.card_congr h2, ← h1, rank_conjTranspose_mul_self]
 
-/-- **The singular system of a matrix** ([kress1998numerical], Theorem 5.4): there are `r = A.rank`
-positive numbers `μ j`, an orthonormal family `u` of right singular vectors and an orthonormal
-family `v` of left singular vectors with `A u_j = μ_j v_j` and `Aᴴ v_j = μ_j u_j`, along which `A`
-expands as `A x = ∑ j, μ_j ⟪u_j, x⟫ v_j`. That expansion is the factorization `A = V Σ Uᴴ`: it says
-the matrix acts diagonally between the two families, and it forces `A z = 0` for every `z`
-orthogonal to all the `u_j`.
+/-- **The singular system of a matrix.** Let $A \in \mathbb{K}^{m \times n}$ and
+$r = \operatorname{rank} A$. There are numbers $\mu_0, \dots, \mu_{r-1} > 0$, an orthonormal
+family $u_0, \dots, u_{r-1}$ in $\mathbb{K}^n$ and an orthonormal family $v_0, \dots, v_{r-1}$
+in $\mathbb{K}^m$ such that
+$$A u_j = \mu_j v_j, \qquad A^H v_j = \mu_j u_j$$
+for every $j$, and
+$$Ax = \sum_{j < r} \mu_j \langle u_j, x \rangle v_j
+  \qquad \text{for every } x \in \mathbb{K}^n.$$
+This is Theorem 5.4 of [kress1998numerical].
 
-The families are indexed by `Fin A.rank` in no particular order; the underlying data are
-`Matrix.colSingularValues` and `Matrix.rightSingularBasis`, indexed by the columns of `A`. -/
+The expansion says that $A$ acts diagonally between the two families, and it gives $Az = 0$ for
+every $z$ orthogonal to all $u_j$. The families are indexed by `Fin A.rank` in no particular
+order. They are built from `Matrix.colSingularValues` and `Matrix.rightSingularBasis`, which are
+indexed by the columns of $A$. -/
 theorem exists_singularSystem [DecidableEq m] :
     ∃ (μ : Fin A.rank → ℝ) (u : Fin A.rank → EuclideanSpace 𝕜 n)
       (v : Fin A.rank → EuclideanSpace 𝕜 m),
@@ -355,32 +390,35 @@ section Pinv
 
 open scoped ComplexOrder
 
-/-- `x⁻¹ x x⁻¹ = x⁻¹`, at `x = 0` too. -/
+/-- For every scalar $x$, $x^{-1} x x^{-1} = x^{-1}$, also at $x = 0$, where $0^{-1} = 0$. -/
 private theorem inv_mul_mul_inv (x : 𝕜) : x⁻¹ * x * x⁻¹ = x⁻¹ := by
   rcases eq_or_ne x 0 with rfl | h
   · simp
   · rw [inv_mul_cancel₀ h, one_mul]
 
-/-- The unitary whose columns are the right singular vectors of `A`, that is, the eigenvector
-unitary of the Gram matrix `Aᴴ A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **right singular unitary** of $A$ is the unitary matrix
+$V \in \mathbb{K}^{n \times n}$ whose columns are the right singular vectors of $A$, that is,
+the eigenvector matrix `Matrix.IsHermitian.eigenvectorUnitary` of $A^H A$. -/
 noncomputable def rightSingularUnitary (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   (isHermitian_conjTranspose_mul_self A).eigenvectorUnitary
 
-/-- The right singular unitary is unitary. -/
+/-- The right singular unitary `Matrix.rightSingularUnitary A` is a unitary matrix. -/
 theorem rightSingularUnitary_mem_unitaryGroup : A.rightSingularUnitary ∈ unitaryGroup n 𝕜 :=
   ((isHermitian_conjTranspose_mul_self A).eigenvectorUnitary).2
 
-/-- One half of unitarity of the right singular unitary, in equational form. -/
+/-- The right singular unitary $V$ = `Matrix.rightSingularUnitary A` satisfies $V^H V = I$. -/
 theorem star_mul_rightSingularUnitary :
     star A.rightSingularUnitary * A.rightSingularUnitary = 1 :=
   mem_unitaryGroup_iff'.1 A.rightSingularUnitary_mem_unitaryGroup
 
-/-- The other half of unitarity of the right singular unitary, in equational form. -/
+/-- The right singular unitary $V$ = `Matrix.rightSingularUnitary A` satisfies $V V^H = I$. -/
 theorem rightSingularUnitary_mul_star :
     A.rightSingularUnitary * star A.rightSingularUnitary = 1 :=
   mem_unitaryGroup_iff.1 A.rightSingularUnitary_mem_unitaryGroup
 
-/-- The spectral decomposition of the Gram matrix: `Aᴴ A = V Σ² Vᴴ`. -/
+/-- The spectral decomposition of the Gram matrix: $A^H A = V \operatorname{diag}(\sigma_i^2) V^H$,
+where $V$ is the right singular unitary `Matrix.rightSingularUnitary A` and $\sigma_i$ are the
+singular values. -/
 theorem conjTranspose_mul_self_eq_conj_diagonal :
     Aᴴ * A = A.rightSingularUnitary * diagonal (fun i => ((A.colSingularValues i ^ 2 : ℝ) : 𝕜))
       * star A.rightSingularUnitary := by
@@ -388,8 +426,11 @@ theorem conjTranspose_mul_self_eq_conj_diagonal :
   rw [Unitary.conjStarAlgAut_apply]
   simp [rightSingularUnitary, Function.comp_def, sq_colSingularValues]
 
-/-- Conjugation by the right singular unitary turns a product of conjugated diagonal matrices into
-the conjugate of the product of their diagonals. -/
+/-- Let $V$ be the right singular unitary `Matrix.rightSingularUnitary A`. For
+$f, g : n \to \mathbb{K}$,
+$$\bigl(V \operatorname{diag}(f) V^H\bigr) \bigl(V \operatorname{diag}(g) V^H\bigr)
+  = V \operatorname{diag}(f g) V^H.$$
+-/
 theorem conj_diagonal_mul_conj_diagonal (f g : n → 𝕜) :
     (A.rightSingularUnitary * diagonal f * star A.rightSingularUnitary) *
         (A.rightSingularUnitary * diagonal g * star A.rightSingularUnitary)
@@ -406,18 +447,24 @@ theorem conj_diagonal_mul_conj_diagonal (f g : n → 𝕜) :
           rw [A.star_mul_rightSingularUnitary]; noncomm_ring
     _ = _ := by rw [hd]
 
-/-- The Moore–Penrose pseudoinverse of the Gram matrix `Aᴴ A`, obtained by inverting its nonzero
-eigenvalues and leaving the zero ones alone; the auxiliary from which `Matrix.pinv` is built. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **Moore–Penrose pseudoinverse of the Gram matrix**
+$A^H A$ is
+$$(A^H A)^+ = V \operatorname{diag}(\sigma_i^{-2}) V^H,$$
+where $V$ is the right singular unitary and $0^{-1} = 0$. It inverts the nonzero eigenvalues of
+$A^H A$ and keeps the zero ones. `Matrix.pinv` is built from it. -/
 noncomputable def gramPinv (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   A.rightSingularUnitary * diagonal (fun i => ((A.colSingularValues i ^ 2 : ℝ) : 𝕜)⁻¹)
     * star A.rightSingularUnitary
 
-/-- The pseudoinverse of the Gram matrix, unfolded. -/
+/-- The pseudoinverse of the Gram matrix `Matrix.gramPinv A` is
+$V \operatorname{diag}(\sigma_i^{-2}) V^H$, where $V$ is the right singular unitary
+`Matrix.rightSingularUnitary A`. -/
 theorem gramPinv_def : A.gramPinv = A.rightSingularUnitary *
     diagonal (fun i => ((A.colSingularValues i ^ 2 : ℝ) : 𝕜)⁻¹) * star A.rightSingularUnitary :=
   rfl
 
-/-- The pseudoinverse of the Gram matrix is Hermitian, its eigenvalues being real. -/
+/-- The pseudoinverse $(A^H A)^+$ of the Gram matrix is Hermitian, because its eigenvalues
+$\sigma_i^{-2}$ are real. -/
 theorem isHermitian_gramPinv : A.gramPinv.IsHermitian := by
   have hf : (star fun i => (((A.colSingularValues i ^ 2 : ℝ) : 𝕜))⁻¹)
       = fun i => (((A.colSingularValues i ^ 2 : ℝ) : 𝕜))⁻¹ := by
@@ -426,45 +473,53 @@ theorem isHermitian_gramPinv : A.gramPinv.IsHermitian := by
   rw [Matrix.IsHermitian, gramPinv_def, star_eq_conjTranspose, conjTranspose_mul,
     conjTranspose_mul, conjTranspose_conjTranspose, diagonal_conjTranspose, hf, Matrix.mul_assoc]
 
-/-- The first Penrose condition for the Gram matrix. -/
+/-- The first Penrose condition for the Gram matrix: $A^H A \, (A^H A)^+ \, A^H A = A^H A$. -/
 theorem gram_mul_gramPinv_mul_gram : Aᴴ * A * A.gramPinv * (Aᴴ * A) = Aᴴ * A := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
   exact congrArg diagonal (funext fun i => mul_inv_mul_cancel _)
 
-/-- The second Penrose condition for the Gram matrix. -/
+/-- The second Penrose condition for the Gram matrix: $(A^H A)^+ \, A^H A \, (A^H A)^+ = (A^H A)^+$.
+-/
 theorem gramPinv_mul_gram_mul_gramPinv : A.gramPinv * (Aᴴ * A) * A.gramPinv = A.gramPinv := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
   exact congrArg diagonal (funext fun i => inv_mul_mul_inv _)
 
-/-- The Gram matrix commutes with its pseudoinverse, both being diagonal in the right singular
-basis. -/
+/-- The Gram matrix commutes with its pseudoinverse, $(A^H A)^+ A^H A = A^H A (A^H A)^+$, because
+both are diagonal in the basis of right singular vectors. -/
 theorem gramPinv_mul_gram_comm : A.gramPinv * (Aᴴ * A) = Aᴴ * A * A.gramPinv := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
   exact congrArg diagonal (funext fun i => mul_comm _ _)
 
-/-- The **Moore–Penrose pseudoinverse** of a matrix, `A⁺ = (Aᴴ A)⁺ Aᴴ`, where the pseudoinverse of
-the Gram matrix inverts its nonzero eigenvalues and leaves the zero ones alone. It is characterized
-by the four Penrose conditions (`Matrix.pinv_unique`), and `A⁺ y` is the least-squares solution of
-`A x = y` of smallest norm. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **Moore–Penrose pseudoinverse** of $A$ is
+$$A^+ = (A^H A)^+ A^H \in \mathbb{K}^{n \times m},$$
+where the pseudoinverse $(A^H A)^+$ = `Matrix.gramPinv A` of the Gram matrix inverts its nonzero
+eigenvalues and keeps the zero ones.
+
+The four Penrose conditions characterize $A^+$ (`Matrix.pinv_unique`). The vector $A^+ y$ is the
+least-squares solution of $Ax = y$ of smallest norm
+(`Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf` and `Matrix.norm_pinv_le_of_normalEquations`). -/
 noncomputable def pinv (A : Matrix m n 𝕜) : Matrix n m 𝕜 := A.gramPinv * Aᴴ
 
-/-- The pseudoinverse, unfolded. -/
+/-- The pseudoinverse is $A^+ = (A^H A)^+ A^H$, by definition. -/
 theorem pinv_def : A.pinv = A.gramPinv * Aᴴ := rfl
 
 omit [DecidableEq n] in
-/-- A matrix killed by `Aᴴ A` is killed by `A`, because `Aᴴ A M = 0` forces `(A M)ᴴ (A M) = 0`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $M \in \mathbb{K}^{n \times k}$. If $A^H A M = 0$, then
+$AM = 0$, because then $(AM)^H (AM) = 0$. -/
 theorem mul_eq_zero_of_conjTranspose_mul_self_mul_eq_zero {k : Type*}
     {M : Matrix n k 𝕜} (h : Aᴴ * A * M = 0) : A * M = 0 := by
   rw [← conjTranspose_mul_self_eq_zero (A := A * M), conjTranspose_mul, Matrix.mul_assoc,
     ← Matrix.mul_assoc Aᴴ, h, Matrix.mul_zero]
 
-/-- The first Penrose condition. -/
+/-- The first Penrose condition. For every $A \in \mathbb{K}^{m \times n}$,
+$$A A^+ A = A.$$
+-/
 theorem mul_pinv_mul_self : A * A.pinv * A = A := by
   have key : A * (1 - A.gramPinv * (Aᴴ * A)) = 0 := by
     refine A.mul_eq_zero_of_conjTranspose_mul_self_mul_eq_zero ?_
@@ -474,30 +529,35 @@ theorem mul_pinv_mul_self : A * A.pinv * A = A := by
         simp only [pinv_def, Matrix.mul_assoc]
     _ = A := key.symm
 
-/-- The second Penrose condition. -/
+/-- The second Penrose condition. For every $A \in \mathbb{K}^{m \times n}$,
+$$A^+ A A^+ = A^+.$$
+-/
 theorem pinv_mul_self_mul_pinv : A.pinv * A * A.pinv = A.pinv := by
   calc A.pinv * A * A.pinv = A.gramPinv * (Aᴴ * A) * A.gramPinv * Aᴴ := by
         simp only [pinv_def, Matrix.mul_assoc]
     _ = A.pinv := by rw [gramPinv_mul_gram_mul_gramPinv, pinv_def]
 
-/-- The third Penrose condition: `A A⁺` is Hermitian. -/
+/-- The third Penrose condition: $A A^+$ is Hermitian. -/
 theorem isHermitian_mul_pinv : (A * A.pinv).IsHermitian := by
   rw [Matrix.IsHermitian, pinv_def, conjTranspose_mul, conjTranspose_mul,
     conjTranspose_conjTranspose, A.isHermitian_gramPinv, Matrix.mul_assoc]
 
-/-- The fourth Penrose condition: `A⁺ A` is Hermitian. -/
+/-- The fourth Penrose condition: $A^+ A$ is Hermitian. -/
 theorem isHermitian_pinv_mul : (A.pinv * A).IsHermitian := by
   have h : A.pinv * A = A.gramPinv * (Aᴴ * A) := by rw [pinv_def, Matrix.mul_assoc]
   rw [Matrix.IsHermitian, h, conjTranspose_mul, (isHermitian_conjTranspose_mul_self A).eq,
     A.isHermitian_gramPinv, ← gramPinv_mul_gram_comm]
 
-/-- The pseudoinverse solves the normal equations: `Aᴴ (A A⁺) = Aᴴ`. -/
+/-- The pseudoinverse solves the normal equations: $A^H (A A^+) = A^H$. -/
 theorem conjTranspose_mul_mul_pinv : Aᴴ * (A * A.pinv) = Aᴴ := by
   rw [← A.isHermitian_mul_pinv, ← conjTranspose_mul, mul_pinv_mul_self]
 
-/-- **The Moore–Penrose pseudoinverse is the unique matrix satisfying the four Penrose conditions.**
-The Penrose conditions force `B A = A⁺ A` and `A B = A A⁺`, after which `B = B A B = A⁺ A A⁺ = A⁺`.
--/
+/-- **The Moore–Penrose pseudoinverse is the unique matrix that satisfies the four Penrose
+conditions.** Let $A \in \mathbb{K}^{m \times n}$ and $B \in \mathbb{K}^{n \times m}$ satisfy
+$$ABA = A, \qquad BAB = B, \qquad (AB)^H = AB, \qquad (BA)^H = BA.$$
+Then $B = A^+$.
+
+The four conditions give $BA = A^+ A$ and $AB = A A^+$, and then $B = BAB = A^+ A A^+ = A^+$. -/
 theorem pinv_unique {B : Matrix n m 𝕜} (h1 : A * B * A = A) (h2 : B * A * B = B)
     (h3 : (A * B).IsHermitian) (h4 : (B * A).IsHermitian) : B = A.pinv := by
   have c1 : B * A = A.pinv * A := by
@@ -527,7 +587,8 @@ theorem pinv_unique {B : Matrix n m 𝕜} (h1 : A * B * A = A) (h2 : B * A * B =
 
 section LeastSquares
 
-/-- A Hermitian matrix acts as a self-adjoint operator on Euclidean space. -/
+/-- A Hermitian matrix $M \in \mathbb{K}^{n \times n}$ is self-adjoint on Euclidean space:
+$\langle Mu, z \rangle = \langle u, Mz \rangle$ for all $u, z \in \mathbb{K}^n$. -/
 theorem inner_toEuclideanLin_of_isHermitian {M : Matrix n n 𝕜} (hM : M.IsHermitian)
     (u z : EuclideanSpace 𝕜 n) :
     (inner 𝕜 (toEuclideanLin M u) z : 𝕜) = inner 𝕜 u (toEuclideanLin M z) := by
@@ -536,7 +597,10 @@ theorem inner_toEuclideanLin_of_isHermitian {M : Matrix n n 𝕜} (hM : M.IsHerm
 
 variable [DecidableEq m]
 
-/-- The residual of the pseudoinverse solution is orthogonal to the range of `A`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The residual of the pseudoinverse solution is orthogonal to
+the range of $A$: for $y \in \mathbb{K}^m$ and $w \in \mathbb{K}^n$,
+$$\langle Aw, A A^+ y - y \rangle = 0.$$
+-/
 theorem inner_toEuclideanLin_sub_pinv (y : EuclideanSpace 𝕜 m) (w : EuclideanSpace 𝕜 n) :
     (inner 𝕜 (toEuclideanLin A w)
       (toEuclideanLin A (toEuclideanLin A.pinv y) - y) : 𝕜) = 0 := by
@@ -547,7 +611,8 @@ theorem inner_toEuclideanLin_sub_pinv (y : EuclideanSpace 𝕜 m) (w : Euclidean
   rw [← LinearMap.adjoint_inner_right, ← toEuclideanLin_conjTranspose_eq_adjoint, hres,
     inner_zero_right]
 
-/-- **`A⁺ y` is a least-squares solution**: it minimizes the residual `‖A x - y‖`. -/
+/-- **$A^+ y$ is a least-squares solution.** Let $A \in \mathbb{K}^{m \times n}$. For
+$y \in \mathbb{K}^m$ and every $x \in \mathbb{K}^n$, $\|A A^+ y - y\| \le \|Ax - y\|$. -/
 theorem norm_toEuclideanLin_pinv_sub_le (y : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A (toEuclideanLin A.pinv y) - y‖ ≤ ‖toEuclideanLin A x - y‖ := by
   have hsplit : toEuclideanLin A x - y
@@ -565,15 +630,23 @@ theorem norm_toEuclideanLin_pinv_sub_le (y : EuclideanSpace 𝕜 m) (x : Euclide
   refine le_of_sq_le_sq ?_ (norm_nonneg _)
   nlinarith [hpy, sq_nonneg ‖toEuclideanLin A (x - toEuclideanLin A.pinv y)‖]
 
-/-- **The residual of the pseudoinverse solution is the least-squares minimum.** -/
+/-- **The residual of the pseudoinverse solution is the least-squares minimum.** Let
+$A \in \mathbb{K}^{m \times n}$. For every $y \in \mathbb{K}^m$,
+$$\|A A^+ y - y\| = \inf_{x \in \mathbb{K}^n} \|Ax - y\|.$$
+-/
 theorem norm_toEuclideanLin_pinv_sub_eq_iInf (y : EuclideanSpace 𝕜 m) :
     ‖toEuclideanLin A (toEuclideanLin A.pinv y) - y‖
       = ⨅ x : EuclideanSpace 𝕜 n, ‖toEuclideanLin A x - y‖ := by
   refine le_antisymm (le_ciInf fun x => A.norm_toEuclideanLin_pinv_sub_le y x) ?_
   exact ciInf_le ⟨0, fun r hr => by obtain ⟨x, rfl⟩ := hr; exact norm_nonneg _⟩ _
 
-/-- **Among the least-squares solutions, `A⁺ y` has the smallest norm.** The hypothesis is the
-normal equations `Aᴴ A x = Aᴴ y`, which characterize the least-squares solutions. -/
+/-- **Among the least-squares solutions, $A^+ y$ has the smallest norm.** Let
+$A \in \mathbb{K}^{m \times n}$ and $y \in \mathbb{K}^m$, and let $x \in \mathbb{K}^n$ satisfy
+the normal equations
+$$A^H A x = A^H y.$$
+Then $\|A^+ y\| \le \|x\|$.
+
+The normal equations characterize the least-squares solutions. -/
 theorem norm_pinv_le_of_normalEquations (y : EuclideanSpace 𝕜 m) {x : EuclideanSpace 𝕜 n}
     (hx : toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ y) :
     ‖toEuclideanLin A.pinv y‖ ≤ ‖x‖ := by
@@ -611,7 +684,9 @@ end LeastSquares
 
 section Projector
 
-/-- `A⁺ A` acts as the identity on the range of `Aᴴ`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. Then $A^+ A$ is the identity on the range of $A^H$:
+$$A^+ A A^H = A^H.$$
+-/
 theorem pinv_mul_self_mul_conjTranspose : A.pinv * A * Aᴴ = Aᴴ := by
   have h : (A.pinv * A * Aᴴ)ᴴ = (Aᴴ)ᴴ := by
     rw [conjTranspose_mul, conjTranspose_conjTranspose, A.isHermitian_pinv_mul.eq,
@@ -620,8 +695,12 @@ theorem pinv_mul_self_mul_conjTranspose : A.pinv * A * Aᴴ = Aᴴ := by
 
 variable [DecidableEq m]
 
-/-- **The pseudoinverse commutes with the conjugate transpose**, `(Aᴴ)⁺ = (A⁺)ᴴ`: the Penrose
-conditions for `A` and `A⁺` are, conjugate-transposed, those for `Aᴴ` and `(A⁺)ᴴ`. -/
+/-- **The pseudoinverse commutes with the conjugate transpose.** For every
+$A \in \mathbb{K}^{m \times n}$,
+$$(A^H)^+ = (A^+)^H.$$
+
+The Penrose conditions for $A$ and $A^+$, conjugate-transposed, are those for $A^H$ and
+$(A^+)^H$. -/
 theorem pinv_conjTranspose : Aᴴ.pinv = A.pinvᴴ := by
   symm
   refine pinv_unique Aᴴ ?_ ?_ ?_ ?_
@@ -632,9 +711,13 @@ theorem pinv_conjTranspose : Aᴴ.pinv = A.pinvᴴ := by
   · rw [IsHermitian, ← conjTranspose_mul, conjTranspose_conjTranspose,
       A.isHermitian_mul_pinv.eq]
 
-/-- **`A A⁺` is the orthogonal projection onto the range of `A`** ([golub2013matrix] §5.5.2,
-`A A⁺ = U₁ U₁ᴴ`): its values lie in the range, and the residual `x - A A⁺ x` is orthogonal to
-the range because `Aᴴ A A⁺ = Aᴴ`. -/
+/-- **$A A^+$ is the orthogonal projection onto the range of $A$.** Let
+$A \in \mathbb{K}^{m \times n}$. The linear map $y \mapsto A A^+ y$ on $\mathbb{K}^m$ is the
+orthogonal projection onto the range of $x \mapsto Ax$. This is [golub2013matrix], §5.5.2, where
+it is written $A A^+ = U_1 U_1^H$.
+
+The values of $A A^+$ lie in the range, and the residual $y - A A^+ y$ is orthogonal to the
+range because $A^H A A^+ = A^H$. The projection is `Submodule.starProjection`. -/
 theorem mul_pinv_eq_starProjection :
     toEuclideanLin (A * A.pinv) = ((LinearMap.range (toEuclideanLin A)).starProjection :
       EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 m) := by
@@ -649,9 +732,12 @@ theorem mul_pinv_eq_starProjection :
       ← toEuclideanLin_mul_apply, conjTranspose_mul_mul_pinv, sub_self, inner_zero_right,
       map_zero]
 
-/-- **`A⁺ A` is the orthogonal projection onto the range of `Aᴴ`** ([golub2013matrix] §5.5.2,
-`A⁺ A = V₁ V₁ᴴ`): the dual of `Matrix.mul_pinv_eq_starProjection`, applied to `Aᴴ`, since
-`A⁺ A = (A⁺ A)ᴴ = Aᴴ (Aᴴ)⁺`. -/
+/-- **$A^+ A$ is the orthogonal projection onto the range of $A^H$.** Let
+$A \in \mathbb{K}^{m \times n}$. The linear map $x \mapsto A^+ A x$ on $\mathbb{K}^n$ is the
+orthogonal projection onto the range of $y \mapsto A^H y$. This is [golub2013matrix], §5.5.2,
+where it is written $A^+ A = V_1 V_1^H$.
+
+It is `Matrix.mul_pinv_eq_starProjection` for $A^H$, because $A^+ A = (A^+ A)^H = A^H (A^H)^+$. -/
 theorem pinv_mul_eq_starProjection :
     toEuclideanLin (A.pinv * A) = ((LinearMap.range (toEuclideanLin Aᴴ)).starProjection :
       EuclideanSpace 𝕜 n →ₗ[𝕜] EuclideanSpace 𝕜 n) := by
@@ -668,7 +754,8 @@ section CondNumber
 
 open scoped Matrix.Norms.L2Operator
 
-/-- Parseval in the right singular basis. -/
+/-- Parseval's identity in the basis of right singular vectors:
+$\sum_i |\langle u_i, x \rangle|^2 = \|x\|^2$ for $x \in \mathbb{K}^n$. -/
 theorem sum_norm_inner_rightSingularBasis_sq (x : EuclideanSpace 𝕜 n) :
     ∑ i, ‖(inner 𝕜 (A.rightSingularBasis i) x : 𝕜)‖ ^ 2 = ‖x‖ ^ 2 := by
   have h := EuclideanSpace.norm_sq_eq (A.rightSingularBasis.repr x)
@@ -678,7 +765,10 @@ theorem sum_norm_inner_rightSingularBasis_sq (x : EuclideanSpace 𝕜 n) :
 
 variable [Nonempty n]
 
-/-- The largest singular value bounds `A` as an operator. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with $n \ge 1$. The largest singular value bounds $A$ as an
+operator: for every $x \in \mathbb{K}^n$,
+$$\|Ax\| \le \bigl(\max_i \sigma_i\bigr) \|x\|.$$
+-/
 theorem norm_toEuclideanLin_le_iSup_colSingularValues (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A x‖ ≤ (⨆ i, A.colSingularValues i) * ‖x‖ := by
   have hbdd : BddAbove (Set.range A.colSingularValues) := (Set.finite_range _).bddAbove
@@ -691,7 +781,8 @@ theorem norm_toEuclideanLin_le_iSup_colSingularValues (x : EuclideanSpace 𝕜 n
   exact Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_right
     (pow_le_pow_left₀ (A.colSingularValues_nonneg i) (hle i) 2) (sq_nonneg _)
 
-/-- The smallest singular value bounds `A` from below. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with $n \ge 1$. The smallest singular value bounds $A$ from
+below: $(\min_i \sigma_i) \|x\| \le \|Ax\|$ for every $x \in \mathbb{K}^n$. -/
 theorem iInf_colSingularValues_mul_norm_le (x : EuclideanSpace 𝕜 n) :
     (⨅ i, A.colSingularValues i) * ‖x‖ ≤ ‖toEuclideanLin A x‖ := by
   have hbdd : BddBelow (Set.range A.colSingularValues) := (Set.finite_range _).bddBelow
@@ -703,8 +794,13 @@ theorem iInf_colSingularValues_mul_norm_le (x : EuclideanSpace 𝕜 n) :
   exact Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_right
     (pow_le_pow_left₀ hnn (hge i) 2) (sq_nonneg _)
 
-/-- **Under the `l₂` operator norm the norm of a matrix is its largest singular value**, for
-rectangular matrices as well as square ones. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with $n \ge 1$. **The operator 2-norm of $A$ is its largest
+singular value:**
+$$\|A\|_2 = \max_i \sigma_i.$$
+This holds for rectangular matrices as well as square ones.
+
+The norm is the operator norm induced by the Euclidean norms, from the scope
+`Matrix.Norms.L2Operator`. -/
 theorem l2_opNorm_eq_iSup_colSingularValues : ‖A‖ = ⨆ i, A.colSingularValues i := by
   have hbdd : BddAbove (Set.range A.colSingularValues) := (Set.finite_range _).bddAbove
   have hnn : 0 ≤ ⨆ j, A.colSingularValues j :=
@@ -723,7 +819,8 @@ theorem l2_opNorm_eq_iSup_colSingularValues : ‖A‖ = ⨆ i, A.colSingularValu
 variable (B : Matrix n n 𝕜)
 
 omit [Nonempty n] in
-/-- An invertible matrix has no zero singular value. -/
+/-- Let $B \in \mathbb{K}^{n \times n}$ have invertible determinant. Then every singular value of
+$B$ is positive. -/
 theorem colSingularValues_pos (hB : IsUnit B.det) (i : n) : 0 < B.colSingularValues i := by
   refine lt_of_le_of_ne (B.colSingularValues_nonneg i) (Ne.symm fun h => ?_)
   have h0 : toEuclideanLin B (B.rightSingularBasis i) = 0 :=
@@ -736,8 +833,12 @@ theorem colSingularValues_pos (hB : IsUnit B.det) (i : n) : 0 < B.colSingularVal
   rw [← hinv, norm_zero] at hone
   exact zero_ne_one hone
 
-/-- **A positive least singular value makes a square matrix invertible**, the converse of
-`Matrix.colSingularValues_pos`: `σ_min ‖x‖ ≤ ‖B x‖` makes `x ↦ B x` injective. -/
+/-- **A positive least singular value makes a square matrix invertible.** Let
+$B \in \mathbb{K}^{n \times n}$ with $n \ge 1$. If $\min_i \sigma_i(B) > 0$, then $B$ is
+invertible.
+
+This is the converse of `Matrix.colSingularValues_pos`. The bound
+$\sigma_{\min} \|x\| \le \|Bx\|$ makes $x \mapsto Bx$ injective. -/
 theorem isUnit_of_iInf_colSingularValues_pos (h : 0 < ⨅ i, B.colSingularValues i) : IsUnit B := by
   rw [← mulVec_injective_iff_isUnit]
   intro v w hvw
@@ -748,7 +849,10 @@ theorem isUnit_of_iInf_colSingularValues_pos (h : 0 < ⨅ i, B.colSingularValues
   have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
   simpa [sub_eq_zero] using h3
 
-/-- **The norm of the inverse is the reciprocal of the smallest singular value.** -/
+/-- **The norm of the inverse is the reciprocal of the smallest singular value.** Let
+$B \in \mathbb{K}^{n \times n}$ with $n \ge 1$ have invertible determinant. Then
+$$\|B^{-1}\|_2 = \frac{1}{\min_i \sigma_i(B)}.$$
+-/
 theorem l2_opNorm_inv_eq_inv_iInf_colSingularValues (hB : IsUnit B.det) :
     ‖B⁻¹‖ = (⨅ i, B.colSingularValues i)⁻¹ := by
   obtain ⟨i₀, hi₀⟩ := Finite.exists_min B.colSingularValues
@@ -777,8 +881,12 @@ theorem l2_opNorm_inv_eq_inv_iInf_colSingularValues (hB : IsUnit B.det) :
     rw [inv_mul_cancel₀ hpos.ne']
     exact h2
 
-/-- **The spectral condition number is the ratio of the extreme singular values**, `κ₂(A) =
-σmax/σmin`. -/
+/-- **The spectral condition number is the ratio of the extreme singular values.** Let
+$B \in \mathbb{K}^{n \times n}$ with $n \ge 1$ have invertible determinant. Then
+$$\kappa_2(B) = \|B\|_2 \, \|B^{-1}\|_2 = \frac{\max_i \sigma_i(B)}{\min_i \sigma_i(B)}.$$
+
+The condition number is `NormedRing.condNumber` for the operator 2-norm of the scope
+`Matrix.Norms.L2Operator`. -/
 theorem condNumber_l2_eq_div_colSingularValues (hB : IsUnit B.det) :
     NormedRing.condNumber B = (⨆ i, B.colSingularValues i) / (⨅ i, B.colSingularValues i) := by
   rw [NormedRing.condNumber, ← Matrix.nonsing_inv_eq_ringInverse,
@@ -791,25 +899,36 @@ end CondNumber
 
 section Sorted
 
-/-- The singular values of `A` in nonincreasing order, `0`-based and zero from `rank A` on:
-Mathlib's `LinearMap.singularValues` of the operator `toEuclideanLin A`. The `i`-th singular
-value `σ_{i+1}(A)` of [golub2013matrix] §2.4.1 is `A.sortedSingularValues i`. An abbreviation,
-so that statements in the `toEuclideanLin` form and in this one unify by `rfl`; it exists for
-dot notation, beside the column-indexed `Matrix.colSingularValues`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **sorted singular values**
+$\sigma_0 \ge \sigma_1 \ge \dots \ge 0$ of $A$ are the singular values of the operator
+$x \mapsto Ax$ on Euclidean space, in nonincreasing order and with multiplicity, indexed by
+$\mathbb{N}$ from $0$. They are $0$ from the index $\operatorname{rank} A$ on.
+
+The definition is Mathlib's `LinearMap.singularValues` of `Matrix.toEuclideanLin A`. The
+singular value $\sigma_{i+1}(A)$ of [golub2013matrix], §2.4.1, is `A.sortedSingularValues i`.
+The definition is an abbreviation, so that statements about `Matrix.toEuclideanLin A` and about
+this function agree by `rfl`. It exists for dot notation, beside the column-indexed
+`Matrix.colSingularValues`. -/
 noncomputable abbrev sortedSingularValues (i : ℕ) : ℝ :=
   (toEuclideanLin A).singularValues i
 
-/-- Sorted singular values are nonnegative. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. Every sorted singular value is nonnegative:
+$\sigma_i \ge 0$ for all $i \in \mathbb{N}$. -/
 theorem sortedSingularValues_nonneg (i : ℕ) : 0 ≤ A.sortedSingularValues i :=
   (toEuclideanLin A).singularValues_nonneg i
 
-/-- Sorted singular values are sorted. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The sorted singular values are nonincreasing:
+$\sigma_j \le \sigma_i$ for all $i \le j$. -/
 theorem sortedSingularValues_antitone : Antitone A.sortedSingularValues :=
   (toEuclideanLin A).singularValues_antitone
 
-/-- **The column-indexed and the sorted singular values are the same multiset**: a relabelling
-`e : Fin (card n) ≃ n` carries the sorted ones to `Matrix.colSingularValues`. Both are square roots
-of the eigenvalues of `Aᴴ A = (toEuclideanLin A)† ∘ toEuclideanLin A`, and Mathlib's
+/-- **The column-indexed and the sorted singular values are the same multiset.** Let
+$A \in \mathbb{K}^{m \times n}$ and let $N$ be the number of columns. There is a bijection
+$e : \{0, \dots, N - 1\} \to n$ such that, for every $k$, the column-indexed singular value of
+index $e(k)$ is the sorted singular value $\sigma_k$.
+
+Both are square roots of the eigenvalues of $A^H A$, which is the composition of the adjoint of
+`Matrix.toEuclideanLin A` with `Matrix.toEuclideanLin A`. Mathlib's
 `Matrix.IsHermitian.eigenvalues` is by definition the sorted list reindexed along
 `Fintype.equivOfCardEq`. -/
 theorem exists_equiv_colSingularValues_eq_sortedSingularValues :
@@ -827,8 +946,10 @@ theorem exists_equiv_colSingularValues_eq_sortedSingularValues :
   rw [sortedSingularValues, T.singularValues_fin hn k, colSingularValues, heig]
   simp [IsHermitian.eigenvalues]
 
-/-- **The number of positive singular values is the rank** ([golub2013matrix] Corollary 2.4.6):
-`σ_k(A) = 0` exactly from `k = rank A` on. -/
+/-- **The number of positive singular values is the rank.** Let $A \in \mathbb{K}^{m \times n}$. For
+every $k \in \mathbb{N}$,
+$$\sigma_k(A) = 0 \iff \operatorname{rank} A \le k.$$
+This is Corollary 2.4.6 of [golub2013matrix]. -/
 theorem sortedSingularValues_eq_zero_iff_rank_le (k : ℕ) :
     A.sortedSingularValues k = 0 ↔ A.rank ≤ k := by
   classical
@@ -837,8 +958,12 @@ theorem sortedSingularValues_eq_zero_iff_rank_le (k : ℕ) :
       (EuclideanSpace.basisFun n 𝕜).toBasis, ← toEuclideanLin_eq_toLin_orthonormal]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The largest singular value is the `2`-norm** ([golub2013matrix] Corollary 2.4.3):
-`σ₁(A) = ‖A‖₂`, for every shape (both sides are `0` when `A` has no columns). -/
+/-- **The largest singular value is the 2-norm.** For every $A \in \mathbb{K}^{m \times n}$,
+$$\sigma_0(A) = \|A\|_2.$$
+This is Corollary 2.4.3 of [golub2013matrix], where the largest singular value is $\sigma_1$.
+
+The statement holds for every shape. When $A$ has no columns, both sides are $0$. The norm is
+the operator norm of the scope `Matrix.Norms.L2Operator`. -/
 theorem sortedSingularValues_zero_eq_l2_opNorm : A.sortedSingularValues 0 = ‖A‖ := by
   rcases isEmpty_or_nonempty n with hn | hn
   · have hA : A = 0 := by ext i j; exact isEmptyElim j
@@ -853,8 +978,11 @@ theorem sortedSingularValues_zero_eq_l2_opNorm : A.sortedSingularValues 0 = ‖A
     · rw [← e.apply_symm_apply i, he]
       exact A.sortedSingularValues_antitone (Nat.zero_le _)
 
-/-- **The last sorted singular value is the least column-indexed one**, for every shape:
-`σ_{card n}(A) = ⨅ i, A.colSingularValues i` (for a wide matrix both are `0`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with $N \ge 1$ columns. **The last sorted singular value is
+the least column-indexed one:**
+$$\sigma_{N-1}(A) = \min_i \sigma_i(A),$$
+where the right-hand side is over the column-indexed singular values. This holds for every
+shape; for a wide matrix both sides are $0$. -/
 theorem sortedSingularValues_eq_iInf_colSingularValues [Nonempty n] :
     A.sortedSingularValues (Fintype.card n - 1) = ⨅ i, A.colSingularValues i := by
   obtain ⟨e, he⟩ := A.exists_equiv_colSingularValues_eq_sortedSingularValues
@@ -865,10 +993,15 @@ theorem sortedSingularValues_eq_iInf_colSingularValues [Nonempty n] :
   · rw [← he ⟨Fintype.card n - 1, Nat.sub_lt hpos one_pos⟩]
     exact ciInf_le (Set.finite_range _).bddBelow _
 
-/-- **The least singular value is the least stretch** ([golub2013matrix] §2.4):
-`⨅ i, σ_i(A) = ⨅_{‖x‖ = 1} ‖A x‖`, for every shape. (Column-indexed on purpose: over the columns,
-`⨅ i` is `σ_min` with no sorted-index bookkeeping; the sorted reading is
-`Matrix.sortedSingularValues_eq_iInf_colSingularValues`.) -/
+/-- **The least singular value is the least stretch.** For every $A \in \mathbb{K}^{m \times n}$,
+$$\min_i \sigma_i(A) = \inf_{\|x\| = 1} \|Ax\|,$$
+where the left-hand side is over the column-indexed singular values. This is in
+[golub2013matrix], §2.4.
+
+The statement holds for every shape. When $A$ has no columns, both sides are $0$, the infimum of
+the empty set in `ℝ`. The column-indexed singular values are used on purpose: over the columns,
+the infimum is $\sigma_{\min}$ without a sorted index. The sorted form is
+`Matrix.sortedSingularValues_eq_iInf_colSingularValues`. -/
 theorem iInf_colSingularValues_eq_iInf_norm :
     ⨅ i, A.colSingularValues i
       = ⨅ x : {x : EuclideanSpace 𝕜 n // ‖x‖ = 1}, ‖toEuclideanLin A x‖ := by
@@ -891,9 +1024,12 @@ theorem iInf_colSingularValues_eq_iInf_norm :
           ‖toEuclideanLin A x‖) := ⟨0, by rintro _ ⟨x, rfl⟩; exact norm_nonneg _⟩
       exact ciInf_le hbdd ⟨A.rightSingularBasis i₀, A.rightSingularBasis.orthonormal.1 i₀⟩
 
-/-- **The least singular value is attained**: a unit vector `x` (the right singular vector of a
-least singular value) with `‖A x‖ = ⨅ i, σ_i(A)`. (Column-indexed on purpose, as
-`Matrix.iInf_colSingularValues_eq_iInf_norm`.) -/
+/-- **The least singular value is attained.** Let $A \in \mathbb{K}^{m \times n}$ with $n \ge 1$.
+There is $x \in \mathbb{K}^n$ with $\|x\| = 1$ and
+$$\|Ax\| = \min_i \sigma_i(A).$$
+
+The vector is a right singular vector of a least singular value. The singular values are
+column-indexed, as in `Matrix.iInf_colSingularValues_eq_iInf_norm`. -/
 theorem exists_norm_eq_iInf_colSingularValues [Nonempty n] :
     ∃ x : EuclideanSpace 𝕜 n, ‖x‖ = 1 ∧ ‖toEuclideanLin A x‖ = ⨅ i, A.colSingularValues i := by
   obtain ⟨i₀, hi₀⟩ := Finite.exists_min A.colSingularValues
@@ -901,8 +1037,11 @@ theorem exists_norm_eq_iInf_colSingularValues [Nonempty n] :
   rw [norm_toEuclideanLin_rightSingularBasis]
   exact le_antisymm (le_ciInf hi₀) (ciInf_le (Set.finite_range _).bddBelow i₀)
 
-/-- **A positive least stretch makes the columns independent**: if `σ_min(A) > 0` then
-`A x = 0` forces `x = 0`. -/
+/-- **A positive least singular value makes the columns independent.** Let
+$A \in \mathbb{K}^{m \times n}$. If $\min_i \sigma_i(A) > 0$, then the columns of $A$ are
+linearly independent, that is, $Ax = 0$ implies $x = 0$.
+
+The columns of $A$ are the rows of `Aᵀ`. -/
 theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m n 𝕜}
     (h : 0 < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 Aᵀ := by
   rcases isEmpty_or_nonempty n with hn | hn
@@ -916,8 +1055,11 @@ theorem linearIndependent_transpose_of_iInf_colSingularValues_pos {A : Matrix m 
   have h3 := congrArg WithLp.ofLp (norm_eq_zero.1 h2)
   simpa [sub_eq_zero] using h3
 
-/-- **Linearly independent columns give a positive least stretch**: `σ_min(A) > 0`, the converse
-of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
+/-- **Linearly independent columns give a positive least singular value.** Let
+$A \in \mathbb{K}^{m \times n}$ with $n \ge 1$. If the columns of $A$ are linearly independent,
+then $\min_i \sigma_i(A) > 0$.
+
+This is the converse of `Matrix.linearIndependent_transpose_of_iInf_colSingularValues_pos`. -/
 theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) : 0 < ⨅ i, A.colSingularValues i := by
   obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
@@ -933,9 +1075,13 @@ theorem iInf_colSingularValues_pos_of_linearIndependent [Nonempty n] {A : Matrix
   rw [hx0, norm_zero] at hx1
   exact zero_ne_one hx1
 
-/-- **The least singular value is unitarily invariant** ([golub2013matrix] §7.9.5):
-`⨅ i, σ_i(U A V) = ⨅ i, σ_i(A)` for unitary `U`, `V` — `V` permutes the unit sphere and `U` is an
-isometry. (Column-indexed on purpose, as `Matrix.iInf_colSingularValues_eq_iInf_norm`.) -/
+/-- **The least singular value is unitarily invariant.** Let $A \in \mathbb{K}^{m \times n}$, and
+let $U \in \mathbb{K}^{m \times m}$ and $V \in \mathbb{K}^{n \times n}$ be unitary. Then
+$$\min_i \sigma_i(UAV) = \min_i \sigma_i(A).$$
+This is in [golub2013matrix], §7.9.5.
+
+The matrix $V$ permutes the unit sphere and $U$ is an isometry. The singular values are
+column-indexed, as in `Matrix.iInf_colSingularValues_eq_iInf_norm`. -/
 theorem iInf_colSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m 𝕜}
     {V : Matrix n n 𝕜} (hU : U ∈ unitaryGroup m 𝕜) (hV : V ∈ unitaryGroup n 𝕜) :
     ⨅ i, (U * A * V).colSingularValues i = ⨅ i, A.colSingularValues i := by
@@ -949,8 +1095,9 @@ theorem iInf_colSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m �
     norm_toEuclideanLin_apply_of_mem_unitaryGroup hU]
   rfl
 
-/-- **The sorted singular values are unitarily invariant**: `σ_i(U A V) = σ_i(A)` for unitary `U`,
-`V`, the matrix form of `LinearMap.singularValues_comp_linearIsometryEquiv`. -/
+/-- **The sorted singular values are unitarily invariant.** Let $A \in \mathbb{K}^{m \times n}$, and
+let $U$ and $V$ be unitary. Then $\sigma_k(UAV) = \sigma_k(A)$ for every $k$. This is the matrix
+form of `LinearMap.singularValues_comp_linearIsometryEquiv`. -/
 theorem sortedSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m 𝕜}
     {V : Matrix n n 𝕜} (hU : U ∈ unitaryGroup m 𝕜) (hV : V ∈ unitaryGroup n 𝕜) :
     (U * A * V).sortedSingularValues = A.sortedSingularValues := by
@@ -964,12 +1111,14 @@ theorem sortedSingularValues_unitary_mul_mul [DecidableEq m] {U : Matrix m m �
   change (toEuclideanLin (U * A * V)).singularValues i = (toEuclideanLin A).singularValues i
   rw [key, LinearMap.singularValues_comp_linearIsometryEquiv]
 
-/-- A unitary factor on the left does not change the sorted singular values. -/
+/-- A unitary factor on the left does not change the sorted singular values:
+$\sigma_k(UA) = \sigma_k(A)$ for unitary $U$. -/
 theorem sortedSingularValues_unitary_mul [DecidableEq m] {U : Matrix m m 𝕜}
     (hU : U ∈ unitaryGroup m 𝕜) : (U * A).sortedSingularValues = A.sortedSingularValues := by
   simpa using A.sortedSingularValues_unitary_mul_mul hU (one_mem (unitaryGroup n 𝕜))
 
-/-- A unitary factor on the right does not change the sorted singular values. -/
+/-- A unitary factor on the right does not change the sorted singular values:
+$\sigma_k(AV) = \sigma_k(A)$ for unitary $V$. -/
 theorem sortedSingularValues_mul_unitary {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜) :
     (A * V).sortedSingularValues = A.sortedSingularValues := by
   classical
@@ -991,20 +1140,25 @@ section Zero
 
 variable {α : Type*} [Zero α]
 
-/-- The rectangular "diagonal" matrix `diag(σ 0, σ 1, …) ∈ α^{m × n}` of
-[quarteroni2000numerical] (1.9): `σ i` at the entries `(i, i)` with `i < min m n`, and `0`
-elsewhere. It is indexed by a function on `ℕ`, so that one `σ` serves every shape and the
-transpose is the same `σ` on the transposed shape; the values `σ i` for `i ≥ min m n` are never
-read. -/
+/-- Let $\sigma : \mathbb{N} \to \alpha$. The **rectangular diagonal matrix**
+$\operatorname{diag}(\sigma_0, \sigma_1, \dots) \in \alpha^{m \times n}$ has the entry
+$\sigma_i$ at $(i, i)$ for $i < \min(m, n)$, and $0$ elsewhere. This is the matrix of
+[quarteroni2000numerical], (1.9).
+
+The diagonal is a function on $\mathbb{N}$, so that one $\sigma$ serves every shape, and the
+transpose has the same $\sigma$ on the transposed shape. The values $\sigma_i$ for
+$i \ge \min(m, n)$ are not used. -/
 def rectDiagonal (σ : ℕ → α) : Matrix (Fin m) (Fin n) α :=
   of fun i j => if (i : ℕ) = j then σ i else 0
 
-/-- The entries of a rectangular diagonal matrix. -/
+/-- The entry $(i, j)$ of the rectangular diagonal matrix $\operatorname{diag}(\sigma)$ is
+$\sigma_i$ if $i = j$, and $0$ otherwise. -/
 theorem rectDiagonal_apply (σ : ℕ → α) (i : Fin m) (j : Fin n) :
     rectDiagonal σ i j = if (i : ℕ) = j then σ i else 0 := rfl
 
-/-- Two rectangular diagonal matrices of the same shape agree when their diagonals agree below
-`min m n`. -/
+/-- Let $\sigma, \tau : \mathbb{N} \to \alpha$ with $\sigma_i = \tau_i$ for all $i < \min(m, n)$.
+Then the rectangular diagonal matrices $\operatorname{diag}(\sigma)$ and
+$\operatorname{diag}(\tau)$ in $\alpha^{m \times n}$ are equal. -/
 theorem rectDiagonal_congr {σ τ : ℕ → α} (h : ∀ i, i < m → i < n → σ i = τ i) :
     (rectDiagonal σ : Matrix (Fin m) (Fin n) α) = rectDiagonal τ := by
   ext i j
@@ -1013,8 +1167,9 @@ theorem rectDiagonal_congr {σ τ : ℕ → α} (h : ∀ i, i < m → i < n → 
   · exact h i i.isLt (hij ▸ j.isLt)
   · rfl
 
-/-- The transpose of a rectangular diagonal matrix is the rectangular diagonal matrix of the
-transposed shape, with the same diagonal. -/
+/-- The transpose of the rectangular diagonal matrix $\operatorname{diag}(\sigma) \in \alpha^{m
+\times n}$ is the rectangular diagonal matrix $\operatorname{diag}(\sigma) \in \alpha^{n \times
+m}$ with the same diagonal. -/
 theorem rectDiagonal_transpose (σ : ℕ → α) :
     (rectDiagonal σ : Matrix (Fin m) (Fin n) α)ᵀ = rectDiagonal σ := by
   ext i j
@@ -1025,24 +1180,31 @@ theorem rectDiagonal_transpose (σ : ℕ → α) :
   · exact absurd h2.symm h1
   · rfl
 
-/-- A square rectangular diagonal matrix is a diagonal matrix. -/
+/-- A square rectangular diagonal matrix is a diagonal matrix: $\operatorname{diag}(\sigma) \in
+\alpha^{n \times n}$ is the diagonal matrix with diagonal entries
+$\sigma_0, \dots, \sigma_{n-1}$. -/
 theorem rectDiagonal_eq_diagonal (σ : ℕ → α) :
     (rectDiagonal σ : Matrix (Fin n) (Fin n) α) = diagonal fun i : Fin n => σ i := by
   ext i j
   simp only [rectDiagonal_apply, diagonal_apply, Fin.ext_iff]
 
-/-- **The shifted rectangular diagonal matrix**: `σ j` at the entries `(j - k, j)` with `k ≤ j`,
-and `0` elsewhere — the `D_B` block of a generalized singular value decomposition and the sine
-block of a thin CS decomposition with fewer rows than columns ([golub2013matrix] (6.1.23)). At
-`k = 0` it is `Matrix.rectDiagonal` (`Matrix.shiftedRectDiagonal_zero`). -/
+/-- Let $k \in \mathbb{N}$ and $\sigma : \mathbb{N} \to \alpha$. The **shifted rectangular diagonal
+matrix** in $\alpha^{m \times n}$ has the entry $\sigma_j$ at $(i, j)$ when $j = i + k$, and $0$
+elsewhere.
+
+It is the block $D_B$ of a generalized singular value decomposition, and the sine block of a
+thin CS decomposition with fewer rows than columns ([golub2013matrix], (6.1.23)). For $k = 0$ it
+is `Matrix.rectDiagonal` (`Matrix.shiftedRectDiagonal_zero`). -/
 def shiftedRectDiagonal (k : ℕ) (σ : ℕ → α) : Matrix (Fin m) (Fin n) α :=
   of fun i j => if (j : ℕ) = i + k then σ j else 0
 
-/-- The entries of a shifted rectangular diagonal matrix. -/
+/-- The entry $(i, j)$ of the shifted rectangular diagonal matrix with shift $k$ is $\sigma_j$ if
+$j = i + k$, and $0$ otherwise. -/
 theorem shiftedRectDiagonal_apply (k : ℕ) (σ : ℕ → α) (i : Fin m) (j : Fin n) :
     shiftedRectDiagonal k σ i j = if (j : ℕ) = i + k then σ j else 0 := rfl
 
-/-- Without a shift, the shifted rectangular diagonal matrix is the rectangular diagonal one. -/
+/-- With shift $0$, the shifted rectangular diagonal matrix is the rectangular diagonal matrix
+$\operatorname{diag}(\sigma)$. -/
 theorem shiftedRectDiagonal_zero (σ : ℕ → α) :
     (shiftedRectDiagonal 0 σ : Matrix (Fin m) (Fin n) α) = rectDiagonal σ := by
   ext i j
@@ -1053,7 +1215,9 @@ theorem shiftedRectDiagonal_zero (σ : ℕ → α) :
 
 end Zero
 
-/-- The conjugate transpose of a rectangular diagonal matrix. -/
+/-- The conjugate transpose of the rectangular diagonal matrix $\operatorname{diag}(\sigma) \in
+\alpha^{m \times n}$ is the rectangular diagonal matrix $\operatorname{diag}(\bar\sigma) \in
+\alpha^{n \times m}$, where $\bar\sigma_i$ is the star of $\sigma_i$. -/
 theorem rectDiagonal_conjTranspose {α : Type*} [AddMonoid α] [StarAddMonoid α] (σ : ℕ → α) :
     (rectDiagonal σ : Matrix (Fin m) (Fin n) α)ᴴ = rectDiagonal (star ∘ σ) := by
   ext i j
@@ -1068,7 +1232,8 @@ section Semiring
 
 variable {α : Type*} [NonUnitalNonAssocSemiring α]
 
-/-- A rectangular diagonal matrix acts on a vector by scaling the coordinates it can see. -/
+/-- Let $\Sigma = \operatorname{diag}(\sigma) \in \alpha^{m \times n}$ and $x \in \alpha^n$. For
+$i < n$, $(\Sigma x)_i = \sigma_i x_i$. -/
 theorem rectDiagonal_mulVec (σ : ℕ → α) (x : Fin n → α) (i : Fin m) (h : (i : ℕ) < n) :
     (rectDiagonal σ *ᵥ x) i = σ i * x ⟨i, h⟩ := by
   rw [mulVec_apply_eq_sum, Finset.sum_eq_single ⟨i, h⟩]
@@ -1077,7 +1242,8 @@ theorem rectDiagonal_mulVec (σ : ℕ → α) (x : Fin n → α) (i : Fin m) (h 
     rw [rectDiagonal_apply, ite_eq_right (fun hij => hj (Fin.ext hij.symm)), zero_mul]
   · exact fun h' => absurd (Finset.mem_univ _) h'
 
-/-- A rectangular diagonal matrix kills the coordinates beyond its width. -/
+/-- Let $\Sigma = \operatorname{diag}(\sigma) \in \alpha^{m \times n}$ and $x \in \alpha^n$. For
+$i \ge n$, $(\Sigma x)_i = 0$. -/
 theorem rectDiagonal_mulVec_of_le (σ : ℕ → α) (x : Fin n → α) (i : Fin m) (h : n ≤ i) :
     (rectDiagonal σ *ᵥ x) i = 0 := by
   rw [mulVec_apply_eq_sum]
@@ -1086,8 +1252,9 @@ theorem rectDiagonal_mulVec_of_le (σ : ℕ → α) (x : Fin n → α) (i : Fin 
     ite_eq_right (fun hij : (i : ℕ) = j => absurd (lt_of_eq_of_lt hij j.isLt) (not_lt.2 h)),
     zero_mul]
 
-/-- A rectangular diagonal matrix times a matrix reads the rows it can see: the matrix form of
-`Matrix.rectDiagonal_mulVec`. -/
+/-- Let $\Sigma = \operatorname{diag}(\sigma) \in \alpha^{m \times n}$ and
+$M \in \alpha^{n \times o}$. For $i < n$, $(\Sigma M)_{ij} = \sigma_i M_{ij}$. This is the
+matrix form of `Matrix.rectDiagonal_mulVec`. -/
 theorem rectDiagonal_mul_apply {o : Type*} (σ : ℕ → α) (M : Matrix (Fin n) o α)
     (i : Fin m) (j : o) (h : (i : ℕ) < n) :
     ((rectDiagonal σ : Matrix (Fin m) (Fin n) α) * M) i j = σ i * M ⟨i, h⟩ j := by
@@ -1097,8 +1264,8 @@ theorem rectDiagonal_mul_apply {o : Type*} (σ : ℕ → α) (M : Matrix (Fin n)
     rw [rectDiagonal_apply, ite_eq_right (fun hik => hk (Fin.ext hik.symm)), zero_mul]
   · exact fun h' => absurd (Finset.mem_univ _) h'
 
-/-- Right multiplication by a rectangular diagonal matrix scales the columns it can see and pads
-with zero columns. -/
+/-- Let $M \in \alpha^{o \times m}$ and $\Sigma = \operatorname{diag}(\sigma) \in \alpha^{m \times
+n}$. Then $(M \Sigma)_{ij} = M_{ij} \sigma_j$ if $j < m$, and $(M \Sigma)_{ij} = 0$ otherwise. -/
 theorem mul_rectDiagonal_apply {o : Type*} (M : Matrix o (Fin m) α) (σ : ℕ → α) (i : o)
     (j : Fin n) :
     (M * (rectDiagonal σ : Matrix (Fin m) (Fin n) α)) i j
@@ -1113,8 +1280,8 @@ theorem mul_rectDiagonal_apply {o : Type*} (M : Matrix o (Fin m) α) (σ : ℕ �
   · refine Finset.sum_eq_zero fun k _ => ?_
     rw [rectDiagonal_apply, ite_eq_right (fun hkj : (k : ℕ) = j => h (hkj ▸ k.isLt)), mul_zero]
 
-/-- A shifted rectangular diagonal matrix acts on a vector by scaling the shifted coordinates:
-the shifted form of `Matrix.rectDiagonal_mulVec`. -/
+/-- Let $D \in \alpha^{m \times n}$ be the shifted rectangular diagonal matrix with shift $k$, and
+let $x \in \alpha^n$. For $i + k < n$, $(Dx)_i = \sigma_{i+k} x_{i+k}$. -/
 theorem shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → α) (x : Fin n → α) (i : Fin m)
     (h : (i : ℕ) + k < n) :
     (shiftedRectDiagonal k σ *ᵥ x) i = σ (i + k) * x ⟨i + k, h⟩ := by
@@ -1125,7 +1292,12 @@ theorem shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → α) (x : Fin n → α
   · exact fun h' => absurd (Finset.mem_univ _) h'
 
 /-- The product of two rectangular diagonal matrices is the rectangular diagonal matrix of the
-products, truncated at the inner dimension. -/
+products, truncated at the inner dimension: for $\operatorname{diag}(\sigma) \in \alpha^{l
+\times m}$ and $\operatorname{diag}(\tau) \in \alpha^{m \times n}$,
+$$\operatorname{diag}(\sigma) \operatorname{diag}(\tau) = \operatorname{diag}(\rho),
+  \qquad \rho_i = \begin{cases} \sigma_i \tau_i & \text{if } i < m, \\
+  0 & \text{otherwise.} \end{cases}$$
+-/
 theorem rectDiagonal_mul_rectDiagonal (σ τ : ℕ → α) :
     (rectDiagonal σ : Matrix (Fin l) (Fin m) α) * (rectDiagonal τ : Matrix (Fin m) (Fin n) α)
       = rectDiagonal fun i => if i < m then σ i * τ i else 0 := by
@@ -1153,15 +1325,19 @@ section SVD
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- `Σᴴ Σ` is the square diagonal matrix of the `|σ i|²`, truncated at the height of `Σ`. -/
+/-- Let $\Sigma = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$. Then
+$\Sigma^H \Sigma \in \mathbb{K}^{n \times n}$ is the diagonal matrix with entries
+$\bar\sigma_j \sigma_j = |\sigma_j|^2$ for $j < m$ and $0$ for $j \ge m$. -/
 theorem conjTranspose_rectDiagonal_mul_self (σ : ℕ → 𝕜) :
     (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * rectDiagonal σ
       = diagonal fun j : Fin n => if (j : ℕ) < m then star (σ j) * σ j else 0 := by
   rw [rectDiagonal_conjTranspose, rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
   rfl
 
-/-- `Σᴴ Σ` for a shifted rectangular diagonal matrix: the shift disappears, and the diagonal
-keeps the `|σ_j|²` with `k ≤ j < m + k`. -/
+/-- Let $D \in \mathbb{K}^{m \times n}$ be the shifted rectangular diagonal matrix with shift $k$.
+Then $D^H D \in \mathbb{K}^{n \times n}$ is the diagonal matrix with entries
+$\bar\sigma_j \sigma_j = |\sigma_j|^2$ for $k \le j < m + k$ and $0$ for the other $j$. The
+shift disappears. -/
 theorem conjTranspose_shiftedRectDiagonal_mul_self (k : ℕ) (σ : ℕ → 𝕜) :
     (shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * shiftedRectDiagonal k σ
       = diagonal fun j : Fin n => if k ≤ j ∧ (j : ℕ) < m + k then star (σ j) * σ j else 0 := by
@@ -1190,8 +1366,9 @@ theorem conjTranspose_shiftedRectDiagonal_mul_self (k : ℕ) (σ : ℕ → 𝕜)
       rw [ite_eq_right this, mul_zero]
     · rw [ite_eq_right h1, star_zero, zero_mul]
 
-/-- The adjoint of a shifted rectangular diagonal matrix times a matrix: row `a` of `Σᴴ M` is
-`conj(σ_a)` times row `a - k` of `M` when `k ≤ a < m + k`, and zero otherwise. -/
+/-- Let $D \in \mathbb{K}^{m \times n}$ be the shifted rectangular diagonal matrix with shift $k$,
+and let $M \in \mathbb{K}^{m \times o}$. Then row $a$ of $D^H M$ is $\bar\sigma_a$ times row
+$a - k$ of $M$ when $k \le a$ and $a - k < m$, and zero otherwise. -/
 theorem conjTranspose_shiftedRectDiagonal_mul_apply {o : Type*} (k : ℕ) (σ : ℕ → 𝕜)
     (M : Matrix (Fin m) o 𝕜) (a : Fin n) (b : o) :
     ((shiftedRectDiagonal k σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * M) a b
@@ -1208,7 +1385,9 @@ theorem conjTranspose_shiftedRectDiagonal_mul_apply {o : Type*} (k : ℕ) (σ : 
     rw [conjTranspose_apply, shiftedRectDiagonal_apply,
       ite_eq_right (fun hij => h ⟨by omega, by omega⟩), star_zero, zero_mul]
 
-/-- `Σᴴ v` for a shifted rectangular diagonal `Σ`: the vector form of
+/-- Let $D \in \mathbb{K}^{m \times n}$ be the shifted rectangular diagonal matrix with shift $k$,
+and let $v \in \mathbb{K}^m$. Then $(D^H v)_i = \bar\sigma_i v_{i-k}$ when $k \le i$ and
+$i - k < m$, and $(D^H v)_i = 0$ otherwise. This is the vector form of
 `Matrix.conjTranspose_shiftedRectDiagonal_mul_apply`. -/
 theorem conjTranspose_shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → 𝕜) (v : Fin m → 𝕜)
     (i : Fin n) :
@@ -1226,8 +1405,9 @@ theorem conjTranspose_shiftedRectDiagonal_mulVec (k : ℕ) (σ : ℕ → 𝕜) (
     rw [conjTranspose_apply, shiftedRectDiagonal_apply,
       ite_eq_right (fun hij => h ⟨by omega, by omega⟩), star_zero, zero_mul]
 
-/-- For `n ≤ m`, the product of a square matrix with a tall rectangular diagonal matrix only sees
-the first `n` columns of the square matrix: `W Σ = W₁ diag(σ)`. -/
+/-- Let $n \le m$, $W \in \mathbb{K}^{m \times m}$ and $\Sigma = \operatorname{diag}(\sigma) \in
+\mathbb{K}^{m \times n}$. Then $W \Sigma = W_1 \operatorname{diag}(\sigma_0, \dots,
+\sigma_{n-1})$, where $W_1$ consists of the first $n$ columns of $W$. -/
 theorem mul_rectDiagonal_eq_submatrix_mul_diagonal (hnm : n ≤ m) (W : Matrix (Fin m) (Fin m) 𝕜)
     (σ : ℕ → 𝕜) :
     W * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)
@@ -1244,8 +1424,9 @@ theorem mul_rectDiagonal_eq_submatrix_mul_diagonal (hnm : n ≤ m) (W : Matrix (
     simp [rectDiagonal_apply, hl']
   · simp
 
-/-- For `m ≤ n`, the product of a wide rectangular diagonal matrix with a square matrix only sees
-the first `m` rows of the square matrix: `Σ W = diag(σ) W₁`, the dual of
+/-- Let $m \le n$, $\Sigma = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$ and
+$W \in \mathbb{K}^{n \times n}$. Then $\Sigma W = \operatorname{diag}(\sigma_0, \dots,
+\sigma_{m-1}) W_1$, where $W_1$ consists of the first $m$ rows of $W$. This is the dual of
 `Matrix.mul_rectDiagonal_eq_submatrix_mul_diagonal`. -/
 theorem rectDiagonal_mul_eq_diagonal_mul_submatrix (hmn : m ≤ n) (σ : ℕ → 𝕜)
     (W : Matrix (Fin n) (Fin n) 𝕜) :
@@ -1263,7 +1444,8 @@ theorem rectDiagonal_mul_eq_diagonal_mul_submatrix (hmn : m ≤ n) (σ : ℕ →
     simp [rectDiagonal_apply, hl']
   · simp
 
-/-- The first `n` columns of a unitary matrix are orthonormal. -/
+/-- Let $n \le m$ and let $W \in \mathbb{K}^{m \times m}$ be unitary. The first $n$ columns $W_1$ of
+$W$ are orthonormal: $W_1^H W_1 = I$. -/
 theorem conjTranspose_submatrix_castLE_mul_self (hnm : n ≤ m) {W : Matrix (Fin m) (Fin m) 𝕜}
     (hW : W ∈ unitaryGroup (Fin m) 𝕜) :
     (W.submatrix id (Fin.castLE hnm))ᴴ * W.submatrix id (Fin.castLE hnm) = 1 := by
@@ -1271,41 +1453,46 @@ theorem conjTranspose_submatrix_castLE_mul_self (hnm : n ≤ m) {W : Matrix (Fin
     ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hW]
   exact submatrix_one _ (Fin.castLE_injective hnm)
 
-/-- The unitary matrix whose columns are the vectors of an orthonormal basis `b` of a Euclidean
-space: the change-of-basis matrix from the standard basis to `b`, whose `j`-th column is `b j`
-(`Matrix.unitaryOfBasis_apply`). -/
+/-- Let $b$ be an orthonormal basis of $\mathbb{K}^\iota$. The matrix `Matrix.unitaryOfBasis b` is
+the matrix whose column $j$ is the basis vector $b_j$. It is the change-of-basis matrix from the
+standard basis to $b$, and it is unitary (`Matrix.unitaryOfBasis_mem_unitaryGroup`). -/
 noncomputable def unitaryOfBasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : Matrix ι ι 𝕜 :=
   (EuclideanSpace.basisFun ι 𝕜).toBasis.toMatrix b.toBasis
 
-/-- The entries of `Matrix.unitaryOfBasis b` are the coordinates of the basis vectors: the `j`-th
-column is `b j`. -/
+/-- The entry $(i, j)$ of `Matrix.unitaryOfBasis b` is the coordinate $i$ of the basis vector $b_j$,
+so its column $j$ is $b_j$. -/
 theorem unitaryOfBasis_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) (i j : ι) : unitaryOfBasis b i j = b j i :=
   rfl
 
-/-- The matrix of an orthonormal basis of a Euclidean space is unitary. -/
+/-- For an orthonormal basis $b$ of $\mathbb{K}^\iota$, the matrix `Matrix.unitaryOfBasis b` with
+columns $b_j$ is unitary. -/
 theorem unitaryOfBasis_mem_unitaryGroup {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : unitaryOfBasis b ∈ unitaryGroup ι 𝕜 :=
   (EuclideanSpace.basisFun ι 𝕜).toMatrix_orthonormalBasis_mem_unitary b
 
-/-- The rows of the transpose of `Matrix.unitaryOfBasis b`, that is its columns, are the vectors
-of `b`. -/
+/-- Row $j$ of the transpose of `Matrix.unitaryOfBasis b`, that is, column $j$ of
+`Matrix.unitaryOfBasis b`, is the basis vector $b_j$. -/
 theorem unitaryOfBasis_transpose_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) (j : ι) :
     (unitaryOfBasis b)ᵀ j = ⇑(b j) := rfl
 
-/-- The columns of a matrix with `Vᴴ V = 1` are orthonormal vectors of `EuclideanSpace`. -/
+/-- Let $V \in \mathbb{K}^{\iota \times r}$ satisfy $V^H V = I$. Then the columns of $V$ are
+orthonormal vectors of the Euclidean space $\mathbb{K}^\iota$. -/
 theorem orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one {ι r : Type*} [Fintype ι]
     [DecidableEq r] {V : Matrix ι r 𝕜} (hV : Vᴴ * V = 1) :
     Orthonormal 𝕜 fun j => (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace 𝕜 ι) :=
   conjTranspose_mul_self_eq_one_iff_orthonormal.mp hV
 
-/-- **Orthonormal columns extend to a unitary matrix** ([golub2013matrix] Theorem 2.1.1): for
-`V` with `Vᴴ V = 1` and a placement `f` of its columns among those of an `ι × ι` matrix, there is a
-unitary `U` whose columns `f j` are the columns of `V`. The columns of `V` extend to an orthonormal
-basis of `EuclideanSpace 𝕜 ι` (`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`), whose
-matrix is `Matrix.unitaryOfBasis`. -/
+/-- **Orthonormal columns extend to a unitary matrix.** Let $V \in \mathbb{K}^{\iota \times r}$
+satisfy $V^H V = I$, and let $f : r \to \iota$ be injective. Then there is a unitary
+$U \in \mathbb{K}^{\iota \times \iota}$ whose column $f(j)$ is column $j$ of $V$ for every
+$j \in r$. This is Theorem 2.1.1 of [golub2013matrix].
+
+The columns of $V$ extend to an orthonormal basis of $\mathbb{K}^\iota$
+(`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`), and $U$ is its matrix
+`Matrix.unitaryOfBasis`. -/
 theorem exists_mem_unitaryGroup_submatrix_eq {ι r : Type*} [Fintype ι] [DecidableEq ι]
     [DecidableEq r] (V : Matrix ι r 𝕜) (hV : Vᴴ * V = 1) (f : r ↪ ι) :
     ∃ U ∈ unitaryGroup ι 𝕜, U.submatrix id f = V := by
@@ -1329,9 +1516,14 @@ theorem exists_mem_unitaryGroup_submatrix_eq {ι r : Type*} [Fintype ι] [Decida
   rfl
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The `2`-norm of a rectangular diagonal matrix** is the largest modulus on its diagonal
-([golub2013matrix] P2.3.3 at `p = 2`; `0` when `min m n = 0`): `‖Σ‖₂² = ‖Σᴴ Σ‖₂` and `Σᴴ Σ` is
-the diagonal matrix of the `|σ_i|²`. -/
+/-- **The 2-norm of a rectangular diagonal matrix** is the largest modulus on its diagonal: for
+$\Sigma = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$,
+$$\|\Sigma\|_2 = \max_{i < \min(m, n)} |\sigma_i|,$$
+and $\|\Sigma\|_2 = 0$ when $\min(m, n) = 0$. This is Problem P2.3.3 of [golub2013matrix] for
+$p = 2$.
+
+The proof uses $\|\Sigma\|_2^2 = \|\Sigma^H \Sigma\|_2$, where $\Sigma^H \Sigma$ is the diagonal
+matrix of the $|\sigma_i|^2$. -/
 theorem l2_opNorm_rectDiagonal (σ : ℕ → 𝕜) :
     ‖(rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)‖ = ⨆ i : Fin (min m n), ‖σ i‖ := by
   set S : Matrix (Fin m) (Fin n) 𝕜 := rectDiagonal σ with hS
@@ -1372,8 +1564,9 @@ theorem l2_opNorm_rectDiagonal (σ : ℕ → 𝕜) :
   exact (pow_left_inj₀ (norm_nonneg _) hs0 two_ne_zero).1 hsq
 
 open scoped ComplexOrder in
-/-- **The rank of a rectangular diagonal matrix** is the number of nonzero entries on its
-diagonal. -/
+/-- **The rank of a rectangular diagonal matrix** $\operatorname{diag}(\sigma) \in \mathbb{K}^{m
+\times n}$ is the number of nonzero entries on its diagonal, that is, the number of
+$j < \min(m, n)$ with $\sigma_j \neq 0$. -/
 theorem rank_rectDiagonal (σ : ℕ → 𝕜) :
     (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜).rank
       = Fintype.card {j : Fin n // (j : ℕ) < m ∧ σ j ≠ 0} := by
@@ -1384,8 +1577,10 @@ theorem rank_rectDiagonal (σ : ℕ → 𝕜) :
   · simp [h]
   · simp [h]
 
-/-- The entries of `Uᴴ A V` are the inner products `⟪u_i, A v_j⟫` of the columns of `U` with the
-images of the columns of `V`. -/
+/-- Let $U \in \mathbb{K}^{m \times m}$, $A \in \mathbb{K}^{m \times n}$ and
+$V \in \mathbb{K}^{n \times n}$, with columns $u_i$ of $U$ and $v_j$ of $V$. Then
+$$(U^H A V)_{ij} = \langle u_i, A v_j \rangle.$$
+-/
 theorem star_mul_mul_apply (U : Matrix (Fin m) (Fin m) 𝕜) (A : Matrix (Fin m) (Fin n) 𝕜)
     (V : Matrix (Fin n) (Fin n) 𝕜) (i : Fin m) (j : Fin n) :
     (star U * A * V) i j = inner 𝕜 (WithLp.toLp 2 (Uᵀ i) : EuclideanSpace 𝕜 (Fin m))
@@ -1396,10 +1591,14 @@ theorem star_mul_mul_apply (U : Matrix (Fin m) (Fin m) 𝕜) (A : Matrix (Fin m)
   refine Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => ?_
   ring
 
-/-- The right singular vectors of `A`, sorted by decreasing singular value and extended by zero to
-an `ℕ`-indexed family: `A.sortedRightSingularVec j` for `j < n` is the `j`-th vector of the sorted
-orthonormal eigenbasis of `Aᴴ A`, paired with `(toEuclideanLin A).singularValues j`. The
-`ℕ`-indexing matches `Matrix.rectDiagonal` and `LinearMap.singularValues`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The **sorted right singular vectors**
+$v_0, v_1, \dots \in \mathbb{K}^n$ of $A$ are, for $j < n$, the vectors of the orthonormal
+eigenbasis of $A^H A$ sorted by decreasing eigenvalue, so that $v_j$ belongs to the sorted
+singular value $\sigma_j$. For $j \ge n$, $v_j = 0$.
+
+The family is indexed by $\mathbb{N}$, like `Matrix.rectDiagonal` and
+`LinearMap.singularValues`. The eigenbasis is `LinearMap.IsSymmetric.eigenvectorBasis` of the
+composition of the adjoint of `Matrix.toEuclideanLin A` with `Matrix.toEuclideanLin A`. -/
 noncomputable def sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (j : ℕ) :
     EuclideanSpace 𝕜 (Fin n) :=
   if h : j < n then
@@ -1407,19 +1606,23 @@ noncomputable def sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (j : 
       ⟨j, h⟩
   else 0
 
-/-- Below `n`, the sorted right singular vectors are the sorted eigenbasis of `Aᴴ A`. -/
+/-- For $j < n$, the sorted right singular vector $v_j$ is the vector of index $j$ of the sorted
+eigenbasis of $A^H A$. -/
 theorem sortedRightSingularVec_of_lt (A : Matrix (Fin m) (Fin n) 𝕜) {j : ℕ} (h : j < n) :
     A.sortedRightSingularVec j = (toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis
       finrank_euclideanSpace_fin ⟨j, h⟩ := by
   rw [sortedRightSingularVec, dite_eq_left h]
 
-/-- From `n` on, the sorted right singular vectors are zero. -/
+/-- For $j \ge n$, the sorted right singular vector $v_j$ is $0$. -/
 theorem sortedRightSingularVec_of_le (A : Matrix (Fin m) (Fin n) 𝕜) {j : ℕ} (h : n ≤ j) :
     A.sortedRightSingularVec j = 0 := by
   rw [sortedRightSingularVec, dite_eq_right (not_lt.2 h)]
 
-/-- The images of the sorted right singular vectors are pairwise orthogonal, with the squared
-singular values as squared norms; beyond `n` they vanish. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with sorted right singular vectors $v_j$ and sorted singular
+values $\sigma_j$. For all $i, j \in \mathbb{N}$,
+$$\langle A v_i, A v_j \rangle = \begin{cases} \sigma_j^2 & \text{if } i = j < n, \\
+  0 & \text{otherwise.} \end{cases}$$
+-/
 theorem inner_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (i j : ℕ) :
     inner 𝕜 (toEuclideanLin A (A.sortedRightSingularVec i))
         (toEuclideanLin A (A.sortedRightSingularVec j))
@@ -1434,7 +1637,8 @@ theorem inner_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 
   · rw [sortedRightSingularVec_of_le A (not_lt.1 hj), map_zero, inner_zero_right,
       ite_eq_right (fun h : i = j ∧ j < n => hj h.2)]
 
-/-- The image of the `j`-th sorted right singular vector has norm the `j`-th singular value. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. For every $j \in \mathbb{N}$, $\|A v_j\| = \sigma_j$, where
+$v_j$ is the sorted right singular vector and $\sigma_j$ the sorted singular value. -/
 theorem norm_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (j : ℕ) :
     ‖toEuclideanLin A (A.sortedRightSingularVec j)‖ = (toEuclideanLin A).singularValues j := by
   by_cases hj : j < n
@@ -1444,7 +1648,8 @@ theorem norm_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) �
       (toEuclideanLin A).singularValues_of_finrank_le (finrank_euclideanSpace_fin.trans_le
         (not_lt.1 hj))]
 
-/-- The sorted right singular vectors are orthonormal below `n`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The sorted right singular vectors are orthonormal below
+$n$: for $i, j < n$, $\langle v_i, v_j \rangle = 1$ if $i = j$ and $0$ otherwise. -/
 theorem inner_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) {i j : ℕ} (hi : i < n)
     (hj : j < n) :
     inner 𝕜 (A.sortedRightSingularVec i) (A.sortedRightSingularVec j) = if i = j then 1 else 0 := by
@@ -1453,8 +1658,9 @@ theorem inner_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) {i j : �
       finrank_euclideanSpace_fin).orthonormal]
   simp only [Fin.mk.injEq]
 
-/-- The normalized images `A v_j / σ_j` of the sorted right singular vectors with `σ_j ≠ 0`,
-placed at their own indices in `Fin m`, are orthonormal. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with sorted right singular vectors $v_i$ and sorted singular
+values $\sigma_i$. The normalized images $\sigma_i^{-1} A v_i$, for the indices $i < m$ with
+$\sigma_i \neq 0$, form an orthonormal family in $\mathbb{K}^m$. -/
 theorem orthonormal_leftSingular (A : Matrix (Fin m) (Fin n) 𝕜) :
     Orthonormal 𝕜 (({i : Fin m | (toEuclideanLin A).singularValues i ≠ 0} : Set (Fin m)).domRestrict
       fun i : Fin m => (((toEuclideanLin A).singularValues i : ℝ) : 𝕜)⁻¹ •
@@ -1476,18 +1682,23 @@ theorem orthonormal_leftSingular (A : Matrix (Fin m) (Fin n) 𝕜) :
     field_simp
   · simp
 
-/-- **The singular value decomposition** ([quarteroni2000numerical] Property 1.7): every
-`A : Matrix (Fin m) (Fin n) 𝕜` has unitary `U` (`m × m`) and `V` (`n × n`) with
-`Uᴴ A V = Σ = diag(σ₀, σ₁, …)`, the rectangular diagonal matrix carrying Mathlib's sorted singular
-values `(toEuclideanLin A).singularValues`, `σ₀ ≥ σ₁ ≥ … ≥ 0`. Over `𝕜 = ℝ` the factors are real
-orthogonal matrices, which is the book's real case.
+/-- **The singular value decomposition.** Let $A \in \mathbb{K}^{m \times n}$ with sorted singular
+values $\sigma_0 \ge \sigma_1 \ge \dots \ge 0$. There are unitary matrices
+$U \in \mathbb{K}^{m \times m}$ and $V \in \mathbb{K}^{n \times n}$ with
+$$U^H A V = \Sigma = \operatorname{diag}(\sigma_0, \sigma_1, \dots)
+  \in \mathbb{K}^{m \times n}.$$
+This is Property 1.7 of [quarteroni2000numerical]. For $\mathbb{K} = \mathbb{R}$ the factors are
+real orthogonal matrices, which is the real case of the source.
 
-The columns of `V` are the sorted orthonormal eigenbasis of `Aᴴ A`
-(`Matrix.sortedRightSingularVec`); the images `A v_j` are pairwise orthogonal of norm `σ_j`, so the
-normalized ones with `σ_j ≠ 0` are orthonormal (`Matrix.orthonormal_leftSingular`) and, placed at
-the same indices, extend to an orthonormal basis of `𝕜^m`
-(`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`), whose vectors are the columns of `U`.
--/
+The diagonal of $\Sigma$ is `Matrix.sortedSingularValues A`, which unfolds to Mathlib's
+`LinearMap.singularValues` of `Matrix.toEuclideanLin A`, and the matrix `Matrix.rectDiagonal`
+gives $\Sigma$. The
+columns of $V$ are the sorted right singular vectors `Matrix.sortedRightSingularVec`. The images
+$A v_j$ are pairwise orthogonal with $\|A v_j\| = \sigma_j$, so the normalized ones with
+$\sigma_j \neq 0$ are orthonormal (`Matrix.orthonormal_leftSingular`). Placed at the same
+indices, they extend to an orthonormal basis of $\mathbb{K}^m$
+(`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`), whose vectors are the columns of
+$U$. -/
 theorem exists_svd (A : Matrix (Fin m) (Fin n) 𝕜) :
     ∃ U ∈ unitaryGroup (Fin m) 𝕜, ∃ V ∈ unitaryGroup (Fin n) 𝕜,
       star U * A * V = rectDiagonal fun i => (((toEuclideanLin A).singularValues i : ℝ) : 𝕜) := by
@@ -1523,13 +1734,16 @@ theorem exists_svd (A : Matrix (Fin m) (Fin n) 𝕜) :
     · rw [ite_eq_left (Fin.ext hij), ite_eq_left hij, mul_one, hij]
     · rw [ite_eq_right (fun h => hij (congrArg Fin.val h)), ite_eq_right hij, mul_zero]
 
-/-! #### Consequences of a singular value decomposition
+/-!
+### Consequences of a singular value decomposition
 
-Everything below takes an arbitrary factorization `Uᴴ A V = Σ` with unitary `U`, `V` and
-rectangular diagonal `Σ` as its hypothesis — not necessarily the one `Matrix.exists_svd` produces —
-and reads off the pseudoinverse, the kernel and the range, and the singular values. -/
+The results below take as hypothesis an arbitrary factorization $U^H A V = \Sigma$ with unitary $U$,
+$V$ and rectangular diagonal $\Sigma$, not necessarily the one that `Matrix.exists_svd` gives. From
+it they compute the pseudoinverse, the kernel, the range and the singular values.
+-/
 
-/-- A factorization `Uᴴ A V = Σ` with unitary factors is `A = U Σ Vᴴ`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, let $U \in \mathbb{K}^{m \times m}$ and
+$V \in \mathbb{K}^{n \times n}$ be unitary, and let $U^H A V = S$. Then $A = U S V^H$. -/
 theorem eq_mul_mul_star_of_star_mul_mul_eq {A : Matrix (Fin m) (Fin n) 𝕜}
     {U : Matrix (Fin m) (Fin m) 𝕜} {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) {S : Matrix (Fin m) (Fin n) 𝕜} (h : star U * A * V = S) :
@@ -1537,10 +1751,15 @@ theorem eq_mul_mul_star_of_star_mul_mul_eq {A : Matrix (Fin m) (Fin n) 𝕜}
   rw [← h, Matrix.mul_assoc, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hV, Matrix.mul_one,
     ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU, Matrix.one_mul]
 
-/-- **The thin singular value decomposition** ([golub2013matrix] §2.4.3): for `n ≤ m`,
-`A = U₁ Σ₁ Vᴴ` with `U₁` an `m × n` matrix of orthonormal columns, `V` unitary and `Σ₁` the
-square diagonal matrix of the sorted singular values. `U₁` is the first `n` columns of the `U` of
-`Matrix.exists_svd`, which are all that `U Σ` sees. -/
+/-- **The thin singular value decomposition.** Let $A \in \mathbb{K}^{m \times n}$ with $n \le m$,
+and let $\sigma_0 \ge \sigma_1 \ge \dots$ be its sorted singular values. There are
+$U_1 \in \mathbb{K}^{m \times n}$ with orthonormal columns, $U_1^H U_1 = I$, and a unitary
+$V \in \mathbb{K}^{n \times n}$ with
+$$A = U_1 \operatorname{diag}(\sigma_0, \dots, \sigma_{n-1}) V^H.$$
+This is in [golub2013matrix], §2.4.3.
+
+The matrix $U_1$ consists of the first $n$ columns of the $U$ of `Matrix.exists_svd`, which are
+the only columns that $U \Sigma$ uses. -/
 theorem exists_thin_svd (A : Matrix (Fin m) (Fin n) 𝕜) (hnm : n ≤ m) :
     ∃ U₁ : Matrix (Fin m) (Fin n) 𝕜, U₁ᴴ * U₁ = 1 ∧ ∃ V ∈ unitaryGroup (Fin n) 𝕜,
       A = U₁ * diagonal (fun i : Fin n => ((A.sortedSingularValues i : ℝ) : 𝕜)) * star V := by
@@ -1563,10 +1782,15 @@ theorem exists_thin_svd (A : Matrix (Fin m) (Fin n) 𝕜) (hnm : n ≤ m) :
       simp [rectDiagonal_apply, hl']
     · simp
 
-/-- **The thin singular value decomposition of a wide matrix** ([golub2013matrix] §2.4.3), the
-dual of `Matrix.exists_thin_svd`: for `m ≤ n`, `A = U Σ₁ V₁ᴴ` with `U` unitary, `V₁` an `n × m`
-matrix of orthonormal columns and `Σ₁` the square diagonal matrix of the sorted singular values.
-`V₁` is the first `m` columns of the `V` of `Matrix.exists_svd`, which are all that `Σ Vᴴ` sees. -/
+/-- **The thin singular value decomposition of a wide matrix.** Let $A \in \mathbb{K}^{m \times n}$
+with $m \le n$, and let $\sigma_0 \ge \sigma_1 \ge \dots$ be its sorted singular values. There
+are $V_1 \in \mathbb{K}^{n \times m}$ with orthonormal columns, $V_1^H V_1 = I$, and a unitary
+$U \in \mathbb{K}^{m \times m}$ with
+$$A = U \operatorname{diag}(\sigma_0, \dots, \sigma_{m-1}) V_1^H.$$
+This is in [golub2013matrix], §2.4.3.
+
+This is the dual of `Matrix.exists_thin_svd`. The matrix $V_1$ consists of the first $m$ columns
+of the $V$ of `Matrix.exists_svd`, which are the only columns that $\Sigma V^H$ uses. -/
 theorem exists_wide_thin_svd (A : Matrix (Fin m) (Fin n) 𝕜) (hmn : m ≤ n) :
     ∃ V₁ : Matrix (Fin n) (Fin m) 𝕜, V₁ᴴ * V₁ = 1 ∧ ∃ U ∈ unitaryGroup (Fin m) 𝕜,
       A = U * diagonal (fun i : Fin m => ((A.sortedSingularValues i : ℝ) : 𝕜)) * V₁ᴴ := by
@@ -1577,12 +1801,17 @@ theorem exists_wide_thin_svd (A : Matrix (Fin m) (Fin n) 𝕜) (hmn : m ≤ n) :
   rw [Matrix.mul_assoc, rectDiagonal_mul_eq_diagonal_mul_submatrix hmn, ← Matrix.mul_assoc,
     star_eq_conjTranspose, conjTranspose_submatrix]
 
-/-- **The pseudoinverse from a singular value decomposition** ([quarteroni2000numerical]
-Definition 1.15): if `Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, then `A⁺ = V Σ⁺ Uᴴ` with
-`Σ⁺ = diag(σ⁻¹)` — Lean's `0⁻¹ = 0` produces exactly the `diag(1/σ₁, …, 1/σ_r, 0, …, 0)` of the
-book's (1.11), with no case split on the rank. The right-hand side satisfies the four Penrose
-conditions, and `Matrix.pinv_unique` identifies it; nothing is assumed about `σ`, not even that it
-is real. -/
+/-- **The pseudoinverse from a singular value decomposition.** Let $A \in \mathbb{K}^{m \times n}$,
+let $U$ and $V$ be unitary, and let $\sigma : \mathbb{N} \to \mathbb{K}$ satisfy $U^H A V =
+\Sigma = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$. Then
+$$A^+ = V \Sigma^+ U^H, \qquad \Sigma^+ = \operatorname{diag}(\sigma_0^{-1}, \sigma_1^{-1}, \dots)
+  \in \mathbb{K}^{n \times m},$$
+with $0^{-1} = 0$. This is Definition 1.15 of [quarteroni2000numerical].
+
+The convention $0^{-1} = 0$ gives exactly the matrix $\operatorname{diag}(1/\sigma_1, \dots,
+1/\sigma_r, 0, \dots, 0)$ of (1.11) in the source, without a case split on the rank. Nothing is
+assumed about $\sigma$, not even that it is real. The right-hand side satisfies the four Penrose
+conditions, and `Matrix.pinv_unique` identifies it with $A^+$. -/
 theorem pinv_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
     {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
@@ -1650,8 +1879,9 @@ section PinvSpecial
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
-/-- The pseudoinverse of a nonsingular matrix is its inverse ([quarteroni2000numerical] §1.9:
-`A⁺ = A⁻¹` when `n = m = rank A`). -/
+/-- The pseudoinverse of a nonsingular matrix is its inverse: if $A \in \mathbb{K}^{n \times n}$ is
+invertible, then $A^+ = A^{-1}$. This is in [quarteroni2000numerical], §1.9, as $A^+ = A^{-1}$
+when $n = m = \operatorname{rank} A$. -/
 theorem pinv_eq_inv {A : Matrix n n 𝕜} (hA : IsUnit A) : A.pinv = A⁻¹ := by
   have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA
   symm
@@ -1663,10 +1893,14 @@ theorem pinv_eq_inv {A : Matrix n n 𝕜} (hA : IsUnit A) : A.pinv = A⁻¹ := b
   · rw [nonsing_inv_mul _ hdet]
     exact isHermitian_one
 
-/-- The pseudoinverse of a matrix of full column rank — one whose Gram matrix `Aᴴ A` is
-nonsingular — is `(Aᴴ A)⁻¹ Aᴴ` ([quarteroni2000numerical] §1.9: `A⁺ = (Aᵀ A)⁻¹ Aᵀ` when
-`rank A = n < m`). `LinearAlgebra/Matrix/LeastSquares` has the same identity under the hypothesis
-`LinearIndependent 𝕜 Aᵀ`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have nonsingular Gram matrix $A^H A$, that is, full column
+rank. Then
+$$A^+ = (A^H A)^{-1} A^H.$$
+This is in [quarteroni2000numerical], §1.9, as $A^+ = (A^T A)^{-1} A^T$ when
+$\operatorname{rank} A = n < m$.
+
+The same identity, with the hypothesis that the columns of $A$ are linearly independent, is
+`Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose`. -/
 theorem pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit {A : Matrix m n 𝕜}
     (h : IsUnit (Aᴴ * A)) : A.pinv = (Aᴴ * A)⁻¹ * Aᴴ := by
   have hdet : IsUnit (Aᴴ * A).det := (isUnit_iff_isUnit_det _).1 h
@@ -1686,23 +1920,29 @@ section SVD2
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- The columns of a unitary matrix are sent to the standard basis vectors by its adjoint. -/
+/-- For a unitary $V$ with columns $v_j$, $V^H v_j = e_j$, the standard basis vector. -/
 private theorem star_mulVec_transpose_apply {V : Matrix (Fin n) (Fin n) 𝕜}
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) (j : Fin n) : star V *ᵥ Vᵀ j = Pi.single j 1 := by
   have : Vᵀ j = V *ᵥ Pi.single j 1 := by rw [mulVec_single_one]; rfl
   rw [this, mulVec_mulVec, mem_unitaryGroup_iff'.1 hV, one_mulVec]
 
-/-- A vector expanded along the columns of a unitary matrix, `x = ∑ (Vᴴ x)_j V_j`. -/
+/-- For a unitary $V$ with columns $v_j$, every $x$ expands as $x = \sum_j (V^H x)_j \, v_j$. -/
 private theorem eq_sum_star_mulVec_smul_transpose {V : Matrix (Fin n) (Fin n) 𝕜}
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) (x : Fin n → 𝕜) :
     x = ∑ j, (star V *ᵥ x) j • Vᵀ j := by
   conv_lhs => rw [← one_mulVec x, ← mem_unitaryGroup_iff.1 hV, ← mulVec_mulVec, mulVec_eq_sum]
   simp only [op_smul_eq_smul]
 
-/-- **The kernel from a singular value decomposition** ([quarteroni2000numerical] §1.9): if
-`Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, the kernel of `A` is spanned by the columns of `V`
-whose singular value vanishes — the columns `j ≥ m` beyond the height of `Σ`, and those with
-`σ j = 0`; for sorted singular values these are `v_{r+1}, …, v_n`, `r` the rank. -/
+/-- **The kernel from a singular value decomposition.** Let $A \in \mathbb{K}^{m \times n}$, let $U$
+and $V$ be unitary with columns $v_j$ of $V$, and let $\sigma : \mathbb{N} \to \mathbb{K}$
+satisfy $U^H A V = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$. Then
+$$\ker A = \operatorname{span}\{v_j : j \ge m \text{ or } \sigma_j = 0\}.$$
+This is in [quarteroni2000numerical], §1.9.
+
+The spanning columns are those whose singular value is zero: the columns beyond the height of
+$\Sigma$, and those with $\sigma_j = 0$. For sorted singular values and
+$r = \operatorname{rank} A$, these are $v_{r+1}, \dots, v_n$ in the numbering from $1$ of the
+source. -/
 theorem ker_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
     {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
@@ -1746,9 +1986,14 @@ theorem ker_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matr
         exact hj
     · rfl
 
-/-- **The range from a singular value decomposition** ([quarteroni2000numerical] §1.9): if
-`Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, the range of `A` is spanned by the columns of `U`
-whose singular value does not vanish — `u_1, …, u_r` for sorted singular values, `r` the rank. -/
+/-- **The range from a singular value decomposition.** Let $A \in \mathbb{K}^{m \times n}$, let $U$
+and $V$ be unitary with columns $u_i$ of $U$, and let $\sigma : \mathbb{N} \to \mathbb{K}$
+satisfy $U^H A V = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$. Then
+$$\operatorname{range} A = \operatorname{span}\{u_i : i < n \text{ and } \sigma_i \neq 0\}.$$
+This is in [quarteroni2000numerical], §1.9.
+
+For sorted singular values and $r = \operatorname{rank} A$, the spanning columns are
+$u_1, \dots, u_r$ in the numbering from $1$ of the source. -/
 theorem range_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜}
     {U : Matrix (Fin m) (Fin m) 𝕜} {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
@@ -1791,22 +2036,28 @@ theorem range_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜}
 
 end SVD2
 
-/-! #### Uniqueness of the singular values
+/-!
+### Uniqueness of the singular values
 
-The singular values of any factorization `Uᴴ A V = Σ` are determined by `A`: the multiset of their
-squares is the multiset of eigenvalues of `Aᴴ A`, and when they are sorted they are Mathlib's
-`LinearMap.singularValues`. The bridge is the characteristic polynomial, which the unitary
-similarity `Aᴴ A = V Σᴴ Σ Vᴴ` preserves. -/
+The singular values of every factorization $U^H A V = \Sigma$ are determined by $A$: the multiset of
+their squares is the multiset of eigenvalues of $A^H A$, and when they are sorted they are Mathlib's
+`LinearMap.singularValues`. The proofs compare characteristic polynomials, which the unitary
+similarity $A^H A = V \Sigma^H \Sigma V^H$ preserves.
+-/
 
 section Uniqueness
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **The singular values from a unitary diagonalization of the Gram matrix**: if
-`Aᴴ A = U diag(dᵢ²) Uᴴ` with `U` unitary and `d ≥ 0`, then the singular values of `A` are the `dᵢ`,
-up to a relabelling `e`. The characteristic polynomial of `Aᴴ A` is that of `diag(dᵢ²)`, so the
-multiset of eigenvalues of `Aᴴ A` is that of the `dᵢ²`, and `Matrix.colSingularValues` are their
-square roots. -/
+/-- **The singular values from a unitary diagonalization of the Gram matrix.** Let
+$A \in \mathbb{K}^{m \times n}$, let $U \in \mathbb{K}^{n \times n}$ be unitary, and let
+$d : n \to \mathbb{R}$ with $d_i \ge 0$ satisfy
+$$A^H A = U \operatorname{diag}(d_i^2) U^H.$$
+Then there is a permutation $e$ of $n$ with $\sigma_{e(i)}(A) = d_i$ for every $i$.
+
+The characteristic polynomial of $A^H A$ is that of $\operatorname{diag}(d_i^2)$, so the
+multiset of eigenvalues of $A^H A$ is that of the $d_i^2$, and `Matrix.colSingularValues` are
+their square roots. -/
 theorem exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq {m n : Type*} [Fintype m]
     [Fintype n] [DecidableEq n] {A : Matrix m n 𝕜} {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜)
     {d : n → ℝ} (hd : ∀ i, 0 ≤ d i)
@@ -1824,11 +2075,15 @@ theorem exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq {m n : Ty
   obtain ⟨e, he⟩ := exists_equiv_of_map_univ_val_eq hmult
   exact ⟨e, fun i => by rw [colSingularValues, he i, Real.sqrt_sq (hd i)]⟩
 
-/-- **The singular values of a Hermitian matrix are the moduli of its eigenvalues**
-([quarteroni2000numerical] §1.9, after (1.10)): there is a relabelling `e` with
-`σ_{e i}(A) = |λ_i(A)|`. Since `Aᴴ A = A²` has the characteristic polynomial of `diag(λ_i²)`, the
-multiset of eigenvalues of `Aᴴ A` is that of the `λ_i²`, and `Matrix.colSingularValues` are their
-square roots. -/
+/-- **The singular values of a Hermitian matrix are the moduli of its eigenvalues.** Let
+$A \in \mathbb{K}^{n \times n}$ be Hermitian with eigenvalues $\lambda_i$. Then there is a
+permutation $e$ of $n$ with
+$$\sigma_{e(i)}(A) = |\lambda_i(A)| \qquad \text{for every } i.$$
+This is in [quarteroni2000numerical], §1.9, after (1.10).
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. Since $A^H A = A^2$ has the characteristic
+polynomial of $\operatorname{diag}(\lambda_i^2)$, this is a case of
+`Matrix.exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq`. -/
 theorem IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues {n : Type*} [Fintype n]
     [DecidableEq n] {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ e : n ≃ n, ∀ i, A.colSingularValues (e i) = |hA.eigenvalues i| := by
@@ -1845,12 +2100,17 @@ theorem IsHermitian.exists_equiv_colSingularValues_eq_abs_eigenvalues {n : Type*
 
 variable {m n : ℕ}
 
-/-- **Uniqueness of the singular values** ([quarteroni2000numerical] (1.10), `σ_i(A) = √λ_i(Aᴴ A)`):
-if `Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary and `σ` antitone and nonnegative, then the `σ_i`
-with `i < min m n` are Mathlib's sorted singular values `(toEuclideanLin A).singularValues i`.
-From `Aᴴ A = V Σᴴ Σ Vᴴ` the characteristic polynomial of `Aᴴ A` is that of the diagonal matrix of
-the `σ_i²` (padded by zeros), an antitone family, which the sorted-eigenvalue characterization
-`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` identifies with the eigenvalues of `T† T`. -/
+/-- **Uniqueness of the singular values.** Let $A \in \mathbb{K}^{m \times n}$, let $U$ and $V$ be
+unitary, and let $\sigma : \mathbb{N} \to \mathbb{R}$ be nonincreasing and nonnegative with
+$$U^H A V = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}.$$
+Then for every $i < \min(m, n)$, $\sigma_i$ is the sorted singular value $\sigma_i(A)$. This is
+(1.10) of [quarteroni2000numerical], $\sigma_i(A) = \sqrt{\lambda_i(A^H A)}$.
+
+The sorted singular values are `(toEuclideanLin A).singularValues`. From
+$A^H A = V \Sigma^H \Sigma V^H$, the characteristic polynomial of $A^H A$ is that of the
+diagonal matrix of the $\sigma_i^2$, padded by zeros, which is a nonincreasing family. The
+characterization of sorted eigenvalues `LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` then
+identifies it with the eigenvalues of $A^H A$. -/
 theorem singularValues_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
     {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
     (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → ℝ} (hσ : Antitone σ) (hσ0 : ∀ i, 0 ≤ σ i)
@@ -1913,7 +2173,9 @@ section Expansion
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- The coordinates `Uᴴ b` of a vector in the columns of `U` are the inner products `⟪u_i, b⟫`. -/
+/-- Let $U \in \mathbb{K}^{m \times m}$ with columns $u_i$, and let $b \in \mathbb{K}^m$. The
+coordinates of $U^H b$ are the inner products with the columns:
+$(U^H b)_i = \langle u_i, b \rangle$. -/
 theorem star_mulVec_apply_eq_inner (U : Matrix (Fin m) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin m))
     (i : Fin m) :
     (star U *ᵥ WithLp.ofLp b) i
@@ -1922,9 +2184,14 @@ theorem star_mulVec_apply_eq_inner (U : Matrix (Fin m) (Fin m) 𝕜) (b : Euclid
   simp only [mulVec, dotProduct, star_apply, transpose_apply, Pi.star_apply]
   exact Finset.sum_congr rfl fun k _ => mul_comm _ _
 
-/-- **The action of `V Σ Uᴴ` in the columns of `U` and `V`**: for a rectangular diagonal
-`Σ = diag(τ)`, `V Σ Uᴴ b = ∑_{i < min m n} τ_i ⟪u_i, b⟫ v_i`. This is the expansion behind every
-singular-vector formula for `A⁺` and the Tikhonov matrix. -/
+/-- **The action of $V \Sigma U^H$ in the columns of $U$ and $V$.** Let
+$U \in \mathbb{K}^{m \times m}$ and $V \in \mathbb{K}^{n \times n}$ with columns $u_i$ and
+$v_i$, and let $\Sigma = \operatorname{diag}(\tau) \in \mathbb{K}^{n \times m}$. For every
+$b \in \mathbb{K}^m$,
+$$V \Sigma U^H b = \sum_{i < \min(m, n)} \tau_i \langle u_i, b \rangle \, v_i.$$
+
+This expansion gives the formulas for $A^+$ and for the Tikhonov matrix in terms of singular
+vectors. -/
 theorem toEuclideanLin_mul_rectDiagonal_mul_star_apply (U : Matrix (Fin m) (Fin m) 𝕜)
     (V : Matrix (Fin n) (Fin n) 𝕜) (τ : ℕ → 𝕜) (b : EuclideanSpace 𝕜 (Fin m)) :
     toEuclideanLin (V * (rectDiagonal τ : Matrix (Fin n) (Fin m) 𝕜) * star U) b
@@ -1963,8 +2230,11 @@ theorem toEuclideanLin_mul_rectDiagonal_mul_star_apply (U : Matrix (Fin m) (Fin 
   · have hj' : ¬ (j : ℕ) < min m n := fun h => hj (lt_of_lt_of_le h (min_le_left m n))
     simp only [hj, hj', ↓reduceDIte, ↓reduceIte, mul_zero]
 
-/-- **Parseval for `V Σ Uᴴ b`** with `V` unitary:
-`‖V Σ Uᴴ b‖² = ∑_{i < min m n} |τ_i|² |⟪u_i, b⟫|²`. -/
+/-- **Parseval's identity for $V \Sigma U^H b$.** Let $U \in \mathbb{K}^{m \times m}$ with columns
+$u_i$, let $V \in \mathbb{K}^{n \times n}$ be unitary, and let $\Sigma =
+\operatorname{diag}(\tau) \in \mathbb{K}^{n \times m}$. For every $b \in \mathbb{K}^m$,
+$$\|V \Sigma U^H b\|^2 = \sum_{i < \min(m, n)} |\tau_i|^2 \, |\langle u_i, b \rangle|^2.$$
+-/
 theorem norm_sq_toEuclideanLin_mul_rectDiagonal_mul_star_apply (U : Matrix (Fin m) (Fin m) 𝕜)
     {V : Matrix (Fin n) (Fin n) 𝕜} (hV : V ∈ unitaryGroup (Fin n) 𝕜) (τ : ℕ → 𝕜)
     (b : EuclideanSpace 𝕜 (Fin m)) :
@@ -1983,8 +2253,8 @@ theorem norm_sq_toEuclideanLin_mul_rectDiagonal_mul_star_apply (U : Matrix (Fin 
   simp only [Function.comp_apply, norm_mul, mul_pow] at this ⊢
   exact this
 
-/-- Entrywise conjugation preserves orthonormality of Euclidean vectors:
-`⟪x̄, ȳ⟫ = ⟪y, x⟫`. -/
+/-- Entrywise conjugation preserves orthonormality of Euclidean vectors: if $(v_k)$ is orthonormal,
+so is $(\bar v_k)$, because $\langle \bar x, \bar y \rangle = \langle y, x \rangle$. -/
 theorem orthonormal_toLp_star {ι p : Type*} [Fintype p] {v : ι → EuclideanSpace 𝕜 p}
     (hv : Orthonormal 𝕜 v) : Orthonormal 𝕜 fun k => WithLp.toLp 2 (star ⇑(v k)) := by
   classical
@@ -1994,10 +2264,15 @@ theorem orthonormal_toLp_star {ι p : Type*} [Fintype p] {v : ι → EuclideanSp
     dotProduct_comm, ← EuclideanSpace.inner_eq_star_dotProduct, hv j i]
   exact if_congr eq_comm rfl rfl
 
-/-- **The sorted singular expansion** of a matrix over any finite index types:
-`M = ∑_{k < rank M} σ_k u_k v_kᴴ` with orthonormal left vectors `u`, orthonormal right vectors `v`
-and positive sorted singular values `σ_k = M.sortedSingularValues k`. The right vectors are right
-singular vectors relabelled by `Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`. -/
+/-- **The sorted singular expansion.** Let $M \in \mathbb{K}^{p \times q}$ and
+$r = \operatorname{rank} M$. There are orthonormal families $u_0, \dots, u_{r-1}$ in
+$\mathbb{K}^p$ and $v_0, \dots, v_{r-1}$ in $\mathbb{K}^q$ such that the sorted singular values
+$\sigma_0, \dots, \sigma_{r-1}$ of $M$ are positive and
+$$M = \sum_{k < r} \sigma_k \, u_k v_k^H.$$
+
+The index types are arbitrary finite types, and $\sigma_k$ is `M.sortedSingularValues k`. The
+vectors $v_k$ are right singular vectors relabelled by
+`Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`. -/
 theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype p] [Fintype q]
     [DecidableEq q] (M : Matrix p q 𝕜) :
     ∃ (u : Fin M.rank → EuclideanSpace 𝕜 p) (v : Fin M.rank → EuclideanSpace 𝕜 q),
@@ -2061,31 +2336,44 @@ theorem exists_eq_sum_sortedSingularValues_smul_vecMulVec {p q : Type*} [Fintype
 
 end Expansion
 
-/-! ### Singular value decompositions as a specification
+/-!
+### Singular value decompositions as a specification
 
-`Matrix.IsSVD A U σ V` bundles the hypotheses of the consequences above: `Uᴴ A V = diag(σ)` with
-`U`, `V` unitary and `σ` antitone and nonnegative. It is the output condition of every "compute
-the SVD" step of an algorithm, and every statement below takes it rather than "the" SVD, which is
-not unique. -/
+`Matrix.IsSVD A U σ V` collects the hypotheses of the consequences above:
+$U^H A V = \operatorname{diag}(\sigma)$ with $U$, $V$ unitary and $\sigma$ nonincreasing and
+nonnegative. It is the output condition of every step "compute the SVD" of an algorithm. The results
+below take it as hypothesis rather than "the" SVD, which is not unique.
+-/
 
 section IsSVD
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- **A singular value decomposition, as a specification** ([golub2013matrix] Theorem 2.4.1):
-`Uᴴ A V = Σ = diag(σ₀, σ₁, …)` with `U`, `V` unitary and `σ` antitone and nonnegative. The values
-`σ i` for `i ≥ min m n` are not read by `Matrix.rectDiagonal` and are constrained only by the two
-order conditions. -/
+/-- **A singular value decomposition, as a specification.** Let $A \in \mathbb{K}^{m \times n}$,
+$U \in \mathbb{K}^{m \times m}$, $V \in \mathbb{K}^{n \times n}$ and
+$\sigma : \mathbb{N} \to \mathbb{R}$. Then $(U, \sigma, V)$ is a **singular value
+decomposition** of $A$ if $U$ and $V$ are unitary,
+$$U^H A V = \Sigma = \operatorname{diag}(\sigma_0, \sigma_1, \dots)
+  \in \mathbb{K}^{m \times n},$$
+and $\sigma$ is nonincreasing and nonnegative. This is the factorization of Theorem 2.4.1 of
+[golub2013matrix].
+
+The structure extends `Matrix.IsUnitaryEquiv`, which holds the unitarity of $U$ and $V$ and the
+factorization. The values $\sigma_i$ for $i \ge \min(m, n)$ are not used by
+`Matrix.rectDiagonal`, and only the two order conditions constrain them. -/
 structure IsSVD (A : Matrix (Fin m) (Fin n) 𝕜) (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) 𝕜) : Prop
     extends IsUnitaryEquiv A U (rectDiagonal fun i => ((σ i : ℝ) : 𝕜)) V where
-  /-- The singular values are sorted. -/
+  /-- The diagonal is nonincreasing: $\sigma_j \le \sigma_i$ for $i \le j$. -/
   antitone : Antitone σ
-  /-- The singular values are nonnegative. -/
+  /-- The diagonal entries are nonnegative: $\sigma_i \ge 0$ for every $i$. -/
   nonneg : ∀ i, 0 ≤ σ i
 
-/-- **Every matrix has a singular value decomposition**, with the sorted singular values on the
-diagonal (`Matrix.exists_svd`). -/
+/-- **Every matrix has a singular value decomposition.** For every $A \in \mathbb{K}^{m \times n}$
+there are $U$, $\sigma$ and $V$ such that $(U, \sigma, V)$ is a singular value decomposition of
+$A$.
+
+The diagonal is the sorted singular values, from `Matrix.exists_svd`. -/
 theorem exists_isSVD (A : Matrix (Fin m) (Fin n) 𝕜) : ∃ U σ V, IsSVD A U σ V := by
   obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
   exact ⟨U, A.sortedSingularValues, V, ⟨hU, hV, h⟩, A.sortedSingularValues_antitone,
@@ -2094,26 +2382,37 @@ theorem exists_isSVD (A : Matrix (Fin m) (Fin n) 𝕜) : ∃ U σ V, IsSVD A U �
 variable {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- An SVD is the factorization `A = U Σ Vᴴ`. -/
+/-- If $(U, \sigma, V)$ is a singular value decomposition of $A$, then $A = U \Sigma V^H$ with
+$\Sigma = \operatorname{diag}(\sigma) \in \mathbb{K}^{m \times n}$. -/
 theorem IsSVD.eq_mul_mul_star (h : IsSVD A U σ V) :
     A = U * (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin m) (Fin n) 𝕜) * star V :=
   eq_mul_mul_star_of_star_mul_mul_eq h.mem_unitaryGroup_left h.mem_unitaryGroup_right
     h.star_mul_mul
 
-/-- **The diagonal of any SVD is the sorted singular values** ([golub2013matrix] Theorem 2.4.1):
-`σ i = σ_i(A)` for `i < min m n` (`Matrix.singularValues_eq_of_svd`). -/
+/-- **The diagonal of every SVD is the sorted singular values.** If $(U, \sigma, V)$ is a singular
+value decomposition of $A \in \mathbb{K}^{m \times n}$, then $\sigma_i = \sigma_i(A)$, the
+sorted singular value, for every $i < \min(m, n)$. The factorization is that of Theorem 2.4.1 of
+[golub2013matrix].
+
+It is `Matrix.singularValues_eq_of_svd`. -/
 theorem IsSVD.singularValues_eq (h : IsSVD A U σ V) {i : ℕ} (him : i < m) (hin : i < n) :
     σ i = A.sortedSingularValues i :=
   (singularValues_eq_of_svd h.mem_unitaryGroup_left h.mem_unitaryGroup_right h.antitone h.nonneg
     h.star_mul_mul him hin).symm
 
-/-- **The pseudoinverse from an SVD**, `A⁺ = V Σ⁺ Uᴴ` (`Matrix.pinv_eq_of_svd`). -/
+/-- **The pseudoinverse from an SVD.** If $(U, \sigma, V)$ is a singular value decomposition of
+$A \in \mathbb{K}^{m \times n}$, then
+$$A^+ = V \operatorname{diag}(\sigma_0^{-1}, \sigma_1^{-1}, \dots) U^H,$$
+with the diagonal matrix in $\mathbb{K}^{n \times m}$ and $0^{-1} = 0$. This is
+`Matrix.pinv_eq_of_svd`. -/
 theorem IsSVD.pinv_eq (h : IsSVD A U σ V) :
     A.pinv = V * (rectDiagonal fun i => ((σ i : 𝕜))⁻¹ : Matrix (Fin n) (Fin m) 𝕜) * star U :=
   pinv_eq_of_svd h.mem_unitaryGroup_left h.mem_unitaryGroup_right h.star_mul_mul
 
-/-- **The kernel from an SVD** is spanned by the columns `v_j` of `V` with `j ≥ m` or `σ j = 0`
-(`Matrix.ker_mulVecLin_eq_span_of_svd`). -/
+/-- **The kernel from an SVD.** If $(U, \sigma, V)$ is a singular value decomposition of
+$A \in \mathbb{K}^{m \times n}$ and $V$ has columns $v_j$, then
+$$\ker A = \operatorname{span}\{v_j : j \ge m \text{ or } \sigma_j = 0\}.$$
+This is `Matrix.ker_mulVecLin_eq_span_of_svd`. -/
 theorem IsSVD.ker_mulVecLin_eq_span (h : IsSVD A U σ V) :
     LinearMap.ker A.mulVecLin
       = Submodule.span 𝕜 (Vᵀ '' {j : Fin n | m ≤ (j : ℕ) ∨ σ j = 0}) := by
@@ -2121,8 +2420,10 @@ theorem IsSVD.ker_mulVecLin_eq_span (h : IsSVD A U σ V) :
     h.star_mul_mul]
   simp only [RCLike.ofReal_eq_zero]
 
-/-- **The range from an SVD** is spanned by the columns `u_i` of `U` with `i < n` and `σ i ≠ 0`
-(`Matrix.range_mulVecLin_eq_span_of_svd`). -/
+/-- **The range from an SVD.** If $(U, \sigma, V)$ is a singular value decomposition of
+$A \in \mathbb{K}^{m \times n}$ and $U$ has columns $u_i$, then
+$$\operatorname{range} A = \operatorname{span}\{u_i : i < n \text{ and } \sigma_i \neq 0\}.$$
+This is `Matrix.range_mulVecLin_eq_span_of_svd`. -/
 theorem IsSVD.range_mulVecLin_eq_span (h : IsSVD A U σ V) :
     LinearMap.range A.mulVecLin
       = Submodule.span 𝕜 (Uᵀ '' {i : Fin m | (i : ℕ) < n ∧ σ i ≠ 0}) := by
@@ -2130,7 +2431,9 @@ theorem IsSVD.range_mulVecLin_eq_span (h : IsSVD A U σ V) :
     h.star_mul_mul]
   simp only [ne_eq, RCLike.ofReal_eq_zero]
 
-/-- **An SVD of `Aᴴ`** is an SVD of `A` with the factors exchanged: `Vᴴ Aᴴ U = Σᴴ`. -/
+/-- **An SVD of $A^H$.** If $(U, \sigma, V)$ is a singular value decomposition of
+$A \in \mathbb{K}^{m \times n}$, then $(V, \sigma, U)$ is a singular value decomposition of
+$A^H$: $V^H A^H U = \Sigma^H = \operatorname{diag}(\sigma) \in \mathbb{K}^{n \times m}$. -/
 theorem IsSVD.conjTranspose (h : IsSVD A U σ V) : IsSVD Aᴴ V σ U where
   mem_unitaryGroup_left := h.mem_unitaryGroup_right
   mem_unitaryGroup_right := h.mem_unitaryGroup_left
@@ -2145,16 +2448,20 @@ theorem IsSVD.conjTranspose (h : IsSVD A U σ V) : IsSVD Aᴴ V σ U where
     funext i
     simp
 
-/-- **The least singular value from an SVD**: for a tall `A` (`0 < n ≤ m`),
-`⨅ i, σ_i(A) = σ_{n-1}`, the last diagonal entry of any SVD. -/
+/-- **The least singular value from an SVD.** Let $0 < n \le m$. If $(U, \sigma, V)$ is a singular
+value decomposition of $A \in \mathbb{K}^{m \times n}$, then
+$\min_i \sigma_i(A) = \sigma_{n-1}$, the last diagonal entry. The minimum is over the
+column-indexed singular values. -/
 theorem IsSVD.iInf_colSingularValues_eq (h : IsSVD A U σ V) (hn : 0 < n) (hnm : n ≤ m) :
     ⨅ i, A.colSingularValues i = σ (n - 1) := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   rw [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin,
     h.singularValues_eq (by omega) (by omega)]
 
-/-- **`‖A x‖²` in the right singular coordinates**: for an SVD `Uᴴ A V = Σ`,
-`‖A x‖² = ∑_{i < min n m} σ_i² |(Vᴴ x)_i|²`. -/
+/-- **$\|Ax\|^2$ in the right singular coordinates.** If $(U, \sigma, V)$ is a singular value
+decomposition of $A \in \mathbb{K}^{m \times n}$, then for every $x \in \mathbb{K}^n$,
+$$\|Ax\|^2 = \sum_{i < \min(n, m)} \sigma_i^2 \, |(V^H x)_i|^2.$$
+-/
 theorem IsSVD.norm_sq_toEuclideanLin_apply (h : IsSVD A U σ V) (x : EuclideanSpace 𝕜 (Fin n)) :
     ‖toEuclideanLin A x‖ ^ 2 = ∑ i : Fin (min n m),
       σ i ^ 2 * ‖(star V *ᵥ WithLp.ofLp x) (Fin.castLE (min_le_left n m) i)‖ ^ 2 := by
@@ -2163,8 +2470,11 @@ theorem IsSVD.norm_sq_toEuclideanLin_apply (h : IsSVD A U σ V) (x : EuclideanSp
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [star_mulVec_apply_eq_inner, RCLike.norm_ofReal, sq_abs]
 
-/-- **`‖A x‖²` in the right singular coordinates**, for a tall `A` (`n ≤ m`), where every
-coordinate is weighted: `‖A x‖² = ∑_{i < n} σ_i² |(Vᴴ x)_i|²`. -/
+/-- **$\|Ax\|^2$ in the right singular coordinates for a tall matrix.** Let $n \le m$. If
+$(U, \sigma, V)$ is a singular value decomposition of $A \in \mathbb{K}^{m \times n}$, then
+every coordinate is weighted: for every $x \in \mathbb{K}^n$,
+$$\|Ax\|^2 = \sum_{i < n} \sigma_i^2 \, |(V^H x)_i|^2.$$
+-/
 theorem IsSVD.norm_sq_toEuclideanLin_apply_of_le (h : IsSVD A U σ V) (hnm : n ≤ m)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     ‖toEuclideanLin A x‖ ^ 2 = ∑ i : Fin n, σ i ^ 2 * ‖(star V *ᵥ WithLp.ofLp x) i‖ ^ 2 := by
@@ -2174,11 +2484,15 @@ theorem IsSVD.norm_sq_toEuclideanLin_apply_of_le (h : IsSVD A U σ V) (hnm : n �
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [ite_eq_left (lt_min i.isLt (lt_of_lt_of_le i.isLt hnm))]
 
-/-- **The minimizers of `‖A x‖ / ‖x‖`** ([golub2013matrix] §6.3.2): for a tall `A` (`n ≤ m`) with
-an SVD `Uᴴ A V = Σ` whose singular values `σ_r = ⋯ = σ_{n-1}` lie strictly below
-`σ_0, …, σ_{r-1}`, `‖A x‖ = σ_{n-1} ‖x‖` exactly when the coordinates `(Vᴴ x)_j` vanish for `j < r`:
-`‖A x‖² - σ_{n-1}² ‖x‖² = ∑_j (σ_j² - σ_{n-1}²) |(Vᴴ x)_j|²` is a sum of nonnegative terms whose
-weight is positive exactly for `j < r`. -/
+/-- **The minimizers of $\|Ax\| / \|x\|$ in coordinates.** Let $n \le m$ and let $(U, \sigma, V)$ be
+a singular value decomposition of $A \in \mathbb{K}^{m \times n}$. Let $r \in \mathbb{N}$
+satisfy $\sigma_{n-1} < \sigma_j$ for all $j < r$ and $\sigma_r = \sigma_{n-1}$. Then for every
+$x \in \mathbb{K}^n$,
+$$\|Ax\| = \sigma_{n-1} \|x\| \iff (V^H x)_j = 0 \text{ for all } j < r.$$
+This is in [golub2013matrix], §6.3.2.
+
+The difference $\|Ax\|^2 - \sigma_{n-1}^2 \|x\|^2 = \sum_j (\sigma_j^2 - \sigma_{n-1}^2) |(V^H
+x)_j|^2$ is a sum of nonnegative terms, and the weight is positive exactly for $j < r$. -/
 theorem IsSVD.norm_toEuclideanLin_eq_iff (h : IsSVD A U σ V) (hnm : n ≤ m) {r : ℕ}
     (hgap : ∀ j < r, σ (n - 1) < σ j) (heq : σ r = σ (n - 1)) (x : EuclideanSpace 𝕜 (Fin n)) :
     ‖toEuclideanLin A x‖ = σ (n - 1) * ‖x‖ ↔
@@ -2215,8 +2529,11 @@ theorem IsSVD.norm_toEuclideanLin_eq_iff (h : IsSVD A U σ V) (hnm : n ≤ m) {r
       ring
     · rw [hge j (not_lt.1 hj), sub_self, zero_mul]
 
-/-- **The span of the trailing columns of a unitary matrix** is cut out by the leading
-coordinates: `x ∈ span {v_j : j ≥ r}` exactly when `(Vᴴ x)_j = 0` for `j < r`. -/
+/-- **The span of the trailing columns of a unitary matrix** is cut out by the leading coordinates.
+Let $V \in \mathbb{K}^{n \times n}$ be unitary with columns $v_j$, and let $r \in \mathbb{N}$.
+For every $x \in \mathbb{K}^n$,
+$$x \in \operatorname{span}\{v_j : j \ge r\} \iff (V^H x)_j = 0 \text{ for all } j < r.$$
+-/
 theorem mem_span_toLp_transpose_iff (hV : V ∈ unitaryGroup (Fin n) 𝕜) (r : ℕ)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     x ∈ Submodule.span 𝕜
@@ -2250,9 +2567,12 @@ theorem mem_span_toLp_transpose_iff (hV : V ∈ unitaryGroup (Fin n) 𝕜) (r : 
       exact Submodule.zero_mem _
     · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, not_lt.1 hj, rfl⟩)
 
-/-- **The minimizers of `‖A x‖ / ‖x‖` are the trailing right singular vectors**
-([golub2013matrix] §6.3.2): for a tall `A` with an SVD whose singular values `σ_r = ⋯ = σ_{n-1}`
-lie strictly below the others, `‖A x‖ = σ_{n-1} ‖x‖` exactly on `span {v_r, …, v_{n-1}}`. -/
+/-- **The minimizers of $\|Ax\| / \|x\|$ are the trailing right singular vectors.** Let $n \le m$
+and let $(U, \sigma, V)$ be a singular value decomposition of $A \in \mathbb{K}^{m \times n}$,
+where $V$ has columns $v_j$. Let $r \in \mathbb{N}$ satisfy $\sigma_{n-1} < \sigma_j$ for all
+$j < r$ and $\sigma_r = \sigma_{n-1}$. Then for every $x \in \mathbb{K}^n$,
+$$\|Ax\| = \sigma_{n-1} \|x\| \iff x \in \operatorname{span}\{v_j : j \ge r\}.$$
+This is in [golub2013matrix], §6.3.2. -/
 theorem IsSVD.norm_toEuclideanLin_eq_iff_mem_span (h : IsSVD A U σ V) (hnm : n ≤ m) {r : ℕ}
     (hgap : ∀ j < r, σ (n - 1) < σ j) (heq : σ r = σ (n - 1)) (x : EuclideanSpace 𝕜 (Fin n)) :
     ‖toEuclideanLin A x‖ = σ (n - 1) * ‖x‖ ↔ x ∈ Submodule.span 𝕜
@@ -2260,15 +2580,26 @@ theorem IsSVD.norm_toEuclideanLin_eq_iff_mem_span (h : IsSVD A U σ V) (hnm : n 
   rw [h.norm_toEuclideanLin_eq_iff hnm hgap heq,
     mem_span_toLp_transpose_iff h.mem_unitaryGroup_right]
 
-/-- The rank-`k` truncation `A_k = ∑_{i<k} σ_i u_i v_iᴴ` of an SVD ([golub2013matrix] (2.4.3)),
-defined from the factors because the SVD is not unique. -/
+/-- Let $U \in \mathbb{K}^{m \times m}$, $V \in \mathbb{K}^{n \times n}$,
+$\sigma : \mathbb{N} \to \mathbb{R}$ and $k \in \mathbb{N}$. The **rank-$k$ truncation** of the
+factorization is
+$$A_k = U \Sigma_k V^H,
+  \qquad \Sigma_k = \operatorname{diag}(\sigma_0, \dots, \sigma_{k-1}, 0, 0, \dots)
+  \in \mathbb{K}^{m \times n}.$$
+This is the matrix of [golub2013matrix], (2.4.3).
+
+It is defined from the factors, because the SVD is not unique. For $k \le \min(m, n)$ it is
+$\sum_{i < k} \sigma_i u_i v_i^H$ (`Matrix.svdTruncation_eq_sum`). -/
 noncomputable def svdTruncation (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) : Matrix (Fin m) (Fin n) 𝕜 :=
   U * (rectDiagonal (fun i => if i < k then (σ i : 𝕜) else 0) : Matrix (Fin m) (Fin n) 𝕜) *
     star V
 
-/-- **The truncation as a sum of rank-one matrices** ([golub2013matrix] (2.4.3)): for `k` at most
-both dimensions, `U Σ_k Vᴴ = ∑_{i<k} σ_i u_i v_iᴴ`. -/
+/-- **The truncation as a sum of rank-one matrices.** Let $U \in \mathbb{K}^{m \times m}$ and
+$V \in \mathbb{K}^{n \times n}$ with columns $u_i$ and $v_i$, let
+$\sigma : \mathbb{N} \to \mathbb{R}$, and let $k \le m$ and $k \le n$. Then
+$$U \Sigma_k V^H = \sum_{i < k} \sigma_i \, u_i v_i^H.$$
+This is (2.4.3) of [golub2013matrix]. -/
 theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) 𝕜) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n) :
     svdTruncation U σ V k = ∑ i : Fin k,
@@ -2291,8 +2622,11 @@ theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ
   rw [show (⟨i, him⟩ : Fin m) = Fin.castLE hkm i from rfl]
   ring
 
-/-- **The truncation of an SVD at `k ≤ rank A` has rank `k`**: the unitary factors do not change
-the rank, and the first `k` singular values are positive
+/-- **The truncation of an SVD at $k \le \operatorname{rank} A$ has rank $k$.** If $(U, \sigma, V)$
+is a singular value decomposition of $A \in \mathbb{K}^{m \times n}$ and
+$k \le \operatorname{rank} A$, then the truncation $U \Sigma_k V^H$ has rank $k$.
+
+The unitary factors do not change the rank, and the first $k$ singular values are positive
 (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). -/
 theorem rank_svdTruncation (h : IsSVD A U σ V) {k : ℕ} (hk : k ≤ A.rank) :
     (svdTruncation U σ V k).rank = k := by

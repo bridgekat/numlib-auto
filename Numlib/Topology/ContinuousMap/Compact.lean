@@ -13,13 +13,21 @@ import Mathlib.Topology.ContinuousMap.Compact
 /-!
 # The sup norm of a continuous function on a compact space is attained
 
-`ContinuousMap.exists_norm_apply_eq_norm`: on a nonempty compact space, some point `x` has
-`‖f x‖ = ‖f‖`.
+Let $X$ be a nonempty compact topological space and let $E$ be a seminormed additive group. The norm
+of a continuous function $f : X \to E$ is the sup norm $\|f\| = \sup_{x \in X} \|f(x)\|$. This file
+proves that the supremum is a maximum.
+
+## Main results
+
+* `ContinuousMap.exists_norm_apply_eq_norm`: some point $x \in X$ has $\|f(x)\| = \|f\|$.
 -/
 
 namespace ContinuousMap
 
-/-- **The sup norm of a continuous function on a nonempty compact space is attained.** -/
+/-- **The sup norm of a continuous function on a nonempty compact space is attained.** Let $X$ be a
+nonempty compact topological space, let $E$ be a seminormed additive group, and let
+$f : X \to E$ be continuous. Then there is $x \in X$ with $\|f(x)\| = \|f\|$, where $\|f\|$ is
+the sup norm. -/
 theorem exists_norm_apply_eq_norm {X E : Type*} [TopologicalSpace X] [CompactSpace X] [Nonempty X]
     [SeminormedAddCommGroup E] (f : C(X, E)) : ∃ x, ‖f x‖ = ‖f‖ := by
   obtain ⟨t, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty

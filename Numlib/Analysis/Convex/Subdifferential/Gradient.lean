@@ -12,66 +12,88 @@ import Numlib.Analysis.Convex.Subdifferential.Defs
 /-!
 # Gradients and the subdifferential
 
-Where a convex function is differentiable its gradient is its only subgradient, and the directional
-derivative is the corresponding linear function. Conversely, for a convex function finite at `x`,
-differentiability at `x` is *equivalent* to linearity of `f'(x; ·)`, and in finite dimensions the
-two-sided derivatives along the vectors of a basis already suffice.
+Let $f \colon E \to [-\infty, +\infty]$ be a convex function, and let $f'(x; v)$ be its one-sided
+directional derivative at $x$ in the direction $v$. At a point $x$ where $f$ is differentiable, the
+gradient $\nabla f(x)$ is the only subgradient of $f$, and
+$f'(x; v) = \langle v, \nabla f(x) \rangle$ for every $v$. Conversely, if $E$ is finite-dimensional
+and $f(x)$ is finite, then $f$ is differentiable at $x$ if and only if $f'(x; \cdot)$ is linear, and
+it is enough that the two-sided derivatives along the vectors of a basis exist and are finite. The
+presentation follows [rockafellar1970convex], §25.
 
-Dually, a point of `epi f*` is *exposed* exactly when it is `(y, f* y)` for a `y` that is the only
-subgradient of `f` somewhere, and the same holds for the set cut out by a positively homogeneous
-function. Both are phrased in terms of unique subgradients rather than of differentiability: the
-converse passage needs `x` interior to `dom f` and is in `Subdifferential/Uniqueness.lean`.
+Dually, a point of $\operatorname{epi} f^*$ is an exposed point exactly when it is $(y, f^*(y))$ for
+a $y$ that is the only subgradient of $f$ at some point. The same holds for a set that is cut out by
+a positively homogeneous function. These results are stated with unique subgradients, not with
+differentiability. The passage from a unique subgradient to differentiability needs $x$ in the
+interior of $\operatorname{dom} f$, and it is in
+`Numlib.Analysis.Convex.Subdifferential.Uniqueness`.
+
+## Main definitions
+
+* `ConvexAnalysis.HasGradientAtFn`: $f$ has the gradient $f'$ at $x$ if, near $x$, $f$ agrees with a
+  real-valued function that is Fréchet differentiable at $x$ with derivative $f'$.
+* `ConvexAnalysis.DifferentiableAtFn`: $f$ has a gradient at $x$.
 
 ## Main results
 
-* `subdifferential_eq_singleton_of_dirDeriv_eq`,
-  `convexCl_dirDeriv_eq_of_subdifferential_eq_singleton` — if `f'(x; ·)` is `⟨·, y₀⟩` then
-  `∂f x = {y₀}`, and conversely a single-valued `∂f x` makes `cl f'(x; ·)` linear.
-* `le_hasFDerivAt`, `subdifferential_eq_singleton_of_hasFDerivAt` — the gradient inequality
-  `f z ≥ f x + ⟨z - x, ∇f x⟩`, and `∂f x = {∇f x}` ([rockafellar1970convex] Theorem 25.1). The
-  uniqueness half alone, `eq_of_mem_subdifferential_of_hasFDerivAt`, needs no convexity.
-* `differentiableAtFn_iff_exists_dirDeriv_eq`, `differentiableAtFn_of_forall_basis_dirDeriv_eq` —
-  differentiability is linearity of `f'(x; ·)`, already along a basis
-  ([rockafellar1970convex] Theorem 25.2).
-* `mem_exposedPoints_epi_convexConj_iff`, `mem_exposedPoints_supportSet_iff` — exposed points as
-  unique subgradients.
-* `HasGradientAtFn`, `DifferentiableAtFn` — `∇f x = f'` for an `EReal`-valued `f`, with the results
-  above repackaged as `.le`, `.subdifferential_eq`, `.dirDeriv_eq`, `.mem_interior_convexDom`,
-  `.proper` and `.unique`. This is the interface the Legendre theory uses.
+* `ConvexAnalysis.subdifferential_eq_singleton_of_dirDeriv_eq`: if
+  $f'(x; \cdot) = \langle \cdot, y_0 \rangle$, then $\partial f(x) = \{y_0\}$.
+* `ConvexAnalysis.convexCl_dirDeriv_eq_of_subdifferential_eq_singleton`: if
+  $\partial f(x) = \{y_0\}$, then the closure of $f'(x; \cdot)$ is $\langle \cdot, y_0 \rangle$.
+* `ConvexAnalysis.le_of_hasFDerivAt`: the gradient inequality $f(z) \ge f(x) + \langle z - x, \nabla
+  f(x) \rangle$ ([rockafellar1970convex], Theorem 25.1).
+* `ConvexAnalysis.eq_of_mem_subdifferential_of_hasFDerivAt`: at a point of differentiability, every
+  subgradient is the derivative. This needs no convexity.
+* `ConvexAnalysis.subdifferential_eq_singleton_of_hasFDerivAt`: at a point of differentiability,
+  $\partial f(x) = \{\nabla f(x)\}$ ([rockafellar1970convex], Theorem 25.1).
+* `ConvexAnalysis.differentiableAtFn_iff_exists_dirDeriv_eq`: $f$ is differentiable at $x$ if and
+  only if $f'(x; \cdot)$ is linear ([rockafellar1970convex], Theorem 25.2).
+* `ConvexAnalysis.differentiableAtFn_of_forall_basis_dirDeriv_eq`: finite two-sided derivatives
+  along the vectors of a basis make $f$ differentiable ([rockafellar1970convex], Theorem 25.2).
+* `ConvexAnalysis.mem_exposedPoints_epi_convexConj_iff`: $(y, \mu)$ is an exposed point of
+  $\operatorname{epi} f^*$ if and only if $\mu = f^*(y)$ and $\partial f(x) = \{y\}$ for some $x$.
+* `ConvexAnalysis.mem_exposedPoints_supportSet_iff`: $z$ is an exposed point of the set cut out by a
+  positively homogeneous $g$ if and only if $\partial g(y) = \{z\}$ for some $y$.
 
 ## Implementation notes
 
-Differentiability of an `EReal`-valued function is carried by a local real representative:
-`HasFDerivAt` needs a normed target, so a convex `f : E → EReal` is differentiable at `x` when some
-real `g` has `f =ᶠ[𝓝 x] fun z => (g z : EReal)` and `HasFDerivAt g f' x`. This forces
-`x ∈ int (dom f)`, the standing assumption that `f x` is finite. Restricting to `f : E → ℝ` instead
-would lose the Legendre theory, where the interesting functions are `+∞` outside an open set.
-
-The directional-derivative statements hold over an arbitrary pairing `B`, with uniqueness needing
-`B` separating in its second variable. In place of `[FiniteDimensional ℝ E]` the exposed point
-results assume `[IsCompatiblePairing B.flip]` — every continuous linear functional on `F` is
-`⟨x, ·⟩` — which holds for finite-dimensional `E` paired with `StrongDual ℝ E`.
-
-## References
-
-* [rockafellar1970convex] §25.
+* `HasFDerivAt` needs a normed target, so differentiability of a function
+  $f \colon E \to [-\infty, +\infty]$ is expressed with a local real representative: $f$ is
+  differentiable at $x$ when some real-valued $g$ satisfies `f =ᶠ[𝓝 x] fun z => (g z : EReal)` and
+  `HasFDerivAt g f' x`. This forces $x \in \operatorname{int}(\operatorname{dom} f)$, which is the
+  standing assumption that $f$ is finite near $x$. A restriction to real-valued functions would lose
+  the Legendre theory, where the interesting functions are $+\infty$ outside an open set.
+* The results on gradients are restated for `ConvexAnalysis.HasGradientAtFn` as
+  `ConvexAnalysis.HasGradientAtFn.le`, `ConvexAnalysis.HasGradientAtFn.subdifferential_eq`,
+  `ConvexAnalysis.HasGradientAtFn.dirDeriv_eq`,
+  `ConvexAnalysis.HasGradientAtFn.mem_interior_convexDom`, `ConvexAnalysis.HasGradientAtFn.proper`
+  and `ConvexAnalysis.HasGradientAtFn.unique`. The Legendre theory uses this form.
+* The statements about directional derivatives hold for an arbitrary pairing $B$ of $E$ and $F$.
+  Uniqueness of the subgradient needs $B$ to separate the points of $F$. In place of finite
+  dimension, the results on exposed points assume `[IsCompatiblePairing B.flip]`: every continuous
+  linear functional on $F$ is $\langle x, \cdot \rangle$ for some $x \in E$. This holds for a
+  finite-dimensional $E$ paired with `StrongDual ℝ E`.
 -/
 
 open Set Filter Topology
 
 namespace ConvexAnalysis
 
-/-! ### The algebraic core: a linear directional derivative -/
+/-! ### A linear directional derivative -/
 
 section Linear
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E}
 
-/-- Algebraically: if the directional derivative `f'(x; ·)` is the linear function `⟨·, y₀⟩`, then
-`y₀` is the unique subgradient of `f` at `x`. This is the description of `∂f x` by
-`⟨·, y⟩ ≤ f'(x; ·)` plus the observation that `⟨v, y⟩ ≤ ⟨v, y₀⟩` for *every* `v`, `-v` included,
-forces `⟨·, y⟩ = ⟨·, y₀⟩`; the pairing must therefore separate the points of `F`. -/
+/-- Let $B$ be a pairing of $E$ and $F$ that separates the points of $F$, and let
+$f \colon E \to [-\infty, +\infty]$ be finite at $x$. If there is $y_0 \in F$ with
+$f'(x; v) = \langle v, y_0 \rangle$ for every $v \in E$, then
+$$\partial f(x) = \{y_0\}.$$
+
+No convexity is assumed. A subgradient $y$ satisfies $\langle v, y \rangle \le f'(x; v) =
+\langle v, y_0 \rangle$ for every $v$, also for $-v$, so $\langle \cdot, y \rangle = \langle
+\cdot, y_0 \rangle$. That $B$ separates the points of $F$ is the hypothesis that `B.flip` is
+injective. -/
 theorem subdifferential_eq_singleton_of_dirDeriv_eq (hsep : Function.Injective B.flip)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) {y₀ : F}
     (h : ∀ v : E, dirDeriv f x v = ((B v y₀ : ℝ) : EReal)) :
@@ -95,9 +117,14 @@ theorem subdifferential_eq_singleton_of_dirDeriv_eq (hsep : Function.Injective B
   · rintro rfl v
     rw [h v]
 
-/-- The converse at the level of closures: if `∂f x` is a single point `y₀`, then `cl f'(x; ·)` is
-the linear function `⟨·, y₀⟩`. It is `cl f'(x; ·) = δ*(· | ∂f x)`, the support function of a
-singleton being linear. -/
+/-- Let $E$ be a locally convex topological vector space, let $B$ be a pairing of $E$ and $F$ that
+is compatible with the topology of $E$, and let $f \colon E \to [-\infty, +\infty]$ be convex
+and finite at $x$. If $\partial f(x) = \{y_0\}$, then the closure of the directional derivative
+is linear:
+$$\operatorname{cl} f'(x; \cdot) = \langle \cdot, y_0 \rangle.$$
+
+The proof uses $\operatorname{cl} f'(x; \cdot) = \delta^*(\cdot \mid \partial f(x))$: the
+support function of a singleton is linear. The closure is `ConvexAnalysis.convexCl`. -/
 theorem convexCl_dirDeriv_eq_of_subdifferential_eq_singleton [TopologicalSpace E]
     [ContinuousSMul ℝ E]
     [IsTopologicalAddGroup E] [LocallyConvexSpace ℝ E] [IsCompatiblePairing B] (hf : ConvexFn f)
@@ -115,14 +142,15 @@ section Frechet
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal} {g : E → ℝ}
   {x : E} {f' : E →L[ℝ] ℝ}
 
-/-- The ray `t ↦ x + t • v` tends to `x` as `t ↓ 0`. -/
+/-- The ray $t \mapsto x + t v$ tends to $x$ as $t$ tends to $0$ from above. -/
 theorem tendsto_ray_nhdsGT (x v : E) :
     Tendsto (fun t : ℝ => x + t • v) (𝓝[>] (0 : ℝ)) (𝓝 x) := by
   have hc : Continuous fun t : ℝ => x + t • v := by fun_prop
   simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
 
-/-- The difference quotient along a ray converges to the derivative in that direction. This is the
-only piece of calculus the section uses. -/
+/-- Let $g \colon E \to \mathbb{R}$ be Fréchet differentiable at $x$ with derivative $f'$. Then for
+every $v \in E$, the difference quotient $(g(x + tv) - g(x))/t$ tends to $f'(v)$ as $t$ tends to
+$0$ from above. -/
 theorem tendsto_slope_ray_of_hasFDerivAt (hd : HasFDerivAt g f' x) (v : E) :
     Tendsto (fun t : ℝ => (g (x + t • v) - g x) / t) (𝓝[>] (0 : ℝ)) (𝓝 (f' v)) := by
   have hsmul : HasDerivAt (fun t : ℝ => t • v) v 0 := by
@@ -138,18 +166,19 @@ theorem tendsto_slope_ray_of_hasFDerivAt (hd : HasFDerivAt g f' x) (v : E) :
 /-! ### Local finiteness and properness -/
 
 omit [NormedSpace ℝ E] in
-/-- A function that agrees with a real-valued function near `x` has `x` in the interior of its
-effective domain. Neither convexity nor differentiability plays any role — only local
-finiteness. -/
+/-- If $f \colon E \to [-\infty, +\infty]$ agrees with a real-valued function on a neighbourhood of
+$x$, then $x$ is in the interior of $\operatorname{dom} f$. Neither convexity nor
+differentiability is used. -/
 theorem mem_interior_convexDom_of_eventuallyEq_coe
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : x ∈ interior (convexDom f) :=
   mem_interior_iff_mem_nhds.2
     (hfg.mono fun z hz => mem_convexDom.2 (by rw [hz]; exact EReal.coe_lt_top _))
 
-/-- A convex function that is finite near a point is proper. Unlike the general statement that a
-convex function taking `−∞` takes it throughout the relative interior of its domain, this holds in
-any topological vector space: if `f u = ⊥` then `f` is `⊥` on the half-open segment `[u, x)`,
-whose points approach `x`, where `f` is finite. -/
+/-- A convex function $f \colon E \to [-\infty, +\infty]$ that agrees with a real-valued function on
+a neighbourhood of a point is proper.
+
+This holds in every topological vector space. If $f(u) = -\infty$, then convexity makes
+$f = -\infty$ on the half-open segment $[u, x)$, whose points approach $x$, where $f$ is finite. -/
 theorem properConvex_of_eventuallyEq_coe (hf : ConvexFn f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : ProperConvex f := by
   have hx : f x = ((g x : ℝ) : EReal) := hfg.self_of_nhds
@@ -170,8 +199,11 @@ theorem properConvex_of_eventuallyEq_coe (hf : ConvexFn f)
 
 /-! ### The gradient is the unique subgradient -/
 
-/-- **The gradient inequality**: a convex function lies above its tangent affine function at every
-point of differentiability. -/
+/-- The **gradient inequality**. Let $f \colon E \to [-\infty, +\infty]$ be a proper convex function
+on a real normed space, and let $f$ agree near $x$ with a real-valued function $g$ that is
+Fréchet differentiable at $x$ with derivative $f'$. Then for every $z \in E$,
+$$f(x) + f'(z - x) \le f(z).$$
+-/
 theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) (z : E) :
     f x + ((f' (z - x) : ℝ) : EReal) ≤ f z := by
@@ -197,9 +229,13 @@ theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
   rw [hx, hfz, ← EReal.coe_add, EReal.coe_le_coe_iff]
   linarith
 
-/-- **Uniqueness**: any subgradient at a point of differentiability is the derivative. Neither
-convexity nor properness is used — only the limit of the difference quotient along the two opposite
-rays. -/
+/-- Let $f \colon E \to [-\infty, +\infty]$ agree near $x$ with a real-valued function $g$ that is
+Fréchet differentiable at $x$ with derivative $f'$. Then every subgradient $y \in \partial f(x)$
+is equal to $f'$.
+
+Neither convexity nor properness is used, only the limits of the difference quotients along the
+two opposite rays $x + tv$ and $x - tv$. The subgradients are taken for the pairing of $E$ with
+its dual `StrongDual ℝ E`. -/
 theorem eq_of_mem_subdifferential_of_hasFDerivAt (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal))
     (hd : HasFDerivAt g f' x) {y : StrongDual ℝ E}
     (hy : y ∈ subdifferential (topDualPairing ℝ E).flip f x) : y = f' := by
@@ -223,8 +259,14 @@ theorem eq_of_mem_subdifferential_of_hasFDerivAt (hfg : f =ᶠ[𝓝 x] fun z => 
   rw [map_neg, map_neg] at hneg
   linarith
 
-/-- At a point where a convex function is differentiable, the gradient is the unique
-subgradient. -/
+/-- Let $f \colon E \to [-\infty, +\infty]$ be a proper convex function on a real normed space, and
+let $f$ agree near $x$ with a real-valued function $g$ that is Fréchet differentiable at $x$
+with derivative $f'$. Then the derivative is the only subgradient:
+$$\partial f(x) = \{f'\}.$$
+
+The subgradients are taken for the pairing of $E$ with its dual `StrongDual ℝ E`. The inclusion
+$\supseteq$ is `ConvexAnalysis.le_of_hasFDerivAt`, and the inclusion $\subseteq$ is
+`ConvexAnalysis.eq_of_mem_subdifferential_of_hasFDerivAt`. -/
 theorem subdifferential_eq_singleton_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) :
     subdifferential (topDualPairing ℝ E).flip f x = {f'} := by
@@ -234,10 +276,13 @@ theorem subdifferential_eq_singleton_of_hasFDerivAt (hf : ConvexFn f) (hp : Prop
   rw [hval]
   exact le_of_hasFDerivAt hf hp hfg hd z
 
-/-- **Necessity**: at a point of differentiability the directional derivative is the linear
-function `v ↦ ⟨v, ∇f x⟩`. Both halves come from the defining infimum: the lower bound is the
-gradient inequality at `x + a • v`, the upper bound the limit `a ↓ 0`, extracted through
-`EReal.lt_iff_exists_real_btwn` so that no `EReal` division has to be computed. -/
+/-- Let $f \colon E \to [-\infty, +\infty]$ be a proper convex function on a real normed space, and
+let $f$ agree near $x$ with a real-valued function that is Fréchet differentiable at $x$ with
+derivative $f'$. Then $f'(x; v) = f'(v)$ for every $v \in E$: the directional derivative is
+linear.
+
+The lower bound comes from the gradient inequality at $x + av$, and the upper bound from the
+limit as $a$ tends to $0$ from above. -/
 theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) (hd : HasFDerivAt g f' x) (v : E) :
     dirDeriv f x v = ((f' v : ℝ) : EReal) := by
@@ -266,60 +311,70 @@ theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : ProperConvex f)
     rw [hx, add_sub_cancel_left, map_smul, smul_eq_mul, ← EReal.coe_add] at hgrad
     rwa [mul_comm (f' v) a]
 
-/-! ### Packaging: `∇f` for an `EReal`-valued function -/
+/-! ### Gradients of extended-real-valued functions -/
 
-/-- `f` **has gradient** `f'` at `x`: near `x`, `f` agrees with a real-valued function that is
-Fréchet differentiable at `x` with derivative `f'`. This is `∇f x = f'`. An `EReal`-valued function
-cannot satisfy `HasFDerivAt` directly — that needs a normed target — and the local real
-representative carries exactly what the classical definition presupposes: `f` finite near `x`. -/
+/-- A function $f \colon E \to [-\infty, +\infty]$ **has the gradient** $f' \in E^*$ at $x$ if there
+is a real-valued function $g$ that agrees with $f$ on a neighbourhood of $x$ and is Fréchet
+differentiable at $x$ with derivative $f'$. This is $\nabla f(x) = f'$.
+
+A function with values in `EReal` cannot satisfy `HasFDerivAt` directly, because that needs a
+normed target. The local real representative $g$ carries what the classical definition
+presupposes: $f$ is finite near $x$. -/
 def HasGradientAtFn (f : E → EReal) (f' : StrongDual ℝ E) (x : E) : Prop :=
   ∃ g : E → ℝ, f =ᶠ[𝓝 x] (fun z => ((g z : ℝ) : EReal)) ∧ HasFDerivAt g f' x
 
-/-- `f` is **differentiable** at `x`: it has a gradient there. -/
+/-- A function $f \colon E \to [-\infty, +\infty]$ is **differentiable** at $x$ if it has a gradient
+at $x$ in the sense of `ConvexAnalysis.HasGradientAtFn`. -/
 def DifferentiableAtFn (f : E → EReal) (x : E) : Prop :=
   ∃ f' : StrongDual ℝ E, HasGradientAtFn f f' x
 
+/-- If $g \colon E \to \mathbb{R}$ is Fréchet differentiable at $x$ with derivative $f'$, then $g$,
+read as a function with values in $[-\infty, +\infty]$, has the gradient $f'$ at $x$. -/
 theorem hasGradientAtFn_coe (hd : HasFDerivAt g f' x) :
     HasGradientAtFn (fun z => ((g z : ℝ) : EReal)) f' x :=
   ⟨g, EventuallyEq.rfl, hd⟩
 
-/-- Packaged: a gradient at `x` puts `x` in the interior of `dom f`. -/
+/-- If $f$ has a gradient at $x$, then $x$ is in the interior of $\operatorname{dom} f$. -/
 theorem HasGradientAtFn.mem_interior_convexDom
     (h : HasGradientAtFn f f' x) : x ∈ interior (convexDom f) := by
   obtain ⟨g, hfg, -⟩ := h
   exact mem_interior_convexDom_of_eventuallyEq_coe hfg
 
-/-- Packaged: a convex function with a gradient somewhere is proper. -/
+/-- A convex function that has a gradient at some point is proper. -/
 theorem HasGradientAtFn.proper (hf : ConvexFn f) (h : HasGradientAtFn f f' x) : ProperConvex f := by
   obtain ⟨g, hfg, -⟩ := h
   exact properConvex_of_eventuallyEq_coe hf hfg
 
-/-- The gradient inequality, packaged. -/
+/-- The gradient inequality: if a convex function $f$ has the gradient $f'$ at $x$, then
+$f(x) + f'(z - x) \le f(z)$ for every $z$. -/
 theorem HasGradientAtFn.le (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (z : E) :
     f x + ((f' (z - x) : ℝ) : EReal) ≤ f z := by
   obtain ⟨g, hfg, hd⟩ := h
   exact le_of_hasFDerivAt hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd z
 
-/-- Packaged: the gradient is the only subgradient. -/
+/-- If a convex function $f$ has the gradient $f'$ at $x$, then $\partial f(x) = \{f'\}$. -/
 theorem HasGradientAtFn.subdifferential_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     subdifferential (topDualPairing ℝ E).flip f x = {f'} := by
   obtain ⟨g, hfg, hd⟩ := h
   exact subdifferential_eq_singleton_of_hasFDerivAt
       hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd
 
+/-- If a convex function $f$ has the gradient $f'$ at $x$, then $f'$ is a subgradient of $f$ at $x$.
+-/
 theorem HasGradientAtFn.mem_subdifferential (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     f' ∈ subdifferential (topDualPairing ℝ E).flip f x := by
   rw [h.subdifferential_eq hf]
   exact Set.mem_singleton_iff.2 rfl
 
-/-- Packaged: `f'(x; v) = ⟨v, ∇f x⟩` at a point of differentiability. -/
+/-- If a convex function $f$ has the gradient $f'$ at $x$, then $f'(x; v) = f'(v)$ for every $v$. -/
 theorem HasGradientAtFn.dirDeriv_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (v : E) :
     dirDeriv f x v = ((f' v : ℝ) : EReal) := by
   obtain ⟨g, hfg, hd⟩ := h
   exact dirDeriv_eq_of_hasFDerivAt hf (properConvex_of_eventuallyEq_coe hf hfg) hfg hd v
 
-/-- The gradient is unique where it exists. This is the
-uniqueness of `HasFDerivAt` for the local real representative, and it needs no convexity. -/
+/-- The gradient is unique: if $f$ has the gradients $f_1'$ and $f_2'$ at $x$, then $f_1' = f_2'$.
+No convexity is needed, because this is the uniqueness of the Fréchet derivative of the local
+real representative. -/
 theorem HasGradientAtFn.unique {f₁' f₂' : StrongDual ℝ E} (h₁ : HasGradientAtFn f f₁' x)
     (h₂ : HasGradientAtFn f f₂' x) : f₁' = f₂' := by
   obtain ⟨g₁, hfg₁, hd₁⟩ := h₁
@@ -337,17 +392,14 @@ section Sufficiency
 
 variable {ι : Type*} [Finite ι]
 
-/-- The **two-sided one-dimensional estimate** behind sufficiency. If the directional derivatives
-of `f` at `x` along `v` and `-v` are `c` and `-c`, then for every `η > 0` there is a step `a₀ > 0`
-with
+/-- A two-sided one-dimensional estimate. Let $f \colon E \to [-\infty, +\infty]$ be convex with
+$f(x) = r \in \mathbb{R}$, let $v \in E$, and let $c \in \mathbb{R}$ satisfy $f'(x; v) = c$ and
+$f'(x; -v) = -c$. Then for every $\eta > 0$ there is $a_0 > 0$ such that
+$$f(x + tv) \le r + tc + |t| \eta \qquad \text{whenever } |t| \le a_0,$$
+for $t$ of either sign.
 
-```
-f (x + t • v) ≤ f x + t * c + |t| * η        whenever |t| ≤ a₀,
-```
-
-for `t` of *either* sign. On the negative side the one-sided estimate is applied in the direction
-`-v`; the linear term survives unchanged because `(-t) * (-c) = t * c`, while the error term picks
-up `|t| = -t`. -/
+For $t < 0$ the one-sided estimate is applied in the direction $-v$. The linear term stays the
+same because $(-t)(-c) = tc$. -/
 theorem exists_forall_abs_le_of_dirDeriv_eq (hf : ConvexFn f) {r : ℝ} (hr : f x = (r : EReal))
     {v : E} {c η : ℝ} (hη : 0 < η) (hpos : dirDeriv f x v = (c : EReal))
     (hneg : dirDeriv f x (-v) = ((-c : ℝ) : EReal)) :
@@ -375,21 +427,19 @@ theorem exists_forall_abs_le_of_dirDeriv_eq (hf : ConvexFn f) {r : ℝ} (hr : f 
     rw [EReal.coe_eq_coe_iff, habs]
     ring
 
-/-- **Sufficiency, quantitatively**: two-sided directional derivatives along a *basis* already
-force the tangent affine estimate
+/-- Let $E$ be a finite-dimensional real normed space with a basis $(b_j)_{j \in \iota}$, let
+$f \colon E \to [-\infty, +\infty]$ be convex with $f(x) = r \in \mathbb{R}$, and let
+$y_0 \in E^*$ satisfy $f'(x; b_j) = y_0(b_j)$ and $f'(x; -b_j) = -y_0(b_j)$ for every $j$. Then
+for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$f(z) \le r + y_0(z - x) + \varepsilon \|z - x\| \qquad \text{whenever } \|z - x\| \le
+  \delta.$$
 
-```
-f z ≤ f x + ⟨z - x, y₀⟩ + ε ‖z - x‖
-```
-
-on a ball whose radius depends only on `ε`.
-
-Finite-dimensionality enters through a *cross-polytope* decomposition rather than through
-compactness of the unit sphere, which keeps the argument quantitative. Writing `z - x = ∑ ξ j • b j`
-and `S = ∑ |ξ j|`, the point `z` is the convex combination with weights `|ξ j| / S` of the points
-`x + (S * sign (ξ j)) • b j`, each at distance `S` from `x` along a basis direction, where the
-one-sided estimate applies. The linear terms recombine into `⟨z - x, y₀⟩` exactly and the error is
-`S * η`, at most `ε ‖z - x‖` once `η` is scaled by the constant relating `∑ |ξ j|` to `‖z - x‖`. -/
+The proof uses a cross-polytope decomposition, not compactness of the unit sphere, so it stays
+quantitative. Write $z - x = \sum_j \xi_j b_j$ and $S = \sum_j |\xi_j|$. Then $z$ is the convex
+combination with weights $|\xi_j| / S$ of the points $x + S \operatorname{sign}(\xi_j) b_j$,
+where the one-sided estimate applies. The linear terms recombine into $y_0(z - x)$, and the
+error is at most $S \eta$, which is at most $\varepsilon \|z - x\|$ after $\eta$ is scaled by a
+constant that bounds $\sum_j |\xi_j|$ by $\|z - x\|$. -/
 theorem exists_le_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E] (b : Module.Basis ι ℝ E)
     (hf : ConvexFn f) {r : ℝ} (hr : f x = (r : EReal)) {y₀ : StrongDual ℝ E}
     (hpos : ∀ j, dirDeriv f x (b j) = ((y₀ (b j) : ℝ) : EReal))
@@ -512,11 +562,14 @@ theorem exists_le_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E] (b : Mod
         _ = ε * ‖w‖ := by rw [hηdef]; field_simp
     linarith
 
-/-- The estimate of `exists_le_of_forall_basis_dirDeriv_eq` recovers `f'(x; ·)` in *every*
-direction, not only along the basis: it bounds `f'(x; v)` above by `⟨v, y₀⟩`, and the general
-inequality `-f'(x; -v) ≤ f'(x; v)` supplies the matching lower bound. This turns `n` two-sided
-partial derivatives into linearity of `f'(x; ·)` without a detour that would need `f'(x; ·)` to be
-proper first. -/
+/-- Let $E$ be a finite-dimensional real normed space with a basis $(b_j)_{j \in \iota}$, let
+$f \colon E \to [-\infty, +\infty]$ be convex and finite at $x$, and let $y_0 \in E^*$ satisfy
+$f'(x; b_j) = y_0(b_j)$ and $f'(x; -b_j) = -y_0(b_j)$ for every $j$. Then $f'(x; v) = y_0(v)$
+for every $v \in E$.
+
+The estimate of `ConvexAnalysis.exists_le_of_forall_basis_dirDeriv_eq` gives
+$f'(x; v) \le y_0(v)$, and the general inequality $-f'(x; -v) \le f'(x; v)$ gives the lower
+bound. The proof does not need to know first that $f'(x; \cdot)$ is proper. -/
 theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     (b : Module.Basis ι ℝ E) (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
     {y₀ : StrongDual ℝ E} (hpos : ∀ j, dirDeriv f x (b j) = ((y₀ (b j) : ℝ) : EReal))
@@ -559,11 +612,14 @@ theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
   rw [← EReal.coe_neg, neg_neg] at h2
   exact h2.trans (neg_dirDeriv_neg_le hf ht hb v)
 
-/-- **Sufficiency**, from two-sided derivatives along a basis: `f` is Fréchet differentiable at
-`x`, with gradient the functional `y₀` whose values along the basis are the given
-one-sided derivatives. The two-sided estimate `f x + ⟨z - x, y₀⟩ ≤ f z ≤ f x + ⟨z - x, y₀⟩ +
-ε ‖z - x‖` does all three jobs at once: it makes `f` finite near `x`, so that the local real
-representative exists, and exhibits the little-o estimate defining `HasFDerivAt`. -/
+/-- Let $E$ be a finite-dimensional real normed space with a basis $(b_j)_{j \in \iota}$, let
+$f \colon E \to [-\infty, +\infty]$ be convex and finite at $x$, and let $y_0 \in E^*$ satisfy
+$f'(x; b_j) = y_0(b_j)$ and $f'(x; -b_j) = -y_0(b_j)$ for every $j$. Then $f$ has the gradient
+$y_0$ at $x$.
+
+The two-sided estimate $f(x) + y_0(z - x) \le f(z) \le f(x) + y_0(z - x) + \varepsilon \|z -
+x\|$ near $x$ shows that $f$ is finite near $x$, so that the local real representative exists,
+and it is the little-o estimate of Fréchet differentiability. -/
 theorem hasGradientAtFn_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     (b : Module.Basis ι ℝ E) (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
     {y₀ : StrongDual ℝ E} (hpos : ∀ j, dirDeriv f x (b j) = ((y₀ (b j) : ℝ) : EReal))
@@ -603,18 +659,26 @@ theorem hasGradientAtFn_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
   rw [hgx, Real.norm_eq_abs, abs_le]
   exact ⟨by linarith, by linarith⟩
 
-/-- **Sufficiency**: if the directional derivative `f'(x; ·)` is the linear function `⟨·, y₀⟩`,
-then `f` is differentiable at `x` with `∇f x = y₀`. This is the previous theorem read at any basis;
-the hypothesis in every direction is more than the proof consumes. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f \colon E \to [-\infty, +\infty]$ be
+convex and finite at $x$, and let $y_0 \in E^*$ satisfy $f'(x; v) = y_0(v)$ for every $v \in E$.
+Then $f$ has the gradient $y_0$ at $x$.
+
+This is `ConvexAnalysis.hasGradientAtFn_of_forall_basis_dirDeriv_eq` for any basis of $E$. -/
 theorem hasGradientAtFn_of_dirDeriv_eq [FiniteDimensional ℝ E] (hf : ConvexFn f) (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) {y₀ : StrongDual ℝ E}
     (h : ∀ v : E, dirDeriv f x v = ((y₀ v : ℝ) : EReal)) : HasGradientAtFn f y₀ x :=
   hasGradientAtFn_of_forall_basis_dirDeriv_eq (Module.finBasis ℝ E) hf ht hb (fun j => h _)
     (fun j => by rw [h, map_neg])
 
-/-- **In full**: for a convex function finite at `x`, differentiability at `x` is equivalent to
-linearity of `f'(x; ·)`. Necessity is `HasGradientAtFn.dirDeriv_eq` and sufficiency is
-`hasGradientAtFn_of_dirDeriv_eq`. -/
+/-- Let $E$ be a finite-dimensional real normed space, and let $f \colon E \to [-\infty, +\infty]$
+be convex and finite at $x$. Then $f$ is differentiable at $x$ if and only if the directional
+derivative $f'(x; \cdot)$ is linear, that is, there is $y_0 \in E^*$ with
+$$f'(x; v) = y_0(v) \qquad \text{for every } v \in E.$$
+This is the first part of Theorem 25.2 of [rockafellar1970convex].
+
+Differentiability is `ConvexAnalysis.DifferentiableAtFn`. Necessity is
+`ConvexAnalysis.HasGradientAtFn.dirDeriv_eq`, and sufficiency is
+`ConvexAnalysis.hasGradientAtFn_of_dirDeriv_eq`. -/
 theorem differentiableAtFn_iff_exists_dirDeriv_eq [FiniteDimensional ℝ E] (hf : ConvexFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     DifferentiableAtFn f x ↔
@@ -625,10 +689,17 @@ theorem differentiableAtFn_iff_exists_dirDeriv_eq [FiniteDimensional ℝ E] (hf 
   · rintro ⟨y₀, h⟩
     exact ⟨y₀, hasGradientAtFn_of_dirDeriv_eq hf ht hb h⟩
 
-/-- It is already enough that the `n` two-sided partial derivatives exist and are finite. Here
-"the `n` partial derivatives" is the pair of one-sided derivatives along the vectors of a basis,
-and "two-sided and finite" is the requirement that they be the negatives of each other and real.
-The gradient is then `b.constr` of those numbers. -/
+/-- Let $E$ be a finite-dimensional real normed space with a basis $(b_j)_{j \in \iota}$, and let
+$f \colon E \to [-\infty, +\infty]$ be convex and finite at $x$. If there are real numbers $c_j$
+with
+$$f'(x; b_j) = c_j \quad \text{and} \quad f'(x; -b_j) = -c_j \qquad \text{for every } j,$$
+then $f$ is differentiable at $x$. This is the second part of Theorem 25.2 of
+[rockafellar1970convex]: it is enough that the two-sided partial derivatives along the vectors
+of a basis exist and are finite.
+
+The two-sided partial derivative along $b_j$ is the pair of one-sided derivatives $f'(x; b_j)$
+and $-f'(x; -b_j)$. The hypothesis says that these two are equal and real. The gradient is the
+linear functional `b.constr ℝ c` with the values $c_j$ on the basis. -/
 theorem differentiableAtFn_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     (b : Module.Basis ι ℝ E) (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (c : ι → ℝ)
     (hpos : ∀ j, dirDeriv f x (b j) = ((c j : ℝ) : EReal))
@@ -651,11 +722,15 @@ section HalfCylinder
 
 variable {X : Type*} [AddCommGroup X] [Module ℝ X] [TopologicalSpace X]
 
-/-- The exposed points of a half-cylinder `C ×ˢ [0, ∞)` are the points `(z, 0)` with `z` an
-exposed point of `C`. A functional exposing a point of the cylinder must be *strictly* decreasing
-in the vertical direction, since otherwise the whole vertical ray attains the maximum; that forces
-the height to be `0` and reduces the functional to one on `C`. The cylinder is the epigraph of an
-indicator function, so this is how a statement about `epi f*` becomes one about a convex set. -/
+/-- Let $X$ be a real vector space with a topology, let $C \subseteq X$, and let $z \in X$ and
+$\nu \in \mathbb{R}$. Then $(z, \nu)$ is an exposed point of the half-cylinder
+$C \times [0, \infty)$ if and only if $\nu = 0$ and $z$ is an exposed point of $C$.
+
+A functional that exposes a point of the half-cylinder must be strictly decreasing in the
+vertical direction, because otherwise the whole vertical ray attains the maximum. Therefore the
+height is $0$, and the functional reduces to a functional on $C$. The half-cylinder is the
+epigraph of the indicator function of $C$, and this is how a statement about
+$\operatorname{epi} f^*$ becomes a statement about a convex set. -/
 theorem mem_exposedPoints_prod_Ici_iff {C : Set X} {z : X} {ν : ℝ} :
     (z, ν) ∈ (C ×ˢ Ici (0 : ℝ)).exposedPoints ℝ ↔ ν = 0 ∧ z ∈ C.exposedPoints ℝ := by
   constructor
@@ -715,9 +790,9 @@ section Exposed
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal}
 
-/-- A subgradient pins down the value: if `y ∈ ∂f x` and `f* y = μ` is finite, then
-`f x = ⟨x, y⟩ - μ`. This is Fenchel's equality solved for `f x`, and in particular `f x` is
-finite. -/
+/-- Let $f \colon E \to [-\infty, +\infty]$ be proper, let $y \in \partial f(x)$, and let
+$f^*(y) = \mu \in \mathbb{R}$. Then $f(x) = \langle x, y \rangle - \mu$; in particular $f(x)$ is
+finite. This is Fenchel's equality, solved for $f(x)$. -/
 theorem ProperConvex.eq_sub_of_mem_subdifferential (hp : ProperConvex f) {x : E} {y : F} {μ : ℝ}
     (hy : y ∈ subdifferential B f x) (hμ : convexConj B f y = (μ : EReal)) :
     f x = ((B x y - μ : ℝ) : EReal) := by
@@ -739,13 +814,22 @@ section Topology
 variable [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
   [LocallyConvexSpace ℝ E] [TopologicalSpace F]
 
-/-- In subgradient form: `(y, μ)` is an exposed point of `epi f*` exactly when `μ = f* y` and `y`
-is the *only* subgradient of `f` at some point `x`.
+/-- Let $E$ be a locally convex topological vector space and let $F$ be a topological space, with a
+pairing $B$ of $E$ and $F$ such that the continuous linear functionals on $E$ are the maps
+$\langle \cdot, y \rangle$ and those on $F$ are the maps $\langle x, \cdot \rangle$. Let
+$f \colon E \to [-\infty, +\infty]$ be a closed proper convex function, let $y \in F$ and let
+$\mu \in \mathbb{R}$. Then $(y, \mu)$ is an exposed point of $\operatorname{epi} f^*$ if and
+only if
+$$f^*(y) = \mu \quad \text{and} \quad \partial f(x) = \{y\} \text{ for some } x \in E.$$
 
-Geometrically, a supporting hyperplane to `epi f*` touching it in a single point is necessarily
-non-vertical, hence the graph of an affine function `⟨x, ·⟩ - α`; supporting `epi f*` at `(y, μ)`
-says `x ∈ ∂f*(y)`, i.e. `y ∈ ∂f x`, and touching nowhere else says `∂f x` is no larger than `{y}`.
-Only the forward direction uses closedness, through `∂f* = (∂f)⁻¹`. -/
+Geometrically, a hyperplane that supports $\operatorname{epi} f^*$ at a single point is not
+vertical, so it is the graph of an affine function $\langle x, \cdot \rangle - \alpha$. That it
+supports $\operatorname{epi} f^*$ at $(y, \mu)$ says $x \in \partial f^*(y)$, that is,
+$y \in \partial f(x)$. That it touches $\operatorname{epi} f^*$ nowhere else says
+$\partial f(x) = \{y\}$. Only the forward direction uses closedness, through
+$\partial f^* = (\partial f)^{-1}$.
+
+The compatibility hypotheses are `[IsCompatiblePairing B]` and `[IsCompatiblePairing B.flip]`. -/
 theorem mem_exposedPoints_epi_convexConj_iff [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ConvexFn f) (hp : ProperConvex f) (hc : ClosedConvex f) {y : F} {μ : ℝ} :
     (y, μ) ∈ (epi (convexConj B f)).exposedPoints ℝ ↔
@@ -884,12 +968,20 @@ section Homogeneous
 variable [IsTopologicalAddGroup F] [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F]
 
 omit [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E] in
-/-- The exposed points of a set are the values of the subdifferential of any positively
-homogeneous function that cuts it out. If `g` is closed proper convex and positively
-homogeneous and `C = {x | ⟨x, y⟩ ≤ g y for all y}` — for instance `g` the support function of
-`C` — then `z` is an exposed point of `C` exactly when `z` is the *only* subgradient of `g` at some
-`y`. The conjugate of `g` is the indicator of `C`, so `epi g*` is the half-cylinder `C ×ˢ [0, ∞)`
-and this is the previous result read at height `0`. -/
+/-- Let $F$ be a locally convex topological vector space, let $E$ carry a topology, and let $B$ be a
+pairing of $E$ and $F$ such that the continuous linear functionals on $E$ are the maps
+$\langle \cdot, y \rangle$ and those on $F$ are the maps $\langle x, \cdot \rangle$. Let
+$g \colon F \to [-\infty, +\infty]$ be a closed proper convex function that is positively
+homogeneous, and let
+$$C = \{z \in E \mid \langle z, y \rangle \le g(y) \text{ for all } y \in F\}.$$
+Then $z \in E$ is an exposed point of $C$ if and only if $\partial g(y) = \{z\}$ for some
+$y \in F$.
+
+For example, $g$ can be the support function of $C$. The conjugate of $g$ is the indicator
+function of $C$, so $\operatorname{epi} g^*$ is the half-cylinder $C \times [0, \infty)$, and
+the result is `ConvexAnalysis.mem_exposedPoints_epi_convexConj_iff` at height $0$. The set $C$
+is `ConvexAnalysis.supportSet B.flip g`, and the subgradients of $g$ are taken for the pairing
+`B.flip`. -/
 theorem mem_exposedPoints_supportSet_iff [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     {g : F → EReal} (hgh : PosHomogeneous g) (hgc : ConvexFn g) (hgp : ProperConvex g)
     (hgcl : ClosedConvex g) {z : E} :

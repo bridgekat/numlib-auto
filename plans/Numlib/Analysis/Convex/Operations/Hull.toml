@@ -8,14 +8,12 @@ id = 'convexFn_convFn'
 
 [[node]]
 id = 'convFn_le'
-desc = 'The convex hull of a family is a minorant of every member of the family.'
 
 [[node]]
 id = 'le_convFn'
 
 [[node]]
 id = 'isGreatest_convFn'
-desc = 'The convex hull of a family is its greatest convex minorant.'
 
 [[node]]
 id = 'convFn_le_iInf'

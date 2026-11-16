@@ -15,54 +15,65 @@ import Numlib.Analysis.Normed.Module.WeakDual
 /-!
 # The Eberlein–Šmulian theorem
 
-For a subset `A` of a normed space `E`, with `B` its closure in the weak topology, the following
-are equivalent, and either implies the third:
+The **Eberlein–Šmulian theorem** characterizes the weakly compact subsets of a normed space by
+sequences. Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$A \subseteq E$, and let $B$ be the closure of $A$ in the weak topology. Consider the conditions:
 
-* (P) `B` is weakly compact;
-* (Q) every sequence in `A` has a weakly convergent subsequence;
-* (R) every point of `B` is the weak limit of a sequence in `A`.
+* (P) $B$ is weakly compact;
+* (Q) every sequence in $A$ has a weakly convergent subsequence;
+* (R) every point of $B$ is the weak limit of a sequence in $A$.
 
-The consequence for reflexivity is the converse of the weak sequential compactness of the unit
-ball of a reflexive space (`NormedSpace.exists_subseq_forall_dual_tendsto`, the parent module):
-**a normed space in which every bounded sequence has a weakly convergent subsequence is
-reflexive** (`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`), so that
-reflexivity is characterized by weak sequential compactness of the closed unit ball
-(`NormedSpace.isReflexive_iff_forall_exists_subseq_forall_dual_tendsto`). No completeness is
-assumed anywhere: a space with the property is reflexive, hence complete.
+The theorem states that (P) and (Q) are equivalent, and this file also proves that (Q) implies (R).
+This follows Theorem 3.19 and Problem 10 of [brezis2011functional]. The consequence for reflexivity
+is the converse of `NormedSpace.exists_subseq_forall_dual_tendsto`: a normed space in which every
+bounded sequence has a weakly convergent subsequence is reflexive. So reflexivity is characterized
+by weak sequential compactness of the closed unit ball. Completeness is never assumed, because a
+space with this property is reflexive, hence complete.
 
-## The proof
+## Main results
 
-* **(P) ⇒ (Q)** (`IsCompact.isSeqCompact_weakSpace`): a sequence lives in the closed span `N` of
-  its terms, a separable closed subspace, which is weakly closed by Mazur's theorem. The compact
-  set `K ∩ N` carries a countable family of weakly continuous functions separating its points —
-  a norming sequence of functionals of `N` (`exists_seq_strongDual_norming_of_separableSpace`)
-  extended to `E` by Hahn–Banach — so it is metrizable
-  (`Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating`, which is what the
-  explicit metric `∑ 2⁻ᵏ |⟨bₖ, x - y⟩|` of the textbook proof builds), hence sequentially compact.
-* **The norming lemma** (`NormedSpace.exists_finset_norm_le_two_mul_sup_of_finiteDimensional`):
-  a finite-dimensional subspace `M` of a dual space is normed, up to the factor `2`, by finitely
-  many vectors of the unit ball, since its unit sphere is totally bounded.
-* **The heart, (Q) ⇒ points of the weak-∗ closure of `J(A)` come from `E`**
-  (`NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact`): given `ξ`
-  in the weak-∗ closure of `J(A)`, one builds `x_k ∈ A` and finite sets `Ψ_k` of functionals of
-  the unit ball such that `Ψ_k` norms (up to `2`) the span `M_k` of `ξ, J x_0, …, J x_{k-1}`, and
-  `x_k` approximates `ξ` within `1/(k+1)` on `Ψ_0 ∪ … ∪ Ψ_k`. The union `F` of the `Ψ_k` then
-  norms the norm closure of `M = ⋃ M_k` (the norming inequality passes to the closure because the
-  `Ψ_k` lie in the unit ball). A weak limit `u` of a subsequence of the `x_k` lies in the closed
-  span of the `x_k` (Mazur), so `ξ - J u ∈ closure M`; the approximation property forces
-  `ξ f = f u` for every `f ∈ F`, and the norming inequality forces `ξ = J u`. The recursion
-  carries the finite data as a pair (points chosen so far, functionals chosen so far), built by
-  `Nat.rec` from a choice function.
-* **(Q) ⇒ (P)** (`NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact`): (Q) makes `A`
-  bounded, so the weak-∗ closure of `J(A)` is compact by Banach–Alaoglu, and the previous item
-  puts it inside the range of the embedding of the weak space into the weak-∗ bidual; Mathlib's
-  `NormedSpace.isCompact_closure_of_isBounded` transfers the compactness back. **(Q) ⇒ (R)**
-  (`NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_toWeakSpace`) is the previous
-  item read on `J(B)`.
+* `NormedSpace.exists_finset_norm_le_two_mul_sup_of_finiteDimensional`: a finite-dimensional
+  subspace of $E^*$ is normed, up to the factor $2$, by finitely many vectors of the unit ball of
+  $E$.
+* `NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact`: under (Q),
+  every point of the weak-$*$ closure of $J(A)$ in $E^{**}$ is $Jx$ for some $x \in E$, and $x$ is
+  the weak limit of a sequence in $A$.
+* `NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact`: (Q) implies (P).
+* `NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_toWeakSpace`: (Q) implies (R).
+* `IsCompact.isSeqCompact_weakSpace`: a weakly compact subset of $E$ is weakly sequentially compact.
+* `NormedSpace.isCompact_closure_image_toWeakSpace_iff_isSeqCompact`: $B$ is weakly compact if and
+  only if it is weakly sequentially compact.
+* `NormedSpace.isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall`: if the closed unit ball is
+  weakly sequentially compact, then $E$ is reflexive.
+* `NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto` and
+  `NormedSpace.isReflexive_iff_forall_exists_subseq_forall_dual_tendsto`: $E$ is reflexive if and
+  only if every bounded sequence has a weakly convergent subsequence.
 
-## References
+## Proof outline
 
-[brezis2011functional] Theorem 3.19 and Problem 10 (Eberlein–Šmulian).
+For (P) $\Rightarrow$ (Q), a sequence lies in the closed span $N$ of its terms, a separable closed
+subspace, which is weakly closed by Mazur's theorem. On the compact set $K \cap N$ a countable
+family of weakly continuous functions separates the points, so $K \cap N$ is metrizable and hence
+sequentially compact. The central step is the passage from (Q) to the weak-$*$ closure of $J(A)$:
+given $\xi$ in that closure, an interleaved recursion builds points $x_k \in A$ that approximate
+$\xi$ on finite sets of functionals which norm the spans of $\xi, Jx_0, \dots, Jx_{k-1}$, and a weak
+limit $u$ of a subsequence of $(x_k)$ satisfies $\xi = Ju$. For (Q) $\Rightarrow$ (P), the set $A$
+is bounded, so the weak-$*$ closure of $J(A)$ is compact by the Banach–Alaoglu theorem, and the
+central step puts it inside $J(E)$. The implication (Q) $\Rightarrow$ (R) is the central step
+applied to points of $J(B)$.
+
+## Implementation notes
+
+* Condition (Q) is written out as the hypothesis that every sequence $x$ in $A$ has $u \in E$ and a
+  strictly increasing $\varphi$ with `toWeakSpace 𝕜 E (x (φ k))` tending to `toWeakSpace 𝕜 E u`.
+  Weak closure and weak compactness are taken of `toWeakSpace 𝕜 E '' A`.
+* The metrizability in (P) $\Rightarrow$ (Q) uses
+  `Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating` with a norming
+  sequence of functionals of $N$ (`exists_seq_strongDual_norming_of_separableSpace`) extended to $E$
+  by the Hahn–Banach theorem. It replaces the explicit metric
+  $\sum_k 2^{-k} |\langle b_k, x - y \rangle|$ of the textbook proof.
+* The recursion of the central step carries the finite data as a pair (the points chosen so far, the
+  functionals chosen so far), built by `Nat.rec` from a choice function.
 -/
 
 open Filter Topology Metric Set Function TopologicalSpace
@@ -71,14 +82,16 @@ namespace NormedSpace
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-!
-### The norming lemma
--/
+/-! ### The norming lemma -/
 
-/-- **A finite-dimensional subspace of a dual space is normed, up to the factor `2`, by finitely
-many vectors of the unit ball**: the unit sphere of `M` is totally bounded, so finitely many
-`g ∈ M` are within `1/8` of every point of it; almost-norming vectors `a` of these `g`
-(`‖g a‖ ≥ ‖g‖ - 1/8`) then satisfy `‖h a‖ ≥ 1/2` for every `h` on the sphere. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $M$ be a
+finite-dimensional subspace of the dual $E^*$. Then there is a finite set $s \subseteq E$ of
+vectors of norm at most $1$ such that every $g \in M$ satisfies $\|g\| \le 2 |g(a)|$ for some
+$a \in s$.
+
+The unit sphere of $M$ is totally bounded, so finitely many $g \in M$ lie within $1/8$ of every
+point of it. Vectors $a$ that almost norm these $g$, with $|g(a)| \ge \|g\| - 1/8$, then satisfy
+$|h(a)| \ge 1/2$ for some $a$, for every $h$ on the sphere. -/
 theorem exists_finset_norm_le_two_mul_sup_of_finiteDimensional
     (M : Submodule 𝕜 (StrongDual 𝕜 E)) [FiniteDimensional 𝕜 M] :
     ∃ s : Finset E, (∀ a ∈ s, ‖a‖ ≤ 1) ∧ ∀ g ∈ M, ∃ a ∈ s, ‖g‖ ≤ 2 * ‖g a‖ := by
@@ -139,15 +152,21 @@ theorem exists_finset_norm_le_two_mul_sup_of_finiteDimensional
   rw [ge_iff_le, inv_mul_eq_div, le_div_iff₀ hgn] at h1
   linarith
 
-/-!
-### The heart: (Q) brings the weak-∗ closure of `J(A)` back to `E`
--/
+/-! ### The central step: (Q) brings the weak-$*$ closure of $J(A)$ back to $E$ -/
 
-/-- **The heart of the Eberlein–Šmulian theorem.** If every sequence in `A` has a weakly
-convergent subsequence, then every point `ξ` of the weak-∗ closure of `J(A)` in the bidual is
-`J x` for some `x`, which is the weak limit of a sequence in `A`. The proof is the interleaved
-construction of the module doc: points `x_k ∈ A` approximating `ξ` on finite sets `Ψ_k` of
-functionals of the unit ball that norm the spans of `ξ, J x_0, …, J x_{k-1}`. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \subseteq E$ be a set in which every sequence has a weakly convergent subsequence. Let
+$\xi \in E^{**}$ lie in the weak-$*$ closure of $J(A)$. Then $\xi = Jx$ for some $x \in E$, and
+there is a sequence $(y_n)$ in $A$ that converges weakly to $x$.
+
+This is the central step of the Eberlein–Šmulian theorem. The proof builds points $x_k \in A$
+and finite sets $\Psi_k$ of functionals in the unit ball of $E^*$ such that $\Psi_k$ norms (up
+to the factor $2$) the span $M_k$ of $\xi, Jx_0, \dots, Jx_{k-1}$, and $x_k$ approximates $\xi$
+within $1/(k+1)$ on $\Psi_0 \cup \dots \cup \Psi_k$. The union $F$ of the $\Psi_k$ norms the
+norm closure of $M = \bigcup_k M_k$. A weak limit $u$ of a subsequence of $(x_k)$ lies in the
+closed span of the $x_k$ by Mazur's theorem, so $\xi - Ju$ lies in the closure of $M$. The
+approximation property gives $\xi(f) = f(u)$ for every $f \in F$, and the norming inequality
+gives $\xi = Ju$. -/
 theorem exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact {A : Set E}
     (hA : ∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧
       Tendsto (fun k => toWeakSpace 𝕜 E (x (φ k))) atTop (𝓝 (toWeakSpace 𝕜 E u)))
@@ -320,15 +339,18 @@ theorem exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact {A :
   rw [← hξJ, hξ']
   rfl
 
-/-!
-### (Q) ⇒ (P) and (Q) ⇒ (R)
--/
+/-! ### (Q) implies (P), and (Q) implies (R) -/
 
-/-- **(Q) ⇒ (P): if every sequence in `A` has a weakly convergent subsequence, the weak closure
-of `A` is weakly compact.** (Q) makes `A` bounded, the weak-∗ closure of `J(A)` is then compact
-by Banach–Alaoglu and lies in the range of the embedding of the weak space by
-`exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact`, and Mathlib's
-`isCompact_closure_of_isBounded` transfers the compactness back. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \subseteq E$ be a set in which every sequence has a weakly convergent subsequence. Then the
+weak closure of $A$ is weakly compact. This is the implication (Q) $\Rightarrow$ (P) of the
+Eberlein–Šmulian theorem.
+
+Condition (Q) makes $A$ bounded. The weak-$*$ closure of $J(A)$ is then compact by the
+Banach–Alaoglu theorem, and it lies in $J(E)$ by
+`NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact`. The Mathlib
+theorem `NormedSpace.isCompact_closure_of_isBounded` transfers the compactness back to the weak
+topology of $E$. -/
 theorem isCompact_closure_image_toWeakSpace_of_isSeqCompact {A : Set E}
     (hA : ∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧
       Tendsto (fun k => toWeakSpace 𝕜 E (x (φ k))) atTop (𝓝 (toWeakSpace 𝕜 E u))) :
@@ -353,8 +375,10 @@ theorem isCompact_closure_image_toWeakSpace_of_isSeqCompact {A : Set E}
     (ξ := ξ) hξ
   exact ⟨toWeakSpace 𝕜 E x, hx.symm⟩
 
-/-- **(Q) ⇒ (R): if every sequence in `A` has a weakly convergent subsequence, every point of
-the weak closure of `A` is the weak limit of a sequence in `A`.** -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \subseteq E$ be a set in which every sequence has a weakly convergent subsequence. Then every
+point $u$ of the weak closure of $A$ is the weak limit of a sequence in $A$. This is the
+implication (Q) $\Rightarrow$ (R) of the Eberlein–Šmulian theorem. -/
 theorem exists_seq_tendsto_toWeakSpace_of_mem_closure_image_toWeakSpace {A : Set E}
     (hA : ∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧
       Tendsto (fun k => toWeakSpace 𝕜 E (x (φ k))) atTop (𝓝 (toWeakSpace 𝕜 E u)))
@@ -374,14 +398,15 @@ theorem exists_seq_tendsto_toWeakSpace_of_mem_closure_image_toWeakSpace {A : Set
     exact (inclusionInDoubleDualLi 𝕜 (E := E)).injective h1
   exact ⟨y, hyA, hxu ▸ hy⟩
 
-/-!
-### Reflexivity by weak sequential compactness
--/
+/-! ### Reflexivity by weak sequential compactness -/
 
-/-- **Eberlein–Šmulian for reflexivity: a normed space whose closed unit ball is weakly
-sequentially compact is reflexive.** The ball is then weakly compact
-(`isCompact_closure_image_toWeakSpace_of_isSeqCompact`, the ball being weakly closed) and
-Kakutani's converse applies. Completeness follows, so it is not assumed. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If the closed unit
+ball of $E$ is weakly sequentially compact, then $E$ is reflexive.
+
+The ball is then weakly compact, by
+`NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact` and because the ball is weakly
+closed, and the converse direction of Kakutani's theorem applies. Completeness follows, so it is
+not assumed. -/
 theorem isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall
     (h : IsSeqCompact (toWeakSpace 𝕜 E '' closedBall (0 : E) 1)) : IsReflexive 𝕜 E := by
   refine isReflexive_of_isCompact_image_toWeakSpace_closedBall ?_
@@ -397,10 +422,14 @@ theorem isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall
   have := isCompact_closure_image_toWeakSpace_of_isSeqCompact hA
   rwa [(isClosed_image_toWeakSpace_closedBall 0 1).closure_eq] at this
 
-/-- **A normed space in which every bounded sequence has a weakly convergent subsequence is
-reflexive**, the converse of `exists_subseq_forall_dual_tendsto`. The hypothesis makes the
-closed unit ball weakly sequentially compact — the limit stays in the ball because the norm is
-weakly sequentially lower semicontinuous (`norm_le_liminf_norm_of_weak_tendsto`). -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Assume that for every
+$C \in \mathbb{R}$ and every sequence $(v_n)$ in $E$ with $\|v_n\| \le C$ for all $n$ there are
+$u \in E$ and a strictly increasing $\varphi \colon \mathbb{N} \to \mathbb{N}$ with
+$\ell(v_{\varphi(k)}) \to \ell(u)$ for every $\ell \in E^*$. Then $E$ is reflexive.
+
+This is the converse of `NormedSpace.exists_subseq_forall_dual_tendsto`. The hypothesis makes
+the closed unit ball weakly sequentially compact: the limit stays in the ball because the norm
+is weakly sequentially lower semicontinuous (`norm_le_liminf_norm_of_weak_tendsto`). -/
 theorem isReflexive_of_forall_exists_subseq_forall_dual_tendsto
     (h : ∀ (v : ℕ → E) (C : ℝ), (∀ n, ‖v n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧
       ∀ ℓ : StrongDual 𝕜 E, Tendsto (fun k => ℓ (v (φ k))) atTop (𝓝 (ℓ u))) :
@@ -424,24 +453,33 @@ theorem isReflexive_of_forall_exists_subseq_forall_dual_tendsto
       ext k; simp [hv]
     rwa [this] at hlim'
 
-/-- **A normed space is reflexive iff every bounded sequence has a weakly convergent
-subsequence** (Kakutani + Eberlein–Šmulian). -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $E$ is reflexive
+if and only if for every $C \in \mathbb{R}$ and every sequence $(v_n)$ in $E$ with
+$\|v_n\| \le C$ for all $n$ there are $u \in E$ and a strictly increasing
+$\varphi \colon \mathbb{N} \to \mathbb{N}$ with $\ell(v_{\varphi(k)}) \to \ell(u)$ for every
+$\ell \in E^*$.
+
+The two directions are `NormedSpace.exists_subseq_forall_dual_tendsto` and
+`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`. They combine Kakutani's
+theorem and the Eberlein–Šmulian theorem. -/
 theorem isReflexive_iff_forall_exists_subseq_forall_dual_tendsto :
     IsReflexive 𝕜 E ↔ ∀ (v : ℕ → E) (C : ℝ), (∀ n, ‖v n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ),
       StrictMono φ ∧ ∀ ℓ : StrongDual 𝕜 E, Tendsto (fun k => ℓ (v (φ k))) atTop (𝓝 (ℓ u)) :=
   ⟨fun _ _ _ hv => exists_subseq_forall_dual_tendsto hv,
     isReflexive_of_forall_exists_subseq_forall_dual_tendsto⟩
 
-/-!
-### (P) ⇒ (Q): weakly compact sets are weakly sequentially compact
--/
+/-! ### (P) implies (Q): weakly compact sets are weakly sequentially compact -/
 
-/-- **A weakly compact subset of a normed space is weakly sequentially compact.** A sequence in
-`K` lies in the closed span `N` of its terms, a separable closed subspace, weakly closed by
-Mazur's theorem; on the compact set `K ∩ N` a norming sequence of functionals of `N`, extended to
-`E` by Hahn–Banach, is a countable separating family of continuous functions, so `K ∩ N` is
-metrizable (`Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating`) and
-hence sequentially compact. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $K$ be a
+compact subset of $E$ with the weak topology. Then $K$ is sequentially compact in the weak
+topology.
+
+A sequence in $K$ lies in the closed span $N$ of its terms, a separable closed subspace, which
+is weakly closed by Mazur's theorem. On the compact set $K \cap N$, a norming sequence of
+functionals of $N$, extended to $E$ by the Hahn–Banach theorem, is a countable separating family
+of continuous functions. So $K \cap N$ is metrizable
+(`Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating`) and hence
+sequentially compact. -/
 theorem _root_.IsCompact.isSeqCompact_weakSpace {K : Set (WeakSpace 𝕜 E)} (hK : IsCompact K) :
     IsSeqCompact K := by
   intro x hx
@@ -498,8 +536,13 @@ theorem _root_.IsCompact.isSeqCompact_weakSpace {K : Set (WeakSpace 𝕜 E)} (hK
   obtain ⟨a, ha, φ, hφ, hlim⟩ := hseq (x := x) fun n => ⟨hx n, hxN n⟩
   exact ⟨a, ha.1, φ, hφ, hlim⟩
 
-/-- **Eberlein–Šmulian, (P) ⇔ (Q)**: the weak closure of `A` is weakly compact iff it is weakly
-sequentially compact. -/
+/-- Let $E$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \subseteq E$. Then the weak closure of $A$ is weakly compact if and only if it is weakly
+sequentially compact. This is a form of the equivalence (P) $\Leftrightarrow$ (Q) of the
+Eberlein–Šmulian theorem.
+
+Here the sequences in the weak sequential compactness are sequences in the weak closure of $A$,
+not only in $A$. -/
 theorem isCompact_closure_image_toWeakSpace_iff_isSeqCompact (A : Set E) :
     IsCompact (closure (toWeakSpace 𝕜 E '' A)) ↔
       IsSeqCompact (closure (toWeakSpace 𝕜 E '' A)) := by

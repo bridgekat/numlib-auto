@@ -10,47 +10,56 @@ import Numlib.Approximation.Hermite
 /-!
 # Piecewise Hermite interpolation with uniform derivative bounds
 
-Two-point Hermite interpolation of degree `2p + 1` and its piecewise version on the real line,
-with bounds on the derivatives that depend only on `p` and on a consistency constant `κ` of the
-data ([cartis2022evaluation] Appendix A.9). These are the tool with which the "slow convergence"
-examples of [cartis2022evaluation] are built: data prescribed at a sequence of points are
-interpolated by a function whose derivatives are bounded and Lipschitz with constants independent
-of the number and spacing of the points.
+A jet of order $p$ at a point is a list $a_0, \dots, a_p$ of prescribed values of a function and its
+first $p$ derivatives. This file constructs two-point Hermite interpolants of degree $2p + 1$ and
+their piecewise versions on the real line, with bounds on the derivatives that depend only on $p$
+and on a consistency constant $\kappa$ of the jets. The construction follows Appendix A.9 of
+[cartis2022evaluation]. It is the tool with which the slow-convergence examples of
+[cartis2022evaluation] are built: jets prescribed at a sequence of points are interpolated by a
+function whose derivatives are bounded and Lipschitz, with constants independent of the number and
+the spacing of the points.
 
-The consistency condition (A.30)/(A.32) asks that the jet `b` at the right end `s` of an interval
-agrees, up to `κ s^{p-j+1}`, with the degree-`p` Taylor expansion of the jet `a` at the left end:
-`|b j - ∑_{i=j}^p a i s^{i-j}/(i-j)!| ≤ κ s^{p-j+1}` for `j ≤ p`. This is exactly what Taylor's
-theorem gives for a function whose `p`-th derivative is `κ`-Lipschitz.
+The consistency condition (A.30) and (A.32) asks that the jet $b$ at the right end $s$ of an
+interval agrees, up to $\kappa s^{p-j+1}$, with the Taylor expansion of degree $p$ of the jet $a$ at
+the left end: $$\Big| b_j - \sum_{i=j}^p \frac{a_i\, s^{i-j}}{(i - j)!} \Big| \le \kappa\,
+s^{p-j+1}, \qquad j \le p.$$ Taylor's theorem gives exactly this for the jets of a function whose
+derivative of order $p$ is $\kappa$-Lipschitz.
 
 ## Main results
 
-* `Hermite.exists_twoPoint_interpolant` — Theorem A.9.1: a polynomial `π` of degree at most `2p+1`
-  with the prescribed jets at `0` and `s` and `|π^{(j)}(τ)| ≤ ∑_{i=j}^p |a i| s^{i-j}/(i-j)! +
-  C κ s^{p+1-j}` on `[0, s]` for `j ≤ p + 1`, with `C` depending only on `p`; in particular
-  `π^{(p)}` is `C κ`-Lipschitz on `[0, s]`; `Hermite.exists_twoPoint_interpolant_bounded` is the
-  second part (bounds depending only on `p, κ` when `|a j| ≤ κ` and `s ≤ κ`).
-* `Hermite.exists_contDiff_interpolating_jets` — Theorem A.9.2: a `C^p` function on `ℝ`
-  interpolating jets at nodes `x 0 < ⋯ < x K` with `C κ`-Lipschitz `p`-th derivative.
-* `Hermite.exists_contDiff_interpolating_jets_bounded` — Theorem A.9.2, bounded version: if also the
-  jets are bounded by `κ` and the gaps are at most `κ`, the interpolant can be chosen with all
-  derivatives of order `≤ p` bounded by a constant depending only on `p, κ`, and constant outside
-  `[x 0 - 1, x K + 1]`. The bound on the last jet follows from the consistency condition;
-  `Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le` assumes it (and allows `K = 0`).
+* `Hermite.exists_twoPoint_interpolant`: Theorem A.9.1 of [cartis2022evaluation]. For consistent
+  jets at $0$ and $s$, there is a polynomial $\pi$ of degree at most $2p + 1$ with these jets and
+  with $|\pi^{(j)}(\tau)| \le \sum_{i=j}^p |a_i| s^{i-j}/(i - j)! + C\kappa s^{p+1-j}$ on $[0, s]$
+  for $j \le p + 1$, where $C$ depends only on $p$; in particular $\pi^{(p)}$ is $C\kappa$-Lipschitz
+  on $[0, s]$.
+* `Hermite.exists_twoPoint_interpolant_bounded`: the second part of Theorem A.9.1. If also
+  $|a_j| \le \kappa$ and $s \le \kappa$, the bounds depend only on $p$ and $\kappa$.
+* `Hermite.exists_contDiff_interpolating_jets`: Theorem A.9.2. Consistent jets at nodes
+  $x_0 < \dots < x_K$ are interpolated by a $C^p$ function on $\mathbb{R}$ whose derivative of order
+  $p$ is $L$-Lipschitz, where $L$ depends only on $p$ and $\kappa$.
+* `Hermite.exists_contDiff_interpolating_jets_bounded`: Theorem A.9.2, bounded version. If also the
+  jets are bounded by $\kappa$ and the gaps are at most $\kappa$, the interpolant can be chosen with
+  all derivatives of order at most $p$ bounded by a constant that depends only on $p$ and $\kappa$,
+  and constant outside $[x_0 - 1, x_K + 1]$. The bound on the last jet follows from the consistency
+  condition; `Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le` assumes it, and
+  allows $K = 0$.
 
 ## Implementation notes
 
-The two-point interpolant is written as `T(τ) + s^{p+1} R(τ/s)` with `T` the Taylor polynomial of
-the left jet and `R = ∑_l D_l H_l` a combination of fixed Hermite basis polynomials on `[0, 1]`
-(zero jet at `0`, unit jets at `1`), with weights `D_j = r_j / s^{p+1-j}` bounded by `κ`. This
-avoids the explicit matrix `A_p` of the book. Pieces are glued with `Hermite.glue`, the function
-equal to `u` on `(-∞, a]` and to `v` on `(a, ∞)` (and `Hermite.glue3` glues three functions at
-`0` and `1`): when the `p`-jets of `u` and `v` agree at `a` the
-glued function is again `C^p` (`Hermite.contDiff_glue`). In the bounded version the outer pieces
-are Hermite pieces of length `1` towards constant jets, as in the book, with the consistency
-constant `(p + 2) κ`.
-
-In Theorem A.9.2 the steps `s_k > 0` are indexed by `k < k_e`, and the bound holds for all
-`x ∈ ℝ`.
+* The two-point interpolant is written as $T(\tau) + s^{p+1} R(\tau/s)$, with $T$ the Taylor
+  polynomial of the left jet and $R = \sum_l D_l H_l$ a combination of fixed Hermite basis
+  polynomials on $[0, 1]$ (zero jet at $0$, unit jets at $1$). The weights $D_j = r_j/s^{p+1-j}$ are
+  bounded by $\kappa$. This avoids the explicit matrix $A_p$ of the source.
+* Pieces are glued with `Hermite.glue`, the function equal to $u$ on $(-\infty, a]$ and to $v$ on
+  $(a, \infty)$; `Hermite.glue3` glues three functions at $0$ and $1$. When the jets of order $p$ of
+  $u$ and $v$ agree at $a$, the glued function is again $C^p$ (`Hermite.contDiff_glue`).
+* In the bounded version the outer pieces are Hermite pieces of length $1$ towards constant jets, as
+  in the source, with the consistency constant $(p + 2)\kappa$.
+* In Theorem A.9.2 the steps $s_k > 0$ are indexed by $k < k_e$, and the bound holds for all
+  $x \in \mathbb{R}$.
+* A jet is a function `ℕ → ℝ`, of which only the values at $0, \dots, p$ are used, and a family of
+  jets at the nodes is a function `F : ℕ → ℕ → ℝ`, with $F_{k,j}$ the prescribed derivative of order
+  $j$ at $x_k$.
 -/
 
 open Polynomial
@@ -60,11 +69,14 @@ namespace Hermite
 
 /-! ### Taylor polynomials of jets -/
 
-/-- The degree-`p` Taylor polynomial `∑_{i ≤ p} a i / i! X^i` of a jet `a`. -/
+/-- The **Taylor polynomial** of degree $p$ of a jet $a$: $$\sum_{i=0}^p \frac{a_i}{i!} X^i.$$
+-/
 noncomputable def jetTaylorPoly (p : ℕ) (a : ℕ → ℝ) : ℝ[X] :=
   ∑ i ∈ Finset.range (p + 1), C (a i / i.factorial) * X ^ i
 
-/-- The derivatives of the Taylor polynomial of a jet: `∑_{i=j}^p a i τ^{i-j}/(i-j)!`. -/
+/-- The derivative of order $j$ of the Taylor polynomial of degree $p$ of a jet $a$, at $\tau$, is
+$$\sum_{i=j}^p \frac{a_i\, \tau^{i-j}}{(i - j)!}.$$
+-/
 theorem eval_iterate_derivative_jetTaylorPoly (p : ℕ) (a : ℕ → ℝ) (j : ℕ) (τ : ℝ) :
     (derivative^[j] (jetTaylorPoly p a)).eval τ =
       ∑ i ∈ Finset.Icc j p, a i * τ ^ (i - j) / (i - j).factorial := by
@@ -91,7 +103,8 @@ theorem eval_iterate_derivative_jetTaylorPoly (p : ℕ) (a : ℕ → ℝ) (j : �
           rw [Nat.descFactorial_eq_zero_iff_lt.2 this]
           simp
 
-/-- The Taylor sum of a jet at displacement `0` returns the jet. -/
+/-- For $j \le p$, the Taylor sum of a jet at the displacement $0$ returns the jet:
+$\sum_{i=j}^p a_i\, 0^{i-j}/(i - j)! = a_j$. -/
 theorem sum_Icc_zero_pow (a : ℕ → ℝ) {j p : ℕ} (hj : j ≤ p) :
     ∑ i ∈ Finset.Icc j p, a i * (0 : ℝ) ^ (i - j) / (i - j).factorial = a j := by
   rw [Finset.sum_eq_single j]
@@ -104,10 +117,11 @@ theorem sum_Icc_zero_pow (a : ℕ → ℝ) {j p : ℕ} (hj : j ≤ p) :
   · intro h
     exact absurd (Finset.mem_Icc.2 ⟨le_rfl, hj⟩) h
 
-/-- The jet of the constant `c`: `c` at order `0`, and `0` at higher orders. -/
+/-- The jet of the constant function $c$: $c$ at order $0$, and $0$ at every higher order. -/
 def constJet (c : ℝ) (i : ℕ) : ℝ := if i = 0 then c else 0
 
-/-- The Taylor sum of a constant jet is the jet itself, at any displacement. -/
+/-- The Taylor sum of the jet of a constant is that jet, at every displacement $\tau$:
+$\sum_{i=j}^p c_i\, \tau^{i-j}/(i - j)! = c_j$ for the jet $c_i$ of the constant $c$. -/
 theorem sum_Icc_constJet (c : ℝ) (j p : ℕ) (τ : ℝ) :
     ∑ i ∈ Finset.Icc j p, constJet c i * τ ^ (i - j) / (i - j).factorial = constJet c j := by
   rcases Nat.eq_zero_or_pos j with rfl | hj
@@ -125,7 +139,8 @@ theorem sum_Icc_constJet (c : ℝ) (j p : ℕ) (τ : ℝ) :
         omega
       simp [constJet, this]
 
-/-- A constant jet is bounded by the bound of its value. -/
+/-- If $|c| \le \kappa$, every entry of the jet of the constant $c$ has absolute value at most
+$\kappa$. -/
 theorem abs_constJet_le {c κ : ℝ} (hc : |c| ≤ κ) (i : ℕ) : |constJet c i| ≤ κ := by
   unfold constJet
   split_ifs
@@ -134,7 +149,7 @@ theorem abs_constJet_le {c κ : ℝ} (hc : |c| ≤ κ) (i : ℕ) : |constJet c i
 
 /-! ### Polynomial pieces -/
 
-/-- Derivatives of a rescaled polynomial `q (c X)`. -/
+/-- The derivative of order $j$ of the rescaled polynomial $q(cX)$ is $c^j q^{(j)}(cX)$. -/
 theorem iterate_derivative_comp_C_mul_X (q : ℝ[X]) (c : ℝ) (j : ℕ) :
     derivative^[j] (q.comp (C c * X)) = C (c ^ j) * (derivative^[j] q).comp (C c * X) := by
   induction j with
@@ -144,19 +159,22 @@ theorem iterate_derivative_comp_C_mul_X (q : ℝ[X]) (c : ℝ) (j : ℕ) :
       Function.iterate_succ_apply', pow_succ, C_mul]
     ring
 
-/-- The function `t ↦ π (t - x₀)` of a polynomial `π` is smooth. -/
+/-- For a polynomial $\pi$ and $x_0 \in \mathbb{R}$, the function $t \mapsto \pi(t - x_0)$ is
+smooth. -/
 theorem contDiff_eval_sub (π : ℝ[X]) (x₀ : ℝ) {n : WithTop ℕ∞} :
     ContDiff ℝ n fun t => π.eval (t - x₀) := by
   have h : ContDiff ℝ n fun t => π.eval t := by
     simpa [coe_aeval_eq_eval] using π.contDiff_aeval (𝕜 := ℝ) n
   exact h.comp (contDiff_id.sub contDiff_const)
 
-/-- The derivatives of `t ↦ π (t - x₀)`. -/
+/-- The derivative of order $j$ of $t \mapsto \pi(t - x_0)$ is $t \mapsto \pi^{(j)}(t - x_0)$. -/
 theorem iteratedDeriv_eval_sub (π : ℝ[X]) (x₀ : ℝ) (j : ℕ) :
     iteratedDeriv j (fun t => π.eval (t - x₀)) = fun t => (derivative^[j] π).eval (t - x₀) := by
   rw [iteratedDeriv_comp_sub_const j (fun t => π.eval t) x₀, Polynomial.iteratedDeriv_eval]
 
-/-- Mean value bound for the `j`-th derivative of a polynomial on `[a, b]`. -/
+/-- The mean value bound for the derivatives of a polynomial: if $|\pi^{(j+1)}| \le M$ on $[a, b]$,
+then $|\pi^{(j)}(\tau_1) - \pi^{(j)}(\tau_2)| \le M |\tau_1 - \tau_2|$ for
+$\tau_1, \tau_2 \in [a, b]$. -/
 theorem abs_eval_iterate_derivative_sub_le (π : ℝ[X]) (j : ℕ) {a b M : ℝ}
     (hM : ∀ τ ∈ Set.Icc a b, |(derivative^[j + 1] π).eval τ| ≤ M) {τ₁ τ₂ : ℝ}
     (h₁ : τ₁ ∈ Set.Icc a b) (h₂ : τ₂ ∈ Set.Icc a b) :
@@ -171,8 +189,9 @@ theorem abs_eval_iterate_derivative_sub_le (π : ℝ[X]) (j : ℕ) {a b M : ℝ}
 
 /-! ### Two-point Hermite interpolation -/
 
-/-- The Hermite basis on `[0, 1]`: a polynomial of degree `< 2p + 2` with zero `p`-jet at `0` and
-the `l`-th unit `p`-jet at `1`. -/
+/-- **The Hermite basis on $[0, 1]$.** For all $p$ and $l$ there is a polynomial $H$ of degree less
+than $2p + 2$ with $H^{(j)}(0) = 0$ for all $j \le p$, and $H^{(j)}(1) = 1$ if $j = l$ and
+$H^{(j)}(1) = 0$ otherwise, for all $j \le p$. -/
 theorem exists_unitJet (p l : ℕ) : ∃ H : ℝ[X], H.degree < ((2 * p + 2 : ℕ) : WithBot ℕ) ∧
     ∀ j ≤ p, (derivative^[j] H).eval 0 = 0 ∧
       (derivative^[j] H).eval 1 = if j = l then 1 else 0 := by
@@ -183,12 +202,21 @@ theorem exists_unitJet (p l : ℕ) : ∃ H : ℝ[X], H.degree < ((2 * p + 2 : �
     (by simp; ring) ![fun _ => 0, fun j => if j = l then 1 else 0]
   exact ⟨H, hdeg, fun j hj => ⟨by simpa using hH 0 j hj, by simpa using hH 1 j hj⟩⟩
 
-/-- **Theorem A.9.1** ([cartis2022evaluation]). There is a constant `C ≥ 0` depending only on `p`
-such that: for `s > 0` and jets `a b : ℕ → ℝ` with
-`|b j - ∑_{i=j}^p a i s^{i-j}/(i-j)!| ≤ κ s^{p-j+1}` for `j ≤ p` (A.30), there is a polynomial
-`π` of degree at most `2p + 1` with `π^{(j)}(0) = a j`, `π^{(j)}(s) = b j` (`j ≤ p`, (A.24)), with
-`|π^{(j)}(τ)| ≤ ∑_{i=j}^p |a i| s^{i-j}/(i-j)! + C κ s^{p+1-j}` for `τ ∈ [0, s]`, `j ≤ p + 1`
-((A.27)), and in particular with `C κ`-Lipschitz `p`-th derivative on `[0, s]` ((A.28)). -/
+/-- **Two-point Hermite interpolation with uniform bounds.** For every $p \in \mathbb{N}$ there is a
+constant $C \ge 0$ with the following property. Let $s > 0$, $\kappa \in \mathbb{R}$, and let
+$a, b$ be jets with the consistency condition (A.30) $$\Big| b_j - \sum_{i=j}^p \frac{a_i\,
+s^{i-j}}{(i - j)!} \Big| \le \kappa\, s^{p-j+1}, \qquad j \le p.$$ Then there is a polynomial
+$\pi$ of degree at most $2p + 1$ such that:
+
+* $\pi^{(j)}(0) = a_j$ and $\pi^{(j)}(s) = b_j$ for $j \le p$ (A.24);
+* $|\pi^{(j)}(\tau)| \le \sum_{i=j}^p |a_i|\, s^{i-j}/(i - j)! + C\kappa\, s^{p+1-j}$ for
+  $\tau \in [0, s]$ and $j \le p + 1$ (A.27);
+* $|\pi^{(p)}(\tau_1) - \pi^{(p)}(\tau_2)| \le C\kappa\, |\tau_1 - \tau_2|$ for
+  $\tau_1, \tau_2 \in [0, s]$ (A.28).
+
+This is Theorem A.9.1 of [cartis2022evaluation].
+
+The constant $C$ depends only on $p$: it is chosen before $s$, $\kappa$, $a$ and $b$. -/
 theorem exists_twoPoint_interpolant (p : ℕ) : ∃ C : ℝ, 0 ≤ C ∧
     ∀ (s κ : ℝ) (a b : ℕ → ℝ), 0 < s →
       (∀ j ≤ p, |b j - ∑ i ∈ Finset.Icc j p, a i * s ^ (i - j) / (i - j).factorial| ≤
@@ -318,7 +346,8 @@ theorem exists_twoPoint_interpolant (p : ℕ) : ∃ C : ℝ, 0 ≤ C ∧
 
 /-! ### Gluing two functions at a point -/
 
-/-- The function equal to `u` on `(-∞, a]` and to `v` on `(a, ∞)`. -/
+/-- The function **glued** at $a$ from $u$ and $v$: it equals $u(t)$ for $t \le a$ and $v(t)$ for
+$t > a$. -/
 noncomputable def glue (a : ℝ) (u v : ℝ → ℝ) (t : ℝ) : ℝ :=
   if t ≤ a then u t else v t
 
@@ -326,21 +355,23 @@ section Glue
 
 variable {a t : ℝ} {u v : ℝ → ℝ}
 
-/-- The glued function equals `u` up to `a`. -/
+/-- The glued function equals $u(t)$ for $t \le a$. -/
 theorem glue_of_le (h : t ≤ a) : glue a u v t = u t := by
   simp [glue, h]
 
-/-- The glued function equals `v` after `a`. -/
+/-- The glued function equals $v(t)$ for $t > a$. -/
 theorem glue_of_lt (h : a < t) : glue a u v t = v t := by
   simp [glue, not_le.2 h]
 
-/-- If `u a = v a`, the glued function equals `v` from `a` on. -/
+/-- If $u(a) = v(a)$, the glued function equals $v(t)$ for $t \ge a$. -/
 theorem glue_of_ge (hav : u a = v a) (h : a ≤ t) : glue a u v t = v t := by
   rcases h.lt_or_eq with h | rfl
   · exact glue_of_lt h
   · rw [glue_of_le le_rfl, hav]
 
-/-- Gluing differentiable functions whose values and derivatives agree at `a`. -/
+/-- Let $u$ and $v$ be differentiable on $\mathbb{R}$ with derivatives $u'$ and $v'$, and let
+$u(a) = v(a)$ and $u'(a) = v'(a)$. Then the glued function is differentiable at every $t$, and
+its derivative is the function glued from $u'$ and $v'$. -/
 theorem hasDerivAt_glue {u' v' : ℝ → ℝ} (hu : ∀ t, HasDerivAt u (u' t) t)
     (hv : ∀ t, HasDerivAt v (v' t) t) (h0 : u a = v a) (h1 : u' a = v' a) (t : ℝ) :
     HasDerivAt (glue a u v) (glue a u' v' t) t := by
@@ -360,15 +391,17 @@ theorem hasDerivAt_glue {u' v' : ℝ → ℝ} (hu : ∀ t, HasDerivAt u (u' t) t
     exact (hv t).congr_of_eventuallyEq
       (Filter.mem_of_superset (Ioi_mem_nhds ht) fun y hy => glue_of_lt hy)
 
-/-- Gluing continuous functions that agree at `a` gives a continuous function. -/
+/-- If $u$ and $v$ are continuous and $u(a) = v(a)$, the glued function is continuous. -/
 theorem continuous_glue (hu : Continuous u) (hv : Continuous v) (h : u a = v a) :
     Continuous (glue a u v) :=
   Continuous.if_le hu hv continuous_id continuous_const fun x hx => by
     rw [show x = a from hx]
     exact h
 
-/-- **Gluing `C^n` functions.** If the `n`-jets of the `C^n` functions `u` and `v` agree at `a`,
-the glued function is `C^n`, and its derivatives are the glued derivatives. -/
+/-- **Gluing $C^n$ functions.** Let $u$ and $v$ be of class $C^n$ on $\mathbb{R}$,
+$n \in \mathbb{N}$, with $u^{(j)}(a) = v^{(j)}(a)$ for all $j \le n$. Then the glued function is
+of class $C^n$, and for $j \le n$ its derivative of order $j$ is the function glued from
+$u^{(j)}$ and $v^{(j)}$. -/
 theorem contDiff_glue {n : ℕ} (hu : ContDiff ℝ n u) (hv : ContDiff ℝ n v)
     (h : ∀ j ≤ n, iteratedDeriv j u a = iteratedDeriv j v a) :
     ContDiff ℝ n (glue a u v) ∧
@@ -392,9 +425,9 @@ theorem contDiff_glue {n : ℕ} (hu : ContDiff ℝ n u) (hv : ContDiff ℝ n v)
   simp only [iteratedDeriv_zero] at h1 h2
   exact ⟨contDiffOn_univ.1 h1, fun j hj => funext fun t => h2 j hj (Set.mem_univ t)⟩
 
-/-- **Lipschitz bound for a glued function**: on an order-connected set `s`, if `u` is
-`L`-Lipschitz on `s ∩ (-∞, a]`, `v` on `s ∩ [a, ∞)` and `u a = v a`, the glued function is
-`L`-Lipschitz on `s`. -/
+/-- **A Lipschitz bound for a glued function.** Let $s \subseteq \mathbb{R}$ be order-connected, let
+$u$ be $L$-Lipschitz on $s \cap (-\infty, a]$ and $v$ be $L$-Lipschitz on $s \cap [a, \infty)$,
+and let $u(a) = v(a)$. Then the glued function is $L$-Lipschitz on $s$. -/
 theorem abs_glue_sub_le {s : Set ℝ} (hs : s.OrdConnected) {L : ℝ}
     (hu : ∀ x ∈ s, ∀ y ∈ s, x ≤ a → y ≤ a → |u x - u y| ≤ L * |x - y|)
     (hv : ∀ x ∈ s, ∀ y ∈ s, a ≤ x → a ≤ y → |v x - v y| ≤ L * |x - y|) (h : u a = v a)
@@ -424,9 +457,10 @@ theorem abs_glue_sub_le {s : Set ℝ} (hs : s.OrdConnected) {L : ℝ}
 
 end Glue
 
-/-! ### Gluing three functions at `0` and `1` -/
+/-! ### Gluing three functions at $0$ and $1$ -/
 
-/-- The function equal to `l` on `(-∞, 0]`, to `m` on `(0, 1]` and to `r` on `(1, ∞)`. -/
+/-- The function **glued** from three functions: it equals $l(t)$ for $t \le 0$, $m(t)$ for
+$0 < t \le 1$, and $r(t)$ for $t > 1$. -/
 noncomputable def glue3 (l m r : ℝ → ℝ) (t : ℝ) : ℝ :=
   glue 0 l (glue 1 m r) t
 
@@ -434,19 +468,24 @@ section Glue3
 
 variable {l m r l' m' r' : ℝ → ℝ} {t : ℝ}
 
+/-- The three-piece function equals $l(t)$ for $t \le 0$. -/
 theorem glue3_of_nonpos (ht : t ≤ 0) : glue3 l m r t = l t :=
   glue_of_le ht
 
+/-- If $l(0) = m(0)$, the three-piece function equals $m(t)$ for $t \in [0, 1]$. -/
 theorem glue3_of_mem_Icc (h0 : l 0 = m 0) (ht : t ∈ Set.Icc (0 : ℝ) 1) : glue3 l m r t = m t := by
   rcases ht.1.lt_or_eq with h | rfl
   · rw [glue3, glue_of_lt h, glue_of_le ht.2]
   · rw [glue3_of_nonpos le_rfl, h0]
 
+/-- If $m(1) = r(1)$, the three-piece function equals $r(t)$ for $t \ge 1$. -/
 theorem glue3_of_one_le (h1 : m 1 = r 1) (ht : 1 ≤ t) : glue3 l m r t = r t := by
   rw [glue3, glue_of_lt (by linarith), glue_of_ge h1 ht]
 
-/-- A three-piece function whose pieces have matching values and derivatives at `0` and `1` is
-differentiable, with the three-piece derivative. -/
+/-- Let $l$, $m$ and $r$ be differentiable on $\mathbb{R}$ with derivatives $l'$, $m'$ and $r'$,
+with $l(0) = m(0)$, $l'(0) = m'(0)$, $m(1) = r(1)$ and $m'(1) = r'(1)$. Then the three-piece
+function is differentiable at every $t$, and its derivative is the three-piece function of $l'$,
+$m'$ and $r'$. -/
 theorem hasDerivAt_glue3 (hl : ∀ t, HasDerivAt l (l' t) t) (hm : ∀ t, HasDerivAt m (m' t) t)
     (hr : ∀ t, HasDerivAt r (r' t) t) (h0 : l 0 = m 0) (h0' : l' 0 = m' 0) (h1 : m 1 = r 1)
     (h1' : m' 1 = r' 1) (t : ℝ) : HasDerivAt (glue3 l m r) (glue3 l' m' r' t) t := by
@@ -457,7 +496,8 @@ theorem hasDerivAt_glue3 (hl : ∀ t, HasDerivAt l (l' t) t) (hm : ∀ t, HasDer
     (by rw [glue_of_le zero_le_one, h0']) t
   exact this
 
-/-- Bound on a three-piece function by bounds on its pieces. -/
+/-- If $|l| \le B$ on $(-\infty, 0]$, $|m| \le B$ on $[0, 1]$ and $|r| \le B$ on $[1, \infty)$, then
+the three-piece function is bounded by $B$ in absolute value. -/
 theorem abs_glue3_le {B : ℝ} (hl : ∀ t ≤ 0, |l t| ≤ B) (hm : ∀ t ∈ Set.Icc (0 : ℝ) 1, |m t| ≤ B)
     (hr : ∀ t, 1 ≤ t → |r t| ≤ B) (t : ℝ) : |glue3 l m r t| ≤ B := by
   rcases le_or_gt t 0 with h | h
@@ -467,7 +507,8 @@ theorem abs_glue3_le {B : ℝ} (hl : ∀ t ≤ 0, |l t| ≤ B) (hm : ∀ t ∈ S
   · rw [glue_of_le h']; exact hm t ⟨h.le, h'⟩
   · rw [glue_of_lt h']; exact hr t h'.le
 
-/-- A three-piece function of continuous pieces matching at `0` and `1` is continuous. -/
+/-- If $l$, $m$ and $r$ are continuous, $l(0) = m(0)$ and $m(1) = r(1)$, the three-piece function is
+continuous. -/
 theorem continuous_glue3 {l m r : ℝ → ℝ} (hl : Continuous l) (hm : Continuous m)
     (hr : Continuous r) (h0 : l 0 = m 0) (h1 : m 1 = r 1) : Continuous (glue3 l m r) :=
   continuous_glue hl (continuous_glue hm hr h1)
@@ -477,34 +518,41 @@ end Glue3
 
 /-! ### Piecewise Hermite interpolation -/
 
-/-- The derivatives of the Taylor polynomial of a jet at `x₀`. -/
+/-- The derivative of order $j$ of $t \mapsto T(t - x_0)$, for the Taylor polynomial $T$ of degree
+$p$ of a jet $a$, is $\sum_{i=j}^p a_i (t - x_0)^{i-j}/(i - j)!$. -/
 theorem iteratedDeriv_jetTaylorPoly_sub (p : ℕ) (a : ℕ → ℝ) (x₀ : ℝ) (j : ℕ) (t : ℝ) :
     iteratedDeriv j (fun t => (jetTaylorPoly p a).eval (t - x₀)) t =
       ∑ i ∈ Finset.Icc j p, a i * (t - x₀) ^ (i - j) / (i - j).factorial := by
   simp only [iteratedDeriv_eval_sub, eval_iterate_derivative_jetTaylorPoly]
 
-/-- The Taylor polynomial of a jet at `x₀` has that jet at `x₀`. -/
+/-- For $j \le p$, the derivative of order $j$ of $t \mapsto T(t - x_0)$ at $x_0$ is $a_j$, where
+$T$ is the Taylor polynomial of degree $p$ of the jet $a$. -/
 theorem iteratedDeriv_jetTaylorPoly_sub_self {p : ℕ} (a : ℕ → ℝ) (x₀ : ℝ) {j : ℕ}
     (hj : j ≤ p) :
     iteratedDeriv j (fun t => (jetTaylorPoly p a).eval (t - x₀)) x₀ = a j := by
   rw [iteratedDeriv_jetTaylorPoly_sub, sub_self, sum_Icc_zero_pow a hj]
 
-/-- The `p`-th derivative of the Taylor polynomial of a `p`-jet is constant. -/
+/-- The derivative of order $p$ of $t \mapsto T(t - x_0)$ is the constant $a_p$, where $T$ is the
+Taylor polynomial of degree $p$ of the jet $a$. -/
 theorem iteratedDeriv_jetTaylorPoly_sub_top (p : ℕ) (a : ℕ → ℝ) (x₀ t : ℝ) :
     iteratedDeriv p (fun t => (jetTaylorPoly p a).eval (t - x₀)) t = a p := by
   rw [iteratedDeriv_jetTaylorPoly_sub, Finset.Icc_self, Finset.sum_singleton]
   simp
 
-/-- Nodes increasing up to `K` are monotone on `[0, K]`
-(`strictMonoOn_Iic_of_lt_succ`). -/
+/-- If $x_k < x_{k+1}$ for all $k < K$, then $x_i \le x_j$ for $i \le j \le K$. -/
 private theorem le_of_lt_succ_of_le {K : ℕ} {x : ℕ → ℝ} (hx : ∀ k < K, x k < x (k + 1))
     {i j : ℕ} (hij : i ≤ j) (hj : j ≤ K) : x i ≤ x j :=
   (strictMonoOn_Iic_of_lt_succ (ψ := x) fun m hm => by simpa using hx m hm).monotoneOn
     (Set.mem_Iic.2 (hij.trans hj)) (Set.mem_Iic.2 hj) hij
 
-/-- The interior part of the piecewise interpolant: given polynomial pieces `π k` on
-`[0, x (k+1) - x k]` with the prescribed jets at both ends, Lipschitz `p`-th derivatives and
-bounded derivatives, the glued function on `[x 0, x K']` has the same properties. -/
+/-- **Gluing the interior pieces.** Let $x_0 < x_1 < \dots < x_K$ and let $s_k = x_{k+1} - x_k$. For
+$k < K$ let $\pi_k$ be a polynomial with $\pi_k^{(j)}(0) = F_{k,j}$ and
+$\pi_k^{(j)}(s_k) = F_{k+1,j}$ for $j \le p$, whose derivative of order $p$ is $L$-Lipschitz on
+$[0, s_k]$ and whose derivatives of order at most $p$ are bounded by $B$ on $[0, s_k]$. Let also
+$|F_{0,j}| \le B$ for $j \le p$. Then for every $K' \le K$ there is a $C^p$ function
+$M : \mathbb{R} \to \mathbb{R}$ with $M^{(j)}(x_k) = F_{k,j}$ for $k \le K'$ and $j \le p$,
+whose derivative of order $p$ is $L$-Lipschitz on $[x_0, x_{K'}]$, and whose derivatives of
+order at most $p$ are bounded by $B$ on $[x_0, x_{K'}]$. -/
 theorem exists_glued_pieces {p : ℕ} {L B : ℝ} {K : ℕ} {x : ℕ → ℝ} {F : ℕ → ℕ → ℝ}
     (π : ℕ → ℝ[X]) (hx : ∀ k < K, x k < x (k + 1))
     (h0 : ∀ k < K, ∀ j ≤ p, (derivative^[j] (π k)).eval 0 = F k j)
@@ -568,12 +616,17 @@ theorem exists_glued_pieces {p : ℕ} {L B : ℝ} {K : ℕ} {x : ℕ → ℝ} {F
         rw [glue_of_lt htK, hPj]
         exact hB K' hK j hj _ ⟨by linarith, by linarith [ht.2]⟩
 
-/-- **Theorem A.9.2** ([cartis2022evaluation]). For every `p` and `κ ≥ 0` there is `L ≥ 0`
-(depending only on `p` and `κ`) such that: for nodes `x 0 < x 1 < ⋯ < x K` and jets `F k j`
-(`k ≤ K`, `j ≤ p`) consistent in the sense of (A.32),
-`|F (k+1) j - ∑_{i=j}^p F k i s_k^{i-j}/(i-j)!| ≤ κ s_k^{p-j+1}` with `s_k = x (k+1) - x k`
-(`k < K`, `j ≤ p`), there is a `C^p` function `g : ℝ → ℝ` with `L`-Lipschitz `p`-th derivative and
-`g^{(j)}(x k) = F k j` for `k ≤ K`, `j ≤ p`. -/
+/-- **Piecewise Hermite interpolation with a Lipschitz derivative.** For every $p \in \mathbb{N}$
+and $\kappa \ge 0$ there is $L \ge 0$ with the following property. Let
+$x_0 < x_1 < \dots < x_K$, let $s_k = x_{k+1} - x_k$, and let $F_{k,j}$ ($k \le K$, $j \le p$)
+be jets with the consistency condition (A.32) $$\Big| F_{k+1,j} - \sum_{i=j}^p \frac{F_{k,i}\,
+s_k^{i-j}}{(i - j)!} \Big| \le \kappa\, s_k^{p-j+1}, \qquad k < K, \ j \le p.$$ Then there is a
+function $g : \mathbb{R} \to \mathbb{R}$ of class $C^p$ with $$g^{(j)}(x_k) = F_{k,j} \quad (k
+\le K, \ j \le p), \qquad |g^{(p)}(t_1) - g^{(p)}(t_2)| \le L |t_1 - t_2| \quad (t_1, t_2 \in
+\mathbb{R}).$$ This is Theorem A.9.2 of [cartis2022evaluation].
+
+The constant $L$ depends only on $p$ and $\kappa$: it is chosen before $K$, the nodes and the
+jets. -/
 theorem exists_contDiff_interpolating_jets (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) : ∃ L : ℝ, 0 ≤ L ∧
     ∀ (K : ℕ) (x : ℕ → ℝ) (F : ℕ → ℕ → ℝ), (∀ k < K, x k < x (k + 1)) →
       (∀ k < K, ∀ j ≤ p, |F (k + 1) j - ∑ i ∈ Finset.Icc j p,
@@ -662,7 +715,9 @@ theorem exists_contDiff_interpolating_jets (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ)
         glue_of_le (le_of_lt_succ_of_le hx hk le_rfl)]
       exact hMj k hk j hj
 
-/-- A bound on the Taylor sum of a jet bounded by `κ`, for a displacement `0 ≤ s ≤ m`, `m ≥ 1`. -/
+/-- Let $|a_i| \le \kappa$ for $i \le p$, and let $0 \le s \le m$ with $m \ge 1$. Then $\sum_{i=j}^p
+|a_i|\, s^{i-j}/(i - j)! \le (p + 1)\kappa\, m^p$.
+-/
 theorem sum_Icc_abs_mul_pow_le {p j : ℕ} {a : ℕ → ℝ} {κ s m : ℝ} (ha : ∀ i ≤ p, |a i| ≤ κ)
     (hs : 0 ≤ s) (hsm : s ≤ m) (hm : 1 ≤ m) :
     ∑ i ∈ Finset.Icc j p, |a i| * s ^ (i - j) / (i - j).factorial ≤ (p + 1) * κ * m ^ p := by
@@ -683,14 +738,20 @@ theorem sum_Icc_abs_mul_pow_le {p j : ℕ} {a : ℕ → ℝ} {κ s m : ℝ} (ha 
         exact_mod_cast Nat.sub_le _ _
     _ = (p + 1) * κ * m ^ p := by ring
 
-/-- **Theorem A.9.2, bounded version, with all jets bounded.** For every `p` and `κ ≥ 0` there
-are `L, B ≥ 0` (depending only on `p` and `κ`) such that: under the hypotheses of
-`Hermite.exists_contDiff_interpolating_jets`, and if moreover all the jets are bounded,
-`|F k j| ≤ κ` (`k ≤ K`, `j ≤ p`), and the gaps are bounded, `x (k+1) - x k ≤ κ` (`k < K`), the
-interpolant `g` can be chosen with `L`-Lipschitz `p`-th derivative, all derivatives of order
-`j ≤ p` bounded by `B` on `ℝ`, and `g` constant, equal to `F 0 0` on `(-∞, x 0 - 1]` and to
-`F K 0` on `[x K + 1, ∞)`. Consequently `g` is bounded below and its derivatives of orders
-`1, …, p` are Lipschitz. -/
+/-- **Theorem A.9.2, bounded version, with all jets bounded.** For every $p \in \mathbb{N}$ and
+$\kappa \ge 0$ there are $L, B \ge 0$ with the following property. Let $x_0 < x_1 < \dots < x_K$
+with $s_k = x_{k+1} - x_k \le \kappa$ for $k < K$, and let $F_{k,j}$ be jets with
+$|F_{k,j}| \le \kappa$ for $k \le K$ and $j \le p$ and with the consistency condition (A.32) of
+`Hermite.exists_contDiff_interpolating_jets`. Then there is a function
+$g : \mathbb{R} \to \mathbb{R}$ of class $C^p$ such that:
+
+* $g^{(j)}(x_k) = F_{k,j}$ for $k \le K$ and $j \le p$;
+* $g^{(p)}$ is $L$-Lipschitz on $\mathbb{R}$;
+* $|g^{(j)}(t)| \le B$ for all $t \in \mathbb{R}$ and $j \le p$;
+* $g(t) = F_{0,0}$ for $t \le x_0 - 1$, and $g(t) = F_{K,0}$ for $t \ge x_K + 1$.
+
+In particular $g$ is bounded below, and its derivatives of orders $1, \dots, p$ are Lipschitz.
+The constants $L$ and $B$ depend only on $p$ and $\kappa$. This version allows $K = 0$. -/
 theorem exists_contDiff_interpolating_jets_bounded_of_forall_le (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧
       ∀ (K : ℕ) (x : ℕ → ℝ) (F : ℕ → ℕ → ℝ), (∀ k < K, x k < x (k + 1)) →
@@ -903,14 +964,26 @@ theorem exists_contDiff_interpolating_jets_bounded_of_forall_le (p : ℕ) {κ : 
       glue_of_ge hv3 ht, ← iteratedDeriv_zero (f := cR), hcRj]
     simp [constJet]
 
-/-- **Theorem A.9.2, bounded version** ([cartis2022evaluation]). For every `p` and `κ ≥ 0` there
-are `L, B ≥ 0` (depending only on `p` and `κ`) such that: for `K > 0` nodes
-`x 0 < ⋯ < x K` with gaps `x (k+1) - x k ≤ κ` and jets `F k j` satisfying (A.32) with constant
-`κ` and bounded by `|F k j| ≤ κ` for `k < K` (`j ≤ p`), there is a `C^p` function `g : ℝ → ℝ`
-interpolating the jets at all nodes `k ≤ K`, with `L`-Lipschitz `p`-th derivative, all
-derivatives of order `j ≤ p` bounded by `B` on `ℝ`, and `g` constant, equal to `F 0 0` on
-`(-∞, x 0 - 1]` and to `F K 0` on `[x K + 1, ∞)`. Consequently `g` is bounded below and its
-derivatives of orders `1, …, p` are Lipschitz. -/
+/-- **Theorem A.9.2, bounded version.** For every $p \in \mathbb{N}$ and $\kappa \ge 0$ there are
+$L, B \ge 0$ with the following property. Let $K > 0$, let $x_0 < x_1 < \dots < x_K$ with
+$s_k = x_{k+1} - x_k \le \kappa$ for $k < K$, and let $F_{k,j}$ be jets with
+$|F_{k,j}| \le \kappa$ for $k < K$ and $j \le p$ and with the consistency condition (A.32)
+$$\Big| F_{k+1,j} - \sum_{i=j}^p \frac{F_{k,i}\, s_k^{i-j}}{(i - j)!} \Big| \le \kappa\,
+s_k^{p-j+1}, \qquad k < K, \ j \le p.$$ Then there is a function $g : \mathbb{R} \to \mathbb{R}$
+of class $C^p$ such that:
+
+* $g^{(j)}(x_k) = F_{k,j}$ for $k \le K$ and $j \le p$;
+* $g^{(p)}$ is $L$-Lipschitz on $\mathbb{R}$;
+* $|g^{(j)}(t)| \le B$ for all $t \in \mathbb{R}$ and $j \le p$;
+* $g(t) = F_{0,0}$ for $t \le x_0 - 1$, and $g(t) = F_{K,0}$ for $t \ge x_K + 1$.
+
+In particular $g$ is bounded below, and its derivatives of orders $1, \dots, p$ are Lipschitz.
+This is the bounded version of Theorem A.9.2 of [cartis2022evaluation].
+
+The bound on the last jet $F_{K,j}$ is not assumed: it follows from the consistency condition,
+with a larger constant. The proof applies
+`Hermite.exists_contDiff_interpolating_jets_bounded_of_forall_le`. The constants $L$ and $B$
+depend only on $p$ and $\kappa$. -/
 theorem exists_contDiff_interpolating_jets_bounded (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) :
     ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧
       ∀ (K : ℕ) (x : ℕ → ℝ) (F : ℕ → ℕ → ℝ), 0 < K → (∀ k < K, x k < x (k + 1)) →
@@ -958,11 +1031,15 @@ theorem exists_contDiff_interpolating_jets_bounded (p : ℕ) {κ : ℝ} (hκ : 0
   rw [hκ']
   linarith
 
-/-- **Theorem A.9.1, second part** ([cartis2022evaluation]). There is `C ≥ 0` depending only
-on `p` such that, under the hypotheses of `Hermite.exists_twoPoint_interpolant` and if moreover
-`|a j| ≤ κ` (`j ≤ p`) and `s ≤ κ` ((A.31)), the interpolant satisfies
-`|π^{(j)}(τ)| ≤ (p + 1) κ m^p + C κ m^{p+1}` on `[0, s]` for `j ≤ p + 1`, with `m = max 1 κ`:
-a bound depending only on `p` and `κ`. -/
+/-- **Theorem A.9.1, second part.** For every $p \in \mathbb{N}$ there is a constant $C \ge 0$ with
+the following property. Let $0 < s \le \kappa$, let $a, b$ be jets with $|a_j| \le \kappa$ for
+$j \le p$ (A.31) and with the consistency condition (A.30) of
+`Hermite.exists_twoPoint_interpolant`. Then there is a polynomial $\pi$ of degree at most
+$2p + 1$ with $\pi^{(j)}(0) = a_j$ and $\pi^{(j)}(s) = b_j$ for $j \le p$, with
+$$|\pi^{(j)}(\tau)| \le (p + 1)\kappa\, m^p + C\kappa\, m^{p+1}, \qquad \tau \in [0, s], \ j \le
+p + 1,$$ where $m = \max\{1, \kappa\}$, and with $|\pi^{(p)}(\tau_1) - \pi^{(p)}(\tau_2)| \le
+C\kappa |\tau_1 - \tau_2|$ for $\tau_1, \tau_2 \in [0, s]$. This is the second part of Theorem
+A.9.1 of [cartis2022evaluation]; the bound depends only on $p$ and $\kappa$. -/
 theorem exists_twoPoint_interpolant_bounded (p : ℕ) : ∃ C : ℝ, 0 ≤ C ∧
     ∀ (s κ : ℝ) (a b : ℕ → ℝ), 0 < s → s ≤ κ → (∀ j ≤ p, |a j| ≤ κ) →
       (∀ j ≤ p, |b j - ∑ i ∈ Finset.Icc j p, a i * s ^ (i - j) / (i - j).factorial| ≤

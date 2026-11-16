@@ -17,32 +17,47 @@ import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic
 /-!
 # The primary functional calculus of analytic functions
 
-Power series, the exponential and the logarithm for the primary functional calculus `pfc` of
-`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/Basic`.
-
-Everything is proved from the spectral decomposition `pfc_eq_sum_spectralIdempotent`: a statement
-about `pfc f a` becomes finitely many statements about the scalar jets `f⁽ʲ⁾(λ)/j!`, `j < m_λ`. No
-norm on the algebra is needed for the series statements: `HasSum` is taken in any topological
-algebra with continuous operations (e.g. `Matrix n n ℂ` with its product topology).
+This module treats power series, the exponential, the logarithm, derivatives along a ray,
+composition, and the Taylor truncation bound for the primary functional calculus $f(a)$ = `pfc f a`
+of `Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic`. Its main result is Theorem
+9.1.2 of [golub2013matrix]: if $f(z) = \sum_k c_k (z - z_0)^k$ on a disc that contains the spectrum
+of $a$, then $\sum_k c_k (a - z_0)^k = f(a)$. The truncation error of this series is bounded as in
+Theorem 9.2.3 of [golub2013matrix]. The module also proves the composition rule
+$(g \circ f)(a) = g(f(a))$ and that $\exp$ and $\log$ of the calculus agree with Mathlib's series.
 
 ## Main results
 
-* `HasFPowerSeriesOnBall.hasSum_taylorJet`: inside the ball of convergence of a power series, the
-  Taylor coefficients at `z` are the re-expanded series `∑ₖ cₖ C(k, j) (z - z₀)^{k-j}`.
-* `hasSum_pfc`: [golub2013matrix] Theorem 9.1.2 — if `f` has the power series `∑ cₖ (z - z₀)ᵏ` on
-  a ball containing the spectrum of `a`, then `∑ cₖ (a - z₀)ᵏ = pfc f a`; `tendsto_sum_pfc` is the
-  partial-sum form.
-* `pfc_exp_eq_normedSpace_exp`, `pfc_log_eq_normedSpace_log`: agreement with Mathlib's series
-  exponential and logarithm.
+* `HasFPowerSeriesOnBall.hasSum_taylorJet`: inside the ball of convergence of a power series
+  $\sum_k c_k (z - z_0)^k$, the Taylor coefficients at $z$ are the re-expanded series
+  $\sum_k c_k \binom{k}{j} (z - z_0)^{k - j}$.
+* `hasSum_pfc`: Theorem 9.1.2 of [golub2013matrix]. If $f$ has the power series
+  $\sum_k c_k (z - z_0)^k$ on a ball that contains the spectrum of $a$, then
+  $\sum_k c_k (a - z_0)^k = f(a)$; `tendsto_sum_pfc` is the form with partial sums.
+* `pfc_exp_eq_normedSpace_exp`, `pfc_log_eq_normedSpace_log`: the calculus agrees with Mathlib's
+  series exponential and logarithm.
 * `hasFPowerSeriesOnBall_ofScalars_of_hasSum`, `Complex.hasFPowerSeriesOnBall_log_one`,
-  `Complex.hasFPowerSeriesOnBall_log_one_sub`: scalar power series to feed `hasSum_pfc`.
-* `hasDerivAt_pfc_smul`: `d/ds f(s a) = a f'(s a)`.
-* `pfc_comp`: the composition rule `(g ∘ f)(a) = g(f(a))` (Higham, *Functions of Matrices*,
-  Theorem 1.17), from `iteratedDeriv_comp_congr` of `Numlib/Analysis/Calculus/IteratedDeriv/Lemmas`
-  (jets of a composition depend only on the jets of the factors, Faà di Bruno).
-* `norm_pfc_sub_sum_le`: [golub2013matrix] Theorem 9.2.3, the Taylor truncation bound, by Taylor's
-  formula with integral remainder along `s ↦ f(s a)` (the integral form, not the mean-value form,
-  gives the book's `1/(q+1)!`).
+  `Complex.hasFPowerSeriesOnBall_log_one_sub`: scalar power series that serve as input to
+  `hasSum_pfc`.
+* `hasDerivAt_pfc_smul`: $\frac{d}{ds} f(sa) = a f'(sa)$.
+* `pfc_comp`: the composition rule $(g \circ f)(a) = g(f(a))$ (Higham, *Functions of Matrices*,
+  Theorem 1.17).
+* `norm_pfc_sub_sum_le`: Theorem 9.2.3 of [golub2013matrix], the Taylor truncation bound.
+
+## Proof outline
+
+Everything is proved from the spectral decomposition `pfc_eq_sum_spectralIdempotent`: a statement
+about $f(a)$ becomes finitely many statements about the scalar Taylor coefficients
+$f^{(j)}(\lambda)/j!$, $j < m_\lambda$. The composition rule uses `iteratedDeriv_comp_congr` of
+`Numlib.Analysis.Calculus.IteratedDeriv.Lemmas`: the derivatives of a composition depend only on the
+derivatives of the factors, by the Faà di Bruno formula. The truncation bound is Taylor's formula
+with integral remainder along $s \mapsto f(sa)$; the integral form, not the mean-value form, gives
+the factor $1/(q + 1)!$ of the source.
+
+## Implementation notes
+
+* No norm on the algebra is needed for the statements on series: `HasSum` is taken in any
+  topological algebra with continuous operations, for example `Matrix n n ℂ` with its product
+  topology.
 -/
 
 open Polynomial Hermite Filter Topology
@@ -52,8 +67,15 @@ section Series
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
 
-/-- **Taylor coefficients of a power series inside its ball**: if `f = ∑ cₖ (z - z₀)ᵏ` on the ball
-of radius `r`, then at every `z` of that ball `f⁽ʲ⁾(z)/j! = ∑ₖ cₖ C(k, j) (z - z₀)^{k-j}`. -/
+/-- **Taylor coefficients of a power series inside its ball.** Let $\mathbb{K}$ be a complete
+nontrivially normed field of characteristic zero, and let $f : \mathbb{K} \to \mathbb{K}$ have
+the power series $\sum_k c_k (z - z_0)^k$ on the ball of radius $r \in [0, \infty]$ about $z_0$.
+Then at every $z$ of this ball and for every $j$,
+$$\frac{f^{(j)}(z)}{j!} = \sum_k c_k \binom{k}{j} (z - z_0)^{k - j},$$
+and the series converges.
+
+Here $c_k$ is `p.coeff k`, and $k - j$ is the truncated subtraction of natural numbers; the
+terms with $k < j$ vanish because $\binom{k}{j} = 0$. -/
 theorem HasFPowerSeriesOnBall.hasSum_taylorJet [CharZero 𝕜] {f : 𝕜 → 𝕜}
     {p : FormalMultilinearSeries 𝕜 𝕜 𝕜} {z₀ : 𝕜} {r : ℝ≥0∞} (hf : HasFPowerSeriesOnBall f p z₀ r)
     {z : 𝕜} (hz : z ∈ Metric.eball z₀ r) (j : ℕ) :
@@ -79,9 +101,9 @@ theorem HasFPowerSeriesOnBall.hasSum_taylorJet [CharZero 𝕜] {f : 𝕜 → �
   · rfl
 
 omit [CompleteSpace 𝕜] in
-/-- **A power series converging everywhere is a power series of its sum on the whole field**: if
-`∑ₖ cₖ zᵏ = f z` for every `z`, then `f` has the power series `∑ₖ cₖ zᵏ` on the ball of infinite
-radius about `0`. -/
+/-- Let $\mathbb{K}$ be a nontrivially normed field and $c : \mathbb{N} \to \mathbb{K}$. If
+$\sum_k c_k z^k = f(z)$ for every $z \in \mathbb{K}$, then $f$ has the power series
+$\sum_k c_k z^k$ on the ball of infinite radius about $0$. -/
 theorem hasFPowerSeriesOnBall_ofScalars_of_hasSum {f : 𝕜 → 𝕜} {c : ℕ → 𝕜}
     (h : ∀ z, HasSum (fun k => c k * z ^ k) (f z)) :
     HasFPowerSeriesOnBall f (FormalMultilinearSeries.ofScalars 𝕜 c) 0 ⊤ where
@@ -105,15 +127,22 @@ variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [CharZero 𝕜] [Comple
   [Ring A] [Algebra 𝕜 A]
 
 omit [CompleteSpace 𝕜] in
-/-- The Taylor coefficients of `(X - z₀)ᵏ` at `λ`. -/
+/-- The Taylor coefficients of $(X - z_0)^k$ at $\lambda$ are
+$\binom{k}{j} (\lambda - z_0)^{k - j}$. -/
 private theorem taylorJet_sub_pow (z₀ l : 𝕜) (k j : ℕ) :
     taylorJet (fun z => ((X - C z₀) ^ k).eval z) l j = (k.choose j : 𝕜) * (l - z₀) ^ (k - j) := by
   rw [taylorJet_polynomial, taylor_pow, map_sub, taylor_X, taylor_C,
     show X + C l - C z₀ = X + C (l - z₀) by rw [map_sub]; ring, coeff_X_add_C_pow, mul_comm]
 
-/-- **Power series of `pfc`** ([golub2013matrix] Theorem 9.1.2): if `f` has the power series
-`∑ cₖ (z - z₀)ᵏ` on a ball containing the spectrum of `a`, then `∑ cₖ (a - z₀)ᵏ = pfc f a`, in any
-topological `𝕜`-algebra with continuous operations. -/
+/-- **Power series of the primary functional calculus** (Theorem 9.1.2 of [golub2013matrix]). Let
+$\mathbb{K}$ be a complete nontrivially normed field of characteristic zero, and let $A$ be a
+topological $\mathbb{K}$-algebra with continuous addition, multiplication and scalar
+multiplication. Let $f$ have the power series $\sum_k c_k (z - z_0)^k$ on the ball of radius $r$
+about $z_0$, and let $a \in A$ be integral over $\mathbb{K}$, with a split minimal polynomial
+and with spectrum in this ball. Then the series below converges in $A$, and
+$$\sum_k c_k (a - z_0)^k = f(a).$$
+
+Here $f(a)$ is `pfc f a`, and the convergence is `HasSum`, that is, unconditional convergence. -/
 theorem hasSum_pfc [TopologicalSpace A] [IsTopologicalRing A] [ContinuousSMul 𝕜 A] {f : 𝕜 → 𝕜}
     {p : FormalMultilinearSeries 𝕜 𝕜 𝕜} {z₀ : 𝕜} {r : ℝ≥0∞} (hf : HasFPowerSeriesOnBall f p z₀ r)
     {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
@@ -140,7 +169,14 @@ theorem hasSum_pfc [TopologicalSpace A] [IsTopologicalRing A] [ContinuousSMul �
   have hl' : l ∈ spectrum 𝕜 a := spectrum.mem_of_mem_roots_minpoly (Multiset.mem_toFinset.mp hl)
   exact (hf.hasSum_taylorJet (hσ hl') j).smul_const _
 
-/-- The partial-sum form of `hasSum_pfc`. -/
+/-- The power series of the primary functional calculus with partial sums. Let $\mathbb{K}$ be a
+complete nontrivially normed field of characteristic zero, and let $A$ be a topological
+$\mathbb{K}$-algebra with continuous addition, multiplication and scalar multiplication. Let $f$
+have the power series $\sum_k c_k (z - z_0)^k$ on the ball of radius $r$ about $z_0$, and let
+$a \in A$ be integral over $\mathbb{K}$, with a split minimal polynomial and with spectrum in
+this ball. Then
+$$\sum_{k < N} c_k (a - z_0)^k \to f(a) \qquad (N \to \infty).$$
+-/
 theorem tendsto_sum_pfc [TopologicalSpace A] [IsTopologicalRing A] [ContinuousSMul 𝕜 A]
     {f : 𝕜 → 𝕜} {p : FormalMultilinearSeries 𝕜 𝕜 𝕜} {z₀ : 𝕜} {r : ℝ≥0∞}
     (hf : HasFPowerSeriesOnBall f p z₀ r) {a : A} (ha : IsIntegral 𝕜 a)
@@ -156,8 +192,13 @@ section Complex
 variable {A : Type*} [Ring A] [Algebra ℂ A] [TopologicalSpace A] [IsTopologicalRing A]
   [ContinuousSMul ℂ A] [T2Space A]
 
-/-- **Agreement with Mathlib's exponential**: `pfc exp a = NormedSpace.exp a` for an integral
-element of a Hausdorff topological `ℂ`-algebra with continuous operations; no norm is needed. -/
+/-- **Agreement with Mathlib's exponential.** Let $A$ be a Hausdorff topological
+$\mathbb{C}$-algebra with continuous addition, multiplication and scalar multiplication, and let
+$a \in A$ be integral over $\mathbb{C}$. Then the primary functional calculus of the complex
+exponential at $a$ is the exponential series `NormedSpace.exp a`.
+
+No norm on $A$ is needed. The minimal polynomial splits because $\mathbb{C}$ is algebraically
+closed. -/
 theorem pfc_exp_eq_normedSpace_exp {a : A} (ha : IsIntegral ℂ a) :
     pfc Complex.exp a = NormedSpace.exp a := by
   have hf : HasFPowerSeriesOnBall Complex.exp
@@ -169,8 +210,8 @@ theorem pfc_exp_eq_normedSpace_exp {a : A} (ha : IsIntegral ℂ a) :
   rw [NormedSpace.exp_eq_tsum ℂ]
   exact h.tsum_eq.symm
 
-/-- The power series of `log` at `1`: `log z = ∑_{n ≥ 1} (-1)^{n+1} (z - 1)ⁿ / n` on the unit
-ball around `1`. -/
+/-- The power series of the complex logarithm at $1$: $\log z = \sum_{n \ge 1} \frac{(-1)^{n+1}}{n}
+(z - 1)^n$ on the open disc of radius $1$ about $1$. The coefficient at $n = 0$ is $0$. -/
 theorem Complex.hasFPowerSeriesOnBall_log_one :
     HasFPowerSeriesOnBall Complex.log
       (FormalMultilinearSeries.ofScalars ℂ fun n => ((-1) ^ (n + 1) / n : ℂ)) 1 1 where
@@ -200,8 +241,8 @@ theorem Complex.hasFPowerSeriesOnBall_log_one :
         FormalMultilinearSeries.coeff_ofScalars, smul_eq_mul]
       ring
 
-/-- The power series of `z ↦ log (1 - z)` at `0`: `log (1 - z) = -∑_{k ≥ 1} zᵏ / k` on the unit
-ball. -/
+/-- The power series of $z \mapsto \log(1 - z)$ at $0$: $\log(1 - z) = -\sum_{k \ge 1} z^k / k$ on
+the open unit disc. The coefficient at $k = 0$ is $0$. -/
 theorem Complex.hasFPowerSeriesOnBall_log_one_sub :
     HasFPowerSeriesOnBall (fun z => Complex.log (1 - z))
       (FormalMultilinearSeries.ofScalars ℂ fun k => -((k : ℂ)⁻¹)) 0 1 where
@@ -229,8 +270,11 @@ theorem Complex.hasFPowerSeriesOnBall_log_one_sub :
       ring
     · simp
 
-/-- **Agreement with Mathlib's series logarithm near `1`**: if every eigenvalue `λ` satisfies
-`‖λ - 1‖ < 1`, then `pfc log a = NormedSpace.log a`. -/
+/-- **Agreement with Mathlib's logarithm series near $1$.** Let $A$ be a Hausdorff topological
+$\mathbb{C}$-algebra with continuous addition, multiplication and scalar multiplication, and let
+$a \in A$ be integral over $\mathbb{C}$. If every $\mu$ in the spectrum of $a$ satisfies
+$|\mu - 1| < 1$, then the primary functional calculus of the principal complex logarithm at $a$
+is the series `NormedSpace.log a`, that is, $\sum_{n \ge 1} \frac{(-1)^{n+1}}{n} (a - 1)^n$. -/
 theorem pfc_log_eq_normedSpace_log {a : A} (ha : IsIntegral ℂ a)
     (hσ : ∀ μ ∈ spectrum ℂ a, ‖μ - 1‖ < 1) :
     pfc Complex.log a = NormedSpace.log a := by
@@ -249,7 +293,7 @@ section Derivative
 variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [CharZero 𝕜] [CompleteSpace 𝕜]
   [NormedRing A] [NormedAlgebra 𝕜 A]
 
-/-- The derivative of the coefficient `s ↦ sʲ f⁽ʲ⁾(s l)/j!` of `pfc_smul`. -/
+/-- The derivative of the coefficient $s \mapsto s^j f^{(j)}(s\lambda)/j!$ of `pfc_smul`. -/
 private theorem hasDerivAt_coeff_smul {f : 𝕜 → 𝕜} {t l : 𝕜} (hf : AnalyticAt 𝕜 f (t * l))
     (j : ℕ) :
     HasDerivAt (fun s : 𝕜 => s ^ j * taylorJet f (s * l) j)
@@ -269,8 +313,15 @@ private theorem hasDerivAt_coeff_smul {f : 𝕜 → 𝕜} {t l : 𝕜} (hf : Ana
   convert h3 using 1
   ring
 
-/-- **The derivative along a ray**: if `f` is analytic at every `t λ`, `λ` an eigenvalue of `a`,
-then `d/ds f(s a) = a f'(t a)` at `s = t` (`t = 0` included). -/
+/-- **The derivative along a ray.** Let $\mathbb{K}$ be a complete nontrivially normed field of
+characteristic zero, let $A$ be a normed $\mathbb{K}$-algebra, let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial, and let $t \in \mathbb{K}$. If $f$ is analytic at
+$t\mu$ for every $\mu$ in the spectrum of $a$, then $s \mapsto f(sa)$ is differentiable at
+$s = t$, with
+$$\frac{d}{ds} f(sa) \Big|_{s = t} = a\, f'(ta).$$
+The case $t = 0$ is included.
+
+Here $f'(ta)$ is the primary functional calculus of `deriv f` at $ta$. -/
 theorem hasDerivAt_pfc_smul {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     {f : 𝕜 → 𝕜} {t : 𝕜} (hf : ∀ μ ∈ spectrum 𝕜 a, AnalyticAt 𝕜 f (t * μ)) :
     HasDerivAt (fun s : 𝕜 => pfc f (s • a)) (a * pfc (deriv f) (t • a)) t := by
@@ -339,11 +390,17 @@ section Composition
 
 variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [CharZero 𝕜] [Ring A] [Algebra 𝕜 A]
 
-/-- **The composition rule** (Higham, *Functions of Matrices*, Theorem 1.17): if `f` is
-`C^{m_λ - 1}` at every eigenvalue `λ` of `a` and `g` is `C^{m_λ - 1}` at `f λ`, then
-`(g ∘ f)(a) = g(f(a))`. The minimal polynomial of `f(a)` divides `∏_λ (X - f λ)` with the
-multiplicities of `a`, and the jets of `G ∘ P` (interpolants of `g` and `f`) are those of `g ∘ f`
-(`iteratedDeriv_comp_congr`). -/
+/-- **The composition rule** (Higham, *Functions of Matrices*, Theorem 1.17). Let $\mathbb{K}$ be a
+nontrivially normed field of characteristic zero, and let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial. Let $f$ be $C^{m_\lambda - 1}$ on the spectrum of
+$a$ (`ContDiffOnSpectrum`), and let $g$ be $C^{m_\lambda - 1}$ at $f(\lambda)$ for every root
+$\lambda$ of the minimal polynomial of $a$, where $m_\lambda$ is the multiplicity of $\lambda$.
+Then
+$$(g \circ f)(a) = g(f(a)).$$
+
+The minimal polynomial of $f(a)$ divides $\prod_\lambda (X - f(\lambda))^{m_\lambda}$. If $P$
+and $G$ are interpolants of $f$ and $g$, the derivatives of $G \circ P$ at the eigenvalues are
+those of $g \circ f$ (`iteratedDeriv_comp_congr`). -/
 theorem pfc_comp {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) {f g : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
     (hg : ∀ μ ∈ (minpoly 𝕜 a).roots,
@@ -408,7 +465,10 @@ section TaylorBound
 
 variable {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A]
 
-/-- `pfc` at `0 • a` is the value at `0`. -/
+/-- Let $\mathbb{K}$ be a nontrivially normed field, let $B$ be a $\mathbb{K}$-algebra, and let
+$a \in B$ be integral over $\mathbb{K}$ with a split minimal polynomial. For every
+$g : \mathbb{K} \to \mathbb{K}$, the primary functional calculus of $g$ at $0 \cdot a$ is
+$g(0) \cdot 1$. -/
 theorem pfc_zero_smul {𝕜 B : Type*} [NontriviallyNormedField 𝕜] [Ring B] [Algebra 𝕜 B] {a : B}
     (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (g : 𝕜 → 𝕜) :
     pfc g ((0 : 𝕜) • a) = algebraMap 𝕜 B (g 0) := by
@@ -422,7 +482,7 @@ theorem pfc_zero_smul {𝕜 B : Type*} [NontriviallyNormedField 𝕜] [Ring B] [
   rw [Finset.sum_eq_single 0 (fun j _ hj => by simp [zero_pow hj]) (by simp [hm])]
   simp [Algebra.smul_def]
 
-/-- The successive derivatives `a^k f⁽ᵏ⁾(t a)` of `t ↦ f(t a)` along the real segment. -/
+/-- The $k$-th derivative $a^k f^{(k)}(ta)$ of $t \mapsto f(ta)$ along the real segment. -/
 private noncomputable def rayDeriv (f : ℂ → ℂ) (a : A) (k : ℕ) (t : ℝ) : A :=
   a ^ k * pfc (iteratedDeriv k f) ((t : ℂ) • a)
 
@@ -460,7 +520,7 @@ private theorem continuousOn_rayDeriv {f : ℂ → ℂ} {p : FormalMultilinearSe
     ContinuousOn (rayDeriv f a k) (Set.uIcc 0 1) := fun _ ht =>
   (hasDerivAt_rayDeriv hf ha hσ k ht).continuousAt.continuousWithinAt
 
-/-- Taylor's formula with integral remainder along the segment `[0, 1]`. -/
+/-- Taylor's formula with integral remainder for $t \mapsto f(ta)$ on $[0, 1]$. -/
 private theorem rayDeriv_taylor {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ}
     {r : ℝ≥0∞} (hf : HasFPowerSeriesOnBall f p 0 r) {a : A} (ha : IsIntegral ℂ a)
     (hσ : spectrum ℂ a ⊆ Metric.eball 0 r) (q : ℕ) :
@@ -493,11 +553,18 @@ private theorem rayDeriv_taylor {f : ℂ → ℂ} {p : FormalMultilinearSeries �
     simp only [one_div]
     abel_nf
 
-/-- **The Taylor truncation bound** ([golub2013matrix] Theorem 9.2.3, without the book's factor
-`n`): if `f = ∑ αₖ zᵏ` on a ball about `0` containing the spectrum of `a`, and
-`‖a^{q+1} f⁽q+1⁾(s a)‖ ≤ M` for `s ∈ [0, 1]`, then
-`‖f(a) - ∑_{k ≤ q} αₖ aᵏ‖ ≤ M / (q + 1)!`. Taylor's formula with integral remainder for
-`s ↦ f(s a)`, whose derivatives are `aᵏ f⁽ᵏ⁾(s a)` (`hasDerivAt_pfc_smul`). -/
+/-- **The Taylor truncation bound** (Theorem 9.2.3 of [golub2013matrix]). Let $A$ be a complex
+Banach algebra, let $f$ have the power series $\sum_k \alpha_k z^k$ on the ball of radius $r$
+about $0$, and let $a \in A$ be integral over $\mathbb{C}$ with spectrum in this ball. Let
+$q \in \mathbb{N}$ and $M \in \mathbb{R}$, and suppose that
+$$\|a^{q+1} f^{(q+1)}(sa)\| \le M \qquad \text{for all } s \in [0, 1].$$
+Then
+$$\Big\| f(a) - \sum_{k=0}^{q} \alpha_k a^k \Big\| \le \frac{M}{(q + 1)!}.$$
+
+The bound of the source for matrices of order $n$ has an additional factor $n$; the bound here
+has no such factor. The proof is Taylor's formula with integral remainder for $s \mapsto f(sa)$,
+whose derivatives are $a^k f^{(k)}(sa)$ (`hasDerivAt_pfc_smul`). Here $f^{(q+1)}(sa)$ is the
+primary functional calculus of `iteratedDeriv (q + 1) f` at $sa$. -/
 theorem norm_pfc_sub_sum_le {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ} {r : ℝ≥0∞}
     (hf : HasFPowerSeriesOnBall f p 0 r) {a : A} (ha : IsIntegral ℂ a)
     (hσ : spectrum ℂ a ⊆ Metric.eball 0 r) (q : ℕ) {M : ℝ}

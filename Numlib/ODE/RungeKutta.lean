@@ -13,99 +13,146 @@ import Numlib.ODE.OneStep
 /-!
 # Runge–Kutta methods
 
-Runge–Kutta methods for the Cauchy problem `y' = f(t, y)` on a real normed space `E`
-([quarteroni2000numerical] §11.8; [kress1998numerical] §10.2 has the same two-stage derivation;
-[hairer1993solving] is the reference for what the book quotes without proof).
+This module treats Runge–Kutta methods for the Cauchy problem $y' = f(t, y)$ with values in a real
+normed space $E$, following §11.8 of [quarteroni2000numerical]. §10.2 of [kress1998numerical] has
+the same two-stage derivation, and [hairer1993solving] is the reference for the results that the
+source quotes without proof. An $s$-stage method is given by its Butcher tableau $(A, b, c)$. Its
+stages at $(t, u)$ with step $h$ solve $K_i = f(t + c_i h, u + h \sum_j a_{ij} K_j)$, and its step
+is $u_{n+1} = u_n + h \sum_i b_i K_i$. The step is a relation, so every Runge–Kutta method is a
+method in the sense of `Numlib.ODE.OneStep`, and the one-step theory (zero-stability, convergence,
+absolute stability, A-stability) applies to it without new proofs.
 
-**Tableaux.** `ButcherTableau s` is the Butcher array `A : Matrix (Fin s) (Fin s) ℝ`,
-`b c : Fin s → ℝ` of an `s`-stage method ((11.70)–(11.71)); `IsExplicit` (`a_ij = 0` for `j ≥ i`),
-`IsSemiImplicit`
-(`a_ij = 0` for `j > i`, the DIRK methods) and `IsRowSum` (`c_i = ∑_j a_ij`, (11.72)) are its
-shapes. The stage relation `IsStages f h t u K` is (11.71),
-`K_i = f(t + c_i h, u + h ∑_j a_ij K_j)`, and the step relation `stepRel f h t u v` says that
-`v = u + h ∑_i b_i K_i` for some stages `K` — a `OneStep.Method`, so the whole one-step theory
-of `Numlib/ODE/OneStep` (zero-stability, convergence, absolute stability, A-stability) applies to
-every Runge–Kutta method by instantiation and is not re-proved here. For an explicit tableau the
-stages are computed by strong recursion on the stage index (`explicitStages`), are the unique
-stages (`eq_explicitStages_of_isStages`), and the step relation is the increment function
-`explicitIncrement f t u _ h = ∑_i b_i K_i` (`stepRel_eq_ofIncrement`), whose Lipschitz constant
-`(∑_i |b_i|) L (1 + h₀ L α)^s`, `α = ∑_{i,j} |a_ij|`, is `lipschitzIncrement_explicit`; hence
-every explicit Runge–Kutta method is zero-stable and, when consistent along the solution,
-convergent (`isZeroStable_explicit`, `isConvergentFor_explicit`) — the book's "since RK methods are
-one-step methods, consistency implies stability and, in turn, convergence".
+For an explicit tableau the stages are computed by recursion, the step is given by an increment
+function, and this increment is Lipschitz in the state. Hence every explicit method is zero-stable,
+and it is convergent when it is consistent. Consistency is equivalent to $\sum_i b_i = 1$. The
+two-stage order-two conditions $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$ are sufficient, and for $c_1 = 0$
+they are also necessary. The classical method (11.73) has order $4$. On the test equation
+$y' = \lambda y$, one step multiplies by $R(h\lambda)$, where
+$R(z) = 1 + z b^T (I - zA)^{-1} \mathbb{1}$ is the stability function. For an explicit tableau $R$
+is a polynomial. So the region of absolute stability of a consistent explicit method is bounded and
+the method is not A-stable, and an explicit $s$-stage method of order $s$ has
+$R(z) = \sum_{k \le s} z^k / k!$. The module also defines the Runge–Kutta–Fehlberg 4(5) embedded
+pair of §11.8.2 and the implicit tableaux of §11.8.3: the implicit midpoint rule, the two-stage
+Gauss–Legendre tableau, two Radau IIA tableaux, a Lobatto IIIA tableau and a three-stage DIRK
+family.
 
-**Consistency and order.** Consistency is `∑_i b_i = 1` in both directions: along every `C¹`
-solution of a problem with a Lipschitz field, the stages converge to `f(t, y t)` uniformly in `t`
-as `h → 0⁺` (`isConsistentFor_of_sum_b_eq_one`); conversely on `y' = 1` the truncation error is
-the constant `1 - ∑ b_i` (`sum_b_eq_one_of_isConsistentFor`). The two-stage order-two conditions
-`b₁ + b₂ = 1`, `c₂ b₂ = 1/2` of §11.8.1 are derived by the Taylor expansion of the second stage in
-the pair `(t, y)` (`hasOrderFor_two_of`), and are necessary on the test problems `y' = 1` and
-`y' = 2t` (`sum_b_mul_c_eq_half_of_hasOrderFor`, `orderTwoConditions_of_hasOrderFor`: a
-coefficient `c` with `c h = O(h²)` vanishes, `eq_zero_of_isBigO_pow_succ` of
-`Numlib/Analysis/Asymptotics/Pow`). Heun's method and the modified Euler method are the two-stage
-instances (`heun`, `modifiedEuler`); the classical fourth-order method (11.73) is `rk4`, with its
-algebraic order conditions (`rk4_orderConditions`). Property 11.4 (Butcher's barriers) is quoted,
-not formalized.
-A tableau satisfying the row-sum condition sees a non-autonomous problem as the autonomous
-problem `Y' = (1, f(Y))` on `ℝ × E` and has the same order along the two (`autonomize`,
-`hasOrderFor_autonomize_iff`); that reduction is what lets the fourth order of the classical
-method be proved in the elementary differentials of a single field, and `rk4_hasOrderFor` is the
-result: `rk4` has order `4` along every solution of a problem whose field is `C⁴` with bounded
-derivatives. Its proof expands one stage once and for all
-(`exists_forall_norm_stage_sub_le`), instantiates that three times to expand the increment
-(`exists_forall_norm_rk4_increment_sub_le`), and matches the expansion against the Taylor series
-of the solution (`rk4_hasOrderFor_autonomous`); the `h³` coefficients agree only after the
-symmetry of the second derivative is used, at exactly one place.
+## Main definitions
 
-**Adaptivity** (§11.8.2). `EmbeddedPair s` is a tableau with a second weight vector `b̂`; the
-error indicator `h ∑_i (b_i - b̂_i) K_i` is the difference of the two solutions sharing the stages
-(`errorIndicator_eq_sub`), and the Runge–Kutta–Fehlberg 4(5) pair is `rkf45` (standard
-coefficients; the book's table is damaged in the source).
+* `ODE.ButcherTableau`: the Butcher array $(A, b, c)$ of an $s$-stage method.
+* `ODE.ButcherTableau.IsExplicit`: $a_{ij} = 0$ for $j \ge i$.
+* `ODE.ButcherTableau.IsSemiImplicit`: $a_{ij} = 0$ for $j > i$ (the DIRK methods).
+* `ODE.ButcherTableau.IsRowSum`: the row-sum condition $c_i = \sum_j a_{ij}$ (11.72).
+* `ODE.ButcherTableau.IsStages`: the stage relation (11.71).
+* `ODE.ButcherTableau.stepRel`: the step relation $v = u + h \sum_i b_i K_i$ of the method.
+* `ODE.ButcherTableau.explicitStages`: the stages of an explicit method, by recursion on the stage
+  index.
+* `ODE.ButcherTableau.explicitIncrement`: the increment function $\sum_i b_i K_i$ of an explicit
+  method.
+* `ODE.autonomize`: the autonomous field $(t, v) \mapsto (1, f(t, v))$ on $\mathbb{R} \times E$.
+* `ODE.ButcherTableau.heun`, `ODE.ButcherTableau.modifiedEuler`: the two-stage explicit tableaux of
+  Heun's method and the modified Euler method.
+* `ODE.rk4`: the classical fourth-order method (11.73).
+* `ODE.EmbeddedPair`: a tableau with a second weight vector $\hat b$ (11.76).
+* `ODE.EmbeddedPair.errorIndicator`: the error indicator $h \sum_i (b_i - \hat b_i) K_i$.
+* `ODE.rkf45`: the Runge–Kutta–Fehlberg 4(5) pair.
+* `ODE.ButcherTableau.implicitMidpoint`, `ODE.ButcherTableau.gaussLegendre2`: the Gauss–Legendre
+  tableaux with one and two stages.
+* `ODE.ButcherTableau.radauIIA1`, `ODE.ButcherTableau.radauIIA2`, `ODE.ButcherTableau.lobattoIIIA2`,
+  `ODE.ButcherTableau.dirk3`: the Radau IIA, Lobatto IIIA and DIRK tableaux of §11.8.3.
+* `ODE.ButcherTableau.stabilityFunction`: the stability function
+  $R(z) = 1 + z b^T (I - zA)^{-1} \mathbb{1}$.
+* `ODE.ButcherTableau.stabilityPolynomial`: the polynomial
+  $1 + \sum_{k<s} (b^T A^k \mathbb{1}) X^{k+1}$.
 
-**Implicit families** (§11.8.3): the implicit midpoint rule `implicitMidpoint` (the one-stage
-Gauss–Legendre method, whose step is `u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)`,
-`stepRel_implicitMidpoint_iff`), the two-stage Gauss–Legendre tableau `gaussLegendre2` with the
-collocation identities `gaussLegendre2_collocation`, the Radau IIA tableaux `radauIIA1`
-(backward Euler) and `radauIIA2`, the Lobatto IIIA tableau `lobattoIIIA2` (Crank–Nicolson), and
-the three-stage DIRK family `dirk3 μ`; the maximal orders `2s`, `2s - 1`, `2s - 2` are quoted, not
-proved.
+## Main results
 
-**Stability function** (§11.8.4). `stabilityFunction z = 1 + z bᵀ (I - z A)⁻¹ 𝟙` with Mathlib's
-`Matrix.inv` (zero on a singular matrix). On the test equation `y' = λ y` one step multiplies by
-`R(hλ)` when `I - hλ A` is invertible (`stepRel_testField_iff`), so that
-`z ∈ absStabilityRegion ↔ ‖R z‖ < 1` under that invertibility
-(`mem_absStabilityRegion_iff_of_isUnit`).
+* `ODE.ButcherTableau.lipschitzIncrement_explicit`: the explicit increment is Lipschitz in the state
+  with the constant $(\sum_i |b_i|) L (1 + h_0 L \alpha)^s$, $\alpha = \sum_{i,j} |a_{ij}|$.
+* `ODE.ButcherTableau.isZeroStable_explicit`: every explicit method is zero-stable.
+* `ODE.ButcherTableau.isConvergentFor_explicit`: a consistent explicit method is convergent.
+* `ODE.ButcherTableau.isConsistentFor_of_sum_b_eq_one`: $\sum_i b_i = 1$ gives consistency.
+* `ODE.ButcherTableau.sum_b_eq_one_of_isConsistentFor`: consistency on $y' = 1$ forces
+  $\sum_i b_i = 1$.
+* `ODE.ButcherTableau.hasOrderFor_autonomize_iff`: the order of a method along $y$ equals its order
+  along $s \mapsto (s, y(s))$ for the autonomous field.
+* `ODE.ButcherTableau.hasOrderFor_two_of`: the two-stage conditions $b_1 + b_2 = 1$, $c_2 b_2 = 1/2$
+  give order $2$.
+* `ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`: for a two-stage tableau with $c_1 = 0$,
+  order $2$ on two test problems forces these conditions.
+* `ODE.rk4_orderConditions`: the eight order-four conditions of the classical tableau.
+* `ODE.rk4_hasOrderFor`: the classical method has order $4$ for a field with bounded derivatives up
+  to order four.
+* `ODE.EmbeddedPair.errorIndicator_eq_sub`: the error indicator is the difference of the two steps
+  of the pair.
+* `ODE.ButcherTableau.stepRel_implicitMidpoint_iff`: the step of the implicit midpoint rule is
+  $u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)$.
+* `ODE.ButcherTableau.gaussLegendre2_collocation`: the collocation identities of the two-stage
+  Gauss–Legendre tableau.
+* `ODE.ButcherTableau.stepRel_testField_iff`: on the test equation, one step multiplies by
+  $R(h\lambda)$ when $I - h\lambda A$ is invertible.
+* `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit`: if $I - zA$ is invertible, then
+  $z \in \mathcal{A}$ if and only if $|R(z)| < 1$.
+* `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isExplicit`: for an explicit tableau,
+  $z \in \mathcal{A}$ if and only if $|R(z)| < 1$.
+* `ODE.ButcherTableau.not_mem_absStabilityRegion_of_forall_ne`: if the stage system on the test
+  equation has no solution, then $z \notin \mathcal{A}$.
+* `ODE.ButcherTableau.stabilityFunction_eq_sum_of_isExplicit`: for an explicit tableau, $R(z) = 1 +
+  \sum_{k<s} z^{k+1} b^T A^k \mathbb{1}$.
+* `ODE.ButcherTableau.stabilityFunction_eq_det_of_isExplicit`: for an explicit tableau,
+  $R(z) = \det(I - zA + z \mathbb{1} b^T)$.
+* `ODE.ButcherTableau.not_isAStable_of_isExplicit`: no consistent explicit method is A-stable.
+* `ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder`: an explicit $s$-stage method of
+  order $s$ has $R(z) = \sum_{k \le s} z^k / k!$.
+* `ODE.stabilityFunction_rk4`: the classical method has $R(z) = 1 + z + z^2/2 + z^3/6 + z^4/24$.
 
-*Erratum (§11.8.4).* The book states the characterization `𝒜 = {z : |R(z)| < 1}` with no
-hypothesis, although its own derivation of `R` inverts `I - hλ A`. The invertibility is a genuine
-hypothesis on the method, and it is a hypothesis rather than a further clause of the
-characterization: for `A = !![0, 1; 1, 0]`, `b = (1/2, 1/2)` and `z = -1` the matrix
-`I - zA = !![1, 1; 1, 1]` is singular, yet the stage system `K₁ + K₂ = z u` is solvable for every
-datum and every solution gives the same step `v = u (1 + z/2) = u/2`, so every datum has an orbit
-and every orbit tends to `0`, that is, `z ∈ 𝒜` in the sense of `OneStep.IsAbsStable`, while
-`R(z) = 1` with Mathlib's `Matrix.inv`. So `z ∈ 𝒜 ↔ IsUnit (I - zA) ∧ ‖R z‖ < 1` is *false*. The
-corrected forms are `mem_absStabilityRegion_iff_of_isUnit` (the book's claim under the hypothesis
-its derivation uses), `mem_absStabilityRegion_iff_of_isExplicit` (no hypothesis is needed for an
-explicit tableau, the only case the book goes on to use) and
-`not_mem_absStabilityRegion_of_forall_ne` (the singular case in which the stage system has no
-solution, and `z ∉ 𝒜` for the opposite reason). Also in `notes/book-errata.md`.
+## Proof outline
 
-For an explicit tableau `A` is nilpotent, so
-`I - zA` is always invertible with determinant `1`, and `R` is the polynomial
-`1 + ∑_{k<s} z^{k+1} bᵀ A^k 𝟙 = det (I - zA + z 𝟙 bᵀ)` (`stabilityFunction_eq_sum_of_isExplicit`,
-`stabilityFunction_eq_det_of_isExplicit`, the matrix determinant lemma); a consistent explicit
-method therefore has a bounded region and is never A-stable (`not_isAStable_of_isExplicit`,
-Remark 11.2 for Runge–Kutta methods), and an explicit `s`-stage method of order `s` has
-`R(z) = ∑_{k ≤ s} z^k / k!` (`stabilityFunction_eq_truncExp_of_hasOrder`, proved from the
-real problem `y' = y` alone with `Polynomial.eq_zero_of_isBigO_pow_succ`). `stabilityFunction_rk4`
-is the truncated exponential of degree `4`.
+The necessary conditions come from test problems. On $y' = 1$ the truncation error is the constant
+$1 - \sum_i b_i$, and on $y' = 2t$ it is $h(1 - 2 \sum_i b_i c_i)$ at $t = 0$. A coefficient $c$
+with $ch = O(h^2)$ vanishes (`eq_zero_of_isBigO_pow_succ` of `Numlib.Analysis.Asymptotics.Pow`). The
+fourth order of the classical method is proved for an autonomous field, and the row-sum condition
+reduces the general case to it (`ODE.ButcherTableau.hasOrderFor_autonomize_iff`). The proof expands
+one stage once (`ODE.exists_forall_norm_stage_sub_le`), uses this three times to expand the
+increment (`ODE.exists_forall_norm_rk4_increment_sub_le`), and compares the expansion with the
+Taylor series of the solution (`ODE.rk4_hasOrderFor_autonomous`). The coefficients of $h^3$ agree
+only after the symmetry of the second derivative is used, at exactly one place. The formula for the
+stability function of a method of order $s$ comes from the real problem $y' = y$: the polynomial
+$R - \sum_{k \le s} X^k / k!$ is $O(h^{s+1})$ and has degree at most $s$, so it is zero
+(`Polynomial.eq_zero_of_isBigO_pow_succ`).
 
-## Conventions
+## Implementation notes
 
-The vector field is `f : ℝ → E → E`; the stages `K : Fin s → E`. The book indexes stages from
-`1`; here `Fin s` starts at `0`, so the two-stage conditions read `b 0 + b 1 = 1`,
-`c 1 * b 1 = 1/2`. Complex versions of the real data are `complexA`, `complexB`. The step size `h`
-is real; on the test equation `E = ℂ` and `h • x = (h : ℂ) * x`.
+* The vector field is `f : ℝ → E → E`, and the stages are `K : Fin s → E`. The source indexes the
+  stages from $1$; here `Fin s` starts at $0$. So the two-stage conditions $b_1 + b_2 = 1$ and
+  $c_2 b_2 = 1/2$ read `b 0 + b 1 = 1` and `c 1 * b 1 = 1 / 2`.
+* `ODE.ButcherTableau.explicitStages` uses only the entries $a_{ij}$ with $j < i$, so it is defined
+  for every tableau. The results about it and about `ODE.ButcherTableau.explicitIncrement` need
+  explicitness only where they compare it with the stage relation.
+* The step size $h$ is real. On the test equation $E = \mathbb{C}$, and $h \cdot x$ is
+  `(h : ℂ) * x`. The complex forms of the real data are `ODE.ButcherTableau.complexA` and
+  `ODE.ButcherTableau.complexB`.
+* `ODE.ButcherTableau.stabilityFunction` uses Mathlib's `Matrix.inv`, which is $0$ on a singular
+  matrix. So $R(z) = 1$ when $I - zA$ is singular.
+* §11.8.4 of the source states $\mathcal{A} = \{z : |R(z)| < 1\}$ without a hypothesis, although its
+  derivation of $R$ inverts $I - h\lambda A$. The invertibility is a genuine hypothesis, and it
+  cannot be added as a further clause of the characterization. For $A = \begin{bmatrix} 0 & 1 \\ 1 &
+  0 \end{bmatrix}$, $b = (1/2, 1/2)$ and $z = -1$, the matrix $I - zA$ is singular. Yet the stage
+  system $K_1 + K_2 = zu$ has a solution for every datum $u$, and every solution gives the same step
+  $v = u(1 + z/2) = u/2$. So every datum has an orbit and every orbit tends to $0$, that is,
+  $z \in \mathcal{A}$ in the sense of `ODE.OneStep.IsAbsStable`, while $R(z) = 1$. Thus
+  "$z \in \mathcal{A}$ if and only if $I - zA$ is invertible and $|R(z)| < 1$" is false. The correct
+  forms are `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit` (the claim of the source under
+  the hypothesis that its derivation uses),
+  `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isExplicit` (no hypothesis for an explicit
+  tableau, the only case that the source uses later) and
+  `ODE.ButcherTableau.not_mem_absStabilityRegion_of_forall_ne` (a singular case where the stage
+  system has no solution, and $z \notin \mathcal{A}$ for this reason).
+* The table of the Fehlberg pair in the source is incomplete (some denominators are missing), so
+  `ODE.rkf45` uses the standard coefficients. The source prints the error coefficients as
+  $E = b - \hat b$; the printed values are $\hat b - b$ (`ODE.rkf45_bhat_sub_b`).
+* Property 11.4 of the source (Butcher's barriers) is quoted there and is not formalized. The
+  maximal orders $2s$, $2s - 1$ and $2s - 2$ of the Gauss–Legendre, Radau and Lobatto methods are
+  quoted, not proved.
 -/
 
 open Set Filter Topology Asymptotics Matrix
@@ -115,15 +162,17 @@ namespace ODE
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **A Butcher tableau** with `s` stages ([quarteroni2000numerical] (11.70)–(11.71)): the
-coefficient matrix `A = (a_ij)`, the weights `b` and the nodes `c` of an `s`-stage Runge–Kutta
-method. -/
+/-- A **Butcher tableau** with $s$ stages ((11.70)–(11.71) of [quarteroni2000numerical]): the
+coefficient matrix $A = (a_{ij}) \in \mathbb{R}^{s \times s}$, the weights $b \in \mathbb{R}^s$
+and the nodes $c \in \mathbb{R}^s$ of an $s$-stage Runge–Kutta method.
+
+The stages are indexed by `Fin s`, from $0$. -/
 structure ButcherTableau (s : ℕ) where
-  /-- The coefficient matrix `A = (a_ij)`. -/
+  /-- The coefficient matrix $A = (a_{ij})$. -/
   A : Matrix (Fin s) (Fin s) ℝ
-  /-- The weights `b = (b_i)`. -/
+  /-- The weights $b = (b_i)$. -/
   b : Fin s → ℝ
-  /-- The nodes `c = (c_i)`. -/
+  /-- The nodes $c = (c_i)$. -/
   c : Fin s → ℝ
 
 namespace ButcherTableau
@@ -132,59 +181,70 @@ variable {s : ℕ} (tab : ButcherTableau s) {f : ℝ → E → E} {h t t₀ T h�
 
 /-! ### Shapes of tableaux -/
 
-/-- An **explicit** tableau: `a_ij = 0` for `j ≥ i`, so that each stage is computed from the
-previous ones ([quarteroni2000numerical] §11.8). -/
+/-- A tableau is **explicit** if $a_{ij} = 0$ whenever $j \ge i$, so that each stage is computed
+from the earlier ones (§11.8 of [quarteroni2000numerical]). -/
 def IsExplicit : Prop := ∀ i j : Fin s, i ≤ j → tab.A i j = 0
 
-/-- A **semi-implicit** (diagonally implicit, DIRK) tableau: `a_ij = 0` for `j > i`, so that each
-stage solves one equation in itself. -/
+/-- A tableau is **semi-implicit**, or diagonally implicit (DIRK), if $a_{ij} = 0$ whenever $j > i$,
+so that each stage solves one equation in itself. -/
 def IsSemiImplicit : Prop := ∀ i j : Fin s, i < j → tab.A i j = 0
 
-/-- The **row-sum condition** `c_i = ∑_j a_ij` ([quarteroni2000numerical] (11.72)). -/
+/-- A tableau satisfies the **row-sum condition** ((11.72) of [quarteroni2000numerical]) if
+$c_i = \sum_j a_{ij}$ for every $i$. -/
 def IsRowSum : Prop := ∀ i, tab.c i = ∑ j, tab.A i j
 
 /-- An explicit tableau is semi-implicit. -/
 theorem IsExplicit.isSemiImplicit (hex : tab.IsExplicit) : tab.IsSemiImplicit :=
   fun i j hij => hex i j hij.le
 
-/-- **The consistency condition** `∑_i b_i = 1` ([quarteroni2000numerical] §11.8). -/
+/-- The **consistency condition** $\sum_i b_i = 1$ (§11.8 of [quarteroni2000numerical]). -/
 def IsConsistent : Prop := ∑ i, tab.b i = 1
 
 /-! ### Stages and the step relation -/
 
-/-- **The stage relation** ([quarteroni2000numerical] (11.71)): `K` are the stages of the
-method at `(t, u)` with step `h` when `K_i = f(t + c_i h, u + h ∑_j a_ij K_j)` for every `i`. -/
+/-- The **stage relation** ((11.71) of [quarteroni2000numerical]): $K = (K_i) \in E^s$ are stages of
+the method for the field $f$ at $(t, u)$ with step $h$ if
+$$K_i = f\Bigl(t + c_i h, u + h \sum_j a_{ij} K_j\Bigr) \quad \text{for every } i.$$
+-/
 def IsStages (f : ℝ → E → E) (h t : ℝ) (u : E) (K : Fin s → E) : Prop :=
   ∀ i, K i = f (t + tab.c i * h) (u + h • ∑ j, tab.A i j • K j)
 
-/-- **The step relation** of the Runge–Kutta method ([quarteroni2000numerical] (11.70)):
-`v` is admissible at `t + h` from `u` at `t` when `v = u + h ∑_i b_i K_i` for some stages `K`.
-This is a `OneStep.Method`, so the one-step theory applies. -/
+/-- The **step relation** of the Runge–Kutta method ((11.70) of [quarteroni2000numerical]): $v$ is
+admissible at time $t + h$ from $u$ at time $t$ if $v = u + h \sum_i b_i K_i$ for some stages
+$K$ at $(t, u)$ with step $h$.
+
+This is a `ODE.OneStep.Method`, so the one-step theory of `Numlib.ODE.OneStep` applies to it. -/
 def stepRel : OneStep.Method E := fun f h t u v =>
   ∃ K : Fin s → E, tab.IsStages f h t u K ∧ v = u + h • ∑ i, tab.b i • K i
 
-/-- The step relation, unfolded. -/
+/-- The step relation holds if and only if there are stages $K$ at $(t, u)$ with step $h$ such that
+$v = u + h \sum_i b_i K_i$. -/
 theorem stepRel_apply {v : E} :
     tab.stepRel f h t u v ↔
       ∃ K : Fin s → E, tab.IsStages f h t u K ∧ v = u + h • ∑ i, tab.b i • K i :=
   Iff.rfl
 
-/-- **The stages of an explicit method**, by strong recursion on the stage index:
-`K_i = f(t + c_i h, u + h ∑_{j < i} a_ij K_j)`. -/
+/-- The **stages of an explicit method**, defined by strong recursion on the stage index:
+$$K_i = f\Bigl(t + c_i h, u + h \sum_{j<i} a_{ij} K_j\Bigr).$$
+
+The definition uses only the entries $a_{ij}$ with $j < i$, so it is defined for every tableau.
+For an explicit tableau these are the stages (`ODE.ButcherTableau.isStages_explicitStages`). -/
 noncomputable def explicitStages (f : ℝ → E → E) (h t : ℝ) (u : E) (i : Fin s) : E :=
   f (t + tab.c i * h)
     (u + h • ∑ j, if _ : j < i then tab.A i j • explicitStages f h t u j else 0)
 termination_by i.1
 decreasing_by exact ‹j < i›
 
-/-- The recursion defining the explicit stages. -/
+/-- The recursion that defines the explicit stages: $K_i = f(t + c_i h, u + h \sum_{j<i} a_{ij}
+K_j)$. -/
 theorem explicitStages_apply (i : Fin s) :
     tab.explicitStages f h t u i = f (t + tab.c i * h)
       (u + h • ∑ j, if j < i then tab.A i j • tab.explicitStages f h t u j else 0) := by
   rw [explicitStages]
   simp only [dite_eq_ite]
 
-/-- For an explicit tableau the sum over all stages reduces to the sum over the earlier ones. -/
+/-- For an explicit tableau, every $K \in E^s$ and every $i$,
+$\sum_j a_{ij} K_j = \sum_{j<i} a_{ij} K_j$. -/
 theorem sum_smul_eq_sum_ite_of_isExplicit (hex : tab.IsExplicit) (K : Fin s → E) (i : Fin s) :
     ∑ j, tab.A i j • K j = ∑ j, if j < i then tab.A i j • K j else 0 := by
   refine Finset.sum_congr rfl fun j _ => ?_
@@ -192,12 +252,14 @@ theorem sum_smul_eq_sum_ite_of_isExplicit (hex : tab.IsExplicit) (K : Fin s → 
   · rfl
   · rw [hex i j (not_lt.1 hj), zero_smul]
 
-/-- The explicit stages are stages. -/
+/-- For an explicit tableau, the explicit stages at $(t, u)$ with step $h$ are stages in the sense
+of `ODE.ButcherTableau.IsStages`. -/
 theorem isStages_explicitStages (hex : tab.IsExplicit) (f : ℝ → E → E) (h t : ℝ) (u : E) :
     tab.IsStages f h t u (tab.explicitStages f h t u) := fun i => by
   rw [explicitStages_apply, sum_smul_eq_sum_ite_of_isExplicit tab hex]
 
-/-- For an explicit tableau the stages are unique: any stages are the explicit ones. -/
+/-- For an explicit tableau the stages are unique: any stages $K$ at $(t, u)$ with step $h$ are the
+explicit stages. -/
 theorem eq_explicitStages_of_isStages (hex : tab.IsExplicit) {K : Fin s → E}
     (hK : tab.IsStages f h t u K) : K = tab.explicitStages f h t u := by
   have key : ∀ m, ∀ i : Fin s, i.1 < m → K i = tab.explicitStages f h t u i := by
@@ -215,23 +277,28 @@ theorem eq_explicitStages_of_isStages (hex : tab.IsExplicit) {K : Fin s → E}
   funext i
   exact key (i.1 + 1) i (Nat.lt_succ_self _)
 
-/-- **The increment function of an explicit method** ([quarteroni2000numerical] (11.71)):
-`F(t, u, h; f) = ∑_i b_i K_i` with the explicit stages. -/
+/-- The **increment function of an explicit method** ((11.71) of [quarteroni2000numerical]):
+$\Phi(t, u, v; h) = \sum_i b_i K_i$, with the explicit stages $K_i$ at $(t, u)$ with step $h$.
+It does not depend on $v$.
+
+The source writes this increment as $F(t, u, h; f)$. -/
 noncomputable def explicitIncrement (f : ℝ → E → E) : OneStep.Increment E :=
   fun t u _ h => ∑ i, tab.b i • tab.explicitStages f h t u i
 
-/-- The explicit increment, unfolded. -/
+/-- The explicit increment is $\sum_i b_i K_i$, with the explicit stages $K_i$ at $(t, u)$ with step
+$h$. -/
 theorem explicitIncrement_apply (v : E) :
     tab.explicitIncrement f t u v h = ∑ i, tab.b i • tab.explicitStages f h t u i :=
   rfl
 
-/-- The explicit increment is explicit in the sense of `OneStep.IsExplicit`. -/
+/-- The explicit increment is explicit in the sense of `ODE.OneStep.IsExplicit`. -/
 theorem isExplicit_explicitIncrement (f : ℝ → E → E) :
     OneStep.IsExplicit (tab.explicitIncrement f) :=
   fun _ _ _ _ _ => rfl
 
-/-- For an explicit tableau the step relation is the step relation of the explicit
-increment: `v = u + h ∑_i b_i K_i` with the explicit stages. -/
+/-- For an explicit tableau, the step relation of the method is the step relation of the explicit
+increment: $v$ is admissible from $u$ if and only if $v = u + h \sum_i b_i K_i$ with the
+explicit stages $K_i$. -/
 theorem stepRel_eq_ofIncrement (hex : tab.IsExplicit) (f : ℝ → E → E) :
     tab.stepRel f = OneStep.ofIncrement (tab.explicitIncrement f) := by
   ext h t u v
@@ -248,23 +315,27 @@ section Lipschitz
 
 variable {L : NNReal}
 
-/-- The entry sum `α = ∑_{i, j} |a_ij|` of the coefficient matrix, the crude bound on `A` that
-enters the Lipschitz constants below. -/
+/-- The entry sum $\alpha = \sum_{i,j} |a_{ij}|$ of the coefficient matrix, a crude bound on $A$
+that enters the Lipschitz constants below. -/
 noncomputable def entrySum : ℝ := ∑ i, ∑ j, |tab.A i j|
 
 /-- The entry sum is nonnegative. -/
 theorem entrySum_nonneg : 0 ≤ tab.entrySum :=
   Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => abs_nonneg _
 
-/-- Every row sum of `|A|` is bounded by the entry sum. -/
+/-- Every row sum $\sum_j |a_{ij}|$ is at most the entry sum $\alpha$. -/
 theorem sum_abs_le_entrySum (i : Fin s) : ∑ j, |tab.A i j| ≤ tab.entrySum :=
   Finset.single_le_sum (f := fun i => ∑ j, |tab.A i j|)
     (fun _ _ => Finset.sum_nonneg fun _ _ => abs_nonneg _) (Finset.mem_univ i)
 
-/-- **The stages of an explicit method are Lipschitz in the state**: if `f t'` is `L`-Lipschitz
-for every `t' ∈ [t₀, t₀ + T + h₀]`, the nodes satisfy `0 ≤ c_i ≤ 1`, `t ∈ [t₀, t₀ + T]` and
-`0 < h ≤ h₀`, then `‖K_i(u) - K_i(v)‖ ≤ L (1 + h₀ L α)^{i+1} ‖u - v‖`, by strong induction on
-the stage index. -/
+/-- **The explicit stages are Lipschitz in the state.** Let $L \ge 0$, let $f(t', \cdot)$ be
+$L$-Lipschitz for every $t' \in [t_0, t_0 + T + h_0]$, let $0 \le c_i \le 1$ for every $i$, and
+let $t \in [t_0, t_0 + T]$ and $h \in (0, h_0]$. Write $K_i(u)$ for the explicit stage at
+$(t, u)$ with step $h$. Then for all $u, v \in E$ and every stage index $i$, counted from $0$,
+$$\|K_i(u) - K_i(v)\| \le L (1 + h_0 L \alpha)^{i+1} \|u - v\|,$$
+where $\alpha$ is the entry sum of $A$.
+
+The proof is a strong induction on the stage index. -/
 theorem norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T + h₀), LipschitzWith L (f t)) (hh : h ∈ Ioc 0 h₀)
     (ht : t ∈ Icc t₀ (t₀ + T)) (u v : E) (i : Fin s) :
@@ -349,11 +420,14 @@ theorem norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
             gcongr
   exact key (i.1 + 1) i (Nat.lt_succ_self _)
 
-/-- **The Lipschitz constant of an explicit Runge–Kutta increment** (the hypothesis (11.18) of
-[quarteroni2000numerical] Theorem 11.1 for an explicit tableau): if `f t'` is `L`-Lipschitz for
-`t' ∈ [t₀, t₀ + T + h₀]` and the nodes satisfy `0 ≤ c_i ≤ 1`, the explicit increment is
-`Λ`-Lipschitz in the sense of `OneStep.LipschitzIncrement` with
-`Λ = (∑_i |b_i|) L (1 + h₀ L α)^s`, `α = ∑_{i,j} |a_ij|`. -/
+/-- **The Lipschitz constant of an explicit Runge–Kutta increment.** Let $L \ge 0$, let
+$f(t', \cdot)$ be $L$-Lipschitz for every $t' \in [t_0, t_0 + T + h_0]$, and let
+$0 \le c_i \le 1$ for every $i$. Then the explicit increment satisfies
+`ODE.OneStep.LipschitzIncrement` on $[t_0, t_0 + T]$ and $(0, h_0]$ with the constant
+$$\Lambda = \Bigl(\sum_i |b_i|\Bigr) L (1 + h_0 L \alpha)^s, \qquad \alpha = \sum_{i,j}
+  |a_{ij}|.$$
+This is the hypothesis (11.18) of Theorem 11.1 of [quarteroni2000numerical] for a Runge–Kutta
+method. -/
 theorem lipschitzIncrement_explicit (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T + h₀), LipschitzWith L (f t)) :
     OneStep.LipschitzIncrement (tab.explicitIncrement f) t₀ T h₀
@@ -379,9 +453,16 @@ theorem lipschitzIncrement_explicit (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     _ = (∑ i, |tab.b i|) * L * (1 + h₀ * L * tab.entrySum) ^ s * ‖u - v‖ := by
         rw [← Finset.sum_mul]; ring
 
-/-- **Every explicit Runge–Kutta method is zero-stable** on a horizon `T ≥ 0` with a Lipschitz
-field ([quarteroni2000numerical] §11.8, "consistency implies stability"): `OneStep.IsZeroStable`
-from `lipschitzIncrement_explicit` and `OneStep.isZeroStable_of_lipschitzIncrement`. -/
+/-- **Every explicit Runge–Kutta method is zero-stable.** Let the tableau be explicit with
+$0 \le c_i \le 1$ for every $i$, let $T \ge 0$, $h_0 > 0$ and $L \ge 0$, and let $f(t, \cdot)$
+be $L$-Lipschitz for every $t \in [t_0, t_0 + T + h_0]$. Then the step relation of the method is
+zero-stable on the horizon $T$ for every datum $y_0$. This is the stability part of the remark
+in §11.8 of [quarteroni2000numerical] that consistency implies stability for Runge–Kutta
+methods.
+
+The theorem does not need consistency. The proof combines
+`ODE.ButcherTableau.lipschitzIncrement_explicit` with
+`ODE.OneStep.isZeroStable_of_lipschitzIncrement`. -/
 theorem isZeroStable_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T + h₀), LipschitzWith L (f t)) (hT : 0 ≤ T) (hh₀ : 0 < h₀)
     (y₀ : E) : OneStep.IsZeroStable (tab.stepRel f) t₀ T y₀ := by
@@ -391,10 +472,14 @@ theorem isZeroStable_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈ Ic
   have := tab.entrySum_nonneg
   positivity
 
-/-- **A consistent explicit Runge–Kutta method is convergent** ([quarteroni2000numerical] §11.8,
-"consistency implies stability and, in turn, convergence"): along a curve `y` for which the
-explicit increment is consistent, the orbits from `y t₀` converge, by
-`OneStep.isConvergentFor_of_isConsistentFor`. -/
+/-- **A consistent explicit Runge–Kutta method is convergent.** Let the tableau be explicit with
+$0 \le c_i \le 1$ for every $i$, let $T \ge 0$, $h_0 > 0$ and $L \ge 0$, let $f(t, \cdot)$ be
+$L$-Lipschitz for every $t \in [t_0, t_0 + T + h_0]$, and let the explicit increment be
+consistent along the curve $y$ on $[t_0, t_0 + T]$. Then the step relation of the method
+converges to $y$ from the datum $y(t_0)$. This is the remark in §11.8 of
+[quarteroni2000numerical] that consistency implies stability and, in turn, convergence.
+
+The proof is `ODE.OneStep.isConvergentFor_of_isConsistentFor`. -/
 theorem isConvergentFor_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T + h₀), LipschitzWith L (f t)) (hT : 0 ≤ T) (hh₀ : 0 < h₀)
     {y : ℝ → E} (hcons : OneStep.IsConsistentFor (tab.explicitIncrement f) t₀ T y) :
@@ -407,15 +492,21 @@ theorem isConvergentFor_explicit (hex : tab.IsExplicit) (hc : ∀ i, tab.c i ∈
 
 end Lipschitz
 
-/-! ### Consistency: `∑ bᵢ = 1` -/
+/-! ### Consistency: $\sum_i b_i = 1$ -/
 
 section Consistency
 
 variable {L : NNReal} {y : ℝ → E}
 
-/-- **The stages of an explicit method are bounded**: if `‖f s u‖ ≤ M` for `s ∈ [t₀, t₀ + T + 1]`,
-`f s` is `L`-Lipschitz there, the nodes satisfy `0 ≤ c_i ≤ 1`, `t ∈ [t₀, t₀ + T]` and `0 < h ≤ 1`,
-then `‖K_i‖ ≤ M (1 + L α)^{i+1}`, by the same induction as `norm_explicitStages_sub_le`. -/
+/-- **The explicit stages are bounded.** Let $L \ge 0$ and $M \in \mathbb{R}$, and let $f(s, \cdot)$
+be $L$-Lipschitz with $\|f(s, u)\| \le M$ for every $s \in [t_0, t_0 + T + 1]$. Let
+$0 \le c_i \le 1$ for every $i$, $t \in [t_0, t_0 + T]$ and $h \in (0, 1]$. Then the explicit
+stages at $(t, u)$ with step $h$ satisfy
+$$\|K_i\| \le M (1 + L\alpha)^{i+1}$$
+for every stage index $i$, counted from $0$, where $\alpha$ is the entry sum of $A$.
+
+The bound on $f$ is needed only at the state $u$. The proof is the induction of
+`ODE.ButcherTableau.norm_explicitStages_sub_le`. -/
 theorem norm_explicitStages_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ∀ s ∈ Icc t₀ (t₀ + T + 1), LipschitzWith L (f s)) {M : ℝ}
     (hM : ∀ s ∈ Icc t₀ (t₀ + T + 1), ‖f s u‖ ≤ M) (hh : h ∈ Ioc 0 1) (ht : t ∈ Icc t₀ (t₀ + T))
@@ -478,13 +569,18 @@ theorem norm_explicitStages_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
             gcongr
   exact key (i.1 + 1) i (Nat.lt_succ_self _)
 
-/-- The stages of an explicit method converge to the field along the solution, uniformly in
-the time: if `f` is continuous on `[t₀, t₀ + T + 1] × E` and `L`-Lipschitz in the state there,
-`y` is continuous on `[t₀, t₀ + T]` and the nodes satisfy `0 ≤ c_i ≤ 1`, then for every `ε > 0`
-there is `η > 0` such that `‖K_i(t, y t; h) - f(t, y t)‖ ≤ ε` for all `i`, all `0 < h ≤ η` and all
-`t ∈ [t₀, t₀ + T]`. The stage `K_i = f(t + c_i h, y t + h w_i)` differs from `f(t + c_i h, y t)` by
-at most `L h ‖w_i‖`, with `‖w_i‖` bounded through `norm_explicitStages_le`, and from `f(t, y t)`
-by the uniform continuity of `f` on the compact set `[t₀, t₀ + T + 1] × y([t₀, t₀ + T])`. -/
+/-- Let $I = [t_0, t_0 + T]$ and $J = [t_0, t_0 + T + 1]$. Let $f$ be continuous on $J \times E$,
+let $L \ge 0$ and let $f(s, \cdot)$ be $L$-Lipschitz for every $s \in J$. Let $y$ be continuous
+on $I$, and let $0 \le c_i \le 1$ for every $i$. Then the explicit stages along $y$ converge to
+the field uniformly in time: for every $\varepsilon > 0$ there is $\eta > 0$ such that the
+explicit stages $K_i$ at $(t, y(t))$ with step $h$ satisfy
+$$\|K_i - f(t, y(t))\| \le \varepsilon$$
+for every stage index $i$, every $h \in (0, \eta]$ and every $t \in I$.
+
+The stage $K_i = f(t + c_i h, y(t) + h w_i)$ differs from $f(t + c_i h, y(t))$ by at most
+$L h \|w_i\|$, and `ODE.ButcherTableau.norm_explicitStages_le` bounds $\|w_i\|$. The value
+$f(t + c_i h, y(t))$ is close to $f(t, y(t))$ by the uniform continuity of $f$ on the compact
+set $J \times y(I)$. -/
 theorem exists_forall_norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T + 1) ×ˢ univ))
     (hlip : ∀ s ∈ Icc t₀ (t₀ + T + 1), LipschitzWith L (f s))
@@ -565,12 +661,15 @@ theorem exists_forall_norm_explicitStages_sub_le (hc : ∀ i, tab.c i ∈ Icc (0
     _ ≤ ε / 2 + ε / 2 := add_le_add (h1.trans h3) h2
     _ = ε := add_halves ε
 
-/-- **`∑ bᵢ = 1` gives consistency** ([quarteroni2000numerical] §11.8): an explicit tableau with
-`∑_i b_i = 1` and nodes in `[0, 1]` is consistent along every `C¹` solution `y` of `y' = f(t, y)`
-on `[t₀, t₀ + T]` of a field continuous on `[t₀, t₀ + T + 1] × E` and Lipschitz in the state
-there: the increment `∑_i b_i K_i` converges to `f(t, y t)` uniformly in `t`
-(`exists_forall_norm_explicitStages_sub_le`), and `OneStep.isConsistentFor_of_tendsto_increment`
-concludes. -/
+/-- **The condition $\sum_i b_i = 1$ gives consistency** (§11.8 of [quarteroni2000numerical]). Let
+$I = [t_0, t_0 + T]$ and $J = [t_0, t_0 + T + 1]$. Let $0 \le c_i \le 1$ for every $i$ and
+$\sum_i b_i = 1$. Let $f$ be continuous on $J \times E$, let $L \ge 0$ and let $f(s, \cdot)$ be
+$L$-Lipschitz for every $s \in J$. Let $y$ have the derivative $f(s, y(s))$ within $I$ at every
+$s \in I$. Then the explicit increment is consistent along $y$ on $I$.
+
+The increment $\sum_i b_i K_i$ converges to $f(t, y(t))$ uniformly in $t$
+(`ODE.ButcherTableau.exists_forall_norm_explicitStages_sub_le`), and
+`ODE.OneStep.isConsistentFor_of_tendsto_increment` concludes. -/
 theorem isConsistentFor_of_sum_b_eq_one (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1)
     (hb : ∑ i, tab.b i = 1) (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T + 1) ×ˢ univ))
     (hlip : ∀ s ∈ Icc t₀ (t₀ + T + 1), LipschitzWith L (f s))
@@ -600,15 +699,17 @@ theorem isConsistentFor_of_sum_b_eq_one (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1
     _ ≤ (∑ i, |tab.b i| + 1) * (ε / (∑ i, |tab.b i| + 1)) := by gcongr; linarith
     _ = ε := by field_simp
 
-/-- On a constant field every explicit stage is that constant. -/
+/-- For a constant field $f(t, u) = c$, every explicit stage is $c$. -/
 theorem explicitStages_const (c : E) (h t : ℝ) (u : E) (i : Fin s) :
     tab.explicitStages (fun _ _ => c) h t u i = c := by
   rw [explicitStages_apply]
 
-/-- **Consistency forces `∑ bᵢ = 1`** ([quarteroni2000numerical] §11.8, the converse): if the
-explicit method is consistent along the solution `y t = t` of `y' = 1` on some `[t₀, t₀ + T]`,
-`T > 0`, then `∑_i b_i = 1`. There every stage is `1` and the truncation error is the constant
-`1 - ∑_i b_i`, which must tend to zero. -/
+/-- **Consistency forces $\sum_i b_i = 1$** (§11.8 of [quarteroni2000numerical], the converse). Let
+$T > 0$. If the explicit increment for the real problem $y' = 1$ is consistent along its
+solution $y(t) = t$ on $[t_0, t_0 + T]$, then $\sum_i b_i = 1$.
+
+On this problem every stage is $1$, and the truncation error is the constant $1 - \sum_i b_i$,
+which must tend to zero. -/
 theorem sum_b_eq_one_of_isConsistentFor {t₀ T : ℝ} (hT : 0 < T)
     (hcons : OneStep.IsConsistentFor (tab.explicitIncrement fun _ _ => (1 : ℝ)) t₀ T id) :
     ∑ i, tab.b i = 1 := by
@@ -635,32 +736,38 @@ end Consistency
 
 end ButcherTableau
 
-/-! ### Autonomization
+/-!
+### Autonomization
 
-A non-autonomous problem `y' = f(t, y)` on `E` is the autonomous problem `Y' = G(Y)` on `ℝ × E`
-for `G(t, v) = (1, f t v)` and `Y s = (s, y s)`. A Runge–Kutta method satisfying the row-sum
-condition does not see the difference: its stages for `G` are `L_i = (1, K_i)`, its increment is
-`(1, Φ)` when the tableau is consistent, and its local truncation error along `Y` is
-`(0, τ)` — so the order along `y` and the order along `Y` are the same
-(`hasOrderFor_autonomize_iff`). This is the reduction that makes the order conditions of a
-non-autonomous problem those of an autonomous one: the elementary differentials of `G` on `ℝ × E`
-replace the mixed partial derivatives of `f` in `(t, v)`. -/
+A non-autonomous problem $y' = f(t, y)$ on $E$ is the autonomous problem $Y' = G(Y)$ on
+$\mathbb{R} \times E$ for $G(t, v) = (1, f(t, v))$ and $Y(s) = (s, y(s))$. An explicit Runge–Kutta
+method that satisfies the row-sum condition does not see the difference. Its stages for $G$ are
+$L_i = (1, K_i)$, its increment is $(1, \Phi)$ when the tableau is consistent, and its local
+truncation error along $Y$ is $(0, \tau)$. So the order along $y$ and the order along $Y$ are the
+same (`ODE.ButcherTableau.hasOrderFor_autonomize_iff`). This reduction makes the order conditions of
+a non-autonomous problem those of an autonomous one: the elementary differentials of $G$ on
+$\mathbb{R} \times E$ replace the mixed partial derivatives of $f$ in $(t, v)$.
+-/
 
 section Autonomization
 
-/-- **The autonomized field** of `f : ℝ → E → E`: the field `G(t, v) = (1, f t v)` on `ℝ × E`,
-whose integral curves are `s ↦ (s, y s)` with `y' = f(·, y)`. It is constant in its own time
-argument, so it is a field on `ℝ × E` in the sense of `ODE` and an autonomous one. -/
+/-- The **autonomized field** of $f : \mathbb{R} \times E \to E$: the field $G(t, v) = (1, f(t, v))$
+on $\mathbb{R} \times E$. Its integral curves are $s \mapsto (s, y(s))$ with $y' = f(s, y)$.
+
+As a field `ℝ → ℝ × E → ℝ × E` it ignores its own time argument, so it is autonomous. -/
 def autonomize (f : ℝ → E → E) : ℝ → ℝ × E → ℝ × E := fun _ p => (1, f p.1 p.2)
 
 namespace ButcherTableau
 
 variable {s : ℕ} (tab : ButcherTableau s) {f : ℝ → E → E} {h t t₀ T : ℝ} {u : E}
 
-/-- **The stages of the autonomized field are the stages of `f` with the time appended**:
-`L_i = (1, K_i)`, for an explicit tableau satisfying the row-sum condition `c_i = ∑_j a_ij`. The
-time component of `(t₀, u) + h ∑_{j<i} a_ij L_j` is `t₀ + h ∑_{j<i} a_ij = t₀ + c_i h`, which is
-exactly the time at which `K_i` evaluates `f`. -/
+/-- Let the tableau be explicit and satisfy the row-sum condition $c_i = \sum_j a_{ij}$. Then the
+explicit stages of the autonomized field at the state $(t_0, u) \in \mathbb{R} \times E$ are
+$L_i = (1, K_i)$, where $K_i$ are the explicit stages of $f$ at $(t_0, u)$. Both use the step
+$h$, and the time at which $L_i$ is computed does not matter.
+
+The time component of $(t_0, u) + h \sum_{j<i} a_{ij} L_j$ is
+$t_0 + h \sum_{j<i} a_{ij} = t_0 + c_i h$, which is the time at which $K_i$ evaluates $f$. -/
 theorem explicitStages_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (i : Fin s) :
     tab.explicitStages (autonomize f) h t (t₀, u) i = (1, tab.explicitStages f h t₀ u i) := by
   have key : ∀ m, ∀ i : Fin s, i.1 < m →
@@ -697,8 +804,12 @@ theorem explicitStages_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (
       rw [smul_eq_mul, mul_comm h (tab.c i)]
   exact key (i.1 + 1) i (Nat.lt_succ_self _)
 
-/-- **The increment of the autonomized field** is `(1, Φ)`: the time component is `∑_i b_i = 1`
-by consistency of the tableau. -/
+/-- Let the tableau be explicit, satisfy the row-sum condition and be consistent. Then the explicit
+increment of the autonomized field at the state $(t_0, u)$ with step $h$ is
+$(1, \Phi(t_0, u, u; h))$, where $\Phi$ is the explicit increment for $f$. The time and the
+third argument of the autonomized increment do not matter.
+
+The time component is $\sum_i b_i = 1$. -/
 theorem explicitIncrement_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
     (hcons : tab.IsConsistent) (w : ℝ × E) :
     tab.explicitIncrement (autonomize f) t (t₀, u) w h = (1, tab.explicitIncrement f t₀ u u h) := by
@@ -711,8 +822,12 @@ theorem explicitIncrement_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum
   rw [Finset.sum_congr rfl fun i _ => hterm i, Prod.mk.injEq]
   exact ⟨by rw [Prod.fst_sum]; exact hcons, by rw [Prod.snd_sum]⟩
 
-/-- **The local truncation error of the autonomized method along `Y s = (s, y s)`** is
-`(0, τ)`: the time components of `h⁻¹ (Y(t+h) - Y(t))` and of the increment are both `1`. -/
+/-- Let the tableau be explicit, satisfy the row-sum condition and be consistent, and let
+$h \neq 0$. Then the local truncation error of the method for the autonomized field along
+$Y(s) = (s, y(s))$ at $t$ is $(0, \tau(t; h))$, where $\tau(t; h)$ is the local truncation error
+of the method for $f$ along $y$.
+
+The time components of $h^{-1}(Y(t + h) - Y(t))$ and of the increment are both $1$. -/
 theorem lte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (hcons : tab.IsConsistent)
     (y : ℝ → E) (hh : h ≠ 0) :
     OneStep.lte (tab.explicitIncrement (autonomize f)) h (fun s => (s, y s)) t
@@ -725,8 +840,10 @@ theorem lte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (hcons : tab
   simp
   rfl
 
-/-- **The global truncation errors agree** for a nonzero step, since `‖(0, τ)‖ = ‖τ‖` in the
-product norm. -/
+/-- Let the tableau be explicit, satisfy the row-sum condition and be consistent, and let
+$h \neq 0$. Then the global truncation error of the method for the autonomized field along
+$s \mapsto (s, y(s))$ equals the global truncation error of the method for $f$ along $y$,
+because $\|(0, \tau)\| = \|\tau\|$ in the product norm. -/
 theorem globalLte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
     (hcons : tab.IsConsistent) (y : ℝ → E) (hh : h ≠ 0) :
     OneStep.globalLte (tab.explicitIncrement (autonomize f)) t₀ T (fun s => (s, y s)) h
@@ -736,10 +853,11 @@ theorem globalLte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
   rw [tab.lte_autonomize hex hrow hcons y hh, Prod.norm_mk, norm_zero]
   exact max_eq_right (norm_nonneg _)
 
-/-- **Order is invariant under autonomization**: an explicit tableau satisfying the row-sum
-condition and consistent has order `p` along `y` for `f` exactly when it has order `p` along
-`s ↦ (s, y s)` for the autonomized field. This is what reduces the order conditions of a
-non-autonomous problem to those of an autonomous one. -/
+/-- **Order is invariant under autonomization.** Let the tableau be explicit, satisfy the row-sum
+condition and be consistent. Then the method for the autonomized field has order $p$ along
+$s \mapsto (s, y(s))$ if and only if the method for $f$ has order $p$ along $y$.
+
+This reduces the order conditions of a non-autonomous problem to those of an autonomous one. -/
 theorem hasOrderFor_autonomize_iff (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
     (hcons : tab.IsConsistent) (y : ℝ → E) (p : ℕ) :
     OneStep.HasOrderFor (tab.explicitIncrement (autonomize f)) t₀ T (fun s => (s, y s)) p ↔
@@ -758,12 +876,16 @@ end Autonomization
 
 namespace ButcherTableau
 
-/-- **Heun's method as a tableau** ([quarteroni2000numerical] Exercise 11.12): the two-stage
-explicit method with `A = !![0, 0; 1, 0]`, `b = (1/2, 1/2)`, `c = (0, 1)`. -/
+/-- **Heun's method as a tableau** (Exercise 11.12 of [quarteroni2000numerical]): the two-stage
+explicit tableau
+$$A = \begin{bmatrix} 0 & 0 \\ 1 & 0 \end{bmatrix}, \qquad b = (1/2, 1/2), \qquad c = (0, 1).$$
+-/
 noncomputable def heun : ButcherTableau 2 := ⟨!![0, 0; 1, 0], ![1 / 2, 1 / 2], ![0, 1]⟩
 
-/-- **The modified Euler method as a tableau** ([quarteroni2000numerical] (11.91), Exercise
-11.12): `A = !![0, 0; 1/2, 0]`, `b = (0, 1)`, `c = (0, 1/2)`. -/
+/-- **The modified Euler method as a tableau** ((11.91) and Exercise 11.12 of
+[quarteroni2000numerical]): the two-stage explicit tableau
+$$A = \begin{bmatrix} 0 & 0 \\ 1/2 & 0 \end{bmatrix}, \qquad b = (0, 1), \qquad c = (0, 1/2).$$
+-/
 noncomputable def modifiedEuler : ButcherTableau 2 := ⟨!![0, 0; 1 / 2, 0], ![0, 1], ![0, 1 / 2]⟩
 
 /-- Heun's tableau is explicit. -/
@@ -772,12 +894,12 @@ theorem heun_isExplicit : heun.IsExplicit := by
   rw [Fin.le_def] at hij
   fin_cases i <;> fin_cases j <;> simp at hij <;> simp [heun]
 
-/-- The first stage of Heun's tableau. -/
+/-- The first stage of Heun's tableau is $K_1 = f(t, u)$. -/
 theorem explicitStages_heun_zero (f : ℝ → E → E) (h t : ℝ) (u : E) :
     heun.explicitStages f h t u 0 = f t u := by
   rw [explicitStages_apply]; simp [heun]
 
-/-- The second stage of Heun's tableau. -/
+/-- The second stage of Heun's tableau is $K_2 = f(t + h, u + h f(t, u))$. -/
 theorem explicitStages_heun_one (f : ℝ → E → E) (h t : ℝ) (u : E) :
     heun.explicitStages f h t u 1 = f (t + h) (u + h • f t u) := by
   rw [explicitStages_apply, Fin.sum_univ_two, explicitStages_heun_zero]; simp [heun]
@@ -786,11 +908,11 @@ theorem explicitStages_heun_one (f : ℝ → E → E) (h t : ℝ) (u : E) :
 theorem heun_isRowSum : heun.IsRowSum := by
   intro i; fin_cases i <;> simp [heun, Fin.sum_univ_two]
 
-/-- Heun's tableau is consistent. -/
+/-- Heun's tableau is consistent: $\sum_i b_i = 1$. -/
 theorem heun_isConsistent : heun.IsConsistent := by
   simp [IsConsistent, heun, Fin.sum_univ_two]; norm_num
 
-/-- The explicit increment of Heun's tableau is Heun's method `OneStep.heun`. -/
+/-- The explicit increment of Heun's tableau is Heun's method `ODE.OneStep.heun`. -/
 theorem explicitIncrement_heun (f : ℝ → E → E) : heun.explicitIncrement f = OneStep.heun f := by
   ext t u v h
   rw [explicitIncrement_apply, Fin.sum_univ_two, explicitStages_heun_zero,
@@ -803,12 +925,12 @@ theorem modifiedEuler_isExplicit : modifiedEuler.IsExplicit := by
   rw [Fin.le_def] at hij
   fin_cases i <;> fin_cases j <;> simp at hij <;> simp [modifiedEuler]
 
-/-- The first stage of the modified Euler tableau. -/
+/-- The first stage of the modified Euler tableau is $K_1 = f(t, u)$. -/
 theorem explicitStages_modifiedEuler_zero (f : ℝ → E → E) (h t : ℝ) (u : E) :
     modifiedEuler.explicitStages f h t u 0 = f t u := by
   rw [explicitStages_apply]; simp [modifiedEuler]
 
-/-- The second stage of the modified Euler tableau. -/
+/-- The second stage of the modified Euler tableau is $K_2 = f(t + h/2, u + (h/2) f(t, u))$. -/
 theorem explicitStages_modifiedEuler_one (f : ℝ → E → E) (h t : ℝ) (u : E) :
     modifiedEuler.explicitStages f h t u 1 = f (t + h / 2) (u + (h / 2) • f t u) := by
   rw [explicitStages_apply, Fin.sum_univ_two, explicitStages_modifiedEuler_zero]
@@ -819,8 +941,10 @@ theorem explicitStages_modifiedEuler_one (f : ℝ → E → E) (h t : ℝ) (u : 
 theorem modifiedEuler_isRowSum : modifiedEuler.IsRowSum := by
   intro i; fin_cases i <;> simp [modifiedEuler, Fin.sum_univ_two]
 
-/-- **The modified Euler method** ([quarteroni2000numerical] (11.91)):
-`u_{n+1} = u_n + h f(t_n + h/2, u_n + (h/2) f(t_n, u_n))`. -/
+/-- **The modified Euler method** ((11.91) of [quarteroni2000numerical]): the explicit increment of
+the modified Euler tableau is $\Phi(t, u, v; h) = f(t + h/2, u + (h/2) f(t, u))$, that is,
+$$u_{n+1} = u_n + h f\bigl(t_n + h/2, u_n + (h/2) f(t_n, u_n)\bigr).$$
+-/
 theorem explicitIncrement_modifiedEuler (f : ℝ → E → E) (t : ℝ) (u v : E) (h : ℝ) :
     modifiedEuler.explicitIncrement f t u v h = f (t + h / 2) (u + (h / 2) • f t u) := by
   rw [explicitIncrement_apply, Fin.sum_univ_two, explicitStages_modifiedEuler_one]
@@ -828,9 +952,11 @@ theorem explicitIncrement_modifiedEuler (f : ℝ → E → E) (t : ℝ) (u v : E
 
 end ButcherTableau
 
-/-- **The classical fourth-order Runge–Kutta method** ([quarteroni2000numerical] (11.73),
-Exercise 11.13): `A = !![0,0,0,0; 1/2,0,0,0; 0,1/2,0,0; 0,0,1,0]`, `b = (1/6, 1/3, 1/3, 1/6)`,
-`c = (0, 1/2, 1/2, 1)`. -/
+/-- **The classical fourth-order Runge–Kutta method** ((11.73) and Exercise 11.13 of
+[quarteroni2000numerical]): the four-stage explicit tableau
+$$A = \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1/2 & 0 & 0 & 0 \\ 0 & 1/2 & 0 & 0 \\ 0 & 0 & 1 & 0
+  \end{bmatrix}, \qquad b = (1/6, 1/3, 1/3, 1/6), \qquad c = (0, 1/2, 1/2, 1).$$
+-/
 noncomputable def rk4 : ButcherTableau 4 where
   A := !![0, 0, 0, 0; 1 / 2, 0, 0, 0; 0, 1 / 2, 0, 0; 0, 0, 1, 0]
   b := ![1 / 6, 1 / 3, 1 / 3, 1 / 6]
@@ -846,17 +972,19 @@ theorem rk4_isExplicit : rk4.IsExplicit := by
 theorem rk4_isRowSum : rk4.IsRowSum := by
   intro i; fin_cases i <;> simp [rk4, Fin.sum_univ_four]
 
-/-- The classical tableau is consistent. -/
+/-- The classical tableau is consistent: $\sum_i b_i = 1$. -/
 theorem rk4_isConsistent : rk4.IsConsistent := by
   simp [ButcherTableau.IsConsistent, rk4, Fin.sum_univ_four]; norm_num
 
-/-- The nodes of the classical tableau lie in `[0, 1]`. -/
+/-- The nodes of the classical tableau lie in $[0, 1]$. -/
 theorem rk4_c_mem_Icc (i : Fin 4) : rk4.c i ∈ Icc (0 : ℝ) 1 := by
   fin_cases i <;> simp [rk4] <;> norm_num
 
-/-- **The classical method, written out** ([quarteroni2000numerical] (11.73)):
-`u_{n+1} = u_n + (h/6)(K₁ + 2K₂ + 2K₃ + K₄)` with `K₁ = f(t, u)`, `K₂ = f(t + h/2, u + (h/2)K₁)`,
-`K₃ = f(t + h/2, u + (h/2)K₂)`, `K₄ = f(t + h, u + hK₃)`. -/
+/-- **The classical method, written out** ((11.73) of [quarteroni2000numerical]): the explicit
+increment of the classical tableau is
+$$\Phi(t, u, v; h) = \tfrac16 (K_1 + 2K_2 + 2K_3 + K_4)$$
+with $K_1 = f(t, u)$, $K_2 = f(t + h/2, u + (h/2) K_1)$, $K_3 = f(t + h/2, u + (h/2) K_2)$ and
+$K_4 = f(t + h, u + h K_3)$. -/
 theorem explicitIncrement_rk4 (f : ℝ → E → E) (t : ℝ) (u v : E) (h : ℝ) :
     rk4.explicitIncrement f t u v h =
       (1 / 6 : ℝ) • (f t u + (2 : ℝ) • f (t + h / 2) (u + (h / 2) • f t u) +
@@ -881,10 +1009,15 @@ theorem explicitIncrement_rk4 (f : ℝ → E → E) (t : ℝ) (u v : E) (h : ℝ
   simp [rk4]
   module
 
-/-- **The eight order-four conditions** of the classical tableau, `∑ b_i = 1`, `∑ b_i c_i = 1/2`,
-`∑ b_i c_i² = 1/3`, `∑ b_i a_ij c_j = 1/6`, `∑ b_i c_i³ = 1/4`, `∑ b_i c_i a_ij c_j = 1/8`,
-`∑ b_i a_ij c_j² = 1/12`, `∑ b_i a_ij a_jk c_k = 1/24` — the algebraic content of its fourth
-order ([hairer1993solving] Table II.2.2). -/
+/-- **The eight order-four conditions** of the classical tableau:
+$$\sum_i b_i = 1, \quad \sum_i b_i c_i = \tfrac12, \quad \sum_i b_i c_i^2 = \tfrac13, \quad
+  \sum_{i,j} b_i a_{ij} c_j = \tfrac16,$$
+$$\sum_i b_i c_i^3 = \tfrac14, \quad \sum_{i,j} b_i c_i a_{ij} c_j = \tfrac18, \quad \sum_{i,j}
+  b_i a_{ij} c_j^2 = \tfrac1{12}, \quad \sum_{i,j,k} b_i a_{ij} a_{jk} c_k = \tfrac1{24}.$$
+They are the algebraic content of the fourth order of the method (Table II.2.2 of
+[hairer1993solving]).
+
+The fourth order itself is `ODE.rk4_hasOrderFor`. -/
 theorem rk4_orderConditions :
     ∑ i, rk4.b i = 1 ∧ ∑ i, rk4.b i * rk4.c i = 1 / 2 ∧ ∑ i, rk4.b i * rk4.c i ^ 2 = 1 / 3 ∧
       ∑ i, ∑ j, rk4.b i * rk4.A i j * rk4.c j = 1 / 6 ∧ ∑ i, rk4.b i * rk4.c i ^ 3 = 1 / 4 ∧
@@ -896,20 +1029,21 @@ theorem rk4_orderConditions :
 
 /-! ### Embedded pairs -/
 
-/-- **An embedded pair** ([quarteroni2000numerical] (11.76)): a tableau with a second weight
-vector `b̂`; the two methods `(c, A, b)` and `(c, A, b̂)` share their stages. -/
+/-- An **embedded pair** ((11.76) of [quarteroni2000numerical]): a tableau $(c, A, b)$ with a second
+weight vector $\hat b$. The two methods $(c, A, b)$ and $(c, A, \hat b)$ share their stages. -/
 structure EmbeddedPair (s : ℕ) extends ButcherTableau s where
-  /-- The second weight vector `b̂`. -/
+  /-- The second weight vector $\hat b$. -/
   bhat : Fin s → ℝ
 
 namespace EmbeddedPair
 
 variable {s : ℕ} (P : EmbeddedPair s)
 
-/-- The tableau `(c, A, b̂)` of the second method of the pair. -/
+/-- The tableau $(c, A, \hat b)$ of the second method of the pair. -/
 def toTableauHat : ButcherTableau s := ⟨P.A, P.bhat, P.c⟩
 
-/-- The explicit stages only depend on `A` and `c`. -/
+/-- The explicit stages depend only on $A$ and $c$: two tableaux with the same $A$ and the same $c$
+have the same explicit stages. -/
 theorem _root_.ODE.ButcherTableau.explicitStages_congr {tab tab' : ButcherTableau s}
     (hA : tab.A = tab'.A) (hc : tab.c = tab'.c) (f : ℝ → E → E) (h t : ℝ) (u : E) :
     tab.explicitStages f h t u = tab'.explicitStages f h t u := by
@@ -929,19 +1063,23 @@ theorem _root_.ODE.ButcherTableau.explicitStages_congr {tab tab' : ButcherTablea
   funext i
   exact key (i.1 + 1) i (Nat.lt_succ_self _)
 
-/-- The two tableaux of a pair have the same explicit stages. -/
+/-- The two tableaux of an embedded pair have the same explicit stages. -/
 theorem explicitStages_toTableauHat (f : ℝ → E → E) (h t : ℝ) (u : E) :
     P.toTableauHat.explicitStages f h t u = P.toButcherTableau.explicitStages f h t u :=
   ButcherTableau.explicitStages_congr (tab := P.toTableauHat) (tab' := P.toButcherTableau) rfl rfl
     f h t u
 
-/-- **The error indicator** ([quarteroni2000numerical] §11.8.2): `h ∑_i (b_i - b̂_i) K_i`, the
-difference of the two solutions of the pair, computed from the shared stages. -/
+/-- The **error indicator** of an embedded pair at $(t, u)$ with step $h$ (§11.8.2 of
+[quarteroni2000numerical]): $h \sum_i (b_i - \hat b_i) K_i$, with the shared explicit stages
+$K_i$. -/
 noncomputable def errorIndicator (f : ℝ → E → E) (h t : ℝ) (u : E) : E :=
   h • ∑ i, (P.b i - P.bhat i) • P.toButcherTableau.explicitStages f h t u i
 
-/-- The error indicator is the difference `u_{n+1} - û_{n+1}` of the two solutions of the pair
-sharing the stages, so it needs no extra evaluation of the field. -/
+/-- The error indicator is the difference $u_{n+1} - \hat u_{n+1}$ of the two explicit steps of the
+pair from $u$:
+$$h \sum_i (b_i - \hat b_i) K_i = \Bigl(u + h \sum_i b_i K_i\Bigr) - \Bigl(u + h \sum_i \hat b_i
+  K_i\Bigr).$$
+So the indicator needs no extra evaluation of the field. -/
 theorem errorIndicator_eq_sub (f : ℝ → E → E) (h t : ℝ) (u : E) :
     P.errorIndicator f h t u =
       (u + h • P.toButcherTableau.explicitIncrement f t u u h) -
@@ -952,10 +1090,18 @@ theorem errorIndicator_eq_sub (f : ℝ → E → E) (h t : ℝ) (u : E) :
 
 end EmbeddedPair
 
-/-- **The Runge–Kutta–Fehlberg 4(5) pair** ([quarteroni2000numerical] §11.8.2), with the
-standard coefficients: `b` is the fourth-order method, `b̂` the fifth-order one, and
-`E = b - b̂ = (1/360, 0, -128/4275, -2197/75240, 1/50, 2/55)`. The book's table is damaged in the
-source (missing denominators); the standard values are used. -/
+/-- The **Runge–Kutta–Fehlberg 4(5) pair** (§11.8.2 of [quarteroni2000numerical]): the six-stage
+explicit embedded pair with the standard coefficients, among them
+$$c = \bigl(0, \tfrac14, \tfrac38, \tfrac{12}{13}, 1, \tfrac12\bigr),$$
+$$b = \bigl(\tfrac{25}{216}, 0, \tfrac{1408}{2565}, \tfrac{2197}{4104}, -\tfrac15, 0\bigr),
+  \qquad \hat b = \bigl(\tfrac{16}{135}, 0, \tfrac{6656}{12825}, \tfrac{28561}{56430},
+  -\tfrac{9}{50}, \tfrac{2}{55}\bigr).$$
+The weights $b$ give the fourth-order method and $\hat b$ the fifth-order one.
+
+The table of the pair in the source is incomplete (some denominators are missing), so the
+definition uses the standard coefficients. The source prints the error coefficients
+$(1/360, 0, -128/4275, -2197/75240, 1/50, 2/55)$ as $E = b - \hat b$. These values are
+$\hat b - b$ (`ODE.rkf45_bhat_sub_b`). -/
 noncomputable def rkf45 : EmbeddedPair 6 where
   A := !![0, 0, 0, 0, 0, 0;
     1 / 4, 0, 0, 0, 0, 0;
@@ -977,13 +1123,16 @@ theorem rkf45_isExplicit : rkf45.toButcherTableau.IsExplicit := by
 theorem rkf45_isRowSum : rkf45.toButcherTableau.IsRowSum := by
   intro i; fin_cases i <;> simp [rkf45, Fin.sum_univ_succ] <;> norm_num
 
-/-- Both weight vectors of the Fehlberg pair sum to `1`. -/
+/-- Both weight vectors of the Fehlberg pair sum to $1$: $\sum_i b_i = \sum_i \hat b_i = 1$. -/
 theorem rkf45_sum_b : ∑ i, rkf45.b i = 1 ∧ ∑ i, rkf45.bhat i = 1 := by
   simp [rkf45, Fin.sum_univ_succ]; norm_num
 
-/-- The error coefficients of the Fehlberg pair as the book prints them,
-`(1/360, 0, -128/4275, -2197/75240, 1/50, 2/55)`: they are `b̂ - b` (the book writes `E = b - b̂`,
-which has the opposite sign for its `b` of order `4` and `b̂` of order `5`). -/
+/-- The difference of the weights of the Fehlberg pair is
+$$\hat b - b = \bigl(\tfrac1{360}, 0, -\tfrac{128}{4275}, -\tfrac{2197}{75240}, \tfrac1{50},
+  \tfrac2{55}\bigr).$$
+
+The source prints these values as the error coefficients $E = b - \hat b$, with $b$ of order $4$
+and $\hat b$ of order $5$. With this sign convention, the printed values are $\hat b - b$. -/
 theorem rkf45_bhat_sub_b :
     (fun i => rkf45.bhat i - rkf45.b i) =
       ![1 / 360, 0, -128 / 4275, -2197 / 75240, 1 / 50, 2 / 55] := by
@@ -993,12 +1142,14 @@ theorem rkf45_bhat_sub_b :
 
 namespace ButcherTableau
 
-/-- **The implicit midpoint rule** ([quarteroni2000numerical] §11.8.3), the one-stage
-Gauss–Legendre method: `A = !![1/2]`, `b = (1)`, `c = (1/2)`. -/
+/-- The **implicit midpoint rule** (§11.8.3 of [quarteroni2000numerical]), the one-stage
+Gauss–Legendre method: $A = (1/2)$, $b = (1)$, $c = (1/2)$. -/
 noncomputable def implicitMidpoint : ButcherTableau 1 := ⟨!![1 / 2], ![1], ![1 / 2]⟩
 
-/-- **The step of the implicit midpoint rule**:
-`u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)` ([quarteroni2000numerical] §11.8.3). -/
+/-- **The step of the implicit midpoint rule** (§11.8.3 of [quarteroni2000numerical]): $v$ is
+admissible from $u$ at time $t$ with step $h$ if and only if
+$$v = u + h f\bigl(t + h/2, (u + v)/2\bigr).$$
+-/
 theorem stepRel_implicitMidpoint_iff (f : ℝ → E → E) (h t : ℝ) (u v : E) :
     implicitMidpoint.stepRel f h t u v ↔ v = u + h • f (t + h / 2) ((2 : ℝ)⁻¹ • (u + v)) := by
   simp only [stepRel_apply, IsStages, implicitMidpoint, Fin.forall_fin_one, Fin.sum_univ_one,
@@ -1015,21 +1166,26 @@ theorem stepRel_implicitMidpoint_iff (f : ℝ → E → E) (h t : ℝ) (u v : E)
       module
     rw [e, show t + 1 / 2 * h = t + h / 2 by ring]
 
-/-- The order conditions `∑ b = 1`, `∑ b c = 1/2` of the implicit midpoint rule. -/
+/-- The implicit midpoint rule satisfies the order conditions $\sum_i b_i = 1$ and
+$\sum_i b_i c_i = 1/2$. -/
 theorem implicitMidpoint_orderConditions :
     ∑ i, implicitMidpoint.b i = 1 ∧ ∑ i, implicitMidpoint.b i * implicitMidpoint.c i = 1 / 2 := by
   simp [implicitMidpoint]
 
-/-- **The two-stage Gauss–Legendre tableau** of order `4` ([quarteroni2000numerical] §11.8.3):
-`c = (1/2 - √3/6, 1/2 + √3/6)`, `A = !![1/4, 1/4 - √3/6; 1/4 + √3/6, 1/4]`, `b = (1/2, 1/2)`; the
-nodes are the roots of the Legendre polynomial `L₂` in `x = 2c - 1`. -/
+/-- The **two-stage Gauss–Legendre tableau**, of order $4$ (§11.8.3 of [quarteroni2000numerical]):
+$$A = \begin{bmatrix} 1/4 & 1/4 - \sqrt3/6 \\ 1/4 + \sqrt3/6 & 1/4 \end{bmatrix}, \qquad b =
+  (1/2, 1/2), \qquad c = (1/2 - \sqrt3/6, 1/2 + \sqrt3/6).$$
+The nodes are the roots of the Legendre polynomial $L_2$ in the variable $x = 2c - 1$.
+
+The order $4$ is quoted from the source and is not proved here. -/
 noncomputable def gaussLegendre2 : ButcherTableau 2 :=
   ⟨!![1 / 4, 1 / 4 - Real.sqrt 3 / 6; 1 / 4 + Real.sqrt 3 / 6, 1 / 4], ![1 / 2, 1 / 2],
     ![1 / 2 - Real.sqrt 3 / 6, 1 / 2 + Real.sqrt 3 / 6]⟩
 
-/-- **The collocation identities of the two-stage Gauss–Legendre tableau**
-([quarteroni2000numerical] §11.8.3): `∑_j c_j^{k-1} a_ij = c_i^k / k` and
-`∑_j c_j^{k-1} b_j = 1/k` for `k = 1, 2`. -/
+/-- **The collocation identities of the two-stage Gauss–Legendre tableau** (§11.8.3 of
+[quarteroni2000numerical]): for $k = 1, 2$ and every $i$,
+$$\sum_j c_j^{k-1} a_{ij} = \frac{c_i^k}{k}, \qquad \sum_j c_j^{k-1} b_j = \frac1k.$$
+-/
 theorem gaussLegendre2_collocation :
     (∀ i, ∑ j, gaussLegendre2.A i j = gaussLegendre2.c i) ∧
       (∀ i, ∑ j, gaussLegendre2.c j * gaussLegendre2.A i j = gaussLegendre2.c i ^ 2 / 2) ∧
@@ -1045,35 +1201,46 @@ theorem gaussLegendre2_collocation :
 theorem gaussLegendre2_isRowSum : gaussLegendre2.IsRowSum := fun i =>
   (gaussLegendre2_collocation.1 i).symm
 
-/-- **The one-stage Radau IIA tableau**, `A = !![1]`, `b = (1)`, `c = (1)`: backward Euler
-([quarteroni2000numerical] §11.8.3). -/
+/-- The **one-stage Radau IIA tableau** $A = (1)$, $b = (1)$, $c = (1)$, which is backward Euler
+(§11.8.3 of [quarteroni2000numerical]). -/
 noncomputable def radauIIA1 : ButcherTableau 1 := ⟨!![1], ![1], ![1]⟩
 
-/-- **The two-stage Radau IIA tableau** of order `3` ([quarteroni2000numerical] §11.8.3):
-`c = (1/3, 1)`, `A = !![5/12, -1/12; 3/4, 1/4]`, `b = (3/4, 1/4)`. -/
+/-- The **two-stage Radau IIA tableau**, of order $3$ (§11.8.3 of [quarteroni2000numerical]):
+$$A = \begin{bmatrix} 5/12 & -1/12 \\ 3/4 & 1/4 \end{bmatrix}, \qquad b = (3/4, 1/4), \qquad c =
+  (1/3, 1).$$
+
+The order $3$ is quoted from the source and is not proved here. -/
 noncomputable def radauIIA2 : ButcherTableau 2 :=
   ⟨!![5 / 12, -1 / 12; 3 / 4, 1 / 4], ![3 / 4, 1 / 4], ![1 / 3, 1]⟩
 
-/-- **The two-stage Lobatto IIIA tableau**, `c = (0, 1)`, `A = !![0, 0; 1/2, 1/2]`,
-`b = (1/2, 1/2)`: Crank–Nicolson ([quarteroni2000numerical] §11.8.3). -/
+/-- The **two-stage Lobatto IIIA tableau**, which is Crank–Nicolson (§11.8.3 of
+[quarteroni2000numerical]):
+$$A = \begin{bmatrix} 0 & 0 \\ 1/2 & 1/2 \end{bmatrix}, \qquad b = (1/2, 1/2), \qquad c = (0,
+  1).$$
+-/
 noncomputable def lobattoIIIA2 : ButcherTableau 2 :=
   ⟨!![0, 0; 1 / 2, 1 / 2], ![1 / 2, 1 / 2], ![0, 1]⟩
 
-/-- **The three-stage DIRK tableau** with parameter `μ`, a root of `3μ³ - 3μ - 1 = 0`
-([quarteroni2000numerical] §11.8.3): `c = ((1+μ)/2, 1/2, (1-μ)/2)`,
-`A = !![(1+μ)/2, 0, 0; -μ/2, (1+μ)/2, 0; 1+μ, -1-2μ, (1+μ)/2]`,
-`b = (1/(6μ²), 1 - 1/(3μ²), 1/(6μ²))`. -/
+/-- The **three-stage DIRK tableau** with parameter $\mu$ (§11.8.3 of [quarteroni2000numerical]):
+$$A = \begin{bmatrix} (1 + \mu)/2 & 0 & 0 \\ -\mu/2 & (1 + \mu)/2 & 0 \\ 1 + \mu & -1 - 2\mu &
+  (1 + \mu)/2 \end{bmatrix},$$
+$$b = \Bigl(\frac1{6\mu^2}, 1 - \frac1{3\mu^2}, \frac1{6\mu^2}\Bigr), \qquad c = \Bigl(\frac{1 +
+  \mu}2, \frac12, \frac{1 - \mu}2\Bigr).$$
+
+The source takes for $\mu$ a root of $3\mu^3 - 3\mu - 1 = 0$. The definition accepts every real
+$\mu$. -/
 noncomputable def dirk3 (μ : ℝ) : ButcherTableau 3 :=
   ⟨!![(1 + μ) / 2, 0, 0; -μ / 2, (1 + μ) / 2, 0; 1 + μ, -1 - 2 * μ, (1 + μ) / 2],
     ![1 / (6 * μ ^ 2), 1 - 1 / (3 * μ ^ 2), 1 / (6 * μ ^ 2)], ![(1 + μ) / 2, 1 / 2, (1 - μ) / 2]⟩
 
-/-- The DIRK tableau is semi-implicit. -/
+/-- The DIRK tableau is semi-implicit for every $\mu$. -/
 theorem dirk3_isSemiImplicit (μ : ℝ) : (dirk3 μ).IsSemiImplicit := by
   intro i j hij
   rw [Fin.lt_def] at hij
   fin_cases i <;> fin_cases j <;> simp at hij <;> simp [dirk3]
 
-/-- The one-stage Radau IIA method is backward Euler. -/
+/-- The one-stage Radau IIA method is backward Euler: its step relation is the step relation of
+`ODE.OneStep.backwardEuler`. -/
 theorem stepRel_radauIIA1 (f : ℝ → E → E) :
     radauIIA1.stepRel f = OneStep.ofIncrement (OneStep.backwardEuler f) := by
   ext h t u v
@@ -1086,7 +1253,8 @@ theorem stepRel_radauIIA1 (f : ℝ → E → E) :
   · intro hv
     exact ⟨fun _ => f (t + h) v, by rw [← hv], hv⟩
 
-/-- The two-stage Lobatto IIIA method is Crank–Nicolson. -/
+/-- The two-stage Lobatto IIIA method is Crank–Nicolson: its step relation is the step relation of
+`ODE.OneStep.crankNicolson`. -/
 theorem stepRel_lobattoIIIA2 (f : ℝ → E → E) :
     lobattoIIIA2.stepRel f = OneStep.ofIncrement (OneStep.crankNicolson f) := by
   ext h t u v
@@ -1116,30 +1284,37 @@ namespace ButcherTableau
 
 variable {s : ℕ} (tab : ButcherTableau s)
 
-/-- The coefficient matrix `A` read in `ℂ`. -/
+/-- The coefficient matrix $A$ with its entries read in $\mathbb{C}$. -/
 def complexA : Matrix (Fin s) (Fin s) ℂ := tab.A.map ((↑) : ℝ → ℂ)
 
-/-- The weights `b` read in `ℂ`. -/
+/-- The weights $b$ read in $\mathbb{C}$. -/
 def complexB : Fin s → ℂ := fun i => (tab.b i : ℂ)
 
-/-- The entries of the complexified coefficient matrix. -/
+/-- The entries of the complex coefficient matrix are the entries $a_{ij}$, read in $\mathbb{C}$. -/
 @[simp] theorem complexA_apply (i j : Fin s) : tab.complexA i j = (tab.A i j : ℂ) := rfl
 
-/-- The entries of the complexified weights. -/
+/-- The entries of the complex weights are the weights $b_i$, read in $\mathbb{C}$. -/
 @[simp] theorem complexB_apply (i : Fin s) : tab.complexB i = (tab.b i : ℂ) := rfl
 
-/-- **The stability function** ([quarteroni2000numerical] §11.8.4):
-`R(z) = 1 + z bᵀ (I - z A)⁻¹ 𝟙`, with Mathlib's `Matrix.inv` (which is `0` on a singular
-matrix, so the formula is meaningful when `I - z A` is invertible). -/
+/-- The **stability function** of the tableau (§11.8.4 of [quarteroni2000numerical]):
+$$R(z) = 1 + z\, b^T (I - zA)^{-1} \mathbb{1}, \qquad z \in \mathbb{C},$$
+where $\mathbb{1}$ is the vector of ones.
+
+The inverse is Mathlib's `Matrix.inv`, which is $0$ on a singular matrix. So $R(z) = 1$ when
+$I - zA$ is singular, and the formula has its usual meaning only when $I - zA$ is invertible. -/
 noncomputable def stabilityFunction (z : ℂ) : ℂ :=
   1 + z * (tab.complexB ⬝ᵥ ((1 - z • tab.complexA)⁻¹ *ᵥ fun _ => 1))
 
-/-- The sum `∑_i b_i K_i` of complex stages is the dot product with the complexified weights. -/
+/-- For complex stages $K$, the sum $\sum_i b_i K_i$ is the dot product $b^T K$ with the complex
+weights. -/
 theorem sum_smul_eq_dotProduct (K : Fin s → ℂ) : ∑ i, tab.b i • K i = tab.complexB ⬝ᵥ K := by
   simp [dotProduct, Complex.real_smul]
 
-/-- **The stage system on the test equation** ([quarteroni2000numerical] (11.77)):
-`K` are stages of the method on `y' = λ y` at `u` iff `(I - hλ A) K = λ u 𝟙`. -/
+/-- **The stage system on the test equation** ((11.77) of [quarteroni2000numerical]):
+$K \in \mathbb{C}^s$ are stages of the method for $y' = \lambda y$ at $(t, u)$ with step $h$ if
+and only if
+$$(I - h\lambda A) K = \lambda u\, \mathbb{1}.$$
+-/
 theorem isStages_testField_iff {lam : ℂ} {h t : ℝ} {u : ℂ} (K : Fin s → ℂ) :
     tab.IsStages (testField lam) h t u K ↔
       (1 - (h * lam) • tab.complexA) *ᵥ K = (lam * u) • fun _ => (1 : ℂ) := by
@@ -1149,8 +1324,9 @@ theorem isStages_testField_iff {lam : ℂ} {h t : ℝ} {u : ℂ} (K : Fin s → 
   refine forall_congr' fun i => ?_
   constructor <;> intro H <;> linear_combination H
 
-/-- **One step on the test equation multiplies by `R(hλ)`** ([quarteroni2000numerical]
-§11.8.4): if `I - hλ A` is invertible, `v` is admissible from `u` iff `v = R(hλ) u`. -/
+/-- **One step on the test equation multiplies by $R(h\lambda)$** (§11.8.4 of
+[quarteroni2000numerical]). If $I - h\lambda A$ is invertible, then $v$ is admissible from $u$
+for $y' = \lambda y$ with step $h$ if and only if $v = R(h\lambda) u$. -/
 theorem stepRel_testField_iff {lam : ℂ} {h : ℝ}
     (hinv : IsUnit (1 - (h * lam) • tab.complexA)) (t : ℝ) (u v : ℂ) :
     tab.stepRel (testField lam) h t u v ↔ v = tab.stabilityFunction (h * lam) * u := by
@@ -1175,8 +1351,8 @@ theorem stepRel_testField_iff {lam : ℂ} {h : ℝ}
   · intro hv
     exact ⟨_, (tab.isStages_testField_iff _).2 hsol, hv.trans (hval _ hsol).symm⟩
 
-/-- The orbits of the method on the test equation are geometric: `u_n = R(hλ)^n u_0` when
-`I - hλ A` is invertible. -/
+/-- If $I - h\lambda A$ is invertible, then every orbit of the method on $y' = \lambda y$ with step
+$h$ is geometric: $u_n = R(h\lambda)^n u_0$. -/
 theorem testField_orbit {lam : ℂ} {h : ℝ} (hinv : IsUnit (1 - (h * lam) • tab.complexA))
     {u : ℕ → ℂ} (hu : OneStep.IsOrbit (tab.stepRel (testField lam)) h 0 u) (n : ℕ) :
     u n = tab.stabilityFunction (h * lam) ^ n * u 0 := by
@@ -1187,8 +1363,8 @@ theorem testField_orbit {lam : ℂ} {h : ℝ} (hinv : IsUnit (1 - (h * lam) • 
     rw [(tab.stepRel_testField_iff hinv _ _ _).1 (hu n), ih, pow_succ]
     ring
 
-/-- On the test equation with `I - hλ A` invertible, every datum has an orbit, the geometric
-sequence `R(hλ)^n u₀`. -/
+/-- If $I - h\lambda A$ is invertible, then for every $u_0 \in \mathbb{C}$ the sequence
+$R(h\lambda)^n u_0$ is an orbit of the method on $y' = \lambda y$ with step $h$. -/
 theorem isOrbit_testField {lam : ℂ} {h : ℝ} (hinv : IsUnit (1 - (h * lam) • tab.complexA))
     (u₀ : ℂ) :
     OneStep.IsOrbit (tab.stepRel (testField lam)) h 0 fun n =>
@@ -1198,8 +1374,11 @@ theorem isOrbit_testField {lam : ℂ} {h : ℝ} (hinv : IsUnit (1 - (h * lam) �
   rw [tab.stepRel_testField_iff hinv, pow_succ]
   ring
 
-/-- On the test equation the step relation depends on `(h, λ)` only through `hλ`: the stages
-scale by `h`. -/
+/-- Let $h \neq 0$. On the test equation the step relation depends on $(h, \lambda)$ only through
+$h\lambda$: $v$ is admissible from $u$ for $y' = \lambda y$ with step $h$ at time $t$ if and
+only if $v$ is admissible from $u$ for $y' = h\lambda y$ with step $1$ at any time $t'$.
+
+The stages scale by $h$. -/
 theorem stepRel_testField_smul_iff {lam : ℂ} {h : ℝ} (hh : h ≠ 0) (t t' : ℝ) (u v : ℂ) :
     tab.stepRel (testField lam) h t u v ↔ tab.stepRel (testField (h * lam)) 1 t' u v := by
   simp only [stepRel_apply, isStages_testField_iff, Complex.ofReal_one, one_mul, one_smul]
@@ -1220,20 +1399,24 @@ theorem stepRel_testField_smul_iff {lam : ℂ} {h : ℝ} (hh : h ≠ 0) (t t' : 
     · rw [sum_smul_eq_dotProduct, sum_smul_eq_dotProduct, dotProduct_smul, Complex.real_smul,
         smul_eq_mul, ← mul_assoc, mul_inv_cancel₀ hh', one_mul]
 
-/-- The orbits of the method on the test equation depend on `(h, λ)` only through `hλ`. -/
+/-- Let $h > 0$. A sequence is an orbit of the method on $y' = \lambda y$ with step $h$ if and only
+if it is an orbit of the method on $y' = h\lambda y$ with step $1$. -/
 theorem testField_scaleInvariant (h : ℝ) (hh : 0 < h) (lam : ℂ) (u : ℕ → ℂ) :
     OneStep.IsOrbit (tab.stepRel (testField lam)) h 0 u ↔
       OneStep.IsOrbit (tab.stepRel (testField (h * lam))) 1 0 u := by
   simp only [OneStep.isOrbit_iff]
   exact forall_congr' fun n => tab.stepRel_testField_smul_iff hh.ne' _ _ _ _
 
-/-- **The region of absolute stability of a Runge–Kutta method** ([quarteroni2000numerical]
-§11.8.4): when `I - z A` is invertible, `z ∈ 𝒜 ↔ ‖R(z)‖ < 1`. (When `I - z A` is singular the
-method may still be absolutely stable in the sense of `OneStep.IsAbsStable` — the stage system
-can be solvable for every datum with a forced step, e.g. `A = !![0, 1; 1, 0]`, `b = (1/2, 1/2)`
-at `z = -1` — so the invertibility is a genuine hypothesis; see
-`not_mem_absStabilityRegion_of_forall_ne` for the singular case in which the stage system has no
-solution.) -/
+/-- **The region of absolute stability of a Runge–Kutta method** (§11.8.4 of
+[quarteroni2000numerical]). If $I - zA$ is invertible, then $z \in \mathcal{A}$ if and only if
+$|R(z)| < 1$.
+
+The source states this characterization without a hypothesis, but the invertibility is a genuine
+hypothesis. When $I - zA$ is singular, the method can still be absolutely stable in the sense of
+`ODE.OneStep.IsAbsStable`, because the stage system can have a solution for every datum, with
+the same step for every solution. An example is $A = \begin{bmatrix} 0 & 1 \\ 1 & 0
+\end{bmatrix}$, $b = (1/2, 1/2)$ and $z = -1$. For the singular case where the stage system has
+no solution, see `ODE.ButcherTableau.not_mem_absStabilityRegion_of_forall_ne`. -/
 theorem mem_absStabilityRegion_iff_of_isUnit {z : ℂ} (hz : IsUnit (1 - z • tab.complexA)) :
     z ∈ OneStep.absStabilityRegion tab.stepRel ↔ ‖tab.stabilityFunction z‖ < 1 := by
   rw [OneStep.absStabilityRegion_eq_of_scaleInvariant tab.testField_scaleInvariant, mem_ofPred_eq]
@@ -1243,8 +1426,9 @@ theorem mem_absStabilityRegion_iff_of_isUnit {z : ℂ} (hz : IsUnit (1 - z • t
   · simpa using tab.isOrbit_testField hz' u₀
   · simpa using tab.testField_orbit hz' hu n
 
-/-- When `𝟙 ∉ range (I - z A)` (so `I - z A` is singular), some datum has no step on the test
-equation, so `z ∉ 𝒜`. -/
+/-- Let $z \neq 0$, and let $(I - zA) K \neq \mathbb{1}$ for every $K \in \mathbb{C}^s$, so that
+$I - zA$ is singular. Then $z \notin \mathcal{A}$: on the test equation with $\lambda = z$ and
+step $1$, the datum $1/z$ has no step. -/
 theorem not_mem_absStabilityRegion_of_forall_ne {z : ℂ}
     (hz : ∀ K : Fin s → ℂ, (1 - z • tab.complexA) *ᵥ K ≠ fun _ => 1) (hz0 : z ≠ 0) :
     z ∉ OneStep.absStabilityRegion tab.stepRel := by
@@ -1257,15 +1441,15 @@ theorem not_mem_absStabilityRegion_of_forall_ne {z : ℂ}
     at hK
   exact hz K hK
 
-/-! ### Explicit tableaux: `R` is a polynomial -/
+/-! ### Explicit tableaux: $R$ is a polynomial -/
 
 section Explicit
 
 variable (hex : tab.IsExplicit)
 include hex
 
-/-- For an explicit tableau the powers of `A` are strictly lower triangular of increasing
-depth: `(A^k)_ij = 0` whenever `i < j + k`. -/
+/-- For an explicit tableau, the powers of $A$ are strictly lower triangular of increasing depth:
+$(A^k)_{ij} = 0$ whenever $i < j + k$. -/
 theorem complexA_pow_apply_eq_zero (k : ℕ) (i j : Fin s) (hij : i.1 < j.1 + k) :
     (tab.complexA ^ k) i j = 0 := by
   induction k generalizing i j with
@@ -1281,25 +1465,25 @@ theorem complexA_pow_apply_eq_zero (k : ℕ) (i j : Fin s) (hij : i.1 < j.1 + k)
     · rw [ih i l hl, zero_mul]
     · rw [complexA_apply, hex l j (by omega), Complex.ofReal_zero, mul_zero]
 
-/-- For an explicit tableau `A` is nilpotent: `A^s = 0`. -/
+/-- For an explicit tableau, $A$ is nilpotent: $A^s = 0$. -/
 theorem complexA_pow_eq_zero : tab.complexA ^ s = 0 := by
   ext i j
   rw [tab.complexA_pow_apply_eq_zero hex s i j (by omega), Matrix.zero_apply]
 
-/-- For an explicit tableau `(I - z A)⁻¹ = ∑_{k<s} (z A)^k`, the Neumann series of the nilpotent
-matrix `z A`. -/
+/-- For an explicit tableau and every $z \in \mathbb{C}$, $(I - zA)^{-1} = \sum_{k<s} (zA)^k$, the
+Neumann series of the nilpotent matrix $zA$. -/
 theorem inv_one_sub_smul_complexA (z : ℂ) :
     (1 - z • tab.complexA)⁻¹ = ∑ k ∈ range s, (z • tab.complexA) ^ k := by
   refine Matrix.inv_eq_right_inv ?_
   rw [mul_neg_geom_sum, smul_pow, tab.complexA_pow_eq_zero hex, smul_zero, sub_zero]
 
-/-- For an explicit tableau `I - z A` is invertible for every `z`. -/
+/-- For an explicit tableau, $I - zA$ is invertible for every $z \in \mathbb{C}$. -/
 theorem isUnit_one_sub_smul_complexA (z : ℂ) : IsUnit (1 - z • tab.complexA) :=
   (Matrix.isUnit_iff_isUnit_det _).2 <| Matrix.isUnit_det_of_right_inverse (by
     rw [mul_neg_geom_sum, smul_pow, tab.complexA_pow_eq_zero hex, smul_zero, sub_zero])
 
-/-- For an explicit tableau `det (I - z A) = 1`: the matrix is lower triangular with unit
-diagonal. -/
+/-- For an explicit tableau, $\det(I - zA) = 1$ for every $z \in \mathbb{C}$: the matrix is lower
+triangular with unit diagonal. -/
 theorem det_one_sub_smul_complexA (z : ℂ) : (1 - z • tab.complexA).det = 1 := by
   rw [Matrix.det_of_isLowerTriangular]
   · refine Finset.prod_eq_one fun i _ => ?_
@@ -1308,8 +1492,9 @@ theorem det_one_sub_smul_complexA (z : ℂ) : (1 - z • tab.complexA).det = 1 :
     have hij' : i < j := hij
     simp [Matrix.one_apply_ne hij'.ne, hex i j hij'.le]
 
-/-- **The nilpotent expansion of the stability function** of an explicit tableau:
-`R(z) = 1 + ∑_{k<s} z^{k+1} bᵀ A^k 𝟙`, a polynomial of degree at most `s`. -/
+/-- **The stability function of an explicit tableau is a polynomial**: for every $z \in \mathbb{C}$,
+$$R(z) = 1 + \sum_{k<s} z^{k+1}\, b^T A^k \mathbb{1},$$
+a polynomial of degree at most $s$. -/
 theorem stabilityFunction_eq_sum_of_isExplicit (z : ℂ) :
     tab.stabilityFunction z =
       1 + ∑ k ∈ range s, z ^ (k + 1) * (tab.complexB ⬝ᵥ (tab.complexA ^ k *ᵥ fun _ => 1)) := by
@@ -1320,9 +1505,13 @@ theorem stabilityFunction_eq_sum_of_isExplicit (z : ℂ) :
   rw [smul_pow, Matrix.smul_mulVec, dotProduct_smul, smul_eq_mul, pow_succ]
   ring
 
-/-- **The determinant formula for the stability function** of an explicit tableau
-([quarteroni2000numerical] §11.8.4): `R(z) = det (I - z A + z 𝟙 bᵀ) / det (I - z A)` with
-`det (I - z A) = 1`, from the matrix determinant lemma. -/
+/-- **The determinant formula for the stability function** of an explicit tableau (§11.8.4 of
+[quarteroni2000numerical]): for every $z \in \mathbb{C}$,
+$$R(z) = \det(I - zA + z \mathbb{1} b^T).$$
+The source writes $R(z) = \det(I - zA + z \mathbb{1} b^T) / \det(I - zA)$, and
+$\det(I - zA) = 1$ for an explicit tableau.
+
+The proof is the matrix determinant lemma. -/
 theorem stabilityFunction_eq_det_of_isExplicit (z : ℂ) :
     tab.stabilityFunction z =
       (1 - z • tab.complexA +
@@ -1339,21 +1528,23 @@ theorem stabilityFunction_eq_det_of_isExplicit (z : ℂ) :
   rw [e, Matrix.det_mul, Matrix.det_one_add_replicateCol_mul_replicateRow, hM,
     tab.det_one_sub_smul_complexA hex, one_mul, dotProduct_smul, smul_eq_mul, stabilityFunction]
 
-/-- For an explicit tableau the region of absolute stability is `{z | ‖R(z)‖ < 1}` without any
-invertibility clause. -/
+/-- For an explicit tableau, $z \in \mathcal{A}$ if and only if $|R(z)| < 1$, with no invertibility
+hypothesis. -/
 theorem mem_absStabilityRegion_iff_of_isExplicit (z : ℂ) :
     z ∈ OneStep.absStabilityRegion tab.stepRel ↔ ‖tab.stabilityFunction z‖ < 1 :=
   tab.mem_absStabilityRegion_iff_of_isUnit (tab.isUnit_one_sub_smul_complexA hex z)
 
 omit hex in
-/-- **The stability polynomial** of a tableau: `1 + ∑_{k<s} (bᵀ A^k 𝟙) X^{k+1}`, whose evaluation
-is the stability function when the tableau is explicit. -/
+/-- The **stability polynomial** of a tableau:
+$$P(X) = 1 + \sum_{k<s} (b^T A^k \mathbb{1})\, X^{k+1} \in \mathbb{C}[X].$$
+For an explicit tableau, its evaluation is the stability function
+(`ODE.ButcherTableau.stabilityFunction_eq_eval`). -/
 noncomputable def stabilityPolynomial : Polynomial ℂ :=
   1 + ∑ k ∈ range s, Polynomial.C (tab.complexB ⬝ᵥ (tab.complexA ^ k *ᵥ fun _ => 1)) *
     Polynomial.X ^ (k + 1)
 
-/-- The stability function of an explicit tableau is the evaluation of its stability
-polynomial. -/
+/-- For an explicit tableau, the stability function is the evaluation of the stability polynomial:
+$R(z) = P(z)$. -/
 theorem stabilityFunction_eq_eval (z : ℂ) :
     tab.stabilityFunction z = (tab.stabilityPolynomial).eval z := by
   rw [tab.stabilityFunction_eq_sum_of_isExplicit hex, stabilityPolynomial, Polynomial.eval_add,
@@ -1363,7 +1554,7 @@ theorem stabilityFunction_eq_eval (z : ℂ) :
   rw [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X, mul_comm]
 
 omit hex in
-/-- The coefficient of `X` in the stability polynomial is `∑_i b_i`. -/
+/-- Let $s \ge 1$. The coefficient of $X$ in the stability polynomial is $\sum_i b_i$. -/
 theorem stabilityPolynomial_coeff_one (hs : 0 < s) :
     (tab.stabilityPolynomial).coeff 1 = ((∑ i, tab.b i : ℝ) : ℂ) := by
   rw [stabilityPolynomial, Polynomial.coeff_add, Polynomial.finsetSum_coeff,
@@ -1376,7 +1567,7 @@ theorem stabilityPolynomial_coeff_one (hs : 0 < s) :
     exact absurd (Finset.mem_range.2 hs) h
 
 omit hex in
-/-- The stability polynomial of a consistent tableau has positive degree. -/
+/-- If $\sum_i b_i = 1$, then the stability polynomial has positive degree. -/
 theorem degree_stabilityPolynomial_pos (hb : ∑ i, tab.b i = 1) :
     0 < (tab.stabilityPolynomial).degree := by
   have hs : 0 < s := by
@@ -1392,9 +1583,11 @@ theorem degree_stabilityPolynomial_pos (hb : ∑ i, tab.b i = 1) :
     exact one_ne_zero
   exact lt_of_lt_of_le (by norm_num) (Polynomial.le_degree_of_ne_zero h1)
 
-/-- **The region of absolute stability of an explicit consistent method is bounded**
-([quarteroni2000numerical] §11.8.4): `R` is a nonconstant polynomial, so `‖R(z)‖ ≥ 1` outside a
-bounded set. -/
+/-- **The region of absolute stability of a consistent explicit method is bounded** (§11.8.4 of
+[quarteroni2000numerical]). Let the tableau be explicit with $\sum_i b_i = 1$. Then
+$\mathcal{A}$ is bounded.
+
+$R$ is a nonconstant polynomial, so $|R(z)| \ge 1$ outside a bounded set. -/
 theorem isBounded_absStabilityRegion (hb : ∑ i, tab.b i = 1) :
     Bornology.IsBounded (OneStep.absStabilityRegion tab.stepRel) := by
   have hev : ∀ᶠ z in Bornology.cobounded ℂ, 1 ≤ ‖tab.stabilityFunction z‖ := by
@@ -1407,9 +1600,11 @@ theorem isBounded_absStabilityRegion (hb : ∑ i, tab.b i = 1) :
   rw [mem_compl_iff, tab.mem_absStabilityRegion_iff_of_isExplicit hex]
   exact not_lt.2 hz
 
-/-- **No explicit consistent Runge–Kutta method is A-stable** ([quarteroni2000numerical]
-Remark 11.2 for Runge–Kutta methods, §11.8.4): its region of absolute stability is bounded,
-while the left half-plane is not. -/
+/-- **No consistent explicit Runge–Kutta method is A-stable** (Remark 11.2 of
+[quarteroni2000numerical] for Runge–Kutta methods, §11.8.4). Let the tableau be explicit with
+$\sum_i b_i = 1$. Then the method is not A-stable.
+
+Its region of absolute stability is bounded, and the left half-plane is not. -/
 theorem not_isAStable_of_isExplicit (hb : ∑ i, tab.b i = 1) : ¬ OneStep.IsAStable tab.stepRel := by
   intro hA
   obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (tab.isBounded_absStabilityRegion hex hb)
@@ -1426,8 +1621,8 @@ end ButcherTableau
 
 /-! ### The stability functions of the named tableaux -/
 
-/-- **The stability function of the classical method** ([quarteroni2000numerical] §11.8.4):
-`R(z) = 1 + z + z²/2 + z³/6 + z⁴/24`, the truncated exponential of degree `4`. -/
+/-- **The stability function of the classical method** (§11.8.4 of [quarteroni2000numerical]):
+$R(z) = 1 + z + z^2/2 + z^3/6 + z^4/24$, the truncated exponential of degree $4$. -/
 theorem stabilityFunction_rk4 (z : ℂ) :
     rk4.stabilityFunction z = 1 + z + z ^ 2 / 2 + z ^ 3 / 6 + z ^ 4 / 24 := by
   rw [rk4.stabilityFunction_eq_sum_of_isExplicit rk4_isExplicit]
@@ -1435,8 +1630,8 @@ theorem stabilityFunction_rk4 (z : ℂ) :
     Matrix.mul_apply, rk4]
   ring
 
-/-- The region of absolute stability of the classical method:
-`‖1 + z + z²/2 + z³/6 + z⁴/24‖ < 1` ([quarteroni2000numerical] Figure 11.10, `s = 4`). -/
+/-- The region of absolute stability of the classical method: $z \in \mathcal{A}$ if and only if
+$|1 + z + z^2/2 + z^3/6 + z^4/24| < 1$ (Figure 11.10 of [quarteroni2000numerical], $s = 4$). -/
 theorem mem_absStabilityRegion_rk4_iff (z : ℂ) :
     z ∈ OneStep.absStabilityRegion rk4.stepRel ↔
       ‖1 + z + z ^ 2 / 2 + z ^ 3 / 6 + z ^ 4 / 24‖ < 1 := by
@@ -1444,16 +1639,16 @@ theorem mem_absStabilityRegion_rk4_iff (z : ℂ) :
 
 namespace ButcherTableau
 
-/-- The stability function of Heun's tableau is `1 + z + z²/2`, in agreement with
-`OneStep.mem_absStabilityRegion_heun_iff`. -/
+/-- The stability function of Heun's tableau is $R(z) = 1 + z + z^2/2$. This agrees with
+`ODE.OneStep.mem_absStabilityRegion_heun_iff`. -/
 theorem stabilityFunction_heun (z : ℂ) : heun.stabilityFunction z = 1 + z + z ^ 2 / 2 := by
   rw [heun.stabilityFunction_eq_sum_of_isExplicit heun_isExplicit]
   simp [Finset.sum_range_succ, dotProduct, Matrix.mulVec, Fin.sum_univ_two, pow_succ,
     Matrix.mul_apply, heun]
   ring
 
-/-- The stability function of the implicit midpoint rule is `(1 + z/2) / (1 - z/2)` for `z ≠ 2`,
-the stability function of Crank–Nicolson. -/
+/-- Let $z \neq 2$. The stability function of the implicit midpoint rule is
+$R(z) = (1 + z/2)/(1 - z/2)$, the stability function of Crank–Nicolson. -/
 theorem stabilityFunction_implicitMidpoint {z : ℂ} (hz : z ≠ 2) :
     implicitMidpoint.stabilityFunction z = (1 + z / 2) / (1 - z / 2) := by
   have hinv : (1 - z • implicitMidpoint.complexA)⁻¹ = !![(1 - z / 2)⁻¹] := by
@@ -1471,16 +1666,19 @@ theorem stabilityFunction_implicitMidpoint {z : ℂ} (hz : z ≠ 2) :
 
 variable {s : ℕ} (tab : ButcherTableau s)
 
-/-- On a field that ignores the state, every explicit stage is the field at the node. -/
+/-- If the field $f(t, u)$ does not depend on $u$, then every explicit stage is the field at its
+node: $K_i = f(t + c_i h, u)$. -/
 theorem explicitStages_of_forall_eq {f : ℝ → E → E} (hf : ∀ t u v, f t u = f t v) (h t : ℝ)
     (u : E) (i : Fin s) : tab.explicitStages f h t u i = f (t + tab.c i * h) u := by
   rw [explicitStages_apply]
   exact hf _ _ _
 
-/-- **The order-two condition `∑ bᵢ cᵢ = 1/2` is necessary** ([quarteroni2000numerical]
-§11.8.1): if an explicit method has order `2` along the solution `y t = t²` of `y' = 2t` on
-`[0, 1]`, then `∑_i b_i c_i = 1/2`. There the stages are `2 (t + c_i h)` and the truncation error
-at `t = 0` is `h (1 - 2 ∑ b_i c_i)`. -/
+/-- **The order-two condition $\sum_i b_i c_i = 1/2$ is necessary** (§11.8.1 of
+[quarteroni2000numerical]). If the explicit increment for the real problem $y' = 2t$ has order
+$2$ along its solution $y(t) = t^2$ on $[0, 1]$, then $\sum_i b_i c_i = 1/2$.
+
+On this problem the stages are $2(t + c_i h)$, and the truncation error at $t = 0$ is
+$h(1 - 2 \sum_i b_i c_i)$. -/
 theorem sum_b_mul_c_eq_half_of_hasOrderFor
     (hord : OneStep.HasOrderFor (tab.explicitIncrement fun t _ => 2 * t) 0 1 (fun t => t ^ 2) 2) :
     ∑ i, tab.b i * tab.c i = 1 / 2 := by
@@ -1514,10 +1712,13 @@ theorem sum_b_mul_c_eq_half_of_hasOrderFor
   have := eq_zero_of_isBigO_pow_succ hbig
   linarith
 
-/-- **The two-stage order-two conditions are necessary** ([quarteroni2000numerical] §11.8.1):
-if the explicit two-stage tableau with `c 0 = 0` has order `2` along the solutions of `y' = 1`
-(on some `[t₀, t₀ + T]`, `T > 0`) and of `y' = 2t` (on `[0, 1]`), then `b 0 + b 1 = 1` and
-`c 1 * b 1 = 1/2`. -/
+/-- **The two-stage order-two conditions are necessary** (§11.8.1 of [quarteroni2000numerical]). Let
+a two-stage tableau have $c_1 = 0$, and let $T > 0$. Suppose that the explicit increment has
+order $2$ along the solution $y(t) = t$ of $y' = 1$ on $[t_0, t_0 + T]$, and along the solution
+$y(t) = t^2$ of $y' = 2t$ on $[0, 1]$. Then $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$.
+
+In Lean the stages are indexed from $0$: the hypothesis is `tab.c 0 = 0`, and the conclusions
+are `tab.b 0 + tab.b 1 = 1` and `tab.c 1 * tab.b 1 = 1 / 2`. -/
 theorem orderTwoConditions_of_hasOrderFor (tab : ButcherTableau 2) (hc0 : tab.c 0 = 0) {t₀ T : ℝ}
     (hT : 0 < T)
     (hord₁ : OneStep.HasOrderFor (tab.explicitIncrement fun _ _ => (1 : ℝ)) t₀ T id 2)
@@ -1529,15 +1730,16 @@ theorem orderTwoConditions_of_hasOrderFor (tab : ButcherTableau 2) (hc0 : tab.c 
   rw [hc0] at h2
   exact ⟨h1, by linarith⟩
 
-/-! ### The stability function of a method of order `s` -/
+/-! ### The stability function of a method of order $s$ -/
 
 section TruncExp
 
 variable (hex : tab.IsExplicit)
 include hex
 
-/-- The real explicit stages on `y' = y`, read in `ℂ`, are stages of the test equation with
-`λ = 1`. -/
+/-- Let the tableau be explicit, and let $h, t, u$ be real. The explicit stages for the real problem
+$y' = y$ at $(t, u)$ with step $h$, read in $\mathbb{C}$, are stages of the test equation with
+$\lambda = 1$ at $(t, u)$. -/
 theorem isStages_testField_one_ofReal (h t u : ℝ) :
     tab.IsStages (testField 1) h t (u : ℂ)
       fun i => ((tab.explicitStages (fun _ (y : ℝ) => y) h t u i : ℝ) : ℂ) := by
@@ -1548,8 +1750,9 @@ theorem isStages_testField_one_ofReal (h t u : ℝ) :
   push_cast
   simp [Complex.real_smul]
 
-/-- On the real problem `y' = y`, one step of an explicit method from `1` is `R(h)`:
-`R(h) = 1 + h ∑_i b_i K_i(0, 1; h)`. -/
+/-- Let the tableau be explicit, and let $h$ be real. Then $R(h) = 1 + h\, \Phi(0, 1, 1; h)$, where
+$\Phi$ is the explicit increment for the real problem $y' = y$. That is, one step of size $h$
+from $1$ is $R(h)$. -/
 theorem stabilityFunction_ofReal (h : ℝ) :
     tab.stabilityFunction h =
       ((1 + h * tab.explicitIncrement (fun _ y => y) 0 1 1 h : ℝ) : ℂ) := by
@@ -1561,12 +1764,16 @@ theorem stabilityFunction_ofReal (h : ℝ) :
   push_cast
   simp [Complex.real_smul]
 
-/-- **The stability function of an explicit method of order `s`** ([quarteroni2000numerical]
-§11.8.4): if the explicit `s`-stage method has order `s` along the solution `e^t` of the real
-problem `y' = y` on `[0, 1]`, then `R(z) = ∑_{k ≤ s} z^k / k!`. On `y' = y` the step from `1`
-is `R(h)`, so `e^h - R(h) = h τ(h) = O(h^{s+1})`; the polynomial `R - ∑_{k ≤ s} X^k / k!` of
-degree at most `s` is then `O(h^{s+1})` at `0⁺`, hence zero. (The book states this for
-`s ≤ 4`, where such methods exist; the implication needs no bound on `s`.) -/
+/-- **The stability function of an explicit method of order $s$** (§11.8.4 of
+[quarteroni2000numerical]). Let the $s$-stage tableau be explicit, and let its explicit
+increment for the real problem $y' = y$ have order $s$ along the solution $e^t$ on $[0, 1]$.
+Then for every $z \in \mathbb{C}$,
+$$R(z) = \sum_{k=0}^{s} \frac{z^k}{k!}.$$
+
+The source states this for $s \le 4$, where such methods exist; the proof needs no bound on $s$.
+On $y' = y$ the step from $1$ is $R(h)$, so $e^h - R(h) = h\tau(h) = O(h^{s+1})$. The polynomial
+$R - \sum_{k \le s} X^k / k!$ has degree at most $s$ and is $O(h^{s+1})$ as $h \to 0^+$, so it
+is zero. -/
 theorem stabilityFunction_eq_truncExp_of_hasOrder
     (hord : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp s) (z : ℂ) :
     tab.stabilityFunction z = ∑ k ∈ range (s + 1), z ^ k / k.factorial := by
@@ -1650,15 +1857,21 @@ end ButcherTableau
 
 namespace ButcherTableau
 
-/-- **The two-stage order-two conditions are sufficient** ([quarteroni2000numerical] §11.8.1):
-an explicit two-stage tableau satisfying the row-sum condition, `b₁ + b₂ = 1` and `c₂ b₂ = 1/2`
-(here `b 0 + b 1 = 1`, `c 1 * b 1 = 1/2`) has order `2` along every solution `y` of `y' = f(t, y)`
-on `[t₀, t₀ + T]` whose field `F(t, v) = f t v` has Fréchet derivatives `F'`, `F''` on `ℝ × E`
-with `‖F''‖ ≤ M₂`, and whose derivatives `y'' = (f(·, y ·))'` and `y'''` exist on the interval
-with `‖y'''‖ ≤ M₃`. The second stage `K₂ = F((t, y t) + c₂ h (1, K₁))` is `y' + c₂ h y'' + O(h²)`
-by the Taylor bound along the segment, `y'' = F'(t, y t)(1, y')` by the chain rule, and the
-conditions cancel the `h` and `h²` terms against the Taylor expansion of `y(t + h)`; the
-constant is `M₃ / 6 + |b₂| M₂ (1 + M₁)² c₂² / 2` with `M₁` a bound of `‖y'‖`. -/
+/-- **The two-stage order-two conditions are sufficient** (§11.8.1 of [quarteroni2000numerical]).
+Let a two-stage tableau be explicit, satisfy the row-sum condition, and have $b_1 + b_2 = 1$ and
+$c_2 b_2 = 1/2$. Let the field $F(t, v) = f(t, v)$ on $\mathbb{R} \times E$ have Fréchet
+derivatives $F'$ and $F''$ at every point, with $\|F''(p)\| \le M_2$ for every $p$. Let
+$I = [t_0, t_0 + T]$, let $y$ have the derivative $f(s, y(s))$ within $I$ at every $s \in I$,
+let $y''(s)$ be the derivative of $s \mapsto f(s, y(s))$ and $y'''(s)$ the derivative of $y''$
+within $I$, and let $\|y'''(s)\| \le M_3$ for $s \in I$. Then the explicit increment has order
+$2$ along $y$ on $I$.
+
+In Lean the stages are indexed from $0$, so the conditions read `tab.b 0 + tab.b 1 = 1` and
+`tab.c 1 * tab.b 1 = 1 / 2`. The second stage $K_2 = F((t, y(t)) + c_2 h (1, K_1))$ is
+$y'(t) + c_2 h y''(t) + O(h^2)$ by the Taylor bound along the segment, and
+$y'' = F'(t, y(t))(1, y')$ by the chain rule. The two conditions cancel the terms in $h$ and
+$h^2$ against the Taylor expansion of $y(t + h)$. The constant is
+$M_3/6 + |b_2| M_2 (1 + M_1)^2 c_2^2 / 2$, with $M_1$ a bound of $\|y'\|$. -/
 theorem hasOrderFor_two_of (tab : ButcherTableau 2) (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
     (hb : tab.b 0 + tab.b 1 = 1) (hcb : tab.c 1 * tab.b 1 = 1 / 2) {t₀ T : ℝ} {f : ℝ → E → E}
     {F' : ℝ × E → ℝ × E →L[ℝ] E} {F'' : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] E} {M₂ M₃ : ℝ}
@@ -1747,33 +1960,39 @@ theorem hasOrderFor_two_of (tab : ButcherTableau 2) (hex : tab.IsExplicit) (hrow
 
 end ButcherTableau
 
-/-! ### The classical method has order four
+/-!
+### The classical method has order four
 
-The order-four proof of `rk4_hasOrderFor` runs entirely in the **autonomous** picture supplied by
-`hasOrderFor_autonomize_iff`: on a normed space `X` with a field `G : X → X` whose Fréchet
-derivatives `G₁, G₂, G₃, G₄` are globally bounded, the stages of the classical tableau at `p` are
-`L₁ = G p`, `L₂ = G(p + (h/2) L₁)`, `L₃ = G(p + (h/2) L₂)`, `L₄ = G(p + h L₃)`, and each is the
-*same* expansion of one more stage, which `exists_forall_norm_stage_sub_le` does once and for
-all. -/
+The proof of `ODE.rk4_hasOrderFor` works in the autonomous setting that
+`ODE.ButcherTableau.hasOrderFor_autonomize_iff` provides. Let $X$ be a real normed space and
+$G : X \to X$ a field whose Fréchet derivatives $G_1, G_2, G_3, G_4$ are bounded on $X$. The stages
+of the classical tableau at $p$ are $L_1 = G(p)$, $L_2 = G(p + (h/2) L_1)$, $L_3 = G(p + (h/2) L_2)$
+and $L_4 = G(p + h L_3)$. Each of them is the same expansion of one more stage, which
+`ODE.exists_forall_norm_stage_sub_le` proves once.
+-/
 
 section RungeKuttaFour
 
 variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
 
-/-- **One Runge–Kutta stage, expanded to third order in the step**, for an autonomous field
-`G : X → X` with globally bounded Fréchet derivatives `G₁, …, G₄`
-([quarteroni2000numerical] §11.8, the expansion behind (11.73)). If the previous stage value `v`
-agrees with `G p + h a + h² q` to within `γ h³`, then the stage `G (p + θ h v)` agrees with
+/-- **One Runge–Kutta stage, expanded to third order in the step.** Let $X$ be a real normed space
+and $G : X \to X$ a field with Fréchet derivatives $G_1, G_2, G_3, G_4$, each the derivative of
+the one before, with $\|G_k(p)\| \le M_k$ for every $p$. Let $R, \gamma \in \mathbb{R}$ and
+$\theta \ge 0$. Then there is $c \ge 0$ with the following property. Let $p, v, a, q \in X$ and
+$h \in (0, 1]$, write $g = G(p)$ and take the derivatives at $p$, and let $\|g\| \le R$,
+$\|a\| \le R$, $\|q\| \le R$ and $\|v - (g + h a + h^2 q)\| \le \gamma h^3$. Then
+$$\Bigl\| G(p + \theta h v) - \Bigl(g + \theta h\, G_1 g + \theta h^2\, G_1 a + \theta h^3\, G_1
+  q + \frac{\theta^2 h^2}{2} G_2(g, g)$$
+$$+ \frac{\theta^2 h^3}{2} \bigl(G_2(a, g) + G_2(g, a)\bigr) + \frac{\theta^3 h^3}{6} G_3(g, g,
+  g)\Bigr) \Bigr\| \le c h^4.$$
+This is the expansion behind (11.73) of [quarteroni2000numerical], §11.8.
 
-`G p + θh·G₁ g + θh²·G₁ a + θh³·G₁ q + (θ²h²/2)·G₂(g, g) + (θ²h³/2)·(G₂(a, g) + G₂(g, a))
-  + (θ³h³/6)·G₃(g, g, g)`, `g = G p`,
-
-to within `c h⁴` for `h ∈ (0, 1]`, with `c` independent of the base point `p` — which is what a
-uniform bound on the local truncation error needs. The three stages `L₂, L₃, L₄` of the classical
-method are the three instances `(θ, a, q) = (1/2, 0, 0)`, `(1/2, G₁g/2, G₂(g,g)/8)` and
-`(1, G₁g/2, G₁(G₁g)/4 + G₂(g,g)/8)`. The proof is `norm_sub_taylor_segment_le` at `w = θh·v`
-followed by the multilinear expansion of `G₂ w w` and `G₃ w w w`
-(`norm_bilinear_diag_sub_le`, `norm_trilinear_diag_sub_le`). -/
+The constant $c$ does not depend on $p$, which a uniform bound on the local truncation error
+needs. The stages $L_2, L_3, L_4$ of the classical method are the instances
+$(\theta, a, q) = (1/2, 0, 0)$, $(1/2, G_1 g/2, G_2(g, g)/8)$ and
+$(1, G_1 g/2, G_1(G_1 g)/4 + G_2(g, g)/8)$. The proof is `norm_sub_taylor_segment_le` at
+$w = \theta h v$, followed by the multilinear expansions `norm_bilinear_diag_sub_le` and
+`norm_trilinear_diag_sub_le` of $G_2(w, w)$ and $G_3(w, w, w)$. -/
 theorem exists_forall_norm_stage_sub_le
     {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
     {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
@@ -1952,20 +2171,26 @@ theorem exists_forall_norm_stage_sub_le
   refine (add_le_add norm_add₃_le le_rfl).trans ?_
   linarith [b1, b2, b3, b4]
 
-/-- **The increment of the classical method, expanded to third order in the step**, for an
-autonomous field `G : X → X` with globally bounded Fréchet derivatives
-([quarteroni2000numerical] (11.73)). Writing `g = G p`, the increment
-`(L₁ + 2L₂ + 2L₃ + L₄)/6` of the four stages at `p` agrees with
+/-- **The increment of the classical method, expanded to third order in the step** ((11.73) of
+[quarteroni2000numerical]). Let $X$ be a real normed space and $G : X \to X$ a field with
+Fréchet derivatives $G_1, G_2, G_3, G_4$, each the derivative of the one before, with
+$\|G_k(p)\| \le M_k$ for every $p$. Let $M_0 \in \mathbb{R}$. Then there is $c \ge 0$ with the
+following property. Let $p \in X$ with $\|G(p)\| \le M_0$ and $h \in (0, 1]$, write $g = G(p)$
+and take the derivatives at $p$, and let $L_1, \dots, L_4$ be the stages of the classical method
+at $p$. Then
+$$\Bigl\| \tfrac16 (L_1 + 2L_2 + 2L_3 + L_4) - \Bigl(g + \frac h2 G_1 g + \frac{h^2}{6}
+  \bigl(G_2(g, g) + G_1(G_1 g)\bigr)$$
+$$+ \frac{h^3}{24} \bigl(G_3(g, g, g) + G_2(G_1 g, g) + 2 G_2(g, G_1 g) + G_1(G_2(g, g)) +
+  G_1(G_1(G_1 g))\bigr)\Bigr) \Bigr\| \le c h^4.$$
+The subtracted expression is the Taylor polynomial $g + \frac h2 Y^{(2)} + \frac{h^2}{6}
+Y^{(3)} + \frac{h^3}{24} Y^{(4)}$ of the difference quotient $(Y(t + h) - Y(t))/h$ of an
+integral curve $Y$ of $G$ with $Y(t) = p$.
 
-`g + (h/2)·G₁ g + (h²/6)·(G₂(g,g) + G₁(G₁ g))
-  + (h³/24)·(G₃(g,g,g) + G₂(G₁ g, g) + 2 G₂(g, G₁ g) + G₁(G₂(g,g)) + G₁(G₁(G₁ g)))`
-
-— the truncated Taylor series `g + (h/2) Y⁽²⁾ + (h²/6) Y⁽³⁾ + (h³/24) Y⁽⁴⁾` of an integral curve
-through `p` — to within `c h⁴` for `h ∈ (0, 1]`, uniformly over `p` with `‖G p‖ ≤ M₀`. The three
-stages are the three instances of `exists_forall_norm_stage_sub_le`; the last matching of
-coefficients uses the symmetry `G₂(u, v) = G₂(v, u)` of the second derivative
-(`second_derivative_symmetric`), because the stages produce `(1/16)(G₂(G₁g, g) + G₂(g, G₁g))`
-where the Taylor series produces `(1/24) G₂(G₁g, g) + (2/24) G₂(g, G₁g)`. -/
+The three stages $L_2, L_3, L_4$ are three instances of `ODE.exists_forall_norm_stage_sub_le`.
+The final comparison of coefficients uses the symmetry $G_2(u, v) = G_2(v, u)$ of the second
+derivative (`second_derivative_symmetric`): the stages give $\frac1{16}\bigl(G_2(G_1 g, g) +
+G_2(g, G_1 g)\bigr)$ where the Taylor polynomial has $\frac1{24} G_2(G_1 g, g) + \frac2{24}
+G_2(g, G_1 g)$. -/
 theorem exists_forall_norm_rk4_increment_sub_le
     {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
     {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
@@ -2181,18 +2406,20 @@ theorem exists_forall_norm_rk4_increment_sub_le
   rw [hn2, hn2]
   linarith
 
-/-- **The classical Runge–Kutta method has order four on an autonomous problem**
-([quarteroni2000numerical] (11.73), §11.8.1): for a field `G : X → X` with global Fréchet
-derivatives `G₁, G₂, G₃, G₄` bounded by `M₁, M₂, M₃, M₄`, and an integral curve `Y` of `G` on
-`[t₀, t₀ + T]` whose successive derivatives `Y⁽²⁾, …, Y⁽⁵⁾` exist there with `‖Y⁽⁵⁾‖ ≤ M₅`,
-`rk4` has order `4` along `Y`. The chain rule identifies `Y⁽²⁾ = G₁ g`,
-`Y⁽³⁾ = G₂(g,g) + G₁(G₁ g)` and
-`Y⁽⁴⁾ = G₃(g,g,g) + G₂(G₁g, g) + 2 G₂(g, G₁g) + G₁(G₂(g,g)) + G₁(G₁(G₁g))` with `g = G(Y s)`
-(`UniqueDiffWithinAt.eq_deriv` and `HasDerivWithinAt.clm_apply`); `norm_sub_taylorSum_le` at
-order four and `exists_forall_norm_rk4_increment_sub_le` then bound the local truncation error by
-`(M₅/120 + c) h⁴` for every `h ∈ (0, 1]`, uniformly over the grid. The restriction to `h ≤ 1` is
-why the conclusion is assembled by `IsBigO.of_bound` on `Ioc 0 1` rather than by
-`OneStep.hasOrderFor_of_forall_norm_lte_le`. -/
+/-- **The classical Runge–Kutta method has order four on an autonomous problem** ((11.73) and
+§11.8.1 of [quarteroni2000numerical]). Let $X$ be a real normed space and $G : X \to X$ a field
+with Fréchet derivatives $G_1, G_2, G_3, G_4$, each the derivative of the one before, with
+$\|G_k(p)\| \le M_k$ for every $p$. Let $I = [t_0, t_0 + T]$, let $Y$ have the derivative
+$G(Y(s))$ within $I$ at every $s \in I$, let $Y^{(2)}(s)$ be the derivative of
+$s \mapsto G(Y(s))$ within $I$, let $Y^{(3)}, Y^{(4)}, Y^{(5)}$ be the successive derivatives
+within $I$, and let $\|Y^{(5)}(s)\| \le M_5$ for $s \in I$. Then the classical method for $G$
+has order $4$ along $Y$ on $I$.
+
+With $g = G(Y(s))$, the chain rule gives $Y^{(2)} = G_1 g$, $Y^{(3)} = G_2(g, g) + G_1(G_1 g)$
+and $Y^{(4)} = G_3(g, g, g) + G_2(G_1 g, g) + 2 G_2(g, G_1 g) + G_1(G_2(g, g)) + G_1(G_1(G_1
+g))$. The Taylor bound `norm_sub_taylorSum_le` of order four and
+`ODE.exists_forall_norm_rk4_increment_sub_le` then bound the local truncation error by
+$(M_5/120 + c) h^4$ for every $h \in (0, 1]$, uniformly over the grid. -/
 theorem rk4_hasOrderFor_autonomous {t₀ T : ℝ}
     {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
     {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
@@ -2348,19 +2575,22 @@ theorem rk4_hasOrderFor_autonomous {t₀ T : ℝ}
 
 end RungeKuttaFour
 
-/-- **The classical Runge–Kutta method has order four** ([quarteroni2000numerical] (11.73),
-§11.8.1; the order conditions themselves are `rk4_orderConditions`): if the field
-`F(t, v) = f t v` on `ℝ × E` has global Fréchet derivatives `F₁, F₂, F₃, F₄` bounded by
-`M₁, M₂, M₃, M₄`, and `y` solves `y' = f(·, y)` on `[t₀, t₀ + T]` with derivatives
-`y⁽²⁾, …, y⁽⁵⁾` there and `‖y⁽⁵⁾‖ ≤ M₅`, then `rk4` has order `4` along `y`.
+/-- **The classical Runge–Kutta method has order four** ((11.73) and §11.8.1 of
+[quarteroni2000numerical]). Let the field $F(t, v) = f(t, v)$ on $\mathbb{R} \times E$ have
+Fréchet derivatives $F_1, F_2, F_3, F_4$, each the derivative of the one before, with
+$\|F_k(p)\| \le M_k$ for every $p$. Let $I = [t_0, t_0 + T]$, let $y$ have the derivative
+$f(s, y(s))$ within $I$ at every $s \in I$, let $y^{(2)}(s)$ be the derivative of
+$s \mapsto f(s, y(s))$ within $I$, let $y^{(3)}, y^{(4)}, y^{(5)}$ be the successive derivatives
+within $I$, and let $\|y^{(5)}(s)\| \le M_5$ for $s \in I$. Then the classical method has order
+$4$ along $y$ on $I$.
 
-The proof is `hasOrderFor_autonomize_iff`: the row-sum condition makes the method see the
-autonomous field `G(t, v) = (1, f t v)` on `ℝ × E`, whose Fréchet derivatives are the
-post-compositions of `F₁, …, F₄` with the isometry `w ↦ (0, w)` (hence bounded by the same
-constants) and whose integral curve is `s ↦ (s, y s)`; `rk4_hasOrderFor_autonomous` finishes.
-Bounded derivatives up to order four are needed because the constant must be uniform over the
-horizon; they are not needed off a neighbourhood of the curve, but no such localization is made
-here. -/
+The order conditions themselves are `ODE.rk4_orderConditions`. By
+`ODE.ButcherTableau.hasOrderFor_autonomize_iff`, the method sees the autonomous field
+$G(t, v) = (1, f(t, v))$ on $\mathbb{R} \times E$. The Fréchet derivatives of $G$ are those of
+$F$ followed by the isometry $w \mapsto (0, w)$, so they have the same bounds, and the integral
+curve is $s \mapsto (s, y(s))$. Then `ODE.rk4_hasOrderFor_autonomous` concludes. The derivatives
+up to order four must be bounded because the constant must be uniform over the horizon. Bounds
+near the curve would suffice, but the theorem does not localize them. -/
 theorem rk4_hasOrderFor {t₀ T : ℝ} {f : ℝ → E → E}
     {F₁ : ℝ × E → ℝ × E →L[ℝ] E} {F₂ : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
     {F₃ : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}

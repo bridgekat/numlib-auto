@@ -10,106 +10,132 @@ import Numlib.Analysis.Convex.Recession.Cone
 /-!
 # Relative interiors of convex sets
 
-The theory of relative interiors of convex sets in a finite-dimensional real normed space. The
-*relative interior* `ri C` is the interior of `C` taken relative to its affine hull; it is Mathlib's
-`intrinsicInterior ℝ C`, so no new definition is introduced, and what this file adds is the
-convexity theory that `Mathlib.Analysis.Convex.Intrinsic` does not carry. Finite dimension also
-sharpens several statements about convex functions and about separation that the topological
-modules `Closure.lean` and `Separation.lean` can state only in dimension-free form.
+Let $E$ be a finite-dimensional real normed space. The **relative interior** $\operatorname{ri} C$
+of a set $C \subseteq E$ is the interior of $C$ relative to its affine hull $\operatorname{aff} C$:
+the set of points $x \in \operatorname{aff} C$ such that every point of $\operatorname{aff} C$ close
+enough to $x$ lies in $C$. It is Mathlib's `intrinsicInterior ℝ C`, so no new definition is
+introduced. This module adds the convexity theory that `Mathlib.Analysis.Convex.Intrinsic` does not
+contain. Write $\operatorname{cl} C$ for the closure and $\operatorname{int} C$ for the interior.
+The presentation follows [rockafellar1970convex], §6, §7 and §11.
 
-## Main definitions
-
-* `ri` — scoped notation for `intrinsicInterior ℝ`, matching Rockafellar's usage.
+The central tool is the line segment principle: if $C$ is convex, $x \in \operatorname{ri} C$ and
+$y \in \operatorname{cl} C$, then $(1 - a)x + a y \in \operatorname{ri} C$ for $0 \le a < 1$. From
+it follow the facts that $C$, $\operatorname{ri} C$ and $\operatorname{cl} C$ have the same closure
+and the same relative interior, the prolongation principle, and the rules for intersections, linear
+images, inverse images, sums, products and convex hulls of unions. The second half of the module
+applies these rules to convex functions $f : E \to [-\infty, +\infty]$, with effective domain
+$\operatorname{dom} f = \{x : f(x) < +\infty\}$ and epigraph $\operatorname{epi} f = \{(x, \mu) :
+f(x) \le \mu\}$, and ends with proper separation. Finite dimension also sharpens several statements
+about convex functions and about separation that `Numlib.Analysis.Convex.Closure` and
+`Numlib.Analysis.Convex.Separation` state only in a dimension-free form.
 
 ## Main results
 
-* `mem_intrinsicInterior_iff` — the metric description of `ri s`: a point of the affine hull lies
-  in `ri s` exactly when some ball of the affine hull around it is contained in `s`. This is the
-  cornerstone from which the rest of the file is derived.
-* `Convex.subset_closure_inter_setOf_pos`, `Convex.closure_inter_setOf_pos` — a convex set on which
-  a linear functional is non-negative and somewhere positive is the closure of the part where the
-  functional is positive; a segment argument with no relative interiors in it, here because it is
-  the density step of the cross-section arguments.
-* `Convex.segment_mem_relint` — the *line segment principle*: the half-open segment from a relative
-  interior point towards a point of the closure stays in `ri C`
-  ([rockafellar1970convex] Theorem 6.1).
-* `Convex.relint_nonempty`, `Convex.affineSpan_relint` — a nonempty convex set has a nonempty
-  relative interior, and the same affine hull as it.
-* `Convex.interior_subset_relint` — `int C ⊆ ri C` for every set, Mathlib's
-  `interior_subset_intrinsicInterior`; for a full-dimensional convex set the two agree.
-* `Convex.closure_relint`, `Convex.relint_closure` — `C`, `ri C` and `cl C` share a closure and a
-  relative interior, whence `Convex.closure_eq_iff_relint_eq` and
-  `Convex.relint_inter_nonempty_of_isOpen`.
-* `Convex.mem_relint_iff_prolong` — the *prolongation principle*: `z ∈ ri C` exactly when every
-  segment of `C` ending at `z` continues past it ([rockafellar1970convex] Theorem 6.4).
-* `Convex.closure_iInter`, `Convex.relint_iInter` — closure and relative interior commute with an
-  intersection whose relative interiors meet, with `Convex.relint_inter_affine` and
+* `ConvexAnalysis.mem_intrinsicInterior_iff`: a point of $\operatorname{aff} s$ lies in
+  $\operatorname{ri} s$ exactly when some ball of $\operatorname{aff} s$ around it lies in $s$. The
+  rest of the module is derived from this description.
+* `Convex.subset_closure_inter_setOf_pos` and `Convex.closure_inter_setOf_pos`: a convex set on
+  which a linear functional is nonnegative, and somewhere positive, is the closure of the part where
+  the functional is positive. This density step of the cross-section arguments uses no relative
+  interior.
+* `Convex.segment_mem_relint`: the **line segment principle**, Theorem 6.1 of
+  [rockafellar1970convex].
+* `Convex.relint_nonempty` and `Convex.affineSpan_relint`: a nonempty convex set has a nonempty
+  relative interior, with the same affine hull as the set.
+* `Convex.interior_subset_relint`: $\operatorname{int} C \subseteq \operatorname{ri} C$ for every
+  set $C$.
+* `Convex.closure_relint` and `Convex.relint_closure`: for convex $C$,
+  $\operatorname{cl}(\operatorname{ri} C) = \operatorname{cl} C$ and
+  $\operatorname{ri}(\operatorname{cl} C) = \operatorname{ri} C$; consequences are
+  `Convex.closure_eq_iff_relint_eq` and `Convex.relint_inter_nonempty_of_isOpen`.
+* `Convex.mem_relint_iff_prolong`: the **prolongation principle**, Theorem 6.4 of
+  [rockafellar1970convex]: $z \in \operatorname{ri} C$ exactly when every segment in $C$ that ends
+  at $z$ can be prolonged beyond $z$ inside $C$.
+* `Convex.closure_iInter` and `Convex.relint_iInter`: closure and relative interior commute with an
+  intersection of convex sets whose relative interiors have a common point, the latter for a finite
+  intersection; related results are `Convex.relint_inter_affine` and
   `Convex.relint_subset_relint_of_subset_closure`.
-* `Convex.relint_image` — linear images commute with `ri`, with `Convex.relint_smul` and
-  `Convex.relint_add`; `Convex.relint_preimage` and `Convex.closure_preimage` do the same for
-  inverse images, provided some point is carried into `ri D`.
-* `Convex.mem_relint_prod_iff` — relative interior points of a convex set in a product, read off
-  from the projection and the slice; `Convex.relint_cone_prodMk_one` applies it to the cone over
-  `C`, and `Convex.relint_convexHull_union` to the convex hull of a union.
-* `ConvexFn.relint_epi` — the relative interior of an epigraph, whence
-  `ConvexFn.exists_mem_relint_convexDom_lt` and `ConvexFn.le_of_mem_closure`.
-* `ConvexFn.eq_bot_of_mem_relint_convexDom` — an improper convex function is `−∞` on `ri (dom f)`.
-* `ConvexFn.properConvex_convexCl`, `ConvexFn.convexCl_eq_of_mem_relint_convexDom` — the closure of
-  a proper convex function is proper and agrees with it on `ri (dom f)`; with
-  `ConvexFn.relint_convexDom_convexCl` and `ConvexFn.interior_convexDom_convexCl`, `dom (cl f)` has
-  the same relative interior *and* the same interior as `dom f`.
-* `ConvexFn.tendsto_lscHull_along_segment_relint` — the closure of `f` at `y` as a limit of `f`
-  along a segment towards `y` from a relative interior point of `dom f`.
-* `ConvexFn.relint_setOf_le`, `ConvexFn.closure_setOf_le` — the relative interior and the closure
-  of a level set, with `ConvexFn.relint_setOf_lt_eq`, `ConvexFn.closure_setOf_lt_eq` and the
-  relatively open and closed special cases.
-* `exists_separatesProperly_iff_disjoint_relint` — two nonempty convex sets separate properly
-  exactly when their relative interiors are disjoint ([rockafellar1970convex] Theorem 11.3).
+* `Convex.relint_image`, `Convex.relint_smul` and `Convex.relint_add`: the relative interior
+  commutes with linear images, scalar multiples and sums of convex sets; `Convex.relint_preimage`
+  and `Convex.closure_preimage` give the same for inverse images under a linear map $A$, provided
+  that $A$ maps some point into $\operatorname{ri} D$.
+* `Convex.mem_relint_prod_iff`: a point of a convex set in a product is a relative interior point
+  exactly when its first coordinate is one for the projection and its second coordinate is one for
+  the slice; applications are `Convex.relint_cone_prodMk_one` for the cone over $C$ and
+  `Convex.relint_convexHull_union` for the convex hull of a union.
+* `ConvexAnalysis.ConvexFn.relint_epi`: the relative interior of an epigraph; consequences are
+  `ConvexAnalysis.ConvexFn.exists_mem_relint_convexDom_lt` and
+  `ConvexAnalysis.ConvexFn.le_of_mem_closure`.
+* `ConvexAnalysis.ConvexFn.eq_bot_of_mem_relint_convexDom`: an improper convex function is $-\infty$
+  on $\operatorname{ri}(\operatorname{dom} f)$.
+* `ConvexAnalysis.ConvexFn.properConvex_convexCl` and
+  `ConvexAnalysis.ConvexFn.convexCl_eq_of_mem_relint_convexDom`: the closure $\operatorname{cl} f$
+  of a proper convex function is proper, and it agrees with $f$ on
+  $\operatorname{ri}(\operatorname{dom} f)$; by `ConvexAnalysis.ConvexFn.relint_convexDom_convexCl`
+  and `ConvexAnalysis.ConvexFn.interior_convexDom_convexCl`,
+  $\operatorname{dom}(\operatorname{cl} f)$ has the same relative interior and the same interior as
+  $\operatorname{dom} f$.
+* `ConvexAnalysis.ConvexFn.tendsto_lscHull_along_segment_relint`: the lower semicontinuous hull of
+  $f$ at $y$ is the limit of $f$ along the segment towards $y$ from a point of
+  $\operatorname{ri}(\operatorname{dom} f)$.
+* `ConvexAnalysis.ConvexFn.relint_setOf_le` and `ConvexAnalysis.ConvexFn.closure_setOf_le`: the
+  relative interior and the closure of a level set $\{x : f(x) \le \alpha\}$; related results are
+  `ConvexAnalysis.ConvexFn.relint_setOf_lt_eq`, `ConvexAnalysis.ConvexFn.closure_setOf_lt_eq` and
+  the special cases for relatively open $\operatorname{dom} f$ and for closed $f$.
+* `ConvexAnalysis.exists_separatesProperly_iff_disjoint_relint`: two nonempty convex sets can be
+  separated properly exactly when their relative interiors are disjoint, Theorem 11.3 of
+  [rockafellar1970convex].
+
+## Notation
+
+* `ri`: the relative interior $\operatorname{ri} C$, scoped notation in the namespace
+  `ConvexAnalysis` for `intrinsicInterior ℝ C`.
 
 ## Implementation notes
 
-Everything rests on `mem_intrinsicInterior_iff`, which converts `x ∈ ri s` — defined in Mathlib
-through the subspace topology on `affineSpan ℝ s` — into a statement about distances in the ambient
-space. Rockafellar instead reduces to the full-dimensional case by transporting along an affine
-isomorphism; the metric description avoids that transport, and the `AddTorsor` bookkeeping a change
-of ambient space would force on every proof. Finite-dimensionality enters through
-`intrinsicClosure_eq_closure` and through closedness of affine subspaces; results not needing it
-carry `omit [FiniteDimensional ℝ E]`.
-
-The convexity lemmas are named `Convex.*` and shadow the root namespace `Convex`. Generalised field
-notation resolves `hC.segment_mem_relint` against the *root* `Convex` namespace only, so these
-lemmas must be applied by their explicit names, `Convex.segment_mem_relint hC …`.
-
-## References
-
-* [rockafellar1970convex] §6, §7 and §11.
+* Mathlib defines `intrinsicInterior` through the subspace topology on `affineSpan ℝ s`. Everything
+  here rests on `ConvexAnalysis.mem_intrinsicInterior_iff`, which turns $x \in \operatorname{ri} s$
+  into a statement about distances in the ambient space. Rockafellar instead reduces to the
+  full-dimensional case by an affine isomorphism. The metric description avoids that transport, and
+  the `AddTorsor` bookkeeping that a change of ambient space would force on every proof.
+* Finite dimension enters through `intrinsicClosure_eq_closure` and through the closedness of affine
+  subspaces. Results that do not need it are stated without `[FiniteDimensional ℝ E]`.
+* The convexity lemmas are named `Convex.*`. Generalized field notation resolves
+  `hC.segment_mem_relint` against the root namespace `Convex` only, so in this module these lemmas
+  are applied by their full names, as in `Convex.segment_mem_relint hC …`.
 -/
 
 open Set Filter Topology Pointwise
 
 namespace ConvexAnalysis
 
-/-- Rockafellar's `ri C`, the *relative interior* of `C`: Mathlib's `intrinsicInterior ℝ C`. -/
+/-- The **relative interior** $\operatorname{ri} C$ of a set $C$: the interior of $C$ relative to
+its affine hull. It is notation for Mathlib's `intrinsicInterior ℝ C`. -/
 scoped notation "ri" => intrinsicInterior ℝ
 
-/-! ### The positive part of a convex set
+/-!
+### The positive part of a convex set
 
-A convex set on which a continuous linear functional is non-negative and somewhere positive is the
-closure of the part where the functional is *strictly* positive. This is a segment argument in a
-topological vector space — no relative interiors, no finite dimension — and it is the density step
-that every "a closed convex cone is the closure of the cone generated by one of its cross-sections"
-argument runs on. -/
+A convex set on which a linear functional is nonnegative, and somewhere positive, is the closure of
+the part where the functional is strictly positive. This is a segment argument in a topological
+vector space, with no relative interior and no finite dimension. It is the density step of every
+argument that a closed convex cone is the closure of the cone generated by one of its
+cross-sections.
+-/
 
 section Positive
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] {C : Set E} {ℓ : E →ₗ[ℝ] ℝ} {x₀ : E}
 
-/-- **The strictly positive part of a convex set is dense in it.** If a continuous linear functional
-`ℓ` is non-negative on a convex set `C` and positive at one of its points `x₀`, then every point `x`
-of `C` is a limit of points of `C` at which `ℓ` is positive: the segment points
-`(1 - t) x + t x₀` have `ℓ` value `(1 - t) ℓ x + t ℓ x₀ > 0` for `0 < t ≤ 1`. No continuity of `ℓ`
-is needed, the approximating points being produced explicitly. -/
+/-- Let $E$ be a real topological vector space, let $C \subseteq E$ be convex, and let
+$\ell : E \to \mathbb{R}$ be linear. Suppose that $\ell(x) \ge 0$ for all $x \in C$, and that
+$\ell(x_0) > 0$ for some $x_0 \in C$. Then $$C \subseteq \operatorname{cl}(C \cap \{x :
+\ell(x) > 0\}).$$
+
+Each $x \in C$ is the limit as $t \downarrow 0$ of the points $(1 - t)x + t x_0 \in C$, at which
+$\ell$ takes the value $(1 - t)\ell(x) + t\ell(x_0) > 0$ for $0 < t \le 1$. Continuity of $\ell$
+is not needed, because the approximating points are given explicitly. -/
 theorem _root_.Convex.subset_closure_inter_setOf_pos (hC : Convex ℝ C)
     (hnn : ∀ x ∈ C, 0 ≤ ℓ x) (hx₀ : x₀ ∈ C) (hpos : 0 < ℓ x₀) :
     C ⊆ closure (C ∩ {x | 0 < ℓ x}) := by
@@ -129,8 +155,11 @@ theorem _root_.Convex.subset_closure_inter_setOf_pos (hC : Convex ℝ C)
     have : (0 : ℝ) < ℓ (x + t • (x₀ - x)) := by rw [hval]; linarith
     exact this
 
-/-- **A convex set is the closure of its strictly positive part**, under the hypotheses of
-`Convex.subset_closure_inter_setOf_pos`. -/
+/-- Let $E$ be a real topological vector space, let $C \subseteq E$ be convex, and let
+$\ell : E \to \mathbb{R}$ be linear with $\ell(x) \ge 0$ for all $x \in C$ and $\ell(x_0) > 0$
+for some $x_0 \in C$. Then $$\operatorname{cl}(C \cap \{x : \ell(x) > 0\}) = \operatorname{cl}
+C.$$
+-/
 theorem _root_.Convex.closure_inter_setOf_pos (hC : Convex ℝ C)
     (hnn : ∀ x ∈ C, 0 ≤ ℓ x) (hx₀ : x₀ ∈ C) (hpos : 0 < ℓ x₀) :
     closure (C ∩ {x | 0 < ℓ x}) = closure C :=
@@ -139,15 +168,18 @@ theorem _root_.Convex.closure_inter_setOf_pos (hC : Convex ℝ C)
 
 end Positive
 
-/-! ### The metric description of `ri` -/
+/-! ### The metric description of the relative interior -/
 
 section Metric
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {s : Set E} {x : E}
 
-/-- **Rockafellar's definition of `ri`**, recovered from Mathlib's `intrinsicInterior`: a point of
-`ri s` is a point of the affine hull of `s` around which every point of the affine hull that is
-close enough already lies in `s`. -/
+/-- Let $E$ be a real normed space and $s \subseteq E$. A point $x$ lies in $\operatorname{ri} s$ if
+and only if $x \in \operatorname{aff} s$ and there is $\varepsilon > 0$ such that every
+$y \in \operatorname{aff} s$ with $\|y - x\| < \varepsilon$ lies in $s$.
+
+This is Rockafellar's definition of the relative interior, recovered from Mathlib's
+`intrinsicInterior`. The rest of the module is derived from it. -/
 theorem mem_intrinsicInterior_iff :
     x ∈ ri s ↔ x ∈ affineSpan ℝ s ∧ ∃ ε > 0, ∀ y ∈ affineSpan ℝ s, dist y x < ε → y ∈ s := by
   constructor
@@ -163,8 +195,9 @@ theorem mem_intrinsicInterior_iff :
     rw [mem_interior_iff_mem_nhds, Metric.mem_nhds_iff]
     exact ⟨ε, hε, fun z hz => h z z.2 (by simpa [Metric.mem_ball, Subtype.dist_eq] using hz)⟩
 
-/-- A set whose affine hull is everything has `ri s = int s`. In particular this is the case for a
-full-dimensional convex set, which is why `ri` is only interesting in lower dimensions. -/
+/-- If $\operatorname{aff} s = E$, then $\operatorname{ri} s = \operatorname{int} s$. In particular
+this holds for a full-dimensional convex set, so the relative interior differs from the interior
+only for sets of lower dimension. -/
 theorem intrinsicInterior_eq_interior (h : affineSpan ℝ s = ⊤) : ri s = interior s := by
   ext x
   rw [mem_intrinsicInterior_iff, h, mem_interior_iff_mem_nhds, Metric.mem_nhds_iff]
@@ -175,7 +208,8 @@ theorem intrinsicInterior_eq_interior (h : affineSpan ℝ s = ⊤) : ri s = inte
   · rintro ⟨ε, hε, h'⟩
     exact ⟨ε, hε, fun y hy => h' (by simpa [Metric.mem_ball] using hy)⟩
 
-/-- The relative interior of an affine set is the set itself: an affine set is relatively open. -/
+/-- The relative interior of an affine subspace $M$ is $M$ itself: an affine set is relatively open.
+-/
 @[simp]
 theorem _root_.AffineSubspace.intrinsicInterior_coe (M : AffineSubspace ℝ E) :
     ri (M : Set E) = M := by
@@ -183,25 +217,29 @@ theorem _root_.AffineSubspace.intrinsicInterior_coe (M : AffineSubspace ℝ E) :
   rw [mem_intrinsicInterior_iff, AffineSubspace.affineSpan_coe]
   exact ⟨And.left, fun h => ⟨h, 1, one_pos, fun _ hy _ => hy⟩⟩
 
+/-- The relative interior of the whole space $E$ is $E$. -/
 @[simp]
 theorem intrinsicInterior_univ : ri (univ : Set E) = univ := by
   simpa using AffineSubspace.intrinsicInterior_coe (⊤ : AffineSubspace ℝ E)
 
-/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
+/-- For $\alpha \in \mathbb{R}$, the relative interior of the closed half-line $[\alpha, \infty)$ is
+the open half-line $(\alpha, \infty)$. -/
 theorem intrinsicInterior_Ici (α : ℝ) : ri (Ici α) = Ioi α := by
   have hspan : affineSpan ℝ (Ici α) = ⊤ := by
     rw [← (convex_Ici α).interior_nonempty_iff_affineSpan_eq_top, interior_Ici]
     exact ⟨α + 1, by simp⟩
   rw [intrinsicInterior_eq_interior hspan, interior_Ici]
 
-/-- The relative interior of a closed half-line of `ℝ` is the corresponding open half-line. -/
+/-- For $\alpha \in \mathbb{R}$, the relative interior of the closed half-line $(-\infty, \alpha]$
+is the open half-line $(-\infty, \alpha)$. -/
 theorem intrinsicInterior_Iic (α : ℝ) : ri (Iic α) = Iio α := by
   have hspan : affineSpan ℝ (Iic α) = ⊤ := by
     rw [← (convex_Iic α).interior_nonempty_iff_affineSpan_eq_top, interior_Iic]
     exact ⟨α - 1, by simp⟩
   rw [intrinsicInterior_eq_interior hspan, interior_Iic]
 
-/-- An affine combination of two points of an affine subspace lies in it. -/
+/-- Let $M$ be an affine subspace and $p, q \in M$. Then $(1 - t)p + t q \in M$ for every real $t$.
+-/
 theorem _root_.AffineSubspace.combo_mem {M : AffineSubspace ℝ E} {p q : E} (hp : p ∈ M) (hq : q ∈ M)
     (t : ℝ) : (1 - t) • p + t • q ∈ M := by
   simpa [AffineMap.lineMap_apply_module] using AffineMap.lineMap_mem (k := ℝ) t hp hq
@@ -215,14 +253,16 @@ section Layer
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C C₁ C₂ : Set E} {x y : E}
 
-/-- In finite dimensions an affine subspace is closed, so the closure of a set stays inside its
-affine hull. -/
+/-- Let $E$ be finite-dimensional. Then $\operatorname{cl} s \subseteq \operatorname{aff} s$ for
+every $s \subseteq E$, because affine subspaces of $E$ are closed. -/
 theorem closure_subset_affineSpan (s : Set E) : closure s ⊆ affineSpan ℝ s :=
   closure_minimal (subset_affineSpan ℝ s) (affineSpan ℝ s).closed_of_finiteDimensional
 
-/-- **The line segment principle**, the engine of the whole section: the half-open segment from a
-relative interior point of a convex set towards a point of its closure stays in the relative
-interior. -/
+/-- The **line segment principle**. Let $C \subseteq E$ be convex, $x \in \operatorname{ri} C$ and
+$y \in \operatorname{cl} C$. Then $$(1 - a)x + a y \in \operatorname{ri} C \quad \text{for } 0
+\le a < 1.$$ That is, the half-open segment from $x$ towards $y$ lies in $\operatorname{ri} C$.
+
+This is Theorem 6.1 of [rockafellar1970convex]. Most results of this module rest on it. -/
 theorem _root_.Convex.segment_mem_relint (hC : Convex ℝ C) (hx : x ∈ ri C) (hy : y ∈ closure C)
     {a : ℝ} (ha : 0 ≤ a) (ha' : a < 1) : (1 - a) • x + a • y ∈ ri C := by
   rw [mem_intrinsicInterior_iff] at hx ⊢
@@ -276,7 +316,7 @@ theorem _root_.Convex.segment_mem_relint (hC : Convex ℝ C) (hx : x ∈ ri C) (
 
 /-! ### Convexity and the affine hull of the relative interior -/
 
-/-- The relative interior of a convex set is convex. -/
+/-- If $C$ is convex, then $\operatorname{ri} C$ is convex. -/
 protected theorem _root_.Convex.relint (hC : Convex ℝ C) : Convex ℝ (ri C) := by
   intro u hu v hv a b ha hb hab
   rcases eq_or_lt_of_le (show b ≤ 1 by linarith) with rfl | hb1
@@ -286,19 +326,24 @@ protected theorem _root_.Convex.relint (hC : Convex ℝ C) : Convex ℝ (ri C) :
     subst hab'
     exact Convex.segment_mem_relint hC hu (subset_closure (intrinsicInterior_subset hv)) hb hb1
 
-/-- A nonempty convex set has a nonempty relative interior: Mathlib's
-`Set.Nonempty.intrinsicInterior`, restated with the argument order the rest of the file uses. -/
+/-- Let $C \subseteq E$ be convex and nonempty. Then $\operatorname{ri} C$ is nonempty.
+
+This is Mathlib's `Set.Nonempty.intrinsicInterior`, with the order of the arguments that this
+module uses. -/
 theorem _root_.Convex.relint_nonempty (hC : Convex ℝ C) (hne : C.Nonempty) : (ri C).Nonempty :=
   hne.intrinsicInterior hC
 
-/-- Taking the closure never changes the affine hull. No convexity is needed; this is
-`affineSpan_intrinsicClosure` together with `intrinsicClosure_eq_closure`. -/
+/-- For every $s \subseteq E$, $\operatorname{aff}(\operatorname{cl} s) = \operatorname{aff} s$. No
+convexity is needed.
+
+This combines Mathlib's `affineSpan_intrinsicClosure` and `intrinsicClosure_eq_closure`. -/
 @[simp]
 theorem affineSpan_closure (s : Set E) : affineSpan ℝ (closure s) = affineSpan ℝ s := by
   rw [← intrinsicClosure_eq_closure ℝ s, affineSpan_intrinsicClosure]
 
-/-- Passing to the relative interior does not change the affine hull, hence does not change the
-dimension. -/
+/-- Let $C \subseteq E$ be convex. Then $$\operatorname{aff}(\operatorname{ri} C) =
+\operatorname{aff} C.$$ Thus passing to the relative interior does not change the affine hull,
+and does not change the dimension. -/
 @[simp]
 theorem _root_.Convex.affineSpan_relint (hC : Convex ℝ C) :
     affineSpan ℝ (ri C) = affineSpan ℝ C := by
@@ -316,29 +361,36 @@ theorem _root_.Convex.affineSpan_relint (hC : Convex ℝ C) :
   exact AffineSubspace.combo_mem (subset_affineSpan ℝ _ hz) (subset_affineSpan ℝ _ hm) 2
 
 omit [FiniteDimensional ℝ E] in
-/-- The interior is contained in the relative interior, Mathlib's
-`interior_subset_intrinsicInterior`; for a full-dimensional convex set the two agree. `int C ⊆ ri C`
-is the half every caller uses, since it makes the relative-interior theorems applicable at an
-ordinary interior point. -/
+/-- Let $E$ be a real normed space and $C \subseteq E$ any set. Then $\operatorname{int} C \subseteq
+\operatorname{ri} C$.
+
+This is Mathlib's `interior_subset_intrinsicInterior`. It makes the theorems about relative
+interiors applicable at an interior point. Neither convexity nor finite dimension is needed. For
+a full-dimensional set the two sets agree, by `ConvexAnalysis.intrinsicInterior_eq_interior`. -/
 theorem _root_.Convex.interior_subset_relint : interior C ⊆ ri C :=
   interior_subset_intrinsicInterior
 
 /-! ### Interchanging closure and relative interior -/
 
 omit [FiniteDimensional ℝ E] in
-/-- The algebraic identity behind every prolongation argument: prolonging the segment from `x` past
-`z` by a factor `μ ≠ 0` and then travelling from `x` to that point at parameter `μ⁻¹` returns
-to `z`. -/
+/-- Let $x, z \in E$ and $\mu \neq 0$. Then $$(1 - \mu^{-1})x + \mu^{-1}\big((1 - \mu)x + \mu
+z\big) = z.$$ So the point $(1 - \mu)x + \mu z$, which prolongs the segment from $x$ through $z$
+by the factor $\mu$, leads back to $z$ at the parameter $\mu^{-1}$.
+
+This identity is behind every prolongation argument. -/
 theorem combo_prolong (x z : E) {μ : ℝ} (hμ : μ ≠ 0) :
     (1 - μ⁻¹) • x + μ⁻¹ • ((1 - μ) • x + μ • z) = z := by
   match_scalars <;> field_simp
   ring
 
 omit [FiniteDimensional ℝ E] in
-/-- Every segment ending at a relative interior point `z` and starting from a point of the affine
-hull can be prolonged slightly beyond `z` without leaving `C`. This is the easy half of the
-prolongation criterion, stated for the affine hull rather than for `C` because that is what the
-closure results below need. -/
+/-- Let $z \in \operatorname{ri} C$ and $x \in \operatorname{aff} C$. Then there is $\mu > 1$ with
+$(1 - \mu)x + \mu z \in C$: the segment from $x$ to $z$ can be prolonged slightly beyond $z$
+inside $C$.
+
+This is the easy half of the prolongation principle `Convex.mem_relint_iff_prolong`. It is
+stated for points of the affine hull rather than of $C$, because the closure results below need
+that form. Neither convexity nor finite dimension is needed. -/
 theorem exists_one_lt_smul_mem_of_mem_relint {z : E} (hz : z ∈ ri C)
     (hx : x ∈ affineSpan ℝ C) : ∃ μ > (1 : ℝ), (1 - μ) • x + μ • z ∈ C := by
   rw [mem_intrinsicInterior_iff] at hz
@@ -365,11 +417,15 @@ theorem exists_one_lt_smul_mem_of_mem_relint {z : E} (hz : z ∈ ri C)
     _ < ε := by linarith
 
 omit [FiniteDimensional ℝ E] in
-/-- **A linear function that attains its maximum over `C` at a relative interior point is constant
-on `C`** — the half of the relative-boundary criterion below that does not need separation.
-Prolonging the segment from `x` past `z` stays in `C`, and a linear function cannot be maximal at
-an interior point of a segment without being constant along it. Neither convexity of `C` nor
-continuity of `φ` is used. -/
+/-- Let $\varphi : E \to \mathbb{R}$ be linear and $z \in \operatorname{ri} C$, with
+$\varphi(x) \le \varphi(z)$ for all $x \in C$. Then $\varphi(x) = \varphi(z)$ for all $x \in C$.
+Thus a linear function that attains its maximum over $C$ at a relative interior point is
+constant on $C$.
+
+This is the half of `ConvexAnalysis.notMem_relint_iff_exists_isMaxOn` that does not need
+separation. The segment from $x$ through $z$ can be prolonged beyond $z$ inside $C$, and a
+linear function cannot be maximal at an inner point of a segment unless it is constant on the
+segment. Neither convexity of $C$ nor continuity of $\varphi$ is used. -/
 theorem eq_of_isMaxOn_of_mem_relint {φ : E →ₗ[ℝ] ℝ} {z : E}
     (hz : z ∈ ri C) (hmax : ∀ x ∈ C, φ x ≤ φ z) : ∀ x ∈ C, φ x = φ z := by
   intro x hx
@@ -382,8 +438,9 @@ theorem eq_of_isMaxOn_of_mem_relint {φ : E →ₗ[ℝ] ℝ} {z : E}
   nlinarith [hcon, hμ]
 
 omit [FiniteDimensional ℝ E] in
-/-- The sign form of the preceding lemma: a linear function that is `≤ 0` on `C` and vanishes at a
-relative interior point vanishes on all of `C`. -/
+/-- Let $\varphi : E \to \mathbb{R}$ be linear and $z \in \operatorname{ri} C$, with
+$\varphi(x) \le 0$ for all $x \in C$ and $\varphi(z) = 0$. Then $\varphi(x) = 0$ for all
+$x \in C$. -/
 theorem eq_zero_of_nonpos_of_mem_relint {φ : E →ₗ[ℝ] ℝ} {z : E}
     (hz : z ∈ ri C) (hnonpos : ∀ x ∈ C, φ x ≤ 0) (hz0 : φ z = 0) : ∀ x ∈ C, φ x = 0 := by
   intro x hx
@@ -391,7 +448,9 @@ theorem eq_zero_of_nonpos_of_mem_relint {φ : E →ₗ[ℝ] ℝ} {z : E}
     eq_of_isMaxOn_of_mem_relint hz (fun w hw => by rw [hz0]; exact hnonpos w hw) x hx
   rwa [hz0] at hconst
 
-/-- A convex set and its relative interior have the same closure: `cl (ri C) = cl C`. -/
+/-- Let $C \subseteq E$ be convex. Then a convex set and its relative interior have the same
+closure: $$\operatorname{cl}(\operatorname{ri} C) = \operatorname{cl} C.$$
+-/
 theorem _root_.Convex.closure_relint (hC : Convex ℝ C) : closure (ri C) = closure C := by
   refine Subset.antisymm (closure_mono intrinsicInterior_subset) ?_
   rcases C.eq_empty_or_nonempty with rfl | hne
@@ -405,7 +464,9 @@ theorem _root_.Convex.closure_relint (hC : Convex ℝ C) : closure (ri C) = clos
     exact Convex.segment_mem_relint hC hz hw hb.le (by linarith)
   exact closure_mono hopen (segment_subset_closure_openSegment (right_mem_segment ℝ z w))
 
-/-- A convex set and its closure have the same relative interior: `ri (cl C) = ri C`. -/
+/-- Let $C \subseteq E$ be convex. Then a convex set and its closure have the same relative
+interior: $$\operatorname{ri}(\operatorname{cl} C) = \operatorname{ri} C.$$
+-/
 theorem _root_.Convex.relint_closure (hC : Convex ℝ C) : ri (closure C) = ri C := by
   refine Subset.antisymm ?_ (fun z hz => ?_)
   · rcases C.eq_empty_or_nonempty with rfl | hne
@@ -423,13 +484,15 @@ theorem _root_.Convex.relint_closure (hC : Convex ℝ C) : ri (closure C) = ri C
     rw [affineSpan_closure]
     exact ⟨hzA, ε, hε, fun y hy hd => subset_closure (hball y hy hd)⟩
 
-/-- The relative interior is idempotent: `ri (ri C) = ri C`, so `ri C` is relatively open. -/
+/-- Let $C$ be convex. Then $\operatorname{ri}(\operatorname{ri} C) = \operatorname{ri} C$, so
+$\operatorname{ri} C$ is relatively open. -/
 theorem _root_.Convex.relint_relint (hC : Convex ℝ C) : ri (ri C) = ri C := by
   calc ri (ri C) = ri (closure (ri C)) := (Convex.relint_closure (Convex.relint hC)).symm
     _ = ri (closure C) := by rw [Convex.closure_relint hC]
     _ = ri C := Convex.relint_closure hC
 
-/-- Two convex sets have the same closure exactly when they have the same relative interior. -/
+/-- Let $C_1, C_2 \subseteq E$ be convex. Then $\operatorname{cl} C_1 = \operatorname{cl} C_2$ if
+and only if $\operatorname{ri} C_1 = \operatorname{ri} C_2$. -/
 theorem _root_.Convex.closure_eq_iff_relint_eq (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
     closure C₁ = closure C₂ ↔ ri C₁ = ri C₂ := by
   constructor
@@ -438,20 +501,23 @@ theorem _root_.Convex.closure_eq_iff_relint_eq (h₁ : Convex ℝ C₁) (h₂ : 
   · intro h
     rw [← Convex.closure_relint h₁, ← Convex.closure_relint h₂, h]
 
-/-- A set sandwiched between `ri C` and `cl C` has the same closure as `C`. -/
+/-- Let $C_1$ be convex and $\operatorname{ri} C_1 \subseteq C_2 \subseteq \operatorname{cl} C_1$.
+Then $\operatorname{cl} C_2 = \operatorname{cl} C_1$. -/
 theorem _root_.Convex.closure_eq_of_relint_subset_of_subset_closure (h₁ : Convex ℝ C₁)
     (hsub : ri C₁ ⊆ C₂) (hsup : C₂ ⊆ closure C₁) : closure C₂ = closure C₁ :=
   Subset.antisymm (closure_minimal hsup isClosed_closure)
     (Convex.closure_relint h₁ ▸ closure_mono hsub)
 
-/-- A convex set squeezed between `C` and `cl C` has the same relative interior as `C`. -/
+/-- Let $C_1$ and $C_2$ be convex with $C_1 \subseteq C_2 \subseteq \operatorname{cl} C_1$. Then
+$\operatorname{ri} C_2 = \operatorname{ri} C_1$. -/
 theorem _root_.Convex.relint_eq_of_subset_of_subset_closure (h₁ : Convex ℝ C₁)
     (h₂ : Convex ℝ C₂) (hsub : C₁ ⊆ C₂) (hsup : C₂ ⊆ closure C₁) : ri C₂ = ri C₁ :=
   (Convex.closure_eq_iff_relint_eq h₂ h₁).1
     (Convex.closure_eq_of_relint_subset_of_subset_closure h₁
       (intrinsicInterior_subset.trans hsub) hsup)
 
-/-- An open set meeting `cl C` already meets `ri C`. -/
+/-- Let $C \subseteq E$ be convex and $U \subseteq E$ open. If $U$ meets $\operatorname{cl} C$, then
+$U$ meets $\operatorname{ri} C$. -/
 theorem _root_.Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : Set E} (hU : IsOpen U)
     (h : (U ∩ closure C).Nonempty) : (U ∩ ri C).Nonempty := by
   rw [← Convex.closure_relint hC] at h
@@ -460,8 +526,12 @@ theorem _root_.Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : S
 
 /-! ### The prolongation criterion -/
 
-/-- **The prolongation principle**: `z` is a relative interior point of a nonempty convex set `C`
-exactly when every segment in `C` ending at `z` can be prolonged slightly beyond `z` inside `C`. -/
+/-- The **prolongation principle**. Let $C \subseteq E$ be nonempty and convex, and let $z \in E$.
+Then $z \in \operatorname{ri} C$ if and only if for every $x \in C$ there is $\mu > 1$ with
+$$(1 - \mu)x + \mu z \in C.$$ That is, every segment in $C$ that ends at $z$ can be prolonged
+slightly beyond $z$ inside $C$.
+
+This is Theorem 6.4 of [rockafellar1970convex]. -/
 theorem _root_.Convex.mem_relint_iff_prolong (hC : Convex ℝ C) (hne : C.Nonempty) {z : E} :
     z ∈ ri C ↔ ∀ x ∈ C, ∃ μ > (1 : ℝ), (1 - μ) • x + μ • z ∈ C := by
   constructor
@@ -475,9 +545,12 @@ theorem _root_.Convex.mem_relint_iff_prolong (hC : Convex ℝ C) (hne : C.Nonemp
     exact Convex.segment_mem_relint hC hx (subset_closure hy) (inv_nonneg.2 (by linarith))
       (by rw [inv_lt_one_iff₀]; exact Or.inr hμ)
 
-/-- A point is *interior* to a convex set exactly when the set absorbs every direction at that
-point. The prolongation principle gives the relative-interior version; absorbing every direction
-forces the affine hull to be everything, where `ri` and `int` agree. -/
+/-- Let $C$ be convex and $z \in E$. Then $z \in \operatorname{int} C$ if and only if for every
+$y \in E$ there is $\varepsilon > 0$ with $z + \varepsilon y \in C$. Thus $z$ is an interior
+point exactly when $C$ absorbs every direction at $z$.
+
+The prolongation principle gives the version for the relative interior. Absorbing every
+direction forces $\operatorname{aff} C = E$, where the relative interior and the interior agree. -/
 theorem _root_.Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
     z ∈ interior C ↔ ∀ y : E, ∃ ε : ℝ, 0 < ε ∧ z + ε • y ∈ C := by
   constructor
@@ -511,7 +584,11 @@ theorem _root_.Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
 
 /-! ### Intersections -/
 
-/-- The technical core of the intersection theorem: from a common relative interior point, every
+/-- Let $C_i \subseteq E$, $i \in \iota$, be convex sets whose relative interiors have a common
+point. Then $$\bigcap_i \operatorname{cl} C_i \subseteq \operatorname{cl}\Big(\bigcap_i
+\operatorname{ri} C_i\Big).$$
+
+This is the core of the intersection theorems: from a common relative interior point, every
 point common to all the closures is a limit of points common to all the relative interiors. -/
 theorem _root_.Convex.iInter_closure_subset_closure_iInter_relint {ι : Type*} {C : ι → Set E}
     (hC : ∀ i, Convex ℝ (C i)) (h : (⋂ i, ri (C i)).Nonempty) :
@@ -528,15 +605,20 @@ theorem _root_.Convex.iInter_closure_subset_closure_iInter_relint {ι : Type*} {
     exact Convex.segment_mem_relint (hC i) (hx i) (hy i) hb.le (by linarith)
   exact closure_mono hopen (segment_subset_closure_openSegment (right_mem_segment ℝ x y))
 
-/-- When the relative interiors have a common point, closure commutes with intersection. No
-finiteness is needed. -/
+/-- Let $C_i \subseteq E$, $i \in \iota$, be convex sets whose relative interiors have a common
+point, for an arbitrary index type $\iota$. Then closure commutes with the intersection:
+$$\operatorname{cl}\Big(\bigcap_i C_i\Big) = \bigcap_i \operatorname{cl} C_i.$$
+
+No finiteness of $\iota$ is needed. -/
 theorem _root_.Convex.closure_iInter {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
     (h : (⋂ i, ri (C i)).Nonempty) : closure (⋂ i, C i) = ⋂ i, closure (C i) := by
   refine Subset.antisymm (fun p hp => mem_iInter.2 fun i => closure_mono (iInter_subset _ i) hp) ?_
   exact (Convex.iInter_closure_subset_closure_iInter_relint hC h).trans
     (closure_mono (iInter_mono fun _ => intrinsicInterior_subset))
 
-/-- The easy inclusion `ri (⋂ i, C i) ⊆ ⋂ i, ri (C i)`, valid for an arbitrary index set. -/
+/-- Let $C_i \subseteq E$, $i \in \iota$, be convex sets whose relative interiors have a common
+point, for an arbitrary index type $\iota$. Then $\operatorname{ri}(\bigcap_i C_i) \subseteq
+\bigcap_i \operatorname{ri} C_i$. -/
 theorem _root_.Convex.relint_iInter_subset {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
     (h : (⋂ i, ri (C i)).Nonempty) : ri (⋂ i, C i) ⊆ ⋂ i, ri (C i) := by
   have hcl : closure (⋂ i, ri (C i)) = closure (⋂ i, C i) :=
@@ -548,9 +630,13 @@ theorem _root_.Convex.relint_iInter_subset {ι : Type*} {C : ι → Set E} (hC :
   rw [← heq]
   exact intrinsicInterior_subset
 
-/-- The relative interior commutes with a finite intersection whose relative interiors have a
-common point. Finiteness is essential: the intersection of `ri [0, 1 + α]` over `α > 0` is `(0, 1]`,
-not `ri [0, 1]`. -/
+/-- Let $\iota$ be finite, and let $C_i \subseteq E$, $i \in \iota$, be convex sets whose relative
+interiors have a common point. Then the relative interior commutes with the intersection:
+$$\operatorname{ri}\Big(\bigcap_i C_i\Big) = \bigcap_i \operatorname{ri} C_i.$$
+
+Finiteness is essential. In $\mathbb{R}$ the intervals $[0, 1 + \alpha]$, $\alpha > 0$, have
+$\bigcap_{\alpha > 0} \operatorname{ri}[0, 1 + \alpha] = (0, 1]$, while their intersection
+$[0, 1]$ has the relative interior $(0, 1)$. -/
 theorem _root_.Convex.relint_iInter {ι : Type*} [Finite ι] {C : ι → Set E}
     (hC : ∀ i, Convex ℝ (C i)) (h : (⋂ i, ri (C i)).Nonempty) : ri (⋂ i, C i) = ⋂ i, ri (C i) := by
   refine Subset.antisymm (Convex.relint_iInter_subset hC h) fun z hz => ?_
@@ -578,12 +664,17 @@ theorem _root_.Convex.relint_iInter {ι : Type*} [Finite ι] {C : ι → Set E}
 /-! ### Binary intersections, and intersections with an affine set -/
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- `Bool` is the finite index type that specialises an indexed intersection to a binary one:
-Mathlib's `iInf_bool_eq` read in the complete lattice `Set α`, restated in `⋂`/`∩` form. -/
+/-- For a family $D$ of sets indexed by `Bool`, $\bigcap_b D_b = D_{\mathrm{true}} \cap
+D_{\mathrm{false}}$.
+
+This specializes an indexed intersection to a binary one. It is Mathlib's `iInf_bool_eq` in the
+complete lattice of sets. -/
 theorem iInter_bool {α : Type*} (D : Bool → Set α) : (⋂ b, D b) = D true ∩ D false :=
   iInf_bool_eq (f := D)
 
-/-- Closure commutes with the intersection of two convex sets whose relative interiors meet. -/
+/-- Let $C_1, C_2 \subseteq E$ be convex with $\operatorname{ri} C_1 \cap \operatorname{ri} C_2 \neq
+\emptyset$. Then $\operatorname{cl}(C_1 \cap C_2) = \operatorname{cl} C_1 \cap \operatorname{cl}
+C_2$. -/
 theorem _root_.Convex.closure_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (h : (ri C₁ ∩ ri C₂).Nonempty) : closure (C₁ ∩ C₂) = closure C₁ ∩ closure C₂ := by
   have key := Convex.closure_iInter (C := fun b : Bool => bif b then C₁ else C₂)
@@ -591,8 +682,9 @@ theorem _root_.Convex.closure_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ 
   rw [iInter_bool, iInter_bool] at key
   exact key
 
-/-- The relative interior commutes with the intersection of two convex sets whose relative
-interiors meet. -/
+/-- Let $C_1, C_2 \subseteq E$ be convex with $\operatorname{ri} C_1 \cap \operatorname{ri} C_2 \neq
+\emptyset$. Then $\operatorname{ri}(C_1 \cap C_2) = \operatorname{ri} C_1 \cap \operatorname{ri}
+C_2$. -/
 theorem _root_.Convex.relint_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (h : (ri C₁ ∩ ri C₂).Nonempty) : ri (C₁ ∩ C₂) = ri C₁ ∩ ri C₂ := by
   have key := Convex.relint_iInter (C := fun b : Bool => bif b then C₁ else C₂)
@@ -600,22 +692,28 @@ theorem _root_.Convex.relint_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C
   rw [iInter_bool, iInter_bool] at key
   exact key
 
-/-- Intersecting with an affine set that meets `ri C` commutes with the relative interior. This is
-the workhorse of the theory of convex functions and of recession cones. -/
+/-- Let $C \subseteq E$ be convex and let $M \subseteq E$ be an affine subspace that meets
+$\operatorname{ri} C$. Then $$\operatorname{ri}(M \cap C) = M \cap \operatorname{ri} C.$$
+
+This is the main tool for the results on convex functions and on recession cones. -/
 theorem _root_.Convex.relint_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
     (h : ((M : Set E) ∩ ri C).Nonempty) : ri ((M : Set E) ∩ C) = (M : Set E) ∩ ri C := by
   have key := Convex.relint_inter M.convex hC (by rwa [AffineSubspace.intrinsicInterior_coe])
   rwa [AffineSubspace.intrinsicInterior_coe] at key
 
-/-- Intersecting with an affine set that meets `ri C` commutes with the closure. -/
+/-- Let $C \subseteq E$ be convex and let $M \subseteq E$ be an affine subspace that meets
+$\operatorname{ri} C$. Then $\operatorname{cl}(M \cap C) = M \cap \operatorname{cl} C$. -/
 theorem _root_.Convex.closure_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
     (h : ((M : Set E) ∩ ri C).Nonempty) :
     closure ((M : Set E) ∩ C) = (M : Set E) ∩ closure C := by
   have key := Convex.closure_inter M.convex hC (by rwa [AffineSubspace.intrinsicInterior_coe])
   rwa [M.closed_of_finiteDimensional.closure_eq] at key
 
-/-- A convex subset of `cl C₁` that is not entirely contained in the relative boundary of `C₁` has
-its relative interior inside `ri C₁`. -/
+/-- Let $C_1, C_2 \subseteq E$ be convex with $C_2 \subseteq \operatorname{cl} C_1$, and suppose
+that $C_2$ meets $\operatorname{ri} C_1$. Then $\operatorname{ri} C_2 \subseteq
+\operatorname{ri} C_1$. Thus a convex subset of $\operatorname{cl} C_1$ that does not lie
+entirely in the relative boundary of $C_1$ has its relative interior inside
+$\operatorname{ri} C_1$. -/
 theorem _root_.Convex.relint_subset_relint_of_subset_closure (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (hsub : C₂ ⊆ closure C₁) (h : (C₂ ∩ ri C₁).Nonempty) : ri C₂ ⊆ ri C₁ := by
   have hfr : IsClosed (intrinsicFrontier ℝ C₁) :=
@@ -648,8 +746,11 @@ theorem _root_.Convex.relint_subset_relint_of_subset_closure (h₁ : Convex ℝ 
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
 
-/-- A linear image commutes with the relative interior. Continuity of `A` is automatic in finite
-dimensions, which is why no hypothesis on `A` appears. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces, let $C \subseteq E$ be convex, and let
+$A : E \to F$ be linear. Then $$\operatorname{ri}(A C) = A(\operatorname{ri} C).$$
+
+No hypothesis on $A$ is needed, because a linear map on a finite-dimensional space is
+continuous. -/
 theorem _root_.Convex.relint_image (hC : Convex ℝ C) (A : E →ₗ[ℝ] F) : ri (A '' C) = A '' ri C := by
   have hAc : Continuous A := A.continuous_of_finiteDimensional
   have hcl : closure (A '' ri C) = closure (A '' C) := by
@@ -670,14 +771,15 @@ theorem _root_.Convex.relint_image (hC : Convex ℝ C) (A : E →ₗ[ℝ] F) : r
   exact ⟨μ, hμ, ⟨(1 - μ) • x + μ • z, hmem, by simp⟩⟩
 
 omit [FiniteDimensional ℝ F] in
-/-- A linear map carries the closure of a set into the closure of its image: just continuity of
-`A`, needing no convexity. -/
+/-- Let $A : E \to F$ be linear, with $E$ finite-dimensional. Then $A(\operatorname{cl} s) \subseteq
+\operatorname{cl}(A s)$ for every $s \subseteq E$. This uses only the continuity of $A$, and no
+convexity. -/
 theorem image_closure_subset (s : Set E) (A : E →ₗ[ℝ] F) :
     A '' closure s ⊆ closure (A '' s) :=
   image_closure_subset_closure_image A.continuous_of_finiteDimensional
 
-/-- Scaling commutes with the relative interior: `ri (a • C) = a • ri C` for every real `a`,
-including `a = 0`. -/
+/-- Let $C \subseteq E$ be convex and $a \in \mathbb{R}$. Then $$\operatorname{ri}(a C) = a
+\operatorname{ri} C,$$ also for $a = 0$. -/
 theorem _root_.Convex.relint_smul (hC : Convex ℝ C) (a : ℝ) : ri (a • C) = a • ri C := by
   have himg : ∀ D : Set E, (a • LinearMap.id : E →ₗ[ℝ] E) '' D = a • D := fun D => by
     rw [show ⇑(a • LinearMap.id : E →ₗ[ℝ] E) = fun x : E => a • x from rfl]
@@ -685,8 +787,12 @@ theorem _root_.Convex.relint_smul (hC : Convex ℝ C) (a : ℝ) : ri (a • C) =
   have h := Convex.relint_image hC (a • LinearMap.id : E →ₗ[ℝ] E)
   rwa [himg, himg] at h
 
-/-- The relative interior of a sum is the sum of the relative interiors. Mathlib's
-`intrinsicInterior_prod_eq` supplies the direct-sum half. -/
+/-- Let $C_1, C_2 \subseteq E$ be convex. Then the relative interior of the sum is the sum of the
+relative interiors: $$\operatorname{ri}(C_1 + C_2) = \operatorname{ri} C_1 + \operatorname{ri}
+C_2.$$
+
+The proof applies `Convex.relint_image` to the map $(x, y) \mapsto x + y$ on $C_1 \times C_2$,
+and Mathlib's `intrinsicInterior_prod_eq` gives the relative interior of the product. -/
 theorem _root_.Convex.relint_add (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
     ri (C₁ + C₂) = ri C₁ + ri C₂ := by
   have hA : ∀ D₁ D₂ : Set E,
@@ -697,7 +803,8 @@ theorem _root_.Convex.relint_add (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C�
   rwa [hA, intrinsicInterior_prod_eq, hA] at h
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The sum of the closures is contained in the closure of the sum. -/
+/-- For subsets $D_1, D_2$ of $E$, $\operatorname{cl} D_1 + \operatorname{cl} D_2 \subseteq
+\operatorname{cl}(D_1 + D_2)$. -/
 theorem closure_add_subset (D₁ D₂ : Set E) :
     closure D₁ + closure D₂ ⊆ closure (D₁ + D₂) := by
   rw [← Set.add_image_prod, ← Set.add_image_prod, ← closure_prod_eq]
@@ -706,9 +813,13 @@ theorem closure_add_subset (D₁ D₂ : Set E) :
 /-! ### Inverse images under a linear map -/
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-/-- The set-level identity behind the inverse-image theorem: the graph of `A` meets the horizontal
-slab `univ ×ˢ T` exactly over `A ⁻¹' T`. Stated for an arbitrary set `M` presented as the graph, so
-the caller may keep whichever coercion of `LinearMap.graph A` it already has. -/
+/-- Let $A : E \to F$ be linear, let $M \subseteq E \times F$ be the graph $\{(x, y) : y = A x\}$ of
+$A$, and let $T \subseteq F$. Then the projection of $M \cap (E \times T)$ onto $E$ is
+$A^{-1}(T)$.
+
+The graph is given as a set $M$ together with a proof of the equation, so a caller can use any
+coercion of `LinearMap.graph A`. This is the identity of sets behind the theorem on inverse
+images. -/
 theorem image_fst_inter_prod_univ {A : E →ₗ[ℝ] F} {M : Set (E × F)}
     (hM : M = {p : E × F | p.2 = A p.1}) (T : Set F) :
     ⇑(LinearMap.fst ℝ E F) '' (M ∩ (univ : Set E) ×ˢ T) = A ⁻¹' T := by
@@ -721,10 +832,13 @@ theorem image_fst_inter_prod_univ {A : E →ₗ[ℝ] F} {M : Set (E × F)}
   · intro hx
     exact ⟨(x, A x), ⟨rfl, mem_univ _, hx⟩, rfl⟩
 
-/-- An inverse image under a linear map commutes with the relative interior, provided some point is
-carried into `ri D`. `A ⁻¹' D` is the projection of `graph A ∩ (univ ×ˢ D)`, so intersection with
-an affine set and the image theorem do all the work, the relative interior hypothesis feeding the
-former. -/
+/-- Let $D \subseteq F$ be convex and $A : E \to F$ linear, and suppose that
+$A^{-1}(\operatorname{ri} D)$ is nonempty. Then $$\operatorname{ri}(A^{-1} D) =
+A^{-1}(\operatorname{ri} D).$$
+
+The set $A^{-1} D$ is the projection of $\operatorname{graph} A \cap (E \times D)$. So the
+theorem follows from `Convex.relint_inter_affine`, which uses the hypothesis, and from
+`Convex.relint_image`. -/
 theorem _root_.Convex.relint_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
     (h : (A ⁻¹' ri D).Nonempty) : ri (A ⁻¹' D) = A ⁻¹' ri D := by
   obtain ⟨x₀, hx₀⟩ := h
@@ -742,8 +856,12 @@ theorem _root_.Convex.relint_preimage {D : Set F} (hD : Convex ℝ D) (A : E →
   rw [Convex.relint_inter_affine (convex_univ.prod hD) hne, hriS] at himg
   rwa [image_fst_inter_prod_univ hMset, image_fst_inter_prod_univ hMset] at himg
 
-/-- The same for closures. One inclusion is continuity of `A`; the other runs through the same
-projection of the graph. -/
+/-- Let $D \subseteq F$ be convex and $A : E \to F$ linear, and suppose that
+$A^{-1}(\operatorname{ri} D)$ is nonempty. Then $$\operatorname{cl}(A^{-1} D) =
+A^{-1}(\operatorname{cl} D).$$
+
+One inclusion is the continuity of $A$. The other uses the same projection of the graph as
+`Convex.relint_preimage`. -/
 theorem _root_.Convex.closure_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
     (h : (A ⁻¹' ri D).Nonempty) : closure (A ⁻¹' D) = A ⁻¹' closure D := by
   obtain ⟨x₀, hx₀⟩ := h
@@ -770,9 +888,11 @@ section Indexed
 
 variable {ι : Type*}
 
-/-- Over a `Finset`: the relative interior of a finite intersection is the intersection of the
-relative interiors, as soon as the latter has a point in common. This is `Convex.relint_iInter`
-read over the subtype `↥s`. -/
+/-- Let $s$ be a finite set of indices, let $C_i \subseteq E$ be convex for $i \in s$, and let
+$x_0 \in \operatorname{ri} C_i$ for all $i \in s$. Then $$\operatorname{ri}\Big(\bigcap_{i \in
+s} C_i\Big) = \bigcap_{i \in s} \operatorname{ri} C_i.$$
+
+This is `Convex.relint_iInter` for the index type of the elements of $s$. -/
 theorem _root_.Convex.relint_biInter_finset {s : Finset ι} {C : ι → Set E}
     (hC : ∀ i ∈ s, Convex ℝ (C i)) {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i)) :
     ri (⋂ i ∈ s, C i) = ⋂ i ∈ s, ri (C i) := by
@@ -783,9 +903,13 @@ theorem _root_.Convex.relint_biInter_finset {s : Finset ι} {C : ι → Set E}
   rw [hbi C, hbi fun i => ri (C i)]
   exact Convex.relint_iInter (fun i => hC i i.2) ⟨x₀, Set.mem_iInter.2 fun i => hx₀ i i.2⟩
 
-/-- **The relative interior of a product of convex sets is the product of the relative interiors.**
-This is the `Set.pi` form of `intrinsicInterior_prod_eq`; unlike that one it needs finite dimension,
-being `Convex.relint_iInter` applied to the coordinate preimages. -/
+/-- Let $\iota$ be finite and let $C_i \subseteq E$, $i \in \iota$, be convex. Then the relative
+interior of the product set $\prod_i C_i \subseteq E^\iota$ is the product of the relative
+interiors: $$\operatorname{ri}\Big(\prod_i C_i\Big) = \prod_i \operatorname{ri} C_i.$$
+
+This is the `Set.pi` form of Mathlib's `intrinsicInterior_prod_eq`. Unlike that theorem it needs
+finite dimension, because it applies `Convex.relint_iInter` to the preimages under the
+coordinate maps. -/
 theorem _root_.Convex.relint_univ_pi [Finite ι] (C : ι → Set E) (hC : ∀ i, Convex ℝ (C i)) :
     ri (univ.pi C) = univ.pi fun i => ri (C i) := by
   obtain ⟨hι⟩ := nonempty_fintype ι
@@ -815,9 +939,12 @@ end Indexed
 
 /-! ### Slices of a convex set in a product -/
 
-/-- A point of a convex subset of a product is a relative interior point exactly when its first
-coordinate is a relative interior point of the projection and its second coordinate is a relative
-interior point of the corresponding slice. -/
+/-- Let $E$ and $F$ be finite-dimensional, let $S \subseteq E \times F$ be convex, and let $y \in E$
+and $z \in F$. Then $(y, z) \in \operatorname{ri} S$ if and only if $$y \in \operatorname{ri}\{u
+: (u, w) \in S \text{ for some } w\} \quad \text{and} \quad z \in \operatorname{ri}\{w : (y, w)
+\in S\}.$$ Thus a point of a convex set in a product is a relative interior point exactly when
+its first coordinate is a relative interior point of the projection and its second coordinate is
+a relative interior point of the slice above the first. -/
 theorem _root_.Convex.mem_relint_prod_iff {S : Set (E × F)} (hS : Convex ℝ S) {y : E} {z : F} :
     (y, z) ∈ ri S ↔ y ∈ ri (Prod.fst '' S) ∧ z ∈ ri {w | (y, w) ∈ S} := by
   have hfst : ri (Prod.fst '' S) = Prod.fst '' ri S := by
@@ -858,21 +985,23 @@ theorem _root_.Convex.mem_relint_prod_iff {S : Set (E × F)} (hS : Convex ℝ S)
       rw [hslice hne]; exact ⟨rfl, hz⟩
     exact hmem.2
 
-/-! ### Recession cones -/
+/-!
+### The cone over a convex set, and convex hulls of unions
 
-/-! ### The cone over a convex set, and convex hulls of unions
-
-Rockafellar's `K`, the convex cone in `ℝ × E` generated by `{1} × C`, is written out here as the
-explicit set `insert 0 {p | 0 < p.1 ∧ p.2 ∈ p.1 • C}`; `coe_hull_prodMk_one` in
-`Numlib/Analysis/Convex/Recession/ConeHull.lean` identifies it with
-`PointedCone.hull ℝ ({1} × C)`. -/
+For $C \subseteq E$, Rockafellar's convex cone in $\mathbb{R} \times E$ generated by
+$\{1\} \times C$ is written here as the explicit set $$K(C) = \{0\} \cup \{(\lambda, x) : \lambda >
+0,\ x \in \lambda C\}.$$ For convex $C$, `ConvexAnalysis.coe_hull_prodMk_one` in
+`Numlib.Analysis.Convex.Recession.ConeHull` identifies it with `PointedCone.hull ℝ ({1} × C)`.
+-/
 
 section Cone
 
 omit [FiniteDimensional ℝ E] in
-/-- The cone `{(λ, x) | λ > 0, x ∈ λC} ∪ {0}` over a convex set is convex. The convex combination is
-checked directly, `Convex.add_smul` (`(s + t) • C = s • C + t • C`) carrying the only interesting
-case. -/
+/-- Let $C \subseteq E$ be convex. Then the cone $K(C) = \{0\} \cup \{(\lambda, x) : \lambda > 0,\ x
+\in \lambda C\}$ is convex.
+
+The proof checks convex combinations directly. The only interesting case uses
+$(s + t) C = s C + t C$ for $s, t \ge 0$ (`Convex.add_smul`). -/
 theorem convex_cone_prodMk_one (hC : Convex ℝ C) :
     Convex ℝ (insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C}) := by
   have hsmul : ∀ (t : ℝ) (w : E) (a : ℝ), w ∈ t • C → a • w ∈ (a * t) • C := by
@@ -900,7 +1029,8 @@ theorem convex_cone_prodMk_one (hC : Convex ℝ C) :
         exact Set.add_mem_add (hsmul p.1 p.2 a hp2) (hsmul q.1 q.2 b hq2)
 
 omit [FiniteDimensional ℝ E] in
-/-- The horizontal slices of the cone over `C`, above a *positive* height. -/
+/-- Let $C \subseteq E$ and $t > 0$. Then the slice of the cone $K(C)$ at height $t$ is
+$\{w : (t, w) \in K(C)\} = t C$. -/
 theorem slice_cone_prodMk_one {t : ℝ} (ht : 0 < t) (C : Set E) :
     {w : E | ((t, w) : ℝ × E) ∈ insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C}} = t • C := by
   ext w
@@ -910,7 +1040,8 @@ theorem slice_cone_prodMk_one {t : ℝ} (ht : 0 < t) (C : Set E) :
   · exact h2
 
 omit [FiniteDimensional ℝ E] in
-/-- The projection of the cone over a nonempty `C` on the homogenising coordinate. -/
+/-- Let $C \subseteq E$ be nonempty. Then the projection of the cone $K(C)$ onto its first
+coordinate is $[0, \infty)$. -/
 theorem image_fst_cone_prodMk_one (hne : C.Nonempty) :
     Prod.fst '' insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C} = Ici (0 : ℝ) := by
   obtain ⟨x, hx⟩ := hne
@@ -926,10 +1057,13 @@ theorem image_fst_cone_prodMk_one (hne : C.Nonempty) :
     · exact ⟨0, Or.inl rfl, rfl⟩
     · exact ⟨(t, t • x), Or.inr ⟨ht', Set.smul_mem_smul_set hx⟩, rfl⟩
 
-/-- The relative interior of the convex cone generated by `{1} × C` consists of the pairs `(λ, x)`
-with `λ > 0` and `x ∈ λ (ri C)`. This is the product criterion with the first factor `ℝ`: the
-projection of the cone is `[0, ∞)`, whose relative interior is `(0, ∞)`, and the slice above
-`λ > 0` is `λ C`. -/
+/-- Let $C \subseteq E$ be nonempty and convex. Then the relative interior of the cone $K(C) = \{0\}
+\cup \{(\lambda, x) : \lambda > 0,\ x \in \lambda C\}$ generated by $\{1\} \times C$ is
+$$\operatorname{ri} K(C) = \{(\lambda, x) : \lambda > 0,\ x \in \lambda \operatorname{ri} C\}.$$
+
+This is `Convex.mem_relint_prod_iff` with the first factor $\mathbb{R}$: the projection of
+$K(C)$ is $[0, \infty)$, whose relative interior is $(0, \infty)$, and the slice above
+$\lambda > 0$ is $\lambda C$. -/
 theorem _root_.Convex.relint_cone_prodMk_one (hC : Convex ℝ C) (hne : C.Nonempty) :
     ri (insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C})
       = {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • ri C} := by
@@ -947,8 +1081,8 @@ theorem _root_.Convex.relint_cone_prodMk_one (hC : Convex ℝ C) (hne : C.Nonemp
     rw [slice_cone_prodMk_one ht C, Convex.relint_smul hC]
     exact hw
 
-/-- A point of `C` lies in `ri C` exactly when its lift to height one lies in the relative
-interior of the cone over `C`. -/
+/-- Let $C \subseteq E$ be nonempty and convex, and let $x \in E$. Then $x \in \operatorname{ri} C$
+if and only if $(1, x)$ lies in the relative interior of the cone $K(C)$. -/
 theorem _root_.Convex.mem_relint_iff_mk_one_mem_relint_cone (hC : Convex ℝ C) (hne : C.Nonempty)
     {x : E} :
     x ∈ ri C ↔ ((1, x) : ℝ × E) ∈ ri (insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C}) := by
@@ -956,8 +1090,9 @@ theorem _root_.Convex.mem_relint_iff_mk_one_mem_relint_cone (hC : Convex ℝ C) 
   simp
 
 omit [FiniteDimensional ℝ E] in
-/-- The cone over `conv (C₁ ∪ C₂)` is the sum of the cones over `C₁` and over `C₂`: the convex hull
-of a union becomes a sum one dimension up. -/
+/-- Let $C_1, C_2 \subseteq E$ be nonempty and convex. Then the cone over the convex hull of the
+union is the sum of the cones: $$K(\operatorname{conv}(C_1 \cup C_2)) = K(C_1) + K(C_2).$$ Thus
+the convex hull of a union becomes a sum one dimension up. -/
 theorem cone_prodMk_one_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • convexHull ℝ (C₁ ∪ C₂)}
@@ -1009,10 +1144,13 @@ theorem cone_prodMk_one_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁
         · rw [h1, h2, _root_.Convex.add_smul (convex_convexHull ℝ (C₁ ∪ C₂)) hp1.le hq1.le]
           exact Set.add_mem_add (Set.smul_set_mono hsub₁ hp2) (Set.smul_set_mono hsub₂ hq2)
 
-/-- The relative interior of the convex hull of a union of two nonempty convex sets is the union of
-the relative interiors of the convex combinations. The proof passes to the cones one dimension up,
-where the convex hull of the union becomes a *sum*, applies the formula for the relative interior
-of a sum, and reads the answer off the cone description. -/
+/-- Let $C_1, C_2 \subseteq E$ be nonempty and convex. Then $$\operatorname{ri}
+\operatorname{conv}(C_1 \cup C_2) = \bigcup_{0 < a < 1} \big((1 - a) \operatorname{ri} C_1 + a
+\operatorname{ri} C_2\big).$$
+
+The proof passes to the cones one dimension up, where the convex hull of the union becomes a sum
+(`ConvexAnalysis.cone_prodMk_one_convexHull_union`). It then applies `Convex.relint_add` and
+reads off the answer from `Convex.relint_cone_prodMk_one`. -/
 theorem _root_.Convex.relint_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     ri (convexHull ℝ (C₁ ∪ C₂)) = ⋃ a ∈ Ioo (0 : ℝ) 1, ((1 - a) • ri C₁ + a • ri C₂) := by
@@ -1039,9 +1177,15 @@ theorem _root_.Convex.relint_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ :
 
 end Cone
 
-/-- The relative interior and the closure of a convex set have the same directions of recession.
-This is the statement `Numlib/Analysis/Convex/Recession/Cone.lean` defers, where
-`recessionCone_interior_eq_recessionCone_closure` is proved instead. -/
+/-! ### Recession cones -/
+
+/-- Let $C \subseteq E$ be convex. Then the relative interior and the closure of $C$ have the same
+directions of recession: $$0^+(\operatorname{ri} C) = 0^+(\operatorname{cl} C),$$ where $0^+D =
+\{y : x + a y \in D \text{ for all } x \in D,\ a \ge 0\}$.
+
+`ConvexAnalysis.recessionCone_interior_eq_recessionCone_closure` in
+`Numlib.Analysis.Convex.Recession.Cone` proves the version with the interior, for a convex set
+with nonempty interior. -/
 theorem _root_.Convex.recessionCone_relint (hC : Convex ℝ C) :
     recessionCone (ri C) = recessionCone (closure C) := by
   refine Subset.antisymm ?_ fun y hy x hx a ha => ?_
@@ -1062,13 +1206,16 @@ section Functions
 variable {f : E → EReal}
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The vertical sections of an epigraph are closed. -/
+/-- For $z \in [-\infty, +\infty]$, the set $\{\nu \in \mathbb{R} : z \le \nu\}$ is closed. These
+sets are the vertical sections of an epigraph. -/
 theorem isClosed_setOf_le (z : EReal) : IsClosed {ν : ℝ | z ≤ (ν : EReal)} :=
   isClosed_le continuous_const continuous_coe_real_ereal
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The relative interior of a vertical section of an epigraph: `ri [f x, ∞) = (f x, ∞)`, with the
-degenerate values of `f x` included. -/
+/-- For $z \in [-\infty, +\infty]$, $$\operatorname{ri}\{\nu \in \mathbb{R} : z \le \nu\} = \{\nu
+\in \mathbb{R} : z < \nu\}.$$ For real $z$ this says
+$\operatorname{ri}[z, \infty) = (z, \infty)$. For $z = -\infty$ both sides are $\mathbb{R}$, and
+for $z = +\infty$ both sides are empty. -/
 theorem intrinsicInterior_setOf_le (z : EReal) :
     ri {ν : ℝ | z ≤ (ν : EReal)} = {ν : ℝ | z < (ν : EReal)} := by
   induction z with
@@ -1087,8 +1234,11 @@ theorem intrinsicInterior_setOf_le (z : EReal) :
       ext ν; simp
     rw [h1, h2, intrinsicInterior_empty]
 
-/-- The relative interior of an epigraph consists of the pairs `(x, μ)` with `x ∈ ri (dom f)` and
-`f x < μ < ∞`. This is the product criterion in which the second factor is `ℝ`. -/
+/-- Let $f : E \to [-\infty, +\infty]$ be convex. Then $$\operatorname{ri}(\operatorname{epi} f) =
+\{(x, \mu) \in E \times \mathbb{R} : x \in \operatorname{ri}(\operatorname{dom} f),\ f(x) <
+\mu\}.$$
+
+This is `Convex.mem_relint_prod_iff` with the second factor $\mathbb{R}$. -/
 theorem ConvexFn.relint_epi (hf : ConvexFn f) :
     ri (epi f) = {p : E × ℝ | p.1 ∈ ri (convexDom f) ∧ f p.1 < (p.2 : EReal)} := by
   ext p
@@ -1101,11 +1251,15 @@ theorem ConvexFn.relint_epi (hf : ConvexFn f) :
 /-! ### Improper convex functions -/
 
 omit [FiniteDimensional ℝ E] in
-/-- An improper convex function takes the value `−∞` at every relative interior point of its
-effective domain — so it is infinite except perhaps at relative boundary points of `dom f`.
-`ConvexFn.eq_bot_or_eq_top` in `Numlib/Analysis/Convex/Closure.lean` is the dimension-free
-replacement, valid in any topological vector space; this is the finite-dimensional statement, which
-needs no hypothesis on `dom f` and locates the `⊥` values precisely. -/
+/-- Let $E$ be a real normed space, let $f$ be convex and not proper, and let
+$x \in \operatorname{ri}(\operatorname{dom} f)$. Then $f(x) = -\infty$. Thus an improper convex
+function is $-\infty$ on $\operatorname{ri}(\operatorname{dom} f)$, and it is infinite except
+perhaps at relative boundary points of $\operatorname{dom} f$.
+
+Finite dimension is not needed. `ConvexAnalysis.ConvexFn.eq_bot_or_eq_top` in
+`Numlib.Analysis.Convex.Closure` is a version in any topological vector space for lower
+semicontinuous $f$. The present statement needs no hypothesis on $\operatorname{dom} f$, and it
+locates the values $-\infty$ exactly. -/
 theorem ConvexFn.eq_bot_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ¬ ProperConvex f) {x : E}
     (hx : x ∈ ri (convexDom f)) : f x = ⊥ := by
   have hxd : x ∈ convexDom f := intrinsicInterior_subset hx
@@ -1122,8 +1276,11 @@ theorem ConvexFn.eq_bot_of_mem_relint_convexDom (hf : ConvexFn f) (hp : ¬ Prope
     (by rw [inv_lt_one_iff₀]; exact Or.inr hμ)
   rwa [combo_prolong u x hμ0] at hkey
 
-/-- A lower semicontinuous improper convex function is `−∞` on the whole closure of its effective
-domain — the finite-dimensional sharpening of the preceding statement. -/
+/-- Let $f$ be convex, lower semicontinuous and not proper. Then $f(x) = -\infty$ for every
+$x \in \operatorname{cl}(\operatorname{dom} f)$.
+
+This sharpens `ConvexAnalysis.ConvexFn.eq_bot_of_mem_relint_convexDom`. It assumes finite
+dimension. -/
 theorem ConvexFn.eq_bot_of_mem_closure_convexDom (hf : ConvexFn f) (hl : LowerSemicontinuous f)
     (hp : ¬ ProperConvex f) {x : E} (hx : x ∈ closure (convexDom f)) : f x = ⊥ := by
   by_contra hne
@@ -1134,8 +1291,8 @@ theorem ConvexFn.eq_bot_of_mem_closure_convexDom (hf : ConvexFn f) (hl : LowerSe
   exact absurd (hf.eq_bot_of_mem_relint_convexDom hp hy) (hUlt y hyU).ne'
 
 omit [FiniteDimensional ℝ E] in
-/-- A convex function whose effective domain is relatively open is either nowhere `−∞`, or
-everywhere infinite. -/
+/-- Let $f$ be convex with $\operatorname{ri}(\operatorname{dom} f) = \operatorname{dom} f$. Then
+either $f(x) \neq -\infty$ for all $x$, or $f(x) \in \{-\infty, +\infty\}$ for all $x$. -/
 theorem ConvexFn.forall_ne_bot_or_forall_infinite (hf : ConvexFn f)
     (hopen : ri (convexDom f) = convexDom f) :
     (∀ x, f x ≠ ⊥) ∨ ∀ x, f x = ⊥ ∨ f x = ⊤ := by
@@ -1148,9 +1305,13 @@ theorem ConvexFn.forall_ne_bot_or_forall_infinite (hf : ConvexFn f)
 
 /-! ### The closure of a proper convex function -/
 
-/-- The key step: the lower semicontinuous hull agrees with `f` at every relative interior point of
-`dom f`. The vertical line over `x` meets `ri (epi f)`, so intersecting with an affine set lets the
-closure be computed inside that line, where the epigraph section is already closed. -/
+/-- Let $f$ be convex and $x \in \operatorname{ri}(\operatorname{dom} f)$. Then
+$(\operatorname{lsc} f)(x) = f(x)$, where $\operatorname{lsc} f$ is the lower semicontinuous
+hull, the function whose epigraph is $\operatorname{cl}(\operatorname{epi} f)$.
+
+The vertical line over $x$ meets $\operatorname{ri}(\operatorname{epi} f)$. So the closure of
+the epigraph can be computed inside that line, where the section of the epigraph is already
+closed. -/
 theorem ConvexFn.lscHull_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
     (hx : x ∈ ri (convexDom f)) : lscHull f x = f x := by
   have hVconv : Convex ℝ (({x} : Set E) ×ˢ (univ : Set ℝ)) := (convex_singleton x).prod convex_univ
@@ -1180,8 +1341,12 @@ theorem ConvexFn.lscHull_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
   rw [← hkey] at hmem
   exact hmem.2
 
-/-- `dom (lsc f)` is squeezed between `dom f` and its closure, so the two domains have the same
-closure and the same relative interior. Properness is not needed. -/
+/-- Let $f$ be convex. Then $\operatorname{ri}(\operatorname{dom}(\operatorname{lsc} f)) =
+\operatorname{ri}(\operatorname{dom} f)$.
+
+The set $\operatorname{dom}(\operatorname{lsc} f)$ lies between $\operatorname{dom} f$ and its
+closure, so the two domains have the same closure and the same relative interior. Properness is
+not needed. -/
 theorem ConvexFn.relint_convexDom_lscHull (hf : ConvexFn f) :
     ri (convexDom (lscHull f)) = ri (convexDom f) :=
   (Convex.closure_eq_iff_relint_eq (convexFn_lscHull hf).convex_convexDom
@@ -1190,8 +1355,10 @@ theorem ConvexFn.relint_convexDom_lscHull (hf : ConvexFn f) :
       (intrinsicInterior_subset.trans (convexDom_subset_convexDom_lscHull f))
       (convexDom_lscHull_subset_closure_convexDom f))
 
-/-- The lower semicontinuous hull of a *proper* convex function is nowhere `−∞`. This is what makes
-`convexCl f` the hull rather than the constant `⊥`, and it is finite-dimensional. -/
+/-- Let $f$ be proper and convex. Then $(\operatorname{lsc} f)(x) \neq -\infty$ for every $x \in E$.
+
+This is why `ConvexAnalysis.convexCl f` is the lower semicontinuous hull and not the constant
+$-\infty$. It assumes finite dimension. -/
 theorem ConvexFn.lscHull_ne_bot (hf : ConvexFn f) (hp : ProperConvex f)
     (x : E) : lscHull f x ≠ ⊥ := by
   intro hbot
@@ -1202,21 +1369,26 @@ theorem ConvexFn.lscHull_ne_bot (hf : ConvexFn f) (hp : ProperConvex f)
     (convexFn_lscHull hf).eq_bot_of_mem_relint_convexDom hgp (by rw [hdom]; exact hz)
   exact hp.ne_bot z (hf.lscHull_eq_of_mem_relint_convexDom hz ▸ h1)
 
-/-- For a proper convex function the closure *is* the lower semicontinuous hull; the exceptional
-branch of `convexCl` is never taken. -/
+/-- Let $f$ be proper and convex. Then the closure $\operatorname{cl} f$ is the lower semicontinuous
+hull $\operatorname{lsc} f$: the exceptional case in the definition of `ConvexAnalysis.convexCl`
+does not occur. -/
 theorem ConvexFn.convexCl_eq_lscHull (hf : ConvexFn f)
     (hp : ProperConvex f) : convexCl f = lscHull f :=
   convexCl_of_forall_ne_bot (hf.lscHull_ne_bot hp)
 
-/-- The closure of a proper convex function is proper (and hence, by `closedConvex_convexCl`, a
-closed proper convex function). -/
+/-- Let $f$ be proper and convex. Then its closure $\operatorname{cl} f$ is proper.
+
+By `ConvexAnalysis.closedConvex_convexCl`, $\operatorname{cl} f$ is then a closed proper convex
+function. -/
 theorem ConvexFn.properConvex_convexCl (hf : ConvexFn f)
     (hp : ProperConvex f) : ProperConvex (convexCl f) := by
   rw [hf.convexCl_eq_lscHull hp]
   exact ⟨hp.convexDom_nonempty.mono (convexDom_subset_convexDom_lscHull f), hf.lscHull_ne_bot hp⟩
 
-/-- `cl f` agrees with `f` at every relative interior point of `dom f`, whether or not `f` is
-proper. -/
+/-- Let $f$ be convex and $x \in \operatorname{ri}(\operatorname{dom} f)$. Then
+$(\operatorname{cl} f)(x) = f(x)$.
+
+Properness of $f$ is not needed. -/
 theorem ConvexFn.convexCl_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
     (hx : x ∈ ri (convexDom f)) :
     convexCl f x = f x := by
@@ -1227,17 +1399,24 @@ theorem ConvexFn.convexCl_eq_of_mem_relint_convexDom (hf : ConvexFn f) {x : E}
     have hl : lscHull f x = ⊥ := le_bot_iff.1 (hbot ▸ lscHull_le f x)
     rw [convexCl_of_exists_eq_bot ⟨x, hl⟩, hbot]
 
-/-- The concave counterpart of `ConvexFn.convexCl_eq_of_mem_relint_convexDom`: `cl g` agrees with
-`g` at every relative interior point of `concaveDom g`. -/
+/-- Let $g$ be concave, with effective domain $\operatorname{dom} g = \{x : g(x) > -\infty\}$, and
+let $x \in \operatorname{ri}(\operatorname{dom} g)$. Then $(\operatorname{cl} g)(x) = g(x)$,
+where $\operatorname{cl} g$ is the concave closure `ConvexAnalysis.concaveCl g`.
+
+This is the concave counterpart of
+`ConvexAnalysis.ConvexFn.convexCl_eq_of_mem_relint_convexDom`. -/
 theorem ConcaveFn.concaveCl_eq_of_mem_relint_concaveDom {g : E → EReal} (hg : ConcaveFn g) {x : E}
     (hx : x ∈ ri (concaveDom g)) : concaveCl g x = g x := by
   rw [concaveDom_eq_convexDom_neg] at hx
   rw [concaveCl_apply, hg.convexFn_neg.convexCl_eq_of_mem_relint_convexDom hx]
   exact neg_neg _
 
-/-- `cl f` also agrees with `f` off the closure of `dom f`, where both are `+∞`. Together with
-`ConvexFn.convexCl_eq_of_mem_relint_convexDom` this is the assertion that `cl f` differs from `f` at
-most at relative boundary points of `dom f`. -/
+/-- Let $f$ be proper and convex, and let $x \notin \operatorname{cl}(\operatorname{dom} f)$. Then
+$(\operatorname{cl} f)(x) = f(x)$, both values being $+\infty$.
+
+Together with `ConvexAnalysis.ConvexFn.convexCl_eq_of_mem_relint_convexDom`, this says that
+$\operatorname{cl} f$ differs from $f$ at most at relative boundary points of
+$\operatorname{dom} f$. -/
 theorem ConvexFn.convexCl_eq_of_notMem_closure_convexDom (hf : ConvexFn f)
     (hp : ProperConvex f) {x : E}
     (hx : x ∉ closure (convexDom f)) : convexCl f x = f x := by
@@ -1251,8 +1430,12 @@ theorem ConvexFn.convexCl_eq_of_notMem_closure_convexDom (hf : ConvexFn f)
     exact hx (subset_closure (mem_convexDom.2 (lt_of_le_of_ne le_top h)))
   rw [h1, h2]
 
-/-- The concave counterpart of `ConvexFn.convexCl_eq_of_notMem_closure_convexDom`: `cl g` agrees
-with `g` off the closure of `concaveDom g`, where both are `-∞`. -/
+/-- Let $g$ be proper and concave, and let $x \notin \operatorname{cl}(\operatorname{dom} g)$, where
+$\operatorname{dom} g = \{x : g(x) > -\infty\}$. Then $(\operatorname{cl} g)(x) = g(x)$ for the
+concave closure, both values being $-\infty$.
+
+This is the concave counterpart of
+`ConvexAnalysis.ConvexFn.convexCl_eq_of_notMem_closure_convexDom`. -/
 theorem ConcaveFn.concaveCl_eq_of_notMem_closure_concaveDom {g : E → EReal} (hg : ConcaveFn g)
     (hp : ProperConcave g) {x : E} (hx : x ∉ closure (concaveDom g)) : concaveCl g x = g x := by
   rw [concaveDom_eq_convexDom_neg] at hx
@@ -1260,17 +1443,26 @@ theorem ConcaveFn.concaveCl_eq_of_notMem_closure_concaveDom {g : E → EReal} (h
       hg.convexFn_neg.convexCl_eq_of_notMem_closure_convexDom hp.properConvex_neg hx]
   exact neg_neg _
 
-/-- `dom (cl f)` is squeezed between `dom f` and its closure, so the two domains have the same
-closure and the same relative interior. -/
+/-- Let $f$ be proper and convex. Then $$\operatorname{ri}(\operatorname{dom}(\operatorname{cl}
+f)) = \operatorname{ri}(\operatorname{dom} f).$$
+
+The set $\operatorname{dom}(\operatorname{cl} f)$ lies between $\operatorname{dom} f$ and its
+closure, so the two domains have the same closure and the same relative interior. -/
 theorem ConvexFn.relint_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConvex f) :
     ri (convexDom (convexCl f)) = ri (convexDom f) := by
   rw [hf.convexCl_eq_lscHull hp]
   exact hf.relint_convexDom_lscHull
 
-/-- The companion statement for *interiors*: `dom (cl f)` has the same plain interior as `dom f`,
-not only the same relative interior. The inclusion `⊇` is `cl f ≤ f`; for `⊆`,
-`interior (dom (cl f))` is an *open* set inside `ri (dom (cl f)) = ri (dom f) ⊆ dom f`, and an open
-subset of a set is inside its interior. -/
+/-- Let $f$ be proper and convex. Then $\operatorname{dom}(\operatorname{cl} f)$ and
+$\operatorname{dom} f$ have the same interior, not only the same relative interior:
+$$\operatorname{int}(\operatorname{dom}(\operatorname{cl} f)) =
+\operatorname{int}(\operatorname{dom} f).$$
+
+The inclusion $\supseteq$ follows from $\operatorname{cl} f \le f$. For $\subseteq$,
+$\operatorname{int}(\operatorname{dom}(\operatorname{cl} f))$ is an open set inside
+$\operatorname{ri}(\operatorname{dom}(\operatorname{cl} f)) =
+\operatorname{ri}(\operatorname{dom} f) \subseteq \operatorname{dom} f$, and an open subset of a
+set lies in its interior. -/
 theorem ConvexFn.interior_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConvex f) :
     interior (convexDom (convexCl f)) = interior (convexDom f) := by
   refine Set.Subset.antisymm ?_ (interior_mono fun z hz =>
@@ -1283,8 +1475,8 @@ theorem ConvexFn.interior_convexDom_convexCl (hf : ConvexFn f) (hp : ProperConve
   rw [hf.relint_convexDom_convexCl hp]
   exact intrinsicInterior_subset
 
-/-- A proper convex function whose effective domain is an affine set — in particular one that is
-finite everywhere — is closed. -/
+/-- Let $f$ be proper and convex, and suppose that $\operatorname{dom} f$ is an affine subspace $M$.
+Then $f$ is closed. In particular, a proper convex function that is finite everywhere is closed. -/
 theorem ConvexFn.closedConvex_of_convexDom_eq_coe (hf : ConvexFn f) (hp : ProperConvex f)
     {M : AffineSubspace ℝ E} (hdom : convexDom f = (M : Set E)) : ClosedConvex f := by
   refine funext fun x => ?_
@@ -1296,12 +1488,15 @@ theorem ConvexFn.closedConvex_of_convexDom_eq_coe (hf : ConvexFn f) (hp : Proper
     rw [hdom, M.closed_of_finiteDimensional.closure_eq]
     rwa [hdom] at hx
 
-/-- A convex function bounded below by a real constant on a convex set on which it is finite is
-bounded below by that same constant on the closure of the set. The line segment principle plus one
-limit: from a relative interior point `y` of `D` the whole half-open segment towards `x ∈ cl D`
-stays in `D`, so the affine bound is `≥ c` for every `t < 1`. Rockafellar carries no hypothesis at
-`−∞`; here `g` is asked never to take that value, which is how the result is used and what makes
-the statement true as it stands. -/
+/-- Let $f$ be convex and never $-\infty$. Let $D \subseteq E$ be convex, with $f(z) < +\infty$ and
+$c \le f(z)$ for all $z \in D$, where $c \in \mathbb{R}$. Then $c \le f(x)$ for every
+$x \in \operatorname{cl} D$.
+
+By the line segment principle, the half-open segment from a relative interior point $y$ of $D$
+towards $x \in \operatorname{cl} D$ stays in $D$. So the convexity bound $(1 - t) f(y) + t f(x)$
+is at least $c$ for every $t < 1$, and a limit gives $c \le f(x)$. Rockafellar has no hypothesis
+about the value $-\infty$; here $f$ is assumed never to take it. This is how the result is used,
+and it makes the statement true as it stands. -/
 theorem ConvexFn.le_of_mem_closure (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥) {D : Set E}
     (hD : Convex ℝ D) (hfin : ∀ z ∈ D, f z ≠ ⊤) {c : ℝ} (h : ∀ z ∈ D, (c : EReal) ≤ f z)
     {x : E} (hx : x ∈ closure D) : (c : EReal) ≤ f x := by
@@ -1333,11 +1528,15 @@ section SegmentLimits
 
 variable {f : E → EReal}
 
-/-- The lower semicontinuous hull of `f` at `y` is the limit of `f` along the segment running from
-a *relative interior* point of `dom f` towards `y`. `Numlib/Analysis/Convex/Closure.lean` proves
-`tendsto_lscHull_along_segment`, where the segment must start at an interior point of `epi f`; here
-the description of `ri (epi f)` supplies a relative interior point instead, and the line segment
-principle replaces Mathlib's `Convex.combo_interior_closure_mem_interior`. -/
+/-- Let $f$ be convex, $x \in \operatorname{ri}(\operatorname{dom} f)$ and $y \in E$. Then the lower
+semicontinuous hull of $f$ at $y$ is a limit along the segment from $x$ to $y$:
+$$(\operatorname{lsc} f)(y) = \lim_{a \uparrow 1} f((1 - a)x + a y).$$
+
+`ConvexAnalysis.tendsto_lscHull_along_segment` in `Numlib.Analysis.Convex.Closure` proves this
+for a segment that starts at an interior point of $\operatorname{epi} f$. Here
+`ConvexAnalysis.ConvexFn.relint_epi` supplies a relative interior point of
+$\operatorname{epi} f$ instead, and the line segment principle replaces Mathlib's
+`Convex.combo_interior_closure_mem_interior`. -/
 theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
     (hx : x ∈ ri (convexDom f)) (y : E) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (lscHull f y)) := by
@@ -1347,8 +1546,11 @@ theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
   exact tendsto_lscHull_along_segment_of_combo_mem fun _ hyβ a ha0 ha1 =>
     intrinsicInterior_subset (Convex.segment_mem_relint hf.convex_epi hxα hyβ ha0 ha1)
 
-/-- The same limit for `convexCl`. Properness is what rules out the exceptional branch of
-`convexCl`; compare `convexCl_eq_limit_along_segment`, which has to assume it directly. -/
+/-- Let $f$ be proper and convex, $x \in \operatorname{ri}(\operatorname{dom} f)$ and $y \in E$.
+Then $$(\operatorname{cl} f)(y) = \lim_{a \uparrow 1} f((1 - a)x + a y).$$
+
+Properness rules out the exceptional case in the definition of `ConvexAnalysis.convexCl`.
+Compare `ConvexAnalysis.convexCl_eq_limit_along_segment`, which has to assume this directly. -/
 theorem ConvexFn.tendsto_convexCl_along_segment_relint (hf : ConvexFn f)
     (hp : ProperConvex f) {x : E}
     (hx : x ∈ ri (convexDom f)) (y : E) :
@@ -1356,11 +1558,15 @@ theorem ConvexFn.tendsto_convexCl_along_segment_relint (hf : ConvexFn f)
   rw [hf.convexCl_eq_lscHull hp]
   exact hf.tendsto_lscHull_along_segment_relint hx y
 
-/-- **Two convex functions that agree on the relative interior of a common effective domain have the
-same lower semicontinuous hull** — the sharp form of "a closed convex function is determined by its
-values on the relative interior of its effective domain". From a relative interior point the
-half-open segment towards `y` stays in the relative interior, where the two agree; off
-`cl (dom f)` both hulls are `⊤`. -/
+/-- Let $f$ and $g$ be convex with $\operatorname{ri}(\operatorname{dom} f) =
+\operatorname{ri}(\operatorname{dom} g)$, and let $f = g$ on
+$\operatorname{ri}(\operatorname{dom} f)$. Then $f$ and $g$ have the same lower semicontinuous
+hull. This is the sharp form of the fact that a closed convex function is determined by its
+values on the relative interior of its effective domain.
+
+From a relative interior point, the half-open segment towards $y$ stays in the relative
+interior, where $f$ and $g$ agree. Off $\operatorname{cl}(\operatorname{dom} f)$ both hulls are
+$+\infty$. -/
 theorem lscHull_eq_of_eqOn_relint_convexDom {g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
     (hdom : ri (convexDom f) = ri (convexDom g)) (heq : Set.EqOn f g (ri (convexDom f))) :
     lscHull f = lscHull g := by
@@ -1393,15 +1599,25 @@ theorem lscHull_eq_of_eqOn_relint_convexDom {g : E → EReal} (hf : ConvexFn f) 
         top_le_iff.1 (not_lt.1 fun hmem => hyg (convexDom_lscHull_subset_closure_convexDom g hmem))
       rw [h1, h2]
 
-/-- The `convexCl` form of `lscHull_eq_of_eqOn_relint_convexDom`. -/
+/-- Let $f$ and $g$ be convex with $\operatorname{ri}(\operatorname{dom} f) =
+\operatorname{ri}(\operatorname{dom} g)$, and let $f = g$ on
+$\operatorname{ri}(\operatorname{dom} f)$. Then $\operatorname{cl} f = \operatorname{cl} g$.
+
+This is the form of `ConvexAnalysis.lscHull_eq_of_eqOn_relint_convexDom` for the closure
+`ConvexAnalysis.convexCl`. -/
 theorem convexCl_eq_of_eqOn_relint_convexDom {g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
     (hdom : ri (convexDom f) = ri (convexDom g)) (heq : Set.EqOn f g (ri (convexDom f))) :
     convexCl f = convexCl g := by
   unfold convexCl
   rw [lscHull_eq_of_eqOn_relint_convexDom hf hg hdom heq]
 
-/-- The concave counterpart of `convexCl_eq_of_eqOn_relint_convexDom`: two concave functions that
-agree on the relative interior of a common effective domain have the same concave closure. -/
+/-- Let $f$ and $g$ be concave, with effective domains
+$\operatorname{dom} f = \{x : f(x) > -\infty\}$ and
+$\operatorname{dom} g = \{x : g(x) > -\infty\}$. Suppose that
+$\operatorname{ri}(\operatorname{dom} f) = \operatorname{ri}(\operatorname{dom} g)$ and $f = g$
+on $\operatorname{ri}(\operatorname{dom} f)$. Then $f$ and $g$ have the same concave closure.
+
+This is the concave counterpart of `ConvexAnalysis.convexCl_eq_of_eqOn_relint_convexDom`. -/
 theorem concaveCl_eq_of_eqOn_relint_concaveDom {g : E → EReal} (hf : ConcaveFn f)
     (hg : ConcaveFn g) (hdom : ri (concaveDom f) = ri (concaveDom g))
     (heq : Set.EqOn f g (ri (concaveDom f))) : concaveCl f = concaveCl g := by
@@ -1422,10 +1638,12 @@ section LevelSets
 
 variable {f : E → EReal}
 
-/-- If a convex function is anywhere below a real level, then it is already below that level at
-some *relative interior* point of its effective domain. The open half-space `{(x, μ) | μ < α}`
-meets `epi f`, hence meets `ri (epi f)`, and the description of `ri (epi f)` reads off the
-point. -/
+/-- Let $f$ be convex and $\alpha \in \mathbb{R}$, and suppose that $f(x) < \alpha$ for some
+$x \in E$. Then $f(x) < \alpha$ for some $x \in \operatorname{ri}(\operatorname{dom} f)$.
+
+The open half-space $\{(x, \mu) : \mu < \alpha\}$ meets $\operatorname{epi} f$, hence it meets
+$\operatorname{ri}(\operatorname{epi} f)$ by `Convex.relint_inter_nonempty_of_isOpen`, and
+`ConvexAnalysis.ConvexFn.relint_epi` gives the point. -/
 theorem ConvexFn.exists_mem_relint_convexDom_lt (hf : ConvexFn f) {α : ℝ}
     (hα : ∃ x, f x < (α : EReal)) : ∃ x ∈ ri (convexDom f), f x < (α : EReal) := by
   obtain ⟨x, hx⟩ := hα
@@ -1438,10 +1656,13 @@ theorem ConvexFn.exists_mem_relint_convexDom_lt (hf : ConvexFn f) {α : ℝ}
   have hpα : p.2 < α := hpU
   exact ⟨p.1, hpri.1, hpri.2.trans (by exact_mod_cast hpα)⟩
 
-/-- The relative interior of a level set: `ri {x | f x ≤ α} = {x ∈ ri (dom f) | f x < α}`, whenever
-`α` exceeds the infimum of `f`. The horizontal hyperplane `{(x, α)}` of the textbook argument is
-replaced by the *slab* `E × (-∞, α]`, whose relative interior is `E × (-∞, α)`. Properness is not
-needed. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then the relative
+interior of the level set is $$\operatorname{ri}\{x : f(x) \le \alpha\} = \{x \in
+\operatorname{ri}(\operatorname{dom} f) : f(x) < \alpha\}.$$
+
+Rockafellar's argument intersects $\operatorname{epi} f$ with the horizontal hyperplane
+$\{(x, \alpha)\}$. Here it is replaced by the slab $E \times (-\infty, \alpha]$, whose relative
+interior is $E \times (-\infty, \alpha)$. Properness is not needed. -/
 theorem ConvexFn.relint_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     ri {x | f x ≤ (α : EReal)} = {x ∈ ri (convexDom f) | f x < (α : EReal)} := by
   obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_convexDom_lt (iInf_lt_iff.1 hα)
@@ -1471,11 +1692,18 @@ theorem ConvexFn.relint_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x 
     obtain ⟨ν, hzν, hνα⟩ := EReal.lt_iff_exists_real_btwn.1 hz2
     exact ⟨(z, ν), ⟨⟨hz1, hzν⟩, mem_univ _, by exact_mod_cast hνα⟩, rfl⟩
 
-/-- The closure of a level set: `cl {x | f x ≤ α} = {x | (cl f) x ≤ α}`, stated for the lower
-semicontinuous hull, which carries the content. `⊆` is `closure_le_subset_lscHull_le` and needs no
-hypothesis; for `⊇`, `exists_mem_relint_dom_lt` supplies a point `y ∈ ri (dom f)` with `f y < α`,
-and the line segment principle runs the segment from `(y, α) ∈ ri (epi f)` to `(x, α) ∈ cl (epi f)`
-inside `ri (epi f)`. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then the closure
+of the level set is a level set of the lower semicontinuous hull: $$\operatorname{cl}\{x : f(x)
+\le \alpha\} = \{x : (\operatorname{lsc} f)(x) \le \alpha\}.$$
+
+For proper $f$, the hull is the closure $\operatorname{cl} f$
+(`ConvexAnalysis.ConvexFn.closure_setOf_le_convexCl`). The inclusion $\subseteq$ is
+`ConvexAnalysis.closure_le_subset_lscHull_le` and needs no hypothesis. For $\supseteq$,
+`ConvexAnalysis.ConvexFn.exists_mem_relint_convexDom_lt` gives
+$y \in \operatorname{ri}(\operatorname{dom} f)$ with $f(y) < \alpha$, and the line segment
+principle keeps the segment from $(y, \alpha) \in \operatorname{ri}(\operatorname{epi} f)$ to
+$(x, \alpha) \in \operatorname{cl}(\operatorname{epi} f)$ inside
+$\operatorname{ri}(\operatorname{epi} f)$. -/
 theorem ConvexFn.closure_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x ≤ (α : EReal)} = {x | lscHull f x ≤ (α : EReal)} := by
   refine subset_antisymm (closure_le_subset_lscHull_le f α) fun x hx => ?_
@@ -1494,38 +1722,46 @@ theorem ConvexFn.closure_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x
   rw [harith] at hle
   exact hle
 
-/-- The two level sets `{f ≤ α}` and `{f < α}` have the same closure. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then the level
+sets $\{x : f(x) < \alpha\}$ and $\{x : f(x) \le \alpha\}$ have the same closure. -/
 theorem ConvexFn.closure_setOf_lt_eq (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x < (α : EReal)} = closure {x | f x ≤ (α : EReal)} :=
   Convex.closure_eq_of_relint_subset_of_subset_closure (hf.convex_le (α : EReal))
     (by rw [hf.relint_setOf_le hα]; exact fun _ hz => hz.2)
     (fun z hz => subset_closure (show f z ≤ (α : EReal) from le_of_lt hz))
 
-/-- The two level sets `{f ≤ α}` and `{f < α}` have the same relative interior. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then the level
+sets $\{x : f(x) < \alpha\}$ and $\{x : f(x) \le \alpha\}$ have the same relative interior. -/
 theorem ConvexFn.relint_setOf_lt_eq (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     ri {x | f x < (α : EReal)} = ri {x | f x ≤ (α : EReal)} :=
   (Convex.closure_eq_iff_relint_eq (hf.convex_lt (α : EReal))
     (hf.convex_le (α : EReal))).1 (hf.closure_setOf_lt_eq hα)
 
-/-- The relative interior of the strict level set `{f < α}`. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then
+$\operatorname{ri}\{x : f(x) < \alpha\} = \{x \in \operatorname{ri}(\operatorname{dom} f) : f(x)
+< \alpha\}$. -/
 theorem ConvexFn.relint_setOf_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     ri {x | f x < (α : EReal)} = {x ∈ ri (convexDom f) | f x < (α : EReal)} :=
   (hf.relint_setOf_lt_eq hα).trans (hf.relint_setOf_le hα)
 
-/-- The closure of the strict level set `{f < α}`, in terms of the lower semicontinuous hull. -/
+/-- Let $f$ be convex and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then
+$\operatorname{cl}\{x : f(x) < \alpha\} = \{x : (\operatorname{lsc} f)(x) \le \alpha\}$. -/
 theorem ConvexFn.closure_setOf_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x < (α : EReal)} = {x | lscHull f x ≤ (α : EReal)} :=
   (hf.closure_setOf_lt_eq hα).trans (hf.closure_setOf_le hα)
 
-/-- The closure formula for a *proper* convex function, where the hull is the closure `cl f`. -/
+/-- Let $f$ be proper and convex, and let $\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then
+$\operatorname{cl}\{x : f(x) \le \alpha\} = \{x : (\operatorname{cl} f)(x) \le \alpha\}$. -/
 theorem ConvexFn.closure_setOf_le_convexCl (hf : ConvexFn f) (hp : ProperConvex f) {α : ℝ}
     (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x ≤ (α : EReal)} = {x | convexCl f x ≤ (α : EReal)} := by
   rw [hf.closure_setOf_le hα, hf.convexCl_eq_lscHull hp]
 
-/-- For a convex function whose effective domain is relatively open, the relative interior of a
-level set is the corresponding strict level set. Rockafellar assumes `f` closed as well; closedness
-is not used. -/
+/-- Let $f$ be convex with $\operatorname{ri}(\operatorname{dom} f) = \operatorname{dom} f$, and let
+$\alpha \in \mathbb{R}$ with $\inf_x f(x) < \alpha$. Then $\operatorname{ri}\{x : f(x) \le
+\alpha\} = \{x : f(x) < \alpha\}$.
+
+Rockafellar also assumes $f$ closed. Closedness is not used. -/
 theorem ConvexFn.relint_setOf_le_of_relint_convexDom_eq (hf : ConvexFn f)
     (hopen : ri (convexDom f) = convexDom f)
     {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
@@ -1534,9 +1770,12 @@ theorem ConvexFn.relint_setOf_le_of_relint_convexDom_eq (hf : ConvexFn f)
   exact Set.ext fun z =>
     ⟨fun hz => hz.2, fun hz => ⟨mem_convexDom.2 (hz.trans (EReal.coe_lt_top α)), hz⟩⟩
 
-/-- For a closed proper convex function the closure of a strict level set is the corresponding
-level set. Rockafellar assumes in addition that `dom f` is relatively open; that hypothesis is
-needed only for the companion formula above. -/
+/-- Let $f$ be a closed proper convex function, and let $\alpha \in \mathbb{R}$ with
+$\inf_x f(x) < \alpha$. Then $\operatorname{cl}\{x : f(x) < \alpha\} = \{x : f(x) \le \alpha\}$.
+
+Rockafellar also assumes that $\operatorname{dom} f$ is relatively open. That hypothesis is
+needed only for the companion formula
+`ConvexAnalysis.ConvexFn.relint_setOf_le_of_relint_convexDom_eq`. -/
 theorem ConvexFn.closure_setOf_lt_of_closedConvex (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : ClosedConvex f)
     {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
@@ -1549,18 +1788,22 @@ end LevelSets
 
 section Separation
 
-/-! ### Transversal thickening
+/-!
+### Transversal thickening
 
-Rockafellar's device for turning a relative-interior statement into an interior statement: add to
-`C` a complement `W'` of the direction of its affine hull. The thickened set `C + W'` is convex, its
-affine hull is everything (so it has nonempty interior), and it meets `aff C` in `C` again — so
-`x ∉ ri C` becomes `x ∉ int (C + W')` and Mathlib's separation theorems for *open* convex sets
-apply. The three lemmas below need the topology but not `[FiniteDimensional ℝ E]`, which is why
-each carries an `omit`; finite-dimensionality enters only in `exists_lt_of_notMem_relint`, through
-`Convex.interior_nonempty_iff_affineSpan_eq_top` and closedness of an affine subspace. -/
+Rockafellar turns a statement about relative interiors into one about interiors by adding to $C$ a
+complement $W'$ of the direction of its affine hull. For convex $C$ the thickened set $C + W'$ is
+convex, its affine hull is $E$, so it has nonempty interior, and it meets $\operatorname{aff} C$ in
+$C$ again. Then $x \notin \operatorname{ri} C$ becomes $x \notin \operatorname{int}(C + W')$, and
+Mathlib's separation theorems for open convex sets apply. The three lemmas below do not need finite
+dimension. Finite dimension enters only in `ConvexAnalysis.exists_lt_of_notMem_relint`, through
+`Convex.interior_nonempty_iff_affineSpan_eq_top` and the closedness of affine subspaces.
+-/
 
 omit [FiniteDimensional ℝ E] in
-/-- **Transversal thickening, trace.** The thickened set meets the affine hull of `C` in `C`. -/
+/-- Let $W'$ be a subspace complementary to the direction of $\operatorname{aff} C$. Then the
+thickened set meets the affine hull in $C$: $$(C + W') \cap \operatorname{aff} C = C.$$
+-/
 theorem add_submodule_inter_affineSpan {W' : Submodule ℝ E}
     (hcompl : IsCompl (affineSpan ℝ C).direction W') :
     (C + (W' : Set E)) ∩ (affineSpan ℝ C : Set E) = C := by
@@ -1578,7 +1821,8 @@ theorem add_submodule_inter_affineSpan {W' : Submodule ℝ E}
   exact hc
 
 omit [FiniteDimensional ℝ E] in
-/-- **Transversal thickening, span.** The thickened set is affinely spanning. -/
+/-- Let $C$ be nonempty and let $W'$ be a subspace complementary to the direction of
+$\operatorname{aff} C$. Then $\operatorname{aff}(C + W') = E$. -/
 theorem affineSpan_add_submodule_eq_top (hne : C.Nonempty) {W' : Submodule ℝ E}
     (hcompl : IsCompl (affineSpan ℝ C).direction W') :
     affineSpan ℝ (C + (W' : Set E)) = ⊤ := by
@@ -1605,8 +1849,11 @@ theorem affineSpan_add_submodule_eq_top (hne : C.Nonempty) {W' : Submodule ℝ E
   exact AffineSubspace.vadd_mem_of_mem_direction h2 h1
 
 omit [FiniteDimensional ℝ E] in
-/-- **Transversal thickening, relative interior.** A point of `aff C` outside `ri C` is outside the
-interior of the thickening. This is the step that lets an *open*-set separation theorem be used. -/
+/-- Let $W'$ be a subspace complementary to the direction of $\operatorname{aff} C$, and let
+$x_0 \in \operatorname{aff} C$ with $x_0 \notin \operatorname{ri} C$. Then
+$x_0 \notin \operatorname{int}(C + W')$.
+
+This is the step that lets a separation theorem for open sets be used. -/
 theorem notMem_interior_add_submodule {x₀ : E} {W' : Submodule ℝ E}
     (hcompl : IsCompl (affineSpan ℝ C).direction W') (hx₀A : x₀ ∈ affineSpan ℝ C)
     (hx₀ : x₀ ∉ ri C) : x₀ ∉ interior (C + (W' : Set E)) := by
@@ -1618,9 +1865,14 @@ theorem notMem_interior_add_submodule {x₀ : E} {W' : Submodule ℝ E}
     ⟨hball (by simpa [Metric.mem_ball] using hd), hy⟩
   rwa [add_submodule_inter_affineSpan hcompl] at hmem
 
-/-- A point outside `ri C` is *properly* separated from `C` by a hyperplane through it. The proof
-thickens `C` transversally to its affine hull, so that `x₀ ∉ ri C` becomes `x₀ ∉ int (C + W')` and
-Mathlib's separation of a point from an open convex set applies. -/
+/-- Let $C \subseteq E$ be nonempty and convex, and let $x_0 \notin \operatorname{ri} C$. Then there
+is a continuous linear functional $g : E \to \mathbb{R}$ with $g(x) \le g(x_0)$ for all
+$x \in C$ and $g(x) < g(x_0)$ for some $x \in C$. Thus the hyperplane $\{g = g(x_0)\}$ through
+$x_0$ separates $x_0$ from $C$ properly.
+
+The proof thickens $C$ transversally to its affine hull, so that
+$x_0 \notin \operatorname{ri} C$ becomes $x_0 \notin \operatorname{int}(C + W')$, and then
+applies Mathlib's separation of a point from an open convex set. -/
 theorem exists_lt_of_notMem_relint (hC : Convex ℝ C) (hne : C.Nonempty) {x₀ : E}
     (hx₀ : x₀ ∉ ri C) :
     ∃ g : E →L[ℝ] ℝ, (∀ x ∈ C, g x ≤ g x₀) ∧ ∃ x ∈ C, g x < g x₀ := by
@@ -1688,8 +1940,11 @@ theorem exists_lt_of_notMem_relint (hC : Convex ℝ C) (hne : C.Nonempty) {x₀ 
       simp only [neg_apply]
       linarith
 
-/-- A point of a convex set is a *relative boundary* point exactly when some linear function that
-is not constant on `C` attains its maximum over `C` there. -/
+/-- Let $C \subseteq E$ be convex and $x \in C$. Then $x \notin \operatorname{ri} C$ if and only if
+there is a continuous linear functional $g$ with $g(y) \le g(x)$ for all $y \in C$ and
+$g(y) \neq g(x)$ for some $y \in C$. Thus a point of $C$ is a relative boundary point exactly
+when some continuous linear function that is not constant on $C$ attains its maximum over $C$
+there. -/
 theorem notMem_relint_iff_exists_isMaxOn (hC : Convex ℝ C) {x : E} (hx : x ∈ C) :
     x ∉ ri C ↔ ∃ g : E →L[ℝ] ℝ, (∀ y ∈ C, g y ≤ g x) ∧ ∃ y ∈ C, g y ≠ g x := by
   constructor
@@ -1706,7 +1961,9 @@ theorem notMem_relint_iff_exists_isMaxOn (hC : Convex ℝ C) {x : E} (hx : x ∈
     rw [hgw] at hcon
     nlinarith [mul_pos (sub_pos.2 hμ) (sub_pos.2 hylt)]
 
-/-- A convex set has a nonzero normal at each of its boundary points. -/
+/-- Let $C \subseteq E$ be convex and let $x \in C$ lie in the boundary of $C$. Then there is a
+nonzero continuous linear functional $g$ with $g(y) \le g(x)$ for all $y \in C$: the set $C$ has
+a nonzero normal at $x$. -/
 theorem exists_ne_zero_isMaxOn_of_mem_frontier (hC : Convex ℝ C) {x : E} (hx : x ∈ C)
     (hfr : x ∈ frontier C) : ∃ g : E →L[ℝ] ℝ, g ≠ 0 ∧ ∀ y ∈ C, g y ≤ g x := by
   have hnotint : x ∉ interior C := hfr.2
@@ -1736,10 +1993,15 @@ theorem exists_ne_zero_isMaxOn_of_mem_frontier (hC : Convex ℝ C) {x : E} (hx :
     rw [hzero] at hlt
     simp at hlt
 
-/-- Two nonempty convex sets can be separated properly exactly when their relative interiors are
-disjoint. It is proved here rather than in `Numlib/Analysis/Convex/Separation.lean` because it rests
-on the line segment principle and on `ri C ≠ ∅` for nonempty convex `C`, both
-finite-dimensional. -/
+/-- Let $C_1, C_2 \subseteq E$ be nonempty and convex. Then there are a continuous linear functional
+$g : E \to \mathbb{R}$ and $c \in \mathbb{R}$ that separate $C_1$ and $C_2$ properly if and only
+if $$\operatorname{ri} C_1 \cap \operatorname{ri} C_2 = \emptyset.$$ Here $g$ and $c$ separate
+$C_1$ and $C_2$ properly when $g \le c$ on $C_1$, $g \ge c$ on $C_2$, and $C_1 \cup C_2$ is not
+contained in the hyperplane $\{g = c\}$.
+
+This is Theorem 11.3 of [rockafellar1970convex]. It is proved here and not in
+`Numlib.Analysis.Convex.Separation`, because it rests on the line segment principle and on
+$\operatorname{ri} C \neq \emptyset$ for nonempty convex $C$, which both need finite dimension. -/
 theorem exists_separatesProperly_iff_disjoint_relint (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (hne₁ : C₁.Nonempty) (hne₂ : C₂.Nonempty) :
     (∃ (g : E →L[ℝ] ℝ) (c : ℝ), SeparatesProperly g c C₁ C₂) ↔ Disjoint (ri C₁) (ri C₂) := by

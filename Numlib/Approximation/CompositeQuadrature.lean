@@ -10,57 +10,58 @@ import Numlib.Approximation.Quadrature
 /-!
 # Composite quadrature rules
 
-A *composite* rule applies one fixed rule to each panel of a partition of an interval. Unlike the
-rules of `Numlib/Approximation/Quadrature`, whose degree of exactness has to grow for the
-Szegő–Pólya criterion to apply, a composite rule keeps a fixed panel rule and converges because the
-mesh tends to zero. This file has the rule, the convergence theorem with its explicit modulus of
-continuity bound, and the mean value form of the composite trapezoidal error.
+A **composite** quadrature rule divides an interval $[a, b]$ into panels and applies one fixed rule
+on each panel. The rules of `Numlib.Approximation.Quadrature` converge by the Szegő–Pólya criterion,
+which needs a degree of exactness that grows. A composite rule keeps its panel rule fixed, and it
+converges because the mesh tends to zero. This module proves this convergence with an explicit bound
+by the oscillation of the integrand, and the error formulas of the composite trapezoidal and Simpson
+rules on the uniform mesh $x_j = a + jh$, $h = (b - a)/N$. The presentation follows Example 12.4.5
+of [han2009theoretical] and §9.4 of [kress1998numerical].
+
+The composite trapezoidal sum is $T_N = h \bigl(\tfrac12 g(x_0) + g(x_1) + \dots + g(x_{N-1}) +
+\tfrac12 g(x_N)\bigr)$. Its error has the mean value form $-\tfrac{h^2}{12} (b - a) g''(\xi)$ and
+the Euler–Maclaurin form $-\tfrac{h^2}{12} \bigl(g'(b) - g'(a)\bigr) + O(h^4)$. The composite
+Simpson sum $S_N$ has the error $-\tfrac{h^4}{2880} (b - a) g^{(4)}(\xi)$. Both error formulas come
+from Peano identities on one panel. The module also has the periodic trapezoidal rule on the circle,
+which converges for every continuous integrand.
 
 ## Main definitions
 
-* `Quadrature.composite` is a rule of `N` panels of `m` nodes, as one `Fin (N * m)`-indexed
-  `Quadrature.functional`.
-* `Quadrature.trapezoidSum g a h N` is the composite trapezoidal sum
-  `h (g(x₀)/2 + g(x₁) + ⋯ + g(x_{N-1}) + g(x_N)/2)` on the uniform mesh `x_j = a + j h`, and
-  `Quadrature.simpsonSum` the composite Simpson sum on the same mesh.
-* `Quadrature.circleTrapezoid T n` is the periodic trapezoidal rule on `AddCircle T`, as a
-  `Quadrature.functional`.
+* `Quadrature.composite`: the rule with $N$ panels of $m$ nodes each, as one rule with $Nm$ nodes.
+* `Quadrature.trapezoidSum`: the composite trapezoidal sum on the uniform mesh.
+* `Quadrature.simpsonSum`: the composite Simpson sum on the uniform mesh.
+* `Quadrature.circleTrapezoid`: the periodic trapezoidal rule with $n$ equally spaced nodes on the
+  circle $\mathbb{R}/T\mathbb{Z}$.
 
 ## Main results
 
-* `Quadrature.abs_sub_compositeSum_le`, the **Riemann sum bound**: a panel rule with nonnegative
-  weights summing to one, applied on a partition of mesh at most `h`, differs from the integral by
-  at most `(b - a) ε`, where `ε` bounds the oscillation of the integrand over distances `h`. This
-  is the reason a composite rule converges for *every* continuous integrand, and it is what
-  `Quadrature.tendsto_compositeSum` turns into a limit.
-* `Quadrature.tendsto_trapezoidSum` and `Quadrature.tendsto_simpsonSum`, the convergence of the
-  two classical composite rules on a uniform mesh, and `Quadrature.tendsto_circleTrapezoid`, the
-  convergence of the periodic trapezoidal rule for every continuous integrand on `AddCircle T` —
-  the hypothesis a Nyström method for a boundary integral equation asks of its quadrature rules.
-* `Quadrature.sub_trapezoid_eq_integral_peanoKernel`, the one-panel Peano identity
-  `∫_α^β g - (β - α)(g(α) + g(β))/2 = ∫_α^β (t - α)(t - β) g''(t)/2 dt`, and
-  `Quadrature.sub_composite_trapezoid_eq`, the composite mean value form
-  `∫_a^b g - h(g(x₀)/2 + ⋯ + g(x_N)/2) = -h² (b - a) g''(ξ)/12`.
-* `Quadrature.abs_sub_trapezoidSum_add_le`, the Euler–Maclaurin form of the same error:
-  `-(h²/12) [g'(b) - g'(a)]` up to `(b - a) h⁴ ‖g⁗‖_∞ / 720`.  Two further integrations by parts
-  of the Peano identity give it, `Quadrature.integral_peanoKernel_mul_eq`, and it is the form that
-  justifies Richardson extrapolation.
-* `Quadrature.sub_simpson_eq_integral_peanoKernel`, the one-panel Peano identity for Simpson's
-  rule, whose kernel is the *piecewise* cubic `(t - α)³(3t - α - 2β)/72` on the left half of the
-  panel and its mirror image on the right, and `Quadrature.sub_composite_simpson_eq`, the
-  composite mean value form `∫_a^b g - simpsonSum g a h N = -h⁴ (b - a) g⁗(ξ)/2880`.
-  `Quadrature.abs_sub_simpson_le` is the one-panel bound `M (β - α)⁵/2880` that follows from it,
-  and `Quadrature.integral_eq_simpson_of_natDegree_le` the exactness of Simpson's rule on
-  polynomials of degree at most three; together they give
-  `Quadrature.abs_integral_mul_sub_eval_le`, the `𝒪((β - α)⁵)` bound for a weighted integral of a
-  quadratic interpolation error over one panel.
-* `Quadrature.norm_sub_simpsonSum_le`, the composite Simpson bound `M h⁴ (b - a)/2880` for an
-  integrand with values in a real Banach space, by duality from the scalar mean value form.
-
-## References
-
-The composite rules and the trapezoidal error are [han2009theoretical] Example 12.4.5 and
-[kress1998numerical] §9.4; Simpson's error is [kress1998numerical] §9.4.
+* `Quadrature.abs_sub_compositeSum_le`: the **Riemann sum bound**. A panel rule with nonnegative
+  weights of sum $1$, on a partition of mesh at most $h$, differs from the integral by at most
+  $(b - a)\varepsilon$, where $\varepsilon$ bounds the oscillation of the integrand over distances
+  at most $h$.
+* `Quadrature.tendsto_compositeSum`: such a composite rule converges for every continuous integrand
+  when the mesh tends to zero.
+* `Quadrature.tendsto_trapezoidSum`, `Quadrature.tendsto_simpsonSum` and
+  `Quadrature.tendsto_circleTrapezoid`: the composite trapezoidal and Simpson rules, and the
+  periodic trapezoidal rule, converge for every continuous integrand.
+* `Quadrature.sub_trapezoid_eq_integral_peanoKernel`: the Peano identity $\int_\alpha^\beta g -
+  \tfrac{\beta - \alpha}{2} (g(\alpha) + g(\beta)) = \int_\alpha^\beta \tfrac12 (t - \alpha)(t -
+  \beta) g''(t) \, dt$.
+* `Quadrature.sub_composite_trapezoid_eq`: $\int_a^b g - T_N = -\tfrac{h^2}{12} (b - a) g''(\xi)$
+  for some $\xi \in [a, b]$.
+* `Quadrature.abs_sub_trapezoidSum_add_le`: $\bigl|\int_a^b g - T_N + \tfrac{h^2}{12} (g'(b) -
+  g'(a))\bigr| \le \tfrac{1}{720} (b - a) h^4 M$ when $|g^{(4)}| \le M$.
+* `Quadrature.sub_simpson_eq_integral_peanoKernel`: the Peano identity of Simpson's rule on one
+  panel, with a piecewise quartic kernel.
+* `Quadrature.sub_composite_simpson_eq`: $\int_a^b g - S_N = -\tfrac{h^4}{2880} (b - a)
+  g^{(4)}(\xi)$ for some $\xi \in [a, b]$.
+* `Quadrature.abs_sub_simpson_le` and `Quadrature.integral_eq_simpson_of_natDegree_le`: the error of
+  Simpson's rule on one panel is at most $M (\beta - \alpha)^5 / 2880$, and the rule is exact for
+  polynomials of degree at most $3$.
+* `Quadrature.abs_integral_mul_sub_eval_le`: a bound of order $(\beta - \alpha)^5$ for a weighted
+  integral of a quadratic interpolation error over one panel.
+* `Quadrature.norm_sub_simpsonSum_le`: the composite Simpson bound $M h^4 (b - a)/2880$ for an
+  integrand with values in a real Banach space.
 -/
 
 open Filter MeasureTheory Set Topology
@@ -71,15 +72,19 @@ section Composite
 
 variable {X : Type*} [TopologicalSpace X] {N m : ℕ}
 
-/-- **A composite quadrature rule**: `N` panels carrying `m` nodes each, assembled into one
-quadrature rule on `Fin (N * m)` nodes. The weights `w j i` of a composite rule of an interval
-partition are the panel weights scaled by the panel length, and its nodes `x j i` are the panel
-nodes; nothing but the bookkeeping is in the definition. -/
+/-- **A composite quadrature rule.** Let $w_{ji}$ and $x_{ji}$, for $j < N$ and $i < m$, be weights
+and nodes in $X$. The composite rule is the quadrature rule
+$$f \mapsto \sum_{j < N} \sum_{i < m} w_{ji} f(x_{ji})$$
+on $C(X)$, with $Nm$ nodes.
+
+For a partition of an interval, $w_{ji}$ are the weights of the panel rule times the length of
+panel $j$, and $x_{ji}$ are the nodes of panel $j$. The definition does only the bookkeeping: it
+is `Quadrature.functional` with the index set `Fin (N * m)`, through `finProdFinEquiv`. -/
 noncomputable def composite (w : Fin N → Fin m → ℝ) (x : Fin N → Fin m → X) : C(X, ℝ) →L[ℝ] ℝ :=
   functional (fun p => Function.uncurry w (finProdFinEquiv.symm p))
     (fun p => Function.uncurry x (finProdFinEquiv.symm p))
 
-/-- A composite rule is the sum over the panels of the panel rules. -/
+/-- The composite rule takes the value $\sum_{j < N} \sum_{i < m} w_{ji} f(x_{ji})$ at $f$. -/
 @[simp]
 theorem composite_apply (w : Fin N → Fin m → ℝ) (x : Fin N → Fin m → X) (f : C(X, ℝ)) :
     composite w x f = ∑ j, ∑ i, w j i * f (x j i) := by
@@ -87,8 +92,8 @@ theorem composite_apply (w : Fin N → Fin m → ℝ) (x : Fin N → Fin m → X
   exact Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => by
     simp [Equiv.symm_apply_apply]
 
-/-- The absolute weight sum of a composite rule is the sum of the panels' absolute weight sums,
-so a composite rule is bounded on `C(X, ℝ)` by that sum. -/
+/-- Let $X$ be compact. The operator norm of a composite rule on $C(X)$ is at most the sum
+$\sum_j \sum_i |w_{ji}|$ of the absolute values of its weights. -/
 theorem norm_composite_le [CompactSpace X] (w : Fin N → Fin m → ℝ) (x : Fin N → Fin m → X) :
     ‖composite w x‖ ≤ ∑ j, ∑ i, |w j i| := by
   refine ContinuousLinearMap.opNorm_le_bound _
@@ -109,9 +114,13 @@ section RiemannSum
 
 variable {a b h ε : ℝ} {g : ℝ → ℝ}
 
-/-- **The one panel bound.** A rule with nonnegative weights summing to one and nodes inside the
-panel differs from the panel integral by at most the panel length times a bound `ε` for the
-oscillation of the integrand on the panel. -/
+/-- **The bound on one panel.** Let $\alpha \le \beta$, let $g$ be continuous on $[\alpha, \beta]$,
+let $\omega_0, \dots, \omega_{m-1} \ge 0$ with $\sum_i \omega_i = 1$, and let
+$y_0, \dots, y_{m-1} \in [\alpha, \beta]$. If $|g(u) - g(v)| \le \varepsilon$ for all
+$u, v \in [\alpha, \beta]$, then
+$$\Bigl| \int_\alpha^\beta g - (\beta - \alpha) \sum_i \omega_i g(y_i) \Bigr| \le (\beta -
+  \alpha) \varepsilon.$$
+-/
 theorem abs_sub_panelSum_le {α β : ℝ} (hαβ : α ≤ β) (hg : ContinuousOn g (Icc α β)) {m : ℕ}
     {ω : Fin m → ℝ} (hω : ∀ i, 0 ≤ ω i) (hωsum : ∑ i, ω i = 1) {y : Fin m → ℝ}
     (hy : ∀ i, y i ∈ Icc α β)
@@ -152,13 +161,16 @@ theorem abs_sub_panelSum_le {α β : ℝ} (hαβ : α ≤ β) (hg : ContinuousOn
         exact mul_le_mul_of_nonneg_left (hbound i) (hω i)
     _ = (β - α) * ε := by rw [← Finset.sum_mul, hωsum, one_mul]
 
-/-- **The Riemann sum bound for a composite rule.** The panel rule has nonnegative weights summing
-to one and nodes inside its panel; the partition `t` of `[a, b]` has `N` panels of length at most
-`h`; and `ε` bounds the oscillation of the integrand over distances at most `h`. Then the composite
-rule differs from `∫_a^b g` by at most `(b - a) ε`.
+/-- **The Riemann sum bound for a composite rule.** Let $g$ be continuous on $[a, b]$, and let
+$a = t_0 \le t_1 \le \dots \le t_N = b$ with $t_{j+1} - t_j \le h$. Let
+$\omega_0, \dots, \omega_{m-1} \ge 0$ with $\sum_i \omega_i = 1$, and let the nodes $y_{ji}$ lie
+in $[t_j, t_{j+1}]$. If $|g(u) - g(v)| \le \varepsilon$ for all $u, v \in [a, b]$ with
+$|u - v| \le h$, then
+$$\Bigl| \int_a^b g - \sum_{j < N} (t_{j+1} - t_j) \sum_i \omega_i g(y_{ji}) \Bigr| \le (b - a)
+  \varepsilon.$$
 
-The bound involves no degree of exactness, only the modulus of continuity, which is why a composite
-rule converges for *every* continuous integrand as the mesh tends to zero
+The bound uses no degree of exactness, only the modulus of continuity of $g$. This is why a
+composite rule converges for every continuous integrand when the mesh tends to zero
 (`Quadrature.tendsto_compositeSum`). -/
 theorem abs_sub_compositeSum_le {N : ℕ} {t : ℕ → ℝ} (hg : ContinuousOn g (Icc a b))
     (ht0 : t 0 = a) (htN : t N = b) (htmono : ∀ j < N, t j ≤ t (j + 1))
@@ -194,11 +206,16 @@ theorem abs_sub_compositeSum_le {N : ℕ} {t : ℕ → ℝ} (hg : ContinuousOn g
         exact ⟨by linarith [hu.2, hv.1, htmesh j hjN], by linarith [hv.2, hu.1, htmesh j hjN]⟩
     _ = (b - a) * ε := by rw [← Finset.sum_mul, Finset.sum_range_sub, ht0, htN]
 
-/-- **The Riemann sum theorem.** A composite rule whose panel weights are nonnegative and sum to
-one converges to the integral for *every* continuous integrand, as soon as the mesh of the
-partitions tends to zero. The panel rule is fixed and its degree of exactness never grows, so this
-is not an instance of the Szegő–Pólya criterion `Quadrature.tendsto_iff_bddAbove_sum_abs`; it is
-`Quadrature.abs_sub_compositeSum_le` together with the uniform continuity of the integrand. -/
+/-- **The Riemann sum theorem.** Let $a \le b$ and let $g$ be continuous on $[a, b]$. For each $n$,
+let $a = t_{n,0} \le \dots \le t_{n,N_n} = b$ be a partition with $t_{n,j+1} - t_{n,j} \le h_n$,
+where $h_n \to 0$. Let $\omega_0, \dots, \omega_{m-1} \ge 0$ with $\sum_i \omega_i = 1$, and let
+the nodes $y_{n,j,i}$ lie in $[t_{n,j}, t_{n,j+1}]$. Then
+$$\sum_{j < N_n} (t_{n,j+1} - t_{n,j}) \sum_i \omega_i g(y_{n,j,i}) \to \int_a^b g \qquad (n \to
+  \infty).$$
+
+The panel rule is fixed and its degree of exactness does not grow, so this is not a case of the
+Szegő–Pólya criterion `Quadrature.tendsto_iff_bddAbove_sum_abs`. The proof is
+`Quadrature.abs_sub_compositeSum_le` together with the uniform continuity of $g$. -/
 theorem tendsto_compositeSum (hab : a ≤ b) (hg : ContinuousOn g (Icc a b)) {N : ℕ → ℕ}
     {t : ℕ → ℕ → ℝ} {hs : ℕ → ℝ} (ht0 : ∀ n, t n 0 = a) (htN : ∀ n, t n (N n) = b)
     (htmono : ∀ n, ∀ j < N n, t n j ≤ t n (j + 1))
@@ -234,12 +251,15 @@ theorem tendsto_compositeSum (hab : a ≤ b) (hg : ContinuousOn g (Icc a b)) {N 
 
 end RiemannSum
 
-/-- **Collecting panel errors into one derivative value.** If `G` is continuous on `[a, b]`,
-`u, v ∈ [a, b]`, `κ < 0` and each of the `N ≥ 1` panel errors `e j` lies between `G v * κ` and
-`G u * κ`, then `∑ⱼ e j = N κ G(ξ)` for some `ξ ∈ [a, b]`: the sum lies between `G v * (N κ)` and
-`G u * (N κ)`, and the intermediate value theorem between `u` and `v` supplies `ξ`. This is the
-last step of every composite error formula in mean value form, applied with `G` the derivative
-that bounds the panel errors through its extreme values `G u` and `G v`. -/
+/-- Let $G$ be continuous on $[a, b]$, let $u, v \in [a, b]$, let $\kappa < 0$ and let $N \ge 1$. If
+the numbers $e_0, \dots, e_{N-1}$ satisfy $G(v) \kappa \le e_j \le G(u) \kappa$, then
+$$\sum_{j < N} e_j = N \kappa \, G(\xi)$$
+for some $\xi \in [a, b]$.
+
+This is the last step of each composite error formula in mean value form. There $e_j$ are the
+panel errors, and $G(u)$ and $G(v)$ are the extreme values of a derivative. The sum lies between
+$N \kappa G(v)$ and $N \kappa G(u)$, and the intermediate value theorem between $u$ and $v$
+gives $\xi$. -/
 theorem exists_sum_eq_mul_of_forall_mem {a b u v κ : ℝ} {G : ℝ → ℝ}
     (hG : ContinuousOn G (Set.Icc a b)) (hu : u ∈ Set.Icc a b) (hv : v ∈ Set.Icc a b)
     (hκ : κ < 0) {N : ℕ} (hN : 0 < N) {e : ℕ → ℝ}
@@ -274,14 +294,17 @@ section Trapezoid
 
 variable {a b h : ℝ} {g g' g'' : ℝ → ℝ}
 
-/-- **The composite trapezoidal sum** on the uniform mesh `x_j = a + j h` with `N` panels,
-`∑_{j < N} (h/2) (g(x_j) + g(x_{j+1}))`.  In the book's display it is
-`h (g(x_0)/2 + g(x_1) + ⋯ + g(x_{N-1}) + g(x_N)/2)`, which is `Quadrature.trapezoidSum_eq`. -/
+/-- **The composite trapezoidal sum** of $g$ with $N$ panels on the uniform mesh $x_j = a + jh$:
+$$T_N = \sum_{j < N} \frac{h}{2} \bigl(g(x_j) + g(x_{j+1})\bigr).$$
+
+The usual form $h \bigl(\tfrac12 g(x_0) + g(x_1) + \dots + g(x_{N-1}) + \tfrac12 g(x_N)\bigr)$
+is `Quadrature.trapezoidSum_eq`. -/
 noncomputable def trapezoidSum (g : ℝ → ℝ) (a h : ℝ) (N : ℕ) : ℝ :=
   ∑ j ∈ Finset.range N, h / 2 * (g (a + j * h) + g (a + (j + 1) * h))
 
-/-- The composite trapezoidal sum in the form in which it is usually displayed: the interior nodes
-carry the weight `h` and the two endpoints the weight `h / 2`. -/
+/-- For $N \ge 1$, the composite trapezoidal sum is
+$$T_N = h \Bigl( \frac{g(a) + g(a + Nh)}{2} + \sum_{j=1}^{N-1} g(a + jh) \Bigr):$$
+the interior nodes have the weight $h$ and the two endpoints the weight $h/2$. -/
 theorem trapezoidSum_eq {N : ℕ} (hN : 0 < N) :
     trapezoidSum g a h N
       = h * ((g a + g (a + N * h)) / 2 + ∑ j ∈ Finset.Ico 1 N, g (a + j * h)) := by
@@ -301,9 +324,14 @@ theorem trapezoidSum_eq {N : ℕ} (hN : 0 < N) :
   push_cast
   ring_nf
 
-/-- **The Peano identity for the trapezoidal rule on one panel**: the error of the two point
-trapezoidal rule is the integral of the second derivative against the kernel
-`(t - α)(t - β)/2`, which is nonpositive on the panel.  Two integrations by parts. -/
+/-- **The Peano identity of the trapezoidal rule on one panel.** Let $g$ have the derivative $g'$,
+and $g'$ the derivative $g''$, at every point between $\alpha$ and $\beta$, and let $g''$ be
+integrable there. Then
+$$\int_\alpha^\beta g(t) \, dt - \frac{\beta - \alpha}{2} \bigl(g(\alpha) + g(\beta)\bigr) =
+  \int_\alpha^\beta \frac{(t - \alpha)(t - \beta)}{2} g''(t) \, dt.$$
+
+The kernel $(t - \alpha)(t - \beta)/2$ is nonpositive between $\alpha$ and $\beta$. The proof is
+two integrations by parts. -/
 theorem sub_trapezoid_eq_integral_peanoKernel {α β : ℝ}
     (hg : ∀ x ∈ Set.uIcc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.uIcc α β, HasDerivAt g' (g'' x) x)
@@ -331,7 +359,9 @@ theorem sub_trapezoid_eq_integral_peanoKernel {α β : ℝ}
   rw [h1]
   ring
 
-/-- The Peano kernel of the trapezoidal rule integrates to `-(β - α)³/12` over the panel. -/
+/-- The Peano kernel of the trapezoidal rule has the integral
+$$\int_\alpha^\beta \frac{(t - \alpha)(t - \beta)}{2} \, dt = -\frac{(\beta - \alpha)^3}{12}.$$
+-/
 theorem integral_peanoKernel {α β : ℝ} :
     (∫ t in α..β, (t - α) * (t - β) / 2) = -(β - α) ^ 3 / 12 := by
   have hF : ∀ x ∈ Set.uIcc α β,
@@ -351,15 +381,17 @@ theorem integral_peanoKernel {α β : ℝ} :
       |>.div_const 2 |>.intervalIntegrable _ _)]
   ring
 
-/-- **The composite trapezoidal rule error in mean value form.**  For `g` twice differentiable with
-continuous second derivative on `[a, b]` and the uniform mesh `h = (b - a)/N`,
+/-- **The error of the composite trapezoidal rule in mean value form.** Let $a < b$, let $N \ge 1$
+and $h = (b - a)/N$. Let $g$ have the derivative $g'$, and $g'$ the derivative $g''$, at every
+point of $[a, b]$, with $g''$ continuous on $[a, b]$. Then for some $\xi \in [a, b]$,
+$$\int_a^b g(t) \, dt - T_N = -\frac{h^2 (b - a)}{12} g''(\xi),$$
+where $T_N$ is the composite trapezoidal sum on the mesh $x_j = a + jh$. This is in Example
+12.4.5 of [han2009theoretical] and in §9.4 of [kress1998numerical].
 
-`∫_a^b g - h (g(x_0)/2 + g(x_1) + ⋯ + g(x_{N-1}) + g(x_N)/2) = -h² (b - a) g''(ξ)/12`
-
-for some `ξ` in `[a, b]`.  The panel error is the Peano integral
-`Quadrature.sub_trapezoid_eq_integral_peanoKernel`; the kernel does not change sign, so each panel
-error lies between `-h³ M/12` and `-h³ m/12` with `m` and `M` the extreme values of `g''`, and the
-intermediate value theorem collects the `N` panels into one value of `g''`. -/
+The error on each panel is the Peano integral of
+`Quadrature.sub_trapezoid_eq_integral_peanoKernel`. The kernel does not change sign, so each
+panel error lies between $-h^3 M/12$ and $-h^3 m/12$, where $m$ and $M$ are the extreme values
+of $g''$. The intermediate value theorem collects the $N$ panels into one value of $g''$. -/
 theorem sub_composite_trapezoid_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = (b - a) / N)
     (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x) (hg'' : ContinuousOn g'' (Set.Icc a b)) :
@@ -473,15 +505,19 @@ section UniformMesh
 
 variable {a b : ℝ} {g : ℝ → ℝ}
 
-/-- **The composite Simpson sum** on the uniform mesh `x_j = a + j h`,
-`∑_{j < N} (h/6) (g(x_j) + 4 g(x_j + h/2) + g(x_{j+1}))`: the panel rule is Simpson's, with the
-weights `(1/6, 4/6, 1/6)` at the two endpoints and the midpoint of the panel. -/
+/-- **The composite Simpson sum** of $g$ with $N$ panels on the uniform mesh $x_j = a + jh$:
+$$S_N = \sum_{j < N} \frac{h}{6} \Bigl(g(x_j) + 4 g\bigl(x_j + \tfrac{h}{2}\bigr) +
+  g(x_{j+1})\Bigr).$$
+The panel rule is Simpson's rule, with the weights $\tfrac16, \tfrac46, \tfrac16$ at the two
+endpoints and the midpoint of the panel. -/
 noncomputable def simpsonSum (g : ℝ → ℝ) (a h : ℝ) (N : ℕ) : ℝ :=
   ∑ j ∈ Finset.range N, h / 6 * (g (a + j * h) + 4 * g (a + j * h + h / 2) + g (a + (j + 1) * h))
 
-/-- **The composite Simpson rule is the first Romberg column, for any number of panels**:
-`S_N = (4 T_{2N} - T_N)/3` with `T_N` on the mesh `h` and `T_{2N}` on `h/2`, by reindexing the
-`2N`-panel trapezoidal sum by parity. -/
+/-- **The composite Simpson rule is the first Romberg column.** For all $a$, $h$ and $N$,
+$$S_N = \frac{4 T_{2N} - T_N}{3},$$
+where $S_N$ and $T_N$ have the mesh $h$ and $T_{2N}$ has the mesh $h/2$.
+
+The proof writes the trapezoidal sum with $2N$ panels as a sum over even and odd indices. -/
 theorem simpsonSum_eq_trapezoidSum (f : ℝ → ℝ) (a h : ℝ) (N : ℕ) :
     Quadrature.simpsonSum f a h N
       = (4 * Quadrature.trapezoidSum f a (h / 2) (2 * N) - Quadrature.trapezoidSum f a h N)
@@ -505,10 +541,15 @@ theorem simpsonSum_eq_trapezoidSum (f : ℝ → ℝ) (a h : ℝ) (N : ℕ) :
   rw [e1, e2, e3]
   ring
 
-/-- **Convergence of a composite rule on the uniform mesh.** The shape shared by the uniform mesh
-convergence proofs: the partition `x_j = a + j h_n` of `[a, b]` into `N n` panels satisfies the
-hypotheses of `tendsto_compositeSum`, for a panel rule with nonnegative weights `ω` summing to one
-at the nodes `x_j + c i h_n`, `c i ∈ [0, 1]`. -/
+/-- **Convergence of a composite rule on the uniform mesh.** Let $a \le b$, let $g$ be continuous on
+$[a, b]$, let $N_n \ge 1$ and $h_n = (b - a)/N_n$ with $h_n \to 0$. Let
+$\omega_0, \dots, \omega_{m-1} \ge 0$ with $\sum_i \omega_i = 1$, and let
+$c_0, \dots, c_{m-1} \in [0, 1]$. Then
+$$\sum_{j < N_n} h_n \sum_i \omega_i \, g(a + j h_n + c_i h_n) \to \int_a^b g \qquad (n \to
+  \infty).$$
+
+This is the common form of the convergence proofs on the uniform mesh. The partition
+$x_j = a + j h_n$ satisfies the hypotheses of `Quadrature.tendsto_compositeSum`. -/
 theorem tendsto_uniformMesh {N : ℕ → ℕ} {hs : ℕ → ℝ} {m : ℕ} {ω : Fin m → ℝ}
     {c : Fin m → ℝ} (hab : a ≤ b) (hg : ContinuousOn g (Set.Icc a b)) (hN : ∀ n, 0 < N n)
     (hhs : ∀ n, hs n = (b - a) / N n) (hlim : Tendsto hs atTop (𝓝 0)) (hω : ∀ i, 0 ≤ ω i)
@@ -538,8 +579,9 @@ theorem tendsto_uniformMesh {N : ℕ → ℕ} {hs : ℕ → ℝ} {m : ℕ} {ω :
   push_cast
   ring_nf
 
-/-- **The composite trapezoidal rule converges** for every continuous integrand, as soon as the
-mesh of the uniform partitions tends to zero. -/
+/-- **The composite trapezoidal rule converges.** Let $a \le b$, let $g$ be continuous on $[a, b]$,
+and let $N_n \ge 1$ and $h_n = (b - a)/N_n$ with $h_n \to 0$. Then the composite trapezoidal
+sums with $N_n$ panels of length $h_n$ converge to $\int_a^b g$. -/
 theorem tendsto_trapezoidSum {N : ℕ → ℕ} {hs : ℕ → ℝ} (hab : a ≤ b)
     (hg : ContinuousOn g (Set.Icc a b)) (hN : ∀ n, 0 < N n) (hhs : ∀ n, hs n = (b - a) / N n)
     (hlim : Tendsto hs atTop (𝓝 0)) :
@@ -553,10 +595,13 @@ theorem tendsto_trapezoidSum {N : ℕ → ℕ} {hs : ℕ → ℝ} (hab : a ≤ b
   simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one]
   ring_nf
 
-/-- **The composite Simpson rule converges** for every continuous integrand, as soon as the mesh of
-the uniform partitions tends to zero.  Simpson's weights are nonnegative and sum to one, so this is
-the same Riemann sum theorem as for the trapezoidal rule; the higher order of Simpson's rule shows
-only in the error formula for a smooth integrand, not in its convergence. -/
+/-- **The composite Simpson rule converges.** Let $a \le b$, let $g$ be continuous on $[a, b]$, and
+let $N_n \ge 1$ and $h_n = (b - a)/N_n$ with $h_n \to 0$. Then the composite Simpson sums with
+$N_n$ panels of length $h_n$ converge to $\int_a^b g$.
+
+The weights of Simpson's rule are nonnegative and have sum $1$, so this is the same Riemann sum
+theorem as for the trapezoidal rule. The higher order of Simpson's rule shows only in the error
+formula for a smooth integrand. -/
 theorem tendsto_simpsonSum {N : ℕ → ℕ} {hs : ℕ → ℝ} (hab : a ≤ b)
     (hg : ContinuousOn g (Set.Icc a b)) (hN : ∀ n, 0 < N n) (hhs : ∀ n, hs n = (b - a) / N n)
     (hlim : Tendsto hs atTop (𝓝 0)) :
@@ -579,9 +624,12 @@ section EulerMaclaurin
 
 variable {a b h : ℝ} {g g' g'' g₃ g₄ : ℝ → ℝ}
 
-/-- The **second Peano kernel** of the trapezoidal rule, `(t - α)²(t - β)²/24`, integrates to
-`(β - α)⁵/720` over the panel. It is nonnegative there, which is what makes the remainder of the
-Euler–Maclaurin expansion easy to bound. -/
+/-- The **second Peano kernel** of the trapezoidal rule has the integral
+$$\int_\alpha^\beta \frac{(t - \alpha)^2 (t - \beta)^2}{24} \, dt = \frac{(\beta -
+  \alpha)^5}{720}.$$
+
+The kernel is nonnegative. This makes the remainder of the Euler–Maclaurin expansion easy to
+bound. -/
 theorem integral_peanoKernel_sq {α β : ℝ} :
     (∫ t in α..β, (t - α) ^ 2 * (t - β) ^ 2 / 24) = (β - α) ^ 5 / 720 := by
   have hF : ∀ x ∈ Set.uIcc α β,
@@ -613,15 +661,17 @@ theorem integral_peanoKernel_sq {α β : ℝ} :
     (Continuous.intervalIntegrable (by fun_prop) _ _)]
   ring
 
-/-- **Two more integrations by parts of the Peano identity.**  The Peano kernel `(t - α)(t - β)/2`
-of the trapezoidal rule differs from the mean-zero kernel `Q` of the Euler–Maclaurin expansion by
-the constant `(β - α)²/12`, and `Q` has two successive antiderivatives vanishing at both endpoints.
-Hence, for `g` of class `C⁴`,
+/-- **Two more integrations by parts of the Peano identity.** Let $g'$ have the derivative $g''$,
+$g''$ the derivative $g'''$, and $g'''$ the derivative $g^{(4)}$ at every point between $\alpha$
+and $\beta$, and let $g^{(4)}$ be integrable there. Then
+$$\int_\alpha^\beta \frac{(t - \alpha)(t - \beta)}{2} g''(t) \, dt = -\frac{(\beta -
+  \alpha)^2}{12} \bigl(g'(\beta) - g'(\alpha)\bigr) + \int_\alpha^\beta \frac{(t - \alpha)^2
+  (t - \beta)^2}{24} g^{(4)}(t) \, dt.$$
+The second term is $O((\beta - \alpha)^5)$.
 
-`∫_α^β (t - α)(t - β) g''(t)/2 dt`
-` = -((β - α)²/12) (g'(β) - g'(α)) + ∫_α^β (t - α)²(t - β)² g⁗(t)/24 dt`,
-
-the second term being `O((β - α)⁵)`. -/
+The Peano kernel $(t - \alpha)(t - \beta)/2$ differs by the constant $(\beta - \alpha)^2/12$
+from a kernel $Q$ of mean zero. The kernel $Q$ has two successive antiderivatives that vanish at
+both endpoints. -/
 theorem integral_peanoKernel_mul_eq {α β : ℝ}
     (h2 : ∀ x ∈ Set.uIcc α β, HasDerivAt g' (g'' x) x)
     (h3 : ∀ x ∈ Set.uIcc α β, HasDerivAt g'' (g₃ x) x)
@@ -691,16 +741,18 @@ theorem integral_peanoKernel_mul_eq {α β : ℝ}
   rw [hsplit] at hib2
   linarith [hib1, hib2]
 
-/-- **The Euler–Maclaurin form of the composite trapezoidal error.**  For `g` of class `C⁴` on
-`[a, b]` with `|g⁗| ≤ M` there, and the uniform mesh `h = (b - a)/N`,
+/-- **The Euler–Maclaurin form of the composite trapezoidal error.** Let $a < b$, let $N \ge 1$ and
+$h = (b - a)/N$. Let $g$ have derivatives $g', g'', g''', g^{(4)}$ at every point of $[a, b]$,
+with $g^{(4)}$ continuous and $|g^{(4)}| \le M$ on $[a, b]$. Then
+$$\Bigl| \int_a^b g(t) \, dt - T_N + \frac{h^2}{12} \bigl(g'(b) - g'(a)\bigr) \Bigr| \le
+  \frac{(b - a) h^4 M}{720},$$
+where $T_N$ is the composite trapezoidal sum on the mesh $x_j = a + jh$.
 
-`∫_a^b g - h (g(x₀)/2 + ⋯ + g(x_N)/2) = -(h²/12) [g'(b) - g'(a)] + R`, `|R| ≤ (b - a) h⁴ M/720`.
-
-This is the asymptotic form of the trapezoidal error, and it is a *different* statement from the
-mean value form `sub_composite_trapezoid_eq`: it names the leading term, which is what makes
-Richardson extrapolation raise the order.  The boundary terms of the panels telescope, and the
-remainder is the second Peano kernel `(t - x_j)²(t - x_{j+1})²/24`, which is nonnegative and
-integrates to `h⁵/720` on each of the `N` panels. -/
+This is a different statement from the mean value form `Quadrature.sub_composite_trapezoid_eq`:
+it names the leading term of the error, and this is what lets Richardson extrapolation raise the
+order. The boundary terms of the panels telescope. The remainder on each panel is the integral
+against the second Peano kernel $(t - x_j)^2 (t - x_{j+1})^2/24$, which is nonnegative and has
+the integral $h^5/720$. -/
 theorem abs_sub_trapezoidSum_add_le (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = (b - a) / N)
     {M : ℝ} (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x)
@@ -832,10 +884,9 @@ section SimpsonError
 
 variable {a b h : ℝ} {g g' g'' g₃ g₄ : ℝ → ℝ}
 
-/-- **The telescoping identity behind a fourth order Peano kernel.**  If `p` has four derivatives
-and the fourth one is `1`, then `p g⁗ - g` is the derivative of `p g''' - p' g'' + p'' g' - p''' g`,
-so integrating it over a panel is a single application of the fundamental theorem of calculus in
-place of the four integrations by parts it replaces. -/
+/-- If $p$ has the derivatives $p_1, p_2, p_3$ and $p_3' = 1$, then
+$\int_u^v p \, g^{(4)} - \int_u^v g$ equals the difference of
+$p g''' - p_1 g'' + p_2 g' - p_3 g$ between $v$ and $u$. -/
 private theorem integral_quartic_kernel_sub {p p₁ p₂ p₃ : ℝ → ℝ} {u v : ℝ}
     (hp : ∀ x : ℝ, HasDerivAt p (p₁ x) x) (hp₁ : ∀ x : ℝ, HasDerivAt p₁ (p₂ x) x)
     (hp₂ : ∀ x : ℝ, HasDerivAt p₂ (p₃ x) x) (hp₃ : ∀ x : ℝ, HasDerivAt p₃ 1 x)
@@ -870,12 +921,18 @@ private theorem integral_quartic_kernel_sub {p p₁ p₂ p₃ : ℝ → ℝ} {u 
   rw [← intervalIntegral.integral_sub hpg hgi]
   exact intervalIntegral.integral_eq_sub_of_hasDerivAt hΦ (hpg.sub hgi)
 
-/-- **The Peano identity for Simpson's rule on one panel.**  Simpson's kernel is *piecewise*
-cubic: `(t - α)³(3t - α - 2β)/72` on the left half of the panel and its mirror image
-`(t - β)³(3t - β - 2α)/72` on the right.  Each half is a quartic whose fourth derivative is `1`,
-so `Quadrature.integral_quartic_kernel_sub` applies on each half; the boundary terms at the
-midpoint cancel, because the two halves agree there to second order and their third derivatives
-are opposite, and what survives is exactly Simpson's weights `(1, 4, 1)/6`. -/
+/-- **The Peano identity of Simpson's rule on one panel.** Let $g$ have derivatives
+$g', g'', g''', g^{(4)}$ at every point between $\alpha$ and $\beta$, and let $g^{(4)}$ be
+integrable there. Let $\mu = (\alpha + \beta)/2$. Then
+$$\int_\alpha^\beta g - \frac{\beta - \alpha}{6} \bigl(g(\alpha) + 4 g(\mu) + g(\beta)\bigr) =
+  \int_\alpha^\mu \frac{(t - \alpha)^3 (3t - \alpha - 2\beta)}{72} g^{(4)}(t) \, dt +
+  \int_\mu^\beta \frac{(t - \beta)^3 (3t - \beta - 2\alpha)}{72} g^{(4)}(t) \, dt.$$
+
+The kernel of Simpson's rule is piecewise: a quartic on the left half of the panel, and its
+mirror image on the right half. Each half is a quartic with fourth derivative $1$, so one
+application of the fundamental theorem of calculus handles each half. The boundary terms at the
+midpoint cancel, because the two halves agree there to second order and have opposite third
+derivatives. What remains is Simpson's weights $(1, 4, 1)/6$. -/
 theorem sub_simpson_eq_integral_peanoKernel {α β : ℝ}
     (hg : ∀ x ∈ Set.uIcc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.uIcc α β, HasDerivAt g' (g'' x) x)
@@ -955,8 +1012,10 @@ theorem sub_simpson_eq_integral_peanoKernel {α β : ℝ}
     intervalIntegral.integral_add_adjacent_intervals hgL hgR
   linarith [hL, hR, hadd]
 
-/-- The left half of Simpson's Peano kernel integrates to `-(β - α)⁵/5760` over the left half
-panel. -/
+/-- The left half of the Peano kernel of Simpson's rule has the integral
+$$\int_\alpha^{(\alpha + \beta)/2} \frac{(t - \alpha)^3 (3t - \alpha - 2\beta)}{72} \, dt =
+  -\frac{(\beta - \alpha)^5}{5760}.$$
+-/
 theorem integral_simpsonKernel_left {α β : ℝ} :
     (∫ t in α..(α + β) / 2, (t - α) ^ 3 * (3 * t - α - 2 * β) / 72) = -(β - α) ^ 5 / 5760 := by
   have hF : ∀ y ∈ Set.uIcc α ((α + β) / 2),
@@ -973,15 +1032,17 @@ theorem integral_simpsonKernel_left {α β : ℝ} :
     (Continuous.intervalIntegrable (by fun_prop) _ _)]
   ring
 
-/-- The right half of Simpson's Peano kernel integrates to `-(β - α)⁵/5760` over the right half
-panel, so the whole kernel integrates to `-(β - α)⁵/2880`. -/
+/-- The right half of the Peano kernel of Simpson's rule has the integral
+$$\int_{(\alpha + \beta)/2}^\beta \frac{(t - \beta)^3 (3t - \beta - 2\alpha)}{72} \, dt =
+  -\frac{(\beta - \alpha)^5}{5760}.$$
+So the whole kernel has the integral $-(\beta - \alpha)^5/2880$. -/
 theorem integral_simpsonKernel_right {α β : ℝ} :
     (∫ t in (α + β) / 2..β, (t - β) ^ 3 * (3 * t - β - 2 * α) / 72) = -(β - α) ^ 5 / 5760 := by
   rw [intervalIntegral.integral_symm, add_comm α β, integral_simpsonKernel_left]
   ring
 
-/-- An integral against a nonpositive kernel is bounded above by the kernel's integral times a
-lower bound for the other factor. -/
+/-- If $u \le v$, $k \le 0$ on $[u, v]$ and $c \le f$ on $[u, v]$, with $k$ and $f$ continuous, then
+$\int_u^v k f \le c \int_u^v k$. -/
 private theorem integral_nonpos_kernel_mul_le {f k : ℝ → ℝ} {u v c : ℝ} (huv : u ≤ v)
     (hk : ContinuousOn k (Set.Icc u v)) (hf : ContinuousOn f (Set.Icc u v))
     (hknp : ∀ t ∈ Set.Icc u v, k t ≤ 0) (hc : ∀ t ∈ Set.Icc u v, c ≤ f t) :
@@ -996,8 +1057,8 @@ private theorem integral_nonpos_kernel_mul_le {f k : ℝ → ℝ} {u v c : ℝ} 
   rw [intervalIntegral.integral_mul_const] at h
   linarith
 
-/-- An integral against a nonpositive kernel is bounded below by the kernel's integral times an
-upper bound for the other factor. -/
+/-- If $u \le v$, $k \le 0$ on $[u, v]$ and $f \le c$ on $[u, v]$, with $k$ and $f$ continuous, then
+$c \int_u^v k \le \int_u^v k f$. -/
 private theorem le_integral_nonpos_kernel_mul {f k : ℝ → ℝ} {u v c : ℝ} (huv : u ≤ v)
     (hk : ContinuousOn k (Set.Icc u v)) (hf : ContinuousOn f (Set.Icc u v))
     (hknp : ∀ t ∈ Set.Icc u v, k t ≤ 0) (hc : ∀ t ∈ Set.Icc u v, f t ≤ c) :
@@ -1012,11 +1073,15 @@ private theorem le_integral_nonpos_kernel_mul {f k : ℝ → ℝ} {u v c : ℝ} 
   rw [intervalIntegral.integral_mul_const] at h
   linarith
 
-/-- **One Simpson panel, bounded by the extreme values of `g⁗`.**  Simpson's Peano kernel is
-nonpositive on both halves of the panel and integrates to `-(β - α)⁵/2880`, so for
-`c ≤ g⁗ ≤ M` on the panel the error lies between `M (-(β - α)⁵/2880)` and `c (-(β - α)⁵/2880)`.
-This sign definiteness is what lets the intermediate value theorem collect the panels of a
-composite rule into one value of `g⁗`. -/
+/-- **The error of Simpson's rule on one panel, between two bounds.** Let $\alpha \le \beta$. Let
+$g$ have derivatives $g', g'', g''', g^{(4)}$ at every point of $[\alpha, \beta]$, with
+$g^{(4)}$ continuous and $c \le g^{(4)} \le M$ on $[\alpha, \beta]$. Then
+$$M \cdot \Bigl(-\frac{(\beta - \alpha)^5}{2880}\Bigr) \le \int_\alpha^\beta g - \frac{\beta -
+  \alpha}{6} \Bigl(g(\alpha) + 4 g\bigl(\tfrac{\alpha + \beta}{2}\bigr) + g(\beta)\Bigr) \le c
+  \cdot \Bigl(-\frac{(\beta - \alpha)^5}{2880}\Bigr).$$
+
+The Peano kernel of Simpson's rule is nonpositive on both halves of the panel. This lets the
+intermediate value theorem collect the panels of the composite rule into one value of $g^{(4)}$. -/
 theorem sub_simpson_mem_Icc {α β c M : ℝ} (hαβ : α ≤ β)
     (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
@@ -1068,16 +1133,17 @@ theorem sub_simpson_mem_Icc {α β c M : ℝ} (hαβ : α ≤ β)
   rw [Set.mem_Icc, hkey]
   constructor <;> linarith
 
-/-- **The composite Simpson rule error in mean value form.**  For `g` of class `C⁴` on `[a, b]`
-and the uniform mesh `h = (b - a)/N`,
+/-- **The error of the composite Simpson rule in mean value form.** Let $a < b$, let $N \ge 1$ and
+$h = (b - a)/N$. Let $g$ have derivatives $g', g'', g''', g^{(4)}$ at every point of $[a, b]$,
+with $g^{(4)}$ continuous on $[a, b]$. Then for some $\xi \in [a, b]$,
+$$\int_a^b g(t) \, dt - S_N = -\frac{h^4 (b - a)}{2880} g^{(4)}(\xi),$$
+where $S_N$ is the composite Simpson sum on the mesh $x_j = a + jh$. This is in §9.4 of
+[kress1998numerical].
 
-`∫_a^b g - (h/6) ∑_j (g(x_j) + 4 g(x_j + h/2) + g(x_{j+1})) = -(h⁴ (b - a)/2880) g⁗(ξ)`
-
-for some `ξ` in `[a, b]`.  This is the extra order that a smooth integrand buys over the mere
-convergence of `Quadrature.tendsto_simpsonSum`.  The panel error is
-`Quadrature.sub_simpson_mem_Icc`; Simpson's Peano kernel does not change sign, so each panel error
-lies between `-h⁵ M/2880` and `-h⁵ m/2880` with `m` and `M` the extreme values of `g⁗`, and the
-intermediate value theorem collects the `N` panels into one value of `g⁗`. -/
+A smooth integrand gives this order, beyond the convergence of `Quadrature.tendsto_simpsonSum`.
+The error on each panel is bounded by `Quadrature.sub_simpson_mem_Icc`. It lies between
+$-h^5 M/2880$ and $-h^5 m/2880$, where $m$ and $M$ are the extreme values of $g^{(4)}$. The
+intermediate value theorem collects the $N$ panels into one value of $g^{(4)}$. -/
 theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = (b - a) / N)
     (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x)
@@ -1148,12 +1214,16 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
   rw [hsplit, hE, ← hNh]
   ring
 
-/-- **The Simpson panel error bound.**  If `g` has four derivatives on the panel `[α, β]` and
-`|g⁗| ≤ M` there, then Simpson's rule on that panel is in error by at most `M (β - α)⁵/2880`.
+/-- **The error bound of Simpson's rule on one panel.** Let $\alpha \le \beta$. Let $g$ have
+derivatives $g', g'', g''', g^{(4)}$ at every point of $[\alpha, \beta]$, with $g^{(4)}$
+continuous and $|g^{(4)}| \le M$ on $[\alpha, \beta]$. Then
+$$\Bigl| \int_\alpha^\beta g - \frac{\beta - \alpha}{6} \Bigl(g(\alpha) + 4
+  g\bigl(\tfrac{\alpha + \beta}{2}\bigr) + g(\beta)\Bigr) \Bigr| \le \frac{M (\beta -
+  \alpha)^5}{2880}.$$
 
-This is `Quadrature.sub_simpson_mem_Icc` with the extreme values of `g⁗` replaced by `±M`; the
-sign definiteness of Simpson's Peano kernel is what makes the constant `1/2880` rather than the
-larger one an absolute value estimate of the kernel itself would give. -/
+This is `Quadrature.sub_simpson_mem_Icc` with the bounds $\pm M$. The constant $1/2880$ comes
+from the constant sign of the Peano kernel. An estimate by the absolute value of the kernel
+would give a larger constant. -/
 theorem abs_sub_simpson_le {α β M : ℝ} (hαβ : α ≤ β)
     (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
@@ -1168,13 +1238,15 @@ theorem abs_sub_simpson_le {α β M : ℝ} (hαβ : α ≤ β)
   rw [abs_le]
   constructor <;> nlinarith [hmem.1, hmem.2]
 
-/-- **Simpson's rule is exact for polynomials of degree at most three.**  Such a polynomial has a
-vanishing fourth derivative, so `Quadrature.sub_simpson_mem_Icc` traps the panel error between two
-zeros.
+/-- **Simpson's rule is exact for polynomials of degree at most $3$.** Let $\alpha \le \beta$, and
+let $p$ be a real polynomial of degree at most $3$. Then
+$$\int_\alpha^\beta p(t) \, dt = \frac{\beta - \alpha}{6} \Bigl(p(\alpha) + 4
+  p\bigl(\tfrac{\alpha + \beta}{2}\bigr) + p(\beta)\Bigr).$$
 
-This is what makes the integral of a piecewise *quadratic* interpolant over one of its panels
-equal to Simpson's rule for the interpolated function on that panel — the observation behind the
-extra power of `h` in the iterated piecewise quadratic collocation method. -/
+The fourth derivative of $p$ is zero, so `Quadrature.sub_simpson_mem_Icc` bounds the error
+between two zeros. The result shows that the integral of a piecewise quadratic interpolant over
+one of its panels equals Simpson's rule for the interpolated function on that panel. This is the
+reason for the extra power of $h$ in the iterated piecewise quadratic collocation method. -/
 theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p : Polynomial ℝ}
     (hp : p.natDegree ≤ 3) :
     (∫ t in α..β, p.eval t)
@@ -1201,20 +1273,24 @@ theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p
   rw [Set.mem_Icc] at hmem
   linarith
 
-/-- **A weighted integral of a quadratic interpolation error on one panel.**  Let `g` have four
-derivatives on `[α, β]` with `|g⁗| ≤ M` there, and let `q` be a polynomial of degree at most three
-that agrees with `g` at `α`, `(α + β)/2` and `β` (for instance the quadratic interpolant at those
-three nodes). For a weight `κ` continuous on the panel with `|κ α| ≤ K`, `|κ y - κ α| ≤ L` and
-`|g y - q y| ≤ E` on `[α, β]`,
+/-- **A weighted integral of a quadratic interpolation error on one panel.** Let $\alpha \le \beta$.
+Let $g$ have derivatives $g', g'', g''', g^{(4)}$ at every point of $[\alpha, \beta]$, with
+$g^{(4)}$ continuous and $|g^{(4)}| \le M$ on $[\alpha, \beta]$. Let $q$ be a real polynomial of
+degree at most $3$ that agrees with $g$ at $\alpha$, $(\alpha + \beta)/2$ and $\beta$, for
+example the quadratic interpolant at these nodes. Let $\kappa$ be continuous on
+$[\alpha, \beta]$ with $|\kappa(\alpha)| \le K$, and suppose that
+$|\kappa(y) - \kappa(\alpha)| \le L$ and $|g(y) - q(y)| \le E$ for all $y \in [\alpha, \beta]$.
+Then
+$$\Bigl| \int_\alpha^\beta \kappa(y) \bigl(g(y) - q(y)\bigr) \, dy \Bigr| \le K \frac{M (\beta -
+  \alpha)^5}{2880} + L E (\beta - \alpha).$$
 
-`|∫_α^β κ (g - q)| ≤ K M (β - α)⁵/2880 + L E (β - α)`.
-
-Splitting `κ = κ α + (κ - κ α)`, the integral of `q` over the panel is Simpson's rule for `g`
-(`integral_eq_simpson_of_natDegree_le`), so the first part is `κ α` times the Simpson panel error
-(`abs_sub_simpson_le`). For a weight Lipschitz with constant `Λ` the oscillation is
-`L = Λ (β - α)` and both parts are `𝒪((β - α)⁵)` against an `𝒪((β - α)³)` interpolation error:
-the gain of one power of the mesh in iterated piecewise quadratic collocation
-([han2009theoretical] (12.3.31)). -/
+The proof writes $\kappa = \kappa(\alpha) + (\kappa - \kappa(\alpha))$. The integral of $q$ over
+the panel is Simpson's rule for $g$ (`Quadrature.integral_eq_simpson_of_natDegree_le`), so the
+first part is $\kappa(\alpha)$ times the error of Simpson's rule
+(`Quadrature.abs_sub_simpson_le`). If $\kappa$ is Lipschitz with constant $\Lambda$, then
+$L = \Lambda (\beta - \alpha)$. With an interpolation error $E = O((\beta - \alpha)^3)$, both
+parts are then $O((\beta - \alpha)^5)$. This is the gain of one power of the mesh in iterated
+piecewise quadratic collocation, (12.3.31) of [han2009theoretical]. -/
 theorem abs_integral_mul_sub_eval_le {α β M K L E : ℝ} (hαβ : α ≤ β)
     (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
     (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
@@ -1270,18 +1346,21 @@ section SimpsonVector
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- **The composite Simpson error bound for a vector-valued integrand.** Let `g : ℝ → E` take
-values in a real Banach space and have four derivatives on `[a, b]`, the fourth one continuous with
-`‖g⁗‖ ≤ M` there. On the uniform mesh `h = (b - a)/N`,
+/-- **The composite Simpson bound for an integrand with values in a Banach space.** Let $E$ be a
+real Banach space, let $a < b$, let $N \ge 1$ and $h = (b - a)/N$. Let
+$g \colon \mathbb{R} \to E$ have derivatives $g', g'', g''', g^{(4)}$ at every point of
+$[a, b]$, with $g^{(4)}$ continuous and $\|g^{(4)}\| \le M$ on $[a, b]$. Then, with
+$x_j = a + jh$,
+$$\Bigl\| \int_a^b g - \sum_{j < N} \frac{h}{6} \Bigl(g(x_j) + 4 g\bigl(x_j +
+  \tfrac{h}{2}\bigr) + g(x_{j+1})\Bigr) \Bigr\| \le \frac{M h^4 (b - a)}{2880}.$$
+The constant is the constant of the scalar bound, with no factor that depends on $E$.
 
-`‖∫_a^b g - ∑_{j < N} (h/6) (g(x_j) + 4 g(x_j + h/2) + g(x_{j+1}))‖ ≤ M h⁴ (b - a) / 2880`,
-
-with `x_j = a + j h`: the constant of the scalar bound, with no factor depending on `E`. Every
-continuous linear functional `φ` turns the error into the scalar error of `φ ∘ g`, which
-`Quadrature.sub_composite_simpson_eq` bounds by `‖φ‖ M h⁴ (b - a) / 2880`, and the Hahn–Banach
-theorem (`NormedSpace.norm_le_dual_bound`) returns the bound to the norm. The matrix-valued Simpson
-bound of [golub2013matrix] (9.2.7) is the instance `E = ℂ^{n×n}` with the spectral norm (the book's
-panel width is `h/2`); the entrywise argument of the book loses a factor `n`. -/
+Each continuous linear functional $\varphi$ turns the error into the scalar error of
+$\varphi \circ g$, which `Quadrature.sub_composite_simpson_eq` bounds by
+$\|\varphi\| M h^4 (b - a)/2880$. The Hahn–Banach theorem (`NormedSpace.norm_le_dual_bound`)
+gives the bound on the norm. The matrix Simpson bound (9.2.7) of [golub2013matrix] is the case
+where $E$ is the space of complex $n \times n$ matrices with the spectral norm; there the panel
+width is $h/2$. The entrywise argument of that source loses a factor $n$. -/
 theorem norm_sub_simpsonSum_le {a b h M : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N)
     (hh : h = (b - a) / N) {g g' g'' g₃ g₄ : ℝ → E}
     (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
@@ -1326,25 +1405,27 @@ section Circle
 
 variable {T : ℝ} [hT : Fact (0 < T)]
 
-/-- **The periodic trapezoidal rule** on the circle `AddCircle T`: the `n` equally spaced nodes
-`j T / n` with the equal weights `T / n`.
+/-- **The periodic trapezoidal rule** on the circle $\mathbb{R}/T\mathbb{Z}$: the rule with the $n$
+equally spaced nodes $jT/n$, $j = 0, \dots, n - 1$, and the equal weights $T/n$.
 
-On a periodic integrand the composite trapezoidal rule and the composite rectangle rule are the
-same rule, because the two endpoints of the parameter interval are one and the same node of the
-circle; that is why the periodic trapezoidal rule has no half weights. -/
+For a periodic integrand, the composite trapezoidal rule and the composite rectangle rule are
+the same rule, because the two endpoints of the parameter interval are the same node of the
+circle. This is why the periodic trapezoidal rule has no half weights. -/
 noncomputable def circleTrapezoid (T : ℝ) (n : ℕ) : C(AddCircle T, ℝ) →L[ℝ] ℝ :=
   functional (fun _ : Fin n => T / n) fun j : Fin n => (((j : ℕ) * (T / n) : ℝ) : AddCircle T)
 
 omit hT in
-/-- The periodic trapezoidal rule at an integrand, `h ∑_{j < n} v (j h)` with `h = T / n`. -/
+/-- The periodic trapezoidal rule takes the value $h \sum_{j < n} v(jh)$ at $v$, with $h = T/n$. -/
 theorem circleTrapezoid_apply (n : ℕ) (v : C(AddCircle T, ℝ)) :
     circleTrapezoid T n v
       = ∑ j ∈ Finset.range n, T / n * v (((j * (T / n) : ℝ) : AddCircle T)) := by
   rw [circleTrapezoid, functional_apply]
   exact Fin.sum_univ_eq_sum_range (fun j => T / n * v (((j * (T / n) : ℝ) : AddCircle T))) n
 
-/-- The absolute weight sum of the periodic trapezoidal rule is the length of the circle, uniformly
-in `n`: this is the hypothesis (12.4.3) of the Nyström theory. -/
+/-- Let $T > 0$. The sum of the absolute values of the weights of the periodic trapezoidal rule is
+at most $T$, uniformly in $n$: $\sum_{j < n} |T/n| \le T$.
+
+This is the hypothesis (12.4.3) of the Nyström theory in [han2009theoretical]. -/
 theorem sum_abs_circleTrapezoid (n : ℕ) : ∑ _j : Fin n, |T / (n : ℝ)| ≤ T := by
   have hT0 : 0 < T := hT.out
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -1354,10 +1435,14 @@ theorem sum_abs_circleTrapezoid (n : ℕ) : ∑ _j : Fin n, |T / (n : ℝ)| ≤ 
       abs_of_nonneg (by positivity : (0 : ℝ) ≤ T / n)]
     rw [mul_div_cancel₀ _ hn0.ne']
 
-/-- **The periodic trapezoidal rule converges for every continuous integrand.**  This is the
-Riemann sum theorem `tendsto_compositeSum` transported to the circle by
-`AddCircle.intervalIntegral_preimage`, and it is the hypothesis that the Nyström method for a
-boundary integral equation asks of its quadrature rules. -/
+/-- **The periodic trapezoidal rule converges for every continuous integrand.** Let $T > 0$ and let
+$v$ be a continuous function on the circle $\mathbb{R}/T\mathbb{Z}$. Then the periodic
+trapezoidal rule with $n$ nodes applied to $v$ converges to $\int v$ as $n \to \infty$, where
+the integral is for the Haar measure of total mass $T$.
+
+The proof transfers the Riemann sum theorem `Quadrature.tendsto_compositeSum` to the circle with
+`AddCircle.intervalIntegral_preimage`. A Nyström method for a boundary integral equation asks
+this convergence of its quadrature rules. -/
 theorem tendsto_circleTrapezoid (v : C(AddCircle T, ℝ)) :
     Tendsto (fun n => circleTrapezoid T n v) atTop (𝓝 (∫ x, v x ∂MeasureTheory.volume)) := by
   have hT0 : 0 < T := hT.out

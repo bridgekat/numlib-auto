@@ -15,38 +15,53 @@ import Numlib.Analysis.Normed.Operator.Unbounded.Basic
 /-!
 # Closed sums of closed subspaces, and one-sided inverses
 
-What the open mapping theorem says about the geometry of closed subspaces of a Banach space, and
-about one-sided inverses of bounded operators ([brezis2011functional], §2.4 and Exercise 2.16).
+This module proves consequences of the open mapping theorem for closed subspaces of a Banach space
+and for one-sided inverses of bounded operators ([brezis2011functional], §2.4 and Exercise 2.16).
+Let $G$ and $L$ be closed subspaces of a Banach space $E$. If $G + L$ is closed, then every
+$z \in G + L$ can be written $z = x + y$ with $x \in G$, $y \in L$ and $\|x\|, \|y\| \le C \|z\|$,
+and
+$$\operatorname{dist}(x, G \cap L) \le C \bigl(\operatorname{dist}(x, G) + \operatorname{dist}(x,
+  L)\bigr) \quad \text{for every } x \in E.$$
+Conversely, this distance inequality implies that $G + L$ is closed. For bounded operators between
+Banach spaces, a surjective operator has a bounded right inverse if and only if its kernel is
+complemented, and an injective operator has a bounded left inverse if and only if its range is
+closed and complemented.
 
-Mathlib already has the vocabulary: `Submodule.IsTopCompl` and `Submodule.ClosedComplemented`
-(in a Banach space, a topological complement of a closed subspace is exactly a closed algebraic
-complement, `Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`), and
-`ContinuousLinearMap.HasRightInverse` / `HasLeftInverse` with the characterization of left
-inverses `HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`. This file adds
-what is missing.
+## Main results
 
-## Main statements
-
-* `Submodule.exists_add_eq_norm_le_of_isClosed_sup` — if `G`, `L` and `G + L` are closed, every
-  `z ∈ G + L` decomposes as `z = x + y` with `x ∈ G`, `y ∈ L` and `‖x‖, ‖y‖ ≤ C ‖z‖`: the open
-  mapping theorem for the surjection `G × L → G + L`, `(x, y) ↦ x + y`.
-* `Submodule.exists_infDist_inf_le_of_isClosed_sup` — under the same hypotheses,
-  `dist (x, G ∩ L) ≤ C (dist (x, G) + dist (x, L))` for every `x`.
-* `Submodule.isClosed_sup_of_forall_infDist_inf_le` — the converse: if
-  `dist (x, G ∩ L) ≤ C dist (x, L)` for all `x ∈ G`, then `G + L` is closed. This is proved
-  through the closed range criterion `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le`
-  for the map `G × L → E`, whose kernel is `{(w, -w) | w ∈ G ∩ L}`.
-* `Submodule.isClosed_sup_iff_exists_infDist_inf_le` — the two combined as an equivalence.
+* `Submodule.exists_add_eq_norm_le_of_isClosed_sup`: if $G$, $L$ and $G + L$ are closed, then every
+  $z \in G + L$ is $x + y$ with $x \in G$, $y \in L$ and $\|x\|, \|y\| \le C \|z\|$.
+* `Submodule.exists_infDist_inf_le_of_isClosed_sup`: under the same hypotheses,
+  $\operatorname{dist}(x, G \cap L) \le C (\operatorname{dist}(x, G) + \operatorname{dist}(x, L))$
+  for every $x$.
+* `Submodule.isClosed_sup_of_forall_infDist_inf_le`: if $\operatorname{dist}(x, G \cap L) \le C
+  \operatorname{dist}(x, L)$ for every $x \in G$, then $G + L$ is closed.
+* `Submodule.isClosed_sup_iff_exists_infDist_inf_le`: the last two results combined as an
+  equivalence.
 * `ContinuousLinearMap.HasRightInverse.of_surjective_of_closedComplemented_ker`,
-  `ContinuousLinearMap.hasRightInverse_iff_closedComplemented_ker` — a surjective bounded operator
-  between Banach spaces has a bounded right inverse iff its kernel is complemented (the converse
-  direction is Mathlib's `closedComplemented_ker_of_rightInverse`).
-* `ContinuousLinearMap.hasLeftInverse_iff_isClosed_range_and_closedComplemented_range` — an
-  injective bounded operator has a bounded left inverse iff its range is closed and complemented
-  (both directions are Mathlib's, recorded here in the same shape as the right-inverse statement).
+  `ContinuousLinearMap.hasRightInverse_iff_closedComplemented_ker`: a surjective bounded operator
+  between Banach spaces has a bounded right inverse if and only if its kernel is complemented.
+* `ContinuousLinearMap.hasLeftInverse_iff_isClosed_range_and_closedComplemented_range`: an injective
+  bounded operator between Banach spaces has a bounded left inverse if and only if its range is
+  closed and complemented.
 
-Mathlib's product `G × L` carries the sup norm, so the constant of the decomposition bounds
-`max ‖x‖ ‖y‖` rather than the book's `‖x‖ + ‖y‖`; the two differ by a factor `2`.
+## Implementation notes
+
+* Mathlib already provides the vocabulary: `Submodule.IsTopCompl` and
+  `Submodule.ClosedComplemented`, and `ContinuousLinearMap.HasRightInverse` and
+  `ContinuousLinearMap.HasLeftInverse`. In a Banach space, a topological complement of a closed
+  subspace is the same as a closed algebraic complement
+  (`Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`). Mathlib also characterizes
+  left inverses
+  (`ContinuousLinearMap.HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`)
+  and proves one direction for right inverses
+  (`ContinuousLinearMap.closedComplemented_ker_of_rightInverse`).
+* Mathlib's product $G \times L$ carries the maximum norm. So the constant of the decomposition
+  bounds $\max(\|x\|, \|y\|)$, not $\|x\| + \|y\|$ as in [brezis2011functional]. The two forms
+  differ by a factor of at most $2$.
+* The proof of `Submodule.isClosed_sup_of_forall_infDist_inf_le` uses the closed range criterion
+  `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` for the addition map
+  $G \times L \to E$, whose kernel is $\{(w, -w) : w \in G \cap L\}$.
 -/
 
 open Metric
@@ -56,12 +71,15 @@ namespace Submodule
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [CompleteSpace E]
 
-/-- **Bounded decomposition of a closed sum** ([brezis2011functional], Theorem 2.10). If `G`, `L`
-are closed subspaces of a Banach space with `G + L` closed, there is `C ≥ 0` such that every
-`z ∈ G + L` can be written `z = x + y` with `x ∈ G`, `y ∈ L`, `‖x‖ ≤ C ‖z‖` and `‖y‖ ≤ C ‖z‖`.
+/-- **Bounded decomposition of a closed sum**. Let $G$ and $L$ be closed subspaces of a Banach space
+$E$ such that $G + L$ is closed. Then there is a constant $C \ge 0$ such that every
+$z \in G + L$ can be written $z = x + y$ with $x \in G$, $y \in L$,
+$$\|x\| \le C \|z\| \quad \text{and} \quad \|y\| \le C \|z\|.$$
+This is Theorem 2.10 of [brezis2011functional].
 
-This is the open mapping theorem (`ContinuousLinearMap.exists_preimage_norm_le`) for the
-bounded surjection `G × L → G + L`, `(x, y) ↦ x + y`, between Banach spaces. -/
+The source bounds $\|x\| + \|y\|$ instead. The proof is the open mapping theorem
+(`ContinuousLinearMap.exists_preimage_norm_le`) for the bounded surjection
+$G \times L \to G + L$, $(x, y) \mapsto x + y$, between Banach spaces. -/
 theorem exists_add_eq_norm_le_of_isClosed_sup (G L : Submodule 𝕜 E) (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) (hGL : IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)) :
     ∃ C : ℝ, 0 ≤ C ∧
@@ -88,13 +106,16 @@ theorem exists_add_eq_norm_le_of_isClosed_sup (G L : Submodule 𝕜 E) (hG : IsC
   rw [hn, Prod.norm_def, max_le_iff] at hnorm
   exact ⟨x, x.2, y, y.2, hz', hnorm.1, hnorm.2⟩
 
-/-- **Distance to the intersection of a closed sum** ([brezis2011functional], Corollary 2.11). If
-`G`, `L` and `G + L` are closed, there is `C` with
-`dist (x, G ∩ L) ≤ C (dist (x, G) + dist (x, L))` for every `x`.
+/-- **Distance to the intersection of a closed sum**. Let $G$ and $L$ be closed subspaces of a
+Banach space $E$ such that $G + L$ is closed. Then there is a constant $C$ such that
+$$\operatorname{dist}(x, G \cap L) \le C \bigl(\operatorname{dist}(x, G) +
+  \operatorname{dist}(x, L)\bigr) \quad \text{for every } x \in E.$$
+This is Corollary 2.11 of [brezis2011functional].
 
-Given `a ∈ G`, `b ∈ L` nearly realizing the two distances, decompose `a - b = a' + b'` with
-`‖a'‖ ≤ C ‖a - b‖` by `exists_add_eq_norm_le_of_isClosed_sup`; then `a - a' ∈ G ∩ L` and
-`‖x - (a - a')‖ ≤ ‖x - a‖ + C (‖x - a‖ + ‖x - b‖)`. -/
+Given $a \in G$ and $b \in L$ that nearly attain the two distances, decompose $a - b = a' + b'$
+with $a' \in G$, $b' \in L$ and $\|a'\| \le C \|a - b\|$ by
+`Submodule.exists_add_eq_norm_le_of_isClosed_sup`. Then $a - a' \in G \cap L$ and $\|x - (a -
+a')\| \le \|x - a\| + C (\|x - a\| + \|x - b\|)$. -/
 theorem exists_infDist_inf_le_of_isClosed_sup (G L : Submodule 𝕜 E) (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) (hGL : IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)) :
     ∃ C : ℝ, ∀ x : E,
@@ -131,14 +152,18 @@ theorem exists_infDist_inf_le_of_isClosed_sup (G L : Submodule 𝕜 E) (hG : IsC
         have := infDist_nonneg (x := x) (s := (L : Set E))
         linarith
 
-/-- **A distance inequality forces a closed sum** ([brezis2011functional], Exercise 2.16, the
-converse of Corollary 2.11 announced in its Remark 7). If `G`, `L` are closed subspaces of a
-Banach space and `dist (x, G ∩ L) ≤ C dist (x, L)` for every `x ∈ G`, then `G + L` is closed.
+/-- Let $G$ and $L$ be closed subspaces of a Banach space $E$, and let $C$ be a real number such
+that
+$$\operatorname{dist}(x, G \cap L) \le C \operatorname{dist}(x, L) \quad \text{for every } x \in
+  G.$$
+Then $G + L$ is closed. This is Exercise 2.16 of [brezis2011functional], the converse of
+Corollary 2.11 that its Remark 7 announces.
 
-The book argues through the quotient `E ⧸ L`; here the closed range criterion
+The source argues through the quotient $E / L$. Here the closed range criterion
 `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` is applied to the addition map
-`T : G × L → E`, whose range is `G + L` and whose kernel is `{(w, -w) | w ∈ G ∩ L}`: for
-`(x, y) ∈ G × L` one has `dist ((x, y), N(T)) ≤ dist (x, G ∩ L) + ‖x + y‖ ≤ (C + 1) ‖x + y‖`. -/
+$T \colon G \times L \to E$. Its range is $G + L$ and its kernel is
+$\{(w, -w) : w \in G \cap L\}$. For $(x, y) \in G \times L$, $\operatorname{dist}((x, y), \ker
+T) \le \operatorname{dist}(x, G \cap L) + \|x + y\| \le (C + 1) \|x + y\|$. -/
 theorem isClosed_sup_of_forall_infDist_inf_le (G L : Submodule 𝕜 E) (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) {C : ℝ}
     (h : ∀ x ∈ G, infDist x (G ⊓ L : Submodule 𝕜 E) ≤ C * infDist x (L : Set E)) :
@@ -197,9 +222,11 @@ theorem isClosed_sup_of_forall_infDist_inf_le (G L : Submodule 𝕜 E) (hG : IsC
         linarith
     _ = (max C 0 + 1) * ‖(x : E) + y‖ := by ring
 
-/-- **Closed sums through a distance inequality** ([brezis2011functional], Corollary 2.11 and
-Remark 7 / Exercise 2.16): for closed subspaces `G`, `L` of a Banach space, `G + L` is closed iff
-`dist (x, G ∩ L) ≤ C (dist (x, G) + dist (x, L))` for some `C` and all `x`. -/
+/-- Let $G$ and $L$ be closed subspaces of a Banach space $E$. Then $G + L$ is closed if and only if
+there is a constant $C$ such that
+$$\operatorname{dist}(x, G \cap L) \le C \bigl(\operatorname{dist}(x, G) +
+  \operatorname{dist}(x, L)\bigr) \quad \text{for every } x \in E.$$
+This combines Corollary 2.11 of [brezis2011functional] with its Remark 7 and Exercise 2.16. -/
 theorem isClosed_sup_iff_exists_infDist_inf_le (G L : Submodule 𝕜 E) (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) :
     IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E) ↔ ∃ C : ℝ, ∀ x : E,
@@ -216,11 +243,14 @@ namespace ContinuousLinearMap
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace E] [CompleteSpace F]
 
-/-- **A surjection with complemented kernel has a bounded right inverse**
-([brezis2011functional], Theorem 2.12, (ii) ⇒ (i)). If `T : E → F` is a surjective bounded
-operator between Banach spaces whose kernel has a topological complement `L`, then `T` restricted
-to `L` is a bijection `L → F`, its inverse is bounded by the open mapping theorem, and composing
-with the inclusion of `L` gives a right inverse of `T`. -/
+/-- Let $T \colon E \to F$ be a surjective bounded linear operator between Banach spaces whose
+kernel is complemented, that is, there is a bounded linear projection of $E$ onto $\ker T$. Then
+$T$ has a bounded right inverse: a bounded linear operator $S \colon F \to E$ with $TS = I$.
+This is the implication (ii) ⇒ (i) of Theorem 2.12 of [brezis2011functional].
+
+Let $L$ be a topological complement of $\ker T$. Then $T$ restricted to $L$ is a bijection
+$L \to F$, its inverse is bounded by the open mapping theorem, and its composition with the
+inclusion of $L$ in $E$ is a right inverse of $T$. -/
 theorem HasRightInverse.of_surjective_of_closedComplemented_ker {T : E →L[𝕜] F}
     (hT : Function.Surjective T) (hker : T.ker.ClosedComplemented) : T.HasRightInverse := by
   obtain ⟨L, hL⟩ := hker.exists_isTopCompl
@@ -248,20 +278,23 @@ theorem HasRightInverse.of_surjective_of_closedComplemented_ker {T : E →L[𝕜
   change T (L.subtypeL (e.symm f)) = f
   exact ContinuousLinearEquiv.ofBijective_apply_symm_apply S hinj hsurj f
 
-/-- **Right inverses of a surjection** ([brezis2011functional], Theorem 2.12): a surjective
-bounded operator between Banach spaces has a bounded right inverse iff its kernel is
-complemented. -/
+/-- Let $T \colon E \to F$ be a surjective bounded linear operator between Banach spaces. Then $T$
+has a bounded right inverse if and only if $\ker T$ is complemented, that is, there is a bounded
+linear projection of $E$ onto $\ker T$. This is Theorem 2.12 of [brezis2011functional]. -/
 theorem hasRightInverse_iff_closedComplemented_ker {T : E →L[𝕜] F} (hT : Function.Surjective T) :
     T.HasRightInverse ↔ T.ker.ClosedComplemented :=
   ⟨fun ⟨S, hS⟩ => T.closedComplemented_ker_of_rightInverse S hS,
     HasRightInverse.of_surjective_of_closedComplemented_ker hT⟩
 
-/-- **Left inverses of an injection** ([brezis2011functional], Theorem 2.13): an injective bounded
-operator between Banach spaces has a bounded left inverse iff its range is closed and
-complemented. Both directions are Mathlib's (`HasLeftInverse.isClosed_range`,
-`HasLeftInverse.closedComplemented_range` and
-`HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`); the statement is
-recorded so that Theorems 2.12 and 2.13 have the same shape. -/
+/-- Let $T \colon E \to F$ be an injective bounded linear operator between Banach spaces. Then $T$
+has a bounded left inverse, that is, a bounded linear operator $S \colon F \to E$ with $ST = I$,
+if and only if the range of $T$ is closed and complemented. This is Theorem 2.13 of
+[brezis2011functional].
+
+Both directions are in Mathlib: `ContinuousLinearMap.HasLeftInverse.isClosed_range`,
+`ContinuousLinearMap.HasLeftInverse.closedComplemented_range` and
+`ContinuousLinearMap.HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`.
+The statement is recorded so that Theorems 2.12 and 2.13 have the same form. -/
 theorem hasLeftInverse_iff_isClosed_range_and_closedComplemented_range {T : E →L[𝕜] F}
     (hT : Function.Injective T) :
     T.HasLeftInverse ↔ IsClosed (Set.range T) ∧ T.range.ClosedComplemented :=

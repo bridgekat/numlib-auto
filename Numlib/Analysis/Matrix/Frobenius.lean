@@ -17,12 +17,27 @@ import Mathlib.Tactic.Positivity.Finset
 /-!
 # The Frobenius norm, entry by entry
 
-The elementary identities of the Frobenius norm (Mathlib's scoped `Matrix.Norms.Frobenius`):
-`‖A‖_F² = ∑ᵢⱼ |aᵢⱼ|²` (`Matrix.frobenius_norm_sq_eq_sum_sq`), `‖A‖_F² = tr(Aᴴ A)`
-(`Matrix.frobenius_norm_sq_eq_trace`), `|aᵢⱼ| ≤ ‖A‖_F` (`Matrix.norm_entry_le_frobenius_norm`), and
-the sums of the squared Euclidean norms of the columns and of the rows
-(`Matrix.frobenius_norm_sq_eq_sum_norm_sq_col`, `Matrix.frobenius_norm_sq_eq_sum_norm_sq_row`).
-A matrix supported on a block has the norm of the block (`Matrix.frobenius_norm_eq_submatrix_val`).
+The Frobenius norm of a matrix $A = (a_{ij}) \in \mathbb{K}^{m \times n}$, over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, is $\|A\|_F = \bigl(\sum_{i,j} |a_{ij}|^2\bigr)^{1/2}$.
+This file proves its elementary identities: $\|A\|_F^2 = \sum_{i,j} |a_{ij}|^2$,
+$\|A\|_F^2 = \operatorname{tr}(A^H A)$, the bound $|a_{ij}| \le \|A\|_F$, and the expressions of
+$\|A\|_F^2$ as the sum of the squared Euclidean norms of the columns and of the rows. A matrix that
+is zero outside a block has the Frobenius norm of the block.
+
+## Main results
+
+* `Matrix.frobenius_norm_sq_eq_sum_sq`: $\|A\|_F^2 = \sum_{i,j} |a_{ij}|^2$.
+* `Matrix.frobenius_norm_sq_eq_trace`: $\|A\|_F^2 = \operatorname{tr}(A^H A)$.
+* `Matrix.norm_entry_le_frobenius_norm`: $|a_{ij}| \le \|A\|_F$.
+* `Matrix.frobenius_norm_sq_eq_sum_norm_sq_col` and `Matrix.frobenius_norm_sq_eq_sum_norm_sq_row`:
+  $\|A\|_F^2$ is the sum of the squared Euclidean norms of the columns, and of the rows.
+* `Matrix.frobenius_norm_eq_submatrix_val`: a matrix that is zero outside a block has the Frobenius
+  norm of the block.
+
+## Implementation notes
+
+* The norm is Mathlib's Frobenius norm on `Matrix m n 𝕜`, from the scoped instances
+  `Matrix.Norms.Frobenius`, with rows and columns indexed by finite types.
 -/
 
 open Finset
@@ -33,13 +48,19 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The Frobenius norm squared is the sum of the squared entries. -/
+/-- For every matrix $A = (a_{ij}) \in \mathbb{K}^{m \times n}$,
+$$\|A\|_F^2 = \sum_{i,j} |a_{ij}|^2.$$
+-/
 theorem frobenius_norm_sq_eq_sum_sq (A : Matrix m n 𝕜) : ‖A‖ ^ 2 = ∑ i, ∑ j, ‖A i j‖ ^ 2 := by
   rw [frobenius_norm_def, ← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
   norm_num
 
-/-- **(1.18)**: `‖A‖_F² = tr(Aᴴ A)`, [quarteroni2000numerical] Example 1.7 (the display there
-omits the square root). -/
+/-- For every matrix $A \in \mathbb{K}^{m \times n}$,
+$$\|A\|_F^2 = \operatorname{tr}(A^H A).$$
+This is (1.18) in Example 1.7 of [quarteroni2000numerical]; the display there omits the square
+root.
+
+The real number $\|A\|_F^2$ is embedded in $\mathbb{K}$. -/
 theorem frobenius_norm_sq_eq_trace (A : Matrix m n 𝕜) :
     ((‖A‖ ^ 2 : ℝ) : 𝕜) = trace (Aᴴ * A) := by
   rw [frobenius_norm_sq_eq_sum_sq, trace, Finset.sum_comm]
@@ -49,8 +70,9 @@ theorem frobenius_norm_sq_eq_trace (A : Matrix m n 𝕜) :
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [conjTranspose_apply, RCLike.star_def, RCLike.conj_mul]
 
-/-- An entry is bounded by the Frobenius norm, `|a_ij| ≤ ‖A‖_F`: the Frobenius form of
-`Matrix.norm_entry_le_l2_opNorm`. -/
+/-- Every entry of a matrix $A = (a_{ij})$ is bounded by its Frobenius norm: $|a_{ij}| \le \|A\|_F$.
+
+This is the Frobenius form of `Matrix.norm_entry_le_l2_opNorm`. -/
 theorem norm_entry_le_frobenius_norm (A : Matrix m n 𝕜) (i : m) (j : n) : ‖A i j‖ ≤ ‖A‖ := by
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 ?_
   rw [frobenius_norm_sq_eq_sum_sq]
@@ -61,19 +83,30 @@ theorem norm_entry_le_frobenius_norm (A : Matrix m n 𝕜) (i : m) (j : n) : ‖
         Finset.single_le_sum (f := fun i' => ∑ j', ‖A i' j'‖ ^ 2)
           (fun _ _ => Finset.sum_nonneg fun _ _ => by positivity) (Finset.mem_univ i)
 
-/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the columns. -/
+/-- For every matrix $A \in \mathbb{K}^{m \times n}$, $\|A\|_F^2$ is the sum of the squared
+Euclidean norms of the columns:
+$$\|A\|_F^2 = \sum_j \|A e_j\|_2^2.$$
+-/
 theorem frobenius_norm_sq_eq_sum_norm_sq_col (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ j, ‖(WithLp.toLp 2 fun i => A i j : EuclideanSpace 𝕜 m)‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq, Finset.sum_comm]
   exact Finset.sum_congr rfl fun j _ => by simp [EuclideanSpace.norm_sq_eq]
 
-/-- The Frobenius norm squared is the sum of the squared Euclidean norms of the rows. -/
+/-- For every matrix $A \in \mathbb{K}^{m \times n}$, $\|A\|_F^2$ is the sum of the squared
+Euclidean norms of the rows:
+$$\|A\|_F^2 = \sum_i \|a_{i,:}\|_2^2,$$
+where $a_{i,:} \in \mathbb{K}^n$ is the $i$-th row of $A$. -/
 theorem frobenius_norm_sq_eq_sum_norm_sq_row (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ i, ‖(WithLp.toLp 2 (A i) : EuclideanSpace 𝕜 n)‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq]
   exact Finset.sum_congr rfl fun i _ => by rw [EuclideanSpace.norm_sq_eq]
 
-/-- A matrix supported on the block `p × q` has the Frobenius norm of that block. -/
+/-- Let $P$ be a set of row indices and $Q$ a set of column indices, and let $A$ be a matrix with
+$a_{ij} = 0$ unless $i \in P$ and $j \in Q$. Then $\|A\|_F$ is the Frobenius norm of the block
+$(a_{ij})_{i \in P, j \in Q}$.
+
+The sets are given by predicates `p` and `q`, and the block is
+`A.submatrix Subtype.val Subtype.val`. -/
 theorem frobenius_norm_eq_submatrix_val {p : m → Prop} {q : n → Prop} [DecidablePred p]
     [DecidablePred q] {A : Matrix m n 𝕜} (h : ∀ i j, ¬ (p i ∧ q j) → A i j = 0) :
     ‖A‖ = ‖A.submatrix (Subtype.val : {i // p i} → m) (Subtype.val : {j // q j} → n)‖ := by

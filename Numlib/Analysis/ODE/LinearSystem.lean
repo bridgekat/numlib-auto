@@ -10,32 +10,53 @@ import Numlib.Analysis.ODE.Cauchy
 /-!
 # Linear systems with constant coefficients
 
-The system `y' = A y` for a constant matrix `A : Matrix n n ℂ`, as used by the absolute-stability
-and stiffness discussion of [quarteroni2000numerical] §11.9–11.10: the solution
-`y t = exp (t A) y₀` (`linear_isSolutionOn_exp_smul`) and its uniqueness
-(`linear_isSolutionOn_unique`), the expansion `y t = ∑ⱼ Cⱼ e^{λⱼ t} vⱼ` in an eigenvector basis
-when `A = Q Λ Q⁻¹` is diagonalizable (`linear_solution_eq_sum_exp_smul`, the book's (11.82)), the
-decay `‖y t‖ → 0` when every eigenvalue has negative real part
-(`linear_tendsto_zero_of_re_lt_zero`, (11.83)–(11.84)), the diagonalizing change of variables
-`z = Q⁻¹ y`, `z' = Λ z` (`linear_diagonalized_isSolutionOn`, (11.85)), which reduces the system to
-`n` scalar test equations `zⱼ' = λⱼ zⱼ` (`isSolutionOn_diagonal_iff`), and the *stiffness quotient*
-`r_s = σ / τ` of (11.86), `σ = min Re λⱼ`, `τ = max Re λⱼ` (`stiffnessQuotient`).
+This file studies the system $y' = Ay$ for a constant matrix $A \in \mathbb{C}^{n \times n}$, as in
+the discussion of absolute stability and stiffness in §11.9–11.10 of [quarteroni2000numerical]. The
+solution with $y(0) = y_0$ is $y(t) = e^{tA} y_0$, and it is unique. When $A = Q \Lambda Q^{-1}$ is
+diagonalizable, with $\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ and the columns
+$v_j$ of $Q$ an eigenvector basis, every solution has the expansion
+$$y(t) = \sum_j C_j e^{\lambda_j t} v_j, \qquad C = Q^{-1} y_0,$$
+which is (11.82) of the book. If every eigenvalue has negative real part, then $\|y(t)\| \to 0$ as
+$t \to \infty$ ((11.83)–(11.84)). The change of variables $z = Q^{-1} y$ gives $z' = \Lambda z$
+((11.85)), that is, $n$ scalar test equations $z_j' = \lambda_j z_j$. The file ends with the
+stiffness quotient $r_s = \sigma / \tau$ of (11.86), with
+$\sigma = \min_j \operatorname{Re} \lambda_j$ and $\tau = \max_j \operatorname{Re} \lambda_j$.
 
-Mathlib has the matrix exponential (`NormedSpace.exp` on `Matrix n n ℂ`, with `Matrix.exp_conj`
-and `Matrix.exp_diagonal`) and the derivative `hasDerivAt_exp_smul_const'`; the solution is one
-composition with the linear map `M ↦ M *ᵥ y₀`, and uniqueness is
-`ODE.isSolutionOn_unique_of_lipschitz` for the Lipschitz field `v ↦ A *ᵥ v`. Everything is over
-`ℂ` on `n → ℂ`, because the eigenvalues of a real matrix are complex; a real system is read
-through the complexified matrix `A.map ofReal`. Diagonalizability is the hypothesis
-`A = Q * diagonal μ * Q⁻¹` with `IsUnit Q` — the columns of `Q` are the eigenvectors `vⱼ` and `μ`
-the eigenvalues — rather than "`n` distinct eigenvalues", which implies it and is all the book
-uses. The stiffness quotient is a definition on the spectrum; the book's "stiff iff `r_s ≫ 1`"
-and its Definition 11.14 are informal and get no node.
+## Main definitions
 
-## Conventions
+* `ODE.stiffnessQuotient`: the stiffness quotient $\sigma / \tau$ of a matrix.
 
-The scalar `t • A` for `t : ℝ` is the real multiple of the complex matrix, `(t : ℂ) • A`. The
-book's `e^{λⱼ t}` is `Complex.exp (μ j * t)`. Time starts at `t₀ = 0`; the initial datum is `y₀`.
+## Main results
+
+* `ODE.linear_isSolutionOn_exp_smul`: $t \mapsto e^{tA} y_0$ solves $y' = Ay$, $y(0) = y_0$.
+* `ODE.linear_isSolutionOn_unique`: every solution on $[0, T]$ is $t \mapsto e^{tA} y_0$.
+* `ODE.linear_solution_eq_sum_exp_smul`: the expansion $y(t) = \sum_j C_j e^{\lambda_j t} v_j$ of a
+  solution of a diagonalizable system.
+* `ODE.linear_tendsto_zero_of_re_lt_zero`: the solutions of a diagonalizable system whose
+  eigenvalues have negative real parts tend to zero.
+* `ODE.linear_diagonalized_isSolutionOn`: if $y$ solves $y' = Ay$, then $z = Q^{-1} y$ solves
+  $z' = \Lambda z$.
+* `ODE.isSolutionOn_diagonal_iff`: a diagonal system is equivalent to $n$ scalar test equations.
+* `ODE.one_le_stiffnessQuotient`: if the spectrum is nonempty and all eigenvalues have negative real
+  part, the stiffness quotient is at least $1$.
+
+## Implementation notes
+
+* The matrix exponential is Mathlib's `NormedSpace.exp` on `Matrix n n ℂ`, with `Matrix.exp_conj`
+  and `Matrix.exp_diagonal`. The derivative comes from `hasDerivAt_exp_smul_const'`, and the
+  solution is one composition with the linear map $M \mapsto M y_0$. Uniqueness is
+  `ODE.isSolutionOn_unique_of_lipschitz` for the Lipschitz field $v \mapsto Av$.
+* Everything is over $\mathbb{C}$ on `n → ℂ`, because the eigenvalues of a real matrix are complex.
+  A real system is read through the complexified matrix `A.map ofReal`.
+* Diagonalizability is the hypothesis `A = Q * diagonal μ * Q⁻¹` with `IsUnit Q`: the columns of $Q$
+  are the eigenvectors $v_j$, and $\mu_j = \lambda_j$ are the eigenvalues. The book assumes instead
+  that $A$ has $n$ distinct eigenvalues, which implies this hypothesis, and uses only this
+  hypothesis.
+* For $t \in \mathbb{R}$, `t • A` is the real multiple of the complex matrix, `(t : ℂ) • A`. The
+  book's $e^{\lambda_j t}$ is `Complex.exp (μ j * t)`. Time starts at $t_0 = 0$, and the initial
+  value is $y_0$.
+* The stiffness quotient is a definition on the spectrum. The book's statement that the system is
+  stiff when $r_s \gg 1$, and its Definition 11.14, are informal and are not formalized.
 -/
 
 open Set Filter Topology Matrix NormedSpace
@@ -44,10 +65,12 @@ namespace ODE
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-! ### Derivatives of `mulVec` -/
+/-! ### Derivatives of matrix-vector products -/
 
 omit [DecidableEq n] in
-/-- The derivative of `t ↦ M *ᵥ y t` is `M *ᵥ y' t`: `mulVec` is linear. -/
+/-- Let $M \in \mathbb{C}^{m \times n}$, and let $y : \mathbb{R} \to \mathbb{C}^n$ have the
+derivative $y'$ within $I \subseteq \mathbb{R}$ at $t$. Then $t \mapsto M y(t)$ has the
+derivative $M y'$ within $I$ at $t$, because $v \mapsto Mv$ is linear. -/
 theorem hasDerivWithinAt_mulVec {m : Type*} [Finite m] (M : Matrix m n ℂ) {y : ℝ → n → ℂ}
     {y' : n → ℂ} {I : Set ℝ} {t : ℝ} (hy : HasDerivWithinAt y y' I t) :
     HasDerivWithinAt (fun t => M *ᵥ y t) (M *ᵥ y') I t := by
@@ -55,7 +78,8 @@ theorem hasDerivWithinAt_mulVec {m : Type*} [Finite m] (M : Matrix m n ℂ) {y :
   exact ((LinearMap.toContinuousLinearMap
     M.mulVecLin).restrictScalars ℝ).hasFDerivAt.comp_hasDerivWithinAt t hy
 
-/-- The map `M ↦ M *ᵥ v` on `Matrix n n ℂ`, as a continuous real-linear map. -/
+/-- The map $M \mapsto Mv$ from $\mathbb{C}^{n \times n}$ to $\mathbb{C}^n$, for a fixed
+$v \in \mathbb{C}^n$, as a continuous real-linear map. -/
 noncomputable def mulVecRightCLM (v : n → ℂ) : Matrix n n ℂ →L[ℝ] (n → ℂ) :=
   LinearMap.toContinuousLinearMap
     { toFun := fun M => M *ᵥ v
@@ -63,13 +87,16 @@ noncomputable def mulVecRightCLM (v : n → ℂ) : Matrix n n ℂ →L[ℝ] (n �
       map_smul' := fun c M => Matrix.smul_mulVec c M v }
 
 omit [DecidableEq n] in
-/-- The map `M ↦ M *ᵥ v`, applied. -/
+/-- The map `ODE.mulVecRightCLM v` sends $M$ to $Mv$. -/
 @[simp] theorem mulVecRightCLM_apply (v : n → ℂ) (M : Matrix n n ℂ) :
     mulVecRightCLM v M = M *ᵥ v :=
   rfl
 
-/-- The derivative of `t ↦ exp (t A) y₀` is `A (exp (t A) y₀)`, from `hasDerivAt_exp_smul_const'`
-in the normed algebra `Matrix n n ℂ` under the `L^∞` operator norm. -/
+/-- For $A \in \mathbb{C}^{n \times n}$, $y_0 \in \mathbb{C}^n$ and $t \in \mathbb{R}$, the function
+$t \mapsto e^{tA} y_0$ has the derivative $A (e^{tA} y_0)$ at $t$.
+
+The proof uses `hasDerivAt_exp_smul_const'` in the normed algebra `Matrix n n ℂ` with the
+$L^\infty$ operator norm. -/
 theorem hasDerivAt_exp_smul_mulVec (A : Matrix n n ℂ) (y₀ : n → ℂ) (t : ℝ) :
     HasDerivAt (fun t : ℝ => exp (t • A) *ᵥ y₀) (A *ᵥ (exp (t • A) *ᵥ y₀)) t := by
   let _ : NormedRing (Matrix n n ℂ) := Matrix.linftyOpNormedRing
@@ -79,20 +106,25 @@ theorem hasDerivAt_exp_smul_mulVec (A : Matrix n n ℂ) (y₀ : n → ℂ) (t : 
 
 /-! ### The exponential solution -/
 
-/-- **The exponential solution** of `y' = A y`, `y 0 = y₀`: `t ↦ exp (t A) y₀` solves the
-system at every time ([quarteroni2000numerical] §11.9). -/
+/-- **The exponential solution.** For $A \in \mathbb{C}^{n \times n}$ and $y_0 \in \mathbb{C}^n$,
+the function $t \mapsto e^{tA} y_0$ solves the Cauchy problem $y' = Ay$, $y(0) = y_0$ at every
+time $t \in \mathbb{R}$ (§11.9 of [quarteroni2000numerical]).
+
+The solution concept is `ODE.IsSolutionOn` with the field `fun _ v => A *ᵥ v` and the set of
+times `univ`. -/
 theorem linear_isSolutionOn_exp_smul (A : Matrix n n ℂ) (y₀ : n → ℂ) :
     IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ univ fun t : ℝ => exp (t • A) *ᵥ y₀ :=
   ⟨by simp, fun t _ => (hasDerivAt_exp_smul_mulVec A y₀ t).hasDerivWithinAt⟩
 
 omit [DecidableEq n] in
-/-- The linear field `v ↦ A *ᵥ v` is Lipschitz. -/
+/-- The linear field $v \mapsto Av$ on $\mathbb{C}^n$ is Lipschitz with some constant $L \ge 0$. -/
 theorem exists_lipschitzWith_mulVec (A : Matrix n n ℂ) :
     ∃ L : NNReal, LipschitzWith L fun v : n → ℂ => A *ᵥ v :=
   ⟨_, (LinearMap.toContinuousLinearMap A.mulVecLin).lipschitzWith⟩
 
-/-- **Uniqueness**: every solution of `y' = A y`, `y 0 = y₀` on `[0, T]` is `t ↦ exp (t A) y₀`
-there. -/
+/-- **Uniqueness.** Let $A \in \mathbb{C}^{n \times n}$, $y_0 \in \mathbb{C}^n$ and
+$T \in \mathbb{R}$. Every solution $y$ of $y' = Ay$, $y(0) = y_0$ on $[0, T]$ satisfies
+$y(t) = e^{tA} y_0$ for all $t \in [0, T]$. -/
 theorem linear_isSolutionOn_unique {A : Matrix n n ℂ} {y₀ : n → ℂ} {T : ℝ} {y : ℝ → n → ℂ}
     (hy : IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Icc 0 T) y) :
     EqOn y (fun t : ℝ => exp (t • A) *ᵥ y₀) (Icc 0 T) := by
@@ -106,8 +138,10 @@ theorem linear_isSolutionOn_unique {A : Matrix n n ℂ} {y₀ : n → ℂ} {T : 
 
 variable {A Q : Matrix n n ℂ} {μ : n → ℂ}
 
-/-- The exponential of a diagonalized matrix: if `A = Q Λ Q⁻¹` with `Λ = diagonal μ` and `Q`
-invertible, then `exp (t A) = Q diagonal (e^{t μⱼ}) Q⁻¹`. -/
+/-- Let $A = Q \Lambda Q^{-1}$ with $\Lambda = \operatorname{diag}(\mu)$ and
+$Q \in \mathbb{C}^{n \times n}$ invertible. Then for every $t \in \mathbb{R}$,
+$$e^{tA} = Q \operatorname{diag}(e^{\mu_1 t}, \dots, e^{\mu_n t}) Q^{-1}.$$
+-/
 theorem exp_smul_eq_of_eq_mul_diagonal (hA : A = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) (t : ℝ) :
     exp (t • A) = Q * diagonal (fun j => Complex.exp (μ j * t)) * Q⁻¹ := by
   have e : t • A = Q * diagonal (fun j => μ j * t) * Q⁻¹ := by
@@ -118,16 +152,19 @@ theorem exp_smul_eq_of_eq_mul_diagonal (hA : A = Q * diagonal μ * Q⁻¹) (hQ :
   rw [e, Matrix.exp_conj _ _ hQ, Matrix.exp_diagonal, Pi.exp_def, Complex.exp_eq_exp_ℂ]
 
 omit [DecidableEq n] in
-/-- The column expansion of a matrix-vector product: `Q *ᵥ w = ∑ⱼ wⱼ • (column j of Q)`. -/
+/-- For $Q \in \mathbb{C}^{n \times n}$ and $w \in \mathbb{C}^n$, the product $Qw$ is the
+combination $\sum_j w_j q_j$ of the columns $q_j$ of $Q$. -/
 theorem mulVec_eq_sum_smul_col (Q : Matrix n n ℂ) (w : n → ℂ) :
     Q *ᵥ w = ∑ j, w j • fun i => Q i j := by
   ext i
   simp [Matrix.mulVec, dotProduct, Finset.sum_apply, mul_comm]
 
-/-- **The eigen-expansion of the solution** ([quarteroni2000numerical] (11.82)): if
-`A = Q Λ Q⁻¹`, `Λ = diagonal μ`, `Q` invertible (its columns `vⱼ` an eigenvector basis, `μ j = λⱼ`),
-then every solution of `y' = A y`, `y 0 = y₀` on `[0, T]` is
-`y t = ∑ⱼ Cⱼ e^{λⱼ t} vⱼ` there, with the constants `C = Q⁻¹ y₀` fixed by the initial datum. -/
+/-- **The eigenvector expansion of the solution.** Let $A = Q \Lambda Q^{-1}$ with
+$\Lambda = \operatorname{diag}(\mu)$ and $Q \in \mathbb{C}^{n \times n}$ invertible, so that the
+columns $v_j$ of $Q$ are an eigenvector basis and $\mu_j = \lambda_j$ are the eigenvalues. Let
+$y$ solve $y' = Ay$, $y(0) = y_0$ on $[0, T]$. Then for every $t \in [0, T]$,
+$$y(t) = \sum_j C_j e^{\lambda_j t} v_j, \qquad C = Q^{-1} y_0.$$
+This is (11.82) of [quarteroni2000numerical]. -/
 theorem linear_solution_eq_sum_exp_smul (hA : A = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q)
     {y₀ : n → ℂ} {T : ℝ} {y : ℝ → n → ℂ} (hy : IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Icc 0 T) y)
     {t : ℝ} (ht : t ∈ Icc 0 T) :
@@ -137,10 +174,14 @@ theorem linear_solution_eq_sum_exp_smul (hA : A = Q * diagonal μ * Q⁻¹) (hQ 
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [mulVec_diagonal, mul_comm]
 
-/-- **Decay of the solutions** ([quarteroni2000numerical] (11.83)–(11.84)): if `A = Q Λ Q⁻¹` is
-diagonalizable and every eigenvalue has negative real part, every solution of `y' = A y` on
-`[0, ∞)` tends to zero, because each `e^{λⱼ t} = e^{Re λⱼ t} (cos (Im λⱼ t) + i sin (Im λⱼ t))`
-has norm `e^{Re λⱼ t} → 0`. -/
+/-- **Decay of the solutions.** Let $A = Q \Lambda Q^{-1}$ with $\Lambda = \operatorname{diag}(\mu)$
+and $Q \in \mathbb{C}^{n \times n}$ invertible, and assume $\operatorname{Re} \mu_j < 0$ for
+every $j$. If $y$ solves $y' = Ay$, $y(0) = y_0$ on $[0, \infty)$, then $\|y(t)\| \to 0$ as
+$t \to \infty$. This is (11.83)–(11.84) of [quarteroni2000numerical].
+
+The reason is that $e^{\lambda_j t} = e^{\operatorname{Re} \lambda_j t} (\cos(\operatorname{Im}
+\lambda_j t) + i \sin(\operatorname{Im} \lambda_j t))$ has the norm
+$e^{\operatorname{Re} \lambda_j t} \to 0$. -/
 theorem linear_tendsto_zero_of_re_lt_zero (hA : A = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q)
     (hμ : ∀ j, (μ j).re < 0) {y₀ : n → ℂ} {y : ℝ → n → ℂ}
     (hy : IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Ici 0) y) :
@@ -162,9 +203,10 @@ theorem linear_tendsto_zero_of_re_lt_zero (hA : A = Q * diagonal μ * Q⁻¹) (h
   exact (linear_solution_eq_sum_exp_smul hA hQ (hy.mono (Icc_subset_Ici_self : Icc 0 t ⊆ Ici 0))
     (right_mem_Icc.2 ht)).symm
 
-/-- **The diagonalizing change of variables** ([quarteroni2000numerical] (11.85)): if
-`A = Q Λ Q⁻¹` with `Q` invertible and `y` solves `y' = A y` on `I`, then `z = Q⁻¹ y` solves
-`z' = Λ z` on `I`. -/
+/-- **The diagonalizing change of variables.** Let $A = Q \Lambda Q^{-1}$ with
+$\Lambda = \operatorname{diag}(\mu)$ and $Q \in \mathbb{C}^{n \times n}$ invertible. If $y$
+solves $y' = Ay$, $y(t_0) = y_0$ on a set of times $I$, then $z = Q^{-1} y$ solves
+$z' = \Lambda z$, $z(t_0) = Q^{-1} y_0$ on $I$. This is (11.85) of [quarteroni2000numerical]. -/
 theorem linear_diagonalized_isSolutionOn (hA : A = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q)
     {t₀ : ℝ} {y₀ : n → ℂ} {I : Set ℝ} {y : ℝ → n → ℂ}
     (hy : IsSolutionOn (fun _ v => A *ᵥ v) t₀ y₀ I y) :
@@ -179,8 +221,10 @@ theorem linear_diagonalized_isSolutionOn (hA : A = Q * diagonal μ * Q⁻¹) (hQ
   rw [e]
   exact h
 
-/-- The converse of the change of variables: if `z` solves `z' = Λ z` on `I`, then `y = Q z`
-solves `y' = A y` on `I`. -/
+/-- The converse of `ODE.linear_diagonalized_isSolutionOn`. Let $A = Q \Lambda Q^{-1}$ with
+$\Lambda = \operatorname{diag}(\mu)$ and $Q \in \mathbb{C}^{n \times n}$ invertible. If $z$
+solves $z' = \Lambda z$, $z(t_0) = z_0$ on a set of times $I$, then $y = Qz$ solves $y' = Ay$,
+$y(t_0) = Q z_0$ on $I$. -/
 theorem linear_isSolutionOn_of_diagonalized (hA : A = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q)
     {t₀ : ℝ} {z₀ : n → ℂ} {I : Set ℝ} {z : ℝ → n → ℂ}
     (hz : IsSolutionOn (fun _ v => diagonal μ *ᵥ v) t₀ z₀ I z) :
@@ -195,8 +239,10 @@ theorem linear_isSolutionOn_of_diagonalized (hA : A = Q * diagonal μ * Q⁻¹) 
   rw [e]
   exact h
 
-/-- **A diagonal system is `n` scalar test equations**: `z` solves `z' = diagonal μ *ᵥ z` on `I`
-iff every component `zⱼ` solves the scalar equation `zⱼ' = μⱼ zⱼ` on `I`. -/
+/-- **A diagonal system is $n$ scalar test equations.** A function $z : \mathbb{R} \to \mathbb{C}^n$
+solves $z' = \operatorname{diag}(\mu) z$, $z(t_0) = z_0$ on a set of times $I$ if and only if,
+for every $j$, the component $z_j$ solves the scalar equation $z_j' = \mu_j z_j$,
+$z_j(t_0) = (z_0)_j$ on $I$. -/
 theorem isSolutionOn_diagonal_iff {t₀ : ℝ} {z₀ : n → ℂ} {I : Set ℝ} {z : ℝ → n → ℂ} :
     IsSolutionOn (fun _ v => diagonal μ *ᵥ v) t₀ z₀ I z ↔
       ∀ j, IsSolutionOn (fun _ w => μ j * w) t₀ (z₀ j) I fun t => z t j := by
@@ -207,15 +253,24 @@ theorem isSolutionOn_diagonal_iff {t₀ : ℝ} {z₀ : n → ℂ} {I : Set ℝ} 
 
 /-! ### The stiffness quotient -/
 
-/-- **The stiffness quotient** ([quarteroni2000numerical] (11.86)): for a matrix whose
-eigenvalues satisfy `σ ≤ Re λⱼ ≤ τ < 0`, `r_s = σ / τ` with `σ = min Re λⱼ` and `τ = max Re λⱼ`,
-i.e. `sInf (re '' spectrum) / sSup (re '' spectrum)`. The book calls the system stiff when
-`r_s ≫ 1`, which is not a definition. -/
+/-- **The stiffness quotient** of $A \in \mathbb{C}^{n \times n}$:
+$$r_s = \frac{\sigma}{\tau}, \qquad \sigma = \inf_{\lambda \in \operatorname{spec}(A)}
+  \operatorname{Re} \lambda, \quad \tau = \sup_{\lambda \in \operatorname{spec}(A)}
+  \operatorname{Re} \lambda,$$
+where $\operatorname{spec}(A)$ is the spectrum of $A$. This is (11.86) of
+[quarteroni2000numerical]. The spectrum is the finite set of eigenvalues, so $\sigma$ and $\tau$
+are the minimum and the maximum of their real parts. When the spectrum is nonempty and all
+eigenvalues have negative real part, $\sigma \le \tau < 0$ and $r_s \ge 1$.
+
+The book calls the system stiff when $r_s \gg 1$, which is not a definition. The definition uses
+`sInf` and `sSup` of `Complex.re '' spectrum ℂ A`. For $n = 0$ the spectrum is empty, both are
+$0$, and $r_s = 0$. -/
 noncomputable def stiffnessQuotient (A : Matrix n n ℂ) : ℝ :=
   sInf (Complex.re '' spectrum ℂ A) / sSup (Complex.re '' spectrum ℂ A)
 
-/-- If the spectrum is nonempty and every eigenvalue has negative real part, the stiffness
-quotient is at least `1`: `σ ≤ τ < 0` gives `σ / τ ≥ 1`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have a nonempty spectrum, and let every eigenvalue $\lambda$
+of $A$ satisfy $\operatorname{Re} \lambda < 0$. Then the stiffness quotient satisfies
+$r_s \ge 1$, because $\sigma \le \tau < 0$ gives $\sigma / \tau \ge 1$. -/
 theorem one_le_stiffnessQuotient (A : Matrix n n ℂ) (hne : (spectrum ℂ A).Nonempty)
     (hneg : ∀ μ ∈ spectrum ℂ A, μ.re < 0) : 1 ≤ stiffnessQuotient A := by
   have hfin : (Complex.re '' spectrum ℂ A).Finite := A.finite_spectrum.image _

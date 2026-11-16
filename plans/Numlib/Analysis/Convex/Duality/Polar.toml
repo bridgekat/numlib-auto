@@ -8,11 +8,9 @@ id = 'polarSet'
 
 [[node]]
 id = 'polarSet_union'
-desc = 'The polar set of a union is the intersection of the polar sets.'
 
 [[node]]
 id = 'polarCone_union'
-desc = 'The polar of a union is the intersection of the polars.'
 
 [[node]]
 id = 'gc_polarCone_polarCone'
@@ -58,7 +56,6 @@ id = 'isClosed_polarCone'
 
 [[node]]
 id = 'isClosed_polarSet'
-desc = 'The polar set is closed when the pairing is continuous in its second argument.'
 
 [[node]]
 id = 'polarSet_closure'

@@ -15,19 +15,25 @@ import Mathlib.Topology.Order.IntermediateValue
 /-!
 # A mean value theorem for integrals with a moving point
 
-`MeasureTheory.exists_integral_eq_mul_integral`: if `ω` has constant sign on a convex carrier `s`
-of a measure `μ` on `ℝ` and every `t ∈ s` has some `ξ_t ∈ s` with `e t = D ξ_t * ω t`, `D`
-continuous on `s`, then `∫ e ∂μ = D ξ * ∫ ω ∂μ` for one `ξ ∈ s`. Unlike Mathlib's
-`exists_eq_const_mul_setIntegral_of_ae_nonneg`, no measurability of `t ↦ ξ_t` is asked for, which
-is the situation of every interpolation remainder.
+Let $\mu$ be a measure on $\mathbb{R}$ that is carried by a nonempty convex set $s$, that is,
+$\mu(\mathbb{R} \setminus s) = 0$. Let $\omega$ be an integrable function of constant sign on $s$,
+let $D$ be continuous on $s$, and let $e$ be an integrable function such that every $t \in s$ has
+some $\xi_t \in s$ with $e(t) = D(\xi_t) \, \omega(t)$. Then there is one $\xi \in s$ with
+$$\int e \, d\mu = D(\xi) \int \omega \, d\mu.$$
+Unlike Mathlib's `exists_eq_const_mul_setIntegral_of_ae_nonneg`, the result does not ask for the
+map $t \mapsto \xi_t$ to be measurable. This is the situation of every interpolation remainder.
+
+## Main results
+
+* `MeasureTheory.exists_integral_eq_mul_integral`: the statement above.
 -/
 
 namespace MeasureTheory
 
 variable {μ : Measure ℝ}
 
-/-- A function of constant sign on a carrier `s` of `μ` whose integral vanishes is `μ`-almost
-everywhere zero. -/
+/-- If $\mu(\mathbb{R} \setminus s) = 0$ and an integrable function $g$ has constant sign on $s$ and
+integral $0$, then $g = 0$ $\mu$-almost everywhere. -/
 private theorem ae_eq_zero_of_integral_eq_zero {s : Set ℝ} (hsupp : μ sᶜ = 0) {g : ℝ → ℝ}
     (hg : Integrable g μ) (hsign : (∀ t ∈ s, 0 ≤ g t) ∨ ∀ t ∈ s, g t ≤ 0)
     (h0 : ∫ t, g t ∂μ = 0) : g =ᵐ[μ] 0 := by
@@ -42,18 +48,23 @@ private theorem ae_eq_zero_of_integral_eq_zero {s : Set ℝ} (hsupp : μ sᶜ = 
     filter_upwards [h] with t ht
     simpa using ht
 
-/-- **A mean value theorem for integrals with a moving point.** Let `ω` be of constant sign on a
-convex carrier `s` of `μ`, and let `e` be such that every `t ∈ s` has some `ξ_t ∈ s` with
-`e t = D ξ_t * ω t`, for a function `D` continuous on `s`. Then `∫ e ∂μ = D ξ * ∫ ω ∂μ` for one
-`ξ ∈ s`.
+/-- **A mean value theorem for integrals with a moving point.** Let $\mu$ be a measure on
+$\mathbb{R}$, and let $s \subseteq \mathbb{R}$ be a nonempty convex set with
+$\mu(\mathbb{R} \setminus s) = 0$. Let $e, \omega, D \colon \mathbb{R} \to \mathbb{R}$, where
+$e$ and $\omega$ are $\mu$-integrable, $D$ is continuous on $s$, and either $\omega \ge 0$ on
+$s$ or $\omega \le 0$ on $s$. If for every $t \in s$ there is $\xi_t \in s$ with
+$e(t) = D(\xi_t) \, \omega(t)$, then there is $\xi \in s$ with
+$$\int e \, d\mu = D(\xi) \int \omega \, d\mu.$$
 
-For `e = D * ω` with `ξ_t = t` this is the first mean value theorem for integrals; the point of the
-statement is that `t ↦ ξ_t` need not be measurable, which is the situation of every interpolation
-remainder. If `∫ ω ∂μ = 0` then `ω`, and with it `e`, vanishes almost everywhere, and any `ξ`
-works. Otherwise put `c = ∫ e ∂μ / ∫ ω ∂μ`: were `D - c` of one strict sign on `s`, the function
-`e - c ω = (D ξ_t - c) ω` would be of constant sign with zero integral, hence almost everywhere
-zero, and so would `ω` be; so `D` takes values on both sides of `c` on `s`, and the intermediate
-value theorem finishes. -/
+For $e = D \omega$ and $\xi_t = t$ this is the first mean value theorem for integrals. The map
+$t \mapsto \xi_t$ need not be measurable, and this is the situation of every interpolation
+remainder.
+
+If $\int \omega \, d\mu = 0$, then $\omega$ and $e$ vanish almost everywhere, and every $\xi$
+works. Otherwise let $c = \int e \, d\mu / \int \omega \, d\mu$. If $D - c$ had one strict sign
+on $s$, then $e - c \omega = (D(\xi_t) - c) \, \omega$ would have constant sign and integral
+$0$, so it would vanish almost everywhere, and so would $\omega$. Hence $D$ takes values on both
+sides of $c$ on $s$, and the intermediate value theorem gives $\xi$. -/
 theorem exists_integral_eq_mul_integral {s : Set ℝ} (hs : Convex ℝ s) (hne : s.Nonempty)
     (hsupp : μ sᶜ = 0) {e ω D : ℝ → ℝ} (he : Integrable e μ) (hω : Integrable ω μ)
     (hD : ContinuousOn D s) (hsign : (∀ t ∈ s, 0 ≤ ω t) ∨ ∀ t ∈ s, ω t ≤ 0)

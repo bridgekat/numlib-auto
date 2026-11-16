@@ -10,34 +10,61 @@ import Mathlib.Analysis.Normed.Module.Seminorm.Basic
 /-!
 # Generalized Taylor models and criticality of composite functions
 
-For a composite objective `w = f + h ∘ c` with `f : E → ℝ`, `c : E → F` smooth and `h : F → ℝ`
-Lipschitz (possibly nonsmooth), [cartis2022evaluation] (§14.1) uses the *generalized Taylor model*
-`T_{w,j}(x, s) = T_{f,j}(x, s) + h(T_{c,j}(x, s))` ((14.1.5)), in which `h` is kept exactly, and the
-criticality measure `φ^δ_{w,j}(x) = w(x) - min_{‖d‖ ≤ δ} T_{w,j}(x, d)` ((14.1.6)).
+Consider a composite objective $w = f + h \circ c$ with $f : E \to \mathbb{R}$ and $c : E \to F$
+smooth and $h : F \to \mathbb{R}$ Lipschitz and possibly nonsmooth. Following §14.1 of
+[cartis2022evaluation], the *generalized Taylor model* of order $j$ at $x$ is
+$$T_{w,j}(x, s) = T_{f,j}(x, s) + h(T_{c,j}(x, s)),$$
+as in (14.1.5): the Taylor polynomials of $f$ and $c$ are used, but $h$ is kept exactly. The
+composite criticality measure (14.1.6) is $\varphi^\delta_{w,j}(x) = w(x) - \min_{\|d\| \le \delta}
+T_{w,j}(x, d)$, the largest decrease of the model over the ball of radius $\delta$.
 
-As for the core `Optimization.taylorMeasure`, everything is built from derivative *data*
-`Df : FormalMultilinearSeries ℝ E ℝ`, `Dc : FormalMultilinearSeries ℝ E F`, so that the same
-definitions serve the function (`Df = ftaylorSeries ℝ f x`, `Dc = ftaylorSeries ℝ c x`) and the
-regularized model of ARqpC at a trial step ((14.1.14)), and the measure is an instance of
-`Optimization.decrementMeasure` over a set `S` of feasible displacements (`S = univ`
-unconstrained, `S = {d | x + d ∈ X}` in §14.2).
+This module builds these objects from derivative data $D_f$ and $D_c$, that is, from sequences of
+multilinear maps, with the Taylor sums $T_{f,j}(d) = \sum_{i=0}^{j} \frac{1}{i!} D_{f,i}[d]^i$ and
+$T_{c,j}(d) = \sum_{i=0}^{j} \frac{1}{i!} D_{c,i}[d]^i$. It defines the decrement
+$\Delta T_{w,j}(d) = T_{w,j}(0) - T_{w,j}(d)$, the measure $\varphi^\delta_{w,j}$ as the supremum of
+$\Delta T_{w,j}$ over the feasible displacements $d \in S$ with $\|d\| \le \delta$, and the
+$(\varepsilon, \delta)$-approximate optimality condition (14.1.9). It proves that the measure is
+finite, nonnegative, monotone and attained in finite dimension, the first-order necessary condition
+of Lemma 14.1.1, and the bound on the remainder $|w(x + s) - T_{w,p}(x, s)|$ used in the proof of
+Lemma 14.1.6.
 
 ## Main definitions
 
-* `Optimization.IsSubadditive h`: `h (a + b) ≤ h a + h b` (part of the book's assumption h.S0);
-* `Optimization.compositeTaylorDecrement Df Dc h j d = T_{w,j}(0) - T_{w,j}(d)`;
-* `Optimization.compositeTaylorMeasure Df Dc h j δ S`, the measure (14.1.6);
-* `Optimization.IsEpsDeltaApproxComposite Df Dc h S q ε δ`, condition (14.1.9).
+* `Optimization.IsSubadditive`: $h(a + b) \le h(a) + h(b)$ for all $a, b$.
+* `Optimization.HasLipschitzConst`: $h$ is Lipschitz with a real constant $L \ge 0$.
+* `Optimization.compositeTaylorDecrement`: the decrement
+  $\Delta T_{w,j}(d) = T_{w,j}(0) - T_{w,j}(d)$.
+* `Optimization.compositeTaylorMeasure`: the measure $\varphi^\delta_{w,j}$ of (14.1.6) over a set
+  $S$ of feasible displacements.
+* `Optimization.IsEpsDeltaApproxComposite`: the condition (14.1.9), $\varphi^{\delta_j}_{w,j} \le
+  \varepsilon_j \delta_j^j / j!$ for $1 \le j \le q$.
 
 ## Main results
 
-* `Optimization.abs_compositeTaylorDecrement_le`: the decrement is bounded on balls, so the measure
-  is a finite supremum (nonnegative, monotone in `δ` and `S`);
-* `Optimization.exists_compositeTaylorMeasure_eq`: attainment in finite dimension;
-* `Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn`: first-order necessity for
-  convex `h` (Lemma 14.1.1, for local minimizers over a convex set);
-* `Optimization.abs_sub_compositeTaylor_le_of_lipschitz`: the value remainder of the composite
-  model (proof of Lemma 14.1.6).
+* `Optimization.abs_compositeTaylorDecrement_le`: $|\Delta T_{w,j}(d)| \le \sum_{i=1}^{j}
+  (\|D_{f,i}\| + L_h \|D_{c,i}\|) \|d\|^i / i!$, so the measure is a finite supremum.
+* `Optimization.exists_compositeTaylorMeasure_eq`: in finite dimension, the supremum that defines
+  the measure is attained.
+* `Optimization.compositeTaylorDecrement_one_nonpos_of_isLocalMinOn`: at a local minimizer of $w$
+  over a convex set, with $h$ convex, $\Delta T_{w,1}(x, s) \le 0$ for all feasible $s$ (Lemma
+  14.1.1).
+* `Optimization.abs_sub_compositeTaylor_le_of_lipschitz`: $|w(x + s) - T_{w,p}(x, s)| \le (L_f + L_h
+  L_c) \|s\|^{p+1} / (p + 1)!$ (proof of Lemma 14.1.6).
+
+## Implementation notes
+
+* All definitions take derivative data `Df : FormalMultilinearSeries ℝ E ℝ` and
+  `Dc : FormalMultilinearSeries ℝ E F`, as the core `Optimization.taylorMeasure` does. The data are
+  `ftaylorSeries ℝ f x` and `ftaylorSeries ℝ c x` for the function itself. They are the jets at a
+  trial step of the regularized model for the model measure of ARqpC (14.1.14).
+* The measure is an instance of `Optimization.decrementMeasure` over a set `S` of feasible
+  displacements. The unconstrained case is `S = univ`, and the constrained case of §14.2 of
+  [cartis2022evaluation] is `S = {d | x + d ∈ X}`.
+* `Optimization.IsSubadditive` is defined here because Mathlib's `Subadditive` is about sequences.
+  The assumption h.S0 of [cartis2022evaluation] is subadditivity together with $h(0) = 0$, which the
+  theorems assume separately.
+* Lipschitz constants are real numbers, since they enter explicit bounds.
+  `Optimization.HasLipschitzConst.of_lipschitzWith` converts from Mathlib's `LipschitzWith`.
 -/
 
 open Set Metric Finset Filter Topology
@@ -47,11 +74,15 @@ namespace Optimization
 
 section Subadditive
 
-/-- `h` is *subadditive*: `h (a + b) ≤ h a + h b` (the book's assumption h.S0, which also asks
-`h 0 = 0`; Mathlib's `Subadditive` is about sequences). -/
+/-- A function $h : F \to \mathbb{R}$ on an additive type is **subadditive** if
+$h(a + b) \le h(a) + h(b)$ for all $a, b \in F$.
+
+The assumption h.S0 of [cartis2022evaluation] asks for subadditivity and also for $h(0) = 0$;
+the theorems below assume $h(0) = 0$ separately. Mathlib's `Subadditive` is a different notion,
+about sequences. -/
 def IsSubadditive {F : Type*} [Add F] (h : F → ℝ) : Prop := ∀ a b, h (a + b) ≤ h a + h b
 
-/-- Seminorms are subadditive. -/
+/-- A seminorm $p$ on a real vector space is subadditive: $p(a + b) \le p(a) + p(b)$. -/
 theorem _root_.Seminorm.isSubadditive {G : Type*} [AddCommGroup G] [Module ℝ G]
     (p : Seminorm ℝ G) :
     IsSubadditive (p : G → ℝ) :=
@@ -59,20 +90,26 @@ theorem _root_.Seminorm.isSubadditive {G : Type*} [AddCommGroup G] [Module ℝ G
 
 variable {F : Type*} [NormedAddCommGroup F]
 
-/-- `h` is Lipschitz continuous with the real constant `L ≥ 0`: `|h a - h b| ≤ L ‖a - b‖`
-([cartis2022evaluation], assumption h.L, with `L = L_{h,0}`). Real constants are used since they
-enter explicit bounds; `HasLipschitzConst.of_lipschitzWith` converts from Mathlib's
-`LipschitzWith`. -/
+/-- The function $h : F \to \mathbb{R}$ **has Lipschitz constant** $L$ if $L \ge 0$ and
+$|h(a) - h(b)| \le L \|a - b\|$ for all $a, b \in F$. This is the assumption h.L of
+[cartis2022evaluation], with $L = L_{h,0}$.
+
+The constant is a real number, since it enters explicit bounds.
+`Optimization.HasLipschitzConst.of_lipschitzWith` converts from Mathlib's `LipschitzWith`. -/
 structure HasLipschitzConst (h : F → ℝ) (L : ℝ) : Prop where
+  /-- The constant is nonnegative: $L \ge 0$. -/
   nonneg : 0 ≤ L
+  /-- The Lipschitz inequality $|h(a) - h(b)| \le L \|a - b\|$ for all $a, b$. -/
   abs_sub_le : ∀ a b, |h a - h b| ≤ L * ‖a - b‖
 
-/-- Mathlib's `LipschitzWith K h` gives `HasLipschitzConst h K`. -/
+/-- If $h$ is Lipschitz with constant $K \ge 0$ in the sense of Mathlib's `LipschitzWith`, then $h$
+has Lipschitz constant $K$. -/
 theorem HasLipschitzConst.of_lipschitzWith {h : F → ℝ} {K : NNReal} (hK : LipschitzWith K h) :
     HasLipschitzConst h K :=
   ⟨K.2, fun a b => by simpa [Real.dist_eq, dist_eq_norm] using hK.dist_le_mul a b⟩
 
-/-- A function with a Lipschitz constant is `LipschitzWith` that constant. -/
+/-- If $h$ has Lipschitz constant $L$, then $h$ is Lipschitz with constant $L$ in the sense of
+Mathlib's `LipschitzWith`. -/
 theorem HasLipschitzConst.lipschitzWith {h : F → ℝ} {L : ℝ} (hL : HasLipschitzConst h L) :
     LipschitzWith ⟨L, hL.nonneg⟩ h :=
   LipschitzWith.of_dist_le_mul fun a b => by
@@ -86,35 +123,38 @@ theorem HasLipschitzConst.continuous {h : F → ℝ} {L : ℝ} (hL : HasLipschit
 
 variable {h h' : F → ℝ} {Lh : ℝ}
 
-/-- Unfolding lemma for `IsSubadditive`. -/
+/-- $h$ is subadditive if and only if $h(a + b) \le h(a) + h(b)$ for all $a, b$. -/
 theorem isSubadditive_iff : IsSubadditive h ↔ ∀ a b, h (a + b) ≤ h a + h b := Iff.rfl
 
-/-- A sum of subadditive functions is subadditive. -/
+/-- The sum of two subadditive functions is subadditive. -/
 theorem IsSubadditive.add (hh : IsSubadditive h) (hh' : IsSubadditive h') :
     IsSubadditive (h + h') := fun a b => by
   simp only [Pi.add_apply]
   linarith [hh a b, hh' a b]
 
-/-- The norm is subadditive. -/
+/-- The norm $a \mapsto \|a\|$ is subadditive. -/
 theorem isSubadditive_norm : IsSubadditive (fun a : F => ‖a‖) := norm_add_le
 
-/-- An odd subadditive function is additive. -/
+/-- If $h$ is subadditive and odd, $h(-a) = -h(a)$ for all $a$, then $h$ is additive:
+$h(a + b) = h(a) + h(b)$. -/
 theorem IsSubadditive.map_add_of_odd (hh : IsSubadditive h) (hodd : ∀ a, h (-a) = -h a)
     (a b : F) : h (a + b) = h a + h b := by
   have := hh (a + b) (-b)
   rw [add_neg_cancel_right, hodd] at this
   linarith [hh a b]
 
-/-- A subadditive `h` increases by at most `h b` along `b`: `h (a + b) - h a ≤ h b`. -/
+/-- If $h$ is subadditive, then $h(a + b) - h(a) \le h(b)$ for all $a, b$. -/
 theorem IsSubadditive.sub_le (hh : IsSubadditive h) (a b : F) : h (a + b) - h a ≤ h b := by
   linarith [hh a b]
 
-/-- (14.1.4) If `h 0 = 0` and `h` has Lipschitz constant `Lh`, then `|h a| ≤ Lh ‖a‖`. -/
+/-- If $h(0) = 0$ and $h$ has Lipschitz constant $L_h$, then $|h(a)| \le L_h \|a\|$ for all $a$.
+This is (14.1.4) of [cartis2022evaluation]. -/
 theorem abs_le_of_lipschitz_of_map_zero (h0 : h 0 = 0)
     (hLip : HasLipschitzConst h Lh) (a : F) : |h a| ≤ Lh * ‖a‖ := by
   simpa [h0] using hLip.abs_sub_le a 0
 
-/-- For subadditive Lipschitz `h` with `h 0 = 0`: `h (a + b) - h a ≤ h b ≤ Lh ‖b‖`. -/
+/-- If $h$ is subadditive, $h(0) = 0$, and $h$ has Lipschitz constant $L_h$, then
+$h(a + b) - h(a) \le h(b) \le L_h \|b\|$; the theorem states $h(a + b) - h(a) \le L_h \|b\|$. -/
 theorem IsSubadditive.sub_le_mul_norm (hh : IsSubadditive h) (h0 : h 0 = 0)
     (hLip : HasLipschitzConst h Lh) (a b : F) : h (a + b) - h a ≤ Lh * ‖b‖ :=
   (hh.sub_le a b).trans ((le_abs_self _).trans (abs_le_of_lipschitz_of_map_zero h0 hLip b))
@@ -122,7 +162,7 @@ theorem IsSubadditive.sub_le_mul_norm (hh : IsSubadditive h) (h0 : h 0 = 0)
 /-- The zero function is subadditive. -/
 theorem isSubadditive_zero {G : Type*} [Add G] : IsSubadditive (0 : G → ℝ) := fun _ _ => by simp
 
-/-- The zero function has Lipschitz constant `0`. -/
+/-- The zero function has Lipschitz constant $0$. -/
 theorem hasLipschitzConst_zero : HasLipschitzConst (0 : F → ℝ) 0 :=
   ⟨le_rfl, fun _ _ => by simp⟩
 
@@ -138,38 +178,50 @@ section Decrement
 variable (Df : FormalMultilinearSeries ℝ E ℝ) (Dc : FormalMultilinearSeries ℝ E F) (h : F → ℝ)
   (j : ℕ)
 
-/-- The decrease `ΔT_{w,j}(d) = T_{w,j}(0) - T_{w,j}(d)` of the generalized Taylor model
-`T_{w,j}(s) = T_{f,j}(s) + h(T_{c,j}(s))` built from the jets `Df`, `Dc` ([cartis2022evaluation],
-(14.1.5)–(14.1.6)). `h` is kept exactly: `T_{w,j}` is not a Taylor polynomial of `w`. -/
+/-- Let $D_f$ and $D_c$ be derivative data, that is, sequences of multilinear maps on $E$ with
+values in $\mathbb{R}$ and in $F$, and let $h : F \to \mathbb{R}$. The **composite Taylor
+decrement** of order $j$ along $d \in E$ is the decrease of the generalized Taylor model
+$T_{w,j}(s) = T_{f,j}(s) + h(T_{c,j}(s))$ from $0$ to $d$:
+$$\Delta T_{w,j}(d) = \bigl(T_{f,j}(0) + h(T_{c,j}(0))\bigr) - \bigl(T_{f,j}(d) +
+  h(T_{c,j}(d))\bigr),$$
+where $T_{f,j}(s) = \sum_{i=0}^{j} \frac{1}{i!} D_{f,i}[s]^i$ and $T_{c,j}(s) = \sum_{i=0}^{j}
+\frac{1}{i!} D_{c,i}[s]^i$. This is the model (14.1.5) of [cartis2022evaluation] as it enters
+the measure (14.1.6).
+
+The function $h$ is kept exactly, so $T_{w,j}$ is not a Taylor polynomial of
+$w = f + h \circ c$. The Taylor sums are `FormalMultilinearSeries.taylorSum` of `Df` and `Dc`. -/
 noncomputable def compositeTaylorDecrement (d : E) : ℝ :=
   (Df.taylorSum j 0 + h (Dc.taylorSum j 0)) - (Df.taylorSum j d + h (Dc.taylorSum j d))
 
-/-- The composite decrement is the Taylor decrement of `Df` plus the decrease of `h`. -/
+/-- The composite decrement is the Taylor decrement of $D_f$ plus the decrease of $h$: $\Delta
+T_{w,j}(d) = \Delta T_{f,j}(d) + h(T_{c,j}(0)) - h(T_{c,j}(d))$. -/
 theorem compositeTaylorDecrement_eq (d : E) :
     compositeTaylorDecrement Df Dc h j d =
       Df.taylorDecrement j d + (h (Dc.taylorSum j 0) - h (Dc.taylorSum j d)) := by
   rw [compositeTaylorDecrement, FormalMultilinearSeries.taylorDecrement]
   ring
 
-/-- With `h = 0` the composite decrement is the Taylor decrement. -/
+/-- With $h = 0$, the composite decrement is the Taylor decrement $\Delta T_{f,j}$ of $D_f$. -/
 @[simp]
 theorem compositeTaylorDecrement_zero_fun :
     compositeTaylorDecrement Df Dc (0 : F → ℝ) j = Df.taylorDecrement j := by
   ext d
   simp [compositeTaylorDecrement_eq]
 
-/-- The composite decrement vanishes at `d = 0`. -/
+/-- The composite decrement vanishes at $d = 0$. -/
 @[simp]
 theorem compositeTaylorDecrement_zero_right : compositeTaylorDecrement Df Dc h j 0 = 0 :=
   sub_self _
 
-/-- The composite decrement is continuous when `h` is. -/
+/-- If $h$ is continuous, then $d \mapsto \Delta T_{w,j}(d)$ is continuous. -/
 theorem continuous_compositeTaylorDecrement (hc : Continuous h) :
     Continuous (compositeTaylorDecrement Df Dc h j) :=
   continuous_const.sub ((Df.contDiff_taylorSum j (n := 0)).continuous.add
     (hc.comp (Dc.contDiff_taylorSum j (n := 0)).continuous))
 
-/-- `‖T_{c,j}(0) - T_{c,j}(d)‖ ≤ ∑_{i=1}^j ‖Dc_i‖ ‖d‖^i / i!`. -/
+/-- For derivative data $D_c$ with values in $F$ and every $d \in E$,
+$$\|T_{c,j}(0) - T_{c,j}(d)\| \le \sum_{i=1}^{j} \|D_{c,i}\| \, \frac{\|d\|^i}{i!}.$$
+-/
 theorem norm_taylorSum_zero_sub_le (d : E) :
     ‖Dc.taylorSum j 0 - Dc.taylorSum j d‖ ≤ ∑ i ∈ Finset.Icc 1 j, ‖Dc i‖ * ‖d‖ ^ i / i ! := by
   rw [Dc.taylorSum_zero_right, Dc.taylorSum_eq_add, sub_add_cancel_left, norm_neg]
@@ -180,8 +232,13 @@ theorem norm_taylorSum_zero_sub_le (d : E) :
 
 variable {Df Dc h j} {Lh : ℝ}
 
-/-- **Bound on the composite decrement.** If `h` has Lipschitz constant `Lh`, then
-`|ΔT_{w,j}(d)| ≤ ∑_{i=1}^j (‖Df_i‖ + Lh ‖Dc_i‖) ‖d‖^i / i!`. -/
+/-- **Bound on the composite decrement.** If $h$ has Lipschitz constant $L_h$, then for every
+$d \in E$
+$$|\Delta T_{w,j}(d)| \le \sum_{i=1}^{j} \bigl(\|D_{f,i}\| + L_h \|D_{c,i}\|\bigr)
+  \frac{\|d\|^i}{i!}.$$
+
+The norms $\|D_{f,i}\|$ and $\|D_{c,i}\|$ are operator norms of multilinear maps. The bound
+shows that the supremum in `Optimization.compositeTaylorMeasure` is finite. -/
 theorem abs_compositeTaylorDecrement_le (hLip : HasLipschitzConst h Lh) (d : E) :
     |compositeTaylorDecrement Df Dc h j d| ≤
       ∑ i ∈ Finset.Icc 1 j, (‖Df i‖ + Lh * ‖Dc i‖) * ‖d‖ ^ i / i ! := by
@@ -199,7 +256,8 @@ theorem abs_compositeTaylorDecrement_le (hLip : HasLipschitzConst h Lh) (d : E) 
   rw [he]
   exact (abs_add_le _ _).trans (add_le_add h1 h2)
 
-/-- The composite decreases over a feasible ball are bounded above. -/
+/-- If $h$ has Lipschitz constant $L_h$, then for every $\delta \in \mathbb{R}$ and $S \subseteq E$
+the values $\Delta T_{w,j}(d)$ for $\|d\| \le \delta$ and $d \in S$ are bounded above. -/
 theorem bddAbove_compositeTaylorDecrement (hLip : HasLipschitzConst h Lh) (δ : ℝ) (S : Set E) :
     BddAbove (compositeTaylorDecrement Df Dc h j '' (closedBall 0 δ ∩ S)) := by
   refine ⟨∑ i ∈ Finset.Icc 1 j, (‖Df i‖ + Lh * ‖Dc i‖) * δ ^ i / i !,
@@ -217,21 +275,30 @@ section Measure
 variable (Df : FormalMultilinearSeries ℝ E ℝ) (Dc : FormalMultilinearSeries ℝ E F) (h : F → ℝ)
   (j : ℕ) (δ : ℝ) (S : Set E)
 
-/-- The composite criticality measure `φ^δ_{w,j} = sup {ΔT_{w,j}(d) | ‖d‖ ≤ δ, d ∈ S}`
-([cartis2022evaluation], (14.1.6), with the minimization variable `d`): for
-`Df = ftaylorSeries ℝ f x`, `Dc = ftaylorSeries ℝ c x` and `S = univ` it is
-`w(x) - min_{‖d‖ ≤ δ} T_{w,j}(x, d)`; with `S = {d | x + d ∈ X}` it is the constrained measure of
-§14.2; with the jets of the regularized model at a trial step it is `φ^δ_{m̂,j}(s)` of
-(14.1.14). -/
+/-- Let $D_f$, $D_c$ be derivative data, $h : F \to \mathbb{R}$, $\delta \in \mathbb{R}$ and
+$S \subseteq E$ a set of feasible displacements. The **composite criticality measure** of order
+$j$ is
+$$\varphi^\delta_{w,j} = \sup \{\Delta T_{w,j}(d) \mid \|d\| \le \delta, \ d \in S\}.$$
+For $D_f$ and $D_c$ the Taylor series of $f$ and $c$ at $x$ and $S = E$, this is the measure
+$\varphi^\delta_{w,j}(x) = w(x) - \min_{\|d\| \le \delta} T_{w,j}(x, d)$ of (14.1.6) of
+[cartis2022evaluation], with minimization variable $d$.
+
+The supremum is `sSup` in `ℝ`; it is $0$ if the set of values is empty, and it is finite when
+$h$ is Lipschitz (`Optimization.bddAbove_compositeTaylorDecrement`). The measure is
+`Optimization.decrementMeasure` of `Optimization.compositeTaylorDecrement`. With
+$S = \{d \mid x + d \in X\}$ it is the constrained measure of §14.2 of [cartis2022evaluation].
+With the jets of the regularized model at a trial step $s$ it is the model measure
+$\varphi^\delta_{\hat m,j}(s)$ of (14.1.14). -/
 noncomputable def compositeTaylorMeasure : ℝ :=
   decrementMeasure (compositeTaylorDecrement Df Dc h j) δ S
 
-/-- Unfolding lemma for `compositeTaylorMeasure`. -/
+/-- The composite measure is the supremum $\sup \Delta T_{w,j}(\bar B(0, \delta) \cap S)$. -/
 theorem compositeTaylorMeasure_eq_sSup :
     compositeTaylorMeasure Df Dc h j δ S =
       sSup (compositeTaylorDecrement Df Dc h j '' (closedBall 0 δ ∩ S)) := rfl
 
-/-- With `h = 0` the composite measure is the Taylor measure. -/
+/-- With $h = 0$, the composite measure is the Taylor measure `Optimization.taylorMeasure` of $D_f$.
+-/
 @[simp]
 theorem compositeTaylorMeasure_zero_fun :
     compositeTaylorMeasure Df Dc (0 : F → ℝ) j δ S = taylorMeasure Df j δ S := by
@@ -240,34 +307,43 @@ theorem compositeTaylorMeasure_zero_fun :
 
 variable {Df Dc h j δ S} {Lh : ℝ} {d : E}
 
-/-- Every feasible composite decrease is at most the measure (`h` Lipschitz). -/
+/-- If $h$ has a Lipschitz constant, then $\Delta T_{w,j}(d) \le \varphi^\delta_{w,j}$ for every
+$d \in S$ with $\|d\| \le \delta$. -/
 theorem compositeTaylorDecrement_le_compositeTaylorMeasure (hLip : HasLipschitzConst h Lh)
     (hd : d ∈ closedBall 0 δ ∩ S) :
     compositeTaylorDecrement Df Dc h j d ≤ compositeTaylorMeasure Df Dc h j δ S :=
   le_decrementMeasure (bddAbove_compositeTaylorDecrement hLip δ S) hd
 
-/-- The composite measure is nonnegative when `0` is feasible (`h` Lipschitz). -/
+/-- If $h$ has a Lipschitz constant, $0 \in S$ and $\delta \ge 0$, then
+$\varphi^\delta_{w,j} \ge 0$. -/
 theorem compositeTaylorMeasure_nonneg (hLip : HasLipschitzConst h Lh)
     (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) : 0 ≤ compositeTaylorMeasure Df Dc h j δ S :=
   decrementMeasure_nonneg (bddAbove_compositeTaylorDecrement hLip δ S) h0 hδ
     (compositeTaylorDecrement_zero_right Df Dc h j)
 
-/-- The composite measure is monotone in the radius. -/
+/-- If $h$ has a Lipschitz constant, $0 \in S$ and $0 \le \delta \le \delta'$, then
+$\varphi^\delta_{w,j} \le \varphi^{\delta'}_{w,j}$, with both measures over $S$. -/
 theorem compositeTaylorMeasure_mono_radius {δ' : ℝ} (hLip : HasLipschitzConst h Lh)
     (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) (hδδ' : δ ≤ δ') :
     compositeTaylorMeasure Df Dc h j δ S ≤ compositeTaylorMeasure Df Dc h j δ' S :=
   decrementMeasure_mono_radius ⟨0, mem_closedBall_self hδ, h0⟩
     (bddAbove_compositeTaylorDecrement hLip δ' S) hδδ'
 
-/-- The composite measure is monotone in the feasible set. -/
+/-- If $h$ has a Lipschitz constant, $0 \in S$, $\delta \ge 0$ and $S \subseteq S'$, then the
+measure over $S$ is at most the measure over $S'$. -/
 theorem compositeTaylorMeasure_mono_set {S' : Set E} (hLip : HasLipschitzConst h Lh)
     (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) (hSS' : S ⊆ S') :
     compositeTaylorMeasure Df Dc h j δ S ≤ compositeTaylorMeasure Df Dc h j δ S' :=
   decrementMeasure_mono_set ⟨0, mem_closedBall_self hδ, h0⟩
     (bddAbove_compositeTaylorDecrement hLip δ S') hSS'
 
-/-- In finite dimension, with `h` continuous, `S` closed and `0 ∈ S`, the composite measure is
-attained at an optimality displacement. -/
+/-- Let $E$ be finite-dimensional, $h$ continuous, $S \subseteq E$ closed with $0 \in S$, and
+$\delta \ge 0$. Then the composite measure is attained: there is $d \in S$ with
+$\|d\| \le \delta$ and
+$$\Delta T_{w,j}(d) = \varphi^\delta_{w,j}.$$
+
+Such a $d$ is an optimality displacement. The proof uses that $\Delta T_{w,j}$ is continuous and
+that $\bar B(0, \delta) \cap S$ is compact and nonempty. -/
 theorem exists_compositeTaylorMeasure_eq [FiniteDimensional ℝ E] (hc : Continuous h)
     (hS : IsClosed S) (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) :
     ∃ d ∈ closedBall 0 δ ∩ S,
@@ -284,26 +360,35 @@ section Approx
 variable {Df : FormalMultilinearSeries ℝ E ℝ} {Dc : FormalMultilinearSeries ℝ E F} {h : F → ℝ}
   {S : Set E} {q : ℕ} {ε δ : ℕ → ℝ}
 
-/-- `(ε, δ)`-approximate `q`-th order optimality for a composite function
-([cartis2022evaluation], (14.1.9)): `φ^{δ_j}_{w,j} ≤ ε_j δ_j^j / j!` for `1 ≤ j ≤ q`, for the jets
-`Df = ftaylorSeries ℝ f x`, `Dc = ftaylorSeries ℝ c x` and feasible displacements `S`. -/
+/-- Let $D_f$, $D_c$ be derivative data, $h : F \to \mathbb{R}$, $S \subseteq E$ a set of feasible
+displacements, $q \in \mathbb{N}$, and $(\varepsilon_j)$, $(\delta_j)$ real sequences. The data
+are **$(\varepsilon, \delta)$-approximately $q$-th order optimal** for the composite function if
+$$\varphi^{\delta_j}_{w,j} \le \varepsilon_j \frac{\delta_j^j}{j!} \qquad \text{for } 1 \le j
+  \le q.$$
+When $D_f$ is `ftaylorSeries ℝ f x` and $D_c$ is `ftaylorSeries ℝ c x`, this is the condition
+(14.1.9) of [cartis2022evaluation] at $x$. -/
 def IsEpsDeltaApproxComposite (Df : FormalMultilinearSeries ℝ E ℝ)
     (Dc : FormalMultilinearSeries ℝ E F) (h : F → ℝ) (S : Set E) (q : ℕ) (ε δ : ℕ → ℝ) : Prop :=
   ∀ j ∈ Finset.Icc 1 q, compositeTaylorMeasure Df Dc h j (δ j) S ≤ ε j * δ j ^ j / j !
 
-/-- Unfolding lemma for `IsEpsDeltaApproxComposite`. -/
+/-- The condition `Optimization.IsEpsDeltaApproxComposite` holds if and only if
+$\varphi^{\delta_j}_{w,j} \le \varepsilon_j \delta_j^j / j!$ for $1 \le j \le q$. -/
 theorem isEpsDeltaApproxComposite_iff :
     IsEpsDeltaApproxComposite Df Dc h S q ε δ ↔
       ∀ j ∈ Finset.Icc 1 q, compositeTaylorMeasure Df Dc h j (δ j) S ≤ ε j * δ j ^ j / j ! :=
   Iff.rfl
 
-/-- With `h = 0`, composite approximate optimality is the smooth one (12.1.25). -/
+/-- With $h = 0$, composite approximate optimality is the smooth condition
+`Optimization.IsEpsDeltaApprox` of (12.1.25) of [cartis2022evaluation]. -/
 theorem isEpsDeltaApproxComposite_zero_fun_iff :
     IsEpsDeltaApproxComposite Df Dc (0 : F → ℝ) S q ε δ ↔ IsEpsDeltaApprox Df S q ε δ := by
   simp only [IsEpsDeltaApproxComposite, compositeTaylorMeasure_zero_fun, IsEpsDeltaApprox]
 
-/-- Certification by the Step-1 test (14.1.10): passing the test with approximate optimality
-displacements of the composite decrements certifies (14.1.9). -/
+/-- Let $\varsigma > 0$, and for each $1 \le j \le q$ let $d_j$ be an approximate optimality
+displacement of $\Delta T_{w,j}$: $d_j \in S$, $\|d_j\| \le \delta_j$ and $\varsigma
+\varphi^{\delta_j}_{w,j} \le \Delta T_{w,j}(d_j)$. If the test $\Delta T_{w,j}(d_j) \le
+\varsigma \varepsilon_j \delta_j^j / j!$ passes for $1 \le j \le q$, then the condition (14.1.9)
+holds. This is the certification by the Step-1 test (14.1.10) of [cartis2022evaluation]. -/
 theorem MeasureTestPasses.isEpsDeltaApproxComposite {ς : ℝ} {d : ℕ → E} (hς : 0 < ς)
     (hd : ∀ j ∈ Finset.Icc 1 q,
       IsApproxMeasureStep (compositeTaylorDecrement Df Dc h j) (δ j) S ς (d j))
@@ -318,7 +403,8 @@ end Approx
 
 section Necessity
 
-/-- The first-order Taylor polynomial along a ray: `T_{g,1}(x, α s) = g(x) + α ∇g(x)[s]`. -/
+/-- For $g : E \to G$, the first-order Taylor polynomial along a ray is $T_{g,1}(x, \alpha s) =
+g(x) + \alpha \nabla g(x)[s]$. -/
 private theorem taylorSum_one_ftaylorSeries_smul {G : Type*} [NormedAddCommGroup G]
     [NormedSpace ℝ G] (g : E → G) (x s : E) (α : ℝ) :
     (ftaylorSeries ℝ g x).taylorSum 1 (α • s) = g x + α • fderiv ℝ g x s := by
@@ -334,8 +420,9 @@ private theorem taylorSum_ftaylorSeries_zero {G : Type*} [NormedAddCommGroup G]
     (ftaylorSeries ℝ g x).taylorSum p 0 = g x :=
   taylorPolynomial_zero_right g p x
 
-/-- The first-order composite decrement along a ray: `ΔT_{w,1}(x, α s) = w(x) - (f(x) +
-α ∇f(x)[s] + h(c(x) + α ∇c(x)[s]))`. -/
+/-- For the jets of $f$ and $c$ at $x$, the first-order composite decrement along a ray is $\Delta
+T_{w,1}(x, \alpha s) = w(x) - \bigl(f(x) + \alpha \nabla f(x)[s] + h(c(x) + \alpha \nabla
+c(x)[s])\bigr)$. -/
 private theorem compositeTaylorDecrement_one_smul (f : E → ℝ) (c : E → F) (h : F → ℝ) (x s : E)
     (α : ℝ) :
     compositeTaylorDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h 1 (α • s) =
@@ -344,11 +431,17 @@ private theorem compositeTaylorDecrement_one_smul (f : E → ℝ) (c : E → F) 
     taylorSum_one_ftaylorSeries_smul c, taylorSum_ftaylorSeries_zero f,
     taylorSum_ftaylorSeries_zero c, smul_eq_mul]
 
-/-- **First-order necessity for composite problems** ([cartis2022evaluation], Lemma 14.1.1,
-generalized). Let `X ⊆ E` be convex, `x ∈ X`, `f` and `c` differentiable at `x`, `h` convex with
-Lipschitz constant `Lh`, and `x` a local minimizer of `w = f + h ∘ c` on `X`. Then for every `s`
-with `x + s ∈ X`, `ΔT_{w,1}(x, s) ≤ 0`: `0` is a global minimizer of `T_{w,1}(x, ·)` over `X - x`.
-(Local minimality, plain Lipschitz continuity of `h` and no subadditivity suffice.) -/
+/-- **First-order necessary condition for composite problems.** Let $X \subseteq E$ be convex and
+$x \in X$. Let $f : E \to \mathbb{R}$ and $c : E \to F$ be differentiable at $x$, and let
+$h : F \to \mathbb{R}$ be convex with a Lipschitz constant. If $x$ is a local minimizer of
+$w = f + h \circ c$ on $X$, then for every $s$ with $x + s \in X$
+$$\Delta T_{w,1}(x, s) \le 0,$$
+so $0$ is a global minimizer of $T_{w,1}(x, \cdot)$ over $X - x$. This generalizes Lemma 14.1.1
+of [cartis2022evaluation].
+
+The decrement is `Optimization.compositeTaylorDecrement` of `ftaylorSeries ℝ f x` and
+`ftaylorSeries ℝ c x`. Local minimality, Lipschitz continuity of $h$, and no subadditivity are
+enough. -/
 theorem compositeTaylorDecrement_one_nonpos_of_isLocalMinOn {f : E → ℝ} {c : E → F} {h : F → ℝ}
     {Lh : ℝ} {X : Set E} {x : E} (hX : Convex ℝ X) (hx : x ∈ X) (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (hconv : ConvexOn ℝ univ h)
@@ -414,9 +507,11 @@ theorem compositeTaylorDecrement_one_nonpos_of_isLocalMinOn {f : E → ℝ} {c :
     simp only [ε]; field_simp
   nlinarith [abs_nonneg Lh]
 
-/-- Consequence of Lemma 14.1.1: at a local minimizer of `f + h ∘ c` on a convex `X` (with `h`
-convex and Lipschitz), the first-order composite measure over `{d | x + d ∈ X}` vanishes for every
-`δ ≥ 0`. -/
+/-- Let $X \subseteq E$ be convex, $x \in X$, let $f$ and $c$ be differentiable at $x$, and let $h$
+be convex with a Lipschitz constant. If $x$ is a local minimizer of $f + h \circ c$ on $X$, then
+for every $\delta \ge 0$ the first-order composite measure $\varphi^\delta_{w,1}(x)$ over the
+feasible displacements $\{d \mid x + d \in X\}$ is $0$. This is a consequence of Lemma 14.1.1 of
+[cartis2022evaluation]. -/
 theorem compositeTaylorMeasure_one_eq_zero_of_isLocalMinOn {f : E → ℝ} {c : E → F} {h : F → ℝ}
     {Lh : ℝ} {X : Set E} {x : E} (hX : Convex ℝ X) (hx : x ∈ X) (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (hconv : ConvexOn ℝ univ h)
@@ -437,10 +532,17 @@ end Necessity
 
 /-! ### Value remainder -/
 
-/-- **Remainder of the composite model, anchored** (proof of Lemma 14.1.6 of
-[cartis2022evaluation]): as `abs_sub_compositeTaylor_le_of_lipschitz`, with `∇^p f` and `∇^p c`
-only Lipschitz anchored at `x` (`‖∇^p f(y) - ∇^p f(x)‖ ≤ L_f ‖y - x‖` and the same for `c` with
-`L_c`, for `y ∈ C`). -/
+/-- **Remainder of the composite model, anchored form.** Let $C \subseteq E$ be convex, and let
+$f : E \to \mathbb{R}$ and $c : E \to F$ be $p$ times continuously differentiable at every point
+of $C$. Suppose that $\nabla^p f$ and $\nabla^p c$ are Lipschitz with anchor $x$: $\|\nabla^p
+f(y) - \nabla^p f(x)\| \le L_f \|y - x\|$ and $\|\nabla^p c(y) - \nabla^p c(x)\| \le L_c \|y -
+x\|$ for $y \in C$. Let $h$ have Lipschitz constant $L_h$. Then for $x, x + s \in C$
+$$\bigl|f(x + s) + h(c(x + s)) - \bigl(T_{f,p}(x, s) + h(T_{c,p}(x, s))\bigr)\bigr| \le
+  \frac{L_f + L_h L_c}{(p + 1)!} \|s\|^{p+1}.$$
+
+This is the form of `Optimization.abs_sub_compositeTaylor_le_of_lipschitz` that the proof of
+Lemma 14.1.6 of [cartis2022evaluation] needs. $T_{f,p}(x, \cdot)$ is `taylorPolynomial f p x`,
+and $T_{c,p}(x, \cdot)$ is the Taylor sum of `ftaylorSeries ℝ c x`. -/
 theorem abs_sub_compositeTaylor_le_of_lipschitzAnchored {f : E → ℝ} {c : E → F} {h : F → ℝ}
     {p : ℕ} {Lf Lc Lh : ℝ} {C : Set E} {x s : E} (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
@@ -463,12 +565,18 @@ theorem abs_sub_compositeTaylor_le_of_lipschitzAnchored {f : E → ℝ} {c : E �
         add_le_add h1 h3
     _ = (Lf + Lh * Lc) / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := by ring
 
-/-- **Remainder of the composite model** (proof of Lemma 14.1.6 of [cartis2022evaluation], with
-`L_{w,p} = L_{f,p} + L_{h,0} L_{c,p}` (14.1.27)). If `f`, `c` are `C^p` on the convex set `C`, with
-`∇^p f` `Lf`-Lipschitz and `∇^p c` `Lc`-Lipschitz on `C`, and `h` has Lipschitz constant `Lh`,
-then for `x, x + s ∈ C`,
-`|w(x + s) - T_{w,p}(x, s)| ≤ (Lf + Lh Lc) / (p + 1)! ‖s‖^{p+1}`. (A factor `√m` arises from
-componentwise constants, see `ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`.) -/
+/-- **Remainder of the composite model.** Let $C \subseteq E$ be convex, let $f : E \to \mathbb{R}$
+and $c : E \to F$ be $p$ times continuously differentiable at every point of $C$, with
+$\nabla^p f$ Lipschitz with constant $L_f$ and $\nabla^p c$ Lipschitz with constant $L_c$ on
+$C$, and let $h$ have Lipschitz constant $L_h$. Then for $x, x + s \in C$
+$$\bigl|w(x + s) - T_{w,p}(x, s)\bigr| \le \frac{L_f + L_h L_c}{(p + 1)!} \|s\|^{p+1},$$
+where $w = f + h \circ c$ and $T_{w,p}(x, s) = T_{f,p}(x, s) + h(T_{c,p}(x, s))$. This is the
+estimate in the proof of Lemma 14.1.6 of [cartis2022evaluation], with
+$L_{w,p} = L_{f,p} + L_{h,0} L_{c,p}$ as in (14.1.27).
+
+The operator norm is used for $\nabla^p c$. Componentwise constants for
+$c : \mathbb{R}^n \to \mathbb{R}^m$ give a factor $\sqrt{m}$; see
+`ContinuousMultilinearMap.norm_le_sqrt_card_mul_of_euclidean`. -/
 theorem abs_sub_compositeTaylor_le_of_lipschitz {f : E → ℝ} {c : E → F} {h : F → ℝ} {p : ℕ}
     {Lf Lc Lh : ℝ} {C : Set E} {x s : E} (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hc : ∀ y ∈ C, ContDiffAt ℝ p c y) (hLf : IteratedFDerivLipschitzOn f p Lf C)

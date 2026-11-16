@@ -15,40 +15,49 @@ import Numlib.LinearAlgebra.Matrix.Products
 /-!
 # The WY representation of a product of reflectors
 
-A product `Q = Q₁ ⋯ Q_r` of rank-one modifications of the identity `Q_j = 1 - β_j v_j v_jᴴ` (for
-instance Householder reflectors) is a rank-`r` modification of the identity,
+Let $Q = Q_1 \cdots Q_r$ be a product of rank-one modifications of the identity,
+$Q_j = I - \beta_j v_j v_j^H$, for example of Householder reflectors. Let
+$Y = [v_1 \mid \cdots \mid v_r]$ be the matrix whose columns are the vectors $v_j$. Then $Q$ is a
+modification of the identity of rank at most $r$ in two forms ([golub2013matrix], §5.1.7):
 
-* `Q = 1 - W Yᴴ`, the **WY representation** ([golub2013matrix] §5.1.7, (5.1.6); Bischof–Van Loan
-  1987), with `Y` the matrix whose columns are the vectors `v_j`, and
-* `Q = 1 - Y T Yᴴ` with `T` upper triangular, the **compact WY representation** (Schreiber–Van
-  Loan 1989), the form used by blocked Householder algorithms.
+* $Q = I - W Y^H$ for a matrix $W$ with $r$ columns, the **WY representation** ((5.1.6) of
+  [golub2013matrix], due to Bischof and Van Loan (1987));
+* $Q = I - Y T Y^H$ for an upper triangular $r \times r$ matrix $T$, the **compact WY
+  representation** (due to Schreiber and Van Loan (1989)), the form that blocked Householder
+  algorithms use.
+
+The module also proves that a *block reflector* $I - 2 V V^H$ with $V^H V = I$ is unitary (Schreiber
+and Parlett (1987)).
+
+## Main definitions
+
+* `Matrix.IsWY`: the statement $Q = I - W Y^H$.
+* `Matrix.wyW`: the factor $W$ of the WY representation, built by the recursion of Algorithm 5.1.2
+  of [golub2013matrix].
 
 ## Main results
 
-* `Matrix.IsWY Q W Y`: the statement `Q = 1 - W Yᴴ`.
-* `Matrix.IsWY.mul_one_sub_smul_vecMulVec` ([golub2013matrix] Lemma 5.1.1): multiplying on the right
-  by `1 - β v vᴴ` appends the column `z = β Q v` to `W` and the column `v` to `Y`.
-* `Matrix.wyW`, `Matrix.isWY_prod`: the `W` factor built by that recursion ([golub2013matrix]
-  Algorithm 5.1.2) represents the whole product (`Matrix.isWY_prodFwd` for the product written as
-  `prodFwd` of a sequence); `Y` is the matrix of the vectors themselves, and
-  `Matrix.wyW_apply_eq_zero_of_apply_eq_zero` reads off the shape of `W`.
+* `Matrix.IsWY.mul_one_sub_smul_vecMulVec`: Lemma 5.1.1 of [golub2013matrix]. Multiplication on the
+  right by $I - \beta v v^H$ appends the column $z = \beta Q v$ to $W$ and the column $v$ to $Y$.
+* `Matrix.isWY_prod`, `Matrix.isWY_prodFwd`: the matrix `Matrix.wyW` represents the whole product
+  $Q_1 \cdots Q_r$.
+* `Matrix.wyW_apply_eq_zero_of_apply_eq_zero`: a row on which every vector $v_j$ vanishes is a zero
+  row of $W$.
 * `Matrix.exists_compactWY`, `Matrix.exists_compactWY_prodFwd`: the compact representation
-  `Q = 1 - Y T Yᴴ`.
-* `Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup`: a *block reflector* `1 - 2 V Vᴴ`
-  with `Vᴴ V = 1` is unitary (Schreiber–Parlett 1987).
+  $Q = I - Y T Y^H$ with $T$ upper triangular.
+* `Matrix.one_sub_two_mul_conjTranspose_mem_unitaryGroup`: a block reflector $I - 2 V V^H$ with
+  $V^H V = I$ is unitary.
 
 ## Implementation notes
 
-The algebra holds over any commutative `*`-ring, and none of it needs `Q` or the factors to be
-unitary (the book assumes orthogonality in Lemma 5.1.1 but does not use it). The factors are indexed
-by `Fin r` and the product is `(List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod`, in
-the order `Q₁ ⋯ Q_r`, which is `prodFwd` of the factors (`prodFwd_eq_prod_ofFn`);
-columns are appended with `Fin.snoc` on the column index,
-`Matrix.of fun i => Fin.snoc (W i) (z i)`, which is how the recursion grows `W` and `Y`.
-
-## References
-
-* [golub2013matrix] §5.1.7.
+* The algebra holds over any commutative ring with involution. None of it needs $Q$ or the factors
+  $Q_j$ to be unitary: Lemma 5.1.1 of [golub2013matrix] assumes orthogonality, but its proof does
+  not use it.
+* The factors are indexed by `Fin r`. The product of the factors, in increasing order of the index,
+  is `(List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod`, which is `prodFwd` of the
+  factors (`prodFwd_eq_prod_ofFn`).
+* A column $z$ is appended to $W$ with `Fin.snoc` on the column index, as
+  `Matrix.of fun i => Fin.snoc (W i) (z i)`. This is how the recursion grows $W$ and $Y$.
 -/
 
 open scoped Matrix
@@ -57,8 +66,11 @@ namespace Matrix
 
 variable {n R : Type*} [Fintype n] [DecidableEq n] {r : ℕ}
 
-/-- **The WY representation** ([golub2013matrix] (5.1.6)): `Q = 1 - W Yᴴ` with `W`, `Y` of
-width `r`, so that `Q` is a rank-`r` modification of the identity. -/
+/-- **The WY representation** ((5.1.6) of [golub2013matrix]). Let $Q$ be an $n \times n$ matrix and
+let $W$ and $Y$ be $n \times r$ matrices over a ring with involution. Then $(W, Y)$ is a WY
+representation of $Q$ if
+$$Q = I - W Y^H.$$
+Thus $Q$ is a modification of the identity of rank at most $r$. -/
 def IsWY [Ring R] [Star R] (Q : Matrix n n R) (W Y : Matrix n (Fin r) R) : Prop :=
   Q = 1 - W * Yᴴ
 
@@ -67,8 +79,11 @@ section CommRing
 variable [CommRing R] [StarRing R]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Appending a column to each factor adds the outer product of the new columns:
-`[W | z] [Y | v]ᴴ = W Yᴴ + z vᴴ`. -/
+/-- Let $W$ and $Y$ be $n \times r$ matrices and $z$ and $v$ vectors of length $n$, over a
+commutative ring with involution. Appending $z$ to $W$ and $v$ to $Y$ as last columns adds the
+outer product of the new columns:
+$$[W \mid z] \, [Y \mid v]^H = W Y^H + z v^H.$$
+-/
 theorem of_snoc_mul_conjTranspose_of_snoc (W Y : Matrix n (Fin r) R) (z v : n → R) :
     (of fun i => Fin.snoc (W i) (z i) : Matrix n (Fin (r + 1)) R) *
         (of fun i => Fin.snoc (Y i) (v i) : Matrix n (Fin (r + 1)) R)ᴴ =
@@ -76,8 +91,12 @@ theorem of_snoc_mul_conjTranspose_of_snoc (W Y : Matrix n (Fin r) R) (z v : n �
   ext i j
   simp [Matrix.mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
 
-/-- **[golub2013matrix] Lemma 5.1.1.** If `Q = 1 - W Yᴴ` and `P = 1 - β v vᴴ`, then
-`Q P = 1 - [W | z] [Y | v]ᴴ` with `z = β Q v`. (No orthogonality is needed.) -/
+/-- Let $Q = I - W Y^H$, where $W$ and $Y$ are $n \times r$ matrices over a commutative ring with
+involution, and let $P = I - \beta v v^H$ for a scalar $\beta$ and a vector $v$. Then
+$$Q P = I - [W \mid z] \, [Y \mid v]^H, \qquad z = \beta Q v.$$
+This is Lemma 5.1.1 of [golub2013matrix].
+
+No orthogonality of $Q$ or $P$ is needed. -/
 theorem IsWY.mul_one_sub_smul_vecMulVec {Q : Matrix n n R} {W Y : Matrix n (Fin r) R}
     (h : IsWY Q W Y) (β : R) (v : n → R) :
     IsWY (Q * (1 - β • vecMulVec v (star v))) (of fun i => Fin.snoc (W i) ((β • (Q *ᵥ v)) i))
@@ -85,9 +104,11 @@ theorem IsWY.mul_one_sub_smul_vecMulVec {Q : Matrix n n R} {W Y : Matrix n (Fin 
   rw [IsWY, of_snoc_mul_conjTranspose_of_snoc, smul_vecMulVec, ← sub_sub, ← h, mul_sub, mul_one,
     mul_smul_comm, mul_vecMulVec]
 
-/-- **The `W` factor of the WY representation** of `Q₁ ⋯ Q_r`, `Q_j = 1 - β_j v_j v_jᴴ`, by the
-recursion of [golub2013matrix] Algorithm 5.1.2: `W₁ = β₁ v₁` and
-`W_{j+1} = [W_j | β_{j+1} (1 - W_j Y_jᴴ) v_{j+1}]`, `Y_j` the first `j` vectors as columns. -/
+/-- **The factor $W$ of the WY representation** of $Q_1 \cdots Q_r$, $Q_j = I - \beta_j v_j v_j^H$,
+by the recursion of Algorithm 5.1.2 of [golub2013matrix]. Let
+$Y_j = [v_1 \mid \cdots \mid v_j]$. Then $W_0$ is the empty $n \times 0$ matrix, and
+$$W_{j+1} = [W_j \mid \beta_{j+1} (I - W_j Y_j^H) v_{j+1}].$$
+In particular $W_1 = \beta_1 v_1$. -/
 def wyW : {r : ℕ} → (Fin r → R) → (Fin r → n → R) → Matrix n (Fin r) R
   | 0, _, _ => 0
   | r + 1, β, v =>
@@ -95,16 +116,19 @@ def wyW : {r : ℕ} → (Fin r → R) → (Fin r → n → R) → Matrix n (Fin 
       ((β (Fin.last r) • ((1 - wyW (Fin.init β) (Fin.init v) *
         (of fun i j => Fin.init v j i : Matrix n (Fin r) R)ᴴ) *ᵥ v (Fin.last r))) i)
 
-/-- The recursion defining `Matrix.wyW`. -/
+/-- The recursion that defines `Matrix.wyW`: the factor $W$ for $r + 1$ terms is the factor $W_r$
+for the first $r$ terms, with the column $\beta_{r+1} (I - W_r Y_r^H) v_{r+1}$ appended. -/
 theorem wyW_succ (β : Fin (r + 1) → R) (v : Fin (r + 1) → n → R) :
     wyW β v = of fun i => Fin.snoc (α := fun _ => R) (wyW (Fin.init β) (Fin.init v) i)
       ((β (Fin.last r) • ((1 - wyW (Fin.init β) (Fin.init v) *
         (of fun i j => Fin.init v j i : Matrix n (Fin r) R)ᴴ) *ᵥ v (Fin.last r))) i) :=
   rfl
 
-/-- **Every product of `r` rank-one modifications of the identity has a WY representation**
-([golub2013matrix] (5.1.6), Algorithm 5.1.2): `Q₁ ⋯ Q_r = 1 - W Yᴴ` with `W = Matrix.wyW β v` and
-`Y` the matrix whose columns are the vectors `v_j`. -/
+/-- **Every product of $r$ rank-one modifications of the identity has a WY representation** ((5.1.6)
+and Algorithm 5.1.2 of [golub2013matrix]). Let $\beta_1, \dots, \beta_r$ be scalars and
+$v_1, \dots, v_r$ vectors of length $n$ over a commutative ring with involution. Then
+$$(I - \beta_1 v_1 v_1^H) \cdots (I - \beta_r v_r v_r^H) = I - W Y^H,$$
+where $W$ is `Matrix.wyW β v` and $Y$ is the matrix whose columns are the vectors $v_j$. -/
 theorem isWY_prod (β : Fin r → R) (v : Fin r → n → R) :
     IsWY (List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod (wyW β v)
       (of fun i j => v j i) := by
@@ -121,9 +145,12 @@ theorem isWY_prod (β : Fin r → R) (v : Fin r → n → R) :
     · ext i j
       refine Fin.lastCases ?_ (fun j => ?_) j <;> simp [Fin.init]
 
-/-- **Rows on which every vector vanishes are zero rows of `W`** ([golub2013matrix] §5.2.3: "the
-first `λ - 1` rows of `W_k` and `Y_k` are zero"): each new column `β (1 - W Yᴴ) v` of `W` is a
-combination of the vectors `v_j`. -/
+/-- **Rows on which every vector vanishes are zero rows of $W$** ([golub2013matrix], §5.2.3: "the
+first $\lambda - 1$ rows of $W_k$ and $Y_k$ are zero"). Let $S$ be a set of row indices with
+$(v_j)_i = 0$ for all $j$ and all $i \in S$. Then the factor $W$ of `Matrix.wyW β v` has
+$w_{ik} = 0$ for all $i \in S$ and all $k$.
+
+Each new column $\beta (I - W Y^H) v$ of $W$ is a linear combination of the vectors $v_j$. -/
 theorem wyW_apply_eq_zero_of_apply_eq_zero {S : Set n} (β : Fin r → R) (v : Fin r → n → R)
     (hv : ∀ j, ∀ i ∈ S, v j i = 0) : ∀ i ∈ S, ∀ k, wyW β v i k = 0 := by
   induction r with
@@ -139,7 +166,8 @@ theorem wyW_apply_eq_zero_of_apply_eq_zero {S : Set n} (β : Fin r → R) (v : F
     · rw [Fin.snoc_castSucc, ih']
 
 omit [StarRing R] in
-/-- The bordered matrix `[T, t; 0, b]` of the compact WY recursion. -/
+/-- The bordered matrix $\begin{bmatrix} T & t \\ 0 & b \end{bmatrix}$ of the recursion for the
+compact WY representation. -/
 private def compactWYStep (T : Matrix (Fin r) (Fin r) R) (t : Fin r → R) (b : R) :
     Matrix (Fin (r + 1)) (Fin (r + 1)) R :=
   of (Fin.snoc (α := fun _ => Fin (r + 1) → R) (fun i => Fin.snoc (α := fun _ => R) (T i) (t i))
@@ -169,8 +197,9 @@ private theorem of_snoc_mul_compactWYStep (Y : Matrix n (Fin r) R) (w : n → R)
   refine Fin.lastCases ?_ (fun j => ?_) j <;>
     simp [compactWYStep, Matrix.mul_apply, Fin.sum_univ_castSucc, mulVec, dotProduct, mul_comm]
 
-/-- One step of the compact WY recursion: if `Q = 1 - Y T Yᴴ`, then
-`Q (1 - b w wᴴ) = 1 - [Y | w] [T, t; 0, b] [Y | w]ᴴ` with `t = -b T Yᴴ w`. -/
+/-- One step of the recursion for the compact WY representation: if $Q = I - Y T Y^H$, then $Q (I -
+b w w^H) = I - [Y \mid w] \begin{bmatrix} T & t \\ 0 & b \end{bmatrix} [Y \mid w]^H$ with
+$t = -b T Y^H w$. -/
 private theorem compactWY_step {Q : Matrix n n R} {Y : Matrix n (Fin r) R}
     {T : Matrix (Fin r) (Fin r) R} (hQ : Q = 1 - Y * T * Yᴴ) (b : R) (w : n → R) :
     Q * (1 - b • vecMulVec w (star w)) =
@@ -183,9 +212,15 @@ private theorem compactWY_step {Q : Matrix n n R} {Y : Matrix n (Fin r) R}
     one_mulVec, ← mulVec_mulVec, ← mulVec_mulVec, mulVec_smul, smul_sub, neg_smul, add_comm]
   abel_nf
 
-/-- **The compact WY representation** (Schreiber–Van Loan 1989; [golub2013matrix] §5.1.7): with
-`Y` as in `Matrix.isWY_prod`, `Q₁ ⋯ Q_r = 1 - Y T Yᴴ` for an upper triangular `T`, built by
-`T₁ = β₁`, `T_{j+1} = [T_j, -β_{j+1} T_j Y_jᴴ v_{j+1}; 0, β_{j+1}]`. -/
+/-- **The compact WY representation** (Schreiber and Van Loan (1989); [golub2013matrix], §5.1.7).
+Let $\beta_1, \dots, \beta_r$ be scalars and $v_1, \dots, v_r$ vectors of length $n$ over a
+commutative ring with involution, and let $Y$ be the matrix whose columns are the vectors $v_j$.
+Then there is an upper triangular $r \times r$ matrix $T$ with
+$$(I - \beta_1 v_1 v_1^H) \cdots (I - \beta_r v_r v_r^H) = I - Y T Y^H.$$
+
+The proof builds $T$ by the recursion $T_1 = \beta_1$ and $T_{j+1} = \begin{bmatrix} T_j &
+-\beta_{j+1} T_j Y_j^H v_{j+1} \\ 0 & \beta_{j+1} \end{bmatrix}$, with
+$Y_j = [v_1 \mid \cdots \mid v_j]$. -/
 theorem exists_compactWY (β : Fin r → R) (v : Fin r → n → R) :
     ∃ T : Matrix (Fin r) (Fin r) R, T.IsUpperTriangular ∧
       (List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod =
@@ -205,18 +240,22 @@ theorem exists_compactWY (β : Fin r → R) (v : Fin r → n → R) :
     rw [List.ofFn_succ', List.prod_concat, hY]
     exact compactWY_step hQ _ _
 
-/-- **The WY representation of a forward product** (`Matrix.isWY_prod` for `prodFwd`): for
-sequences `β`, `v`, `Q₁ ⋯ Q_r = 1 - W Yᴴ` with `W = Matrix.wyW` of the first `r` terms and `Y`
-the matrix whose columns are `v 0, …, v (r-1)`. -/
+/-- **The WY representation of a forward product**: `Matrix.isWY_prod` for `prodFwd`. Let
+$(\beta_k)_{k \in \mathbb{N}}$ be scalars and $(v_k)_{k \in \mathbb{N}}$ vectors of length $n$,
+and let $r \in \mathbb{N}$. Then the product of the first $r$ factors $I - \beta_k v_k v_k^H$,
+in increasing order of $k$, is $I - W Y^H$, where $W$ is `Matrix.wyW` of the first $r$ terms and
+$Y$ is the matrix with columns $v_0, \dots, v_{r-1}$. -/
 theorem isWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
     IsWY (prodFwd (fun k => 1 - β k • vecMulVec (v k) (star (v k))) r)
       (wyW (fun j : Fin r => β j) fun j => v j) (of fun i (j : Fin r) => v j i) := by
   rw [prodFwd_eq_prod_ofFn]
   exact isWY_prod _ _
 
-/-- **The compact WY representation of a forward product** (`Matrix.exists_compactWY` for
-`prodFwd`): `Q₁ ⋯ Q_r = 1 - Y T Yᴴ` with `T` upper triangular and `Y` the matrix whose
-columns are `v 0, …, v (r-1)`. -/
+/-- **The compact WY representation of a forward product**: `Matrix.exists_compactWY` for `prodFwd`.
+Let $(\beta_k)_{k \in \mathbb{N}}$ be scalars and $(v_k)_{k \in \mathbb{N}}$ vectors of length
+$n$, and let $r \in \mathbb{N}$. Then there is an upper triangular $r \times r$ matrix $T$ such
+that the product of the first $r$ factors $I - \beta_k v_k v_k^H$, in increasing order of $k$,
+is $I - Y T Y^H$, where $Y$ is the matrix with columns $v_0, \dots, v_{r-1}$. -/
 theorem exists_compactWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ) :
     ∃ T : Matrix (Fin r) (Fin r) R, T.IsUpperTriangular ∧
       prodFwd (fun k => 1 - β k • vecMulVec (v k) (star (v k))) r =
@@ -224,8 +263,11 @@ theorem exists_compactWY_prodFwd (β : ℕ → R) (v : ℕ → n → R) (r : ℕ
   rw [prodFwd_eq_prod_ofFn]
   exact exists_compactWY (fun j : Fin r => β j) fun j => v j
 
-/-- **Block reflectors are unitary** ([golub2013matrix] §5.1.7; Schreiber–Parlett 1987): if
-`Vᴴ V = 1`, then `1 - 2 V Vᴴ` is unitary (it is Hermitian and involutive). -/
+/-- **Block reflectors are unitary** ([golub2013matrix], §5.1.7; Schreiber and Parlett (1987)). Let
+$V$ be an $n \times k$ matrix over a commutative ring with involution, with $V^H V = I$. Then
+$I - 2 V V^H$ is unitary.
+
+The matrix $I - 2 V V^H$ is Hermitian and is its own inverse. -/
 theorem one_sub_two_mul_conjTranspose_mem_unitaryGroup {κ : Type*} [Fintype κ]
     [DecidableEq κ] {V : Matrix n κ R} (hV : Vᴴ * V = 1) :
     1 - (2 : R) • (V * Vᴴ) ∈ unitaryGroup n R := by

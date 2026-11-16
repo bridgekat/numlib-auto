@@ -6,55 +6,92 @@ import Numlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.PDE.DirichletLaplacian
 
 /-!
-# The obstacle problem: the Lewy–Stampacchia inequality and `H²` regularity
+# The obstacle problem: the Lewy–Stampacchia inequality and $H^2$ regularity
 
-The obstacle problem for the Laplacian on a bounded open `Ω ⊆ ℝ^N`, with obstacle `ψ ∈ H¹(Ω)`
-and load `f ∈ L²(Ω)`, is the variational inequality
+Let $\Omega \subseteq \mathbb{R}^N$ be open, let $\psi \in H^1(\Omega)$ be an obstacle and let
+$f \in L^2(\Omega)$ be a load. The obstacle problem for the Laplacian is the variational inequality
+$$u \in \mathcal{K} := \{v \in H^1_0(\Omega) : v \ge \psi \text{ a.e.}\}, \qquad \int_\Omega \nabla
+  u \cdot \nabla (v - u) \ge \int_\Omega f (v - u) \quad \text{for all } v \in \mathcal{K},$$
+as in [han2009theoretical], Examples 11.1.1 and 11.3.10, and the Comments on Chapter 9 of
+[brezis2011functional]. When the obstacle has $-\Delta \psi = q \in L^2(\Omega)$ in the weak sense,
+the **Lewy–Stampacchia inequality** $f \le -\Delta u \le \max\{f, q\}$ holds, so
+$-\Delta u \in L^2(\Omega)$. On a $C^2$ domain the linear regularity theory then gives
+$u \in H^2(\Omega)$ with
+$$\|u\|_{H^2(\Omega)} \le C \big(\|f\|_{L^2} + \|\max\{f, q\} - f\|_{L^2} + \|u\|_{L^2}\big).$$
+This is the case $p = 2$ of Theorem 11.3.12 of [han2009theoretical], for the Laplacian. That source
+attributes the theorem to Brezis and Stampacchia, and quotes it also from Gilbarg and Trudinger. The
+argument is the classical one; see also Kinderlehrer and Stampacchia, *An Introduction to
+Variational Inequalities and Their Applications*, Chapter IV, and Rodrigues, *Obstacle Problems in
+Mathematical Physics*, §5:4.
 
-`u ∈ K := {v ∈ H¹₀(Ω) : v ≥ ψ a.e.}`,  `∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)` for all `v ∈ K`
+## Main definitions
 
-([han2009theoretical] Example 11.1.1, Example 11.3.10; [brezis2011functional] Chapter 9,
-Comments). Its solution has one more derivative than the variational setting shows: when the
-obstacle has `−Δψ ∈ L²(Ω)`, the **Lewy–Stampacchia inequality** `f ≤ −Δu ≤ max (f, −Δψ)` holds,
-so `−Δu ∈ L²(Ω)`, and on a `C²` domain the linear regularity theory
-(`Elliptic.regularity_dirichlet`) gives `u ∈ H²(Ω)` with the bound
-`‖u‖_{H²} ≤ C (‖f‖_{L²} + ‖Δψ‖_{L²} + ‖u‖_{L²})` — the `p = 2` case of
-[han2009theoretical] Theorem 11.3.12 (Brezis–Stampacchia).
+* `Elliptic.IsObstacleSolution`: $u$ solves the obstacle problem with obstacle $\psi$ and load $f$.
 
-## The argument
+## Main results
 
-* `Elliptic.IsObstacleSolution Ω ψ f u` is the variational inequality above, on `u ∈ H¹(Ω)`.
-* The lower bound `f ≤ −Δu` (`Elliptic.IsObstacleSolution.load_le_dirichletForm`) is the
-  inequality tested with `v = u + Φ`, `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`.
-* The upper bound (`Elliptic.IsObstacleSolution.dirichletForm_le_load_sup`) is the classical
-  truncation argument: for `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0` and `ε > 0`, the admissible competitor
-  `v = u − min (ε Φ, u − ψ) = max (u − ε Φ, ψ)` gives, with `z = u − ψ ≥ 0` and
-  `−Δψ = q ∈ L²(Ω)`,
+* `Elliptic.IsObstacleSolution.load_le_dirichletForm`: the lower bound $f \le -\Delta u$, that is,
+  $\int_\Omega f \Phi \le \int_\Omega \nabla u \cdot \nabla \Phi$ for $\Phi \in H^1_0(\Omega)$ with
+  $\Phi \ge 0$.
+* `Elliptic.IsObstacleSolution.dirichletForm_le_load_sup`: the upper bound
+  $-\Delta u \le \max\{f, q\}$, that is, $\int_\Omega \nabla u \cdot \nabla \Phi \le \int_\Omega
+  \max\{f, q\} \Phi$ for $\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$.
+* `Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load`: $-\Delta u = f + h$ for some
+  $h \in L^2(\Omega)$ with $\|h\|_2 \le 2 \|\max\{f, q\} - f\|_2$.
+* `Elliptic.regularity_obstacle`: on a $C^2$ domain with bounded boundary, $u \in H^2(\Omega)$ with
+  an $H^2$ bound.
+* `Elliptic.IsObstacleSolution.norm_le`: the a priori bound $\|u\|_{H^1} \le 2(1 +
+  (2R)^2)(\|w\|_{H^1} + \|f\|_2)$ for $\Omega \subseteq B(0, R)$ and an admissible $w$.
+* `Elliptic.regularity_obstacle_sobolev_two`: for an obstacle in $H^2(\Omega)$ with
+  $\psi^+ \in H^1_0(\Omega)$, $\|u\|_{H^2} \le C (\|f\|_2 + \|\psi\|_{H^2})$.
 
-  `∫_Ω ∇z · ∇(min (ε Φ, z)) ≤ ∫_Ω (f − q) min (ε Φ, z) ≤ ε ∫_Ω (f − q)⁺ Φ`;
+## Proof outline
 
-  the left side is `ε ∫_{z ≥ εΦ} ∇z · ∇Φ + ∫_{z < εΦ} |∇z|² ≥ ε ∫_{z ≥ εΦ} ∇z · ∇Φ`
-  (`∇ min (a, b) = 1_{a ≤ b} ∇a + 1_{a > b} ∇b`, from `∇ w⁺ = 1_{w > 0} ∇w`), and as `ε ↓ 0` the
-  set `{z ≥ εΦ}` fills `{z > 0}`, on whose complement `∇z = 0` (Stampacchia), so
-  `∫_Ω ∇z · ∇Φ ≤ ∫_Ω (f − q)⁺ Φ`, i.e. `∫_Ω ∇u · ∇Φ ≤ ∫_Ω max (f, q) Φ`. The one delicate point is
-  `min (ε Φ, z) ∈ H¹₀(Ω)`: it is `ε Φ − (ε Φ − z)⁺` with `0 ≤ (ε Φ − z)⁺ ≤ ε Φ`, and a function
-  squeezed between `0` and an element of `H¹₀(Ω)` lies in `H¹₀(Ω)`
-  (`SobolevEuclideanZero.mem_of_nonneg_of_le`, on a `C¹` chart domain: its extension by zero is
-  `min (ṽ⁺, w̄)` with `ṽ` a Sobolev extension of the function and `w̄` the extension by zero of the
-  majorant, hence lies in `H¹(ℝ^N)`, and Proposition 9.18 concludes).
-* The two bounds make the functional `Φ ↦ ∫_Ω ∇u · ∇Φ − ∫_Ω f Φ` on `H¹₀(Ω)` nonnegative on the
-  nonnegative `Φ` and dominated there by `∫_Ω (max (f, q) − f) Φ`, hence bounded by
-  `2 ‖max (f, q) − f‖_{L²} ‖Φ‖_{L²}` on all of `H¹₀(Ω)` (`Φ = Φ⁺ − Φ⁻`); the Hahn–Banach and Riesz
-  theorems represent it as `Φ ↦ ∫_Ω h Φ` with `h ∈ L²(Ω)`
-  (`Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load`), which is `−Δu = f + h ∈ L²(Ω)`.
-* `Elliptic.regularity_obstacle`: on a `C²` chart domain with bounded boundary, `u ∈ H²(Ω)`
-  with the bound.
+The lower bound is the variational inequality tested with $v = u + \Phi$, where
+$\Phi \in H^1_0(\Omega)$ and $\Phi \ge 0$.
 
-## References
+The upper bound is the classical truncation argument. Let $\Phi \in H^1_0(\Omega)$ with
+$\Phi \ge 0$, let $\varepsilon > 0$, and let $z = u - \psi \ge 0$. The competitor $v = u -
+\min\{\varepsilon \Phi, z\} = \max\{u - \varepsilon \Phi, \psi\}$ is admissible, and it gives
+$$\int_\Omega \nabla z \cdot \nabla \min\{\varepsilon \Phi, z\} \le \int_\Omega (f - q)
+  \min\{\varepsilon \Phi, z\} \le \varepsilon \int_\Omega (f - q)^+ \Phi.$$
+The left side is $\varepsilon \int_{\{z \ge \varepsilon \Phi\}} \nabla z \cdot \nabla \Phi +
+\int_{\{z < \varepsilon \Phi\}} |\nabla z|^2 \ge \varepsilon \int_{\{z \ge \varepsilon \Phi\}}
+\nabla z \cdot \nabla \Phi$, because $\nabla \min\{a, b\} = 1_{\{a \le b\}} \nabla a + 1_{\{a > b\}}
+\nabla b$, which follows from $\nabla w^+ = 1_{\{w > 0\}} \nabla w$. As $\varepsilon \downarrow 0$
+the set $\{z \ge \varepsilon \Phi\}$ fills $\{z > 0\}$, and $\nabla z = 0$ almost everywhere on the
+complement (Stampacchia). Hence $\int_\Omega \nabla z \cdot \nabla \Phi \le \int_\Omega (f - q)^+
+\Phi$, which is $\int_\Omega \nabla u \cdot \nabla \Phi \le \int_\Omega \max\{f, q\} \Phi$.
 
-[han2009theoretical] Theorem 11.3.12 (quoted there from Brezis–Stampacchia and
-Gilbarg–Trudinger); Kinderlehrer–Stampacchia, *An Introduction to Variational Inequalities and
-Their Applications*, Chapter IV; Rodrigues, *Obstacle Problems in Mathematical Physics*, §5:4.
+The two bounds make the functional $\Phi \mapsto \int_\Omega \nabla u \cdot \nabla \Phi -
+\int_\Omega f \Phi$ on $H^1_0(\Omega)$ nonnegative on nonnegative $\Phi$, and bounded there by
+$\int_\Omega (\max\{f, q\} - f) \Phi$. With $\Phi = \Phi^+ - \Phi^-$ it is bounded by
+$2 \|\max\{f, q\} - f\|_2 \|\Phi\|_2$ on all of $H^1_0(\Omega)$. The Hahn–Banach and Riesz theorems
+represent it as $\Phi \mapsto \int_\Omega h \Phi$ with $h \in L^2(\Omega)$, which is
+$-\Delta u = f + h$. The linear regularity theorem, Theorem 9.25 of [brezis2011functional], then
+gives the $H^2$ bound.
+
+## Implementation notes
+
+* The upper bound and the regularity results are stated on $\mathbb{R}^{d+1}$, so $N \ge 1$. They
+  need a domain of class $C^1$ (or $C^2$) by local charts with bounded boundary
+  (`IsContDiffChartDomain`). The reason is the one delicate point of the argument,
+  $\min\{\varepsilon \Phi, z\} \in H^1_0(\Omega)$. This function is
+  $\varepsilon \Phi - (\varepsilon \Phi - z)^+$ with $0 \le (\varepsilon \Phi - z)^+ \le \varepsilon
+  \Phi$, and a function squeezed between $0$ and an element of $H^1_0(\Omega)$ lies in
+  $H^1_0(\Omega)$ (`SobolevEuclideanZero.mem_of_nonneg_of_le`, on such a domain). The extension by
+  zero of that function is $\min\{\tilde v^+, \bar w\}$, with $\tilde v$ a Sobolev extension of the
+  function and $\bar w$ the extension by zero of the majorant, so it lies in $H^1(\mathbb{R}^N)$,
+  and Proposition 9.18 of [brezis2011functional] concludes.
+* The hypothesis $-\Delta \psi = q$ is `Elliptic.IsWeakSolution (Elliptic.dirichletForm Ω)
+  (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q`, that is, $\int_\Omega \nabla \psi \cdot \nabla \Phi =
+  \int_\Omega q \Phi$ for all $\Phi \in H^1_0(\Omega)$. The function $\max\{f, q\}$ is the lattice
+  supremum `f ⊔ q` in $L^2(\Omega)$.
+* For $\Phi \in H^1(\Omega)$, the norm $\|\Phi\|_{L^2(\Omega)}$ is
+  `‖SobolevMultiIndex.weakDeriv Φ 0‖`.
+* The statement $u \in H^2(\Omega)$ is `MemSobolevMultiIndex` of order $2$ for the function of $u$.
+* The $H^2$ bound holds for every element of `SobolevEuclidean (d + 1) 2 2 Ω` whose function is
+  that of $u$.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -64,7 +101,7 @@ noncomputable section
 
 namespace Elliptic
 
-/-! ### The obstacle problem and the lower bound `f ≤ −Δu` -/
+/-! ### The obstacle problem and the lower bound $f \le -\Delta u$ -/
 
 section Obstacle
 
@@ -72,25 +109,36 @@ variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
 open SobolevMultiIndex
 
-/-- **A solution of the obstacle problem** with obstacle `ψ ∈ H¹(Ω)` and load `f ∈ L²(Ω)`:
-`u ∈ H¹₀(Ω)`, `u ≥ ψ` almost everywhere, and `∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)` for every
-`v ∈ H¹₀(Ω)` with `v ≥ ψ` almost everywhere ([han2009theoretical] (11.1.7)). -/
+/-- A **solution of the obstacle problem** with obstacle $\psi \in H^1(\Omega)$ and load
+$f \in L^2(\Omega)$ is a $u \in H^1(\Omega)$ with $u \in H^1_0(\Omega)$, $u \ge \psi$ almost
+everywhere on $\Omega$, and
+$$\int_\Omega \nabla u \cdot \nabla (v - u) \ge \int_\Omega f (v - u)$$
+for every $v \in H^1_0(\Omega)$ with $v \ge \psi$ almost everywhere on $\Omega$. This is
+(11.1.7) of [han2009theoretical].
+
+The open set $\Omega \subseteq \mathbb{R}^N$ is arbitrary. The left side of the inequality is
+`Elliptic.dirichletForm Ω u (v - u)`, and the right side is `Elliptic.load Ω f (v - u)`. -/
 structure IsObstacleSolution (ψ : SobolevEuclidean N 1 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u : SobolevEuclidean N 1 2 Ω) : Prop where
-  /-- `u ∈ H¹₀(Ω)`. -/
+  /-- The solution lies in $H^1_0(\Omega)$. -/
   mem_zero : u ∈ SobolevEuclideanZero N 1 2 Ω
-  /-- `u ≥ ψ` almost everywhere on `Ω`. -/
+  /-- The solution satisfies $u \ge \psi$ almost everywhere on $\Omega$. -/
   ae_le : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn ψ x ≤ fn u x
-  /-- The variational inequality. -/
+  /-- The variational inequality: $\int_\Omega \nabla u \cdot \nabla (v - u) \ge \int_\Omega f (v -
+  u)$ for every $v \in H^1_0(\Omega)$ with $v \ge \psi$ almost everywhere on $\Omega$. -/
   ineq : ∀ v ∈ SobolevEuclideanZero N 1 2 Ω,
     (∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn ψ x ≤ fn v x) →
       load Ω f (v - u) ≤ dirichletForm Ω u (v - u)
 
 variable {Ω}
 
-/-- **The lower bound `f ≤ −Δu` of the Lewy–Stampacchia inequality**: for `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`,
-`∫_Ω f Φ ≤ ∫_Ω ∇u · ∇Φ` — the variational inequality tested with `v = u + Φ`. -/
+/-- The lower bound $f \le -\Delta u$ of the **Lewy–Stampacchia inequality**. Let $u$ solve the
+obstacle problem with obstacle $\psi \in H^1(\Omega)$ and load $f \in L^2(\Omega)$. Then for
+every $\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$ almost everywhere,
+$$\int_\Omega f \Phi \le \int_\Omega \nabla u \cdot \nabla \Phi.$$
+
+The proof tests the variational inequality with $v = u + \Phi$. -/
 theorem IsObstacleSolution.load_le_dirichletForm {ψ : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     {u : SobolevEuclidean N 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
@@ -106,7 +154,7 @@ theorem IsObstacleSolution.load_le_dirichletForm {ψ : SobolevEuclidean N 1 2 Ω
 
 end Obstacle
 
-/-! ### The upper bound `−Δu ≤ max (f, −Δψ)`: the truncation step -/
+/-! ### The upper bound $-\Delta u \le \max\{f, -\Delta \psi\}$: the truncation step -/
 
 section Upper
 
@@ -114,7 +162,7 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- `f v` is integrable on `Ω` for `f ∈ L²(Ω)`, `v ∈ H¹(Ω)`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1(\Omega)$, the product $f v$ is integrable on $\Omega$. -/
 theorem integrable_mul_fn (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclidean (d + 1) 1 2 Ω) :
     Integrable (fun x ↦ f x * fn v x)
@@ -125,7 +173,8 @@ theorem integrable_mul_fn (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpa
       rw [mul_comm]
       rfl)
 
-/-- The product of two partial derivatives of `H¹(Ω)` elements is integrable on `Ω`. -/
+/-- For $v, w \in H^1(\Omega)$ and each $i$, the product $\partial_i v\, \partial_i w$ is integrable
+on $\Omega$. -/
 theorem integrable_weakDeriv_mul_weakDeriv (v w : SobolevEuclidean (d + 1) 1 2 Ω)
     (i : Fin (d + 1)) :
     Integrable (fun x ↦ weakDeriv v (MultiIndexLE.single i) x
@@ -137,7 +186,9 @@ theorem integrable_weakDeriv_mul_weakDeriv (v w : SobolevEuclidean (d + 1) 1 2 �
       simp only [RCLike.inner_apply, conj_trivial]
       rw [mul_comm])
 
-/-- The partial derivatives of `ε Φ − z` are `ε ∂ᵢΦ − ∂ᵢz`, almost everywhere. -/
+/-- For $\Phi, z \in H^1(\Omega)$ and $\varepsilon \in \mathbb{R}$, the partial derivatives of
+$\varepsilon \Phi - z$ are $\varepsilon \partial_i \Phi - \partial_i z$ almost everywhere on
+$\Omega$. -/
 theorem weakDeriv_smul_sub_ae_eq (ε : ℝ) (Φ z : SobolevEuclidean (d + 1) 1 2 Ω)
     (i : Fin (d + 1)) :
     ⇑(weakDeriv (ε • Φ - z) (MultiIndexLE.single i))
@@ -153,7 +204,8 @@ theorem weakDeriv_smul_sub_ae_eq (ε : ℝ) (Φ z : SobolevEuclidean (d + 1) 1 2
     Lp.coeFn_smul ε (weakDeriv Φ (MultiIndexLE.single i))] with x hx1 hx2
   rw [hx1, Pi.sub_apply, hx2, Pi.smul_apply, smul_eq_mul]
 
-/-- The function of `ε Φ − z` is `ε Φ − z`, almost everywhere. -/
+/-- For $\Phi, z \in H^1(\Omega)$ and $\varepsilon \in \mathbb{R}$, the function of
+$\varepsilon \Phi - z$ is $\varepsilon \Phi - z$ almost everywhere on $\Omega$. -/
 theorem fn_smul_sub_ae_eq (ε : ℝ) (Φ z : SobolevEuclidean (d + 1) 1 2 Ω) :
     fn (ε • Φ - z) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
       fun x ↦ ε * fn Φ x - fn z x := by
@@ -164,12 +216,19 @@ theorem fn_smul_sub_ae_eq (ε : ℝ) (Φ z : SobolevEuclidean (d + 1) 1 2 Ω) :
     rw [show fn (ε • Φ) x = (ε • fn Φ) x from h2, Pi.smul_apply, smul_eq_mul]
   rw [e, e2]
 
-/-- **The truncation `min (ε Φ, z)` as an element of `H¹₀(Ω)`**, for `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`,
-`z ∈ H¹(Ω)`, `z ≥ 0` and `ε > 0`, on a `C¹` chart domain with bounded boundary: it is
-`ε Φ − (ε Φ − z)⁺`, the positive part `P = (ε Φ − z)⁺` lying in `H¹₀(Ω)` because `0 ≤ P ≤ ε Φ`
-(`SobolevEuclideanZero.mem_of_nonneg_of_le`). The partial derivatives are
-`∂ᵢ min (ε Φ, z) = ε ∂ᵢΦ − 1_{εΦ > z} (ε ∂ᵢΦ − ∂ᵢz)`
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^1$ by local charts with bounded
+boundary. Let $\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$, let $z \in H^1(\Omega)$ with $z \ge 0$
+almost everywhere, and let $\varepsilon > 0$. Then there is $\theta \in H^1_0(\Omega)$ whose
+function is $\min\{\varepsilon \Phi, z\} = \varepsilon \Phi - (\varepsilon \Phi - z)^+$ almost
+everywhere, with
+$$\partial_i \theta = \varepsilon \partial_i \Phi - 1_{\{\varepsilon \Phi - z > 0\}}\,
+  \partial_i(\varepsilon \Phi - z)$$
+almost everywhere on $\Omega$, for each $i$.
+
+The positive part $P = (\varepsilon \Phi - z)^+$ lies in $H^1_0(\Omega)$ because
+$0 \le P \le \varepsilon \Phi$ (`SobolevEuclideanZero.mem_of_nonneg_of_le`). The formula for the
+partial derivatives is `SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart`. In the
+indicator, $\varepsilon \Phi - z$ is the function of the element `ε • Φ - z` of $H^1(\Omega)$. -/
 theorem exists_min_elem
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -219,8 +278,11 @@ theorem exists_min_elem
       h2] with x hx1 hx2 hx3
     rw [hx1, Pi.sub_apply, hx2, Pi.smul_apply, smul_eq_mul, hx3]
 
-/-- **The variational inequality tested with `v = u − θ`**: for `θ ∈ H¹₀(Ω)` with `θ ≤ u − ψ`,
-`∫_Ω ∇u · ∇θ ≤ ∫_Ω f θ`. -/
+/-- Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$. If
+$\theta \in H^1_0(\Omega)$ and $\theta \le u - \psi$ almost everywhere on $\Omega$, then
+$$\int_\Omega \nabla u \cdot \nabla \theta \le \int_\Omega f \theta.$$
+
+The proof tests the variational inequality with $v = u - \theta$. -/
 theorem IsObstacleSolution.dirichletForm_le_load_of_le {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
@@ -239,8 +301,11 @@ theorem IsObstacleSolution.dirichletForm_le_load_of_le {ψ : SobolevEuclidean (d
     neg_le_neg_iff] at hVI
   exact hVI
 
-/-- `∫_Ω ∇z · ∇θ ≤ ∫_Ω (f − q) θ` for `z = u − ψ`, `−Δψ = q` and `θ` as in
-`IsObstacleSolution.dirichletForm_le_load_of_le`. -/
+/-- Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$. Let $z = u - \psi$, and
+let $\theta \in H^1_0(\Omega)$ with $\theta \le z$ almost everywhere on $\Omega$. Then
+$$\int_\Omega \nabla z \cdot \nabla \theta \le \int_\Omega (f - q) \theta.$$
+-/
 theorem IsObstacleSolution.dirichletForm_sub_le {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
@@ -261,7 +326,10 @@ theorem IsObstacleSolution.dirichletForm_sub_le {ψ : SobolevEuclidean (d + 1) 1
   calc dirichletForm Ω z θ = dirichletForm Ω u θ - load Ω q θ := eq_sub_of_add_eq hsplit.symm
     _ ≤ load Ω f θ - load Ω q θ := sub_le_sub_right hVI _
 
-/-- `∫_Ω g θ ≤ ε ∫_Ω g⁺ Φ` for `0 ≤ θ ≤ ε Φ`. -/
+/-- Let $g \in L^2(\Omega)$, $\theta, \Phi \in H^1(\Omega)$ and $\varepsilon \in \mathbb{R}$, with
+$0 \le \theta \le \varepsilon \Phi$ almost everywhere on $\Omega$. Then
+$$\int_\Omega g \theta \le \varepsilon \int_\Omega g^+ \Phi.$$
+-/
 theorem load_le_smul_load_sup_zero
     (g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {θ Φ : SobolevEuclidean (d + 1) 1 2 Ω} {ε : ℝ}
@@ -280,8 +348,16 @@ theorem load_le_smul_load_sup_zero
         mul_le_mul_of_nonneg_left h2 (le_max_right _ _)
     _ = ε * (max (g x) 0 * fn Φ x) := by ring
 
-/-- **One component of `∫_Ω ∇z · ∇ min (ε Φ, z)`**: with `∂ᵢθ = ε ∂ᵢΦ − 1_{y > 0} (ε ∂ᵢΦ − ∂ᵢz)`,
-`∂ᵢz ∂ᵢθ = 1_{y ≤ 0} ε ∂ᵢz ∂ᵢΦ + 1_{y > 0} (∂ᵢz)² ≥ 1_{y ≤ 0} ε ∂ᵢz ∂ᵢΦ`. -/
+/-- Let $\theta, z, \Phi, y \in H^1(\Omega)$, $\varepsilon \in \mathbb{R}$ and an index $i$ be such
+that, almost everywhere on $\Omega$, $\partial_i \theta = \varepsilon \partial_i \Phi - 1_{\{y >
+0\}} \partial_i y$ and $\partial_i y = \varepsilon \partial_i \Phi - \partial_i z$. Then
+$$\int_\Omega \varepsilon\, 1_{\{y \le 0\}}\, \partial_i z\, \partial_i \Phi \le \int_\Omega
+  \partial_i z\, \partial_i \theta.$$
+This is one component of the lower bound for $\int_\Omega \nabla z \cdot \nabla
+\min\{\varepsilon \Phi, z\}$.
+
+Pointwise, $\partial_i z\, \partial_i \theta = 1_{\{y \le 0\}} \varepsilon\, \partial_i z\,
+\partial_i \Phi + 1_{\{y > 0\}} (\partial_i z)^2$. -/
 theorem integral_indicator_le_integral_weakDeriv_mul {θ z Φ y : SobolevEuclidean (d + 1) 1 2 Ω}
     {ε : ℝ} (i : Fin (d + 1))
     (hDθ : ⇑(weakDeriv θ (MultiIndexLE.single i))
@@ -314,18 +390,24 @@ theorem integral_indicator_le_integral_weakDeriv_mul {θ z Φ y : SobolevEuclide
     ring_nf
     exact le_refl _
 
-/-- **The truncation step of the Lewy–Stampacchia argument.** Let `u` solve the obstacle problem
-with obstacle `ψ` and load `f`, where `−Δψ = q ∈ L²(Ω)` weakly, on a `C¹` chart domain with
-bounded boundary; let `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`, and `ε > 0`. With `z = u − ψ ≥ 0`, the competitor
-`v = u − min (ε Φ, z) = max (u − ε Φ, ψ)` is admissible, and the variational inequality gives
+/-- The truncation step of the proof of the Lewy–Stampacchia inequality. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^1$ by local charts with bounded
+boundary. Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$. Let $z = u - \psi$, let
+$\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$ almost everywhere, and let $\varepsilon > 0$. Then
+$$\sum_i \int_{\{\varepsilon \Phi \le z\}} \partial_i z\, \partial_i \Phi \le \int_\Omega (f -
+  q)^+ \Phi.$$
 
-`ε ∑ᵢ ∫_{εΦ ≤ z} ∂ᵢz ∂ᵢΦ ≤ ∫_Ω ∇z · ∇(min (ε Φ, z)) ≤ ∫_Ω (f − q) min (ε Φ, z) ≤ ε ∫_Ω (f − q)⁺ Φ`,
-
-the middle inequality being the variational inequality minus `−Δψ = q`
-(`IsObstacleSolution.dirichletForm_sub_le`), the first the formula
-`∇ min (ε Φ, z) = 1_{εΦ ≤ z} ε ∇Φ + 1_{εΦ > z} ∇z` (`integral_indicator_le_integral_weakDeriv_mul`),
-and the last `0 ≤ min (ε Φ, z) ≤ ε Φ` (`load_le_smul_load_sup_zero`); the membership
-`min (ε Φ, z) ∈ H¹₀(Ω)` is `exists_min_elem`. -/
+The competitor $v = u - \min\{\varepsilon \Phi, z\} = \max\{u - \varepsilon \Phi, \psi\}$ is
+admissible, and
+$$\varepsilon \sum_i \int_{\{\varepsilon \Phi \le z\}} \partial_i z\, \partial_i \Phi \le
+  \int_\Omega \nabla z \cdot \nabla \min\{\varepsilon \Phi, z\} \le \int_\Omega (f - q)
+  \min\{\varepsilon \Phi, z\} \le \varepsilon \int_\Omega (f - q)^+ \Phi.$$
+The first inequality is `Elliptic.integral_indicator_le_integral_weakDeriv_mul`, the second is
+`Elliptic.IsObstacleSolution.dirichletForm_sub_le`, and the third is
+`Elliptic.load_le_smul_load_sup_zero`. The membership
+$\min\{\varepsilon \Phi, z\} \in H^1_0(\Omega)$ is `Elliptic.exists_min_elem`. The set
+$\{\varepsilon \Phi \le z\}$ is the set where the function of `ε • Φ - z` is at most $0$. -/
 theorem IsObstacleSolution.truncation_step
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -389,7 +471,7 @@ theorem IsObstacleSolution.truncation_step
 
 end Upper
 
-/-! ### The upper bound: the limit `ε ↓ 0` -/
+/-! ### The upper bound: the limit $\varepsilon \downarrow 0$ -/
 
 section UpperLimit
 
@@ -397,7 +479,11 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- `∫_Ω ∇u · ∇Φ = ∫_Ω ∇z · ∇Φ + ∫_Ω q Φ` for `z = u − ψ`, `−Δψ = q` weakly and `Φ ∈ H¹₀(Ω)`. -/
+/-- Let $-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$, let
+$u \in H^1(\Omega)$, and let $z = u - \psi$. Then for every $\Phi \in H^1_0(\Omega)$,
+$$\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega \nabla z \cdot \nabla \Phi + \int_\Omega
+  q \Phi.$$
+-/
 theorem dirichletForm_eq_dirichletForm_sub_add_load {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     (hψ : IsWeakSolution (dirichletForm Ω) (SobolevEuclideanZero (d + 1) 1 2 Ω) ψ q)
@@ -408,13 +494,13 @@ theorem dirichletForm_eq_dirichletForm_sub_add_load {ψ : SobolevEuclidean (d + 
     rw [hz, sub_add_cancel]
   rw [huzψ, dirichletForm_add_left, hψ Φ hΦ]
 
-/-- `max (a − b) 0 + b = max a b`. -/
+/-- For real numbers $a$ and $b$, $\max\{a - b, 0\} + b = \max\{a, b\}$. -/
 theorem max_sub_zero_add (a b : ℝ) : max (a - b) 0 + b = max a b := by
   rcases le_total a b with h | h
   · rw [max_eq_right (sub_nonpos.2 h), max_eq_right h, zero_add]
   · rw [max_eq_left (sub_nonneg.2 h), max_eq_left h, sub_add_cancel]
 
-/-- `(f − q)⁺ + q = max (f, q)` in `L²(Ω)`. -/
+/-- For $f, q \in L^2(\Omega)$, $(f - q)^+ + q = \max\{f, q\}$ in $L^2(\Omega)$. -/
 theorem sub_sup_zero_add_eq_sup
     (f q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     (f - q) ⊔ 0 + q = f ⊔ q := by
@@ -425,7 +511,8 @@ theorem sub_sup_zero_add_eq_sup
   rw [h1, Pi.add_apply, h2, Pi.sup_apply, h3, Pi.sub_apply, h4, Pi.zero_apply, h5, Pi.sup_apply]
   exact max_sub_zero_add _ _
 
-/-- `∫_Ω (f − q)⁺ Φ + ∫_Ω q Φ = ∫_Ω max (f, q) Φ`. -/
+/-- For $f, q \in L^2(\Omega)$ and $\Phi \in H^1(\Omega)$, $\int_\Omega (f - q)^+ \Phi + \int_\Omega
+q \Phi = \int_\Omega \max\{f, q\} \Phi$. -/
 theorem load_sub_sup_zero_add_load
     (f q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (Φ : SobolevEuclidean (d + 1) 1 2 Ω) :
@@ -433,12 +520,19 @@ theorem load_sub_sup_zero_add_load
   exact (load_add (Ω := Ω) ((f - q) ⊔ 0) q Φ).symm.trans
     (congrArg (fun g ↦ load Ω g Φ) (sub_sup_zero_add_eq_sup f q))
 
-/-- **The Lewy–Stampacchia upper bound for `z = u − ψ`**: `∫_Ω ∇z · ∇Φ ≤ ∫_Ω (f − q)⁺ Φ` for
-`Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`. The truncation step `IsObstacleSolution.truncation_step` at
-`ε = 1/(n+1)` and dominated convergence: as `n → ∞`, `1_{ε_n Φ ≤ z} → 1_{z > 0}` where `z > 0`, and
-`∂ᵢz = 0` almost everywhere on `{z = 0}`
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart`,
-since `z = z⁺`), so `∑ᵢ ∫_{ε_n Φ ≤ z} ∂ᵢz ∂ᵢΦ → ∑ᵢ ∫_Ω ∂ᵢz ∂ᵢΦ`. -/
+/-- The Lewy–Stampacchia upper bound for $z = u - \psi$. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be
+a domain of class $C^1$ by local charts with bounded boundary. Let $u$ solve the obstacle
+problem with obstacle $\psi$ and load $f$, and let $-\Delta \psi = q \in L^2(\Omega)$ in the
+weak sense on $H^1_0(\Omega)$. Let $z = u - \psi$. Then for every $\Phi \in H^1_0(\Omega)$ with
+$\Phi \ge 0$ almost everywhere,
+$$\int_\Omega \nabla z \cdot \nabla \Phi \le \int_\Omega (f - q)^+ \Phi.$$
+
+The proof applies `Elliptic.IsObstacleSolution.truncation_step` with $\varepsilon_n = 1/(n+1)$
+and uses dominated convergence. As $n \to \infty$, $1_{\{\varepsilon_n \Phi \le z\}} \to 1$
+where $z > 0$, and $\partial_i z = 0$ almost everywhere on $\{z = 0\}$
+(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart`, since $z = z^+$). So $\sum_i
+\int_{\{\varepsilon_n \Phi \le z\}} \partial_i z\, \partial_i \Phi \to \sum_i \int_\Omega
+\partial_i z\, \partial_i \Phi$. -/
 theorem IsObstacleSolution.dirichletForm_sub_le_load_sup_zero
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -526,12 +620,16 @@ theorem IsObstacleSolution.dirichletForm_sub_le_load_sup_zero
     simp only [L2.inner_eq_integral_mul]
   exact e.trans_le hzΦ
 
-/-- **The upper bound `−Δu ≤ max (f, −Δψ)` of the Lewy–Stampacchia inequality**: on a `C¹`
-chart domain with bounded boundary, if `u` solves the obstacle problem with obstacle `ψ` and load
-`f`, and `−Δψ = q ∈ L²(Ω)` weakly, then `∫_Ω ∇u · ∇Φ ≤ ∫_Ω max (f, q) Φ` for every `Φ ∈ H¹₀(Ω)`,
-`Φ ≥ 0`: `∫_Ω ∇(u − ψ) · ∇Φ ≤ ∫_Ω (f − q)⁺ Φ`
-(`IsObstacleSolution.dirichletForm_sub_le_load_sup_zero`)
-plus `∫_Ω ∇ψ · ∇Φ = ∫_Ω q Φ`, and `(f − q)⁺ + q = max (f, q)`. -/
+/-- The upper bound $-\Delta u \le \max\{f, -\Delta \psi\}$ of the **Lewy–Stampacchia inequality**.
+Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^1$ by local charts with bounded
+boundary. Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$. Then for every
+$\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$ almost everywhere,
+$$\int_\Omega \nabla u \cdot \nabla \Phi \le \int_\Omega \max\{f, q\} \Phi.$$
+
+The proof adds $\int_\Omega \nabla (u - \psi) \cdot \nabla \Phi \le \int_\Omega (f - q)^+ \Phi$
+(`Elliptic.IsObstacleSolution.dirichletForm_sub_le_load_sup_zero`) and $\int_\Omega \nabla \psi
+\cdot \nabla \Phi = \int_\Omega q \Phi$, and uses $(f - q)^+ + q = \max\{f, q\}$. -/
 theorem IsObstacleSolution.dirichletForm_le_load_sup
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -551,7 +649,7 @@ theorem IsObstacleSolution.dirichletForm_le_load_sup
 
 end UpperLimit
 
-/-! ### From the two-sided bound to `−Δu ∈ L²(Ω)` -/
+/-! ### From the two-sided bound to $-\Delta u \in L^2(\Omega)$ -/
 
 section Representation
 
@@ -559,9 +657,13 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **A continuous linear functional on `H¹₀(Ω)` bounded by the `L²` norm is `Φ ↦ ∫_Ω h Φ`** for
-some `h ∈ L²(Ω)` with `‖h‖₂ ≤ C`: `exists_inner_of_forall_abs_le` along the injective inclusion
-`SobolevMultiIndexZero.fnL : H¹₀(Ω) → L²(Ω)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $T$ be a continuous linear functional on
+$H^1_0(\Omega)$, and let $C \ge 0$ with $|T \Phi| \le C \|\Phi\|_{L^2(\Omega)}$ for every
+$\Phi \in H^1_0(\Omega)$. Then there is $h \in L^2(\Omega)$ with $\|h\|_{L^2(\Omega)} \le C$ and
+$T \Phi = \int_\Omega h \Phi$ for every $\Phi \in H^1_0(\Omega)$.
+
+The proof applies `exists_inner_of_forall_abs_le` to the injective inclusion of $H^1_0(\Omega)$
+into $L^2(\Omega)$ (`SobolevMultiIndexZero.fnL`). -/
 theorem exists_load_eq_of_forall_abs_le (T : SobolevEuclideanZero N 1 2 Ω →L[ℝ] ℝ) {C : ℝ}
     (hC : 0 ≤ C) (hT : ∀ Φ : SobolevEuclideanZero N 1 2 Ω,
       |T Φ| ≤ C * ‖weakDeriv (Φ : SobolevEuclidean N 1 2 Ω) 0‖) :
@@ -580,9 +682,16 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **The two-sided Lewy–Stampacchia bound on nonnegative `Φ`**: for `Φ ∈ H¹₀(Ω)`, `Φ ≥ 0`,
-`|∫_Ω ∇u · ∇Φ − ∫_Ω f Φ| ≤ ‖max (f, q) − f‖₂ ‖Φ‖₂`, from
-`IsObstacleSolution.load_le_dirichletForm` and `IsObstacleSolution.dirichletForm_le_load_sup`. -/
+/-- The two-sided Lewy–Stampacchia bound on nonnegative test functions. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^1$ by local charts with bounded
+boundary. Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$. Then for every
+$\Phi \in H^1_0(\Omega)$ with $\Phi \ge 0$ almost everywhere,
+$$\Big|\int_\Omega \nabla u \cdot \nabla \Phi - \int_\Omega f \Phi\Big| \le \|\max\{f, q\} -
+  f\|_{L^2(\Omega)} \|\Phi\|_{L^2(\Omega)}.$$
+
+The proof combines `Elliptic.IsObstacleSolution.load_le_dirichletForm` and
+`Elliptic.IsObstacleSolution.dirichletForm_le_load_sup`. -/
 theorem IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -602,8 +711,12 @@ theorem IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg
   rw [abs_of_nonneg (by linarith)]
   linarith [le_abs_self (load Ω (f ⊔ q - f) Φ)]
 
-/-- **The Lewy–Stampacchia functional is `L²`-bounded on all of `H¹₀(Ω)`**:
-`|∫_Ω ∇u · ∇Φ − ∫_Ω f Φ| ≤ 2 ‖max (f, q) − f‖₂ ‖Φ‖₂`, by splitting `Φ = Φ⁺ − Φ⁻`. -/
+/-- Under the hypotheses of `Elliptic.IsObstacleSolution.abs_dirichletForm_sub_load_le_of_nonneg` on
+$\Omega$, $\psi$, $q$, $f$ and $u$: for every $\Phi \in H^1_0(\Omega)$,
+$$\Big|\int_\Omega \nabla u \cdot \nabla \Phi - \int_\Omega f \Phi\Big| \le 2 \|\max\{f, q\} -
+  f\|_{L^2(\Omega)} \|\Phi\|_{L^2(\Omega)}.$$
+
+The proof splits $\Phi = \Phi^+ - \Phi^-$. -/
 theorem IsObstacleSolution.abs_dirichletForm_sub_load_le
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -632,11 +745,17 @@ theorem IsObstacleSolution.abs_dirichletForm_sub_load_le
           (h2.trans (mul_le_mul_of_nonneg_left hQn hg0))
     _ = 2 * ‖f ⊔ q - f‖ * ‖weakDeriv Φ 0‖ := by ring
 
-/-- **`−Δu ∈ L²(Ω)` for the solution of the obstacle problem**: on a `C¹` chart domain with
-bounded boundary, with `−Δψ = q ∈ L²(Ω)`, there is `h ∈ L²(Ω)` with `‖h‖₂ ≤ 2 ‖max (f, q) − f‖₂`
-and `∫_Ω ∇u · ∇Φ = ∫_Ω (f + h) Φ` for every `Φ ∈ H¹₀(Ω)`, i.e. `−Δu = f + h`. The Lewy–Stampacchia
-bound `|∫_Ω ∇u · ∇Φ − ∫_Ω f Φ| ≤ 2 ‖max (f, q) − f‖₂ ‖Φ‖₂` and the representation
-`exists_load_eq_of_forall_abs_le`. -/
+/-- $-\Delta u \in L^2(\Omega)$ for the solution of the obstacle problem. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^1$ by local charts with bounded
+boundary. Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$-\Delta \psi = q \in L^2(\Omega)$ in the weak sense on $H^1_0(\Omega)$. Then there is
+$h \in L^2(\Omega)$ with $\|h\|_{L^2(\Omega)} \le 2 \|\max\{f, q\} - f\|_{L^2(\Omega)}$ and
+$$\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega (f + h) \Phi \qquad \text{for every }
+  \Phi \in H^1_0(\Omega),$$
+that is, $-\Delta u = f + h$ in the weak sense.
+
+The proof applies `Elliptic.exists_load_eq_of_forall_abs_le` to the bound of
+`Elliptic.IsObstacleSolution.abs_dirichletForm_sub_load_le`. -/
 theorem IsObstacleSolution.exists_dirichletForm_eq_load
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -665,7 +784,7 @@ theorem IsObstacleSolution.exists_dirichletForm_eq_load
 
 end LpBound
 
-/-! ### `H²` regularity of the solution of the obstacle problem -/
+/-! ### $H^2$ regularity of the solution of the obstacle problem -/
 
 section Regularity
 
@@ -673,8 +792,13 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- The solution of the obstacle problem is a weak solution of `−Δu + u = f + h + u` on `H¹₀(Ω)`
-once `−Δu = f + h` is known, i.e. a Galerkin solution for the form of `−Δ + 1`. -/
+/-- Let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$, and let
+$h \in L^2(\Omega)$ with $\int_\Omega \nabla u \cdot \nabla \Phi = \int_\Omega (f + h) \Phi$ for
+every $\Phi \in H^1_0(\Omega)$. Then $u \in H^1_0(\Omega)$ and
+$$\int_\Omega \nabla u \cdot \nabla \Phi + \int_\Omega u \Phi = \int_\Omega (f + h + u) \Phi
+  \qquad \text{for every } \Phi \in H^1_0(\Omega),$$
+so $u$ is the Galerkin solution in $H^1_0(\Omega)$ of $-\Delta u + u = f + h + u$ for the form
+`Elliptic.laplaceForm Ω` of $-\Delta + 1$. -/
 theorem IsObstacleSolution.isGalerkinSolution_laplace {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclidean (d + 1) 1 2 Ω} (hu : IsObstacleSolution Ω ψ f u)
@@ -686,18 +810,24 @@ theorem IsObstacleSolution.isGalerkinSolution_laplace {ψ : SobolevEuclidean (d 
   rw [laplaceForm_apply_eq_dirichletForm_add_weakDeriv, heq Φ hΦ]
   simp only [load_apply_inner, inner_add_left]
 
-/-- **`H²` regularity for the obstacle problem** — the `p = 2` case of [han2009theoretical]
-Theorem 11.3.12 (Brezis–Stampacchia), for the Laplacian. On a `C²` chart domain `Ω ⊆ ℝ^{d+1}` with
-bounded boundary there is a constant `C` such that for every obstacle `ψ ∈ H¹(Ω)` with
-`−Δψ = q ∈ L²(Ω)` weakly, every load `f ∈ L²(Ω)` and every solution `u` of the obstacle problem,
-`u ∈ H²(Ω)`, and every `U ∈ H²(Ω)` with function `u` has
-`‖U‖_{H²(Ω)} ≤ C (‖f‖₂ + 2 ‖max (f, q) − f‖₂ + ‖u‖₂)`.
+/-- **$H^2$ regularity for the obstacle problem.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+domain of class $C^2$ by local charts with bounded boundary. There is a constant $C \ge 0$ with
+the following property. Let $\psi \in H^1(\Omega)$ and $q \in L^2(\Omega)$ with $\int_\Omega
+\nabla \psi \cdot \nabla \Phi = \int_\Omega q \Phi$ for every $\Phi \in H^1_0(\Omega)$, let
+$f \in L^2(\Omega)$, and let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$.
+Then $u \in H^2(\Omega)$, and every $U \in H^2(\Omega)$ whose function is $u$ almost everywhere
+satisfies
+$$\|U\|_{H^2(\Omega)} \le C \big(\|f\|_{L^2} + 2 \|\max\{f, q\} - f\|_{L^2} +
+  \|u\|_{L^2}\big).$$
+This is the case $p = 2$ of Theorem 11.3.12 of [han2009theoretical] (due to Brezis and
+Stampacchia), for the Laplacian.
 
-The Lewy–Stampacchia inequality gives `−Δu = f + h` with `h ∈ L²(Ω)`, `‖h‖₂ ≤ 2 ‖max (f, q) − f‖₂`
-(`IsObstacleSolution.exists_dirichletForm_eq_load`), so `u` is the weak solution of
-`−Δu + u = f + h + u` on `H¹₀(Ω)`, and the linear regularity theory
-(`Elliptic.regularity_dirichlet`, [brezis2011functional] Theorem 9.25) applies; its constant is
-the one here. -/
+The Lewy–Stampacchia inequality gives $-\Delta u = f + h$ with $h \in L^2(\Omega)$ and
+$\|h\|_2 \le 2 \|\max\{f, q\} - f\|_2$
+(`Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load`). So $u$ is the weak solution of
+$-\Delta u + u = f + h + u$ in $H^1_0(\Omega)$, and the linear regularity theorem
+`Elliptic.regularity_dirichlet` (Theorem 9.25 of [brezis2011functional]) applies. The constant
+$C$ is the constant of that theorem. -/
 theorem regularity_obstacle
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -723,7 +853,7 @@ theorem regularity_obstacle
 
 end Regularity
 
-/-! ### Two norm estimates for the bound of Theorem 11.3.12 -/
+/-! ### A norm estimate for the bound of Theorem 11.3.12 of [han2009theoretical] -/
 
 section Estimates
 
@@ -731,7 +861,8 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- `‖max (f, q) − f‖₂ ≤ ‖q − f‖₂`, since `max (f, q) − f = (q − f)⁺`. -/
+/-- For $f, q \in L^2(\Omega)$, $\|\max\{f, q\} - f\|_{L^2(\Omega)} \le \|q - f\|_{L^2(\Omega)}$,
+since $\max\{f, q\} - f = (q - f)^+$. -/
 theorem norm_sup_sub_le (f q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ‖f ⊔ q - f‖ ≤ ‖q - f‖ := by
   refine Lp.norm_le_norm_of_ae_le ?_
@@ -744,7 +875,7 @@ theorem norm_sup_sub_le (f q : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpa
 
 end Estimates
 
-/-! ### The a priori `H¹` bound and the `H²` bound for obstacles in `H²(Ω)` -/
+/-! ### The a priori $H^1$ bound and the $H^2$ bound for obstacles in $H^2(\Omega)$ -/
 
 section APriori
 
@@ -752,8 +883,8 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- The real inequality behind the a priori bound: `t² ≤ K (s t + s²)` with `K ≥ 1` forces
-`t ≤ 2 K s`. -/
+/-- Let $K \ge 1$ and $s, t \ge 0$ be real numbers with $t^2 \le K (s t + s^2)$. Then $t \le 2 K s$.
+-/
 theorem le_two_mul_of_sq_le {K s t : ℝ} (hK : 1 ≤ K) (hs : 0 ≤ s) (ht : 0 ≤ t)
     (h : t ^ 2 ≤ K * (s * t + s ^ 2)) : t ≤ 2 * K * s := by
   by_contra hcon
@@ -762,11 +893,17 @@ theorem le_two_mul_of_sq_le {K s t : ℝ} (hK : 1 ≤ K) (hs : 0 ≤ s) (ht : 0 
   nlinarith [mul_lt_mul_of_pos_left hlt (show (0 : ℝ) < t by linarith), mul_nonneg hKs hs,
     mul_nonneg hKs ht]
 
-/-- **The a priori `H¹` bound for the obstacle problem**: for `Ω ⊆ B(0, R)`, an admissible
-`w ∈ H¹₀(Ω)` with `w ≥ ψ` and a solution `u` of the obstacle problem,
-`‖u‖_{H¹} ≤ 2 (1 + (2R)²) (‖w‖_{H¹} + ‖f‖₂)`. Testing the variational inequality with `v = w`
-gives `a(u, u) ≤ a(u, w) − ℓ(w) + ℓ(u) ≤ ‖u‖ ‖w‖ + ‖f‖ ‖w‖ + ‖f‖ ‖u‖`, and
-`a(u, u) ≥ (1 + (2R)²)⁻¹ ‖u‖²` by Poincaré's inequality. -/
+/-- The **a priori $H^1$ bound for the obstacle problem**. Let $R \ge 0$, and let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open with $\Omega \subseteq B(0, R)$. Let $u$ solve the
+obstacle problem with obstacle $\psi$ and load $f$, and let $w \in H^1_0(\Omega)$ with
+$w \ge \psi$ almost everywhere on $\Omega$. Then
+$$\|u\|_{H^1(\Omega)} \le 2 \big(1 + (2R)^2\big) \big(\|w\|_{H^1(\Omega)} +
+  \|f\|_{L^2(\Omega)}\big).$$
+
+Write $a(u, v) = \int_\Omega \nabla u \cdot \nabla v$ and $\ell(v) = \int_\Omega f v$. The
+variational inequality tested with $v = w$ gives $a(u, u) \le a(u, w) - \ell(w) + \ell(u) \le
+\|u\| \|w\| + \|f\| \|w\| + \|f\| \|u\|$, and $a(u, u) \ge (1 + (2R)^2)^{-1} \|u\|^2$ by
+Poincaré's inequality. -/
 theorem IsObstacleSolution.norm_le {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -803,19 +940,25 @@ theorem IsObstacleSolution.norm_le {R : ℝ} (hR : 0 ≤ R)
     nlinarith [norm_nonneg u, norm_nonneg w, norm_nonneg f]
   exact le_two_mul_of_sq_le hK (by positivity) (norm_nonneg _) hquad
 
-/-- **[han2009theoretical] Theorem 11.3.12 at `p = 2`, for the Laplacian, an obstacle in
-`H²(Ω)` and a `C²` domain**: on a `C²` chart domain `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}` there is a constant
-`C` such that for every obstacle `ψ ∈ H¹(Ω)` which is the function of some `Ψ ∈ H²(Ω)` and whose
-positive part is the function of an element of `H¹₀(Ω)` (the book's "`ψ ≤ 0` on `Γ`"), every
-`f ∈ L²(Ω)` and every solution `u` of the obstacle problem, `u ∈ H²(Ω)` with
-`‖u‖_{H²(Ω)} ≤ C (‖f‖_{L²(Ω)} + ‖Ψ‖_{H²(Ω)})`.
+/-- Let $R \ge 0$, and let $\Omega \subseteq \mathbb{R}^{d+1}$ be a domain of class $C^2$ by local
+charts with $\Omega \subseteq B(0, R)$. There is a constant $C \ge 0$ with the following
+property. Let $\Psi \in H^2(\Omega)$ and $\psi \in H^1(\Omega)$ have the same function almost
+everywhere, and let $\psi^+$ be the function of an element of $H^1_0(\Omega)$. Let
+$f \in L^2(\Omega)$, and let $u$ solve the obstacle problem with obstacle $\psi$ and load $f$.
+Then $u \in H^2(\Omega)$, and every $U \in H^2(\Omega)$ whose function is $u$ almost everywhere
+satisfies
+$$\|U\|_{H^2(\Omega)} \le C \big(\|f\|_{L^2(\Omega)} + \|\Psi\|_{H^2(\Omega)}\big).$$
+This is Theorem 11.3.12 of [han2009theoretical] for $p = 2$, the Laplacian, an obstacle in
+$H^2(\Omega)$ and a $C^2$ domain.
 
-The obstacle has `−Δψ = q := −∑ᵢ ∂ᵢᵢΨ ∈ L²(Ω)` weakly
-(`dirichletForm_eq_load_neg_sobolevLaplacianL`), so `regularity_obstacle` bounds `‖u‖_{H²}` by
-`C₀ (‖f‖ + 2 ‖max (f, q) − f‖ + ‖u‖₂)`;
-`‖max (f, q) − f‖ ≤ ‖q − f‖ ≤ ‖f‖ + (d + 1) ‖Ψ‖_{H²}` and the a priori bound
-`IsObstacleSolution.norm_le` tested with `w = ψ⁺ ∈ H¹₀(Ω)`, `‖ψ⁺‖_{H¹} ≤ ‖ψ‖_{H¹} ≤ ‖Ψ‖_{H²}`,
-give `‖u‖₂ ≤ 2 (1 + (2R)²) (‖Ψ‖_{H²} + ‖f‖)`. -/
+The hypothesis $\psi^+ \in H^1_0(\Omega)$ stands for the condition "$\psi \le 0$ on $\Gamma$" of
+[han2009theoretical]. The obstacle has $-\Delta \psi = q := -\sum_i \partial_{ii} \Psi \in
+L^2(\Omega)$ in the weak sense (`Elliptic.dirichletForm_eq_load_neg_sobolevLaplacianL`). So
+`Elliptic.regularity_obstacle` bounds $\|u\|_{H^2}$ by
+$C_0 (\|f\| + 2 \|\max\{f, q\} - f\| + \|u\|_2)$. Then $\|\max\{f, q\} - f\| \le \|q - f\| \le
+\|f\| + (d + 1) \|\Psi\|_{H^2}$. The a priori bound `Elliptic.IsObstacleSolution.norm_le` with
+$w = \psi^+$, together with $\|\psi^+\|_{H^1} \le \|\psi\|_{H^1} \le \|\Psi\|_{H^2}$, gives
+$\|u\|_2 \le 2 (1 + (2R)^2) (\|\Psi\|_{H^2} + \|f\|)$. -/
 theorem regularity_obstacle_sobolev_two {R : ℝ} (hR : 0 ≤ R)
     (hΩb : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :

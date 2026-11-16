@@ -12,51 +12,72 @@ import Numlib.Nonlinear.ScalarNewton
 /-!
 # Diagonal plus rank-one matrices and the secular equation
 
-The eigenproblem of a diagonal-plus-rank-one Hermitian matrix `D + ρ z zᴴ`, the secular equation,
-and the merge step of the divide-and-conquer method for symmetric tridiagonal matrices
-([golub2013matrix] §8.4.3–8.4.4; Dongarra and Sorensen 1987; Barlow 1993).
+Let $d \in \mathbb{R}^n$, $\rho \in \mathbb{R}$ and $z \in \mathbb{K}^n$ with
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $D = \operatorname{diag}(d)$. This file studies
+the eigenproblem of the Hermitian matrix $M = D + \rho z z^H$ through the **secular function**
+$$f(\lambda) = 1 + \rho \sum_i \frac{|z_i|^2}{d_i - \lambda} = 1 + \rho\, z^H (D - \lambda I)^{-1}
+  z,$$
+and the merge step of the divide-and-conquer method for symmetric tridiagonal matrices. The
+presentation follows §8.4.3–8.4.4 of [golub2013matrix], after Dongarra and Sorensen (1987) and
+Barlow (1993). When the $d_i$ are distinct, $\rho \neq 0$ and no $z_i$ vanishes, the real
+eigenvalues of $M$ are the zeros of $f$, the eigenvectors are the multiples of
+$(D - \lambda I)^{-1} z$, and the eigenvalues strictly interlace the $d_i$.
 
-Setting: `d : n → ℝ`, `ρ : ℝ`, `z : n → 𝕜` over `[RCLike 𝕜]`, and the matrix
-`M = diagonal (fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)`. The **secular function**
-`Matrix.secularFunction d ρ z λ = 1 + ρ ∑ i, |z i|² / (d i - λ)` is the book's
-`f(λ) = 1 + ρ zᵀ (D - λ I)⁻¹ z`.
+The file also treats the bordered secular function $1 - \lambda - r^T (B - \lambda I)^{-1} r$ of a
+symmetric matrix $\begin{bmatrix} 1 & r^T \\ r & B \end{bmatrix}$, from §4.7.7 of [golub2013matrix]
+after Cybenko and Van Loan (1986). Newton's method converges monotonically from the right to its
+zero below the spectrum of $B$.
+
+## Main definitions
+
+* `Matrix.secularFunction`: the secular function $f(\lambda) = 1 + \rho \sum_i |z_i|^2 / (d_i -
+  \lambda)$ of $D + \rho z z^H$.
+* `Matrix.borderedSecularFunction`: the bordered secular function
+  $1 - \lambda - r^T (B - \lambda I)^{-1} r$.
 
 ## Main results
 
-* `Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne` ([golub2013matrix] Lemma 8.4.2):
-  when the `d i` are distinct, `ρ ≠ 0` and no `z i` vanishes, an eigenvector `v` of `M` has
-  `zᴴ v ≠ 0` and its eigenvalue is no `d i`.
-* `Matrix.hasEigenvalue_iff_secularFunction_eq_zero` ([golub2013matrix] Theorem 8.4.3(a)): under
-  the same hypotheses the real eigenvalues of `M` are the zeros of the secular function, and
-  `Matrix.hasEigenvector_diagonal_add_rankOne_resolvent` (Theorem 8.4.3(c)): the eigenvectors are
-  the multiples of `(D - λ)⁻¹ z`.
-* `Matrix.hasDerivAt_secularFunction`, `Matrix.secularFunction_strictMonoOn` (and its `ρ < 0` twin
-  `Matrix.secularFunction_strictAntiOn`): the secular function
-  is monotone between its poles.
-* `Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace` ([golub2013matrix] Theorem 8.4.3(b)):
-  for strictly decreasing `d` the eigenvalues of `M` strictly interlace the `d i`,
-  `λ_1 > d_1 > λ_2 > ⋯ > λ_n > d_n` for `ρ > 0` and `d_1 > λ_1 > d_2 > ⋯ > d_n > λ_n` for `ρ < 0`.
-  The weak inequalities are the rank-one case of the low-rank interlacing of `Numlib/Eigen/MinMax`
-  (`LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`, [golub2013matrix]
-  Theorem 8.1.8), and Lemma 8.4.2 makes them strict: no eigenvalue of `M` is a `d i`. The book's
-  argument through the poles of the secular function and the intermediate value theorem is not
-  needed.
-* `Matrix.exists_orthogonal_deflation` ([golub2013matrix] Theorem 8.4.4): rotations in the planes
-  of repeated `d i` and a permutation reduce an arbitrary `(d, z)` to the generic case, the nonzero
-  entries of `z` first with strictly decreasing `d`.
+* `Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne`: if the $d_i$ are distinct,
+  $\rho \neq 0$ and no $z_i$ vanishes, an eigenvector $v$ of $M$ has $z^H v \neq 0$, and its
+  eigenvalue is no $d_i$ (Lemma 8.4.2 of [golub2013matrix]).
+* `Matrix.hasEigenvalue_iff_secularFunction_eq_zero`: under the same hypotheses, a real $\lambda$ is
+  an eigenvalue of $M$ if and only if it is no $d_i$ and $f(\lambda) = 0$ (Theorem 8.4.3(a)).
+* `Matrix.hasEigenvector_diagonal_add_rankOne_resolvent`: under the same hypotheses, the
+  eigenvectors for $\lambda$ are the nonzero multiples of $(D - \lambda I)^{-1} z$ (Theorem
+  8.4.3(c)).
+* `Matrix.hasDerivAt_secularFunction`, `Matrix.secularFunction_strictMonoOn` and
+  `Matrix.secularFunction_strictAntiOn`: the derivative of $f$, and the strict monotonicity of $f$
+  between consecutive poles.
+* `Matrix.eigenvalues₀_diagonal_add_rankOne_strictInterlace`: for strictly decreasing $d$, the
+  eigenvalues of $M$ strictly interlace the $d_i$ (Theorem 8.4.3(b)).
+* `Matrix.exists_orthogonal_deflation`: rotations in the planes of repeated $d_i$ and a permutation
+  reduce an arbitrary $(d, z)$ to the generic case (Theorem 8.4.4).
 * `Matrix.conj_fromBlocks_add_rankOne_eq`: the merge step of divide and conquer, a block-diagonal
-  orthogonal similarity turning `diag(T₁, T₂) + ρ v vᵀ` into a diagonal-plus-rank-one matrix.
-* `Matrix.borderedSecularFunction` ([golub2013matrix] §4.7.7, Cybenko and Van Loan 1986): the
-  secular function `1 - λ - rᵀ (B - λ)⁻¹ r` of a bordered symmetric matrix `[1 rᵀ; r B]`, with its
-  zero at an eigenvalue and its bridge to `Matrix.secularFunction` in an eigenbasis of `B`;
-  `Matrix.tendsto_newton_borderedSecularFunction` ([golub2013matrix] (4.7.10)): Newton's method
-  converges monotonically from the right to its zero below the spectrum of `B`.
+  orthogonal similarity that turns $\operatorname{diag}(T_1, T_2) + \rho v v^T$ into a
+  diagonal-plus-rank-one matrix.
+* `Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`: an eigenvalue of the bordered matrix at
+  which $B - \lambda I$ is invertible is a zero of the bordered secular function.
+* `Matrix.borderedSecularFunction_eq_secularFunction_sub`: in an eigenbasis of $B$, the bordered
+  secular function is a secular function with $\rho = -1$, minus $\lambda$.
+* `Matrix.tendsto_newton_borderedSecularFunction`: Newton's method for the bordered secular function
+  converges monotonically from the right to its zero below the spectrum of $B$ (equations (4.7.9)
+  and (4.7.10)).
+
+## Proof outline
+
+The weak inequalities of the interlacing are the rank-one case of the low-rank interlacing in
+`Numlib.Eigen.MinMax` (`LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`,
+Theorem 8.1.8 of [golub2013matrix]). Lemma 8.4.2 makes them strict, because no eigenvalue of $M$ is
+a $d_i$. The argument of the source through the poles of the secular function and the intermediate
+value theorem is not needed.
 
 ## Implementation notes
 
-At a pole `λ = d i` the Lean value of the secular function is junk (`x / 0 = 0`); every statement
-assumes `λ ∉ Set.range d`. Eigenvalues are sorted decreasingly, as everywhere in the backbone
-(`Matrix.IsHermitian.sortedEigenvalues`).
+* At a pole $\lambda = d_i$, the Lean value of the secular function reads each term
+  $|z_j|^2 / (d_j - \lambda)$ with $d_j = \lambda$ as $0$, because $x / 0 = 0$. Every statement
+  about it assumes $\lambda \notin \{d_i\}$.
+* Eigenvalues are sorted decreasingly, as everywhere in the backbone
+  (`Matrix.IsHermitian.sortedEigenvalues`). Indices start at $0$.
 -/
 
 open Finset
@@ -65,14 +86,20 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
-/-- The **secular function** of `D + ρ z zᴴ` ([golub2013matrix] Theorem 8.4.3(a)):
-`f(λ) = 1 + ρ ∑ i, |z i|² / (d i - λ)`, the book's `1 + ρ zᵀ (D - λ I)⁻¹ z`. At a pole `λ = d i`
-the value is junk; the statements about it assume `λ ∉ Set.range d`. -/
+/-- The **secular function** of $D + \rho z z^H$ (Theorem 8.4.3(a) of [golub2013matrix]): for
+$d \in \mathbb{R}^n$, $\rho \in \mathbb{R}$ and $z \in \mathbb{K}^n$,
+$$f(\lambda) = 1 + \rho \sum_i \frac{|z_i|^2}{d_i - \lambda},$$
+which the source writes as $1 + \rho z^T (D - \lambda I)^{-1} z$.
+
+At a pole $\lambda = d_i$, each term with $d_j = \lambda$ has the value $0$, by the convention
+$x / 0 = 0$. The statements about $f$ assume $\lambda \notin \{d_i\}$. -/
 noncomputable def secularFunction (d : n → ℝ) (ρ : ℝ) (z : n → 𝕜) (t : ℝ) : ℝ :=
   1 + ρ * ∑ i, ‖z i‖ ^ 2 / (d i - t)
 
-/-- The secular function in the book's resolvent form: for `λ` not a `d i`,
-`f(λ) = 1 + ρ re (zᴴ (D - λ)⁻¹ z)`. -/
+/-- The secular function in the resolvent form of the source: if $\lambda \in \mathbb{R}$ is no
+$d_i$, then
+$$f(\lambda) = 1 + \rho \operatorname{Re}\bigl(z^H (D - \lambda I)^{-1} z\bigr).$$
+-/
 theorem secularFunction_eq_inner_resolvent [DecidableEq n] (d : n → ℝ) (ρ : ℝ) (z : n → 𝕜) {t : ℝ}
     (ht : t ∉ Set.range d) :
     secularFunction d ρ z t =
@@ -90,8 +117,10 @@ theorem secularFunction_eq_inner_resolvent [DecidableEq n] (d : n → ℝ) (ρ :
     ← RCLike.ofReal_inv, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul, RCLike.ofReal_re,
     div_eq_inv_mul]
 
-/-- **The derivative of the secular function** ([golub2013matrix] §8.4.3, proof of Theorem 8.4.3):
-away from the poles, `f'(λ) = ρ ∑ i, |z i|² / (d i - λ)²`. -/
+/-- **The derivative of the secular function** (§8.4.3 of [golub2013matrix], proof of Theorem
+8.4.3). If $\lambda \in \mathbb{R}$ is no $d_i$, then $f$ is differentiable at $\lambda$ with
+$$f'(\lambda) = \rho \sum_i \frac{|z_i|^2}{(d_i - \lambda)^2}.$$
+-/
 theorem hasDerivAt_secularFunction (d : n → ℝ) (ρ : ℝ) (z : n → 𝕜) {t : ℝ}
     (ht : t ∉ Set.range d) :
     HasDerivAt (secularFunction d ρ z) (ρ * ∑ i, ‖z i‖ ^ 2 / (d i - t) ^ 2) t := by
@@ -106,8 +135,10 @@ theorem hasDerivAt_secularFunction (d : n → ℝ) (ρ : ℝ) (z : n → 𝕜) {
   have hsum := HasDerivAt.fun_sum (u := Finset.univ) fun i _ => hterm i
   exact (hsum.const_mul ρ).const_add 1
 
-/-- **The secular function is strictly increasing between consecutive poles** for `ρ > 0` (and
-some `z i ≠ 0`): on any interval free of the `d i`, `f' = ρ ∑ |z i|² / (d i - λ)² > 0`. -/
+/-- **The secular function is strictly increasing between consecutive poles.** Let $\rho > 0$, let
+$z_i \neq 0$ for some $i$, and let $a, b \in \mathbb{R}$ be such that no $d_i$ lies in the open
+interval $(a, b)$. Then $f$ is strictly increasing on $(a, b)$, since $f' = \rho \sum_i |z_i|^2
+/ (d_i - \lambda)^2 > 0$ there. -/
 theorem secularFunction_strictMonoOn (d : n → ℝ) {ρ : ℝ} (hρ : 0 < ρ) (z : n → 𝕜)
     (hz : ∃ i, z i ≠ 0) {a b : ℝ} (hab : ∀ i, d i ∉ Set.Ioo a b) :
     StrictMonoOn (secularFunction d ρ z) (Set.Ioo a b) := by
@@ -124,9 +155,10 @@ theorem secularFunction_strictMonoOn (d : n → ℝ) {ρ : ℝ} (hρ : 0 < ρ) (
   exact div_pos (pow_pos (norm_pos_iff.mpr hj) 2)
     (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hne j))))
 
-/-- **The secular function is strictly decreasing between consecutive poles** for `ρ < 0` (and
-some `z i ≠ 0`): the twin of `Matrix.secularFunction_strictMonoOn`, since
-`f_ρ = 2 - f_{-ρ}`. -/
+/-- **The secular function is strictly decreasing between consecutive poles.** Let $\rho < 0$, let
+$z_i \neq 0$ for some $i$, and let no $d_i$ lie in the open interval $(a, b)$. Then $f$ is
+strictly decreasing on $(a, b)$. This is the twin of `Matrix.secularFunction_strictMonoOn`,
+since $f_\rho = 2 - f_{-\rho}$. -/
 theorem secularFunction_strictAntiOn (d : n → ℝ) {ρ : ℝ} (hρ : ρ < 0) (z : n → 𝕜)
     (hz : ∃ i, z i ≠ 0) {a b : ℝ} (hab : ∀ i, d i ∉ Set.Ioo a b) :
     StrictAntiOn (secularFunction d ρ z) (Set.Ioo a b) := by
@@ -138,12 +170,14 @@ theorem secularFunction_strictAntiOn (d : n → ℝ) {ρ : ℝ} (hρ : ρ < 0) (
 variable [DecidableEq n] {d : n → ℝ} {ρ : ℝ} {z : n → 𝕜}
 
 omit [DecidableEq n] in
-/-- The rank-one matrix `z zᴴ` applied to `v` is `(zᴴ v) z`, row by row. -/
+/-- For $z, v \in \mathbb{K}^n$, the rank-one matrix $z z^H$ satisfies $(z z^H v)_i = z_i\,(z^H v)$
+for each index $i$. -/
 theorem vecMulVec_star_mulVec_apply (z v : n → 𝕜) (i : n) :
     (vecMulVec z (star z) *ᵥ v) i = z i * (star z ⬝ᵥ v) := by
   simp only [mulVec, dotProduct, vecMulVec_apply, Finset.mul_sum, mul_assoc]
 
-/-- The rows of `(D + ρ z zᴴ) v`: `d i v i + ρ (zᴴ v) z i`. -/
+/-- For $v \in \mathbb{K}^n$, the entries of $(D + \rho z z^H) v$ are
+$d_i v_i + \rho\,(z^H v)\, z_i$. -/
 theorem diagonal_add_rankOne_mulVec_apply (v : n → 𝕜) (i : n) :
     (((diagonal fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)) *ᵥ v) i =
       d i * v i + ρ * (star z ⬝ᵥ v) * z i := by
@@ -151,8 +185,11 @@ theorem diagonal_add_rankOne_mulVec_apply (v : n → 𝕜) (i : n) :
   rw [vecMulVec_star_mulVec_apply]
   ring
 
-/-- The eigen-equation of `D + ρ z zᴴ` row by row: `(d i - λ) v i = -ρ (zᴴ v) z i`
-([golub2013matrix] (8.4.4)). -/
+/-- The eigen-equation of $D + \rho z z^H$ row by row ((8.4.4) of [golub2013matrix]). For
+$v \in \mathbb{K}^n$ and $\lambda \in \mathbb{K}$, $(D + \rho z z^H) v = \lambda v$ holds if and
+only if
+$$(d_i - \lambda)\, v_i = -\rho\, (z^H v)\, z_i \quad \text{for every } i.$$
+-/
 theorem diagonal_add_rankOne_mulVec_eq_iff {v : n → 𝕜} {t : 𝕜} :
     ((diagonal fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)) *ᵥ v = t • v ↔
       ∀ i, ((d i : 𝕜) - t) * v i = -(ρ * (star z ⬝ᵥ v) * z i) := by
@@ -163,10 +200,14 @@ theorem diagonal_add_rankOne_mulVec_eq_iff {v : n → 𝕜} {t : 𝕜} :
   · rw [diagonal_add_rankOne_mulVec_apply, Pi.smul_apply, smul_eq_mul]
     linear_combination h i
 
-/-- **[golub2013matrix] Lemma 8.4.2**: if the `d i` are distinct, `ρ ≠ 0`, no `z i` vanishes and
-`(D + ρ z zᴴ) v = λ v` with `v ≠ 0`, then `zᴴ v ≠ 0` and `λ` is no `d i` (so `D - λ` is
-invertible). If `λ = d i`, row `i` of (8.4.4) forces `zᴴ v = 0`; then `D v = λ v`, so `v` is a
-multiple of `e_i` (distinct `d`), and `zᴴ v = conj (z i) v i ≠ 0`. -/
+/-- **Lemma 8.4.2** of [golub2013matrix]. Let the $d_i$ be distinct, let $\rho \neq 0$, and let
+$z_i \neq 0$ for every $i$. If $v \neq 0$ and $(D + \rho z z^H) v = \lambda v$ with
+$\lambda \in \mathbb{K}$, then $z^H v \neq 0$ and $\lambda \neq d_i$ for every $i$, so
+$D - \lambda I$ is invertible.
+
+If $\lambda = d_i$, row $i$ of (8.4.4) forces $z^H v = 0$. Then $D v = \lambda v$, so $v$ is a
+multiple of $e_i$ because the $d_j$ are distinct, and $z^H v = \bar{z}_i v_i \neq 0$, a
+contradiction. -/
 theorem isUnit_diagonal_sub_of_hasEigenvector_add_rankOne (hd : Function.Injective d)
     (hρ : ρ ≠ 0) (hz : ∀ i, z i ≠ 0) {v : n → 𝕜} (hv : v ≠ 0) {t : 𝕜}
     (h : ((diagonal fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)) *ᵥ v = t • v) :
@@ -194,10 +235,14 @@ theorem isUnit_diagonal_sub_of_hasEigenvector_add_rankOne (hd : Function.Injecti
   rw [hi, sub_self, zero_mul, eq_comm, neg_eq_zero] at this
   exact mul_ne_zero (mul_ne_zero (by exact_mod_cast hρ) hw) (hz i) this
 
-/-- **[golub2013matrix] Theorem 8.4.3(a)**: under the hypotheses of Lemma 8.4.2 (distinct `d i`,
-`ρ ≠ 0`, no `z i = 0`), a real `λ` is an eigenvalue of `D + ρ z zᴴ` iff it is no `d i` and a zero
-of the secular function. (⇒) apply `zᴴ (D - λ)⁻¹` to (8.4.4) and cancel `zᴴ v ≠ 0`; (⇐)
-`v = (D - λ)⁻¹ z` is an eigenvector, the rows of `(D + ρ z zᴴ - λ) v` being `f(λ) z i`. -/
+/-- **Theorem 8.4.3(a)** of [golub2013matrix]. Let the $d_i$ be distinct, let $\rho \neq 0$, and let
+$z_i \neq 0$ for every $i$. Then $\lambda \in \mathbb{R}$ is an eigenvalue of $D + \rho z z^H$
+if and only if $\lambda \neq d_i$ for every $i$ and $f(\lambda) = 0$.
+
+For the forward direction, apply $z^H (D - \lambda I)^{-1}$ to (8.4.4) and cancel
+$z^H v \neq 0$. For the converse, $v = (D - \lambda I)^{-1} z$ is an eigenvector, because the
+rows of $(D + \rho z z^H - \lambda I) v$ are $f(\lambda) z_i$. The eigenvalue is one of the
+endomorphism `Matrix.toLin'` of $\mathbb{K}^n$. -/
 theorem hasEigenvalue_iff_secularFunction_eq_zero (hd : Function.Injective d) (hρ : ρ ≠ 0)
     (hz : ∀ i, z i ≠ 0) (t : ℝ) :
     Module.End.HasEigenvalue
@@ -261,9 +306,11 @@ theorem hasEigenvalue_iff_secularFunction_eq_zero (hd : Function.Injective d) (h
     rw [mul_div_cancel₀ _ (hne i)]
     ring
 
-/-- **[golub2013matrix] Theorem 8.4.3(c)**: under the hypotheses of Lemma 8.4.2, every eigenvector
-`v` of `D + ρ z zᴴ` for `λ` is a nonzero multiple of `(D - λ)⁻¹ z`, from (8.4.4) with `D - λ`
-invertible. -/
+/-- **Theorem 8.4.3(c)** of [golub2013matrix]. Let the $d_i$ be distinct, let $\rho \neq 0$, and let
+$z_i \neq 0$ for every $i$. If $v \neq 0$ and $(D + \rho z z^H) v = \lambda v$ with
+$\lambda \in \mathbb{K}$, then there is a $c \neq 0$ with
+$$v = c\, (D - \lambda I)^{-1} z, \qquad v_i = c\, \frac{z_i}{d_i - \lambda}.$$
+This follows from (8.4.4), since $D - \lambda I$ is invertible. -/
 theorem hasEigenvector_diagonal_add_rankOne_resolvent (hd : Function.Injective d) (hρ : ρ ≠ 0)
     (hz : ∀ i, z i ≠ 0) {v : n → 𝕜} (hv : v ≠ 0) {t : 𝕜}
     (h : ((diagonal fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)) *ᵥ v = t • v) :
@@ -282,9 +329,13 @@ section Interlacing
 
 variable {N : ℕ}
 
-/-- The sorted eigenvalues of a real diagonal matrix with decreasing entries are its entries: both
-lists are sorted, and they are permutations of each other (the roots of `∏ (X - d i)`,
-`Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`). -/
+/-- Let $d \in \mathbb{R}^N$ be decreasing, $d_0 \ge d_1 \ge \dots$, and let
+$D = \operatorname{diag}(d)$, as a Hermitian matrix over $\mathbb{K}$. Then the eigenvalues of
+$D$, sorted decreasingly, are $d_0, d_1, \dots, d_{N-1}$.
+
+Both lists are sorted, and they are permutations of each other: both are the roots of
+$\prod_i (X - d_i)$ (`Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`). The sorted
+eigenvalues are `Matrix.IsHermitian.sortedEigenvalues`. -/
 theorem IsHermitian.sortedEigenvalues_diagonal {d : Fin N → ℝ} (hd : Antitone d)
     (hD : (diagonal fun i => (d i : 𝕜)).IsHermitian) : hD.sortedEigenvalues = d := by
   have h1 := hD.roots_charpoly_eq_sortedEigenvalues
@@ -296,7 +347,8 @@ theorem IsHermitian.sortedEigenvalues_diagonal {d : Fin N → ℝ} (hd : Antiton
   exact List.ofFn_injective ((Multiset.coe_eq_coe.mp hm).eq_of_sortedGE
     (List.sortedGE_ofFn_iff.mpr hD.sortedEigenvalues_antitone) (List.sortedGE_ofFn_iff.mpr hd))
 
-/-- Every sorted eigenvalue of a Hermitian matrix has an eigenvector. -/
+/-- Each sorted eigenvalue $\lambda_k$ of a Hermitian matrix $M \in \mathbb{K}^{N \times N}$ has an
+eigenvector: there is a $v \neq 0$ with $M v = \lambda_k v$. -/
 theorem IsHermitian.exists_mulVec_eq_sortedEigenvalues_smul {M : Matrix (Fin N) (Fin N) 𝕜}
     (hM : M.IsHermitian) (k : Fin N) :
     ∃ v : Fin N → 𝕜, v ≠ 0 ∧ M *ᵥ v = (hM.sortedEigenvalues k : 𝕜) • v := by
@@ -306,8 +358,10 @@ theorem IsHermitian.exists_mulVec_eq_sortedEigenvalues_smul {M : Matrix (Fin N) 
   have h2 := congrFun (congrFun (mem_unitaryGroup_iff'.1 hU) k) k
   simp [Matrix.mul_apply, h1] at h2
 
-/-- The quadratic form of the rank-one matrix `c z zᴴ` (`c` real):
-`re ⟪c z zᴴ x, x⟫ = c |zᴴ x|²`. -/
+/-- For $c \in \mathbb{R}$, $z \in \mathbb{K}^n$ and $x$ in the Euclidean space $\mathbb{K}^n$, the
+quadratic form of the rank-one matrix $c z z^H$ is
+$$\operatorname{Re} \langle c z z^H x, x \rangle = c\, |z^H x|^2.$$
+-/
 theorem re_inner_toEuclideanLin_smul_vecMulVec (c : ℝ) (z : n → 𝕜) (x : EuclideanSpace 𝕜 n) :
     RCLike.re (inner 𝕜 (toEuclideanLin ((c : 𝕜) • vecMulVec z (star z)) x) x) =
       c * ‖star z ⬝ᵥ WithLp.ofLp x‖ ^ 2 := by
@@ -322,7 +376,8 @@ theorem re_inner_toEuclideanLin_smul_vecMulVec (c : ℝ) (z : n → 𝕜) (x : E
     star_mul', RCLike.star_def, RCLike.conj_ofReal, mul_assoc, RCLike.conj_mul,
     ← RCLike.ofReal_pow, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-/-- The rank-one matrix `c z zᴴ` has rank at most one: its range is in the span of `z`. -/
+/-- For $c \in \mathbb{K}$ and $z \in \mathbb{K}^n$, the rank-one matrix $c z z^H$ has rank at most
+$1$: its range lies in the span of $z$. -/
 theorem finrank_range_toEuclideanLin_smul_vecMulVec_le (c : 𝕜) (z : n → 𝕜) :
     Module.finrank 𝕜 (LinearMap.range (toEuclideanLin (c • vecMulVec z (star z)))) ≤ 1 := by
   have hle : LinearMap.range (toEuclideanLin (c • vecMulVec z (star z))) ≤
@@ -337,14 +392,21 @@ theorem finrank_range_toEuclideanLin_smul_vecMulVec_le (c : 𝕜) (z : n → �
   refine (Submodule.finrank_mono hle).trans ?_
   simpa using finrank_span_le_card ({WithLp.toLp 2 z} : Set (EuclideanSpace 𝕜 n))
 
-/-- **[golub2013matrix] Theorem 8.4.3(b), strict interlacing**: for strictly decreasing `d`,
-`ρ ≠ 0` and no `z i = 0`, the sorted eigenvalues `λ` of `D + ρ z zᴴ` satisfy
-`λ_1 > d_1 > λ_2 > ⋯ > λ_n > d_n` if `ρ > 0` and `d_1 > λ_1 > d_2 > ⋯ > d_n > λ_n` if `ρ < 0`.
+/-- **Theorem 8.4.3(b)** of [golub2013matrix], strict interlacing. Let $d \in \mathbb{R}^N$ be
+strictly decreasing, let $\rho \neq 0$, let $z \in \mathbb{K}^N$ with $z_i \neq 0$ for every
+$i$, and let $\lambda_0 \ge \lambda_1 \ge \dots \ge \lambda_{N-1}$ be the eigenvalues of the
+Hermitian matrix $D + \rho z z^H$. With indices from $0$:
+* if $\rho > 0$, then $d_i < \lambda_i$ for every $i$, and $\lambda_{i+1} < d_i$ for
+  $i + 1 < N$, that is, $\lambda_0 > d_0 > \lambda_1 > \dots > \lambda_{N-1} > d_{N-1}$;
+* if $\rho < 0$, then $\lambda_i < d_i$ for every $i$, and $d_{i+1} < \lambda_i$ for
+  $i + 1 < N$, that is, $d_0 > \lambda_0 > d_1 > \dots > d_{N-1} > \lambda_{N-1}$.
+
 The weak inequalities are the rank-one interlacing
-`LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le` (the sorted
-eigenvalues of `D` being `d`, `Matrix.IsHermitian.sortedEigenvalues_diagonal`), and they are
-strict because no eigenvalue of `D + ρ z zᴴ` is a `d i`
-(`Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne`, Lemma 8.4.2). -/
+`LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`, with the sorted
+eigenvalues of $D$ equal to $d$ by `Matrix.IsHermitian.sortedEigenvalues_diagonal`. They are
+strict because no eigenvalue of $D + \rho z z^H$ is a $d_i$
+(`Matrix.isUnit_diagonal_sub_of_hasEigenvector_add_rankOne`, Lemma 8.4.2). The eigenvalues are
+`Matrix.IsHermitian.sortedEigenvalues`, and the source indexes from $1$. -/
 theorem eigenvalues₀_diagonal_add_rankOne_strictInterlace {d : Fin N → ℝ} (hd : StrictAnti d)
     {ρ : ℝ} (hρ : ρ ≠ 0) {z : Fin N → 𝕜} (hz : ∀ i, z i ≠ 0)
     (hM : ((diagonal fun i => (d i : 𝕜)) + (ρ : 𝕜) • vecMulVec z (star z)).IsHermitian) :
@@ -417,8 +479,8 @@ section Deflation
 
 variable {N : ℕ}
 
-/-- A plane rotation in the plane of two equal diagonal entries commutes with the diagonal matrix:
-on that plane the diagonal matrix is a scalar. -/
+/-- A plane rotation in the plane of two equal diagonal entries $d_j = d_k$ commutes with
+$\operatorname{diag}(d)$. -/
 private theorem planeRotation_mul_diagonal_comm {d : Fin N → ℝ} {j k : Fin N} (hjk : j ≠ k)
     (hd : d j = d k) (c s : ℝ) :
     planeRotation j k c s * diagonal d = diagonal d * planeRotation j k c s := by
@@ -427,11 +489,9 @@ private theorem planeRotation_mul_diagonal_comm {d : Fin N → ℝ} {j k : Fin N
   split_ifs <;> subst_vars <;>
     first | ring1 | (rw [hd]; try ring1)
 
-/-- The first move of [golub2013matrix] Theorem 8.4.4, repeated: rotations in the planes of
-repeated diagonal entries leave `D` alone and, applied to `z`, leave at most one nonzero entry of
-`V₁ᵀ z` for each value of `d`. By strong induction on the number of nonzero entries: a rotation in
-the plane of two nonzero entries with equal `d` (`Matrix.transpose_planeRotation_givensPair_mulVec`)
-zeroes one of them and changes no other entry but its partner. -/
+/-- Rotations in the planes of repeated diagonal entries give an orthogonal $V$ with $V^T D V = D$
+such that $V^T z$ has at most one nonzero entry for each value of $d$; this is the first step of
+Theorem 8.4.4 of [golub2013matrix], repeated. -/
 private theorem exists_orthogonal_distinct_of_ne_zero (d : Fin N → ℝ) :
     ∀ (m : ℕ) (z : Fin N → ℝ), (Finset.univ.filter fun i => z i ≠ 0).card = m →
       ∃ V ∈ orthogonalGroup (Fin N) ℝ, Vᵀ * diagonal d * V = diagonal d ∧
@@ -475,16 +535,20 @@ private theorem exists_orthogonal_distinct_of_ne_zero (d : Fin N → ℝ) :
   · rw [transpose_mul, ← mulVec_mulVec]
     exact hVz
 
-/-- **Deflation to the generic case** ([golub2013matrix] Theorem 8.4.4): for `d z : Fin N → ℝ`
-there are an orthogonal `V₁`, `μ` and `r ≤ N` with `V₁ᵀ diag(d) V₁ = diag(μ)`, `μ` strictly
-decreasing on the first `r` indices and decreasing on the others, and `w = V₁ᵀ z` nonzero exactly on
-the first `r` indices. Rotations in the planes of repeated `d i` zero all but one entry of `z` per
-value of `d`; a permutation then sorts the nonzero entries to the front by decreasing `μ`, and the
-others behind them by decreasing `μ`.
+/-- **Theorem 8.4.4** of [golub2013matrix] (deflation to the generic case). Let
+$d, z \in \mathbb{R}^N$. Then there are an orthogonal $V_1 \in \mathbb{R}^{N \times N}$, a
+vector $\mu \in \mathbb{R}^N$ and a number $r \le N$ such that, with indices from $0$:
+* $V_1^T \operatorname{diag}(d) V_1 = \operatorname{diag}(\mu)$;
+* $\mu$ is strictly decreasing on the first $r$ indices: $\mu_j < \mu_i$ for $i < j < r$;
+* $\mu$ is decreasing on the other indices: $\mu_j \le \mu_i$ for $r \le i \le j$;
+* $w = V_1^T z$ satisfies $w_i \neq 0$ if and only if $i < r$.
 
-The book states the ordering as `μ_1 > ⋯ > μ_r ≥ μ_{r+1} ≥ ⋯ ≥ μ_n`; across the boundary this is
-false in general (`d = (2, 1)`, `z = (0, 1)`: the only nonzero `w` sits at the eigenvalue `1`, so
-`μ_1 = 1 < μ_2 = 2`), and only the two separate orderings are claimed. -/
+Rotations in the planes of repeated $d_i$ make all entries of $z$ but one zero for each value of
+$d$. A permutation then sorts the nonzero entries to the front by decreasing $\mu$, and the
+others behind them by decreasing $\mu$. The source states the ordering as $\mu_1 > \dots > \mu_r
+\ge \mu_{r+1} \ge \dots \ge \mu_n$. Across the boundary this is false in general: for
+$d = (2, 1)$ and $z = (0, 1)$, the only nonzero entry of $w$ belongs to the eigenvalue $1$, so
+$\mu_1 = 1 < \mu_2 = 2$. So only the two separate orderings are stated. -/
 theorem exists_orthogonal_deflation (d z : Fin N → ℝ) :
     ∃ V₁ ∈ orthogonalGroup (Fin N) ℝ, ∃ μ : Fin N → ℝ, ∃ r ≤ N,
       V₁ᵀ * diagonal d * V₁ = diagonal μ ∧
@@ -583,10 +647,15 @@ end Deflation
 
 /-! ### The merge step of divide and conquer -/
 
-/-- **The merge step of divide and conquer** ([golub2013matrix] §8.4.4): if orthogonal `Q₁`, `Q₂`
-diagonalize `T₁`, `T₂`, then the block-diagonal orthogonal `U = diag(Q₁, Q₂)` turns
-`diag(T₁, T₂) + ρ v vᵀ` into the diagonal-plus-rank-one matrix
-`diag(d₁, d₂) + ρ z zᵀ` with `z = Uᵀ v`. -/
+/-- **The merge step of divide and conquer** (§8.4.4 of [golub2013matrix]). Let
+$T_1 \in \mathbb{R}^{m_1 \times m_1}$ and $T_2 \in \mathbb{R}^{m_2 \times m_2}$, and let $Q_1$,
+$Q_2$ be orthogonal with $Q_1^T T_1 Q_1 = \operatorname{diag}(d_1)$ and
+$Q_2^T T_2 Q_2 = \operatorname{diag}(d_2)$. Let $\rho \in \mathbb{R}$ and
+$v \in \mathbb{R}^{m_1 + m_2}$. Then $U = \operatorname{diag}(Q_1, Q_2)$ is orthogonal, and
+$$U^T \bigl(\operatorname{diag}(T_1, T_2) + \rho v v^T\bigr) U = \operatorname{diag}(d_1, d_2) +
+  \rho z z^T, \qquad z = U^T v.$$
+
+Block matrices are indexed by `m₁ ⊕ m₂`, and $U$ is `Matrix.fromBlocks Q₁ 0 0 Q₂`. -/
 theorem conj_fromBlocks_add_rankOne_eq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂]
     [DecidableEq m₁] [DecidableEq m₂] {T₁ Q₁ : Matrix m₁ m₁ ℝ} {T₂ Q₂ : Matrix m₂ m₂ ℝ}
     (hQ₁ : Q₁ ∈ orthogonalGroup m₁ ℝ) (hQ₂ : Q₂ ∈ orthogonalGroup m₂ ℝ) {d₁ : m₁ → ℝ}
@@ -621,19 +690,31 @@ section Bordered
 
 variable {m : ℕ}
 
-/-- The **bordered secular function** of `T = [1 rᵀ; r B]` ([golub2013matrix] §4.7.7, Cybenko and
-Van Loan 1986): `f(λ) = 1 - λ - rᵀ (B - λ)⁻¹ r`, whose zero below the spectrum of `B` is the
-smallest eigenvalue of `T` (under (4.7.8)). Only the unit corner is used, not the Toeplitz
-structure. The bordered sibling of `Matrix.secularFunction`
-(`Matrix.borderedSecularFunction_eq_secularFunction_sub`). -/
+/-- The **bordered secular function** of $T = \begin{bmatrix} 1 & r^T \\ r & B \end{bmatrix}$
+(§4.7.7 of [golub2013matrix], after Cybenko and Van Loan, 1986): for $r \in \mathbb{R}^m$ and
+$B \in \mathbb{R}^{m \times m}$,
+$$f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r.$$
+Its zero below the spectrum of $B$ is the smallest eigenvalue of $T$ under the condition
+(4.7.8).
+
+Only the unit corner of $T$ is used, not the Toeplitz structure of the source. If
+$B - \lambda I$ is singular, the Lean inverse is $0$ and the value is $1 - \lambda$. The
+relation to `Matrix.secularFunction` is `Matrix.borderedSecularFunction_eq_secularFunction_sub`. -/
 noncomputable def borderedSecularFunction (r : Fin m → ℝ) (B : Matrix (Fin m) (Fin m) ℝ)
     (t : ℝ) : ℝ :=
   1 - t - r ⬝ᵥ ((B - t • 1)⁻¹ *ᵥ r)
 
-/-- **An eigenvalue of the bordered matrix is a zero of the bordered secular function**
-([golub2013matrix] §4.7.7): if `[1 rᵀ; r B] [α; y] = λ [α; y]` with `[α; y] ≠ 0` and `B - λ`
-invertible, then `α ≠ 0`, `y = -α (B - λ)⁻¹ r` (the second block row), and `f(λ) = 0` (the first
-block row divided by `α`). -/
+/-- **An eigenvalue of the bordered matrix is a zero of the bordered secular function** (§4.7.7 of
+[golub2013matrix]). Let $r \in \mathbb{R}^m$, $B \in \mathbb{R}^{m \times m}$,
+$\lambda, \alpha \in \mathbb{R}$ and $y \in \mathbb{R}^m$, with $B - \lambda I$ invertible and
+$(\alpha, y) \neq 0$. If
+$$\begin{bmatrix} 1 & r^T \\ r & B \end{bmatrix} \begin{bmatrix} \alpha \\ y \end{bmatrix} =
+  \lambda \begin{bmatrix} \alpha \\ y \end{bmatrix},$$
+then $\alpha \neq 0$, $y = -\alpha (B - \lambda I)^{-1} r$, and $f(\lambda) = 0$.
+
+The formula for $y$ is the second block row, and $f(\lambda) = 0$ is the first block row divided
+by $\alpha$. The block matrix is indexed by `Fin 1 ⊕ Fin m`, with the row
+`Matrix.replicateRow (Fin 1) r` and the column `Matrix.replicateCol (Fin 1) r`. -/
 theorem borderedSecularFunction_eq_zero_of_mulVec_eq {r : Fin m → ℝ}
     {B : Matrix (Fin m) (Fin m) ℝ} {t α : ℝ} {y : Fin m → ℝ} (hB : IsUnit (B - t • 1))
     (hne : Sum.elim (fun _ : Fin 1 => α) y ≠ 0)
@@ -674,8 +755,11 @@ theorem borderedSecularFunction_eq_zero_of_mulVec_eq {r : Fin m → ℝ}
     rw [borderedSecularFunction]; linear_combination h1'
   exact (mul_eq_zero.mp this).resolve_left hα
 
-/-- **Powers of the resolvent in an eigenbasis**: if the orthogonal `Q` diagonalizes `B`,
-`Qᵀ B Q = diag(d)`, and `λ` is not a `d i`, then `rᵀ (B - λ)⁻ᵏ r = ∑ i, (Qᵀ r)_i² / (d i - λ)^k`. -/
+/-- **Powers of the resolvent in an eigenbasis.** Let $B, Q \in \mathbb{R}^{m \times m}$ with $Q$
+orthogonal and $Q^T B Q = \operatorname{diag}(d)$, let $\lambda \in \mathbb{R}$ be no $d_i$, and
+let $k \in \mathbb{N}$. Then for every $r \in \mathbb{R}^m$
+$$r^T \bigl((B - \lambda I)^{-1}\bigr)^k r = \sum_i \frac{(Q^T r)_i^2}{(d_i - \lambda)^k}.$$
+-/
 theorem dotProduct_inv_sub_smul_one_pow_mulVec {r : Fin m → ℝ}
     {B Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) {d : Fin m → ℝ}
     (hQB : Qᵀ * B * Q = diagonal d) {t : ℝ} (ht : t ∉ Set.range d) (k : ℕ) :
@@ -713,12 +797,17 @@ theorem dotProduct_inv_sub_smul_one_pow_mulVec {r : Fin m → ℝ}
   rw [mulVec_diagonal, inv_pow, div_eq_mul_inv]
   ring
 
-/-- **The bordered secular function in an eigenbasis of the border block**: if the orthogonal `Q`
-diagonalizes `B`, `Qᵀ B Q = diag(d)`, and `λ` is not a `d i`, then
-`f(λ) = 1 - λ - ∑ i, (Qᵀ r)_i² / (d i - λ)`, that is the rank-one secular function
-`Matrix.secularFunction d (-1) (Qᵀ r)` minus `λ`. It connects the Newton iteration of §4.7.7 for
-`λ_min` of a bordered matrix with the pole structure of §8.4.3 (one root below `min d`, the others
-interlacing the `d i`). -/
+/-- **The bordered secular function in an eigenbasis of the border block.** Let
+$B, Q \in \mathbb{R}^{m \times m}$ with $Q$ orthogonal and $Q^T B Q = \operatorname{diag}(d)$,
+and let $\lambda \in \mathbb{R}$ be no $d_i$. Then
+$$1 - \lambda - r^T (B - \lambda I)^{-1} r = 1 - \lambda - \sum_i \frac{(Q^T r)_i^2}{d_i -
+  \lambda},$$
+that is, the bordered secular function at $\lambda$ is the secular function
+`Matrix.secularFunction d (-1) (Qᵀ *ᵥ r)` at $\lambda$, minus $\lambda$.
+
+This connects the Newton iteration of §4.7.7 of [golub2013matrix] for the smallest eigenvalue of
+a bordered matrix with the poles of §8.4.3: one root lies below $\min_i d_i$, and the others
+interlace the $d_i$. -/
 theorem borderedSecularFunction_eq_secularFunction_sub {r : Fin m → ℝ}
     {B Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) {d : Fin m → ℝ}
     (hQB : Qᵀ * B * Q = diagonal d) {t : ℝ} (ht : t ∉ Set.range d) :
@@ -729,18 +818,26 @@ theorem borderedSecularFunction_eq_secularFunction_sub {r : Fin m → ℝ}
   simp only [Real.norm_eq_abs, sq_abs]
   ring
 
-/-- An orthogonal eigenbasis of a real symmetric matrix, with Mathlib's eigenvalues. -/
+/-- A real symmetric matrix $B$ has an orthogonal $Q$ with
+$Q^T B Q = \operatorname{diag}(\lambda_i)$, where the $\lambda_i$ are the eigenvalues
+`Matrix.IsHermitian.eigenvalues` of $B$. -/
 private theorem IsHermitian.exists_orthogonal_transpose_mul_mul_eq {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) :
     ∃ Q ∈ orthogonalGroup (Fin m) ℝ, Qᵀ * B * Q = diagonal hB.eigenvalues :=
   ⟨hB.eigenvectorUnitary, hB.eigenvectorUnitary.2, hB.transpose_eigenvectorUnitary_mul_mul⟩
 
-/-- **The derivatives of the bordered secular function** ([golub2013matrix] §4.7.7): for a real
-symmetric `B` and `λ` not an eigenvalue of `B`, `f'(λ) = -1 - ‖(B - λ)⁻¹ r‖²` and
-`f''(λ) = -2 rᵀ (B - λ)⁻³ r`. Away from the eigenvalues `f` agrees with the rational function
-`1 - λ - ∑ (Qᵀ r)_i² / (d i - λ)` in an eigenbasis of `B`
-(`Matrix.borderedSecularFunction_eq_secularFunction_sub`), which is differentiated termwise; the
-sums are read back through `Matrix.dotProduct_inv_sub_smul_one_pow_mulVec`. -/
+/-- **The derivatives of the bordered secular function** (§4.7.7 of [golub2013matrix]). Let
+$B \in \mathbb{R}^{m \times m}$ be symmetric, let $r \in \mathbb{R}^m$, and let
+$\lambda \in \mathbb{R}$ be no eigenvalue of $B$. Then the bordered secular function $f$
+satisfies
+$$f'(\lambda) = -1 - \|(B - \lambda I)^{-1} r\|^2, \qquad f''(\lambda) = -2\, r^T (B - \lambda
+  I)^{-3} r.$$
+
+Away from the eigenvalues of $B$, $f$ agrees with the rational function $1 - \lambda - \sum_i
+(Q^T r)_i^2 / (d_i - \lambda)$ in an eigenbasis of $B$
+(`Matrix.borderedSecularFunction_eq_secularFunction_sub`), which is differentiated term by term.
+The sums are converted back by `Matrix.dotProduct_inv_sub_smul_one_pow_mulVec`. The second
+derivative is the derivative at $\lambda$ of `deriv (Matrix.borderedSecularFunction r B)`. -/
 theorem hasDerivAt_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, hB.eigenvalues i ≠ t) :
     HasDerivAt (borderedSecularFunction r B)
@@ -790,10 +887,14 @@ theorem hasDerivAt_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin 
     rw [dotProduct_inv_sub_smul_one_pow_mulVec hQ hQB htd 3, ← Finset.mul_sum]
     ring
 
-/-- **The signs of the derivatives below the spectrum of `B`** ([golub2013matrix] §4.7.7): if `λ`
-is below every eigenvalue of the symmetric `B`, then `f'(λ) = -1 - ‖(B - λ)⁻¹ r‖² ≤ -1` and
-`f''(λ) = -2 rᵀ (B - λ)⁻³ r ≤ 0`; so `f` is strictly decreasing and concave there, which is what
-makes the Newton iteration (4.7.10) converge monotonically. -/
+/-- **The signs of the derivatives below the spectrum of $B$** (§4.7.7 of [golub2013matrix]). Let
+$B \in \mathbb{R}^{m \times m}$ be symmetric, let $r \in \mathbb{R}^m$, and let
+$\lambda \in \mathbb{R}$ be less than every eigenvalue of $B$. Then
+$$-1 - \|(B - \lambda I)^{-1} r\|^2 \le -1 \quad\text{and}\quad -2\, r^T (B - \lambda I)^{-3} r
+  \le 0.$$
+By `Matrix.hasDerivAt_borderedSecularFunction`, these are $f'(\lambda)$ and $f''(\lambda)$. So
+$f$ is strictly decreasing and concave below the spectrum of $B$, and this makes the Newton
+iteration (4.7.10) converge monotonically. -/
 theorem neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos {r : Fin m → ℝ}
     {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) :
@@ -811,15 +912,22 @@ theorem neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos {r : Fin m �
     linarith
 
 open Filter Topology Set in
-/-- **Newton's method for the smallest eigenvalue of a bordered matrix converges monotonically
-from the right** ([golub2013matrix] (4.7.9)–(4.7.10), Cybenko and Van Loan 1986): let `B` be
-real symmetric and `α` a zero of the bordered secular function `f` below the spectrum of `B` — under
-(4.7.8) `λ_min(T) < λ_min(B)` of `T = [1 rᵀ; r B]` this is `λ_min(T)`
-(`Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`). If `α ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton
-iterates `λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ - f(λ⁽ᵏ⁾) / f'(λ⁽ᵏ⁾)` satisfy `α ≤ λ⁽ᵏ⁺¹⁾ ≤ λ⁽ᵏ⁾` and tend to `α`. Below
-the spectrum of `B`, `f' ≤ -1` and `f'' ≤ 0`
-(`Matrix.neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos`), so `f` is decreasing and
-concave there and `Newton.tendsto_iterate_scalarStep_of_antitoneOn_deriv` applies. -/
+/-- **Newton's method for the smallest eigenvalue of a bordered matrix converges monotonically from
+the right** ((4.7.9) and (4.7.10) of [golub2013matrix], after Cybenko and Van Loan, 1986). Let
+$B \in \mathbb{R}^{m \times m}$ be symmetric, let $r \in \mathbb{R}^m$, and let $f$ be the
+bordered secular function. Let $\alpha, \lambda^{(0)} \in \mathbb{R}$ with $f(\alpha) = 0$,
+$\alpha \le \lambda^{(0)}$, and $\lambda^{(0)}$ less than every eigenvalue of $B$. Then the
+Newton iterates
+$$\lambda^{(k+1)} = \lambda^{(k)} - \frac{f(\lambda^{(k)})}{f'(\lambda^{(k)})}$$
+satisfy $\alpha \le \lambda^{(k+1)} \le \lambda^{(k)}$ for every $k$, and
+$\lambda^{(k)} \to \alpha$.
+
+Under the condition (4.7.8), $\lambda_{\min}(T) < \lambda_{\min}(B)$ for $T = \begin{bmatrix} 1
+& r^T \\ r & B \end{bmatrix}$, and then $\alpha$ is $\lambda_{\min}(T)$
+(`Matrix.borderedSecularFunction_eq_zero_of_mulVec_eq`). Below the spectrum of $B$, $f' \le -1$
+and $f'' \le 0$ (`Matrix.neg_one_sub_dotProduct_le_and_neg_two_mul_dotProduct_nonpos`), so $f$
+is decreasing and concave there, and `Newton.tendsto_iterate_scalarStep_of_antitoneOn_deriv`
+applies. The Newton step is `Newton.scalarStep` with $f'$ = `deriv f`. -/
 theorem tendsto_newton_borderedSecularFunction {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {α x₀ : ℝ} (hα : borderedSecularFunction r B α = 0) (hαx : α ≤ x₀)
     (hx₀ : ∀ i, x₀ < hB.eigenvalues i) :

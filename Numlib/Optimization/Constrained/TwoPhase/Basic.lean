@@ -9,45 +9,52 @@ import Numlib.Optimization.Complexity.Telescoping
 # Targets of two-phase target-following methods
 
 The two-phase methods TPp-GC (Algorithm 7.2.1) and TPqp-GC (Algorithm 14.3.2) of
-[cartis2022evaluation] for `min f(x)` subject to `x ∈ 𝒳`, `c(x) = 0` first find an approximately
-feasible point `x₁` (`‖c(x₁)‖ ≤ θε₀`), then follow a decreasing sequence of targets `t_k`: at outer
-iteration `k` an inner method decreases the residual `‖r(x, t_k)‖` (`Constrained.targetResidual`)
-from `x_k` to `x_{k+1}`, and the target is reset either by (7.2.11) (case (a), the residual became
-small) or by the reflection (7.2.13) (case (b), `f(x_{k+1}) < t_k`). This file records the
-bookkeeping of the targets, independently of the inner method, proves their properties
-(Lemmas 7.2.3 and 7.2.4, used verbatim for TPqp-GC), and provides the counting lemmas behind the
-telescoping arguments of Lemmas 7.2.6 and 14.3.8. The outer loop itself is
-`Constrained.IsTargetFollowingRun` (`Numlib.Optimization.Constrained.TwoPhase.Run`), its complexity
-is in `Numlib.Optimization.Constrained.TwoPhase.Complexity`.
+[cartis2022evaluation] solve $\min f(x)$ subject to $x \in \mathcal{X}$ and $c(x) = 0$. Phase 1
+finds an approximately feasible point $x_1$ with $\|c(x_1)\| \le \theta \varepsilon_0$. Phase 2
+follows a decreasing sequence of targets $t_k$. At outer iteration $k$ an inner method decreases the
+residual norm $\|r(x, t_k)\|$ (`Constrained.targetResidual`) from $x_k$ to $x_{k+1}$. The target is
+then reset either by (7.2.11), in case (a) where the residual has become small, or by the reflection
+(7.2.13), in case (b) where $f(x_{k+1}) < t_k$.
+
+This file records the bookkeeping of the targets, independently of the inner method. It proves their
+properties (Lemmas 7.2.3 and 7.2.4, which hold verbatim for TPqp-GC), and it gives the counting
+lemmas behind the telescoping arguments of Lemmas 7.2.6 and 14.3.8. The outer loop itself is
+`Constrained.IsTargetFollowingRun` in `Numlib.Optimization.Constrained.TwoPhase.Run`, and its
+complexity is in `Numlib.Optimization.Constrained.TwoPhase.Complexity`.
 
 ## Main definitions
 
-* `Constrained.IsTargetSequence f c θ ε₀ x t Ka K`: outer iterates `x`, targets `t` and the set
-  `Ka` of case-(a) iterations satisfy Steps 0 and 2 of Phase 2 for the outer iterations
-  `k ∈ [1, K)`.
+* `Constrained.IsTargetSequence`: the outer iterates $x_k$, the targets $t_k$ and the set
+  $\mathcal{K}_a$ of case-(a) iterations satisfy Steps 0, 1 and 2 of Phase 2 for the outer
+  iterations $k \in [1, K)$.
 
 ## Main results
 
-* `Constrained.IsTargetSequence.props`: Lemma 7.2.3 ((7.2.26)–(7.2.31));
-* `Constrained.IsTargetSequence.card_mul_le_of_target_drop`: iterations lowering the target by `τ`
-  number at most `(f_up - f_low + 1)/τ`;
-* `Constrained.IsTargetSequence.card_Ka_le`: Lemma 7.2.4, `|𝒦_a| ≤ (f_up - f_low + 1)/((1-θ)ε₀)`;
-* `Constrained.IsTargetSequence.sum_max_sub_le`: the residual decrease above `θε₀` over the outer
-  iterations `[1, K]` is at most `(1 - θ)ε₀ (|𝒦_a ∩ [1, K)| + 1)`;
-* `Constrained.le_card_add_sum_of_cover`: counting the outer iterations by case-(a), bad and
-  productive ones;
+* `Constrained.IsTargetSequence.props`: Lemma 7.2.3, the properties (7.2.26)–(7.2.31) of the
+  targets.
+* `Constrained.IsTargetSequence.card_mul_le_of_target_drop`: the iterations that lower the target by
+  at least $\tau$ are at most $(f_{\mathrm{up}} - f_{\mathrm{low}} + 1) / \tau$ in number.
+* `Constrained.IsTargetSequence.card_Ka_le`: Lemma 7.2.4, $|\mathcal{K}_a| \le (f_{\mathrm{up}} -
+  f_{\mathrm{low}} + 1) / ((1 - \theta) \varepsilon_0)$.
+* `Constrained.IsTargetSequence.sum_max_sub_le`: the decrease of the residual above
+  $\theta \varepsilon_0$ over the outer iterations $[1, K]$ is at most $(1 - \theta) \varepsilon_0
+  (|\mathcal{K}_a \cap [1, K)| + 1)$.
+* `Constrained.le_card_add_sum_of_cover`: a count of the outer iterations by case-(a) iterations,
+  bad iterations and productive iterations.
 * `Constrained.sub_ge_of_residual_decrease`, `Constrained.sub_ge_of_merit_decrease`: a merit
-  decrease guaranteed by the inner method lowers the residual by a fixed amount;
-* `Constrained.card_le_of_residual_block`: the number of "good" successful inner iterations
-  between two consecutive case-(a) iterations is `O((1-θ) max_l ε₀^{2-π_l} ε_l^{-π_l})`
-  (Lemmas 7.2.6 and 14.3.8).
+  decrease that the inner method guarantees lowers the residual by a fixed amount.
+* `Constrained.card_le_of_residual_block`: the number of good successful inner iterations between
+  two consecutive case-(a) iterations is $O\big((1 - \theta) \max_l \varepsilon_0^{2 - \pi_l}
+  \varepsilon_l^{-\pi_l}\big)$ (Lemmas 7.2.6 and 14.3.8).
 
 ## Implementation notes
 
-The predicate `Ka` is a parameter constrained only by the two cases: case (a) (`Ka k`) needs
-`‖r(x_{k+1}, t_k)‖ ≤ θε₀`, case (b) (`¬ Ka k`) needs `‖r(x_{k+1}, t_k)‖ ≥ θε₀` and
-`f(x_{k+1}) < t_k`. This covers the residual test of Step 2(a) both in the form `≤ θε₀` and in the
-strict form `< θε₀`. The terminating case (c) does not occur before the horizon `K`.
+* The set $\mathcal{K}_a$ is a parameter `Ka`, constrained only by the two cases. Case (a) (`Ka k`)
+  needs $\|r(x_{k+1}, t_k)\| \le \theta \varepsilon_0$, and case (b) (`¬ Ka k`) needs
+  $\|r(x_{k+1}, t_k)\| \ge \theta \varepsilon_0$ and $f(x_{k+1}) < t_k$. This covers the residual
+  test of Step 2(a) both in the form $\le \theta \varepsilon_0$ and in the strict form
+  $< \theta \varepsilon_0$.
+* The terminating case (c) does not occur before the horizon $K$.
 -/
 open Finset
 open scoped Topology
@@ -56,38 +63,46 @@ namespace Constrained
 
 variable {E F : Type*} [NormedAddCommGroup F]
 
-/-- **Outer bookkeeping of Phase 2** of TPp-GC (Algorithm 7.2.1) and TPqp-GC (Algorithm 14.3.2)
-of [cartis2022evaluation]. For outer iterates `x`, targets `t`, a horizon `K` and the set `Ka` of
-case-(a) iterations (the book's `𝒦_a`, (7.2.25), (14.3.36)):
-* Step 0: `‖c(x₁)‖ ≤ θε₀` (Phase 1 did not terminate) and `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`;
-* Step 1, for `1 ≤ k < K`: the inner method does not increase the residual,
-  `‖r(x_{k+1}, t_k)‖ ≤ ‖r(x_k, t_k)‖`;
-* Step 2(a), for `1 ≤ k < K` with `Ka k`: `‖r(x_{k+1}, t_k)‖ ≤ θε₀` and
-  `t_{k+1} = f(x_{k+1}) - √(ε₀² - ‖c(x_{k+1})‖²)` (7.2.11);
-* Step 2(b), for `1 ≤ k < K` with `¬ Ka k`: `‖r(x_{k+1}, t_k)‖ ≥ θε₀`, `f(x_{k+1}) < t_k` and
-  `t_{k+1} = 2 f(x_{k+1}) - t_k` (7.2.13).
-Algorithm 7.2.1 (with the test `≤ θε₀` in Step 2(a)) takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ ≤ θε₀`;
-Algorithm 14.3.2 takes `Ka k ↔ ‖r(x_{k+1}, t_k)‖ < θε₀`. -/
+/-- **Outer bookkeeping of Phase 2** of TPp-GC (Algorithm 7.2.1) and TPqp-GC (Algorithm 14.3.2) of
+[cartis2022evaluation]. Let $x_k$ be the outer iterates, $t_k$ the targets, $K$ a horizon, and
+$\mathcal{K}_a$ the set of case-(a) iterations ((7.2.25), (14.3.36)). The sequence is a **target
+sequence** if:
+* Step 0: $\|c(x_1)\| \le \theta \varepsilon_0$ (Phase 1 did not terminate) and $t_1 = f(x_1) -
+  \sqrt{\varepsilon_0^2 - \|c(x_1)\|^2}$;
+* Step 1, for $1 \le k < K$: the inner method does not increase the residual,
+  $\|r(x_{k+1}, t_k)\| \le \|r(x_k, t_k)\|$;
+* Step 2(a), for $1 \le k < K$ with $k \in \mathcal{K}_a$:
+  $\|r(x_{k+1}, t_k)\| \le \theta \varepsilon_0$ and $t_{k+1} = f(x_{k+1}) -
+  \sqrt{\varepsilon_0^2 - \|c(x_{k+1})\|^2}$, as in (7.2.11);
+* Step 2(b), for $1 \le k < K$ with $k \notin \mathcal{K}_a$:
+  $\|r(x_{k+1}, t_k)\| \ge \theta \varepsilon_0$, $f(x_{k+1}) < t_k$ and
+  $t_{k+1} = 2 f(x_{k+1}) - t_k$, as in (7.2.13).
+
+Algorithm 7.2.1, with the test $\le \theta \varepsilon_0$ in Step 2(a), takes
+$k \in \mathcal{K}_a$ if and only if $\|r(x_{k+1}, t_k)\| \le \theta \varepsilon_0$. Algorithm
+14.3.2 takes $k \in \mathcal{K}_a$ if and only if $\|r(x_{k+1}, t_k)\| < \theta \varepsilon_0$. -/
 structure IsTargetSequence (f : E → ℝ) (c : E → F) (θ ε₀ : ℝ) (x : ℕ → E) (t : ℕ → ℝ)
     (Ka : ℕ → Prop) (K : ℕ) : Prop where
-  /-- Phase 1 ended with `‖c(x₁)‖ ≤ θε₀`. -/
+  /-- Phase 1 ended with $\|c(x_1)\| \le \theta \varepsilon_0$. -/
   norm_one_le : ‖c (x 1)‖ ≤ θ * ε₀
-  /-- Step 0: `t₁ = f(x₁) - √(ε₀² - ‖c(x₁)‖²)`. -/
+  /-- Step 0: the first target is $t_1 = f(x_1) - \sqrt{\varepsilon_0^2 - \|c(x_1)\|^2}$. -/
   target_one : t 1 = f (x 1) - √(ε₀ ^ 2 - ‖c (x 1)‖ ^ 2)
-  /-- Step 1: the inner method does not increase the residual. -/
+  /-- Step 1: for $1 \le k < K$, the inner method does not increase the residual,
+  $\|r(x_{k+1}, t_k)\| \le \|r(x_k, t_k)\|$. -/
   residual_succ_le : ∀ k, 1 ≤ k → k < K →
     targetResidual f c (t k) (x (k + 1)) ≤ targetResidual f c (t k) (x k)
-  /-- Step 2(a) is entered only when `‖r(x_{k+1}, t_k)‖ ≤ θε₀`. -/
+  /-- Step 2(a) is entered only when $\|r(x_{k+1}, t_k)\| \le \theta \varepsilon_0$. -/
   residual_le_of_Ka : ∀ k, 1 ≤ k → k < K → Ka k → targetResidual f c (t k) (x (k + 1)) ≤ θ * ε₀
-  /-- Step 2(a): the target update (7.2.11). -/
+  /-- Step 2(a): the target update (7.2.11), $t_{k+1} = f(x_{k+1}) - \sqrt{\varepsilon_0^2 -
+  \|c(x_{k+1})\|^2}$. -/
   target_succ_of_Ka : ∀ k, 1 ≤ k → k < K → Ka k →
     t (k + 1) = f (x (k + 1)) - √(ε₀ ^ 2 - ‖c (x (k + 1))‖ ^ 2)
-  /-- Step 2(b) is entered only when `‖r(x_{k+1}, t_k)‖ ≥ θε₀`. -/
+  /-- Step 2(b) is entered only when $\|r(x_{k+1}, t_k)\| \ge \theta \varepsilon_0$. -/
   le_residual_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k →
     θ * ε₀ ≤ targetResidual f c (t k) (x (k + 1))
-  /-- Step 2(b) is entered only when `f(x_{k+1}) < t_k`. -/
+  /-- Step 2(b) is entered only when $f(x_{k+1}) < t_k$. -/
   lt_target_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k → f (x (k + 1)) < t k
-  /-- Step 2(b): the target update (7.2.13). -/
+  /-- Step 2(b): the target update (7.2.13), $t_{k+1} = 2 f(x_{k+1}) - t_k$. -/
   target_succ_of_not_Ka : ∀ k, 1 ≤ k → k < K → ¬ Ka k → t (k + 1) = 2 * f (x (k + 1)) - t k
 
 namespace IsTargetSequence
@@ -95,7 +110,7 @@ namespace IsTargetSequence
 variable {f : E → ℝ} {c : E → F} {θ ε₀ : ℝ} {x : ℕ → E} {t : ℕ → ℝ} {Ka : ℕ → Prop} {K : ℕ}
   {k : ℕ}
 
-/-- A target sequence up to `K` is one up to any earlier horizon. -/
+/-- A target sequence up to the horizon $K$ is a target sequence up to every horizon $K' \le K$. -/
 theorem mono (h : IsTargetSequence f c θ ε₀ x t Ka K) {K' : ℕ} (hK : K' ≤ K) :
     IsTargetSequence f c θ ε₀ x t Ka K' where
   norm_one_le := h.norm_one_le
@@ -107,7 +122,8 @@ theorem mono (h : IsTargetSequence f c θ ε₀ x t Ka K) {K' : ℕ} (hK : K' �
   lt_target_of_not_Ka k h1 hk := h.lt_target_of_not_Ka k h1 (hk.trans_le hK)
   target_succ_of_not_Ka k h1 hk := h.target_succ_of_not_Ka k h1 (hk.trans_le hK)
 
-/-- `f(x_k) ≥ t_k` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.26)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. For $1 \le k \le K$, the iterates
+lie above their targets: $f(x_k) \ge t_k$. This is (7.2.26) of [cartis2022evaluation]. -/
 theorem sub_target_nonneg (h : IsTargetSequence f c θ ε₀ x t Ka K) (hk1 : 1 ≤ k)
     (hkK : k ≤ K) : 0 ≤ f (x k) - t k := by
   obtain rfl | ⟨j, rfl, hj⟩ : k = 1 ∨ ∃ j, k = j + 1 ∧ 1 ≤ j := by
@@ -122,7 +138,9 @@ theorem sub_target_nonneg (h : IsTargetSequence f c θ ε₀ x t Ka K) (hk1 : 1 
     · rw [h.target_succ_of_not_Ka j hj (by omega) ha]
       linarith [h.lt_target_of_not_Ka j hj (by omega) ha]
 
-/-- After a case-(a) iteration the residual is reset to `ε₀` ([cartis2022evaluation], (7.2.27)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $\theta \le 1$ and
+$\varepsilon_0 \ge 0$. After a case-(a) iteration $k$ with $1 \le k < K$, the residual is reset
+to $\|r(x_{k+1}, t_{k+1})\| = \varepsilon_0$. This is (7.2.27) of [cartis2022evaluation]. -/
 theorem residual_succ_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1)
     (hε₀ : 0 ≤ ε₀) (hk1 : 1 ≤ k) (hkK : k < K) (ha : Ka k) :
     targetResidual f c (t (k + 1)) (x (k + 1)) = ε₀ := by
@@ -132,15 +150,18 @@ theorem residual_succ_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : 
     _ ≤ θ * ε₀ := h.residual_le_of_Ka k hk1 hkK ha
     _ ≤ ε₀ := mul_le_of_le_one_left hε₀ hθ
 
-/-- After a case-(b) iteration the residual is unchanged by the target update
-([cartis2022evaluation], (7.2.28), (7.2.41)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. After a case-(b) iteration $k$ with
+$1 \le k < K$, the target update does not change the residual:
+$\|r(x_{k+1}, t_{k+1})\| = \|r(x_{k+1}, t_k)\|$. This is (7.2.28) and (7.2.41) of
+[cartis2022evaluation]. -/
 theorem residual_succ_of_not_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hk1 : 1 ≤ k)
     (hkK : k < K) (ha : ¬ Ka k) :
     targetResidual f c (t (k + 1)) (x (k + 1)) = targetResidual f c (t k) (x (k + 1)) := by
   rw [h.target_succ_of_not_Ka k hk1 hkK ha, targetResidual_two_mul_sub]
 
-/-- The residual `‖r(x_k, t_k)‖` is at most `ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation],
-(7.2.27)–(7.2.28)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $\theta \le 1$ and
+$\varepsilon_0 \ge 0$. Then $\|r(x_k, t_k)\| \le \varepsilon_0$ for $1 \le k \le K$. This is
+(7.2.27)–(7.2.28) of [cartis2022evaluation]. -/
 theorem residual_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
     (hk1 : 1 ≤ k) (hkK : k ≤ K) : targetResidual f c (t k) (x k) ≤ ε₀ := by
   induction k, hk1 using Nat.le_induction with
@@ -153,18 +174,24 @@ theorem residual_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1
     · rw [h.residual_succ_of_not_Ka hj (by omega) ha]
       exact (h.residual_succ_le j hj (by omega)).trans (ih (by omega))
 
-/-- `‖c(x_k)‖ ≤ ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.29)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $\theta \le 1$ and
+$\varepsilon_0 \ge 0$. Then $\|c(x_k)\| \le \varepsilon_0$ for $1 \le k \le K$. This is (7.2.29)
+of [cartis2022evaluation]. -/
 theorem norm_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
     (hk1 : 1 ≤ k) (hkK : k ≤ K) : ‖c (x k)‖ ≤ ε₀ :=
   norm_le_targetResidual.trans (h.residual_le hθ hε₀ hk1 hkK)
 
-/-- `f(x_k) - t_k ≤ ε₀` for `1 ≤ k ≤ K` ([cartis2022evaluation], (7.2.29)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $\theta \le 1$ and
+$\varepsilon_0 \ge 0$. Then $f(x_k) - t_k \le \varepsilon_0$ for $1 \le k \le K$. This is
+(7.2.29) of [cartis2022evaluation]. -/
 theorem sub_target_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
     (hk1 : 1 ≤ k) (hkK : k ≤ K) : f (x k) - t k ≤ ε₀ :=
   sub_le_targetResidual.trans (h.residual_le hθ hε₀ hk1 hkK)
 
-/-- A case-(a) iteration decreases the target by at least `(1 - θ)ε₀` ([cartis2022evaluation],
-(7.2.30), via Lemma B.7.1). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $0 \le \theta \le 1$ and
+$\varepsilon_0 \ge 0$. A case-(a) iteration $k$ with $1 \le k < K$ decreases the target by at
+least $(1 - \theta) \varepsilon_0$: $t_k - t_{k+1} \ge (1 - \theta) \varepsilon_0$. This is
+(7.2.30) of [cartis2022evaluation], proved with Lemma B.7.1 (`neg_add_sqrt_sq_sub_sq_ge`). -/
 theorem sub_target_succ_ge_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
     (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hk1 : 1 ≤ k) (hkK : k < K) (ha : Ka k) :
     (1 - θ) * ε₀ ≤ t k - t (k + 1) := by
@@ -176,7 +203,9 @@ theorem sub_target_succ_ge_of_Ka (h : IsTargetSequence f c θ ε₀ x t Ka K) (h
   rw [h.target_succ_of_Ka k hk1 hkK ha]
   linarith
 
-/-- The targets decrease strictly ([cartis2022evaluation], Lemma 7.2.3). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $0 \le \theta < 1$ and
+$\varepsilon_0 > 0$. Then the targets decrease strictly: $t_{k+1} < t_k$ for $1 \le k < K$. This
+is part of Lemma 7.2.3 of [cartis2022evaluation]. -/
 theorem target_succ_lt (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
     (hε₀ : 0 < ε₀) (hk1 : 1 ≤ k) (hkK : k < K) : t (k + 1) < t k := by
   by_cases ha : Ka k
@@ -185,7 +214,9 @@ theorem target_succ_lt (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 �
   · rw [h.target_succ_of_not_Ka k hk1 hkK ha]
     linarith [h.lt_target_of_not_Ka k hk1 hkK ha]
 
-/-- The targets are nonincreasing on `[1, K]`. -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $0 \le \theta < 1$ and
+$\varepsilon_0 > 0$. Then the targets are nonincreasing on $[1, K]$: $t_j \le t_i$ for
+$1 \le i \le j \le K$. -/
 theorem target_le_of_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
     (hε₀ : 0 < ε₀) {i j : ℕ} (hi : 1 ≤ i) (hij : i ≤ j) (hjK : j ≤ K) : t j ≤ t i := by
   induction j, hij using Nat.le_induction with
@@ -193,8 +224,11 @@ theorem target_le_of_le (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 �
   | succ j hij ih =>
     exact (h.target_succ_lt hθ0 hθ hε₀ (hi.trans hij) (by omega)).le.trans (ih (by omega))
 
-/-- Under f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with `‖c‖ ≤ ε₀`) and `ε₀ ≤ 1`, the
-targets stay in `[f_low - 1, f_up]` ([cartis2022evaluation], (7.2.31)). -/
+/-- Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $\theta \le 1$ and
+$0 \le \varepsilon_0 \le 1$, and let $x_k \in X$ for $1 \le k \le K$. Assume f.B.Fb of
+[cartis2022evaluation]: $f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every $z \in X$ with
+$\|c(z)\| \le \varepsilon_0$. Then $t_k \in [f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$ for
+$1 \le k \le K$. This is (7.2.31) of [cartis2022evaluation]. -/
 theorem target_mem_Icc (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀)
     (hε₀1 : ε₀ ≤ 1) {X : Set E} {flow fup : ℝ} (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X)
     (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) (hk1 : 1 ≤ k) (hkK : k ≤ K) :
@@ -204,12 +238,20 @@ theorem target_mem_Icc (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ : θ �
   have h2 := h.sub_target_le hθ hε₀ hk1 hkK
   constructor <;> linarith [hb.1, hb.2]
 
-/-- **Lemma 7.2.3** of [cartis2022evaluation] (valid verbatim for TPqp-GC). For a target
-sequence with `0 ≤ θ < 1` and `ε₀ > 0`: the targets decrease strictly on `[1, K]`; for
-`1 ≤ k ≤ K`, `0 ≤ f(x_k) - t_k ≤ ε₀` and `‖c(x_k)‖ ≤ ε₀` ((7.2.26), (7.2.29)); for `1 ≤ k < K`,
-`‖r(x_{k+1}, t_{k+1})‖ = ε₀` and `t_k - t_{k+1} ≥ (1-θ)ε₀` if `k ∈ 𝒦_a` ((7.2.27), (7.2.30)),
-`‖r(x_{k+1}, t_{k+1})‖ = ‖r(x_{k+1}, t_k)‖ ≤ ε₀` otherwise ((7.2.28)); and, under f.B.Fb with
-`ε₀ ≤ 1`, `t_k ∈ [f_low - 1, f_up]` ((7.2.31)). -/
+/-- **Lemma 7.2.3** of [cartis2022evaluation], which holds verbatim for TPqp-GC. Let $x_k$, $t_k$ be
+a target sequence up to the horizon $K$, with $0 \le \theta < 1$ and $\varepsilon_0 > 0$. Then:
+* the targets decrease strictly: $t_{k+1} < t_k$ for $1 \le k < K$;
+* for $1 \le k \le K$: $0 \le f(x_k) - t_k \le \varepsilon_0$ and
+  $\|c(x_k)\| \le \varepsilon_0$, by (7.2.26) and (7.2.29);
+* for $1 \le k < K$ with $k \in \mathcal{K}_a$: $\|r(x_{k+1}, t_{k+1})\| = \varepsilon_0$ and
+  $t_k - t_{k+1} \ge (1 - \theta) \varepsilon_0$, by (7.2.27) and (7.2.30);
+* for $1 \le k < K$ with $k \notin \mathcal{K}_a$: $\|r(x_{k+1}, t_{k+1})\| = \|r(x_{k+1},
+  t_k)\| \le \varepsilon_0$, by (7.2.28);
+* if $\varepsilon_0 \le 1$, then for every set $X$ that contains $x_k$ for $1 \le k \le K$ and
+  all $f_{\mathrm{low}}, f_{\mathrm{up}}$ with f.B.Fb
+  ($f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for $z \in X$ with
+  $\|c(z)\| \le \varepsilon_0$), $t_k \in [f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$ for
+  $1 \le k \le K$, by (7.2.31). -/
 theorem props (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (hθ : θ < 1)
     (hε₀ : 0 < ε₀) :
     (∀ k, 1 ≤ k → k < K → t (k + 1) < t k) ∧
@@ -231,10 +273,15 @@ theorem props (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ) (h�
       h.residual_le hθ.le hε₀.le (by omega) (by omega)⟩,
     fun hε₀1 _ _ _ hxX hB _ hk1 hkK => h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB hk1 hkK⟩
 
-/-- **Telescoping the targets**: under f.B.Fb (`f_low ≤ f ≤ f_up` on the points of `X` with
-`‖c‖ ≤ ε₀`), `0 ≤ θ < 1` and `0 < ε₀ ≤ 1`, if every outer iteration of a set `S ⊆ [1, K)` lowers the
-target by at least `τ`, then `|S| τ ≤ f_up - f_low + 1`: the targets do not increase and stay in
-`[f_low - 1, f_up]`. -/
+/-- **Telescoping the targets.** Let $0 \le \theta < 1$, $0 < \varepsilon_0 \le 1$ and $K \ge 1$.
+Let $x_k$, $t_k$ be a target sequence up to the horizon $K$. Let $x_k \in X$ for
+$1 \le k \le K$, and assume f.B.Fb: $f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for every
+$z \in X$ with $\|c(z)\| \le \varepsilon_0$. Let $S \subseteq [1, K)$ be a finite set of outer
+iterations, each of which lowers the target by at least $\tau$: $t_k - t_{k+1} \ge \tau$ for
+$k \in S$. Then
+$$|S| \, \tau \le f_{\mathrm{up}} - f_{\mathrm{low}} + 1.$$
+
+The targets do not increase and stay in $[f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$. -/
 theorem card_mul_le_of_target_drop (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
     (hθ : θ < 1) (hε₀ : 0 < ε₀) (hε₀1 : ε₀ ≤ 1) (hK : 1 ≤ K) {X : Set E} {flow fup : ℝ}
     (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X) (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup)
@@ -255,10 +302,16 @@ theorem card_mul_le_of_target_drop (h : IsTargetSequence f c θ ε₀ x t Ka K) 
   have htK := h.target_mem_Icc hθ.le hε₀.le hε₀1 hxX hB hK le_rfl
   linarith [ht1.2, htK.1]
 
-/-- **Lemma 7.2.4** of [cartis2022evaluation]: under f.B.Fb (`f_low ≤ f ≤ f_up` on the points
-of `X` with `‖c‖ ≤ ε₀`), `0 ≤ θ < 1` and `0 < ε₀ ≤ 1`, the number of case-(a) iterations among
-the outer iterations `k ∈ [1, K)` is at most `(f_up - f_low + 1)/((1 - θ)ε₀)`. (Theorem 14.3.9's
-`f_up - f_low - 1` is a sign slip for this `+ 1`.) -/
+/-- **Lemma 7.2.4** of [cartis2022evaluation]. Let $x_k$, $t_k$ be a target sequence up to the
+horizon $K$. Let $0 \le \theta < 1$, $0 < \varepsilon_0 \le 1$ and $K \ge 1$. Let $x_k \in X$
+for $1 \le k \le K$, and assume f.B.Fb: $f_{\mathrm{low}} \le f(z) \le f_{\mathrm{up}}$ for
+every $z \in X$ with $\|c(z)\| \le \varepsilon_0$. Then the number of case-(a) iterations among
+the outer iterations $k \in [1, K)$ satisfies
+$$|\mathcal{K}_a \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{(1 - \theta)
+  \varepsilon_0}.$$
+
+The bound $f_{\mathrm{up}} - f_{\mathrm{low}} - 1$ in Theorem 14.3.9 of the source is a sign
+slip for $f_{\mathrm{up}} - f_{\mathrm{low}} + 1$. -/
 theorem card_Ka_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K) (hθ0 : 0 ≤ θ)
     (hθ : θ < 1) (hε₀ : 0 < ε₀) (hε₀1 : ε₀ ≤ 1) (hK : 1 ≤ K) {X : Set E} {flow fup : ℝ}
     (hxX : ∀ k, 1 ≤ k → k ≤ K → x k ∈ X) (hB : ∀ z ∈ X, ‖c z‖ ≤ ε₀ → flow ≤ f z ∧ f z ≤ fup) :
@@ -268,8 +321,8 @@ theorem card_Ka_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka 
   rw [mem_filter, mem_Ico] at hk
   exact h.sub_target_succ_ge_of_Ka hθ0 hθ.le hε₀.le hk.1.1 hk.1.2 hk.2
 
-/-- The number of case-(a) iterations in `[1, K + 1)` is that in `[1, K)` plus `1` if `K` is a
-case-(a) iteration. -/
+/-- The number of case-(a) iterations in $[1, K + 1)$ is the number in $[1, K)$, plus $1$ if $K$ is
+a case-(a) iteration. -/
 private theorem card_filter_Ico_succ (Ka : ℕ → Prop) [DecidablePred Ka] {K : ℕ} (hK1 : 1 ≤ K) :
     (((Finset.Ico 1 (K + 1)).filter Ka).card : ℝ) =
       ((Finset.Ico 1 K).filter Ka).card + if Ka K then 1 else 0 := by
@@ -278,10 +331,13 @@ private theorem card_filter_Ico_succ (Ka : ℕ → Prop) [DecidablePred Ka] {K :
   · rw [Finset.card_insert_of_notMem (by simp)]; push_cast; ring
   · simp
 
-/-- **Telescoping over the outer iterations** (the sums behind (7.2.37)–(7.2.39) and (14.3.69)–
-(14.3.71) of [cartis2022evaluation]). With `a_k = max(‖r(x_k, t_k)‖, θε₀)` and
-`b_k = max(‖r(x_{k+1}, t_k)‖, θε₀)`, for `1 ≤ K`:
-`∑_{k ∈ [1, K]} (a_k - b_k) + b_K ≤ a_1 + (1 - θ) ε₀ |𝒦_a ∩ [1, K)|`. -/
+/-- **Telescoping over the outer iterations**, the sums behind (7.2.37)–(7.2.39) and
+(14.3.69)–(14.3.71) of [cartis2022evaluation]. Let $x_k$, $t_k$ be a target sequence up to the
+horizon $K$. Let $\theta \le 1$, $\varepsilon_0 \ge 0$ and $K \ge 1$. Let $a_k = \max(\|r(x_k,
+t_k)\|, \theta \varepsilon_0)$ and $b_k = \max(\|r(x_{k+1}, t_k)\|, \theta \varepsilon_0)$. Then
+$$\sum_{k=1}^{K} (a_k - b_k) + b_K \le a_1 + (1 - \theta) \varepsilon_0 \, |\mathcal{K}_a \cap
+  [1, K)|.$$
+-/
 theorem sum_max_sub_add_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
     (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
     ∑ k ∈ Finset.Icc 1 K,
@@ -307,10 +363,13 @@ theorem sum_max_sub_add_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀
         simp
     linarith
 
-/-- **The outer telescoping bound**: `∑_{k ∈ [1, K]} (a_k - b_k) ≤ (1 - θ) ε₀ (|𝒦_a ∩ [1, K)| + 1)`
-for `1 ≤ K`, `0 ≤ θ ≤ 1`, `ε₀ ≥ 0` (notation of `sum_max_sub_add_le`): a decrease of the
-residual above `θε₀` within the inner runs can accumulate only `(1 - θ)ε₀` per block between two
-case-(a) iterations. -/
+/-- **The outer telescoping bound.** Let $0 \le \theta \le 1$, $\varepsilon_0 \ge 0$ and $K \ge 1$,
+and let $a_k$, $b_k$ be as in `Constrained.IsTargetSequence.sum_max_sub_add_le`. Let $x_k$,
+$t_k$ be a target sequence up to the horizon $K$. Then
+$$\sum_{k=1}^{K} (a_k - b_k) \le (1 - \theta) \varepsilon_0 \big(|\mathcal{K}_a \cap [1, K)| +
+  1\big).$$
+So the decrease of the residual above $\theta \varepsilon_0$ within the inner runs accumulates
+at most $(1 - \theta) \varepsilon_0$ per block between two case-(a) iterations. -/
 theorem sum_max_sub_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t Ka K)
     (hθ0 : 0 ≤ θ) (hθ : θ ≤ 1) (hε₀ : 0 ≤ ε₀) (hK1 : 1 ≤ K) :
     ∑ k ∈ Finset.Icc 1 K,
@@ -326,10 +385,12 @@ theorem sum_max_sub_le [DecidablePred Ka] (h : IsTargetSequence f c θ ε₀ x t
 
 end IsTargetSequence
 
-/-- **Counting the outer iterations** (Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]): if every
-outer iteration `k ∈ [1, K)` is a case-(a) iteration (`A k`), a "bad" iteration (`B k`), or
-contains at least one counted inner iteration (`1 ≤ g k`), then
-`K ≤ |A ∩ [1, K)| + ∑_{k ∈ [1, K]} g k + |B ∩ [1, K)| + 1`. -/
+/-- **Counting the outer iterations**, for Lemmas 7.2.6 and 14.3.8 of [cartis2022evaluation]. Let
+$A$ and $B$ be predicates on $\mathbb{N}$ and $g : \mathbb{N} \to \mathbb{N}$. Suppose that
+every outer iteration $k \in [1, K)$ is a case-(a) iteration ($A(k)$), a bad iteration ($B(k)$),
+or contains at least one counted inner iteration ($g(k) \ge 1$). Then
+$$K \le |A \cap [1, K)| + \sum_{k=1}^{K} g(k) + |B \cap [1, K)| + 1.$$
+-/
 theorem le_card_add_sum_of_cover (A B : ℕ → Prop) [DecidablePred A] [DecidablePred B]
     (g : ℕ → ℕ) {K : ℕ} (hcov : ∀ k ∈ Finset.Ico 1 K, A k ∨ B k ∨ 1 ≤ g k) :
     K ≤ ((Finset.Ico 1 K).filter A).card + ∑ k ∈ Finset.Icc 1 K, g k +
@@ -361,18 +422,23 @@ theorem le_card_add_sum_of_cover (A B : ℕ → Prop) [DecidablePred A] [Decidab
 
 section Block
 
-/-- A sequence that is nonincreasing at every step before `N` is antitone on `[0, N]`. -/
+/-- Let $\rho : \mathbb{N} \to \mathbb{R}$ satisfy $\rho_{i+1} \le \rho_i$ for all $i < N$. Then
+$\rho_j \le \rho_i$ for $i \le j \le N$. -/
 theorem antitone_of_succ_le {ρ : ℕ → ℝ} {N : ℕ} (hmono : ∀ i < N, ρ (i + 1) ≤ ρ i) {i j : ℕ}
     (hij : i ≤ j) (hjN : j ≤ N) : ρ j ≤ ρ i := by
   induction j, hij using Nat.le_induction with
   | base => exact le_rfl
   | succ j hij ih => exact (hmono j (by omega)).trans (ih (by omega))
 
-/-- The decrease of one "good" iteration in the block argument of [cartis2022evaluation],
-Lemmas 7.2.6 and 14.3.8 (Appendix B, proof of Lemma 14.3.8). If `θ ε₀ ≤ ρ' ≤ ρ ≤ ε₀`,
-`0 ≤ π ≤ π_max`, `0 < θ ≤ 1`, `e > 0`, and `κ (ρ' e)^π ≤ ρ²/2 - ρ'²/2`, then
-`ρ - ρ' ≥ κ θ^{π_max} ε₀^{π-1} e^π`: indeed `(ρ - ρ') ρ ≥ ½ (ρ² - ρ'²) ≥ κ (θ ε₀ e)^π` and
-`ρ ≤ ε₀`. -/
+/-- **The decrease of one good iteration** in the block argument of Lemmas 7.2.6 and 14.3.8 of
+[cartis2022evaluation] (Appendix B, proof of Lemma 14.3.8). Let $\theta \varepsilon_0 \le \rho'
+\le \rho \le \varepsilon_0$, $0 \le \pi \le \pi_{\max}$, $0 < \theta \le 1$,
+$\varepsilon_0 > 0$, $\kappa > 0$ and $e > 0$, and suppose $\kappa (\rho' e)^\pi \le \rho^2 /
+2 - \rho'^2 / 2$. Then
+$$\rho - \rho' \ge \kappa \, \theta^{\pi_{\max}} \varepsilon_0^{\pi - 1} e^\pi.$$
+
+Indeed $(\rho - \rho') \rho \ge \frac12 (\rho^2 - \rho'^2) \ge \kappa (\theta \varepsilon_0
+e)^\pi$ and $\rho \le \varepsilon_0$. -/
 theorem sub_ge_of_residual_decrease {ρ ρ' θ ε₀ κ π πmax e : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1)
     (hε₀ : 0 < ε₀) (hκ : 0 < κ) (hπ : 0 ≤ π) (hπmax : π ≤ πmax) (he : 0 < e)
     (hlow : θ * ε₀ ≤ ρ') (hρρ' : ρ' ≤ ρ) (hρ : ρ ≤ ε₀)
@@ -400,7 +466,8 @@ theorem sub_ge_of_residual_decrease {ρ ρ' θ ε₀ κ π πmax e : ℝ} (hθ0 
   calc κ * θ ^ πmax * (ε₀ ^ (π - 1) * e ^ π) ≤ κ * θ ^ π * (ε₀ ^ (π - 1) * e ^ π) := by gcongr
     _ ≤ ρ - ρ' := le_of_mul_le_mul_right h5 hε₀
 
-/-- `ε₀^{π-1} e^π ≥ ε₀ / M` whenever `ε₀^{2-π} e^{-π} ≤ M`. -/
+/-- Let $\varepsilon_0 > 0$ and $e > 0$, and let $\varepsilon_0^{2 - \pi} e^{-\pi} \le M$. Then
+$\varepsilon_0^{\pi - 1} e^\pi \ge \varepsilon_0 / M$. -/
 theorem div_le_rpow_mul_rpow {ε₀ e π M : ℝ} (hε₀ : 0 < ε₀) (he : 0 < e)
     (hM : ε₀ ^ (2 - π) * e ^ (-π) ≤ M) : ε₀ / M ≤ ε₀ ^ (π - 1) * e ^ π := by
   have hQ : 0 < ε₀ ^ (2 - π) * e ^ (-π) := by positivity
@@ -412,12 +479,17 @@ theorem div_le_rpow_mul_rpow {ε₀ e π M : ℝ} (hε₀ : 0 < ε₀) (he : 0 <
   calc ε₀ / M ≤ ε₀ / (ε₀ ^ (2 - π) * e ^ (-π)) := div_le_div_of_nonneg_left hε₀.le hQ hM
     _ = ε₀ ^ (π - 1) * e ^ π := by rw [div_eq_iff hQ.ne', hprod]
 
-/-- The decrease of one "good" iteration in the form of (14.2.11) ([cartis2022evaluation], proof of
-Lemma 14.3.8, (B.14.20)–(B.14.21)): the merit decrease is measured with the residual `r` at the
-start of the inner call, `κ (β r ε)^π ≤ ρ²/2 - ρ'²/2`. If `θ ε₀ ≤ r ≤ ε₀`, `ρ' ≤ ρ ≤ r`,
-`0 < βθ ≤ 1`, `0 ≤ π ≤ π_max`, `κ > 0`, `ε > 0` and `ε₀^{2-π} ε^{-π} ≤ M`, then
-`ρ - ρ' ≥ κ (βθ)^{π_max} ε₀ / M`: the merit decrease is at least `κ (βθ)^{π_max} ε₀² / M`, and
-`ρ + ρ' ≤ 2ε₀`. -/
+/-- **The decrease of one good iteration** in the form of (14.2.11), from the proof of Lemma 14.3.8
+of [cartis2022evaluation], (B.14.20)–(B.14.21). Here the merit decrease is measured with the
+residual $r$ at the start of the inner call: $\kappa (\beta r \varepsilon)^\pi \le \rho^2 / 2 -
+\rho'^2 / 2$. Let $\theta \varepsilon_0 \le r \le \varepsilon_0$, $\rho' \le \rho \le r$,
+$\beta > 0$, $\theta > 0$, $\beta \theta \le 1$, $\varepsilon_0 > 0$,
+$0 \le \pi \le \pi_{\max}$, $\kappa > 0$, $\varepsilon > 0$, $M > 0$ and $\varepsilon_0^{2 -
+\pi} \varepsilon^{-\pi} \le M$. Then
+$$\rho - \rho' \ge \frac{\kappa (\beta \theta)^{\pi_{\max}} \varepsilon_0}{M}.$$
+
+The merit decrease is at least $\kappa (\beta \theta)^{\pi_{\max}} \varepsilon_0^2 / M$, and
+$\rho + \rho' \le 2 \varepsilon_0$. -/
 theorem sub_ge_of_merit_decrease {ρ ρ' r β θ ε₀ κ π πmax ε M : ℝ} (hβ : 0 < β) (hθ : 0 < θ)
     (hβθ : β * θ ≤ 1) (hε₀ : 0 < ε₀) (hκ : 0 < κ) (hπ : 0 ≤ π) (hπmax : π ≤ πmax) (hε : 0 < ε)
     (hM0 : 0 < M) (hM : ε₀ ^ (2 - π) * ε ^ (-π) ≤ M) (hr_ge : θ * ε₀ ≤ r) (hr_le : r ≤ ε₀)
@@ -455,21 +527,27 @@ theorem sub_ge_of_merit_decrease {ρ ρ' r β θ ε₀ κ π πmax ε M : ℝ} (
   have hd0 : 0 ≤ ρ - ρ' := sub_nonneg.2 hρ'ρ
   nlinarith [mul_le_mul_of_nonneg_left hsum_le hd0]
 
-/-- **Counting "good" inner iterations in a block** (the telescoping argument of
-[cartis2022evaluation], Lemmas 7.2.6 and 14.3.8). Let `ρ` (the residuals `‖r(x_{j,i}, t_j)‖` of
-the inner iterates of a block, concatenated) be nonincreasing on `[0, N]` with `ρ_0 ≤ ε₀` and
-`ρ_N ≥ θ ε₀` (`0 < θ ≤ 1`, `ε₀ > 0`), and let `T ⊆ [0, N)` be a set of iterations at which, for
-some `l ∈ L` (the criticality orders), `ρ_i²/2 - ρ_{i+1}²/2 ≥ κ (ρ_{i+1} ε_l)^{π_l}` (the merit
-decrease `μ(x_{j,i}) - μ(x_{j,i+1})` guaranteed by the inner method at a successful iteration
-whose new iterate fails the criticality test), with `κ > 0`, `0 ≤ π_l ≤ π_max`, `ε_l > 0`. If
-`ε₀^{2-π_l} ε_l^{-π_l} ≤ M` for every `l ∈ L`, then `|T| ≤ (1 - θ) M / (κ θ^{π_max})`.
+/-- **Counting good inner iterations in a block**, the telescoping argument of Lemmas 7.2.6 and
+14.3.8 of [cartis2022evaluation]. Let $0 < \theta \le 1$, $\varepsilon_0 > 0$ and $\kappa > 0$.
+Let $\rho : \mathbb{N} \to \mathbb{R}$ (the residuals $\|r(x_{j,i}, t_j)\|$ of the inner
+iterates of a block, concatenated) be nonincreasing on $[0, N]$, with $\rho_0 \le \varepsilon_0$
+and $\rho_N \ge \theta \varepsilon_0$. Let $L$ be a nonempty finite set of criticality orders,
+with $0 \le \pi_l \le \pi_{\max}$, $\varepsilon_l > 0$ and $\varepsilon_0^{2 - \pi_l}
+\varepsilon_l^{-\pi_l} \le M$ for every $l \in L$. Let $T \subseteq [0, N)$ be a set of
+iterations such that for every $i \in T$ there is $l \in L$ with
+$$\kappa (\rho_{i+1} \varepsilon_l)^{\pi_l} \le \rho_i^2 / 2 - \rho_{i+1}^2 / 2,$$
+which is the merit decrease $\mu(x_{j,i}) - \mu(x_{j,i+1})$ that the inner method guarantees at
+a successful iteration whose new iterate fails the criticality test. Then
+$$|T| \le \frac{1 - \theta}{\kappa \theta^{\pi_{\max}}} M.$$
 
-Only the iterations of `T` are counted: the `i = 0` entries of the set `𝓘_k^s` of successful
-inner iterations and the last successful iteration of case-(b) calls that end on the criticality
-test are counted separately. For TPp-GC (`L = {1}`, `π = (p+1)/p`, `κ = κ₁`) the constant is
-`κ₁⁻¹ θ^{-(p+1)/p}`; for TPqp-GC (`κ = κ^μ_decr β^{π_max}`) it is `[κ^μ_decr]⁻¹ (βθ)^{-π_max}`
-(14.3.71). The proof uses `ρ_{i+1}^π / ρ_i ≥ (θε₀)^π / ε₀`; no ratio condition
-`ρ_{i+1} ≥ θ ρ_i` is needed. -/
+Only the iterations of $T$ are counted. The entries with $i = 0$ of the set $\mathcal{I}_k^s$ of
+successful inner iterations, and the last successful iteration of case-(b) calls that end on the
+criticality test, are counted separately. For TPp-GC ($L = \{1\}$, $\pi = (p+1)/p$,
+$\kappa = \kappa_1$) the constant is $\kappa_1^{-1} \theta^{-(p+1)/p}$. For TPqp-GC ($\kappa =
+\kappa^\mu_{\mathrm{decr}} \beta^{\pi_{\max}}$) it is $[\kappa^\mu_{\mathrm{decr}}]^{-1} (\beta
+\theta)^{-\pi_{\max}}$, as in (14.3.71). The proof uses $\rho_{i+1}^\pi / \rho_i \ge (\theta
+\varepsilon_0)^\pi / \varepsilon_0$; no ratio condition $\rho_{i+1} \ge \theta \rho_i$ is
+needed. -/
 theorem card_le_of_residual_block {ι : Type*} {ρ : ℕ → ℝ} {N : ℕ} {T : Finset ℕ} {L : Finset ι}
     {π ε : ι → ℝ} {θ ε₀ κ πmax M : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) (hε₀ : 0 < ε₀) (hκ : 0 < κ)
     (hL : L.Nonempty) (hπ : ∀ l ∈ L, 0 ≤ π l ∧ π l ≤ πmax) (hε : ∀ l ∈ L, 0 < ε l)

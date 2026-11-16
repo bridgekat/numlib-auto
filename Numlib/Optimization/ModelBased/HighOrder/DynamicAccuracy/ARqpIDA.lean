@@ -6,36 +6,82 @@ import Numlib.Data.Nat.SeqAppend
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpDAStep
 
 /-!
-# ARqpIDA: adaptive regularization with implicit dynamic accuracy
+# Adaptive regularization with implicit dynamic accuracy (ARqpIDA)
 
-The analysis of the adaptive-regularization method ARqpIDA ([cartis2022evaluation],
-Algorithm 13.1.2): exact function values, inexact derivatives within `κ_{∇,i} h_{k,i}` of the
-exact ones, and the iteration `ARqpDAStep`.
+This file analyses the adaptive-regularization method ARqpIDA (Algorithm 13.1.2 of
+[cartis2022evaluation]). The method uses exact function values and inexact derivatives
+$\overline{\nabla}^i f(x_k)$ with $\|\overline{\nabla}^i f(x_k) - \nabla^i f(x_k)\| \le
+\kappa_{\nabla,i} h_{k,i}$ (13.1.2), and each iteration is `Optimization.ARqpDAStep` with the ratio
+(13.1.58). The analysis is stated for runs on a feasible set $X$ (§14.2): Step-1 displacements $e$
+satisfy $x_k + e \in X$, and trial points lie in $X$. The unconstrained method of Chapter 13 is the
+case $X = C = A = E$ below.
 
-The analysis is stated for runs on a feasible set `X` (Step-1 displacements and trial points
-in `{e | x_k + e ∈ X}`, [cartis2022evaluation] §14.2) under the smoothness hypothesis
-`LipschitzDerivsAnchored f C A 0 p L` with normalized constants `L_j ≥ 1`, `X ⊆ C` and an anchor
-set `A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`: the objective does not increase along the runs, so the iterates
-are anchors, derivative estimates are made at iterates, and trial points are related to them by
-Taylor's theorem anchored at the iterate. The unconstrained methods of Chapter 13 are the case
-`X = C = A = univ`.
+The **smoothness hypothesis** is `LipschitzDerivsAnchored f C A 0 p L`: $C$ is open and convex,
+$A \subseteq C$, $f$ is $C^p$ near every point of $C$, and for $j \in [0, p]$ the $j$-th derivative
+satisfies $\|\nabla^j f(x) - \nabla^j f(y)\| \le L_j \|x - y\|$ for $x \in A$ and $y \in C$. The
+constants are normalized, $L_j \ge 1$, and usually $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$. The objective does not increase along a run, so the
+iterates lie in $A$. The analysis uses the constants $L_f = \max_{j \le p} L_j$,
+$\kappa_{\nabla,\max} = \max_{i \in [1, p]} \kappa_{\nabla,i}$, $\overline{L}_f = L_f +
+\kappa_{\nabla,\max}\kappa_h$, the bound $\sigma_{\max}$ of (13.1.77) on the weights,
+$\kappa_{\delta,\min} = \varsigma\theta/(24\max\{\overline{L}_f, \sigma_{\max}\})$, and
+$A_{\mathrm{c}} = L_{f,p} + \sigma_{\max} + 3\kappa_{\nabla,\max}\kappa_s$. An iterate is
+approximately optimal if it is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer on $X$
+for some radii $\delta \in (0, 1]^q$. The sets $\mathcal{S}_k$ and $\mathcal{A}_k$ are the
+successful and the accuracy-improving iterations in $[0, k]$.
 
 ## Main definitions
 
-* `IsARqpIDARun`: a run on a feasible set with the exact-value ratio (13.1.58) (`arqpIDARatio`);
-* `arqpIDATest`: approximate optimality on `X` for some radii in `(0, 1]^q`;
-* `arqpIDASigmaMax`, `arConstA`, `arKappaAcc`: the constants of Lemmas 13.1.14–13.1.18 and
+* `Optimization.IsARqpIDARun`: a run of ARqpIDA on a feasible set, with the ratio (13.1.58) of
+  `Optimization.arqpIDARatio`.
+* `Optimization.arqpIDATest`: the iterate $x_k$ is approximately optimal on $X$.
+* `Optimization.arqpIDASigmaMax`, `Optimization.arConstA`, `Optimization.arKappaAcc`: the constants
+  $\sigma_{\max}$, $A_{\mathrm{c}}$ and $\kappa_{\mathrm{acc}}$ of Lemmas 13.1.14–13.1.18 and
   Theorem 13.1.19.
 
 ## Main results
 
-* `IsARqpIDARun.not_acc_of_le` (Lemma 13.1.12), `.sigma_le` (Lemma 13.1.14),
-  `.arqpIDATest_of_pass` (Lemma 13.1.15), `.measure_ineq` (Lemma 13.1.16), `.step_bound`,
-  `.norm_step_ge` (Lemma 13.1.17), `.decrease_ge` (Lemma 13.1.18), `.card_acc_le`,
-  `.complexity` (the complexity argument of Theorem 13.1.19), `.complexity_of_radiiControl`
-  (Theorem 14.2.4, ARqpIDA row), `.le_card_succ` (Lemma 14.2.3, ARqpIDA row);
-* `.measure_ineq_unit`, `.step_bound_unit`, `.decrease_ge_unit`: the unit-radii argument for
-  `q ≤ 2` without constraints (`δ ↦ φ^δ_j/δ^j` is non-increasing for `j ≤ 2`).
+* `Optimization.IsARqpIDARun.not_acc_of_le`: small accuracies give a trial iteration (Lemma
+  13.1.12).
+* `Optimization.IsARqpIDARun.sigma_le`: $\sigma_k \le \sigma_{\max}$ (Lemma 13.1.14).
+* `Optimization.IsARqpIDARun.arqpIDATest_of_pass`: certification of approximate optimality at Step 5
+  (Lemma 13.1.15).
+* `Optimization.IsARqpIDARun.measure_ineq`: the radius inequality (13.1.79) (Lemma 13.1.16).
+* `Optimization.IsARqpIDARun.step_bound`, `Optimization.IsARqpIDARun.norm_step_ge`: the step is long
+  (Lemma 13.1.17).
+* `Optimization.IsARqpIDARun.decrease_ge`: sufficient decrease at successful iterations (Lemma
+  13.1.18).
+* `Optimization.IsARqpIDARun.card_acc_le`: the number of accuracy-improving iterations is bounded.
+* `Optimization.IsARqpIDARun.complexity`: the complexity argument of Theorem 13.1.19 for any
+  decrease constant.
+* `Optimization.IsARqpIDARun.le_card_succ`: the number of iterations is bounded by the number of
+  successful ones (Lemma 14.2.3, ARqpIDA case).
+* `Optimization.IsARqpIDARun.complexity_of_radiiControl`: the evaluation complexity (Theorem 14.2.4,
+  ARqpIDA case).
+* `Optimization.IsARqpIDARun.measure_ineq_unit`, `Optimization.IsARqpIDARun.step_bound_unit`,
+  `Optimization.IsARqpIDARun.decrease_ge_unit`: the argument with unit radii for $q \le 2$ without
+  constraints.
+
+## Proof outline
+
+At a successful iteration followed by an iterate that is not approximately optimal, the radius
+inequality (13.1.79) and the lower bound on the radii give a lower bound on $\|s_k\|$, hence on the
+decrease $f(x_k) - f(x_{k+1})$. Since $f$ is bounded below on $X$, there are few such iterations.
+Each accuracy-improving iteration multiplies the accuracies by $\gamma_h$, and small accuracies give
+a trial iteration, so there are few accuracy-improving iterations. Finally, the number of trial
+iterations is bounded by the number of successful ones (Lemma 13.1.9).
+
+## Implementation notes
+
+* The method has no termination rule. The results count the iterations before the first iterate that
+  passes `Optimization.arqpIDATest`.
+* The closedness of $X$ is not used.
+* The smoothness hypothesis is anchored at the iterates, and this suffices: the iterates lie in $A$,
+  the derivative estimates are made at the iterates, and the trial points are related to the
+  iterates by Taylor's theorem anchored at the iterate.
+* For $q \le 2$ without constraints, the map $\delta \mapsto \phi^\delta_j/\delta^j$ is
+  non-increasing for $j \le 2$ (`Optimization.pow_div_mul_taylorMeasure_le`). This gives the results
+  with unit radii for any radii of Step 2.
 -/
 
 open Set Metric Finset
@@ -47,54 +93,64 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-! ### ARqpIDA runs -/
 
-/-- The ratio (13.1.58) of ARqpIDA: `ρ_k = (f(x_k) - f(x_k + s_k)) / \overline{ΔT}_{f,p}(x_k, s_k)`
-with exact function values. -/
+/-- The ratio (13.1.58) of ARqpIDA, with exact function values:
+$$\rho_k = \frac{f(x_k) - f(x_k + s_k)}{\overline{\Delta T}_{f,p}(x_k, s_k)}.$$
+-/
 noncomputable def arqpIDARatio (f : E → ℝ) (P : ARqpIDAParams)
     (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (x s : ℕ → E) (k : ℕ) : ℝ :=
   reductionRatio f (x k) (s k) ((D k).taylorDecrement P.p (s k))
 
-/-- The test of approximate optimality used for ARqpIDA with a feasible set
-([cartis2022evaluation], §14.2, (14.2.2)): `x_k` is an `(ε, δ)`-approximate `q`-th order
-minimizer of `f` on the feasible set `X` (measures over `{e | x_k + e ∈ X}`) for *some* radii
-`δ ∈ (0, 1]^q`. The unconstrained test is the case `X = univ`. -/
+/-- The test of approximate optimality for ARqpIDA on a feasible set ([cartis2022evaluation], §14.2,
+(14.2.2)): $x_k$ is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer of $f$ on $X$
+for *some* radii $\delta \in (0, 1]^q$. That is, for some such $\delta$ and every
+$j \in [1, q]$, the Taylor measure of $f$ at $x_k$ over the displacements $e$ with
+$x_k + e \in X$ satisfies $\phi^{\delta_j}_{f,j}(x_k) \le \varepsilon_j\delta_j^j/j!$.
+
+The unconstrained test is the case $X = E$. -/
 def arqpIDATest (f : E → ℝ) (X : Set E) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x : ℕ → E)
     (k : ℕ) : Prop :=
   ∃ δ' : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 P.q, δ' j ∈ Set.Ioc 0 1) ∧
     IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε δ'
 
-/-- **ARqpIDA with a feasible set** ([cartis2022evaluation], Algorithm 13.1.2; ARqpIDA-SC of §14.2)
-as a run predicate, for the objective `f`, a feasible set `X` (displacements `{e | x_k + e ∈ X}`,
-feasible trial points and Step-2 displacements; closedness of `X` is not used), the (unknown)
-oracle constants `κ_{∇,i} ≥ 0`, constants `P`, tolerances `ε ∈ (0, 1]^q` with `ε ≤ δ₀`, a feasible
-starting point `x₀ ∈ X`, and sequences of iterates `x`, regularization parameters `σ`, radii
-`δ, δ₁, δs` (`δ^{(0)}_k, δ^{(1)}_k, δ_{s_k}`), requested accuracies `h`, inexact jets `D`
-satisfying (13.1.2) up to order `p`, Step-1 displacements `dd`, orders `j_k`, steps `s` and
-accuracy-improving flags `acc`; every iteration satisfies `ARqpDAStep` on `X` with the exact-value
-ratio (13.1.58). The method has no termination rule (see `arqpIDATest`); the unconstrained method
-is the case `X = univ`. -/
+/-- A run of ARqpIDA on a feasible set (Algorithm 13.1.2 of [cartis2022evaluation]; ARqpIDA-SC of
+§14.2). The data are the objective $f$, a feasible set $X$, the unknown oracle constants
+$\kappa_{\nabla,i}$, the constants $P$, tolerances $\varepsilon$, a starting point $x_0$, and
+the sequences of iterates $x_k$, weights $\sigma_k$, radii $\delta^{(0)}_k$, $\delta^{(1)}_k$
+and $\delta_{s_k}$, requested accuracies $h_{k,i}$, inexact derivative data $D_k$, Step-1
+displacements $d_{k,j}$, orders $j_k$, steps $s_k$ and accuracy-improving flags. The run
+requires: $\varepsilon_j \in (0, 1]$ and $\varepsilon_j \le \delta_{0,j}$ for $j \in [1, q]$;
+$\kappa_{\nabla,i} \ge 0$ for $i \in [1, p]$; $x_0 \in X$; the initial weight, radii and
+accuracies of $P$; the error model (13.1.2), $\|\overline{\nabla}^i f(x_k) - \nabla^i f(x_k)\|
+\le \kappa_{\nabla,i} h_{k,i}$ for $i \in [1, p]$ and every $k$; and `Optimization.ARqpDAStep`
+on $X$ with the ratio (13.1.58) at every iteration.
+
+The method has no termination rule (see `Optimization.arqpIDATest`). The closedness of $X$ is
+not used. The unconstrained method is the case $X = E$. The error model is
+`Optimization.JetApprox` of the Taylor series `ftaylorSeries ℝ f (x k)` and $D_k$. -/
 structure IsARqpIDARun (f : E → ℝ) (X : Set E) (κg : ℕ → ℝ) (P : ARqpIDAParams)
     (ε : ℕ → ℝ) (x₀ : E) (x : ℕ → E) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E)
     (acc : ℕ → Prop) : Prop where
-  /-- `ε ∈ (0, 1]^q`. -/
+  /-- The tolerances satisfy $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$. -/
   eps_mem : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1
-  /-- `ε_j ≤ δ_{0,j}` (13.1.51). -/
+  /-- The tolerances satisfy $\varepsilon_j \le \delta_{0,j}$ for $j \in [1, q]$ (13.1.51). -/
   eps_le : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j
-  /-- `κ_{∇,i} ≥ 0`. -/
+  /-- The oracle constants satisfy $\kappa_{\nabla,i} \ge 0$ for $i \in [1, p]$. -/
   κg_nonneg : ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ κg i
-  /-- The starting point. -/
+  /-- The first iterate is the starting point $x_0$. -/
   x_zero : x 0 = x₀
-  /-- The starting point is feasible. -/
+  /-- The starting point is feasible: $x_0 \in X$. -/
   x₀_mem : x₀ ∈ X
-  /-- The initial regularization parameter. -/
+  /-- The initial weight is $\sigma_0$ of $P$. -/
   σ_zero : σ 0 = P.σ₀
-  /-- The initial radii. -/
+  /-- The initial radii are $\delta_0$ of $P$. -/
   δ_zero : δ 0 = P.δ₀
-  /-- The initial accuracies. -/
+  /-- The initial accuracies are $h_0$ of $P$. -/
   h_zero : h 0 = P.h₀
-  /-- The error model (13.1.2) for `i ∈ [1, p]`. -/
+  /-- The error model (13.1.2): $\|\overline{\nabla}^i f(x_k) - \nabla^i f(x_k)\| \le
+  \kappa_{\nabla,i} h_{k,i}$ for $i \in [1, p]$ and every $k$. -/
   oracle : ∀ k, JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.p (fun i => κg i * h k i)
-  /-- Steps 1–5. -/
+  /-- Steps 1–5 hold at every iteration, with the ratio (13.1.58). -/
   step : ∀ k, ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc (arqpIDARatio f P D x s) k
 
 namespace IsARqpIDARun
@@ -106,28 +162,37 @@ variable {f : E → ℝ} {X : Set E} {κg : ℕ → ℝ} {P : ARqpIDAParams} {ε
   (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
 include hrun
 
+/-- Along an ARqpIDA run, $\sigma_k \ge \sigma_{\min}$, $\delta^{(0)}_{k,j} \in (0, 1]$ for
+$j \in [1, q]$, and $0 \le h_{k,i} \le \kappa_h$ for $i \in [1, p]$. -/
 theorem invariants (k : ℕ) :
     P.σmin ≤ σ k ∧ (∀ j ∈ Finset.Icc 1 P.q, 0 < δ k j ∧ δ k j ≤ 1) ∧
       ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ h k i ∧ h k i ≤ P.κh :=
   arqpDA_invariants (fun i _ => hrun.step i) hrun.σ_zero hrun.δ_zero hrun.h_zero
 
+/-- Along an ARqpIDA run, the weights are positive: $\sigma_k > 0$. -/
 theorem sigma_pos (k : ℕ) : 0 < σ k := P.σmin_pos.trans_le (hrun.invariants k).1
 
+/-- For an ARqpIDA run, $\varepsilon_{\min} = \min_{j \in [1, q]} \varepsilon_j > 0$. -/
 theorem epsMin_pos : 0 < epsMin P.q ε :=
   Optimization.epsMin_pos P.one_le_q fun j hj => (hrun.eps_mem j hj).1
 
+/-- For an ARqpIDA run, $\varepsilon_{\min} = \min_{j \in [1, q]} \varepsilon_j \le 1$. -/
 theorem epsMin_le_one : epsMin P.q ε ≤ 1 :=
   Optimization.epsMin_le_one P.one_le_q fun j hj => (hrun.eps_mem j hj).2
 
+/-- For an ARqpIDA run, $\kappa_{\nabla,\max} = \max_{i \in [1, p]} \kappa_{\nabla,i} \ge 0$. -/
 theorem kappaMax_nonneg : 0 ≤ ordMax P.p κg := ordMax_nonneg hrun.κg_nonneg
 
-/-- The iterates are feasible. -/
+/-- The iterates of an ARqpIDA run are feasible: $x_k \in X$. -/
 theorem mem (k : ℕ) : x k ∈ X :=
   arqpDA_mem (fun i _ => hrun.step i) (hrun.x_zero ▸ hrun.x₀_mem)
 
-/-- The objective does not increase along an ARqpIDA run with a feasible set: `f(x_k) ≤ f(x₀)` (the
-ratio uses exact function values and the predicted decrease of a trial iteration is positive,
-Lemma 13.1.13). -/
+/-- The objective does not increase along an ARqpIDA run on a feasible set: $f(x_k) \le f(x_0)$ for
+every $k$.
+
+The ratio uses exact function values, and the predicted decrease of a trial iteration is
+positive (Lemma 13.1.13 of [cartis2022evaluation]), so a successful iteration does not increase
+$f$. -/
 theorem objective_le (k : ℕ) : f (x k) ≤ f x₀ := by
   rw [← hrun.x_zero]
   refine le_zero_of_forall_succ_le (u := fun i => f (x i)) fun i _ => ?_
@@ -136,12 +201,14 @@ theorem objective_le (k : ℕ) : f (x k) ≤ f x₀ := by
   · exact ((hrun.step i).accept ha).le (w := f) rfl (ARqpDAStep.taylorDecrement_ge (hrun.step i) ha
       (fun j hj => (hrun.eps_mem j hj).1) (hrun.sigma_pos i).le).2
 
-/-- The iterates lie in every set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The iterates of an ARqpIDA run lie in every set $A$ that contains the sublevel set
+$\{y \in X \mid f(y) \le f(x_0)\}$. -/
 theorem mem_anchor {A : Set E} (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) (k : ℕ) : x k ∈ A :=
   hAX _ (hrun.mem k) (hrun.objective_le k)
 
-/-- (13.1.63): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h` for `i ∈ [1, p]`, under the smoothness
-hypothesis anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The bound (13.1.63) of [cartis2022evaluation]. Assume the smoothness hypothesis with $L_j \ge 1$
+and $A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$. Then $\|\overline{\nabla}^i f(x_k)\| \le
+\overline{L}_f = L_f + \kappa_{\nabla,\max}\kappa_h$ for $i \in [1, p]$ and every $k$. -/
 theorem norm_D_le {C A : Set E} {L : ℕ → ℝ} (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) (k : ℕ) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.p) :
@@ -149,7 +216,8 @@ theorem norm_D_le {C A : Set E} {L : ℕ → ℝ} (hf : LipschitzDerivsAnchored 
   hf.norm_le_of_jetApprox hL (hrun.mem_anchor hAX k) (hrun.oracle k) hrun.κg_nonneg
     (fun i hi => ((hrun.invariants k).2.2 i hi).1) (fun i hi => ((hrun.invariants k).2.2 i hi).2) hi
 
-/-- `L̄_f = L_f + κ_{∇,max} κ_h ≥ 1` for normalized constants `L_j ≥ 1`. -/
+/-- If $L_j \ge 1$ for $j \le p$, then $\overline{L}_f = L_f + \kappa_{\nabla,\max}\kappa_h \ge 1$.
+-/
 theorem one_le_Lbar {L : ℕ → ℝ} (hL : ∀ j ≤ P.p, 1 ≤ L j) :
     1 ≤ lipMax L P.p + ordMax P.p κg * P.κh := by
   have := one_le_lipMax hL; have := hrun.kappaMax_nonneg; have := P.κh_nonneg; nlinarith
@@ -163,17 +231,24 @@ variable {X C A : Set E} {f : E → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams}
   {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
-/-- **Accurate derivatives give trial iterations** (Lemma 13.1.12 of [cartis2022evaluation]): the
-outcomes of Step 2 at iteration `k` of an ARqpIDA run. Assume the smoothness hypothesis, write
-`L̄_f = L_f + κ_{∇,max} κ_h`, assume the radii control (13.1.69)–(13.1.70) at the earlier iterations
-`i < k` (only these enter the radius bound at `k`), and let `σ̄` be any bound with `σ_i ≤ σ̄` for
-`i ≤ k`. Then:
-* if Step 2 is performed at `k`, then (13.1.74)
-  `Δm̄_k(s_k) ≥ ¼ ς ε_{j_k} (δ^{(1)}_{k,j_k})^{j_k}/j_k! > 0`, hence `s_k ≠ 0`;
-* (13.1.71) `δ^{(0)}_{k,j} ≥ δ^{(1)}_{k,j} ≥ κ^{(1)}_δ(σ̄) ε_j` for `j ∈ [1, q]`;
-* if Step 2 is performed at `k` and (13.1.73)
-  `h_{k,i} ≤ κ_s (ς κ^{(1)}_δ(σ̄)^q/(12 q! max(L̄_f, σ̄)))^p ε_min^{p(q+1)}` for `i ∈ [1, p]`, then
-  `k ∈ 𝒯`, i.e. iteration `k` is not accuracy-improving (`¬ acc k`). -/
+/-- Accurate derivatives give trial iterations: the outcomes of Step 2 at iteration $k$ of an
+ARqpIDA run. Assume the smoothness hypothesis with $L_j \ge 1$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration
+$i < k$, and $\sigma_i \le \bar\sigma$ for $i \le k$. Then:
+* if Step 2 is performed at $k$ (the test (13.1.53) fails at some order), then (13.1.74)
+  $\Delta\overline{m}_k(s_k) \ge
+  \varsigma\varepsilon_{j_k}(\delta^{(1)}_{k,j_k})^{j_k}/(4\,j_k!) > 0$, and $s_k \neq 0$;
+* (13.1.71) $\delta^{(0)}_{k,j} \ge \delta^{(1)}_{k,j} \ge
+  \kappa^{(1)}_\delta(\bar\sigma)\varepsilon_j$ for $j \in [1, q]$;
+* if Step 2 is performed at $k$ and (13.1.73) $h_{k,i} \le
+  \kappa_s(\varsigma\kappa^{(1)}_\delta(\bar\sigma)^q/(12\,q!\,\max\{\overline{L}_f,
+  \bar\sigma\}))^p\varepsilon_{\min}^{p(q+1)}$ for $i \in [1, p]$, then iteration $k$ is not
+  accuracy-improving.
+
+This is Lemma 13.1.12 of [cartis2022evaluation]. Only the iterations $i < k$ enter the radius
+bound at $k$, so the radii control is assumed only there. The constant $\kappa^{(1)}_\delta$ is
+`Optimization.arKappaDelta1`. -/
 theorem IsARqpIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -214,15 +289,22 @@ theorem IsARqpIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
 
 /-! ### The regularization weights -/
 
-/-- The bound `σ_max = max(σ₀, γ₃ (2 L_{f,p} + 4 (p+1)! κ_s' κ_{∇,max})/(1 - η₂))` of (13.1.77),
-with `κ_s' = max(κ_s, κ_h)`. -/
+/-- The bound (13.1.77) of [cartis2022evaluation] on the weights,
+$$\sigma_{\max} = \max\Big\{\sigma_0, \frac{\gamma_3(2L_{f,p} +
+  4(p+1)!\,\kappa_s'\kappa_{\nabla,\max})}{1 - \eta_2}\Big\}, \qquad \kappa_s' = \max\{\kappa_s,
+  \kappa_h\}.$$
+-/
 noncomputable def arqpIDASigmaMax (P : ARqpIDAParams) (Lp κm : ℝ) : ℝ :=
   max P.σ₀ (P.γ₃ * ((2 * Lp + 4 * (P.p + 1)! * max P.κs P.κh * κm) / (1 - P.η₂)))
 
-/-- **The regularization weights stay bounded** (Lemma 13.1.14 of [cartis2022evaluation]): under the
-smoothness hypothesis, every ARqpIDA run satisfies `σ_k ≤ σ_max` (13.1.77) for all `k`, with
-`σ_max = arqpIDASigmaMax` (the constant `κ_s' = max(κ_s, κ_h)` covers the long steps `‖s_k‖ ≥ 1`,
-where the accuracy test (13.1.46) is not performed and only `h_{k,i} ≤ κ_h` is known). -/
+/-- Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$. Then every ARqpIDA run satisfies (13.1.77)
+$$\sigma_k \le \sigma_{\max} \qquad \text{for all } k,$$
+with $\sigma_{\max}$ of `Optimization.arqpIDASigmaMax` for $L_{f,p}$ and $\kappa_{\nabla,\max}$.
+This is Lemma 13.1.14 of [cartis2022evaluation].
+
+The constant $\kappa_s' = \max\{\kappa_s, \kappa_h\}$ covers the long steps $\|s_k\| \ge 1$,
+where the accuracy test (13.1.46) is not performed and only $h_{k,i} \le \kappa_h$ is known. -/
 theorem IsARqpIDARun.sigma_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -285,12 +367,16 @@ theorem IsARqpIDARun.sigma_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
 
 /-! ### Certification and the radius inequality -/
 
-/-- **Certification at Step 5** (Lemma 13.1.15 of [cartis2022evaluation]): under the smoothness
-hypothesis and the radii control at every iteration before `k`, if Step 1 of ARqpIDA branches to
-Step 5 at iteration `k` ((13.1.53) at every order) and (13.1.78)
-`κ_{∇,max} h_{k,i} ≤ ς κ^{(1)}_δ(σ_max)^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, p]`, then `x_k` is an
-`(ε, δ^{(1)}_k)`-approximate `q`-th order minimizer with `δ^{(1)}_k ∈ (0, 1]^q` (in particular
-`arqpIDATest k`). -/
+/-- Certification at Step 5. Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration
+$i < k$. Suppose that the test (13.1.53) holds at every order at iteration $k$, so that Step 1
+branches to Step 5, and that (13.1.78)
+$$\kappa_{\nabla,\max} h_{k,i} \le
+  \frac{\varsigma\kappa_{\delta,\min}^q}{4\,q!}\varepsilon_{\min}^{q+1}, \qquad i \in [1, p].$$
+Then $\delta^{(1)}_k \in (0, 1]^q$ and $x_k$ is an $(\varepsilon, \delta^{(1)}_k)$-approximate
+$q$-th order minimizer of $f$ on $X$; in particular `Optimization.arqpIDATest` holds at $k$.
+This is Lemma 13.1.15 of [cartis2022evaluation]. -/
 theorem IsARqpIDARun.arqpIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -346,13 +432,17 @@ theorem IsARqpIDARun.arqpIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P
             exact mul_nonneg (hrun.eps_mem j hj).1.le (pow_nonneg (hmem j hj).1.le _)
   exact ⟨hmem, happrox, δ₁ k, hmem, happrox⟩
 
-/-- **The radius inequality** (Lemma 13.1.16 of [cartis2022evaluation]): under the smoothness
-hypothesis, let iteration `k` of ARqpIDA be successful with `‖s_k‖ < 1`, and let `x_{k+1}` not be
-approximately optimal for the radii `δ_{k+1} = δ^{(0)}_{k+1}` (`= δ_{s_k}`). Then for some
-`j ∈ [1, q]` (13.1.79)
-`(1 - θ) ε_j δ_{k+1,j}^j/j!
-≤ (L_{f,p} + σ_max + 3 κ_{∇,max} κ_s) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ! ‖s_k‖^{p-ℓ+1}`,
-with `σ_max` of Lemma 13.1.14. -/
+/-- The radius inequality. Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$. Let iteration $k$ of an ARqpIDA run be a
+successful trial iteration with $\|s_k\| < 1$, and let $x_{k+1}$ not be an
+$(\varepsilon, \delta^{(0)}_{k+1})$-approximate $q$-th order minimizer on $X$. Then for some
+$j \in [1, q]$, with $\delta = \delta^{(0)}_{k+1,j}$, (13.1.79)
+$$(1 - \theta)\frac{\varepsilon_j\delta^j}{j!} \le (L_{f,p} + \sigma_{\max} +
+  3\kappa_{\nabla,\max}\kappa_s)\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}\|s_k\|^{p-\ell+1}.$$
+This is Lemma 13.1.16 of [cartis2022evaluation].
+
+The radii $\delta^{(0)}_{k+1}$ equal $\delta_{s_k}$, because the iteration is successful and the
+step is short. -/
 theorem IsARqpIDARun.measure_ineq (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -400,17 +490,20 @@ theorem IsARqpIDARun.measure_ineq (hf : LipschitzDerivsAnchored f C A 0 P.p L)
 
 /-! ### Step length and decrease -/
 
-/-- The constant `L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` of Lemmas 13.1.16–13.1.18. -/
+/-- The constant $A_{\mathrm{c}} = L_{f,p} + \sigma_{\max} + 3\kappa_{\nabla,\max}\kappa_s$ of
+Lemmas 13.1.16–13.1.18 of [cartis2022evaluation]. -/
 noncomputable def arConstA (P : ARqpIDAParams) (L : ℕ → ℝ) (κm : ℝ) : ℝ :=
   L P.p + arqpIDASigmaMax P (L P.p) κm + 3 * κm * P.κs
 
+/-- If $L_{f,p} \ge 1$ and $\kappa_{\nabla,\max} \ge 0$, then $A_{\mathrm{c}} \ge 1$. -/
 theorem one_le_arConstA {P : ARqpIDAParams} {L : ℕ → ℝ} {κm : ℝ} (hL : 1 ≤ L P.p)
     (hκm : 0 ≤ κm) : 1 ≤ arConstA P L κm := by
   have h1 : 0 ≤ arqpIDASigmaMax P (L P.p) κm := P.σ₀_pos.le.trans (le_max_left _ _)
   have h2 : 0 ≤ 3 * κm * P.κs := by have := P.κs_pos; positivity
   unfold arConstA; linarith
 
-/-- `κ^{(1)}_δ(σ') ε ≤ ς θ ε/(24 max(L̄, σ))` for `σ ≤ σ'`. -/
+/-- If $\overline{L} > 0$, $\sigma \le \sigma'$ and $e \ge 0$, then $\kappa^{(1)}_\delta(\sigma') e
+\le \varsigma\theta e/(24\max\{\overline{L}, \sigma\})$. -/
 theorem arKappaDelta1_mul_le {P : ARqpIDAParams} {Lb σ σ' e : ℝ} (hLb : 0 < Lb) (hσ : σ ≤ σ')
     (he : 0 ≤ e) : arKappaDelta1 P Lb σ' * e ≤ P.ς * P.θ * e / (24 * max Lb σ) := by
   have := P.ς_pos; have := P.θ_pos
@@ -419,10 +512,19 @@ theorem arKappaDelta1_mul_le {P : ARqpIDAParams} {Lb σ σ' e : ℝ} (hLb : 0 < 
   rw [arKappaDelta1, div_mul_eq_mul_div]
   exact div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
 
-/-- The step-length bounds behind Lemmas 13.1.17 and 13.1.18 for ARqpIDA: at a successful iteration
-`k` with the radii control at `k` and `x_{k+1}` not approximately optimal for the radii
-`δ_{k+1}`, either `‖s_k‖ ≥ 1` or the conclusions of `arqp_pow_ge_of_radius_ineq` hold for some
-order `j` with `a = 1 - θ`, `A = L_{f,p} + σ_max + 3 κ_{∇,max} κ_s` and `κ = κ_{δ,min}`. -/
+/-- The step-length bounds behind Lemmas 13.1.17 and 13.1.18 of [cartis2022evaluation]. Assume the
+smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at iteration $k$. Let
+iteration $k$ be a successful trial iteration, and let $x_{k+1}$ not be an
+$(\varepsilon, \delta^{(0)}_{k+1})$-approximate $q$-th order minimizer on $X$. Then for some
+$j \in [1, q]$, either $\|s_k\| \ge 1$, or the conclusions of
+`Optimization.arqp_pow_ge_of_radius_ineq` hold with $a = 1 - \theta$, $A = A_{\mathrm{c}}$ and
+$\kappa = \kappa_{\delta,\min}$:
+$$\frac{1 - \theta}{2\,j!\,A_{\mathrm{c}}}\varepsilon_j \le \|s_k\|^{p-j+1} \text{ if } u,
+  \qquad \frac{1 - \theta}{2\,j!\,A_{\mathrm{c}}}\hat\kappa^{j-1}\varepsilon_j^j \le \|s_k\|^p
+  \text{ if not } u,$$
+with $\hat\kappa = \min\{\kappa_{\delta,\min}, (1 - \theta)/(2\,q!\,A_{\mathrm{c}})\}$. -/
 theorem IsARqpIDARun.step_bound (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -472,13 +574,23 @@ theorem IsARqpIDARun.step_bound (hf : LipschitzDerivsAnchored f C A 0 P.p L)
   exact arqp_pow_ge_of_radius_ineq (sub_pos.2 P.θ_lt_one) hA hεj.1 ht hs1 hδpos hj P.q_le_p
     hκ0 hκε hq2 hineq
 
-/-- **The step is long** (Lemma 13.1.17 of [cartis2022evaluation]): under the smoothness hypothesis
-and the radii control at iteration `k`, if iteration `k` of ARqpIDA is successful and `x_{k+1}`
-is not approximately optimal for the radii `δ_{k+1}`, then for some `j ∈ [1, q]` (13.1.80):
-* if `q ≤ 2`, `‖s_k‖ ≥ ((1 - θ)/(2 j! A))^{1/(p-j+1)} ε_j^{1/(p-j+1)}`;
-* if `q > 2`, `‖s_k‖ ≥ ((1 - θ) κ̂^{j-1}/(2 j! A))^{1/p} ε_j^{j/p}`, where `A = L_{f,p} + σ_max
-  + 3 κ_{∇,max} κ_s` and `κ̂ = min(κ_{δ,min}, (1-θ)/(2 q! A))` with `κ_{δ,min} = ς θ/(24
-  max(L̄_f, σ_max))` (13.1.81). -/
+/-- The step is long. Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at iteration $k$. Let
+iteration $k$ be a successful trial iteration, and let $x_{k+1}$ not be an
+$(\varepsilon, \delta^{(0)}_{k+1})$-approximate $q$-th order minimizer on $X$. Then for some
+$j \in [1, q]$ (13.1.80):
+* if $u$ holds (unit radii), $\|s_k\| \ge ((1 -
+  \theta)/(2\,j!\,A_{\mathrm{c}}))^{1/(p-j+1)}\varepsilon_j^{1/(p-j+1)}$;
+* if $u$ fails (radii bounded below), $\|s_k\| \ge ((1 -
+  \theta)\hat\kappa^{j-1}/(2\,j!\,A_{\mathrm{c}}))^{1/p}\varepsilon_j^{j/p}$,
+
+where $\hat\kappa = \min\{\kappa_{\delta,\min}, (1 - \theta)/(2\,q!\,A_{\mathrm{c}})\}$ and
+$\kappa_{\delta,\min} = \varsigma\theta/(24\max\{\overline{L}_f, \sigma_{\max}\})$ (13.1.81).
+This is Lemma 13.1.17 of [cartis2022evaluation].
+
+The source states the two cases for $q \le 2$ and $q > 2$, which is the mode $u = (q \le 2)$ of
+`Optimization.RadiiControl`. -/
 theorem IsARqpIDARun.norm_step_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -542,14 +654,25 @@ theorem IsARqpIDARun.norm_step_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
           (1 - P.θ) / (2 * j ! * A) * κh ^ (j - 1) * ε j ^ j := by ring
       _ ≤ ‖s k‖ ^ P.p := hq3 hq
 
-/-- **Sufficient decrease** (Lemma 13.1.18 of [cartis2022evaluation]): under the smoothness
-hypothesis and the radii control at every iteration, if iteration `k` of ARqpIDA is successful
-and `x_{k+1}` is not approximately optimal (for any radii in `(0, 1]^q`), then (13.1.82)
-`\overline{ΔT}_{f,p}(x_k, s_k) ≥ κ_{Δm} min_{j ∈ [1,q]} ε_j^{π_j}` and (13.1.83) `f(x_k) -
-f(x_{k+1}) ≥ ½ η₁ κ_{Δm} min_j ε_j^{π_j}`, with `π_j = arPi q p j` and `κ_{Δm} = σ_min/(p+1)! ·
-arStepConst q p (1 - θ) A κ_{δ,min}`: for `q ≤ 2`, `κ_{Δm} = σ_min/(p+1)! ((1-θ)/(2 q!
-A))^{(p+1)/(p-q+1)}`, for `q > 2`, `κ_{Δm} = σ_min/(p+1)! ((1-θ) κ̂^{q-1}/(2 q! A))^{q(p+1)/p}`
-(`κ̂` as in `IsARqpIDARun.norm_step_ge`). -/
+/-- Sufficient decrease. Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at iteration $k$. Let
+iteration $k$ be a successful trial iteration, and let $x_{k+1}$ not be approximately optimal on
+$X$ for any radii in $(0, 1]^q$. Then (13.1.82) and (13.1.83)
+$$\overline{\Delta T}_{f,p}(x_k, s_k) \ge \kappa_{\Delta m}\min_{j \in [1, q]}
+  \varepsilon_j^{\pi_j}, \qquad f(x_k) - f(x_{k+1}) \ge \tfrac{1}{2}\eta_1\kappa_{\Delta
+  m}\min_{j \in [1, q]} \varepsilon_j^{\pi_j},$$
+with $\pi_j$ the exponent `Optimization.arPiOf u p j` and $\kappa_{\Delta m}$ equal to
+$\sigma_{\min}/(p+1)!$ times the step-length constant of `Optimization.arStepConstOf` for
+$a = 1 - \theta$, $A = A_{\mathrm{c}}$ and $\kappa = \kappa_{\delta,\min}$. This is Lemma
+13.1.18 of [cartis2022evaluation].
+
+With unit radii ($u$), $\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!}\big(\frac{1 -
+\theta}{2\,q!\,A_{\mathrm{c}}}\big)^{(p+1)/(p-q+1)}$ and $\pi_j = (p+1)/(p-j+1)$. With radii
+bounded below (not $u$), $\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!}\big(\frac{(1 -
+\theta)\hat\kappa^{q-1}}{2\,q!\,A_{\mathrm{c}}}\big)^{q(p+1)/p}$ and $\pi_j = j(p+1)/p$, with
+$\hat\kappa$ as in `Optimization.IsARqpIDARun.norm_step_ge`. The source states the two cases for
+$q \le 2$ and $q > 2$. -/
 theorem IsARqpIDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -621,14 +744,18 @@ theorem IsARqpIDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.p L)
 
 /-! ### Complexity -/
 
-/-- The constant `κ_acc` of the proof of Theorem 13.1.19 ([cartis2022evaluation]):
-`min(ς κ^q/(4 q! κ_{∇,max}), κ_s (ς κ^q/(12 q! max(L̄_f, σ_max)))^p)` with `κ = κ^{(1)}_δ(σ_max)`,
-the first term being omitted when `κ_{∇,max} = 0`. -/
+/-- The constant $\kappa_{\mathrm{acc}}$ of the proof of Theorem 13.1.19 of [cartis2022evaluation]:
+$$\kappa_{\mathrm{acc}} = \min\Big\{\frac{\varsigma\kappa^q}{4\,q!\,\kappa_{\nabla,\max}},
+  \kappa_s\Big(\frac{\varsigma\kappa^q}{12\,q!\,\max\{\overline{L}_f,
+  \sigma_{\max}\}}\Big)^p\Big\}, \qquad \kappa = \kappa^{(1)}_\delta(\sigma_{\max}),$$
+where the first term is omitted when $\kappa_{\nabla,\max} = 0$. -/
 noncomputable def arKappaAcc (P : ARqpIDAParams) (κ Lb σmax κm : ℝ) : ℝ :=
   if κm = 0 then P.κs * (P.ς * κ ^ P.q / (12 * P.q ! * max Lb σmax)) ^ P.p
   else min (P.ς * κ ^ P.q / (4 * P.q ! * κm))
     (P.κs * (P.ς * κ ^ P.q / (12 * P.q ! * max Lb σmax)) ^ P.p)
 
+/-- If $\kappa > 0$, $\overline{L} > 0$ and $\kappa_{\nabla,\max} \ge 0$, then
+$\kappa_{\mathrm{acc}} > 0$. -/
 theorem arKappaAcc_pos {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 < κ) (hLb : 0 < Lb)
     (hκm : 0 ≤ κm) : 0 < arKappaAcc P κ Lb σmax κm := by
   have := P.ς_pos; have := P.κs_pos
@@ -638,6 +765,8 @@ theorem arKappaAcc_pos {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 < κ
   · positivity
   · exact lt_min (by have := lt_of_le_of_ne hκm (Ne.symm h0); positivity) (by positivity)
 
+/-- The constant $\kappa_{\mathrm{acc}}$ is at most its second term,
+$\kappa_s(\varsigma\kappa^q/(12\,q!\,\max\{\overline{L}, \sigma_{\max}\}))^p$. -/
 theorem arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} :
     arKappaAcc P κ Lb σmax κm ≤ P.κs * (P.ς * κ ^ P.q / (12 * P.q ! * max Lb σmax)) ^ P.p := by
   unfold arKappaAcc
@@ -645,6 +774,8 @@ theorem arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} :
   · exact le_rfl
   · exact min_le_right _ _
 
+/-- If $\kappa \ge 0$ and $\kappa_{\nabla,\max} \ge 0$, then
+$\kappa_{\nabla,\max}\kappa_{\mathrm{acc}} \le \varsigma\kappa^q/(4\,q!)$. -/
 theorem mul_arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 ≤ κ) (hκm : 0 ≤ κm) :
     κm * arKappaAcc P κ Lb σmax κm ≤ P.ς * κ ^ P.q / (4 * P.q !) := by
   have := P.ς_pos
@@ -657,11 +788,15 @@ theorem mul_arKappaAcc_le {P : ARqpIDAParams} {κ Lb σmax κm : ℝ} (hκ : 0 �
           mul_le_mul_of_nonneg_left (min_le_left _ _) hκm
       _ = P.ς * κ ^ P.q / (4 * P.q !) := by field_simp
 
-/-- **The accuracy-improving iterations of ARqpIDA with a feasible set** (proof of Theorem 13.1.19,
-[cartis2022evaluation]): under `LipschitzDerivsAnchored f C A 0 p L` (`L_j ≥ 1`, `A ⊇ {y ∈ X |
-f(y) ≤ f(x₀)}`) and the radii control at every iteration, if no iterate `x_j`, `j ≤ k`, is
-approximately optimal on `X`, then `|𝒜_k| ≤ p(q+1)/|log γ_h| |log ε_min| +
-|log(κ_acc/κ_h)|/|log γ_h| + 1` (either mode of the radii control, `ARqpDARadiiControl`). -/
+/-- The accuracy-improving iterations of ARqpIDA on a feasible set, in the proof of Theorem 13.1.19
+of [cartis2022evaluation]. Assume the smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$
+and $A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration, in
+either mode. If no iterate $x_j$ with $j \le k$ is approximately optimal on $X$, then
+$$|\mathcal{A}_k| \le \frac{p(q+1)}{|\log\gamma_h|}|\log\varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}}/\kappa_h)|}{|\log\gamma_h|} + 1.$$
+
+The set $\mathcal{A}_k$ is `Optimization.successSet` of the accuracy-improving flags. -/
 theorem IsARqpIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -728,13 +863,24 @@ theorem IsARqpIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.p L)
           |Real.log P.γh| + 1 := h
     _ = NA := by rw [hNA_def]; push_cast; ring
 
-/-- **The complexity argument of Theorem 13.1.19** ([cartis2022evaluation]), for any decrease
-constant: under the smoothness hypothesis, f.Bb and the radii control at every iteration, if
-every successful iteration `k` of an ARqpIDA run followed by an iterate `x_{k+1}` that is not
-approximately optimal decreases `f` by at least `c > 0`, then there is a first approximately
-optimal iterate `x_{k_ε}`, before which at most `(1 + |log γ₁|/log γ₂) (f(x₀) - f_low)/c +
-log(σ_max/σ₀)/log γ₂ + 2 + |log γ₁|/log γ₂` function evaluations and at most `(f(x₀) - f_low)/c
-+ p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 3` derivative estimates are made. -/
+/-- The complexity argument of Theorem 13.1.19 of [cartis2022evaluation], for any decrease constant.
+Assume $f \ge f_{\mathrm{low}}$ on $X$, the smoothness hypothesis with $L_j \ge 1$,
+$X \subseteq C$ and $A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration. Let
+$c > 0$, and suppose that every successful trial iteration $k$ such that $x_{k+1}$ is not
+approximately optimal decreases $f$ by at least $c$. Then there is a first approximately optimal
+iterate $x_{k_\varepsilon}$. Before it, with $N = (f(x_0) - f_{\mathrm{low}})/c$, at most
+$$\Big(1 + \frac{|\log\gamma_1|}{\log\gamma_2}\Big)N +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log\gamma_2} + 2 + \frac{|\log\gamma_1|}{\log\gamma_2}$$
+function evaluations and at most
+$$N + \frac{p(q+1)}{|\log\gamma_h|}|\log\varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}}/\kappa_h)|}{|\log\gamma_h|} + 3$$
+derivative estimates are made.
+
+The function evaluations are counted as $1$ plus the number of trial iterations before
+$k_\varepsilon$, and the derivative estimates as $1$ plus the number of iterations before
+$k_\varepsilon$ that are accuracy-improving or successful (`Optimization.derivEvalCount`). The
+first approximately optimal iterate is `Optimization.IsFirstHit` of `Optimization.arqpIDATest`. -/
 theorem IsARqpIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
@@ -816,10 +962,14 @@ theorem IsARqpIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.p L)
   · calc _ ≤ (NA + 1) + (N + 1 + 1) - 1 := by linarith
       _ = _ := by rw [hNA_def]; ring
 
-/-- **Radius one for orders `≤ 2`** (used for Theorem 13.1.19 (1)): if `q ≤ 2` and `x` is an
-`(ε, δ)`-approximate `q`-th order minimizer for some radii `δ ∈ (0, 1]^q` (unconstrained), then
-`φ^1_{f,j}(x) ≤ ε_j/j!` for `j ∈ [1, q]` (`δ ↦ φ^δ_j/δ^j` is non-increasing for `j ≤ 2`,
-`Optimization.pow_div_mul_taylorMeasure_le`). -/
+/-- Radius one suffices for the orders $q \le 2$, without constraints. Let $q \le 2$, and let $x$ be
+an $(\varepsilon, \delta)$-approximate $q$-th order minimizer for the derivative data $D$ and
+some radii $\delta \in (0, 1]^q$, with all of $E$ as feasible displacements. Then $x$ is also an
+$(\varepsilon, 1)$-approximate minimizer: $\phi^1_j \le \varepsilon_j/j!$ for $j \in [1, q]$.
+This is used for Theorem 13.1.19 (1) of [cartis2022evaluation].
+
+The proof uses that $\delta \mapsto \phi^\delta_j/\delta^j$ is non-increasing for $j \le 2$
+(`Optimization.pow_div_mul_taylorMeasure_le`). -/
 theorem isEpsDeltaApprox_one_of_le_two {D : FormalMultilinearSeries ℝ E ℝ} {q : ℕ}
     (hq : q ≤ 2) {ε δ : ℕ → ℝ} (hδ : ∀ j ∈ Finset.Icc 1 q, δ j ∈ Set.Ioc 0 1)
     (h : IsEpsDeltaApprox D univ q ε δ) : IsEpsDeltaApprox D univ q ε (fun _ => 1) := by
@@ -836,12 +986,17 @@ theorem isEpsDeltaApprox_one_of_le_two {D : FormalMultilinearSeries ℝ E ℝ} {
       _ = δ j ^ j * (ε j / j !) := by ring
   exact le_of_mul_le_mul_left this hpos
 
-/-- **The radius inequality at unit radii**: for an ARqpIDA run on `E`
-(`IsARqpIDARun` with `X = univ`) under the smoothness hypothesis, a successful iteration `k`
-with `‖s_k‖ < 1` such that `x_{k+1}` is not approximately optimal with unit radii satisfies
-(13.1.79) with `δ = 1`, whatever the radii `δ_{s_k}` of Step 2: since `δ ↦ φ^δ_ℓ/δ^ℓ` is
-non-increasing for `ℓ ≤ 2` (`Optimization.pow_div_mul_taylorMeasure_le`), the bound (13.1.57)
-on the model at the radii `δ_{s_k}` gives the same bound at radius `1`. -/
+/-- The radius inequality at unit radii. Let $X = C = A = E$ in the smoothness hypothesis, with
+$L_j \ge 1$, and let $q \le 2$. Let iteration $k$ of an ARqpIDA run on $E$ be a successful trial
+iteration with $\|s_k\| < 1$, and let $x_{k+1}$ not be an $(\varepsilon, 1)$-approximate $q$-th
+order minimizer. Then for some $j \in [1, q]$ the inequality (13.1.79) holds with $\delta = 1$:
+$$(1 - \theta)\frac{\varepsilon_j}{j!} \le (L_{f,p} + \sigma_{\max} +
+  3\kappa_{\nabla,\max}\kappa_s)\sum_{\ell=1}^{j} \frac{1}{\ell!}\|s_k\|^{p-\ell+1},$$
+whatever the radii $\delta_{s_k}$ of Step 2.
+
+Since $\delta \mapsto \phi^\delta_\ell/\delta^\ell$ is non-increasing for $\ell \le 2$
+(`Optimization.pow_div_mul_taylorMeasure_le`), the bound (13.1.57) on the model at the radii
+$\delta_{s_k}$ gives the same bound at radius $1$. -/
 theorem IsARqpIDARun.measure_ineq_unit (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j) (hq2 : P.q ≤ 2)
     (hrun : IsARqpIDARun f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
@@ -896,10 +1051,15 @@ theorem IsARqpIDARun.measure_ineq_unit (hf : LipschitzDerivsAnchored f univ univ
   rw [add_zero] at this
   exact this.le
 
-/-- **The step bound at unit radii** (`q ≤ 2`, no constraints): for an ARqpIDA run on `E` under the
-smoothness hypothesis and any radii, a successful iteration `k` such that `x_{k+1}` is not
-approximately optimal with unit radii has a long step or `(1-θ)/(2 j! A) ε_j ≤ ‖s_k‖^{p-j+1}`
-for some `j ∈ [1, q]` (in the unit-radii mode). -/
+/-- The step bound at unit radii. Let $X = C = A = E$ in the smoothness hypothesis, with
+$L_j \ge 1$, and let $q \le 2$. Let iteration $k$ of an ARqpIDA run on $E$ be a successful trial
+iteration, and let $x_{k+1}$ not be an $(\varepsilon, 1)$-approximate $q$-th order minimizer.
+Then for some $j \in [1, q]$, either $\|s_k\| \ge 1$ or
+$$\frac{1 - \theta}{2\,j!\,A_{\mathrm{c}}}\varepsilon_j \le \|s_k\|^{p-j+1},$$
+whatever the radii of the run.
+
+The conclusion is stated as the conclusion of `Optimization.IsARqpIDARun.step_bound` in the mode
+$u = $ `True`, where the second alternative is empty. -/
 theorem IsARqpIDARun.step_bound_unit (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j) (hq2 : P.q ≤ 2)
     (hrun : IsARqpIDARun f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
@@ -938,11 +1098,16 @@ theorem IsARqpIDARun.step_bound_unit (hf : LipschitzDerivsAnchored f univ univ 0
   exact arqp_pow_ge_of_radius_ineq (u := True) (sub_pos.2 P.θ_lt_one) hA hεj.1 ht hs1 one_pos
     hj P.q_le_p hκ0 hκε (fun _ => rfl) hineq
 
-/-- **Sufficient decrease at unit radii**: for an ARqpIDA run on `E` under the
-smoothness hypothesis and any radii, every successful iteration `k` such that `x_{k+1}` is not
-approximately optimal (`arqpIDATest`, some radii in `(0, 1]^q`) decreases `f` by at least `½ η₁
-κ_{Δm} min_j ε_j^{(p+1)/(p-j+1)}`, the decrease of the unit-radii mode (the unit-radii mode `u
-= True`), whatever the radii control of the run. -/
+/-- Sufficient decrease at unit radii. Let $X = C = A = E$ in the smoothness hypothesis, with
+$L_j \ge 1$, and let $q \le 2$. Let iteration $k$ of an ARqpIDA run on $E$ be a successful trial
+iteration, and let $x_{k+1}$ not be approximately optimal for any radii in $(0, 1]^q$. Then
+$$f(x_k) - f(x_{k+1}) \ge \tfrac{1}{2}\eta_1\kappa_{\Delta m}\min_{j \in [1, q]}
+  \varepsilon_j^{(p+1)/(p-j+1)}, \qquad \kappa_{\Delta m} =
+  \frac{\sigma_{\min}}{(p+1)!}\Big(\frac{1 -
+  \theta}{2\,q!\,A_{\mathrm{c}}}\Big)^{(p+1)/(p-q+1)},$$
+which is the decrease of the mode with unit radii, whatever the radii control of the run.
+
+The constants are `Optimization.arStepConstOf` and `Optimization.arPiOf` in the mode `True`. -/
 theorem IsARqpIDARun.decrease_ge_unit (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j) (hq2 : P.q ≤ 2)
     (hrun : IsARqpIDARun f univ κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
@@ -1016,14 +1181,17 @@ variable {f : E → ℝ} {X C A X₀ : Set E} {κg : ℕ → ℝ} {P : ARqpIDAPa
   {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E}
   {acc : ℕ → Prop} {L B : ℕ → ℝ} {u : Prop}
 
-/-- **Counting the trial iterations of a run** (Lemma 14.2.3 of [cartis2022evaluation]): for an
-ARqpIDA run with a feasible set under `LipschitzDerivsAnchored f C A 0 p L` (`L_j ≥ 1`,
-`A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`) and the radii control, every iteration `k` up to the first iterate
-that is approximately optimal on `X` satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with
-`κ_uns = 1 + |log γ₁|/log γ₂` and `κ_unc = log(σ_max/σ₀)/log γ₂ + N_𝒜`,
-`N_𝒜 = p(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. The radii control
-(`ARqpDARadiiControl u`) may be in either mode (unit radii, or the (12.2.51)-type lower bounds
-at every order). -/
+/-- Counting the iterations of a run. Assume the smoothness hypothesis with $L_j \ge 1$,
+$X \subseteq C$ and $A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration, in
+either mode. Then every iteration $k$ up to the first iterate that is approximately optimal on
+$X$ satisfies (14.2.13)
+$$k \le \kappa_{\mathrm{uns}}|\mathcal{S}_k| + \kappa_{\mathrm{unc}}, \qquad
+  \kappa_{\mathrm{uns}} = 1 + \frac{|\log\gamma_1|}{\log\gamma_2}, \qquad
+  \kappa_{\mathrm{unc}} = \frac{\log(\sigma_{\max}/\sigma_0)}{\log\gamma_2} + N_{\mathcal{A}},$$
+where $N_{\mathcal{A}} = \frac{p(q+1)}{|\log\gamma_h|}|\log\varepsilon_{\min}| +
+\frac{|\log(\kappa_{\mathrm{acc}}/\kappa_h)|}{|\log\gamma_h|} + 1$. This is Lemma 14.2.3 of
+[cartis2022evaluation] for ARqpIDA. -/
 theorem IsARqpIDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -1056,19 +1224,28 @@ theorem IsARqpIDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.p L)
   push_cast
   nlinarith [mul_le_mul_of_nonneg_right hmono hc]
 
-/-- **Evaluation complexity under the radii control** (Theorem 14.2.4 of [cartis2022evaluation]):
-under `f ≥ f_low` on `X`, `LipschitzDerivsAnchored f C A 0 p L` (`L_j ≥ 1`,
-`A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`) and the radii control at every iteration, every ARqpIDA with a
-feasible set run reaches a first iterate `x_{k_ε} ∈ X` that is an `(ε, δ_ε)`-approximate `q`-th
-order minimizer on `X` for some radii `δ_ε ∈ (0, 1]^q` (`arqpIDATest`), before which at most
-`(1 + |log γ₁|/log γ₂) (f(x₀) - f_low)/c + κ^C` function evaluations and
-`(f(x₀) - f_low)/c + κ^E |log ε_min| + κ^F + 3` derivative estimates are made, where
-`c = ½ η₁ κ_{Δm} min_j ε_j^{π_j}` is the decrease of Lemma 14.2.2, and the constants are those of
-Theorem 13.1.19, with the radii control in either mode `u` (`ARqpDARadiiControl`): unit radii
-`δ_{s_k} = 1` (`u`), which Step 2 guarantees for `X = E` with `q ≤ 2` or for `q = 1` with `X`
-convex, with `π_j = (p+1)/(p-j+1)`, or the (12.2.51)-type lower bounds at every order (`¬ u`),
-available for every `q` and `X`, with `π_j = j(p+1)/p` (`π_j = arPiOf u p j`; the radii control of
-Theorem 13.1.19, `RadiiControl`, is the mode `u = (q ≤ 2)`). -/
+/-- Evaluation complexity under the radii control. Assume $f \ge f_{\mathrm{low}}$ on $X$, the
+smoothness hypothesis with $L_j \ge 1$, $X \subseteq C$ and
+$A \supseteq \{y \in X \mid f(y) \le f(x_0)\}$, and the radii control
+`Optimization.ARqpDARadiiControl u` with $\overline{L} = \overline{L}_f$ at every iteration.
+Then every ARqpIDA run on $X$ reaches a first iterate $x_{k_\varepsilon} \in X$ that is an
+$(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer on $X$ for some radii
+$\delta_\varepsilon \in (0, 1]^q$. Before it, with $c = \frac{1}{2}\eta_1\kappa_{\Delta m}\min_j
+\varepsilon_j^{\pi_j}$ the decrease of `Optimization.IsARqpIDARun.decrease_ge` (Lemma 14.2.2)
+and $N = (f(x_0) - f_{\mathrm{low}})/c$, at most
+$$\Big(1 + \frac{|\log\gamma_1|}{\log\gamma_2}\Big)N +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log\gamma_2} + 2 + \frac{|\log\gamma_1|}{\log\gamma_2}$$
+function evaluations and at most
+$$N + \frac{p(q+1)}{|\log\gamma_h|}|\log\varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}}/\kappa_h)|}{|\log\gamma_h|} + 3$$
+derivative estimates are made. This is Theorem 14.2.4 of [cartis2022evaluation] for ARqpIDA.
+
+The radii control may be in either mode $u$: unit radii $\delta_{s_k} = 1$, which Step 2
+guarantees for $X = E$ with $q \le 2$ or for $q = 1$ with $X$ convex, with
+$\pi_j = (p+1)/(p-j+1)$; or the lower bounds of the type (12.2.51) at every order, available for
+every $q$ and $X$, with $\pi_j = j(p+1)/p$. Here $\pi_j$ is `Optimization.arPiOf u p j`. The
+radii control of Theorem 13.1.19, `Optimization.RadiiControl`, is the mode $u = (q \le 2)$. The
+counts are as in `Optimization.IsARqpIDARun.complexity`. -/
 theorem IsARqpIDARun.complexity_of_radiiControl (hf : LipschitzDerivsAnchored f C A 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
@@ -1120,11 +1297,13 @@ variable {X : Set E} {P : ARqpIDAParams} {ε : ℕ → ℝ} {f : E → ℝ} {κ 
   {σ σ' : ℕ → ℝ} {δ δ' δ₁ δ₁' δs δs' h h' : ℕ → ℕ → ℝ} {dd dd' : ℕ → ℕ → E} {jk jk' : ℕ → ℕ}
   {s s' : ℕ → E} {acc acc' : ℕ → Prop}
 
-/-- **Splicing ARqpIDA iterations with exact Taylor data**: if the first `κ` iterations of some
-sequences are ARqpIDA steps (with `D_k` the Taylor jet of `f` at `x_k` and the ratio (13.1.58)),
-and other sequences starting at their state at `κ` are ARqpIDA steps at every iteration, then the
-sequences following the first ones before `κ` and the second ones (shifted by `κ`) from `κ` on
-are ARqpIDA steps at every iteration. -/
+/-- Splicing ARqpIDA iterations with exact Taylor data. Let the derivative data be the Taylor series
+of $f$ at the iterates, and the ratio be (13.1.58). Suppose that the first sequences satisfy
+`Optimization.ARqpDAStep` at every iteration $k < \kappa$, and that other sequences, whose
+iterate, weight, radii $\delta^{(0)}$ and accuracies at $0$ are those of the first sequences at
+$\kappa$, satisfy it at every iteration. Then the sequences equal to the first ones before
+$\kappa$ and to the second ones, shifted by $\kappa$, from $\kappa$ on (`Nat.seqAppend`) satisfy
+`Optimization.ARqpDAStep` at every iteration. -/
 theorem ARqpDAStep.seqAppend
     (hpre : ∀ k < κ, ARqpDAStep X P ε x σ δ δ₁ δs h (fun i => ftaylorSeries ℝ f (x i)) dd jk s acc
       (arqpIDARatio f P (fun i => ftaylorSeries ℝ f (x i)) x s) k)
@@ -1145,10 +1324,12 @@ theorem ARqpDAStep.seqAppend
   · refine (hpost (k - κ)).congr ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ <;>
       simp only [arqpIDARatio, Nat.seqAppend_of_le hk, Nat.seqAppend_succ_of_le hk]
 
-/-- **The ARqpIDA criterion at a spike of order `q`**: if the measures of the Taylor jet of `f` at
-`x_k` vanish below order `q` and are `(c/q!) t^q` at order `q` and radius `t ≥ 0`, then `x_k` is
-`(ε, δ)`-approximately optimal for some radii `δ ∈ (0, 1]^q` (`Optimization.arqpIDATest` without
-constraints) if and only if `c ≤ ε`. -/
+/-- The ARqpIDA test at a spike of order $q$. Let $\varepsilon > 0$, and suppose that the Taylor
+measures of $f$ at $x_k$, without constraints, satisfy $\phi^t_{f,j}(x_k) = 0$ for
+$j \in [1, q - 1]$ and $\phi^t_{f,q}(x_k) = (c/q!)t^q$ for every radius $t \ge 0$. Then $x_k$ is
+$(\varepsilon, \delta)$-approximately optimal for some radii $\delta \in (0, 1]^q$, with all
+tolerances equal to $\varepsilon$ (`Optimization.arqpIDATest` on $E$), if and only if
+$c \le \varepsilon$. -/
 theorem arqpIDATest_univ_iff_of_taylorMeasure_eq {ε c : ℝ} {k : ℕ} (hε : 0 < ε)
     (hmeas : ∀ j ∈ Finset.Icc 1 P.q, ∀ t : ℝ, 0 ≤ t →
       taylorMeasure (ftaylorSeries ℝ f (x k)) j t univ =

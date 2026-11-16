@@ -9,40 +9,62 @@ import Numlib.Optimization.Optimality.HighOrder
 /-!
 # The regularized model of high-order adaptive-regularization methods
 
-The high-order adaptive-regularization methods ARqp ([cartis2022evaluation], §12.2.2) and
-ARqpIDA/ARqpEDA (§13.1.4, §13.3.2) minimize the regularized `p`-th order model
-`m(s) = regularizedModel D p σ s = T_p(s) + σ/(p+1)! ‖s‖^{p+1}`
-built from derivative data `D` (the exact jet `ftaylorSeries ℝ f x` or an inexact jet), and measure
-the approximate optimality of a trial step `s` through the model measure
-`φ^δ_{m,j}(s) = taylorMeasure (ftaylorSeries ℝ m s) j δ S`. All statements here are for arbitrary
-data, with an explicit error budget where the data are inexact; the exact-data lemmas of
-Chapter 12 are the specializations with exact data and zero errors. The composite model of ARqpC
-(§14.1) is treated in `Optimization.Composite.RegularizedModel`, whose lemmas with `h = 0` give the
-model-decrease results here.
+The high-order adaptive-regularization methods ARqp ([cartis2022evaluation], §12.2.2), ARqpIDA
+(§13.1.4) and ARqpEDA (§13.3.2) minimize the regularized model of order $p$,
+$$m(s) = T_p(D, s) + \frac{\sigma}{(p+1)!}\|s\|^{p+1}, \qquad T_p(D, s) = \sum_{i=0}^{p}
+  \frac{D_i[s]^i}{i!},$$
+built from a jet $D$: the exact jet of $f$ at the iterate, or an inexact jet. The approximate
+optimality of a trial step $s$ is measured by the model measure
+$$\phi^\delta_{m,j}(s) = \sup\{\Delta T_{m,j}(s, d) : \|d\| \le \delta,\ d \in S\},$$
+where $\Delta T_{m,j}(s, d) = T_{m,j}(s, 0) - T_{m,j}(s, d)$ is the decrement of the Taylor
+polynomial $T_{m,j}(s, \cdot)$ of degree $j$ of $m$ at $s$. In the same way $\phi^\delta_{f,j}(y)$
+is the measure of the jet of $f$ at $y$.
+
+The results hold for arbitrary data, with an explicit error budget where the data are inexact; the
+exact-data lemmas of Chapter 12 are the special cases with exact data and zero errors. The file
+bounds the derivatives of the model, derives a model decrease from a large decrement, constructs a
+step with its optimality radii from a global model minimizer, compares the exact and the inexact
+model measures, transfers the measure from the model to the function, and derives the radius
+inequality. The composite model of ARqpC (§14.1) is treated in
+`Numlib.Optimization.Composite.RegularizedModel`, whose lemmas with $h = 0$ give the model-decrease
+results here.
 
 ## Main results
 
 * `Optimization.iteratedFDerivLipschitzOn_regularizedModel`,
   `Optimization.norm_iteratedFDeriv_regularizedModel_le`,
-  `Optimization.abs_iteratedFDeriv_regularizedModel_apply_le`: Lemma 12.2.7;
-* `Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge`: Lemma 12.2.8, with the corollary
-  `Optimization.taylorMeasure_regularizedModel_le_of_isMinOn` at a model minimizer;
-* `Optimization.regularizedModel_decrease_ge_of_taylorDecrement_ge`: Lemma 13.1.10;
-* `Optimization.exists_highOrderStep`: the existence part of Lemmas 12.2.9 and 13.1.12 (an
-  admissible step with its optimality radii, from a global model minimizer; termination of the
-  inner Algorithm 12.2.3 is not covered);
-* `Optimization.taylorMeasure_regularizedModel_le_add`: (13.1.48)–(13.1.50) (exact versus inexact
-  model measures);
-* `Optimization.taylorMeasure_le_of_regularizedModel`: the measure transfer behind Lemma 12.2.11;
+  `Optimization.abs_iteratedFDeriv_regularizedModel_apply_le`: Lemma 12.2.7, the $p$-th derivative
+  of $m$ is $\sigma$-Lipschitz, and the derivatives of orders $2, \dots, p$ are bounded by
+  $3L + \sigma$ on the unit ball.
+* `Optimization.sub_regularizedModel_ge_of_taylorDecrement_ge`: Lemma 12.2.8, a large model
+  decrement gives a model decrease; its corollary
+  `Optimization.taylorMeasure_regularizedModel_le_of_isMinOn` bounds the model measure at a model
+  minimizer.
+* `Optimization.regularizedModel_decrease_ge_of_taylorDecrement_ge`: Lemma 13.1.10, the model
+  decrease along a displacement with a large Taylor decrement of the data.
+* `Optimization.exists_highOrderStep`: the existence part of Lemmas 12.2.9 and 13.1.12, a global
+  model minimizer with its optimality radii; the termination of the inner Algorithm 12.2.3 is not
+  covered.
+* `Optimization.taylorMeasure_regularizedModel_le_add`: (13.1.48)–(13.1.50), the exact model measure
+  is at most the inexact one plus an error term.
+* `Optimization.taylorMeasure_le_of_regularizedModel`: the transfer of the measure from the model to
+  the function behind Lemma 12.2.11.
 * `Optimization.sub_mul_lt_of_measure_comparison`: the radius inequality from an abstract one-step
-  comparison, with instances `Optimization.radius_inequality_of_measure_gt` (Lemmas 12.2.11 and
-  13.1.16 with an error budget) and `Optimization.radius_inequality_of_compositeTaylorMeasure_gt`
-  (Lemma 14.1.7), with the factor `ς - θ` (requiring `θ < ς`).
+  comparison, with the instances `Optimization.radius_inequality_of_measure_gt` (Lemmas 12.2.11 and
+  13.1.16, with an error budget) and `Optimization.radius_inequality_of_compositeTaylorMeasure_gt`
+  (Lemma 14.1.7). The factor in these inequalities is $\varsigma - \theta$, which requires
+  $\theta < \varsigma$.
 
-The step-length algebra that follows (Lemmas 12.2.12, 13.1.17, 14.1.8) is
-`Optimization.pow_ge_of_measure_ineq` and `Optimization.norm_step_ge_of_measure_ineq`; the measure
-at a local minimizer for orders `1, 2` (Theorem 12.1.4) is
-`Optimization.taylorMeasure_eq_zero_of_isLocalMin`.
+## Implementation notes
+
+* The model is `Optimization.regularizedModel D p σ`. Its jet at a step $s$ is
+  `ftaylorSeries ℝ (regularizedModel D p σ) s`, and the model measure $\phi^\delta_{m,j}(s)$ is
+  `Optimization.taylorMeasure` of this jet. The norms of derivatives are operator norms of
+  continuous multilinear maps.
+* The step-length algebra that follows the radius inequality (Lemmas 12.2.12, 13.1.17 and 14.1.8) is
+  `Optimization.pow_ge_of_measure_ineq` and `Optimization.norm_step_ge_of_measure_ineq`. The measure
+  at a local minimizer for the orders $1$ and $2$ (Theorem 12.1.4) is
+  `Optimization.taylorMeasure_eq_zero_of_isLocalMin`.
 -/
 
 open Set Metric Finset Filter
@@ -58,9 +80,13 @@ section Derivatives
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ L : ℝ}
 
-/-- **Lemma 12.2.7, first part** ([cartis2022evaluation], (12.2.39)): for `σ ≥ 0` the `p`-th
-derivative of the model is `σ`-Lipschitz (the `p`-th derivative of `T_p` is constant and that of
-`‖s‖^{p+1}` is `(p+1)!`-Lipschitz, (B.4.3)). -/
+/-- Let $D$ be a jet, $p \in \mathbb{N}$ and $\sigma \ge 0$, and let $m$ be the regularized model of
+$D$. Then the $p$-th derivative of $m$ is $\sigma$-Lipschitz on $E$:
+$$\|\nabla^p m(s) - \nabla^p m(s')\| \le \sigma\|s - s'\| \quad \text{for } s, s' \in E.$$
+This is the first part of Lemma 12.2.7 of [cartis2022evaluation], (12.2.39).
+
+The $p$-th derivative of $T_p(D, \cdot)$ is constant, and that of $s \mapsto \|s\|^{p+1}$ is
+$(p+1)!$-Lipschitz by (B.4.3). -/
 theorem iteratedFDerivLipschitzOn_regularizedModel (hσ : 0 ≤ σ) :
     IteratedFDerivLipschitzOn (regularizedModel D p σ) p σ univ := by
   rw [iteratedFDerivLipschitzOn_iff]
@@ -78,8 +104,13 @@ theorem iteratedFDerivLipschitzOn_regularizedModel (hσ : 0 ≤ σ) :
         mul_le_mul_of_nonneg_left (hN a (mem_univ a) b (mem_univ b)) (by positivity)
     _ = σ * ‖a - b‖ := by field_simp
 
-/-- **Value remainder of the model** ([cartis2022evaluation], Lemma 12.2.7 with Corollary A.8.4):
-for `σ ≥ 0`, `|m(s + d) - T_{m,p}(s, d)| ≤ σ/(p+1)! ‖d‖^{p+1}`. -/
+/-- Let $\sigma \ge 0$ and $s, d \in E$. The model differs from its own Taylor polynomial of degree
+$p$ at $s$ by at most
+$$|m(s + d) - T_{m,p}(s, d)| \le \frac{\sigma}{(p+1)!}\|d\|^{p+1}.$$
+This follows from Lemma 12.2.7 of [cartis2022evaluation] with Corollary A.8.4.
+
+The Taylor polynomial $T_{m,p}(s, \cdot)$ is `taylorPolynomial (Optimization.regularizedModel D
+p σ) p s`. -/
 theorem abs_regularizedModel_sub_taylorPolynomial_le (hσ : 0 ≤ σ) (s d : E) :
     |regularizedModel D p σ (s + d) - taylorPolynomial (regularizedModel D p σ) p s d| ≤
       σ / ((p + 1)! : ℝ) * ‖d‖ ^ (p + 1) :=
@@ -87,8 +118,10 @@ theorem abs_regularizedModel_sub_taylorPolynomial_le (hσ : 0 ≤ σ) (s d : E) 
     (fun _ _ => (contDiff_regularizedModel (D := D) (σ := σ)).contDiffAt)
     (iteratedFDerivLipschitzOn_regularizedModel hσ) (mem_univ s) (mem_univ (s + d))
 
-/-- **Lemma 12.2.7, (12.2.38)** ([cartis2022evaluation]): if `‖D_i‖ ≤ L` for `i = 2, …, p`
-(`L ≥ 0`), `σ ≥ 0` and `‖s‖ ≤ 1`, then `‖∇^ℓ m(s)‖ ≤ 3 L + σ` for `ℓ = 2, …, p` (operator norm). -/
+/-- Let $L \ge 0$ with $\|D_i\| \le L$ for $i = 2, \dots, p$, let $\sigma \ge 0$ and $\|s\| \le 1$.
+Then
+$$\|\nabla^\ell m(s)\| \le 3L + \sigma \quad \text{for } \ell = 2, \dots, p.$$
+This is (12.2.38) of Lemma 12.2.7 of [cartis2022evaluation]. -/
 theorem norm_iteratedFDeriv_regularizedModel_le (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hσ : 0 ≤ σ) {ℓ : ℕ} (hℓ : ℓ ∈ Finset.Icc 2 p) {s : E}
     (hs : ‖s‖ ≤ 1) : ‖iteratedFDeriv ℝ ℓ (regularizedModel D p σ) s‖ ≤ 3 * L + σ := by
@@ -105,9 +138,10 @@ theorem norm_iteratedFDeriv_regularizedModel_le (hL : 0 ≤ L)
             (Or.inr (by omega)) hs) (by positivity)
       _ = σ := by field_simp
 
-/-- **Lemma 12.2.7, diagonal form** ([cartis2022evaluation], (12.2.38)): under the hypotheses of
-`norm_iteratedFDeriv_regularizedModel_le`, `|∇^ℓ m(s)[d]^ℓ| ≤ (3 L + σ) ‖d‖^ℓ` for every `d` and
-`ℓ = 2, …, p`. -/
+/-- Let $L \ge 0$ with $\|D_i\| \le L$ for $i = 2, \dots, p$, let $\sigma \ge 0$ and $\|s\| \le 1$.
+Then for every $d \in E$ and $\ell = 2, \dots, p$,
+$$|\nabla^\ell m(s)[d]^\ell| \le (3L + \sigma)\|d\|^\ell.$$
+This is the diagonal form of (12.2.38) of Lemma 12.2.7 of [cartis2022evaluation]. -/
 theorem abs_iteratedFDeriv_regularizedModel_apply_le (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hσ : 0 ≤ σ) {ℓ : ℕ} (hℓ : ℓ ∈ Finset.Icc 2 p) {s : E}
     (hs : ‖s‖ ≤ 1) (d : E) :
@@ -125,11 +159,16 @@ section Decrease
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ L : ℝ}
 
-/-- **Lemma 12.2.8** ([cartis2022evaluation]; the case `h = 0` of Lemma 14.1.2,
-`compositeRegularizedModel_sub_ge_of_decrement_ge`). If `‖D_i‖ ≤ L` for `i = 2, …, p` (`L ≥ 0`),
-`σ ≥ 0`, `‖s‖ ≤ 1`, `1 ≤ j ≤ p`, `0 ≤ δ ≤ 1` with `4 (3 L + σ) δ ≤ α` (the book's (12.2.41)), and
-`‖d‖ ≤ δ` with `ΔT_{m,j}(s, d) ≥ α δ^j/j!` (12.2.42), then `m(s) - m(s + d) ≥ (α/2) δ^j/j!`
-(12.2.43). -/
+/-- Let $L \ge 0$ with $\|D_i\| \le L$ for $i = 2, \dots, p$, let $\sigma \ge 0$, $\|s\| \le 1$ and
+$1 \le j \le p$, and let $0 \le \delta \le 1$ with $4(3L + \sigma)\delta \le \alpha$ (the
+condition (12.2.41)). If $\|d\| \le \delta$ and $\Delta T_{m,j}(s, d) \ge \alpha\delta^j/j!$
+(12.2.42), then
+$$m(s) - m(s + d) \ge \frac{\alpha}{2}\frac{\delta^j}{j!},$$
+which is (12.2.43). This is Lemma 12.2.8 of [cartis2022evaluation].
+
+It is the case $h = 0$ of the composite Lemma 14.1.2,
+`Optimization.compositeRegularizedModel_sub_ge_of_decrement_ge`. The decrement
+$\Delta T_{m,j}(s, d)$ is `(ftaylorSeries ℝ (regularizedModel D p σ) s).taylorDecrement j d`. -/
 theorem sub_regularizedModel_ge_of_taylorDecrement_ge (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ∈ Finset.Icc 1 p)
     {s d : E} (hs : ‖s‖ ≤ 1) {α δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1)
@@ -142,11 +181,14 @@ theorem sub_regularizedModel_ge_of_taylorDecrement_ge (hL : 0 ≤ L)
     hδ0 hδ1 (by simpa using hδα) hd (by rwa [compositeModelDecrement_zero_fun])
   simpa using h
 
-/-- **Radii at a minimizer of the model** (the content of Lemma 12.2.9 of [cartis2022evaluation];
-the case `h = 0` of `compositeTaylorMeasure_model_le_of_isMinOn`): under the hypotheses of
-`sub_regularizedModel_ge_of_taylorDecrement_ge`, if `s` minimizes the model over `s + S`
-(`m(s) ≤ m(s + d)` for `d ∈ S`, `0 ∈ S`), `α > 0` and `0 < δ ≤ 1` with `4 (3 L + σ) δ ≤ α`, then
-`φ^δ_{m,j}(s) ≤ α δ^j/j!` (the measure over `closedBall 0 δ ∩ S`). -/
+/-- **Radii at a minimizer of the model.** Let $L \ge 0$ with $\|D_i\| \le L$ for $i = 2, \dots, p$,
+let $\sigma \ge 0$, $1 \le j \le p$ and $\|s\| \le 1$. Let $0 \in S$, and let $s$ minimize the
+model over $s + S$: $m(s) \le m(s + d)$ for every $d \in S$. If $\alpha > 0$ and
+$0 < \delta \le 1$ with $4(3L + \sigma)\delta \le \alpha$, then
+$$\phi^\delta_{m,j}(s) \le \frac{\alpha\delta^j}{j!}.$$
+This is the content of Lemma 12.2.9 of [cartis2022evaluation].
+
+It is the case $h = 0$ of `Optimization.compositeTaylorMeasure_model_le_of_isMinOn`. -/
 theorem taylorMeasure_regularizedModel_le_of_isMinOn (hL : 0 ≤ L)
     (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ∈ Finset.Icc 1 p)
     {s : E} (hs : ‖s‖ ≤ 1) {S : Set E} (hS0 : (0 : E) ∈ S)
@@ -159,10 +201,14 @@ theorem taylorMeasure_regularizedModel_le_of_isMinOn (hL : 0 ≤ L)
     (by simpa using hδα)
   simpa using h
 
-/-- **Lemma 13.1.10** ([cartis2022evaluation]): the model decrease along a displacement with a
-large Taylor decrement of the data. If `σ ≥ 0`, `j ≤ p`, `‖D_ℓ‖ ≤ L` for `ℓ = j + 1, …, p`,
-`0 ≤ δ ≤ 1` with `4 max(L, σ) δ ≤ α` ((13.1.64)), `‖d‖ ≤ δ` and `ΔT_j(d) ≥ α δ^j/j!`, then
-`m(0) - m(d) ≥ (α/2) δ^j/j!` ((13.1.65)). -/
+/-- Let $\sigma \ge 0$ and $j \le p$, let $\|D_\ell\| \le L$ for $\ell = j + 1, \dots, p$, and let
+$0 \le \delta \le 1$ with $4\max(L, \sigma)\delta \le \alpha$ (13.1.64). If $\|d\| \le \delta$
+and the decrement of the data satisfies $\Delta T_j(D, d) \ge \alpha\delta^j/j!$, then
+$$m(0) - m(d) \ge \frac{\alpha}{2}\frac{\delta^j}{j!},$$
+which is (13.1.65). This is Lemma 13.1.10 of [cartis2022evaluation].
+
+Here $\Delta T_j(D, d)$ is `D.taylorDecrement j d`, the decrement of the data at $0$, not of the
+model at a trial step. -/
 theorem regularizedModel_decrease_ge_of_taylorDecrement_ge {j : ℕ} (hjp : j ≤ p) (hσ : 0 ≤ σ)
     (hD : ∀ ℓ ∈ Finset.Icc (j + 1) p, ‖D ℓ‖ ≤ L) {α δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1)
     (hδα : 4 * max L σ * δ ≤ α) {d : E} (hd : ‖d‖ ≤ δ)
@@ -204,17 +250,27 @@ section Step
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {p q : ℕ} {σ L : ℝ}
 
-/-- **Existence of an admissible high-order step** ([cartis2022evaluation], existence part of
-Lemmas 12.2.9 and 13.1.12, for arbitrary data; termination of Algorithm 12.2.3 is not
-covered). Let `E` be finite-dimensional, `1 ≤ p`, `q ≤ p`, `σ > 0`, `‖D_i‖ ≤ L` for
-`i = 2, …, p` (`L ≥ 0`), `θ > 0`, `0 < ς ≤ 1` and `ε_ℓ > 0` for `ℓ = 1, …, q`.
-Then there are a global minimizer `s` of the model `m = regularizedModel D p σ` (in particular
-`m(s) ≤ m(0)`, (12.2.27)), radii `δs` and displacements `dm` such that `δs_ℓ ∈ (0, 1]`,
-`δs_ℓ = 1` for `ℓ ≤ 2` ((12.2.44)), `δs_ℓ = min(1, ς θ ε_ℓ/(4 (3 L + σ)))` for `ℓ ≥ 3`
-((12.2.45)), and either `‖s‖ ≥ 1` or, for every `ℓ = 1, …, q`, `dm_ℓ` is a `ς`-approximate
-optimality displacement of the model at `s` with `ΔT_{m,ℓ}(s, dm_ℓ) ≤ ς θ ε_ℓ δs_ℓ^ℓ/ℓ!`
-((12.2.29)). The step is a global minimizer, which is always acceptable; this
-avoids the limiting argument of Algorithm 12.2.3. -/
+/-- **Existence of an admissible high-order step.** Let $E$ be finite-dimensional, $1 \le p$,
+$q \le p$ and $\sigma > 0$, let $L \ge 0$ with $\|D_i\| \le L$ for $i = 2, \dots, p$, let
+$\theta > 0$ and $0 < \varsigma \le 1$, and let $\varepsilon_\ell > 0$ for $\ell = 1, \dots, q$.
+Then there are a global minimizer $s$ of the model $m$ on $E$, radii $\delta_\ell$ and
+displacements $d_\ell$ with the following properties.
+* For $\ell = 1, \dots, q$: $0 < \delta_\ell \le 1$; $\delta_\ell = 1$ if $\ell \le 2$
+  (12.2.44); and $\delta_\ell = \min(1, \varsigma\theta\varepsilon_\ell/(4(3L + \sigma)))$ if
+  $\ell \ge 3$ (12.2.45).
+* Either $\|s\| \ge 1$, or for every $\ell = 1, \dots, q$ the displacement $d_\ell$ is a
+  $\varsigma$-approximate optimality displacement of the model at $s$ for the radius
+  $\delta_\ell$ with $\Delta T_{m,\ell}(s, d_\ell) \le
+  \varsigma\theta\varepsilon_\ell\delta_\ell^\ell/\ell!$ (12.2.29).
+
+This is the existence part of Lemmas 12.2.9 and 13.1.12 of [cartis2022evaluation], for arbitrary
+data.
+
+A global minimizer satisfies $m(s) \le m(0)$ (12.2.27) and is always acceptable. Taking it
+avoids the limiting argument of Algorithm 12.2.3, whose termination is not covered here. An
+approximate optimality displacement is `Optimization.IsApproxMeasureStep` with the feasible set
+$E$: $\|d_\ell\| \le \delta_\ell$ and $\varsigma\,\phi^{\delta_\ell}_{m,\ell}(s) \le \Delta
+T_{m,\ell}(s, d_\ell)$. -/
 theorem exists_highOrderStep [FiniteDimensional ℝ E] (hp : 1 ≤ p) (hq : q ≤ p) (hσ : 0 < σ)
     (hL : 0 ≤ L) (hD : ∀ i ∈ Finset.Icc 2 p, ‖D i‖ ≤ L) {θ ς : ℝ} (hθ : 0 < θ) (hς : 0 < ς)
     (hς1 : ς ≤ 1) {ε : ℕ → ℝ} (hε : ∀ ℓ ∈ Finset.Icc 1 q, 0 < ε ℓ) :
@@ -291,8 +347,10 @@ section Inexact
 
 variable {D Dbar : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ : ℝ} {err : ℕ → ℝ}
 
-/-- The derivatives of order `ℓ ≤ p` of two regularized models with the same weight differ by
-those of the Taylor sum of the difference of the data. -/
+/-- Let $D$ and $\bar D$ be jets, $\ell \le p$ and $s \in E$, and let $m$ and $\bar m$ be the
+regularized models of $D$ and $\bar D$ with the same $p$ and $\sigma$. Then
+$\nabla^\ell m(s) - \nabla^\ell \bar m(s)$ is the $\ell$-th derivative at $s$ of the Taylor sum
+$T_p(D - \bar D, \cdot)$. -/
 theorem iteratedFDeriv_regularizedModel_sub {ℓ : ℕ} (hℓ : ℓ ≤ p) (s : E) :
     iteratedFDeriv ℝ ℓ (regularizedModel D p σ) s -
         iteratedFDeriv ℝ ℓ (regularizedModel Dbar p σ) s =
@@ -301,12 +359,16 @@ theorem iteratedFDeriv_regularizedModel_sub {ℓ : ℕ} (hℓ : ℓ ≤ p) (s : 
     FormalMultilinearSeries.iteratedFDeriv_taylorSum_sub]
   abel
 
-/-- **(13.1.48)–(13.1.49), first inequality** ([cartis2022evaluation]): if the data `Dbar`
-approximate `D` with errors `err` up to order `p` (`JetApprox D Dbar p err`), then for `j ≤ p`,
-`0 ∈ S` and `δ ≥ 0`, the model measures at any step `s` satisfy
-`φ^δ_{m,j}(s) ≤ φ^δ_{m̄,j}(s) + ∑_{ℓ=1}^j δ^ℓ/ℓ! ∑_{i=ℓ}^p err_i ‖s‖^{i-ℓ}/(i-ℓ)!`, where
-`m = regularizedModel D p σ` and `m̄ = regularizedModel Dbar p σ` (the regularization terms cancel).
-By symmetry of `JetApprox` the same holds with `m` and `m̄` exchanged. -/
+/-- Let $\bar D$ approximate $D$ up to order $p$ with errors $e$
+(`Optimization.JetApprox D Dbar p err`), let $j \le p$, $s \in E$, $0 \in S$ and $\delta \ge 0$,
+and let $m$ and $\bar m$ be the regularized models of $D$ and $\bar D$ with the same $p$ and
+$\sigma$. Then
+$$\phi^\delta_{m,j}(s) \le \phi^\delta_{\bar m,j}(s) + \sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!} \sum_{i=\ell}^{p} \frac{e_i\|s\|^{i-\ell}}{(i-\ell)!}.$$
+This is the first inequality of (13.1.48)–(13.1.49) of [cartis2022evaluation].
+
+The regularization terms cancel. The approximation relation is symmetric, so the bound also
+holds with $m$ and $\bar m$ exchanged. -/
 theorem taylorMeasure_regularizedModel_le_add (h : JetApprox D Dbar p err) {j : ℕ} (hjp : j ≤ p)
     (s : E) {S : Set E} (hS0 : (0 : E) ∈ S) {δ : ℝ} (hδ : 0 ≤ δ) :
     taylorMeasure (ftaylorSeries ℝ (regularizedModel D p σ) s) j δ S ≤
@@ -342,9 +404,12 @@ theorem taylorMeasure_regularizedModel_le_add (h : JetApprox D Dbar p err) {j : 
       _ ≤ _ := by gcongr
   linarith [(abs_le.1 habs).2]
 
-/-- **(13.1.49)** ([cartis2022evaluation]): if moreover `err_i ≤ κ κs ‖s‖^{p-i+1}` for
-`i = 1, …, p` (`κ, κs ≥ 0`; the accuracy requirement (13.1.46)), the excess is at most
-`3 κ κs ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1}`. -/
+/-- Let $\bar D$ approximate $D$ up to order $p$ with errors $e$, let $\kappa, \kappa_s \ge 0$, and
+let $e_i \le \kappa\kappa_s\|s\|^{p-i+1}$ for $i = 1, \dots, p$ (the accuracy requirement
+(13.1.46)). Let $j \le p$, $0 \in S$ and $\delta \ge 0$. Then
+$$\phi^\delta_{m,j}(s) \le \phi^\delta_{\bar m,j}(s) + 3\kappa\kappa_s \sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}\|s\|^{p-\ell+1}.$$
+This is (13.1.49) of [cartis2022evaluation]. -/
 theorem taylorMeasure_regularizedModel_le_add_of_stepAccuracy (h : JetApprox D Dbar p err)
     {κ κs : ℝ} (hκ : 0 ≤ κ) (hκs : 0 ≤ κs) {s : E}
     (herr : ∀ i ∈ Finset.Icc 1 p, err i ≤ κ * κs * ‖s‖ ^ (p - i + 1)) {j : ℕ} (hjp : j ≤ p)
@@ -378,8 +443,11 @@ theorem taylorMeasure_regularizedModel_le_add_of_stepAccuracy (h : JetApprox D D
       ≤ δ ^ ℓ / ℓ ! * (3 * κ * κs * ‖s‖ ^ (p - ℓ + 1)) := by gcongr
     _ = 3 * κ * κs * (δ ^ ℓ / ℓ ! * ‖s‖ ^ (p - ℓ + 1)) := by ring
 
-/-- **(13.1.50)** ([cartis2022evaluation]): if `‖s‖ ≤ 1`, `δ ≤ 1` and `err_i ≤ e` for
-`i = 1, …, p`, the excess is at most `6 e`. -/
+/-- Let $\bar D$ approximate $D$ up to order $p$ with errors $e$, let $e_{\max} \ge 0$ with
+$e_i \le e_{\max}$ for $i = 1, \dots, p$, and let $\|s\| \le 1$, $j \le p$, $0 \in S$ and
+$0 \le \delta \le 1$. Then
+$$\phi^\delta_{m,j}(s) \le \phi^\delta_{\bar m,j}(s) + 6e_{\max}.$$
+This is (13.1.50) of [cartis2022evaluation]. -/
 theorem taylorMeasure_regularizedModel_le_add_six_mul (h : JetApprox D Dbar p err) {e : ℝ}
     (he0 : 0 ≤ e) (he : ∀ i ∈ Finset.Icc 1 p, err i ≤ e) {s : E} (hs : ‖s‖ ≤ 1) {j : ℕ}
     (hjp : j ≤ p) {S : Set E} (hS0 : (0 : E) ∈ S) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1) :
@@ -417,10 +485,16 @@ section Transfer
 
 variable {f : E → ℝ} {p : ℕ} {σ L : ℝ} {C : Set E} {x s : E}
 
-/-- **Measure transfer from the model to the function, anchored**: as
-`taylorMeasure_le_of_regularizedModel`, with `∇^p f` only Lipschitz anchored at `x`,
-`‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C` (the condition (14.2.9) of
-[cartis2022evaluation]). -/
+/-- **Measure transfer from the model to the function, anchored.** Let $C \subseteq E$ be convex,
+let $f$ be of class $C^p$ at every point of $C$, let $x, x + s \in C$ and $L \ge 0$, and let
+$\nabla^p f$ be $L$-Lipschitz anchored at $x$:
+$$\|\nabla^p f(y) - \nabla^p f(x)\| \le L\|y - x\| \quad \text{for } y \in C,$$
+the condition (14.2.9) of [cartis2022evaluation]. Let $\sigma \ge 0$, let $m$ be the regularized
+model of the jet of $f$ at $x$, and let $j \le p$, $0 \in S$ and $\delta \ge 0$. Then
+$$\phi^\delta_{f,j}(x + s) \le \phi^\delta_{m,j}(s) + (L + \sigma)\sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}\,\frac{\|s\|^{p-\ell+1}}{(p-\ell+1)!}.$$
+
+This is `Optimization.taylorMeasure_le_of_regularizedModel` with a weaker Lipschitz condition. -/
 theorem taylorMeasure_le_of_regularizedModel_anchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
@@ -437,13 +511,16 @@ theorem taylorMeasure_le_of_regularizedModel_anchored (hC : Convex ℝ C)
   refine mul_le_mul_of_nonneg_left (sum_le_sum fun ℓ _ => ?_) (by positivity)
   gcongr
 
-/-- **Measure transfer from the model to the function** ([cartis2022evaluation],
-(12.2.53)–(12.2.56), exact data; the case `h = 0` of `compositeTaylorMeasure_le_of_step`). Let
-`f` be `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there (`L ≥ 0`), `σ ≥ 0`,
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ`, `j ≤ p`, feasible displacements `S ∋ 0` and
-`δ ≥ 0`. Then
-`φ^δ_{f,j}(x + s) ≤ φ^δ_{m,j}(s) + (L + σ) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1}/(p-ℓ+1)!`.
-(This is (12.2.56), with the exponent `p - ℓ + 1`.) -/
+/-- **Measure transfer from the model to the function.** Let $C \subseteq E$ be convex, let $f$ be
+of class $C^p$ at every point of $C$ with $\nabla^p f$ $L$-Lipschitz on $C$ and $L \ge 0$, and
+let $x, x + s \in C$. Let $\sigma \ge 0$, let $m$ be the regularized model of the jet of $f$ at
+$x$, and let $j \le p$, $0 \in S$ and $\delta \ge 0$. Then
+$$\phi^\delta_{f,j}(x + s) \le \phi^\delta_{m,j}(s) + (L + \sigma)\sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}\,\frac{\|s\|^{p-\ell+1}}{(p-\ell+1)!}.$$
+This is (12.2.53)–(12.2.56) of [cartis2022evaluation] for exact data; the bound is (12.2.56),
+with the exponent $p - \ell + 1$.
+
+It is the case $h = 0$ of `Optimization.compositeTaylorMeasure_le_of_step`. -/
 theorem taylorMeasure_le_of_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hjp : j ≤ p) {S : Set E}
@@ -455,12 +532,19 @@ theorem taylorMeasure_le_of_regularizedModel (hC : Convex ℝ C)
   taylorMeasure_le_of_regularizedModel_anchored hC hf
     (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hL0 hx hxs hσ hjp hS0 hδ
 
-/-- **The radius inequality, abstract form** (the common step of [cartis2022evaluation],
-Lemmas 12.2.11, 13.1.16 and 14.1.7): if the measure `Φ` at the new iterate is not small,
-`a ε δ^j/j! - e₀ < Φ`, a one-step comparison `Φ ≤ Φm + R` with a model measure `Φm` holds, and the
-step approximately minimizes the model, `Φm ≤ θ ε δ^j/j!` ((12.2.29), (14.1.13)), then
-`(a - θ) ε δ^j/j! < R + e₀`. The instances are `radius_inequality_of_measure_gt` (smooth, with
-inexact data) and `radius_inequality_of_compositeTaylorMeasure_gt` (composite). -/
+/-- **The radius inequality, abstract form.** Let $\Phi, \Phi_m, R, a, \theta, \varepsilon, \delta,
+e_0 \in \mathbb{R}$ and $j \in \mathbb{N}$. If
+$$\frac{a\varepsilon\delta^j}{j!} - e_0 < \Phi, \qquad \Phi \le \Phi_m + R, \qquad \Phi_m \le
+  \frac{\theta\varepsilon\delta^j}{j!},$$
+then
+$$(a - \theta)\frac{\varepsilon\delta^j}{j!} < R + e_0.$$
+This is the common step of Lemmas 12.2.11, 13.1.16 and 14.1.7 of [cartis2022evaluation].
+
+In the applications, $\Phi$ is the measure at the new iterate, which is not small;
+$\Phi \le \Phi_m + R$ is a one-step comparison with a model measure $\Phi_m$; and the last
+hypothesis says that the step approximately minimizes the model ((12.2.29), (14.1.13)). The
+instances are `Optimization.radius_inequality_of_measure_gt` (smooth, with inexact data) and
+`Optimization.radius_inequality_of_compositeTaylorMeasure_gt` (composite). -/
 theorem sub_mul_lt_of_measure_comparison {Φ Φm R a θ ε δ e₀ : ℝ} {j : ℕ}
     (h₁ : a * ε * δ ^ j / (j ! : ℝ) - e₀ < Φ) (hcomp : Φ ≤ Φm + R)
     (h₂ : Φm ≤ θ * ε * δ ^ j / j !) : (a - θ) * ε * δ ^ j / j ! < R + e₀ := by
@@ -469,7 +553,9 @@ theorem sub_mul_lt_of_measure_comparison {Φ Φm R a θ ε δ e₀ : ℝ} {j : �
   rw [e]
   linarith
 
-/-- Dropping the factorials `(p - ℓ + 1)! ≥ 1` and enlarging the constant `A ≤ A'`. -/
+/-- For $A, \delta, t \ge 0$ and $A \le A'$, $A\sum_{\ell=1}^{j}
+\frac{\delta^\ell}{\ell!}\frac{t^{p-\ell+1}}{(p-\ell+1)!} \le A'\sum_{\ell=1}^{j}
+\frac{\delta^\ell}{\ell!}t^{p-\ell+1}$. -/
 private theorem mul_sum_le_mul_sum_of_factorial {A A' δ t : ℝ} {j p : ℕ} (hA : 0 ≤ A)
     (hAA' : A ≤ A') (hδ : 0 ≤ δ) (ht : 0 ≤ t) :
     A * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * (t ^ (p - ℓ + 1) / ((p - ℓ + 1)! : ℝ)) ≤
@@ -483,9 +569,21 @@ private theorem mul_sum_le_mul_sum_of_factorial {A A' δ t : ℝ} {j p : ℕ} (h
           (by exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero _))
     _ ≤ A' * ∑ ℓ ∈ Finset.Icc 1 j, δ ^ ℓ / ℓ ! * t ^ (p - ℓ + 1) := by gcongr
 
-/-- **The radius inequality, anchored**: as `radius_inequality_of_measure_gt`, with `∇^p f` only
-Lipschitz anchored at `x`, `‖∇^p f(y) - ∇^p f(x)‖ ≤ Lp ‖y - x‖` for `y ∈ C` (the condition
-(14.2.9) of [cartis2022evaluation]). -/
+/-- **The radius inequality, anchored.** Let $C \subseteq E$ be convex, let $f$ be of class $C^p$ at
+every point of $C$, let $x, x + s \in C$, and let $L_p \ge 0$ with $\|\nabla^p f(y) - \nabla^p
+f(x)\| \le L_p\|y - x\|$ for $y \in C$ (the condition (14.2.9) of [cartis2022evaluation]). Let
+$\bar D$ approximate the jet of $f$ at $x$ up to order $p$ with errors
+$e_i \le \kappa\kappa_s\|s\|^{p-i+1}$ for $i = 1, \dots, p$, where $\kappa, \kappa_s \ge 0$. Let
+$0 \le \sigma \le \sigma_{\max}$, let $\bar m$ be the regularized model of $\bar D$, and let
+$j \le p$, $0 \in S$ and $\delta \ge 0$. If
+$$\frac{a\varepsilon\delta^j}{j!} - e_0 < \phi^\delta_{f,j}(x + s) \quad \text{and} \quad
+  \phi^\delta_{\bar m,j}(s) \le \frac{\theta\varepsilon\delta^j}{j!},$$
+then
+$$(a - \theta)\frac{\varepsilon\delta^j}{j!} < (L_p + \sigma_{\max} +
+  3\kappa\kappa_s)\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}\|s\|^{p-\ell+1} + e_0.$$
+
+This is `Optimization.radius_inequality_of_measure_gt` with $\nabla^p f$ only Lipschitz anchored
+at $x$. -/
 theorem radius_inequality_of_measure_gt_anchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) {Lp : ℝ}
     (hLp : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ Lp * ‖y - x‖)
@@ -509,20 +607,25 @@ theorem radius_inequality_of_measure_gt_anchored (hC : Convex ℝ C)
   refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
   linarith
 
-/-- **The radius inequality** ([cartis2022evaluation], Lemmas 12.2.11 and 13.1.16, with an
-explicit error budget). Let `f` be `C^p` on a convex `C ∋ x, x + s` with
-`Lp`-Lipschitz `∇^p f` there (`Lp ≥ 0`), `Dbar` approximate the jet of `f` at `x` with errors
-`err_i ≤ κ κs ‖s‖^{p-i+1}` (`κ, κs ≥ 0`), `0 ≤ σ ≤ σmax`, `j ≤ p`, feasible displacements
-`S ∋ 0` at `x + s`, and `δ ≥ 0`. Suppose
-* (h₁) `a ε δ^j/j! - e₀ < φ^δ_{f,j}(x + s)` (the measure at the new iterate is not small), and
-* (h₂) `φ^δ_{m̄,j}(s) ≤ θ ε δ^j/j!` for the inexact model `m̄ = regularizedModel Dbar p σ` (the
-  step approximately minimizes the model at order `j`, (12.2.29)).
+/-- **The radius inequality.** Let $C \subseteq E$ be convex, let $f$ be of class $C^p$ at every
+point of $C$ with $\nabla^p f$ $L_p$-Lipschitz on $C$ and $L_p \ge 0$, and let $x, x + s \in C$.
+Let $\bar D$ approximate the jet of $f$ at $x$ up to order $p$ with errors
+$e_i \le \kappa\kappa_s\|s\|^{p-i+1}$ for $i = 1, \dots, p$, where $\kappa, \kappa_s \ge 0$. Let
+$0 \le \sigma \le \sigma_{\max}$, let $\bar m$ be the regularized model of $\bar D$, and let
+$j \le p$, $0 \in S$ (feasible displacements at $x + s$) and $\delta \ge 0$. Suppose that the
+measure at the new iterate is not small and that the step approximately minimizes the inexact
+model at order $j$ (12.2.29):
+$$\frac{a\varepsilon\delta^j}{j!} - e_0 < \phi^\delta_{f,j}(x + s) \quad \text{and} \quad
+  \phi^\delta_{\bar m,j}(s) \le \frac{\theta\varepsilon\delta^j}{j!}.$$
+Then
+$$(a - \theta)\frac{\varepsilon\delta^j}{j!} < (L_p + \sigma_{\max} +
+  3\kappa\kappa_s)\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}\|s\|^{p-\ell+1} + e_0.$$
+This is Lemmas 12.2.11 and 13.1.16 of [cartis2022evaluation], with an explicit error budget.
 
-Then `(a - θ) ε δ^j/j! < (Lp + σmax + 3 κ κs) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1} + e₀`.
-
-For exact ARqp (Lemma 12.2.11): `Dbar` the exact jet, `κ = 0`, `e₀ = 0` and `a = ς`: the failed
-Step-1 test at `x + s` only certifies `φ > ς ε δ^j/j!`, hence the factor `ς - θ` (and the
-analysis needs `θ < ς`). For ARqpIDA (Lemma 13.1.16) `κ = κ_{∇,max}`. -/
+For exact ARqp (Lemma 12.2.11), $\bar D$ is the exact jet, $\kappa = 0$, $e_0 = 0$ and
+$a = \varsigma$: the failed Step-1 test at $x + s$ only certifies $\phi^\delta_{f,j}(x + s) >
+\varsigma\varepsilon\delta^j/j!$, hence the factor $\varsigma - \theta$, and the analysis needs
+$\theta < \varsigma$. For ARqpIDA (Lemma 13.1.16), $\kappa = \kappa_{\nabla,\max}$. -/
 theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     {Lp : ℝ} (hLp : IteratedFDerivLipschitzOn f p Lp C) (hLp0 : 0 ≤ Lp) (hx : x ∈ C)
     (hxs : x + s ∈ C) {Dbar : FormalMultilinearSeries ℝ E ℝ} {err : ℕ → ℝ}
@@ -539,9 +642,26 @@ theorem radius_inequality_of_measure_gt (hC : Convex ℝ C) (hf : ∀ y ∈ C, C
     (fun y hy => iteratedFDerivLipschitzOn_iff.1 hLp y hy x hx) hLp0 hx hxs happrox hκ hκs herr hσ
     hσmax hjp hS0 hδ h₁ h₂
 
-/-- **The radius inequality for composite problems, anchored** ([cartis2022evaluation],
-Lemma 14.1.7): as `radius_inequality_of_compositeTaylorMeasure_gt`, with `∇^p f` and
-`∇^p c` only Lipschitz anchored at `x` (between `x` and the points of `C`). -/
+/-- **The radius inequality for composite problems, anchored.** Let $F$ be a real normed space,
+$c : E \to F$, and let $h : F \to \mathbb{R}$ have the Lipschitz constant $L_h$. Let
+$C \subseteq E$ be convex, let $f$ and $c$ be of class $C^p$ at every point of $C$, let
+$x, x + s \in C$, and let $L_f, L_c \ge 0$ with
+$$\|\nabla^p f(y) - \nabla^p f(x)\| \le L_f\|y - x\|, \qquad \|\nabla^p c(y) - \nabla^p c(x)\|
+  \le L_c\|y - x\| \qquad (y \in C).$$
+Let $0 \le \sigma \le \sigma_{\max}$, $j \le p$, $0 \in S$ and $\delta \ge 0$. Write
+$\phi^\delta_{w,j}(x + s)$ for the composite measure of the jets of $f$ and $c$ at $x + s$, and
+$\phi^\delta_{\hat m,j}(s)$ for the composite measure at $s$ of the jets of the regularized
+model of $f$ at $x$ and of the Taylor polynomial of degree $p$ of $c$ at $x$. If
+$$\frac{a\varepsilon\delta^j}{j!} - e_0 < \phi^\delta_{w,j}(x + s) \quad \text{and} \quad
+  \phi^\delta_{\hat m,j}(s) \le \frac{\theta\varepsilon\delta^j}{j!},$$
+then
+$$(a - \theta)\frac{\varepsilon\delta^j}{j!} < (L_f + L_hL_c + \sigma_{\max})\sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}\|s\|^{p-\ell+1} + \frac{2L_hL_c}{(p+1)!}\|s\|^{p+1} + e_0.$$
+This is Lemma 14.1.7 of [cartis2022evaluation] with Lipschitz conditions anchored at $x$.
+
+This is `Optimization.radius_inequality_of_compositeTaylorMeasure_gt` with $\nabla^p f$ and
+$\nabla^p c$ only Lipschitz anchored at $x$, between $x$ and the points of $C$. The composite
+measure is `Optimization.compositeTaylorMeasure`. -/
 theorem radius_inequality_of_compositeTaylorMeasure_gt_anchored {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {c : E → F} {h : F → ℝ} {Lf Lc Lh σmax : ℝ} (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
@@ -567,15 +687,24 @@ theorem radius_inequality_of_compositeTaylorMeasure_gt_anchored {F : Type*} [Nor
   refine sub_mul_lt_of_measure_comparison h₁ ?_ h₂
   linarith
 
-/-- **The radius inequality for composite problems** ([cartis2022evaluation], Lemma 14.1.7).
-Under the hypotheses of `compositeTaylorMeasure_le_of_step` (with `0 ≤ σ ≤ σmax`),
-suppose
-* (h₁) `a ε δ^j/j! - e₀ < φ^δ_{w,j}(x + s)`, and
-* (h₂) `φ^δ_{m̂,j}(s) ≤ θ ε δ^j/j!` for the composite model `m̂` built at `x` ((14.1.13)).
+/-- **The radius inequality for composite problems.** Let $F$ be a real normed space, $c : E \to F$,
+and let $h : F \to \mathbb{R}$ have the Lipschitz constant $L_h$. Let $C \subseteq E$ be convex,
+let $f$ and $c$ be of class $C^p$ at every point of $C$ with $\nabla^p f$ $L_f$-Lipschitz and
+$\nabla^p c$ $L_c$-Lipschitz on $C$, $L_f, L_c \ge 0$, and let $x, x + s \in C$. Let
+$0 \le \sigma \le \sigma_{\max}$, $j \le p$, $0 \in S$ and $\delta \ge 0$. With the composite
+measures $\phi^\delta_{w,j}$ and $\phi^\delta_{\hat m,j}$ of
+`Optimization.radius_inequality_of_compositeTaylorMeasure_gt_anchored`, suppose that
+$$\frac{a\varepsilon\delta^j}{j!} - e_0 < \phi^\delta_{w,j}(x + s) \quad \text{and} \quad
+  \phi^\delta_{\hat m,j}(s) \le \frac{\theta\varepsilon\delta^j}{j!},$$
+the second condition being (14.1.13) for the composite model $\hat m$ built at $x$. Then
+$$(a - \theta)\frac{\varepsilon\delta^j}{j!} < (L_f + L_hL_c + \sigma_{\max})\sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}\|s\|^{p-\ell+1} + \frac{2L_hL_c}{(p+1)!}\|s\|^{p+1} + e_0.$$
+This is Lemma 14.1.7 of [cartis2022evaluation].
 
-Then `(a - θ) ε δ^j/j! < (Lf + Lh Lc + σmax) ∑_{ℓ=1}^j δ^ℓ/ℓ! ‖s‖^{p-ℓ+1} +
-2 Lh Lc/(p+1)! ‖s‖^{p+1} + e₀`. For ARqpC, `a = ς` and `e₀ = 0`: this is (14.1.30), with the
-factors `ς - θ` and `2` on the last term (see `compositeTaylorDecrement_le_of_step`). -/
+The hypotheses are those of `Optimization.compositeTaylorMeasure_le_of_step`, together with
+$\sigma \le \sigma_{\max}$. For ARqpC, $a = \varsigma$ and $e_0 = 0$, and the inequality is
+(14.1.30), with the factors $\varsigma - \theta$ and $2$ on the last term (see
+`Optimization.compositeTaylorDecrement_le_of_step`). -/
 theorem radius_inequality_of_compositeTaylorMeasure_gt {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {c : E → F} {h : F → ℝ} {Lf Lc Lh σmax : ℝ} (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hc : ∀ y ∈ C, ContDiffAt ℝ p c y)
@@ -604,9 +733,11 @@ end Transfer
 
 section Zero
 
-/-- **(12.2.49)** of [cartis2022evaluation]: for `f` of class `C^p` at `x`, the Taylor decrements of
-order `j ≤ p` of the model `m = regularizedModel (ftaylorSeries ℝ f x) p σ` at `0` are those of
-`f` at `x`. -/
+/-- Let $f$ be of class $C^p$ at $x$, let $\sigma \in \mathbb{R}$, $j \le p$ and $d \in E$, and let
+$m$ be the regularized model of the jet of $f$ at $x$. Then the Taylor decrement of order $j$ of
+$m$ at $0$ is that of $f$ at $x$:
+$$\Delta T_{m,j}(0, d) = \Delta T_{f,j}(x, d).$$
+This is (12.2.49) of [cartis2022evaluation]. -/
 theorem taylorDecrement_regularizedModel_zero {f : E → ℝ} {p : ℕ} {x : E} (hf : ContDiffAt ℝ p f x)
     (σ : ℝ) {j : ℕ} (hj : j ≤ p) (d : E) :
     (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) 0).taylorDecrement j d =
@@ -617,7 +748,9 @@ theorem taylorDecrement_regularizedModel_zero {f : E → ℝ} {p : ℕ} {x : E} 
   refine Finset.sum_congr rfl fun i hi => ?_
   rw [ftaylorSeries_regularizedModel_zero hsymm ((Finset.mem_Icc.1 hi).2.trans hj)]
 
-/-- The measures of order `j ≤ p` of the model at `0` are those of `f` at `x`. -/
+/-- Let $f$ be of class $C^p$ at $x$, let $\sigma \in \mathbb{R}$ and $j \le p$, and let $m$ be the
+regularized model of the jet of $f$ at $x$. Then for every $\delta$ and $S$ the measure of order
+$j$ of $m$ at $0$ is that of $f$ at $x$: $\phi^\delta_{m,j}(0) = \phi^\delta_{f,j}(x)$. -/
 theorem taylorMeasure_regularizedModel_zero {f : E → ℝ} {p : ℕ} {x : E} (hf : ContDiffAt ℝ p f x)
     (σ : ℝ) {j : ℕ} (hj : j ≤ p) (δ : ℝ) (S : Set E) :
     taylorMeasure (ftaylorSeries ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) 0) j δ S =

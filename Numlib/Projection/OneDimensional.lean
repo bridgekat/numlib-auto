@@ -8,12 +8,62 @@ import Numlib.Projection.Optimality
 /-!
 # One-dimensional projection processes
 
-The projection step with `K = span {v}`, `L = span {w}` ([saad2003iterative] (5.12)–(5.13)), and its
-three classical instances, written with the residual `r = b - A x`: steepest descent (`v = w = r`),
-minimal residual iteration (`v = r`, `w = A r`), and residual-norm steepest descent (`v = A† r`, `w
-= A v`). Convergence: Kantorovich's inequality ([saad2003iterative] Lemma 5.8), the steepest-descent
-rate ([saad2003iterative] Thm 5.9) and the minimal-residual rate ([saad2003iterative] Thm 5.10,
-valid for bounded coercive operators on any inner product space).
+Let $A$ be a linear operator on an inner product space $E$ and let $b \in E$. A one-dimensional
+projection step for $Ax = b$ uses the trial space $K = \operatorname{span}\{v\}$ and the test space
+$L = \operatorname{span}\{w\}$ ([saad2003iterative] (5.12)–(5.13)). From $x$, with the residual
+$r = b - Ax$, it gives
+$$x' = x + \frac{\langle w, r \rangle}{\langle w, Av \rangle}\, v.$$
+The three classical instances are steepest descent ($v = w = r$), the minimal residual iteration
+($v = r$, $w = Ar$) and residual-norm steepest descent ($v = A^H r$, $w = Av$). With $v = w = d$ the
+step is the exact line search along $d$, the step of every conjugate-direction method.
+
+For convergence, the file proves Kantorovich's inequality ([saad2003iterative] Lemma 5.8), the
+contraction of the energy norm of the error by steepest descent ([saad2003iterative] Theorem 5.9,
+[quarteroni2000numerical] Theorem 4.10), and the contraction of the residual by the minimal residual
+iteration ([saad2003iterative] Theorem 5.10). Here $A$ is symmetric with $\lambda_{\min} \|u\|^2 \le
+\operatorname{Re}\langle Au, u \rangle \le \lambda_{\max} \|u\|^2$ for all $u$, where
+$0 < \lambda_{\min}$, and $\|u\|_A = \sqrt{\operatorname{Re}\langle Au, u \rangle}$ is the energy
+norm.
+
+## Main definitions
+
+* `Projection.step1`: the one-dimensional projection step onto $\operatorname{span}\{v\}$
+  orthogonally to $\operatorname{span}\{w\}$.
+* `Projection.steepestDescentStep`: the step with $v = w = r$.
+* `Projection.minResStep`: the step with $v = r$ and $w = Ar$.
+* `Projection.residualNormSDStep`: the step with $v = A^H r$ and $w = Av$.
+
+## Main results
+
+* `Projection.step1_isPetrovGalerkin`: if $\langle w, Av \rangle \neq 0$, the step satisfies the
+  Petrov–Galerkin condition for $\operatorname{span}\{v\}$ and $\operatorname{span}\{w\}$.
+* `Projection.steepestDescentStep_isGalerkin`: for coercive $A$, steepest descent is the Galerkin
+  step on $\operatorname{span}\{r\}$.
+* `Projection.minResStep_isMinResidual`: the minimal residual step minimizes the residual norm over
+  $x + \operatorname{span}\{r\}$.
+* `Projection.kantorovich_inequality`: if $Ay = x$, then $\operatorname{Re}\langle Ax, x \rangle
+  \operatorname{Re}\langle y, x \rangle \le \frac{(\lambda_{\max} + \lambda_{\min})^2}{4
+  \lambda_{\max} \lambda_{\min}} \|x\|^4$.
+* `Projection.energyNorm_steepestDescentStep_le`: steepest descent contracts the energy norm of the
+  error by $(\lambda_{\max} - \lambda_{\min}) / (\lambda_{\max} + \lambda_{\min})$.
+* `Projection.tendsto_iterate_steepestDescentStep`: the steepest-descent iterates converge to the
+  solution from every starting point.
+* `Projection.norm_residual_minResStep_le`: for bounded $A$ with $c \|x\|^2 \le
+  \operatorname{Re}\langle Ax, x \rangle$, the minimal residual step contracts the residual by
+  $\sqrt{1 - c^2 / \|A\|^2}$.
+* `Projection.energyNorm_step1_sq_eq`: the exact line search along $d$ lowers the squared energy
+  norm of the error by $|\langle d, r \rangle|^2 / \operatorname{Re}\langle Ad, d \rangle$.
+
+## Implementation notes
+
+* The estimates do not use the spectral theorem. Its role is taken by polarization
+  (`LinearMap.IsSymmetricBoundedBy.norm_apply_le`) and by the quadratic-form inequalities for
+  $(A - \lambda_{\min})(\lambda_{\max} - A) \ge 0$. So the results hold in every inner product
+  space; completeness is needed only to define the adjoint in `Projection.residualNormSDStep`.
+* The bounds $\lambda_{\min}$ and $\lambda_{\max}$ are stated as `LinearMap.IsSymmetricBoundedBy`.
+  They need not be eigenvalues of $A$.
+* Division by zero is $0$. Hence the step is $x' = x$ when $\langle w, Av \rangle = 0$, and the
+  one-step identities hold without hypotheses at a breakdown.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -22,7 +72,8 @@ namespace LinearMap
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
-/-- The real part of the sesquilinear form of a symmetric operator is symmetric. -/
+/-- Let $C$ be a symmetric operator. For all $w, z$, $\operatorname{Re}\langle Cz, w \rangle =
+\operatorname{Re}\langle Cw, z \rangle$. -/
 theorem IsSymmetric.re_inner_comm {C : F →ₗ[𝕜] F} (hC : C.IsSymmetric) (w z : F) :
     RCLike.re (inner 𝕜 (C z) w) = RCLike.re (inner 𝕜 (C w) z) := by
   rw [hC z w, ← inner_conj_symm]
@@ -30,9 +81,12 @@ theorem IsSymmetric.re_inner_comm {C : F →ₗ[𝕜] F} (hC : C.IsSymmetric) (w
 
 namespace IsSymmetricBoundedBy
 
-/-- **Polarization**: for a symmetric operator the numerical radius controls the norm. If the
-quadratic form of `C` lies in `[-d, d] ‖·‖²` then `‖C u‖ ≤ d ‖u‖`. This is the substitute for the
-spectral theorem in all the estimates below. -/
+/-- **Polarization**: for a symmetric operator the numerical radius controls the norm. Let $C$ be
+symmetric with $-d \|u\|^2 \le \operatorname{Re}\langle Cu, u \rangle \le d \|u\|^2$ for all
+$u$. Then
+$$\|Cu\| \le d \|u\| \quad\text{for every } u.$$
+
+This replaces the spectral theorem in all the estimates of this file. -/
 theorem norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ} (hC : C.IsSymmetricBoundedBy (-d) d) (u : F) :
     ‖C u‖ ≤ d * ‖u‖ := by
   have hpol : ∀ w z : F, 4 * RCLike.re (inner 𝕜 (C w) z) ≤ 2 * d * (‖w‖ ^ 2 + ‖z‖ ^ 2) := by
@@ -77,8 +131,12 @@ theorem norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ} (hC : C.IsSymmetricBounde
   rw [hnormz, hinnerz] at hkey
   nlinarith [hkey, hupos]
 
-/-- The quadratic-form version of the operator inequality `(A - lmin)(lmax - A) ≥ 0`: `‖A u‖² + lmin
-lmax ‖u‖² ≤ (lmin + lmax) re ⟪A u, u⟫`. -/
+/-- Let $B$ be symmetric with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle Bu, u \rangle \le
+\lambda_{\max} \|u\|^2$ for all $u$. Then for every $u$,
+$$\|Bu\|^2 + \lambda_{\min} \lambda_{\max} \|u\|^2 \le (\lambda_{\min} + \lambda_{\max})
+  \operatorname{Re}\langle Bu, u \rangle.$$
+This is the quadratic-form version of the operator inequality
+$(B - \lambda_{\min})(\lambda_{\max} - B) \ge 0$. -/
 theorem norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
     (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
     ‖B u‖ ^ 2 + lmin * lmax * ‖u‖ ^ 2 ≤ (lmin + lmax) * RCLike.re (inner 𝕜 (B u) u) := by
@@ -110,9 +168,12 @@ theorem norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
     RCLike.norm_ofReal, mul_pow, sq_abs] at hsq
   linarith
 
-/-- **Degenerate spectral interval**: a symmetric operator whose quadratic form is exactly `l ‖u‖²`
-is the scalar `l`. This is the `lmin = lmax` case of `LinearMap.IsSymmetricBoundedBy`, and it is
-what makes the Chebyshev convergence bounds true (indeed trivial) without a strict spectral gap. -/
+/-- **Degenerate bounds.** Let $B$ be symmetric with $\operatorname{Re}\langle Bu, u \rangle = l
+\|u\|^2$ for all $u$, that is, with both bounds of `LinearMap.IsSymmetricBoundedBy` equal to
+$l$. Then $Bu = lu$ for every $u$.
+
+This is why the Chebyshev convergence bounds hold, and are trivial, without a strict gap between
+the bounds. -/
 theorem apply_eq_smul {B : F →ₗ[𝕜] F} {l : ℝ} (hB : B.IsSymmetricBoundedBy l l) (u : F) :
     B u = (l : 𝕜) • u := by
   have hre : RCLike.re (inner 𝕜 (B u) u) = l * ‖u‖ ^ 2 :=
@@ -130,7 +191,10 @@ theorem apply_eq_smul {B : F →ₗ[𝕜] F} {l : ℝ} (hB : B.IsSymmetricBounde
   rw [← sub_eq_zero, ← norm_eq_zero, ← sq_eq_zero_iff]
   exact le_antisymm hzero (sq_nonneg _)
 
-/-- `lmin ⟪B u, u⟫ ≤ ‖B u‖²` (the operator inequality `lmin B ≤ B²`). -/
+/-- Let $B$ be symmetric with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle Bu, u \rangle \le
+\lambda_{\max} \|u\|^2$ for all $u$, where $0 \le \lambda_{\min}$. Then for every $u$,
+$$\lambda_{\min} \operatorname{Re}\langle Bu, u \rangle \le \|Bu\|^2.$$
+This is the operator inequality $\lambda_{\min} B \le B^2$. -/
 theorem le_norm_apply_sq {B : F →ₗ[𝕜] F} {lmin lmax : ℝ} (hl : 0 ≤ lmin)
     (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
     lmin * RCLike.re (inner 𝕜 (B u) u) ≤ ‖B u‖ ^ 2 := by
@@ -142,7 +206,10 @@ theorem le_norm_apply_sq {B : F →ₗ[𝕜] F} {lmin lmax : ℝ} (hl : 0 ≤ lm
   have h2 : lmin * ‖u‖ ≤ ‖B u‖ := by nlinarith
   nlinarith [norm_nonneg (B u)]
 
-/-- `‖B u‖² ≤ lmax ⟪B u, u⟫` (the operator inequality `B² ≤ lmax B`). -/
+/-- Let $B$ be symmetric with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle Bu, u \rangle \le
+\lambda_{\max} \|u\|^2$ for all $u$, where $0 \le \lambda_{\min}$. Then for every $u$,
+$$\|Bu\|^2 \le \lambda_{\max} \operatorname{Re}\langle Bu, u \rangle.$$
+This is the operator inequality $B^2 \le \lambda_{\max} B$. -/
 theorem norm_apply_sq_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ} (hl : 0 ≤ lmin)
     (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
     ‖B u‖ ^ 2 ≤ lmax * RCLike.re (inner 𝕜 (B u) u) := by
@@ -156,16 +223,22 @@ end LinearMap
 
 namespace Projection
 
-/-- One projection step onto `span {v}` orthogonally to `span {w}`: `x ↦ x + (⟪r, w⟫ / ⟪A v, w⟫) v`
-with `r = b - A x` ([saad2003iterative], (5.12)). -/
+/-- The **one-dimensional projection step** onto $\operatorname{span}\{v\}$ orthogonally to
+$\operatorname{span}\{w\}$ ([saad2003iterative], (5.12)). From $x$, with the residual
+$r = b - Ax$,
+$$x \mapsto x + \frac{\langle w, r \rangle}{\langle w, Av \rangle}\, v.$$
+If $\langle w, Av \rangle = 0$, the quotient is $0$ by the convention of division by zero, and
+the step returns $x$. -/
 noncomputable def step1 (A : E →ₗ[𝕜] E) (b : E) (v w : E) (x : E) : E :=
   x + (inner 𝕜 w (b - A x) / inner 𝕜 w (A v)) • v
 
 variable {A : E →ₗ[𝕜] E} {b : E}
 
-/-- The one-dimensional step meets the Petrov–Galerkin specification for `K = span {v}` and `L =
-span {w}`, under the nondegeneracy condition `⟪w, A v⟫ ≠ 0` that makes its denominator nonzero.  The
-three instances below differ only in how `v` and `w` are chosen. -/
+/-- Let $\langle w, Av \rangle \neq 0$. Then the one-dimensional step from $x$ satisfies the
+Petrov–Galerkin condition for $(A, b, x, \operatorname{span}\{v\}, \operatorname{span}\{w\})$.
+
+The condition $\langle w, Av \rangle \neq 0$ makes the denominator of the step nonzero. The
+three classical instances differ only in the choice of $v$ and $w$. -/
 theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     IsPetrovGalerkin A b x (𝕜 ∙ v) (𝕜 ∙ w) (step1 A b v w x) := by
   refine ⟨?_, ?_⟩
@@ -178,11 +251,14 @@ theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     field_simp
     ring
 
-/-- With `v = w = d` and coercive `A`, the one-dimensional step is Galerkin on `span {d}` with no
-nondegeneracy hypothesis: coercivity gives `⟪d, A d⟫ ≠ 0` for `d ≠ 0`, and for `d = 0` the step
-does nothing while the span is trivial. This is the exact line search along `d` for the energy
-functional ([quarteroni2000numerical] (4.39), (7.36)), the step of every conjugate-direction
-method (`Numlib/Projection/ConjugateDirection`). -/
+/-- **The exact line search.** Let $A$ be coercive. For every $d$ and $x$, the one-dimensional step
+with $v = w = d$ from $x$ satisfies the Galerkin condition for
+$(A, b, x, \operatorname{span}\{d\})$.
+
+No nondegeneracy hypothesis is needed: for $d \neq 0$ coercivity gives
+$\langle d, Ad \rangle \neq 0$, and for $d = 0$ the step returns $x$ and the span is zero. This
+is the exact line search along $d$ for the energy functional ([quarteroni2000numerical] (4.39),
+(7.36)), the step of every conjugate-direction method (`Numlib.Projection.ConjugateDirection`). -/
 theorem step1_isGalerkin (hA : A.IsCoercive) (d x : E) :
     IsGalerkin A b x (𝕜 ∙ d) (step1 A b d d x) := by
   rcases eq_or_ne d 0 with rfl | hd
@@ -196,30 +272,35 @@ theorem step1_isGalerkin (hA : A.IsCoercive) (d x : E) :
     rw [inner_eq_zero_symm.1 hcon, map_zero] at hpos
     exact lt_irrefl 0 hpos
 
-/-- Steepest descent step ([saad2003iterative], Alg 5.2): `v = w = r` with the residual `r = b - A
-x`. -/
+/-- The **steepest descent step** ([saad2003iterative], Algorithm 5.2): the one-dimensional step
+with $v = w = r$, where $r = b - Ax$ is the residual at $x$. -/
 noncomputable def steepestDescentStep (A : E →ₗ[𝕜] E) (b : E) (x : E) : E :=
   step1 A b (b - A x) (b - A x) x
 
-/-- Minimal residual iteration step ([saad2003iterative], Alg 5.3): `v = r`, `w = A r` with the
-residual `r = b - A x`. -/
+/-- The **minimal residual iteration step** ([saad2003iterative], Algorithm 5.3): the
+one-dimensional step with $v = r$ and $w = Ar$, where $r = b - Ax$ is the residual at $x$. -/
 noncomputable def minResStep (A : E →ₗ[𝕜] E) (b : E) (x : E) : E :=
   step1 A b (b - A x) (A (b - A x)) x
 
-/-- Residual-norm steepest descent step ([saad2003iterative], Alg 5.4): `v = A† r`, `w = A v` with
-the residual `r = b - A x` and `A†` the adjoint of `A`. -/
+/-- The **residual-norm steepest descent step** ([saad2003iterative], Algorithm 5.4). Let $E$ be
+complete and let $A$ be a bounded operator. The step is the one-dimensional step with
+$v = A^H r$ and $w = Av$, where $r = b - Ax$ is the residual at $x$ and $A^H$ is the adjoint of
+$A$. -/
 noncomputable def residualNormSDStep [CompleteSpace E] (A : E →L[𝕜] E) (b : E) (x : E) : E :=
   step1 (A : E →ₗ[𝕜] E) b ((ContinuousLinearMap.adjoint A) (b - A x))
     (A ((ContinuousLinearMap.adjoint A) (b - A x))) x
 
-/-- The steepest-descent and minimal-residual steps do nothing once the residual vanishes. -/
+/-- If the residual $b - Ax$ is zero and $v = b - Ax$, the one-dimensional step returns $x$. -/
 private theorem step1_of_residual_eq_zero {v w x : E} (h0 : b - A x = 0) (hv : v = b - A x) :
     step1 A b v w x = x := by
   rw [step1, hv, h0, smul_zero, add_zero]
 
-/-- Steepest descent is the Galerkin method on the residual line `K = L = span {r}`, `r = b - A x`.
-Coercivity of `A` supplies the nondegeneracy `⟪r, A r⟫ ≠ 0`; if the residual already vanishes the
-step does nothing and the conclusion is immediate. -/
+/-- **Steepest descent is a Galerkin step.** Let $A$ be coercive and let $r = b - Ax$. The steepest
+descent step from $x$ satisfies the Galerkin condition for
+$(A, b, x, \operatorname{span}\{r\})$.
+
+Coercivity gives the nondegeneracy $\langle r, Ar \rangle \neq 0$ for $r \neq 0$. If $r = 0$ the
+step returns $x$. -/
 theorem steepestDescentStep_isGalerkin (x : E) (hA : A.IsCoercive) :
     IsGalerkin A b x (𝕜 ∙ (b - A x)) (steepestDescentStep A b x) := by
   rcases eq_or_ne (b - A x) 0 with h0 | h0
@@ -230,11 +311,14 @@ theorem steepestDescentStep_isGalerkin (x : E) (hA : A.IsCoercive) :
     rw [inner_eq_zero_symm.1 hcon, map_zero] at hpos
     exact lt_irrefl 0 hpos
 
-/-- The minimal residual iteration deserves its name: its step minimizes `‖b - A y‖` over the
-residual line `y ∈ x + span {r}`, `r = b - A x`.  Taking `L = A K` turns the minimization into the
-one-dimensional step, whose nondegeneracy is `A r ≠ 0`; where that fails every point of the line
-has the same residual `r`, and the step, which does nothing, minimizes trivially.  So no hypothesis
-on `A` is needed. -/
+/-- **The minimal residual step minimizes the residual.** Let $r = b - Ax$. The minimal residual
+step $x'$ from $x$ satisfies the minimal-residual condition for
+$(A, b, x, \operatorname{span}\{r\})$: it minimizes $\|b - Ay\|$ over
+$y \in x + \operatorname{span}\{r\}$. No hypothesis on $A$ is needed.
+
+With $L = AK$ the minimization is the one-dimensional step, whose nondegeneracy condition is
+$Ar \neq 0$. If $Ar = 0$, every point of the line has the residual $r$, and the step, which
+returns $x$, is a minimizer. -/
 theorem minResStep_isMinResidual (x : E) :
     IsMinResidual A b x (𝕜 ∙ (b - A x)) (minResStep A b x) := by
   have hmap : (𝕜 ∙ (b - A x)).map A = 𝕜 ∙ A (b - A x) := by
@@ -251,8 +335,13 @@ theorem minResStep_isMinResidual (x : E) :
     exact step1_isPetrovGalerkin (b - A x) (A (b - A x)) x fun hcon =>
       h0 (inner_self_eq_zero.1 hcon)
 
-/-- Kantorovich's inequality ([saad2003iterative], Lemma 5.8): for symmetric coercive `A` with
-spectrum in `[λmin, λmax]`, `re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)² / (4 λmax λmin) ‖x‖⁴`. -/
+/-- **Kantorovich's inequality** ([saad2003iterative], Lemma 5.8). Let $A$ be symmetric with
+$\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle Au, u \rangle \le \lambda_{\max} \|u\|^2$
+for all $u$, where $0 < \lambda_{\min}$. If $Ay = x$, then
+$$\operatorname{Re}\langle Ax, x \rangle \cdot \operatorname{Re}\langle y, x \rangle \le
+  \frac{(\lambda_{\max} + \lambda_{\min})^2}{4 \lambda_{\max} \lambda_{\min}} \|x\|^4.$$
+
+The vector $y$ is $A^{-1} x$. Asking for it as a hypothesis avoids the inverse of $A$. -/
 theorem kantorovich_inequality {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) (x : E) {y : E} (hy : A y = x) :
     RCLike.re (inner 𝕜 (A x) x) * RCLike.re (inner 𝕜 y x) ≤
@@ -312,7 +401,8 @@ theorem kantorovich_inequality {lmin lmax : ℝ} (hl : 0 < lmin)
   nlinarith [hsquare,
     sq_nonneg (RCLike.re (inner 𝕜 (A x) x) - lmin * lmax * RCLike.re (inner 𝕜 y x))]
 
-/-- Expansion of the energy norm along the steepest-descent line. -/
+/-- For symmetric coercive $A$, every $d$ and real $t$, $\|d - tAd\|_A^2 = \|d\|_A^2 - 2t \|Ad\|^2 +
+t^2 \operatorname{Re}\langle A^2 d, Ad \rangle$. -/
 private theorem energyNorm_sub_smul_apply_sq (hAc : A.IsSymmetricCoercive) (d : E) (t : ℝ) :
     energyNorm A (d - (t : 𝕜) • A d) ^ 2
       = energyNorm A d ^ 2 - 2 * t * ‖A d‖ ^ 2
@@ -327,9 +417,8 @@ private theorem energyNorm_sub_smul_apply_sq (hAc : A.IsSymmetricCoercive) (d : 
   rw [hsym]
   ring
 
-/-- **The steepest-descent step in closed form**: with the residual `r = b - A x` and `q = re ⟪ A r,
-r ⟫`, the step is `x ↦ x + (‖r‖²/q) r`.  The step length is real because the quadratic form of a
-symmetric operator is.  Both convergence statements below start here. -/
+/-- For symmetric $A$ and $r = b - Ax$, the steepest descent step is $x + (\|r\|^2 /
+\operatorname{Re}\langle Ar, r \rangle)\, r$, with a real step length. -/
 private theorem steepestDescentStep_eq (hsym : A.IsSymmetric) (x : E) :
     steepestDescentStep A b x
       = x + ((‖b - A x‖ ^ 2 / RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) : ℝ) : 𝕜)
@@ -345,8 +434,13 @@ private theorem steepestDescentStep_eq (hsym : A.IsSymmetric) (x : E) :
       ← RCLike.ofReal_pow, ← RCLike.ofReal_div, RCLike.ofReal_re]
   rw [steepestDescentStep, step1, hscal]
 
-/-- [saad2003iterative], Thm 5.9: steepest descent contracts the energy norm of the error by the
-factor `(λmax - λmin)/(λmax + λmin)`. -/
+/-- **Contraction by steepest descent** ([saad2003iterative], Theorem 5.9). Let $A$ be symmetric
+with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle Au, u \rangle \le \lambda_{\max}
+\|u\|^2$ for all $u$, where $0 < \lambda_{\min}$, and let $Ax^* = b$. For every $x$, the
+steepest descent step $x'$ from $x$ satisfies
+$$\|x^* - x'\|_A \le \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}}
+  \|x^* - x\|_A.$$
+-/
 theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x : E) :
     energyNorm A (xstar - steepestDescentStep A b x) ≤
@@ -408,8 +502,13 @@ theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
   have hfin := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (energyNorm_nonneg _ _), Real.sqrt_sq (mul_nonneg hcnn henn)] at hfin
 
-/-- [saad2003iterative], Thm 5.10: for a bounded operator with `c ‖x‖² ≤ re⟪A x, x⟫`, the minimal
-residual iteration contracts the residual by the factor `√(1 - c² / ‖A‖²)`. -/
+/-- **Contraction by the minimal residual iteration** ([saad2003iterative], Theorem 5.10). Let $A$
+be a bounded operator, and let $c > 0$ with $c \|x\|^2 \le \operatorname{Re}\langle Ax, x
+\rangle$ for all $x$. For all $b$ and $x$, the minimal residual step $x'$ from $x$ satisfies
+$$\|b - Ax'\| \le \sqrt{1 - c^2 / \|A\|^2}\, \|b - Ax\|.$$
+
+$\|A\|$ is the operator norm. The space $E$ need not be complete. The proof bounds the quotient
+in `Projection.norm_residual_minResStep_sq_eq` from below. -/
 theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) (b x : E) :
     ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖ ≤
@@ -447,12 +546,14 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     have hfin := Real.sqrt_le_sqrt hsq
     rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_mul hknn, Real.sqrt_sq (norm_nonneg _)] at hfin
 
-/-- The exact one-step identity for the minimal residual iteration ([saad2003iterative], (5.18)):
-with the residual `r = b - A x` and the new residual `r′ = b - A x′`, `‖r′‖² = ‖r‖² (1 - ‖⟪A r, r⟫‖²
-/ (‖r‖² ‖A r‖²))`, the book’s `‖r′‖ = ‖r‖ sin ∠(r, A r)`. No hypothesis is needed: at a breakdown
-(`r = 0` or `A r = 0`) the step does nothing and both sides read `‖r‖²`, because division by zero is
-zero.  Bounding the quotient below is what turns this identity into the contraction of
-`norm_residual_minResStep_le`. -/
+/-- **The one-step identity of the minimal residual iteration** ([saad2003iterative], (5.18)). Let
+$r = b - Ax$, and let $r' = b - Ax'$ be the residual after the minimal residual step. Then
+$$\|r'\|^2 = \|r\|^2 \left(1 - \frac{|\langle Ar, r \rangle|^2}{\|r\|^2 \|Ar\|^2}\right).$$
+The source writes this as $\|r'\| = \|r\| \sin \angle(r, Ar)$.
+
+No hypothesis is needed. If $r = 0$ or $Ar = 0$ the step returns $x$, and both sides are
+$\|r\|^2$, because division by zero is $0$. A lower bound for the quotient turns this identity
+into the contraction `Projection.norm_residual_minResStep_le`. -/
 theorem norm_residual_minResStep_sq_eq (x : E) :
     ‖b - A (minResStep A b x)‖ ^ 2
       = ‖b - A x‖ ^ 2 *
@@ -490,11 +591,16 @@ theorem norm_residual_minResStep_sq_eq (x : E) :
   field_simp
   ring
 
-/-- The exact one-step identity for steepest descent ([saad2003iterative], the display preceding
-Lemma 5.8, that is (5.20)): for the error `d = xstar - x` and the residual `r = A d = b - A x`,
-`‖d′‖_A² = ‖d‖_A² (1 - ⟪r, r⟫² / (⟪A r, r⟫ ⟪A⁻¹ r, r⟫))`, where `⟪r, r⟫ = ‖r‖²` and `⟪A⁻¹ r, r⟫ =
-⟪d, A d⟫ = ‖d‖_A²`.  Bounding the quotient below by Kantorovich’s inequality is exactly the proof of
-`energyNorm_steepestDescentStep_le`. -/
+/-- **The one-step identity of steepest descent** ([saad2003iterative], the display before Lemma
+5.8, (5.20)). Let $A$ be symmetric coercive, let $Ax^* = b$, and let $x'$ be the steepest
+descent step from $x$. With the error $d = x^* - x$ and the residual $r = b - Ax = Ad$,
+$$\|x^* - x'\|_A^2 = \|d\|_A^2 \left(1 - \frac{\|r\|^4}{\operatorname{Re}\langle Ar, r \rangle\,
+  \|d\|_A^2}\right).$$
+
+The source writes the quotient as $\langle r, r \rangle^2 / (\langle Ar, r \rangle \langle
+A^{-1} r, r \rangle)$, where $\langle r, r \rangle = \|r\|^2$ and $\langle A^{-1} r, r \rangle =
+\langle d, Ad \rangle = \|d\|_A^2$. A lower bound for the quotient by Kantorovich's inequality
+is the proof of `Projection.energyNorm_steepestDescentStep_le`. -/
 theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E}
     (hstar : A xstar = b) (x : E) :
     energyNorm A (xstar - steepestDescentStep A b x) ^ 2
@@ -524,20 +630,24 @@ theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar
   field_simp
   ring
 
-/-- The one-dimensional step does nothing when the test vector is already orthogonal to the
-residual: its coefficient vanishes. -/
+/-- If $\langle w, b - Ax \rangle = 0$, the one-dimensional step with vectors $v$, $w$ from $x$
+returns $x$, because its coefficient is zero. -/
 theorem step1_eq_self_of_inner_eq_zero {v w x : E} (h : inner 𝕜 w (b - A x) = 0) :
     step1 A b v w x = x := by
   rw [step1, h, zero_div, zero_smul, add_zero]
 
-/-- The exact one-step identity for the exact line search along an arbitrary direction `d`
-([quarteroni2000numerical] (7.37)–(7.38)): for symmetric coercive `A`, `A x* = b` and
-`x′ = step1 A b d d x`, that is `x′ = x + (⟪d, r⟫ / ⟪d, A d⟫) d` with `r = b - A x`,
-`‖x* - x′‖_A² = ‖x* - x‖_A² - ‖⟪d, r⟫‖² / re ⟪A d, d⟫`. No hypothesis on `d`: for `d = 0` the step
-does nothing and the quotient is `0 / 0 = 0`. Pythagoras in the energy norm for the Galerkin step
-(`Projection.step1_isGalerkin`, `IsGalerkin.energyNorm_sq_add`) gives the identity at once; the case
-`d = r` is `Projection.energyNorm_steepestDescentStep_sq_eq`. Over `ℝ` the numerator is
-`⟪d, r⟫²`, and the book's `ρ_k = 1 - σ_k` form is `Projection.energyNorm_step1_sq_eq_mul`. -/
+/-- **The one-step identity of the exact line search** ([quarteroni2000numerical] (7.37)–(7.38)).
+Let $A$ be symmetric coercive and let $Ax^* = b$. For all $d$ and $x$, let $r = b - Ax$ and let
+$x' = x + (\langle d, r \rangle / \langle d, Ad \rangle)\, d$ be the step along $d$. Then
+$$\|x^* - x'\|_A^2 = \|x^* - x\|_A^2 - \frac{|\langle d, r \rangle|^2}{\operatorname{Re}\langle
+  Ad, d \rangle}.$$
+
+No hypothesis on $d$ is needed: for $d = 0$ the step returns $x$ and the quotient is $0/0 = 0$.
+The identity follows from Pythagoras in the energy norm for the Galerkin step
+(`Projection.step1_isGalerkin`, `IsGalerkin.energyNorm_sq_add`). The case $d = r$ is
+`Projection.energyNorm_steepestDescentStep_sq_eq`. Over $\mathbb{R}$ the numerator is
+$\langle d, r \rangle^2$. The form $\rho_k = 1 - \sigma_k$ of the source is
+`Projection.energyNorm_step1_sq_eq_mul`. -/
 theorem energyNorm_step1_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
     (d x : E) :
     energyNorm A (xstar - step1 A b d d x) ^ 2
@@ -563,9 +673,12 @@ theorem energyNorm_step1_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E} (hstar :
   rw [hpy, hsmul]
   ring
 
-/-- [quarteroni2000numerical] (7.38): the exact step along `d` contracts the squared energy norm of
-the error by the factor `ρ = 1 - σ`, `σ = ‖⟪d, r⟫‖² / (re ⟪A d, d⟫ ‖x* - x‖_A²)`; when `x = x*`
-both sides vanish. -/
+/-- **The contraction factor of the exact line search** ([quarteroni2000numerical] (7.38)). Let $A$
+be symmetric coercive and let $Ax^* = b$. For all $d$ and $x$, with $r = b - Ax$ and $x'$ the
+step along $d$,
+$$\|x^* - x'\|_A^2 = (1 - \sigma)\, \|x^* - x\|_A^2, \qquad \sigma = \frac{|\langle d, r
+  \rangle|^2}{\operatorname{Re}\langle Ad, d \rangle\, \|x^* - x\|_A^2}.$$
+The source writes the factor as $\rho = 1 - \sigma$. When $x = x^*$ both sides are zero. -/
 theorem energyNorm_step1_sq_eq_mul (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
     (d x : E) :
     energyNorm A (xstar - step1 A b d d x) ^ 2
@@ -579,7 +692,8 @@ theorem energyNorm_step1_sq_eq_mul (hA : A.IsSymmetricCoercive) {xstar : E} (hst
     simp [h0, hr]
   · field_simp
 
-/-- The exact step never increases the energy norm of the error. -/
+/-- Let $A$ be symmetric coercive and let $Ax^* = b$. For all $d$ and $x$, the step $x'$ along $d$
+from $x$ satisfies $\|x^* - x'\|_A \le \|x^* - x\|_A$. -/
 theorem energyNorm_step1_le (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
     (d x : E) : energyNorm A (xstar - step1 A b d d x) ≤ energyNorm A (xstar - x) := by
   refine energyNorm_le_of_sq_le ?_
@@ -588,9 +702,12 @@ theorem energyNorm_step1_le (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A 
     div_nonneg (by positivity) (hA.isPositive.re_inner_nonneg_left d)
   linarith
 
-/-- [quarteroni2000numerical] §7.2.4, the remark after (7.38): the exact step along `d` strictly
-decreases the energy norm of the error unless `d` is orthogonal to the residual — in which case the
-step does nothing (`Projection.step1_eq_self_of_inner_eq_zero`). -/
+/-- **Strict decrease** ([quarteroni2000numerical] §7.2.4, the remark after (7.38)). Let $A$ be
+symmetric coercive and let $Ax^* = b$. If $\langle d, b - Ax \rangle \neq 0$, the step $x'$
+along $d$ from $x$ satisfies
+$$\|x^* - x'\|_A < \|x^* - x\|_A.$$
+If $\langle d, b - Ax \rangle = 0$, the step returns $x$
+(`Projection.step1_eq_self_of_inner_eq_zero`). -/
 theorem energyNorm_step1_lt (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
     {d x : E} (h : inner 𝕜 d (b - A x) ≠ 0) :
     energyNorm A (xstar - step1 A b d d x) < energyNorm A (xstar - x) := by
@@ -603,10 +720,12 @@ theorem energyNorm_step1_lt (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A 
     linarith
   exact lt_of_pow_lt_pow_left₀ 2 (energyNorm_nonneg A _) hsq
 
-/-- The contraction corollary shared by the convergence theorems of this file: if the errors of a
-sequence of iterates contract by a factor `ρ < 1` in some functional `N` that dominates the norm up
-to a constant — any norm equivalent to the norm of `E`, an energy norm, or the residual norm of a
-coercive operator — then the iterates converge to `xstar`. -/
+/-- **Convergence from a contraction.** Let $N : E \to \mathbb{R}$ be nonnegative with
+$\|v\| \le C\, N(v)$ for all $v$, and let $0 \le \rho < 1$. If a sequence $(x_k)$ satisfies
+$N(x^* - x_{k+1}) \le \rho\, N(x^* - x_k)$ for every $k$, then $x_k \to x^*$.
+
+The function $N$ can be any norm equivalent to the norm of $E$, an energy norm, or the residual
+norm of a coercive operator. The convergence theorems of this file use this result. -/
 theorem tendsto_of_forall_norm_succ_le {N : E → ℝ} {C ρ : ℝ} {xseq : ℕ → E} {xstar : E}
     (hN : ∀ v : E, ‖v‖ ≤ C * N v) (hN0 : ∀ v : E, 0 ≤ N v) (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
     (h : ∀ k, N (xstar - xseq (k + 1)) ≤ ρ * N (xstar - xseq k)) :
@@ -639,8 +758,11 @@ theorem tendsto_of_forall_norm_succ_le {N : E → ℝ} {C ρ : ℝ} {xseq : ℕ 
 
 /-! ### Convergence of the steepest-descent iterates -/
 
-/-- The steepest-descent factor `(λmax - λmin)/(λmax + λmin)` of a nonzero space lies in `[0, 1)`:
-on a nontrivial space the bounds `λmin ≤ λmax` are forced by any nonzero vector. -/
+/-- Let $E \neq 0$, and let $A$ be symmetric with $\lambda_{\min} \|u\|^2 \le
+\operatorname{Re}\langle Au, u \rangle \le \lambda_{\max} \|u\|^2$ for all $u$, where
+$0 < \lambda_{\min}$. Then the steepest-descent factor satisfies
+$$0 \le \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}} < 1.$$
+On a nonzero space, any nonzero vector forces $\lambda_{\min} \le \lambda_{\max}$. -/
 theorem steepestDescentFactor_mem_Ico [Nontrivial E] {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) :
     0 ≤ (lmax - lmin) / (lmax + lmin) ∧ (lmax - lmin) / (lmax + lmin) < 1 := by
@@ -650,9 +772,13 @@ theorem steepestDescentFactor_mem_Ico [Nontrivial E] {lmin lmax : ℝ} (hl : 0 <
   have hs : 0 < lmax + lmin := by linarith
   exact ⟨div_nonneg (by linarith) hs.le, by rw [div_lt_one hs]; linarith⟩
 
-/-- **The steepest-descent rate along the iterates** ([saad2003iterative] Thm 5.9,
-[quarteroni2000numerical] Theorem 4.10): the energy norm of the error after `k` steps is at most
-`((λmax - λmin)/(λmax + λmin))^k` times the initial one. -/
+/-- **The steepest-descent rate** ([saad2003iterative] Theorem 5.9, [quarteroni2000numerical]
+Theorem 4.10). Let $A$ be symmetric with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle
+Au, u \rangle \le \lambda_{\max} \|u\|^2$ for all $u$, where $0 < \lambda_{\min}$, and let
+$Ax^* = b$. Let $x_k$ be the $k$-th steepest-descent iterate from $x_0$. Then for every $k$,
+$$\|x^* - x_k\|_A \le \left(\frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} +
+  \lambda_{\min}}\right)^k \|x^* - x_0\|_A.$$
+-/
 theorem energyNorm_iterate_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x₀ : E) (k : ℕ) :
     energyNorm A (xstar - (steepestDescentStep A b)^[k] x₀) ≤
@@ -667,9 +793,13 @@ theorem energyNorm_iterate_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lm
     exact (energyNorm_steepestDescentStep_le hl hA hstar _).trans
       (mul_le_mul_of_nonneg_left ih hρ)
 
-/-- **Steepest descent converges** from every starting vector ([saad2003iterative] Thm 5.9,
-[quarteroni2000numerical] Theorem 4.10): the energy norm contracts by a factor `< 1` and dominates
-`√λmin` times the norm (`tendsto_of_forall_norm_succ_le`). -/
+/-- **Convergence of steepest descent** ([saad2003iterative] Theorem 5.9, [quarteroni2000numerical]
+Theorem 4.10). Let $A$ be symmetric with $\lambda_{\min} \|u\|^2 \le \operatorname{Re}\langle
+Au, u \rangle \le \lambda_{\max} \|u\|^2$ for all $u$, where $0 < \lambda_{\min}$, and let
+$Ax^* = b$. Then for every $x_0$ the steepest-descent iterates from $x_0$ converge to $x^*$.
+
+The energy norm of the error contracts by a factor less than $1$, and it is at least
+$\sqrt{\lambda_{\min}}$ times the norm (`Projection.tendsto_of_forall_norm_succ_le`). -/
 theorem tendsto_iterate_steepestDescentStep {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x₀ : E) :
     Filter.Tendsto (fun k => (steepestDescentStep A b)^[k] x₀) Filter.atTop (nhds xstar) := by

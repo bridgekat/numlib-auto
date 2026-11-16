@@ -19,39 +19,60 @@ import Mathlib.Topology.Order.Compact
 /-!
 # Chebyshev min–max on an interval
 
-The classical Chebyshev min–max theorem on an interval,
-`min {max_{t ∈ [a,b]} |p t| : deg p ≤ m, p γ = 1} = 1 / |T_m(1 + 2(a - γ)/(b - a))|` for
-`γ ∉ [a, b]`, its special case `γ = 0`, and the growth estimates for `T_m` that turn it into the
-geometric rates used in Krylov-method error bounds.
-Mathlib supplies `Polynomial.Chebyshev.T` and the extremal inequality
-`Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one`.
+Let $a < b$, let $T_m$ be the Chebyshev polynomial of the first kind of degree $m$, and let
+$s(t) = (b + a - 2t)/(b - a)$ be the affine map that carries $[a, b]$ onto $[-1, 1]$, with
+$s(a) = 1$ and $s(b) = -1$. The **Chebyshev min–max theorem** on $[a, b]$ says that for
+$\gamma \notin [a, b]$,
+$$\min \Bigl\{ \max_{t \in [a, b]} |p(t)| : \deg p \le m,\ p(\gamma) = 1 \Bigr\} =
+  \frac{1}{|T_m(s(\gamma))|},$$
+and that the minimum is attained by the shifted Chebyshev polynomial $T_m(s(t)) / T_m(s(\gamma))$.
+This module proves the theorem, its special case $\gamma = 0 < a$, the uniqueness of the minimizer
+in that case, and growth estimates for $T_m$ that turn the min–max value into the geometric rates of
+the error bounds of Krylov methods. Mathlib supplies $T_m$ as `Polynomial.Chebyshev.T` and the
+extremal inequality `Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one`.
 
-The last theorem of the file leaves the single interval: for a spectrum split into two intervals
-on either side of the origin, composing the shifted Chebyshev polynomial with a quadratic that
-fixes the origin and maps both intervals onto one gives the corresponding geometric bound.
+The last theorem leaves the single interval. For a set $[a, b] \cup [c, d]$ with $a < b < 0 < c < d$
+and $b - a = d - c$, the shifted Chebyshev polynomial composed with a quadratic that fixes the
+origin and maps both intervals onto one interval gives the corresponding geometric bound.
 
 ## Main definitions
 
-* `Polynomial.Chebyshev.shifted m a b γ`: the Chebyshev polynomial of degree `m` transplanted to
-  `[a, b]` by an affine change of variable and normalized to `1` at `γ`.
+* `Polynomial.Chebyshev.shifted`: the polynomial $T_m(s(t)) / T_m(s(\gamma))$, the Chebyshev
+  polynomial of degree $m$ carried to $[a, b]$ and normalized to $1$ at $\gamma$.
+* `Polynomial.Chebyshev.extremalNode`: the Chebyshev extremal nodes $t_0 < \dots < t_m$ of $[a, b]$.
 
 ## Main results
 
-* `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval` and
-  `Polynomial.Chebyshev.sSup_abs_eval_shifted`: the min–max value, as a lower bound over the
-  admissible polynomials and as the value `Polynomial.Chebyshev.shifted` attains;
-  `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero` is the case `γ = 0`.
-* `Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`: the growth estimate
-  `1 / T_m((κ + 1)/(κ - 1)) ≤ 2 ((√κ - 1)/(√κ + 1))^m`, which is where the `√κ` rate of a Krylov
-  method on a system of condition number `κ` comes from.
-* `Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc`: the two-interval bound.
+* `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval`: every polynomial of degree at most $m$
+  with $p(\gamma) = 1$ has maximum modulus on $[a, b]$ at least $1 / |T_m(s(\gamma))|$.
+* `Polynomial.Chebyshev.sSup_abs_eval_shifted`: the shifted Chebyshev polynomial attains this value.
+* `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero`: the case $\gamma = 0 < a$,
+  with the value $1 / T_m((b + a)/(b - a))$.
+* `Polynomial.Chebyshev.eq_shifted_of_sSup_abs_eval_eq`: for $0 < a < b$ and $m \ge 1$, the
+  minimizer with $p(0) = 1$ is unique.
+* `Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`: for $\kappa > 1$, $1 / T_m((\kappa +
+  1)/(\kappa - 1)) \le 2 \bigl((\sqrt\kappa - 1)/(\sqrt\kappa + 1)\bigr)^m$, the source of the
+  $\sqrt\kappa$ rate of a Krylov method for a system of condition number $\kappa$.
+* `Polynomial.Chebyshev.one_div_eval_T_eq_two_mul_pow_div`: the exact value $2 c^m / (1 + c^{2m})$
+  with $c = (\sqrt\kappa - 1)/(\sqrt\kappa + 1)$.
+* `Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc`: the bound for two intervals on
+  either side of the origin.
+
+## Implementation notes
+
+* The maximum of $|p|$ on $[a, b]$ is written as `sSup ((fun t => |p.eval t|) '' Set.Icc a b)`.
+* Mathlib indexes `Polynomial.Chebyshev.T` by an integer. The degree $m$ is a natural number, cast
+  to an integer.
 -/
 
 open Polynomial Polynomial.Chebyshev
 
 namespace Polynomial.Chebyshev
 
-/-- Closed form `T_m x = ½ ((x + √(x²-1))^m + (x - √(x²-1))^m)` for `x ≥ 1`. -/
+/-- For $x \ge 1$ and $m \in \mathbb{N}$, the Chebyshev polynomial has the closed form
+$$T_m(x) = \frac{1}{2} \Bigl( \bigl(x + \sqrt{x^2 - 1}\bigr)^m + \bigl(x - \sqrt{x^2 -
+  1}\bigr)^m \Bigr).$$
+-/
 theorem eval_T_eq_half_add_pow {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
     (T ℝ m).eval x =
       ((x + Real.sqrt (x ^ 2 - 1)) ^ m + (x - Real.sqrt (x ^ 2 - 1)) ^ m) / 2 := by
@@ -65,7 +86,8 @@ theorem eval_T_eq_half_add_pow {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
     show -((m : ℝ) * Real.arcosh x) = (m : ℝ) * -Real.arcosh x by ring,
     Real.exp_nat_mul, hexpn]
 
-/-- `½ (x + √(x²-1))^m ≤ T_m x` for `x ≥ 1`. -/
+/-- For $x \ge 1$ and $m \in \mathbb{N}$, $\frac{1}{2} \bigl(x + \sqrt{x^2 - 1}\bigr)^m \le T_m(x)$.
+-/
 theorem half_pow_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
     (x + Real.sqrt (x ^ 2 - 1)) ^ m / 2 ≤ (T ℝ m).eval x := by
   rw [eval_T_eq_half_add_pow hx]
@@ -75,13 +97,18 @@ theorem half_pow_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
   have := pow_nonneg (by linarith : (0:ℝ) ≤ x - Real.sqrt (x ^ 2 - 1)) m
   linarith
 
-/-- To the right of the oscillation interval `T_m` is at least `1`, so the min–max value
-`1 / T_m(·)` is a genuine contraction factor and no absolute value is needed around it. -/
+/-- For $x \ge 1$ and $m \in \mathbb{N}$, $T_m(x) \ge 1$.
+
+Thus to the right of the interval $[-1, 1]$, the min–max value $1 / T_m(x)$ is at most $1$, and
+it needs no absolute value. -/
 theorem one_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) : 1 ≤ (T ℝ m).eval x :=
   one_le_eval_T_real _ hx
 
-/-- Chebyshev polynomials increase to the right of `1`: `T_k(x) = cosh (k arcosh x)` there, and
-`cosh` and `arcosh` are monotone on `[0, ∞)` and `[1, ∞)`. -/
+/-- The Chebyshev polynomials increase to the right of $1$: if $1 \le x \le y$, then
+$T_k(x) \le T_k(y)$ for every $k \in \mathbb{N}$.
+
+On $[1, \infty)$, $T_k(x) = \cosh(k \operatorname{arcosh} x)$, and $\cosh$ and
+$\operatorname{arcosh}$ are monotone on $[0, \infty)$ and $[1, \infty)$. -/
 theorem eval_T_le_eval_T {x y : ℝ} (hx : 1 ≤ x) (hxy : x ≤ y) (k : ℕ) :
     (T ℝ k).eval x ≤ (T ℝ k).eval y := by
   have hy : 1 ≤ y := hx.trans hxy
@@ -92,14 +119,21 @@ theorem eval_T_le_eval_T {x y : ℝ} (hx : 1 ≤ x) (hxy : x ≤ y) (k : ℕ) :
   rw [abs_of_nonneg (mul_nonneg hk h0), abs_of_nonneg (mul_nonneg hk (h0.trans hle))]
   exact mul_le_mul_of_nonneg_left hle hk
 
-/-- The shifted Chebyshev polynomial `t ↦ T_m((b + a - 2t)/(b - a)) / T_m((b + a - 2γ)/(b - a))`,
-normalized to `1` at `γ`. -/
+/-- The **shifted Chebyshev polynomial** of degree $m$ for the interval $[a, b]$, normalized at
+$\gamma$:
+$$t \mapsto \frac{T_m\bigl((b + a - 2t)/(b - a)\bigr)}{T_m\bigl((b + a - 2\gamma)/(b -
+  a)\bigr)}.$$
+If the denominator is $0$, the polynomial is $0$, because division by zero gives $0$.
+
+For $a < b$ and $\gamma \notin [a, b]$, the denominator is nonzero and the polynomial takes the
+value $1$ at $\gamma$ (`Polynomial.Chebyshev.shifted_eval_self`). -/
 noncomputable def shifted (m : ℕ) (a b γ : ℝ) : ℝ[X] :=
   Polynomial.C (1 / (T ℝ m).eval ((b + a - 2 * γ) / (b - a))) *
     (T ℝ m).comp (Polynomial.C ((b + a) / (b - a)) - Polynomial.C (2 / (b - a)) * X)
 
-/-- `shifted m a b γ` has degree at most `m`: the affine change of variable does not raise the
-degree. Half of what makes it an admissible competitor in the min–max problem. -/
+/-- The shifted Chebyshev polynomial of degree $m$ has degree at most $m$, because the affine change
+of variable does not raise the degree. This is one of the two conditions that make it an
+admissible competitor in the min–max problem. -/
 theorem shifted_degree_le (m : ℕ) (a b γ : ℝ) : (shifted m a b γ).degree ≤ m := by
   have hlin : (Polynomial.C ((b + a) / (b - a)) -
       Polynomial.C (2 / (b - a)) * X : ℝ[X]).natDegree ≤ 1 := by
@@ -113,7 +147,8 @@ theorem shifted_degree_le (m : ℕ) (a b γ : ℝ) : (shifted m a b γ).degree �
   rw [hT]
   simpa using Nat.mul_le_mul_left m hlin
 
-/-- The evaluation of `shifted` as a ratio of Chebyshev values. -/
+/-- For $a < b$, the value of the shifted Chebyshev polynomial at $t$ is
+$T_m(s(t)) / T_m(s(\gamma))$, with $s(t) = (b + a - 2t)/(b - a)$. -/
 private theorem eval_shifted (m : ℕ) {a b : ℝ} (hab : a < b) (γ t : ℝ) :
     (shifted m a b γ).eval t
       = (T ℝ (m : ℤ)).eval ((b + a - 2 * t) / (b - a)) /
@@ -124,14 +159,15 @@ private theorem eval_shifted (m : ℕ) {a b : ℝ} (hab : a < b) (γ t : ℝ) :
   rw [show (b + a) / (b - a) - 2 / (b - a) * t = (b + a - 2 * t) / (b - a) by field_simp]
   ring
 
-/-- The affine change of variable `t ↦ (b + a - 2t)/(b - a)` maps `[a, b]` into `[-1, 1]`. -/
+/-- For $a < b$, the affine map $t \mapsto (b + a - 2t)/(b - a)$ maps $[a, b]$ into $[-1, 1]$. -/
 private theorem abs_shift_le_one {a b t : ℝ} (hab : a < b) (ht : t ∈ Set.Icc a b) :
     |(b + a - 2 * t) / (b - a)| ≤ 1 := by
   have hd : 0 < b - a := by linarith
   rw [abs_div, abs_of_pos hd, div_le_one hd]
   exact abs_le.mpr ⟨by linarith [ht.2], by linarith [ht.1]⟩
 
-/-- A point outside `[a, b]` is mapped outside `[-1, 1]`. -/
+/-- For $a < b$, the affine map $t \mapsto (b + a - 2t)/(b - a)$ maps every point outside $[a, b]$
+to a point outside $[-1, 1]$. -/
 private theorem one_lt_abs_shift {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.Icc a b) :
     1 < |(b + a - 2 * γ) / (b - a)| := by
   have hd : 0 < b - a := by linarith
@@ -142,14 +178,17 @@ private theorem one_lt_abs_shift {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.
       have : (b + a - 2 * γ) / (b - a) < -1 := by rw [div_lt_iff₀ hd]; linarith
       linarith) (neg_le_abs _)
 
-/-- `|T_m|` is unchanged by a sign change of its argument, `T_m` being even or odd with `m`. -/
+/-- For $m \in \mathbb{N}$ and $z \in \mathbb{R}$, $|T_m(-z)| = |T_m(z)|$, because $T_m$ is even or
+odd according to the parity of $m$. -/
 theorem abs_eval_T_neg (m : ℕ) (z : ℝ) :
     |(T ℝ (m : ℤ)).eval (-z)| = |(T ℝ (m : ℤ)).eval z| := by
   simp [T_eval_neg, abs_mul]
 
-/-- `shifted m a b γ` takes the value `1` at the normalization point `γ`, the other half of what
-makes it admissible. The hypothesis `γ ∉ [a, b]` is what keeps the normalizing denominator
-`T_m((b + a - 2γ)/(b - a))` away from zero. -/
+/-- For $a < b$ and $\gamma \notin [a, b]$, the shifted Chebyshev polynomial normalized at $\gamma$
+takes the value $1$ at $\gamma$. This is the second condition that makes it admissible.
+
+The hypothesis $\gamma \notin [a, b]$ keeps the normalizing denominator
+$T_m((b + a - 2\gamma)/(b - a))$ away from zero. -/
 theorem shifted_eval_self (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.Icc a b) :
     (shifted m a b γ).eval γ = 1 := by
   have hTne : (T ℝ (m : ℤ)).eval ((b + a - 2 * γ) / (b - a)) ≠ 0 := by
@@ -159,10 +198,13 @@ theorem shifted_eval_self (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ S
     linarith
   rw [eval_shifted m hab, div_self hTne]
 
-/-- The extremal property of `T_m` outside `[-1, 1]`: a real polynomial of degree at most `m`
-bounded by `1` on `[-1, 1]` is bounded by `|T_m|` at any point of absolute value at least `1`
-(`eval_iterate_derivative_le_of_forall_abs_le_one` at order `0` on `[1, ∞)`, and its reflection
-on `(-∞, -1]`). -/
+/-- The **extremal property of $T_m$ outside $[-1, 1]$**. Let $P$ be a real polynomial of degree at
+most $m$ with $|P(y)| \le 1$ for every $y \in [-1, 1]$. Then for every $z$ with $|z| \ge 1$,
+$$P(z) \le |T_m(z)|.$$
+
+On $[1, \infty)$ this is Mathlib's
+`Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one` at order $0$. On
+$(-\infty, -1]$ it follows by reflection. -/
 theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m)
     (hbnd : ∀ y ∈ Set.Icc (-1 : ℝ) 1, |P.eval y| ≤ 1) {z : ℝ} (hz : 1 ≤ |z|) :
     P.eval z ≤ |(T ℝ (m : ℤ)).eval z| := by
@@ -188,8 +230,10 @@ theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m)
       _ ≤ |(T ℝ (m : ℤ)).eval (-z)| := le_abs_self _
       _ = |(T ℝ (m : ℤ)).eval z| := abs_eval_T_neg m z
 
-/-- Lower bound (general normalization point `γ ∉ [a, b]`): every polynomial of degree `≤ m`
-with `p γ = 1` has sup over `[a, b]` at least `1 / |T_m((b + a - 2γ)/(b - a))|`. -/
+/-- The **lower bound of the Chebyshev min–max theorem**. Let $a < b$, let $\gamma \notin [a, b]$,
+and let $p$ be a real polynomial of degree at most $m$ with $p(\gamma) = 1$. Then
+$$\frac{1}{|T_m\bigl((b + a - 2\gamma)/(b - a)\bigr)|} \le \sup_{t \in [a, b]} |p(t)|.$$
+-/
 theorem one_div_eval_T_le_sSup_abs_eval (m : ℕ) {a b γ : ℝ} (hab : a < b)
     (hγ : γ ∉ Set.Icc a b) (p : ℝ[X]) (hp : p.degree ≤ m) (hpγ : p.eval γ = 1) :
     1 / |(T ℝ m).eval ((b + a - 2 * γ) / (b - a))| ≤
@@ -261,7 +305,11 @@ theorem one_div_eval_T_le_sSup_abs_eval (m : ℕ) {a b γ : ℝ} (hab : a < b)
   calc (1 : ℝ) = M * M⁻¹ := by field_simp
     _ ≤ M * |(T ℝ (m : ℤ)).eval u| := by gcongr
 
-/-- The bound is attained by `shifted m a b γ`. -/
+/-- The **shifted Chebyshev polynomial attains the min–max value**. Let $a < b$ and
+$\gamma \notin [a, b]$, and let $q$ be the shifted Chebyshev polynomial of degree $m$ for
+$[a, b]$, normalized at $\gamma$. Then
+$$\sup_{t \in [a, b]} |q(t)| = \frac{1}{|T_m\bigl((b + a - 2\gamma)/(b - a)\bigr)|}.$$
+-/
 theorem sSup_abs_eval_shifted (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.Icc a b) :
     sSup ((fun t => |(shifted m a b γ).eval t|) '' Set.Icc a b) =
       1 / |(T ℝ m).eval ((b + a - 2 * γ) / (b - a))| := by
@@ -285,9 +333,13 @@ theorem sSup_abs_eval_shifted (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ �
             (div_nonneg zero_le_one (abs_nonneg _))
       _ = 1 / |(T ℝ (m : ℤ)).eval ((b + a - 2 * γ) / (b - a))| := one_mul _
 
-/-- Special case `γ = 0`, `0 < a < b`, the form used for the error bound of a Krylov method on a
-positive definite operator with spectrum in `[a, b]`:
-`min_{deg p ≤ m, p 0 = 1} max_{[a,b]} |p| = 1 / T_m((b + a)/(b - a))`. -/
+/-- The **Chebyshev min–max lower bound at $\gamma = 0$**. Let $0 < a < b$, and let $p$ be a real
+polynomial of degree at most $m$ with $p(0) = 1$. Then
+$$\frac{1}{T_m\bigl((b + a)/(b - a)\bigr)} \le \sup_{t \in [a, b]} |p(t)|.$$
+
+This is the form used in the error bound of a Krylov method for a positive definite operator
+with spectrum in $[a, b]$. With `Polynomial.Chebyshev.sSup_abs_eval_shifted`, it gives
+$\min_{\deg p \le m,\, p(0) = 1} \max_{[a, b]} |p| = 1 / T_m((b + a)/(b - a))$. -/
 theorem one_div_eval_T_le_sSup_abs_eval_of_eval_zero (m : ℕ) {a b : ℝ} (ha : 0 < a) (hab : a < b)
     (p : ℝ[X]) (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :
     1 / (T ℝ m).eval ((b + a) / (b - a)) ≤ sSup ((fun t => |p.eval t|) '' Set.Icc a b) := by
@@ -299,9 +351,12 @@ theorem one_div_eval_T_le_sSup_abs_eval_of_eval_zero (m : ℕ) {a b : ℝ} (ha :
     linarith
   rwa [abs_of_nonneg (le_trans zero_le_one (one_le_eval_T hu m))] at h
 
-/-- `1 / T_m((κ + 1)/(κ - 1)) ≤ 2 ((√κ - 1)/(√κ + 1))^m` for `κ > 1`: the growth estimate that
-turns the min–max value into the classical `√κ` convergence rate for a system of condition
-number `κ`. -/
+/-- The **growth estimate for $T_m$**. For $\kappa > 1$ and $m \in \mathbb{N}$,
+$$\frac{1}{T_m\bigl((\kappa + 1)/(\kappa - 1)\bigr)} \le 2 \Bigl(\frac{\sqrt\kappa -
+  1}{\sqrt\kappa + 1}\Bigr)^m.$$
+
+This turns the min–max value into the classical $\sqrt\kappa$ convergence rate for a system of
+condition number $\kappa$. -/
 theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
     1 / (T ℝ m).eval ((κ + 1) / (κ - 1)) ≤
       2 * ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ m := by
@@ -332,12 +387,16 @@ theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
         rw [one_div_div, div_pow, div_pow]
         field_simp
 
-/-- The closed form of the Chebyshev min–max value on `[λmin, λmax]` with `κ = λmax / λmin > 1`
-([quarteroni2000numerical] (4.47) and the display closing the proof of Theorem 4.12): with
-`c = (√κ - 1)/(√κ + 1)`, `1 / T_m((κ + 1)/(κ - 1)) = 2 c^m / (1 + c^{2m})`. At
-`x = (κ + 1)/(κ - 1)` one has `x + √(x² - 1) = 1/c` and `x - √(x² - 1) = c`, so
-`T_m x = ½ (c^{-m} + c^m)` by `eval_T_eq_half_add_pow`. This sharpens
-`one_div_eval_T_le_two_mul_pow` to an equality. -/
+/-- The **closed form of the Chebyshev min–max value**. For $\kappa > 1$ and $m \in \mathbb{N}$,
+with $c = (\sqrt\kappa - 1)/(\sqrt\kappa + 1)$,
+$$\frac{1}{T_m\bigl((\kappa + 1)/(\kappa - 1)\bigr)} = \frac{2 c^m}{1 + c^{2m}}.$$
+
+This is (4.47) of [quarteroni2000numerical] and the display that closes the proof of its Theorem
+4.12, for the interval $[\lambda_{\min}, \lambda_{\max}]$ with
+$\kappa = \lambda_{\max} / \lambda_{\min}$. At $x = (\kappa + 1)/(\kappa - 1)$ one has
+$x + \sqrt{x^2 - 1} = 1/c$ and $x - \sqrt{x^2 - 1} = c$, so $T_m(x) = \frac{1}{2}(c^{-m} + c^m)$
+by `Polynomial.Chebyshev.eval_T_eq_half_add_pow`. The result sharpens
+`Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow` to an equality. -/
 theorem one_div_eval_T_eq_two_mul_pow_div {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
     1 / (T ℝ m).eval ((κ + 1) / (κ - 1)) =
       2 * ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ m /
@@ -372,13 +431,18 @@ section Uniqueness
 
 variable {m : ℕ} {a b : ℝ}
 
-/-- The Chebyshev extremal nodes of `[a, b]`: the images `t_k = (b + a)/2 - cos(kπ/m) (b - a)/2`,
-`k = 0, …, m`, of the extrema `cos(kπ/m)` of `T_m` under the affine map of `[-1, 1]` onto
-`[a, b]`; `t_0 = a` and `t_m = b`. -/
+/-- The **Chebyshev extremal nodes** of $[a, b]$: for $k = 0, \dots, m$,
+$$t_k = \frac{b + a}{2} - \cos\Bigl(\frac{k\pi}{m}\Bigr) \frac{b - a}{2}.$$
+They are the images of the extrema $\cos(k\pi/m)$ of $T_m$ under the affine map of $[-1, 1]$
+onto $[a, b]$, and $t_0 = a$, $t_m = b$.
+
+For $m = 0$, the angle $k\pi/m$ is $0$, because division by zero gives $0$, and the only node is
+$t_0 = a$. -/
 noncomputable def extremalNode (m : ℕ) (a b : ℝ) (k : Fin (m + 1)) : ℝ :=
   (b + a) / 2 - Real.cos ((k : ℝ) * Real.pi / m) * ((b - a) / 2)
 
-/-- The affine change of variable sends the `k`-th extremal node back to `cos(kπ/m)`. -/
+/-- For $a < b$, the affine map $t \mapsto (b + a - 2t)/(b - a)$ sends the extremal node $t_k$ to
+$\cos(k\pi/m)$. -/
 theorem shift_extremalNode (hab : a < b) (k : Fin (m + 1)) :
     (b + a - 2 * extremalNode m a b k) / (b - a) = Real.cos ((k : ℝ) * Real.pi / m) := by
   have hba : b - a ≠ 0 := sub_ne_zero.mpr hab.ne'
@@ -386,14 +450,14 @@ theorem shift_extremalNode (hab : a < b) (k : Fin (m + 1)) :
   field_simp
   ring
 
-/-- The extremal nodes lie in `[a, b]`. -/
+/-- For $a < b$, the extremal nodes lie in $[a, b]$. -/
 theorem extremalNode_mem_Icc (hab : a < b) (k : Fin (m + 1)) :
     extremalNode m a b k ∈ Set.Icc a b := by
   have hc := Real.abs_cos_le_one ((k : ℝ) * Real.pi / m)
   rw [abs_le] at hc
   constructor <;> (simp only [extremalNode]; nlinarith [hc.1, hc.2])
 
-/-- The angle `kπ/m` of the `k`-th node lies in `[0, π]`. -/
+/-- For $m \ge 1$ and $k \le m$, the angle $k\pi/m$ lies in $[0, \pi]$. -/
 private theorem angle_mem_Icc (hm : 1 ≤ m) (k : Fin (m + 1)) :
     (k : ℝ) * Real.pi / m ∈ Set.Icc 0 Real.pi := by
   have hmpos : (0 : ℝ) < m := by exact_mod_cast hm
@@ -403,7 +467,8 @@ private theorem angle_mem_Icc (hm : 1 ≤ m) (k : Fin (m + 1)) :
   · rw [div_le_iff₀ hmpos]
     nlinarith [Real.pi_pos]
 
-/-- The extremal nodes are strictly increasing in `k`. -/
+/-- For $m \ge 1$ and $a < b$, the extremal nodes are strictly increasing:
+$t_0 < t_1 < \dots < t_m$. -/
 theorem extremalNode_strictMono (hm : 1 ≤ m) (hab : a < b) :
     StrictMono (extremalNode m a b) := by
   intro j k hjk
@@ -415,13 +480,15 @@ theorem extremalNode_strictMono (hm : 1 ≤ m) (hab : a < b) :
   simp only [extremalNode]
   nlinarith
 
-/-- The extremal nodes are distinct. -/
+/-- For $m \ge 1$ and $a < b$, the extremal nodes are distinct. -/
 theorem extremalNode_injective (hm : 1 ≤ m) (hab : a < b) :
     Function.Injective (extremalNode m a b) :=
   (extremalNode_strictMono hm hab).injective
 
-/-- At the `k`-th extremal node the normalized Chebyshev polynomial takes the value
-`(-1)^k / T_m((b + a)/(b - a))`, the alternating extremal values. -/
+/-- For $m \ge 1$ and $a < b$, the shifted Chebyshev polynomial $q$ of degree $m$ for $[a, b]$,
+normalized at $0$, takes alternating extremal values at the extremal nodes:
+$$q(t_k) = \frac{(-1)^k}{T_m\bigl((b + a)/(b - a)\bigr)}, \qquad k = 0, \dots, m.$$
+-/
 theorem eval_shifted_extremalNode (hm : 1 ≤ m) (hab : a < b) (k : Fin (m + 1)) :
     (shifted m a b 0).eval (extremalNode m a b k)
       = (-1) ^ (k : ℕ) / (T ℝ m).eval ((b + a) / (b - a)) := by
@@ -431,9 +498,11 @@ theorem eval_shifted_extremalNode (hm : 1 ≤ m) (hab : a < b) (k : Fin (m + 1))
       push_cast; field_simp,
     Real.cos_nat_mul_pi, mul_zero, sub_zero]
 
-/-- The weights `ℓ_k(0)` of Lagrange interpolation at the extremal nodes, evaluated at `0`, have
-the sign `(-1)^k`: `0 < (-1)^k ℓ_k(0)`. Each factor `(0 - t_j)/(t_k - t_j)` of `ℓ_k(0)` is
-negative exactly for the `k` indices `j < k`. -/
+/-- Let $m \ge 1$ and $0 < a < b$, and let $\ell_k$ be the Lagrange basis polynomials for the
+extremal nodes $t_0, \dots, t_m$. Then $(-1)^k \ell_k(0) > 0$ for every $k$.
+
+Each factor $(0 - t_j)/(t_k - t_j)$ of $\ell_k(0)$ is negative exactly for the $k$ indices
+$j < k$. The basis polynomials are `Lagrange.basis`. -/
 theorem pos_neg_one_pow_mul_eval_zero_basis_extremalNode (hm : 1 ≤ m) (ha : 0 < a) (hab : a < b)
     (k : Fin (m + 1)) :
     0 < (-1) ^ (k : ℕ) * (Lagrange.basis Finset.univ (extremalNode m a b) k).eval 0 := by
@@ -462,8 +531,11 @@ theorem pos_neg_one_pow_mul_eval_zero_basis_extremalNode (hm : 1 ≤ m) (ha : 0 
     have : (extremalNode m a b k - extremalNode m a b j)⁻¹ < 0 := inv_lt_zero.2 h1
     nlinarith
 
-/-- Lagrange interpolation at the extremal nodes, evaluated at `0`: for `deg r ≤ m`,
-`r(0) = ∑_k r(t_k) ℓ_k(0)`. -/
+/-- Lagrange interpolation at the extremal nodes, evaluated at $0$. Let $m \ge 1$ and $a < b$, let
+$\ell_k$ be the Lagrange basis polynomials for $t_0, \dots, t_m$, and let $r$ be a real
+polynomial of degree at most $m$. Then
+$$r(0) = \sum_{k=0}^{m} r(t_k)\, \ell_k(0).$$
+-/
 theorem eval_zero_eq_sum_extremalNode (hm : 1 ≤ m) (hab : a < b) {r : ℝ[X]}
     (hr : r.natDegree ≤ m) :
     r.eval 0 = ∑ k : Fin (m + 1), r.eval (extremalNode m a b k) *
@@ -478,15 +550,21 @@ theorem eval_zero_eq_sum_extremalNode (hm : 1 ≤ m) (hab : a < b) {r : ℝ[X]}
   rw [Lagrange.interpolate_apply, Polynomial.eval_finsetSum]
   exact Finset.sum_congr rfl fun k _ => by rw [Polynomial.eval_mul, Polynomial.eval_C]
 
-/-- Uniqueness in the Chebyshev min–max problem (the "admits a unique solution" of
-[quarteroni2000numerical] Property 4.6, which the book states without proof): for `0 < a < b` and
-`m ≥ 1`, a polynomial `p` of degree at most `m` with `p(0) = 1` whose maximum modulus on `[a, b]`
-is the minimal value `1 / T_m((b + a)/(b - a))` (`one_div_eval_T_le_sSup_abs_eval_of_eval_zero`)
-is the normalized Chebyshev polynomial `shifted m a b 0`. Instead of counting zeros with
-multiplicity, the proof interpolates at the `m + 1` extremal nodes `t_k`: the weights
-`λ_k = ℓ_k(0)` have the signs `(-1)^k` of the extremal values of `q = shifted m a b 0`, so
-`1 = p(0) = ∑ λ_k p(t_k) ≤ ∑ |λ_k| M = ∑ λ_k q(t_k) = q(0) = 1` forces `p(t_k) = q(t_k)` at every
-node, and two polynomials of degree at most `m` agreeing at `m + 1` points are equal. -/
+/-- **Uniqueness of the Chebyshev minimizer.** Let $m \ge 1$ and $0 < a < b$, and let $p$ be a real
+polynomial of degree at most $m$ with $p(0) = 1$ and
+$$\sup_{t \in [a, b]} |p(t)| = \frac{1}{T_m\bigl((b + a)/(b - a)\bigr)},$$
+the minimal value of `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero`. Then
+$p$ is the shifted Chebyshev polynomial of degree $m$ for $[a, b]$, normalized at $0$.
+
+This is the uniqueness claim ("admits a unique solution") of Property 4.6 of
+[quarteroni2000numerical], which the source states without proof. Instead of counting zeros with
+multiplicity, the proof interpolates at the $m + 1$ extremal nodes $t_k$. Let $q$ be the shifted
+Chebyshev polynomial and $M$ the minimal value. The weights $\lambda_k = \ell_k(0)$ have the
+signs $(-1)^k$ of the extremal values $q(t_k)$, so
+$$1 = p(0) = \sum_k \lambda_k p(t_k) \le \sum_k |\lambda_k| M = \sum_k \lambda_k q(t_k) = q(0) =
+  1.$$
+This forces $p(t_k) = q(t_k)$ at every node, and two polynomials of degree at most $m$ that
+agree at $m + 1$ points are equal. -/
 theorem eq_shifted_of_sSup_abs_eval_eq (hm : 1 ≤ m) (ha : 0 < a) (hab : a < b) {p : ℝ[X]}
     (hp : p.natDegree ≤ m) (hp0 : p.eval 0 = 1)
     (hsup : sSup ((fun t => |p.eval t|) '' Set.Icc a b) = 1 / (T ℝ m).eval ((b + a) / (b - a))) :
@@ -565,24 +643,29 @@ theorem eq_shifted_of_sSup_abs_eval_eq (hm : 1 ≤ m) (ha : 0 < a) (hab : a < b)
 
 end Uniqueness
 
-/-- The pointwise form of the min–max bound: on `[a, b]` the normalized Chebyshev polynomial
-`shifted m a b γ` is bounded by `1 / |T_m((b + a - 2γ)/(b - a))|`. -/
+/-- The pointwise form of the min–max bound. For $a < b$, every $\gamma$ and every $t \in [a, b]$,
+the shifted Chebyshev polynomial $q$ of degree $m$ for $[a, b]$, normalized at $\gamma$,
+satisfies
+$$|q(t)| \le \frac{1}{|T_m\bigl((b + a - 2\gamma)/(b - a)\bigr)|}.$$
+If the denominator is $0$, both sides are $0$. -/
 theorem abs_eval_shifted_le (m : ℕ) {a b γ t : ℝ} (hab : a < b) (ht : t ∈ Set.Icc a b) :
     |(shifted m a b γ).eval t| ≤ 1 / |(T ℝ m).eval ((b + a - 2 * γ) / (b - a))| := by
   rw [eval_shifted m hab, abs_div, div_eq_mul_inv, one_div]
   exact mul_le_of_le_one_left (inv_nonneg.mpr (abs_nonneg _))
     (abs_eval_T_real_le_one _ (abs_shift_le_one hab ht))
 
-/-- The two-interval Chebyshev polynomial. For `a < b < 0 < c < d` with equal interval lengths
-`b - a = d - c` there is, for every `k`, a real polynomial of degree at most `2k` taking the
-value `1` at the origin whose modulus on `[a, b] ∪ [c, d]` is at most
-`2 ((√|ad| - √|bc|)/(√|ad| + √|bc|))^k`.
+/-- The **two-interval Chebyshev bound**. Let $a < b < 0 < c < d$ with equal interval lengths
+$b - a = d - c$, and let $k \in \mathbb{N}$. Then there is a real polynomial $p$ of degree at
+most $2k$ with $p(0) = 1$ and
+$$|p(t)| \le 2 \Bigl(\frac{\sqrt{|ad|} - \sqrt{|bc|}}{\sqrt{|ad|} + \sqrt{|bc|}}\Bigr)^k \quad
+  \text{for every } t \in [a, b] \cup [c, d].$$
 
-It is `shifted k |b c| |a d| 0` composed with the quadratic `t ↦ t² - (a + d) t`, which fixes the
-origin and maps each of the two intervals onto `[|b c|, |a d|]`: the equal lengths make
-`a + d = b + c`, so the quadratic is `t² - (b + c) t` as well and the two images coincide.
-This is the polynomial behind the convergence bound of a minimal-residual Krylov method for a
-symmetric operator whose spectrum is split into two intervals on either side of the origin. -/
+The polynomial is the shifted Chebyshev polynomial of degree $k$ for $[|bc|, |ad|]$, normalized
+at $0$, composed with the quadratic $t \mapsto t^2 - (a + d) t$. The quadratic fixes the origin
+and maps each of the two intervals onto $[|bc|, |ad|]$: the equal lengths give $a + d = b + c$,
+so the quadratic is also $t^2 - (b + c) t$, and the two images coincide. This polynomial gives
+the convergence bound of a minimal-residual Krylov method for a symmetric operator whose
+spectrum is split into two intervals on either side of the origin. -/
 theorem exists_eval_zero_eq_one_abs_le_of_union_Icc {a b c d : ℝ} (hab : a < b) (hb : b < 0)
     (hc : 0 < c) (hcd : c < d) (hlen : b - a = d - c) (k : ℕ) :
     ∃ p : ℝ[X], p.degree ≤ (2 * k : ℕ) ∧ p.eval 0 = 1 ∧

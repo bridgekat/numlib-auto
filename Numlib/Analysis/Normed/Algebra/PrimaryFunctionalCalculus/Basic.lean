@@ -10,53 +10,65 @@ import Numlib.Analysis.Calculus.HermiteInterpolation
 /-!
 # The primary functional calculus
 
-For an element `a` of a `𝕜`-algebra `A` over a nontrivially normed field, integral over `𝕜` with a
-split minimal polynomial, and a function `f : 𝕜 → 𝕜`, the **primary functional calculus** is
+Let $\mathbb{K}$ be a nontrivially normed field, let $A$ be a $\mathbb{K}$-algebra, and let
+$a \in A$ be integral over $\mathbb{K}$ with a minimal polynomial that splits. Let $\lambda$ run
+over the roots of the minimal polynomial, and let $m_\lambda$ be the multiplicity of $\lambda$ as a
+root (the index of the eigenvalue $\lambda$). For $f : \mathbb{K} \to \mathbb{K}$, the **primary
+functional calculus** is $f(a) = p(a)$, where $p$ is the Hermite interpolant of the Taylor
+coefficients $f^{(j)}(\lambda)/j!$, $j < m_\lambda$, at the roots. This is Higham's definition of a
+matrix function by interpolation (Higham, *Functions of Matrices*, Definition 1.4;
+[golub2013matrix], §9.1), for any integral element of any algebra.
 
-  `pfc f a = p(a)`,  `p` the Hermite interpolant of `f` and its derivatives at the roots of the
-  minimal polynomial of `a`, each root `λ` to its multiplicity `m_λ` (the index of `λ`).
-
-This is Higham's definition of a matrix function by interpolation (*Functions of Matrices*,
-Definition 1.4; [golub2013matrix] §9.1), for any integral element of any algebra. It is total and
-algebraic: `pfc f a` is a polynomial in `a` by construction, and it depends exactly on the jets
-`f⁽ʲ⁾(λ)`, `j < m_λ` (`pfc_congr`) — the formal content of "`f` is defined on the spectrum of `a`".
-The Jordan-form, power-series and Cauchy-integral definitions of `f(A)` are theorems
-(`Numlib/Analysis/Matrix/Function/Basic`, `…/PrimaryFunctionalCalculus/Analytic`, `…/Cauchy`).
+The definition is total and algebraic: $f(a)$ is a polynomial in $a$ by construction, and it depends
+only on the derivatives $f^{(j)}(\lambda)$, $j < m_\lambda$ (`pfc_congr`). This is the formal
+content of "$f$ is defined on the spectrum of $a$". The module proves the algebraic rules of the
+calculus, the spectral decomposition $f(a) = \sum_\lambda \sum_{j < m_\lambda}
+\frac{f^{(j)}(\lambda)}{j!} (a - \lambda)^j E_\lambda$ with the spectral idempotents $E_\lambda$,
+and the spectral mapping theorem $\sigma(f(a)) = f(\sigma(a))$. The Jordan-form, power-series and
+Cauchy-integral descriptions of $f(A)$ are theorems in `Numlib.Analysis.Matrix.Function.Basic`,
+`Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Analytic` and
+`Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy`.
 
 ## Main definitions
 
-* `pfc f a`: the primary functional calculus, with junk values when `a` is not integral or its
-  minimal polynomial does not split.
-* `spectralIdempotent a μ`: the spectral idempotent (Frobenius covariant, Riesz projection) of `a`
-  at `μ`, as a polynomial in `a`.
-* `ContDiffOnSpectrum f a`: `f` is `C^{m_λ - 1}` at every eigenvalue `λ` of index `m_λ`, the
-  smoothness hypothesis of the algebraic rules below.
+* `pfc`: the primary functional calculus $f(a)$.
+* `spectralIdempotent`: the spectral idempotent $E_\mu$ of $a$ at $\mu$ (Frobenius covariant, Riesz
+  projection), as a polynomial in $a$.
+* `ContDiffOnSpectrum`: $f$ is $C^{m_\lambda - 1}$ at every root $\lambda$ of the minimal polynomial
+  of $a$, the smoothness hypothesis of the algebraic rules.
 
 ## Main results
 
-* `pfc_eq_aeval_of_isJetInterpolant`: the characterization every other result goes through — any
-  polynomial interpolating the jets of `f` on any multiset whose nodal polynomial the minimal
-  polynomial divides computes `pfc f a`.
-* `pfc_congr`, `pfc_congr_of_eventuallyEq`, `pfc_congr_of_eqOn`: `pfc f a` depends only on the jets
-  of `f` at the eigenvalues, hence only on `f` near the spectrum.
+* `pfc_eq_aeval_of_isJetInterpolant`: the characterization through which all other results go. Any
+  polynomial that interpolates the Taylor coefficients of $f$ on a multiset whose nodal polynomial
+  the minimal polynomial divides computes $f(a)$.
+* `pfc_congr`, `pfc_congr_of_eventuallyEq`, `pfc_congr_of_eqOn`: $f(a)$ depends only on the
+  derivatives of $f$ at the eigenvalues, hence only on $f$ near the spectrum.
 * `spectrum.mem_iff_isRoot_minpoly`, `spectrum.mem_iff_mem_roots_minpoly`: the spectrum of an
   integral element is the set of roots of its minimal polynomial.
-* `pfc_polynomial`, `pfc_const`, `pfc_id`, `pfc_pow`: polynomials are evaluated at `a`.
-* `pfc_add`, `pfc_const_smul`, `pfc_mul`, `pfc_inv`: `pfc · a` is an algebra homomorphism on
-  functions smooth enough at the eigenvalues.
-* `commute_pfc`, `AlgHom.map_pfc`, `AlgEquiv.map_pfc`, `pfc_units_conj`: commutation, naturality
-  and similarity.
-* `spectralIdempotent_mul_spectralIdempotent`, `sum_spectralIdempotent`, … : the spectral
-  idempotents are a resolution of the identity, and `pfc_eq_sum_spectralIdempotent` is the spectral
-  decomposition (Sylvester's formula).
-* `spectrum_pfc`: the spectral mapping theorem `σ(f(a)) = f(σ(a))`.
+* `pfc_polynomial`, `pfc_const`, `pfc_id`, `pfc_pow`: for a polynomial $p$, the calculus gives
+  $p(a)$.
+* `pfc_add`, `pfc_const_smul`, `pfc_mul`, `pfc_inv`: $f \mapsto f(a)$ is an algebra homomorphism on
+  functions that are smooth enough at the eigenvalues.
+* `commute_pfc`, `AlgHom.map_pfc`, `AlgEquiv.map_pfc`, `pfc_units_conj`: commutation with $a$,
+  naturality, and similarity.
+* `spectralIdempotent_mul_spectralIdempotent`, `sum_spectralIdempotent`,
+  `pow_mul_spectralIdempotent`: the spectral idempotents are orthogonal idempotents that sum to $1$,
+  and $(a - \mu)^{m_\mu} E_\mu = 0$.
+* `pfc_eq_sum_spectralIdempotent`: the spectral decomposition (Sylvester's formula).
+* `spectrum_pfc`: the spectral mapping theorem $\sigma(f(a)) = f(\sigma(a))$.
 
 ## Implementation notes
 
-The definition uses a classical `DecidableEq 𝕜` (multiplicities are counted with `Multiset.count`);
-statements that mention jet interpolation take an arbitrary instance and `pfc_def` converts. The
-hypotheses `IsIntegral 𝕜 a` and `(minpoly 𝕜 a).Splits` are automatic over an algebraically closed
-field in a finite-dimensional algebra (matrices over `ℂ`).
+* `pfc f a` has a junk value when $a$ is not integral or its minimal polynomial does not split. If
+  $a$ is not integral, its minimal polynomial is $0$, it has no roots, and `pfc f a = 0`.
+* The derivatives are Mathlib's `iteratedDeriv`, which take junk values where $f$ is not
+  differentiable. For this reason the algebraic rules assume `ContDiffOnSpectrum`.
+* The definition uses a classical `DecidableEq 𝕜`, because multiplicities are counted with
+  `Multiset.count`. Statements that mention jet interpolation take an arbitrary instance, and
+  `pfc_def` converts between the two.
+* The hypotheses `IsIntegral 𝕜 a` and `(minpoly 𝕜 a).Splits` hold automatically over an
+  algebraically closed field in a finite-dimensional algebra, for example for complex matrices.
 -/
 
 open Polynomial Hermite
@@ -65,11 +77,15 @@ section Spectrum
 
 variable {K A : Type*} [Field K] [Ring A] [Algebra K A]
 
-/-- Polynomials in one element commute. -/
+/-- Two polynomials in the same element commute: $p(a)\, q(a) = q(a)\, p(a)$ for $a$ in a
+$K$-algebra and $p, q \in K[X]$. -/
 theorem commute_aeval_aeval (a : A) (p q : K[X]) : Commute (aeval a p) (aeval a q) := by
   rw [Commute, SemiconjBy, ← map_mul, ← map_mul, mul_comm]
 
-/-- **The spectrum of an integral element is the set of roots of its minimal polynomial.** -/
+/-- **The spectrum of an integral element is the set of roots of its minimal polynomial.** Let $K$
+be a field, let $A$ be a $K$-algebra, and let $a \in A$ be integral over $K$. Then $\mu \in K$
+lies in the spectrum $\sigma(a)$ if and only if $\mu$ is a root of the minimal polynomial of
+$a$. -/
 theorem spectrum.mem_iff_isRoot_minpoly {a : A} (ha : IsIntegral K a) {μ : K} :
     μ ∈ spectrum K a ↔ (minpoly K a).IsRoot μ := by
   rw [spectrum.mem_iff]
@@ -107,14 +123,16 @@ theorem spectrum.mem_iff_isRoot_minpoly {a : A} (ha : IsIntegral K a) {μ : K} :
     rw [hq, natDegree_mul (X_sub_C_ne_zero μ) hq0', natDegree_X_sub_C] at hdeg
     omega
 
-/-- **The spectrum of an integral element is the multiset of roots of its minimal polynomial**, in
-the membership form the `pfc` lemmas quantify over. -/
+/-- Let $a$ be integral over the field $K$. Then $\mu \in \sigma(a)$ if and only if $\mu$ belongs to
+the multiset of roots of the minimal polynomial of $a$. This is the form of
+`spectrum.mem_iff_isRoot_minpoly` over which the lemmas on `pfc` quantify. -/
 theorem spectrum.mem_iff_mem_roots_minpoly {a : A} (ha : IsIntegral K a) {μ : K} :
     μ ∈ spectrum K a ↔ μ ∈ (minpoly K a).roots := by
   rw [spectrum.mem_iff_isRoot_minpoly ha, mem_roots (minpoly.ne_zero ha)]
 
-/-- A root of the minimal polynomial is in the spectrum, with no integrality hypothesis (the
-minimal polynomial of a non-integral element is `0`, which has no roots). -/
+/-- A root of the minimal polynomial of $a$ lies in the spectrum of $a$. No integrality hypothesis
+is needed: the minimal polynomial of an element that is not integral is $0$, and its multiset of
+roots is empty. -/
 theorem spectrum.mem_of_mem_roots_minpoly {a : A} {μ : K} (hμ : μ ∈ (minpoly K a).roots) :
     μ ∈ spectrum K a := by
   have ha : IsIntegral K a := by
@@ -128,14 +146,26 @@ end Spectrum
 variable {𝕜 A : Type*} [NontriviallyNormedField 𝕜] [Ring A] [Algebra 𝕜 A]
 
 open Classical in
-/-- **The primary functional calculus**: `pfc f a = p(a)` for the Hermite interpolant `p` of the
-jets of `f` at the roots of the minimal polynomial of `a`, counted with multiplicity
-([golub2013matrix] §9.1's `f(A)`; Higham, *Functions of Matrices*, Definition 1.4). Junk when `a`
-is not integral or `minpoly 𝕜 a` does not split. -/
+/-- The **primary functional calculus**. Let $\mathbb{K}$ be a nontrivially normed field, let $A$ be
+a $\mathbb{K}$-algebra, let $a \in A$ and let $f : \mathbb{K} \to \mathbb{K}$. Let $p$ be the
+Hermite interpolant of $f$ at the roots of the minimal polynomial of $a$, each root $\lambda$
+taken to its multiplicity $m_\lambda$. That is, $p$ is the unique polynomial of degree less than
+the number of roots counted with multiplicity such that, at each root $\lambda$,
+$$p \equiv \sum_{j < m_\lambda} \frac{f^{(j)}(\lambda)}{j!} (X - \lambda)^j \pmod{(X -
+  \lambda)^{m_\lambda}}.$$
+Then $f(a) = p(a)$. This is $f(A)$ of [golub2013matrix], §9.1, and Definition 1.4 of Higham,
+*Functions of Matrices*.
+
+The definition is meaningful when $a$ is integral over $\mathbb{K}$ and its minimal polynomial
+splits; otherwise the value is a junk value, and it is $0$ when $a$ is not integral. The
+derivatives are `iteratedDeriv`, and the interpolant is `Hermite.interpolateJet` of the roots
+and of `Hermite.taylorJet f`. -/
 noncomputable def pfc (f : 𝕜 → 𝕜) (a : A) : A :=
   aeval a (interpolateJet (minpoly 𝕜 a).roots (taylorJet f))
 
-/-- `pfc` unfolded with any decidable equality on `𝕜`. -/
+/-- `pfc f a` unfolded with an arbitrary decidable equality on $\mathbb{K}$: it is the value at $a$
+of the Hermite interpolant of the Taylor coefficients `Hermite.taylorJet f` at the roots of the
+minimal polynomial of $a$. -/
 theorem pfc_def [h : DecidableEq 𝕜] (f : 𝕜 → 𝕜) (a : A) :
     pfc f a = aeval a (interpolateJet (minpoly 𝕜 a).roots (taylorJet f)) := by
   obtain rfl : h = fun a b => Classical.propDecidable (a = b) := Subsingleton.elim _ _
@@ -146,14 +176,16 @@ section Characterization
 variable [DecidableEq 𝕜] {a : A}
 
 omit [DecidableEq 𝕜] in
-/-- The minimal polynomial of an integral element with split minimal polynomial is the nodal
-polynomial of its roots. -/
+/-- If $a$ is integral with a split minimal polynomial, the minimal polynomial is the nodal
+polynomial $\prod_\lambda (X - \lambda)$ of its multiset of roots, each root counted with
+multiplicity. -/
 theorem minpoly_eq_nodalMultiset_roots (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) :
     minpoly 𝕜 a = nodalMultiset (minpoly 𝕜 a).roots :=
   eq_nodalMultiset_roots (minpoly.monic ha) hs
 
-/-- **Two interpolants of the same jets on a multiset whose nodal polynomial the minimal polynomial
-divides agree at `a`.** -/
+/-- Let $s$ be a multiset in $\mathbb{K}$ whose nodal polynomial $\prod_{x \in s} (X - x)$ is
+divisible by the minimal polynomial of $a$. If two polynomials $p$ and $q$ interpolate the same
+jets on $s$, then $p(a) = q(a)$. -/
 theorem aeval_eq_aeval_of_isJetInterpolant {s : Multiset 𝕜} (hdvd : minpoly 𝕜 a ∣ nodalMultiset s)
     {y : 𝕜 → ℕ → 𝕜} {p q : 𝕜[X]} (hp : IsJetInterpolant s y p) (hq : IsJetInterpolant s y q) :
     aeval a p = aeval a q := by
@@ -161,16 +193,22 @@ theorem aeval_eq_aeval_of_isJetInterpolant {s : Multiset 𝕜} (hdvd : minpoly �
   rw [← sub_eq_zero, ← map_sub, hr, map_mul, minpoly.aeval, zero_mul]
 
 omit [DecidableEq 𝕜] in
-/-- The roots of the minimal polynomial are among the nodes when it divides the nodal
-polynomial. -/
+/-- If the minimal polynomial of $a$ divides the nodal polynomial of a multiset $s$, then its
+multiset of roots is contained in $s$, with multiplicities. -/
 theorem roots_minpoly_le_of_dvd {s : Multiset 𝕜} (hdvd : minpoly 𝕜 a ∣ nodalMultiset s) :
     (minpoly 𝕜 a).roots ≤ s := by
   simpa using roots.le_of_dvd (monic_nodalMultiset s).ne_zero hdvd
 
-/-- **The characterization of `pfc`**: if the minimal polynomial of `a` divides the nodal
-polynomial of `s` (e.g. `s` the roots of the minimal polynomial, or the eigenvalues of a matrix
-with algebraic multiplicities) and `p` interpolates the jets of `f` on `s`, then
-`pfc f a = p(a)`. No differentiability is needed anywhere. -/
+/-- **The characterization of the primary functional calculus.** Let $a \in A$, and let $s$ be a
+multiset in $\mathbb{K}$ whose nodal polynomial $\prod_{x \in s} (X - x)$ is divisible by the
+minimal polynomial of $a$; for example, $s$ is the multiset of roots of the minimal polynomial,
+or the eigenvalues of a matrix with their algebraic multiplicities. Let $p \in \mathbb{K}[X]$
+interpolate the Taylor coefficients $f^{(j)}(x)/j!$ of $f$ at each node $x$ of $s$, for $j$
+below the multiplicity of $x$ in $s$. Then $f(a) = p(a)$.
+
+No differentiability of $f$ is needed. The divisibility hypothesis implies that $a$ is integral
+and that its minimal polynomial splits. The interpolation condition is `Hermite.IsJetInterpolant
+s (Hermite.taylorJet f) p`. -/
 theorem pfc_eq_aeval_of_isJetInterpolant {s : Multiset 𝕜} (hdvd : minpoly 𝕜 a ∣ nodalMultiset s)
     {f : 𝕜 → 𝕜} {p : 𝕜[X]} (hp : IsJetInterpolant s (taylorJet f) p) : pfc f a = aeval a p := by
   have hne : minpoly 𝕜 a ≠ 0 := fun h =>
@@ -185,7 +223,8 @@ theorem pfc_eq_aeval_of_isJetInterpolant {s : Multiset 𝕜} (hdvd : minpoly �
     (isJetInterpolant_interpolateJet _ _) (hp.of_le (roots_minpoly_le_of_dvd hdvd))
 
 omit [DecidableEq 𝕜] in
-/-- The minimal polynomial divides the nodal polynomial of its roots when it splits. -/
+/-- If $a$ is integral with a split minimal polynomial, the minimal polynomial divides the nodal
+polynomial of its multiset of roots. -/
 theorem minpoly_dvd_nodalMultiset_roots (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) :
     minpoly 𝕜 a ∣ nodalMultiset (minpoly 𝕜 a).roots :=
   (minpoly_eq_nodalMultiset_roots ha hs).dvd
@@ -196,9 +235,11 @@ section Algebraic
 
 variable {a : A}
 
-/-- **`pfc f a` depends only on the jets of `f` at the eigenvalues up to the index**: if
-`f⁽ʲ⁾(λ) = g⁽ʲ⁾(λ)` at every root `λ` of the minimal polynomial for `j` below its multiplicity,
-then `pfc f a = pfc g a`. -/
+/-- **$f(a)$ depends only on the derivatives of $f$ at the eigenvalues.** Let $a \in A$ and
+$f, g : \mathbb{K} \to \mathbb{K}$. If $f^{(j)}(\lambda) = g^{(j)}(\lambda)$ for every root
+$\lambda$ of the minimal polynomial of $a$ and every $j < m_\lambda$, then $f(a) = g(a)$.
+
+No hypothesis on $a$ is needed. The derivatives are `iteratedDeriv`. -/
 theorem pfc_congr {f g : 𝕜 → 𝕜}
     (h : ∀ μ ∈ (minpoly 𝕜 a).roots, ∀ j < (minpoly 𝕜 a).rootMultiplicity μ,
       iteratedDeriv j f μ = iteratedDeriv j g μ) :
@@ -208,61 +249,76 @@ theorem pfc_congr {f g : 𝕜 → 𝕜}
   rw [count_roots] at hj
   rw [taylorJet, taylorJet, h x hx j hj]
 
-/-- **`pfc f a` depends only on `f` near the spectrum**: if `f = g` near every eigenvalue, then
-`pfc f a = pfc g a`. -/
+/-- If $f = g$ on a neighbourhood of every point of the spectrum of $a$, then $f(a) = g(a)$. -/
 theorem pfc_congr_of_eventuallyEq {f g : 𝕜 → 𝕜} (h : ∀ μ ∈ spectrum 𝕜 a, f =ᶠ[nhds μ] g) :
     pfc f a = pfc g a :=
   pfc_congr fun μ hμ j _ =>
     (h μ (spectrum.mem_of_mem_roots_minpoly hμ)).iteratedDeriv_eq j
 
-/-- **`pfc f a` depends only on `f` on a neighbourhood of the spectrum**: if `f = g` on an open set
-`U` containing the spectrum, then `pfc f a = pfc g a`. -/
+/-- If $f = g$ on an open set $U$ that contains the spectrum of $a$, then $f(a) = g(a)$. -/
 theorem pfc_congr_of_eqOn {f g : 𝕜 → 𝕜} {U : Set 𝕜} (hU : IsOpen U) (hσ : spectrum 𝕜 a ⊆ U)
     (h : Set.EqOn f g U) : pfc f a = pfc g a :=
   pfc_congr_of_eventuallyEq fun _ hμ =>
     Filter.eventuallyEq_of_mem (hU.mem_nhds (hσ hμ)) h
 
-/-- **Polynomials**: `pfc (p.eval ·) a = p(a)`. -/
+/-- **Polynomials.** Let $\mathbb{K}$ have characteristic zero, and let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial. For every polynomial $p \in \mathbb{K}[X]$, the
+primary functional calculus of the function $z \mapsto p(z)$ at $a$ is $p(a)$. -/
 theorem pfc_polynomial [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     (p : 𝕜[X]) : pfc (fun z => p.eval z) a = aeval a p := by
   classical
   exact pfc_eq_aeval_of_isJetInterpolant (minpoly_dvd_nodalMultiset_roots ha hs)
     (isJetInterpolant_taylorJet_polynomial _ p)
 
+/-- If $\mathbb{K}$ has characteristic zero and $a$ is integral with a split minimal polynomial, the
+constant function $c$ gives $c \cdot 1$. -/
 theorem pfc_const [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (c : 𝕜) :
     pfc (fun _ => c) a = algebraMap 𝕜 A c := by
   simpa using pfc_polynomial ha hs (C c : 𝕜[X])
 
+/-- If $\mathbb{K}$ has characteristic zero and $a$ is integral with a split minimal polynomial, the
+identity function gives $a$. -/
 theorem pfc_id [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) :
     pfc (fun z : 𝕜 => z) a = a := by
   simpa using pfc_polynomial ha hs (X : 𝕜[X])
 
+/-- If $\mathbb{K}$ has characteristic zero and $a$ is integral with a split minimal polynomial, the
+function $z \mapsto z^n$ gives $a^n$. -/
 theorem pfc_pow [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (n : ℕ) :
     pfc (fun z : 𝕜 => z ^ n) a = a ^ n := by
   simpa using pfc_polynomial ha hs ((X : 𝕜[X]) ^ n)
 
-/-- `f` is **`C^{m_λ - 1}` at the eigenvalues of `a`**: at every root `λ` of the minimal
-polynomial of `a`, `f` is `C^{m_λ - 1}`, `m_λ` the multiplicity of `λ` (the index of the
-eigenvalue). This is the smoothness under which `pfc · a` is an algebra homomorphism (`pfc_add`,
-`pfc_mul`, `pfc_inv`) and composes (`pfc_comp`): it makes the jets `f⁽ʲ⁾(λ)`, `j < m_λ`, on which
-`pfc f a` depends (`pfc_congr`) behave as derivatives. -/
+/-- A function $f : \mathbb{K} \to \mathbb{K}$ is **$C^{m_\lambda - 1}$ on the spectrum** of $a$ if,
+at every root $\lambda$ of the minimal polynomial of $a$, $f$ is $C^{m_\lambda - 1}$ at
+$\lambda$, where $m_\lambda$ is the multiplicity of $\lambda$ as a root (the index of the
+eigenvalue $\lambda$).
+
+Under this smoothness, $f \mapsto f(a)$ is an algebra homomorphism (`pfc_add`, `pfc_mul`,
+`pfc_inv`), and compositions behave as expected (`pfc_comp`). It makes the derivatives
+$f^{(j)}(\lambda)$, $j < m_\lambda$, on which $f(a)$ depends (`pfc_congr`), behave as true
+derivatives. -/
 def ContDiffOnSpectrum (f : 𝕜 → 𝕜) (a : A) : Prop :=
   ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ
 
-/-- `ContDiffOnSpectrum` unfolded. -/
+/-- $f$ is $C^{m_\lambda - 1}$ on the spectrum of $a$ if and only if $f$ is $C^{m_\lambda - 1}$ at
+every root $\lambda$ of the minimal polynomial of $a$. -/
 theorem contDiffOnSpectrum_iff {f : 𝕜 → 𝕜} :
     ContDiffOnSpectrum f a ↔
       ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ((minpoly 𝕜 a).rootMultiplicity μ - 1 : ℕ) f μ :=
   Iff.rfl
 
 open scoped ContDiff in
-/-- A function that is `C^∞` at every eigenvalue is `C^{m_λ - 1}` there. -/
+/-- A function that is $C^\infty$ at every root of the minimal polynomial of $a$ is
+$C^{m_\lambda - 1}$ on the spectrum of $a$. -/
 theorem ContDiffOnSpectrum.of_contDiffAt {f : 𝕜 → 𝕜}
     (h : ∀ μ ∈ (minpoly 𝕜 a).roots, ContDiffAt 𝕜 ∞ f μ) : ContDiffOnSpectrum f a :=
   fun μ hμ => (h μ hμ).of_le (WithTop.coe_le_coe.2 le_top)
 
-/-- **Linearity** of `pfc` on functions that are `C^{m_λ - 1}` at every eigenvalue `λ`. The
-smoothness is needed: with Mathlib's junk derivatives, `(f + g)⁽ʲ⁾` need not be `f⁽ʲ⁾ + g⁽ʲ⁾`. -/
+/-- **Additivity.** Let $a \in A$, and let $f$ and $g$ be $C^{m_\lambda - 1}$ on the spectrum of $a$
+(`ContDiffOnSpectrum`). Then $(f + g)(a) = f(a) + g(a)$.
+
+The smoothness hypothesis is needed because Mathlib's derivatives have junk values: without it,
+$(f + g)^{(j)}$ need not be $f^{(j)} + g^{(j)}$. -/
 theorem pfc_add {f g : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
     (hg : ContDiffOnSpectrum g a) :
@@ -275,6 +331,7 @@ theorem pfc_add {f g : 𝕜 → 𝕜}
     exact_mod_cast (by omega : j ≤ _)
   exact taylorJet_add ((hf x hx).of_le hj') ((hg x hx).of_le hj')
 
+/-- For every scalar $c$, $(cf)(a) = c\, f(a)$. No hypothesis on $f$ or $a$ is needed. -/
 theorem pfc_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) : pfc (c • f) a = c • pfc f a := by
   classical
   have h : taylorJet (c • f) = c • taylorJet f := by
@@ -282,6 +339,8 @@ theorem pfc_const_smul (c : 𝕜) (f : 𝕜 → 𝕜) : pfc (c • f) a = c • 
     rw [taylorJet_const_smul, Pi.smul_apply, Pi.smul_apply, smul_eq_mul]
   rw [pfc_def, pfc_def, h, interpolateJet_smul, map_smul]
 
+/-- If $f$ and $g$ are $C^{m_\lambda - 1}$ on the spectrum of $a$, then $(f - g)(a) = f(a) - g(a)$.
+-/
 theorem pfc_sub {f g : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
     (hg : ContDiffOnSpectrum g a) :
@@ -290,8 +349,8 @@ theorem pfc_sub {f g : 𝕜 → 𝕜}
   rw [sub_eq_add_neg, ← neg_one_smul 𝕜 g, pfc_add hf hg', pfc_const_smul, neg_one_smul,
     ← sub_eq_add_neg]
 
-/-- **Commutation** ([golub2013matrix] (9.1.7)): whatever commutes with `a` commutes with
-`pfc f a`. -/
+/-- **Commutation** ([golub2013matrix], (9.1.7)): if $b$ commutes with $a$, then $b$ commutes with
+$f(a)$. -/
 theorem Commute.pfc_right {b : A} (h : Commute b a) (f : 𝕜 → 𝕜) : Commute b (pfc f a) := by
   classical
   rw [pfc]
@@ -301,15 +360,22 @@ theorem Commute.pfc_right {b : A} (h : Commute b a) (f : 𝕜 → 𝕜) : Commut
   | monomial n c _ => simpa using
       (Algebra.commute_algebraMap_right c b).mul_right (h.pow_right (n + 1))
 
-/-- `a` commutes with `pfc f a` ([golub2013matrix] (9.1.7), `A f(A) = f(A) A`). -/
+/-- Let $a \in A$ and $f : \mathbb{K} \to \mathbb{K}$. Then $a$ commutes with $f(a)$:
+$$a\, f(a) = f(a)\, a.$$
+This is (9.1.7) of [golub2013matrix]. -/
 theorem commute_pfc (a : A) (f : 𝕜 → 𝕜) : Commute a (pfc f a) :=
   (Commute.refl a).pfc_right f
 
+/-- For all $f$ and $g$, the elements $f(a)$ and $g(a)$ commute. -/
 theorem commute_pfc_pfc (a : A) (f g : 𝕜 → 𝕜) : Commute (pfc f a) (pfc g a) := by
   rw [pfc, pfc]
   exact commute_aeval_aeval a _ _
 
-/-- **Naturality** under algebra homomorphisms: `φ (f(a)) = f(φ a)`. -/
+/-- **Naturality under algebra homomorphisms.** Let $\varphi : A \to B$ be a homomorphism of
+$\mathbb{K}$-algebras, and let $a \in A$ be integral over $\mathbb{K}$ with a split minimal
+polynomial. Then for every $f : \mathbb{K} \to \mathbb{K}$,
+$$\varphi(f(a)) = f(\varphi(a)).$$
+-/
 theorem AlgHom.map_pfc {B : Type*} [Ring B] [Algebra 𝕜 B] (φ : A →ₐ[𝕜] B)
     (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (f : 𝕜 → 𝕜) :
     φ (pfc f a) = pfc f (φ a) := by
@@ -320,9 +386,13 @@ theorem AlgHom.map_pfc {B : Type*} [Ring B] [Algebra 𝕜 B] (φ : A →ₐ[𝕜
   rw [pfc_eq_aeval_of_isJetInterpolant hdvd (isJetInterpolant_interpolateJet _ _), pfc_def,
     aeval_algHom_apply]
 
-/-- **Multiplicativity** of `pfc` on functions that are `C^{m_λ - 1}` at every eigenvalue: the
-Leibniz rule for jets (`Hermite.taylorJet_mul`) and products of interpolants
-(`Hermite.IsJetInterpolant.mul`). -/
+/-- **Multiplicativity.** Let $\mathbb{K}$ have characteristic zero, let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial, and let $f$ and $g$ be $C^{m_\lambda - 1}$ on the
+spectrum of $a$. Then
+$$(fg)(a) = f(a)\, g(a).$$
+
+The proof combines the Leibniz rule for Taylor coefficients (`Hermite.taylorJet_mul`) with
+products of interpolants (`Hermite.IsJetInterpolant.mul`). -/
 theorem pfc_mul [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) {f g : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
     (hg : ContDiffOnSpectrum g a) :
@@ -338,7 +408,9 @@ theorem pfc_mul [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).
       exact_mod_cast (by omega : n ≤ _)
     exact taylorJet_mul ((hf x hx).of_le hn') ((hg x hx).of_le hn')
 
-/-- Functions whose product is `1` near every eigenvalue give inverse elements. -/
+/-- Let $\mathbb{K}$ have characteristic zero, let $a$ be integral with a split minimal polynomial,
+and let $f$ and $g$ be $C^{m_\lambda - 1}$ on the spectrum of $a$. If $fg = 1$ on a
+neighbourhood of every root of the minimal polynomial, then $f(a)\, g(a) = 1$. -/
 theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     {f g : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
@@ -348,8 +420,14 @@ theorem pfc_mul_pfc_eq_one [CharZero 𝕜] (ha : IsIntegral 𝕜 a) (hs : (minpo
   rw [← pfc_mul ha hs hf hg, pfc_congr (g := fun _ => (1 : 𝕜))
     fun μ hμ j _ => (hfg μ hμ).iteratedDeriv_eq j, pfc_const ha hs, map_one]
 
-/-- **Inverses**: if `f` is `C^{m_λ - 1}` and nonvanishing at every eigenvalue `λ`, then `f(a)` is
-invertible with inverse `(1/f)(a)` ([golub2013matrix] §9.1's rational functions). -/
+/-- **Inverses.** Let $\mathbb{K}$ have characteristic zero, let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial, and let $f$ be $C^{m_\lambda - 1}$ on the spectrum
+of $a$ with $f(\lambda) \neq 0$ at every root $\lambda$ of the minimal polynomial. Then $f(a)$
+is invertible, and
+$$(1/f)(a) = f(a)^{-1}.$$
+This covers the rational functions of [golub2013matrix], §9.1.
+
+The inverse is `Ring.inverse`, and $1/f$ is $z \mapsto f(z)^{-1}$. -/
 theorem pfc_inv [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) {f : 𝕜 → 𝕜}
     (hf : ContDiffOnSpectrum f a)
@@ -362,7 +440,9 @@ theorem pfc_inv [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
   let u : Aˣ := ⟨pfc f a, pfc (fun z => (f z)⁻¹) a, h1, h2⟩
   exact ⟨u.isUnit, (Ring.inverse_unit u).symm⟩
 
-/-- The inverse of an element with `0` outside its spectrum is `pfc (·⁻¹)`. -/
+/-- Let $\mathbb{K}$ have characteristic zero, and let $a$ be integral with a split minimal
+polynomial and $0 \notin \sigma(a)$. Then the function $z \mapsto z^{-1}$ gives the inverse
+$a^{-1}$ (`Ring.inverse a`). -/
 theorem pfc_inv_id [CharZero 𝕜] (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) (h0 : (0 : 𝕜) ∉ spectrum 𝕜 a) :
     pfc (fun z : 𝕜 => z⁻¹) a = Ring.inverse a := by
@@ -377,14 +457,17 @@ section AlgEquiv
 
 variable {B : Type*} [Ring B] [Algebra 𝕜 B]
 
-/-- **Naturality under algebra equivalences**, with no hypothesis on `a`: an algebra equivalence
-preserves the minimal polynomial (compare `AlgHom.map_pfc`, which needs `a` integral with a split
-minimal polynomial). -/
+/-- **Naturality under algebra isomorphisms.** Let $\varphi : A \to B$ be an isomorphism of
+$\mathbb{K}$-algebras. Then for every $a \in A$ and every $f : \mathbb{K} \to \mathbb{K}$,
+$$\varphi(f(a)) = f(\varphi(a)).$$
+
+No hypothesis on $a$ is needed, because an algebra isomorphism preserves the minimal polynomial.
+Compare `AlgHom.map_pfc`, which needs $a$ integral with a split minimal polynomial. -/
 theorem AlgEquiv.map_pfc (φ : A ≃ₐ[𝕜] B) (f : 𝕜 → 𝕜) (a : A) : φ (pfc f a) = pfc f (φ a) := by
   classical
   rw [pfc_def, pfc_def, minpoly.algEquiv_eq, ← aeval_algHom_apply]
 
-/-- Conjugation by a unit as an algebra automorphism. -/
+/-- Conjugation $x \mapsto u x u^{-1}$ by a unit $u$, as an algebra automorphism. -/
 private def unitsConjAlgEquiv (u : Aˣ) : A ≃ₐ[𝕜] A where
   toFun x := u * x * ↑u⁻¹
   invFun x := ↑u⁻¹ * x * u
@@ -394,7 +477,8 @@ private def unitsConjAlgEquiv (u : Aˣ) : A ≃ₐ[𝕜] A where
   map_add' x y := by simp [mul_add, add_mul]
   commutes' c := by simp [Algebra.commutes, mul_assoc]
 
-/-- **Similarity** in any algebra: `f(u a u⁻¹) = u f(a) u⁻¹` for a unit `u`. -/
+/-- **Similarity.** For a unit $u \in A$, every $a \in A$ and every $f$,
+$f(u a u^{-1}) = u\, f(a)\, u^{-1}$. -/
 theorem pfc_units_conj (u : Aˣ) (f : 𝕜 → 𝕜) (a : A) :
     pfc f (u * a * ↑u⁻¹) = u * pfc f a * ↑u⁻¹ :=
   ((unitsConjAlgEquiv u).map_pfc f a).symm
@@ -405,7 +489,8 @@ end AlgEquiv
 
 section Idempotent
 
-/-- The jet with a single `1` at order `0` at the node `μ`. -/
+/-- The jet with the value $1$ at order $0$ at the node $\mu$, and $0$ at all other orders and
+nodes. -/
 private def idemJet [DecidableEq 𝕜] (μ : 𝕜) : 𝕜 → ℕ → 𝕜 := fun ν j =>
   if ν = μ ∧ j = 0 then 1 else 0
 
@@ -428,10 +513,14 @@ private theorem mul_idemJet [DecidableEq 𝕜] (μ : 𝕜) (y : 𝕜 → ℕ →
     simp [idemJet, this]
 
 open Classical in
-/-- The **spectral idempotent** (Frobenius covariant, Riesz projection) of `a` at `μ`: `E_μ = p(a)`
-for the Hermite interpolant `p` of the jets `1, 0, 0, …` at `μ` and `0` at the other roots of the
-minimal polynomial. For a matrix it is the projection onto the generalized eigenspace of `μ` along
-the others. -/
+/-- The **spectral idempotent** $E_\mu$ of $a$ at $\mu \in \mathbb{K}$, also called the Frobenius
+covariant or the Riesz projection. It is $E_\mu = p(a)$, where $p$ is the Hermite interpolant,
+at the roots of the minimal polynomial of $a$ with their multiplicities, of the jet that is
+$1, 0, 0, \dots$ at $\mu$ and $0$ at the other roots.
+
+For a matrix, $E_\mu$ is the projection onto the generalized eigenspace of $\mu$ along the other
+generalized eigenspaces. If $\mu$ is not a root, then $E_\mu = 0$
+(`spectralIdempotent_eq_zero_of_notMem`). -/
 noncomputable def spectralIdempotent (a : A) (μ : 𝕜) : A :=
   aeval a (interpolateJet (minpoly 𝕜 a).roots (idemJet μ))
 
@@ -443,7 +532,11 @@ private theorem spectralIdempotent_def [h : DecidableEq 𝕜] (a : A) (μ : 𝕜
   obtain rfl : h = fun a b => Classical.propDecidable (a = b) := Subsingleton.elim _ _
   rfl
 
-/-- The spectral idempotents are **orthogonal idempotents**: `E_λ E_μ = δ_{λμ} E_λ`. -/
+/-- **The spectral idempotents are orthogonal idempotents.** Let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial. For all $\lambda, \mu \in \mathbb{K}$,
+$$E_\lambda E_\mu = \begin{cases} E_\lambda & \text{if } \lambda = \mu, \\ 0 & \text{if }
+  \lambda \neq \mu. \end{cases}$$
+-/
 theorem spectralIdempotent_mul_spectralIdempotent (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) (l μ : 𝕜) :
     spectralIdempotent a l * spectralIdempotent a μ =
@@ -466,7 +559,10 @@ theorem spectralIdempotent_mul_spectralIdempotent (ha : IsIntegral 𝕜 a)
       simp [idemJet, h]
     · simp [hν]
 
-/-- The spectral idempotents are a **resolution of the identity**: `∑_λ E_λ = 1`. -/
+/-- **The spectral idempotents are a resolution of the identity.** Let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial. Then
+$$\sum_\lambda E_\lambda = 1,$$
+where $\lambda$ runs over the distinct roots of the minimal polynomial of $a$. -/
 theorem sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) :
     ∑ l ∈ (minpoly 𝕜 a).roots.toFinset, spectralIdempotent a l = 1 := by
   have hdvd := minpoly_dvd_nodalMultiset_roots ha hs
@@ -485,7 +581,7 @@ theorem sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).S
   · simp [hn]
 
 omit [DecidableEq 𝕜] in
-/-- The spectral idempotents commute with `a`. -/
+/-- The element $a$ commutes with each of its spectral idempotents $E_\mu$. -/
 theorem commute_spectralIdempotent (a : A) (μ : 𝕜) : Commute a (spectralIdempotent a μ) := by
   classical
   rw [spectralIdempotent_def]
@@ -493,8 +589,11 @@ theorem commute_spectralIdempotent (a : A) (μ : 𝕜) : Commute a (spectralIdem
   rwa [aeval_X] at this
 
 omit [DecidableEq 𝕜] in
-/-- On the range of `E_μ`, `a - μ` is nilpotent of index at most the multiplicity `m_μ`:
-`(a - μ)^{m_μ} E_μ = 0`. -/
+/-- Let $a \in A$ be integral over $\mathbb{K}$ with a split minimal polynomial, let
+$\mu \in \mathbb{K}$, and let $m_\mu$ be the multiplicity of $\mu$ as a root of the minimal
+polynomial ($m_\mu = 0$ if $\mu$ is not a root). Then
+$$(a - \mu)^{m_\mu} E_\mu = 0.$$
+So $a - \mu$ is nilpotent on the range of $E_\mu$, of index at most $m_\mu$. -/
 theorem pow_mul_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (μ : 𝕜) :
     (a - algebraMap 𝕜 A μ) ^ (minpoly 𝕜 a).rootMultiplicity μ * spectralIdempotent a μ = 0 := by
   classical
@@ -513,7 +612,7 @@ theorem pow_mul_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 
     · simp [h]
 
 omit [DecidableEq 𝕜] in
-/-- `E_μ = 0` when `μ` is not an eigenvalue. -/
+/-- If $\mu$ is not a root of the minimal polynomial of $a$, then $E_\mu = 0$. -/
 theorem spectralIdempotent_eq_zero_of_notMem {μ : 𝕜} (hμ : μ ∉ (minpoly 𝕜 a).roots) :
     spectralIdempotent a μ = 0 := by
   classical
@@ -524,7 +623,8 @@ theorem spectralIdempotent_eq_zero_of_notMem {μ : 𝕜} (hμ : μ ∉ (minpoly 
     simp [idemJet, this]
 
 omit [DecidableEq 𝕜] in
-/-- `E_μ ≠ 0` at an eigenvalue `μ`. -/
+/-- If $a$ is integral with a split minimal polynomial and $\mu$ is a root of its minimal
+polynomial, then $E_\mu \neq 0$. -/
 theorem spectralIdempotent_ne_zero (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) {μ : 𝕜}
     (hμ : μ ∈ (minpoly 𝕜 a).roots) : spectralIdempotent a μ ≠ 0 := by
   classical
@@ -540,8 +640,12 @@ theorem spectralIdempotent_ne_zero (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 
   rw [taylor_coeff_zero, (dvd_iff_isRoot.mp hX).eq_zero] at h1
   simp [idemJet] at h1
 
-/-- **The spectral decomposition of a polynomial in `a`**: if `p` interpolates the jets `y` at the
-roots of the minimal polynomial, then `p(a) = ∑_λ ∑_{j < m_λ} y λ j (a - λ)ʲ E_λ`. -/
+/-- **The spectral decomposition of a polynomial in $a$.** Let $a \in A$ be integral over
+$\mathbb{K}$ with a split minimal polynomial, let $y$ assign to each node $\lambda$ and order
+$j$ a scalar $y_\lambda(j)$, and let $p \in \mathbb{K}[X]$ interpolate these jets at the roots
+of the minimal polynomial, each root $\lambda$ to its multiplicity $m_\lambda$. Then
+$$p(a) = \sum_\lambda \sum_{j < m_\lambda} y_\lambda(j)\, (a - \lambda)^j E_\lambda,$$
+where $\lambda$ runs over the distinct roots of the minimal polynomial. -/
 theorem aeval_eq_sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     {y : 𝕜 → ℕ → 𝕜} {p : 𝕜[X]} (hp : IsJetInterpolant (minpoly 𝕜 a).roots y p) :
     aeval a p = ∑ l ∈ (minpoly 𝕜 a).roots.toFinset,
@@ -564,8 +668,14 @@ theorem aeval_eq_sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 
     simp only [Finset.sum_apply]
     simp [Finset.sum_ite_eq, hν, coeff_taylor_jetPoly, hn, m]
 
-/-- **The spectral decomposition** (Sylvester's formula; Higham, *Functions of Matrices*, (1.9)):
-`f(a) = ∑_λ ∑_{j < m_λ} f⁽ʲ⁾(λ)/j! (a - λ)ʲ E_λ`. -/
+/-- **The spectral decomposition** (Sylvester's formula; Higham, *Functions of Matrices*, (1.9)).
+Let $a \in A$ be integral over $\mathbb{K}$ with a split minimal polynomial. For every
+$f : \mathbb{K} \to \mathbb{K}$,
+$$f(a) = \sum_\lambda \sum_{j < m_\lambda} \frac{f^{(j)}(\lambda)}{j!} (a - \lambda)^j
+  E_\lambda,$$
+where $\lambda$ runs over the distinct roots of the minimal polynomial of $a$.
+
+The coefficient $f^{(j)}(\lambda)/j!$ is `Hermite.taylorJet f λ j`. -/
 theorem pfc_eq_sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     (f : 𝕜 → 𝕜) :
     pfc f a = ∑ l ∈ (minpoly 𝕜 a).roots.toFinset,
@@ -574,9 +684,12 @@ theorem pfc_eq_sum_spectralIdempotent (ha : IsIntegral 𝕜 a) (hs : (minpoly �
   rw [pfc_def]
   exact aeval_eq_sum_spectralIdempotent ha hs (isJetInterpolant_interpolateJet _ _)
 
-/-- **Locally constant functions** ([golub2013matrix] §9.4.1: "all the derivatives of the sign
-function are zero"): if `f` is constant `c λ` near every eigenvalue `λ`, then
-`f(a) = ∑_λ c λ • E_λ`. -/
+/-- **Locally constant functions.** Let $a \in A$ be integral over $\mathbb{K}$ with a split minimal
+polynomial, and let $f, c : \mathbb{K} \to \mathbb{K}$. If, for each root $\lambda$ of the
+minimal polynomial, $f$ equals the constant $c(\lambda)$ on a neighbourhood of $\lambda$, then
+$$f(a) = \sum_\lambda c(\lambda)\, E_\lambda,$$
+where $\lambda$ runs over the distinct roots. This is the principle behind the remark of
+[golub2013matrix], §9.4.1, that "all the derivatives of the sign function are zero". -/
 theorem pfc_eq_sum_smul_spectralIdempotent_of_eventuallyEq (ha : IsIntegral 𝕜 a)
     (hs : (minpoly 𝕜 a).Splits) {f c : 𝕜 → 𝕜}
     (h : ∀ l ∈ (minpoly 𝕜 a).roots, f =ᶠ[nhds l] fun _ => c l) :
@@ -596,8 +709,14 @@ private theorem aeval_smul_eq_aeval_comp (a : A) (s : 𝕜) (q : 𝕜[X]) :
     aeval (s • a) q = aeval a (q.comp (C s * X)) := by
   rw [aeval_comp, map_mul, aeval_C, aeval_X, Algebra.smul_def]
 
-/-- **`pfc` along a ray**: `f(s a) = ∑_λ ∑_{j < m_λ} sʲ f⁽ʲ⁾(sλ)/j! (a - λ)ʲ E_λ` for every
-`s : 𝕜`, `s = 0` included; the spectral data of `s • a` are those of `a`, rescaled. -/
+/-- **The primary functional calculus along a ray.** Let $a \in A$ be integral over $\mathbb{K}$
+with a split minimal polynomial. For every $s \in \mathbb{K}$, $s = 0$ included, and every $f$,
+$$f(sa) = \sum_\lambda \sum_{j < m_\lambda} s^j \frac{f^{(j)}(s\lambda)}{j!} (a - \lambda)^j
+  E_\lambda,$$
+where $\lambda$ runs over the distinct roots of the minimal polynomial of $a$ and $E_\lambda$
+are the spectral idempotents of $a$.
+
+The spectral data of $sa$ are those of $a$, rescaled. -/
 theorem pfc_smul (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits) (s : 𝕜) (f : 𝕜 → 𝕜) :
     pfc f (s • a) = ∑ l ∈ (minpoly 𝕜 a).roots.toFinset,
       ∑ j ∈ Finset.range ((minpoly 𝕜 a).rootMultiplicity l),
@@ -632,7 +751,10 @@ end Idempotent
 
 /-! ### The spectral mapping theorem -/
 
-/-- **The spectral mapping theorem**: `σ(f(a)) = f(σ(a))`. -/
+/-- **The spectral mapping theorem.** Let $a \in A$ be integral over $\mathbb{K}$ with a split
+minimal polynomial. For every $f : \mathbb{K} \to \mathbb{K}$,
+$$\sigma(f(a)) = f(\sigma(a)).$$
+No smoothness of $f$ is needed. -/
 theorem spectrum_pfc {a : A} (ha : IsIntegral 𝕜 a) (hs : (minpoly 𝕜 a).Splits)
     (f : 𝕜 → 𝕜) : spectrum 𝕜 (pfc f a) = f '' spectrum 𝕜 a := by
   classical

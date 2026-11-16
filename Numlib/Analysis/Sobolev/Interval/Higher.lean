@@ -15,52 +15,79 @@ import Numlib.Analysis.Sobolev.Operators
 import Numlib.Analysis.Sobolev.Interval.Embedding
 
 /-!
-# The Sobolev spaces `W^{m,p}(I)` of higher order
+# Sobolev spaces of higher order on an open subset of the line
 
-The spaces `W^{m,p}(I)` of [brezis2011functional] §8.2, paragraph "The Sobolev spaces
-`W^{m,p}`", for every `1 ≤ p ≤ ∞`. The space itself, its inductive description
-(`memSobolevIntervalLp_succ_iff`), its norm and the `H^m` inner product are in
-`Numlib/Analysis/Sobolev/Interval/Basic.lean`; this module carries the book's characterization by
-`m` weak derivatives, the embedding `W^{m,p}(a, b) ⊆ C^{m-1}(Ī)` and the inclusion
-`C^k[a, b] ⊆ W^{k,p}(a, b)`.
+This module studies the spaces $W^{m,p}(I)$ of [brezis2011functional], §8.2, paragraph "The Sobolev
+spaces $W^{m,p}$", for an open set $I \subseteq \mathbb{R}$ and every $1 \le p \le \infty$. For
+$u \in W^{m,p}(I)$, write $D^j u \in L^p(I)$ for its weak derivative of order $j \le m$, and
+$\|\cdot\|_p$ for the norm of $L^p(I)$. The module proves the characterization of $W^{m,p}(I)$ by
+$m$ weak derivatives, the continuous and, for $p > 1$, compact injection
+$W^{m+1,p}(a, b) \subseteq C^m[a, b]$, the inclusion $C^m[a, b] \subseteq W^{m,p}(a, b)$ with its
+density for $p < \infty$ and its failure of surjectivity, the interpolation inequality
+$$\|D^j u\|_p \le \varepsilon \|D^m u\|_p + C \|u\|_p \qquad (0 < j < m,\ \varepsilon > 0),$$
+and the Leibniz formula for the product with a smooth function.
 
-## Main definitions and statements
+The space $W^{m,p}(I)$, its inductive description (`memSobolevIntervalLp_succ_iff`), its norm and
+the inner product of $H^m(I)$ are in `Numlib.Analysis.Sobolev.Interval.Basic`. The space $C^m[a, b]$
+is `ContDiffMapIcc` of `Numlib.Analysis.Calculus.ContDiffMapIcc`, with the norm
+$\sum_{j \le m} \|u^{(j)}\|_\infty$.
 
-* `SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral`: the book's "easily shown"
-  characterization, `u ∈ W^{m,p}(I)` iff `u ∈ L^p(I)` and there are `g_1, …, g_m ∈ L^p(I)` with
-  `∫_I u D^j φ = (-1)^j ∫_I g_j φ` for every test function `φ`.
-* `SobolevIntervalLp.derivOne u j`, the pair `(D^j u, D^{j+1} u)` of `u ∈ W^{k+1,p}(I)` as an
-  element of `W^{1,p}(I)`, whose continuous representative is the representative of `D^j u`.
-* `SobolevIntervalLp.toContDiffMapIcc hab : W^{k+1,p}(a, b) →L[ℝ] C^k[a, b]`, **the embedding
-  `W^{m,p}(a, b) ⊆ C^{m-1}(Ī)` with continuous injection**, into the Banach space `ContDiffMapIcc`
-  of `Numlib/Analysis/Calculus/ContDiffMapIcc.lean`, sending `u` to the tuple of the continuous
-  representatives of `u, u', …, u^{(k)}`; it is injective (`toContDiffMapIcc_injective`) and, for
-  `1 < p ≤ ∞`, compact (`isCompactOperator_toContDiffMapIcc`), the book's "compact injection".
-* `ContDiffMapIcc.toSobolevIntervalLp hab hlt k : C^k[a, b] →L[ℝ] W^{k,p}(a, b)`, the reverse
-  inclusion (Remark 2 of §8.2), injective, of norm at most `(b - a)^{1/p}`, and
-  `ContDiffMapIcc.exists_not_mem_range_toSobolevIntervalLp`: it is not surjective
-  (`x ↦ |x - (a + b)/2|` lies in `W^{1,p}(a, b)` and has no `C¹` representative), so `C^1[a, b]`
-  is not complete for the `W^{1,p}` norm; `ContDiffMapIcc.not_surjective_toSobolevIntervalLp`
-  is the statement at every order `m`, by induction through the primitive
-  `SobolevIntervalLp.sobolevPrimitive`, a right inverse of the shift.
-* `ContDiffMapIcc.denseRange_toSobolevIntervalLp`: **`C^k[a, b]` is dense in `W^{k,p}(a, b)`**
-  for `1 ≤ p < ∞`, by induction on `k` through the shift `SobolevIntervalLp.shift : W^{k+1,p} →
-  W^{k,p}` and the antiderivative `ContDiffMapIcc.cons`, with the elementary form
-  `SobolevIntervalLp.eLpNorm_integral_le` of **Poincaré's inequality**,
-  `‖∫_a^x w‖_{L^p(a, b)} ≤ (b - a)/p^{1/p} ‖w‖_{L^p(a, b)}` for every `1 ≤ p ≤ ∞`, controlling
-  the function component (its `W_0^{1,p}` consequences, Proposition 8.13, are in
-  `Numlib/Analysis/Sobolev/Interval/Zero.lean`).
-* `SobolevIntervalLp.eLpNorm_deriv_le_mul_add`, **the interpolation inequality**
-  `‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` (`0 < j < m`, every `ε > 0`, `C = C(ε, m, p, |I|)`) on every
-  open interval and for every `1 ≤ p ≤ ∞`, from the order-two window estimate
-  `SobolevIntervalLp.norm_deriv_zero_le_of_deriv_eq` (a Taylor expansion over windows of length
-  `h` and Young's inequality, no covering argument) and an induction on the order; its corollary
-  `SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`: `‖u‖_p + ‖D^m u‖_p` is a norm equivalent
-  to the `W^{m,p}` norm.
+## Main definitions
 
-The `p = 2` bounded theory of `Numlib/Analysis/Sobolev/Interval.lean` (`ContDiffMapIcc.derivLp`,
-`toSobolevInterval`, …) is the case `p = 2` of the definitions here; the two are kept separate
-until the specialization pass re-proves the former from the latter.
+* `SobolevIntervalLp.derivOne`: the pair $(D^j u, D^{j+1} u)$ of $u \in W^{m+1,p}(I)$ as an element
+  of $W^{1,p}(I)$.
+* `SobolevIntervalLp.toContDiffMapIcc`: the embedding $W^{m+1,p}(a, b) \to C^m[a, b]$ that sends $u$
+  to the continuous representatives of $u, u', \dots, u^{(m)}$.
+* `ContDiffMapIcc.toSobolevIntervalLp`: the inclusion $C^k[a, b] \to W^{k,p}(a, b)$.
+* `SobolevIntervalLp.shift`: the map $u \mapsto Du$ from $W^{m+1,p}(I)$ to $W^{m,p}(I)$.
+* `SobolevIntervalLp.sobolevPrimitive`: the primitive $x \mapsto \int_{(a+b)/2}^x u$ of
+  $u \in W^{m,p}(a, b)$, a right inverse of the shift.
+
+## Main results
+
+* `SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral`: $u \in W^{m,p}(I)$ if and only if
+  $u \in L^p(I)$ and for every $1 \le j \le m$ there is $g_j \in L^p(I)$ with $\int_I u
+  \varphi^{(j)} = (-1)^j \int_I g_j \varphi$ for every test function $\varphi$.
+* `SobolevIntervalLp.toContDiffMapIcc_injective`,
+  `SobolevIntervalLp.isCompactOperator_toContDiffMapIcc`: the embedding
+  $W^{m+1,p}(a, b) \to C^m[a, b]$ is injective, and compact for $1 < p \le \infty$.
+* `ContDiffMapIcc.norm_toSobolevIntervalLp_le`, `ContDiffMapIcc.toSobolevIntervalLp_injective`: the
+  inclusion $C^k[a, b] \to W^{k,p}(a, b)$ is injective and has norm at most $(b - a)^{1/p}$.
+* `ContDiffMapIcc.exists_not_mem_range_toSobolevIntervalLp`,
+  `ContDiffMapIcc.not_surjective_toSobolevIntervalLp`: the inclusion $C^m[a, b] \to W^{m,p}(a, b)$
+  is not surjective, for every $m$.
+* `ContDiffMapIcc.denseRange_toSobolevIntervalLp`: $C^k[a, b]$ is dense in $W^{k,p}(a, b)$ for
+  $1 \le p < \infty$.
+* `SobolevIntervalLp.eLpNorm_integral_le`: the elementary **Poincaré inequality** $\|x \mapsto
+  \int_a^x w\|_{L^p(a,b)} \le (b - a) p^{-1/p} \|w\|_{L^p(a,b)}$.
+* `SobolevIntervalLp.eLpNorm_deriv_le_mul_add`: the **interpolation inequality** on every open
+  interval and for every $1 \le p \le \infty$.
+* `SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`: $\|u\|_p + \|D^m u\|_p$ is a norm
+  equivalent to the norm of $W^{m,p}(I)$.
+* `hasWeakIteratedDerivOn_sum_choose_mul`, `SobolevIntervalLp.exists_contDiff_mul`: the Leibniz
+  formula $D^j(g u) = \sum_{i \le j} \binom{j}{i} g^{(j-i)} D^i u$, and multiplication by a smooth
+  function with bounded derivatives preserves $W^{m,p}(I)$.
+
+## Proof outline
+
+The density of $C^k[a, b]$ is proved by induction on $k$. One approximates the shifted element $Du$
+and takes an antiderivative, and the elementary Poincaré inequality controls the function component.
+The non-surjectivity is proved by induction on $m$ through the primitive
+`SobolevIntervalLp.sobolevPrimitive`, starting from $x \mapsto |x - (a + b)/2|$ in $W^{1,p}(a, b)$.
+The interpolation inequality comes from an estimate at order two: a Taylor expansion over windows of
+length $h$ and Young's inequality for convolutions give $\|v'\|_p \le 2h \|v''\|_p + (3/h) \|v\|_p$,
+without a covering argument. An induction on the order then reaches all intermediate derivatives.
+
+## Implementation notes
+
+* The case $p = 2$ of the bounded theory, $H^m(a, b)$ in `Numlib.Analysis.Sobolev.Interval`
+  (`ContDiffMapIcc.derivLp`, `ContDiffMapIcc.toSobolevInterval`), is the case $p = 2$ of the
+  definitions here.
+* The index $j$ of a derivative is an element of `Fin (m + 1)`. For $u$ in the type
+  `SobolevIntervalLp (m + 1) p I`, the space is $W^{m+1,p}(I)$, and its image in
+  `ContDiffMapIcc hab m` lies in $C^m[a, b]$.
+* The function $u^{(j)}$ of an element of $C^k[a, b]$ is read on $\mathbb{R}$ through
+  `ContinuousMap.IccExtend`, which is constant outside $[a, b]$.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -74,12 +101,16 @@ variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ}
 
 /-! ### The characterization by `m` weak derivatives -/
 
-/-- **The characterization of `W^{m,p}(I)` by `m` weak derivatives** ([brezis2011functional]
-§8.2, "The Sobolev spaces `W^{m,p}`", the "easily shown" equivalence): `u ∈ W^{m,p}(I)` iff
-`u ∈ L^p(I)` and for every `1 ≤ j ≤ m` there is `g_j ∈ L^p(I)` with
-`∫_I u D^j φ = (-1)^j ∫_I g_j φ` for all test functions `φ` on `I`. The functions `g_j` are the
-weak derivatives `SobolevIntervalLp.deriv u j`, and `SobolevIntervalLp.hasWeakDerivOn_deriv_succ`
-says that `g_{j+1}` is the weak derivative of `g_j`. -/
+/-- **Characterization of $W^{m,p}(I)$ by $m$ weak derivatives.** Let $1 \le p \le \infty$, let
+$I \subseteq \mathbb{R}$ be open, and let $u \colon \mathbb{R} \to \mathbb{R}$. Then
+$u \in W^{m,p}(I)$ if and only if $u \in L^p(I)$ and for every $1 \le j \le m$ there is
+$g_j \in L^p(I)$ with
+$$\int_I u \, \varphi^{(j)} = (-1)^j \int_I g_j \, \varphi$$
+for every test function $\varphi$ on $I$. This is the equivalence that [brezis2011functional],
+§8.2, paragraph "The Sobolev spaces $W^{m,p}$", calls easily shown.
+
+The functions $g_j$ are the weak derivatives `SobolevIntervalLp.deriv u j`. By
+`SobolevIntervalLp.hasWeakDerivOn_deriv_succ`, $g_{j+1}$ is the weak derivative of $g_j$. -/
 theorem memSobolevIntervalLp_iff_forall_integral [Fact (1 ≤ p)] {u : ℝ → ℝ} :
     MemSobolevIntervalLp u m p I ↔ MemLp u p (volume.restrict I) ∧ ∀ j ∈ Icc 1 m,
       ∃ g : ℝ → ℝ, MemLp g p (volume.restrict I) ∧ ∀ φ : 𝓓(I, ℝ),
@@ -102,10 +133,10 @@ theorem memSobolevIntervalLp_iff_forall_integral [Fact (1 ≤ p)] {u : ℝ → �
     simp only [mul_comm] at this ⊢
     exact this
 
-/-! ### The successive derivatives as elements of `W^{1,p}(I)` -/
+/-! ### The successive derivatives as elements of $W^{1,p}(I)$ -/
 
-/-- **The pair `(D^j u, D^{j+1} u)` as an element of `W^{1,p}(I)`**, for `u ∈ W^{k+1,p}(I)` and
-`j ≤ k`: the `j`-th derivative of `u` with its own weak derivative. -/
+/-- For $u \in W^{m+1,p}(I)$ and $j \le m$, the element of $W^{1,p}(I)$ whose function is $D^j u$
+and whose weak derivative is $D^{j+1} u$. -/
 def derivOne (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) : SobolevIntervalLp 1 p I :=
   SobolevIntervalLp.mk ![deriv u j.castSucc, deriv u j.succ] fun i ↦ by
     have h0 : HasWeakIteratedDerivOn 0 (deriv u j.castSucc) (deriv u j.castSucc) I :=
@@ -117,42 +148,48 @@ def derivOne (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) : SobolevInte
     · exact h0
     · exact h1
 
-/-- The function of `derivOne u j` is `D^j u`. -/
+/-- The function of `SobolevIntervalLp.derivOne u j`, as an element of $L^p(I)$, is $D^j u$. -/
 @[simp]
 theorem deriv_derivOne_zero (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (derivOne u j) 0 = deriv u j.castSucc := rfl
 
-/-- The weak derivative of `derivOne u j` is `D^{j+1} u`. -/
+/-- The weak derivative of `SobolevIntervalLp.derivOne u j` is $D^{j+1} u$. -/
 @[simp]
 theorem deriv_derivOne_one (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (derivOne u j) 1 = deriv u j.succ := rfl
 
-/-- `derivOne` is additive. -/
+/-- The pair $(D^j u, D^{j+1} u)$ is additive in $u$: `derivOne (u + v) j = derivOne u j + derivOne
+v j`. -/
 theorem derivOne_add (u v : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     derivOne (u + v) j = derivOne u j + derivOne v j :=
   ext fun i ↦ by fin_cases i <;> rfl
 
-/-- `derivOne` is homogeneous. -/
+/-- The pair $(D^j u, D^{j+1} u)$ is homogeneous in $u$: `derivOne (r • u) j = r • derivOne u j`. -/
 theorem derivOne_smul (r : ℝ) (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     derivOne (r • u) j = r • derivOne u j :=
   ext fun i ↦ by fin_cases i <;> rfl
 
-/-- `derivOne` of `u` at `j = 0` is the inclusion of `u` into `W^{1,p}(I)`: its function is that
-of `u`. -/
+/-- For $j = 0$, the function of `SobolevIntervalLp.derivOne u 0` is the function of $u$. Thus
+`derivOne u 0` is $u$ read in $W^{1,p}(I)$. -/
 theorem fn_derivOne_zero (u : SobolevIntervalLp (m + 1) p I) : fn (derivOne u 0) = fn u := rfl
 
 variable [Fact (1 ≤ p)]
 
-/-- `‖derivOne u j‖ ≤ 2 ‖u‖`. -/
+/-- Let $1 \le p \le \infty$. For $u \in W^{m+1,p}(I)$ and $j \le m$, the pair $(D^j u, D^{j+1} u)$
+has norm at most $2 \|u\|$ in $W^{1,p}(I)$. -/
 theorem norm_derivOne_le (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     ‖derivOne u j‖ ≤ 2 * ‖u‖ := by
   refine (norm_le_sum_norm_deriv _).trans ?_
   rw [Fin.sum_univ_two, deriv_derivOne_zero, deriv_derivOne_one, two_mul]
   exact add_le_add (norm_deriv_le u _) (norm_deriv_le u _)
 
-/-- **The successive derivatives have consecutive representatives**: on the closure of `I`, the
-representative of `(D^j u, D^{j+1} u)` has the derivative the representative of
-`(D^{j+1} u, D^{j+2} u)` within the closure. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, let $u \in W^{m+1,p}(I)$ and let $j < m$.
+At every point $x$ of the closure $\bar I$, the continuous representative of
+$(D^j u, D^{j+1} u)$ has, within $\bar I$, the derivative equal to the value at $x$ of the
+continuous representative of $(D^{j+1} u, D^{j+2} u)$.
+
+Thus the continuous representatives of the successive derivatives are the classical derivatives
+of each other on $\bar I$. -/
 theorem hasDerivWithinAt_rep_derivOne (hI : (I : Set ℝ).OrdConnected)
     (u : SobolevIntervalLp (m + 1) p I) (j : Fin m) {x : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) :
@@ -163,18 +200,22 @@ theorem hasDerivWithinAt_rep_derivOne (hI : (I : Set ℝ).OrdConnected)
   rw [deriv_derivOne_one, Fin.succ_castSucc, ← deriv_derivOne_zero u j.succ, deriv_zero]
   exact fn_ae_eq_rep hI _
 
-/-! ### The embedding `W^{k+1,p}(a, b) ↪ C^k[a, b]` -/
+/-! ### The embedding $W^{m+1,p}(a, b) \hookrightarrow C^m[a, b]$ -/
 
 variable {a b : ℝ}
 
-/-- The tuple of the continuous representatives of `u, u', …, u^{(k)}` on `[a, b]`, for
-`u ∈ W^{k+1,p}(a, b)`. -/
+/-- For $1 \le p \le \infty$, $a < b$, $u \in W^{m+1,p}(a, b)$ and $j \le m$, the continuous
+representative of $D^j u$ (that is, of `SobolevIntervalLp.derivOne u j`), as a continuous
+function on $[a, b]$. -/
 def toContDiffMapIccTuple (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b))
     (j : Fin (m + 1)) : C(Icc a b, ℝ) :=
   ⟨fun x ↦ rep (derivOne u j) x, (continuousOn_rep_Icc hab (derivOne u j)).comp_continuous
     continuous_subtype_val fun x ↦ x.2⟩
 
-/-- The tuple of representatives satisfies the derivative condition of `ContDiffMapIcc`. -/
+/-- For $1 \le p \le \infty$, $a < b$, $u \in W^{m+1,p}(a, b)$ and $j < m$, the continuous
+representative of $D^{j+1} u$ on $[a, b]$ is the derivative of the continuous representative of
+$D^j u$, at the endpoints as well (`ContinuousMap.HasDerivIcc`). This is the condition that
+defines an element of $C^m[a, b]$. -/
 theorem hasDerivIcc_toContDiffMapIccTuple (hab : a < b)
     (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b)) (j : Fin m) :
     ContinuousMap.HasDerivIcc hab.le (toContDiffMapIccTuple hab u j.castSucc)
@@ -188,7 +229,8 @@ theorem hasDerivIcc_toContDiffMapIccTuple (hab : a < b)
   · rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab.le _ hy]; rfl
   · rw [ContinuousMap.coe_IccExtend, IccExtend_val]; rfl
 
-/-- The linear map `W^{k+1,p}(a, b) → C^k[a, b]`, `u ↦ (ũ, ũ', …, ũ^{(k)})`. -/
+/-- For $1 \le p \le \infty$ and $a < b$, the linear map $W^{m+1,p}(a, b) \to C^m[a, b]$ that sends
+$u$ to the tuple of the continuous representatives of $u, u', \dots, u^{(m)}$ on $[a, b]$. -/
 def toContDiffMapIccₗ (hab : a < b) :
     SobolevIntervalLp (m + 1) p (Opens.Ioo a b) →ₗ[ℝ] ContDiffMapIcc hab.le m where
   toFun u := ContDiffMapIcc.mk hab.le (toContDiffMapIccTuple hab u)
@@ -202,13 +244,18 @@ def toContDiffMapIccₗ (hab : a < b) :
     rw [derivOne_smul]
     exact rep_smul_Icc hab _ _ x.2
 
-/-- The `j`-th derivative of the image of `u` is the representative of `(D^j u, D^{j+1} u)`. -/
+/-- The derivative of order $j$ of the image of $u$ under the linear map
+`SobolevIntervalLp.toContDiffMapIccₗ` is, at every $x \in [a, b]$, the continuous representative
+of $(D^j u, D^{j+1} u)$. -/
 theorem deriv_toContDiffMapIccₗ (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b))
     (j : Fin (m + 1)) (x : Icc a b) :
     (toContDiffMapIccₗ hab u).deriv j x = rep (derivOne u j) x := rfl
 
-/-- The embedding constant of `W^{k+1,p}(a, b) → C^k[a, b]`, for the linear map:
-`‖u‖_{C^k} ≤ 2 (k + 1) C ‖u‖_{W^{k+1,p}}` with `C` the constant of Theorem 8.8 (5). -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m+1,p}(a, b)$, the linear map $T$ into
+$C^m[a, b]$ satisfies
+$$\|T u\|_{C^m} \le 2 (m + 1) C \|u\|_{W^{m+1,p}},$$
+where $C$ is `SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`, the constant of the embedding
+$W^{1,p}(a, b) \subseteq L^\infty(a, b)$ of Theorem 8.8 (5) of [brezis2011functional]. -/
 theorem norm_toContDiffMapIccₗ_le (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b)) :
     ‖toContDiffMapIccₗ hab u‖
       ≤ (m + 1) * (2 * embeddingConst p (Opens.Ioo a b)) * ‖u‖ := by
@@ -230,37 +277,48 @@ theorem norm_toContDiffMapIccₗ_le (hab : a < b) (u : SobolevIntervalLp (m + 1)
     _ = (m + 1) * (2 * embeddingConst p (Opens.Ioo a b)) * ‖u‖ := by
         simp [Finset.sum_const, mul_assoc]
 
-/-- **The embedding `W^{k+1,p}(a, b) ↪ C^k[a, b]`** ([brezis2011functional] §8.2, "The Sobolev
-spaces `W^{m,p}`": `W^{m,p}(I) ⊆ C^{m-1}(Ī)` with continuous injection for a bounded `I`): the
-continuous linear map sending `u` to the tuple of the continuous representatives of
-`u, u', …, u^{(k)}`, an element of the Banach space `ContDiffMapIcc hab.le k`. It is injective
-(`toContDiffMapIcc_injective`) and compact for `1 < p ≤ ∞`
-(`isCompactOperator_toContDiffMapIcc`). At `k = 0` its only component is
-`SobolevIntervalLp.toContinuousMap`. -/
+/-- **The embedding $W^{m+1,p}(a, b) \hookrightarrow C^m[a, b]$.** Let $1 \le p \le \infty$ and
+$a < b$. The continuous linear map $T \colon W^{m+1,p}(a, b) \to C^m[a, b]$ sends $u$ to the
+tuple of the continuous representatives of $u, u', \dots, u^{(m)}$, an element of the Banach
+space `ContDiffMapIcc hab.le m`. Its operator norm is at most $2 (m + 1) C$, with $C$ the
+constant `SobolevIntervalLp.embeddingConst p (Opens.Ioo a b)`. This is the inclusion
+$W^{m,p}(I) \subseteq C^{m-1}(\bar I)$ with continuous injection of [brezis2011functional],
+§8.2, paragraph "The Sobolev spaces $W^{m,p}$", for a bounded interval $I$.
+
+It is injective (`SobolevIntervalLp.toContDiffMapIcc_injective`) and compact for
+$1 < p \le \infty$ (`SobolevIntervalLp.isCompactOperator_toContDiffMapIcc`). For $m = 0$ its
+only component is `SobolevIntervalLp.toContinuousMap`. -/
 def toContDiffMapIcc (hab : a < b) :
     SobolevIntervalLp (m + 1) p (Opens.Ioo a b) →L[ℝ] ContDiffMapIcc hab.le m :=
   LinearMap.mkContinuous (toContDiffMapIccₗ hab)
     ((m + 1) * (2 * embeddingConst p (Opens.Ioo a b))) (fun u ↦ norm_toContDiffMapIccₗ_le hab u)
 
-/-- The `j`-th derivative of the image of `u ∈ W^{k+1,p}(a, b)` in `C^k[a, b]` is the
-representative of `(D^j u, D^{j+1} u)`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m+1,p}(a, b)$ and $j \le m$, the derivative
+of order $j$ of the image of $u$ in $C^m[a, b]$ is, at every $x \in [a, b]$, the continuous
+representative of $(D^j u, D^{j+1} u)$. -/
 theorem deriv_toContDiffMapIcc (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b))
     (j : Fin (m + 1)) (x : Icc a b) : (toContDiffMapIcc hab u).deriv j x = rep (derivOne u j) x :=
   rfl
 
-/-- The function of the image of `u` in `C^k[a, b]` is the representative of `u`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m+1,p}(a, b)$, the function of the image of
+$u$ in $C^m[a, b]$ is, at every $x \in [a, b]$, the continuous representative of $u$ (read in
+$W^{1,p}(a, b)$ as `SobolevIntervalLp.derivOne u 0`). -/
 theorem toContDiffMapIcc_apply (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b))
     (x : Icc a b) : toContDiffMapIcc hab u x = rep (derivOne u 0) x :=
   rfl
 
-/-- The operator norm of the embedding `W^{k+1,p}(a, b) ↪ C^k[a, b]`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The embedding $T \colon W^{m+1,p}(a, b) \to C^m[a, b]$ has
+operator norm $\|T\| \le 2 (m + 1) C$, with $C$ the constant `SobolevIntervalLp.embeddingConst p
+(Opens.Ioo a b)`. -/
 theorem norm_toContDiffMapIcc_le (hab : a < b) :
     ‖(toContDiffMapIcc hab : SobolevIntervalLp (m + 1) p (Opens.Ioo a b) →L[ℝ] _)‖
       ≤ (m + 1) * (2 * embeddingConst p (Opens.Ioo a b)) :=
   LinearMap.mkContinuous_norm_le _ (by have := embeddingConst_pos p (Opens.Ioo a b); positivity) _
 
-/-- **The embedding `W^{k+1,p}(a, b) ↪ C^k[a, b]` is injective**: the function determines the
-element. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The embedding $W^{m+1,p}(a, b) \to C^m[a, b]$ is
+injective.
+
+The function of the image determines the element. -/
 theorem toContDiffMapIcc_injective (hab : a < b) :
     Function.Injective (toContDiffMapIcc (p := p) (m := m) hab) := by
   intro u v huv
@@ -275,34 +333,35 @@ theorem toContDiffMapIcc_injective (hab : a < b) :
 
 end SobolevIntervalLp
 
-/-! ### The inclusion `C^k[a, b] → W^{k,p}(a, b)` -/
+/-! ### The inclusion $C^k[a, b] \to W^{k,p}(a, b)$ -/
 
 namespace ContDiffMapIcc
 
 variable {a b : ℝ} {hab : a ≤ b} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- The `j`-th derivative of `u ∈ C^k[a, b]`, extended by its endpoint values off `[a, b]`, lies
-in `L^p(a, b)`. -/
+/-- Let $a \le b$, let $p$ be an exponent, let $u \in C^k[a, b]$ and $j \le k$. The derivative
+$u^{(j)}$, extended to $\mathbb{R}$ by its values at the endpoints, lies in $L^p(a, b)$. -/
 theorem memLp_IccExtend_deriv (p : ℝ≥0∞) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     MemLp (IccExtend hab (u.deriv j)) p (volume.restrict (Ioo a b)) :=
   (ContinuousMap.IccExtend hab (u.deriv j)).continuous.continuousOn.memLp_top_restrict_Ioo
     |>.mono_exponent le_top
 
 variable (p) in
-/-- The `j`-th derivative of `u ∈ C^k[a, b]`, extended by its endpoint values off `[a, b]`, as an
-element of `L^p(a, b)`. -/
+/-- For $u \in C^k[a, b]$ and $j \le k$, the derivative $u^{(j)}$, extended to $\mathbb{R}$ by its
+values at the endpoints, as an element of $L^p(a, b)$. -/
 def derivLpOf (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) : Lp ℝ p (volume.restrict (Ioo a b)) :=
   (memLp_IccExtend_deriv p u j).toLp _
 
 omit [Fact (1 ≤ p)] in
-/-- `ContDiffMapIcc.derivLpOf` is the extended derivative almost everywhere. -/
+/-- The element `ContDiffMapIcc.derivLpOf p u j` of $L^p(a, b)$ agrees almost everywhere on $(a, b)$
+with the extension of $u^{(j)}$ by its endpoint values. -/
 theorem coeFn_derivLpOf (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     derivLpOf p u j =ᵐ[volume.restrict (Ioo a b)] IccExtend hab (u.deriv j) :=
   MemLp.coeFn_toLp _
 
 omit [Fact (1 ≤ p)] in
-/-- `ContDiffMapIcc.derivLpOf` is additive. -/
+/-- The class of $u^{(j)}$ in $L^p(a, b)$ is additive in $u \in C^k[a, b]$. -/
 theorem derivLpOf_add (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     derivLpOf p (u + v) j = derivLpOf p u j + derivLpOf p v j := by
   refine Lp.ext ((coeFn_derivLpOf (p := p) _ _).trans ?_)
@@ -311,7 +370,7 @@ theorem derivLpOf_add (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
   exact Eventually.of_forall fun x ↦ rfl
 
 omit [Fact (1 ≤ p)] in
-/-- `ContDiffMapIcc.derivLpOf` is homogeneous. -/
+/-- The class of $u^{(j)}$ in $L^p(a, b)$ is homogeneous in $u \in C^k[a, b]$. -/
 theorem derivLpOf_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     derivLpOf p (c • u) j = c • derivLpOf p u j := by
   refine Lp.ext ((coeFn_derivLpOf (p := p) _ _).trans ?_)
@@ -319,7 +378,8 @@ theorem derivLpOf_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
   exact Eventually.of_forall fun x ↦ rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The extended derivatives of `u ∈ C^k[a, b]` are the weak derivatives of `u` on `(a, b)`. -/
+/-- Let $a < b$, let $u \in C^k[a, b]$ and $j \le k$. On $(a, b)$, the class of $u^{(j)}$ in
+$L^p(a, b)$ is the weak derivative of order $j$ of the class of $u$. -/
 theorem hasWeakIteratedDerivOn_derivLpOf (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) :
     HasWeakIteratedDerivOn (j : ℕ) (derivLpOf p u 0) (derivLpOf p u j) (Opens.Ioo a b) := by
@@ -337,8 +397,11 @@ theorem hasWeakIteratedDerivOn_derivLpOf (hlt : a < b) (u : ContDiffMapIcc hab k
     rw [← e2, ← e1, IccExtend_of_mem hab _ hx']
 
 variable (p) in
-/-- The inclusion `C^k[a, b] → W^{k,p}(a, b)` as a linear map: `u` goes to the element whose
-`j`-th component is the extended derivative `u^{(j)}`. -/
+/-- For $a < b$, the inclusion $C^k[a, b] \to W^{k,p}(a, b)$ as a linear map: $u$ goes to the
+element whose component of order $j$ is the class of $u^{(j)}$ in $L^p(a, b)$.
+
+The hypothesis $a \le b$ is the one in the type `ContDiffMapIcc hab k`, and $a < b$ is needed
+for the weak derivatives. -/
 def toSobolevIntervalLpₗ (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     ContDiffMapIcc hab k →ₗ[ℝ] SobolevIntervalLp k p (Opens.Ioo a b) where
   toFun u := SobolevIntervalLp.mk (derivLpOf p u) (hasWeakIteratedDerivOn_derivLpOf hlt u)
@@ -350,14 +413,19 @@ def toSobolevIntervalLpₗ (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     exact derivLpOf_smul c u j
 
 omit [Fact (1 ≤ p)] in
-/-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
+/-- The weak derivative of order $j$ of the image of $u \in C^k[a, b]$ under the linear inclusion
+`ContDiffMapIcc.toSobolevIntervalLpₗ` is the class of $u^{(j)}$ in $L^p(a, b)$. -/
 @[simp]
 theorem deriv_toSobolevIntervalLpₗ (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) :
     SobolevIntervalLp.deriv (toSobolevIntervalLpₗ p hab hlt k u) j = derivLpOf p u j := rfl
 
 omit [Fact (1 ≤ p)] in
-/-- `‖u^{(j)}‖_{L^p(a, b)} ≤ (b - a)^{1/p} ‖u^{(j)}‖_∞`. -/
+/-- For every exponent $p$, $u \in C^k[a, b]$ and $j \le k$,
+$$\|u^{(j)}\|_{L^p(a, b)} \le (b - a)^{1/p} \|u^{(j)}\|_\infty,$$
+where the exponent $1/p$ is read as $0$ for $p = \infty$.
+
+The exponent is `p.toReal⁻¹`, which is $0$ for $p = \infty$, so that the factor is then $1$. -/
 theorem norm_derivLpOf_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     ‖derivLpOf p u j‖ ≤ (b - a) ^ p.toReal⁻¹ * ‖u.deriv j‖ := by
   rw [derivLpOf, Lp.norm_toLp]
@@ -371,8 +439,10 @@ theorem norm_derivLpOf_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
   rw [ENNReal.toReal_mul, ← ENNReal.toReal_rpow, ENNReal.toReal_ofReal (sub_nonneg.2 hab),
     ENNReal.toReal_ofReal (norm_nonneg _)]
 
-/-- The constant of the inclusion `C^k[a, b] → W^{k,p}(a, b)`, for the linear map:
-`‖u‖_{W^{k,p}} ≤ (b - a)^{1/p} ‖u‖_{C^k}`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The linear inclusion
+$\iota \colon C^k[a, b] \to W^{k,p}(a, b)$ satisfies
+$$\|\iota u\|_{W^{k,p}} \le (b - a)^{1/p} \|u\|_{C^k},$$
+with $1/p = 0$ for $p = \infty$. -/
 theorem norm_toSobolevIntervalLpₗ_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ‖toSobolevIntervalLpₗ p hab hlt k u‖ ≤ (b - a) ^ p.toReal⁻¹ * ‖u‖ := by
   refine (SobolevIntervalLp.norm_le_sum_norm_deriv _).trans ?_
@@ -382,37 +452,46 @@ theorem norm_toSobolevIntervalLpₗ_le (hab : a ≤ b) (hlt : a < b) (u : ContDi
     exact norm_derivLpOf_le u j
 
 variable (p) in
-/-- **The inclusion `C^k[a, b] → W^{k,p}(a, b)`** ([brezis2011functional] §8.2, Remark 2, for
-every order): the continuous linear map sending `u ∈ C^k[a, b]` to the element of `W^{k,p}(a, b)`
-whose components are its derivatives `u, u', …, u^{(k)}` extended by their endpoint values. It is
-injective (`toSobolevIntervalLp_injective`), has norm at most `(b - a)^{1/p}`
-(`norm_toSobolevIntervalLp_le`), and its left inverse on the range is
-`SobolevIntervalLp.toContDiffMapIcc`. -/
+/-- **The inclusion $C^k[a, b] \to W^{k,p}(a, b)$.** Let $1 \le p \le \infty$ and $a < b$. The
+continuous linear map $\iota$ sends $u \in C^k[a, b]$ to the element of $W^{k,p}(a, b)$ whose
+components are the derivatives $u, u', \dots, u^{(k)}$, extended by their values at the
+endpoints. Its operator norm is at most $(b - a)^{1/p}$
+(`ContDiffMapIcc.norm_toSobolevIntervalLp_le`). This is Remark 2 of [brezis2011functional],
+§8.2, at every order $k$.
+
+It is injective (`ContDiffMapIcc.toSobolevIntervalLp_injective`). The embedding
+`SobolevIntervalLp.toContDiffMapIcc` composed with $\iota$ at order $k + 1$ is the inclusion
+$C^{k+1}[a, b] \to C^k[a, b]$ (`ContDiffMapIcc.deriv_toContDiffMapIcc_toSobolevIntervalLp`). -/
 def toSobolevIntervalLp (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     ContDiffMapIcc hab k →L[ℝ] SobolevIntervalLp k p (Opens.Ioo a b) :=
   LinearMap.mkContinuous (toSobolevIntervalLpₗ p hab hlt k) ((b - a) ^ p.toReal⁻¹)
     (fun u ↦ norm_toSobolevIntervalLpₗ_le hab hlt u)
 
-/-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The weak derivative of order $j$ of the image of
+$u \in C^k[a, b]$ in $W^{k,p}(a, b)$ is the class of $u^{(j)}$ in $L^p(a, b)$. -/
 @[simp]
 theorem deriv_toSobolevIntervalLp (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) :
     SobolevIntervalLp.deriv (toSobolevIntervalLp p hab hlt k u) j = derivLpOf p u j := rfl
 
-/-- The function of the inclusion of `u ∈ C^k[a, b]` is `u` almost everywhere on `(a, b)`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The function of the image of $u \in C^k[a, b]$ in
+$W^{k,p}(a, b)$ agrees with $u$ almost everywhere on $(a, b)$. -/
 theorem fn_toSobolevIntervalLp_ae_eq (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     SobolevIntervalLp.fn (toSobolevIntervalLp p hab hlt k u) =ᵐ[volume.restrict (Ioo a b)]
       u.extend :=
   coeFn_derivLpOf u 0
 
-/-- **The constant of the inclusion `C^k[a, b] → W^{k,p}(a, b)`**:
-`‖u‖_{W^{k,p}} ≤ (b - a)^{1/p} ‖u‖_{C^k}`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The inclusion $\iota \colon C^k[a, b] \to W^{k,p}(a, b)$
+satisfies
+$$\|\iota u\|_{W^{k,p}} \le (b - a)^{1/p} \|u\|_{C^k}$$
+for every $u \in C^k[a, b]$, with $1/p = 0$ for $p = \infty$. -/
 theorem norm_toSobolevIntervalLp_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ‖toSobolevIntervalLp p hab hlt k u‖ ≤ (b - a) ^ p.toReal⁻¹ * ‖u‖ :=
   norm_toSobolevIntervalLpₗ_le hab hlt u
 
-/-- **The inclusion `C^k[a, b] → W^{k,p}(a, b)` is injective**: a continuous function vanishing
-almost everywhere on `(a, b)` vanishes on `[a, b]`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The inclusion $C^k[a, b] \to W^{k,p}(a, b)$ is injective.
+
+A continuous function that vanishes almost everywhere on $(a, b)$ vanishes on $[a, b]$. -/
 theorem toSobolevIntervalLp_injective (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     Function.Injective (toSobolevIntervalLp p hab hlt k) := by
   refine (injective_iff_map_eq_zero _).2 fun u hu ↦ ?_
@@ -429,9 +508,12 @@ theorem toSobolevIntervalLp_injective (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
   simp only [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ t.2] at this
   exact this
 
-/-- **The embedding `W^{k+1,p}(a, b) ↪ C^k[a, b]` is a left inverse of the inclusion**: for
-`u ∈ C^{k+1}[a, b]`, the derivatives of `toContDiffMapIcc (toSobolevIntervalLp u)` are those of
-`u`, the representatives of the derivatives of a `C^{k+1}` function being those derivatives. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in C^{k+1}[a, b]$, the derivatives of order
+$j \le k$ of the image of $u$ under the inclusion into $W^{k+1,p}(a, b)$ followed by the
+embedding into $C^k[a, b]$ are the derivatives $u^{(j)}$ of $u$, at every point of $[a, b]$.
+
+Thus the composition is the inclusion $C^{k+1}[a, b] \to C^k[a, b]$ that forgets the derivative
+of order $k + 1$. -/
 theorem deriv_toContDiffMapIcc_toSobolevIntervalLp (hlt : a < b) (u : ContDiffMapIcc hlt.le (k + 1))
     (j : Fin (k + 1)) (x : Icc a b) :
     (SobolevIntervalLp.toContDiffMapIcc hlt (toSobolevIntervalLp p hlt.le hlt (k + 1) u)).deriv j x
@@ -447,38 +529,43 @@ theorem deriv_toContDiffMapIcc_toSobolevIntervalLp (hlt : a < b) (u : ContDiffMa
 end ContDiffMapIcc
 
 
-/-! ### Compactness of `W^{k+1,p}(a, b) ↪ C^k[a, b]` -/
+/-! ### Compactness of $W^{m+1,p}(a, b) \hookrightarrow C^m[a, b]$ -/
 
 namespace SobolevIntervalLp
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {a b : ℝ}
 
 variable (m p I) in
-/-- `SobolevIntervalLp.derivOne` as a continuous linear map `W^{k+1,p}(I) → W^{1,p}(I)`, of norm
-at most `2`. -/
+/-- For $1 \le p \le \infty$ and $j \le m$, the map $u \mapsto (D^j u, D^{j+1} u)$ as a continuous
+linear map $W^{m+1,p}(I) \to W^{1,p}(I)$, of norm at most $2$. -/
 def derivOneCLM (j : Fin (m + 1)) : SobolevIntervalLp (m + 1) p I →L[ℝ] SobolevIntervalLp 1 p I :=
   LinearMap.mkContinuous
     { toFun := fun u ↦ derivOne u j
       map_add' := fun u v ↦ derivOne_add u v j
       map_smul' := fun r u ↦ derivOne_smul r u j } 2 fun u ↦ norm_derivOne_le u j
 
-/-- `derivOneCLM` is `derivOne`. -/
+/-- The continuous linear map `SobolevIntervalLp.derivOneCLM m p I j` sends $u$ to
+`SobolevIntervalLp.derivOne u j`. -/
 @[simp]
 theorem derivOneCLM_apply (j : Fin (m + 1)) (u : SobolevIntervalLp (m + 1) p I) :
     derivOneCLM m p I j u = derivOne u j := rfl
 
-/-- The `j`-th component of the embedding into `C^k[a, b]` is the embedding into `C[a, b]` of the
-`j`-th derivative. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m+1,p}(a, b)$ and $j \le m$, the component
+of order $j$ of the image of $u$ in $C^m[a, b]$ is the image of $(D^j u, D^{j+1} u)$ under the
+embedding $W^{1,p}(a, b) \to C[a, b]$ (`SobolevIntervalLp.toContinuousMap`). -/
 theorem deriv_toContDiffMapIcc_eq (hab : a < b) (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b))
     (j : Fin (m + 1)) : (toContDiffMapIcc hab u).deriv j = toContinuousMap hab (derivOne u j) :=
   rfl
 
-/-- **`W^{k+1,p}(a, b) ⊆ C^k[a, b]` with compact injection for `1 < p ≤ ∞`**
-([brezis2011functional] §8.2, "The Sobolev spaces `W^{m,p}`"): the embedding
-`SobolevIntervalLp.toContDiffMapIcc` is a compact operator. Each component
-`u ↦ toContinuousMap (D^j u, D^{j+1} u)` is compact by Theorem 8.8 (6), so the image of the unit
-ball lies in a finite product of compact sets of `C[a, b]`, whose preimage in the closed subspace
-`C^k[a, b]` of the product is compact. -/
+/-- **$W^{m+1,p}(a, b) \subseteq C^m[a, b]$ with compact injection.** Let $1 < p \le \infty$ and
+$a < b$. Then the embedding `SobolevIntervalLp.toContDiffMapIcc` of $W^{m+1,p}(a, b)$ into
+$C^m[a, b]$ is a compact operator. This is the compact injection of [brezis2011functional],
+§8.2, paragraph "The Sobolev spaces $W^{m,p}$".
+
+Each component $u \mapsto (D^j u, D^{j+1} u) \mapsto C[a, b]$ is compact by Theorem 8.8 (6) of
+[brezis2011functional]. So the image of the unit ball lies in a finite product of compact
+subsets of $C[a, b]$, and its preimage in the closed subspace $C^m[a, b]$ of the product is
+compact. -/
 theorem isCompactOperator_toContDiffMapIcc (hab : a < b) (hp : 1 < p) :
     IsCompactOperator
       (toContDiffMapIcc hab : SobolevIntervalLp (m + 1) p (Opens.Ioo a b) →L[ℝ] _) := by
@@ -505,8 +592,8 @@ theorem isCompactOperator_toContDiffMapIcc (hab : a < b) (hp : 1 < p) :
   rintro w ⟨u, hu, rfl⟩ j -
   exact subset_closure ⟨u, hu, rfl⟩
 
-/-- **`W^{k+1,p}(a, b) ⊆ C^k[a, b]` with compact injection for `1 < p ≤ ∞`**, in the vocabulary
-of `Numlib/Analysis/Normed/Operator/Embedding.lean`. -/
+/-- Let $1 < p \le \infty$ and $a < b$. The embedding $W^{m+1,p}(a, b) \to C^m[a, b]$ is a compact
+embedding in the sense of `IsCompactEmbedding`. -/
 theorem isCompactEmbedding_toContDiffMapIcc (hab : a < b) (hp : 1 < p) :
     IsCompactEmbedding
       (toContDiffMapIcc (p := p) (m := m) hab :
@@ -516,14 +603,17 @@ theorem isCompactEmbedding_toContDiffMapIcc (hab : a < b) (hp : 1 < p) :
 
 end SobolevIntervalLp
 
-/-! ### The inclusion `C^1[a, b] → W^{1,p}(a, b)` is not surjective -/
+/-! ### The inclusion $C^1[a, b] \to W^{1,p}(a, b)$ is not surjective -/
 
 namespace ContDiffMapIcc
 
 variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **`x ↦ |x - c|` lies in `W^{1,p}(a, b)` for `a < c < b`** ([brezis2011functional] §8.2,
-Example (i), translated): a continuous piecewise-`C¹` function on the partition `a < c < b`. -/
+/-- Let $1 \le p \le \infty$ and $a < c < b$. Then the function $x \mapsto |x - c|$ lies in
+$W^{1,p}(a, b)$. This is Example (i) of [brezis2011functional], §8.2, translated to the point
+$c$.
+
+The function is continuous and piecewise $C^1$ for the partition $a < c < b$. -/
 theorem memSobolevIntervalLp_abs_sub {c : ℝ} (hac : a < c) (hcb : c < b) :
     MemSobolevIntervalLp (fun x : ℝ ↦ |x - c|) 1 p (Opens.Ioo a b) := by
   have hx : StrictMono (![a, c, b] : Fin 3 → ℝ) := by
@@ -560,11 +650,15 @@ theorem memSobolevIntervalLp_abs_sub {c : ℝ} (hac : a < c) (hcb : c < b) :
   exact (memSobolevIntervalLp_of_piecewise_contDiffOn (p := p) hx rfl rfl
     (continuous_abs.comp (continuous_id.sub continuous_const)).continuousOn hg' hbdd).1
 
-/-- **The inclusion `C^1[a, b] → W^{1,p}(a, b)` is not surjective** ([brezis2011functional] §8.2,
-Example (i)): `x ↦ |x - (a + b)/2|` lies in `W^{1,p}(a, b)`, but its continuous representative,
-which is unique, is not differentiable at the midpoint, so no `C¹` function represents it. In
-particular `C^1[a, b]` is not complete for the `W^{1,p}` norm, being a proper subspace of a
-Banach space (and dense for `p < ∞`). -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The inclusion $C^1[a, b] \to W^{1,p}(a, b)$ is not
+surjective: some $u \in W^{1,p}(a, b)$ is not in its range. This follows from Example (i) of
+[brezis2011functional], §8.2.
+
+The function $x \mapsto |x - (a + b)/2|$ lies in $W^{1,p}(a, b)$. Its continuous representative
+is unique and is not differentiable at the midpoint, so no $C^1$ function represents it. In
+particular, for $p < \infty$, $C^1[a, b]$ is not complete for the norm of $W^{1,p}(a, b)$,
+because it is a proper dense subspace of a Banach space
+(`ContDiffMapIcc.denseRange_toSobolevIntervalLp`). -/
 theorem exists_not_mem_range_toSobolevIntervalLp (hlt : a < b) :
     ∃ u : SobolevIntervalLp 1 p (Opens.Ioo a b),
       u ∉ Set.range (toSobolevIntervalLp p hlt.le hlt 1) := by
@@ -611,11 +705,14 @@ namespace SobolevIntervalLp
 variable {m : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
 omit [Fact (1 ≤ p)] in
-/-- The Poincaré constant `(b - a) / p^{1/p}` is nonnegative. -/
+/-- For $a \le b$ and every exponent $p$, the Poincaré constant $(b - a)/p^{1/p}$ is nonnegative.
+
+The number $p^{1/p}$ is `p.toReal ^ p.toReal⁻¹`, which is $1$ for $p = \infty$. -/
 theorem poincareConst_nonneg (hab : a ≤ b) : 0 ≤ (b - a) / p.toReal ^ p.toReal⁻¹ :=
   div_nonneg (sub_nonneg.2 hab) (Real.rpow_nonneg ENNReal.toReal_nonneg _)
 
-/-- The derivatives of an element of `W^{m,p}(a, b)` are integrable on `(a, b)`. -/
+/-- Let $1 \le p \le \infty$. For $u \in W^{m,p}(a, b)$ and $j \le m$, the weak derivative $D^j u$
+is integrable on $(a, b)$. -/
 theorem integrableOn_deriv_Ioo (u : SobolevIntervalLp m p (Opens.Ioo a b)) (j : Fin (m + 1)) :
     IntegrableOn (deriv u j) (Ioo a b) := by
   rcases lt_or_ge a b with hab | hab
@@ -627,7 +724,9 @@ theorem integrableOn_deriv_Ioo (u : SobolevIntervalLp m p (Opens.Ioo a b)) (j : 
   · rw [Ioo_eq_empty (not_lt.2 hab)]
     exact integrableOn_empty
 
-/-- `∫_a^b (x - a)^{p-1} dx = (b - a)^p / p` for `p ≥ 1`, as a Lebesgue integral. -/
+/-- For $a \le b$ and a real number $q \ge 1$,
+$$\int_a^b (x - a)^{q - 1} \, dx = \frac{(b - a)^q}{q},$$
+as a Lebesgue integral in $[0, \infty]$ over $(a, b)$. -/
 theorem lintegral_ofReal_sub_rpow (hab : a ≤ b) {q : ℝ} (hq : 1 ≤ q) :
     ∫⁻ x in Ioo a b, ENNReal.ofReal ((x - a) ^ (q - 1)) = ENNReal.ofReal ((b - a) ^ q / q) := by
   have hint : IntegrableOn (fun x ↦ (x - a) ^ (q - 1)) (Ioo a b) := by
@@ -641,10 +740,15 @@ theorem lintegral_ofReal_sub_rpow (hab : a ≤ b) {q : ℝ} (hq : 1 ≤ q) :
     intervalIntegral.integral_comp_sub_right (fun x ↦ x ^ (q - 1)) a, sub_self,
     integral_rpow (Or.inl (by linarith)), sub_add_cancel, Real.zero_rpow (by linarith), sub_zero]
 
-/-- **Poincaré's inequality, elementary form, in `ℝ≥0∞`**: for `w ∈ L^1(a, b)` and
-`1 ≤ p ≤ ∞`, `‖∫_a^x w‖_{L^p(a, b)} ≤ (b - a) / p^{1/p} ‖w‖_{L^p(a, b)}` (with `p^{1/p} = 1` at
-`p = ∞`). By Hölder, `|∫_a^x w| ≤ (x - a)^{1 - 1/p} ‖w‖_p`, and
-`∫_a^b (x - a)^{p - 1} dx = (b - a)^p / p`. -/
+/-- **Poincaré's inequality, elementary form.** Let $1 \le p \le \infty$, let $a \le b$, and let $w$
+be integrable on $(a, b)$. Then
+$$\Bigl\|x \mapsto \int_a^x w\Bigr\|_{L^p(a, b)} \le \frac{b - a}{p^{1/p}} \|w\|_{L^p(a, b)},$$
+with $p^{1/p} = 1$ for $p = \infty$.
+
+The norms are in $[0, \infty]$. By Hölder's inequality
+$|\int_a^x w| \le (x - a)^{1 - 1/p} \|w\|_p$, and
+$\int_a^b (x - a)^{p - 1} \, dx = (b - a)^p / p$. The consequences for $W_0^{1,p}(a, b)$,
+Proposition 8.13 of [brezis2011functional], are in `Numlib.Analysis.Sobolev.Interval.Zero`. -/
 theorem eLpNorm_integral_le (hab : a ≤ b) {w : ℝ → ℝ} (hw : IntegrableOn w (Ioo a b)) :
     eLpNorm (fun x ↦ ∫ t in a..x, w t) p (volume.restrict (Ioo a b))
       ≤ ENNReal.ofReal ((b - a) / p.toReal ^ p.toReal⁻¹)
@@ -712,14 +816,14 @@ theorem eLpNorm_integral_le (hab : a ≤ b) {w : ℝ → ℝ} (hw : IntegrableOn
 
 end SobolevIntervalLp
 
-/-! ### The shift `W^{k+1,p}(I) → W^{k,p}(I)` and the density of `C^k[a, b]` -/
+/-! ### The shift $W^{m+1,p}(I) \to W^{m,p}(I)$ and the density of $C^k[a, b]$ -/
 
 namespace SobolevIntervalLp
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **The shift `u ↦ Du`**, `W^{k+1,p}(I) → W^{k,p}(I)`: the element with components
-`Du, D²u, …, D^{k+1}u`. -/
+/-- **The shift** $u \mapsto Du$, for $1 \le p \le \infty$: the element of $W^{m,p}(I)$ whose
+components are $Du, D^2 u, \dots, D^{m+1} u$, for $u \in W^{m+1,p}(I)$. -/
 noncomputable def shift (u : SobolevIntervalLp (m + 1) p I) : SobolevIntervalLp m p I :=
   mk (fun j ↦ deriv u j.succ) fun j ↦ by
     have h1 : HasWeakDerivOn (deriv u (0 : Fin (m + 1)).castSucc) (deriv u (0 : Fin (m + 1)).succ)
@@ -731,20 +835,24 @@ noncomputable def shift (u : SobolevIntervalLp (m + 1) p I) : SobolevIntervalLp 
     exact h1.hasWeakIteratedDerivOn_of_succ h2
 
 omit [Fact (1 ≤ p)] in
-/-- The components of the shift are the higher derivatives. -/
+/-- The component of order $j$ of the shift of $u$ is $D^{j+1} u$. -/
 @[simp]
 theorem deriv_shift (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (shift u) j = deriv u j.succ := rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The shift is additive. -/
+/-- The shift commutes with subtraction: $\operatorname{shift}(u - v) = \operatorname{shift} u -
+\operatorname{shift} v$. -/
 theorem shift_sub (u v : SobolevIntervalLp (m + 1) p I) : shift (u - v) = shift u - shift v :=
   ext fun j ↦ by rw [deriv_shift, deriv_sub, deriv_sub, deriv_shift, deriv_shift]
 
 variable {a b : ℝ}
 
-/-- The primitive
-`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` lies in `L^p(a, b)`, being continuous on `[a, b]`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m,p}(a, b)$, the primitive
+$x \mapsto \int_{(a+b)/2}^x u$ lies in $L^p(a, b)$.
+
+It is continuous on $[a, b]$. The Lean statement writes the primitive as
+`0 + ∫ t in (a + b) / 2..x, deriv u 0 t`. -/
 theorem memLp_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
     MemLp (fun x ↦ 0 + ∫ t in (a + b) / 2..x, deriv u 0 t) p
       (volume.restrict (Ioo a b)) := by
@@ -757,10 +865,11 @@ theorem memLp_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.I
       (fun x hx y hy ↦ (hint.mono_set (uIcc_subset_Icc hx hy)).intervalIntegrable) 0
   exact hF.memLp_top_restrict_Ioo.mono_exponent le_top
 
-/-- **The primitive
-`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` as an element of `W^{m+1,p}(a, b)`**: its components
-are the primitive followed by the components of `u`. A right inverse of the shift
-`shift` (`shift_sobolevPrimitive`). -/
+/-- **The primitive** of $u \in W^{m,p}(a, b)$, for $1 \le p \le \infty$ and $a < b$: the element of
+$W^{m+1,p}(a, b)$ whose components are the primitive $x \mapsto \int_{(a+b)/2}^x u$ followed by
+$u, Du, \dots, D^m u$.
+
+It is a right inverse of the shift (`SobolevIntervalLp.shift_sobolevPrimitive`). -/
 def sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
     SobolevIntervalLp (m + 1) p (Opens.Ioo a b) :=
   mk
@@ -781,21 +890,23 @@ def sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
           (hasWeakIteratedDerivOn_deriv u i)).congr_ae ?_ (EventuallyEq.refl _ _)
         exact (memLp_sobolevPrimitive hlt u).coeFn_toLp.symm)
 
-/-- The shift of the primitive of `u` is `u`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $u \in W^{m,p}(a, b)$, the shift of the primitive of
+$u$ is $u$. -/
 theorem shift_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
     shift (sobolevPrimitive hlt u) = u :=
   ext fun _ ↦ rfl
 
 end SobolevIntervalLp
 
-/-! ### The primitive as a right inverse of the shift, and the non-surjectivity of
-`C^m[a, b] → W^{m,p}(a, b)` at every order -/
+/-! ### The non-surjectivity of $C^m[a, b] \to W^{m,p}(a, b)$ at every order -/
 
 namespace ContDiffMapIcc
 
 variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- The inclusion `C^{m+1}[a, b] → W^{m+1,p}(a, b)` intertwines the two shifts `u ↦ u'`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. For $v \in C^{m+1}[a, b]$, the shift of the image of $v$
+in $W^{m+1,p}(a, b)$ is the image of $v'$ in $W^{m,p}(a, b)$. Thus the inclusion commutes with
+the two maps $u \mapsto u'$. -/
 theorem shift_toSobolevIntervalLp (hlt : a < b) (v : ContDiffMapIcc hlt.le (m + 1)) :
     SobolevIntervalLp.shift (toSobolevIntervalLp p hlt.le hlt (m + 1) v)
       = toSobolevIntervalLp p hlt.le hlt m v.shift :=
@@ -804,8 +915,11 @@ theorem shift_toSobolevIntervalLp (hlt : a < b) (v : ContDiffMapIcc hlt.le (m + 
       deriv_toSobolevIntervalLp]
     exact (MemLp.toLp_eq_toLp_iff _ _).2 (by rw [deriv_shift])
 
-/-- **The inclusion `C[a, b] → L^p(a, b)` is not surjective**: the step function
-`x ↦ 1` for `x > (a + b)/2`, `-1` otherwise, has no continuous representative on `[a, b]`. -/
+/-- Let $1 \le p \le \infty$ and $a < b$. The inclusion $C[a, b] \to W^{0,p}(a, b)$ is not
+surjective.
+
+The step function equal to $1$ for $x > (a + b)/2$ and to $-1$ otherwise has no continuous
+representative on $[a, b]$. -/
 theorem not_surjective_toSobolevIntervalLp_zero (hlt : a < b) :
     ¬ Function.Surjective (toSobolevIntervalLp p hlt.le hlt 0) := by
   obtain ⟨c, hc⟩ : ∃ c, c = (a + b) / 2 := ⟨_, rfl⟩
@@ -840,10 +954,12 @@ theorem not_surjective_toSobolevIntervalLp_zero (hlt : a < b) :
   simp only at h1 h2
   linarith
 
-/-- **The inclusion
-`C^m[a, b] → W^{m,p}(a, b)` is not surjective, for every `m` and every `1 ≤ p ≤ ∞`**: by
-induction on `m`, the primitive `sobolevPrimitive` lifting an element of `W^{m,p}(a, b)` outside
-the range of `C^m[a, b]` to one of `W^{m+1,p}(a, b)` outside the range of `C^{m+1}[a, b]`. -/
+/-- Let $1 \le p \le \infty$, $a < b$ and $m \in \mathbb{N}$. The inclusion
+$C^m[a, b] \to W^{m,p}(a, b)$ is not surjective.
+
+The proof is by induction on $m$. The primitive `SobolevIntervalLp.sobolevPrimitive` lifts an
+element of $W^{m,p}(a, b)$ outside the range of $C^m[a, b]$ to an element of $W^{m+1,p}(a, b)$
+outside the range of $C^{m+1}[a, b]$. -/
 theorem not_surjective_toSobolevIntervalLp (hlt : a < b) (m : ℕ) :
     ¬ Function.Surjective (toSobolevIntervalLp p hlt.le hlt m) := by
   induction m with
@@ -861,13 +977,15 @@ namespace ContDiffMapIcc
 
 variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **`C^k[a, b]` is dense in `W^{k,p}(a, b)` for `1 ≤ p < ∞`** ([brezis2011functional] §8.2,
-after Theorem 8.7, for `W^{m,p}`): the inclusion `ContDiffMapIcc.toSobolevIntervalLp` has dense
-range. By induction on `k`: for `k = 0` the test functions are dense in `L^p(a, b)`; for
-`k + 1`, approximate the shifted element `Du ∈ W^{k,p}(a, b)` by `w ∈ C^k[a, b]` and take the
-antiderivative `v = ũ(a) + ∫_a^x w`, whose distance to `u` is controlled by Poincaré's inequality
-`SobolevIntervalLp.eLpNorm_integral_le` on the function component and by `‖w - Du‖` on the
-others. -/
+/-- **$C^k[a, b]$ is dense in $W^{k,p}(a, b)$.** Let $1 \le p < \infty$ and $a < b$. Then the
+inclusion $C^k[a, b] \to W^{k,p}(a, b)$ (`ContDiffMapIcc.toSobolevIntervalLp`) has dense range.
+This is the statement after Theorem 8.7 of [brezis2011functional], §8.2, for $W^{m,p}$.
+
+The proof is by induction on $k$. For $k = 0$, the test functions are dense in $L^p(a, b)$. For
+$k + 1$, approximate the shifted element $Du \in W^{k,p}(a, b)$ by $w \in C^k[a, b]$ and take
+the antiderivative $v = \tilde u(a) + \int_a^x w$ (`ContDiffMapIcc.cons`). Poincaré's inequality
+`SobolevIntervalLp.eLpNorm_integral_le` controls the function component of $v - u$, and
+$\|w - Du\|$ controls the others. -/
 theorem denseRange_toSobolevIntervalLp (hab : a ≤ b) (hlt : a < b) (hp : p ≠ ⊤) (k : ℕ) :
     DenseRange (toSobolevIntervalLp p hab hlt k) := by
   rw [Metric.denseRange_iff]
@@ -994,7 +1112,7 @@ theorem denseRange_toSobolevIntervalLp (hab : a ≤ b) (hlt : a < b) (hp : p ≠
 
 end ContDiffMapIcc
 
-/-! ### The interpolation inequality `‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` -/
+/-! ### The interpolation inequality $\|D^j u\|_p \le \varepsilon \|D^m u\|_p + C \|u\|_p$ -/
 
 namespace SobolevIntervalLp
 
@@ -1002,11 +1120,15 @@ open scoped Convolution
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **The Taylor estimate behind the interpolation inequality**: for `v, w ∈ W^{1,p}(I)` with
-`v' = w` (so `v ∈ W^{2,p}(I)`, `w = v'`), `x ≤ y` in `I` and `z ∈ [x, y]`,
-`(y - x) |w̃(z)| ≤ |ṽ(y)| + |ṽ(x)| + (y - x) ∫_x^y |w'|`, from
-`ṽ(y) - ṽ(x) = ∫_x^y w̃ = (y - x) w̃(z) + ∫_x^y (w̃(t) - w̃(z)) dt` and
-`|w̃(t) - w̃(z)| ≤ ∫_x^y |w'|` for `t ∈ [x, y]`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, and let $v, w \in W^{1,p}(I)$ with
+$v' = w$ in $L^p(I)$, so that $v \in W^{2,p}(I)$ and $w' = v''$. Let $x \le y$ be points of $I$
+and $z \in [x, y]$. Then the continuous representatives satisfy
+$$(y - x) |\tilde w(z)| \le |\tilde v(y)| + |\tilde v(x)| + (y - x) \int_x^y |w'|.$$
+This is the Taylor estimate behind the interpolation inequality.
+
+It follows from $\tilde v(y) - \tilde v(x) = \int_x^y \tilde w = (y - x) \tilde w(z) + \int_x^y
+(\tilde w(t) - \tilde w(z)) \, dt$ and $|\tilde w(t) - \tilde w(z)| \le \int_x^y |w'|$ for
+$t \in [x, y]$. -/
 theorem mul_norm_rep_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
     {v w : SobolevIntervalLp 1 p I} (hvw : deriv v 1 = deriv w 0) {x y z : ℝ}
     (hx : x ∈ (I : Set ℝ)) (hy : y ∈ (I : Set ℝ)) (hxy : x ≤ y) (hz : z ∈ Icc x y) :
@@ -1061,15 +1183,19 @@ theorem mul_norm_rep_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
     _ ≤ (‖rep v y‖ + ‖rep v x‖) + J * (y - x) := add_le_add (norm_sub_le _ _) e2
     _ = ‖rep v y‖ + ‖rep v x‖ + (y - x) * ∫ t in x..y, ‖deriv w 1 t‖ := by rw [hJ]; ring
 
-/-- **The interpolation inequality at order two**, `‖v'‖_p ≤ 2h ‖v''‖_p + (3/h) ‖v‖_p` for
-`v ∈ W^{2,p}(I)` and every `h > 0` with `2h < |I|`, written for the pair `v, w ∈ W^{1,p}(I)`
-with `v' = w` (so `w = v'` and `w' = v''`), on any open interval `I` and for every `1 ≤ p ≤ ∞`.
-For `x ∈ I` one of `x + h`, `x - h` lies in `I`, and the Taylor estimate
-`SobolevIntervalLp.mul_norm_rep_le_of_deriv_eq` on `[x, x + h]` or `[x - h, x]` gives
-`h |w̃(x)| ≤ |ṽ(x)| + |ṽ(x ± h)| + h ∫_{x-h}^{x+h} |w'|`. The last term is the convolution of
-`|w'|` (extended by zero) with the indicator of `(-h, h)`, whose `L^p` norm is at most
-`2h ‖w'‖_p` by Young's inequality (`MeasureTheory.eLpNorm_convolution_lsmul_le`), and the
-translates of `ṽ` have the `L^p` norm of `ṽ`. No covering of `I` by small intervals is needed. -/
+/-- **The interpolation inequality at order two.** Let $1 \le p \le \infty$, let $I$ be an open
+interval, and let $v, w \in W^{1,p}(I)$ with $v' = w$ in $L^p(I)$. Let $h > 0$ with $2h < |I|$,
+where $|I| \le \infty$ is the length of $I$. Then
+$$\|w\|_p \le 2h \|w'\|_p + \frac{3}{h} \|v\|_p.$$
+For $v \in W^{2,p}(I)$ this reads $\|v'\|_p \le 2h \|v''\|_p + (3/h) \|v\|_p$.
+
+For $x \in I$, one of $x + h$ and $x - h$ lies in $I$, and the Taylor estimate
+`SobolevIntervalLp.mul_norm_rep_le_of_deriv_eq` on $[x, x + h]$ or $[x - h, x]$ gives $h |\tilde
+w(x)| \le |\tilde v(x)| + |\tilde v(x \pm h)| + h \int_{x-h}^{x+h} |w'|$. The last term is the
+convolution of $|w'|$, extended by zero, with the indicator of $(-h, h)$. Its $L^p$ norm is at
+most $2h \|w'\|_p$ by Young's inequality (`MeasureTheory.eLpNorm_convolution_lsmul_le`), and the
+translates of $\tilde v$ have the $L^p$ norm of $\tilde v$. No covering of $I$ by small
+intervals is needed. -/
 theorem norm_deriv_zero_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
     {v w : SobolevIntervalLp 1 p I} (hvw : deriv v 1 = deriv w 0) {h : ℝ} (hh : 0 < h)
     (hvol : ENNReal.ofReal (2 * h) < volume (I : Set ℝ)) :
@@ -1243,13 +1369,17 @@ theorem norm_deriv_zero_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
         div_le_div_of_nonneg_right hfin hh.le
     _ = 2 * h * ‖deriv w 1‖ + 3 / h * ‖deriv v 0‖ := by field_simp; ring
 
-/-- **The combinatorial core of the interpolation inequality**: a family of nonnegative
-sequences `N i : ℕ → ℝ` (the norms `‖D^k u‖_p`, `u` ranging over `W^{M,p}(I)`) satisfying, for
-every window `0 < h ≤ h₀` and `k + 2 ≤ M`, `N i (k + 1) ≤ h * N i (k + 2) + A / h * N i k`,
-satisfies `N i j ≤ ε * N i m + C * N i 0` for `1 ≤ j < m ≤ M` and every `ε > 0`, with a constant
-`C` uniform in `i`. By induction on `m`, absorbing the `N i (m - 1)` of the window estimate at
-`k = m - 1` through the induction hypothesis (with `ε = h / (2 (A + 1))`, so that the `N i m` on
-the right is at most half of the one on the left). -/
+/-- Let $N_i \colon \mathbb{N} \to \mathbb{R}$, for $i$ in an index set, be nonnegative sequences,
+let $h_0 > 0$, $A \ge 0$ and $M \in \mathbb{N}$. Suppose that for every $0 < h \le h_0$, every
+$k$ with $k + 2 \le M$ and every $i$,
+$$N_i(k + 1) \le h \, N_i(k + 2) + \frac{A}{h} N_i(k).$$
+Then for all $1 \le j < m \le M$ and $\varepsilon > 0$ there is $C \ge 0$ with
+$N_i(j) \le \varepsilon N_i(m) + C N_i(0)$ for every $i$. This is the combinatorial core of the
+interpolation inequality, with $N_i(k)$ the norms $\|D^k u\|_p$.
+
+The proof is by induction on $m$. The term $N_i(m - 1)$ of the hypothesis at $k = m - 1$ is
+absorbed through the induction hypothesis with $\varepsilon = h / (2 (A + 1))$, so that the term
+$N_i(m)$ on the right is at most half of the one on the left. -/
 theorem exists_forall_le_mul_add_of_forall_le_mul_add_div {ι : Type*} (N : ι → ℕ → ℝ)
     (hN : ∀ i k, 0 ≤ N i k) {h₀ A : ℝ} (hh₀ : 0 < h₀) (hA : 0 ≤ A) {M : ℕ}
     (hB : ∀ h, 0 < h → h ≤ h₀ → ∀ k, k + 2 ≤ M → ∀ i,
@@ -1310,17 +1440,20 @@ theorem exists_forall_le_mul_add_of_forall_le_mul_add_div {ι : Type*} (N : ι �
       have h2 := hC' i
       nlinarith
 
-/-- **The interpolation inequality** of [brezis2011functional] §8.2, paragraph "The Sobolev
-spaces `W^{m,p}`" (stated there for a bounded interval with a reference to Adams, and as
-Exercise 8.6 via the compact embedding): on every open interval `I` and for every `1 ≤ p ≤ ∞`,
-`0 < j < m` and `ε > 0` there is a constant `C = C(ε, m, p, |I|)` with
-`‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` for all `u ∈ W^{m,p}(I)`. The order-two window estimate
-`SobolevIntervalLp.norm_deriv_zero_le_of_deriv_eq` gives
-`‖D^{k+1} u‖_p ≤ h ‖D^{k+2} u‖_p + (6 / h) ‖D^k u‖_p` for every `0 < h < |I|` (applied to the
-pairs `SobolevIntervalLp.derivOne u k`, `derivOne u (k + 1)`), and the induction
-`SobolevIntervalLp.exists_forall_le_mul_add_of_forall_le_mul_add_div` on `m` propagates it to
-all intermediate orders. Consequently the norm `‖u‖_p + ‖D^m u‖_p` is equivalent to the
-`W^{m,p}` norm (`SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`). -/
+/-- **The interpolation inequality.** Let $1 \le p \le \infty$, let $I$ be an open interval, and let
+$0 < j < m$ and $\varepsilon > 0$. Then there is a constant $C \ge 0$ such that
+$$\|D^j u\|_p \le \varepsilon \|D^m u\|_p + C \|u\|_p$$
+for every $u \in W^{m,p}(I)$. This is the inequality of [brezis2011functional], §8.2, paragraph
+"The Sobolev spaces $W^{m,p}$". The source states it for a bounded interval with a reference to
+Adams, and as Exercise 8.6 through the compact embedding.
+
+The constant depends on $\varepsilon$, $m$, $p$ and $|I|$. The estimate at order two
+`SobolevIntervalLp.norm_deriv_zero_le_of_deriv_eq`, applied to the pairs
+`SobolevIntervalLp.derivOne u k` and `derivOne u (k + 1)`, gives $\|D^{k+1} u\|_p \le h
+\|D^{k+2} u\|_p + (6/h) \|D^k u\|_p$ for every $0 < h < |I|$. The induction
+`SobolevIntervalLp.exists_forall_le_mul_add_of_forall_le_mul_add_div` on $m$ carries it to all
+intermediate orders. The orders $j$ and $m$ are `j : Fin (m + 1)` with `j ≠ 0` and
+`j ≠ Fin.last m`. -/
 theorem eLpNorm_deriv_le_mul_add (hI : (I : Set ℝ).OrdConnected) (j : Fin (m + 1)) (hj0 : j ≠ 0)
     (hjm : j ≠ Fin.last m) {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevIntervalLp m p I,
@@ -1386,12 +1519,15 @@ theorem eLpNorm_deriv_le_mul_add (hI : (I : Set ℝ).OrdConnected) (j : Fin (m +
   have := hC u
   rwa [hNk u j hjm'.le, hNk u (m' + 1) le_rfl, hNk u 0 (Nat.zero_le _)] at this
 
-/-- **The norm `‖u‖_p + ‖D^m u‖_p` is equivalent to the `W^{m,p}` norm** (the corollary of the
-interpolation inequality in [brezis2011functional] §8.2, "The Sobolev spaces `W^{m,p}`"): on
-every open interval `I` and for every `1 ≤ p ≤ ∞` there is `C = C(m, p, |I|)` with
-`‖u‖ ≤ C (‖u‖_p + ‖D^m u‖_p)` for all `u ∈ W^{m,p}(I)`; the reverse comparison is
-`SobolevIntervalLp.norm_deriv_le`. Each intermediate `‖D^j u‖_p` is bounded through
-`SobolevIntervalLp.eLpNorm_deriv_le_mul_add` with `ε = 1`. -/
+/-- **Equivalent norm.** Let $1 \le p \le \infty$, let $I$ be an open interval, and let
+$m \in \mathbb{N}$. Then there is a constant $C \ge 0$ with
+$$\|u\|_{W^{m,p}(I)} \le C \bigl(\|u\|_p + \|D^m u\|_p\bigr)$$
+for every $u \in W^{m,p}(I)$. Thus $\|u\|_p + \|D^m u\|_p$ is a norm equivalent to the norm of
+$W^{m,p}(I)$. This is the corollary of the interpolation inequality in [brezis2011functional],
+§8.2, paragraph "The Sobolev spaces $W^{m,p}$".
+
+The reverse comparison is `SobolevIntervalLp.norm_deriv_le`. Each intermediate $\|D^j u\|_p$ is
+bounded by `SobolevIntervalLp.eLpNorm_deriv_le_mul_add` with $\varepsilon = 1$. -/
 theorem exists_norm_le_mul_norm_deriv_add (hI : (I : Set ℝ).OrdConnected) (m : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevIntervalLp m p I,
       ‖u‖ ≤ C * (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖) := by
@@ -1423,8 +1559,9 @@ section LeibnizLine
 
 variable {I : Opens ℝ} {f v w : ℝ → ℝ} {k : ℕ}
 
-/-- Adding a weak derivative at the end of a chain: if `v` is the `k`-th weak derivative of `f`
-and `w` the weak derivative of `v`, then `w` is the `(k + 1)`-th weak derivative of `f`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open. If $v$ is the weak derivative of order $k$ of $f$ on $I$
+and $w$ is the weak derivative of $v$ on $I$, then $w$ is the weak derivative of order $k + 1$
+of $f$ on $I$. -/
 theorem HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn (h : HasWeakIteratedDerivOn k f v I)
     (h' : HasWeakDerivOn v w I) : HasWeakIteratedDerivOn (k + 1) f w I := by
   have h'' : HasWeakIteratedLineDerivOn ![(1 : ℝ)] v w I volume :=
@@ -1432,9 +1569,11 @@ theorem HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn (h : HasWeakIteratedDerivO
   exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (y := Fin.cons 1 fun _ ↦ 1)
     (fun j ↦ by refine Fin.cases rfl (fun j ↦ rfl) j) rfl).1 (h.cons h'')
 
-/-- **The Leibniz rule for a smooth factor on the line**: for `w` the weak derivative of `u` on
-`I` and `g` smooth, `g' u + g w` is the weak derivative of `g u`; the one-dimensional reading of
-`HasWeakIteratedLineDerivOn.contDiff_mul`. -/
+/-- **The Leibniz rule for a smooth factor on the line.** Let $I \subseteq \mathbb{R}$ be open, let
+$w$ be the weak derivative of $f$ on $I$, and let $g$ be smooth on $\mathbb{R}$. Then the weak
+derivative of $g f$ on $I$ is $g w + g' f$.
+
+This is the one-dimensional case of `HasWeakIteratedLineDerivOn.contDiff_mul`. -/
 theorem HasWeakDerivOn.contDiff_mul (h : HasWeakDerivOn f w I) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ∞ g) :
     HasWeakDerivOn (fun x ↦ g x * f x) (fun x ↦ g x * w x + deriv g x * f x) I := by
@@ -1443,12 +1582,15 @@ theorem HasWeakDerivOn.contDiff_mul (h : HasWeakDerivOn f w I) {g : ℝ → ℝ}
   exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn
     (fun j ↦ by fin_cases j; rfl) rfl).1 (h1.contDiff_mul hg)
 
-/-- **The Leibniz formula for the iterated weak derivatives of a product by a smooth function**:
-for a chain `D 0, D 1, …, D m` of functions on `I`, each the weak derivative of the one before,
-and the chain `G 0, G 1, …` of the successive derivatives of a smooth function `G 0`, the
-`j`-th weak derivative of `G 0 · D 0` is `∑_{i ≤ j} C(j, i) G (j − i) D i`, for every `j ≤ m`.
-By induction on `j` from the order-one rule `HasWeakDerivOn.contDiff_mul` and Pascal's rule
-(`Finset.sum_choose_succ_mul`). -/
+/-- **The Leibniz formula** for the weak derivatives of a product with a smooth function. Let
+$I \subseteq \mathbb{R}$ be open and $m \in \mathbb{N}$. Let $D_0, D_1, \dots$ be functions with
+$D_0$ locally integrable on $I$ and $D_{i+1}$ the weak derivative of $D_i$ on $I$ for every
+$i < m$. Let $G_0, G_1, \dots$ be smooth functions with $G_n' = G_{n+1}$ for every $n$. Then for
+every $j \le m$, the weak derivative of order $j$ of $G_0 D_0$ on $I$ is
+$$\sum_{i=0}^{j} \binom{j}{i} G_{j-i} D_i.$$
+
+The proof is by induction on $j$, from the rule at order one `HasWeakDerivOn.contDiff_mul` and
+Pascal's rule (`Finset.sum_choose_succ_mul`). -/
 theorem hasWeakIteratedDerivOn_sum_choose_mul {D G : ℕ → ℝ → ℝ} {m : ℕ}
     (hD : ∀ i < m, HasWeakDerivOn (D i) (D (i + 1)) I) (hD0 : LocallyIntegrableOn (D 0) I)
     (hG : ∀ n, ContDiff ℝ ∞ (G n)) (hGd : ∀ n, deriv (G n) = G (n + 1)) {j : ℕ} (hj : j ≤ m) :
@@ -1494,10 +1636,14 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- **Multiplication by a smooth function with bounded derivatives preserves `W^{m,p}(I)`**, with
-the Leibniz formula: for `g` smooth with `|g^{(k)}| ≤ B` for `k ≤ m` and `u ∈ W^{m,p}(I)`, there
-is `v ∈ W^{m,p}(I)` with `D^j v = ∑_{i ≤ j} C(j, i) g^{(j−i)} D^i u` for every `j ≤ m` (so
-`v = g u`); the element is built from `hasWeakIteratedDerivOn_sum_choose_mul` by
+/-- **Multiplication by a smooth function preserves $W^{m,p}(I)$.** Let $1 \le p \le \infty$, let
+$I \subseteq \mathbb{R}$ be open, and let $g$ be smooth on $\mathbb{R}$ with
+$|g^{(k)}(x)| \le B$ for all $k \le m$ and $x \in \mathbb{R}$. Then for every $u \in W^{m,p}(I)$
+there is $v \in W^{m,p}(I)$ with
+$$D^j v = \sum_{i=0}^{j} \binom{j}{i} g^{(j-i)} D^i u$$
+almost everywhere on $I$, for every $j \le m$. In particular $v = g u$.
+
+The element $v$ is built from `hasWeakIteratedDerivOn_sum_choose_mul` with
 `SobolevIntervalLp.mk`. -/
 theorem exists_contDiff_mul {g : ℝ → ℝ} (hg : ContDiff ℝ ∞ g) {B : ℝ}
     (hB : ∀ k ≤ m, ∀ x, |iteratedDeriv k g x| ≤ B) (u : SobolevIntervalLp m p I) :

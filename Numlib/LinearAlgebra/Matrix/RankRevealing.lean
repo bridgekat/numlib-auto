@@ -18,49 +18,86 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # Rank-revealing orthogonal factorizations
 
-QR factorization with column pivoting in its rank-revealing form, the `UTV` decompositions of
-Stewart, and the least-squares solutions they produce ([golub2013matrix] §5.4.2–§5.4.6,
-§5.5.5, §5.6.2; Businger–Golub 1965, Chan 1987, Stewart 1993, Golub–Pereyra).
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$ and let $A \in \mathbb{K}^{M \times N}$. This
+module studies factorizations $A = UTW$ in which $U$ is unitary, $W$ is invertible, the rows of $T$
+from the $r$-th on vanish, and the leading $r \times r$ block of $T$ is invertible. Such a
+factorization reveals the rank $r$ of $A$, the range of $A$ and the least-squares solutions of
+$Ax = b$. The main instance is QR factorization with column pivoting in its rank-revealing form,
+$A\Pi = QR$, which always exists with $r = \operatorname{rank} A$. The module also proves Chan's
+bound on the last diagonal entry of $R$ after a suitable column permutation, defines the URV and ULV
+decompositions of Stewart and proves his bounds on the distance between a trailing column span and
+the trailing right singular subspace, describes the basic and the minimum-norm least-squares
+solutions of a rank-deficient problem, and bounds the error of subset selection based on the
+singular value decomposition. The presentation follows [golub2013matrix], §5.4.2–§5.4.6, §5.5.5 and
+§5.6.2, which in turn follow Businger and Golub (1965), Chan (1987), Stewart (1993) and Golub and
+Pereyra.
+
+Indices start at $0$. For $T \in \mathbb{K}^{M \times N}$ and $r \le M, N$, the block $T_{11}$
+consists of the first $r$ rows and columns, $T_{12}$ of the first $r$ rows and the last $N - r$
+columns, $T_{21}$ of the last $M - r$ rows and the first $r$ columns, and $T_{22}$ of the last
+$M - r$ rows and the last $N - r$ columns. For $y \in \mathbb{K}^r$ and $z \in \mathbb{K}^{N - r}$,
+$[y; z] \in \mathbb{K}^N$ is the stacked vector. A permutation $\sigma$ of the column indices has
+the permutation matrix $\Pi$ with $(A\Pi)_{ij} = A_{i\sigma(j)}$, so that
+$\Pi^T v = v \circ \sigma$. Singular values $\sigma_0(A) \ge \sigma_1(A) \ge \dots$ are numbered
+from $0$, the norm of a matrix is the $2$-norm, and the gap between two subspaces $K$ and $L$ is
+$\|P_K - P_L\|$, the norm of the difference of the orthogonal projections.
 
 ## Main definitions
 
-* `Matrix.HasRevealingBlock T r`: the rows of `T` from the `r`-th on vanish and its leading `r × r`
-  block is invertible; then `rank T = r`, and a factorization `A = U T W` (`U` unitary, `W`
-  invertible) reveals the range and the least-squares solutions of `A`
-  (`Matrix.HasRevealingBlock.range_toEuclideanLin_eq_span`,
-  `Matrix.HasRevealingBlock.isLeastSquaresSolution_iff`).
-* `Matrix.IsPivotedQR.IsRankRevealing A Q R σ r`: a pivoted QR factorization `A Π = Q R` whose
-  factor `R` has a revealing block of size `r` ([golub2013matrix] (5.4.6)); then `r = rank A`.
-* `Matrix.IsURV A U R V`, `Matrix.IsULV A U L V`: the two-sided orthogonal decompositions
-  `Uᴴ A V = R` (upper triangular) and `Uᴴ A V = L` (lower triangular) of Stewart (1993).
-* `Matrix.pivotedBasicSolution`: the basic solution `x_B = Π [R₁₁⁻¹ c; 0]` of §5.5.5.
+* `Matrix.HasRevealingBlock`: the rows of $T$ from the $r$-th on vanish and $T_{11}$ is invertible.
+* `Matrix.IsPivotedQR.IsRankRevealing`: a pivoted QR factorization $A\Pi = QR$ in which $R$ has a
+  revealing block of size $r$, as in (5.4.6) of [golub2013matrix].
+* `Matrix.IsURV`, `Matrix.IsULV`: the decompositions $U^H A V = R$ with $R$ upper triangular and
+  $U^H A V = L$ with $L$ lower triangular, for unitary $U$ and $V$.
+* `Matrix.pivotedBasicSolution`: the basic solution $x_B = \Pi [R_{11}^{-1} c; 0]$ of §5.5.5 of
+  [golub2013matrix], with $c$ the first $r$ entries of $Q^H b$.
 
 ## Main results
 
-* `Matrix.exists_isPivotedQR_rank`: every matrix has a rank-revealing pivoted QR factorization
-  with `r = rank A` — permute a basis of the column space to the front; then *any* QR
-  factorization of the permuted matrix has the shape, no pivoting rule is needed for existence.
-* `Matrix.IsPivotedQR.IsRankRevealing.range_eq_span`: `ran A = span {q₁, …, q_r}`.
-* `Matrix.exists_perm_isQR_abs_le` ([golub2013matrix] Theorem 5.4.1, Chan): some column
-  permutation makes the last diagonal entry of every QR factor at most `√n ‖A v‖`.
+* `Matrix.HasRevealingBlock.rank_eq`: a matrix with a revealing block of size $r$ has rank $r$.
+* `Matrix.HasRevealingBlock.range_toEuclideanLin_eq_span`: if $A = UTW$ with $W$ invertible and $T$
+  has a revealing block of size $r$, then the range of $A$ is spanned by the first $r$ columns of
+  $U$.
+* `Matrix.HasRevealingBlock.isLeastSquaresSolution_iff`: if moreover $U$ is unitary, then $x$ is a
+  least-squares solution of $Ax = b$ if and only if the first $r$ equations of $TWx = U^H b$ hold.
+* `Matrix.exists_isPivotedQR_rank`: every matrix has a rank-revealing pivoted QR factorization with
+  $r = \operatorname{rank} A$; no pivoting rule is needed for existence.
+* `Matrix.IsPivotedQR.IsRankRevealing.rank_eq`, `Matrix.IsPivotedQR.IsRankRevealing.range_eq_span`:
+  a rank-revealing pivoted QR factorization has $r = \operatorname{rank} A$ and $\operatorname{ran}
+  A = \operatorname{span}\{q_0, \dots, q_{r-1}\}$.
+* `Matrix.exists_perm_isQR_abs_le`: Theorem 5.4.1 of [golub2013matrix] (Chan): for a unit vector
+  $v$, some column permutation makes the last diagonal entry of every QR factor $R$ of $A\Pi$ at
+  most $\sqrt{n} \|Av\|$ in modulus.
+* `Matrix.gap_le_of_urv`, `Matrix.gap_le_of_ulv`: Stewart's bounds (5.4.10) and (5.4.11) of
+  [golub2013matrix] on the gap between the span of the trailing columns of $V$ in a URV or ULV
+  decomposition and the trailing right singular subspace.
 * `Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff`,
-  `…norm_minNorm_eq_iInf`, `…norm_basic_le` ((5.5.4), (5.5.5)) and `…mulVec_basic_eq`
-  (Algorithm 5.6.1): the least-squares solutions of a rank-deficient problem read off a
-  rank-revealing factorization.
-* `Matrix.gap_le_of_urv`, `Matrix.gap_le_of_ulv` ([golub2013matrix] (5.4.10), (5.4.11), Stewart
-  1993): how close the trailing columns of `V` in a URV or ULV decomposition come to the trailing
-  right singular subspace, from the common setting `Matrix.stewart_setting` and the gap between
-  trailing column spans `Matrix.gap_range_tailIdx_eq`.
-* `Matrix.norm_residual_subset_sub_le` ([golub2013matrix] Theorem 5.5.3): the residual of SVD-based
-  subset selection against that of the nearest rank-`r` problem.
+  `Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_basic`: the least-squares solutions of
+  a rank-deficient problem, and the basic solution among them.
+* `Matrix.IsPivotedQR.IsRankRevealing.norm_minNorm_eq_iInf`,
+  `Matrix.IsPivotedQR.IsRankRevealing.norm_basic_le`: (5.5.4) and (5.5.5) of [golub2013matrix], the
+  minimum-norm solution as a minimum over a free parameter and the bound $\|x_B\| \le \sqrt{1 +
+  \|R_{11}^{-1} R_{12}\|^2} \, \|A^+ b\|$.
+* `Matrix.IsPivotedQR.IsRankRevealing.mulVec_basic_eq`: Algorithm 5.6.1 of [golub2013matrix], the
+  basic solution of an underdetermined system of full row rank.
+* `Matrix.norm_residual_subset_sub_le`: Theorem 5.5.3 of [golub2013matrix], the residual of subset
+  selection against that of the nearest rank-$r$ problem.
 
 ## Implementation notes
 
-Blocks are expressed by index maps rather than `fromBlocks` and a reindexing: the leading block is
-`R.submatrix (Fin.castLE _) (Fin.castLE _)`, the trailing indices are `Matrix.tailIdx`, and a
-vector split `[y; z]` on `Fin N` is `Matrix.blockVec`. Where a `fromBlocks` form is needed (for
-Stewart's bounds), `Matrix.blockEquiv : Fin r ⊕ Fin (N − r) ≃ Fin N` reindexes to it. The column
-permutation `Π` acts through `A.submatrix id σ`, i.e. `(A Π) x = A (x ∘ σ⁻¹)`.
+* Blocks are expressed by index maps, not by `Matrix.fromBlocks` and a reindexing. The leading block
+  of $R$ is `R.submatrix (Fin.castLE _) (Fin.castLE _)`, the trailing indices are `Matrix.tailIdx`,
+  and the vector $[y; z]$ on `Fin N` is `Matrix.blockVec`. Where a `Matrix.fromBlocks` form is
+  needed, as for Stewart's bounds, `Matrix.blockEquiv : Fin r ⊕ Fin (N - r) ≃ Fin N` reindexes to
+  it.
+* The column permutation $\Pi$ acts through `A.submatrix id σ`, so that
+  $(A\Pi)x = A(x \circ \sigma^{-1})$. The matrix $\Pi$ is `(1 : Matrix _ _ 𝕜).submatrix id σ` and
+  $\Pi^T$ is `(1 : Matrix _ _ 𝕜).submatrix σ id`.
+* The singular value $\sigma_i(A)$ is `A.sortedSingularValues i`, which is $\sigma_{i+1}$ in the
+  1-based numbering of [golub2013matrix]. The matrix norm is the $2$-norm of
+  `Matrix.Norms.L2Operator`, and the gap is `Submodule.gap`.
+* The inverse $R_{11}^{-1}$ is `Matrix.inv`, which is $0$ for a singular matrix. In a rank-revealing
+  factorization $R_{11}$ is invertible.
 -/
 
 open scoped Matrix
@@ -69,35 +106,44 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {M N : ℕ}
 
-/-! ### Factorizations `A = U T W` with a revealing block
+/-!
+### Factorizations $A = UTW$ with a revealing block
 
-The rank-revealing pivoted QR factorization (`W = Πᵀ`) and the complete orthogonal decomposition
-(`W = Vᴴ`, in `Numlib/LinearAlgebra/Matrix/CompleteOrthogonal`) are both factorizations
-`A = U T W` with `U` unitary, `W` invertible, the rows of `T` from the `r`-th on zero and the
-leading `r × r` block `T₁₁` invertible. Rank, range and least-squares solutions are read off
-such a factorization once, here. -/
+The rank-revealing pivoted QR factorization, with $W = \Pi^T$, and the complete orthogonal
+decomposition of `Numlib.LinearAlgebra.Matrix.CompleteOrthogonal`, with $W = V^H$, are both
+factorizations $A = UTW$ in which $U$ is unitary, $W$ is invertible, the rows of $T$ from the $r$-th
+on vanish and $T_{11}$ is invertible. This section derives the rank, the range and the least-squares
+solutions of $A$ from such a factorization, once for both.
+-/
 
 section RevealingBlock
 
 variable {r : ℕ}
 
-/-- **A revealing block** of size `r` ([golub2013matrix] (5.4.6), the shape `[T₁₁ T₁₂; 0 0]` of a
-rank-revealing factorization): the rows of `T` from the `r`-th on vanish and the leading `r × r`
-block `T₁₁` is invertible. Then `rank T = r` (`Matrix.HasRevealingBlock.rank_eq`), and every
-factorization `A = U T W` with `U` unitary and `W` invertible reveals range and least-squares
-solutions of `A`. -/
+/-- Let $\alpha$ be a semiring, let $T \in \alpha^{M \times N}$ and let $r \in \mathbb{N}$. The
+matrix $T$ has a **revealing block** of size $r$ if $r \le M$, $r \le N$, every row of $T$ with
+index $i \ge r$ is zero, and the leading $r \times r$ block $T_{11}$ is invertible. Thus
+$$T = \begin{bmatrix} T_{11} & T_{12} \\ 0 & 0 \end{bmatrix},$$
+which is the shape of a rank-revealing factorization in (5.4.6) of [golub2013matrix].
+
+Such a matrix has rank $r$ (`Matrix.HasRevealingBlock.rank_eq`). A factorization $A = UTW$ with
+$U$ unitary and $W$ invertible then gives the range and the least-squares solutions of $A$
+(`Matrix.HasRevealingBlock.range_toEuclideanLin_eq_span`,
+`Matrix.HasRevealingBlock.isLeastSquaresSolution_iff`). -/
 structure HasRevealingBlock {α : Type*} [Semiring α] (T : Matrix (Fin M) (Fin N) α) (r : ℕ) :
     Prop where
-  /-- The block size does not exceed the number of rows. -/
+  /-- The block size satisfies $r \le M$. -/
   le_rows : r ≤ M
-  /-- The block size does not exceed the number of columns. -/
+  /-- The block size satisfies $r \le N$. -/
   le_cols : r ≤ N
-  /-- The rows from the `r`-th on vanish. -/
+  /-- Every entry $T_{ij}$ with row index $i \ge r$ is zero. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0
-  /-- The leading `r × r` block is invertible. -/
+  /-- The leading $r \times r$ block $T_{11}$ is invertible. -/
   isUnit_block : IsUnit (T.submatrix (Fin.castLE le_rows) (Fin.castLE le_cols))
 
-/-- The rows of `T [y; z]` above the `r`-th: `T₁₁ y + T₁₂ z`. -/
+/-- Let $T \in \mathbb{K}^{M \times N}$ with $r \le M$ and $r \le N$, and let $y \in \mathbb{K}^r$
+and $z \in \mathbb{K}^{N - r}$. Then the first $r$ entries of $T[y; z]$ are the entries of
+$T_{11} y + T_{12} z$. -/
 theorem mulVec_blockVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (hN : r ≤ N)
     (y : Fin r → 𝕜) (z : Fin (N - r) → 𝕜) (i : Fin r) :
     (T *ᵥ blockVec hN y z) (Fin.castLE hM i) =
@@ -106,9 +152,11 @@ theorem mulVec_blockVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) 
   rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx hN]
   simp [mulVec, dotProduct]
 
-/-- **A revealing block has the rank**: a matrix whose rows from the `r`-th on vanish and whose
-leading `r × r` block is invertible has rank `r` — at most `r` nonzero rows, and an invertible
-`r × r` submatrix. -/
+/-- Let $T \in \mathbb{K}^{M \times N}$ have a revealing block of size $r$. Then
+$\operatorname{rank} T = r$.
+
+The rank is at most $r$ because $T$ has at most $r$ nonzero rows, and at least $r$ because $T$
+has the invertible $r \times r$ submatrix $T_{11}$. -/
 theorem HasRevealingBlock.rank_eq {T : Matrix (Fin M) (Fin N) 𝕜} (h : T.HasRevealingBlock r) :
     T.rank = r := by
   obtain ⟨hM, hN, hz, hu⟩ := h
@@ -131,9 +179,15 @@ theorem HasRevealingBlock.rank_eq {T : Matrix (Fin M) (Fin N) 𝕜} (h : T.HasRe
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
   {T : Matrix (Fin M) (Fin N) 𝕜} {W : Matrix (Fin N) (Fin N) 𝕜}
 
-/-- **The range of `A = U T W` is spanned by the first `r` columns of `U`**, when `W` is
-invertible, the rows of `T` from the `r`-th on vanish and `T₁₁` is invertible: `A x = U (T W x)`
-has zero coordinates from the `r`-th on, and `u_i = A W⁻¹ [T₁₁⁻¹ e_i; 0]`. -/
+/-- Let $A, T \in \mathbb{K}^{M \times N}$, let $U \in \mathbb{K}^{M \times M}$, and let
+$W \in \mathbb{K}^{N \times N}$ be invertible, with $A = UTW$. If $T$ has a revealing block of
+size $r$, then the range of $A$ is spanned by the first $r$ columns $u_0, \dots, u_{r-1}$ of
+$U$:
+$$\operatorname{ran} A = \operatorname{span}\{u_0, \dots, u_{r-1}\}.$$
+
+The matrix $U$ need not be unitary. The vector $TWx$ has zero entries from the $r$-th on, which
+gives one inclusion, and $u_i = A W^{-1} [T_{11}^{-1} e_i; 0]$ gives the other. The range is
+that of `Matrix.toEuclideanLin A`. -/
 theorem HasRevealingBlock.range_toEuclideanLin_eq_span (h : T.HasRevealingBlock r)
     (hA : A = U * T * W) (hW : IsUnit W) :
     LinearMap.range (toEuclideanLin A) =
@@ -183,9 +237,11 @@ theorem HasRevealingBlock.range_toEuclideanLin_eq_span (h : T.HasRevealingBlock 
     ext l
     simp [mulVec, dotProduct, Pi.single_apply, Matrix.col]
 
-/-- **The residual splits**: for `A = U T W` with `U` unitary and the rows of `T` from the `r`-th
-on zero, `‖A x − b‖²` is the squared residual of the first `r` equations of `T (W x) = Uᴴ b`
-plus the squared norm of the trailing part of `Uᴴ b`. -/
+/-- Let $A = UTW$ with $U \in \mathbb{K}^{M \times M}$ unitary, let $r \le M$, and let every row of
+$T$ with index $i \ge r$ be zero. Then for all $b \in \mathbb{K}^M$ and $x \in \mathbb{K}^N$,
+the squared residual splits as
+$$\|Ax - b\|^2 = \sum_{i < r} |(TWx)_i - (U^H b)_i|^2 + \sum_{r \le i < M} |(U^H b)_i|^2.$$
+-/
 theorem norm_toEuclideanLin_sub_sq_eq_of_eq_mul (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hM : r ≤ M)
     (hA : A = U * T * W) (hz : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) → T i j = 0)
     (b : EuclideanSpace 𝕜 (Fin M)) (x : EuclideanSpace 𝕜 (Fin N)) :
@@ -211,10 +267,15 @@ theorem norm_toEuclideanLin_sub_sq_eq_of_eq_mul (hU : U ∈ unitaryGroup (Fin M)
     = _
   rw [htail, zero_sub, norm_neg]
 
-/-- **The least-squares solutions of `A = U T W`**: when `U` is unitary, `W` invertible, the rows
-of `T` from the `r`-th on zero and `T₁₁` invertible, `x` is a least-squares solution of `A x = b`
-exactly when the first `r` equations of `T (W x) = Uᴴ b` hold. The residual is then the trailing
-part of `Uᴴ b`, and `W⁻¹ [T₁₁⁻¹ c; 0]` attains it. -/
+/-- Let $A = UTW$ with $U \in \mathbb{K}^{M \times M}$ unitary and $W \in \mathbb{K}^{N \times N}$
+invertible, and let $T$ have a revealing block of size $r$. Then $x \in \mathbb{K}^N$ is a
+least-squares solution of $Ax = b$ if and only if the first $r$ equations of $TWx = U^H b$ hold:
+$$(TWx)_i = (U^H b)_i \quad \text{for all } i < r.$$
+
+By `Matrix.norm_toEuclideanLin_sub_sq_eq_of_eq_mul`, the squared residual of every $x$ is at
+least the squared norm of the last $M - r$ entries of $U^H b$, and
+$x = W^{-1} [T_{11}^{-1} c; 0]$, with $c$ the first $r$ entries of $U^H b$, attains this value.
+A least-squares solution is `Matrix.IsLeastSquaresSolution`. -/
 theorem HasRevealingBlock.isLeastSquaresSolution_iff (h : T.HasRevealingBlock r)
     (hU : U ∈ unitaryGroup (Fin M) 𝕜) (hA : A = U * T * W) (hW : IsUnit W)
     {b : EuclideanSpace 𝕜 (Fin M)} {x : EuclideanSpace 𝕜 (Fin N)} :
@@ -259,23 +320,31 @@ end RevealingBlock
 
 section RankRevealing
 
-/-- **A rank-revealing pivoted QR factorization** ([golub2013matrix] (5.4.6)): `A Π = Q R`
-(`Matrix.IsPivotedQR`) with a revealing block of size `r` in `R` (`Matrix.HasRevealingBlock`):
-the rows of `R` from the `r`-th on zero and the leading `r × r` block `R₁₁` invertible,
-`R = [R₁₁ R₁₂; 0 0]`. Then `r = rank A`
-(`Matrix.IsPivotedQR.IsRankRevealing.rank_eq`); it always exists with `r = rank A`
-(`Matrix.exists_isPivotedQR_rank`). The one hypothesis of the least-squares statements below. -/
+/-- Let $A \in \mathbb{K}^{M \times N}$, $Q \in \mathbb{K}^{M \times M}$ and
+$R \in \mathbb{K}^{M \times N}$, let $\sigma$ be a permutation of the column indices with
+permutation matrix $\Pi$, and let $r \in \mathbb{N}$. A **rank-revealing pivoted QR
+factorization** is a pivoted QR factorization $A\Pi = QR$, with $Q$ unitary and $R$ upper
+trapezoidal (`Matrix.IsPivotedQR`), in which $R$ has a revealing block of size $r$
+(`Matrix.HasRevealingBlock`):
+$$A\Pi = Q \begin{bmatrix} R_{11} & R_{12} \\ 0 & 0 \end{bmatrix}, \qquad R_{11} \in
+  \mathbb{K}^{r \times r} \text{ invertible}.$$
+This is (5.4.6) of [golub2013matrix].
+
+Then $r = \operatorname{rank} A$ (`Matrix.IsPivotedQR.IsRankRevealing.rank_eq`), and a
+factorization with $r = \operatorname{rank} A$ always exists (`Matrix.exists_isPivotedQR_rank`).
+It is the only hypothesis of the least-squares results of this module. -/
 structure IsPivotedQR.IsRankRevealing (A : Matrix (Fin M) (Fin N) 𝕜)
     (Q : Matrix (Fin M) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin N) 𝕜) (σ : Equiv.Perm (Fin N))
     (r : ℕ) : Prop extends IsPivotedQR A Q R σ, HasRevealingBlock R r
 
-/-- The inverse permutation matrix `Πᵀ` acts on a vector by `v ↦ v ∘ σ`. -/
+/-- For a permutation $\sigma$ of the column indices, the matrix $\Pi^T$, which is
+`(1 : Matrix _ _ 𝕜).submatrix σ id`, acts on a vector by $\Pi^T v = v \circ \sigma$. -/
 theorem one_submatrix_mulVec (σ : Equiv.Perm (Fin N)) (v : Fin N → 𝕜) :
     (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix σ id *ᵥ v = v ∘ σ := by
   funext k
   simp [mulVec, dotProduct, Matrix.one_apply]
 
-/-- The inverse permutation matrix `Πᵀ` is invertible. -/
+/-- For a permutation $\sigma$ of the column indices, the matrix $\Pi^T$ is invertible. -/
 theorem isUnit_one_submatrix (σ : Equiv.Perm (Fin N)) :
     IsUnit ((1 : Matrix (Fin N) (Fin N) 𝕜).submatrix σ id) :=
   (isUnit_submatrix_equiv (A := (1 : Matrix (Fin N) (Fin N) 𝕜)) σ (Equiv.refl _)).2 isUnit_one
@@ -285,15 +354,17 @@ namespace IsPivotedQR.IsRankRevealing
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
   {R : Matrix (Fin M) (Fin N) 𝕜} {σ : Equiv.Perm (Fin N)} {r : ℕ}
 
-/-- A pivoted QR factorization `A Π = Q R` is `A = Q R Πᵀ`. -/
+/-- A rank-revealing pivoted QR factorization $A\Pi = QR$ gives $A = QR\Pi^T$. -/
 theorem eq_mul (h : IsRankRevealing A Q R σ r) :
     A = Q * R * (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix σ id := by
   rw [h.isQR.mul_eq, mul_submatrix_one, submatrix_submatrix]
   simp
 
-/-- **The rank is revealed**: a rank-revealing pivoted QR factorization has `r = rank A`. The
-rank is invariant under `Q` and `Π`, and `R` has a revealing block
-(`Matrix.HasRevealingBlock.rank_eq`). -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $r$. Then $\operatorname{rank} A = r$.
+
+The rank does not change under multiplication by the invertible matrices $Q$ and $\Pi$, and $R$
+has rank $r$ by `Matrix.HasRevealingBlock.rank_eq`. -/
 theorem rank_eq (h : IsRankRevealing A Q R σ r) : A.rank = r := by
   classical
   rw [h.eq_mul, rank_mul_eq_left_of_isUnit_det _ _
@@ -302,9 +373,14 @@ theorem rank_eq (h : IsRankRevealing A Q R σ r) : A.rank = r := by
       ((isUnit_iff_isUnit_det Q).1 (isUnit_of_mem_unitaryGroup h.isQR.mem_unitaryGroup))]
   exact h.toHasRevealingBlock.rank_eq
 
-/-- **The range of `A` is spanned by the first `r` columns of `Q`** ([golub2013matrix] §5.4.2,
-`ran(A) = span{q_1, …, q_r}`): `A x = Q R (Πᵀ x)` has zero coordinates from the `r`-th on, and
-conversely `q_i = A Π [R₁₁⁻¹ e_i; 0]`. -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $r$. Then the range of $A$ is spanned by the first $r$ columns of $Q$:
+$$\operatorname{ran} A = \operatorname{span}\{q_0, \dots, q_{r-1}\}.$$
+This is stated in §5.4.2 of [golub2013matrix], with the 1-based columns $q_1, \dots, q_r$.
+
+The proof specializes `Matrix.HasRevealingBlock.range_toEuclideanLin_eq_span` to $A = QR\Pi^T$:
+the vector $R\Pi^T x$ has zero entries from the $r$-th on, and
+$q_i = A\Pi [R_{11}^{-1} e_i; 0]$. -/
 theorem range_eq_span (h : IsRankRevealing A Q R σ r) :
     LinearMap.range (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun i : Fin r =>
@@ -313,12 +389,14 @@ theorem range_eq_span (h : IsRankRevealing A Q R σ r) :
 
 end IsPivotedQR.IsRankRevealing
 
-/-- **Every matrix has a rank-revealing pivoted QR factorization** ([golub2013matrix] (5.4.6)):
-`∃ σ Q R, IsPivotedQR.IsRankRevealing A Q R σ (rank A)`. Choose `r = rank A` linearly independent
-columns, a permutation `σ` putting them first, and any QR factorization `A Π = Q R`. The first `r`
-columns of `A Π` span its column space; the coordinates of index `≥ r` in `Qᴴ (·)` vanish on them
-(`R` is upper triangular), hence on every column, so the rows of `R` from the `r`-th on vanish;
-and `R₁₁ y = 0` gives `A Π [y; 0] = 0`, so `y = 0` by independence. -/
+/-- Every matrix $A \in \mathbb{K}^{M \times N}$ has a rank-revealing pivoted QR factorization
+$A\Pi = QR$ in which $R$ has a revealing block of size $r = \operatorname{rank} A$, in the sense
+of (5.4.6) of [golub2013matrix].
+
+No pivoting rule is needed for existence. The proof chooses $r$ linearly independent columns of
+$A$, a permutation $\sigma$ that puts them first, and any QR factorization of $A\Pi$. The first
+$r$ columns of $A\Pi$ span its column space and $R$ is upper triangular, so the rows of $R$ from
+the $r$-th on vanish; the independence of the first $r$ columns makes $R_{11}$ invertible. -/
 theorem exists_isPivotedQR_rank (A : Matrix (Fin M) (Fin N) 𝕜) :
     ∃ σ Q R, IsPivotedQR.IsRankRevealing A Q R σ A.rank := by
   classical
@@ -402,9 +480,12 @@ end RankRevealing
 
 section Chan
 
-/-- **Column-norm downdating** ([golub2013matrix] §5.4.2): for `Q` unitary and `z`, the tail of
-`Qᴴ z` has squared norm `‖z‖² − |(Qᴴ z)₀|²` — the identity behind Algorithm 5.4.1's updated
-`c(i) = c(i) − A(r, i)²`. -/
+/-- The **column-norm downdating** identity: let $Q \in \mathbb{K}^{(s+1) \times (s+1)}$ be unitary
+and let $z \in \mathbb{K}^{s+1}$. Then the entries of $Q^H z$ after the first satisfy
+$$\sum_{i=1}^{s} |(Q^H z)_i|^2 = \|z\|^2 - |(Q^H z)_0|^2.$$
+
+This identity is behind the update $c(i) = c(i) - A(r, i)^2$ of the column norms in Algorithm
+5.4.1 of [golub2013matrix], §5.4.2. -/
 theorem norm_sq_tail_eq_of_mem_unitaryGroup {s : ℕ} {Q : Matrix (Fin (s + 1)) (Fin (s + 1)) 𝕜}
     (hQ : Q ∈ unitaryGroup (Fin (s + 1)) 𝕜) (z : Fin (s + 1) → 𝕜) :
     ∑ i : Fin s, ‖(Qᴴ *ᵥ z) i.succ‖ ^ 2 = ∑ i, ‖z i‖ ^ 2 - ‖(Qᴴ *ᵥ z) 0‖ ^ 2 := by
@@ -414,11 +495,17 @@ theorem norm_sq_tail_eq_of_mem_unitaryGroup {s : ℕ} {Q : Matrix (Fin (s + 1)) 
   rw [← sum_norm_sq_mulVec_of_mem_unitaryGroup hQ' z, Fin.sum_univ_succ]
   ring
 
-/-- **Chan's theorem** ([golub2013matrix] Theorem 5.4.1, Chan 1987): for
-`A : Matrix (Fin M) (Fin (N + 1)) 𝕜` with `N + 1 ≤ M` and a unit vector `v`, some column
-permutation `σ` makes every QR factorization `A Π = Q R` satisfy
-`|r_nn| ≤ √(N + 1) ‖A v‖₂` for the last diagonal entry. Move an entry of `v` of largest modulus
-(`|v_p| ≥ 1/√(N + 1)`) to the last position; then `‖A v‖ = ‖R Πᵀ v‖ ≥ |r_nn| |v_p|`. -/
+/-- **Chan's theorem**: let $A \in \mathbb{K}^{M \times n}$ with $n = N + 1 \le M$, and let
+$v \in \mathbb{K}^n$ with $\|v\| = 1$. Then there is a column permutation $\sigma$ such that
+every QR factorization $A\Pi = QR$ satisfies
+$$|r_{nn}| \le \sqrt{n} \, \|Av\|$$
+for the last diagonal entry $r_{nn}$ of $R$. This is Theorem 5.4.1 of [golub2013matrix], due to
+Chan (1987).
+
+The permutation moves an entry $v_p$ of largest modulus, which has $|v_p| \ge 1/\sqrt{n}$, to
+the last position; then $\|Av\| = \|R\Pi^T v\| \ge |r_{nn}| \, |v_p|$. In Lean, $r_{nn}$ is the
+entry `R ⟨N, _⟩ (Fin.last N)`, and a QR factorization of $A\Pi$ is
+`Matrix.IsQR (A.submatrix id σ) Q R`. -/
 theorem exists_perm_isQR_abs_le (A : Matrix (Fin M) (Fin (N + 1)) 𝕜) (hNM : N + 1 ≤ M)
     (v : EuclideanSpace 𝕜 (Fin (N + 1))) (hv : ‖v‖ = 1) :
     ∃ σ : Equiv.Perm (Fin (N + 1)), ∀ Q R, IsQR (A.submatrix id σ) Q R →
@@ -474,32 +561,43 @@ end Chan
 
 section UTV
 
-/-- **A URV decomposition** (Stewart 1993; [golub2013matrix] §5.4.5): `U`, `V` unitary and
-`Uᴴ A V = R` upper triangular in the rectangular sense. The two-sided orthogonal factorization
-whose trailing block reveals the small singular values; a pivoted QR factorization is one with
-`V` the permutation matrix (`Matrix.IsPivotedQR.isURV`). -/
+/-- Let $A \in \mathbb{K}^{M \times N}$, $U \in \mathbb{K}^{M \times M}$,
+$R \in \mathbb{K}^{M \times N}$ and $V \in \mathbb{K}^{N \times N}$. These form a **URV
+decomposition** of $A$ if $U$ and $V$ are unitary, $U^H A V = R$, and $R$ is upper triangular in
+the rectangular sense: $R_{ij} = 0$ for $j < i$. This is the decomposition of Stewart (1993) in
+§5.4.5 of [golub2013matrix].
+
+Its trailing block reveals the small singular values of $A$ (`Matrix.gap_le_of_urv`). A pivoted
+QR factorization is a URV decomposition in which $V$ is the permutation matrix
+(`Matrix.IsPivotedQR.isURV`). The structure extends `Matrix.IsUnitaryEquiv` by the shape
+condition. -/
 structure IsURV (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
     (R : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop
     extends IsUnitaryEquiv A U R V where
-  /-- The middle factor is upper triangular. -/
+  /-- The middle factor is upper triangular: $R_{ij} = 0$ for $j < i$. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (j : ℕ) < i → R i j = 0
 
-/-- **A ULV decomposition** (Stewart 1993; [golub2013matrix] §5.4.5), the lower triangular twin
-of `Matrix.IsURV`: `U`, `V` unitary and `Uᴴ A V = L` lower triangular in the rectangular sense. -/
+/-- Let $A \in \mathbb{K}^{M \times N}$, $U \in \mathbb{K}^{M \times M}$,
+$L \in \mathbb{K}^{M \times N}$ and $V \in \mathbb{K}^{N \times N}$. These form a **ULV
+decomposition** of $A$ if $U$ and $V$ are unitary, $U^H A V = L$, and $L$ is lower triangular in
+the rectangular sense: $L_{ij} = 0$ for $i < j$. This is the lower triangular counterpart of
+`Matrix.IsURV`, from Stewart (1993) in §5.4.5 of [golub2013matrix]. -/
 structure IsULV (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
     (L : Matrix (Fin M) (Fin N) 𝕜) (V : Matrix (Fin N) (Fin N) 𝕜) : Prop
     extends IsUnitaryEquiv A U L V where
-  /-- The middle factor is lower triangular. -/
+  /-- The middle factor is lower triangular: $L_{ij} = 0$ for $i < j$. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), (i : ℕ) < j → L i j = 0
 
-/-- The permutation matrix `Π` of a column permutation `σ`, the identity with its columns
-permuted, is unitary. -/
+/-- For a permutation $\sigma$ of the column indices, the permutation matrix $\Pi$, which is the
+identity matrix with its columns permuted by $\sigma$, is unitary. -/
 theorem one_submatrix_mem_unitaryGroup (σ : Equiv.Perm (Fin N)) :
     (1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id σ ∈ unitaryGroup (Fin N) 𝕜 :=
   submatrix_equiv_mem_unitaryGroup (one_mem _) (Equiv.refl _) σ
 
-/-- **A pivoted QR factorization is a URV decomposition** with `V = Π`, the permutation matrix of
-`σ` (`A Π = A.submatrix id σ`). -/
+/-- Let $A\Pi = QR$ be a pivoted QR factorization of $A \in \mathbb{K}^{M \times N}$. Then
+$Q^H A \Pi = R$ is a URV decomposition of $A$, with $U = Q$ and $V = \Pi$.
+
+The matrices `(1 : Matrix _ _ 𝕜).submatrix id σ` and `A.submatrix id σ` are $\Pi$ and $A\Pi$. -/
 theorem IsPivotedQR.isURV {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
     {R : Matrix (Fin M) (Fin N) 𝕜} {σ : Equiv.Perm (Fin N)} (h : IsPivotedQR A Q R σ) :
     IsURV A Q R ((1 : Matrix (Fin N) (Fin N) 𝕜).submatrix id σ) where
@@ -523,16 +621,19 @@ open scoped Matrix.Norms.L2Operator
 variable {r : ℕ}
 
 omit [RCLike 𝕜] in
-/-- The tail and head indices together cover `Fin N` once. -/
+/-- The trailing indices $r, \dots, N - 1$ and the leading indices $0, \dots, r - 1$ together
+enumerate the indices $0, \dots, N - 1$, each once. -/
 private theorem bijective_sum_elim_tailIdx_castLE (h : r ≤ N) :
     Function.Bijective (Sum.elim (tailIdx h) (Fin.castLE h)) := by
   convert ((Equiv.sumComm _ _).trans (blockEquiv h)).bijective using 1
   funext x
   cases x <;> simp
 
-/-- **The gap between trailing column spans** ([golub2013matrix] Theorem 2.5.1): for unitary `V`,
-`Z`, the gap between the spans of their last `N − r` columns is the `2`-norm of the block of
-`Vᴴ Z` in the leading `r` rows and the trailing `N − r` columns. -/
+/-- Let $V, Z \in \mathbb{K}^{N \times N}$ be unitary, let $r \le N$, and let $V_2$ and $Z_2$ be the
+last $N - r$ columns of $V$ and of $Z$. Then the gap between their ranges is the $2$-norm of the
+block of $V^H Z$ in the first $r$ rows and the last $N - r$ columns:
+$$\operatorname{gap}(\operatorname{ran} V_2, \operatorname{ran} Z_2) = \|(V^H Z)_{12}\|.$$
+This is Theorem 2.5.1 of [golub2013matrix] in the form that Stewart's bounds use. -/
 theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
     (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hZ : Z ∈ unitaryGroup (Fin N) 𝕜) (h : r ≤ N) :
     (LinearMap.range (toEuclideanLin (V.submatrix id (tailIdx h)))).gap
@@ -550,11 +651,22 @@ theorem gap_range_tailIdx_eq {V Z : Matrix (Fin N) (Fin N) 𝕜}
     conjTranspose_mul, conjTranspose_conjTranspose, conjTranspose_submatrix,
     ← submatrix_mul _ _ _ id _ Function.bijective_id, star_eq_conjTranspose]
 
-/-- **Stewart's setting** ([golub2013matrix] §5.4.6): for `T = Uᴴ A V` with `U`, `V` unitary and
-an SVD `A = W Σ Zᴴ`, let `Y` be the last `N − r` columns of `Vᴴ Z` (the trailing right singular
-vectors of `T`). Then `Tᴴ T Y = Y D` for a diagonal `D` of the squared trailing singular values,
-all at most `σ_r(T)²`; `Y` is an isometry; `‖T Y w‖ ≤ σ_r(T) ‖w‖`; and the gap between the trailing
-column spans of `V` and `Z` is the norm of the leading `r` rows of `Y`. -/
+/-- Let $A, T \in \mathbb{K}^{M \times N}$ with $T = U^H A V$ for unitary $U$ and $V$, let
+$A = W \Sigma Z^H$ be a singular value decomposition, let $r \le N$, and let $Y$ be the last
+$N - r$ columns of $V^H Z$, which are trailing right singular vectors of $T$. Then:
+
+* there is $D \in \mathbb{K}^{(N-r) \times (N-r)}$ with $T^H T Y = Y D$ and
+  $\|Dw\| \le \sigma_r(T)^2 \|w\|$ for all $w$;
+* $Y$ is an isometry: $\|Yw\| = \|w\|$ for all $w$;
+* $\|TYw\| \le \sigma_r(T) \|w\|$ for all $w$;
+* the gap between the spans of the last $N - r$ columns of $V$ and of $Z$ is $\|Y_1\|$, the
+  $2$-norm of the first $r$ rows of $Y$.
+
+This is the common setting of Stewart's bounds in §5.4.6 of [golub2013matrix].
+
+The value $\sigma_r(T)$ is `T.sortedSingularValues r`, the $(r+1)$-th largest singular value of
+$T$. In the proof, $D$ is the diagonal matrix of the squared trailing singular values; the
+statement records only the bound on $D$. -/
 theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M) (Fin M) 𝕜}
     {V Z : Matrix (Fin N) (Fin N) 𝕜} {σ : ℕ → ℝ} (hU : U ∈ unitaryGroup (Fin M) 𝕜)
     (hV : V ∈ unitaryGroup (Fin N) 𝕜) (hT : star U * A * V = T) (hA : IsSVD A W σ Z)
@@ -660,8 +772,8 @@ theorem stewart_setting {A T : Matrix (Fin M) (Fin N) 𝕜} {U W : Matrix (Fin M
   rw [e2, mul_pow]
   linarith
 
-/-- The least singular value bounds the stretch from below: `σ_{r-1}(B) ‖x‖ ≤ ‖B x‖` for a
-matrix with `r ≥ 1` columns. -/
+/-- For $B \in \mathbb{K}^{p \times r}$ with $r \ge 1$, the least singular value bounds the stretch
+from below: $\sigma_{r-1}(B) \|x\| \le \|Bx\|$. -/
 private theorem sortedSingularValues_mul_norm_le {p : Type*} [Fintype p] (B : Matrix p (Fin r) 𝕜)
     (hr : 0 < r) (x : EuclideanSpace 𝕜 (Fin r)) :
     B.sortedSingularValues (r - 1) * ‖x‖ ≤ ‖toEuclideanLin B x‖ := by
@@ -669,7 +781,8 @@ private theorem sortedSingularValues_mul_norm_le {p : Type*} [Fintype p] (B : Ma
   have := B.iInf_colSingularValues_mul_norm_le x
   rwa [← sortedSingularValues_eq_iInf_colSingularValues, Fintype.card_fin] at this
 
-/-- The rows above the `r`-th of `T v`: `(T v)₁ = T₁₁ v₁ + T₁₂ v₂`. -/
+/-- The first $r$ entries of $Tv$ are those of $T_{11} v_1 + T_{12} v_2$, where $v_1$ and $v_2$ are
+the first $r$ and the last $N - r$ entries of $v$. -/
 private theorem mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (hN : r ≤ N)
     (v : Fin N → 𝕜) (i : Fin r) :
     (T *ᵥ v) (Fin.castLE hM i) =
@@ -678,7 +791,8 @@ private theorem mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M) (
   rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx hN]
   rfl
 
-/-- The rows above the `r`-th of `Tᴴ u`: `(Tᴴ u)₁ = T₁₁ᴴ u₁ + T₂₁ᴴ u₂`. -/
+/-- The first $r$ entries of $T^H u$ are those of $T_{11}^H u_1 + T_{21}^H u_2$, where $u_1$ and
+$u_2$ are the first $r$ and the last $M - r$ entries of $u$. -/
 private theorem conjTranspose_mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (hM : r ≤ M)
     (hN : r ≤ N) (u : Fin M → 𝕜) (i : Fin r) :
     (Tᴴ *ᵥ u) (Fin.castLE hN i) =
@@ -687,7 +801,8 @@ private theorem conjTranspose_mulVec_castLE (T : Matrix (Fin M) (Fin N) 𝕜) (h
   rw [mulVec, dotProduct, sum_eq_sum_castLE_add_sum_tailIdx hM]
   rfl
 
-/-- From `s² y ≤ (s a + t² Y) w` to `y ≤ (a / s + (t / s)² Y) w`. -/
+/-- For real numbers with $s > 0$, the inequality $s^2 y \le (s a + t^2 Y) w$ implies
+$y \le (a / s + (t / s)^2 Y) w$. -/
 private theorem le_mul_of_sq_mul_le {y w a t Y s : ℝ} (hs : 0 < s)
     (h : s ^ 2 * y ≤ (s * a + t ^ 2 * Y) * w) : y ≤ (a / s + (t / s) ^ 2 * Y) * w := by
   have hs2 : 0 < s ^ 2 := by positivity
@@ -696,7 +811,8 @@ private theorem le_mul_of_sq_mul_le {y w a t Y s : ℝ} (hs : 0 < s)
     field_simp
   exact le_of_mul_le_mul_right (by rw [e]; linarith) hs2
 
-/-- From `x ≤ a / s + ρ² x` with `0 ≤ ρ < 1` to `x ≤ a / ((1 − ρ²) s)`. -/
+/-- For real numbers with $s > 0$ and $0 \le \rho < 1$, the inequality $x \le a / s + \rho^2 x$
+implies $x \le a / ((1 - \rho^2) s)$. -/
 private theorem le_div_of_le_add_sq_mul {x a s ρ : ℝ} (hs : 0 < s) (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
     (h : x ≤ a / s + ρ ^ 2 * x) : x ≤ a / ((1 - ρ ^ 2) * s) := by
   have h1 : 0 < 1 - ρ ^ 2 := by nlinarith
@@ -705,16 +821,22 @@ private theorem le_div_of_le_add_sq_mul {x a s ρ : ℝ} (hs : 0 < s) (hρ0 : 0 
   rw [mul_add, mul_div_cancel₀ _ hs.ne'] at this
   nlinarith
 
-/-- **Stewart's bound for a URV decomposition** ([golub2013matrix] (5.4.10), Stewart 1993): let
-`Uᴴ A V = R = [R₁₁ R₁₂; 0 R₂₂]` be a URV decomposition split at `k` (`R₁₁` of size `k × k`),
-`Uᴴ … Z` any SVD of `A` (`hA`), `S` the span of the last `n − k` right singular vectors and `V₂` the
-last `n − k` columns of `V`. If `‖R₂₂‖₂ < σ_min(R₁₁)` (`σ_min(R₁₁) = R₁₁.sortedSingularValues
-(k − 1)`), then with `ρ = ‖R₂₂‖₂ / σ_min(R₁₁)`,
-`gap(ran V₂, S) ≤ ‖R₁₂‖₂ / ((1 − ρ²) σ_min(R₁₁))`. In the coordinates of `R`, with `Y = [Y₁; Y₂]`
-the trailing right singular vectors of `R`, the gap is `‖Y₁‖₂`, and the first block row of
-`Rᴴ R Y = Y Σ₂²` is `R₁₁ᴴ (R₁₁ Y₁ + R₁₂ Y₂) = Y₁ Σ₂²`; with `σ_k(R) ≤ ‖R₂₂‖₂`
-(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`) this gives
-`σ_min (σ_min ‖Y₁‖ − ‖R₁₂‖) ≤ ‖R₂₂‖² ‖Y₁‖`. -/
+/-- **Stewart's bound for a URV decomposition**: let $U^H A V = R$ be a URV decomposition of
+$A \in \mathbb{K}^{M \times N}$, let $A = W \Sigma Z^H$ be a singular value decomposition, and
+let $k \le M$ and $k \le N$. Split $R$ at $k$,
+$$R = \begin{bmatrix} R_{11} & R_{12} \\ 0 & R_{22} \end{bmatrix}, \qquad R_{11} \in
+  \mathbb{K}^{k \times k},$$
+and let $V_2$ and $Z_2$ be the last $N - k$ columns of $V$ and of $Z$. If
+$\|R_{22}\| < \sigma_{\min}(R_{11})$, then with $\rho = \|R_{22}\| / \sigma_{\min}(R_{11})$,
+$$\operatorname{gap}(\operatorname{ran} V_2, \operatorname{ran} Z_2) \le \frac{\|R_{12}\|}{(1 -
+  \rho^2) \, \sigma_{\min}(R_{11})}.$$
+This is (5.4.10) of [golub2013matrix], due to Stewart (1993).
+
+The space $\operatorname{ran} Z_2$ is the span of the last $N - k$ right singular vectors of
+$A$, and $\sigma_{\min}(R_{11})$ is `R₁₁.sortedSingularValues (k - 1)`. With $Y$ as in
+`Matrix.stewart_setting`, the gap is $\|Y_1\|$, and the first block row of $R^H R Y = Y D$
+together with $\sigma_k(R) \le \|R_{22}\|$ (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`)
+gives $\sigma_{\min} (\sigma_{\min} \|Y_1\| - \|R_{12}\|) \le \|R_{22}\|^2 \|Y_1\|$. -/
 theorem gap_le_of_urv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
     {R : Matrix (Fin M) (Fin N) 𝕜} {V : Matrix (Fin N) (Fin N) 𝕜} (h : IsURV A U R V)
     {W : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin N) (Fin N) 𝕜}
@@ -808,15 +930,24 @@ theorem gap_le_of_urv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin
   exact le_div_of_le_add_sq_mul hs0 (div_nonneg (norm_nonneg _) hs0.le)
     ((div_lt_one hs0).2 hρ) hY₁
 
-/-- **Stewart's bound for a ULV decomposition** ([golub2013matrix] (5.4.11), Stewart 1993, with the
-book's `L₁₂` read as `L₂₁`, the only nonzero off-diagonal block of the lower triangular `L`): let
-`Uᴴ A V = L = [L₁₁ 0; L₂₁ L₂₂]` be a ULV decomposition split at `k`, and `S`, `V₂` as in
-`Matrix.gap_le_of_urv`. If `‖L₂₂‖₂ < σ_min(L₁₁)`, then with `ρ = ‖L₂₂‖₂ / σ_min(L₁₁)`,
-`gap(ran V₂, S) ≤ ρ ‖L₂₁‖₂ / ((1 − ρ²) σ_min(L₁₁))`. With `Y = [Y₁; Y₂]` the trailing right
-singular vectors of `L`, the first block row of `Lᴴ L Y = Y Σ₂²` is
-`L₁₁ᴴ L₁₁ Y₁ + L₂₁ᴴ (L Y)₂ = Y₁ Σ₂²`, and `‖L Y‖₂ ≤ σ_k(L) ≤ ‖L₂₂‖₂`
-(`Matrix.sortedSingularValues_le_l2_opNorm_trailing_lower`), so
-`σ_min² ‖Y₁‖ ≤ ‖L₂₂‖² ‖Y₁‖ + ‖L₂₂‖ ‖L₂₁‖`. -/
+/-- **Stewart's bound for a ULV decomposition**: let $U^H A V = L$ be a ULV decomposition of
+$A \in \mathbb{K}^{M \times N}$, let $A = W \Sigma Z^H$ be a singular value decomposition, and
+let $k \le M$ and $k \le N$. Split $L$ at $k$,
+$$L = \begin{bmatrix} L_{11} & 0 \\ L_{21} & L_{22} \end{bmatrix}, \qquad L_{11} \in
+  \mathbb{K}^{k \times k},$$
+and let $V_2$ and $Z_2$ be the last $N - k$ columns of $V$ and of $Z$. If
+$\|L_{22}\| < \sigma_{\min}(L_{11})$, then with $\rho = \|L_{22}\| / \sigma_{\min}(L_{11})$,
+$$\operatorname{gap}(\operatorname{ran} V_2, \operatorname{ran} Z_2) \le \frac{\rho \,
+  \|L_{21}\|}{(1 - \rho^2) \, \sigma_{\min}(L_{11})}.$$
+This is (5.4.11) of [golub2013matrix], due to Stewart (1993).
+
+The source prints $L_{12}$ in (5.4.11). The only nonzero off-diagonal block of the lower
+triangular $L$ is $L_{21}$, and the statement here reads the bound with $L_{21}$.
+
+With $Y$ as in `Matrix.stewart_setting`, the first block row of $L^H L Y = Y D$ is
+$L_{11}^H L_{11} Y_1 + L_{21}^H (LY)_2 = Y_1 D$, and $\|LY\| \le \sigma_k(L) \le \|L_{22}\|$
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing_lower`), so that $\sigma_{\min}^2 \|Y_1\|
+\le \|L_{22}\|^2 \|Y_1\| + \|L_{22}\| \, \|L_{21}\|$. -/
 theorem gap_le_of_ulv {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
     {L : Matrix (Fin M) (Fin N) 𝕜} {V : Matrix (Fin N) (Fin N) 𝕜} (h : IsULV A U L V)
     {W : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ} {Z : Matrix (Fin N) (Fin N) 𝕜}
@@ -925,9 +1056,17 @@ section LeastSquares
 
 variable {r : ℕ}
 
-/-- **The basic solution** ([golub2013matrix] §5.5.5, `x_B = Π [R₁₁⁻¹ c; 0]`): with
-`c = (Qᴴ b)₁:r` and `R₁₁` the leading `r × r` block of `R`, the vector whose permuted coordinates
-are `R₁₁⁻¹ c` on the first `r` indices and `0` on the rest. -/
+/-- Let $Q \in \mathbb{K}^{M \times M}$ and $R \in \mathbb{K}^{M \times N}$, let $\sigma$ be a
+permutation of the column indices with permutation matrix $\Pi$, let $r \le M$ and $r \le N$,
+and let $b \in \mathbb{K}^M$. Let $c \in \mathbb{K}^r$ be the first $r$ entries of $Q^H b$. The
+**basic solution** is
+$$x_B = \Pi \begin{bmatrix} R_{11}^{-1} c \\ 0 \end{bmatrix},$$
+the vector whose permuted coordinates $\Pi^T x_B = x_B \circ \sigma$ are $R_{11}^{-1} c$ on the
+first $r$ indices and $0$ on the others. This is the basic solution of §5.5.5 of
+[golub2013matrix].
+
+The inverse $R_{11}^{-1}$ is `Matrix.inv`, which is $0$ when $R_{11}$ is singular. In a
+rank-revealing pivoted QR factorization, $R_{11}$ is invertible. -/
 noncomputable def pivotedBasicSolution (Q : Matrix (Fin M) (Fin M) 𝕜)
     (R : Matrix (Fin M) (Fin N) 𝕜) (σ : Equiv.Perm (Fin N)) (hM : r ≤ M) (hN : r ≤ N)
     (b : EuclideanSpace 𝕜 (Fin M)) : EuclideanSpace 𝕜 (Fin N) :=
@@ -939,7 +1078,7 @@ namespace IsPivotedQR.IsRankRevealing
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {Q : Matrix (Fin M) (Fin M) 𝕜}
   {R : Matrix (Fin M) (Fin N) 𝕜} {σ : Equiv.Perm (Fin N)}
 
-/-- The permuted coordinates of the basic solution. -/
+/-- The permuted coordinates $\Pi^T x_B$ of the basic solution are $[R_{11}^{-1} c; 0]$. -/
 private theorem basic_comp (h : IsRankRevealing A Q R σ r) (b : EuclideanSpace 𝕜 (Fin M)) :
     WithLp.ofLp (pivotedBasicSolution Q R σ h.le_rows h.le_cols b) ∘ σ =
       blockVec h.le_cols ((R.submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols))⁻¹ *ᵥ
@@ -947,11 +1086,19 @@ private theorem basic_comp (h : IsRankRevealing A Q R σ r) (b : EuclideanSpace 
   funext k
   simp [pivotedBasicSolution]
 
-/-- **The least-squares solutions of a rank-revealing factorization** ([golub2013matrix] §5.5.5):
-`x` is a least-squares solution of `A x = b` exactly when the first `r` equations of
-`R (Πᵀ x) = Qᴴ b` hold, `R₁₁ y + R₁₂ z = c` for `Πᵀ x = [y; z]` — equivalently
-`Πᵀ x = [R₁₁⁻¹ (c − R₁₂ z); z]` for a free `z` (`R₁₁` is invertible). The residual is
-`‖A x − b‖² = ‖R₁₁ y + R₁₂ z − c‖² + ‖d‖²` (`Qᴴ b = [c; d]`). -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $r$, and let $b \in \mathbb{K}^M$. Then $x \in \mathbb{K}^N$ is a least-squares solution
+of $Ax = b$ if and only if the first $r$ equations of $R\Pi^T x = Q^H b$ hold. With
+$\Pi^T x = [y; z]$ and $c$ the first $r$ entries of $Q^H b$, these equations are
+$$R_{11} y + R_{12} z = c.$$
+This is the description of the least-squares solutions in §5.5.5 of [golub2013matrix].
+
+Since $R_{11}$ is invertible, the solutions are the vectors with
+$\Pi^T x = [R_{11}^{-1} (c - R_{12} z); z]$ for a free $z \in \mathbb{K}^{N - r}$. With
+$Q^H b = [c; d]$, the residual is $\|Ax - b\|^2 = \|R_{11} y + R_{12} z - c\|^2 + \|d\|^2$
+(`Matrix.norm_toEuclideanLin_sub_sq_eq_of_eq_mul`). The proof specializes
+`Matrix.HasRevealingBlock.isLeastSquaresSolution_iff`, and `WithLp.ofLp x ∘ σ` is the vector
+$\Pi^T x$. -/
 theorem isLeastSquaresSolution_iff (h : IsRankRevealing A Q R σ r)
     {b : EuclideanSpace 𝕜 (Fin M)} {x : EuclideanSpace 𝕜 (Fin N)} :
     IsLeastSquaresSolution A b x ↔ ∀ i : Fin r,
@@ -960,8 +1107,10 @@ theorem isLeastSquaresSolution_iff (h : IsRankRevealing A Q R σ r)
   rw [h.toHasRevealingBlock.isLeastSquaresSolution_iff h.isQR.mem_unitaryGroup h.eq_mul
     (isUnit_one_submatrix σ), one_submatrix_mulVec]
 
-/-- **The basic solution is a least-squares solution** ([golub2013matrix] §5.5.5), and its
-coordinates `Πᵀ x_B` vanish from the `r`-th on: it has at most `r` nonzero entries. -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $r$, and let $b \in \mathbb{K}^M$. Then the basic solution $x_B$ is a least-squares
+solution of $Ax = b$, and its permuted coordinates $(x_B)_{\sigma(j)}$ vanish for $j \ge r$, so
+that $x_B$ has at most $r$ nonzero entries. This is a statement of §5.5.5 of [golub2013matrix]. -/
 theorem isLeastSquaresSolution_basic (h : IsRankRevealing A Q R σ r)
     (b : EuclideanSpace 𝕜 (Fin M)) :
     IsLeastSquaresSolution A b (pivotedBasicSolution Q R σ h.le_rows h.le_cols b) ∧
@@ -973,8 +1122,9 @@ theorem isLeastSquaresSolution_basic (h : IsRankRevealing A Q R σ r)
   · have := congrFun (basic_comp h b) (tailIdx h.le_cols j)
     simpa using this
 
-/-- A least-squares solution has `Πᵀ x = [R₁₁⁻¹ c − S z; z]` with `S = R₁₁⁻¹ R₁₂` and `z` the
-trailing coordinates. -/
+/-- The first $r$ permuted coordinates of a least-squares solution $x$ are $R_{11}^{-1} c - S z$,
+where $S = R_{11}^{-1} R_{12}$ and $z$ is the vector of the last $N - r$ permuted coordinates of
+$x$. -/
 private theorem head_eq_of_isLeastSquaresSolution (h : IsRankRevealing A Q R σ r)
     {b : EuclideanSpace 𝕜 (Fin M)} {x : EuclideanSpace 𝕜 (Fin N)}
     (hx : IsLeastSquaresSolution A b x) :
@@ -996,9 +1146,17 @@ private theorem head_eq_of_isLeastSquaresSolution (h : IsRankRevealing A Q R σ 
     rfl
   rw [← heq, mulVec_add, mulVec_mulVec, hB, one_mulVec, ← mulVec_mulVec, add_sub_cancel_right]
 
-/-- **The minimal-norm solution as a minimum over the free parameter** ([golub2013matrix]
-(5.5.4); the book writes `z ∈ ℝ^{n−2}` for `ℝ^{n−r}`): the solution set is
-`x_B − Π [R₁₁⁻¹ R₁₂ z; −z]`, and `‖A⁺ b‖` is its least norm. -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $r$, and let $b \in \mathbb{K}^M$. Then the minimum-norm least-squares solution $A^+ b$
+has the least norm on the set of least-squares solutions, written with a free parameter:
+$$\|A^+ b\| = \inf_{z \in \mathbb{K}^{N - r}} \left\| x_B - \Pi \begin{bmatrix} R_{11}^{-1}
+  R_{12} z \\ -z \end{bmatrix} \right\|.$$
+This is (5.5.4) of [golub2013matrix].
+
+The source writes $z \in \mathbb{R}^{n-2}$ where $z \in \mathbb{R}^{n-r}$ is meant. The vectors
+$x_B - \Pi [R_{11}^{-1} R_{12} z; -z]$ are exactly the least-squares solutions
+(`Matrix.IsPivotedQR.IsRankRevealing.isLeastSquaresSolution_iff`). The pseudoinverse $A^+$ is
+`Matrix.pinv`. -/
 theorem norm_minNorm_eq_iInf (h : IsRankRevealing A Q R σ r) (b : EuclideanSpace 𝕜 (Fin M)) :
     ‖toEuclideanLin A.pinv b‖ = ⨅ z : Fin (N - r) → 𝕜,
       ‖pivotedBasicSolution Q R σ h.le_rows h.le_cols b - WithLp.toLp 2 (blockVec h.le_cols
@@ -1042,7 +1200,8 @@ theorem norm_minNorm_eq_iInf (h : IsRankRevealing A Q R σ r) (b : EuclideanSpac
   rw [← hx₀]
   exact ciInf_le ⟨0, fun _ ⟨z, hz⟩ => hz ▸ norm_nonneg _⟩ z₀
 
-/-- The norm of a vector through its permuted head and tail coordinates. -/
+/-- The squared norm of $v \in \mathbb{K}^N$ is the sum of the squared norms of the first $r$ and of
+the last $N - r$ entries of $\Pi^T v$. -/
 private theorem norm_sq_eq_head_add_tail (h : IsRankRevealing A Q R σ r)
     (v : EuclideanSpace 𝕜 (Fin N)) :
     ‖v‖ ^ 2 = ‖(WithLp.toLp 2 fun i => (WithLp.ofLp v ∘ σ) (Fin.castLE h.le_cols i) :
@@ -1054,11 +1213,15 @@ private theorem norm_sq_eq_head_add_tail (h : IsRankRevealing A Q R σ r)
   rfl
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Golub–Pereyra** ([golub2013matrix] (5.5.5)): the basic solution is at most a factor
-`√(1 + ‖R₁₁⁻¹ R₁₂‖₂²)` longer than the minimal-norm solution,
-`‖A⁺ b‖ ≤ ‖x_B‖ ≤ √(1 + ‖R₁₁⁻¹ R₁₂‖₂²) ‖A⁺ b‖`. With `S = R₁₁⁻¹ R₁₂` and `Πᵀ A⁺ b = [y; z]`,
-`y = R₁₁⁻¹ c − S z` and `Πᵀ x_B = [R₁₁⁻¹ c; 0]`, so `‖x_B‖ = ‖y + S z‖ ≤ ‖y‖ + ‖S‖ ‖z‖`, and
-Cauchy–Schwarz in `ℝ²` gives `≤ √(1 + ‖S‖²) √(‖y‖² + ‖z‖²)`. The lower bound is minimality. -/
+/-- The **Golub–Pereyra bound**: let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in
+which $R$ has a revealing block of size $r$, and let $b \in \mathbb{K}^M$. Then the basic
+solution $x_B$ and the minimum-norm least-squares solution $A^+ b$ satisfy
+$$\|A^+ b\| \le \|x_B\| \le \sqrt{1 + \|R_{11}^{-1} R_{12}\|^2} \, \|A^+ b\|.$$
+This is (5.5.5) of [golub2013matrix].
+
+The lower bound is the minimality of $A^+ b$. The upper bound follows from $\|x_B\| = \|y + Sz\|
+\le \|y\| + \|S\| \, \|z\|$, where $S = R_{11}^{-1} R_{12}$ and $\Pi^T A^+ b = [y; z]$, and the
+Cauchy–Schwarz inequality in $\mathbb{R}^2$. -/
 theorem norm_basic_le (h : IsRankRevealing A Q R σ r) (b : EuclideanSpace 𝕜 (Fin M)) :
     ‖toEuclideanLin A.pinv b‖ ≤ ‖pivotedBasicSolution Q R σ h.le_rows h.le_cols b‖ ∧
       ‖pivotedBasicSolution Q R σ h.le_rows h.le_cols b‖ ≤
@@ -1100,10 +1263,16 @@ theorem norm_basic_le (h : IsRankRevealing A Q R σ r) (b : EuclideanSpace 𝕜 
   refine htri.trans (Real.le_sqrt_of_sq_le ?_)
   nlinarith [sq_nonneg (‖S‖ * a - t), norm_nonneg S]
 
-/-- **Underdetermined systems of full row rank** ([golub2013matrix] §5.6.2, Algorithm 5.6.1): if
-`IsPivotedQR.IsRankRevealing A Q R σ M` — no row of `R` vanishes and its leading `M × M` block
-`R₁` is invertible, which is the case exactly when `A` has independent rows — then the basic
-solution `x = Π [R₁⁻¹ Qᴴ b; 0]` solves `A x = b`. -/
+/-- Let $A\Pi = QR$ be a rank-revealing pivoted QR factorization in which $R$ has a revealing block
+of size $M$, so that no row of $R$ vanishes and its leading $M \times M$ block $R_1$ is
+invertible. Then for every $b \in \mathbb{K}^M$ the basic solution
+$$x = \Pi \begin{bmatrix} R_1^{-1} Q^H b \\ 0 \end{bmatrix}$$
+solves $Ax = b$. This is the solution of an underdetermined system of full row rank in §5.6.2 of
+[golub2013matrix], Algorithm 5.6.1.
+
+A factorization with a revealing block of size $M$ exists exactly when $A$ has linearly
+independent rows, by `Matrix.IsPivotedQR.IsRankRevealing.rank_eq` and
+`Matrix.exists_isPivotedQR_rank`. -/
 theorem mulVec_basic_eq (h : IsRankRevealing A Q R σ M) (b : EuclideanSpace 𝕜 (Fin M)) :
     toEuclideanLin A (pivotedBasicSolution Q R σ h.le_rows h.le_cols b) = b := by
   have hls := (h.isLeastSquaresSolution_basic b).1
@@ -1132,8 +1301,8 @@ open scoped Matrix.Norms.L2Operator
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin N) (Fin N) 𝕜} {r : ℕ}
 
-/-- **The truncated SVD through the leading left singular vectors**: `U₁ U₁ᴴ A = A_r` for an SVD
-`A = U Σ Vᴴ` and `U₁` the first `r` columns of `U`. -/
+/-- For a singular value decomposition $A = U \Sigma V^H$ and the first $r$ columns $U_1$ of $U$,
+the matrix $U_1 U_1^H A$ is the rank-$r$ truncation $A_r$ of the decomposition. -/
 private theorem mul_conjTranspose_mul_eq_svdTruncation (h : IsSVD A U σ V) (hrM : r ≤ M) :
     U.submatrix id (Fin.castLE hrM) * (U.submatrix id (Fin.castLE hrM))ᴴ * A =
       svdTruncation U σ V r := by
@@ -1162,17 +1331,25 @@ private theorem mul_conjTranspose_mul_eq_svdTruncation (h : IsSVD A U σ V) (hrM
   conv_lhs => rw [h.eq_mul_mul_star]
   rw [svdTruncation, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hdiag, Matrix.mul_assoc U, hmask]
 
-/-- **[golub2013matrix] Theorem 5.5.3** (subset selection against the nearest rank-`r` problem): in
-the setting of `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix` (`IsSVD A U σ V`, a column
-permutation `π`, `B₁` the first `r` columns of `A Π`, `Ṽ₁₁` the leading `r × r` block of `Πᵀ V`,
-assumed invertible) and with `r ≤ rank A`, the residuals `r_x = (1 − U₁ U₁ᴴ) b` of the nearest
-rank-`r` problem (`U₁` the first `r` columns of `U`) and `r_y = (1 − B₁ B₁⁺) b` of the subset
-satisfy `‖r_x − r_y‖₂ ≤ (σ_r(A) / σ_{r-1}(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂` (0-based: the book's
-`σ_{r̃+1}/σ_{r̃}`). The difference is `(P_{B₁} − P_{U₁}) b`, at most the gap between the two
-`r`-dimensional ranges, which is `‖P_{U₁⊥} P_{B₁}‖₂`; on the range of `B₁`,
-`P_{U₁⊥} B₁ z = (A − A_r) Π [z; 0]` has norm at most `σ_r(A) ‖z‖`, and
-`σ_{r-1}(B₁) ‖z‖ ≤ ‖B₁ z‖` with `σ_{r-1}(A) ≤ ‖Ṽ₁₁⁻¹‖₂ σ_{r-1}(B₁)` (Theorem 5.5.2). The rank
-hypothesis, implicit in the book, is needed: for `A = 0` the left side need not vanish. -/
+/-- Let $A = U \Sigma V^H$ be a singular value decomposition of $A \in \mathbb{K}^{M \times N}$, let
+$0 < r$ with $r \le M$, $r \le N$ and $r \le \operatorname{rank} A$, and let $\pi$ be a column
+permutation with permutation matrix $\Pi$. Let $B_1$ be the first $r$ columns of $A\Pi$, let
+$\tilde V_{11}$ be the leading $r \times r$ block of $\Pi^T V$, and assume that $\tilde V_{11}$
+is invertible. Let $U_1$ be the first $r$ columns of $U$. Then for every $b \in \mathbb{K}^M$
+the residual $r_x = (I - U_1 U_1^H) b$ of the nearest rank-$r$ problem and the residual
+$r_y = (I - B_1 B_1^+) b$ of the subset satisfy
+$$\|r_x - r_y\| \le \frac{\sigma_r(A)}{\sigma_{r-1}(A)} \, \|\tilde V_{11}^{-1}\| \, \|b\|.$$
+This is Theorem 5.5.3 of [golub2013matrix], which compares subset selection with the nearest
+rank-$r$ problem.
+
+Singular values are numbered from $0$, so the quotient $\sigma_r(A) / \sigma_{r-1}(A)$ is
+$\sigma_{\tilde r + 1} / \sigma_{\tilde r}$ of the source. The hypothesis
+$r \le \operatorname{rank} A$ is implicit in the source and is necessary: for $A = 0$ the right
+side is $0$, because $0 / 0 = 0$ in Lean, but the left side need not vanish. The proof writes
+$r_x - r_y$ as $(P_{B_1} - P_{U_1}) b$ and bounds the gap between the two $r$-dimensional ranges
+with $\|P_{U_1^\perp} B_1 z\| \le \sigma_r(A) \|z\|$ and with Theorem 5.5.2 of
+[golub2013matrix], $\sigma_{r-1}(A) \le \|\tilde V_{11}^{-1}\| \, \sigma_{r-1}(B_1)$
+(`Matrix.IsSVD.sortedSingularValues_le_mul_submatrix`). -/
 theorem norm_residual_subset_sub_le (h : IsSVD A U σ V) (π : Equiv.Perm (Fin N)) (hr0 : 0 < r)
     (hrM : r ≤ M) (hrN : r ≤ N) (hrank : r ≤ A.rank)
     (hV : IsUnit ((V.submatrix π id).submatrix (Fin.castLE hrN) (Fin.castLE hrN)))

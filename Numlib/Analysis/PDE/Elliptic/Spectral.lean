@@ -11,72 +11,100 @@ import Numlib.MeasureTheory.Function.LpSpace.Convergence
 /-!
 # Eigenfunctions and spectral decomposition of the Dirichlet problem
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.8: the
-Dirichlet eigenfunctions of `-Δ` on a bounded open set `Ω ⊆ ℝ^N`. Theorem 9.31 reads: there are
-a Hilbert basis `(e_n)` of `L²(Ω)` and reals `λ_n > 0` with `λ_n → +∞` such that
-`e_n ∈ H^1_0(Ω) ∩ C^∞(Ω)` and `-Δ e_n = λ_n e_n` in `Ω`.
+Let $\Omega \subseteq \mathbb{R}^N$ be open. This module constructs the Dirichlet eigenfunctions of
+$-\Delta$ on $\Omega$, following §9.8 of [brezis2011functional]. Theorem 9.31 there states: if
+$\Omega$ is bounded, there are a Hilbert basis $(e_n)$ of $L^2(\Omega)$ and real numbers
+$\lambda_n > 0$ with $\lambda_n \to +\infty$ such that $e_n \in H^1_0(\Omega) \cap C^\infty(\Omega)$
+and $-\Delta e_n = \lambda_n e_n$ in $\Omega$. The weak form (83) of the equation is
+$$\int_\Omega \nabla e_n \cdot \nabla \varphi = \lambda_n \int_\Omega e_n \varphi \qquad \text{for
+  all } \varphi \in H^1_0(\Omega).$$
 
-## Design: a general symmetric coercive form, and the basis as data
+The construction works for any bounded form $a$ on $H^1(\Omega)$ that is symmetric and coercive on
+$H^1_0(\Omega)$, and $\Omega$ need only have finite measure. For $f \in L^2(\Omega)$ let
+$Sf \in H^1_0(\Omega)$ be the solution of $a(Sf, v) = \langle f, v \rangle_{L^2}$ for all
+$v \in H^1_0(\Omega)$, and let the solution operator $T : L^2(\Omega) \to L^2(\Omega)$ map $f$ to
+the function of $Sf$. Then $T$ is compact, symmetric, positive and injective. The spectral theorem
+for compact symmetric operators gives a Hilbert basis $(e_n)$ of $L^2(\Omega)$ with
+$T e_n = \mu_n e_n$, where $\mu_n > 0$ decreases to $0$. The eigenvalues of the problem are
+$\lambda_n = 1/\mu_n$, which increase to $+\infty$, and the eigenfunctions are the elements
+$u_n = \lambda_n S e_n \in H^1_0(\Omega)$, whose functions are the $e_n$. The case
+$a(u, v) = \int_\Omega \nabla u \cdot \nabla v$ is Theorem 9.31. The module also proves Remark 28
+(the normalized eigenfunctions are Hilbert bases of $H^1_0(\Omega)$), Remark 29 (smoothness up to
+the boundary on a smooth domain) and Remark 30 (a general symmetric elliptic operator) of
+[brezis2011functional], Chapter 9.
 
-The proof uses nothing about the Laplacian beyond three properties of its Dirichlet form
-`a(u, v) = ∫ ∇u·∇v` on `H^1_0(Ω)`: bounded, symmetric, coercive (Poincaré). So the construction
-is carried out for an arbitrary `a : SesqForm ℝ (H^1(Ω))` that is Hermitian and coercive on
-`H^1_0(Ω)`: the solution operator `T = solutionOperator Ω a _ : L²(Ω) → L²(Ω)` of
-`Numlib/Analysis/PDE/Elliptic/Dirichlet.lean` is compact when `Ω` has finite measure
-(Rellich–Kondrachov, `Elliptic.solutionOperator_isCompactOperator`), symmetric
-(`Elliptic.solutionOperator_isSymmetric`: `⟪T f, g⟫ = a(T g, T f) = a(T f, T g) = ⟪f, T g⟫`),
-positive (`Elliptic.inner_solutionOperator_nonneg`) and injective
-(`Elliptic.solutionOperator_ker_eq_bot`: `T f = 0` forces `∫ f φ = 0` for every `φ ∈ H^1_0(Ω)`,
-so `f = 0`), and `L²(Ω)` is infinite-dimensional when `Ω ≠ ∅` and `N ≥ 1`
-(`MeasureTheory.Lp.not_finiteDimensional_of_isOpen`). The enumerated spectral theorem
-`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` of
-`Numlib/Analysis/InnerProductSpace/CompactSpectral.lean` — which needs exactly injectivity and
-infinite dimension — produces the basis, with eigenvalues `μ_n → 0`, `μ_n > 0`, listed in
-decreasing order; `λ_n = 1/μ_n` is then increasing to `+∞`.
+## Main definitions
 
-The basis and the eigenvalues are **data**, not an existential: `Elliptic.eigenbasis` and
-`Elliptic.eigenvalue`, together with the elements `Elliptic.eigenfunction … n ∈ H^1_0(Ω)` whose
-functions the basis vectors are, and the weak eigenvalue equation
-`a(u_n, φ) = λ_n ⟪e_n, φ⟫` (`Elliptic.form_eigenfunction`). The Laplacian instance is
-`Elliptic.dirichletEigenbasis`, `Elliptic.dirichletEigenvalue`, `Elliptic.dirichletEigenfunction`
-(Theorem 9.31, the Hilbert-space part), consumed by the heat and wave equations of
-`Numlib/Analysis/PDE/Heat.lean` and `Wave.lean`; Remark 30, a general elliptic operator with
-symmetric `L^∞` coefficients, is `Elliptic.exists_hilbertBasis_eigen_general`, the instance
-`a = generalForm Ω A 0 a₀ + λ₀ ⟨·,·⟩_{L²}` with `λ₀` from Gårding's inequality, its eigenvalues
-shifted back by `λ₀`.
+* `Elliptic.eigenbasis`, `Elliptic.eigenvalue`, `Elliptic.eigenfunction`: for a symmetric form $a$
+  coercive on $H^1_0(\Omega)$, the Hilbert basis $(e_n)$ of $L^2(\Omega)$, the eigenvalues
+  $\lambda_n$, and the eigenfunctions $u_n \in H^1_0(\Omega)$ with function $e_n$.
+* `Elliptic.dirichletEigenbasis`, `Elliptic.dirichletEigenvalue`, `Elliptic.dirichletEigenfunction`:
+  the same objects for $a(u, v) = \int_\Omega \nabla u \cdot \nabla v$ on a bounded $\Omega$.
+* `HilbertBasis.ofInnerEqMul`: a Hilbert basis transported from $L$ to $E$ along an injective map
+  and a family $u_i$ with $\langle u_i, x \rangle_E = c_i \langle b_i, Tx \rangle_L$.
+* `Elliptic.restrictOperator`, `Elliptic.dirichletOperator`: the bounded operator $A$ on
+  $H^1_0(\Omega)$ with $\langle Au, v \rangle_{H^1} = a(u, v)$, and its case for the Dirichlet form.
+* `Elliptic.energyEigenbasis`, `Elliptic.sobolevZeroEigenbasis`: the Hilbert bases
+  $(u_n / \sqrt{\lambda_n})$ of $H^1_0(\Omega)$ for the inner product $a$, and
+  $(u_n / \sqrt{\lambda_n + 1})$ for the $H^1$ inner product.
 
-The spaces are on `ℝ^N` with `N = d + 1`: for `N = 0` the open set `Ω` is at most a point and
-`L²(Ω)` is finite-dimensional, so there is no `ℕ`-indexed basis. The symmetry and injectivity of
-the solution operator hold for every `N`.
+## Main results
 
-## The bases of `H^1_0(Ω)`
+* `Elliptic.solutionOperator_isSymmetric`, `Elliptic.inner_solutionOperator_nonneg`,
+  `Elliptic.solutionOperator_ker_eq_bot`: the solution operator $T$ is symmetric, positive and
+  injective.
+* `Elliptic.eigenvalue_pos`, `Elliptic.monotone_eigenvalue`, `Elliptic.tendsto_eigenvalue_atTop`:
+  $0 < \lambda_0 \le \lambda_1 \le \dots$ and $\lambda_n \to +\infty$.
+* `Elliptic.form_eigenfunction`: the weak equation $a(u_n, \varphi) = \lambda_n \langle e_n, \varphi
+  \rangle_{L^2}$ for $\varphi \in H^1_0(\Omega)$.
+* `Elliptic.dirichletForm_dirichletEigenfunction`, `Elliptic.dirichletEigenvalue_pos`,
+  `Elliptic.tendsto_dirichletEigenvalue_atTop`: the Hilbert-space part of Theorem 9.31.
+* `Elliptic.dirichletEigenbasis_exists_contDiffOn`: the smoothness part of Theorem 9.31: $e_n$ has a
+  representative $\tilde u$ of class $C^\infty$ on $\Omega$ with
+  $-\Delta \tilde u = \lambda_n \tilde u$ at every point of $\Omega$.
+* `Elliptic.hilbertBasis_energy`, `Elliptic.hilbertBasis_sobolevZero`: Remark 28, the two Hilbert
+  bases of $H^1_0(\Omega)$.
+* `Elliptic.exists_contDiffOn_closure_eigenfunction`: Remark 29,
+  $e_n \in C^\infty(\overline{\Omega})$ on a bounded domain of class $C^\infty$.
+* `Elliptic.exists_hilbertBasis_eigen_general`: Remark 30, the eigenfunction basis of a symmetric
+  uniformly elliptic operator with $L^\infty$ coefficients.
 
-Remark 28 states that `(e_n / √λ_n)` is a Hilbert basis of `H^1_0(Ω)` for the inner product
-`∫ ∇u·∇v` and `(e_n / √(λ_n + 1))` for the `H^1` inner product. The second is
-`Elliptic.sobolevZeroEigenbasis`, a `HilbertBasis ℕ ℝ (SobolevEuclideanZero N 1 2 Ω)` on the
-nose, since `laplaceForm = innerSL` (`Elliptic.hilbertBasis_sobolevZero`); the first is
-`Elliptic.energyEigenbasis`, on the energy space `WithEnergy` of
-`Numlib/Analysis/InnerProductSpace/Energy.lean` for the operator `Elliptic.dirichletOperator` of
-the Dirichlet form restricted to `H^1_0(Ω)`, symmetric and coercive there
-(`Elliptic.hilbertBasis_energy`); the energy basis is built for every Hermitian form coercive on
-`H^1_0(Ω)`.
+## Proof outline
 
-## Smoothness
+The solution operator $T$ is compact by the Rellich–Kondrachov theorem when $\Omega$ has finite
+measure (`Elliptic.solutionOperator_isCompactOperator`). It is symmetric because $\langle Tf, g
+\rangle_{L^2} = a(Sg, Sf) = a(Sf, Sg) = \langle f, Tg \rangle_{L^2}$. It is injective because
+$Tf = 0$ gives $\int_\Omega f \varphi = 0$ for all $\varphi \in H^1_0(\Omega)$. Since $L^2(\Omega)$
+is infinite-dimensional for a nonempty open $\Omega \subseteq \mathbb{R}^N$ with $N \ge 1$, the
+spectral theorem `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` gives the basis. Interior
+regularity (Remark 25, `Elliptic.regularity_interior_higher`) applied to
+$-\Delta e_n = \lambda_n e_n$ gives $e_n \in H^m_{\mathrm{loc}}(\Omega)$ for all $m$, hence a
+$C^\infty$ representative. The weak equation then gives the pointwise equation for that
+representative. On a domain of class $C^\infty$, Theorem 9.25 gives $e_n \in H^m(\Omega)$ for all
+$m$ and $e_n \in C^\infty(\overline{\Omega})$.
 
-`e_n ∈ C^∞(Ω)` is interior regularity alone (Remark 25, `Elliptic.regularity_interior_higher` of
-`Numlib/Analysis/PDE/Elliptic/Regularity.lean`): the weak equation bootstraps
-`e_n ∈ H^1_loc ⇒ H^3_loc ⇒ …`, and `MemSobolevMultiIndexLoc.exists_contDiffOn` gives a `C^∞`
-representative on `Ω`. The classical equation `-Δ ũ_n = λ_n ũ_n` pointwise on `Ω` for a `C²`
-representative, with Mathlib's `Δ`, is `Elliptic.laplacian_eq_of_eigenfunction`, from the weak
-one against test functions by the variational lemma (Step D of §9.5, Example 1). The smoothness
-clauses of Theorem 9.31 are `Elliptic.dirichletEigenbasis_exists_contDiffOn`; on a `C^∞` domain the
-eigenfunctions lie in every `H^m(Ω)` and are `C^∞(Ω̄)` (Remark 29,
-`Elliptic.exists_contDiffOn_closure_eigenfunction`, through Theorem 9.25 of
-`Numlib/Analysis/PDE/Elliptic/Regularity.lean`).
+## Implementation notes
 
-## References
-
-[brezis2011functional], §9.8: Theorem 9.31, Remarks 28–30.
+* The basis and the eigenvalues are data, not the content of an existential statement. The weak
+  equation (83) is a theorem about these data (`Elliptic.form_eigenfunction`). The heat and wave
+  equations in `Numlib.Analysis.PDE.Heat` and `Numlib.Analysis.PDE.Wave` use them.
+* The spaces are on $\mathbb{R}^N$ with `N = d + 1`. For $N = 0$ the open set $\Omega$ is at most a
+  point and $L^2(\Omega)$ is finite-dimensional, so there is no basis indexed by $\mathbb{N}$. The
+  symmetry and the injectivity of the solution operator hold for every $N$.
+* The Lean types `Lp ℝ 2 (volume.restrict Ω)`, `SobolevEuclidean N 1 2 Ω` and
+  `SobolevEuclideanZero N 1 2 Ω` are $L^2(\Omega)$, $H^1(\Omega)$ and $H^1_0(\Omega)$. The space
+  $H^1_0(\Omega)$ carries the $H^1$ inner product $\int_\Omega (\nabla u \cdot \nabla v + uv)$. The
+  function of $u \in H^1_0(\Omega)$ in $L^2(\Omega)$ is `SobolevMultiIndexZero.fnL … u`.
+* The basis $(u_n / \sqrt{\lambda_n})$ lives on the energy space
+  `WithEnergy (Elliptic.restrictOperator Ω a) _` of `Numlib.Analysis.InnerProductSpace.Energy`,
+  which is $H^1_0(\Omega)$ with the inner product $a(u, v)$. The basis
+  $(u_n / \sqrt{\lambda_n + 1})$ is a `HilbertBasis` of `SobolevEuclideanZero (d + 1) 1 2 Ω` itself,
+  because the form of $-\Delta + 1$ is the $H^1$ inner product.
+* In Remark 30 the coefficients $a_{ij}$ are assumed symmetric, $a_{ij} = a_{ji}$.
+  [brezis2011functional] omits this hypothesis; without it the solution operator is not
+  self-adjoint. The eigenvalues come from the form $a + \lambda_0 \langle \cdot, \cdot
+  \rangle_{L^2}$, with $\lambda_0$ from Gårding's inequality, and are shifted back by $\lambda_0$.
+  They need not be positive.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -93,8 +121,13 @@ section Symmetric
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
   (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
 
-/-- `⟪T f, g⟫_{L²} = a(T g, T f)`: the weak equation of `T g` tested against the solution
-`T f ∈ H^1_0(Ω)`. -/
+/-- Let $a$ be a bounded form on $H^1(\Omega)$ that is coercive on $H^1_0(\Omega)$, let $T$ be its
+solution operator on $L^2(\Omega)$, and let $S f \in H^1_0(\Omega)$ be the solution with datum
+$f$, so that $Tf$ is the function of $Sf$. Then for all $f, g \in L^2(\Omega)$
+$$\langle Tf, g \rangle_{L^2} = a(Sg, Sf).$$
+
+This is the weak equation for $Sg$ tested with $Sf \in H^1_0(\Omega)$. Here $S$ is
+`Elliptic.solutionMap`. -/
 theorem inner_solutionOperator_eq_form
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ⟪solutionOperator Ω a ha f, g⟫_ℝ = a (solutionMap Ω a ha g) (solutionMap Ω a ha f) := by
@@ -102,10 +135,14 @@ theorem inner_solutionOperator_eq_form
     restrict_apply_solutionMap]
   rfl
 
-/-- **The solution operator is symmetric** for a Hermitian form: `⟪T f, g⟫ = a(T g, T f) =
-a(T f, T g) = ⟪f, T g⟫` — "repeat the proof of Theorem 8.21" in the proof of
-[brezis2011functional] Theorem 9.31 (the one-dimensional Sturm–Liouville theorem is its
-Theorem 8.22). -/
+/-- Let $a$ be a bounded form on $H^1(\Omega)$ that is Hermitian and coercive on $H^1_0(\Omega)$.
+Then the solution operator $T$ of $a$ is symmetric on $L^2(\Omega)$: $\langle Tf, g
+\rangle_{L^2} = \langle f, Tg \rangle_{L^2}$ for all $f, g$.
+
+Here $Sf \in H^1_0(\Omega)$ is the solution with datum $f$. The proof is $\langle Tf, g
+\rangle_{L^2} = a(Sg, Sf) = a(Sf, Sg) = \langle f, Tg \rangle_{L^2}$. In the proof of Theorem
+9.31, [brezis2011functional] says to repeat the proof of Theorem 8.21; the one-dimensional
+Sturm–Liouville theorem is its Theorem 8.22. -/
 theorem solutionOperator_isSymmetric (hsymm : a.IsHermitian) :
     (solutionOperator Ω a ha : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
       →ₗ[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).IsSymmetric := by
@@ -115,14 +152,20 @@ theorem solutionOperator_isSymmetric (hsymm : a.IsHermitian) :
     inner_solutionOperator_eq_form, SesqForm.isHermitian_real_iff] at *
   exact hsymm _ _
 
-/-- **`⟪T f, f⟫ = a(T f, T f)`**, read on `H^1_0(Ω)`. -/
+/-- Let $a$ be a bounded form on $H^1(\Omega)$ that is coercive on $H^1_0(\Omega)$, with solution
+operator $T$ and solution map $S$. Then $\langle Tf, f \rangle_{L^2} = a(Sf, Sf)$ for every
+$f \in L^2(\Omega)$. -/
 theorem inner_solutionOperator_self_eq
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ⟪solutionOperator Ω a ha f, f⟫_ℝ = a (solutionMap Ω a ha f) (solutionMap Ω a ha f) :=
   inner_solutionOperator_eq_form Ω a ha f f
 
-/-- **The solution operator is positive**: `⟪T f, f⟫ = a(T f, T f) ≥ c ‖T f‖² ≥ 0` by the
-coercivity of the form on `H^1_0(Ω)`. -/
+/-- Let $a$ be a bounded form on $H^1(\Omega)$ that is coercive on $H^1_0(\Omega)$. Then its
+solution operator $T$ is positive: $\langle Tf, f \rangle_{L^2} \ge 0$ for every
+$f \in L^2(\Omega)$.
+
+The proof is $\langle Tf, f \rangle_{L^2} = a(Sf, Sf) \ge c \|Sf\|_{H^1}^2 \ge 0$, with the
+coercivity constant $c > 0$. The form need not be Hermitian. -/
 theorem inner_solutionOperator_nonneg
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     0 ≤ ⟪solutionOperator Ω a ha f, f⟫_ℝ := by
@@ -132,10 +175,14 @@ theorem inner_solutionOperator_nonneg
   rw [SesqForm.restrict_apply] at h
   exact le_trans (by positivity) h
 
-/-- **The solution operator is injective** (`N(T) = {0}` in the proof of [brezis2011functional]
-Theorem 9.31): `T f = 0` forces the solution `u ∈ H^1_0(Ω)` to vanish, so `∫_Ω f φ = a(0, φ) = 0`
-for every `φ ∈ H^1_0(Ω)`, and a function of `L²(Ω)` orthogonal to `H^1_0(Ω)` is zero
-(`SobolevEuclideanZero.toDualL2_injective`, the variational lemma). -/
+/-- Let $a$ be a bounded form on $H^1(\Omega)$ that is coercive on $H^1_0(\Omega)$. Then its
+solution operator $T$ on $L^2(\Omega)$ is injective: $\ker T = \{0\}$.
+
+This is the claim $N(T) = \{0\}$ in the proof of Theorem 9.31 of [brezis2011functional]. If
+$Tf = 0$, the solution $u \in H^1_0(\Omega)$ is $0$, so
+$\int_\Omega f \varphi = a(0, \varphi) = 0$ for every $\varphi \in H^1_0(\Omega)$. A function of
+$L^2(\Omega)$ that is orthogonal to $H^1_0(\Omega)$ is zero
+(`SobolevEuclideanZero.toDualL2_injective`). -/
 theorem solutionOperator_ker_eq_bot :
     LinearMap.ker (solutionOperator Ω a ha :
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -154,9 +201,9 @@ theorem solutionOperator_ker_eq_bot :
 
 end Symmetric
 
-/-- A real bounded form is linear in its first slot: `a (c • u) v = c * a u v`, for `u` in a
-subspace `K` (the coercion of `c • u` being `c • ↑u`). Belongs beside `SesqForm.restrict` in
-`Numlib/Variational/Forms.lean`. -/
+/-- Let $a$ be a bounded real form on a real inner product space $V$, and let $K$ be a subspace of
+$V$. Then $a(cu, v) = c \, a(u, v)$ for all $c \in \mathbb{R}$, $u \in K$ and $v \in V$, where
+$cu$ is formed in $K$. -/
 theorem _root_.SesqForm.apply_coe_smul_left {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] (a : SesqForm ℝ V) (K : Submodule ℝ V) (c : ℝ) (u : K) (v : V) :
     a (c • u : K) v = c * a u v := by
@@ -173,57 +220,76 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (ha : (a.restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoercive)
 
 include hne in
-/-- `L²(Ω)` is infinite-dimensional for a nonempty open `Ω ⊆ ℝ^N`, `N ≥ 1`
-(`MeasureTheory.Lp.not_finiteDimensional_of_isOpen`); the hypothesis `hfin` of the enumerated
-spectral theorem. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a nonempty open set, with $N = d + 1 \ge 1$. Then
+$L^2(\Omega)$ is infinite-dimensional.
+
+This is the hypothesis of infinite dimension in the spectral theorem
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`. The proof is
+`MeasureTheory.Lp.not_finiteDimensional_of_isOpen`. -/
 theorem not_finiteDimensional_L2 :
     ¬ FiniteDimensional ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :=
   Lp.not_finiteDimensional_of_isOpen volume 2 Ω.isOpen hne
 
-/-- **The eigenbasis of a symmetric coercive form** — the abstract core of
-[brezis2011functional] Theorem 9.31, for a general Hermitian form `a` on `H^1(Ω)` coercive on
-`H^1_0(Ω)`, on an open set `Ω ⊆ ℝ^N` (`N = d + 1`) of finite measure, nonempty: the Hilbert
-basis of `L²(Ω)` of eigenfunctions of the solution operator `T = solutionOperator Ω a ha`,
-produced by `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` from the symmetry,
-compactness and injectivity of `T` and the infinite dimension of `L²(Ω)`. Its `n`-th vector
-`e_n` is the function of `Elliptic.eigenfunction … n ∈ H^1_0(Ω)`, which solves
-`a(e_n, φ) = λ_n ⟪e_n, φ⟫` for the eigenvalue `λ_n = Elliptic.eigenvalue … n`
-(`Elliptic.form_eigenfunction`). -/
+/-- The **eigenbasis of a symmetric coercive form**. Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be a nonempty open set of finite measure, and let $a$ be a bounded form on
+$H^1(\Omega)$ that is Hermitian and coercive on $H^1_0(\Omega)$. This is the Hilbert basis
+$(e_n)_{n \in \mathbb{N}}$ of $L^2(\Omega)$ that consists of eigenvectors of the solution
+operator $T$ of $a$.
+
+The vector $e_n$ is the function of `Elliptic.eigenfunction … n` $\in H^1_0(\Omega)$. That
+element solves $a(u_n, \varphi) = \lambda_n \langle e_n, \varphi \rangle_{L^2}$ for all
+$\varphi \in H^1_0(\Omega)$, where $\lambda_n$ is `Elliptic.eigenvalue … n`
+(`Elliptic.form_eigenfunction`). This is the abstract core of Theorem 9.31 of
+[brezis2011functional].
+
+The basis is `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` applied to $T$. Its
+hypotheses are the symmetry, the compactness and the injectivity of $T$, and the infinite
+dimension of $L^2(\Omega)$. -/
 def eigenbasis :
     HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :=
   ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis
     (solutionOperator_isSymmetric Ω a ha hsymm) (solutionOperator_isCompactOperator Ω hΩ a ha)
     (solutionOperator_ker_eq_bot Ω a ha) (not_finiteDimensional_L2 Ω hne)
 
-/-- The eigenvalues `μ_n` of the solution operator `T`, listed with multiplicity in decreasing
-order (`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`): `T e_n = μ_n e_n`. -/
+/-- The eigenvalues $\mu_n$ of the solution operator $T$ of the form $a$, listed with multiplicity
+in decreasing order, so that $T e_n = \mu_n e_n$.
+
+This is `ContinuousLinearMap.IsSymmetric.eigenvalueSeq` applied to $T$. -/
 def eigenvalueSeq : ℕ → ℝ :=
   ContinuousLinearMap.IsSymmetric.eigenvalueSeq (solutionOperator_isSymmetric Ω a ha hsymm)
     (solutionOperator_isCompactOperator Ω hΩ a ha)
 
-/-- **The eigenvalues `λ_n = 1/μ_n`** of the weak eigenvalue problem `a(u, φ) = λ ⟪u, φ⟫` on
-`H^1_0(Ω)`, the reciprocals of the eigenvalues of the solution operator: positive
-(`Elliptic.eigenvalue_pos`), increasing (`Elliptic.monotone_eigenvalue`) and tending to `+∞`
-(`Elliptic.tendsto_eigenvalue_atTop`). -/
+/-- The **eigenvalues** $\lambda_n = 1/\mu_n$ of the weak eigenvalue problem $a(u, \varphi) =
+\lambda \langle u, \varphi \rangle_{L^2}$ for all $\varphi \in H^1_0(\Omega)$. They are the
+reciprocals of the eigenvalues $\mu_n$ of the solution operator.
+
+Lean's convention $0^{-1} = 0$ applies to the definition. When $\Omega$ is nonempty,
+$\mu_n > 0$, and the eigenvalues are positive, nondecreasing and tend to $+\infty$: see
+`Elliptic.eigenvalue_pos`, `Elliptic.monotone_eigenvalue` and
+`Elliptic.tendsto_eigenvalue_atTop`. -/
 def eigenvalue (n : ℕ) : ℝ := (eigenvalueSeq Ω hΩ a hsymm ha n)⁻¹
 
-/-- `T e_n = μ_n e_n`. -/
+/-- The basis vector $e_n$ is an eigenvector of the solution operator: $T e_n = \mu_n e_n$ for every
+$n$. -/
 theorem solutionOperator_eigenbasis (n : ℕ) :
     solutionOperator Ω a ha (eigenbasis Ω hΩ hne a hsymm ha n)
       = eigenvalueSeq Ω hΩ a hsymm ha n • eigenbasis Ω hΩ hne a hsymm ha n :=
   ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis _ _ _ _ n
 
-/-- The eigenvalues of the solution operator tend to `0`. -/
+/-- The eigenvalues of the solution operator tend to $0$: $\mu_n \to 0$ as $n \to \infty$. -/
 theorem tendsto_eigenvalueSeq_zero : Tendsto (eigenvalueSeq Ω hΩ a hsymm ha) atTop (𝓝 0) :=
   ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero _ _
 
-/-- The eigenfunctions are nonzero. -/
+/-- The basis vectors are nonzero: $e_n \neq 0$ for every $n$. -/
 theorem eigenbasis_ne_zero (n : ℕ) : eigenbasis Ω hΩ hne a hsymm ha n ≠ 0 :=
   (eigenbasis Ω hΩ hne a hsymm ha).orthonormal.ne_zero n
 
 include hne in
-/-- **The eigenvalues of the solution operator are positive**: `μ_n = ⟪T e_n, e_n⟫ ≥ 0` by the
-positivity of `T` and `μ_n ≠ 0` by its injectivity. -/
+/-- If $\Omega$ is nonempty, the eigenvalues of the solution operator are positive: $\mu_n > 0$ for
+every $n$.
+
+The proof: $\mu_n = \langle T e_n, e_n \rangle_{L^2} \ge 0$ because $T$ is positive, and
+$\mu_n \neq 0$ because $T$ is injective. -/
 theorem eigenvalueSeq_pos (n : ℕ) : 0 < eigenvalueSeq Ω hΩ a hsymm ha n := by
   have h1 := inner_solutionOperator_nonneg Ω a ha (eigenbasis Ω hΩ hne a hsymm ha n)
   rw [solutionOperator_eigenbasis, inner_smul_left, RCLike.conj_to_real,
@@ -235,7 +301,8 @@ theorem eigenvalueSeq_pos (n : ℕ) : 0 < eigenvalueSeq Ω hΩ a hsymm ha n := b
   exact LinearMap.ker_eq_bot'.1 (solutionOperator_ker_eq_bot Ω a ha) _ h2
 
 include hne in
-/-- The eigenvalues of the solution operator decrease. -/
+/-- If $\Omega$ is nonempty, the eigenvalues of the solution operator are nonincreasing:
+$\mu_{n+1} \le \mu_n$ for every $n$. -/
 theorem eigenvalueSeq_antitone : Antitone (eigenvalueSeq Ω hΩ a hsymm ha) := fun m n hmn ↦ by
   have h : |eigenvalueSeq Ω hΩ a hsymm ha n| ≤ |eigenvalueSeq Ω hΩ a hsymm ha m| :=
     ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone _ _ hmn
@@ -243,31 +310,40 @@ theorem eigenvalueSeq_antitone : Antitone (eigenvalueSeq Ω hΩ a hsymm ha) := f
     abs_of_pos (eigenvalueSeq_pos Ω hΩ hne a hsymm ha m)] at h
 
 include hne in
-/-- **The eigenvalues `λ_n` are positive** ([brezis2011functional] Theorem 9.31). -/
+/-- If $\Omega$ is nonempty, the eigenvalues are positive: $\lambda_n > 0$ for every $n$. This is
+part of Theorem 9.31 of [brezis2011functional]. -/
 theorem eigenvalue_pos (n : ℕ) : 0 < eigenvalue Ω hΩ a hsymm ha n :=
   inv_pos.2 (eigenvalueSeq_pos Ω hΩ hne a hsymm ha n)
 
 include hne in
-/-- **The eigenvalues `λ_n` increase.** -/
+/-- If $\Omega$ is nonempty, the eigenvalues are nondecreasing: $\lambda_n \le \lambda_m$ for
+$n \le m$. -/
 theorem monotone_eigenvalue : Monotone (eigenvalue Ω hΩ a hsymm ha) := fun _ n hmn ↦
   inv_anti₀ (eigenvalueSeq_pos Ω hΩ hne a hsymm ha n)
     (eigenvalueSeq_antitone Ω hΩ hne a hsymm ha hmn)
 
 include hne in
-/-- **`λ_n → +∞`** ([brezis2011functional] Theorem 9.31). -/
+/-- If $\Omega$ is nonempty, $\lambda_n \to +\infty$ as $n \to \infty$. This is part of Theorem 9.31
+of [brezis2011functional]. -/
 theorem tendsto_eigenvalue_atTop : Tendsto (eigenvalue Ω hΩ a hsymm ha) atTop atTop := by
   have h1 : Tendsto (eigenvalueSeq Ω hΩ a hsymm ha) atTop (𝓝[>] 0) :=
     tendsto_nhdsWithin_iff.2 ⟨tendsto_eigenvalueSeq_zero Ω hΩ a hsymm ha,
       Eventually.of_forall fun n ↦ eigenvalueSeq_pos Ω hΩ hne a hsymm ha n⟩
   exact tendsto_inv_nhdsGT_zero.comp h1
 
-/-- **The eigenfunctions as elements of `H^1_0(Ω)`**: `u_n = λ_n • (the weak solution with datum
-`e_n`)`, whose function is `e_n` (`Elliptic.fnL_eigenfunction`) and which solves
-`a(u_n, φ) = λ_n ⟪e_n, φ⟫` for every `φ ∈ H^1_0(Ω)` (`Elliptic.form_eigenfunction`). -/
+/-- The **eigenfunctions** as elements of $H^1_0(\Omega)$: $u_n = \lambda_n \, S e_n$, where
+$S e_n \in H^1_0(\Omega)$ is the solution with datum $e_n$.
+
+The function of $u_n$ is $e_n$ (`Elliptic.fnL_eigenfunction`), and $a(u_n, \varphi) = \lambda_n
+\langle e_n, \varphi \rangle_{L^2}$ for every $\varphi \in H^1_0(\Omega)$
+(`Elliptic.form_eigenfunction`). -/
 def eigenfunction (n : ℕ) : SobolevEuclideanZero (d + 1) 1 2 Ω :=
   eigenvalue Ω hΩ a hsymm ha n • solutionMap Ω a ha (eigenbasis Ω hΩ hne a hsymm ha n)
 
-/-- **The function of `u_n` is `e_n`**: `T (λ_n e_n) = e_n`. -/
+/-- The function of the eigenfunction $u_n \in H^1_0(\Omega)$ in $L^2(\Omega)$ is the basis vector
+$e_n$.
+
+The proof is $T(\lambda_n e_n) = \lambda_n \mu_n e_n = e_n$. -/
 theorem fnL_eigenfunction (n : ℕ) :
     SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
       (eigenfunction Ω hΩ hne a hsymm ha n) = eigenbasis Ω hΩ hne a hsymm ha n := by
@@ -289,7 +365,8 @@ theorem fnL_eigenfunction (n : ℕ) :
         rw [smul_smul, eigenvalue, inv_mul_cancel₀ (eigenvalueSeq_pos Ω hΩ hne a hsymm ha n).ne',
           one_smul]
 
-/-- **The function of `u_n` is `e_n`**, almost everywhere on `Ω`. -/
+/-- The function of the eigenfunction $u_n$, as an element of $H^1(\Omega)$, agrees with $e_n$
+almost everywhere on $\Omega$. -/
 theorem fn_eigenfunction (n : ℕ) :
     SobolevMultiIndex.fn (eigenfunction Ω hΩ hne a hsymm ha n : SobolevEuclidean (d + 1) 1 2 Ω)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
@@ -297,8 +374,11 @@ theorem fn_eigenfunction (n : ℕ) :
   rw [← fnL_eigenfunction Ω hΩ hne a hsymm ha n]
   exact Filter.EventuallyEq.refl _ _
 
-/-- **The weak eigenvalue equation (83)** of [brezis2011functional] Theorem 9.31 for the form
-`a`: `a(u_n, φ) = λ_n ⟪e_n, φ⟫_{L²}` for every `φ ∈ H^1_0(Ω)`. -/
+/-- The **weak eigenvalue equation** (83) for the form $a$: for every $n$ and every
+$\varphi \in H^1_0(\Omega)$,
+$$a(u_n, \varphi) = \lambda_n \langle e_n, \varphi \rangle_{L^2}.$$
+
+This is (83) of Theorem 9.31 of [brezis2011functional], for a general form $a$. -/
 theorem form_eigenfunction (n : ℕ) (φ : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     a (eigenfunction Ω hΩ hne a hsymm ha n) φ
       = eigenvalue Ω hΩ a hsymm ha n * ⟪eigenbasis Ω hΩ hne a hsymm ha n,
@@ -314,9 +394,11 @@ theorem form_eigenfunction (n : ℕ) (φ : SobolevEuclideanZero (d + 1) 1 2 Ω) 
           (restrict_apply_solutionMap Ω a ha (eigenbasis Ω hΩ hne a hsymm ha n) φ)
     _ = _ := rfl
 
-/-- **Each basis function is in `H^1_0(Ω)` and solves the weak eigenvalue problem**: for every
-`n`, `e_n` is the function of some `u ∈ H^1_0(Ω)` with `a(u, φ) = λ_n ⟪e_n, φ⟫` for every
-`φ ∈ H^1_0(Ω)` — the book's (83) for the form `a`; the element is `Elliptic.eigenfunction`. -/
+/-- For every $n$ there is $u \in H^1_0(\Omega)$ whose function is $e_n$ and which satisfies $a(u,
+\varphi) = \lambda_n \langle e_n, \varphi \rangle_{L^2}$ for every $\varphi \in H^1_0(\Omega)$.
+
+This is the existential form of (83) of [brezis2011functional] for the form $a$. The element $u$
+is `Elliptic.eigenfunction`. -/
 theorem eigenbasis_mem_sobolevZero (n : ℕ) :
     ∃ u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
       SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume u
@@ -331,15 +413,20 @@ theorem eigenbasis_mem_sobolevZero (n : ℕ) :
 
 end Eigenbasis
 
-/-! ### Theorem 9.31: the Dirichlet eigenfunctions of `-Δ` -/
+/-! ### Theorem 9.31: the Dirichlet eigenfunctions of $-\Delta$ -/
 
 section Dirichlet
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- **Poincaré's inequality as coercivity of the Dirichlet form on `H^1_0(Ω)`** for
-`Ω ⊆ B(0, R)`: `∫_Ω |∇v|² ≥ (1 + (2R)²)⁻¹ ‖v‖²_{H^1}`, from `SobolevEuclideanZero.norm_le_gradNorm`
-([brezis2011functional] Corollary 9.19) in the form `Elliptic.norm_sq_le_dirichletForm_self`. -/
+/-- **Poincaré's inequality** as coercivity of the Dirichlet form. Let $R \ge 0$ and
+$\Omega \subseteq B(0, R)$. Then the Dirichlet form restricted to $H^1_0(\Omega)$ is coercive
+with constant $(1 + (2R)^2)^{-1}$:
+$$\int_\Omega |\nabla v|^2 \ge \frac{1}{1 + (2R)^2} \|v\|_{H^1}^2 \qquad \text{for all } v \in
+  H^1_0(\Omega).$$
+
+The proof uses `SobolevEuclideanZero.norm_le_gradNorm` (Corollary 9.19 of
+[brezis2011functional]) in the form `Elliptic.norm_sq_le_dirichletForm_self`. -/
 theorem dirichletForm_restrict_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
     ((dirichletForm Ω).restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoerciveWith
@@ -350,8 +437,11 @@ theorem dirichletForm_restrict_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
   rw [inv_mul_le_iff₀ hpos]
   exact norm_sq_le_dirichletForm_self hR hΩ v.2
 
-/-- **The Dirichlet form is coercive on `H^1_0(Ω)` for a bounded `Ω`** (Poincaré's inequality):
-the hypothesis `ha` of the solution operator and of the eigenbasis for `a = dirichletForm Ω`. -/
+/-- If $\Omega$ is bounded, the Dirichlet form $\int_\Omega \nabla u \cdot \nabla v$ is coercive on
+$H^1_0(\Omega)$.
+
+This is Poincaré's inequality. It is the coercivity hypothesis of the solution operator and of
+`Elliptic.eigenbasis` for the Dirichlet form. -/
 theorem dirichletForm_restrict_isCoercive
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
     ((dirichletForm Ω).restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoercive := by
@@ -361,63 +451,80 @@ theorem dirichletForm_restrict_isCoercive
 variable (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- **[brezis2011functional] Theorem 9.31, the basis of Dirichlet eigenfunctions of `-Δ`**: for
-a bounded nonempty open `Ω ⊆ ℝ^N` (`N = d + 1`), the Hilbert basis `(e_n)` of `L²(Ω)` of
-eigenfunctions of the Dirichlet problem for `-Δ`, the instance of `Elliptic.eigenbasis` for the
-Dirichlet form `∫ ∇u·∇v`, Hermitian and coercive on `H^1_0(Ω)` by Poincaré's inequality. Each
-`e_n` is the function of `Elliptic.dirichletEigenfunction Ω hΩ hne n ∈ H^1_0(Ω)`, which solves
-`∫ ∇e_n·∇φ = λ_n ∫ e_n φ` for all `φ ∈ H^1_0(Ω)` (the book's (83),
-`Elliptic.dirichletForm_dirichletEigenfunction`) with the eigenvalue
-`λ_n = Elliptic.dirichletEigenvalue Ω hΩ n > 0`, `λ_n → +∞`. -/
+/-- The **Dirichlet eigenbasis** of $-\Delta$. Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be
+a bounded nonempty open set. This is the Hilbert basis $(e_n)$ of $L^2(\Omega)$ of the
+eigenfunctions of the Dirichlet problem for $-\Delta$.
+
+Each $e_n$ is the function of `Elliptic.dirichletEigenfunction Ω hΩ hne n` $\in H^1_0(\Omega)$.
+That element solves
+$$\int_\Omega \nabla e_n \cdot \nabla \varphi = \lambda_n \int_\Omega e_n \varphi \qquad
+  \text{for all } \varphi \in H^1_0(\Omega),$$
+which is (83) (`Elliptic.dirichletForm_dirichletEigenfunction`), with the eigenvalue
+$\lambda_n$ = `Elliptic.dirichletEigenvalue Ω hΩ n`. The eigenvalues are positive and tend to
+$+\infty$. This is the basis of Theorem 9.31 of [brezis2011functional].
+
+The definition is `Elliptic.eigenbasis` for the Dirichlet form, which is Hermitian, and coercive
+on $H^1_0(\Omega)$ by Poincaré's inequality. -/
 def dirichletEigenbasis :
     HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :=
   eigenbasis Ω hΩ.measure_lt_top.ne hne (dirichletForm Ω) (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ)
 
-/-- **The Dirichlet eigenvalues `λ_n` of `-Δ`** ([brezis2011functional] Theorem 9.31): positive
-(`Elliptic.dirichletEigenvalue_pos`), increasing (`Elliptic.monotone_dirichletEigenvalue`), tending
-to `+∞` (`Elliptic.tendsto_dirichletEigenvalue_atTop`). -/
+/-- The **Dirichlet eigenvalues** $\lambda_n$ of $-\Delta$ on a bounded open set $\Omega$: the
+eigenvalues `Elliptic.eigenvalue` of the Dirichlet form.
+
+When $\Omega$ is nonempty they are positive (`Elliptic.dirichletEigenvalue_pos`), nondecreasing
+(`Elliptic.monotone_dirichletEigenvalue`) and tend to $+\infty$
+(`Elliptic.tendsto_dirichletEigenvalue_atTop`). These are the eigenvalues of Theorem 9.31 of
+[brezis2011functional]. -/
 def dirichletEigenvalue : ℕ → ℝ :=
   eigenvalue Ω hΩ.measure_lt_top.ne (dirichletForm Ω) (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ)
 
-/-- **The Dirichlet eigenfunctions as elements of `H^1_0(Ω)`**: `u_n ∈ H^1_0(Ω)` with function
-`e_n = dirichletEigenbasis Ω hΩ hne n`. -/
+/-- The **Dirichlet eigenfunctions** as elements of $H^1_0(\Omega)$: the element
+$u_n \in H^1_0(\Omega)$ whose function is $e_n$ = `Elliptic.dirichletEigenbasis Ω hΩ hne n`. It
+is `Elliptic.eigenfunction` for the Dirichlet form. -/
 def dirichletEigenfunction (n : ℕ) : SobolevEuclideanZero (d + 1) 1 2 Ω :=
   eigenfunction Ω hΩ.measure_lt_top.ne hne (dirichletForm Ω) (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ) n
 
 include hne in
-/-- **`λ_n > 0`** ([brezis2011functional] Theorem 9.31). -/
+/-- If $\Omega$ is bounded and nonempty, the Dirichlet eigenvalues are positive: $\lambda_n > 0$ for
+every $n$. This is part of Theorem 9.31 of [brezis2011functional]. -/
 theorem dirichletEigenvalue_pos (n : ℕ) : 0 < dirichletEigenvalue Ω hΩ n :=
   eigenvalue_pos Ω hΩ.measure_lt_top.ne hne _ _ _ n
 
 include hne in
-/-- **The Dirichlet eigenvalues increase.** -/
+/-- If $\Omega$ is bounded and nonempty, the Dirichlet eigenvalues are nondecreasing:
+$\lambda_n \le \lambda_m$ for $n \le m$. -/
 theorem monotone_dirichletEigenvalue : Monotone (dirichletEigenvalue Ω hΩ) :=
   monotone_eigenvalue Ω hΩ.measure_lt_top.ne hne _ _ _
 
 include hne in
-/-- **`λ_n → +∞`** ([brezis2011functional] Theorem 9.31). -/
+/-- If $\Omega$ is bounded and nonempty, the Dirichlet eigenvalues tend to $+\infty$. This is part
+of Theorem 9.31 of [brezis2011functional]. -/
 theorem tendsto_dirichletEigenvalue_atTop : Tendsto (dirichletEigenvalue Ω hΩ) atTop atTop :=
   tendsto_eigenvalue_atTop Ω hΩ.measure_lt_top.ne hne _ _ _
 
-/-- **`e_n ∈ H^1_0(Ω)`**: the basis function `e_n` is the function of
-`dirichletEigenfunction Ω hΩ hne n`. -/
+/-- The function of the Dirichlet eigenfunction $u_n \in H^1_0(\Omega)$ in $L^2(\Omega)$ is the
+basis vector $e_n$. In particular $e_n \in H^1_0(\Omega)$. -/
 theorem fnL_dirichletEigenfunction (n : ℕ) :
     SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
       (dirichletEigenfunction Ω hΩ hne n) = dirichletEigenbasis Ω hΩ hne n :=
   fnL_eigenfunction Ω hΩ.measure_lt_top.ne hne _ _ _ n
 
-/-- **`e_n ∈ H^1_0(Ω)`**, almost everywhere on `Ω`. -/
+/-- The function of the Dirichlet eigenfunction $u_n$, as an element of $H^1(\Omega)$, agrees with
+$e_n$ almost everywhere on $\Omega$. -/
 theorem fn_dirichletEigenfunction (n : ℕ) :
     SobolevMultiIndex.fn (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
         dirichletEigenbasis Ω hΩ hne n :=
   fn_eigenfunction Ω hΩ.measure_lt_top.ne hne _ _ _ n
 
-/-- **The weak eigenvalue equation (83)** of [brezis2011functional] Theorem 9.31:
-`∫_Ω ∇e_n·∇φ = λ_n ∫_Ω e_n φ` for every `φ ∈ H^1_0(Ω)`. -/
+/-- The **weak eigenvalue equation** (83) of Theorem 9.31 of [brezis2011functional]: for every $n$
+and every $\varphi \in H^1_0(\Omega)$,
+$$\int_\Omega \nabla u_n \cdot \nabla \varphi = \lambda_n \int_\Omega e_n \varphi,$$
+where $u_n \in H^1_0(\Omega)$ is the Dirichlet eigenfunction with function $e_n$. -/
 theorem dirichletForm_dirichletEigenfunction (n : ℕ) (φ : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     dirichletForm Ω (dirichletEigenfunction Ω hΩ hne n) φ
       = dirichletEigenvalue Ω hΩ n * ⟪dirichletEigenbasis Ω hΩ hne n,
@@ -425,9 +532,9 @@ theorem dirichletForm_dirichletEigenfunction (n : ℕ) (φ : SobolevEuclideanZer
           volume φ⟫_ℝ :=
   form_eigenfunction Ω hΩ.measure_lt_top.ne hne _ _ _ n φ
 
-/-- **Each Dirichlet eigenfunction is in `H^1_0(Ω)` and solves (83)**, in the existential form:
-`e_n` is the function of some `u ∈ H^1_0(Ω)` with `∫ ∇u·∇φ = λ_n ∫ e_n φ` for all
-`φ ∈ H^1_0(Ω)`. -/
+/-- For every $n$ there is $u \in H^1_0(\Omega)$ whose function is $e_n$ and which satisfies
+$\int_\Omega \nabla u \cdot \nabla \varphi = \lambda_n \int_\Omega e_n \varphi$ for every
+$\varphi \in H^1_0(\Omega)$. This is the existential form of (83) of [brezis2011functional]. -/
 theorem dirichletEigenbasis_mem_sobolevZero (n : ℕ) :
     ∃ u ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
       SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume u
@@ -440,7 +547,7 @@ theorem dirichletEigenbasis_mem_sobolevZero (n : ℕ) :
 
 end Dirichlet
 
-/-! ### The classical eigenvalue equation for a `C²` eigenfunction -/
+/-! ### The classical eigenvalue equation for a $C^2$ eigenfunction -/
 
 section Classical
 
@@ -448,14 +555,20 @@ open Laplacian
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-- **The classical eigenvalue equation**: if `U ∈ H^1(Ω)` satisfies the weak equation
-`∫_Ω ∇U·∇φ = λ ∫_Ω U φ` for every test function `φ` and its function is a `C²` function `u` on
-`Ω`, then `-Δ u = λ u` at every point of `Ω`, with Mathlib's Laplacian `Δ`. The weak equation
-says that `U` solves `-ΔU + U = (λ + 1) U` weakly, so Step D of [brezis2011functional] §9.5,
-Example 1 (`Elliptic.laplacian_ae_eq_of_forall_testFunction`) gives `-Δu + u = (λ + 1) u` almost
-everywhere on `Ω`, and both sides are continuous on the open `Ω`
-(`MeasureTheory.Measure.eqOn_open_of_ae_eq`). This is the reading of "`-Δ e_n = λ_n e_n` in
-`Ω`" of Theorem 9.31 for the `C^∞` representative of `e_n`. -/
+/-- The **classical eigenvalue equation**. Let $\Omega \subseteq \mathbb{R}^N$ be open, let
+$U \in H^1(\Omega)$, and let $\lambda \in \mathbb{R}$. Assume that
+$$\int_\Omega \nabla U \cdot \nabla V = \lambda \int_\Omega U V$$
+for every element $V \in H^1(\Omega)$ whose function agrees almost everywhere on $\Omega$ with a
+test function. Assume also that the function of $U$ agrees almost everywhere on $\Omega$ with a
+function $u$ of class $C^2$ on $\Omega$. Then $-\Delta u(x) = \lambda u(x)$ at every point
+$x \in \Omega$.
+
+This is the reading of "$-\Delta e_n = \lambda_n e_n$ in $\Omega$" of Theorem 9.31 of
+[brezis2011functional] for the smooth representative of $e_n$. The weak equation says that $U$
+solves $-\Delta U + U = (\lambda + 1) U$ weakly. Step D of §9.5, Example 1
+(`Elliptic.laplacian_ae_eq_of_forall_testFunction`) then gives $-\Delta u + u = (\lambda + 1) u$
+almost everywhere on $\Omega$. Both sides are continuous on the open set $\Omega$, so they agree
+everywhere (`MeasureTheory.Measure.eqOn_open_of_ae_eq`). The Laplacian $\Delta$ is Mathlib's. -/
 theorem laplacian_eq_of_eigenfunction {U : SobolevEuclidean N 1 2 Ω} {lam : ℝ}
     (hUw : ∀ V ∈ SobolevMultiIndex.testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
       1 2 Ω volume, dirichletForm Ω U V
@@ -501,8 +614,8 @@ section Transport
 variable {ι E L : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup L]
   [InnerProductSpace ℝ L]
 
-/-- A vector orthogonal to every vector of a Hilbert basis is zero. Belongs beside
-`HilbertBasis.repr_apply_apply` in `Mathlib/Analysis/InnerProductSpace/l2Space.lean`. -/
+/-- Let $b$ be a Hilbert basis of a real inner product space $L$, and let $x \in L$ with
+$\langle b_i, x \rangle = 0$ for every $i$. Then $x = 0$. -/
 theorem _root_.HilbertBasis.eq_zero_of_forall_inner_eq_zero (b : HilbertBasis ι ℝ L) {x : L}
     (h : ∀ i, ⟪b i, x⟫_ℝ = 0) : x = 0 := by
   have hr : b.repr x = 0 := by
@@ -510,9 +623,8 @@ theorem _root_.HilbertBasis.eq_zero_of_forall_inner_eq_zero (b : HilbertBasis ι
     rw [b.repr_apply_apply, h i, lp.coeFn_zero, Pi.zero_apply]
   simpa using congrArg b.repr.symm hr
 
-/-- The orthogonal complement of the span of a family is trivial when only `0` is orthogonal to
-every member of the family. Belongs beside `Submodule.mem_orthogonal` in
-`Mathlib/Analysis/InnerProductSpace/Orthogonal.lean`. -/
+/-- Let $(v_i)$ be a family in a real inner product space $E$ such that only $0$ is orthogonal to
+every $v_i$. Then the orthogonal complement of the span of $(v_i)$ is $\{0\}$. -/
 theorem _root_.Submodule.orthogonal_span_range_eq_bot_of_forall {v : ι → E}
     (h : ∀ x, (∀ i, ⟪v i, x⟫_ℝ = 0) → x = 0) : (Submodule.span ℝ (Set.range v))ᗮ = ⊥ := by
   rw [eq_bot_iff]
@@ -520,8 +632,9 @@ theorem _root_.Submodule.orthogonal_span_range_eq_bot_of_forall {v : ι → E}
   rw [Submodule.mem_bot]
   exact h x fun i ↦ (Submodule.mem_orthogonal _ _).1 hx _ (Submodule.subset_span ⟨i, rfl⟩)
 
-/-- A family `u` with `⟪u i, u i⟫ = c i > 0` and `⟪u i, u j⟫ = 0` for `i ≠ j`, normalized by
-`1/√(c i)`, is orthonormal. -/
+/-- Let $(u_i)$ be a family in a real inner product space $E$ and let $c_i > 0$, with
+$\langle u_i, u_i \rangle = c_i$ for every $i$ and $\langle u_i, u_j \rangle = 0$ for
+$i \neq j$. Then the family $(c_i^{-1/2} u_i)$ is orthonormal. -/
 theorem _root_.orthonormal_inv_sqrt_smul {u : ι → E} {c : ι → ℝ} (hc : ∀ i, 0 < c i)
     (hd : ∀ i, ⟪u i, u i⟫_ℝ = c i) (ho : ∀ i j, i ≠ j → ⟪u i, u j⟫_ℝ = 0) :
     Orthonormal ℝ fun i ↦ (√(c i))⁻¹ • u i := by
@@ -536,13 +649,19 @@ theorem _root_.orthonormal_inv_sqrt_smul {u : ι → E} {c : ι → ℝ} (hc : �
 
 variable [CompleteSpace E]
 
-/-- **Transport of a Hilbert basis along a weak eigenvalue equation.** Let `b` be a Hilbert
-basis of `L`, `T : E →ₗ L` injective, and `u : ι → E` a family with `T (u i) = b i` and
-`⟪u i, x⟫_E = c i ⟪b i, T x⟫_L` for every `x ∈ E`, with `c i > 0`. Then `i ↦ u i / √(c i)` is a
-Hilbert basis of `E`: it is orthonormal because `⟪u i, u j⟫ = c i ⟪b i, b j⟫ = c i δ_ij`, and
-complete because `x ⊥ u i` for all `i` gives `T x ⊥ b i` for all `i`, so `T x = 0` and `x = 0`.
-This is the argument of [brezis2011functional] Chapter 9, Remark 28, with `E = H^1_0(Ω)`,
-`L = L²(Ω)`, `T` the inclusion, `b` the Dirichlet eigenbasis and `c i = λ_i` or `λ_i + 1`. -/
+/-- **Transport of a Hilbert basis along a weak eigenvalue equation.** Let $E$ be a real Hilbert
+space and $L$ a real inner product space. Let $b$ be a Hilbert basis of $L$, let $T : E \to L$
+be linear and injective, and let $(u_i)$ be a family in $E$ and $c_i > 0$ such that
+$T u_i = b_i$ and
+$$\langle u_i, x \rangle_E = c_i \langle b_i, T x \rangle_L \qquad \text{for all } i \text{ and
+  all } x \in E.$$
+Then $(u_i / \sqrt{c_i})$ is a Hilbert basis of $E$.
+
+The family is orthonormal because $\langle u_i, u_j \rangle_E = c_i \langle b_i, b_j \rangle_L =
+c_i \delta_{ij}$. It is complete because $x \perp u_i$ for all $i$ gives $Tx \perp b_i$ for all
+$i$, so $Tx = 0$ and $x = 0$. This is the argument of Remark 28 in Chapter 9 of
+[brezis2011functional], with $E = H^1_0(\Omega)$, $L = L^2(\Omega)$, $T$ the inclusion, $b$ the
+Dirichlet eigenbasis, and $c_i = \lambda_i$ or $c_i = \lambda_i + 1$. -/
 def _root_.HilbertBasis.ofInnerEqMul (b : HilbertBasis ι ℝ L) (T : E →ₗ[ℝ] L)
     (hT : Function.Injective T) (u : ι → E) (c : ι → ℝ) (hc : ∀ i, 0 < c i)
     (hTu : ∀ i, T (u i) = b i) (h : ∀ i x, ⟪u i, x⟫_ℝ = c i * ⟪b i, T x⟫_ℝ) :
@@ -560,7 +679,7 @@ def _root_.HilbertBasis.ofInnerEqMul (b : HilbertBasis ι ℝ L) (T : E →ₗ[�
       · exact absurd hi (hc i).ne'
       · exact hi)
 
-/-- The basis vectors of `HilbertBasis.ofInnerEqMul` are the normalized `u i / √(c i)`. -/
+/-- The vectors of the Hilbert basis `HilbertBasis.ofInnerEqMul` are $u_i / \sqrt{c_i}$. -/
 @[simp]
 theorem _root_.HilbertBasis.coe_ofInnerEqMul (b : HilbertBasis ι ℝ L) (T : E →ₗ[ℝ] L)
     (hT : Function.Injective T) (u : ι → E) (c : ι → ℝ) (hc : ∀ i, 0 < c i)
@@ -568,13 +687,19 @@ theorem _root_.HilbertBasis.coe_ofInnerEqMul (b : HilbertBasis ι ℝ L) (T : E 
     ⇑(HilbertBasis.ofInnerEqMul b T hT u c hc hTu h) = fun i ↦ (√(c i))⁻¹ • u i :=
   HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- **Transport of a Hilbert basis to an energy space.** For a bounded symmetric coercive
-operator `A` on `E`, a Hilbert basis `b` of `L`, `T : E →ₗ L` injective and a family `u` with
-`T (u i) = b i` and `⟪A (u i), x⟫ = c i ⟪b i, T x⟫` for every `x`, `c i > 0`, the family
-`i ↦ u i / √(c i)` is a Hilbert basis of the energy space `WithEnergy A _` of `A`
-(`HilbertBasis.ofInnerEqMul` for the energy inner product `⟪A u, x⟫`). This is
-[brezis2011functional] Chapter 9, Remark 28, first clause, in the abstract: `E = H^1_0(Ω)`, `A`
-the operator of the form `a`, `⟪A u_i, x⟫ = a(u_i, x) = λ_i ⟪e_i, x⟫_{L²}`. -/
+/-- **Transport of a Hilbert basis to an energy space.** Let $E$ be a real Hilbert space, $L$ a real
+inner product space, and $A$ a bounded symmetric coercive operator on $E$. Let $b$ be a Hilbert
+basis of $L$, let $T : E \to L$ be linear and injective, and let $(u_i)$ be a family in $E$ and
+$c_i > 0$ such that $T u_i = b_i$ and
+$$\langle A u_i, x \rangle_E = c_i \langle b_i, T x \rangle_L \qquad \text{for all } i \text{
+  and all } x \in E.$$
+Then $(u_i / \sqrt{c_i})$ is a Hilbert basis of the energy space `WithEnergy A _` of $A$, which
+is $E$ with the inner product $\langle A u, x \rangle_E$.
+
+The proof is `HilbertBasis.ofInnerEqMul` for the energy inner product. This is the first clause
+of Remark 28 in Chapter 9 of [brezis2011functional] in abstract form, with $E = H^1_0(\Omega)$,
+$A$ the operator of the form $a$, and $\langle A u_i, x \rangle = a(u_i, x) = \lambda_i \langle
+e_i, x \rangle_{L^2}$. -/
 def _root_.HilbertBasis.ofInnerEqMulEnergy (A : E →L[ℝ] E) (hA : A.toLinearMap.IsSymmetricCoercive)
     (b : HilbertBasis ι ℝ L) (T : E →ₗ[ℝ] L) (hT : Function.Injective T) (u : ι → E) (c : ι → ℝ)
     (hc : ∀ i, 0 < c i) (hTu : ∀ i, T (u i) = b i)
@@ -587,8 +712,8 @@ def _root_.HilbertBasis.ofInnerEqMulEnergy (A : E →L[ℝ] E) (hA : A.toLinearM
       rw [LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.symm_apply_apply, hTu])
     (fun i x ↦ h i _)
 
-/-- The basis vectors of `HilbertBasis.ofInnerEqMulEnergy` are the normalized `u i / √(c i)`,
-read in the energy space. -/
+/-- The vectors of the Hilbert basis `HilbertBasis.ofInnerEqMulEnergy` are $u_i / \sqrt{c_i}$, read
+in the energy space. -/
 @[simp]
 theorem _root_.HilbertBasis.coe_ofInnerEqMulEnergy (A : E →L[ℝ] E)
     (hA : A.toLinearMap.IsSymmetricCoercive) (b : HilbertBasis ι ℝ L) (T : E →ₗ[ℝ] L)
@@ -601,7 +726,7 @@ theorem _root_.HilbertBasis.coe_ofInnerEqMulEnergy (A : E →L[ℝ] E)
 
 end Transport
 
-/-! ### The operator of a form restricted to `H^1_0(Ω)` -/
+/-! ### The operator of a form restricted to $H^1_0(\Omega)$ -/
 
 section RestrictOperator
 
@@ -609,49 +734,63 @@ variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
   (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)) (hsymm : a.IsHermitian)
   (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
 
-/-- **The operator of a form restricted to `H^1_0(Ω)`**: the bounded operator `A` on `H^1_0(Ω)`
-with `⟪A u, v⟫_{H^1} = a(u, v)` (`SesqForm.toOperator`); its energy space `WithEnergy` is
-`H^1_0(Ω)` with the inner product `a(u, v)`. -/
+/-- The **operator of a form restricted to $H^1_0(\Omega)$**: the bounded operator $A$ on
+$H^1_0(\Omega)$ with $\langle A u, v \rangle_{H^1} = a(u, v)$ for all $u, v \in H^1_0(\Omega)$.
+
+It is `SesqForm.toOperator` of the restricted form. When $a$ is Hermitian and coercive on
+$H^1_0(\Omega)$, its energy space `WithEnergy` is $H^1_0(\Omega)$ with the inner product
+$a(u, v)$. -/
 def restrictOperator :
     SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
   SesqForm.toOperator (a.restrict (SobolevEuclideanZero N 1 2 Ω))
 
-/-- `⟪A u, v⟫_{H^1} = a(u, v)`. -/
+/-- The operator of the restricted form satisfies $\langle A u, v \rangle_{H^1} = a(u, v)$ for all
+$u, v \in H^1_0(\Omega)$. -/
 theorem inner_restrictOperator (u v : SobolevEuclideanZero N 1 2 Ω) :
     ⟪restrictOperator Ω a u, v⟫_ℝ = a u v :=
   SesqForm.inner_toOperator _ u v
 
 include hsymm ha in
-/-- The operator of a Hermitian form coercive on `H^1_0(Ω)` is symmetric and coercive, so that
-`H^1_0(Ω)` with the inner product `a(u, v)` is the energy space
-`WithEnergy (restrictOperator Ω a) _`. -/
+/-- If the form $a$ is Hermitian and coercive on $H^1_0(\Omega)$, its operator $A$ on
+$H^1_0(\Omega)$ is symmetric and coercive. Thus $H^1_0(\Omega)$ with the inner product $a(u, v)$
+is the energy space `WithEnergy (Elliptic.restrictOperator Ω a) _`. -/
 theorem restrictOperator_isSymmetricCoercive :
     (restrictOperator Ω a).toLinearMap.IsSymmetricCoercive :=
   (hsymm.restrict _).isSymmetricCoercive_toOperator ha
 
-/-- The energy space of a form coercive on `H^1_0(Ω)` is complete
-(`WithEnergy.instCompleteSpace_of_continuousLinearMap`). -/
+/-- If the form $a$ is Hermitian and coercive on $H^1_0(\Omega)$, the energy space of its operator
+on $H^1_0(\Omega)$ is complete.
+
+The proof is `WithEnergy.instCompleteSpace_of_continuousLinearMap`. -/
 theorem completeSpace_withEnergy_restrictOperator :
     CompleteSpace (WithEnergy (restrictOperator Ω a).toLinearMap
       (restrictOperator_isSymmetricCoercive Ω a hsymm ha)) :=
   WithEnergy.instCompleteSpace_of_continuousLinearMap _
 
-/-- **The operator of the Dirichlet form on `H^1_0(Ω)`**: the bounded operator `A` on `H^1_0(Ω)`
-with `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v` (`Elliptic.inner_dirichletOperator`); symmetric and coercive
-for a bounded `Ω` (`Elliptic.dirichletOperator_isSymmetricCoercive`), so that its energy space
-`WithEnergy (dirichletOperator Ω) _` is `H^1_0(Ω)` with the scalar product `∫ ∇u·∇v` of
-[brezis2011functional] Chapter 9, Remark 28 — the first factor of the phase space of the wave
-equation, whose energy `∫_Ω |∇u|²` is `⟪A u, u⟫` ([brezis2011functional] §10.3, (32)). -/
+/-- The **operator of the Dirichlet form** on $H^1_0(\Omega)$: the bounded operator $A$ on
+$H^1_0(\Omega)$ with
+$$\langle A u, v \rangle_{H^1} = \int_\Omega \nabla u \cdot \nabla v \qquad \text{for all } u, v
+  \in H^1_0(\Omega)$$
+(`Elliptic.inner_dirichletOperator`).
+
+For a bounded $\Omega$ it is symmetric and coercive
+(`Elliptic.dirichletOperator_isSymmetricCoercive`). Its energy space
+`WithEnergy (Elliptic.dirichletOperator Ω) _` is $H^1_0(\Omega)$ with the scalar product
+$\int_\Omega \nabla u \cdot \nabla v$ of Remark 28 in Chapter 9 of [brezis2011functional]. It is
+the first factor of the phase space of the wave equation, whose energy $\int_\Omega |\nabla
+u|^2 = \langle A u, u \rangle_{H^1}$ is (32) of §10.3 of [brezis2011functional]. -/
 def dirichletOperator :
     SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
   restrictOperator Ω (dirichletForm Ω)
 
-/-- `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v`. -/
+/-- The operator $A$ of the Dirichlet form satisfies $\langle A u, v \rangle_{H^1} = \int_\Omega
+\nabla u \cdot \nabla v$ for all $u, v \in H^1_0(\Omega)$. -/
 theorem inner_dirichletOperator (u v : SobolevEuclideanZero N 1 2 Ω) :
     ⟪dirichletOperator Ω u, v⟫_ℝ = dirichletForm Ω u v :=
   inner_restrictOperator Ω _ u v
 
-/-- `⟪A u, v⟫_{H¹} = ⟪A v, u⟫_{H¹}`: the operator of the Dirichlet form is symmetric. -/
+/-- The operator $A$ of the Dirichlet form is symmetric: $\langle A u, v \rangle_{H^1} = \langle A
+v, u \rangle_{H^1}$ for all $u, v \in H^1_0(\Omega)$. -/
 theorem inner_dirichletOperator_comm (u v : SobolevEuclideanZero N 1 2 Ω) :
     ⟪dirichletOperator Ω u, v⟫_ℝ = ⟪dirichletOperator Ω v, u⟫_ℝ := by
   rw [inner_dirichletOperator, inner_dirichletOperator, dirichletForm_isHermitian Ω _ _,
@@ -669,11 +808,16 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (a : SesqForm ℝ (SobolevEuclidean (d + 1) 1 2 Ω)) (hsymm : a.IsHermitian)
   (ha : (a.restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoercive)
 
-/-- **The eigenfunctions normalized in the energy norm form a Hilbert basis of `H^1_0(Ω)` for
-the inner product `a(u, v)`** ([brezis2011functional] Chapter 9, Remark 28, first clause, for a
-general Hermitian form coercive on `H^1_0(Ω)`): `n ↦ u_n / √λ_n` on the energy space
-`WithEnergy (restrictOperator Ω a) _`, by `HilbertBasis.ofInnerEqMul` with the weak equation
-`a(u_n, x) = λ_n ⟪e_n, x⟫_{L²}` (`Elliptic.form_eigenfunction`). -/
+/-- The **energy eigenbasis** of a symmetric coercive form. Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be a nonempty open set of finite measure, and let $a$ be a bounded form on
+$H^1(\Omega)$ that is Hermitian and coercive on $H^1_0(\Omega)$. This is the Hilbert basis
+$(u_n / \sqrt{\lambda_n})$ of $H^1_0(\Omega)$ with the inner product $a(u, v)$, where $u_n$ are
+the eigenfunctions and $\lambda_n$ the eigenvalues of $a$.
+
+This is the first clause of Remark 28 in Chapter 9 of [brezis2011functional], for a general
+form. The basis lives on the energy space `WithEnergy (Elliptic.restrictOperator Ω a) _`. It is
+`HilbertBasis.ofInnerEqMulEnergy` with the weak equation $a(u_n, x) = \lambda_n \langle e_n, x
+\rangle_{L^2}$ (`Elliptic.form_eigenfunction`). -/
 def energyEigenbasis :
     HilbertBasis ℕ ℝ (WithEnergy (restrictOperator Ω a).toLinearMap
       (restrictOperator_isSymmetricCoercive Ω a hsymm ha)) :=
@@ -686,7 +830,7 @@ def energyEigenbasis :
     (fnL_eigenfunction Ω hΩ hne a hsymm ha)
     (fun n x ↦ (inner_restrictOperator Ω a _ x).trans (form_eigenfunction Ω hΩ hne a hsymm ha n x))
 
-/-- The vectors of the energy basis are `u_n / √λ_n`. -/
+/-- The vectors of the energy eigenbasis are $u_n / \sqrt{\lambda_n}$, read in the energy space. -/
 theorem coe_energyEigenbasis :
     ⇑(energyEigenbasis Ω hΩ hne a hsymm ha) = fun n ↦ (√(eigenvalue Ω hΩ a hsymm ha n))⁻¹
       • WithEnergy.equiv _ _ (eigenfunction Ω hΩ hne a hsymm ha n) :=
@@ -694,7 +838,7 @@ theorem coe_energyEigenbasis :
 
 end EnergyBasis
 
-/-! ### Remark 28: the two bases of `H^1_0(Ω)` for the Dirichlet form -/
+/-! ### Remark 28: the two bases of $H^1_0(\Omega)$ for the Dirichlet form -/
 
 section SobolevZeroBasis
 
@@ -702,9 +846,12 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- **The `H^1` inner product against a Dirichlet eigenfunction**:
-`⟪u_n, x⟫_{H^1} = (λ_n + 1) ⟪e_n, x⟫_{L²}` for every `x ∈ H^1_0(Ω)`, from the weak equation (83)
-and `laplaceForm = innerSL`. -/
+/-- Let $\Omega$ be bounded and nonempty. Then the $H^1$ inner product of the Dirichlet
+eigenfunction $u_n$ with any $x \in H^1_0(\Omega)$ is
+$$\langle u_n, x \rangle_{H^1} = (\lambda_n + 1) \langle e_n, x \rangle_{L^2}.$$
+
+The proof uses the weak equation (83) and the fact that the form of $-\Delta + 1$ is the $H^1$
+inner product. -/
 theorem inner_dirichletEigenfunction_left (n : ℕ) (x : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     ⟪dirichletEigenfunction Ω hΩ hne n, x⟫_ℝ
       = (dirichletEigenvalue Ω hΩ n + 1) * ⟪dirichletEigenbasis Ω hΩ hne n,
@@ -731,10 +878,13 @@ theorem inner_dirichletEigenfunction_left (n : ℕ) (x : SobolevEuclideanZero (d
             (fnL_dirichletEigenfunction Ω hΩ hne n))
     _ = _ := by ring
 
-/-- **The Dirichlet eigenfunctions normalized in `H^1` form a Hilbert basis of `H^1_0(Ω)`**
-([brezis2011functional] Chapter 9, Remark 28, second clause): `n ↦ u_n / √(λ_n + 1)`, for the
-inner product `∫ (∇u·∇v + uv)` the type carries, by `HilbertBasis.ofInnerEqMul` with
-`⟪u_n, x⟫_{H^1} = (λ_n + 1) ⟪e_n, x⟫_{L²}`. -/
+/-- The **$H^1$ eigenbasis** of $H^1_0(\Omega)$. Let $\Omega$ be bounded and nonempty. This is the
+Hilbert basis $(u_n / \sqrt{\lambda_n + 1})$ of $H^1_0(\Omega)$ for its $H^1$ inner product
+$\int_\Omega (\nabla u \cdot \nabla v + uv)$, where $u_n$ are the Dirichlet eigenfunctions.
+
+This is the second clause of Remark 28 in Chapter 9 of [brezis2011functional]. It is
+`HilbertBasis.ofInnerEqMul` with $\langle u_n, x \rangle_{H^1} = (\lambda_n + 1) \langle e_n, x
+\rangle_{L^2}$. -/
 def sobolevZeroEigenbasis : HilbertBasis ℕ ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   HilbertBasis.ofInnerEqMul (dirichletEigenbasis Ω hΩ hne)
     (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
@@ -744,49 +894,62 @@ def sobolevZeroEigenbasis : HilbertBasis ℕ ℝ (SobolevEuclideanZero (d + 1) 1
     (fun n ↦ by linarith [dirichletEigenvalue_pos Ω hΩ hne n])
     (fnL_dirichletEigenfunction Ω hΩ hne) (inner_dirichletEigenfunction_left Ω hΩ hne)
 
-/-- The vectors of the `H^1` basis are `u_n / √(λ_n + 1)`. -/
+/-- The vectors of the $H^1$ eigenbasis are $u_n / \sqrt{\lambda_n + 1}$. -/
 theorem coe_sobolevZeroEigenbasis :
     ⇑(sobolevZeroEigenbasis Ω hΩ hne)
       = fun n ↦ (√(dirichletEigenvalue Ω hΩ n + 1))⁻¹ • dirichletEigenfunction Ω hΩ hne n :=
   HilbertBasis.coe_ofInnerEqMul _ _ _ _ _ _ _ _
 
-/-- **[brezis2011functional] Chapter 9, Remark 28, second clause**: `(e_n / √(λ_n + 1))` is a
-Hilbert basis of `H^1_0(Ω)` for the scalar product `∫ (∇u·∇v + uv)` — there is a
-`HilbertBasis ℕ ℝ (H^1_0(Ω))` whose `n`-th vector is `u_n / √(λ_n + 1)`, `u_n ∈ H^1_0(Ω)` the
-`n`-th Dirichlet eigenfunction (`Elliptic.sobolevZeroEigenbasis`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set. Then there is
+a Hilbert basis of $H^1_0(\Omega)$, for the scalar product
+$\int_\Omega (\nabla u \cdot \nabla v + uv)$, whose $n$-th vector is
+$u_n / \sqrt{\lambda_n + 1}$. Here $u_n \in H^1_0(\Omega)$ is the $n$-th Dirichlet
+eigenfunction, with function $e_n$.
+
+This is the second clause of Remark 28 in Chapter 9 of [brezis2011functional], which writes the
+basis as $(e_n / \sqrt{\lambda_n + 1})$. The basis is `Elliptic.sobolevZeroEigenbasis`. -/
 theorem hilbertBasis_sobolevZero :
     ∃ b : HilbertBasis ℕ ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω),
       ∀ n, b n = (√(dirichletEigenvalue Ω hΩ n + 1))⁻¹ • dirichletEigenfunction Ω hΩ hne n :=
   ⟨sobolevZeroEigenbasis Ω hΩ hne, fun n ↦ congrFun (coe_sobolevZeroEigenbasis Ω hΩ hne) n⟩
 
 include hΩ in
-/-- The operator of the Dirichlet form is symmetric and coercive on `H^1_0(Ω)` of a bounded
-`Ω` (Poincaré's inequality). -/
+/-- If $\Omega$ is bounded, the operator of the Dirichlet form on $H^1_0(\Omega)$ is symmetric and
+coercive. Coercivity is Poincaré's inequality. -/
 theorem dirichletOperator_isSymmetricCoercive :
     (dirichletOperator Ω).toLinearMap.IsSymmetricCoercive :=
   restrictOperator_isSymmetricCoercive Ω _ (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ)
 
-/-- **The Dirichlet eigenfunctions normalized in the Dirichlet energy form a Hilbert basis of
-`H^1_0(Ω)` for the scalar product `∫ ∇u·∇v`** ([brezis2011functional] Chapter 9, Remark 28,
-first clause): `n ↦ u_n / √λ_n` on the energy space `WithEnergy (dirichletOperator Ω) _`. -/
+/-- The **Dirichlet energy eigenbasis**. Let $\Omega$ be bounded and nonempty. This is the Hilbert
+basis $(u_n / \sqrt{\lambda_n})$ of $H^1_0(\Omega)$ for the scalar product
+$\int_\Omega \nabla u \cdot \nabla v$, where $u_n$ are the Dirichlet eigenfunctions.
+
+This is the first clause of Remark 28 in Chapter 9 of [brezis2011functional]. The basis lives on
+the energy space `WithEnergy (Elliptic.dirichletOperator Ω) _`. -/
 def dirichletEnergyEigenbasis :
     HilbertBasis ℕ ℝ (WithEnergy (dirichletOperator Ω).toLinearMap
       (dirichletOperator_isSymmetricCoercive Ω hΩ)) :=
   energyEigenbasis Ω hΩ.measure_lt_top.ne hne (dirichletForm Ω) (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ)
 
-/-- The vectors of the energy basis are `u_n / √λ_n`. -/
+/-- The vectors of the Dirichlet energy eigenbasis are $u_n / \sqrt{\lambda_n}$, read in the energy
+space. -/
 theorem coe_dirichletEnergyEigenbasis :
     ⇑(dirichletEnergyEigenbasis Ω hΩ hne) = fun n ↦ (√(dirichletEigenvalue Ω hΩ n))⁻¹
       • WithEnergy.equiv _ _ (dirichletEigenfunction Ω hΩ hne n) :=
   coe_energyEigenbasis Ω hΩ.measure_lt_top.ne hne (dirichletForm Ω) (dirichletForm_isHermitian Ω)
     (dirichletForm_restrict_isCoercive Ω hΩ)
 
-/-- **[brezis2011functional] Chapter 9, Remark 28, first clause**: `(e_n / √λ_n)` is a Hilbert
-basis of `H^1_0(Ω)` for the scalar product `∫ ∇u·∇v` — there is a Hilbert basis of the energy
-space `WithEnergy (dirichletOperator Ω) _` whose `n`-th vector is `u_n / √λ_n`
-(`Elliptic.dirichletEnergyEigenbasis`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set. Then there is
+a Hilbert basis of $H^1_0(\Omega)$, for the scalar product
+$\int_\Omega \nabla u \cdot \nabla v$, whose $n$-th vector is $u_n / \sqrt{\lambda_n}$. Here
+$u_n \in H^1_0(\Omega)$ is the $n$-th Dirichlet eigenfunction, with function $e_n$.
+
+This is the first clause of Remark 28 in Chapter 9 of [brezis2011functional], which writes the
+basis as $(e_n / \sqrt{\lambda_n})$. The space with this scalar product is the energy space
+`WithEnergy (Elliptic.dirichletOperator Ω) _`, and the basis is
+`Elliptic.dirichletEnergyEigenbasis`. -/
 theorem hilbertBasis_energy :
     ∃ b : HilbertBasis ℕ ℝ (WithEnergy (dirichletOperator Ω).toLinearMap
       (dirichletOperator_isSymmetricCoercive Ω hΩ)),
@@ -800,15 +963,13 @@ end SobolevZeroBasis
 
 section General
 
-/-- The sum of two Hermitian forms is Hermitian. Belongs beside `SesqForm.IsHermitian` in
-`Numlib/Variational/Forms.lean`. -/
+/-- The sum of two Hermitian forms is Hermitian. -/
 theorem _root_.SesqForm.IsHermitian.add {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
     [InnerProductSpace 𝕜 V] {a b : SesqForm 𝕜 V} (ha : a.IsHermitian) (hb : b.IsHermitian) :
     (a + b).IsHermitian := fun u v ↦ by
   rw [add_apply, add_apply, add_apply, add_apply, map_add, ha u v, hb u v]
 
-/-- A real multiple of a Hermitian real form is Hermitian. Belongs beside `SesqForm.IsHermitian`
-in `Numlib/Variational/Forms.lean`. -/
+/-- A real multiple $c \, a$ of a Hermitian real form $a$ is Hermitian. -/
 theorem _root_.SesqForm.IsHermitian.smul_real {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] {a : SesqForm ℝ V} (c : ℝ) (ha : a.IsHermitian) :
     (c • a).IsHermitian := fun u v ↦ by
@@ -817,7 +978,8 @@ theorem _root_.SesqForm.IsHermitian.smul_real {V : Type*} [NormedAddCommGroup V]
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-- A pairing through the identity of a multi-index with itself is a Hermitian form. -/
+/-- For a multi-index $\alpha$ of order at most $1$, the form $(u, v) \mapsto \langle
+\partial^\alpha u, \partial^\alpha v \rangle_{L^2}$ on $H^1(\Omega)$ is Hermitian. -/
 theorem pairing_id_isHermitian (α : MultiIndexLE (Fin N) 1) :
     (pairing Ω (ContinuousLinearMap.id ℝ _) α α).IsHermitian := fun u v ↦ by
   rw [conj_trivial]
@@ -832,10 +994,21 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
     Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))} {α : ℝ}
 
-/-- **Remark 30, for a shifted form**: if `a` is a Hermitian form coercive on `H^1_0(Ω)` with
-`a(u, v) = ∫ ∑ a_ij ∂ᵢu ∂ⱼv + ∫ a₀ u v + μ ∫ u v`, then the eigenbasis of `a` with the
-eigenvalues shifted back by `μ` is the spectral decomposition (84) of the operator with
-coefficients `a_ij`, `a₀`. -/
+/-- Remark 30 in Chapter 9 of [brezis2011functional], for a shifted form. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a nonempty open set of finite measure, and let
+$a_{ij}, a_0 \in L^\infty(\Omega)$. Let $a$ be a bounded form on $H^1(\Omega)$ that is Hermitian
+and coercive on $H^1_0(\Omega)$, and let $\mu \in \mathbb{R}$ with
+$$a(u, v) = \sum_{i,j} \int_\Omega a_{ij} \, \partial_i u \, \partial_j v + \int_\Omega a_0 u
+  v + \mu \int_\Omega u v \qquad \text{for all } u, v \in H^1(\Omega).$$
+Then there are a Hilbert basis $(e_n)$ of $L^2(\Omega)$ and real numbers $\lambda_n \to +\infty$
+such that each $e_n$ is the function of some $u_n \in H^1_0(\Omega)$ with
+$$\sum_{i,j} \int_\Omega a_{ij} \, \partial_i u_n \, \partial_j \varphi + \int_\Omega a_0 u_n
+  \varphi = \lambda_n \int_\Omega e_n \varphi \qquad \text{for all } \varphi \in
+  H^1_0(\Omega).$$
+
+This is the spectral decomposition (84). The basis is the eigenbasis of $a$, and $\lambda_n$ is
+the eigenvalue of $a$ minus $\mu$. The form with coefficients $a_{ij}$ and $a_0$ is
+`Elliptic.generalForm Ω A 0 a₀`, without first-order terms. -/
 theorem exists_hilbertBasis_eigen_of_shift
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ≠ ⊤)
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
@@ -877,16 +1050,25 @@ theorem exists_hilbertBasis_eigen_of_shift
   change _ = (eigenvalue Ω hΩ a hherm hcoer n - μ) * _
   linear_combination h1 - h2
 
-/-- **[brezis2011functional] Chapter 9, Remark 30**: for an open `Ω ⊆ ℝ^N` (`N = d + 1`) of
-finite measure, nonempty, `L^∞` coefficients `a_ij` satisfying the ellipticity condition (36)
-and *symmetric* (`a_ij = a_ji`, a hypothesis the book omits and without which the solution
-operator is not self-adjoint), and `a₀ ∈ L^∞(Ω)`, there are a Hilbert basis `(e_n)` of `L²(Ω)`
-and reals `λ_n → +∞` such that each `e_n` is the function of some `u_n ∈ H^1_0(Ω)` with
-`∫_Ω ∑ a_ij ∂ᵢu_n ∂ⱼφ + ∫_Ω a₀ u_n φ = λ_n ∫_Ω e_n φ` for all `φ ∈ H^1_0(Ω)` (84). Proof:
-`Elliptic.eigenbasis` for the shifted form `a = generalForm Ω A 0 a₀ + λ₀ ⟪·,·⟫_{L²}`, Hermitian
-(`Elliptic.generalForm_isHermitian_of_symm`) and coercive on `H^1_0(Ω)` for the `λ₀` of Gårding's
-inequality (`Elliptic.generalForm_garding_restrict_isCoercive`); its eigenvalues `λ'_n → +∞`
-give `λ_n = λ'_n - λ₀`, which need not be positive. -/
+/-- Remark 30 in Chapter 9 of [brezis2011functional]. Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be a nonempty open set of finite measure. Let $a_{ij} \in L^\infty(\Omega)$ be
+symmetric, $a_{ij} = a_{ji}$, and satisfy the ellipticity condition (36) with a constant
+$\alpha > 0$. Let $a_0 \in L^\infty(\Omega)$. Then there are a Hilbert basis $(e_n)$ of
+$L^2(\Omega)$ and real numbers $\lambda_n \to +\infty$ such that each $e_n$ is the function of
+some $u_n \in H^1_0(\Omega)$ with the spectral decomposition (84)
+$$\sum_{i,j} \int_\Omega a_{ij} \, \partial_i u_n \, \partial_j \varphi + \int_\Omega a_0 u_n
+  \varphi = \lambda_n \int_\Omega e_n \varphi \qquad \text{for all } \varphi \in
+  H^1_0(\Omega).$$
+
+[brezis2011functional] omits the symmetry hypothesis $a_{ij} = a_{ji}$. Without it the solution
+operator is not self-adjoint. The numbers $\lambda_n$ need not be positive.
+
+The proof applies `Elliptic.eigenbasis` to the shifted form, the sum of
+`Elliptic.generalForm Ω A 0 a₀` and $\lambda_0 \langle \cdot, \cdot \rangle_{L^2}$. This form is
+Hermitian (`Elliptic.generalForm_isHermitian_of_symm`), and coercive on $H^1_0(\Omega)$ for the
+$\lambda_0$ of Gårding's inequality (`Elliptic.generalForm_garding_restrict_isCoercive`). Its
+eigenvalues $\lambda'_n \to +\infty$ give $\lambda_n = \lambda'_n - \lambda_0$. The ellipticity
+condition is `Elliptic.IsUniformlyElliptic`. -/
 theorem exists_hilbertBasis_eigen_general
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ≠ ⊤)
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
@@ -908,7 +1090,7 @@ theorem exists_hilbertBasis_eigen_general
 
 end Remark30
 
-/-! ### Theorem 9.31: the classical equation for a smooth representative of `e_n` -/
+/-! ### Theorem 9.31: the classical equation for a smooth representative of $e_n$ -/
 
 section DirichletClassical
 
@@ -918,10 +1100,15 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- **`-Δ e_n = λ_n e_n` in `Ω`** ([brezis2011functional] Theorem 9.31): a representative `ũ` of
-the Dirichlet eigenfunction `e_n` that is `C²` on `Ω` satisfies `-Δ ũ x = λ_n ũ x` at every point
-of `Ω`, by `Elliptic.laplacian_eq_of_eigenfunction` and the weak equation (83). The `C^∞`
-representative itself comes from interior regularity (Remark 25). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set, and let $u$ be
+a function of class $C^2$ on $\Omega$ that agrees almost everywhere on $\Omega$ with the
+Dirichlet eigenfunction $e_n$. Then $-\Delta u(x) = \lambda_n u(x)$ at every point
+$x \in \Omega$.
+
+This is the equation "$-\Delta e_n = \lambda_n e_n$ in $\Omega$" of Theorem 9.31 of
+[brezis2011functional]. The proof is `Elliptic.laplacian_eq_of_eigenfunction` with the weak
+equation (83). Interior regularity (Remark 25) gives the $C^\infty$ representative
+(`Elliptic.dirichletEigenbasis_exists_contDiffOn`). -/
 theorem laplacian_eq_dirichletEigenfunction (n : ℕ) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (hu : ContDiffOn ℝ 2 u Ω)
     (hU : (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
@@ -947,10 +1134,14 @@ variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
 open SobolevMultiIndex
 
-/-- **The weak eigenvalue equation against a test function, in terms of functions**: if
-`U ∈ H^1(Ω)` satisfies `∫_Ω ∇U·∇V = λ ⟪U, V⟫` for every test-function element `V`, then for every
-test function `φ`, `∫_Ω ∑ᵢ ∂ᵢU ∂ᵢφ = ∫_Ω (λ U) φ` — the hypothesis shape of the interior
-regularity theorem `Elliptic.regularity_interior_higher`. -/
+/-- The weak eigenvalue equation against a test function, in terms of functions. Let
+$U \in H^1(\Omega)$ and $\lambda \in \mathbb{R}$ satisfy $\int_\Omega \nabla U \cdot \nabla V =
+\lambda \int_\Omega U V$ for every element $V \in H^1(\Omega)$ whose function agrees almost
+everywhere on $\Omega$ with a test function. Then for every test function $\varphi$ on $\Omega$
+$$\int_\Omega \sum_i \partial_i U \, \partial_i \varphi = \int_\Omega (\lambda U) \varphi.$$
+
+This is the form of the hypothesis of the interior regularity theorem
+`Elliptic.regularity_interior_higher`. -/
 theorem integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction {U : SobolevEuclidean N 1 2 Ω}
     {lam : ℝ}
     (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
@@ -985,10 +1176,13 @@ theorem integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction {U : SobolevEuclid
     rw [fnL_apply, fnL_apply, hx, Pi.smul_apply, smul_eq_mul, mul_assoc]
   rw [← hL, h1, hR]
 
-/-- **The `H¹_loc`-to-`H^{m+2}_loc` bootstrap for a weak eigenfunction**: if `U ∈ H^1(Ω)`
-satisfies the weak eigenvalue equation against the test functions and its function lies in
-`H^m_loc(Ω)`, then it lies in `H^{m+2}_loc(Ω)`: the datum `λ U` of the equation `−ΔU = λ U` is in
-`H^m_loc(Ω)`, and `Elliptic.regularity_interior_higher` applies. -/
+/-- Let $U \in H^1(\Omega)$ and $\lambda \in \mathbb{R}$ satisfy $\int_\Omega \nabla U \cdot \nabla
+V = \lambda \int_\Omega U V$ for every element $V \in H^1(\Omega)$ whose function agrees almost
+everywhere on $\Omega$ with a test function. If the function of $U$ lies in
+$H^m_{\mathrm{loc}}(\Omega)$, then it lies in $H^{m+2}_{\mathrm{loc}}(\Omega)$.
+
+The datum $\lambda U$ of the equation $-\Delta U = \lambda U$ lies in
+$H^m_{\mathrm{loc}}(\Omega)$, and `Elliptic.regularity_interior_higher` applies. -/
 theorem memSobolevMultiIndexLoc_add_two_of_eigenfunction {U : SobolevEuclidean N 1 2 Ω}
     {lam : ℝ}
     (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
@@ -1005,13 +1199,18 @@ theorem memSobolevMultiIndexLoc_add_two_of_eigenfunction {U : SobolevEuclidean N
     (fun V hVc hVΩ ↦ (hm V hVc hVΩ).const_smul lam)
     (integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction Ω hUw)
 
-/-- **A weak Dirichlet eigenfunction of `−Δ` lies in `H^m_loc(Ω)` for every `m`**
-([brezis2011functional] §9.8, proof of Theorem 9.31, "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`"):
-if `U ∈ H^1(Ω)` satisfies `∫_Ω ∇U·∇V = λ ⟪U, V⟫` for every test-function element `V`, then the
-function of `U` lies in `H^m_loc(Ω)` for every `m`. Induction on `m` two steps at a time: `U`
-lies in `H^1_loc(Ω)`, and `U ∈ H^m_loc(Ω)` gives `U ∈ H^{m+2}_loc(Ω)` by interior regularity
-(Remark 25, `Elliptic.regularity_interior_higher`) applied to the equation `−ΔU = λ U`, whose datum
-`λ U` is then in `H^m_loc(Ω)`. -/
+/-- A weak Dirichlet eigenfunction of $-\Delta$ lies in $H^m_{\mathrm{loc}}(\Omega)$ for every $m$.
+Let $U \in H^1(\Omega)$ and $\lambda \in \mathbb{R}$ satisfy $\int_\Omega \nabla U \cdot \nabla
+V = \lambda \int_\Omega U V$ for every element $V \in H^1(\Omega)$ whose function agrees almost
+everywhere on $\Omega$ with a test function. Then the function of $U$ lies in
+$H^m_{\mathrm{loc}}(\Omega)$ for every $m \in \mathbb{N}$.
+
+This is the claim "$e_n \in \bigcap_m H^m(\omega)$ for all $\omega \subset\subset \Omega$" in
+the proof of Theorem 9.31 of [brezis2011functional]. The proof is an induction on $m$ in steps
+of two. The function of $U$ lies in $H^1_{\mathrm{loc}}(\Omega)$. If it lies in
+$H^m_{\mathrm{loc}}(\Omega)$, interior regularity (Remark 25,
+`Elliptic.regularity_interior_higher`) applied to $-\Delta U = \lambda U$ puts it in
+$H^{m+2}_{\mathrm{loc}}(\Omega)$. The local space is `MemSobolevMultiIndexLoc`. -/
 theorem eigenfunction_memSobolevMultiIndexLoc {U : SobolevEuclidean N 1 2 Ω} {lam : ℝ}
     (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
       dirichletForm Ω U V
@@ -1031,10 +1230,14 @@ theorem eigenfunction_memSobolevMultiIndexLoc {U : SobolevEuclidean N 1 2 Ω} {l
     | succ m ih => exact ⟨ih.2, memSobolevMultiIndexLoc_add_two_of_eigenfunction Ω hUw ih.1⟩
   exact (key m).1
 
-/-- **A weak Dirichlet eigenfunction of `−Δ` has a `C^∞` representative on `Ω`**: with the
-hypotheses of `Elliptic.eigenfunction_memSobolevMultiIndexLoc`, the function of `U` agrees almost
-everywhere on `Ω` with a function of class `C^∞` on `Ω`
-(`MemSobolevMultiIndexLoc.exists_contDiffOn`). -/
+/-- A weak Dirichlet eigenfunction of $-\Delta$ has a $C^\infty$ representative on $\Omega$. Let
+$U \in H^1(\Omega)$ and $\lambda \in \mathbb{R}$ satisfy $\int_\Omega \nabla U \cdot \nabla V =
+\lambda \int_\Omega U V$ for every element $V \in H^1(\Omega)$ whose function agrees almost
+everywhere on $\Omega$ with a test function. Then the function of $U$ agrees almost everywhere
+on $\Omega$ with a function $\tilde u$ of class $C^\infty$ on $\Omega$.
+
+The proof is `Elliptic.eigenfunction_memSobolevMultiIndexLoc` and
+`MemSobolevMultiIndexLoc.exists_contDiffOn`. -/
 theorem eigenfunction_exists_contDiffOn {U : SobolevEuclidean N 1 2 Ω} {lam : ℝ}
     (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
       dirichletForm Ω U V
@@ -1054,8 +1257,12 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- The weak eigenvalue equation (83) of the `n`-th Dirichlet eigenfunction against the
-test-function elements, in the shape of `Elliptic.eigenfunction_memSobolevMultiIndexLoc`. -/
+/-- Let $\Omega$ be bounded and nonempty. Then the Dirichlet eigenfunction $u_n$ satisfies
+$\int_\Omega \nabla u_n \cdot \nabla V = \lambda_n \int_\Omega u_n V$ for every element
+$V \in H^1(\Omega)$ whose function agrees almost everywhere on $\Omega$ with a test function.
+
+This is the weak equation (83) in the form of the hypothesis of
+`Elliptic.eigenfunction_memSobolevMultiIndexLoc`. -/
 theorem dirichletForm_dirichletEigenfunction_testFunctions (n : ℕ) :
     ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
       dirichletForm Ω (dirichletEigenfunction Ω hΩ hne n) V
@@ -1069,14 +1276,20 @@ theorem dirichletForm_dirichletEigenfunction_testFunctions (n : ℕ) :
       (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume V⟫_ℝ)
       (fnL_dirichletEigenfunction Ω hΩ hne n).symm)
 
-/-- **[brezis2011functional] Theorem 9.31, the smoothness clauses**: for every `n` there is
-`ũ : ℝ^N → ℝ` of class `C^∞` on `Ω` (`e_n ∈ C^∞(Ω)`), agreeing almost everywhere on `Ω` with the
-`n`-th Dirichlet eigenfunction `e_n = dirichletEigenbasis Ω hΩ hne n`, with
-`−Δ ũ x = λ_n ũ x` at every point `x ∈ Ω` (`−Δ e_n = λ_n e_n` in `Ω`). The representative comes
-from interior regularity (`Elliptic.eigenfunction_exists_contDiffOn`, Remark 25) and the pointwise
-equation from `Elliptic.laplacian_eq_dirichletEigenfunction`. With `dirichletEigenbasis`,
-`dirichletEigenvalue_pos`, `tendsto_dirichletEigenvalue_atTop` and `dirichletEigenfunction`, this
-is the whole of Theorem 9.31. -/
+/-- The smoothness clauses of Theorem 9.31 of [brezis2011functional]. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set. For every $n$
+there is a function $\tilde u : \mathbb{R}^N \to \mathbb{R}$ of class $C^\infty$ on $\Omega$
+that agrees almost everywhere on $\Omega$ with the Dirichlet eigenfunction $e_n$ and satisfies
+$-\Delta \tilde u(x) = \lambda_n \tilde u(x)$ at every point $x \in \Omega$.
+
+The book states these clauses as $e_n \in C^\infty(\Omega)$ and $-\Delta e_n = \lambda_n e_n$ in
+$\Omega$. Together with `Elliptic.dirichletEigenbasis`, `Elliptic.dirichletEigenvalue_pos`,
+`Elliptic.tendsto_dirichletEigenvalue_atTop` and `Elliptic.dirichletEigenfunction`, this is the
+whole of Theorem 9.31.
+
+The representative comes from interior regularity (Remark 25,
+`Elliptic.eigenfunction_exists_contDiffOn`), and the pointwise equation from
+`Elliptic.laplacian_eq_dirichletEigenfunction`. -/
 theorem dirichletEigenbasis_exists_contDiffOn (n : ℕ) :
     ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, ContDiffOn ℝ ∞ ũ Ω ∧
       (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
@@ -1090,9 +1303,14 @@ theorem dirichletEigenbasis_exists_contDiffOn (n : ℕ) :
   exact ⟨ũ, hũ, hae', laplacian_eq_dirichletEigenfunction Ω hΩ hne n
     (hũ.of_le (by simp)) hae'⟩
 
-/-- **The Dirichlet eigenfunction `u_n ∈ H^1_0(Ω)` solves `−Δu + u = (λ_n + 1) e_n` weakly**: it
-is the Galerkin solution of the form of `−Δ + 1` with the datum `(λ_n + 1) e_n` on `H^1_0(Ω)`,
-by `laplaceForm_apply_eq_dirichletForm_add` and the weak eigenvalue equation (83). -/
+/-- Let $\Omega$ be bounded and nonempty. Then the Dirichlet eigenfunction $u_n \in H^1_0(\Omega)$
+solves $-\Delta u + u = (\lambda_n + 1) e_n$ weakly:
+$$\int_\Omega (\nabla u_n \cdot \nabla v + u_n v) = (\lambda_n + 1) \int_\Omega e_n v \qquad
+  \text{for all } v \in H^1_0(\Omega).$$
+
+The statement is `IsGalerkinSolution` for the form `Elliptic.laplaceForm` of $-\Delta + 1$ and
+the load of $(\lambda_n + 1) e_n$ on $H^1_0(\Omega)$. The proof uses
+`Elliptic.laplaceForm_apply_eq_dirichletForm_add` and the weak equation (83). -/
 theorem dirichletEigenfunction_isGalerkinSolution_laplace (n : ℕ) :
     IsGalerkinSolution (laplaceForm Ω)
       (load Ω ((dirichletEigenvalue Ω hΩ n + 1) • dirichletEigenbasis Ω hΩ hne n))
@@ -1126,10 +1344,16 @@ theorem dirichletEigenfunction_isGalerkinSolution_laplace (n : ℕ) :
   refine h1.trans (h5.trans (Eq.trans ?_ h4.symm))
   ring
 
-/-- **The Dirichlet eigenfunctions lie in `H^m(Ω)` for every `m`** on a `C^∞` domain (bounded, so
-that the eigenbasis exists): `u_n` solves `−Δu + u = (λ_n + 1) e_n` weakly, so `u_n ∈ H^m` gives
-`(λ_n + 1) e_n ∈ H^m`, hence `u_n ∈ H^{m+2}` by Theorem 9.25
-(`Elliptic.regularity_dirichlet_higher_mem_laplace`); induction on `m`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set of class
+$C^\infty$. Then every Dirichlet eigenfunction $e_n$ lies in $H^m(\Omega)$ for every
+$m \in \mathbb{N}$.
+
+The eigenfunction $u_n$ solves $-\Delta u + u = (\lambda_n + 1) e_n$ weakly. If
+$e_n \in H^m(\Omega)$, the datum $(\lambda_n + 1) e_n$ lies in $H^m(\Omega)$, so
+$e_n \in H^{m+2}(\Omega)$ by Theorem 9.25 of [brezis2011functional]
+(`Elliptic.regularity_dirichlet_higher_mem_laplace`). The proof is an induction on $m$. The
+boundedness of $\Omega$ is needed for the eigenbasis to exist. Class $C^\infty$ is
+`IsContDiffChartDomain ∞`. -/
 theorem dirichletEigenfunction_memSobolevMultiIndex
     (hΩ' : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (n : ℕ) (m : ℕ) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -1167,12 +1391,17 @@ theorem dirichletEigenfunction_memSobolevMultiIndex
       exact this.congr_ae hfn.symm
   exact (key m).1
 
-/-- **[brezis2011functional] Chapter 9, Remark 29, second clause**: on a bounded nonempty open
-set of class `C^∞`, every Dirichlet eigenfunction `e_n` agrees almost everywhere on `Ω` with a
-function `ũ` continuous on `ℝ^N`, of class `C^∞` on `Ω`, all of whose derivatives extend
-continuously from `Ω` to `ℝ^N` — `e_n ∈ C^∞(Ω̄)` in the sense of Chapter 9, footnote 16. The
-eigenfunction solves `−Δu + u = (λ_n + 1) e_n` weakly with a datum in every `H^m(Ω)`
-(`Elliptic.dirichletEigenfunction_memSobolevMultiIndex`), and Theorem 9.25's `C^∞(Ω̄)` clause
+/-- The second clause of Remark 29 in Chapter 9 of [brezis2011functional]. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set of class
+$C^\infty$. Then every Dirichlet eigenfunction $e_n$ agrees almost everywhere on $\Omega$ with a
+function $\tilde u : \mathbb{R}^N \to \mathbb{R}$ that is continuous on $\mathbb{R}^N$ and of
+class $C^\infty$ on $\Omega$, and such that for every $j$ the $j$-th derivative $D^j \tilde u$
+agrees on $\Omega$ with a continuous function on $\mathbb{R}^N$.
+
+This is $e_n \in C^\infty(\overline{\Omega})$ in the sense of footnote 16 of Chapter 9 of
+[brezis2011functional]. The eigenfunction solves $-\Delta u + u = (\lambda_n + 1) e_n$ weakly,
+with a datum in every $H^m(\Omega)$ (`Elliptic.dirichletEigenfunction_memSobolevMultiIndex`),
+and the $C^\infty(\overline{\Omega})$ clause of Theorem 9.25
 (`Elliptic.regularity_dirichlet_smooth`) applies. -/
 theorem exists_contDiffOn_closure_eigenfunction
     (hΩ' : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (n : ℕ) :

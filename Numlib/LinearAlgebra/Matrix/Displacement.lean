@@ -15,44 +15,71 @@ import Numlib.LinearAlgebra.Matrix.Toeplitz
 /-!
 # Displacement structure
 
-A square matrix `A` has *displacement structure* with respect to two displacement operators `F`,
-`G` when its displacement `F A − A G` has low rank; a factorization `F A − A G = R Sᵀ` with
-`R S : Matrix n (Fin r) K` is a set of *generators* ([golub2013matrix] §12.1; Kailath, Kung and
-Morf 1979; Gohberg, Kailath and Olshevsky 1995).
+Let $F, G, A \in K^{n \times n}$ over a field $K$. The **displacement** of $A$ with respect to the
+displacement operators $F$ and $G$ is $FA - AG$, and the **displacement rank** is its rank. The
+matrix $A$ has displacement structure when the displacement rank is low; a factorization
+$FA - AG = RS^T$ with $R, S \in K^{n \times r}$ is a set of **generators**. The presentation follows
+[golub2013matrix] §12.1, after Kailath, Kung and Morf (1979) and Gohberg, Kailath and Olshevsky
+(1995).
 
-* The displacement is the Sylvester operator `Matrix.sylvesterMap F G A` of
-  `Numlib.LinearAlgebra.Matrix.Sylvester`; this file adds only its rank,
-  `Matrix.displacementRank F G A`. When the Sylvester operator is injective, generators determine
-  the matrix (`Matrix.eq_of_sylvesterMap_eq`).
-* The Cauchy matrix has displacement `e eᵀ` for diagonal operators
-  (`Matrix.sylvesterMap_diagonal_cauchy`), hence displacement rank `1`
-  (`Matrix.displacementRank_diagonal_cauchy`).
-* **The generator update under one step of Gaussian elimination**
-  (`Matrix.sylvesterMap_schurComplement`, [golub2013matrix] Theorem 12.1.1, generalized): if the
-  first row of `F` and the first column of `G` vanish off the corner, the Schur complement
-  `A₁ = B − f gᵀ / α` has displacement `R₁ S₁ᵀ` with explicitly updated generators. The book's
-  diagonal case is `Matrix.sylvesterMap_diagonal_schurComplement`.
-* The displacement operators of §12.1.7: the cyclic shifts `Z_{±1}` (`Matrix.cyclicShift` of
-  `Numlib.LinearAlgebra.Matrix.Permutation`) and the corner-modified tridiagonal matrices
-  `Y_{0,0}`, `Y_{1,1}` (`Matrix.cornerTridiagonal` of
-  `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`). Their Sylvester operators are injective
-  (`Matrix.sylvesterMap_cyclicShift_one_neg_one_injective`,
-  `Matrix.sylvesterMap_cornerTridiagonal_injective`), and the displacements of Toeplitz and Hankel
-  matrices vanish off the first row and last column, respectively off the border
-  (`Matrix.sylvesterMap_cyclicShift_toeplitz_apply`, `Matrix.sylvesterMap_cyclicShift_hankel_apply`,
+The module proves that generators determine $A$ when the map $X \mapsto FX - XG$ is injective; that
+a Cauchy matrix has displacement $ee^T$ for diagonal operators; that one step of Gaussian
+elimination updates the generators explicitly ([golub2013matrix] Theorem 12.1.1, generalized); and
+that Toeplitz and Hankel matrices have displacement rank at most $2$ for the cyclic shifts
+$Z_1, Z_{-1}$ and at most $4$ for the corner-modified tridiagonal matrices $Y_{00}, Y_{11}$
+([golub2013matrix] (12.1.8)–(12.1.11)).
+
+## Main definitions
+
+* `Matrix.displacementRank`: the rank of $FA - AG$, [golub2013matrix] (12.1.2).
+
+## Main results
+
+* `Matrix.eq_of_sylvesterMap_eq`: if $X \mapsto FX - XG$ is injective, two matrices with the same
+  generators are equal.
+* `Matrix.displacementRank_le_iff_exists`: the displacement rank is at most $r$ if and only if
+  generators with $r$ columns exist, [golub2013matrix] (12.1.3).
+* `Matrix.sylvesterMap_diagonal_cauchy`, `Matrix.displacementRank_diagonal_cauchy`: the Cauchy
+  matrix $(1/(\omega_k - \nu_j))$ has displacement $ee^T$ for $\operatorname{diag}(\omega)$ and
+  $\operatorname{diag}(\nu)$, hence displacement rank $1$.
+* `Matrix.sylvesterMap_schurComplement`: if the first row of $F$ and the first column of $G$ vanish
+  off the corner, the Schur complement after one elimination step has explicitly updated generators.
+  `Matrix.sylvesterMap_diagonal_schurComplement` is the diagonal case of [golub2013matrix] Theorem
+  12.1.1, and `Matrix.displacementRank_diagonal_schurComplement_le` its consequence for the rank.
+* `Matrix.sylvesterMap_cyclicShift_one_neg_one_injective`,
+  `Matrix.sylvesterMap_cornerTridiagonal_injective`: the maps $X \mapsto Z_1 X - X Z_{-1}$ and
+  $X \mapsto Y_{00} X - X Y_{11}$ are injective.
+* `Matrix.sylvesterMap_cyclicShift_toeplitz_apply`, `Matrix.sylvesterMap_cyclicShift_hankel_apply`,
   `Matrix.sylvesterMap_cornerTridiagonal_toeplitz_apply`,
-  `Matrix.sylvesterMap_cornerTridiagonal_hankel_apply`).
+  `Matrix.sylvesterMap_cornerTridiagonal_hankel_apply`: where the displacements of Toeplitz and
+  Hankel matrices vanish.
+* `Matrix.displacementRank_cyclicShift_toeplitz_le`,
+  `Matrix.displacementRank_cyclicShift_hankel_le`,
+  `Matrix.displacementRank_cornerTridiagonal_toeplitz_le`,
+  `Matrix.displacementRank_cornerTridiagonal_hankel_le`,
+  `Matrix.displacementRank_cornerTridiagonal_toeplitz_add_hankel_le`: the rank bounds
+  (12.1.8)–(12.1.11) of [golub2013matrix].
 
-## Design
+## Notation
 
-The book puts the nonsingularity of the Sylvester operator into the definition of the displacement
-rank ((12.1.2)); here it is a hypothesis exactly where it is used. The support lemmas are stated
-entrywise; the rank bounds (12.1.8)–(12.1.11) follow from them by the support bound of
-`Numlib.LinearAlgebra.Matrix.Rank`.
+The displacement operators below are those of [golub2013matrix] §12.1.7.
 
-## References
+* $Z_\varphi$: the $\varphi$-cyclic shift `Matrix.cyclicShift n φ` of
+  `Numlib.LinearAlgebra.Matrix.Permutation`, with ones on the subdiagonal and $\varphi$ in the top
+  right corner.
+* $Y_{\gamma\delta}$: the corner-modified tridiagonal matrix `Matrix.cornerTridiagonal n γ δ` of
+  `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, with ones on the two off-diagonals, $\gamma$ at
+  the top left and $\delta$ at the bottom right corner.
 
-* [golub2013matrix] §12.1.
+## Implementation notes
+
+* The displacement $FA - AG$ is the Sylvester operator `Matrix.sylvesterMap F G A` of
+  `Numlib.LinearAlgebra.Matrix.Sylvester`. This module adds only its rank.
+* [golub2013matrix] puts the nonsingularity of the Sylvester operator into the definition (12.1.2)
+  of the displacement rank. Here it is a hypothesis exactly where it is used.
+* The support lemmas are stated entrywise. The rank bounds follow from them by the support bound of
+  `Numlib.LinearAlgebra.Matrix.Rank`.
+* Indices are $0$-based: the first row of the source is row $0$.
 -/
 
 open Finset
@@ -67,13 +94,17 @@ section Rank
 
 variable {n : Type*} [Fintype n]
 
-/-- The `{F, G}`-displacement rank ([golub2013matrix] (12.1.2)): the rank of the displacement
-`F A − A G = sylvesterMap F G A`. No nonsingularity of the Sylvester operator is built in. -/
+/-- Let $F, G, A \in K^{n \times n}$. The **$\{F, G\}$-displacement rank** of $A$ is the rank of its
+displacement $$FA - AG.$$ This is (12.1.2) of [golub2013matrix].
+
+No nonsingularity of the Sylvester operator $X \mapsto FX - XG$ is part of the definition. -/
 noncomputable def displacementRank (F G A : Matrix n n K) : ℕ :=
   (sylvesterMap F G A).rank
 
-/-- **Generators determine the matrix** when the Sylvester operator is injective
-([golub2013matrix] §12.1.1, "if `λ(F) ∩ λ(G) = ∅`"). -/
+/-- Let $F, G \in K^{n \times n}$ with $X \mapsto FX - XG$ injective. If $FA - AG = RS^T$ and
+$FB - BG = RS^T$ for the same $R, S \in K^{n \times r}$, then $A = B$: **generators determine
+the matrix**. This is the remark in [golub2013matrix] §12.1.1 under the condition
+$\lambda(F) \cap \lambda(G) = \emptyset$. -/
 theorem eq_of_sylvesterMap_eq {F G : Matrix n n K} (hFG : Function.Injective (sylvesterMap F G))
     {A B : Matrix n n K} {r : Type*} [Fintype r] {R S : Matrix n r K}
     (hA : sylvesterMap F G A = R * Sᵀ) (hB : sylvesterMap F G B = R * Sᵀ) : A = B :=
@@ -83,9 +114,12 @@ end Rank
 
 /-! ### Cauchy matrices -/
 
-/-- **The Cauchy matrix has displacement `e eᵀ`** ([golub2013matrix] §12.1.2): if `ω k ≠ ν j`
-for all `k`, `j`, then `diag(ω) C − C diag(ν) = e eᵀ` for the Cauchy matrix
-`C = (1 / (ω k − ν j))`. -/
+/-- Let $\omega, \nu \in K^n$ with $\omega_k \ne \nu_j$ for all $k$ and $j$, and let $C$ be the
+Cauchy matrix with entries $c_{kj} = 1/(\omega_k - \nu_j)$. Then $$\operatorname{diag}(\omega)
+C - C \operatorname{diag}(\nu) = ee^T,$$ where $e$ is the vector of ones. This is
+[golub2013matrix] §12.1.2.
+
+The matrix $C$ is `Matrix.cauchy ω (-ν)`. -/
 theorem sylvesterMap_diagonal_cauchy {n : ℕ} {ω ν : Fin n → K} (h : ∀ k j, ω k ≠ ν j) :
     sylvesterMap (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = vecMulVec 1 1 := by
   ext k j
@@ -93,9 +127,11 @@ theorem sylvesterMap_diagonal_cauchy {n : ℕ} {ω ν : Fin n → K} (h : ∀ k 
     Pi.one_apply, Pi.one_apply, mul_one]
   exact mul_inv_cancel₀ (sub_ne_zero.mpr (h k j))
 
-/-- **The Cauchy matrix has displacement rank `1`** ([golub2013matrix] §12.1.2) for diagonal
-operators with disjoint diagonals, `n ≠ 0`: its displacement is `e eᵀ`
-(`Matrix.sylvesterMap_diagonal_cauchy`). -/
+/-- Let $\omega, \nu \in K^n$ with $n \ge 1$ and $\omega_k \ne \nu_j$ for all $k$ and $j$. Then the
+Cauchy matrix $(1/(\omega_k - \nu_j))$ has $\{\operatorname{diag}(\omega),
+\operatorname{diag}(\nu)\}$-displacement rank $1$ ([golub2013matrix] §12.1.2).
+
+Its displacement is $ee^T$, by `Matrix.sylvesterMap_diagonal_cauchy`. -/
 theorem displacementRank_diagonal_cauchy {n : ℕ} {ω ν : Fin n → K} (h : ∀ k j, ω k ≠ ν j)
     (hn : n ≠ 0) : displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1 := by
   rw [displacementRank, sylvesterMap_diagonal_cauchy h]
@@ -112,14 +148,18 @@ section Schur
 
 variable {N r : ℕ}
 
-/-- **The generator update under one step of Gaussian elimination** ([golub2013matrix]
-Theorem 12.1.1, generalized). Let `F G A : Matrix (Fin (N + 1)) (Fin (N + 1)) K` with
-`F A − A G = R Sᵀ`, where the first row of `F` and the first column of `G` vanish off the corner,
-and `α = A 0 0 ≠ 0`. Write `A = [α gᵀ; f B]`. Then the Schur complement `A₁ = B − f gᵀ / α`
-satisfies `F₁ A₁ − A₁ G₁ = R₁ S₁ᵀ` with `F₁`, `G₁` the trailing blocks of `F`, `G` and
-`R₁ = R(2:, :) − f r₁ᵀ / α`, `S₁ = S(2:, :) − g s₁ᵀ / α` (`r₁`, `s₁` the first rows of `R`, `S`).
-The book's case is `F`, `G` diagonal; the corner hypotheses also cover the lower shift and every
-lower/upper triangular pair. -/
+/-- **The generator update under one step of Gaussian elimination.** Let
+$F, G, A \in K^{(N+1) \times (N+1)}$ and $R, S \in K^{(N+1) \times r}$ with $FA - AG = RS^T$.
+Suppose that the first row of $F$ and the first column of $G$ vanish off the corner, and that
+$\alpha = a_{11} \ne 0$. Write $$A = \begin{bmatrix} \alpha & g^T \\ f & B \end{bmatrix}$$ and
+let $r_1^T$, $s_1^T$ be the first rows of $R$, $S$. Then the Schur complement
+$A_1 = B - f g^T / \alpha$ satisfies $F_1 A_1 - A_1 G_1 = R_1 S_1^T$, where $F_1$, $G_1$ are the
+trailing $N \times N$ blocks of $F$, $G$ and $$R_1 = R(2{:}, :) - f r_1^T / \alpha, \qquad S_1 =
+S(2{:}, :) - g s_1^T / \alpha.$$ This generalizes [golub2013matrix] Theorem 12.1.1.
+
+The source takes $F$ and $G$ diagonal. The corner hypotheses also cover the lower shift and
+every pair of a lower and an upper triangular matrix. Indices in Lean are $0$-based, so $\alpha$
+is `A 0 0`. -/
 theorem sylvesterMap_schurComplement {F G A : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
     {R S : Matrix (Fin (N + 1)) (Fin r) K} (hF : ∀ j : Fin N, F 0 j.succ = 0)
     (hG : ∀ i : Fin N, G i.succ 0 = 0) (h : sylvesterMap F G A = R * Sᵀ) (hα : A 0 0 ≠ 0) :
@@ -187,9 +227,13 @@ theorem sylvesterMap_schurComplement {F G A : Matrix (Fin (N + 1)) (Fin (N + 1))
     (F i.succ 0 * A 0 j.succ - A i.succ 0 * G 0 j.succ -
       a * A i.succ 0 * A 0 j.succ * (F 0 0 - G 0 0)) * ha
 
-/-- **Theorem 12.1.1** in the book's form ([golub2013matrix]): for diagonal displacement operators
-`Ω = diag(ω)`, `Λ = diag(ν)`, the Schur complement after one elimination step has the updated
-generators with respect to `diag(ω₂, …)`, `diag(ν₂, …)`. -/
+/-- **Theorem 12.1.1** of [golub2013matrix]. Let $\omega, \nu \in K^{N+1}$,
+$\Omega = \operatorname{diag}(\omega)$, $\Lambda = \operatorname{diag}(\nu)$, and let
+$A \in K^{(N+1) \times (N+1)}$ and $R, S \in K^{(N+1) \times r}$ with
+$\Omega A - A \Lambda = RS^T$ and $\alpha = a_{11} \ne 0$. Then the Schur complement
+$A_1 = B - f g^T / \alpha$ satisfies $$\operatorname{diag}(\omega_2, \dots, \omega_{N+1}) A_1 -
+A_1 \operatorname{diag}(\nu_2, \dots, \nu_{N+1}) = R_1 S_1^T,$$ with $f$, $g$, $B$, $R_1$ and
+$S_1$ as in `Matrix.sylvesterMap_schurComplement`. -/
 theorem sylvesterMap_diagonal_schurComplement {ω ν : Fin (N + 1) → K}
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) K} {R S : Matrix (Fin (N + 1)) (Fin r) K}
     (h : sylvesterMap (diagonal ω) (diagonal ν) A = R * Sᵀ) (hα : A 0 0 ≠ 0) :
@@ -207,15 +251,17 @@ theorem sylvesterMap_diagonal_schurComplement {ω ν : Fin (N + 1) → K}
 
 end Schur
 
-/-! ### The cyclic shifts `Z_{±1}` -/
+/-! ### The cyclic shifts $Z_{\pm 1}$ -/
 
 section CyclicShift
 
 variable {n : ℕ}
 
-/-- **The `{Z₁, Z₋₁}` Sylvester operator is injective** ([golub2013matrix] P12.1.1(a), the
-nonsingularity (12.1.2) presupposes for (12.1.8)): `Z₁ X = X Z₋₁` gives `Z₁ⁿ X = X Z₋₁ⁿ`, that is
-`X = −X`. -/
+/-- Let $K$ have $2 \ne 0$. Then the map $X \mapsto Z_1 X - X Z_{-1}$ on $K^{n \times n}$ is
+injective. This is [golub2013matrix] P12.1.1(a), the nonsingularity that (12.1.2) requires for
+(12.1.8).
+
+From $Z_1 X = X Z_{-1}$ follows $Z_1^n X = X Z_{-1}^n$, that is, $X = -X$. -/
 theorem sylvesterMap_cyclicShift_one_neg_one_injective (h2 : (2 : K) ≠ 0) :
     Function.Injective (sylvesterMap (cyclicShift n (1 : K)) (cyclicShift n (-1))) := by
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
@@ -227,9 +273,9 @@ theorem sylvesterMap_cyclicShift_one_neg_one_injective (h2 : (2 : K) ≠ 0) :
     Matrix.mul_one, neg_one_smul, neg_eq_iff_add_eq_zero, ← two_smul K X] at hpow
   exact (smul_eq_zero.mp hpow).resolve_left h2
 
-/-- **The Toeplitz displacement is supported on the first row and the last column**
-([golub2013matrix] (12.1.8)): for a Toeplitz `T`, `(Z₁ T − T Z₋₁)_ij = 0` for `0 < i` and
-`j < n − 1`. -/
+/-- Let $T \in K^{n \times n}$ be Toeplitz. Then the displacement $Z_1 T - T Z_{-1}$ is supported on
+the first row and the last column: its entry $(i, j)$ is $0$ whenever $i$ is not the first row
+and $j$ is not the last column. This is (12.1.8) of [golub2013matrix]. -/
 theorem sylvesterMap_cyclicShift_toeplitz_apply {T : Matrix (Fin n) (Fin n) K} (hT : T.IsToeplitz)
     {i j : Fin n} (hi : 0 < (i : ℕ)) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cyclicShift n 1) (cyclicShift n (-1)) T i j = 0 := by
@@ -237,9 +283,9 @@ theorem sylvesterMap_cyclicShift_toeplitz_apply {T : Matrix (Fin n) (Fin n) K} (
     mul_cyclicShift_apply_of_lt _ _ _ hj, sub_eq_zero]
   exact isToeplitz_iff.mp hT _ _ _ _ (by simp only; omega)
 
-/-- **The Hankel displacement is supported on the last row and the last column**
-([golub2013matrix] (12.1.10)): for a Hankel `H`, `(Z₁ᵀ H − H Z₋₁)_ij = 0` for `i < n − 1` and
-`j < n − 1`. -/
+/-- Let $H \in K^{n \times n}$ be Hankel. Then the displacement $Z_1^T H - H Z_{-1}$ is supported on
+the last row and the last column: its entry $(i, j)$ is $0$ whenever $i$ is not the last row and
+$j$ is not the last column. This is (12.1.10) of [golub2013matrix]. -/
 theorem sylvesterMap_cyclicShift_hankel_apply {H : Matrix (Fin n) (Fin n) K} (hH : H.IsHankel)
     {i j : Fin n} (hi : (i : ℕ) + 1 < n) (hj : (j : ℕ) + 1 < n) :
     sylvesterMap (cyclicShift n 1)ᵀ (cyclicShift n (-1)) H i j = 0 := by
@@ -252,15 +298,17 @@ theorem sylvesterMap_cyclicShift_hankel_apply {H : Matrix (Fin n) (Fin n) K} (hH
 
 end CyclicShift
 
-/-! ### The corner-modified tridiagonal operators `Y_{0,0}`, `Y_{1,1}` -/
+/-! ### The corner-modified tridiagonal operators $Y_{00}$, $Y_{11}$ -/
 
 section CornerTridiagonal
 
 variable {n : ℕ}
 
-/-- **The `{Y₀₀, Y₁₁}` displacement of a Toeplitz matrix is supported on the border**
-([golub2013matrix] (12.1.9)): `(Y₀₀ T − T Y₁₁)_ij = 0` for `0 < i < n − 1` and `0 < j < n − 1`,
-since `T_{i−1,j} + T_{i+1,j} = T_{i,j−1} + T_{i,j+1}`. -/
+/-- Let $T \in \mathbb{R}^{n \times n}$ be Toeplitz. Then the displacement $Y_{00} T - T Y_{11}$ is
+supported on the border: its entry $(i, j)$ is $0$ whenever neither $i$ nor $j$ is the first or
+the last index. This is (12.1.9) of [golub2013matrix].
+
+At an interior entry, $t_{i-1,j} + t_{i+1,j} = t_{i,j-1} + t_{i,j+1}$. -/
 theorem sylvesterMap_cornerTridiagonal_toeplitz_apply {T : Matrix (Fin n) (Fin n) ℝ}
     (hT : T.IsToeplitz) {i j : Fin n} (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n)
     (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
@@ -271,9 +319,11 @@ theorem sylvesterMap_cornerTridiagonal_toeplitz_apply {T : Matrix (Fin n) (Fin n
     isToeplitz_iff.mp hT ⟨i + 1, hi⟩ j i ⟨j - 1, by omega⟩ (by simp only; omega)]
   ring
 
-/-- **The `{Y₀₀, Y₁₁}` displacement of a Hankel matrix is supported on the border**
-([golub2013matrix] (12.1.11)): `(Y₀₀ H − H Y₁₁)_ij = 0` for `0 < i < n − 1` and `0 < j < n − 1`,
-since `H_{i−1,j} + H_{i+1,j} = H_{i,j−1} + H_{i,j+1}`. -/
+/-- Let $H \in \mathbb{R}^{n \times n}$ be Hankel. Then the displacement $Y_{00} H - H Y_{11}$ is
+supported on the border: its entry $(i, j)$ is $0$ whenever neither $i$ nor $j$ is the first or
+the last index. This is (12.1.11) of [golub2013matrix].
+
+At an interior entry, $h_{i-1,j} + h_{i+1,j} = h_{i,j-1} + h_{i,j+1}$. -/
 theorem sylvesterMap_cornerTridiagonal_hankel_apply {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H.IsHankel) {i j : Fin n} (hi₀ : 0 < (i : ℕ)) (hi : (i : ℕ) + 1 < n)
     (hj₀ : 0 < (j : ℕ)) (hj : (j : ℕ) + 1 < n) :
@@ -285,7 +335,8 @@ theorem sylvesterMap_cornerTridiagonal_hankel_apply {H : Matrix (Fin n) (Fin n) 
   rw [show (i : ℕ) - 1 + j = i + (j - 1) by omega, show (i : ℕ) + 1 + j = i + (j + 1) by omega]
   ring
 
-/-- A vector orthogonal to an orthogonal family of `n` nonzero vectors in `ℝⁿ` is zero. -/
+/-- Let $v_1, \dots, v_n \in \mathbb{R}^n$ be pairwise orthogonal and nonzero. A vector
+$w \in \mathbb{R}^n$ orthogonal to every $v_k$ is zero. -/
 private theorem eq_zero_of_forall_dotProduct_eq_zero {v : Fin n → Fin n → ℝ}
     (horth : ∀ k l, k ≠ l → v k ⬝ᵥ v l = 0) (hpos : ∀ k, v k ⬝ᵥ v k ≠ 0) {w : Fin n → ℝ}
     (hw : ∀ k, v k ⬝ᵥ w = 0) : w = 0 := by
@@ -307,7 +358,8 @@ private theorem eq_zero_of_forall_dotProduct_eq_zero {v : Fin n → Fin n → �
   have hVw : V *ᵥ w = 0 := funext hw
   rw [← one_mulVec w, ← hinv, ← mulVec_mulVec, hVw, mulVec_zero]
 
-/-- The eigenvalues `2 cos((k+1)π/(n+1))` of `Y₀₀` and `2 cos(lπ/n)` of `Y₁₁` are distinct. -/
+/-- For $0 \le k, l < n$, $2 \cos((k+1)\pi/(n+1)) \ne 2 \cos(l\pi/n)$: the eigenvalues of $Y_{00}$
+and of $Y_{11}$ are distinct. -/
 private theorem cos_ne_cos {k l : Fin n} :
     2 * Real.cos ((((k : ℕ) : ℝ) + 1) * Real.pi / ((n : ℝ) + 1)) ≠
       2 * Real.cos ((l : ℕ) * Real.pi / n) := by
@@ -337,10 +389,13 @@ private theorem cos_ne_cos {k l : Fin n} :
   have := Nat.le_of_dvd (by omega) (hcop.dvd_of_dvd_mul_right hdvd)
   omega
 
-/-- **The `{Y₀₀, Y₁₁}` Sylvester operator is injective** ([golub2013matrix] P12.1.1(b), the book's
-"`λ(Y₀₀) ∩ λ(Y₁₁) = ∅`"): the spectra `{2 cos((k+1)π/(n+1))}` and `{2 cos(lπ/n)}` are disjoint,
-and both matrices have orthogonal eigenbases (the DST-I and DCT-II vectors), so
-`s_kᵀ (Y₀₀ X − X Y₁₁) c_l = (λ_k − μ_l) s_kᵀ X c_l` forces `X = 0`. -/
+/-- The map $X \mapsto Y_{00} X - X Y_{11}$ on $\mathbb{R}^{n \times n}$ is injective. This is
+[golub2013matrix] P12.1.1(b), the condition $\lambda(Y_{00}) \cap \lambda(Y_{11}) = \emptyset$
+of the source.
+
+The spectra $\{2 \cos((k+1)\pi/(n+1))\}$ and $\{2 \cos(l\pi/n)\}$ are disjoint, and both
+matrices have orthogonal eigenbases (the DST-I and DCT-II vectors $s_k$ and $c_l$). So $s_k^T
+(Y_{00} X - X Y_{11}) c_l = (\lambda_k - \mu_l) s_k^T X c_l$ forces $X = 0$. -/
 theorem sylvesterMap_cornerTridiagonal_injective :
     Function.Injective (sylvesterMap (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1)) := by
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
@@ -387,15 +442,20 @@ end CornerTridiagonal
 
 section Bounds
 
-/-- **Generators exist exactly up to the displacement rank** ([golub2013matrix] (12.1.3)):
-`displacementRank F G A ≤ r` iff `F A − A G = R Sᵀ` for some `R S : Matrix n (Fin r) K`. -/
+/-- Let $F, G, A \in K^{n \times n}$ and $r \in \mathbb{N}$. The $\{F, G\}$-displacement rank of $A$
+is at most $r$ if and only if $FA - AG = RS^T$ for some $R, S \in K^{n \times r}$. So
+**generators exist exactly up to the displacement rank**. This is (12.1.3) of [golub2013matrix]. -/
 theorem displacementRank_le_iff_exists {n : Type*} [Fintype n] {F G A : Matrix n n K} {r : ℕ} :
     displacementRank F G A ≤ r ↔
       ∃ R S : Matrix n (Fin r) K, sylvesterMap F G A = R * Sᵀ :=
   rank_le_iff_exists_mul_transpose _ r
 
-/-- The consequence of Theorem 12.1.1 displayed after its proof ([golub2013matrix] §12.1.3): one
-step of Gaussian elimination does not increase the `{diag(ω), diag(ν)}`-displacement rank. -/
+/-- Let $\omega, \nu \in K^{N+1}$ and let $A \in K^{(N+1) \times (N+1)}$ have
+$\{\operatorname{diag}(\omega), \operatorname{diag}(\nu)\}$-displacement rank at most $r$, with
+$a_{11} \ne 0$. Then the Schur complement $A_1$ after one elimination step has
+$\{\operatorname{diag}(\omega_2, \dots), \operatorname{diag}(\nu_2, \dots)\}$-displacement rank
+at most $r$. This is the consequence of Theorem 12.1.1 displayed after its proof in
+[golub2013matrix] §12.1.3. -/
 theorem displacementRank_diagonal_schurComplement_le {N r : ℕ} {ω ν : Fin (N + 1) → K}
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
     (h : displacementRank (diagonal ω) (diagonal ν) A ≤ r) (hα : A 0 0 ≠ 0) :
@@ -407,7 +467,7 @@ theorem displacementRank_diagonal_schurComplement_le {N r : ℕ} {ω ν : Fin (N
 
 variable {n : ℕ}
 
-/-- A square matrix vanishing outside row `a` and column `b` has rank at most `2`. -/
+/-- A square matrix that vanishes outside row $a$ and column $b$ has rank at most $2$. -/
 private theorem rank_le_two_of_forall {A : Matrix (Fin n) (Fin n) K} (a b : Fin n)
     (h : ∀ i j, i ≠ a → j ≠ b → A i j = 0) : A.rank ≤ 2 :=
   (rank_le_card_add_card_of_forall_ne_zero A {a} {b} fun i j hij => by
@@ -415,7 +475,7 @@ private theorem rank_le_two_of_forall {A : Matrix (Fin n) (Fin n) K} (a b : Fin 
     simp only [Finset.mem_singleton, not_or] at hc
     exact hij (h i j hc.1 hc.2)).trans (by simp)
 
-/-- A square matrix vanishing outside rows `a`, `b` and columns `a`, `b` has rank at most `4`. -/
+/-- A square matrix that vanishes outside rows $a, b$ and columns $a, b$ has rank at most $4$. -/
 private theorem rank_le_four_of_forall {A : Matrix (Fin n) (Fin n) K} (a b : Fin n)
     (h : ∀ i j, i ≠ a → i ≠ b → j ≠ a → j ≠ b → A i j = 0) : A.rank ≤ 4 := by
   have hc : ({a, b} : Finset (Fin n)).card ≤ 2 := (Finset.card_insert_le _ _).trans (by simp)
@@ -425,12 +485,14 @@ private theorem rank_le_four_of_forall {A : Matrix (Fin n) (Fin n) K} (a b : Fin
   simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hne
   exact hij (h i j hne.1.1 hne.1.2 hne.2.1 hne.2.2)
 
-/-- The empty matrix has rank `0`. -/
+/-- The empty matrix has rank $0$. -/
 private theorem rank_fin_zero (A : Matrix (Fin 0) (Fin 0) K) : A.rank = 0 :=
   Nat.le_zero.mp ((rank_le_card_width A).trans (by simp))
 
-/-- **Toeplitz matrices have `{Z₁, Z₋₁}`-displacement rank at most `2`** ([golub2013matrix]
-(12.1.8)): the displacement is supported on the first row and the last column. -/
+/-- A Toeplitz matrix $T \in K^{n \times n}$ has $\{Z_1, Z_{-1}\}$-displacement rank at most $2$.
+This is (12.1.8) of [golub2013matrix].
+
+The displacement is supported on the first row and the last column. -/
 theorem displacementRank_cyclicShift_toeplitz_le {T : Matrix (Fin n) (Fin n) K}
     (hT : T.IsToeplitz) : displacementRank (cyclicShift n 1) (cyclicShift n (-1)) T ≤ 2 := by
   rcases n with _ | N
@@ -440,8 +502,10 @@ theorem displacementRank_cyclicShift_toeplitz_le {T : Matrix (Fin n) (Fin n) K}
   have hj' : (j : ℕ) ≠ N := fun h' => hj (Fin.ext h')
   exact sylvesterMap_cyclicShift_toeplitz_apply hT (by omega) (by omega)
 
-/-- **Hankel matrices have `{Z₁ᵀ, Z₋₁}`-displacement rank at most `2`** ([golub2013matrix]
-(12.1.10)): the displacement is supported on the last row and the last column. -/
+/-- A Hankel matrix $H \in K^{n \times n}$ has $\{Z_1^T, Z_{-1}\}$-displacement rank at most $2$.
+This is (12.1.10) of [golub2013matrix].
+
+The displacement is supported on the last row and the last column. -/
 theorem displacementRank_cyclicShift_hankel_le {H : Matrix (Fin n) (Fin n) K}
     (hH : H.IsHankel) : displacementRank (cyclicShift n 1)ᵀ (cyclicShift n (-1)) H ≤ 2 := by
   rcases n with _ | N
@@ -451,8 +515,8 @@ theorem displacementRank_cyclicShift_hankel_le {H : Matrix (Fin n) (Fin n) K}
   have hj' : (j : ℕ) ≠ N := fun h' => hj (Fin.ext h')
   exact sylvesterMap_cyclicShift_hankel_apply hH (by omega) (by omega)
 
-/-- A real matrix whose `{Y₀₀, Y₁₁}`-displacement vanishes off the border has displacement rank
-at most `4`. -/
+/-- A real matrix whose $\{Y_{00}, Y_{11}\}$-displacement vanishes off the border has
+$\{Y_{00}, Y_{11}\}$-displacement rank at most $4$. -/
 private theorem displacementRank_cornerTridiagonal_le_of_border {A : Matrix (Fin n) (Fin n) ℝ}
     (h : ∀ i j : Fin n, 0 < (i : ℕ) → (i : ℕ) + 1 < n → 0 < (j : ℕ) → (j : ℕ) + 1 < n →
       sylvesterMap (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) A i j = 0) :
@@ -466,25 +530,29 @@ private theorem displacementRank_cornerTridiagonal_le_of_border {A : Matrix (Fin
   have hjN' : (j : ℕ) ≠ N := fun h' => hjN (Fin.ext h')
   exact h i j (by omega) (by omega) (by omega) (by omega)
 
-/-- **Toeplitz matrices have `{Y₀₀, Y₁₁}`-displacement rank at most `4`** ([golub2013matrix]
-(12.1.9)): the displacement is supported on the border. -/
+/-- A Toeplitz matrix $T \in \mathbb{R}^{n \times n}$ has $\{Y_{00}, Y_{11}\}$-displacement rank at
+most $4$. This is (12.1.9) of [golub2013matrix].
+
+The displacement is supported on the border. -/
 theorem displacementRank_cornerTridiagonal_toeplitz_le {T : Matrix (Fin n) (Fin n) ℝ}
     (hT : T.IsToeplitz) :
     displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) T ≤ 4 :=
   displacementRank_cornerTridiagonal_le_of_border fun _ _ hi₀ hi hj₀ hj =>
     sylvesterMap_cornerTridiagonal_toeplitz_apply hT hi₀ hi hj₀ hj
 
-/-- **Hankel matrices have `{Y₀₀, Y₁₁}`-displacement rank at most `4`** ([golub2013matrix]
-(12.1.11)). -/
+/-- A Hankel matrix $H \in \mathbb{R}^{n \times n}$ has $\{Y_{00}, Y_{11}\}$-displacement rank at
+most $4$. This is (12.1.11) of [golub2013matrix]. -/
 theorem displacementRank_cornerTridiagonal_hankel_le {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H.IsHankel) :
     displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) H ≤ 4 :=
   displacementRank_cornerTridiagonal_le_of_border fun _ _ hi₀ hi hj₀ hj =>
     sylvesterMap_cornerTridiagonal_hankel_apply hH hi₀ hi hj₀ hj
 
-/-- **Toeplitz-plus-Hankel matrices have `{Y₀₀, Y₁₁}`-displacement rank at most `4`**
-([golub2013matrix], the display after (12.1.11)): the displacement is linear, and both
-displacements vanish off the border. -/
+/-- Let $T, H \in \mathbb{R}^{n \times n}$ with $T$ Toeplitz and $H$ Hankel. Then $T + H$ has
+$\{Y_{00}, Y_{11}\}$-displacement rank at most $4$. This is the display after (12.1.11) in
+[golub2013matrix].
+
+The displacement is linear, and both displacements vanish off the border. -/
 theorem displacementRank_cornerTridiagonal_toeplitz_add_hankel_le
     {T H : Matrix (Fin n) (Fin n) ℝ} (hT : T.IsToeplitz) (hH : H.IsHankel) :
     displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) (T + H) ≤ 4 :=

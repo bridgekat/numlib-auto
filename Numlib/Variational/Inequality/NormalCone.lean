@@ -12,48 +12,57 @@ import Numlib.Analysis.Convex.Subdifferential.Monotone
 import Numlib.Variational.Inequality.Basic
 
 /-!
-# Variational inequalities in the vocabulary of convex analysis
+# Variational inequalities in the language of convex analysis
 
-The dictionary between the elliptic variational inequality of `Numlib/Variational/Inequality/Basic`
-and the normal cones, subdifferentials and monotone relations of `Numlib/Analysis/Convex`. The
-inequality
+This module translates the elliptic variational inequality of `Numlib.Variational.Inequality.Basic`,
+$$u \in K, \qquad \langle f, v - u \rangle \le \langle Au, v - u \rangle + j(v) - j(u)
+  \quad \text{for all } v \in K,$$
+into the normal cones, subdifferentials and monotone relations of convex analysis. With $N_K(u)$ the
+normal cone of $K$ at $u$, $\partial$ the subdifferential and $\delta_K$ the indicator function of
+$K$, the inequality of the first kind ($j = 0$) is $f - Au \in N_K(u)$, and the general inequality
+is $f - Au \in \partial(j + \delta_K)(u)$. In a Hilbert space, for $j$ convex and lower
+semicontinuous, the subdifferential splits as $\partial(j + \delta_K)(u) = \partial j(u) + N_K(u)$.
+The variational inequalities follow §11.3 of [han2009theoretical], and the sum rule follows §23 of
+[rockafellar1970convex].
 
-  `u ∈ K`,  `⟪f, v - u⟫ ≤ ⟪A u, v - u⟫ + j v - j u`  for every `v ∈ K`
+The module also shows that a strongly monotone operator has a monotone graph, and that the
+first-order condition for a minimizer of a convex function $f$ over a convex set $K$,
+$f'(u)(v - u) \ge 0$ for all $v \in K$, is $-f'(u) \in N_K(u)$. This is the sufficiency half of
+Theorem 27.4 of [rockafellar1970convex].
 
-stays the *definition*: its consumers manipulate it as an inequality, `A` is a nonlinear operator
-and `j` is real-valued, and a definition through `subdifferential` would carry an `EReal` coercion
-into every proof of the Hilbert-space theory for no gain. What this module adds are the
-translations, all of them `Iff`s about the same point `u`:
+## Main results
 
-* `isVariationalInequalitySolution_zero_iff_sub_mem_normalCone` — the inequality of the first kind
-  (`j = 0`) is `f - A u ∈ N_K(u)`, the normal cone taken for the pairing `innerₗ V`;
-* `isVariationalInequalitySolution_iff_sub_mem_subdifferential` — the inequality of the second kind
-  is `f - A u ∈ ∂(j + δ_K)(u)`, with `δ_K` the indicator function `indicatorFn K`;
-* `isVariationalInequalitySolution_iff_sub_mem_add_normalCone` — in a Hilbert space, for `j` convex
-  and lower semicontinuous, the subdifferential splits, `∂(j + δ_K)(u) = ∂j(u) + N_K(u)`, so the
-  inequality of the second kind is `f - A u ∈ ∂j(u) + N_K(u)`. The split is the sum rule
-  `IsExactSum.subdifferential_add` under the continuity constraint qualification
-  `IsExactSum.of_continuousAt`; the continuity of `j` is
-  `ConvexOn.continuous_of_lowerSemicontinuous`, and the qualification wants the pairing compatible,
-  which `instIsCompatiblePairingInner` supplies by Fréchet–Riesz.
+* `isVariationalInequalitySolution_zero_iff_sub_mem_normalCone`: the inequality of the first kind is
+  $u \in K$ and $f - Au \in N_K(u)$.
+* `isVariationalInequalitySolution_iff_sub_mem_subdifferential`: the variational inequality is
+  $u \in K$ and $f - Au \in \partial(j + \delta_K)(u)$.
+* `ConvexOn.isExactSum_coe_indicatorFn`: in a Hilbert space, a convex lower semicontinuous $j$ and
+  $\delta_K$ satisfy the constraint qualification of the sum rule.
+* `isVariationalInequalitySolution_iff_sub_mem_add_normalCone`: in a Hilbert space, for $j$ convex
+  and lower semicontinuous, the variational inequality is $u \in K$ and
+  $f - Au \in \partial j(u) + N_K(u)$.
+* `IsStronglyMonotoneWith.isMonotoneRel_graph`: a strongly monotone operator with a nonnegative
+  constant has a monotone graph.
+* `isMinOn_iff_neg_mem_normalCone`, `isMinOn_iff_neg_toDual_symm_mem_normalCone`: a point minimizes
+  a convex function over a convex set if and only if the negative derivative, or in a Hilbert space
+  the negative gradient, lies in the normal cone.
 
-Two neighbouring translations live here as well:
+## Implementation notes
 
-* `IsStronglyMonotoneWith.isMonotoneRel_graph` — a strongly monotone operator with a non-negative
-  constant has a monotone graph in the sense of `IsMonotoneRel`, the multivalued notion the theory
-  of `∂f` is built on;
-* `isMinOn_iff_neg_mem_normalCone`, `isMinOn_iff_neg_toDual_symm_mem_normalCone` — the
-  first-order condition of `Numlib/Analysis/Convex/Gateaux` for a minimiser of a convex Gâteaux
-  differentiable `f` over a convex `K`, `0 ≤ f' u (v - u)` for all `v ∈ K`, is `-f' u ∈ N_K(u)`,
-  against the pairing of `V` with its dual in a normed space and, through the Riesz representative
-  of `f' u`, against `innerₗ V` in a Hilbert space. This is the sufficiency half of Rockafellar,
-  *Convex Analysis*, Theorem 27.4, in the vocabulary of the variational layer.
-
-The glue reading a real-valued convex function as a proper `ConvexFn` is `ConvexOn.convexFn_coe`
-and `ConvexAnalysis.properConvex_coe` of `Numlib/Analysis/Convex/Epigraph`.
-
-Sources: Atkinson–Han, *Theoretical Numerical Analysis*, §11.3 for the inequalities; Rockafellar,
-*Convex Analysis*, §23 for the sum rule and Theorem 27.4 for the optimality condition.
+* The variational inequality stays defined as an inequality. Its users work with it as an
+  inequality, $A$ is a nonlinear operator and $j$ is real-valued, and a definition through
+  `ConvexAnalysis.subdifferential` would bring a coercion to `EReal` into every proof of the
+  Hilbert-space theory.
+* The normal cone and the subdifferential are taken for the pairing `innerₗ V`, except in
+  `isMinOn_iff_neg_mem_normalCone`, which uses the pairing of $V$ with its continuous dual. The
+  indicator function $\delta_K$ is `ConvexAnalysis.indicatorFn K`.
+* The split of the subdifferential is the sum rule `ConvexAnalysis.IsExactSum.subdifferential_add`
+  under the continuity constraint qualification `ConvexAnalysis.IsExactSum.of_continuousAt`. The
+  continuity of $j$ is `ConvexOn.continuous_of_lowerSemicontinuous`. The qualification needs a
+  compatible pairing, which `ConvexAnalysis.instIsCompatiblePairingInner` supplies by the
+  Fréchet–Riesz theorem.
+* A real-valued convex function is read as a proper convex `EReal`-valued function by
+  `ConvexOn.convexFn_coe` and `ConvexAnalysis.properConvex_coe`.
 -/
 
 open ConvexAnalysis
@@ -66,9 +75,13 @@ section Inequality
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
   {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {u : V}
 
-/-- **The inequality of the first kind is a normal-cone condition.** With `j = 0`,
-`IsVariationalInequalitySolution A 0 f K u` says exactly that `u ∈ K` and `f - A u` is normal to
-`K` at `u`: `⟪v - u, f - A u⟫ ≤ 0` for every `v ∈ K`. No hypothesis on `A`, `K` or `V`. -/
+/-- **The inequality of the first kind is a normal-cone condition.** Let $V$ be a real inner product
+space, $A : V \to V$, $f \in V$ and $K \subseteq V$. Then $u$ solves the variational inequality
+with $j = 0$ if and only if $u \in K$ and $f - Au$ lies in the normal cone of $K$ at $u$:
+$$\langle v - u, f - Au \rangle \le 0 \quad \text{for all } v \in K.$$
+
+There is no hypothesis on $A$, $K$ or $V$. The normal cone is `ConvexAnalysis.normalCone` for
+the pairing `innerₗ V`. -/
 theorem isVariationalInequalitySolution_zero_iff_sub_mem_normalCone :
     IsVariationalInequalitySolution A 0 f K u ↔ u ∈ K ∧ f - A u ∈ normalCone (innerₗ V) K u := by
   unfold IsVariationalInequalitySolution
@@ -78,11 +91,16 @@ theorem isVariationalInequalitySolution_zero_iff_sub_mem_normalCone :
     inner_sub_right (v - u) f (A u), sub_nonpos, real_inner_comm (v - u) f,
     real_inner_comm (v - u) (A u)]
 
-/-- **The inequality of the second kind is a subgradient condition.**
-`IsVariationalInequalitySolution A j f K u` says exactly that `u ∈ K` and `f - A u` is a
-subgradient at `u` of `j + δ_K`, the functional `j` extended by `+∞` off `K`. Off `K` the
-subgradient inequality is vacuous, and on `K` it is the variational inequality. No hypothesis on
-`A`, `j`, `K` or `V`. -/
+/-- **The variational inequality is a subgradient condition.** Let $V$ be a real inner product
+space, $A : V \to V$, $j : V \to \mathbb{R}$, $f \in V$ and $K \subseteq V$. Then $u$ solves the
+variational inequality if and only if $u \in K$ and $f - Au$ is a subgradient at $u$ of
+$j + \delta_K$, the function equal to $j$ on $K$ and to $+\infty$ outside $K$:
+$$j(u) + \langle v - u, f - Au \rangle \le j(v) + \delta_K(v) \quad \text{for all } v \in V.$$
+
+There is no hypothesis on $A$, $j$, $K$ or $V$. Outside $K$ the subgradient inequality holds
+trivially, and on $K$ it is the variational inequality. The subdifferential is
+`ConvexAnalysis.subdifferential` for the pairing `innerₗ V`, applied to the `EReal`-valued
+function $j + \delta_K$. -/
 theorem isVariationalInequalitySolution_iff_sub_mem_subdifferential :
     IsVariationalInequalitySolution A j f K u ↔
       u ∈ K ∧
@@ -104,9 +122,14 @@ theorem isVariationalInequalitySolution_iff_sub_mem_subdifferential :
       real_inner_comm f (v - u), real_inner_comm (A u) (v - u)] at hv'
     linarith
 
-/-- The constraint qualification behind the split `∂(j + δ_K) = ∂j + N_K`: in a real Hilbert
-space a convex lower semicontinuous `j : V → ℝ` is continuous, so it adds exactly with the
-indicator of any nonempty convex `K`. -/
+/-- Let $V$ be a real Hilbert space, let $j : V \to \mathbb{R}$ be convex and lower semicontinuous,
+and let $K \subseteq V$ be nonempty and convex. Then $j$ and the indicator function $\delta_K$
+add exactly for the pairing `innerₗ V`: both are proper, and the conjugate of $j + \delta_K$ is
+the infimal convolution of the conjugates, with the infimum attained. This is the constraint
+qualification for the split $\partial(j + \delta_K) = \partial j + N_K$.
+
+A convex lower semicontinuous real function on a Hilbert space is continuous, and this gives the
+continuity constraint qualification `ConvexAnalysis.IsExactSum.of_continuousAt`. -/
 theorem ConvexOn.isExactSum_coe_indicatorFn [CompleteSpace V] (hj : ConvexOn ℝ Set.univ j)
     (hlsc : LowerSemicontinuous j) (hK : Convex ℝ K) (hne : K.Nonempty) :
     IsExactSum (innerₗ V) (fun v => (j v : EReal)) (indicatorFn K) := by
@@ -116,12 +139,17 @@ theorem ConvexOn.isExactSum_coe_indicatorFn [CompleteSpace V] (hj : ConvexOn ℝ
     (mem_convexDom.2 (EReal.coe_lt_top _)) (by rwa [convexDom_indicatorFn]) ?_
   exact (continuous_coe_real_ereal.comp (hj.continuous_of_lowerSemicontinuous hlsc)).continuousAt
 
-/-- **The inequality of the second kind, split.** In a real Hilbert space, for `j` convex and
-lower semicontinuous and `K` nonempty and convex, `IsVariationalInequalitySolution A j f K u`
-says exactly that `u ∈ K` and `f - A u ∈ ∂j(u) + N_K(u)`: some subgradient `y` of `j` at `u`
-has `f - A u - y` normal to `K` at `u`. The inclusion `∂j(u) + N_K(u) ⊆ ∂(j + δ_K)(u)` is
-unconditional; the reverse one is the sum rule `IsExactSum.subdifferential_add` under the continuity
-constraint qualification, which is where the hypotheses on `j`, `K` and `V` are spent. -/
+/-- **The variational inequality with a split subdifferential.** Let $V$ be a real Hilbert space,
+$A : V \to V$, $f \in V$, let $j : V \to \mathbb{R}$ be convex and lower semicontinuous, and let
+$K \subseteq V$ be nonempty and convex. Then $u$ solves the variational inequality if and only
+if $u \in K$ and
+$$f - Au \in \partial j(u) + N_K(u),$$
+that is, some subgradient $y$ of $j$ at $u$ has $f - Au - y$ normal to $K$ at $u$.
+
+The inclusion $\partial j(u) + N_K(u) \subseteq \partial(j + \delta_K)(u)$ holds with no
+hypothesis. The reverse inclusion is the sum rule
+`ConvexAnalysis.IsExactSum.subdifferential_add` under the constraint qualification
+`ConvexOn.isExactSum_coe_indicatorFn`, which uses the hypotheses on $j$, $K$ and $V$. -/
 theorem isVariationalInequalitySolution_iff_sub_mem_add_normalCone [CompleteSpace V]
     (hj : ConvexOn ℝ Set.univ j) (hlsc : LowerSemicontinuous j) (hK : Convex ℝ K)
     (hne : K.Nonempty) :
@@ -134,10 +162,14 @@ theorem isVariationalInequalitySolution_iff_sub_mem_add_normalCone [CompleteSpac
     ← (ConvexOn.isExactSum_coe_indicatorFn hj hlsc hK hne).subdifferential_add u]
   rfl
 
-/-- **A strongly monotone operator has a monotone graph.** `IsStronglyMonotoneWith ℝ A c` with
-`0 ≤ c` gives `0 ≤ ⟪x - y, A x - A y⟫` for all `x, y`, which is `IsMonotoneRel (innerₗ V)` of the
-graph `{p | p.2 = A p.1}` of `A` — the single-valued case of the monotone relations the theory of
-the subdifferential is built on. -/
+/-- **A strongly monotone operator has a monotone graph.** Let $V$ be a real inner product space and
+let $A : V \to V$ be strongly monotone with a constant $c \ge 0$. Then the graph
+$\{(x, Ax) : x \in V\}$ of $A$ is a monotone relation:
+$$\langle x - y, Ax - Ay \rangle \ge 0 \quad \text{for all } x, y \in V.$$
+
+The conclusion is `ConvexAnalysis.IsMonotoneRel (innerₗ V)` of the graph `{p | p.2 = A p.1}`.
+This is the single-valued case of the monotone relations on which the theory of the
+subdifferential is built. -/
 theorem IsStronglyMonotoneWith.isMonotoneRel_graph {c : ℝ} (hA : IsStronglyMonotoneWith ℝ A c)
     (hc : 0 ≤ c) : IsMonotoneRel (innerₗ V) {p : V × V | p.2 = A p.1} := by
   rintro ⟨x, x'⟩ (rfl : x' = A x) ⟨y, y'⟩ (rfl : y' = A y)
@@ -155,12 +187,16 @@ section Gateaux
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {f : V → ℝ}
   {f' : V → V →L[ℝ] ℝ} {K : Set V} {u : V}
 
-/-- **The first-order condition as a normal-cone condition** (the sufficiency half of Rockafellar,
-*Convex Analysis*, Theorem 27.4, in the setting of `Numlib/Analysis/Convex/Gateaux`). For `f`
-convex on a convex `K` with directional derivatives `f'` at the points of `K`, a point `u ∈ K`
-minimises `f` over `K` if and only if `-f' u` is normal to `K` at `u`, against the pairing of `V`
-with its continuous dual: `f' u (v - u) ≥ 0` for every `v ∈ K`. This is
-`isMinOn_iff_forall_lineDeriv_nonneg` with its right-hand side read as a set membership. -/
+/-- **The first-order condition as a normal-cone condition.** Let $V$ be a real normed space, let
+$K \subseteq V$ be convex, and let $f : V \to \mathbb{R}$ be convex on $K$. Assume that at every
+point $w \in K$ the function $f$ has the directional derivative $f'(w)h$ in every direction $h$,
+where $f'(w) \in V'$. Then $u \in K$ minimizes $f$ over $K$ if and only if $-f'(u)$ lies in the
+normal cone of $K$ at $u$ for the pairing of $V$ with $V'$:
+$$f'(u)(v - u) \ge 0 \quad \text{for all } v \in K.$$
+This is the sufficiency half of Theorem 27.4 of [rockafellar1970convex].
+
+The pairing is `(topDualPairing ℝ V).flip`. The proof reads
+`isMinOn_iff_forall_lineDeriv_nonneg` as a membership in `ConvexAnalysis.normalCone`. -/
 theorem isMinOn_iff_neg_mem_normalCone (hf : ConvexOn ℝ K f)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) (hu : u ∈ K) :
     IsMinOn f K u ↔ -f' u ∈ normalCone (topDualPairing ℝ V).flip K u := by
@@ -175,9 +211,16 @@ section GateauxHilbert
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
   {f : V → ℝ} {f' : V → V →L[ℝ] ℝ} {K : Set V} {u : V}
 
-/-- **The first-order condition as a normal-cone condition, in a Hilbert space.** With the Riesz
-representative `∇f(u) = (toDual ℝ V).symm (f' u)` of the derivative, `u ∈ K` minimises the convex
-`f` over the convex `K` if and only if `-∇f(u) ∈ N_K(u)` for the pairing `innerₗ V`. -/
+/-- **The first-order condition as a normal-cone condition, in a Hilbert space.** Let $V$ be a real
+Hilbert space, let $K \subseteq V$ be convex, and let $f : V \to \mathbb{R}$ be convex on $K$,
+with directional derivatives $f'(w)h$, $f'(w) \in V'$, at every point $w \in K$ in every
+direction $h$. Let $\nabla f(u) \in V$ be the Riesz representative of $f'(u)$. Then $u \in K$
+minimizes $f$ over $K$ if and only if
+$$-\nabla f(u) \in N_K(u), \quad \text{that is,} \quad \langle v - u, \nabla f(u) \rangle \ge 0
+  \quad \text{for all } v \in K.$$
+
+The gradient is `(InnerProductSpace.toDual ℝ V).symm (f' u)`, and the normal cone is taken for
+the pairing `innerₗ V`. -/
 theorem isMinOn_iff_neg_toDual_symm_mem_normalCone (hf : ConvexOn ℝ K f)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) (hu : u ∈ K) :
     IsMinOn f K u ↔ -(InnerProductSpace.toDual ℝ V).symm (f' u) ∈ normalCone (innerₗ V) K u := by

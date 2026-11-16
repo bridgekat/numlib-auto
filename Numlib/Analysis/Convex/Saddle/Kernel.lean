@@ -8,62 +8,117 @@ import Numlib.Analysis.Convex.Saddle.Equiv
 /-!
 # Kernels of saddle-functions
 
-The **kernel** of a concave-convex function `K` is its restriction to the relative interior
-`ri (dom₁ K) × ri (dom₂ K)` of its effective domain, and it is a complete invariant: two closed
-proper concave-convex functions are equivalent exactly when their kernels agree. Every *simple*
-proper such function determines a single equivalence class of closed proper functions with that
-kernel, the order interval between its lower and upper closures; and closedness of a proper `K` is
-visible in the two effective domains `C = dom₁ K` and `D = dom₂ K` alone, with no closure
-operation involved.
+The **kernel** of a concave-convex function $K \colon U \times X \to [-\infty, +\infty]$ is its
+restriction to the relative interior $\operatorname{ri}(\operatorname{dom} K)$ of its effective
+domain. This module proves, for finite-dimensional $U$ and $X$, that two closed proper
+concave-convex functions are equivalent if and only if they have the same kernel, and that the
+kernel of a *simple* proper concave-convex function is the kernel of exactly one equivalence class
+of closed proper concave-convex functions. These are Theorems 34.4 and 34.5 of
+[rockafellar1970convex]. The module also proves Theorem 34.3, which characterizes the closed proper
+concave-convex functions by the behaviour of their slices, and it compares the two brackets of a
+convex bifunction (Corollaries 33.2.1 and 33.2.2).
+
+A function $K$ is concave-convex if $K(\cdot, x)$ is concave for every $x$ and $K(u, \cdot)$ is
+convex for every $u$. Its effective domain is $\operatorname{dom} K = C \times D$, with $C =
+\operatorname{dom}_1 K = \{u \mid K(u, x) > -\infty \text{ for all } x\}$ and $D =
+\operatorname{dom}_2 K = \{x \mid K(u, x) < +\infty \text{ for all } u\}$, and $K$ is proper if $C$
+and $D$ are nonempty. The partial closure $\operatorname{cl}_2 K$ replaces each convex slice
+$K(u, \cdot)$ by its convex closure, and $\operatorname{cl}_1 K$ replaces each concave slice
+$K(\cdot, x)$ by its concave closure. Two functions $K$ and $L$ are equivalent if
+$\operatorname{cl}_1 K = \operatorname{cl}_1 L$ and $\operatorname{cl}_2 K = \operatorname{cl}_2 L$,
+and $K$ is closed if $\operatorname{cl}_1 \operatorname{cl}_2 K = \operatorname{cl}_1 K$ and
+$\operatorname{cl}_2 \operatorname{cl}_1 K = \operatorname{cl}_2 K$. The lower closure is
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ and the upper closure is
+$\operatorname{cl}_1 \operatorname{cl}_2 K$. The swapped function of $K$ is
+$(x, u) \mapsto -K(u, x)$.
 
 ## Main definitions
 
-* `kernelSet K` — the rectangle `ri (dom₁ K) ×ˢ ri (dom₂ K)`, which is `ri (dom K)`; `kernel K` is
-  `K` on that rectangle and `⊤` off it.
-* `domSaddle K` — `dom K = dom₁ K × dom₂ K`; `ProperSaddleFn K` — both halves nonempty.
-* `SaddleStructure K` — the six structural clauses of a closed proper saddle-function, as
-  `ConvexSliceStructure` for `K` and for `saddleSwap K`.
-* `SimpleSaddleFn K` — Rockafellar's *simple*: over `ri (dom₁ K)` the convex slices stay inside
-  `cl (dom₂ K)`, and symmetrically.
-* `lowerSimpleExt C D K`, `upperSimpleExt C D K` — the two simple extensions of a finite
-  saddle-function on `C × D`.
+* `ConvexAnalysis.domSaddle`: the effective domain $\operatorname{dom} K = \operatorname{dom}_1 K
+  \times \operatorname{dom}_2 K$.
+* `ConvexAnalysis.ProperSaddleFn`: $K$ is proper, that is, $\operatorname{dom}_1 K$ and
+  $\operatorname{dom}_2 K$ are nonempty.
+* `ConvexAnalysis.ConvexSliceStructure`: properties (a)–(c) of Theorem 34.3 of
+  [rockafellar1970convex], which describe the convex slices $K(u, \cdot)$ for
+  $u \in \operatorname{ri} C$, for $u \in C \setminus \operatorname{ri} C$ and for $u \notin C$.
+* `ConvexAnalysis.SaddleStructure`: the six properties (a)–(f) of Theorem 34.3, that is, the convex
+  slice structure of $K$ and of the swapped function.
+* `ConvexAnalysis.kernelSet`: the rectangle $\operatorname{ri} C \times \operatorname{ri} D =
+  \operatorname{ri}(\operatorname{dom} K)$.
+* `ConvexAnalysis.kernel`: the kernel, $K$ on $\operatorname{ri} C \times \operatorname{ri} D$ and
+  $+\infty$ elsewhere.
+* `ConvexAnalysis.SimpleSaddleFn`: $K$ is simple, that is, $\operatorname{dom}(K(u, \cdot))
+  \subseteq \operatorname{cl} D$ for $u \in \operatorname{ri} C$ and $\operatorname{dom}(K(\cdot,
+  x)) \subseteq \operatorname{cl} C$ for $x \in \operatorname{ri} D$.
+* `ConvexAnalysis.lowerSimpleExt`, `ConvexAnalysis.upperSimpleExt`: the lower and upper simple
+  extensions of a finite function on $C \times D$.
 
 ## Main results
 
-* `saddleEquiv_iff_kernel_eq` — equivalence is detected by the kernel
-  ([rockafellar1970convex] Theorem 34.4); `closedSaddleFn_iff_saddleStructure` — closedness is
-  detected by the six structural clauses.
-* `exists_unique_saddleEquiv_class_of_kernel` — a simple proper saddle-function has exactly one
-  class of closed proper functions with its kernel ([rockafellar1970convex] Theorem 34.5);
-  `exists_unique_saddleEquiv_class_of_finite` — the same starting from a finite saddle-function.
-* `kernel_partialCl₂`, `kernel_partialCl₁`, `SimpleSaddleFn.partialCl₂`,
-  `SimpleSaddleFn.partialCl₁` — `cl₁` and `cl₂` preserve simplicity, properness and the kernel,
-  which is the engine of that uniqueness.
-* `mem_saddleClass_simpleExt_iff_saddleEquiv` — the extensions of a finite saddle-function with the
-  prescribed infinite values off `C × D` are one full equivalence class;
-  `SaddleEquiv.eq_of_mem_relint_dom₁` — equivalent closed functions agree over `ri (dom₁ K)`.
-* `convexCl_eq_of_eqOn_relint_convexDom`, `concaveCl_eq_of_eqOn_relint_concaveDom` — a closed convex
-  function is determined by its values on `ri (dom f)`.
-* `concaveDom_bracket` — the concave effective domain of `u ↦ ⟨Fu, y⟩` is `dom F`;
-  `bracket_eq_concaveBracket_convexAdjointBifun_of_polyhedral` — for a proper polyhedral bifunction
-  the relative interior may be dropped and the two brackets agree except at the pairs with
-  `u ∉ dom F` *and* `y ∉ dom F*`; `exists_unique_bifun_of_simpleExt` — a finite continuous
-  saddle-function on a closed `C × D` comes from a unique closed convex bifunction.
+* `ConvexAnalysis.closedSaddleFn_iff_saddleStructure`: a proper concave-convex function is closed if
+  and only if it has the six properties of Theorem 34.3.
+* `ConvexAnalysis.SaddleEquiv.eq_of_mem_relint_dom₁`,
+  `ConvexAnalysis.SaddleEquiv.eq_of_mem_relint_dom₂`: two equivalent closed proper concave-convex
+  functions agree on $\operatorname{ri}(\operatorname{dom}_1 K) \times X$ and on $U \times
+  \operatorname{ri}(\operatorname{dom}_2 K)$.
+* `ConvexAnalysis.saddleEquiv_iff_kernel_eq`: two closed proper concave-convex functions are
+  equivalent if and only if they have the same kernel (Theorem 34.4).
+* `ConvexAnalysis.SimpleSaddleFn.partialCl₂`, `ConvexAnalysis.kernel_partialCl₂`,
+  `ConvexAnalysis.SimpleSaddleFn.partialCl₁`, `ConvexAnalysis.kernel_partialCl₁`: for a simple
+  proper concave-convex $K$, the partial closures $\operatorname{cl}_2 K$ and
+  $\operatorname{cl}_1 K$ are again simple and have the kernel of $K$.
+* `ConvexAnalysis.exists_unique_saddleEquiv_class_of_kernel`: the kernel of a simple proper
+  concave-convex function is the kernel of exactly one equivalence class of closed proper
+  concave-convex functions (Theorem 34.5).
+* `ConvexAnalysis.exists_unique_saddleEquiv_class_of_finite`: the same for the restriction to
+  $\operatorname{ri}(C \times D)$ of a finite concave-convex function on a nonempty product of
+  convex sets (Corollary 34.5.1).
+* `ConvexAnalysis.mem_saddleClass_simpleExt_iff_saddleEquiv`: for a finite function on a nonempty
+  closed $C \times D$ that is continuous in each variable, the order interval between its two simple
+  extensions is the equivalence class of the lower simple extension (Corollary 34.2.4).
+* `ConvexAnalysis.concaveDom_bracket`: the effective domain of the concave function
+  $u \mapsto \langle Fu, y \rangle$ is $\operatorname{dom} F$.
+* `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint`,
+  `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBifun`:
+  $\langle Fu, y \rangle = \langle u, F^* y \rangle$ for
+  $u \in \operatorname{ri}(\operatorname{dom} F)$, and for closed $F$ also for $y \in
+  \operatorname{ri}(\operatorname{dom} F^*)$ (Corollary 33.2.1).
+* `ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_polyhedral`: for a proper
+  polyhedral convex bifunction the two brackets agree unless $u \notin \operatorname{dom} F$ and
+  $y \notin \operatorname{dom} F^*$ (Corollary 33.2.2).
+* `ConvexAnalysis.exists_unique_bifun_of_simpleExt`: the two simple extensions of a finite
+  continuous concave-convex function on a nonempty closed convex $C \times D$ are the two brackets
+  of exactly one closed convex bifunction.
+
+## Proof outline
+
+Equivalent closed proper functions have the same effective domains, and they agree with
+$\operatorname{cl}_2 K$ on $\operatorname{ri} C \times X$, because there the concave slices of
+$\operatorname{cl}_2 K$ have the effective domain $C$ and a concave function agrees with its closure
+on the relative interior of its effective domain. So they have the same kernel. Conversely, if two
+closed proper functions have the same kernel, then their convex slices over $\operatorname{ri} C$
+agree, because a closed convex function is determined by its values on the relative interior of its
+effective domain (`ConvexAnalysis.convexCl_eq_of_eqOn_relint_convexDom`); from this they have the
+same $\operatorname{cl}_1$ and the same $\operatorname{cl}_2$. For Theorem 34.5,
+$\operatorname{cl}_1$ and $\operatorname{cl}_2$ preserve properness, simplicity and the kernel of a
+simple proper $K$, so the lower and upper closures are closed proper functions with the kernel of
+$K$. By Theorem 34.4 they are equivalent, and their order interval is the whole class.
 
 ## Implementation notes
 
-`kernel K` is a total function rather than a `Set.restrict`: equations between restrictions to
-rectangles that move with the function are unusable, whereas `kernel K = kernel L` is one honest
-equation, which `kernel_eq_iff` unpacks into "same rectangle, same values there". Taking the kernel
-to be its *rectangle* alone would break the invariance, since `K` and `K + 1` share a rectangle.
-
-Finite dimension is used only where `ri` appears. No pairing appears in any statement here:
-concave-convexity of the partial closures is the only input from the duality layer, and over a
-normed space the continuous dual supplies the compatible pairing internally.
-
-## References
-
-* [rockafellar1970convex] §33 and §34.
+* `ConvexAnalysis.kernel` is a total function, not a restriction to a subset. Its rectangle depends
+  on $K$, so an equation between restrictions of two functions to their own rectangles would be hard
+  to use. The single equation `kernel K = kernel L` says "the same rectangle, and the same values
+  there" (`ConvexAnalysis.kernel_eq_iff`). The rectangle alone is not an invariant: $K$ and $K + 1$
+  have the same rectangle.
+* Finite dimension is assumed only where a relative interior appears. No pairing appears in the
+  statements about saddle-functions: the only input from duality is that the partial closures of a
+  concave-convex function are concave-convex, and over a normed space the continuous dual gives a
+  compatible pairing inside the proof.
+* Each statement about the concave variable is proved from the corresponding statement about the
+  convex variable, applied to the swapped function `ConvexAnalysis.saddleSwap K`. The upper simple
+  extension is the swapped lower simple extension of the swapped function
+  (`ConvexAnalysis.upperSimpleExt_eq_saddleSwap`).
 -/
 
 namespace ConvexAnalysis
@@ -76,8 +131,9 @@ section SwapClosed
 
 variable {U X : Type*} [TopologicalSpace U] [TopologicalSpace X] {K : U × X → EReal}
 
-/-- Rockafellar's closedness for saddle-functions is invariant under the swap involution: its two
-equations exchange places. -/
+/-- A function $K \colon U \times X \to [-\infty, +\infty]$ is closed if and only if its swapped
+function $(x, u) \mapsto -K(u, x)$ is closed: the swap exchanges the two equations of
+closedness. -/
 theorem closedSaddleFn_saddleSwap_iff : ClosedSaddleFn (saddleSwap K) ↔ ClosedSaddleFn K := by
   have e1 : partialCl₁ (partialCl₂ (saddleSwap K)) = saddleSwap (partialCl₂ (partialCl₁ K)) := by
     rw [partialCl₂_saddleSwap, partialCl₁_saddleSwap]
@@ -99,25 +155,27 @@ section DomainsAlgebraic
 
 variable {U X : Type*} {K : U × X → EReal} {u : U}
 
-/-- Every slice `K (u, ·)` has `dom₂ K` inside its effective domain. -/
+/-- For every $u$, the effective domain of the convex slice $K(u, \cdot)$ contains
+$\operatorname{dom}_2 K$. -/
 theorem dom₂_subset_convexDom_slice (K : U × X → EReal)
     (u : U) : dom₂ K ⊆ convexDom fun x => K (u, x) :=
   fun _ hx => hx u
 
-/-- Every slice `K (·, x)` has `dom₁ K` inside its concave effective domain. -/
+/-- For every $x$, the effective domain of the concave slice $K(\cdot, x)$ contains
+$\operatorname{dom}_1 K$. -/
 theorem dom₁_subset_concaveDom_slice (K : U × X → EReal) (x : X) :
     dom₁ K ⊆ concaveDom fun u => K (u, x) :=
   fun _ hu => hu x
 
-/-- On `dom₁ K` the slice `K (u, ·)` is a proper convex function, as soon as `dom₂ K` is
-nonempty. -/
+/-- If $\operatorname{dom}_2 K$ is nonempty and $u \in \operatorname{dom}_1 K$, then the slice
+$K(u, \cdot)$ is a proper convex function. -/
 theorem properConvex_slice_of_mem_dom₁ (hne : (dom₂ K).Nonempty) (hu : u ∈ dom₁ K) :
     ProperConvex fun x => K (u, x) := by
   obtain ⟨x₀, hx₀⟩ := hne
   exact ⟨⟨x₀, hx₀ u⟩, fun x => (hu x).ne'⟩
 
-/-- On `dom₂ K` the slice `K (·, x)` is a proper concave function, as soon as `dom₁ K` is
-nonempty. -/
+/-- If $\operatorname{dom}_1 K$ is nonempty and $x \in \operatorname{dom}_2 K$, then the slice
+$K(\cdot, x)$ is a proper concave function. -/
 theorem properConcave_slice_of_mem_dom₂ {x : X} (hne : (dom₁ K).Nonempty) (hx : x ∈ dom₂ K) :
     ProperConcave fun u => K (u, x) := by
   obtain ⟨u₀, hu₀⟩ := hne
@@ -129,8 +187,9 @@ section DomainsCl₂
 
 variable {U X : Type*} [NormedAddCommGroup X] {K : U × X → EReal} {u : U}
 
-/-- Off `dom₁ K` the slice `K (u, ·)` takes the value `-∞` somewhere, so its convex closure is the
-constant `-∞`. -/
+/-- Let $X$ be a normed group. If $u \notin \operatorname{dom}_1 K$, then
+$(\operatorname{cl}_2 K)(u, x) = -\infty$ for every $x$: the slice $K(u, \cdot)$ takes the value
+$-\infty$ somewhere, so its convex closure is the constant $-\infty$. -/
 theorem partialCl₂_slice_eq_bot_of_notMem_dom₁ (hu : u ∉ dom₁ K) :
     (fun x => partialCl₂ K (u, x)) = fun _ => (⊥ : EReal) := by
   obtain ⟨x₀, hx₀⟩ : ∃ x₀ : X, K (u, x₀) = ⊥ := by
@@ -145,7 +204,9 @@ theorem partialCl₂_slice_eq_bot_of_notMem_dom₁ (hu : u ∉ dom₁ K) :
   rw [partialCl₂_slice]
   exact convexCl_of_exists_eq_bot ⟨x₀, h1⟩
 
-/-- `cl₂` can only enlarge the second effective domain, since it lowers `K`. -/
+/-- The partial closure $\operatorname{cl}_2 K$ has a larger second effective domain:
+$\operatorname{dom}_2 K \subseteq \operatorname{dom}_2(\operatorname{cl}_2 K)$, because
+$\operatorname{cl}_2 K \le K$. -/
 theorem dom₂_subset_dom₂_partialCl₂ (K : U × X → EReal) : dom₂ K ⊆ dom₂ (partialCl₂ K) :=
   fun _ hx u => lt_of_le_of_lt (partialCl₂_le K (u, _)) (hx u)
 
@@ -156,15 +217,17 @@ section DomainsCl₂FD
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [NormedAddCommGroup X] [NormedSpace ℝ X]
   [FiniteDimensional ℝ X] {K : U × X → EReal} {u : U}
 
-/-- On `dom₁ K` the slice `(cl₂ K) (u, ·)` is again proper: closing a proper convex function
-leaves it proper, slice by slice. -/
+/-- Let $X$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_2 K$ nonempty. For $u \in \operatorname{dom}_1 K$, the slice
+$(\operatorname{cl}_2 K)(u, \cdot)$ is a proper convex function. -/
 theorem properConvex_partialCl₂_slice (hK : ConcaveConvexFn K) (hne : (dom₂ K).Nonempty)
     (hu : u ∈ dom₁ K) : ProperConvex fun x => partialCl₂ K (u, x) := by
   rw [partialCl₂_slice]
   exact (hK.convex_snd u).properConvex_convexCl (properConvex_slice_of_mem_dom₁ hne hu)
 
-/-- `dom₁ K` is the effective domain of *every* concave slice `(cl₂ K) (·, x)`, not merely their
-intersection. -/
+/-- Let $X$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_2 K$ nonempty. For every $x$, the effective domain of the concave slice
+$(\operatorname{cl}_2 K)(\cdot, x)$ is exactly $\operatorname{dom}_1 K$. -/
 theorem concaveDom_partialCl₂_slice (hK : ConcaveConvexFn K) (hne : (dom₂ K).Nonempty) (x : X) :
     concaveDom (fun u => partialCl₂ K (u, x)) = dom₁ K := by
   ext u
@@ -175,7 +238,9 @@ theorem concaveDom_partialCl₂_slice (hK : ConcaveConvexFn K) (hne : (dom₂ K)
     exact absurd h' (lt_irrefl ⊥)
   · exact bot_lt_iff_ne_bot.2 ((properConvex_partialCl₂_slice hK hne h).ne_bot x)
 
-/-- `cl₂` does not change the first effective domain. -/
+/-- Let $X$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_2 K$ nonempty. Then $\operatorname{dom}_1(\operatorname{cl}_2 K) =
+\operatorname{dom}_1 K$. -/
 theorem dom₁_partialCl₂ (hK : ConcaveConvexFn K) (hne : (dom₂ K).Nonempty) :
     dom₁ (partialCl₂ K) = dom₁ K := by
   ext u
@@ -188,8 +253,10 @@ theorem dom₁_partialCl₂ (hK : ConcaveConvexFn K) (hne : (dom₂ K).Nonempty)
       rw [concaveDom_partialCl₂_slice hK hne x]; exact hu
     exact h
 
-/-- Closing a convex function cannot push its effective domain past the closure: that of
-`(cl₂ K) (u, ·)` lies inside the closure of that of `K (u, ·)`. -/
+/-- Let $X$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_2 K$ nonempty. For $u \in \operatorname{dom}_1 K$, the effective domain of
+$(\operatorname{cl}_2 K)(u, \cdot)$ lies in the closure of the effective domain of
+$K(u, \cdot)$. -/
 theorem convexDom_partialCl₂_slice_subset_closure (hK : ConcaveConvexFn K) (hne : (dom₂ K).Nonempty)
     (hu : u ∈ dom₁ K) :
     convexDom (fun x => partialCl₂ K (u, x)) ⊆ closure (convexDom fun x => K (u, x)) := by
@@ -205,8 +272,10 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [AddCommGroup 
   {K : U × X → EReal} {x : X}
 
 omit [NormedSpace ℝ U] [AddCommGroup X] [Module ℝ X] in
-/-- Off `dom₂ K` the slice `K (·, x)` takes the value `+∞` somewhere, so its concave closure is
-the constant `+∞`. The mirror of `partialCl₂_slice_eq_bot_of_notMem_dom₁`. -/
+/-- Let $U$ be a normed group. If $x \notin \operatorname{dom}_2 K$, then
+$(\operatorname{cl}_1 K)(u, x) = +\infty$ for every $u$: the slice $K(\cdot, x)$ takes the value
+$+\infty$ somewhere, so its concave closure is the constant $+\infty$. This is the mirror of
+`ConvexAnalysis.partialCl₂_slice_eq_bot_of_notMem_dom₁`. -/
 theorem partialCl₁_slice_eq_top_of_notMem_dom₂ (hx : x ∉ dom₂ K) :
     (fun u => partialCl₁ K (u, x)) = fun _ => (⊤ : EReal) := by
   have h := partialCl₂_slice_eq_bot_of_notMem_dom₁ (K := saddleSwap K) (u := x)
@@ -218,21 +287,28 @@ theorem partialCl₁_slice_eq_top_of_notMem_dom₂ (hx : x ∉ dom₂ K) :
   simpa using congrArg (fun z : EReal => -z) h'
 
 omit [NormedSpace ℝ U] [AddCommGroup X] [Module ℝ X] in
-/-- `cl₁` can only enlarge the first effective domain, since it raises `K`. -/
+/-- The partial closure $\operatorname{cl}_1 K$ has a larger first effective domain:
+$\operatorname{dom}_1 K \subseteq \operatorname{dom}_1(\operatorname{cl}_1 K)$, because
+$K \le \operatorname{cl}_1 K$. -/
 theorem dom₁_subset_dom₁_partialCl₁ (K : U × X → EReal) : dom₁ K ⊆ dom₁ (partialCl₁ K) :=
   fun _ hu x => lt_of_lt_of_le (hu x) (le_partialCl₁ K (_, x))
 
 omit [NormedSpace ℝ U] [AddCommGroup X] [Module ℝ X] in
-/-- The slice of `cl₂` of the swap, written back in terms of `cl₁`. This is the workhorse of the
-transport: every `cl₁` statement below is a `cl₂` statement at `saddleSwap K`. -/
+/-- For every $x$, the slice $u \mapsto (\operatorname{cl}_2 \tilde K)(x, u)$ of the swapped
+function $\tilde K(x, u) = -K(u, x)$ is $u \mapsto -(\operatorname{cl}_1 K)(u, x)$.
+
+The statements about $\operatorname{cl}_1$ below are derived through this identity from the
+statements about $\operatorname{cl}_2$ for the swapped function. -/
 theorem partialCl₂_saddleSwap_slice (K : U × X → EReal) (x : X) :
     (fun u => partialCl₂ (saddleSwap K) (x, u)) = fun u => -(partialCl₁ K (u, x)) :=
   funext fun u => congrFun (partialCl₂_saddleSwap K) (x, u)
 
 variable [FiniteDimensional ℝ U]
 
-/-- The mirror of `properConvex_partialCl₂_slice`: on `dom₂ K` the slice `(cl₁ K) (·, x)` is again a
-proper concave function. -/
+/-- Let $U$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_1 K$ nonempty. For $x \in \operatorname{dom}_2 K$, the slice
+$(\operatorname{cl}_1 K)(\cdot, x)$ is a proper concave function. This is the mirror of
+`ConvexAnalysis.properConvex_partialCl₂_slice`. -/
 theorem properConcave_partialCl₁_slice (hK : ConcaveConvexFn K) (hne : (dom₁ K).Nonempty)
     (hx : x ∈ dom₂ K) : ProperConcave fun u => partialCl₁ K (u, x) := by
   have h := properConvex_partialCl₂_slice hK.saddleSwap
@@ -240,8 +316,9 @@ theorem properConcave_partialCl₁_slice (hK : ConcaveConvexFn K) (hne : (dom₁
   rw [partialCl₂_saddleSwap_slice] at h
   exact properConcave_iff_properConvex_neg.2 h
 
-/-- The mirror of `concaveDom_partialCl₂_slice`: `dom₂ K` is the effective domain of *every*
-convex slice `(cl₁ K) (u, ·)`. -/
+/-- Let $U$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_1 K$ nonempty. For every $u$, the effective domain of the convex slice
+$(\operatorname{cl}_1 K)(u, \cdot)$ is exactly $\operatorname{dom}_2 K$. -/
 theorem convexDom_partialCl₁_slice (hK : ConcaveConvexFn K) (hne : (dom₁ K).Nonempty) (u : U) :
     convexDom (fun x => partialCl₁ K (u, x)) = dom₂ K := by
   have h := concaveDom_partialCl₂_slice hK.saddleSwap
@@ -254,14 +331,19 @@ theorem convexDom_partialCl₁_slice (hK : ConcaveConvexFn K) (hne : (dom₁ K).
   change partialCl₁ K (u, x) < ⊤ ↔ ⊥ < -(partialCl₁ K (u, x))
   rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
 
-/-- `cl₁` does not change the second effective domain. -/
+/-- Let $U$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_1 K$ nonempty. Then $\operatorname{dom}_2(\operatorname{cl}_1 K) =
+\operatorname{dom}_2 K$. -/
 theorem dom₂_partialCl₁ (hK : ConcaveConvexFn K) (hne : (dom₁ K).Nonempty) :
     dom₂ (partialCl₁ K) = dom₂ K := by
   have h := dom₁_partialCl₂ hK.saddleSwap (by rwa [dom₂_saddleSwap])
   rw [partialCl₂_saddleSwap, dom₁_saddleSwap, dom₁_saddleSwap] at h
   exact h
 
-/-- The mirror of `convexDom_partialCl₂_slice_subset_closure`. -/
+/-- Let $U$ be a finite-dimensional real normed space and let $K$ be concave-convex with
+$\operatorname{dom}_1 K$ nonempty. For $x \in \operatorname{dom}_2 K$, the effective domain of
+$(\operatorname{cl}_1 K)(\cdot, x)$ lies in the closure of the effective domain of
+$K(\cdot, x)$. -/
 theorem concaveDom_partialCl₁_slice_subset_closure (hK : ConcaveConvexFn K)
     (hne : (dom₁ K).Nonempty) (hx : x ∈ dom₂ K) :
     concaveDom (fun u => partialCl₁ K (u, x)) ⊆ closure (concaveDom fun u => K (u, x)) := by
@@ -287,37 +369,54 @@ section ProperConvex
 
 variable {U X : Type*} {K : U × X → EReal}
 
-/-- The **effective domain** of a saddle-function: the product `dom₁ K × dom₂ K`, on which `K` is
-finite. -/
+/-- The **effective domain** of a function $K \colon U \times X \to [-\infty, +\infty]$ is the
+product
+$$\operatorname{dom} K = \operatorname{dom}_1 K \times \operatorname{dom}_2 K,$$
+where $\operatorname{dom}_1 K = \{u \mid K(u, x) > -\infty \text{ for all } x\}$ and
+$\operatorname{dom}_2 K = \{x \mid K(u, x) < +\infty \text{ for all } u\}$. The function $K$ is
+finite on $\operatorname{dom} K$.
+
+This is the effective domain of a saddle-function in §34 of [rockafellar1970convex]. -/
 def domSaddle (K : U × X → EReal) : Set (U × X) := dom₁ K ×ˢ dom₂ K
 
+/-- A pair $p$ lies in $\operatorname{dom} K$ if and only if $p_1 \in \operatorname{dom}_1 K$ and
+$p_2 \in \operatorname{dom}_2 K$. -/
 @[simp] theorem mem_domSaddle {p : U × X} : p ∈ domSaddle K ↔ p.1 ∈ dom₁ K ∧ p.2 ∈ dom₂ K :=
   Iff.rfl
 
-/-- A saddle-function is **proper** when its effective domain is nonempty. -/
+/-- A function $K \colon U \times X \to [-\infty, +\infty]$ is **proper** if both
+$\operatorname{dom}_1 K$ and $\operatorname{dom}_2 K$ are nonempty, that is, if its effective
+domain $\operatorname{dom} K$ is nonempty
+(`ConvexAnalysis.properSaddleFn_iff_domSaddle_nonempty`).
+
+This is the properness of a saddle-function in §34 of [rockafellar1970convex]. -/
 structure ProperSaddleFn (K : U × X → EReal) : Prop where
-  /-- `K` is somewhere finite in the first variable. -/
+  /-- The set $\operatorname{dom}_1 K$ is nonempty. -/
   dom₁_nonempty : (dom₁ K).Nonempty
-  /-- `K` is somewhere finite in the second variable. -/
+  /-- The set $\operatorname{dom}_2 K$ is nonempty. -/
   dom₂_nonempty : (dom₂ K).Nonempty
 
+/-- The effective domain of a proper $K$ is nonempty. -/
 theorem ProperSaddleFn.domSaddle_nonempty (hp : ProperSaddleFn K) : (domSaddle K).Nonempty := by
   obtain ⟨u, hu⟩ := hp.dom₁_nonempty
   obtain ⟨x, hx⟩ := hp.dom₂_nonempty
   exact ⟨(u, x), hu, hx⟩
 
+/-- $K$ is proper if and only if its effective domain $\operatorname{dom} K$ is nonempty. -/
 theorem properSaddleFn_iff_domSaddle_nonempty :
     ProperSaddleFn K ↔ (domSaddle K).Nonempty :=
   ⟨ProperSaddleFn.domSaddle_nonempty, fun ⟨p, hp⟩ => ⟨⟨p.1, hp.1⟩, ⟨p.2, hp.2⟩⟩⟩
 
+/-- The swapped function $(x, u) \mapsto -K(u, x)$ of a proper $K$ is proper. -/
 theorem ProperSaddleFn.saddleSwap (hp : ProperSaddleFn K) :
     ProperSaddleFn (ConvexAnalysis.saddleSwap K) :=
   ⟨by rw [dom₁_saddleSwap]; exact hp.dom₂_nonempty,
     by rw [dom₂_saddleSwap]; exact hp.dom₁_nonempty⟩
 
-/-- On its effective domain a saddle-function is finite. -/
+/-- If $p \in \operatorname{dom} K$, then $K(p) < +\infty$. -/
 theorem lt_top_of_mem_domSaddle {p : U × X} (hp : p ∈ domSaddle K) : K p < ⊤ := hp.2 p.1
 
+/-- If $p \in \operatorname{dom} K$, then $K(p) > -\infty$. -/
 theorem bot_lt_of_mem_domSaddle {p : U × X} (hp : p ∈ domSaddle K) : ⊥ < K p := hp.1 p.2
 
 end ProperConvex
@@ -328,19 +427,22 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K : U × X → EReal}
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The relative interior of the effective domain of a saddle-function is the product of the two
-relative interiors: `ri (dom K) = ri (dom₁ K) × ri (dom₂ K)`. -/
+/-- Let $U$ and $X$ be real normed spaces. Then $\operatorname{ri}(\operatorname{dom} K) =
+\operatorname{ri}(\operatorname{dom}_1 K) \times \operatorname{ri}(\operatorname{dom}_2 K)$. -/
 theorem relint_domSaddle (K : U × X → EReal) :
     ri (domSaddle K) = ri (dom₁ K) ×ˢ ri (dom₂ K) :=
   intrinsicInterior_prod_eq _ _
 
 omit [FiniteDimensional ℝ X] in
-/-- The first effective domain of a proper concave-convex `K` has nonempty relative interior. -/
+/-- Let $U$ be a finite-dimensional real normed space. If $K$ is concave-convex and proper, then
+$\operatorname{ri}(\operatorname{dom}_1 K)$ is nonempty. -/
 theorem ProperSaddleFn.relint_dom₁_nonempty (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     (ri (dom₁ K)).Nonempty :=
   Convex.relint_nonempty hK.convex_dom₁ hp.dom₁_nonempty
 
 omit [FiniteDimensional ℝ U] in
+/-- Let $X$ be a finite-dimensional real normed space. If $K$ is concave-convex and proper, then
+$\operatorname{ri}(\operatorname{dom}_2 K)$ is nonempty. -/
 theorem ProperSaddleFn.relint_dom₂_nonempty (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     (ri (dom₂ K)).Nonempty :=
   Convex.relint_nonempty hK.convex_dom₂ hp.dom₂_nonempty
@@ -354,28 +456,40 @@ section CorFiniteDim
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] {K : U × X → EReal}
 
-/-- The partial closure `cl₂ K` of a concave-convex function is again concave-convex: over a
-normed space the continuous dual is a compatible partner, so no pairing has to be chosen. -/
+/-- Let $U$ and $X$ be real normed spaces. If $K$ is concave-convex, then $\operatorname{cl}_2 K$ is
+concave-convex.
+
+The proof uses the continuous dual of $X$ as a compatible pairing, so no pairing appears in the
+statement. -/
 theorem ConcaveConvexFn.partialCl₂ (hK : ConcaveConvexFn K) :
     ConcaveConvexFn (ConvexAnalysis.partialCl₂ K) :=
   concaveConvexFn_partialCl₂ (X := StrongDual ℝ X) (topDualPairing ℝ X) hK
 
-/-- The mirror clause: `cl₁ K` of a concave-convex function is again concave-convex. -/
+/-- Let $U$ and $X$ be real normed spaces. If $K$ is concave-convex, then $\operatorname{cl}_1 K$ is
+concave-convex. -/
 theorem ConcaveConvexFn.partialCl₁ (hK : ConcaveConvexFn K) :
     ConcaveConvexFn (ConvexAnalysis.partialCl₁ K) :=
   concaveConvexFn_partialCl₁ (V := StrongDual ℝ U) (topDualPairing ℝ U).flip hK
 
 end CorFiniteDim
 
-/-! ### Effective domains and the relative-interior clauses -/
+/-!
+### Effective domains and the relative-interior clauses
+
+Unless a statement says otherwise, $U$ and $X$ are finite-dimensional real normed spaces in this
+section.
+-/
 
 section DomainsRelint
 
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K L : U × X → EReal}
 
-/-- `cl₂` leaves the *second* effective domain of a closed proper saddle-function unchanged. (That
-it leaves the first unchanged is `dom₁_partialCl₂` and needs no closedness.) -/
+/-- Let $K$ be a closed proper concave-convex function. Then
+$\operatorname{dom}_2(\operatorname{cl}_2 K) = \operatorname{dom}_2 K$.
+
+The equation $\operatorname{dom}_1(\operatorname{cl}_2 K) = \operatorname{dom}_1 K$ needs no
+closedness; it is `ConvexAnalysis.dom₁_partialCl₂`. -/
 theorem ClosedSaddleFn.dom₂_partialCl₂ (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : dom₂ (partialCl₂ K) = dom₂ K := by
   have hne₁ : (dom₁ (partialCl₂ K)).Nonempty := by
@@ -385,7 +499,8 @@ theorem ClosedSaddleFn.dom₂_partialCl₂ (hcl : ClosedSaddleFn K) (hK : Concav
   rw [hcl.1, dom₂_partialCl₁ hK hp.dom₁_nonempty] at h1
   exact h1.symm
 
-/-- `cl₁` leaves the *first* effective domain of a closed proper saddle-function unchanged. -/
+/-- Let $K$ be a closed proper concave-convex function. Then
+$\operatorname{dom}_1(\operatorname{cl}_1 K) = \operatorname{dom}_1 K$. -/
 theorem ClosedSaddleFn.dom₁_partialCl₁ (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : dom₁ (partialCl₁ K) = dom₁ K := by
   have hne₂ : (dom₂ (partialCl₁ K)).Nonempty := by
@@ -396,19 +511,23 @@ theorem ClosedSaddleFn.dom₁_partialCl₁ (hcl : ClosedSaddleFn K) (hK : Concav
   exact h1.symm
 
 omit [NormedSpace ℝ U] [FiniteDimensional ℝ U] [NormedSpace ℝ X] [FiniteDimensional ℝ X] in
-/-- Where the two closures agree, `K` agrees with them: they sandwich it. -/
+/-- Let $U$ and $X$ be normed groups. If $(\operatorname{cl}_1 K)(p) = (\operatorname{cl}_2 K)(p)$,
+then $K(p) = (\operatorname{cl}_2 K)(p)$, because $\operatorname{cl}_2 K \le K \le
+\operatorname{cl}_1 K$. -/
 theorem eq_partialCl₂_of_partialCl₁_eq {p : U × X} (h : partialCl₁ K p = partialCl₂ K p) :
     K p = partialCl₂ K p := by
   refine le_antisymm ?_ (partialCl₂_le K p)
   rw [← h]
   exact le_partialCl₁ K p
 
-/-- At a relative interior point of `dom₁ K` the two partial closures of a closed saddle-function
-already agree.
+/-- Let $K$ be a closed proper concave-convex function. For $u \in
+\operatorname{ri}(\operatorname{dom}_1 K)$ and every $x$,
+$$(\operatorname{cl}_1 K)(u, x) = (\operatorname{cl}_2 K)(u, x).$$
 
-Closedness gives `cl₁ K = cl₁ (cl₂ K)`, which closes the *concave* function `(cl₂ K) (·, x)`,
-whose effective domain is exactly `dom₁ K`, and a concave function agrees with its closure on the
-relative interior of that domain. -/
+Closedness gives $\operatorname{cl}_1 K = \operatorname{cl}_1 \operatorname{cl}_2 K$. The
+concave slice $(\operatorname{cl}_2 K)(\cdot, x)$ has the effective domain
+$\operatorname{dom}_1 K$, and a concave function agrees with its closure on the relative
+interior of its effective domain. -/
 theorem ClosedSaddleFn.partialCl₁_eq_partialCl₂_of_mem_relint_dom₁ (hcl : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) {u : U} (hu : u ∈ ri (dom₁ K)) (x : X) :
     partialCl₁ K (u, x) = partialCl₂ K (u, x) := by
@@ -420,7 +539,11 @@ theorem ClosedSaddleFn.partialCl₁_eq_partialCl₂_of_mem_relint_dom₁ (hcl : 
     _ = concaveCl (fun u => partialCl₂ K (u, x)) u := congrFun (partialCl₁_slice _ x) u
     _ = partialCl₂ K (u, x) := h
 
-/-- The mirror clause on `U × ri (dom₂ K)`, obtained from the swap involution. -/
+/-- Let $K$ be a closed proper concave-convex function. For $x \in
+\operatorname{ri}(\operatorname{dom}_2 K)$ and every $u$, $(\operatorname{cl}_1 K)(u, x) =
+(\operatorname{cl}_2 K)(u, x)$. The proof applies
+`ConvexAnalysis.ClosedSaddleFn.partialCl₁_eq_partialCl₂_of_mem_relint_dom₁` to the swapped
+function. -/
 theorem ClosedSaddleFn.partialCl₁_eq_partialCl₂_of_mem_relint_dom₂ (hcl : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) {x : X} (hx : x ∈ ri (dom₂ K)) (u : U) :
     partialCl₁ K (u, x) = partialCl₂ K (u, x) := by
@@ -430,44 +553,58 @@ theorem ClosedSaddleFn.partialCl₁_eq_partialCl₂_of_mem_relint_dom₂ (hcl : 
   change -(partialCl₂ K (u, x)) = -(partialCl₁ K (u, x)) at h
   simpa using (congrArg (fun z : EReal => -z) h).symm
 
-/-- A closed saddle-function coincides with `cl₂ K` — hence with every member of its equivalence
-class — on `ri (dom₁ K) × X`. -/
+/-- Let $K$ be a closed proper concave-convex function. For $u \in
+\operatorname{ri}(\operatorname{dom}_1 K)$ and every $x$,
+$K(u, x) = (\operatorname{cl}_2 K)(u, x)$. Since equivalent functions have the same
+$\operatorname{cl}_2$, all closed members of the equivalence class of $K$ agree there. -/
 theorem ClosedSaddleFn.eq_partialCl₂_of_mem_relint_dom₁ (hcl : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) {u : U} (hu : u ∈ ri (dom₁ K)) (x : X) :
     K (u, x) = partialCl₂ K (u, x) :=
   eq_partialCl₂_of_partialCl₁_eq (hcl.partialCl₁_eq_partialCl₂_of_mem_relint_dom₁ hK hp hu x)
 
-/-- The same on `U × ri (dom₂ K)`: there too a closed saddle-function coincides with `cl₂ K`. -/
+/-- Let $K$ be a closed proper concave-convex function. For $x \in
+\operatorname{ri}(\operatorname{dom}_2 K)$ and every $u$,
+$K(u, x) = (\operatorname{cl}_2 K)(u, x)$. -/
 theorem ClosedSaddleFn.eq_partialCl₂_of_mem_relint_dom₂ (hcl : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) {x : X} (hx : x ∈ ri (dom₂ K)) (u : U) :
     K (u, x) = partialCl₂ K (u, x) :=
   eq_partialCl₂_of_partialCl₁_eq (hcl.partialCl₁_eq_partialCl₂_of_mem_relint_dom₂ hK hp hx u)
 
-/-! #### Equivalent saddle-functions: shared domains, agreement on relative interiors -/
+/-! ### Equivalent saddle-functions: shared domains, agreement on relative interiors -/
 
 omit [FiniteDimensional ℝ U] in
-/-- Equivalent saddle-functions have the same first effective domain. No closedness is needed:
-`dom₁ K` is already `dom₁ (cl₂ K)`. -/
+/-- Let $X$ be a finite-dimensional real normed space and let $K$ and $L$ be equivalent proper
+concave-convex functions. Then $\operatorname{dom}_1 K = \operatorname{dom}_1 L$. No closedness
+is needed, because $\operatorname{dom}_1 K = \operatorname{dom}_1(\operatorname{cl}_2 K)$. -/
 theorem SaddleEquiv.dom₁_eq (h : SaddleEquiv K L) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) :
     dom₁ K = dom₁ L := by
   rw [← dom₁_partialCl₂ hK hpK.dom₂_nonempty, ← dom₁_partialCl₂ hL hpL.dom₂_nonempty, h.2]
 
 omit [FiniteDimensional ℝ X] in
-/-- Equivalent saddle-functions have the same second effective domain. -/
+/-- Let $U$ be a finite-dimensional real normed space and let $K$ and $L$ be equivalent proper
+concave-convex functions. Then $\operatorname{dom}_2 K = \operatorname{dom}_2 L$. -/
 theorem SaddleEquiv.dom₂_eq (h : SaddleEquiv K L) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) :
     dom₂ K = dom₂ L := by
   rw [← dom₂_partialCl₁ hK hpK.dom₁_nonempty, ← dom₂_partialCl₁ hL hpL.dom₁_nonempty, h.1]
 
-/-- Equivalent saddle-functions have the same effective domain. -/
+/-- Let $K$ and $L$ be equivalent proper concave-convex functions. Then
+$\operatorname{dom} K = \operatorname{dom} L$. -/
 theorem SaddleEquiv.domSaddle_eq (h : SaddleEquiv K L) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) :
     domSaddle K = domSaddle L := by
   rw [domSaddle, domSaddle, h.dom₁_eq hK hpK hL hpL, h.dom₂_eq hK hpK hL hpL]
 
-/-- Equivalent *closed* saddle-functions agree wherever the first coordinate is a relative interior
-point of `dom₁ K`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K, L \colon U \times X \to [-\infty, +\infty]$ be closed proper concave-convex functions that
+are equivalent. Then for every $u \in \operatorname{ri}(\operatorname{dom}_1 K)$ and every
+$x \in X$,
+$$K(u, x) = L(u, x).$$
+
+This is the second assertion of Corollary 34.2.1 of [rockafellar1970convex], for the first
+variable. Both functions agree with $\operatorname{cl}_2 K = \operatorname{cl}_2 L$ there
+(`ConvexAnalysis.ClosedSaddleFn.eq_partialCl₂_of_mem_relint_dom₁`). -/
 theorem SaddleEquiv.eq_of_mem_relint_dom₁ (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L)
     (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) {u : U} (hu : u ∈ ri (dom₁ K)) (x : X) :
@@ -476,7 +613,14 @@ theorem SaddleEquiv.eq_of_mem_relint_dom₁ (h : SaddleEquiv K L) (hclK : Closed
   rw [hclK.eq_partialCl₂_of_mem_relint_dom₁ hK hpK hu x,
     hclL.eq_partialCl₂_of_mem_relint_dom₁ hL hpL hu' x, h.2]
 
-/-- The mirror half: equivalent *closed* saddle-functions agree over `ri (dom₂ K)`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K, L \colon U \times X \to [-\infty, +\infty]$ be closed proper concave-convex functions that
+are equivalent. Then for every $x \in \operatorname{ri}(\operatorname{dom}_2 K)$ and every
+$u \in U$,
+$$K(u, x) = L(u, x).$$
+
+This is the second assertion of Corollary 34.2.1 of [rockafellar1970convex], for the second
+variable. -/
 theorem SaddleEquiv.eq_of_mem_relint_dom₂ (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L)
     (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) {x : X} (hx : x ∈ ri (dom₂ K)) (u : U) :
@@ -495,42 +639,46 @@ variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGr
   [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X] {K L : U × X → EReal}
 
 omit [AddCommGroup U] [IsTopologicalAddGroup U] in
-/-- A lower closed saddle-function is closed. -/
+/-- A lower closed function ($\operatorname{cl}_2 \operatorname{cl}_1 K = K$) is closed. -/
 theorem LowerClosedFn.closedSaddleFn (h : LowerClosedFn K) : ClosedSaddleFn K := by
   have h' : partialCl₂ (partialCl₁ K) = K := h
   have hc : partialCl₂ K = K := h.partialClosed₂
   exact ⟨by rw [hc], by rw [h', hc]⟩
 
 omit [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- An upper closed saddle-function is closed. -/
+/-- An upper closed function ($\operatorname{cl}_1 \operatorname{cl}_2 K = K$) is closed. -/
 theorem UpperClosedFn.closedSaddleFn (h : UpperClosedFn K) : ClosedSaddleFn K := by
   have h' : partialCl₁ (partialCl₂ K) = K := h
   have hc : partialCl₁ K = K := h.partialClosed₁
   exact ⟨by rw [h', hc], by rw [hc]⟩
 
 omit [AddCommGroup U] [IsTopologicalAddGroup U] [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- The least member `cl₂ K` of the class of a closed saddle-function is lower closed. -/
+/-- If $K$ is closed, then $\operatorname{cl}_2 K$ is lower closed. It is the least member of the
+equivalence class of $K$. -/
 theorem ClosedSaddleFn.lowerClosedFn_partialCl₂ (hcl : ClosedSaddleFn K) :
     LowerClosedFn (partialCl₂ K) := by
   change partialCl₂ (partialCl₁ (partialCl₂ K)) = partialCl₂ K
   rw [hcl.1, hcl.2]
 
 omit [AddCommGroup U] [IsTopologicalAddGroup U] [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- The greatest member `cl₁ K` of the class of a closed saddle-function is upper closed. -/
+/-- If $K$ is closed, then $\operatorname{cl}_1 K$ is upper closed. It is the greatest member of the
+equivalence class of $K$. -/
 theorem ClosedSaddleFn.upperClosedFn_partialCl₁ (hcl : ClosedSaddleFn K) :
     UpperClosedFn (partialCl₁ K) := by
   change partialCl₁ (partialCl₂ (partialCl₁ K)) = partialCl₁ K
   rw [hcl.2, hcl.1]
 
 omit [AddCommGroup U] [IsTopologicalAddGroup U] in
-/-- The lower closed member of an equivalence class is unique. -/
+/-- If $L$ is equivalent to $K$ and lower closed, then $L = \operatorname{cl}_2 K$. So an
+equivalence class has at most one lower closed member. -/
 theorem SaddleEquiv.eq_partialCl₂_of_lowerClosedFn (h : SaddleEquiv K L)
     (hL : LowerClosedFn L) : L = partialCl₂ K := by
   have hc : partialCl₂ L = L := hL.partialClosed₂
   rw [← hc, ← h.2]
 
 omit [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- The upper closed member of an equivalence class is unique. -/
+/-- If $L$ is equivalent to $K$ and upper closed, then $L = \operatorname{cl}_1 K$. So an
+equivalence class has at most one upper closed member. -/
 theorem SaddleEquiv.eq_partialCl₁_of_upperClosedFn (h : SaddleEquiv K L)
     (hL : UpperClosedFn L) : L = partialCl₁ K := by
   have hc : partialCl₁ L = L := hL.partialClosed₁
@@ -544,7 +692,8 @@ section Improper
 
 variable {U X : Type*} [NormedAddCommGroup U] [NormedAddCommGroup X] {K : U × X → EReal}
 
-/-- A closed saddle-function with empty first effective domain is the constant `-∞`. -/
+/-- Let $U$ and $X$ be normed groups. A closed function $K$ with
+$\operatorname{dom}_1 K = \emptyset$ is the constant $-\infty$. -/
 theorem ClosedSaddleFn.eq_const_bot_of_dom₁_eq_empty (hcl : ClosedSaddleFn K)
     (h : dom₁ K = ∅) : K = fun _ => (⊥ : EReal) := by
   have h2 : partialCl₂ K = fun _ => (⊥ : EReal) := by
@@ -561,7 +710,8 @@ theorem ClosedSaddleFn.eq_const_bot_of_dom₁_eq_empty (hcl : ClosedSaddleFn K)
   rw [← congrFun h1 p]
   exact le_partialCl₁ K p
 
-/-- A closed saddle-function with empty second effective domain is the constant `+∞`. -/
+/-- Let $U$ and $X$ be normed groups. A closed function $K$ with
+$\operatorname{dom}_2 K = \emptyset$ is the constant $+\infty$. -/
 theorem ClosedSaddleFn.eq_const_top_of_dom₂_eq_empty (hcl : ClosedSaddleFn K)
     (h : dom₂ K = ∅) : K = fun _ => (⊤ : EReal) := by
   have hs := (closedSaddleFn_saddleSwap_iff.2 hcl).eq_const_bot_of_dom₁_eq_empty
@@ -571,7 +721,8 @@ theorem ClosedSaddleFn.eq_const_top_of_dom₂_eq_empty (hcl : ClosedSaddleFn K)
   change -(K (p.1, p.2)) = ⊥ at hp
   simpa using congrArg (fun z : EReal => -z) hp
 
-/-- The only improper closed saddle-functions are the two constants. -/
+/-- Let $U$ and $X$ be normed groups. A closed function that is not proper is the constant $-\infty$
+or the constant $+\infty$. -/
 theorem ClosedSaddleFn.eq_const_of_not_properSaddleFn (hcl : ClosedSaddleFn K)
     (hp : ¬ ProperSaddleFn K) : K = (fun _ => (⊥ : EReal)) ∨ K = fun _ => (⊤ : EReal) := by
   by_cases h1 : (dom₁ K).Nonempty
@@ -580,7 +731,8 @@ theorem ClosedSaddleFn.eq_const_of_not_properSaddleFn (hcl : ClosedSaddleFn K)
     · exact Or.inr (hcl.eq_const_top_of_dom₂_eq_empty (Set.not_nonempty_iff_eq_empty.1 h2))
   · exact Or.inl (hcl.eq_const_bot_of_dom₁_eq_empty (Set.not_nonempty_iff_eq_empty.1 h1))
 
-/-- The two improper closed saddle-functions are not equivalent. -/
+/-- Let $U$ and $X$ be nonempty normed groups. The constant functions $-\infty$ and $+\infty$ on
+$U \times X$ are not equivalent. -/
 theorem not_saddleEquiv_const_bot_const_top [Nonempty U] [Nonempty X] :
     ¬ SaddleEquiv (fun _ : U × X => (⊥ : EReal)) (fun _ : U × X => (⊤ : EReal)) := by
   intro h
@@ -595,60 +747,94 @@ theorem not_saddleEquiv_const_bot_const_top [Nonempty U] [Nonempty X] :
 
 end Improper
 
-/-! ### The structure of a closed proper saddle-function -/
+/-!
+### The structure of a closed proper saddle-function
+
+Unless a statement says otherwise, $U$ and $X$ are finite-dimensional real normed spaces in this
+section. Throughout, $C = \operatorname{dom}_1 K$ and $D = \operatorname{dom}_2 K$.
+-/
 
 section Structure
 
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K : U × X → EReal}
 
-/-- The **convex slice structure**: the description of the convex slices `K (u, ·)` of a closed
-proper concave-convex function, according to whether `u` lies in `ri C`, in `C ∖ ri C`, or
-outside `C = dom₁ K`.
+/-- The **convex slice structure** of $K \colon U \times X \to [-\infty, +\infty]$, with
+$C = \operatorname{dom}_1 K$ and $D = \operatorname{dom}_2 K$, consists of these properties:
 
-Over `C` the lower bound `dom₂ K ⊆ dom (K (u, ·))` is unconditional (`dom₂_subset_convexDom_slice`)
-and is therefore not a field, and improperness off `C` is recorded through the two `-∞` clauses
-rather than as a separate assertion. -/
+* for $u \in C$, the slice $K(u, \cdot)$ is a proper convex function whose effective domain lies
+  in $\operatorname{cl} D$;
+* for $u \in \operatorname{ri} C$, the slice $K(u, \cdot)$ is moreover closed, with effective
+  domain exactly $D$;
+* for $u \notin C$, $K(u, x) = -\infty$ for all $x \in \operatorname{ri} D$;
+* for $u \notin \operatorname{cl} C$, $K(u, x) = -\infty$ for all $x \in D$.
+
+These are properties (a)–(c) of Theorem 34.3 of [rockafellar1970convex].
+
+The inclusion of $D$ in the effective domain of $K(u, \cdot)$ holds for every $u$
+(`ConvexAnalysis.dom₂_subset_convexDom_slice`), so it is not a field. The source states in (c)
+that $K(u, \cdot)$ is improper for $u \notin C$; here this is recorded through the two $-\infty$
+clauses, not as a separate property. -/
 structure ConvexSliceStructure (K : U × X → EReal) : Prop where
-  /-- Every slice over `dom₁ K` is a proper convex function. -/
+  /-- For $u \in \operatorname{dom}_1 K$, the slice $K(u, \cdot)$ is a proper convex function. -/
   properConvex_slice : ∀ u ∈ dom₁ K, ProperConvex fun x => K (u, x)
-  /-- Over `ri (dom₁ K)` the slice is moreover closed … -/
+  /-- For $u \in \operatorname{ri}(\operatorname{dom}_1 K)$, the slice $K(u, \cdot)$ is a closed
+  convex function. -/
   closedConvex_slice : ∀ u ∈ ri (dom₁ K), ClosedConvex fun x => K (u, x)
-  /-- … with effective domain exactly `dom₂ K`. -/
+  /-- For $u \in \operatorname{ri}(\operatorname{dom}_1 K)$, the effective domain of $K(u, \cdot)$
+  is $\operatorname{dom}_2 K$. -/
   convexDom_slice : ∀ u ∈ ri (dom₁ K), convexDom (fun x => K (u, x)) = dom₂ K
-  /-- Over `dom₁ K` the effective domain of the slice stays inside `cl (dom₂ K)`. -/
+  /-- For $u \in \operatorname{dom}_1 K$, the effective domain of $K(u, \cdot)$ lies in
+  $\operatorname{cl}(\operatorname{dom}_2 K)$. -/
   convexDom_slice_subset_closure : ∀ u ∈ dom₁ K, convexDom (fun x => K (u, x)) ⊆ closure (dom₂ K)
-  /-- Off `dom₁ K` the slice is `-∞` throughout `ri (dom₂ K)`. -/
+  /-- For $u \notin \operatorname{dom}_1 K$, $K(u, x) = -\infty$ for every $x \in
+  \operatorname{ri}(\operatorname{dom}_2 K)$. -/
   eq_bot_of_notMem_dom₁ : ∀ u ∉ dom₁ K, ∀ x ∈ ri (dom₂ K), K (u, x) = ⊥
-  /-- Off `cl (dom₁ K)` the slice is `-∞` throughout `dom₂ K`. -/
+  /-- For $u \notin \operatorname{cl}(\operatorname{dom}_1 K)$, $K(u, x) = -\infty$ for every
+  $x \in \operatorname{dom}_2 K$. -/
   eq_bot_of_notMem_closure_dom₁ : ∀ u ∉ closure (dom₁ K), ∀ x ∈ dom₂ K, K (u, x) = ⊥
 
-/-- The full structural description of a closed proper saddle-function: the convex slice structure
-for `K`, together with the same for the swapped saddle-function. -/
+/-- The **saddle structure** of $K$: $K$ has the convex slice structure
+(`ConvexAnalysis.ConvexSliceStructure`), and so does its swapped function
+$(x, u) \mapsto -K(u, x)$.
+
+These are the six properties (a)–(f) of Theorem 34.3 of [rockafellar1970convex]. Properties
+(d)–(f) describe the concave slices $K(\cdot, x)$; they are the properties (a)–(c) of the
+swapped function. The lemmas `ConvexAnalysis.SaddleStructure.properConcave_slice` to
+`ConvexAnalysis.SaddleStructure.eq_top_of_notMem_closure_dom₂` state them in terms of $K$. -/
 def SaddleStructure (K : U × X → EReal) : Prop :=
   ConvexSliceStructure K ∧ ConvexSliceStructure (saddleSwap K)
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- Let $U$ and $X$ be real normed spaces. If $K$ has the saddle structure, then so does its swapped
+function $(x, u) \mapsto -K(u, x)$. -/
 theorem SaddleStructure.saddleSwap (hs : SaddleStructure K) :
     SaddleStructure (ConvexAnalysis.saddleSwap K) :=
   ⟨hs.2, by rw [saddleSwap_saddleSwap]; exact hs.1⟩
 
-/-! #### The swapped clauses, read in concave language -/
+/-!
+### The swapped clauses, read in concave language
+
+These lemmas need only real normed spaces $U$ and $X$.
+-/
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Every slice `K (·, x)` over `dom₂ K` is a proper concave function. -/
+/-- If $K$ has the saddle structure and $x \in \operatorname{dom}_2 K$, then $K(\cdot, x)$ is a
+proper concave function. -/
 theorem SaddleStructure.properConcave_slice (hs : SaddleStructure K) {x : X} (hx : x ∈ dom₂ K) :
     ProperConcave fun u => K (u, x) :=
   properConcave_iff_properConvex_neg.2 (hs.2.properConvex_slice x (by rwa [dom₁_saddleSwap]))
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Over `ri (dom₂ K)` the slice `K (·, x)` is a closed concave function. -/
+/-- If $K$ has the saddle structure and $x \in \operatorname{ri}(\operatorname{dom}_2 K)$, then
+$K(\cdot, x)$ is a closed concave function. -/
 theorem SaddleStructure.closedConcave_slice (hs : SaddleStructure K) {x : X}
     (hx : x ∈ ri (dom₂ K)) : ClosedConcave fun u => K (u, x) :=
   closedConcave_iff_closedConvex_neg.2 (hs.2.closedConvex_slice x (by rwa [dom₁_saddleSwap]))
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Over `ri (dom₂ K)` the slice `K (·, x)` has `dom₁ K` as its effective domain. -/
+/-- If $K$ has the saddle structure and $x \in \operatorname{ri}(\operatorname{dom}_2 K)$, then the
+effective domain of $K(\cdot, x)$ is $\operatorname{dom}_1 K$. -/
 theorem SaddleStructure.concaveDom_slice (hs : SaddleStructure K) {x : X}
     (hx : x ∈ ri (dom₂ K)) : concaveDom (fun u => K (u, x)) = dom₁ K := by
   have h := hs.2.convexDom_slice x (by rwa [dom₁_saddleSwap])
@@ -657,7 +843,8 @@ theorem SaddleStructure.concaveDom_slice (hs : SaddleStructure K) {x : X}
   exact h
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Over `dom₂ K` the effective domain of `K (·, x)` stays inside `cl (dom₁ K)`. -/
+/-- If $K$ has the saddle structure and $x \in \operatorname{dom}_2 K$, then the effective domain of
+$K(\cdot, x)$ lies in $\operatorname{cl}(\operatorname{dom}_1 K)$. -/
 theorem SaddleStructure.concaveDom_slice_subset_closure (hs : SaddleStructure K) {x : X}
     (hx : x ∈ dom₂ K) : concaveDom (fun u => K (u, x)) ⊆ closure (dom₁ K) := by
   have h := hs.2.convexDom_slice_subset_closure x (by rwa [dom₁_saddleSwap])
@@ -666,7 +853,8 @@ theorem SaddleStructure.concaveDom_slice_subset_closure (hs : SaddleStructure K)
   exact h
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Off `dom₂ K` the slice `K (·, x)` is `+∞` throughout `ri (dom₁ K)`. -/
+/-- If $K$ has the saddle structure, $x \notin \operatorname{dom}_2 K$ and $u \in
+\operatorname{ri}(\operatorname{dom}_1 K)$, then $K(u, x) = +\infty$. -/
 theorem SaddleStructure.eq_top_of_notMem_dom₂ (hs : SaddleStructure K) {x : X}
     (hx : x ∉ dom₂ K) {u : U} (hu : u ∈ ri (dom₁ K)) : K (u, x) = ⊤ := by
   have h := hs.2.eq_bot_of_notMem_dom₁ x (by rwa [dom₁_saddleSwap]) u
@@ -675,7 +863,8 @@ theorem SaddleStructure.eq_top_of_notMem_dom₂ (hs : SaddleStructure K) {x : X}
   simpa using congrArg (fun z : EReal => -z) h
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Off `cl (dom₂ K)` the slice `K (·, x)` is `+∞` throughout `dom₁ K`. -/
+/-- If $K$ has the saddle structure, $x \notin \operatorname{cl}(\operatorname{dom}_2 K)$ and
+$u \in \operatorname{dom}_1 K$, then $K(u, x) = +\infty$. -/
 theorem SaddleStructure.eq_top_of_notMem_closure_dom₂ (hs : SaddleStructure K) {x : X}
     (hx : x ∉ closure (dom₂ K)) {u : U} (hu : u ∈ dom₁ K) : K (u, x) = ⊤ := by
   have h := hs.2.eq_bot_of_notMem_closure_dom₁ x (by rwa [dom₁_saddleSwap]) u
@@ -683,7 +872,7 @@ theorem SaddleStructure.eq_top_of_notMem_closure_dom₂ (hs : SaddleStructure K)
   change -(K (u, x)) = ⊥ at h
   simpa using congrArg (fun z : EReal => -z) h
 
-/-! #### Necessity: a closed proper saddle-function is structured -/
+/-! ### Necessity: a closed proper saddle-function is structured -/
 
 /-- A closed proper concave-convex function has the convex slice structure. -/
 theorem ClosedSaddleFn.convexSliceStructure (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
@@ -725,17 +914,19 @@ theorem ClosedSaddleFn.convexSliceStructure (hcl : ClosedSaddleFn K) (hK : Conca
     rw [← h2]
     exact le_partialCl₁ K (u, x)
 
-/-- A closed proper concave-convex function has all six structural properties. -/
+/-- A closed proper concave-convex function has the saddle structure, that is, all six properties of
+Theorem 34.3 of [rockafellar1970convex]. -/
 theorem ClosedSaddleFn.saddleStructure (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : SaddleStructure K :=
   ⟨hcl.convexSliceStructure hK hp,
     (closedSaddleFn_saddleSwap_iff.2 hcl).convexSliceStructure hK.saddleSwap
       hp.saddleSwap⟩
 
-/-! #### Sufficiency: a structured saddle-function is closed -/
+/-! ### Sufficiency: a structured saddle-function is closed -/
 
-/-- The key step of the sufficiency half: for a structured `K`, the concave slices of `cl₂ K` and
-of `K` have the same concave closure. -/
+/-- Let $K$ be a proper concave-convex function with the saddle structure. For every $x$, the
+concave slices $(\operatorname{cl}_2 K)(\cdot, x)$ and $K(\cdot, x)$ have the same concave
+closure. -/
 theorem SaddleStructure.concaveCl_partialCl₂_slice (hs : SaddleStructure K)
     (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) (x : X) :
     concaveCl (fun u => partialCl₂ K (u, x)) = concaveCl fun u => K (u, x) := by
@@ -760,7 +951,8 @@ theorem SaddleStructure.concaveCl_partialCl₂_slice (hs : SaddleStructure K)
         ((hagree u₀ hu₀).trans htop),
       concaveCl_eq_top_of_eq_top (x₀ := u₀) (g := fun u => K (u, x)) htop]
 
-/-- A structured saddle-function satisfies the first closedness equation, `cl₁ (cl₂ K) = cl₁ K`. -/
+/-- Let $K$ be a proper concave-convex function with the saddle structure. Then $\operatorname{cl}_1
+\operatorname{cl}_2 K = \operatorname{cl}_1 K$, which is the first equation of closedness. -/
 theorem SaddleStructure.partialCl₁_partialCl₂ (hs : SaddleStructure K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : partialCl₁ (partialCl₂ K) = partialCl₁ K := by
   funext p
@@ -770,7 +962,7 @@ theorem SaddleStructure.partialCl₁_partialCl₂ (hs : SaddleStructure K) (hK :
         rw [hs.concaveCl_partialCl₂_slice hK hp p.2]
     _ = partialCl₁ K p := rfl
 
-/-- The six structural properties make `K` closed. -/
+/-- A proper concave-convex function with the saddle structure is closed. -/
 theorem SaddleStructure.closedSaddleFn (hs : SaddleStructure K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : ClosedSaddleFn K := by
   refine ⟨hs.partialCl₁_partialCl₂ hK hp, ?_⟩
@@ -778,8 +970,24 @@ theorem SaddleStructure.closedSaddleFn (hs : SaddleStructure K) (hK : ConcaveCon
   rw [partialCl₂_saddleSwap, partialCl₁_saddleSwap, partialCl₁_saddleSwap] at h
   exact saddleSwap_injective h
 
-/-- A proper concave-convex function is closed if and only if it has the six structural
-properties. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a proper concave-convex function. Then $K$ is
+closed if and only if it has the saddle structure (`ConvexAnalysis.SaddleStructure`): with
+$C = \operatorname{dom}_1 K$ and $D = \operatorname{dom}_2 K$,
+
+* (a) for $u \in \operatorname{ri} C$, $K(u, \cdot)$ is a closed proper convex function with
+  effective domain $D$;
+* (b) for $u \in C$, $K(u, \cdot)$ is a proper convex function whose effective domain lies in
+  $\operatorname{cl} D$;
+* (c) for $u \notin C$, $K(u, \cdot) = -\infty$ on $\operatorname{ri} D$, and for
+  $u \notin \operatorname{cl} C$ also on $D$;
+* (d)–(f) the same three properties for the concave slices $K(\cdot, x)$, with $C$ and $D$
+  exchanged and $+\infty$ in place of $-\infty$.
+
+This is Theorem 34.3 of [rockafellar1970convex], which is stated in
+$\mathbb{R}^m \times \mathbb{R}^n$. The source states (b) for
+$u \in C \setminus \operatorname{ri} C$; here (b) is stated for all $u \in C$, which includes
+the case $u \in \operatorname{ri} C$ of (a). -/
 theorem closedSaddleFn_iff_saddleStructure (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     ClosedSaddleFn K ↔ SaddleStructure K :=
   ⟨fun hcl => hcl.saddleStructure hK hp, fun hs => hs.closedSaddleFn hK hp⟩
@@ -793,47 +1001,64 @@ section Kernel
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K L : U × X → EReal}
 
-/-- The rectangle `ri (dom K) = ri (dom₁ K) × ri (dom₂ K)` on which the kernel lives. -/
+/-- The **kernel rectangle** of $K$ is $\operatorname{ri}(\operatorname{dom}_1 K) \times
+\operatorname{ri}(\operatorname{dom}_2 K)$, which equals
+$\operatorname{ri}(\operatorname{dom} K)$ (`ConvexAnalysis.kernelSet_eq_relint_domSaddle`).
+
+The kernel `ConvexAnalysis.kernel` of $K$ is the restriction of $K$ to this set. -/
 def kernelSet (K : U × X → EReal) : Set (U × X) := ri (dom₁ K) ×ˢ ri (dom₂ K)
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- The kernel rectangle is $\operatorname{ri}(\operatorname{dom} K)$. -/
 theorem kernelSet_eq_relint_domSaddle (K : U × X → EReal) :
     kernelSet K = ri (domSaddle K) := (relint_domSaddle K).symm
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- A pair $p$ lies in the kernel rectangle if and only if $p_1 \in
+\operatorname{ri}(\operatorname{dom}_1 K)$ and $p_2 \in \operatorname{ri}(\operatorname{dom}_2
+K)$. -/
 @[simp] theorem mem_kernelSet {p : U × X} :
     p ∈ kernelSet K ↔ p.1 ∈ ri (dom₁ K) ∧ p.2 ∈ ri (dom₂ K) := Iff.rfl
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- The kernel rectangle lies in the effective domain $\operatorname{dom} K$. -/
 theorem kernelSet_subset_domSaddle (K : U × X → EReal) : kernelSet K ⊆ domSaddle K :=
   fun _ hp => ⟨intrinsicInterior_subset hp.1, intrinsicInterior_subset hp.2⟩
 
-/-- The **kernel** of a saddle-function: the restriction of `K` to `ri (dom K)`, extended by `⊤`
-off that rectangle.
+/-- The **kernel** of $K \colon U \times X \to [-\infty, +\infty]$ is the restriction of $K$ to
+$\operatorname{ri}(\operatorname{dom} K) = \operatorname{ri}(\operatorname{dom}_1 K) \times
+\operatorname{ri}(\operatorname{dom}_2 K)$, extended by $+\infty$:
+$$(\ker K)(u, x) = \begin{cases} K(u, x) & \text{if } (u, x) \in
+  \operatorname{ri}(\operatorname{dom} K), \\ +\infty & \text{otherwise.} \end{cases}$$
 
-Rockafellar's kernel is literally a partial function, which makes equations between the kernels of
-two saddle-functions awkward to state. The extension loses nothing — `K` is finite on `ri (dom K)`,
-so `kernel K` is `⊤` exactly off the rectangle — and `kernel K = kernel L` recovers both "the same
-rectangle" and "the same values there" (`kernel_eq_iff`). -/
+In §34 of [rockafellar1970convex] the kernel is a function defined only on
+$\operatorname{ri}(\operatorname{dom} K)$. The extension by $+\infty$ loses no information: $K$
+is finite on $\operatorname{ri}(\operatorname{dom} K)$, so the kernel takes the value $+\infty$
+exactly off this set, and `kernel K = kernel L` holds if and only if the two rectangles are
+equal and $K$ and $L$ agree on them (`ConvexAnalysis.kernel_eq_iff`). The definition is
+`ConvexAnalysis.convexRestrict` of `ConvexAnalysis.kernelSet K`. -/
 noncomputable def kernel (K : U × X → EReal) : U × X → EReal :=
   ConvexAnalysis.convexRestrict (kernelSet K) K
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- On the kernel rectangle, the kernel of $K$ equals $K$. -/
 @[simp] theorem kernel_of_mem {p : U × X} (hp : p ∈ kernelSet K) : kernel K p = K p :=
   convexRestrict_of_mem hp
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
+/-- Off the kernel rectangle, the kernel of $K$ is $+\infty$. -/
 @[simp] theorem kernel_of_notMem {p : U × X} (hp : p ∉ kernelSet K) : kernel K p = ⊤ :=
   convexRestrict_of_notMem hp
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- A saddle-function is finite on its kernel rectangle, which is what makes `kernel K` detect
-that rectangle. -/
+/-- $K$ is less than $+\infty$ on its kernel rectangle. For this reason the kernel determines its
+rectangle. -/
 theorem lt_top_of_mem_kernelSet {p : U × X} (hp : p ∈ kernelSet K) : K p < ⊤ :=
   lt_top_of_mem_domSaddle (kernelSet_subset_domSaddle K hp)
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Equality of kernels unpacks into equality of the two rectangles and agreement on them. -/
+/-- The kernels of $K$ and $L$ are equal if and only if $K$ and $L$ have the same kernel rectangle
+and agree on it. -/
 theorem kernel_eq_iff :
     kernel K = kernel L ↔ kernelSet K = kernelSet L ∧ Set.EqOn K L (kernelSet K) := by
   constructor
@@ -857,8 +1082,11 @@ theorem kernel_eq_iff :
     · rw [kernel_of_mem hp, kernel_of_mem (hset ▸ hp), heq hp]
     · rw [kernel_of_notMem hp, kernel_of_notMem (fun h => hp (hset ▸ h))]
 
-/-- The two factors of the kernel rectangle are determined by it, since both are nonempty for a
-proper concave-convex function. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces. If $K$ is a proper concave-convex
+function and $K$ and $L$ have the same kernel rectangle, then
+$\operatorname{ri}(\operatorname{dom}_1 K) = \operatorname{ri}(\operatorname{dom}_1 L)$ and
+$\operatorname{ri}(\operatorname{dom}_2 K) = \operatorname{ri}(\operatorname{dom}_2 L)$. The
+factors are determined by the product because both factors for $K$ are nonempty. -/
 theorem relint_dom₁_eq_and_relint_dom₂_eq_of_kernelSet_eq (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (h : kernelSet K = kernelSet L) :
     ri (dom₁ K) = ri (dom₁ L) ∧ ri (dom₂ K) = ri (dom₂ L) :=
@@ -866,12 +1094,15 @@ theorem relint_dom₁_eq_and_relint_dom₂_eq_of_kernelSet_eq (hK : ConcaveConve
     ((hpK.relint_dom₁_nonempty hK).prod (hpK.relint_dom₂_nonempty hK))).1 h
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The kernel rectangle of the swapped saddle-function. -/
+/-- The kernel rectangle of the swapped function $(x, u) \mapsto -K(u, x)$ is
+$\operatorname{ri}(\operatorname{dom}_2 K) \times \operatorname{ri}(\operatorname{dom}_1 K)$. -/
 theorem kernelSet_saddleSwap (K : U × X → EReal) :
     kernelSet (saddleSwap K) = ri (dom₂ K) ×ˢ ri (dom₁ K) := by
   rw [kernelSet, dom₁_saddleSwap, dom₂_saddleSwap]
 
-/-- Having the same kernel is invariant under the swap involution. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces. If $K$ is a proper concave-convex
+function and $K$ and $L$ have the same kernel, then their swapped functions
+$(x, u) \mapsto -K(u, x)$ and $(x, u) \mapsto -L(u, x)$ have the same kernel. -/
 theorem kernel_saddleSwap_eq_of_kernel_eq (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K)
     (h : kernel K = kernel L) : kernel (saddleSwap K) = kernel (saddleSwap L) := by
   obtain ⟨hset, heq⟩ := kernel_eq_iff.1 h
@@ -885,15 +1116,19 @@ theorem kernel_saddleSwap_eq_of_kernel_eq (hK : ConcaveConvexFn K) (hpK : Proper
 
 end Kernel
 
-/-! ### Equivalence is equality of kernels -/
+/-!
+### Equivalence is equality of kernels
+
+In this section $U$ and $X$ are finite-dimensional real normed spaces.
+-/
 
 section KernelEquiv
 
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K L : U × X → EReal}
 
-/-- Equivalent closed proper saddle-functions have the same kernel: they share both effective
-domains and agree over the relative interiors. -/
+/-- Two equivalent closed proper concave-convex functions have the same kernel: they have the same
+effective domains, and they agree over the relative interiors. -/
 theorem SaddleEquiv.kernel_eq (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L)
     (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) : kernel K = kernel L := by
@@ -901,9 +1136,12 @@ theorem SaddleEquiv.kernel_eq (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
   · rw [kernelSet, kernelSet, h.dom₁_eq hK hpK hL hpL, h.dom₂_eq hK hpK hL hpL]
   · exact h.eq_of_mem_relint_dom₁ hclK hK hpK hclL hL hpL hp.1 p.2
 
-/-- Over `ri (dom₁ K)` two closed proper saddle-functions with the same kernel have literally the
-same convex slice. A closed convex function is determined by its values on the relative interior
-of its effective domain. -/
+/-- Let $K$ and $L$ be closed proper concave-convex functions with the same kernel. For $u \in
+\operatorname{ri}(\operatorname{dom}_1 K)$, the slices $K(u, \cdot)$ and $L(u, \cdot)$ are
+equal.
+
+A closed convex function is determined by its values on the relative interior of its effective
+domain (`ConvexAnalysis.convexCl_eq_of_eqOn_relint_convexDom`). -/
 theorem slice_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L) (hL : ConcaveConvexFn L)
     (hpL : ProperSaddleFn L) (h : kernel K = kernel L) {u : U} (hu : u ∈ ri (dom₁ K)) :
@@ -925,7 +1163,7 @@ theorem slice_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     _ = convexCl fun x => L (u, x) := hcl
     _ = fun x => L (u, x) := hsL.1.closedConvex_slice u hu'
 
-/-- Two closed proper saddle-functions with the same kernel have the same second effective
+/-- Two closed proper concave-convex functions with the same kernel have the same second effective
 domain. -/
 theorem dom₂_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L) (hL : ConcaveConvexFn L)
@@ -938,7 +1176,8 @@ theorem dom₂_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K
   rw [← hsK.1.convexDom_slice u₀ hu₀, ← hsL.1.convexDom_slice u₀ (h1 ▸ hu₀),
     slice_eq_of_kernel_eq hclK hK hpK hclL hL hpL h hu₀]
 
-/-- Two closed proper saddle-functions with the same kernel have the same concave closure `cl₁`. -/
+/-- Two closed proper concave-convex functions with the same kernel have the same partial closure
+$\operatorname{cl}_1$. -/
 theorem partialCl₁_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L) (hL : ConcaveConvexFn L)
     (hpL : ProperSaddleFn L) (h : kernel K = kernel L) : partialCl₁ K = partialCl₁ L := by
@@ -972,8 +1211,13 @@ theorem partialCl₁_eq_of_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConv
         concaveCl_eq_top_of_eq_top (x₀ := u₀) (g := fun u => L (u, p.2)) htopL]
   exact congrFun key p.1
 
-/-- Two closed proper concave-convex functions are equivalent if and only if they have the same
-kernel. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K, L \colon U \times X \to [-\infty, +\infty]$ be closed proper concave-convex functions. Then
+$K$ and $L$ are equivalent if and only if they have the same kernel.
+
+This is Theorem 34.4 of [rockafellar1970convex], which is stated in
+$\mathbb{R}^m \times \mathbb{R}^n$. The kernel is `ConvexAnalysis.kernel`, the restriction to
+$\operatorname{ri}(\operatorname{dom} K)$ extended by $+\infty$. -/
 theorem saddleEquiv_iff_kernel_eq (hclK : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L) (hL : ConcaveConvexFn L)
     (hpL : ProperSaddleFn L) : SaddleEquiv K L ↔ kernel K = kernel L := by
@@ -995,37 +1239,54 @@ section ClosedCl
 variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U]
   [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X]
 
-/-- The lower closure of any saddle-function is a closed saddle-function. -/
+/-- Let $U$ and $X$ be topological groups. For every $K$, the lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ is closed. -/
 theorem closedSaddleFn_lowerCl (K : U × X → EReal) : ClosedSaddleFn (lowerCl K) :=
   LowerClosedFn.closedSaddleFn (lowerCl_idem K)
 
-/-- The upper closure of any saddle-function is a closed saddle-function. -/
+/-- Let $U$ and $X$ be topological groups. For every $K$, the upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ is closed. -/
 theorem closedSaddleFn_upperCl (K : U × X → EReal) : ClosedSaddleFn (upperCl K) :=
   UpperClosedFn.closedSaddleFn (upperCl_idem K)
 
 end ClosedCl
 
-/-! ### Simple saddle-functions -/
+/-!
+### Simple saddle-functions
+
+Unless a statement says otherwise, $U$ and $X$ are finite-dimensional real normed spaces in this
+section and the next.
+-/
 
 section Simple
 
 variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K : U × X → EReal}
 
-/-- A concave-convex function is **simple** — Rockafellar's word — when over `ri (dom₁ K)` the
-convex slices have their effective domains inside `cl (dom₂ K)`, and symmetrically. Every closed
-proper saddle-function is simple, and so is every simple extension of a finite saddle-function on
-a product of convex sets. -/
+/-- A function $K \colon U \times X \to [-\infty, +\infty]$ is **simple** if
+
+* for every $u \in \operatorname{ri}(\operatorname{dom}_1 K)$, the effective domain of the
+  convex slice $K(u, \cdot)$ lies in $\operatorname{cl}(\operatorname{dom}_2 K)$, and
+* for every $x \in \operatorname{ri}(\operatorname{dom}_2 K)$, the effective domain of the
+  concave slice $K(\cdot, x)$ lies in $\operatorname{cl}(\operatorname{dom}_1 K)$.
+
+This is the simple saddle-function of §34 of [rockafellar1970convex]. Every closed proper
+concave-convex function is simple (`ConvexAnalysis.ClosedSaddleFn.simpleSaddleFn`), and so are
+the simple extensions of a finite function on a product of nonempty sets
+(`ConvexAnalysis.simpleSaddleFn_lowerSimpleExt`). -/
 structure SimpleSaddleFn (K : U × X → EReal) : Prop where
-  /-- Over `ri (dom₁ K)` the convex slice does not reach beyond `cl (dom₂ K)`. -/
+  /-- For $u \in \operatorname{ri}(\operatorname{dom}_1 K)$, the effective domain of $K(u, \cdot)$
+  lies in $\operatorname{cl}(\operatorname{dom}_2 K)$. -/
   convexDom_slice_subset_closure : ∀ u ∈ ri (dom₁ K),
       convexDom (fun x => K (u, x)) ⊆ closure (dom₂ K)
-  /-- Over `ri (dom₂ K)` the concave slice does not reach beyond `cl (dom₁ K)`. -/
+  /-- For $x \in \operatorname{ri}(\operatorname{dom}_2 K)$, the effective domain of $K(\cdot, x)$
+  lies in $\operatorname{cl}(\operatorname{dom}_1 K)$. -/
   concaveDom_slice_subset_closure :
     ∀ x ∈ ri (dom₂ K), concaveDom (fun u => K (u, x)) ⊆ closure (dom₁ K)
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- Simplicity is invariant under the swap involution: the two clauses trade places. -/
+/-- Let $U$ and $X$ be real normed spaces. The swapped function $(x, u) \mapsto -K(u, x)$ is simple
+if and only if $K$ is simple: the two clauses exchange places. -/
 theorem simpleSaddleFn_saddleSwap_iff :
     SimpleSaddleFn (saddleSwap K) ↔ SimpleSaddleFn K := by
   constructor
@@ -1053,12 +1314,12 @@ theorem simpleSaddleFn_saddleSwap_iff :
       exact h2
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The two slice-domain clauses say precisely that a structured saddle-function is simple. -/
+/-- Let $U$ and $X$ be real normed spaces. A function with the saddle structure is simple. -/
 theorem SaddleStructure.simpleSaddleFn (hs : SaddleStructure K) : SimpleSaddleFn K :=
   ⟨fun u hu => hs.1.convexDom_slice_subset_closure u (intrinsicInterior_subset hu),
     fun _x hx => hs.concaveDom_slice_subset_closure (intrinsicInterior_subset hx)⟩
 
-/-- Every closed proper concave-convex function is simple. -/
+/-- A closed proper concave-convex function is simple. -/
 theorem ClosedSaddleFn.simpleSaddleFn (hcl : ClosedSaddleFn K) (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) : SimpleSaddleFn K :=
   (hcl.saddleStructure hK hp).simpleSaddleFn
@@ -1073,21 +1334,25 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K : U × X → EReal}
 
 omit [FiniteDimensional ℝ U] in
-/-- For a simple `K`, a convex slice taken over `ri (dom₁ K)` has effective domain with the same
-relative interior as `dom₂ K`. -/
+/-- Let $X$ be finite-dimensional, and let $K$ be a simple concave-convex function. For $u \in
+\operatorname{ri}(\operatorname{dom}_1 K)$, the effective domain of $K(u, \cdot)$ has the same
+relative interior as $\operatorname{dom}_2 K$. -/
 theorem relint_convexDom_slice (hK : ConcaveConvexFn K) (hs : SimpleSaddleFn K) {u : U}
     (hu : u ∈ ri (dom₁ K)) : ri (convexDom fun x => K (u, x)) = ri (dom₂ K) :=
   Convex.relint_eq_of_subset_of_subset_closure hK.convex_dom₂ (hK.convex_snd u).convex_convexDom
     (dom₂_subset_convexDom_slice K u) (hs.convexDom_slice_subset_closure u hu)
 
 omit [FiniteDimensional ℝ U] in
-/-- `cl₂` does not move a simple `K` on the kernel rectangle. -/
+/-- Let $X$ be finite-dimensional, and let $K$ be a simple concave-convex function. On the kernel
+rectangle $\operatorname{ri}(\operatorname{dom}_1 K) \times
+\operatorname{ri}(\operatorname{dom}_2 K)$, $\operatorname{cl}_2 K = K$. -/
 theorem partialCl₂_eq_of_mem_kernelSet (hK : ConcaveConvexFn K) (hs : SimpleSaddleFn K)
     {p : U × X} (hmem : p ∈ kernelSet K) : partialCl₂ K p = K p :=
   (hK.convex_snd p.1).convexCl_eq_of_mem_relint_convexDom (x := p.2)
     (by rw [relint_convexDom_slice hK hs hmem.1]; exact hmem.2)
 
-/-- `cl₂` cannot enlarge `dom₂ K` beyond its closure. -/
+/-- For a simple proper concave-convex $K$, $\operatorname{dom}_2(\operatorname{cl}_2 K) \subseteq
+\operatorname{cl}(\operatorname{dom}_2 K)$. -/
 theorem dom₂_partialCl₂_subset_closure (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : dom₂ (partialCl₂ K) ⊆ closure (dom₂ K) := by
   obtain ⟨u₀, hu₀⟩ := hp.relint_dom₁_nonempty hK
@@ -1099,26 +1364,35 @@ theorem dom₂_partialCl₂_subset_closure (hK : ConcaveConvexFn K) (hp : Proper
     exact closure_mono (hs.convexDom_slice_subset_closure u₀ hu₀)
   exact h3 h2
 
-/-- `cl₂` leaves the relative interior of `dom₂` alone when `K` is simple. -/
+/-- For a simple proper concave-convex $K$,
+$\operatorname{ri}(\operatorname{dom}_2(\operatorname{cl}_2 K)) =
+\operatorname{ri}(\operatorname{dom}_2 K)$. -/
 theorem relint_dom₂_partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : ri (dom₂ (partialCl₂ K)) = ri (dom₂ K) :=
   Convex.relint_eq_of_subset_of_subset_closure hK.convex_dom₂ hK.partialCl₂.convex_dom₂
     (dom₂_subset_dom₂_partialCl₂ K) (dom₂_partialCl₂_subset_closure hK hp hs)
 
-/-- `cl₂` leaves the closure of `dom₂` alone when `K` is simple. -/
+/-- For a simple proper concave-convex $K$,
+$\operatorname{cl}(\operatorname{dom}_2(\operatorname{cl}_2 K)) =
+\operatorname{cl}(\operatorname{dom}_2 K)$. -/
 theorem closure_dom₂_partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : closure (dom₂ (partialCl₂ K)) = closure (dom₂ K) :=
   (Convex.closure_eq_iff_relint_eq hK.partialCl₂.convex_dom₂ hK.convex_dom₂).2
     (relint_dom₂_partialCl₂ hK hp hs)
 
 omit [FiniteDimensional ℝ U] in
-/-- `cl₂` preserves properness. -/
+/-- Let $X$ be finite-dimensional. If $K$ is a proper concave-convex function, then
+$\operatorname{cl}_2 K$ is proper. -/
 theorem ProperSaddleFn.partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     ProperSaddleFn (ConvexAnalysis.partialCl₂ K) :=
   ⟨by rw [dom₁_partialCl₂ hK hp.dom₂_nonempty]; exact hp.dom₁_nonempty,
     hp.dom₂_nonempty.mono (dom₂_subset_dom₂_partialCl₂ K)⟩
 
-/-- `cl₂` preserves simplicity. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a simple proper concave-convex function. Then
+$\operatorname{cl}_2 K$ is simple.
+
+This is a step of the proof of Theorem 34.5 of [rockafellar1970convex]. -/
 theorem SimpleSaddleFn.partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : SimpleSaddleFn (ConvexAnalysis.partialCl₂ K) := by
   constructor
@@ -1136,7 +1410,14 @@ theorem SimpleSaddleFn.partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleF
     rw [concaveDom_partialCl₂_slice hK hp.dom₂_nonempty x, dom₁_partialCl₂ hK hp.dom₂_nonempty]
     exact subset_closure
 
-/-- `cl₂` preserves the kernel. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a simple proper concave-convex function. Then
+$\operatorname{cl}_2 K$ has the same kernel as $K$.
+
+This is a step of the proof of Theorem 34.5 of [rockafellar1970convex]: the two functions have
+the same kernel rectangle (`ConvexAnalysis.dom₁_partialCl₂`,
+`ConvexAnalysis.relint_dom₂_partialCl₂`), and they agree on it
+(`ConvexAnalysis.partialCl₂_eq_of_mem_kernelSet`). -/
 theorem kernel_partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : kernel (ConvexAnalysis.partialCl₂ K) = kernel K := by
   have hset : kernelSet (ConvexAnalysis.partialCl₂ K) = kernelSet K := by
@@ -1147,14 +1428,20 @@ theorem kernel_partialCl₂ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
   exact partialCl₂_eq_of_mem_kernelSet hK hs hp'
 
 omit [FiniteDimensional ℝ X] in
-/-- `cl₁` preserves properness. -/
+/-- Let $U$ be finite-dimensional. If $K$ is a proper concave-convex function, then
+$\operatorname{cl}_1 K$ is proper. -/
 theorem ProperSaddleFn.partialCl₁ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     ProperSaddleFn (ConvexAnalysis.partialCl₁ K) := by
   have h := ProperSaddleFn.partialCl₂ hK.saddleSwap hp.saddleSwap
   rw [partialCl₂_saddleSwap] at h
   exact ⟨by simpa using h.dom₂_nonempty, by simpa using h.dom₁_nonempty⟩
 
-/-- The mirror: `cl₁` preserves simplicity. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a simple proper concave-convex function. Then
+$\operatorname{cl}_1 K$ is simple.
+
+This is the mirror of `ConvexAnalysis.SimpleSaddleFn.partialCl₂`, proved for the swapped
+function. -/
 theorem SimpleSaddleFn.partialCl₁ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : SimpleSaddleFn (ConvexAnalysis.partialCl₁ K) := by
   have h := SimpleSaddleFn.partialCl₂ hK.saddleSwap hp.saddleSwap
@@ -1162,7 +1449,11 @@ theorem SimpleSaddleFn.partialCl₁ (hK : ConcaveConvexFn K) (hp : ProperSaddleF
   rw [partialCl₂_saddleSwap] at h
   exact simpleSaddleFn_saddleSwap_iff.1 h
 
-/-- The mirror: `cl₁` preserves the kernel. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a simple proper concave-convex function. Then
+$\operatorname{cl}_1 K$ has the same kernel as $K$.
+
+This is the mirror of `ConvexAnalysis.kernel_partialCl₂`, proved for the swapped function. -/
 theorem kernel_partialCl₁ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : kernel (ConvexAnalysis.partialCl₁ K) = kernel K := by
   have h := kernel_partialCl₂ hK.saddleSwap hp.saddleSwap
@@ -1175,16 +1466,23 @@ theorem kernel_partialCl₁ (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
 
 end Preserve
 
-/-! ### The equivalence class attached to a simple saddle-function -/
+/-!
+### The equivalence class attached to a simple saddle-function
+
+Except in the first two lemmas, $U$ and $X$ are finite-dimensional real normed spaces in this
+section, unless a statement says otherwise.
+-/
 
 section DomainMono
 
 variable {U X : Type*} {K L : U × X → EReal}
 
-/-- The first effective domain is monotone in the saddle-function. -/
+/-- For any two functions $K \le L$ on $U \times X$, $\operatorname{dom}_1 K \subseteq
+\operatorname{dom}_1 L$. -/
 theorem dom₁_mono (h : K ≤ L) : dom₁ K ⊆ dom₁ L := fun _ hu x => lt_of_lt_of_le (hu x) (h (_, x))
 
-/-- The second effective domain is antitone in the saddle-function. -/
+/-- For any two functions $K \le L$ on $U \times X$, $\operatorname{dom}_2 L \subseteq
+\operatorname{dom}_2 K$. -/
 theorem dom₂_anti (h : K ≤ L) : dom₂ L ⊆ dom₂ K := fun _ hx u => lt_of_le_of_lt (h (u, _)) (hx u)
 
 end DomainMono
@@ -1195,94 +1493,115 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X] {K L : U × X → EReal}
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The lower closure of a simple proper concave-convex function is concave-convex. -/
+/-- Let $U$ and $X$ be real normed spaces. If $K$ is concave-convex, then its lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ is concave-convex. -/
 theorem ConcaveConvexFn.lowerCl (hK : ConcaveConvexFn K) :
     ConcaveConvexFn (ConvexAnalysis.lowerCl K) :=
   ConcaveConvexFn.partialCl₂ (ConcaveConvexFn.partialCl₁ hK)
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The upper closure of a concave-convex function is concave-convex. -/
+/-- Let $U$ and $X$ be real normed spaces. If $K$ is concave-convex, then its upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ is concave-convex. -/
 theorem ConcaveConvexFn.upperCl (hK : ConcaveConvexFn K) :
     ConcaveConvexFn (ConvexAnalysis.upperCl K) :=
   ConcaveConvexFn.partialCl₁ (ConcaveConvexFn.partialCl₂ hK)
 
-/-- The lower closure of a simple proper saddle-function is proper. -/
+/-- If $K$ is a proper concave-convex function, then its lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ is proper. -/
 theorem ProperSaddleFn.lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     ProperSaddleFn (ConvexAnalysis.lowerCl K) :=
   ProperSaddleFn.partialCl₂ (ConcaveConvexFn.partialCl₁ hK) (ProperSaddleFn.partialCl₁ hK hp)
 
-/-- The upper closure of a simple proper saddle-function is proper. -/
+/-- If $K$ is a proper concave-convex function, then its upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ is proper. -/
 theorem ProperSaddleFn.upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) :
     ProperSaddleFn (ConvexAnalysis.upperCl K) :=
   ProperSaddleFn.partialCl₁ (ConcaveConvexFn.partialCl₂ hK) (ProperSaddleFn.partialCl₂ hK hp)
 
-/-- The lower closure of a simple saddle-function is simple. -/
+/-- If $K$ is a simple proper concave-convex function, then its lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ is simple. -/
 theorem SimpleSaddleFn.lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : SimpleSaddleFn (ConvexAnalysis.lowerCl K) :=
   SimpleSaddleFn.partialCl₂ (ConcaveConvexFn.partialCl₁ hK) (ProperSaddleFn.partialCl₁ hK hp)
     (SimpleSaddleFn.partialCl₁ hK hp hs)
 
-/-- The upper closure of a simple saddle-function is simple. -/
+/-- If $K$ is a simple proper concave-convex function, then its upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ is simple. -/
 theorem SimpleSaddleFn.upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : SimpleSaddleFn (ConvexAnalysis.upperCl K) :=
   SimpleSaddleFn.partialCl₁ (ConcaveConvexFn.partialCl₂ hK) (ProperSaddleFn.partialCl₂ hK hp)
     (SimpleSaddleFn.partialCl₂ hK hp hs)
 
-/-- The lower closure of a simple saddle-function has the same kernel. -/
+/-- If $K$ is a simple proper concave-convex function, then its lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ has the same kernel as $K$. -/
 theorem kernel_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SimpleSaddleFn K) :
     kernel (ConvexAnalysis.lowerCl K) = kernel K :=
   (kernel_partialCl₂ (ConcaveConvexFn.partialCl₁ hK) (ProperSaddleFn.partialCl₁ hK hp)
     (SimpleSaddleFn.partialCl₁ hK hp hs)).trans (kernel_partialCl₁ hK hp hs)
 
-/-- The upper closure of a simple saddle-function has the same kernel. -/
+/-- If $K$ is a simple proper concave-convex function, then its upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ has the same kernel as $K$. -/
 theorem kernel_upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K) (hs : SimpleSaddleFn K) :
     kernel (ConvexAnalysis.upperCl K) = kernel K :=
   (kernel_partialCl₁ (ConcaveConvexFn.partialCl₂ hK) (ProperSaddleFn.partialCl₂ hK hp)
     (SimpleSaddleFn.partialCl₂ hK hp hs)).trans (kernel_partialCl₂ hK hp hs)
 
-/-- For a simple proper concave-convex `K`, the lower closure `cl₂ cl₁ K` and the upper closure
-`cl₁ cl₂ K` are equivalent. Both are closed, and both have the same kernel as `K`, which for
-closed proper saddle-functions already forces equivalence. -/
+/-- If $K$ is a simple proper concave-convex function, then the lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$ and the upper closure
+$\operatorname{cl}_1 \operatorname{cl}_2 K$ are equivalent. Both are closed proper
+concave-convex functions with the kernel of $K$, so Theorem 34.4 of [rockafellar1970convex]
+applies. -/
 theorem saddleEquiv_lowerCl_upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : SaddleEquiv (lowerCl K) (upperCl K) :=
   (saddleEquiv_iff_kernel_eq (closedSaddleFn_lowerCl K) hK.lowerCl (ProperSaddleFn.lowerCl hK hp)
     (closedSaddleFn_upperCl K) hK.upperCl (ProperSaddleFn.upperCl hK hp)).2
     ((kernel_lowerCl hK hp hs).trans (kernel_upperCl hK hp hs).symm)
 
-/-- `cl₁` carries the lower closure to the upper one: the two are a closure pair. -/
+/-- If $K$ is a simple proper concave-convex function, then $\operatorname{cl}_1$ of the lower
+closure is the upper closure: $\operatorname{cl}_1(\operatorname{cl}_2 \operatorname{cl}_1 K) =
+\operatorname{cl}_1 \operatorname{cl}_2 K$. -/
 theorem partialCl₁_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : partialCl₁ (lowerCl K) = upperCl K :=
   ((saddleEquiv_lowerCl_upperCl hK hp hs).1).trans (partialClosed₁_upperCl K)
 
-/-- `cl₂` carries the upper closure back to the lower one. -/
+/-- If $K$ is a simple proper concave-convex function, then $\operatorname{cl}_2$ of the upper
+closure is the lower closure: $\operatorname{cl}_2(\operatorname{cl}_1 \operatorname{cl}_2 K) =
+\operatorname{cl}_2 \operatorname{cl}_1 K$. -/
 theorem partialCl₂_upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : partialCl₂ (upperCl K) = lowerCl K :=
   ((saddleEquiv_lowerCl_upperCl hK hp hs).2).symm.trans (partialClosed₂_lowerCl K)
 
-/-- The lower closure lies below the upper one: `cl₂ cl₁ K ≤ cl₁ cl₂ K`. -/
+/-- If $K$ is a simple proper concave-convex function, then $\operatorname{cl}_2 \operatorname{cl}_1
+K \le \operatorname{cl}_1 \operatorname{cl}_2 K$. -/
 theorem lowerCl_le_upperCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) : lowerCl K ≤ upperCl K :=
   le_of_partialCl₂_eq (partialCl₂_upperCl hK hp hs)
 
-/-- Every saddle-function between the two closures is closed. -/
+/-- Let $K$ be a simple proper concave-convex function. Every $L$ with $\operatorname{cl}_2
+\operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$ is closed. -/
 theorem closedSaddleFn_of_mem_saddleClass_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) : ClosedSaddleFn L :=
   closedSaddleFn_of_mem_saddleClass (partialCl₁_lowerCl hK hp hs) (partialCl₂_upperCl hK hp hs) hL
 
-/-- Every saddle-function between the two closures is proper. -/
+/-- Let $K$ be a proper concave-convex function. Every $L$ with $\operatorname{cl}_2
+\operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$ is proper. -/
 theorem properSaddleFn_of_mem_saddleClass_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) : ProperSaddleFn L :=
   ⟨(ProperSaddleFn.lowerCl hK hp).dom₁_nonempty.mono (dom₁_mono hL.1),
     (ProperSaddleFn.upperCl hK hp).dom₂_nonempty.mono (dom₂_anti hL.2)⟩
 
-/-- Every saddle-function between the two closures is equivalent to them. -/
+/-- Let $K$ be a simple proper concave-convex function. Every $L$ with $\operatorname{cl}_2
+\operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$ is equivalent to the
+lower closure $\operatorname{cl}_2 \operatorname{cl}_1 K$. -/
 theorem saddleEquiv_of_mem_saddleClass_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) :
     SaddleEquiv (lowerCl K) L :=
   saddleEquiv_of_mem_saddleClass (partialCl₁_lowerCl hK hp hs) (partialCl₂_upperCl hK hp hs)
     (mem_saddleClass_left (partialCl₂_upperCl hK hp hs)) hL
 
-/-- Every concave-convex saddle-function between the two closures has the same kernel as `K`. -/
+/-- Let $K$ be a simple proper concave-convex function. Every concave-convex $L$ with
+$\operatorname{cl}_2 \operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$
+has the same kernel as $K$. -/
 theorem kernel_of_mem_saddleClass_lowerCl (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) (hCC : ConcaveConvexFn L)
     (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) : kernel L = kernel K := by
@@ -1292,8 +1611,9 @@ theorem kernel_of_mem_saddleClass_lowerCl (hK : ConcaveConvexFn K) (hp : ProperS
     (properSaddleFn_of_mem_saddleClass_lowerCl hK hp hL)
   rw [← h, kernel_lowerCl hK hp hs]
 
-/-- Conversely, a closed proper concave-convex function with the same kernel as `K` lies between
-the two closures. -/
+/-- Let $K$ be a simple proper concave-convex function. Every closed proper concave-convex $L$ with
+the same kernel as $K$ satisfies $\operatorname{cl}_2 \operatorname{cl}_1 K \le L \le
+\operatorname{cl}_1 \operatorname{cl}_2 K$. -/
 theorem mem_saddleClass_lowerCl_of_kernel_eq (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) (hclL : ClosedSaddleFn L) (hCC : ConcaveConvexFn L)
     (hpL : ProperSaddleFn L) (hker : kernel L = kernel K) :
@@ -1309,8 +1629,17 @@ theorem mem_saddleClass_lowerCl_of_kernel_eq (hK : ConcaveConvexFn K) (hp : Prop
   rw [h1, h2] at hmem
   exact hmem
 
-/-- The kernel of a simple proper concave-convex function is the kernel of exactly one equivalence
-class of closed proper concave-convex functions, represented by the lower closure `cl₂ cl₁ K`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a simple proper concave-convex function. Then
+there is a closed proper concave-convex function $M$ with the same kernel as $K$ such that every
+closed proper concave-convex function $L$ has the same kernel as $K$ if and only if $L$ is
+equivalent to $M$. So the kernel of $K$ is the kernel of exactly one equivalence class of closed
+proper concave-convex functions.
+
+This is Theorem 34.5 of [rockafellar1970convex], which is stated in
+$\mathbb{R}^m \times \mathbb{R}^n$. The function $M$ is the lower closure
+$\operatorname{cl}_2 \operatorname{cl}_1 K$, and the class is the order interval between the
+lower and the upper closure (`ConvexAnalysis.mem_saddleClass_lowerCl_of_kernel_eq`). -/
 theorem exists_unique_saddleEquiv_class_of_kernel (hK : ConcaveConvexFn K)
     (hp : ProperSaddleFn K) (hs : SimpleSaddleFn K) :
     ∃ M : U × X → EReal, (ClosedSaddleFn M ∧ ConcaveConvexFn M ∧ ProperSaddleFn M ∧
@@ -1324,55 +1653,65 @@ theorem exists_unique_saddleEquiv_class_of_kernel (hK : ConcaveConvexFn K)
 
 end SaddleClass
 
-/-! ### The simple extensions of a finite saddle-function on `C × D` -/
+/-! ### The simple extensions of a finite saddle-function on $C \times D$ -/
 
 section LowerSimpleExt
 
 variable {U X : Type*} {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- Rockafellar's **lower simple extension** `K₁` of a finite saddle-function `K` on `C × D`:
-`K` on `C × D`, `+∞` on `C × Dᶜ`, and `-∞` off `C`. -/
+/-- The **lower simple extension** $K_1$ of a finite function $K$ on $C \times D$, where
+$C \subseteq U$ and $D \subseteq X$:
+$$K_1(u, x) = \begin{cases} K(u, x) & \text{if } u \in C,\ x \in D, \\ +\infty & \text{if } u
+  \in C,\ x \notin D, \\ -\infty & \text{if } u \notin C. \end{cases}$$
+
+This is the lower simple extension of §34 of [rockafellar1970convex]. The function $K$ is given
+on all of $U \times X$ with real values; only its values on $C \times D$ matter. -/
 noncomputable def lowerSimpleExt (C : Set U) (D : Set X) (K : U × X → ℝ) : U × X → EReal :=
   fun p => concaveRestrict C (fun u => convexRestrict D (fun x => (K (u, x) : EReal)) p.2) p.1
 
+/-- The lower simple extension satisfies $K_1(u, x) = K(u, x)$ for $u \in C$ and $x \in D$. -/
 @[simp] theorem lowerSimpleExt_of_mem {p : U × X} (hu : p.1 ∈ C) (hx : p.2 ∈ D) :
     lowerSimpleExt C D K p = (K p : EReal) := by
   simp [lowerSimpleExt, hu, hx]
 
+/-- The lower simple extension satisfies $K_1(u, x) = -\infty$ for $u \notin C$. -/
 @[simp] theorem lowerSimpleExt_of_notMem_left {p : U × X} (hu : p.1 ∉ C) :
     lowerSimpleExt C D K p = ⊥ := by
   simp [lowerSimpleExt, hu]
 
+/-- The lower simple extension satisfies $K_1(u, x) = +\infty$ for $u \in C$ and $x \notin D$. -/
 @[simp] theorem lowerSimpleExt_of_notMem_right {p : U × X} (hu : p.1 ∈ C) (hx : p.2 ∉ D) :
     lowerSimpleExt C D K p = ⊤ := by
   simp [lowerSimpleExt, hu, hx]
 
-/-- Over `C` the convex slice of `K₁` is `K (u, ·)` extended by `⊤` off `D`. -/
+/-- For $u \in C$, the convex slice $K_1(u, \cdot)$ is $K(u, \cdot)$ on $D$ and $+\infty$ off $D$.
+-/
 theorem lowerSimpleExt_slice₂_of_mem {u : U} (hu : u ∈ C) :
     (fun x => lowerSimpleExt C D K (u, x)) = convexRestrict D fun x => (K (u, x) : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [lowerSimpleExt, hu, hx]
 
-/-- Off `C` the convex slice of `K₁` is the constant `-∞`. -/
+/-- For $u \notin C$, the convex slice $K_1(u, \cdot)$ is the constant $-\infty$. -/
 theorem lowerSimpleExt_slice₂_of_notMem {u : U} (hu : u ∉ C) :
     (fun x => lowerSimpleExt C D K (u, x)) = fun _ => (⊥ : EReal) := by
   funext x
   simp [lowerSimpleExt, hu]
 
-/-- Over `D` the concave slice of `K₁` is `K (·, x)` extended by `-∞` off `C`. -/
+/-- For $x \in D$, the concave slice $K_1(\cdot, x)$ is $K(\cdot, x)$ on $C$ and $-\infty$ off $C$.
+-/
 theorem lowerSimpleExt_slice₁_of_mem {x : X} (hx : x ∈ D) :
     (fun u => lowerSimpleExt C D K (u, x)) = concaveRestrict C fun u => (K (u, x) : EReal) := by
   funext u
   by_cases hu : u ∈ C <;> simp [lowerSimpleExt, hu, hx]
 
-/-- Off `D` the concave slice of `K₁` is the indicator-like function that is `+∞` on `C` and `-∞`
-off it. -/
+/-- For $x \notin D$, the concave slice $K_1(\cdot, x)$ is $+\infty$ on $C$ and $-\infty$ off $C$.
+-/
 theorem lowerSimpleExt_slice₁_of_notMem {x : X} (hx : x ∉ D) :
     (fun u => lowerSimpleExt C D K (u, x)) = concaveRestrict C fun _ => (⊤ : EReal) := by
   funext u
   by_cases hu : u ∈ C <;> simp [lowerSimpleExt, hu, hx]
 
-/-- The lower simple extension has `dom₁ K₁ = C`. -/
+/-- If $D$ is nonempty, then $\operatorname{dom}_1 K_1 = C$. -/
 theorem dom₁_lowerSimpleExt (hD : D.Nonempty) : dom₁ (lowerSimpleExt C D K) = C := by
   obtain ⟨x₀, hx₀⟩ := hD
   ext u
@@ -1387,7 +1726,7 @@ theorem dom₁_lowerSimpleExt (hD : D.Nonempty) : dom₁ (lowerSimpleExt C D K) 
     · rw [lowerSimpleExt_of_notMem_right (p := (u, x)) hu hx]
       exact bot_lt_top
 
-/-- The lower simple extension has `dom₂ K₁ = D`. -/
+/-- If $C$ is nonempty, then $\operatorname{dom}_2 K_1 = D$. -/
 theorem dom₂_lowerSimpleExt (hC : C.Nonempty) : dom₂ (lowerSimpleExt C D K) = D := by
   obtain ⟨u₀, hu₀⟩ := hC
   ext x
@@ -1409,8 +1748,8 @@ section LowerSimpleExtConvex
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- The lower simple extension of a finite concave-convex function on `C × D` is concave-convex on
-all of `U × X`. -/
+/-- Let $C$ be convex, and let $K$ be finite and concave-convex on $C \times D$. Then the lower
+simple extension $K_1$ is concave-convex on all of $U \times X$. -/
 theorem concaveConvexFn_lowerSimpleExt (hC : Convex ℝ C)
     (hK : ConcaveConvexOn C D K) :
     ConcaveConvexFn (lowerSimpleExt C D K) := by
@@ -1429,7 +1768,7 @@ theorem concaveConvexFn_lowerSimpleExt (hC : Convex ℝ C)
       exact convexFn_const ⊥
 
 omit [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X] in
-/-- The lower simple extension of a finite saddle-function on a nonempty `C × D` is proper. -/
+/-- If $C$ and $D$ are nonempty, then the lower simple extension $K_1$ is proper. -/
 theorem properSaddleFn_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
     ProperSaddleFn (lowerSimpleExt C D K) :=
   ⟨by rw [dom₁_lowerSimpleExt hDne]; exact hCne, by rw [dom₂_lowerSimpleExt hCne]; exact hDne⟩
@@ -1443,8 +1782,9 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   {C : Set U} {D : Set X} {K : U × X → ℝ}
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The lower simple extension of a finite saddle-function is simple. Its slices have effective
-domains exactly `D` and `C`, so they do not even reach the boundary. -/
+/-- Let $U$ and $X$ be real normed spaces. If $C$ and $D$ are nonempty, then the lower simple
+extension $K_1$ is simple. Its convex slices over $C$ have the effective domain $D$, and its
+concave slices over $D$ have the effective domain $C$, so they do not reach the boundary. -/
 theorem simpleSaddleFn_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
     SimpleSaddleFn (lowerSimpleExt C D K) := by
   constructor
@@ -1460,7 +1800,9 @@ theorem simpleSaddleFn_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
     exact subset_closure
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
-/-- The kernel of the lower simple extension is the restriction of `K` to `ri (C × D)`. -/
+/-- Let $U$ and $X$ be real normed spaces. If $C$ and $D$ are nonempty, then the kernel of the lower
+simple extension $K_1$ is the restriction of $K$ to $\operatorname{ri}(C \times D)$, extended by
+$+\infty$. -/
 theorem kernel_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
     kernel (lowerSimpleExt C D K) = convexRestrict (ri (C ×ˢ D)) fun p => (K p : EReal) := by
   have hset : kernelSet (lowerSimpleExt C D K) = ri (C ×ˢ D) := by
@@ -1475,9 +1817,19 @@ theorem kernel_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
   · have hp' : p ∉ kernelSet (lowerSimpleExt C D K) := by rw [hset]; exact hp
     rw [kernel_of_notMem hp', convexRestrict_of_notMem hp]
 
-/-- A finite concave-convex function `K` on a nonempty product `C × D` of convex sets is the
-kernel of exactly one equivalence class of closed proper concave-convex functions on `U × X`. The
-class is the one attached to the lower simple extension of `K`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be nonempty convex sets, and let $K$ be a finite concave-convex function on
+$C \times D$. Let $k$ be the restriction of $K$ to $\operatorname{ri}(C \times D)$, extended by
+$+\infty$. Then there is a closed proper concave-convex function $M$ with kernel $k$ such that
+every closed proper concave-convex function $L$ on $U \times X$ has kernel $k$ if and only if
+$L$ is equivalent to $M$. So $k$ is the kernel of exactly one equivalence class of closed proper
+concave-convex functions.
+
+This is Corollary 34.5.1 of [rockafellar1970convex], which is stated in
+$\mathbb{R}^m \times \mathbb{R}^n$. The class is the one of the lower simple extension of $K$,
+by Theorem 34.5 (`ConvexAnalysis.exists_unique_saddleEquiv_class_of_kernel`). The hypothesis
+that $K$ is concave-convex on $C \times D$ is `ConvexAnalysis.ConcaveConvexOn`, and the
+convexity of $D$ is part of it. -/
 theorem exists_unique_saddleEquiv_class_of_finite (hC : Convex ℝ C)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hK : ConcaveConvexOn C D K) :
@@ -1500,16 +1852,24 @@ section UpperSimpleExt
 
 variable {U X : Type*} {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- Rockafellar's **upper simple extension** `K₂` of a finite saddle-function `K` on `C × D`:
-`K` on `C × D`, `-∞` on `Cᶜ × D`, and `+∞` off `D`. -/
+/-- The **upper simple extension** $K_2$ of a finite function $K$ on $C \times D$, where
+$C \subseteq U$ and $D \subseteq X$:
+$$K_2(u, x) = \begin{cases} K(u, x) & \text{if } u \in C,\ x \in D, \\ -\infty & \text{if } u
+  \notin C,\ x \in D, \\ +\infty & \text{if } x \notin D. \end{cases}$$
+
+This is the upper simple extension of §34 of [rockafellar1970convex]. The function $K$ is given
+on all of $U \times X$ with real values; only its values on $C \times D$ matter. -/
 noncomputable def upperSimpleExt (C : Set U) (D : Set X) (K : U × X → ℝ) : U × X → EReal :=
   fun p => convexRestrict D (fun x => concaveRestrict C (fun u => (K (u, x) : EReal)) p.1) p.2
 
-/-- **The upper simple extension is the lower one, swapped.**
+/-- The upper simple extension of $K$ on $C \times D$ is the swapped function of the lower simple
+extension of $(x, u) \mapsto -K(u, x)$ on $D \times C$:
+$$K_2(u, x) = -\tilde K_1(x, u), \qquad \tilde K_1 = \text{lower simple extension of } (x, u)
+  \mapsto -K(u, x) \text{ on } D \times C.$$
 
-This identity is the whole of the upper theory: exchanging the two arguments turns `C` into `D`,
-the concave restriction into the convex one and `-∞` into `+∞`, which is what `saddleSwap` does on
-the value side and `swapReal` on the real side. Every upper lemma below is a rewrite along it. -/
+The exchange of the two arguments turns $C$ into $D$, the restriction by $-\infty$ into the
+restriction by $+\infty$, and $-\infty$ into $+\infty$. The lemmas about $K_2$ below are derived
+from the lemmas about $K_1$ through this identity. -/
 theorem upperSimpleExt_eq_saddleSwap (C : Set U) (D : Set X) (K : U × X → ℝ) :
     upperSimpleExt C D K = saddleSwap (lowerSimpleExt D C (swapReal K)) := by
   funext p
@@ -1517,61 +1877,70 @@ theorem upperSimpleExt_eq_saddleSwap (C : Set U) (D : Set X) (K : U × X → ℝ
   by_cases hx : x ∈ D <;> by_cases hu : u ∈ C <;>
     simp [upperSimpleExt, lowerSimpleExt, saddleSwap, swapReal, hu, hx]
 
+/-- The upper simple extension satisfies $K_2(u, x) = K(u, x)$ for $u \in C$ and $x \in D$. -/
 @[simp] theorem upperSimpleExt_of_mem {p : U × X} (hu : p.1 ∈ C) (hx : p.2 ∈ D) :
     upperSimpleExt C D K p = (K p : EReal) := by
   rw [upperSimpleExt_eq_saddleSwap, saddleSwap_apply,
     lowerSimpleExt_of_mem (p := (p.2, p.1)) hx hu]
   simp [swapReal]
 
+/-- The upper simple extension satisfies $K_2(u, x) = +\infty$ for $x \notin D$. -/
 @[simp] theorem upperSimpleExt_of_notMem_right {p : U × X} (hx : p.2 ∉ D) :
     upperSimpleExt C D K p = ⊤ := by
   rw [upperSimpleExt_eq_saddleSwap, saddleSwap_apply,
     lowerSimpleExt_of_notMem_left (p := (p.2, p.1)) hx]
   simp
 
+/-- The upper simple extension satisfies $K_2(u, x) = -\infty$ for $u \notin C$ and $x \in D$. -/
 @[simp] theorem upperSimpleExt_of_notMem_left {p : U × X} (hu : p.1 ∉ C) (hx : p.2 ∈ D) :
     upperSimpleExt C D K p = ⊥ := by
   rw [upperSimpleExt_eq_saddleSwap, saddleSwap_apply,
     lowerSimpleExt_of_notMem_right (p := (p.2, p.1)) hx hu]
   simp
 
-/-- Over `C` the convex slice of `K₂` agrees with that of `K₁`. -/
+/-- For $u \in C$, the convex slice $K_2(u, \cdot)$ is $K(u, \cdot)$ on $D$ and $+\infty$ off $D$,
+as for $K_1$. -/
 theorem upperSimpleExt_slice₂_of_mem {u : U} (hu : u ∈ C) :
     (fun x => upperSimpleExt C D K (u, x)) = convexRestrict D fun x => (K (u, x) : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [upperSimpleExt, hu, hx]
 
-/-- Off `C` the convex slice of `K₂` is `-∞` on `D` and `+∞` elsewhere. -/
+/-- For $u \notin C$, the convex slice $K_2(u, \cdot)$ is $-\infty$ on $D$ and $+\infty$ off $D$. -/
 theorem upperSimpleExt_slice₂_of_notMem {u : U} (hu : u ∉ C) :
     (fun x => upperSimpleExt C D K (u, x)) = convexRestrict D fun _ => (⊥ : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [upperSimpleExt, hu, hx]
 
-/-- Over `D` the concave slice of `K₂` agrees with that of `K₁`. -/
+/-- For $x \in D$, the concave slice $K_2(\cdot, x)$ is $K(\cdot, x)$ on $C$ and $-\infty$ off $C$,
+as for $K_1$. -/
 theorem upperSimpleExt_slice₁_of_mem {x : X} (hx : x ∈ D) :
     (fun u => upperSimpleExt C D K (u, x)) = concaveRestrict C fun u => (K (u, x) : EReal) := by
   funext u
   by_cases hu : u ∈ C <;> simp [upperSimpleExt, hu, hx]
 
-/-- Off `D` the concave slice of `K₂` is the constant `+∞`. -/
+/-- For $x \notin D$, the concave slice $K_2(\cdot, x)$ is the constant $+\infty$. -/
 theorem upperSimpleExt_slice₁_of_notMem {x : X} (hx : x ∉ D) :
     (fun u => upperSimpleExt C D K (u, x)) = fun _ => (⊤ : EReal) := by
   funext u
   simp [upperSimpleExt, hx]
 
-/-- The upper simple extension has `dom₁ K₂ = C`. -/
+/-- If $D$ is nonempty, then $\operatorname{dom}_1 K_2 = C$. -/
 theorem dom₁_upperSimpleExt (hD : D.Nonempty) : dom₁ (upperSimpleExt C D K) = C := by
   rw [upperSimpleExt_eq_saddleSwap, dom₁_saddleSwap]
   exact dom₂_lowerSimpleExt hD
 
-/-- The upper simple extension has `dom₂ K₂ = D`. -/
+/-- If $C$ is nonempty, then $\operatorname{dom}_2 K_2 = D$. -/
 theorem dom₂_upperSimpleExt (hC : C.Nonempty) : dom₂ (upperSimpleExt C D K) = D := by
   rw [upperSimpleExt_eq_saddleSwap, dom₂_saddleSwap]
   exact dom₁_lowerSimpleExt hC
 
-/-- The interval between the two simple extensions is exactly the set of extensions of `K` with
-Rockafellar's prescribed infinite values off `C × D` — the class `Ω`. The values on `Cᶜ × Dᶜ` are
-unconstrained. -/
+/-- Let $K_1$ and $K_2$ be the lower and upper simple extensions of $K$ on $C \times D$. A function
+$L \colon U \times X \to [-\infty, +\infty]$ satisfies $K_1 \le L \le K_2$ if and only if
+$$L = K \text{ on } C \times D, \qquad L = +\infty \text{ on } C \times (X \setminus D), \qquad
+  L = -\infty \text{ on } (U \setminus C) \times D.$$
+The values of $L$ on $(U \setminus C) \times (X \setminus D)$ are not constrained. This order
+interval is the class $\Omega$ of Corollary 34.2.4 of [rockafellar1970convex], without the
+concave-convexity that the source also asks for. -/
 theorem mem_saddleClass_simpleExt_iff {L : U × X → EReal} :
     L ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K) ↔
       (∀ u ∈ C, ∀ x ∈ D, L (u, x) = (K (u, x) : EReal)) ∧
@@ -1614,11 +1983,12 @@ section UpperSimpleExtConvex
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- The upper simple extension of a finite concave-convex function on `C × D` is concave-convex on
-all of `U × X`.
+/-- Let $D$ be convex, and let $K$ be finite and concave-convex on $C \times D$. Then the upper
+simple extension $K_2$ is concave-convex on all of $U \times X$.
 
-Transported from `concaveConvexFn_lowerSimpleExt`: the swap exchanges the convexity and concavity
-hypotheses and negates each, which is `ConcaveConvexOn.swapReal`. -/
+The proof applies `ConvexAnalysis.concaveConvexFn_lowerSimpleExt` to the swapped function,
+through `ConvexAnalysis.upperSimpleExt_eq_saddleSwap` and
+`ConvexAnalysis.ConcaveConvexOn.swapReal`. -/
 theorem concaveConvexFn_upperSimpleExt (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) :
     ConcaveConvexFn (upperSimpleExt C D K) := by
@@ -1628,7 +1998,12 @@ theorem concaveConvexFn_upperSimpleExt (hD : Convex ℝ D)
 
 end UpperSimpleExtConvex
 
-/-! ### The class `Ω` is a full equivalence class -/
+/-!
+### The class $\Omega$ is a full equivalence class
+
+In this section $U$ and $X$ are topological groups, and $\Omega$ is the set of $L$ with
+$K_1 \le L \le K_2$.
+-/
 
 section FullClass
 
@@ -1637,8 +2012,8 @@ variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGr
   {K : U × X → ℝ} {L : U × X → EReal}
 
 omit [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U] in
-/-- The convex slices of the two simple extensions of a finite continuous saddle-function on a
-closed `C × D` are closed, so `cl₂` fixes the lower simple extension. -/
+/-- Let $D$ be closed, and let $K(u, \cdot)$ be continuous on $D$ for every $u \in C$. Then the
+convex slices of the lower simple extension are closed, so $\operatorname{cl}_2 K_1 = K_1$. -/
 theorem partialCl₂_lowerSimpleExt (hDcl : IsClosed D)
     (hcont : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D) :
     partialCl₂ (lowerSimpleExt C D K) = lowerSimpleExt C D K := by
@@ -1656,7 +2031,8 @@ theorem partialCl₂_lowerSimpleExt (hDcl : IsClosed D)
     rw [congrFun h x, lowerSimpleExt_of_notMem_left (p := (u, x)) hu]
 
 omit [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- `cl₁` carries the lower simple extension to the upper one. -/
+/-- Let $C$ be closed and nonempty, and let $K(\cdot, x)$ be continuous on $C$ for every $x \in D$.
+Then $\operatorname{cl}_1 K_1 = K_2$. -/
 theorem partialCl₁_lowerSimpleExt (hCcl : IsClosed C) (hCne : C.Nonempty)
     (hcont : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
     partialCl₁ (lowerSimpleExt C D K) = upperSimpleExt C D K := by
@@ -1675,11 +2051,12 @@ theorem partialCl₁_lowerSimpleExt (hCcl : IsClosed C) (hCne : C.Nonempty)
     rw [congrFun h u, upperSimpleExt_of_notMem_right (p := (u, x)) hx]
 
 omit [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U] in
-/-- `cl₂` carries the upper simple extension back to the lower one.
+/-- Let $D$ be closed and nonempty, and let $K(u, \cdot)$ be continuous on $D$ for every $u \in C$.
+Then $\operatorname{cl}_2 K_2 = K_1$.
 
-The mirror of `partialCl₁_lowerSimpleExt`, transported rather than re-proved:
-`partialCl₂_saddleSwap` exchanges the two closures, `upperSimpleExt_eq_saddleSwap` exchanges the
-two extensions, and the continuity hypothesis passes through as `ContinuousOn.neg`. -/
+The proof applies `ConvexAnalysis.partialCl₁_lowerSimpleExt` to the swapped function:
+`ConvexAnalysis.partialCl₂_saddleSwap` exchanges the two closures, and
+`ConvexAnalysis.upperSimpleExt_eq_saddleSwap` exchanges the two extensions. -/
 theorem partialCl₂_upperSimpleExt (hDcl : IsClosed D) (hDne : D.Nonempty)
     (hcont : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D) :
     partialCl₂ (upperSimpleExt C D K) = lowerSimpleExt C D K := by
@@ -1687,7 +2064,8 @@ theorem partialCl₂_upperSimpleExt (hDcl : IsClosed D) (hDne : D.Nonempty)
     partialCl₁_lowerSimpleExt hDcl hDne (fun u hu => (hcont u hu).neg),
     upperSimpleExt_eq_saddleSwap, swapReal_swapReal, saddleSwap_saddleSwap]
 
-/-- Every member of `Ω` is a closed saddle-function. -/
+/-- Let $C$ and $D$ be closed and nonempty, and let $K$ be continuous on $C \times D$ in each
+variable separately. Then every member of $\Omega$ is closed. -/
 theorem closedSaddleFn_of_mem_saddleClass_simpleExt (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
@@ -1696,7 +2074,9 @@ theorem closedSaddleFn_of_mem_saddleClass_simpleExt (hCcl : IsClosed C) (hDcl : 
   closedSaddleFn_of_mem_saddleClass (partialCl₁_lowerSimpleExt hCcl hCne hcontC)
     (partialCl₂_upperSimpleExt hDcl hDne hcontD) hL
 
-/-- `Ω` is contained in a single equivalence class. -/
+/-- Let $C$ and $D$ be closed and nonempty, and let $K$ be continuous on $C \times D$ in each
+variable separately. Then every member of $\Omega$ is equivalent to the lower simple extension
+$K_1$. -/
 theorem saddleEquiv_of_mem_saddleClass_simpleExt (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
@@ -1707,11 +2087,19 @@ theorem saddleEquiv_of_mem_saddleClass_simpleExt (hCcl : IsClosed C) (hDcl : IsC
     (partialCl₂_upperSimpleExt hDcl hDne hcontD)
     (mem_saddleClass_left (partialCl₂_upperSimpleExt hDcl hDne hcontD)) hL
 
-/-- `Ω` is *exactly* the equivalence class of the lower simple extension, so the extensions of `K`
-with the prescribed infinite values form one full equivalence class of closed saddle-functions.
-Proved from closedness of the slices of the two simple extensions rather than from the bifunction
-representation, so the hypotheses are separate continuity in each variable rather than joint
-continuity. -/
+/-- Let $U$ and $X$ be topological groups, let $C \subseteq U$ and $D \subseteq X$ be nonempty
+closed sets, and let $K \colon U \times X \to \mathbb{R}$ be such that $K(u, \cdot)$ is
+continuous on $D$ for every $u \in C$ and $K(\cdot, x)$ is continuous on $C$ for every
+$x \in D$. Then for every $L \colon U \times X \to [-\infty, +\infty]$,
+$$K_1 \le L \le K_2 \iff L \text{ is equivalent to } K_1.$$
+So the extensions of $K$ with the prescribed infinite values off $C \times D$
+(`ConvexAnalysis.mem_saddleClass_simpleExt_iff`) form one full equivalence class of closed
+functions.
+
+This is Corollary 34.2.4 of [rockafellar1970convex], which asks for $K$ to be continuous on
+$C \times D$. Here $K$ needs to be continuous only in each variable separately. The proof uses
+the closedness of the slices of the two simple extensions, not the representation by a
+bifunction. -/
 theorem mem_saddleClass_simpleExt_iff_saddleEquiv (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
@@ -1729,7 +2117,7 @@ theorem mem_saddleClass_simpleExt_iff_saddleEquiv (hCcl : IsClosed C) (hDcl : Is
 
 omit [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U] [TopologicalSpace X]
   [AddCommGroup X] [IsTopologicalAddGroup X] in
-/-- Every member of `Ω` is proper. -/
+/-- If $C$ and $D$ are nonempty, then every member of $\Omega$ is proper. -/
 theorem properSaddleFn_of_mem_saddleClass_simpleExt (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hL : L ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K)) : ProperSaddleFn L :=
   ⟨by
@@ -1742,20 +2130,31 @@ theorem properSaddleFn_of_mem_saddleClass_simpleExt (hCne : C.Nonempty) (hDne : 
 
 end FullClass
 
-/-! ### The two brackets of a bifunction on a relative interior
+/-!
+### The two brackets of a bifunction on a relative interior
 
-The two brackets of a convex bifunction differ by a concave closure in the first variable. A
-concave function agrees with its closure on the relative interior of its effective domain, and the
-effective domain of `u ↦ ⟨Fu, y⟩` is `dom F` on the nose — so on `ri (dom F)` the two brackets are
-simply equal. -/
+The two brackets $\langle Fu, y \rangle$ and $\langle u, F^* y \rangle$ of a convex bifunction $F$
+differ by a concave closure in the first variable. A concave function agrees with its closure on the
+relative interior of its effective domain, and the effective domain of
+$u \mapsto \langle Fu, y \rangle$ is exactly $\operatorname{dom} F$. So the two brackets are equal
+on $\operatorname{ri}(\operatorname{dom} F)$.
+-/
 
 section DomBracket
 
 variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
   {F : Bifun U X}
 
-/-- **The concave effective domain of `u ↦ ⟨Fu, y⟩` is `dom F`**, for every `y`. The bracket is
-`-∞` exactly where the slice `F u` is identically `+∞`. -/
+/-- Let $F$ be a bifunction from $U$ to $X$, let $\langle \cdot, \cdot \rangle$ be a bilinear
+pairing of $X$ with $Y$, and let $y \in Y$. The effective domain of the function $u \mapsto
+\langle Fu, y \rangle = \sup_x \bigl(\langle x, y \rangle - (Fu)(x)\bigr)$ is
+$$\{u \mid \langle Fu, y \rangle > -\infty\} = \operatorname{dom} F = \{u \mid Fu \not\equiv
+  +\infty\}.$$
+
+This is a step of the proof of Corollary 33.2.1 of [rockafellar1970convex]. The bracket is
+$-\infty$ exactly where the function $Fu$ is identically $+\infty$. The Lean names are
+`ConvexAnalysis.bracket` for the bracket and `ConvexAnalysis.convexDomBifun` for the effective
+domain of $F$. -/
 theorem concaveDom_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (y : Y) :
     concaveDom (fun u => bracket Bx F u y) = convexDomBifun F := by
   ext u
@@ -1770,8 +2169,16 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
   [AddCommGroup V] [Module ℝ V] [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
   {F : Bifun U X}
 
-/-- At a relative interior point of `dom F` the two brackets already agree —
-`⟨Fu, y⟩ = ⟨u, F* y⟩`, with no closure in sight. -/
+/-- Let $U$ be a finite-dimensional real normed space with a compatible pairing $\langle \cdot,
+\cdot \rangle \colon U \times V \to \mathbb{R}$, let $\langle \cdot, \cdot \rangle \colon X
+\times Y \to \mathbb{R}$ be a bilinear pairing, and let $F$ be a convex bifunction from $U$ to
+$X$. For every $u \in \operatorname{ri}(\operatorname{dom} F)$ and every $y \in Y$,
+$$\langle Fu, y \rangle = \langle u, F^* y \rangle.$$
+
+This is the first assertion of Corollary 33.2.1 of [rockafellar1970convex]. The left side is
+`ConvexAnalysis.bracket`, the supremum $\sup_x (\langle x, y \rangle - (Fu)(x))$. The right side
+is `ConvexAnalysis.concaveBracket` of the adjoint $F^*$ (`ConvexAnalysis.convexAdjointBifun`),
+the infimum $\inf_v (\langle u, v \rangle - (F^* y)(v))$. -/
 theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (hF : ConvexBifun F) {u : U}
     (hu : u ∈ ri (convexDomBifun F)) (y : Y) :
@@ -1793,12 +2200,20 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
   [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] {F : Bifun U X}
 
-/-- **For a closed convex bifunction the two brackets `⟨Fu, y⟩` and `⟨u, F* y⟩` already agree at
-every relative interior point of `dom F*`.**
+/-- Let $U$ and $X$ be locally convex real topological vector spaces, let $\langle \cdot, \cdot
+\rangle \colon U \times V \to \mathbb{R}$ be a compatible pairing, let $Y$ be a
+finite-dimensional real normed space, and let $\langle \cdot, \cdot \rangle \colon X \times Y
+\to \mathbb{R}$ be a pairing that is compatible for both $X$ and $Y$. Let $F$ be a closed convex
+bifunction from $U$ to $X$. For every $u \in U$ and every $y \in
+\operatorname{ri}(\operatorname{dom} F^*)$,
+$$\langle Fu, y \rangle = \langle u, F^* y \rangle.$$
 
-The two differ by the convex closure in `y`; `⟨u, F*·⟩` is convex with effective domain `dom F*`,
-and a convex function agrees with its closure on the relative interior of its effective domain. It
-is `Y`, not `U`, that must be finite-dimensional. -/
+This is the second assertion of Corollary 33.2.1 of [rockafellar1970convex]. The two brackets
+differ by the convex closure in $y$. The function $y \mapsto \langle u, F^* y \rangle$ is convex
+with effective domain $\operatorname{dom} F^*$, and a convex function agrees with its closure on
+the relative interior of its effective domain. Here $Y$ must be finite-dimensional, not $U$. The
+set $\operatorname{dom} F^*$ is `ConvexAnalysis.concaveDomBifun` of the adjoint, the $y$ at
+which $F^* y$ is not identically $-\infty$. -/
 theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBifun
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (u : U)
     {y : Y} (hy : y ∈ ri (concaveDomBifun (convexAdjointBifun Bu Bx F))) :
@@ -1813,14 +2228,17 @@ theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint_concaveDomBif
 
 end BracketAgreeDual
 
-/-! ### The two brackets of a polyhedral bifunction
+/-!
+### The two brackets of a polyhedral bifunction
 
-The previous section puts the two brackets together on the *relative interior* of an effective
-domain, because that is where a convex or concave function must agree with its closure. A
-polyhedral function agrees with its closure on all of its effective domain, so for a polyhedral
-bifunction the equality extends to the domain itself, leaving uncovered only the pairs with
-`u ∉ dom F` *and* `y ∉ dom F*`, where the two brackets are `-∞` and `+∞`. The `u`-side half needs
-no properness; the `y`-side half does, because it runs through `F** = cl F = F`. -/
+The previous section proves the equality of the two brackets on the relative interior of an
+effective domain, because a convex or concave function agrees with its closure there. A polyhedral
+function agrees with its closure on all of its effective domain. So for a polyhedral bifunction the
+equality holds on the effective domain itself. Only the pairs with $u \notin \operatorname{dom} F$
+and $y \notin \operatorname{dom} F^*$ remain, and there the two brackets are $-\infty$ and
+$+\infty$. The half for $u \in \operatorname{dom} F$ needs no properness. The half for
+$y \in \operatorname{dom} F^*$ needs it, because it uses $F^{**} = \operatorname{cl} F = F$.
+-/
 
 section PolyhedralBrackets
 
@@ -1833,8 +2251,8 @@ variable {U V X Y : Type*}
 
 omit [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensional ℝ U]
   [FiniteDimensional ℝ X] [FiniteDimensional ℝ Y] in
-/-- Off `dom F` the bracket is `-∞`: there `F u` is identically `+∞`, and the conjugate of `+∞` is
-`-∞`. -/
+/-- For $u \notin \operatorname{dom} F$ and every $y$, $\langle Fu, y \rangle = -\infty$: the
+function $Fu$ is identically $+\infty$, and its conjugate is $-\infty$. -/
 theorem bracket_eq_bot_of_notMem_convexDomBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {u : U}
     (hu : u ∉ convexDomBifun F) (y : Y) : bracket Bx F u y = ⊥ := by
   by_contra hne
@@ -1844,8 +2262,9 @@ theorem bracket_eq_bot_of_notMem_convexDomBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ V] [NormedAddCommGroup Y]
   [NormedSpace ℝ Y] [FiniteDimensional ℝ Y] in
-/-- Off `dom G` the concave bracket is `+∞`, the mirror of
-`bracket_eq_bot_of_notMem_convexDomBifun`. -/
+/-- Let $G$ be a bifunction from $Y$ to $V$. For $y \notin \operatorname{dom} G$ and every $u$, the
+concave bracket $\langle u, G y \rangle = \inf_v (\langle u, v \rangle - (G y)(v))$ is
+$+\infty$. This is the mirror of `ConvexAnalysis.bracket_eq_bot_of_notMem_convexDomBifun`. -/
 theorem concaveBracket_eq_top_of_notMem_concaveDomBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (G : Bifun Y V) (u : U) {y : Y} (hy : y ∉ concaveDomBifun G) :
     concaveBracket Bu G u y = ⊤ := by
@@ -1855,13 +2274,17 @@ theorem concaveBracket_eq_top_of_notMem_concaveDomBifun (Bu : U →ₗ[ℝ] V �
   exact lt_top_iff_ne_top.2 hne
 
 omit [FiniteDimensional ℝ V] [FiniteDimensional ℝ Y] in
-/-- **The `u`-side half**: for a polyhedral convex bifunction the two brackets agree at every `u`
-of `dom F`, not merely at the relative-interior points that
-`bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint` asks for.
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $\langle \cdot, \cdot \rangle
+\colon U \times V \to \mathbb{R}$ be a compatible pairing, and let $F$ be a polyhedral convex
+bifunction from $U$ to $X$. For every $u \in \operatorname{dom} F$ and every $y$, $\langle Fu, y
+\rangle = \langle u, F^* y \rangle$. This strengthens
+`ConvexAnalysis.bracket_eq_concaveBracket_convexAdjointBifun_of_mem_relint`, which asks for
+$u \in \operatorname{ri}(\operatorname{dom} F)$.
 
-The two differ by the concave closure in `u`; `⟨F·, y⟩` is polyhedral concave with effective
-domain `dom F`, and a polyhedral function agrees with its closure on all of its effective domain.
-Properness of `F` plays no part here. -/
+The two brackets differ by the concave closure in $u$. The function
+$u \mapsto \langle Fu, y \rangle$ is polyhedral concave with effective domain
+$\operatorname{dom} F$, and a polyhedral function agrees with its closure on all of its
+effective domain. Properness of $F$ is not used. -/
 theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_convexDomBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (hF : PolyhedralBifun F) {u : U}
     (hu : u ∈ convexDomBifun F) (y : Y) :
@@ -1872,12 +2295,15 @@ theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_convexDomBifun (Bu :
   exact (concaveCl_eq_of_mem_concaveDom (polyhedralFn_neg_bracket hF Bx y)
     (by rw [concaveDom_bracket]; exact hu)).symm
 
-/-- **The `y`-side half**: for a *proper* polyhedral convex bifunction the two brackets agree at
-every `y` of `dom F*`, for every `u`.
+/-- Let $U$, $V$, $X$ and $Y$ be finite-dimensional real normed spaces with compatible pairings
+$U \times V \to \mathbb{R}$ and $X \times Y \to \mathbb{R}$, the second compatible on both
+sides. Let $F$ be a proper polyhedral convex bifunction from $U$ to $X$. For every $u$ and every
+$y \in \operatorname{dom} F^*$, $\langle Fu, y \rangle = \langle u, F^* y \rangle$.
 
-This is the first half read on the dual side: the brackets differ by the convex closure in `y`
-once `cl F = F`, which properness plus polyhedrality supply; `⟨u, F*·⟩` is polyhedral convex with
-effective domain `dom F*`, so the closure changes nothing there. -/
+The brackets differ by the convex closure in $y$ once $\operatorname{cl} F = F$, which follows
+from properness and polyhedrality. The function $y \mapsto \langle u, F^* y \rangle$ is
+polyhedral convex with effective domain $\operatorname{dom} F^*$, so the closure does not change
+it there. -/
 theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_concaveDomBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : PolyhedralBifun F) (hp : ProperConvex (graphFn F)) (u : U)
@@ -1893,8 +2319,19 @@ theorem bracket_eq_concaveBracket_convexAdjointBifun_of_mem_concaveDomBifun (Bu 
   rw [convexDom_concaveBracket]
   exact hy
 
-/-- For a proper polyhedral convex bifunction the two brackets agree, `⟨Fu, y⟩ = ⟨u, F* y⟩`, at
-every pair `(u, y)` except those with `u ∉ dom F` and `y ∉ dom F*`. -/
+/-- Let $U$, $V$, $X$ and $Y$ be finite-dimensional real normed spaces, let $\langle \cdot, \cdot
+\rangle \colon U \times V \to \mathbb{R}$ be a compatible pairing, and let $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be a pairing that is compatible for both $X$ and $Y$.
+Let $F$ be a polyhedral convex bifunction from $U$ to $X$ whose graph function
+$(u, x) \mapsto (Fu)(x)$ is proper. If $u \in \operatorname{dom} F$ or
+$y \in \operatorname{dom} F^*$, then
+$$\langle Fu, y \rangle = \langle u, F^* y \rangle.$$
+For the remaining pairs, $\langle Fu, y \rangle = -\infty$ and
+$\langle u, F^* y \rangle = +\infty$
+(`ConvexAnalysis.bracket_eq_bot_and_concaveBracket_eq_top`).
+
+This is Corollary 33.2.2 of [rockafellar1970convex]. Polyhedrality is
+`ConvexAnalysis.PolyhedralBifun`, the polyhedrality of the graph function. -/
 theorem bracket_eq_concaveBracket_convexAdjointBifun_of_polyhedral (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : PolyhedralBifun F) (hp : ProperConvex (graphFn F)) (u : U)
@@ -1906,8 +2343,9 @@ theorem bracket_eq_concaveBracket_convexAdjointBifun_of_polyhedral (Bu : U →�
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ V] [FiniteDimensional ℝ X]
   [FiniteDimensional ℝ Y] in
-/-- The exceptional pairs: when `u ∉ dom F` and `y ∉ dom F*` one bracket is `-∞` and the other
-`+∞`. Neither polyhedrality nor properness is used. -/
+/-- For $u \notin \operatorname{dom} F$ and $y \notin \operatorname{dom} F^*$,
+$\langle Fu, y \rangle = -\infty$ and $\langle u, F^* y \rangle = +\infty$. Neither
+polyhedrality nor properness is used. -/
 theorem bracket_eq_bot_and_concaveBracket_eq_top (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {u : U} (hu : u ∉ convexDomBifun F) {y : Y}
     (hy : y ∉ concaveDomBifun (convexAdjointBifun Bu Bx F)) :
@@ -1917,12 +2355,14 @@ theorem bracket_eq_bot_and_concaveBracket_eq_top (Bu : U →ₗ[ℝ] V →ₗ[�
 
 end PolyhedralBrackets
 
-/-! ### The bifunction behind a finite continuous saddle-function
+/-!
+### The bifunction behind a finite continuous saddle-function
 
-The two simple extensions of a finite continuous saddle-function on a closed `C × D` are a closure
-pair, which is exactly what the representation by a closed convex bifunction asks for. Both
-closure computations are already done — they are what the class `Ω` runs on — so the result is
-their composition. -/
+The two simple extensions of a finite continuous saddle-function on a closed $C \times D$ are
+related by $\operatorname{cl}_1 K_1 = K_2$ and $\operatorname{cl}_2 K_2 = K_1$. This is what the
+representation by a closed convex bifunction needs, and both equations are proved in the section on
+the class $\Omega$.
+-/
 
 section SimpleExtClosed
 
@@ -1930,7 +2370,9 @@ variable {U Y : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGr
   [TopologicalSpace Y] [AddCommGroup Y] [IsTopologicalAddGroup Y] {C : Set U} {D : Set Y}
   {K : U × Y → ℝ}
 
-/-- The lower simple extension is lower closed. -/
+/-- Let $C$ and $D$ be closed and nonempty, and let $K$ be continuous on $C \times D$ in each
+variable separately. Then the lower simple extension $K_1$ is lower closed: $\operatorname{cl}_2
+\operatorname{cl}_1 K_1 = K_1$. -/
 theorem lowerClosedFn_lowerSimpleExt (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
     (hDne : D.Nonempty) (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
@@ -1938,7 +2380,9 @@ theorem lowerClosedFn_lowerSimpleExt (hCcl : IsClosed C) (hDcl : IsClosed D) (hC
   rw [lowerClosedFn_iff, lowerCl_def, partialCl₁_lowerSimpleExt hCcl hCne hcontC,
     partialCl₂_upperSimpleExt hDcl hDne hcontD]
 
-/-- The upper simple extension is upper closed. -/
+/-- Let $C$ and $D$ be closed and nonempty, and let $K$ be continuous on $C \times D$ in each
+variable separately. Then the upper simple extension $K_2$ is upper closed: $\operatorname{cl}_1
+\operatorname{cl}_2 K_2 = K_2$. -/
 theorem upperClosedFn_upperSimpleExt (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
     (hDne : D.Nonempty) (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
@@ -1957,10 +2401,20 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y]
   {C : Set U} {D : Set Y} {K : U × Y → ℝ}
 
-/-- A finite continuous concave-convex function on a nonempty closed `C × D` has a unique closed
-convex bifunction `F` whose two brackets are its lower and upper simple extensions. The explicit
-formulas for `F` and `F*` are the definitions of the conjugate and the concave conjugate of the
-slices. -/
+/-- Let $U$, $X$ and $Y$ be locally convex real topological vector spaces, let $\langle \cdot, \cdot
+\rangle \colon U \times V \to \mathbb{R}$ be a compatible pairing, and let $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be a pairing that is compatible for both $X$ and $Y$.
+Let $C \subseteq U$ be nonempty, closed and convex, let $D \subseteq Y$ be nonempty and closed,
+and let $K \colon U \times Y \to \mathbb{R}$ be concave-convex on $C \times D$, with
+$K(u, \cdot)$ continuous on $D$ for every $u \in C$ and $K(\cdot, y)$ continuous on $C$ for
+every $y \in D$. Then there is exactly one closed convex bifunction $F$ from $U$ to $X$ whose
+brackets are the two simple extensions of $K$:
+$$\langle Fu, y \rangle = K_1(u, y), \qquad \langle u, F^* y \rangle = K_2(u, y) \qquad
+  \text{for all } u, y.$$
+
+The explicit formulas for $F$ and $F^*$ are the conjugate and the concave conjugate of the
+slices of $K_1$ and $K_2$. The convexity of $D$ is part of the hypothesis that $K$ is
+concave-convex on $C \times D$ (`ConvexAnalysis.ConcaveConvexOn`). -/
 theorem exists_unique_bifun_of_simpleExt (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)

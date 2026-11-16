@@ -9,67 +9,76 @@ import Numlib.Variational.WeakMinimization
 /-!
 # Numerical approximation of elliptic variational inequalities
 
-An *approximation* of the elliptic variational inequality over `K` is the same inequality over
-another set `K_h`: no new notion of discrete solution is needed, and unique solvability of the
-discrete problem is `existsUnique_isVariationalInequalitySolution` again.  `K_h` need not be
-contained in `K`.
+Let $V$ be a real inner product space, let $A \colon V \to V$ be strongly monotone with constant
+$c > 0$ and Lipschitz with constant $L$, let $f \in V$, and let $j \colon V \to \mathbb{R}$. A
+solution of the variational inequality over a set $K$ is a $u \in K$ with $\langle f, v - u \rangle
+\le \langle Au, v - u \rangle + j(v) - j(u)$ for all $v \in K$. An approximation of this inequality
+is the same inequality over another set $K_h$, which need not be contained in $K$. So no new notion
+of discrete solution is needed, and unique solvability of the discrete problem is
+`existsUnique_isVariationalInequalitySolution` again. The presentation follows §11.4 of
+[han2009theoretical]: Theorems 11.4.1, 11.4.2 and 11.4.7 and Exercises 11.4.2 and 11.4.3. The error
+bound is due to [falk1974error].
 
-Everything here rests on one inequality.  Write
+All results rest on one inequality. Write $R(v, w) = \langle Au, v - w \rangle + j(v) - j(w) -
+\langle f, v - w \rangle$ for the residual of the continuous solution $u$. If $u$ solves the
+inequality over $K$ and $u_h$ solves it over $K_h$, then the sum of the two inequalities and the
+strong monotonicity inequality gives, for every $v \in K$ and $v_h \in K_h$,
+$$c \|u - u_h\|^2 \le R(v, u_h) + R(v_h, u) + \langle Au - Au_h, u - v_h \rangle.$$
+The same computation applies when the discrete problem has another functional $j_h$: then $j(u_h)$
+in the first residual and $j(v_h)$ in the second residual are replaced by $j_h(u_h)$ and $j_h(v_h)$.
+The Cauchy–Schwarz inequality, Lipschitz continuity and Young's inequality bound the last term, and
+give Falk's generalized Céa lemma
+$$\frac{c}{2} \|u - u_h\|^2 \le R(v, u_h) + R(v_h, u) + \frac{L^2}{2c} \|u - v_h\|^2.$$
+This is pure algebra: it uses no closedness, no convexity, no topology and no limit. Every other
+result of the module is a special case or a consequence.
 
-  `R j' v w = ⟪A u, v - w⟫ + j' v - j' w - ⟪f, v - w⟫`
+## Main results
 
-for the residual of the continuous solution `u`, measured with the functional `j'`.  If `u` solves
-the inequality over `K` with `j` and `u_h` solves it over `K_h` with `j_h`, then for every `v ∈ K`
-and `v_h ∈ K_h`
+* `norm_sub_le_of_isVariationalInequalitySolution`: Falk's generalized Céa lemma
+  ([han2009theoretical], Theorem 11.4.2).
+* `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: for an internal approximation,
+  $K_h \subseteq K$, the choice $v = u_h$ removes the first residual.
+* `norm_sub_le_of_isVariationalInequalitySolution_of_le`: replacing $j$ on the discrete set by a
+  larger $j_h$ costs one use of $j(u_h) \le j_h(u_h)$ (Theorem 11.4.7).
+* `norm_sub_le_of_regularization`: two problems on the whole space whose functionals differ by at
+  most $c_1 \varepsilon$ have solutions within $\sqrt{2 c_1 \varepsilon / c}$ (Exercise 11.4.3).
+* `tendsto_of_isVariationalInequalitySolution_of_subset`: internal approximations converge when the
+  constraint sets approximate the solution and $j$ is continuous on $K$ (Exercise 11.4.2). No weak
+  compactness is used, so a finite element analysis should cite this result and not the external
+  one.
+* `tendsto_of_isVariationalInequalitySolution`: the convergence theorem for discrete sets that need
+  not lie in $K$ in the book (Theorem 11.4.1). As stated here, its hypothesis on weak limits forces
+  $K_n \subseteq K$; the theorem explains why. It uses weak compactness: a bounded sequence has a
+  weakly convergent subsequence, whose limit lies in $K$ by hypothesis and solves the continuous
+  inequality by Minty's lemma. Minty's form is stable under weak limits because it evaluates the
+  operator at the test point.
+* `tendsto_of_isVariationalInequalitySolution_of_mosco`: convergence of an internal approximation
+  whose discrete functional varies with the discretization, as a quadrature approximation of $j$
+  does. The hypotheses that replace the single $j$ are Mosco convergence of the family, that is, a
+  weak lower limit bound and recovery sequences over a dense set, and one affine minorant for the
+  whole family.
 
-  `c ‖u - u_h‖² ≤ R j v u_h + R j_h v_h u + ⟪A u - A u_h, u - v_h⟫`,
+## Implementation notes
 
-by adding the two inequalities to the strong monotonicity inequality; bounding the last term by
-Cauchy–Schwarz, Lipschitz continuity and Young's inequality turns it into
-
-  `(c/2) ‖u - u_h‖² ≤ R j v u_h + R j v_h u + (L²/(2c)) ‖u - v_h‖²`,
-
-which is `norm_sub_le_of_isVariationalInequalitySolution`, [falk1974error] generalized Céa lemma.
-It is pure algebra: no closedness, no convexity, no topology and no limit.  Everything else in the
-module is a specialization.
-
-* `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: for an *internal* approximation, `K_h
-  ⊆ K`, the choice `v = u_h` kills the first residual.
-* `tendsto_of_isVariationalInequalitySolution_of_subset`: hence internal approximations converge as
-  soon as the constraint sets approximate `K` pointwise and `j` is continuous on `K`.  **No weak
-  compactness is used**, which is why this and not the external theorem is the statement a
-  finite-element analysis should cite.
-* `tendsto_of_isVariationalInequalitySolution`: the general external case, where the discrete sets
-  are not inside `K`.  This one does need weak compactness — a bounded sequence has a weakly
-  convergent subsequence, whose limit lies in `K` by hypothesis and solves the continuous inequality
-  by Minty's lemma, which is stable under weak limits precisely because it evaluates the operator at
-  the *test* point.
-* `norm_sub_le_of_isVariationalInequalitySolution_of_le`: replacing `j` on the discrete set by a
-  larger `j_h` costs one insertion of `j u_h ≤ j_h u_h`.
-* `tendsto_of_isVariationalInequalitySolution_of_mosco`: the only convergence theorem here whose
-  discrete functional *varies* with the discretization, as a quadrature approximation of `j` does.
-  Internal approximation again, and the two hypotheses that replace the single `j` are Mosco
-  convergence of the family — a weak liminf bound and recovery sequences over a dense set — together
-  with one affine minorant serving the whole family.
-* `norm_sub_le_of_regularization`: two problems on the whole space whose functionals differ by `c₁
-  ε` have solutions within `√(2 c₁ ε / c)`.
-
-The bounds are stated squared, as the proofs establish them, rather than as the book's `‖u - u_h‖ ≤
-C inf (‖u - v_h‖ + |R v_h u|^{1/2})`: the infima follow by `le_ciInf` and the square root by
-`Real.sqrt_le_sqrt` together with `√(x + y) ≤ √x + √y`, and neither step belongs in the statement of
-the estimate.
-
-The material is Section 11.4 of [han2009theoretical] — Theorems 11.4.1, 11.4.2 and 11.4.7 and
-Exercises 11.4.2 and 11.4.3 — and the error bound is due to [falk1974error].
+* The bounds are stated squared, as the proofs give them, and not in the form $\|u - u_h\| \le C
+  \inf (\|u - v_h\| + |R(v_h, u)|^{1/2})$ of the book. The infima follow by `le_ciInf`, and the
+  square root by `Real.sqrt_le_sqrt` and $\sqrt{x + y} \le \sqrt{x} + \sqrt{y}$; neither step
+  belongs in the statement of the estimate.
+* Lipschitz continuity is `LipschitzWith L.toNNReal A` for a real $L$. A negative $L$ is read as
+  $0$, and the bounds with $L^2$ hold in either case.
+* In `tendsto_of_isVariationalInequalitySolution` and
+  `tendsto_of_isVariationalInequalitySolution_of_mosco`, the hypotheses on weak limits quantify over
+  every map $\sigma \colon \mathbb{N} \to \mathbb{N}$, not only over maps with
+  $\sigma(k) \to \infty$. Constant maps then make these hypotheses stronger than in the book; each
+  theorem says how.
 -/
 
 open Filter Set Topology
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- `LipschitzWith L.toNNReal A` truncates a negative constant to zero, and the square of the
-truncation is below the square of the constant either way.  This is the step that lets an estimate
-stated with `L ^ 2` be proved from a `LipschitzWith L.toNNReal` hypothesis. -/
+/-- For every real $L$, $(\max\{L, 0\})^2 \le L^2$; this lets a bound with $L^2$ be proved from a
+Lipschitz constant `L.toNNReal`. -/
 private theorem coe_toNNReal_sq_le (L : ℝ) : ((L.toNNReal : ℝ)) ^ 2 ≤ L ^ 2 := by
   rcases le_or_gt 0 L with hL | hL
   · rw [Real.coe_toNNReal L hL]
@@ -82,11 +91,12 @@ section Core
 
 variable {A : V → V} {j jh : V → ℝ} {f : V} {K Kh : Set V} {c L : ℝ} {u uh v vh : V}
 
-/-- **The core estimate.**  Adding the two variational inequalities — the continuous one tested at
-`v ∈ K` and the discrete one tested at `v_h ∈ K_h` — to the strong monotonicity inequality between
-the two solutions leaves the cross term `⟪A u - A u_h, u - v_h⟫` and the two residuals of the
-continuous solution.  Nothing but bilinearity is used, and the two problems may carry different
-functionals. -/
+/-- Let $u$ solve the variational inequality with $j$ over $K$, and let $u_h$ solve it with $j_h$
+over $K_h$. Then the sum of the continuous inequality at $v \in K$, the discrete inequality at
+$v_h \in K_h$ and the strong monotonicity inequality gives $c \|u - u_h\|^2 \le \big(\langle Au,
+v - u_h \rangle + j(v) - j_h(u_h) - \langle f, v - u_h \rangle\big) + \big(\langle Au, v_h - u
+\rangle + j_h(v_h) - j(u) - \langle f, v_h - u \rangle\big) + \langle Au - Au_h, u - v_h
+\rangle$. -/
 private theorem varIneq_core (hmono : IsStronglyMonotoneWith ℝ A c)
     (hu : IsVariationalInequalitySolution A j f K u)
     (huh : IsVariationalInequalitySolution A jh f Kh uh) (hv : v ∈ K) (hvh : vh ∈ Kh) :
@@ -100,8 +110,8 @@ private theorem varIneq_core (hmono : IsStronglyMonotoneWith ℝ A c)
   simp only [RCLike.re_to_real, inner_sub_left, inner_sub_right] at hm h1 h2 ⊢
   linarith
 
-/-- Young's inequality in the shape [falk1974error] lemma needs: `c p² ≤ R + M p q` with `M² ≤ L²`
-gives `(c/2) p² ≤ R + (L²/(2c)) q²`. -/
+/-- Young's inequality for Falk's lemma: if $c > 0$, $M^2 \le L^2$ and $c p^2 \le R + M p q$, then
+$\frac{c}{2} p^2 \le R + \frac{L^2}{2c} q^2$. -/
 private theorem sq_le_of_le_add_mul {c M Lr p q R : ℝ} (hc : 0 < c) (hML : M ^ 2 ≤ Lr ^ 2)
     (h : c * p ^ 2 ≤ R + M * p * q) : c / 2 * p ^ 2 ≤ R + Lr ^ 2 / (2 * c) * q ^ 2 := by
   have h2c : (0 : ℝ) < 2 * c := by linarith
@@ -114,26 +124,26 @@ private theorem sq_le_of_le_add_mul {c M Lr p q R : ℝ} (hc : 0 < c) (hML : M ^
   nlinarith [sq_nonneg (c * p - M * q), mul_le_mul_of_nonneg_left h h2c.le,
     mul_le_mul_of_nonneg_right hML (sq_nonneg q)]
 
-/-- The cross term of the core estimate, bounded by Cauchy–Schwarz and Lipschitz continuity. -/
+/-- If $A$ is Lipschitz with constant $L$, then $\langle Ax - Ay, z \rangle \le \max\{L, 0\} \|x -
+y\| \|z\|$. -/
 private theorem inner_sub_apply_le (hlip : LipschitzWith L.toNNReal A) (x y z : V) :
     inner ℝ (A x - A y) z ≤ (L.toNNReal : ℝ) * ‖x - y‖ * ‖z‖ := by
   refine (real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
   simpa only [dist_eq_norm] using hlip.dist_le_mul x y
 
-/-- **[falk1974error] generalized Céa lemma.**  Let `u` solve the variational inequality over `K`
-and let `u_h` solve it over `K_h`, with the same strongly monotone Lipschitz operator, the same
-datum and the same convex term.  Then for every `v ∈ K` and every `v_h ∈ K_h`
+/-- **Falk's generalized Céa lemma** ([falk1974error]; [han2009theoretical], Theorem 11.4.2 and
+(11.4.7)). Let $V$ be a real inner product space, let $A \colon V \to V$ be strongly monotone
+with a constant $c > 0$ and Lipschitz with constant $L$, let $f \in V$ and
+$j \colon V \to \mathbb{R}$, and let $K$ and $K_h$ be subsets of $V$. Let $u$ solve the
+variational inequality over $K$, and let $u_h$ solve the variational inequality with the same
+$A$, $j$ and $f$ over $K_h$. Then for every $v \in K$ and every $v_h \in K_h$,
+$$\frac{c}{2} \|u - u_h\|^2 \le R(v, u_h) + R(v_h, u) + \frac{L^2}{2c} \|u - v_h\|^2,$$
+where $R(v, w) = \langle Au, v - w \rangle + j(v) - j(w) - \langle f, v - w \rangle$ is the
+residual of the continuous solution.
 
-  `(c/2) ‖u - u_h‖² ≤ R v u_h + R v_h u + (L²/(2c)) ‖u - v_h‖²`,
-
-where `R v w = ⟪A u, v - w⟫ + j v - j w - ⟪f, v - w⟫` is the residual of the *continuous* solution,
-`c` its strong monotonicity constant and `L` its Lipschitz constant.
-
-Purely algebraic: no closedness, convexity, topology or limit is used, and `K_h` need not meet `K`.
-For a variational equation — `K` a subspace, `j = 0`, `K_h ⊆ K` — both residuals vanish and this is
-Céa's lemma.
-
-[han2009theoretical], Theorem 11.4.2 and (11.4.7). -/
+The proof is pure algebra: it uses no closedness, convexity, topology or limit, and $K_h$ need
+not meet $K$. For a variational equation, with $K$ a subspace, $j = 0$ and $K_h \subseteq K$,
+both residuals vanish and this is Céa's lemma. A negative $L$ is read as $0$. -/
 theorem norm_sub_le_of_isVariationalInequalitySolution (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -146,14 +156,13 @@ theorem norm_sub_le_of_isVariationalInequalitySolution (hc : 0 < c)
     ((varIneq_core hmono hu huh hv hvh).trans
       (by linarith [inner_sub_apply_le hlip u uh (u - vh)]))
 
-/-- **The internal-approximation form of [falk1974error] lemma.**  When the discrete solution lies
-in `K` — in particular when `K_h ⊆ K` — the first residual of
-`norm_sub_le_of_isVariationalInequalitySolution` vanishes, at `v = u_h`, and only the residual at
-the discrete test point remains:
+/-- **Falk's lemma for internal approximations** ([han2009theoretical], the display after Theorem
+11.4.2). Let $A$, $c$, $L$, $f$, $j$, $K$, $K_h$, $u$ and $u_h$ be as in
+`norm_sub_le_of_isVariationalInequalitySolution`, and let $u_h \in K$, as in particular when
+$K_h \subseteq K$. Then for every $v_h \in K_h$,
+$$\frac{c}{2} \|u - u_h\|^2 \le R(v_h, u) + \frac{L^2}{2c} \|u - v_h\|^2.$$
 
-  `(c/2) ‖u - u_h‖² ≤ R v_h u + (L²/(2c)) ‖u - v_h‖²`.
-
-[han2009theoretical], the display following Theorem 11.4.2. -/
+The first residual of `norm_sub_le_of_isVariationalInequalitySolution` vanishes at $v = u_h$. -/
 theorem norm_sub_le_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -164,15 +173,16 @@ theorem norm_sub_le_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
   have h := norm_sub_le_of_isVariationalInequalitySolution hc hmono hlip hu huh huhK hvh
   simpa using h
 
-/-- **[han2009theoretical], Theorem 11.4.7.**  A method that replaces the convex term `j` on the
-discrete set by a *larger* functional `j_h` — the property enjoyed by the numerical-integration
-construction of the book's (11.4.28) — obeys the same estimate with the residual measured by `j_h`:
+/-- **Theorem 11.4.7** of [han2009theoretical]. Let $A$, $c$, $L$, $f$, $j$, $K$ and $u$ be as in
+`norm_sub_le_of_isVariationalInequalitySolution`, let $j_h \colon V \to \mathbb{R}$, and let
+$u_h$ solve the variational inequality with $A$, $j_h$ and $f$ over $K_h$. Assume $u_h \in K$
+and $j(u_h) \le j_h(u_h)$. Then for every $v_h \in K_h$,
+$$\frac{c}{2} \|u - u_h\|^2 \le R_h(v_h, u) + \frac{L^2}{2c} \|u - v_h\|^2, \qquad R_h(v_h, u) =
+  \langle Au, v_h - u \rangle + j_h(v_h) - j(u) - \langle f, v_h - u \rangle.$$
 
-  `(c/2) ‖u - u_h‖² ≤ R_h v_h u + (L²/(2c)) ‖u - v_h‖²`, `R_h v_h u = ⟪A u, v_h - u⟫ + j_h v_h - j u
-  - ⟪f, v_h - u⟫`.
-
-The algebra is [falk1974error], with the single inequality `j u_h ≤ j_h u_h` inserted at `v = u_h`.
--/
+This covers a method that replaces $j$ on the discrete set by a larger functional $j_h$, as the
+construction of (11.4.28) of the book by numerical integration does. The proof is Falk's
+computation, with the inequality $j(u_h) \le j_h(u_h)$ at $v = u_h$. -/
 theorem norm_sub_le_of_isVariationalInequalitySolution_of_le (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -186,13 +196,16 @@ theorem norm_sub_le_of_isVariationalInequalitySolution_of_le (hc : 0 < c)
   simp only [sub_self, inner_zero_right] at hcore
   linarith [inner_sub_apply_le hlip u uh (u - vh)]
 
-/-- **[han2009theoretical], Exercise 11.4.3 and (11.4.20).**  If a regularized functional satisfies
-`|j_ε v - j v| ≤ c₁ ε` everywhere, then the solution of the regularized inequality on the whole
-space is within `√(2 c₁ ε / c)` of the solution of the original one: the a priori bound with
-exponent `β = 1/2`.
+/-- **Exercise 11.4.3 and (11.4.20)** of [han2009theoretical]. Let $A$ be strongly monotone with a
+constant $c > 0$, let $j, j_\varepsilon \colon V \to \mathbb{R}$ satisfy
+$|j_\varepsilon(w) - j(w)| \le c_1 \varepsilon$ for all $w \in V$, let $u$ solve the variational
+inequality with $j$ over $V$, and let $u_\varepsilon$ solve it with $j_\varepsilon$ over $V$.
+Then
+$$\|u - u_\varepsilon\| \le \sqrt{\frac{2 c_1 \varepsilon}{c}}.$$
 
-Both residuals of the core estimate are bounded by `c₁ ε` and its cross term vanishes, at `v = u_ε`
-and `v_h = u`, so neither Lipschitz continuity nor Young's inequality is used and the constant is
+This is the a priori bound with exponent $\beta = \frac12$. At $v = u_\varepsilon$ and
+$v_h = u$, both residuals of the core estimate are at most $c_1 \varepsilon$ and the cross term
+vanishes. So neither Lipschitz continuity nor Young's inequality is used, and the constant is
 the sharp one. -/
 theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c)
@@ -215,12 +228,9 @@ theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0
 
 end Core
 
-/-- The part of [falk1974error] bound that does not see the discrete solution — the residual of the
-continuous solution at the approximating point, together with the Young term — converges along any
-sequence `w n → v` on which the values of the functionals converge, to the same expression at `v`.
-The functional is allowed to vary with `n`, which is what
-`tendsto_of_isVariationalInequalitySolution_of_mosco` needs; `tendsto_falk_majorant` is the case
-`v = u` and a fixed `j`, where the limit is zero. -/
+/-- If $w_n \to v$ and $j_n(w_n) \to j(v)$, then $R_{j_n}(w_n, u) + \frac{L^2}{2c} \|u - w_n\|^2$
+tends to $R_j(v, u) + \frac{L^2}{2c} \|u - v\|^2$, the part of Falk's bound that does not depend
+on the discrete solution. -/
 private theorem tendsto_falk_majorant_of_tendsto {A : V → V} {j : V → ℝ} {jh : ℕ → V → ℝ}
     {f u v : V} {c L : ℝ} {w : ℕ → V} (hw : Tendsto w atTop (𝓝 v))
     (hjw : Tendsto (fun n => jh n (w n)) atTop (𝓝 (j v))) :
@@ -242,10 +252,8 @@ private theorem tendsto_falk_majorant_of_tendsto {A : V → V} {j : V → ℝ} {
   have h := (((hinner (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner f)
   exact h.add (hnormw.const_mul (L ^ 2 / (2 * c)))
 
-/-- The majorant of `tendsto_falk_majorant_of_tendsto` at the continuous solution itself: it tends
-to zero along any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems
-below run the same argument on it, differing only in how they get `hjw`: the internal one from
-continuity of `j` on `K`, the external one from continuity on the whole space. -/
+/-- If $w_n \to u$ and $j(w_n) \to j(u)$, then $R_j(w_n, u) + \frac{L^2}{2c} \|u - w_n\|^2 \to 0$.
+-/
 private theorem tendsto_falk_majorant {A : V → V} {j : V → ℝ} {f u : V} {c L : ℝ} {w : ℕ → V}
     (hw : Tendsto w atTop (𝓝 u)) (hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u))) :
     Tendsto (fun n => (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
@@ -260,14 +268,15 @@ section Internal
 variable {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {Kh : ℕ → Set V} {c L : ℝ} {u : V}
   {uh : ℕ → V}
 
-/-- **Convergence of internal approximations.** [han2009theoretical], Exercise 11.4.2.  Let `K_h n ⊆
-K` be nonempty sets whose points approximate `u` — there is a sequence `w n ∈ K_h n` with `w n → u`
-— and let `j` be continuous on `K`.  Then the discrete solutions converge to `u` in norm.
+/-- **Convergence of internal approximations** ([han2009theoretical], Exercise 11.4.2). Let $V$ be a
+real inner product space, let $A$ be strongly monotone with a constant $c > 0$ and Lipschitz
+with constant $L$, let $f \in V$, and let $j$ be continuous on $K$. Let $K_n \subseteq K$ for
+every $n$, let $u$ solve the variational inequality over $K$, and let $u_n$ solve it over $K_n$.
+Assume that there are $w_n \in K_n$ with $w_n \to u$. Then $u_n \to u$ in norm.
 
-Straight from `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: the residual `R (w n) u`
-tends to `0` along the approximating sequence, and so does `‖u - w n‖`.  **No weak compactness is
-used**, which is what makes this, and not the external Theorem 11.4.1, the statement a
-finite-element analysis should cite. -/
+The proof applies `norm_sub_le_of_isVariationalInequalitySolution_of_subset` at $v_h = w_n$: the
+residual $R(w_n, u)$ and $\|u - w_n\|$ tend to $0$. No weak compactness is used, and this is why
+a finite element analysis should cite this result and not the external Theorem 11.4.1. -/
 theorem tendsto_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hsub : ∀ n, Kh n ⊆ K) (hjc : ContinuousOn j K)
@@ -309,8 +318,8 @@ end Internal
 
 /-! ### Weak convergence in inner-product form -/
 
-/-- Weak convergence written with the vector on the left is weak convergence with it on the right;
-over `ℝ` the inner product is symmetric. -/
+/-- If $\langle v_k, y \rangle \to \langle z, y \rangle$ for every $y$, then $\langle y, v_k \rangle
+\to \langle y, z \rangle$ for every $y$. -/
 private theorem tendsto_inner_of_weak {v : ℕ → V} {z : V}
     (hw : ∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y))) (y : V) :
     Tendsto (fun k => inner ℝ y (v k)) atTop (𝓝 (inner ℝ y z)) := by
@@ -319,8 +328,8 @@ private theorem tendsto_inner_of_weak {v : ℕ → V} {z : V}
 
 /-! ### The steps shared by the external convergence theorems -/
 
-/-- The boundedness step of the external convergence theorems: an estimate
-`(c/2) x n² ≤ a x n + g n` with `g` bounded above bounds `x`. -/
+/-- If $c > 0$, $g$ is bounded above and $\frac{c}{2} x_n^2 \le a x_n + g_n$ for all $n$, then the
+sequence $(x_n)$ is bounded above. -/
 private theorem exists_forall_le_of_half_mul_sq_le {c a : ℝ} (hc : 0 < c) {x g : ℕ → ℝ}
     (hg : BddAbove (Set.range g)) (h : ∀ n, c / 2 * x n ^ 2 ≤ a * x n + g n) :
     ∃ D, ∀ n, x n ≤ D := by
@@ -340,12 +349,10 @@ private theorem exists_forall_le_of_half_mul_sq_le {c a : ℝ} (hc : 0 < c) {x g
     have hfin := le_of_mul_le_mul_left hstep hd0
     linarith
 
-/-- The limit step of the external convergence theorems, in Minty's form.  Along a reindexing `s`
-on which the discrete solutions converge weakly to `z`, test the discrete inequalities at points
-`p n ∈ K_h n` converging to `v` with `j_h (s k) (p (s k)) → j_v`: then every `α` above
-`⟪A v, v - z⟫ - ⟪f, v - z⟫ + j_v` eventually bounds `j_h (s k) (u_h (s k))`.  Monotonicity moves
-the operator to the test point, where it converges in norm, which is what lets the weak limit
-pass. -/
+/-- Minty's form of the limit step: along a reindexing on which the discrete solutions converge
+weakly to $z$, and with test points $p_n \in K_n$ converging to $v$ with $j_{n}(p_n) \to j_v$,
+every $\alpha > \langle Av, v - z \rangle - \langle f, v - z \rangle + j_v$ eventually bounds
+$j_n(u_n)$ from above. -/
 private theorem eventually_lt_of_tendsto_minty {A : V → V} {jh : ℕ → V → ℝ} {f : V}
     {Kh : ℕ → Set V} {L D jv : ℝ} {uh p : ℕ → V} {u v z : V} {s : ℕ → ℕ}
     (hmono : ∀ x y : V, (0 : ℝ) ≤ inner ℝ (A x - A y) (x - y)) (hlip : LipschitzWith L.toNNReal A)
@@ -413,8 +420,8 @@ private theorem eventually_lt_of_tendsto_minty {A : V → V} {jh : ℕ → V →
   filter_upwards [hE.eventually (eventually_lt_nhds hα)] with k hk
   exact (hjle (s k)).trans_lt hk
 
-/-- The last step of the external convergence theorems: once the discrete solutions converge
-weakly to `u`, the linear part `⟪a, u - u_h⟫ - ⟪f, u - u_h⟫` of Falk's bound tends to zero. -/
+/-- If the discrete solutions converge weakly to $u$, then $\langle a, u - u_k \rangle - \langle f,
+u - u_k \rangle \to 0$. -/
 private theorem tendsto_inner_sub_sub_inner_sub_of_weak {uh : ℕ → V} {u a f : V}
     (hweak : ∀ y : V, Tendsto (fun k => inner ℝ (uh k) y) atTop (𝓝 (inner ℝ u y))) :
     Tendsto (fun k => inner ℝ a (u - uh k) - inner ℝ f (u - uh k)) atTop (𝓝 0) := by
@@ -436,25 +443,31 @@ section External
 variable [CompleteSpace V] {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {Kh : ℕ → Set V}
   {c L : ℝ} {u : V} {uh : ℕ → V}
 
-/-- **[han2009theoretical], Theorem 11.4.1.**  The general convergence theorem, in which the
-discrete constraint sets need not lie inside `K`.  Assume
+/-- **Theorem 11.4.1** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $A$ be strongly
+monotone with a constant $c > 0$ and Lipschitz with constant $L$, let $f \in V$, let $K$ be
+convex, and let $j$ be convex and continuous on $V$. Assume:
 
-* `j` is convex and continuous on the whole space;
-* every point of `K` is a limit of points of the `K_h n`;
-* every weak limit of a sequence taken from the `K_h n` along any reindexing lies in `K`.
+* every $v \in K$ is the limit of a sequence $w_n \in K_n$;
+* for every map $\sigma \colon \mathbb{N} \to \mathbb{N}$ and every sequence
+  $v_k \in K_{\sigma(k)}$ that converges weakly to some $z$, the limit $z$ lies in $K$.
 
-Then the discrete solutions converge to `u` in norm.
+Let $u$ solve the variational inequality over $K$, and let $u_n$ solve it over $K_n$. Then
+$u_n \to u$ in norm.
 
-Three steps.  The discrete solutions are bounded, by testing at an approximation of `u` and using an
-affine minorant of `j`.  A weakly convergent subsequence has its limit `z` in `K`, and `z` solves
-the continuous inequality: the discrete inequalities in Minty's form pass to the weak limit, because
-Minty's form evaluates the operator at the *test* point, and `j` is weakly sequentially lower
-semicontinuous, being convex and continuous.  Hence `z = u`, and the same estimate upgrades weak
-convergence to norm convergence.
+The proof has three steps. First, the discrete solutions are bounded: test at an approximation
+of $u$, and use an affine minorant of $j$. Second, a weakly convergent subsequence has its limit
+$z$ in $K$, and $z$ solves the continuous inequality: the discrete inequalities in Minty's form
+pass to the weak limit, because Minty's form evaluates the operator at the test point, and $j$
+is weakly sequentially lower semicontinuous, because it is convex and continuous. So $z = u$.
+Third, the same estimate turns weak convergence into norm convergence.
 
-For internal approximations the third hypothesis is `mem_of_weak_tendsto_of_convex`, and the
-weak-compactness step is not needed at all — see
-`tendsto_of_isVariationalInequalitySolution_of_subset`. -/
+Because $\sigma$ can be constant, the second hypothesis applied to constant sequences gives
+$K_n \subseteq K$ for every $n$. So, as stated, the theorem applies only to internal
+approximations. A hypothesis restricted to maps with $\sigma(k) \to \infty$ would not have this
+consequence. For internal approximations with $K$ convex and closed, the second hypothesis
+follows from `mem_of_weak_tendsto_of_convex`, and
+`tendsto_of_isVariationalInequalitySolution_of_subset` gives the conclusion without weak
+compactness. -/
 theorem tendsto_of_isVariationalInequalitySolution (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hKcv : Convex ℝ K) (hjcv : ConvexOn ℝ univ j) (hjc : Continuous j)
@@ -590,41 +603,46 @@ section Varying
 variable [CompleteSpace V] {A : V → V} {j : V → ℝ} {jh : ℕ → V → ℝ} {f : V} {K U : Set V}
   {Kh : ℕ → Set V} {c L : ℝ} {u : V} {uh : ℕ → V}
 
-/-- **Convergence of an internal approximation whose functional varies with the discretization.**
-Every convergence theorem above carries one functional `j`, shared by the continuous problem and by
-all the discrete ones.  Here the discrete problem number `n` carries its own convex term `j_h n`, as
-it does whenever the term `j` of the continuous problem is evaluated by a quadrature rule.  Assume
-`A` is `c`-strongly monotone and `L`-Lipschitz, `K` is convex and closed, `j` is convex on `K` and
-continuous, and
+/-- **Convergence of an internal approximation whose functional varies with the discretization.** In
+the theorems above, one functional $j$ is shared by the continuous problem and all discrete
+problems. Here the discrete problem number $n$ has its own functional $j_n$, as when the
+functional of the continuous problem is computed by a quadrature rule. Let $V$ be a real Hilbert
+space, let $A$ be strongly monotone with a constant $c > 0$ and Lipschitz with constant $L$, let
+$f \in V$, let $K$ be convex and closed, and let $j$ be continuous on $V$ and convex on $K$.
+Assume:
 
-* the approximation is *internal*: `K_h n ⊆ K`;
-* the family `j_h` is *uniformly proper*: one continuous affine minorant `lin + b` lies below every
-  `j_h n` on `K_h n`;
-* the family is *weakly sequentially lower semicontinuous*: whenever `v k ∈ K_h (σ k)` converges
-  weakly to `z`, every `α < j z` is eventually below `j_h (σ k) (v k)`;
-* the discrete sets carry *recovery sequences* over a set `U` whose closure contains `K`: for every
-  `v ∈ U` there are `w n ∈ K_h n` with `w n → v` **and** `j_h n (w n) → j v`.
+* the approximation is internal: $K_n \subseteq K$ for every $n$;
+* the family $(j_n)$ is uniformly proper: there are a bounded linear functional $\lambda$ and
+  $b \in \mathbb{R}$ with $\lambda(v) + b \le j_n(v)$ for all $n$ and all $v \in K_n$;
+* the family is weakly sequentially lower semicontinuous: for every map
+  $\sigma \colon \mathbb{N} \to \mathbb{N}$ and every sequence $v_k \in K_{\sigma(k)}$ that
+  converges weakly to some $z$, every $\alpha < j(z)$ satisfies $\alpha < j_{\sigma(k)}(v_k)$
+  for all large $k$;
+* there are recovery sequences over a set $U$ with $K \subseteq \overline{U}$: for every
+  $v \in U$ there are $w_n \in K_n$ with $w_n \to v$ and $j_n(w_n) \to j(v)$.
 
-Then the discrete solutions converge to `u` in norm.
+Let $u$ solve the variational inequality with $j$ over $K$, and let $u_n$ solve it with $j_n$
+over $K_n$. Then $u_n \to u$ in norm.
 
-The last two hypotheses are Mosco convergence of the family to `j` [mosco1969convergence] — a weak
-liminf bound and a strong recovery sequence.  The liminf is written as an eventual strict
-inequality, `∀ α < j z, ∀ᶠ k, α < j_h (σ k) (v k)`, which is what the proof consumes and which
-presumes no boundedness of the values; over `ℝ` a `Filter.liminf` would be junk on a sequence
-unbounded below.  Taking `j_h n = j` and `U = K` returns
-`tendsto_of_isVariationalInequalitySolution` for an internal approximation, a convex continuous
-functional being weakly sequentially lower semicontinuous.
+The last two hypotheses are Mosco convergence of the family to $j$ [mosco1969convergence]: a
+weak lower limit bound and a strong recovery sequence. The lower limit is written as an eventual
+strict inequality, which is what the proof uses and which needs no boundedness of the values;
+over $\mathbb{R}$, `Filter.liminf` has no meaningful value for a sequence that is unbounded
+below. Because $\sigma$ can be constant, this hypothesis applied to constant sequences gives
+$j(v) \le j_n(v)$ for all $n$ and $v \in K_n$. The choice $j_n = j$ and $U = K$ gives
+`tendsto_of_isVariationalInequalitySolution` for an internal approximation, since a convex
+continuous functional is weakly sequentially lower semicontinuous.
 
-The proof is that of `tendsto_of_isVariationalInequalitySolution` with three substitutions.  The
-lower bound on `j_h n (u_h n)` in the boundedness step comes from the uniform minorant of the family
-rather than from an affine minorant of `j`.  The weak lower semicontinuity is the hypothesis on the
-family rather than `ConvexOn.weakSeqLowerSemicontinuousOn` for `j`.  And, because a recovery
-sequence is available only over `U` while the solution `u` need not lie in `U`, the two steps that
-approximate the continuous solution now pass through `U` by a limit: Minty's inequality for the weak
-limit is proved on `U` and extended to `K` by continuity of `A` and `j`, and the final estimate is
-run at a point of `U` where the residual of `u` is below a prescribed `ε`.  Continuity of `j` is
-therefore still used, and used only for those two limits; on a complete space it is not an extra
-assumption, a real-valued convex lower semicontinuous functional being continuous automatically. -/
+The proof is that of `tendsto_of_isVariationalInequalitySolution`, with three changes. The lower
+bound on $j_n(u_n)$ in the boundedness step comes from the uniform minorant of the family, not
+from an affine minorant of $j$. The weak lower semicontinuity is the hypothesis on the family,
+not `ConvexOn.weakSeqLowerSemicontinuousOn` for $j$. A recovery sequence exists only over $U$,
+and $u$ need not lie in $U$, so the two steps that approximate the continuous solution pass
+through $U$ by a limit: Minty's inequality for the weak limit is proved on $U$ and extended to
+$K$ by continuity of $A$ and $j$, and the final estimate is applied at a point of $U$ where the
+residual of $u$ is below a given $\varepsilon$. So continuity of $j$ is used, and only for these
+two limits. On a complete space, a real-valued convex lower semicontinuous functional on the
+whole space is continuous, so continuity is no extra assumption in that case. -/
 theorem tendsto_of_isVariationalInequalitySolution_of_mosco (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hKcv : Convex ℝ K) (hKcl : IsClosed K) (hjcv : ConvexOn ℝ K j) (hjc : Continuous j)

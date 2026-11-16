@@ -14,31 +14,39 @@ import Mathlib.Data.Matrix.Mul
 /-!
 # Connectivity matrices and the assembly of a matrix from local blocks
 
-A *local-to-global map* `ι : κ → n` names, inside a global index set `n`, the `κ` indices that one
-local piece of a problem owns; the finite element method calls `κ` the local degrees of freedom of
-an element and `ι` its connectivity list. The Boolean matrix `Matrix.connectivity ι` of shape
-`n × κ` — a `1` in position `(ι p, p)` and zeros elsewhere — is the *scatter* operator of that map,
-and its transpose is the *gather* operator `x ↦ x ∘ ι`.
+A **local-to-global map** $\iota \colon \kappa \to n$ names, inside a global index set $n$, the
+indices that one local piece of a problem owns. The finite element method calls $\kappa$ the local
+degrees of freedom of an element and $\iota$ its connectivity list. The **connectivity matrix**
+$P_\iota$ of $\iota$ is the $n \times \kappa$ matrix with entry $1$ in position $(\iota(p), p)$ and
+$0$ elsewhere. Multiplication by $P_\iota$ scatters a local vector into the global index set, and
+multiplication by $P_\iota^T$ gathers a global vector $x$ to the local vector $x \circ \iota$.
 
-The one theorem here is `Matrix.connectivity_mul_submatrix_mul_transpose`: a matrix supported on
-the block `range ι × range ι` is recovered from that block by scattering, `P (Mᵢᵢ) Pᵀ = M`. Summed
-over a family of local maps it gives `Matrix.eq_sum_connectivity_mul_submatrix_mul_transpose`, the
-statement that a matrix which splits as a sum of locally supported contributions is the sum of the
-scattered local blocks, and `Matrix.mulVec_eq_sum_connectivity`, the *unassembled* matrix–vector
-product: gather, apply the local block, scatter, add up. Both are the algebraic content of finite
-element assembly, and neither mentions any geometry.
+The main identity is $P_\iota M_{\iota\iota} P_\iota^T = M$ for an injective $\iota$ and a matrix
+$M$ that vanishes outside the block $\operatorname{range} \iota \times \operatorname{range} \iota$,
+where $M_{\iota\iota}$ is the local block $(M_{\iota(p) \iota(q)})_{p, q}$. Summed over a family of
+local maps, it shows that a matrix which is a sum of locally supported contributions is the sum of
+the scattered local blocks. It also gives the unassembled matrix–vector product: gather, apply the
+local block, scatter, and add up. These results are the algebraic content of finite element
+assembly, and they use no geometry.
 
 ## Main definitions
 
-* `Matrix.connectivity ι`: the Boolean scatter matrix of `ι : κ → n`.
+* `Matrix.connectivity`: the connectivity matrix $P_\iota$ of a map $\iota \colon \kappa \to n$.
 
 ## Main results
 
-* `Matrix.transpose_connectivity_mulVec`: gathering is restriction, `Pᵀ *ᵥ x = x ∘ ι`.
-* `Matrix.connectivity_mul_submatrix_mul_transpose`: `P (M.submatrix ι ι) Pᵀ = M` for an injective
-  `ι` and an `M` supported on `range ι × range ι`.
-* `Matrix.eq_sum_connectivity_mul_submatrix_mul_transpose` and `Matrix.mulVec_eq_sum_connectivity`:
-  the assembled matrix and the assembled matrix–vector product as sums over the local pieces.
+* `Matrix.transpose_connectivity_mulVec`: gathering is restriction, $P_\iota^T x = x \circ \iota$.
+* `Matrix.connectivity_mul_submatrix_mul_transpose`: $P_\iota M_{\iota\iota} P_\iota^T = M$ for an
+  injective $\iota$ and a matrix $M$ supported on $\operatorname{range} \iota \times
+  \operatorname{range} \iota$.
+* `Matrix.eq_sum_connectivity_mul_submatrix_mul_transpose`: if $A = \sum_e A_e$ with each $A_e$
+  supported on the indices of the element $e$, then $A = \sum_e P_e (A_e)_{\iota_e \iota_e} P_e^T$.
+* `Matrix.mulVec_eq_sum_connectivity`: under the same hypotheses, $Ax = \sum_e P_e (A_e)_{\iota_e
+  \iota_e} (x \circ \iota_e)$.
+
+## Implementation notes
+
+* The local block $M_{\iota\iota}$ is `M.submatrix ι ι`.
 -/
 
 namespace Matrix
@@ -49,27 +57,30 @@ section Def
 
 variable [DecidableEq n] [Zero R] [One R]
 
-/-- The Boolean *connectivity* (or *scatter*) matrix of a local-to-global index map `ι : κ → n`:
-the `n × κ` matrix whose `(i, p)` entry is `1` when `i = ι p` and `0` otherwise. It is the
-submatrix of the identity that keeps all rows and selects the columns named by `ι`, so multiplying
-by it on the left scatters a local vector into the global index set, and multiplying by its
-transpose gathers a global vector down to the local one. -/
+/-- The **connectivity matrix**, or scatter matrix, of a local-to-global index map
+$\iota \colon \kappa \to n$ is the $n \times \kappa$ matrix $P_\iota$ with entries
+$$(P_\iota)_{ip} = \begin{cases} 1 & \text{if } i = \iota(p), \\ 0 & \text{otherwise.}
+  \end{cases}$$
+It is the submatrix of the identity that keeps all rows and selects the columns named by
+$\iota$. Multiplication by $P_\iota$ on the left scatters a local vector into the global index
+set, and multiplication by $P_\iota^T$ gathers a global vector to the local one. -/
 def connectivity (ι : κ → n) : Matrix n κ R := Matrix.of fun i p => if i = ι p then 1 else 0
 
-/-- The entries of the connectivity matrix: `1` where the global index `i` is the image of the
-local index `p`, and `0` elsewhere. -/
+/-- The entries of the connectivity matrix: $(P_\iota)_{ip}$ is $1$ if $i = \iota(p)$ and $0$
+otherwise. -/
 @[simp]
 theorem connectivity_apply (ι : κ → n) (i : n) (p : κ) :
     (connectivity ι : Matrix n κ R) i p = if i = ι p then 1 else 0 := rfl
 
-/-- The connectivity matrix is a submatrix of the identity: `P_ι = I_{*, ι}`. -/
+/-- The connectivity matrix is a submatrix of the identity: $P_\iota$ consists of the columns
+$\iota(p)$, $p \in \kappa$, of the identity matrix of order $n$. -/
 theorem connectivity_eq_submatrix_one (ι : κ → n) :
     (connectivity ι : Matrix n κ R) = (1 : Matrix n n R).submatrix id ι := by
   ext i p
   simp [Matrix.one_apply]
 
-/-- The rows of the connectivity matrix at an index of the form `ι p₀` are read by injectivity:
-`P (ι p₀) p = δ_{p₀ p}`. -/
+/-- Let $\iota \colon \kappa \to n$ be injective. Then for $p_0, p \in \kappa$, the entry
+$(P_\iota)_{\iota(p_0), p}$ is $1$ if $p_0 = p$ and $0$ otherwise. -/
 theorem connectivity_apply_of_injective [DecidableEq κ] {ι : κ → n} (hι : Function.Injective ι)
     (p₀ p : κ) : (connectivity ι : Matrix n κ R) (ι p₀) p = if p₀ = p then 1 else 0 := by
   simp only [connectivity_apply]
@@ -81,8 +92,8 @@ section Vec
 
 variable [DecidableEq n] [Fintype n] [NonAssocSemiring R]
 
-/-- Gathering: the transpose of the connectivity matrix restricts a global vector to the local
-indices, `Pᵀ *ᵥ x = x ∘ ι`. -/
+/-- Gathering is restriction: for a vector $x$ indexed by $n$, $P_\iota^T x = x \circ \iota$, that
+is, $(P_\iota^T x)_p = x_{\iota(p)}$. -/
 theorem transpose_connectivity_mulVec (ι : κ → n) (x : n → R) :
     (connectivity ι : Matrix n κ R)ᵀ *ᵥ x = fun p => x (ι p) := by
   funext p
@@ -94,13 +105,17 @@ section Reconstruct
 
 variable [DecidableEq n] [Fintype κ] [Semiring R]
 
-/-- The scatter–gather sandwich reconstructs a locally supported matrix from its local block: if
-`ι` is injective and `M` vanishes whenever either index falls outside `range ι`, then
-`P (M.submatrix ι ι) Pᵀ = M`.
+/-- Let $\iota \colon \kappa \to n$ be injective, with $\kappa$ finite, and let $M$ be an
+$n \times n$ matrix over a semiring with $M_{ij} = 0$ whenever
+$i \notin \operatorname{range} \iota$ or $j \notin \operatorname{range} \iota$. Then the scatter
+of the local block reconstructs $M$:
+$$P_\iota M_{\iota\iota} P_\iota^T = M,$$
+where $M_{\iota\iota} = (M_{\iota(p) \iota(q)})_{p, q \in \kappa}$.
 
 This is the identity behind finite element assembly. Injectivity says that an element does not
-name the same global node twice; the support hypothesis is the one the textbooks leave implicit,
-and without it the scatter loses exactly the entries that lie outside the element. -/
+name the same global node twice. The support hypothesis is the one that textbooks leave
+implicit; without it, the scatter loses exactly the entries outside the element. The local block
+$M_{\iota\iota}$ is `M.submatrix ι ι`. -/
 theorem connectivity_mul_submatrix_mul_transpose {ι : κ → n} (hι : Function.Injective ι)
     {M : Matrix n n R} (hM : ∀ i j, (i ∉ Set.range ι ∨ j ∉ Set.range ι) → M i j = 0) :
     (connectivity ι : Matrix n κ R) * M.submatrix ι ι * (connectivity ι : Matrix n κ R)ᵀ = M := by
@@ -138,9 +153,14 @@ theorem connectivity_mul_submatrix_mul_transpose {ι : κ → n} (hι : Function
 
 variable [Fintype E]
 
-/-- **Assembly.** A matrix that splits as a sum of locally supported contributions, one per element
-of a finite family with local-to-global maps `ι e`, is the sum of the scattered local blocks:
-`A = ∑ₑ Pₑ Aₑ Pₑᵀ` with `Aₑ` the local block `(A e).submatrix (ι e) (ι e)`. -/
+/-- **Assembly.** Let $E$ be a finite set of elements, and for each $e \in E$ let
+$\iota_e \colon \kappa \to n$ be an injective local-to-global map and let $A_e$ be an
+$n \times n$ matrix over a semiring with $(A_e)_{ij} = 0$ whenever
+$i \notin \operatorname{range} \iota_e$ or $j \notin \operatorname{range} \iota_e$. If
+$A = \sum_{e \in E} A_e$, then $A$ is the sum of the scattered local blocks:
+$$A = \sum_{e \in E} P_{\iota_e} (A_e)_{\iota_e \iota_e} P_{\iota_e}^T.$$
+
+The local block $(A_e)_{\iota_e \iota_e}$ is `(Aloc e).submatrix (ι e) (ι e)`. -/
 theorem eq_sum_connectivity_mul_submatrix_mul_transpose {ι : E → κ → n}
     (hι : ∀ e, Function.Injective (ι e)) {A : Matrix n n R} {Aloc : E → Matrix n n R}
     (hsupp : ∀ e i j, (i ∉ Set.range (ι e) ∨ j ∉ Set.range (ι e)) → Aloc e i j = 0)
@@ -154,10 +174,12 @@ theorem eq_sum_connectivity_mul_submatrix_mul_transpose {ι : E → κ → n}
 
 variable [Fintype n]
 
-/-- **The unassembled matrix–vector product.** With the hypotheses of
-`Matrix.eq_sum_connectivity_mul_submatrix_mul_transpose`, applying `A` to a vector is: gather onto
-each element, apply the local block there, scatter back, and add up. The global matrix `A` never
-has to be formed. -/
+/-- **The unassembled matrix–vector product.** Under the hypotheses of
+`Matrix.eq_sum_connectivity_mul_submatrix_mul_transpose`, with $n$ finite, every vector $x$
+satisfies
+$$Ax = \sum_{e \in E} P_{\iota_e} \bigl((A_e)_{\iota_e \iota_e} (x \circ \iota_e)\bigr).$$
+Thus $Ax$ is computed by gathering $x$ onto each element, applying the local block, scattering
+back, and adding up. The global matrix $A$ is never formed. -/
 theorem mulVec_eq_sum_connectivity {ι : E → κ → n} (hι : ∀ e, Function.Injective (ι e))
     {A : Matrix n n R} {Aloc : E → Matrix n n R}
     (hsupp : ∀ e i j, (i ∉ Set.range (ι e) ∨ j ∉ Set.range (ι e)) → Aloc e i j = 0)

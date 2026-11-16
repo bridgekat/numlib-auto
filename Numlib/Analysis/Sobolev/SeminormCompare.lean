@@ -12,51 +12,65 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Numlib.Analysis.Sobolev.DenyLions
 
 /-!
-# The tensor Sobolev seminorm against the multi-index one
+# The tensor Sobolev seminorm against the multi-index seminorm
 
-`Numlib/Analysis/Sobolev/Domain.lean` measures the derivatives of order `n` of a function of
-`W^{k,p}(Ω)` by the `L^p(Ω)` norm of the operator norm of the weak derivative *tensor*
-`∂^n f : Ω → E [×n]→L[ℝ] F` (`sobolevSeminorm f n p Ω μ`), while
-`Numlib/Analysis/Sobolev/MultiIndex.lean` and `Numlib/Analysis/Sobolev/DenyLions.lean` index the
-derivatives by multi-indices `α` of a basis `b` and take the `ℓ^p` sum
-`|u|_{k,p,Ω} = (∑_{|α| = k} ‖∂^α u‖_p^p)^{1/p}` (`SobolevMultiIndex.topSeminorm`). On a
-finite-dimensional space the two are equivalent, and this file proves the two inequalities with
-explicit constants depending on the basis alone:
-
-* `SobolevMultiIndex.sobolevSeminorm_fn_le`: `‖∂^n (fn u)‖_{L^p(Ω)} ≤ C_n ‖u‖_{k,p,Ω}` for
-  `u ∈ W^{k,p}(Ω)` and `n ≤ k`, with `C_n = ∑_{m : Fin n → ι} ‖basisCoordProd b m‖`: the tensor
-  is determined by its values on tuples of basis vectors, which are the `∂^α`
-  (`ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul`);
-* `SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm`:
-  `|u|_{k,p,Ω} ≤ C'_k ‖∂^k (fn u)‖_{L^p(Ω)}`, with `C'_k = ∑_{|α| = k} ∏_j ‖(e_α)_j‖`: each
-  `∂^α u` is the tensor evaluated at the tuple `e_α` naming `α`.
-
-For the standard basis of `ℝ^N` both constants are counts of multi-indices, `N^n` and
-`#{|α| = k}`. The file also carries the algebra of `sobolevSeminorm` on `W^{k,p}(Ω)` that the
-finite element interpolation estimates of `[han2009theoretical]` §10.3 use: invariance under
-almost-everywhere equality, finiteness, the triangle inequality, homogeneity, and the bound for
-a finite linear combination.
+Let $\Omega$ be an open subset of a finite-dimensional real normed space $E$, and let
+$1 \le p \le \infty$. The module `Numlib.Analysis.Sobolev.Domain` measures the derivatives of order
+$n$ of a function $f \in W^{k,p}(\Omega)$ by the $L^p(\Omega)$ norm $\|D^n f\|_{L^p(\Omega)}$ of the
+operator norm of the weak derivative tensor $D^n f : \Omega \to \mathcal{L}^n(E; F)$
+(`sobolevSeminorm`). The modules `Numlib.Analysis.Sobolev.MultiIndex` and
+`Numlib.Analysis.Sobolev.DenyLions` index the derivatives by multi-indices $\alpha$ relative to a
+basis $b = (e_i)_{i \in \iota}$ of $E$, and use the seminorm $|u|_{k,p,\Omega} =
+\big(\sum_{|\alpha| = k} \|\partial^\alpha u\|_{L^p(\Omega)}^p\big)^{1/p}$
+(`SobolevMultiIndex.topSeminorm`) of Definition 7.2.2 and §7.3.5 of [han2009theoretical]. On a
+finite-dimensional space the two are equivalent: the operator norm of a symmetric tensor is
+comparable to any norm on its finitely many entries. This module proves the two inequalities, with
+constants that depend on the basis alone:
+$$\|D^n u\|_{L^p(\Omega)} \le C_n \|u\|_{k,p,\Omega} \quad (n \le k), \qquad |u|_{k,p,\Omega} \le
+  C'_k \|D^k u\|_{L^p(\Omega)}.$$
+For the standard basis of $\mathbb{R}^N$ both constants are counts of multi-indices, $N^n$ and
+$\#\{\alpha : |\alpha| = k\}$. The module also proves the algebra of the tensor seminorm on
+$W^{k,p}(\Omega)$ that the finite element interpolation estimates of [han2009theoretical], §10.3,
+use: finiteness, the triangle inequality, homogeneity, and the bound for a finite linear
+combination.
 
 ## Main results
 
-* `MemSobolev.sobolevSeminorm_ne_top`, `sobolevSeminorm_add_le`,
-  `sobolevSeminorm_sub_le`, `sobolevSeminorm_const_smul`, `sobolevSeminorm_sum_smul_le`,
-  `MemSobolev.finsetSum`: the algebra of the tensor seminorm on `W^{k,p}(Ω)`;
-  `MemSobolev.sobolevNorm_le_sum_sobolevSeminorm`: the norm is at most the sum of the seminorms
-  of all orders.
-* `SobolevMultiIndex.weakDeriv_ae_eq_weakIteratedFDeriv_apply`: `∂^α u` is the tensor
-  derivative of order `|α|` of `fn u` evaluated at the tuple naming `α`, almost everywhere; and
-  `SobolevMultiIndex.weakDeriv_multiIndexCount_ae_eq` for an arbitrary tuple of basis vectors,
-  through the symmetry of the weak derivative in its directions.
-* `SobolevMultiIndex.sobolevSeminorm_fn_le`,
-  `SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm` (and its real form
-  `SobolevMultiIndex.topSeminorm_le_mul_toReal_sobolevSeminorm`): the two comparisons.
+* `MemSobolev.sobolevSeminorm_ne_top`: the tensor seminorm of a function of $W^{k,p}(\Omega)$ is
+  finite.
+* `sobolevSeminorm_add_le`, `sobolevSeminorm_sub_le`, `sobolevSeminorm_const_smul`,
+  `sobolevSeminorm_sum_smul_le`: the triangle inequality, homogeneity, and the bound for a finite
+  linear combination.
+* `MemSobolev.finsetSum`: $W^{k,p}(\Omega)$ is closed under finite sums.
+* `MemSobolev.sobolevNorm_le_sum_sobolevSeminorm`: for $p < \infty$, the norm of $W^{k,p}(\Omega)$
+  is at most the sum of the tensor seminorms of the orders $0, \dots, k$.
+* `ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul`: a continuous multilinear map is
+  bounded by its values on tuples of basis vectors.
+* `SobolevMultiIndex.weakDeriv_ae_eq_weakIteratedFDeriv_apply`: $\partial^\alpha u$ is the tensor
+  derivative $D^{|\alpha|} u$ evaluated at the tuple of basis vectors that names $\alpha$.
+* `SobolevMultiIndex.weakDeriv_multiIndexCount_ae_eq`: $D^n u$ evaluated at any tuple of basis
+  vectors is the weak derivative $\partial^\alpha u$, where $\alpha$ counts how often each basis
+  vector occurs.
+* `SobolevMultiIndex.sobolevSeminorm_fn_le`: $\|D^n u\|_{L^p(\Omega)} \le C_n \|u\|_{k,p,\Omega}$
+  for $n \le k$.
+* `SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm`,
+  `SobolevMultiIndex.topSeminorm_le_mul_toReal_sobolevSeminorm`: $|u|_{k,p,\Omega} \le C'_k \|D^k
+  u\|_{L^p(\Omega)}$.
 
-## References
+## Notation
 
-`[han2009theoretical]` Definition 7.2.2 and §7.3.5 (the seminorm `|·|_{k,p,Ω}`); the equivalence
-is the remark that on `ℝ^d` the operator norm of a symmetric tensor is comparable to any norm
-on its finitely many entries.
+* $D^n f$: the weak derivative of order $n$ of $f$ on $\Omega$, a function with values in the
+  continuous $n$-linear maps from $E$ to $F$ (`weakIteratedFDeriv`). It is $0$ when $f$ has no such
+  weak derivative.
+* $\|u\|_{k,p,\Omega}$: the norm of $u$ in the multi-index space `SobolevMultiIndex F b k p Ω μ`.
+* $e_\alpha$: the tuple of basis vectors that names the multi-index $\alpha$, of length $|\alpha|$
+  (`multiIndexTuple`).
+
+## Implementation notes
+
+* The tensor seminorm `sobolevSeminorm f n p Ω μ` is an extended nonnegative real. The comparisons
+  are stated in `ℝ≥0∞`, and `SobolevMultiIndex.topSeminorm_le_mul_toReal_sobolevSeminorm` gives the
+  real form.
 -/
 
 open Filter MeasureTheory Module Set TopologicalSpace
@@ -65,7 +79,7 @@ open scoped ENNReal NNReal
 
 noncomputable section
 
-/-! ### The algebra of the tensor seminorm on `W^{k,p}(Ω)` -/
+/-! ### The algebra of the tensor seminorm on $W^{k,p}(\Omega)$ -/
 
 section Algebra
 
@@ -73,17 +87,22 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [CompleteSpace F] {Ω : Opens E} {μ : Measure E} {k : ℕ} {p : ℝ≥0∞} {f g : E → F}
 
-/-- The Sobolev seminorm of a function of `W^{k,p}(Ω)` is finite. -/
+/-- Let $f \in W^{k,p}(\Omega)$. Then the tensor seminorm $\|D^k f\|_{L^p(\Omega)}$ is finite: it is
+not $\infty$. -/
 theorem MemSobolev.sobolevSeminorm_ne_top (hf : MemSobolev f k p Ω μ) :
     sobolevSeminorm f k p Ω μ ≠ ⊤ :=
   (hf.memLp_weakIteratedFDeriv le_rfl).eLpNorm_ne_top
 
-/-- The Sobolev seminorm of a function of `W^{k,p}(Ω)` is finite. -/
+/-- Let $f \in W^{k,p}(\Omega)$. Then the tensor seminorm satisfies
+$\|D^k f\|_{L^p(\Omega)} < \infty$. -/
 theorem MemSobolev.sobolevSeminorm_lt_top (hf : MemSobolev f k p Ω μ) :
     sobolevSeminorm f k p Ω μ < ⊤ :=
   lt_top_iff_ne_top.2 hf.sobolevSeminorm_ne_top
 
-/-- **The triangle inequality for the Sobolev seminorm** on `W^{k,p}(Ω)`, `1 ≤ p`. -/
+/-- The **triangle inequality for the tensor Sobolev seminorm**. Let $1 \le p$, and let
+$f, g \in W^{k,p}(\Omega)$. Then
+$$\|D^k (f + g)\|_{L^p(\Omega)} \le \|D^k f\|_{L^p(\Omega)} + \|D^k g\|_{L^p(\Omega)}.$$
+-/
 theorem sobolevSeminorm_add_le (hp : 1 ≤ p) (hf : MemSobolev f k p Ω μ)
     (hg : MemSobolev g k p Ω μ) :
     sobolevSeminorm (f + g) k p Ω μ ≤ sobolevSeminorm f k p Ω μ + sobolevSeminorm g k p Ω μ := by
@@ -92,8 +111,10 @@ theorem sobolevSeminorm_add_le (hp : 1 ≤ p) (hf : MemSobolev f k p Ω μ)
   rw [hw.eLpNorm_weakIteratedFDeriv]
   exact eLpNorm_add_le_of_norm hp
 
-/-- **The triangle inequality for the Sobolev seminorm of a difference** on `W^{k,p}(Ω)`,
-`1 ≤ p`. -/
+/-- The **triangle inequality for the tensor Sobolev seminorm of a difference**. Let $1 \le p$, and
+let $f, g \in W^{k,p}(\Omega)$. Then
+$$\|D^k (f - g)\|_{L^p(\Omega)} \le \|D^k f\|_{L^p(\Omega)} + \|D^k g\|_{L^p(\Omega)}.$$
+-/
 theorem sobolevSeminorm_sub_le (hp : 1 ≤ p) (hf : MemSobolev f k p Ω μ)
     (hg : MemSobolev g k p Ω μ) :
     sobolevSeminorm (f - g) k p Ω μ ≤ sobolevSeminorm f k p Ω μ + sobolevSeminorm g k p Ω μ := by
@@ -102,7 +123,8 @@ theorem sobolevSeminorm_sub_le (hp : 1 ≤ p) (hf : MemSobolev f k p Ω μ)
   rw [hw.eLpNorm_weakIteratedFDeriv]
   exact eLpNorm_sub_le_of_norm hp
 
-/-- **Homogeneity of the Sobolev seminorm** on `W^{k,p}(Ω)`. -/
+/-- **Homogeneity of the tensor Sobolev seminorm**. Let $f \in W^{k,p}(\Omega)$ and
+$c \in \mathbb{R}$. Then $\|D^k (c f)\|_{L^p(\Omega)} = |c| \, \|D^k f\|_{L^p(\Omega)}$. -/
 theorem sobolevSeminorm_const_smul (hf : MemSobolev f k p Ω μ) (c : ℝ) :
     sobolevSeminorm (c • f) k p Ω μ = ‖c‖ₑ * sobolevSeminorm f k p Ω μ := by
   have hw := (hf.hasWeakIteratedFDerivOn le_rfl).const_smul c
@@ -110,7 +132,11 @@ theorem sobolevSeminorm_const_smul (hf : MemSobolev f k p Ω μ) (c : ℝ) :
   rw [hw.eLpNorm_weakIteratedFDeriv, eLpNorm_const_smul]
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- `W^{k,p}(Ω)` is closed under finite sums. -/
+/-- Let $s$ be a finite set of indices and let $f_i \in W^{k,p}(\Omega)$ for every $i \in s$. Then
+$\sum_{i \in s} f_i \in W^{k,p}(\Omega)$.
+
+This result needs neither finite dimension of $E$ nor completeness of $F$; it needs only that
+the open sets of $E$ are measurable. -/
 theorem MemSobolev.finsetSum [OpensMeasurableSpace E] {ι : Type*} {s : Finset ι} {f : ι → E → F}
     (hf : ∀ i ∈ s, MemSobolev (f i) k p Ω μ) : MemSobolev (∑ i ∈ s, f i) k p Ω μ := by
   classical
@@ -121,9 +147,12 @@ theorem MemSobolev.finsetSum [OpensMeasurableSpace E] {ι : Type*} {s : Finset �
     exact (hf a (Finset.mem_insert_self a s)).add
       (ih fun i hi ↦ hf i (Finset.mem_insert_of_mem hi))
 
-/-- **The Sobolev seminorm of a finite linear combination** of functions of `W^{k,p}(Ω)`,
-`1 ≤ p`, is bounded by the combination of their seminorms with the absolute values of the
-coefficients. -/
+/-- The **tensor Sobolev seminorm of a finite linear combination**. Let $1 \le p$, let $s$ be a
+finite set of indices, let $f_i \in W^{k,p}(\Omega)$ for every $i \in s$, and let
+$c_i \in \mathbb{R}$. Then
+$$\Big\|D^k \sum_{i \in s} c_i f_i\Big\|_{L^p(\Omega)} \le \sum_{i \in s} |c_i| \, \|D^k
+  f_i\|_{L^p(\Omega)}.$$
+-/
 theorem sobolevSeminorm_sum_smul_le (hp : 1 ≤ p) {ι : Type*} {s : Finset ι} {f : ι → E → F}
     (hf : ∀ i ∈ s, MemSobolev (f i) k p Ω μ) (c : ι → ℝ) :
     sobolevSeminorm (∑ i ∈ s, c i • f i) k p Ω μ
@@ -144,9 +173,13 @@ theorem sobolevSeminorm_sum_smul_le (hp : 1 ≤ p) {ι : Type*} {s : Finset ι} 
     rw [sobolevSeminorm_const_smul (hf a (Finset.mem_insert_self a s))]
     exact add_le_add le_rfl (ih fun i hi ↦ hf i (Finset.mem_insert_of_mem hi))
 
-/-- **The Sobolev norm is at most the sum of the seminorms of all orders**, `1 ≤ p < ∞`:
-`‖f‖_{k,p,Ω} = (∑_{n ≤ k} |f|_{n,p,Ω}^p)^{1/p} ≤ ∑_{n ≤ k} |f|_{n,p,Ω}` (the `ℓ^p` norm is at
-most the `ℓ^1` norm, `Real.rpow_sum_rpow_le_sum`). -/
+/-- The **Sobolev norm is at most the sum of the seminorms of all orders**. Let $1 \le p < \infty$
+and $f \in W^{k,p}(\Omega)$. Then
+$$\|f\|_{k,p,\Omega} = \Big(\sum_{n = 0}^{k} \|D^n f\|_{L^p(\Omega)}^p\Big)^{1/p} \le \sum_{n =
+  0}^{k} \|D^n f\|_{L^p(\Omega)}.$$
+
+Here $\|f\|_{k,p,\Omega}$ is `sobolevNorm`. The inequality is the bound of the $\ell^p$ norm by
+the $\ell^1$ norm, `Real.rpow_sum_rpow_le_sum`. -/
 theorem MemSobolev.sobolevNorm_le_sum_sobolevSeminorm [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hf : MemSobolev f k p Ω μ) :
     sobolevNorm f k p Ω μ ≤ ∑ n : Fin (k + 1), sobolevSeminorm f n p Ω μ := by
@@ -183,9 +216,15 @@ section Multilinear
 variable {E G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup G]
   [NormedSpace ℝ G] {ι : Type*} [Fintype ι]
 
-/-- **A continuous multilinear map is bounded by its values on tuples of basis vectors**:
-`‖T‖ ≤ ∑_m ‖basisCoordProd b m‖ ‖T (b ∘ m)‖`, the sum over the tuples `m : Fin n → ι`, by the
-expansion `ContinuousMultilinearMap.apply_eq_sum_basis`. -/
+/-- **A continuous multilinear map is bounded by its values on tuples of basis vectors**. Let
+$b = (e_i)_{i \in \iota}$ be a finite basis of $E$, and let $T : E^n \to G$ be a continuous
+$n$-linear map. Then
+$$\|T\| \le \sum_{m : \{0, \dots, n-1\} \to \iota} \|\pi_m\| \, \|T(e_{m(0)}, \dots,
+  e_{m(n-1)})\|,$$
+where $\pi_m(y_0, \dots, y_{n-1}) = \prod_j b^*_{m(j)}(y_j)$ is the product of the coordinate
+functionals named by $m$ (`basisCoordProd b m`).
+
+The proof expands $T$ in the basis with `ContinuousMultilinearMap.apply_eq_sum_basis`. -/
 theorem ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul (b : Basis ι ℝ E) {n : ℕ}
     (T : E [×n]→L[ℝ] G) :
     ‖T‖ ≤ ∑ m : Fin n → ι, ‖basisCoordProd b m‖ * ‖T fun j ↦ b (m j)‖ := by
@@ -211,13 +250,18 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 namespace SobolevMultiIndex
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] in
-/-- The function of an element of `W^{k,p}(Ω)` lies in `W^{k,p}(Ω)` in the tensor formulation. -/
+/-- Let $u$ be an element of the multi-index space $W^{k,p}(\Omega)$. Then its function
+`SobolevMultiIndex.fn u` lies in $W^{k,p}(\Omega)$ in the tensor formulation: it satisfies
+`MemSobolev`. -/
 theorem memSobolev_fn (u : SobolevMultiIndex F b k p Ω μ) : MemSobolev (fn u) k p Ω μ :=
   (memSobolevMultiIndex u).memSobolev
 
 omit [Fact (1 ≤ p)] in
-/-- **`∂^α u` is the tensor derivative of order `|α|` of `fn u` evaluated at the tuple naming
-`α`**, almost everywhere on `Ω`. -/
+/-- **$\partial^\alpha u$ is the tensor derivative of order $|\alpha|$ at the tuple that names
+$\alpha$.** Let $u$ be an element of the multi-index space $W^{k,p}(\Omega)$ for a basis $b$ of
+$E$, and let $|\alpha| \le k$. Then, for almost every $x \in \Omega$,
+$$\partial^\alpha u(x) = D^{|\alpha|} u(x)(e_\alpha),$$
+where $e_\alpha$ is the tuple of basis vectors that names $\alpha$ (`multiIndexTuple`). -/
 theorem weakDeriv_ae_eq_weakIteratedFDeriv_apply (u : SobolevMultiIndex F b k p Ω μ)
     (α : MultiIndexLE ι k) :
     (weakDeriv u α : E → F) =ᵐ[μ.restrict (Ω : Set E)]
@@ -228,9 +272,14 @@ theorem weakDeriv_ae_eq_weakIteratedFDeriv_apply (u : SobolevMultiIndex F b k p 
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h2)
 
 omit [Fact (1 ≤ p)] in
-/-- **The tensor derivative of order `n` of `fn u` evaluated at an arbitrary tuple of basis
-vectors is a weak derivative `∂^α u`**, for the multi-index `α` counting the occurrences of each
-index in the tuple: the weak derivative is symmetric in its directions. -/
+/-- **The tensor derivative at a tuple of basis vectors is a weak derivative $\partial^\alpha u$.**
+Let $u$ be an element of the multi-index space $W^{k,p}(\Omega)$ for a basis
+$b = (e_i)_{i \in \iota}$ of $E$, let $n \le k$, and let $m : \{0, \dots, n-1\} \to \iota$. Let
+$\alpha$ be the multi-index that counts how often each index occurs in $m$ (`multiIndexCount`).
+Then, for almost every $x \in \Omega$,
+$$\partial^\alpha u(x) = D^n u(x)(e_{m(0)}, \dots, e_{m(n-1)}).$$
+
+The proof uses the symmetry of the weak derivative in its directions. -/
 theorem weakDeriv_multiIndexCount_ae_eq (u : SobolevMultiIndex F b k p Ω μ) {n : ℕ} (hn : n ≤ k)
     (m : Fin n → ι) :
     (weakDeriv u ⟨multiIndexCount m, (sum_multiIndexCount m).le.trans hn⟩ : E → F)
@@ -245,17 +294,24 @@ theorem weakDeriv_multiIndexCount_ae_eq (u : SobolevMultiIndex F b k p Ω μ) {n
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h2)
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] in
-/-- The `L^p(Ω)` norm of a weak derivative `∂^α u`, as an extended real, is its norm in
-`L^p(Ω)`. -/
+/-- For an element $u$ of the multi-index space $W^{k,p}(\Omega)$ and $|\alpha| \le k$, the
+$L^p(\Omega)$ norm of $\partial^\alpha u$ as an extended real (`eLpNorm`) is its norm in
+$L^p(\Omega)$. -/
 theorem eLpNorm_weakDeriv (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
     eLpNorm (weakDeriv u α) p (μ.restrict (Ω : Set E)) = ENNReal.ofReal ‖weakDeriv u α‖ := by
   rw [Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _)]
 
-/-- **The tensor seminorm is bounded by the multi-index norm**: for `u ∈ W^{k,p}(Ω)` and
-`n ≤ k`, `‖∂^n (fn u)‖_{L^p(Ω)} ≤ (∑_{m : Fin n → ι} ‖basisCoordProd b m‖) ‖u‖_{k,p,Ω}`. The
-tensor `∂^n (fn u)(x)` is bounded by its values on the tuples of basis vectors
-(`ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul`), which are the `∂^α u (x)`
-(`weakDeriv_multiIndexCount_ae_eq`), each of `L^p(Ω)` norm at most `‖u‖`. -/
+/-- **The tensor seminorm is bounded by the multi-index norm.** Let $u$ be an element of the
+multi-index space $W^{k,p}(\Omega)$ for a basis $b = (e_i)_{i \in \iota}$ of $E$, and let
+$n \le k$. Then
+$$\|D^n u\|_{L^p(\Omega)} \le \Big(\sum_{m : \{0, \dots, n-1\} \to \iota} \|\pi_m\|\Big)
+  \|u\|_{k,p,\Omega},$$
+where $\pi_m$ is the product of the coordinate functionals named by $m$ (`basisCoordProd b m`).
+
+The tensor $D^n u(x)$ is bounded by its values on tuples of basis vectors
+(`ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul`). These values are the
+$\partial^\alpha u(x)$ (`SobolevMultiIndex.weakDeriv_multiIndexCount_ae_eq`), and each of them
+has $L^p(\Omega)$ norm at most $\|u\|_{k,p,\Omega}$. -/
 theorem sobolevSeminorm_fn_le (u : SobolevMultiIndex F b k p Ω μ) {n : ℕ} (hn : n ≤ k) :
     sobolevSeminorm (fn u) n p Ω μ
       ≤ ENNReal.ofReal (∑ m : Fin n → ι, ‖basisCoordProd b m‖) * ENNReal.ofReal ‖u‖ := by
@@ -300,10 +356,16 @@ theorem sobolevSeminorm_fn_le (u : SobolevMultiIndex F b k p Ω μ) {n : ℕ} (h
     _ = ENNReal.ofReal (∑ m : Fin n → ι, ‖basisCoordProd b m‖) * ENNReal.ofReal ‖u‖ := by
         rw [← Finset.sum_mul, ENNReal.ofReal_sum_of_nonneg fun _ _ ↦ norm_nonneg _]
 
-/-- **The multi-index top seminorm is bounded by the tensor seminorm**: for `u ∈ W^{k,p}(Ω)`,
-`|u|_{k,p,Ω} ≤ (∑_{|α| = k} ∏_j ‖(e_α)_j‖) ‖∂^k (fn u)‖_{L^p(Ω)}`, where `e_α` is the tuple of
-basis vectors naming `α`: `|u|_{k,p,Ω} ≤ ∑_{|α| = k} ‖∂^α u‖_p` (`PiLp.norm_le_sum_norm`) and
-`∂^α u (x) = ∂^k (fn u)(x)(e_α)` has norm at most `‖∂^k (fn u)(x)‖ ∏_j ‖(e_α)_j‖`. -/
+/-- **The multi-index seminorm is bounded by the tensor seminorm.** Let $u$ be an element of the
+multi-index space $W^{k,p}(\Omega)$ for a basis $b$ of $E$. Then
+$$|u|_{k,p,\Omega} \le \Big(\sum_{|\alpha| = k} \prod_j \|(e_\alpha)_j\|\Big) \|D^k
+  u\|_{L^p(\Omega)},$$
+where $e_\alpha$ is the tuple of basis vectors that names $\alpha$, and $|u|_{k,p,\Omega}$ is
+`SobolevMultiIndex.topSeminorm`.
+
+The proof bounds $|u|_{k,p,\Omega}$ by $\sum_{|\alpha| = k} \|\partial^\alpha u\|_{L^p(\Omega)}$
+(`PiLp.norm_le_sum_norm`), and $\partial^\alpha u(x) = D^k u(x)(e_\alpha)$ has norm at most
+$\|D^k u(x)\| \prod_j \|(e_\alpha)_j\|$. -/
 theorem ofReal_topSeminorm_le_sobolevSeminorm (u : SobolevMultiIndex F b k p Ω μ) :
     ENNReal.ofReal (topSeminorm F b k p Ω μ u)
       ≤ ENNReal.ofReal (∑ α : MultiIndexEq ι k, ∏ j, ‖multiIndexTuple (b : ι → E) α.1.1 j‖)
@@ -354,8 +416,11 @@ theorem ofReal_topSeminorm_le_sobolevSeminorm (u : SobolevMultiIndex F b k p Ω 
         rw [← Finset.sum_mul, ENNReal.ofReal_sum_of_nonneg fun _ _ ↦
           Finset.prod_nonneg fun _ _ ↦ norm_nonneg _]
 
-/-- `SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm` with real constants:
-`|u|_{k,p,Ω} ≤ C'_k ‖∂^k (fn u)‖_{L^p(Ω)}`, the right-hand side finite. -/
+/-- The real form of `SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm`. Let $u$ be an
+element of the multi-index space $W^{k,p}(\Omega)$ for a basis $b$ of $E$. Then
+$$|u|_{k,p,\Omega} \le \Big(\sum_{|\alpha| = k} \prod_j \|(e_\alpha)_j\|\Big) \|D^k
+  u\|_{L^p(\Omega)},$$
+where the tensor seminorm on the right is converted to a real number. That number is finite. -/
 theorem topSeminorm_le_mul_toReal_sobolevSeminorm (u : SobolevMultiIndex F b k p Ω μ) :
     topSeminorm F b k p Ω μ u
       ≤ (∑ α : MultiIndexEq ι k, ∏ j, ‖multiIndexTuple (b : ι → E) α.1.1 j‖)

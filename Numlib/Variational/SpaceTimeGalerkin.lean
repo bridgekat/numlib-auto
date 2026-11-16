@@ -9,26 +9,84 @@ import Numlib.Approximation.BrokenInterpolation
 import Numlib.Variational.Evolution
 
 /-!
-# Error analysis of the space–time Galerkin methods for the transport equation
+# Error analysis of space–time Galerkin methods for the transport equation
 
-The convergence estimates of the continuous and discontinuous Galerkin semi-discretizations of
-the transport equation `u_t + a u_x + a₀ u = f` on `(α, β) × (0, T)`
-([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli, *Numerical
-Approximation of Partial Differential Equations*, §14.3, without proof), for an exact solution
-whose regularity is taken as a hypothesis: `u(·, t) ∈ H^{r+1}(α, β)` and `∂ₜu(·, t) ∈ H^{r+1}(α, β)`
-uniformly in `t ∈ [0, T]`.
+This file proves convergence estimates for the continuous and the discontinuous Galerkin
+semi-discretizations in space of the transport equation
+$$\partial_t u + a\, \partial_x u + a_0 u = f \quad \text{on } (x_0, x_n) \times (0, T),$$
+with broken polynomials of degree at most $r$ on a partition $x_0 < x_1 < \dots < x_n$. These are
+the estimates of [quarteroni2000numerical], §13.10.1, which quotes them without proof from
+[quarteroni1994numerical], §14.3. The regularity of the exact solution is a hypothesis: for every
+$t \in [0, T]$, the function $u(\cdot, t)$ lies in $H^{r+1}(x_0, x_n)$, and for the continuous
+method also $\partial_t u(\cdot, t)$ does, with bounds on the $H^{r+1}$ seminorms that are uniform
+in $t$. With explicit constants, the error of the continuous method is $O(\|u_0 - u_{0,h}\| + h^r)$,
+and the error of the discontinuous method is $O(\|u_0 - u_{0,h}\| + h^{r+1/2})$.
 
-The argument is the standard one. The **error equation** `IsSemidiscreteGalerkin.sub`: the
-difference of the discrete solution `u_h` and any curve `W` differentiable in time solves the
-semi-discrete problem again, with the consistency error `⟪∂ₜW, ·⟫ + b_t(W, ·) - F_t` as source and
-`u_{0,h} - W(0)` as datum. With `W(t) = Π_h u(·, t)` the nodal interpolant of the exact solution
-(`BrokenPolynomial.interp`, which commutes with `∂ₜ` because it is a linear map of the nodal values,
-`hasDerivWithinAt_interp`), the source is the interpolation error of `∂ₜu` in `L²` and of `u` in
-`H¹`, `O(h^r)` by the estimates of `Numlib/Approximation/BrokenInterpolation`; the stability
-estimate `IsSemidiscreteGalerkin.norm_sq_add_integral_le` then bounds the discrete error, and the
-triangle inequality finishes. The classical derivative `∂ₓu` of the solution is identified with
-the weak derivative of its `H^{r+1}` representative by
-`SobolevInterval.ae_eq_deriv_one_of_hasDerivAt`.
+The panels are $I_i = [x_i, x_{i+1}]$ for $0 \le i < n$, and $B_h$ is the space of broken
+polynomials: families $v = (v_i)$ of polynomials of degree at most $r$, one for each panel, with no
+continuity across the nodes. For a function $g$, the norm $\|g - v\| = (\sum_i \int_{I_i} (g -
+v_i)^2)^{1/2}$ is the panelwise $L^2(x_0, x_n)$ norm, and $(g, v) = \sum_i \int_{I_i} g\, v_i$ is
+the pairing. The traces of $v$ at a node are $v^+(x_i) = v_i(x_i)$ and $v^-(x_i) = v_{i-1}(x_i)$,
+with $v^-(x_0) = 0$, and the jump is $[v]_i = v^+(x_i) - v^-(x_i)$. The transport form is $b(w, v) =
+\sum_i \int_{I_i} (a w_i' + a_0 w_i) v_i$, and the upwind form is $b^{DG}(w, v) = b(w, v) + \sum_i
+a(x_i) [w]_i v^+(x_i)$. The nodal interpolant is $\Pi_h$, and the $L^2$ projection onto $B_h$ is
+$P_h$.
+
+## Main definitions
+
+* `Variational.dgConst`: the explicit constant $C_{DG}$ of the discontinuous Galerkin error
+  estimate.
+
+## Main results
+
+* `Variational.IsSemidiscreteGalerkin.sub`: the error equation; the difference of a solution of a
+  semi-discrete Galerkin problem and any curve $W$ that is differentiable in time solves the same
+  problem with the consistency error of $W$ as source.
+* `Variational.hasDerivWithinAt_interp`: the nodal interpolant commutes with $\partial_t$.
+* `Variational.hasDerivWithinAt_proj`: the $L^2$ projection commutes with $\partial_t$.
+* `SobolevInterval.ae_eq_deriv_one_of_hasDerivAt`: the classical derivative of a continuous
+  representative of an $H^{k+1}$ function is its weak derivative almost everywhere.
+* `Variational.abs_transport_defect_le`: the consistency error of the transport form is bounded by
+  the approximation errors of $u$, $\partial_x u$ and $\partial_t u$.
+* `Variational.dg_defect_le`: the consistency error of the upwind form at the $L^2$ projection of
+  the exact solution is bounded from above by the $L^2$ projection error, the traces of the
+  projection error at the nodes, and jump and outflow terms of the test function with the weight
+  $\tfrac{1}{4}$.
+* `Variational.sum_mul_sq_sub_proj_le`: a weighted sum of the squared traces of the projection error
+  at points of the panels is $O(h^{2r+1})$.
+* `Variational.cG_error_le`: the error estimate of the continuous Galerkin method.
+* `Variational.dG_error_sq_le`, `Variational.dG_error_le`: the error estimate of the discontinuous
+  Galerkin method, in squared form and in the form of the source.
+
+## Proof outline
+
+The error equation `Variational.IsSemidiscreteGalerkin.sub` says that $u_h - W$ solves the
+semi-discrete problem with the consistency error $(f, \cdot) - \langle \partial_t W, \cdot\rangle -
+b_t(W, \cdot)$ as source and $u_{0,h} - W(0)$ as initial datum. For the continuous method
+$W(t) = \Pi_h u(\cdot, t)$, and for the discontinuous method $W(t) = P_h u(\cdot, t)$. Both commute
+with $\partial_t$, so the consistency error is an approximation error of $\partial_t u$ in $L^2$ and
+of $u$ in $H^1$, of order $h^r$ by the estimates of `Numlib.Approximation.BrokenInterpolation`. The
+energy estimate `Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le` then bounds $u_h - W$,
+and the triangle inequality finishes the proof. For the discontinuous method, the dissipation of the
+upwind form absorbs the traces of the projection error at the nodes, which are of order $h^{r+1/2}$.
+The classical derivative $\partial_x u$ of the solution is identified with the weak derivative of
+its $H^{r+1}$ representative by `SobolevInterval.ae_eq_deriv_one_of_hasDerivAt`.
+
+## Implementation notes
+
+* The space $B_h$ is `BrokenPolynomial x r` with its $L^2(x_0, x_n)$ inner product. The norms of the
+  errors of non-polynomial functions are written as square roots of sums of panel integrals.
+* The regularity of $u(\cdot, t)$ is the existence of some `U : SobolevInterval (r + 1) (x 0) (x
+  (Fin.last n))` equal to $u(\cdot, t)$ almost everywhere on $(x_0, x_n)$, with a bound on
+  `SobolevInterval.seminorm`.
+* The space $V_h$ of the continuous method is any submodule of $B_h$ whose elements are exactly the
+  continuous broken polynomials with $v^+(x_0) = 0$.
+* [quarteroni2000numerical] states the boundary term of the continuous estimate at the inflow end
+  $x_0$, where it vanishes because $u$ and $u_h$ both satisfy the inflow condition.
+  `Variational.cG_error_le` has the boundary term at the outflow end $x_n$, where the energy
+  identity produces it.
+* In the discontinuous estimate, the jump $[u - u_h]_0$ of the source is $\varphi - u_h^+(x_0)$,
+  because $u$ is continuous and $u(x_0) = \varphi$.
 -/
 
 open Set Filter Topology intervalIntegral Real MeasureTheory Polynomial TopologicalSpace
@@ -42,11 +100,18 @@ namespace Variational
 
 variable {K : Type*} [NormedAddCommGroup K] [InnerProductSpace ℝ K]
 
-/-- **The error equation**: if `u` solves the semi-discrete Galerkin problem for the form `a`
-and the source `F`, and `W` is any curve differentiable within `[0, T]` with derivative `W'`,
-then `u - W` solves the semi-discrete problem with the source `F t - (⟪W' t, ·⟫ + a t (W t) ·)`
-and the initial datum `u₀ - W 0`. With `W` an interpolant or projection of the exact solution
-this is the equation for the discrete error `u_h - W`, whose source is the consistency error. -/
+/-- The **error equation** of a semi-discrete Galerkin problem. Let $K$ be a real inner product
+space, let $a(t)$ be bounded bilinear forms and $F(t)$ bounded linear functionals on $K$, and
+let $u$ solve the semi-discrete problem $\langle u'(t), v\rangle + a(t)(u(t), v) = F(t)v$ for
+all $v \in K$ and $t \in [0, T]$, with $u(0) = u_0$. Let $W : \mathbb{R} \to K$ have the
+derivative $W'(t)$ within $[0, T]$ at every $t \in [0, T]$. Then $u - W$ solves the
+semi-discrete problem with the source
+$$t \mapsto F(t) - \bigl(\langle W'(t), \cdot\rangle + a(t)(W(t), \cdot)\bigr)$$
+and the initial datum $u_0 - W(0)$.
+
+The semi-discrete problem is `Variational.IsSemidiscreteGalerkin`. When $W$ is an interpolant or
+a projection of the exact solution, this is the equation for the discrete error $u - W$, and its
+source is the consistency error of $W$. -/
 theorem IsSemidiscreteGalerkin.sub {a : ℝ → SesqForm ℝ K} {F : ℝ → K →L[ℝ] ℝ} {u₀ : K} {T : ℝ}
     {u : ℝ → K} (h : IsSemidiscreteGalerkin a F u₀ T u) {W W' : ℝ → K}
     (hW : ∀ t ∈ Icc 0 T, HasDerivWithinAt W (W' t) (Icc 0 T) t) :
@@ -64,9 +129,14 @@ theorem IsSemidiscreteGalerkin.sub {a : ℝ → SesqForm ℝ K} {F : ℝ → K �
 variable {n : ℕ} {x : Fin (n + 1) → ℝ} {r : ℕ} [hx : Fact (StrictMono x)]
   {node : Fin n → Fin (r + 1) → ℝ}
 
-/-- Interpolation from time-dependent nodal values is differentiable in time, with the
-interpolant of the derivatives of the values as derivative: `ofValuesₗ` is a linear map on a
-finite-dimensional space, hence continuous. -/
+/-- Interpolation from nodal values that depend on time is differentiable in time. Let $x$ be a
+strictly increasing partition, let the nodes of each panel be distinct, and let each nodal value
+$c_{ij}(t)$ have the derivative $c'_{ij}$ within a set $s$ at $t$. Then the broken polynomial
+that interpolates the values $c(t)$ has, within $s$ at $t$, the derivative equal to the broken
+polynomial that interpolates the values $c'$.
+
+The interpolation map is `BrokenPolynomial.ofValuesₗ`. It is a linear map on a
+finite-dimensional space, hence continuous, so the derivative passes through it. -/
 theorem hasDerivWithinAt_ofValuesₗ (hinj : ∀ i, Function.Injective (node i))
     {c : ℝ → Fin n → Fin (r + 1) → ℝ} {c' : Fin n → Fin (r + 1) → ℝ} {s : Set ℝ} {t : ℝ}
     (hc : ∀ i j, HasDerivWithinAt (fun t => c t i j) (c' i j) s t) :
@@ -77,9 +147,14 @@ theorem hasDerivWithinAt_ofValuesₗ (hinj : ∀ i, Function.Injective (node i))
   exact (LinearMap.toContinuousLinearMap
     (BrokenPolynomial.ofValuesₗ x r node hinj)).hasFDerivAt.comp_hasDerivWithinAt t hc'
 
-/-- **The interpolant of a time-dependent function is differentiable in time**, with the
-interpolant of the time derivative as derivative: if `∂ₜ u(y, t) = ut y t` within `[0, T]` at
-every node `y`, then `d/dt Π_h u(·, t) = Π_h ut(·, t)`. -/
+/-- The **nodal interpolant commutes with the time derivative**. Let $x$ be a strictly increasing
+partition with a node system of degree $r$, and let $u$ and $u_t$ be functions of $(y, t)$ such
+that, for every $y \in [x_0, x_n]$, the function $t \mapsto u(y, t)$ has the derivative
+$u_t(y, t)$ within $[0, T]$ at $t$. Then $t \mapsto \Pi_h u(\cdot, t)$ has the derivative
+$\Pi_h u_t(\cdot, t)$ within $[0, T]$ at $t$.
+
+The interpolant $\Pi_h$ is `BrokenPolynomial.interp`, and the proof specializes
+`Variational.hasDerivWithinAt_ofValuesₗ`. -/
 theorem hasDerivWithinAt_interp (hnode : BrokenPolynomial.IsNodes x r node) {u ut : ℝ → ℝ → ℝ}
     {T t : ℝ}
     (hu : ∀ y ∈ Icc (x 0) (x (Fin.last n)),
@@ -91,13 +166,17 @@ theorem hasDerivWithinAt_interp (hnode : BrokenPolynomial.IsNodes x r node) {u u
 
 end Variational
 
-/-! ### The classical derivative of an `H¹` function is its weak derivative -/
+/-! ### The classical derivative of an $H^1$ function is its weak derivative -/
 
 open SobolevInterval in
-/-- If a function `f` continuous on `[a, b]` represents `U ∈ H^{k+1}(a, b)` and has a derivative
-`f'` at every point of `(a, b)`, then `f'` is the weak derivative `U'` almost everywhere on
-`(a, b)`: `f = c + ∫_a^x U'` on `[a, b]` by the absolutely continuous representative, whose
-derivative is `U'` almost everywhere by the Lebesgue differentiation theorem. -/
+/-- The classical derivative of a representative of an $H^{k+1}$ function is its weak derivative.
+Let $a < b$, let $U \in H^{k+1}(a, b)$, and let $f$ be continuous on $[a, b]$ with $U = f$
+almost everywhere on $(a, b)$. If $f$ has the derivative $f'(y)$ at every $y \in (a, b)$, then
+$f' = U'$ almost everywhere on $(a, b)$, where $U'$ is the first weak derivative
+`SobolevInterval.deriv U 1`.
+
+The proof writes $f(y) = c + \int_a^y U'$ on $[a, b]$ by the absolutely continuous
+representative, and then applies the Lebesgue differentiation theorem. -/
 theorem SobolevInterval.ae_eq_deriv_one_of_hasDerivAt {a b : ℝ} (hab : a < b) {k : ℕ}
     (U : SobolevInterval (k + 1) a b) {f f' : ℝ → ℝ} (hf : ContinuousOn f (Icc a b))
     (hU : fn U =ᵐ[volume.restrict (Ioo a b)] f) (hf' : ∀ y ∈ Ioo a b, HasDerivAt f (f' y) y) :
@@ -133,12 +212,20 @@ section FixedTime
 
 variable {a₀ : ℝ → ℝ}
 
-/-- **The consistency error of the transport form at a fixed time.** For the exact solution
-`u` of `ut + a ux + a₀ u = f` (pointwise on `[x 0, x n]`), with `ux` almost everywhere equal to
-a square integrable `g`, and any broken polynomials `W`, `W'` (the interpolants of `u` and `ut`),
-the defect `⟪f, v⟫ - (⟪W', v⟫ + b(W, v))` of the pair `(W, W')` in the semi-discrete equation is
-bounded by the three approximation errors: `‖ut - W'‖`, `‖g - W'‖` (weighted by `A ≥ |a|`) and
-`‖u - W‖` (weighted by `A₀ ≥ |a₀|`), times `‖v‖`. -/
+/-- The **consistency error of the transport form** at a fixed time. Let $x$ be a strictly
+increasing partition, let $a$ and $a_0$ be integrable on $[x_0, x_n]$, let $a$ be continuous on
+$[x_0, x_n]$, and let $|a| \le A$ and $|a_0| \le A_0$ on $[x_0, x_n]$ for constants
+$A, A_0 \ge 0$. Let $u$ and $u_t$ be continuous on $[x_0, x_n]$, with $u_t + a u_x + a_0 u = f$
+at every point of $[x_0, x_n]$. Let $g$ be a function such that $g$ and $g^2$ are integrable on
+$[x_0, x_n]$ and $u_x = g$ almost everywhere on $(x_0, x_n)$. Let $W, W' \in B_h$ satisfy
+$$\|u - W\| \le E_u, \qquad \|u_t - W'\| \le E_{u'}, \qquad \|g - \partial_x W\| \le E_g,$$
+where $\partial_x W$ is the panelwise derivative of $W$. Then for every $v \in B_h$
+$$\bigl|(f, v) - \langle W', v\rangle - b(W, v)\bigr|
+  \le (E_{u'} + A E_g + A_0 E_u) \|v\|.$$
+
+In the error analysis, $W$ and $W'$ are the interpolants of $u$ and $u_t$, and the left side is
+the consistency error of the pair $(W, W')$ in the semi-discrete equation. The form $b$ is
+`Variational.transportForm`, and the pairing is `BrokenPolynomial.pairing`. -/
 theorem abs_transport_defect_le (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
     (hac : ContinuousOn a (Icc (x 0) (x (Fin.last n)))) {A A₀ : ℝ} (hA0 : 0 ≤ A)
@@ -274,54 +361,67 @@ section TimeDependent
 
 variable {a₀ : ℝ → ℝ → ℝ}
 
-/-- `E + √B ≤ √2 √(E² + B)` for `E, B ≥ 0`: `Real.sqrt_add_sqrt_le_sqrt_two_mul` at `p = E²`. -/
+/-- For $E, B \ge 0$, $E + \sqrt{B} \le \sqrt{2} \sqrt{E^2 + B}$, by
+`Real.sqrt_add_sqrt_le_sqrt_two_mul`. -/
 private theorem add_sqrt_le_sqrt_two_mul_sqrt {E B : ℝ} (hE : 0 ≤ E) (hB : 0 ≤ B) :
     E + √B ≤ √2 * √(E ^ 2 + B) := by
   have h := Real.sqrt_add_sqrt_le_sqrt_two_mul (sq_nonneg E) hB
   rwa [Real.sqrt_sq hE] at h
 
-/-- `√(e² + c) ≤ e + d` for `e, d ≥ 0` and `c ≤ d²`. -/
+/-- For $e, d \ge 0$ and $c \le d^2$, $\sqrt{e^2 + c} \le e + d$. -/
 private theorem sqrt_sq_add_le {e c d : ℝ} (he : 0 ≤ e) (hd : 0 ≤ d) (hcd : c ≤ d ^ 2) :
     √(e ^ 2 + c) ≤ e + d := by
   calc √(e ^ 2 + c) ≤ √((e + d) ^ 2) := Real.sqrt_le_sqrt (by nlinarith [mul_nonneg he hd])
     _ = e + d := Real.sqrt_sq (add_nonneg he hd)
 
-/-- `μ⁻¹ (t Φ²) ≤ (T/μ) Φ²` for `t ≤ T`, `μ > 0`. -/
+/-- For $\mu > 0$ and $t \le T$, $\mu^{-1} (t \Phi^2) \le (T / \mu) \Phi^2$. -/
 private theorem inv_mul_le_div_mul {μ t T Φ : ℝ} (hμ : 0 < μ) (ht : t ≤ T) :
     μ⁻¹ * (t * Φ ^ 2) ≤ T / μ * Φ ^ 2 := by
   rw [div_eq_inv_mul, mul_assoc]
   exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right ht (sq_nonneg Φ)) (inv_pos.2 hμ).le
 
-/-- The final rearrangement: `P + s (X + P + Q) ≤ s (X + 2 P + Q)` for `s ≥ 1`, `P ≥ 0`. -/
+/-- For $s \ge 1$ and $P \ge 0$, $P + s(X + P + Q) \le s(X + 2P + Q)$. -/
 private theorem add_mul_le_mul_add {s X P Q : ℝ} (hs : 1 ≤ s) (hP : 0 ≤ P) :
     P + s * (X + P + Q) ≤ s * (X + 2 * P + Q) := by nlinarith
 
-/-- **The error estimate of the continuous Galerkin method for the transport equation**
-([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli §14.3.1 without proof;
-here with explicit constants). Let `u` be a classical solution of `u_t + a u_x + a₀ u = f` on
-`[x 0, x n] × [0, T]` with `u(x 0, t) = 0`, whose partial derivatives `ux`, `ut` exist within the
-strip, with `ut(·, t)` continuous, and which is regular in the sense that
-`u(·, t) ∈ H^{r+1}(x 0, x n)` with `|u(·, t)|_{H^{r+1}} ≤ M` and `ut(·, t) ∈ H^{r+1}(x 0, x n)` with
-`|ut(·, t)|_{H^{r+1}} ≤ M'`
-for every `t ∈ [0, T]`. Let `u_h : [0, T] → V` solve the semi-discrete Galerkin problem on the
-space `V = V_h^{in}` of continuous broken polynomials of degree `r` vanishing at `x 0`, with a
-discrete source `f_h(t)` that agrees with `f(·, t)` against `V` (its `L²` projection), on a
-partition of mesh at most `h` carrying a Lagrange node system of degree `r`. Under the
-dissipativity `0 < μ₀ ≤ a₀ - a'/2`, with `|a| ≤ A`, `|a₀| ≤ A₀` and `a(x n) ≥ 0`, for every
-`t ∈ [0, T]`
+/-- The **error estimate of the continuous Galerkin method** for the transport equation. Let
+$x_0 < \dots < x_n$ be a partition with $n \ge 1$, panel lengths at most $h$ and a Lagrange node
+system of degree $r$, and let $T > 0$. Let $a$ be integrable on $[x_0, x_n]$ and differentiable
+at every point of $[x_0, x_n]$ with $a'$ continuous there, let $a_0(\cdot, t)$ be integrable on
+$[x_0, x_n]$ for every $t$, let $a(x_n) \ge 0$, and let there be constants $\mu_0 > 0$, $A$ and
+$A_0$ with
+$$\mu_0 \le a_0(s, t) - \tfrac{1}{2} a'(s), \qquad |a(s)| \le A,
+  \qquad |a_0(s, t)| \le A_0$$
+for $s \in [x_0, x_n]$ and $t \in [0, T]$. Let $u$ be a classical solution of
+$u_t + a u_x + a_0 u = f$ on the strip $[x_0, x_n] \times [0, T]$ with $u(x_0, t) = 0$: at every
+point of the strip, $u(\cdot, t)$ has the derivative $u_x$ within $[x_0, x_n]$ and $u(y, \cdot)$
+has the derivative $u_t$ within $[0, T]$, and $u_t(\cdot, t)$ is continuous on $[x_0, x_n]$ for
+$t \in [0, T]$. Let $u$ be regular: for every $t \in [0, T]$ there are
+$U, U' \in H^{r+1}(x_0, x_n)$, equal almost everywhere to $u(\cdot, t)$ and $u_t(\cdot, t)$,
+with $|U|_{H^{r+1}} \le M$ and $|U'|_{H^{r+1}} \le M'$. Let $V_h \subseteq B_h$ be the space of
+continuous broken polynomials $v$ with $v^+(x_0) = 0$, let $f_h(t) \in B_h$ satisfy
+$\langle f_h(t), v\rangle = (f(\cdot, t), v)$ for $v \in V_h$ and $t \in [0, T]$, and let
+$u_h : \mathbb{R} \to V_h$ solve the semi-discrete Galerkin problem $\langle u_h'(t), v\rangle +
+b_t(u_h(t), v) = \langle f_h(t), v\rangle$ for $v \in V_h$ and $t \in [0, T]$, with
+$u_h(0) = u_{0,h}$. Then for every $t \in [0, T]$
+$$\|u(t) - u_h(t)\| +
+  \Bigl(\int_0^t a(x_n) \bigl(u(x_n, \tau) - u_h^-(x_n, \tau)\bigr)^2 \, d\tau\Bigr)^{1/2}
+  \le \sqrt{2} \Bigl(\|u(0) - u_{0,h}\| +
+  h^r \bigl(2hM + \sqrt{T / \mu_0}\, (AM + h(M' + A_0 M))\bigr)\Bigr).$$
+This is the estimate for continuous finite elements of degree $r$ in [quarteroni2000numerical],
+§13.10.1, which quotes it from [quarteroni1994numerical], §14.3.1, without proof; here the
+constants are explicit.
 
-`‖u(t) - u_h(t)‖_{L²} + (∫₀ᵗ a(x n) (u(x n, τ) - u_h(x n, τ))² dτ)^{1/2}
-  ≤ √2 (‖u₀ - u_{0,h}‖_{L²} + h^r (2 h M + √(T/μ₀) (A M + h (M' + A₀ M))))`,
-
-where the `L²` norms are panel sums. The proof is the error equation
-`IsSemidiscreteGalerkin.sub` with the nodal interpolant `W(t) = Π_h u(·, t)` (which lies in
-`V`, commutes with `∂ₜ` by `hasDerivWithinAt_interp`, and interpolates `u` at `x n`), whose
-consistency error is bounded by `abs_transport_defect_le` and the interpolation estimates
-(`h^{r+1} M'` for `ut`, `h^r M` for `ux`, `h^{r+1} M` for `u`), the dissipative energy estimate
-`IsSemidiscreteGalerkin.norm_sq_add_integral_le` for the discrete error `u_h - W`, and the
-triangle inequality. The book states the boundary term at the inflow end `α`, where it vanishes
-identically since both `u` and `u_h` satisfy the inflow condition; the estimate holds at the
-outflow end `β = x n`, which is where the energy identity produces it. -/
+The source states the boundary term at the inflow end $x_0$, where it vanishes because $u$ and
+$u_h$ both satisfy the inflow condition; the estimate here has it at the outflow end $x_n$,
+where the energy identity produces it. The norms are panelwise $L^2$ norms, and $b_t$ is
+`Variational.transportForm` with the coefficient $a_0(\cdot, t)$, restricted to $V_h$. The proof
+applies the error equation `Variational.IsSemidiscreteGalerkin.sub` with the nodal interpolant
+$W(t) = \Pi_h u(\cdot, t)$, which lies in $V_h$, commutes with $\partial_t$ by
+`Variational.hasDerivWithinAt_interp`, and interpolates $u$ at $x_n$. Its consistency error is
+bounded by `Variational.abs_transport_defect_le` and the interpolation estimates $h^{r+1} M'$
+for $u_t$, $h^r M$ for $u_x$ and $h^{r+1} M$ for $u$, and the energy estimate
+`Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le` bounds $u_h - W$. -/
 theorem cG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
@@ -560,10 +660,13 @@ theorem cG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
 
 end TimeDependent
 
-/-! ### The `L²` projection of a time-dependent function commutes with `∂ₜ` -/
+/-! ### The $L^2$ projection of a time-dependent function commutes with $\partial_t$ -/
 
-/-- A panel integral of a function continuous on the strip `[x 0, x n] × [0, T]` against a
-polynomial is continuous in time (dominated convergence). -/
+/-- Let $g$ be continuous on the strip $[x_0, x_n] \times [0, T]$, let $I_i$ be a panel and let $q$
+be a polynomial. Then $t \mapsto \int_{x_i}^{x_{i+1}} g(y, t)\, q(y) \, dy$ is continuous on
+$[0, T]$.
+
+The proof is by dominated convergence. -/
 theorem continuousOn_integral_panel_mul {g : ℝ → ℝ → ℝ} {T : ℝ}
     (hg : ContinuousOn (fun p : ℝ × ℝ => g p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
     (i : Fin n) (q : ℝ[X]) :
@@ -595,8 +698,8 @@ theorem continuousOn_integral_panel_mul {g : ℝ → ℝ → ℝ} {T : ℝ}
       (continuousWithinAt_const.prodMk continuousWithinAt_id)
       fun z hz => Set.mk_mem_prod (hmemI y hy) hz).mul continuousWithinAt_const
 
-/-- The pairing of a function continuous on the strip `[x 0, x n] × [0, T]` with a fixed broken
-polynomial is continuous in time. -/
+/-- Let $g$ be continuous on the strip $[x_0, x_n] \times [0, T]$. For every $v \in B_h$, the
+pairing $t \mapsto (g(\cdot, t), v)$ is continuous on $[0, T]$. -/
 theorem continuousOn_pairing {g : ℝ → ℝ → ℝ} {T : ℝ}
     (hg : ContinuousOn (fun p : ℝ × ℝ => g p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
     (v : BrokenPolynomial x r) :
@@ -604,8 +707,11 @@ theorem continuousOn_pairing {g : ℝ → ℝ → ℝ} {T : ℝ}
   simp only [pairing_def]
   exact continuousOn_finsetSum _ fun i _ => continuousOn_integral_panel_mul hg i (v i)
 
-/-- The projection of a function continuous on the strip is continuous in time: it is the sum of
-its pairings with an orthonormal basis. -/
+/-- Let $n \ge 1$ and let $g$ be continuous on the strip $[x_0, x_n] \times [0, T]$. Then
+$t \mapsto P_h g(\cdot, t)$ is continuous on $[0, T]$.
+
+The projection $P_h$ is `BrokenPolynomial.proj`. It is the sum of the pairings with an
+orthonormal basis, so the result follows from `Variational.continuousOn_pairing`. -/
 theorem continuousOn_proj (hn : 0 < n) {g : ℝ → ℝ → ℝ} {T : ℝ}
     (hg : ContinuousOn (fun p : ℝ × ℝ => g p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T)) :
     ContinuousOn (fun t => proj x r fun y => g y t) (Icc 0 T) := by
@@ -627,10 +733,14 @@ theorem continuousOn_proj (hn : 0 < n) {g : ℝ → ℝ → ℝ} {T : ℝ}
   refine ContinuousOn.congr ?_ hexp
   exact continuousOn_finsetSum _ fun k _ => (continuousOn_pairing hg (b k)).smul continuousOn_const
 
-/-- **The fundamental theorem of calculus for the pairing**: if `∂ₜ u = ut` within `[0, T]` with
-`ut` continuous on the strip, then for `τ ∈ [0, T]` and every broken polynomial `v`,
-`⟪u(·, τ), v⟫ - ⟪u(·, 0), v⟫ = ∫₀^τ ⟪ut(·, s), v⟫ ds`. The fundamental theorem of calculus in `t`
-for each `y`, then Fubini on each panel. -/
+/-- The **fundamental theorem of calculus for the pairing**. Let $u(\cdot, t)$ be continuous on
+$[x_0, x_n]$ for every $t \in [0, T]$, let $t \mapsto u(y, t)$ have the derivative $u_t(y, t)$
+within $[0, T]$ at every point of the strip $[x_0, x_n] \times [0, T]$, and let $u_t$ be
+continuous on the strip. Then for $\tau \in [0, T]$ and every $v \in B_h$
+$$(u(\cdot, \tau), v) - (u(\cdot, 0), v) = \int_0^\tau (u_t(\cdot, s), v) \, ds.$$
+
+The proof applies the fundamental theorem of calculus in $t$ for each $y$, and then Fubini's
+theorem on each panel. -/
 theorem pairing_sub_eq_integral {u ut : ℝ → ℝ → ℝ} {T : ℝ}
     (huc : ∀ t ∈ Icc 0 T, ContinuousOn (fun y => u y t) (Icc (x 0) (x (Fin.last n))))
     (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
@@ -700,8 +810,15 @@ theorem pairing_sub_eq_integral {u ut : ℝ → ℝ → ℝ} {T : ℝ}
   rw [← hftc y (hIcc hy)]
   ring
 
-/-- **The projection of a time-dependent function is the integral of the projection of its time
-derivative**: `P u(·, τ) = P u(·, 0) + ∫₀^τ P ut(·, s) ds` for `τ ∈ [0, T]`. -/
+/-- The $L^2$ projection of a time-dependent function is the integral of the projection of its time
+derivative. Let $n \ge 1$, let $u(\cdot, t)$ be continuous on $[x_0, x_n]$ for every
+$t \in [0, T]$, let $t \mapsto u(y, t)$ have the derivative $u_t(y, t)$ within $[0, T]$ at every
+point of the strip $[x_0, x_n] \times [0, T]$, and let $u_t$ be continuous on the strip. Then
+for $\tau \in [0, T]$
+$$P_h u(\cdot, \tau) = P_h u(\cdot, 0) + \int_0^\tau P_h u_t(\cdot, s) \, ds.$$
+
+The integral is the Bochner integral in $B_h$. The proof tests the identity against every
+$v \in B_h$ with `Variational.pairing_sub_eq_integral`. -/
 theorem proj_eq_add_integral (hn : 0 < n) {u ut : ℝ → ℝ → ℝ} {T : ℝ}
     (huc : ∀ t ∈ Icc 0 T, ContinuousOn (fun y => u y t) (Icc (x 0) (x (Fin.last n))))
     (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
@@ -738,11 +855,15 @@ theorem proj_eq_add_integral (hn : 0 < n) {u ut : ℝ → ℝ → ℝ} {T : ℝ}
   simp only [innerSL_apply_apply]
   rw [real_inner_comm, inner_proj (huti s (Icc_subset_Icc le_rfl hτ.2 hs))]
 
-/-- **The `L²` projection of a time-dependent function is differentiable in time**, with the
-projection of the time derivative as derivative: if `∂ₜu = ut` within `[0, T]` at every point of
-`[x 0, x n]`, `u(·, t)` is continuous and `ut` is continuous on the strip, then
-`d/dt P u(·, t) = P ut(·, t)` within `[0, T]`. The fundamental theorem of calculus for
-`P u(·, t) = P u(·, 0) + ∫₀ᵗ P ut(·, s) ds`, whose integrand is continuous. -/
+/-- The **$L^2$ projection commutes with the time derivative**. Let $n \ge 1$, let $u(\cdot, t)$ be
+continuous on $[x_0, x_n]$ for every $t \in [0, T]$, let $t \mapsto u(y, t)$ have the derivative
+$u_t(y, t)$ within $[0, T]$ at every point of the strip $[x_0, x_n] \times [0, T]$, and let
+$u_t$ be continuous on the strip. Then for $t \in [0, T]$, the function
+$t \mapsto P_h u(\cdot, t)$ has the derivative $P_h u_t(\cdot, t)$ within $[0, T]$ at $t$.
+
+The proof applies the fundamental theorem of calculus to the identity of
+`Variational.proj_eq_add_integral`, whose integrand is continuous by
+`Variational.continuousOn_proj`. -/
 theorem hasDerivWithinAt_proj (hn : 0 < n) {u ut : ℝ → ℝ → ℝ} {T : ℝ}
     (huc : ∀ t ∈ Icc 0 T, ContinuousOn (fun y => u y t) (Icc (x 0) (x (Fin.last n))))
     (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
@@ -772,9 +893,9 @@ variable {a₀ : ℝ → ℝ}
 
 /-! ### The consistency error of the upwind discontinuous Galerkin form -/
 
-/-- The boundary terms of the discontinuous Galerkin defect, reindexed: with `tl 0 = 0`,
-`∑ᵢ c(xᵢ₊₁) e(xᵢ₊₁) tl(xᵢ₊₁) - ∑ᵢ c(xᵢ) e(xᵢ) tr(xᵢ) + c(x₀) e(x₀) tr(x₀)
-  = c(xₙ) e(xₙ) tl(xₙ) - ∑_{i ≠ 0} c(xᵢ) e(xᵢ) (tr(xᵢ) - tl(xᵢ))`. -/
+/-- If $t^-_0 = 0$, then $\sum_{i < n} c_{i+1} e_{i+1} t^-_{i+1} - \sum_{i < n} c_i e_i t^+_i + c_0
+e_0 t^+_0 = c_n e_n t^-_n - \sum_{0 < i < n} c_i e_i (t^+_i - t^-_i)$, which is the reindexing
+of the boundary terms of the discontinuous Galerkin consistency error. -/
 private theorem boundary_sum_eq (hn : 0 < n) {c e tl : Fin (n + 1) → ℝ} {tr : Fin n → ℝ}
     (htl : tl 0 = 0) :
     ∑ i : Fin n, c i.succ * e i.succ * tl i.succ - ∑ i : Fin n, c i.castSucc * e i.castSucc * tr i
@@ -799,7 +920,7 @@ private theorem boundary_sum_eq (hn : 0 < n) {c e tl : Fin (n + 1) → ℝ} {tr 
     exact Finset.sum_congr rfl fun i _ => by ring
   linarith
 
-/-- Reindexing of the node sums: `f(xₙ) + ∑_{i ≠ 0} f(xᵢ) = ∑ᵢ f(xᵢ₊₁)`. -/
+/-- For values $f_i$ at the nodes, $f_n + \sum_{0 < i < n} f_i = \sum_{i < n} f_{i+1}$. -/
 private theorem node_sum_eq (hn : 0 < n) (f : Fin (n + 1) → ℝ) :
     f (Fin.last n) + ∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n), f i.castSucc
       = ∑ i : Fin n, f i.succ := by
@@ -811,22 +932,31 @@ private theorem node_sum_eq (hn : 0 < n) (f : Fin (n + 1) → ℝ) :
     rfl
   linarith
 
-/-- `c e t ≤ c t²/4 + c e²` for `c ≥ 0`. -/
+/-- For $c \ge 0$, $c e t \le c t^2 / 4 + c e^2$. -/
 private theorem mul_mul_le_quarter {c e t : ℝ} (hc : 0 ≤ c) :
     c * e * t ≤ c * t ^ 2 / 4 + c * e ^ 2 := by
   nlinarith [mul_nonneg hc (sq_nonneg (t / 2 - e))]
 
-/-- **The consistency error of the upwind discontinuous Galerkin form at a fixed time.** For the
-exact solution `u` of `ut + a ux + a₀ u = f` on `[x 0, x n]` with inflow value `u(x 0) = φ`, the
-pair `(W, W') = (P u, P ut)` of `L²` projections has the defect
-`(⟪f, v⟫ + a(x 0) φ v⁺(x 0)) - (⟪W', v⟫ + b^{DG}(W, v))` bounded by
-`(A₀ + A' + A' h (2 r (r + 1)/h_min)) ‖u - W‖ ‖v‖ + ¼ a(x n) v⁻(x n)² + ¼ ∑_{i ≠ 0} a(xᵢ) [v]ᵢ²
-+ ∑ᵢ a(xᵢ₊₁) (u - W)⁻(xᵢ₊₁)²`, where `|a₀| ≤ A₀`, `|a'| ≤ A'`, the panels have lengths in
-`[h_min, h]`, and `Eu` bounds the `L²` error `‖u - W‖`. Integration by parts on each panel moves
-the derivative from `u - W` onto `a v`, the orthogonality of the projection error to `a(xᵢ) vᵢ'`
-leaves `(a - a(xᵢ)) vᵢ'`, bounded through the Lipschitz constant of `a` and the Markov
-inequality for `v`, and the boundary terms telescope into the traces of the projection error at
-the nodes, absorbed by the jump and outflow terms with the weights `¼`. -/
+/-- The **consistency error of the upwind discontinuous Galerkin form** at a fixed time. Let
+$x_0 < \dots < x_n$ be a partition with $n \ge 1$ and panel lengths in $[h_{\min}, h]$, where
+$h_{\min} > 0$. Let $a$ and $a_0$ be integrable on $[x_0, x_n]$, let $a$ be differentiable at
+every point of $[x_0, x_n]$ with $a'$ continuous there, and let $a \ge 0$, $|a'| \le A'$ and
+$|a_0| \le A_0$ on $[x_0, x_n]$ for constants $A', A_0 \ge 0$. Let $u$ be continuous on
+$[x_0, x_n]$ with the derivative $u_x(y)$ at every $y \in (x_0, x_n)$, let $u_t$ be continuous
+on $[x_0, x_n]$, and let $u_t + a u_x + a_0 u = f$ on $[x_0, x_n]$ with $u(x_0) = \varphi$. Let
+$g$ be integrable on $[x_0, x_n]$ with $u_x = g$ almost everywhere on $(x_0, x_n)$, and let
+$\|u - P_h u\| \le E_u$. Then for every $v \in B_h$
+$$(f, v) + a(x_0) \varphi v^+(x_0) - \langle P_h u_t, v\rangle - b^{DG}(P_h u, v)
+  \le \Bigl(A_0 + A' + A' h \frac{2r(r+1)}{h_{\min}}\Bigr) E_u \|v\| +
+  \frac{1}{4} a(x_n) v^-(x_n)^2 + \frac{1}{4} \sum_{0 < i < n} a(x_i) [v]_i^2 +
+  \sum_{i < n} a(x_{i+1}) \bigl(u(x_{i+1}) - (P_h u)_i(x_{i+1})\bigr)^2.$$
+
+The bound is one-sided. The form $b^{DG}$ is `Variational.dgUpwindForm`, and $P_h$ is
+`BrokenPolynomial.proj`. Integration by parts on each panel moves the derivative from
+$u - P_h u$ onto $a v$. The orthogonality of the projection error to $a(x_i) v_i'$ leaves
+$(a - a(x_i)) v_i'$, which is bounded through the Lipschitz constant of $a$ and the Markov
+inequality for $v$. The boundary terms telescope into the traces of the projection error at the
+nodes, and the jump and outflow terms with the weights $\tfrac{1}{4}$ absorb them. -/
 theorem dg_defect_le (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : IntervalIntegrable a₀ volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -1187,12 +1317,17 @@ theorem dg_defect_le (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fi
   rw [hsum]
   linarith
 
-/-- **The traces of the projection error at the nodes**, for `U ∈ H^{r+1}(x 0, x n)` with
-continuous representative `u` and a node system of degree `r` on a partition with
-`h_min ≤ h_i ≤ h`: for points `y i` in the panels and weights `0 ≤ a ≤ A`,
-`∑ᵢ a(y i) (u(y i) - (P u)ᵢ(y i))² ≤ 2 A h^{2r+1} |U|² (h/h_min + (1 + 4 r (r + 1) h/h_min)²)`.
-The trace inequality `sum_mul_sq_sub_eval_le` with the `L²` and `H¹` errors of the projection.
--/
+/-- The **traces of the projection error at the nodes**. Let $x_0 < \dots < x_n$ be a partition with
+$n \ge 1$, panel lengths in $[h_{\min}, h]$ with $h_{\min} > 0$, and a node system of degree
+$r$. Let $|a| \le A$ on $[x_0, x_n]$ with $A \ge 0$, let $U \in H^{r+1}(x_0, x_n)$, and let $u$
+be continuous on $[x_0, x_n]$ with $U = u$ almost everywhere on $(x_0, x_n)$. Then for points
+$y_i \in I_i$
+$$\sum_i a(y_i) \bigl(u(y_i) - (P_h u)_i(y_i)\bigr)^2
+  \le 2 A h^{2r+1} |U|_{H^{r+1}}^2 \Bigl(\frac{h}{h_{\min}} +
+  \Bigl(1 + 4r(r+1) \frac{h}{h_{\min}}\Bigr)^2\Bigr).$$
+
+The proof applies the trace inequality `BrokenPolynomial.sum_mul_sq_sub_eval_le` to the $L^2$
+and $H^1$ errors of the projection. -/
 theorem sum_mul_sq_sub_proj_le (hn : 0 < n) {A : ℝ} (hA0 : 0 ≤ A)
     (hA : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a s| ≤ A) {node : Fin n → Fin (r + 1) → ℝ}
     (hnode : IsNodes x r node) {h hmin : ℝ} (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h)
@@ -1253,11 +1388,17 @@ section DGTimeDependent
 
 variable {a₀ : ℝ → ℝ → ℝ}
 
-/-- **The constant of the discontinuous Galerkin error estimate.** With `ρ = h / h_min` the
-mesh ratio, `K = 2 r (r + 1) ρ` the Markov constant, `Φ₀ = (A₀ + A' + A' K) M` the consistency
-constant and `K_tr = 2 A M² (ρ + (1 + 4 r (r + 1) ρ)²)` the trace constant, the bound of
-`dG_error_sq_le` is `(16 + 4/μ₀) ‖u₀ - u_{0,h}‖² + dgConst · h^{2r+1}` with
-`dgConst = 2 h M² + T (2 h M² + 10 K_tr) + (8 + 2/μ₀) (2 h M² + T (h Φ₀²/μ₀ + 2 K_tr))`. -/
+/-- The **constant of the discontinuous Galerkin error estimate**. Let $\rho = h / h_{\min}$ be the
+mesh ratio, $K = 2r(r+1)\rho$ the Markov constant, $\Phi_0 = (A_0 + A' + A'K) M$ the consistency
+constant and $K_{\mathrm{tr}} = 2AM^2 (\rho + (1 + 4r(r+1)\rho)^2)$ the trace constant. The
+constant is
+$$C_{DG} = 2hM^2 + T(2hM^2 + 10 K_{\mathrm{tr}}) +
+  \Bigl(8 + \frac{2}{\mu_0}\Bigr)
+    \Bigl(2hM^2 + T \Bigl(\frac{h \Phi_0^2}{\mu_0} + 2 K_{\mathrm{tr}}\Bigr)\Bigr).$$
+
+The bound of `Variational.dG_error_sq_le` is $(16 + 4/\mu_0) \|u_0 - u_{0,h}\|^2 + C_{DG}
+h^{2r+1}$. The definition has no hypotheses; at $\mu_0 = 0$ or $h_{\min} = 0$ the divisions by
+zero give $0$. -/
 def dgConst (r : ℕ) (A A' A₀ μ₀ T M h hmin : ℝ) : ℝ :=
   2 * h * M ^ 2 + T * (2 * h * M ^ 2 + 10 * (2 * A * M ^ 2
       * (h / hmin + (1 + 4 * r * (r + 1) * (h / hmin)) ^ 2)))
@@ -1265,24 +1406,27 @@ def dgConst (r : ℕ) (A A' A₀ μ₀ T M h hmin : ℝ) : ℝ :=
         ^ 2 / μ₀ + 2 * (2 * A * M ^ 2 * (h / hmin + (1 + 4 * r * (r + 1) * (h / hmin)) ^ 2))))
 
 
-/-- `c (j + (p - q))² ≤ 2 c j² + 4 c p² + 4 c q²` for `c ≥ 0`. -/
+/-- For $c \ge 0$, $c(j + (p - q))^2 \le 2cj^2 + 4cp^2 + 4cq^2$. -/
 private theorem mul_sq_add_sub_le {c j p q : ℝ} (hc : 0 ≤ c) :
     c * (j + (p - q)) ^ 2 ≤ 2 * (c * j ^ 2) + 4 * (c * p ^ 2) + 4 * (c * q ^ 2) := by
   nlinarith [mul_nonneg hc (sq_nonneg (j - (p - q))), mul_nonneg hc (sq_nonneg (p + q))]
 
-/-- `c (j - p)² ≤ 2 c j² + 2 c p²` for `c ≥ 0`. -/
+/-- For $c \ge 0$, $c(j - p)^2 \le 2cj^2 + 2cp^2$. -/
 private theorem mul_sq_sub_le {c j p : ℝ} (hc : 0 ≤ c) :
     c * (j - p) ^ 2 ≤ 2 * (c * j ^ 2) + 2 * (c * p ^ 2) := by
   nlinarith [mul_nonneg hc (sq_nonneg (j + p))]
 
-/-- The absorption of the error terms by the energy:
-`(2/μ₀) N + 4 S + 2 J ≤ (2/μ₀ + 6) (N + B + S + J)` for nonnegative parts. -/
+/-- For $\mu_0 > 0$ and $N, B, S, J \ge 0$, $(2/\mu_0) N + 4S + 2J \le (2/\mu_0 + 6)(N + B + S +
+J)$, which absorbs the error terms into the energy. -/
 private theorem energy_parts_le {N B S J μ₀ : ℝ} (hμ : 0 < μ₀) (hN : 0 ≤ N) (hB : 0 ≤ B)
     (hS : 0 ≤ S) (hJ : 0 ≤ J) : 2 / μ₀ * N + 4 * S + 2 * J ≤ (2 / μ₀ + 6) * (N + B + S + J) := by
   have hμ' : 0 ≤ 2 / μ₀ := by positivity
   nlinarith [mul_nonneg hμ' hB, mul_nonneg hμ' hS, mul_nonneg hμ' hJ]
 
-/-- The final rearrangement of `dG_error_sq_le`. -/
+/-- The final rearrangement in the proof of `Variational.dG_error_sq_le`: if $\mu_0 > 0$, $t \le T$,
+$P, Q, G \ge 0$, $e_0 \le 2Y_i + 2P$, $w \le e_0 + tG$, $Y_0 \le 2P + 2(e_0 + tG)$ and
+$L \le t(2P + 10Q) + (2/\mu_0 + 6)w$, then $Y_0 + L \le (16 + 4/\mu_0) Y_i + 2P + T(2P + 10Q) +
+(8 + 2/\mu_0)(2P + TG)$. -/
 private theorem dg_final {Y₀ L Yi P Q G e0 w μ₀ T t : ℝ} (hμ : 0 < μ₀) (htT : t ≤ T)
     (hP : 0 ≤ P) (hQ : 0 ≤ Q) (hG : 0 ≤ G) (he0 : e0 ≤ 2 * Yi + 2 * P)
     (hw : w ≤ e0 + t * G) (hY₀ : Y₀ ≤ 2 * P + 2 * (e0 + t * G))
@@ -1302,29 +1446,45 @@ private theorem dg_final {Y₀ L Yi P Q G e0 w μ₀ T t : ℝ} (hμ : 0 < μ₀
   rw [h7]
   linarith
 
-/-- **The error estimate of the discontinuous Galerkin method for the transport equation, squared
-form** ([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli §14.3.3 without
-proof; here with explicit constants). Let `u` be a classical solution of `u_t + a u_x + a₀ u = f`
-on `[x 0, x n] × [0, T]` with inflow value `u(x 0, t) = φ(t)`, continuous on the strip with
-partial derivatives `ux`, `ut` and `ut` continuous on the strip, and regular in the sense that
-`u(·, t) ∈ H^{r+1}(x 0, x n)` with `|u(·, t)|_{H^{r+1}} ≤ M` for every `t ∈ [0, T]`. Let
-`u_h : [0, T] → W_h` solve the upwind discontinuous Galerkin semi-discretization on the broken
-polynomials of degree `r ≥ 0` of a partition with panels of length between `h_min` and `h`
-carrying a node system of degree `r`, with the discrete source `f_h(t)` the `L²` projection of
-`f(·, t)`. Under the dissipativity `0 < μ₀ ≤ a₀ - a'/2`, with `0 ≤ a ≤ A`, `|a'| ≤ A'`, `|a₀| ≤ A₀`,
-for every `t ∈ [0, T]`
+/-- The **error estimate of the discontinuous Galerkin method** for the transport equation, in
+squared form. Let $x_0 < \dots < x_n$ be a partition with $n \ge 1$, panel lengths in
+$[h_{\min}, h]$ with $h_{\min} > 0$, and a node system of degree $r$, and let $T > 0$. Let $a$
+be integrable on $[x_0, x_n]$ and differentiable at every point of $[x_0, x_n]$ with $a'$
+continuous there, let $a_0(\cdot, t)$ be integrable on $[x_0, x_n]$ for every $t$, and let there
+be constants $\mu_0 > 0$, $A$, $A'$ and $A_0$ with
+$$\mu_0 \le a_0(s, t) - \tfrac{1}{2} a'(s), \quad 0 \le a(s), \quad |a(s)| \le A,
+  \quad |a'(s)| \le A', \quad |a_0(s, t)| \le A_0$$
+for $s \in [x_0, x_n]$ and $t \in [0, T]$. Let $u$ be a classical solution of
+$u_t + a u_x + a_0 u = f$ on the strip $[x_0, x_n] \times [0, T]$ with the inflow value
+$u(x_0, t) = \varphi(t)$: $u$ and $u_t$ are continuous on the strip, and at every point of the
+strip $u(\cdot, t)$ has the derivative $u_x$ within $[x_0, x_n]$ and $u(y, \cdot)$ has the
+derivative $u_t$ within $[0, T]$. Let $u$ be regular: for every $t \in [0, T]$ there is
+$U \in H^{r+1}(x_0, x_n)$, equal almost everywhere to $u(\cdot, t)$, with $|U|_{H^{r+1}} \le M$.
+Let $f_h(t) \in B_h$ satisfy $\langle f_h(t), v\rangle = (f(\cdot, t), v)$ for all $v \in B_h$
+and $t \in [0, T]$, so that $f_h(t)$ is the $L^2$ projection of $f(\cdot, t)$, and let
+$u_h : \mathbb{R} \to B_h$ solve the upwind semi-discretization
+$$\langle u_h'(t), v\rangle + b^{DG}_t(u_h(t), v)
+  = \langle f_h(t), v\rangle + a(x_0) \varphi(t) v^+(x_0) \qquad (v \in B_h,\ t \in [0, T])$$
+with $u_h(0) = u_{0,h}$. Then for every $t \in [0, T]$
+$$\|u(t) - u_h(t)\|^2 + \int_0^t \Bigl(\|u(\tau) - u_h(\tau)\|^2 +
+  \sum_{j=1}^{n-1} a(x_j) [u_h(\tau)]_j^2 +
+  a(x_0) \bigl(u_h^+(x_0, \tau) - \varphi(\tau)\bigr)^2\Bigr) d\tau
+  \le \Bigl(16 + \frac{4}{\mu_0}\Bigr) \|u(0) - u_{0,h}\|^2 + C_{DG}\, h^{2r+1},$$
+where $C_{DG}$ is `Variational.dgConst`. This is the square of the estimate
+$O(\|u_0 - u_{0,h}\| + h^{r+1/2})$ for discontinuous finite elements of degree $r$ in
+[quarteroni2000numerical], §13.10.1, which quotes it from [quarteroni1994numerical], §14.3.3,
+without proof; here the constants are explicit.
 
-`‖u(t) - u_h(t)‖² + ∫₀ᵗ (‖u(τ) - u_h(τ)‖² + ∑_{j=1}^{n-1} a(x_j) [u_h(τ)]_j²
-    + a(x 0) (u_h⁺(x 0, τ) - φ(τ))²) dτ
-  ≤ (16 + 4/μ₀) ‖u₀ - u_{0,h}‖² + dgConst · h^{2r+1}`,
-
-the book's `O(‖u₀ - u_{0,h}‖ + h^{r+1/2})` squared (the jump `[u - u_h]_0` of the book is
-`φ - u_h⁺(x 0)`, since `u` is continuous and `u(x 0) = φ`). The proof is the error equation
-`IsSemidiscreteGalerkin.sub` with the `L²` projection `W(t) = P u(·, t)` of the exact solution,
-which commutes with `∂ₜ` (`hasDerivWithinAt_proj`) and whose consistency error `dg_defect_le` is
-absorbed by the dissipation of the upwind form (`le_dgUpwindForm`): the `L²` part is `O(h^{r+1})`
-and the traces of the projection error at the nodes are `O(h^{r+1/2})` by the trace inequality
-(`sum_mul_sq_sub_proj_le`), which is where the half power comes from. -/
+The jump $[u - u_h]_0$ of the source is $\varphi - u_h^+(x_0)$ here, because $u$ is continuous
+and $u(x_0) = \varphi$. The norms are panelwise $L^2$ norms, and $b^{DG}_t$ is
+`Variational.dgUpwindForm` with the coefficient $a_0(\cdot, t)$. The proof applies the error
+equation `Variational.IsSemidiscreteGalerkin.sub` with the $L^2$ projection
+$W(t) = P_h u(\cdot, t)$, which commutes with $\partial_t$ by
+`Variational.hasDerivWithinAt_proj`. The dissipation of the upwind form,
+`Variational.le_dgUpwindForm`, absorbs the consistency error of `Variational.dg_defect_le`. The
+$L^2$ part of the consistency error is $O(h^{r+1})$, and the traces of the projection error at
+the nodes are $O(h^{r+1/2})$ by `Variational.sum_mul_sq_sub_proj_le`; the half power comes from
+this trace term. -/
 theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
@@ -1712,16 +1872,20 @@ theorem dG_error_sq_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
   rw [hgconst, hΦsq, hQ, hP, hKtr, hΦ₀, hK, hρ, dgConst]
   ring
 
-/-- **The error estimate of the discontinuous Galerkin method for the transport equation**
-([quarteroni2000numerical] §13.10.1, quoted there from Quarteroni–Valli §14.3.3 without proof):
-under the hypotheses of `Variational.dG_error_sq_le`, for every `t ∈ [0, T]`
+/-- The **error estimate of the discontinuous Galerkin method** for the transport equation. Under
+the hypotheses of `Variational.dG_error_sq_le`, for every $t \in [0, T]$
+$$\|u(t) - u_h(t)\| + \Bigl(\int_0^t \Bigl(\|u(\tau) - u_h(\tau)\|^2 +
+  \sum_{j=1}^{n-1} a(x_j) [u_h(\tau)]_j^2 +
+  a(x_0) \bigl(u_h^+(x_0, \tau) - \varphi(\tau)\bigr)^2\Bigr) d\tau\Bigr)^{1/2}
+  \le \sqrt{2} \Bigl(\sqrt{16 + 4/\mu_0}\, \|u(0) - u_{0,h}\| +
+    \sqrt{C_{DG}}\, h^r \sqrt{h}\Bigr),$$
+where $C_{DG}$ is `Variational.dgConst`. This is the estimate $O(\|u_0 - u_{0,h}\| + h^{r+1/2})$
+for discontinuous finite elements of degree $r$ in [quarteroni2000numerical], §13.10.1, which
+quotes it from [quarteroni1994numerical], §14.3.3, without proof; here the constants are
+explicit.
 
-`‖u(t) - u_h(t)‖ + (∫₀ᵗ (‖u(τ) - u_h(τ)‖² + ∑_{j=1}^{n-1} a(x_j) [u_h(τ)]_j²
-    + a(x 0) (u_h⁺(x 0, τ) - φ(τ))²) dτ)^{1/2}
-  ≤ √2 (√(16 + 4/μ₀) ‖u₀ - u_{0,h}‖ + √dgConst h^{r+1/2})`,
-
-the book's `O(‖u₀ - u_{0,h}‖ + h^{r+1/2})` with explicit constants, `h^{r+1/2}` written `h^r √h`.
-From the squared form by `√p + √q ≤ √2 √(p + q)` and `√(p + q) ≤ √p + √q`. -/
+The power $h^{r+1/2}$ is written $h^r \sqrt{h}$. The estimate follows from the squared form by
+$\sqrt{p} + \sqrt{q} \le \sqrt{2} \sqrt{p + q}$ and $\sqrt{p + q} \le \sqrt{p} + \sqrt{q}$. -/
 theorem dG_error_le (hn : 0 < n) {T : ℝ} (hT : 0 < T)
     (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))

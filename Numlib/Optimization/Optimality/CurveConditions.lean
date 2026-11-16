@@ -8,47 +8,59 @@ import Mathlib.Analysis.InnerProductSpace.Basic
 /-!
 # Curve-based necessary optimality conditions of arbitrary order
 
-Along a polynomial arc `α ↦ x + ∑_{i=1}^{q} α^i s_i (+ o(α^q))`, the Taylor expansion of a smooth
-function `f` in powers of `α` has, for `j ≥ 1`, the coefficient
-`c_j = ∑_{k=1}^{j} (1/k!) ∑_{(ℓ_1,…,ℓ_k) ∈ P(j,k)} ∇^k f(x)[s_{ℓ_1},…,s_{ℓ_k}]`
-([cartis2022evaluation], (12.1.6)), where `P(j,k)` is the set of `k`-tuples of positive integers
-summing to `j` ((12.1.5)). A local minimizer has `c_j ≥ 0` as soon as `c_1 = ⋯ = c_{j-1} = 0`
-along every arc staying in the feasible set (Theorems 12.1.1 and 14.3.1).
+Let $E$ and $F$ be real normed spaces, let $f : E \to F$ be smooth at $x$, and let
+$s_1, s_2, \dots \in E$. Along a polynomial arc $\alpha \mapsto x + \sum_{i=1}^{q} \alpha^i s_i +
+o(\alpha^q)$, the expansion of $f$ in powers of $\alpha$ has, for $j \ge 1$, the coefficient
+$$c_j = \sum_{k=1}^{j} \frac{1}{k!} \sum_{(\ell_1, \dots, \ell_k) \in \mathcal{P}(j, k)} \nabla^k
+  f(x)[s_{\ell_1}, \dots, s_{\ell_k}],$$
+as in (12.1.6) of [cartis2022evaluation], where $\mathcal{P}(j, k)$ is the set (12.1.5) of
+$k$-tuples of positive integers with sum $j$. At a local minimizer of a real function, $c_j \ge 0$
+whenever $c_1 = \dots = c_{j-1} = 0$, along every arc that stays in the feasible set. This is
+Theorem 12.1.1 of [cartis2022evaluation] for unconstrained problems and Theorem 14.3.1 for problems
+with equality constraints, where the coefficients are those of the Lagrangian.
 
 ## Main definitions
 
-* `Optimization.curveIndexSet j k`: the index set `P(j,k)` of (12.1.5).
-* `Optimization.curveCoeff D s j`: the coefficient `c_j` (12.1.6) for derivative data `D` (exact
-  data being `ftaylorSeries ℝ f x`), with values in any normed space.
-* `Optimization.IsCurveCritical D q`: the conclusion of Theorem 12.1.1 for all orders `j ≤ q`
-  (the book's "`q`-th order minimizer").
-* `Optimization.IsFeasibleArc K x j s`: some arc `x + ∑_{ℓ ≤ j} α^ℓ s_ℓ + o(α^j)` stays in `K` for
-  small `α > 0` (the book's descriptor set `𝒟^j`).
+* `Optimization.curveIndexSet`: the index set $\mathcal{P}(j, k)$ of (12.1.5).
+* `Optimization.curveCoeff`: the coefficient $c_j$ of (12.1.6) for derivative data $D$, with values
+  in any normed space; the exact data of $f$ at $x$ is `ftaylorSeries ℝ f x`.
+* `Optimization.IsCurveCritical`: the conclusion of Theorem 12.1.1 for all orders $j \le q$, the
+  "$q$-th order minimizer" of the source.
+* `Optimization.IsFeasibleArc`: some arc $x + \sum_{\ell \le j} \alpha^\ell s_\ell + o(\alpha^j)$
+  stays in a set $K$ for small $\alpha > 0$; the tuple $(s_1, \dots, s_j)$ is then in the descriptor
+  set $\mathcal{D}^j$ of the source.
 
 ## Main results
 
-* `Optimization.taylorSum_polyCurve_eq`: the Taylor sum along a polynomial curve is a polynomial
-  in `α` whose coefficients up to `α^q` are the `curveCoeff`.
-* `Optimization.isLittleO_comp_curve_sub_curveCoeff`: the expansion
-  `g(γ(α)) = g(x) + ∑_{i ≤ j} α^i c_i + o(α^j)` along an arc (Peano remainder plus algebra).
+* `Optimization.taylorSum_polyCurve_eq`: the Taylor sum along a polynomial curve is a polynomial in
+  $\alpha$ whose coefficients up to $\alpha^q$ are the $c_j$.
+* `Optimization.isLittleO_comp_curve_sub_curveCoeff`: the expansion $g(\gamma(\alpha)) = g(x) +
+  \sum_{i \le j} \alpha^i c_i + o(\alpha^j)$ along an arc $\gamma$.
 * `Optimization.nonneg_of_isLittleO_poly_of_le`, `Optimization.eq_zero_of_isLittleO_sum_pow`:
   one-dimensional sign and uniqueness tests for asymptotic expansions.
-* `Optimization.IsLocalMin.isCurveCritical`: Theorem 12.1.1.
-* `Optimization.curveCoeff_eq_zero_of_isFeasibleArc`: the constraint expansion (14.3.3).
-* `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn`: Theorem 14.3.1, for
-  arcs in the feasible set `X ∩ {c = 0}`.
+* `IsLocalMin.isCurveCritical`: Theorem 12.1.1, a local minimizer of a function that is $q$ times
+  continuously differentiable is a $q$-th order minimizer.
+* `Optimization.curveCoeff_eq_zero_of_isFeasibleArc`: the constraint expansion (14.3.3), the
+  coefficients of the constraints vanish along a feasible arc.
+* `Optimization.curveCoeff_lagrangian_nonneg_of_isLocalMinOn`: Theorem 14.3.1, for arcs in the
+  feasible set $X \cap \{c = 0\}$.
 * `Optimization.curveCoeff_eq_of_isLittleO`, `Optimization.iteratedFDeriv_apply_diag_eq_of_poly`,
-  `Optimization.taylorPolynomial_eq_of_poly`: coefficients, diagonal derivatives and Taylor
-  polynomials read off an explicit expansion along a curve or a ray.
+  `Optimization.taylorPolynomial_eq_of_poly`: the coefficients, the diagonal derivatives and the
+  Taylor polynomials, read off an explicit expansion along a curve or a ray.
+
+## Proof outline
+
+The expansion along an arc follows from the Peano form of Taylor's theorem and the algebra of
+`Optimization.taylorSum_polyCurve_eq`; no Faà di Bruno formula is needed. The sign conditions then
+follow from the one-dimensional test `Optimization.nonneg_of_isLittleO_poly_of_le`.
 
 ## Implementation notes
 
-`curveCoeff` is defined literally from `P(j,k)` (the tuples `ℓ : Fin k → ℕ` with entries in
-`[1, j]` summing to `j`; these are the compositions of `j` into `k` parts). The tuples `s_i` need
-not be nonzero: the conclusions hold for every tuple (tuples with zero entries give the classical
-ray conditions). No Faà di
-Bruno formula is needed: the expansion along an arc follows from the Peano form of Taylor's
-theorem and the algebra of `taylorSum_polyCurve_eq`.
+* `Optimization.curveCoeff` is defined literally from $\mathcal{P}(j, k)$: the tuples
+  `ℓ : Fin k → ℕ` with entries in $[1, j]$ and sum $j$, that is, the compositions of $j$ into $k$
+  parts.
+* The vectors $s_i$ need not be nonzero. The conclusions hold for every tuple, and tuples with zero
+  entries give the classical conditions along rays.
 -/
 
 open Finset Filter Asymptotics
@@ -59,14 +71,17 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 namespace Optimization
 
-/-! ### The index sets `P(j,k)` -/
+/-! ### The index sets $\mathcal{P}(j, k)$ -/
 
-/-- The index set `P(j,k)` of [cartis2022evaluation], (12.1.5): the `k`-tuples
-`(ℓ_1, …, ℓ_k)` of integers in `[1, j]` with `ℓ_1 + ⋯ + ℓ_k = j` (the compositions of `j` into
-`k` positive parts). -/
+/-- The **index set** $\mathcal{P}(j, k)$ of (12.1.5) of [cartis2022evaluation]: the $k$-tuples
+$(\ell_1, \dots, \ell_k)$ of integers in $[1, j]$ with
+$$\ell_1 + \dots + \ell_k = j.$$
+These are the compositions of $j$ into $k$ positive parts. -/
 def curveIndexSet (j k : ℕ) : Finset (Fin k → ℕ) :=
   {ℓ ∈ Fintype.piFinset fun _ => Icc 1 j | ∑ i, ℓ i = j}
 
+/-- A tuple $\ell$ is in $\mathcal{P}(j, k)$ if and only if every entry is in $[1, j]$ and the
+entries sum to $j$. -/
 theorem mem_curveIndexSet {j k : ℕ} {ℓ : Fin k → ℕ} :
     ℓ ∈ curveIndexSet j k ↔ (∀ i, ℓ i ∈ Icc 1 j) ∧ ∑ i, ℓ i = j := by
   simp [curveIndexSet, Fintype.mem_piFinset]
@@ -74,19 +89,20 @@ theorem mem_curveIndexSet {j k : ℕ} {ℓ : Fin k → ℕ} :
 private theorem le_sum_of_fin {k : ℕ} (ℓ : Fin k → ℕ) (i : Fin k) : ℓ i ≤ ∑ i, ℓ i :=
   single_le_sum (fun _ _ => Nat.zero_le _) (mem_univ i)
 
-/-- A `k`-tuple of positive integers sums to at least `k`. -/
+/-- A $k$-tuple of positive integers has sum at least $k$. -/
 private theorem card_le_sum_of_one_le {k : ℕ} {ℓ : Fin k → ℕ} (h : ∀ i, 1 ≤ ℓ i) :
     k ≤ ∑ i, ℓ i := by
   simpa using sum_le_sum fun i (_ : i ∈ (univ : Finset (Fin k))) => h i
 
-/-- `P(j,k)` is empty when `j < k`. -/
+/-- If $j < k$, then $\mathcal{P}(j, k)$ is empty. -/
 theorem curveIndexSet_eq_empty {j k : ℕ} (h : j < k) : curveIndexSet j k = ∅ := by
   refine eq_empty_of_forall_notMem fun ℓ hℓ => ?_
   rw [mem_curveIndexSet] at hℓ
   have := card_le_sum_of_one_le fun i => (mem_Icc.1 (hℓ.1 i)).1
   omega
 
-/-- For `j ≤ q`, `P(j,k)` consists of the `k`-tuples with entries in `[1, q]` summing to `j`. -/
+/-- If $j \le q$, then $\mathcal{P}(j, k)$ is the set of $k$-tuples with entries in $[1, q]$ and sum
+$j$. -/
 theorem curveIndexSet_eq_filter {j q k : ℕ} (hjq : j ≤ q) :
     curveIndexSet j k = {ℓ ∈ Fintype.piFinset fun _ : Fin k => Icc 1 q | ∑ i, ℓ i = j} := by
   ext ℓ
@@ -99,10 +115,15 @@ theorem curveIndexSet_eq_filter {j q k : ℕ} (hjq : j ≤ q) :
 
 /-! ### The curve coefficients -/
 
-/-- The coefficient of `α^j` in the expansion of `f` along `x + ∑_i α^i s_i`
-([cartis2022evaluation], (12.1.6)):
-`curveCoeff D s j = ∑_{k=1}^{j} (1/k!) ∑_{ℓ ∈ P(j,k)} D_k[s_{ℓ_1}, …, s_{ℓ_k}]`, for derivative
-data `D` (`D = ftaylorSeries ℝ f x` for exact derivatives). For `j = 0` it is `0`. -/
+/-- The **curve coefficient** $c_j$ of (12.1.6) of [cartis2022evaluation]: the coefficient of
+$\alpha^j$ in the expansion of $f$ along $x + \sum_i \alpha^i s_i$. For derivative data $D$ and
+$j \ge 1$,
+$$c_j = \sum_{k=1}^{j} \frac{1}{k!} \sum_{\ell \in \mathcal{P}(j, k)} D_k[s_{\ell_1}, \dots,
+  s_{\ell_k}].$$
+For $j = 0$ the sum is empty and $c_0 = 0$.
+
+For exact derivatives, $D$ is `ftaylorSeries ℝ f x`. The coefficients are also used in Table
+12.1.1 and (14.3.3) of the source. -/
 noncomputable def curveCoeff (D : FormalMultilinearSeries ℝ E F) (s : ℕ → E) (j : ℕ) : F :=
   ∑ k ∈ Icc 1 j, (k ! : ℝ)⁻¹ • ∑ ℓ ∈ curveIndexSet j k, D k fun i => s (ℓ i)
 
@@ -110,45 +131,54 @@ section CurveCoeff
 
 variable (D D' : FormalMultilinearSeries ℝ E F) (s : ℕ → E)
 
+/-- The defining formula of the curve coefficient: $c_j = \sum_{k=1}^{j} \frac{1}{k!} \sum_{\ell \in
+\mathcal{P}(j, k)} D_k[s_{\ell_1}, \dots, s_{\ell_k}]$. -/
 theorem curveCoeff_def (j : ℕ) :
     curveCoeff D s j = ∑ k ∈ Icc 1 j, (k ! : ℝ)⁻¹ • ∑ ℓ ∈ curveIndexSet j k, D k fun i => s (ℓ i) :=
   rfl
 
+/-- The zeroth curve coefficient is $c_0 = 0$. -/
 @[simp]
 theorem curveCoeff_zero : curveCoeff D s 0 = 0 := by
   simp [curveCoeff]
 
+/-- The curve coefficients are additive in the derivative data $D$. -/
 @[simp]
 theorem curveCoeff_add (j : ℕ) :
     curveCoeff (D + D') s j = curveCoeff D s j + curveCoeff D' s j := by
   simp [curveCoeff, sum_add_distrib, smul_add]
 
+/-- The curve coefficients are homogeneous in the derivative data: the coefficients of $a D$ are $a$
+times those of $D$. -/
 @[simp]
 theorem curveCoeff_smul (a : ℝ) (j : ℕ) : curveCoeff (a • D) s j = a • curveCoeff D s j := by
   simp [curveCoeff, smul_sum, smul_comm a]
 
+/-- The curve coefficients of $-D$ are the negatives of those of $D$. -/
 @[simp]
 theorem curveCoeff_neg (j : ℕ) : curveCoeff (-D) s j = -curveCoeff D s j := by
   simp [curveCoeff, sum_neg_distrib, smul_neg]
 
+/-- The curve coefficients of $D - D'$ are the differences of those of $D$ and $D'$. -/
 @[simp]
 theorem curveCoeff_sub (j : ℕ) :
     curveCoeff (D - D') s j = curveCoeff D s j - curveCoeff D' s j := by
   simp [curveCoeff, sum_sub_distrib, smul_sub]
 
-/-- The coefficients of data composed with a continuous linear map `L` are the images under `L`. -/
+/-- The curve coefficients of the data $D$ composed with a continuous linear map $L$ are the images
+under $L$ of the coefficients of $D$. -/
 @[simp]
 theorem curveCoeff_compFormalMultilinearSeries {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     (L : F →L[ℝ] G) (j : ℕ) :
     curveCoeff (L.compFormalMultilinearSeries D) s j = L (curveCoeff D s j) := by
   simp [curveCoeff, map_sum, map_smul]
 
-/-- The first coefficient is `D_1[s_1]`. -/
+/-- The first curve coefficient is $c_1 = D_1[s_1]$. -/
 theorem curveCoeff_one : curveCoeff D s 1 = D 1 fun _ => s 1 := by
   have : curveIndexSet 1 1 = {fun _ => 1} := by decide
   simp [curveCoeff, this]
 
-/-- The second coefficient is `D_1[s_2] + ½ D_2[s_1, s_1]`. -/
+/-- The second curve coefficient is $c_2 = D_1[s_2] + \frac{1}{2} D_2[s_1, s_1]$. -/
 theorem curveCoeff_two :
     curveCoeff D s 2 = (D 1 fun _ => s 2) + (2 : ℝ)⁻¹ • D 2 fun _ => s 1 := by
   have h1 : curveIndexSet 2 1 = {fun _ => 2} := by decide
@@ -156,8 +186,10 @@ theorem curveCoeff_two :
   have hI : Icc 1 2 = {1, 2} := by decide
   simp [curveCoeff, h1, h2, hI]
 
-/-- Along a ray (`s_i = 0` for `i ≥ 2`) only the tuple `(1, …, 1)` contributes:
-`c_j = (1/j!) D_j[s_1]^j` for `j ≥ 1`. -/
+/-- Along a ray, that is, when $s_i = 0$ for $i \ge 2$, only the tuple $(1, \dots, 1)$ contributes:
+for $j \ge 1$,
+$$c_j = \frac{1}{j!} D_j[s_1]^j.$$
+-/
 theorem curveCoeff_of_ray {j : ℕ} (hj : 1 ≤ j) (hs : ∀ i, 2 ≤ i → s i = 0) :
     curveCoeff D s j = (j ! : ℝ)⁻¹ • D j fun _ => s 1 := by
   -- every tuple other than `(1, …, 1)` has an entry `≥ 2`, hence a zero argument
@@ -186,7 +218,10 @@ section PolyCurve
 
 variable (D : FormalMultilinearSeries ℝ E F) (s : ℕ → E)
 
-/-- Multilinear expansion of `D_k[∑_{i=1}^q α^i s_i]^k` over all index tuples. -/
+/-- Multilinear expansion over all index tuples:
+$$D_k\Bigl[\sum_{i=1}^q \alpha^i s_i\Bigr]^k = \sum_{\ell \in [1, q]^k} \alpha^{\ell_1 + \dots +
+  \ell_k} D_k[s_{\ell_1}, \dots, s_{\ell_k}].$$
+-/
 theorem apply_polyCurve_eq (q k : ℕ) (α : ℝ) :
     (D k fun _ => ∑ i ∈ Icc 1 q, α ^ i • s i) =
       ∑ ℓ ∈ Fintype.piFinset (fun _ : Fin k => Icc 1 q), α ^ (∑ i, ℓ i) • D k fun i => s (ℓ i) := by
@@ -194,9 +229,15 @@ theorem apply_polyCurve_eq (q k : ℕ) (α : ℝ) :
   refine sum_congr rfl fun ℓ _ => ?_
   rw [(D k).map_smul_univ (fun i => α ^ ℓ i), prod_pow_eq_pow_sum]
 
-/-- **Expansion along a polynomial curve.** The Taylor sum `D.taylorSum q` evaluated at
-`∑_{i=1}^q α^i s_i` is `D_0 + ∑_{j=1}^q α^j c_j + α^{q+1} R(α)` with `c_j = curveCoeff D s j`
-and a continuous (polynomial) remainder `R`. -/
+/-- **Expansion along a polynomial curve.** Let $T_q$ be the Taylor sum of order $q$ of the data
+$D$. There is a continuous function $R : \mathbb{R} \to F$ such that for every
+$\alpha \in \mathbb{R}$,
+$$T_q\Bigl(\sum_{i=1}^q \alpha^i s_i\Bigr) = D_0 + \sum_{j=1}^q \alpha^j c_j + \alpha^{q+1}
+  R(\alpha),$$
+where $c_j$ are the curve coefficients. This is the interpretation of (12.1.6) in Theorem 12.1.1
+of [cartis2022evaluation].
+
+The remainder $R$ is a polynomial in $\alpha$. -/
 theorem taylorSum_polyCurve_eq (q : ℕ) :
     ∃ R : ℝ → F, Continuous R ∧ ∀ α : ℝ,
       D.taylorSum q (∑ i ∈ Icc 1 q, α ^ i • s i) =
@@ -268,7 +309,8 @@ end PolyCurve
 
 section Arc
 
-/-- The polynomial part `∑_{ℓ=1}^j α^ℓ s_ℓ` of an arc tends to `0` as `α → 0`. -/
+/-- The polynomial part $\sum_{\ell=1}^j \alpha^\ell s_\ell$ of an arc tends to $0$ as
+$\alpha \to 0$. -/
 theorem tendsto_polyCurve_zero (s : ℕ → E) (j : ℕ) :
     Tendsto (fun α : ℝ => ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ) (𝓝 0) (𝓝 0) := by
   have hc : Continuous fun α : ℝ => ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ := by fun_prop
@@ -276,7 +318,8 @@ theorem tendsto_polyCurve_zero (s : ℕ → E) (j : ℕ) :
     sum_eq_zero fun ℓ hℓ => by rw [zero_pow (by have := (mem_Icc.1 hℓ).1; omega), zero_smul]
   simpa [h0] using hc.tendsto 0
 
-/-- The polynomial part of an arc is `O(α)`. -/
+/-- The polynomial part $\sum_{\ell=1}^j \alpha^\ell s_\ell$ of an arc is $O(\alpha)$ as
+$\alpha \to 0$. -/
 theorem polyCurve_isBigO (s : ℕ → E) (j : ℕ) :
     (fun α : ℝ => ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ) =O[𝓝 0] fun α => α := by
   have hd : Differentiable ℝ fun α : ℝ => ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ := by fun_prop
@@ -284,7 +327,7 @@ theorem polyCurve_isBigO (s : ℕ → E) (j : ℕ) :
     sum_eq_zero fun ℓ hℓ => by rw [zero_pow (by have := (mem_Icc.1 hℓ).1; omega), zero_smul]
   simpa [h0] using (hd 0).hasFDerivAt.isBigO_sub
 
-/-- `α^j = O(α^i)` as `α → 0` for `i ≤ j`. -/
+/-- For $i \le j$, $\alpha^j = O(\alpha^i)$ as $\alpha \to 0$. -/
 private theorem pow_isBigO_pow_of_le {i j : ℕ} (h : i ≤ j) :
     (fun α : ℝ => α ^ j) =O[𝓝 0] fun α => α ^ i := by
   rcases h.eq_or_lt with rfl | h
@@ -293,7 +336,8 @@ private theorem pow_isBigO_pow_of_le {i j : ℕ} (h : i ≤ j) :
 
 variable {s : ℕ → E} {x : E} {j : ℕ} {γ : ℝ → E}
 
-/-- An arc `γ(α) = x + ∑_{ℓ=1}^j α^ℓ s_ℓ + o(α^j)` tends to `x` as `α → 0⁺`. -/
+/-- An arc $\gamma(\alpha) = x + \sum_{\ell=1}^j \alpha^\ell s_\ell + o(\alpha^j)$ as
+$\alpha \to 0^+$ satisfies $\gamma(\alpha) \to x$ as $\alpha \to 0^+$. -/
 theorem tendsto_of_isLittleO_curve
     (hγ : (fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] fun α => α ^ j) :
     Tendsto γ (𝓝[>] 0) (𝓝 x) := by
@@ -306,7 +350,8 @@ theorem tendsto_of_isLittleO_curve
   refine this.congr fun α => ?_
   abel
 
-/-- An arc `γ(α) = x + ∑_{ℓ=1}^j α^ℓ s_ℓ + o(α^j)` with `j ≥ 1` satisfies `γ(α) - x = O(α)`. -/
+/-- Let $j \ge 1$. An arc $\gamma(\alpha) = x + \sum_{\ell=1}^j \alpha^\ell s_\ell + o(\alpha^j)$ as
+$\alpha \to 0^+$ satisfies $\gamma(\alpha) - x = O(\alpha)$. -/
 theorem sub_isBigO_of_isLittleO_curve (hj : 1 ≤ j)
     (hγ : (fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] fun α => α ^ j) :
     (fun α => γ α - x) =O[𝓝[>] 0] fun α => α := by
@@ -315,10 +360,17 @@ theorem sub_isBigO_of_isLittleO_curve (hj : 1 ≤ j)
   refine (he.add ((polyCurve_isBigO s j).mono nhdsWithin_le_nhds)).congr_left fun α => ?_
   abel
 
-/-- **Expansion along an arc.** If `g` is `C^j` at `x` and
-`γ(α) = x + ∑_{ℓ=1}^j α^ℓ s_ℓ + o(α^j)` as `α → 0⁺`, then
-`g(γ(α)) = g(x) + ∑_{i=1}^j α^i c_i + o(α^j)`, with `c_i = curveCoeff (ftaylorSeries ℝ g x) s i`
-([cartis2022evaluation], Section 12.1.2 and (14.3.3), "collecting terms of equal degree in α"). -/
+/-- **Expansion along an arc.** Let $g : E \to F$ be $j$ times continuously differentiable at $x$,
+and let
+$$\gamma(\alpha) = x + \sum_{\ell=1}^j \alpha^\ell s_\ell + o(\alpha^j) \quad \text{as } \alpha
+  \to 0^+.$$
+Then
+$$g(\gamma(\alpha)) = g(x) + \sum_{i=1}^j \alpha^i c_i + o(\alpha^j) \quad \text{as } \alpha \to
+  0^+,$$
+where $c_i$ are the curve coefficients of $g$ at $x$. This is the step "collecting terms of
+equal degree in $\alpha$" of Section 12.1.2 and (14.3.3) of [cartis2022evaluation].
+
+The coefficients are `Optimization.curveCoeff (ftaylorSeries ℝ g x) s i`. -/
 theorem isLittleO_comp_curve_sub_curveCoeff {g : E → F} (hg : ContDiffAt ℝ j g x)
     (hγ : (fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] fun α => α ^ j) :
     (fun α => g (γ α) - g x - ∑ i ∈ Icc 1 j, α ^ i • curveCoeff (ftaylorSeries ℝ g x) s i)
@@ -373,7 +425,7 @@ end Arc
 
 section OneDim
 
-/-- If `α^n • w = o(α^n)` as `α → 0⁺`, then `w = 0`. -/
+/-- If $\alpha^n w = o(\alpha^n)$ as $\alpha \to 0^+$, then $w = 0$. -/
 theorem eq_zero_of_isLittleO_pow_smul {n : ℕ} {w : F}
     (h : (fun α : ℝ => α ^ n • w) =o[𝓝[>] 0] fun α => α ^ n) : w = 0 := by
   refine norm_le_zero_iff.1 (le_of_forall_pos_le_add fun ε hε => ?_)
@@ -383,8 +435,10 @@ theorem eq_zero_of_isLittleO_pow_smul {n : ℕ} {w : F}
   rw [norm_smul, mul_comm ‖α ^ n‖] at hα
   simpa using le_of_mul_le_mul_right hα hpos
 
-/-- **Uniqueness of asymptotic expansions.** If `∑_{i=1}^j α^i • v_i = o(α^j)` as `α → 0⁺`, then
-`v_i = 0` for all `i ∈ [1, j]`. -/
+/-- **Uniqueness of asymptotic expansions.** If
+$$\sum_{i=1}^j \alpha^i v_i = o(\alpha^j) \quad \text{as } \alpha \to 0^+,$$
+then $v_i = 0$ for all $i \in [1, j]$. This is the uniqueness of expansions used in (14.3.3) of
+[cartis2022evaluation]. -/
 theorem eq_zero_of_isLittleO_sum_pow {j : ℕ} {v : ℕ → F}
     (h : (fun α : ℝ => ∑ i ∈ Icc 1 j, α ^ i • v i) =o[𝓝[>] 0] fun α => α ^ j) :
     ∀ i ∈ Icc 1 j, v i = 0 := by
@@ -408,9 +462,12 @@ theorem eq_zero_of_isLittleO_sum_pow {j : ℕ} {v : ℕ → F}
     · refine eq_zero_of_isLittleO_pow_smul (h.congr_left fun α => ?_)
       rw [hsplit, sum_eq_zero fun i hi => by rw [hlow i hi, smul_zero], zero_add]
 
-/-- **First-nonvanishing-coefficient test.** Let `j ≥ 1` and
-`ψ(α) = ψ₀ + ∑_{i=1}^j α^i a_i + o(α^j)` as `α → 0⁺` with `a_1 = ⋯ = a_{j-1} = 0`. If
-`ψ₀ ≤ ψ(α)` for all small `α > 0`, then `0 ≤ a_j`. -/
+/-- **First nonvanishing coefficient test.** Let $j \ge 1$, and let
+$$\psi(\alpha) = \psi_0 + \sum_{i=1}^j \alpha^i a_i + o(\alpha^j) \quad \text{as } \alpha \to
+  0^+,$$
+with $a_1 = \dots = a_{j-1} = 0$. If $\psi_0 \le \psi(\alpha)$ for all sufficiently small
+$\alpha > 0$, then $a_j \ge 0$. This is the idea of the proofs of Theorems 12.1.1 and 14.3.1 of
+[cartis2022evaluation]. -/
 theorem nonneg_of_isLittleO_poly_of_le {ψ : ℝ → ℝ} {ψ₀ : ℝ} {a : ℕ → ℝ} {j : ℕ} (hj : 1 ≤ j)
     (h : (fun α => ψ α - ψ₀ - ∑ i ∈ Icc 1 j, α ^ i • a i) =o[𝓝[>] 0] fun α => α ^ j)
     (hle : ∀ᶠ α in 𝓝[>] 0, ψ₀ ≤ ψ α) (hzero : ∀ i ∈ Ico 1 j, a i = 0) : 0 ≤ a j := by
@@ -433,26 +490,29 @@ end OneDim
 
 section Necessary
 
-/-- `IsFeasibleArc K x j s`: some arc `γ(α) = x + ∑_{ℓ=1}^j α^ℓ s_ℓ + o(α^j)` lies in `K` for all
-small `α > 0` (the arcs (12.1.4), (14.3.2) of [cartis2022evaluation]; the tuple `(s_1, …, s_j)`
-belongs to the book's descriptor set `𝒟^j` of `K`). -/
+/-- A tuple $(s_1, \dots, s_j)$ is **feasible** for a set $K$ at $x$ up to order $j$ if some arc
+$$\gamma(\alpha) = x + \sum_{\ell=1}^j \alpha^\ell s_\ell + o(\alpha^j) \quad \text{as } \alpha
+  \to 0^+$$
+lies in $K$ for all sufficiently small $\alpha > 0$. These are the arcs (12.1.4) and (14.3.2) of
+[cartis2022evaluation], and the tuple is then in the descriptor set $\mathcal{D}^j$ of $K$. -/
 def IsFeasibleArc (K : Set E) (x : E) (j : ℕ) (s : ℕ → E) : Prop :=
   ∃ γ : ℝ → E, ((fun α => γ α - (x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ)) =o[𝓝[>] 0] fun α => α ^ j) ∧
     ∀ᶠ α in 𝓝[>] 0, γ α ∈ K
 
 variable {K K' : Set E} {x : E} {j : ℕ} {s : ℕ → E}
 
+/-- A tuple that is feasible for $K$ at $x$ is feasible for every set $K' \supseteq K$. -/
 theorem IsFeasibleArc.mono (h : IsFeasibleArc K x j s) (hKK' : K ⊆ K') : IsFeasibleArc K' x j s :=
   let ⟨γ, hγ, hK⟩ := h
   ⟨γ, hγ, hK.mono fun _ hα => hKK' hα⟩
 
-/-- In the whole space every tuple is feasible: take the polynomial arc itself. -/
+/-- In the whole space every tuple is feasible: the polynomial arc itself is a feasible arc. -/
 theorem isFeasibleArc_univ (x : E) (j : ℕ) (s : ℕ → E) : IsFeasibleArc Set.univ x j s :=
   ⟨fun α => x + ∑ ℓ ∈ Icc 1 j, α ^ ℓ • s ℓ, by simp,
     Eventually.of_forall fun _ => Set.mem_univ _⟩
 
-/-- For a convex set `X ∋ x`, a first-order direction `s_1` with `x + t s_1 ∈ X` for some `t > 0`
-is feasible (the segment is an arc). -/
+/-- Let $X$ be convex and $x \in X$. If $x + t s_1 \in X$ for some $t > 0$, then $s_1$ is feasible
+for $X$ at $x$ up to order $1$: the segment is a feasible arc. -/
 theorem isFeasibleArc_one_of_convex {X : Set E} (hX : Convex ℝ X) (hx : x ∈ X) {t : ℝ}
     (ht : 0 < t) (hxt : x + t • s 1 ∈ X) : IsFeasibleArc X x 1 s := by
   refine ⟨fun α => x + α • s 1, by simp, ?_⟩
@@ -461,9 +521,11 @@ theorem isFeasibleArc_one_of_convex {X : Set E} (hX : Convex ℝ X) (hx : x ∈ 
     ⟨div_nonneg hα.1.le ht.le, (div_le_one ht).2 hα.2.le⟩
   rwa [smul_smul, div_mul_cancel₀ _ ht.ne'] at h
 
-/-- **Curve-based necessary condition along one feasible arc.** If `f` is `C^j` at `x` (`j ≥ 1`),
-`x` minimizes `f` locally on `K`, the tuple `s` is feasible for `K` at `x` up to order `j` and the
-coefficients `c_1, …, c_{j-1}` vanish, then `c_j ≥ 0`. -/
+/-- **Curve-based necessary condition along one feasible arc.** Let $j \ge 1$, let
+$f : E \to \mathbb{R}$ be $j$ times continuously differentiable at $x$, and let $x$ be a local
+minimizer of $f$ on $K$. If the tuple $s$ is feasible for $K$ at $x$ up to order $j$ and the
+curve coefficients of $f$ satisfy $c_1 = \dots = c_{j-1} = 0$, then $c_j \ge 0$. This is the
+common step of the proofs of Theorems 12.1.1 and 14.3.1 of [cartis2022evaluation]. -/
 theorem curveCoeff_nonneg_of_isLocalMinOn {f : E → ℝ} (hf : ContDiffAt ℝ j f x) (hj : 1 ≤ j)
     (hmin : IsLocalMinOn f K x) (harc : IsFeasibleArc K x j s)
     (hzero : ∀ i ∈ Ico 1 j, curveCoeff (ftaylorSeries ℝ f x) s i = 0) :
@@ -474,10 +536,11 @@ theorem curveCoeff_nonneg_of_isLocalMinOn {f : E → ℝ} (hf : ContDiffAt ℝ j
   exact nonneg_of_isLittleO_poly_of_le hj (isLittleO_comp_curve_sub_curveCoeff hf hγ)
     (hγK.eventually hmin) hzero
 
-/-- `IsCurveCritical D q`: the curve-based conditions of order `1, …, q` hold for the derivative
-data `D`: for every `j ∈ [1, q]` and every `s`, if `c_1 = ⋯ = c_{j-1} = 0` then `c_j ≥ 0`, with
-`c_i = curveCoeff D s i` ([cartis2022evaluation], (12.1.6)–(12.1.7)). For
-`D = ftaylorSeries ℝ f x` this is the book's "`x` is a `q`-th order minimizer". -/
+/-- The derivative data $D$ satisfy the **curve-based conditions of order** $1, \dots, q$ if for
+every $j \in [1, q]$ and every sequence $s$ of vectors, $c_1 = \dots = c_{j-1} = 0$ implies
+$c_j \ge 0$, where $c_i$ are the curve coefficients (12.1.6) of [cartis2022evaluation]; compare
+(12.1.7). For the exact data `ftaylorSeries ℝ f x` of $f$ at $x$, this is the statement "$x$ is
+a $q$-th order minimizer" of Section 12.1.2 of the source. -/
 def IsCurveCritical (D : FormalMultilinearSeries ℝ E ℝ) (q : ℕ) : Prop :=
   ∀ j ∈ Icc 1 q, ∀ s : ℕ → E, (∀ i ∈ Ico 1 j, curveCoeff D s i = 0) → 0 ≤ curveCoeff D s j
 
@@ -485,10 +548,12 @@ namespace IsCurveCritical
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {q : ℕ}
 
+/-- The curve-based conditions of order up to $q$ imply those of order up to $q' \le q$. -/
 theorem mono {q' : ℕ} (h : IsCurveCritical D q) (hq : q' ≤ q) : IsCurveCritical D q' :=
   fun j hj => h j (Icc_subset_Icc_right hq hj)
 
-/-- First-order condition: the first derivative vanishes. -/
+/-- First-order condition: if the curve-based conditions hold up to order $q \ge 1$, then $D_1 = 0$.
+-/
 theorem apply_one_eq_zero (h : IsCurveCritical D q) (hq : 1 ≤ q) : D 1 = 0 := by
   have key : ∀ d : E, 0 ≤ D 1 fun _ => d := fun d => by
     have := h 1 (mem_Icc.2 ⟨le_rfl, hq⟩) (fun _ => d) (by simp)
@@ -503,7 +568,8 @@ theorem apply_one_eq_zero (h : IsCurveCritical D q) (hq : 1 ≤ q) : D 1 = 0 := 
   rw [h2] at h1
   simpa using h1
 
-/-- Second-order condition: the second derivative is nonnegative on the diagonal. -/
+/-- Second-order condition: if the curve-based conditions hold up to order $q \ge 2$, then
+$D_2[d]^2 \ge 0$ for every $d$. -/
 theorem apply_two_nonneg (h : IsCurveCritical D q) (hq : 2 ≤ q) (d : E) :
     0 ≤ D 2 fun _ => d := by
   have h1 := h.apply_one_eq_zero (by omega)
@@ -514,8 +580,9 @@ theorem apply_two_nonneg (h : IsCurveCritical D q) (hq : 2 ≤ q) (d : E) :
   rw [curveCoeff_two, h1] at this
   simpa using this
 
-/-- Third-order condition: `D_3[d]^3 = 0` on the null directions `D_2[d]^2 = 0`
-([cartis2022evaluation], discussion after Theorem 12.1.1, with `s_1 = ±d`). -/
+/-- Third-order condition: if the curve-based conditions hold up to order $q \ge 3$ and
+$D_2[d]^2 = 0$, then $D_3[d]^3 = 0$. This is the discussion after Theorem 12.1.1 of
+[cartis2022evaluation], with $s_1 = \pm d$. -/
 theorem apply_three_eq_zero (h : IsCurveCritical D q) (hq : 3 ≤ q) {d : E}
     (hd : (D 2 fun _ => d) = 0) : (D 3 fun _ => d) = 0 := by
   have h1 := h.apply_one_eq_zero (by omega)
@@ -547,15 +614,15 @@ theorem apply_three_eq_zero (h : IsCurveCritical D q) (hq : 3 ≤ q) {d : E}
 
 end IsCurveCritical
 
-/-- `IsCurveCritical D 1` holds exactly when the first derivative vanishes. -/
+/-- The curve-based conditions of order $1$ hold if and only if $D_1 = 0$. -/
 theorem isCurveCritical_one_iff {D : FormalMultilinearSeries ℝ E ℝ} :
     IsCurveCritical D 1 ↔ D 1 = 0 := by
   refine ⟨fun h => h.apply_one_eq_zero le_rfl, fun h j hj s _ => ?_⟩
   obtain rfl : j = 1 := by simp at hj; omega
   simp [curveCoeff_one, h]
 
-/-- `IsCurveCritical D 2` holds exactly when the first derivative vanishes and the second one is
-nonnegative on the diagonal (no symmetry of `D 2` needed). -/
+/-- The curve-based conditions of order up to $2$ hold if and only if $D_1 = 0$ and $D_2[d]^2 \ge 0$
+for every $d$. No symmetry of $D_2$ is needed. -/
 theorem isCurveCritical_two_iff {D : FormalMultilinearSeries ℝ E ℝ} :
     IsCurveCritical D 2 ↔ D 1 = 0 ∧ ∀ d, 0 ≤ D 2 fun _ => d := by
   refine ⟨fun h => ⟨h.apply_one_eq_zero (by norm_num), h.apply_two_nonneg le_rfl⟩,
@@ -565,23 +632,24 @@ theorem isCurveCritical_two_iff {D : FormalMultilinearSeries ℝ E ℝ} :
   · rw [curveCoeff_two, h1]
     simpa using h2 (s 1)
 
-/-- **Curve-based necessary conditions for an unconstrained local minimum**
-([cartis2022evaluation], Theorem 12.1.1). If `f` is `C^q` at a local minimizer `x`, then `x` is a
-`q`-th order minimizer: for every `j ∈ [1, q]` and every `s_1, …, s_j` with
-`c_1 = ⋯ = c_{j-1} = 0`, `c_j ≥ 0`, where `c_i` are the coefficients (12.1.6).
+/-- **Curve-based necessary conditions for an unconstrained local minimum**, Theorem 12.1.1 of
+[cartis2022evaluation]. Let $f : E \to \mathbb{R}$ be $q$ times continuously differentiable at a
+local minimizer $x$. Then $x$ is a $q$-th order minimizer: for every $j \in [1, q]$ and every
+sequence $s$ of vectors with $c_1 = \dots = c_{j-1} = 0$, the curve coefficient satisfies
+$c_j \ge 0$, where $c_i$ are the coefficients (12.1.6) of $f$ at $x$.
 
-The book restricts (12.1.6)–(12.1.7) to tuples with all `s_i ≠ 0`; here every tuple `s` is
-allowed, so the conclusion is asserted for more tuples and the statement is stronger. Tuples with
-zero entries are what give the classical conditions, e.g. the ray `s_1 = d`, `s_i = 0` for
-`i ≥ 2`. -/
+The source restricts (12.1.6)–(12.1.7) to tuples with all $s_i \neq 0$. Here every tuple is
+allowed, so the statement is stronger. The tuples with zero entries give the classical
+conditions, for example the ray $s_1 = d$, $s_i = 0$ for $i \ge 2$. -/
 theorem _root_.IsLocalMin.isCurveCritical {f : E → ℝ} {x : E} {q : ℕ} (hf : ContDiffAt ℝ q f x)
     (hmin : IsLocalMin f x) : IsCurveCritical (ftaylorSeries ℝ f x) q := fun j hj s hzero =>
   curveCoeff_nonneg_of_isLocalMinOn (hf.of_le (by exact_mod_cast (mem_Icc.1 hj).2))
     (mem_Icc.1 hj).1 (isLocalMinOn_univ_iff.2 hmin) (isFeasibleArc_univ x j s) hzero
 
-/-- **Expansion of the constraints along a feasible arc** ([cartis2022evaluation], (14.3.3)). If
-`c` is `C^j` at `x` and `s` is feasible up to order `j` for a set on which `c`
-vanishes, then all coefficients `c_1, …, c_j` of `c` along `s` vanish. -/
+/-- **Expansion of the constraints along a feasible arc**, (14.3.3) of [cartis2022evaluation]. Let
+$c : E \to F$ be $j$ times continuously differentiable at $x$, and let the tuple $s$ be feasible
+up to order $j$ at $x$ for the set $X \cap \{z \mid c(z) = 0\}$. Then the curve coefficients of
+$c$ satisfy $c_1 = \dots = c_j = 0$. -/
 theorem curveCoeff_eq_zero_of_isFeasibleArc {c : E → F} (hc : ContDiffAt ℝ j c x) {X : Set E}
     (harc : IsFeasibleArc (X ∩ {z | c z = 0}) x j s) :
     ∀ i ∈ Icc 1 j, curveCoeff (ftaylorSeries ℝ c x) s i = 0 := by
@@ -599,18 +667,21 @@ theorem curveCoeff_eq_zero_of_isFeasibleArc {c : E → F} (hc : ContDiffAt ℝ j
   have hα0 : c (γ α) = 0 := hα.2
   simp [hα0, hcx]
 
-/-- **Curve-based necessary conditions for a constrained local minimum**
-([cartis2022evaluation], Theorem 14.3.1). Let `f : E → ℝ` and `c : E → F` be `C^q` at
-`x` with `c x = 0`, and let `x` be a local minimizer of `f` on `X ∩ {c = 0}`. For any multiplier
-`y`, write `ℒ(z) = f(z) - ⟪y, c(z)⟫`. If `j ∈ [1, q]`, `s` is feasible for `X ∩ {c = 0}` up to
-order `j`, and the coefficients `c_1, …, c_{j-1}` of `ℒ` along `s` vanish, then the coefficient
-`c_j` of `ℒ` is nonnegative (14.3.4).
+/-- **Curve-based necessary conditions for a constrained local minimum**, Theorem 14.3.1 of
+[cartis2022evaluation]. Let $F$ be a real inner product space, let $f : E \to \mathbb{R}$ and
+$c : E \to F$ be $q$ times continuously differentiable at $x$ with $c(x) = 0$, and let $x$ be a
+local minimizer of $f$ on $X \cap \{z \mid c(z) = 0\}$. For a multiplier $y \in F$, let
+$\mathcal{L}(z) = f(z) - \langle y, c(z) \rangle$. Let $j \in [1, q]$, let the tuple $s$ be
+feasible for $X \cap \{z \mid c(z) = 0\}$ at $x$ up to order $j$, and let the curve coefficients
+of $\mathcal{L}$ satisfy $c_1 = \dots = c_{j-1} = 0$. Then the curve coefficient $c_j$ of
+$\mathcal{L}$ is nonnegative, which is (14.3.4).
 
-The arc must stay in the whole feasible set `X ∩ {c = 0}`; (14.3.3) then holds by
-`curveCoeff_eq_zero_of_isFeasibleArc`. Arcs that only stay in `X` and satisfy (14.3.3) do not
-suffice: for `X = ℝ²`, `c(x) = x₁² + x₂²`, `f(x) = -x₁`, `x = 0` is the only feasible point,
-(14.3.3) holds for every `s_1` and X.CQ holds for `q = 1`, yet (14.3.4) for `j = 1`, `s_1 = e_1`
-reads `-1 ≥ 0`. -/
+The arc must stay in the whole feasible set $X \cap \{c = 0\}$; then (14.3.3) holds by
+`Optimization.curveCoeff_eq_zero_of_isFeasibleArc`. Arcs that only stay in $X$ and satisfy
+(14.3.3) do not suffice. For $X = \mathbb{R}^2$, $c(x) = x_1^2 + x_2^2$ and $f(x) = -x_1$, the
+point $x = 0$ is the only feasible point, (14.3.3) holds for every $s_1$, and the constraint
+qualification X.CQ of the source holds for $q = 1$. But (14.3.4) for $j = 1$ and $s_1 = e_1$
+reads $-1 \ge 0$. -/
 theorem curveCoeff_lagrangian_nonneg_of_isLocalMinOn {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace ℝ F] {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ}
     (hf : ContDiffAt ℝ q f x) (hc : ContDiffAt ℝ q c x) (hcx : c x = 0)
@@ -629,15 +700,19 @@ theorem curveCoeff_lagrangian_nonneg_of_isLocalMinOn {F : Type*} [NormedAddCommG
 
 end Necessary
 
-/-! ### Coefficients from explicit expansions
+/-!
+### Coefficients from explicit expansions
 
 The curve coefficients (12.1.6), the diagonal derivatives and the Taylor polynomials of a function
-can be read off an explicit expansion of the function along a polynomial curve or a ray (used for
-the polynomial examples of [cartis2022evaluation], §12.1). -/
+can be read off an explicit expansion of the function along a polynomial curve or a ray. This is
+used for the polynomial examples of Section 12.1 of [cartis2022evaluation].
+-/
 
 section Expansion
 
-/-- A function of the form `α^{q+1} P(α)` with `P` continuous at `0` is `o(α^q)`. -/
+/-- Let $P : \mathbb{R} \to \mathbb{R}$ be continuous at $0$. If
+$r(\alpha) = \alpha^{q+1} P(\alpha)$ for all $\alpha$, then $r(\alpha) = o(\alpha^q)$ as
+$\alpha \to 0^+$. -/
 theorem isLittleO_of_eq_pow_succ_mul {r P : ℝ → ℝ} {q : ℕ} (hP : ContinuousAt P 0)
     (h : ∀ α, r α = α ^ (q + 1) * P α) : r =o[𝓝[>] 0] fun α => α ^ q := by
   have hP1 : P =O[𝓝 0] fun _ => (1 : ℝ) := hP.tendsto.isBigO_one ℝ
@@ -647,9 +722,12 @@ theorem isLittleO_of_eq_pow_succ_mul {r P : ℝ → ℝ} {q : ℕ} (hP : Continu
     exact this.trans_isLittleO (Asymptotics.isLittleO_pow_pow (Nat.lt_succ_self q))
   exact (this.mono nhdsWithin_le_nhds).congr_left fun α => (h α).symm
 
-/-- **Curve coefficients from an expansion.** If `f` is `C^q` at `x` and
-`f(x + ∑_{ℓ=1}^q α^ℓ s_ℓ) = f(x) + ∑_{i=1}^q a_i α^i + o(α^q)` as `α → 0⁺`, then the
-coefficients (12.1.6) are `c_i = a_i` for `i ∈ [1, q]`. -/
+/-- **Curve coefficients from an expansion.** Let $f : E \to \mathbb{R}$ be $q$ times continuously
+differentiable at $x$, and suppose that
+$$f\Bigl(x + \sum_{\ell=1}^q \alpha^\ell s_\ell\Bigr) = f(x) + \sum_{i=1}^q a_i \alpha^i +
+  o(\alpha^q) \quad \text{as } \alpha \to 0^+.$$
+Then the curve coefficients (12.1.6) of $f$ at $x$ are $c_i = a_i$ for $i \in [1, q]$. This is
+used in Example 12.1.2 of [cartis2022evaluation]. -/
 theorem curveCoeff_eq_of_isLittleO {f : E → ℝ} {x : E} {q : ℕ} {s : ℕ → E} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ q f x)
     (h : (fun α => f (x + ∑ ℓ ∈ Finset.Icc 1 q, α ^ ℓ • s ℓ) - f x -
@@ -665,9 +743,10 @@ theorem curveCoeff_eq_of_isLittleO {f : E → ℝ} {x : E} {q : ℕ} {s : ℕ �
       ring)
   exact fun i hi => sub_eq_zero.1 (this i hi)
 
-/-- **Diagonal derivatives from an expansion along a ray.** If `f` is `C^N` at `x` and
-`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i + o(t^N)` as `t → 0⁺`, then `∇^i f(x)[d]^i = i! a_i` for
-`i ∈ [1, N]`. -/
+/-- **Diagonal derivatives from an expansion along a ray.** Let $f : E \to \mathbb{R}$ be $N$ times
+continuously differentiable at $x$, and suppose that
+$$f(x + t d) = f(x) + \sum_{i=1}^N a_i t^i + o(t^N) \quad \text{as } t \to 0^+.$$
+Then $\nabla^i f(x)[d]^i = i! \, a_i$ for $i \in [1, N]$. -/
 theorem iteratedFDeriv_apply_diag_eq_of_isLittleO {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ N f x)
     (h : (fun t => f (x + t • d) - f x - ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) =o[𝓝[>] 0]
@@ -692,9 +771,9 @@ theorem iteratedFDeriv_apply_diag_eq_of_isLittleO {f : E → ℝ} {x d : E} {N :
   change _ = (i ! : ℝ) * ((i ! : ℝ)⁻¹ * iteratedFDeriv ℝ i f x fun _ => d)
   field_simp
 
-/-- **Diagonal derivatives from a polynomial along a ray.** If `f` is `C^N` at `x` and
-`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i` for all small `t > 0`, then `∇^i f(x)[d]^i = i! a_i` for
-`i ∈ [1, N]`. -/
+/-- **Diagonal derivatives from a polynomial along a ray.** Let $f : E \to \mathbb{R}$ be $N$ times
+continuously differentiable at $x$, and suppose that $f(x + t d) = f(x) + \sum_{i=1}^N a_i t^i$
+for all sufficiently small $t > 0$. Then $\nabla^i f(x)[d]^i = i! \, a_i$ for $i \in [1, N]$. -/
 theorem iteratedFDeriv_apply_diag_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ N f x)
     (h : ∀ᶠ t in 𝓝[>] (0 : ℝ), f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) :
@@ -705,9 +784,11 @@ theorem iteratedFDeriv_apply_diag_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ}
       rw [hα]
       ring) EventuallyEq.rfl
 
-/-- **Taylor decrements of a polynomial along a ray.** If `f` is `C^N` at `x` and
-`f(x + s d) = f(x) + ∑_{i=1}^N a_i s^i` for all `s`, then `ΔT_j(x, d) = -∑_{i=1}^j a_i` for
-`j ≤ N`. -/
+/-- **Taylor decrements of a polynomial along a ray.** Let $g : E \to \mathbb{R}$ be $N$ times
+continuously differentiable at $x$, and suppose that $g(x + s d) = g(x) + \sum_{i=1}^N a_i s^i$
+for all $s \in \mathbb{R}$. Then for $j \le N$ the Taylor decrement is
+$$\Delta T_j(x, d) = T_j(x, 0) - T_j(x, d) = -\sum_{i=1}^j a_i.$$
+-/
 theorem taylorDecrement_eq_of_poly {g : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hg : ContDiffAt ℝ N g x)
     (h : ∀ s : ℝ, g (x + s • d) = g x + ∑ i ∈ Finset.Icc 1 N, s ^ i * a i) {j : ℕ}
@@ -723,9 +804,10 @@ theorem taylorDecrement_eq_of_poly {g : E → ℝ} {x d : E} {N : ℕ} {a : ℕ 
   rw [this]
   field_simp
 
-/-- **Taylor polynomials from an expansion along a ray.** If `f` is `C^N` at `x` and
-`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i + o(t^N)` as `t → 0⁺`, then for `p ≤ N`,
-`T_{f,p}(x, d) = f(x) + ∑_{i=1}^p a_i`. -/
+/-- **Taylor polynomials from an expansion along a ray.** Let $f : E \to \mathbb{R}$ be $N$ times
+continuously differentiable at $x$, and suppose that
+$$f(x + t d) = f(x) + \sum_{i=1}^N a_i t^i + o(t^N) \quad \text{as } t \to 0^+.$$
+Then for $p \le N$, the Taylor polynomial satisfies $T_{f,p}(x, d) = f(x) + \sum_{i=1}^p a_i$. -/
 theorem taylorPolynomial_eq_of_isLittleO {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ N f x)
     (h : (fun t => f (x + t • d) - f x - ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) =o[𝓝[>] 0]
@@ -743,9 +825,10 @@ theorem taylorPolynomial_eq_of_isLittleO {f : E → ℝ} {x d : E} {N : ℕ} {a 
   have hfac : (i ! : ℝ) ≠ 0 := by positivity
   field_simp
 
-/-- **Taylor polynomials of polynomials along a ray.** If `f` is `C^N` at `x` and
-`f(x + t d) = f(x) + ∑_{i=1}^N a_i t^i` for all small `t > 0`, then for `p ≤ N`,
-`T_{f,p}(x, d) = f(x) + ∑_{i=1}^p a_i`. -/
+/-- **Taylor polynomials of polynomials along a ray.** Let $f : E \to \mathbb{R}$ be $N$ times
+continuously differentiable at $x$, and suppose that $f(x + t d) = f(x) + \sum_{i=1}^N a_i t^i$
+for all sufficiently small $t > 0$. Then for $p \le N$,
+$T_{f,p}(x, d) = f(x) + \sum_{i=1}^p a_i$. -/
 theorem taylorPolynomial_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ N f x)
     (h : ∀ᶠ t in 𝓝[>] (0 : ℝ), f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) {p : ℕ}
@@ -756,8 +839,9 @@ theorem taylorPolynomial_eq_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ
       rw [hα]
       ring) EventuallyEq.rfl) hp
 
-/-- If `f(x + t d)` is a polynomial of degree at most `N` in `t` and `f` is `C^N` at `x`, then
-`T_{f,N}(x, d) = f(x + d)`. -/
+/-- Let $f : E \to \mathbb{R}$ be $N$ times continuously differentiable at $x$, and suppose that
+$f(x + t d) = f(x) + \sum_{i=1}^N a_i t^i$ for all $t \in \mathbb{R}$. Then
+$T_{f,N}(x, d) = f(x + d)$. -/
 theorem taylorPolynomial_eq_self_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a : ℕ → ℝ}
     (hf : ContDiffAt ℝ N f x)
     (h : ∀ t : ℝ, f (x + t • d) = f x + ∑ i ∈ Finset.Icc 1 N, t ^ i * a i) :
@@ -766,8 +850,8 @@ theorem taylorPolynomial_eq_self_of_poly {f : E → ℝ} {x d : E} {N : ℕ} {a 
   simp
 
 omit [NormedSpace ℝ E] in
-/-- A point is not a local minimizer if `f` is smaller along a curve (or a sequence) tending to
-it. -/
+/-- If $\gamma(t) \to x$ along a nontrivial filter and $f(\gamma(t)) < f(x)$ eventually, then $x$ is
+not a local minimizer of $f$. -/
 theorem not_isLocalMin_of_curve {ι : Type*} {l : Filter ι} [l.NeBot] {f : E → ℝ} {x : E}
     {γ : ι → E} (hγ : Tendsto γ l (𝓝 x)) (hneg : ∀ᶠ t in l, f (γ t) < f x) :
     ¬ IsLocalMin f x := fun hmin => by

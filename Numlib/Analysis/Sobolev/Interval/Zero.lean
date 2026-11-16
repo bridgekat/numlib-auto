@@ -14,66 +14,94 @@ import Numlib.Analysis.Sobolev.Interval.Higher
 import Numlib.Analysis.Sobolev.Zero
 
 /-!
-# The space `W_0^{1,p}(I)`
+# The spaces $W_0^{m,p}(I)$ on an open interval
 
-The closure `W_0^{1,p}(I)` of the test functions in `W^{1,p}(I)`, [brezis2011functional] §8.3,
-for every exponent `1 ≤ p ≤ ∞` (the boundary characterization for `p < ∞`) and every open
-interval `I`. The space `SobolevIntervalLpZero m p I` itself is defined in
-`Numlib/Analysis/Sobolev/Interval/Basic.lean` as the multi-index `SobolevMultiIndexZero`.
+Let $I \subseteq \mathbb{R}$ be an open interval, bounded or not, and let $1 \le p \le \infty$. The
+space $W_0^{m,p}(I)$ is the closure of the test functions $C_0^\infty(I)$ in $W^{m,p}(I)$, as in
+[brezis2011functional], §8.3. For $u \in W^{1,p}(I)$, write $\tilde u$ for its continuous
+representative on $\bar I$ and $u'$ for its weak derivative. This file proves the boundary
+characterization of Theorem 8.12 of [brezis2011functional]: for $1 \le p < \infty$,
+$u \in W_0^{1,p}(I)$ if and only if $\tilde u = 0$ on $\partial I$. It also proves Poincaré's
+inequality on $W_0^{1,p}(a, b)$ (Proposition 8.13), Remarks 9, 13, 14 (ii) and 16 (i) of Chapter 8,
+the Poincaré–Wirtinger inequalities of Problem 47 A and C, and the characterization of
+$W_0^{m+1,p}(I)$ of Remark 18: for $1 \le p < \infty$, $u \in W_0^{m+1,p}(I)$ if and only if
+$u = Du = \dots = D^m u = 0$ on $\partial I$.
 
-## Main statements
+The space itself is `SobolevIntervalLpZero m p I` of `Numlib.Analysis.Sobolev.Interval.Basic`, the
+multi-index space `SobolevMultiIndexZero` in one variable.
 
-* `SobolevIntervalLp.evalCLM'`: evaluation of the continuous representative at a point of `Ī`
-  as a bounded linear functional, and `SobolevIntervalLpZero.rep_frontier_eq_zero` (Theorem 8.12,
-  the easy direction): an element of `W_0^{1,p}(I)` vanishes on `∂I`.
-* `SobolevIntervalLpZero.norm_deriv_zero_le`, `norm_le_mul_norm_deriv`,
-  `eLpNorm_le_mul_eLpNorm_deriv` (**Proposition 8.13, Poincaré's inequality**): for
-  `u ∈ W_0^{1,p}(a, b)`, `‖u‖_p ≤ (b - a)/p^{1/p} ‖u'‖_p` — the constant is `(b - a)/√2` at
-  `p = 2` and `b - a` at `p = ∞` — so the seminorm `‖u'‖_p` is a norm on `W_0^{1,p}(a, b)`
-  equivalent to the `W^{1,p}` norm; from the elementary form
-  `SobolevIntervalLp.eLpNorm_integral_le` of `Numlib/Analysis/Sobolev/Interval/Higher.lean`.
-* `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded` (Theorem 8.12, converse,
-  bounded interval) and `mem_sobolevIntervalLpZero_iff` (**Theorem 8.12**):
-  `u ∈ W_0^{1,p}(I) ↔ u = 0 on ∂I`, `1 ≤ p < ∞`, on every open interval;
-  `sobolevIntervalLpZero_top` (Remark 13): `W_0^{1,p}(ℝ) = W^{1,p}(ℝ)`;
-  `SobolevIntervalLpZero.mem_of_hasCompactSupport` (Remark 14 (ii));
-  `SobolevIntervalLp.exists_not_mem_closure_testFunctions` (Remark 9).
-* `SobolevIntervalLp.cutoff` and `tendsto_cutoff`: the cut-off sequence `ζ_n u → u` in
-  `W^{1,p}(I)` of the proof of Theorem 8.7, used to reduce the unbounded case of Theorem 8.12 to
-  the bounded one.
-* `SobolevIntervalLp.abs_rep_sub_average_le`, `SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv`,
-  `SobolevIntervalLp.eLpNorm_sub_average_le` (Problem 47 A.1, A.4, A.6): the Poincaré–Wirtinger
-  inequalities `‖u - ū‖_∞ ≤ ‖u'‖_1` and `‖u‖_∞ ≤ ½ ‖u'‖_1` on `W_0^{1,1}`;
-  `SobolevIntervalLp.integral_abs_sub_average_le` and `integral_abs_sub_average_le_half`
-  (Problem 47 C.1, C.2): `‖u - ū‖_{L¹(0,1)} ≤ 2 ∫_0^1 |u'(t)| t (1 - t) dt ≤ ½ ‖u'‖_{L¹(0,1)}`,
-  by Tonelli's theorem on the square `(0, 1)²`.
-* `mem_sobolevIntervalLpZero_higher_iff_of_bounded` (Remark 18, bounded interval):
-  `u ∈ W_0^{m+1,p}(a, b) ↔ u = Du = ⋯ = D^m u = 0 on {a, b}`, `1 ≤ p < ∞`, by induction on `m`
-  from Theorem 8.12 (`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero` is the induction
-  step); `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero` is the easy direction on every `I`;
-  `mem_sobolevIntervalLpZero_higher_iff` (**Remark 18** on every open interval): the reduction
-  of the unbounded case to the bounded one through the cut-offs `ζ_n u` at every order
-  (`SobolevIntervalLp.exists_cutoff_tendsto`, from the Leibniz formula
-  `hasWeakIteratedDerivOn_sum_choose_mul` for the weak derivatives of a product by a smooth
-  function and its element form `SobolevIntervalLp.exists_contDiff_mul`) and the transfer
-  `SobolevIntervalLpZero.mem_of_restrictL_mem` of membership in `W_0^{m,p}` from a subinterval.
+## Main definitions
 
-## Design
+* `SobolevIntervalLp.evalCLM'`: evaluation $u \mapsto \tilde u(x)$ at a point $x \in \bar I$, as a
+  bounded linear functional on $W^{1,p}(I)$.
+* `TestFunction.toSobolevIntervalLp` and `SobolevIntervalLp.ofContDiffOn`: a test function, and a
+  $C^1$ function in $L^p(I)$ with derivative in $L^p(I)$, as elements of $W^{1,p}(I)$.
+* `SobolevIntervalLp.cutoffFn` and `SobolevIntervalLp.cutoff`: the cut-off functions
+  $\zeta_n(x) = \zeta(x / (n + 1))$ and the products $\zeta_n u$ of the proof of Theorem 8.7 of
+  [brezis2011functional].
+* `SobolevIntervalLp.restrict`: the restriction of $u \in W^{1,p}(I)$ to an open subset of $I$.
 
-* `u = 0` on `∂I` is `∀ x ∈ frontier (I : Set ℝ), rep u x = 0`; the frontier of an open interval
-  is its set of finite endpoints (empty for `ℝ`, so Remark 13 is the instance `I = ℝ`).
-* The converse of Theorem 8.12 is not proved by the book's truncation `G(nu)/n`. On a bounded
-  interval the derivative `u'` has zero mean and is approximated in `L^p` by a test function of
-  zero mean, whose primitive is a test function converging to `u` by Poincaré's inequality (the
-  proof of `SobolevIntervalZero.mem_of_rep_eq_zero` of `Numlib/Analysis/Sobolev/Interval.lean`
-  at `p = 2`). On an unbounded interval the cut-offs `ζ_n u` vanish off the bounded interval
-  `I ∩ (-2n, 2n)`, on which they lie in `W_0^{1,p}` by the bounded case
-  (`SobolevIntervalLpZero.mem_of_forall_eq_zero_off_Ioo`, the restriction argument), and
-  `ζ_n u → u` in `W^{1,p}(I)`; Remark 14 (ii) then follows from Theorem 8.12. At order `m + 1`
-  the same reduction needs the weak derivatives of `ζ_n u`, given by the Leibniz formula
-  `D^j (ζ_n u) = ∑_{i ≤ j} C(j, i) ζ_n^{(j−i)} D^i u`; the module imports
-  `Numlib/Analysis/Sobolev/Zero.lean` for the every-order tools of the transfer (restriction,
-  the vanishing of the weak derivatives where the function vanishes).
+## Main results
+
+* `SobolevIntervalLpZero.rep_frontier_eq_zero`: an element of $W_0^{1,p}(I)$ vanishes on
+  $\partial I$.
+* `SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv`, `SobolevIntervalLpZero.norm_deriv_zero_le`
+  and `SobolevIntervalLpZero.norm_le_mul_norm_deriv`: Poincaré's inequality
+  $\|u\|_p \le (b - a) p^{-1/p} \|u'\|_p$ on $W_0^{1,p}(a, b)$, so $\|u'\|_p$ is a norm on
+  $W_0^{1,p}(a, b)$ equivalent to the $W^{1,p}$ norm.
+* `SobolevIntervalLp.exists_not_mem_closure_testFunctions`: the constant $1$ lies in $W^{1,p}(a, b)$
+  but not in $W_0^{1,p}(a, b)$ (Remark 9).
+* `SobolevIntervalLp.abs_rep_sub_average_le`, `SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv`
+  and `SobolevIntervalLp.eLpNorm_sub_average_le`: the Poincaré–Wirtinger inequalities
+  $\|u - \bar u\|_\infty \le \|u'\|_1$, and $\|u\|_\infty \le \frac12 \|u'\|_1$ on
+  $W_0^{1,1}(a, b)$, with their $L^p$ forms (Problem 47 A.1, A.4, A.6).
+* `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded` and
+  `mem_sobolevIntervalLpZero_iff`: Theorem 8.12 on a bounded interval and on every open interval.
+* `sobolevIntervalLpZero_top`: $W_0^{1,p}(\mathbb{R}) = W^{1,p}(\mathbb{R})$ for $p < \infty$
+  (Remark 13).
+* `SobolevIntervalLpZero.mem_of_hasCompactSupport`: an element whose representative vanishes off a
+  compact subset of $I$ lies in $W_0^{1,p}(I)$ (Remark 14 (ii)).
+* `mem_sobolevIntervalLpZero_iff_indicator_mem`: $u \in W_0^{1,p}(I)$ if and only if its zero
+  extension lies in $W^{1,p}(\mathbb{R})$ (Remark 16 (i)).
+* `SobolevIntervalLp.integral_abs_sub_average_le` and
+  `SobolevIntervalLp.integral_abs_sub_average_le_half`: $\|u - \bar u\|_{L^1(0,1)} \le 2 \int_0^1
+  |u'(t)| \, t (1 - t) \, dt \le \frac12 \|u'\|_{L^1(0,1)}$ (Problem 47 C.1, C.2).
+* `SobolevIntervalLp.tendsto_cutoff_smul` and `SobolevIntervalLp.exists_cutoff_tendsto`:
+  $\zeta_n u \to u$ in $W^{1,p}(I)$, and in $W^{m,p}(I)$, for $p < \infty$.
+* `mem_sobolevIntervalLpZero_higher_iff_of_bounded` and `mem_sobolevIntervalLpZero_higher_iff`:
+  Remark 18 on a bounded interval and on every open interval.
+
+## Proof outline
+
+The converse direction of Theorem 8.12 does not use the truncation $G(nu)/n$ of the source. On a
+bounded interval $(a, b)$ the derivative $u'$ has mean zero, since
+$\tilde u(b) - \tilde u(a) = \int_a^b u'$. It is approximated in $L^p$ by a test function of mean
+zero, whose primitive is a test function that converges to $u$ by Poincaré's inequality. On an
+unbounded interval, the cut-offs $\zeta_n u$ vanish off the bounded interval
+$I \cap (-2(n+1), 2(n+1))$, so they lie in $W_0^{1,p}(I)$ by the bounded case and a restriction
+argument, and $\zeta_n u \to u$ in $W^{1,p}(I)$. Remark 14 (ii) then follows from Theorem 8.12.
+
+Remark 18 is proved by induction on $m$ from Theorem 8.12, not by the Hardy-type inequalities of
+Exercise 8.9 of the source. On an unbounded interval the same reduction to the bounded case uses the
+weak derivatives of $\zeta_n u$, given by the Leibniz formula $D^j (\zeta_n u) = \sum_{i \le j}
+\binom{j}{i} \zeta_n^{(j-i)} D^i u$.
+
+## Implementation notes
+
+* An open interval is an open set `I : Opens ℝ` with the hypothesis `(I : Set ℝ).OrdConnected`. The
+  condition "$\tilde u = 0$ on $\partial I$" is `∀ x ∈ frontier (I : Set ℝ), SobolevIntervalLp.rep u
+  x = 0`. The frontier of an open interval is its set of finite endpoints. It is empty for
+  $I = \mathbb{R}$, so Remark 13 is the case $I = \mathbb{R}$ of Theorem 8.12.
+* For $u \in W^{m+1,p}(I)$ and $j \le m$, the derivative $D^j u$ is read as the element
+  `SobolevIntervalLp.derivOne u j` of $W^{1,p}(I)$, the pair $(D^j u, D^{j+1} u)$. Its boundary
+  values are those of its continuous representative.
+* The constant $p^{1/p}$ is `p.toReal ^ p.toReal⁻¹`, which is $1$ at $p = \infty$. Likewise $1/p$ is
+  `p.toReal⁻¹`, which is $0$ at $p = \infty$.
+* The cut-off $\zeta_n$ is $\zeta(x / (n + 1))$ for $n \in \mathbb{N}$, so that $n = 0$ is allowed.
+* The module imports `Numlib.Analysis.Sobolev.Zero` for the tools of every order: the restriction to
+  an open subset, and the vanishing of the weak derivatives where the function vanishes.
+* The case $p = 2$ of Theorem 8.12 on a bounded interval is `SobolevIntervalZero.mem_of_rep_eq_zero`
+  of `Numlib.Analysis.Sobolev.Interval`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -88,8 +116,13 @@ variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 /-! ### Evaluation at a point of the closure -/
 
 variable (p I) in
-/-- **Evaluation of the continuous representative** at a point `x ∈ Ī` as a bounded linear
-functional on `W^{1,p}(I)`, of norm at most `embeddingConst p I` (Theorem 8.8 (5)). -/
+/-- **Evaluation of the continuous representative** at a point $x \in \bar I$, for an open interval
+$I$ and $1 \le p \le \infty$: the bounded linear functional $u \mapsto \tilde u(x)$ on
+$W^{1,p}(I)$.
+
+Its norm is at most `SobolevIntervalLp.embeddingConst p I`, by the bound
+$|\tilde u(x)| \le C \|u\|_{W^{1,p}(I)}$ of Theorem 8.8 (5) of [brezis2011functional]
+(`SobolevIntervalLp.abs_rep_le`). -/
 def evalCLM' (hI : (I : Set ℝ).OrdConnected) {x : ℝ} (hx : x ∈ closure (I : Set ℝ)) :
     StrongDual ℝ (SobolevIntervalLp 1 p I) :=
   LinearMap.mkContinuous
@@ -99,18 +132,18 @@ def evalCLM' (hI : (I : Set ℝ).OrdConnected) {x : ℝ} (hx : x ∈ closure (I 
     rw [Real.norm_eq_abs]
     exact abs_rep_le hI u hx
 
-/-- Evaluation is the value of the continuous representative. -/
+/-- The functional `SobolevIntervalLp.evalCLM'` at $x$ maps $u$ to $\tilde u(x)$. -/
 @[simp]
 theorem evalCLM'_apply (hI : (I : Set ℝ).OrdConnected) {x : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (u : SobolevIntervalLp 1 p I) : evalCLM' p I hI hx u = rep u x := rfl
 
-/-- A point of the frontier of an open set is not in the set. -/
+/-- A point of the frontier of an open set $I \subseteq \mathbb{R}$ does not lie in $I$. -/
 theorem _root_.TopologicalSpace.Opens.notMem_of_mem_frontier {x : ℝ}
     (hx : x ∈ frontier (I : Set ℝ)) : x ∉ (I : Set ℝ) := by
   rw [I.isOpen.frontier_eq] at hx
   exact hx.2
 
-/-- A point of the frontier of an open set lies in its closure. -/
+/-- A point of the frontier of an open set $I \subseteq \mathbb{R}$ lies in the closure $\bar I$. -/
 theorem _root_.TopologicalSpace.Opens.mem_closure_of_mem_frontier {x : ℝ}
     (hx : x ∈ frontier (I : Set ℝ)) : x ∈ closure (I : Set ℝ) :=
   frontier_subset_closure hx
@@ -123,21 +156,28 @@ variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 open SobolevIntervalLp
 
-/-- An element of `W^{1,p}(I)` whose function is a test function lies in `W_0^{1,p}(I)`. -/
+/-- Let $1 \le p \le \infty$ and let $\varphi$ be a test function on $I$. An element
+$u \in W^{1,p}(I)$ whose function equals $\varphi$ almost everywhere on $I$ lies in
+$W_0^{1,p}(I)$. -/
 theorem mem_of_fn_ae_eq (φ : 𝓓(I, ℝ)) {u : SobolevIntervalLp 1 p I}
     (hu : fn u =ᵐ[volume.restrict I] φ) : u ∈ SobolevIntervalLpZero 1 p I :=
   SobolevMultiIndexZero.testFunctions_le ⟨φ, hu⟩
 
-/-- Every test function on `I` is the function of an element of `W_0^{1,p}(I)`. -/
+/-- Let $1 \le p \le \infty$. Every test function $\varphi$ on $I$ is, almost everywhere on $I$, the
+function of an element of $W_0^{1,p}(I)$. -/
 theorem exists_mem_fn_ae_eq (φ : 𝓓(I, ℝ)) :
     ∃ u ∈ SobolevIntervalLpZero 1 p I, fn u =ᵐ[volume.restrict I] φ :=
   let ⟨u, hu, hφ⟩ := TestFunction.exists_mem_sobolevMultiIndex_testFunctions
     (b := Module.Basis.singleton Unit ℝ) (k := 1) (p := p) φ
   ⟨u, SobolevMultiIndexZero.testFunctions_le hu, hφ⟩
 
-/-- **Theorem 8.12 of [brezis2011functional], the easy direction**: an element of `W_0^{1,p}(I)`
-vanishes on the boundary of `I`: evaluation at a point of `∂I` is a continuous linear functional
-on `W^{1,p}(I)` vanishing on the test functions, hence on their closure. -/
+/-- Let $I$ be an open interval and $1 \le p \le \infty$. If $u \in W_0^{1,p}(I)$, then
+$\tilde u(x) = 0$ for every $x \in \partial I$. This is the easy direction of Theorem 8.12 of
+[brezis2011functional].
+
+Evaluation at a point of $\partial I$ is a continuous linear functional on $W^{1,p}(I)$
+(`SobolevIntervalLp.evalCLM'`). It vanishes on the test functions, so it vanishes on their
+closure. -/
 theorem rep_frontier_eq_zero (hI : (I : Set ℝ).OrdConnected) {u : SobolevIntervalLp 1 p I}
     (hu : u ∈ SobolevIntervalLpZero 1 p I) {x : ℝ} (hx : x ∈ frontier (I : Set ℝ)) :
     rep u x = 0 := by
@@ -152,14 +192,16 @@ theorem rep_frontier_eq_zero (hI : (I : Set ℝ).OrdConnected) {u : SobolevInter
 
 end SobolevIntervalLpZero
 
-/-! ### Poincaré's inequality on `W_0^{1,p}(a, b)` -/
+/-! ### Poincaré's inequality on $W_0^{1,p}(a, b)$ -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
-/-- An element of `W^{1,p}(a, b)` whose representative vanishes at `a` is the primitive of its
-derivative: `ũ(x) = ∫_a^x u'` for `x ∈ [a, b]`. -/
+/-- Let $a < b$, $1 \le p \le \infty$, and let $u \in W^{1,p}(a, b)$ with $\tilde u(a) = 0$. Then
+$u$ is the primitive of its derivative:
+$$\tilde u(x) = \int_a^x u'(t) \, dt \qquad\text{for } x \in [a, b].$$
+-/
 theorem rep_eq_integral_of_rep_left_eq_zero (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) (ha : rep u a = 0) {x : ℝ} (hx : x ∈ Icc a b) :
     rep u x = ∫ t in a..x, deriv u 1 t := by
@@ -168,8 +210,12 @@ theorem rep_eq_integral_of_rep_left_eq_zero (hab : a < b)
     (by rw [closure_coe_Ioo hab]; exact hx)
   rwa [ha, sub_zero] at h
 
-/-- **Poincaré's inequality** for an element of `W^{1,p}(a, b)` vanishing at `a`:
-`‖u‖_{L^p} ≤ (b - a)/p^{1/p} ‖u'‖_{L^p}`, in `ℝ≥0∞`. -/
+/-- **Poincaré's inequality** for a function that vanishes at the left endpoint. Let $a < b$,
+$1 \le p \le \infty$, and let $u \in W^{1,p}(a, b)$ with $\tilde u(a) = 0$. Then
+$$\|u\|_{L^p(a, b)} \le \frac{b - a}{p^{1/p}} \|u'\|_{L^p(a, b)},$$
+where $p^{1/p} = 1$ at $p = \infty$.
+
+The norms are the extended norms `MeasureTheory.eLpNorm`, with values in $[0, \infty]$. -/
 theorem eLpNorm_le_mul_eLpNorm_deriv_of_rep_left_eq_zero (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) (ha : rep u a = 0) :
     eLpNorm (fn u) p (volume.restrict (Ioo a b))
@@ -182,8 +228,10 @@ theorem eLpNorm_le_mul_eLpNorm_deriv_of_rep_left_eq_zero (hab : a < b)
   rw [eLpNorm_congr_ae hfn]
   exact eLpNorm_integral_le hab.le (integrableOn_deriv_Ioo u 1)
 
-/-- **Poincaré's inequality** for an element of `W^{1,p}(a, b)` vanishing at `a`, in the norms
-of `L^p(a, b)`: `‖u‖_p ≤ (b - a)/p^{1/p} ‖u'‖_p`. -/
+/-- **Poincaré's inequality** for a function that vanishes at the left endpoint, in the norm of
+$L^p(a, b)$. Let $a < b$, $1 \le p \le \infty$, and let $u \in W^{1,p}(a, b)$ with
+$\tilde u(a) = 0$. Then $\|u\|_p \le (b - a) p^{-1/p} \|u'\|_p$, where $p^{1/p} = 1$ at
+$p = \infty$. -/
 theorem norm_deriv_zero_le_of_rep_left_eq_zero (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) (ha : rep u a = 0) :
     ‖deriv u 0‖ ≤ (b - a) / p.toReal ^ p.toReal⁻¹ * ‖deriv u 1‖ := by
@@ -192,8 +240,11 @@ theorem norm_deriv_zero_le_of_rep_left_eq_zero (hab : a < b)
   refine ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top (Lp.eLpNorm_ne_top _)) ?_
   exact eLpNorm_le_mul_eLpNorm_deriv_of_rep_left_eq_zero hab u ha
 
-/-- **Poincaré's inequality** for an element of `W^{1,p}(a, b)` vanishing at `a`, in the norm of
-`W^{1,p}(a, b)`: `‖u‖_{W^{1,p}} ≤ ((b - a)/p^{1/p} + 1) ‖u'‖_p`. -/
+/-- **Poincaré's inequality** for a function that vanishes at the left endpoint, in the norm of
+$W^{1,p}(a, b)$. Let $a < b$, $1 \le p \le \infty$, and let $u \in W^{1,p}(a, b)$ with
+$\tilde u(a) = 0$. Then
+$$\|u\|_{W^{1,p}} \le \Bigl(\frac{b - a}{p^{1/p}} + 1\Bigr) \|u'\|_p,$$
+where $p^{1/p} = 1$ at $p = \infty$. -/
 theorem norm_le_mul_norm_deriv_of_rep_left_eq_zero (hab : a < b)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) (ha : rep u a = 0) :
     ‖u‖ ≤ ((b - a) / p.toReal ^ p.toReal⁻¹ + 1) * ‖deriv u 1‖ := by
@@ -209,27 +260,34 @@ variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
 open SobolevIntervalLp
 
-/-- The representative of an element of `W_0^{1,p}(a, b)` vanishes at `a`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The representative of $u \in W_0^{1,p}(a, b)$ vanishes at
+$a$. -/
 theorem rep_left_eq_zero (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) : rep u a = 0 :=
   rep_frontier_eq_zero (ordConnected_coe_Ioo a b) hu
     (by rw [Opens.coe_Ioo, frontier_Ioo hab]; exact mem_insert a {b})
 
-/-- The representative of an element of `W_0^{1,p}(a, b)` vanishes at `b`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The representative of $u \in W_0^{1,p}(a, b)$ vanishes at
+$b$. -/
 theorem rep_right_eq_zero (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) : rep u b = 0 :=
   rep_frontier_eq_zero (ordConnected_coe_Ioo a b) hu
     (by rw [Opens.coe_Ioo, frontier_Ioo hab]; exact mem_insert_of_mem a rfl)
 
-/-- An element of `W_0^{1,p}(a, b)` is the primitive of its derivative: `ũ(x) = ∫_a^x u'`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. An element $u \in W_0^{1,p}(a, b)$ is the primitive of its
+derivative: $\tilde u(x) = \int_a^x u'(t) \, dt$ for $x \in [a, b]$. -/
 theorem rep_eq_integral (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) {x : ℝ} (hx : x ∈ Icc a b) :
     rep u x = ∫ t in a..x, deriv u 1 t :=
   rep_eq_integral_of_rep_left_eq_zero hab u (rep_left_eq_zero hab hu) hx
 
-/-- **Proposition 8.13 of [brezis2011functional] (Poincaré's inequality)**, in `ℝ≥0∞`: for
-`u ∈ W_0^{1,p}(a, b)`, `1 ≤ p ≤ ∞`, `‖u‖_{L^p} ≤ (b - a)/p^{1/p} ‖u'‖_{L^p}` (`p^{1/p} = 1` at
-`p = ∞`); at `p = 2` the constant is `(b - a)/√2`. -/
+/-- **Poincaré's inequality** on $W_0^{1,p}(a, b)$. Let $a < b$ and $1 \le p \le \infty$. For
+$u \in W_0^{1,p}(a, b)$,
+$$\|u\|_{L^p(a, b)} \le \frac{b - a}{p^{1/p}} \|u'\|_{L^p(a, b)},$$
+where $p^{1/p} = 1$ at $p = \infty$. At $p = 2$ the constant is $(b - a)/\sqrt 2$. This is
+Proposition 8.13 of [brezis2011functional].
+
+The norms are the extended norms `MeasureTheory.eLpNorm`, with values in $[0, \infty]$. -/
 theorem eLpNorm_le_mul_eLpNorm_deriv (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) :
     eLpNorm (fn u) p (volume.restrict (Ioo a b))
@@ -237,23 +295,27 @@ theorem eLpNorm_le_mul_eLpNorm_deriv (hab : a < b) {u : SobolevIntervalLp 1 p (O
         * eLpNorm (deriv u 1) p (volume.restrict (Ioo a b)) :=
   eLpNorm_le_mul_eLpNorm_deriv_of_rep_left_eq_zero hab u (rep_left_eq_zero hab hu)
 
-/-- **Proposition 8.13 of [brezis2011functional] (Poincaré's inequality)**, in the norms of
-`L^p(a, b)`: for `u ∈ W_0^{1,p}(a, b)`, `‖u‖_p ≤ (b - a)/p^{1/p} ‖u'‖_p`. -/
+/-- **Poincaré's inequality** on $W_0^{1,p}(a, b)$, in the norm of $L^p(a, b)$. Let $a < b$ and
+$1 \le p \le \infty$. For $u \in W_0^{1,p}(a, b)$, $\|u\|_p \le (b - a) p^{-1/p} \|u'\|_p$,
+where $p^{1/p} = 1$ at $p = \infty$. This is Proposition 8.13 of [brezis2011functional]. -/
 theorem norm_deriv_zero_le (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) :
     ‖deriv u 0‖ ≤ (b - a) / p.toReal ^ p.toReal⁻¹ * ‖deriv u 1‖ :=
   norm_deriv_zero_le_of_rep_left_eq_zero hab u (rep_left_eq_zero hab hu)
 
-/-- **Proposition 8.13 of [brezis2011functional], the book's (13)**: on `W_0^{1,p}(a, b)` the
-`W^{1,p}` norm is controlled by `‖u'‖_p`: `‖u‖_{W^{1,p}} ≤ ((b - a)/p^{1/p} + 1) ‖u'‖_p`. Together
-with `‖u'‖_p ≤ ‖u‖` (`SobolevIntervalLp.norm_deriv_le`), `‖u'‖_p` is a norm on `W_0^{1,p}(a, b)`
-equivalent to the `W^{1,p}` norm. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. For $u \in W_0^{1,p}(a, b)$,
+$$\|u\|_{W^{1,p}} \le \Bigl(\frac{b - a}{p^{1/p}} + 1\Bigr) \|u'\|_p,$$
+where $p^{1/p} = 1$ at $p = \infty$. This is (13) in Proposition 8.13 of [brezis2011functional].
+
+Together with $\|u'\|_p \le \|u\|_{W^{1,p}}$ (`SobolevIntervalLp.norm_deriv_le`), it shows that
+$\|u'\|_p$ is a norm on $W_0^{1,p}(a, b)$ equivalent to the $W^{1,p}$ norm. -/
 theorem norm_le_mul_norm_deriv (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) :
     ‖u‖ ≤ ((b - a) / p.toReal ^ p.toReal⁻¹ + 1) * ‖deriv u 1‖ :=
   norm_le_mul_norm_deriv_of_rep_left_eq_zero hab u (rep_left_eq_zero hab hu)
 
-/-- On `W_0^{1,p}(a, b)`, `‖u'‖_p = 0` only for `u = 0`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. For $u \in W_0^{1,p}(a, b)$, $\|u'\|_p = 0$ if and only if
+$u = 0$. -/
 theorem norm_deriv_one_eq_zero_iff (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) : ‖deriv u 1‖ = 0 ↔ u = 0 := by
   refine ⟨fun h ↦ ?_, fun h ↦ by rw [h, deriv_zero_elem, norm_zero]⟩
@@ -263,17 +325,20 @@ theorem norm_deriv_one_eq_zero_iff (hab : a < b) {u : SobolevIntervalLp 1 p (Ope
 
 end SobolevIntervalLpZero
 
-/-! ### Remark 9: `W_0^{1,p}(a, b) ≠ W^{1,p}(a, b)` -/
+/-! ### Remark 9: $W_0^{1,p}(a, b) \neq W^{1,p}(a, b)$ -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
-/-- **Remark 9 of [brezis2011functional], Chapter 8**: on a bounded interval `(a, b)`, the
-constant function `1` lies in `W^{1,p}(a, b)` but not in the closure `W_0^{1,p}(a, b)` of the
-test functions, since its representative is `1` at `a` (Theorem 8.12). So the test functions are
-not dense in `W^{1,p}(a, b)`, in contrast to `L^p(a, b)`
-(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
+/-- Let $a < b$ and $1 \le p \le \infty$. There is an element $u \in W^{1,p}(a, b)$ whose function
+is the constant $1$ almost everywhere and which does not lie in $W_0^{1,p}(a, b)$. So the test
+functions are not dense in $W^{1,p}(a, b)$, unlike in $L^p(a, b)$
+(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). This is Remark 9 of [brezis2011functional],
+Chapter 8.
+
+The representative of $u$ is $1$ at $a$, and Theorem 8.12
+(`SobolevIntervalLpZero.rep_left_eq_zero`) excludes this for an element of $W_0^{1,p}(a, b)$. -/
 theorem exists_not_mem_closure_testFunctions (hab : a < b) :
     ∃ u : SobolevIntervalLp 1 p (Opens.Ioo a b),
       fn u =ᵐ[volume.restrict (Ioo a b)] (fun _ ↦ (1 : ℝ)) ∧
@@ -286,8 +351,8 @@ theorem exists_not_mem_closure_testFunctions (hab : a < b) :
   rw [SobolevIntervalLpZero.rep_left_eq_zero hab h] at h1
   exact zero_ne_one h1
 
-/-- **Remark 9 of [brezis2011functional], Chapter 8**: `W_0^{1,p}(a, b)` is a proper subspace of
-`W^{1,p}(a, b)`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. Then $W_0^{1,p}(a, b)$ is a proper subspace of
+$W^{1,p}(a, b)$. This is Remark 9 of [brezis2011functional], Chapter 8. -/
 theorem sobolevIntervalLpZero_Ioo_ne_top (hab : a < b) :
     SobolevIntervalLpZero 1 p (Opens.Ioo a b) ≠ ⊤ := fun h ↦
   let ⟨_, _, hu⟩ := exists_not_mem_closure_testFunctions (p := p) hab
@@ -301,18 +366,24 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
-/-- The continuous representative of an element of `W^{1,p}(a, b)` is integrable on `(a, b)`. -/
+/-- Let $a < b$ and $1 \le p \le \infty$. The continuous representative of $u \in W^{1,p}(a, b)$ is
+integrable on $(a, b)$. -/
 theorem integrableOn_rep_Ioo (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) :
     IntegrableOn (rep u) (Ioo a b) := by
   have hcl : Icc a b ⊆ closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) := by rw [closure_coe_Ioo hab]
   exact (((continuousOn_rep (ordConnected_coe_Ioo a b) u).mono hcl).integrableOn_Icc).mono_set
     Ioo_subset_Icc_self
 
-/-- **Poincaré–Wirtinger, Problem 47 A.1 of [brezis2011functional]** (Comments on Chapter 8,
-1 (i)), for every `1 ≤ p ≤ ∞`: for `u ∈ W^{1,p}(a, b)` and `ū` the mean of `u` on `(a, b)`,
-`|ũ(x) - ū| ≤ (b - a)^{1 - 1/p} ‖u'‖_p` for every `x ∈ [a, b]` — `‖u - ū‖_∞ ≤ ‖u'‖_1` at `p = 1`.
-Indeed `ũ(x) - ū` is the mean over `y` of `ũ(x) - ũ(y) = ∫_y^x u'`, which is bounded by Hölder;
-the book's intermediate-value argument is not needed. -/
+/-- **The Poincaré–Wirtinger inequality** in the uniform norm. Let $a < b$ and $1 \le p \le \infty$.
+For $u \in W^{1,p}(a, b)$, let $\bar u$ be the mean of $u$ on $(a, b)$. Then for every
+$x \in [a, b]$,
+$$|\tilde u(x) - \bar u| \le (b - a)^{1 - 1/p} \|u'\|_p,$$
+where $1/p = 0$ at $p = \infty$. At $p = 1$ this is $\|u - \bar u\|_\infty \le \|u'\|_1$,
+Problem 47 A.1 of [brezis2011functional] (Comments on Chapter 8, 1 (i)).
+
+The number $\tilde u(x) - \bar u$ is the mean over $y$ of
+$\tilde u(x) - \tilde u(y) = \int_y^x u'$, and Hölder's inequality bounds this. The
+intermediate-value argument of the source is not needed. -/
 theorem abs_rep_sub_average_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) {x : ℝ}
     (hx : x ∈ Icc a b) :
     |rep u x - ⨍ y in Ioo a b, fn u y| ≤ (b - a) ^ (1 - p.toReal⁻¹) * ‖deriv u 1‖ := by
@@ -337,10 +408,15 @@ theorem abs_rep_sub_average_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.I
   rw [Real.volume_real_Ioo_of_le hab.le, mul_comm _ (b - a), ← mul_assoc,
     inv_mul_cancel₀ (sub_pos.2 hab).ne', one_mul]
 
-/-- **Problem 47 A.6 of [brezis2011functional], the Poincaré–Wirtinger inequality in `L^q`**:
-for `u ∈ W^{1,p}(a, b)`, `1 ≤ p ≤ ∞`, and every `q`,
-`‖u - ū‖_{L^q(a, b)} ≤ (b - a)^{1/q} (b - a)^{1 - 1/p} ‖u'‖_p`, from A.1 and
-`‖·‖_q ≤ |I|^{1/q} ‖·‖_∞`. -/
+/-- **The Poincaré–Wirtinger inequality in $L^q$.** Let $a < b$ and $1 \le p \le \infty$. For
+$u \in W^{1,p}(a, b)$ with mean $\bar u$ on $(a, b)$, and for every exponent $q$,
+$$\|u - \bar u\|_{L^q(a, b)} \le (b - a)^{1/q} (b - a)^{1 - 1/p} \|u'\|_p,$$
+where $1/p$ and $1/q$ are read as $0$ at $\infty$. This is Problem 47 A.6 of
+[brezis2011functional].
+
+The inequality follows from `SobolevIntervalLp.abs_rep_sub_average_le` and
+$\|f\|_q \le |I|^{1/q} \|f\|_\infty$. The left side is the extended norm
+`MeasureTheory.eLpNorm`. -/
 theorem eLpNorm_sub_average_le (hab : a < b) (u : SobolevIntervalLp 1 p (Opens.Ioo a b))
     (q : ℝ≥0∞) :
     eLpNorm (fun x ↦ fn u x - ⨍ y in Ioo a b, fn u y) q (volume.restrict (Ioo a b))
@@ -371,9 +447,14 @@ variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
 open SobolevIntervalLp
 
-/-- **Problem 47 A.4 of [brezis2011functional]**, in `ℝ≥0∞` and for every `1 ≤ p ≤ ∞`: for
-`u ∈ W_0^{1,p}(a, b)` and `x ∈ [a, b]`, `2 |ũ(x)| ≤ ∫_a^b |u'| ≤ (b - a)^{1 - 1/p} ‖u'‖_p`, since
-`|ũ(x)| ≤ ∫_a^x |u'|` and `|ũ(x)| ≤ ∫_x^b |u'|` (`ũ` vanishes at both ends). -/
+/-- Let $a < b$ and $1 \le p \le \infty$. For $u \in W_0^{1,p}(a, b)$ and $x \in [a, b]$,
+$$2 |\tilde u(x)| \le (b - a)^{1 - 1/p} \|u'\|_p,$$
+where $1/p = 0$ at $p = \infty$. This is Problem 47 A.4 of [brezis2011functional], stated in
+$[0, \infty]$.
+
+Since $\tilde u$ vanishes at both ends, $|\tilde u(x)| \le \int_a^x |u'|$ and
+$|\tilde u(x)| \le \int_x^b |u'|$, so $2 |\tilde u(x)| \le \int_a^b |u'|$, and Hölder's
+inequality bounds the last integral. -/
 theorem two_mul_enorm_rep_le (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) {x : ℝ} (hx : x ∈ Icc a b) :
     2 * ‖rep u x‖ₑ ≤ ENNReal.ofReal (b - a) ^ (1 - p.toReal⁻¹) * ‖deriv u 1‖ₑ := by
@@ -402,9 +483,11 @@ theorem two_mul_enorm_rep_le (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo
         exact mul_le_mul' le_rfl
           (eLpNorm_restrict_le_of_subset_closure hI (Ioc_subset_Icc_self.trans hcl) _ _)
 
-/-- **Problem 47 A.4 of [brezis2011functional]** (Comments on Chapter 8, 1 (i)), for every
-`1 ≤ p ≤ ∞`: for `u ∈ W_0^{1,p}(a, b)` and `x ∈ [a, b]`,
-`|ũ(x)| ≤ ½ (b - a)^{1 - 1/p} ‖u'‖_p` — `‖u‖_∞ ≤ ½ ‖u'‖_1` at `p = 1`. -/
+/-- **The Poincaré inequality in the uniform norm.** Let $a < b$ and $1 \le p \le \infty$. For
+$u \in W_0^{1,p}(a, b)$ and $x \in [a, b]$,
+$$|\tilde u(x)| \le \frac12 (b - a)^{1 - 1/p} \|u'\|_p,$$
+where $1/p = 0$ at $p = \infty$. At $p = 1$ this is $\|u\|_\infty \le \frac12 \|u'\|_1$, Problem
+47 A.4 of [brezis2011functional] (Comments on Chapter 8, 1 (i)). -/
 theorem abs_rep_le_half_eLpNorm_deriv (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) {x : ℝ} (hx : x ∈ Icc a b) :
     |rep u x| ≤ 2⁻¹ * ((b - a) ^ (1 - p.toReal⁻¹) * ‖deriv u 1‖) := by
@@ -415,10 +498,15 @@ theorem abs_rep_le_half_eLpNorm_deriv (hab : a < b) {u : SobolevIntervalLp 1 p (
   rw [← le_div_iff₀' two_pos] at h
   rwa [div_eq_inv_mul] at h
 
-/-- **Problem 47 A.6 of [brezis2011functional], the Poincaré inequality in `L^q`**: for
-`u ∈ W_0^{1,p}(a, b)`, `1 ≤ p ≤ ∞`, and every `q`,
-`‖u‖_{L^q(a, b)} ≤ ½ (b - a)^{1/q} (b - a)^{1 - 1/p} ‖u'‖_p`, from A.4 and
-`‖·‖_q ≤ |I|^{1/q} ‖·‖_∞`. -/
+/-- **The Poincaré inequality in $L^q$.** Let $a < b$ and $1 \le p \le \infty$. For
+$u \in W_0^{1,p}(a, b)$ and every exponent $q$,
+$$\|u\|_{L^q(a, b)} \le (b - a)^{1/q} \cdot \frac12 (b - a)^{1 - 1/p} \|u'\|_p,$$
+where $1/p$ and $1/q$ are read as $0$ at $\infty$. This is Problem 47 A.6 of
+[brezis2011functional].
+
+The inequality follows from `SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv` and
+$\|f\|_q \le |I|^{1/q} \|f\|_\infty$. The left side is the extended norm
+`MeasureTheory.eLpNorm`. -/
 theorem eLpNorm_le_half_mul (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)) (q : ℝ≥0∞) :
     eLpNorm (fn u) q (volume.restrict (Ioo a b))
@@ -439,19 +527,20 @@ theorem eLpNorm_le_half_mul (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo 
 
 end SobolevIntervalLpZero
 
-/-! ### Test functions as elements of `W^{1,p}(I)` -/
+/-! ### Test functions as elements of $W^{1,p}(I)$ -/
 
 namespace TestFunction
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- A test function on `I` has its classical derivative as weak derivative on `I`. -/
+/-- A test function $\varphi$ on an open set $I \subseteq \mathbb{R}$ has its classical derivative
+$\varphi'$ as weak derivative on $I$. -/
 theorem hasWeakDerivOn (φ : 𝓓(I, ℝ)) : HasWeakDerivOn φ (deriv φ) I :=
   hasWeakDerivOn_of_contDiffOn (φ.contDiff.of_le (by simp)).contDiffOn
 
 variable (p) in
-/-- The element of `W^{1,p}(I)` carried by a test function on `I`: the pair of the function and
-its derivative, in `L^p(I)`. -/
+/-- The element of $W^{1,p}(I)$ given by a test function $\varphi$ on $I$, for $1 \le p \le \infty$:
+the pair $(\varphi, \varphi')$ in $L^p(I)$. -/
 def toSobolevIntervalLp (φ : 𝓓(I, ℝ)) : SobolevIntervalLp 1 p I :=
   SobolevIntervalLp.mk ![(φ.memLp' p).toLp φ, (φ.memLp_deriv p).toLp (deriv φ)] fun j ↦ by
     fin_cases j
@@ -460,24 +549,26 @@ def toSobolevIntervalLp (φ : 𝓓(I, ℝ)) : SobolevIntervalLp 1 p I :=
     · exact φ.hasWeakDerivOn.congr_ae (φ.memLp' p).coeFn_toLp.symm
         (φ.memLp_deriv p).coeFn_toLp.symm
 
-/-- The function of the element of `W^{1,p}(I)` carried by a test function. -/
+/-- The function of `TestFunction.toSobolevIntervalLp p φ` is $\varphi$, almost everywhere on $I$.
+-/
 theorem fn_toSobolevIntervalLp_ae_eq (φ : 𝓓(I, ℝ)) :
     SobolevIntervalLp.fn (toSobolevIntervalLp p φ) =ᵐ[volume.restrict I] φ :=
   (φ.memLp' p).coeFn_toLp
 
-/-- The derivative of the element of `W^{1,p}(I)` carried by a test function. -/
+/-- The weak derivative of `TestFunction.toSobolevIntervalLp p φ` is $\varphi'$, almost everywhere
+on $I$. -/
 theorem coeFn_deriv_toSobolevIntervalLp_one (φ : 𝓓(I, ℝ)) :
     ⇑(SobolevIntervalLp.deriv (toSobolevIntervalLp p φ) 1) =ᵐ[volume.restrict I] deriv φ :=
   (φ.memLp_deriv p).coeFn_toLp
 
-/-- The element of `W^{1,p}(I)` carried by a test function lies in the image of the test
-functions. -/
+/-- The element `TestFunction.toSobolevIntervalLp p φ` lies in the submodule
+`SobolevMultiIndex.testFunctions` of elements of $W^{1,p}(I)$ whose function is a test function. -/
 theorem toSobolevIntervalLp_mem_testFunctions (φ : 𝓓(I, ℝ)) :
     toSobolevIntervalLp p φ
       ∈ SobolevMultiIndex.testFunctions ℝ (Module.Basis.singleton Unit ℝ) 1 p I volume :=
   ⟨φ, fn_toSobolevIntervalLp_ae_eq φ⟩
 
-/-- The element of `W^{1,p}(I)` carried by a test function lies in `W_0^{1,p}(I)`. -/
+/-- The element `TestFunction.toSobolevIntervalLp p φ` lies in $W_0^{1,p}(I)$. -/
 theorem toSobolevIntervalLp_mem (φ : 𝓓(I, ℝ)) :
     toSobolevIntervalLp p φ ∈ SobolevIntervalLpZero 1 p I :=
   SobolevMultiIndexZero.testFunctions_le (toSobolevIntervalLp_mem_testFunctions φ)
@@ -490,8 +581,13 @@ section Holder
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
-/-- **Hölder's inequality** for the integral over `(a, b)`, in `ℝ≥0∞` and without any hypothesis
-on `w`: `|∫_a^b w| ≤ (b - a)^{1 - 1/p} ‖w‖_{L^p(a, b)}`. -/
+/-- **Hölder's inequality** for an integral over $(a, b)$. Let $1 \le p \le \infty$ and
+$w : \mathbb{R} \to \mathbb{R}$, with no further hypothesis on $w$. Then
+$$\Bigl|\int_a^b w\Bigr| \le (b - a)^{1 - 1/p} \|w\|_{L^p(a, b)},$$
+where $1/p = 0$ at $p = \infty$.
+
+Both sides are in $[0, \infty]$. If $w$ is not integrable on $(a, b)$, the integral on the left
+is $0$ by the convention of the Bochner integral. -/
 theorem MeasureTheory.enorm_setIntegral_Ioo_le_rpow_mul_eLpNorm (w : ℝ → ℝ) :
     ‖∫ x in Ioo a b, w x‖ₑ
       ≤ ENNReal.ofReal (b - a) ^ (1 - p.toReal⁻¹) * eLpNorm w p (volume.restrict (Ioo a b)) := by
@@ -509,18 +605,19 @@ variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {a b : ℝ}
 
 open SobolevIntervalLp
 
-/-- **Theorem 8.12 of [brezis2011functional], converse, on a bounded interval**: for `a < b`,
-`1 ≤ p < ∞` and `u ∈ W^{1,p}(a, b)` whose continuous representative vanishes at `a` and at `b`,
-`u ∈ W_0^{1,p}(a, b)`.
+/-- Let $a < b$, $1 \le p < \infty$, and let $u \in W^{1,p}(a, b)$ with
+$\tilde u(a) = \tilde u(b) = 0$. Then $u \in W_0^{1,p}(a, b)$. This is the converse direction of
+Theorem 8.12 of [brezis2011functional] on a bounded interval.
 
-The derivative `u'` has zero mean on `(a, b)`, since `ũ(b) - ũ(a) = ∫_a^b u'`. Approximate `u'` in
-`L^p(a, b)` by a test function `ψ` (`MeasureTheory.MemLp.exists_contDiff_tsupport_subset`),
-correct its mean by a multiple of a fixed test function of integral one (Hölder controls the
-correction), and take the primitive `φ = ∫_a^x ψ'` of the corrected function, which is again a
-test function (`TestFunction.primitiveIic`). Then `ũ - φ = ∫_a^x (u' - ψ')` and Poincaré's
-inequality (`SobolevIntervalLp.eLpNorm_integral_le`) bounds `‖u - φ‖_{W^{1,p}}` by a multiple of
-`‖u' - ψ'‖_p`. No cut-off or mollification of `u` itself is needed (the book truncates `u`
-by `G(nu)/n` instead). -/
+The derivative $u'$ has mean zero on $(a, b)$, since $\tilde u(b) - \tilde u(a) = \int_a^b u'$.
+The proof approximates $u'$ in $L^p(a, b)$ by a test function $\psi$
+(`MeasureTheory.MemLp.exists_contDiff_tsupport_subset`), corrects its mean by a multiple of a
+fixed test function of integral one (Hölder's inequality controls the correction), and takes the
+primitive $\varphi$ of the corrected function, which is again a test function
+(`TestFunction.primitiveIic`). Then Poincaré's inequality
+(`SobolevIntervalLp.eLpNorm_integral_le`) bounds $\|u - \varphi\|_{W^{1,p}}$ by a multiple of
+$\|u' - \varphi'\|_p$. No cut-off or mollification of $u$ is needed; the source truncates $u$ by
+$G(nu)/n$ instead. -/
 theorem mem_of_rep_frontier_eq_zero_of_bounded (hab : a < b) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p (Opens.Ioo a b)) (ha : rep u a = 0) (hb : rep u b = 0) :
     u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b) := by
@@ -660,14 +757,15 @@ theorem mem_of_rep_frontier_eq_zero_of_bounded (hab : a < b) (hp : p ≠ ⊤)
 
 end SobolevIntervalLpZero
 
-/-! ### `C^1` functions as elements of `W^{1,p}(I)` -/
+/-! ### $C^1$ functions as elements of $W^{1,p}(I)$ -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- The element of `W^{1,p}(I)` carried by a `C^1` function on `I` lying, with its derivative, in
-`L^p(I)`. -/
+/-- The element of $W^{1,p}(I)$ given by a function $g$ that is $C^1$ on $I$, with $g \in L^p(I)$
+and $g' \in L^p(I)$, for $1 \le p \le \infty$: the pair $(g, g')$ in $L^p(I)$, with the
+classical derivative $g'$. -/
 def ofContDiffOn {g : ℝ → ℝ} (hg : ContDiffOn ℝ 1 g I) (hgp : MemLp g p (volume.restrict I))
     (hgp' : MemLp (_root_.deriv g) p (volume.restrict I)) : SobolevIntervalLp 1 p I :=
   mk ![hgp.toLp g, hgp'.toLp (_root_.deriv g)] fun j ↦ by
@@ -676,20 +774,21 @@ def ofContDiffOn {g : ℝ → ℝ} (hg : ContDiffOn ℝ 1 g I) (hgp : MemLp g p 
         ((Lp.memLp _).locallyIntegrableOn (Ω := I) Fact.out)
     · exact (hasWeakDerivOn_of_contDiffOn hg).congr_ae hgp.coeFn_toLp.symm hgp'.coeFn_toLp.symm
 
-/-- The function of `SobolevIntervalLp.ofContDiffOn`. -/
+/-- The function of `SobolevIntervalLp.ofContDiffOn` is $g$, almost everywhere on $I$. -/
 theorem fn_ofContDiffOn_ae_eq {g : ℝ → ℝ} (hg : ContDiffOn ℝ 1 g I)
     (hgp : MemLp g p (volume.restrict I)) (hgp' : MemLp (_root_.deriv g) p (volume.restrict I)) :
     fn (ofContDiffOn hg hgp hgp') =ᵐ[volume.restrict I] g :=
   hgp.coeFn_toLp
 
-/-- The weak derivative of `SobolevIntervalLp.ofContDiffOn` is the classical derivative. -/
+/-- The weak derivative of `SobolevIntervalLp.ofContDiffOn` is the classical derivative $g'$, almost
+everywhere on $I$. -/
 theorem coeFn_deriv_ofContDiffOn_one {g : ℝ → ℝ} (hg : ContDiffOn ℝ 1 g I)
     (hgp : MemLp g p (volume.restrict I)) (hgp' : MemLp (_root_.deriv g) p (volume.restrict I)) :
     ⇑(deriv (ofContDiffOn hg hgp hgp') 1) =ᵐ[volume.restrict I] _root_.deriv g :=
   hgp'.coeFn_toLp
 
-/-- The continuous representative of `SobolevIntervalLp.ofContDiffOn` is the function itself,
-on the closure of `I`, when that function is continuous there. -/
+/-- Let $I$ be an open interval. If $g$ is also continuous on $\bar I$, then the continuous
+representative of `SobolevIntervalLp.ofContDiffOn` equals $g$ on $\bar I$. -/
 theorem rep_ofContDiffOn (hI : (I : Set ℝ).OrdConnected) {g : ℝ → ℝ} (hg : ContDiffOn ℝ 1 g I)
     (hgp : MemLp g p (volume.restrict I)) (hgp' : MemLp (_root_.deriv g) p (volume.restrict I))
     (hgc : ContinuousOn g (closure (I : Set ℝ))) :
@@ -702,21 +801,23 @@ end SobolevIntervalLp
 
 namespace SobolevIntervalLp
 
-/-- The model cut-off: a smooth bump equal to `1` on `[-1, 1]` and to `0` off `(-2, 2)`. -/
+/-- The model cut-off $\zeta$: a smooth bump on $\mathbb{R}$ with values in $[0, 1]$, equal to $1$
+on $[-1, 1]$ and to $0$ off $(-2, 2)$. -/
 def cutoffBump : ContDiffBump (0 : ℝ) := ⟨1, 2, one_pos, one_lt_two⟩
 
-/-- The cut-off `ζ_n(x) = ζ(x / (n + 1))`: a smooth function with `0 ≤ ζ_n ≤ 1`, equal to `1` on
-`[-(n + 1), n + 1]` and to `0` off `(-2(n + 1), 2(n + 1))`. -/
+/-- The cut-off $\zeta_n(x) = \zeta(x / (n + 1))$, for $n \in \mathbb{N}$. It is smooth, with
+$0 \le \zeta_n \le 1$, equal to $1$ on $[-(n + 1), n + 1]$ and to $0$ off
+$(-2(n + 1), 2(n + 1))$. -/
 def cutoffFn (n : ℕ) (x : ℝ) : ℝ := cutoffBump (x / ((n : ℝ) + 1))
 
-/-- `ζ_n = 1` on `[-(n + 1), n + 1]`. -/
+/-- $\zeta_n(x) = 1$ for $|x| \le n + 1$. -/
 theorem cutoffFn_of_abs_le {n : ℕ} {x : ℝ} (hx : |x| ≤ (n : ℝ) + 1) : cutoffFn n x = 1 := by
   refine cutoffBump.one_of_mem_closedBall ?_
   rw [mem_closedBall_zero_iff, Real.norm_eq_abs, abs_div,
     abs_of_pos (by positivity : (0 : ℝ) < (n : ℝ) + 1)]
   exact div_le_one_of_le₀ hx (by positivity)
 
-/-- `ζ_n = 0` off `(-2(n + 1), 2(n + 1))`. -/
+/-- $\zeta_n(x) = 0$ for $|x| \ge 2(n + 1)$. -/
 theorem cutoffFn_of_le_abs {n : ℕ} {x : ℝ} (hx : 2 * ((n : ℝ) + 1) ≤ |x|) : cutoffFn n x = 0 := by
   refine cutoffBump.zero_of_le_dist ?_
   rw [dist_zero_right, Real.norm_eq_abs, abs_div,
@@ -725,17 +826,17 @@ theorem cutoffFn_of_le_abs {n : ℕ} {x : ℝ} (hx : 2 * ((n : ℝ) + 1) ≤ |x|
   rw [le_div_iff₀ (by positivity)]
   exact hx
 
-/-- `0 ≤ ζ_n`. -/
+/-- $\zeta_n \ge 0$. -/
 theorem cutoffFn_nonneg (n : ℕ) (x : ℝ) : 0 ≤ cutoffFn n x := cutoffBump.nonneg
 
-/-- `ζ_n ≤ 1`. -/
+/-- $\zeta_n \le 1$. -/
 theorem cutoffFn_le_one (n : ℕ) (x : ℝ) : cutoffFn n x ≤ 1 := cutoffBump.le_one
 
-/-- `ζ_n` is smooth. -/
+/-- $\zeta_n$ is smooth. -/
 theorem contDiff_cutoffFn (n : ℕ) : ContDiff ℝ ∞ (cutoffFn n) :=
   cutoffBump.contDiff.comp (contDiff_id.div_const _)
 
-/-- `ζ_n` has compact support. -/
+/-- $\zeta_n$ has compact support. -/
 theorem hasCompactSupport_cutoffFn (n : ℕ) : HasCompactSupport (cutoffFn n) :=
   HasCompactSupport.of_support_subset_isCompact
     (isCompact_Icc (a := -(2 * ((n : ℝ) + 1))) (b := 2 * ((n : ℝ) + 1))) fun x hx ↦ by
@@ -747,7 +848,8 @@ theorem hasCompactSupport_cutoffFn (n : ℕ) : HasCompactSupport (cutoffFn n) :=
     · rw [abs_of_neg (by linarith)]; linarith
     · rw [abs_of_pos (by linarith)]; linarith
 
-/-- The derivatives of the cut-offs are bounded by `C / (n + 1)`, `C = sup |ζ'|`. -/
+/-- The derivatives of the cut-offs are of order $1/(n + 1)$: there is a constant $C \ge 0$ with
+$|\zeta_n'(x)| \le C / (n + 1)$ for all $n$ and $x$. One can take $C = \sup |\zeta'|$. -/
 theorem exists_abs_deriv_cutoffFn_le :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (n : ℕ) (x : ℝ), |_root_.deriv (cutoffFn n) x| ≤ C / ((n : ℝ) + 1) := by
   obtain ⟨C, hC⟩ := cutoffBump.hasCompactSupport.deriv.exists_bound_of_continuous
@@ -768,11 +870,11 @@ theorem exists_abs_deriv_cutoffFn_le :
 
 variable {p : ℝ≥0∞} {I : Opens ℝ}
 
-/-- `ζ_n ∈ L^p(I)` for every `I`. -/
+/-- $\zeta_n \in L^p(I)$ for every open set $I$ and every exponent $p$. -/
 theorem memLp_cutoffFn (n : ℕ) : MemLp (cutoffFn n) p (volume.restrict I) :=
   (contDiff_cutoffFn n).continuous.memLp_of_hasCompactSupport (hasCompactSupport_cutoffFn n)
 
-/-- `ζ_n' ∈ L^p(I)` for every `I`. -/
+/-- $\zeta_n' \in L^p(I)$ for every open set $I$ and every exponent $p$. -/
 theorem memLp_deriv_cutoffFn (n : ℕ) : MemLp (_root_.deriv (cutoffFn n)) p (volume.restrict I) :=
   ((contDiff_cutoffFn n).continuous_deriv (by simp)).memLp_of_hasCompactSupport
     (hasCompactSupport_cutoffFn n).deriv
@@ -780,23 +882,28 @@ theorem memLp_deriv_cutoffFn (n : ℕ) : MemLp (_root_.deriv (cutoffFn n)) p (vo
 variable [Fact (1 ≤ p)]
 
 variable (p I) in
-/-- The cut-off `ζ_n` as an element of `W^{1,p}(I)`. -/
+/-- The cut-off $\zeta_n$ as an element of $W^{1,p}(I)$, for $1 \le p \le \infty$. -/
 def cutoffElem (n : ℕ) : SobolevIntervalLp 1 p I :=
   ofContDiffOn ((contDiff_cutoffFn n).of_le (by simp)).contDiffOn (memLp_cutoffFn n)
     (memLp_deriv_cutoffFn n)
 
-/-- The continuous representative of the cut-off element is `ζ_n`. -/
+/-- Let $I$ be an open interval. The continuous representative of the element
+`SobolevIntervalLp.cutoffElem p I n` is $\zeta_n$ on $\bar I$. -/
 theorem rep_cutoffElem (hI : (I : Set ℝ).OrdConnected) (n : ℕ) :
     EqOn (rep (cutoffElem p I n)) (cutoffFn n) (closure (I : Set ℝ)) :=
   rep_ofContDiffOn hI _ _ _ (contDiff_cutoffFn n).continuous.continuousOn
 
-/-- **The cut-off sequence of the proof of Theorem 8.7 (b) of [brezis2011functional]**: the
-element `ζ_n u` of `W^{1,p}(I)`, with function `ζ_n ũ` and weak derivative `ζ_n' ũ + ζ_n u'`. -/
+/-- **The cut-off sequence** of the proof of Theorem 8.7 (b) of [brezis2011functional]. For an open
+interval $I$, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$, it is the element $\zeta_n u$ of
+$W^{1,p}(I)$, with function $\zeta_n \tilde u$ and weak derivative
+$\zeta_n' \tilde u + \zeta_n u'$.
+
+It is the product `SobolevIntervalLp.mul` of `SobolevIntervalLp.cutoffElem p I n` and $u$. -/
 def cutoff (hI : (I : Set ℝ).OrdConnected) (n : ℕ) (u : SobolevIntervalLp 1 p I) :
     SobolevIntervalLp 1 p I :=
   mul hI (cutoffElem p I n) u
 
-/-- The continuous representative of `ζ_n u` is `ζ_n ũ` on the closure of `I`. -/
+/-- The continuous representative of $\zeta_n u$ is $\zeta_n \tilde u$ on $\bar I$. -/
 theorem rep_cutoff (hI : (I : Set ℝ).OrdConnected) (n : ℕ) (u : SobolevIntervalLp 1 p I) :
     EqOn (rep (cutoff hI n u)) (fun x ↦ cutoffFn n x * rep u x) (closure (I : Set ℝ)) :=
   fun x hx ↦ by
@@ -804,14 +911,15 @@ theorem rep_cutoff (hI : (I : Set ℝ).OrdConnected) (n : ℕ) (u : SobolevInter
     beta_reduce
     rw [rep_cutoffElem hI n hx]
 
-/-- The function of `ζ_n u` is `ζ_n ũ`. -/
+/-- The function of $\zeta_n u$ is $\zeta_n \tilde u$, almost everywhere on $I$. -/
 theorem fn_cutoff (hI : (I : Set ℝ).OrdConnected) (n : ℕ) (u : SobolevIntervalLp 1 p I) :
     fn (cutoff hI n u) =ᵐ[volume.restrict I] fun x ↦ cutoffFn n x * rep u x :=
   (fn_mul hI _ u).trans (by
     filter_upwards [ae_restrict_mem I.isOpen.measurableSet] with x hx
     rw [rep_cutoffElem hI n (subset_closure hx)])
 
-/-- The weak derivative of `ζ_n u` is `ζ_n' ũ + ζ_n u'`. -/
+/-- The weak derivative of $\zeta_n u$ is $\zeta_n' \tilde u + \zeta_n u'$, almost everywhere on
+$I$. -/
 theorem coeFn_deriv_cutoff_one (hI : (I : Set ℝ).OrdConnected) (n : ℕ)
     (u : SobolevIntervalLp 1 p I) :
     ⇑(deriv (cutoff hI n u) 1) =ᵐ[volume.restrict I]
@@ -829,7 +937,8 @@ section Tail
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The `L^p` norm of `f ∈ L^p(μ)`, `p < ∞`, off `[-r, r]` tends to `0` as `r → ∞`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, $1 \le p < \infty$, and $f \in L^p(\mu)$. Then the
+$L^p(\mu)$ norm of $f$ off $[-r, r]$ tends to $0$ as $r \to \infty$. -/
 theorem MeasureTheory.tendsto_eLpNorm_restrict_compl_Icc_atTop {μ : Measure ℝ} {f : ℝ → ℝ}
     (hp : p ≠ ⊤) (hf : MemLp f p μ) :
     Tendsto (fun r ↦ eLpNorm f p (μ.restrict (Icc (-r) r)ᶜ)) atTop (𝓝 0) := by
@@ -861,11 +970,14 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- **The cut-offs converge** ([brezis2011functional], proof of Theorem 8.7 (b)): for
-`u ∈ W^{1,p}(I)`, `1 ≤ p < ∞`, `ζ_n u → u` in `W^{1,p}(I)`. Indeed `ζ_n u - u = (ζ_n - 1) ũ`
-vanishes on `[-(n+1), n+1]` and is bounded by `|ũ|`, so its `L^p` norm is at most the norm of
-`ũ` off `[-(n+1), n+1]`, which tends to `0`; likewise for `(ζ_n - 1) u'`, and
-`‖ζ_n' ũ‖_p ≤ (C / (n + 1)) ‖ũ‖_p → 0`. -/
+/-- **The cut-offs converge.** Let $I$ be an open interval, $1 \le p < \infty$, and
+$u \in W^{1,p}(I)$. Then $\zeta_n u \to u$ in $W^{1,p}(I)$. This is a step of the proof of
+Theorem 8.7 (b) of [brezis2011functional].
+
+The function $\zeta_n u - u = (\zeta_n - 1) \tilde u$ vanishes on $[-(n+1), n+1]$ and is bounded
+by $|\tilde u|$. So its $L^p$ norm is at most the norm of $\tilde u$ off $[-(n+1), n+1]$, which
+tends to $0$. The same holds for $(\zeta_n - 1) u'$, and $\|\zeta_n' \tilde u\|_p \le (C / (n +
+1)) \|\tilde u\|_p \to 0$. -/
 theorem tendsto_cutoff_smul (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) : Tendsto (fun n ↦ cutoff hI n u) atTop (𝓝 u) := by
   obtain ⟨C, hC0, hC⟩ := exists_abs_deriv_cutoffFn_le
@@ -982,19 +1094,20 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I J : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- The zero function has weak derivative zero. -/
+/-- The zero function has the weak derivative zero on every open set $I \subseteq \mathbb{R}$. -/
 theorem hasWeakDerivOn_zero (I : Opens ℝ) : HasWeakDerivOn (0 : ℝ → ℝ) 0 I :=
   HasWeakIteratedLineDerivOn.zero
 
 omit [Fact (1 ≤ p)] in
-/-- Two elements of `W^{1,p}(I)` with the same function are equal: the weak derivative is
-unique. -/
+/-- Two elements of $W^{1,p}(I)$ whose functions agree almost everywhere on $I$ are equal, for every
+exponent $p$. This is the uniqueness of the weak derivative. -/
 theorem eq_of_fn_ae_eq {u v : SobolevIntervalLp 1 p I} (h : fn u =ᵐ[volume.restrict I] fn v) :
     u = v :=
   SobolevMultiIndex.ext_of_fn_ae_eq h
 
 omit [Fact (1 ≤ p)] in
-/-- An element of `W^{1,p}(I)` whose representative vanishes on the closure of `I` is zero. -/
+/-- Let $I$ be an open interval. An element of $W^{1,p}(I)$ whose continuous representative vanishes
+on $\bar I$ is zero, for every exponent $p$. -/
 theorem eq_zero_of_rep_eq_zero (hI : (I : Set ℝ).OrdConnected) {u : SobolevIntervalLp 1 p I}
     (h : ∀ x ∈ closure (I : Set ℝ), rep u x = 0) : u = 0 :=
   eq_of_fn_ae_eq ((fn_ae_eq_rep hI u).trans (by
@@ -1003,19 +1116,22 @@ theorem eq_zero_of_rep_eq_zero (hI : (I : Set ℝ).OrdConnected) {u : SobolevInt
     rw [h x (subset_closure hx), hx0]
     rfl))
 
-/-- The restriction of an `L^p(I)` function to an open set `J ⊆ I`. -/
+/-- The restriction of a function $f \in L^p(I)$ to an open set $J \subseteq I$, as an element of
+$L^p(J)$, for $1 \le p \le \infty$. -/
 def restrictLp (hJI : (J : Set ℝ) ⊆ I) (f : Lp ℝ p (volume.restrict (I : Set ℝ))) :
     Lp ℝ p (volume.restrict (J : Set ℝ)) :=
   ((Lp.memLp f).mono_measure (Measure.restrict_mono hJI le_rfl)).toLp f
 
 omit [Fact (1 ≤ p)] in
-/-- The restriction is the function, almost everywhere on `J`. -/
+/-- The restriction `SobolevIntervalLp.restrictLp` of $f$ equals $f$ almost everywhere on $J$, for
+every exponent $p$. -/
 theorem coeFn_restrictLp (hJI : (J : Set ℝ) ⊆ I) (f : Lp ℝ p (volume.restrict (I : Set ℝ))) :
     ⇑(restrictLp hJI f) =ᵐ[volume.restrict J] f :=
   MemLp.coeFn_toLp _
 
-/-- **Restriction** of `u ∈ W^{1,p}(I)` to an open set `J ⊆ I`: its function and weak derivative
-restricted to `J`. -/
+/-- **The restriction** of $u \in W^{1,p}(I)$ to an open set $J \subseteq I$, for
+$1 \le p \le \infty$: the element of $W^{1,p}(J)$ whose function and weak derivative are those
+of $u$, restricted to $J$. -/
 def restrict (hJI : (J : Set ℝ) ⊆ I) (u : SobolevIntervalLp 1 p I) : SobolevIntervalLp 1 p J :=
   mk ![restrictLp hJI (deriv u 0), restrictLp hJI (deriv u 1)] fun j ↦ by
     fin_cases j
@@ -1024,18 +1140,19 @@ def restrict (hJI : (J : Set ℝ) ⊆ I) (u : SobolevIntervalLp 1 p I) : Sobolev
     · exact ((hasWeakDerivOn_fn u).mono hJI).congr_ae (coeFn_restrictLp hJI _).symm
         (coeFn_restrictLp hJI _).symm
 
-/-- The function of the restriction. -/
+/-- The function of the restriction of $u$ to $J$ is the function of $u$, almost everywhere on $J$.
+-/
 theorem fn_restrict_ae_eq (hJI : (J : Set ℝ) ⊆ I) (u : SobolevIntervalLp 1 p I) :
     fn (restrict hJI u) =ᵐ[volume.restrict J] fn u :=
   coeFn_restrictLp hJI _
 
-/-- The weak derivative of the restriction. -/
+/-- The weak derivative of the restriction of $u$ to $J$ is $u'$, almost everywhere on $J$. -/
 theorem coeFn_deriv_restrict_one (hJI : (J : Set ℝ) ⊆ I) (u : SobolevIntervalLp 1 p I) :
     ⇑(deriv (restrict hJI u) 1) =ᵐ[volume.restrict J] deriv u 1 :=
   coeFn_restrictLp hJI _
 
-/-- The continuous representative of the restriction is the restriction of the continuous
-representative. -/
+/-- Let $J \subseteq I$ be open intervals. The continuous representative of the restriction of $u$
+to $J$ equals $\tilde u$ on $\bar J$. -/
 theorem rep_restrict (hI : (I : Set ℝ).OrdConnected) (hJ : (J : Set ℝ).OrdConnected)
     (hJI : (J : Set ℝ) ⊆ I) (u : SobolevIntervalLp 1 p I) :
     EqOn (rep (restrict hJI u)) (rep u) (closure (J : Set ℝ)) :=
@@ -1044,8 +1161,9 @@ theorem rep_restrict (hI : (I : Set ℝ).OrdConnected) (hJ : (J : Set ℝ).OrdCo
       (ae_mono (Measure.restrict_mono hJI le_rfl))))
 
 omit [Fact (1 ≤ p)] in
-/-- The `L^p` norm over `t` of a function vanishing a.e. on `t \ s` is its `L^p` norm over
-`s`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, let $s \subseteq t$ with $s$ measurable, and let $f = 0$
+almost everywhere on $t \setminus s$. Then the $L^p$ norm of $f$ over $t$ equals its $L^p$ norm
+over $s$, for every exponent $p$. -/
 theorem _root_.MeasureTheory.eLpNorm_restrict_eq_of_ae_eq_zero_off {μ : Measure ℝ} {f : ℝ → ℝ}
     {s t : Set ℝ} (hs : MeasurableSet s) (hst : s ⊆ t)
     (h : ∀ᵐ x ∂(μ.restrict t), x ∉ s → f x = 0) :
@@ -1068,13 +1186,15 @@ variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 open SobolevIntervalLp
 
-/-- **The restriction argument of Theorem 8.12**: an element `u ∈ W^{1,p}(I)`, `1 ≤ p < ∞`, whose
-representative vanishes on `∂I` and off a bounded interval `(c, d)` lies in `W_0^{1,p}(I)`.
-The set `J = I ∩ (c, d)` is a bounded interval `(a, b)` (or empty, and then `u = 0`); the
-restriction of `u` to `J` vanishes at `a` and `b`, hence lies in `W_0^{1,p}(J)` by the bounded
-case, so it is approximated by test functions on `J`, which are test functions on `I`; and the
-`W^{1,p}(I)` distance from `u` to such a test function is at most twice the `W^{1,p}(J)` distance,
-since `u` and `u'` vanish a.e. off `J`. -/
+/-- **The restriction argument of Theorem 8.12.** Let $I$ be an open interval, $1 \le p < \infty$,
+and $c, d \in \mathbb{R}$. If $u \in W^{1,p}(I)$ satisfies $\tilde u = 0$ on $\partial I$ and
+$\tilde u = 0$ on $\bar I \setminus (c, d)$, then $u \in W_0^{1,p}(I)$.
+
+The set $J = I \cap (c, d)$ is a bounded interval $(a, b)$, or empty, and then $u = 0$. The
+restriction of $u$ to $J$ vanishes at $a$ and $b$, so it lies in $W_0^{1,p}(J)$ by the bounded
+case. It is therefore approximated by test functions on $J$, which are test functions on $I$.
+The $W^{1,p}(I)$ distance from $u$ to such a test function is at most twice the $W^{1,p}(J)$
+distance, because $u$ and $u'$ vanish almost everywhere off $J$. -/
 theorem mem_of_rep_eq_zero_off_Ioo (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) {c d : ℝ} (hfr : ∀ x ∈ frontier (I : Set ℝ), rep u x = 0)
     (hoff : ∀ x ∈ closure (I : Set ℝ), x ∉ Ioo c d → rep u x = 0) :
@@ -1227,12 +1347,15 @@ theorem mem_of_rep_eq_zero_off_Ioo (hI : (I : Set ℝ).OrdConnected) (hp : p ≠
     _ < ε / 2 + ε / 2 := add_lt_add hw hw
     _ = ε := add_halves ε
 
-/-- **Theorem 8.12 of [brezis2011functional]**: for `1 ≤ p < ∞` and an open interval `I`, bounded
-or not, `u ∈ W^{1,p}(I)` lies in `W_0^{1,p}(I)` if and only if its continuous representative
-vanishes on the boundary of `I`. The converse direction reduces to the bounded case through the
-cut-offs `ζ_n u` (`SobolevIntervalLp.tendsto_cutoff_smul`), which vanish off `(-2(n+1), 2(n+1))`
-and at the finite endpoints of `I`, hence lie in `W_0^{1,p}(I)` (`mem_of_rep_eq_zero_off_Ioo`),
-and converge to `u`. -/
+/-- **Theorem 8.12** of [brezis2011functional]. Let $I$ be an open interval, bounded or not, and
+$1 \le p < \infty$. Then $u \in W^{1,p}(I)$ lies in $W_0^{1,p}(I)$ if and only if its continuous
+representative vanishes on $\partial I$:
+$$u \in W_0^{1,p}(I) \iff \tilde u(x) = 0 \text{ for all } x \in \partial I.$$
+
+The converse direction reduces to the bounded case through the cut-offs $\zeta_n u$
+(`SobolevIntervalLp.tendsto_cutoff_smul`). They vanish off $(-2(n+1), 2(n+1))$ and at the finite
+endpoints of $I$, so they lie in $W_0^{1,p}(I)$
+(`SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo`), and they converge to $u$. -/
 theorem _root_.mem_sobolevIntervalLpZero_iff (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) :
     u ∈ SobolevIntervalLpZero 1 p I ↔ ∀ x ∈ frontier (I : Set ℝ), rep u x = 0 := by
@@ -1252,33 +1375,39 @@ theorem _root_.mem_sobolevIntervalLpZero_iff (hI : (I : Set ℝ).OrdConnected) (
     · rw [abs_of_nonpos (by linarith)]; linarith
     · rw [abs_of_nonneg (by linarith)]; exact hx'
 
-/-- **Remark 13 of [brezis2011functional], Chapter 8**: `W_0^{1,p}(ℝ) = W^{1,p}(ℝ)` for
-`1 ≤ p < ∞`, the instance `I = ℝ` of Theorem 8.12 (`ℝ` has no boundary). -/
+/-- For $1 \le p < \infty$, $W_0^{1,p}(\mathbb{R}) = W^{1,p}(\mathbb{R})$. This is Remark 13 of
+[brezis2011functional], Chapter 8, the case $I = \mathbb{R}$ of Theorem 8.12: $\mathbb{R}$ has
+no boundary. -/
 theorem _root_.sobolevIntervalLpZero_top (hp : p ≠ ⊤) : SobolevIntervalLpZero 1 p ⊤ = ⊤ :=
   eq_top_iff.2 fun u _ ↦ (mem_sobolevIntervalLpZero_iff Opens.ordConnected_top hp u).2 fun x hx ↦ by
     rw [Opens.coe_top, frontier_univ] at hx
     exact absurd hx (notMem_empty x)
 
-/-- **Remark 14 (ii) of [brezis2011functional], Chapter 8**: if the continuous representative of
-`u ∈ W^{1,p}(I)`, `1 ≤ p < ∞`, vanishes off a subset `K ⊆ I` (for instance a compact one), then
-`u ∈ W_0^{1,p}(I)`: `ũ` vanishes at the boundary points of `I`, which are not in `K`. -/
+/-- Let $I$ be an open interval, $1 \le p < \infty$, and $K \subseteq I$. If $u \in W^{1,p}(I)$
+satisfies $\tilde u = 0$ on $\bar I \setminus K$, then $u \in W_0^{1,p}(I)$. This is a form of
+Remark 14 (ii) of [brezis2011functional], Chapter 8, for an arbitrary subset $K$ of $I$ in place
+of a compact one.
+
+The points of $\partial I$ are not in $I$, hence not in $K$, so $\tilde u$ vanishes there and
+Theorem 8.12 applies. -/
 theorem mem_of_rep_eq_zero_off (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) {K : Set ℝ} (hKI : K ⊆ I)
     (hK : ∀ x ∈ closure (I : Set ℝ), x ∉ K → rep u x = 0) : u ∈ SobolevIntervalLpZero 1 p I :=
   (mem_sobolevIntervalLpZero_iff hI hp u).2 fun x hx ↦
     hK x (frontier_subset_closure hx) fun hxK ↦ I.notMem_of_mem_frontier hx (hKI hxK)
 
-/-- **Remark 14 (ii) of [brezis2011functional], Chapter 8**, for the support: if the support of
-the continuous representative of `u ∈ W^{1,p}(I)`, `1 ≤ p < ∞`, lies in `I`, then
-`u ∈ W_0^{1,p}(I)`. -/
+/-- Let $I$ be an open interval and $1 \le p < \infty$. If the support of the continuous
+representative of $u \in W^{1,p}(I)$ lies in $I$, then $u \in W_0^{1,p}(I)$. This is a form of
+Remark 14 (ii) of [brezis2011functional], Chapter 8. -/
 theorem mem_of_tsupport_rep_subset (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I) (h : tsupport (rep u) ⊆ I) :
     u ∈ SobolevIntervalLpZero 1 p I :=
   mem_of_rep_eq_zero_off hI hp u h fun _ _ hx ↦ image_eq_zero_of_notMem_tsupport hx
 
-/-- **Remark 14 (ii) of [brezis2011functional], Chapter 8**, as stated there: if the continuous
-representative of `u ∈ W^{1,p}(I)`, `1 ≤ p < ∞`, vanishes off a compact subset of `I`, then
-`u ∈ W_0^{1,p}(I)`. -/
+/-- Let $I$ be an open interval and $1 \le p < \infty$. If the continuous representative of
+$u \in W^{1,p}(I)$ vanishes on $\bar I$ off a compact subset $K$ of $I$, then
+$u \in W_0^{1,p}(I)$. This is Remark 14 (ii) of [brezis2011functional], Chapter 8, as stated
+there. -/
 theorem mem_of_hasCompactSupport (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp 1 p I)
     (h : ∃ K : Set ℝ, IsCompact K ∧ K ⊆ I ∧ ∀ x ∈ closure (I : Set ℝ), x ∉ K → rep u x = 0) :
@@ -1295,8 +1424,9 @@ namespace SobolevIntervalLp
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- The `L^p(ℝ)` distance from a function vanishing off `I` to the zero extension of `g` is the
-`L^p(I)` distance to `g`. -/
+/-- Let $f$ vanish off the open set $I$, and let $g$ be any function. Then the $L^p(\mathbb{R})$
+distance from $f$ to the zero extension $1_I g$ of $g$ equals the $L^p(I)$ distance from $f$ to
+$g$, for every exponent $p$. -/
 theorem eLpNorm_sub_indicator (f g : ℝ → ℝ) (hf : ∀ x, x ∉ (I : Set ℝ) → f x = 0) :
     eLpNorm (f - (I : Set ℝ).indicator g) p volume = eLpNorm (f - g) p (volume.restrict I) := by
   rw [← eLpNorm_indicator_eq_eLpNorm_restrict I.isOpen.measurableSet.nullMeasurableSet]
@@ -1306,7 +1436,8 @@ theorem eLpNorm_sub_indicator (f g : ℝ → ℝ) (hf : ∀ x, x ∉ (I : Set �
   · simp [indicator_of_mem hx]
   · simp [indicator_of_notMem hx, hf x hx]
 
-/-- The components of a convergent sequence converge, in `ℝ≥0∞`. -/
+/-- Let $1 \le p \le \infty$. If $w_n \to u$ in $W^{1,p}(I)$, then $\|(w_n - u)^{(j)}\|_p \to 0$ for
+$j = 0, 1$, in $[0, \infty]$. -/
 theorem tendsto_enorm_deriv_sub {w : ℕ → SobolevIntervalLp 1 p I} {u : SobolevIntervalLp 1 p I}
     (hlim : Tendsto w atTop (𝓝 u)) (j : Fin 2) :
     Tendsto (fun n ↦ ‖deriv (w n - u) j‖ₑ) atTop (𝓝 0) := by
@@ -1318,7 +1449,8 @@ theorem tendsto_enorm_deriv_sub {w : ℕ → SobolevIntervalLp 1 p I} {u : Sobol
   simpa only [ofReal_norm] using h2
 
 omit [Fact (1 ≤ p)] in
-/-- The zero extension of the function of `u ∈ W^{1,p}(I)` lies in `L^p(ℝ)`. -/
+/-- For $u \in W^{1,p}(I)$ and $j \in \{0, 1\}$, the zero extension $1_I u^{(j)}$ of $u^{(j)}$ lies
+in $L^p(\mathbb{R})$, for every exponent $p$. Here $u^{(0)} = u$ and $u^{(1)} = u'$. -/
 theorem memLp_indicator_deriv (u : SobolevIntervalLp 1 p I) (j : Fin 2) :
     MemLp ((I : Set ℝ).indicator (deriv u j)) p volume :=
   memLp_iff.2 (by
@@ -1333,11 +1465,13 @@ variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 open SobolevIntervalLp
 
-/-- **Remark 16 (i) of [brezis2011functional], Chapter 8, forward direction**: the zero extension
-`ū` of `u ∈ W_0^{1,p}(I)`, `1 ≤ p ≤ ∞`, has the zero extension of `u'` as weak derivative on
-`ℝ`. Test functions `φ_n` on `I` converge to `u` in `W^{1,p}(I)`; as test functions on `ℝ` they
-converge to `ū` in `W^{1,p}(ℝ)`, and the weak derivative is closed under `L^p` limits
-(`hasWeakDerivOn_of_tendsto_eLpNorm`). -/
+/-- Let $1 \le p \le \infty$ and $u \in W_0^{1,p}(I)$. Then the zero extension $1_I u$ has the weak
+derivative $1_I u'$ on $\mathbb{R}$. This is the forward direction of Remark 16 (i) of
+[brezis2011functional], Chapter 8.
+
+Test functions $\varphi_n$ on $I$ converge to $u$ in $W^{1,p}(I)$. As test functions on
+$\mathbb{R}$ they converge to the zero extension in $W^{1,p}(\mathbb{R})$, and the weak
+derivative is closed under $L^p$ limits (`hasWeakDerivOn_of_tendsto_eLpNorm`). -/
 theorem hasWeakDerivOn_indicator {u : SobolevIntervalLp 1 p I}
     (hu : u ∈ SobolevIntervalLpZero 1 p I) :
     HasWeakDerivOn ((I : Set ℝ).indicator (fn u)) ((I : Set ℝ).indicator (deriv u 1)) ⊤ := by
@@ -1373,11 +1507,13 @@ theorem hasWeakDerivOn_indicator {u : SobolevIntervalLp 1 p I}
     rw [← hwφ n] at hx2
     rw [hx1, Pi.sub_apply, Pi.sub_apply, hx2]
 
-/-- **Remark 16 (i) of [brezis2011functional], Chapter 8**: for `1 ≤ p < ∞` and an open interval
-`I`, `u ∈ W^{1,p}(I)` lies in `W_0^{1,p}(I)` if and only if its zero extension `ū` lies in
-`W^{1,p}(ℝ)`. Conversely, the continuous representative of `ū ∈ W^{1,p}(ℝ)` vanishes a.e. on
-one side of each boundary point of `I`, hence at that point by continuity, and Theorem 8.12
-applies. -/
+/-- Let $I$ be an open interval and $1 \le p < \infty$. Then $u \in W^{1,p}(I)$ lies in
+$W_0^{1,p}(I)$ if and only if its zero extension $1_I u$ lies in $W^{1,p}(\mathbb{R})$. This is
+Remark 16 (i) of [brezis2011functional], Chapter 8.
+
+For the converse direction, the continuous representative of the zero extension vanishes almost
+everywhere on one side of each boundary point of $I$, hence at that point by continuity, and
+Theorem 8.12 applies. -/
 theorem _root_.mem_sobolevIntervalLpZero_iff_indicator_mem (hI : (I : Set ℝ).OrdConnected)
     (hp : p ≠ ⊤) (u : SobolevIntervalLp 1 p I) :
     u ∈ SobolevIntervalLpZero 1 p I
@@ -1430,11 +1566,12 @@ theorem _root_.mem_sobolevIntervalLpZero_iff_indicator_mem (hI : (I : Set ℝ).O
 
 end SobolevIntervalLpZero
 
-/-! ### Problem 47 C: the weighted Poincaré–Wirtinger inequality in `L¹(0, 1)` -/
+/-! ### Problem 47 C: the weighted Poincaré–Wirtinger inequality in $L^1(0, 1)$ -/
 
 namespace SobolevIntervalLp
 
-/-- The set of pairs `(x, y)` with `t` strictly between them, `t ∈ Ι y x`, is measurable. -/
+/-- For $t \in \mathbb{R}$, the set of pairs $(x, y)$ with $\min(x, y) < t \le \max(x, y)$ is
+measurable. This is the condition `t ∈ Ι y x`. -/
 theorem measurableSet_setOf_mem_uIoc (t : ℝ) : MeasurableSet {q : ℝ × ℝ | t ∈ Ι q.2 q.1} := by
   simp only [mem_uIoc, Set.ofPred_or, Set.ofPred_and]
   exact ((measurableSet_lt measurable_snd measurable_const).inter
@@ -1442,8 +1579,9 @@ theorem measurableSet_setOf_mem_uIoc (t : ℝ) : MeasurableSet {q : ℝ × ℝ |
     ((measurableSet_lt measurable_fst measurable_const).inter
       (measurableSet_le measurable_const measurable_snd))
 
-/-- **The weight of Problem 47 C.1**: for `t ∈ (0, 1)`, the pairs `(x, y) ∈ (0, 1)²` with `t`
-between `y` and `x` form two rectangles, of total measure `2 t (1 - t)`. -/
+/-- For $t \in (0, 1)$, the pairs $(x, y) \in (0, 1)^2$ with $\min(x, y) < t \le \max(x, y)$ form
+two rectangles, of total measure $2t(1 - t)$. This is the weight of Problem 47 C.1 of
+[brezis2011functional]. -/
 theorem volume_prod_setOf_mem_uIoc {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
     (volume.prod volume) (Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 ∩ {q : ℝ × ℝ | t ∈ Ι q.2 q.1})
       = ENNReal.ofReal (2 * (t * (1 - t))) := by
@@ -1467,7 +1605,8 @@ theorem volume_prod_setOf_mem_uIoc {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
   congr 1
   ring
 
-/-- For `t ∉ (0, 1)`, no pair `(x, y) ∈ (0, 1)²` has `t` between `y` and `x`. -/
+/-- For $t \notin (0, 1)$, no pair $(x, y) \in (0, 1)^2$ satisfies $\min(x, y) < t \le \max(x, y)$.
+-/
 theorem prod_Ioo_inter_setOf_mem_uIoc_eq_empty {t : ℝ} (ht : t ∉ Ioo (0 : ℝ) 1) :
     Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 ∩ {q : ℝ × ℝ | t ∈ Ι q.2 q.1} = ∅ := by
   ext ⟨x, y⟩
@@ -1477,12 +1616,15 @@ theorem prod_Ioo_inter_setOf_mem_uIoc_eq_empty {t : ℝ} (ht : t ∉ Ioo (0 : �
   refine ⟨fun hyt htx ↦ ht ⟨hy0.trans hyt, htx.trans_lt hx1⟩,
     fun hxt hty ↦ ht ⟨hx0.trans hxt, hty.trans_lt hy1⟩⟩
 
-/-- **Problem 47 C.1 of [brezis2011functional], in `ℝ≥0∞`**: for `u ∈ W^{1,1}(0, 1)` and `ū` its
-mean, `∫_0^1 |ũ(x) - ū| dx ≤ ∫_0^1 |u'(t)| 2 t (1 - t) dt`. Since `ũ(x) - ū` is the mean over
-`y` of `ũ(x) - ũ(y) = ∫_y^x u'`, the left side is at most
-`∫∫_{(0,1)²} ∫ |u'(t)| 1_{t ∈ Ι y x} dt dx dy`, and Tonelli's theorem turns this into
-`∫ |u'(t)| · |{(x, y) : t ∈ Ι y x}| dt`, the measure of the two rectangles being
-`2 t (1 - t)` (`SobolevIntervalLp.volume_prod_setOf_mem_uIoc`). -/
+/-- Let $u \in W^{1,1}(0, 1)$ with mean $\bar u$. Then
+$$\int_0^1 |\tilde u(x) - \bar u| \, dx \le \int_0^1 |u'(t)| \, 2t(1 - t) \, dt,$$
+with both integrals in $[0, \infty]$. This is Problem 47 C.1 of [brezis2011functional].
+
+The number $\tilde u(x) - \bar u$ is the mean over $y$ of
+$\tilde u(x) - \tilde u(y) = \int_y^x u'$. So the left side is at most $\int\!\!\int_{(0,1)^2}
+\int |u'(t)| \, 1_{\{\min(x,y) < t \le \max(x,y)\}} \, dt \, dx \, dy$. Tonelli's theorem turns
+this into $\int |u'(t)| \, m(t) \, dt$, where $m(t) = 2t(1 - t)$ is the measure of the two
+rectangles (`SobolevIntervalLp.volume_prod_setOf_mem_uIoc`). -/
 theorem lintegral_enorm_rep_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
     ∫⁻ x in Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ
       ≤ ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (2 * (t * (1 - t))) := by
@@ -1577,9 +1719,11 @@ theorem lintegral_enorm_rep_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo
           rw [hS, hA]; exact volume_prod_setOf_mem_uIoc ht
         rw [h1, hw]
 
-/-- **Problem 47 C.1 of [brezis2011functional]**: for `u ∈ W^{1,1}(0, 1)` and `ū` its mean,
-`∫_0^1 |ũ(x) - ū| dx ≤ 2 ∫_0^1 |u'(t)| t (1 - t) dt` — the Fubini computation of
-`SobolevIntervalLp.lintegral_enorm_rep_sub_average_le`, read in `ℝ`. -/
+/-- Let $u \in W^{1,1}(0, 1)$ with mean $\bar u$. Then
+$$\int_0^1 |\tilde u(x) - \bar u| \, dx \le 2 \int_0^1 |u'(t)| \, t(1 - t) \, dt.$$
+This is Problem 47 C.1 of [brezis2011functional].
+
+It is `SobolevIntervalLp.lintegral_enorm_rep_sub_average_le`, read in $\mathbb{R}$. -/
 theorem integral_abs_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
     ∫ x in Ioo (0 : ℝ) 1, |rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y|
       ≤ 2 * ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| * (t * (1 - t)) := by
@@ -1635,8 +1779,11 @@ theorem integral_abs_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) 
     _ = 2 * (∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t))).toReal := by
         rw [ENNReal.toReal_mul, ENNReal.toReal_ofNat]
 
-/-- **Problem 47 C.2 of [brezis2011functional]**: for `u ∈ W^{1,1}(0, 1)` and `ū` its mean,
-`‖u - ū‖_{L¹(0, 1)} ≤ ½ ‖u'‖_{L¹(0, 1)}`, since `2 t (1 - t) ≤ ½` on `(0, 1)`. -/
+/-- Let $u \in W^{1,1}(0, 1)$ with mean $\bar u$. Then $\|u - \bar u\|_{L^1(0, 1)} \le \frac12
+\|u'\|_{L^1(0, 1)}$. This is Problem 47 C.2 of [brezis2011functional].
+
+It follows from `SobolevIntervalLp.integral_abs_sub_average_le`, since $2t(1 - t) \le \frac12$
+on $(0, 1)$. -/
 theorem integral_abs_sub_average_le_half (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
     ∫ x in Ioo (0 : ℝ) 1, |rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y| ≤ 1 / 2 * ‖deriv u 1‖ := by
   refine (integral_abs_sub_average_le u).trans ?_
@@ -1665,26 +1812,29 @@ theorem integral_abs_sub_average_le_half (u : SobolevIntervalLp 1 1 (Opens.Ioo 0
 
 end SobolevIntervalLp
 
-/-! ### Remark 18: `W_0^{m,p}(I)` by the boundary values of the derivatives -/
+/-! ### Remark 18: $W_0^{m,p}(I)$ by the boundary values of the derivatives -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
 omit [Fact (1 ≤ p)] in
-/-- An element of `W^{1,p}(I)` is its own pair `(u, u')`. -/
+/-- For $u \in W^{1,p}(I)$, the pair $(D^0 u, D^1 u)$ given by `SobolevIntervalLp.derivOne u 0` is
+$u$ itself. -/
 theorem derivOne_zero_eq (u : SobolevIntervalLp 1 p I) : derivOne u 0 = u :=
   ext fun i ↦ by fin_cases i <;> rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The pairs of the shift `Du` are the pairs of `u` one order up. -/
+/-- For $u \in W^{m+2,p}(I)$ and $j \le m$, the pair $(D^j (Du), D^{j+1} (Du))$ of the shift $Du$ is
+the pair $(D^{j+1} u, D^{j+2} u)$ of $u$. -/
 theorem derivOne_shift (u : SobolevIntervalLp (m + 2) p I) (j : Fin (m + 1)) :
     derivOne (shift u) j = derivOne u j.succ :=
   ext fun i ↦ by fin_cases i <;> rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The weak derivatives of an element of `W^{m,p}(I)` carried by a test function are the
-classical derivatives of the test function, almost everywhere on `I`. -/
+/-- Let $u \in W^{m,p}(I)$ and let $\varphi$ be a test function on $I$ with $u = \varphi$ almost
+everywhere on $I$. Then for $j \le m$ the weak derivative $D^j u$ equals the classical
+derivative $\varphi^{(j)}$ almost everywhere on $I$, for every exponent $p$. -/
 theorem deriv_ae_eq_iteratedDeriv_of_fn_ae_eq {u : SobolevIntervalLp m p I} {φ : 𝓓(I, ℝ)}
     (hu : fn u =ᵐ[volume.restrict I] φ) (j : Fin (m + 1)) :
     ⇑(deriv u j) =ᵐ[volume.restrict I] iteratedDeriv j φ :=
@@ -1692,11 +1842,15 @@ theorem deriv_ae_eq_iteratedDeriv_of_fn_ae_eq {u : SobolevIntervalLp m p I} {φ 
     (((hasWeakIteratedDerivOn_deriv u j).congr_ae hu EventuallyEq.rfl).ae_eq
       (hasWeakIteratedDerivOn_of_contDiffOn φ.contDiff.contDiffOn (by simp)))
 
-/-- **Remark 18 of [brezis2011functional], Chapter 8, the easy direction**: the derivatives of
-orders `0, …, m` of an element of `W_0^{m+1,p}(I)` vanish on the boundary of `I` — the
-evaluation of `D^j u` at a point of `∂I` is a continuous linear functional on `W^{m+1,p}(I)`
-(`SobolevIntervalLp.evalCLM'` after `SobolevIntervalLp.derivOneCLM`) vanishing on the test
-functions, hence on their closure. -/
+/-- Let $I$ be an open interval and $1 \le p \le \infty$. If $u \in W_0^{m+1,p}(I)$, then the
+derivatives $D^j u$ of orders $j = 0, \dots, m$ vanish on $\partial I$. This is the easy
+direction of Remark 18 of [brezis2011functional], Chapter 8.
+
+Each $D^j u$ is read as the element `SobolevIntervalLp.derivOne u j` of $W^{1,p}(I)$ through its
+continuous representative. Evaluation of $D^j u$ at a point of $\partial I$ is a continuous
+linear functional on $W^{m+1,p}(I)$ (`SobolevIntervalLp.evalCLM'` after
+`SobolevIntervalLp.derivOneCLM`). It vanishes on the test functions, so it vanishes on their
+closure. -/
 theorem _root_.SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero (hI : (I : Set ℝ).OrdConnected)
     {u : SobolevIntervalLp (m + 1) p I} (hu : u ∈ SobolevIntervalLpZero (m + 1) p I)
     (j : Fin (m + 1)) {x : ℝ} (hx : x ∈ frontier (I : Set ℝ)) : rep (derivOne u j) x = 0 := by
@@ -1716,14 +1870,16 @@ theorem _root_.SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero (hI : (I : Se
 
 variable {a b : ℝ}
 
-/-- **The induction step of Remark 18 on a bounded interval**: for `u ∈ W^{m+2,p}(a, b)` whose
-shift `Du` lies in `W_0^{m+1,p}(a, b)` and whose representative vanishes at `a` and `b`,
-`u ∈ W_0^{m+2,p}(a, b)`. Approximate `Du` by test-function elements `v`, correct the mean of their
-functions by a multiple of a fixed test function of integral one (the mean of `Du` is
-`ũ(b) - ũ(a) = 0`), and take the primitive from `a`, which is again a test function
-(`TestFunction.primitiveIic`) whose element approximates `u` in `W^{m+2,p}(a, b)`: its
-derivatives of orders `≥ 1` are those of `v`, and its function is controlled by Poincaré's
-inequality (`SobolevIntervalLp.eLpNorm_integral_le`). -/
+/-- **The induction step of Remark 18** on a bounded interval. Let $a < b$ and $1 \le p \le \infty$,
+and let $u \in W^{m+2,p}(a, b)$. If the shift $Du$ lies in $W_0^{m+1,p}(a, b)$ and the
+representative of $u$ vanishes at $a$ and $b$, then $u \in W_0^{m+2,p}(a, b)$.
+
+The proof approximates $Du$ by elements given by test functions $v$, corrects the mean of these
+functions by a multiple of a fixed test function of integral one (the mean of $Du$ is
+$\tilde u(b) - \tilde u(a) = 0$), and takes the primitive from $a$. This primitive is again a
+test function (`TestFunction.primitiveIic`), and it approximates $u$ in $W^{m+2,p}(a, b)$: its
+derivatives of orders $\ge 1$ are those of $v$, and Poincaré's inequality
+(`SobolevIntervalLp.eLpNorm_integral_le`) controls its function. -/
 theorem _root_.SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero (hab : a < b)
     (u : SobolevIntervalLp (m + 2) p (Opens.Ioo a b))
     (hshift : shift u ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b))
@@ -1892,15 +2048,18 @@ theorem _root_.SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero (hab : a < 
         rw [hη, ← mul_div_assoc, mul_comm M ε, mul_div_mul_right _ _ hM0.ne']
     _ < ε := half_lt_self hε
 
-/-- **Remark 18 of [brezis2011functional], Chapter 8, on a bounded interval**: for `a < b`,
-`1 ≤ p < ∞` and `u ∈ W^{m+1,p}(a, b)`, `u ∈ W_0^{m+1,p}(a, b)` if and only if
-`u = Du = ⋯ = D^m u = 0` on `∂(a, b) = {a, b}`, each `D^j u` (`j ≤ m`) read as the element
-`SobolevIntervalLp.derivOne u j` of `W^{1,p}(a, b)` through its continuous representative. The
-forward direction is `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`; the converse is by
-induction on `m` from Theorem 8.12 (`mem_sobolevIntervalLpZero_iff`), the induction step being
-`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero` — no moment conditions on `D^{m+1} u` and
-no `m`-fold primitives are needed, since `Du ∈ W_0^{m,p}(a, b)` is the induction hypothesis. The
-book's route (Exercise 8.9, Hardy-type inequalities) is not followed. -/
+/-- Let $a < b$ and $1 \le p < \infty$. Then $u \in W^{m+1,p}(a, b)$ lies in $W_0^{m+1,p}(a, b)$ if
+and only if
+$$u = Du = \dots = D^m u = 0 \quad\text{on } \partial(a, b) = \{a, b\}.$$
+This is Remark 18 of [brezis2011functional], Chapter 8, on a bounded interval.
+
+Each $D^j u$, $j \le m$, is read as the element `SobolevIntervalLp.derivOne u j` of
+$W^{1,p}(a, b)$ through its continuous representative. The forward direction is
+`SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`. The converse is by induction on $m$ from
+Theorem 8.12 (`mem_sobolevIntervalLpZero_iff`), with the induction step
+`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero`. No moment conditions on $D^{m+1} u$ and
+no $m$-fold primitives are needed, because $Du \in W_0^{m,p}(a, b)$ is the induction hypothesis.
+The route of the source, through Exercise 8.9 and Hardy-type inequalities, is not followed. -/
 theorem _root_.mem_sobolevIntervalLpZero_higher_iff_of_bounded (hab : a < b) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b)) :
     u ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b)
@@ -1929,7 +2088,7 @@ end SobolevIntervalLp
 
 
 
-/-! ### Convergence in `W^{m,p}(I)` from the convergence of the derivatives -/
+/-! ### Convergence in $W^{m,p}(I)$ from the convergence of the derivatives -/
 
 section Convergence
 
@@ -1937,8 +2096,11 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- Convergence in `W^{m,p}(I)` from the `L^p(I)` convergence of the weak derivatives of orders
-`0, …, m`: the one-dimensional reading of
+/-- Let $1 \le p \le \infty$, and let $w_n, u \in W^{m,p}(I)$. If
+$\|D^j w_n - D^j u\|_{L^p(I)} \to 0$ for every $j = 0, \dots, m$, then $w_n \to u$ in
+$W^{m,p}(I)$.
+
+This is the one-dimensional case of
 `SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`. -/
 theorem tendsto_of_forall_tendsto_eLpNorm_deriv_sub {w : ℕ → SobolevIntervalLp m p I}
     {u : SobolevIntervalLp m p I}
@@ -1963,8 +2125,10 @@ section CutoffHigher
 
 namespace SobolevIntervalLp
 
-/-- The derivatives of every order of the cut-offs `ζ_n` are bounded uniformly in `n`:
-`ζ_n^{(k)}(x) = (n + 1)^{-k} ζ^{(k)}(x / (n + 1))`. -/
+/-- The derivatives of each order $k$ of the cut-offs are bounded uniformly in $n$: there is a
+constant $C \ge 0$ with $|\zeta_n^{(k)}(x)| \le C$ for all $n$ and $x$.
+
+The bound follows from $\zeta_n^{(k)}(x) = (n + 1)^{-k} \zeta^{(k)}(x / (n + 1))$. -/
 theorem exists_forall_abs_iteratedDeriv_cutoffFn_le (k : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (n : ℕ) (x : ℝ), |iteratedDeriv k (cutoffFn n) x| ≤ C := by
   obtain ⟨C, hC⟩ := (cutoffBump.hasCompactSupport.iteratedDeriv k).exists_bound_of_continuous
@@ -1982,7 +2146,8 @@ theorem exists_forall_abs_iteratedDeriv_cutoffFn_le (k : ℕ) :
         · exact (Real.norm_eq_abs _).symm.le.trans ((hC _).trans (le_max_left _ _))
     _ = max C 0 := by rw [one_pow, one_mul]
 
-/-- The derivatives of positive order of `ζ_n` vanish on `(-(n + 1), n + 1)`, where `ζ_n = 1`. -/
+/-- For $k \ge 1$ and $|x| < n + 1$, $\zeta_n^{(k)}(x) = 0$, since $\zeta_n = 1$ on
+$(-(n + 1), n + 1)$. -/
 theorem iteratedDeriv_cutoffFn_eq_zero_of_abs_lt {n k : ℕ} (hk : k ≠ 0) {x : ℝ}
     (hx : |x| < (n : ℝ) + 1) : iteratedDeriv k (cutoffFn n) x = 0 := by
   have hev : cutoffFn n =ᶠ[𝓝 x] fun _ ↦ (1 : ℝ) :=
@@ -1991,7 +2156,7 @@ theorem iteratedDeriv_cutoffFn_eq_zero_of_abs_lt {n k : ℕ} (hk : k ≠ 0) {x :
   rw [hev.iteratedDeriv_eq, iteratedDeriv_const]
   simp [hk]
 
-/-- The derivatives of every order of `ζ_n` vanish where `|x| > 2(n + 1)`. -/
+/-- For every $k$ and $|x| > 2(n + 1)$, $\zeta_n^{(k)}(x) = 0$. -/
 theorem iteratedDeriv_cutoffFn_eq_zero_of_lt_abs {n k : ℕ} {x : ℝ}
     (hx : 2 * ((n : ℝ) + 1) < |x|) : iteratedDeriv k (cutoffFn n) x = 0 := by
   have hev : cutoffFn n =ᶠ[𝓝 x] fun _ ↦ (0 : ℝ) :=
@@ -2002,7 +2167,8 @@ theorem iteratedDeriv_cutoffFn_eq_zero_of_lt_abs {n k : ℕ} {x : ℝ}
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- The `L^p(I)` mass of `f ∈ L^p(I)` off `(-(n + 1), n + 1)` tends to `0`. -/
+/-- Let $1 \le p < \infty$ and $f \in L^p(I)$. Then the $L^p(I)$ norm of $f$ off $(-(n + 1), n + 1)$
+tends to $0$ as $n \to \infty$. -/
 theorem tendsto_eLpNorm_restrict_compl_Ioo (hp : p ≠ ⊤) {f : ℝ → ℝ}
     (hf : MemLp f p (volume.restrict I)) :
     Tendsto (fun n : ℕ ↦ eLpNorm f p
@@ -2013,8 +2179,10 @@ theorem tendsto_eLpNorm_restrict_compl_Ioo (hp : p ≠ ⊤) {f : ℝ → ℝ}
   simp only [Function.comp_def]
   rw [Measure.restrict_congr_set (ae_eq_set_compl_compl.2 Ioo_ae_eq_Icc)]
 
-/-- The pointwise bound `|ζ_n^{(k)} f| ≤ C |1_{(-(n+1), n+1)ᶜ} f|` for `k ≥ 1` and
-`|ζ_n^{(k)}| ≤ C`. -/
+/-- Let $k \ge 1$ and let $|\zeta_n^{(k)}| \le C$ on $\mathbb{R}$. Then for every function $f$ and
+every $x$,
+$$|\zeta_n^{(k)}(x) f(x)| \le C \, |1_{\mathbb{R} \setminus (-(n+1), n+1)}(x) f(x)|.$$
+-/
 theorem norm_iteratedDeriv_cutoffFn_mul_le {n k : ℕ} (hk : k ≠ 0) {C : ℝ}
     (hC : ∀ x, |iteratedDeriv k (cutoffFn n) x| ≤ C) (f : ℝ → ℝ) (x : ℝ) :
     ‖iteratedDeriv k (cutoffFn n) x * f x‖
@@ -2026,7 +2194,8 @@ theorem norm_iteratedDeriv_cutoffFn_mul_le {n k : ℕ} (hk : k ≠ 0) {C : ℝ}
   · rw [indicator_of_mem (mem_compl hx), Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
     exact mul_le_mul_of_nonneg_right (hC x) (abs_nonneg _)
 
-/-- The pointwise bound `|(ζ_n − 1) f| ≤ |1_{(-(n+1), n+1)ᶜ} f|`. -/
+/-- For every function $f$ and every $x$, $|(\zeta_n(x) - 1) f(x)| \le |1_{\mathbb{R} \setminus
+(-(n+1), n+1)}(x) f(x)|$. -/
 theorem norm_cutoffFn_sub_one_mul_le (n : ℕ) (f : ℝ → ℝ) (x : ℝ) :
     ‖(cutoffFn n x - 1) * f x‖ ≤ ‖(Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ.indicator f x‖ := by
   by_cases hx : x ∈ Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1)
@@ -2036,14 +2205,18 @@ theorem norm_cutoffFn_sub_one_mul_le (n : ℕ) (f : ℝ → ℝ) (x : ℝ) :
     exact mul_le_of_le_one_left (abs_nonneg _)
       (abs_le.2 ⟨by linarith [cutoffFn_nonneg n x], by linarith [cutoffFn_le_one n x]⟩)
 
-/-- **The cut-offs at every order** ([brezis2011functional], proof of Theorem 8.7 (b), for
-`W^{m,p}(I)`): for `u ∈ W^{m,p}(I)`, `1 ≤ p < ∞`, there are elements `v n ∈ W^{m,p}(I)`, the
-products `ζ_n u`, whose weak derivatives are given by the Leibniz formula
-`D^j (ζ_n u) = ∑_{i ≤ j} C(j, i) ζ_n^{(j−i)} D^i u` (`SobolevIntervalLp.exists_contDiff_mul`),
-and `v n → u` in `W^{m,p}(I)`: `D^j (ζ_n u) − D^j u = (ζ_n − 1) D^j u + ∑_{i < j} C(j, i)
-ζ_n^{(j−i)} D^i u`, where every term vanishes on `(-(n+1), n+1)` and is bounded by a constant
-times `|D^i u|`, so its `L^p` norm is at most a constant times the `L^p` mass of `D^i u` off
-`(-(n+1), n+1)`, which tends to `0`. -/
+/-- **The cut-offs at every order.** Let $1 \le p < \infty$ and $u \in W^{m,p}(I)$. Then there are
+elements $v_n \in W^{m,p}(I)$, the products $\zeta_n u$, whose weak derivatives are given by the
+Leibniz formula
+$$D^j v_n = \sum_{i \le j} \binom{j}{i} \zeta_n^{(j-i)} D^i u \qquad\text{almost everywhere on }
+  I, \quad j \le m,$$
+and $v_n \to u$ in $W^{m,p}(I)$. This extends a step of the proof of Theorem 8.7 (b) of
+[brezis2011functional] to $W^{m,p}(I)$.
+
+The elements come from `SobolevIntervalLp.exists_contDiff_mul`. The difference $D^j v_n - D^j
+u = (\zeta_n - 1) D^j u + \sum_{i < j} \binom{j}{i} \zeta_n^{(j-i)} D^i u$ has terms that vanish
+on $(-(n+1), n+1)$ and are bounded by a constant times $|D^i u|$. So the $L^p$ norm of each term
+is at most a constant times the $L^p$ norm of $D^i u$ off $(-(n+1), n+1)$, which tends to $0$. -/
 theorem exists_cutoff_tendsto (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
     ∃ v : ℕ → SobolevIntervalLp m p I,
       (∀ (n : ℕ) (j : Fin (m + 1)), ⇑(deriv (v n) j) =ᵐ[volume.restrict I]
@@ -2128,13 +2301,15 @@ open SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I J : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- **Transfer of membership in `W_0^{m,p}` from a subinterval**: if `J ⊆ I`, the restriction of
-`u ∈ W^{m,p}(I)` to `J` lies in `W_0^{m,p}(J)`, and `u` vanishes almost everywhere on `I` outside a
-closed set `K` with `K ∩ I ⊆ J`, then `u ∈ W_0^{m,p}(I)`: the one-dimensional, every-order
-version of `SobolevMultiIndexZero.mem_of_mem_restrict`. Test functions on `J` converging to
-`u|_J` are test functions on `I` converging to `u` in `W^{m,p}(I)`, because every component of
-the difference vanishes almost everywhere on `I ∖ J`; the case `E = ℝ` of
-`SobolevMultiIndexZero.mem_of_mem_restrict`. -/
+/-- **Transfer of membership in $W_0^{m,p}$ from a subset.** Let $1 \le p \le \infty$, let
+$J \subseteq I$ be open, and let $u \in W^{m,p}(I)$. Assume that the restriction of $u$ to $J$
+lies in $W_0^{m,p}(J)$, and that $u = 0$ almost everywhere on $I$ outside a closed set $K$ with
+$K \cap I \subseteq J$. Then $u \in W_0^{m,p}(I)$.
+
+This is the case $E = \mathbb{R}$ of `SobolevMultiIndexZero.mem_of_mem_restrict`. Test functions
+on $J$ that converge to the restriction of $u$ are test functions on $I$ that converge to $u$ in
+$W^{m,p}(I)$, because every component of the difference vanishes almost everywhere on
+$I \setminus J$. The restriction is `SobolevMultiIndex.restrictL`. -/
 theorem mem_of_restrictL_mem (h : J ≤ I) {u : SobolevIntervalLp m p I}
     (hu : SobolevMultiIndex.restrictL ℝ (Module.Basis.singleton Unit ℝ) m p volume h u
       ∈ SobolevIntervalLpZero m p J)
@@ -2149,18 +2324,22 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
 
-/-- **Remark 18 of [brezis2011functional], Chapter 8, on any open interval**: for `1 ≤ p < ∞` and
-`u ∈ W^{m+1,p}(I)`, `u ∈ W_0^{m+1,p}(I)` if and only if `u = Du = ⋯ = D^m u = 0` on `∂I`, each
-`D^j u` (`j ≤ m`) read as the element `SobolevIntervalLp.derivOne u j` of `W^{1,p}(I)` through
-its continuous representative. The forward direction is
-`SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`; the converse reduces to the bounded case
-`mem_sobolevIntervalLpZero_higher_iff_of_bounded` through the cut-offs `ζ_n u → u` in
-`W^{m+1,p}(I)` (`SobolevIntervalLp.exists_cutoff_tendsto`, with the Leibniz formula for their
-derivatives): on the bounded interval `J_n = I ∩ (−3(n+1), 3(n+1))` the derivatives of `ζ_n u` of
-orders `≤ m` vanish at the endpoints — at those of `I` because those of `u` do, at `±3(n+1)`
-because `ζ_n` vanishes near them — so `ζ_n u|_{J_n} ∈ W_0^{m+1,p}(J_n)`, hence
-`ζ_n u ∈ W_0^{m+1,p}(I)` (`SobolevIntervalLpZero.mem_of_restrictL_mem`), and `W_0^{m+1,p}(I)` is
-closed. The book's route (Exercise 8.9, Hardy-type inequalities) is not followed. -/
+/-- Let $I$ be an open interval, $1 \le p < \infty$, and $u \in W^{m+1,p}(I)$. Then
+$u \in W_0^{m+1,p}(I)$ if and only if
+$$u = Du = \dots = D^m u = 0 \quad\text{on } \partial I.$$
+This is Remark 18 of [brezis2011functional], Chapter 8, on every open interval.
+
+Each $D^j u$, $j \le m$, is read as the element `SobolevIntervalLp.derivOne u j` of $W^{1,p}(I)$
+through its continuous representative. The forward direction is
+`SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`. The converse reduces to the bounded case
+`mem_sobolevIntervalLpZero_higher_iff_of_bounded` through the cut-offs $\zeta_n u \to u$ in
+$W^{m+1,p}(I)$ (`SobolevIntervalLp.exists_cutoff_tendsto`, with the Leibniz formula for their
+derivatives). On the bounded interval $J_n = I \cap (-3(n+1), 3(n+1))$ the derivatives of
+$\zeta_n u$ of orders $\le m$ vanish at the endpoints: at those of $I$ because those of $u$ do,
+and at $\pm 3(n+1)$ because $\zeta_n$ vanishes near them. So the restriction of $\zeta_n u$ to
+$J_n$ lies in $W_0^{m+1,p}(J_n)$, hence $\zeta_n u \in W_0^{m+1,p}(I)$
+(`SobolevIntervalLpZero.mem_of_restrictL_mem`), and $W_0^{m+1,p}(I)$ is closed. The route of the
+source, through Exercise 8.9 and Hardy-type inequalities, is not followed. -/
 theorem _root_.mem_sobolevIntervalLpZero_higher_iff (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
     (u : SobolevIntervalLp (m + 1) p I) :
     u ∈ SobolevIntervalLpZero (m + 1) p I

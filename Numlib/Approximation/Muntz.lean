@@ -13,47 +13,57 @@ import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.LinearAlgebra.Matrix.Cauchy
 
 /-!
-# The Müntz–Szász theorem in `L²(0, 1)`
+# The Müntz–Szász theorem in $L^2(0, 1)$
 
-For `0 < λ₀ < λ₁ < ⋯` with `λⱼ → ∞`, the span of the powers `t ↦ t ^ λⱼ` is dense in `L²(0, 1)`
-if and only if `∑ 1 / λⱼ` diverges (`Muntz.dense_span_powerL2_iff`). Mathlib has neither the
-Müntz–Szász theorem nor a Hardy space theory; the route here is the classical one through Gram
-determinants.
+Let $0 < \lambda_0 < \lambda_1 < \cdots$ be real exponents with $\lambda_j \to \infty$. The
+**Müntz–Szász theorem** says that the span of the powers $t \mapsto t^{\lambda_j}$ is dense in
+$L^2(0, 1)$ if and only if $\sum_j 1/\lambda_j = \infty$. This is Theorem 3.1.5 of
+[han2009theoretical]. Mathlib has neither the Müntz–Szász theorem nor a theory of Hardy spaces, and
+the proof here is the classical one through Gram determinants.
+
+The key formula is the distance in $L^2(0, 1)$ from a power $t^a$ to the span of finitely many
+distinct powers $t^{l_0}, \dots, t^{l_{n-1}}$, with all exponents greater than $-1/2$:
+$$d^2 = \frac{1}{2a + 1} \prod_{i < n} \Bigl(\frac{a - l_i}{a + l_i + 1}\Bigr)^2.$$
 
 ## Main definitions
 
-* `Muntz.powerL2 l` — the power `t ↦ t ^ l` as an element of `L²(0, 1)` (the zero element when
-  `l ≤ -1/2`, where the power is not square integrable).
+* `Muntz.powerL2`: the power $t \mapsto t^l$ as an element of $L^2(0, 1)$, and $0$ when
+  $l \le -1/2$, where the power is not square integrable.
 
 ## Main results
 
-* `Muntz.inner_powerL2` — `⟪tᵃ, t^b⟫ = 1 / (a + b + 1)`.
-* `Muntz.linearIndependent_powerL2` — distinct powers are linearly independent.
-* `Muntz.dist_sq_powerL2` — the squared distance from `tᵃ` to the span of `t^{l₀}, …, t^{l_{n-1}}`
-  is `(2a + 1)⁻¹ ∏ᵢ ((a - lᵢ) / (a + lᵢ + 1))²`.
-* `Muntz.dense_span_powerL2_natCast` — the monomials span a dense subspace of `L²(0, 1)`.
-* `Muntz.dense_span_powerL2_iff` — the Müntz–Szász theorem.
+* `Muntz.inner_powerL2`: $\langle t^a, t^b \rangle = 1/(a + b + 1)$ for $a, b > -1/2$.
+* `Muntz.linearIndependent_powerL2`: distinct powers are linearly independent.
+* `Muntz.dist_sq_powerL2`: the squared distance from $t^a$ to the span of
+  $t^{l_0}, \dots, t^{l_{n-1}}$ is $(2a + 1)^{-1} \prod_i ((a - l_i)/(a + l_i + 1))^2$.
+* `Muntz.dense_span_powerL2_natCast`: the monomials $t^m$, $m \in \mathbb{N}$, span a dense subspace
+  of $L^2(0, 1)$.
+* `Muntz.dense_span_powerL2_iff`: the Müntz–Szász theorem.
 
-## Proof
+## Proof outline
 
-`inner_powerL2` makes the Gram matrix of a finite system of powers the Cauchy matrix of
-`Numlib/LinearAlgebra/Matrix/Cauchy`, whose determinant is `Matrix.det_cauchy`. Gram's formula for
-the distance to a span, `Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real` of
-`Numlib/Analysis/InnerProductSpace/GramDeterminant`, turns the quotient of two such determinants
-into the squared best-approximation error, and the quotient telescopes to `dist_sq_powerL2`.
+By `Muntz.inner_powerL2`, the Gram matrix of a finite family of powers is a Cauchy matrix
+(`Matrix.cauchy`), whose determinant is given by `Matrix.det_cauchy`. Gram's formula for the
+distance to a span, `Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real`, writes the squared
+best approximation error as a quotient of two such determinants, and the quotient simplifies to the
+product above.
 
-The rest is real analysis of that product. Since `1 - (λᵢ - a)/(λᵢ + a + 1) = (2a+1)/(λᵢ + a + 1)`
-is comparable to `1/λᵢ`, the product tends to `0` exactly when `∑ 1/λᵢ` diverges: `1 - x ≤ exp (-x)`
-for the vanishing, the Weierstrass product inequality `1 - ∑ bᵢ ≤ ∏ (1 - bᵢ)` for the lower bound.
-For the *if* direction the vanishing is applied at every natural number `a = m` and closed against
-`dense_span_powerL2_natCast`, the density of the polynomials in `L²(0, 1)`, which is
-`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ` of `Numlib/Approximation/OrthogonalPolynomial`
-for Lebesgue measure on `(0, 1)`. For the *only if* direction the lower bound is applied at one `a`
-outside the sequence, namely a point between `λ₀` and `λ₁`.
+The rest is real analysis of that product. Since $1 - (\lambda_i - a)/(\lambda_i + a + 1) = (2a +
+1)/(\lambda_i + a + 1)$ is comparable to $1/\lambda_i$, the product tends to $0$ exactly when
+$\sum_i 1/\lambda_i$ diverges. The inequality $1 - x \le e^{-x}$ gives the vanishing, and the
+Weierstrass product inequality $1 - \sum_i b_i \le \prod_i (1 - b_i)$ gives the lower bound. For the
+direction "divergence implies density", the vanishing is applied at every natural number $a = m$,
+and the density of the polynomials in $L^2(0, 1)$ finishes the proof. That density is
+`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ` for Lebesgue measure on $(0, 1)$. For the converse
+direction, the lower bound is applied at one exponent $a$ strictly between $\lambda_0$ and
+$\lambda_1$.
 
-## References
+## Implementation notes
 
-[han2009theoretical] Theorem 3.1.5.
+* $L^2(0, 1)$ is `Lp ℝ 2 (volume.restrict (Set.Ioo 0 1))`, the real space $L^2$ of Lebesgue measure
+  on the open interval $(0, 1)$.
+* The divergence of $\sum_j 1/\lambda_j$ is stated as `¬ Summable fun j ↦ (lam j)⁻¹`. The terms are
+  positive, so the two conditions agree.
 -/
 
 open Filter MeasureTheory Set Submodule
@@ -62,7 +72,7 @@ open scoped Topology
 
 namespace Muntz
 
-/-- The measure of `L²(0, 1)`: Lebesgue measure restricted to the open unit interval. -/
+/-- The measure of $L^2(0, 1)$: Lebesgue measure restricted to the open interval $(0, 1)$. -/
 local notation "μ₁" => MeasureTheory.volume.restrict (Set.Ioo (0 : ℝ) 1)
 
 private theorem aestronglyMeasurable_rpow (l : ℝ) :
@@ -70,7 +80,7 @@ private theorem aestronglyMeasurable_rpow (l : ℝ) :
   (ContinuousOn.rpow_const continuousOn_id fun _ (hx : _ ∈ Set.Ioo (0 : ℝ) 1) ↦
     Or.inl (ne_of_gt hx.1)).aestronglyMeasurable measurableSet_Ioo
 
-/-- `∫₀¹ tᵃ t^b dt = 1 / (a + b + 1)` whenever `a + b > -1`. -/
+/-- For real $a, b$ with $a + b > -1$, $\int_0^1 t^a t^b \, dt = 1/(a + b + 1)$. -/
 private theorem integral_rpow_mul_rpow {a b : ℝ} (h : -1 < a + b) :
     ∫ t in Ioo (0:ℝ) 1, t ^ a * t ^ b = 1 / (a + b + 1) := by
   have hc : ∀ t ∈ Ioo (0:ℝ) 1, t ^ a * t ^ b = t ^ (a + b) :=
@@ -79,7 +89,7 @@ private theorem integral_rpow_mul_rpow {a b : ℝ} (h : -1 < a + b) :
     ← intervalIntegral.integral_of_le zero_le_one, integral_rpow (Or.inl h), Real.one_rpow,
     Real.zero_rpow (by linarith), sub_zero]
 
-/-- The power function `t ↦ t ^ l` is square integrable on `(0, 1)` when `l > -1/2`. -/
+/-- For real $l > -1/2$, the power function $t \mapsto t^l$ is square integrable on $(0, 1)$. -/
 theorem memLp_rpow {l : ℝ} (hl : -(1 / 2 : ℝ) < l) : MemLp (fun t : ℝ ↦ t ^ l) 2 μ₁ := by
   rw [memLp_two_iff_integrable_sq (aestronglyMeasurable_rpow l)]
   have hc : ∀ t ∈ Ioo (0:ℝ) 1, (t ^ l) ^ 2 = t ^ (2 * l) := by
@@ -90,18 +100,24 @@ theorem memLp_rpow {l : ℝ} (hl : -(1 / 2 : ℝ) < l) : MemLp (fun t : ℝ ↦ 
   rw [← IntegrableOn, integrableOn_congr_fun hc measurableSet_Ioo]
   exact (intervalIntegral.integrableOn_Ioo_rpow_iff one_pos).2 (by linarith)
 
-/-- The power function `t ↦ t ^ l` as an element of `L²(0, 1)`. For `l ≤ -1/2` it is not square
-integrable and the definition returns `0`; every use below has `l > 0`. -/
+/-- For real $l$, `Muntz.powerL2 l` is the **power function** $t \mapsto t^l$ as an element of
+$L^2(0, 1)$ if $l > -1/2$.
+
+For $l \le -1/2$ the power is not square integrable, and the definition gives $0$. Every use in
+this module has $l > -1/2$. -/
 noncomputable def powerL2 (l : ℝ) : Lp ℝ 2 μ₁ :=
   if h : -(1 / 2 : ℝ) < l then (memLp_rpow h).toLp _ else 0
 
-/-- `powerL2 l` is represented by `t ↦ t ^ l`. -/
+/-- For real $l > -1/2$, the element `Muntz.powerL2 l` of $L^2(0, 1)$ is represented almost
+everywhere by the function $t \mapsto t^l$. -/
 theorem coeFn_powerL2 {l : ℝ} (hl : -(1 / 2 : ℝ) < l) : powerL2 l =ᵐ[μ₁] fun t ↦ t ^ l := by
   have h : powerL2 l = (memLp_rpow hl).toLp _ := dite_eq_iff.2 (Or.inl ⟨hl, rfl⟩)
   rw [h]
   exact MemLp.coeFn_toLp _
 
-/-- The inner product of two powers in `L²(0, 1)`: `⟪tᵃ, t^b⟫ = 1 / (a + b + 1)`. -/
+/-- For real $a, b > -1/2$, the inner product of two powers in $L^2(0, 1)$ is
+$$\langle t^a, t^b \rangle = \int_0^1 t^a t^b \, dt = \frac{1}{a + b + 1}.$$
+-/
 theorem inner_powerL2 {a b : ℝ} (ha : -(1 / 2 : ℝ) < a) (hb : -(1 / 2 : ℝ) < b) :
     inner ℝ (powerL2 a) (powerL2 b) = 1 / (a + b + 1) := by
   rw [L2.inner_def, ← integral_rpow_mul_rpow (a := a) (b := b) (by linarith)]
@@ -110,8 +126,8 @@ theorem inner_powerL2 {a b : ℝ} (ha : -(1 / 2 : ℝ) < a) (hb : -(1 / 2 : ℝ)
   rw [h1, h2, RCLike.inner_apply]
   simp [mul_comm]
 
-/-- The Gram matrix of the powers `t ^ mᵢ` in `L²(0, 1)` is the Cauchy matrix of `mᵢ + 1/2` with
-itself. -/
+/-- For exponents $m_i > -1/2$, the Gram matrix of the powers $t^{m_i}$ in $L^2(0, 1)$ is the Cauchy
+matrix $((m_i + 1/2) + (m_j + 1/2))^{-1}$. -/
 private theorem gram_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1 / 2 : ℝ) < m i) :
     Matrix.gram ℝ (fun i ↦ powerL2 (m i))
       = Matrix.cauchy (fun i ↦ m i + 1 / 2) (fun i ↦ m i + 1 / 2) := by
@@ -120,7 +136,8 @@ private theorem gram_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1 / 2 
   congr 1
   ring
 
-/-- The Cauchy determinant, read on the Gram matrix of the powers. -/
+/-- For exponents $m_i > -1/2$, the Gram determinant of the powers $t^{m_i}$ is $\prod_{i < j}
+(m_j - m_i)^2 / \prod_{i, j} (m_i + m_j + 1)$. -/
 private theorem det_gram_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1 / 2 : ℝ) < m i) :
     (Matrix.gram ℝ fun i ↦ powerL2 (m i)).det
       = (∏ i, ∏ j ∈ Finset.Ioi i, ((m j - m i) * (m j - m i)))
@@ -131,8 +148,11 @@ private theorem det_gram_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1 
   · exact Finset.prod_congr rfl fun i _ ↦ Finset.prod_congr rfl fun j _ ↦ by ring
   · exact Finset.prod_congr rfl fun i _ ↦ Finset.prod_congr rfl fun j _ ↦ by ring
 
-/-- Distinct powers are linearly independent in `L²(0, 1)`, because their Gram matrix is a Cauchy
-matrix with distinct nodes. -/
+/-- Let $m_0, \dots, m_{n-1}$ be distinct real numbers with $m_i > -1/2$ for all $i$. Then the
+powers $t^{m_0}, \dots, t^{m_{n-1}}$ are linearly independent in $L^2(0, 1)$.
+
+The proof uses that their Gram matrix is a Cauchy matrix with distinct nodes, so its determinant
+is not zero. -/
 theorem linearIndependent_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1 / 2 : ℝ) < m i)
     (hinj : Function.Injective m) : LinearIndependent ℝ (fun i ↦ powerL2 (m i)) := by
   refine Matrix.det_gram_ne_zero_iff_linearIndependent.1 ?_
@@ -140,7 +160,8 @@ theorem linearIndependent_powerL2 {n : ℕ} (m : Fin n → ℝ) (hm : ∀ i, -(1
   exact Matrix.det_cauchy_ne_zero (fun i j ↦ ne_of_gt (by have := hm i; have := hm j; linarith))
     (fun i j h ↦ hinj (by simpa using h)) (fun i j h ↦ hinj (by simpa using h))
 
-/-- Splitting a product over the strictly upper triangle of `Fin (n + 1)` along `Fin.cons`. -/
+/-- A product over the pairs $i < j$ in `Fin (n + 1)`, for the family `Fin.cons a l`, splits into
+the factors with $i = 0$ and a product over the pairs $i < j$ for $l$. -/
 private theorem prod_Ioi_cons {M : Type*} [CommMonoid M] {n : ℕ} (g : ℝ → ℝ → M) (a : ℝ)
     (l : Fin n → ℝ) :
     (∏ i : Fin (n + 1), ∏ j ∈ Finset.Ioi i,
@@ -151,7 +172,8 @@ private theorem prod_Ioi_cons {M : Type*} [CommMonoid M] {n : ℕ} (g : ℝ → 
   · rw [Fin.prod_Ioi_zero]; simp
   · exact Finset.prod_congr rfl fun i _ ↦ by rw [Fin.prod_Ioi_succ]; simp
 
-/-- Splitting a double product over `Fin (n + 1)` along `Fin.cons`. -/
+/-- A double product over `Fin (n + 1)`, for the family `Fin.cons a l`, splits into the factors that
+involve $a$ and a double product for $l$. -/
 private theorem prod_prod_cons {M : Type*} [CommMonoid M] {n : ℕ} (g : ℝ → ℝ → M) (a : ℝ)
     (l : Fin n → ℝ) :
     (∏ i : Fin (n + 1), ∏ j : Fin (n + 1),
@@ -159,7 +181,7 @@ private theorem prod_prod_cons {M : Type*} [CommMonoid M] {n : ℕ} (g : ℝ →
       = (g a a * ∏ j, g a (l j)) * ∏ i, (g (l i) a * ∏ j, g (l i) (l j)) := by
   simp [Fin.prod_univ_succ]
 
-/-- The cancellation that turns the quotient of the two Cauchy determinants into the Müntz
+/-- An algebraic identity that turns the quotient of the two Cauchy determinants into the Müntz
 product. -/
 private theorem ratio_algebra {A N P Q D a : ℝ} (hN : N ≠ 0) (hD : D ≠ 0) (hP : P ≠ 0)
     (hQ : Q ≠ 0) (ha : 2 * a + 1 ≠ 0) :
@@ -167,12 +189,16 @@ private theorem ratio_algebra {A N P Q D a : ℝ} (hN : N ≠ 0) (hD : D ≠ 0) 
   rw [show a + a + 1 = 2 * a + 1 by ring]
   field_simp
 
-/-- The squared distance in `L²(0, 1)` from `t ^ a` to the span of the powers `t ^ lᵢ`:
+/-- Let $l_0, \dots, l_{n-1}$ be distinct real numbers with $l_i > -1/2$ for all $i$, and let
+$a > -1/2$. Then the squared distance in $L^2(0, 1)$ from $t^a$ to the span $V$ of
+$t^{l_0}, \dots, t^{l_{n-1}}$ is
+$$\|t^a - P_V t^a\|^2 = \frac{1}{2a + 1} \prod_{i < n} \Bigl(\frac{a - l_i}{a + l_i +
+  1}\Bigr)^2,$$
+where $P_V$ is the orthogonal projection onto $V$.
 
-`d² = (2a + 1)⁻¹ ∏ᵢ ((a - lᵢ) / (a + lᵢ + 1))²`.
-
-This is Gram's determinant formula, `Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real`,
-evaluated on the Cauchy determinant `Matrix.det_cauchy`. -/
+The projection $P_V$ is `Submodule.starProjection`. The proof evaluates Gram's determinant
+formula `Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real` with the Cauchy determinant
+`Matrix.det_cauchy`. -/
 theorem dist_sq_powerL2 {n : ℕ} (l : Fin n → ℝ) (a : ℝ) (hl : ∀ i, -(1 / 2 : ℝ) < l i)
     (ha : -(1 / 2 : ℝ) < a) (hinj : Function.Injective l) :
     ‖powerL2 a
@@ -213,20 +239,21 @@ theorem dist_sq_powerL2 {n : ℕ} (l : Fin n → ℝ) (a : ℝ) (hl : ∀ i, -(1
     Finset.prod_ne_zero_iff.2 fun i _ ↦ ne_of_gt (by have := hl i; linarith)
   exact ratio_algebra hN0 hD0 hP hQ ha2
 
-/-! #### The Müntz products -/
+/-! ### The Müntz products -/
 
 section Products
 
 variable {a : ℝ} {l : ℕ → ℝ} {i : ℕ}
 
-/-- The `i`-th factor of the Müntz product, `((a - lᵢ) / (a + lᵢ + 1)) ^ 2`, is at most `1`. -/
+/-- For $a \ge 0$ and $l_i > 0$, the $i$-th factor $((a - l_i)/(a + l_i + 1))^2$ of the Müntz
+product is at most $1$. -/
 private theorem muntzFactor_le_one (ha : 0 ≤ a) (hl : 0 < l i) :
     ((a - l i) / (a + l i + 1)) ^ 2 ≤ 1 := by
   rw [div_pow, div_le_one (by positivity)]
   nlinarith [abs_nonneg (a - l i)]
 
-/-- Where `lᵢ` exceeds `a`, the `i`-th factor is `(1 - bᵢ) ^ 2` with `bᵢ = (2a+1)/(lᵢ + a + 1)`,
-the quantity that is comparable to `1 / lᵢ`. -/
+/-- For $a \ge 0$ and $l_i > 0$, the $i$-th factor of the Müntz product is $(1 - b_i)^2$ with
+$b_i = (2a + 1)/(l_i + a + 1)$, a quantity comparable to $1/l_i$. -/
 private theorem muntzFactor_eq (ha : 0 ≤ a) (hl : 0 < l i) :
     ((a - l i) / (a + l i + 1)) ^ 2 = (1 - (2 * a + 1) / (l i + a + 1)) ^ 2 := by
   have h : l i + a + 1 ≠ 0 := by positivity
@@ -234,7 +261,8 @@ private theorem muntzFactor_eq (ha : 0 ≤ a) (hl : 0 < l i) :
     div_pow, div_pow]
   congr 1 <;> ring
 
-/-- If `∑ 1 / lⱼ` diverges then the Müntz products tend to `0`. -/
+/-- If $a \ge 0$, all $l_j > 0$, $l_j \to \infty$ and $\sum_j 1/l_j$ diverges, then the Müntz
+products $\prod_{i < n} ((a - l_i)/(a + l_i + 1))^2$ tend to $0$ as $n \to \infty$. -/
 private theorem tendsto_muntzProd (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
     (htop : Tendsto l atTop atTop) (hns : ¬ Summable fun j ↦ (l j)⁻¹) :
     Tendsto (fun n ↦ ∏ i ∈ Finset.range n, ((a - l i) / (a + l i + 1)) ^ 2) atTop (𝓝 0) := by
@@ -272,7 +300,8 @@ private theorem tendsto_muntzProd (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
   simpa using (hprod.pow 2).const_mul
     (∏ i ∈ Finset.range I, ((a - l i) / (a + l i + 1)) ^ 2)
 
-/-- The Müntz products decrease. -/
+/-- If $a \ge 0$ and all $l_j > 0$, then the Müntz products
+$\prod_{i < n} ((a - l_i)/(a + l_i + 1))^2$ decrease in $n$. -/
 private theorem muntzProd_antitone (ha : 0 ≤ a) (hl : ∀ j, 0 < l j) :
     Antitone fun n ↦ ∏ i ∈ Finset.range n, ((a - l i) / (a + l i + 1)) ^ 2 := by
   refine antitone_nat_of_succ_le fun n ↦ ?_
@@ -281,7 +310,9 @@ private theorem muntzProd_antitone (ha : 0 ≤ a) (hl : ∀ j, 0 < l j) :
       sq_nonneg ((a - l i) / (a + l i + 1))),
     muntzFactor_le_one (i := n) ha (hl n), sq_nonneg ((a - l n) / (a + l n + 1))]
 
-/-- If `∑ 1 / lⱼ` converges and `a` avoids the `lⱼ`, the Müntz products stay away from `0`. -/
+/-- If $a \ge 0$, all $l_j > 0$, $l_j \to \infty$, $l_j \ne a$ for all $j$, and $\sum_j 1/l_j$
+converges, then the Müntz products have a positive lower bound $\varepsilon$ that does not
+depend on $n$. -/
 private theorem muntzProd_bddBelow (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
     (htop : Tendsto l atTop atTop) (hne : ∀ j, l j ≠ a) (hsum : Summable fun j ↦ (l j)⁻¹) :
     ∃ ε > 0, ∀ n, ε ≤ ∏ i ∈ Finset.range n, ((a - l i) / (a + l i + 1)) ^ 2 := by
@@ -329,14 +360,14 @@ private theorem muntzProd_bddBelow (ha : 0 ≤ a) (hl : ∀ j, 0 < l j)
 
 end Products
 
-/-! #### The polynomials are dense in `L²(0, 1)` -/
+/-! ### The polynomials are dense in $L^2(0, 1)$ -/
 
-/-- Lebesgue measure on `(0, 1)` is a weight in the sense of `OrthogonalPolynomial.IsWeight`, so
-the polynomials lie in `L²(0, 1)` and are dense there. -/
+/-- Lebesgue measure on $(0, 1)$ is a weight in the sense of `OrthogonalPolynomial.IsWeight`, so the
+polynomials lie in $L^2(0, 1)$ and are dense there. -/
 private theorem isWeight_unit : OrthogonalPolynomial.IsWeight μ₁ :=
   OrthogonalPolynomial.isWeight_volume_restrict_Ioo zero_lt_one
 
-/-- The `L²(0, 1)` class of the monomial `X ^ m` is `powerL2 m`. -/
+/-- For $m \in \mathbb{N}$, the class in $L^2(0, 1)$ of the monomial $X^m$ is `Muntz.powerL2 m`. -/
 private theorem toLpₗ_X_pow (m : ℕ) :
     isWeight_unit.toLpₗ (Polynomial.X ^ m) = powerL2 (m : ℝ) := by
   refine Lp.ext ?_
@@ -345,10 +376,12 @@ private theorem toLpₗ_X_pow (m : ℕ) :
     with t h1 h2
   rw [h1, h2, Polynomial.eval_pow, Polynomial.eval_X, Real.rpow_natCast]
 
-/-- The monomials span a dense subspace of `L²(0, 1)`: the polynomials are dense in `L²` of a
-weight carried by a compact interval (`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ`, which is
-[han2009theoretical] Theorem 3.1.1 together with the density of the bounded continuous functions
-in `L²`), and every polynomial is a combination of the monomials. -/
+/-- The monomials $t^m$, $m \in \mathbb{N}$, span a dense subspace of $L^2(0, 1)$.
+
+The polynomials are dense in $L^2$ of a weight that is carried by a compact interval
+(`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ`). That result rests on Theorem 3.1.1 of
+[han2009theoretical] and on the density of the bounded continuous functions in $L^2$. Every
+polynomial is a linear combination of the monomials. -/
 theorem dense_span_powerL2_natCast :
     Dense ((Submodule.span ℝ (Set.range fun m : ℕ ↦ powerL2 (m : ℝ)) :
       Submodule ℝ (Lp ℝ 2 μ₁)) : Set (Lp ℝ 2 μ₁)) := by
@@ -363,13 +396,14 @@ theorem dense_span_powerL2_natCast :
     rw [← Polynomial.smul_X_eq_monomial, map_smul, toLpₗ_X_pow]
     exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨n, rfl⟩)
 
-/-! #### The theorem -/
+/-! ### The theorem -/
 
 section Main
 
 variable {lam : ℕ → ℝ}
 
-/-- The spans of the initial segments increase. -/
+/-- For $n \le n'$, the span of the first $n$ powers $t^{\lambda_i}$ is contained in the span of the
+first $n'$ powers. -/
 private theorem muntzFin_le {n n' : ℕ} (hn : n ≤ n') :
     Submodule.span ℝ (Set.range fun i : Fin n ↦ powerL2 (lam i))
       ≤ Submodule.span ℝ (Set.range fun i : Fin n' ↦ powerL2 (lam i)) := by
@@ -377,7 +411,8 @@ private theorem muntzFin_le {n n' : ℕ} (hn : n ≤ n') :
   rintro _ ⟨i, rfl⟩
   exact ⟨⟨i, lt_of_lt_of_le i.2 hn⟩, rfl⟩
 
-/-- Each initial segment spans inside the full span. -/
+/-- For every $n$, the span of the first $n$ powers $t^{\lambda_i}$ is contained in the span of all
+the powers $t^{\lambda_j}$. -/
 private theorem muntzFin_le_span (n : ℕ) :
     Submodule.span ℝ (Set.range fun i : Fin n ↦ powerL2 (lam i))
       ≤ Submodule.span ℝ (Set.range fun j : ℕ ↦ powerL2 (lam j)) := by
@@ -385,7 +420,8 @@ private theorem muntzFin_le_span (n : ℕ) :
   rintro _ ⟨i, rfl⟩
   exact ⟨i, rfl⟩
 
-/-- Every element of the full span already lies in the span of an initial segment. -/
+/-- Every element of the span of all the powers $t^{\lambda_j}$ lies in the span of the first $n$
+powers for some $n$. -/
 private theorem exists_mem_muntzFin {x : Lp ℝ 2 μ₁}
     (hx : x ∈ Submodule.span ℝ (Set.range fun j : ℕ ↦ powerL2 (lam j))) :
     ∃ n, x ∈ Submodule.span ℝ (Set.range fun i : Fin n ↦ powerL2 (lam i)) := by
@@ -400,7 +436,9 @@ private theorem exists_mem_muntzFin {x : Lp ℝ 2 μ₁}
     fun n n' ↦ ⟨max n n', muntzFin_le (le_max_left n n'), muntzFin_le (le_max_right n n')⟩
   exact (Submodule.mem_iSup_of_directed _ hdir).1 (hsub hx)
 
-/-- The distance from `t ^ a` to the span of the first `n` powers, as a Müntz product. -/
+/-- If all $\lambda_j > 0$, $\lambda$ is strictly increasing and $a \ge 0$, then the squared
+distance from $t^a$ to the span of the first $n$ powers $t^{\lambda_i}$ is $(2a + 1)^{-1}
+\prod_{i < n} ((a - \lambda_i)/(a + \lambda_i + 1))^2$. -/
 private theorem norm_sub_starProjection_muntz (hlam : ∀ j, 0 < lam j) (hmono : StrictMono lam)
     {a : ℝ} (ha : 0 ≤ a) (n : ℕ) :
     ‖powerL2 a - (Submodule.span ℝ (Set.range fun i : Fin n ↦ powerL2 (lam i))).starProjection
@@ -410,7 +448,9 @@ private theorem norm_sub_starProjection_muntz (hlam : ∀ j, 0 < lam j) (hmono :
     (fun i j h ↦ Fin.val_injective (hmono.injective h))]
   exact congrArg _ (Fin.prod_univ_eq_prod_range (fun i ↦ ((a - lam i) / (a + lam i + 1)) ^ 2) n)
 
-/-- If `∑ 1 / λⱼ` diverges, every power `t ^ a` with `a ≥ 0` lies in the closure of the span. -/
+/-- If all $\lambda_j > 0$, $\lambda$ is strictly increasing, $\lambda_j \to \infty$ and
+$\sum_j 1/\lambda_j$ diverges, then every power $t^a$ with $a \ge 0$ lies in the closure of the
+span of the powers $t^{\lambda_j}$. -/
 private theorem mem_closure_muntzSpan (hlam : ∀ j, 0 < lam j) (hmono : StrictMono lam)
     (htop : Tendsto lam atTop atTop) (hns : ¬ Summable fun j ↦ (lam j)⁻¹) {a : ℝ} (ha : 0 ≤ a) :
     powerL2 a ∈ closure ((Submodule.span ℝ (Set.range fun j : ℕ ↦ powerL2 (lam j)) :
@@ -427,8 +467,10 @@ private theorem mem_closure_muntzSpan (hlam : ∀ j, 0 < lam j) (hmono : StrictM
   rw [dist_eq_norm]
   exact lt_of_pow_lt_pow_left₀ 2 hε.le hn
 
-/-- If `∑ 1 / λⱼ` converges, the span is not dense: it misses `t ^ a` for `a` strictly between
-`λ₀` and `λ₁`. -/
+/-- If all $\lambda_j > 0$, $\lambda$ is strictly increasing, $\lambda_j \to \infty$ and
+$\sum_j 1/\lambda_j$ converges, then the span of the powers $t^{\lambda_j}$ is not dense in
+$L^2(0, 1)$: its closure does not contain $t^a$ for $a$ strictly between $\lambda_0$ and
+$\lambda_1$. -/
 private theorem not_dense_muntzSpan (hlam : ∀ j, 0 < lam j) (hmono : StrictMono lam)
     (htop : Tendsto lam atTop atTop) (hs : Summable fun j ↦ (lam j)⁻¹) :
     ¬ Dense ((Submodule.span ℝ (Set.range fun j : ℕ ↦ powerL2 (lam j)) :
@@ -466,9 +508,15 @@ private theorem not_dense_muntzSpan (hlam : ∀ j, 0 < lam j) (hmono : StrictMon
   rw [dist_eq_norm] at hlt
   linarith
 
-/-- **The Müntz–Szász theorem** ([han2009theoretical] Theorem 3.1.5). Let `0 < λ₀ < λ₁ < ⋯` with
-`λⱼ → ∞`. The span of the powers `t ↦ t ^ λⱼ` is dense in `L²(0, 1)` if and only if `∑ 1 / λⱼ`
-diverges, stated as the failure of `Summable` (the terms are positive). -/
+/-- The **Müntz–Szász theorem**. Let $\lambda_0, \lambda_1, \dots$ be real numbers with
+$0 < \lambda_0 < \lambda_1 < \cdots$ and $\lambda_j \to \infty$. Then the span of the powers
+$t \mapsto t^{\lambda_j}$ is dense in $L^2(0, 1)$ if and only if
+$$\sum_{j = 0}^{\infty} \frac{1}{\lambda_j} = \infty.$$
+This is Theorem 3.1.5 of [han2009theoretical].
+
+The divergence of the series is stated as `¬ Summable fun j ↦ (lam j)⁻¹`; the terms are
+positive, so the two conditions agree. The hypothesis $0 < \lambda_0 < \lambda_1 < \cdots$ is
+`0 < lam 0` together with `StrictMono lam`. -/
 theorem dense_span_powerL2_iff (lam : ℕ → ℝ) (hpos : 0 < lam 0) (hmono : StrictMono lam)
     (htop : Tendsto lam atTop atTop) :
     Dense ((Submodule.span ℝ (Set.range fun j ↦ powerL2 (lam j)) :

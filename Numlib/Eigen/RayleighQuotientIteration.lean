@@ -12,91 +12,108 @@ import Numlib.Eigen.QRAlgorithm
 /-!
 # Rayleigh quotient iteration: local quadratic convergence, and the last row of a shifted QR step
 
-Rayleigh quotient iteration is inverse iteration whose shift is refreshed at every step to the
-Rayleigh quotient `ρ = ⟪v, M v⟫` of the current unit vector `v`: `v' = (M - ρ)⁻¹ v / ‖·‖`. This
-module proves that it converges *locally quadratically* to a simple eigenvalue of a general
-(nonsymmetric) operator, in the quantitative form of [demmel1997applied] §4.4.5, and applies it
-to the QR iteration with the Rayleigh-quotient shift `μ = t_{nn}` of [quarteroni2000numerical]
-(5.53), whose last row is one step of that iteration on the transpose.
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$ and let $M$ be a
+linear operator on $E$. **Rayleigh quotient iteration** is inverse iteration whose shift is
+refreshed at every step to the Rayleigh quotient $\rho = \langle v, Mv \rangle$ of the current unit
+vector $v$: the next vector is $u / \|u\|$, where $(M - \rho) u = v$. This module proves that the
+iteration converges locally quadratically to a simple eigenvalue of a general, nonsymmetric
+operator, in the quantitative form of Demmel, *Applied Numerical Linear Algebra* (1997),
+§4.4.4–4.4.5, pp. 161–163. Demmel also identifies Rayleigh quotient iteration with the shifted QR
+step, and [quarteroni2000numerical] cites him for the quadratic convergence. The module applies the
+result to the QR iteration with the Rayleigh-quotient shift $\mu = t_{nn}$ of
+[quarteroni2000numerical] (5.53), whose last row is one step of Rayleigh quotient iteration on the
+transpose. Related material is in [quarteroni2000numerical] §5.3.2 (inverse iteration) and §5.7.1
+(the single-shift QR iteration (5.52)–(5.53)), in §7.5 of the 1989 edition of Golub and Van Loan,
+*Matrix Computations*, and in [saad2011numerical] §4.1.
 
-## The splitting at a simple eigenvalue
+Let $Mx = lx$, and let $y$ be a left eigenvector, $\langle y, Mz \rangle = l \langle y, z \rangle$
+for all $z$ (that is, $M^* y = \bar l y$), normalized by $\langle y, x \rangle = 1$. The spectral
+projector of $l$ is $Pv = \langle y, v \rangle x$, and $E = \mathbb{K} x \oplus y^\perp$ is an
+$M$-invariant splitting. All statements are written in terms of the **complementary component**
+$v - \langle y, v \rangle x = (1 - P) v$ of a vector $v$. Two constants describe the eigenvalue: $C$
+with $\|(M - l) z\| \le C \|z\|$ for all $z$, and $K$ with $\|w\| \le K \|(M - l) w\|$ for all
+$w \perp y$.
 
-Let `M x = l x` with a left eigenvector `y` — `⟪y, M z⟫ = l ⟪y, z⟫` for all `z`, that is,
-`M† y = conj l • y` — normalized by `⟪y, x⟫ = 1`. The spectral projector of `l` is `P v = ⟪y, v⟫ x`
-and `E = 𝕜 x ⊕ y ⊥` is an `M`-invariant splitting. The **complementary component**
-`v - ⟪y, v⟫ x = (1 - P) v` of a vector is the quantity every statement is written in: it is
-orthogonal to `y` (`Krylov.inner_sub_inner_smul`), it commutes with `M` and with the shifted
-operators (`Krylov.map_sub_inner_smul`, `Krylov.map_sub_inner_smul_sub_smul`), and it is
-comparable with the distance from `v` to the eigenline, `sin θ(v, 𝕜 x) ‖v‖ ≤ ‖v - ⟪y, v⟫ x‖ ≤
-(1 + ‖x‖ ‖y‖) sin θ(v, 𝕜 x) ‖v‖` (`Krylov.sinAngle_span_singleton_le`,
-`Krylov.norm_sub_inner_smul_le_sinAngle_mul`). The bilinear form of the projector is what makes
-the nonsymmetric case work without any orthogonality: no eigenbasis, no Jordan form, no gap
-between eigenvalues is ever named.
+## Main definitions
 
-Two constants describe the eigenvalue. `C` bounds `M - l`, `‖(M - l) z‖ ≤ C ‖z‖`; `K` bounds the
-resolvent on the complement, `‖w‖ ≤ K ‖(M - l) w‖` for `w ⊥ y`. The second exists in finite
-dimension because `M - l` is injective on `y ⊥` — the eigenspace of `l` is the line through `x`,
-which meets `y ⊥` only in `0` (`Krylov.exists_norm_le_mul_norm_map_sub`) — and it persists near
-`l`: `‖w‖ ≤ 2 K ‖(M - ρ) w‖` on `y ⊥` for `2 K ‖ρ - l‖ ≤ 1`
-(`Krylov.norm_le_two_mul_norm_map_sub_smul`, a Neumann-series step written as a lower bound).
+* `Krylov.rqiStep`: one step of Rayleigh quotient iteration.
+* `Krylov.rayleighQuotientIterate`: the iteration, started from the normalized starting vector.
 
-## The convergence theorem
+## Main results
 
 * `Krylov.norm_inner_map_sub_le`: the Rayleigh quotient of a unit vector is first-order accurate,
-  `|⟪v, M v⟫ - l| ≤ C ‖v - ⟪y, v⟫ x‖`, from the identity `⟪v, M v⟫ - l = ⟪v, (M - l)(1 - P) v⟫`
-  (`Krylov.inner_map_sub_mul_inner_self`). For a symmetric operator this is second order, which is
-  why Rayleigh quotient iteration is cubically convergent there; the general case is only quadratic.
-* `Krylov.norm_sub_inner_smul_le_norm_map_sub_smul`: a small residual `‖M v - ρ v‖` at a shift
-  `ρ` near `l` forces a small complementary component,
-  `‖v - ⟪y, v⟫ x‖ ≤ 2 K (1 + ‖x‖ ‖y‖) ‖M v - ρ v‖`.
-* `Krylov.norm_sub_inner_smul_le_sq_mul_norm`, **the step**: for a unit `v` with complementary
-  component `η` in the basin `4 η ≤ 1`, `2 K C η ≤ 1`, the solution `u` of `(M - ρ) u = v` at the
-  Rayleigh shift has `‖u - ⟪y, u⟫ x‖ ≤ 4 K C η² ‖u‖`. The shifted operator preserves the
-  splitting, contracts the complementary component by at most `2K`, and divides the
-  eigen-component by `l - ρ = O(η)`; the ratio is `O(η²)`.
-* `Krylov.rqiStep`, `Krylov.rayleighQuotientIterate`: the iteration itself, with `Ring.inverse`
-  so that it is total; `Krylov.isUnit_sub_smul_one` says the shifted operator is invertible in
-  the basin whenever the shift is not exactly `l`, and `Krylov.norm_rayleighQuotientIterate_sub_le`
-  is the local quadratic convergence: `4 K C ‖v_k - ⟪y, v_k⟫ x‖ ≤ (4 K C η₀) ^ (2 ^ k)` for a
-  start in the basin `4 η₀ ≤ 1`, `4 K C η₀ ≤ 1`, as long as no shift is exactly an eigenvalue.
-
-## The last row of a shifted QR step
-
-For a real matrix `T` with `T - μ I = Q R` (`Matrix.qrQ`, `Matrix.qrR`), the last column of `Q`
-satisfies `(T - μ I)ᵀ q_n = r_{nn} e_n` (`Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last`,
-from `(T - μ I)ᵀ Q = Rᵀ`): it is one step of inverse iteration on `Tᵀ` from `e_n` with shift `μ`.
-With the shift `μ = t_{nn} = ⟪e_n, Tᵀ e_n⟫` this is one step of Rayleigh quotient iteration on
-`Tᵀ`, and for a Hessenberg `T` the residual of `e_n` is the single entry `|t_{n,n-1}|`
-(`Matrix.toEuclideanLin_transpose_single_last_sub_of_isUpperHessenberg`). The last row of
-`T' = R Q + μ I = Qᵀ T Q` is `⟪Tᵀ q_n, q_j⟫` (`Matrix.transpose_mul_mul_apply`), so its
-off-diagonal entries are bounded by `C` times the complementary component of `q_n`:
-
-* `Matrix.abs_shiftedQrStep_last_le`: `|t'_{nj}| ≤ 4 K C² A'² t_{n,n-1}²` for `j ≠ n` and
-  `|t'_{nn} - l| ≤ 4 K C² A'² t_{n,n-1}²`, `A' = 2 K (1 + ‖x‖ ‖y‖)`, once `|t_{n,n-1}|` and
-  `|t_{nn} - l|` are small and `T - μ I` is nonsingular;
-* `Matrix.abs_shiftedQrStep_last_le_of_conj`: the same with the eigenvector data of a matrix `A`
-  and the step taken on a Hessenberg orthogonal conjugate `T = Qᵀ A Q` — the form the iteration
-  (5.53) consumes, every iterate being such a conjugate;
+  $|\langle v, Mv \rangle - l| \le C \|v - \langle y, v \rangle x\|$, from the identity $\langle v,
+  Mv \rangle - l = \langle v, (M - l)(1 - P) v \rangle$ (`Krylov.inner_map_sub_mul_inner_self`).
+* `Krylov.norm_sub_inner_smul_le_norm_map_sub_smul`: a small residual $\|Mv - \rho v\|$ at a shift
+  $\rho$ near $l$ forces a small complementary component, $\|v - \langle y, v \rangle x\| \le 2K
+  (1 + \|x\| \|y\|) \|Mv - \rho v\|$.
+* `Krylov.exists_norm_le_mul_norm_map_sub`: in finite dimension the constant $K$ exists when every
+  eigenvector of $l$ is a multiple of $x$.
+* `Krylov.norm_sub_inner_smul_le_sq_mul_norm`: the step: for a unit vector $v$ with complementary
+  component $\eta$ in the basin $4\eta \le 1$, $2KC\eta \le 1$, the solution $u$ of
+  $(M - \rho) u = v$ at the Rayleigh shift has $\|u - \langle y, u \rangle x\| \le 4KC\eta^2 \|u\|$.
+* `Krylov.isUnit_sub_smul_one`: in the basin the shifted operator is invertible whenever the shift
+  is not exactly $l$.
+* `Krylov.norm_rayleighQuotientIterate_sub_le`: local quadratic convergence, $4KC \|v_k - \langle y,
+  v_k \rangle x\| \le (4KC\eta_0)^{2^k}$ for a start in the basin $4\eta_0 \le 1$,
+  $4KC\eta_0 \le 1$, as long as no shift is exactly an eigenvalue.
+* `Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last`: for a real QR decomposition $A = QR$, the
+  last column $q_n$ of $Q$ satisfies $A^T q_n = r_{nn} e_n$.
+* `Matrix.abs_shiftedQrStep_last_le`: for an upper Hessenberg $T$ with $T - t_{nn} I$ nonsingular,
+  the canonical QR step $T'$ with shift $t_{nn}$ has $|t'_{nj}| \le 4KC^2\alpha^2 t_{n,n-1}^2$ for
+  $j \neq n$ and $|t'_{nn} - l| \le 4KC^2\alpha^2 t_{n,n-1}^2$, with $\alpha = 2K(1 + \|x\| \|y\|)$,
+  once $|t_{n,n-1}|$ and $|t_{nn} - l|$ are small.
+* `Matrix.abs_shiftedQrStep_last_le_of_conj`: the same bound with the eigenvector data of a matrix
+  $A$ and the step taken on a Hessenberg orthogonal conjugate $T = Q^T A Q$, the form that the
+  iteration (5.53) uses.
 * `Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one`: an algebraically simple real
-  eigenvalue supplies `x`, `y`, `K`;
-* `Matrix.exists_abs_isShiftedQrStep_last_le_sq`: the three combined, for a single-shift step
-  with any QR factorization (`Matrix.IsShiftedQrStep`), with constants depending only on `A`
-  and `l`;
+  eigenvalue supplies $x$, $y$ and $K$.
+* `Matrix.exists_abs_isShiftedQrStep_last_le_sq`: the three combined, for a single-shift step with
+  any QR factorization (`Matrix.IsShiftedQrStep`), with constants that depend only on $A$ and $l$.
 * `Matrix.isUpperHessenberg_shiftedQrStep`, `Matrix.isUpperHessenberg_rayleighShiftQrIterate`:
   Hessenberg form is preserved as long as no shift is exactly an eigenvalue.
 
-The surface statement is `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`. Two
-hypotheses there are the reading of the book's "`O(η_k²)`": the closeness of `t_{nn}^{(k)}` to
-the eigenvalue, which says which eigenvalue the last row converges to, and the nonsingularity of
-every shifted matrix, which is the generic case in which the book's QR factorization is unique
-and Hessenberg form is preserved; the book's "unreduced" is not needed.
+## Proof outline
 
-## References
+The complementary component is orthogonal to $y$ (`Krylov.inner_sub_inner_smul`), it commutes with
+$M$ and with the shifted operators (`Krylov.map_sub_inner_smul`,
+`Krylov.map_sub_inner_smul_sub_smul`), and it is comparable with the distance from $v$ to the
+eigenline: $\sin\theta(v, \mathbb{K} x) \|v\| \le \|v - \langle y, v \rangle x\| \le (1 + \|x\|
+\|y\|) \sin\theta(v, \mathbb{K} x) \|v\|$ (`Krylov.sinAngle_span_singleton_le`,
+`Krylov.norm_sub_inner_smul_le_sinAngle_mul`). The bilinear form of the projector makes the
+nonsymmetric case work without any orthogonality: no eigenbasis, no Jordan form and no gap between
+eigenvalues is used. The constant $K$ exists in finite dimension because $M - l$ is injective on
+$y^\perp$: the eigenspace of $l$ is the line through $x$, which meets $y^\perp$ only in $0$. It
+persists near $l$: $\|w\| \le 2K \|(M - \rho) w\|$ on $y^\perp$ for $2K |\rho - l| \le 1$
+(`Krylov.norm_le_two_mul_norm_map_sub_smul`, a Neumann-series step written as a lower bound). In one
+step, the shifted operator preserves the splitting, contracts the complementary component by at most
+$2K$, and divides the eigencomponent by $l - \rho = O(\eta)$, so the ratio is $O(\eta^2)$. For a
+symmetric operator the Rayleigh quotient is second-order accurate, which is why Rayleigh quotient
+iteration converges cubically there; the general case is only quadratic.
 
-[demmel1997applied] §4.4.4–4.4.5, pp. 161–163 (Rayleigh quotient iteration and its
-identification with the shifted QR step, the source [quarteroni2000numerical] cites for the
-quadratic convergence); [quarteroni2000numerical] §5.3.2 (inverse iteration) and §5.7.1 (the
-single-shift QR iteration (5.52)–(5.53)); [golub1989matrix] §7.5; [saad2011numerical] §4.1.
+For a real matrix $T$ with $T - \mu I = QR$, the identity $(T - \mu I)^T Q = R^T$ gives
+$(T - \mu I)^T q_n = r_{nn} e_n$ for the last column $q_n$ of $Q$: it is one step of inverse
+iteration on $T^T$ from $e_n$ with shift $\mu$. With the shift
+$\mu = t_{nn} = \langle e_n, T^T e_n \rangle$ this is one step of Rayleigh quotient iteration on
+$T^T$, and for a Hessenberg $T$ the residual of $e_n$ is the single entry $|t_{n,n-1}|$
+(`Matrix.toEuclideanLin_transpose_single_last_sub_of_isUpperHessenberg`). The last row of
+$T' = RQ + \mu I = Q^T T Q$ is $\langle T^T q_n, q_j \rangle$ (`Matrix.transpose_mul_mul_apply`), so
+its off-diagonal entries are bounded by $C$ times the complementary component of $q_n$.
+
+## Implementation notes
+
+* The inverse in the iteration is `Ring.inverse`, so that the iteration is total. Statements about a
+  step assume that the shifted operator is invertible.
+* In the matrix part the operator of the abstract theorems is $M = T^T$. So the vector $x$ with
+  $T^T x = lx$ is a left eigenvector of $T$, and the vector $y$ with $Ty = ly$ is a right
+  eigenvector of $T$.
+* Matrix indices are $0$-based in Lean. The prose writes the last index as $n$; it is
+  `Fin.last (N + 1)` for a matrix of order $N + 2$, and $n - 1$ is `Fin.castSucc (Fin.last N)`.
+* The surface statement is `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`. Two of its
+  hypotheses are the reading of the book's "$O(\eta_k^2)$": the closeness of $t^{(k)}_{nn}$ to the
+  eigenvalue, which says which eigenvalue the last row converges to, and the nonsingularity of every
+  shifted matrix, which is the generic case in which the book's QR factorization is unique and
+  Hessenberg form is preserved. The book's hypothesis that the matrix is unreduced is not needed.
 -/
 
 open Filter Topology
@@ -111,18 +128,26 @@ section Projector
 
 variable {M : E →ₗ[𝕜] E} {l : 𝕜} {x y : E}
 
-/-- The complementary component `v - ⟪y, v⟫ x` is orthogonal to the left eigenvector `y`. -/
+/-- If $\langle y, x \rangle = 1$, then the complementary component $v - \langle y, v \rangle x$ of
+every vector $v$ is orthogonal to $y$. -/
 theorem inner_sub_inner_smul (hyx : inner 𝕜 y x = 1) (v : E) :
     inner 𝕜 y (v - inner 𝕜 y v • x) = 0 := by
   rw [inner_sub_right, inner_smul_right, hyx, mul_one, sub_self]
 
-/-- The spectral projector commutes with `M`: `(1 - P) (M v) = M ((1 - P) v)`. -/
+/-- Let $Mx = lx$ and let $y$ be a left eigenvector of $M$ for $l$. Then the complementary component
+commutes with $M$: for every $v$,
+$$M(v - \langle y, v \rangle x) = Mv - \langle y, Mv \rangle x.$$
+-/
 theorem map_sub_inner_smul (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (v : E) :
     M (v - inner 𝕜 y v • x) = M v - inner 𝕜 y (M v) • x := by
   rw [map_sub, map_smul, hx, hy.inner_apply, smul_smul, mul_comm]
 
-/-- The complementary component of `(M - ρ) v` is `(M - ρ)` applied to that of `v`. -/
+/-- Let $Mx = lx$ and let $y$ be a left eigenvector of $M$ for $l$. Then for every
+$\rho \in \mathbb{K}$ and every $v$, the complementary component of $(M - \rho) v$ is $M - \rho$
+applied to the complementary component of $v$:
+$$(M - \rho)(v - \langle y, v \rangle x) = (M - \rho) v - \langle y, (M - \rho) v \rangle x.$$
+-/
 theorem map_sub_inner_smul_sub_smul (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (ρ : 𝕜) (v : E) :
     M (v - inner 𝕜 y v • x) - ρ • (v - inner 𝕜 y v • x) =
@@ -131,8 +156,9 @@ theorem map_sub_inner_smul_sub_smul (hx : M x = l • x)
     mul_smul]
   abel
 
-/-- The Rayleigh quotient minus the eigenvalue is a bilinear form in the complementary
-component: `⟪v, M v⟫ - l ⟪v, v⟫ = ⟪v, (M - l) w⟫` with `w = v - ⟪y, v⟫ x`. -/
+/-- Let $Mx = lx$. Then for all $y$ and $v$, with $w = v - \langle y, v \rangle x$,
+$$\langle v, Mv \rangle - l \langle v, v \rangle = \langle v, (M - l) w \rangle.$$
+So the Rayleigh quotient minus the eigenvalue is controlled by the complementary component. -/
 theorem inner_map_sub_mul_inner_self (hx : M x = l • x) (v : E) :
     inner 𝕜 v (M v) - l * inner 𝕜 v v =
       inner 𝕜 v (M (v - inner 𝕜 y v • x) - l • (v - inner 𝕜 y v • x)) := by
@@ -141,8 +167,10 @@ theorem inner_map_sub_mul_inner_self (hx : M x = l • x) (v : E) :
       sub_sub_sub_cancel_right]
   rw [h, inner_sub_right, inner_smul_right]
 
-/-- The Rayleigh quotient of a unit vector is first-order accurate in the complementary
-component: `|⟪v, M v⟫ - l| ≤ C ‖v - ⟪y, v⟫ x‖` when `‖(M - l) z‖ ≤ C ‖z‖`. -/
+/-- Let $Mx = lx$, and let $\|(M - l) z\| \le C \|z\|$ for all $z$. Then for every $y$ and every
+unit vector $v$,
+$$|\langle v, Mv \rangle - l| \le C \|v - \langle y, v \rangle x\|.$$
+The Rayleigh quotient of a unit vector is first-order accurate in the complementary component. -/
 theorem norm_inner_map_sub_le (hx : M x = l • x) {C : ℝ}
     (hC : ∀ z, ‖M z - l • z‖ ≤ C * ‖z‖) {v : E} (hv : ‖v‖ = 1) :
     ‖inner 𝕜 v (M v) - l‖ ≤ C * ‖v - inner 𝕜 y v • x‖ := by
@@ -158,7 +186,8 @@ theorem norm_inner_map_sub_le (hx : M x = l • x) {C : ℝ}
       exact mul_le_mul_of_nonneg_left (hC _) zero_le_one
     _ = C * ‖v - inner 𝕜 y v • x‖ := one_mul _
 
-/-- The complementary component is bounded by the vector: `‖v - ⟪y, v⟫ x‖ ≤ (1 + ‖x‖ ‖y‖) ‖v‖`. -/
+/-- For all vectors $x$, $y$ and $v$, the complementary component is bounded by the vector: $\|v -
+\langle y, v \rangle x\| \le (1 + \|x\| \|y\|) \|v\|$. -/
 theorem norm_sub_inner_smul_le (x y v : E) :
     ‖v - inner 𝕜 y v • x‖ ≤ (1 + ‖x‖ * ‖y‖) * ‖v‖ := by
   calc ‖v - inner 𝕜 y v • x‖ ≤ ‖v‖ + ‖inner 𝕜 y v • x‖ := norm_sub_le _ _
@@ -168,9 +197,12 @@ theorem norm_sub_inner_smul_le (x y v : E) :
       exact norm_inner_le_norm _ _
     _ = (1 + ‖x‖ * ‖y‖) * ‖v‖ := by ring
 
-/-- **The resolvent bound on the complementary subspace persists near the eigenvalue**: if
-`‖w‖ ≤ K ‖(M - l) w‖` for every `w ⊥ y` and `2 K ‖ρ - l‖ ≤ 1`, then
-`‖w‖ ≤ 2 K ‖(M - ρ) w‖` for every `w ⊥ y`. -/
+/-- **The resolvent bound on the complementary subspace persists near the eigenvalue.** Let
+$K \ge 0$ satisfy $\|w\| \le K \|(M - l) w\|$ for every $w$ with $\langle y, w \rangle = 0$, and
+let $2K |\rho - l| \le 1$. Then $\|w\| \le 2K \|(M - \rho) w\|$ for every $w$ with
+$\langle y, w \rangle = 0$.
+
+The proof is a Neumann-series step written as a lower bound. -/
 theorem norm_le_two_mul_norm_map_sub_smul {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
     (hρ : 2 * K * ‖ρ - l‖ ≤ 1) {w : E} (hw : inner 𝕜 y w = 0) :
@@ -187,8 +219,12 @@ theorem norm_le_two_mul_norm_map_sub_smul {K : ℝ} (hK0 : 0 ≤ K)
   have h4 := mul_le_mul_of_nonneg_right hρ (norm_nonneg w)
   nlinarith [norm_nonneg w, norm_nonneg (M w - ρ • w)]
 
-/-- **A small residual forces a small complementary component**: for `ρ` within `1 / (2K)` of the
-eigenvalue, `‖v - ⟪y, v⟫ x‖ ≤ 2 K (1 + ‖x‖ ‖y‖) ‖M v - ρ v‖`. -/
+/-- **A small residual forces a small complementary component.** Let $Mx = lx$, let $y$ be a left
+eigenvector of $M$ for $l$ with $\langle y, x \rangle = 1$, let $K \ge 0$ satisfy
+$\|w\| \le K \|(M - l) w\|$ for every $w \perp y$, and let $2K |\rho - l| \le 1$. Then for every
+$v$
+$$\|v - \langle y, v \rangle x\| \le 2K (1 + \|x\| \|y\|) \|Mv - \rho v\|.$$
+-/
 theorem norm_sub_inner_smul_le_norm_map_sub_smul (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
@@ -203,9 +239,13 @@ theorem norm_sub_inner_smul_le_norm_map_sub_smul (hx : M x = l • x)
       exact norm_sub_inner_smul_le x y _
     _ = 2 * K * (1 + ‖x‖ * ‖y‖) * ‖M v - ρ • v‖ := by ring
 
-/-- **The resolvent bound on the complementary subspace exists**, in finite dimension: if the
-eigenspace of `l` is the line through `x` and `⟪y, x⟫ = 1`, then `M - l` is injective on the
-hyperplane `y ⊥`, hence bounded below there. -/
+/-- **The resolvent bound on the complementary subspace exists** in finite dimension. Let $E$ be
+finite-dimensional, let $\langle y, x \rangle = 1$, and suppose that every solution $z$ of
+$Mz = lz$ is a multiple of $x$. Then there is $K > 0$ with $\|w\| \le K \|(M - l) w\|$ for every
+$w$ with $\langle y, w \rangle = 0$.
+
+The eigenspace of $l$ lies in the line through $x$, which meets the hyperplane $y^\perp$ only in
+$0$. So $M - l$ is injective on $y^\perp$, hence bounded below there. -/
 theorem exists_norm_le_mul_norm_map_sub [FiniteDimensional 𝕜 E] (hyx : inner 𝕜 y x = 1)
     (hsimple : ∀ z, M z = l • z → ∃ c : 𝕜, z = c • x) :
     ∃ K : ℝ, 0 < K ∧ ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖ := by
@@ -230,20 +270,21 @@ theorem exists_norm_le_mul_norm_map_sub [FiniteDimensional 𝕜 E] (hyx : inner 
   rw [dist_zero_right, map_zero, dist_zero_right, hfapply] at h
   exact h
 
-/-- **One step of Rayleigh quotient iteration is quadratically convergent at a simple
-eigenvalue.** Let `M x = l x`, let `y` be a left eigenvector normalized by `⟪y, x⟫ = 1`, let
-`‖w‖ ≤ K ‖(M - l) w‖` on the hyperplane `y ⊥` and `‖(M - l) z‖ ≤ C ‖z‖`. For a unit vector `v`
-whose complementary component `η = ‖v - ⟪y, v⟫ x‖` satisfies `4 η ≤ 1` and `2 K C η ≤ 1`, and
-for `u` solving the shifted system `(M - ρ) u = v` with the Rayleigh shift `ρ = ⟪v, M v⟫`, the
-complementary component of `u` is `O(η²)` relative to `‖u‖`:
-`‖u - ⟪y, u⟫ x‖ ≤ 4 K C η² ‖u‖`. The next iterate `u / ‖u‖` therefore has complementary component
-at most `4 K C η²`.
+/-- **One step of Rayleigh quotient iteration is quadratically convergent at a simple eigenvalue.**
+Let $Mx = lx$, let $y$ be a left eigenvector of $M$ for $l$ with $\langle y, x \rangle = 1$, let
+$K \ge 0$ satisfy $\|w\| \le K \|(M - l) w\|$ for every $w \perp y$, and let
+$\|(M - l) z\| \le C \|z\|$ for all $z$. Let $v$ be a unit vector whose complementary component
+$\eta = \|v - \langle y, v \rangle x\|$ satisfies $4\eta \le 1$ and $2KC\eta \le 1$, and let $u$
+solve $(M - \rho) u = v$ with the Rayleigh shift $\rho = \langle v, Mv \rangle$. Then
+$$\|u - \langle y, u \rangle x\| \le 4KC\eta^2 \|u\|.$$
+So the next iterate $u / \|u\|$ has complementary component at most $4KC\eta^2$.
 
-The proof is the perturbation argument of [demmel1997applied] §4.4.4–4.4.5 made quantitative: the
-shifted operator `M - ρ` preserves the splitting `E = 𝕜 x ⊕ y ⊥`, it is bounded below by
-`1 / (2K)` on `y ⊥` because `|ρ - l| ≤ C η` (`Krylov.norm_le_two_mul_norm_map_sub_smul`), and it
-divides the eigen-component by `l - ρ`, which is of order `η`; so the component of `u` along `x`
-is of order `1 / η` while its complementary component is of order `η`. -/
+The proof is the perturbation argument of Demmel, *Applied Numerical Linear Algebra*,
+§4.4.4–4.4.5, made quantitative. The operator $M - \rho$ preserves the splitting
+$E = \mathbb{K} x \oplus y^\perp$. It is bounded below by $1/(2K)$ on $y^\perp$ because
+$|\rho - l| \le C\eta$ (`Krylov.norm_le_two_mul_norm_map_sub_smul`), and it divides the
+eigencomponent by $l - \rho$, which is of order $\eta$. So the component of $u$ along $x$ is of
+order $1/\eta$, while its complementary component is of order $\eta$. -/
 theorem norm_sub_inner_smul_le_sq_mul_norm (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
     (hK0 : 0 ≤ K) (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖)
@@ -317,8 +358,12 @@ section Angle
 
 variable {x y : E}
 
-/-- The complementary component dominates the distance to the eigenline: `sin θ(v, 𝕜 x) ≤
-‖v - ⟪y, v⟫ x‖ / ‖v‖`, the orthogonal projection onto the line being the best approximation. -/
+/-- For all vectors $x$, $y$ and $v$,
+$$\sin\theta(v, \mathbb{K} x) \le \frac{\|v - \langle y, v \rangle x\|}{\|v\|},$$
+where $\sin\theta(v, \mathbb{K} x) = \|v - P_{\mathbb{K} x} v\| / \|v\|$ is
+`Submodule.sinAngle`. The complementary component dominates the distance to the eigenline,
+because the orthogonal projection onto the line is the best approximation from it. Both sides
+are $0$ at $v = 0$. -/
 theorem sinAngle_span_singleton_le (x y v : E) :
     (𝕜 ∙ x).sinAngle v ≤ ‖v - inner 𝕜 y v • x‖ / ‖v‖ := by
   rw [Submodule.sinAngle]
@@ -330,9 +375,11 @@ theorem sinAngle_span_singleton_le (x y v : E) :
         Metric.infDist_le_dist_of_mem hmem
     _ = ‖v - inner 𝕜 y v • x‖ := dist_eq_norm _ _
 
-/-- The complementary component is at most `1 + ‖x‖ ‖y‖` times the distance to the eigenline:
-`‖v - ⟪y, v⟫ x‖ ≤ (1 + ‖x‖ ‖y‖) sin θ(v, 𝕜 x) ‖v‖`, because `v - ⟪y, v⟫ x = (1 - P)(v - c x)`
-for every `c`, in particular for the orthogonal projection of `v`. -/
+/-- If $\langle y, x \rangle = 1$, then for every $v$
+$$\|v - \langle y, v \rangle x\| \le (1 + \|x\| \|y\|) \sin\theta(v, \mathbb{K} x) \|v\|.$$
+So the complementary component is at most $1 + \|x\| \|y\|$ times the distance to the eigenline.
+The reason is that $v - \langle y, v \rangle x = (1 - P)(v - cx)$ for every $c$, in particular
+when $cx$ is the orthogonal projection of $v$ onto the line. -/
 theorem norm_sub_inner_smul_le_sinAngle_mul (hyx : inner 𝕜 y x = 1) (v : E) :
     ‖v - inner 𝕜 y v • x‖ ≤ (1 + ‖x‖ * ‖y‖) * ((𝕜 ∙ x).sinAngle v * ‖v‖) := by
   rw [Submodule.sinAngle_mul_norm]
@@ -351,36 +398,45 @@ end Angle
 
 section Iteration
 
-/-- **One step of Rayleigh quotient iteration**: the shift is the Rayleigh quotient `ρ = ⟪v, M v⟫`
-of the (unit) vector `v`, and the next vector is the normalized solution of `(M - ρ) u = v`. The
-inverse is `Ring.inverse`, so the step is total and returns `0` when `M - ρ` is singular or
-`u = 0`; every statement about it assumes `IsUnit (M - ρ • 1)`. -/
+/-- **One step of Rayleigh quotient iteration.** For a vector $v$, let
+$\rho = \langle v, Mv \rangle$ be its Rayleigh quotient and $u = (M - \rho)^{-1} v$. The step
+returns $u / \|u\|$.
+
+The inverse is `Ring.inverse`, so the step is total: it returns $0$ when $M - \rho$ is not
+invertible or $u = 0$. Every statement about the step assumes that $M - \rho$ is invertible. -/
 noncomputable def rqiStep (M : Module.End 𝕜 E) (v : E) : E :=
   (‖Ring.inverse (M - inner 𝕜 v (M v) • (1 : Module.End 𝕜 E)) v‖ : 𝕜)⁻¹ •
     Ring.inverse (M - inner 𝕜 v (M v) • (1 : Module.End 𝕜 E)) v
 
-/-- **Rayleigh quotient iteration** ([demmel1997applied] §4.4.4–4.4.5; [saad2011numerical] §4.1,
-beside the fixed-shift `Krylov.inverseIterate`): the inverse iteration whose shift is updated at
-every step to the Rayleigh quotient of the current vector, started from the normalization of
-`v₀`. -/
+/-- **Rayleigh quotient iteration.** For a starting vector $w$, the iterates are $v_0 = w / \|w\|$
+and $v_{k+1}$ = one step `Krylov.rqiStep` of Rayleigh quotient iteration from $v_k$. It is
+inverse iteration whose shift is updated at every step to the Rayleigh quotient of the current
+vector (Demmel, *Applied Numerical Linear Algebra*, §4.4.4–4.4.5; [saad2011numerical] §4.1,
+beside the fixed-shift iteration `Krylov.inverseIterate`).
+
+For $w = 0$ the iteration starts at $v_0 = 0$. -/
 noncomputable def rayleighQuotientIterate (M : Module.End 𝕜 E) (v₀ : E) : ℕ → E
   | 0 => (‖v₀‖ : 𝕜)⁻¹ • v₀
   | k + 1 => rqiStep M (rayleighQuotientIterate M v₀ k)
 
-/-- The iteration starts at the normalization of the starting vector. -/
+/-- The iteration starts at the normalized starting vector, $v_0 = w / \|w\|$. -/
 @[simp]
 theorem rayleighQuotientIterate_zero (M : Module.End 𝕜 E) (v₀ : E) :
     rayleighQuotientIterate M v₀ 0 = (‖v₀‖ : 𝕜)⁻¹ • v₀ := rfl
 
-/-- One step of the iteration, by definition. -/
+/-- The iterate $v_{k+1}$ is one step of Rayleigh quotient iteration from $v_k$. -/
 theorem rayleighQuotientIterate_succ (M : Module.End 𝕜 E) (v₀ : E) (k : ℕ) :
     rayleighQuotientIterate M v₀ (k + 1) = rqiStep M (rayleighQuotientIterate M v₀ k) := rfl
 
 variable {M : E →ₗ[𝕜] E} {l : 𝕜} {x y : E}
 
-/-- **In the basin the shifted operator is injective unless the shift is the eigenvalue**: if
-`2 K ‖ρ - l‖ ≤ 1` and `ρ ≠ l` then `(M - ρ) z = 0` forces `z = 0`, the complementary component
-of `z` vanishing by the resolvent bound and the eigen-component by `ρ ≠ l`. -/
+/-- **In the basin, the shifted operator is injective unless the shift is the eigenvalue.** Let
+$Mx = lx$, let $y$ be a left eigenvector of $M$ for $l$ with $\langle y, x \rangle = 1$, let
+$K \ge 0$ satisfy $\|w\| \le K \|(M - l) w\|$ for every $w \perp y$, and let $\rho \neq l$
+satisfy $2K |\rho - l| \le 1$. If $(M - \rho) z = 0$, then $z = 0$.
+
+The complementary component of $z$ vanishes by the resolvent bound, and the eigencomponent
+vanishes because $\rho \neq l$. -/
 theorem eq_zero_of_map_sub_smul_eq_zero (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
@@ -400,8 +456,10 @@ theorem eq_zero_of_map_sub_smul_eq_zero (hx : M x = l • x)
     · exact absurd (sub_eq_zero.mp h'').symm hρl
   · exact absurd h hx0
 
-/-- **In the basin the shifted operator is invertible unless the shift is the eigenvalue**, in
-finite dimension. -/
+/-- **In the basin, the shifted operator is invertible unless the shift is the eigenvalue.** Let $E$
+be finite-dimensional. Let $Mx = lx$, let $y$ be a left eigenvector of $M$ for $l$ with
+$\langle y, x \rangle = 1$, let $K \ge 0$ satisfy $\|w\| \le K \|(M - l) w\|$ for every
+$w \perp y$, and let $\rho \neq l$ satisfy $2K |\rho - l| \le 1$. Then $M - \rho$ is invertible. -/
 theorem isUnit_sub_smul_one [FiniteDimensional 𝕜 E] (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖) {ρ : 𝕜}
@@ -410,10 +468,15 @@ theorem isUnit_sub_smul_one [FiniteDimensional 𝕜 E] (hx : M x = l • x)
   intro z hz
   exact eq_zero_of_map_sub_smul_eq_zero hx hy hyx hK0 hK hρ hρl hz
 
-/-- **One step of Rayleigh quotient iteration, in the basin**: for a unit vector `v` with
-complementary component `η` satisfying `4 η ≤ 1`, `2 K C η ≤ 1`, and with `M - ρ` invertible at
-the Rayleigh shift `ρ = ⟪v, M v⟫`, the next iterate `rqiStep M v` is a unit vector whose
-complementary component is at most `4 K C η²`. -/
+/-- **One step of Rayleigh quotient iteration, in the basin.** Let $Mx = lx$, let $y$ be a left
+eigenvector of $M$ for $l$ with $\langle y, x \rangle = 1$, let $K \ge 0$ satisfy
+$\|w\| \le K \|(M - l) w\|$ for every $w \perp y$, and let $\|(M - l) z\| \le C \|z\|$ for all
+$z$. Let $v$ be a unit vector whose complementary component
+$\eta = \|v - \langle y, v \rangle x\|$ satisfies $4\eta \le 1$ and $2KC\eta \le 1$, and let
+$M - \rho$ be invertible at the Rayleigh shift $\rho = \langle v, Mv \rangle$. Then the next
+iterate $v'$ = `Krylov.rqiStep M v` is a unit vector with
+$$\|v' - \langle y, v' \rangle x\| \le 4KC\eta^2.$$
+-/
 theorem rqiStep_spec (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
     (hK0 : 0 ≤ K) (hK : ∀ w, inner 𝕜 y w = 0 → ‖w‖ ≤ K * ‖M w - l • w‖)
@@ -445,20 +508,22 @@ theorem rqiStep_spec (hx : M x = l • x)
       _ = 4 * K * C * ‖v - inner 𝕜 y v • x‖ ^ 2 := by
         field_simp
 
-/-- **Rayleigh quotient iteration converges locally quadratically at a simple eigenvalue**
-([demmel1997applied] §4.4.4–4.4.5, the local statement behind the quadratic convergence of the
-single-shift QR iteration, [quarteroni2000numerical] §5.7.1). Let `M x = l x`, let `y` be a left
-eigenvector with `⟪y, x⟫ = 1`, let `‖w‖ ≤ K ‖(M - l) w‖` on `y ⊥` and `‖(M - l) z‖ ≤ C ‖z‖`. If the
-starting vector `v₀` is a unit vector whose complementary component `η₀ = ‖v₀ - ⟪y, v₀⟫ x‖`
-satisfies `4 η₀ ≤ 1` and `4 K C η₀ ≤ 1`, and if no Rayleigh shift along the way is exactly an
-eigenvalue (`M - ρ_k` invertible for every `k`), then every iterate `v_k` is a unit vector with
+/-- **Rayleigh quotient iteration converges locally quadratically at a simple eigenvalue.** Let
+$Mx = lx$, let $y$ be a left eigenvector of $M$ for $l$ with $\langle y, x \rangle = 1$, let
+$K > 0$ satisfy $\|w\| \le K \|(M - l) w\|$ for every $w \perp y$, and let $C > 0$ satisfy
+$\|(M - l) z\| \le C \|z\|$ for all $z$. Let the starting vector $v_0$ be a unit vector whose
+complementary component $\eta_0 = \|v_0 - \langle y, v_0 \rangle x\|$ satisfies $4\eta_0 \le 1$
+and $4KC\eta_0 \le 1$. Suppose that no Rayleigh shift is exactly an eigenvalue: $M - \rho_k$ is
+invertible for every $k$, where $\rho_k = \langle v_k, M v_k \rangle$. Then every iterate $v_k$
+is a unit vector with
+$$4KC \|v_k - \langle y, v_k \rangle x\| \le (4KC\eta_0)^{2^k}.$$
+This is the local statement behind the quadratic convergence of the single-shift QR iteration in
+[quarteroni2000numerical] §5.7.1; see Demmel, *Applied Numerical Linear Algebra*, §4.4.4–4.4.5.
 
-`4 K C ‖v_k - ⟪y, v_k⟫ x‖ ≤ (4 K C η₀) ^ (2 ^ k)`:
-
-the complementary component — and with it the angle to the eigenvector,
-`Krylov.sinAngle_span_singleton_le` — is squared at every step. For a symmetric `M` the
-convergence is in fact cubic; the quadratic rate is what the nonsymmetric perturbation argument
-gives, the Rayleigh quotient being only first-order accurate
+The complementary component, and with it the angle to the eigenvector
+(`Krylov.sinAngle_span_singleton_le`), is squared at every step. For a symmetric $M$ the
+convergence is in fact cubic. The quadratic rate is what the nonsymmetric perturbation argument
+gives, because the Rayleigh quotient is only first-order accurate
 (`Krylov.norm_inner_map_sub_le`). -/
 theorem norm_rayleighQuotientIterate_sub_le (hx : M x = l • x)
     (hy : Module.End.IsLeftEigenvector M l y) (hyx : inner 𝕜 y x = 1) {K C : ℝ}
@@ -515,15 +580,17 @@ section Column
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- A matrix applied to a column: `M (U e_j) = (M U) e_j`. -/
+/-- For square matrices $M$ and $U$, $M u_j = (MU)_{\cdot j}$, where $u_j$ is the $j$-th column of
+$U$. -/
 theorem toEuclideanLin_euclideanCol (M U : Matrix n n 𝕜) (j : n) :
     toEuclideanLin M (euclideanCol U j) = euclideanCol (M * U) j := by
   ext i
   simp [euclideanCol, toLpLin_apply, mulVec, dotProduct, Matrix.mul_apply, mul_comm]
 
-/-- The entries of a real orthogonal conjugate `Uᵀ T U`, read through the transpose:
-`(Uᵀ T U)_{ij} = ⟪Tᵀ u_i, u_j⟫`, so that the `i`-th row of the conjugate is `Tᵀ u_i` tested
-against the columns of `U`. -/
+/-- For real square matrices $U$ and $T$,
+$$(U^T T U)_{ij} = \langle T^T u_i, u_j \rangle,$$
+where $u_i$ is the $i$-th column of $U$. So the $i$-th row of the conjugate is $T^T u_i$ tested
+against the columns of $U$. -/
 theorem transpose_mul_mul_apply (U T : Matrix n n ℝ) (i j : n) :
     (Uᵀ * T * U) i j =
       inner ℝ (toEuclideanLin Tᵀ (euclideanCol U i)) (euclideanCol U j) := by
@@ -536,10 +603,15 @@ section Last
 
 variable {N : ℕ}
 
-/-- **The last column of the orthogonal factor** of a real `QR` factorization `A = Q R`:
-`Aᵀ q_n = r_{nn} e_n`, from `Aᵀ Q = Rᵀ Qᵀ Q = Rᵀ` and the upper triangularity of `R`. This is
-the identification, [demmel1997applied] §4.4.5, of the last column of `Q` with one step of
-inverse iteration on `Aᵀ` from `e_n`: `q_n` is proportional to `A⁻ᵀ e_n` whenever `r_{nn} ≠ 0`. -/
+/-- **The last column of the orthogonal factor.** Let $A \in \mathbb{R}^{n \times n}$, $n = N + 1$,
+have the QR decomposition $A = QR$ by `Matrix.qrQ` and `Matrix.qrR`, and let $q_n$ be the last
+column of $Q$. Then
+$$A^T q_n = r_{nn} e_n.$$
+
+This follows from $A^T Q = R^T Q^T Q = R^T$ and the upper triangularity of $R$. It identifies
+the last column of $Q$ with one step of inverse iteration on $A^T$ from $e_n$, as in Demmel,
+*Applied Numerical Linear Algebra*, §4.4.5: $q_n$ is proportional to $A^{-T} e_n$ whenever
+$r_{nn} \neq 0$. The index $n$ is `Fin.last N`. -/
 theorem toEuclideanLin_transpose_euclideanCol_qrQ_last (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     toEuclideanLin Aᵀ (euclideanCol (qrQ A) (Fin.last N)) =
       qrR A (Fin.last N) (Fin.last N) • EuclideanSpace.single (Fin.last N) (1 : ℝ) := by
@@ -557,8 +629,10 @@ theorem toEuclideanLin_transpose_euclideanCol_qrQ_last (A : Matrix (Fin (N + 1))
   · rw [ite_eq_right hi, mul_zero]
     exact isUpperTriangular_qrR A (lt_of_le_of_ne (Fin.le_last i) hi)
 
-/-- The last row of an upper Hessenberg matrix `T` has only two entries: as a vector,
-`Tᵀ e_n - t_{nn} e_n = t_{n,n-1} e_{n-1}`. -/
+/-- Let $T \in \mathbb{R}^{n \times n}$, $n = N + 2$, be upper Hessenberg. Then the last row of $T$
+has at most two nonzero entries; as a vector,
+$$T^T e_n - t_{nn} e_n = t_{n,n-1} e_{n-1}.$$
+The index $n$ is `Fin.last (N + 1)` and $n - 1$ is `Fin.castSucc (Fin.last N)`. -/
 theorem toEuclideanLin_transpose_single_last_sub_of_isUpperHessenberg
     {T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ} (hT : T.IsUpperHessenberg) :
     toEuclideanLin Tᵀ (EuclideanSpace.single (Fin.last (N + 1)) (1 : ℝ)) -
@@ -591,26 +665,29 @@ section Step
 
 variable {N : ℕ}
 
-/-- **One Rayleigh-shift QR step is quadratically convergent in the last row.** Let `T` be a real
-upper Hessenberg matrix of order `n = N + 2`, let `l` be an eigenvalue with a left eigenvector `x`
-(`Tᵀ x = l x`) and a right eigenvector `y` (`T y = l y`) normalized by `⟪y, x⟫ = 1`, with the
-resolvent bound `‖w‖ ≤ K ‖(Tᵀ - l) w‖` on `y ⊥` and `‖(Tᵀ - l) z‖ ≤ C ‖z‖`. Write
-`A' = 2 K (1 + ‖x‖ ‖y‖)`, `μ = t_{nn}` and `t = |t_{n,n-1}|`. If the shifted matrix `T - μ I` is
-nonsingular and `4 A' t ≤ 1`, `2 K C A' t ≤ 1`, `2 K |μ - l| ≤ 1`, then the step
-`T' = R Q + μ I`, `Q R = T - μ I`, has
+/-- **One Rayleigh-shift QR step is quadratically convergent in the last row.** Let
+$T \in \mathbb{R}^{n \times n}$, $n = N + 2$, be upper Hessenberg. Let $l \in \mathbb{R}$ and
+$x, y \in \mathbb{R}^n$ satisfy $T^T x = lx$, $Ty = ly$ and $\langle y, x \rangle = 1$. Let
+$K \ge 0$ satisfy $\|w\| \le K \|(T^T - l) w\|$ for every $w \perp y$, and let
+$\|(T^T - l) z\| \le C \|z\|$ for all $z$. Write $\alpha = 2K(1 + \|x\| \|y\|)$, $\mu = t_{nn}$
+and $t = |t_{n,n-1}|$. Suppose that $T - \mu I$ is nonsingular and
+$$4\alpha t \le 1, \qquad 2KC\alpha t \le 1, \qquad 2K |\mu - l| \le 1.$$
+Then the canonical QR step $T' = RQ + \mu I$, where $QR = T - \mu I$, satisfies
+$$|t'_{nj}| \le 4KC^2\alpha^2 t^2 \quad (j \neq n), \qquad |t'_{nn} - l| \le 4KC^2\alpha^2
+  t^2.$$
+This follows Demmel, *Applied Numerical Linear Algebra*, §4.4.4–4.4.5.
 
-`|t'_{nj}| ≤ 4 K C² A'² t²` for every `j ≠ n`, and `|t'_{nn} - l| ≤ 4 K C² A'² t²`.
-
-This is [demmel1997applied] §4.4.4–4.4.5: the last row of `T'` is `q_nᵀ T Q` where `q_n`, the last
-column of `Q`, is `(T - μ I)⁻ᵀ e_n` normalized
-(`Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last`) — one step of Rayleigh quotient
-iteration on `Tᵀ` from `e_n`, whose Rayleigh quotient is `μ = t_{nn}` and whose residual is
-`‖Tᵀ e_n - μ e_n‖ = t` because `T` is Hessenberg
+The last row of $T'$ is $q_n^T T Q$, where the last column $q_n$ of $Q$ is
+$(T - \mu I)^{-T} e_n$ normalized (`Matrix.toEuclideanLin_transpose_euclideanCol_qrQ_last`).
+This is one step of Rayleigh quotient iteration on $T^T$ from $e_n$: its Rayleigh quotient is
+$\mu = t_{nn}$, and its residual is $\|T^T e_n - \mu e_n\| = t$ because $T$ is Hessenberg
 (`Matrix.toEuclideanLin_transpose_single_last_sub_of_isUpperHessenberg`). The residual controls
-the complementary component `η` of `e_n` (`Krylov.norm_sub_inner_smul_le_norm_map_sub_smul`,
-`η ≤ A' t`), the step squares it (`Krylov.norm_sub_inner_smul_le_sq_mul_norm`), and the
-off-diagonal entries of the last row are `⟪(Tᵀ - l) q_n, q_j⟫`, of size `C` times the
-complementary component of `q_n`. -/
+the complementary component $\eta \le \alpha t$ of $e_n$
+(`Krylov.norm_sub_inner_smul_le_norm_map_sub_smul`), the step squares it
+(`Krylov.norm_sub_inner_smul_le_sq_mul_norm`), and the off-diagonal entries of the last row are
+$\langle (T^T - l) q_n, q_j \rangle$, of size $C$ times the complementary component of $q_n$.
+The step is `Matrix.shiftedQrStep`; the index $n$ is `Fin.last (N + 1)` and $n - 1$ is
+`Fin.castSucc (Fin.last N)`. -/
 theorem abs_shiftedQrStep_last_le {T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hT : T.IsUpperHessenberg) {l : ℝ} {x y : EuclideanSpace ℝ (Fin (N + 2))}
     (hx : toEuclideanLin Tᵀ x = l • x) (hy : toEuclideanLin T y = l • y)
@@ -764,35 +841,36 @@ section Orthogonal
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {Q : Matrix n n ℝ}
 
-/-- A real orthogonal matrix satisfies `Q Qᵀ = 1`. -/
+/-- A real orthogonal matrix $Q$ satisfies $Q Q^T = I$. -/
 theorem mul_transpose_of_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup n ℝ) :
     Q * Qᵀ = 1 :=
   (Matrix.mem_orthogonalGroup_iff n ℝ).mp hQ
 
-/-- A real orthogonal matrix satisfies `Qᵀ Q = 1`. -/
+/-- A real orthogonal matrix $Q$ satisfies $Q^T Q = I$. -/
 theorem transpose_mul_of_mem_orthogonalGroup (hQ : Q ∈ Matrix.orthogonalGroup n ℝ) :
     Qᵀ * Q = 1 :=
   (Matrix.mem_orthogonalGroup_iff' n ℝ).mp hQ
 
-/-- `Q (Qᵀ v) = v` for an orthogonal `Q`. -/
+/-- For a real orthogonal matrix $Q$ and every vector $v$, $Q (Q^T v) = v$. -/
 theorem toEuclideanLin_toEuclideanLin_transpose_apply (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)
     (v : EuclideanSpace ℝ n) : toEuclideanLin Q (toEuclideanLin Qᵀ v) = v := by
   rw [← toEuclideanLin_mul_apply, mul_transpose_of_mem_orthogonalGroup hQ,
     toEuclideanLin_one_apply]
 
-/-- `Qᵀ (Q v) = v` for an orthogonal `Q`. -/
+/-- For a real orthogonal matrix $Q$ and every vector $v$, $Q^T (Q v) = v$. -/
 theorem toEuclideanLin_transpose_toEuclideanLin_apply (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)
     (v : EuclideanSpace ℝ n) : toEuclideanLin Qᵀ (toEuclideanLin Q v) = v := by
   rw [← toEuclideanLin_mul_apply, transpose_mul_of_mem_orthogonalGroup hQ,
     toEuclideanLin_one_apply]
 
-/-- `⟪Qᵀ y, w⟫ = ⟪y, Q w⟫`: `Matrix.toEuclideanLin_transpose_inner_left` for a square real
-matrix. -/
+/-- For every real square matrix $Q$ and all vectors $y$, $w$, $\langle Q^T y, w \rangle = \langle
+y, Q w \rangle$. This is `Matrix.toEuclideanLin_transpose_inner_left` for a square real matrix. -/
 theorem inner_toEuclideanLin_transpose_left (Q : Matrix n n ℝ) (y w : EuclideanSpace ℝ n) :
     inner ℝ (toEuclideanLin Qᵀ y) w = inner ℝ y (toEuclideanLin Q w) :=
   toEuclideanLin_transpose_inner_left Q w y
 
-/-- A matrix conjugated by an orthogonal `Q`, applied to `Qᵀ v`: `(Qᵀ B Q) (Qᵀ v) = Qᵀ (B v)`. -/
+/-- For a real orthogonal matrix $Q$, every real square matrix $B$ and every vector $v$,
+$(Q^T B Q)(Q^T v) = Q^T (B v)$. -/
 theorem toEuclideanLin_transpose_mul_mul_apply_transpose (hQ : Q ∈ Matrix.orthogonalGroup n ℝ)
     (B : Matrix n n ℝ) (v : EuclideanSpace ℝ n) :
     toEuclideanLin (Qᵀ * B * Q) (toEuclideanLin Qᵀ v) = toEuclideanLin Qᵀ (toEuclideanLin B v) := by
@@ -805,13 +883,22 @@ section Conj
 
 variable {N : ℕ}
 
-/-- **The one-step bound `Matrix.abs_shiftedQrStep_last_le` transported along an orthogonal
-similarity**: the eigenvector data `(x, y, K, C)` are those of a matrix `A` and the step is taken
-on a Hessenberg `T = Qᵀ A Q`, `Q` orthogonal, with the same constants. This is the form the
-iteration (5.53) of [quarteroni2000numerical] consumes, every iterate being an orthogonal
-conjugate of the starting matrix. The eigenvectors of `Tᵀ` and `T` are `Qᵀ x` and `Qᵀ y`, of
-the same norms and inner product, and both resolvent bounds are invariant because `Q` is an
-isometry. -/
+/-- **The one-step bound `Matrix.abs_shiftedQrStep_last_le`, transported along an orthogonal
+similarity.** Let $A, T, Q \in \mathbb{R}^{n \times n}$, $n = N + 2$, with $Q$ orthogonal,
+$T = Q^T A Q$ and $T$ upper Hessenberg. Let $l \in \mathbb{R}$ and $x, y \in \mathbb{R}^n$
+satisfy $A^T x = lx$, $Ay = ly$ and $\langle y, x \rangle = 1$. Let $K \ge 0$ satisfy
+$\|w\| \le K \|(A^T - l) w\|$ for every $w \perp y$, and let $\|(A^T - l) z\| \le C \|z\|$ for
+all $z$. Write $\alpha = 2K(1 + \|x\| \|y\|)$, $\mu = t_{nn}$ and $t = |t_{n,n-1}|$. Suppose
+that $T - \mu I$ is nonsingular and
+$$4\alpha t \le 1, \qquad 2KC\alpha t \le 1, \qquad 2K |\mu - l| \le 1.$$
+Then the canonical QR step $T'$ from $T$ with shift $\mu$ satisfies
+$$|t'_{nj}| \le 4KC^2\alpha^2 t^2 \quad (j \neq n), \qquad |t'_{nn} - l| \le 4KC^2\alpha^2
+  t^2.$$
+
+This is the form that the iteration (5.53) of [quarteroni2000numerical] uses, every iterate
+being an orthogonal conjugate of the starting matrix. The eigenvectors of $T^T$ and $T$ are
+$Q^T x$ and $Q^T y$, with the same norms and inner product, and both bounds with $K$ and $C$ are
+invariant because $Q$ is an isometry. -/
 theorem abs_shiftedQrStep_last_le_of_conj {A T Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup (Fin (N + 2)) ℝ) (hTQ : T = Qᵀ * A * Q)
     (hT : T.IsUpperHessenberg) {l : ℝ} {x y : EuclideanSpace ℝ (Fin (N + 2))}
@@ -877,14 +964,16 @@ section Data
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **An algebraically simple real eigenvalue supplies the eigenvector data of the local
-convergence theorem**: if `l` is a simple root of the characteristic polynomial of a real matrix
-`A`, there are a left eigenvector `x` (`Aᵀ x = l x`), a right eigenvector `y` (`A y = l y`) with
-`⟪y, x⟫ = 1` — the two are not orthogonal at an algebraically simple eigenvalue,
-`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one` — and a constant `K > 0` with
-`‖w‖ ≤ K ‖(Aᵀ - l) w‖` on the hyperplane `y ⊥`, because the eigenspace of `Aᵀ` at `l` is the
-line through `x`, which meets `y ⊥` only in `0`
-(`Krylov.exists_norm_le_mul_norm_map_sub`). -/
+/-- **An algebraically simple real eigenvalue supplies the eigenvector data of the local convergence
+theorem.** Let $A \in \mathbb{R}^{n \times n}$ and let $l$ be a simple root of the
+characteristic polynomial of $A$. Then there are $x, y \in \mathbb{R}^n$ and $K > 0$ with
+$$A^T x = lx, \qquad Ay = ly, \qquad \langle y, x \rangle = 1,$$
+and $\|w\| \le K \|(A^T - l) w\|$ for every $w$ with $\langle y, w \rangle = 0$.
+
+The left and right eigenvectors are not orthogonal at an algebraically simple eigenvalue
+(`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`), so they can be normalized. The
+constant $K$ exists because the eigenspace of $A^T$ at $l$ is the line through $x$, which meets
+$y^\perp$ only in $0$ (`Krylov.exists_norm_le_mul_norm_map_sub`). -/
 theorem exists_eigenvector_data_of_rootMultiplicity_eq_one {A : Matrix n n ℝ} {l : ℝ}
     (hl : A.charpoly.rootMultiplicity l = 1) :
     ∃ (x y : EuclideanSpace ℝ n) (K : ℝ), toEuclideanLin Aᵀ x = l • x ∧
@@ -936,11 +1025,15 @@ section ShiftedStep
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
   [LocallyFiniteOrderBot n]
 
-/-- **A shifted QR step preserves upper Hessenberg form** when the shifted matrix is
-nonsingular ([quarteroni2000numerical] §5.6.4 for the unshifted step): `R Q + μ I` with `R` upper
-triangular and `Q = qrQ (T - μ I)` upper Hessenberg (`Matrix.isUpperHessenberg_qrQ`). The
-nonsingularity is what makes the factor `Q` unique; at a singular shift the Gram–Schmidt
-completion of `Matrix.qrQ` is arbitrary and need not be Hessenberg. -/
+/-- **A shifted QR step preserves upper Hessenberg form when the shifted matrix is nonsingular.**
+Let $T$ be upper Hessenberg and let $T - \mu I$ be invertible. Then the canonical QR step from
+$T$ with shift $\mu$ is upper Hessenberg ([quarteroni2000numerical] §5.6.4 for the unshifted
+step).
+
+The step is $RQ + \mu I$ with $R$ upper triangular and $Q$ = `Matrix.qrQ (T - μ • 1)` upper
+Hessenberg (`Matrix.isUpperHessenberg_qrQ`). The nonsingularity makes the factor $Q$ unique. At
+a singular shift the Gram–Schmidt completion in `Matrix.qrQ` is arbitrary and need not be
+Hessenberg. -/
 theorem isUpperHessenberg_shiftedQrStep {T : Matrix n n 𝕜} (hT : T.IsUpperHessenberg) {μ : 𝕜}
     (hunit : IsUnit (T - μ • 1)) : (shiftedQrStep μ T).IsUpperHessenberg := by
   have hdet : IsUnit (T - μ • 1).det := (isUnit_iff_isUnit_det _).mp hunit
@@ -954,8 +1047,9 @@ section RayleighShift
 variable {𝕜 : Type*} [RCLike 𝕜] {N : ℕ}
 
 /-- **The Rayleigh-shift QR iteration preserves upper Hessenberg form** as long as no shift is an
-eigenvalue: if `A` is upper Hessenberg and every shifted matrix `T_k - (T_k)_{nn} I` is
-nonsingular, every iterate `T_k = rayleighShiftQrIterate A k` is upper Hessenberg. -/
+eigenvalue. Let $A$ of order $n = N + 1$ be upper Hessenberg, let $T_k$ be the Rayleigh-shift
+iterates `Matrix.rayleighShiftQrIterate A k`, and suppose that every shifted matrix
+$T_k - (T_k)_{nn} I$ is invertible. Then every $T_k$ is upper Hessenberg. -/
 theorem isUpperHessenberg_rayleighShiftQrIterate {A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜}
     (hA : A.IsUpperHessenberg)
     (hreg : ∀ k, IsUnit (rayleighShiftQrIterate A k -
@@ -975,16 +1069,20 @@ section Quadratic
 
 variable {N : ℕ}
 
-/-- **Local quadratic convergence of the single-shift QR step at a simple eigenvalue, for any
-QR factorization** ([golub2013matrix] §7.5.3, [quarteroni2000numerical] (5.53)): for `A` with an
-algebraically simple real eigenvalue `l` there are `C` and `δ > 0` such that, for every Hessenberg
-orthogonal conjugate `T = Qᵀ A Q` with `|t_{n,n-1}| ≤ δ`, `|t_nn - l| ≤ δ` and `T - t_nn I`
-nonsingular, every single-shift QR step `T'` of `T` (`Matrix.IsShiftedQrStep` with shift `t_nn`,
-any factorization) has `|t'_{n,n-1}| ≤ C t_{n,n-1}²` and `|t'_nn - l| ≤ C t_{n,n-1}²` (0-based: `n`
-is `Fin.last`). The canonical step is bounded by `Matrix.abs_shiftedQrStep_last_le_of_conj` with
-the data of `Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one`, and any other step is a
-unimodular diagonal similarity of it (`Matrix.IsShiftedQrStep.unique_of_isUnit`), which keeps the
-moduli of the entries and the diagonal. -/
+/-- **Local quadratic convergence of the single-shift QR step at a simple eigenvalue, for any QR
+factorization.** Let $A \in \mathbb{R}^{n \times n}$, $n = N + 2$, and let $l$ be a simple root
+of the characteristic polynomial of $A$. Then there are $C$ and $\delta > 0$ with the following
+property. Let $Q$ be orthogonal, and let $T = Q^T A Q$ be upper Hessenberg with $T - t_{nn} I$
+nonsingular, $|t_{n,n-1}| \le \delta$ and $|t_{nn} - l| \le \delta$. Then every QR step $T'$
+from $T$ with shift $t_{nn}$, for any QR factorization, satisfies
+$$|t'_{n,n-1}| \le C t_{n,n-1}^2, \qquad |t'_{nn} - l| \le C t_{n,n-1}^2.$$
+This is [golub2013matrix] §7.5.3 and [quarteroni2000numerical] (5.53).
+
+The canonical step is bounded by `Matrix.abs_shiftedQrStep_last_le_of_conj` with the data of
+`Matrix.exists_eigenvector_data_of_rootMultiplicity_eq_one`. Any other step is a unimodular
+diagonal similarity of it (`Matrix.IsShiftedQrStep.unique_of_isUnit`), which keeps the moduli of
+the entries and the diagonal. A step for any factorization is `Matrix.IsShiftedQrStep`; the
+index $n$ is `Fin.last (N + 1)` and $n - 1$ is `Fin.castSucc (Fin.last N)`. -/
 theorem exists_abs_isShiftedQrStep_last_le_sq {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ} {l : ℝ}
     (hl : A.charpoly.rootMultiplicity l = 1) :
     ∃ C δ : ℝ, 0 < δ ∧ ∀ Q T T' : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ,

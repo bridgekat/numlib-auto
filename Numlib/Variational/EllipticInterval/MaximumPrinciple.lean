@@ -8,49 +8,70 @@ import Numlib.Variational.EllipticInterval.BoundaryConditions
 /-!
 # The maximum principle for the two-point boundary value problem
 
-The maximum principle of [brezis2011functional] §8.5: Theorem 8.19 (the Dirichlet problem, by
-Stampacchia's truncation method), Corollary 8.20, Proposition 8.21 (the Neumann problem),
-Remarks 26–27 (the classical route through the second-derivative test at an interior or
-endpoint maximum) and Remark 28 (the problem on `ℝ`).
+This module proves the maximum principle of [brezis2011functional], §8.5, for weak solutions
+$u \in H^1(a, b)$ of the equation $-(\alpha u')' + \gamma u = f$ on an interval $(a, b)$. For
+$u \in H^1(a, b)$, $\tilde u$ denotes its continuous representative on $[a, b]$, and $u(a)$, $u(b)$
+mean $\tilde u(a)$, $\tilde u(b)$. The results are Theorem 8.19 (the Dirichlet problem, by
+Stampacchia's truncation method), Corollary 8.20, Proposition 8.21 (the Neumann problem), Remarks 26
+and 27 (the classical maximum principle for $C^2$ solutions, by the second-derivative test at an
+interior or an endpoint maximum) and Remark 28 (the problem $-u'' + u = f$ on $\mathbb{R}$).
+
+The main tool is the truncation $G(t) = (\max\{t, 0\})^2$. For $u \in H^1(a, b)$ and
+$K \in \mathbb{R}$, the function $G(\tilde u - K)$ is in $H^1(a, b)$, with weak derivative
+$G'(\tilde u - K) u'$. It is in $H^1_0(a, b)$ when $u(a) \le K$ and $u(b) \le K$, so it is an
+admissible test function in the weak equation.
 
 ## Main definitions
 
-* `EllipticInterval.truncation`, Stampacchia's truncation `G(t) = (max t 0)²`: `C¹`, vanishing on
-  `(−∞, 0]`, with `t G(t) ≥ 0` and `G(t) = 0 ↔ t ≤ 0`;
-* `EllipticInterval.truncationElem hab u K`, the element `G(u − K)` of `H¹(a, b)` (the chain rule
-  `SobolevIntervalLp.memSobolevIntervalLp_comp_of_bounded`), which lies in `H_0^1(a, b)` when
-  `u ≤ K` at the endpoints (`truncationElem_mem_sobolevIntervalZero`).
+* `EllipticInterval.truncation`: Stampacchia's truncation $G(t) = (\max\{t, 0\})^2$. It is $C^1$, it
+  vanishes on $(-\infty, 0]$, $t G(t) \ge 0$, and $G(t) = 0$ if and only if $t \le 0$.
+* `EllipticInterval.truncationElem`: the element $G(u - K)$ of $H^1(a, b)$. It is in $H^1_0(a, b)$
+  when $u \le K$ at the endpoints (`EllipticInterval.truncationElem_mem_sobolevIntervalZero`).
 
-## Main statements
+## Main results
 
-* `EllipticInterval.integral_eq_zero_of_truncation` (the energy identity of Stampacchia's method,
-  for an arbitrary measure): testing `∫ (α u' v' + γ u v) = ∫ f v` with `v = G(u − K)` and
-  `f ≤ K γ` gives `∫ α u'² G'(u − K) = 0` and `∫ γ (u − K) G(u − K) = 0`.
-* `EllipticInterval.rep_le_of_le_of_isWeakSolution` (**Theorem 8.19**, for the general operator
-  `−(α u')' + γ u = f` with `α ≥ α₀ > 0`, `γ ≥ 0`): a weak solution with `u ≤ K` at the endpoints
-  and `f ≤ K γ` almost everywhere satisfies `u ≤ K` on `[a, b]`; `rep_ge_of_ge_of_isWeakSolution`
-  is the lower bound, and `abs_rep_le_of_isWeakSolution`, `rep_nonneg_of_isWeakSolution`,
-  `abs_rep_le_max_of_isWeakSolution` are **Corollary 8.20**.
-* `EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann` (**Proposition 8.21**) and its lower
-  bound, for the Neumann problem.
-* `EllipticInterval.le_of_contDiffMapIcc_classical` (Remark 26) and
-  `le_of_contDiffMapIcc_classical_neumann` (Remark 27): the classical maximum principle for `C²`
-  solutions, through the second-derivative test `IsLocalMax.deriv_deriv_nonpos` and its one-sided
-  endpoint form.
-* `EllipticInterval.Line.rep_le_of_le`, `Line.le_rep_of_le` (Remark 28): the maximum principle on
-  `ℝ`.
+* `EllipticInterval.integral_eq_zero_of_truncation`: the energy identity of Stampacchia's method,
+  for an arbitrary measure. If $\int (\alpha u' v' + \gamma u v) = \int f v$ for $v = G(u - K)$,
+  with $\alpha, \gamma \ge 0$ and $f \le K \gamma$, then $\alpha u' v' = 0$ and
+  $\gamma (u - K) v = 0$ almost everywhere.
+* `EllipticInterval.rep_le_of_le_of_isWeakSolution`: Theorem 8.19 of [brezis2011functional], for the
+  operator $-(\alpha u')' + \gamma u$ with $\alpha \ge \alpha_0 > 0$ and $\gamma \ge 0$. A weak
+  solution with $u \le K$ at the endpoints and $f \le K \gamma$ almost everywhere satisfies
+  $\tilde u \le K$ on $[a, b]$. `EllipticInterval.rep_ge_of_ge_of_isWeakSolution` is the lower
+  bound.
+* `EllipticInterval.rep_nonneg_of_isWeakSolution`, `EllipticInterval.abs_rep_le_of_isWeakSolution`,
+  `EllipticInterval.abs_rep_le_max_of_isWeakSolution`: Corollary 8.20 (i)–(iii) of
+  [brezis2011functional] for $-u'' + u = f$.
+* `EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`,
+  `EllipticInterval.rep_ge_of_ge_of_isWeakSolution_neumann`: Proposition 8.21 of
+  [brezis2011functional], the maximum principle for the Neumann problem.
+* `EllipticInterval.le_of_contDiffMapIcc_classical`,
+  `EllipticInterval.le_of_contDiffMapIcc_classical_neumann`: Remarks 26 and 27 of
+  [brezis2011functional], the classical maximum principle for $C^2$ solutions with Dirichlet and
+  with Neumann conditions.
+* `EllipticInterval.Line.rep_le_of_le`, `EllipticInterval.Line.le_rep_of_le`: Remark 28 of
+  [brezis2011functional], the maximum principle on $\mathbb{R}$.
 
-## Design
+## Proof outline
 
-* The truncation is `G(t) = (max t 0)²`, `C¹` with `G'(t) = 2 max t 0`. The book allows any
-  `C¹` function vanishing on `(−∞, 0]` and strictly increasing on `(0, ∞)`.
-* The general form `γ ≥ 0` of Theorem 8.19 is proved from the vanishing of `∫ α u'² G'(u − K)`:
-  then `G(u − K) ∈ H_0^1` has weak derivative `G'(u − K) u' = 0`, so it is constant (du
-  Bois-Reymond), hence `0`. The book's argument at `γ = 1` uses instead the vanishing of
-  `∫ (u − K) G(u − K)`, which is what the Neumann and the whole-line versions use, where no
-  boundary condition is available.
-* Remark 28 needs `0 ≤ K` for `G(u − K)` to lie in `H¹(ℝ)` (`G(−K) = 0`); this costs nothing,
-  since `f ≤ K` almost everywhere with `f ∈ L²(ℝ)` forces `0 ≤ K` — but the hypothesis is stated.
+In Theorem 8.19, the test function $v = G(u - K) \in H^1_0(a, b)$ gives
+$\int \alpha u'^2 G'(u - K) = 0$. Then $v' = G'(u - K) u' = 0$, so $v$ is constant by the du
+Bois-Reymond lemma, and $v = 0$ by its boundary values. Hence $u \le K$. The source proves the case
+$\gamma = 1$ with the identity $\int (u - K) G(u - K) = 0$ instead. The Neumann version and the
+version on $\mathbb{R}$ use this second identity, because they have no boundary condition. Remarks
+26 and 27 use the second-derivative test: at a maximum $x_0$ of $v$, $v''(x_0) \le 0$, so
+$v(x_0) = f(x_0) + v''(x_0) \le K$.
+
+## Implementation notes
+
+* The truncation is $G(t) = (\max\{t, 0\})^2$, which is $C^1$ with $G'(t) = 2 \max\{t, 0\}$. The
+  source permits any $C^1$ function that vanishes on $(-\infty, 0]$ and is strictly increasing on
+  $(0, \infty)$.
+* The element $G(u - K)$ of $H^1(a, b)$ comes from the chain rule
+  `SobolevIntervalLp.memSobolevIntervalLp_comp_of_bounded`.
+* Remark 28 has the hypothesis $K \ge 0$, so that $G(u - K)$ is in $H^1(\mathbb{R})$ (this needs
+  $G(-K) = 0$). The hypothesis costs nothing: if $f \le K$ almost everywhere and
+  $f \in L^2(\mathbb{R})$, then $K \ge 0$. But the theorem states it.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -62,33 +83,34 @@ namespace EllipticInterval
 
 /-! ### Stampacchia's truncation -/
 
-/-- **Stampacchia's truncation function** `G(t) = (max t 0)²`: of class `C¹`, vanishing for
-`t ≤ 0` and strictly increasing on `[0, ∞)` — the function `G` of the proof of
-[brezis2011functional] Theorem 8.19. -/
+/-- **Stampacchia's truncation function** is
+$$G(t) = (\max\{t, 0\})^2.$$
+It is of class $C^1$, it vanishes for $t \le 0$, and it is strictly increasing on $[0, \infty)$.
+It is the function $G$ of the proof of Theorem 8.19 of [brezis2011functional]. -/
 def truncation (t : ℝ) : ℝ := max t 0 ^ 2
 
-/-- `G(t) = 0` for `t ≤ 0`. -/
+/-- For $t \le 0$, $G(t) = 0$. -/
 theorem truncation_eq_zero_of_nonpos {t : ℝ} (h : t ≤ 0) : truncation t = 0 := by
   rw [truncation, max_eq_right h]; ring
 
-/-- `G(t) = t²` for `t ≥ 0`. -/
+/-- For $t \ge 0$, $G(t) = t^2$. -/
 theorem truncation_of_nonneg {t : ℝ} (h : 0 ≤ t) : truncation t = t ^ 2 := by
   rw [truncation, max_eq_left h]
 
-/-- `G(0) = 0`. -/
+/-- $G(0) = 0$. -/
 @[simp]
 theorem truncation_zero : truncation 0 = 0 := truncation_eq_zero_of_nonpos le_rfl
 
-/-- `G ≥ 0`. -/
+/-- $G(t) \ge 0$ for every $t \in \mathbb{R}$. -/
 theorem truncation_nonneg (t : ℝ) : 0 ≤ truncation t := sq_nonneg _
 
-/-- `t G(t) ≥ 0`. -/
+/-- $t \, G(t) \ge 0$ for every $t \in \mathbb{R}$. -/
 theorem mul_truncation_nonneg (t : ℝ) : 0 ≤ t * truncation t := by
   rcases le_or_gt t 0 with h | h
   · rw [truncation_eq_zero_of_nonpos h, mul_zero]
   · exact mul_nonneg h.le (truncation_nonneg t)
 
-/-- `G(t) = 0` exactly when `t ≤ 0`. -/
+/-- $G(t) = 0$ if and only if $t \le 0$. -/
 theorem truncation_eq_zero_iff {t : ℝ} : truncation t = 0 ↔ t ≤ 0 := by
   refine ⟨fun h ↦ ?_, truncation_eq_zero_of_nonpos⟩
   by_contra ht
@@ -96,7 +118,7 @@ theorem truncation_eq_zero_iff {t : ℝ} : truncation t = 0 ↔ t ≤ 0 := by
   rw [truncation_of_nonneg ht.le] at h
   exact ht.ne' (pow_eq_zero_iff two_ne_zero |>.1 h)
 
-/-- `t G(t) = 0` exactly when `t ≤ 0`. -/
+/-- $t \, G(t) = 0$ if and only if $t \le 0$. -/
 theorem mul_truncation_eq_zero_iff {t : ℝ} : t * truncation t = 0 ↔ t ≤ 0 := by
   rw [mul_eq_zero, truncation_eq_zero_iff]
   constructor
@@ -105,7 +127,9 @@ theorem mul_truncation_eq_zero_iff {t : ℝ} : t * truncation t = 0 ↔ t ≤ 0 
     · exact h
   · exact fun h ↦ Or.inr h
 
-/-- `G` is differentiable with `G'(t) = 2 max t 0`; at `t = 0` by the squeeze `|G(h)| ≤ h²`. -/
+/-- $G$ is differentiable at every $t \in \mathbb{R}$, with $G'(t) = 2 \max\{t, 0\}$.
+
+At $t = 0$ this follows from the bound $|G(h)| \le h^2$. -/
 theorem hasDerivAt_truncation (t : ℝ) : HasDerivAt truncation (2 * max t 0) t := by
   rcases lt_trichotomy t 0 with ht | rfl | ht
   · have h : truncation =ᶠ[𝓝 t] fun _ ↦ (0 : ℝ) := by
@@ -131,33 +155,35 @@ theorem hasDerivAt_truncation (t : ℝ) : HasDerivAt truncation (2 * max t 0) t 
     have := (hasDerivAt_pow 2 t).congr_of_eventuallyEq h
     simpa using this
 
-/-- The derivative of the truncation. -/
+/-- The derivative of $G$ is the function $t \mapsto 2 \max\{t, 0\}$. -/
 theorem deriv_truncation : _root_.deriv truncation = fun t ↦ 2 * max t 0 :=
   funext fun t ↦ (hasDerivAt_truncation t).deriv
 
-/-- The derivative of the truncation is nonnegative. -/
+/-- $G'(t) \ge 0$ for every $t \in \mathbb{R}$. -/
 theorem deriv_truncation_nonneg (t : ℝ) : 0 ≤ _root_.deriv truncation t := by
   rw [deriv_truncation]
   exact mul_nonneg two_pos.le (le_max_right t 0)
 
-/-- `G` is of class `C¹`. -/
+/-- $G$ is of class $C^1$ on $\mathbb{R}$. -/
 theorem contDiff_truncation : ContDiff ℝ 1 truncation :=
   contDiff_one_iff_deriv.2 ⟨fun t ↦ (hasDerivAt_truncation t).differentiableAt, by
     rw [deriv_truncation]; fun_prop⟩
 
-/-- The shifted truncation `s ↦ G(s − K)` is `C¹`. -/
+/-- For every $K \in \mathbb{R}$, the shifted truncation $s \mapsto G(s - K)$ is of class $C^1$. -/
 theorem contDiff_truncation_sub (K : ℝ) : ContDiff ℝ 1 fun s ↦ truncation (s - K) :=
   contDiff_truncation.comp (contDiff_id.sub contDiff_const)
 
-/-- The derivative of the shifted truncation. -/
+/-- The derivative of $s \mapsto G(s - K)$ at $s$ is $2 \max\{s - K, 0\}$. -/
 theorem deriv_truncation_sub (K s : ℝ) :
     _root_.deriv (fun s ↦ truncation (s - K)) s = 2 * max (s - K) 0 := by
   exact (hasDerivAt_truncation (s - K)).comp_sub_const.deriv
 
 /-! ### Two continuity lemmas -/
 
-/-- A function continuous on `[a, b]` and at most `K` almost everywhere on `(a, b)` is at most
-`K` on `[a, b]`: `max g K` and the constant `K` are continuous and agree almost everywhere. -/
+/-- Let $a < b$, let $g$ be continuous on $[a, b]$, and let $g \le K$ almost everywhere on $(a, b)$.
+Then $g(x) \le K$ for every $x \in [a, b]$.
+
+The functions $\max\{g, K\}$ and $K$ are continuous on $[a, b]$ and agree almost everywhere. -/
 theorem le_on_Icc_of_ae_le {a b : ℝ} (hab : a < b) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
     {K : ℝ} (h : ∀ᵐ x ∂(volume.restrict (Ioo a b)), g x ≤ K) : ∀ x ∈ Icc a b, g x ≤ K := by
   have hc : ContinuousOn (fun x ↦ max (g x) K) (Icc a b) :=
@@ -169,8 +195,8 @@ theorem le_on_Icc_of_ae_le {a b : ℝ} (hab : a < b) {g : ℝ → ℝ} (hg : Con
   rw [← this]
   exact le_max_left _ _
 
-/-- A continuous function on `ℝ` that is at most `K` almost everywhere is at most `K`
-everywhere. -/
+/-- Let $g : \mathbb{R} \to \mathbb{R}$ be continuous, and let $g \le K$ almost everywhere. Then
+$g(x) \le K$ for every $x \in \mathbb{R}$. -/
 theorem le_of_ae_le {g : ℝ → ℝ} (hg : Continuous g) {K : ℝ} (h : ∀ᵐ x, g x ≤ K) : ∀ x, g x ≤ K := by
   have e : (fun x ↦ max (g x) K) = fun _ ↦ K :=
     ((hg.max continuous_const).ae_eq_iff_eq (μ := volume) continuous_const).1
@@ -182,11 +208,18 @@ theorem le_of_ae_le {g : ℝ → ℝ} (hg : Continuous g) {K : ℝ} (h : ∀ᵐ 
 
 /-! ### The energy identity of Stampacchia's method -/
 
-/-- **The energy identity behind Stampacchia's truncation method**, for an arbitrary measure:
-if `∫ (α u' v' + γ u v) = ∫ f v` with `v = G(u − K)`, `v' = G'(u − K) u'`, `α ≥ 0`, `γ ≥ 0` and
-`f ≤ K γ` almost everywhere, then `∫ α u' v' = 0` and `∫ γ (u − K) v = 0`, both integrands being
-nonnegative: subtracting `K ∫ γ v` from both sides,
-`∫ α u'² G'(u − K) + ∫ γ (u − K) G(u − K) = ∫ (f − K γ) G(u − K) ≤ 0`. -/
+/-- **The energy identity of Stampacchia's truncation method**, for an arbitrary measure $\mu$ on
+$\mathbb{R}$. Let $\alpha, \gamma, f, u_0, u_1, v_0, v_1$ be real functions and
+$K \in \mathbb{R}$. Assume that, $\mu$-almost everywhere, $\alpha \ge 0$, $\gamma \ge 0$,
+$f \le K \gamma$, $v_0 = G(u_0 - K)$ and $v_1 = 2 \max\{u_0 - K, 0\} \, u_1$. Assume that
+$\alpha u_1 v_1$, $\gamma u_0 v_0$, $f v_0$ and $\gamma v_0$ are $\mu$-integrable, and that
+$$\int (\alpha u_1 v_1 + \gamma u_0 v_0) \, d\mu = \int f v_0 \, d\mu.$$
+Then $\alpha u_1 v_1 = 0$ and $\gamma (u_0 - K) v_0 = 0$ $\mu$-almost everywhere.
+
+Here $u_0, u_1$ stand for $u, u'$ and $v_0, v_1$ for $v = G(u - K)$ and $v' = G'(u - K) u'$.
+Subtracting $K \int \gamma v_0$ from both sides gives $\int \alpha u_1^2 G'(u_0 - K) + \int
+\gamma (u_0 - K) G(u_0 - K) = \int (f - K \gamma) G(u_0 - K) \le 0$, and both integrands on the
+left are nonnegative. -/
 theorem integral_eq_zero_of_truncation {μ : Measure ℝ} {α γ f u₀ u₁ v₀ v₁ : ℝ → ℝ} {K : ℝ}
     (hα : ∀ᵐ x ∂μ, 0 ≤ α x) (hγ : ∀ᵐ x ∂μ, 0 ≤ γ x) (hf : ∀ᵐ x ∂μ, f x ≤ K * γ x)
     (hv₀ : v₀ =ᵐ[μ] fun x ↦ truncation (u₀ x - K))
@@ -228,18 +261,19 @@ theorem integral_eq_zero_of_truncation {μ : Measure ℝ} {α γ f u₀ u₁ v�
   exact ⟨(integral_eq_zero_iff_of_nonneg_ae hA i1).1 hAzero,
     (integral_eq_zero_iff_of_nonneg_ae hB iB).1 hBzero⟩
 
-/-! ### The truncated element `G(u − K)` of `H¹(a, b)` -/
+/-! ### The truncated element $G(u - K)$ of $H^1(a, b)$ -/
 
 variable {a b : ℝ}
 
-/-- `G(ũ − K)` lies in `L²(a, b)`. -/
+/-- Let $a < b$, $u \in H^1(a, b)$ and $K \in \mathbb{R}$. Then $G(\tilde u - K) \in L^2(a, b)$. -/
 theorem memLp_truncation_rep (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
     MemLp (fun t ↦ truncation (SobolevIntervalLp.rep u t - K)) 2 (volume.restrict (Ioo a b)) :=
   (memSobolevIntervalLp_one_iff.1 (SobolevIntervalLp.memSobolevIntervalLp_comp_of_bounded hab u
     (contDiff_truncation_sub K)).1).1
 
 open SobolevInterval in
-/-- `G'(ũ − K) u' = 2 max (ũ − K) 0 · u'` lies in `L²(a, b)`. -/
+/-- Let $u \in H^1(a, b)$ and $K \in \mathbb{R}$. Then
+$2 \max\{\tilde u - K, 0\} \, u' \in L^2(a, b)$. -/
 theorem memLp_deriv_truncation_rep_mul (u : SobolevInterval 1 a b) (K : ℝ) :
     MemLp (fun t ↦ 2 * max (SobolevIntervalLp.rep u t - K) 0 * deriv u 1 t) 2
       (volume.restrict (Ioo a b)) := by
@@ -249,7 +283,8 @@ theorem memLp_deriv_truncation_rep_mul (u : SobolevInterval 1 a b) (K : ℝ) :
   exact this
 
 open SobolevInterval in
-/-- The chain rule for `G(ũ − K)`: its weak derivative is `2 max (ũ − K) 0 · u'`. -/
+/-- The chain rule for $G(\tilde u - K)$. Let $a < b$, $u \in H^1(a, b)$ and $K \in \mathbb{R}$.
+Then $G(\tilde u - K)$ has the weak derivative $2 \max\{\tilde u - K, 0\} \, u'$ on $(a, b)$. -/
 theorem hasWeakDerivOn_truncation_rep (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
     HasWeakDerivOn (fun t ↦ truncation (SobolevIntervalLp.rep u t - K))
       (fun t ↦ 2 * max (SobolevIntervalLp.rep u t - K) 0 * deriv u 1 t) (Opens.Ioo a b) := by
@@ -258,9 +293,11 @@ theorem hasWeakDerivOn_truncation_rep (hab : a < b) (u : SobolevInterval 1 a b) 
   simp only [deriv_truncation_sub] at this
   exact this
 
-/-- **The truncation `G(u − K)` of `u ∈ H¹(a, b)`** as an element of `H¹(a, b)`, by the chain
-rule (Corollary 8.11 on a bounded interval): its function is `G(ũ − K)` and its weak derivative
-`G'(ũ − K) u' = 2 max (ũ − K) 0 · u'`. -/
+/-- **The truncation $G(u - K)$** of $u \in H^1(a, b)$, for $a < b$ and $K \in \mathbb{R}$. It is
+the element of $H^1(a, b)$ whose function is $G(\tilde u - K)$ and whose weak derivative is
+$G'(\tilde u - K) u' = 2 \max\{\tilde u - K, 0\} \, u'$.
+
+This is the chain rule, Corollary 8.11 of [brezis2011functional], on a bounded interval. -/
 def truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) : SobolevInterval 1 a b :=
   SobolevIntervalLp.mk
     ![(memLp_truncation_rep hab u K).toLp (fun t ↦ truncation (SobolevIntervalLp.rep u t - K)),
@@ -275,21 +312,22 @@ def truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) : Sobolev
         (memLp_deriv_truncation_rep_mul u K).coeFn_toLp.symm
 
 open SobolevInterval in
-/-- The function of the truncated element. -/
+/-- The function of $G(u - K) \in H^1(a, b)$ is $G(\tilde u - K)$ almost everywhere on $(a, b)$. -/
 theorem fn_truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
     fn (truncationElem hab u K) =ᵐ[volume.restrict (Ioo a b)]
       fun t ↦ truncation (SobolevIntervalLp.rep u t - K) :=
   (memLp_truncation_rep hab u K).coeFn_toLp
 
 open SobolevInterval in
-/-- The weak derivative of the truncated element. -/
+/-- The weak derivative of $G(u - K) \in H^1(a, b)$ is $2 \max\{\tilde u - K, 0\} \, u'$ almost
+everywhere on $(a, b)$. -/
 theorem coeFn_deriv_truncationElem_one (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
     ⇑(deriv (truncationElem hab u K) 1) =ᵐ[volume.restrict (Ioo a b)]
       fun t ↦ 2 * max (SobolevIntervalLp.rep u t - K) 0 * deriv u 1 t :=
   (memLp_deriv_truncation_rep_mul u K).coeFn_toLp
 
 open SobolevInterval in
-/-- The continuous representative of the truncated element is `G(ũ − K)` on `[a, b]`. -/
+/-- The continuous representative of $G(u - K) \in H^1(a, b)$ is $G(\tilde u - K)$ on $[a, b]$. -/
 theorem rep_truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
     EqOn (rep (truncationElem hab u K)) (fun t ↦ truncation (rep u t - K)) (Icc a b) := by
   refine rep_eq_of_continuousOn hab _
@@ -298,8 +336,10 @@ theorem rep_truncationElem (hab : a < b) (u : SobolevInterval 1 a b) (K : ℝ) :
   rw [h1]
 
 open SobolevInterval in
-/-- **The truncated element lies in `H_0^1(a, b)` when `u ≤ K` at the endpoints**
-(`G(u(a) − K) = 0` and `G(u(b) − K) = 0`). -/
+/-- Let $a < b$, $u \in H^1(a, b)$ and $K \in \mathbb{R}$. If $u(a) \le K$ and $u(b) \le K$, then
+$G(u - K) \in H^1_0(a, b)$.
+
+The reason is that $G(u(a) - K) = 0$ and $G(u(b) - K) = 0$. -/
 theorem truncationElem_mem_sobolevIntervalZero (hab : a < b) {u : SobolevInterval 1 a b} {K : ℝ}
     (hKa : rep u a ≤ K) (hKb : rep u b ≤ K) : truncationElem hab u K ∈ SobolevIntervalZero a b :=
   SobolevIntervalZero.mem_of_rep_eq_zero hab _
@@ -309,8 +349,14 @@ theorem truncationElem_mem_sobolevIntervalZero (hab : a < b) {u : SobolevInterva
         exact truncation_eq_zero_of_nonpos (by linarith))
 
 open SobolevInterval in
-/-- The energy identity of Stampacchia's method on `(a, b)`, for the form `form a b α 0 γ` tested
-with `v = G(u − K)`. -/
+/-- The energy identity of Stampacchia's method on $(a, b)$. Let $a < b$, let
+$\alpha, \gamma \in L^\infty(a, b)$ with $\alpha \ge 0$ and $\gamma \ge 0$ almost everywhere,
+let $f \in L^2(a, b)$, $u \in H^1(a, b)$ and $K \in \mathbb{R}$, and let $f \le K \gamma$ almost
+everywhere. Let $v = G(u - K)$, and assume
+$$\int_a^b (\alpha u' v' + \gamma u v) = \int_a^b f v.$$
+Then $\alpha u' v' = 0$ and $\gamma (u - K) v = 0$ almost everywhere on $(a, b)$.
+
+The left side is `EllipticInterval.form a b α 0 γ u v`, the form with $\beta = 0$. -/
 theorem integral_eq_zero_of_form_truncationElem (hab : a < b)
     (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ αL x)
@@ -350,14 +396,21 @@ theorem integral_eq_zero_of_form_truncationElem (hab : a < b)
 /-! ### Theorem 8.19: the maximum principle for the Dirichlet problem -/
 
 open SobolevInterval in
-/-- **Theorem 8.19 of [brezis2011functional] (the maximum principle)**, for the operator
-`−(α u')' + γ u` with `α ≥ α₀ > 0` and `γ ≥ 0`: if `u ∈ H¹(a, b)` satisfies the weak equation
-`∫ (α u' v' + γ u v) = ∫ f v` for every `v ∈ H_0^1(a, b)`, `u(a) ≤ K`, `u(b) ≤ K` and `f ≤ K γ`
-almost everywhere, then `u ≤ K` on `[a, b]`. The book's problem `−u'' + u = f` is `α = γ = 1`,
-where the hypothesis on `f` reads `f ≤ K` (so `K = max (α, β, ess sup f)` when that is finite).
-Stampacchia's method: `v = G(u − K) ∈ H_0^1` in the weak equation gives
-`∫ α u'² G'(u − K) = 0`, so `v' = G'(u − K) u' = 0` and `v` is constant (du Bois-Reymond), hence
-`0` by its boundary values. -/
+/-- The **maximum principle** for the operator $-(\alpha u')' + \gamma u$. Let $a < b$, let
+$\alpha, \gamma \in L^\infty(a, b)$ with $\alpha \ge \alpha_0$ almost everywhere for a constant
+$\alpha_0 > 0$ and $\gamma \ge 0$ almost everywhere, and let $f \in L^2(a, b)$. Let
+$u \in H^1(a, b)$ satisfy
+$$\int_a^b (\alpha u' v' + \gamma u v) = \int_a^b f v
+  \quad \text{for every } v \in H^1_0(a, b).$$
+If $u(a) \le K$, $u(b) \le K$ and $f \le K \gamma$ almost everywhere, then $\tilde u(x) \le K$
+for every $x \in [a, b]$. This is Theorem 8.19 of [brezis2011functional].
+
+The source states the theorem for $-u'' + u = f$, which is the case $\alpha = \gamma = 1$. There
+the hypothesis on $f$ reads $f \le K$, so $K$ can be the maximum of $u(a)$, $u(b)$ and the
+essential supremum of $f$, when that is finite. The proof is Stampacchia's method: the test
+function $v = G(u - K) \in H^1_0(a, b)$ gives $\int \alpha u'^2 G'(u - K) = 0$, so
+$v' = G'(u - K) u' = 0$, $v$ is constant by the du Bois-Reymond lemma, and $v = 0$ by its
+boundary values. -/
 theorem rep_le_of_le_of_isWeakSolution (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ αL x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γL x) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
@@ -399,12 +452,14 @@ theorem rep_le_of_le_of_isWeakSolution (hab : a < b) (αL γL : Lp ℝ ⊤ (volu
   simp only at h
   linarith [truncation_eq_zero_iff.1 h]
 
-/-- The load of `−f` is `−load f`. -/
+/-- For $f \in L^2(a, b)$, the load of $-f$ is the negative of the load of $f$:
+$v \mapsto \int_a^b (-f) v$ is $v \mapsto -\int_a^b f v$. -/
 theorem load_neg (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : load a b (-f) = -load a b f := by
   ext v
   rw [neg_apply, load_apply_inner, load_apply_inner, inner_neg_left]
 
-/-- The continuous representative of `−u`. -/
+/-- Let $a < b$ and $u \in H^1(a, b)$. The continuous representative of $-u$ is $-\tilde u$ on
+$[a, b]$. -/
 theorem _root_.SobolevInterval.rep_neg (hab : a < b) (u : SobolevInterval 1 a b) :
     EqOn (SobolevInterval.rep (-u)) (-SobolevInterval.rep u) (Icc a b) := by
   have := SobolevInterval.rep_smul hab (-1) u
@@ -413,8 +468,13 @@ theorem _root_.SobolevInterval.rep_neg (hab : a < b) (u : SobolevInterval 1 a b)
   simp
 
 open SobolevInterval in
-/-- **Theorem 8.19, the lower bound**: under the weak equation, `K ≤ u(a)`, `K ≤ u(b)` and
-`K γ ≤ f` almost everywhere imply `K ≤ u` on `[a, b]` — the upper bound applied to `−u`. -/
+/-- The lower bound of the maximum principle `EllipticInterval.rep_le_of_le_of_isWeakSolution`.
+Under the hypotheses of `EllipticInterval.rep_le_of_le_of_isWeakSolution` on $\alpha$, $\gamma$
+and the weak equation, if $K \le u(a)$, $K \le u(b)$ and $K \gamma \le f$ almost everywhere,
+then $K \le \tilde u(x)$ for every $x \in [a, b]$. This is the lower bound in Theorem 8.19 of
+[brezis2011functional].
+
+The proof applies the upper bound to $-u$. -/
 theorem rep_ge_of_ge_of_isWeakSolution (hab : a < b) (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     {α₀ : ℝ} (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo a b)), α₀ ≤ αL x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo a b)), 0 ≤ γL x) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
@@ -440,8 +500,10 @@ theorem rep_ge_of_ge_of_isWeakSolution (hab : a < b) (αL γL : Lp ℝ ⊤ (volu
 /-! ### Corollary 8.20 -/
 
 open SobolevInterval in
-/-- **Corollary 8.20 (i) of [brezis2011functional]**: for the model problem `−u'' + u = f`, if
-`u ≥ 0` at the endpoints and `f ≥ 0` almost everywhere, then `u ≥ 0` on `[a, b]`. -/
+/-- Let $a < b$, $f \in L^2(a, b)$, and let $u \in H^1(a, b)$ satisfy
+$$\int_a^b (u' v' + u v) = \int_a^b f v \quad \text{for every } v \in H^1_0(a, b).$$
+If $u(a) \ge 0$, $u(b) \ge 0$ and $f \ge 0$ almost everywhere, then $\tilde u(x) \ge 0$ for
+every $x \in [a, b]$. This is Corollary 8.20(i) of [brezis2011functional]. -/
 theorem rep_nonneg_of_isWeakSolution (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b f v)
@@ -453,9 +515,11 @@ theorem rep_nonneg_of_isWeakSolution (hab : a < b) (f : Lp ℝ 2 (volume.restric
     (by filter_upwards [hf] with x hx; rw [zero_mul]; exact hx)
 
 open SobolevInterval in
-/-- **Corollary 8.20 (ii) of [brezis2011functional]**: for the model problem `−u'' + u = f`, if
-`u = 0` at the endpoints and `|f| ≤ M` almost everywhere, then `|u| ≤ M` on `[a, b]`, that is,
-`‖u‖_∞ ≤ ‖f‖_∞`. -/
+/-- Let $a < b$, $f \in L^2(a, b)$, and let $u \in H^1(a, b)$ satisfy
+$$\int_a^b (u' v' + u v) = \int_a^b f v \quad \text{for every } v \in H^1_0(a, b).$$
+If $u(a) = u(b) = 0$ and $|f| \le M$ almost everywhere, then $|\tilde u(x)| \le M$ for every
+$x \in [a, b]$. That is, $\|u\|_\infty \le \|f\|_\infty$. This is Corollary 8.20(ii) of
+[brezis2011functional]. -/
 theorem abs_rep_le_of_isWeakSolution (hab : a < b) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
     {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b f v)
@@ -486,8 +550,11 @@ theorem abs_rep_le_of_isWeakSolution (hab : a < b) (f : Lp ℝ 2 (volume.restric
       (by filter_upwards [hf, h1] with y hy hy'; rw [hy', mul_one]; exact (abs_le.1 hy).2) x hx
 
 open SobolevInterval in
-/-- **Corollary 8.20 (iii) of [brezis2011functional]**: for the model problem with `f = 0`,
-`|u| ≤ max |u(a)| |u(b)|` on `[a, b]`, that is, `‖u‖_∞ ≤ ‖u‖_{L^∞(∂I)}`. -/
+/-- Let $a < b$, and let $u \in H^1(a, b)$ satisfy
+$$\int_a^b (u' v' + u v) = 0 \quad \text{for every } v \in H^1_0(a, b).$$
+Then $|\tilde u(x)| \le \max\{|u(a)|, |u(b)|\}$ for every $x \in [a, b]$. That is,
+$\|u\|_\infty \le \|u\|_{L^\infty(\partial I)}$, where $I = (a, b)$. This is Corollary 8.20(iii)
+of [brezis2011functional]. -/
 theorem abs_rep_le_max_of_isWeakSolution (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : ∀ v ∈ SobolevIntervalZero a b, modelForm a b u v = load a b 0 v) :
     ∀ x ∈ Icc a b, |rep u x| ≤ max |rep u a| |rep u b| := by
@@ -515,11 +582,15 @@ theorem abs_rep_le_max_of_isWeakSolution (hab : a < b) {u : SobolevInterval 1 a 
 /-! ### Proposition 8.21: the maximum principle for the Neumann problem -/
 
 open SobolevInterval in
-/-- **Proposition 8.21 of [brezis2011functional] (the maximum principle for the Neumann
-problem)**: if `u ∈ H¹(a, b)` satisfies `∫ u' v' + ∫ u v = ∫ f v` for every `v ∈ H¹(a, b)` and
-`f ≤ K` almost everywhere, then `u ≤ K` on `[a, b]`. The same truncation `v = G(u − K)`, now
-admissible without any boundary condition; here the vanishing of `∫ (u − K) G(u − K)` gives
-`u ≤ K` almost everywhere, hence everywhere by continuity. -/
+/-- The **maximum principle for the Neumann problem**. Let $a < b$, $f \in L^2(a, b)$, and let
+$u \in H^1(a, b)$ satisfy
+$$\int_a^b (u' v' + u v) = \int_a^b f v \quad \text{for every } v \in H^1(a, b).$$
+If $f \le K$ almost everywhere, then $\tilde u(x) \le K$ for every $x \in [a, b]$. This is
+Proposition 8.21 of [brezis2011functional].
+
+The test function $v = G(u - K)$ is admissible without a boundary condition. The identity
+$\int (u - K) G(u - K) = 0$ gives $u \le K$ almost everywhere, and continuity gives
+$\tilde u \le K$ everywhere on $[a, b]$. -/
 theorem rep_le_of_le_of_isWeakSolution_neumann (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : ∀ v, modelForm a b u v = load a b f v) {K : ℝ}
@@ -537,8 +608,11 @@ theorem rep_le_of_le_of_isWeakSolution_neumann (hab : a < b)
   exact mul_truncation_eq_zero_iff.1 hx
 
 open SobolevInterval in
-/-- **Proposition 8.21, the lower bound**: `K ≤ f` almost everywhere implies `K ≤ u` on
-`[a, b]` for the weak solution of the Neumann problem. -/
+/-- The lower bound of the maximum principle for the Neumann problem. Let $a < b$,
+$f \in L^2(a, b)$, and let $u \in H^1(a, b)$ be the weak solution of the Neumann problem, as in
+`EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`. If $K \le f$ almost everywhere, then
+$K \le \tilde u(x)$ for every $x \in [a, b]$. This is the lower bound in Proposition 8.21 of
+[brezis2011functional]. -/
 theorem rep_ge_of_ge_of_isWeakSolution_neumann (hab : a < b)
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : ∀ v, modelForm a b u v = load a b f v) {K : ℝ}
@@ -555,11 +629,15 @@ theorem rep_ge_of_ge_of_isWeakSolution_neumann (hab : a < b)
 
 /-! ### Remarks 26 and 27: the classical maximum principle -/
 
-/-- **The one-sided second-derivative test at a right endpoint**, the mirror image of
-`IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici` through `y ↦ 2 x₀ − y`: if `u` has a local maximum
-at `x₀` among the points of `(−∞, x₀]`, with the one-sided derivatives `u'` there and
-`u' x₀ = 0`, and `u'` has one-sided derivative `c` at `x₀`, then `c ≤ 0`. Belongs beside the
-`Ici` version in `Numlib/Analysis/Calculus/DerivativeTest.lean`. -/
+/-- **The one-sided second-derivative test at a right endpoint.** Let
+$u, u' : \mathbb{R} \to \mathbb{R}$ and $x_0, c \in \mathbb{R}$. Assume that $u$ has a local
+maximum at $x_0$ relative to $(-\infty, x_0]$, that $u$ has the derivative $u'(y)$ within
+$(-\infty, x_0]$ at every $y \le x_0$ near $x_0$, that $u'$ has the derivative $c$ within
+$(-\infty, x_0]$ at $x_0$, and that $u'(x_0) = 0$. Then $c \le 0$.
+
+This is the mirror image of `IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici` under
+$y \mapsto 2 x_0 - y$. It belongs beside that lemma in
+`Numlib.Analysis.Calculus.DerivativeTest`. -/
 theorem _root_.IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Iic {u u' : ℝ → ℝ} {x₀ c : ℝ}
     (hmax : IsLocalMaxOn u (Iic x₀) x₀)
     (hu : ∀ᶠ y in 𝓝[≤] x₀, HasDerivWithinAt u (u' y) (Iic x₀) y)
@@ -592,8 +670,10 @@ theorem _root_.IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Iic {u u' : ℝ → ℝ} 
     exact h2.congr_deriv (by ring)
   exact IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici hmax' hu'' hc (by simp [hrx₀, h0])
 
-/-- For `v ∈ C²[a, b]`, `v` has derivative `v'` and `v'` has derivative `v''` within `[a, b]` at
-every point of `[a, b]`. -/
+/-- Let $a < b$ and $v \in C^2[a, b]$. At every $t \in [a, b]$, $v$ has the derivative $v'(t)$
+within $[a, b]$, and $v'$ has the derivative $v''(t)$ within $[a, b]$.
+
+Here $v$ and $v'$ are read as functions on $\mathbb{R}$ through `ContDiffMapIcc.extend`. -/
 theorem contDiffMapIcc_hasDerivWithinAt (hab : a < b) (v : ContDiffMapIcc hab.le 2) (t : Icc a b) :
     HasDerivWithinAt v.extend (v.shift.extend t) (Icc a b) t ∧
       HasDerivWithinAt v.shift.extend (v.deriv 2 t) (Icc a b) t := by
@@ -601,8 +681,8 @@ theorem contDiffMapIcc_hasDerivWithinAt (hab : a < b) (v : ContDiffMapIcc hab.le
   have := v.hasDerivWithinAt_extend t
   rwa [show v.deriv 1 t = v.shift.extend t by rw [ContDiffMapIcc.extend_val]; rfl] at this
 
-/-- At an interior point of `[a, b]`, the second derivative of `v ∈ C²[a, b]` is
-`deriv (deriv v)`. -/
+/-- Let $a < b$, $v \in C^2[a, b]$ and $x \in (a, b)$. Then the second derivative at $x$ of the
+extension of $v$ to $\mathbb{R}$ is $v''(x)$. -/
 theorem deriv_deriv_contDiffMapIcc_extend (hab : a < b) (v : ContDiffMapIcc hab.le 2) {x : ℝ}
     (hx : x ∈ Ioo a b) :
     _root_.deriv (_root_.deriv v.extend) x = v.deriv 2 ⟨x, Ioo_subset_Icc_self hx⟩ := by
@@ -615,10 +695,12 @@ theorem deriv_deriv_contDiffMapIcc_extend (hab : a < b) (v : ContDiffMapIcc hab.
   exact ((contDiffMapIcc_hasDerivWithinAt hab v ⟨x, Ioo_subset_Icc_self hx⟩).2.hasDerivAt
     hnhds).deriv
 
-/-- **Remark 26 of [brezis2011functional] (the classical maximum principle)**: if `v ∈ C²[a, b]`
-satisfies `−v'' + v = f` on `[a, b]`, `v(a) ≤ K`, `v(b) ≤ K` and `f ≤ K` on `[a, b]`, then
-`v ≤ K` on `[a, b]`. At an interior maximum `x₀`, `v''(x₀) ≤ 0`
-(`IsLocalMax.deriv_deriv_nonpos`), so `v(x₀) = f(x₀) + v''(x₀) ≤ f(x₀) ≤ K`. -/
+/-- The **classical maximum principle**. Let $a < b$ and let $v \in C^2[a, b]$ satisfy
+$-v'' + v = f$ at every point of $[a, b]$. If $v(a) \le K$, $v(b) \le K$ and $f \le K$ on
+$[a, b]$, then $v \le K$ on $[a, b]$. This is Remark 26 of [brezis2011functional].
+
+At an interior maximum $x_0$, $v''(x_0) \le 0$ by `IsLocalMax.deriv_deriv_nonpos`, so
+$v(x_0) = f(x_0) + v''(x_0) \le f(x_0) \le K$. -/
 theorem le_of_contDiffMapIcc_classical (hab : a < b) (v : ContDiffMapIcc hab.le 2) {f : ℝ → ℝ}
     (hode : ∀ x : Icc a b, -v.deriv 2 x + v x = f x) {K : ℝ}
     (hKa : v ⟨a, left_mem_Icc.2 hab.le⟩ ≤ K) (hKb : v ⟨b, right_mem_Icc.2 hab.le⟩ ≤ K)
@@ -641,8 +723,10 @@ theorem le_of_contDiffMapIcc_classical (hab : a < b) (v : ContDiffMapIcc hab.le 
   rw [ContDiffMapIcc.extend_of_mem v hx₀]
   linarith [hf x₀ hx₀]
 
-/-- At a maximum of `v ∈ C²[a, b]` on `[a, b]` attained at `a` with `v'(a) = 0`, `v''(a) ≤ 0`
-(the one-sided second-derivative test). -/
+/-- Let $a < b$ and $v \in C^2[a, b]$. If $v$ attains its maximum on $[a, b]$ at $a$ and
+$v'(a) = 0$, then $v''(a) \le 0$.
+
+This is the one-sided second-derivative test. -/
 theorem contDiffMapIcc_deriv_two_nonpos_left (hab : a < b) (v : ContDiffMapIcc hab.le 2)
     (hmax : IsMaxOn v.extend (Icc a b) a) (hva : v.deriv 1 ⟨a, left_mem_Icc.2 hab.le⟩ = 0) :
     v.deriv 2 ⟨a, left_mem_Icc.2 hab.le⟩ ≤ 0 := by
@@ -659,8 +743,10 @@ theorem contDiffMapIcc_deriv_two_nonpos_left (hab : a < b) (v : ContDiffMapIcc h
   · exact ((hd ⟨a, left_mem_Icc.2 hab.le⟩).2).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE hab)
   · exact (hshift ⟨a, left_mem_Icc.2 hab.le⟩).trans hva
 
-/-- At a maximum of `v ∈ C²[a, b]` on `[a, b]` attained at `b` with `v'(b) = 0`, `v''(b) ≤ 0`
-(the one-sided second-derivative test). -/
+/-- Let $a < b$ and $v \in C^2[a, b]$. If $v$ attains its maximum on $[a, b]$ at $b$ and
+$v'(b) = 0$, then $v''(b) \le 0$.
+
+This is the one-sided second-derivative test. -/
 theorem contDiffMapIcc_deriv_two_nonpos_right (hab : a < b) (v : ContDiffMapIcc hab.le 2)
     (hmax : IsMaxOn v.extend (Icc a b) b) (hvb : v.deriv 1 ⟨b, right_mem_Icc.2 hab.le⟩ = 0) :
     v.deriv 2 ⟨b, right_mem_Icc.2 hab.le⟩ ≤ 0 := by
@@ -677,10 +763,12 @@ theorem contDiffMapIcc_deriv_two_nonpos_right (hab : a < b) (v : ContDiffMapIcc 
   · exact ((hd ⟨b, right_mem_Icc.2 hab.le⟩).2).mono_of_mem_nhdsWithin (Icc_mem_nhdsLE hab)
   · exact (hshift ⟨b, right_mem_Icc.2 hab.le⟩).trans hvb
 
-/-- **Remark 27 of [brezis2011functional] (the classical maximum principle, Neumann
-conditions)**: if `v ∈ C²[a, b]` satisfies `−v'' + v = f` on `[a, b]`, `v'(a) = v'(b) = 0` and
-`f ≤ K` on `[a, b]`, then `v ≤ K` on `[a, b]`. At an interior maximum as in Remark 26; at an
-endpoint the one-sided second-derivative test gives `v'' ≤ 0` there as well. -/
+/-- The **classical maximum principle with Neumann conditions**. Let $a < b$ and let
+$v \in C^2[a, b]$ satisfy $-v'' + v = f$ at every point of $[a, b]$ and $v'(a) = v'(b) = 0$. If
+$f \le K$ on $[a, b]$, then $v \le K$ on $[a, b]$. This is Remark 27 of [brezis2011functional].
+
+At an interior maximum the argument is that of Remark 26. At a maximum at an endpoint, the
+one-sided second-derivative test gives $v'' \le 0$ there as well. -/
 theorem le_of_contDiffMapIcc_classical_neumann (hab : a < b) (v : ContDiffMapIcc hab.le 2)
     {f : ℝ → ℝ} (hode : ∀ x : Icc a b, -v.deriv 2 x + v x = f x)
     (hva : v.deriv 1 ⟨a, left_mem_Icc.2 hab.le⟩ = 0)
@@ -708,24 +796,29 @@ theorem le_of_contDiffMapIcc_classical_neumann (hab : a < b) (v : ContDiffMapIcc
     have h2 := hloc.deriv_deriv_nonpos v.extend.continuous.continuousAt
     rwa [deriv_deriv_contDiffMapIcc_extend hab v hx₀'] at h2
 
-/-! ### Remark 28: the maximum principle on `ℝ` -/
+/-! ### Remark 28: the maximum principle on $\mathbb{R}$ -/
 
 namespace Line
 
-/-- Almost-everywhere statements over the restriction of Lebesgue measure to the whole line. -/
+/-- A property holds almost everywhere for Lebesgue measure restricted to the whole line
+$\mathbb{R}$ if and only if it holds almost everywhere for Lebesgue measure. -/
 theorem ae_restrict_top_iff {P : ℝ → Prop} :
     (∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), P x) ↔ ∀ᵐ x, P x := by
   rw [Opens.coe_top, Measure.restrict_univ]
 
 open SobolevIntervalLp in
-/-- `G(ũ − K) ∈ L²(ℝ)` for `u ∈ H¹(ℝ)` and `K ≥ 0` (Corollary 8.11 needs `G(−K) = 0`). -/
+/-- Let $u \in H^1(\mathbb{R})$ and $K \ge 0$. Then $G(\tilde u - K) \in L^2(\mathbb{R})$.
+
+The hypothesis $K \ge 0$ gives $G(-K) = 0$, which the chain rule, Corollary 8.11 of
+[brezis2011functional], needs on $\mathbb{R}$. -/
 theorem memLp_truncation_rep_top (u : SobolevIntervalLp 1 2 ⊤) {K : ℝ} (hK : 0 ≤ K) :
     MemLp (fun t ↦ truncation (rep u t - K)) 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
   (memSobolevIntervalLp_one_iff.1 (memSobolevIntervalLp_comp Opens.ordConnected_top u
     (contDiff_truncation_sub K) (truncation_eq_zero_of_nonpos (by linarith))).1).1
 
 open SobolevIntervalLp in
-/-- `2 max (ũ − K) 0 · u' ∈ L²(ℝ)`. -/
+/-- Let $u \in H^1(\mathbb{R})$ and $K \in \mathbb{R}$. Then $2 \max\{\tilde u - K, 0\} \, u' \in
+L^2(\mathbb{R})$. -/
 theorem memLp_deriv_truncation_rep_mul_top (u : SobolevIntervalLp 1 2 ⊤) (K : ℝ) :
     MemLp (fun t ↦ 2 * max (rep u t - K) 0 * deriv u 1 t) 2
       (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) := by
@@ -734,7 +827,9 @@ theorem memLp_deriv_truncation_rep_mul_top (u : SobolevIntervalLp 1 2 ⊤) (K : 
   exact this
 
 open SobolevIntervalLp in
-/-- The chain rule for `G(ũ − K)` on `ℝ`. -/
+/-- The chain rule for $G(\tilde u - K)$ on $\mathbb{R}$. Let $u \in H^1(\mathbb{R})$ and
+$K \in \mathbb{R}$. Then $G(\tilde u - K)$ has the weak derivative
+$2 \max\{\tilde u - K, 0\} \, u'$ on $\mathbb{R}$. -/
 theorem hasWeakDerivOn_truncation_rep_top (u : SobolevIntervalLp 1 2 ⊤) (K : ℝ) :
     HasWeakDerivOn (fun t ↦ truncation (rep u t - K))
       (fun t ↦ 2 * max (rep u t - K) 0 * deriv u 1 t) ⊤ := by
@@ -742,7 +837,9 @@ theorem hasWeakDerivOn_truncation_rep_top (u : SobolevIntervalLp 1 2 ⊤) (K : �
   simp only [deriv_truncation_sub] at this
   exact this
 
-/-- **The truncation `G(u − K)` of `u ∈ H¹(ℝ)`** as an element of `H¹(ℝ)`, for `K ≥ 0`. -/
+/-- **The truncation $G(u - K)$** of $u \in H^1(\mathbb{R})$, for $K \ge 0$. It is the element of
+$H^1(\mathbb{R})$ whose function is $G(\tilde u - K)$ and whose weak derivative is
+$2 \max\{\tilde u - K, 0\} \, u'$. -/
 def truncationElem (u : SobolevIntervalLp 1 2 ⊤) {K : ℝ} (hK : 0 ≤ K) : SobolevIntervalLp 1 2 ⊤ :=
   SobolevIntervalLp.mk
     ![(memLp_truncation_rep_top u hK).toLp (fun t ↦ truncation (SobolevIntervalLp.rep u t - K)),
@@ -757,43 +854,51 @@ def truncationElem (u : SobolevIntervalLp 1 2 ⊤) {K : ℝ} (hK : 0 ≤ K) : So
         (memLp_deriv_truncation_rep_mul_top u K).coeFn_toLp.symm
 
 open SobolevIntervalLp in
-/-- The function of the truncated element on `ℝ`. -/
+/-- The function of $G(u - K) \in H^1(\mathbb{R})$ is $G(\tilde u - K)$ almost everywhere. -/
 theorem fn_truncationElem (u : SobolevIntervalLp 1 2 ⊤) {K : ℝ} (hK : 0 ≤ K) :
     fn (truncationElem u hK) =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)]
       fun t ↦ truncation (rep u t - K) :=
   (memLp_truncation_rep_top u hK).coeFn_toLp
 
 open SobolevIntervalLp in
-/-- The weak derivative of the truncated element on `ℝ`. -/
+/-- The weak derivative of $G(u - K) \in H^1(\mathbb{R})$ is $2 \max\{\tilde u - K, 0\} \, u'$
+almost everywhere. -/
 theorem coeFn_deriv_truncationElem_one (u : SobolevIntervalLp 1 2 ⊤) {K : ℝ} (hK : 0 ≤ K) :
     ⇑(deriv (truncationElem u hK) 1) =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)]
       fun t ↦ 2 * max (rep u t - K) 0 * deriv u 1 t :=
   (memLp_deriv_truncation_rep_mul_top u K).coeFn_toLp
 
-/-- The load of `−f` is `−load f`. -/
+/-- For $f \in L^2(\mathbb{R})$, the load of $-f$ on $H^1(\mathbb{R})$ is the negative of the load
+of $f$. -/
 theorem load_neg (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) : load (-f) = -load f := by
   ext v
   rw [neg_apply, load_apply_inner, load_apply_inner, inner_neg_left]
 
-/-- The weak solution depends linearly on the datum: `solution (−f) = −solution f`. -/
+/-- The weak solution of $-u'' + u = f$ on $\mathbb{R}$ is odd in the datum: the solution for $-f$
+is the negative of the solution for $f$. -/
 theorem solution_neg (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     solution (-f) = -solution f :=
   (eq_solution_of_forall fun v ↦ by
     rw [form_apply, inner_neg_left, ← form_apply, form_solution, load_neg, neg_apply]).symm
 
 open SobolevIntervalLp in
-/-- The continuous representative of the weak solution is continuous on `ℝ`. -/
+/-- For $f \in L^2(\mathbb{R})$, the continuous representative of the weak solution
+`EllipticInterval.Line.solution f` is continuous on $\mathbb{R}$. -/
 theorem continuous_rep_solution (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     Continuous (rep (solution f)) := by
   have := continuousOn_rep Opens.ordConnected_top (solution f)
   rwa [Opens.coe_top, closure_univ, continuousOn_univ] at this
 
 open SobolevIntervalLp in
-/-- **Remark 28 of [brezis2011functional] (the maximum principle on `ℝ`)**: for `f ∈ L²(ℝ)`
-with `f ≤ K` almost everywhere, `0 ≤ K`, the weak solution `u` of `−u'' + u = f` on `ℝ` satisfies
-`u ≤ K` everywhere. The truncation `G(u − K) ∈ H¹(ℝ)` (which needs `0 ≤ K`) tested in the weak
-equation gives `∫ (u − K) G(u − K) = 0`, so `u ≤ K` almost everywhere, hence everywhere by
-continuity. -/
+/-- The **maximum principle on $\mathbb{R}$**. Let $f \in L^2(\mathbb{R})$ and $K \ge 0$, with
+$f \le K$ almost everywhere. Then the weak solution $u$ of $-u'' + u = f$ on $\mathbb{R}$
+satisfies $\tilde u(x) \le K$ for every $x \in \mathbb{R}$. This is Remark 28 of
+[brezis2011functional].
+
+The weak solution is `EllipticInterval.Line.solution f`. The truncation $G(u - K)$ is in
+$H^1(\mathbb{R})$ because $K \ge 0$. As a test function in the weak equation it gives
+$\int (u - K) G(u - K) = 0$, so $u \le K$ almost everywhere, and continuity gives
+$\tilde u \le K$ everywhere. -/
 theorem rep_le_of_le (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) {K : ℝ} (hK : 0 ≤ K)
     (hf : ∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), f x ≤ K) :
     ∀ x, rep (solution f) x ≤ K := by
@@ -865,8 +970,12 @@ theorem rep_le_of_le (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ
   exact le_of_ae_le (continuous_rep_solution f) (ae_restrict_top_iff.1 hae)
 
 open SobolevIntervalLp in
-/-- **Remark 28, the lower bound**: for `f ∈ L²(ℝ)` with `K ≤ f` almost everywhere and `K ≤ 0`,
-the weak solution satisfies `K ≤ u` everywhere — the upper bound applied to `−f`. -/
+/-- The lower bound of the maximum principle on $\mathbb{R}$. Let $f \in L^2(\mathbb{R})$ and
+$K \le 0$, with $K \le f$ almost everywhere. Then the weak solution $u$ of $-u'' + u = f$ on
+$\mathbb{R}$ satisfies $K \le \tilde u(x)$ for every $x \in \mathbb{R}$. This is the lower bound
+in Remark 28 of [brezis2011functional].
+
+The proof applies the upper bound to $-f$. -/
 theorem le_rep_of_le (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) {K : ℝ} (hK : K ≤ 0)
     (hf : ∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), K ≤ f x) :
     ∀ x, K ≤ rep (solution f) x := by

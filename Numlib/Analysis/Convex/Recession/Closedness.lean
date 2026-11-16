@@ -9,49 +9,78 @@ import Numlib.Analysis.Convex.RelativeInterior
 import Numlib.Analysis.Convex.Recession.Function
 
 /-!
-# When is a linear image closed?
+# Closedness of linear images of convex sets and functions
 
-A linear image `A C` of a convex set need not be closed. It is closed, and its recession cone is
-the image of the recession cone, as soon as
+Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $C \subseteq E$ a
+nonempty convex set and $A : E \to G$ a linear map. The image $AC$ need not be closed. Suppose that
+$$0^+(\operatorname{cl} C) \cap \ker A \subseteq \operatorname{lin}(\operatorname{cl} C),$$
+that is, every direction of recession of $\operatorname{cl} C$ that $A$ maps to $0$ is also a
+direction of recession in the opposite sense. Then $\operatorname{cl}(AC) = A(\operatorname{cl} C)$
+and $0^+(A(\operatorname{cl} C)) = A(0^+(\operatorname{cl} C))$. This is Theorem 9.1 of
+[rockafellar1970convex], and the module follows §9 of that book.
 
-```
-0⁺(cl C) ∩ ker A ⊆ lin (cl C),
-```
-
-that is, as soon as every direction of recession of `cl C` killed by `A` is also one backwards.
-Sums of sets, images and sums and infimal convolutions of functions, and pointwise suprema follow.
+From this theorem the module derives closedness results for sums $C + D$ of convex sets, for the
+image $Af$ of a closed proper convex function $f$, and for the infimal convolution
+$f \mathbin{\square} g$, together with the attainment of the infima that define $Af$ and
+$f \mathbin{\square} g$. It also gives rules for the recession function $f0^+$ and the closure
+$\operatorname{cl} f$ of sums, pointwise suprema and compositions $gA$ of convex functions.
 
 ## Main results
 
-* `isClosed_image_of_recessionCone_inter_ker`, `recessionCone_image_of_recessionCone_inter_ker` —
-  the closedness and recession-cone halves under the *reduced* hypothesis `0⁺C ∩ ker A ⊆ {0}`;
-  `Convex.closure_image_eq_and_recessionCone` and its three components are the full statement
-  ([rockafellar1970convex] Theorem 9.1), and `image_recessionCone_subset` is the unconditional
-  inclusion.
-* `Convex.isClosed_add`, `Convex.closure_add_eq`, `Convex.recessionCone_add` — the same three
-  conclusions for a sum `C + D`, with the no-cancellation, bounded and conic cases following.
-* `closedProperConvexFn_mapLin` — a linear image of a closed proper convex function is closed
-  proper convex, the infimum defining it is attained, and `(A f)0⁺ = A (f0⁺)`.
-* `closedProperConvexFn_infConv_of_recessionFn_symm`, `closedProperConvexFn_infConv` — the same
-  for infimal convolution, under a symmetry and under a positivity hypothesis.
-* `ClosedProperConvexFn.add`, `closedProperConvexFn_finsetSum`, `recessionFn_add`, `convexCl_add` —
-  a sum of closed proper convex functions whose effective domains share a point is closed proper
-  convex, its recession function is the sum, and `cl (f + g) = cl f + cl g`.
-* `isClosed_epi_iSup`, `recessionFn_iSup`, `lscHull_iSup` — pointwise suprema;
-  `isClosed_epi_compLin`, `recessionFn_compLin`, `convexCl_compLin` — composition with a linear map.
+* `ConvexAnalysis.image_recessionCone_subset`: $A(0^+C) \subseteq 0^+(AC)$ for every set $C$ and
+  every linear map $A$.
+* `ConvexAnalysis.isClosed_image_of_recessionCone_inter_ker`,
+  `ConvexAnalysis.recessionCone_image_of_recessionCone_inter_ker`: if $C$ is closed and convex and
+  $0^+C \cap \ker A \subseteq \{0\}$, then $AC$ is closed, and $0^+(AC) = A(0^+C)$ if $C$ is also
+  nonempty.
+* `Convex.closure_image_eq_and_recessionCone`: Theorem 9.1 of [rockafellar1970convex], as stated
+  above. Its parts are `Convex.isClosed_image_closure`, `Convex.closure_image_eq` and
+  `Convex.recessionCone_image_closure`.
+* `Convex.isClosed_add`, `Convex.closure_add_eq`, `Convex.recessionCone_add`: the same three
+  conclusions for a sum $C + D$, when a direction of recession of $C$ and one of $D$ can cancel only
+  inside the lineality spaces. The cases of no cancellation, of a bounded summand and of two cones
+  follow.
+* `ConvexAnalysis.closedProperConvexFn_mapLin`: a linear image $Af$ of a closed proper convex
+  function is closed proper convex, the infimum that defines it is attained, and
+  $(Af)0^+ = A(f0^+)$.
+* `ConvexAnalysis.closedProperConvexFn_infConv_of_recessionFn_symm`,
+  `ConvexAnalysis.closedProperConvexFn_infConv`: the same for the infimal convolution
+  $f \mathbin{\square} g$, under a symmetry hypothesis and under a positivity hypothesis on $f0^+$
+  and $g0^+$.
+* `ConvexAnalysis.ClosedProperConvexFn.add`, `ConvexAnalysis.closedProperConvexFn_finsetSum`,
+  `ConvexAnalysis.recessionFn_add`, `ConvexAnalysis.convexCl_add`: a sum of closed proper convex
+  functions whose effective domains have a common point is closed proper convex, and its recession
+  function is the sum of the recession functions; $\operatorname{cl}(f + g) = \operatorname{cl} f +
+  \operatorname{cl} g$ when the relative interiors of the effective domains meet.
+* `ConvexAnalysis.isClosed_epi_iSup`, `ConvexAnalysis.recessionFn_iSup`,
+  `ConvexAnalysis.lscHull_iSup`: the rules for pointwise suprema.
+* `ConvexAnalysis.isClosed_epi_compLin`, `ConvexAnalysis.recessionFn_compLin`,
+  `ConvexAnalysis.convexCl_compLin`: the rules for the composition $gA$ with a linear map.
+
+## Proof outline
+
+Both conclusions of Theorem 9.1 come from one compactness argument: a decreasing sequence of
+nonempty closed convex sets, each with recession cone $\{0\}$, is a sequence of compact sets, so its
+intersection is nonempty. The hypothesis says that $N = 0^+(\operatorname{cl} C) \cap \ker A$ is a
+subspace. Splitting $\operatorname{cl} C = N + (\operatorname{cl} C \cap M)$ along a complement $M$
+of $N$ does not change the image, and it reduces the recession cone to one that meets $\ker A$ only
+at $0$. The results on functions apply the results on sets to epigraphs.
 
 ## Implementation notes
 
-Both halves come from one compactness argument: a decreasing sequence of nonempty closed convex
-sets, each with recession cone `{0}`, is a sequence of compact sets, so its intersection is
-nonempty. The hypothesis says exactly that `N := 0⁺(cl C) ∩ ker A` is a subspace, and splitting
-`cl C = N + (cl C ∩ M)` along a complement `M` of `N` leaves the image unchanged while cutting the
-recession cone down to one that meets `ker A` only at `0`. Finite dimensionality of the source is
-used only to get that compactness; the target space needs none.
-
-## References
-
-* [rockafellar1970convex] §9.
+* Finite dimension is needed only for $E$, to get the compactness. The target space $G$ is any real
+  normed space.
+* Functions take values in `EReal`. The epigraph is $\operatorname{epi} f = \{(x, \mu) \in E \times
+  \mathbb{R} \mid f(x) \le \mu\}$ (`ConvexAnalysis.epi`), the effective domain is
+  $\operatorname{dom} f = \{x \mid f(x) < +\infty\}$ (`ConvexAnalysis.convexDom`), and the recession
+  function $f0^+$ is `ConvexAnalysis.recessionFn`, with $\operatorname{epi}(f0^+) =
+  0^+(\operatorname{epi} f)$.
+* The image $(Af)(y) = \inf\{f(x) \mid Ax = y\}$ is `ConvexAnalysis.mapLin`, the composition $gA$ is
+  `ConvexAnalysis.compLin`, and the infimal convolution is `ConvexAnalysis.infConv`. A closed proper
+  convex function is `ConvexAnalysis.ClosedProperConvexFn`.
+* Two closures of a function occur: the lower semicontinuous hull, whose epigraph is
+  $\operatorname{cl}(\operatorname{epi} f)$ (`ConvexAnalysis.lscHull`), and the closure
+  $\operatorname{cl} f$ of a convex function (`ConvexAnalysis.convexCl`).
 -/
 
 open Filter Metric Pointwise Set Topology
@@ -64,11 +93,11 @@ section Ray
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E}
 
-/-- **A ray in a convex set is filled in from its base point**: if `x₀` and `x₀ + c • z` both lie
-in `C`, so does `x₀ + b • z` for every `0 ≤ b ≤ c`.
+/-- Let $C$ be convex, and let $x_0 \in C$ and $x_0 + cz \in C$. Then $x_0 + bz \in C$ for every $b$
+with $0 \le b \le c$.
 
-`Convex.add_smul_mem` is the same statement with `b / c` in place of `b`; this form is the one that
-comes up when the endpoints are indexed by `ℕ`. -/
+Mathlib's `Convex.add_smul_mem` is the same statement with $b/c$ in place of $b$. The form here
+is convenient when the endpoints are indexed by natural numbers. -/
 theorem _root_.Convex.add_smul_mem_of_le (hC : Convex ℝ C) {x₀ z : E} (hx₀ : x₀ ∈ C) {b c : ℝ}
     (hb : 0 ≤ b) (hbc : b ≤ c) (h : x₀ + c • z ∈ C) : x₀ + b • z ∈ C := by
   rcases eq_or_lt_of_le (hb.trans hbc) with hc | hc
@@ -86,8 +115,10 @@ section Unconditional
 
 variable {E G : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup G] [Module ℝ G]
 
-/-- **A linear map carries directions of recession forward**: `A (0⁺C) ⊆ 0⁺(A C)`. No convexity,
-no closedness, no hypothesis on `A`. -/
+/-- Let $A : E \to G$ be a linear map between real vector spaces and $C \subseteq E$ any set. Then
+$$A(0^+C) \subseteq 0^+(AC).$$
+
+No convexity, no closedness and no hypothesis on $A$ are needed. -/
 theorem image_recessionCone_subset (A : E →ₗ[ℝ] G) (C : Set E) :
     A '' recessionCone C ⊆ recessionCone (A '' C) := by
   rintro _ ⟨y, hy, rfl⟩ _ ⟨x, hx, rfl⟩ a ha
@@ -104,8 +135,14 @@ variable {E G : Type*}
   [NormedAddCommGroup G] [NormedSpace ℝ G]
   {C : Set E} {A : E →ₗ[ℝ] G}
 
-/-- **Closedness under the reduced hypothesis**: if a closed convex set recedes in no direction
-of `ker A` other than `0`, its image under `A` is closed. -/
+/-- Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $A : E \to G$ a
+linear map, and $C \subseteq E$ a closed convex set with
+$$0^+C \cap \ker A \subseteq \{0\}.$$
+Then $AC$ is closed.
+
+This is the case of `Convex.closure_image_eq_and_recessionCone` in which no nonzero direction of
+recession is mapped to $0$, and it is the main step of the proof of that theorem. Nonemptiness
+of $C$ is not needed. -/
 theorem isClosed_image_of_recessionCone_inter_ker (A : E →ₗ[ℝ] G) (hC : Convex ℝ C)
     (hC' : IsClosed C) (h : recessionCone C ∩ (LinearMap.ker A : Set E) ⊆ {0}) :
     IsClosed (A '' C) := by
@@ -146,7 +183,11 @@ theorem isClosed_image_of_recessionCone_inter_ker (A : E →ₗ[ℝ] G) (hC : Co
   have hd : ∀ n : ℕ, dist (A x) y ≤ ((n : ℝ) + 1)⁻¹ := fun n => (Set.mem_iInter.1 hx n).2
   exact dist_le_zero.1 (ge_of_tendsto tendsto_inv_nat_add_one_atTop_nhds_zero (.of_forall hd))
 
-/-- **The recession cone of the image**, under the reduced hypothesis: `0⁺(A C) = A (0⁺C)`. -/
+/-- Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $A : E \to G$ a
+linear map, and $C \subseteq E$ a nonempty closed convex set with
+$0^+C \cap \ker A \subseteq \{0\}$. Then
+$$0^+(AC) = A(0^+C).$$
+-/
 theorem recessionCone_image_of_recessionCone_inter_ker (A : E →ₗ[ℝ] G) (hC : Convex ℝ C)
     (hC' : IsClosed C) (hne : C.Nonempty)
     (h : recessionCone C ∩ (LinearMap.ker A : Set E) ⊆ {0}) :
@@ -215,11 +256,16 @@ variable {E G : Type*}
   [NormedAddCommGroup G] [NormedSpace ℝ G]
   {C : Set E} {A : E →ₗ[ℝ] G}
 
-/-- **The reduction step.** The hypothesis says exactly that `N := 0⁺(cl C) ∩ ker A` sits inside
-the lineality space, hence is a subspace. Splitting `cl C` along any complement `M` of `N`
-produces a set with the same image, the same image of the recession cone, and the *reduced*
-hypothesis `0⁺ ∩ ker A ⊆ {0}`. It is packaged as an existential so that the closedness half and
-the recession-cone half can both consume it. -/
+/-- Let $C \subseteq E$ be a nonempty convex set and $A : E \to G$ a linear map, and suppose that
+every $z \in 0^+(\operatorname{cl} C)$ with $Az = 0$ lies in
+$\operatorname{lin}(\operatorname{cl} C)$. Then there is a nonempty closed convex set
+$D \subseteq E$ with $AD = A(\operatorname{cl} C)$, $A(0^+D) = A(0^+(\operatorname{cl} C))$ and
+$0^+D \cap \ker A \subseteq \{0\}$.
+
+The hypothesis says that $N = 0^+(\operatorname{cl} C) \cap \ker A$ lies in the lineality space,
+so $N$ is a subspace. The set $D$ is $\operatorname{cl} C \cap M$ for a complement $M$ of $N$.
+The result is an existence statement so that the proofs of closedness and of the formula for the
+recession cone can both use it. -/
 theorem exists_reduction_of_recessionCone_inter_ker (hC : Convex ℝ C) (hne : C.Nonempty)
     (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
@@ -265,8 +311,9 @@ theorem exists_reduction_of_recessionCone_inter_ker (hC : Convex ℝ C) (hne : C
     rw [hM.inf_eq_bot] at hbot
     simpa using hbot
 
-/-- **Closedness of a linear image**: if `cl C` recedes in no direction of `ker A` other than
-those it also recedes in backwards, then `A (cl C)` is closed. -/
+/-- Let $C \subseteq E$ be convex and $A : E \to G$ a linear map, and suppose that every
+$z \in 0^+(\operatorname{cl} C)$ with $Az = 0$ lies in
+$\operatorname{lin}(\operatorname{cl} C)$. Then $A(\operatorname{cl} C)$ is closed. -/
 theorem _root_.Convex.isClosed_image_closure (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     IsClosed (A '' closure C) := by
@@ -277,7 +324,10 @@ theorem _root_.Convex.isClosed_image_closure (hC : Convex ℝ C) (A : E →ₗ[�
   rw [← himg]
   exact isClosed_image_of_recessionCone_inter_ker A hDconv hDcl hred
 
-/-- **The closure of a linear image**: `cl (A C) = A (cl C)`. -/
+/-- Let $C \subseteq E$ be convex and $A : E \to G$ a linear map, and suppose that every
+$z \in 0^+(\operatorname{cl} C)$ with $Az = 0$ lies in
+$\operatorname{lin}(\operatorname{cl} C)$. Then
+$\operatorname{cl}(AC) = A(\operatorname{cl} C)$. -/
 theorem _root_.Convex.closure_image_eq (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     closure (A '' C) = A '' closure C := by
@@ -286,7 +336,10 @@ theorem _root_.Convex.closure_image_eq (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
   rw [← (Convex.isClosed_image_closure hC A h).closure_eq]
   exact closure_mono (Set.image_mono subset_closure)
 
-/-- **The recession cone of a linear image**: `0⁺(A (cl C)) = A (0⁺(cl C))`. -/
+/-- Let $C \subseteq E$ be nonempty and convex and $A : E \to G$ a linear map, and suppose that
+every $z \in 0^+(\operatorname{cl} C)$ with $Az = 0$ lies in
+$\operatorname{lin}(\operatorname{cl} C)$. Then $0^+(A(\operatorname{cl} C)) =
+A(0^+(\operatorname{cl} C))$. -/
 theorem _root_.Convex.recessionCone_image_closure (hC : Convex ℝ C) (hne : C.Nonempty)
     (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
@@ -296,7 +349,17 @@ theorem _root_.Convex.recessionCone_image_closure (hC : Convex ℝ C) (hne : C.N
   rw [← himg, ← hrec]
   exact recessionCone_image_of_recessionCone_inter_ker A hDconv hDcl hDne hred
 
-/-- **The closure and the recession cone of a linear image**, both conclusions together. -/
+/-- Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $C \subseteq E$ a
+nonempty convex set and $A : E \to G$ a linear map. Suppose that every
+$z \in 0^+(\operatorname{cl} C)$ with $Az = 0$ lies in
+$\operatorname{lin}(\operatorname{cl} C)$. Then
+$$\operatorname{cl}(AC) = A(\operatorname{cl} C) \quad\text{and}\quad 0^+(A(\operatorname{cl}
+  C)) = A(0^+(\operatorname{cl} C)).$$
+This is Theorem 9.1 of [rockafellar1970convex].
+
+The target space $G$ need not be finite-dimensional. The two conclusions are
+`Convex.closure_image_eq` and `Convex.recessionCone_image_closure`, and
+`Convex.isClosed_image_closure` states that $A(\operatorname{cl} C)$ is closed. -/
 theorem _root_.Convex.closure_image_eq_and_recessionCone (hC : Convex ℝ C) (hne : C.Nonempty)
     (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
@@ -314,14 +377,20 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {C D : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- The sum `C + D` is the image of `C ×ˢ D` under the linear map `(x, y) ↦ x + y`. This is what
-turns a question about a sum into a question about a linear image. -/
+/-- For sets $C, D \subseteq E$, the sum $C + D$ is the image of $C \times D$ under the linear map
+$(x, y) \mapsto x + y$. This turns a question about a sum into a question about a linear image. -/
 theorem image_coprod_id_prod (C D : Set E) :
     (LinearMap.id.coprod LinearMap.id : E × E →ₗ[ℝ] E) '' C ×ˢ D = C + D :=
   Set.add_image_prod
 
 omit [FiniteDimensional ℝ E] in
-/-- The cancellation hypothesis for two sets, transported to the product. -/
+/-- Let $C$ and $D$ be nonempty, and suppose that $z \in \operatorname{lin}(\operatorname{cl} C)$
+and $w \in \operatorname{lin}(\operatorname{cl} D)$ whenever $z \in 0^+(\operatorname{cl} C)$,
+$w \in 0^+(\operatorname{cl} D)$ and $z + w = 0$. Then every
+$p \in 0^+(\operatorname{cl}(C \times D))$ with $p_1 + p_2 = 0$ lies in
+$\operatorname{lin}(\operatorname{cl}(C \times D))$. This is the hypothesis of
+`Convex.closure_image_eq_and_recessionCone` for the set $C \times D$ and the map
+$(x, y) \mapsto x + y$. -/
 theorem forall_mem_linealitySpace_prod (hCne : C.Nonempty) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
       z ∈ linealitySpace (closure C) ∧ w ∈ linealitySpace (closure D)) :
@@ -333,9 +402,13 @@ theorem forall_mem_linealitySpace_prod (hCne : C.Nonempty) (hDne : D.Nonempty)
   rw [closure_prod_eq, linealitySpace_prod hCne.closure hDne.closure]
   exact h z hp.1 w hp.2 hzero
 
-/-- **Closedness of a sum**: the sum of two closed convex sets is closed as soon as the only way a
-direction of recession of `C` and a direction of recession of `D` can cancel is inside the two
-lineality spaces. -/
+/-- Let $E$ be a finite-dimensional real normed space, and let $C, D \subseteq E$ be nonempty closed
+convex sets. Suppose that $z \in \operatorname{lin} C$ and $w \in \operatorname{lin} D$ whenever
+$z \in 0^+C$, $w \in 0^+D$ and $z + w = 0$. Then $C + D$ is closed.
+
+The hypothesis says that a direction of recession of $C$ and a direction of recession of $D$ can
+cancel only inside the two lineality spaces. The proof applies
+`Convex.closure_image_eq_and_recessionCone` to $C \times D$ and the map $(x, y) \mapsto x + y$. -/
 theorem _root_.Convex.isClosed_add (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, ∀ w ∈ recessionCone D, z + w = 0 →
@@ -347,7 +420,12 @@ theorem _root_.Convex.isClosed_add (hC : Convex ℝ C) (hCc : IsClosed C) (hCne 
   have := Convex.isClosed_image_closure (hC.prod hD) (LinearMap.id.coprod LinearMap.id) hkey
   rwa [closure_prod_eq, hCcl, hDcl, image_coprod_id_prod] at this
 
-/-- **The closure of a sum**: `cl (C + D) = cl C + cl D`. -/
+/-- Let $E$ be a finite-dimensional real normed space, and let $C, D \subseteq E$ be nonempty convex
+sets. Suppose that $z \in \operatorname{lin}(\operatorname{cl} C)$ and
+$w \in \operatorname{lin}(\operatorname{cl} D)$ whenever $z \in 0^+(\operatorname{cl} C)$,
+$w \in 0^+(\operatorname{cl} D)$ and $z + w = 0$. Then
+$$\operatorname{cl}(C + D) = \operatorname{cl} C + \operatorname{cl} D.$$
+-/
 theorem _root_.Convex.closure_add_eq (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
     (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
@@ -357,7 +435,13 @@ theorem _root_.Convex.closure_add_eq (hC : Convex ℝ C) (hCne : C.Nonempty) (hD
     (forall_mem_linealitySpace_prod hCne hDne h)
   rwa [image_coprod_id_prod, closure_prod_eq, image_coprod_id_prod] at this
 
-/-- **The recession cone of a sum**: `0⁺(cl C + cl D) = 0⁺(cl C) + 0⁺(cl D)`. -/
+/-- Let $E$ be a finite-dimensional real normed space, and let $C, D \subseteq E$ be nonempty convex
+sets. Suppose that $z \in \operatorname{lin}(\operatorname{cl} C)$ and
+$w \in \operatorname{lin}(\operatorname{cl} D)$ whenever $z \in 0^+(\operatorname{cl} C)$,
+$w \in 0^+(\operatorname{cl} D)$ and $z + w = 0$. Then
+$$0^+(\operatorname{cl} C + \operatorname{cl} D) = 0^+(\operatorname{cl} C) +
+  0^+(\operatorname{cl} D).$$
+-/
 theorem _root_.Convex.recessionCone_add (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
     (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
@@ -373,9 +457,9 @@ theorem _root_.Convex.recessionCone_add (hC : Convex ℝ C) (hCne : C.Nonempty) 
 /-! ### Sums under a no-cancellation hypothesis -/
 
 omit [FiniteDimensional ℝ E] in
-/-- The no-cancellation hypothesis implies the lineality one: if no direction of recession of `C`
-has its opposite among the directions of recession of `D`, the only cancelling pair is `(0, 0)`,
-which lies in both lineality spaces. -/
+/-- Suppose that $z \in 0^+C$ and $-z \in 0^+D$ imply $z = 0$. Then $z \in \operatorname{lin} C$ and
+$w \in \operatorname{lin} D$ whenever $z \in 0^+C$, $w \in 0^+D$ and $z + w = 0$: the only such
+pair is $(0, 0)$, which lies in both lineality spaces. -/
 theorem forall_mem_linealitySpace_of_neg_notMem
     (h : ∀ z ∈ recessionCone C, -z ∈ recessionCone D → z = 0) :
     ∀ z ∈ recessionCone C, ∀ w ∈ recessionCone D, z + w = 0 →
@@ -389,14 +473,15 @@ theorem forall_mem_linealitySpace_of_neg_notMem
   rw [neg_zero]
   exact zero_mem_linealitySpace D
 
-/-- The sum of two closed convex sets is closed as soon as no direction of recession of one is
-the opposite of a direction of recession of the other. -/
+/-- Let $C$ and $D$ be nonempty closed convex subsets of a finite-dimensional real normed space. If
+$z \in 0^+C$ and $-z \in 0^+D$ imply $z = 0$, then $C + D$ is closed. -/
 theorem _root_.Convex.isClosed_add_of_neg_notMem_recessionCone (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, -z ∈ recessionCone D → z = 0) : IsClosed (C + D) :=
   Convex.isClosed_add hC hCc hCne hD hDc hDne (forall_mem_linealitySpace_of_neg_notMem h)
 
-/-- Under the same hypothesis, `0⁺(C + D) = 0⁺C + 0⁺D`. -/
+/-- Let $C$ and $D$ be nonempty closed convex subsets of a finite-dimensional real normed space. If
+$z \in 0^+C$ and $-z \in 0^+D$ imply $z = 0$, then $0^+(C + D) = 0^+C + 0^+D$. -/
 theorem _root_.Convex.recessionCone_add_of_neg_notMem_recessionCone (hC : Convex ℝ C)
     (hCc : IsClosed C) (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, -z ∈ recessionCone D → z = 0) :
@@ -405,8 +490,9 @@ theorem _root_.Convex.recessionCone_add_of_neg_notMem_recessionCone (hC : Convex
     (by rw [hCc.closure_eq, hDc.closure_eq]; exact forall_mem_linealitySpace_of_neg_notMem h)
   rwa [hCc.closure_eq, hDc.closure_eq] at key
 
-/-- **A bounded summand suffices**: a bounded set recedes in no direction, so the hypothesis is
-automatic and `C + D` is closed. -/
+/-- Let $C$ be a nonempty bounded closed convex set and $D$ a nonempty closed convex set in a
+finite-dimensional real normed space. Then $C + D$ is closed. A bounded set has $0^+C = \{0\}$,
+so the hypothesis of `Convex.isClosed_add` holds. -/
 theorem _root_.Convex.isClosed_add_of_isBounded (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hCb : Bornology.IsBounded C) (hD : Convex ℝ D) (hDc : IsClosed D)
     (hDne : D.Nonempty) :
@@ -415,8 +501,14 @@ theorem _root_.Convex.isClosed_add_of_isBounded (hC : Convex ℝ C) (hCc : IsClo
   rw [recessionCone_eq_zero_of_isBounded hCne hCb] at hz
   exact hz
 
-/-- **The closure of a sum of two pointed convex cones**: the cancellation hypothesis reads on
-the closures, and gives `cl (K + L) = cl K + cl L`. -/
+/-- Let $K$ and $L$ be pointed convex cones in a finite-dimensional real normed space. Suppose that
+$z \in \operatorname{lin}(\operatorname{cl} K)$ and
+$w \in \operatorname{lin}(\operatorname{cl} L)$ whenever $z \in \operatorname{cl} K$,
+$w \in \operatorname{cl} L$ and $z + w = 0$. Then $\operatorname{cl}(K + L) = \operatorname{cl}
+K + \operatorname{cl} L$.
+
+The closure of a cone is its own recession cone, so the hypothesis of `Convex.closure_add_eq` is
+a condition on the closures themselves. -/
 theorem closure_add_coe_pointedCone (K L : PointedCone ℝ E)
     (h : ∀ z ∈ closure (K : Set E), ∀ w ∈ closure (L : Set E), z + w = 0 →
       z ∈ linealitySpace (closure (K : Set E)) ∧ w ∈ linealitySpace (closure (L : Set E))) :
@@ -433,9 +525,12 @@ section FnAlg
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {z : E}
 
-/-- The hypothesis at the level of the epigraph: `(z, 0)` is a direction of recession of `epi f`
-exactly when `f` recedes in the direction `z`, and it lies in the lineality space exactly when `f`
-is *constant* along `z`. -/
+/-- Let $f$ be proper. Then $(z, 0) \in \operatorname{lin}(\operatorname{epi} f)$ if and only if $z$
+lies in the constancy space of $f$, that is, $(f0^+)(z) \le 0$ and $(f0^+)(-z) \le 0$.
+
+So $(z, 0)$ lies in the lineality space of $\operatorname{epi} f$ exactly when $f$ is constant
+along $z$. By definition, $(z, 0) \in 0^+(\operatorname{epi} f)$ exactly when $f$ recedes in the
+direction $z$. -/
 theorem mk_zero_mem_linealitySpace_epi_iff (hp : ProperConvex f) :
     ((z, (0 : ℝ)) : E × ℝ) ∈ linealitySpace (epi f) ↔ z ∈ constancySpace f := by
   rw [mk_mem_linealitySpace_epi_iff hp, mem_constancySpace]
@@ -461,14 +556,19 @@ variable {E G : Type*}
   [NormedAddCommGroup G] [NormedSpace ℝ G]
   {f : E → EReal} {A : E →ₗ[ℝ] G}
 
-/-- **The image of a function under a linear map**: the image of a closed proper convex function
-is again closed proper convex, the infimum defining it is attained, and
-`(A f)0⁺ = A (f0⁺)`, provided `f` is *constant* along every direction of recession that `A` kills.
+/-- Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $f$ a closed proper
+convex function on $E$ and $A : E \to G$ a linear map. Let $Af$ be the image of $f$ under $A$,
+$(Af)(y) = \inf\{f(x) \mid Ax = y\}$. Suppose that every $z$ with $(f0^+)(z) \le 0$ and $Az = 0$
+lies in the constancy space of $f$. Then
+$$\operatorname{epi}(Af) = \{(Ax, \mu) \mid (x, \mu) \in \operatorname{epi} f\},$$
+$Af$ is a closed proper convex function, and $(Af)0^+ = A(f0^+)$.
 
-The conclusions are packaged together because they come from one application of the image
-theorem to `epi f`: the epigraph identity is the statement that the infimum is attained, and
-closedness, properness and the recession function are read off it. This is the twin of
-`closedProperConvexFn_infConv`. -/
+The hypothesis says that $f$ is constant along every direction of recession of $f$ that $A$ maps
+to $0$. The epigraph identity says that the infimum defining $(Af)(y)$ is attained whenever it
+is finite. The three conclusions come from one application of the theorem on linear images to
+$\operatorname{epi} f$ and the map $(x, \mu) \mapsto (Ax, \mu)$: closedness, properness and the
+recession function are read off the epigraph identity. The companion result for infimal
+convolution is `ConvexAnalysis.closedProperConvexFn_infConv`. -/
 theorem closedProperConvexFn_mapLin (hf : ClosedProperConvexFn f) (A : E →ₗ[ℝ] G)
     (h : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f) :
     epi (mapLin A f) = A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) '' epi f ∧
@@ -545,8 +645,9 @@ theorem closedProperConvexFn_mapLin (hf : ClosedProperConvexFn f) (A : E →ₗ[
   refine epi_injective ?_
   rw [epi_recessionFn, hepi, hrec, epi_mapLin hepilike, epi_recessionFn]
 
-/-- **Attainment on its own**: under the same hypothesis the infimum defining `(A f) y` is
-attained whenever it is bounded above by a real. -/
+/-- Under the hypotheses of `ConvexAnalysis.closedProperConvexFn_mapLin`, let $y \in G$ and
+$\mu \in \mathbb{R}$ with $(Af)(y) \le \mu$. Then there is $x \in E$ with $Ax = y$ and
+$f(x) \le \mu$. In particular, the infimum defining $(Af)(y)$ is attained when it is finite. -/
 theorem exists_mapLin_eq (hf : ClosedProperConvexFn f) (A : E →ₗ[ℝ] G)
     (h : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f)
     {y : G} {μ : ℝ} (hμ : mapLin A f y ≤ (μ : EReal)) :
@@ -567,11 +668,11 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f g : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- The positivity hypothesis, transported to the epigraphs: a direction of recession of `epi f`
-whose opposite recedes from `epi g` has to be zero.
+/-- Let $f$ and $g$ be proper, and suppose that $(f0^+)(z) + (g0^+)(-z) > 0$ for every $z \neq 0$.
+If $q \in 0^+(\operatorname{epi} f)$ and $-q \in 0^+(\operatorname{epi} g)$, then $q = 0$.
 
-The vertical coordinate is what makes this more than a restatement: at `z = 0` the hypothesis says
-nothing, and it is properness — `f0⁺ 0 = g0⁺ 0 = 0` — that pins the vertical coordinate to `0`. -/
+The hypothesis says nothing at $z = 0$. Properness gives $(f0^+)(0) = (g0^+)(0) = 0$, and this
+forces the second coordinate of $q$ to be $0$. -/
 theorem forall_eq_zero_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : ProperConvex g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) :
     ∀ q ∈ recessionCone (epi f), -q ∈ recessionCone (epi g) → q = 0 := by
@@ -594,15 +695,16 @@ theorem forall_eq_zero_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : Prop
     exact absurd hsum (not_le.2 (h z hz))
 
 omit [FiniteDimensional ℝ E] in
-/-- Call `z` a direction of **joint recession** for `f` and `g` when
-`(f0⁺) z + (g0⁺) (-z) ≤ 0`; it is the direction in which `f □ g` fails to increase. If the set of
-such directions is symmetric, then a direction of recession of `epi f` whose opposite recedes from
-`epi g` lies in the lineality space of `epi f`, and its opposite in that of `epi g` — which is the
-hypothesis of `Convex.isClosed_add`.
+/-- Call $z \in E$ a direction of **joint recession** of $f$ and $g$ if
+$(f0^+)(z) + (g0^+)(-z) \le 0$; these are the directions in which $f \mathbin{\square} g$ does
+not increase. Let $f$ and $g$ be proper, and suppose that $-z$ is a direction of joint recession
+whenever $z$ is. If $q \in 0^+(\operatorname{epi} f)$, $r \in 0^+(\operatorname{epi} g)$ and
+$q + r = 0$, then $q \in \operatorname{lin}(\operatorname{epi} f)$ and
+$r \in \operatorname{lin}(\operatorname{epi} g)$. This is the hypothesis of
+`Convex.isClosed_add` for $\operatorname{epi} f$ and $\operatorname{epi} g$.
 
-The vertical coordinates are what make this more than a restatement: the hypothesis speaks only
-about directions in `E`, and it is properness — through `le_recessionFn_of_neg_le` — that pins the
-two vertical coordinates against each other. -/
+The hypothesis is about directions in $E$ only. Properness, through
+`ConvexAnalysis.le_recessionFn_of_neg_le`, relates the two second coordinates. -/
 theorem forall_mem_linealitySpace_epi_of_recessionFn_symm (hpf : ProperConvex f)
     (hpg : ProperConvex g)
     (h : ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
@@ -639,19 +741,24 @@ theorem forall_mem_linealitySpace_epi_of_recessionFn_symm (hpf : ProperConvex f)
   rw [hneg]
   exact recessionFn_le_coe_iff.1 hgz
 
-/-- **Infimal convolution under a symmetry hypothesis.** If `f` and `g` are closed proper convex
-and the set of directions of joint recession — those `z` with `(f0⁺) z + (g0⁺) (-z) ≤ 0` — is
-symmetric, then `f □ g` is a closed proper convex function, the infimum defining it is attained,
-and `(f □ g)0⁺ = f0⁺ □ g0⁺`.
+/-- Let $E$ be a finite-dimensional real normed space and $f$, $g$ closed proper convex functions on
+$E$. Suppose that the set of directions of joint recession,
+$\{z \mid (f0^+)(z) + (g0^+)(-z) \le 0\}$, is symmetric: $(f0^+)(-z) + (g0^+)(z) \le 0$ whenever
+$(f0^+)(z) + (g0^+)(-z) \le 0$. Then
+$$\operatorname{epi}(f \mathbin{\square} g) = \operatorname{epi} f + \operatorname{epi} g,$$
+$f \mathbin{\square} g$ is a closed proper convex function, and $(f \mathbin{\square} g)0^+ =
+f0^+ \mathbin{\square} g0^+$.
 
-This is strictly weaker in hypothesis than `closedProperConvexFn_infConv`, which asks the set of
-directions of joint recession to be `{0}`. Symmetry allows a whole subspace of directions along
-which `f` and `g` are affine with opposite slopes; `f = g = 0` is already such a pair, and the
-conclusions hold for it.
+The epigraph identity says that the infimum defining $(f \mathbin{\square} g)(x)$ is attained.
+The hypothesis is weaker than that of `ConvexAnalysis.closedProperConvexFn_infConv`, which asks
+the set of directions of joint recession to be $\{0\}$. Symmetry allows a whole subspace of
+directions along which $f$ and $g$ are affine with opposite slopes; $f = g = 0$ is such a pair,
+and the conclusions hold for it.
 
-Properness is where the symmetry does its work. A vertical line in `epi f + epi g` produces
-directions with `(f0⁺) z + (g0⁺) (-z) ≤ -1`; symmetry then forces the reversed sum to be `≤ 0`
-too, and `(f0⁺) (-z) + (g0⁺) z ≥ 1` by `le_recessionFn_of_neg_le`. -/
+Properness of $f \mathbin{\square} g$ is where symmetry is used. A vertical line in
+$\operatorname{epi} f + \operatorname{epi} g$ gives a direction $z$ with
+$(f0^+)(z) + (g0^+)(-z) \le -1$. Symmetry then makes the reversed sum at most $0$, while
+`ConvexAnalysis.le_recessionFn_of_neg_le` gives $(f0^+)(-z) + (g0^+)(z) \ge 1$. -/
 theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
     (h : ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
@@ -735,8 +842,9 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
   rw [hL, hR]
 
 omit [FiniteDimensional ℝ E] in
-/-- The positivity hypothesis implies the symmetry one: if the only direction of joint recession
-is `0`, the set of them is trivially symmetric. -/
+/-- Let $f$ and $g$ be proper. If $(f0^+)(z) + (g0^+)(-z) > 0$ for every $z \neq 0$, then the set of
+directions of joint recession is symmetric: $(f0^+)(-z) + (g0^+)(z) \le 0$ whenever
+$(f0^+)(z) + (g0^+)(-z) \le 0$, because the set is then $\{0\}$. -/
 theorem recessionFn_symm_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : ProperConvex g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) :
     ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
@@ -747,18 +855,19 @@ theorem recessionFn_symm_of_recessionFn_add_pos (hpf : ProperConvex f) (hpg : Pr
     rw [neg_zero, recessionFn_apply_zero hpf, recessionFn_apply_zero hpg, add_zero]
   · exact absurd hz (not_le.2 (h z hne))
 
-/-- **Infimal convolution under a positivity hypothesis.** If `f` and `g` are closed proper convex
-functions with `(f0⁺) z + (g0⁺) (-z) > 0` for every `z ≠ 0`, then `f □ g` is a
-closed proper convex function, the infimum defining it is attained, and
-`(f □ g)0⁺ = f0⁺ □ g0⁺`.
+/-- Let $E$ be a finite-dimensional real normed space and $f$, $g$ closed proper convex functions on
+$E$ with
+$$(f0^+)(z) + (g0^+)(-z) > 0 \quad \text{for every } z \neq 0.$$
+Then $\operatorname{epi}(f \mathbin{\square} g) = \operatorname{epi} f + \operatorname{epi} g$,
+$f \mathbin{\square} g$ is a closed proper convex function, and $(f \mathbin{\square} g)0^+ =
+f0^+ \mathbin{\square} g0^+$.
 
-The three conclusions come from one application of the no-cancellation sum rule to `epi f` and
-`epi g`: the epigraph identity `epi (f □ g) = epi f + epi g` *is* the attainment statement, since
-a sum of epigraphs is an epigraph exactly when every infimum defining `f □ g` is achieved.
-
-The hypothesis is stronger than it needs to be: it is enough that the set of directions of joint
-recession be *symmetric*, not that it be `{0}`. That is
-`closedProperConvexFn_infConv_of_recessionFn_symm`, of which this is a specialisation. -/
+The epigraph identity is the statement that the infimum is attained: a sum of epigraphs is an
+epigraph exactly when every infimum defining $f \mathbin{\square} g$ is attained. The hypothesis
+is stronger than needed: it suffices that the set of directions of joint recession is symmetric,
+not that it is $\{0\}$. This result is a special case of
+`ConvexAnalysis.closedProperConvexFn_infConv_of_recessionFn_symm`, through
+`ConvexAnalysis.recessionFn_symm_of_recessionFn_add_pos`. -/
 theorem closedProperConvexFn_infConv (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) :
     epi (infConv f g) = epi f + epi g ∧ ClosedProperConvexFn (infConv f g) ∧
@@ -766,8 +875,12 @@ theorem closedProperConvexFn_infConv (hf : ClosedProperConvexFn f) (hg : ClosedP
   closedProperConvexFn_infConv_of_recessionFn_symm hf hg
     (recessionFn_symm_of_recessionFn_add_pos hf.proper hg.proper h)
 
-/-- **Attainment for infimal convolution**, under the symmetry hypothesis: the infimum defining
-`(f □ g) x` is attained whenever it is bounded above by a real. -/
+/-- Under the hypotheses of `ConvexAnalysis.closedProperConvexFn_infConv_of_recessionFn_symm`, let
+$x \in E$ and $\mu \in \mathbb{R}$ with $(f \mathbin{\square} g)(x) \le \mu$. Then there are
+$y \in E$ and real numbers $\nu$, $\rho$ with $\nu + \rho = \mu$, $f(y) \le \nu$ and
+$g(x - y) \le \rho$.
+
+The statement also contains the equation $y + (x - y) = x$, which always holds. -/
 theorem exists_add_eq_of_infConv_le_of_recessionFn_symm (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
     (h : ∀ z : E, recessionFn f z + recessionFn g (-z) ≤ 0 →
@@ -786,7 +899,11 @@ theorem exists_add_eq_of_infConv_le_of_recessionFn_symm (hf : ClosedProperConvex
   rw [hr1]
   exact hr
 
-/-- Attainment for infimal convolution, under the positivity hypothesis. -/
+/-- Under the hypotheses of `ConvexAnalysis.closedProperConvexFn_infConv`, let $x \in E$ and
+$\mu \in \mathbb{R}$ with $(f \mathbin{\square} g)(x) \le \mu$. Then there are $y \in E$ and
+real numbers $\nu$, $\rho$ with $\nu + \rho = \mu$, $f(y) \le \nu$ and $g(x - y) \le \rho$.
+
+The statement also contains the equation $y + (x - y) = x$, which always holds. -/
 theorem exists_add_eq_of_infConv_le (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
     (h : ∀ z : E, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) {x : E} {μ : ℝ}
     (hμ : infConv f g x ≤ (μ : EReal)) :
@@ -805,24 +922,27 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f g : E → EReal}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- A sum of two functions that never take `⊥` never takes `⊥`. -/
+/-- If $f$ and $g$ never take the value $-\infty$, then $f + g$ never takes the value $-\infty$. -/
 theorem add_ne_bot (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E) : (f + g) x ≠ ⊥ := by
   rw [Pi.add_apply]
   exact EReal.add_ne_bot_iff.2 ⟨hf x, hg x⟩
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- Properness of a sum: properness of the summands plus one common domain point. -/
+/-- If $f$ and $g$ are proper and $\operatorname{dom}(f + g)$ is nonempty, then $f + g$ is proper.
+-/
 theorem ProperConvex.add (hf : ProperConvex f) (hg : ProperConvex g)
     (hne : (convexDom (f + g)).Nonempty) :
     ProperConvex (f + g) := ⟨hne, add_ne_bot hf.ne_bot hg.ne_bot⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- **A sum of two closed proper convex functions** is again closed proper convex, as soon as it
-is not identically `+∞`.
+/-- Let $E$ be a real normed space and $f$, $g$ closed proper convex functions on $E$ such that
+$f + g$ is not identically $+\infty$, that is, $\operatorname{dom} f \cap \operatorname{dom} g$
+is nonempty. Then $f + g$ is a closed proper convex function.
 
-Lower semicontinuity of the sum is Mathlib's `LowerSemicontinuous.add'`, whose explicit continuity
-hypothesis is exactly what properness supplies: neither summand is `⊥`, so `EReal` addition is
-continuous at every pair of values. -/
+The hypothesis is the nonemptiness of `convexDom (f + g)`. Lower semicontinuity of the sum is
+Mathlib's `LowerSemicontinuous.add'`. Its hypothesis of continuity of addition holds because
+neither summand takes the value $-\infty$, so addition in `EReal` is continuous at every pair of
+values that occurs. -/
 theorem ClosedProperConvexFn.add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
     (hne : (convexDom (f + g)).Nonempty) : ClosedProperConvexFn (f + g) := by
   have hbot : ∀ x, (f + g) x ≠ ⊥ := add_ne_bot hf.proper.ne_bot hg.proper.ne_bot
@@ -832,11 +952,12 @@ theorem ClosedProperConvexFn.add (hf : ClosedProperConvexFn f) (hg : ClosedPrope
     EReal.continuousAt_add (Or.inr (hg.proper.ne_bot x)) (Or.inl (hf.proper.ne_bot x))
 
 omit [FiniteDimensional ℝ E] in
-/-- **A finite sum**: `f₁ + ⋯ + fₘ` is closed proper convex as soon as the summands are and their
-effective domains share a point.
+/-- Let $E$ be a real normed space and $g_i$, $i \in s$, finitely many closed proper convex
+functions on $E$ whose effective domains have a common point $x_0$. Then $\sum_{i \in s} g_i$ is
+a closed proper convex function.
 
-The binary rule needs a point of the domain at every step, so the induction carries one: what is
-proved is the conjunction of the conclusion with `x₀ ∈ dom (∑ i ∈ s, gᵢ)`. -/
+The binary rule needs a point of the effective domain at each step. So the induction proves the
+conclusion together with $x_0 \in \operatorname{dom} \sum_{i \in s} g_i$. -/
 theorem closedProperConvexFn_finsetSum {ι : Type*} {s : Finset ι} {g : ι → E → EReal}
     (hg : ∀ i ∈ s, ClosedProperConvexFn (g i)) {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (g i)) :
     ClosedProperConvexFn (∑ i ∈ s, g i) := by
@@ -868,11 +989,13 @@ theorem closedProperConvexFn_finsetSum {ι : Type*} {s : Finset ι} {g : ι → 
   exact (key s hg hx₀).1
 
 omit [FiniteDimensional ℝ E] in
-/-- **The recession function of a sum**: `(f + g)0⁺ = f0⁺ + g0⁺`.
+/-- Let $E$ be a real normed space and $f$, $g$ closed proper convex functions on $E$ such that
+$\operatorname{dom} f \cap \operatorname{dom} g$ is nonempty. Then
+$$(f + g)0^+ = f0^+ + g0^+.$$
 
-Both sides are limits of difference quotients based at one common point of `dom f ∩ dom g`, and
-`EReal.coe_mul_sub_add_coe_mul_sub` says the quotients themselves add up. Uniqueness of
-limits finishes; closedness is what makes a single base point enough. -/
+Both sides are limits of difference quotients based at one common point of
+$\operatorname{dom} f \cap \operatorname{dom} g$, and the difference quotients add up
+(`EReal.coe_mul_sub_add_coe_mul_sub`). Closedness is what makes a single base point enough. -/
 theorem recessionFn_add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn g)
     (hne : (convexDom (f + g)).Nonempty) :
     recessionFn (f + g) = recessionFn f + recessionFn g := by
@@ -905,12 +1028,15 @@ theorem recessionFn_add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn
       (hg.proper.ne_bot _) p q
   exact tendsto_nhds_unique h3 (Filter.Tendsto.congr' heq hadd)
 
-/-- **The lower semicontinuous hull of a sum**: when the two effective domains share a relative
-interior point, the hull of a sum is the sum of the hulls.
+/-- Let $E$ be a finite-dimensional real normed space and $f$, $g$ proper convex functions on $E$
+such that some $x$ lies in $\operatorname{ri}(\operatorname{dom} f) \cap
+\operatorname{ri}(\operatorname{dom} g)$. Then the lower semicontinuous hull of $f + g$ is the
+sum of the lower semicontinuous hulls of $f$ and $g$.
 
-Each of the three hulls at `y` is a limit along one and the same segment based at the common
-point, which lies in `ri (dom (f + g))` because the relative interior of an intersection of convex
-sets with a common relative interior point is the intersection of the relative interiors. -/
+Each of the three hulls at a point is a limit along the same segment from $x$. The point $x$
+lies in $\operatorname{ri}(\operatorname{dom}(f + g))$, because the relative interior of an
+intersection of convex sets with a common relative interior point is the intersection of the
+relative interiors. -/
 theorem lscHull_add (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
     (hpg : ProperConvex g)
     {x : E} (hxf : x ∈ ri (convexDom f)) (hxg : x ∈ ri (convexDom g)) :
@@ -929,8 +1055,12 @@ theorem lscHull_add (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
       (Or.inl (hf.lscHull_ne_bot hpf y))
   exact tendsto_nhds_unique h3 (hcont.tendsto.comp (h1.prodMk_nhds h2))
 
-/-- **The closure of a sum**: `cl (f + g) = cl f + cl g` when the effective domains share a
-relative interior point. -/
+/-- Let $E$ be a finite-dimensional real normed space and $f$, $g$ proper convex functions on $E$
+such that some $x$ lies in $\operatorname{ri}(\operatorname{dom} f) \cap
+\operatorname{ri}(\operatorname{dom} g)$. Then
+$$\operatorname{cl}(f + g) = \operatorname{cl} f + \operatorname{cl} g.$$
+
+Here $\operatorname{cl}$ is the closure of a convex function, `ConvexAnalysis.convexCl`. -/
 theorem convexCl_add (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
     (hpg : ProperConvex g)
     {x : E} (hxf : x ∈ ri (convexDom f)) (hxg : x ∈ ri (convexDom g)) :
@@ -956,16 +1086,22 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {ι : Type*} {f : ι → E → EReal}
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **A pointwise supremum of closed functions is closed**, because its epigraph is an
-intersection of epigraphs. Nothing else is needed. -/
+/-- Let $(f_i)_{i \in I}$ be functions on a normed additive group whose epigraphs are closed. Then
+the pointwise supremum $\sup_i f_i$ has a closed epigraph, because its epigraph is the
+intersection of the epigraphs of the $f_i$. No other hypothesis is needed. -/
 theorem isClosed_epi_iSup (hc : ∀ i, IsClosed (epi (f i))) :
     IsClosed (epi fun z => ⨆ i, f i z) := by
   rw [epi_iSup]
   exact isClosed_iInter hc
 
 omit [FiniteDimensional ℝ E] in
-/-- **The recession function of a pointwise supremum**: `(⨆ i, fᵢ)0⁺ = ⨆ i, (fᵢ)0⁺`. It is the
-recession cone of an intersection, read through `epi_recessionFn`. -/
+/-- Let $E$ be a real normed space and $(f_i)_{i \in I}$ convex functions on $E$ with closed
+epigraphs, and suppose that the epigraph of $\sup_i f_i$ is nonempty. Then
+$$\Bigl(\sup_i f_i\Bigr)0^+ = \sup_i\, (f_i 0^+).$$
+
+The epigraph of a recession function is the recession cone of the epigraph
+(`ConvexAnalysis.epi_recessionFn`), so this is the rule for the recession cone of an
+intersection. -/
 theorem recessionFn_iSup (hconv : ∀ i, ConvexFn (f i)) (hc : ∀ i, IsClosed (epi (f i)))
     (hne : (epi fun z => ⨆ i, f i z).Nonempty) :
     recessionFn (fun z => ⨆ i, f i z) = fun z => ⨆ i, recessionFn (f i) z := by
@@ -975,11 +1111,14 @@ theorem recessionFn_iSup (hconv : ∀ i, ConvexFn (f i)) (hc : ∀ i, IsClosed (
     recessionCone_iInter (fun i => (hconv i).convex_epi) hc hne]
   exact iInter_congr fun i => (epi_recessionFn (f i)).symm
 
-/-- **The lower semicontinuous hull of a pointwise supremum**: `cl (⨆ i, fᵢ) = ⨆ i, cl fᵢ`.
+/-- Let $E$ be a finite-dimensional real normed space and $(f_i)_{i \in I}$ convex functions on $E$.
+Let $x$ be a point of $\operatorname{ri}(\operatorname{dom} f_i)$ for every $i$, with
+$\sup_i f_i(x) < +\infty$. Then the lower semicontinuous hull of $\sup_i f_i$ is the pointwise
+supremum of the lower semicontinuous hulls of the $f_i$.
 
-A point `x` lying in every `ri (dom fᵢ)` at which the supremum is finite supplies a common
-relative interior point of the epigraphs: `(x, μ)` lies in every `ri (epi fᵢ)` for any real `μ`
-above the supremum, which is what lets the closure pass inside the intersection. -/
+For every real $\mu > \sup_i f_i(x)$, the point $(x, \mu)$ lies in
+$\operatorname{ri}(\operatorname{epi} f_i)$ for every $i$. This common relative interior point
+of the epigraphs lets the closure pass inside the intersection. -/
 theorem lscHull_iSup (hconv : ∀ i, ConvexFn (f i)) {x : E} (hx : ∀ i, x ∈ ri (convexDom (f i)))
     (hfin : (⨆ i, f i x) < ⊤) :
     lscHull (fun z => ⨆ i, f i z) = fun z => ⨆ i, lscHull (f i) z := by
@@ -1002,16 +1141,25 @@ variable {E G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimensional ℝ G] {g : G → EReal}
 
 omit [FiniteDimensional ℝ G] in
-/-- **Closedness of a composition**: `g A` is closed whenever `g` is, with no relative interior
-hypothesis, because `epi (g A)` is a preimage of `epi g` under a continuous map. -/
+/-- Let $E$ be a finite-dimensional real normed space, $G$ a real normed space, $g$ a function on
+$G$ with closed epigraph, and $A : E \to G$ a linear map. Then $gA = g \circ A$ has a closed
+epigraph.
+
+No relative interior hypothesis is needed: $\operatorname{epi}(gA)$ is the preimage of
+$\operatorname{epi} g$ under the map $(x, \mu) \mapsto (Ax, \mu)$, which is continuous because
+$E$ is finite-dimensional. -/
 theorem isClosed_epi_compLin (hc : IsClosed (epi g)) (A : E →ₗ[ℝ] G) :
     IsClosed (epi (compLin g A)) := by
   rw [epi_compLin]
   exact hc.preimage (prodMapId A).continuous_of_finiteDimensional
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ G] in
-/-- **The recession function of a composition**: `(gA)0⁺ = (g0⁺)A`. It is the recession cone of a
-preimage, read through `epi_recessionFn`. -/
+/-- Let $E$ and $G$ be real normed spaces, $g$ a convex function on $G$ with closed epigraph, and
+$A : E \to G$ a linear map, and suppose that $\operatorname{dom}(gA)$ is nonempty. Then
+$$(gA)0^+ = (g0^+)A.$$
+
+The epigraph of $(gA)0^+$ is the recession cone of a preimage of $\operatorname{epi} g$, so this
+is `ConvexAnalysis.recessionCone_preimage` read through `ConvexAnalysis.epi_recessionFn`. -/
 theorem recessionFn_compLin (hg : ConvexFn g) (hc : IsClosed (epi g)) (A : E →ₗ[ℝ] G)
     (hne : (convexDom (compLin g A)).Nonempty) :
     recessionFn (compLin g A) = compLin (recessionFn g) A := by
@@ -1023,8 +1171,10 @@ theorem recessionFn_compLin (hg : ConvexFn g) (hc : IsClosed (epi g)) (A : E →
   exact ⟨(x, μ), mk_mem_epi.2 hμ.le⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- The relative interior hypothesis, transported to epigraphs: if `A x` is a relative interior
-point of `dom g`, some `(x, μ)` is carried into `ri (epi g)`. -/
+/-- Let $G$ be a finite-dimensional real normed space, $g$ a convex function on $G$, and
+$A : E \to G$ a linear map with $Ax \in \operatorname{ri}(\operatorname{dom} g)$. Then some
+$(x', \mu)$ is mapped by $(x', \mu) \mapsto (Ax', \mu)$ into
+$\operatorname{ri}(\operatorname{epi} g)$. -/
 theorem preimage_relint_epi_nonempty (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E}
     (hx : A x ∈ ri (convexDom g)) : ((prodMapId A) ⁻¹' ri (epi g)).Nonempty := by
   obtain ⟨μ, hμ, -⟩ :=
@@ -1033,9 +1183,12 @@ theorem preimage_relint_epi_nonempty (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x 
   rw [Set.mem_preimage, hg.relint_epi]
   exact ⟨hx, hμ⟩
 
-/-- **The lower semicontinuous hull of a composition**: `cl (g A) = (cl g) A` as soon as some
-`A x` is a relative interior point of `dom g`. It is the rule for the closure of a preimage,
-applied to `epi g`. -/
+/-- Let $E$ and $G$ be finite-dimensional real normed spaces, $g$ a convex function on $G$, and
+$A : E \to G$ a linear map with $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x$.
+Then the lower semicontinuous hull of $gA$ is the composition of the lower semicontinuous hull
+of $g$ with $A$.
+
+This is the rule for the closure of a preimage, applied to $\operatorname{epi} g$. -/
 theorem lscHull_compLin (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E} (hx : A x ∈ ri (convexDom g)) :
     lscHull (compLin g A) = compLin (lscHull g) A := by
   refine epi_injective ?_
@@ -1043,7 +1196,12 @@ theorem lscHull_compLin (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E} (hx : A 
   exact Convex.closure_preimage hg.convex_epi (prodMapId A)
     (preimage_relint_epi_nonempty hg A hx)
 
-/-- The same for `convexCl`: `cl (g A) = (cl g) A` for proper `g`. -/
+/-- Let $E$ and $G$ be finite-dimensional real normed spaces, $g$ a proper convex function on $G$,
+and $A : E \to G$ a linear map with $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some
+$x$. Then
+$$\operatorname{cl}(gA) = (\operatorname{cl} g)A.$$
+
+Here $\operatorname{cl}$ is the closure of a convex function, `ConvexAnalysis.convexCl`. -/
 theorem convexCl_compLin (hg : ConvexFn g) (hp : ProperConvex g) (A : E →ₗ[ℝ] G) {x : E}
     (hx : A x ∈ ri (convexDom g)) : convexCl (compLin g A) = compLin (convexCl g) A := by
   have hcomp : ConvexFn (compLin g A) := convexFn_compLin A hg

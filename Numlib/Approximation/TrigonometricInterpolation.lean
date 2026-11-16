@@ -8,67 +8,88 @@ import Numlib.Approximation.Trigonometric
 /-!
 # The Dirichlet-kernel form of trigonometric interpolation
 
-`trigInterpCLM T n` (`Numlib.Approximation.Interpolation`) is the projection of `C(ℝ/Tℤ, ℝ)` onto
-the trigonometric polynomials of degree at most `n` that interpolates at the `2 n + 1` equispaced
-nodes `xⱼ = j T / (2 n + 1)`. On the circle of circumference `2 π` its cardinal functions are
-translates of the Dirichlet kernel,
+Let $\mathcal{I}_n$ be trigonometric interpolation at the $2n + 1$ equispaced nodes
+$x_j = 2\pi j / (2n + 1)$, $j = 0, \dots, 2n$, of a period: it maps a continuous $2\pi$-periodic
+function $f$ to the unique trigonometric polynomial of degree at most $n$ that agrees with $f$ at
+the nodes. This file shows that the cardinal functions of $\mathcal{I}_n$ are translates of the
+Dirichlet kernel $D_n(t) = 1/2 + \sum_{k=1}^n \cos(kt)$, as in (3.7.19) and Exercise 3.7.5 of
+[han2009theoretical]:
+$$\mathcal{I}_n f(x) = \frac{2}{2n + 1} \sum_{j=0}^{2n} f(x_j)\, D_n(x - x_j).$$
+So $\mathcal{I}_n$ is the discrete analogue of the Fourier projection: the Fourier projection
+integrates $f$ against $D_n(y - x) / \pi$, and $\mathcal{I}_n$ averages $f$ against
+$2 D_n(x - x_j) / (2n + 1)$ over the nodes.
 
-`φⱼ = 2 Dₙ(· - xⱼ) / (2 n + 1)`,
-
-so the interpolant is the discrete analogue of the Fourier partial sum: where the Fourier
-projection integrates `f` against `Dₙ(x - y) / π`, the interpolation projection averages it against
-`2 Dₙ(x - xⱼ) / (2 n + 1)` over the nodes.
-
-Two facts make the identification work. The recentred kernel `Dₙ(· - a)` is again a trigonometric
-polynomial of degree at most `n`, by the addition formula for the cosine
-(`PeriodicCont.dirichletShiftCM_mem_trigPolyLE`); and at the node differences the kernel takes the
-values `Dₙ(xₖ - xⱼ) = (2 n + 1)/2` for `j = k` and `0` otherwise
-(`PeriodicCont.dirichletKernel_node_sub`), because `(n + 1/2)(xₖ - xⱼ)` is an integer multiple of
-`π` while `(xₖ - xⱼ)/2` is not.
+The operator norm of $\mathcal{I}_n$ on the continuous periodic functions is therefore the largest
+value of the Lebesgue function $\Lambda_n(x) = \frac{2}{2n + 1} \sum_j |D_n(x - x_j)|$. The file
+proves the bound $\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$, and the Lebesgue lemma $\|f -
+\mathcal{I}_n f\|_\infty \le (1 + \|\mathcal{I}_n\|) \operatorname{dist}(f, \mathcal{T}_n)$, where
+$\mathcal{T}_n$ is the space of trigonometric polynomials of degree at most $n$.
 
 ## Main definitions
 
-* `PeriodicCont.dirichletShiftCM n a` — the recentred Dirichlet kernel `Dₙ(· - a)` on the circle.
+* `PeriodicCont.dirichletShiftCM`: the shifted Dirichlet kernel $D_n(\cdot - a)$ as a continuous
+  function on the circle.
 
-## Main statements
+## Main results
 
-* `norm_sub_trigInterpCLM_le` — the Lebesgue lemma for the interpolatory projection.
-* `PeriodicCont.dirichletShiftCM_mem_trigPolyLE` — it is a trigonometric polynomial of degree at
-  most `n`.
-* `PeriodicCont.dirichletKernel_node_sub` — the kernel's values at the differences of the
-  equispaced nodes.
-* `PeriodicCont.trigInterpCLM_eq_sum_dirichletShiftCM` and
-  `PeriodicCont.trigInterpCLM_coe_apply` — the interpolation projection in the Lagrange form built
-  from those cardinal functions, as a function on the circle and pointwise on `ℝ`.
-* `PeriodicCont.cardinalBasisCM_trigInterpNode` — the cardinal functions are exactly
-  `2 Dₙ(· - xⱼ)/(2 n + 1)`, and `PeriodicCont.isGreatest_norm_trigInterpCLM` — the operator norm of
-  the projection is therefore the largest value of the Lebesgue function
-  `Λₙ(x) = (2/(2 n + 1)) ∑ⱼ |Dₙ(x - xⱼ)|`.
-* `norm_trigInterpCLM_le` — a Rivlin-type bound on that supremum,
-  `‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`, read off from `SineSum.sum_term_le` of
-  `Numlib/Analysis/SpecialFunctions/SineSum` at `M = 2 n + 1`. It carries the sharp coefficient
-  `2/π` of [han2009theoretical], (3.7.20) but a larger additive constant; the theorem's own doc
-  comment says why the constant printed there is not the one proved here.
-* `le_norm_trigInterpCLM_one` — `5/3 ≤ ‖𝓘₁‖`, which is what makes the constant printed in
-  [han2009theoretical], (3.7.20) too small.
+* `norm_sub_trigInterpCLM_le`: the Lebesgue lemma $\|f - \mathcal{I}_n f\|_\infty \le (1 +
+  \|\mathcal{I}_n\|) \operatorname{dist}(f, \mathcal{T}_n)$, for any period $T > 0$.
+* `PeriodicCont.dirichletShiftCM_mem_trigPolyLE`: $D_n(\cdot - a)$ is a trigonometric polynomial of
+  degree at most $n$.
+* `PeriodicCont.dirichletKernel_node_sub`: $D_n(x_k - x_j)$ is $(2n + 1)/2$ for $j = k$ and $0$
+  otherwise.
+* `PeriodicCont.trigInterpCLM_eq_sum_dirichletShiftCM`, `PeriodicCont.trigInterpCLM_coe_apply`: the
+  Lagrange formula $\mathcal{I}_n f = \frac{2}{2n + 1} \sum_j f(x_j)\, D_n(\cdot - x_j)$, on the
+  circle and pointwise on $\mathbb{R}$.
+* `PeriodicCont.cardinalBasisCM_trigInterpNode`: the cardinal functions of $\mathcal{I}_n$ are
+  $2 D_n(\cdot - x_j) / (2n + 1)$.
+* `PeriodicCont.isGreatest_norm_trigInterpCLM`: $\|\mathcal{I}_n\|$ is the largest value of the
+  Lebesgue function $\Lambda_n$.
+* `norm_trigInterpCLM_le`: $\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$.
+* `le_norm_trigInterpCLM_one`: $\|\mathcal{I}_1\| \ge 5/3$.
 
-## References
+## Proof outline
 
-[han2009theoretical], (3.7.19)–(3.7.20) and Exercise 3.7.5.
+The shifted kernel $D_n(\cdot - a)$ is a trigonometric polynomial of degree at most $n$ by the
+addition formula for the cosine. At the differences of the nodes, $D_n(x_k - x_j)$ is $(2n + 1)/2$
+for $j = k$ and $0$ otherwise, because $(n + 1/2)(x_k - x_j)$ is an integer multiple of $\pi$ and
+$(x_k - x_j)/2$ is not. So the functions $2 D_n(\cdot - x_j) / (2n + 1)$ are the cardinal functions,
+and the Lagrange formula and the norm formula follow from the general theory of
+`Numlib.Approximation.Unisolvent`.
+
+## Notation
+
+* $\mathcal{I}_n$: the interpolation projection `trigInterpCLM (2 * π) n` of
+  `Numlib.Approximation.Interpolation`.
+* $x_j$: the node `trigInterpNode (2 * π) n j`, the class of $2\pi j / (2n + 1)$ on the circle.
+
+## Implementation notes
+
+* The bound of (3.7.20) of [han2009theoretical] is printed as
+  $\|\mathcal{I}_n\| \le 1 + (2/\pi) \log n$. As printed it is false: $\|\mathcal{I}_1\| \ge 5/3$
+  (`le_norm_trigInterpCLM_one`). The file proves `norm_trigInterpCLM_le`, which has the sharp
+  coefficient $2/\pi$ but the additive constant $2$; the doc comment of `norm_trigInterpCLM_le`
+  explains the difference.
+* The logarithmic estimate is `SineSum.sum_term_le` of `Numlib.Analysis.SpecialFunctions.SineSum`,
+  with $M = 2n + 1$.
 -/
 
 open Set
 
 open scoped Real
 
-/-! ### The Lebesgue lemma for the interpolatory projection -/
+/-! ### The Lebesgue lemma for the interpolation projection -/
 
-/-- **The Lebesgue lemma for trigonometric interpolation**: the error of the interpolant of a
-continuous periodic function at the `2 n + 1` equispaced nodes is at most `1 + ‖𝓘ₙ‖` times its
-distance to the trigonometric polynomials of degree at most `n`.
+/-- **The Lebesgue lemma for trigonometric interpolation.** Let $T > 0$, and let $\mathcal{I}_n$ be
+interpolation at the $2n + 1$ equispaced nodes $jT / (2n + 1)$ of a period by trigonometric
+polynomials of degree at most $n$. For every continuous $T$-periodic function $f$,
+$$\|f - \mathcal{I}_n f\|_\infty \le (1 + \|\mathcal{I}_n\|) \operatorname{dist}(f,
+  \mathcal{T}_n),$$
+where $\mathcal{T}_n$ is the space `trigPolyLE T n` of trigonometric polynomials of degree at
+most $n$.
 
-It is the abstract Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection
-`trigInterpCLM`; combined with a bound on the best approximation error — Jackson's theorem — it
+This is the abstract Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection
+`trigInterpCLM T n`. With a bound on the best approximation error, such as Jackson's theorem, it
 gives the uniform convergence rate of trigonometric interpolation. -/
 theorem norm_sub_trigInterpCLM_le {T : ℝ} [Fact (0 < T)] (n : ℕ) (f : C(AddCircle T, ℝ)) :
     ‖f - trigInterpCLM T n f‖
@@ -82,15 +103,17 @@ namespace PeriodicCont
 
 variable {n : ℕ}
 
-/-! ### The recentred Dirichlet kernel -/
+/-! ### The shifted Dirichlet kernel -/
 
-/-- The Dirichlet kernel recentred at `a`, `Dₙ(· - a)`, as a continuous function on the circle of
-circumference `2 π`. Its translates by the `2 n + 1` equispaced nodes, scaled by `2/(2 n + 1)`, are
-the cardinal functions of trigonometric interpolation. -/
+/-- The **shifted Dirichlet kernel**: for a real number $a$, the continuous function
+$x \mapsto D_n(x - a)$ on the circle of circumference $2\pi$. Its shifts by the $2n + 1$
+equispaced nodes, multiplied by $2 / (2n + 1)$, are the cardinal functions of trigonometric
+interpolation (`PeriodicCont.cardinalBasisCM_trigInterpNode`). -/
 noncomputable def dirichletShiftCM (n : ℕ) (a : ℝ) : C(AddCircle (2 * π), ℝ) :=
   (dirichletCM n).comp ⟨fun x => x - (a : AddCircle (2 * π)), by fun_prop⟩
 
-/-- The recentred kernel evaluates to `dirichletKernel n (t - a)` at the class of `t`. -/
+/-- For real numbers $a$ and $t$, the shifted Dirichlet kernel `PeriodicCont.dirichletShiftCM n a`
+at the point $t$ of the circle is $D_n(t - a)$. -/
 @[simp]
 theorem dirichletShiftCM_coe (n : ℕ) (a t : ℝ) :
     dirichletShiftCM n a ↑t = dirichletKernel n (t - a) := by
@@ -98,8 +121,11 @@ theorem dirichletShiftCM_coe (n : ℕ) (a t : ℝ) :
   rw [dirichletShiftCM]
   simp only [ContinuousMap.comp_apply, ContinuousMap.coe_mk, hsub, dirichletCM_coe]
 
-/-- **The recentred Dirichlet kernel is a trigonometric polynomial of degree at most `n`.** The
-addition formula `cos (m (t - a)) = cos (m a) cos (m t) + sin (m a) sin (m t)` expands it in the
+/-- **The shifted Dirichlet kernel is a trigonometric polynomial of degree at most $n$.** For every
+real number $a$, the function $D_n(\cdot - a)$ lies in $\mathcal{T}_n$, the space
+`trigPolyLE (2 * π) n`.
+
+The addition formula $\cos(m(t - a)) = \cos(ma) \cos(mt) + \sin(ma) \sin(mt)$ expands it in the
 real trigonometric system. -/
 theorem dirichletShiftCM_mem_trigPolyLE (n : ℕ) (a : ℝ) :
     dirichletShiftCM n a ∈ trigPolyLE (2 * π) n := by
@@ -144,10 +170,14 @@ theorem dirichletShiftCM_mem_trigPolyLE (n : ℕ) (a : ℝ) :
 
 /-! ### The kernel at the differences of the equispaced nodes -/
 
-/-- **The Dirichlet kernel at the differences of the `2 n + 1` equispaced nodes**: it is
-`(2 n + 1)/2` at `0` and vanishes at every other difference, because `(n + 1/2)(xₖ - xⱼ)` is an
-integer multiple of `π` while `(xₖ - xⱼ)/2` is not. This is what makes `2 Dₙ(· - xⱼ)/(2 n + 1)` the
-cardinal functions of trigonometric interpolation. -/
+/-- **The Dirichlet kernel at the differences of the equispaced nodes.** For an integer $d$ with
+$|d| \le 2n$,
+$$D_n\Bigl(\frac{2\pi d}{2n + 1}\Bigr) = \begin{cases} (2n + 1)/2, & d = 0, \\ 0, & d \neq 0.
+  \end{cases}$$
+
+For $d \neq 0$ the value vanishes because $(n + 1/2) \cdot 2\pi d / (2n + 1) = \pi d$ is an
+integer multiple of $\pi$ and $\pi d / (2n + 1)$ is not. This makes the functions
+$2 D_n(\cdot - x_j) / (2n + 1)$ the cardinal functions of trigonometric interpolation. -/
 theorem dirichletKernel_node_sub (n : ℕ) (d : ℤ) (hd : d.natAbs ≤ 2 * n) :
     dirichletKernel n (2 * π * d / (2 * n + 1))
       = if d = 0 then (2 * (n : ℝ) + 1) / 2 else 0 := by
@@ -190,8 +220,11 @@ theorem dirichletKernel_node_sub (n : ℕ) (d : ℤ) (hd : d.natAbs ≤ 2 * n) :
 
 /-! ### The Lagrange formula for the interpolation projection -/
 
-/-- The recentred Dirichlet kernels take the value `(2 n + 1)/2` at their own node and vanish at
-the others, so `2 Dₙ(· - xⱼ)/(2 n + 1)` are the cardinal functions of the interpolation problem. -/
+/-- For nodes $x_j$ and $x_k$ with $j, k \in \{0, \dots, 2n\}$, the shifted Dirichlet kernel takes
+the value
+$$D_n(x_k - x_j) = \begin{cases} (2n + 1)/2, & j = k, \\ 0, & j \neq k. \end{cases}$$
+So the functions $2 D_n(\cdot - x_j) / (2n + 1)$ are the cardinal functions of the interpolation
+problem. -/
 theorem dirichletShiftCM_apply_node (n : ℕ) (j k : Fin (2 * n + 1)) :
     dirichletShiftCM n ((j : ℕ) * (2 * π) / (2 * n + 1)) (trigInterpNode (2 * π) n k)
       = if j = k then (2 * (n : ℝ) + 1) / 2 else 0 := by
@@ -213,10 +246,13 @@ theorem dirichletShiftCM_apply_node (n : ℕ) (j k : Fin (2 * n + 1)) :
     omega
 
 
-/-- **The Lagrange formula for trigonometric interpolation** ([han2009theoretical], (3.7.19)). The
-trigonometric interpolant of `f` at the `2 n + 1` equispaced nodes of a period is `2/(2 n + 1)`
-times the sum of the recentred Dirichlet kernels weighted by the nodal values:
-`𝓘ₙ f = (2/(2 n + 1)) ∑ⱼ f(xⱼ) Dₙ(· - xⱼ)`. -/
+/-- **The Lagrange formula for trigonometric interpolation.** For every continuous $2\pi$-periodic
+function $f$,
+$$\mathcal{I}_n f = \frac{2}{2n + 1} \sum_{j=0}^{2n} f(x_j)\, D_n(\cdot - x_j),$$
+as an identity of continuous functions on the circle.
+
+This is (3.7.19) of [han2009theoretical]. The function $D_n(\cdot - x_j)$ is
+`PeriodicCont.dirichletShiftCM n (j * (2 * π) / (2 * n + 1))`. -/
 theorem trigInterpCLM_eq_sum_dirichletShiftCM (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
     trigInterpCLM (2 * π) n f
       = (2 / (2 * (n : ℝ) + 1)) •
@@ -233,8 +269,12 @@ theorem trigInterpCLM_eq_sum_dirichletShiftCM (n : ℕ) (f : C(AddCircle (2 * π
       (fun h => absurd (Finset.mem_univ k) h), ite_eq_left rfl]
     field_simp
 
-/-- The Lagrange formula for trigonometric interpolation ([han2009theoretical], (3.7.19)),
-pointwise on `ℝ`: `𝓘ₙ f (x) = (2/(2 n + 1)) ∑ⱼ Dₙ(x - xⱼ) f(xⱼ)`. -/
+/-- **The Lagrange formula for trigonometric interpolation**, pointwise on $\mathbb{R}$. For every
+continuous $2\pi$-periodic function $f$ and every real number $x$,
+$$\mathcal{I}_n f(x) = \frac{2}{2n + 1} \sum_{j=0}^{2n} D_n(x - x_j)\, f(x_j), \qquad x_j =
+  \frac{2\pi j}{2n + 1}.$$
+
+This is (3.7.19) of [han2009theoretical]. -/
 theorem trigInterpCLM_coe_apply (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) (x : ℝ) :
     trigInterpCLM (2 * π) n f ↑x
       = 2 / (2 * (n : ℝ) + 1) *
@@ -248,10 +288,15 @@ theorem trigInterpCLM_coe_apply (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) (x : 
 
 /-! ### The Lebesgue function of trigonometric interpolation -/
 
-/-- **The cardinal functions of trigonometric interpolation** at the `2 n + 1` equispaced nodes are
-the recentred Dirichlet kernels `2 Dₙ(· - xⱼ)/(2 n + 1)` ([han2009theoretical], Exercise 3.7.5).
-They are trigonometric polynomials of degree at most `n` taking the value `1` at `xⱼ` and `0` at
-the other nodes, and the interpolation problem has only one such solution. -/
+/-- **The cardinal functions of trigonometric interpolation.** For $j \in \{0, \dots, 2n\}$, the
+$j$-th cardinal function of interpolation by trigonometric polynomials of degree at most $n$ at
+the equispaced nodes $x_0, \dots, x_{2n}$ is
+$$\varphi_j = \frac{2}{2n + 1} D_n(\cdot - x_j).$$
+
+This is Exercise 3.7.5 of [han2009theoretical]. The cardinal function is
+`Approximation.IsUnisolvent.cardinalBasisCM` for the unisolvence `isUnisolvent_trigPolyLE`. The
+proof checks that the right side lies in $\mathcal{T}_n$ and takes the value $1$ at $x_j$ and
+$0$ at the other nodes; the interpolation problem has only one such solution. -/
 theorem cardinalBasisCM_trigInterpNode (n : ℕ) (j : Fin (2 * n + 1)) :
     (isUnisolvent_trigPolyLE (2 * π) (injective_trigInterpNode (2 * π) n)).cardinalBasisCM j
       = (2 / (2 * (n : ℝ) + 1)) • dirichletShiftCM n ((j : ℕ) * (2 * π) / (2 * n + 1)) := by
@@ -273,13 +318,16 @@ theorem cardinalBasisCM_trigInterpNode (n : ℕ) (j : Fin (2 * n + 1)) :
   rw [Approximation.IsUnisolvent.cardinalBasisCM]
   exact (congrArg Subtype.val hfin).symm
 
-/-- **The Lebesgue constant of trigonometric interpolation.** The operator norm of `𝓘ₙ` is the
-largest value of its Lebesgue function
+/-- **The Lebesgue constant of trigonometric interpolation.** The operator norm of $\mathcal{I}_n$,
+for the supremum norm on the continuous $2\pi$-periodic functions, is the largest value of the
+Lebesgue function
+$$\Lambda_n(t) = \frac{2}{2n + 1} \sum_{j=0}^{2n} |D_n(t - x_j)|, \qquad t \in \mathbb{R},$$
+and the largest value is attained.
 
-`Λₙ(x) = (2/(2 n + 1)) ∑_{j=0}^{2n} |Dₙ(x - xⱼ)|`.
-
-Rivlin's bound `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` ([han2009theoretical], (3.7.20)) is a bound on this
-supremum; it is not proved here. -/
+The bound of Rivlin in (3.7.20) of [han2009theoretical] is a bound on this maximum; see
+`norm_trigInterpCLM_le` for the bound proved here. The proof specializes
+`Approximation.IsUnisolvent.isGreatest_norm_interpCLM` with the cardinal functions of
+`PeriodicCont.cardinalBasisCM_trigInterpNode`. -/
 theorem isGreatest_norm_trigInterpCLM (n : ℕ) :
     IsGreatest
       (Set.range fun t : ℝ => 2 / (2 * (n : ℝ) + 1) *
@@ -318,27 +366,28 @@ end PeriodicCont
 
 /-! ### Rivlin's bound for the Lebesgue constant -/
 
-/-- **Rivlin's bound for the Lebesgue constant of trigonometric interpolation**, with the constant
-`2` in place of the `1` of [han2009theoretical], (3.7.20):
+/-- **Rivlin's bound for the Lebesgue constant of trigonometric interpolation**, with the additive
+constant $2$: for every natural number $n$,
+$$\|\mathcal{I}_n\| \le 2 + \frac{2}{\pi} \log(2n + 1).$$
 
-`‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`.
+Section 3.7 of [han2009theoretical] prints the bound $\|\mathcal{I}_n\| \le 1 + (2/\pi) \log n$
+for $n \ge 1$ in (3.7.20), quoting Rivlin. As printed this bound is false: at $n = 1$ the
+Lebesgue function takes the value $5/3$ at the midpoint of two nodes, and the right side is $1$
+(`le_norm_trigInterpCLM_one`). In the bound of Rivlin, $n$ is the number of nodes, here
+$2n + 1$, and the sharp statement is $\|\mathcal{I}_n\| \le 1 + (2/\pi) \log(2n + 1)$. Its two
+sides differ by about $0.04$ for every $n$. The bound here keeps the sharp coefficient $2/\pi$,
+so it gives the growth $O(\log n)$ that the convergence rate (3.7.22) uses, but it has a larger
+additive constant: one unit for each of the two nodes nearest the evaluation point.
 
-The book prints `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` for `n ≥ 1`, quoting Rivlin; as printed that is false —
-at `n = 1` the Lebesgue function attains `5/3` at the midpoint of two nodes while the right-hand
-side is `1`. The `n` of Rivlin's bound is the *number of nodes*, here `2 n + 1`, and the sharp
-statement is `‖𝓘ₙ‖ ≤ 1 + (2/π) log (2 n + 1)`, which has no slack to speak of: its two sides
-differ by about `0.04` for every `n`. What is proved here keeps the sharp `2/π`, and so gives the
-`𝓞(log n)` growth that the convergence rate (3.7.22) consumes, but pays a larger additive
-constant, one for each of the two nodes nearest the evaluation point.
-
-The estimate itself is `SineSum.sum_term_le` of `Numlib/Analysis/SpecialFunctions/SineSum`, which
-bounds
-`∑_{i < M} |sin (π (k + i + δ))| / (M |sin (π (k + i + δ)/M)|)` by `2 + (2/π) log M` for every
-`M ≥ 3`. Writing the evaluation point as `x = 2 π (c₀ + δ)/M` with `M = 2 n + 1` and `0 ≤ δ < 1`,
-the closed form `2 sin (u/2) Dₙ(u) = sin (M u / 2)` turns each term of the Lebesgue function into
-`(2/M) |Dₙ(x - xⱼ)| = |sin (π (c + δ))| / (M |sin (π (c + δ)/M)|)` with `c = c₀ - j`, and those `M`
-indices are consecutive. The identification fails only for `δ = 0`, that is when `x` is itself a
-node; there every term but one vanishes and the Lebesgue function is `1`. -/
+The estimate is `SineSum.sum_term_le` of `Numlib.Analysis.SpecialFunctions.SineSum`: for
+$M \ge 3$, $0 \le \delta < 1$ and an integer $c$, it bounds $\sum_{i < M} |\sin(\pi(c + i +
+\delta))| / (M |\sin(\pi(c + i + \delta)/M)|)$ by $2 + (2/\pi) \log M$. Write $M = 2n + 1$ and
+the evaluation point as $x = 2\pi(c_0 + \delta)/M$ with $0 \le \delta < 1$. The closed form
+$2 \sin(u/2) D_n(u) = \sin(Mu/2)$ turns each term of the Lebesgue function into $(2/M) |D_n(x -
+x_j)| = |\sin(\pi(c + \delta))| / (M |\sin(\pi(c + \delta)/M)|)$ with $c = c_0 - j$, and these
+$M$ indices $c$ are consecutive. This fails only for $\delta = 0$, when $x$ is a node; there
+every term but one vanishes and the Lebesgue function is $1$. For $n = 0$ the bound reads
+$\|\mathcal{I}_0\| \le 2$, and the Lebesgue function is $1$. -/
 theorem norm_trigInterpCLM_le (n : ℕ) :
     ‖trigInterpCLM (2 * π) n‖ ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 1) := by
   have hpi := Real.pi_pos
@@ -489,12 +538,12 @@ theorem norm_trigInterpCLM_le (n : ℕ) :
     rw [hsum]
     exact SineSum.sum_term_le hM3 hδ0 hδ1 _
 
-/-- **The Lebesgue constant of trigonometric interpolation at three nodes is at least `5/3`.**
-The Lebesgue function `Λ₁(x) = (2/3) ∑ⱼ |D₁(x - xⱼ)|` takes the value `5/3` at `x = π/3`, the
-midpoint of two of the three nodes.
+/-- **The Lebesgue constant of trigonometric interpolation at three nodes is at least $5/3$**:
+$\|\mathcal{I}_1\| \ge 5/3$. The Lebesgue function $\Lambda_1(x) = \frac{2}{3} \sum_j |D_1(x -
+x_j)|$ takes the value $5/3$ at $x = \pi/3$, the midpoint of the nodes $0$ and $2\pi/3$.
 
-This is what refutes the bound `1 + (2/π) log n` printed as [han2009theoretical], (3.7.20): at
-`n = 1` its right-hand side is `1`. -/
+This shows that the bound $1 + (2/\pi) \log n$ printed in (3.7.20) of [han2009theoretical] is
+false: at $n = 1$ its right side is $1$. -/
 theorem le_norm_trigInterpCLM_one : 5 / 3 ≤ ‖trigInterpCLM (2 * π) 1‖ := by
   have hD : ∀ t : ℝ, dirichletKernel 1 t = 1 / 2 + Real.cos t := by
     intro t

@@ -8,36 +8,48 @@ import Numlib.Optimization.ModelBased.HighOrderStep
 /-!
 # The adaptive-regularization method ARqpC for composite problems
 
-ARqpC ([cartis2022evaluation], §14.1, Algorithm 14.1.1) minimizes `w = f + h ∘ c` with
-`f : E → ℝ`, `c : E → F` smooth and `h : F → ℝ` Lipschitz (possibly nonsmooth) on a feasible set
-`X` (`X = univ` is ARqpC, a closed `X` is ARqpC-SC of §14.2). It is the generic ARqp run
-`Optimization.IsARqpRun` for the objective `w` with the composite model data
-`arqpcData f c h p x σ k = ARqpData.ofComposite (ftaylorSeries ℝ f (x k)) (ftaylorSeries ℝ c (x k))
-h p (σ k)`, whose Step 2 is computed by the detailed Step 2 (Algorithm 14.1.2): the abstract
-transition system `Optimization.DetailedStepTrans` for the composite model
-`compositeRegularizedModel` and its decrements (14.1.14), with a set `J` of orders at which the
-radius may be halved (`j ≥ 2`, and `j = 1` as well if `h` or `X` is not convex).
+The method ARqpC of [cartis2022evaluation] (§14.1, Algorithm 14.1.1) minimizes $w = f + h \circ c$,
+where $f : E \to \mathbb{R}$ and $c : E \to F$ are smooth and $h : F \to \mathbb{R}$ is Lipschitz
+continuous and possibly nonsmooth, over a feasible set $X$. The case $X = E$ is ARqpC, and a closed
+$X$ gives the variant ARqpC-SC of §14.2. At the iterate $x_k$ with weight $\sigma_k$ the method uses
+the composite model
+$$\hat m_k(s) = T_{f,p}(x_k, s) + h\bigl(T_{c,p}(x_k, s)\bigr) + \frac{\sigma_k}{(p+1)!}
+  \|s\|^{p+1}$$
+of (14.1.11), which keeps $h$ exactly. ARqpC is the generic ARqp run `Optimization.IsARqpRun` for
+the objective $w$ with the composite model data `Optimization.arqpcData`. Its Step 2 is computed by
+the detailed Step 2 of Algorithm 14.1.2: an abstract procedure for the model $\hat m_k$ and its
+decrements (14.1.14), which halves the radius of an order $j$ in a set $J$ of orders. In the source,
+$J$ contains the orders $j \ge 2$, and also $j = 1$ if $h$ or $X$ is not convex.
 
 ## Main definitions
 
-* `Optimization.arqpcData`, `Optimization.arqpcStop`: the model data and termination test;
-* `Optimization.IsARqpCDetailedStep`: the outputs of the detailed Step 2;
-* `Optimization.compositeHalvingSet`: the orders at which the detailed Step 2 halves the radii;
-* `Optimization.IsARqpCRun`: the runs of ARqpC, ARqp runs with composite data whose Step 2 is the
-  detailed Step 2.
+* `Optimization.arqpcData`, `Optimization.arqpcStop`: the model data and the termination test.
+* `Optimization.IsARqpCDetailedStep`: the outputs of the detailed Step 2.
+* `Optimization.compositeHalvingSet`: the orders at which the detailed Step 2 of the source halves
+  the radii.
+* `Optimization.IsARqpCRun`: the runs of ARqpC, which are ARqp runs with composite data whose Step 2
+  is the detailed Step 2.
 
 ## Main results
 
-* `Optimization.exists_isARqpCDetailedStep`: in finite dimension the detailed Step 2 has an output
-  whose radii satisfy the lower bound of Lemma 14.1.3 at the halved orders (and are `1` at the
-  others);
-* `Optimization.IsARqpCDetailedStep.exists_arqpStep`: its outputs satisfy the Step-2 conditions of
-  the run;
-* `Optimization.exists_isARqpRun_composite`, `Optimization.exists_isARqpCRun`: ARqpC runs exist
-  for any `f`, `c` and any Lipschitz, subadditive `h` with `h 0 = 0`, on a closed feasible set (no
-  smoothness is needed);
-* `Optimization.isARqpCDetailedStep_of_isMinOn`: for `q = 1`, convex `h` and `X`, global model
-  minimizers are outputs of the detailed Step 2.
+* `Optimization.exists_isARqpCDetailedStep`: Lemma 14.1.3, in finite dimension the detailed Step 2
+  has an output whose radii satisfy a lower bound at the halved orders and are $1$ at the other
+  orders.
+* `Optimization.IsARqpCDetailedStep.exists_arqpStep`: the outputs of the detailed Step 2 satisfy the
+  Step-2 conditions of the run.
+* `Optimization.exists_isARqpRun_composite`, `Optimization.exists_isARqpCRun`: ARqpC runs exist on
+  every closed feasible set, for any $f$ and $c$ and any Lipschitz, subadditive $h$ with $h(0) = 0$.
+  No smoothness is needed.
+* `Optimization.isARqpCDetailedStep_of_isMinOn`: for $q = 1$ and convex $h$ and $X$, global
+  minimizers of the model are outputs of the detailed Step 2.
+
+## Implementation notes
+
+* The detailed Step 2 is the transition system `Optimization.DetailedStepTrans`, and its outputs are
+  `Optimization.IsDetailedStepOutput`. The halving set $J$ is a parameter of the run; the set of the
+  source is `Optimization.compositeHalvingSet h X`.
+* Lipschitz continuity of $h$ with constant $L_h$ is `Optimization.HasLipschitzConst h Lh`, which
+  includes $L_h \ge 0$. Subadditivity $h(a + b) \le h(a) + h(b)$ is `Optimization.IsSubadditive h`.
 -/
 
 open Set Metric
@@ -48,25 +60,33 @@ namespace Optimization
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {p q : ℕ}
 
-/-- The model data of ARqpC at iteration `k` ([cartis2022evaluation], (14.1.10)–(14.1.15)):
-generalized Taylor decrements of `w = f + h ∘ c` at `x_k`, the model `m̂_k` (14.1.11), its
-decrements (14.1.14) and the predicted decrease `ΔT_{w,p}(x_k, ·)`. -/
+/-- The model data of ARqpC at iteration $k$, as in (14.1.10)–(14.1.15) of [cartis2022evaluation]:
+the generalized Taylor decrements of $w = f + h \circ c$ at $x_k$, the composite model
+$\hat m_k$ of (14.1.11), its decrements (14.1.14), and the predicted decrease
+$\Delta T_{w,p}(x_k, \cdot)$.
+
+It is `Optimization.ARqpData.ofComposite` for the Taylor series of $f$ and $c$ at $x_k$ and the
+weight $\sigma_k$. -/
 noncomputable abbrev arqpcData (f : E → ℝ) (c : E → F) (h : F → ℝ) (p : ℕ) (x : ℕ → E)
     (σ : ℕ → ℝ) (k : ℕ) : ARqpData E :=
   ARqpData.ofComposite (ftaylorSeries ℝ f (x k)) (ftaylorSeries ℝ c (x k)) h p (σ k)
 
-/-- The termination test of ARqpC at iteration `k`: the Step-1 test, or the Step-2 test
-`m̂_k(s_k) = m̂_k(0)`. -/
+/-- The termination test of ARqpC at iteration $k$: the Step-1 test holds, or the Step-2 test
+$\hat m_k(s_k) = \hat m_k(0)$ holds. -/
 abbrev arqpcStop (f : E → ℝ) (c : E → F) (h : F → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ)
     (x s : ℕ → E) (σ : ℕ → ℝ) (δ : ℕ → ℕ → ℝ) (d : ℕ → ℕ → E) (k : ℕ) : Prop :=
   IsARRun.Stop (arqpStop₁ P q ε (arqpcData f c h p x σ) δ d)
     (arqpStop₂ (arqpcData f c h p x σ) s) k
 
-/-- The outputs `(s, δ_s)` of the detailed Step 2 of ARqpC ([cartis2022evaluation],
-Algorithm 14.1.2) at the iterate `x` with weight `σ`: the abstract detailed Step 2
-(`IsDetailedStepOutput`) for the composite model `m̂` over the feasible steps `{s | x + s ∈ X}`,
-with displacements `{d | x + s + d ∈ X}`, the model decrements (14.1.14), and the halving set
-`J`. -/
+/-- The outputs of the detailed Step 2 of ARqpC, Algorithm 14.1.2 of [cartis2022evaluation]. At the
+iterate $x$ with weight $\sigma$, a step $s$ with radii $\delta^s$ is an **output** if some
+execution of the abstract detailed Step 2 returns $(s, \delta^s)$. The procedure works with the
+composite model $\hat m$, the feasible steps $\{s \mid x + s \in X\}$, the displacements
+$\{d \mid x + s + d \in X\}$ at a trial step $s$, the model decrements (14.1.14), and the
+halving set $J$.
+
+The abstract procedure is `Optimization.IsDetailedStepOutput`. An execution starts with some
+$\mu_0 \in (0, 1]$ and all radii equal to $1$. -/
 abbrev IsARqpCDetailedStep (f : E → ℝ) (c : E → F) (h : F → ℝ) (X : Set E) (p q : ℕ)
     (P : ARqpParams) (ε : ℕ → ℝ) (J : Set ℕ) (σ : ℝ) (x s : E) (δs : ℕ → ℝ) : Prop :=
   IsDetailedStepOutput
@@ -75,29 +95,42 @@ abbrev IsARqpCDetailedStep (f : E → ℝ) (c : E → F) (h : F → ℝ) (X : Se
     (fun j s d => compositeModelDecrement (ftaylorSeries ℝ f x) (ftaylorSeries ℝ c x) h p σ j s d)
     q P.ς P.θ ε J s δs
 
-/-- The orders at which the detailed Step 2 of ARqpC halves the radius ([cartis2022evaluation],
-Algorithm 14.1.2, Step 2.4.3): `j ≥ 2`, and every order if `h` or the feasible set `X` is not
-convex. -/
+/-- The orders at which the detailed Step 2 of ARqpC halves the radius, Step 2.4.3 of Algorithm
+14.1.2 of [cartis2022evaluation]: the set
+$$\{j \in \mathbb{N} \mid j \ge 2, \text{ or } h \text{ is not convex, or } X \text{ is not
+  convex}\}.$$
+-/
 def compositeHalvingSet (h : F → ℝ) (X : Set E) : Set ℕ :=
   {j | 2 ≤ j ∨ ¬ (ConvexOn ℝ univ h ∧ Convex ℝ X)}
 
-/-- **A run of ARqpC** ([cartis2022evaluation], Algorithm 14.1.1 with Step 2 computed by
-Algorithm 14.1.2; with a feasible set `X` the ARqpC-SC variant of §14.2) for `w = f + h ∘ c`,
-constants `P`, orders `1 ≤ q ≤ p`, accuracies `ε ∈ (0, 1]^q`, initial radii `δ₀ ∈ (0, 1]^q` and
-halving set `J`: the ARqp run `IsARqpRun` for `w` with the composite model data `arqpcData`
-(Step 1: (14.1.10); Step 2: (14.1.12)–(14.1.13); Steps 3–4: (14.1.15)–(14.1.16)), whose Step-2
-pair `(s_k, δ_{s_k})` is an output of the detailed Step 2 (`IsARqpCDetailedStep`) at every
-iteration reaching Step 2. The book's halving set is `compositeHalvingSet h X`. -/
+/-- **A run of ARqpC**, Algorithm 14.1.1 of [cartis2022evaluation] with Step 2 computed by Algorithm
+14.1.2; with a feasible set $X$ it is the variant ARqpC-SC of §14.2. Let $w = f + h \circ c$,
+let $P$ be the constants, and let $J$ be a halving set. The sequences form a **run** if
+
+* the orders satisfy $1 \le q \le p$, and $\varepsilon_j \in (0, 1]$ and
+  $\delta_{0,j} \in (0, 1]$ for $j = 1, \ldots, q$;
+* they form an ARqp run (`Optimization.IsARqpRun`) for $w$ with the composite model data
+  `Optimization.arqpcData`: Step 1 is (14.1.10), Step 2 is (14.1.12)–(14.1.13), and Steps 3–4
+  are (14.1.15)–(14.1.16);
+* at every reached iteration at which the Step-1 test fails, the Step-2 pair $(s_k, \delta^s_k)$
+  is an output of the detailed Step 2 (`Optimization.IsARqpCDetailedStep`).
+
+The halving set of the source is `Optimization.compositeHalvingSet h X`. -/
 structure IsARqpCRun (f : E → ℝ) (c : E → F) (h : F → ℝ) (X : Set E) (p q : ℕ) (P : ARqpParams)
     (J : Set ℕ) (ε δ₀ : ℕ → ℝ) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ)
     (d dm : ℕ → ℕ → E) : Prop where
+  /-- The order sought is at least one: $q \ge 1$. -/
   one_le_q : 1 ≤ q
+  /-- The order sought is at most the model order: $q \le p$. -/
   q_le_p : q ≤ p
+  /-- The accuracies satisfy $\varepsilon_j \in (0, 1]$ for $j = 1, \ldots, q$. -/
   ε_mem : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1
+  /-- The initial radii satisfy $\delta_{0,j} \in (0, 1]$ for $j = 1, \ldots, q$. -/
   δ₀_mem : ∀ j ∈ Finset.Icc 1 q, δ₀ j ∈ Ioc 0 1
-  /-- Steps 1–4: the ARqp run with composite model data. -/
+  /-- Steps 1–4: the sequences form an ARqp run with the composite model data. -/
   run : IsARqpRun (fun y => f y + h (c y)) X P q ε δ₀ (arqpcData f c h p x σ) x s σ δ δs d dm
-  /-- Step 2 is computed by the detailed Step 2. -/
+  /-- Step 2 is computed by the detailed Step 2: at every reached iteration at which the Step-1 test
+  fails, $(s_k, \delta^s_k)$ is an output of the detailed Step 2. -/
   detailed : ∀ k, (∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i) →
     ¬ arqpStop₁ P q ε (arqpcData f c h p x σ) δ d k →
     IsARqpCDetailedStep f c h X p q P ε J (σ k) (x k) (s k) (δs k)
@@ -108,24 +141,30 @@ section HalvingSet
 
 variable {j q : ℕ}
 
+/-- An order $j$ lies in the halving set if and only if $j \ge 2$, or $h$ and $X$ are not both
+convex. -/
 theorem mem_compositeHalvingSet :
     j ∈ compositeHalvingSet h X ↔ 2 ≤ j ∨ ¬ (ConvexOn ℝ univ h ∧ Convex ℝ X) := Iff.rfl
 
+/-- Every order $j \ge 2$ lies in the halving set. -/
 theorem mem_compositeHalvingSet_of_two_le (hj : 2 ≤ j) : j ∈ compositeHalvingSet h X :=
   Or.inl hj
 
+/-- If $h$ and $X$ are not both convex, then every order lies in the halving set. -/
 theorem mem_compositeHalvingSet_of_not_convex (hn : ¬ (ConvexOn ℝ univ h ∧ Convex ℝ X)) :
     j ∈ compositeHalvingSet h X :=
   Or.inr hn
 
-/-- For convex `h` and `X`, the first-order radius is never halved. -/
+/-- If $h$ is convex on $F$ and $X$ is convex, then the order $1$ is not in the halving set, so the
+first-order radius is never halved. -/
 theorem one_notMem_compositeHalvingSet (hh : ConvexOn ℝ univ h) (hX : Convex ℝ X) :
     1 ∉ compositeHalvingSet h X := by
   rintro (h2 | hn)
   · omega
   · exact hn ⟨hh, hX⟩
 
-/-- The orders `j ∈ [1, q]` outside the halving set are `j = 1`, with `h` and `X` convex. -/
+/-- If an order $j \in \{1, \ldots, q\}$ is not in the halving set, then $j = 1$, $h$ is convex on
+$F$ and $X$ is convex. -/
 theorem eq_one_of_notMem_compositeHalvingSet (hj : j ∈ Finset.Icc 1 q)
     (hjJ : j ∉ compositeHalvingSet h X) : j = 1 ∧ ConvexOn ℝ univ h ∧ Convex ℝ X := by
   rw [mem_compositeHalvingSet, not_or, not_le, not_not] at hjJ
@@ -133,7 +172,8 @@ theorem eq_one_of_notMem_compositeHalvingSet (hj : j ∈ Finset.Icc 1 q)
 
 end HalvingSet
 
-/-- The termination test of ARqpC: the Step-1 test or the Step-2 test. -/
+/-- The termination test of ARqpC at iteration $k$ holds if and only if the Step-1 test or the
+Step-2 test holds at $k$. -/
 theorem arqpcStop_iff {P : ARqpParams} {p q : ℕ} {x s : ℕ → E} {σ : ℕ → ℝ} {δ : ℕ → ℕ → ℝ}
     {d : ℕ → ℕ → E} {k : ℕ} :
     arqpcStop f c h P p q ε x s σ δ d k ↔
@@ -145,18 +185,20 @@ namespace IsARqpCRun
 variable {p q : ℕ} {P : ARqpParams} {J : Set ℕ} {δ₀ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ}
   {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E}
 
-/-- The iterates stay in `X` up to termination. -/
+/-- In a run of ARqpC, $x_k \in X$ for every reached iteration $k$. -/
 theorem mem (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i) : x k ∈ X :=
   hr.run.mem k hk
 
-/-- The radii stay in `(0, 1]` up to termination. -/
+/-- In a run of ARqpC, $0 < \delta_{k,j} \le 1$ for every reached iteration $k$ and every
+$j = 1, \ldots, q$. -/
 theorem delta_mem (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i) :
     ∀ j ∈ Finset.Icc 1 q, 0 < δ k j ∧ δ k j ≤ 1 :=
   hr.run.delta_mem hr.δ₀_mem k hk
 
-/-- At the orders outside the halving set the Step-2 radius is `1`. -/
+/-- In a run of ARqpC, let iteration $k$ be reached and let the Step-1 test fail at $k$. Then the
+Step-2 radius of every order $j \notin J$ is $\delta^s_{k,j} = 1$. -/
 theorem radius_eq_one (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h P p q ε x s σ δ d i)
     (h1 : ¬ arqpStop₁ P q ε (arqpcData f c h p x σ) δ d k) {j : ℕ} (hj : j ∉ J) :
@@ -165,13 +207,17 @@ theorem radius_eq_one (hr : IsARqpCRun f c h X p q P J ε δ₀ x s σ δ δs d 
 
 end IsARqpCRun
 
-/-- **Existence of a step for ARqpC** ([cartis2022evaluation], Lemma 14.1.3). In finite
-dimension, let `h` be subadditive with `h 0 = 0` and Lipschitz constant `L_h`, `X` closed,
-`x ∈ X`, `‖∇^i f(x)‖ ≤ K_f` and `‖∇^i c(x)‖ ≤ K_c` for `i ∈ [2, p]` (`K_f ≥ 1`, `K_c ≥ 0`),
-`σ > 0`, `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q`, and let the orders `j ∈ [1, q]` outside the halving set
-`J` be `j = 1` with `h` and `X` convex. Then the detailed Step 2 has an
-output `(s, δ_s)` with `δ_{s,j} = 1` for `j ∉ J` and, if `‖s‖ < 1`,
-`δ_{s,j} ≥ ςθ/(8(3(K_f + L_h K_c) + σ)) ε_j` for `j ∈ J ∩ [1, q]` ((14.1.24)). -/
+/-- **Lemma 14.1.3** of [cartis2022evaluation], existence of a step for ARqpC. Let $E$ be
+finite-dimensional, and let $h$ be subadditive with $h(0) = 0$ and Lipschitz continuous with
+constant $L_h$. Let $1 \le q \le p$, $\varepsilon_j \in (0, 1]$ for $j = 1, \ldots, q$, $X$
+closed and $x \in X$. Let $K_f \ge 1$ and $K_c \ge 0$ satisfy $\|\nabla^i f(x)\| \le K_f$ and
+$\|\nabla^i c(x)\| \le K_c$ for $i = 2, \ldots, p$, and let $\sigma > 0$. Let every order
+$j \in \{1, \ldots, q\}$ outside the halving set $J$ be $j = 1$, with $h$ convex on $F$ and $X$
+convex. Then the detailed Step 2 has an output $(s, \delta^s)$ such that $\delta^s_j = 1$ for
+every $j \notin J$ and, if $\|s\| < 1$,
+$$\delta^s_j \ge \frac{\varsigma \theta}{8 (3 (K_f + L_h K_c) + \sigma)} \varepsilon_j \qquad (j
+  \in J, \ 1 \le j \le q),$$
+as in (14.1.24). -/
 theorem exists_isARqpCDetailedStep [FiniteDimensional ℝ E] (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0) (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hX : IsClosed X) {x : E} (hx : x ∈ X)
@@ -267,9 +313,11 @@ theorem exists_isARqpCDetailedStep [FiniteDimensional ℝ E] (hLh : HasLipschitz
     field_simp
     ring
 
-/-- An output of the detailed Step 2 satisfies the Step-2 conditions of the ARqp run
-(`ARqpStep`) for suitable model displacements `dm` (finite dimension, `σ > 0`, `x ∈ X`, `X`
-closed, `h` Lipschitz). -/
+/-- Let $E$ be finite-dimensional, let $h$ be Lipschitz continuous with constant $L_h$, let $X$ be
+closed, $\sigma > 0$ and $x \in X$. If $(s, \delta^s)$ is an output of the detailed Step 2 of
+ARqpC at $x$ with weight $\sigma$, then there are model displacements $d^m$ such that
+$(s, \delta^s, d^m)$ satisfies the Step-2 conditions `Optimization.ARqpStep` of the ARqp run for
+$X$ and the composite model data at $x$. -/
 theorem IsARqpCDetailedStep.exists_arqpStep [FiniteDimensional ℝ E]
     (hLh : HasLipschitzConst h Lh) (hX : IsClosed X) {P : ARqpParams} {J : Set ℕ} {σ : ℝ}
     (hσ : 0 < σ) {x s : E} (hx : x ∈ X) {δs : ℕ → ℝ}
@@ -304,11 +352,14 @@ theorem IsARqpCDetailedStep.exists_arqpStep [FiniteDimensional ℝ E]
   · exact Or.inl hlong
   · exact Or.inr fun j hj => hdm j hj hshort
 
-/-- **Existence of ARqpC runs** ([cartis2022evaluation], Algorithms 14.1.1–14.1.2 are well
-defined; no smoothness is needed): in finite dimension, for any `f`, `c`, a Lipschitz subadditive
-`h` with `h 0 = 0`, a closed feasible set `X`, `x₀ ∈ X`, `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q`,
-`δ₀ ∈ (0, 1]^q` and a halving set `J` as in `exists_isARqpCDetailedStep`, there is an ARqpC run
-from `x₀` whose Step-2 pairs are outputs of the detailed Step 2 at every iteration reached. -/
+/-- **Existence of ARqpC runs**: Algorithms 14.1.1–14.1.2 of [cartis2022evaluation] are well
+defined, and no smoothness is needed. Let $E$ be finite-dimensional, let $f$ and $c$ be any
+functions, and let $h$ be subadditive with $h(0) = 0$ and Lipschitz continuous with constant
+$L_h$. Let $1 \le q \le p$, let $\varepsilon_j \in (0, 1]$ and $0 < \delta_{0,j} \le 1$ for
+$j = 1, \ldots, q$, let $X$ be closed and $x_0 \in X$, and let the halving set $J$ satisfy the
+hypothesis of `Optimization.exists_isARqpCDetailedStep`. Then there is an ARqp run from $x_0$
+for $w = f + h \circ c$ with the composite model data, whose Step-2 pair is an output of the
+detailed Step 2 at every reached iteration. -/
 theorem exists_isARqpRun_composite [FiniteDimensional ℝ E] (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0) (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p)
     {δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
@@ -349,10 +400,12 @@ theorem exists_isARqpRun_composite [FiniteDimensional ℝ E] (hLh : HasLipschitz
     obtain ⟨dm, hdm⟩ := hout.exists_arqpStep hLh hX hσ hy
     exact ⟨s, δs, dm, hdm, hout⟩
 
-/-- **Existence of ARqpC runs** (`IsARqpCRun`): under the hypotheses of
-`exists_isARqpRun_composite` (finite dimension, `h` Lipschitz and subadditive with `h 0 = 0`,
-`X` closed, `x₀ ∈ X`, `1 ≤ q ≤ p`, `ε, δ₀ ∈ (0, 1]^q`, and the orders `j ∈ [1, q]` outside `J`
-equal to `1` with `h` and `X` convex), there is an ARqpC run from `x₀`. -/
+/-- **Existence of ARqpC runs** (`Optimization.IsARqpCRun`). Let $E$ be finite-dimensional, let $h$
+be subadditive with $h(0) = 0$ and Lipschitz continuous with constant $L_h$, let
+$1 \le q \le p$, let $\varepsilon_j \in (0, 1]$ and $0 < \delta_{0,j} \le 1$ for
+$j = 1, \ldots, q$, let $X$ be closed and $x_0 \in X$, and let every order
+$j \in \{1, \ldots, q\}$ outside $J$ be $j = 1$, with $h$ convex on $F$ and $X$ convex. Then
+there is a run of ARqpC from $x_0$. -/
 theorem exists_isARqpCRun [FiniteDimensional ℝ E] (hLh : HasLipschitzConst h Lh)
     (hS : IsSubadditive h) (h0 : h 0 = 0) (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p)
     {δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
@@ -364,7 +417,11 @@ theorem exists_isARqpCRun [FiniteDimensional ℝ E] (hLh : HasLipschitzConst h L
     (c := c) (p := p) hLh hS h0 P hq hqp hε hδ₀ hX hx₀ hJ
   exact ⟨x, s, σ, δ, δs, d, dm, h0', ⟨hq, hqp, hε, hδ₀, hrun, fun k hk _ => hdet k hk⟩⟩
 
-/-- **Existence of ARqpC runs with the book's halving set** `compositeHalvingSet h X`. -/
+/-- **Existence of ARqpC runs with the halving set of the source.** Let $E$ be finite-dimensional,
+let $h$ be subadditive with $h(0) = 0$ and Lipschitz continuous with constant $L_h$, let
+$1 \le q \le p$, let $\varepsilon_j \in (0, 1]$ and $0 < \delta_{0,j} \le 1$ for
+$j = 1, \ldots, q$, and let $X$ be closed and $x_0 \in X$. Then there is a run of ARqpC from
+$x_0$ with the halving set `Optimization.compositeHalvingSet h X`. -/
 theorem exists_isARqpCRun_compositeHalvingSet [FiniteDimensional ℝ E]
     (hLh : HasLipschitzConst h Lh) (hS : IsSubadditive h) (h0 : h 0 = 0) (P : ARqpParams)
     (hq : 1 ≤ q) (hqp : q ≤ p) {δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
@@ -375,11 +432,15 @@ theorem exists_isARqpCRun_compositeHalvingSet [FiniteDimensional ℝ E]
   exists_isARqpCRun hLh hS h0 P hq hqp hε hδ₀ hX hx₀ fun _ hj hjJ =>
     eq_one_of_notMem_compositeHalvingSet hj hjJ
 
-/-- **Global model minimizers are outputs of the detailed Step 2 for `q = 1`** (convex `h` and
-`X`, any halving set): if `x + s ∈ X` and `s` globally minimizes the composite model over the
-feasible steps, then `(s, 1)` is an output: a long step is returned at once, and for a short step
-the order-`1` model decrements at `s` are nonpositive (first-order necessity for the model), so
-the displacement `0` passes the order-`1` test with radius `1`. -/
+/-- **Global model minimizers are outputs of the detailed Step 2 for $q = 1$.** Let $p \ge 1$, let
+$h$ be convex on $F$ and Lipschitz continuous with constant $L_h$, let $X$ be convex, let $J$ be
+any halving set, and let $\varepsilon_1 \ge 0$. If $x + s \in X$ and $s$ minimizes the composite
+model $\hat m$ over the feasible steps $\{t \mid x + t \in X\}$, then $(s, \delta^s)$ with all
+radii $\delta^s_j = 1$ is an output of the detailed Step 2 with $q = 1$.
+
+A long step is returned at once. For a short step, the model decrements of order $1$ at $s$ are
+nonpositive by first-order necessity for the model, so the displacement $0$ passes the test of
+order $1$ with radius $1$. -/
 theorem isARqpCDetailedStep_of_isMinOn (hp : 1 ≤ p) (hLh : HasLipschitzConst h Lh)
     (hconv : ConvexOn ℝ univ h) (hX : Convex ℝ X) (P : ARqpParams) (J : Set ℕ) (hε : 0 ≤ ε 1)
     {σ : ℝ} {x s : E} (hs : x + s ∈ X)

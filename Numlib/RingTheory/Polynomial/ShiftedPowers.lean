@@ -14,27 +14,44 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
-# The shifted powers `(X - y_j)^k` at distinct points
+# The shifted powers $(X - y_j)^k$ at distinct points
 
-Over a field of characteristic zero, the `k + 1` polynomials `(X - y_j)^k` at distinct points
-`y_0, …, y_k` are linearly independent (`Polynomial.linearIndependent_X_sub_C_pow`) — they are a
-basis of the polynomials of degree at most `k` — and on `k + 2` distinct points the kernel of
-`c ↦ ∑_j c_j (X - y_j)^k` is one-dimensional
-(`Polynomial.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`). The proof extracts the
-coefficients of a vanishing combination, which are the moments `∑_j c_j (-y_j)^p`, `p ≤ k`, a
-Vandermonde system in the `c_j`.
+Let $K$ be a field of characteristic zero and let $k \in \mathbb{N}$. For $k + 1$ distinct points
+$y_0, \dots, y_k \in K$, the $k + 1$ polynomials $(X - y_j)^k$ are linearly independent, so they
+form a basis of the polynomials of degree at most $k$. For $k + 2$ distinct points
+$y_0, \dots, y_{k+1}$, the coefficient vectors $c$ with $\sum_j c_j (X - y_j)^k = 0$ form a space of
+dimension at most one: two such vectors, the second nonzero, are proportional.
 
 This is the algebraic fact behind Schoenberg's characterization of the B-spline as the piecewise
-polynomial of minimal support (`Numlib/Approximation/BSpline.lean`).
+polynomial of minimal support, in `Numlib.Approximation.BSpline`.
+
+## Main results
+
+* `Polynomial.linearIndependent_X_sub_C_pow`: the polynomials $(X - y_j)^k$ at $k + 1$ distinct
+  points are linearly independent.
+* `Polynomial.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`: on $k + 2$ distinct points, two
+  vanishing combinations $\sum_j c_j (X - y_j)^k = 0$, the second nontrivial, are proportional.
+
+## Proof outline
+
+By the binomial theorem, the coefficients of $\sum_j c_j (X - y_j)^k$ are, up to nonzero binomial
+factors, the moments $\sum_j c_j (-y_j)^p$ for $p = 0, \dots, k$. A vanishing combination therefore
+solves a Vandermonde system in the $c_j$, and the Vandermonde matrix at distinct points is
+invertible.
 -/
 
 open Polynomial
 
 namespace Polynomial
 
-/-- **The `k + 1` powers `(X - y_j)^k` at distinct points are linearly independent**: extracting
-the coefficients of a vanishing combination gives the vanishing of the moments
-`∑_j c_j (-y_j)^p`, `p ≤ k`, a Vandermonde system in the `c_j`. -/
+/-- The **shifted powers at $k + 1$ distinct points are linearly independent**. Let $K$ be a field
+of characteristic zero, let $k \in \mathbb{N}$, and let $y_0, \dots, y_k \in K$ be distinct.
+Then the $k + 1$ polynomials
+$$(X - y_0)^k, \dots, (X - y_k)^k$$
+are linearly independent over $K$.
+
+The coefficients of a vanishing combination $\sum_j c_j (X - y_j)^k$ give the vanishing of the
+moments $\sum_j c_j (-y_j)^p$ for $p \le k$, a Vandermonde system in the $c_j$. -/
 theorem linearIndependent_X_sub_C_pow {K : Type*} [Field K] [CharZero K] {k : ℕ}
     {y : Fin (k + 1) → K} (hy : Function.Injective y) :
     LinearIndependent K fun j => (X - C (y j)) ^ k := by
@@ -62,8 +79,12 @@ theorem linearIndependent_X_sub_C_pow {K : Type*} [Field K] [CharZero K] {k : �
     Matrix.det_vandermonde_ne_zero_iff.mpr (neg_injective.comp hy)
   exact congrFun (Matrix.eq_zero_of_vecMul_eq_zero hdet hvm)
 
-/-- **The kernel of `c ↦ ∑_j c_j (X - y_j)^k` on `k + 2` distinct points is one-dimensional**:
-two vanishing combinations, the second nontrivial, are proportional. -/
+/-- The **vanishing combinations of the shifted powers at $k + 2$ distinct points form a space of
+dimension at most one**. Let $K$ be a field of characteristic zero, let $k \in \mathbb{N}$, and
+let $y_0, \dots, y_{k+1} \in K$ be distinct. Let $c, c' \in K^{k+2}$ satisfy
+$$\sum_{j=0}^{k+1} c_j (X - y_j)^k = 0 \quad \text{and} \quad \sum_{j=0}^{k+1} c'_j (X -
+  y_j)^k = 0,$$
+with $c' \neq 0$. Then $c = \lambda c'$ for some $\lambda \in K$. -/
 theorem exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero {K : Type*} [Field K] [CharZero K]
     {k : ℕ} {y : Fin (k + 2) → K} (hy : Function.Injective y) {c c' : Fin (k + 2) → K}
     (hc : ∑ j, C (c j) * (X - C (y j)) ^ k = 0)

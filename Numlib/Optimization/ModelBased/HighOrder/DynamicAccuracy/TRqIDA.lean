@@ -11,37 +11,55 @@ import Numlib.Optimization.ModelBased.HighOrder.TRq
 import Numlib.Optimization.ModelBased.InexactRatio
 
 /-!
-# TRqIDA: a trust-region method with inexact derivatives and implicit dynamic accuracy
+# The trust-region method TRqIDA with inexact derivatives
 
-The trust-region method TRqIDA ([cartis2022evaluation], Algorithm 13.1.1) looks for
-`(ε, δ)`-approximate `q`-th order minimizers using exact function values and inexact derivative
-jets `D_k` with `‖D_k i - ∇^i f(x_k)‖ ≤ κ_{∇,i} h_{k,i}` (13.1.2), for constants `κ_{∇,i}`
-unknown to the method and accuracies `h_{k,i}` controlled by it: an iteration whose step is too
-short for the current accuracies (13.1.9) only reduces them (it is *accuracy-improving*).
+The trust-region method TRqIDA of [cartis2022evaluation], Algorithm 13.1.1, looks for
+$(\varepsilon, \delta)$-approximate $q$-th order minimizers. It uses exact function values and
+inexact derivatives $\overline{\nabla}^i f(x_k) = D_{k,i}$ with
+$$\|\overline{\nabla}^i f(x_k) - \nabla^i f(x_k)\| \le \kappa_{\nabla,i} h_{k,i} \qquad (1 \le i \le
+  q), \qquad (13.1.2)$$
+where the constants $\kappa_{\nabla,i}$ are unknown to the method and the accuracies $h_{k,i}$ are
+controlled by it. Write $\overline{\Delta T}_{f,j}(x_k, s)$ for the decrease of the Taylor
+polynomial of order $j$ built from the inexact derivatives, and
+$\delta_k = \min(\Delta_k, \vartheta)$ for the optimality radius. An iteration is
+**accuracy-improving** if the inequality (13.1.14) holds at no order, or if its step is too short
+for the current accuracies, in the sense that the test (13.1.9) fails; such an iteration only
+reduces the accuracies. The other iterations are **trial iterations**. Among the iterations
+$0, \dots, k$, the sets $\mathcal{T}_k$, $\mathcal{S}_k$ and $\mathcal{A}_k$ are the trial, the
+successful and the accuracy-improving iterations.
 
-The analysis is stated for runs on a feasible set `X` (Step-1 displacements and trial points
-in `{e | x_k + e ∈ X}`, [cartis2022evaluation] §14.2) under the smoothness hypothesis
-`LipschitzDerivsAnchored f C A 0 q L` with normalized constants `L_j ≥ 1`, `X ⊆ C` and an anchor set
-`A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`: the objective does not increase along the runs, so the iterates are
-anchors, derivative estimates are made at iterates, and trial points are related to them by
-Taylor's theorem anchored at the iterate. The unconstrained methods of Chapter 13 are the case
-`X = C = A = univ`.
+The analysis holds for runs on a feasible set $X$, as in §14.2 of the source: the displacements of
+Step 1 and the trial points lie in $\{e : x_k + e \in X\}$. The smoothness hypothesis is
+`LipschitzDerivsAnchored f C A 0 q L` with normalized constants $L_j \ge 1$, $X \subseteq C$, and a
+set of anchors $A \supseteq \{y \in X : f(y) \le f(x_0)\}$. The objective does not increase along a
+run, so the iterates are anchors. The derivatives are estimated at the iterates, and Taylor's
+theorem anchored at the iterate relates the trial points to them. The unconstrained methods of
+Chapter 13 are the case $X = C = A = E$.
 
 ## Main definitions
 
-* `TRqIDAParams`: the constants of Step 0;
-* `TRqDAStep`: one iteration (Steps 1, 2, 4, 5) given the value of the ratio, shared with TRqEDA;
-* `IsTRqIDARun`: a run on a feasible set with the exact-value ratio (13.1.16); `trqIDATest`: the
-  (unobservable) approximate-optimality test.
+* `Optimization.TRqIDAParams`: the constants of Step 0.
+* `Optimization.TRqDAStep`: one iteration (Steps 1, 2, 4 and 5) for a given value of the ratio,
+  shared with TRqEDA.
+* `Optimization.trqIDATest`: the approximate optimality test, which the method cannot observe.
+* `Optimization.IsTRqIDARun`: a run on a feasible set with the ratio (13.1.16) of exact function
+  values.
 
 ## Main results
 
-* `trqDA_card_trial_le` (Lemma 13.1.1), `TRqDAStep.trqGap_ge` (Lemma 13.1.2),
-  `trqDA_delta_ge` (the radius bound behind Lemma 13.1.4);
-* `IsTRqIDARun.ratio_ge`, `.delta_ge`, `.decrease_ge`, `.not_acc_of_le`, `.trqIDATest_of_pass`
-  (Lemmas 13.1.3–13.1.7), `.card_acc_le` (the accuracy-improving iterations),
-  `.complexity` (Theorem 13.1.8), `.le_card_succ` (Lemma 14.2.3, TRqIDA row);
-* `exists_trqDA_run`: runs exist for every oracle (in finite dimension).
+* `Optimization.trqDA_card_trial_le`: Lemma 13.1.1, the number of trial iterations.
+* `Optimization.TRqDAStep.trqGap_ge`: Lemma 13.1.2, the decrease at a trial iteration.
+* `Optimization.trqDA_delta_ge`: the bound on the radius behind Lemma 13.1.4.
+* `Optimization.IsTRqIDARun.ratio_ge`: Lemma 13.1.3, very successful iterations.
+* `Optimization.IsTRqIDARun.delta_ge`: Lemma 13.1.4, the radius stays bounded below.
+* `Optimization.IsTRqIDARun.decrease_ge`: Lemma 13.1.5, sufficient decrease.
+* `Optimization.IsTRqIDARun.not_acc_of_le`: Lemma 13.1.6, accurate derivatives give trial
+  iterations.
+* `Optimization.IsTRqIDARun.trqIDATest_of_pass`: Lemma 13.1.7, certification by the test of Step 1.
+* `Optimization.IsTRqIDARun.card_acc_le`: the number of accuracy-improving iterations.
+* `Optimization.IsTRqIDARun.complexity`: Theorem 13.1.8, the evaluation complexity of TRqIDA.
+* `Optimization.IsTRqIDARun.le_card_succ`: Lemma 14.2.3 for TRqIDA, the number of iterations.
+* `Optimization.exists_trqDA_run`: in finite dimension, runs exist for every derivative oracle.
 -/
 
 open Set Metric Finset
@@ -51,51 +69,70 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-! ### TRqIDA: constants and one iteration -/
+/-! ### Constants and one iteration -/
 
-/-- The constants of Algorithm 13.1.1 (TRqIDA, [cartis2022evaluation], Step 0): the trust-region
-constants (`0 < η₁ ≤ η₂ < 1`, `0 < γ₁ ≤ γ₂ < 1 ≤ γ₃`, `Δ₀ > 0`), the criticality order `q ≥ 1`,
-`ϑ ∈ (0, 1]` with `ϑ ≤ Δ₀ ≤ Δ_max`, `ς ∈ (0, 1]`, `γ_h ∈ (0, 1)`, `κ_s > 0`, and initial
-accuracies `0 < h_{0,i} ≤ κ_h` (`i ∈ [1, q]`). The tolerance-dependent requirement
-`ϑ ≥ ε_min` is part of the run predicate. -/
+/-- The constants of TRqIDA, [cartis2022evaluation], Algorithm 13.1.1, Step 0. An element consists
+of the trust-region constants `Optimization.TRParams` ($0 < \eta_1 \le \eta_2 < 1$,
+$0 < \gamma_1 \le \gamma_2 < 1 \le \gamma_3$, $\Delta_0 > 0$), the criticality order $q \ge 1$,
+a threshold $\vartheta \in (0, 1]$ with $\vartheta \le \Delta_0 \le \Delta_{\max}$, a fraction
+$\varsigma \in (0, 1]$, an accuracy reduction factor $\gamma_h \in (0, 1)$, a constant
+$\kappa_s > 0$, and initial accuracies $0 < h_{0,i} \le \kappa_h$ for $1 \le i \le q$.
+
+The requirement $\vartheta \ge \varepsilon_{\min}$ depends on the tolerances, so it is part of
+the run predicate. -/
 structure TRqIDAParams extends TRParams where
-  /-- The criticality order. -/
+  /-- The criticality order $q$. -/
   q : ℕ
-  /-- The threshold on the optimality radius. -/
+  /-- The threshold $\vartheta$ on the optimality radius. -/
   ϑ : ℝ
-  /-- The maximal trust-region radius. -/
+  /-- The maximal trust-region radius $\Delta_{\max}$. -/
   Δmax : ℝ
-  /-- The accuracy reduction factor. -/
+  /-- The accuracy reduction factor $\gamma_h$. -/
   γh : ℝ
-  /-- The constant of the accuracy test (13.1.9). -/
+  /-- The constant $\kappa_s$ of the accuracy test (13.1.9). -/
   κs : ℝ
-  /-- The bound on the initial accuracies. -/
+  /-- The bound $\kappa_h$ on the initial accuracies. -/
   κh : ℝ
-  /-- The fraction of the measure achieved by the Step-1 displacements. -/
+  /-- The fraction $\varsigma$ of the criticality measure that the displacements of Step 1 achieve.
+  -/
   ς : ℝ
-  /-- The initial requested accuracies. -/
+  /-- The initial requested accuracies $h_{0,i}$. -/
   h₀ : ℕ → ℝ
+  /-- The order is positive: $q \ge 1$. -/
   one_le_q : 1 ≤ q
+  /-- The threshold is positive: $\vartheta > 0$. -/
   ϑ_pos : 0 < ϑ
+  /-- The threshold is at most one: $\vartheta \le 1$. -/
   ϑ_le_one : ϑ ≤ 1
+  /-- The threshold is at most the initial radius: $\vartheta \le \Delta_0$. -/
   ϑ_le_Δ₀ : ϑ ≤ Δ₀
+  /-- The initial radius is at most the maximal radius: $\Delta_0 \le \Delta_{\max}$. -/
   Δ₀_le_Δmax : Δ₀ ≤ Δmax
+  /-- The fraction is positive: $\varsigma > 0$. -/
   ς_pos : 0 < ς
+  /-- The fraction is at most one: $\varsigma \le 1$. -/
   ς_le_one : ς ≤ 1
+  /-- The accuracy reduction factor is positive: $\gamma_h > 0$. -/
   γh_pos : 0 < γh
+  /-- The accuracy reduction factor is less than one: $\gamma_h < 1$. -/
   γh_lt_one : γh < 1
+  /-- The constant of the accuracy test is positive: $\kappa_s > 0$. -/
   κs_pos : 0 < κs
+  /-- The initial accuracies are positive: $h_{0,i} > 0$ for $1 \le i \le q$. -/
   h₀_pos : ∀ i ∈ Finset.Icc 1 q, 0 < h₀ i
+  /-- The initial accuracies are bounded: $h_{0,i} \le \kappa_h$ for $1 \le i \le q$. -/
   h₀_le : ∀ i ∈ Finset.Icc 1 q, h₀ i ≤ κh
 
 namespace TRqIDAParams
 
 variable (P : TRqIDAParams)
 
+/-- The bound on the initial accuracies is positive: $\kappa_h > 0$. -/
 theorem kappaH_pos : 0 < P.κh :=
   (P.h₀_pos 1 (Finset.mem_Icc.2 ⟨le_rfl, P.one_le_q⟩)).trans_le
     (P.h₀_le 1 (Finset.mem_Icc.2 ⟨le_rfl, P.one_le_q⟩))
 
+/-- The order $1$ lies in $\{1, \dots, q\}$. -/
 theorem one_mem_Icc : 1 ∈ Finset.Icc 1 P.q := Finset.mem_Icc.2 ⟨le_rfl, P.one_le_q⟩
 
 end TRqIDAParams
@@ -106,68 +143,84 @@ variable {X : Set E} {P : TRqIDAParams} {ε : ℕ → ℝ} {x : ℕ → E} {Δ :
   {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd : ℕ → ℕ → E} {jk : ℕ → ℕ}
   {s : ℕ → E} {acc : ℕ → Prop} {ρ : ℕ → ℝ} {k : ℕ}
 
-/-- The optimality radius `δ_k = min(Δ_k, ϑ)` of TRqIDA (Step 1). -/
+/-- The optimality radius $\delta_k = \min(\Delta_k, \vartheta)$ of TRqIDA, Step 1. -/
 noncomputable abbrev trqDARadius (P : TRqIDAParams) (Δ : ℕ → ℝ) (k : ℕ) : ℝ := min (Δ k) P.ϑ
 
-/-- The Step-1.2 test (13.1.14) at order `j` fails to certify optimality:
-`\overline{ΔT}_{f,j}(x_k, d_{k,j}) > ½ ς ε_j δ_k^j / j!`. -/
+/-- The test of Step 1.2 **fails to certify** optimality at order $j$ and iteration $k$ if the
+inequality (13.1.14) holds:
+$$\overline{\Delta T}_{f,j}(x_k, d_{k,j}) > \frac{\varsigma \varepsilon_j \delta_k^j}{2 \,
+  j!}.$$
+-/
 def trqDAFail (P : TRqIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (Δ : ℕ → ℝ) (dd : ℕ → ℕ → E) (k j : ℕ) : Prop :=
   P.ς * ε j * trqDARadius P Δ k ^ j / j ! / 2 < (D k).taylorDecrement j (dd k j)
 
-/-- Step 2 of TRqIDA ((13.1.15) and the accuracy test (13.1.9)), entered at the least order `j_k`
-at which (13.1.14) holds: `s_k ∈ B_{Δ_k}` (feasible) does at least as well as `d_k = d_{k,j_k}`
-on the order-`j_k` inexact decrement, and the iteration is accuracy-improving iff (13.1.9)
-fails for some `i ∈ [1, q]`. -/
+/-- Step 2 of TRqIDA, (13.1.15) and the accuracy test (13.1.9). The order $j_k$ is the least order
+in $\{1, \dots, q\}$ at which (13.1.14) holds. The step $s_k$ satisfies $\|s_k\| \le \Delta_k$
+and $x_k + s_k \in X$, and it does at least as well as $d_k = d_{k,j_k}$ on the inexact
+decrement of order $j_k$. The iteration is accuracy-improving if and only if (13.1.9) fails for
+some $i$ with $1 \le i \le q$. -/
 structure TRqStep2 (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → E) (Δ : ℕ → ℝ)
     (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ)
     (s : ℕ → E) (acc : ℕ → Prop) (k : ℕ) : Prop where
-  /-- `j_k ∈ [1, q]`. -/
+  /-- The order $j_k$ lies in $\{1, \dots, q\}$. -/
   jk_mem : jk k ∈ Finset.Icc 1 P.q
-  /-- (13.1.14) holds at `j_k`. -/
+  /-- The inequality (13.1.14) holds at $j_k$. -/
   fail : trqDAFail P ε D Δ dd k (jk k)
-  /-- `j_k` is the least such order. -/
+  /-- The order $j_k$ is the least order at which (13.1.14) holds. -/
   pass_lt : ∀ j ∈ Finset.Icc 1 P.q, j < jk k → ¬ trqDAFail P ε D Δ dd k j
-  /-- The trial point is feasible. -/
+  /-- The trial point is feasible: $x_k + s_k \in X$. -/
   mem : x k + s k ∈ X
-  /-- `s_k ∈ B_{Δ_k}`. -/
+  /-- The step lies in the trust region: $\|s_k\| \le \Delta_k$. -/
   norm_le : ‖s k‖ ≤ Δ k
-  /-- (13.1.15). -/
+  /-- The inequality (13.1.15): $\overline{\Delta T}_{f,j_k}(x_k, d_{k,j_k}) \le \overline{\Delta
+  T}_{f,j_k}(x_k, s_k)$. -/
   dec_le : (D k).taylorDecrement (jk k) (dd k (jk k)) ≤ (D k).taylorDecrement (jk k) (s k)
-  /-- Branching to Step 5 iff the accuracy test (13.1.9) fails. -/
+  /-- The iteration branches to Step 5 if and only if the accuracy test (13.1.9) fails:
+  $\kappa_s \|s_k\|^{q-i+1} < h_{k,i}$ for some $i$ with $1 \le i \le q$. -/
   acc_iff : acc k ↔ ∃ i ∈ Finset.Icc 1 P.q, P.κs * ‖s k‖ ^ (P.q - i + 1) < h k i
 
-/-- **One iteration of TRqIDA / TRqEDA** ([cartis2022evaluation], Algorithm 13.1.1, Steps 1, 2,
-4, 5) on the feasible set `X`, given the ratio `ρ k` of Step 3: Step-1 displacements `d_{k,j}` with
-(13.1.13) for every order; if (13.1.14) fails at every order the iteration is accuracy-improving,
-otherwise Step 2 (`TRqStep2`); a trial iteration (`¬ acc k`) accepts or rejects the step and updates
-the radius by (13.1.17) (capped by `Δ_max`), keeps the accuracies, and keeps the derivative
-estimates when the step is rejected; an accuracy-improving iteration keeps `x_k` and `Δ_k` and
-multiplies the accuracies by `γ_h` (13.1.18). -/
+/-- **One iteration of TRqIDA or TRqEDA**, [cartis2022evaluation], Algorithm 13.1.1, Steps 1, 2, 4
+and 5, on the feasible set $X$, for a given value $\rho_k$ of the ratio of Step 3. The iteration
+$k$ satisfies:
+* the displacements $d_{k,j}$ of Step 1 satisfy (13.1.13) at every order: they are approximate
+  optimality displacements with the fraction $\varsigma$ for
+  $\overline{\Delta T}_{f,j}(x_k, \cdot)$, the radius $\delta_k$ and the feasible displacements
+  $\{e : x_k + e \in X\}$;
+* if (13.1.14) fails at every order, the iteration is accuracy-improving; otherwise Step 2
+  (`Optimization.TRqStep2`) holds;
+* a trial iteration accepts or rejects the step and updates the radius by (13.1.17), with
+  $\Delta_{k+1} \le \Delta_{\max}$; it keeps the accuracies, and it keeps the derivative
+  estimates when the step is rejected;
+* an accuracy-improving iteration keeps $x_k$ and $\Delta_k$ and multiplies the accuracies by
+  $\gamma_h$, (13.1.18). -/
 structure TRqDAStep (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → E) (Δ : ℕ → ℝ)
     (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ)
     (s : ℕ → E) (acc : ℕ → Prop) (ρ : ℕ → ℝ) (k : ℕ) : Prop where
-  /-- (13.1.13): `ς`-approximate optimality displacements at every order. -/
+  /-- The inequality (13.1.13): at every order $1 \le j \le q$, $d_{k,j}$ is an approximate
+  optimality displacement with the fraction $\varsigma$. -/
   witness : ∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((D k).taylorDecrement j)
     (trqDARadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
-  /-- Step 1 → Step 5 when (13.1.14) fails at every order. -/
+  /-- Step 1 branches to Step 5 when (13.1.14) fails at every order. -/
   acc_of_pass : (∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j) → acc k
-  /-- Step 2 when (13.1.14) holds at some order. -/
+  /-- Step 2 holds when (13.1.14) holds at some order. -/
   step2 : (∃ j ∈ Finset.Icc 1 P.q, trqDAFail P ε D Δ dd k j) →
     TRqStep2 X P ε x Δ h D dd jk s acc k
-  /-- Steps 3–4 on a trial iteration. -/
+  /-- Steps 3 and 4 on a trial iteration: the acceptance rule and the radius update
+  `Optimization.TRAcceptance` for the ratio $\rho_k$. -/
   accept : ¬ acc k → TRAcceptance P.toTRParams (ρ k) (x k) (s k) (x (k + 1)) (Δ k) (Δ (k + 1))
-  /-- The radius cap of (13.1.17). -/
+  /-- The radius cap of (13.1.17): $\Delta_{k+1} \le \Delta_{\max}$ on a trial iteration. -/
   le_Δmax : ¬ acc k → Δ (k + 1) ≤ P.Δmax
-  /-- The accuracies are kept on trial iterations. -/
+  /-- A trial iteration keeps the accuracies: $h_{k+1} = h_k$. -/
   h_trial : ¬ acc k → h (k + 1) = h k
-  /-- No new derivative estimates at an unchanged iterate. -/
+  /-- A rejected trial iteration ($\rho_k < \eta_1$) keeps the derivative estimates:
+  $D_{k+1} = D_k$. -/
   D_unsucc : ¬ acc k → ρ k < P.η₁ → D (k + 1) = D k
-  /-- Step 5 keeps the iterate. -/
+  /-- Step 5 keeps the iterate: $x_{k+1} = x_k$. -/
   x_acc : acc k → x (k + 1) = x k
-  /-- Step 5 keeps the radius. -/
+  /-- Step 5 keeps the radius: $\Delta_{k+1} = \Delta_k$. -/
   Δ_acc : acc k → Δ (k + 1) = Δ k
-  /-- Step 5 (13.1.18). -/
+  /-- Step 5, (13.1.18): $h_{k+1,i} = \gamma_h h_{k,i}$ for all $i$. -/
   h_acc : acc k → ∀ i, h (k + 1) i = P.γh * h k i
 
 namespace TRqDAStep
@@ -175,45 +228,50 @@ namespace TRqDAStep
 variable (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k)
 include hs
 
-/-- A trial iteration went through Step 2. -/
+/-- At a trial iteration, Step 2 holds. -/
 theorem step2_of_not_acc (hk : ¬ acc k) : TRqStep2 X P ε x Δ h D dd jk s acc k := by
   refine hs.step2 ?_
   by_contra hc
   push Not at hc
   exact hk (hs.acc_of_pass hc)
 
-/-- The radius update of a trial iteration. -/
+/-- At a trial iteration, the radius follows the trust-region update for the ratio $\rho_k$. -/
 theorem update (hk : ¬ acc k) :
     TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ (ρ k) (Δ k) (Δ (k + 1)) :=
   (hs.accept hk).update
 
-/-- The radius either is kept or follows the update. -/
+/-- The radius is kept, $\Delta_{k+1} = \Delta_k$, or follows the trust-region update for the ratio
+$\rho_k$. -/
 theorem delta_succ_eq_or_update : Δ (k + 1) = Δ k ∨
     TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ (ρ k) (Δ k) (Δ (k + 1)) := by
   by_cases hk : acc k
   · exact Or.inl (hs.Δ_acc hk)
   · exact Or.inr (hs.update hk)
 
-/-- The iterate is kept unless the iteration is successful. -/
+/-- Unless the iteration is a successful trial iteration, the iterate is kept: $x_{k+1} = x_k$. -/
 theorem iterate_succ_eq (hk : ¬ (¬ acc k ∧ P.η₁ ≤ ρ k)) : x (k + 1) = x k := by
   by_cases ha : acc k
   · exact hs.x_acc ha
   · exact (hs.accept ha).eq_self (not_le.1 fun h' => hk ⟨ha, h'⟩)
 
-/-- A successful iteration moves to the trial point. -/
+/-- A successful trial iteration ($\rho_k \ge \eta_1$) moves to the trial point:
+$x_{k+1} = x_k + s_k$. -/
 theorem iterate_succ_eq_add (hk : ¬ acc k) (hρ : P.η₁ ≤ ρ k) : x (k + 1) = x k + s k :=
   (hs.accept hk).eq_add hρ
 
-/-- The iterates stay feasible: `x_k ∈ X` implies `x_{k+1} ∈ X`. -/
+/-- The iterates stay feasible: $x_k \in X$ implies $x_{k+1} \in X$. -/
 theorem mem_succ (hx : x k ∈ X) : x (k + 1) ∈ X := by
   by_cases hc : ¬ acc k ∧ P.η₁ ≤ ρ k
   · rw [hs.iterate_succ_eq_add hc.1 hc.2]; exact (hs.step2_of_not_acc hc.1).mem
   · rw [hs.iterate_succ_eq hc]; exact hx
 
-/-- One iteration only involves the data at iterations `k` and `k + 1`: the step predicate at `k`
-transfers to sequences whose iterates, radii, accuracies and estimates at `k'` and `k' + 1`, and
-whose displacements, order, step, flag and ratio at `k'`, are those of iterations `k` and `k + 1`
-(used to splice runs). -/
+/-- One iteration depends only on the data at the iterations $k$ and $k + 1$. If other sequences
+have, at $k'$ and $k' + 1$, the same iterates, radii, accuracies and derivative estimates as the
+given ones at $k$ and $k + 1$, and at $k'$ the same displacements, order, step, flag and ratio
+as at $k$, then the step predicate at $k$ gives the step predicate of the other sequences at
+$k'$.
+
+This is used to splice runs. -/
 theorem congr {x' : ℕ → E} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ}
     {D' : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd' : ℕ → ℕ → E} {jk' : ℕ → ℕ} {s' : ℕ → E}
     {acc' : ℕ → Prop} {ρ' : ℕ → ℝ} {k' : ℕ} (hx : x' k' = x k) (hx1 : x' (k' + 1) = x (k + 1))
@@ -248,11 +306,15 @@ section Splice
 variable {f : E → ℝ} {κ : ℕ} {x' : ℕ → E} {Δ' : ℕ → ℝ} {h' : ℕ → ℕ → ℝ} {dd' : ℕ → ℕ → E}
   {jk' : ℕ → ℕ} {s' : ℕ → E} {acc' : ℕ → Prop}
 
-/-- **Splicing TRqIDA iterations with exact Taylor data**: if the first `κ` iterations of some
-sequences are TRqIDA steps (with `D_k` the Taylor jet of `f` at `x_k` and the ratio (13.1.16)),
-and other sequences starting at their state at `κ` are TRqIDA steps at every iteration, then the
-sequences following the first ones before `κ` and the second ones (shifted by `κ`) from `κ` on
-are TRqIDA steps at every iteration. -/
+/-- **Splicing TRqIDA iterations with exact Taylor data**. Consider sequences whose first $\kappa$
+iterations are TRqIDA steps, with $D_k$ the Taylor series of $f$ at $x_k$ and the ratio
+(13.1.16). Consider second sequences that start at the iterate, the radius and the accuracies of
+the first ones at $\kappa$, and are TRqIDA steps at every iteration. Then the sequences that
+follow the first ones before $\kappa$ and the second ones, shifted by $\kappa$, from $\kappa$ on
+are TRqIDA steps at every iteration.
+
+The spliced sequences are `Nat.seqAppend κ`, which takes the value $a_k$ for $k < \kappa$ and
+$b_{k - \kappa}$ for $k \ge \kappa$. -/
 theorem TRqDAStep.seqAppend
     (hpre : ∀ k < κ, TRqDAStep X P ε x Δ h (fun i => ftaylorSeries ℝ f (x i)) dd jk s acc
       (trqRatio f (fun i => ftaylorSeries ℝ f (x i)) x s jk) k)
@@ -274,14 +336,15 @@ theorem TRqDAStep.seqAppend
 
 end Splice
 
-/-- The iterates of TRqIDA/TRqEDA sequences starting in `X` stay in `X`. -/
+/-- If the iterations $i < k$ are TRqIDA or TRqEDA steps and $x_0 \in X$, then $x_k \in X$. -/
 theorem trqDA_mem (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i) (hx0 : x 0 ∈ X) :
     x k ∈ X := by
   induction k with
   | zero => exact hx0
   | succ k ih => exact (hstep k k.lt_succ_self).mem_succ (ih fun i hi => hstep i (by omega))
 
-/-- The radii of TRqIDA/TRqEDA sequences stay positive. -/
+/-- If the iterations $i < k$ are TRqIDA or TRqEDA steps and $\Delta_0$ is the initial radius of the
+constants, then $\Delta_k > 0$. -/
 theorem trqDA_delta_pos (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i)
     (hΔ0 : Δ 0 = P.Δ₀) : 0 < Δ k := by
   induction k with
@@ -293,9 +356,9 @@ theorem trqDA_delta_pos (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s ac
     · rw [hk.Δ_acc ha]; exact hΔ
     · exact (hk.accept ha).pos hΔ
 
-/-- **Invariants of TRqIDA/TRqEDA sequences**: if the step predicate holds at every iteration
-`i < k`, `Δ_0 = Δ₀` and `h_0 = h₀`, then `0 < Δ_k ≤ Δ_max` and `0 < h_{k,i} ≤ κ_h` for
-`i ∈ [1, q]`. -/
+/-- **Invariants of TRqIDA and TRqEDA**. If the iterations $i < k$ are steps of the method, and
+$\Delta_0$ and $h_0$ are the initial radius and accuracies of the constants, then
+$0 < \Delta_k \le \Delta_{\max}$ and $0 < h_{k,i} \le \kappa_h$ for $1 \le i \le q$. -/
 theorem trqDA_invariants (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i)
     (hΔ0 : Δ 0 = P.Δ₀) (hh0 : h 0 = P.h₀) :
     (0 < Δ k ∧ Δ k ≤ P.Δmax) ∧ ∀ i ∈ Finset.Icc 1 P.q, 0 < h k i ∧ h k i ≤ P.κh := by
@@ -313,16 +376,21 @@ theorem trqDA_invariants (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s a
       exact ⟨mul_pos P.γh_pos h1, (mul_le_of_le_one_left h1.le P.γh_lt_one.le).trans h2⟩
     · exact ⟨⟨(hk.accept ha).pos hΔ, hk.le_Δmax ha⟩, by rw [hk.h_trial ha]; exact hh⟩
 
-/-- The optimality radius lies in `(0, 1]`. -/
+/-- If $\Delta_k > 0$, then the optimality radius satisfies $0 < \delta_k \le 1$. -/
 theorem trqDARadius_mem (hΔ : 0 < Δ k) : 0 < trqDARadius P Δ k ∧ trqDARadius P Δ k ≤ 1 :=
   ⟨lt_min hΔ P.ϑ_pos, (min_le_right _ _).trans P.ϑ_le_one⟩
 
 /-! ### Counting the trial iterations -/
 
-/-- **Counting the trial iterations** (Lemma 13.1.1 of [cartis2022evaluation]): for sequences
-satisfying the TRqIDA step predicate at every iteration `i ≤ k` with `Δ_0 = Δ₀`, if
-`0 < Δ_min ≤ Δ_{k+1}`, then `|𝒯_k| ≤ |𝒮_k| (1 + log γ₃/|log γ₂|) + |log (Δ_min/Δ₀)|/|log γ₂|`
-(13.1.22), where `𝒯_k = {i ≤ k | ¬ acc i}` and `𝒮_k = {i ≤ k | ¬ acc i, ρ_i ≥ η₁}`. -/
+/-- **Lemma 13.1.1** of [cartis2022evaluation], counting the trial iterations. Assume that the
+iterations $i \le k$ are TRqIDA steps with the ratios $\rho_i$, and that $\Delta_0$ is the
+initial radius of the constants. If $0 < \Delta_{\min} \le \Delta_{k+1}$, then
+$$|\mathcal{T}_k| \le |\mathcal{S}_k| \Big(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\Big) +
+  \frac{|\log(\Delta_{\min} / \Delta_0)|}{|\log \gamma_2|}, \qquad (13.1.22)$$
+where $\mathcal{T}_k = \{i \le k : i \text{ is a trial iteration}\}$ and $\mathcal{S}_k = \{i
+\in \mathcal{T}_k : \rho_i \ge \eta_1\}$.
+
+The sets are `Optimization.successSet`, which includes $k$. -/
 theorem trqDA_card_trial_le (hstep : ∀ i ≤ k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i)
     (hΔ0 : Δ 0 = P.Δ₀) {Δmin : ℝ} (hmin : 0 < Δmin) (hΔmin : Δmin ≤ Δ (k + 1)) :
     ((successSet (fun i => ¬ acc i) k).card : ℝ) ≤
@@ -356,10 +424,16 @@ theorem trqDA_card_trial_le (hstep : ∀ i ≤ k, TRqDAStep X P ε x Δ h D dd j
 
 /-! ### The decrease at a trial iteration -/
 
-/-- **The decrease at a trial iteration** (Lemma 13.1.2 of [cartis2022evaluation]): at a trial
-iteration `k ∈ 𝒯` of TRqIDA (or TRqEDA) with `Δ_k > 0`, the scaled criticality `φ̂_{f,k}` of
-(13.1.25) satisfies `φ̂_{f,k} ≥ ½ ς ε_min` (hence (13.1.26), `min_{i ∈ 𝒯_k} φ̂_{f,i} ≥ ½ ς ε_min`)
-and (13.1.27), `\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ φ̂_{f,k} δ_k^{j_k} / j_k!`. -/
+/-- **Lemma 13.1.2** of [cartis2022evaluation], the decrease at a trial iteration. Let $k$ be a
+trial iteration of TRqIDA or TRqEDA with $\Delta_k > 0$. Then the scaled criticality
+$\hat\phi_{f,k}$ of (13.1.25) satisfies
+$$\hat\phi_{f,k} \ge \tfrac12 \varsigma \varepsilon_{\min} \qquad \text{and} \qquad
+  \overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{\hat\phi_{f,k} \delta_k^{j_k}}{j_k!} \quad
+  (13.1.27).$$
+
+The first bound gives (13.1.26), $\min_{i \in \mathcal{T}_k} \hat\phi_{f,i} \ge \frac12
+\varsigma \varepsilon_{\min}$. Here $\hat\phi_{f,k}$ is `Optimization.trqGap` of $D_k$, $j_k$,
+$\delta_k$ and $d_{k,j_k}$, and $\varepsilon_{\min}$ is `Optimization.epsMin`. -/
 theorem TRqDAStep.trqGap_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (hk : ¬ acc k)
     (hΔ : 0 < Δ k) :
     P.ς * epsMin P.q ε / 2 ≤ trqGap (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) ∧
@@ -386,8 +460,9 @@ theorem TRqDAStep.trqGap_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (h
     _ = j ! * (P.ς * ε j * δ ^ j / j ! / 2) := by field_simp
     _ ≤ j ! * (D k).taylorDecrement j (dd k j) := by gcongr
 
-/-- The predicted decrease `\overline{ΔT}_{f,j_k}(x_k, s_k)` of a trial iteration of TRqIDA (or
-TRqEDA) with `Δ_k > 0` and `ε_min > 0` is positive (Lemma 13.1.2). -/
+/-- The predicted decrease of a trial iteration is positive, as in Lemma 13.1.2 of
+[cartis2022evaluation]. Let $k$ be a trial iteration of TRqIDA or TRqEDA with $\Delta_k > 0$ and
+$\varepsilon_{\min} > 0$. Then $\overline{\Delta T}_{f,j_k}(x_k, s_k) > 0$. -/
 theorem TRqDAStep.taylorDecrement_pos (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k)
     (hk : ¬ acc k) (hΔ : 0 < Δ k) (hε : 0 < epsMin P.q ε) :
     0 < (D k).taylorDecrement (jk k) (s k) := by
@@ -396,16 +471,20 @@ theorem TRqDAStep.taylorDecrement_pos (hs : TRqDAStep X P ε x Δ h D dd jk s ac
   have h0 : 0 < P.ς * epsMin P.q ε / 2 := by have := P.ς_pos; positivity
   exact lt_of_lt_of_le (div_pos (mul_pos (h0.trans_le hφ) (pow_pos hδ _)) (by positivity)) hdec
 
-/-- The scaled criticality `φ̂_{f,i}` (13.1.25) of iteration `i`. -/
+/-- The scaled criticality $\hat\phi_{f,i} = j_i! \, \overline{\Delta T}_{f,j_i}(x_i, d_{i,j_i}) /
+\delta_i^{j_i}$ of (13.1.25) at iteration $i$. -/
 noncomputable abbrev trPhiHat (P : TRqIDAParams) (Δ : ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (i : ℕ) : ℝ :=
   trqGap (D i) (jk i) (trqDARadius P Δ i) (dd i (jk i))
 
-/-- **The radius bound behind Lemma 13.1.4** ([cartis2022evaluation], Appendix B), for sequences
-satisfying the TRqIDA step predicate at every iteration `i < k` with `Δ_0 = Δ₀`. Suppose that a
-trial iteration `i` with `Δ_i ≤ min(ϑ, a φ̂_{f,i})` is very successful (Lemmas 13.1.3, 13.3.1),
-and let `0 ≤ κ_Δ ≤ γ₁ a`. Then for every lower bound `c` of the `φ̂_{f,i}`, `i ∈ 𝒯_{k-1}`,
-`Δ_k ≥ min(γ₁ ϑ, κ_Δ c)`. -/
+/-- **The bound on the radius behind Lemma 13.1.4** of [cartis2022evaluation], Appendix B. Assume
+that the iterations $i < k$ are TRqIDA steps and that $\Delta_0$ is the initial radius of the
+constants. Let $a \ge 0$ and $0 \le \kappa_\Delta \le \gamma_1 a$. Assume that every trial
+iteration $i < k$ with $\Delta_i \le \min(\vartheta, a \hat\phi_{f,i})$ is very successful,
+$\rho_i \ge \eta_2$ (as Lemmas 13.1.3 and 13.3.1 show), and that $c \le \hat\phi_{f,i}$ for
+every trial iteration $i < k$. Then
+$$\Delta_k \ge \min(\gamma_1 \vartheta, \kappa_\Delta c).$$
+-/
 theorem trqDA_delta_ge (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc ρ i)
     (hΔ0 : Δ 0 = P.Δ₀) {a κΔ c : ℝ} (ha : 0 ≤ a) (hκΔ0 : 0 ≤ κΔ) (hκΔ : κΔ ≤ P.γ₁ * a)
     (hsucc : ∀ i < k, ¬ acc i → Δ i ≤ min P.ϑ (a * trPhiHat P Δ D dd jk i) → P.η₂ ≤ ρ i)
@@ -442,10 +521,13 @@ theorem trqDA_delta_ge (hstep : ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc
         _ = P.γ₁ * (a * c) := by ring
         _ ≤ P.γ₁ * Δ k := mul_le_mul_of_nonneg_left (h1.trans hφ.le) P.γ₁_pos.le
 
-/-- **The decrement bound behind Lemma 13.1.5** ([cartis2022evaluation], Appendix B), for one
-trial iteration of the TRqIDA step predicate: if `0 < ε_min ≤ 1`, `0 ≤ κ_δ ≤ ½` and
-`δ_k ≥ ς κ_δ ε_min` ((13.1.32)), then
-`\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ (ς κ_δ)^{q+1}/q! ε_min^{q+1}` ((13.1.34)). -/
+/-- **The decrement bound behind Lemma 13.1.5** of [cartis2022evaluation], Appendix B. Let $k$ be a
+trial iteration of the TRqIDA step predicate with $\Delta_k > 0$. If
+$0 < \varepsilon_{\min} \le 1$, $0 \le \kappa_\delta \le \frac12$ and $\delta_k \ge \varsigma
+\kappa_\delta \varepsilon_{\min}$, (13.1.32), then
+$$\overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\delta)^{q+1}}{q!}
+  \varepsilon_{\min}^{q+1}. \qquad (13.1.34)$$
+-/
 theorem TRqDAStep.taylorDecrement_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k)
     (hk : ¬ acc k) (hΔ : 0 < Δ k) {κδ : ℝ} (hκδ0 : 0 ≤ κδ) (hκδ : κδ ≤ 1 / 2)
     (hεmin : 0 < epsMin P.q ε) (hεmin1 : epsMin P.q ε ≤ 1)
@@ -486,11 +568,14 @@ theorem TRqDAStep.taylorDecrement_ge (hs : TRqDAStep X P ε x Δ h D dd jk s acc
           hjpos hfact
     _ ≤ (D k).taylorDecrement j (s k) := hdec
 
-/-- **The accuracy bound behind Lemma 13.1.6** ([cartis2022evaluation]), for one iteration of the
-TRqIDA step predicate that goes through Step 2: if `‖∇̄^i f(x_k)‖ ≤ L̄` for `i ∈ [1, q]` with
-`L̄ ≥ 1`, `ε ∈ (0, 1]^q`, `0 ≤ κ_δ ≤ 1`, `δ_k ≥ ς κ_δ ε_min` and (13.1.36)
-`h_{k,i} ≤ κ_s (ς^{q+1} κ_δ^q/(4 q! L̄))^q ε_min^{q(q+1)}` for `i ∈ [1, q]`, then the accuracy test
-(13.1.9) holds, i.e. the iteration is not accuracy-improving. -/
+/-- **The accuracy bound behind Lemma 13.1.6** of [cartis2022evaluation]. Consider an iteration $k$
+of the TRqIDA step predicate that goes through Step 2, with $\Delta_k > 0$. Assume
+$\|\overline{\nabla}^i f(x_k)\| \le \bar L$ for $1 \le i \le q$ with $\bar L \ge 1$,
+$\varepsilon_j \in (0, 1]$ for $1 \le j \le q$, $0 \le \kappa_\delta \le 1$, $\delta_k \ge
+\varsigma \kappa_\delta \varepsilon_{\min}$, and
+$$h_{k,i} \le \kappa_s \Big(\frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q! \, \bar L}\Big)^q
+  \varepsilon_{\min}^{q(q+1)} \qquad (1 \le i \le q). \qquad (13.1.36)$$
+Then the accuracy test (13.1.9) holds, so the iteration is not accuracy-improving. -/
 theorem TRqStep2.not_acc_of_le (h2 : TRqStep2 X P ε x Δ h D dd jk s acc k) (hΔ : 0 < Δ k)
     {Lb κδ : ℝ} (hLb : 1 ≤ Lb) (hD : ∀ i ∈ Finset.Icc 1 P.q, ‖D k i‖ ≤ Lb)
     (hκδ0 : 0 ≤ κδ) (hκδ : κδ ≤ 1) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
@@ -578,45 +663,55 @@ end TRStep
 
 /-! ### TRqIDA runs -/
 
-/-- The test of approximate optimality of TRqIDA with a feasible set at iteration `k`
-([cartis2022evaluation], §14.2, (14.2.2)): `x_k` is an `(ε, δ_k)`-approximate `q`-th order
-minimizer of `f` on the feasible set `X` (measures over the feasible displacements `{e | x_k +
-e ∈ X}`) with the radius `δ_k = min(Δ_k, ϑ)`. The unconstrained test is the case `X = univ`. -/
+/-- The **approximate optimality test** of TRqIDA with a feasible set at iteration $k$,
+[cartis2022evaluation], §14.2, (14.2.2). The test holds if $x_k$ is an
+$(\varepsilon, \delta_k)$-approximate $q$-th order minimizer of $f$ on $X$, with the radius
+$\delta_k = \min(\Delta_k, \vartheta)$ at all orders: for $1 \le j \le q$, the criticality
+measure of the exact Taylor polynomial of order $j$ at $x_k$ over the feasible displacements
+$\{e : x_k + e \in X\}$ is at most $\varepsilon_j \delta_k^j / j!$.
+
+The unconstrained test is the case $X = E$. The method cannot evaluate this test, because it
+needs the exact derivatives. -/
 def trqIDATest (f : E → ℝ) (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ) (x : ℕ → E)
     (Δ : ℕ → ℝ) (k : ℕ) : Prop :=
   IsEpsDeltaApprox (ftaylorSeries ℝ f (x k)) {e | x k + e ∈ X} P.q ε (fun _ => trqDARadius P Δ k)
 
-/-- **TRqIDA with a feasible set** ([cartis2022evaluation], Algorithm 13.1.1; TRqIDA-SC of
-§14.2) as a run predicate, for the objective `f`, the closed feasible set `X` (closedness is
-not used by the analysis), the (unknown) oracle constants `κ_{∇,i}` (`κg i ≥ 0`), constants
-`P`, tolerances `ε ∈ (0, 1]^q` with `ε_min ≤ ϑ`, a feasible starting point `x₀ ∈ X`, and
-sequences of iterates `x`, radii `Δ`, requested accuracies `h`, inexact jets `D` satisfying
-(13.1.2), Step-1 displacements `dd`, orders `j_k`, steps `s` and accuracy-improving flags
-`acc`; every iteration satisfies `TRqDAStep` on `X` (feasible Step-1 displacements and trial
-points) with the exact-value ratio (13.1.16) `ρ_k = (f(x_k) - f(x_k + s_k)) /
-\overline{ΔT}_{f,j_k}(x_k, s_k)` (`Optimization.trqRatio`). Algorithm 13.1.1 is the case `X =
-    univ`. -/
+/-- **TRqIDA with a feasible set**, [cartis2022evaluation], Algorithm 13.1.1, and TRqIDA-SC of
+§14.2, as a run predicate. The data are the objective $f$, the feasible set $X$, the oracle
+constants $\kappa_{\nabla,i} \ge 0$ (unknown to the method), constants $P$, tolerances
+$\varepsilon_j \in (0, 1]$ with $\varepsilon_{\min} \le \vartheta$, a feasible starting point
+$x_0 \in X$, and sequences of iterates $x_k$, radii $\Delta_k$, requested accuracies $h_{k,i}$,
+inexact derivatives $D_k$, displacements $d_{k,j}$ of Step 1, orders $j_k$, steps $s_k$ and
+accuracy-improving flags. These data form a run if the inexact derivatives satisfy the error
+model (13.1.2) at every iteration, and every iteration is a step `Optimization.TRqDAStep` on $X$
+with the ratio (13.1.16) of exact function values,
+$$\rho_k = \frac{f(x_k) - f(x_k + s_k)}{\overline{\Delta T}_{f,j_k}(x_k, s_k)},$$
+which is `Optimization.trqRatio`.
+
+Algorithm 13.1.1 is the case $X = E$. The source takes $X$ closed; the analysis does not use
+this, so the predicate does not require it. -/
 structure IsTRqIDARun (f : E → ℝ) (X : Set E) (κg : ℕ → ℝ) (P : TRqIDAParams)
     (ε : ℕ → ℝ) (x₀ : E) (x : ℕ → E) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ E ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E)
     (acc : ℕ → Prop) : Prop where
-  /-- `ε ∈ (0, 1]^q`. -/
+  /-- The tolerances satisfy $\varepsilon_j \in (0, 1]$ for $1 \le j \le q$. -/
   eps_mem : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1
-  /-- `ϑ ≥ ε_min`. -/
+  /-- The threshold satisfies $\vartheta \ge \varepsilon_{\min}$. -/
   epsMin_le_ϑ : epsMin P.q ε ≤ P.ϑ
-  /-- `κ_{∇,i} ≥ 0`. -/
+  /-- The oracle constants are nonnegative: $\kappa_{\nabla,i} \ge 0$ for $1 \le i \le q$. -/
   κg_nonneg : ∀ i ∈ Finset.Icc 1 P.q, 0 ≤ κg i
-  /-- The starting point. -/
+  /-- The first iterate is the starting point $x_0$. -/
   x_zero : x 0 = x₀
-  /-- The starting point is feasible. -/
+  /-- The starting point is feasible: $x_0 \in X$. -/
   x₀_mem : x₀ ∈ X
-  /-- The initial radius. -/
+  /-- The first radius is the initial radius $\Delta_0$ of the constants. -/
   Δ_zero : Δ 0 = P.Δ₀
-  /-- The initial accuracies. -/
+  /-- The first accuracies are the initial accuracies $h_{0,i}$ of the constants. -/
   h_zero : h 0 = P.h₀
-  /-- The error model (13.1.2). -/
+  /-- The error model (13.1.2): $\|D_{k,i} - \nabla^i f(x_k)\| \le \kappa_{\nabla,i} h_{k,i}$ for
+  $1 \le i \le q$ and every $k$. -/
   oracle : ∀ k, JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.q (fun i => κg i * h k i)
-  /-- Steps 1–5. -/
+  /-- Steps 1–5 hold at every iteration. -/
   step : ∀ k, TRqDAStep X P ε x Δ h D dd jk s acc (trqRatio f D x s jk) k
 
 namespace IsTRqIDARun
@@ -627,26 +722,34 @@ variable {f : E → ℝ} {X : Set E} {κg : ℕ → ℝ} {P : TRqIDAParams} {ε 
   (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
 include hrun
 
+/-- The radii of a TRqIDA run are positive. -/
 theorem delta_pos (k : ℕ) : 0 < Δ k :=
   trqDA_delta_pos (fun i _ => hrun.step i) hrun.Δ_zero
 
+/-- The accuracies of a TRqIDA run satisfy $0 < h_{k,i} \le \kappa_h$ for $1 \le i \le q$. -/
 theorem accuracy_mem (k : ℕ) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.q) : 0 < h k i ∧ h k i ≤ P.κh :=
   (trqDA_invariants (k := k) (fun i _ => hrun.step i) hrun.Δ_zero hrun.h_zero).2 i hi
 
+/-- The smallest tolerance of a TRqIDA run is positive: $\varepsilon_{\min} > 0$. -/
 theorem epsMin_pos : 0 < epsMin P.q ε :=
   Optimization.epsMin_pos P.one_le_q fun j hj => (hrun.eps_mem j hj).1
 
+/-- The smallest tolerance of a TRqIDA run is at most one: $\varepsilon_{\min} \le 1$. -/
 theorem epsMin_le_one : epsMin P.q ε ≤ 1 :=
   Optimization.epsMin_le_one P.one_le_q fun j hj => (hrun.eps_mem j hj).2
 
+/-- The largest oracle constant of a TRqIDA run is nonnegative: $\kappa_{\nabla,\max} \ge 0$. -/
 theorem kappaMax_nonneg : 0 ≤ ordMax P.q κg := ordMax_nonneg hrun.κg_nonneg
 
-/-- The iterates are feasible. -/
+/-- The iterates of a TRqIDA run are feasible: $x_k \in X$. -/
 theorem mem (k : ℕ) : x k ∈ X :=
   trqDA_mem (fun i _ => hrun.step i) (hrun.x_zero ▸ hrun.x₀_mem)
 
-/-- The objective does not increase along a TRqIDA run with a feasible set: `f(x_k) ≤ f(x₀)` (the
-ratio uses exact function values and the predicted decrease of a trial iteration is positive). -/
+/-- The objective does not increase along a TRqIDA run with a feasible set: $f(x_k) \le f(x_0)$ for
+every $k$.
+
+The ratio uses exact function values, and the predicted decrease of a trial iteration is
+positive, so a successful iteration decreases $f$. -/
 theorem objective_le (k : ℕ) : f (x k) ≤ f x₀ := by
   rw [← hrun.x_zero]
   refine le_zero_of_forall_succ_le (u := fun i => f (x i)) fun i _ => ?_
@@ -655,12 +758,17 @@ theorem objective_le (k : ℕ) : f (x k) ≤ f x₀ := by
   · exact ((hrun.step i).accept ha).le (f := f) trqRatio_eq
       ((hrun.step i).taylorDecrement_pos ha (hrun.delta_pos i) hrun.epsMin_pos)
 
-/-- The iterates lie in every set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The iterates of a TRqIDA run lie in every set $A$ that contains the sublevel set
+$\{y \in X : f(y) \le f(x_0)\}$. -/
 theorem mem_anchor {A : Set E} (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) (k : ℕ) : x k ∈ A :=
   hAX _ (hrun.mem k) (hrun.objective_le k)
 
-/-- (13.1.24): `‖∇̄^i f(x_k)‖ ≤ L̄_f = L_f + κ_{∇,max} κ_h` under the smoothness hypothesis
-anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The bound (13.1.24) on the inexact derivatives. Under the smoothness hypothesis
+`LipschitzDerivsAnchored f C A 0 q L` with $L_j \ge 1$ for $j \le q$, and with $A$ containing
+the sublevel set $\{y \in X : f(y) \le f(x_0)\}$, the iterates of a TRqIDA run satisfy, for
+$1 \le i \le q$,
+$$\|\overline{\nabla}^i f(x_k)\| \le \bar L_f = L_f + \kappa_{\nabla,\max} \kappa_h.$$
+-/
 theorem norm_D_le {C A : Set E} {L : ℕ → ℝ} (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) (k : ℕ) {i : ℕ} (hi : i ∈ Finset.Icc 1 P.q) :
@@ -678,10 +786,16 @@ variable {X C A : Set E} {f : E → ℝ} {κg : ℕ → ℝ} {P : TRqIDAParams} 
 
 /-! ### Very successful iterations -/
 
-/-- **Very successful iterations** (Lemma 13.1.3 of [cartis2022evaluation]): under the smoothness
-hypothesis, at a trial iteration `k ∈ 𝒯` of TRqIDA with (13.1.28)
-`Δ_k ≤ min(ϑ, (1 - η₂)/(L_f + 4 (q+1)! κ_s κ_{∇,max}) pĥ_{f,k})`, the iteration is very successful
-(`ρ_k ≥ η₂`) and `Δ_{k+1} ≥ Δ_k`. -/
+/-- **Lemma 13.1.3** of [cartis2022evaluation], very successful iterations. Assume the smoothness
+hypothesis `LipschitzDerivsAnchored f C A 0 q L` with $L_j \ge 1$ for $j \le q$,
+$X \subseteq C$, and $A \supseteq \{y \in X : f(y) \le f(x_0)\}$. Let $k$ be a trial iteration
+of a TRqIDA run with
+$$\Delta_k \le \min\Big(\vartheta, \frac{1 - \eta_2}{L_f + 4 (q+1)! \, \kappa_s
+  \kappa_{\nabla,\max}} \hat\phi_{f,k}\Big). \qquad (13.1.28)$$
+Then the iteration is very successful, $\rho_k \ge \eta_2$, and $\Delta_{k+1} \ge \Delta_k$.
+
+Here $L_f$ is `Optimization.lipMax L q` and $\kappa_{\nabla,\max}$ is
+`Optimization.ordMax q κg`. -/
 theorem IsTRqIDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -769,11 +883,20 @@ theorem IsTRqIDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
 
 /-! ### The radius stays bounded below -/
 
-/-- **The radius stays bounded below** (Lemma 13.1.4 of [cartis2022evaluation]): under the
-smoothness hypothesis, along a TRqIDA run, for every `κ_Δ ∈ (0, 1]` with
-`κ_Δ ≤ γ₁ (1 - η₂)/(L_f + 4(q+1)! κ_s κ_{∇,max})` (e.g. the value (13.1.31), `trKappaDelta`) and
-every `k`: (13.1.30) `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ 𝒯_k} φ̂_{f,i})` if `𝒯_k ≠ ∅` and `Δ_k ≥ γ₁ ϑ`
-otherwise, and (13.1.32) `δ_k ≥ ς κ_δ ε_min` with `κ_δ = κ_Δ/2` (13.1.33). -/
+/-- **Lemma 13.1.4** of [cartis2022evaluation], the radius stays bounded below. Assume the
+smoothness hypothesis of `Optimization.IsTRqIDARun.ratio_ge`. Let $\kappa_\Delta \in (0, 1]$
+with
+$$\kappa_\Delta \le \frac{\gamma_1 (1 - \eta_2)}{L_f + 4 (q+1)! \, \kappa_s
+  \kappa_{\nabla,\max}},$$
+for example the value (13.1.31). Then along a TRqIDA run, for every $k$:
+$$\Delta_k \ge \min\Big(\gamma_1 \vartheta, \kappa_\Delta \min_{i \in \mathcal{T}_k}
+  \hat\phi_{f,i}\Big) \text{ if } \mathcal{T}_k \neq \emptyset, \qquad \Delta_k \ge \gamma_1
+  \vartheta \text{ if } \mathcal{T}_k = \emptyset, \qquad (13.1.30)$$
+and $\delta_k \ge \varsigma \kappa_\delta \varepsilon_{\min}$, (13.1.32), with
+$\kappa_\delta = \kappa_\Delta / 2$, (13.1.33).
+
+The set $\mathcal{T}_k$ of trial iterations among $0, \dots, k$ is
+`Optimization.successSet (fun i => ¬ acc i) k`. -/
 theorem IsTRqIDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -823,18 +946,26 @@ theorem IsTRqIDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
           exact mul_le_mul_of_nonneg_right this hεmin.le
       _ ≤ P.γ₁ * P.ϑ := mul_le_mul_of_nonneg_left hrun.epsMin_le_ϑ P.γ₁_pos.le
 
-/-- The admissible values of `κ_Δ` in Lemmas 13.1.4–13.1.7 and Theorem 13.1.8:
-`0 < κ_Δ ≤ 1` and `κ_Δ ≤ γ₁ (1 - η₂)/(L_f + 4(q+1)! κ_s κ_{∇,max})`. -/
+/-- The **admissible values** of $\kappa_\Delta$ in Lemmas 13.1.4–13.1.7 and Theorem 13.1.8 of
+[cartis2022evaluation]: $0 < \kappa_\Delta \le 1$ and
+$$\kappa_\Delta \le \frac{\gamma_1 (1 - \eta_2)}{L_f + 4 (q+1)! \, \kappa_s
+  \kappa_{\nabla,\max}}.$$
+-/
 def IsTRKappaDelta (P : TRqIDAParams) (Lf κm κΔ : ℝ) : Prop :=
   0 < κΔ ∧ κΔ ≤ 1 ∧ κΔ ≤ P.γ₁ * ((1 - P.η₂) / (Lf + 4 * (P.q + 1)! * P.κs * κm))
 
 /-! ### Sufficient decrease -/
 
-/-- **Sufficient decrease** (Lemma 13.1.5 of [cartis2022evaluation]): under the smoothness
-hypothesis, for an admissible `κ_Δ` and `κ_δ = κ_Δ/2`, every trial iteration `k ∈ 𝒯` of a TRqIDA run
-satisfies (13.1.34) `\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ (ς κ_δ)^{q+1}/q! ε_min^{q+1}`, and if
-moreover `k ∈ 𝒮` then (13.1.35) `f(x_k) - f(x_{k+1}) ≥ η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}`. (No
-optimality hypothesis is needed.) -/
+/-- **Lemma 13.1.5** of [cartis2022evaluation], sufficient decrease. Assume the smoothness
+hypothesis of `Optimization.IsTRqIDARun.ratio_ge`, let $\kappa_\Delta$ be admissible, and let
+$\kappa_\delta = \kappa_\Delta / 2$. Then every trial iteration $k$ of a TRqIDA run satisfies
+$$\overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\delta)^{q+1}}{q!}
+  \varepsilon_{\min}^{q+1}, \qquad (13.1.34)$$
+and if moreover $k$ is successful, $\rho_k \ge \eta_1$, then
+$$f(x_k) - f(x_{k+1}) \ge \eta_1 \frac{(\varsigma \kappa_\delta)^{q+1}}{2 \, q!}
+  \varepsilon_{\min}^{q+1}. \qquad (13.1.35)$$
+
+No hypothesis on the approximate optimality of the iterates is needed. -/
 theorem IsTRqIDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -866,11 +997,14 @@ theorem IsTRqIDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
 
 /-! ### Accuracy and certification -/
 
-/-- **Accurate derivatives give trial iterations** (Lemma 13.1.6 of [cartis2022evaluation]): under
-the smoothness hypothesis, with `L̄_f = L_f + κ_{∇,max} κ_h` ((13.1.24)) and an admissible `κ_Δ`,
-`κ_δ = κ_Δ/2`: if Step 1 of TRqIDA branches to Step 2 at iteration `k` and (13.1.36)
-`h_{k,i} ≤ κ_s (ς^{q+1} κ_δ^q/(4 q! L̄_f))^q ε_min^{q(q+1)}` for all `i ∈ [1, q]`, then Step 2 does
-not branch to Step 5 (`k ∈ 𝒯`). -/
+/-- **Lemma 13.1.6** of [cartis2022evaluation], accurate derivatives give trial iterations. Assume
+the smoothness hypothesis of `Optimization.IsTRqIDARun.ratio_ge`, let $\kappa_\Delta$ be
+admissible, $\kappa_\delta = \kappa_\Delta / 2$, and
+$\bar L_f = L_f + \kappa_{\nabla,\max} \kappa_h$, (13.1.24). If Step 1 of TRqIDA branches to
+Step 2 at iteration $k$, that is, (13.1.14) holds at some order, and
+$$h_{k,i} \le \kappa_s \Big(\frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q! \, \bar L_f}\Big)^q
+  \varepsilon_{\min}^{q(q+1)} \qquad (1 \le i \le q), \qquad (13.1.36)$$
+then Step 2 does not branch to Step 5, so $k$ is a trial iteration. -/
 theorem IsTRqIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -888,12 +1022,17 @@ theorem IsTRqIDARun.not_acc_of_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (fun i hi => hrun.norm_D_le hf hL hAX k hi) (by positivity) (by linarith) hrun.eps_mem
     (IsTRqIDARun.delta_ge hf hL hXC hAX hrun hκΔ0 hκΔ1 hκΔ' k).2.2 hh
 
-/-- **Certification by the Step-1 test** (Lemma 13.1.7 of [cartis2022evaluation]): under the
-smoothness hypothesis and for an admissible `κ_Δ`, `κ_δ = κ_Δ/2`: if Step 1 of TRqIDA branches to
-Step 5 at iteration `k` ((13.1.14) fails at every order) and (13.1.37)
-`κ_{∇,max} h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, q]` (written without division,
-so that `κ_{∇,max} = 0` is allowed), then `φ^{δ_k}_{f,j}(x_k) ≤ ε_j δ_k^j/j!` for all `j ∈ [1, q]`.
--/
+/-- **Lemma 13.1.7** of [cartis2022evaluation], certification by the test of Step 1. Assume the
+smoothness hypothesis of `Optimization.IsTRqIDARun.ratio_ge`, let $\kappa_\Delta$ be admissible,
+and $\kappa_\delta = \kappa_\Delta / 2$. If Step 1 of TRqIDA branches to Step 5 at iteration
+$k$, that is, (13.1.14) fails at every order, and
+$$\kappa_{\nabla,\max} h_{k,i} \le \frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q!}
+  \varepsilon_{\min}^{q+1} \qquad (1 \le i \le q), \qquad (13.1.37)$$
+then $\phi^{\delta_k}_{f,j}(x_k) \le \varepsilon_j \delta_k^j / j!$ for $1 \le j \le q$, that
+is, the approximate optimality test `Optimization.trqIDATest` holds at $k$.
+
+The condition (13.1.37) is written without division by $\kappa_{\nabla,\max}$, so that
+$\kappa_{\nabla,\max} = 0$ (exact derivatives) is allowed. -/
 theorem IsTRqIDARun.trqIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -945,18 +1084,23 @@ theorem IsTRqIDARun.trqIDATest_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q
 
 /-! ### Complexity -/
 
-/-- The constant `κ^S_{TRqIDA} = 2 q!/(η₁ (ς κ_δ)^{q+1})` (13.1.40), with `κ_δ = κ_Δ/2`. -/
+/-- The constant $\kappa^S_{\mathrm{TRqIDA}} = 2 \, q! / (\eta_1 (\varsigma \kappa_\delta)^{q+1})$
+of (13.1.40) of [cartis2022evaluation], with $\kappa_\delta = \kappa_\Delta / 2$. -/
 noncomputable def trKappaS (P : TRqIDAParams) (κΔ : ℝ) : ℝ :=
   2 * P.q ! / (P.η₁ * (P.ς * (κΔ / 2)) ^ (P.q + 1))
 
-/-- The constant `κ_acc` of the proof of Theorem 13.1.8 ([cartis2022evaluation]):
-`min(ς^{q+1} κ_δ^q/(4 q! κ_{∇,max}), κ_s (ς^{q+1} κ_δ^q/(4 q! L̄_f))^q)`, the first term being
-omitted when `κ_{∇,max} = 0` (exact derivatives). -/
+/-- The constant $\kappa_{\mathrm{acc}}$ of the proof of Theorem 13.1.8 of [cartis2022evaluation]:
+$$\kappa_{\mathrm{acc}} = \min\Big(\frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q! \,
+  \kappa_{\nabla,\max}}, \ \kappa_s \Big(\frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q! \, \bar
+  L_f}\Big)^q\Big), \qquad \kappa_\delta = \kappa_\Delta / 2.$$
+When $\kappa_{\nabla,\max} = 0$ (exact derivatives), the first term is omitted. -/
 noncomputable def trKappaAcc (P : TRqIDAParams) (κΔ Lb κm : ℝ) : ℝ :=
   if κm = 0 then P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q ! * Lb)) ^ P.q
   else min (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q ! * κm))
     (P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q ! * Lb)) ^ P.q)
 
+/-- If $\kappa_\Delta > 0$, $\bar L_f > 0$ and $\kappa_{\nabla,\max} \ge 0$, then
+$\kappa_{\mathrm{acc}} > 0$. -/
 theorem trKappaAcc_pos {P : TRqIDAParams} {κΔ Lb κm : ℝ} (hκΔ : 0 < κΔ) (hLb : 0 < Lb)
     (hκm : 0 ≤ κm) : 0 < trKappaAcc P κΔ Lb κm := by
   have := P.ς_pos; have := P.κs_pos
@@ -965,6 +1109,8 @@ theorem trKappaAcc_pos {P : TRqIDAParams} {κΔ Lb κm : ℝ} (hκΔ : 0 < κΔ)
   · positivity
   · exact lt_min (by have := lt_of_le_of_ne hκm (Ne.symm h0); positivity) (by positivity)
 
+/-- The constant $\kappa_{\mathrm{acc}}$ is at most $\kappa_s (\varsigma^{q+1} \kappa_\delta^q / (4
+\, q! \, \bar L_f))^q$. -/
 theorem trKappaAcc_le {P : TRqIDAParams} {κΔ Lb κm : ℝ} :
     trKappaAcc P κΔ Lb κm ≤
       P.κs * (P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q ! * Lb)) ^ P.q := by
@@ -973,6 +1119,8 @@ theorem trKappaAcc_le {P : TRqIDAParams} {κΔ Lb κm : ℝ} :
   · exact le_rfl
   · exact min_le_right _ _
 
+/-- If $\kappa_\Delta > 0$ and $\kappa_{\nabla,\max} \ge 0$, then $\kappa_{\nabla,\max}
+\kappa_{\mathrm{acc}} \le \varsigma^{q+1} \kappa_\delta^q / (4 \, q!)$. -/
 theorem mul_trKappaAcc_le {P : TRqIDAParams} {κΔ Lb κm : ℝ} (hκΔ : 0 < κΔ) (hκm : 0 ≤ κm) :
     κm * trKappaAcc P κΔ Lb κm ≤ P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) := by
   have := P.ς_pos
@@ -985,10 +1133,13 @@ theorem mul_trKappaAcc_le {P : TRqIDAParams} {κΔ Lb κm : ℝ} (hκΔ : 0 < κ
           mul_le_mul_of_nonneg_left (min_le_left _ _) hκm
       _ = P.ς ^ (P.q + 1) * (κΔ / 2) ^ P.q / (4 * P.q !) := by field_simp
 
-/-- **The accuracy-improving iterations of TRqIDA with a feasible set** (proof of Theorem 13.1.8,
-[cartis2022evaluation]): under `LipschitzDerivsAnchored f C A 0 q L` (`L_j ≥ 1`, `A ⊇ {y ∈ X |
-f(y) ≤ f(x₀)}`) and for an admissible `κ_Δ`, if no iterate `x_j`, `j ≤ k`, is approximately
-optimal on `X`, then `|𝒜_k| ≤ q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+/-- **The number of accuracy-improving iterations of TRqIDA with a feasible set**, from the proof of
+Theorem 13.1.8 of [cartis2022evaluation]. Assume the smoothness hypothesis of
+`Optimization.IsTRqIDARun.ratio_ge` and let $\kappa_\Delta$ be admissible. If no iterate $x_j$
+with $j \le k$ is approximately optimal on $X$, then
+$$|\mathcal{A}_k| \le \frac{q(q+1)}{|\log \gamma_h|} |\log \varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}} / \kappa_h)|}{|\log \gamma_h|} + 1,$$
+where $\mathcal{A}_k$ is the set of accuracy-improving iterations among $0, \dots, k$. -/
 theorem IsTRqIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -1048,17 +1199,31 @@ theorem IsTRqIDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
           |Real.log P.γh| + 1 := h
     _ = NA := by rw [hNA_def]; push_cast; ring
 
-/-- **Evaluation complexity of TRqIDA** (Theorem 13.1.8 of [cartis2022evaluation]): complexity of
-TRqIDA. Let the smoothness hypothesis and f.Bb (`f ≥ f_low`) hold, `ε ∈ (0, 1]^q`, and `κ_Δ` be
-admissible (e.g. (13.1.31)), `κ_δ = κ_Δ/2`. For every TRqIDA run there is a first iteration `k_ε` at
-which `x_ε = x_{k_ε}` is an `(ε, δ_ε)`-approximate `q`-th order minimizer with
-`δ_ε = min(Δ_{k_ε}, ϑ) ∈ (0, 1]`, and before it at most (13.1.38)
-`κ^A (f(x₀) - f_low)/ε_min^{q+1} + κ^B |log ε_min| + κ^C` function evaluations and (13.1.39)
-`κ^A (f(x₀) - f_low)/ε_min^{q+1} + κ^E |log ε_min| + κ^F + 2` derivative estimates are made, with
-`κ^S = 2 q!/(η₁ (ς κ_δ)^{q+1})`, `κ^A = κ^S (1 + log γ₃/|log γ₂|)`, `κ^B = 1/|log γ₂|`,
-`κ^C = |log(ς κ_δ/Δ₀)|/|log γ₂| + 1`, `κ^E = q(q+1)/|log γ_h|`, `κ^F = |log(κ_acc/κ_h)|/|log γ_h|`
-(`κ_acc = trKappaAcc`). The derivative count includes the initial estimate and the last
-accuracy-improving iteration. -/
+/-- **Theorem 13.1.8** of [cartis2022evaluation], the evaluation complexity of TRqIDA. Assume the
+smoothness hypothesis of `Optimization.IsTRqIDARun.ratio_ge` and assumption f.Bb,
+$f(y) \ge f_{\mathrm{low}}$ for $y \in X$. Let $\kappa_\Delta$ be admissible, for example
+(13.1.31), and $\kappa_\delta = \kappa_\Delta / 2$. Then every TRqIDA run has a first iteration
+$k_\varepsilon$ at which $x_\varepsilon = x_{k_\varepsilon}$ is an
+$(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer on $X$, with
+$\delta_\varepsilon = \min(\Delta_{k_\varepsilon}, \vartheta) \in (0, 1]$. Up to $k_\varepsilon$
+the method makes at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + \kappa^B |\log
+  \varepsilon_{\min}| + \kappa^C \qquad (13.1.38)$$
+function evaluations and at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + \kappa^E |\log
+  \varepsilon_{\min}| + \kappa^F + 2 \qquad (13.1.39)$$
+derivative estimates, with $\kappa^S = 2 \, q! / (\eta_1 (\varsigma \kappa_\delta)^{q+1})$,
+$\kappa^A = \kappa^S (1 + \log \gamma_3 / |\log \gamma_2|)$, $\kappa^B = 1 / |\log \gamma_2|$,
+$\kappa^C = |\log(\varsigma \kappa_\delta / \Delta_0)| / |\log \gamma_2| + 1$,
+$\kappa^E = q(q+1) / |\log \gamma_h|$ and $\kappa^F = |\log(\kappa_{\mathrm{acc}} / \kappa_h)| /
+|\log \gamma_h|$.
+
+The first iteration is `Optimization.IsFirstHit` for `Optimization.trqIDATest`. The function
+evaluations are counted by `Optimization.derivEvalCount` of the trial iterations, and the
+derivative estimates by `Optimization.derivEvalCount` of the successful and the
+accuracy-improving iterations. The count of derivative estimates includes the initial estimate
+and the last accuracy-improving iteration. The constant $\kappa_{\mathrm{acc}}$ is
+`Optimization.trKappaAcc`. -/
 theorem IsTRqIDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
@@ -1172,7 +1337,7 @@ section TRExistence
 
 variable [FiniteDimensional ℝ E]
 
-/-- The data of one TRqIDA iteration: iterate, radius, accuracies, Step-1 displacements, order,
+/-- The data of one TRqIDA iteration: iterate, radius, accuracies, displacements of Step 1, order,
 step and accuracy-improving flag. -/
 private structure TRState (E : Type*) where
   x : E
@@ -1186,11 +1351,12 @@ private structure TRState (E : Type*) where
 variable (f : E → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ)
   (O : E → (ℕ → ℝ) → FormalMultilinearSeries ℝ E ℝ)
 
-/-- The Step-1.2 test of a state. -/
+/-- The test of Step 1.2 at a state. -/
 private def trqDAFailS (a : TRState E) (j : ℕ) : Prop :=
   P.ς * ε j * min a.Δ P.ϑ ^ j / j ! / 2 < (O a.x a.h).taylorDecrement j (a.dd j)
 
-/-- Steps 1–2 of a state, and the radius invariant. -/
+/-- Steps 1 and 2 at a state, together with the invariant $0 < \Delta \le \Delta_{\max}$ on the
+radius. -/
 private def TRLocal (a : TRState E) : Prop :=
   (0 < a.Δ ∧ a.Δ ≤ P.Δmax) ∧
   (∀ j ∈ Finset.Icc 1 P.q, IsApproxMeasureStep ((O a.x a.h).taylorDecrement j) (min a.Δ P.ϑ)
@@ -1202,7 +1368,7 @@ private def TRLocal (a : TRState E) : Prop :=
     (O a.x a.h).taylorDecrement a.jk (a.dd a.jk) ≤ (O a.x a.h).taylorDecrement a.jk a.s ∧
     (a.acc ↔ ∃ i ∈ Finset.Icc 1 P.q, P.κs * ‖a.s‖ ^ (P.q - i + 1) < a.h i))
 
-/-- Steps 1–2 can be performed at every iterate with a positive radius. -/
+/-- Steps 1 and 2 can be performed at every iterate with a radius in $(0, \Delta_{\max}]$. -/
 private theorem exists_trLocal (x : E) {Δ : ℝ} (hΔ : 0 < Δ) (hΔm : Δ ≤ P.Δmax) (h : ℕ → ℝ) :
     ∃ dd jk s, ∃ acc : Prop, TRLocal P ε O ⟨x, Δ, h, dd, jk, s, acc⟩ := by
   classical
@@ -1221,7 +1387,8 @@ private theorem exists_trLocal (x : E) {Δ : ℝ} (hΔ : 0 < Δ) (hΔm : Δ ≤ 
     exact ⟨dd, 1, 0, True, ⟨hΔ, hΔm⟩, fun j _ => hdd j, fun _ => trivial,
       fun ⟨j, hj, hf⟩ => absurd (hex j hj) (not_le.2 hf)⟩
 
-/-- The transition of a TRqIDA run from a state satisfying Steps 1–2. -/
+/-- From a state that satisfies Steps 1 and 2, there is a next state that satisfies Steps 1 and 2
+and completes a TRqIDA step. -/
 private theorem exists_trNext (a : TRState E) (ha : TRLocal P ε O a) :
     ∃ b : TRState E, TRLocal P ε O b ∧ ∀ (r : ℕ → TRState E) (k : ℕ), r k = a → r (k + 1) = b →
       TRqDAStep univ P ε (fun i => (r i).x) (fun i => (r i).Δ) (fun i => (r i).h)
@@ -1283,11 +1450,14 @@ private theorem exists_trNext (a : TRState E) (ha : TRLocal P ε O a) :
   · simp only [hra] at hk; simp only [hra, hrb, Δ', hk, ite_true]
   · simp only [hra] at hk; simp only [hra, hrb, h', hk, ite_true]
 
-/-- **Existence of TRqIDA iterations** ([cartis2022evaluation], Algorithm 13.1.1): for every
-objective `f`, constants `P`, tolerances `ε`, starting point `x₀` and deterministic derivative
-oracle `O` (inexact jet `O y h` at `y` for accuracies `h`), there are sequences following the
-iteration of TRqIDA at every step, with the exact-value ratio (13.1.16) and the derivatives
-`D_k = O(x_k, h_k)`. -/
+/-- **Existence of TRqIDA iterations**, [cartis2022evaluation], Algorithm 13.1.1. Let $E$ be a
+finite-dimensional real inner product space, $f : E \to \mathbb{R}$, $P$ constants of TRqIDA and
+$\varepsilon_j$ tolerances. Let $O$ be a deterministic derivative oracle, which returns inexact
+derivatives $O(y, h)$ at $y$ for the accuracies $h$. Then for every $x_0 \in E$ there are
+sequences with $x_0$ as the first iterate, $\Delta_0$ and $h_0$ as the first radius and
+accuracies, that satisfy the step `Optimization.TRqDAStep` of TRqIDA on $X = E$ at every
+iteration, with the ratio (13.1.16) of exact function values and the derivatives
+$D_k = O(x_k, h_k)$. -/
 theorem exists_trqDA_run (x₀ : E) :
     ∃ (x : ℕ → E) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (jk : ℕ → ℕ)
       (s : ℕ → E) (acc : ℕ → Prop), x 0 = x₀ ∧ Δ 0 = P.Δ₀ ∧ h 0 = P.h₀ ∧
@@ -1319,14 +1489,18 @@ variable {f : E → ℝ} {X C A X₀ : Set E} {κg : ℕ → ℝ} {P : TRqIDAPar
   {x : ℕ → E} {Δ : ℕ → ℝ} {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ}
   {dd : ℕ → ℕ → E} {jk : ℕ → ℕ} {s : ℕ → E} {acc : ℕ → Prop} {L B : ℕ → ℝ} {κΔ : ℝ}
 
-/-- **Counting the trial iterations of a run** (Lemma 14.2.3 of [cartis2022evaluation]): for a
-TRqIDA run with a feasible set under `LipschitzDerivsAnchored f C A 0 q L` (`L_j ≥ 1`,
-`A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`) and an admissible `κ_Δ`, every iteration `k` up to the first iterate
-that is approximately optimal on `X` satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13), with `𝒮_k` the
-successful iterations in `[0, k]`, `κ_uns = 1 + log γ₃/|log γ₂|` and
-`κ_unc = |log(ς κ_δ ε_min/Δ₀)|/|log γ₂| + N_𝒜`, where
-`N_𝒜 = q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1` bounds the number of
-accuracy-improving iterations. -/
+/-- **Lemma 14.2.3** of [cartis2022evaluation] for TRqIDA, counting the iterations of a run. Assume
+the smoothness hypothesis of `Optimization.IsTRqIDARun.ratio_ge` and let $\kappa_\Delta$ be
+admissible. Then every iteration $k$ up to and including the first iterate that is approximately
+optimal on $X$ satisfies
+$$k \le \kappa_{\mathrm{uns}} |\mathcal{S}_k| + \kappa_{\mathrm{unc}}, \qquad (14.2.13)$$
+where $\mathcal{S}_k$ is the set of successful iterations among $0, \dots, k$,
+$\kappa_{\mathrm{uns}} = 1 + \log \gamma_3 / |\log \gamma_2|$, and $\kappa_{\mathrm{unc}} =
+|\log(\varsigma \kappa_\delta \varepsilon_{\min} / \Delta_0)| / |\log \gamma_2| +
+N_{\mathcal{A}}$ with
+$$N_{\mathcal{A}} = \frac{q(q+1)}{|\log \gamma_h|} |\log \varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}} / \kappa_h)|}{|\log \gamma_h|} + 1,$$
+the bound on the number of accuracy-improving iterations. -/
 theorem IsTRqIDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)

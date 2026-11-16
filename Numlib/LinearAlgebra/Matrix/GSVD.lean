@@ -14,58 +14,70 @@ import Numlib.LinearAlgebra.Matrix.CSDecomposition
 /-!
 # The generalized singular value decomposition
 
-The *generalized singular value decomposition* (GSVD) of a pair `A : Matrix (Fin m₁) (Fin n) 𝕜`,
-`B : Matrix (Fin m₂) (Fin n) 𝕜` ([golub2013matrix] Theorem 6.1.1, after Van Loan 1976 and
-Paige–Saunders 1981) diagonalizes both at once: unitary `U₁`, `U₂` and an invertible `X` with
-`U₁ᴴ A X = D_A` rectangular diagonal and `U₂ᴴ B X = D_B` rectangular diagonal shifted by
-`p = r − m₂` columns, where `r` is the rank of the stacked matrix `[A; B]` and the pairs
-`(α_i, β_i)` are cosine–sine pairs.
+Let $A \in \mathbb{K}^{m_1 \times n}$ and $B \in \mathbb{K}^{m_2 \times n}$ over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $r$ be the rank of the stacked matrix
+$\begin{bmatrix} A \\ B \end{bmatrix}$, and let $p = \max(r - m_2, 0)$. The **generalized singular
+value decomposition** (GSVD) of the pair $(A, B)$ diagonalizes both matrices at once: there are
+unitary $U_1$, $U_2$ and an invertible $X$ with $$U_1^H A X = D_A, \qquad U_2^H B X = D_B,$$ where
+$D_A$ is rectangular diagonal with entries $\alpha_i$, and $D_B$ is rectangular diagonal shifted by
+$p$ columns with entries $\beta_i$. The pairs $(\alpha_i, \beta_i)$ are $(1, 0)$ for $i < p$,
+cosine–sine pairs for $p \le i < r$, and $(0, 0)$ for $i \ge r$. This is Theorem 6.1.1 of
+[golub2013matrix] (§6.1.6), after Van Loan (*Generalizing the singular value decomposition*, SIAM J.
+Numer. Anal. 13, 1976) and Paige and Saunders (SIAM J. Numer. Anal. 18, 1981).
+
+The module proves that a GSVD exists when $n \le m_1$, and derives its consequences: $X^H (A^H A +
+\lambda B^H B) X = \operatorname{diag}(\alpha_i^2 + \lambda \beta_i^2)$, the columns of $X$ are
+generalized eigenvectors of the pencil $A^H A - \mu^2 B^H B$, the columns $x_i$ with $i \ge r$ span
+$\ker A \cap \ker B$, and the GSVD of $(A, I)$ is a singular value decomposition of $A$.
 
 ## Main definitions
 
-* `Matrix.IsGSVD A B U₁ U₂ X α β`: the specification, with `D_A = rectDiagonal α` and
-  `D_B = shiftedRectDiagonal p β`; read 0-based, `α_i = 1, β_i = 0` for `i < p`,
-  `α_i² + β_i² = 1` with `α_i, β_i ≥ 0` for `p ≤ i < r`, and `α_i = β_i = 0` for `i ≥ r`.
+* `Matrix.IsGSVD`: the statement that $(U_1, U_2, X, \alpha, \beta)$ is a GSVD of $(A, B)$.
 
 ## Main results
 
-* `Matrix.exists_isGSVD`: [golub2013matrix] Theorem 6.1.1, for `n ≤ m₁`. The book's proof: an SVD
-  `[A; B] = Q diag(Σ_r, 0) Zᴴ`, the thin CS decomposition of the first `r` columns of `Q`
-  (`Matrix.exists_isThinCSD`, in the general form without `m₂ ≥ r`), and
-  `X = Z · blockDiag(V₁ᴴ Σ_r, I)⁻¹`.
-* `Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`: `Xᴴ (AᴴA + λ BᴴB) X =
-  diag(α² + λ β²)`, and `Matrix.IsGSVD.gram_mulVec_col`: the columns of `X` are generalized
-  eigenvectors of the pencil `AᴴA − μ² BᴴB`.
-* `Matrix.IsGSVD.ker_inf_ker`: the common kernel of `A` and `B` is spanned by the columns
-  `x_i`, `i ≥ r`.
-* The simultaneous diagonal forms behind these, for one factorization `Uᴴ M X = diag(γ)` or a
-  congruence to diagonal forms (so also for [golub2013matrix] Theorem 8.7.4's unshifted version):
-  `Matrix.mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal` (`M x_k = γ_k u_k`),
-  `Matrix.conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal` (`Xᴴ MᴴM X = diag |γ|²`),
-  and, in `Numlib/Eigen/Pencil`, `Matrix.hasPencilEigenvector_col_of_conj_diagonal` and
-  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal` (the pencil `P − λ Q` with `Xᴴ P X = diag a`,
-  `Xᴴ Q X = diag b` has eigenvectors `x_k` and eigenvalues `a_k / b_k`).
-* `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of `(A, I)`
-  is an SVD of `A`, `U₁ᴴ A U₂ = diag(α_i / β_i)` with `β_i > 0`.
-* The facts used in GSVD coordinates by the least-squares applications:
-  `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left` (`Xᴴ Aᴴ = D_Aᴴ U₁ᴴ`) and its `B` twin,
-  `Matrix.IsGSVD.sq_add_smul_sq_ne_zero` (`α_i² + μ β_i² ≠ 0` below the rank), and
-  `Matrix.IsGSVD.rank_eq_and_ne_zero`.
+* `Matrix.exists_isGSVD`: [golub2013matrix] Theorem 6.1.1; for $n \le m_1$ every pair $(A, B)$ has a
+  GSVD.
+* `Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`: $X^H (A^H A + \lambda B^H B) X =
+  \operatorname{diag}(\alpha_i^2 + \lambda \beta_i^2)$.
+* `Matrix.IsGSVD.inv_gram_add_smul_gram_eq`: the inverse of $A^H A + \lambda B^H B$ in GSVD
+  coordinates.
+* `Matrix.IsGSVD.gram_mulVec_col`: $\beta_i^2 A^H A x_i = \alpha_i^2 B^H B x_i$ for every column
+  $x_i$ of $X$.
+* `Matrix.IsGSVD.ker_inf_ker`: $\ker A \cap \ker B$ is spanned by the columns $x_i$ with $i \ge r$.
+* `Matrix.mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal`,
+  `Matrix.conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal`: for one factorization
+  $U^H M X = \operatorname{diag}(\gamma)$ with $U$ unitary, $M x_k = \gamma_k u_k$ and $X^H M^H M
+  X = \operatorname{diag}(|\gamma_k|^2)$. These also serve the unshifted form of [golub2013matrix]
+  Theorem 8.7.4. The pencil forms are `Matrix.hasPencilEigenvector_col_of_conj_diagonal` and
+  `Matrix.pencilSpectrum_eq_range_of_conj_diagonal` in `Numlib.Eigen.Pencil`.
+* `Matrix.IsGSVD.star_mul_mul_eq_of_eq_one`, `Matrix.IsGSVD.pos_of_eq_one`: the GSVD of $(A, I)$
+  gives the SVD $U_1^H A U_2 = \operatorname{diag}(\alpha_i / \beta_i)$ with $\beta_i > 0$.
+* `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left`,
+  `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_right`, `Matrix.IsGSVD.sq_add_smul_sq_ne_zero`,
+  `Matrix.IsGSVD.rank_eq_and_ne_zero`: facts in GSVD coordinates that the least-squares applications
+  use.
+
+## Proof outline
+
+Take an SVD $\begin{bmatrix} A \\ B \end{bmatrix} Z = Q_1 \Sigma_r \begin{bmatrix} I & 0
+\end{bmatrix}$, where $Q_1$ holds the first $r$ columns of a unitary $Q$. A thin CS decomposition of
+$Q_1 = \begin{bmatrix} Q_{11} \\ Q_{21} \end{bmatrix}$ gives $U_1$, $U_2$ and $V_1$
+(`Matrix.exists_isThinCSD`, in the general form without $m_2 \ge r$). Then $X = Z \cdot
+\operatorname{blockdiag}(V_1^H \Sigma_r, I)^{-1}$.
 
 ## Implementation notes
 
-The field names follow the thin CS decomposition `Matrix.IsThinCSD` the proof goes through: the
-two left factors are `mem_unitaryGroup_left₁` (`U₁`, of `A`) and `mem_unitaryGroup_left₂` (`U₂`,
-of `B`), and the two diagonal forms are `star_mul_mul₁` and `star_mul_mul₂`; the lemmas about
-`A` and `B` carry the same subscripts.
-
-The consequences that read `α_i` off `D_A` assume the book's standing hypothesis `n ≤ m₁`: without
-it the entries `α_i` with `m₁ ≤ i < n` are not seen by the `m₁ × n` matrix `D_A`.
-
-## References
-
-* [golub2013matrix] §6.1.6; C. F. Van Loan, *Generalizing the singular value decomposition*,
-  SIAM J. Numer. Anal. 13 (1976); C. C. Paige, M. A. Saunders, SIAM J. Numer. Anal. 18 (1981).
+* The rectangular diagonal matrices are `Matrix.rectDiagonal` and `Matrix.shiftedRectDiagonal`. The
+  sequences $\alpha, \beta$ are functions on $\mathbb{N}$, indexed from $0$, and $p = r - m_2$ is
+  truncated subtraction of natural numbers.
+* The field names follow the thin CS decomposition `Matrix.IsThinCSD` that the proof uses. The two
+  left factors are `mem_unitaryGroup_left₁` ($U_1$, of $A$) and `mem_unitaryGroup_left₂` ($U_2$, of
+  $B$), and the two diagonal forms are `star_mul_mul₁` and `star_mul_mul₂`. The lemmas about $A$ and
+  $B$ carry the same subscripts.
+* The consequences that read $\alpha_i$ off $D_A$ assume the standing hypothesis $n \le m_1$ of the
+  source. Without it, the entries $\alpha_i$ with $m_1 \le i < n$ do not appear in the
+  $m_1 \times n$ matrix $D_A$.
 -/
 
 open scoped ComplexOrder
@@ -78,33 +90,43 @@ section Def
 
 variable {m₁ m₂ n : ℕ}
 
-/-- **The generalized singular value decomposition, as a specification** ([golub2013matrix]
-Theorem 6.1.1, (6.1.22)–(6.1.23)): with `r` the rank of `[A; B]` and `p = r − m₂` (truncated),
-`U₁`, `U₂` are unitary, `X` is invertible, `U₁ᴴ A X = rectDiagonal α` and
-`U₂ᴴ B X = shiftedRectDiagonal p β`, where `α_i = 1, β_i = 0` for `i < p`, `α_i² + β_i² = 1` for
-`p ≤ i < r`, `α_i = β_i = 0` for `i ≥ r`, and all are nonnegative. The columns of `X` are the
-book's `x_1, …, x_n`. -/
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$, $B \in \mathbb{K}^{m_2 \times n}$, let $r$ be the rank of
+$\begin{bmatrix} A \\ B \end{bmatrix}$ and $p = \max(r - m_2, 0)$. A tuple
+$(U_1, U_2, X, \alpha, \beta)$ with $U_1 \in \mathbb{K}^{m_1 \times m_1}$,
+$U_2 \in \mathbb{K}^{m_2 \times m_2}$, $X \in \mathbb{K}^{n \times n}$ and real sequences
+$\alpha, \beta$ is a **generalized singular value decomposition** of $(A, B)$ if $U_1$ and $U_2$
+are unitary, $X$ is invertible, $$U_1^H A X = D_A, \qquad U_2^H B X = D_B,$$ where $D_A$ has
+$\alpha_i$ at position $(i, i)$ and $D_B$ has $\beta_{i+p}$ at position $(i, i + p)$ and both
+are zero elsewhere, and the pairs satisfy $\alpha_i, \beta_i \ge 0$ for all $i$,
+$(\alpha_i, \beta_i) = (1, 0)$ for $i < p$, $\alpha_i^2 + \beta_i^2 = 1$ for $p \le i < r$, and
+$\alpha_i = \beta_i = 0$ for $i \ge r$. This is Theorem 6.1.1 of [golub2013matrix],
+(6.1.22)–(6.1.23).
+
+The columns of $X$ are the vectors $x_1, \dots, x_n$ of the source. In Lean the indices start at
+$0$. -/
 structure IsGSVD (A : Matrix (Fin m₁) (Fin n) 𝕜) (B : Matrix (Fin m₂) (Fin n) 𝕜)
     (U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜) (U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜)
     (X : Matrix (Fin n) (Fin n) 𝕜) (α β : ℕ → ℝ) : Prop where
-  /-- The first left factor (of `A`) is unitary. -/
+  /-- The first left factor $U_1$, of $A$, is unitary. -/
   mem_unitaryGroup_left₁ : U₁ ∈ unitaryGroup (Fin m₁) 𝕜
-  /-- The second left factor (of `B`) is unitary. -/
+  /-- The second left factor $U_2$, of $B$, is unitary. -/
   mem_unitaryGroup_left₂ : U₂ ∈ unitaryGroup (Fin m₂) 𝕜
-  /-- The right factor is invertible. -/
+  /-- The right factor $X$ is invertible. -/
   isUnit : IsUnit X
-  /-- The first `p` pairs are `(1, 0)`. -/
+  /-- For $i < p$, $\alpha_i = 1$ and $\beta_i = 0$. -/
   eq_one_and_eq_zero_of_lt : ∀ i < (fromRows A B).rank - m₂, α i = 1 ∧ β i = 0
-  /-- The middle pairs are cosine–sine pairs. -/
+  /-- For $p \le i < r$, $\alpha_i^2 + \beta_i^2 = 1$. -/
   sq_add_sq : ∀ i, (fromRows A B).rank - m₂ ≤ i → i < (fromRows A B).rank →
     α i ^ 2 + β i ^ 2 = 1
-  /-- The pairs are nonnegative. -/
+  /-- For every $i$, $\alpha_i \ge 0$ and $\beta_i \ge 0$. -/
   nonneg : ∀ i, 0 ≤ α i ∧ 0 ≤ β i
-  /-- The pairs past the rank vanish. -/
+  /-- For $i \ge r$, $\alpha_i = \beta_i = 0$. -/
   eq_zero_and_eq_zero_of_rank_le : ∀ i, (fromRows A B).rank ≤ i → α i = 0 ∧ β i = 0
-  /-- The factorization `U₁ᴴ A X = D_A`. -/
+  /-- The factorization $U_1^H A X = D_A$, with $D_A$ rectangular diagonal with entries $\alpha_i$.
+  -/
   star_mul_mul₁ : star U₁ * A * X = rectDiagonal fun i => ((α i : ℝ) : 𝕜)
-  /-- The factorization `U₂ᴴ B X = D_B`. -/
+  /-- The factorization $U_2^H B X = D_B$, with $D_B$ rectangular diagonal shifted by $p$ columns
+  with entries $\beta_i$. -/
   star_mul_mul₂ : star U₂ * B * X =
     shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜)
 
@@ -114,13 +136,17 @@ section Exists
 
 variable {m₁ m₂ n : ℕ}
 
-/-- **Existence of the GSVD** ([golub2013matrix] Theorem 6.1.1): for `n ≤ m₁` every pair
-`A : Matrix (Fin m₁) (Fin n) 𝕜`, `B : Matrix (Fin m₂) (Fin n) 𝕜` has a GSVD. Let
-`[A; B] Z = Q Σ = Q₁ Σ_r [I 0]` be an SVD, `Q₁ = [Q₁₁; Q₂₁]` the first `r` columns of `Q`, and
-`U₁ᴴ Q₁₁ V₁ = C`, `U₂ᴴ Q₂₁ V₁ = S` a thin CS decomposition (`Matrix.exists_isThinCSD`, with
-`r ≤ n ≤ m₁`). With `Y = Rᵀ Σ_r⁻¹ V₁ R + (1 − Rᵀ R)`, `R = [I_r 0]`, and `X = Z Y` one gets
-`A X = Q₁₁ V₁ R` and `B X = Q₂₁ V₁ R`, whence the two diagonal forms; `Y` is invertible, with
-inverse `Rᵀ V₁ᴴ Σ_r R + (1 − Rᵀ R)`. -/
+/-- **Theorem 6.1.1** of [golub2013matrix], existence of the GSVD. Let
+$A \in \mathbb{K}^{m_1 \times n}$ and $B \in \mathbb{K}^{m_2 \times n}$ with $n \le m_1$. Then
+$(A, B)$ has a generalized singular value decomposition $(U_1, U_2, X, \alpha, \beta)$.
+
+Let $\begin{bmatrix} A \\ B \end{bmatrix} Z = Q \Sigma = Q_1 \Sigma_r \begin{bmatrix} I & 0
+\end{bmatrix}$ be an SVD, with $Q_1 = \begin{bmatrix} Q_{11} \\ Q_{21} \end{bmatrix}$ the first
+$r$ columns of $Q$, and let $U_1^H Q_{11} V_1 = C$, $U_2^H Q_{21} V_1 = S$ be a thin CS
+decomposition (`Matrix.exists_isThinCSD`, with $r \le n \le m_1$). With
+$R = \begin{bmatrix} I_r & 0 \end{bmatrix}$, $Y = R^T \Sigma_r^{-1} V_1 R + (I - R^T R)$ and
+$X = ZY$, one gets $AX = Q_{11} V_1 R$ and $BX = Q_{21} V_1 R$, and so the two diagonal forms.
+The matrix $Y$ is invertible, with inverse $R^T V_1^H \Sigma_r R + (I - R^T R)$. -/
 theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
     (B : Matrix (Fin m₂) (Fin n) 𝕜) : ∃ U₁ U₂ X α β, IsGSVD A B U₁ U₂ X α β := by
   classical
@@ -264,32 +290,39 @@ theorem exists_isGSVD (hnm : n ≤ m₁) (A : Matrix (Fin m₁) (Fin n) 𝕜)
 
 end Exists
 
-/-! ### Simultaneous diagonal forms
+/-!
+### Simultaneous diagonal forms
 
-The facts below use only one factorization `Uᴴ M X = D` with `U` unitary and `D` rectangular
-diagonal, or a congruence of two matrices to diagonal ones by the same invertible `X`; they serve
-the GSVD and its tall rectangular version ([golub2013matrix] Theorem 8.7.4) alike. -/
+The results below use only one factorization $U^H M X = D$ with $U$ unitary and $D$ rectangular
+diagonal, or a congruence of two matrices to diagonal ones by the same invertible $X$. They serve
+the GSVD and its tall rectangular form ([golub2013matrix] Theorem 8.7.4) alike.
+-/
 
 section DiagonalForms
 
 variable {m n : ℕ} {M : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- `Uᴴ M X = D` with `U` unitary gives `M X = U D`. -/
+/-- Let $M \in \mathbb{K}^{m \times n}$, $X \in \mathbb{K}^{n \times n}$ and let
+$U \in \mathbb{K}^{m \times m}$ be unitary. If $U^H M X = D$, then $MX = UD$. -/
 theorem mul_eq_mul_of_star_mul_mul_eq {D : Matrix (Fin m) (Fin n) 𝕜}
     (hU : U ∈ unitaryGroup (Fin m) 𝕜) (h : star U * M * X = D) : M * X = U * D := by
   rw [← h, Matrix.mul_assoc, ← Matrix.mul_assoc U, star_eq_conjTranspose,
     mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
 
-/-- `Xᴴ Mᴴ M X = (Uᴴ M X)ᴴ (Uᴴ M X)` for unitary `U`. -/
+/-- Let $M \in \mathbb{K}^{m \times n}$, $X \in \mathbb{K}^{n \times n}$ and let
+$U \in \mathbb{K}^{m \times m}$ be unitary. Then $X^H M^H M X = (U^H M X)^H (U^H M X)$. -/
 theorem conjTranspose_mul_gram_mul_eq (hU : U ∈ unitaryGroup (Fin m) 𝕜) :
     Xᴴ * (Mᴴ * M) * X = (star U * M * X)ᴴ * (star U * M * X) := by
   simp only [conjTranspose_mul, star_eq_conjTranspose, conjTranspose_conjTranspose,
     Matrix.mul_assoc]
   rw [← Matrix.mul_assoc U, mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul]
 
-/-- **A unitary rectangular-diagonal form diagonalizes the Gram matrix**: if `Uᴴ M X = diag(γ)`
-with `U` unitary and `n ≤ m`, then `Xᴴ MᴴM X = diag(|γ_k|²)`. -/
+/-- Let $M \in \mathbb{K}^{m \times n}$ with $n \le m$, $X \in \mathbb{K}^{n \times n}$, and let
+$U \in \mathbb{K}^{m \times m}$ be unitary. If $U^H M X = \operatorname{diag}(\gamma)$ is
+rectangular diagonal, then $$X^H M^H M X = \operatorname{diag}(|\gamma_0|^2, \dots,
+|\gamma_{n-1}|^2).$$ So **a unitary rectangular diagonal form diagonalizes the Gram matrix**.
+The sequence $\gamma$ is indexed from $0$. -/
 theorem conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal (hnm : n ≤ m)
     (hU : U ∈ unitaryGroup (Fin m) 𝕜) {γ : ℕ → 𝕜} (h : star U * M * X = rectDiagonal γ) :
     Xᴴ * (Mᴴ * M) * X = diagonal fun k : Fin n => star (γ k) * γ k := by
@@ -298,8 +331,10 @@ theorem conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal (hnm : n ≤ 
   funext k
   rw [ite_eq_left (lt_of_lt_of_le k.isLt hnm)]
 
-/-- **The columns of a rectangular-diagonal form**: if `M X = U diag(γ)` and `n ≤ m`, then
-`M x_k = γ_k u_k` for the columns `x_k` of `X` and `u_k` of `U`. -/
+/-- Let $M \in \mathbb{K}^{m \times n}$ with $n \le m$, $X \in \mathbb{K}^{n \times n}$ and
+$U \in \mathbb{K}^{m \times m}$. If $MX = U \operatorname{diag}(\gamma)$ with a rectangular
+diagonal $\operatorname{diag}(\gamma)$, then $$M x_k = \gamma_k u_k$$ for every $k$, where $x_k$
+and $u_k$ are the $k$-th columns of $X$ and $U$. -/
 theorem mulVec_col_eq_smul_col_of_mul_eq_mul_rectDiagonal (hnm : n ≤ m) {γ : ℕ → 𝕜}
     (h : M * X = U * rectDiagonal γ) (k : Fin n) :
     M *ᵥ X.col k = γ k • U.col (Fin.castLE hnm k) := by
@@ -323,17 +358,19 @@ variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (F
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
 
-/-- `A X = U₁ D_A`. -/
+/-- In a GSVD of $(A, B)$, $AX = U_1 D_A$. -/
 theorem IsGSVD.mul_eq₁ (h : IsGSVD A B U₁ U₂ X α β) :
     A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) :=
   mul_eq_mul_of_star_mul_mul_eq h.mem_unitaryGroup_left₁ h.star_mul_mul₁
 
-/-- `B X = U₂ D_B`. -/
+/-- In a GSVD of $(A, B)$, $BX = U_2 D_B$. -/
 theorem IsGSVD.mul_eq₂ (h : IsGSVD A B U₁ U₂ X α β) :
     B * X = U₂ * shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :=
   mul_eq_mul_of_star_mul_mul_eq h.mem_unitaryGroup_left₂ h.star_mul_mul₂
 
-/-- **The GSVD diagonalizes `AᴴA`**: `Xᴴ AᴴA X = diag(α²)`, for `n ≤ m₁`. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$ with $n \le m_1$. Then $$X^H A^H A X =
+\operatorname{diag}(\alpha_0^2, \dots, \alpha_{n-1}^2).$$
+-/
 theorem IsGSVD.conjTranspose_mul_gram_mul₁ (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) :
     Xᴴ * (Aᴴ * A) * X = diagonal fun i : Fin n => ((α i ^ 2 : ℝ) : 𝕜) := by
   rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_left₁, h.star_mul_mul₁,
@@ -344,8 +381,10 @@ theorem IsGSVD.conjTranspose_mul_gram_mul₁ (h : IsGSVD A B U₁ U₂ X α β) 
   push_cast
   ring
 
-/-- **The GSVD diagonalizes `BᴴB`**: `Xᴴ BᴴB X = diag(β²)`. The shift of `D_B` disappears, and the
-`β_j` it does not see vanish. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$. Then $$X^H B^H B X =
+\operatorname{diag}(\beta_0^2, \dots, \beta_{n-1}^2).$$
+
+The shift of $D_B$ disappears, and the $\beta_j$ that $D_B$ does not contain vanish. -/
 theorem IsGSVD.conjTranspose_mul_gram_mul₂ (h : IsGSVD A B U₁ U₂ X α β) :
     Xᴴ * (Bᴴ * B) * X = diagonal fun i : Fin n => ((β i ^ 2 : ℝ) : 𝕜) := by
   rw [conjTranspose_mul_gram_mul_eq h.mem_unitaryGroup_left₂, h.star_mul_mul₂,
@@ -363,8 +402,10 @@ theorem IsGSVD.conjTranspose_mul_gram_mul₂ (h : IsGSVD A B U₁ U₂ X α β) 
     rw [hβ]
     simp
 
-/-- **The GSVD diagonalizes `AᴴA + λ BᴴB`** ([golub2013matrix] §6.1.6, the display before
-(6.1.26), and §6.2.6): `Xᴴ (AᴴA + λ BᴴB) X = diag(α_i² + λ β_i²)`, for `n ≤ m₁`. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$ with $n \le m_1$, and let
+$\lambda \in \mathbb{R}$. Then $$X^H (A^H A + \lambda B^H B) X =
+\operatorname{diag}(\alpha_i^2 + \lambda \beta_i^2).$$ This is the display before (6.1.26) in
+§6.1.6 of [golub2013matrix], used again in §6.2.6. -/
 theorem IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul (h : IsGSVD A B U₁ U₂ X α β)
     (hnm : n ≤ m₁) (μ : ℝ) :
     Xᴴ * (Aᴴ * A + (μ : 𝕜) • (Bᴴ * B)) * X
@@ -377,8 +418,11 @@ theorem IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul (h : IsGSVD A B U₁ U�
   push_cast
   rw [Pi.smul_apply, smul_eq_mul]
 
-/-- **The inverse of `AᴴA + λ BᴴB` in GSVD coordinates**: when every `α_i² + λβ_i²` is nonzero,
-`(AᴴA + λ BᴴB)⁻¹ = X diag(α² + λβ²)⁻¹ Xᴴ`, for `n ≤ m₁`. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$ with $n \le m_1$, let
+$\lambda \in \mathbb{R}$, and suppose that $\alpha_i^2 + \lambda \beta_i^2 \ne 0$ for every
+$i < n$. Then $$(A^H A + \lambda B^H B)^{-1} = X \operatorname{diag}(\alpha_i^2 + \lambda
+\beta_i^2)^{-1} X^H.$$
+-/
 theorem IsGSVD.inv_gram_add_smul_gram_eq (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) (μ : ℝ)
     (hd : ∀ i : Fin n, α i ^ 2 + μ * β i ^ 2 ≠ 0) :
     (Aᴴ * A + (μ : 𝕜) • (Bᴴ * B))⁻¹
@@ -396,16 +440,18 @@ theorem IsGSVD.inv_gram_add_smul_gram_eq (h : IsGSVD A B U₁ U₂ X α β) (hnm
       funext fun i => inv_mul_cancel₀ (RCLike.ofReal_ne_zero.2 (hd i)),
     diagonal_one, Matrix.one_mul, mul_nonsing_inv _ hXd]
 
-/-- **The GSVD diagonalizes the pencil `AᴴA − μ² BᴴB`** ([golub2013matrix] §6.1.6, the remark
-relating the GSVD to `AᵀA x = μ² BᵀB x`, taken up in §8.7.4): for `n ≤ m₁` and every column
-`x_i` of `X`, `β_i² AᴴA x_i = α_i² BᴴB x_i`. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$ with $n \le m_1$. For every column
+$x_i$ of $X$, $$\beta_i^2 A^H A x_i = \alpha_i^2 B^H B x_i,$$ so **the GSVD diagonalizes the
+pencil $A^H A - \mu^2 B^H B$**. This is the remark in §6.1.6 of [golub2013matrix] that relates
+the GSVD to $A^T A x = \mu^2 B^T B x$, taken up again in §8.7.4. -/
 theorem IsGSVD.gram_mulVec_col (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m₁) (i : Fin n) :
     ((β i ^ 2 : ℝ) : 𝕜) • ((Aᴴ * A) *ᵥ X.col i)
       = ((α i ^ 2 : ℝ) : 𝕜) • ((Bᴴ * B) *ᵥ X.col i) :=
   smul_mulVec_col_eq_of_conj_diagonal h.isUnit (h.conjTranspose_mul_gram_mul₁ hnm)
     h.conjTranspose_mul_gram_mul₂ i
 
-/-- The common kernel of `A` and `B` is the kernel of the stacked matrix `[A; B]`. -/
+/-- For matrices $A$ and $B$ with the same columns, $\ker A \cap \ker B = \ker \begin{bmatrix} A \\
+B \end{bmatrix}$. -/
 theorem ker_inf_ker_eq_ker_fromRows {m₁ m₂ n : Type*} [Fintype n] (A : Matrix m₁ n 𝕜)
     (B : Matrix m₂ n 𝕜) :
     LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin
@@ -419,10 +465,14 @@ theorem ker_inf_ker_eq_ker_fromRows {m₁ m₂ n : Type*} [Fintype n] (A : Matri
   · intro h0
     exact ⟨funext fun k => congrFun h0 (Sum.inl k), funext fun k => congrFun h0 (Sum.inr k)⟩
 
-/-- **The common kernel in GSVD coordinates**: `ker A ∩ ker B` is spanned by the columns `x_i` of
-`X` with `i ≥ r = rank [A; B]`. They are killed by both (`α_i = β_i = 0`), they are independent,
-and `ker A ∩ ker B = ker [A; B]` has dimension `n − r`. Used for (6.1.21) and (6.2.12):
-`null(A) ∩ null(B) = {0}` iff `r = n`. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$ and $r = \operatorname{rank}
+\begin{bmatrix} A \\ B \end{bmatrix}$. Then $\ker A \cap \ker B$ is the span of the columns
+$x_i$ of $X$ with $i \ge r$.
+
+These columns are mapped to $0$ by both matrices, since $\alpha_i = \beta_i = 0$, and they are
+linearly independent; $\ker A \cap \ker B = \ker \begin{bmatrix} A \\ B \end{bmatrix}$ has
+dimension $n - r$. The result is used for (6.1.21) and (6.2.12) of [golub2013matrix]:
+$\operatorname{null}(A) \cap \operatorname{null}(B) = \{0\}$ if and only if $r = n$. -/
 theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
     LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin
       = Submodule.span 𝕜 (X.col '' {i | (fromRows A B).rank ≤ (i : ℕ)}) := by
@@ -480,7 +530,8 @@ theorem IsGSVD.ker_inf_ker (h : IsGSVD A B U₁ U₂ X α β) :
   refine (Submodule.eq_of_le_of_finrank_le hle ?_).symm
   rw [hfin, ker_inf_ker_eq_ker_fromRows, hker]
 
-/-- Stacking the identity below `A` gives full column rank: `rank [A; I] = n`. -/
+/-- For every $A \in \mathbb{K}^{m_1 \times n}$, the stacked matrix
+$\begin{bmatrix} A \\ I \end{bmatrix}$ has rank $n$. -/
 theorem rank_fromRows_one (A : Matrix (Fin m₁) (Fin n) 𝕜) :
     (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).rank = n := by
   have hker : LinearMap.ker (fromRows A (1 : Matrix (Fin n) (Fin n) 𝕜)).mulVecLin = ⊥ := by
@@ -500,8 +551,9 @@ section OfEqOne
 
 variable {A : Matrix (Fin m₁) (Fin n) 𝕜} {U₂ : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- In a GSVD of `(A, I)` the right factor is `X = U₂ D_B` with `D_B = diag(β)`: `p = 0` since
-`rank [A; I] = n` (`Matrix.rank_fromRows_one`). -/
+/-- In a GSVD of $(A, I)$, the right factor is $X = U_2 \operatorname{diag}(\beta_0, \dots,
+\beta_{n-1})$, because $p = 0$ when $\operatorname{rank} \begin{bmatrix} A \\ I \end{bmatrix} =
+n$ (`Matrix.rank_fromRows_one`). -/
 theorem IsGSVD.eq_mul_diagonal_of_eq_one
     (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
     X = U₂ * diagonal fun i : Fin n => ((β i : ℝ) : 𝕜) := by
@@ -510,7 +562,8 @@ theorem IsGSVD.eq_mul_diagonal_of_eq_one
     rectDiagonal_eq_diagonal] at hX
   exact hX
 
-/-- In a GSVD of `(A, I)` every `β_i`, `i < n`, is positive: `X = U₂ diag(β)` is invertible. -/
+/-- In a GSVD of $(A, I)$, $\beta_i > 0$ for every $i < n$, because
+$X = U_2 \operatorname{diag}(\beta)$ is invertible. -/
 theorem IsGSVD.pos_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
     ∀ i < n, 0 < β i := by
   intro i hi
@@ -521,10 +574,13 @@ theorem IsGSVD.pos_of_eq_one (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U�
     (Finset.prod_eq_zero (Finset.mem_univ ⟨i, hi⟩)
       (show ((β i : ℝ) : 𝕜) = 0 by rw [← hβ, RCLike.ofReal_zero]))
 
-/-- **The GSVD of `(A, I)` is an SVD of `A`** ([golub2013matrix] §6.1.6, "if `B = I_{n₁}` … we
-obtain the SVD of `A`", made precise): `U₁ᴴ A U₂ = diag(α_i / β_i)`, an SVD of `A` with singular
-values `α_i / β_i` (unsorted, positive denominators by `Matrix.IsGSVD.pos_of_eq_one`). The book's
-"set `X = U₂`" is loose: `X` itself is `U₂ D_B` (`Matrix.IsGSVD.eq_mul_diagonal_of_eq_one`). -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, I)$ with $I$ the $n \times n$ identity.
+Then $$U_1^H A U_2 = \operatorname{diag}(\alpha_i / \beta_i),$$ a singular value decomposition
+of $A$ with singular values $\alpha_i / \beta_i$ (not sorted). This makes precise the remark of
+[golub2013matrix] §6.1.6 that the GSVD with $B = I$ gives the SVD of $A$.
+
+The denominators are positive by `Matrix.IsGSVD.pos_of_eq_one`. The instruction "set $X = U_2$"
+of the source is loose: $X$ itself is $U_2 D_B$ (`Matrix.IsGSVD.eq_mul_diagonal_of_eq_one`). -/
 theorem IsGSVD.star_mul_mul_eq_of_eq_one
     (h : IsGSVD A (1 : Matrix (Fin n) (Fin n) 𝕜) U₁ U₂ X α β) :
     star U₁ * A * U₂ = rectDiagonal fun i => ((α i / β i : ℝ) : 𝕜) := by
@@ -559,7 +615,7 @@ variable {m₁ m₂ n : ℕ} {A : Matrix (Fin m₁) (Fin n) 𝕜} {B : Matrix (F
   {U₁ : Matrix (Fin m₁) (Fin m₁) 𝕜} {U₂ : Matrix (Fin m₂) (Fin m₂) 𝕜}
   {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
 
-/-- The `A`-half of a GSVD, conjugate-transposed: `Xᴴ Aᴴ = D_Aᴴ U₁ᴴ`, with `D_A` real. -/
+/-- In a GSVD of $(A, B)$, $X^H A^H = D_A^H U_1^H$, where $D_A$ is real. -/
 theorem IsGSVD.conjTranspose_mul_conjTranspose_left (h : IsGSVD A B U₁ U₂ X α β) :
     Xᴴ * Aᴴ = (rectDiagonal fun i => ((α i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m₁) 𝕜) * star U₁ := by
   have hAX : A * X = U₁ * rectDiagonal fun i => ((α i : ℝ) : 𝕜) := by
@@ -571,7 +627,7 @@ theorem IsGSVD.conjTranspose_mul_conjTranspose_left (h : IsGSVD A B U₁ U₂ X 
   funext i
   simp
 
-/-- The `B`-half of a GSVD, conjugate-transposed: `Xᴴ Bᴴ = D_Bᴴ U₂ᴴ`. -/
+/-- In a GSVD of $(A, B)$, $X^H B^H = D_B^H U_2^H$. -/
 theorem IsGSVD.conjTranspose_mul_conjTranspose_right (h : IsGSVD A B U₁ U₂ X α β) :
     Xᴴ * Bᴴ = (shiftedRectDiagonal ((fromRows A B).rank - m₂) fun i => ((β i : ℝ) : 𝕜) :
       Matrix (Fin m₂) (Fin n) 𝕜)ᴴ * star U₂ := by
@@ -581,8 +637,9 @@ theorem IsGSVD.conjTranspose_mul_conjTranspose_right (h : IsGSVD A B U₁ U₂ X
       mem_unitaryGroup_iff.1 h.mem_unitaryGroup_left₂, Matrix.one_mul]
   rw [← conjTranspose_mul, hBX, conjTranspose_mul, star_eq_conjTranspose]
 
-/-- Below the rank, the weighted sum `α_i² + μ β_i²` of a GSVD pair is nonzero for `μ > 0`: the
-pair is `(1, 0)` or a cosine–sine pair. -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$, let $\mu > 0$ and $i < r$. Then
+$\alpha_i^2 + \mu \beta_i^2 \ne 0$, because the pair $(\alpha_i, \beta_i)$ is $(1, 0)$ or a
+cosine–sine pair. -/
 theorem IsGSVD.sq_add_smul_sq_ne_zero (h : IsGSVD A B U₁ U₂ X α β) {μ : ℝ} (hμ : 0 < μ)
     {i : ℕ} (hi : i < (fromRows A B).rank) : α i ^ 2 + μ * β i ^ 2 ≠ 0 := by
   by_cases hp : i < (fromRows A B).rank - m₂
@@ -595,9 +652,11 @@ theorem IsGSVD.sq_add_smul_sq_ne_zero (h : IsGSVD A B U₁ U₂ X α β) {μ : �
     have hb' : β i ^ 2 = 0 := (mul_eq_zero.1 hb).resolve_left hμ.ne'
     nlinarith [sq_nonneg (α i)]
 
-/-- With `B` of full row rank and `ker A ⊓ ker B = ⊥`, the GSVD has `r = n`, so `p_GSVD = n − m₂`,
-and the sines `β_j`, `n − m₂ ≤ j < n`, are nonzero (a zero one would make a row of
-`D_B = U₂ᴴ B X` vanish). -/
+/-- Let $(U_1, U_2, X, \alpha, \beta)$ be a GSVD of $(A, B)$, let the rows of $B$ be linearly
+independent, and let $\ker A \cap \ker B = \{0\}$. Then $r = n$, $m_2 \le n$, and
+$\beta_j \ne 0$ for $n - m_2 \le j < n$.
+
+Here $p = n - m_2$. A zero $\beta_j$ would make a row of $D_B = U_2^H B X$ vanish. -/
 theorem IsGSVD.rank_eq_and_ne_zero (h : IsGSVD A B U₁ U₂ X α β)
     (hB : LinearIndependent 𝕜 B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) :

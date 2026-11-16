@@ -9,21 +9,33 @@ import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import Numlib.Analysis.Normed.Algebra.Exponential
 
 /-!
-# The logarithm of a normed algebra: bounds
+# Bounds for the logarithm in a normed algebra
 
-Upstreaming candidate: natural home `Mathlib/Analysis/Normed/Algebra/Logarithm`, whose name this
-module mirrors.
+Mathlib's logarithm `NormedSpace.log` is the series $\log x = \sum_{n \ge 1} \frac{(-1)^{n+1}}{n}
+(x - 1)^n$, defined in any topological algebra. This module bounds it in a normed algebra over
+$\mathbb{R}$ or $\mathbb{C}$: if $\|x - 1\| < 1$, then $\|\log x\| \le -\log(1 - \|x - 1\|)$. It
+also proves that the logarithm is a right inverse of the exponential near $1$: $\exp(\log x) = x$
+for $\|x - 1\| < 1$ in a complete normed real algebra.
 
-Mathlib's `NormedSpace.log x = ∑ₙ (-1)^{n+1}/n (x - 1)ⁿ` is defined in any topological algebra;
-this module bounds it in a normed algebra over `ℝ` or `ℂ`:
+## Main results
 
-* `NormedSpace.norm_log_le`: `‖log x‖ ≤ -log (1 - ‖x - 1‖)` for `‖x - 1‖ < 1`, termwise against
-  the real series `∑ uⁿ/n = -log (1 - u)`. [golub2013matrix] P9.2.2 is the weaker
-  `‖log (I + A)‖ ≤ ‖A‖/(1 - ‖A‖)`.
+* `NormedSpace.norm_log_le`: $\|\log x\| \le -\log(1 - \|x - 1\|)$ for $\|x - 1\| < 1$.
+* `NormedSpace.exp_log_of_norm_sub_one_lt`: $\exp(\log x) = x$ for $\|x - 1\| < 1$ in a complete
+  normed $\mathbb{R}$-algebra.
 
-* `NormedSpace.exp_log_of_norm_sub_one_lt`: `exp (log x) = x` for `‖x - 1‖ < 1` in a complete
-  normed real (or complex) algebra, a TODO of Mathlib, by showing that `e^{-log(1 + t h)} (1 + t h)`
-  is constant in `t`.
+## Proof outline
+
+The norm bound compares the series termwise with the real series
+$\sum_{n \ge 1} u^n / n = -\log(1 - u)$. For $\exp(\log x) = x$, put $h = x - 1$; the function
+$t \mapsto \exp(-\log(1 + th))(1 + th)$ has derivative $0$ on $[0, 1]$, so its values at $t = 1$ and
+$t = 0$ agree.
+
+## Implementation notes
+
+* A complex Banach algebra is a complete normed $\mathbb{R}$-algebra through
+  `NormedAlgebra.complexToReal`, so `NormedSpace.exp_log_of_norm_sub_one_lt` covers it.
+* The Mathlib module `Mathlib.Analysis.Normed.Algebra.Logarithm` lists $\exp(\log x) = x$ as an open
+  task. This module extends that Mathlib module and mirrors its name.
 -/
 
 open Filter Topology
@@ -32,8 +44,14 @@ namespace NormedSpace
 
 variable {𝔸 : Type*} [NormedRing 𝔸]
 
-/-- **The logarithm series is bounded termwise by the real one**:
-`‖log x‖ ≤ -log (1 - ‖x - 1‖)` whenever `‖x - 1‖ < 1`. -/
+/-- **The logarithm series is bounded termwise by the real one.** Let $\mathbb{K}$ be $\mathbb{R}$
+or $\mathbb{C}$, let $\mathbb{A}$ be a normed $\mathbb{K}$-algebra, and let $x \in \mathbb{A}$
+satisfy $\|x - 1\| < 1$. Then
+$$\|\log x\| \le -\log(1 - \|x - 1\|).$$
+
+The bound compares the series termwise with $\sum_{n \ge 1} u^n / n = -\log(1 - u)$ at
+$u = \|x - 1\|$. Problem P9.2.2 of [golub2013matrix] is the weaker bound
+$\|\log(I + A)\| \le \|A\| / (1 - \|A\|)$. The algebra need not be complete. -/
 theorem norm_log_le (𝕂 : Type*) [RCLike 𝕂] [NormedAlgebra 𝕂 𝔸] {x : 𝔸} (hx : ‖x - 1‖ < 1) :
     ‖log x‖ ≤ -Real.log (1 - ‖x - 1‖) := by
   set u := ‖x - 1‖
@@ -54,22 +72,26 @@ section ExpLog
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]
 
-/-- The coefficients `(-1)^{n+1}/n` of the logarithm series. -/
+/-- The coefficients $(-1)^{n+1} / n$ of the logarithm series; the coefficient at $n = 0$ is $0$. -/
 private noncomputable def logCoeff (n : ℕ) : ℝ := (-1) ^ (n + 1) / n
 
 omit [CompleteSpace 𝔸] in
-/-- `log (1 + t h)` as a power series in the real variable `t`. -/
+/-- For real $t$, $\log(1 + th) = \sum_n \frac{(-1)^{n+1}}{n} t^n h^n$, a power series in $t$. -/
 private theorem log_one_add_smul_eq_tsum (h : 𝔸) (t : ℝ) :
     log (1 + t • h) = ∑' n, (logCoeff n * t ^ n) • h ^ n := by
   rw [log_eq_tsum ℝ]
   simp only [add_sub_cancel_left, smul_pow, smul_smul, logCoeff]
 
-/-- **`exp (log x) = x`** in a complete normed real (or complex) algebra whenever `‖x - 1‖ < 1`
-(a TODO of Mathlib's `Mathlib/Analysis/Normed/Algebra/Logarithm`). With `h = x - 1` and
-`L(t) = log (1 + t h)`, all of `L(t)`, `L'(t) = h (1 + t h)⁻¹` and `h` commute, so
-`φ(t) = e^{-L(t)} (1 + t h)` has derivative `e^{-L} (h - L'(1 + t h)) = 0` (the derivative of the
-exponential in a commuting direction is `NormedSpace.expFrechet_apply_of_commute`), and
-`φ(1) = φ(0) = 1`. -/
+/-- **The exponential of the logarithm.** Let $\mathbb{A}$ be a complete normed
+$\mathbb{R}$-algebra, and let $x \in \mathbb{A}$ satisfy $\|x - 1\| < 1$. Then
+$\exp(\log x) = x$.
+
+A complex Banach algebra is a complete normed $\mathbb{R}$-algebra by restriction of scalars, so
+the statement covers it. Proof idea: with $h = x - 1$ and $L(t) = \log(1 + th)$, the elements
+$L(t)$, $L'(t) = h(1 + th)^{-1}$ and $h$ commute. So $\varphi(t) = \exp(-L(t))(1 + th)$ has the
+derivative $\exp(-L(t))(h - L'(t)(1 + th)) = 0$, and $\varphi(1) = \varphi(0) = 1$. The
+derivative of the exponential in a commuting direction is
+`NormedSpace.expFrechet_apply_of_commute`. -/
 theorem exp_log_of_norm_sub_one_lt {x : 𝔸} (hx : ‖x - 1‖ < 1) : exp (log x) = x := by
   set h := x - 1 with hh
   have hx1 : x = 1 + h := by rw [hh]; abel

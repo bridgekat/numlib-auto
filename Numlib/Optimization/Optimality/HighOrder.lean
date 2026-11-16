@@ -8,35 +8,53 @@ import Numlib.Optimization.Optimality.CurveConditions
 /-!
 # High-order approximate optimality through the Taylor-decrement measure
 
-For derivative data `D` (exact data being `ftaylorSeries ℝ f x`), the Taylor-decrement measure
-`taylorMeasure D j δ S = sup_{d ∈ S, ‖d‖ ≤ δ} ΔT_j(d)` is the book's `φ^δ_{f,j}(x)`
-([cartis2022evaluation], (12.1.10)) when `S = univ`. This file relates it to the classical
-optimality conditions of low order and to local minimizers.
+Let $E$ be a real normed space, and let $D = (D_0, D_1, \dots)$ be derivative data at a point, with
+$D_i$ a continuous $i$-linear form; the exact data of $f$ at $x$ is `ftaylorSeries ℝ f x`. Write
+$T_j(s) = \sum_{i \le j} \frac{1}{i!} D_i[s]^i$ for the Taylor sum of order $j$ and
+$\Delta T_j(s) = T_j(0) - T_j(s)$ for its decrease. The **Taylor-decrement measure** is
+$$\phi^\delta_j = \sup_{d \in S,\ \|d\| \le \delta} \Delta T_j(d).$$
+For $S = E$ and exact data it is the measure $\phi^\delta_{f,j}(x)$ of (12.1.10) of
+[cartis2022evaluation]. This file relates $\phi^\delta_j$ to the classical optimality conditions of
+low order (Theorems 12.1.3 and 12.1.6), to the measure of the next order (Theorem 12.1.7 and Lemma
+B.12.1), and to local minimizers (Theorem 12.1.4). It also proves the sufficient conditions of
+Theorem 12.1.5 under a growth hypothesis.
 
 ## Main results
 
-* `taylorMeasure_mono`, `taylorMeasure_le_taylorMeasure_succ_add`: monotonicity and the cascade
-  estimate behind Theorem 12.1.7 (`taylorMeasure_le_of_taylorMeasure_succ_le`);
-* `taylorMeasure_two_eq_zero_of_three`: Lemma B.12.1;
-* `taylorMeasure_one_eq_zero_iff`, `neg_le_minCurvature_of_taylorMeasure_two_le`,
-  `norm_sq_le_of_taylorMeasure_two_le`, `taylorMeasure_two_eq_zero_iff`,
-  `abs_apply_three_le_taylorMeasure`: first-, second- and third-order readings of `φ_1, φ_2, φ_3`
-  (Theorems 12.1.3, 12.1.6);
-* `taylorMeasure_eq_zero_of_isLocalMin`, `exists_taylorMeasure_le_of_isLocalMin`,
-  `tendsto_taylorMeasure_div_pow_of_isLocalMin`: local minimizers (Theorem 12.1.4);
-* `isStrictLocalMin_taylorPolynomial_succ_of_growth`,
-  `isStrictLocalMin_of_taylorPolynomial_growth`: sufficient conditions of Theorem 12.1.5 under a
-  growth hypothesis.
+* `Optimization.taylorMeasure_mono`: $\phi^\delta_j$ is monotone in the radius $\delta$ and in the
+  set $S$.
+* `Optimization.taylorMeasure_le_taylorMeasure_succ_add`: the cascade estimate $\phi^\delta_j \le
+  \phi^\delta_{j+1} + \|D_{j+1}\| \delta^{j+1} / (j+1)!$.
+* `Optimization.taylorMeasure_le_of_taylorMeasure_succ_le`: Theorem 12.1.7, approximate optimality
+  of order $j + 1$ implies approximate optimality of order $j$.
+* `Optimization.taylorMeasure_two_eq_zero_of_three`: Lemma B.12.1, $\phi^\delta_3 = 0$ implies
+  $\phi^\delta_2 = 0$.
+* `Optimization.taylorMeasure_one_eq_zero_iff`, `Optimization.taylorMeasure_two_eq_zero_iff`,
+  `Optimization.abs_apply_three_le_taylorMeasure`: first-, second- and third-order readings of
+  $\phi_1$, $\phi_2$ and $\phi_3$ (Theorem 12.1.3).
+* `Optimization.neg_le_minCurvature_of_taylorMeasure_two_le`,
+  `Optimization.norm_sq_le_of_taylorMeasure_two_le`: the bounds of Theorem 12.1.6(ii).
+* `Optimization.taylorMeasure_eq_zero_of_isLocalMin`,
+  `Optimization.tendsto_taylorMeasure_div_pow_of_isLocalMin`: the measure at a local minimizer
+  (Theorem 12.1.4).
+* `Optimization.isStrictLocalMin_taylorPolynomial_succ_of_growth`,
+  `Optimization.isStrictLocalMin_of_taylorPolynomial_growth`: the sufficient conditions of Theorem
+  12.1.5 under a growth hypothesis.
+* `Optimization.continuous_taylorMeasure_ftaylorSeries`: for $f$ of class $C^n$ and $j \le n$, the
+  measure $\phi^\delta_{f,j}(x)$ is continuous in $x$.
 
 ## Implementation notes
 
-Statements about the measure alone are stated for arbitrary data `D` (exact, inexact, or the jet of
-a model). Low-order identifications are proved directly by testing the supremum at well-chosen
-displacements (`±d`, `t • d`), avoiding the trust-region multiplier `(H + λI)^+`; the bound of
-Theorem 12.1.6 (ii) becomes explicit: `‖∇f‖² ≤ δ² ε max(‖∇²f‖, ε)`.
-
-An isolated minimizer of `T_{f,j}(x, ·)` need not have uniform growth, and isolation alone does
-not make `x` a local minimizer of `f`; the sufficient conditions here assume growth of order `j`.
+* The measure is `Optimization.taylorMeasure D j δ S`. Statements about the measure alone hold for
+  arbitrary data $D$: exact, inexact, or the derivatives of a model.
+* The low-order readings are proved directly, by testing the supremum at chosen displacements
+  ($\pm d$, $t d$). They avoid the trust-region multiplier $(H + \lambda I)^+$ of the source. The
+  bound of Theorem 12.1.6(ii) becomes explicit: $\|\nabla f\|^2 \le \delta^2 \varepsilon
+  \max(\|\nabla^2 f\|, \varepsilon)$.
+* An isolated minimizer of $T_{f,j}(x, \cdot)$ need not have uniform growth, and isolation alone
+  does not make $x$ a local minimizer of $f$. The sufficient conditions here therefore assume growth
+  of order $j$; see `Optimization.isStrictLocalMin_taylorPolynomial_succ_of_growth` for a
+  counterexample to the condition with isolation only.
 -/
 
 open Finset Filter Metric Asymptotics
@@ -46,7 +64,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 namespace Optimization
 
-/-- Real-valued form of `ContinuousMultilinearMap.apply_smul_diag`: `A[t d]^n = t^n A[d]^n`. -/
+/-- For a continuous $n$-linear form $A$, $A[t d]^n = t^n A[d]^n$. -/
 private theorem apply_smul_diag_mul {n : ℕ} (A : E [×n]→L[ℝ] ℝ) (t : ℝ) (d : E) :
     (A fun _ => t • d) = t ^ n * A fun _ => d := by
   rw [ContinuousMultilinearMap.apply_smul_diag, smul_eq_mul]
@@ -63,16 +81,21 @@ private theorem le_taylorMeasure_univ {d : E} (hd : ‖d‖ ≤ δ) :
     D.taylorDecrement j d ≤ taylorMeasure D j δ Set.univ :=
   taylorDecrement_le_taylorMeasure D j ⟨by simpa using hd, Set.mem_univ _⟩
 
-/-- Monotonicity of the measure in the radius and in the feasible set
-([cartis2022evaluation], (12.1.10)). -/
+/-- **Monotonicity of the measure** in the radius and in the feasible set; compare (12.1.10) of
+[cartis2022evaluation]. Let $0 \in S$, $0 \le \delta \le \delta'$ and $S \subseteq S'$. Then
+$$\phi^\delta_j(S) \le \phi^{\delta'}_j(S'),$$
+where $\phi^\delta_j(S)$ is the Taylor-decrement measure of order $j$ and radius $\delta$ over
+$S$. -/
 theorem taylorMeasure_mono {δ' : ℝ} {S' : Set E} (h0 : 0 ∈ S) (hδ : 0 ≤ δ) (hδδ' : δ ≤ δ')
     (hSS' : S ⊆ S') : taylorMeasure D j δ S ≤ taylorMeasure D j δ' S' :=
   (decrementMeasure_mono_radius ⟨0, zero_mem_inter hδ h0⟩ (bddAbove_taylorDecrement D j δ' S)
     hδδ').trans (decrementMeasure_mono_set ⟨0, zero_mem_inter (hδ.trans hδδ') h0⟩
       (bddAbove_taylorDecrement D j δ' S') hSS')
 
-/-- **Cascade estimate** (core of [cartis2022evaluation], Theorem 12.1.7):
-`φ_j ≤ φ_{j+1} + ‖D_{j+1}‖ δ^{j+1}/(j+1)!`. -/
+/-- **Cascade estimate**, the core of the proof of Theorem 12.1.7 of [cartis2022evaluation]. Let
+$0 \in S$ and $\delta \ge 0$. Then for every $j$,
+$$\phi^\delta_j \le \phi^\delta_{j+1} + \frac{\|D_{j+1}\| \, \delta^{j+1}}{(j+1)!}.$$
+-/
 theorem taylorMeasure_le_taylorMeasure_succ_add (h0 : 0 ∈ S) (hδ : 0 ≤ δ) (j : ℕ) :
     taylorMeasure D j δ S ≤
       taylorMeasure D (j + 1) δ S + ‖D (j + 1)‖ * δ ^ (j + 1) / (j + 1)! := by
@@ -89,9 +112,14 @@ theorem taylorMeasure_le_taylorMeasure_succ_add (h0 : 0 ∈ S) (hδ : 0 ≤ δ) 
   rw [div_eq_mul_inv, mul_comm _ ((j + 1)! : ℝ)⁻¹]
   nlinarith [inv_pos.2 hf]
 
-/-- **Cascading approximate optimality** ([cartis2022evaluation], Theorem 12.1.7, with `j + 1` for
-the book's `j`). If `φ_{j+1} ≤ ε δ^{j+1}/(j+1)!` with `0 ≤ ε ≤ ε'`, `δ ≤ 1` and
-`2 ‖D_{j+1}‖ δ ≤ (j+1) ε`, then `φ_j ≤ ε' δ^j / j!`. -/
+/-- **Cascading approximate optimality**, Theorem 12.1.7 of [cartis2022evaluation], with $j + 1$ in
+place of the $j$ of the source. Let $j \ge 1$, $0 \in S$, $0 \le \delta \le 1$ and
+$0 \le \varepsilon \le \varepsilon'$. If
+$$\phi^\delta_{j+1} \le \frac{\varepsilon \delta^{j+1}}{(j+1)!} \quad \text{and} \quad 2
+  \|D_{j+1}\| \delta \le (j + 1) \varepsilon,$$
+then
+$$\phi^\delta_j \le \frac{\varepsilon' \delta^j}{j!}.$$
+-/
 theorem taylorMeasure_le_of_taylorMeasure_succ_le (hj : 1 ≤ j) (h0 : 0 ∈ S) (hδ0 : 0 ≤ δ)
     (hδ1 : δ ≤ 1) {ε ε' : ℝ} (hε : 0 ≤ ε) (hεε' : ε ≤ ε')
     (h : taylorMeasure D (j + 1) δ S ≤ ε * δ ^ (j + 1) / (j + 1)!)
@@ -110,8 +138,11 @@ theorem taylorMeasure_le_of_taylorMeasure_succ_le (hj : 1 ≤ j) (h0 : 0 ∈ S) 
     _ ≤ δ ^ j * ((j + 1) * ε') / ((j + 1) * j !) := by gcongr
     _ = ε' * δ ^ j / j ! := by field_simp
 
-/-- **Lemma B.12.1** ([cartis2022evaluation]): if `φ_3^δ = 0` then `φ_2^δ = 0`. No symmetry of
-the data is needed. -/
+/-- **Lemma B.12.1** of [cartis2022evaluation]. Let $\delta \ge 0$. If the unconstrained measure of
+order $3$ vanishes, $\phi^\delta_3 = 0$, then the unconstrained measure of order $2$ vanishes,
+$\phi^\delta_2 = 0$.
+
+No symmetry of the data $D$ is needed. -/
 theorem taylorMeasure_two_eq_zero_of_three (hδ : 0 ≤ δ) (h : taylorMeasure D 3 δ Set.univ = 0) :
     taylorMeasure D 2 δ Set.univ = 0 := by
   refine le_antisymm (decrementMeasure_le ⟨0, zero_mem_inter hδ (Set.mem_univ _)⟩ fun s hs => ?_)
@@ -159,14 +190,18 @@ theorem taylorMeasure_two_eq_zero_of_three (hδ : 0 ≤ δ) (h : taylorMeasure D
   have e3 : α ^ 2 * (c / 6) ≤ α * (-ψ / 2) := by nlinarith
   nlinarith
 
-/-- **First-order reading of `φ_1`** ([cartis2022evaluation], Theorem 12.1.3 (i)): for `δ > 0`,
-`φ^δ_1 = 0` iff the first derivative vanishes. -/
+/-- **First-order reading of $\phi_1$**, Theorem 12.1.3(i) of [cartis2022evaluation]. For
+$\delta > 0$, the unconstrained measure $\phi^\delta_1$ vanishes if and only if $D_1 = 0$. -/
 theorem taylorMeasure_one_eq_zero_iff (hδ : 0 < δ) :
     taylorMeasure D 1 δ Set.univ = 0 ↔ D 1 = 0 := by
   rw [taylorMeasure_one_eq D hδ.le, mul_eq_zero, norm_eq_zero, or_iff_right hδ.ne']
 
-/-- **Second-order reading of `φ_2`** ([cartis2022evaluation], Theorem 12.1.6 (ii), first part):
-if `φ^δ_2 ≤ ε δ²/2` then `λ_min[D_2] ≥ -ε`. -/
+/-- **Second-order reading of $\phi_2$**, the first part of Theorem 12.1.6(ii) of
+[cartis2022evaluation]. Let $\delta > 0$ and $\varepsilon \ge 0$. If the unconstrained measure
+satisfies $\phi^\delta_2 \le \varepsilon \delta^2 / 2$, then
+$$\lambda_{\min}[D_2] \ge -\varepsilon.$$
+
+Here $\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d]^2$ is `Optimization.minCurvature`. -/
 theorem neg_le_minCurvature_of_taylorMeasure_two_le {ε : ℝ} (hδ : 0 < δ) (hε : 0 ≤ ε)
     (h : taylorMeasure D 2 δ Set.univ ≤ ε * δ ^ 2 / 2) : -ε ≤ minCurvature (D 2) := by
   rcases subsingleton_or_nontrivial E with hE | hE
@@ -193,9 +228,13 @@ theorem neg_le_minCurvature_of_taylorMeasure_two_le {ε : ℝ} (hδ : 0 < δ) (h
     nlinarith
   exact le_of_mul_le_mul_left this (by positivity)
 
-/-- **First-order reading of `φ_2`**, explicit form of the book's `‖∇f‖ ≤ δ κ √ε₂`
-([cartis2022evaluation], Theorem 12.1.6 (ii), second part, (12.1.27)–(12.1.29)): if
-`φ^δ_2 ≤ ε δ²/2` then `‖D_1‖² ≤ δ² ε max(‖D_2‖, ε)`. -/
+/-- **First-order reading of $\phi_2$**, the second part of Theorem 12.1.6(ii) of
+[cartis2022evaluation], (12.1.27)–(12.1.29). Let $\delta > 0$ and $\varepsilon \ge 0$. If the
+unconstrained measure satisfies $\phi^\delta_2 \le \varepsilon \delta^2 / 2$, then
+$$\|D_1\|^2 \le \delta^2 \varepsilon \max(\|D_2\|, \varepsilon).$$
+
+This is an explicit form of the bound $\|\nabla f\| \le \delta \kappa \sqrt{\varepsilon_2}$ of
+the source. -/
 theorem norm_sq_le_of_taylorMeasure_two_le {ε : ℝ} (hδ : 0 < δ) (hε : 0 ≤ ε)
     (h : taylorMeasure D 2 δ Set.univ ≤ ε * δ ^ 2 / 2) :
     ‖D 1‖ ^ 2 ≤ δ ^ 2 * ε * max ‖D 2‖ ε := by
@@ -269,8 +308,10 @@ theorem norm_sq_le_of_taylorMeasure_two_le {ε : ℝ} (hδ : 0 < δ) (hε : 0 �
   calc ‖D 1‖ ^ 2 ≤ K ^ 2 := by gcongr
     _ = δ ^ 2 * ε * M := hKsq
 
-/-- **Second-order reading of `φ_2`** ([cartis2022evaluation], Theorem 12.1.3 (ii), (12.1.14)): for
-`δ > 0`, `φ^δ_2 = 0` iff `D_1 = 0` and `λ_min[D_2] ≥ 0`. -/
+/-- **Second-order reading of $\phi_2$**, Theorem 12.1.3(ii) of [cartis2022evaluation], (12.1.14).
+For $\delta > 0$, the unconstrained measure $\phi^\delta_2$ vanishes if and only if
+$$D_1 = 0 \quad \text{and} \quad \lambda_{\min}[D_2] \ge 0.$$
+-/
 theorem taylorMeasure_two_eq_zero_iff (hδ : 0 < δ) :
     taylorMeasure D 2 δ Set.univ = 0 ↔ D 1 = 0 ∧ 0 ≤ minCurvature (D 2) := by
   constructor
@@ -288,11 +329,14 @@ theorem taylorMeasure_two_eq_zero_iff (hδ : 0 < δ) :
     simp only [zero_apply, neg_zero, zero_sub]
     linarith
 
-/-- **Third-order reading of `φ_3`** ([cartis2022evaluation], Theorem 12.1.3 (iii), (12.1.13),
-(12.1.15)): on directions `d` with `‖d‖ ≤ 1`, `D_1[d] = 0` and `D_2[d]^2 = 0` (the subspace
-`𝓜(x) = ker D_1 ∩ ker D_2` when `D_2` is positive semidefinite),
-`|D_3[d]^3| ≤ φ^δ_3 / (δ³/3!)`. This is the book's bound on the projected tensor
-`‖P_𝓜[∇³f(x)]‖`, read on the diagonal. -/
+/-- **Third-order reading of $\phi_3$**, Theorem 12.1.3(iii) of [cartis2022evaluation], (12.1.13)
+and (12.1.15). Let $\delta \ge 0$, and let $d$ satisfy $\|d\| \le 1$, $D_1[d] = 0$ and
+$D_2[d]^2 = 0$. Then the unconstrained measure satisfies
+$$\frac{\delta^3}{6} |D_3[d]^3| \le \phi^\delta_3.$$
+
+When $D_2$ is positive semidefinite, the directions $d$ of the hypothesis form the subspace
+$\mathcal{M}(x) = \ker D_1 \cap \ker D_2$. The statement is the bound of the source on the
+projected tensor $\|P_{\mathcal{M}}[\nabla^3 f(x)]\|$, read on the diagonal. -/
 theorem abs_apply_three_le_taylorMeasure (hδ : 0 ≤ δ) {d : E} (hd : ‖d‖ ≤ 1)
     (h1 : (D 1 fun _ => d) = 0) (h2 : (D 2 fun _ => d) = 0) :
     δ ^ 3 / 6 * |D 3 fun _ => d| ≤ taylorMeasure D 3 δ Set.univ := by
@@ -314,9 +358,11 @@ section LocalMin
 
 variable {f : E → ℝ} {x : E} {j : ℕ}
 
-/-- **The measure at a local minimizer, low orders** ([cartis2022evaluation], Theorem 12.1.4,
-(12.1.16)): if `f` is `C^j` at a local minimizer `x`, `j ∈ {1, 2}`, then `φ^δ_j(x) = 0` for every
-`δ ≥ 0`. -/
+/-- **The measure at a local minimizer, low orders**, Theorem 12.1.4 of [cartis2022evaluation],
+(12.1.16). Let $j \in \{1, 2\}$, let $x$ be a local minimizer of $f$, and let $f$ be $j$ times
+continuously differentiable at $x$. Then $\phi^\delta_{f,j}(x) = 0$ for every $\delta \ge 0$.
+
+The measure is the unconstrained measure of the exact data `ftaylorSeries ℝ f x`. -/
 theorem taylorMeasure_eq_zero_of_isLocalMin (hf : ContDiffAt ℝ j f x) (hmin : IsLocalMin f x)
     (hj : j ∈ Icc 1 2) {δ : ℝ} (hδ : 0 ≤ δ) :
     taylorMeasure (ftaylorSeries ℝ f x) j δ Set.univ = 0 := by
@@ -332,9 +378,11 @@ theorem taylorMeasure_eq_zero_of_isLocalMin (hf : ContDiffAt ℝ j f x) (hmin : 
     simp only [zero_apply, neg_zero, zero_sub]
     linarith
 
-/-- **The measure at a local minimizer, quantitative form** ([cartis2022evaluation],
-Theorem 12.1.4): if `f` is `C^j` at a local minimizer `x`, then for every `η > 0` there is
-`δ₀ > 0` with `φ^δ_j(x) ≤ η δ^j` for all `δ ∈ [0, δ₀]`. -/
+/-- **The measure at a local minimizer, quantitative form**, Theorem 12.1.4 of
+[cartis2022evaluation]. Let $x$ be a local minimizer of $f$, and let $f$ be $j$ times
+continuously differentiable at $x$. Then for every $\eta > 0$ there is $\delta_0 > 0$ such that
+$$\phi^\delta_{f,j}(x) \le \eta \, \delta^j \quad \text{for all } \delta \in [0, \delta_0].$$
+-/
 theorem exists_taylorMeasure_le_of_isLocalMin (hf : ContDiffAt ℝ j f x) (hmin : IsLocalMin f x)
     {η : ℝ} (hη : 0 < η) : ∃ δ₀ > 0, ∀ δ, 0 ≤ δ → δ ≤ δ₀ →
       taylorMeasure (ftaylorSeries ℝ f x) j δ Set.univ ≤ η * δ ^ j := by
@@ -356,8 +404,11 @@ theorem exists_taylorMeasure_le_of_isLocalMin (hf : ContDiffAt ℝ j f x) (hmin 
     _ ≤ η * ‖d‖ ^ j := this
     _ ≤ η * δ ^ j := by gcongr
 
-/-- **The measure at a local minimizer** ([cartis2022evaluation], Theorem 12.1.4, (12.1.17)): if
-`f` is `C^j` at a local minimizer `x`, then `φ^δ_j(x)/δ^j → 0` as `δ → 0⁺`. -/
+/-- **The measure at a local minimizer**, Theorem 12.1.4 of [cartis2022evaluation], (12.1.17). Let
+$x$ be a local minimizer of $f$, and let $f$ be $j$ times continuously differentiable at $x$.
+Then
+$$\frac{\phi^\delta_{f,j}(x)}{\delta^j} \to 0 \quad \text{as } \delta \to 0^+.$$
+-/
 theorem tendsto_taylorMeasure_div_pow_of_isLocalMin (hf : ContDiffAt ℝ j f x)
     (hmin : IsLocalMin f x) :
     Tendsto (fun δ => taylorMeasure (ftaylorSeries ℝ f x) j δ Set.univ / δ ^ j) (𝓝[>] 0)
@@ -381,9 +432,11 @@ end LocalMin
 
 section Sufficient
 
-/-- Growth of order `j` of the Taylor sum `T_j` survives the next term:
-`T_{j+1}(s) - T_{j+1}(0) ≥ (c - L ‖s‖/(j+1)!) ‖s‖^j` when `‖D_{j+1}‖ ≤ L` and
-`T_j(s) - T_j(0) ≥ c ‖s‖^j` (proof of [cartis2022evaluation], Theorem 12.1.5). -/
+/-- Growth of order $j$ of the Taylor sum survives the next term. Let $\|D_{j+1}\| \le L$, and
+suppose that $T_j(s) - T_j(0) \ge c \|s\|^j$ for all $\|s\| \le r$. Then for every $s$ with
+$\|s\| \le r$,
+$$T_{j+1}(s) - T_{j+1}(0) \ge \Bigl(c - \frac{L \|s\|}{(j+1)!}\Bigr) \|s\|^j.$$
+This step is used in the proof of Theorem 12.1.5 of [cartis2022evaluation]. -/
 theorem sub_taylorSum_succ_ge_of_growth (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ} {c L r : ℝ}
     (hL : ‖D (j + 1)‖ ≤ L)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ D.taylorSum j s - D.taylorSum j 0)
@@ -405,8 +458,9 @@ theorem sub_taylorSum_succ_ge_of_growth (D : FormalMultilinearSeries ℝ E ℝ) 
     exact mul_le_mul_of_nonneg_left (by linarith) (inv_nonneg.2 hf.le)
   nlinarith
 
-/-- Under the hypotheses of `sub_taylorSum_succ_ge_of_growth`, `T_{j+1}(0) < T_{j+1}(s)` for
-`0 < ‖s‖ ≤ r` with `L ‖s‖ < c (j+1)!`. -/
+/-- Let $\|D_{j+1}\| \le L$, and suppose that $T_j(s) - T_j(0) \ge c \|s\|^j$ for all $\|s\| \le r$.
+Then $T_{j+1}(0) < T_{j+1}(s)$ for every $s \neq 0$ with $\|s\| \le r$ and
+$L \|s\| < c \, (j+1)!$. -/
 theorem taylorSum_succ_zero_lt_of_growth (D : FormalMultilinearSeries ℝ E ℝ)
     {j : ℕ} {c L r : ℝ} (hL : ‖D (j + 1)‖ ≤ L)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ D.taylorSum j s - D.taylorSum j 0)
@@ -421,11 +475,16 @@ theorem taylorSum_succ_zero_lt_of_growth (D : FormalMultilinearSeries ℝ E ℝ)
     mul_pos hpos (pow_pos (norm_pos_iff.2 hs0) j)
   linarith
 
-/-- **Propagation of growth to the next order** (the consequence stated after Theorem 12.1.5 of
-[cartis2022evaluation], under a growth hypothesis): if `‖D_{j+1}‖ ≤ L` and
-`T_j(s) - T_j(0) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `T_{j+1}` grows of the same
-order with constant `c/2` on a smaller ball. Iterating gives growth of every `T_ℓ`, `ℓ ≥ j`, when
-the higher derivatives are bounded. -/
+/-- **Propagation of growth to the next order**, the consequence stated after Theorem 12.1.5 of
+[cartis2022evaluation], under a growth hypothesis. Let $c > 0$, $r > 0$ and $\|D_{j+1}\| \le L$,
+and suppose that $T_j(s) - T_j(0) \ge c \|s\|^j$ for all $\|s\| \le r$. Then there is $r'$ with
+$0 < r' \le r$ such that
+$$T_{j+1}(s) - T_{j+1}(0) \ge \frac{c}{2} \|s\|^j \quad \text{for all } \|s\| \le r'.$$
+
+Iterating gives growth of every $T_\ell$, $\ell \ge j$, when the higher derivatives are bounded.
+The growth hypothesis replaces the isolation hypothesis of Theorem 12.1.5;
+`Optimization.isStrictLocalMin_taylorPolynomial_succ_of_growth` explains why isolation alone
+does not suffice. -/
 theorem exists_growth_taylorSum_succ_of_growth (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ}
     {c L r : ℝ} (hc : 0 < c) (hr : 0 < r) (hL : ‖D (j + 1)‖ ≤ L)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ D.taylorSum j s - D.taylorSum j 0) :
@@ -448,17 +507,18 @@ theorem exists_growth_taylorSum_succ_of_growth (D : FormalMultilinearSeries ℝ 
   have hpow : 0 ≤ ‖s‖ ^ j := by positivity
   nlinarith
 
-/-- **Sufficient condition for the Taylor model** ([cartis2022evaluation], Theorem 12.1.5, first
-conclusion, under a growth hypothesis). If `‖D_{j+1}‖ ≤ L` and `T_j` grows like
-`T_j(s) - T_j(0) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `s = 0` is a strict local
-minimizer of `T_{j+1}`.
+/-- **Sufficient condition for the Taylor model**, the first conclusion of Theorem 12.1.5 of
+[cartis2022evaluation], under a growth hypothesis. Let $c > 0$, $r > 0$ and $\|D_{j+1}\| \le L$,
+and suppose that
+$$T_j(s) - T_j(0) \ge c \|s\|^j \quad \text{for all } \|s\| \le r.$$
+Then $s = 0$ is a strict local minimizer of $T_{j+1}$.
 
-The book only assumes that `s = 0` is an isolated minimizer of `T_j`; this does not give the
+The source assumes only that $s = 0$ is an isolated minimizer of $T_j$. This does not give the
 uniform growth that its proof uses, and the statement is then false. For
-`f(x) = (x₂ - x₁²)² + x₂⁶ - x₁⁷` on `ℝ²`, `j = 6`, `x = 0`: `T_{f,6}(0, s) = (s₂ - s₁²)² + s₂⁶` has
-the isolated minimizer `s = 0`, but `T_{f,7}(0, ·) = f` and `f(t, t²) = t¹² - t⁷ < 0` for
-`t ∈ (0, 1)`, so `0` is neither an isolated minimizer of `T_{f,7}(0, ·)` nor a local minimizer of
-`f`. -/
+$f(x) = (x_2 - x_1^2)^2 + x_2^6 - x_1^7$ on $\mathbb{R}^2$, $j = 6$ and $x = 0$, the Taylor
+polynomial $T_{f,6}(0, s) = (s_2 - s_1^2)^2 + s_2^6$ has the isolated minimizer $s = 0$. But
+$T_{f,7}(0, \cdot) = f$ and $f(t, t^2) = t^{12} - t^7 < 0$ for $t \in (0, 1)$, so $0$ is neither
+an isolated minimizer of $T_{f,7}(0, \cdot)$ nor a local minimizer of $f$. -/
 theorem isStrictLocalMin_taylorPolynomial_succ_of_growth (D : FormalMultilinearSeries ℝ E ℝ)
     {j : ℕ} {c L r : ℝ} (hc : 0 < c) (hr : 0 < r) (hL : ‖D (j + 1)‖ ≤ L)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ D.taylorSum j s - D.taylorSum j 0) :
@@ -473,9 +533,11 @@ theorem isStrictLocalMin_taylorPolynomial_succ_of_growth (D : FormalMultilinearS
   rw [lt_div_iff₀ (by positivity)] at h1
   nlinarith [le_abs_self L, norm_nonneg s]
 
-/-- Quantitative form of `isStrictLocalMin_of_taylorPolynomial_growth`: if `f` is `C^j` at `x`
-and `T_{f,j}(x, s) - f(x) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then
-`f(x + s) ≥ f(x) + (c/2) ‖s‖^j` for all small `s`. -/
+/-- Let $f$ be $j$ times continuously differentiable at $x$, let $c > 0$ and $r > 0$, and suppose
+that $T_{f,j}(x, s) - f(x) \ge c \|s\|^j$ for all $\|s\| \le r$. Then there is $\rho > 0$ such
+that
+$$f(x + s) \ge f(x) + \frac{c}{2} \|s\|^j \quad \text{for all } \|s\| < \rho.$$
+This is the quantitative form of `Optimization.isStrictLocalMin_of_taylorPolynomial_growth`. -/
 theorem exists_add_le_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j : ℕ}
     (hf : ContDiffAt ℝ j f x) {c r : ℝ} (hc : 0 < c) (hr : 0 < r)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ taylorPolynomial f j x s - f x) :
@@ -488,12 +550,16 @@ theorem exists_add_le_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j : �
   have := (abs_le.1 h2).1
   linarith
 
-/-- **Sufficient condition for `f`** ([cartis2022evaluation], Theorem 12.1.5, second conclusion,
-under a growth hypothesis). If `f` is `C^j` at `x` and its Taylor polynomial grows like
-`T_{f,j}(x, s) - f(x) ≥ c ‖s‖^j` (`c > 0`) for `‖s‖ ≤ r` (`r > 0`), then `x` is a strict local
-minimizer of `f`. For `j = 2` the growth condition is `∇f(x) = 0` with `∇²f(x)` coercive. That
-`s = 0` is an isolated minimizer of `T_{f,j}(x, ·)` would not suffice (see
-`isStrictLocalMin_taylorPolynomial_succ_of_growth`). -/
+/-- **Sufficient condition for $f$**, the second conclusion of Theorem 12.1.5 of
+[cartis2022evaluation], under a growth hypothesis. Let $f$ be $j$ times continuously
+differentiable at $x$, let $c > 0$ and $r > 0$, and suppose that the Taylor polynomial of $f$
+satisfies
+$$T_{f,j}(x, s) - f(x) \ge c \|s\|^j \quad \text{for all } \|s\| \le r.$$
+Then $x$ is a strict local minimizer of $f$.
+
+For $j = 2$ the growth condition means $\nabla f(x) = 0$ and $\nabla^2 f(x)$ coercive. The
+weaker hypothesis of the source, that $s = 0$ is an isolated minimizer of $T_{f,j}(x, \cdot)$,
+would not suffice; see `Optimization.isStrictLocalMin_taylorPolynomial_succ_of_growth`. -/
 theorem isStrictLocalMin_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j : ℕ}
     (hf : ContDiffAt ℝ j f x) {c r : ℝ} (hc : 0 < c) (hr : 0 < r)
     (hgrowth : ∀ s : E, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ taylorPolynomial f j x s - f x) :
@@ -510,11 +576,19 @@ theorem isStrictLocalMin_of_taylorPolynomial_growth {f : E → ℝ} {x : E} {j :
 
 end Sufficient
 
+/-! ### Continuity in the base point -/
+
 section Continuity
 
-/-- **Continuity of the Taylor measure in the base point**: for `f` of class `C^n`, `j ≤ n` and
-`δ ≥ 0`, `s ↦ φ^δ_{f,j}(s) = taylorMeasure (ftaylorSeries ℝ f s) j δ univ` is continuous (by
-`abs_taylorMeasure_sub_le` and continuity of the derivatives). -/
+/-- **Continuity of the Taylor measure in the base point.** Let $f$ be of class $C^n$, let $j \le n$
+and $\delta \ge 0$. Then the function
+$$x \mapsto \phi^\delta_{f,j}(x)$$
+is continuous, where $\phi^\delta_{f,j}(x)$ is the unconstrained measure
+`Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ Set.univ`. This is used in the proof of
+Lemma 12.2.9 of [cartis2022evaluation].
+
+The proof combines the perturbation bound `Optimization.abs_taylorMeasure_sub_le` with the
+continuity of the derivatives. -/
 theorem continuous_taylorMeasure_ftaylorSeries {f : E → ℝ} {n j : ℕ} (hf : ContDiff ℝ n f)
     (hj : j ≤ n) {δ : ℝ} (hδ : 0 ≤ δ) :
     Continuous fun s => taylorMeasure (ftaylorSeries ℝ f s) j δ Set.univ := by

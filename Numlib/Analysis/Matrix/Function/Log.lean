@@ -12,26 +12,43 @@ import Numlib.Analysis.Matrix.Function.Sqrt
 /-!
 # The principal logarithm of a matrix
 
-The principal logarithm ([golub2013matrix] §9.4.4; Higham, *Functions of Matrices*, Ch. 11)
-`log(A) = pfc Complex.log A`, with Mathlib's principal branch `Complex.log` (analytic on
-`Complex.slitPlane`). For `A` with no eigenvalue on `(-∞, 0]` it is a logarithm of `A`,
-`e^{log A} = A`, with eigenvalues in the strip `|Im z| < π` (`Matrix.exp_principalLog`).
+Let $A \in \mathbb{C}^{n \times n}$. The principal logarithm $\log A$ of $A$ is the primary
+functional calculus of $A$ at Mathlib's principal branch `Complex.log` of the logarithm, which is
+analytic on the slit plane $\mathbb{C} \setminus (-\infty, 0]$ (`Complex.slitPlane`). This follows
+[golub2013matrix], §9.4.4, and Higham, *Functions of Matrices*, Chapter 11. If no eigenvalue of $A$
+lies on $(-\infty, 0]$, then $\log A$ is a logarithm of $A$, $e^{\log A} = A$, and its eigenvalues
+lie in the strip $|\operatorname{Im} z| < \pi$. It is the only logarithm of $A$ with this property,
+and it is real when $A$ is real.
+
+The file also proves the Maclaurin series and the Gregory series of $\log A$, and the identities
+$\log A^{1/2} = \tfrac{1}{2} \log A$ and $\log A = 2^k \log A^{1/2^k}$ on which the inverse scaling
+and squaring method rests.
+
+## Main definitions
+
+* `Matrix.principalLog`: the principal logarithm $\log A$.
 
 ## Main results
 
-* `Matrix.exp_principalLog`: `e^{log A} = A` and the spectrum of `log A` lies in the strip.
-* `Matrix.hasSum_principalLog`: the Maclaurin series `log A = ∑_{k ≥ 1} (-1)^{k+1} (A - I)^k / k`
-  when every eigenvalue lies in the unit disk around `1`.
-* `Matrix.principalLog_principalSqrt`, `Matrix.principalLog_eq_two_pow_smul`: the inverse
-  scaling-and-squaring identity `log A = 2^k log A^{1/2^k}`.
-* `Matrix.existsUnique_exp_eq_of_abs_im_lt`, `Matrix.existsUnique_real_exp_eq`: the principal
-  logarithm is the only logarithm with eigenvalues in the strip, and it is real for a real matrix
-  (read in `ℂ` through `Matrix.complexify`, with `Matrix.complexify_exp` of
-  `Numlib/LinearAlgebra/Matrix/Complexify`).
+* `Matrix.exp_principalLog`: $e^{\log A} = A$, and the eigenvalues of $\log A$ lie in the strip
+  $|\operatorname{Im} z| < \pi$.
+* `Matrix.hasSum_principalLog`: the Maclaurin series $\log A = \sum_{k \ge 1} (-1)^{k+1} (A - I)^k /
+  k$ when every eigenvalue lies in the open unit disc around $1$.
+* `Matrix.hasSum_principalLog_gregory`: the Gregory series
+  $\log A = -2 \sum_{k \ge 0} C^{2k+1} / (2k + 1)$ with $C = (I - A)(I + A)^{-1}$, when every
+  eigenvalue has positive real part.
+* `Matrix.principalLog_principalSqrt` and `Matrix.principalLog_eq_two_pow_smul`: the inverse scaling
+  and squaring identities $\log A^{1/2} = \tfrac{1}{2} \log A$ and $\log A = 2^k \log A^{1/2^k}$.
+* `Matrix.existsUnique_exp_eq_of_abs_im_lt` and `Matrix.existsUnique_real_exp_eq`: the principal
+  logarithm is the only logarithm with eigenvalues in the strip, and for a real matrix it is real.
 
-The Banach-algebra facts about Mathlib's series logarithm `NormedSpace.log` (`exp (log x) = x` for
-`‖x - 1‖ < 1`) are `Numlib/Analysis/Normed/Algebra/Logarithm`; the agreement of the two logarithms
-near the identity is `pfc_log_eq_normedSpace_log`.
+## Implementation notes
+
+* A real matrix is read as a complex matrix through `Matrix.complexify`; `Matrix.complexify_exp` in
+  `Numlib.LinearAlgebra.Matrix.Complexify` gives the compatibility with the exponential.
+* The facts about Mathlib's series logarithm `NormedSpace.log` in a Banach algebra, such as
+  $\exp(\log x) = x$ for $\|x - 1\| < 1$, are in `Numlib.Analysis.Normed.Algebra.Logarithm`. The two
+  logarithms agree near the identity by `pfc_log_eq_normedSpace_log`.
 -/
 
 open Polynomial Filter Topology Complex
@@ -40,17 +57,29 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The principal logarithm** ([golub2013matrix] §9.4.4's `log(A)`): `pfc Complex.log A`. -/
+/-- The **principal logarithm** of a matrix $A \in \mathbb{C}^{n \times n}$: $\log A$ is the primary
+functional calculus of $A$ at the principal branch `Complex.log` of the logarithm. This is
+$\log(A)$ of [golub2013matrix], §9.4.4.
+
+The definition has a value for every $A$. It is a logarithm of $A$ when no eigenvalue of $A$
+lies on $(-\infty, 0]$ (`Matrix.exp_principalLog`). -/
 noncomputable def principalLog (A : Matrix n n ℂ) : Matrix n n ℂ :=
   pfc Complex.log A
 
-/-- Functions agreeing on the slit plane agree at a matrix with spectrum in it. -/
+/-- If the spectrum of $A$ lies in the slit plane, two functions that agree on the slit plane have
+the same value at $A$. -/
 private theorem pfc_congr_of_slitPlane {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane)
     {f g : ℂ → ℂ} (h : ∀ z ∈ slitPlane, f z = g z) : pfc f A = pfc g A :=
   pfc_congr_of_eqOn isOpen_slitPlane hA h
 
-/-- **The principal logarithm is a logarithm** ([golub2013matrix] §9.4.4): with no eigenvalue on
-`(-∞, 0]`, `e^{log A} = A`, and every eigenvalue of `log A` has `|Im μ| < π`. -/
+/-- **The principal logarithm is a logarithm.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$. Then
+$$e^{\log A} = A,$$
+and every eigenvalue $\mu$ of $\log A$ satisfies $|\operatorname{Im} \mu| < \pi$. See
+[golub2013matrix], §9.4.4.
+
+The hypothesis is that the spectrum of $A$ lies in `Complex.slitPlane`, and the exponential is
+`NormedSpace.exp`. -/
 theorem exp_principalLog {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     NormedSpace.exp (principalLog A) = A ∧ ∀ μ ∈ spectrum ℂ (principalLog A), |μ.im| < Real.pi := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -67,8 +96,10 @@ theorem exp_principalLog {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane
     rw [log_im, abs_lt]
     exact ⟨neg_pi_lt_arg μ, lt_of_le_of_ne (arg_le_pi μ) (slitPlane_arg_ne_pi (hA hμ))⟩
 
-/-- **The Maclaurin series of the logarithm** ([golub2013matrix] §9.4.4, `M_q(A)`): if every
-eigenvalue satisfies `|λ - 1| < 1`, then `log A = ∑_{k ≥ 0} (-1)^k (A - I)^{k+1} / (k + 1)`. -/
+/-- **The Maclaurin series of the logarithm.** Let $A \in \mathbb{C}^{n \times n}$ with
+$|\lambda - 1| < 1$ for every eigenvalue $\lambda$ of $A$. Then
+$$\log A = \sum_{k=0}^{\infty} \frac{(-1)^k}{k + 1} (A - I)^{k+1}.$$
+The partial sums are the approximations $M_q(A)$ of [golub2013matrix], §9.4.4. -/
 theorem hasSum_principalLog {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ - 1‖ < 1) :
     HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1)) (principalLog A) := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -86,13 +117,16 @@ theorem hasSum_principalLog {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A
 
 /-! ### Uniqueness of the principal logarithm -/
 
-/-- `(e^z - 1)/z`, completed by `1` at `0`, is analytic at `0`. -/
+/-- The function $(e^z - 1)/z$, with the value $1$ at $0$, is smooth at $0$. -/
 private theorem contDiffAt_dslope_exp : ContDiffAt ℂ ⊤ (dslope Complex.exp 0) 0 := by
   obtain ⟨p, hp⟩ := (analyticAt_cexp (z := 0))
   exact hp.dslope_fslope.analyticAt.contDiffAt
 
-/-- **A nilpotent matrix with exponential `1` is `0`**: if the spectrum of `N` is in `{0}` and
-`e^N = 1`, then `N = 0`, since `e^N - 1 = N u` with `u = pfc ((e^z - 1)/z) N` invertible. -/
+/-- **A nilpotent matrix with exponential $I$ is $0$.** Let $N \in \mathbb{C}^{n \times n}$ have
+spectrum contained in $\{0\}$, and let $e^N = I$. Then $N = 0$.
+
+The proof writes $e^N - I = N u$ with $u = g(N)$ for $g(z) = (e^z - 1)/z$, and $u$ is
+invertible. -/
 theorem eq_zero_of_spectrum_subset_zero_of_exp_eq_one {N : Matrix n n ℂ}
     (hN : spectrum ℂ N ⊆ {0}) (h1 : NormedSpace.exp N = 1) : N = 0 := by
   have hI : IsIntegral ℂ N := Algebra.IsIntegral.isIntegral _
@@ -121,10 +155,14 @@ theorem eq_zero_of_spectrum_subset_zero_of_exp_eq_one {N : Matrix n n ℂ}
   rw [h1, sub_self] at hmul
   exact (hu.mul_left_eq_zero).mp hmul.symm
 
-/-- **Uniqueness of the principal logarithm** ([golub2013matrix] §9.4.4): with no eigenvalue on
-`(-∞, 0]`, `log A` is the only logarithm of `A` with eigenvalues in the strip `|Im z| < π`. Any
-such `X` has `log A = q(X)` for a polynomial with `q(μ) = log (e^μ) = μ` on the spectrum of `X`, so
-`X - log A` has spectrum `{0}` and exponential `e^X e^{-log A} = 1`, hence vanishes. -/
+/-- **Uniqueness of the principal logarithm.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$. Then $\log A$ is the only matrix $X$ with $e^X = A$ and
+$|\operatorname{Im} \mu| < \pi$ for every eigenvalue $\mu$ of $X$. See [golub2013matrix],
+§9.4.4.
+
+For any such $X$, $\log A = q(X)$ for a polynomial $q$ with $q(\mu) = \log e^\mu = \mu$ on the
+spectrum of $X$. So $X - \log A$ has spectrum $\{0\}$ and exponential $e^X e^{-\log A} = I$, and
+it is $0$ by `Matrix.eq_zero_of_spectrum_subset_zero_of_exp_eq_one`. -/
 theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     ∃! X : Matrix n n ℂ, NormedSpace.exp X = A ∧ ∀ μ ∈ spectrum ℂ X, |μ.im| < Real.pi := by
   classical
@@ -168,9 +206,13 @@ theorem existsUnique_exp_eq_of_abs_im_lt {A : Matrix n n ℂ} (hA : spectrum ℂ
   have := eq_zero_of_spectrum_subset_zero_of_exp_eq_one hNs hexpN
   exact (sub_eq_zero.mp this)
 
-/-- **Real logarithms** ([golub2013matrix] §9.4.4): if every real eigenvalue of a real matrix `B` is
-positive (no eigenvalue on `(-∞, 0]`), then `B` has a unique real logarithm with eigenvalues in the
-strip `|Im z| < π`, the complex principal logarithm being real. -/
+/-- **Real logarithms.** Let $B \in \mathbb{R}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$,
+that is, every real eigenvalue of $B$ is positive. Then there is exactly one real matrix
+$X \in \mathbb{R}^{n \times n}$ with $e^X = B$ and $|\operatorname{Im} \mu| < \pi$ for every
+eigenvalue $\mu$ of $X$. See [golub2013matrix], §9.4.4.
+
+The matrix $X$ is the principal logarithm of $B$, which is real. The eigenvalues of $B$ and $X$
+are those of `Matrix.complexify B` and `Matrix.complexify X`. -/
 theorem existsUnique_real_exp_eq {B : Matrix n n ℝ}
     (hB : spectrum ℂ (complexify B) ⊆ slitPlane) :
     ∃! X : Matrix n n ℝ, NormedSpace.exp X = B ∧
@@ -193,10 +235,12 @@ theorem existsUnique_real_exp_eq {B : Matrix n n ℝ}
 
 /-! ### The Gregory series -/
 
-/-- The coefficients `-2/n` (odd `n`), `0` (even `n`) of `log ((1 - w)/(1 + w))`. -/
+/-- The coefficients of $\log((1 - w)/(1 + w)) = \sum_n c_n w^n$: $c_n = -2/n$ for odd $n$ and
+$c_n = 0$ for even $n$. -/
 private noncomputable def gregoryCoeff (n : ℕ) : ℂ := if Odd n then -2 / n else 0
 
-/-- The function `log (1 - w) - log (1 + w)`, which is `log ((1 - w)/(1 + w))` on the unit disk. -/
+/-- The function $w \mapsto \log(1 - w) - \log(1 + w)$, which is $\log((1 - w)/(1 + w))$ on the open
+unit disc. -/
 private noncomputable def gregoryFun (w : ℂ) : ℂ := Complex.log (1 - w) - Complex.log (1 + w)
 
 private theorem norm_gregoryCoeff_le (n : ℕ) : ‖gregoryCoeff n‖ ≤ 2 := by
@@ -236,8 +280,10 @@ private theorem hasFPowerSeriesOnBall_gregoryFun :
     · rw [ite_eq_left ho, smul_eq_mul, pow_succ, ho.neg_one_pow]
       ring
 
-/-- `log z = log (1 - c) - log (1 + c)` for `c = (1 - z)/(1 + z)` and `Re z > 0`: both sides have
-imaginary part in `(-π, π)` and exponential `z`. -/
+/-- If $\operatorname{Re} z > 0$ and $c = (1 - z)/(1 + z)$, then
+$\log z = \log(1 - c) - \log(1 + c)$.
+
+Both sides have imaginary part in $(-\pi, \pi)$ and exponential $z$. -/
 private theorem gregoryFun_cayley {z : ℂ} (hz : 0 < z.re) :
     gregoryFun ((1 - z) * (1 + z)⁻¹) = Complex.log z := by
   have h1z : 1 + z ≠ 0 := fun h => by
@@ -281,9 +327,10 @@ private theorem gregoryFun_cayley {z : ℂ} (hz : 0 < z.re) :
     constructor <;> linarith [abs_lt.mp ha1, abs_lt.mp ha2]
   rw [← hexp, Complex.log_exp him.1 him.2.le]
 
-/-- **The Gregory series** ([golub2013matrix] §9.4.4, `G_q(A)`): if every eigenvalue of `A` has
-positive real part, then with `C = (I - A)(I + A)⁻¹`,
-`log A = -2 ∑_{k ≥ 0} C^{2k+1}/(2k + 1)`. -/
+/-- **The Gregory series.** Let $A \in \mathbb{C}^{n \times n}$ with $\operatorname{Re} \lambda > 0$
+for every eigenvalue $\lambda$ of $A$, and let $C = (I - A)(I + A)^{-1}$. Then
+$$\log A = -2 \sum_{k=0}^{\infty} \frac{C^{2k+1}}{2k + 1}.$$
+The partial sums are the approximations $G_q(A)$ of [golub2013matrix], §9.4.4. -/
 theorem hasSum_principalLog_gregory {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
     HasSum (fun k : ℕ => (-2 / (2 * k + 1) : ℂ) • ((1 - A) * (1 + A)⁻¹) ^ (2 * k + 1))
       (principalLog A) := by
@@ -351,8 +398,11 @@ theorem hasSum_principalLog_gregory {A : Matrix n n ℂ} (hA : ∀ μ ∈ spectr
     rintro ⟨m, rfl⟩
     exact hk ⟨m, rfl⟩
 
-/-- **Taking square roots halves the logarithm** ([golub2013matrix] §9.4.4): with no eigenvalue on
-`(-∞, 0]`, `log A^{1/2} = ½ log A`. -/
+/-- **Taking a square root halves the logarithm.** Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$. Then
+$$\log A^{1/2} = \tfrac{1}{2} \log A,$$
+where $A^{1/2}$ is the principal square root `Matrix.principalSqrt A`. See [golub2013matrix],
+§9.4.4. -/
 theorem principalLog_principalSqrt {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) :
     principalLog (principalSqrt A) = (2⁻¹ : ℂ) • principalLog A := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -374,8 +424,11 @@ theorem principalLog_principalSqrt {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆
   · rw [div_ofNat_im, log_im]
     linarith [neg_pi_lt_arg z, arg_le_pi z, Real.pi_pos]
 
-/-- **Inverse scaling and squaring** ([golub2013matrix] §9.4.4): with no eigenvalue on `(-∞, 0]`,
-`log A = 2^k log A_k` for the repeated square roots `A_0 = A`, `A_{k+1} = A_k^{1/2}`. -/
+/-- **Inverse scaling and squaring.** Let $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on
+$(-\infty, 0]$, and let $A_0 = A$ and $A_{j+1} = A_j^{1/2}$ be the repeated principal square
+roots. Then for every $k \in \mathbb{N}$,
+$$\log A = 2^k \log A_k.$$
+See [golub2013matrix], §9.4.4. -/
 theorem principalLog_eq_two_pow_smul {A : Matrix n n ℂ} (hA : spectrum ℂ A ⊆ slitPlane) (k : ℕ) :
     principalLog A = (2 ^ k : ℂ) • principalLog (principalSqrt^[k] A) := by
   have hspec : ∀ k, spectrum ℂ (principalSqrt^[k] A) ⊆ slitPlane := by

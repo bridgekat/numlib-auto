@@ -2,7 +2,6 @@ namespace = 'ConvexAnalysis'
 
 [[node]]
 id = 'convexDom_indicatorFn'
-desc = 'The effective domain of the indicator of `s` is `s`.'
 
 [[node]]
 id = 'properConvex_indicatorFn'

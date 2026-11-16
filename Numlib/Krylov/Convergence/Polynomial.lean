@@ -12,13 +12,53 @@ import Numlib.Eigen.MinMax
 /-!
 # Polynomials in a symmetric operator: spectral norm bounds
 
-`‖p(A) x‖ ≤ max_{λ ∈ σ(A)} |p(λ)| ‖x‖` and the energy-norm analogue for symmetric `A` in finite
-dimension (via `LinearMap.IsSymmetric.eigenvectorBasis`), and the real-interval form used by the
-Chebyshev bounds: for `A.IsSymmetricBoundedBy a b`, `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` in *any* inner
-product space, obtained by compressing `A` to the finite-dimensional `span {x, A x, …, A^(deg p) x}`
-(the "compression trick"; [saad2003iterative] Lemma 6.28/6.31 proofs, [saad2011numerical] Lemma 6.1,
-[han2009theoretical] (5.6.16)–(5.6.19), [meurant2006lanczos] (3.7)–(3.8)). The Hilbert-space version
-via the continuous functional calculus is a phase-2 alternative, not needed for the statements.
+Let $A$ be a symmetric operator on a finite-dimensional inner product space $E$ over $\mathbb{R}$ or
+$\mathbb{C}$, and let $p$ be a polynomial. Expanding a vector in an orthonormal basis of
+eigenvectors of $A$ (`LinearMap.IsSymmetric.eigenvectorBasis`) gives
+$$\|p(A) x\| \le \max_{\lambda \in \sigma(A)} |p(\lambda)| \, \|x\|,$$
+and the same bound holds in the energy norm $\|x\|_A = \sqrt{\operatorname{Re} \langle Ax, x
+\rangle}$ when $A$ is also coercive. If $A = X D X^{-1}$ with $D$ symmetric, the bound acquires the
+factor $\|X\| \|X^{-1}\|$.
+
+The Chebyshev convergence bounds need the form on a real interval. Suppose that $A$ is symmetric
+with $a \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le b \|x\|^2$ for all $x$. Then $\|p(A)
+x\| \le \sup_{t \in [a, b]} |p(t)| \, \|x\|$ for every real polynomial $p$, in *any* inner product
+space. The proof is the **compression argument**: the vector $p(A) x$ is computed inside the
+finite-dimensional space $K = \operatorname{span}\{x, Ax, \dots, A^{\deg p} x\}$, where it equals
+$p(P_K A|_K) x$ for the compression $P_K A|_K$, and the compression satisfies the same bounds $a$
+and $b$. This argument appears in the proofs of Lemmas 6.28 and 6.31 of [saad2003iterative], in
+Lemma 6.1 of [saad2011numerical], in (5.6.16)–(5.6.19) of [han2009theoretical], and in (3.7)–(3.8)
+of [meurant2006lanczos].
+
+## Main results
+
+* `LinearMap.IsSymmetric.repr_aeval_apply`: in the eigenvector basis, $p(A)$ multiplies the $i$-th
+  coordinate by $p(\lambda_i)$.
+* `LinearMap.IsSymmetric.norm_aeval_apply_le`: if $|p(\mu)| \le C$ at every eigenvalue $\mu$ of $A$,
+  then $\|p(A) x\| \le C \|x\|$.
+* `LinearMap.IsSymmetric.energyNorm_aeval_apply_le`: the same bound in the energy norm, for
+  symmetric coercive $A$.
+* `norm_aeval_apply_le_of_conj`: for $A = X D X^{-1}$ with $D$ symmetric,
+  $\|p(A) x\| \le \|X\| \|X^{-1}\| C \|x\|$ (Proposition 6.32 of [saad2003iterative]).
+* `compression.isSymmetricBoundedBy`, `compression.isSymmetricCoercive`: bounds on the quadratic
+  form, and coercivity, pass to compressions.
+* `compression.energyNorm_apply`: the energy norm of the compression is the restriction of the
+  energy norm of $A$.
+* `LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`:
+  $\|p(A) x\| \le \sup_{[a, b]} |p| \, \|x\|$ in any inner product space.
+* `LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le`: the same bound in the energy norm,
+  for $a > 0$.
+
+## Notation
+
+* $p(A)$ is `aeval A p`. A real polynomial $p$ acts on an operator over $\mathbb{R}$ or $\mathbb{C}$
+  through `p.map (algebraMap ℝ 𝕜)`.
+
+## Implementation notes
+
+* The interval bounds are proved by the compression argument, not by the continuous functional
+  calculus. A version for Hilbert spaces through the continuous functional calculus would be an
+  alternative; the statements here do not need it.
 -/
 
 open Polynomial
@@ -34,9 +74,16 @@ namespace LinearMap.IsSymmetric
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`.  This is the expansion behind every
-bound on `p(A)` in terms of the values of `p` on the spectrum, here and in the Krylov eigenvalue
-estimates. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ of finite dimension $n$, and let
+$(e_i)$ be the orthonormal basis of eigenvectors `LinearMap.IsSymmetric.eigenvectorBasis` with
+the eigenvalues $\lambda_i$ (`LinearMap.IsSymmetric.eigenvalues`). For every polynomial $p$ and
+every $x \in E$, the $i$-th coordinate of $p(A) x$ is $p(\lambda_i)$ times the $i$-th coordinate
+of $x$:
+$$\langle e_i, p(A) x \rangle = p(\lambda_i) \langle e_i, x \rangle.$$
+
+This expansion is behind every bound on $p(A)$ by the values of $p$ on the spectrum, here and in
+the Krylov eigenvalue estimates. The coordinates are those of `OrthonormalBasis.repr`, indexed
+by `Fin n`. -/
 theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]) (x : E)
     (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (aeval A p x) i =
@@ -51,8 +98,14 @@ theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]
         eval_monomial]
       ring
 
-/-- Eigenvalues of `p(A)` are `p(λ)`; hence `‖p(A) x‖ ≤ C ‖x‖` whenever `‖p(λ)‖ ≤ C` on the
-spectrum. -/
+/-- Let $A$ be a symmetric operator on a finite-dimensional inner product space $E$, let $p$ be a
+polynomial, and let $C \in \mathbb{R}$ satisfy $|p(\mu)| \le C$ for every eigenvalue $\mu$ of
+$A$. Then for every $x \in E$,
+$$\|p(A) x\| \le C \|x\|.$$
+
+The eigenvalues of $p(A)$ are the values $p(\lambda)$ at the eigenvalues $\lambda$ of $A$, and
+the proof expands $x$ in an orthonormal basis of eigenvectors
+(`LinearMap.IsSymmetric.repr_aeval_apply`). -/
 theorem norm_aeval_apply_le {C : ℝ} (p : 𝕜[X])
     (hC : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → ‖p.eval μ‖ ≤ C) (x : E) :
     ‖aeval A p x‖ ≤ C * ‖x‖ := by
@@ -73,7 +126,13 @@ theorem norm_aeval_apply_le {C : ℝ} (p : 𝕜[X])
   have := Real.sqrt_le_sqrt key
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (mul_nonneg hC0 (norm_nonneg x))] at this
 
-/-- Energy-norm version for symmetric coercive `A`. -/
+/-- Let $A$ be a symmetric coercive operator on a finite-dimensional inner product space $E$, let
+$p$ be a polynomial, and let $C \in \mathbb{R}$ satisfy $|p(\mu)| \le C$ for every eigenvalue
+$\mu$ of $A$. Then for every $x \in E$, in the energy norm $\|x\|_A = \sqrt{\operatorname{Re}
+\langle Ax, x \rangle}$,
+$$\|p(A) x\|_A \le C \|x\|_A.$$
+
+Coercivity is `LinearMap.IsSymmetricCoercive`, and the energy norm is `energyNorm A`. -/
 theorem energyNorm_aeval_apply_le (hA' : A.IsSymmetricCoercive) {C : ℝ} (p : 𝕜[X])
     (hC : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → ‖p.eval μ‖ ≤ C) (x : E) :
     energyNorm A (aeval A p x) ≤ C * energyNorm A x := by
@@ -103,17 +162,23 @@ theorem energyNorm_aeval_apply_le (hA' : A.IsSymmetricCoercive) {C : ℝ} (p : �
         rw [Real.sqrt_mul (sq_nonneg C), Real.sqrt_sq hC0]; rfl
 
 omit [FiniteDimensional 𝕜 E] in
-/-- The eigenvalues of a symmetric operator are real. -/
+/-- The eigenvalues of a symmetric operator on an inner product space are real: if $\mu$ is an
+eigenvalue, then $\operatorname{Im} \mu = 0$. No finite dimension is assumed. -/
 theorem im_eq_zero_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ) :
     RCLike.im μ = 0 :=
   RCLike.conj_eq_iff_im.mp (hA.conj_eigenvalue_eq_self hμ)
 
 end LinearMap.IsSymmetric
 
-/-- [saad2003iterative], Prop 6.32 (diagonalizable `A`): if `A` is conjugate by `X` to an operator
-`D` whose polynomial images satisfy `‖p(D) y‖ ≤ C ‖y‖`, then `‖p(A) x‖ ≤ κ(X) C ‖x‖`, where `κ(X) =
-‖X‖ ‖X⁻¹‖` is the condition number of `X`. Stated with `D` symmetric so that the finite-dimensional
-bound above applies. -/
+/-- Let $E$ be a finite-dimensional inner product space, let $X : E \to E$ be a continuous linear
+isomorphism, let $D$ be symmetric, and let $A = X D X^{-1}$. If $p$ is a polynomial and
+$|p(\mu)| \le C$ for every eigenvalue $\mu$ of $D$, then for every $x \in E$
+$$\|p(A) x\| \le \|X\| \, \|X^{-1}\| \, C \, \|x\|,$$
+where $\|X\| \|X^{-1}\|$ is the condition number $\kappa(X)$ of $X$. This is Proposition 6.32 of
+[saad2003iterative], for a diagonalizable $A$.
+
+The operator $D$ is required to be symmetric, so that the finite-dimensional bound
+`LinearMap.IsSymmetric.norm_aeval_apply_le` applies to it. -/
 theorem norm_aeval_apply_le_of_conj {A D : E →ₗ[𝕜] E} (X : E ≃L[𝕜] E)
     (hconj : A = (X : E →ₗ[𝕜] E) ∘ₗ D ∘ₗ (X.symm : E →ₗ[𝕜] E)) (hD : D.IsSymmetric) {C : ℝ}
     (p : 𝕜[X]) (hC : ∀ μ : 𝕜, Module.End.HasEigenvalue D μ → ‖p.eval μ‖ ≤ C) (x : E) :
@@ -140,25 +205,34 @@ end FiniteDimensional
 
 section Compression
 
-/-! ### The compression trick
+/-!
+### The compression argument
 
-Everything a Krylov method does in `m` steps happens inside the finite-dimensional `𝒦_{m+1}`, on
-which `A` acts (up to the last step) as its compression. -/
+In $m$ steps, a Krylov method works inside the finite-dimensional space $\mathcal{K}_{m+1}$, on
+which $A$ acts, up to the last step, as its compression $P_K A|_K$ (`compression A K`).
+-/
 
 namespace compression
 
 variable (A : E →ₗ[𝕜] E) (K : Submodule 𝕜 E) [K.HasOrthogonalProjection]
 
-/-- Quadratic-form bounds pass to compressions. -/
+/-- Let $K$ be a subspace with an orthogonal projection $P_K$. If $A$ is symmetric with
+$\lambda_{\min} \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le \lambda_{\max} \|x\|^2$
+for all $x$ (`LinearMap.IsSymmetricBoundedBy`), then the compression $P_K A|_K$ of $A$ to $K$ is
+symmetric and satisfies the same bounds with the same constants $\lambda_{\min}$ and
+$\lambda_{\max}$. -/
 theorem isSymmetricBoundedBy {lmin lmax : ℝ} (hA : A.IsSymmetricBoundedBy lmin lmax) :
     (compression A K).IsSymmetricBoundedBy lmin lmax :=
   hA.of_inner_eq (compression.isSymmetric A K hA.isSymmetric) K.subtypeₗᵢ
     fun x => compression.inner_apply A K x x
 
-/-- Coercivity passes to compressions, with the same constant: the compression of a symmetric
-coercive `A` to `K` is symmetric coercive on `K`. Its quadratic form is the restriction of that of
-`A` (`compression.inner_apply`), so the defining inequality is inherited verbatim, and the
-finite-dimensional energy-norm bounds may be applied inside `K`. -/
+/-- Let $K$ be a subspace with an orthogonal projection $P_K$. If $A$ is symmetric and coercive,
+then the compression $P_K A|_K$ of $A$ to $K$ is symmetric and coercive on $K$, with the same
+coercivity constant.
+
+The quadratic form of the compression is the restriction of the quadratic form of $A$
+(`compression.inner_apply`), so the defining inequality is inherited directly. This lets the
+finite-dimensional energy-norm bounds be applied inside $K$. -/
 theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
     (compression A K).IsSymmetricCoercive := by
   obtain ⟨c, hc, hcA⟩ := hA.isCoercive
@@ -167,13 +241,16 @@ theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
   exact hcA (x : E)
 
 /-- The energy inner product of the compression is the restriction of the energy inner product of
-`A`. -/
+$A$: for $x, y \in K$, $\langle P_K A x, y \rangle = \langle Ax, y \rangle$. -/
 theorem energyInner_apply (x y : K) : energyInner (compression A K) x y = energyInner A x y :=
   compression.inner_apply A K x y
 
-/-- Measuring a vector of `K` in the energy norm of the compression gives the same number as
-measuring it in the energy norm of `A`. This is what lets the compression trick carry an energy-norm
-bound proved in the finite-dimensional `K` back to `E` with no constant lost. -/
+/-- Let $K$ be a subspace with an orthogonal projection $P_K$. For every $x \in K$, the energy norm
+of $x$ for the compression $P_K A|_K$ equals its energy norm for $A$:
+$$\|x\|_{P_K A|_K} = \|x\|_A.$$
+
+This is what lets the compression argument carry an energy-norm bound, proved in the
+finite-dimensional space $K$, back to $E$ with no loss in the constant. -/
 theorem energyNorm_apply (x : K) : energyNorm (compression A K) x = energyNorm A x := by
   rw [energyNorm, energyNorm, compression.inner_apply A K x x]
 
@@ -183,8 +260,9 @@ end Compression
 
 section Interval
 
-/-- For a symmetric operator with quadratic form in `[a, b]`, the values of a real polynomial at the
-(real) eigenvalues are bounded by its sup over `[a, b]`. -/
+/-- For a symmetric operator with quadratic form bounded by $a$ and $b$, the value of a real
+polynomial $p$ at an eigenvalue of the operator is at most $\sup_{t \in [a, b]} |p(t)|$ in
+absolute value. -/
 private theorem norm_eval_map_le_sSup {A : E →ₗ[𝕜] E} {a b : ℝ}
     (hA : A.IsSymmetricBoundedBy a b) (p : ℝ[X]) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) :
@@ -205,8 +283,8 @@ end Interval
 
 section CompressionSpace
 
-/-- The Krylov subspace used by the compression trick: it contains `x` and `p(A) x` can be computed
-inside it. -/
+/-- The Krylov subspace $\operatorname{span}\{x, Ax, \dots, A^d x\}$ of the compression argument: it
+contains $x$, and $p(A) x$ can be computed inside it when $\deg p \le d$. -/
 private noncomputable def compressionSpace (A : E →ₗ[𝕜] E) (d : ℕ) (x : E) : Submodule 𝕜 E :=
   Submodule.span 𝕜 (Set.range fun i : Fin (d + 1) => (A ^ (i : ℕ)) x)
 
@@ -225,8 +303,15 @@ namespace LinearMap.IsSymmetricBoundedBy
 variable {A : E →ₗ[𝕜] E} {a b : ℝ} (hA : A.IsSymmetricBoundedBy a b)
 include hA
 
-/-- Real-interval form, in any inner product space: `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` for a real
-polynomial `p`. -/
+/-- Let $E$ be an inner product space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be symmetric
+with $a \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le b \|x\|^2$ for all $x \in E$.
+For every real polynomial $p$ and every $x \in E$,
+$$\|p(A) x\| \le \sup_{t \in [a, b]} |p(t)| \, \|x\|.$$
+
+No finite dimension and no completeness are assumed. The proof applies the finite-dimensional
+bound `LinearMap.IsSymmetric.norm_aeval_apply_le` to the compression of $A$ to
+$\operatorname{span}\{x, Ax, \dots, A^{\deg p} x\}$. The supremum is `sSup` of the image of
+`Set.Icc a b`, and the real polynomial acts on $A$ through `p.map (algebraMap ℝ 𝕜)`. -/
 theorem norm_aeval_map_apply_le (p : ℝ[X]) (x : E) :
     ‖aeval A (p.map (algebraMap ℝ 𝕜)) x‖ ≤
       sSup ((fun t => |p.eval t|) '' Set.Icc a b) * ‖x‖ := by
@@ -246,7 +331,15 @@ theorem norm_aeval_map_apply_le (p : ℝ[X]) (x : E) :
   have h3 : ‖aeval (compression A K) q (⟨x, hxK⟩ : K)‖ = ‖aeval A q x‖ := by rw [← h1]; rfl
   rwa [h3, show ‖(⟨x, hxK⟩ : K)‖ = ‖x‖ from rfl] at h2
 
-/-- Energy-norm version (`0 < a`). -/
+/-- Let $E$ be an inner product space over $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be symmetric
+with $a \|x\|^2 \le \operatorname{Re} \langle Ax, x \rangle \le b \|x\|^2$ for all $x \in E$,
+where $a > 0$. For every real polynomial $p$ and every $x \in E$, in the energy norm $\|x\|_A =
+\sqrt{\operatorname{Re} \langle Ax, x \rangle}$,
+$$\|p(A) x\|_A \le \sup_{t \in [a, b]} |p(t)| \, \|x\|_A.$$
+
+The hypothesis $a > 0$ makes $A$ coercive. The proof applies
+`LinearMap.IsSymmetric.energyNorm_aeval_apply_le` to a compression of $A$ and uses
+`compression.energyNorm_apply` to return to $E$. -/
 theorem energyNorm_aeval_map_apply_le (ha : 0 < a) (p : ℝ[X]) (x : E) :
     energyNorm A (aeval A (p.map (algebraMap ℝ 𝕜)) x) ≤
       sSup ((fun t => |p.eval t|) '' Set.Icc a b) * energyNorm A x := by

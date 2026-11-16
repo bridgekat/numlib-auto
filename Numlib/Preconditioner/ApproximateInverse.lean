@@ -12,43 +12,65 @@ import Numlib.Analysis.Normed.Ring.Inverse
 /-!
 # Approximate inverse preconditioners
 
-Instead of factoring `A`, minimize `‖1 - A M‖` over sparse `M` and use `M` itself as the
-preconditioner ([saad2003iterative], §10.5). The algorithms of §10.5 are dropping strategies with no
-theorem attached; what has content is here:
+An approximate inverse preconditioner for a matrix $A$ does not factor $A$. It minimizes the
+residual norm $\|1 - AM\|$ over sparse matrices $M$ and uses $M$ itself as the preconditioner
+([saad2003iterative], §10.5). The algorithms of §10.5 are dropping strategies without theorems. This
+module proves the facts behind them: the Frobenius objective decouples into one least-squares
+problem per column of $M$, and a column with a prescribed support needs only the rows that this
+support reaches; the derivative of the least-squares objective; nonsingularity of $AM$ when
+$\|1 - AM\| < 1$; a lower bound on the entries of $M$ in terms of the entries of $A^{-1}$; and the
+quadratic convergence of the self-preconditioned minimal-residual iteration.
 
-* the Frobenius objective decouples into one least-squares problem per column of `M`
-  (`Preconditioner.frobenius_sq_mul_sub_one_eq_sum`), and a column constrained to a support `J` only
-  sees the rows where `A(:, J)` is nonzero (`Preconditioner.isMinOn_submatrix_iff`), which is how
-  [saad2003iterative] §10.5.2 and [golub2013matrix] §11.5.5 compute sparse approximate inverses
-  column by column;
-* the derivative of the least-squares objective, stated in the general Hilbert-space form `d/dm ‖c -
-  T m‖² = -2 ⟪c - T m, T ·⟫`, of which [saad2003iterative] `G = -2 Aᵀ R` for the Frobenius inner
-  product is the instance — nothing about matrices is needed for the proof, and Mathlib does not
-  carry the Frobenius inner product as an inner product space structure anyway;
-* nonsingularity from a small residual, which is Neumann's series;
-* the sparsity estimate, a Hölder bound on `M = A⁻¹ - A⁻¹ R`: a sufficiently accurate approximate
-  inverse has a nonzero pattern containing the large entries of `A⁻¹`, so when those entries are all
-  comparable `M` must be as dense as `A⁻¹`;
-* the quadratic convergence of the self-preconditioned minimal-residual iteration, which is a
-  statement about a normed *ring*: if the next residual is at most `‖(1 - t) R + t R²‖` for every
-  `t`, then it is at most `‖R²‖ ≤ ‖R‖²`. That one-line argument, with the residual recurrence `R' =
-  (1 - α) R + α R²`, is the entire content of [saad2003iterative] Propositions 10.13 and 10.14, and
-  it mentions neither matrices, nor the Frobenius norm, nor sparsity.
+The column decoupling is how [saad2003iterative], §10.5.2, and [golub2013matrix], §11.5.5, compute
+sparse approximate inverses column by column. The sparsity estimate shows that an accurate
+approximate inverse has a nonzero pattern that contains the large entries of $A^{-1}$, so when these
+entries are all of comparable size, $M$ is as dense as $A^{-1}$. The quadratic convergence is a
+statement about a normed ring: if the next residual has norm at most $\|(1 - t) R + t R^2\|$ for
+every real $t$, then it has norm at most $\|R^2\| \le \|R\|^2$. With the residual recurrence
+$R' = (1 - \alpha) R + \alpha R^2$, this is the content of Propositions 10.13 and 10.14 of
+[saad2003iterative], and it uses neither matrices, nor the Frobenius norm, nor sparsity.
 
-The other half of [saad2003iterative] Proposition 10.13 — one self-preconditioned minimal-residual
-step reduces the residual by the sine of the angle between `r` and `C r` — is the one-dimensional
-minimal-residual step of `Numlib/Projection/OneDimensional`, and is not restated here.
+## Main results
+
+* `Preconditioner.hasFDerivAt_normSq_sub_apply`: the map $z \mapsto \|c - Tz\|^2$ has the derivative
+  $e \mapsto -2 \langle c - Tm, Te \rangle$ at $m$.
+* `Preconditioner.isUnit_of_norm_one_sub_mul_lt_one`: in a normed ring, $\|1 - am\| < 1$ implies
+  that $am$ is a unit.
+* `Preconditioner.norm_le_norm_sq_of_isMinOn`: if $\|r'\| \le \|(1 - t) r + t r^2\|$ for every real
+  $t$, then $\|r'\| \le \|r\|^2$.
+* `Preconditioner.residual_selfPreconditionedStep`: the step $M' = M + \alpha M R$ has the residual
+  $R' = (1 - \alpha) R + \alpha R^2$.
+* `Preconditioner.abs_sub_inv_apply_le`: if $BA = 1$, then $|B_{ij}| - \max_k |B_{ik}| \sum_k |(1 -
+  AM)_{kj}| \le |M_{ij}|$.
+* `Preconditioner.frobenius_sq_mul_sub_one_eq_sum`: $\|AM - 1\|_F^2 = \sum_k \|A m_k - e_k\|_2^2$.
+* `Preconditioner.isMinOn_submatrix_iff`: the reduced least-squares problem on the rows $I$ and the
+  columns $J$ has the same minimizers as the full problem over the vectors supported in $J$.
+
+## Implementation notes
+
+* The derivative is stated for a continuous linear map $T$ into a real inner product space.
+  Proposition 10.9 of [saad2003iterative] is the case where $T$ is $M \mapsto AM$ on matrices with
+  the Frobenius inner product. The proof needs nothing about matrices, and Mathlib does not provide
+  the Frobenius inner product as an inner product space structure.
+* The other half of Proposition 10.13 of [saad2003iterative] says that one self-preconditioned
+  minimal-residual step reduces the residual by the sine of the angle between $r$ and $Cr$. This is
+  the one-dimensional minimal-residual step of `Numlib.Projection.OneDimensional`, and it is not
+  stated again here.
 -/
 
 namespace Preconditioner
 
 /-! ### The least-squares objective -/
 
-/-- The derivative of a least-squares objective in a real inner product space: for a continuous
-linear `T : F →L[ℝ] G` and a target `c : G`, the map `z ↦ ‖c - T z‖²` has derivative `e ↦ -2 ⟪c - T
-m, T e⟫` at `m`, that is, gradient `-2 T† (c - T m)`. [saad2003iterative] Proposition 10.9 is the
-instance where `F` and `G` are the matrices with the Frobenius inner product, `T = (A * ·)` and `c =
-1`, whose gradient is `-2 Aᵀ (1 - A M)`. -/
+/-- Let $F$ be a real normed space, let $G$ be a real inner product space, let $T \colon F \to G$ be
+a continuous linear map, and let $c \in G$. Then at every $m \in F$, the map
+$z \mapsto \|c - Tz\|^2$ has the Fréchet derivative
+$$e \mapsto -2 \langle c - Tm, Te \rangle,$$
+that is, the gradient $-2 T^*(c - Tm)$.
+
+Proposition 10.9 of [saad2003iterative] is the case where $F$ and $G$ are spaces of matrices
+with the Frobenius inner product, $T$ is $M \mapsto AM$ and $c = 1$. Its gradient is
+$-2 A^T (1 - AM)$. -/
 theorem hasFDerivAt_normSq_sub_apply {F G : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     [NormedAddCommGroup G] [InnerProductSpace ℝ G] (T : F →L[ℝ] G) (c : G) (m : F) :
     HasFDerivAt (fun z => ‖c - T z‖ ^ 2)
@@ -64,16 +86,21 @@ theorem hasFDerivAt_normSq_sub_apply {F G : Type*} [NormedAddCommGroup F] [Norme
 
 variable {R : Type*} [NormedRing R] [HasSummableGeomSeries R]
 
-/-- [saad2003iterative] Proposition 10.10: in a normed ring — in particular for matrices under any
-submultiplicative norm, the Frobenius norm included — a residual `1 - a m` of norm less than `1`
-forces `a m` to be a unit, so `m` is injective and, in finite dimension, invertible. This is
-Neumann's series. -/
+/-- Let $R$ be a normed ring in which geometric series of elements of norm less than $1$ are
+summable, and let $a, m \in R$. If $\|1 - am\| < 1$, then $am$ is a unit. This is Proposition
+10.10 of [saad2003iterative].
+
+The proof is the Neumann series. The result applies to matrices with any submultiplicative norm,
+including the Frobenius norm. For square matrices it gives that $m$ is invertible. -/
 theorem isUnit_of_norm_one_sub_mul_lt_one {a m : R} (h : ‖1 - a * m‖ < 1) : IsUnit (a * m) := by
   have h' := isUnit_one_sub_of_norm_lt_one h
   rwa [sub_sub_cancel] at h'
 
-/-- The two-sided scaling variant of [saad2003iterative] (10.54): row and column scalings by units
-do not change the conclusion, so a small *scaled* residual is just as good. -/
+/-- Let $R$ be a normed ring in which geometric series of elements of norm less than $1$ are
+summable, let $a, m \in R$, and let $d_1$ and $d_2$ be units of $R$. If
+$\|1 - d_1 a m d_2\| < 1$, then $am$ is a unit. This is the variant of (10.54) of
+[saad2003iterative] with a scaling on both sides: a small scaled residual also gives
+nonsingularity. -/
 theorem isUnit_of_norm_one_sub_units_mul_lt_one {a m : R} {d₁ d₂ : Rˣ}
     (h : ‖1 - (d₁ : R) * (a * m) * (d₂ : R)‖ < 1) : IsUnit (a * m) :=
   (Units.isUnit_units_mul d₁ _).mp ((Units.isUnit_mul_units _ d₂).mp
@@ -81,13 +108,16 @@ theorem isUnit_of_norm_one_sub_units_mul_lt_one {a m : R} {d₁ d₂ : Rˣ}
 
 /-! ### Quadratic convergence of the self-preconditioned iteration -/
 
-/-- [saad2003iterative] Propositions 10.13 (10.60) and 10.14: if the new residual `r'` is no larger
-than `(1 - t) r + t r²` for *every* real `t` — which is what a minimal-residual step in the
-direction `M R` achieves, since `(1 - t) R + t R²` is the residual after a step of length `t`
-(`Preconditioner.residual_selfPreconditionedStep`) — then `‖r'‖ ≤ ‖r²‖ ≤ ‖r‖²`. The proof is to take
-`t = 1`. This is the whole of the quadratic-convergence claim, in both the global and the
-column-oriented form; it says nothing about *whether* the iteration converges, only how fast it does
-once it does. -/
+/-- Let $S$ be a normed ring that is also a real normed space, and let $r, r' \in S$. If
+$$\|r'\| \le \|(1 - t) r + t r^2\| \quad \text{for every } t \in \mathbb{R},$$
+then $\|r'\| \le \|r\|^2$. This is the quadratic convergence of the self-preconditioned
+minimal-residual iteration in Propositions 10.13, (10.60), and 10.14 of [saad2003iterative].
+
+A minimal-residual step in the direction $MR$ gives the hypothesis, because $(1 - t) R + t R^2$
+is the residual after a step of length $t$ (`Preconditioner.residual_selfPreconditionedStep`).
+The proof takes $t = 1$ and uses $\|r^2\| \le \|r\|^2$. The result covers the global and the
+column-oriented form of the iteration. It says how fast the iteration converges when it
+converges, but not whether it converges. -/
 theorem norm_le_norm_sq_of_isMinOn {S : Type*} [NormedRing S] [NormedSpace ℝ S] {r r' : S}
     (h : ∀ t : ℝ, ‖r'‖ ≤ ‖(1 - t) • r + t • r ^ 2‖) : ‖r'‖ ≤ ‖r‖ ^ 2 := by
   have h1 := h 1
@@ -96,17 +126,25 @@ theorem norm_le_norm_sq_of_isMinOn {S : Type*} [NormedRing S] [NormedSpace ℝ S
   rw [pow_two, pow_two]
   exact norm_mul_le r r
 
-/-- [saad2003iterative] (10.63): the preconditioned matrix `B = A M` of the self-preconditioned step
-satisfies `B' = B + α (B (1 - B))`, so it stays a polynomial in `B₀`. In particular a symmetric
-`B₀`, as when `M₀ = α₀ Aᵀ`, keeps every `B_k` symmetric. -/
+/-- Let $T$ be an algebra over a commutative ring $S$, let $A, M \in T$ and $\alpha \in S$. Then the
+matrix $B = AM$ of the self-preconditioned step $M' = M + \alpha M(1 - AM)$ satisfies
+$$A M' = AM + \alpha \, AM (1 - AM),$$
+that is, $B' = B + \alpha B(1 - B)$. This is (10.63) of [saad2003iterative].
+
+Thus every $B_k$ is a polynomial in $B_0$. In particular, if $B_0$ is symmetric, as for
+$M_0 = \alpha_0 A^T$, then every $B_k$ is symmetric. -/
 theorem mul_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Algebra S T]
     (A M : T) (α : S) :
     A * (M + α • (M * (1 - A * M))) = A * M + α • (A * M * (1 - A * M)) := by
   rw [mul_add, mul_smul_comm, ← mul_assoc]
 
-/-- [saad2003iterative] (10.61)–(10.62): the self-preconditioned global minimal-residual step `M' =
-M + α (M R)` with `R = 1 - A M` has residual `R' = (1 - α) R + α R²`. Iterating, `R_k` is a
-polynomial of degree `2^k` in `R₀`. -/
+/-- Let $T$ be an algebra over a commutative ring $S$, let $A, M \in T$ and $\alpha \in S$, and let
+$R = 1 - AM$. Then the self-preconditioned global minimal-residual step $M' = M + \alpha M R$
+has the residual
+$$1 - A M' = (1 - \alpha) R + \alpha R^2.$$
+This is (10.61)–(10.62) of [saad2003iterative].
+
+By induction, the residual $R_k$ after $k$ steps is a polynomial of degree $2^k$ in $R_0$. -/
 theorem residual_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Algebra S T]
     (A M : T) (α : S) :
     1 - A * (M + α • (M * (1 - A * M))) =
@@ -119,9 +157,13 @@ theorem residual_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Alg
 
 open scoped Matrix
 
-/-- The estimate behind [saad2003iterative] Proposition 10.11: with `B` a left inverse of `A` and `R
-= 1 - A M` the residual, `M = B - B R`, so each entry of `M` differs from the corresponding entry of
-`A⁻¹` by at most `(sup over the row of B) * (column sum of |R|)`. -/
+/-- Let $A, B, M$ be real square matrices with $BA = 1$, and let $R = 1 - AM$. Then for all indices
+$i$ and $j$,
+$$|B_{ij}| - \Bigl(\max_k |B_{ik}|\Bigr) \sum_k |R_{kj}| \le |M_{ij}|.$$
+This is the estimate behind Proposition 10.11 of [saad2003iterative].
+
+The proof uses $M = B - BR$, which follows from $BA = 1$. The maximum over $k$ is written as an
+indexed supremum. -/
 theorem abs_sub_inv_apply_le {n : Type*} [Fintype n] [DecidableEq n] {A B M : Matrix n n ℝ}
     (hBA : B * A = 1) (i j : n) :
     |B i j| - (⨆ k, |B i k|) * ∑ k, |(1 - A * M) k j| ≤ |M i j| := by
@@ -143,11 +185,14 @@ theorem abs_sub_inv_apply_le {n : Type*} [Fintype n] [DecidableEq n] {A B M : Ma
     _ ≤ |B i j - (B * (1 - A * M)) i j| := abs_sub_abs_le_abs_sub _ _
     _ = |M i j| := by rw [← hM]
 
-/-- [saad2003iterative] Corollary 10.12: if the `j`-th column of the residual is small in the `ℓ¹`
-norm and the entry `B i j` of the inverse is large relative to its own row, then `M i j` cannot
-vanish. So a sufficiently accurate approximate inverse must have a nonzero pattern containing the
-large entries of `A⁻¹`, and if those are all comparable — as they are for many matrices — `M` must
-be as dense as `A⁻¹`. -/
+/-- Let $A, B, M$ be real square matrices with $BA = 1$, let $R = 1 - AM$, and let $\tau$ be a real
+number with $\sum_k |R_{kj}| \le \tau$. If $\tau \max_k |B_{ik}| < |B_{ij}|$, then
+$M_{ij} \neq 0$. This is Corollary 10.12 of [saad2003iterative].
+
+Thus, if column $j$ of the residual is small in the $\ell^1$ norm and the entry $B_{ij}$ of the
+inverse is large compared with its row, then $M_{ij}$ is not zero. An accurate approximate
+inverse therefore has a nonzero pattern that contains the large entries of $A^{-1}$. When these
+entries are all of comparable size, as for many matrices, $M$ is as dense as $A^{-1}$. -/
 theorem apply_ne_zero_of_abs_lt {n : Type*} [Fintype n] [DecidableEq n] {A B M : Matrix n n ℝ}
     (hBA : B * A = 1) {τ : ℝ} {i j : n} (hτ : ∑ k, |(1 - A * M) k j| ≤ τ)
     (hlt : τ * (⨆ k, |B i k|) < |B i j|) : M i j ≠ 0 := by
@@ -168,10 +213,15 @@ section Columns
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The Frobenius objective decouples into columns** ([golub2013matrix] §11.5.5,
-[saad2003iterative] §10.5.2): `‖A M - 1‖_F² = ∑_k ‖A m_k - e_k‖₂²`, with `m_k` the `k`-th column of
-`M`. So minimizing `‖A M - 1‖_F` over the matrices with a prescribed pattern is `n` independent
-least-squares problems, one per column. -/
+/-- The Frobenius objective decouples into columns. Let $A, M \in \mathbb{K}^{n \times n}$ with
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $m_k$ be column $k$ of $M$. Then
+$$\|AM - 1\|_F^2 = \sum_k \|A m_k - e_k\|_2^2.$$
+This is the decoupling of [golub2013matrix], §11.5.5, and [saad2003iterative], §10.5.2.
+
+Thus the minimization of $\|AM - 1\|_F$ over the matrices with a prescribed pattern is $n$
+independent least-squares problems, one for each column. The norm on the left is the Frobenius
+norm `Matrix.Norms.Frobenius`, and the vectors on the right are in `EuclideanSpace` through
+`WithLp.toLp 2`. -/
 theorem frobenius_sq_mul_sub_one_eq_sum (A M : Matrix n n 𝕜) :
     ‖A * M - 1‖ ^ 2 = ∑ k, ‖WithLp.toLp 2 (A *ᵥ (fun i => M i k) - Pi.single k 1)‖ ^ 2 := by
   rw [Matrix.frobenius_norm_sq_eq_sum_norm_sq_col]
@@ -180,9 +230,10 @@ theorem frobenius_sq_mul_sub_one_eq_sum (A M : Matrix n n 𝕜) :
   funext i
   simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.one_apply, Pi.single_apply]
 
-/-- The residual of a vector supported in `J` splits into the residual of the reduced problem on
-the rows `I` and the part of the right side outside `I`, when every row reached by a column of `J`
-is in `I`. -/
+/-- Let $J$ be a set of columns, and let $I$ be a set of rows that contains every row $i$ with
+$A_{ij} \neq 0$ for some $j \in J$. For a vector $x$ supported in $J$,
+$$\|Ax - c\|_2^2 = \|A(I, J) x_J - c_I\|_2^2 + \sum_{i \notin I} |c_i|^2.$$
+-/
 private theorem norm_sq_mulVec_sub_eq {A : Matrix n n 𝕜} {c : n → 𝕜} {I J : Finset n}
     (hI : ∀ i, ∀ j ∈ J, A i j ≠ 0 → i ∈ I) {x : n → 𝕜} (hx : ∀ j ∉ J, x j = 0) :
     ‖WithLp.toLp 2 (A *ᵥ x - c)‖ ^ 2 =
@@ -208,11 +259,17 @@ private theorem norm_sq_mulVec_sub_eq {A : Matrix n n 𝕜} {c : n → 𝕜} {I 
     rw [PiLp.toLp_apply, Pi.sub_apply, hout i (Finset.mem_compl.mp hi), zero_sub, norm_neg]
 
 omit [DecidableEq n] in
-/-- **Reduced least squares** ([golub2013matrix] §11.5.5, [saad2003iterative] §10.5.2): let `J` be
-the allowed support of a column and `I` a set of rows containing every row `i` with `A i j ≠ 0` for
-some `j ∈ J`. Then `τ` minimizes the small problem `‖A(I, J) τ - c(I)‖₂` exactly when its extension
-by zero (`Function.extend Subtype.val τ 0`) minimizes `‖A x - c‖₂` over the vectors `x` supported in
-`J`: the two objectives differ by the constant `‖c(Iᶜ)‖₂²`. -/
+/-- Reduced least squares. Let $A \in \mathbb{K}^{n \times n}$ and $c \in \mathbb{K}^n$ with
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Let $J$ be a set of columns, and let $I$ be a set of
+rows that contains every row $i$ with $A_{ij} \neq 0$ for some $j \in J$. Then a vector
+$\tau \in \mathbb{K}^J$ minimizes $\|A(I, J) \tau - c_I\|_2$ if and only if its extension by
+zero minimizes $\|Ax - c\|_2$ over the vectors $x \in \mathbb{K}^n$ with $x_j = 0$ for
+$j \notin J$. This is the reduction of [golub2013matrix], §11.5.5, and [saad2003iterative],
+§10.5.2.
+
+The two objectives differ by the constant $\|c_{I^c}\|_2^2$. The submatrix $A(I, J)$ is
+`A.submatrix` along the inclusions of `I` and `J`, and the extension by zero is
+`Function.extend Subtype.val τ 0`. -/
 theorem isMinOn_submatrix_iff {A : Matrix n n 𝕜} {c : n → 𝕜} {I J : Finset n}
     (hI : ∀ i, ∀ j ∈ J, A i j ≠ 0 → i ∈ I) {τ : J → 𝕜} :
     IsMinOn (fun σ : J → 𝕜 => ‖WithLp.toLp 2 (A.submatrix ((↑) : I → n) ((↑) : J → n) *ᵥ σ -

@@ -12,54 +12,62 @@ import Mathlib.Analysis.Normed.Operator.Compact.FiniteDimension
 import Numlib.Analysis.Normed.Operator.Compact
 
 /-!
-# The Riesz ascent and descent of `μ • 1 - K` for a compact `K`
+# The Riesz ascent and descent of $\mu I - K$ for a compact $K$
 
-`Numlib/Analysis/Normed/Operator/Compact` proves what an equation of the second kind needs
-directly: the eigenvalues of a compact operator accumulate only at `0`, the range of `μ • 1 - K`
-is closed, Schauder's theorem, and the solvability criterion on a Hilbert space. This file adds
-the *chain* structure that the Fredholm alternative leaves open — that the null spaces of the
-powers of `μ • 1 - K` stop growing, that the ranges stop shrinking, and that the space is then
-the direct sum of the two.
+Let $K$ be a compact operator on a normed space $X$ and let $\mu \neq 0$. The module
+`Numlib.Analysis.Normed.Operator.Compact` proves what an equation of the second kind needs directly:
+the eigenvalues of a compact operator accumulate only at $0$, the range of $\mu I - K$ is closed,
+Schauder's theorem, and the solvability criterion on a Hilbert space. This file adds the structure
+of the chains that the Fredholm alternative leaves open. The null spaces of the powers
+$(\mu I - K)^n$ stop growing (the ascent is finite), the ranges stop shrinking (the descent is
+finite), and there is an index $\nu$, the **Riesz index**, with $$X = \ker (\mu I - K)^\nu \oplus
+\operatorname{range} (\mu I - K)^\nu.$$ From this follow the Fredholm alternative when only a power
+of $K$ is compact, and the equivalence of injectivity and surjectivity of $\mu I - K$. On a Hilbert
+space, $\ker(\mu I - K)$ and $\ker(\bar\mu I - K^\dagger)$ have the same dimension.
 
-## Main statements
-
-* `IsCompactOperator.exists_le_of_chain` — the one Riesz-lemma argument behind everything here.
-  A chain of pairs `S' n ≤ S n` of subspaces on which `μ • 1 - K` decreases the index, and across
-  which `K` does too, cannot consist of proper inclusions: an almost-orthogonal element of each
-  would make the images under `K` pairwise `‖μ‖`-separated inside a compact set.
-* `IsCompactOperator.exists_ker_pow_succ_le` and `IsCompactOperator.exists_range_pow_le_succ` —
-  the ascent and the descent of `μ • 1 - K` are finite.
-* `IsCompactOperator.exists_riesz_index` — the index `ν` itself: the null spaces increase strictly
-  below `ν` and are constant from `ν` on, the ranges are constant from `ν` on, and
-  `X = ker ((μ • 1 - K) ^ ν) ⊕ range ((μ • 1 - K) ^ ν)`.
-* `IsCompactOperator.finiteDimensional_ker_pow` — every `ker ((μ • 1 - K) ^ n)` is
-  finite-dimensional, because the compact operator `C` with `(μ • 1 - K) ^ n = μ ^ n • 1 - C`
-  acts on that kernel as the invertible scalar `μ ^ n`.
-* `IsCompactOperator.isUnit_smul_one_sub_of_isCompactOperator_pow` and
-  `.hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow` — the Fredholm alternative when
-  only *some power* `K ^ m` is compact, which is the Riesz decomposition of `μ ^ m • 1 - K ^ m`
-  together with the factorisation `μ ^ m • 1 - K ^ m = (μ • 1 - K) * S`.
-* `IsCompactOperator.injective_of_surjective_smul_one_sub` and
-  `.injective_iff_surjective_smul_one_sub` — the converse half of the Fredholm alternative,
-  surjectivity of `μ • 1 - K` forces injectivity (from the Riesz index, no adjoint, no
-  completeness), and the equivalence `N(μ - K) = 0 ⟺ R(μ - K) = X` on a Banach space
-  ([brezis2011functional] Theorem 6.6 (c)).
-
-* `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` — on a Hilbert space,
-  `dim (ker (μ • 1 - K)) = dim (ker (conj μ • 1 - K†))`: the operator has Fredholm index zero.
-  This does *not* follow from the chain structure above, which concerns one operator at a time;
-  it is a finite-rank perturbation argument, and the ascent–descent theory enters only through the
-  finite-dimensionality of the two null spaces.
-
-The auxiliary chain lemmas about the powers of a single operator — that the null spaces increase,
-the ranges decrease, and that either chain is constant once two consecutive terms agree — are
-stated for an arbitrary `A : X →L[𝕜] X` in the `ContinuousLinearMap` namespace, since compactness
-plays no part in them.
-
-## References
-
-This is [han2009theoretical], Theorem 2.8.12 clauses (3), (5) and (6) and Theorem 2.8.14 (1);
+This is Theorem 2.8.12(3), (5) and (6) and Theorem 2.8.14(1) of [han2009theoretical]; the
+equivalence of injectivity and surjectivity is Theorem 6.6(c) of [brezis2011functional].
 [kress1989linear], §3, and [conway2007course], Chapter VII, develop the same theory.
+
+## Main results
+
+* `IsCompactOperator.exists_le_of_chain`: the Riesz argument behind everything here. Let
+  $S'_n \subseteq S_n$ be subspaces with $S'_n$ closed and $(\mu I - K)(S_n) \subseteq S'_n$, and
+  suppose that for any $m \neq n$ the operator $K$ maps $S_m$ into $S'_n$ or $S_n$ into $S'_m$. Then
+  $S_n = S'_n$ for some $n$.
+* `IsCompactOperator.exists_ker_pow_succ_le`, `IsCompactOperator.exists_range_pow_le_succ`: the
+  ascent and the descent of $\mu I - K$ are finite.
+* `IsCompactOperator.exists_riesz_index`: the null spaces increase strictly below the Riesz index
+  $\nu$ and are constant from $\nu$ on, the ranges are constant from $\nu$ on, and $X = \ker (\mu
+  I - K)^\nu \oplus \operatorname{range} (\mu I - K)^\nu$.
+* `IsCompactOperator.finiteDimensional_ker_pow`: every $\ker (\mu I - K)^n$ is finite-dimensional.
+* `IsCompactOperator.isUnit_smul_one_sub_of_isCompactOperator_pow`,
+  `IsCompactOperator.hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow`: the Fredholm
+  alternative when only some power $K^m$ is compact.
+* `IsCompactOperator.injective_of_surjective_smul_one_sub`,
+  `IsCompactOperator.injective_iff_surjective_smul_one_sub`: surjectivity of $\mu I - K$ implies
+  injectivity, on any normed space, and on a Banach space the two are equivalent.
+* `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`: on a Hilbert space, $\dim \ker(\mu I -
+  K) = \dim \ker(\bar\mu I - K^\dagger)$, so $\mu I - K$ has Fredholm index zero.
+
+## Proof outline
+
+The Riesz argument: if every inclusion $S'_n \le S_n$ were proper, Riesz's lemma would give an
+almost orthogonal element $w_n$ of each $S_n$, and the images $K w_n$ would be pairwise at distance
+at least $|\mu|$ inside a compact set. The equality of the dimensions on a Hilbert space does not
+follow from the structure of the chains, which concerns one operator at a time. It is a perturbation
+argument with an operator of finite rank, and the theory of ascent and descent enters only through
+the finite dimension of the two null spaces.
+
+## Implementation notes
+
+* $\mu I - K$ is `μ • (1 : X →L[𝕜] X) - K`.
+* The conjugate $\bar\mu$ is `(starRingEnd 𝕜) μ`, and $K^\dagger$ is
+  `ContinuousLinearMap.adjoint K`.
+* The auxiliary lemmas about the chains of powers of a single operator (the null spaces increase,
+  the ranges decrease, and either chain is constant once two consecutive terms agree) are stated for
+  an arbitrary `A : X →L[𝕜] X` in the namespace `ContinuousLinearMap`, because compactness plays no
+  part in them.
 -/
 
 open Filter Metric Set Topology
@@ -68,17 +76,18 @@ namespace ContinuousLinearMap
 
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- Applying a power of an operator one more time. -/
+/-- For a bounded operator $A$ on $X$, $n \in \mathbb{N}$ and $x \in X$: $A^{n+1} x = A^n (A x)$. -/
 theorem pow_succ_apply (A : X →L[𝕜] X) (n : ℕ) (x : X) :
     (A ^ (n + 1)) x = (A ^ n) (A x) := by
   rw [pow_succ]; rfl
 
-/-- Applying a power of an operator one more time, on the outside. -/
+/-- For a bounded operator $A$ on $X$, $n \in \mathbb{N}$ and $x \in X$: $A^{n+1} x = A (A^n x)$. -/
 theorem pow_succ_apply' (A : X →L[𝕜] X) (n : ℕ) (x : X) :
     (A ^ (n + 1)) x = A ((A ^ n) x) := by
   rw [pow_succ']; rfl
 
-/-- The null spaces of the powers of an operator increase. -/
+/-- The null spaces of the powers of an operator increase: if $m \le n$, then
+$\ker A^m \subseteq \ker A^n$. -/
 theorem ker_pow_mono (A : X →L[𝕜] X) {m n : ℕ} (hmn : m ≤ n) : (A ^ m).ker ≤ (A ^ n).ker := by
   obtain ⟨c, rfl⟩ := Nat.exists_eq_add_of_le hmn
   intro x hx
@@ -87,7 +96,8 @@ theorem ker_pow_mono (A : X →L[𝕜] X) {m n : ℕ} (hmn : m ≤ n) : (A ^ m).
   have h : (A ^ (m + c)) x = (A ^ c) ((A ^ m) x) := by rw [add_comm, pow_add]; rfl
   rw [h, hx', map_zero]
 
-/-- The ranges of the powers of an operator decrease. -/
+/-- The ranges of the powers of an operator decrease: if $m \le n$, then $\operatorname{range} A^n
+\subseteq \operatorname{range} A^m$. -/
 theorem range_pow_anti (A : X →L[𝕜] X) {m n : ℕ} (hmn : m ≤ n) :
     (A ^ n).range ≤ (A ^ m).range := by
   obtain ⟨c, rfl⟩ := Nat.exists_eq_add_of_le hmn
@@ -99,7 +109,8 @@ theorem range_pow_anti (A : X →L[𝕜] X) {m n : ℕ} (hmn : m ≤ n) :
   change (A ^ m) ((A ^ c) x) = y
   rw [← hx', h]
 
-/-- If two consecutive null spaces of the powers of an operator agree, so do all later ones. -/
+/-- If $\ker A^{j+1} \subseteq \ker A^j$, then $\ker A^{i+1} \subseteq \ker A^i$ for every
+$i \ge j$. -/
 theorem ker_pow_succ_le_of_le (A : X →L[𝕜] X) {j : ℕ} (h : (A ^ (j + 1)).ker ≤ (A ^ j).ker)
     {i : ℕ} (hi : j ≤ i) : (A ^ (i + 1)).ker ≤ (A ^ i).ker := by
   induction i, hi using Nat.le_induction with
@@ -115,8 +126,8 @@ theorem ker_pow_succ_le_of_le (A : X →L[𝕜] X) {j : ℕ} (h : (A ^ (j + 1)).
     change (A ^ (i + 1)) x = 0
     rw [A.pow_succ_apply i x, hxi]
 
-/-- If two consecutive null spaces of the powers of an operator agree, the chain is constant
-from there on. -/
+/-- If $\ker A^{j+1} \subseteq \ker A^j$, then $\ker A^i = \ker A^j$ for every $i \ge j$: the chain
+of null spaces is constant from $j$ on. -/
 theorem ker_pow_eq_of_ker_pow_succ_le (A : X →L[𝕜] X) {j : ℕ}
     (h : (A ^ (j + 1)).ker ≤ (A ^ j).ker) {i : ℕ} (hi : j ≤ i) : (A ^ i).ker = (A ^ j).ker := by
   induction i, hi using Nat.le_induction with
@@ -124,7 +135,8 @@ theorem ker_pow_eq_of_ker_pow_succ_le (A : X →L[𝕜] X) {j : ℕ}
   | succ i hji ih =>
     exact le_antisymm ((A.ker_pow_succ_le_of_le h hji).trans ih.le) (A.ker_pow_mono (by omega))
 
-/-- If two consecutive ranges of the powers of an operator agree, so do all later ones. -/
+/-- If $\operatorname{range} A^j \subseteq \operatorname{range} A^{j+1}$, then $\operatorname{range}
+A^i \subseteq \operatorname{range} A^{i+1}$ for every $i \ge j$. -/
 theorem range_pow_le_succ_of_le (A : X →L[𝕜] X) {j : ℕ} (h : (A ^ j).range ≤ (A ^ (j + 1)).range)
     {i : ℕ} (hi : j ≤ i) : (A ^ i).range ≤ (A ^ (i + 1)).range := by
   induction i, hi using Nat.le_induction with
@@ -140,8 +152,9 @@ theorem range_pow_le_succ_of_le (A : X →L[𝕜] X) {j : ℕ} (h : (A ^ j).rang
     have h1 : (A ^ (i + 1 + 1)) z = A ((A ^ (i + 1)) z) := A.pow_succ_apply' (i + 1) z
     rw [h1, hz', ← A.pow_succ_apply' i x, hx']
 
-/-- If two consecutive ranges of the powers of an operator agree, the chain is constant from
-there on. -/
+/-- If $\operatorname{range} A^j \subseteq \operatorname{range} A^{j+1}$, then $\operatorname{range}
+A^i = \operatorname{range} A^j$ for every $i \ge j$: the chain of ranges is constant from $j$
+on. -/
 theorem range_pow_eq_of_range_pow_succ_le (A : X →L[𝕜] X) {j : ℕ}
     (h : (A ^ j).range ≤ (A ^ (j + 1)).range) {i : ℕ} (hi : j ≤ i) :
     (A ^ i).range = (A ^ j).range := by
@@ -151,8 +164,8 @@ theorem range_pow_eq_of_range_pow_succ_le (A : X →L[𝕜] X) {j : ℕ}
     exact le_antisymm (A.range_pow_anti (by omega))
       (ih.symm.trans_le (A.range_pow_le_succ_of_le h hji))
 
-/-- If the null spaces of the powers of `A` have stabilized by the index `ν`, then `ker (A ^ ν)`
-and `range (A ^ ν)` intersect trivially. -/
+/-- If $\ker A^{2\nu} \subseteq \ker A^\nu$, so that the null spaces of the powers of $A$ have
+stopped growing at $\nu$, then $\ker A^\nu \cap \operatorname{range} A^\nu = \{0\}$. -/
 theorem disjoint_ker_range_pow (A : X →L[𝕜] X) {ν : ℕ}
     (h : (A ^ (ν + ν)).ker ≤ (A ^ ν).ker) : Disjoint (A ^ ν).ker (A ^ ν).range := by
   refine Submodule.disjoint_def.2 fun x hx1 hx2 => ?_
@@ -166,8 +179,9 @@ theorem disjoint_ker_range_pow (A : X →L[𝕜] X) {ν : ℕ}
   have : (A ^ ν) y = 0 := h hyk
   rw [← hy', this]
 
-/-- If the ranges of the powers of `A` have stabilized by the index `ν`, then `ker (A ^ ν)` and
-`range (A ^ ν)` span the whole space. -/
+/-- If $\operatorname{range} A^\nu \subseteq \operatorname{range} A^{2\nu}$, so that the ranges of
+the powers of $A$ have stopped shrinking at $\nu$, then
+$\ker A^\nu + \operatorname{range} A^\nu = X$. -/
 theorem codisjoint_ker_range_pow (A : X →L[𝕜] X) {ν : ℕ}
     (h : (A ^ ν).range ≤ (A ^ (ν + ν)).range) : Codisjoint (A ^ ν).ker (A ^ ν).range := by
   refine codisjoint_iff.2 (eq_top_iff.2 fun x _ => ?_)
@@ -185,7 +199,8 @@ namespace IsCompactOperator
 
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- A power of `μ • 1 - K` is again a scalar minus a compact operator. -/
+/-- For a compact $K$, $\mu \in \mathbb{K}$ and $n \in \mathbb{N}$, there is a compact operator $C$
+with $(\mu I - K)^n = \mu^n I - C$. -/
 theorem exists_isCompactOperator_pow_eq {K : X →L[𝕜] X} (hK : IsCompactOperator K) (μ : 𝕜)
     (n : ℕ) : ∃ C : X →L[𝕜] X, IsCompactOperator C ∧
       (μ • (1 : X →L[𝕜] X) - K) ^ n = μ ^ n • (1 : X →L[𝕜] X) - C := by
@@ -199,13 +214,14 @@ theorem exists_isCompactOperator_pow_eq {K : X →L[𝕜] X} (hK : IsCompactOper
       smul_smul, mul_comm μ (μ ^ n), ← pow_succ]
     abel
 
-/-- `K` commutes with `μ • 1 - K`, hence with each of its powers. -/
+/-- For any bounded operator $K$, $\mu \in \mathbb{K}$ and $n \in \mathbb{N}$, the operator $K$
+commutes with $(\mu I - K)^n$. -/
 theorem commute_pow (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) :
     Commute ((μ • (1 : X →L[𝕜] X) - K) ^ n) K :=
   ((Commute.one_left K).smul_left μ).sub_left (Commute.refl K) |>.pow_left n
 
-/-- On the kernel of `(μ • 1 - K) ^ n`, the compact operator `C` of
-`IsCompactOperator.exists_isCompactOperator_pow_eq` acts as the scalar `μ ^ n`. -/
+/-- If $(\mu I - K)^n = \mu^n I - C$, then $C v = \mu^n v$ for every $v \in \ker (\mu I - K)^n$.
+This applies to the compact operator $C$ of `IsCompactOperator.exists_isCompactOperator_pow_eq`. -/
 theorem apply_eq_of_mem_ker_pow {K C : X →L[𝕜] X} {μ : 𝕜} {n : ℕ}
     (hCeq : (μ • (1 : X →L[𝕜] X) - K) ^ n = μ ^ n • (1 : X →L[𝕜] X) - C)
     {v : X} (hv : v ∈ ((μ • (1 : X →L[𝕜] X) - K) ^ n).ker) : C v = μ ^ n • v := by
@@ -214,9 +230,12 @@ theorem apply_eq_of_mem_ker_pow {K C : X →L[𝕜] X} {μ : 𝕜} {n : ℕ}
   simp only [sub_apply, smul_apply, one_apply_eq_self, sub_eq_zero] at h
   exact h.symm
 
-/-- **The kernel of a power of `μ • 1 - K` is finite-dimensional** for a compact `K` and `μ ≠ 0`:
-on that kernel the compact operator `C` with `(μ • 1 - K) ^ n = μ ^ n • 1 - C` acts as the
-invertible scalar `μ ^ n`, so the identity of the kernel is a compact operator. -/
+/-- **The null spaces of the powers of $\mu I - K$ are finite-dimensional.** Let $X$ be a normed
+space over a complete nontrivially normed field, let $K : X \to X$ be a compact operator, and
+let $\mu \neq 0$. Then $\ker (\mu I - K)^n$ is finite-dimensional for every $n \in \mathbb{N}$.
+
+On that kernel the compact operator $C$ with $(\mu I - K)^n = \mu^n I - C$ acts as the
+invertible scalar $\mu^n$, so the identity of the kernel is a compact operator. -/
 theorem finiteDimensional_ker_pow [CompleteSpace 𝕜] {K : X →L[𝕜] X} (hK : IsCompactOperator K)
     {μ : 𝕜} (hμ : μ ≠ 0) (n : ℕ) :
     FiniteDimensional 𝕜 (((μ • (1 : X →L[𝕜] X) - K) ^ n).ker) := by
@@ -240,15 +259,16 @@ theorem finiteDimensional_ker_pow [CompleteSpace 𝕜] {K : X →L[𝕜] X} (hK 
     simpa using this
   exact FiniteDimensional.of_isCompactOperator_id hid
 
-/-- **The Riesz chain argument.** Let `K` be compact and `μ ≠ 0`. Suppose `S' n` is a closed
-subspace of `S n`, that `μ • 1 - K` maps `S n` into `S' n`, and that for any two distinct indices
-`K` maps one of the two larger spaces into the other's smaller one. Then the inclusion
-`S' n ≤ S n` is an equality for some `n`.
+/-- **The Riesz chain argument.** Let $X$ be a normed space over a nontrivially normed field, let
+$K : X \to X$ be a compact operator, and let $\mu \neq 0$. Let $(S_n)$ and $(S'_n)$ be sequences
+of subspaces of $X$ such that for every $n$, $S'_n$ is closed, $S'_n \subseteq S_n$, and
+$(\mu I - K)(S_n) \subseteq S'_n$. Suppose that for any $m \neq n$, either
+$K(S_m) \subseteq S'_n$ or $K(S_n) \subseteq S'_m$. Then $S_n = S'_n$ for some $n$.
 
-If it never were, Riesz's lemma would give `wₙ ∈ S n` of bounded norm at distance at least `1`
-from `S' n`, and then `‖K wₙ - K wₘ‖ ≥ ‖μ‖` for `m ≠ n`, which no sequence in a compact set can
-satisfy. This is the one argument behind both the finiteness of the ascent and the finiteness of
-the descent of `μ • 1 - K`. -/
+If the inclusions were all proper, Riesz's lemma would give $w_n \in S_n$ of bounded norm at
+distance at least $1$ from $S'_n$, and then $\|K w_n - K w_m\| \ge |\mu|$ for $m \neq n$, which
+is impossible for a sequence in a compact set. This one argument gives both the finiteness of
+the ascent and the finiteness of the descent of $\mu I - K$. -/
 theorem exists_le_of_chain {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0)
     (S S' : ℕ → Submodule 𝕜 X) (hclosed : ∀ n, IsClosed (S' n : Set X))
     (hle : ∀ n, S' n ≤ S n)
@@ -300,12 +320,13 @@ theorem exists_le_of_chain {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ :
   exact absurd hlt (not_lt.2 (hsep (φ (N + 1)) (φ N)
     fun h => absurd (hφ.injective h) (by omega)))
 
-/-- `K` commutes with the powers of `μ • 1 - K`, pointwise. -/
+/-- For any bounded operator $K$, $\mu \in \mathbb{K}$, $n \in \mathbb{N}$ and $z \in X$:
+$(\mu I - K)^n (K z) = K ((\mu I - K)^n z)$. -/
 theorem pow_apply_comm (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) (z : X) :
     ((μ • (1 : X →L[𝕜] X) - K) ^ n) (K z) = K (((μ • (1 : X →L[𝕜] X) - K) ^ n) z) :=
   congrArg (fun T : X →L[𝕜] X => T z) (commute_pow K μ n)
 
-/-- The null space of a power of `μ • 1 - K` is invariant under `K`. -/
+/-- The null space of $(\mu I - K)^n$ is invariant under $K$. -/
 theorem mapsTo_ker_pow (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) {z : X}
     (hz : z ∈ ((μ • (1 : X →L[𝕜] X) - K) ^ n).ker) :
     K z ∈ ((μ • (1 : X →L[𝕜] X) - K) ^ n).ker := by
@@ -313,7 +334,7 @@ theorem mapsTo_ker_pow (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) {z : X}
   change ((μ • (1 : X →L[𝕜] X) - K) ^ n) (K z) = 0
   rw [pow_apply_comm, hz', map_zero]
 
-/-- The range of a power of `μ • 1 - K` is invariant under `K`. -/
+/-- The range of $(\mu I - K)^n$ is invariant under $K$. -/
 theorem mapsTo_range_pow (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) {z : X}
     (hz : z ∈ ((μ • (1 : X →L[𝕜] X) - K) ^ n).range) :
     K z ∈ ((μ • (1 : X →L[𝕜] X) - K) ^ n).range := by
@@ -323,15 +344,18 @@ theorem mapsTo_range_pow (K : X →L[𝕜] X) (μ : 𝕜) (n : ℕ) {z : X}
   change ((μ • (1 : X →L[𝕜] X) - K) ^ n) (K y) = K z
   rw [pow_apply_comm, hy']
 
-/-- The range of a power of `μ • 1 - K` is closed, for a compact `K` and `μ ≠ 0`. -/
+/-- For a compact $K$ and $\mu \neq 0$, the range of $(\mu I - K)^n$ is closed for every
+$n \in \mathbb{N}$. -/
 theorem isClosed_range_pow {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0)
     (n : ℕ) : IsClosed ((((μ • (1 : X →L[𝕜] X) - K) ^ n).range : Submodule 𝕜 X) : Set X) := by
   obtain ⟨C, hC, hCeq⟩ := hK.exists_isCompactOperator_pow_eq μ n
   rw [hCeq]
   exact hC.isClosed_range_smul_sub (pow_ne_zero n hμ)
 
-/-- **The ascent of `μ • 1 - K` is finite** for a compact `K` and `μ ≠ 0`: the chain of null
-spaces of the powers stops growing. -/
+/-- **The ascent of $\mu I - K$ is finite.** Let $X$ be a normed space over a nontrivially normed
+field, let $K : X \to X$ be a compact operator, and let $\mu \neq 0$. Then there is $n$ with
+$\ker (\mu I - K)^{n+1} \subseteq \ker (\mu I - K)^n$: the chain of null spaces of the powers
+stops growing. -/
 theorem exists_ker_pow_succ_le {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     ∃ n, ((μ • (1 : X →L[𝕜] X) - K) ^ (n + 1)).ker ≤ ((μ • (1 : X →L[𝕜] X) - K) ^ n).ker := by
   refine hK.exists_le_of_chain hμ (fun n => ((μ • (1 : X →L[𝕜] X) - K) ^ (n + 1)).ker)
@@ -346,8 +370,10 @@ theorem exists_ker_pow_succ_le {K : X →L[𝕜] X} (hK : IsCompactOperator K) {
     · exact Or.inl fun z hz => ContinuousLinearMap.ker_pow_mono _ h (mapsTo_ker_pow K μ (m + 1) hz)
     · exact Or.inr fun z hz => ContinuousLinearMap.ker_pow_mono _ h (mapsTo_ker_pow K μ (n + 1) hz)
 
-/-- **The descent of `μ • 1 - K` is finite** for a compact `K` and `μ ≠ 0`: the chain of ranges of
-the powers stops shrinking. -/
+/-- **The descent of $\mu I - K$ is finite.** Let $X$ be a normed space over a nontrivially normed
+field, let $K : X \to X$ be a compact operator, and let $\mu \neq 0$. Then there is $n$ with
+$\operatorname{range} (\mu I - K)^n \subseteq \operatorname{range} (\mu I - K)^{n+1}$: the chain
+of ranges of the powers stops shrinking. -/
 theorem exists_range_pow_le_succ {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     ∃ n, ((μ • (1 : X →L[𝕜] X) - K) ^ n).range
       ≤ ((μ • (1 : X →L[𝕜] X) - K) ^ (n + 1)).range := by
@@ -367,17 +393,22 @@ theorem exists_range_pow_le_succ {K : X →L[𝕜] X} (hK : IsCompactOperator K)
     · exact Or.inl fun z hz =>
         ContinuousLinearMap.range_pow_anti _ h (mapsTo_range_pow K μ m hz)
 
-/-- **The Riesz index of a nonzero `μ` for a compact `K`.** There is a least `ν` at which the
-chain of null spaces of the powers of `μ • 1 - K` stops growing; before `ν` the chain increases
-strictly, from `ν` on it is constant, the chain of ranges is constant from `ν` on as well, and the
-space is the direct sum of `ker ((μ • 1 - K) ^ ν)` and `range ((μ • 1 - K) ^ ν)`.
-This is [han2009theoretical], Theorem 2.8.12 clauses (3) and (5).
+/-- **The Riesz index.** Let $X$ be a normed space over a nontrivially normed field, let
+$K : X \to X$ be a compact operator, and let $\mu \neq 0$. Write $A = \mu I - K$. Then there is
+$\nu \in \mathbb{N}$ such that
 
-Both chains are finite by `IsCompactOperator.exists_le_of_chain`. The decomposition holds first at
-`max ν q` with `q` an index where the ranges have stabilized, and that decomposition is what shows
-the ranges have in fact stabilized already at `ν`: an element of `range ((μ • 1 - K) ^ ν)` is
-`(μ • 1 - K) ^ ν` applied to a vector whose null-space part is killed, and whose range part is in
-`range ((μ • 1 - K) ^ (max ν q + 1))`. -/
+* $\ker A^j \subsetneq \ker A^{j+1}$ for every $j < \nu$;
+* $\ker A^j = \ker A^\nu$ for every $j \ge \nu$;
+* $\operatorname{range} A^j = \operatorname{range} A^\nu$ for every $j \ge \nu$;
+* $X = \ker A^\nu \oplus \operatorname{range} A^\nu$, as an algebraic direct sum of subspaces.
+
+This is Theorem 2.8.12(3) and (5) of [han2009theoretical].
+
+Both chains are finite by `IsCompactOperator.exists_le_of_chain`. The decomposition holds first
+at $\max(\nu, q)$, with $q$ an index at which the ranges have stopped shrinking. This
+decomposition shows that the ranges stop shrinking already at $\nu$: an element of
+$\operatorname{range} A^\nu$ is $A^\nu$ applied to a vector whose null-space part is annihilated
+and whose range part is in $\operatorname{range} A^{\max(\nu, q) + 1}$. -/
 theorem exists_riesz_index {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     ∃ ν : ℕ,
       (∀ j < ν, ((μ • (1 : X →L[𝕜] X) - K) ^ j).ker
@@ -435,9 +466,11 @@ theorem exists_riesz_index {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ :
     lt_of_le_not_ge (A.ker_pow_mono (Nat.le_succ j)) (Nat.find_min hexP hj),
     hkerstab, hrangestabν, hcomplν⟩
 
-/-- `μ ^ m • 1 - K ^ m` factors through `μ • 1 - K`, with a cofactor that commutes with `K`.
-This is `a ^ m - b ^ m = (a - b) ∑ aⁱ bᵐ⁻¹⁻ⁱ` for the commuting `a = μ • 1` and `b = K`, written
-as a recursion so that no geometric sum is needed. -/
+/-- For a bounded operator $K$, $\mu \in \mathbb{K}$ and $m \in \mathbb{N}$, there is a bounded
+operator $S$ that commutes with $K$ and satisfies $\mu^m I - K^m = (\mu I - K) S$.
+
+This is $a^m - b^m = (a - b) \sum_{i < m} a^i b^{m - 1 - i}$ for the commuting operators
+$a = \mu I$ and $b = K$, proved by recursion so that no geometric sum is needed. -/
 theorem exists_factor_pow_smul_sub (K : X →L[𝕜] X) (μ : 𝕜) (m : ℕ) :
     ∃ S : X →L[𝕜] X, Commute S K ∧
       μ ^ m • (1 : X →L[𝕜] X) - K ^ m = (μ • (1 : X →L[𝕜] X) - K) * S := by
@@ -454,13 +487,17 @@ theorem exists_factor_pow_smul_sub (K : X →L[𝕜] X) (μ : 𝕜) (m : ℕ) :
     rw [hexpand, ← hS, smul_sub, smul_smul, ← pow_succ']
     abel
 
-/-- **Surjectivity of `μ • 1 - K` forces injectivity** for a compact `K` and `μ ≠ 0`, on any
-normed space over any nontrivially normed field: the converse half of the Fredholm alternative,
-`R(I - T) = E ⇒ N(I - T) = {0}` ([brezis2011functional] Theorem 6.6 (c)), which the book proves
-through the adjoint and the orthogonality relations of its Corollary 2.18. Here it comes from the
-Riesz index alone: if `A = μ • 1 - K` is onto then so is every power, so `range (A ^ ν) = ⊤`, and
-the complement `ker (A ^ ν)` of the Riesz decomposition is `⊥`; `ker A ≤ ker (A ^ ν)` finishes
-(for `ν = 0` the chain of null spaces is constant from the start). -/
+/-- **Surjectivity of $\mu I - K$ implies injectivity.** Let $X$ be a normed space over a
+nontrivially normed field, let $K : X \to X$ be a compact operator, and let $\mu \neq 0$. If
+$\mu I - K$ is surjective, then it is injective.
+
+This is the converse half of the Fredholm alternative,
+$R(I - T) = E \Rightarrow N(I - T) = \{0\}$, in Theorem 6.6(c) of [brezis2011functional]. The
+book proves it through the adjoint and the orthogonality relations of its Corollary 2.18. Here
+it follows from the Riesz index alone, with no adjoint and no completeness. If $A = \mu I - K$
+is onto, then so is every power, so $\operatorname{range} A^\nu = X$, and the complement
+$\ker A^\nu$ in the Riesz decomposition is $\{0\}$. Then $\ker A \subseteq \ker A^\nu$ finishes
+the proof; for $\nu = 0$ the chain of null spaces is constant from the start. -/
 theorem injective_of_surjective_smul_one_sub {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜}
     (hμ : μ ≠ 0) (hsurj : Function.Surjective (μ • (1 : X →L[𝕜] X) - K)) :
     Function.Injective (μ • (1 : X →L[𝕜] X) - K) := by
@@ -490,16 +527,16 @@ theorem injective_of_surjective_smul_one_sub {K : X →L[𝕜] X} (hK : IsCompac
 
 variable [CompleteSpace 𝕜]
 
-/-- **The Fredholm alternative for an operator with a compact power.** If some power `K ^ m` of
-a bounded operator on a Banach space is compact and `μ ≠ 0`, then `μ • 1 - K` is invertible as
-soon as it is injective — the Fredholm alternative survives with only a power of the operator
-compact.
+/-- **The Fredholm alternative for an operator with a compact power.** Let $X$ be a Banach space
+over a complete nontrivially normed field, let $K : X \to X$ be a bounded operator such that
+$K^m$ is compact for some $m \in \mathbb{N}$, and let $\mu \neq 0$. If $(\mu I - K) u = 0$
+implies $u = 0$, then $\mu I - K$ is invertible in the algebra of bounded operators on $X$. This
+is Theorem 2.8.12(6) of [han2009theoretical].
 
-The Riesz decomposition `X = ker (B ^ ν) ⊕ range (B ^ ν)` for the compact perturbation
-`B = μ ^ m • 1 - K ^ m` does it: `μ • 1 - K` commutes with `B`, so it preserves both summands; on
-the finite-dimensional first summand injectivity gives surjectivity, and on the second `B` is onto
-and factors as `(μ • 1 - K) * S` with `S` preserving that summand.
-This is [han2009theoretical], Theorem 2.8.12 (6). -/
+Use the Riesz decomposition $X = \ker B^\nu \oplus \operatorname{range} B^\nu$ for the compact
+perturbation $B = \mu^m I - K^m$. The operator $\mu I - K$ commutes with $B$, so it preserves
+both summands. On the finite-dimensional first summand, injectivity gives surjectivity. On the
+second summand, $B$ is onto and factors as $(\mu I - K) S$ with $S$ preserving that summand. -/
 theorem isUnit_smul_one_sub_of_isCompactOperator_pow [CompleteSpace X] {K : X →L[𝕜] X} {m : ℕ}
     (hK : IsCompactOperator (K ^ m)) {μ : 𝕜} (hμ : μ ≠ 0)
     (hinj : ∀ u : X, (μ • (1 : X →L[𝕜] X) - K) u = 0 → u = 0) :
@@ -555,10 +592,12 @@ theorem isUnit_smul_one_sub_of_isCompactOperator_pow [CompleteSpace X] {K : X �
     exact ⟨u' + r', by rw [map_add, hu', hr', hur]⟩
   exact ContinuousLinearMap.isUnit_iff_bijective.2 ⟨hAinj, hAsurj⟩
 
-/-- **The Fredholm alternative for an operator with a compact power**, in the form of Mathlib's
-`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`: if some power of `K` is compact and
-`μ ≠ 0`, then `μ` is either an eigenvalue of `K` or in its resolvent set.
-This is [han2009theoretical], Theorem 2.8.12 (6). -/
+/-- **The Fredholm alternative for an operator with a compact power, spectral form.** Let $X$ be a
+Banach space over a complete nontrivially normed field, let $K : X \to X$ be a bounded operator
+such that $K^m$ is compact for some $m \in \mathbb{N}$, and let $\mu \neq 0$. Then $\mu$ is an
+eigenvalue of $K$ or $\mu$ is in the resolvent set of $K$. This is Theorem 2.8.12(6) of
+[han2009theoretical], in the form of Mathlib's
+`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`. -/
 theorem hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow [CompleteSpace X]
     {K : X →L[𝕜] X} {m : ℕ} (hK : IsCompactOperator (K ^ m)) {μ : 𝕜} (hμ : μ ≠ 0) :
     Module.End.HasEigenvalue (K : Module.End 𝕜 X) μ ∨ μ ∈ resolventSet 𝕜 K := by
@@ -576,13 +615,14 @@ theorem hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow [CompleteSpac
   rw [spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one]
   exact hK.isUnit_smul_one_sub_of_isCompactOperator_pow hμ hinj
 
-/-! ### The Fredholm index of `μ • 1 - K` on a Hilbert space -/
+/-- **The Fredholm alternative as an equivalence.** Let $X$ be a Banach space over a complete
+nontrivially normed field, let $K : X \to X$ be a compact operator, and let $\mu \neq 0$. Then
+$\mu I - K$ is injective if and only if it is surjective. This is Theorem 6.6(c) of
+[brezis2011functional], $N(I - T) = \{0\} \Leftrightarrow R(I - T) = E$.
 
-/-- **The Fredholm alternative as an equivalence**: for a compact `K` on a Banach space and
-`μ ≠ 0`, the operator `μ • 1 - K` is injective if and only if it is surjective
-([brezis2011functional] Theorem 6.6 (c), `N(I - T) = {0} ⟺ R(I - T) = E`). The forward
-direction is the Fredholm alternative (`isUnit_smul_one_sub_of_isCompactOperator_pow` at
-`m = 1`), the converse `injective_of_surjective_smul_one_sub`. -/
+The forward direction is the Fredholm alternative,
+`IsCompactOperator.isUnit_smul_one_sub_of_isCompactOperator_pow` with $m = 1$. The converse is
+`IsCompactOperator.injective_of_surjective_smul_one_sub`. -/
 theorem injective_iff_surjective_smul_one_sub [CompleteSpace X] {K : X →L[𝕜] X}
     (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     Function.Injective (μ • (1 : X →L[𝕜] X) - K) ↔
@@ -593,6 +633,8 @@ theorem injective_iff_surjective_smul_one_sub [CompleteSpace X] {K : X →L[𝕜
     hinj (by rw [hu, map_zero])
   exact (ContinuousLinearMap.isUnit_iff_bijective.1 hunit).2
 
+/-! ### The Fredholm index of $\mu I - K$ on a Hilbert space -/
+
 section Hilbert
 
 open Module
@@ -601,8 +643,8 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [InnerProductSpac
   [CompleteSpace X]
 
 omit [CompleteSpace X] in
-/-- If one finite-dimensional subspace has strictly smaller dimension than another, there is an
-injective linear map of the first into the second whose range misses a vector of the second. -/
+/-- If $N$ and $M$ are finite-dimensional subspaces with $\dim N < \dim M$, there is an injective
+linear map $e : N \to M$ whose range misses some vector of $M$. -/
 private theorem exists_injective_of_finrank_lt {N M : Submodule 𝕜 X}
     [FiniteDimensional 𝕜 N] [FiniteDimensional 𝕜 M] (h : finrank 𝕜 N < finrank 𝕜 M) :
     ∃ e : N →ₗ[𝕜] X, Function.Injective e ∧ (∀ v, e v ∈ M) ∧ ∃ w ∈ M, ∀ v, e v ≠ w := by
@@ -637,14 +679,16 @@ private theorem exists_injective_of_finrank_lt {N M : Submodule 𝕜 X}
   rw [h1] at h2
   simp at h2
 
-/-- **One half of the Fredholm index-zero statement**: on a Hilbert space, the null space of
-`conj μ • 1 - K†` is no larger than that of `μ • 1 - K`.
+/-- **One half of the statement that the Fredholm index is zero.** Let $X$ be a Hilbert space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $K : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $$\dim \ker(\bar\mu I - K^\dagger) \le \dim \ker(\mu I - K).$$
 
-If it were larger, an injective map `e` of `ker (μ • 1 - K)` into `ker (conj μ • 1 - K†)` with
-proper range, composed with the orthogonal projection onto `ker (μ • 1 - K)`, would be a finite-rank
-`F` for which `μ • 1 - (K - F)` is injective — its kernel would have to lie in
-`range (μ • 1 - K) ⊓ ker (conj μ • 1 - K†) = ⊥` — hence bijective by the Fredholm alternative,
-while its range misses every vector of `ker (conj μ • 1 - K†)` outside `range e`. -/
+Suppose the left side were larger. Take an injective map $e$ of $\ker(\mu I - K)$ into
+$\ker(\bar\mu I - K^\dagger)$ with proper range, and compose it with the orthogonal projection
+onto $\ker(\mu I - K)$. This gives an operator $F$ of finite rank for which $\mu I - (K - F)$ is
+injective, because its kernel lies in $\operatorname{range}(\mu I - K) \cap \ker(\bar\mu I -
+K^\dagger) = \{0\}$. By the Fredholm alternative it is then bijective, but its range misses
+every vector of $\ker(\bar\mu I - K^\dagger)$ outside the range of $e$. -/
 theorem finrank_ker_adjoint_le {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     finrank 𝕜 (((starRingEnd 𝕜) μ • (1 : X →L[𝕜] X) - ContinuousLinearMap.adjoint K).ker)
       ≤ finrank 𝕜 ((μ • (1 : X →L[𝕜] X) - K).ker) := by
@@ -724,9 +768,10 @@ theorem finrank_ker_adjoint_le {K : X →L[𝕜] X} (hK : IsCompactOperator K) {
   rw [hA0, zero_add] at hx
   exact hw (N.orthogonalProjectionOnto x) (by rw [← hFapply x]; exact hx)
 
-/-- **The Fredholm index of `μ • 1 - K` is zero** for a compact `K` and `μ ≠ 0`: on a Hilbert
-space the null spaces of `μ • 1 - K` and of `conj μ • 1 - K†` have the same dimension.
-This is [han2009theoretical], Theorem 2.8.14 (1). -/
+/-- **The Fredholm index of $\mu I - K$ is zero.** Let $X$ be a Hilbert space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $K : X \to X$ be a compact operator, and let
+$\mu \neq 0$. Then $$\dim \ker(\mu I - K) = \dim \ker(\bar\mu I - K^\dagger).$$ This is Theorem
+2.8.14(1) of [han2009theoretical]. -/
 theorem finrank_ker_eq_finrank_ker_adjoint {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜}
     (hμ : μ ≠ 0) :
     finrank 𝕜 ((μ • (1 : X →L[𝕜] X) - K).ker)

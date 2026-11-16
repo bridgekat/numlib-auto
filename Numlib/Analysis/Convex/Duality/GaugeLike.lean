@@ -11,61 +11,85 @@ import Numlib.Analysis.Convex.Operations.Closed
 /-!
 # Monotone conjugacy on the half-line, and the convex functions built from a gauge
 
-Two correspondences that fit together. The first is conjugacy for nondecreasing convex functions of
-one nonnegative variable: on that class the ordinary conjugate, cut back to the half-line, is again
-such a function, and the operation is an involution. The second composes such a function with a
-closed gauge on a vector space; the result is a convex function all of whose sublevel sets are
-dilates of one another, and conjugacy on those functions is the first correspondence applied level
-by level, with the gauge replaced by its polar. Specialising the half-line factor to `ζ ↦ ζ^p / p`
-gives the functions positively homogeneous of degree `p`, whose conjugates are positively
-homogeneous of the Hölder conjugate degree `q`; that the two powers are exchanged is Young's
-inequality, read as a conjugacy.
+This module connects two correspondences. The first is conjugacy for nondecreasing closed convex
+functions $g$ of one nonnegative variable: on this class the **monotone conjugate**
+$g^+(s) = \sup \{ts - g(t) : t \ge 0\}$, restricted to $s \ge 0$, is again such a function, and
+$g^{++} = g$. The second composes such a function with a closed gauge $k$ on a vector space $E$
+paired with $F$. The composite $g \circ k$ is a closed proper convex function whose sublevel sets
+are dilates of one another, and its conjugate is $(g \circ k)^* = g^+ \circ k^\circ$, the first
+correspondence applied level by level with $k$ replaced by its polar. For $g(\zeta) = \zeta^p / p$
+this gives the functions that are positively homogeneous of degree $p$, and their conjugates are
+positively homogeneous of the Hölder conjugate degree $q$; that the two powers are exchanged is
+Young's inequality, read as a conjugacy. The presentation follows [rockafellar1970convex], §12 and
+§15.
+
+The functions $g \circ k$ are exactly the **gauge-like** closed proper convex functions $f$: those
+with $f(0) = \inf f$ whose sublevel sets above the infimum are positive multiples of one set
+(Theorem 15.3 of [rockafellar1970convex]).
 
 ## Main definitions
 
-* `MonotoneHalfLineFn g` — `g : ℝ → EReal` is `+∞` on the negative axis, nondecreasing on the
-  half-line, convex, closed, and finite at the origin.
-* `IsGaugeLike f` — `f 0 = inf f`, and the sublevel sets above that infimum are all positive
-  multiples of one another.
-* `monotoneConj g` — the **monotone conjugate** `g⁺(s) = sup {t s - g t ∣ t ≥ 0}`, itself taken to
-  be `+∞` for `s < 0`.
-* `monotoneComp g k` — the composite `g ∘ k` of such a `g` with a `[0, +∞]`-valued `k`, under the
-  convention `g (+∞) = +∞`.
-* `levelSup g α` — the crossing level `sup {ζ ≥ 0 ∣ g ζ ≤ α}`, the dilation factor of the sublevel
-  set `{g ∘ k ≤ α}`.
-* `powHalfLine p`, `PosHomogeneousDeg p f`, `degGauge p f` — the function `ζ ↦ ζ^p / p` of the
-  half-line; the condition `f (λ x) = λ^p f x` for `λ > 0`; and the gauge `(p f)^{1/p}` attached to
-  such an `f`.
+* `ConvexAnalysis.MonotoneHalfLineFn`: $g : \mathbb{R} \to [-\infty, +\infty]$ is $+\infty$ on the
+  negative axis, nondecreasing on $[0, \infty)$, convex, closed, and finite at $0$.
+* `ConvexAnalysis.monotoneConj`: the monotone conjugate $g^+$, with the value $+\infty$ for $s < 0$.
+* `ConvexAnalysis.monotoneComp`: the composite $g \circ k$, with the convention
+  $g(+\infty) = +\infty$.
+* `ConvexAnalysis.levelSup`: the crossing level $\sup \{\zeta \ge 0 : g(\zeta) \le \alpha\}$, the
+  dilation factor of the sublevel set $\{g \circ k \le \alpha\}$.
+* `ConvexAnalysis.powHalfLine`: the function $\zeta \mapsto \zeta^p / p$ on $[0, \infty)$, extended
+  by $+\infty$.
+* `ConvexAnalysis.PosHomogeneousDeg`: $f(\lambda x) = \lambda^p f(x)$ for every $\lambda > 0$.
+* `ConvexAnalysis.degGauge`: the gauge $(p f)^{1/p}$ attached to a function $f$ that is positively
+  homogeneous of degree $p$.
+* `ConvexAnalysis.IsGaugeLike`: $f(0) = \inf f$, and the sublevel sets above the infimum are
+  positive multiples of one set.
 
 ## Main results
 
-* `monotoneHalfLineFn_monotoneConj`, `monotoneConj_monotoneConj` — the class is stable under
-  `monotoneConj`, and `g⁺⁺ = g` ([rockafellar1970convex] Theorem 12.4).
-* `closedProperConvexFn_monotoneComp`, `setOf_monotoneComp_le_eq_smul` — for a non-constant `g`,
-  `g ∘ k` is closed proper convex, and its sublevel sets are all dilates of `{k ≤ 1}`.
-* `convexConj_monotoneComp` — `(g ∘ k)* = g⁺ ∘ k°` for a closed gauge `k`.
-* `monotoneConj_powHalfLine` — `(ζ ↦ ζ^p / p)⁺ = (σ ↦ σ^q / q)`.
-* `posHomogeneousDeg_iff_exists_isGauge` — a closed proper convex function is positively
-  homogeneous of degree `p` exactly when it is `(1/p) k^p` for a closed gauge `k`.
-* `convexConj_monotoneComp_powHalfLine`, `polarGauge_degGauge`, `pairing_le_rpow_mul_rpow`,
-  `polarSet_setOf_le_inv` — the conjugate of `(1/p) k^p` is `(1/q) (k°)^q`, the gauges
-  `(p f)^{1/p}` and `(q f*)^{1/q}` are polar, and the level sets `{f ≤ 1/p}` and `{f* ≤ 1/q}` are
-  polar sets.
-* `closedProperConvexFn_and_isGaugeLike_iff` — a function is closed proper convex and gauge-like
-  exactly when it is `g ∘ k` for a closed gauge `k` and a non-constant `MonotoneHalfLineFn g`
-  ([rockafellar1970convex] Theorem 15.3). `IsGaugeLike.exists_eq_monotoneComp` is the reconstruction
-  half.
+* `ConvexAnalysis.monotoneHalfLineFn_monotoneConj`, `ConvexAnalysis.monotoneConj_monotoneConj`: the
+  class `ConvexAnalysis.MonotoneHalfLineFn` is stable under $g \mapsto g^+$, and $g^{++} = g$; this
+  is the one-dimensional case of Theorem 12.4 of [rockafellar1970convex].
+* `ConvexAnalysis.setOf_monotoneComp_le_eq_smul`: for a closed gauge $k$ and a non-constant $g$ that
+  is finite at a positive point, the sublevel sets of $g \circ k$ are dilates of $\{k \le 1\}$.
+* `ConvexAnalysis.convexConj_monotoneComp`: $(g \circ k)^* = g^+ \circ k^\circ$ for a closed gauge
+  $k$.
+* `ConvexAnalysis.closedProperConvexFn_monotoneComp`: for non-constant $g$, the composite
+  $g \circ k$ is a closed proper convex function.
+* `ConvexAnalysis.monotoneConj_powHalfLine`: the monotone conjugate of $\zeta \mapsto \zeta^p / p$
+  is $\sigma \mapsto \sigma^q / q$.
+* `ConvexAnalysis.posHomogeneousDeg_iff_exists_isGauge`: a closed proper convex function is
+  positively homogeneous of degree $p > 1$ if and only if it is $(1/p) k^p$ for a closed gauge $k$
+  (Corollary 15.3.1 of [rockafellar1970convex]).
+* `ConvexAnalysis.convexConj_monotoneComp_powHalfLine`: $[(1/p) k^p]^* = (1/q) (k^\circ)^q$
+  (Corollary 15.3.1 of [rockafellar1970convex]).
+* `ConvexAnalysis.polarGauge_degGauge`, `ConvexAnalysis.pairing_le_rpow_mul_rpow`,
+  `ConvexAnalysis.polarSet_setOf_le_inv`: the gauges $(p f)^{1/p}$ and $(q f^*)^{1/q}$ are polar to
+  each other, $\langle x, y \rangle \le (p f(x))^{1/p} (q f^*(y))^{1/q}$, and the sets
+  $\{f \le 1/p\}$ and $\{f^* \le 1/q\}$ are polar to each other (Corollary 15.3.2 of
+  [rockafellar1970convex]).
+* `ConvexAnalysis.IsGaugeLike.exists_eq_monotoneComp`: a gauge-like closed proper convex function is
+  $g \circ k$ for a closed gauge $k$ and a suitable $g$.
+* `ConvexAnalysis.closedProperConvexFn_and_isGaugeLike_iff`: a function is closed, proper, convex
+  and gauge-like if and only if it is $g \circ k$ for a closed gauge $k$ and a non-constant $g$ in
+  `ConvexAnalysis.MonotoneHalfLineFn` that is finite at a positive point (Theorem 15.3 of
+  [rockafellar1970convex]).
+
+## Notation
+
+* $\langle x, y \rangle$: the pairing `B x y` of $E$ with $F$.
+* $k^\circ$: the polar `ConvexAnalysis.polarGauge B k` of a gauge.
+* $f^*$: the convex conjugate `ConvexAnalysis.convexConj B f`.
+* $g \circ k$: the composite `ConvexAnalysis.monotoneComp g k`.
 
 ## Implementation notes
 
-A `MonotoneHalfLineFn` may be constant, and then `g ∘ k` need **not** be closed: its sublevel sets
-are `dom k`, which for a closed gauge can fail to be closed. That is what the "non-constant"
-hypothesis buys, and it enters only through `MonotoneHalfLineFn.exists_monotoneConj_ne_top`; the
-conjugacy formula itself does not need it.
-
-## References
-
-* [rockafellar1970convex] §12 and §15.
+* A function in `ConvexAnalysis.MonotoneHalfLineFn` can be constant, and then $g \circ k$ need not
+  be closed: its sublevel sets are the effective domain of $k$, which for a closed gauge need not be
+  closed. The hypothesis that $g$ is not constant excludes this. It enters only through
+  `ConvexAnalysis.MonotoneHalfLineFn.exists_monotoneConj_ne_top`; the conjugacy formula
+  `ConvexAnalysis.convexConj_monotoneComp` does not need it.
+* The one-variable conjugate is taken with respect to the pairing `ConvexAnalysis.mulPairing` of
+  $\mathbb{R}$ with itself.
 -/
 
 open scoped Pointwise
@@ -78,7 +102,9 @@ section RestrictClosed
 
 variable {E : Type*} [AddCommGroup E] [TopologicalSpace E] [IsTopologicalAddGroup E]
 
-/-- Cutting a closed function down to a closed set leaves it closed. -/
+/-- Let $f$ be closed in the sense of `ConvexAnalysis.ClosedConvex` and never $-\infty$, and let $s$
+be a closed set. Then the restriction of $f$ to $s$, extended by $+\infty$ outside $s$, is
+closed. -/
 theorem ClosedConvex.convexRestrict {f : E → EReal} {s : Set E} (hf : ClosedConvex f)
     (hne : ∀ x, f x ≠ ⊥)
     (hs : IsClosed s) : ClosedConvex (ConvexAnalysis.convexRestrict s f) := by
@@ -93,10 +119,12 @@ theorem ClosedConvex.convexRestrict {f : E → EReal} {s : Set E} (hf : ClosedCo
 
 end RestrictClosed
 
-/-! ### The self-pairing of the line, flipped
+/-!
+### The self-pairing of the line, flipped
 
-`mulPairing` is its own flip, but only propositionally, so the results stated against `B.flip` need
-the flipped copy to be visible to instance search as well. -/
+`ConvexAnalysis.mulPairing` is equal to its own flip, but not by definition. Hence the results
+stated for the flipped pairing need the instances for the flipped copy as well.
+-/
 
 instance : IsContinuousPairing mulPairing.flip := by rw [mulPairing_flip]; infer_instance
 
@@ -108,28 +136,31 @@ section MonotoneHalfLine
 
 variable {g : ℝ → EReal} {s t : ℝ}
 
-/-- A **nondecreasing closed convex function on the half-line**: `+∞` on the negative axis,
-nondecreasing on `[0, ∞)`, convex, closed, and finite at the origin.
+/-- A function $g : \mathbb{R} \to [-\infty, +\infty]$ is a **nondecreasing closed convex function
+on the half-line** if it is $+\infty$ on $(-\infty, 0)$, nondecreasing on $[0, \infty)$, convex,
+closed, and finite at $0$.
 
-Convexity and closedness are asked of `g` as a function on all of `ℝ`; because `g` is `+∞` to the
-left of the origin, that is the same as asking them on the half-line. This is exactly the class on
-which monotone conjugacy is an involution. -/
+Convexity and closedness are conditions on $g$ as a function on all of $\mathbb{R}$. Because $g$
+is $+\infty$ to the left of $0$, they are the same conditions on the half-line. This is the
+class on which monotone conjugacy is an involution. -/
 structure MonotoneHalfLineFn (g : ℝ → EReal) : Prop where
-  /-- `g` is `+∞` to the left of the origin. -/
+  /-- The function is $+\infty$ to the left of the origin. -/
   top_of_neg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤
-  /-- `g` is nondecreasing on the half-line. -/
+  /-- The function is nondecreasing on $[0, \infty)$. -/
   monotoneOn : MonotoneOn g (Set.Ici 0)
-  /-- `g` is convex. -/
+  /-- The function is convex. -/
   convex : ConvexFn g
-  /-- `g` is closed. -/
+  /-- The function is closed in the sense of `ConvexAnalysis.ClosedConvex`. -/
   closed : ClosedConvex g
-  /-- `g` is finite at the origin. -/
+  /-- The function is finite at the origin. -/
   zero_ne_top : g 0 ≠ ⊤
 
 namespace MonotoneHalfLineFn
 
-/-- A function of this class never takes the value `-∞`: it is `+∞` somewhere, so the exceptional
-branch of `convexCl` is excluded. -/
+/-- A function in `ConvexAnalysis.MonotoneHalfLineFn` never takes the value $-\infty$.
+
+The function is $+\infty$ somewhere, so the exceptional branch of `ConvexAnalysis.convexCl` does
+not apply to it. -/
 theorem ne_bot (hg : MonotoneHalfLineFn g) (t : ℝ) : g t ≠ ⊥ := by
   by_cases hb : ∃ x, lscHull g x = ⊥
   · have h : convexCl g = g := hg.closed
@@ -140,18 +171,19 @@ theorem ne_bot (hg : MonotoneHalfLineFn g) (t : ℝ) : g t ≠ ⊥ := by
   · push Not at hb
     exact fun hbt => hb t (le_bot_iff.1 (hbt ▸ lscHull_le g t))
 
-/-- The infimum of `g` is attained at the origin. -/
+/-- The infimum of a function $g$ in `ConvexAnalysis.MonotoneHalfLineFn` is attained at $0$:
+$\inf_t g(t) = g(0)$. -/
 theorem iInf_eq_zero (hg : MonotoneHalfLineFn g) : ⨅ t : ℝ, g t = g 0 :=
   le_antisymm (iInf_le _ 0) <| le_iInf fun t => by
     rcases le_or_gt 0 t with ht | ht
     · exact hg.monotoneOn (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 ht) ht
     · rw [hg.top_of_neg ht]; exact le_top
 
-/-- `g 0` is the least value of `g`. -/
+/-- For $g$ in `ConvexAnalysis.MonotoneHalfLineFn`, $g(0) \le g(t)$ for every $t$. -/
 theorem zero_le (hg : MonotoneHalfLineFn g) (t : ℝ) : g 0 ≤ g t :=
   hg.iInf_eq_zero ▸ iInf_le _ t
 
-/-- A function of this class is proper. -/
+/-- A function in `ConvexAnalysis.MonotoneHalfLineFn` is proper. -/
 theorem proper (hg : MonotoneHalfLineFn g) : ProperConvex g :=
   ⟨⟨0, lt_top_iff_ne_top.2 hg.zero_ne_top⟩, hg.ne_bot⟩
 
@@ -159,23 +191,28 @@ end MonotoneHalfLineFn
 
 /-! ### The monotone conjugate -/
 
-/-- The **monotone conjugate** `g⁺(s) = sup {t s - g t ∣ t ≥ 0}` of a function on the half-line.
-Like `g` itself it is taken to be `+∞` to the left of the origin, which is what makes the
-operation an involution rather than a bijection onto a smaller class. -/
+/-- The **monotone conjugate** of $g : \mathbb{R} \to [-\infty, +\infty]$ is
+$$g^+(s) = \sup \{ts - g(t) : t \ge 0\} \quad (s \ge 0), \qquad g^+(s) = +\infty \quad (s <
+  0).$$
+
+The value $+\infty$ to the left of the origin, as for $g$ itself, makes $g \mapsto g^+$ an
+involution on `ConvexAnalysis.MonotoneHalfLineFn` and not only a bijection onto a smaller class. -/
 noncomputable def monotoneConj (g : ℝ → EReal) : ℝ → EReal :=
   ConvexAnalysis.convexRestrict (Set.Ici 0) fun s =>
     ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t
 
+/-- For $s \ge 0$, $g^+(s) = \sup \{ts - g(t) : t \ge 0\}$. -/
 theorem monotoneConj_of_nonneg (g : ℝ → EReal) (hs : 0 ≤ s) :
     monotoneConj g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t :=
   convexRestrict_of_mem hs
 
+/-- For $s < 0$, $g^+(s) = +\infty$. -/
 theorem monotoneConj_of_neg (g : ℝ → EReal) (hs : s < 0) : monotoneConj g s = ⊤ :=
   convexRestrict_of_notMem (by simpa using hs)
 
-/-- On a function that is `+∞` to the left of the origin, the supremum over the half-line and the
-supremum over the whole line agree, so the monotone conjugate is the ordinary conjugate for
-`mulPairing`, cut back to the half-line. -/
+/-- If $g$ is $+\infty$ on $(-\infty, 0)$, then its ordinary conjugate with respect to
+`ConvexAnalysis.mulPairing` is $g^*(s) = \sup \{ts - g(t) : t \ge 0\}$ for every $s$. Hence
+$g^+$ is $g^*$ restricted to $[0, \infty)$. -/
 theorem convexConj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
     convexConj mulPairing g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t := by
   rw [convexConj_apply]
@@ -186,25 +223,27 @@ theorem convexConj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤
     · rw [mulPairing_apply, hg ht, EReal.sub_top]; exact bot_le
   · exact le_iSup (fun t : ℝ => ((mulPairing t s : ℝ) : EReal) - g t) t
 
-/-- The monotone conjugate as a restricted ordinary conjugate. -/
+/-- If $g$ is $+\infty$ on $(-\infty, 0)$, then $g^+$ is the restriction of the ordinary conjugate
+$g^*$ to $[0, \infty)$, extended by $+\infty$. -/
 theorem monotoneConj_eq_convexRestrict_convexConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
     monotoneConj g = ConvexAnalysis.convexRestrict (Set.Ici 0) (convexConj mulPairing g) := by
   rw [monotoneConj, funext fun s => (convexConj_mulPairing_apply hg s).symm]
 
-/-- On the half-line the monotone conjugate and the ordinary conjugate agree. -/
+/-- If $g$ is $+\infty$ on $(-\infty, 0)$ and $s \ge 0$, then $g^+(s) = g^*(s)$. -/
 theorem monotoneConj_of_nonneg' (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (hs : 0 ≤ s) :
     monotoneConj g s = convexConj mulPairing g s := by
   rw [monotoneConj_eq_convexRestrict_convexConj hg, convexRestrict_of_mem (Set.mem_Ici.2 hs)]
 
-/-- The monotone conjugate dominates the ordinary one, being `+∞` where they differ. -/
+/-- If $g$ is $+\infty$ on $(-\infty, 0)$, then $g^* \le g^+$, because $g^+ = +\infty$ where the two
+differ. -/
 theorem convexConj_le_monotoneConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
     convexConj mulPairing g s ≤ monotoneConj g s := by
   rcases le_or_gt 0 s with hs | hs
   · exact (monotoneConj_of_nonneg' hg hs).ge
   · rw [monotoneConj_of_neg _ hs]; exact le_top
 
-/-- The ordinary conjugate of a function that is `+∞` to the left of the origin is nondecreasing:
-only nonnegative arguments contribute to the supremum. -/
+/-- If $g$ is $+\infty$ on $(-\infty, 0)$, then its ordinary conjugate $g^*$ is nondecreasing,
+because only $t \ge 0$ contribute to the supremum. -/
 theorem monotone_convexConj_mulPairing (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
     Monotone (convexConj mulPairing g) := by
   intro s s' hss
@@ -214,7 +253,8 @@ theorem monotone_convexConj_mulPairing (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = 
       (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t, ((t * s' : ℝ) : EReal) - g t) t))
   exact EReal.sub_le_sub (by exact_mod_cast mul_le_mul_of_nonneg_left hss ht) le_rfl
 
-/-- The conjugate is constant to the left of the origin, with the value `-g 0`. -/
+/-- For $g$ in `ConvexAnalysis.MonotoneHalfLineFn` and $s \le 0$, the ordinary conjugate is
+$g^*(s) = -g(0)$. -/
 theorem convexConj_mulPairing_of_nonpos (hg : MonotoneHalfLineFn g) (hs : s ≤ 0) :
     convexConj mulPairing g s = -g 0 := by
   rw [convexConj_mulPairing_apply hg.top_of_neg]
@@ -227,11 +267,12 @@ theorem convexConj_mulPairing_of_nonpos (hg : MonotoneHalfLineFn g) (hs : s ≤ 
         (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t) (0 : ℝ)))
     rw [zero_mul, EReal.coe_zero, sub_eq_add_neg, zero_add]
 
-/-- The monotone conjugate at the origin is `-g 0`. -/
+/-- For $g$ in `ConvexAnalysis.MonotoneHalfLineFn`, $g^+(0) = -g(0)$. -/
 theorem monotoneConj_zero (hg : MonotoneHalfLineFn g) : monotoneConj g 0 = -g 0 := by
   rw [monotoneConj_of_nonneg' hg.top_of_neg le_rfl, convexConj_mulPairing_of_nonpos hg le_rfl]
 
-/-- **The class is stable under monotone conjugacy.** -/
+/-- If $g$ is in `ConvexAnalysis.MonotoneHalfLineFn`, then so is its monotone conjugate $g^+$. This
+is part of Theorem 12.4 of [rockafellar1970convex], in one variable. -/
 theorem monotoneHalfLineFn_monotoneConj (hg : MonotoneHalfLineFn g) :
     MonotoneHalfLineFn (monotoneConj g) where
   top_of_neg _ ht := monotoneConj_of_neg g ht
@@ -249,9 +290,11 @@ theorem monotoneHalfLineFn_monotoneConj (hg : MonotoneHalfLineFn g) :
     rw [monotoneConj_zero hg]
     exact fun h => hg.ne_bot 0 (EReal.neg_eq_top_iff.1 h)
 
-/-- The negative half of the line contributes nothing to the biconjugate supremum at a nonnegative
-argument: there `g⁺` is constant, and the constant is already the value of the term at the origin.
-This is the only place where the truncation in `monotoneConj` has to be undone. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` and $t \ge 0$. Then
+$$\sup_{s \in \mathbb{R}} \big(st - g^+(s)\big) = \sup_{s \in \mathbb{R}} \big(st -
+  g^*(s)\big).$$
+At $t \ge 0$ the negative half-line adds nothing to the second conjugate: $g^*$ is constant
+there, and the constant is already the term at $s = 0$. -/
 theorem iSup_sub_monotoneConj (hg : MonotoneHalfLineFn g) (ht : 0 ≤ t) :
     (⨆ s : ℝ, ((s * t : ℝ) : EReal) - monotoneConj g s)
       = ⨆ s : ℝ, ((s * t : ℝ) : EReal) - convexConj mulPairing g s := by
@@ -271,12 +314,13 @@ theorem iSup_sub_monotoneConj (hg : MonotoneHalfLineFn g) (ht : 0 ≤ t) :
           add_le_add (by exact_mod_cast mul_nonpos_of_nonpos_of_nonneg hs.le ht) le_rfl
       _ = g 0 := zero_add _
 
-/-- **Monotone conjugacy is an involution** on the nondecreasing closed convex functions of one
-nonnegative variable that are finite at the origin.
+/-- **Monotone conjugacy is an involution**: for $g$ in `ConvexAnalysis.MonotoneHalfLineFn`,
+$$g^{++} = g.$$
+This is part of Theorem 12.4 of [rockafellar1970convex], in one variable.
 
-The proof is the Fenchel–Moreau theorem for `mulPairing` together with `iSup_sub_monotoneConj`,
-which says that truncating the conjugate to the half-line does not change the second conjugate at
-a nonnegative argument. -/
+The proof is the Fenchel–Moreau theorem for `ConvexAnalysis.mulPairing` together with
+`ConvexAnalysis.iSup_sub_monotoneConj`, which says that the restriction of the conjugate to the
+half-line does not change the second conjugate at a nonnegative argument. -/
 theorem monotoneConj_monotoneConj (hg : MonotoneHalfLineFn g) :
     monotoneConj (monotoneConj g) = g := by
   have hG := monotoneHalfLineFn_monotoneConj hg
@@ -300,38 +344,41 @@ section MonotoneComp
 
 variable {E : Type*} {g : ℝ → EReal} {k : E → EReal} {x : E} {c : ℝ}
 
-/-- The composite `g ∘ k` of a function on the half-line with a `[0, +∞]`-valued function `k`,
-with the convention `g (+∞) = +∞`.
+/-- The **composite** of $g : \mathbb{R} \to [-\infty, +\infty]$ with $k : E \to [-\infty, +\infty]$
+is
+$$(g \circ k)(x) = \inf \{g(t) : t \in \mathbb{R},\ k(x) \le t\}.$$
+It is intended for $k$ with values in $[0, +\infty]$ and $g$ nondecreasing on $[0, \infty)$.
+Then it is $g(k(x))$ with the convention $g(+\infty) = +\infty$.
 
-Presenting the composite as an infimum over the real levels above `k x` avoids extending `g` to
-`EReal` by hand — and hence a `Decidable` split — while making both defining equations one-line
-consequences: `monotoneComp g k x = g c` when `k x = c` and `g` is nondecreasing on the half-line
-(`monotoneComp_of_eq_coe`), and `monotoneComp g k x = ⊤` when `k x = ⊤`
-(`monotoneComp_of_eq_top`). -/
+The infimum over the real levels above $k(x)$ avoids an extension of $g$ to `EReal` and a case
+split. It makes both defining equations short: $(g \circ k)(x) = g(c)$ when $k(x) = c \ge 0$ and
+$g$ is nondecreasing on $[0, \infty)$ (`ConvexAnalysis.monotoneComp_of_eq_coe`), and
+$(g \circ k)(x) = +\infty$ when $k(x) = +\infty$ (`ConvexAnalysis.monotoneComp_of_eq_top`). -/
 noncomputable def monotoneComp (g : ℝ → EReal) (k : E → EReal) : E → EReal :=
   fun x => ⨅ t : ℝ, ⨅ _ : k x ≤ (t : EReal), g t
 
-/-- The defining formula for the composite. -/
+/-- The defining formula $(g \circ k)(x) = \inf \{g(t) : k(x) \le t\}$. -/
 theorem monotoneComp_apply (g : ℝ → EReal) (k : E → EReal) (x : E) :
     monotoneComp g k x = ⨅ t : ℝ, ⨅ _ : k x ≤ (t : EReal), g t := rfl
 
-/-- Every real level above `k x` bounds the composite from above. -/
+/-- If $k(x) \le c$ for a real $c$, then $(g \circ k)(x) \le g(c)$. -/
 theorem monotoneComp_le (h : k x ≤ (c : EReal)) : monotoneComp g k x ≤ g c :=
   iInf_le_of_le c (le_of_eq (iInf_pos h))
 
-/-- The composite is `+∞` wherever `k` is: no real level lies above `+∞`. -/
+/-- If $k(x) = +\infty$, then $(g \circ k)(x) = +\infty$, because no real level lies above
+$+\infty$. -/
 theorem monotoneComp_of_eq_top (g : ℝ → EReal) (h : k x = ⊤) : monotoneComp g k x = ⊤ :=
   iInf_eq_top.2 fun t => iInf_neg fun hc => EReal.coe_ne_top t (top_le_iff.1 (h ▸ hc))
 
-/-- The composite at a finite value of `k`: the infimum is attained at the level `t = k x`,
-because `g` is nondecreasing on the half-line. No semicontinuity is involved. -/
+/-- Let $g$ be nondecreasing on $[0, \infty)$, and let $k(x) = c$ with $c \ge 0$. Then
+$(g \circ k)(x) = g(c)$: the infimum is attained at $t = c$. No semicontinuity is needed. -/
 theorem monotoneComp_of_eq_coe (hg : MonotoneOn g (Set.Ici 0)) (hc : 0 ≤ c)
     (h : k x = (c : EReal)) : monotoneComp g k x = g c := by
   refine le_antisymm (monotoneComp_le (h.le.trans_eq rfl)) (le_iInf fun t => le_iInf fun ht => ?_)
   rw [h, EReal.coe_le_coe_iff] at ht
   exact hg (Set.mem_Ici.2 hc) (Set.mem_Ici.2 (hc.trans ht)) ht
 
-/-- A nonnegative extended real is either `+∞` or a nonnegative real. -/
+/-- An extended real $z \ge 0$ is either $+\infty$ or a real number $c \ge 0$. -/
 theorem eq_top_or_exists_coe_of_nonneg {z : EReal} (hz : 0 ≤ z) :
     z = ⊤ ∨ ∃ c : ℝ, 0 ≤ c ∧ z = (c : EReal) := by
   rcases eq_or_lt_of_le (le_top (a := z)) with htop | hlt
@@ -349,9 +396,11 @@ section MonotoneCompConvex
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {g : ℝ → EReal} {k : E → EReal}
 
-/-- **Composing preserves convexity.** No monotonicity of `g` is needed: the infimum over the real
-levels above `k x` already builds it in, and the strict form of convexity
-(`convexFn_iff_forall_lt`) supplies a level for each side to be combined. -/
+/-- If $g$ and $k$ are convex, then $g \circ k$ is convex.
+
+No monotonicity of $g$ is needed, because the infimum over the real levels above $k(x)$ already
+makes the composite monotone in the level. The strict form of convexity
+(`ConvexAnalysis.convexFn_iff_forall_lt`) gives a level for each of the two points. -/
 theorem convexFn_monotoneComp (hg : ConvexFn g) (hk : ConvexFn k) :
     ConvexFn (monotoneComp g k) := by
   refine (convexFn_iff_forall_lt _).2 fun x y a b ha hb hab α β hx hy => ?_
@@ -365,8 +414,8 @@ theorem convexFn_monotoneComp (hg : ConvexFn g) (hk : ConvexFn k) :
   exact lt_of_le_of_lt (monotoneComp_le (hk.epi_combo hkt hks ha.le hb.le hab))
     ((convexFn_iff_forall_lt g).1 hg t s a b ha hb hab α β hgt hgs)
 
-/-- **The composite is proper**: it takes the value `g 0` at the origin, which is finite, and it is
-bounded below by `g 0` everywhere. -/
+/-- If $g$ is in `ConvexAnalysis.MonotoneHalfLineFn` and $k$ is a gauge, then $g \circ k$ is proper:
+it has the finite value $g(0)$ at the origin, and it is bounded below by $g(0)$. -/
 theorem properConvex_monotoneComp (hg : MonotoneHalfLineFn g) (hk : IsGauge k) :
     ProperConvex (monotoneComp g k) where
   convexDom_nonempty := ⟨0, by
@@ -383,18 +432,23 @@ theorem properConvex_monotoneComp (hg : MonotoneHalfLineFn g) (hk : IsGauge k) :
 
 end MonotoneCompConvex
 
-/-! ### Growth of a non-constant function of the half-line
+/-!
+### Growth of a non-constant function of the half-line
 
-A convex nondecreasing function of the half-line that is not constant grows at least linearly, so
-its monotone conjugate is finite at small positive arguments. That is the exact content of the
-"non-constant" hypothesis: it is what makes `g ∘ k` closed. -/
+A nondecreasing convex function of the half-line that is not constant grows at least linearly. Hence
+its monotone conjugate is finite at small positive arguments. This is what the hypothesis "not
+constant" contributes: it makes $g \circ k$ closed.
+-/
 
 section Growth
 
 variable {g : ℝ → EReal} {c₀ r t₂ : ℝ}
 
-/-- **A convex function of the half-line lies above the secant through the origin, extended.**
-If `g 0 ≤ c₀` and `r ≤ g t₂` with `t₂ > 0`, then `g t ≥ c₀ + ((r - c₀) / t₂) t` for `t ≥ t₂`. -/
+/-- A convex function of the half-line lies above the extended secant through the origin. Let $g$ be
+convex and never $-\infty$, with $g(0) \le c_0$, and let $t_2 > 0$ with $r \le g(t_2)$. Then for
+every $t \ge t_2$,
+$$c_0 + \frac{r - c_0}{t_2}\, t \le g(t).$$
+-/
 theorem coe_add_mul_le_of_convex (hg : ConvexFn g) (hnb : ∀ z, g z ≠ ⊥) (h0 : g 0 ≤ (c₀ : EReal))
     (ht₂ : 0 < t₂) (hr : (r : EReal) ≤ g t₂) {t : ℝ} (ht : t₂ ≤ t) :
     ((c₀ + (r - c₀) / t₂ * t : ℝ) : EReal) ≤ g t := by
@@ -424,9 +478,10 @@ theorem coe_add_mul_le_of_convex (hg : ConvexFn g) (hnb : ∀ z, g z ≠ ⊥) (h
   rw [h5]
   positivity
 
-/-- **A non-constant convex nondecreasing function of the half-line has an affine minorant of
-positive slope**, beyond the point where it first rises. This is the quantitative form of
-"`g (ζ) → +∞`". -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $g(0) < g(t)$ for some $t > 0$. Then
+$g(0)$ is a real number $c_0$, and there are $m > 0$ and $t_2 > 0$ with
+$$c_0 + m t \le g(t) \quad \text{for every } t \ge t_2.$$
+This is the quantitative form of $g(\zeta) \to +\infty$. -/
 theorem MonotoneHalfLineFn.exists_affine_minorant (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) :
     ∃ m c₀ t₂ : ℝ, 0 < m ∧ 0 < t₂ ∧ g 0 = (c₀ : EReal) ∧
@@ -442,8 +497,11 @@ theorem MonotoneHalfLineFn.exists_affine_minorant (hg : MonotoneHalfLineFn g)
   exact ⟨(r - c₀) / t₂, c₀, t₂, by positivity, ht₂, hc₀,
     fun t ht => coe_add_mul_le_of_convex hg.convex hg.ne_bot (le_of_eq hc₀) ht₂ hrg ht⟩
 
-/-- **The monotone conjugate of a non-constant function of the half-line is finite somewhere on
-the positive axis** — it is finite at every `ζ` below the slope of the affine minorant. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $g(0) < g(t)$ for some $t > 0$. Then
+$g^+(\zeta) < +\infty$ for some $\zeta > 0$.
+
+The proof takes $\zeta$ below the slope of the affine minorant of
+`ConvexAnalysis.MonotoneHalfLineFn.exists_affine_minorant`. -/
 theorem MonotoneHalfLineFn.exists_monotoneConj_ne_top (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) : ∃ ζ : ℝ, 0 < ζ ∧ monotoneConj g ζ ≠ ⊤ := by
   obtain ⟨m, c₀, t₂, hm0, ht₂, hc₀, hmin⟩ := MonotoneHalfLineFn.exists_affine_minorant hg hne
@@ -462,11 +520,14 @@ theorem MonotoneHalfLineFn.exists_monotoneConj_ne_top (hg : MonotoneHalfLineFn g
       nlinarith
   exact ne_top_of_le_ne_top (EReal.coe_ne_top _) hbound
 
-/-- **The monotone conjugate of a function finite at a positive level is non-constant.** The term
-of the defining supremum at that level is an affine function of `s` with positive slope, so `g⁺`
-grows without bound. Together with `MonotoneHalfLineFn.exists_monotoneConj_ne_top` this is
-Rockafellar's "`g⁺` satisfies the same conditions as `g`", and it shows that conjugacy *exchanges*
-the two side conditions. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $g(\zeta) < +\infty$ for some
+$\zeta > 0$. Then $g^+$ is not constant: $g^+(0) < g^+(s)$ for some $s > 0$.
+
+The term of the defining supremum at $\zeta$ is an affine function of $s$ with positive slope,
+so $g^+$ grows without bound. With
+`ConvexAnalysis.MonotoneHalfLineFn.exists_monotoneConj_ne_top`, this is the statement of
+[rockafellar1970convex] that $g^+$ satisfies the same conditions as $g$; it shows that conjugacy
+exchanges the two side conditions. -/
 theorem MonotoneHalfLineFn.exists_lt_monotoneConj (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
     ∃ s : ℝ, 0 < s ∧ monotoneConj g 0 < monotoneConj g s := by
@@ -492,8 +553,8 @@ theorem MonotoneHalfLineFn.exists_lt_monotoneConj (hg : MonotoneHalfLineFn g)
     EReal.coe_lt_coe_iff]
   linarith
 
-/-- The set of levels at which a non-constant function of the half-line is below a given real
-bound is bounded above: past the affine minorant, `c₀ + m t ≤ α` caps `t`. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $g(0) < g(t)$ for some $t > 0$. Then
+for every real $\alpha$ the set $\{t \ge 0 : g(t) \le \alpha\}$ is bounded above. -/
 theorem MonotoneHalfLineFn.bddAbove_setOf_le (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (α : ℝ) :
     BddAbove {t : ℝ | 0 ≤ t ∧ g t ≤ (α : EReal)} := by
@@ -508,9 +569,11 @@ theorem MonotoneHalfLineFn.bddAbove_setOf_le (hg : MonotoneHalfLineFn g)
     rw [le_div_iff₀ hm0]
     linarith
 
-/-- **A convex function of the half-line finite at some positive level is continuous from the right
-at the origin**, in the form needed here: every real level strictly above `g 0` is already attained
-at some positive argument. Without finiteness at a positive level `g` may jump to `+∞` at once. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $g(\zeta) < +\infty$ for some
+$\zeta > 0$. If $g(0) < \alpha$, then $g(t) \le \alpha$ for some $t > 0$.
+
+This is a form of continuity from the right at the origin. Without finiteness at a positive
+point, $g$ can jump to $+\infty$ immediately to the right of $0$. -/
 theorem MonotoneHalfLineFn.exists_pos_le (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) {α : ℝ} (hα : g 0 < (α : EReal)) :
     ∃ t : ℝ, 0 < t ∧ g t ≤ (α : EReal) := by
@@ -539,12 +602,18 @@ theorem MonotoneHalfLineFn.exists_pos_le (hg : MonotoneHalfLineFn g)
   rw [smul_zero, zero_add, smul_eq_mul] at hcombo
   exact le_trans hcombo (EReal.coe_le_coe_iff.2 hkey)
 
-/-- The **crossing level** `sup {ζ ≥ 0 ∣ g ζ ≤ α}` of a function of the half-line. It is the
-dilation factor of the sublevel set `{g ∘ k ≤ α}`. -/
+/-- The **crossing level** of $g : \mathbb{R} \to [-\infty, +\infty]$ at $\alpha \in \mathbb{R}$ is
+the real number
+$$\sup \{t \ge 0 : g(t) \le \alpha\}.$$
+It is the dilation factor of the sublevel set $\{g \circ k \le \alpha\}$.
+
+The supremum is `sSup` in $\mathbb{R}$, so it is $0$ when the set is empty or not bounded above. -/
 noncomputable def levelSup (g : ℝ → EReal) (α : ℝ) : ℝ :=
   sSup {t : ℝ | 0 ≤ t ∧ g t ≤ (α : EReal)}
 
-/-- The crossing level is attained: the set of levels below `α` is closed and bounded. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$, and let
+$g(0) \le \alpha$. Then the crossing level $\lambda$ at $\alpha$ is attained: $\lambda \ge 0$
+and $g(\lambda) \le \alpha$. The reason is that the set of levels is closed and bounded. -/
 theorem levelSup_mem (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) {α : ℝ}
     (hα : g 0 ≤ (α : EReal)) : 0 ≤ levelSup g α ∧ g (levelSup g α) ≤ (α : EReal) := by
   have hset : {t : ℝ | 0 ≤ t ∧ g t ≤ (α : EReal)} = Set.Ici 0 ∩ g ⁻¹' Set.Iic (α : EReal) := rfl
@@ -554,13 +623,15 @@ theorem levelSup_mem (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g
       (lowerSemicontinuous_iff_isClosed_preimage.1 (ClosedConvex.lowerSemicontinuous hg.closed) _)
   exact hcl.csSup_mem ⟨0, le_rfl, hα⟩ (MonotoneHalfLineFn.bddAbove_setOf_le hg hne α)
 
-/-- Any level below `α` is below the crossing level. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$. If
+$t \ge 0$ and $g(t) \le \alpha$, then $t$ is at most the crossing level at $\alpha$. -/
 theorem le_levelSup (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) {α t : ℝ}
     (ht : 0 ≤ t) (htα : g t ≤ (α : EReal)) : t ≤ levelSup g α :=
   le_csSup (MonotoneHalfLineFn.bddAbove_setOf_le hg hne α) ⟨ht, htα⟩
 
-/-- The crossing level is positive as soon as `α` is strictly above `g 0` and `g` is finite
-somewhere on the positive axis. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$ and
+$g(\zeta) < +\infty$ for some $\zeta > 0$. If $g(0) < \alpha$, then the crossing level at
+$\alpha$ is positive. -/
 theorem levelSup_pos (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) {α : ℝ} (hα : g 0 < (α : EReal)) : 0 < levelSup g α := by
   obtain ⟨t, ht0, htα⟩ := MonotoneHalfLineFn.exists_pos_le hg hfin hα
@@ -568,16 +639,21 @@ theorem levelSup_pos (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g
 
 end Growth
 
-/-! ### The sublevel sets of `g ∘ k` are dilates of one another
+/-!
+### The sublevel sets of $g \circ k$ are dilates of one another
 
-This is the geometric content of Rockafellar's "gauge-like": every sublevel set `{g ∘ k ≤ α}` with
-`α` above the minimum is the dilate `λ • {k ≤ 1}`, with `λ` the crossing level of `g` at `α`. -/
+This is the geometric content of the term "gauge-like" of [rockafellar1970convex]. Every sublevel
+set $\{g \circ k \le \alpha\}$ with $\alpha$ above the minimum is the dilate $\lambda \{k \le 1\}$,
+where $\lambda$ is the crossing level of $g$ at $\alpha$.
+-/
 
 section GaugeLikeLevels
 
 variable {E : Type*} {g : ℝ → EReal} {k : E → EReal} {α : ℝ}
 
-/-- The sublevel sets of `g ∘ k` are the sublevel sets of `k`, at the crossing level. -/
+/-- Let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$, let $k$
+be nonnegative, and let $g(0) \le \alpha$. Then $(g \circ k)(x) \le \alpha$ if and only if
+$k(x) \le \lambda$, where $\lambda$ is the crossing level of $g$ at $\alpha$. -/
 theorem monotoneComp_le_coe_iff (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t)
     (hknn : ∀ z, 0 ≤ k z) (hα : g 0 ≤ (α : EReal)) (x : E) :
     monotoneComp g k x ≤ (α : EReal) ↔ k x ≤ ((levelSup g α : ℝ) : EReal) := by
@@ -602,9 +678,12 @@ theorem monotoneComp_le_coe_iff (hg : MonotoneHalfLineFn g) (hne : ∃ t : ℝ, 
 variable [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsTopologicalAddGroup E]
   [ContinuousSMul ℝ E]
 
-/-- **The sublevel sets of `g ∘ k` are dilates of `{k ≤ 1}`** — Rockafellar's "gauge-like", for
-the composite of a closed gauge with a non-constant nondecreasing closed convex function of the
-half-line finite at some positive level. -/
+/-- Let $E$ be a topological vector space, let $k$ be a closed gauge on $E$, and let $g$ be in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$ and $g(\zeta) < +\infty$
+for some $\zeta > 0$. If $g(0) < \alpha$, then
+$$\{x : (g \circ k)(x) \le \alpha\} = \lambda \{x : k(x) \le 1\},$$
+where $\lambda$ is the crossing level of $g$ at $\alpha$. This says that $g \circ k$ is
+gauge-like in the sense of [rockafellar1970convex]. -/
 theorem setOf_monotoneComp_le_eq_smul (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
@@ -620,26 +699,28 @@ theorem setOf_monotoneComp_le_eq_smul (hk : IsGauge k) (hkc : ClosedConvex k)
 
 end GaugeLikeLevels
 
-/-! ### The conjugate of a gauge composed with a function on the half-line
+/-!
+### The conjugate of a gauge composed with a function on the half-line
 
-The composite `g ∘ k` of a closed gauge with a nondecreasing closed convex function on the
-half-line is conjugate to the composite of the polar gauge with the monotone conjugate. The proof
-regroups the supremum defining the conjugate by the level `ζ = k x`: on the dilate `ζ • {k ≤ 1}`
-the composite is at most `g ζ`, and the supremum of the pairing over that dilate is `ζ k°(y)`.
-Closedness of `k` enters only through `convexConj_monotoneComp_le`. -/
+The composite $g \circ k$ of a closed gauge with a nondecreasing closed convex function on the
+half-line has the conjugate $g^+ \circ k^\circ$. The proof groups the supremum that defines the
+conjugate by the level $\zeta = k(x)$. On the dilate $\zeta \{k \le 1\}$ the composite is at most
+$g(\zeta)$, and the supremum of the pairing over this dilate is $\zeta k^\circ(y)$. Closedness of
+$k$ enters only through `ConvexAnalysis.convexConj_monotoneComp_le`.
+-/
 
 section GaugeCompLower
 
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g : ℝ → EReal} {k : E → EReal} {x : E} {y : F} {c : ℝ}
 
-/-- **Where a gauge vanishes the pairing is nonpositive**, provided the polar gauge is finite
-there.
+/-- Let $k$ be a gauge with $k(x) = 0$, and let $k^\circ(y)$ be finite. Then
+$\langle x, y \rangle \le 0$.
 
-The set `{k = 0}` is the recession cone of `{k ≤ 1}` and not in general `{0}`, so the bound has to
-be obtained by scaling: `k (l⁻¹ • x) = 0 ≤ 1` for every `l > 0`, whence `⟨x, y⟩ ≤ l k°(y)`, and
-letting `l` shrink gives `⟨x, y⟩ ≤ 0`. Finiteness of `k°(y)` is essential — in `EReal`,
-`0 * (+∞) = 0`. -/
+The set $\{k = 0\}$ is the recession cone of $\{k \le 1\}$, which in general is not $\{0\}$, so
+the bound comes from scaling: $k(l^{-1} x) = 0 \le 1$ for every $l > 0$, hence
+$\langle x, y \rangle \le l k^\circ(y)$, and $l \to 0$ gives $\langle x, y \rangle \le 0$.
+Finiteness of $k^\circ(y)$ is necessary, because $0 \cdot (+\infty) = 0$ in `EReal`. -/
 theorem pairing_nonpos_of_gauge_eq_zero (hk : IsGauge k) (hx : k x = 0)
     (hc : polarGauge B k y = (c : EReal)) : B x y ≤ 0 := by
   have hc0 : (0 : ℝ) ≤ c := by
@@ -662,15 +743,13 @@ theorem pairing_nonpos_of_gauge_eq_zero (hk : IsGauge k) (hx : k x = 0)
   rw [div_mul_eq_mul_div, le_div_iff₀ (by linarith : (0 : ℝ) < 2 * (c + 1))] at hb
   nlinarith
 
-/-- **The core lower bound.** On the dilate `ζ • {k ≤ 1}` the composite `g ∘ k`
-is at most `g ζ`, and the supremum of the pairing over that dilate is `ζ k°(y)`; so
-`ζ k°(y) - g ζ` is a lower bound for the conjugate of `g ∘ k`, at every level `ζ > 0` where `g` is
-finite.
+/-- Let $k$ be a gauge, let $\zeta > 0$, and let $g(\zeta)$ be finite. Then
+$$\zeta k^\circ(y) - g(\zeta) \le (g \circ k)^*(y).$$
 
-Nothing is assumed about `g` beyond finiteness at the single level `ζ`, and nothing about `k`
-beyond its being a gauge. This one lemma supplies both the `≥` half of the conjugacy formula and,
-at a point where the polar gauge is `+∞`, the degeneracy that forces the conjugate to be `+∞`
-there. -/
+On the dilate $\zeta \{k \le 1\}$ the composite is at most $g(\zeta)$, and the supremum of the
+pairing over the dilate is $\zeta k^\circ(y)$. Nothing else is assumed about $g$ or $k$. This
+lemma gives the inequality $\ge$ of the conjugacy formula and, where $k^\circ(y) = +\infty$, the
+value $+\infty$ of the conjugate. -/
 theorem coe_mul_polarGauge_sub_le_convexConj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < ζ)
     (hr : g ζ = (r : EReal)) :
     (ζ : EReal) * polarGauge B k y - g ζ ≤ convexConj B (monotoneComp g k) y := by
@@ -692,7 +771,9 @@ theorem coe_mul_polarGauge_sub_le_convexConj (hk : IsGauge k) {ζ r : ℝ} (hζ 
     EReal.biSup_add_coe]
   exact iSup₂_le hbound
 
-/-- The origin realises the level `ζ = 0` of the computation, since a gauge vanishes there. -/
+/-- Let $k$ be a gauge, and let $g$ be nondecreasing on $[0, \infty)$. Then
+$0 - g(0) \le (g \circ k)^*(y)$; the origin realizes the level $\zeta = 0$, because a gauge
+vanishes there. -/
 theorem sub_apply_zero_le_convexConj (hk : IsGauge k) (hg : MonotoneOn g (Set.Ici 0)) :
     (0 : EReal) - g 0 ≤ convexConj B (monotoneComp g k) y := by
   have hf0 : monotoneComp g k (0 : E) = g 0 :=
@@ -700,7 +781,9 @@ theorem sub_apply_zero_le_convexConj (hk : IsGauge k) (hg : MonotoneOn g (Set.Ic
   have h := sub_le_convexConj B (monotoneComp g k) (0 : E) y
   rwa [hf0, map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
-/-- The `≥` half of the conjugacy formula, at a point where the polar gauge is finite. -/
+/-- Let $k$ be a gauge, let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`, and let $k^\circ(y) = c$
+be finite. Then $g^+(c) \le (g \circ k)^*(y)$. This is the inequality $\ge$ of the conjugacy
+formula at a point where the polar gauge is finite. -/
 theorem monotoneConj_le_convexConj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLineFn g)
     (hc : polarGauge B k y = (c : EReal)) :
     monotoneConj g c ≤ convexConj B (monotoneComp g k) y := by
@@ -728,12 +811,13 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g : ℝ → EReal} {k : E → EReal} {x : E} {y : F} {c : ℝ}
 
-/-- **The Cauchy–Schwarz inequality for a gauge and its polar**: `⟨x, y⟩ ≤ k(x) k°(y)` wherever
-both sides are finite.
+/-- **Inequality for a gauge and its polar.** Let $E$ be a topological vector space, and let $k$ be
+a closed gauge on $E$. If $k(x) = c$ and $k^\circ(y) = d$ are finite, then
+$$\langle x, y \rangle \le c d.$$
 
-For `k(x) > 0` this is the level-set description of a closed gauge, `x ∈ k(x) • {k ≤ 1}`, together
-with the identification of `k°` as the support function of `{k ≤ 1}`. For `k(x) = 0` the product
-would be `0 · k°(y)`, and the bound is `pairing_nonpos_of_gauge_eq_zero`. -/
+For $c > 0$ this follows from $x \in c \{k \le 1\}$ and the identification of $k^\circ$ with the
+support function of $\{k \le 1\}$. For $c = 0$ the product would be $0 \cdot k^\circ(y)$, and
+the bound is `ConvexAnalysis.pairing_nonpos_of_gauge_eq_zero`. -/
 theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedConvex k) {d : ℝ}
     (hx : k x = (c : EReal)) (hy : polarGauge B k y = (d : EReal)) : B x y ≤ c * d := by
   have hc0 : (0 : ℝ) ≤ c := by
@@ -755,10 +839,13 @@ theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedConvex k) {d : ℝ
     have hb := le_supportFn (B := B) hmem y
     rwa [supportFn_smul B hpos, hsupp, ← EReal.coe_mul, EReal.coe_le_coe_iff] at hb
 
-/-- The `≤` half of the conjugacy formula, at a point where the polar gauge is finite.
+/-- Let $E$ be a topological vector space, let $k$ be a closed gauge on $E$, let $g$ be in
+`ConvexAnalysis.MonotoneHalfLineFn`, and let $k^\circ(y) = c$ be finite. Then
+$(g \circ k)^*(y) \le g^+(c)$. This is the inequality $\le$ of the conjugacy formula at a point
+where the polar gauge is finite.
 
-The supremum over `x` is regrouped by the level `ζ = k x`, and on each level the pairing is bounded
-by `pairing_le_mul_of_gauge`. -/
+The supremum over $x$ is grouped by the level $\zeta = k(x)$, and on each level the pairing is
+bounded by `ConvexAnalysis.pairing_le_mul_of_gauge`. -/
 theorem convexConj_monotoneComp_le (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g)
     (hc : polarGauge B k y = (c : EReal)) :
@@ -781,17 +868,19 @@ theorem convexConj_monotoneComp_le (hk : IsGauge k) (hkc : ClosedConvex k)
         le_trans (le_iSup (fun _ : (0 : ℝ) ≤ c' => ((c' * c : ℝ) : EReal) - g c') hc'0)
           (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t, ((t * c : ℝ) : EReal) - g t) c')
 
-/-- **The conjugacy formula**: for a closed gauge `k` and a nondecreasing closed convex `g` on the
-half-line that is finite at some positive level, the conjugate of `g ∘ k` is `g⁺ ∘ k°`.
+/-- **The conjugacy formula.** Let $E$ be a topological vector space, let $k$ be a closed gauge on
+$E$, and let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn` with $g(\zeta) < +\infty$ for some
+$\zeta > 0$. Then
+$$(g \circ k)^* = g^+ \circ k^\circ.$$
+This is the conjugacy formula of Theorem 15.3 of [rockafellar1970convex].
 
-The finiteness hypothesis is used **only** where `k°(y) = +∞`, to force the conjugate to be `+∞`
-there; both halves of the finite case hold without it. It cannot be dropped: for `g` the indicator
-of `{0}` the left-hand side is `δ*(· ∣ {k ≤ 0})`, which vanishes on the polar of the recession cone
-of `{k ≤ 1}`, while the right-hand side is `+∞` off the barrier cone of `{k ≤ 1}`, and those two
-cones differ.
-
-Neither compatibility nor continuity of the pairing is needed, and `g` need not be non-constant;
-the topology on `E` enters only through the closedness of `k`. -/
+The finiteness hypothesis is used only where $k^\circ(y) = +\infty$, to show that the conjugate
+is $+\infty$ there; both inequalities at finite $k^\circ(y)$ hold without it. It cannot be
+omitted: for $g$ the indicator of $\{0\}$, the left side is $\delta^*(\cdot \mid \{k \le 0\})$,
+which vanishes on the polar of the recession cone of $\{k \le 1\}$, while the right side is
+$+\infty$ outside the barrier cone of $\{k \le 1\}$, and these two cones differ. The pairing
+need not be continuous or compatible, and $g$ need not be non-constant; the topology of $E$
+enters only through the closedness of $k$. -/
 theorem convexConj_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
     convexConj B (monotoneComp g k) = monotoneComp (monotoneConj g) (polarGauge B k) := by
@@ -810,12 +899,14 @@ theorem convexConj_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : Mo
 
 end GaugeComp
 
-/-! ### `g ∘ k` is a closed proper convex function
+/-!
+### The composite $g \circ k$ is a closed proper convex function
 
-Closedness is obtained the way the book obtains it: by applying the conjugacy formula twice.
-`(g ∘ k)** = g⁺⁺ ∘ k°° = g ∘ k`, and a convex function equal to its own biconjugate is closed. The
-second application needs `g⁺` to be finite somewhere on the positive axis, which is exactly what
-`g` non-constant provides. -/
+Closedness is obtained as in [rockafellar1970convex], by two applications of the conjugacy formula:
+$(g \circ k)^{**} = g^{++} \circ k^{\circ\circ} = g \circ k$, and a convex function equal to its
+biconjugate is closed. The second application needs $g^+$ to be finite at a positive point, and this
+is what the hypothesis that $g$ is not constant gives.
+-/
 
 section MonotoneCompClosed
 
@@ -824,12 +915,18 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [AddCommGroup F] [Module ℝ F] [TopologicalSpace F] [IsTopologicalAddGroup F]
   [ContinuousSMul ℝ F] {g : ℝ → EReal} {k : E → EReal}
 
-/-- **`g ∘ k` is closed**, for a closed gauge `k` and a non-constant nondecreasing closed convex
-`g` on the half-line finite at some positive level.
+/-- Let $E$ be a locally convex space, and let $B$ be a pairing of $E$ with a topological vector
+space $F$ that is compatible with the topology of $E$ and for which every
+$\langle x, \cdot \rangle$ is continuous. Let $k$ be a closed gauge on $E$, and let $g$ be in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(\zeta) < +\infty$ for some $\zeta > 0$ and
+$g(0) < g(t)$ for some $t > 0$. Then $g \circ k$ is closed in the sense of
+`ConvexAnalysis.ClosedConvex`.
 
-Non-constancy is essential and is exactly what the proof consumes, through
-`MonotoneHalfLineFn.exists_monotoneConj_ne_top`: for constant `g` the composite is `g 0` on
-`dom k` and `+∞` off it, and `dom k` need not be closed. -/
+The conclusion does not mention $B$; the pairing serves the proof, which applies the conjugacy
+formula twice. The hypothesis that $g$ is not constant is necessary and enters through
+`ConvexAnalysis.MonotoneHalfLineFn.exists_monotoneConj_ne_top`: for constant $g$, the composite
+is $g(0)$ on the effective domain of $k$ and $+\infty$ outside it, and the effective domain need
+not be closed. -/
 theorem closedConvex_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) :
@@ -851,7 +948,13 @@ theorem closedConvex_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompa
   change convexCl (monotoneComp g k) = monotoneComp g k
   rw [← convexBiconj_eq_convexCl (B := B) (convexFn_monotoneComp hg.convex hk.convexFn), hbi]
 
-/-- **`g ∘ k` is a closed proper convex function.** -/
+/-- Let $E$ be a locally convex space, and let $B$ be a pairing of $E$ with a topological vector
+space $F$ that is compatible with the topology of $E$ and for which every
+$\langle x, \cdot \rangle$ is continuous. Let $k$ be a closed gauge on $E$, and let $g$ be in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(\zeta) < +\infty$ for some $\zeta > 0$ and
+$g(0) < g(t)$ for some $t > 0$. Then $g \circ k$ is a closed proper convex function.
+
+The conclusion does not mention $B$; the pairing serves the proof of closedness. -/
 theorem closedProperConvexFn_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsContinuousPairing B.flip] (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
@@ -861,47 +964,55 @@ theorem closedProperConvexFn_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) 
 
 end MonotoneCompClosed
 
-/-! ### The powers of the half-line
+/-!
+### The powers of the half-line
 
-`ζ ↦ ζ^p / p` for `1 < p < ∞`. Under monotone conjugacy these functions are permuted by
-`p ↦ q`, the Hölder conjugate exponent; that is Young's inequality, read as a conjugacy. -/
+The functions $\zeta \mapsto \zeta^p / p$ for $1 < p < \infty$. Monotone conjugacy maps the one for
+$p$ to the one for the Hölder conjugate exponent $q$; this is Young's inequality, read as a
+conjugacy.
+-/
 
 section PowHalfLine
 
 variable {p q ζ : ℝ}
 
-/-- The function `ζ ↦ ζ^p / p` of the half-line, extended by `+∞` to the negative axis. -/
+/-- The function $\zeta \mapsto \zeta^p / p$ for $\zeta \ge 0$, extended by $+\infty$ to
+$(-\infty, 0)$. The power is `Real.rpow`. -/
 noncomputable def powHalfLine (p : ℝ) : ℝ → EReal :=
   ConvexAnalysis.convexRestrict (Set.Ici 0) fun ζ => ((ζ ^ p / p : ℝ) : EReal)
 
+/-- For $\zeta \ge 0$, the value is $\zeta^p / p$. -/
 @[simp] theorem powHalfLine_of_nonneg (p : ℝ) (hζ : 0 ≤ ζ) :
     powHalfLine p ζ = ((ζ ^ p / p : ℝ) : EReal) := convexRestrict_of_mem hζ
 
+/-- For $\zeta < 0$, the value is $+\infty$. -/
 theorem powHalfLine_of_neg (p : ℝ) (hζ : ζ < 0) : powHalfLine p ζ = ⊤ :=
   convexRestrict_of_notMem (by simpa using hζ)
 
+/-- For $\zeta \ge 0$, the value is finite. -/
 theorem powHalfLine_ne_top (p : ℝ) (hζ : 0 ≤ ζ) : powHalfLine p ζ ≠ ⊤ := by
   rw [powHalfLine_of_nonneg p hζ]; exact EReal.coe_ne_top _
 
+/-- For $p > 0$, the value at $0$ is $0$. -/
 theorem powHalfLine_zero (hp : 0 < p) : powHalfLine p 0 = 0 := by
   rw [powHalfLine_of_nonneg p le_rfl, Real.zero_rpow hp.ne', zero_div, EReal.coe_zero]
 
-/-- `ζ ↦ ζ^p / p` is nondecreasing on the half-line. -/
+/-- For $p > 0$, the function $\zeta \mapsto \zeta^p / p$ is nondecreasing on $[0, \infty)$. -/
 theorem monotoneOn_powHalfLine (hp : 0 < p) : MonotoneOn (powHalfLine p) (Set.Ici 0) := by
   intro a ha b hb hab
   rw [powHalfLine_of_nonneg p ha, powHalfLine_of_nonneg p hb, EReal.coe_le_coe_iff]
   have h := Real.rpow_le_rpow ha hab hp.le
   gcongr
 
-/-- Raising `z^{1/p}` back to the `p`th power returns `z`. -/
+/-- For $p > 0$ and $z \ge 0$, $(z^{1/p})^p = z$. -/
 theorem rpow_inv_rpow (hp : 0 < p) {z : ℝ} (hz : 0 ≤ z) : (z ^ p⁻¹) ^ p = z := by
   rw [← Real.rpow_mul hz, inv_mul_cancel₀ hp.ne', Real.rpow_one]
 
-/-- Taking the `1/p`th power of `z^p` returns `z`. -/
+/-- For $p > 0$ and $z \ge 0$, $(z^p)^{1/p} = z$. -/
 theorem rpow_rpow_inv (hp : 0 < p) {z : ℝ} (hz : 0 ≤ z) : (z ^ p) ^ p⁻¹ = z := by
   rw [← Real.rpow_mul hz, mul_inv_cancel₀ hp.ne', Real.rpow_one]
 
-/-- The `1/p`th power does not move the unit level. -/
+/-- For $p > 0$ and $z \ge 0$, $z^{1/p} \le 1$ if and only if $z \le 1$. -/
 theorem rpow_inv_le_one_iff (hp : 0 < p) {z : ℝ} (hz : 0 ≤ z) : z ^ p⁻¹ ≤ 1 ↔ z ≤ 1 := by
   constructor
   · intro h
@@ -911,8 +1022,8 @@ theorem rpow_inv_le_one_iff (hp : 0 < p) {z : ℝ} (hz : 0 ≤ z) : z ^ p⁻¹ �
     have := Real.rpow_le_rpow hz h (by positivity : (0 : ℝ) ≤ p⁻¹)
     rwa [Real.one_rpow] at this
 
-/-- `ζ ↦ ζ^p / p` is a nondecreasing closed convex function of the half-line, finite at the
-origin — the class on which monotone conjugacy is an involution. -/
+/-- For $p \ge 1$, the function $\zeta \mapsto \zeta^p / p$ is in
+`ConvexAnalysis.MonotoneHalfLineFn`, the class on which monotone conjugacy is an involution. -/
 theorem monotoneHalfLineFn_powHalfLine (hp : 1 ≤ p) : MonotoneHalfLineFn (powHalfLine p) where
   top_of_neg _ h := powHalfLine_of_neg p h
   monotoneOn := monotoneOn_powHalfLine (lt_of_lt_of_le zero_lt_one hp)
@@ -932,11 +1043,13 @@ theorem monotoneHalfLineFn_powHalfLine (hp : 1 ≤ p) : MonotoneHalfLineFn (powH
       (fun _ => EReal.coe_ne_bot _) isClosed_Ici
   zero_ne_top := powHalfLine_ne_top p le_rfl
 
-/-- **Young's inequality, as a conjugacy**: the monotone conjugate of `ζ ↦ ζ^p / p` is
-`σ ↦ σ^q / q`, for Hölder conjugate exponents `p` and `q`.
+/-- **Young's inequality as a conjugacy.** Let $p$ and $q$ be Hölder conjugate exponents: $p, q > 1$
+and $1/p + 1/q = 1$. Then the monotone conjugate of $\zeta \mapsto \zeta^p / p$ is
+$\sigma \mapsto \sigma^q / q$.
 
-The supremum `sup {ζ σ - ζ^p / p ∣ ζ ≥ 0}` is bounded above by `σ^q / q` by Young's inequality and
-attained at `ζ = σ^{q-1}`, where `ζ σ = ζ^p = σ^q`. -/
+The supremum $\sup \{\zeta \sigma - \zeta^p / p : \zeta \ge 0\}$ is at most $\sigma^q / q$ by
+Young's inequality, and it is attained at $\zeta = \sigma^{q - 1}$, where
+$\zeta \sigma = \zeta^p = \sigma^q$. -/
 theorem monotoneConj_powHalfLine (hpq : p.HolderConjugate q) :
     monotoneConj (powHalfLine p) = powHalfLine q := by
   have hp0 : (0 : ℝ) < p := hpq.pos
@@ -975,22 +1088,28 @@ theorem monotoneConj_powHalfLine (hpq : p.HolderConjugate q) :
 
 end PowHalfLine
 
-/-! ### Positive homogeneity of degree `p`
+/-!
+### Positive homogeneity of degree $p$
 
-`f (λ x) = λ^p f x` for `λ > 0`. For `1 < p < ∞` these are exactly the functions `(1/p) k^p` of a
-closed gauge `k`, and the gauge is recovered as `(p f)^{1/p}`. -/
+A function is positively homogeneous of degree $p$ if $f(\lambda x) = \lambda^p f(x)$ for
+$\lambda > 0$. For $1 < p < \infty$ the closed proper convex functions of this kind are exactly the
+functions $(1/p) k^p$ of a closed gauge $k$, and the gauge is recovered as $(p f)^{1/p}$.
+-/
 
 section PosHomogeneousDeg
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f k : E → EReal} {x : E} {p : ℝ}
 
-/-- A function is **positively homogeneous of degree `p`** when `f (λ • x) = λ^p f x` for every
-`λ > 0`. Degree `1` is `PosHomogeneous`; as there, only positive scalars are constrained, so the
-value at the origin is not determined. -/
+/-- A function $f : E \to [-\infty, +\infty]$ is **positively homogeneous of degree $p$** if
+$f(\lambda x) = \lambda^p f(x)$ for every $\lambda > 0$ and every $x$.
+
+Degree $1$ is `ConvexAnalysis.PosHomogeneous`. As there, only positive scalars are constrained,
+so the value at the origin is not determined. -/
 def PosHomogeneousDeg (p : ℝ) (f : E → EReal) : Prop :=
   ∀ a : ℝ, 0 < a → ∀ x, f (a • x) = ((a ^ p : ℝ) : EReal) * f x
 
-/-- Positive homogeneity of positive degree leaves only three possible values at the origin. -/
+/-- If $p > 0$ and $f$ is positively homogeneous of degree $p$, then $f(0)$ is $0$, $+\infty$ or
+$-\infty$. -/
 theorem PosHomogeneousDeg.map_zero_trichotomy (hp : 0 < p) (hf : PosHomogeneousDeg p f) :
     f 0 = 0 ∨ f 0 = ⊤ ∨ f 0 = ⊥ := by
   have h2 : ((2 : ℝ) ^ p) ≠ 1 := by
@@ -1002,8 +1121,11 @@ theorem PosHomogeneousDeg.map_zero_trichotomy (hp : 0 < p) (hf : PosHomogeneousD
   rw [smul_zero] at h
   exact h.symm
 
-/-- **A convex function positively homogeneous of degree `p > 1` that vanishes at the origin is
-nonnegative.** Convexity gives `λ^p f x ≤ λ f x` for `0 < λ < 1`, and `λ^p < λ` there. -/
+/-- Let $p > 1$, and let $f$ be convex, never $-\infty$, positively homogeneous of degree $p$, with
+$f(0) = 0$. Then $f$ is nonnegative.
+
+Convexity gives $\lambda^p f(x) \le \lambda f(x)$ for $0 < \lambda < 1$, and
+$\lambda^p < \lambda$ there. -/
 theorem PosHomogeneousDeg.nonneg (hp : 1 < p) (hconv : ConvexFn f) (hne : ∀ z, f z ≠ ⊥)
     (hf : PosHomogeneousDeg p f) (h0 : f 0 = 0) (x : E) : 0 ≤ f x := by
   by_contra hcon
@@ -1022,7 +1144,8 @@ theorem PosHomogeneousDeg.nonneg (hp : 1 < p) (hconv : ConvexFn f) (hne : ∀ z,
     rwa [Real.rpow_one] at h
   nlinarith [mul_lt_mul_of_neg_left hlt ha0]
 
-/-- The composite `(1/p) k^p` of a gauge is positively homogeneous of degree `p`. -/
+/-- If $p > 0$ and $k$ is a gauge, then $(1/p) k^p$ (the composite of $\zeta \mapsto \zeta^p / p$
+with $k$) is positively homogeneous of degree $p$. -/
 theorem posHomogeneousDeg_monotoneComp_powHalfLine (hp : 0 < p) (hk : IsGauge k) :
     PosHomogeneousDeg p (monotoneComp (powHalfLine p) k) := by
   intro a ha z
@@ -1039,14 +1162,16 @@ theorem posHomogeneousDeg_monotoneComp_powHalfLine (hp : 0 < p) (hk : IsGauge k)
       ← EReal.coe_mul]
     exact congrArg _ (by rw [Real.mul_rpow ha.le hc0]; ring)
 
-/-- The **gauge attached to a function positively homogeneous of degree `p`**: `(p f)^{1/p}`, with
-`(+∞)^{1/p} = +∞`.
+/-- The **gauge attached** to a function $f$ that is positively homogeneous of degree $p$ is
+$(p f)^{1/p}$, with $(+\infty)^{1/p} = +\infty$.
 
-Written through `monotoneComp` so that the two defining equations come for free: it is
-`(p a)^{1/p}` where `f` takes the finite value `a ≥ 0`, and `+∞` where `f` is. -/
+It is the composite `ConvexAnalysis.monotoneComp` of $a \mapsto (p a)^{1/p}$ with $f$. For
+$p > 0$ it is $(p a)^{1/p}$ where $f$ has the finite value $a \ge 0$, and $+\infty$ where
+$f = +\infty$. -/
 noncomputable def degGauge (p : ℝ) (f : E → EReal) : E → EReal :=
   monotoneComp (fun a : ℝ => (((p * a) ^ p⁻¹ : ℝ) : EReal)) f
 
+/-- For $p > 0$, the function $a \mapsto (p a)^{1/p}$ is nondecreasing on $[0, \infty)$. -/
 theorem monotoneOn_degGaugeFn (hp : 0 < p) :
     MonotoneOn (fun a : ℝ => (((p * a) ^ p⁻¹ : ℝ) : EReal)) (Set.Ici 0) := by
   intro a ha b _ hab
@@ -1055,15 +1180,18 @@ theorem monotoneOn_degGaugeFn (hp : 0 < p) :
   exact Real.rpow_le_rpow (by positivity) (by nlinarith) (by positivity)
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- If $p > 0$ and $f(x) = a$ with $a \ge 0$, then $(p f)^{1/p}(x) = (p a)^{1/p}$. -/
 theorem degGauge_of_eq_coe (hp : 0 < p) {a : ℝ} (ha : 0 ≤ a) (h : f x = (a : EReal)) :
     degGauge p f x = (((p * a) ^ p⁻¹ : ℝ) : EReal) :=
   monotoneComp_of_eq_coe (monotoneOn_degGaugeFn hp) ha h
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- If $f(x) = +\infty$, then $(p f)^{1/p}(x) = +\infty$. -/
 theorem degGauge_of_eq_top (p : ℝ) (h : f x = ⊤) : degGauge p f x = ⊤ :=
   monotoneComp_of_eq_top _ h
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- If $p > 0$ and $f$ is nonnegative, then $(p f)^{1/p}$ is nonnegative. -/
 theorem degGauge_nonneg (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (x : E) : 0 ≤ degGauge p f x := by
   rcases eq_top_or_exists_coe_of_nonneg (hnn x) with hx | ⟨a, ha0, hx⟩
   · rw [degGauge_of_eq_top p hx]; exact le_top
@@ -1071,10 +1199,13 @@ theorem degGauge_nonneg (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (x : E) : 0 ≤ de
     exact EReal.coe_nonneg.2 (Real.rpow_nonneg (by positivity) _)
 
 omit [Module ℝ E] in
+/-- If $p > 0$ and $f(0) = 0$, then $(p f)^{1/p}$ vanishes at $0$. -/
 theorem degGauge_map_zero (hp : 0 < p) (h0 : f 0 = 0) : degGauge p f 0 = 0 := by
   rw [degGauge_of_eq_coe hp le_rfl (by rw [h0, EReal.coe_zero]), mul_zero,
     Real.zero_rpow (by positivity), EReal.coe_zero]
 
+/-- If $p > 0$ and $f$ is nonnegative and positively homogeneous of degree $p$, then $(p f)^{1/p}$
+is positively homogeneous of degree $1$. -/
 theorem posHomogeneous_degGauge (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (hf : PosHomogeneousDeg p f) :
     PosHomogeneous (degGauge p f) := by
   intro a ha z
@@ -1092,7 +1223,8 @@ theorem posHomogeneous_degGauge (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (hf : PosH
     rw [hrw, Real.mul_rpow (Real.rpow_nonneg ha.le p) (by positivity), rpow_rpow_inv hp ha.le]
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- The unit level set of `(p f)^{1/p}` is the level set `{f ≤ 1/p}`. -/
+/-- If $p > 0$ and $f$ is nonnegative, then the unit sublevel set of $(p f)^{1/p}$ is
+$\{x : f(x) \le 1/p\}$. -/
 theorem setOf_degGauge_le_one (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) :
     {x : E | degGauge p f x ≤ 1} = {x : E | f x ≤ ((p⁻¹ : ℝ) : EReal)} := by
   ext z
@@ -1113,15 +1245,19 @@ theorem setOf_degGauge_le_one (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) :
     change degGauge p f z ≤ 1 ↔ f z ≤ ((p⁻¹ : ℝ) : EReal)
     rw [h1, h2, rpow_inv_le_one_iff hp hpa, ← le_div_iff₀' hp, one_div]
 
-/-- `(p f)^{1/p}` is the Minkowski functional of `{f ≤ 1/p}`. -/
+/-- If $p > 0$ and $f$ is nonnegative, positively homogeneous of degree $p$, with $f(0) = 0$, then
+$(p f)^{1/p}$ is the gauge $\gamma(\cdot \mid \{x : f(x) \le 1/p\})$. -/
 theorem degGauge_eq_gaugeFn (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (hf : PosHomogeneousDeg p f)
     (h0 : f 0 = 0) : degGauge p f = gaugeFn {x : E | f x ≤ ((p⁻¹ : ℝ) : EReal)} := by
   rw [← setOf_degGauge_le_one hp hnn]
   exact (gaugeFn_level_one (degGauge_nonneg hp hnn) (posHomogeneous_degGauge hp hnn hf)
     (degGauge_map_zero hp h0)).symm
 
-/-- `(p f)^{1/p}` is a gauge. Convexity is not proved from the formula but read off from the
-level set: `(p f)^{1/p}` is the Minkowski functional of the convex set `{f ≤ 1/p}`. -/
+/-- If $p > 0$ and $f$ is convex, nonnegative, positively homogeneous of degree $p$, with
+$f(0) = 0$, then $(p f)^{1/p}$ is a gauge.
+
+Convexity follows from the identification with the gauge of the convex set $\{f \le 1/p\}$, not
+from the formula. -/
 theorem isGauge_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hnn : ∀ z, 0 ≤ f z)
     (hf : PosHomogeneousDeg p f) (h0 : f 0 = 0) : IsGauge (degGauge p f) where
   nonneg := degGauge_nonneg hp hnn
@@ -1132,7 +1268,8 @@ theorem isGauge_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hnn : ∀ z, 0 ≤ f
   map_zero := degGauge_map_zero hp h0
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- **`(1/p) [(p f)^{1/p}]^p = f`**: the gauge attached to a nonnegative function recovers it. -/
+/-- If $p > 0$ and $f$ is nonnegative, then $(1/p) \big[(p f)^{1/p}\big]^p = f$: the attached gauge
+recovers $f$. -/
 theorem monotoneComp_powHalfLine_degGauge (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) :
     monotoneComp (powHalfLine p) (degGauge p f) = f := by
   funext z
@@ -1146,8 +1283,8 @@ theorem monotoneComp_powHalfLine_degGauge (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) 
     rw [monotoneComp_of_eq_coe (monotoneOn_powHalfLine hp) hd0 (degGauge_of_eq_coe hp ha0 hz),
       powHalfLine_of_nonneg p hd0, hval, hz]
 
-/-- **`(p · (1/p) k^p)^{1/p} = k`**: the gauge is recovered from the composite, so the
-representation is unique. -/
+/-- If $p > 0$ and $k$ is a gauge, then $\big(p \cdot (1/p) k^p\big)^{1/p} = k$. Hence the gauge in
+the representation $f = (1/p) k^p$ is unique. -/
 theorem degGauge_monotoneComp_powHalfLine (hp : 0 < p) (hk : IsGauge k) :
     degGauge p (monotoneComp (powHalfLine p) k) = k := by
   funext z
@@ -1162,18 +1299,24 @@ theorem degGauge_monotoneComp_powHalfLine (hp : 0 < p) (hk : IsGauge k) :
 
 end PosHomogeneousDeg
 
-/-! ### Homogeneity of degree `p` for closed functions
+/-!
+### Homogeneity of degree $p$ for closed functions
 
-Closedness is what pins the value at the origin, and with it the sign. -/
+Closedness determines the value at the origin, and with it the sign.
+-/
 
 section PosHomogeneousDegClosed
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] {f : E → EReal} {p : ℝ}
 
-/-- **A closed proper function positively homogeneous of degree `p > 0` vanishes at the origin.**
-Along a ray into the origin the values are `λ^p f x₀ → 0`, so the epigraph, being closed, contains
-`(0, 0)`; of the three values homogeneity allows at the origin, only `0` is `≤ 0`. -/
+/-- Let $E$ be a topological vector space and $p > 0$. If $f$ is closed, proper, and positively
+homogeneous of degree $p$, then $f(0) = 0$.
+
+Along a ray into the origin the values are $\lambda^p f(x_0) \to 0$, so the closed epigraph
+contains $(0, 0)$ and $f(0) \le 0$. Homogeneity allows only the values $0$, $+\infty$ and
+$-\infty$ at the origin. The bound $f(0) \le 0$ excludes $+\infty$, and properness excludes
+$-\infty$. -/
 theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedConvex f)
     (hpr : ProperConvex f)
     (hf : PosHomogeneousDeg p f) : f 0 = 0 := by
@@ -1210,8 +1353,9 @@ theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedConvex f)
   · rw [h] at hle; exact absurd hle (by simp)
   · exact absurd h (hpr.ne_bot 0)
 
-/-- `(p f)^{1/p}` is a **closed** gauge, being the Minkowski functional of the closed convex set
-`{f ≤ 1/p}`. -/
+/-- Let $E$ be a topological vector space and $p > 0$. If $f$ is convex, closed, nonnegative,
+positively homogeneous of degree $p$, with $f(0) = 0$, then $(p f)^{1/p}$ is closed, because it
+is the gauge of the closed convex set $\{f \le 1/p\}$. -/
 theorem closedConvex_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hcl : ClosedConvex f)
     (hnn : ∀ z, 0 ≤ f z) (hf : PosHomogeneousDeg p f) (h0 : f 0 = 0) :
     ClosedConvex (degGauge p f) := by
@@ -1222,8 +1366,10 @@ theorem closedConvex_degGauge (hp : 0 < p) (hconv : ConvexFn f) (hcl : ClosedCon
   rw [h0]
   exact EReal.coe_nonneg.2 (by positivity)
 
-/-- **The representation `f = (1/p) [(p f)^{1/p}]^p`** of a closed proper convex function
-positively homogeneous of degree `p`. -/
+/-- Let $E$ be a topological vector space and $p > 1$. If $f$ is a closed proper convex function
+that is positively homogeneous of degree $p$, then
+$$f = (1/p) \big[(p f)^{1/p}\big]^p.$$
+-/
 theorem monotoneComp_powHalfLine_degGauge_eq_self (hp : 1 < p) (hconv : ConvexFn f)
     (hcl : ClosedConvex f) (hpr : ProperConvex f) (hf : PosHomogeneousDeg p f) :
     monotoneComp (powHalfLine p) (degGauge p f) = f :=
@@ -1231,9 +1377,13 @@ theorem monotoneComp_powHalfLine_degGauge_eq_self (hp : 1 < p) (hconv : ConvexFn
     (PosHomogeneousDeg.nonneg hp hconv hpr.ne_bot hf
       (PosHomogeneousDeg.map_zero_eq_zero (lt_trans zero_lt_one hp) hcl hpr hf))
 
-/-- **A closed proper convex function is positively homogeneous of degree `p ∈ (1, ∞)` exactly
-when it is `(1/p) k^p` for a closed gauge `k`.** The gauge is unique — it is `(p f)^{1/p}`, by
-`degGauge_monotoneComp_powHalfLine`. -/
+/-- Let $E$ be a topological vector space, let $p > 1$, and let $f$ be a closed proper convex
+function on $E$. Then $f$ is positively homogeneous of degree $p$ if and only if $f = (1/p) k^p$
+for a closed gauge $k$. This is the first assertion of Corollary 15.3.1 of
+[rockafellar1970convex].
+
+The gauge is unique: it is $(p f)^{1/p}$, by `ConvexAnalysis.degGauge_monotoneComp_powHalfLine`.
+Here $(1/p) k^p$ is `ConvexAnalysis.monotoneComp (ConvexAnalysis.powHalfLine p) k`. -/
 theorem posHomogeneousDeg_iff_exists_isGauge (hp : 1 < p) (hconv : ConvexFn f)
     (hcl : ClosedConvex f)
     (hpr : ProperConvex f) :
@@ -1251,10 +1401,13 @@ theorem posHomogeneousDeg_iff_exists_isGauge (hp : 1 < p) (hconv : ConvexFn f)
 
 end PosHomogeneousDegClosed
 
-/-! ### Conjugacy for the homogeneous functions of degree `p`
+/-!
+### Conjugacy for the functions homogeneous of degree $p$
 
-Corollaries 15.3.1 and 15.3.2: `[(1/p) k^p]* = (1/q) (k°)^q`, the gauge `(p f)^{1/p}` is polar to
-`(q f*)^{1/q}`, and the two unit level sets `{f ≤ 1/p}` and `{f* ≤ 1/q}` are polar sets. -/
+Corollaries 15.3.1 and 15.3.2 of [rockafellar1970convex]: $[(1/p) k^p]^* = (1/q) (k^\circ)^q$, the
+gauge $(p f)^{1/p}$ is polar to $(q f^*)^{1/q}$, and the sets $\{f \le 1/p\}$ and $\{f^* \le 1/q\}$
+are polar to each other.
+-/
 
 section PowConj
 
@@ -1262,7 +1415,13 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f k : E → EReal} {x : E} {y : F} {p q : ℝ}
 
-/-- **`[(1/p) k^p]* = (1/q) (k°)^q`.** -/
+/-- Let $E$ be a topological vector space, let $p$ and $q$ be Hölder conjugate exponents, and let
+$k$ be a closed gauge on $E$. Then
+$$\big[(1/p) k^p\big]^* = (1/q) (k^\circ)^q.$$
+This is the second assertion of Corollary 15.3.1 of [rockafellar1970convex].
+
+The proof is `ConvexAnalysis.convexConj_monotoneComp` with
+`ConvexAnalysis.monotoneConj_powHalfLine`. -/
 theorem convexConj_monotoneComp_powHalfLine (hpq : p.HolderConjugate q) (hk : IsGauge k)
     (hkc : ClosedConvex k) :
     convexConj B (monotoneComp (powHalfLine p) k)
@@ -1272,7 +1431,8 @@ theorem convexConj_monotoneComp_powHalfLine (hpq : p.HolderConjugate q) (hk : Is
     monotoneConj_powHalfLine hpq]
 
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
-/-- The unit level set of a polar gauge is the polar set of the unit level set. -/
+/-- If $k$ is a gauge, then the unit sublevel set of $k^\circ$ is the polar of the unit sublevel set
+of $k$: $\{y : k^\circ(y) \le 1\} = \{x : k(x) \le 1\}^\circ$. -/
 theorem setOf_polarGauge_le_one (hk : IsGauge k) :
     {y : F | polarGauge B k y ≤ 1} = polarSet B {x : E | k x ≤ 1} := by
   rw [polarGauge_eq_supportFn hk.nonneg hk.posHomogeneous hk.map_zero]
@@ -1286,9 +1446,10 @@ variable (hpq : p.HolderConjugate q) (hconv : ConvexFn f) (hcl : ClosedConvex f)
   (hf : PosHomogeneousDeg p f)
 include hpq hconv hcl hpr hf
 
-/-- The conjugate of a closed proper convex function positively homogeneous of degree `p` is
-`(1/q) (k°)^q` for the gauge `k = (p f)^{1/p}` — in particular it is positively homogeneous of
-degree `q`. -/
+/-- Let $E$ be a topological vector space, let $p$ and $q$ be Hölder conjugate exponents, and let
+$f$ be a closed proper convex function on $E$ that is positively homogeneous of degree $p$. Then
+$f^* = (1/q) (k^\circ)^q$ for the gauge $k = (p f)^{1/p}$. In particular $f^*$ is positively
+homogeneous of degree $q$. -/
 theorem convexConj_eq_monotoneComp_powHalfLine :
     convexConj B f = monotoneComp (powHalfLine q) (polarGauge B (degGauge p f)) := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
@@ -1297,7 +1458,11 @@ theorem convexConj_eq_monotoneComp_powHalfLine :
   exact convexConj_monotoneComp_powHalfLine hpq (isGauge_degGauge hpq.pos hconv hnn hf h0)
     (closedConvex_degGauge hpq.pos hconv hcl hnn hf h0)
 
-/-- **`(p f)^{1/p}` is a closed gauge whose polar is `(q f*)^{1/q}`.** -/
+/-- Let $E$ be a topological vector space, let $p$ and $q$ be Hölder conjugate exponents, and let
+$f$ be a closed proper convex function on $E$ that is positively homogeneous of degree $p$. Then
+the polar of the closed gauge $(p f)^{1/p}$ is $(q f^*)^{1/q}$:
+$$\big((p f)^{1/p}\big)^\circ = (q f^*)^{1/q}.$$
+This is Corollary 15.3.2 of [rockafellar1970convex]. -/
 theorem polarGauge_degGauge : polarGauge B (degGauge p f) = degGauge q (convexConj B f) := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
   have hnn : ∀ z, 0 ≤ f z := PosHomogeneousDeg.nonneg hpq.lt hconv hpr.ne_bot hf h0
@@ -1306,8 +1471,11 @@ theorem polarGauge_degGauge : polarGauge B (degGauge p f) = degGauge q (convexCo
       (isGauge_polarGauge (B := B) (degGauge_nonneg hpq.pos hnn)
         (posHomogeneous_degGauge hpq.pos hnn hf) (degGauge_map_zero hpq.pos h0))]
 
-/-- **The Hölder-type inequality** `⟨x, y⟩ ≤ [p f(x)]^{1/p} [q f*(y)]^{1/q}` on
-`dom f × dom f*`. -/
+/-- **Hölder-type inequality.** Let $E$ be a topological vector space, let $p$ and $q$ be Hölder
+conjugate exponents, and let $f$ be a closed proper convex function on $E$ that is positively
+homogeneous of degree $p$. If $f(x) = a$ and $f^*(y) = b$ are finite, then
+$$\langle x, y \rangle \le (p a)^{1/p} (q b)^{1/q}.$$
+This is part of Corollary 15.3.2 of [rockafellar1970convex]. -/
 theorem pairing_le_rpow_mul_rpow {a b : ℝ} (hx : f x = (a : EReal))
     (hy : convexConj B f y = (b : EReal)) : B x y ≤ (p * a) ^ p⁻¹ * (q * b) ^ q⁻¹ := by
   have h0 : f 0 = 0 := PosHomogeneousDeg.map_zero_eq_zero hpq.pos hcl hpr hf
@@ -1325,7 +1493,11 @@ theorem pairing_le_rpow_mul_rpow {a b : ℝ} (hx : f x = (a : EReal))
   rw [polarGauge_degGauge hpq hconv hcl hpr hf]
   exact degGauge_of_eq_coe hpq.symm.pos hb0 hy
 
-/-- **The closed convex sets `{f ≤ 1/p}` and `{f* ≤ 1/q}` are polar to each other.** -/
+/-- Let $E$ be a topological vector space, let $p$ and $q$ be Hölder conjugate exponents, and let
+$f$ be a closed proper convex function on $E$ that is positively homogeneous of degree $p$. Then
+the closed convex sets $\{f \le 1/p\}$ and $\{f^* \le 1/q\}$ are polar to each other:
+$$\{x : f(x) \le 1/p\}^\circ = \{y : f^*(y) \le 1/q\}.$$
+This is part of Corollary 15.3.2 of [rockafellar1970convex]. -/
 theorem polarSet_setOf_le_inv :
     polarSet B {x : E | f x ≤ ((p⁻¹ : ℝ) : EReal)}
       = {y : F | convexConj B f y ≤ ((q⁻¹ : ℝ) : EReal)} := by
@@ -1339,39 +1511,47 @@ theorem polarSet_setOf_le_inv :
 end PowConj
 
 
-/-! ### Gauge-like functions, and the converse half
+/-!
+### Gauge-like functions, and the converse
 
-`f` is **gauge-like** when `f 0 = inf f` and the sublevel sets `{f ≤ α}` above that infimum are all
-positive multiples of one set. `setOf_monotoneComp_le_eq_smul` says that `g ∘ k` is gauge-like;
-here is the converse, that a gauge-like closed proper convex function *is* such a composite.
+A function $f$ is **gauge-like** if $f(0) = \inf f$ and the sublevel sets $\{f \le \alpha\}$ above
+the infimum are positive multiples of one set. By `ConvexAnalysis.setOf_monotoneComp_le_eq_smul`,
+$g \circ k$ is gauge-like. This section proves the converse: a gauge-like closed proper convex
+function is such a composite.
 
-The gauge is the gauge of one sublevel set, `k = γ(· | {f ≤ f 0 + 1})`, and then *every* sublevel
-set of `f` is a sublevel set of `k` (`IsGaugeLike.exists_isGauge_setOf_le_eq`); so `f x` depends on
-`x` only through `k x`. The half-line factor is read off along a ray, `g ζ = f (ζ • x₁)` with
-`k x₁ = 1`, which makes `g` convex and closed for free. Such a ray exists unless `k` takes only the
-values `0` and `+∞` — unless the sublevel sets are a single cone — in which case `f` is `f 0` on
-that cone and `+∞` off it, and the half-line factor is the step function `f 0 + δ(· | [0, 1])`. -/
+The gauge is $k = \gamma(\cdot \mid \{f \le f(0) + 1\})$. Every sublevel set of $f$ above the
+infimum is then a sublevel set of $k$ (`ConvexAnalysis.IsGaugeLike.exists_isGauge_setOf_le_eq`), so
+$f(x)$ depends on $x$ only through $k(x)$. The factor on the half-line is read off along a ray,
+$g(\zeta) = f(\zeta x_1)$ with $k(x_1) = 1$, which makes $g$ convex and closed. Such a ray exists
+unless $k$ takes only the values $0$ and $+\infty$, that is, unless the sublevel sets are one cone.
+In that case $f$ is $f(0)$ on the cone and $+\infty$ outside it, and the factor on the half-line is
+the step function $f(0) + \delta(\cdot \mid [0, 1])$.
+-/
 
 section IsGaugeLike
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f k : E → EReal} {a₀ : ℝ}
 
-/-- **A gauge-like function**, Rockafellar's term: the infimum of `f` is attained at the origin,
-and the sublevel sets strictly above that infimum are all positive multiples of a single set. -/
+/-- A function $f : E \to [-\infty, +\infty]$ is **gauge-like**, in the sense of
+[rockafellar1970convex], if its infimum is attained at the origin and there is a set $C$ such
+that every sublevel set $\{f \le \alpha\}$ with $\alpha > f(0)$ is $\lambda C$ for some
+$\lambda > 0$. -/
 structure IsGaugeLike (f : E → EReal) : Prop where
-  /-- The infimum of `f` is attained at the origin. -/
+  /-- The infimum of $f$ is $f(0)$. -/
   map_zero_eq_iInf : f 0 = ⨅ x, f x
-  /-- The sublevel sets above the infimum are proportional to one another. -/
+  /-- There is a set $C$ such that for every real $\alpha > f(0)$ the sublevel set
+  $\{f \le \alpha\}$ is $\lambda C$ for some $\lambda > 0$. -/
   exists_setOf_le_eq_smul : ∃ C : Set E, ∀ α : ℝ, f 0 < (α : EReal) →
     ∃ l : ℝ, 0 < l ∧ {x : E | f x ≤ (α : EReal)} = l • C
 
-/-- The origin minimises a gauge-like function. -/
+/-- The origin minimizes a gauge-like function: $f(0) \le f(x)$. -/
 theorem IsGaugeLike.map_zero_le (hgl : IsGaugeLike f) (x : E) : f 0 ≤ f x := by
   rw [hgl.map_zero_eq_iInf]
   exact iInf_le f x
 
-/-- Any two sublevel sets above the infimum are positive multiples of *each other* — the form the
-reconstruction uses, with no reference to the auxiliary set. -/
+/-- Let $f$ be gauge-like, and let $\alpha, \beta > f(0)$ be real. Then
+$\{f \le \alpha\} = c \{f \le \beta\}$ for some $c > 0$. This form needs no reference to the
+auxiliary set. -/
 theorem IsGaugeLike.exists_setOf_le_eq_smul_setOf_le (hgl : IsGaugeLike f) {α β : ℝ}
     (hα : f 0 < (α : EReal)) (hβ : f 0 < (β : EReal)) :
     ∃ c : ℝ, 0 < c ∧ {x : E | f x ≤ (α : EReal)} = c • {x : E | f x ≤ (β : EReal)} := by
@@ -1381,8 +1561,8 @@ theorem IsGaugeLike.exists_setOf_le_eq_smul_setOf_le (hgl : IsGaugeLike f) {α �
   refine ⟨a / b, by positivity, ?_⟩
   rw [hseta, hsetb, smul_smul, div_mul_cancel₀ _ hb.ne']
 
-/-- `f 0` is a real number, for a proper gauge-like `f`: it is finite below by properness, and
-above because it is bounded by any value in the effective domain. -/
+/-- If $f$ is gauge-like and proper, then $f(0)$ is a real number. It is not $-\infty$ because $f$
+is proper, and it is not $+\infty$ because it is at most every value of $f$. -/
 theorem IsGaugeLike.exists_map_zero_eq_coe (hgl : IsGaugeLike f) (hpr : ProperConvex f) :
     ∃ a : ℝ, f 0 = (a : EReal) := by
   obtain ⟨x, hx⟩ := hpr.convexDom_nonempty
@@ -1390,8 +1570,9 @@ theorem IsGaugeLike.exists_map_zero_eq_coe (hgl : IsGaugeLike f) (hpr : ProperCo
     (lt_of_le_of_lt (hgl.map_zero_le x) (mem_convexDom.1 hx))
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- **`f` is a nondecreasing function of `k`.** If every sublevel set of `f` above its infimum
-`a₀` is a sublevel set of `k`, then `k u ≤ k v` forces `f u ≤ f v`. -/
+/-- Let $f$ be never $-\infty$, with $a_0 \le f(x)$ for every $x$. Assume that for every real
+$\alpha > a_0$ there is $c > 0$ with $\{f \le \alpha\} = \{k \le c\}$. Then $k(u) \le k(v)$
+implies $f(u) \le f(v)$: $f$ is a nondecreasing function of $k$. -/
 theorem le_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, (a₀ : EReal) ≤ f x)
     (hlev : ∀ α : ℝ, a₀ < α → ∃ c : ℝ, 0 < c ∧
       {x : E | f x ≤ (α : EReal)} = {x : E | k x ≤ (c : EReal)})
@@ -1418,8 +1599,8 @@ theorem le_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, (a�
   exact hu
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- **`f` is `+∞` wherever `k` is.** Same hypotheses as `le_of_forall_setOf_le_eq`: a finite value
-of `f` at `u` would put `u` in a sublevel set of `k`. -/
+/-- Under the hypotheses of `ConvexAnalysis.le_of_forall_setOf_le_eq`, $k(u) = +\infty$ implies
+$f(u) = +\infty$. A finite value of $f$ at $u$ would put $u$ in a sublevel set of $k$. -/
 theorem eq_top_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, (a₀ : EReal) ≤ f x)
     (hlev : ∀ α : ℝ, a₀ < α → ∃ c : ℝ, 0 < c ∧
       {x : E | f x ≤ (α : EReal)} = {x : E | k x ≤ (c : EReal)})
@@ -1440,8 +1621,8 @@ theorem eq_top_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, 
     rwa [hu] at hmem'
   exact absurd (top_le_iff.1 hc) (EReal.coe_ne_top c)
 
-/-- A gauge either takes the value `1` somewhere — supplying Rockafellar's ray — or takes only the
-values `0` and `+∞`, in which case its sublevel sets are a single cone. -/
+/-- A gauge $k$ either takes the value $1$ at some point, or takes only the values $0$ and
+$+\infty$. In the second case its sublevel sets are one cone. -/
 theorem IsGauge.exists_eq_one_or_forall_eq_zero_or_eq_top (hk : IsGauge k) :
     (∃ x₁ : E, k x₁ = 1) ∨ ∀ x : E, k x = 0 ∨ k x = ⊤ := by
   by_cases hray : ∃ x₁ : E, k x₁ = 1
@@ -1469,8 +1650,9 @@ section IsGaugeLikeTopology
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] {f : E → EReal} {g : ℝ → EReal} {k : E → EReal}
 
-/-- **The gauge attached to a gauge-like function**: the gauge of one sublevel set, of which every
-sublevel set of `f` above the infimum is again a sublevel set. -/
+/-- Let $E$ be a topological vector space, and let $f$ be gauge-like, convex and closed with
+$f(0) = a_0$ real. Then there is a closed gauge $k$ such that for every real $\alpha > a_0$
+there is $c > 0$ with $\{f \le \alpha\} = \{k \le c\}$. -/
 theorem IsGaugeLike.exists_isGauge_setOf_le_eq (hgl : IsGaugeLike f) (hconv : ConvexFn f)
     (hcl : ClosedConvex f) {a₀ : ℝ} (h0 : f 0 = (a₀ : EReal)) :
     ∃ k : E → EReal, IsGauge k ∧ ClosedConvex k ∧ ∀ α : ℝ, a₀ < α → ∃ c : ℝ, 0 < c ∧
@@ -1490,9 +1672,10 @@ theorem IsGaugeLike.exists_isGauge_setOf_le_eq (hgl : IsGaugeLike f) (hconv : Co
   obtain ⟨c, hc, hset⟩ := hgl.exists_setOf_le_eq_smul_setOf_le hα' hβ
   exact ⟨c, hc, by rw [hset, setOf_gaugeFn_le_pos hDconv hD0 hDcl hc]⟩
 
-/-- **The converse half**: a gauge-like closed proper convex function is `g ∘ k` for a closed
-gauge `k` and a non-constant nondecreasing closed convex function `g` of the half-line that is
-finite at some positive level. -/
+/-- Let $E$ be a topological vector space, and let $f$ be a gauge-like closed proper convex function
+on $E$. Then $f = g \circ k$ for a closed gauge $k$ and a function $g$ in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$ and $g(\zeta) < +\infty$
+for some $\zeta > 0$. This is the converse half of Theorem 15.3 of [rockafellar1970convex]. -/
 theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : ConvexFn f)
     (hcl : ClosedConvex f) (hpr : ProperConvex f) :
     ∃ (g : ℝ → EReal) (k : E → EReal), MonotoneHalfLineFn g ∧
@@ -1591,8 +1774,10 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       · rw [monotoneComp_of_eq_top _ hx]
         exact htop x hx
 
-/-- **The forward half, in the packaging the converse produces**: `g ∘ k` is gauge-like. This is
-`setOf_monotoneComp_le_eq_smul` with the auxiliary set named. -/
+/-- Let $E$ be a topological vector space, let $k$ be a closed gauge on $E$, and let $g$ be in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$ and $g(\zeta) < +\infty$
+for some $\zeta > 0$. Then $g \circ k$ is gauge-like. This is
+`ConvexAnalysis.setOf_monotoneComp_le_eq_smul` with the auxiliary set named. -/
 theorem isGaugeLike_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : MonotoneHalfLineFn g)
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
     IsGaugeLike (monotoneComp g k) := by
@@ -1608,10 +1793,12 @@ theorem isGaugeLike_monotoneComp (hk : IsGauge k) (hkc : ClosedConvex k) (hg : M
 
 end IsGaugeLikeTopology
 
-/-! ### The characterisation of gauge-like functions
+/-!
+### The characterization of gauge-like functions
 
-The two halves, assembled. The pairing enters only through the forward implication, where
-closedness of `g ∘ k` comes from Fenchel–Moreau. -/
+The two halves together. The pairing enters only through the forward implication, where the
+closedness of $g \circ k$ comes from the Fenchel–Moreau theorem.
+-/
 
 section Characterisation
 
@@ -1621,11 +1808,16 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   [ContinuousSMul ℝ F] {f : E → EReal}
 
 omit [LocallyConvexSpace ℝ E] in
-/-- **The conjugate of a gauge-like closed proper convex function is gauge-like too.**
-`convexConj_monotoneComp` says which composite it is; what has
-to be checked is that `g⁺` satisfies the same two side conditions as `g`, and conjugacy *exchanges*
-them — `g` finite at a positive level makes `g⁺` non-constant, and `g` non-constant makes `g⁺`
-finite at a positive level. -/
+/-- Let $E$ and $F$ be topological vector spaces, let every $\langle x, \cdot \rangle$ be continuous
+on $F$, let $k$ be a closed gauge on $E$, and let $g$ be in `ConvexAnalysis.MonotoneHalfLineFn`
+with $g(\zeta) < +\infty$ for some $\zeta > 0$ and $g(0) < g(t)$ for some $t > 0$. Then the
+conjugate $(g \circ k)^*$ is gauge-like. This is part of Theorem 15.3 of
+[rockafellar1970convex].
+
+`ConvexAnalysis.convexConj_monotoneComp` identifies the conjugate as $g^+ \circ k^\circ$. It
+remains to check that $g^+$ satisfies the two side conditions of $g$, and conjugacy exchanges
+them: $g$ finite at a positive point makes $g^+$ non-constant, and $g$ non-constant makes $g^+$
+finite at a positive point. -/
 theorem isGaugeLike_convexConj_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsContinuousPairing B.flip]
     {g : ℝ → EReal} {k : E → EReal} (hk : IsGauge k) (hkc : ClosedConvex k)
     (hg : MonotoneHalfLineFn g) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤)
@@ -1636,13 +1828,17 @@ theorem isGaugeLike_convexConj_monotoneComp (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ
     (monotoneHalfLineFn_monotoneConj hg) (MonotoneHalfLineFn.exists_lt_monotoneConj hg hfin)
     (MonotoneHalfLineFn.exists_monotoneConj_ne_top hg hne)
 
-/-- **A function is a gauge-like closed proper convex function exactly when it is `g ∘ k`** for a
-closed gauge `k` and a non-constant nondecreasing closed convex function `g` of the half-line which
-is finite at some positive level.
+/-- Let $E$ be a locally convex space, and let $B$ be a pairing of $E$ with a topological vector
+space $F$ that is compatible with the topology of $E$ and for which every
+$\langle x, \cdot \rangle$ is continuous. A function $f$ on $E$ is a gauge-like closed proper
+convex function if and only if $f = g \circ k$ for a closed gauge $k$ and a function $g$ in
+`ConvexAnalysis.MonotoneHalfLineFn` with $g(0) < g(t)$ for some $t > 0$ and $g(\zeta) < +\infty$
+for some $\zeta > 0$. This is the first assertion of Theorem 15.3 of [rockafellar1970convex].
 
-The conjugacy formula that accompanies the theorem is `convexConj_monotoneComp`,
-`(g ∘ k)* = g⁺ ∘ k°`; it needs neither the pairing hypotheses of the forward implication nor
-non-constancy. -/
+The conclusion does not mention $B$; the pairing serves the proof of closedness in the forward
+direction. The conjugacy formula of the theorem is `ConvexAnalysis.convexConj_monotoneComp`,
+$(g \circ k)^* = g^+ \circ k^\circ$, which needs neither the hypotheses on the pairing nor that
+$g$ is non-constant. -/
 theorem closedProperConvexFn_and_isGaugeLike_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) [IsCompatiblePairing B]
     [IsContinuousPairing B.flip] :
     (ClosedProperConvexFn f ∧ IsGaugeLike f) ↔

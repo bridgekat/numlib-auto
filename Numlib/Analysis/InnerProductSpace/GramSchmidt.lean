@@ -12,22 +12,63 @@ import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 
 /-!
-# Gram–Schmidt: flag uniqueness, naturality, and the modified process
+# Gram–Schmidt orthogonalization: uniqueness, naturality and the modified process
 
-An orthonormal family `u` with `span {u_0, …, u_j} = span {f_0, …, f_j}` for every `j` agrees with
-the Gram–Schmidt orthonormalization of `f` up to unimodular scalars, and equals it under the
-sign normalization `re ⟪u_j, f_j⟫ > 0`. This is the "same method, different implementation"
-principle behind classical/modified Gram–Schmidt Arnoldi, Householder Arnoldi (up to signs),
-and the identification of the Lanczos vectors with the normalized conjugate-gradient residuals.
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$(f_j)_{j \in \iota}$ be a family of vectors, indexed by a well-ordered set in which every index has
+finitely many predecessors (for instance $\mathbb{N}$). Mathlib's Gram–Schmidt vectors
+`InnerProductSpace.gramSchmidt` are $g_j = f_j - \sum_{i < j} \frac{\langle g_i, f_j
+\rangle}{\|g_i\|^2} g_i$, and the normalized vectors `InnerProductSpace.gramSchmidtNormed` are
+$e_j = g_j / \|g_j\|$, with $e_j = 0$ when $g_j = 0$. This file proves that an orthonormal family
+$(u_j)$ with $\operatorname{span}\{u_i : i \le j\} = \operatorname{span}\{f_i : i \le j\}$ for every
+$j$ satisfies $u_j = \varepsilon_j e_j$ with $|\varepsilon_j| = 1$, and $u_j = e_j$ when
+$\langle u_j, f_j \rangle > 0$. This uniqueness principle identifies the vectors that different
+algorithms compute: the classical and the modified Gram–Schmidt Arnoldi processes, the Householder
+Arnoldi process (up to signs), and the Lanczos vectors with the normalized conjugate-gradient
+residuals.
 
-Gram–Schmidt commutes with linear isometries (`InnerProductSpace.gramSchmidt_comp_linearIsometry`,
-`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`), which carries every process built on it
-(Arnoldi, Lanczos) between isometric spaces, for instance from an operator to its matrix.
+Gram–Schmidt commutes with linear isometries, so every process built on it (Arnoldi, Lanczos)
+carries over between isometric spaces, for instance from an operator to its matrix. The modified
+Gram–Schmidt sweep subtracts the components of a vector along $q_0, q_1, \dots$ one at a time, each
+against the current vector. Against an orthogonal family it gives the classical vector
+$a - \sum_j \langle q_j, a \rangle q_j$, so in exact arithmetic the modified process computes the
+Gram–Schmidt vectors.
 
-The modified Gram–Schmidt sweep `InnerProductSpace.modifiedGramSchmidtSweep` subtracts the
-components along `q 0, q 1, …` one at a time, each against the current vector; against an
-orthogonal family it returns the classical vector and leaves each coefficient unchanged, so in
-exact arithmetic the modified process computes the Gram–Schmidt vectors.
+## Main definitions
+
+* `InnerProductSpace.modifiedGramSchmidtSweep`: one sweep $v_0 = a$,
+  $v_{j+1} = v_j - \langle q_j, v_j \rangle q_j$ of the modified Gram–Schmidt process.
+
+## Main results
+
+* `InnerProductSpace.span_gramSchmidt_of_isLowerSet`: the vectors $g_i$ and $f_i$ with $i$ in a
+  lower set $J$ span the same subspace.
+* `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed`: an orthonormal family with the same
+  spans as $(f_j)$ is $(\varepsilon_j e_j)$ with $|\varepsilon_j| = 1$.
+* `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos`: if moreover
+  $\langle u_j, f_j \rangle > 0$, then $u_j = e_j$.
+* `InnerProductSpace.inner_gramSchmidtNormed_eq_zero`,
+  `InnerProductSpace.sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal`,
+  `InnerProductSpace.eq_sum_inner_smul_gramSchmidtNormed`: orthogonality and orthonormal expansions
+  in the vectors $e_i$, without linear independence of $(f_j)$.
+* `InnerProductSpace.gramSchmidt_comp_linearIsometry`,
+  `InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`: Gram–Schmidt commutes with linear
+  isometries.
+* `InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`: against a pairwise orthogonal family, the
+  modified sweep gives $a - \sum_{j < k} \langle q_j, a \rangle q_j$.
+* `InnerProductSpace.modifiedGramSchmidt_eq_gramSchmidt`: the modified sweep of $f_n$ against
+  $e_0, \dots, e_{n-1}$ is $g_n$.
+
+## Implementation notes
+
+* The inner product $\langle x, y \rangle$ is `inner 𝕜 x y`. It is conjugate-linear in $x$, so
+  $\langle q, v \rangle q$ is the component of $v$ along a unit vector $q$.
+* The vector $g_j$ is $0$ exactly when $f_j$ lies in the span of the vectors $f_i$ with $i < j$. The
+  results on breakdown hold for every family $(f_j)$, because the vectors that vanish contribute
+  nothing.
+* The modified sweep takes an infinite sequence $(q_j)_{j \in \mathbb{N}}$. A finite family
+  $q_0, \dots, q_{k-1}$ is used through its extension by zero, and the sweep is constant after step
+  $k$.
 -/
 
 namespace InnerProductSpace
@@ -37,9 +78,13 @@ open scoped ComplexOrder
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable {ι : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]
 
-/-- **Gram–Schmidt preserves the span of every lower set of indices**, not only of an `Iic` or an
-`Iio`: a lower set is the union of the `Iic` of its members, and `span_gramSchmidt_Iic` applies to
-each. -/
+/-- Let $(f_i)_{i \in \iota}$ be a family in $E$ and let $J \subseteq \iota$ be a lower set: if
+$j \in J$ and $i \le j$, then $i \in J$. Then the Gram–Schmidt vectors with indices in $J$ span
+the same subspace as the vectors $f_i$ with indices in $J$:
+$$\operatorname{span}\{g_i : i \in J\} = \operatorname{span}\{f_i : i \in J\}.$$
+
+Mathlib's `InnerProductSpace.span_gramSchmidt_Iic` is the case $J = \{i : i \le j\}$. A lower
+set is the union of these sets for its members, and the general case follows. -/
 theorem span_gramSchmidt_of_isLowerSet (f : ι → E) {J : Set ι} (hJ : IsLowerSet J) :
     Submodule.span 𝕜 (gramSchmidt 𝕜 f '' J) = Submodule.span 𝕜 (f '' J) := by
   have hcover : J = ⋃ i ∈ J, Set.Iic i := by
@@ -50,8 +95,8 @@ theorem span_gramSchmidt_of_isLowerSet (f : ι → E) {J : Set ι} (hJ : IsLower
     Submodule.span_iUnion₂]
   exact iSup_congr fun i => iSup_congr fun _ => span_gramSchmidt_Iic 𝕜 f i
 
-/-- The `j`-th Gram–Schmidt vector is the component of `f j` orthogonal to the span of the
-previous ones: the discarded part `f j - gramSchmidt f j` lies in `span {f i | i < j}`. -/
+/-- For every index $j$, the difference $f_j - g_j$ lies in $\operatorname{span}\{f_i : i < j\}$:
+the Gram–Schmidt vector $g_j$ is $f_j$ minus a vector in the span of the earlier vectors. -/
 theorem sub_gramSchmidt_mem_span (f : ι → E) (j : ι) :
     f j - gramSchmidt 𝕜 f j ∈ Submodule.span 𝕜 (f '' Set.Iio j) := by
   rw [gramSchmidt_def, sub_sub_cancel, ← span_gramSchmidt_Iio 𝕜 f j]
@@ -61,8 +106,8 @@ theorem sub_gramSchmidt_mem_span (f : ι → E) (j : ι) :
     exact Submodule.subset_span ⟨i, Finset.mem_Iio.1 hi, rfl⟩
   exact hle (Submodule.starProjection_apply_mem _ (f j))
 
-/-- The `j`-th Gram–Schmidt vector is orthogonal to the span of the previous ones:
-`gramSchmidt f j ∈ (span {f i | i < j})ᗮ`. -/
+/-- For every index $j$, the Gram–Schmidt vector $g_j$ is orthogonal to
+$\operatorname{span}\{f_i : i < j\}$. -/
 theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
     gramSchmidt 𝕜 f j ∈ (Submodule.span 𝕜 (f '' Set.Iio j))ᗮ := by
   rw [Submodule.mem_orthogonal']
@@ -74,8 +119,8 @@ theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
     exact gramSchmidt_inv_triangular 𝕜 f hi
   exact hle hu
 
-/-- `⟪gramSchmidt f j, f j⟫ = ‖gramSchmidt f j‖²`: the Gram–Schmidt vector is the orthogonal
-component of `f j`. -/
+/-- For every index $j$, $\langle g_j, f_j \rangle = \|g_j\|^2$, because $g_j$ is the component of
+$f_j$ orthogonal to the earlier vectors. -/
 theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
     inner 𝕜 (gramSchmidt 𝕜 f j) (f j) = ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ^ 2 := by
   conv_lhs => rw [gramSchmidt_def'' 𝕜 f j]
@@ -84,7 +129,8 @@ theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
   refine Finset.sum_eq_zero fun i hi => ?_
   rw [inner_smul_right, gramSchmidt_orthogonal 𝕜 f (Finset.mem_Iio.1 hi).ne', mul_zero]
 
-/-- `⟪gramSchmidtNormed f j, f j⟫ = ‖gramSchmidt f j‖ ≥ 0`. -/
+/-- For every index $j$, $\langle e_j, f_j \rangle = \|g_j\|$. In particular this inner product is a
+nonnegative real number. -/
 theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
     inner 𝕜 (gramSchmidtNormed 𝕜 f j) (f j) = (‖gramSchmidt 𝕜 f j‖ : 𝕜) := by
   rw [gramSchmidtNormed, inner_smul_left, inner_gramSchmidt_self, RCLike.conj_inv,
@@ -93,8 +139,16 @@ theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
   · simp [h]
   · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
 
-/-- Flag uniqueness: an orthonormal family spanning the same flag as `f` differs from
-`gramSchmidtNormed 𝕜 f` by unimodular scalars. -/
+/-- Let $(f_j)_{j \in \iota}$ and $(u_j)_{j \in \iota}$ be families in $E$. Suppose that $(u_j)$ is
+orthonormal and that
+$$\operatorname{span}\{u_i : i \le j\} = \operatorname{span}\{f_i : i \le j\} \quad \text{for
+  every } j.$$
+Then for every index $j$ there is a scalar $\varepsilon \in \mathbb{K}$ with $|\varepsilon| = 1$
+and $u_j = \varepsilon e_j$, where $e_j$ is the normalized Gram–Schmidt vector
+`InnerProductSpace.gramSchmidtNormed`.
+
+So an orthonormal basis of the flag of subspaces spanned by $(f_j)$ is unique up to unimodular
+scalars. -/
 theorem exists_norm_eq_one_smul_gramSchmidtNormed {f u : ι → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j))
     (j : ι) : ∃ ε : 𝕜, ‖ε‖ = 1 ∧ u j = ε • gramSchmidtNormed 𝕜 f j := by
@@ -147,7 +201,7 @@ theorem exists_norm_eq_one_smul_gramSchmidtNormed {f u : ι → E} (hu : Orthono
     exact hnorm
   · rw [huj, gramSchmidtNormed, smul_smul, mul_assoc, mul_inv_cancel₀ hgn, mul_one]
 
-/-- A unimodular scalar whose product with a nonnegative real is positive is `1`. -/
+/-- A scalar $w$ with $|w| = 1$ such that $w r > 0$ for a real number $r \ge 0$ is equal to $1$. -/
 private theorem eq_one_of_norm_eq_one_of_mul_ofReal_pos {w : 𝕜} (hw : ‖w‖ = 1) {r : ℝ}
     (hr : 0 ≤ r) (hpos : 0 < w * (r : 𝕜)) : w = 1 := by
   rw [mul_comm, RCLike.pos_iff, RCLike.re_ofReal_mul, RCLike.im_ofReal_mul] at hpos
@@ -160,13 +214,16 @@ private theorem eq_one_of_norm_eq_one_of_mul_ofReal_pos {w : 𝕜} (hw : ‖w‖
   · rw [RCLike.one_re]; nlinarith
   · rw [RCLike.one_im, him]
 
-/-- With the sign normalization `⟪u_j, f_j⟫ > 0`, the orthonormal basis of the flag is
-Gram–Schmidt itself.
+/-- Let $(f_j)$ and $(u_j)$ be families in $E$ indexed by $\iota$. Suppose that $(u_j)$ is
+orthonormal and that $\operatorname{span}\{u_i : i \le j\} = \operatorname{span}\{f_i : i \le
+j\}$ for every $j$. If $\langle u_j, f_j \rangle > 0$ for an index $j$, then $u_j = e_j$, the
+normalized Gram–Schmidt vector `InnerProductSpace.gramSchmidtNormed`.
 
-The hypothesis is positivity of `⟪u_j, f_j⟫` in `𝕜` (`RCLike` order, i.e. the inner product is a
-positive real), not merely of its real part: over `ℂ` a unimodular factor `ε` with `re ε > 0` is
-not forced to be `1`, so the `re`-only version of this statement is false. Over `ℝ` the two
-hypotheses agree. -/
+The hypothesis $\langle u_j, f_j \rangle > 0$ uses the order of `RCLike` on $\mathbb{K}$: the
+inner product is a positive real number. A positive real part is not enough over $\mathbb{C}$,
+because a unimodular factor $\varepsilon$ with $\operatorname{Re} \varepsilon > 0$ need not be
+$1$. So the statement with the hypothesis $\operatorname{Re} \langle u_j, f_j \rangle > 0$ is
+false. Over $\mathbb{R}$ the two hypotheses agree. -/
 theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j))
     (j : ι) (hpos : 0 < inner 𝕜 (u j) (f j)) : u j = gramSchmidtNormed 𝕜 f j := by
@@ -179,21 +236,28 @@ theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 
     rwa [RCLike.conj_conj, map_one] at this
   rw [hue, hε1, one_smul]
 
-/-! ### Gram–Schmidt with breakdown
+/-!
+### Gram–Schmidt with breakdown
 
-`gramSchmidtNormed` is `0` from the first linear dependence onwards. The following facts hold with
-no independence hypothesis: past breakdown the vectors vanish and contribute nothing. -/
+The vector $g_j$ is $0$ exactly when $f_j$ lies in the span of the vectors $f_i$ with $i < j$, and
+then $e_j = 0$. The following facts hold with no linear independence hypothesis, because the vectors
+that vanish contribute nothing.
+-/
 
 section Breakdown
 
-/-- **Distinct normalized Gram–Schmidt vectors are orthogonal**, at every pair of indices and with
-no hypothesis: past breakdown they are `0`, and the inner product vanishes for that reason. -/
+/-- For all indices $i \ne j$, the normalized Gram–Schmidt vectors satisfy
+$\langle e_i, e_j \rangle = 0$. No hypothesis on $(f_j)$ is needed: a vector $e_i$ that vanishes
+is orthogonal to every vector. -/
 theorem inner_gramSchmidtNormed_eq_zero (f : ι → E) {i j : ι} (h : i ≠ j) :
     inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) = 0 := by
   simp [gramSchmidtNormed, inner_smul_left, inner_smul_right, gramSchmidt_orthogonal 𝕜 f h]
 
-/-- What is left of `x` after subtracting its expansion in the first `n` normalized Gram–Schmidt
-vectors is orthogonal to all of them, breakdown included. -/
+/-- Let $(f_i)_{i \in \mathbb{N}}$ be a family in $E$, let $x \in E$ and let $n \in \mathbb{N}$.
+Then the vector
+$$x - \sum_{i < n} \langle e_i, x \rangle e_i$$
+is orthogonal to $\operatorname{span}\{e_i : i < n\}$. No linear independence of $(f_i)$ is
+needed. -/
 theorem sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal (f : ℕ → E) (x : E) (n : ℕ) :
     x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i ∈
       (Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n))ᗮ := by
@@ -214,8 +278,11 @@ theorem sub_sum_inner_smul_gramSchmidtNormed_mem_orthogonal (f : ℕ → E) (x :
   | add z w _ _ hz hw => rw [inner_add_left, hz, hw, add_zero]
   | smul c z _ hz => rw [inner_smul_left, hz, mul_zero]
 
-/-- Every element of the span of the first `n` normalized Gram–Schmidt vectors is its own
-orthonormal expansion in them, breakdown included: the vectors that vanish contribute nothing. -/
+/-- Let $(f_i)_{i \in \mathbb{N}}$ be a family in $E$ and let $n \in \mathbb{N}$. Every
+$x \in \operatorname{span}\{e_i : i < n\}$ is its own orthonormal expansion:
+$$x = \sum_{i < n} \langle e_i, x \rangle e_i.$$
+No linear independence of $(f_i)$ is needed, because the vectors $e_i$ that vanish contribute
+nothing. -/
 theorem eq_sum_inner_smul_gramSchmidtNormed (f : ℕ → E) {x : E} {n : ℕ}
     (hx : x ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n)) :
     x = ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i := by
@@ -234,9 +301,11 @@ section LinearIsometry
 
 variable {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E']
 
-/-- **Gram–Schmidt commutes with linear isometries**: orthogonalizing the image `e ∘ f` of a family
-under a linear isometry `e` gives the image of its Gram–Schmidt vectors. The process only sees
-inner products and norms, which `e` preserves. -/
+/-- Let $E'$ be another inner product space over $\mathbb{K}$, let $T : E \to E'$ be a linear
+isometry and let $(f_i)$ be a family in $E$. Then for every index $n$, the $n$-th Gram–Schmidt
+vector of the family $(T f_i)$ is $T g_n$.
+
+The process uses only inner products and norms, which $T$ preserves. -/
 theorem gramSchmidt_comp_linearIsometry (e : E →ₗᵢ[𝕜] E') (f : ι → E) (n : ι) :
     gramSchmidt 𝕜 (e ∘ f) n = e (gramSchmidt 𝕜 f n) := by
   induction n using WellFoundedLT.induction with
@@ -248,8 +317,11 @@ theorem gramSchmidt_comp_linearIsometry (e : E →ₗᵢ[𝕜] E') (f : ι → E
     rw [ih i (Finset.mem_Iio.1 hi), LinearIsometry.inner_map_map,
       LinearIsometry.norm_map, map_smul]
 
-/-- **Normalized Gram–Schmidt commutes with linear isometries**: the normalized form of
-`InnerProductSpace.gramSchmidt_comp_linearIsometry`. -/
+/-- Let $E'$ be another inner product space over $\mathbb{K}$, let $T : E \to E'$ be a linear
+isometry and let $(f_i)$ be a family in $E$. Then for every index $n$, the $n$-th normalized
+Gram–Schmidt vector of the family $(T f_i)$ is $T e_n$.
+
+This is the normalized form of `InnerProductSpace.gramSchmidt_comp_linearIsometry`. -/
 theorem gramSchmidtNormed_comp_linearIsometry (e : E →ₗᵢ[𝕜] E') (f : ι → E) (n : ι) :
     gramSchmidtNormed 𝕜 (e ∘ f) n = e (gramSchmidtNormed 𝕜 f n) := by
   rw [gramSchmidtNormed, gramSchmidtNormed, gramSchmidt_comp_linearIsometry,
@@ -261,34 +333,39 @@ section ModifiedGramSchmidt
 
 variable (𝕜)
 
-/-- **One sweep of the modified Gram–Schmidt process** against a list of vectors `q 0, q 1, …`:
-starting from `a`, the component along `q 0` is removed, then the component of the *result* along
-`q 1`, and so on. Formally `modifiedGramSchmidtSweep 𝕜 q a 0 = a` and
-`modifiedGramSchmidtSweep 𝕜 q a (j + 1) = v - ⟪q j, v⟫ • q j` with
-`v = modifiedGramSchmidtSweep 𝕜 q a j`.
+/-- Let $(q_j)_{j \in \mathbb{N}}$ be vectors in $E$ and let $a \in E$. **One sweep of the modified
+Gram–Schmidt process** against $(q_j)$, starting from $a$, is the sequence
+$$v_0 = a, \qquad v_{j+1} = v_j - \langle q_j, v_j \rangle q_j.$$
+Each step removes from the current vector its component along the next vector $q_j$, when
+$\|q_j\| = 1$. The term `modifiedGramSchmidtSweep 𝕜 q a j` is $v_j$.
 
-Recomputing each inner product on the current vector is what distinguishes the modified process
-from the classical one, which takes all inner products against the original `a`; in exact
-arithmetic the two agree for an orthogonal family (`modifiedGramSchmidtSweep_eq_sub_sum`), and the
-modified order of operations is the numerically stable one. A finite family `q : Fin k → E` is
-used through its extension by zero, on which the sweep stalls after step `k`. -/
+The classical process takes all inner products against the original vector $a$. The modified
+process takes each one against the current vector; this order of operations is the numerically
+stable one. In exact arithmetic the two agree for an orthogonal family
+(`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`). A finite family $q_0, \dots, q_{k-1}$
+is used through its extension by zero, and then the sweep is constant after step $k$. -/
 noncomputable def modifiedGramSchmidtSweep (q : ℕ → E) (a : E) : ℕ → E
   | 0 => a
   | j + 1 =>
     modifiedGramSchmidtSweep q a j - inner 𝕜 (q j) (modifiedGramSchmidtSweep q a j) • q j
 
+/-- The modified Gram–Schmidt sweep starts at $a$: $v_0 = a$. -/
 @[simp]
 theorem modifiedGramSchmidtSweep_zero (q : ℕ → E) (a : E) :
     modifiedGramSchmidtSweep 𝕜 q a 0 = a :=
   rfl
 
+/-- One step of the modified Gram–Schmidt sweep: $v_{j+1} = v_j - \langle q_j, v_j \rangle q_j$. -/
 theorem modifiedGramSchmidtSweep_succ (q : ℕ → E) (a : E) (j : ℕ) :
     modifiedGramSchmidtSweep 𝕜 q a (j + 1) = modifiedGramSchmidtSweep 𝕜 q a j -
       inner 𝕜 (q j) (modifiedGramSchmidtSweep 𝕜 q a j) • q j :=
   rfl
 
-/-- The sweep up to step `k` reads only `q 0, …, q (k - 1)`: two families that agree there give the
-same vector. -/
+/-- Let $(q_j)$ and $(q'_j)$ be sequences in $E$ with $q_i = q'_i$ for all $i < k$. Then the
+modified Gram–Schmidt sweeps against $(q_j)$ and against $(q'_j)$, starting from the same vector
+$a$, agree at step $k$.
+
+So the vector $v_k$ depends only on $q_0, \dots, q_{k-1}$. -/
 theorem modifiedGramSchmidtSweep_congr {q q' : ℕ → E} (a : E) {k : ℕ}
     (h : ∀ i < k, q i = q' i) :
     modifiedGramSchmidtSweep 𝕜 q a k = modifiedGramSchmidtSweep 𝕜 q' a k := by
@@ -298,11 +375,15 @@ theorem modifiedGramSchmidtSweep_congr {q q' : ℕ → E} (a : E) {k : ℕ}
     rw [modifiedGramSchmidtSweep_succ, modifiedGramSchmidtSweep_succ,
       ih fun i hi => h i (hi.trans k.lt_succ_self), h k k.lt_succ_self]
 
-/-- **The modified sweep against an orthogonal family is the classical Gram–Schmidt vector**:
-`modifiedGramSchmidtSweep 𝕜 q a k = a - ∑ j < k, ⟪q j, a⟫ • q j`. Each subtraction leaves the
-inner products with the later `q j` unchanged, because the vector subtracted at step `i` is a
-multiple of `q i ⊥ q j`. Only pairwise orthogonality is used, not normalization; for an
-orthonormal family pass `fun _ _ h => hq.2 h`. -/
+/-- Let $(q_j)_{j \in \mathbb{N}}$ be pairwise orthogonal vectors in $E$:
+$\langle q_i, q_j \rangle = 0$ for $i \ne j$. Then for every $a \in E$ and $k \in \mathbb{N}$,
+the modified Gram–Schmidt sweep gives the classical Gram–Schmidt vector:
+$$v_k = a - \sum_{j < k} \langle q_j, a \rangle q_j.$$
+
+The vector subtracted at step $i$ is a multiple of $q_i$, which is orthogonal to every later
+$q_j$. So each subtraction leaves the inner products with the later vectors unchanged. Only
+orthogonality is used, not normalization. For an orthonormal family `hq : Orthonormal 𝕜 q`, the
+hypothesis is `fun _ _ h => hq.2 h`. -/
 theorem modifiedGramSchmidtSweep_eq_sub_sum {q : ℕ → E}
     (hq : Pairwise fun i j => inner 𝕜 (q i) (q j) = 0) (a : E) (k : ℕ) :
     modifiedGramSchmidtSweep 𝕜 q a k = a - ∑ j ∈ Finset.range k, inner 𝕜 (q j) a • q j := by
@@ -315,10 +396,12 @@ theorem modifiedGramSchmidtSweep_eq_sub_sum {q : ℕ → E}
       rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
     rw [modifiedGramSchmidtSweep_succ, hinner, ih, Finset.sum_range_succ, sub_sub]
 
-/-- **The modified sweep does not change the coefficient it is about to compute**: against an
-orthogonal family, `⟪q k, modifiedGramSchmidtSweep 𝕜 q a k⟫ = ⟪q k, a⟫`, so the coefficients of the
-modified process (taken against the current vector) are those of the classical one (taken against
-`a`). -/
+/-- Let $(q_j)_{j \in \mathbb{N}}$ be pairwise orthogonal vectors in $E$. Then for every $a \in E$
+and $k \in \mathbb{N}$, the sweep does not change the coefficient that it is about to compute:
+$$\langle q_k, v_k \rangle = \langle q_k, a \rangle.$$
+
+So the coefficients of the modified process, taken against the current vector, are those of the
+classical process, taken against $a$. -/
 theorem inner_modifiedGramSchmidtSweep_self {q : ℕ → E}
     (hq : Pairwise fun i j => inner 𝕜 (q i) (q j) = 0) (a : E) (k : ℕ) :
     inner 𝕜 (q k) (modifiedGramSchmidtSweep 𝕜 q a k) = inner 𝕜 (q k) a := by
@@ -326,9 +409,10 @@ theorem inner_modifiedGramSchmidtSweep_self {q : ℕ → E}
   refine sub_eq_self.2 (Finset.sum_eq_zero fun j hj => ?_)
   rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
 
-/-- The rank-one term of the classical Gram–Schmidt formula, written with the normalized
-vectors: `⟪gramSchmidtNormed f i, x⟫ • gramSchmidtNormed f i` is the orthogonal projection of `x`
-on the line through `gramSchmidt f i`. -/
+/-- For every index $i$ and every $x \in E$,
+$$\langle e_i, x \rangle e_i = \frac{\langle g_i, x \rangle}{\|g_i\|^2} g_i,$$
+the orthogonal projection of $x$ onto the line spanned by $g_i$. If $g_i = 0$, both sides are
+$0$. -/
 theorem inner_gramSchmidtNormed_smul_self (f : ι → E) (i : ι) (x : E) :
     inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i =
       (inner 𝕜 (gramSchmidt 𝕜 f i) x / (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2) • gramSchmidt 𝕜 f i := by
@@ -338,9 +422,13 @@ theorem inner_gramSchmidtNormed_smul_self (f : ι → E) (i : ι) (x : E) :
   · congr 1
     field_simp
 
-/-- **The modified Gram–Schmidt method computes the Gram–Schmidt vectors**: sweeping `f n` against
-the normalized vectors `gramSchmidtNormed 𝕜 f 0, …, gramSchmidtNormed 𝕜 f (n - 1)` one after the
-other returns `gramSchmidt 𝕜 f n`. -/
+/-- Let $(f_i)_{i \in \mathbb{N}}$ be a family in $E$ and let $n \in \mathbb{N}$. The modified
+Gram–Schmidt sweep of $f_n$ against the normalized vectors $e_0, e_1, \dots$ gives the
+Gram–Schmidt vector $g_n$ after $n$ steps: if $v_0 = f_n$ and
+$v_{j+1} = v_j - \langle e_j, v_j \rangle e_j$, then $v_n = g_n$.
+
+So the modified Gram–Schmidt method computes the Gram–Schmidt vectors in exact arithmetic. No
+linear independence of $(f_i)$ is needed. -/
 theorem modifiedGramSchmidt_eq_gramSchmidt (f : ℕ → E) (n : ℕ) :
     modifiedGramSchmidtSweep 𝕜 (gramSchmidtNormed 𝕜 f) (f n) n = gramSchmidt 𝕜 f n := by
   have hq : Pairwise fun i j =>

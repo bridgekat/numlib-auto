@@ -10,37 +10,59 @@ import Numlib.Approximation.Chebyshev
 /-!
 # Bernstein polynomials and Bézier curves
 
-The recursion `b_{n+1,k+1} = (1 - X) b_{n,k+1} + X b_{n,k}` of the Bernstein polynomials, their
-degree bound and their basis property, and Bézier curves `B_n(P; t) = ∑_k b_{n,k}(t) P_k` with de
-Casteljau's evaluation, the endpoint, reversal, convex-hull and affine-equivariance properties.
-The material is [quarteroni2000numerical] §8.7.1 and Farin, *Curves and Surfaces for CAGD*,
-chapters 4–5.
+This file studies the Bernstein polynomials $b_{n,k}(X) = \binom{n}{k} X^k (1 - X)^{n-k}$ and the
+Bézier curves built from them. It proves the recursion $b_{n+1,k+1} = (1 - X)\, b_{n,k+1} + X\,
+b_{n,k}$, the degree bound $\deg b_{n,k} \le n$, the linear independence of
+$b_{n,0}, \dots, b_{n,n}$ over any field of characteristic zero, and the fact that they form a basis
+of the polynomials of degree at most $n$ on any infinite subset of $\mathbb{R}$. The Bézier curve of
+the control points $P_0, \dots, P_n$ in a real vector space $E$ is
+$$B_n(P; t) = \sum_{k=0}^n b_{n,k}(t)\, P_k.$$
+De Casteljau's algorithm evaluates it, and it has the endpoint, reversal, convex-hull and
+affine-equivariance properties. The material follows §8.7.1 of [quarteroni2000numerical] and
+chapters 4–5 of Farin, *Curves and Surfaces for CAGD*.
 
-Mathlib has `bernsteinPolynomial R n ν : R[X]` with `eval_at_0`, `eval_at_1`, `derivative_succ`,
-`sum` (`∑_ν b_{n,ν} = 1`), `linearIndependent` (over `ℚ`), and the continuous functions
-`bernstein n ν : C(I, ℝ)` with `bernstein_nonneg` and the Weierstrass approximation; it has neither
-the recursion nor a basis statement nor any curve. The polynomial lemmas below are Mathlib-shaped
-and live in the `bernsteinPolynomial` namespace; the curve is `Bezier.curve` in a real vector space
-`E`, and needs no norm at all.
-
-This module is separate from the B-spline theory because nothing here needs a knot sequence: the
-Bernstein basis is the B-spline basis on the two knots `0, 1` each of multiplicity `n + 1`.
+Nothing here needs a knot sequence, so this module is separate from the B-spline theory of
+`Numlib.Approximation.BSpline`: the Bernstein basis is the B-spline basis on the two knots $0$ and
+$1$, each of multiplicity $n + 1$.
 
 ## Main definitions
 
-* `Bezier.curve P t` — the Bézier curve of the control points `P : Fin (n + 1) → E`.
-* `Bezier.casteljauStep`, `Bezier.casteljau` — de Casteljau's algorithm.
+* `bernsteinPolynomial.toPolyLE`: the Bernstein polynomial $b_{n,k}$ as an element of the space of
+  polynomial functions of degree at most $n$ on a set $X \subseteq \mathbb{R}$.
+* `Bezier.curve`: the Bézier curve $B_n(P; t)$ of the control points $P_0, \dots, P_n$.
+* `Bezier.casteljauStep`, `Bezier.casteljau`: one step of de Casteljau's construction, and de
+  Casteljau's algorithm.
 
 ## Main results
 
-* `bernsteinPolynomial.succ_succ`, `bernsteinPolynomial.succ_zero` — the recursion.
-* `bernsteinPolynomial.linearIndependent'` — linear independence over any field of characteristic
-  zero (Mathlib's `bernsteinPolynomial.linearIndependent` is over `ℚ`).
-* `bernsteinPolynomial.exists_basis_polyLE` — the Bernstein polynomials of degree `n` form a basis
-  of the polynomials of degree at most `n` on any infinite subset of the line.
-* `Bezier.casteljau_eq_curve` — de Casteljau's algorithm evaluates the Bézier curve.
+* `bernsteinPolynomial.succ_succ`, `bernsteinPolynomial.succ_zero`: the recursion of the Bernstein
+  polynomials.
+* `bernsteinPolynomial.degree_le`: $b_{n,k}$ has degree at most $n$.
+* `bernsteinPolynomial.linearIndependent'`: $b_{n,0}, \dots, b_{n,n}$ are linearly independent over
+  any field of characteristic zero.
+* `bernsteinPolynomial.exists_basis_polyLE`: on an infinite set $X \subseteq \mathbb{R}$, the
+  Bernstein polynomials of degree $n$ form a basis of the polynomial functions of degree at most
+  $n$.
+* `Bezier.curve_succ`: the Bézier recursion $B_{n+1}(P_0, \dots, P_{n+1}) = (1 - t) B_n(P_0, \dots,
+  P_n) + t B_n(P_1, \dots, P_{n+1})$.
+* `Bezier.casteljau_eq_curve`: de Casteljau's algorithm evaluates the Bézier curve.
 * `Bezier.curve_zero`, `Bezier.curve_one`, `Bezier.curve_rev`, `Bezier.curve_mem_convexHull`,
-  `Bezier.curve_affine` — the endpoint, reversal, convex-hull and affine-equivariance properties.
+  `Bezier.curve_affine`: the curve starts at $P_0$ and ends at $P_n$, reversing the control points
+  reverses the curve, the curve for $t \in [0, 1]$ lies in the convex hull of the control points,
+  and the curve commutes with affine maps.
+
+## Implementation notes
+
+* Mathlib has the polynomials `bernsteinPolynomial R n ν : R[X]` with
+  `bernsteinPolynomial.eval_at_0`, `bernsteinPolynomial.eval_at_1`,
+  `bernsteinPolynomial.derivative_succ`, `bernsteinPolynomial.sum` ($\sum_\nu b_{n,\nu} = 1$) and
+  `bernsteinPolynomial.linearIndependent` (over $\mathbb{Q}$), and the continuous functions
+  `bernstein n ν : C(I, ℝ)` with `bernstein_nonneg` and the Weierstrass approximation theorem. It
+  has neither the recursion, nor a basis statement, nor any curve. The polynomial lemmas of this
+  file follow the Mathlib style and are in the namespace `bernsteinPolynomial`.
+* The curve `Bezier.curve` takes values in an arbitrary real vector space `E` and needs no norm. The
+  control points are a family `P : Fin (n + 1) → E`, and the curve is defined for all
+  $t \in \mathbb{R}$.
 -/
 
 open Polynomial
@@ -49,8 +71,9 @@ namespace bernsteinPolynomial
 
 variable (R : Type*) [CommRing R]
 
-/-- **The Bernstein recursion** ([quarteroni2000numerical] §8.7.1):
-`b_{n+1,k+1} = (1 - X) b_{n,k+1} + X b_{n,k}`. -/
+/-- **The Bernstein recursion**: over a commutative ring $R$, for all $n, k \in \mathbb{N}$,
+$$b_{n+1,k+1} = (1 - X)\, b_{n,k+1} + X\, b_{n,k}$$
+in $R[X]$. This is the recursion of §8.7.1 of [quarteroni2000numerical]. -/
 theorem succ_succ (n k : ℕ) :
     bernsteinPolynomial R (n + 1) (k + 1)
       = (1 - X) * bernsteinPolynomial R n (k + 1) + X * bernsteinPolynomial R n k := by
@@ -65,14 +88,18 @@ theorem succ_succ (n k : ℕ) :
       Nat.succ_sub_succ]
     ring
 
-/-- The first column of the Bernstein recursion: `b_{n+1,0} = (1 - X) b_{n,0}`. -/
+/-- The first column of the Bernstein recursion: over a commutative ring $R$,
+$b_{n+1,0} = (1 - X)\, b_{n,0}$ in $R[X]$ for every $n \in \mathbb{N}$. -/
 theorem succ_zero (n : ℕ) :
     bernsteinPolynomial R (n + 1) 0 = (1 - X) * bernsteinPolynomial R n 0 := by
   simp only [bernsteinPolynomial, Nat.choose_zero_right, Nat.sub_zero, pow_succ]
   push_cast
   ring
 
-/-- A Bernstein polynomial of order `n` has degree at most `n`. -/
+/-- Over a nontrivial commutative ring $R$, the Bernstein polynomial $b_{n,k}$ has degree at most
+$n$, for all $n, k \in \mathbb{N}$.
+
+For $k > n$ the polynomial $b_{n,k}$ is $0$, whose degree is $-\infty$. -/
 theorem degree_le [Nontrivial R] (n k : ℕ) : (bernsteinPolynomial R n k).degree ≤ n := by
   rcases le_or_gt k n with h | h
   · refine degree_le_of_natDegree_le ?_
@@ -89,9 +116,13 @@ theorem degree_le [Nontrivial R] (n k : ℕ) : (bernsteinPolynomial R n k).degre
 
 variable {R}
 
-/-- **The Bernstein polynomials are linearly independent** over any field of characteristic zero.
-Mathlib's `bernsteinPolynomial.linearIndependent` is the statement over `ℚ`; the proof is the same:
-the `(n - k)`-th derivative at `1` annihilates `b_{n,ν}` for `ν < k` and not `b_{n,k}`. -/
+/-- **The Bernstein polynomials are linearly independent** over any field of characteristic zero:
+for a field $F$ of characteristic zero and $n \in \mathbb{N}$, the polynomials
+$b_{n,0}, \dots, b_{n,n} \in F[X]$ are linearly independent over $F$.
+
+Mathlib's `bernsteinPolynomial.linearIndependent` is the statement over $\mathbb{Q}$. The proof
+is the same: the $(n - k)$-th derivative at $1$ annihilates $b_{n,\nu}$ for $\nu < k$ but not
+$b_{n,k}$. -/
 theorem linearIndependent' {F : Type*} [Field F] [CharZero F] (n : ℕ) :
     LinearIndependent F fun ν : Fin (n + 1) => bernsteinPolynomial F n ν := by
   suffices ∀ k, k ≤ n + 1 → LinearIndependent F fun ν : Fin k => bernsteinPolynomial F n ν from
@@ -125,16 +156,20 @@ theorem linearIndependent' {F : Type*} [Field F] [CharZero F] (n : ℕ) :
 
 end bernsteinPolynomial
 
-/-- The Bernstein polynomial `b_{n,k}`, as an element of the polynomials of degree at most `n` on
-`X ⊆ ℝ`. -/
+/-- The Bernstein polynomial $b_{n,k}$, as an element of `polyLE X n`, the space of the restrictions
+to $X \subseteq \mathbb{R}$ of the real polynomials of degree at most $n$. -/
 noncomputable def bernsteinPolynomial.toPolyLE (X : Set ℝ) (n k : ℕ) : polyLE X n :=
   ⟨(bernsteinPolynomial ℝ n k).toContinuousMapOn X,
     mem_polyLE_iff.mpr ⟨bernsteinPolynomial ℝ n k, bernsteinPolynomial.degree_le ℝ n k,
       fun _ => rfl⟩⟩
 
-/-- **The Bernstein basis** ([quarteroni2000numerical] §8.7.1, "`{b_{n,k}}` provides a basis for
-`𝒫_n`"): on any infinite `X ⊆ ℝ` there is a basis of the polynomials of degree at most `n` whose
-`k`-th vector is `t ↦ b_{n,k}(t)`. -/
+/-- **The Bernstein basis**: let $X \subseteq \mathbb{R}$ be an infinite set and $n \in \mathbb{N}$.
+There is a basis $(e_k)_{k=0}^{n}$ of the space of the restrictions to $X$ of the real
+polynomials of degree at most $n$ such that $e_k(t) = b_{n,k}(t)$ for every $k$ and every
+$t \in X$.
+
+This is the statement of §8.7.1 of [quarteroni2000numerical] that $\{b_{n,k}\}$ provides a basis
+for $\mathcal{P}_n$. The space is `polyLE X n`, a subspace of `C(X, ℝ)`. -/
 theorem bernsteinPolynomial.exists_basis_polyLE {X : Set ℝ} (hX : X.Infinite) (n : ℕ) :
     ∃ B : Module.Basis (Fin (n + 1)) ℝ (polyLE X n),
       ∀ k (t : X), (B k : C(X, ℝ)) t = (bernsteinPolynomial ℝ n k).eval (t : ℝ) := by
@@ -153,36 +188,47 @@ namespace Bezier
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {n : ℕ}
 
-/-- **The Bézier curve** ([quarteroni2000numerical] (8.58)) of the control points `P₀, …, P_n` in
-a real vector space: `B_n(P; t) = ∑_k b_{n,k}(t) P_k`. -/
+/-- **The Bézier curve** of the control points $P_0, \dots, P_n$ in a real vector space $E$: for
+$t \in \mathbb{R}$,
+$$B_n(P; t) = \sum_{k=0}^{n} b_{n,k}(t)\, P_k.$$
+This is (8.58) of [quarteroni2000numerical]. -/
 noncomputable def curve (P : Fin (n + 1) → E) (t : ℝ) : E :=
   ∑ k : Fin (n + 1), (bernsteinPolynomial ℝ n k).eval t • P k
 
-/-- One step of de Casteljau's construction: the points `P_{i,1}(t) = (1 - t) P_i + t P_{i+1}` of
-the polygon obtained by dividing every edge in the ratio `t : 1 - t`. -/
+/-- One step of de Casteljau's construction: for $t \in \mathbb{R}$, the points
+$P_0, \dots, P_{n+1}$ give the $n + 1$ points
+$$P_{i,1}(t) = (1 - t) P_i + t P_{i+1}, \qquad i = 0, \dots, n,$$
+which divide each edge of the control polygon in the ratio $t : (1 - t)$. -/
 def casteljauStep (t : ℝ) (P : Fin (n + 2) → E) : Fin (n + 1) → E :=
   fun i => (1 - t) • P i.castSucc + t • P i.succ
 
-/-- **De Casteljau's algorithm** ([quarteroni2000numerical] §8.7.1): iterate `casteljauStep` until
-one point remains, the point `P_{0,n}(t)`. -/
+/-- **De Casteljau's algorithm** (§8.7.1 of [quarteroni2000numerical]): for $t \in \mathbb{R}$ and
+control points $P_0, \dots, P_n$, apply `Bezier.casteljauStep` $n$ times, until one point
+remains. This point is $P_{0,n}(t)$. For one control point, the result is that point. -/
 def casteljau (t : ℝ) : {n : ℕ} → (Fin (n + 1) → E) → E
   | 0, P => P 0
   | _ + 1, P => casteljau t (casteljauStep t P)
 
+/-- De Casteljau's algorithm applied to one control point $P_0$ gives $P_0$. -/
 @[simp]
 theorem casteljau_zero (t : ℝ) (P : Fin 1 → E) : casteljau t P = P 0 := rfl
 
+/-- De Casteljau's algorithm applied to $n + 2$ control points is the algorithm applied to the
+$n + 1$ points of one step `Bezier.casteljauStep`. -/
 theorem casteljau_succ (t : ℝ) (P : Fin (n + 2) → E) :
     casteljau t P = casteljau t (casteljauStep t P) := rfl
 
-/-- The Bézier curve of a single control point is that point. -/
+/-- The Bézier curve of a single control point $P_0$ is the constant $P_0$. -/
 @[simp]
 theorem curve_of_one (P : Fin 1 → E) (t : ℝ) : curve P t = P 0 := by
   simp [curve, bernsteinPolynomial]
 
-/-- **The Bézier recursion**: `B_n(P₀, …, P_n; t) = (1 - t) B_{n-1}(P₀, …, P_{n-1}; t) +
-t B_{n-1}(P₁, …, P_n; t)`, the polynomial identity `bernsteinPolynomial.succ_succ` read on the
-curve. -/
+/-- **The Bézier recursion**: for control points $P_0, \dots, P_{n+1}$ and $t \in \mathbb{R}$,
+$$B_{n+1}(P_0, \dots, P_{n+1}; t) = (1 - t)\, B_n(P_0, \dots, P_n; t) + t\, B_n(P_1, \dots,
+  P_{n+1}; t).$$
+
+This is the polynomial identity `bernsteinPolynomial.succ_succ` read on the curve. The two
+shorter control polygons are `Fin.init P` and `Fin.tail P`. -/
 theorem curve_succ (P : Fin (n + 2) → E) (t : ℝ) :
     curve P t = (1 - t) • curve (Fin.init P) t + t • curve (Fin.tail P) t := by
   have hrec : ∀ k : Fin (n + 1), (bernsteinPolynomial ℝ (n + 1) (k.succ : ℕ)).eval t
@@ -214,22 +260,24 @@ theorem curve_succ (P : Fin (n + 2) → E) (t : ℝ) :
   rw [h1, h2]
   abel
 
-/-- The Bézier curve of the stepped polygon is the original Bézier curve: the curve version of
-`bernsteinPolynomial.succ_succ`. -/
+/-- For control points $P_0, \dots, P_{n+1}$ and $t \in \mathbb{R}$, the Bézier curve of the points
+$P_{0,1}(t), \dots, P_{n,1}(t)$ of one de Casteljau step, evaluated at the same $t$, is
+$B_{n+1}(P; t)$. This is the curve version of `bernsteinPolynomial.succ_succ`. -/
 theorem curve_casteljauStep (P : Fin (n + 2) → E) (t : ℝ) :
     curve (casteljauStep t P) t = curve P t := by
   rw [curve_succ]
   simp only [curve, casteljauStep, smul_add, Finset.sum_add_distrib, Finset.smul_sum, smul_smul,
     Fin.init_def, Fin.tail_def, mul_comm]
 
-/-- **De Casteljau's algorithm evaluates the Bézier curve** ([quarteroni2000numerical] §8.7.1):
-`P_{0,n}(t) = B_n(P₀, …, P_n; t)`. -/
+/-- **De Casteljau's algorithm evaluates the Bézier curve** (§8.7.1 of [quarteroni2000numerical]):
+for control points $P_0, \dots, P_n$ and $t \in \mathbb{R}$, the result $P_{0,n}(t)$ of
+`Bezier.casteljau` is $B_n(P_0, \dots, P_n; t)$. -/
 theorem casteljau_eq_curve (P : Fin (n + 1) → E) (t : ℝ) : casteljau t P = curve P t := by
   induction n with
   | zero => simp
   | succ n ih => rw [casteljau_succ, ih, curve_casteljauStep]
 
-/-- The Bézier curve starts at the first control point. -/
+/-- The Bézier curve starts at the first control point: $B_n(P; 0) = P_0$. -/
 theorem curve_zero (P : Fin (n + 1) → E) : curve P 0 = P 0 := by
   simp only [curve, bernsteinPolynomial.eval_at_0]
   rw [Finset.sum_eq_single 0]
@@ -239,7 +287,7 @@ theorem curve_zero (P : Fin (n + 1) → E) : curve P 0 = P 0 := by
     rw [ite_eq_right this, zero_smul]
   · simp
 
-/-- The Bézier curve ends at the last control point. -/
+/-- The Bézier curve ends at the last control point: $B_n(P; 1) = P_n$. -/
 theorem curve_one (P : Fin (n + 1) → E) : curve P 1 = P (Fin.last n) := by
   simp only [curve, bernsteinPolynomial.eval_at_1]
   rw [Finset.sum_eq_single (Fin.last n)]
@@ -249,8 +297,10 @@ theorem curve_one (P : Fin (n + 1) → E) : curve P 1 = P (Fin.last n) := by
     rw [ite_eq_right this, zero_smul]
   · simp
 
-/-- **Reversal** ([quarteroni2000numerical] §8.7.1): the Bézier curve of the reversed control
-polygon `P_n, …, P₀` is the same curve traversed backwards. -/
+/-- **Reversal** (§8.7.1 of [quarteroni2000numerical]): the Bézier curve of the reversed control
+polygon $P_n, \dots, P_0$ is the same curve traversed backwards. For every $t \in \mathbb{R}$,
+$$B_n(P_n, \dots, P_0; t) = B_n(P_0, \dots, P_n; 1 - t).$$
+-/
 theorem curve_rev (P : Fin (n + 1) → E) (t : ℝ) : curve (P ∘ Fin.rev) t = curve P (1 - t) := by
   simp only [curve, Function.comp_apply]
   rw [← Equiv.sum_comp (Fin.revPerm : Equiv.Perm (Fin (n + 1)))]
@@ -261,9 +311,12 @@ theorem curve_rev (P : Fin (n + 1) → E) (t : ℝ) : curve (P ∘ Fin.rev) t = 
   rw [Fin.val_rev, Nat.add_sub_add_right, ← bernsteinPolynomial.flip ℝ n k hk, eval_comp]
   simp
 
-/-- **The convex-hull property** ([quarteroni2000numerical] §8.7.1, "a weighted average of the
-points `P_k`"): for `t ∈ [0, 1]` the point `B_n(P; t)` lies in the convex hull of the control
-polygon, the Bernstein weights being nonnegative and summing to one. -/
+/-- **The convex-hull property** (§8.7.1 of [quarteroni2000numerical]): for control points
+$P_0, \dots, P_n$ and $t \in [0, 1]$, the point $B_n(P; t)$ lies in the convex hull of
+$\{P_0, \dots, P_n\}$.
+
+The source describes $B_n(P; t)$ as a weighted average of the points $P_k$: for $t \in [0, 1]$
+the weights $b_{n,k}(t)$ are nonnegative and sum to one. -/
 theorem curve_mem_convexHull (P : Fin (n + 1) → E) {t : ℝ} (ht : t ∈ Set.Icc (0 : ℝ) 1) :
     curve P t ∈ convexHull ℝ (Set.range P) := by
   refine (convex_convexHull ℝ _).sum_mem (fun k _ => ?_) ?_ fun k _ => subset_convexHull ℝ _
@@ -273,9 +326,11 @@ theorem curve_mem_convexHull (P : Fin (n + 1) → E) {t : ℝ} (ht : t ∈ Set.I
   · rw [Fin.sum_univ_eq_sum_range (fun k => (bernsteinPolynomial ℝ n k).eval t), ← eval_finsetSum,
       bernsteinPolynomial.sum, eval_one]
 
-/-- **Affine equivariance**: Bézier curves commute with affine maps of the control points, which is
-the invariance under changes of coordinates that motivates parametric curves in
-[quarteroni2000numerical] §8.7. -/
+/-- **Affine equivariance**: let $E$ and $F$ be real vector spaces, let $L : E \to F$ be linear, and
+let $c \in F$. For control points $P_0, \dots, P_n$ in $E$ and $t \in \mathbb{R}$,
+$$B_n(L P_0 + c, \dots, L P_n + c; t) = L\, B_n(P; t) + c.$$
+This is the invariance under changes of coordinates that motivates parametric curves in §8.7 of
+[quarteroni2000numerical]. -/
 theorem curve_affine {F : Type*} [AddCommGroup F] [Module ℝ F] (L : E →ₗ[ℝ] F) (c : F)
     (P : Fin (n + 1) → E) (t : ℝ) :
     curve (fun k => L (P k) + c) t = L (curve P t) + c := by

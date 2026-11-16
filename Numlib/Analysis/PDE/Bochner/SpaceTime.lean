@@ -12,48 +12,68 @@ import Numlib.Analysis.Sobolev.EmbeddingDomain
 /-!
 # The space–time reading of a curve of Sobolev functions
 
-A curve `t ↦ u(t)` with values in `L²(Ω)` which is, on a set of times `s`, of class
-`C^k(s; H^m(Ω))` in the sense of `Bochner.ContDiffOnThrough` — it factors through the inclusion
-`H^m(Ω) → L²(Ω)` by a `C^k` curve of `H^m(Ω)` — is read as a function `U(x, t)` of space and time
-through the continuous representatives of the Sobolev embedding theorems on a domain
-(`Numlib/Analysis/Sobolev/EmbeddingDomain`, Brezis, *Functional Analysis, Sobolev Spaces and
-Partial Differential Equations*, Corollaries 9.14–9.15). This is the sense in which
-[brezis2011functional] Theorems 10.1 (5), 10.2 (c), 10.8 and Corollary 10.5 state the regularity
-of the solutions of the heat and wave equations in space and time.
+Let $\Omega \subseteq \mathbb{R}^N$ be open, and let $t \mapsto u(t)$ be a curve with values in
+$L^2(\Omega)$ that is, on a set of times $s$, of class $C^k(s; H^m(\Omega))$ in the sense of
+`Bochner.ContDiffOnThrough`: it factors through the inclusion $H^m(\Omega) \to L^2(\Omega)$ by a
+$C^k$ curve in $H^m(\Omega)$. This file reads such a curve as a function $U(x, t)$ of space and
+time, through the continuous representatives that the Sobolev embedding theorems on a domain give
+(Corollaries 9.14–9.15 of [brezis2011functional], in `Numlib.Analysis.Sobolev.EmbeddingDomain`).
+This is the sense in which Theorem 10.1 (5), Theorem 10.2 (c), Corollary 10.5 and Theorem 10.8 of
+[brezis2011functional] state the regularity of the solutions of the heat and wave equations in space
+and time.
+
+Let $\Omega$ be an extension domain for every exponent, for example an open set of class $C^1$ with
+bounded boundary, or the half space. If $m > N/2$ and $u \in C(s; H^m(\Omega))$, there is a
+representative $U$ that is continuous on $\bar\Omega \times s$ with $U(\cdot, t) = u(t)$ almost
+everywhere on $\Omega$ for each $t \in s$. If $k + N/2 < m$ and $u \in C^k(s; H^m(\Omega))$, the
+representative is $C^k$ on $\Omega \times s$, and its derivatives extend continuously to
+$\bar\Omega \times s$. If $u \in C^\infty(s; H^m(\Omega))$ for every $m$, the representative is of
+class $C^\infty(\bar\Omega \times \bar s')$ for every open $s'$ with $\bar s' \subseteq s$.
 
 ## Main results
 
-* `Bochner.continuousOn_prod_of_forall_norm_sub_le`: the general joint-continuity lemma behind the
-  bridge — if `rep w` is continuous on `K` for every `w`, and `‖rep w₁ x − rep w₂ x‖ ≤ C ‖w₁ − w₂‖`
-  on `K`, then `(x, t) ↦ rep (v t) x` is continuous on `K ×ˢ s` for every `v` continuous on `s`.
-* `Bochner.continuousOn_spaceTime_of_contDiffOnThrough`: **the `k = 0` bridge** — for an extension
-  domain `Ω` (a `C¹` domain with bounded boundary, or the half space) and `m > N/2`, a curve
-  `u ∈ C(s; H^m(Ω))` read in `L²(Ω)` has a space–time representative `U` continuous on
-  `closure Ω ×ˢ s` with `U(·, t) = u(t)` almost everywhere on `Ω` for every `t ∈ s`. This is what
-  [brezis2011functional] Corollary 10.5 (`u ∈ C(Q̄)`) needs.
-* `Bochner.exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough`: **the `C^k` bridge** — for
-  `k + N/2 < m` and `s` uniquely differentiable, a curve `u ∈ C^k(s; H^m(Ω))` has a space–time
-  representative `U` of class `C^k` on `Ω ×ˢ s` whose derivatives within `Ω ×ˢ s` extend
-  continuously to `closure Ω ×ˢ s` (`ContDiffOnExtendsTo`, from
-  `Numlib.Analysis.Calculus.ProdContDiff`). The partial derivatives `∂ₜ^j D_x^i U (x, t)` are
-  `D^i (rep (u^{(j)} t)) x`, the continuous extensions of the derivatives of the canonical
-  `C^k(Ω̄)` representatives of Corollary 9.15: these are linear in `u` on `closure Ω` by the
-  uniqueness of continuous representatives (`eqOn_closure_deriv_rep_add`,
-  `eqOn_closure_deriv_rep_smul`), so that evaluation at a point commutes with `d/dt`
-  (`hasDerivWithinAt_of_forall_add_smul_norm_le`), and the product-calculus theorem
-  `contDiffOnExtendsTo_prod_of_partials` assembles the joint derivatives.
-* `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough` (with the variants `_Ioi`,
-  `_Ici` and the within-form `contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough`):
-  **the `C^∞` bridge** — a curve `u ∈ C^∞(s; H^m(Ω))` for every `m` has a space–time
-  representative of class `C^∞(Ω̄ × s̄')`, in the sense of `ContDiffOnClosure`, on `Ω ×ˢ s'` for
-  every open `s'` with `closure s' ⊆ s`: [brezis2011functional] Theorem 10.1 (5)
-  (`u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`), Theorem 10.2 (c) and Theorem 10.8
-  (`u ∈ C^∞(Ω̄ × [0, ∞))`). The extension stops at `closure s' ⊆ s` because the curve need not be
-  continuous into `H^m(Ω)` at the boundary of `s`.
+* `Bochner.continuousOn_prod_of_forall_norm_sub_le`: if $\operatorname{rep}(w)$ is continuous on $K$
+  for every $w$ and $\|\operatorname{rep}(w_1)(x) - \operatorname{rep}(w_2)(x)\| \le C \|w_1 -
+  w_2\|$ on $K$, then $(x, t) \mapsto \operatorname{rep}(v(t))(x)$ is continuous on $K \times s$ for
+  every $v$ continuous on $s$.
+* `Bochner.continuousOn_spaceTime_of_contDiffOnThrough`: for $m > N/2$, a curve
+  $u \in C(s; H^m(\Omega))$ has a space–time representative continuous on $\bar\Omega \times s$.
+  Corollary 10.5 of [brezis2011functional] ($u \in C(\bar Q)$) needs this.
+* `Bochner.exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough`: for $k + N/2 < m$, a curve
+  $u \in C^k(s; H^m(\Omega))$ has a space–time representative of class $C^k$ on $\Omega \times s$
+  whose derivatives extend continuously to $\bar\Omega \times s$.
+* `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough`: a curve
+  $u \in C^\infty(s; H^m(\Omega))$ for every $m$ has a space–time representative of class
+  $C^\infty(\bar\Omega \times \bar s')$ for every open $s'$ with $\bar s' \subseteq s$. This gives
+  Theorem 10.1 (5) ($u \in C^\infty(\bar\Omega \times [\varepsilon, \infty))$ for every
+  $\varepsilon > 0$), Theorem 10.2 (c) and Theorem 10.8
+  ($u \in C^\infty(\bar\Omega \times [0, \infty))$) of [brezis2011functional].
+* `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi`,
+  `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`,
+  `Bochner.contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough`: the variants on
+  $(a, \infty)$, on $[a, \infty)$, and with derivatives within $\Omega \times s$.
 
-## References
+## Proof outline
 
-[brezis2011functional], §10.1–10.3, and chapter 9, Corollaries 9.14–9.15 with footnote 16.
+The partial derivatives $\partial_t^j D_x^i U(x, t)$ are $D^i(\operatorname{rep}(u^{(j)}(t)))(x)$,
+the continuous extensions of the derivatives of the canonical $C^k(\bar\Omega)$ representatives of
+Corollary 9.15. By the uniqueness of continuous representatives, these are linear in $u$ on
+$\bar\Omega$ (`Bochner.eqOn_closure_deriv_rep_add`, `Bochner.eqOn_closure_deriv_rep_smul`). So the
+evaluation at a point commutes with $d/dt$ (`Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le`),
+and the product-calculus theorem `contDiffOnExtendsTo_prod_of_partials` assembles the joint
+derivatives.
+
+## Implementation notes
+
+* An extension domain for every exponent is `IsSobolevExtensionDomainAll N Ω`. The space
+  $H^m(\Omega)$ is the Sobolev space `SobolevMultiIndex` for the standard basis of $\mathbb{R}^N$,
+  with $p = 2$, and the inclusion $H^m(\Omega) \to L^2(\Omega)$ is `SobolevMultiIndex.fnL`.
+* The class $C^k$ with derivatives extending to a larger set is `ContDiffOnExtendsTo` of
+  `Numlib.Analysis.Calculus.ProdContDiff`. The class $C^\infty(\bar\Omega \times \bar s')$ is
+  `ContDiffOnClosure` on $\Omega \times s'$, which is the class of Chapter 9, footnote 16 of
+  [brezis2011functional].
+* The extension stops at $\bar s' \subseteq s$, because the curve need not be continuous into
+  $H^m(\Omega)$ at the boundary of $s$.
 -/
 
 open Filter MeasureTheory Set Topology TopologicalSpace
@@ -61,13 +81,19 @@ open scoped ContDiff ENNReal NNReal
 
 namespace Bochner
 
-/-! ### Joint continuity of `(x, t) ↦ rep (v t) x` -/
+/-! ### Joint continuity of $(x, t) \mapsto \operatorname{rep}(v(t))(x)$ -/
 
-/-- **Joint continuity from a uniformly Lipschitz family of continuous functions**: let
-`rep : V → X → F` be such that every `rep w` is continuous on `K` and
-`‖rep w₁ x − rep w₂ x‖ ≤ C ‖w₁ − w₂‖` for `x ∈ K`. Then for every `v : ℝ → V` continuous on
-`s`, the function `(x, t) ↦ rep (v t) x` is continuous on `K ×ˢ s`: the difference at `(x, t)` and
-`(x₀, t₀)` is bounded by `C ‖v t − v t₀‖ + ‖rep (v t₀) x − rep (v t₀) x₀‖`. -/
+/-- **Joint continuity from a uniformly Lipschitz family of continuous functions.** Let $X$ be a
+pseudometric space, $V$ and $F$ normed groups, $K \subseteq X$ and $C \in \mathbb{R}$. Let
+$\operatorname{rep} : V \to (X \to F)$ be such that every $\operatorname{rep}(w)$ is continuous
+on $K$, and
+$$\|\operatorname{rep}(w_1)(x) - \operatorname{rep}(w_2)(x)\| \le C \|w_1 - w_2\|, \qquad w_1,
+  w_2 \in V, \ x \in K.$$
+Then for every $v : \mathbb{R} \to V$ continuous on $s \subseteq \mathbb{R}$, the function
+$(x, t) \mapsto \operatorname{rep}(v(t))(x)$ is continuous on $K \times s$.
+
+The difference of the values at $(x, t)$ and $(x_0, t_0)$ is at most $C \|v(t) - v(t_0)\| +
+\|\operatorname{rep}(v(t_0))(x) - \operatorname{rep}(v(t_0))(x_0)\|$. -/
 theorem continuousOn_prod_of_forall_norm_sub_le {X V F : Type*} [PseudoMetricSpace X]
     [NormedAddCommGroup V] [NormedAddCommGroup F] {rep : V → X → F} {K : Set X} {C : ℝ}
     (hcont : ∀ w, ContinuousOn (rep w) K)
@@ -105,24 +131,27 @@ theorem continuousOn_prod_of_forall_norm_sub_le {X V F : Type*} [PseudoMetricSpa
     _ < ε / 2 + ε / 2 := add_lt_add_of_le_of_lt hA (h₂ hp.1 hp1)
     _ = ε := add_halves ε
 
-/-! ### The `k = 0` bridge -/
+/-! ### Continuity in space and time -/
 
 variable {N m : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Joint continuity from continuity into `H^m(Ω)`** (the `k = 0` space–time bridge). Let `Ω` be
-an extension domain for every exponent (a `C¹` domain with bounded boundary, or the half space;
-`IsSobolevExtensionDomainAll`), `m > N/2`, `s ⊆ ℝ`, and let `u : ℝ → L²(Ω)` be of class
-`C(s; H^m(Ω))` — it factors on `s` through the inclusion `H^m(Ω) → L²(Ω)` by a curve `v`
-continuous on `s`. Then there is `U : ℝ^N × ℝ → ℝ`, continuous on `closure Ω ×ˢ s`, with
-`U(·, t) = u(t)` almost everywhere on `Ω` for every `t ∈ s`.
+/-- **Joint continuity from continuity into $H^m(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be
+an extension domain for every exponent (an open set of class $C^1$ with bounded boundary, or the
+half space), let $m > N/2$ and $s \subseteq \mathbb{R}$. Let $u : \mathbb{R} \to L^2(\Omega)$ be
+of class $C(s; H^m(\Omega))$: it factors on $s$ through the inclusion
+$H^m(\Omega) \to L^2(\Omega)$ by a curve $v$ continuous on $s$. Then there is $U : \mathbb{R}^N
+\times \mathbb{R} \to \mathbb{R}$, continuous on $\bar\Omega \times s$, with
+$U(\cdot, t) = u(t)$ almost everywhere on $\Omega$ for every $t \in s$. Corollary 10.5 of
+[brezis2011functional] ($u \in C(\bar Q)$) needs this.
 
-Proof: Corollary 9.15 at `k = 0`
-(`SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`) gives every
-`w ∈ H^m(Ω)` a continuous representative `w̃` on `ℝ^N` with `‖w̃‖_∞ ≤ C ‖w‖`. The representative is
-unique on `closure Ω` (`ContinuousOn.eqOn_closure_of_ae_eq`), so `w ↦ w̃` is additive there and
-`‖w̃₁ x − w̃₂ x‖ ≤ C ‖w₁ − w₂‖` for `x ∈ closure Ω`; `U(x, t) := (v t)~(x)` is then jointly
-continuous by `continuousOn_prod_of_forall_norm_sub_le`. This is what [brezis2011functional]
-Corollary 10.5 (`u ∈ C(Q̄)`) needs. -/
+The hypothesis on $\Omega$ is `IsSobolevExtensionDomainAll N Ω`. Proof idea: Corollary 9.15 at
+order $0$ (`SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`)
+gives every $w \in H^m(\Omega)$ a continuous representative $\tilde w$ on $\mathbb{R}^N$ with
+$\|\tilde w\|_\infty \le C \|w\|$. The representative is unique on $\bar\Omega$
+(`ContinuousOn.eqOn_closure_of_ae_eq`), so $w \mapsto \tilde w$ is additive there and $|\tilde
+w_1(x) - \tilde w_2(x)| \le C \|w_1 - w_2\|$ for $x \in \bar\Omega$. Then
+$U(x, t) = \widetilde{v(t)}(x)$ is jointly continuous by
+`Bochner.continuousOn_prod_of_forall_norm_sub_le`. -/
 theorem continuousOn_spaceTime_of_contDiffOnThrough (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hm : (N : ℝ) / 2 < m) {s : Set ℝ}
     {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -165,15 +194,17 @@ theorem continuousOn_spaceTime_of_contDiffOnThrough (hΩ : IsSobolevExtensionDom
     exact (hrepae (v t)).symm
 
 
-/-! ### The canonical `C^k(Ω̄)` representatives are linear on the closure -/
+/-! ### The canonical $C^k(\bar\Omega)$ representatives are linear on the closure -/
 
 section Linearity
 
 variable {N m : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0∞}
   {rep : SobolevEuclidean N m p Ω → EuclideanSpace ℝ (Fin N) → ℝ}
 
-/-- The continuous representatives of a sum: `rep (w₁ + w₂) = rep w₁ + rep w₂` on `closure Ω`, by
-the uniqueness of continuous representatives (`ContinuousOn.eqOn_closure_of_ae_eq`). -/
+/-- Let $\operatorname{rep}(w) : \mathbb{R}^N \to \mathbb{R}$, for $w \in W^{m,p}(\Omega)$, be
+continuous and equal to $w$ almost everywhere on $\Omega$. Then $\operatorname{rep}(w_1 + w_2) =
+\operatorname{rep}(w_1) + \operatorname{rep}(w_2)$ on $\bar\Omega$, by the uniqueness of
+continuous representatives (`ContinuousOn.eqOn_closure_of_ae_eq`). -/
 theorem eqOn_closure_rep_add (hrepc : ∀ w, Continuous (rep w))
     (hrepae : ∀ w, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
@@ -185,7 +216,9 @@ theorem eqOn_closure_rep_add (hrepc : ∀ w, Continuous (rep w))
     with x h₁ h₂ h₃ h₄
   rw [← h₃, h₄, Pi.add_apply, Pi.add_apply, h₁, h₂]
 
-/-- The continuous representatives of a multiple: `rep (c • w) = c • rep w` on `closure Ω`. -/
+/-- Let $\operatorname{rep}(w) : \mathbb{R}^N \to \mathbb{R}$, for $w \in W^{m,p}(\Omega)$, be
+continuous and equal to $w$ almost everywhere on $\Omega$. Then $\operatorname{rep}(cw) = c
+\operatorname{rep}(w)$ on $\bar\Omega$ for every $c \in \mathbb{R}$. -/
 theorem eqOn_closure_rep_smul (hrepc : ∀ w, Continuous (rep w))
     (hrepae : ∀ w, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
@@ -199,8 +232,8 @@ theorem eqOn_closure_rep_smul (hrepc : ∀ w, Continuous (rep w))
 variable {k : ℕ} {G : SobolevEuclidean N m p Ω → EuclideanSpace ℝ (Fin N) →
   (EuclideanSpace ℝ (Fin N) [×k]→L[ℝ] ℝ)}
 
-/-- On the open set `Ω`, the `k`-th derivative of a function of class `C^k` on `Ω` that agrees
-on `Ω` with `f₁ + f₂` is the sum of the derivatives. -/
+/-- Let $f_1, f_2 : \mathbb{R}^N \to \mathbb{R}$ be of class $C^k$ on the open set $\Omega$, and let
+$f = f_1 + f_2$ on $\Omega$. Then $D^k f(x) = D^k f_1(x) + D^k f_2(x)$ for every $x \in \Omega$. -/
 theorem iteratedFDeriv_add_of_eqOn {f f₁ f₂ : EuclideanSpace ℝ (Fin N) → ℝ}
     (h : EqOn f (f₁ + f₂) (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (h₁ : ContDiffOn ℝ k f₁ Ω) (h₂ : ContDiffOn ℝ k f₂ Ω) {x : EuclideanSpace ℝ (Fin N)}
@@ -211,8 +244,9 @@ theorem iteratedFDeriv_add_of_eqOn {f f₁ f₂ : EuclideanSpace ℝ (Fin N) →
     ← iteratedFDerivWithin_of_isOpen k Ω.isOpen hx, ← iteratedFDerivWithin_of_isOpen k Ω.isOpen hx,
     iteratedFDerivWithin_add_apply (h₁ x hx) (h₂ x hx) Ω.isOpen.uniqueDiffOn hx]
 
-/-- On the open set `Ω`, the `k`-th derivative of a function of class `C^k` on `Ω` that agrees
-on `Ω` with `c • f₁` is `c` times the derivative. -/
+/-- Let $f_1 : \mathbb{R}^N \to \mathbb{R}$ be of class $C^k$ on the open set $\Omega$, let
+$c \in \mathbb{R}$, and let $f = c f_1$ on $\Omega$. Then $D^k f(x) = c D^k f_1(x)$ for every
+$x \in \Omega$. -/
 theorem iteratedFDeriv_smul_of_eqOn {f f₁ : EuclideanSpace ℝ (Fin N) → ℝ} {c : ℝ}
     (h : EqOn f (c • f₁) (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (h₁ : ContDiffOn ℝ k f₁ Ω) {x : EuclideanSpace ℝ (Fin N)} (hx : x ∈ Ω) :
@@ -222,8 +256,10 @@ theorem iteratedFDeriv_smul_of_eqOn {f f₁ : EuclideanSpace ℝ (Fin N) → ℝ
     ← iteratedFDerivWithin_of_isOpen k Ω.isOpen hx,
     iteratedFDerivWithin_const_smul_apply (h₁ x hx) Ω.isOpen.uniqueDiffOn hx]
 
-/-- The continuous extensions `G w` of the derivatives `D^k (rep w)` of the canonical
-representatives are additive on `closure Ω`. -/
+/-- Let $\operatorname{rep}(w) : \mathbb{R}^N \to \mathbb{R}$, for $w \in W^{m,p}(\Omega)$, be
+continuous, equal to $w$ almost everywhere on $\Omega$, and of class $C^k$ on $\Omega$. Let
+$G(w)$ be continuous on $\mathbb{R}^N$ and equal to $D^k \operatorname{rep}(w)$ on $\Omega$.
+Then $G(w_1 + w_2) = G(w_1) + G(w_2)$ on $\bar\Omega$. -/
 theorem eqOn_closure_deriv_rep_add (hrepc : ∀ w, Continuous (rep w))
     (hrepae : ∀ w, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
@@ -236,8 +272,10 @@ theorem eqOn_closure_deriv_rep_add (hrepc : ∀ w, Continuous (rep w))
   exact iteratedFDeriv_add_of_eqOn (eqOn_closure_rep_add hrepc hrepae w₁ w₂ |>.mono
     subset_closure) (hrepd w₁) (hrepd w₂) hx
 
-/-- The continuous extensions `G w` of the derivatives `D^k (rep w)` of the canonical
-representatives are homogeneous on `closure Ω`. -/
+/-- Let $\operatorname{rep}(w) : \mathbb{R}^N \to \mathbb{R}$, for $w \in W^{m,p}(\Omega)$, be
+continuous, equal to $w$ almost everywhere on $\Omega$, and of class $C^k$ on $\Omega$. Let
+$G(w)$ be continuous on $\mathbb{R}^N$ and equal to $D^k \operatorname{rep}(w)$ on $\Omega$.
+Then $G(cw) = c G(w)$ on $\bar\Omega$ for every $c \in \mathbb{R}$. -/
 theorem eqOn_closure_deriv_rep_smul (hrepc : ∀ w, Continuous (rep w))
     (hrepae : ∀ w, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] rep w)
@@ -262,9 +300,12 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [LinearOrder ι] {b : Module.Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E}
   {μ : Measure E}
 
-/-- **A curve of class `C^n(s; W^{k,p}(Ω))` is of class `C^n(s; W^{k',p}(Ω))` for `k' ≤ k`**: the
-hypothesis `∀ m, u ∈ C^∞(s; H^m(Ω))` of the space–time bridge follows from
-`u ∈ C^∞(s; H^{2ℓ}(Ω))` for every `ℓ`. -/
+/-- **Lowering the Sobolev order of a curve.** Let $k' \le k$. A curve
+$u : \mathbb{R} \to L^p(\Omega)$ of class $C^n(s; W^{k,p}(\Omega))$ is of class
+$C^n(s; W^{k',p}(\Omega))$.
+
+So the hypothesis "$u \in C^\infty(s; H^m(\Omega))$ for every $m$" of the space–time results
+follows from $u \in C^\infty(s; H^{2\ell}(\Omega))$ for every $\ell$. -/
 theorem ContDiffOnThrough.sobolev_of_le {k k' : ℕ} (hk : k' ≤ k) {n : WithTop ℕ∞}
     {u : ℝ → Lp F p (μ.restrict (Ω : Set E))} {s : Set ℝ}
     (hu : ContDiffOnThrough (SobolevMultiIndex.fnL F b k p Ω μ) n u s) :
@@ -274,35 +315,37 @@ theorem ContDiffOnThrough.sobolev_of_le {k k' : ℕ} (hk : k' ≤ k) {n : WithTo
 
 end LowerOrder
 
-/-! ### The `C^k` bridge -/
+/-! ### Regularity of order $k$ in space and time -/
 
 section Bridge
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Joint `C^k` regularity from `C^k` regularity into `H^m(Ω)`, `k + N/2 < m`** (the
-finite-order space–time bridge). Let `Ω` be an extension domain for every exponent
-(`IsSobolevExtensionDomainAll`), `s ⊆ ℝ` uniquely differentiable, `k + N/2 < m`, and let
-`u : ℝ → L²(Ω)` be of class `C^k(s; H^m(Ω))` — it factors on `s` through the inclusion
-`H^m(Ω) → L²(Ω)` by a curve `v` of class `C^k` on `s`. Then there is `U : ℝ^N × ℝ → ℝ`, with
-`U (·, t)` continuous and `= u t` almost everywhere on `Ω` for every `t ∈ s`, which is `C^k` on
-`Ω ×ˢ s` with every derivative (within `Ω ×ˢ s`) extending continuously to `closure Ω ×ˢ s`.
+/-- **Joint $C^k$ regularity from $C^k$ regularity into $H^m(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be an extension domain for every exponent, let
+$s \subseteq \mathbb{R}$ have unique derivatives, and let $k + N/2 < m$. Let
+$u : \mathbb{R} \to L^2(\Omega)$ be of class $C^k(s; H^m(\Omega))$: it factors on $s$ through
+the inclusion $H^m(\Omega) \to L^2(\Omega)$ by a curve $v$ of class $C^k$ on $s$. Then there is
+$U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ such that, for every $t \in s$, the function
+$U(\cdot, t)$ is continuous and equal to $u(t)$ almost everywhere on $\Omega$, and $U$ is $C^k$
+on $\Omega \times s$ with every derivative within $\Omega \times s$ extending continuously to
+$\bar\Omega \times s$.
 
-Proof. Corollary 9.15 (`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`)
-gives every `w ∈ H^m(Ω)` a representative `rep w`, continuous on `ℝ^N` and `C^k` on `Ω`, whose
-derivatives `D^i (rep w)`, `i ≤ k`, extend continuously to `ℝ^N` with `‖D^i (rep w)‖ ≤ C ‖w‖`.
-The extensions are additive and homogeneous on `closure Ω` by the uniqueness of continuous
-representatives (`eqOn_closure_deriv_rep_add`, `eqOn_closure_deriv_rep_smul`), so that the
-evaluation `w ↦ D^i (rep w) x` at `x ∈ closure Ω` is a bounded linear functional of `w`. With
-`v^{(j)} := iteratedDerivWithin j v s`, the family `g i j (x, t) := D^i (rep (v^{(j)} t)) x` is
-jointly continuous on `closure Ω ×ˢ s` (`continuousOn_prod_of_forall_norm_sub_le`), the
-`x`-derivative of `g i j` is `g (i + 1) j` (curried), and the `t`-derivative of `g i j` is
-`g i (j + 1)` (the bounded linear evaluation commutes with `d/dt`,
-`hasDerivWithinAt_of_forall_add_smul_norm_le`). The product-calculus theorem
-`contDiffOnExtendsTo_prod_of_partials` then makes `U := g 0 0` of class `C^k` on `Ω ×ˢ s` with
-derivatives extending to `closure Ω ×ˢ s`. This is [brezis2011functional], proof of
-Theorem 10.1, the step "`u ∈ C^k((0, ∞); H^{2ℓ}(Ω))` for all `k, ℓ` ⇒ `u ∈ C^∞(Ω̄ × [ε, ∞))`"
-made explicit at a fixed order. -/
+The conclusion on $U$ is `ContDiffOnExtendsTo ℝ k U (Ω ×ˢ s) (closure Ω ×ˢ s)`. Proof idea:
+Corollary 9.15 (`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`) gives every
+$w \in H^m(\Omega)$ a representative $\operatorname{rep}(w)$, continuous on $\mathbb{R}^N$ and
+$C^k$ on $\Omega$, whose derivatives $D^i \operatorname{rep}(w)$, $i \le k$, extend continuously
+to $\mathbb{R}^N$ with norm at most $C\|w\|$. The extensions are linear in $w$ on $\bar\Omega$
+(`Bochner.eqOn_closure_deriv_rep_add`, `Bochner.eqOn_closure_deriv_rep_smul`), so evaluation at
+a point of $\bar\Omega$ is a bounded linear functional. With $v^{(j)}$ the $j$-th derivative of
+$v$ within $s$, the functions $g_{ij}(x, t) = D^i \operatorname{rep}(v^{(j)}(t))(x)$ are jointly
+continuous on $\bar\Omega \times s$ (`Bochner.continuousOn_prod_of_forall_norm_sub_le`). The
+$x$-derivative of $g_{ij}$ is $g_{i+1,j}$, and the $t$-derivative of $g_{ij}$ is $g_{i,j+1}$
+(`Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le`). The product-calculus theorem
+`contDiffOnExtendsTo_prod_of_partials` then applies to $U = g_{00}$. This makes explicit at a
+fixed order the step "$u \in C^k((0, \infty); H^{2\ell}(\Omega))$ for all $k, \ell$ implies $u
+\in C^\infty(\bar\Omega \times [\varepsilon, \infty))$" of the proof of Theorem 10.1 of
+[brezis2011functional]. -/
 theorem exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough
     (hΩ : IsSobolevExtensionDomainAll N Ω) {s : Set ℝ} (hs : UniqueDiffOn ℝ s) {k m : ℕ}
     (hm : (k : ℝ) + N / 2 < m)
@@ -412,15 +455,18 @@ theorem exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough
       (UniqueDiffOn.prod Ω.isOpen.uniqueDiffOn hs)
 
 
-/-- **Joint smoothness from smoothness into every `H^m(Ω)`** (the space–time bridge, in the form
-of derivatives within `Ω ×ˢ s`). Let `Ω` be an extension domain for every exponent, `s ⊆ ℝ`
-uniquely differentiable, and let `u : ℝ → L²(Ω)` be of class `C^∞(s; H^m(Ω))` for every `m`.
-Then there is `U : ℝ^N × ℝ → ℝ` with `U (·, t) = u t` almost everywhere on `Ω` for `t ∈ s`, which
-is `C^∞` on `Ω ×ˢ s` with every derivative within `Ω ×ˢ s` extending continuously to
-`closure Ω ×ˢ s`. Each order `k` is the finite-order bridge
-`exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough` at `m = k + N + 1`; the `U` produced
-at different orders agree on `closure Ω ×ˢ s` by the uniqueness of continuous representatives
-(`ContinuousOn.eqOn_closure_of_ae_eq`), so the one of order `0` serves for all. -/
+/-- **Joint smoothness from smoothness into every $H^m(\Omega)$, with derivatives within
+$\Omega \times s$.** Let $\Omega \subseteq \mathbb{R}^N$ be an extension domain for every
+exponent, let $s \subseteq \mathbb{R}$ have unique derivatives, and let
+$u : \mathbb{R} \to L^2(\Omega)$ be of class $C^\infty(s; H^m(\Omega))$ for every $m$. Then
+there is $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ with $U(\cdot, t) = u(t)$ almost
+everywhere on $\Omega$ for $t \in s$, which is $C^\infty$ on $\Omega \times s$ with every
+derivative within $\Omega \times s$ extending continuously to $\bar\Omega \times s$.
+
+Each order $k$ is `Bochner.exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough` with
+$m = k + N + 1$. The functions $U$ of the different orders agree on $\bar\Omega \times s$ by the
+uniqueness of continuous representatives (`ContinuousOn.eqOn_closure_of_ae_eq`), so the one of
+order $0$ serves for all orders. -/
 theorem contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough
     (hΩ : IsSobolevExtensionDomainAll N Ω) {s : Set ℝ} (hs : UniqueDiffOn ℝ s)
     {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -446,21 +492,25 @@ theorem contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough
     (hUc k t ht).continuousOn
     ((hUae 0 t ht).trans (hUae k t ht).symm) (subset_closure hx)
 
-/-- **Joint smoothness from smoothness into every `H^m(Ω)`** (the space–time bridge). Let `Ω` be
-an extension domain for every exponent (a `C¹` domain with bounded boundary, or the half space;
-`IsSobolevExtensionDomainAll`), `s ⊆ ℝ` uniquely differentiable, and let `u : ℝ → L²(Ω)` be of
-class `C^∞(s; H^m(Ω))` for every `m` — it factors on `s` through the inclusion `H^m(Ω) → L²(Ω)`
-by a `C^∞` curve. Then there is `U : ℝ^N × ℝ → ℝ` with `U (·, t) = u t` almost everywhere on `Ω`
-for every `t ∈ s`, which is of class `C^∞(Ω̄ × s̄')` in the sense of `ContDiffOnClosure` on
-`Ω ×ˢ s'` for every open `s'` whose closure lies in `s`: `C^∞` on `Ω × s'`, every derivative
-extending continuously to `closure Ω × closure s'`. With `s = (0, ∞)` and `s' = (ε, ∞)` this is
-[brezis2011functional] Theorem 10.1 (5), `u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`; with
-`s = [0, ∞)` and `s' = (0, ∞)` it is Theorem 10.2 (c) and Theorem 10.8, `u ∈ C^∞(Ω̄ × [0, ∞))`.
-The extension is asked only up to `closure s' ⊆ s` because the curve `t ↦ u(t)` need not be
-continuous into `H^m(Ω)` at the boundary of `s` (the heat equation with `L²` data is not smooth
-at `t = 0`).
+/-- **Joint smoothness from smoothness into every $H^m(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be an extension domain for every exponent (an open set of class
+$C^1$ with bounded boundary, or the half space), let $s \subseteq \mathbb{R}$ have unique
+derivatives, and let $u : \mathbb{R} \to L^2(\Omega)$ be of class $C^\infty(s; H^m(\Omega))$ for
+every $m$. Then there is $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ with
+$U(\cdot, t) = u(t)$ almost everywhere on $\Omega$ for every $t \in s$, which is of class
+$C^\infty(\bar\Omega \times \bar s')$ for every open $s' \subseteq \mathbb{R}$ with
+$\bar s' \subseteq s$: it is $C^\infty$ on $\Omega \times s'$, and every derivative extends
+continuously to $\bar\Omega \times \bar s'$.
 
-Proof: `contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough` and
+With $s = (0, \infty)$ and $s' = (\varepsilon, \infty)$ this is Theorem 10.1 (5) of
+[brezis2011functional], $u \in C^\infty(\bar\Omega \times [\varepsilon, \infty))$ for every
+$\varepsilon > 0$. With $s = [0, \infty)$ and $s' = (0, \infty)$ it is Theorem 10.2 (c) and
+Theorem 10.8, $u \in C^\infty(\bar\Omega \times [0, \infty))$.
+
+The class is `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ s')`. The extension is asked only up to
+$\bar s' \subseteq s$, because the curve need not be continuous into $H^m(\Omega)$ at the
+boundary of $s$: the heat equation with $L^2$ data is not smooth at $t = 0$. The proof combines
+`Bochner.contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough` and
 `ContDiffOnExtendsTo.contDiffOnClosure`. -/
 theorem contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough
     (hΩ : IsSobolevExtensionDomainAll N Ω) {s : Set ℝ} (hs : UniqueDiffOn ℝ s)
@@ -477,9 +527,14 @@ theorem contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough
   rw [closure_prod_eq]
   exact prod_mono_right hs's
 
-/-- **The bridge on `(a, ∞)`**: a curve of class `C^∞((a, ∞); H^m(Ω))` for every `m` has a
-space–time representative `U` of class `C^∞(Ω̄ × [ε, ∞))` for every `ε > a`
-([brezis2011functional] Theorem 10.1 (5), `a = 0`). -/
+/-- **The space–time reading on $(a, \infty)$.** Let $\Omega \subseteq \mathbb{R}^N$ be an extension
+domain for every exponent, and let $u : \mathbb{R} \to L^2(\Omega)$ be of class
+$C^\infty((a, \infty); H^m(\Omega))$ for every $m$. Then there is $U : \mathbb{R}^N \times
+\mathbb{R} \to \mathbb{R}$ with $U(\cdot, t) = u(t)$ almost everywhere on $\Omega$ for every
+$t > a$, which is of class $C^\infty(\bar\Omega \times [\varepsilon, \infty))$ for every
+$\varepsilon > a$. With $a = 0$ this is Theorem 10.1 (5) of [brezis2011functional].
+
+The class is `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi ε)`. -/
 theorem contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi
     (hΩ : IsSobolevExtensionDomainAll N Ω) {a : ℝ}
     {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -493,11 +548,16 @@ theorem contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi
     contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough hΩ (uniqueDiffOn_Ioi a) hu
   exact ⟨U, hUae, fun ε hε ↦ hU (Ioi ε) isOpen_Ioi (by rw [closure_Ioi]; exact Ici_subset_Ioi.2 hε)⟩
 
-/-- **The bridge on `[a, ∞)`**: a curve of class `C^∞([a, ∞); H^m(Ω))` for every `m` has a
-space–time representative `U`, agreeing with `u t` for every `t ≥ a`, of class
-`C^∞(Ω̄ × [a, ∞))` — `C^∞` on `Ω × (a, ∞)` with every derivative extending continuously to
-`closure Ω × [a, ∞) = closure (Ω × (a, ∞))` ([brezis2011functional] Theorems 10.2 (c) and 10.8,
-`a = 0`). -/
+/-- **The space–time reading on $[a, \infty)$.** Let $\Omega \subseteq \mathbb{R}^N$ be an extension
+domain for every exponent, and let $u : \mathbb{R} \to L^2(\Omega)$ be of class
+$C^\infty([a, \infty); H^m(\Omega))$ for every $m$. Then there is $U : \mathbb{R}^N \times
+\mathbb{R} \to \mathbb{R}$ with $U(\cdot, t) = u(t)$ almost everywhere on $\Omega$ for every
+$t \ge a$, which is of class $C^\infty(\bar\Omega \times [a, \infty))$: it is $C^\infty$ on
+$\Omega \times (a, \infty)$, and every derivative extends continuously to
+$\bar\Omega \times [a, \infty)$, the closure of $\Omega \times (a, \infty)$. With $a = 0$ this
+is Theorem 10.2 (c) and Theorem 10.8 of [brezis2011functional].
+
+The class is `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi a)`. -/
 theorem contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici
     (hΩ : IsSobolevExtensionDomainAll N Ω) {a : ℝ}
     {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}

@@ -9,17 +9,30 @@ import Numlib.Optimization.ModelBased.HighOrder.Orders
 import Numlib.Optimization.ModelBased.InexactTaylor
 
 /-!
-# Dynamic-accuracy methods: common bounds
+# Common bounds for the dynamic-accuracy methods
 
-Elementary bounds shared by the high-order methods with inexact derivatives and dynamic
-accuracy ([cartis2022evaluation], Chapter 13): the TRqIDA/TRqEDA and ARqpIDA/ARqpEDA analyses.
+This file collects elementary bounds that the high-order methods with inexact derivatives and
+dynamic accuracy of [cartis2022evaluation], Chapter 13, share: the trust-region methods TRqEDA and
+TRqIDA and the regularization methods ARqpEDA and ARqpIDA. The smoothness hypothesis is
+`LipschitzDerivsAnchored f C A 0 q L` (assumption f.D0qL of the source): $C$ is open and convex, the
+set $A$ of anchors lies in $C$, $f$ is $q$ times continuously differentiable near every point of
+$C$, and for $0 \le j \le q$ the derivative $\nabla^j f$ satisfies $\|\nabla^j f(y) - \nabla^j
+f(x)\| \le L_j \|y - x\|$ for $x \in A$ and $y \in C$. With normalized constants $L_j \ge 1$, the
+file gives Taylor's theorem at an anchor, the bound $\|\nabla^i f(x)\| \le L_f$ of (13.1.24) with
+$L_f = \max_{0 \le j \le q} L_j$, and its inexact version $\|\overline{\nabla}^i f(x)\| \le L_f +
+\kappa_{\nabla,\max} \kappa_h$ of (13.1.63).
 
-* Consequences of the smoothness hypothesis `LipschitzDerivsAnchored f C A 0 q L` (the function
-  and its derivatives of orders `0, …, q` are anchored-Lipschitz, [cartis2022evaluation] f.D0qL)
-  at the anchors, with normalized constants `L_j ≥ 1`: Taylor's theorem anchored at an anchor,
-  the bound `‖∇^i f(x)‖ ≤ L_f = lipMax L q` ((13.1.24)) and its inexact version
-  `‖∇̄^i f(x)‖ ≤ L_f + κ_{∇,max} κ_h` ((13.1.63)).
-* `taylorDecrement_le_two_mul`: the Taylor decrement of a short step is at most `2 L ‖s‖`.
+## Main results
+
+* `Optimization.one_le_lipMax`: if $L_j \ge 1$ for $j \le q$, then $L_f \ge 1$.
+* `LipschitzDerivsAnchored.abs_sub_taylorDecrement_le_of_le`: Taylor's theorem of order $j \le q$ at
+  an anchor.
+* `LipschitzDerivsAnchored.norm_iteratedFDeriv_le_lipMax`: the bound (13.1.24) on the derivatives at
+  an anchor.
+* `LipschitzDerivsAnchored.norm_le_of_jetApprox`: the bound (13.1.63) on inexact derivatives at an
+  anchor.
+* `Optimization.taylorDecrement_le_two_mul`: the decrease of a Taylor polynomial along a step $s$
+  with $\|s\| \le 1$ is at most $2 L \|s\|$.
 -/
 
 open Set
@@ -29,7 +42,10 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- With normalized constants `L_j ≥ 1` (`j ≤ q`), `L_f = max_{j ≤ q} L_j ≥ 1`. -/
+/-- Let $L_0, \dots, L_q$ be real numbers with $L_j \ge 1$ for all $j \le q$. Then
+$L_f = \max_{0 \le j \le q} L_j$ satisfies $L_f \ge 1$.
+
+Here $L_f$ is `Optimization.lipMax L q`. -/
 theorem one_le_lipMax {L : ℕ → ℝ} {q : ℕ} (hL : ∀ j ≤ q, 1 ≤ L j) : 1 ≤ lipMax L q :=
   (hL 0 (Nat.zero_le q)).trans (le_lipMax (Nat.zero_le q))
 
@@ -42,27 +58,40 @@ open Optimization
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → ℝ} {C A : Set E} {q : ℕ}
   {L : ℕ → ℝ}
 
-/-- Taylor's theorem anchored at `x ∈ A` for the orders `j ≤ q` of
-`LipschitzDerivsAnchored f C A 0 q L` ((A.19)): for `x + s ∈ C`,
-`|f(x + s) - (f(x) - ΔT_{f,j}(x, s))| ≤ L_j/(j+1)! ‖s‖^{j+1}`. -/
+/-- Taylor's theorem anchored at $x \in A$, as in (A.19) of [cartis2022evaluation]. Assume
+`LipschitzDerivsAnchored f C A 0 q L`, let $j \le q$, let $x \in A$, and let $s \in E$ with
+$x + s \in C$. Then
+$$|f(x + s) - T_{f,j}(x, s)| \le \frac{L_j}{(j+1)!} \|s\|^{j+1},$$
+where $T_{f,j}(x, s) = f(x) - \Delta T_{f,j}(x, s)$ is the Taylor polynomial of order $j$ of $f$
+at $x$.
+
+The decrement $\Delta T_{f,j}(x, s)$ is `(ftaylorSeries ℝ f x).taylorDecrement j s`. -/
 theorem abs_sub_taylorDecrement_le_of_le (hf : LipschitzDerivsAnchored f C A 0 q L) {j : ℕ}
     (hj : j ≤ q) {x s : E} (hx : x ∈ A) (hxs : x + s ∈ C) :
     |f (x + s) - (f x - (ftaylorSeries ℝ f x).taylorDecrement j s)| ≤
       L j / ((j + 1)! : ℝ) * ‖s‖ ^ (j + 1) :=
   hf.abs_sub_taylorDecrement_le (Finset.mem_Icc.2 ⟨Nat.zero_le j, hj⟩) hx hxs
 
-/-- The anchored condition of order `j ≤ q` at an anchor `x ∈ A`. -/
+/-- Assume `LipschitzDerivsAnchored f C A 0 q L`, let $j \le q$ and let $x \in A$. Then $\|\nabla^j
+f(y) - \nabla^j f(x)\| \le L_j \|y - x\|$ for every $y \in C$. -/
 theorem lipschitzAt_of_le (hf : LipschitzDerivsAnchored f C A 0 q L) {j : ℕ} (hj : j ≤ q) {x : E}
     (hx : x ∈ A) :
     ∀ y ∈ C, ‖iteratedFDeriv ℝ j f y - iteratedFDeriv ℝ j f x‖ ≤ L j * ‖y - x‖ :=
   hf.lipschitzAt (Finset.mem_Icc.2 ⟨Nat.zero_le j, hj⟩) hx
 
-/-- With `A = C`, the derivative of order `j ≤ q` is Lipschitz on `C`. -/
+/-- Assume `LipschitzDerivsAnchored f C C 0 q L`, in which every point of $C$ is an anchor, and let
+$j \le q$. Then $\nabla^j f$ is Lipschitz on $C$ with constant $L_j$. -/
 theorem lipschitzOn_of_le (hf : LipschitzDerivsAnchored f C C 0 q L) {j : ℕ} (hj : j ≤ q) :
     IteratedFDerivLipschitzOn f j (L j) C :=
   hf.lipschitzOn (Finset.mem_Icc.2 ⟨Nat.zero_le j, hj⟩)
 
-/-- **(13.1.24) at the anchors**: `‖∇^i f(x)‖ ≤ L_{i-1} ≤ L_f` for `i ∈ [1, q]` and `x ∈ A`. -/
+/-- The bound (13.1.24) of [cartis2022evaluation] at the anchors. Assume
+`LipschitzDerivsAnchored f C A 0 q L` and $L_j \ge 1$ for all $j \le q$. Then for
+$1 \le i \le q$ and $x \in A$,
+$$\|\nabla^i f(x)\| \le L_f = \max_{0 \le j \le q} L_j.$$
+
+The proof gives $\|\nabla^i f(x)\| \le L_{i-1}$ from the Lipschitz condition on
+$\nabla^{i-1} f$, and $L_{i-1} \le L_f$. Here $L_f$ is `Optimization.lipMax L q`. -/
 theorem norm_iteratedFDeriv_le_lipMax (hf : LipschitzDerivsAnchored f C A 0 q L)
     (hL : ∀ j ≤ q, 1 ≤ L j) {i : ℕ} (hi : i ∈ Finset.Icc 1 q) {x : E} (hx : x ∈ A) :
     ‖iteratedFDeriv ℝ i f x‖ ≤ lipMax L q := by
@@ -72,9 +101,21 @@ theorem norm_iteratedFDeriv_le_lipMax (hf : LipschitzDerivsAnchored f C A 0 q L)
   exact (hf.norm_iteratedFDeriv_le (Finset.mem_Icc.2 ⟨Nat.zero_le m, hm⟩)
     (zero_le_one.trans (hL m hm)) hx).trans (le_lipMax hm)
 
-/-- **(13.1.24), (13.1.63) at the anchors**: inexact derivatives at `x ∈ A` within `κ_{∇,i} h_i`
-of the exact ones, with `0 ≤ κ_{∇,i}`, `0 ≤ h_i ≤ κ_h`, satisfy
-`‖∇̄^i f(x)‖ ≤ L_f + κ_{∇,max} κ_h`. -/
+/-- The bounds (13.1.24) and (13.1.63) of [cartis2022evaluation] for inexact derivatives at the
+anchors. Assume `LipschitzDerivsAnchored f C A 0 q L` and $L_j \ge 1$ for all $j \le q$. Let
+$x \in A$, and let $\overline{\nabla}^1 f(x), \dots, \overline{\nabla}^q f(x)$ be inexact
+derivatives with
+$$\|\overline{\nabla}^i f(x) - \nabla^i f(x)\| \le \kappa_{\nabla,i} h_i \qquad (1 \le i \le
+  q),$$
+where $\kappa_{\nabla,i} \ge 0$ and $0 \le h_i \le \kappa_h$ for $1 \le i \le q$. Then for
+$1 \le i \le q$,
+$$\|\overline{\nabla}^i f(x)\| \le L_f + \kappa_{\nabla,\max} \kappa_h,$$
+with $L_f = \max_{0 \le j \le q} L_j$ and $\kappa_{\nabla,\max} = \max_{1 \le i \le q}
+\kappa_{\nabla,i}$.
+
+The inexact derivatives are the terms `D i` of a formal multilinear series `D`, and the error
+bound is `JetApprox (ftaylorSeries ℝ f x) D q (fun i => κg i * hh i)`. The constants are
+`Optimization.lipMax L q` and `Optimization.ordMax q κg`. -/
 theorem norm_le_of_jetApprox (hf : LipschitzDerivsAnchored f C A 0 q L) (hL : ∀ j ≤ q, 1 ≤ L j)
     {D : FormalMultilinearSeries ℝ E ℝ} {κg hh : ℕ → ℝ} {κh : ℝ} {x : E} (hx : x ∈ A)
     (hD : JetApprox (ftaylorSeries ℝ f x) D q (fun i => κg i * hh i))
@@ -90,8 +131,12 @@ namespace Optimization
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The decrement is small for short steps: if `‖D_i‖ ≤ Lb` for `i ∈ [1, j]`, `0 ≤ Lb` and
-`‖s‖ ≤ 1`, then `ΔT_j(s) ≤ 2 Lb ‖s‖` (sum bound (A.34)). -/
+/-- Let $D$ be a formal multilinear series on $E$, let $j \in \mathbb{N}$, and let $L \ge 0$ with
+$\|D_i\| \le L$ for $1 \le i \le j$. If $\|s\| \le 1$, then the decrement of the Taylor
+polynomial of order $j$ satisfies
+$$\Delta T_j(s) \le 2 L \|s\|.$$
+
+The proof uses the bound $\sum_{i \ge 1} 1/i! < 2$ of (A.34) of [cartis2022evaluation]. -/
 theorem taylorDecrement_le_two_mul {D : FormalMultilinearSeries ℝ E ℝ} {j : ℕ} {Lb : ℝ}
     (hLb : 0 ≤ Lb) (hD : ∀ i ∈ Finset.Icc 1 j, ‖D i‖ ≤ Lb) {s : E} (hs : ‖s‖ ≤ 1) :
     D.taylorDecrement j s ≤ 2 * Lb * ‖s‖ := by
@@ -106,8 +151,7 @@ theorem taylorDecrement_le_two_mul {D : FormalMultilinearSeries ℝ E ℝ} {j : 
     _ ≤ Lb * (2 * ‖s‖) := by gcongr; exact sum_pow_div_factorial_le_two_mul (norm_nonneg s) hs j
     _ = 2 * Lb * ‖s‖ := by ring
 
-/-- A sequence that does not increase on `[0, k]` stays below its first term:
-`u_{i+1} ≤ u_i` for `i < k` gives `u_k ≤ u_0`. -/
+/-- Let $u_0, \dots, u_k$ be real numbers with $u_{i+1} \le u_i$ for $i < k$. Then $u_k \le u_0$. -/
 theorem le_zero_of_forall_succ_le {u : ℕ → ℝ} {k : ℕ} (h : ∀ i < k, u (i + 1) ≤ u i) :
     u k ≤ u 0 := by
   induction k with

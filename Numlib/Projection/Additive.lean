@@ -8,20 +8,52 @@ import Numlib.Projection.Basic
 /-!
 # Additive and multiplicative projection processes
 
-A family of Petrov–Galerkin pairs `(K i, L i)` can be combined in two ways ([saad2003iterative]
-§5.4).  The *additive* process adds all the corrections at once, with relaxation weights `ω i`
-([saad2003iterative] Algorithm 5.5); the *multiplicative* process applies them one after another
-along a list of indices ([saad2003iterative] Algorithm 5.6), which is the block Gauss–Seidel
-pattern.  Block Jacobi and block Gauss–Seidel are the instances in which the `K i` are coordinate
-subspaces.
+A family of Petrov–Galerkin pairs $(K_i, L_i)$ for the equation $Ax = b$ can be combined in two ways
+([saad2003iterative] §5.4). The *additive* process computes all the corrections from the same
+iterate and adds them at once, with relaxation weights $\omega_i$ ([saad2003iterative] Algorithm
+5.5). The *multiplicative* process applies the corrections one after another along a list of indices
+([saad2003iterative] Algorithm 5.6). When the $K_i$ are coordinate subspaces, the two processes are
+block Jacobi and block Gauss–Seidel.
 
-Everything is governed by the projectors `P i = additiveProjector A K L i`, the projector onto `A (K
-i)` along `(L i)ᗮ`, which is [saad2003iterative] `P_i = A V_i (W_iᴴ A V_i)⁻¹ W_iᴴ` when bases are
-given: the correction of the `i`-th pair satisfies `A δ i = P i r`, so the residual of an additive
-step is `(1 - ∑ i, ω i • P i) r` and the residual of a multiplicative sweep is the product of the `1
-- P i` in the order of the sweep.  With `L i = A (K i)` each `P i` is an orthogonal projector, and
-if the `A (K i)` are mutually orthogonal and their dimensions add up to that of the whole space, the
-projectors sum to `1` and one additive sweep with `ω = 1` is exact.
+Both processes are described by the projectors $P_i$ onto $AK_i$ along $L_i^\perp$. In bases $V_i$
+of $K_i$ and $W_i$ of $L_i$, $P_i = A V_i (W_i^H A V_i)^{-1} W_i^H$. The correction $\delta_i$ of
+the $i$-th pair satisfies $A \delta_i = P_i r$ for the current residual $r$. Hence the residual
+after an additive step is $(I - \sum_i \omega_i P_i) r$, and the residual after a multiplicative
+sweep is the product of the $I - P_i$ in the order of the sweep, applied to $r$. With $L_i = AK_i$
+each $P_i$ is an orthogonal projector. If, in addition, the $AK_i$ are mutually orthogonal and their
+dimensions add up to the dimension of the space, the projectors sum to $I$, and one additive step
+with $\omega = 1$ solves the system.
+
+## Main definitions
+
+* `Projection.IsNondegeneratePair`: $\dim K = \dim L$, and $A$ maps $K$ injectively modulo
+  $L^\perp$.
+* `Projection.pairProjector`: the projector onto $AK$ along $L^\perp$ of a nondegenerate pair.
+* `Projection.pairStep`: one Petrov–Galerkin step for one pair.
+* `Projection.additiveProjector`: the projector $P_i$ of the $i$-th pair of a family.
+* `Projection.additiveStep`: one step of the additive projection process.
+* `Projection.multiplicativeStep`: one sweep of the multiplicative projection process.
+
+## Main results
+
+* `Projection.apply_pairStep_sub`: the correction $\delta$ of one pair satisfies $A\delta = Pr$.
+* `Projection.pairProjector_eq_obliqueProjectionOfBases`: in bases, the projector of a pair is
+  $AV(W^H A V)^{-1} W^H$.
+* `Projection.residual_additiveStep`: the residual after an additive step is
+  $(I - \sum_i \omega_i P_i) r$.
+* `Projection.additiveProjector_eq_starProjection_of_eq_map`: with $L_i = AK_i$, each $P_i$ is the
+  orthogonal projection onto $AK_i$.
+* `Projection.sum_starProjection_eq_one_of_orthogonal`: orthogonal projections onto mutually
+  orthogonal subspaces whose dimensions add up to $\dim E$ sum to $I$.
+* `Projection.residual_multiplicativeStep`: the residual after a multiplicative sweep is the product
+  of the $I - P_i$ applied to $r$.
+
+## Implementation notes
+
+* The projector of a pair is defined as the unique idempotent map with range $AK$ and kernel
+  $L^\perp$. It does not depend on a choice of bases.
+* The multiplicative sweep runs along a list of indices, so an index may occur several times or not
+  at all. The additive step sums over a finite index type.
 -/
 
 open Module (finrank)
@@ -32,22 +64,24 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-! ### A well-posed Petrov–Galerkin pair -/
 
-/-- The hypotheses under which one Petrov–Galerkin pair `(K, L)` determines a unique correction: the
-trial and test spaces have the same dimension, and `A` maps `K` injectively modulo `Lᗮ`.  The second
-condition is the nondegeneracy of [saad2003iterative], Prop 5.1, in the form used by
-`IsPetrovGalerkin.eq_of_forall`; together with the first it gives
-`existsUnique_isPetrovGalerkin_of_finrank_eq`. -/
+/-- A **nondegenerate pair** for a linear map $A : E \to E$ is a pair of subspaces $(K, L)$ of $E$
+with $\dim K = \dim L$ such that $A$ maps $K$ injectively modulo $L^\perp$: every $z \in K$ with
+$Az \in L^\perp$ is $z = 0$.
+
+The second condition is the nondegeneracy condition of [saad2003iterative], Proposition 5.1, in
+the form of `IsPetrovGalerkin.eq_of_forall`. For finite-dimensional $K$ and $L$, both conditions
+together give a unique Petrov–Galerkin iterate by `existsUnique_isPetrovGalerkin_of_finrank_eq`. -/
 structure IsNondegeneratePair (A : E →ₗ[𝕜] E) (K L : Submodule 𝕜 E) : Prop where
-  /-- The trial and test spaces have the same dimension. -/
+  /-- The trial space and the test space have the same dimension. -/
   finrank_eq : finrank 𝕜 K = finrank 𝕜 L
-  /-- `A` maps `K` injectively modulo `Lᗮ`. -/
+  /-- Every $z \in K$ with $Az \in L^\perp$ is zero. -/
   eq_zero_of_mem_orthogonal : ∀ z ∈ K, A z ∈ Lᗮ → z = 0
 
 namespace IsNondegeneratePair
 
 variable {A : E →ₗ[𝕜] E} {K L : Submodule 𝕜 E}
 
-/-- A nondegenerate pair has `A` injective on the trial space. -/
+/-- If $(K, L)$ is a nondegenerate pair for $A$, then $A$ is injective on $K$. -/
 theorem injective_domRestrict (h : IsNondegeneratePair A K L) :
     Function.Injective (A.domRestrict K) := by
   rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
@@ -56,15 +90,15 @@ theorem injective_domRestrict (h : IsNondegeneratePair A K L) :
   rw [show A (z : E) = 0 from LinearMap.mem_ker.1 hz]
   exact Submodule.zero_mem _
 
-/-- The image `A K` has the dimension of the test space, so the projector onto `A K` along `Lᗮ`
-exists. -/
+/-- If $(K, L)$ is a nondegenerate pair for $A$, then $\dim AK = \dim L$. This is one of the two
+conditions for the projector onto $AK$ along $L^\perp$ to exist. -/
 theorem finrank_map_eq (h : IsNondegeneratePair A K L) :
     finrank 𝕜 (K.map A) = finrank 𝕜 L := by
   rw [← LinearMap.range_domRestrict, LinearMap.finrank_range_of_inj h.injective_domRestrict]
   exact h.finrank_eq
 
-/-- The image `A K` meets `Lᗮ` only at zero, the second half of what the projector onto `A K` along
-`Lᗮ` needs. -/
+/-- If $(K, L)$ is a nondegenerate pair for $A$, then $AK \cap L^\perp = 0$. This is the second
+condition for the projector onto $AK$ along $L^\perp$ to exist. -/
 theorem map_inf_orthogonal_eq_bot (h : IsNondegeneratePair A K L) : K.map A ⊓ Lᗮ = ⊥ := by
   refine le_antisymm (fun y hy => ?_) bot_le
   obtain ⟨⟨z, hz, rfl⟩, hy2⟩ := hy
@@ -77,15 +111,19 @@ section Pair
 variable (A : E →ₗ[𝕜] E) (b : E) (K L : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
   [FiniteDimensional 𝕜 L] (h : IsNondegeneratePair A K L)
 
-/-- The projector onto `A K` along `Lᗮ` attached to one Petrov–Galerkin pair: [saad2003iterative] `P
-= A V (Wᴴ A V)⁻¹ Wᴴ` of *Iterative Methods*, (5.22).  It is the projector through which the
-correction of the pair acts on the residual, `A δ = P r` (`apply_pairStep_sub`). -/
+/-- The **projector of a nondegenerate pair**. Let $(K, L)$ be a nondegenerate pair for
+$A : E \to E$, with $K$ and $L$ finite-dimensional. Its projector $P$ is the unique idempotent
+linear map of $E$ with range $AK$ and kernel $L^\perp$, the projector onto $AK$ along $L^\perp$.
+In bases $V$ of $K$ and $W$ of $L$ it is $P = AV(W^H AV)^{-1} W^H$ ([saad2003iterative],
+(5.22)).
+
+The correction of the pair acts on the residual through $P$ (`Projection.apply_pairStep_sub`). -/
 noncomputable def pairProjector : E →ₗ[𝕜] E :=
   (LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot h.finrank_map_eq
     h.map_inf_orthogonal_eq_bot).choose
 
-/-- The defining properties of `pairProjector`: it is idempotent, its range is `A K` and its kernel
-is `Lᗮ`. -/
+/-- The projector $P$ of a nondegenerate pair $(K, L)$ for $A$ is idempotent, its range is $AK$, and
+its kernel is $L^\perp$. -/
 theorem pairProjector_spec :
     IsIdempotentElem (pairProjector A K L h) ∧
       LinearMap.range (pairProjector A K L h) = K.map A ∧
@@ -93,7 +131,8 @@ theorem pairProjector_spec :
   (LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot h.finrank_map_eq
     h.map_inf_orthogonal_eq_bot).choose_spec.1
 
-/-- A projector with the range and kernel of `pairProjector` *is* `pairProjector`. -/
+/-- Let $(K, L)$ be a nondegenerate pair for $A$. Every idempotent linear map with range $AK$ and
+kernel $L^\perp$ is the projector `Projection.pairProjector` of the pair. -/
 theorem eq_pairProjector {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     (hr : LinearMap.range P = K.map A) (hk : LinearMap.ker P = Lᗮ) :
     P = pairProjector A K L h :=
@@ -101,9 +140,17 @@ theorem eq_pairProjector {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     (hr.trans (pairProjector_spec A K L h).2.1.symm)
     (hk.trans (pairProjector_spec A K L h).2.2.symm)
 
-/-- **[saad2003iterative], (5.22)** in matrix form: with a basis `V` of the trial space and a basis
-`W` of the test space, the projector of the pair is `A V (Wᴴ A V)⁻¹ Wᴴ`, the matrix `Wᴴ A V` being
-the cross Gram matrix of `A ∘ V` and `W`, invertible exactly by the nondegeneracy of the pair. -/
+/-- **The projector in bases** ([saad2003iterative], (5.22)). Let $(K, L)$ be a nondegenerate pair
+for $A$, with $K$ and $L$ finite-dimensional. Let $V = (v_1, \dots, v_m)$ and
+$W = (w_1, \dots, w_m)$ be families in $E$, indexed by the same finite set, that span $K$ and
+$L$, and assume that the matrix $W^H A V$, with entries $\langle w_i, A v_j \rangle$, is
+invertible. Then the projector of the pair is
+$$P = AV (W^H A V)^{-1} W^H.$$
+
+When $V$ and $W$ are bases, $W^H A V$ is invertible because the pair is nondegenerate; the
+theorem takes the invertibility as a hypothesis. The matrix $W^H A V$ is `LinearMap.crossGram`
+of the families $(Av_j)$ and $(w_i)$, and the right-hand side is
+`LinearMap.obliqueProjectionOfBases`. -/
 theorem pairProjector_eq_obliqueProjectionOfBases {ι : Type*} [Fintype ι] [DecidableEq ι]
     (V W : ι → E) (hV : Submodule.span 𝕜 (Set.range V) = K)
     (hW : Submodule.span 𝕜 (Set.range W) = L)
@@ -116,8 +163,9 @@ theorem pairProjector_eq_obliqueProjectionOfBases {ι : Type*} [Fintype ι] [Dec
     rfl
   · rw [LinearMap.ker_obliqueProjectionOfBases _ _ hVW, hW]
 
-/-- One Petrov–Galerkin step of the pair `(K, L)`, started from `x`: the unique `y` with `y - x ∈ K`
-and `b - A y ⟂ L` (`existsUnique_isPetrovGalerkin_of_finrank_eq`).  This is one inner iteration of
+/-- **One Petrov–Galerkin step** for a nondegenerate pair $(K, L)$, started from $x$: the unique $y$
+with $y - x \in K$ and $b - Ay \perp L$. It exists and is unique by
+`existsUnique_isPetrovGalerkin_of_finrank_eq`. This is one inner iteration of
 [saad2003iterative], Algorithms 5.5 and 5.6. -/
 noncomputable def pairStep (x : E) : E :=
   (existsUnique_isPetrovGalerkin_of_finrank_eq b x K L h.finrank_eq
@@ -125,15 +173,20 @@ noncomputable def pairStep (x : E) : E :=
 
 variable {A b K L}
 
-/-- `pairStep` meets the Petrov–Galerkin specification. -/
+/-- The step `Projection.pairStep` from $x$ satisfies the Petrov–Galerkin condition for
+$(A, b, x, K, L)$. -/
 theorem pairStep_isPetrovGalerkin (x : E) :
     IsPetrovGalerkin A b x K L (pairStep A b K L h x) :=
   (existsUnique_isPetrovGalerkin_of_finrank_eq b x K L h.finrank_eq
     h.eq_zero_of_mem_orthogonal).choose_spec.1
 
-/-- **[saad2003iterative], (5.22)**: the correction of a Petrov–Galerkin pair acts on the residual
-through the projector, `A δ = P r`.  This is the identity that turns both the additive and the
-multiplicative process into a statement about products of projectors. -/
+/-- **The correction acts through the projector** ([saad2003iterative], (5.22)). Let $y$ be the
+Petrov–Galerkin step of a nondegenerate pair $(K, L)$ from $x$, and let $P$ be the projector of
+the pair. Then
+$$A(y - x) = P(b - Ax).$$
+
+This identity turns both the additive and the multiplicative process into statements about
+products of projectors. -/
 theorem apply_pairStep_sub (x : E) :
     A (pairStep A b K L h x - x) = pairProjector A K L h (b - A x) := by
   obtain ⟨hmem, horth⟩ := pairStep_isPetrovGalerkin h x
@@ -145,7 +198,10 @@ theorem apply_pairStep_sub (x : E) :
   · rw [hd, sub_sub_cancel]
     exact horth
 
-/-- The residual of one Petrov–Galerkin step is `(1 - P) r`. -/
+/-- Let $y$ be the Petrov–Galerkin step of a nondegenerate pair $(K, L)$ from $x$, and let $P$ be
+the projector of the pair. Then the new residual is
+$$b - Ay = (I - P)(b - Ax).$$
+-/
 theorem residual_pairStep (x : E) :
     b - A (pairStep A b K L h x) = (1 - pairProjector A K L h) (b - A x) := by
   have hd := apply_pairStep_sub (b := b) h x
@@ -165,20 +221,26 @@ variable (A : E →ₗ[𝕜] E) (b : E) (K L : ι → Submodule 𝕜 E)
   [∀ i, FiniteDimensional 𝕜 (K i)] [∀ i, FiniteDimensional 𝕜 (L i)]
   (h : ∀ i, IsNondegeneratePair A (K i) (L i))
 
-/-- The projector `P i` of the `i`-th pair, onto `A (K i)` along `(L i)ᗮ` ([saad2003iterative],
-(5.22)). -/
+/-- The projector $P_i$ of the $i$-th pair $(K_i, L_i)$ of a family of nondegenerate pairs: the
+projector onto $AK_i$ along $L_i^\perp$ ([saad2003iterative], (5.22)). -/
 noncomputable def additiveProjector (i : ι) : E →ₗ[𝕜] E := pairProjector A (K i) (L i) (h i)
 
-/-- **One step of the additive projection process** ([saad2003iterative], Algorithm 5.5) with
-relaxation weights `ω`: all the Petrov–Galerkin corrections are computed from the same current
-iterate `x` and added at once.  With `ω = 1` and coordinate subspaces this is block Jacobi. -/
+/-- **One step of the additive projection process** ([saad2003iterative], Algorithm 5.5). Let
+$(K_i, L_i)_{i \in I}$ be a finite family of nondegenerate pairs for $A$, with
+finite-dimensional spaces, and let $\omega_i$ be relaxation weights. From the iterate $x$, let
+$y_i$ be the Petrov–Galerkin step of the $i$-th pair. The new iterate is
+$$x + \sum_{i \in I} \omega_i (y_i - x).$$
+All the corrections are computed from the same iterate $x$. With $\omega = 1$ and coordinate
+subspaces this is block Jacobi. -/
 noncomputable def additiveStep (ω : ι → 𝕜) (x : E) : E :=
   x + ∑ i, ω i • (pairStep A b (K i) (L i) (h i) x - x)
 
 variable {A b K L}
 
-/-- **[saad2003iterative], (5.22)–(5.23)**: the residual of an additive step is obtained from the
-current residual by the operator `1 - ∑ i, ω i • P i`. -/
+/-- **The residual of an additive step** ([saad2003iterative], (5.22)–(5.23)). Let $x'$ be the
+additive step from $x$ with weights $\omega$, and let $P_i$ be the projectors of the pairs. Then
+$$b - Ax' = \Bigl(I - \sum_{i \in I} \omega_i P_i\Bigr)(b - Ax).$$
+-/
 theorem residual_additiveStep (ω : ι → 𝕜) (x : E) :
     b - A (additiveStep A b K L h ω x)
       = (1 - ∑ i, ω i • additiveProjector A K L h i) (b - A x) := by
@@ -193,8 +255,10 @@ theorem residual_additiveStep (ω : ι → 𝕜) (x : E) :
   abel
 
 omit [Fintype ι] in
-/-- The family form of `pairProjector_eq_obliqueProjectionOfBases`: [saad2003iterative] `P_i = A V_i
-(W_iᴴ A V_i)⁻¹ W_iᴴ` of *Iterative Methods*, (5.22). -/
+/-- **The projectors in bases** ([saad2003iterative], (5.22)). Let $V = (v_1, \dots, v_m)$ and
+$W = (w_1, \dots, w_m)$ be families in $E$, indexed by the same finite set, that span $K_i$ and
+$L_i$, and assume that $W^H A V$ is invertible. Then $P_i = AV(W^H AV)^{-1} W^H$. This is the
+family form of `Projection.pairProjector_eq_obliqueProjectionOfBases`. -/
 theorem additiveProjector_eq_obliqueProjectionOfBases {κ : Type*} [Fintype κ] [DecidableEq κ]
     (i : ι) (V W : κ → E) (hV : Submodule.span 𝕜 (Set.range V) = K i)
     (hW : Submodule.span 𝕜 (Set.range W) = L i)
@@ -204,9 +268,9 @@ theorem additiveProjector_eq_obliqueProjectionOfBases {κ : Type*} [Fintype κ] 
   (pairProjector_eq_obliqueProjectionOfBases A (K i) (L i) (h i) V W hV hW hVW).symm
 
 omit [Fintype ι] in
-/-- **The least-squares option** ([saad2003iterative], the remark after (5.23)): choosing the test
-space `L i = A (K i)` makes every `P i` the *orthogonal* projector onto `A (K i)`, so the additive
-step becomes a sum of orthogonal projections of the residual. -/
+/-- **The least-squares choice of test spaces** ([saad2003iterative], the remark after (5.23)). If
+$L_i = AK_i$ for every $i$, then each projector $P_i$ is the orthogonal projection onto $AK_i$.
+The additive step then adds the orthogonal projections of the residual. -/
 theorem additiveProjector_eq_starProjection_of_eq_map (hLK : ∀ i, L i = (K i).map A) (i : ι) :
     additiveProjector A K L h i = (((K i).map A).starProjection : E →ₗ[𝕜] E) := by
   refine (eq_pairProjector A (K i) (L i) (h i) ?_ ?_ ?_).symm
@@ -223,14 +287,17 @@ section Exact
 
 variable {ι : Type*} [Fintype ι] [FiniteDimensional 𝕜 E]
 
-/-- **[saad2003iterative] exactness criterion** ([saad2003iterative], the remark after (5.23)):
-orthogonal projectors onto pairwise orthogonal subspaces whose dimensions add up to the dimension of
-the whole space sum to the identity.  Applied to `M i = A (K i)` in the least-squares additive
-process, it says that one unrelaxed sweep solves the system exactly.
+/-- **Orthogonal projections that sum to the identity** ([saad2003iterative], the remark after
+(5.23)). Let $E$ be finite-dimensional, and let $(M_i)_{i \in I}$ be a finite family of
+subspaces that are pairwise orthogonal, $M_i \perp M_j$ for $i \neq j$, with
+$\sum_i \dim M_i = \dim E$. Then the orthogonal projections $P_{M_i}$ satisfy
+$$\sum_{i \in I} P_{M_i} = I.$$
+For $M_i = AK_i$ in the least-squares additive process, this says that one step with
+$\omega = 1$ solves the system.
 
-The proof does not go through a direct sum decomposition.  The map `x ↦ (P i x)ᵢ` into `∀ i, M i` is
-surjective by orthogonality, hence injective because the dimensions agree, and it annihilates `x - ∑
-i, P i x`. -/
+The proof does not use a direct sum decomposition. The map $x \mapsto (P_{M_i} x)_i$ into
+$\prod_i M_i$ is surjective by the orthogonality, hence injective because the dimensions agree,
+and it maps $x - \sum_i P_{M_i} x$ to zero. -/
 theorem sum_starProjection_eq_one_of_orthogonal (M : ι → Submodule 𝕜 E)
     (horth : ∀ i j, i ≠ j → M i ⟂ M j) (hdim : ∑ i, finrank 𝕜 (M i) = finrank 𝕜 E) :
     ∑ i, (M i).starProjection = 1 := by
@@ -279,17 +346,22 @@ variable (A : E →ₗ[𝕜] E) (b : E) (K L : ι → Submodule 𝕜 E)
   [∀ i, FiniteDimensional 𝕜 (K i)] [∀ i, FiniteDimensional 𝕜 (L i)]
   (h : ∀ i, IsNondegeneratePair A (K i) (L i))
 
-/-- **One sweep of the multiplicative projection process** ([saad2003iterative], Algorithm 5.6): the
-Petrov–Galerkin corrections of the pairs listed in `l` are applied one after another, each computed
-from the iterate the previous one produced.  With coordinate subspaces this is block Gauss–Seidel,
-as block Jacobi is `additiveStep`. -/
+/-- **One sweep of the multiplicative projection process** ([saad2003iterative], Algorithm 5.6). Let
+$(K_i, L_i)_{i \in I}$ be a family of nondegenerate pairs for $A$, with finite-dimensional
+spaces, and let $l = (i_1, \dots, i_k)$ be a list of indices. Starting from $x$, the sweep
+applies the Petrov–Galerkin step of the pair $i_1$, then that of $i_2$, and so on, each from the
+iterate that the previous step produced. With coordinate subspaces this is block Gauss–Seidel,
+as `Projection.additiveStep` is block Jacobi. -/
 noncomputable def multiplicativeStep (l : List ι) (x : E) : E :=
   l.foldl (fun y i => pairStep A b (K i) (L i) (h i) y) x
 
 variable {A b K L}
 
-/-- The residual of a multiplicative sweep is the product of the `1 - P i`, taken in the order of
-the sweep, applied to the current residual ([saad2003iterative], §5.4). -/
+/-- **The residual of a multiplicative sweep** ([saad2003iterative], §5.4). Let $x'$ be the
+multiplicative sweep along $l = (i_1, \dots, i_k)$ from $x$, and let $P_i$ be the projectors of
+the pairs. Then
+$$b - Ax' = (I - P_{i_k}) \cdots (I - P_{i_1})(b - Ax).$$
+-/
 theorem residual_multiplicativeStep (l : List ι) (x : E) :
     b - A (multiplicativeStep A b K L h l x)
       = (l.foldr (fun i P => P * (1 - additiveProjector A K L h i)) 1) (b - A x) := by

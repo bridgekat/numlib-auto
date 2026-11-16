@@ -9,74 +9,90 @@ import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 /-!
 # Rounding errors of Gaussian elimination, Cholesky and the Thomas algorithm
 
-The backward error of the LU factorization and of the solve built on it, in the relational
-rounding model of `Numlib/FloatingPoint/Model`: [quarteroni2000numerical] §3.3.2, §3.4.2, §3.7.1
-and §3.10, [higham2002accuracy] §9.3, §9.6 and §10.1.1.
+This module bounds the backward error of the LU factorization, of the Cholesky and $LDL^T$
+factorizations, of the Thomas algorithm for tridiagonal matrices, and of the solves built on them,
+in the rounding model of `Numlib.FloatingPoint.Model`. It follows §3.3.2, §3.4.2, §3.7.1 and §3.10
+of [quarteroni2000numerical], §9.3, §9.6 and §10.1.1 of [higham2002accuracy], and Chapters 3 and 4
+of [golub2013matrix]. The computed LU factors are described in Doolittle form: $\hat L$ is unit
+lower triangular, $\hat U$ is upper triangular, and every entry is an admissible value of the
+recurrence (3.43) of [quarteroni2000numerical], $$\hat u_{ij} = a_{ij} - \sum_{r < i} \hat l_{ir}
+\hat u_{rj} \quad (i \le j), \qquad \hat l_{ij} = \Bigl(a_{ij} - \sum_{r < j} \hat l_{ir} \hat
+u_{rj}\Bigr) / \hat u_{jj} \quad (j < i),$$ where the rounded products are subtracted one after the
+other from $a_{ij}$ in any order, and $\hat l_{ij}$ needs one more rounded division. Every loop
+order of Gaussian elimination performs exactly these operations on exactly these numbers ("the
+analysis applies to all the variants", [higham2002accuracy] §9.3), so one relation covers Programs
+4–6 of [quarteroni2000numerical].
 
-The factorization is described in its Doolittle form, `FloatingPoint.RoundsLU m A L̂ Û`: `L̂` is
-unit lower triangular, `Û` upper triangular, and every entry is an admissible value of the
-recurrence [quarteroni2000numerical] (3.43) — `û_ij = a_ij - ∑_{r < i} l̂_ir û_rj` for `i ≤ j`,
-`l̂_ij = (a_ij - ∑_{r < j} l̂_ir û_rj) / û_jj` for `j < i` — each computed as in
-`Numlib/FloatingPoint/Substitution`: rounded products subtracted one after the other from `a_ij`
-in any order, then (for `l̂_ij`) one rounded division. Every loop order of Gaussian elimination
-performs exactly these operations on exactly these numbers ([higham2002accuracy] §9.3: "the
-analysis applies to all the variants"), so one relation covers the book's Programs 4–6. The
-Cholesky factor (`FloatingPoint.RoundsCholesky`) is the same shape with a square root on the
-diagonal, modelled as one rounding of an exact square root, and the Thomas recurrence
-(`FloatingPoint.RoundsThomas`) has its three roundings per step.
+The main result is Theorem 9.3 of [higham2002accuracy]: $\hat L \hat U = A + \Delta A$ with
+$|\Delta A| \le \gamma_n |\hat L| |\hat U|$ entrywise. The solve with two substitutions has
+$(A + \Delta A)\hat x = b$ with $|\Delta A| \le \gamma_{3n} |\hat L| |\hat U|$ (Theorem 9.4 of
+[higham2002accuracy]). The Cholesky factorization has the same form with a square root on the
+diagonal, and the bounds are $\gamma_{n+1}$ in the operation order of [higham2002accuracy] and
+$\gamma_{n+3}$ in that of [golub2013matrix]. The Thomas algorithm has three roundings per step and
+the constant $\gamma_1$. All bounds are entrywise, over an ordered field; the normwise bounds are
+over $\mathbb{R}$.
 
-Results, entrywise (`Matrix.abs`, `≤ₑ`) over an ordered field:
+## Main definitions
 
-* `FloatingPoint.exists_roundsLU_mul_eq_add`, [higham2002accuracy] Theorem 9.3 =
-  [quarteroni2000numerical] (3.40): `L̂ Û = A + ΔA` with `|ΔA| ≤ γ_n |L̂| |Û|`, entry by entry from
-  the scalar Lemma 8.4;
-* `FloatingPoint.exists_roundsLU_solve_eq`, [higham2002accuracy] Theorem 9.4: factor, then two
-  substitutions, gives `(A + ΔA) x̂ = b` with `|ΔA| ≤ γ_{3n} |L̂| |Û|`, the rigorous form of
-  [quarteroni2000numerical] (3.64);
-* `FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg`, [quarteroni2000numerical] (3.41):
-  `|ΔA| ≤ (n u / (1 - 2 n u)) |A|` when the computed factors are entrywise nonnegative, through
-  the general `FloatingPoint.abs_entrywiseLE_of_abs_mul_eq` for factors with `|L| |U| = |L U|`;
-* `FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`, [higham2002accuracy] Theorem 9.5 =
-  [quarteroni2000numerical] (3.67) (Wilkinson), in the conditional form the book's derivation
-  deserves: under `|l̂_ij| ≤ 1` and `|û_ij| ≤ ρ max |a_ij|`, `‖ΔA‖_∞ ≤ n² γ_{3n} ρ ‖A‖_∞`. The
-  "illicit manoeuvre" Higham confesses to is that these bounds hold for the exact factors (with
-  `ρ` the growth factor of `Numlib/LinearAlgebra/Matrix/LU/Pivoting`) and not for the computed
-  ones, so the honest theorem takes them as hypotheses;
-* `FloatingPoint.exists_roundsCholesky_eq_add`, [higham2002accuracy] Theorem 10.3:
-  `R̂ᵀ R̂ = A + ΔA` with `|ΔA| ≤ γ_{n+1} |R̂ᵀ| |R̂|` (the book quotes Wilkinson's normwise
-  `8 n (n+1) u ‖A‖₂`, which is not reproduced);
-* `FloatingPoint.exists_roundsThomas_mul_eq_add`, [higham2002accuracy] (9.20): the computed
-  Thomas factors satisfy `L̂ Û = A + ΔA` with `|ΔA| ≤ γ₁ |L̂| |Û|` (Higham's `u`, in a model that
-  only rounds as `x (1 + δ)`), and `FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos`,
-  the factorization half of Theorem 9.14: `|ΔA| ≤ (u / (1 - 2u)) |A|` when the computed pivots
-  and the products `β̂_i c_{i-1}` have the sign pattern of a symmetric positive definite or of an
-  M-matrix;
-* `FloatingPoint.roundsLU_exact_iff`: at the exact model (`RoundingModel.exact`) the computed
-  factors are the Doolittle factors `Matrix.luLower A`, `Matrix.luUpper A`, junk division included —
-  the route from the rounding bridge of an LU program to its exact specification;
-* `FloatingPoint.exists_add_mulVec_eq_of_lu_errors`: the combination step of [higham2002accuracy]
-  Theorem 9.4, for any substitution relations with an entrywise backward error; its instances are
-  `FloatingPoint.exists_roundsLU_solve_eq` and `FloatingPoint.exists_roundsLU_solveDot_eq`, the
-  rigorous form of [golub2013matrix] Theorem 3.3.2 for the inner-product substitutions of
-  `Numlib/FloatingPoint/Substitution`;
-* `FloatingPoint.linfty_opNorm_le_of_abs_le_smul_abs_mul_abs`: `‖ΔA‖_∞ ≤ n² γ c_L c_U` from an
-  entrywise bound `|ΔA| ≤ γ |L| |U|` and entry bounds on the factors ([golub2013matrix] (3.4.9),
-  where the computed multipliers are only bounded by `1 + u`);
-* `FloatingPoint.RoundsLDL`, the `L D Lᵀ` recurrence of [golub2013matrix] Algorithm 4.1.1 with the
-  products `v_k = fl(l_jk d_k)` rounded once and reused down column `j`:
-  `FloatingPoint.exists_roundsLDL_mul_eq_add` (`L̂ D̂ L̂ᵀ = A + ΔA`,
-  `|ΔA| ≤ γ_{n+1} |L̂| |D̂| |L̂ᵀ|`) and `FloatingPoint.exists_roundsLDL_solve_eq` (`γ_{3n+2}`, the
-  rigorous [golub2013matrix] (4.1.4));
-* `FloatingPoint.RoundsCholeskyDiv`, Cholesky in the operation order of [golub2013matrix]
-  Algorithm 4.2.1 (the whole column, diagonal included, divided by the rounded square root of the
-  pivot): `FloatingPoint.exists_roundsCholeskyDiv_mul_transpose_eq_add` (`γ_{n+3}`: the diagonal
-  `fl(t / fl(√t))` carries four roundings in `ĝ_jj²`),
-  `FloatingPoint.exists_roundsCholeskyDiv_add_mulVec_eq` (`γ_{3n+3}`) and
-  `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv`,
-  `‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 - n γ_{n+3})`, the rigorous form of Wilkinson's `c_n u ‖A‖₂`.
+* `FloatingPoint.RoundsLU`: the computed LU factors in Doolittle form.
+* `FloatingPoint.RoundsCholesky`: the computed Cholesky factor $\hat R$ with
+  $\hat R^T \hat R \approx A$, as in Algorithm 10.2 of [higham2002accuracy].
+* `FloatingPoint.RoundsLDL`: the computed $LDL^T$ factors in the operation order of Algorithm 4.1.1
+  of [golub2013matrix].
+* `FloatingPoint.RoundsCholeskyDiv`: the computed Cholesky factor $\hat G$ with
+  $\hat G \hat G^T \approx A$, in the operation order of Algorithm 4.2.1 of [golub2013matrix].
+* `FloatingPoint.RoundsThomas`: the computed multipliers and pivots of the Thomas algorithm.
 
-The exact-arithmetic objects are `Numlib/LinearAlgebra/Matrix/LU`, `LU/Elimination`,
-`LU/Pivoting` and `Cholesky`; the triangular solves are `Numlib/FloatingPoint/Substitution`.
+## Main results
+
+* `FloatingPoint.exists_roundsLU_mul_eq_add`: $\hat L \hat U = A + \Delta A$ with
+  $|\Delta A| \le \gamma_n |\hat L| |\hat U|$ ([higham2002accuracy] Theorem 9.3,
+  [quarteroni2000numerical] (3.40)).
+* `FloatingPoint.roundsLU_exact_iff`: in the exact model, the computed factors are the Doolittle
+  factors `Matrix.luLower A` and `Matrix.luUpper A`.
+* `FloatingPoint.exists_roundsLU_solve_eq`: the solve gives $(A + \Delta A)\hat x = b$ with
+  $|\Delta A| \le \gamma_{3n} |\hat L| |\hat U|$ ([higham2002accuracy] Theorem 9.4).
+* `FloatingPoint.exists_roundsLU_solveDot_eq`: the same bound with the inner-product substitutions,
+  the rigorous form of Theorem 3.3.2 of [golub2013matrix].
+* `FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg`: $|\Delta A| \le (nu/(1 - 2nu)) |A|$ when
+  the computed factors are entrywise nonnegative ([quarteroni2000numerical] (3.41)).
+* `FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`: $\|\Delta A\|_\infty \le n^2 \gamma_{3n} \rho
+  \|A\|_\infty$ when $|\hat l_{ij}| \le 1$ and $|\hat u_{ij}| \le \rho \max |a_{ij}|$
+  ([higham2002accuracy] Theorem 9.5, [quarteroni2000numerical] (3.67)).
+* `FloatingPoint.exists_roundsCholesky_eq_add`: $\hat R^T \hat R = A + \Delta A$ with $|\Delta A|
+  \le \gamma_{n+1} |\hat R^T| |\hat R|$ ([higham2002accuracy] Theorem 10.3).
+* `FloatingPoint.exists_roundsLDL_mul_eq_add` and `FloatingPoint.exists_roundsLDL_solve_eq`: the
+  $LDL^T$ factorization and solve, with constants $\gamma_{n+1}$ and $\gamma_{3n+2}$ (the rigorous
+  form of (4.1.4) of [golub2013matrix]).
+* `FloatingPoint.exists_roundsCholeskyDiv_mul_transpose_eq_add`,
+  `FloatingPoint.exists_roundsCholeskyDiv_add_mulVec_eq` and
+  `FloatingPoint.l2_opNorm_le_of_roundsCholeskyDiv`: the Cholesky factorization and solve of
+  [golub2013matrix], with constants $\gamma_{n+3}$ and $\gamma_{3n+3}$, and the normwise bound
+  $\|E\|_2 \le n \gamma_{3n+3} \|A\|_2 / (1 - n \gamma_{n+3})$.
+* `FloatingPoint.exists_roundsThomas_mul_eq_add`: the computed Thomas factors satisfy
+  $\hat L \hat U = A + \Delta A$ with $|\Delta A| \le \gamma_1 |\hat L| |\hat U|$
+  ([higham2002accuracy] (9.20)).
+* `FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos`: $|\Delta A| \le (u/(1 - 2u)) |A|$ for
+  the sign pattern of a symmetric positive definite matrix or an M-matrix (the factorization half of
+  [higham2002accuracy] Theorem 9.14).
+
+## Implementation notes
+
+* The entrywise absolute value is `Matrix.abs` and the entrywise order is `≤ₑ`, of
+  `Numlib.LinearAlgebra.Matrix.Order`. The $\infty$-norm is the operator norm of the scope
+  `Matrix.Norms.Operator`, and the $2$-norm is `Matrix.lpOpNorm 2`.
+* A square root is modelled as one rounding of an exact square root $s$ ($s \ge 0$, $s^2 = t$). This
+  keeps the scalar field abstract.
+* The combination steps `FloatingPoint.exists_add_mulVec_eq_of_lu_errors` and
+  `FloatingPoint.exists_add_mulVec_eq_of_ldl_errors` apply to any substitution relations with an
+  entrywise backward error.
+* `FloatingPoint.linfty_opNorm_le_of_abs_le_smul_abs_mul_abs` turns an entrywise bound
+  $|\Delta A| \le \gamma |L| |U|$ and bounds on the entries of the factors into a normwise bound. In
+  (3.4.9) of [golub2013matrix] the computed multipliers are bounded only by $1 + u$.
+* The exact factorizations are in `Numlib.LinearAlgebra.Matrix.LU`,
+  `Numlib.LinearAlgebra.Matrix.LU.Elimination`, `Numlib.LinearAlgebra.Matrix.LU.Pivoting` and
+  `Numlib.LinearAlgebra.Matrix.Cholesky`. The triangular solves are in
+  `Numlib.FloatingPoint.Substitution`.
 -/
 
 open Finset
@@ -90,36 +106,44 @@ variable {n : Type*} [Fintype n] [LinearOrder n]
 
 /-! ### The computed LU factorization -/
 
-/-- **The LU factorization in floating-point arithmetic**, Doolittle form. `RoundsLU m A L U`:
-`L` is unit lower triangular, `U` upper triangular, and each entry is an admissible value of the
-recurrence [quarteroni2000numerical] (3.43), computed by the running differences of
-[higham2002accuracy] Lemma 8.4 in any order of the terms — `u_ij` for `i ≤ j` is the running
-difference of `a_ij` and the rounded products `l_ir u_rj`, `r < i`; `l_ij` for `j < i` is the
-running difference of `a_ij` and the rounded products `l_ir u_rj`, `r < j`, divided by `u_jj` with
-one more rounding. -/
+/-- **The LU factorization in floating-point arithmetic**, Doolittle form. Let $m$ be a rounding
+model and $A, L, U$ square matrices indexed by a finite linearly ordered type. The relation
+holds when $L$ is unit lower triangular, $U$ is upper triangular, and each entry is an
+admissible value of the recurrence (3.43) of [quarteroni2000numerical], computed by the running
+differences of Lemma 8.4 of [higham2002accuracy] in some order of the terms:
+
+* for $i \le j$, $u_{ij}$ is an admissible running difference of $a_{ij}$ and the rounded
+  products $l_{ir} u_{rj}$, $r < i$;
+* for $j < i$, $l_{ij}$ is an admissible rounding of $t / u_{jj}$, where $t$ is an admissible
+  running difference of $a_{ij}$ and the rounded products $l_{ir} u_{rj}$, $r < j$. -/
 structure RoundsLU (m : RoundingModel K) (A L U : Matrix n n K) : Prop where
-  /-- `L` vanishes above the diagonal. -/
+  /-- $L$ vanishes above the diagonal: $l_{ij} = 0$ for $i < j$. -/
   lower_apply_eq_zero : ∀ i j, i < j → L i j = 0
-  /-- `L` has unit diagonal. -/
+  /-- $L$ has unit diagonal: $l_{ii} = 1$. -/
   lower_diag : ∀ i, L i i = 1
-  /-- `U` vanishes below the diagonal. -/
+  /-- $U$ vanishes below the diagonal: $u_{ij} = 0$ for $j < i$. -/
   upper_apply_eq_zero : ∀ i j, j < i → U i j = 0
-  /-- The entries of `U`: `u_ij = a_ij - ∑_{r < i} l_ir u_rj`, by running differences. -/
+  /-- The entries of $U$: for $i \le j$, $u_{ij}$ is an admissible running difference
+  `FloatingPoint.RoundsRunningDiff` of $a_{ij} - \sum_{r < i} l_{ir} u_{rj}$, over a
+  duplicate-free list of the indices $r < i$. -/
   upper : ∀ i j, i ≤ j → ∃ o : List n, o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
     RoundsRunningDiff m o (L i) (fun r => U r j) (A i j) (U i j)
-  /-- The entries of `L`: `l_ij = (a_ij - ∑_{r < j} l_ir u_rj) / u_jj`, by running differences
-  and one rounded division. -/
+  /-- The entries of $L$: for $j < i$, $l_{ij}$ is an admissible rounding of $t / u_{jj}$, where $t$
+  is an admissible running difference of $a_{ij} - \sum_{r < j} l_{ir} u_{rj}$ over a
+  duplicate-free list of the indices $r < j$. -/
   lower : ∀ i j, j < i → ∃ (o : List n) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
     RoundsRunningDiff m o (L i) (fun r => U r j) (A i j) t ∧ m.Rounds (t / U j j) (L i j)
 
 variable {m : RoundingModel K} {A L U : Matrix n n K}
 
-/-- The computed factors are an LU factorization of their product. -/
+/-- Computed LU factors $L$ and $U$ form an LU factorization of their product $LU$
+(`Matrix.IsLU (L * U) L U`): $L$ is unit lower triangular and $U$ is upper triangular. -/
 theorem RoundsLU.isLU_mul (h : RoundsLU m A L U) : Matrix.IsLU (L * U) L U :=
   ⟨⟨fun i j hij => h.lower_apply_eq_zero i j (OrderDual.toDual_lt_toDual.1 hij), h.lower_diag⟩,
     fun i j hij => h.upper_apply_eq_zero i j hij, rfl⟩
 
-/-- The entry `(i, j)` of `|L| |U|` is `∑_{r ≤ min i j} |l_ir| |u_rj|`. -/
+/-- For computed LU factors, entry $(i, j)$ of $|L| |U|$ is
+$\sum_{r \le \min(i, j)} |l_{ir}| |u_{rj}|$. -/
 theorem RoundsLU.abs_mul_abs_apply (h : RoundsLU m A L U) (i j : n) :
     (L.abs * U.abs) i j = ∑ r ∈ univ.filter (· ≤ min i j), |L i r| * |U r j| := by
   have hLU : Matrix.IsLU (L.abs * U.abs) L.abs U.abs :=
@@ -129,11 +153,15 @@ theorem RoundsLU.abs_mul_abs_apply (h : RoundsLU m A L U) (i j : n) :
       fun i j hij => by simp [h.upper_apply_eq_zero i j hij], rfl⟩
   exact hLU.apply_eq_sum i j
 
-/-- **One entry of [higham2002accuracy] Theorem 9.3**: `|(L U)_ij - a_ij| ≤ γ_n (|L| |U|)_ij`.
-Above the diagonal the entry `u_ij` carries the running differences; below it, `l_ij u_jj`
-carries them together with the division. In both cases the perturbation is charged to the terms
-`l_ir u_rj`, `r ≤ min i j`. Only the pivots that are divisors must be nonzero, those `u_jj` with
-some row `i > j` below them: the last pivot divides nothing. -/
+/-- **One entry of Theorem 9.3 of [higham2002accuracy].** Let $m$ be a rounding model with $u < 1$
+and $nu < 1$, where $n$ is the order of the matrices, and let $L, U$ be computed LU factors of
+$A$. Suppose that $u_{jj} \neq 0$ for every $j$ that has a row $i > j$ below it. Then for all
+$i, j$ $$|(LU)_{ij} - a_{ij}| \le \gamma_n (|L| |U|)_{ij}.$$
+
+Above the diagonal, the entry $u_{ij}$ carries the running differences; below it,
+$l_{ij} u_{jj}$ carries them together with the division. In both cases the perturbation is
+charged to the terms $l_{ir} u_{rj}$, $r \le \min(i, j)$. Only the pivots that are divisors must
+be nonzero; the last pivot divides nothing. -/
 theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : K) * m.u < 1)
     (h : RoundsLU m A L U) (hd : ∀ j i, j < i → U j j ≠ 0) (i j : n) :
     |(L * U) i j - A i j| ≤ gamma m.u (Fintype.card n) * (L.abs * U.abs) i j := by
@@ -221,11 +249,14 @@ theorem RoundsLU.abs_mul_sub_apply_le (hu : m.u < 1) (hcard : (Fintype.card n : 
             (∑ r ∈ o.toFinset, |L i r| * |U r j| + |L i j| * |U j j|) := by
           rw [mul_add, Finset.mul_sum]
 
-/-- **[higham2002accuracy] Theorem 9.3**, [quarteroni2000numerical] (3.40): the computed LU
-factors satisfy `L̂ Û = A + ΔA` with `|ΔA| ≤ γ_n |L̂| |Û|` entrywise, `n` the order of the matrix.
-The pivots `û_jj` that are divisors, those with some row `i > j` below them, must be nonzero,
-since the model rounds `t / û_jj` with the junk value `t / 0 = 0`; the last pivot divides nothing
-and may vanish. -/
+/-- **Theorem 9.3** of [higham2002accuracy], (3.40) of [quarteroni2000numerical]. Let $m$ be a
+rounding model with $u < 1$ and $nu < 1$, where $n$ is the order of the matrices, and let
+$\hat L, \hat U$ be computed LU factors of $A$. Suppose that $\hat u_{jj} \neq 0$ for every $j$
+that has a row $i > j$ below it. Then there is $\Delta A$ with $$\hat L \hat U = A + \Delta A,
+\qquad |\Delta A| \le \gamma_n |\hat L| |\hat U|$$ entrywise.
+
+The model rounds $t / \hat u_{jj}$ with the Lean value $t / 0 = 0$, so the pivots that are
+divisors must be nonzero. The last pivot divides nothing and may vanish. -/
 theorem exists_roundsLU_mul_eq_add (hu : m.u < 1) (hcard : (Fintype.card n : K) * m.u < 1)
     (h : RoundsLU m A L U) (hd : ∀ j i, j < i → U j j ≠ 0) :
     ∃ ΔA : Matrix n n K, ΔA.abs ≤ₑ gamma m.u (Fintype.card n) • (L.abs * U.abs) ∧
@@ -237,23 +268,27 @@ theorem exists_roundsLU_mul_eq_add (hu : m.u < 1) (hcard : (Fintype.card n : K) 
 section Exact
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The lower factor read off the packed recurrence, below the diagonal. -/
+/-- Below the diagonal, the Doolittle lower factor `Matrix.luLower A` agrees with the packed
+recurrence `Matrix.luPacked A`. -/
 private theorem luLower_apply_of_lt (A : Matrix n n K) {i j : n} (h : j < i) :
     A.luLower i j = A.luPacked i j := by
   simp [Matrix.luLower, h]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The upper factor read off the packed recurrence, on and above the diagonal. -/
+/-- On and above the diagonal, the Doolittle upper factor `Matrix.luUpper A` agrees with the packed
+recurrence `Matrix.luPacked A`. -/
 private theorem luUpper_apply_of_le (A : Matrix n n K) {i j : n} (h : i ≤ j) :
     A.luUpper i j = A.luPacked i j := by
   simp [Matrix.luUpper, h]
 
-/-- **Exact-model characterization of the computed LU factors**: at the exact model the relation
-`FloatingPoint.RoundsLU` pins the factors to the Doolittle recurrence, `L = Matrix.luLower A` and
-`U = Matrix.luUpper A`, with no hypothesis on `A` (both sides divide by a zero pivot with the same
-junk value). Every exact run of an LU algorithm whose rounding bridge lands in `RoundsLU` is
-therefore `(luLower A, luUpper A)`, and `Matrix.isLU_luLower_luUpper` is its exact
-specification. -/
+/-- **The computed LU factors in the exact model.** In the exact model, $L$ and $U$ are computed LU
+factors of $A$ if and only if $L$ = `Matrix.luLower A` and $U$ = `Matrix.luUpper A`, the factors
+of the Doolittle recurrence. There is no hypothesis on $A$: when a pivot is zero, both sides
+divide by it with the same Lean value $t / 0 = 0$.
+
+So every exact run of an LU algorithm whose rounding bridge lands in `FloatingPoint.RoundsLU`
+returns `Matrix.luLower A` and `Matrix.luUpper A`, and `Matrix.isLU_luLower_luUpper` gives its
+exact specification. -/
 theorem roundsLU_exact_iff {A L U : Matrix n n K} :
     RoundsLU (RoundingModel.exact K) A L U ↔ L = A.luLower ∧ U = A.luUpper := by
   constructor
@@ -333,11 +368,16 @@ end Exact
 /-! ### The solve -/
 
 omit [LinearOrder n] in
-/-- **The combination step of [higham2002accuracy] Theorem 9.4**: if `L U = A + ΔA₁` with
-`|ΔA₁| ≤ γ_A |L| |U|`, `(L + ΔL) y = b` with `|ΔL| ≤ γ_L |L|` and `(U + ΔU) x = y` with
-`|ΔU| ≤ γ_U |U|`, then `(A + ΔA) x = b` with `|ΔA| ≤ (γ_A + (1 + γ_L)(1 + γ_U) - 1) |L| |U|` — for
-one constant `γ` this is `(3γ + γ²) |L| |U|`. Any pair of substitution relations with an entrywise
-backward error can use it. -/
+/-- **The combination step of Theorem 9.4 of [higham2002accuracy].** Let
+$A, L, U, \Delta A_1, \Delta L, \Delta U$ be square matrices, $b, y, x$ vectors, and
+$\gamma_A, \gamma_L, \gamma_U$ scalars with $\gamma_L \ge 0$. Suppose that $$LU = A + \Delta
+A_1, \quad (L + \Delta L) y = b, \quad (U + \Delta U) x = y,$$ with
+$|\Delta A_1| \le \gamma_A |L| |U|$, $|\Delta L| \le \gamma_L |L|$ and
+$|\Delta U| \le \gamma_U |U|$ entrywise. Then there is $\Delta A$ with $(A + \Delta A) x = b$
+and $$|\Delta A| \le \bigl(\gamma_A + (1 + \gamma_L)(1 + \gamma_U) - 1\bigr) |L| |U|.$$
+
+For one constant $\gamma$ this is $(3\gamma + \gamma^2) |L| |U|$. Any pair of substitution
+relations with an entrywise backward error can use this step. -/
 theorem exists_add_mulVec_eq_of_lu_errors {A L U ΔA₁ ΔL ΔU : Matrix n n K} {γA γL γU : K}
     (hγL : 0 ≤ γL) (hLU : L * U = A + ΔA₁) (hA : ΔA₁.abs ≤ₑ γA • (L.abs * U.abs))
     (hL : ΔL.abs ≤ₑ γL • L.abs) (hU : ΔU.abs ≤ₑ γU • U.abs) {b y x : n → K}
@@ -355,21 +395,23 @@ theorem exists_add_mulVec_eq_of_lu_errors {A L U ΔA₁ ΔL ΔU : Matrix n n K} 
     rw [this, ← Matrix.mulVec_mulVec, hx, hy]
 
 omit [Fintype n] [LinearOrder n] in
-/-- A bound `c P` with `P` entrywise nonnegative is weakened to `d P` for `c ≤ d`. -/
+/-- An entrywise bound $B \le c P$ with $P$ entrywise nonnegative gives $B \le d P$ for $c \le d$.
+-/
 private theorem entrywiseLE_smul_of_le {B P : Matrix n n K} {c d : K} (hB : B ≤ₑ c • P)
     (hcd : c ≤ d) (hP : P.EntrywiseNonneg) : B ≤ₑ d • P := fun i j => by
   refine (hB i j).trans ?_
   simp only [Matrix.smul_apply, smul_eq_mul]
   exact mul_le_mul_of_nonneg_right hcd (hP.apply i j)
 
-/-- `n u < 1` from `3 n u < 1`. -/
+/-- If $u \ge 0$ and $3ku < 1$, then $ku < 1$. -/
 private theorem card_mul_lt_one_of_three_mul {u : K} (hu : 0 ≤ u) {k : ℕ}
     (h : ((3 * k : ℕ) : K) * u < 1) : (k : K) * u < 1 := by
   have : (k : K) * u ≤ ((3 * k : ℕ) : K) * u := by
     push_cast; nlinarith [mul_nonneg (Nat.cast_nonneg (α := K) k) hu]
   linarith
 
-/-- [higham2002accuracy] Theorem 9.4 for any triangular solves with backward error `γ_n`. -/
+/-- Theorem 9.4 of [higham2002accuracy] for any triangular solves with entrywise backward error
+$\gamma_n$. -/
 private theorem exists_roundsLU_solve_eq_of_errors (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n : ℕ) : K) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) {ΔL ΔU : Matrix n n K}
@@ -392,12 +434,18 @@ private theorem exists_roundsLU_solve_eq_of_errors (hu : m.u < 1)
   rw [this]
   exact h3
 
-/-- **[higham2002accuracy] Theorem 9.4**: factoring `A = L̂ Û` and solving the two triangular
-systems by substitution yields a computed `x̂` with `(A + ΔA) x̂ = b`, `|ΔA| ≤ γ_{3n} |L̂| |Û|`.
-This is the rigorous form of [quarteroni2000numerical] (3.64), whose `n u (3|A| + 5|L̂||Û|) +
-O(u²)` is the first-order form of Golub and Van Loan. Unlike the factorization alone
-(`FloatingPoint.exists_roundsLU_mul_eq_add`), back substitution divides by every pivot, so all of
-them must be nonzero. -/
+/-- **Theorem 9.4** of [higham2002accuracy]. Let $m$ be a rounding model with $u < 1$ and $3nu < 1$,
+where $n$ is the order of the matrices. Let $\hat L, \hat U$ be computed LU factors of $A$ with
+$\hat u_{jj} \neq 0$ for every $j$, let $\hat y$ be computed by forward substitution from
+$\hat L \hat y = b$ (`FloatingPoint.RoundsForwardSubst`), and let $\hat x$ be computed by back
+substitution from $\hat U \hat x = \hat y$ (`FloatingPoint.RoundsBackSubst`). Then there is
+$\Delta A$ with $$(A + \Delta A)\hat x = b, \qquad |\Delta A| \le \gamma_{3n} |\hat L| |\hat
+U|.$$
+
+This is the rigorous form of (3.64) of [quarteroni2000numerical], whose
+$nu(3|A| + 5|\hat L| |\hat U|) + O(u^2)$ is the first-order form of Golub and Van Loan. Unlike
+the factorization alone (`FloatingPoint.exists_roundsLU_mul_eq_add`), back substitution divides
+by every pivot, so all pivots must be nonzero. -/
 theorem exists_roundsLU_solve_eq (hu : m.u < 1) (hcard : ((3 * Fintype.card n : ℕ) : K) * m.u < 1)
     (h : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0) {b y x : n → K}
     (hy : RoundsForwardSubst m L b y) (hx : RoundsBackSubst m U y x) :
@@ -410,10 +458,15 @@ theorem exists_roundsLU_solve_eq (hu : m.u < 1) (hcard : ((3 * Fintype.card n : 
   obtain ⟨ΔU, hΔU, hxU⟩ := exists_roundsBackSubst_eq hu hcard' h.isLU_mul.isUpperTriangular hd hx
   exact exists_roundsLU_solve_eq_of_errors hu hcard h hd hΔL hΔU hyL hxU
 
-/-- **[higham2002accuracy] Theorem 9.4 for the inner-product substitutions**, the rigorous form of
-[golub2013matrix] Theorem 3.3.2 (whose triangular solves are Algorithms 3.1.1–3.1.2): factoring
-`A = L̂ Û` and solving the two triangular systems by `FloatingPoint.RoundsForwardSubstDot` and
-`FloatingPoint.RoundsBackSubstDot` yields `(A + ΔA) x̂ = b` with `|ΔA| ≤ γ_{3n} |L̂| |Û|`. -/
+/-- **Theorem 9.4 of [higham2002accuracy] for the inner-product substitutions**, the rigorous form
+of Theorem 3.3.2 of [golub2013matrix], whose triangular solves are Algorithms 3.1.1–3.1.2. Let
+$m$ be a rounding model with $u < 1$ and $3nu < 1$. Let $\hat L, \hat U$ be computed LU factors
+of $A$ with $\hat u_{jj} \neq 0$ for every $j$, and let $\hat y$ and $\hat x$ be computed from
+$\hat L \hat y = b$ and $\hat U \hat x = \hat y$ by the inner-product substitutions
+`FloatingPoint.RoundsForwardSubstDot` and `FloatingPoint.RoundsBackSubstDot`. Then there is
+$\Delta A$ with $$(A + \Delta A)\hat x = b, \qquad |\Delta A| \le \gamma_{3n} |\hat L| |\hat
+U|.$$
+-/
 theorem exists_roundsLU_solveDot_eq (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n : ℕ) : K) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) {b y x : n → K} (hy : RoundsForwardSubstDot m L b y)
@@ -433,10 +486,13 @@ theorem exists_roundsLU_solveDot_eq (hu : m.u < 1)
 section NoCancellation
 
 omit [LinearOrder n] in
-/-- **The backward error is small relative to `A` when `|L| |U| = |L U|`** ([higham2002accuracy]
-(9.8)–(9.9)): if `L U = A + ΔA` with `|ΔA| ≤ γ |L| |U|`, `γ < 1`, and the product has no
-cancellation, then `|L| |U| = |A + ΔA| ≤ |A| + γ |L| |U|`, so `|L| |U| ≤ |A| / (1 - γ)` and
-`|ΔA| ≤ (γ / (1 - γ)) |A|`. -/
+/-- **The backward error is small relative to $A$ when $|L| |U| = |LU|$** ([higham2002accuracy]
+(9.8)–(9.9)). Let $0 \le \gamma < 1$, and let $LU = A + \Delta A$ with
+$|\Delta A| \le \gamma |L| |U|$ entrywise. If the product has no cancellation, $|LU| = |L| |U|$,
+then $$|\Delta A| \le \frac{\gamma}{1 - \gamma} |A|.$$
+
+The reason is that $|L| |U| = |A + \Delta A| \le |A| + \gamma |L| |U|$, so
+$|L| |U| \le |A| / (1 - \gamma)$. The matrices need not be triangular. -/
 theorem abs_entrywiseLE_of_abs_mul_eq {A L U ΔA : Matrix n n K} {γ : K} (hγ : 0 ≤ γ) (hγ1 : γ < 1)
     (hΔ : ΔA.abs ≤ₑ γ • (L.abs * U.abs)) (hLU : L * U = A + ΔA)
     (habs : (L * U).abs = L.abs * U.abs) : ΔA.abs ≤ₑ (γ / (1 - γ)) • A.abs := by
@@ -452,9 +508,14 @@ theorem abs_entrywiseLE_of_abs_mul_eq {A L U ΔA : Matrix n n K} {γ : K} (hγ :
 
 variable {m : RoundingModel K} {A L U : Matrix n n K}
 
-/-- **[quarteroni2000numerical] (3.41)**, [higham2002accuracy] (9.8): when the computed LU
-factors are entrywise nonnegative, the backward error is small relative to `A` itself,
-`|ΔA| ≤ (n u / (1 - 2 n u)) |A|`, since then `|L̂| |Û| = |L̂ Û| = |A + ΔA|`. -/
+/-- **Equation (3.41)** of [quarteroni2000numerical], (9.8) of [higham2002accuracy]. Let $m$ be a
+rounding model with $u < 1$ and $2nu < 1$, and let $\hat L, \hat U$ be computed LU factors of
+$A$ with $\hat u_{jj} \neq 0$ for every $j$ that has a row $i > j$ below it. If $\hat L$ and
+$\hat U$ are entrywise nonnegative, then there is $\Delta A$ with $$\hat L \hat U = A + \Delta
+A, \qquad |\Delta A| \le \frac{nu}{1 - 2nu} |A|.$$
+
+The reason is that $|\hat L| |\hat U| = |\hat L \hat U| = |A + \Delta A|$ for nonnegative
+factors; the proof uses `FloatingPoint.abs_entrywiseLE_of_abs_mul_eq`. -/
 theorem abs_le_of_roundsLU_of_entrywiseNonneg (hu : m.u < 1)
     (hcard : 2 * ((Fintype.card n : K) * m.u) < 1) (h : RoundsLU m A L U)
     (hd : ∀ j i, j < i → U j j ≠ 0) (hL : L.EntrywiseNonneg) (hU : U.EntrywiseNonneg) :
@@ -483,16 +544,21 @@ open scoped Matrix.Norms.Operator
 
 variable {μ ν : Type*} [Fintype μ] [Fintype ν]
 
-/-- The largest entry is at most the maximum-row-sum norm. -/
+/-- For a real matrix $B$, the largest absolute value of an entry, $\max_{i,j} |b_{ij}|$
+(`Matrix.supAbs`), is at most the maximum row-sum norm $\|B\|_\infty$. -/
 theorem _root_.Matrix.supAbs_le_linfty_opNorm (B : Matrix μ ν ℝ) : B.supAbs ≤ ‖B‖ :=
   Matrix.supAbs_le (norm_nonneg _) (Matrix.abs_apply_le_linfty_opNorm B)
 
-/-- **The normwise consequence of an entrywise factor bound**: if `|ΔA| ≤ γ |L| |U|` entrywise and
-the entries of the factors are bounded, `|l_ij| ≤ c_L` and `|u_ij| ≤ c_U`, then
-`‖ΔA‖_∞ ≤ n² γ c_L c_U`, every row sum of `|L| |U|` being at most `n · n · c_L c_U`.
-`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve` is the case `c_L = 1`, `c_U = ρ max |a_ij|`;
-[golub2013matrix] (3.4.9) needs `c_L = 1 + u`, the bound the relational model gives on the
-computed multipliers of partial pivoting. -/
+/-- **The normwise consequence of an entrywise factor bound.** Let $\Delta A, L, U$ be real square
+matrices of order $n$, and let $\gamma \ge 0$. If $|\Delta A| \le \gamma |L| |U|$ entrywise,
+$|l_{ij}| \le c_L$ and $|u_{ij}| \le c_U$ for all $i, j$, then $$\|\Delta A\|_\infty \le n^2
+\gamma c_L c_U.$$
+
+Every row sum of $|L| |U|$ is at most $n \cdot n \cdot c_L c_U$.
+`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve` is the case $c_L = 1$ and
+$c_U = \rho \max |a_{ij}|$. The bound (3.4.9) of [golub2013matrix] needs $c_L = 1 + u$, the
+bound that the rounding model gives on the computed multipliers of partial pivoting. The norm
+$\|\cdot\|_\infty$ is the operator norm of the scope `Matrix.Norms.Operator`. -/
 theorem linfty_opNorm_le_of_abs_le_smul_abs_mul_abs {ΔA L U : Matrix n n ℝ} {γ cL cU : ℝ}
     (hγ : 0 ≤ γ) (hΔ : ΔA.abs ≤ₑ γ • (L.abs * U.abs)) (hL : ∀ i j, |L i j| ≤ cL)
     (hU : ∀ i j, |U i j| ≤ cU) :
@@ -528,14 +594,23 @@ theorem linfty_opNorm_le_of_abs_le_smul_abs_mul_abs {ΔA L U : Matrix n n ℝ} {
 
 variable {m : RoundingModel ℝ} {A L U : Matrix n n ℝ}
 
-/-- **[higham2002accuracy] Theorem 9.5**, [quarteroni2000numerical] (3.67) (Wilkinson), in its
-honest conditional form: if the computed factors satisfy `|l̂_ij| ≤ 1` and `|û_ij| ≤ ρ max |a_ij|`,
-then the backward error of the solve satisfies `‖ΔA‖_∞ ≤ n² γ_{3n} ρ ‖A‖_∞`. The two hypotheses
-hold for the *exact* factors of Gaussian elimination with partial pivoting with `ρ` the growth
-factor (`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`,
-`Matrix.abs_gemStage_le_growthFactor_mul_supAbs` of `Numlib/LinearAlgebra/Matrix/LU/Pivoting`),
-which is the "illicit manoeuvre" Higham confesses to; with `ρ = ρ_n` this is the book's
-`8 u n³ ρ_n ‖A‖_∞ + O(u²)` up to the constant (`n² γ_{3n} = 3 n³ u + O(u²)`). -/
+/-- **Theorem 9.5** of [higham2002accuracy], (3.67) of [quarteroni2000numerical] (Wilkinson), in a
+conditional form. Let $m$ be a rounding model on $\mathbb{R}$ with $u < 1$ and $3nu < 1$. Let
+$\hat L, \hat U$ be computed LU factors of $A$ with $\hat u_{jj} \neq 0$ for every $j$, and let
+$\hat x$ be computed from them by forward and back substitution as in
+`FloatingPoint.exists_roundsLU_solve_eq`. Let $\rho \ge 0$, and suppose that $$|\hat l_{ij}| \le
+1, \qquad |\hat u_{ij}| \le \rho \max_{k,l} |a_{kl}|$$ for all $i, j$. Then there is $\Delta A$
+with $$(A + \Delta A)\hat x = b, \qquad \|\Delta A\|_\infty \le n^2 \gamma_{3n} \rho
+\|A\|_\infty.$$
+
+The two hypotheses hold for the exact factors of Gaussian elimination with partial pivoting,
+with $\rho$ the growth factor (`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one` and
+`Matrix.abs_gemStage_le_growthFactor_mul_supAbs` of `Numlib.LinearAlgebra.Matrix.LU.Pivoting`),
+but not necessarily for the computed factors. Applying them to the computed factors is the
+"illicit manoeuvre" that Higham confesses to, so this theorem takes them as hypotheses. With
+$\rho = \rho_n$ it gives the printed bound $8 u n^3 \rho_n \|A\|_\infty + O(u^2)$ up to the
+constant, since $n^2 \gamma_{3n} = 3 n^3 u + O(u^2)$. The number $\max |a_{kl}|$ is
+`Matrix.supAbs A`. -/
 theorem linfty_opNorm_le_of_roundsLU_solve (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n : ℕ) : ℝ) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) {b y x : n → ℝ} (hy : RoundsForwardSubst m L b y)
@@ -562,27 +637,35 @@ section Cholesky
 
 variable {m : RoundingModel K} {A R : Matrix n n K}
 
-/-- **The Cholesky factorization in floating-point arithmetic**, [quarteroni2000numerical] (3.45)
-in the indexing of the upper factor `R = Hᵀ`, [higham2002accuracy] Algorithm 10.2: `R` is upper
-triangular; the diagonal entry `r_jj` is an admissible rounding of an exact square root `s` of the
-running difference `t` of `a_jj` and the rounded squares `r_rj²`, `r < j`; and the entry `r_ij`,
-`i < j`, is the running difference of `a_ij` and the rounded products `r_ri r_rj`, `r < i`, divided
-by `r_ii` with one more rounding. The square root is modelled as one rounding of an exact root
-(`0 ≤ s`, `s * s = t`), which keeps the scalar field abstract; over `ℝ` it is `Real.sqrt t`, and
-the relation is unsatisfiable when `t < 0`, which is the breakdown of the algorithm. -/
+/-- **The Cholesky factorization in floating-point arithmetic**, (3.45) of [quarteroni2000numerical]
+in the indexing of the upper factor $R = H^T$, and Algorithm 10.2 of [higham2002accuracy]. The
+relation holds when $R$ is upper triangular and:
+
+* the diagonal entry $r_{jj}$ is an admissible rounding of an exact square root $s \ge 0$,
+  $s^2 = t$, where $t$ is an admissible running difference of $a_{jj}$ and the rounded squares
+  $r_{rj}^2$, $r < j$;
+* for $i < j$, the entry $r_{ij}$ is an admissible rounding of $t / r_{ii}$, where $t$ is an
+  admissible running difference of $a_{ij}$ and the rounded products $r_{ri} r_{rj}$, $r < i$.
+
+The square root is modelled as one rounding of an exact root, which keeps the scalar field
+abstract. Over $\mathbb{R}$ the root is `Real.sqrt t`. The relation cannot hold when $t < 0$,
+and this is the breakdown of the algorithm. -/
 structure RoundsCholesky (m : RoundingModel K) (A R : Matrix n n K) : Prop where
-  /-- `R` vanishes below the diagonal. -/
+  /-- $R$ vanishes below the diagonal: $r_{ij} = 0$ for $j < i$. -/
   apply_eq_zero : ∀ i j, j < i → R i j = 0
-  /-- The diagonal: `r_jj = √(a_jj - ∑_{r < j} r_rj²)`. -/
+  /-- The diagonal: $r_{jj}$ is an admissible rounding of $s = \sqrt{t}$, where $t$ is an admissible
+  running difference of $a_{jj} - \sum_{r < j} r_{rj}^2$. -/
   diag : ∀ j, ∃ (o : List n) (t s : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
     RoundsRunningDiff m o (fun r => R r j) (fun r => R r j) (A j j) t ∧ 0 ≤ s ∧ s * s = t ∧
       m.Rounds s (R j j)
-  /-- Above the diagonal: `r_ij = (a_ij - ∑_{r < i} r_ri r_rj) / r_ii`. -/
+  /-- Above the diagonal: for $i < j$, $r_{ij}$ is an admissible rounding of $t / r_{ii}$, where $t$
+  is an admissible running difference of $a_{ij} - \sum_{r < i} r_{ri} r_{rj}$. -/
   offDiag : ∀ i j, i < j → ∃ (o : List n) (t : K), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
     RoundsRunningDiff m o (fun r => R r i) (fun r => R r j) (A i j) t ∧
       m.Rounds (t / R i i) (R i j)
 
-/-- The entry `(i, j)` of `Rᵀ R` for an upper triangular `R` is `∑_{r ≤ min i j} r_ri r_rj`. -/
+/-- For a computed Cholesky factor $R$, which is upper triangular, entry $(i, j)$ of $R^T R$ is
+$\sum_{r \le \min(i, j)} r_{ri} r_{rj}$. -/
 theorem RoundsCholesky.transpose_mul_apply (h : RoundsCholesky m A R) (i j : n) :
     (Rᵀ * R) i j = ∑ r ∈ univ.filter (· ≤ min i j), R r i * R r j := by
   rw [Matrix.mul_apply]
@@ -594,7 +677,8 @@ theorem RoundsCholesky.transpose_mul_apply (h : RoundsCholesky m A R) (i j : n) 
   · exact hr (by rw [Matrix.transpose_apply, h.apply_eq_zero r i hir, zero_mul])
   · exact hr (by rw [h.apply_eq_zero r j hjr, mul_zero])
 
-/-- The entry `(i, j)` of `|Rᵀ| |R|` is `∑_{r ≤ min i j} |r_ri| |r_rj|`. -/
+/-- For a computed Cholesky factor $R$, entry $(i, j)$ of $|R^T| |R|$ is
+$\sum_{r \le \min(i, j)} |r_{ri}| |r_{rj}|$. -/
 theorem RoundsCholesky.abs_transpose_mul_abs_apply (h : RoundsCholesky m A R) (i j : n) :
     (Rᵀ.abs * R.abs) i j = ∑ r ∈ univ.filter (· ≤ min i j), |R r i| * |R r j| := by
   rw [Matrix.mul_apply]
@@ -608,7 +692,7 @@ theorem RoundsCholesky.abs_transpose_mul_abs_apply (h : RoundsCholesky m A R) (i
   · exact hr (by rw [Matrix.abs_apply R, h.apply_eq_zero r j hjr, abs_zero, mul_zero])
 
 omit [IsStrictOrderedRing K] [LinearOrder n] in
-/-- The sums `Rᵀ R` and `|Rᵀ| |R|` are symmetric in `(i, j)`. -/
+/-- For every square matrix $R$, the matrices $R^T R$ and $|R^T| |R|$ are symmetric. -/
 theorem transpose_mul_apply_comm (R : Matrix n n K) (i j : n) :
     (Rᵀ * R) i j = (Rᵀ * R) j i ∧ (Rᵀ.abs * R.abs) i j = (Rᵀ.abs * R.abs) j i := by
   constructor
@@ -620,9 +704,13 @@ theorem transpose_mul_apply_comm (R : Matrix n n K) (i j : n) :
       rw [Matrix.abs_apply, Matrix.abs_apply, Matrix.abs_apply, Matrix.abs_apply,
         Matrix.transpose_apply, Matrix.transpose_apply, mul_comm]
 
-/-- **One entry of [higham2002accuracy] Theorem 10.3**, on or above the diagonal:
-`|(Rᵀ R)_ij - a_ij| ≤ γ_{n+1} (|Rᵀ| |R|)_ij`. The square root on the diagonal costs one more
-rounding than the division of the LU case, whence `n + 1`. -/
+/-- **One entry of Theorem 10.3 of [higham2002accuracy]**, on or above the diagonal. Let $m$ be a
+rounding model with $u < 1$ and $(n + 1)u < 1$, and let $R$ be a computed Cholesky factor of $A$
+with $r_{ii} \neq 0$ for every $i$. Then for $i \le j$ $$|(R^T R)_{ij} - a_{ij}| \le
+\gamma_{n+1} (|R^T| |R|)_{ij}.$$
+
+The square root on the diagonal costs one more rounding than the division of the LU case, hence
+the index $n + 1$. -/
 theorem RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le (hu : m.u < 1)
     (hcard : ((Fintype.card n + 1 : ℕ) : K) * m.u < 1) (h : RoundsCholesky m A R)
     (hd : ∀ i, R i i ≠ 0) {i j : n} (hij : i ≤ j) :
@@ -731,12 +819,16 @@ theorem RoundsCholesky.abs_transpose_mul_sub_apply_le_of_le (hu : m.u < 1)
             (∑ r ∈ o.toFinset, |R r i| * |R r j| + |R i i| * |R i j|) := by
           rw [mul_add, Finset.mul_sum]
 
-/-- **[higham2002accuracy] Theorem 10.3**: the computed Cholesky factor of a symmetric matrix
-satisfies `R̂ᵀ R̂ = A + ΔA` with `|ΔA| ≤ γ_{n+1} |R̂ᵀ| |R̂|` entrywise. The square root costs one
-rounding more than the division of Gaussian elimination, whence `n + 1`; [quarteroni2000numerical]
-§3.4.2 quotes instead Wilkinson's normwise `‖ΔA‖₂ ≤ 8 n (n + 1) u ‖A‖₂`, which is not
-reproduced. The entries below the diagonal follow from the symmetry of `A`; the diagonal of `R̂`
-must be nonzero for the divisions. -/
+/-- **Theorem 10.3** of [higham2002accuracy]. Let $m$ be a rounding model with $u < 1$ and
+$(n + 1)u < 1$, let $A$ be symmetric, and let $\hat R$ be a computed Cholesky factor of $A$ with
+$\hat r_{ii} \neq 0$ for every $i$. Then there is $\Delta A$ with $$\hat R^T \hat R = A + \Delta
+A, \qquad |\Delta A| \le \gamma_{n+1} |\hat R^T| |\hat R|$$ entrywise.
+
+The square root costs one rounding more than the division of Gaussian elimination, hence the
+index $n + 1$. §3.4.2 of [quarteroni2000numerical] quotes instead Wilkinson's normwise bound
+$\|\Delta A\|_2 \le 8n(n + 1)u\|A\|_2$, which is not formalized here. The entries below the
+diagonal follow from the symmetry of $A$, and the diagonal of $\hat R$ must be nonzero for the
+divisions. -/
 theorem exists_roundsCholesky_eq_add (hu : m.u < 1)
     (hcard : ((Fintype.card n + 1 : ℕ) : K) * m.u < 1) (hA : A.IsSymm)
     (h : RoundsCholesky m A R) (hd : ∀ i, R i i ≠ 0) :
@@ -758,10 +850,12 @@ section Symmetric
 
 variable {ι : Type*}
 
-/-- **From a perturbed row equation to an entrywise bound**: if
-`P (1 + θ₀) = c - ∑_{k ∈ s} f_k (1 + θ_k)` with `|θ₀|` and every `|θ_k|` at most `γ`, then
-`|∑_{k ∈ s} f_k + P - c| ≤ γ (∑_{k ∈ s} |f_k| + |P|)`. Every entry of the backward error of a
-factorization computed by running differences is of this shape. -/
+/-- **From a perturbed row equation to an entrywise bound.** Let $s$ be a finite set, and let
+$f_k, \theta_k$ ($k \in s$), $P$, $c$, $\theta_0$ and $\gamma$ be scalars with
+$|\theta_0| \le \gamma$ and $|\theta_k| \le \gamma$ for $k \in s$. If $$P(1 + \theta_0) = c -
+\sum_{k \in s} f_k (1 + \theta_k),$$ then $$\Bigl|\sum_{k \in s} f_k + P - c\Bigr| \le \gamma
+\Bigl(\sum_{k \in s} |f_k| + |P|\Bigr).$$ Every entry of the backward error of a factorization
+computed by running differences has this form. -/
 theorem abs_sum_add_sub_le_of_mul_one_add_eq {s : Finset ι} {f θ : ι → K} {P c θ₀ γ : K}
     (hθ₀ : |θ₀| ≤ γ) (hθ : ∀ k ∈ s, |θ k| ≤ γ)
     (heq : P * (1 + θ₀) = c - ∑ k ∈ s, f k * (1 + θ k)) :
@@ -780,8 +874,8 @@ theorem abs_sum_add_sub_le_of_mul_one_add_eq {s : Finset ι} {f θ : ι → K} {
   · rw [abs_mul, mul_comm]
     exact mul_le_mul_of_nonneg_right hθ₀ (abs_nonneg _)
 
-/-- Two rounding factors multiplied onto a relative perturbation of order `k` give one of order
-`k + 2`. -/
+/-- If $0 \le u < 1$, $(k + 2)u < 1$, $|\theta| \le \gamma_k$ and $|\delta|, |\varepsilon| \le u$,
+then $|(1 + \theta)(1 + \delta)(1 + \varepsilon) - 1| \le \gamma_{k+2}$. -/
 private theorem abs_one_add_mul_one_add_mul_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u)
     (hu1 : u < 1) {k : ℕ} (h : ((k + 2 : ℕ) : K) * u < 1) {θ δ ε : K} (hθ : |θ| ≤ gamma u k)
     (hδ : |δ| ≤ u) (hε : |ε| ≤ u) : |(1 + θ) * (1 + δ) * (1 + ε) - 1| ≤ gamma u (k + 2) := by
@@ -791,9 +885,10 @@ private theorem abs_one_add_mul_one_add_mul_one_add_sub_one_le_gamma {u : K} (hu
     (abs_one_add_mul_one_add_sub_one_le_gamma hu hu1 h1 hθ hδ) hε
   rwa [add_sub_cancel] at h2
 
-/-- The rounding factors of a pivot computed as `fl(t / fl(√t))`, and of the entries divided by
-it: `(1 + θ)(1 + δ₁)² / ((1 + δ₂)(1 + δ₃))` is a relative perturbation of order `k + 4` when `θ` is
-one of order `k`. -/
+/-- The rounding factors of a pivot computed as $fl(t / fl(\sqrt{t}))$, and of the entries divided
+by it: if $0 \le u < 1$, $(k + 4)u < 1$, $|\theta| \le \gamma_k$ and
+$|\delta_1|, |\delta_2|, |\delta_3| \le u$, then $|(1 + \theta)(1 + \delta_1)^2 / ((1 +
+\delta_2)(1 + \delta_3)) - 1| \le \gamma_{k+4}$. -/
 private theorem abs_one_add_mul_sq_div_div_sub_one_le_gamma {u : K} (hu : 0 ≤ u) (hu1 : u < 1)
     {k : ℕ} (h : ((k + 4 : ℕ) : K) * u < 1) {θ δ₁ δ₂ δ₃ : K} (hθ : |θ| ≤ gamma u k)
     (hδ₁ : |δ₁| ≤ u) (hδ₂ : |δ₂| ≤ u) (hδ₃ : |δ₃| ≤ u) :
@@ -810,27 +905,33 @@ private theorem abs_one_add_mul_sq_div_div_sub_one_le_gamma {u : K} (hu : 0 ≤ 
 
 end Symmetric
 
-/-! ### The computed `L D Lᵀ` factorization -/
+/-! ### The computed $LDL^T$ factorization -/
 
 section LDL
 
-/-- **The `L D Lᵀ` factorization in floating-point arithmetic**, in the operation order of
-[golub2013matrix] Algorithm 4.1.1. `RoundsLDL m A L D`: `L` is unit lower triangular, `D` is
-diagonal, and there are the vectors `v` of the algorithm, `V j k = fl(l_jk d_k)` for `k < j` (one
-per column `j`, reused down the column), such that the pivot `d_j` is the running difference of
-`a_jj` and the rounded products `l_jk V j k`, `k < j`, and the entry `l_ij`, `j < i`, is the
-running difference of `a_ij` and the rounded products `l_ik V j k`, `k < j`, divided by `d_j` with
-one more rounding. The book's matrix–vector products are read as running differences from the
-entry of `A`, in any order of the terms, as in `FloatingPoint.RoundsLU`; only the lower triangle
-of `A` is read. -/
+/-- **The $LDL^T$ factorization in floating-point arithmetic**, in the operation order of Algorithm
+4.1.1 of [golub2013matrix]. The relation holds when $L$ is unit lower triangular, $D$ is
+diagonal, and there is a matrix $V$ of the rounded products $v_{jk} = fl(l_{jk} d_k)$, $k < j$,
+of the algorithm (one vector per column $j$, reused down the column), such that:
+
+* the pivot $d_j$ is an admissible running difference of $a_{jj}$ and the rounded products
+  $l_{jk} v_{jk}$, $k < j$;
+* for $j < i$, the entry $l_{ij}$ is an admissible rounding of $t / d_j$, where $t$ is an
+  admissible running difference of $a_{ij}$ and the rounded products $l_{ik} v_{jk}$, $k < j$.
+
+The matrix–vector products of the book are read as running differences from the entry of $A$, in
+any order of the terms, as in `FloatingPoint.RoundsLU`. Only the lower triangle of $A$ is read. -/
 structure RoundsLDL (m : RoundingModel K) (A L D : Matrix n n K) : Prop where
-  /-- `L` vanishes above the diagonal. -/
+  /-- $L$ vanishes above the diagonal: $l_{ij} = 0$ for $i < j$. -/
   lower_apply_eq_zero : ∀ i j, i < j → L i j = 0
-  /-- `L` has unit diagonal. -/
+  /-- $L$ has unit diagonal: $l_{ii} = 1$. -/
   lower_diag : ∀ i, L i i = 1
-  /-- `D` is diagonal. -/
+  /-- $D$ is diagonal. -/
   isDiag : D.IsDiag
-  /-- The recurrence, with the rounded products `V j k = fl(l_jk d_k)` of the algorithm. -/
+  /-- The recurrence: there are admissible roundings $v_{jk}$ of $l_{jk} d_k$, $k < j$, such that
+  $d_j$ is an admissible running difference of $a_{jj} - \sum_{k < j} l_{jk} v_{jk}$, and, for
+  $j < i$, $l_{ij}$ is an admissible rounding of $t / d_j$ with $t$ an admissible running
+  difference of $a_{ij} - \sum_{k < j} l_{ik} v_{jk}$. -/
   exists_rounds : ∃ V : Matrix n n K, (∀ j k, k < j → m.Rounds (L j k * D k k) (V j k)) ∧
     (∀ j, ∃ o : List n, o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
       RoundsRunningDiff m o (L j) (V j) (A j j) (D j j)) ∧
@@ -839,8 +940,9 @@ structure RoundsLDL (m : RoundingModel K) (A L D : Matrix n n K) : Prop where
 
 variable {m : RoundingModel K} {A L D : Matrix n n K}
 
-/-- The entry `(i, j)` of `|L| |D| |Lᵀ|` for the computed factors is
-`∑_{k ≤ min i j} |l_ik| |d_k| |l_jk|`. -/
+/-- For computed $LDL^T$ factors, entry $(i, j)$ of $|L| |D| |L^T|$ is $\sum_{k \le \min(i, j)}
+|l_{ik}| |d_k| |l_{jk}|$.
+-/
 theorem RoundsLDL.abs_mul_mul_transpose_abs_apply (h : RoundsLDL m A L D) (i j : n) :
     (L.abs * D.abs * Lᵀ.abs) i j =
       ∑ k ∈ univ.filter (· ≤ min i j), |L i k| * |D k k| * |L j k| :=
@@ -848,10 +950,13 @@ theorem RoundsLDL.abs_mul_mul_transpose_abs_apply (h : RoundsLDL m A L D) (i j :
     (fun i j hij => by simp [h.lower_apply_eq_zero i j hij])
     (h.isDiag.map (f := (|·|)) abs_zero) i j
 
-/-- **One entry of the backward error of the computed `L D Lᵀ` factors**, on or below the
-diagonal: `|(L D Lᵀ)_ij - a_ij| ≤ γ_{n+1} (|L| |D| |Lᵀ|)_ij`. The products `V j k = fl(l_jk d_k)`
-cost one rounding more than the products of Gaussian elimination, whence `n + 1`. Only the pivots
-that are divisors must be nonzero. -/
+/-- **One entry of the backward error of the computed $LDL^T$ factors**, on or below the diagonal.
+Let $m$ be a rounding model with $u < 1$ and $(n + 1)u < 1$, and let $L, D$ be computed $LDL^T$
+factors of $A$ with $d_j \neq 0$ for every $j$ that has a row $i > j$ below it. Then for
+$j \le i$ $$|(L D L^T)_{ij} - a_{ij}| \le \gamma_{n+1} (|L| |D| |L^T|)_{ij}.$$
+
+The products $v_{jk} = fl(l_{jk} d_k)$ cost one rounding more than the products of Gaussian
+elimination, hence the index $n + 1$. Only the pivots that are divisors must be nonzero. -/
 theorem RoundsLDL.abs_mul_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
     (hcard : ((Fintype.card n + 1 : ℕ) : K) * m.u < 1) (h : RoundsLDL m A L D)
     (hd : ∀ j i, j < i → D j j ≠ 0) {i j : n} (hji : j ≤ i) :
@@ -920,10 +1025,14 @@ theorem RoundsLDL.abs_mul_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
         ring)
     simpa only [abs_mul] using key
 
-/-- **The backward error of the computed `L D Lᵀ` factors** ([golub2013matrix] Algorithm 4.1.1):
-for a symmetric `A`, `L̂ D̂ L̂ᵀ = A + ΔA` with `|ΔA| ≤ γ_{n+1} |L̂| |D̂| |L̂ᵀ|` entrywise. The
-entries below the diagonal follow from the symmetry of `A` and of `L̂ D̂ L̂ᵀ`; only the pivots that
-are divisors must be nonzero. -/
+/-- **The backward error of the computed $LDL^T$ factors** (Algorithm 4.1.1 of [golub2013matrix]).
+Let $m$ be a rounding model with $u < 1$ and $(n + 1)u < 1$, let $A$ be symmetric, and let
+$\hat L, \hat D$ be computed $LDL^T$ factors of $A$ with $\hat d_j \neq 0$ for every $j$ that
+has a row $i > j$ below it. Then there is $\Delta A$ with $$\hat L \hat D \hat L^T = A + \Delta
+A, \qquad |\Delta A| \le \gamma_{n+1} |\hat L| |\hat D| |\hat L^T|$$ entrywise.
+
+The entries above the diagonal follow from the symmetry of $A$ and of $\hat L \hat D \hat L^T$.
+Only the pivots that are divisors must be nonzero. -/
 theorem exists_roundsLDL_mul_eq_add (hu : m.u < 1)
     (hcard : ((Fintype.card n + 1 : ℕ) : K) * m.u < 1) (hA : A.IsSymm) (h : RoundsLDL m A L D)
     (hd : ∀ j i, j < i → D j j ≠ 0) :
@@ -941,11 +1050,15 @@ theorem exists_roundsLDL_mul_eq_add (hu : m.u < 1)
     exact h.abs_mul_mul_transpose_sub_apply_le_of_le hu hcard hd hij.le
 
 omit [LinearOrder n] in
-/-- **The combination step for three factors** (the `L D Lᵀ` analogue of
-`FloatingPoint.exists_add_mulVec_eq_of_lu_errors`): if `L D Lᵀ = A + ΔA₁` with
-`|ΔA₁| ≤ γ_A |L| |D| |Lᵀ|`, `(L + ΔL₁) z = b`, `(D + ΔD) y = z` and `(Lᵀ + ΔL₂) x = y` with
-`|ΔL₁| ≤ γ₁ |L|`, `|ΔD| ≤ γ₂ |D|` and `|ΔL₂| ≤ γ₃ |Lᵀ|`, then `(A + ΔA) x = b` with
-`|ΔA| ≤ (γ_A + (1 + γ₁)(1 + γ₂)(1 + γ₃) - 1) |L| |D| |Lᵀ|`. -/
+/-- **The combination step for three factors**, the $LDL^T$ analogue of
+`FloatingPoint.exists_add_mulVec_eq_of_lu_errors`. Let $\gamma_1, \gamma_2 \ge 0$. Suppose that
+$$L D L^T = A + \Delta A_1, \quad (L + \Delta L_1) z = b, \quad (D + \Delta D) y = z, \quad
+(L^T + \Delta L_2) x = y,$$ with $|\Delta A_1| \le \gamma_A |L| |D| |L^T|$,
+$|\Delta L_1| \le \gamma_1 |L|$, $|\Delta D| \le \gamma_2 |D|$ and
+$|\Delta L_2| \le \gamma_3 |L^T|$ entrywise. Then there is $\Delta A$ with
+$(A + \Delta A) x = b$ and $$|\Delta A| \le \bigl(\gamma_A + (1 + \gamma_1)(1 + \gamma_2)(1 +
+\gamma_3) - 1\bigr) |L| |D| |L^T|.$$
+-/
 theorem exists_add_mulVec_eq_of_ldl_errors {A L D ΔA₁ ΔL₁ ΔD ΔL₂ : Matrix n n K}
     {γA γ₁ γ₂ γ₃ : K} (hγ₁ : 0 ≤ γ₁) (hγ₂ : 0 ≤ γ₂) (hLDL : L * D * Lᵀ = A + ΔA₁)
     (hA : ΔA₁.abs ≤ₑ γA • (L.abs * D.abs * Lᵀ.abs)) (hL₁ : ΔL₁.abs ≤ₑ γ₁ • L.abs)
@@ -973,7 +1086,8 @@ theorem exists_add_mulVec_eq_of_ldl_errors {A L D ΔA₁ ΔL₁ ΔD ΔL₂ : Mat
       abel
     rw [this, ← Matrix.mulVec_mulVec, hx, ← Matrix.mulVec_mulVec, hy, hz]
 
-/-- The constant of the `L D Lᵀ` solve: `γ_{k+1} + (1 + γ_k)(1 + γ₁)(1 + γ_k) - 1 ≤ γ_{3k+2}`. -/
+/-- The constant of the $LDL^T$ solve: if $u \ge 0$ and $(3k + 2)u < 1$, then $\gamma_{k+1} + (1 +
+\gamma_k)(1 + \gamma_1)(1 + \gamma_k) - 1 \le \gamma_{3k+2}$. -/
 private theorem gamma_add_one_add_mul_one_add_mul_one_add_sub_one_le {u : K} (hu : 0 ≤ u) {k : ℕ}
     (h : ((3 * k + 2 : ℕ) : K) * u < 1) :
     gamma u (k + 1) + ((1 + gamma u k) * (1 + gamma u 1) * (1 + gamma u k) - 1) ≤
@@ -994,12 +1108,16 @@ private theorem gamma_add_one_add_mul_one_add_mul_one_add_sub_one_le {u : K} (hu
     mul_le_mul_of_nonneg_right s1 (by linarith)
   nlinarith [mul_nonneg gk1 g2k1]
 
-/-- **[golub2013matrix] (4.1.4), rigorous**: for a symmetric `A`, the solution computed by the
-factorization of [golub2013matrix] Algorithm 4.1.1, forward substitution with `L̂`, the diagonal
-solve `y_i = fl(z_i / d_i)` and back substitution with `L̂ᵀ` satisfies `(A + E) x̂ = b` with
-`|E| ≤ γ_{3n+2} |L̂| |D̂| |L̂ᵀ|`. This implies the book's first-order bound
-`n u (2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)` for `n ≥ 2`, since `(3n + 2) u ≤ 4 n u`; the book's `2|A|`
-term is not needed. -/
+/-- **Equation (4.1.4)** of [golub2013matrix], in rigorous form. Let $m$ be a rounding model with
+$u < 1$ and $(3n + 2)u < 1$, let $A$ be symmetric, and let $\hat L, \hat D$ be computed $LDL^T$
+factors of $A$ (Algorithm 4.1.1 of [golub2013matrix]) with $\hat d_j \neq 0$ for every $j$. Let
+$\hat z$ be computed by forward substitution from $\hat L \hat z = b$, let $\hat y_i$ be an
+admissible rounding of $\hat z_i / \hat d_i$ for every $i$, and let $\hat x$ be computed by back
+substitution from $\hat L^T \hat x = \hat y$. Then there is $E$ with $$(A + E)\hat x = b, \qquad
+|E| \le \gamma_{3n+2} |\hat L| |\hat D| |\hat L^T|.$$
+
+For $n \ge 2$ this implies the first-order bound $nu(2|A| + 4|\hat L| |\hat D| |\hat L^T|) +
+O(u^2)$ of the book, since $(3n + 2)u \le 4nu$. The term $2|A|$ of the book is not needed. -/
 theorem exists_roundsLDL_solve_eq (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n + 2 : ℕ) : K) * m.u < 1) (hA : A.IsSymm) (h : RoundsLDL m A L D)
     (hd : ∀ j, D j j ≠ 0) {b z y x : n → K} (hz : RoundsForwardSubst m L b z)
@@ -1061,19 +1179,26 @@ end LDL
 
 section CholeskyDiv
 
-/-- **Cholesky in the operation order of [golub2013matrix] Algorithm 4.2.1** (gaxpy Cholesky: the
-column `A(j:n, j)` is updated by running differences and then divided, diagonal included, by the
-rounded square root `ŝ_j = fl(√t_j)` of the pivot). `RoundsCholeskyDiv m A G`: `G` is lower
-triangular, and there are the pivots `t_j` (the running difference of `a_jj` and the rounded
-squares `g_jk²`, `k < j`) and their rounded square roots `ŝ_j`, modelled as one rounding of an exact
-root `0 ≤ s`, `s² = t_j`, such that `g_jj = fl(t_j / ŝ_j)` and, for `j < i`, `g_ij = fl(t_ij / ŝ_j)`
-with `t_ij` the running difference of `a_ij` and the rounded products `g_ik g_jk`, `k < j`. It
-differs from `FloatingPoint.RoundsCholesky` (whose diagonal is `fl(√t)`) exactly in the diagonal:
-`fl(t / fl(√t)) = √t (1 + δ₂) / (1 + δ₁)`. Only the lower triangle of `A` is read. -/
+/-- **Cholesky in the operation order of Algorithm 4.2.1 of [golub2013matrix]** (gaxpy Cholesky: the
+column $A(j{:}n, j)$ is updated by running differences and then divided, diagonal included, by
+the rounded square root $\hat s_j = fl(\sqrt{t_j})$ of the pivot). The relation holds when $G$
+is lower triangular and there are pivots $t_j$ and rounded square roots $\hat s_j$ such that:
+
+* $t_j$ is an admissible running difference of $a_{jj}$ and the rounded squares $g_{jk}^2$,
+  $k < j$;
+* $\hat s_j$ is an admissible rounding of an exact root $s \ge 0$ with $s^2 = t_j$;
+* $g_{jj}$ is an admissible rounding of $t_j / \hat s_j$;
+* for $j < i$, $g_{ij}$ is an admissible rounding of $t_{ij} / \hat s_j$, where $t_{ij}$ is an
+  admissible running difference of $a_{ij}$ and the rounded products $g_{ik} g_{jk}$, $k < j$.
+
+It differs from `FloatingPoint.RoundsCholesky`, whose diagonal is $fl(\sqrt{t})$, exactly in the
+diagonal: $fl(t / fl(\sqrt{t})) = \sqrt{t}(1 + \delta_2)/(1 + \delta_1)$. Only the lower
+triangle of $A$ is read. -/
 structure RoundsCholeskyDiv (m : RoundingModel K) (A G : Matrix n n K) : Prop where
-  /-- `G` vanishes above the diagonal. -/
+  /-- $G$ vanishes above the diagonal: $g_{ij} = 0$ for $i < j$. -/
   apply_eq_zero : ∀ i j, i < j → G i j = 0
-  /-- The recurrence, with the pivots `t j` and their rounded square roots `sh j`. -/
+  /-- The recurrence, with the pivots $t_j$ and their rounded square roots $\hat s_j$ (`sh j`), as
+  described for `FloatingPoint.RoundsCholeskyDiv`. -/
   exists_rounds : ∃ t sh : n → K,
     (∀ j, ∃ o : List n, o.Nodup ∧ (∀ k, k ∈ o ↔ k < j) ∧
       RoundsRunningDiff m o (G j) (G j) (A j j) (t j)) ∧
@@ -1084,17 +1209,22 @@ structure RoundsCholeskyDiv (m : RoundingModel K) (A G : Matrix n n K) : Prop wh
 
 variable {m : RoundingModel K} {A G : Matrix n n K}
 
-/-- The entry `(i, j)` of `|G| |Gᵀ|` for the computed factor is `∑_{k ≤ min i j} |g_ik| |g_jk|`. -/
+/-- For a computed factor $G$ of `FloatingPoint.RoundsCholeskyDiv`, entry $(i, j)$ of $|G| |G^T|$ is
+$\sum_{k \le \min(i, j)} |g_{ik}| |g_{jk}|$. -/
 theorem RoundsCholeskyDiv.abs_mul_transpose_abs_apply (h : RoundsCholeskyDiv m A G) (i j : n) :
     (G.abs * Gᵀ.abs) i j = ∑ k ∈ univ.filter (· ≤ min i j), |G i k| * |G j k| :=
   have hG : ∀ i j, i < j → G.abs i j = 0 := fun i j hij => by simp [h.apply_eq_zero i j hij]
   Matrix.mul_transpose_apply_of_lower hG hG i j
 
-/-- **One entry of the backward error of Cholesky in the operation order of [golub2013matrix]
-Algorithm 4.2.1**, on or below the diagonal: `|(G Gᵀ)_ij - a_ij| ≤ γ_{n+3} (|G| |Gᵀ|)_ij`. The
-products `g_ij g_jj` and `g_jj²` carry the rounding of the square root twice and the two divisions
-once each, four roundings where Gaussian elimination has one; the terms carry `#{k ≤ j} ≤ n`. The
-hypothesis is on the returned diagonal: `g_jj ≠ 0` forces `ŝ_j ≠ 0` and `t_j ≠ 0`. -/
+/-- **One entry of the backward error of Cholesky in the operation order of Algorithm 4.2.1 of
+[golub2013matrix]**, on or below the diagonal. Let $m$ be a rounding model with $u < 1$ and
+$(n + 3)u < 1$, and let $G$ be a computed factor of $A$ with $g_{jj} \neq 0$ for every $j$. Then
+for $j \le i$ $$|(G G^T)_{ij} - a_{ij}| \le \gamma_{n+3} (|G| |G^T|)_{ij}.$$
+
+The products $g_{ij} g_{jj}$ and $g_{jj}^2$ carry the rounding of the square root twice and the
+two divisions once each: four roundings where Gaussian elimination has one. The other terms
+carry at most $\#\{k \le j\} \le n$ roundings. The hypothesis is on the returned diagonal:
+$g_{jj} \neq 0$ forces $\hat s_j \neq 0$ and $t_j \neq 0$. -/
 theorem RoundsCholeskyDiv.abs_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
     (hcard : ((Fintype.card n + 3 : ℕ) : K) * m.u < 1) (h : RoundsCholeskyDiv m A G)
     (hd : ∀ j, G j j ≠ 0) {i j : n} (hji : j ≤ i) :
@@ -1160,12 +1290,16 @@ theorem RoundsCholeskyDiv.abs_mul_transpose_sub_apply_le_of_le (hu : m.u < 1)
       ring)
   simpa only [abs_mul] using key
 
-/-- **The backward error of Cholesky in the operation order of [golub2013matrix] Algorithm 4.2.1**:
-for a symmetric `A`, the computed factor satisfies `Ĝ Ĝᵀ = A + ΔA` with
-`|ΔA| ≤ γ_{n+3} |Ĝ| |Ĝᵀ|` entrywise. The constant is two more than the `γ_{n+1}` of
-`FloatingPoint.exists_roundsCholesky_eq_add`, whose diagonal is `fl(√t)`: here
-`ĝ_jj² = t_j (1 + δ₂)² / (1 + δ₁)²` carries four roundings, and for `n = 1`, `δ₁ = -u`, `δ₂ = u` the
-bound `γ_3` is already exceeded. The diagonal of `Ĝ` must be nonzero. -/
+/-- **The backward error of Cholesky in the operation order of Algorithm 4.2.1 of
+[golub2013matrix].** Let $m$ be a rounding model with $u < 1$ and $(n + 3)u < 1$, let $A$ be
+symmetric, and let $\hat G$ be a computed factor of $A$ with $\hat g_{jj} \neq 0$ for every $j$.
+Then there is $\Delta A$ with $$\hat G \hat G^T = A + \Delta A, \qquad |\Delta A| \le
+\gamma_{n+3} |\hat G| |\hat G^T|$$ entrywise.
+
+The constant is two more than the $\gamma_{n+1}$ of
+`FloatingPoint.exists_roundsCholesky_eq_add`, whose diagonal is $fl(\sqrt{t})$. Here $\hat
+g_{jj}^2 = t_j (1 + \delta_2)^2 / (1 + \delta_1)^2$ carries four roundings, and for $n = 1$,
+$\delta_1 = -u$ and $\delta_2 = u$ the error already exceeds $\gamma_3$. -/
 theorem exists_roundsCholeskyDiv_mul_transpose_eq_add (hu : m.u < 1)
     (hcard : ((Fintype.card n + 3 : ℕ) : K) * m.u < 1) (hA : A.IsSymm)
     (h : RoundsCholeskyDiv m A G) (hd : ∀ j, G j j ≠ 0) :
@@ -1179,7 +1313,8 @@ theorem exists_roundsCholeskyDiv_mul_transpose_eq_add (hu : m.u < 1)
     rw [← (Matrix.isSymm_mul_transpose_self G).apply i j, ← hS'.apply i j, ← hA.apply i j]
     exact h.abs_mul_transpose_sub_apply_le_of_le hu hcard hd hij.le
 
-/-- The constant of the Cholesky solve: `γ_{k+3} + (1 + γ_k)(1 + γ_k) - 1 ≤ γ_{3k+3}`. -/
+/-- The constant of the Cholesky solve: if $u \ge 0$ and $(3k + 3)u < 1$, then $\gamma_{k+3} + (1 +
+\gamma_k)(1 + \gamma_k) - 1 \le \gamma_{3k+3}$. -/
 private theorem gamma_add_three_add_one_add_mul_one_add_sub_one_le {u : K} (hu : 0 ≤ u) {k : ℕ}
     (h : ((3 * k + 3 : ℕ) : K) * u < 1) :
     gamma u (k + 3) + ((1 + gamma u k) * (1 + gamma u k) - 1) ≤ gamma u (3 * k + 3) := by
@@ -1193,10 +1328,16 @@ private theorem gamma_add_three_add_one_add_mul_one_add_sub_one_le {u : K} (hu :
   nlinarith [mul_nonneg g3 g2k]
 
 /-- **The Cholesky solve in the operation order of [golub2013matrix]** (Algorithm 4.2.1, then
-forward substitution with `Ĝ` and back substitution with `Ĝᵀ`; [higham2002accuracy] Theorem 10.4
-for this order): for a symmetric `A`, `(A + E) x̂ = b` with `|E| ≤ γ_{3n+3} |Ĝ| |Ĝᵀ|`. From
-`FloatingPoint.exists_roundsCholeskyDiv_mul_transpose_eq_add`, the substitution theorems and
-`FloatingPoint.exists_add_mulVec_eq_of_lu_errors` with `L = Ĝ`, `U = Ĝᵀ`. -/
+forward substitution with $\hat G$ and back substitution with $\hat G^T$; Theorem 10.4 of
+[higham2002accuracy] for this order). Let $m$ be a rounding model with $u < 1$ and
+$(3n + 3)u < 1$, let $A$ be symmetric, and let $\hat G$ be a computed factor of $A$ with
+$\hat g_{jj} \neq 0$ for every $j$. Let $\hat y$ be computed by forward substitution from
+$\hat G \hat y = b$, and $\hat x$ by back substitution from $\hat G^T \hat x = \hat y$. Then
+there is $E$ with $$(A + E)\hat x = b, \qquad |E| \le \gamma_{3n+3} |\hat G| |\hat G^T|.$$
+
+The proof combines `FloatingPoint.exists_roundsCholeskyDiv_mul_transpose_eq_add`, the
+substitution theorems and `FloatingPoint.exists_add_mulVec_eq_of_lu_errors` with $L = \hat G$
+and $U = \hat G^T$. -/
 theorem exists_roundsCholeskyDiv_add_mulVec_eq (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n + 3 : ℕ) : K) * m.u < 1) (hA : A.IsSymm)
     (h : RoundsCholeskyDiv m A G) (hd : ∀ j, G j j ≠ 0) {b y x : n → K}
@@ -1229,8 +1370,12 @@ section Wilkinson
 open Matrix (lpOpNorm)
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The normwise size of `|G| |Gᵀ|`**: if `|E| ≤ γ |G| |Gᵀ|` entrywise, then
-`‖E‖₂ ≤ γ n ‖G‖₂²`, through `‖E‖₂ ≤ ‖E‖_F ≤ γ ‖|G|‖_F ‖|Gᵀ|‖_F = γ ‖G‖_F² ≤ γ n ‖G‖₂²`. -/
+/-- **The normwise size of $|G| |G^T|$.** Let $E, G$ be real square matrices of order $n$, and let
+$\gamma \ge 0$. If $|E| \le \gamma |G| |G^T|$ entrywise, then $$\|E\|_2 \le \gamma n
+\|G\|_2^2.$$
+
+The proof is the chain $\|E\|_2 \le \|E\|_F \le \gamma \||G|\|_F \||G^T|\|_F = \gamma \|G\|_F^2
+\le \gamma n \|G\|_2^2$. The norm $\|\cdot\|_2$ is `Matrix.lpOpNorm 2`. -/
 theorem lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose {E G : Matrix n n ℝ} {γ : ℝ}
     (hγ : 0 ≤ γ) (hE : E.abs ≤ₑ γ • (G.abs * Gᵀ.abs)) :
     lpOpNorm 2 E ≤ γ * Fintype.card n * lpOpNorm 2 G ^ 2 := by
@@ -1262,13 +1407,19 @@ theorem lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose {E G : Matrix n n �
 
 variable {m : RoundingModel ℝ} {A G : Matrix n n ℝ}
 
-/-- **Wilkinson's normwise bound for the Cholesky solve, rigorous** ([golub2013matrix] §4.2.6:
-"`(A + E) x̂ = b`, `‖E‖₂ ≤ c_n u ‖A‖₂`"): under the hypotheses of
-`FloatingPoint.exists_roundsCholeskyDiv_add_mulVec_eq` and `n γ_{n+3} < 1`, the computed solution
-satisfies `(A + E) x̂ = b` with `‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 - n γ_{n+3})`. Both the solve's `E` and
-the factorization's `ΔA` are bounded by `γ n ‖Ĝ‖₂²`
-(`FloatingPoint.lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose`), and
-`‖Ĝ‖₂² = ‖Ĝ Ĝᵀ‖₂ = ‖A + ΔA‖₂ ≤ ‖A‖₂ + n γ_{n+3} ‖Ĝ‖₂²` is solved for `‖Ĝ‖₂²`. -/
+/-- **Wilkinson's normwise bound for the Cholesky solve**, in rigorous form (§4.2.6 of
+[golub2013matrix]: "$(A + E)\hat x = b$, $\|E\|_2 \le c_n u \|A\|_2$"). Let $m$ be a rounding
+model on $\mathbb{R}$ with $u < 1$, $(3n + 3)u < 1$ and $n \gamma_{n+3} < 1$. Let $A$ be
+symmetric, let $\hat G$ be a computed factor of $A$ (`FloatingPoint.RoundsCholeskyDiv`) with
+$\hat g_{jj} \neq 0$ for every $j$, and let $\hat x$ be computed from $\hat G \hat y = b$ and
+$\hat G^T \hat x = \hat y$ by forward and back substitution. Then there is $E$ with $$(A +
+E)\hat x = b, \qquad \|E\|_2 \le \frac{n \gamma_{3n+3} \|A\|_2}{1 - n \gamma_{n+3}}.$$
+
+Both the $E$ of the solve and the $\Delta A$ of the factorization are bounded by
+$\gamma n \|\hat G\|_2^2$
+(`FloatingPoint.lpOpNorm_two_le_of_abs_le_smul_abs_mul_abs_transpose`), and $\|\hat G\|_2^2 =
+\|\hat G \hat G^T\|_2 = \|A + \Delta A\|_2 \le \|A\|_2 + n \gamma_{n+3} \|\hat G\|_2^2$ is
+solved for $\|\hat G\|_2^2$. The norm $\|\cdot\|_2$ is `Matrix.lpOpNorm 2`. -/
 theorem l2_opNorm_le_of_roundsCholeskyDiv (hu : m.u < 1)
     (hcard : ((3 * Fintype.card n + 3 : ℕ) : ℝ) * m.u < 1)
     (hγ : Fintype.card n * gamma m.u (Fintype.card n + 3) < 1) (hA : A.IsSymm)
@@ -1305,7 +1456,16 @@ theorem l2_opNorm_le_of_roundsCholeskyDiv (hu : m.u < 1)
 
 end Wilkinson
 
-/-! ### The Thomas algorithm -/
+/-!
+### The Thomas algorithm
+
+The tridiagonal matrix $A$ has the diagonal $a$, the subdiagonal $b$ (entry $b_i$ at $(i, i - 1)$)
+and the superdiagonal $c$ (entry $c_i$ at $(i, i + 1)$), as in `Matrix.tridiagonalOfNat`. The
+computed factors are the unit lower bidiagonal matrix $\hat L$ with subdiagonal $\hat\beta$
+(`Matrix.lowerBidiagonalOf`) and the upper bidiagonal matrix $\hat U$ with diagonal $\hat\alpha$ and
+superdiagonal $c$ (`Matrix.upperBidiagonalOf`). The sequences are indexed by $\mathbb{N}$, and the
+matrices of order $N$ use their first terms.
+-/
 
 section Thomas
 
@@ -1314,41 +1474,51 @@ open Matrix (lowerBidiagonalOf upperBidiagonalOf lowerBidiagonalOf_mul_apply
 
 variable {m : RoundingModel K} {N : ℕ}
 
-/-- The entrywise absolute value of the lower bidiagonal matrix. -/
+/-- The entrywise absolute value of the unit lower bidiagonal matrix with subdiagonal $\beta$ is the
+unit lower bidiagonal matrix with subdiagonal $|\beta|$. -/
 theorem abs_lowerBidiagonalOf (β : ℕ → K) (N : ℕ) :
     (lowerBidiagonalOf β N).abs = lowerBidiagonalOf (fun i => |β i|) N := by
   ext i j
   simp only [Matrix.abs_apply, lowerBidiagonalOf, Matrix.of_apply]
   split_ifs <;> simp
 
-/-- The entrywise absolute value of the upper bidiagonal matrix. -/
+/-- The entrywise absolute value of the upper bidiagonal matrix with diagonal $\alpha$ and
+superdiagonal $c$ is the upper bidiagonal matrix with diagonal $|\alpha|$ and superdiagonal
+$|c|$. -/
 theorem abs_upperBidiagonalOf (α c : ℕ → K) (N : ℕ) :
     (upperBidiagonalOf α c N).abs = upperBidiagonalOf (fun i => |α i|) (fun i => |c i|) N := by
   ext i j
   simp only [Matrix.abs_apply, upperBidiagonalOf, Matrix.of_apply]
   split_ifs <;> simp
 
-/-- The entries of the upper bidiagonal matrix of absolute values are nonnegative. -/
+/-- The upper bidiagonal matrix with diagonal $|\alpha|$ and superdiagonal $|c|$ is entrywise
+nonnegative. -/
 theorem upperBidiagonalOf_abs_nonneg (α c : ℕ → K) (i j : Fin N) :
     0 ≤ upperBidiagonalOf (fun i => |α i|) (fun i => |c i|) N i j := by
   simp only [upperBidiagonalOf, Matrix.of_apply]
   split_ifs <;> positivity
 
-/-- **The Thomas algorithm in floating-point arithmetic**, [quarteroni2000numerical] (3.53) with
-its three roundings per step: `α̂₀ = a₀`, `β̂_{i+1}` is an admissible rounding of `b_{i+1} / α̂_i`,
-and `α̂_{i+1}` of `a_{i+1} - fl(β̂_{i+1} c_i)`. -/
+/-- **The Thomas algorithm in floating-point arithmetic**, (3.53) of [quarteroni2000numerical] with
+its three roundings per step. For sequences $a, b, c$ and computed pivots $\hat\alpha$ and
+multipliers $\hat\beta$, the relation holds when $\hat\alpha_0 = a_0$ and, for every $i$,
+$$\hat\beta_{i+1} = fl(b_{i+1} / \hat\alpha_i), \qquad \hat\alpha_{i+1} = fl(a_{i+1} -
+fl(\hat\beta_{i+1} c_i)),$$ where each $fl$ is an admissible rounding. -/
 structure RoundsThomas (m : RoundingModel K) (a b c α β : ℕ → K) : Prop where
-  /-- The first pivot is exact. -/
+  /-- The first pivot is exact: $\hat\alpha_0 = a_0$. -/
   alpha_zero : α 0 = a 0
-  /-- The multipliers: `β_{i+1} = fl(b_{i+1} / α_i)`. -/
+  /-- The multipliers: $\hat\beta_{i+1}$ is an admissible rounding of $b_{i+1} / \hat\alpha_i$. -/
   beta_succ : ∀ i, m.Rounds (b (i + 1) / α i) (β (i + 1))
-  /-- The pivots: `α_{i+1} = fl(a_{i+1} - fl(β_{i+1} c_i))`. -/
+  /-- The pivots: $\hat\alpha_{i+1}$ is an admissible rounding of $a_{i+1} - q$, where $q$ is an
+  admissible rounding of $\hat\beta_{i+1} c_i$. -/
   alpha_succ : ∀ i, ∃ q, m.Rounds (β (i + 1) * c i) q ∧ m.Rounds (a (i + 1) - q) (α (i + 1))
 
 variable {a b c α β : ℕ → K}
 
-/-- **One diagonal entry of the Thomas factorization**: `|α̂_{i+1} + β̂_{i+1} c_i - a_{i+1}| ≤
-γ₁ (|α̂_{i+1}| + |β̂_{i+1}| |c_i|)`. -/
+/-- **One diagonal entry of the Thomas factorization.** Let $m$ be a rounding model with $u < 1$,
+and let $\hat\alpha, \hat\beta$ be computed by the Thomas algorithm. Then for every $i$
+$$|\hat\alpha_{i+1} + \hat\beta_{i+1} c_i - a_{i+1}| \le \gamma_1 (|\hat\alpha_{i+1}| +
+|\hat\beta_{i+1}| |c_i|).$$
+-/
 theorem RoundsThomas.abs_alpha_add_mul_sub_le (hu : m.u < 1) (h : RoundsThomas m a b c α β)
     (i : ℕ) :
     |α (i + 1) + β (i + 1) * c i - a (i + 1)| ≤
@@ -1378,8 +1548,10 @@ theorem RoundsThomas.abs_alpha_add_mul_sub_le (hu : m.u < 1) (h : RoundsThomas m
         add_le_add h1 h2
     _ = m.u / (1 - m.u) * (|α (i + 1)| + |β (i + 1)| * |c i|) := by ring
 
-/-- **One subdiagonal entry of the Thomas factorization**:
-`|β̂_{i+1} α̂_i - b_{i+1}| ≤ γ₁ |β̂_{i+1}| |α̂_i|`, for a nonzero pivot `α̂_i`. -/
+/-- **One subdiagonal entry of the Thomas factorization.** Let $m$ be a rounding model with $u < 1$,
+and let $\hat\alpha, \hat\beta$ be computed by the Thomas algorithm. If $\hat\alpha_i \neq 0$,
+then $$|\hat\beta_{i+1} \hat\alpha_i - b_{i+1}| \le \gamma_1 |\hat\beta_{i+1}| |\hat\alpha_i|.$$
+-/
 theorem RoundsThomas.abs_beta_mul_alpha_sub_le (hu : m.u < 1) (h : RoundsThomas m a b c α β)
     (i : ℕ) (hα : α i ≠ 0) :
     |β (i + 1) * α i - b (i + 1)| ≤ gamma m.u 1 * (|β (i + 1)| * |α i|) := by
@@ -1393,12 +1565,18 @@ theorem RoundsThomas.abs_beta_mul_alpha_sub_le (hu : m.u < 1) (h : RoundsThomas 
   exact mul_le_mul_of_nonneg_right (abs_div_one_add_le_gamma_one hu hε)
     (mul_nonneg (abs_nonneg _) (abs_nonneg _))
 
-/-- **[higham2002accuracy] (9.20)**, the backward error of the Thomas factorization: the
-bidiagonal factors built from the computed multipliers and pivots satisfy `L̂ Û = A + ΔA` with
-`|ΔA| ≤ γ₁ |L̂| |Û|`, `A` the tridiagonal matrix of `a`, `b`, `c`. The perturbation lives on the
-diagonal and the subdiagonal; the superdiagonal `c` is reproduced exactly. Higham's constant is
-`u`, with the rounding written as a division `x / (1 + δ)`; the relational model only provides
-`x (1 + δ)`, which costs `γ₁ = u / (1 - u)`. The pivots must be nonzero for the divisions. -/
+/-- **Equation (9.20)** of [higham2002accuracy], the backward error of the Thomas factorization. Let
+$m$ be a rounding model with $u < 1$, and let $\hat\alpha, \hat\beta$ be computed by the Thomas
+algorithm with $\hat\alpha_i \neq 0$ for every $i$. For every $N$, the bidiagonal factors
+$\hat L, \hat U$ of order $N$ built from $\hat\beta$, $\hat\alpha$ and $c$ satisfy $$\hat L \hat
+U = A + \Delta A, \qquad |\Delta A| \le \gamma_1 |\hat L| |\hat U|$$ for some $\Delta A$, where
+$A$ is the tridiagonal matrix of $a$, $b$, $c$.
+
+Higham's constant is $u$, with the rounding written as a division $x/(1 + \delta)$. The rounding
+model only provides $x(1 + \delta)$, which costs $\gamma_1 = u/(1 - u)$.
+
+The perturbation lies on the diagonal and the subdiagonal; the superdiagonal $c$ is reproduced
+exactly. The pivots must be nonzero for the divisions. -/
 theorem exists_roundsThomas_mul_eq_add (hu : m.u < 1) (h : RoundsThomas m a b c α β)
     (hα : ∀ i, α i ≠ 0) (N : ℕ) :
     ∃ ΔA : Matrix (Fin N) (Fin N) K,
@@ -1486,8 +1664,10 @@ theorem exists_roundsThomas_mul_eq_add (hu : m.u < 1) (h : RoundsThomas m a b c 
       rw [hU, hA, sub_self, abs_zero]
       exact mul_nonneg hγ (upperBidiagonalOf_abs_nonneg α c i j)
 
-/-- When the computed pivots are positive and the products `β̂_{i+1} c_i` nonnegative, the
-product of the computed Thomas factors has no cancellation: `|L̂ Û| = |L̂| |Û|`. -/
+/-- If $\alpha_i > 0$ and $\beta_{i+1} c_i \ge 0$ for every $i$, then the product of the bidiagonal
+factors has no cancellation: $|\hat L \hat U| = |\hat L| |\hat U|$, where $\hat L$ is the unit
+lower bidiagonal matrix with subdiagonal $\beta$ and $\hat U$ the upper bidiagonal matrix with
+diagonal $\alpha$ and superdiagonal $c$. -/
 theorem abs_lowerBidiagonalOf_mul_upperBidiagonalOf (hα : ∀ i, 0 < α i)
     (hbc : ∀ i, 0 ≤ β (i + 1) * c i) (N : ℕ) :
     (lowerBidiagonalOf β N * upperBidiagonalOf α c N).abs =
@@ -1531,12 +1711,16 @@ theorem abs_lowerBidiagonalOf_mul_upperBidiagonalOf (hα : ∀ i, 0 < α i)
     simp only [upperBidiagonalOf, Matrix.of_apply]
     split_ifs <;> simp
 
-/-- **[higham2002accuracy] Theorem 9.14, the factorization half**, [quarteroni2000numerical]
-§3.7.1: when the computed pivots are positive and the products `β̂_{i+1} c_i` nonnegative — the
-sign pattern of a symmetric positive definite tridiagonal matrix (`b = c`) and of a tridiagonal
-M-matrix (`b, c ≤ 0`) — the backward error of the Thomas factorization is small relative to `A`
-itself: `|ΔA| ≤ (u / (1 - 2u)) |A|`. Higham's "if `u` is sufficiently small" is what makes the
-computed pivots positive; here their positivity is the hypothesis. -/
+/-- **Theorem 9.14** of [higham2002accuracy], the factorization half, and §3.7.1 of
+[quarteroni2000numerical]. Let $m$ be a rounding model with $2u < 1$, and let
+$\hat\alpha, \hat\beta$ be computed by the Thomas algorithm with $\hat\alpha_i > 0$ and
+$\hat\beta_{i+1} c_i \ge 0$ for every $i$. Then for every $N$ there is $\Delta A$ with $$\hat L
+\hat U = A + \Delta A, \qquad |\Delta A| \le \frac{u}{1 - 2u} |A|,$$ where $A$ is the
+tridiagonal matrix of $a$, $b$, $c$ of order $N$.
+
+The sign conditions hold for a symmetric positive definite tridiagonal matrix ($b = c$) and for
+a tridiagonal M-matrix ($b, c \le 0$). In [higham2002accuracy], the condition "if $u$ is
+sufficiently small" makes the computed pivots positive; here their positivity is the hypothesis. -/
 theorem exists_roundsThomas_mul_eq_add_of_diag_pos (hu : 2 * m.u < 1)
     (h : RoundsThomas m a b c α β) (hα : ∀ i, 0 < α i) (hbc : ∀ i, 0 ≤ β (i + 1) * c i) (N : ℕ) :
     ∃ ΔA : Matrix (Fin N) (Fin N) K,

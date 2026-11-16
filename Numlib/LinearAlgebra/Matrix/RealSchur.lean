@@ -26,61 +26,83 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 /-!
 # The real Schur form
 
-A real square matrix is orthogonally similar to a *quasi upper triangular* matrix: block upper
-triangular with diagonal blocks of size `1 × 1` or `2 × 2`, the `2 × 2` blocks carrying the pairs
-of complex conjugate eigenvalues. This is the **real Schur form**, or *quasi-Schur form*, of
-[saad2003iterative] §1.8.3.
+Every real square matrix $A$ is orthogonally similar to a quasi upper triangular matrix: there is an
+orthogonal matrix $Q$ such that $Q^T A Q$ is block upper triangular with diagonal blocks of size
+$1 \times 1$ or $2 \times 2$, and the $2 \times 2$ blocks carry the pairs of complex conjugate
+eigenvalues. This is the **real Schur form** of Theorem 7.4.1 of [golub2013matrix], called the
+quasi-Schur form in §1.8.3 of [saad2003iterative]. The sharper form of Property 5.8 of
+[quarteroni2000numerical] also requires that no $2 \times 2$ diagonal block has a real eigenvalue,
+and this module proves it too.
 
-The complex triangulation does not specialize: over `ℝ` an operator need not have an eigenvector,
-so the induction of Schur's theorem has to peel off an invariant subspace of dimension one *or
-two*, and that is exactly where the `2 × 2` blocks come from.
+The proof of the complex Schur triangulation does not carry over directly, because over $\mathbb{R}$
+an operator need not have an eigenvector. The induction instead splits off an invariant subspace of
+dimension one or two, and the $2 \times 2$ blocks come from the invariant planes. The module also
+shows that the eigenvalues of a real orthogonal matrix of even order $2m$ with determinant $1$ are
+$m$ conjugate pairs $e^{\pm i \theta_k}$.
+
+## Main definitions
+
+* `Matrix.IsQuasiUpperTriangular`: $T$ is block upper triangular for a monotone block index whose
+  fibres, the diagonal blocks, have at most two elements.
 
 ## Main results
 
-* `LinearMap.exists_invariant_finrank_le_two`: a real operator on a nonzero finite-dimensional
-  space has an invariant subspace of dimension at most two, and nonzero.
-* `Matrix.IsQuasiUpperTriangular`: the shape of the real Schur form (block upper triangular for
-  a monotone block index with fibres of size at most two), with its `Fin` characterization
-  `Matrix.isQuasiUpperTriangular_iff_fin` (upper Hessenberg with no two consecutive nonzero
-  subdiagonal entries), `Matrix.IsQuasiUpperTriangular.isUpperHessenberg`, and its closure under
-  triangular factors `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`,
-  `Matrix.IsUpperTriangular.mul_isQuasiUpperTriangular` ([golub2013matrix] §7.4–7.8 state the
-  real Schur, QR, QZ, periodic and Hamiltonian Schur forms with it).
-* `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular` ([golub2013matrix] Theorem 7.4.1): the
-  matrix form, `Qᵀ A Q` quasi upper triangular for an orthogonal `Q`;
+* `LinearMap.exists_invariant_finrank_le_two`: a linear operator on a nonzero finite-dimensional
+  real vector space has a nonzero invariant subspace of dimension at most two.
+* `LinearMap.exists_invariant_finrank_eq_one_or_two`: such an operator has an invariant line, or an
+  invariant plane that contains no eigenvector.
+* `Matrix.isQuasiUpperTriangular_iff_fin`: a matrix indexed by $\{0, \dots, N - 1\}$ is quasi upper
+  triangular if and only if it is upper Hessenberg and has no two consecutive nonzero subdiagonal
+  entries.
+* `Matrix.IsQuasiUpperTriangular.isUpperHessenberg`: a quasi upper triangular matrix is upper
+  Hessenberg.
+* `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`,
+  `Matrix.IsUpperTriangular.mul_isQuasiUpperTriangular`: the product of a quasi upper triangular
+  matrix and an upper triangular matrix, in either order, is quasi upper triangular. Chapter 7 of
+  [golub2013matrix] uses the quasi upper triangular shape for the real Schur, QR, QZ, periodic and
+  Hamiltonian Schur forms.
+* `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`: Theorem 7.4.1 of [golub2013matrix], the
+  matrix $Q^T A Q$ is quasi upper triangular for some orthogonal $Q$;
   `LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular` is the operator form.
-* `Matrix.exists_orthonormal_cols_of_invariant`: an invariant real subspace has orthonormal
-  columns `X₀` on which the matrix acts through its compression, `M X₀ = X₀ (X₀ᵀ M X₀)`.
-* `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the sharper form
-  of [quarteroni2000numerical] Property 5.8, in which no `2 × 2` diagonal block has a real
-  eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
-  It rests on `LinearMap.exists_invariant_finrank_eq_one_or_two`: an operator with an eigenvector
-  has an invariant line, and one without has no eigenvector on any invariant plane either.
+* `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the form of Property
+  5.8 of [quarteroni2000numerical], in which no $2 \times 2$ diagonal block has a real eigenvalue,
+  so that the $2 \times 2$ blocks carry exactly the pairs of complex conjugate eigenvalues.
+* `Matrix.exists_orthonormal_cols_of_invariant`: an invariant subspace $X$ of a real matrix $M$ has
+  a matrix $X_0$ of orthonormal columns in $X$ with $M X_0 = X_0 (X_0^T M X_0)$.
 * `Matrix.exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup`: the eigenvalues of a real
-  orthogonal matrix of even order `2m` with determinant `1` are `m` conjugate pairs `e^{±iθ_k}`
-  ([golub2013matrix] (12.2.19), stated there for orthogonal Hessenberg matrices). The roots of the
-  complexified characteristic polynomial have modulus one, come in conjugate pairs, and have
-  product `det = 1`, which pairs up the real roots `±1`; no Schur form is needed.
+  orthogonal matrix of order $2m$ with determinant $1$ are $m$ conjugate pairs $e^{\pm i \theta_k}$,
+  as in (12.2.19) of [golub2013matrix], which states it for orthogonal Hessenberg matrices.
+
+## Proof outline
+
+The invariant subspace comes from a factor of the characteristic polynomial. By the Cayley–Hamilton
+theorem the characteristic polynomial annihilates every vector, so some irreducible real factor $q$
+satisfies $q(A) w = 0$ for a nonzero $w$. An irreducible real polynomial has degree one or two, so
+$\operatorname{span}\{w, Aw\}$ is an $A$-invariant subspace of dimension at most two. No
+complexification is needed. The induction then follows the complex proof: it passes to the
+orthogonal complement of an invariant subspace of the adjoint $A^*$, which is invariant under $A$
+itself.
+
+For the special orthogonal matrix, the roots of the complexified characteristic polynomial have
+modulus one, come in conjugate pairs and have the product $\det H = 1$, which pairs up the real
+roots $\pm 1$. No Schur form is needed.
 
 ## Implementation notes
 
-The invariant subspace comes from a factor of the characteristic polynomial. Cayley–Hamilton
-annihilates every vector, so some *irreducible* real factor `q` has `q(A) w = 0` for a nonzero
-`w`; an irreducible real polynomial has degree one or two, so `span {w, A w}` is `A`-invariant of
-dimension at most two. No complexification is needed.
-
-The induction then follows the complex proof: descend through the orthogonal complement of an
-invariant subspace **of the adjoint**, which is invariant under `A` itself. The new basis vectors
-are appended at the end, `Fin (m + d)` with `Fin.addCases`, `d ∈ {1, 2}` being the dimension of the
-peeled subspace; the block index takes the value `m` on them, which is larger than every value it
-takes on the first `m`.
-
-The bound "at most two elements per block" is carried through the induction in the equivalent form
-`∀ i j, p i = p j → (i : ℕ) ≤ (j : ℕ) + 1`, which propagates without any counting, and is turned
-into a statement about cardinalities once, at the end. The irreducibility of the `2 × 2` blocks is
-carried as the statement that, for two distinct indices `i, j` of one block, the characteristic
-polynomial `(a_ii - μ)(a_jj - μ) - a_ij a_ji` of the block has no real root, which is symmetric
-in `i, j` and speaks only of four inner products; it becomes `μ ∉ spectrum ℝ (block)` at the end.
+* In the induction, the new basis vectors are appended at the end, as `Fin (m + d)` with
+  `Fin.addCases`, where $d \in \{1, 2\}$ is the dimension of the subspace that is split off. The
+  block index takes the value $m$ on them, which is larger than every value it takes on the first
+  $m$ indices.
+* The bound "at most two elements per block" is carried through the induction in the equivalent form
+  `∀ i j, p i = p j → (i : ℕ) ≤ (j : ℕ) + 1`, which propagates without counting. It is turned into a
+  bound on cardinalities once, at the end.
+* The irreducibility of the $2 \times 2$ blocks is carried as the statement that, for two distinct
+  indices $i, j$ of one block, the characteristic polynomial
+  $(a_{ii} - \mu)(a_{jj} - \mu) - a_{ij} a_{ji}$ of the block has no real root $\mu$. This statement
+  is symmetric in $i$ and $j$ and involves only four inner products. At the end it becomes the
+  statement that the real spectrum (`spectrum ℝ`) of the diagonal block is empty.
+* `Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so membership of
+  $Q$ in it means $Q^T Q = 1$.
 -/
 
 open Module Polynomial Submodule
@@ -93,9 +115,8 @@ section Invariant
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- Some *irreducible* real polynomial annihilates a nonzero vector, given that some nonzero
-polynomial does. The induction splits a reducible annihilator `f = g h`: either `h` already
-annihilates `v`, or it sends `v` to a nonzero vector annihilated by `g`. -/
+/-- If a nonzero real polynomial annihilates a nonzero vector under a linear operator $A$, then some
+irreducible real polynomial $q$ satisfies $q(A) w = 0$ for some nonzero vector $w$. -/
 private theorem exists_irreducible_aeval_apply_eq_zero (A : E →ₗ[ℝ] E) (n : ℕ) :
     ∀ f : ℝ[X], f.natDegree = n → f ≠ 0 → ∀ v : E, v ≠ 0 → aeval A f v = 0 →
       ∃ q : ℝ[X], Irreducible q ∧ ∃ w : E, w ≠ 0 ∧ aeval A q w = 0 := by
@@ -130,9 +151,13 @@ private theorem exists_irreducible_aeval_apply_eq_zero (A : E →ₗ[ℝ] E) (n 
 
 variable [FiniteDimensional ℝ E]
 
-/-- **A real operator has an invariant subspace of dimension one or two.** This is the substitute,
-over `ℝ`, for the existence of an eigenvector, and it is what makes the `2 × 2` blocks of the real
-Schur form appear. -/
+/-- Let $E$ be a nonzero finite-dimensional real vector space and let $A \colon E \to E$ be linear.
+Then $A$ has an invariant subspace $W$ with $W \ne 0$ and $\dim W \le 2$.
+
+Over $\mathbb{R}$, this replaces the existence of an eigenvector, and it is the source of the
+$2 \times 2$ blocks of the real Schur form. The subspace is $\operatorname{span}\{w, Aw\}$ for a
+nonzero $w$ with $q(A) w = 0$, where $q$ is an irreducible real factor of the characteristic
+polynomial. -/
 theorem exists_invariant_finrank_le_two [Nontrivial E] (A : E →ₗ[ℝ] E) :
     ∃ W : Submodule ℝ E, W ≠ ⊥ ∧ finrank ℝ W ≤ 2 ∧ ∀ w ∈ W, A w ∈ W := by
   classical
@@ -199,11 +224,15 @@ theorem exists_invariant_finrank_le_two [Nontrivial E] (A : E →ₗ[ℝ] E) :
       · exact hAAw
     exact hsub hx
 
-/-- **A real operator has an invariant line, or an invariant plane on which it has no
-eigenvector.** This refinement of `LinearMap.exists_invariant_finrank_le_two` is what produces the
-real Schur form with *irreducible* `2 × 2` blocks: if `A` has an eigenvector at all, take the line
-it spans; otherwise `A` has no eigenvector anywhere, and any invariant subspace of dimension at
-most two — necessarily a plane, a line being spanned by an eigenvector — will do. -/
+/-- Let $E$ be a nonzero finite-dimensional real vector space and let $A \colon E \to E$ be linear.
+Then $A$ has an invariant subspace $W$ such that either $\dim W = 1$, or $\dim W = 2$ and $W$
+contains no eigenvector of $A$: if $w \in W$, $\mu \in \mathbb{R}$ and $Aw = \mu w$, then
+$w = 0$.
+
+This refinement of `LinearMap.exists_invariant_finrank_le_two` gives the real Schur form with
+irreducible $2 \times 2$ blocks. If $A$ has an eigenvector, the proof takes the line that it
+spans. Otherwise $A$ has no eigenvector at all, and every nonzero invariant subspace of
+dimension at most two is a plane, because an invariant line is spanned by an eigenvector. -/
 theorem exists_invariant_finrank_eq_one_or_two [Nontrivial E] (A : E →ₗ[ℝ] E) :
     ∃ W : Submodule ℝ E, (∀ w ∈ W, A w ∈ W) ∧
       (finrank ℝ W = 1 ∨ finrank ℝ W = 2 ∧ ∀ (μ : ℝ), ∀ w ∈ W, A w = μ • w → w = 0) := by
@@ -230,8 +259,11 @@ section QuasiTriangular
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The orthogonal complement of a subspace invariant under the **adjoint** is invariant under the
-operator itself: `⟪u, A y⟫ = ⟪A† u, y⟫` vanishes for `u` in the subspace. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $A \colon E \to E$ be linear, and
+let $W \subseteq E$ be a subspace that is invariant under the adjoint $A^*$. Then the orthogonal
+complement $W^\perp$ is invariant under $A$: if $y \in W^\perp$, then $Ay \in W^\perp$.
+
+For $u \in W$, $\langle u, Ay \rangle = \langle A^* u, y \rangle = 0$. -/
 theorem mem_orthogonal_of_adjoint_invariant [FiniteDimensional ℝ E] {A : E →ₗ[ℝ] E}
     {W : Submodule ℝ E} (hW : ∀ w ∈ W, LinearMap.adjoint A w ∈ W) {y : E} (hy : y ∈ Wᗮ) :
     A y ∈ Wᗮ := by
@@ -240,11 +272,9 @@ theorem mem_orthogonal_of_adjoint_invariant [FiniteDimensional ℝ E] {A : E →
   rw [← LinearMap.adjoint_inner_left]
   exact hy _ (hW u hu)
 
-/-- The `2 × 2` block of the real Schur form is irreducible: if the plane `W`, invariant under the
-adjoint, carries no eigenvector of the adjoint, then the compression of `A` to an orthonormal basis
-of `W` has no real eigenvalue — the characteristic polynomial `(a₀₀ - μ)(a₁₁ - μ) - a₀₁ a₁₀` of
-the block has no real root. A root `μ` would give a kernel vector `c` of the transposed block, and
-`c₀ w₀ + c₁ w₁` would be an eigenvector of the adjoint in `W`. -/
+/-- If a plane $W$ is invariant under $A^*$ and contains no eigenvector of $A^*$, $w_0, w_1$ is an
+orthonormal basis of $W$, and $a_{ij} = \langle w_i, A w_j \rangle$, then $(a_{ii} -
+\mu)(a_{jj} - \mu) - a_{ij} a_{ji} \ne 0$ for distinct $i, j \in \{0, 1\}$ and every real $\mu$. -/
 private theorem block_ne_zero [FiniteDimensional ℝ E] {A : E →ₗ[ℝ] E} {W : Submodule ℝ E}
     (hW : ∀ w ∈ W, LinearMap.adjoint A w ∈ W)
     (hW2 : ∀ (μ : ℝ), ∀ w ∈ W, LinearMap.adjoint A w = μ • w → w = 0)
@@ -300,10 +330,10 @@ private theorem block_ne_zero [FiniteDimensional ℝ E] {A : E →ₗ[ℝ] E} {W
     (by rw [Fin.sum_univ_two, ← hv, hv0])
   exact hc0 (funext hli)
 
-/-- The induction behind the real Schur form: an orthonormal basis in which the entries of `A`
-below the diagonal blocks vanish. The space is quantified inside the statement because the
-induction descends to the orthogonal complement of the peeled subspace, and the block bound is
-carried in the form `p i = p j → (i : ℕ) ≤ (j : ℕ) + 1`. -/
+/-- For every linear operator $A$ on a real inner product space of dimension $n$ there are an
+orthonormal basis $b_0, \dots, b_{n-1}$ and a monotone block index $p$ with values below $n$
+such that $p(i) = p(j)$ implies $i \le j + 1$, the entries $\langle b_i, A b_j \rangle$ with
+$p(j) < p(i)$ vanish, and the $2 \times 2$ diagonal blocks have no real eigenvalue. -/
 private theorem exists_orthonormalBasis_aux (n : ℕ) :
     ∀ {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E],
       finrank ℝ E = n → ∀ A : E →ₗ[ℝ] E,
@@ -479,8 +509,8 @@ private theorem exists_orthonormalBasis_aux (n : ℕ) :
           rw [hfr, hfr]
           exact block_ne_zero hWinv (hW2 rfl) wb μ hab
 
-/-- A block index on `Fin n` whose equal values are always within one of each other has fibres of
-at most two elements: three of them would contain two at distance two or more. -/
+/-- If a block index $p$ on $\{0, \dots, n - 1\}$ satisfies $i \le j + 1$ whenever $p(i) = p(j)$,
+then every fibre of $p$ has at most two elements. -/
 private theorem card_filter_le_two {n : ℕ} {p : Fin n → ℕ}
     (h : ∀ i j, p i = p j → (i : ℕ) ≤ (j : ℕ) + 1) (k : ℕ) :
     (Finset.univ.filter fun i => p i = k).card ≤ 2 := by
@@ -503,14 +533,23 @@ private theorem card_filter_le_two {n : ℕ} {p : Fin n → ℕ}
 
 variable [FiniteDimensional ℝ E]
 
-/-- **The real Schur form with irreducible `2 × 2` blocks**, operator form
-([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): the basis of
-`LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular` can be chosen so that no `2 × 2` diagonal
-block has a real eigenvalue — for two distinct indices `i, j` of one block, the characteristic
-polynomial `(a_ii - μ)(a_jj - μ) - a_ij a_ji` of the block has no real root `μ` — so that each
-`2 × 2` block carries a pair of complex conjugate eigenvalues. The induction peels off, at each
-step, an invariant line of the adjoint or an invariant plane on which the adjoint has no
-eigenvector (`LinearMap.exists_invariant_finrank_eq_one_or_two`). -/
+/-- Let $E$ be a finite-dimensional real inner product space of dimension $n$ and let
+$A \colon E \to E$ be linear. Then there are an orthonormal basis $b_0, \dots, b_{n-1}$ of $E$
+and a monotone block index $p \colon \{0, \dots, n - 1\} \to \mathbb{N}$ such that, with
+$a_{ij} = \langle b_i, A b_j \rangle$:
+
+* every fibre of $p$ has at most two elements;
+* $a_{ij} = 0$ whenever $p(j) < p(i)$;
+* for distinct $i, j$ with $p(i) = p(j)$ and every real $\mu$, $(a_{ii} - \mu)(a_{jj} - \mu) -
+  a_{ij} a_{ji} \ne 0$.
+
+So the matrix of $A$ in the basis $b$ is quasi upper triangular, no $2 \times 2$ diagonal block
+has a real eigenvalue, and each $2 \times 2$ block carries a pair of complex conjugate
+eigenvalues. This is the operator form of Property 5.8 of [quarteroni2000numerical], the sharper
+form of Theorem 7.4.1 of [golub2013matrix].
+
+At each step, the induction splits off an invariant line of the adjoint or an invariant plane on
+which the adjoint has no eigenvector (`LinearMap.exists_invariant_finrank_eq_one_or_two`). -/
 theorem exists_orthonormalBasis_quasiUpperTriangular_of_irreducible_blocks {n : ℕ}
     (hn : finrank ℝ E = n) (A : E →ₗ[ℝ] E) :
     ∃ (b : OrthonormalBasis (Fin n) ℝ E) (p : Fin n → ℕ), Monotone p ∧
@@ -528,15 +567,19 @@ end LinearMap
 
 namespace Matrix
 
-/-- **The real Schur form with irreducible `2 × 2` blocks**, matrix form
-([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): a real square matrix is
-orthogonally similar to a quasi upper triangular matrix `Qᵀ A Q` none of whose `2 × 2` diagonal
-blocks has a real eigenvalue, so that each carries a pair of complex conjugate eigenvalues while
-the `1 × 1` blocks carry the real ones. The blocks are the fibres of the monotone block index `p`,
-and `(Qᵀ * A * Q).toBlock (fun i => p i = k) (fun i => p i = k)` is the `k`-th diagonal block.
+/-- Let $A \in \mathbb{R}^{N \times N}$. Then there are an orthogonal
+$Q \in \mathbb{R}^{N \times N}$ and a monotone block index
+$p \colon \{0, \dots, N - 1\} \to \mathbb{N}$ whose fibres have at most two elements, such that
+$Q^T A Q$ is block upper triangular for $p$ and no $2 \times 2$ diagonal block has a real
+eigenvalue: for every $k$ whose fibre has two elements, the $k$-th diagonal block of $Q^T A Q$
+has no real number in its spectrum. Thus the $2 \times 2$ blocks carry the pairs of complex
+conjugate eigenvalues and the $1 \times 1$ blocks carry the real eigenvalues. This is Property
+5.8 of [quarteroni2000numerical], the sharper form of Theorem 7.4.1 of [golub2013matrix].
 
-`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
-below is `Qᵀ Q = 1`. -/
+The blocks are the fibres of $p$, and `(Qᵀ * A * Q).toBlock (fun i => p i = k) (fun i => p i =
+k)` is the $k$-th diagonal block. Block upper triangular for $p$ is `Matrix.BlockTriangular p`:
+the entries $(i, j)$ with $p(j) < p(i)$ vanish. `Matrix.orthogonalGroup` is
+`Matrix.unitaryGroup` over a ring with trivial star, so the membership means $Q^T Q = 1$. -/
 theorem exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks {N : ℕ}
     (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ p : Fin N → ℕ, Monotone p ∧
@@ -597,9 +640,13 @@ theorem exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks {N : �
 
 /-! ### Orthonormal columns for an invariant subspace -/
 
-/-- **An invariant real subspace has orthonormal columns**: if `X ≤ ℝ^ι` is `M`-invariant of
-dimension `d`, some `X₀ : Matrix ι (Fin d) ℝ` with `X₀ᵀ X₀ = 1` has its columns in `X` (so they
-span it), and `M` acts on them through the compression `X₀ᵀ M X₀`: `M X₀ = X₀ (X₀ᵀ M X₀)`. -/
+/-- Let $\iota$ be a finite index type, let $M \in \mathbb{R}^{\iota \times \iota}$, and let
+$X \subseteq \mathbb{R}^\iota$ be an $M$-invariant subspace of dimension $d$. Then there is
+$X_0 \in \mathbb{R}^{\iota \times d}$ with orthonormal columns, $X_0^T X_0 = I$, whose columns
+lie in $X$, such that $M$ acts on them through the compression $X_0^T M X_0$:
+$$M X_0 = X_0 (X_0^T M X_0).$$
+
+The $d$ orthonormal columns lie in the $d$-dimensional space $X$, so they span it. -/
 theorem exists_orthonormal_cols_of_invariant {ι : Type*} [Fintype ι] (M : Matrix ι ι ℝ)
     (X : Submodule ℝ (ι → ℝ)) (hinv : ∀ x ∈ X, M *ᵥ x ∈ X) {d : ℕ}
     (hd : Module.finrank ℝ X = d) :
@@ -662,31 +709,45 @@ section QuasiTriangular
 
 variable {n R : Type*} [Fintype n] [LinearOrder n]
 
-/-- **Upper quasi-triangular** ([golub2013matrix] §7.4.1): block upper triangular for a monotone
-block index `p : n → ℕ` whose fibres, the diagonal blocks, have at most two elements. This is the
-shape of the real Schur form (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`) and of the
-real QR, QZ, periodic and Hamiltonian Schur forms of [golub2013matrix] §7.4–7.8. -/
+/-- Let $n$ be a finite linearly ordered index type. A matrix $T \in R^{n \times n}$ is **upper
+quasi-triangular** if there is a monotone block index $p \colon n \to \mathbb{N}$ whose fibres
+have at most two elements each, such that $T$ is block upper triangular for $p$: $T_{ij} = 0$
+whenever $p(j) < p(i)$. The fibres of $p$ are the diagonal blocks, of size $1 \times 1$ or
+$2 \times 2$. This is the quasi-triangular shape of §7.4.1 of [golub2013matrix].
+
+It is the shape of the real Schur form (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`)
+and of the real QR, QZ, periodic and Hamiltonian Schur forms of §7.4–§7.8 of [golub2013matrix].
+Block upper triangularity is `Matrix.BlockTriangular p`. -/
 def IsQuasiUpperTriangular [Zero R] (T : Matrix n n R) : Prop :=
   ∃ p : n → ℕ, Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
     T.BlockTriangular p
 
 omit [Fintype n] in
-/-- An upper triangular matrix is block upper triangular for any monotone block index: a nonzero
-entry `M i j` has `i ≤ j`, hence `p i ≤ p j`. -/
+/-- Let $n$ be a linearly ordered index type, let $M \in R^{n \times n}$ be upper triangular, and
+let $p \colon n \to \mathbb{N}$ be monotone. Then $M$ is block upper triangular for $p$:
+$M_{ij} = 0$ whenever $p(j) < p(i)$.
+
+A nonzero entry $M_{ij}$ has $i \le j$, hence $p(i) \le p(j)$. -/
 theorem IsUpperTriangular.blockTriangular_of_monotone [Zero R] {M : Matrix n n R}
     (hM : M.IsUpperTriangular) {p : n → ℕ} (hp : Monotone p) : M.BlockTriangular p :=
   fun _ _ h => hM (lt_of_not_ge fun hij => absurd h (not_lt.mpr (hp hij)))
 
 omit [Fintype n] in
-/-- A lower triangular matrix is block lower triangular for any monotone block index, the
-transpose of `Matrix.IsUpperTriangular.blockTriangular_of_monotone`. -/
+/-- Let $n$ be a linearly ordered index type, let $M \in R^{n \times n}$ be lower triangular, and
+let $p \colon n \to \mathbb{N}$ be monotone. Then $M$ is block lower triangular for $p$:
+$M_{ij} = 0$ whenever $p(i) < p(j)$. In Lean this is `Matrix.BlockTriangular` for
+`OrderDual.toDual ∘ p`, and it is the transpose of
+`Matrix.IsUpperTriangular.blockTriangular_of_monotone`. -/
 theorem IsLowerTriangular.blockTriangular_of_monotone [Zero R] {M : Matrix n n R}
     (hM : M.IsLowerTriangular) {p : n → ℕ} (hp : Monotone p) :
     M.BlockTriangular (OrderDual.toDual ∘ p) :=
   fun _ _ h => hM (lt_of_not_ge fun hij => absurd h (not_lt.mpr (hp hij)))
 
-/-- An upper triangular matrix is upper quasi-triangular, with `1 × 1` blocks: the block index
-counting the smaller indices is strictly monotone. -/
+/-- An upper triangular matrix $T \in R^{n \times n}$ is upper quasi-triangular, with blocks of size
+$1 \times 1$.
+
+The block index that counts the smaller indices is strictly monotone, so its fibres have one
+element each. -/
 theorem IsUpperTriangular.isQuasiUpperTriangular [Zero R] {T : Matrix n n R}
     (hT : T.IsUpperTriangular) : T.IsQuasiUpperTriangular := by
   classical
@@ -706,8 +767,8 @@ theorem IsUpperTriangular.isQuasiUpperTriangular [Zero R] {T : Matrix n n R}
           rw [ha, hb])
     _ ≤ 2 := by norm_num
 
-/-- Three indices in one fibre of the block index are impossible: a fibre has at most two
-elements. -/
+/-- If every fibre of $p$ has at most two elements, then no three indices $a < b < c$ lie in one
+fibre. -/
 private theorem not_three_of_card_le_two {p : n → ℕ}
     (hcard : ∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) {a b c : n} (hab : a < b)
     (hbc : b < c) (h1 : p b = p a) (h2 : p c = p a) : False := by
@@ -716,8 +777,11 @@ private theorem not_three_of_card_le_two {p : n → ℕ}
       (hab.trans hbc).ne, hbc.ne⟩
   exact absurd (hcard (p a)) (not_le.mpr h3)
 
-/-- An upper quasi-triangular matrix is upper Hessenberg: if an index `k` lies strictly between
-`j` and `i`, the three indices cannot share a block, so `p j < p i`. -/
+/-- An upper quasi-triangular matrix $T \in R^{n \times n}$ is upper Hessenberg: $T_{ij} = 0$
+whenever some index lies strictly between $j$ and $i$.
+
+If an index $k$ lies strictly between $j$ and $i$, the three indices cannot share a block, so
+$p(j) < p(i)$. -/
 theorem IsQuasiUpperTriangular.isUpperHessenberg [Zero R] {T : Matrix n n R}
     (hT : T.IsQuasiUpperTriangular) : T.IsUpperHessenberg := by
   obtain ⟨p, hmono, hcard, htri⟩ := hT
@@ -726,18 +790,22 @@ theorem IsQuasiUpperTriangular.isUpperHessenberg [Zero R] {T : Matrix n n R}
   have hk : p k = p j := le_antisymm ((hmono hki.le).trans heq.ge) (hmono hjk.le)
   exact not_three_of_card_le_two hcard hjk hki hk heq.symm
 
-/-- **Products with upper triangular factors keep the quasi-triangular shape**, with the same block
-index: an upper triangular `R` is block triangular for the monotone index of `T`
-(`Matrix.IsUpperTriangular.blockTriangular_of_monotone`), and block triangular matrices for one
-index are closed under multiplication. Used for the periodic Schur form. -/
+/-- Let $R$ be a semiring, not necessarily unital or associative, and let $T, M \in R^{n \times n}$
+with $T$ upper quasi-triangular and $M$ upper triangular. Then $TM$ is upper quasi-triangular.
+
+The proof keeps the block index of $T$. The matrix $M$ is block triangular for this monotone
+index (`Matrix.IsUpperTriangular.blockTriangular_of_monotone`), and the block triangular
+matrices for one index are closed under multiplication. The result is used for the periodic
+Schur form. -/
 theorem IsQuasiUpperTriangular.mul_isUpperTriangular [NonUnitalNonAssocSemiring R]
     {T M : Matrix n n R} (hT : T.IsQuasiUpperTriangular) (hM : M.IsUpperTriangular) :
     (T * M).IsQuasiUpperTriangular := by
   obtain ⟨p, hmono, hcard, htri⟩ := hT
   exact ⟨p, hmono, hcard, htri.mul (hM.blockTriangular_of_monotone hmono)⟩
 
-/-- An upper triangular factor on the left keeps the quasi-triangular shape, the mirror of
-`Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`. -/
+/-- Let $R$ be a semiring, not necessarily unital or associative, and let $M, T \in R^{n \times n}$
+with $M$ upper triangular and $T$ upper quasi-triangular. Then $MT$ is upper quasi-triangular.
+This is the mirror image of `Matrix.IsQuasiUpperTriangular.mul_isUpperTriangular`. -/
 theorem IsUpperTriangular.mul_isQuasiUpperTriangular [NonUnitalNonAssocSemiring R]
     {T M : Matrix n n R} (hM : M.IsUpperTriangular) (hT : T.IsQuasiUpperTriangular) :
     (M * T).IsQuasiUpperTriangular := by
@@ -750,10 +818,14 @@ section Fin
 
 variable {R : Type*} [Zero R] {N : ℕ}
 
-/-- **Upper quasi-triangular on `Fin N`**: upper Hessenberg with no two consecutive nonzero
-subdiagonal entries. The block index counts the zero subdiagonal entries before an index; a nonzero
-subdiagonal entry keeps its two indices in one block, and two consecutive ones would put three
-indices in one block. -/
+/-- A matrix $T \in R^{N \times N}$, indexed by $\{0, \dots, N - 1\}$, is upper quasi-triangular if
+and only if it is upper Hessenberg and has no two consecutive nonzero subdiagonal entries: for
+every $i$ with $i + 2 < N$,
+$$T_{i+1, i} = 0 \quad \text{or} \quad T_{i+2, i+1} = 0.$$
+
+For the converse, the block index of an index counts the zero subdiagonal entries before it. A
+nonzero subdiagonal entry keeps its two indices in one block, and two consecutive nonzero
+subdiagonal entries would put three indices in one block. -/
 theorem isQuasiUpperTriangular_iff_fin {T : Matrix (Fin N) (Fin N) R} :
     T.IsQuasiUpperTriangular ↔ T.IsUpperHessenberg ∧ ∀ i : ℕ, (hi : i + 2 < N) →
       T ⟨i + 1, by omega⟩ ⟨i, by omega⟩ = 0 ∨ T ⟨i + 2, hi⟩ ⟨i + 1, by omega⟩ = 0 := by
@@ -819,15 +891,16 @@ theorem isQuasiUpperTriangular_iff_fin {T : Matrix (Fin N) (Fin N) R} :
 
 end Fin
 
-/-- **The real Schur form** ([golub2013matrix] Theorem 7.4.1; [saad2003iterative] §1.8.3, the
-quasi-Schur form): a real square matrix is orthogonally similar to an upper quasi-triangular
-matrix, `Qᵀ A Q` block upper triangular with diagonal blocks of size `1 × 1` or `2 × 2`; unlike
-the complex Schur triangulation it needs no complex arithmetic. The refinement that no `2 × 2`
-diagonal block has a real eigenvalue stays with the block index in
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`.
+/-- The **real Schur form**: for every $A \in \mathbb{R}^{N \times N}$ there is an orthogonal
+$Q \in \mathbb{R}^{N \times N}$ such that $Q^T A Q$ is upper quasi-triangular, that is, block
+upper triangular with diagonal blocks of size $1 \times 1$ or $2 \times 2$. This is Theorem
+7.4.1 of [golub2013matrix], and the quasi-Schur form of §1.8.3 of [saad2003iterative].
 
-`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
-below is `Qᵀ Q = 1`. -/
+Unlike the complex Schur triangulation, this form needs no complex arithmetic. The refinement
+that no $2 \times 2$ diagonal block has a real eigenvalue needs the block index in the
+statement, and it is `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`.
+`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the
+membership means $Q^T Q = 1$. -/
 theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, (Qᵀ * A * Q).IsQuasiUpperTriangular := by
   obtain ⟨Q, hQ, p, hmono, hcard, htri, -⟩ :=
@@ -836,11 +909,13 @@ theorem exists_orthogonal_conj_isQuasiUpperTriangular {N : ℕ} (A : Matrix (Fin
 
 end Matrix
 
-/-- **The real Schur form**, operator form: a real operator has an orthonormal basis in which its
-matrix is upper quasi-triangular — block upper triangular for a monotone block index whose blocks
-carry at most two indices each. Over `ℂ` the blocks would all be singletons, which is Schur's
-theorem; over `ℝ` an operator need not have an eigenvector, and a `2 × 2` block appears wherever a
-pair of complex conjugate eigenvalues does. -/
+/-- The **real Schur form**, operator form: let $E$ be a finite-dimensional real inner product space
+of dimension $n$ and let $A \colon E \to E$ be linear. Then $E$ has an orthonormal basis in
+which the matrix of $A$ is upper quasi-triangular.
+
+Over $\mathbb{C}$ all blocks could be taken of size $1 \times 1$, which is Schur's theorem. Over
+$\mathbb{R}$ an operator need not have an eigenvector, and a pair of complex conjugate
+eigenvalues needs a $2 \times 2$ block. -/
 theorem LinearMap.exists_orthonormalBasis_isQuasiUpperTriangular {E : Type*}
     [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] {n : ℕ}
     (hn : finrank ℝ E = n) (A : E →ₗ[ℝ] E) :
@@ -861,12 +936,15 @@ section SpecialOrthogonal
 
 open Complex Polynomial
 
-/-- The pair `{e^{iθ}, e^{−iθ}}` of conjugate points of the unit circle. -/
+/-- The multiset $\{e^{i\theta}, e^{-i\theta}\}$ of two conjugate points of the unit circle. -/
 private noncomputable def circlePair (θ : ℝ) : Multiset ℂ := {exp (θ * I), exp (-θ * I)}
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The eigenvalues of a real orthogonal matrix lie on the unit circle**: its complexification
-is a unitary element of the C⋆-algebra of complex matrices (`spectrum.norm_eq_one_of_unitary`). -/
+/-- Let $H \in \mathbb{R}^{N \times N}$ be orthogonal. Then every root $z$ of the characteristic
+polynomial of $H$, taken as a complex matrix, has $|z| = 1$.
+
+The complex matrix $H$ is a unitary element of the $C^*$-algebra of complex matrices, and the
+spectrum of a unitary element lies on the unit circle (`spectrum.norm_eq_one_of_unitary`). -/
 theorem norm_eq_one_of_mem_orthogonalGroup_of_mem_roots_charpoly {N : ℕ}
     {H : Matrix (Fin N) (Fin N) ℝ} (hH : H ∈ orthogonalGroup (Fin N) ℝ) {z : ℂ}
     (hz : z ∈ (H.map (algebraMap ℝ ℂ)).charpoly.roots) : ‖z‖ = 1 := by
@@ -879,8 +957,8 @@ theorem norm_eq_one_of_mem_orthogonalGroup_of_mem_roots_charpoly {N : ℕ}
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly]
   exact (mem_roots A.charpoly_monic.ne_zero).1 hz
 
-/-- A conjugation-invariant multiset of unit complex numbers with even size and product `1` is a
-union of conjugate pairs `{e^{iθ}, e^{−iθ}}`. -/
+/-- A multiset of complex numbers of modulus one that is closed under conjugation, has even size and
+has product $1$ is a union of conjugate pairs $\{e^{i\theta}, e^{-i\theta}\}$. -/
 private theorem exists_circlePairs (s : Multiset ℂ) (hconj : s.map (starRingEnd ℂ) = s)
     (hnorm : ∀ z ∈ s, ‖z‖ = 1) (hprod : s.prod = 1) (hcard : Even (Multiset.card s)) :
     ∃ T : Multiset ℝ, 2 * Multiset.card T = Multiset.card s ∧ s = T.bind circlePair := by
@@ -962,13 +1040,19 @@ private theorem exists_circlePairs (s : Multiset ℂ) (hconj : s.map (starRingEn
           omega
       rw [Multiset.add_bind, hrb a' 0 1 hc0, hrb b' Real.pi (-1) hcpi, hsab, ← ha', ← hb']
 
-/-- **The spectrum of a special orthogonal matrix** ([golub2013matrix] (12.2.19), stated there
-for orthogonal upper Hessenberg matrices; true for all): the eigenvalues of `H` orthogonal of
-even order `2m` with `det H = 1` are `m` conjugate pairs `e^{±iθ_k}` on the unit circle, the real
-eigenvalues `±1` included in pairs. The roots of the characteristic polynomial have modulus one
-(`H` is unitary over `ℂ`), come in conjugate pairs (the polynomial is real), and the eigenvalue
-`−1` has even multiplicity because their product is `det H = 1`; so does `1`, the order being
-even. -/
+/-- Let $H \in \mathbb{R}^{2m \times 2m}$ be orthogonal with $\det H = 1$. Then there are
+$\theta_0, \dots, \theta_{m-1} \in \mathbb{R}$ such that the characteristic polynomial of $H$,
+taken as a complex matrix, is
+$$\det(XI - H) = \prod_{k=0}^{m-1} (X - e^{i \theta_k})(X - e^{-i \theta_k}).$$
+So the eigenvalues of $H$ are $m$ conjugate pairs $e^{\pm i \theta_k}$ on the unit circle, and
+the real eigenvalues $\pm 1$ occur in pairs. This is (12.2.19) of [golub2013matrix], which
+states it for orthogonal upper Hessenberg matrices; it holds for all special orthogonal matrices
+of even order.
+
+The roots of the characteristic polynomial have modulus one
+(`Matrix.norm_eq_one_of_mem_orthogonalGroup_of_mem_roots_charpoly`) and come in conjugate pairs,
+because the polynomial is real. The eigenvalue $-1$ has even multiplicity because the product of
+the roots is $\det H = 1$, and then so has $1$, because the order is even. -/
 theorem exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup {m : ℕ}
     {H : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ} (hH : H ∈ specialOrthogonalGroup (Fin (2 * m)) ℝ) :
     ∃ θ : Fin m → ℝ, (H.map (algebraMap ℝ ℂ)).charpoly =

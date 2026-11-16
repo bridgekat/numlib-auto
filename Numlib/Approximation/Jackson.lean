@@ -16,71 +16,90 @@ import Numlib.Approximation.Chebyshev
 /-!
 # Jackson's theorem through the Fejér–Korovkin kernel
 
-**Jackson's theorem** bounds the error of the best uniform approximation of a smooth `2 π`-periodic
-function by trigonometric polynomials of degree at most `n`. This file builds the kernel that the
-sharp form of the theorem rests on and proves the theorem for a Hölder continuous function:
+**Jackson's theorem** bounds the error of the best uniform approximation of a smooth $2\pi$-periodic
+function by trigonometric polynomials of degree at most $n$. Write $\mathcal{T}_n$ for the space of
+these trigonometric polynomials, $\rho_n(g) = \operatorname{dist}(g, \mathcal{T}_n)$ for the error
+of best uniform approximation, $\theta_n = \pi/(n + 2)$, and $A_n = \pi \sin(\theta_n / 2) = \pi
+\sin(\pi/(2n + 4))$. This file builds the Fejér–Korovkin kernel and proves the theorem first for a
+Hölder continuous function,
+$$\rho_n(g) \le M A_n^\alpha \le \frac{M (\pi^2/2)^\alpha}{n^\alpha} \qquad \text{when } |g(u) -
+  g(v)| \le M |u - v|^\alpha,$$
+and then, for a function with $k$ continuous derivatives whose $k$-th derivative is $\alpha$-Hölder
+with constant $M$, in the classical form $\rho_n(g) \le (1 + \pi^2/2)^{k+1} M / n^{k+\alpha}$ for
+$n \ge 1$. Through the substitution $x = \cos\theta$, the Hölder bound holds unchanged for the best
+approximation on $[-1, 1]$ by algebraic polynomials of degree at most $n$; the bound for $k$
+derivatives holds for $n > k$, with an extra factor $d$ that compensates the lower degrees $n - i$
+along the recursion. Theorems 3.7.1 and 3.7.2 of [han2009theoretical] state these results with the
+constant $(1 + \pi^2/2)^{k+1}$ and refer to [meinardus1967approximation] for the proof.
 
-`dist (g, 𝕋ₙ) ≤ M (π sin (π / (2 n + 4)))^α ≤ M (π² / 2)^α / n^α` when `|g u - g v| ≤ M |u - v|^α`.
-
-The kernel is `K_n(r) = |∑_{k ≤ n} c_k e^{i k r}|²` with `c_k = √(2/(n+2)) sin ((k+1) π/(n+2))`. It
-is nonnegative and has total mass `2 π` over a period, and its first cosine coefficient is
-`cos (π / (n + 2))` — the largest such a kernel of degree `n` can have. That is what makes its
-second moment as small as `2 π (π sin (π / (2 n + 4)))²`, hence its first absolute moment at most
-`2 π · π sin (π / (2 n + 4))`, and that moment is exactly the error constant. The Fejér kernel and
-its powers give a worse constant, which is why the extremal kernel is the one built here.
+The kernel is $K_n(r) = |\sum_{k \le n} c_k e^{ikr}|^2$ with
+$c_k = \sqrt{2/(n + 2)} \sin((k + 1)\theta_n)$. It is nonnegative, it has total mass $2\pi$ over a
+period, and its first cosine coefficient is $\cos\theta_n$, the largest that such a kernel of degree
+$n$ can have. This makes its second moment as small as $2\pi A_n^2$, and hence its first absolute
+moment at most $2\pi A_n$; this moment is exactly the error constant. The Fejér kernel and its
+powers give a worse constant.
 
 ## Main definitions
 
-* `Jackson.angle n` is `θ = π / (n + 2)`, and `Jackson.coeff n k` is `c_k`.
-* `Jackson.kernel n` is `K_n`, written as the sum of the squares of the real and imaginary parts of
-  `∑_k c_k e^{i k r}` so that `Jackson.kernel_nonneg` is immediate;
-  `Jackson.kernel_eq_sum` expands it as `∑_{k, l} c_k c_l cos ((k - l) r)`, the form the moments
-  and the degree are read off from.
-* `Jackson.approx n g` is the convolution `x ↦ (2 π)⁻¹ ∫_{-π}^{π} K_n(r) g (x - r) dr`
-  (`Jackson.approx_coe`), written out in the real trigonometric system so that
-  `Jackson.approx_mem` — that it is a trigonometric polynomial of degree at most `n` — needs no
-  argument.
-* `Jackson.cosCM m`, `Jackson.sinCM m` are `x ↦ cos (m x)` and `x ↦ sin (m x)` as continuous
-  functions on the circle of circumference `2 π`, again built from the trigonometric system.
+* `Jackson.angle`: the angle $\theta_n = \pi/(n + 2)$.
+* `Jackson.coeff`: the coefficients $c_k = \sqrt{2/(n + 2)} \sin((k + 1)\theta_n)$.
+* `Jackson.kernel`: the Fejér–Korovkin kernel $K_n(r) = |\sum_{k \le n} c_k e^{ikr}|^2$.
+* `Jackson.approx`: the Fejér–Korovkin approximation $L_n g(x) = (2\pi)^{-1} \int_{-\pi}^{\pi}
+  K_n(r)\, g(x - r)\, dr$, a trigonometric polynomial of degree at most $n$.
+* `Jackson.rem`: the remainder $R_n g = g - L_n g$.
+* `Jackson.cosCM`, `Jackson.sinCM`: the functions $x \mapsto \cos(mx)$ and $x \mapsto \sin(mx)$ on
+  the circle of circumference $2\pi$.
 
 ## Main results
 
-* `Jackson.integral_kernel` and `Jackson.integral_cos_mul_kernel`: the mass `2 π` and the first
-  cosine coefficient `cos θ` of the kernel. Both come from the two sums `Jackson.sum_coeff_sq` and
-  `Jackson.sum_coeff_mul_coeff_succ`, which are in turn the telescoping identities
-  `Jackson.sum_cos_odd_angle` and `Jackson.sum_cos_even_angle` at `θ = π / (n + 2)`.
-* `Jackson.integral_sq_mul_kernel_le` and `Jackson.integral_abs_mul_kernel_le`: the second and the
-  first moments. The first follows from the second by `|r| ≤ r²/(2 s) + s/2`, which is the
-  Cauchy–Schwarz step done by hand.
-* `Jackson.abs_sub_approx_le_of_holder` and `Jackson.infDist_le_of_holder`: Jackson's theorem for
-  a Hölder function, pointwise and as a bound on the distance to `trigPolyLE (2 π) n`. This is the
-  case `k = 0`.
-* `Jackson.hasDerivAt_approx`: **the operator commutes with differentiation**, by integration by
-  parts on each Fourier coefficient of the kernel. It is what lets the `k = 0` estimate be iterated
-  through the remainder `Jackson.rem n g = g - approx n g`, whose iterates are estimated by
-  `Jackson.abs_iterate_rem_le`: each application removes a trigonometric polynomial of degree at
-  most `n` (`Jackson.sub_iterate_rem_mem`) and costs one factor of the first moment.
-* `Jackson.infDist_le_of_holder_deriv'` is **Jackson's theorem** in the classical form
-  `ρₙ(g) ≤ (1 + π²/2)^{k+1} M / n^{k+α}` for a `2 π`-periodic `g` with `k` continuous derivatives
-  whose `k`-th derivative is `α`-Hölder with constant `M`;
-  `Jackson.infDist_le_of_holder_deriv` is the same bound before the constant is coarsened, and
-  `Jackson.moment_pow_le` is that coarsening.
+* `Jackson.integral_kernel`, `Jackson.integral_cos_mul_kernel`: the kernel has mass $2\pi$ and first
+  cosine coefficient $\cos\theta_n$.
+* `Jackson.integral_sq_mul_kernel_le`, `Jackson.integral_abs_mul_kernel_le`: the second moment of
+  the kernel is at most $2\pi A_n^2$, and the first absolute moment is at most $2\pi A_n$.
+* `Jackson.abs_sub_approx_le_of_holder`, `Jackson.infDist_le_of_holder`: Jackson's theorem for a
+  Hölder function, pointwise and as a bound on $\rho_n$. This is the case $k = 0$.
+* `Jackson.hasDerivAt_approx`: the Fejér–Korovkin operator commutes with differentiation.
+* `Jackson.abs_iterate_rem_le`: each application of the remainder to a derivative costs one factor
+  $A_n$.
+* `Jackson.infDist_le_of_holder_deriv`: Jackson's theorem with the constant $A_n^{k+\alpha} M$.
+* `Jackson.infDist_le_of_holder_deriv'`: Jackson's theorem in the classical form $\rho_n(g) \le (1 +
+  \pi^2/2)^{k+1} M / n^{k+\alpha}$.
+* `Jackson.exists_degree_le_eval_cos`: the even part of a trigonometric polynomial of degree at most
+  $n$ is $P(\cos\theta)$ for an algebraic polynomial $P$ of degree at most $n$.
+* `Jackson.infDist_polyLE_le_infDist_trigPolyLE`: the best algebraic approximation on $[-1, 1]$ is
+  at least as good as the best trigonometric approximation of the pullback along $\cos$.
+* `Jackson.infDist_polyLE_le_of_holder`, `Jackson.infDist_le_of_holder_poly`: Jackson's theorem for
+  algebraic polynomials, in the Hölder case and in the $C^{k,\alpha}$ case.
 
-* `Jackson.exists_degree_le_eval_cos` is **the Chebyshev correspondence**: the even part of a
-  trigonometric polynomial of degree at most `n` is `P (cos θ)` for an algebraic `P` of degree at
-  most `n`. With it, `Jackson.infDist_polyLE_le_infDist_trigPolyLE` transfers the periodic theorem
-  to `[-1, 1]`, and `Jackson.infDist_polyLE_le_of_holder`,
-  `Jackson.infDist_le_of_holder_poly` are **Jackson's theorem for algebraic polynomials** in the
-  Hölder and the `C^{k,α}` cases. The recursion down the tower of derivatives is
-  `Jackson.infDist_restrictIcc_le_step`, and it loses nothing, the antiderivative of a polynomial
-  being a polynomial (`Jackson.exists_derivative_eq`).
+## Proof outline
 
-The derivatives are supplied as a tower `D 0 = g`, `D (j + 1) = (D j)'` rather than as
-`iteratedDeriv`, so that a caller which already has the derivatives — or which produces them from
-`ContDiff` — can use whichever form it holds.
+The mass and the first cosine coefficient of the kernel come from the sums $\sum_k c_k^2 = 1$ and
+$\sum_k c_k c_{k+1} = \cos\theta_n$, which are telescoping trigonometric sums at the angle
+$\theta_n$. Jordan's inequality gives $r^2 \le \pi^2 (1 - \cos r)/2$ on a period, which bounds the
+second moment, and the first absolute moment follows from $|r| \le r^2/(2s) + s/2$, a Cauchy–Schwarz
+step done by hand. For a Hölder function, the error $g - L_n g$ is a kernel average of the
+increments of $g$, and a tangent-line bound for the concave function $r \mapsto r^\alpha$ reduces it
+to the first absolute moment, which gives $M A_n^\alpha$. For a smooth function, the operator
+commutes with differentiation (integration by parts on each Fourier coefficient), so the iterates of
+the remainder $R_n$ can be estimated one derivative at a time; each iterate removes a trigonometric
+polynomial of degree at most $n$ and costs one factor $A_n$. On $[-1, 1]$, the antiderivative of a
+polynomial of degree at most $n$ is a polynomial of degree at most $n + 1$, and the recursion
+$\rho_{n+1}(u) \le A_{n+1} \rho_n(u')$ goes down the tower of derivatives.
 
-Reference: [han2009theoretical], Theorems 3.7.1 and 3.7.2, which state these with the constant
-`(1 + π²/2)^{k+1}` and refer to [meinardus1967approximation] for the proof.
+## Implementation notes
+
+* The kernel is written as the sum of the squares of the real and the imaginary parts of
+  $\sum_k c_k e^{ikr}$, so that its nonnegativity is immediate. `Jackson.kernel_eq_sum` expands it
+  as $\sum_{k, l} c_k c_l \cos((k - l) r)$, which gives the moments and the degree.
+* The approximation `Jackson.approx` is written out in the real trigonometric system `trigFun`, so
+  that it is a trigonometric polynomial of degree at most $n$ by construction. `Jackson.approx_coe`
+  identifies it with the convolution.
+* The derivatives are given as a tower `D 0 = g`, `D (j + 1) = (D j)'` and not as `iteratedDeriv`. A
+  caller that already has the derivatives, or that produces them from `ContDiff`, can use either
+  form.
+* The Hölder exponent $\alpha$ may be $0$; the results hold for $0 \le \alpha \le 1$.
+* The algebraic case is proved with the constant $(\pi^2/2)^{k+1}$ times a factor $d$ that
+  compensates the degrees $n - i$ along the recursion; see `Jackson.infDist_le_of_holder_poly`.
 -/
 
 open Finset MeasureTheory Real
@@ -89,31 +108,36 @@ open scoped Real
 
 namespace Jackson
 
-/-! ### The angle `θ = π / (n + 2)` -/
+/-! ### The angle $\theta = \pi/(n + 2)$ -/
 
-/-- The angle `θₙ = π / (n + 2)` at which the Fejér–Korovkin kernel of degree `n` is built. -/
+/-- The angle $\theta_n = \pi/(n + 2)$ at which the Fejér–Korovkin kernel of degree $n$ is built. -/
 noncomputable def angle (n : ℕ) : ℝ := π / (n + 2)
 
+/-- The angle is positive: $\theta_n > 0$. -/
 theorem angle_pos (n : ℕ) : 0 < angle n := by
   rw [angle]
   positivity
 
+/-- The angle is less than $\pi$: $\theta_n < \pi$. -/
 theorem angle_lt_pi (n : ℕ) : angle n < π := by
   rw [angle, div_lt_iff₀ (by positivity)]
   nlinarith [pi_pos, Nat.cast_nonneg (α := ℝ) n]
 
+/-- The sine of the angle is positive: $\sin\theta_n > 0$. -/
 theorem sin_angle_pos (n : ℕ) : 0 < Real.sin (angle n) :=
   Real.sin_pos_of_pos_of_lt_pi (angle_pos n) (angle_lt_pi n)
 
-/-- `(n + 2) θₙ = π`, the defining property of the angle. -/
+/-- The defining property of the angle: $(n + 2)\, \theta_n = \pi$. -/
 theorem cast_mul_angle (n : ℕ) : ((n : ℝ) + 2) * angle n = π := by
   rw [angle]
   field_simp
 
 /-! ### Two trigonometric sums at that angle -/
 
-/-- `∑_{j = 0}^{n} cos ((2 j + 1) θ) = -cos θ` at `θ = π / (n + 2)`: the sum telescopes against
-`2 sin θ` to `sin ((2 n + 2) θ) = sin (2 π - 2 θ) = -sin (2 θ)`. -/
+/-- At $\theta = \theta_n = \pi/(n + 2)$,
+$$\sum_{j=0}^{n} \cos((2j + 1)\theta) = -\cos\theta.$$
+The sum telescopes against $2 \sin\theta$ to $\sin((2n + 2)\theta) = \sin(2\pi - 2\theta) =
+-\sin(2\theta)$. -/
 theorem sum_cos_odd_angle (n : ℕ) :
     ∑ j ∈ range (n + 1), Real.cos ((2 * (j : ℝ) + 1) * angle n) = -Real.cos (angle n) := by
   have hs : Real.sin (angle n) ≠ 0 := (sin_angle_pos n).ne'
@@ -146,8 +170,10 @@ theorem sum_cos_odd_angle (n : ℕ) :
   rw [hsum]
   ring
 
-/-- `∑_{j = 1}^{n + 1} cos (2 j θ) = -1` at `θ = π / (n + 2)`: the sum telescopes against
-`2 sin θ` to `sin ((2 n + 3) θ) - sin θ = -2 sin θ`. -/
+/-- At $\theta = \theta_n = \pi/(n + 2)$,
+$$\sum_{j=1}^{n+1} \cos(2j\theta) = -1.$$
+The sum telescopes against $2 \sin\theta$ to $\sin((2n + 3)\theta) - \sin\theta = -2
+\sin\theta$. -/
 theorem sum_cos_even_angle (n : ℕ) :
     ∑ j ∈ range (n + 1), Real.cos (2 * ((j : ℝ) + 1) * angle n) = -1 := by
   have hs : Real.sin (angle n) ≠ 0 := (sin_angle_pos n).ne'
@@ -178,7 +204,7 @@ theorem sum_cos_even_angle (n : ℕ) :
     ring
   exact mul_left_cancel₀ (mul_ne_zero two_ne_zero hs) hsum
 
-/-- `∑_{k = 0}^{n} sin² ((k + 1) θ) = (n + 2) / 2` at `θ = π / (n + 2)`. -/
+/-- At $\theta = \theta_n = \pi/(n + 2)$, $\sum_{k=0}^{n} \sin^2((k + 1)\theta) = (n + 2)/2$. -/
 theorem sum_sin_sq_angle (n : ℕ) :
     ∑ k ∈ range (n + 1), Real.sin (((k : ℝ) + 1) * angle n) ^ 2 = ((n : ℝ) + 2) / 2 := by
   set θ := angle n with hθ
@@ -196,8 +222,8 @@ theorem sum_sin_sq_angle (n : ℕ) :
   simp
   ring
 
-/-- `∑_{k = 0}^{n - 1} sin ((k + 1) θ) sin ((k + 2) θ) = (n + 2) cos θ / 2` at
-`θ = π / (n + 2)`. -/
+/-- At $\theta = \theta_n = \pi/(n + 2)$, $\sum_{k=0}^{n-1} \sin((k + 1)\theta) \sin((k +
+2)\theta) = (n + 2) \cos\theta / 2$. -/
 theorem sum_sin_mul_sin_angle (n : ℕ) :
     ∑ k ∈ range n, Real.sin (((k : ℝ) + 1) * angle n) * Real.sin (((k : ℝ) + 2) * angle n)
       = ((n : ℝ) + 2) * Real.cos (angle n) / 2 := by
@@ -228,10 +254,12 @@ theorem sum_sin_mul_sin_angle (n : ℕ) :
 
 /-! ### The coefficients of the Fejér–Korovkin kernel -/
 
-/-- The `k`-th coefficient `c_k = √(2 / (n + 2)) sin ((k + 1) π / (n + 2))` of the Fejér–Korovkin
-kernel of degree `n`. The normalization makes `∑_{k ≤ n} c_k² = 1`, and the point of the choice is
-that `∑_{k < n} c_k c_{k+1} = cos (π / (n + 2))`, which is as close to `1` as a nonnegative
-trigonometric polynomial of degree `n` allows. -/
+/-- The $k$-th coefficient of the Fejér–Korovkin kernel of degree $n$:
+$$c_k = \sqrt{\frac{2}{n + 2}}\, \sin\Bigl(\frac{(k + 1)\pi}{n + 2}\Bigr).$$
+
+The normalization gives $\sum_{k \le n} c_k^2 = 1$ (`Jackson.sum_coeff_sq`). The choice gives
+$\sum_{k < n} c_k c_{k+1} = \cos(\pi/(n + 2))$ (`Jackson.sum_coeff_mul_coeff_succ`), which is as
+close to $1$ as a nonnegative trigonometric polynomial of degree $n$ allows. -/
 noncomputable def coeff (n k : ℕ) : ℝ :=
   Real.sqrt (2 / ((n : ℝ) + 2)) * Real.sin (((k : ℝ) + 1) * angle n)
 
@@ -239,14 +267,15 @@ private theorem sq_sqrt_two_div (n : ℕ) :
     Real.sqrt (2 / ((n : ℝ) + 2)) ^ 2 = 2 / ((n : ℝ) + 2) :=
   Real.sq_sqrt (by positivity)
 
-/-- The coefficients are normalized: `∑_{k ≤ n} c_k² = 1`. -/
+/-- The coefficients are normalized: $\sum_{k=0}^{n} c_k^2 = 1$. -/
 theorem sum_coeff_sq (n : ℕ) : ∑ k ∈ range (n + 1), coeff n k ^ 2 = 1 := by
   have hn : ((n : ℝ) + 2) ≠ 0 := by positivity
   simp only [coeff, mul_pow, sq_sqrt_two_div]
   rw [← Finset.mul_sum, sum_sin_sq_angle n]
   field_simp
 
-/-- The consecutive products sum to `cos θ`: `∑_{k < n} c_k c_{k+1} = cos (π / (n + 2))`. -/
+/-- The consecutive products of the coefficients sum to $\cos\theta_n$: $\sum_{k=0}^{n-1} c_k
+c_{k+1} = \cos(\pi/(n + 2))$. -/
 theorem sum_coeff_mul_coeff_succ (n : ℕ) :
     ∑ k ∈ range n, coeff n k * coeff n (k + 1) = Real.cos (angle n) := by
   have hn : ((n : ℝ) + 2) ≠ 0 := by positivity
@@ -263,19 +292,25 @@ theorem sum_coeff_mul_coeff_succ (n : ℕ) :
 
 /-! ### The kernel -/
 
-/-- The **Fejér–Korovkin kernel** `K_n(r) = |∑_{k ≤ n} c_k e^{i k r}|²`, written as the sum of the
-squares of its real and imaginary parts so that its nonnegativity is visible. It is a nonnegative
-trigonometric polynomial of degree at most `n` with `(2π)⁻¹ ∫ K_n = 1` whose first cosine
-coefficient `cos (π / (n + 2))` is the largest such a kernel can have; that is what makes its
-second moment small. -/
+/-- The **Fejér–Korovkin kernel** of degree $n$:
+$$K_n(r) = \Bigl(\sum_{k=0}^{n} c_k \cos(kr)\Bigr)^2 + \Bigl(\sum_{k=0}^{n} c_k
+  \sin(kr)\Bigr)^2 = \Bigl|\sum_{k=0}^{n} c_k e^{ikr}\Bigr|^2.$$
+
+It is a nonnegative trigonometric polynomial of degree at most $n$ with
+$(2\pi)^{-1} \int_{-\pi}^{\pi} K_n = 1$. Its first cosine coefficient $\cos(\pi/(n + 2))$ is the
+largest that such a kernel can have, and this makes its second moment small. The definition uses
+the sum of the squares of the real and the imaginary parts, so that the nonnegativity is
+immediate. -/
 noncomputable def kernel (n : ℕ) (r : ℝ) : ℝ :=
   (∑ k ∈ range (n + 1), coeff n k * Real.cos ((k : ℝ) * r)) ^ 2
     + (∑ k ∈ range (n + 1), coeff n k * Real.sin ((k : ℝ) * r)) ^ 2
 
+/-- The Fejér–Korovkin kernel is nonnegative: $K_n(r) \ge 0$. -/
 theorem kernel_nonneg (n : ℕ) (r : ℝ) : 0 ≤ kernel n r := by
   rw [kernel]
   positivity
 
+/-- The Fejér–Korovkin kernel is a continuous function of $r$. -/
 theorem continuous_kernel (n : ℕ) : Continuous (kernel n) := by
   have h : kernel n = fun r : ℝ =>
       (∑ k ∈ range (n + 1), coeff n k * Real.cos ((k : ℝ) * r)) ^ 2
@@ -286,9 +321,11 @@ theorem continuous_kernel (n : ℕ) : Continuous (kernel n) := by
     ((continuous_finsetSum _ fun k _ => continuous_const.mul
       (Real.continuous_sin.comp (continuous_const.mul continuous_id))).pow 2)
 
-/-- The kernel expanded as a double sum of cosines: `K_n(r) = ∑_{k, l ≤ n} c_k c_l cos ((k - l) r)`.
-This is the form the moments are read off from, and the form that shows `K_n` is a trigonometric
-polynomial of degree at most `n`. -/
+/-- The Fejér–Korovkin kernel as a double sum of cosines: for all real $r$,
+$$K_n(r) = \sum_{k=0}^{n} \sum_{l=0}^{n} c_k c_l \cos((k - l) r).$$
+
+This form gives the moments, and it shows that $K_n$ is a trigonometric polynomial of degree at
+most $n$. -/
 theorem kernel_eq_sum (n : ℕ) (r : ℝ) :
     kernel n r = ∑ k ∈ range (n + 1), ∑ l ∈ range (n + 1),
       coeff n k * coeff n l * Real.cos (((k : ℝ) - (l : ℝ)) * r) := by
@@ -320,8 +357,7 @@ private theorem integral_cos_intCast_mul_cos (m : ℤ) :
     integral_cos_int_mul_neg_pi_pi (m - 1)]
   split_ifs <;> ring
 
-/-- The inner sum `∑_{l ≤ n} c_k c_l [l = k + 1]` collapses, and summing over `k` gives
-`∑_{k < n} c_k c_{k+1} = cos θ`. -/
+/-- The double sum $\sum_{k, l \le n} c_k c_l [l = k + 1]$ equals $\cos\theta_n$. -/
 private theorem sum_sum_coeff_ite (n : ℕ) :
     ∑ k ∈ range (n + 1), ∑ l ∈ range (n + 1),
       coeff n k * coeff n l * (if l = k + 1 then (1 : ℝ) else 0) = Real.cos (angle n) := by
@@ -338,7 +374,9 @@ private theorem sum_sum_coeff_ite (n : ℕ) :
   have hk' := Finset.mem_range.1 hk
   rw [ite_eq_left (Finset.mem_range.2 (by omega : k + 1 < n + 1))]
 
-/-- `(2π)⁻¹ ∫ K_n = 1`: the kernel is a probability density on a period. -/
+/-- The Fejér–Korovkin kernel has mass $2\pi$ over a period:
+$$\int_{-\pi}^{\pi} K_n(r)\, dr = 2\pi.$$
+So $(2\pi)^{-1} K_n$ is a probability density on a period. -/
 theorem integral_kernel (n : ℕ) : (∫ r in -π..π, kernel n r) = 2 * π := by
   have hcast : ∀ k l : ℕ, (((k : ℤ) - (l : ℤ) : ℤ) : ℝ) = (k : ℝ) - (l : ℝ) := by
     intro k l; push_cast; ring
@@ -372,7 +410,9 @@ theorem integral_kernel (n : ℕ) : (∫ r in -π..π, kernel n r) = 2 * π := b
     ring
   rw [Finset.sum_congr rfl hk, ← Finset.sum_mul, sum_coeff_sq n, one_mul]
 
-/-- `(2π)⁻¹ ∫ K_n(r) cos r dr = cos θ`: the first cosine coefficient of the kernel. -/
+/-- The first cosine coefficient of the Fejér–Korovkin kernel is $\cos\theta_n$:
+$$\int_{-\pi}^{\pi} \cos r\, K_n(r)\, dr = 2\pi \cos\theta_n.$$
+-/
 theorem integral_cos_mul_kernel (n : ℕ) :
     (∫ r in -π..π, Real.cos r * kernel n r) = 2 * π * Real.cos (angle n) := by
   have hcast : ∀ k l : ℕ, (((k : ℤ) - (l : ℤ) : ℤ) : ℝ) = (k : ℝ) - (l : ℝ) := by
@@ -441,8 +481,8 @@ private theorem sin_sq_half (y : ℝ) : Real.sin (y / 2) ^ 2 = (1 - Real.cos y) 
   rw [show 2 * (y / 2) = y by ring] at h
   nlinarith [Real.sin_sq_add_cos_sq (y / 2)]
 
-/-- **Jordan's inequality in the form the second moment needs**: `r² ≤ π² (1 - cos r) / 2` on a
-period, because `|sin (r/2)| ≥ |r| / π` there. -/
+/-- **Jordan's inequality** in the form that the second moment needs: if $|r| \le \pi$, then
+$r^2 \le \pi^2 (1 - \cos r)/2$. -/
 private theorem sq_le_one_sub_cos {r : ℝ} (hr : |r| ≤ π) :
     r ^ 2 ≤ π ^ 2 * ((1 - Real.cos r) / 2) := by
   have habs : (0 : ℝ) ≤ |r| := abs_nonneg r
@@ -461,9 +501,11 @@ private theorem sq_le_one_sub_cos {r : ℝ} (hr : |r| ≤ π) :
   rw [← sin_sq_half r, ← h5, ← sq_abs r]
   nlinarith [h6]
 
-/-- The second moment of the Fejér–Korovkin kernel: `∫ r² K_n ≤ 2 π · π² (1 - cos θ) / 2`. Since
-`π² (1 - cos θ) / 2 = (π sin (θ/2))²`, this says that the root mean square of `r` against the
-kernel is at most `π sin (θ / 2)`. -/
+/-- The second moment of the Fejér–Korovkin kernel:
+$$\int_{-\pi}^{\pi} r^2 K_n(r)\, dr \le 2\pi \cdot \frac{\pi^2 (1 - \cos\theta_n)}{2}.$$
+
+Since $\pi^2 (1 - \cos\theta_n)/2 = (\pi \sin(\theta_n/2))^2$, the root mean square of $r$
+against the probability density $(2\pi)^{-1} K_n$ is at most $\pi \sin(\theta_n/2)$. -/
 theorem integral_sq_mul_kernel_le (n : ℕ) :
     (∫ r in -π..π, r ^ 2 * kernel n r)
       ≤ 2 * π * (π ^ 2 * ((1 - Real.cos (angle n)) / 2)) := by
@@ -494,17 +536,18 @@ theorem integral_sq_mul_kernel_le (n : ℕ) :
     ring
   rwa [hcalc] at h
 
-/-- The half-angle `θ / 2 = π / (2 (n + 2))` has positive sine. -/
+/-- The half angle $\theta_n / 2 = \pi/(2(n + 2))$ has positive sine. -/
 theorem sin_half_angle_pos (n : ℕ) : 0 < Real.sin (angle n / 2) := by
   have h1 := angle_pos n
   have h2 := angle_lt_pi n
   exact Real.sin_pos_of_pos_of_lt_pi (by linarith) (by linarith [Real.pi_pos])
 
 /-- **The first absolute moment of the Fejér–Korovkin kernel**:
-`(2 π)⁻¹ ∫ |r| K_n(r) dr ≤ π sin (θ / 2)`.
+$$\int_{-\pi}^{\pi} |r|\, K_n(r)\, dr \le 2\pi \cdot \pi \sin(\theta_n/2).$$
 
-The kernel has total mass `2 π` and second moment at most `2 π s²` with `s = π sin (θ / 2)`, and
-`|r| ≤ r² / (2 s) + s / 2` pointwise, so the first moment is at most `2 π (s/2 + s/2) = 2 π s`. -/
+With $s = \pi \sin(\theta_n/2)$, the kernel has mass $2\pi$ and second moment at most
+$2\pi s^2$. Pointwise $|r| \le r^2/(2s) + s/2$, so the first moment is at most
+$2\pi (s/2 + s/2) = 2\pi s$. -/
 theorem integral_abs_mul_kernel_le (n : ℕ) :
     (∫ r in -π..π, |r| * kernel n r) ≤ 2 * π * (π * Real.sin (angle n / 2)) := by
   have hpi := Real.pi_pos
@@ -553,8 +596,8 @@ theorem integral_abs_mul_kernel_le (n : ℕ) :
     ring
   linarith [h, hstep, hfin]
 
-/-- `π sin (θ / 2) ≤ π² / (2 (n + 2))`, the bound behind the constant `1 + π² / 2` of Jackson's
-theorem. -/
+/-- The first absolute moment is of order $1/n$: $\pi \sin(\theta_n/2) \le \pi^2/(2(n + 2))$. This
+bound gives the constant $1 + \pi^2/2$ of Jackson's theorem. -/
 theorem pi_mul_sin_half_angle_le (n : ℕ) :
     π * Real.sin (angle n / 2) ≤ π ^ 2 / (2 * ((n : ℝ) + 2)) := by
   have hpi := Real.pi_pos
@@ -566,18 +609,25 @@ theorem pi_mul_sin_half_angle_le (n : ℕ) :
   calc π * Real.sin (angle n / 2) ≤ π * (angle n / 2) := by nlinarith
     _ = π ^ 2 / (2 * ((n : ℝ) + 2)) := by rw [h2]; field_simp
 
-/-! ### Trigonometric monomials on the circle of circumference `2 π` -/
+/-! ### Trigonometric monomials on the circle of circumference $2\pi$ -/
 
-/-- `x ↦ cos (m x)` as a continuous function on the circle of circumference `2 π`, built from the
-real trigonometric system so that its membership in `trigPolyLE (2 π) n` is immediate. -/
+/-- The function $x \mapsto \cos(mx)$, for an integer $m$, as a continuous function on the circle of
+circumference $2\pi$.
+
+It is built from the real trigonometric system `trigFun`, so that its membership in `trigPolyLE`
+is immediate. -/
 noncomputable def cosCM (m : ℤ) : C(AddCircle (2 * π), ℝ) :=
   if m = 0 then 1 else (√2 : ℝ)⁻¹ • trigFun (2 * π) |m|
 
-/-- `x ↦ sin (m x)` as a continuous function on the circle of circumference `2 π`. -/
+/-- The function $x \mapsto \sin(mx)$, for an integer $m$, as a continuous function on the circle of
+circumference $2\pi$.
+
+It is built from the real trigonometric system `trigFun`, and it is $0$ for $m = 0$. -/
 noncomputable def sinCM (m : ℤ) : C(AddCircle (2 * π), ℝ) :=
   if 0 < m then (√2 : ℝ)⁻¹ • trigFun (2 * π) (-m)
   else if m < 0 then -((√2 : ℝ)⁻¹ • trigFun (2 * π) m) else 0
 
+/-- The value of `Jackson.cosCM m` at the class of a real number $x$ is $\cos(mx)$. -/
 @[simp]
 theorem cosCM_coe (m : ℤ) (x : ℝ) :
     cosCM m ((x : ℝ) : AddCircle (2 * π)) = Real.cos ((m : ℝ) * x) := by
@@ -594,6 +644,7 @@ theorem cosCM_coe (m : ℤ) (x : ℝ) :
       trigFun_coe_of_pos hm x]
     field_simp
 
+/-- The value of `Jackson.sinCM m` at the class of a real number $x$ is $\sin(mx)$. -/
 @[simp]
 theorem sinCM_coe (m : ℤ) (x : ℝ) :
     sinCM m ((x : ℝ) : AddCircle (2 * π)) = Real.sin ((m : ℝ) * x) := by
@@ -610,6 +661,8 @@ theorem sinCM_coe (m : ℤ) (x : ℝ) :
     push_cast
     field_simp
 
+/-- If $|m| \le n$, then $x \mapsto \cos(mx)$ is a trigonometric polynomial of degree at most $n$.
+-/
 theorem cosCM_mem {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) : cosCM m ∈ trigPolyLE (2 * π) n := by
   rw [cosCM]
   split_ifs with h
@@ -617,6 +670,8 @@ theorem cosCM_mem {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) : cosCM m ∈ trigPo
     exact trigFun_mem_trigPolyLE (by simp)
   · exact Submodule.smul_mem _ _ (trigFun_mem_trigPolyLE (by rwa [Int.natAbs_abs]))
 
+/-- If $|m| \le n$, then $x \mapsto \sin(mx)$ is a trigonometric polynomial of degree at most $n$.
+-/
 theorem sinCM_mem {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) : sinCM m ∈ trigPolyLE (2 * π) n := by
   rw [sinCM]
   split_ifs with h1 h2
@@ -626,8 +681,8 @@ theorem sinCM_mem {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) : sinCM m ∈ trigPo
 
 /-! ### The Fejér–Korovkin operator -/
 
-/-- Translating the argument of a `2 π`-periodic function does not change its integral over a
-period, and reflecting it does not either. -/
+/-- The integral of a $2\pi$-periodic function over a period does not change under the substitution
+$r \mapsto x - r$. -/
 private theorem integral_comp_sub_of_periodic {φ : ℝ → ℝ} (hp : Function.Periodic φ (2 * π))
     (x : ℝ) : (∫ r in -π..π, φ (x - r)) = ∫ y in -π..π, φ y := by
   rw [intervalIntegral.integral_comp_sub_left φ x, show x - -π = x + π from by ring]
@@ -635,8 +690,9 @@ private theorem integral_comp_sub_of_periodic {φ : ℝ → ℝ} (hp : Function.
   rw [show x - π + 2 * π = x + π by ring, show -π + 2 * π = π by ring] at h
   exact h
 
-/-- Against a `2 π`-periodic `g`, the integral of `cos (m r) g (x - r)` over a period splits into
-the `m`-th cosine and sine coefficients of `g` times `cos (m x)` and `sin (m x)`. -/
+/-- For a continuous $2\pi$-periodic $g$, the integral of $\cos(mr)\, g(x - r)$ over a period is
+$\cos(mx) a_m + \sin(mx) b_m$, where $a_m$ and $b_m$ are the integrals of $\cos(my)\, g(y)$ and
+$\sin(my)\, g(y)$ over a period. -/
 private theorem integral_cos_mul_comp_sub {g : ℝ → ℝ} (hc : Continuous g)
     (hp : Function.Periodic g (2 * π)) (m : ℤ) (x : ℝ) :
     (∫ r in -π..π, Real.cos ((m : ℝ) * r) * g (x - r))
@@ -678,10 +734,17 @@ private theorem integral_cos_mul_comp_sub {g : ℝ → ℝ} (hc : Continuous g)
   rw [intervalIntegral.integral_add hi1 hi2, intervalIntegral.integral_const_mul,
     intervalIntegral.integral_const_mul, e1, e2]
 
-/-- The **Fejér–Korovkin approximation** of a `2 π`-periodic `g`: the trigonometric polynomial of
-degree at most `n` whose value at `x` is the convolution
-`(2 π)⁻¹ ∫_{-π}^{π} K_n(r) g(x - r) dr` (`Jackson.approx_coe`). It is written out in the real
-trigonometric system, so that membership in `trigPolyLE (2 π) n` is immediate. -/
+/-- The **Fejér–Korovkin approximation** of a function $g : \mathbb{R} \to \mathbb{R}$: the
+trigonometric polynomial of degree at most $n$
+$$L_n g = (2\pi)^{-1} \sum_{k=0}^{n} \sum_{l=0}^{n} c_k c_l \bigl(a_{k-l} \cos((k - l)\,\cdot) +
+  b_{k-l} \sin((k - l)\,\cdot)\bigr),$$
+where $a_m = \int_{-\pi}^{\pi} \cos(my)\, g(y)\, dy$ and
+$b_m = \int_{-\pi}^{\pi} \sin(my)\, g(y)\, dy$.
+
+For a continuous $2\pi$-periodic $g$, the value at $x$ is the convolution $(2\pi)^{-1}
+\int_{-\pi}^{\pi} K_n(r)\, g(x - r)\, dr$ (`Jackson.approx_coe`). The definition is written out
+in the real trigonometric system, so that the membership in `trigPolyLE (2 * π) n` is immediate.
+For a function $g$ that is not integrable on $[-\pi, \pi]$, the integrals take the value $0$. -/
 noncomputable def approx (n : ℕ) (g : ℝ → ℝ) : C(AddCircle (2 * π), ℝ) :=
   (2 * π)⁻¹ • ∑ k ∈ range (n + 1), ∑ l ∈ range (n + 1),
     (coeff n k * coeff n l) •
@@ -690,7 +753,8 @@ noncomputable def approx (n : ℕ) (g : ℝ → ℝ) : C(AddCircle (2 * π), ℝ
         + (∫ y in -π..π, Real.sin ((((k : ℤ) - (l : ℤ) : ℤ) : ℝ) * y) * g y) •
             sinCM ((k : ℤ) - (l : ℤ)))
 
-/-- The Fejér–Korovkin approximation is a trigonometric polynomial of degree at most `n`. -/
+/-- For every $g : \mathbb{R} \to \mathbb{R}$, the Fejér–Korovkin approximation $L_n g$ is a
+trigonometric polynomial of degree at most $n$. -/
 theorem approx_mem (n : ℕ) (g : ℝ → ℝ) : approx n g ∈ trigPolyLE (2 * π) n := by
   refine Submodule.smul_mem _ _ (Submodule.sum_mem _ fun k hk => Submodule.sum_mem _ fun l hl => ?_)
   have hkn := Finset.mem_range.1 hk
@@ -699,7 +763,10 @@ theorem approx_mem (n : ℕ) (g : ℝ → ℝ) : approx n g ∈ trigPolyLE (2 * 
   exact Submodule.smul_mem _ _ (Submodule.add_mem _
     (Submodule.smul_mem _ _ (cosCM_mem hm)) (Submodule.smul_mem _ _ (sinCM_mem hm)))
 
-/-- **The Fejér–Korovkin approximation is the convolution of `g` with the kernel.** -/
+/-- **The Fejér–Korovkin approximation is the convolution of $g$ with the kernel.** If $g$ is
+continuous and $2\pi$-periodic, then for all real $x$
+$$L_n g(x) = (2\pi)^{-1} \int_{-\pi}^{\pi} K_n(r)\, g(x - r)\, dr.$$
+-/
 theorem approx_coe {g : ℝ → ℝ} (hc : Continuous g) (hp : Function.Periodic g (2 * π)) (n : ℕ)
     (x : ℝ) :
     approx n g ((x : ℝ) : AddCircle (2 * π))
@@ -745,8 +812,10 @@ theorem approx_coe {g : ℝ → ℝ} (hc : Continuous g) (hp : Function.Periodic
 
 /-! ### The approximation error -/
 
-/-- The **modulus of the Fejér–Korovkin error** is bounded by the kernel average of the increments
-of `g`. -/
+/-- **The error of the Fejér–Korovkin approximation is bounded by the kernel average of the
+increments of $g$.** If $g$ is continuous and $2\pi$-periodic, then for all real $x$
+$$|g(x) - L_n g(x)| \le (2\pi)^{-1} \int_{-\pi}^{\pi} K_n(r)\, |g(x) - g(x - r)|\, dr.$$
+-/
 theorem abs_sub_approx_le {g : ℝ → ℝ} (hc : Continuous g) (hp : Function.Periodic g (2 * π))
     (n : ℕ) (x : ℝ) :
     |g x - approx n g ((x : ℝ) : AddCircle (2 * π))|
@@ -777,9 +846,11 @@ theorem abs_sub_approx_le {g : ℝ → ℝ} (hc : Continuous g) (hp : Function.P
         intervalIntegral.integral_congr fun r _ => by
           rw [abs_mul, abs_of_nonneg (kernel_nonneg n r)]
 
-/-- **The Fejér–Korovkin error for a Hölder function.** If `|g u - g v| ≤ M |u - v|^α` for some
-`0 < α ≤ 1`, then the trigonometric polynomial `approx n g` of degree at most `n` approximates `g`
-to within `M (π sin (π / (2 n + 4)))^α` uniformly. -/
+/-- **The Fejér–Korovkin error for a Hölder function.** Let $g$ be continuous and $2\pi$-periodic,
+and let $M \ge 0$ and $0 \le \alpha \le 1$ be such that $|g(u) - g(v)| \le M |u - v|^\alpha$ for
+all real $u$ and $v$. Then for every $n$ and every real $x$
+$$|g(x) - L_n g(x)| \le M \bigl(\pi \sin(\pi/(2n + 4))\bigr)^\alpha.$$
+-/
 theorem abs_sub_approx_le_of_holder {g : ℝ → ℝ} (hc : Continuous g)
     (hp : Function.Periodic g (2 * π)) {M α : ℝ} (hM : 0 ≤ M) (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
     (hg : ∀ u v : ℝ, |g u - g v| ≤ M * |u - v| ^ α) (n : ℕ) (x : ℝ) :
@@ -844,23 +915,31 @@ theorem abs_sub_approx_le_of_holder {g : ℝ → ℝ} (hc : Continuous g)
 
 /-! ### Jackson's theorem for a Hölder continuous periodic function -/
 
-/-- The real function underlying a continuous function on the circle of circumference `2 π`. -/
+/-- The $2\pi$-periodic real function $x \mapsto G(x)$ that underlies a continuous function $G$ on
+the circle of circumference $2\pi$. -/
 noncomputable abbrev lift (G : C(AddCircle (2 * π), ℝ)) : ℝ → ℝ := fun x => G ↑x
 
+/-- The real function that underlies a continuous function on the circle is continuous. -/
 theorem continuous_lift (G : C(AddCircle (2 * π), ℝ)) : Continuous (lift G) :=
   G.continuous.comp (AddCircle.continuous_mk' (2 * π))
 
+/-- The real function that underlies a continuous function on the circle is $2\pi$-periodic. -/
 theorem periodic_lift (G : C(AddCircle (2 * π), ℝ)) :
     Function.Periodic (lift G) (2 * π) := fun t => by
   simp only [lift]
   rw [AddCircle.coe_add_period]
 
-/-- **Jackson's theorem for a Hölder function**, the case `k = 0`: a continuous `2 π`-periodic
-function whose increments satisfy `|g u - g v| ≤ M |u - v|^α` is approximated by trigonometric
-polynomials of degree at most `n` to within `M (π sin (π / (2 n + 4)))^α`.
+/-- **Jackson's theorem for a Hölder function**, the case $k = 0$. Let $G$ be a continuous function
+on the circle of circumference $2\pi$, and let $M \ge 0$ and $0 \le \alpha \le 1$ be such that
+$|G(u) - G(v)| \le M |u - v|^\alpha$ for all real $u$ and $v$. Then for every $n$
+$$\operatorname{dist}(G, \mathcal{T}_n) \le M \bigl(\pi \sin(\pi/(2n + 4))\bigr)^\alpha,$$
+where $\mathcal{T}_n$ is the space of trigonometric polynomials of degree at most $n$ and the
+distance is uniform.
 
-Since `π sin (π / (2 n + 4)) ≤ π² / (2 (n + 2))`, this is at most `M (π²/2)^α / n^α`, which is the
-form the constant `1 + π²/2` of the classical statement comes from. -/
+Since $\pi \sin(\pi/(2n + 4)) \le \pi^2/(2(n + 2))$, the bound is at most
+$M (\pi^2/2)^\alpha / n^\alpha$. This is the origin of the constant $1 + \pi^2/2$ of the
+classical statement. The space $\mathcal{T}_n$ is `trigPolyLE (2 * π) n`, and the Hölder
+condition is stated for `Jackson.lift G`. -/
 theorem infDist_le_of_holder {G : C(AddCircle (2 * π), ℝ)} {M α : ℝ} (hM : 0 ≤ M)
     (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
     (hg : ∀ u v : ℝ, |lift G u - lift G v| ≤ M * |u - v| ^ α) (n : ℕ) :
@@ -884,7 +963,8 @@ theorem infDist_le_of_holder {G : C(AddCircle (2 * π), ℝ)} {M α : ℝ} (hM :
 
 /-! ### The operator commutes with differentiation -/
 
-/-- The Fejér–Korovkin approximation written out as a trigonometric sum. -/
+/-- The Fejér–Korovkin approximation, evaluated at a real number $x$, as the trigonometric sum
+$(2\pi)^{-1} \sum_{k, l \le n} c_k c_l (a_{k-l} \cos((k - l) x) + b_{k-l} \sin((k - l) x))$. -/
 theorem approx_coe_eq_sum (n : ℕ) (g : ℝ → ℝ) (x : ℝ) :
     approx n g ((x : ℝ) : AddCircle (2 * π))
       = (2 * π)⁻¹ * ∑ k ∈ range (n + 1), ∑ l ∈ range (n + 1),
@@ -896,7 +976,8 @@ theorem approx_coe_eq_sum (n : ℕ) (g : ℝ → ℝ) (x : ℝ) :
   simp only [approx, ContinuousMap.smul_apply, ContinuousMap.coe_sum, Finset.sum_apply,
     ContinuousMap.add_apply, smul_eq_mul, cosCM_coe, sinCM_coe]
 
-/-- Termwise differentiation of a trigonometric sum of the shape `approx` produces. -/
+/-- The derivative of a trigonometric double sum of the form of `Jackson.approx` is the termwise
+derivative. -/
 private theorem hasDerivAt_trigDoubleSum (n : ℕ) (a b : ℕ → ℕ → ℝ) (x : ℝ) :
     HasDerivAt
       (fun y : ℝ => (2 * π)⁻¹ * ∑ k ∈ range (n + 1), ∑ l ∈ range (n + 1),
@@ -947,8 +1028,9 @@ private theorem hasDerivAt_trigDoubleSum (n : ℕ) (a b : ℕ → ℕ → ℝ) (
     exact HasDerivAt.fun_sum fun k _ => hinner k
   exact HasDerivAt.const_mul _ houter
 
-/-- **Integration by parts against the cosines.** For a `2 π`-periodic `g` the boundary terms
-cancel, so `∫ cos (m y) g'(y) dy = m ∫ sin (m y) g(y) dy`. -/
+/-- **Integration by parts against the cosines.** If $g$ is $2\pi$-periodic and differentiable with
+a continuous derivative $g'$, then $\int_{-\pi}^{\pi} \cos(my)\, g'(y)\, dy = m
+\int_{-\pi}^{\pi} \sin(my)\, g(y)\, dy$. -/
 private theorem integral_cos_mul_deriv {g g' : ℝ → ℝ} (hd : ∀ x, HasDerivAt g (g' x) x)
     (hc' : Continuous g') (hp : Function.Periodic g (2 * π)) (m : ℤ) :
     (∫ y in -π..π, Real.cos ((m : ℝ) * y) * g' y)
@@ -982,8 +1064,9 @@ private theorem integral_cos_mul_deriv {g g' : ℝ → ℝ} (hd : ∀ x, HasDeri
   rw [hrw] at hibp
   linarith [hibp]
 
-/-- **Integration by parts against the sines.** For a `2 π`-periodic `g`,
-`∫ sin (m y) g'(y) dy = -m ∫ cos (m y) g(y) dy`. -/
+/-- **Integration by parts against the sines.** If $g$ is differentiable with a continuous
+derivative $g'$, then $\int_{-\pi}^{\pi} \sin(my)\, g'(y)\, dy = -m \int_{-\pi}^{\pi} \cos(my)\,
+g(y)\, dy$. -/
 private theorem integral_sin_mul_deriv {g g' : ℝ → ℝ} (hd : ∀ x, HasDerivAt g (g' x) x)
     (hc' : Continuous g') (m : ℤ) :
     (∫ y in -π..π, Real.sin ((m : ℝ) * y) * g' y)
@@ -1015,7 +1098,13 @@ private theorem integral_sin_mul_deriv {g g' : ℝ → ℝ} (hd : ∀ x, HasDeri
   rw [hrw] at hibp
   linarith [hibp]
 
-/-- **The Fejér–Korovkin operator commutes with differentiation.** -/
+/-- **The Fejér–Korovkin operator commutes with differentiation.** Let $g$ be $2\pi$-periodic and
+differentiable at every point, with a continuous derivative $g'$. Then for every $n$ the
+function $y \mapsto L_n g(y)$ is differentiable at every real $x$, with derivative
+$$(L_n g)'(x) = L_n g'(x).$$
+
+The proof is integration by parts on each Fourier coefficient of $g$ in the definition of
+$L_n g$. -/
 theorem hasDerivAt_approx {g g' : ℝ → ℝ} (hd : ∀ x, HasDerivAt g (g' x) x) (hc' : Continuous g')
     (hp : Function.Periodic g (2 * π)) (n : ℕ) (x : ℝ) :
     HasDerivAt (fun y : ℝ => approx n g ((y : ℝ) : AddCircle (2 * π)))
@@ -1047,30 +1136,36 @@ theorem hasDerivAt_approx {g g' : ℝ → ℝ} (hd : ∀ x, HasDerivAt g (g' x) 
     (fun k l => ∫ z in -π..π, Real.cos ((((k : ℤ) - (l : ℤ) : ℤ) : ℝ) * z) * g z)
     (fun k l => ∫ z in -π..π, Real.sin ((((k : ℤ) - (l : ℤ) : ℤ) : ℝ) * z) * g z) x
 
-/-! ### The remainder operator and the `C^{k,α}` case -/
+/-! ### The remainder operator and the $C^{k,\alpha}$ case -/
 
-/-- The **Fejér–Korovkin remainder** `R_n g = g - L_n g`. Its iterates are what Jackson's theorem
-for a `k` times differentiable function is estimated through: each application removes a
-trigonometric polynomial of degree at most `n`, and each commutes with differentiation. -/
+/-- The **Fejér–Korovkin remainder** $R_n g = g - L_n g$, as a function on $\mathbb{R}$.
+
+Jackson's theorem for a $k$ times differentiable function is proved through the iterates of
+$R_n$. Each application removes a trigonometric polynomial of degree at most $n$, and each
+application commutes with differentiation. -/
 noncomputable def rem (n : ℕ) (g : ℝ → ℝ) : ℝ → ℝ :=
   fun x => g x - approx n g ((x : ℝ) : AddCircle (2 * π))
 
+/-- If $g$ is continuous, then the remainder $R_n g$ is continuous. -/
 theorem continuous_rem (n : ℕ) {g : ℝ → ℝ} (hc : Continuous g) : Continuous (rem n g) :=
   hc.sub ((approx n g).continuous.comp (AddCircle.continuous_mk' (2 * π)))
 
+/-- If $g$ is $2\pi$-periodic, then the remainder $R_n g$ is $2\pi$-periodic. -/
 theorem periodic_rem (n : ℕ) {g : ℝ → ℝ} (hp : Function.Periodic g (2 * π)) :
     Function.Periodic (rem n g) (2 * π) := by
   intro x
   simp only [rem]
   rw [hp x, AddCircle.coe_add_period]
 
-/-- The remainder commutes with differentiation, because the operator does. -/
+/-- The remainder commutes with differentiation: if $g$ is $2\pi$-periodic and differentiable at
+every point, with a continuous derivative $g'$, then $(R_n g)' = R_n g'$ at every point. -/
 theorem hasDerivAt_rem {g g' : ℝ → ℝ} (hd : ∀ x, HasDerivAt g (g' x) x) (hc' : Continuous g')
     (hp : Function.Periodic g (2 * π)) (n : ℕ) (x : ℝ) :
     HasDerivAt (rem n g) (rem n g' x) x :=
   (hd x).sub (hasDerivAt_approx hd hc' hp n x)
 
-/-- The derivative of a periodic function is periodic. -/
+/-- The derivative of a periodic function is periodic: if $f$ is $T$-periodic and has the derivative
+$f'(x)$ at every $x$, then $f'$ is $T$-periodic. -/
 theorem periodic_deriv {f f' : ℝ → ℝ} {T : ℝ} (hp : Function.Periodic f T)
     (hd : ∀ x, HasDerivAt f (f' x) x) : Function.Periodic f' T := by
   intro x
@@ -1079,6 +1174,7 @@ theorem periodic_deriv {f f' : ℝ → ℝ} {T : ℝ} (hp : Function.Periodic f 
   rw [funext fun y => hp y] at h2
   exact h2.unique (hd x)
 
+/-- If $g$ is continuous, then every iterate $R_n^j g$ of the remainder is continuous. -/
 theorem continuous_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g : ℝ → ℝ}, Continuous g →
     Continuous ((rem n)^[j] g)
   | 0, _, hc => hc
@@ -1086,6 +1182,7 @@ theorem continuous_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g : ℝ → ℝ}, Cont
     rw [Function.iterate_succ_apply]
     exact continuous_iterate_rem n j (continuous_rem n hc)
 
+/-- If $g$ is $2\pi$-periodic, then every iterate $R_n^j g$ of the remainder is $2\pi$-periodic. -/
 theorem periodic_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g : ℝ → ℝ}, Function.Periodic g (2 * π) →
     Function.Periodic ((rem n)^[j] g) (2 * π)
   | 0, _, hp => hp
@@ -1093,6 +1190,9 @@ theorem periodic_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g : ℝ → ℝ}, Functi
     rw [Function.iterate_succ_apply]
     exact periodic_iterate_rem n j (periodic_rem n hp)
 
+/-- Every iterate of the remainder commutes with differentiation: if $g$ and $g'$ are continuous,
+$g$ is $2\pi$-periodic, and $g$ has the derivative $g'(x)$ at every $x$, then
+$(R_n^j g)' = R_n^j g'$ at every point. -/
 theorem hasDerivAt_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g g' : ℝ → ℝ}, Continuous g →
     Continuous g' → Function.Periodic g (2 * π) → (∀ x, HasDerivAt g (g' x) x) →
     ∀ x, HasDerivAt ((rem n)^[j] g) ((rem n)^[j] g' x) x
@@ -1102,8 +1202,10 @@ theorem hasDerivAt_iterate_rem (n : ℕ) : ∀ (j : ℕ) {g g' : ℝ → ℝ}, C
     exact hasDerivAt_iterate_rem n j (continuous_rem n hc) (continuous_rem n hc')
       (periodic_rem n hp) (fun y => hasDerivAt_rem hd hc' hp n y) x
 
-/-- Each application of the remainder subtracts a trigonometric polynomial of degree at most `n`,
-so `g` and its iterated remainder differ by one. -/
+/-- For every $j$ and every function $g : \mathbb{R} \to \mathbb{R}$, there is a trigonometric
+polynomial $q$ of degree at most $n$ with
+$$g(x) - R_n^j g(x) = q(x) \qquad \text{for all real } x.$$
+Each application of the remainder subtracts a trigonometric polynomial of degree at most $n$. -/
 theorem sub_iterate_rem_mem (n : ℕ) : ∀ (j : ℕ) (g : ℝ → ℝ),
     ∃ q ∈ trigPolyLE (2 * π) n, ∀ x : ℝ,
       g x - (rem n)^[j] g x = q ((x : ℝ) : AddCircle (2 * π))
@@ -1118,8 +1220,9 @@ theorem sub_iterate_rem_mem (n : ℕ) : ∀ (j : ℕ) (g : ℝ → ℝ),
     rw [h, ContinuousMap.add_apply, ← hqx x]
     ring
 
-/-- The remainder of a function with a bounded derivative is at most the first absolute moment of
-the kernel times that bound. -/
+/-- Let $u$ be continuous and $2\pi$-periodic, with derivative $u'(x)$ at every $x$, and let
+$L \ge 0$ be such that $|u'| \le L$. Then the remainder is at most the first absolute moment of
+the kernel times $L$: $|R_n u(x)| \le \pi \sin(\theta_n/2)\, L$ for all real $x$. -/
 theorem abs_rem_le_of_deriv_bound {u u' : ℝ → ℝ} (hc : Continuous u)
     (hp : Function.Periodic u (2 * π)) (hd : ∀ x, HasDerivAt u (u' x) x) {L : ℝ} (hL : 0 ≤ L)
     (hb : ∀ x, |u' x| ≤ L) (n : ℕ) (x : ℝ) :
@@ -1138,9 +1241,15 @@ theorem abs_rem_le_of_deriv_bound {u u' : ℝ → ℝ} (hc : Continuous u)
     _ ≤ L * (π * Real.sin (angle n / 2)) := h
     _ = π * Real.sin (angle n / 2) * L := by ring
 
-/-- **The iterated remainder of a `k` times differentiable periodic function.** With `A` the first
-absolute moment of the kernel, `k` applications of the remainder each cost a factor `A`, and the
-last one is estimated by the modulus of continuity of the `k`-th derivative. -/
+/-- **The iterated remainder of a $k$ times differentiable periodic function.** Let
+$D_0, \dots, D_k$ be continuous functions on $\mathbb{R}$, with $D_0$ $2\pi$-periodic and
+$D_{j+1}(x)$ the derivative of $D_j$ at $x$ for all $j < k$ and all $x$. Let $C \ge 0$ be such
+that $|R_n D_k(x)| \le C$ for all $x$. Then for all real $x$
+$$|R_n^{k+1} D_0(x)| \le \bigl(\pi \sin(\theta_n/2)\bigr)^k C.$$
+
+Each of the first $k$ applications of the remainder costs one factor of the first absolute
+moment $\pi \sin(\theta_n/2)$ of the kernel, by `Jackson.abs_rem_le_of_deriv_bound`, because the
+remainder commutes with differentiation. -/
 theorem abs_iterate_rem_le (n : ℕ) : ∀ (k : ℕ) (D : ℕ → ℝ → ℝ), (∀ j ≤ k, Continuous (D j)) →
     Function.Periodic (D 0) (2 * π) → (∀ j < k, ∀ x, HasDerivAt (D j) (D (j + 1) x) x) →
     ∀ C : ℝ, 0 ≤ C → (∀ x, |rem n (D k) x| ≤ C) →
@@ -1173,14 +1282,19 @@ theorem abs_iterate_rem_le (n : ℕ) : ∀ (k : ℕ) (D : ℕ → ℝ → ℝ), 
 
 /-! ### Jackson's theorem -/
 
-/-- **Jackson's theorem**, in terms of the first absolute moment `A = π sin (π / (2 n + 4))` of the
-kernel: for a `2 π`-periodic `g` with `k` continuous derivatives whose `k`-th derivative satisfies
-`|g⁽ᵏ⁾ u - g⁽ᵏ⁾ v| ≤ M |u - v|^α`, the best uniform approximation by trigonometric polynomials of
-degree at most `n` is within `Aᵏ M Aᵅ`.
+/-- **Jackson's theorem**, in terms of the first absolute moment $A_n = \pi \sin(\pi/(2n + 4))$ of
+the kernel. Let $G$ be a continuous function on the circle of circumference $2\pi$, and let
+$D_0, \dots, D_k$ be continuous functions on $\mathbb{R}$ with $D_0 = G$ (as a $2\pi$-periodic
+function) and $D_{j+1}(x)$ the derivative of $D_j$ at $x$ for all $j < k$ and all $x$. Let
+$M \ge 0$ and $0 \le \alpha \le 1$ be such that $|D_k(u) - D_k(v)| \le M |u - v|^\alpha$ for all
+real $u$ and $v$. Then for every $n$
+$$\operatorname{dist}(G, \mathcal{T}_n) \le A_n^k \cdot M A_n^\alpha,$$
+where $\mathcal{T}_n$ is the space of trigonometric polynomials of degree at most $n$ and the
+distance is uniform.
 
-The derivatives are given as a tower `D 0 = g`, `D (j+1) = (D j)'`, which is what the iterated
-remainder consumes; `Jackson.infDist_le_of_holder_deriv'` restates the bound with the classical
-constant. -/
+The derivatives are given as a tower `D 0 = Jackson.lift G`, `D (j + 1) = (D j)'`, which is the
+form that the iterated remainder uses. `Jackson.infDist_le_of_holder_deriv'` states the bound
+with the classical constant. -/
 theorem infDist_le_of_holder_deriv {G : C(AddCircle (2 * π), ℝ)} {k n : ℕ} {M α : ℝ}
     {D : ℕ → ℝ → ℝ} (hD0 : D 0 = lift G) (hDc : ∀ j ≤ k, Continuous (D j))
     (hDd : ∀ j < k, ∀ x, HasDerivAt (D j) (D (j + 1) x) x)
@@ -1218,8 +1332,11 @@ theorem infDist_le_of_holder_deriv {G : C(AddCircle (2 * π), ℝ)} {k n : ℕ} 
     _ = ‖G - q‖ := dist_eq_norm _ _
     _ ≤ _ := hnorm
 
-/-- The bound of `Jackson.infDist_le_of_holder_deriv` in the classical form: with `c = 1 + π²/2`
-the moment satisfies `n A ≤ π²/2 < c`, so `Aᵏ M Aᵅ ≤ cᵏ⁺¹ M / n^{k+α}`. -/
+/-- For $n \ge 1$, $M \ge 0$ and $0 \le \alpha \le 1$, the bound of
+`Jackson.infDist_le_of_holder_deriv` is at most the classical one:
+$$A_n^k \cdot M A_n^\alpha \le \frac{(1 + \pi^2/2)^{k+1} M}{n^{k+\alpha}}, \qquad A_n = \pi
+  \sin(\theta_n/2).$$
+The first absolute moment satisfies $n A_n \le \pi^2/2 < 1 + \pi^2/2$. -/
 theorem moment_pow_le (n k : ℕ) (hn : 1 ≤ n) {M α : ℝ} (hM : 0 ≤ M) (hα0 : 0 ≤ α)
     (hα1 : α ≤ 1) :
     (π * Real.sin (angle n / 2)) ^ k * (M * (π * Real.sin (angle n / 2)) ^ α)
@@ -1264,17 +1381,22 @@ theorem moment_pow_le (n k : ℕ) (hn : 1 ≤ n) {M α : ℝ} (hM : 0 ≤ M) (h�
     _ ≤ M * (1 + π ^ 2 / 2) ^ (k + 1) := mul_le_mul_of_nonneg_left hfinal hM
     _ = (1 + π ^ 2 / 2) ^ (k + 1) * M := by ring
 
-/-- **Jackson's theorem** ([han2009theoretical], Theorem 3.7.1). Let `g` be a `2 π`-periodic
-function with `k` continuous derivatives — given as a tower `D 0 = g`, `D (j+1) = (D j)'` — whose
-`k`-th derivative satisfies the Hölder condition `|g⁽ᵏ⁾ u - g⁽ᵏ⁾ v| ≤ M |u - v|^α` for some
-`0 < α ≤ 1`. Then for `n ≥ 1` the error of the best uniform approximation of `g` by trigonometric
-polynomials of degree at most `n` satisfies
+/-- **Jackson's theorem.** Let $G$ be a continuous function on the circle of circumference $2\pi$,
+and let $D_0, \dots, D_k$ be continuous functions on $\mathbb{R}$ with $D_0 = G$ (as a
+$2\pi$-periodic function) and $D_{j+1}(x)$ the derivative of $D_j$ at $x$ for all $j < k$ and
+all $x$. Let $M \ge 0$ and $0 \le \alpha \le 1$ be such that the $k$-th derivative satisfies the
+Hölder condition $|D_k(u) - D_k(v)| \le M |u - v|^\alpha$ for all real $u$ and $v$. Then for
+every $n \ge 1$ the error of the best uniform approximation of $G$ by trigonometric polynomials
+of degree at most $n$ satisfies
+$$\rho_n(G) = \operatorname{dist}(G, \mathcal{T}_n) \le \frac{c^{k+1} M}{n^{k+\alpha}}, \qquad
+  c = 1 + \frac{\pi^2}{2}.$$
+This is Theorem 3.7.1 of [han2009theoretical].
 
-`ρₙ(g) ≤ c^{k+1} M / n^{k+α}`, with `c = 1 + π²/2`.
-
-The proof is the Fejér–Korovkin kernel: its first absolute moment is `A ≤ π²/(2 n + 4)`, each of
-the `k` applications of the remainder `Jackson.rem` costs a factor `A` because the operator
-commutes with differentiation, and the last one costs `M Aᵅ`. -/
+The space $\mathcal{T}_n$ is `trigPolyLE (2 * π) n`, and the tower of derivatives starts with
+`D 0 = Jackson.lift G`. The proof uses the Fejér–Korovkin kernel: its first absolute moment is
+$A_n \le \pi^2/(2n + 4)$, each of the $k$ applications of the remainder `Jackson.rem` costs a
+factor $A_n$ because the operator commutes with differentiation, and the last application costs
+$M A_n^\alpha$. -/
 theorem infDist_le_of_holder_deriv' {G : C(AddCircle (2 * π), ℝ)} {k n : ℕ} {M α : ℝ}
     {D : ℕ → ℝ → ℝ} (hn : 1 ≤ n) (hD0 : D 0 = lift G) (hDc : ∀ j ≤ k, Continuous (D j))
     (hDd : ∀ j < k, ∀ x, HasDerivAt (D j) (D (j + 1) x) x)
@@ -1285,35 +1407,42 @@ theorem infDist_le_of_holder_deriv' {G : C(AddCircle (2 * π), ℝ)} {k n : ℕ}
   (infDist_le_of_holder_deriv hD0 hDc hDd hM hα0 hα1 hhol).trans
     (moment_pow_le n k hn hM hα0 hα1)
 
-/-! ### Jackson's theorem for algebraic polynomials
+/-!
+### Jackson's theorem for algebraic polynomials
 
-The uniform approximation of a function on `[-1, 1]` by algebraic polynomials reduces to the
-periodic problem through `x = cos θ`: a continuous `f` on `[-1, 1]` pulls back to the even periodic
-function `θ ↦ f (cos θ)`, and the *even part* of a trigonometric polynomial of degree at most `n`
-is `p (cos θ)` for an algebraic `p` of degree at most `n` — the Chebyshev correspondence
-`Jackson.exists_degree_le_eval_cos`. So the best algebraic approximation on `[-1, 1]` is at least as
-good as the best trigonometric approximation of the pullback, and the Hölder constant is not lost,
-because `cos` is `1`-Lipschitz.
+The uniform approximation of a function on $[-1, 1]$ by algebraic polynomials reduces to the
+periodic problem through $x = \cos\theta$. A continuous $f$ on $[-1, 1]$ pulls back to the even
+periodic function $\theta \mapsto f(\cos\theta)$, and the even part of a trigonometric polynomial of
+degree at most $n$ is $p(\cos\theta)$ for an algebraic polynomial $p$ of degree at most $n$
+(`Jackson.exists_degree_le_eval_cos`). So the best algebraic approximation on $[-1, 1]$ is at least
+as good as the best trigonometric approximation of the pullback. The Hölder constant does not
+change, because $\cos$ is $1$-Lipschitz.
 -/
 
 section Algebraic
 
 open scoped Polynomial
 
-/-- The point `cos θ` of `[-1, 1]`. -/
+/-- The point $\cos\theta$ of $[-1, 1]$. -/
 noncomputable def cosIcc (θ : ℝ) : Set.Icc (-1 : ℝ) 1 :=
   ⟨Real.cos θ, ⟨Real.neg_one_le_cos θ, Real.cos_le_one θ⟩⟩
 
+/-- The point `Jackson.cosIcc θ` is the real number $\cos\theta$. -/
 @[simp]
 theorem cosIcc_coe (θ : ℝ) : (cosIcc θ : ℝ) = Real.cos θ := rfl
 
+/-- The point $\cos\theta$ of $[-1, 1]$ is even in $\theta$: $\cos(-\theta) = \cos\theta$. -/
 @[simp]
 theorem cosIcc_neg (θ : ℝ) : cosIcc (-θ) = cosIcc θ := Subtype.ext (Real.cos_neg θ)
 
-/-- **The Chebyshev correspondence.** The even part `θ ↦ (q θ + q (-θ))/2` of a trigonometric
-polynomial of degree at most `n` is `P (cos θ)` for an algebraic polynomial `P` of degree at most
-`n`: the members of the real trigonometric system of positive index are `√2 Tⱼ ∘ cos`, those of
-negative index are odd, and the constant is `T₀ ∘ cos`. -/
+/-- **The Chebyshev correspondence.** Let $q$ be a trigonometric polynomial of degree at most $n$ on
+the circle of circumference $2\pi$. Then there is an algebraic polynomial $P$ of degree at most
+$n$ with
+$$P(\cos\theta) = \frac{q(\theta) + q(-\theta)}{2} \qquad \text{for all real } \theta.$$
+
+The members of the real trigonometric system `trigFun` of positive index are
+$\sqrt{2}\, T_j \circ \cos$, those of negative index are odd, and the constant is
+$T_0 \circ \cos$. -/
 theorem exists_degree_le_eval_cos {n : ℕ} {q : C(AddCircle (2 * π), ℝ)}
     (hq : q ∈ trigPolyLE (2 * π) n) :
     ∃ P : ℝ[X], P.degree ≤ (n : ℕ) ∧
@@ -1353,10 +1482,16 @@ theorem exists_degree_le_eval_cos {n : ℕ} {q : C(AddCircle (2 * π), ℝ)}
     simp only [ContinuousMap.smul_apply, smul_eq_mul]
     ring
 
-/-- **The best algebraic approximation on `[-1, 1]` is at least as good as the best trigonometric
-approximation of the pullback along `cos`.** If `G ↑θ = f (cos θ)` then the distance from `f` to the
-polynomials of degree at most `n` is at most the distance from `G` to the trigonometric polynomials
-of degree at most `n`. -/
+/-- **The best algebraic approximation on $[-1, 1]$ is at least as good as the best trigonometric
+approximation of the pullback along $\cos$.** Let $f$ be continuous on $[-1, 1]$, and let $G$ be
+a continuous function on the circle of circumference $2\pi$ with $G(\theta) = f(\cos\theta)$ for
+all real $\theta$. Then
+$$\operatorname{dist}(f, \mathcal{P}_n) \le \operatorname{dist}(G, \mathcal{T}_n),$$
+where $\mathcal{P}_n$ is the space of polynomials of degree at most $n$ on $[-1, 1]$,
+$\mathcal{T}_n$ is the space of trigonometric polynomials of degree at most $n$, and both
+distances are uniform.
+
+The spaces are `polyLE (Set.Icc (-1) 1) n` and `trigPolyLE (2 * π) n`. -/
 theorem infDist_polyLE_le_infDist_trigPolyLE {n : ℕ} {f : C(Set.Icc (-1 : ℝ) 1, ℝ)}
     {G : C(AddCircle (2 * π), ℝ)} (hG : ∀ θ : ℝ, G ↑θ = f (cosIcc θ)) :
     Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
@@ -1404,10 +1539,15 @@ theorem infDist_polyLE_le_infDist_trigPolyLE {n : ℕ} {f : C(Set.Icc (-1 : ℝ)
     _ = dist G q := (dist_eq_norm _ _).symm
     _ ≤ _ := hdist.le
 
-/-- **Jackson's theorem for algebraic polynomials, the Hölder case.** A function on `[-1, 1]` whose
-increments satisfy `|f u - f v| ≤ M |u - v|^α` is approximated by polynomials of degree at most `n`
-to within `M (π sin (π/(2 n + 4)))^α`, the same bound as in the periodic case: the pullback
-`θ ↦ f (cos θ)` has the same Hölder constant, because `cos` is `1`-Lipschitz. -/
+/-- **Jackson's theorem for algebraic polynomials, the Hölder case.** Let $f$ be continuous on
+$[-1, 1]$, and let $M \ge 0$ and $0 \le \alpha \le 1$ be such that
+$|f(u) - f(v)| \le M |u - v|^\alpha$ for all $u, v \in [-1, 1]$. Then for every $n$
+$$\operatorname{dist}(f, \mathcal{P}_n) \le M \bigl(\pi \sin(\pi/(2n + 4))\bigr)^\alpha,$$
+where $\mathcal{P}_n$ is the space of polynomials of degree at most $n$ on $[-1, 1]$ and the
+distance is uniform.
+
+This is the same bound as in the periodic case: the pullback $\theta \mapsto f(\cos\theta)$ has
+the same Hölder constant, because $\cos$ is $1$-Lipschitz. -/
 theorem infDist_polyLE_le_of_holder {f : C(Set.Icc (-1 : ℝ) 1, ℝ)} {M α : ℝ} (hM : 0 ≤ M)
     (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
     (hf : ∀ u v : Set.Icc (-1 : ℝ) 1, |f u - f v| ≤ M * |(u : ℝ) - (v : ℝ)| ^ α) (n : ℕ) :
@@ -1433,13 +1573,17 @@ theorem infDist_polyLE_le_of_holder {f : C(Set.Icc (-1 : ℝ) 1, ℝ)} {M α : �
         refine mul_le_mul_of_nonneg_left ?_ hM
         exact Real.rpow_le_rpow (abs_nonneg _) hcos hα0
 
-/-! #### The step down in the degree
+/-!
+### The step down in the degree
 
-For algebraic polynomials the antiderivative of a polynomial of degree at most `n - 1` is a
-polynomial of degree at most `n` — no mean has to be subtracted, as it does in the periodic case —
-so the recursion `ρₙ(u) ≤ c ρ_{n-1}(u')/n` loses nothing. -/
+For algebraic polynomials, the antiderivative of a polynomial of degree at most $n - 1$ is a
+polynomial of degree at most $n$. No mean has to be subtracted, as it has to be in the periodic
+case, so the recursion $\rho_n(u) \le c\, \rho_{n-1}(u')/n$ loses nothing.
+-/
 
-/-- **A polynomial has a polynomial antiderivative** of degree one higher. -/
+/-- **A polynomial has a polynomial antiderivative** of degree one higher: if $Q$ is a real
+polynomial of degree at most $m$, then there is a real polynomial $R$ of degree at most $m + 1$
+with $R' = Q$. -/
 theorem exists_derivative_eq {Q : ℝ[X]} {m : ℕ} (hQ : Q.degree ≤ (m : ℕ)) :
     ∃ R : ℝ[X], R.degree ≤ ((m + 1 : ℕ) : ℕ) ∧ Polynomial.derivative R = Q := by
   refine ⟨∑ i ∈ Finset.range (m + 1),
@@ -1469,7 +1613,9 @@ theorem exists_derivative_eq {Q : ℝ[X]} {m : ℕ} (hQ : Q.degree ≤ (m : ℕ)
     push_cast
     field_simp
 
-/-- **Translating by a member of a subspace does not move the distance to it.** -/
+/-- **Translation by a member of a subspace does not change the distance to it.** Let $S$ be a
+subspace of a real normed space $V$, and let $w \in S$. Then $\operatorname{dist}(u - w, S) =
+\operatorname{dist}(u, S)$ for every $u \in V$. -/
 theorem infDist_sub_mem {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     {S : Submodule ℝ V} {w : V}
     (hw : w ∈ S) (u : V) :
@@ -1487,22 +1633,28 @@ theorem infDist_sub_mem {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
   refine le_antisymm (key u w hw) ?_
   simpa using key (u - w) (-w) (S.neg_mem hw)
 
-/-- A function continuous on `[-1, 1]`, as a continuous function on the compact space `[-1, 1]`. -/
+/-- A function $u$ that is continuous on $[-1, 1]$, as a continuous function on the compact space
+$[-1, 1]$. -/
 noncomputable def restrictIcc {u : ℝ → ℝ} (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1)) :
     C(Set.Icc (-1 : ℝ) 1, ℝ) :=
   ⟨fun x => u x, hu.domRestrict⟩
 
+/-- The value of `Jackson.restrictIcc hu` at a point $x$ of $[-1, 1]$ is $u(x)$. -/
 @[simp]
 theorem restrictIcc_apply {u : ℝ → ℝ} (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1))
     (x : Set.Icc (-1 : ℝ) 1) : restrictIcc hu x = u x := rfl
 
-/-- **One step of the recursion in Jackson's theorem on `[-1, 1]`**: the best approximation of a
-function by polynomials of degree at most `n + 1` is at most `π sin (θ_{n+1}/2)` times the best
-approximation of its derivative by polynomials of degree at most `n`.
+/-- **One step of the recursion in Jackson's theorem on $[-1, 1]$.** Let $u$ and $u'$ be continuous
+on $[-1, 1]$, and let $u'(x)$ be the derivative of $u$ within $[-1, 1]$ at every
+$x \in [-1, 1]$. Then for every $n$
+$$\operatorname{dist}(u, \mathcal{P}_{n+1}) \le \pi \sin(\theta_{n+1}/2)\,
+  \operatorname{dist}(u', \mathcal{P}_n),$$
+where $\mathcal{P}_n$ is the space of polynomials of degree at most $n$ on $[-1, 1]$,
+$\theta_{n+1} = \pi/(n + 3)$, and the distances are uniform.
 
-The antiderivative `R` of the best approximation `q` of `u'` is a polynomial of degree at most
-`n + 1`, and `u - R` is Lipschitz with constant `‖u' - q‖` by the mean value theorem, so the Hölder
-case applies to it with exponent `1`. -/
+The antiderivative $R$ of a best approximation $q$ of $u'$ is a polynomial of degree at most
+$n + 1$. By the mean value theorem, $u - R$ is Lipschitz with constant $\|u' - q\|$, so the
+Hölder case applies to it with exponent $1$. -/
 theorem infDist_restrictIcc_le_step {u u' : ℝ → ℝ}
     (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1)) (hu' : ContinuousOn u' (Set.Icc (-1 : ℝ) 1))
     (hd : ∀ x ∈ Set.Icc (-1 : ℝ) 1, HasDerivWithinAt u (u' x) (Set.Icc (-1 : ℝ) 1) x) (n : ℕ) :
@@ -1564,10 +1716,13 @@ theorem infDist_restrictIcc_le_step {u u' : ℝ → ℝ}
         exact mul_le_mul_of_nonneg_right hlt.le hc.le
     _ = c * E + ε := by field_simp
 
-/-- **The recursion iterated.** With a tower `D 0, …, D k` of derivatives on `[-1, 1]`, the best
-approximation of `D 0` by polynomials of degree at most `n` is at most
-`∏_{i < k} π sin (θ_{n-i}/2)` times the best approximation of `D k` by polynomials of degree at most
-`n - k`. -/
+/-- **The recursion iterated.** Let $k \le n$, and let $D_0, \dots, D_k$ be continuous on $[-1, 1]$,
+with $D_{j+1}(x)$ the derivative of $D_j$ within $[-1, 1]$ at every $x \in [-1, 1]$, for all
+$j < k$. Then
+$$\operatorname{dist}(D_0, \mathcal{P}_n) \le \Bigl(\prod_{i=0}^{k-1} \pi
+  \sin(\theta_{n-i}/2)\Bigr) \operatorname{dist}(D_k, \mathcal{P}_{n-k}),$$
+where $\mathcal{P}_m$ is the space of polynomials of degree at most $m$ on $[-1, 1]$ and the
+distances are uniform. -/
 theorem infDist_restrictIcc_le_prod : ∀ (k n : ℕ) (_ : k ≤ n) (D : ℕ → ℝ → ℝ)
     (hDc : ∀ j ≤ k, ContinuousOn (D j) (Set.Icc (-1 : ℝ) 1))
     (_ : ∀ j < k, ∀ x ∈ Set.Icc (-1 : ℝ) 1,
@@ -1603,18 +1758,21 @@ theorem infDist_restrictIcc_le_prod : ∀ (k n : ℕ) (_ : k ≤ n) (D : ℕ →
     rw [hprod, show m + 1 - (k + 1) = m - k from Nat.succ_sub_succ m k, mul_assoc]
     exact hstep.trans (mul_le_mul_of_nonneg_left hrec hnn)
 
-/-- **Jackson's theorem for algebraic polynomials.** Let `D 0, …, D k` be a tower of derivatives on
-`[-1, 1]`, with `D k` satisfying the Hölder condition `|D k u - D k v| ≤ M |u - v|^α` there, and let
-`f` be `D 0` as a continuous function on `[-1, 1]`. Then for `n > k` the error of the best uniform
-approximation of `f` by polynomials of degree at most `n` satisfies
-
-`ρₙ(f) ≤ d c^{k+1} M / n^{k+α}`,  `c = 1 + π²/2`,
-
-for any `d` at least `n^{k+α} / (n (n-1) ⋯ (n-k+1) (n-k)^α)`.
+/-- **Jackson's theorem for algebraic polynomials.** Let $k < n$, and let $D_0, \dots, D_k$ be
+continuous on $[-1, 1]$, with $D_{j+1}(x)$ the derivative of $D_j$ within $[-1, 1]$ at every
+$x \in [-1, 1]$, for all $j < k$. Let $M \ge 0$ and $0 \le \alpha \le 1$ be such that
+$|D_k(u) - D_k(v)| \le M |u - v|^\alpha$ for all $u, v \in [-1, 1]$. Let $f$ be the continuous
+function on $[-1, 1]$ with $f = D_0$ there, and let
+$$d \ge \frac{n^{k+\alpha}}{n (n - 1) \cdots (n - k + 1)\, (n - k)^\alpha}.$$
+Then the error of the best uniform approximation of $f$ by polynomials of degree at most $n$
+satisfies
+$$\rho_n(f) = \operatorname{dist}(f, \mathcal{P}_n) \le \frac{d\, c^{k+1} M}{n^{k+\alpha}},
+  \qquad c = 1 + \frac{\pi^2}{2}.$$
 
 The proof is the recursion `Jackson.infDist_restrictIcc_le_prod` down the tower, which costs
-`π sin (θ_{n-i}/2) ≤ (π²/2)/(n-i)` per step, closed by the Hölder case at degree `n - k`; so the
-constant actually proved is `(π²/2)^{k+1}`, smaller than the classical `(1 + π²/2)^{k+1}`. -/
+$\pi \sin(\theta_{n-i}/2) \le (\pi^2/2)/(n - i)$ per step, and the Hölder case at degree $n - k$
+closes it. So the constant that is actually proved is $(\pi^2/2)^{k+1}$, smaller than the
+classical $(1 + \pi^2/2)^{k+1}$. -/
 theorem infDist_le_of_holder_poly {k n : ℕ} {M α d : ℝ} {D : ℕ → ℝ → ℝ}
     {f : C(Set.Icc (-1 : ℝ) 1, ℝ)} (hf : ∀ x : Set.Icc (-1 : ℝ) 1, f x = D 0 x)
     (hDc : ∀ j ≤ k, ContinuousOn (D j) (Set.Icc (-1 : ℝ) 1))

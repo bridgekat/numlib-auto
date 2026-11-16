@@ -17,57 +17,73 @@ import Mathlib.Analysis.InnerProductSpace.l2Space
 /-!
 # The Hilbert basis of eigenvectors of a compact self-adjoint operator
 
-The spectral decomposition of a compact self-adjoint operator in its classical form — a Hilbert
-basis of eigenvectors indexed by a set of vectors, with no injectivity, separability or
-dimension hypothesis — and the numerical-range description of the spectrum of a bounded
-self-adjoint operator: with `m = inf ⟪T u, u⟫` and `M = sup ⟪T u, u⟫` over the unit sphere,
-`σ(T) ⊆ [m, M]`, `m, M ∈ σ(T)`, `‖T‖ = max (|m|, |M|)`, and a self-adjoint operator whose
-spectrum is contained in `{0}` is zero. This is [brezis2011functional] §6.4 (Proposition 6.9,
-Corollary 6.10, Theorem 6.11).
+Let $T$ be a bounded operator on a Hilbert space $E$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$,
+and let
+$$m = \inf_{x \neq 0} R_T(x), \qquad M = \sup_{x \neq 0} R_T(x), \qquad R_T(x) =
+  \frac{\operatorname{Re} \langle Tx, x \rangle}{\|x\|^2},$$
+be the bounds of its Rayleigh quotient. This module proves the spectral decomposition of a compact
+self-adjoint operator in its classical form: a Hilbert basis of eigenvectors, indexed by a set of
+vectors, with no injectivity, separability or dimension hypothesis. It also proves the description
+of the spectrum of a bounded self-adjoint operator by the bounds of the quadratic form:
+$\sigma(T) \subseteq [m, M]$, $m, M \in \sigma(T)$, $\|T\| = \max(|m|, |M|)$, and a self-adjoint
+operator whose spectrum is contained in $\{0\}$ is zero. This is §6.4 of [brezis2011functional]
+(Proposition 6.9, Corollary 6.10, Theorem 6.11).
 
 ## Main results
 
-* `ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner`: the Cauchy–Schwarz
-  inequality `‖S x‖ ^ 2 ≤ ‖S‖ * re ⟪S x, x⟫` for a positive operator `S`, the estimate on which
-  `M ∈ σ(T)` rests.
-* `ContinuousLinearMap.mem_Icc_of_ofReal_mem_spectrum`,
-  `IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum`,
-  `IsSelfAdjoint.ofReal_iInf_rayleighQuotient_mem_spectrum`,
-  `IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup`: [brezis2011functional] Proposition 6.9, with `m`
-  and `M` written as the infimum and supremum of Mathlib's `ContinuousLinearMap.rayleighQuotient`
-  over the nonzero vectors (the indexing of
-  `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional`; the sphere form is
-  `ContinuousLinearMap.iSup_rayleigh_eq_iSup_rayleigh_sphere`). The bounds are stated for the
-  *real* points of the spectrum, `(t : 𝕜) ∈ spectrum 𝕜 T → t ∈ Icc m M`: over `ℝ` this is the
-  book's statement on the nose, and over `ℂ` the spectrum of a self-adjoint operator is real by
-  Mathlib's C⋆-algebra theory (`IsSelfAdjoint.mem_spectrum_eq_re`). The inclusion `σ(T) ⊆ [m, M]`
-  needs no self-adjointness at all — it is the real slice of `σ(T) ⊆ closure W(T)` — and is
-  stated without it.
-* `IsSelfAdjoint.eq_zero_of_spectrum_subset_zero`: [brezis2011functional] Corollary 6.10, from
-  `ContinuousLinearMap.spectralRadius_eq_nnnorm`.
-* `ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`: the assembly step
-  of the spectral theorem — an operator whose eigenspaces are pairwise orthogonal and span densely
-  has a Hilbert basis of eigenvectors indexed by a set of vectors. It is stated for an arbitrary
-  operator so that it serves both the self-adjoint case here and the compact normal case.
-* `ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`: [brezis2011functional]
-  Theorem 6.11. The eigenspaces of a symmetric operator are orthogonal
-  (`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`) and, for a compact one, span densely
-  (`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`); the eigenvalue of each
-  basis vector is real (`LinearMap.IsSymmetric.conj_eigenvalue_eq_self`).
-  `ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors` is the same statement
-  with an arbitrary index type in the universe of `E`.
+* `ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner`: the Cauchy–Schwarz inequality
+  $\|Sx\|^2 \le \|S\| \operatorname{Re} \langle Sx, x \rangle$ for a positive operator $S$, on which
+  $M \in \sigma(T)$ rests.
+* `ContinuousLinearMap.mem_Icc_of_ofReal_mem_spectrum`: every real point of the spectrum of $T$ lies
+  in $[m, M]$, without self-adjointness (Proposition 6.9 of [brezis2011functional]).
+* `IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum` and
+  `IsSelfAdjoint.ofReal_iInf_rayleighQuotient_mem_spectrum`: for self-adjoint $T$ on a nontrivial
+  space, $M \in \sigma(T)$ and $m \in \sigma(T)$ (Proposition 6.9 of [brezis2011functional]).
+* `IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup`: for self-adjoint $T$ on a nontrivial space,
+  $\|T\| = \max(|m|, |M|)$ (Proposition 6.9 of [brezis2011functional]).
+* `IsSelfAdjoint.eq_zero_of_spectrum_subset_zero`: a self-adjoint operator with
+  $\sigma(T) \subseteq \{0\}$ is zero (Corollary 6.10 of [brezis2011functional]).
+* `ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`: an operator whose
+  eigenspaces are pairwise orthogonal and have dense span has a Hilbert basis of eigenvectors,
+  indexed by a set of vectors.
+* `ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`: a compact symmetric operator
+  has a Hilbert basis of eigenvectors with real eigenvalues (Theorem 6.11 of
+  [brezis2011functional]). `ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors`
+  is the same statement with an arbitrary index type in the universe of $E$.
 
-## Design
+## Proof outline
 
-The spectral bounds use Mathlib's Lax–Milgram criterion
-`ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map` for the resolvent, so no coercivity
-vocabulary is needed. `m ∈ σ(T)` is `M ∈ σ(−T)`; the negation of a bounded infimum is a supremum
-(`csSup_neg`). Where the book assumes `H` separable, no hypothesis is needed: the index set of
-the basis is a set of vectors, as in Mathlib's `exists_hilbertBasis`, and separability of `E`
-is then equivalent to countability of that set. The parent module
-`Numlib.Analysis.InnerProductSpace.CompactSpectral` builds the *enumerated* form
-(`eigenvalueSeq`, `eigenvectorHilbertBasis : HilbertBasis ℕ 𝕜 E`) and needs `T` injective and `E`
-infinite dimensional for that; the two forms are complementary and neither derives from the other.
+The real points $t < m$ are outside the spectrum, because then $T - tI$ is coercive and hence
+invertible by the Lax–Milgram theorem; the same argument applied to $-T$ treats $t > M$. For
+$M \in \sigma(T)$, the operator $S = MI - T$ is positive, so the Cauchy–Schwarz inequality for $S$
+gives $\|Sx\|^2 \le \|S\| (M \|x\|^2 - \operatorname{Re} \langle Tx, x \rangle)$; vectors whose
+Rayleigh quotient approaches $M$ show that $S$ is not bounded below. The statement $m \in \sigma(T)$
+is $M \in \sigma(-T)$. For the Hilbert basis, the eigenspaces of a symmetric operator are
+orthogonal, and for a compact one their span is dense; the union of Hilbert bases of the eigenspaces
+is then a Hilbert basis of $E$.
+
+## Implementation notes
+
+* The numbers $m$ and $M$ are the infimum and supremum of Mathlib's
+  `ContinuousLinearMap.rayleighQuotient` over the nonzero vectors, the indexing of
+  `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional`. [brezis2011functional] takes them
+  over the unit sphere; the two agree by
+  `ContinuousLinearMap.iSup_rayleigh_eq_iSup_rayleigh_sphere`.
+* The spectral bounds are stated for the real points of the spectrum: $t \in \mathbb{R}$ with
+  $t \in \sigma(T)$. Over $\mathbb{R}$ this is the statement of the source. Over $\mathbb{C}$ the
+  spectrum of a self-adjoint operator is real by the C⋆-algebra theory of Mathlib
+  (`IsSelfAdjoint.mem_spectrum_eq_re`). The inclusion $\sigma(T) \cap \mathbb{R} \subseteq [m, M]$
+  needs no self-adjointness, since it is the real part of the inclusion of $\sigma(T)$ in the
+  closure of the numerical range, and it is stated without it.
+* The resolvent bounds use Mathlib's Lax–Milgram criterion
+  `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`, so no coercivity vocabulary is needed.
+* Where [brezis2011functional] assumes $E$ separable for Theorem 6.11, no hypothesis is needed here.
+  The index set of the basis is a set of vectors, as in Mathlib's `exists_hilbertBasis`, and
+  separability of $E$ is then equivalent to countability of that set.
+* The parent module `Numlib.Analysis.InnerProductSpace.CompactSpectral` builds the enumerated form
+  (`ContinuousLinearMap.IsSymmetric.eigenvalueSeq` and a Hilbert basis indexed by $\mathbb{N}$),
+  which needs $T$ injective and $E$ infinite-dimensional. The two forms complement each other, and
+  neither is derived from the other.
 -/
 
 open Module.End Filter Topology RCLike
@@ -79,8 +95,9 @@ namespace ContinuousLinearMap
 
 /-! ### Cauchy–Schwarz for a positive operator -/
 
-/-- The form `⟪S x, y⟫` of a positive operator as a pre-inner-product core, so that Mathlib's
-Cauchy–Schwarz inequality for such cores applies to it. -/
+/-- The form $(x, y) \mapsto \langle Sx, y \rangle$ of a positive operator $S$, as a
+pre-inner-product core, so that the Cauchy–Schwarz inequality of Mathlib for such cores applies
+to it. -/
 @[instance_reducible]
 private noncomputable def IsPositive.preCore {S : E →L[𝕜] E} (hS : S.IsPositive) :
     PreInnerProductSpace.Core 𝕜 E where
@@ -90,10 +107,15 @@ private noncomputable def IsPositive.preCore {S : E →L[𝕜] E} (hS : S.IsPosi
   add_left x y z := by simp [inner_add_left]
   smul_left x y r := by simp [inner_smul_left]
 
-/-- **Cauchy–Schwarz for a positive operator**: `‖S x‖ ^ 2 ≤ ‖S‖ * re ⟪S x, x⟫`. The form
-`(u, v) ↦ re ⟪S u, v⟫` is symmetric and positive semidefinite, so
-`‖S x‖ ^ 4 = (re ⟪S x, S x⟫) ^ 2 ≤ re ⟪S x, x⟫ * re ⟪S (S x), S x⟫ ≤ re ⟪S x, x⟫ * ‖S‖ * ‖S x‖ ^ 2`.
-This is inequality (7) in the proof of [brezis2011functional] Proposition 6.9. -/
+/-- The **Cauchy–Schwarz inequality for a positive operator**. Let $S$ be a bounded positive
+operator on an inner product space $E$. Then for every $x \in E$
+$$\|Sx\|^2 \le \|S\| \operatorname{Re} \langle Sx, x \rangle.$$
+This is inequality (7) in the proof of Proposition 6.9 of [brezis2011functional].
+
+The form $(u, v) \mapsto \operatorname{Re} \langle Su, v \rangle$ is symmetric and positive
+semidefinite, so $\|Sx\|^4 = (\operatorname{Re} \langle Sx, Sx \rangle)^2 \le \operatorname{Re}
+\langle Sx, x \rangle \operatorname{Re} \langle S(Sx), Sx \rangle \le \operatorname{Re} \langle
+Sx, x \rangle \|S\| \|Sx\|^2$. -/
 theorem IsPositive.norm_apply_sq_le_norm_mul_re_inner {S : E →L[𝕜] E} (hS : S.IsPositive)
     (x : E) : ‖S x‖ ^ 2 ≤ ‖S‖ * re ⟪S x, x⟫_𝕜 := by
   have hcs := @InnerProductSpace.Core.inner_mul_inner_self_le 𝕜 E _ _ _ hS.preCore x (S x)
@@ -125,13 +147,15 @@ namespace ContinuousLinearMap
 variable [CompleteSpace E] {T : E →L[𝕜] E}
 
 omit [CompleteSpace E] in
-/-- `re ⟪(c • 1 - T) x, x⟫ = c * ‖x‖ ^ 2 - re ⟪T x, x⟫` for a real `c`. -/
+/-- For real $c$, $\operatorname{Re} \langle (cI - T) x, x \rangle = c \|x\|^2 - \operatorname{Re}
+\langle Tx, x \rangle$. -/
 private theorem re_inner_smul_one_sub_apply (T : E →L[𝕜] E) (c : ℝ) (x : E) :
     re ⟪((c : 𝕜) • (1 : E →L[𝕜] E) - T) x, x⟫_𝕜 = c * ‖x‖ ^ 2 - re ⟪T x, x⟫_𝕜 := by
   simp [inner_sub_left, inner_smul_left]
 
 omit [CompleteSpace E] in
-/-- The Rayleigh quotient of a nonzero vector times the squared norm is the quadratic form. -/
+/-- For $x \neq 0$, the quadratic form $\operatorname{Re} \langle Tx, x \rangle$ is the Rayleigh
+quotient of $x$ times $\|x\|^2$. -/
 private theorem re_inner_eq_rayleighQuotient_mul (T : E →L[𝕜] E) {x : E} (hx : x ≠ 0) :
     re ⟪T x, x⟫_𝕜 = T.rayleighQuotient x * ‖x‖ ^ 2 := by
   have hx2 : ‖x‖ ^ 2 ≠ 0 := by positivity
@@ -139,7 +163,9 @@ private theorem re_inner_eq_rayleighQuotient_mul (T : E →L[𝕜] E) {x : E} (h
     div_mul_cancel₀ _ hx2]
 
 omit [CompleteSpace E] in
-/-- The Rayleigh quotient over the nonzero vectors is bounded below. -/
+/-- Let $T$ be a bounded operator on an inner product space $E$. The Rayleigh quotients
+$\operatorname{Re} \langle Tx, x \rangle / \|x\|^2$ of the nonzero vectors $x$ form a set that
+is bounded below. -/
 theorem bddBelow_rayleighQuotient_subtype (T : E →L[𝕜] E) :
     BddBelow (Set.range fun x : { x : E // x ≠ 0 } => T.rayleighQuotient x) :=
   ⟨-‖T‖, by
@@ -147,17 +173,21 @@ theorem bddBelow_rayleighQuotient_subtype (T : E →L[𝕜] E) :
     exact (abs_le.1 (T.rayleighQuotient_le_norm x)).1⟩
 
 omit [CompleteSpace E] in
-/-- The Rayleigh quotient over the nonzero vectors is bounded above. -/
+/-- Let $T$ be a bounded operator on an inner product space $E$. The Rayleigh quotients
+$\operatorname{Re} \langle Tx, x \rangle / \|x\|^2$ of the nonzero vectors $x$ form a set that
+is bounded above. -/
 theorem bddAbove_rayleighQuotient_subtype (T : E →L[𝕜] E) :
     BddAbove (Set.range fun x : { x : E // x ≠ 0 } => T.rayleighQuotient x) :=
   ⟨‖T‖, by
     rintro _ ⟨x, rfl⟩
     exact (abs_le.1 (T.rayleighQuotient_le_norm x)).2⟩
 
-/-- A real number strictly below a lower bound `c` of the quadratic form of an operator,
-`c * ‖x‖ ^ 2 ≤ re ⟪T x, x⟫`, is in the resolvent set: `T - t • 1` is then coercive with
-constant `c - t`, hence invertible by the Lax–Milgram criterion
-`ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`. No symmetry is needed. -/
+/-- Let $T$ be a bounded operator on a Hilbert space $E$, and let $c \in \mathbb{R}$ satisfy $c
+\|x\|^2 \le \operatorname{Re} \langle Tx, x \rangle$ for all $x \in E$. Then every real number
+$t < c$ is outside the spectrum of $T$. No symmetry is needed.
+
+The operator $T - tI$ is coercive with constant $c - t > 0$, hence invertible by the Lax–Milgram
+criterion `ContinuousLinearMap.isUnit_of_forall_le_norm_inner_map`. -/
 theorem ofReal_notMem_spectrum_of_lt (T : E →L[𝕜] E) {c t : ℝ}
     (hc : ∀ x, c * ‖x‖ ^ 2 ≤ re ⟪T x, x⟫_𝕜) (ht : t < c) : (t : 𝕜) ∉ spectrum 𝕜 T := by
   rw [spectrum.mem_iff, not_not, Algebra.algebraMap_eq_smul_one]
@@ -175,13 +205,17 @@ theorem ofReal_notMem_spectrum_of_lt (T : E →L[𝕜] E) {c t : ℝ}
     _ ≤ |re ⟪((t : 𝕜) • (1 : E →L[𝕜] E) - T) x, x⟫_𝕜| := neg_le_abs _
     _ ≤ ‖⟪((t : 𝕜) • (1 : E →L[𝕜] E) - T) x, x⟫_𝕜‖ := abs_re_le_norm _
 
-/-- **The real spectrum of an operator lies between the bounds of its Rayleigh quotient**
-([brezis2011functional] Proposition 6.9, `σ(T) ⊆ [m, M]`, stated there for self-adjoint `T`; the
-proof, by Lax–Milgram, uses no symmetry): for `t : ℝ` with `(t : 𝕜) ∈ spectrum 𝕜 T`,
-`m ≤ t ≤ M` where `m` and `M` are the infimum and supremum of `T.rayleighQuotient` over the
-nonzero vectors. Over `ℝ` this is the book's statement; over `ℂ` the spectrum of a self-adjoint
-operator is real (`IsSelfAdjoint.mem_spectrum_eq_re`). No nontriviality of `E` is needed: on the
-trivial space the spectrum is empty. -/
+/-- **The real spectrum of an operator lies between the bounds of its Rayleigh quotient.** Let $T$
+be a bounded operator on a Hilbert space $E$, and let $m$ and $M$ be the infimum and the
+supremum of the Rayleigh quotient $\operatorname{Re} \langle Tx, x \rangle / \|x\|^2$ over the
+nonzero vectors $x$. If $t \in \mathbb{R}$ lies in the spectrum of $T$, then $m \le t \le M$.
+This is the inclusion $\sigma(T) \subseteq [m, M]$ of Proposition 6.9 of [brezis2011functional].
+
+The source states the inclusion for self-adjoint $T$; the proof, by the Lax–Milgram theorem,
+uses no symmetry. Over $\mathbb{R}$ this is the statement of the source; over $\mathbb{C}$ the
+spectrum of a self-adjoint operator is real (`IsSelfAdjoint.mem_spectrum_eq_re`). No
+nontriviality of $E$ is needed: on the trivial space the spectrum is empty. The Rayleigh
+quotient is `ContinuousLinearMap.rayleighQuotient`. -/
 theorem mem_Icc_of_ofReal_mem_spectrum (T : E →L[𝕜] E) {t : ℝ}
     (ht : (t : 𝕜) ∈ spectrum 𝕜 T) :
     t ∈ Set.Icc (⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x)
@@ -216,12 +250,16 @@ open ContinuousLinearMap
 
 variable [CompleteSpace E] {T : E →L[𝕜] E}
 
-/-- **The supremum of the Rayleigh quotient of a self-adjoint operator belongs to its spectrum**
-([brezis2011functional] Proposition 6.9, `M ∈ σ(T)`), on a nontrivial Hilbert space. The
-operator `S = M • 1 - T` is positive, so `‖S x‖ ^ 2 ≤ ‖S‖ * (M ‖x‖ ^ 2 - re ⟪T x, x⟫)` by
-`ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner`; vectors whose Rayleigh
-quotient approaches `M` make the right side arbitrarily small relative to `‖x‖ ^ 2`, which no
-invertible `S` allows. -/
+/-- **The supremum of the Rayleigh quotient of a self-adjoint operator lies in its spectrum.** Let
+$E$ be a nontrivial Hilbert space, let $T$ be a bounded self-adjoint operator on $E$, and let
+$M$ be the supremum of the Rayleigh quotient $\operatorname{Re} \langle Tx, x \rangle / \|x\|^2$
+over the nonzero vectors $x$. Then $M \in \sigma(T)$. This is part of Proposition 6.9 of
+[brezis2011functional].
+
+The operator $S = MI - T$ is positive, so $\|Sx\|^2 \le \|S\| (M \|x\|^2 - \operatorname{Re}
+\langle Tx, x \rangle)$ by `ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner`.
+Vectors whose Rayleigh quotient approaches $M$ make the right side arbitrarily small relative to
+$\|x\|^2$, which is impossible for an invertible $S$. -/
 theorem ofReal_iSup_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdjoint T) :
     ((⨆ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) : 𝕜) ∈ spectrum 𝕜 T := by
   have : Nonempty { x : E // x ≠ 0 } := by
@@ -280,10 +318,14 @@ theorem ofReal_iSup_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdj
     nlinarith [pow_pos hc0 2]
   exact absurd (h4.trans_lt h5) (lt_irrefl _)
 
-/-- **The infimum of the Rayleigh quotient of a self-adjoint operator belongs to its spectrum**
-([brezis2011functional] Proposition 6.9, `m ∈ σ(T)`), on a nontrivial Hilbert space: this is
-`M ∈ σ(-T)` for the self-adjoint operator `-T`, whose Rayleigh quotient is `-T.rayleighQuotient`.
--/
+/-- **The infimum of the Rayleigh quotient of a self-adjoint operator lies in its spectrum.** Let
+$E$ be a nontrivial Hilbert space, let $T$ be a bounded self-adjoint operator on $E$, and let
+$m$ be the infimum of the Rayleigh quotient $\operatorname{Re} \langle Tx, x \rangle / \|x\|^2$
+over the nonzero vectors $x$. Then $m \in \sigma(T)$. This is part of Proposition 6.9 of
+[brezis2011functional].
+
+This is $-m \in \sigma(-T)$ for the self-adjoint operator $-T$, whose Rayleigh quotient is the
+negative of that of $T$. -/
 theorem ofReal_iInf_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdjoint T) :
     ((⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) : 𝕜) ∈ spectrum 𝕜 T := by
   have h := hT.neg.ofReal_iSup_rayleighQuotient_mem_spectrum
@@ -294,10 +336,13 @@ theorem ofReal_iInf_rayleighQuotient_mem_spectrum [Nontrivial E] (hT : IsSelfAdj
   rw [heq, ofReal_neg, ← spectrum.neg_eq, Set.neg_mem_neg] at h
   exact h
 
-/-- **`‖T‖ = max (|m|, |M|)`** for a self-adjoint operator on a nontrivial Hilbert space, `m` and
-`M` being the infimum and supremum of its Rayleigh quotient over the nonzero vectors: the last
-clause of [brezis2011functional] Proposition 6.9. Mathlib's
-`ContinuousLinearMap.norm_eq_iSup_rayleighQuotient` gives `‖T‖ = ⨆ x, |T.rayleighQuotient x|`,
+/-- Let $E$ be a nontrivial Hilbert space, let $T$ be a bounded self-adjoint operator on $E$, and
+let $m$ and $M$ be the infimum and the supremum of the Rayleigh quotient $\operatorname{Re}
+\langle Tx, x \rangle / \|x\|^2$ over the nonzero vectors $x$. Then
+$$\|T\| = \max(|m|, |M|).$$
+This is the last part of Proposition 6.9 of [brezis2011functional].
+
+Mathlib's `ContinuousLinearMap.norm_eq_iSup_rayleighQuotient` gives $\|T\| = \sup_x |R_T(x)|$,
 and the rest is real arithmetic. -/
 theorem norm_eq_max_abs_iInf_abs_iSup [Nontrivial E] (hT : IsSelfAdjoint T) :
     ‖T‖ = max |⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x|
@@ -328,9 +373,12 @@ theorem norm_eq_max_abs_iInf_abs_iSup [Nontrivial E] (hT : IsSelfAdjoint T) :
     · exact ((neg_le_neg (hle x₀)).trans (neg_abs_le _)).trans (hleM x₀)
     · exact ciSup_le fun x => (le_abs_self _).trans (hle x)
 
-/-- **A self-adjoint operator whose spectrum is contained in `{0}` is zero**
-([brezis2011functional] Corollary 6.10, stated there with `σ(T) = {0}`; the inclusion covers
-the trivial space, whose spectrum is empty): its spectral radius vanishes, and equals its norm by
+/-- **A self-adjoint operator whose spectrum is contained in $\{0\}$ is zero.** Let $T$ be a bounded
+self-adjoint operator on a Hilbert space $E$ with $\sigma(T) \subseteq \{0\}$. Then $T = 0$.
+This is Corollary 6.10 of [brezis2011functional].
+
+The source states the corollary with $\sigma(T) = \{0\}$; the inclusion also covers the trivial
+space, whose spectrum is empty. The spectral radius of $T$ vanishes, and it equals the norm by
 `ContinuousLinearMap.spectralRadius_eq_nnnorm`. -/
 theorem eq_zero_of_spectrum_subset_zero (hT : IsSelfAdjoint T) (h : spectrum 𝕜 T ⊆ {0}) :
     T = 0 := by
@@ -351,13 +399,18 @@ namespace ContinuousLinearMap
 
 variable [CompleteSpace E] {T : E →L[𝕜] E}
 
-/-- **Assembling a Hilbert basis of eigenvectors** — the last step of the proof of
-[brezis2011functional] Theorem 6.11 (and of its compact normal analogue, Proposition 11.36): an
-operator whose eigenspaces are pairwise orthogonal and span a dense subspace has a Hilbert basis
-of eigenvectors, indexed by a set of vectors as in Mathlib's `exists_hilbertBasis`. The basis is
-the union of Hilbert bases of the (closed, hence complete) eigenspaces: orthonormal by
-`OrthogonalFamily.orthonormal_sigma_orthonormal`, and with dense span because a vector orthogonal
-to it has zero projection onto every eigenspace. No separability is assumed. -/
+/-- **Assembly of a Hilbert basis of eigenvectors.** Let $T$ be a bounded operator on a Hilbert
+space $E$ whose eigenspaces are pairwise orthogonal and whose eigenspaces together span a dense
+subspace, that is, $\bigl(\bigvee_\mu \ker(T - \mu I)\bigr)^\perp = \{0\}$. Then there are a set
+$w \subseteq E$ and a Hilbert basis of $E$ indexed by $w$ whose vectors are the elements of $w$,
+such that every element of $w$ is an eigenvector of $T$.
+
+This is the last step of the proof of Theorem 6.11 of [brezis2011functional] and of its compact
+normal analogue, Proposition 11.36. The basis is the union of Hilbert bases of the eigenspaces,
+which are closed and hence complete. It is orthonormal by
+`OrthogonalFamily.orthonormal_sigma_orthonormal`, and its span is dense because a vector
+orthogonal to it has zero projection onto every eigenspace. No separability is assumed. The
+index set is a set of vectors, as in Mathlib's `exists_hilbertBasis`. -/
 theorem exists_hilbertBasis_eigenvectors_of_orthogonalFamily
     (hV : OrthogonalFamily 𝕜 (fun μ : 𝕜 => eigenspace (T : Module.End 𝕜 E) μ)
       fun μ => (eigenspace (T : Module.End 𝕜 E) μ).subtypeₗᵢ)
@@ -400,14 +453,18 @@ theorem exists_hilbertBasis_eigenvectors_of_orthogonalFamily
   rw [← ha]
   exact mem_eigenspace_iff.1 hmem
 
-/-- **The spectral theorem for compact self-adjoint operators, Hilbert-basis form**
-([brezis2011functional] Theorem 6.11): a compact symmetric operator `T` on a Hilbert space has a
-Hilbert basis of eigenvectors, indexed by a set of vectors `w` as in Mathlib's
-`exists_hilbertBasis`, with real eigenvalues `μ : w → ℝ`. No injectivity, separability or
-dimension hypothesis. The eigenspaces are orthogonal
-(`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`) and span densely
-(`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`); the eigenvalues are real
-by `LinearMap.IsSymmetric.conj_eigenvalue_eq_self`. -/
+/-- The **spectral theorem for compact self-adjoint operators**, Hilbert-basis form. Let $T$ be a
+compact symmetric operator on a Hilbert space $E$. Then there are a set $w \subseteq E$, a
+Hilbert basis $(b_i)_{i \in w}$ of $E$ with $b_i = i$, and real numbers $(\mu_i)_{i \in w}$ such
+that
+$$T b_i = \mu_i b_i \quad \text{for every } i \in w.$$
+This is Theorem 6.11 of [brezis2011functional].
+
+No injectivity, separability or dimension hypothesis is needed; the source assumes $E$
+separable. The index set is a set of vectors, as in Mathlib's `exists_hilbertBasis`. The
+eigenspaces are orthogonal (`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`) and span a
+dense subspace (`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`); the
+eigenvalues are real by `LinearMap.IsSymmetric.conj_eigenvalue_eq_self`. -/
 theorem IsSymmetric.exists_hilbertBasis_eigenvectors (hT : T.IsSymmetric)
     (hK : IsCompactOperator T) :
     ∃ (w : Set E) (b : HilbertBasis w 𝕜 E) (μ : w → ℝ),
@@ -433,10 +490,14 @@ universe u
 
 variable {F : Type u} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] [CompleteSpace F]
 
-/-- **The spectral theorem with an arbitrary index type**: a compact symmetric operator on a
-Hilbert space `F : Type u` has a Hilbert basis of eigenvectors indexed by some type in the
-universe of `F`, each with a real eigenvalue ([brezis2011functional] Theorem 6.11). The index
-type is the set `w` of `ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`. -/
+/-- The **spectral theorem for compact self-adjoint operators** with an arbitrary index type. Let
+$F$ be a Hilbert space in the universe `u` and let $T$ be a compact symmetric operator on $F$.
+Then there are a type $\iota$ in the universe `u` and a Hilbert basis $(b_i)_{i \in \iota}$ of
+$F$ such that each $b_i$ is an eigenvector of $T$ with a real eigenvalue: $T b_i = \mu b_i$ for
+some $\mu \in \mathbb{R}$. This is Theorem 6.11 of [brezis2011functional].
+
+The index type is the set $w$ of
+`ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`. -/
 theorem ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors {T : F →L[𝕜] F}
     (hT : T.IsSymmetric) (hK : IsCompactOperator T) :
     ∃ (ι : Type u) (b : HilbertBasis ι 𝕜 F), ∀ i, ∃ μ : ℝ, T (b i) = (μ : 𝕜) • b i := by

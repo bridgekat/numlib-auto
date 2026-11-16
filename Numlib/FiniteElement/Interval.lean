@@ -11,87 +11,98 @@ import Numlib.Variational.EllipticInterval
 /-!
 # Lagrange finite elements on an interval
 
-The spaces `X_h^k` of continuous piecewise polynomials of degree at most `k` on a partition
-`a = x_0 < x_1 < ⋯ < x_n = b`, read inside `H^1(a, b)`, and their subspaces `X_h^{k,0}` of
-elements vanishing at the endpoints, inside `H^1_0(a, b)`. This is
-[quarteroni2000numerical] (8.22) and (12.57): the trial and test spaces of the finite element
-method for a two-point boundary value problem.
+This file studies the finite element spaces of continuous piecewise polynomials on an interval,
+which are the trial and test spaces of the finite element method for a two-point boundary value
+problem ((8.22) and (12.57) of [quarteroni2000numerical]). Let $a = x_0 < x_1 < \dots < x_n = b$ be
+a partition of $[a, b]$ into $n \ge 1$ panels $[x_k, x_{k+1}]$ of lengths $h_k = x_{k+1} - x_k$. The
+space $X_h^k$ consists of the elements of $H^1(a, b)$ whose continuous representative is a
+polynomial of degree at most $k$ on each panel, and $X_h^{k,0}$ consists of the elements of $X_h^k$
+that vanish at $a$ and $b$. The file constructs the hat functions $\varphi_i$, which form the nodal
+basis of $X_h^1$, computes the stiffness and mass matrices that they produce, and shows that on a
+uniform mesh the Galerkin method is the centred difference scheme. It also constructs the nodal
+basis of $X_h^2$ from the shape functions (12.63)–(12.64), and proves the interpolation estimates
+$|u - \Pi_h^k u|_{H^1} \le h^k |u|_{H^{k+1}}$ for $k = 1, 2$ (Theorem 8.3 of
+[quarteroni2000numerical]).
 
-**There is one space, not three.** `Spline.splineSpace a b n x k 0` of
-`Numlib/Approximation/Spline.lean` *is* the space of continuous piecewise polynomials, as a
-subspace of `C([a, b], ℝ)`. `FiniteElement.lagrangeSpace` is its preimage under the embedding
-`SobolevInterval.toContinuousMap : H^1(a, b) ↪ C([a, b], ℝ)`, and the embedding restricts to a
-linear isomorphism between the two (`FiniteElement.lagrangeSpaceEquiv`): it is injective because
-a continuous function determines its `L²` class and the weak derivative is determined by the
-function, and its image is all of `Spline.splineSpace` because a continuous piecewise polynomial
-is piecewise `C¹` with bounded derivative, hence in `H^1(a, b)`
-(`memSobolevInterval_of_piecewise_contDiffOn`). Every fact about one space therefore transfers
-to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSpace`.
+There is one space, not three. `Spline.splineSpace a b n x k 0` in `Numlib.Approximation.Spline` is
+the space of continuous piecewise polynomials, as a subspace of $C([a, b])$.
+`FiniteElement.lagrangeSpace` is its preimage under the embedding
+$H^1(a, b) \hookrightarrow C([a, b])$ (`SobolevInterval.toContinuousMap`), and the embedding
+restricts to a linear isomorphism between the two (`FiniteElement.lagrangeSpaceEquiv`). The
+embedding is injective because a continuous function determines its $L^2$ class and the weak
+derivative is determined by the function. Its image is all of `Spline.splineSpace`, because a
+continuous piecewise polynomial is piecewise $C^1$ with bounded derivative, hence in $H^1(a, b)$
+(`memSobolevInterval_of_piecewise_contDiffOn`). So every fact about one space transfers to the
+other, and $\dim X_h^k = nk + 1$ follows from `Spline.finrank_splineSpace`.
 
 ## Main definitions
 
-* `FiniteElement.meshSize n x` — the mesh size `h = max_j (x_{j+1} - x_j)`.
-* `FiniteElement.lagrangeSpace hab n x k` — `X_h^k` inside `H^1(a, b)`.
-* `FiniteElement.lagrangeSpaceZero hab n x k` — `X_h^{k,0}`, its part inside `H^1_0(a, b)`.
-* `FiniteElement.lagrangeSpaceEquiv` — the isomorphism `X_h^k ≃ₗ Spline.splineSpace`.
-* `FiniteElement.hatFun`, `FiniteElement.hatDerivFun` — the hat (shape) function (12.61) and its
-  weak derivative, as functions `ℝ → ℝ`; `FiniteElement.hatFunction` is the corresponding element
-  of `H^1(a, b)`, and `FiniteElement.hatBasis`, `FiniteElement.hatBasisZero` the bases of `X_h^1`
-  and `X_h^{1,0}` they form.
+* `FiniteElement.meshSize`: the mesh size $h = \max_k (x_{k+1} - x_k)$.
+* `FiniteElement.lagrangeSpace`, `FiniteElement.lagrangeSpaceZero`: the spaces $X_h^k$ and
+  $X_h^{k,0}$ inside $H^1(a, b)$.
+* `FiniteElement.lagrangeSpaceEquiv`: the isomorphism of $X_h^k$ with `Spline.splineSpace`.
+* `FiniteElement.hatFun`, `FiniteElement.hatDerivFun`: the hat function (12.61) and its weak
+  derivative, as functions $\mathbb{R} \to \mathbb{R}$.
+* `FiniteElement.hatFunction`: the hat function as an element of $H^1(a, b)$.
+  `FiniteElement.hatBasis` and `FiniteElement.hatBasisZero` are the bases of $X_h^1$ and $X_h^{1,0}$
+  that the hat functions form.
 * `FiniteElement.affineMap`, `FiniteElement.referenceHat`, `FiniteElement.referenceQuadratic`,
-  `FiniteElement.referenceHierarchical` — the reference element (12.62), (12.65), (12.66).
-* `FiniteElement.evenNodes`, `FiniteElement.quadShapeFun`, `FiniteElement.quadraticShape` — the
-  element partition of a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}`, the shape functions
-  (12.63)-(12.64) as functions `ℝ → ℝ`, and the corresponding elements of `H^1(a, b)`;
-  `FiniteElement.quadraticBasis` is the nodal basis of `X_h^2` they form.
-* `FiniteElement.stiffnessMatrix`, `FiniteElement.massMatrix` — the matrices `A_fe` of (12.48)
-  and `M` of (13.14) of a family of trial functions.
-* `FiniteElement.lagrangeInterp`, `FiniteElement.quadraticInterp` — the nodal interpolation
-  operators `Π_h^1` and `Π_h^2` of (8.27) as maps `H^1(a, b) → H^1(a, b)`;
-  `FiniteElement.quadElemPoly` is the local Lagrange polynomial of one quadratic element.
+  `FiniteElement.referenceHierarchical`: the reference element (12.62), (12.65), (12.66).
+* `FiniteElement.evenNodes`, `FiniteElement.quadShapeFun`, `FiniteElement.quadraticShape`: the
+  element partition of a quadratic mesh $x_0 < x_1 < \dots < x_{2n}$, and the shape functions
+  (12.63)–(12.64) as functions and as elements of $H^1(a, b)$. `FiniteElement.quadraticBasis` is the
+  nodal basis of $X_h^2$ that they form.
+* `FiniteElement.stiffnessMatrix`, `FiniteElement.massMatrix`: the matrix $A_{fe}$ of (12.48) and
+  the matrix $M$ of (13.14) of a family of trial functions.
+* `FiniteElement.lagrangeInterp`, `FiniteElement.quadraticInterp`: the nodal interpolation operators
+  $\Pi_h^1$ and $\Pi_h^2$ as maps $H^1(a, b) \to H^1(a, b)$. `FiniteElement.quadElemPoly` is the
+  local Lagrange polynomial of one quadratic element.
 
 ## Main results
 
-* `FiniteElement.exists_mem_lagrangeSpace` — every continuous piecewise polynomial is the
-  continuous representative of an element of `H^1(a, b)`.
-* `FiniteElement.lagrangeSpace_eq_map_splineSpace` — the bridge between the two views.
-* `FiniteElement.finrank_lagrangeSpace` — `dim X_h^k = n k + 1`, and
-  `FiniteElement.finrank_lagrangeSpaceZero_one` — `dim X_h^{1,0} = n - 1`.
-* `FiniteElement.rep_hatFunction_node` — `φ_i(x_j) = δ_{ij}`;
-  `FiniteElement.hasWeakDerivOn_hatFun` — the weak derivative is `±1/h` on the two adjacent
-  panels; `FiniteElement.eq_sum_hatFunction` — `v_h = ∑_i v_h(x_i) φ_i`.
-* `FiniteElement.stiffnessMatrix_eq_zero_of_lt`, `FiniteElement.isTridiagonal_stiffnessMatrix` —
-  sparsity from the local supports.
-* `FiniteElement.stiffnessMatrix_uniform_eq`, `FiniteElement.massMatrix_uniform_eq` — the
-  assembled matrices on a uniform mesh, `A_fe = (ε/h) tridiag(-1, 2, -1) + (β/2) tridiag(-1, 0, 1)
-  + (γ h/6) tridiag(1, 4, 1)` and `M = (h/6) tridiag(1, 4, 1)`.
-* `FiniteElement.stiffnessMatrix_posDef`, `FiniteElement.condNumber_stiffnessMatrix_model` —
-  positive definiteness and `K₂(A_fe) = cot²(π h/2)` for the model problem.
-* `FiniteElement.galerkin_iff_centredScheme` — the `P_1` Galerkin system on a uniform mesh is the
-  centred difference scheme (12.75).
-* `FiniteElement.rep_quadraticShape_node` — `φ_i(x_j) = δ_{ij}` for the quadratic shape
-  functions; `FiniteElement.rep_quadraticShape_eq_zero_of_panel` — their local supports;
-  `FiniteElement.rep_quadraticShape_eq_referenceQuadratic` — they are the images of (12.65)
-  under the affine map (12.62) when the interior nodes are the midpoints.
-* `FiniteElement.seminorm_sub_lagrangeInterp_le` and
-  `FiniteElement.seminorm_sub_quadraticInterp_le` — the interpolation estimate (8.26) in the
-  `H^1` seminorm, `|u - Π_h^k u|_{H^1} ≤ h^k |u|_{H^{k+1}}` for `k = 1` and `k = 2`.
-
-## Implementation notes on the hat functions
-
-The shape functions are built as honest functions `ℝ → ℝ` and only then pushed into `H^1(a, b)`.
-With `R_j` the normalized ramp of the panel `[x_j, x_{j+1}]` — zero to the left of `x_j`, rising
-linearly to `1` at `x_{j+1}`, constant afterwards — and `R_{-1} = 1`, `R_j = 0` for `j ≥ n`, the
-hat at the node `i` is `R_{i-1} - R_i` for every `i` at once, endpoints included. Its derivative
-is the difference of the two panel indicators, and `memSobolevInterval_of_piecewise_contDiffOn`
-supplies the weak derivative. The element of `H^1(a, b)` is assembled with `SobolevInterval.mk`
-from the two `L²` classes rather than through an existence statement, so that both components are
-available definitionally — which is what the stiffness and mass integrals need.
+* `FiniteElement.exists_mem_lagrangeSpace`: every continuous piecewise polynomial is the continuous
+  representative of an element of $H^1(a, b)$.
+* `FiniteElement.lagrangeSpace_eq_map_splineSpace`: an element of $H^1(a, b)$ lies in $X_h^k$ if and
+  only if its continuous representative lies in the spline space.
+* `FiniteElement.finrank_lagrangeSpace`: $\dim X_h^k = nk + 1$.
+  `FiniteElement.finrank_lagrangeSpaceZero_one`: $\dim X_h^{1,0} = n - 1$.
+* `FiniteElement.rep_hatFunction_node`: $\varphi_i(x_j) = \delta_{ij}$.
+* `FiniteElement.hasWeakDerivOn_hatFun`: the weak derivative of $\varphi_i$ is $1/h_{i-1}$ and
+  $-1/h_i$ on the two adjacent panels.
+* `FiniteElement.eq_sum_hatFunction`: $v_h = \sum_i v_h(x_i)\, \varphi_i$ for $v_h \in X_h^1$.
+* `FiniteElement.stiffnessMatrix_eq_zero_of_lt`, `FiniteElement.isTridiagonal_stiffnessMatrix`: the
+  stiffness matrix of the hat functions is tridiagonal.
+* `FiniteElement.stiffnessMatrix_uniform_eq`, `FiniteElement.massMatrix_uniform_eq`: on a uniform
+  mesh with constant coefficients, $A_{fe} = (\varepsilon/h) \operatorname{tridiag}(-1, 2, -1) +
+  (\beta/2) \operatorname{tridiag}(-1, 0, 1) + (\gamma h/6) \operatorname{tridiag}(1, 4, 1)$ and
+  $M = (h/6) \operatorname{tridiag}(1, 4, 1)$.
+* `FiniteElement.stiffnessMatrix_posDef`: the stiffness matrix of a symmetric coercive form is
+  positive definite.
+* `FiniteElement.condNumber_stiffnessMatrix_model`: for the model problem $-u'' = f$ on a uniform
+  mesh, $K_2(A_{fe}) = \cot^2(\pi/(2n))$.
+* `FiniteElement.galerkin_iff_centredScheme`: the Galerkin system for $X_h^1$ on a uniform mesh is
+  the centred difference scheme (12.75).
+* `FiniteElement.rep_quadraticShape_node`, `FiniteElement.rep_quadraticShape_eq_zero_of_panel`: the
+  quadratic shape functions satisfy $\varphi_i(x_j) = \delta_{ij}$ and have local support.
+* `FiniteElement.rep_quadraticShape_eq_referenceQuadratic`: when the interior nodes are the
+  midpoints, the quadratic shape functions are the images of (12.65) under the affine map (12.62).
+* `FiniteElement.seminorm_sub_lagrangeInterp_le`, `FiniteElement.seminorm_sub_quadraticInterp_le`:
+  $|u - \Pi_h^k u|_{H^1} \le h^k |u|_{H^{k+1}}$ for $k = 1$ and $k = 2$.
 
 ## Implementation notes
 
-Two lemmas here are general facts about `H^1(a, b)` with no finite element content and belong in
-`Numlib/Analysis/Sobolev/Interval.lean`; they are marked `TODO(backbone)`.
+* A partition is a sequence `x : ℕ → ℝ` with `IsIntervalPartition a b n x`. A quadratic mesh is a
+  partition into $2n$ panels, `IsIntervalPartition a b (2 * n) x`, whose even-indexed nodes are the
+  element endpoints.
+* The hat functions and the quadratic shape functions are first built as functions
+  $\mathbb{R} \to \mathbb{R}$ and only then made elements of $H^1(a, b)$. The sectioning comments
+  below describe the two constructions.
+* `FiniteElement.hatFunction` is assembled with `SobolevInterval.mk` from the $L^2$ classes of the
+  function and of its weak derivative, not through an existence statement, so that both components
+  are available definitionally for the stiffness and mass integrals.
+* The bilinear form is `EllipticInterval.form`, $a(u, v) = \int_a^b (\alpha u' v' + \beta u' v +
+  \gamma u v)$ with coefficients in $L^\infty(a, b)$. Constant coefficients are
+  `EllipticInterval.constLinf`.
 -/
 
 open Set MeasureTheory intervalIntegral
@@ -102,47 +113,60 @@ variable {a b : ℝ}
 
 /-! ### The mesh -/
 
-/-- **The mesh size** `h = max_{0 ≤ j < n} (x_{j+1} - x_j)` of a partition, the `h` of the
-finite element spaces `X_h^k` ([quarteroni2000numerical] §12.4.5). -/
+/-- **The mesh size** of a partition $x_0, \dots, x_n$: $$h = \max_{0 \le j < n} (x_{j+1} - x_j),$$
+the $h$ of the finite element spaces $X_h^k$ (§12.4.5 of [quarteroni2000numerical]).
+
+The maximum is taken together with $0$, so the mesh size of the empty partition $n = 0$ is $0$. -/
 noncomputable def meshSize (n : ℕ) (x : ℕ → ℝ) : ℝ :=
   (Finset.range n).fold max 0 fun j ↦ x (j + 1) - x j
 
+/-- The mesh size is nonnegative. -/
 theorem meshSize_nonneg (n : ℕ) (x : ℕ → ℝ) : 0 ≤ meshSize n x :=
   (Finset.le_fold_max _).2 (Or.inl le_rfl)
 
+/-- Every panel length $x_{j+1} - x_j$, $j < n$, is at most the mesh size. -/
 theorem sub_le_meshSize {n : ℕ} (x : ℕ → ℝ) {j : ℕ} (hj : j < n) :
     x (j + 1) - x j ≤ meshSize n x :=
   (Finset.le_fold_max _).2 (Or.inr ⟨j, Finset.mem_range.2 hj, le_rfl⟩)
 
 /-! ### The finite element spaces -/
 
-/-- **The finite element space `X_h^k`** of [quarteroni2000numerical] (8.22), read inside
-`H^1(a, b)`: the elements of `H^1(a, b)` whose continuous representative is a continuous
-piecewise polynomial of degree at most `k` on the partition `x`. -/
+/-- **The finite element space $X_h^k$** of (8.22) of [quarteroni2000numerical], inside $H^1(a, b)$.
+Let $a < b$, and let $x_0, \dots, x_n$ be nodes. Then $X_h^k$ consists of the $u \in H^1(a, b)$
+whose continuous representative is a continuous piecewise polynomial of degree at most $k$ on
+the panels $[x_j, x_{j+1}]$.
+
+It is the preimage of `Spline.splineSpace a b n x k 0` under `SobolevInterval.toContinuousMap`. -/
 noncomputable def lagrangeSpace (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     Submodule ℝ (SobolevInterval 1 a b) :=
   Submodule.comap (SobolevInterval.toContinuousMap hab).toLinearMap
     (Spline.splineSpace a b n x k 0)
 
+/-- An element $u \in H^1(a, b)$ lies in $X_h^k$ if and only if its continuous representative lies
+in `Spline.splineSpace a b n x k 0`. -/
 theorem mem_lagrangeSpace_iff {hab : a < b} {n k : ℕ} {x : ℕ → ℝ}
     {u : SobolevInterval 1 a b} :
     u ∈ lagrangeSpace hab n x k ↔
       SobolevInterval.toContinuousMap hab u ∈ Spline.splineSpace a b n x k 0 := Iff.rfl
 
-/-- **The finite element space `X_h^{k,0}`** of [quarteroni2000numerical] (12.57): the part of
-`X_h^k` inside `H^1_0(a, b)`, that is, the `v_h ∈ X_h^k` with `v_h(a) = v_h(b) = 0`. -/
+/-- **The finite element space $X_h^{k,0}$** of (12.57) of [quarteroni2000numerical]: the
+intersection of $X_h^k$ with $H^1_0(a, b)$, that is, the $v_h \in X_h^k$ with
+$v_h(a) = v_h(b) = 0$. -/
 noncomputable def lagrangeSpaceZero (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     Submodule ℝ (SobolevInterval 1 a b) :=
   lagrangeSpace hab n x k ⊓ SobolevIntervalZero a b
 
+/-- The space $X_h^{k,0}$ is contained in $H^1_0(a, b)$. -/
 theorem lagrangeSpaceZero_le_sobolevIntervalZero (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     lagrangeSpaceZero hab n x k ≤ SobolevIntervalZero a b := inf_le_right
 
+/-- The space $X_h^{k,0}$ is contained in $X_h^k$. -/
 theorem lagrangeSpaceZero_le_lagrangeSpace (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     lagrangeSpaceZero hab n x k ≤ lagrangeSpace hab n x k := inf_le_left
 
-/-- **(12.57) unfolded**: an element of `X_h^k` lies in `X_h^{k,0}` exactly when its continuous
-representative vanishes at both endpoints. -/
+/-- An element $u \in H^1(a, b)$ lies in $X_h^{k,0}$ if and only if $u \in X_h^k$ and its continuous
+representative vanishes at $a$ and at $b$. This is (12.57) of [quarteroni2000numerical]
+unfolded. -/
 theorem mem_lagrangeSpaceZero_iff (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ)
     (u : SobolevInterval 1 a b) :
     u ∈ lagrangeSpaceZero hab n x k ↔ u ∈ lagrangeSpace hab n x k ∧
@@ -152,11 +176,13 @@ theorem mem_lagrangeSpaceZero_iff (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k :
 
 /-! ### The bridge to the spline space -/
 
-/-- **Every continuous piecewise polynomial lies in `H^1(a, b)`**: a member of
-`Spline.splineSpace a b n x k 0` is the continuous representative of an element of `H^1(a, b)`,
-which therefore lies in `X_h^k`. This is
-`memSobolevInterval_of_piecewise_contDiffOn` applied panel by panel, the panel derivatives being
-the derivatives of the panel polynomials. -/
+/-- **Every continuous piecewise polynomial lies in $H^1(a, b)$.** Let $a = x_0 < \dots < x_n = b$
+be a partition with $n \ge 1$, and let $f \in C([a, b])$ be a polynomial of degree at most $k$
+on each panel. Then there is $u \in H^1(a, b)$ whose continuous representative is $f$. In
+particular $u \in X_h^k$.
+
+The proof applies `memSobolevInterval_of_piecewise_contDiffOn` panel by panel, with the
+derivatives of the panel polynomials as panel derivatives. -/
 theorem exists_mem_lagrangeSpace {n k : ℕ} {x : ℕ → ℝ} (hab : a < b)
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {f : C(Icc a b, ℝ)} (hf : f ∈ Spline.splineSpace a b n x k 0) :
@@ -198,30 +224,39 @@ theorem exists_mem_lagrangeSpace {n k : ℕ} {x : ℕ → ℝ} (hab : a < b)
   obtain ⟨u, hu⟩ := SobolevInterval.exists_toContinuousMap_eq hab hgcont hmem
   exact ⟨u, ContinuousMap.ext fun t ↦ (hu t).trans (hfg t).symm⟩
 
-/-- **`X_h^k` is the spline space read inside `H^1(a, b)`**: an element of `H^1(a, b)` lies in
-`X_h^k` exactly when its continuous representative is a continuous piecewise polynomial, and
-every such function arises this way. `Spline.splineSpace` is the definition of the continuous
-piecewise polynomials; `FiniteElement.lagrangeSpace` is its copy inside `H^1(a, b)` that the
-Galerkin theory needs, and the two are identified by
-`FiniteElement.lagrangeSpaceEquiv`. -/
+/-- **$X_h^k$ is the spline space read inside $H^1(a, b)$.** Let $a < b$. An element
+$u \in H^1(a, b)$ lies in $X_h^k$ if and only if its continuous representative is a continuous
+piecewise polynomial of degree at most $k$, that is, an element of
+`Spline.splineSpace a b n x k 0`.
+
+`Spline.splineSpace` is the definition of the continuous piecewise polynomials, and
+`FiniteElement.lagrangeSpace` is its copy inside $H^1(a, b)$ that the Galerkin theory needs. The
+two are identified by `FiniteElement.lagrangeSpaceEquiv`. -/
 theorem lagrangeSpace_eq_map_splineSpace (hab : a < b) {n k : ℕ} {x : ℕ → ℝ}
     {u : SobolevInterval 1 a b} :
     u ∈ lagrangeSpace hab n x k ↔
       ∃ f ∈ Spline.splineSpace a b n x k 0, SobolevInterval.toContinuousMap hab u = f :=
   ⟨fun h ↦ ⟨_, h, rfl⟩, fun ⟨_, hf, hu⟩ ↦ by rw [mem_lagrangeSpace_iff, hu]; exact hf⟩
 
-/-- The embedding restricted to `X_h^k`, as a linear map into the spline space. -/
+/-- The embedding $H^1(a, b) \hookrightarrow C([a, b])$, restricted to $X_h^k$, as a linear map into
+the spline space. -/
 noncomputable def toSplineSpace (hab : a < b) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     lagrangeSpace hab n x k →ₗ[ℝ] Spline.splineSpace a b n x k 0 :=
   (SobolevInterval.toContinuousMap hab).toLinearMap.restrict fun _ hu ↦ hu
 
+/-- The linear map `FiniteElement.toSplineSpace` sends $u \in X_h^k$ to its continuous
+representative. -/
 @[simp]
 theorem coe_toSplineSpace (hab : a < b) {n k : ℕ} {x : ℕ → ℝ} (u : lagrangeSpace hab n x k) :
     (toSplineSpace hab n x k u : C(Icc a b, ℝ))
       = SobolevInterval.toContinuousMap hab (u : SobolevInterval 1 a b) := rfl
 
-/-- **`X_h^k` and the spline space are isomorphic**, by the embedding `H^1(a, b) ↪ C([a, b], ℝ)`
-restricted to `X_h^k`. -/
+/-- **$X_h^k$ and the spline space are isomorphic.** Let $a = x_0 < \dots < x_n = b$ be a partition
+with $n \ge 1$. The embedding $H^1(a, b) \hookrightarrow C([a, b])$, restricted to $X_h^k$, is a
+linear isomorphism onto `Spline.splineSpace a b n x k 0`.
+
+Injectivity is `SobolevInterval.toContinuousMap_injective`, and surjectivity is
+`FiniteElement.exists_mem_lagrangeSpace`. -/
 noncomputable def lagrangeSpaceEquiv {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     lagrangeSpace hab n x k ≃ₗ[ℝ] Spline.splineSpace a b n x k 0 :=
@@ -232,9 +267,11 @@ noncomputable def lagrangeSpaceEquiv {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
         obtain ⟨u, hu⟩ := exists_mem_lagrangeSpace hab hx hn f.2
         exact ⟨⟨u, by rw [mem_lagrangeSpace_iff, hu]; exact f.2⟩, Subtype.ext hu⟩⟩
 
-/-- **The dimension of `X_h^k`** ([quarteroni2000numerical] §12.4.5): `dim X_h^k = n k + 1`, the
-number of nodal values of a continuous piecewise polynomial of degree `k` on `n` panels. It is
-`Spline.finrank_splineSpace` at smoothness `r = 0`, transported by
+/-- **The dimension of $X_h^k$.** Let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$.
+Then $$\dim X_h^k = nk + 1,$$ the number of nodal values of a continuous piecewise polynomial of
+degree $k$ on $n$ panels (§12.4.5 of [quarteroni2000numerical]).
+
+The proof transports `Spline.finrank_splineSpace` at smoothness $r = 0$ by
 `FiniteElement.lagrangeSpaceEquiv`. -/
 theorem finrank_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
@@ -242,6 +279,7 @@ theorem finrank_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
   rw [(lagrangeSpaceEquiv hab hx hn k).finrank_eq, Spline.finrank_splineSpace hx hn (Nat.zero_le k)]
   simp
 
+/-- For a partition with $n \ge 1$, the space $X_h^k$ is finite-dimensional. -/
 theorem finiteDimensional_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     FiniteDimensional ℝ (lagrangeSpace hab n x k) := by
@@ -249,70 +287,82 @@ theorem finiteDimensional_lagrangeSpace {n : ℕ} {x : ℕ → ℝ} (hab : a < b
     Spline.finiteDimensional_splineSpace hx hn
   exact (lagrangeSpaceEquiv hab hx hn k).symm.finiteDimensional
 
-/-! ### The hat functions of `X_h^1`
+/-!
+### The hat functions of $X_h^1$
 
-The shape functions of [quarteroni2000numerical] (12.61) are built as honest functions `ℝ → ℝ`
-and only then pushed into `H^1(a, b)`. Writing `R_j` for the normalized ramp of the panel
-`[x_j, x_{j+1}]` — zero to the left of `x_j`, rising linearly to `1` at `x_{j+1}`, constant
-afterwards — and setting `R_{-1} = 1`, `R_j = 0` for `j ≥ n`, the hat at the node `i` is the
-difference `R_{i-1} - R_i` for every `i` at once, endpoints included; this is
+The shape functions of (12.61) of [quarteroni2000numerical] are first built as functions
+$\mathbb{R} \to \mathbb{R}$ and only then made elements of $H^1(a, b)$. Let $R_j$ be the normalized
+ramp of the panel $[x_j, x_{j+1}]$: zero to the left of $x_j$, rising linearly to $1$ at $x_{j+1}$,
+and constant afterwards. With $R_{-1} = 1$ and $R_j = 0$ for $j \ge n$, the hat function at the node
+$i$ is the difference $R_{i-1} - R_i$, for every $i$ at once, endpoints included; this is
 `FiniteElement.hatStep` and `FiniteElement.hatFun`. Its derivative is the difference of the two
-panel indicators `FiniteElement.hatDerivFun`, and the two are related by
-`FiniteElement.hasWeakDerivOn_hatFun`, which is
-`memSobolevInterval_of_piecewise_contDiffOn` (a piecewise-`C¹` continuous function lies in
-`H^1`) followed by the identification of the classical derivative off the nodes.
+panel indicators, `FiniteElement.hatDerivFun`. The two are related by
+`FiniteElement.hasWeakDerivOn_hatFun`, which is `memSobolevInterval_of_piecewise_contDiffOn` (a
+continuous piecewise $C^1$ function lies in $H^1$) followed by the identification of the classical
+derivative off the nodes.
 -/
 
-/-- The **normalized ramp** of the panel `[x_j, x_{j+1}]`: `0` to the left of `x_j`, the affine
-function rising to `1` at `x_{j+1}` on the panel, and `1` afterwards. The hat functions of
-[quarteroni2000numerical] (12.61) are the successive differences of these ramps. -/
+/-- The **normalized ramp** of the panel $[x_j, x_{j+1}]$: $$R_j(t) = \frac{\min(\max(t - x_j, 0),\
+x_{j+1} - x_j)}{x_{j+1} - x_j}.$$ For $x_j < x_{j+1}$ it is $0$ to the left of $x_j$, affine on
+the panel, and $1$ to the right of $x_{j+1}$. The hat functions of (12.61) of
+[quarteroni2000numerical] are the differences of consecutive ramps. -/
 noncomputable def rampFun (x : ℕ → ℝ) (j : ℕ) : ℝ → ℝ :=
   fun t ↦ min (max (t - x j) 0) (x (j + 1) - x j) / (x (j + 1) - x j)
 
-/-- The ramp is continuous, for any node sequence. -/
+/-- The normalized ramp is continuous, for any sequence of nodes. -/
 theorem continuous_rampFun (x : ℕ → ℝ) (j : ℕ) : Continuous (rampFun x j) :=
   (((continuous_id.sub continuous_const).max continuous_const).min continuous_const).div_const _
 
-/-- The ramp vanishes to the left of its panel. -/
+/-- If $x_j \le x_{j+1}$, the normalized ramp $R_j$ vanishes at every $t \le x_j$. -/
 theorem rampFun_of_le_left {x : ℕ → ℝ} {j : ℕ} {t : ℝ} (hx : x j ≤ x (j + 1)) (ht : t ≤ x j) :
     rampFun x j t = 0 := by
   rw [rampFun, max_eq_right (by linarith), min_eq_left (by linarith), zero_div]
 
-/-- On its panel the ramp is the affine function `(t - x_j)/(x_{j+1} - x_j)`. -/
+/-- On its panel the normalized ramp is affine: $R_j(t) = (t - x_j)/(x_{j+1} - x_j)$ for
+$x_j \le t \le x_{j+1}$. -/
 theorem rampFun_of_mem {x : ℕ → ℝ} {j : ℕ} {t : ℝ} (h1 : x j ≤ t) (h2 : t ≤ x (j + 1)) :
     rampFun x j t = (t - x j) / (x (j + 1) - x j) := by
   rw [rampFun, max_eq_left (by linarith), min_eq_left (by linarith)]
 
-/-- The ramp is `1` to the right of its panel. -/
+/-- If $x_j < x_{j+1}$, the normalized ramp $R_j$ equals $1$ at every $t \ge x_{j+1}$. -/
 theorem rampFun_of_right_le {x : ℕ → ℝ} {j : ℕ} {t : ℝ} (hx : x j < x (j + 1))
     (ht : x (j + 1) ≤ t) : rampFun x j t = 1 := by
   rw [rampFun, max_eq_left (by linarith), min_eq_right (by linarith), div_self (by linarith)]
 
-/-- The **staircase** `R_{i-1}` of the partition: the constant `1` for `i = 0`, the normalized
-ramp of the panel `[x_{i-1}, x_i]` for `1 ≤ i ≤ n`, and `0` beyond. The hat function at the node
-`i` is `hatStep i - hatStep (i + 1)`. -/
+/-- The **staircase** $R_{i-1}$ of the partition: the constant $1$ for $i = 0$, the normalized ramp
+of the panel $[x_{i-1}, x_i]$ for $1 \le i \le n$, and the constant $0$ for $i > n$. The hat
+function at the node $i$ is the difference of the staircases at $i$ and $i + 1$. -/
 noncomputable def hatStep (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
   if i = 0 then fun _ ↦ 1 else if i ≤ n then rampFun x (i - 1) else fun _ ↦ 0
 
-/-- **The hat (shape) function** `φ_i` of [quarteroni2000numerical] (12.61), as a function
-`ℝ → ℝ`: the continuous piecewise linear function that is `1` at the node `x_i` and `0` at every
-other node, `(t - x_{i-1})/(x_i - x_{i-1})` on `[x_{i-1}, x_i]`, `(x_{i+1} - t)/(x_{i+1} - x_i)`
-on `[x_i, x_{i+1}]` and `0` elsewhere. The end functions `φ_0` and `φ_n` have a single ramp,
-which the uniform formula `hatStep i - hatStep (i + 1)` produces automatically. -/
+/-- **The hat function** $\varphi_i$ of (12.61) of [quarteroni2000numerical], as a function
+$\mathbb{R} \to \mathbb{R}$. On a partition $x_0 < \dots < x_n$ it is the continuous piecewise
+linear function with $\varphi_i(x_i) = 1$ and $\varphi_i(x_j) = 0$ for $j \ne i$:
+$$\varphi_i(t) = \begin{cases}
+  (t - x_{i-1})/(x_i - x_{i-1}) & \text{on } [x_{i-1}, x_i], \\
+  (x_{i+1} - t)/(x_{i+1} - x_i) & \text{on } [x_i, x_{i+1}], \\
+  0 & \text{elsewhere in } [x_0, x_n].
+\end{cases}$$
+
+It is defined as the difference of the staircases `FiniteElement.hatStep` at $i$ and $i + 1$.
+This formula also gives the end functions $\varphi_0$ and $\varphi_n$, which have one branch
+only, and gives $\varphi_i = 0$ for $i > n$. Outside $[x_0, x_n]$ the function $\varphi_0$ is
+$1$ to the left and $\varphi_n$ is $1$ to the right. -/
 noncomputable def hatFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
   fun t ↦ hatStep n x i t - hatStep n x (i + 1) t
 
-/-- The staircase at `i = 0` is the constant `1`. -/
+/-- The staircase at $i = 0$ is the constant $1$. -/
 @[simp]
 theorem hatStep_zero (n : ℕ) (x : ℕ → ℝ) : hatStep n x 0 = fun _ ↦ 1 := by
   rw [hatStep]; simp
 
-/-- The staircase at an index in range is the ramp of the preceding panel. -/
+/-- For $1 \le i \le n$, the staircase at $i$ is the normalized ramp of the panel $[x_{i-1}, x_i]$.
+-/
 theorem hatStep_of_mem {n : ℕ} (x : ℕ → ℝ) {i : ℕ} (h1 : 1 ≤ i) (h2 : i ≤ n) :
     hatStep n x i = rampFun x (i - 1) := by
   rw [hatStep]; split_ifs <;> first | rfl | omega
 
-/-- The staircase vanishes beyond the last node. -/
+/-- For $i > n$, the staircase at $i$ is the constant $0$. -/
 theorem hatStep_of_lt {n : ℕ} (x : ℕ → ℝ) {i : ℕ} (h : n < i) : hatStep n x i = fun _ ↦ 0 := by
   rw [hatStep]; split_ifs <;> first | rfl | omega
 
@@ -332,7 +382,8 @@ section Partition
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- On the panel `k` the staircases of index at most `k` have already risen to `1`. -/
+/-- Let $x_0 < \dots < x_n$ be a partition of $[a, b]$, let $k < n$ and $i \le k$. Then the
+staircase at $i$ equals $1$ at every $t \ge x_k$. -/
 theorem hatStep_eq_one (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) (hi : i ≤ k)
     {t : ℝ} (ht : x k ≤ t) : hatStep n x i t = 1 := by
   rcases Nat.eq_zero_or_pos i with rfl | hi1
@@ -343,7 +394,8 @@ theorem hatStep_eq_one (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < 
     exact rampFun_of_right_le (hx.lt (by omega) (by omega))
       ((hx.mono (by omega) (by omega)).trans ht)
 
-/-- On the panel `k` the staircases of index at least `k + 2` have not yet started. -/
+/-- Let $x_0 < \dots < x_n$ be a partition of $[a, b]$ and let $i \ge k + 2$. Then the staircase at
+$i$ vanishes at every $t \le x_{k+1}$. -/
 theorem hatStep_eq_zero (hx : IsIntervalPartition a b n x) {k i : ℕ} (hi : k + 2 ≤ i)
     {t : ℝ} (ht : t ≤ x (k + 1)) : hatStep n x i t = 0 := by
   rcases lt_or_ge n i with h | h
@@ -354,8 +406,9 @@ theorem hatStep_eq_zero (hx : IsIntervalPartition a b n x) {k i : ℕ} (hi : k +
     exact rampFun_of_le_left (hx.mono (by omega) (by omega))
       (ht.trans (hx.mono (by omega) (by omega)))
 
-/-- **The descending branch of the hat**: on the panel `[x_k, x_{k+1}]`, `φ_k` is
-`(x_{k+1} - t)/(x_{k+1} - x_k)`. -/
+/-- **The descending branch of the hat function.** For a partition of $[a, b]$ and $k < n$,
+$$\varphi_k(t) = \frac{x_{k+1} - t}{x_{k+1} - x_k} \quad \text{for } x_k \le t \le x_{k+1}.$$
+-/
 theorem hatFun_eq_of_left (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x k t = (x (k + 1) - t) / (x (k + 1) - x k) := by
@@ -367,8 +420,9 @@ theorem hatFun_eq_of_left (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k <
   field_simp
   ring
 
-/-- **The ascending branch of the hat**: on the panel `[x_k, x_{k+1}]`, `φ_{k+1}` is
-`(t - x_k)/(x_{k+1} - x_k)`. -/
+/-- **The ascending branch of the hat function.** For a partition of $[a, b]$ and $k < n$,
+$$\varphi_{k+1}(t) = \frac{t - x_k}{x_{k+1} - x_k} \quad \text{for } x_k \le t \le x_{k+1}.$$
+-/
 theorem hatFun_eq_of_right (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x (k + 1) t = (t - x k) / (x (k + 1) - x k) := by
@@ -377,8 +431,9 @@ theorem hatFun_eq_of_right (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k 
   simp only [Nat.add_sub_cancel]
   rw [rampFun_of_mem h1 h2, sub_zero]
 
-/-- **The local support of the hat functions** ([quarteroni2000numerical] §12.4.5): only `φ_k`
-and `φ_{k+1}` are nonzero on the panel `[x_k, x_{k+1}]`. -/
+/-- **The local support of the hat functions** (§12.4.5 of [quarteroni2000numerical]). For a
+partition of $[a, b]$, $k < n$ and $i \notin \{k, k + 1\}$, the hat function $\varphi_i$
+vanishes on the panel $[x_k, x_{k+1}]$. -/
 theorem hatFun_eq_zero_of_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht1 : x k ≤ t) (ht2 : t ≤ x (k + 1)) :
     hatFun n x i t = 0 := by
@@ -386,8 +441,10 @@ theorem hatFun_eq_zero_of_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (
   · rw [hatFun, hatStep_eq_one hx hk (by omega) ht1, hatStep_eq_one hx hk (by omega) ht1, sub_self]
   · rw [hatFun, hatStep_eq_zero hx (by omega) ht2, hatStep_eq_zero hx (by omega) ht2, sub_self]
 
-/-- **The Lagrange interpolation property** `φ_i(x_j) = δ_{ij}` of
-[quarteroni2000numerical] (12.61). -/
+/-- **The Lagrange interpolation property** of (12.61) of [quarteroni2000numerical]. For a partition
+of $[a, b]$ with $n \ge 1$, every index $i$ and every $j \le n$, $$\varphi_i(x_j) =
+\delta_{ij}.$$
+-/
 theorem hatFun_apply_node (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ} (hj : j ≤ n) :
     hatFun n x i (x j) = if i = j then 1 else 0 := by
   rcases lt_or_ge j n with hjn | hjn
@@ -419,25 +476,32 @@ end Partition
 
 /-! ### The derivative of a hat function -/
 
-/-- The derivative of the normalized ramp: the indicator of the open panel, times `1/h_j`. -/
+/-- The derivative of the normalized ramp $R_j$: the function equal to $1/(x_{j+1} - x_j)$ on the
+open panel $(x_j, x_{j+1})$ and $0$ elsewhere. -/
 noncomputable def rampDerivFun (x : ℕ → ℝ) (j : ℕ) : ℝ → ℝ :=
   (Ioo (x j) (x (j + 1))).indicator fun _ ↦ (x (j + 1) - x j)⁻¹
 
-/-- The derivative of the staircase `FiniteElement.hatStep`. -/
+/-- The derivative of the staircase `FiniteElement.hatStep`: $0$ for $i = 0$, the derivative of the
+normalized ramp of the panel $[x_{i-1}, x_i]$ for $1 \le i \le n$, and $0$ for $i > n$. -/
 noncomputable def hatStepDeriv (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
   if i = 0 then fun _ ↦ 0 else if i ≤ n then rampDerivFun x (i - 1) else fun _ ↦ 0
 
-/-- **The weak derivative of the hat function** `φ_i`: `1/h_{i-1}` on the panel
-`(x_{i-1}, x_i)`, `-1/h_i` on the panel `(x_i, x_{i+1})` and `0` elsewhere
-(`FiniteElement.hasWeakDerivOn_hatFun`). -/
+/-- **The weak derivative of the hat function** $\varphi_i$, as a function
+$\mathbb{R} \to \mathbb{R}$: $1/h_{i-1}$ on the panel $(x_{i-1}, x_i)$, $-1/h_i$ on the panel
+$(x_i, x_{i+1})$, and $0$ elsewhere, where $h_j = x_{j+1} - x_j$. Panels with index outside
+$0, \dots, n - 1$ contribute nothing.
+
+It is the difference of the staircase derivatives at $i$ and $i + 1$.
+`FiniteElement.hasWeakDerivOn_hatFun` proves that it is the weak derivative of
+`FiniteElement.hatFun`. -/
 noncomputable def hatDerivFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
   fun t ↦ hatStepDeriv n x i t - hatStepDeriv n x (i + 1) t
 
-/-- The ramp derivative is measurable. -/
+/-- The derivative of the normalized ramp is measurable. -/
 theorem measurable_rampDerivFun (x : ℕ → ℝ) (j : ℕ) : Measurable (rampDerivFun x j) :=
   measurable_const.indicator measurableSet_Ioo
 
-/-- The staircase derivative is measurable. -/
+/-- The derivative of the staircase is measurable. -/
 theorem measurable_hatStepDeriv (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : Measurable (hatStepDeriv n x i) := by
   rw [hatStepDeriv]
   split_ifs
@@ -445,25 +509,27 @@ theorem measurable_hatStepDeriv (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : Measurab
   · exact measurable_rampDerivFun x _
   · exact measurable_const
 
-/-- The hat derivative is measurable. -/
+/-- The derivative of the hat function is measurable. -/
 theorem measurable_hatDerivFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : Measurable (hatDerivFun n x i) :=
   (measurable_hatStepDeriv n x i).sub (measurable_hatStepDeriv n x (i + 1))
 
-/-- Inside its panel the ramp derivative is `1/h_j`. -/
+/-- On the open panel $(x_j, x_{j+1})$ the derivative of the normalized ramp is $1/(x_{j+1} - x_j)$.
+-/
 theorem rampDerivFun_of_mem {x : ℕ → ℝ} {j : ℕ} {t : ℝ} (ht : t ∈ Ioo (x j) (x (j + 1))) :
     rampDerivFun x j t = (x (j + 1) - x j)⁻¹ := indicator_of_mem ht _
 
-/-- Outside its panel the ramp derivative vanishes. -/
+/-- Outside the open panel $(x_j, x_{j+1})$ the derivative of the normalized ramp vanishes. -/
 theorem rampDerivFun_of_notMem {x : ℕ → ℝ} {j : ℕ} {t : ℝ} (ht : t ∉ Ioo (x j) (x (j + 1))) :
     rampDerivFun x j t = 0 := indicator_of_notMem ht _
 
-/-- The staircase derivative at an index in range is the ramp derivative of the preceding
-panel. -/
+/-- For $1 \le i \le n$, the derivative of the staircase at $i$ is the derivative of the normalized
+ramp of the panel $[x_{i-1}, x_i]$. -/
 theorem hatStepDeriv_of_mem {n : ℕ} (x : ℕ → ℝ) {i : ℕ} (h1 : 1 ≤ i) (h2 : i ≤ n) :
     hatStepDeriv n x i = rampDerivFun x (i - 1) := by
   rw [hatStepDeriv]; split_ifs <;> first | rfl | omega
 
-/-- The staircase derivative is bounded by the reciprocal of the panel length. -/
+/-- The derivative of the staircase at $i$ is bounded in absolute value by $|1/(x_i - x_{i-1})|$.
+For $i = 0$ the bound is $0$, because the division by zero gives $0$. -/
 theorem abs_hatStepDeriv_le (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
     |hatStepDeriv n x i t| ≤ |(x i - x (i - 1))⁻¹| := by
   rcases Nat.eq_zero_or_pos i with rfl | hi
@@ -482,11 +548,13 @@ theorem abs_hatStepDeriv_le (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
     · rw [indicator_of_notMem ht, abs_zero]
       exact abs_nonneg _
 
-/-- The bound `1/h_{i-1} + 1/h_i` on the weak derivative of the hat function `φ_i`. -/
+/-- The bound $|1/(x_i - x_{i-1})| + |1/(x_{i+1} - x_i)|$ on the derivative of the hat function
+$\varphi_i$. -/
 noncomputable def hatBound (x : ℕ → ℝ) (i : ℕ) : ℝ :=
   |(x i - x (i - 1))⁻¹| + |(x (i + 1) - x i)⁻¹|
 
-/-- The weak derivative of the hat function is bounded by `FiniteElement.hatBound`. -/
+/-- The derivative of the hat function $\varphi_i$ is bounded in absolute value by
+`FiniteElement.hatBound`, that is, by $|1/(x_i - x_{i-1})| + |1/(x_{i+1} - x_i)|$. -/
 theorem abs_hatDerivFun_le (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
     |hatDerivFun n x i t| ≤ hatBound x i := by
   refine (abs_sub _ _).trans ?_
@@ -495,12 +563,13 @@ theorem abs_hatDerivFun_le (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
   simp only [Nat.add_sub_cancel] at h2
   exact add_le_add h1 h2
 
-/-- The hat function lies in `L²(a, b)`: it is continuous and the interval is bounded. -/
+/-- The hat function lies in $L^2(a, b)$, because it is continuous and bounded on the bounded
+interval. -/
 theorem memLp_hatFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) :
     MemLp (hatFun n x i) 2 (volume.restrict (Ioo a b)) :=
   ContinuousOn.memLp_two_restrict_Ioo (a := a) (b := b) (continuous_hatFun n x i).continuousOn
 
-/-- The derivative of the hat function lies in `L²(a, b)`: it is measurable and bounded. -/
+/-- The derivative of the hat function lies in $L^2(a, b)$, because it is measurable and bounded. -/
 theorem memLp_hatDerivFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) :
     MemLp (hatDerivFun n x i) 2 (volume.restrict (Ioo a b)) :=
   MemLp.of_bound (measurable_hatDerivFun n x i).aestronglyMeasurable (hatBound x i)
@@ -511,7 +580,9 @@ section Partition
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- The panels are disjoint, so on the panel `k` every other ramp derivative vanishes. -/
+/-- Let $x_0 < \dots < x_n$ be a partition of $[a, b]$, let $k < n$, $j \le n$ and $j \ne k$. Then
+the derivative of the normalized ramp $R_j$ vanishes on the open panel $(x_k, x_{k+1})$, because
+the panels are disjoint. -/
 theorem rampDerivFun_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k j : ℕ} (hk : k < n)
     (hj : j ≤ n) (hjk : j ≠ k) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     rampDerivFun x j t = 0 := by
@@ -521,7 +592,8 @@ theorem rampDerivFun_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k j : ℕ
       (not_lt.2 htj.2.le)
   · exact absurd (ht.2.trans_le (hx.mono (by omega) hj : x (k + 1) ≤ x j)) (not_lt.2 htj.1.le)
 
-/-- On the panel `k` only the staircase of index `k + 1` has a nonzero derivative. -/
+/-- Let $x_0 < \dots < x_n$ be a partition of $[a, b]$, let $k < n$ and $i \ne k + 1$. Then the
+derivative of the staircase at $i$ vanishes on the open panel $(x_k, x_{k+1})$. -/
 theorem hatStepDeriv_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (hik : i ≠ k + 1) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) : hatStepDeriv n x i t = 0 := by
   rcases Nat.eq_zero_or_pos i with rfl | hi
@@ -534,7 +606,8 @@ theorem hatStepDeriv_eq_zero_of_ne (hx : IsIntervalPartition a b n x) {k i : ℕ
   · rw [hatStepDeriv_of_mem x hi h]
     exact rampDerivFun_eq_zero_of_ne hx hk (by omega) (by omega) ht
 
-/-- On the panel `k` the staircase of index `k + 1` has derivative `1/h_k`. -/
+/-- For $k < n$, the derivative of the staircase at $k + 1$ equals $1/(x_{k+1} - x_k)$ on the open
+panel $(x_k, x_{k+1})$. -/
 theorem hatStepDeriv_eq {n : ℕ} {x : ℕ → ℝ} {k : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatStepDeriv n x (k + 1) t = (x (k + 1) - x k)⁻¹ := by
@@ -542,28 +615,34 @@ theorem hatStepDeriv_eq {n : ℕ} {x : ℕ → ℝ} {k : ℕ} (hk : k < n) {t : 
   rw [hatStepDeriv_of_mem x (by omega) hkn]
   exact rampDerivFun_of_mem ht
 
-/-- **The descending slope**: on the panel `(x_k, x_{k+1})`, `φ_k' = -1/h_k`. -/
+/-- **The descending slope.** For a partition of $[a, b]$ and $k < n$, the derivative of $\varphi_k$
+equals $-1/(x_{k+1} - x_k)$ on the open panel $(x_k, x_{k+1})$. -/
 theorem hatDerivFun_eq_of_left (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x k t = -(x (k + 1) - x k)⁻¹ := by
   rw [hatDerivFun, hatStepDeriv_eq_zero_of_ne hx hk (by omega) ht, hatStepDeriv_eq hk ht, zero_sub]
 
-/-- **The ascending slope**: on the panel `(x_k, x_{k+1})`, `φ_{k+1}' = 1/h_k`. -/
+/-- **The ascending slope.** For a partition of $[a, b]$ and $k < n$, the derivative of
+$\varphi_{k+1}$ equals $1/(x_{k+1} - x_k)$ on the open panel $(x_k, x_{k+1})$. -/
 theorem hatDerivFun_eq_of_right (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x (k + 1) t = (x (k + 1) - x k)⁻¹ := by
   rw [hatDerivFun, hatStepDeriv_eq hk ht, hatStepDeriv_eq_zero_of_ne hx hk (by omega) ht, sub_zero]
 
-/-- The derivatives of the other hat functions vanish on the panel `k`. -/
+/-- For a partition of $[a, b]$, $k < n$ and $i \notin \{k, k + 1\}$, the derivative of $\varphi_i$
+vanishes on the open panel $(x_k, x_{k+1})$. -/
 theorem hatDerivFun_eq_zero_of_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n)
     (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x i t = 0 := by
   rw [hatDerivFun, hatStepDeriv_eq_zero_of_ne hx hk h2 ht,
     hatStepDeriv_eq_zero_of_ne hx hk (by omega) ht, sub_zero]
 
-/-- On a panel the hat function is affine, with slope the value of `FiniteElement.hatDerivFun`
-there. This is the single fact behind the membership in the spline space, the smoothness on the
-open panels and the identification of the classical derivative. -/
+/-- For a partition of $[a, b]$ and $k < n$, every hat function $\varphi_i$ is affine on the panel
+$[x_k, x_{k+1}]$: there are $c$ and $d$ with $\varphi_i(t) = ct + d$ on the closed panel, and
+`FiniteElement.hatDerivFun` equals the slope $c$ on the open panel.
+
+This one fact gives the membership in the spline space, the smoothness on the open panels, and
+the identification of the classical derivative. -/
 theorem exists_affine_hatFun (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) :
     ∃ c d : ℝ, (∀ t ∈ Icc (x k) (x (k + 1)), hatFun n x i t = c * t + d) ∧
       ∀ t ∈ Ioo (x k) (x (k + 1)), hatDerivFun n x i t = c := by
@@ -585,8 +664,8 @@ theorem exists_affine_hatFun (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : 
       rw [hatFun_eq_zero_of_panel hx hk hik hik' ht.1 ht.2]; ring,
       fun t ht ↦ hatDerivFun_eq_zero_of_panel hx hk hik hik' ht⟩
 
-/-- Inside a panel the classical derivative of the hat function is
-`FiniteElement.hatDerivFun`. -/
+/-- For a partition of $[a, b]$ and $k < n$, the classical derivative of $\varphi_i$ on the open
+panel $(x_k, x_{k+1})$ is `FiniteElement.hatDerivFun`. -/
 theorem deriv_hatFun_eq (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) {t : ℝ}
     (ht : t ∈ Ioo (x k) (x (k + 1))) : deriv (hatFun n x i) t = hatDerivFun n x i t := by
   obtain ⟨c, d, hcd, hc⟩ := exists_affine_hatFun hx hk i
@@ -595,17 +674,20 @@ theorem deriv_hatFun_eq (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k <
   rw [hev.deriv_eq, hc t ht]
   simp
 
-/-- The hat function is `C¹` on each open panel. -/
+/-- For a partition of $[a, b]$ and $k < n$, every hat function is $C^1$ on the open panel
+$(x_k, x_{k+1})$. -/
 theorem contDiffOn_hatFun_panel (hx : IsIntervalPartition a b n x) {k i : ℕ} (hk : k < n) :
     ContDiffOn ℝ 1 (hatFun n x i) (Ioo (x k) (x (k + 1))) := by
   obtain ⟨c, d, hcd, -⟩ := exists_affine_hatFun hx hk i
   exact ((contDiff_const.mul contDiff_id).add contDiff_const).contDiffOn.congr
     fun t ht ↦ hcd t (Ioo_subset_Icc_self ht)
 
-/-! ### The hat function as an element of `H^1(a, b)` -/
+/-! ### The hat function as an element of $H^1(a, b)$ -/
 
-/-- **Almost every point of `(a, b)` lies inside a panel** `(x_k, x_{k+1})`, `k < n`: the
-points outside are the finitely many nodes. -/
+/-- **Almost every point of $(a, b)$ lies inside a panel.** Let $a = x_0 < \dots < x_n = b$ be a
+partition with $n \ge 1$. Then almost every $t \in (a, b)$ lies in an open panel
+$(x_k, x_{k+1})$ with $k < n$, because the points outside the open panels are the finitely many
+nodes. -/
 theorem _root_.IsIntervalPartition.ae_mem_Ioo_panel (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) :
     ∀ᵐ t ∂(volume.restrict (Ioo a b)), ∃ k < n, t ∈ Ioo (x k) (x (k + 1)) := by
@@ -624,15 +706,19 @@ theorem _root_.IsIntervalPartition.ae_mem_Ioo_panel (hx : IsIntervalPartition a 
   exact ⟨lt_of_le_of_ne hpmem.1 (Ne.symm (hne k (by omega))),
     lt_of_le_of_ne hpmem.2 (hne (k + 1) (by omega))⟩
 
-/-- The classical derivative of the hat function agrees almost everywhere on `(a, b)` with
-`FiniteElement.hatDerivFun`: they differ only at the finitely many nodes. -/
+/-- For a partition of $[a, b]$ with $n \ge 1$, the classical derivative of $\varphi_i$ agrees
+almost everywhere on $(a, b)$ with `FiniteElement.hatDerivFun`. The two differ only at the
+nodes. -/
 theorem ae_deriv_hatFun_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     deriv (hatFun n x i) =ᵐ[volume.restrict (Ioo a b)] hatDerivFun n x i := by
   filter_upwards [hx.ae_mem_Ioo_panel hn] with t ⟨k, hk, htk⟩
   exact deriv_hatFun_eq hx hk htk
 
-/-- **The hat function has the weak derivative `FiniteElement.hatDerivFun`**: it is continuous
-and piecewise `C¹` with bounded panel derivatives, so
+/-- **The weak derivative of the hat function.** Let $a = x_0 < \dots < x_n = b$ be a partition with
+$n \ge 1$. Then for every $i$ the function `FiniteElement.hatDerivFun` is a weak derivative of
+the hat function $\varphi_i$ on $(a, b)$.
+
+The hat function is continuous and piecewise $C^1$ with bounded panel derivatives, so
 `memSobolevInterval_of_piecewise_contDiffOn` applies. -/
 theorem hasWeakDerivOn_hatFun (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     HasWeakDerivOn (hatFun n x i) (hatDerivFun n x i) (TopologicalSpace.Opens.Ioo a b) := by
@@ -656,11 +742,13 @@ theorem hasWeakDerivOn_hatFun (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) 
     (continuous_hatFun _ x i).continuousOn hg' hbdd
   exact hweak.congr_ae (Filter.EventuallyEq.refl _ _) (ae_deriv_hatFun_eq hx hn i)
 
-/-- **The hat function `φ_i` of `X_h^1`** ([quarteroni2000numerical] (12.61)), as an element of
-`H^1(a, b)`: the `L²` class of `FiniteElement.hatFun` together with its weak derivative
-`FiniteElement.hatDerivFun`. Building it with `SobolevInterval.mk` rather than through an
-existence statement makes both components available definitionally, which is what the stiffness
-and mass integrals need. -/
+/-- **The hat function $\varphi_i$ of $X_h^1$** ((12.61) of [quarteroni2000numerical]), as an
+element of $H^1(a, b)$, for a partition of $[a, b]$ with $n \ge 1$. Its function is the $L^2$
+class of `FiniteElement.hatFun` and its weak derivative is the $L^2$ class of
+`FiniteElement.hatDerivFun`.
+
+The element is built with `SobolevInterval.mk`, not through an existence statement, so that both
+components are available definitionally. The stiffness and mass integrals need this. -/
 noncomputable def hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 a b :=
   SobolevInterval.mk ![(memLp_hatFun n x i).toLp _, (memLp_hatDerivFun n x i).toLp _]
@@ -671,37 +759,46 @@ noncomputable def hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) 
       · exact hasWeakIteratedDerivOn_one.2 ((hasWeakDerivOn_hatFun hx hn i).congr_ae
           (memLp_hatFun n x i).coeFn_toLp.symm (memLp_hatDerivFun n x i).coeFn_toLp.symm))
 
-/-- The function of the hat element is `FiniteElement.hatFun` almost everywhere. -/
+/-- The function of the hat element $\varphi_i \in H^1(a, b)$ equals `FiniteElement.hatFun` almost
+everywhere on $(a, b)$. -/
 theorem coeFn_deriv_hatFunction_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     ⇑(SobolevInterval.deriv (hatFunction hx hn i) 0)
       =ᵐ[volume.restrict (Ioo a b)] hatFun n x i :=
   (memLp_hatFun n x i).coeFn_toLp
 
-/-- **The weak derivative of the hat element is `±1/h`**: it is
-`FiniteElement.hatDerivFun` almost everywhere. -/
+/-- The weak derivative of the hat element $\varphi_i \in H^1(a, b)$ equals
+`FiniteElement.hatDerivFun` almost everywhere on $(a, b)$. It takes the value $1/h_{i-1}$ on the
+panel $(x_{i-1}, x_i)$ and $-1/h_i$ on the panel $(x_i, x_{i+1})$, where $h_j = x_{j+1} - x_j$. -/
 theorem coeFn_deriv_hatFunction_one (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
     ⇑(SobolevInterval.deriv (hatFunction hx hn i) 1)
       =ᵐ[volume.restrict (Ioo a b)] hatDerivFun n x i :=
   (memLp_hatDerivFun n x i).coeFn_toLp
 
-/-- A node of the partition lies in `[a, b]`. -/
+/-- For a partition of $[a, b]$, every node $x_j$ with $j \le n$ lies in $[a, b]$. -/
 theorem node_mem_Icc (hx : IsIntervalPartition a b n x) {j : ℕ} (hj : j ≤ n) : x j ∈ Icc a b :=
   Set.mem_Icc.2 ⟨hx.left_le hj, hx.le_right hj⟩
 
-/-- The continuous representative of the hat element is `FiniteElement.hatFun`. -/
+/-- The continuous representative of the hat element $\varphi_i \in H^1(a, b)$ equals
+`FiniteElement.hatFun` on $[a, b]$. -/
 theorem rep_hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (i : ℕ) {t : ℝ}
     (ht : t ∈ Icc a b) : SobolevInterval.rep (hatFunction hx hn i) t = hatFun n x i t :=
   SobolevInterval.rep_eq_of_continuousOn (hx.lt_of_pos hn) _
     (continuous_hatFun n x i).continuousOn (coeFn_deriv_hatFunction_zero hx hn i) ht
 
-/-- **`φ_i(x_j) = δ_{ij}`** for the hat elements of `H^1(a, b)`. -/
+/-- **The Lagrange interpolation property of the hat elements.** Let $a = x_0 < \dots < x_n = b$ be
+a partition with $n \ge 1$. For every index $i$ and every $j \le n$, the continuous
+representative of the hat element $\varphi_i \in H^1(a, b)$ satisfies $$\varphi_i(x_j) =
+\delta_{ij}.$$
+-/
 theorem rep_hatFunction_node (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ n) :
     SobolevInterval.rep (hatFunction hx hn i) (x j) = if i = j then 1 else 0 := by
   rw [rep_hatFunction hx hn i (node_mem_Icc hx hj)]
   exact hatFun_apply_node hx hn hj
 
-/-- **The hat elements lie in `X_h^1`**: they are continuous and affine on every panel. -/
+/-- **The hat elements lie in $X_h^1$.** Let $a < b$ and let $a = x_0 < \dots < x_n = b$ be a
+partition with $n \ge 1$. Then every hat element $\varphi_i$ lies in $X_h^1$, because it is
+continuous and affine on every panel. -/
 theorem hatFunction_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : ℕ) : hatFunction hx hn i ∈ lagrangeSpace hab n x 1 := by
   refine ⟨hatFun n x i, ?_, fun t ↦ rep_hatFunction hx hn i t.2, fun j hj ↦ ?_⟩
@@ -711,7 +808,9 @@ theorem hatFunction_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a 
   exact ⟨Polynomial.C c * Polynomial.X + Polynomial.C d, Polynomial.degree_linear_le,
     fun t ht ↦ by simpa using hcd t ht⟩
 
-/-- **The interior hat elements lie in `X_h^{1,0}`**: they vanish at both endpoints. -/
+/-- **The interior hat elements lie in $X_h^{1,0}$.** Let $a < b$ and let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$. Then every hat element $\varphi_i$
+with $i \ne 0$ and $i \ne n$ lies in $X_h^{1,0}$, because it vanishes at both endpoints. -/
 theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ n) :
     hatFunction hx hn i ∈ lagrangeSpaceZero hab n x 1 := by
@@ -726,13 +825,14 @@ theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalPartitio
     rw [h]
     simp [hi]
 
-/-- The hat functions as elements of `X_h^1`, indexed by the `n + 1` nodes. -/
+/-- The hat functions $\varphi_0, \dots, \varphi_n$ as elements of $X_h^1$, indexed by the $n + 1$
+nodes. -/
 noncomputable def hatElem (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n + 1)) : lagrangeSpace hab n x 1 :=
   ⟨hatFunction hx hn (i : ℕ), hatFunction_mem_lagrangeSpace hab hx hn (i : ℕ)⟩
 
-/-- The hat functions are linearly independent: evaluating a vanishing combination at the node
-`x_j` returns its `j`-th coefficient. -/
+/-- The hat functions $\varphi_0, \dots, \varphi_n$ are linearly independent in $X_h^1$. Evaluating
+a vanishing combination at the node $x_j$ gives its $j$-th coefficient. -/
 theorem linearIndependent_hatElem (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (hatElem hab hx hn) := by
   rw [Fintype.linearIndependent_iff]
@@ -747,21 +847,26 @@ theorem linearIndependent_hatElem (hab : a < b) (hx : IsIntervalPartition a b n 
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
 
-/-- **The hat basis of `X_h^1`** ([quarteroni2000numerical] (12.61)): the `n + 1` shape
-functions `φ_0, …, φ_n` are a basis, the nodal values being the degrees of freedom. -/
+/-- **The hat basis of $X_h^1$** ((12.61) of [quarteroni2000numerical]). For a partition of $[a, b]$
+with $n \ge 1$ and $a < b$, the $n + 1$ hat functions $\varphi_0, \dots, \varphi_n$ form a basis
+of $X_h^1$. The nodal values are the degrees of freedom.
+
+The basis comes from the linear independence and the dimension $\dim X_h^1 = n + 1$ of
+`FiniteElement.finrank_lagrangeSpace`. -/
 noncomputable def hatBasis (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n + 1)) ℝ (lagrangeSpace hab n x 1) :=
   haveI := finiteDimensional_lagrangeSpace hab hx hn 1
   basisOfLinearIndependentOfCardEqFinrank (linearIndependent_hatElem hab hx hn)
     (by rw [Fintype.card_fin, finrank_lagrangeSpace hab hx hn 1]; ring)
 
-/-- The hat basis consists of the hat functions. -/
+/-- The $i$-th element of the hat basis is the hat function $\varphi_i$. -/
 @[simp]
 theorem hatBasis_apply (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n + 1)) : hatBasis hab hx hn i = hatElem hab hx hn i := by
   rw [hatBasis, coe_basisOfLinearIndependentOfCardEqFinrank]
 
-/-- **The coordinates in the hat basis are the nodal values.** -/
+/-- **The coordinates in the hat basis are the nodal values.** The $j$-th coordinate of
+$v \in X_h^1$ in the hat basis is $v(x_j)$, the value of its continuous representative at $x_j$. -/
 theorem hatBasis_repr (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (v : lagrangeSpace hab n x 1) (j : Fin (n + 1)) :
     (hatBasis hab hx hn).repr v j
@@ -777,8 +882,10 @@ theorem hatBasis_repr (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 �
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
 
-/-- **Every element of `X_h^1` is the combination of the hat functions with its nodal values**,
-`v_h = ∑_i v_h(x_i) φ_i` ([quarteroni2000numerical] §12.4.5). -/
+/-- **Every element of $X_h^1$ is the combination of the hat functions with its nodal values**
+(§12.4.5 of [quarteroni2000numerical]). Let $a < b$, and let $a = x_0 < \dots < x_n = b$ be a
+partition with $n \ge 1$. Then every $v_h \in X_h^1$ satisfies $$v_h = \sum_{i=0}^{n} v_h(x_i)\,
+\varphi_i,$$ where $v_h(x_i)$ is the value of the continuous representative. -/
 theorem eq_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (v : lagrangeSpace hab n x 1) :
     (v : SobolevInterval 1 a b) = ∑ i : Fin (n + 1),
@@ -790,14 +897,17 @@ theorem eq_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn 
   refine hsub.symm.trans (Finset.sum_congr rfl fun i _ ↦ ?_)
   rw [hatBasis_repr hab hx hn v i]
 
-/-- The interior hat functions `φ_1, …, φ_{n-1}`, a family in `X_h^{1,0}`. -/
+/-- The interior hat functions $\varphi_1, \dots, \varphi_{n-1}$, as elements of $X_h^{1,0}$. -/
 noncomputable def hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : lagrangeSpaceZero hab n x 1 :=
   ⟨hatFunction hx hn ((i : ℕ) + 1), hatFunction_mem_lagrangeSpaceZero hab hx hn (by omega)
     (by have := i.isLt; omega)⟩
 
-/-- The interior hat functions `φ_1, …, φ_{n-1}` are linearly independent in `H^1(a, b)`:
-evaluating a vanishing combination at the node `x_j` returns its `j`-th coefficient. -/
+/-- **The interior hat functions are linearly independent.** Let $a < b$, and let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$. Then
+$\varphi_1, \dots, \varphi_{n-1}$ are linearly independent in $H^1(a, b)$.
+
+Evaluating a vanishing combination at the node $x_j$ gives its $j$-th coefficient. -/
 theorem linearIndependent_hatFunction_succ (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) : LinearIndependent ℝ fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1) := by
   rw [Fintype.linearIndependent_iff]
@@ -809,13 +919,16 @@ theorem linearIndependent_hatFunction_succ (hab : a < b) (hx : IsIntervalPartiti
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
 
-/-- The interior hat functions are linearly independent. -/
+/-- The interior hat functions $\varphi_1, \dots, \varphi_{n-1}$ are linearly independent in
+$X_h^{1,0}$. -/
 theorem linearIndependent_hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) : LinearIndependent ℝ (hatElemZero hab hx hn) :=
   (linearIndependent_hatFunction_succ hab hx hn).of_comp (lagrangeSpaceZero hab n x 1).subtype
 
-/-- **Every element of `X_h^{1,0}` is the combination of the interior hat functions with its
-nodal values.** -/
+/-- **Every element of $X_h^{1,0}$ is the combination of the interior hat functions with its nodal
+values.** Let $a < b$, and let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$. Then
+every $v \in X_h^{1,0}$ satisfies $$v = \sum_{i=1}^{n-1} v(x_i)\, \varphi_i,$$ where $v(x_i)$ is
+the value of the continuous representative. -/
 theorem eq_sum_hatFunction_zero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {v : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpaceZero hab n x 1) :
     v = ∑ i : Fin (n - 1),
@@ -832,8 +945,8 @@ theorem eq_sum_hatFunction_zero (hab : a < b) (hx : IsIntervalPartition a b n x)
   rw [hc0, hcl] at hrepr
   simpa using hrepr
 
-/-- The interior hat functions span `X_h^{1,0}`: an element of `X_h^{1,0}` is the combination of
-all the hat functions with its nodal values, and the two endpoint values vanish. -/
+/-- The interior hat functions span $X_h^{1,0}$. An element of $X_h^{1,0}$ is the combination of all
+the hat functions with its nodal values, and its two endpoint values are $0$. -/
 theorem top_le_span_hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     ⊤ ≤ Submodule.span ℝ (Set.range (hatElemZero hab hx hn)) := by
   rintro v -
@@ -844,20 +957,22 @@ theorem top_le_span_hatElemZero (hab : a < b) (hx : IsIntervalPartition a b n x)
   rw [hv]
   exact Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
-/-- **The interior hat basis of `X_h^{1,0}`** ([quarteroni2000numerical] (12.57)): the `n - 1`
-shape functions attached to the interior nodes. -/
+/-- **The interior hat basis of $X_h^{1,0}$** ((12.57) of [quarteroni2000numerical]). For a
+partition of $[a, b]$ with $n \ge 1$ and $a < b$, the $n - 1$ hat functions
+$\varphi_1, \dots, \varphi_{n-1}$ of the interior nodes form a basis of $X_h^{1,0}$. -/
 noncomputable def hatBasisZero (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n - 1)) ℝ (lagrangeSpaceZero hab n x 1) :=
   Module.Basis.mk (linearIndependent_hatElemZero hab hx hn) (top_le_span_hatElemZero hab hx hn)
 
-/-- The interior hat basis consists of the interior hat functions. -/
+/-- The $i$-th element of the interior hat basis is the hat function $\varphi_{i+1}$. -/
 @[simp]
 theorem hatBasisZero_apply (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : hatBasisZero hab hx hn i = hatElemZero hab hx hn i :=
   congrFun (Module.Basis.coe_mk _ _) i
 
-/-- **`dim X_h^{1,0} = n - 1`** ([quarteroni2000numerical] §12.4.5, the book's `N = nk - 1` at
-`k = 1`). -/
+/-- **The dimension of $X_h^{1,0}$.** Let $a < b$, and let $a = x_0 < \dots < x_n = b$ be a
+partition with $n \ge 1$. Then $$\dim X_h^{1,0} = n - 1.$$ This is the dimension $N = nk - 1$ of
+§12.4.5 of [quarteroni2000numerical] at $k = 1$. -/
 theorem finrank_lagrangeSpaceZero_one (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) : Module.finrank ℝ (lagrangeSpaceZero hab n x 1) = n - 1 := by
   rw [Module.finrank_eq_card_basis (hatBasisZero hab hx hn), Fintype.card_fin]
@@ -866,7 +981,9 @@ end Partition
 
 /-! ### Elementary integrals -/
 
-/-- The integral of a quadratic polynomial over an interval. -/
+/-- The integral of a quadratic polynomial: $$\int_u^v (p t^2 + q t + r)\, dt = \Big[\frac{p
+t^3}{3} + \frac{q t^2}{2} + r t\Big]_u^v.$$
+-/
 theorem integral_quadratic (u v p q r : ℝ) :
     ∫ t in u..v, (p * t ^ 2 + q * t + r)
       = (p * v ^ 3 / 3 + q * v ^ 2 / 2 + r * v)
@@ -890,7 +1007,7 @@ section Panel
 
 variable {u v : ℝ}
 
-/-- `∫_u^v (v - t)/(v - u) = (v - u)/2`. -/
+/-- For $u < v$: $\int_u^v \frac{v - t}{v - u}\, dt = \frac{v - u}{2}$. -/
 theorem integral_ramp_left (huv : u < v) :
     ∫ t in u..v, (v - t) / (v - u) = (v - u) / 2 := by
   have hne : v - u ≠ 0 := by linarith
@@ -899,7 +1016,7 @@ theorem integral_ramp_left (huv : u < v) :
   field_simp
   ring
 
-/-- `∫_u^v (t - u)/(v - u) = (v - u)/2`. -/
+/-- For $u < v$: $\int_u^v \frac{t - u}{v - u}\, dt = \frac{v - u}{2}$. -/
 theorem integral_ramp_right (huv : u < v) :
     ∫ t in u..v, (t - u) / (v - u) = (v - u) / 2 := by
   have hne : v - u ≠ 0 := by linarith
@@ -908,7 +1025,7 @@ theorem integral_ramp_right (huv : u < v) :
   field_simp
   ring
 
-/-- `∫_u^v ((v - t)/(v - u))² = (v - u)/3`. -/
+/-- For $u < v$: $\int_u^v \Big(\frac{v - t}{v - u}\Big)^2 dt = \frac{v - u}{3}$. -/
 theorem integral_ramp_left_sq (huv : u < v) :
     ∫ t in u..v, (v - t) / (v - u) * ((v - t) / (v - u)) = (v - u) / 3 := by
   have hne : v - u ≠ 0 := by linarith
@@ -917,7 +1034,7 @@ theorem integral_ramp_left_sq (huv : u < v) :
   field_simp
   ring
 
-/-- `∫_u^v ((t - u)/(v - u))² = (v - u)/3`. -/
+/-- For $u < v$: $\int_u^v \Big(\frac{t - u}{v - u}\Big)^2 dt = \frac{v - u}{3}$. -/
 theorem integral_ramp_right_sq (huv : u < v) :
     ∫ t in u..v, (t - u) / (v - u) * ((t - u) / (v - u)) = (v - u) / 3 := by
   have hne : v - u ≠ 0 := by linarith
@@ -926,7 +1043,7 @@ theorem integral_ramp_right_sq (huv : u < v) :
   field_simp
   ring
 
-/-- `∫_u^v (v - t)(t - u)/(v - u)² = (v - u)/6`. -/
+/-- For $u < v$: $\int_u^v \frac{(v - t)(t - u)}{(v - u)^2}\, dt = \frac{v - u}{6}$. -/
 theorem integral_ramp_cross (huv : u < v) :
     ∫ t in u..v, (v - t) / (v - u) * ((t - u) / (v - u)) = (v - u) / 6 := by
   have hne : v - u ≠ 0 := by linarith
@@ -943,7 +1060,8 @@ section Panel
 
 variable {u v : ℝ}
 
-/-- The integral of an affine function on `[u, v]` written in the nodal basis of the panel. -/
+/-- Let $u < v$, $h = v - u$, and let $L(t) = (v - t)/h$ and $R(t) = (t - u)/h$ be the nodal basis
+of the affine functions on $[u, v]$. Then $\int_u^v (pL + qR) = (p + q) h/2$. -/
 theorem integral_panel_affine (huv : u < v) (p q : ℝ) :
     ∫ t in u..v, (p * ((v - t) / (v - u)) + q * ((t - u) / (v - u))) = (p + q) * (v - u) / 2 := by
   have hne : v - u ≠ 0 := by linarith
@@ -952,8 +1070,10 @@ theorem integral_panel_affine (huv : u < v) (p q : ℝ) :
   field_simp
   ring
 
-/-- The integral of the product of two affine functions on `[u, v]`, written in the nodal basis
-of the panel: `∫ (pL + qR)(p'L + q'R) = (pp' + qq') h/3 + (pq' + qp') h/6`. -/
+/-- Let $u < v$, $h = v - u$, and let $L(t) = (v - t)/h$ and $R(t) = (t - u)/h$ be the nodal basis
+of the affine functions on $[u, v]$. Then $$\int_u^v (pL + qR)(p'L + q'R) = (pp' +
+qq')\frac{h}{3} + (pq' + qp')\frac{h}{6}.$$
+-/
 theorem integral_panel_affine_mul (huv : u < v) (p q p' q' : ℝ) :
     ∫ t in u..v, (p * ((v - t) / (v - u)) + q * ((t - u) / (v - u)))
         * (p' * ((v - t) / (v - u)) + q' * ((t - u) / (v - u)))
@@ -972,8 +1092,11 @@ section PanelHat
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The hat functions on one panel**: on `[x_k, x_{k+1}]`, `φ_i` is the combination of the two
-panel ramps with its nodal values `δ_{ik}` and `δ_{i,k+1}`. -/
+/-- **The hat functions on one panel.** For a partition of $[a, b]$ and $k < n$, on the panel
+$[x_k, x_{k+1}]$ every hat function is the combination of the two panel ramps with its nodal
+values: $$\varphi_i(t) = \delta_{ik} \frac{x_{k+1} - t}{x_{k+1} - x_k} + \delta_{i,k+1}
+\frac{t - x_k}{x_{k+1} - x_k}.$$
+-/
 theorem hatFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ) {t : ℝ}
     (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x i t = (if i = k then (1 : ℝ) else 0) * ((x (k + 1) - t) / (x (k + 1) - x k))
@@ -987,8 +1110,10 @@ theorem hatFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n
   · rw [hatFun_eq_zero_of_panel hx hk hik hik' h1 h2]
     simp [hik, hik']
 
-/-- **The derivative of the hat functions on one panel**: on `(x_k, x_{k+1})`, `φ_i'` is the
-difference quotient of its two nodal values. -/
+/-- **The derivative of the hat functions on one panel.** For a partition of $[a, b]$ and $k < n$,
+on the open panel $(x_k, x_{k+1})$ the derivative of $\varphi_i$ is the difference quotient of
+its nodal values: $$\varphi_i'(t) = \frac{\delta_{i,k+1} - \delta_{ik}}{x_{k+1} - x_k}.$$
+-/
 theorem hatDerivFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (i : ℕ)
     {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     hatDerivFun n x i t = ((if i = k + 1 then (1 : ℝ) else 0) - (if i = k then (1 : ℝ) else 0))
@@ -1002,7 +1127,10 @@ theorem hatDerivFun_eq_panel (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : 
   · rw [hatDerivFun_eq_zero_of_panel hx hk hik hik' ht]
     simp [hik, hik']
 
-/-- **The panel mass integral** `∫_{x_k}^{x_{k+1}} φ_i φ_j`. -/
+/-- **The panel mass integral.** For a partition of $[a, b]$ and $k < n$, let $h_k = x_{k+1} - x_k$,
+$p_i = \delta_{ik}$ and $q_i = \delta_{i,k+1}$. Then $$\int_{x_k}^{x_{k+1}} \varphi_i
+\varphi_j = (p_i p_j + q_i q_j)\frac{h_k}{3} + (p_i q_j + q_i p_j)\frac{h_k}{6}.$$
+-/
 theorem integral_panel_hat_mul_hat (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatFun n x i t * hatFun n x j t
@@ -1024,7 +1152,10 @@ theorem integral_panel_hat_mul_hat (hx : IsIntervalPartition a b n x) {k : ℕ} 
       rw [hatFun_eq_panel hx hk i ht.1 ht.2, hatFun_eq_panel hx hk j ht.1 ht.2]),
     integral_panel_affine_mul hlt]
 
-/-- **The panel advection integral** `∫_{x_k}^{x_{k+1}} φ_i' φ_j`. -/
+/-- **The panel advection integral.** For a partition of $[a, b]$ and $k < n$, let
+$p_i = \delta_{ik}$ and $q_i = \delta_{i,k+1}$. Then $$\int_{x_k}^{x_{k+1}} \varphi_i'
+\varphi_j = \frac{(q_i - p_i)(p_j + q_j)}{2}.$$
+-/
 theorem integral_panel_hatDeriv_mul_hat (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatDerivFun n x i t * hatFun n x j t
@@ -1044,7 +1175,10 @@ theorem integral_panel_hatDeriv_mul_hat (hx : IsIntervalPartition a b n x) {k : 
     intervalIntegral.integral_const_mul, integral_panel_affine hlt]
   field_simp
 
-/-- **The panel stiffness integral** `∫_{x_k}^{x_{k+1}} φ_i' φ_j'`. -/
+/-- **The panel stiffness integral.** For a partition of $[a, b]$ and $k < n$, let
+$h_k = x_{k+1} - x_k$, $p_i = \delta_{ik}$ and $q_i = \delta_{i,k+1}$. Then
+$$\int_{x_k}^{x_{k+1}} \varphi_i' \varphi_j' = \frac{(q_i - p_i)(q_j - p_j)}{h_k}.$$
+-/
 theorem integral_panel_hatDeriv_mul_hatDeriv (hx : IsIntervalPartition a b n x) {k : ℕ}
     (hk : k < n) (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatDerivFun n x i t * hatDerivFun n x j t
@@ -1069,7 +1203,8 @@ end PanelHat
 
 /-! ### Integrability -/
 
-/-- The normalized ramp takes values in `[0, 1]`, for any node sequence. -/
+/-- The normalized ramp is bounded by $1$ in absolute value, for any sequence of nodes:
+$|R_j(t)| \le 1$. -/
 theorem abs_rampFun_le_one (x : ℕ → ℝ) (j : ℕ) (t : ℝ) : |rampFun x j t| ≤ 1 := by
   have hm0 : (0 : ℝ) ≤ max (t - x j) 0 := le_max_right _ _
   rcases lt_trichotomy (x (j + 1) - x j) 0 with h | h | h
@@ -1081,7 +1216,7 @@ theorem abs_rampFun_le_one (x : ℕ → ℝ) (j : ℕ) (t : ℝ) : |rampFun x j 
     rw [rampFun, abs_of_nonneg (by positivity), div_le_one h]
     exact h1
 
-/-- The staircase takes values in `[0, 1]`. -/
+/-- The staircase is bounded by $1$ in absolute value. -/
 theorem abs_hatStep_le_one (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) : |hatStep n x i t| ≤ 1 := by
   rw [hatStep]
   split_ifs
@@ -1089,7 +1224,7 @@ theorem abs_hatStep_le_one (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) : |ha
   · exact abs_rampFun_le_one x _ t
   · norm_num
 
-/-- The hat function is bounded by `2`, for any node sequence. -/
+/-- The hat function is bounded by $2$ in absolute value, for any sequence of nodes. -/
 theorem abs_hatFun_le_two (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) : |hatFun n x i t| ≤ 2 := by
   refine (abs_sub _ _).trans ?_
   have := abs_hatStep_le_one n x i t
@@ -1100,7 +1235,8 @@ theorem abs_hatFun_le_two (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : ℝ) : |hat
 theorem measurable_hatFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : Measurable (hatFun n x i) :=
   (continuous_hatFun n x i).measurable
 
-/-- A globally measurable function with a global bound is interval integrable. -/
+/-- A measurable function $f : \mathbb{R} \to \mathbb{R}$ with $|f(t)| \le C$ for all $t$ is
+interval integrable on every interval. -/
 theorem intervalIntegrable_of_bounded {f : ℝ → ℝ} (hf : Measurable f) {C : ℝ}
     (hb : ∀ t, |f t| ≤ C) (u v : ℝ) : IntervalIntegrable f volume u v := by
   rw [intervalIntegrable_iff]
@@ -1109,7 +1245,8 @@ theorem intervalIntegrable_of_bounded {f : ℝ → ℝ} (hf : Measurable f) {C :
   rw [Real.volume_uIoc]
   exact ENNReal.ofReal_ne_top
 
-/-- The product of two hat derivatives is interval integrable. -/
+/-- The product $\varphi_i' \varphi_j'$ of two hat derivatives is interval integrable on every
+interval. -/
 theorem intervalIntegrable_hatDeriv_mul_hatDeriv (n : ℕ) (x : ℕ → ℝ) (i j : ℕ) (u v : ℝ) :
     IntervalIntegrable (fun t ↦ hatDerivFun n x i t * hatDerivFun n x j t) volume u v :=
   intervalIntegrable_of_bounded ((measurable_hatDerivFun n x i).mul (measurable_hatDerivFun n x j))
@@ -1118,7 +1255,8 @@ theorem intervalIntegrable_hatDeriv_mul_hatDeriv (n : ℕ) (x : ℕ → ℝ) (i 
       exact mul_le_mul (abs_hatDerivFun_le n x i t) (abs_hatDerivFun_le n x j t) (abs_nonneg _)
         ((abs_nonneg _).trans (abs_hatDerivFun_le n x i t))) u v
 
-/-- The product of a hat derivative and a hat function is interval integrable. -/
+/-- The product $\varphi_i' \varphi_j$ of a hat derivative and a hat function is interval integrable
+on every interval. -/
 theorem intervalIntegrable_hatDeriv_mul_hat (n : ℕ) (x : ℕ → ℝ) (i j : ℕ) (u v : ℝ) :
     IntervalIntegrable (fun t ↦ hatDerivFun n x i t * hatFun n x j t) volume u v :=
   intervalIntegrable_of_bounded ((measurable_hatDerivFun n x i).mul (measurable_hatFun n x j))
@@ -1127,7 +1265,8 @@ theorem intervalIntegrable_hatDeriv_mul_hat (n : ℕ) (x : ℕ → ℝ) (i j : �
       exact mul_le_mul (abs_hatDerivFun_le n x i t) (abs_hatFun_le_two n x j t) (abs_nonneg _)
         ((abs_nonneg _).trans (abs_hatDerivFun_le n x i t))) u v
 
-/-- The product of two hat functions is interval integrable. -/
+/-- The product $\varphi_i \varphi_j$ of two hat functions is interval integrable on every interval.
+-/
 theorem intervalIntegrable_hat_mul_hat (n : ℕ) (x : ℕ → ℝ) (i j : ℕ) (u v : ℝ) :
     IntervalIntegrable (fun t ↦ hatFun n x i t * hatFun n x j t) volume u v :=
   intervalIntegrable_of_bounded ((measurable_hatFun n x i).mul (measurable_hatFun n x j))
@@ -1136,12 +1275,15 @@ theorem intervalIntegrable_hat_mul_hat (n : ℕ) (x : ℕ → ℝ) (i j : ℕ) (
       exact mul_le_mul (abs_hatFun_le_two n x i t) (abs_hatFun_le_two n x j t) (abs_nonneg _)
         (by norm_num)) u v
 
-/-- The integrand of the elliptic form on two hat functions, with constant coefficients. -/
+/-- The integrand of the elliptic form with constant coefficients $\varepsilon$, $\beta$, $\gamma$
+on two hat functions: $\varepsilon \varphi_i' \varphi_j' + \beta \varphi_i' \varphi_j + \gamma
+\varphi_i \varphi_j$. -/
 noncomputable def hatFormIntegrand (n : ℕ) (x : ℕ → ℝ) (ε β γ : ℝ) (i j : ℕ) : ℝ → ℝ :=
   fun t ↦ ε * (hatDerivFun n x i t * hatDerivFun n x j t)
     + β * (hatDerivFun n x i t * hatFun n x j t) + γ * (hatFun n x i t * hatFun n x j t)
 
-/-- The integrand of the elliptic form on two hat functions is interval integrable. -/
+/-- The integrand $\varepsilon \varphi_i' \varphi_j' + \beta \varphi_i' \varphi_j + \gamma \varphi_i
+\varphi_j$ is interval integrable on every interval. -/
 theorem intervalIntegrable_hatFormIntegrand (n : ℕ) (x : ℕ → ℝ) (ε β γ : ℝ) (i j : ℕ) (u v : ℝ) :
     IntervalIntegrable (hatFormIntegrand n x ε β γ i j) volume u v :=
   (((intervalIntegrable_hatDeriv_mul_hatDeriv n x i j u v).const_mul ε).add
@@ -1152,7 +1294,13 @@ section PanelSum
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The panel value of the elliptic form on two hat functions**, for constant coefficients. -/
+/-- **The panel value of the elliptic form on two hat functions**, for constant coefficients. For a
+partition of $[a, b]$ and $k < n$, the integral of $\varepsilon \varphi_i' \varphi_j' + \beta
+\varphi_i' \varphi_j + \gamma \varphi_i \varphi_j$ over $[x_k, x_{k+1}]$ is $\varepsilon$ times
+the panel stiffness integral, plus $\beta$ times the panel advection integral, plus $\gamma$
+times the panel mass integral, in the closed forms of
+`FiniteElement.integral_panel_hatDeriv_mul_hatDeriv`,
+`FiniteElement.integral_panel_hatDeriv_mul_hat` and `FiniteElement.integral_panel_hat_mul_hat`. -/
 theorem integral_panel_hatFormIntegrand (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     (ε β γ : ℝ) (i j : ℕ) :
     ∫ t in (x k)..(x (k + 1)), hatFormIntegrand n x ε β γ i j t
@@ -1179,14 +1327,18 @@ theorem integral_panel_hatFormIntegrand (hx : IsIntervalPartition a b n x) {k : 
     intervalIntegral.integral_const_mul, integral_panel_hatDeriv_mul_hatDeriv hx hk,
     integral_panel_hatDeriv_mul_hat hx hk, integral_panel_hat_mul_hat hx hk]
 
-/-- A panel on which neither hat function is supported contributes nothing. -/
+/-- For a partition of $[a, b]$ and $k < n$, if $i \notin \{k, k + 1\}$ or $j \notin \{k, k + 1\}$,
+then the integral of $\varepsilon \varphi_i' \varphi_j' + \beta \varphi_i' \varphi_j + \gamma
+\varphi_i \varphi_j$ over $[x_k, x_{k+1}]$ is $0$. -/
 theorem integral_panel_hatFormIntegrand_eq_zero (hx : IsIntervalPartition a b n x) {k : ℕ}
     (hk : k < n) (ε β γ : ℝ) {i j : ℕ} (h : (i ≠ k ∧ i ≠ k + 1) ∨ (j ≠ k ∧ j ≠ k + 1)) :
     ∫ t in (x k)..(x (k + 1)), hatFormIntegrand n x ε β γ i j t = 0 := by
   rw [integral_panel_hatFormIntegrand hx hk]
   rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> simp [h1, h2]
 
-/-- The integral over `(a, b)` is the sum of the panel integrals. -/
+/-- For a partition $a = x_0 < \dots < x_n = b$ and a function $F$ that is interval integrable on
+every panel, $$\int_{(a, b)} F = \sum_{k=0}^{n-1} \int_{x_k}^{x_{k+1}} F.$$
+-/
 theorem integral_Ioo_eq_sum_panels (hx : IsIntervalPartition a b n x) {F : ℝ → ℝ}
     (hF : ∀ k, IntervalIntegrable F volume (x k) (x (k + 1))) :
     ∫ t in Ioo a b, F t = ∑ k ∈ Finset.range n, ∫ t in (x k)..(x (k + 1)), F t := by
@@ -1200,24 +1352,32 @@ end PanelSum
 open EllipticInterval
 
 variable (a b) in
-/-- **The stiffness matrix** `A_fe` of [quarteroni2000numerical] (12.48): `A_ij = a(φ_j, φ_i)`
-for a family `φ` of trial functions, the Gram matrix of the elliptic form. -/
+/-- **The stiffness matrix** $A_{fe}$ of (12.48) of [quarteroni2000numerical]. For coefficients
+$\alpha, \beta, \gamma \in L^\infty(a, b)$ and a family $(\varphi_i)$ in $H^1(a, b)$, it is the
+matrix with entries $$a_{ij} = a(\varphi_j, \varphi_i), \qquad a(u, v) = \int_a^b (\alpha u'
+v' + \beta u' v + \gamma u v),$$ the Gram matrix of the elliptic form.
+
+The form is `EllipticInterval.form` and the Gram matrix is `SesqForm.gramMatrix`. -/
 noncomputable def stiffnessMatrix {ι : Type*} (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (φ : ι → SobolevInterval 1 a b) : Matrix ι ι ℝ :=
   (EllipticInterval.form a b α β γ).gramMatrix φ
 
-/-- The entries of the stiffness matrix are `a_{ij} = a(φ_j, φ_i)`. -/
+/-- The entries of the stiffness matrix are $a_{ij} = a(\varphi_j, \varphi_i)$. -/
 theorem stiffnessMatrix_apply {ι : Type*} (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
     (φ : ι → SobolevInterval 1 a b) (i j : ι) :
     stiffnessMatrix a b α β γ φ i j = EllipticInterval.form a b α β γ (φ j) (φ i) := rfl
 
 variable (a b) in
-/-- **The mass matrix** `M_ij = ∫_a^b φ_j φ_i` ([quarteroni2000numerical] (13.14)): the Gram
-matrix of the trial functions for the `L²(a, b)` inner product. -/
+/-- **The mass matrix** ((13.14) of [quarteroni2000numerical]). For a family $(\varphi_i)$ in
+$H^1(a, b)$, it is the matrix with entries $$m_{ij} = \int_a^b \varphi_j \varphi_i,$$ the Gram
+matrix of the family for the inner product of $L^2(a, b)$.
+
+It is the stiffness matrix with the coefficients $\alpha = \beta = 0$ and $\gamma = 1$. -/
 noncomputable def massMatrix {ι : Type*} (φ : ι → SobolevInterval 1 a b) : Matrix ι ι ℝ :=
   stiffnessMatrix a b (constLinf a b 0) (constLinf a b 0) (constLinf a b 1) φ
 
-/-- The entries of the mass matrix are `m_{ij} = ∫ φ_j φ_i`. -/
+/-- The entries of the mass matrix are $m_{ij} = a(\varphi_j, \varphi_i)$ for the elliptic form with
+$\alpha = \beta = 0$ and $\gamma = 1$, that is, $\int_a^b \varphi_j \varphi_i$. -/
 theorem massMatrix_apply {ι : Type*} (φ : ι → SobolevInterval 1 a b) (i j : ι) :
     massMatrix a b φ i j =
       EllipticInterval.form a b (constLinf a b 0) (constLinf a b 0) (constLinf a b 1)
@@ -1227,8 +1387,11 @@ section Form
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- The elliptic form with constant coefficients, on two hat functions, is the integral of
-`FiniteElement.hatFormIntegrand`. -/
+/-- For a partition of $[a, b]$ with $n \ge 1$, the elliptic form with constant coefficients
+$\varepsilon$, $\beta$, $\gamma$ on two hat functions is $$a(\varphi_j, \varphi_i) = \int_{(a,
+b)} (\varepsilon \varphi_j' \varphi_i' + \beta \varphi_j' \varphi_i + \gamma \varphi_j
+\varphi_i).$$
+-/
 theorem form_apply_hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) (ε β γ : ℝ)
     (i j : ℕ) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
@@ -1243,8 +1406,11 @@ theorem form_apply_hatFunction (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
   simp only [h1, h2, h3, h4, h5, h6, h7, hatFormIntegrand]
   ring
 
-/-- The elliptic form with constant coefficients, on two hat functions, is the sum of its panel
-contributions. -/
+/-- For a partition of $[a, b]$ with $n \ge 1$, the elliptic form with constant coefficients on two
+hat functions is the sum over the panels: $$a(\varphi_j, \varphi_i) = \sum_{k=0}^{n-1}
+\int_{x_k}^{x_{k+1}} (\varepsilon \varphi_j' \varphi_i' + \beta \varphi_j' \varphi_i + \gamma
+\varphi_j \varphi_i).$$
+-/
 theorem form_apply_hatFunction_eq_sum (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (ε β γ : ℝ) (i j : ℕ) :
     EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
@@ -1253,11 +1419,16 @@ theorem form_apply_hatFunction_eq_sum (hx : IsIntervalPartition a b n x) (hn : 1
   rw [form_apply_hatFunction hx hn ε β γ i j,
     integral_Ioo_eq_sum_panels hx fun k ↦ intervalIntegrable_hatFormIntegrand n x ε β γ j i _ _]
 
-/-- **The entries of the stiffness matrix on a uniform mesh** ([quarteroni2000numerical]
-§12.4.5, the matrix Program 95 assembles): for constant coefficients `ε, β, γ` and a uniform
-mesh of step `h`, the value `a(φ_j, φ_i)` at an interior node `i` is `2ε/h + 2γh/3` on the
-diagonal, `-ε/h - β/2 + γh/6` at `j = i - 1` and `-ε/h + β/2 + γh/6` at `j = i + 1`, and
-vanishes otherwise. -/
+/-- **The entries of the stiffness matrix on a uniform mesh** (§12.4.5 of [quarteroni2000numerical],
+the matrix that Program 95 assembles). Let $a = x_0 < \dots < x_n = b$ be a partition with
+$n \ge 1$ and all panel lengths equal to $h > 0$, and let $\varepsilon$, $\beta$, $\gamma$ be
+constant coefficients. For an interior node $1 \le i < n$ and every $j$,
+$$a(\varphi_j, \varphi_i) = \begin{cases}
+  2\varepsilon/h + 2\gamma h/3 & \text{if } j = i, \\
+  -\varepsilon/h - \beta/2 + \gamma h/6 & \text{if } j = i - 1, \\
+  -\varepsilon/h + \beta/2 + \gamma h/6 & \text{if } j = i + 1, \\
+  0 & \text{otherwise.}
+\end{cases}$$ -/
 theorem form_apply_hatFunction_uniform (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) {i j : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
@@ -1309,8 +1480,10 @@ section Sparsity
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The supports of two hat functions more than one node apart meet in a null set**: all three
-products entering the elliptic form vanish almost everywhere. -/
+/-- **Hat functions more than one node apart have supports that meet in a null set.** For a
+partition of $[a, b]$ with $n \ge 1$ and $|i - j| \ge 2$, the three products
+$\varphi_j' \varphi_i'$, $\varphi_j' \varphi_i$ and $\varphi_j \varphi_i$ vanish almost
+everywhere on $(a, b)$. -/
 theorem ae_hat_products_eq_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {i j : ℕ}
     (hij : i + 1 < j ∨ j + 1 < i) :
     ∀ᵐ t ∂(volume.restrict (Ioo a b)),
@@ -1325,8 +1498,9 @@ theorem ae_hat_products_eq_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n
       hatDerivFun_eq_zero_of_panel hx hk h1 h2 htk]
     simp
 
-/-- **The elliptic form vanishes on two hat functions more than one node apart**, for arbitrary
-`L^∞` coefficients. -/
+/-- **The elliptic form vanishes on two hat functions more than one node apart.** For a partition of
+$[a, b]$ with $n \ge 1$, coefficients $\alpha, \beta, \gamma \in L^\infty(a, b)$ and
+$|i - j| \ge 2$, $a(\varphi_j, \varphi_i) = 0$. -/
 theorem form_apply_hatFunction_eq_zero (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {i j : ℕ} (hij : i + 1 < j ∨ j + 1 < i) :
     EllipticInterval.form a b α β γ (hatFunction hx hn j) (hatFunction hx hn i) = 0 := by
@@ -1345,15 +1519,22 @@ theorem form_apply_hatFunction_eq_zero (hx : IsIntervalPartition a b n x) (hn : 
       = γ t * (hatFun n x j t * hatFun n x i t) by ring, e3]
   ring
 
-/-- **Sparsity of the stiffness matrix** ([quarteroni2000numerical] §12.4.5): in the hat basis,
-`a_{ij} = 0` whenever `j ∉ {i - 1, i, i + 1}`, so `A_fe` is tridiagonal. -/
+/-- **Sparsity of the stiffness matrix** (§12.4.5 of [quarteroni2000numerical]). Let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and let
+$\alpha, \beta, \gamma \in L^\infty(a, b)$. In the family of all hat functions
+$(\varphi_k)_{k \in \mathbb{N}}$, the stiffness matrix satisfies $a_{ij} = 0$ whenever
+$|i - j| \ge 2$, that is, whenever $j \notin \{i - 1, i, i + 1\}$. -/
 theorem stiffnessMatrix_eq_zero_of_lt (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {i j : ℕ} (hij : i + 1 < j ∨ j + 1 < i) :
     stiffnessMatrix a b α β γ (fun k : ℕ ↦ hatFunction hx hn k) i j = 0 :=
   form_apply_hatFunction_eq_zero hx hn α β γ hij
 
-/-- **The stiffness matrix in the interior hat basis is tridiagonal**
-([quarteroni2000numerical] §12.4.5). -/
+/-- **The stiffness matrix of the interior hat functions is tridiagonal** (§12.4.5 of
+[quarteroni2000numerical]). Let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and
+let $\alpha, \beta, \gamma \in L^\infty(a, b)$. Then the stiffness matrix of the family
+$\varphi_1, \dots, \varphi_{n-1}$ is tridiagonal.
+
+The family is indexed by `Fin (n - 1)`, with index $k$ standing for $\varphi_{k+1}$. -/
 theorem isTridiagonal_stiffnessMatrix (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) :
     (stiffnessMatrix a b α β γ fun k : Fin (n - 1) ↦ hatFunction hx hn ((k : ℕ) + 1))
@@ -1372,10 +1553,18 @@ section Uniform
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The stiffness matrix on a uniform mesh** ([quarteroni2000numerical] §12.4.5, the matrix
-assembled by Program 95): in the interior hat basis of `X_h^{1,0}` with constant coefficients,
-`A_fe = (ε/h) tridiag(-1, 2, -1) + (β/2) tridiag(-1, 0, 1) + (γ h/6) tridiag(1, 4, 1)`. For
-`β = γ = 0` this is `ε h` times the centred finite difference matrix. -/
+/-- **The stiffness matrix on a uniform mesh** (§12.4.5 of [quarteroni2000numerical], the matrix
+that Program 95 assembles). Let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$ and
+all panel lengths equal to $h > 0$, and let $\varepsilon$, $\beta$, $\gamma$ be constant
+coefficients. Then the stiffness matrix of the interior hat functions
+$\varphi_1, \dots, \varphi_{n-1}$ is $$A_{fe} = \frac{\varepsilon}{h} \operatorname{tridiag}(-1,
+2, -1) + \frac{\beta}{2} \operatorname{tridiag}(-1, 0, 1) + \frac{\gamma h}{6}
+\operatorname{tridiag}(1, 4, 1),$$ where $\operatorname{tridiag}(l, d, u)$ has $l$ on the
+subdiagonal, $d$ on the diagonal and $u$ on the superdiagonal. For $\beta = \gamma = 0$ this is
+$\varepsilon h$ times the centred finite difference matrix
+$h^{-2} \operatorname{tridiag}(-1, 2, -1)$.
+
+The tridiagonal matrices are `Matrix.symmTridiagonalToeplitz` and `Matrix.tridiagonalToeplitz`. -/
 theorem stiffnessMatrix_uniform_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) :
     (stiffnessMatrix a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
@@ -1392,8 +1581,11 @@ theorem stiffnessMatrix_uniform_eq (hx : IsIntervalPartition a b n x) (hn : 1 �
     Matrix.symmTridiagonalToeplitz_apply', Matrix.tridiagonalToeplitz_apply]
   split_ifs <;> first | omega | (field_simp; ring) | field_simp
 
-/-- **The mass matrix on a uniform mesh** ([quarteroni2000numerical] §13.3): `M = (h/6)
-tridiag(1, 4, 1)`, that is `∫ φ_i² = 2h/3` and `∫ φ_i φ_{i±1} = h/6`. -/
+/-- **The mass matrix on a uniform mesh** (§13.3 of [quarteroni2000numerical]). Let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$ and all panel lengths equal to
+$h > 0$. Then the mass matrix of the interior hat functions $\varphi_1, \dots, \varphi_{n-1}$ is
+$$M = \frac{h}{6} \operatorname{tridiag}(1, 4, 1),$$ that is, $\int \varphi_i^2 = 2h/3$ and
+$\int \varphi_i \varphi_{i \pm 1} = h/6$. -/
 theorem massMatrix_uniform_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     (massMatrix a b fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
@@ -1407,20 +1599,27 @@ section PosDef
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- The interior hat functions as a family in `H^1_0(a, b)`. -/
+/-- The interior hat functions $\varphi_1, \dots, \varphi_{n-1}$, as elements of $H^1_0(a, b)$. -/
 noncomputable def hatElemH0 (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n - 1)) : SobolevIntervalZero a b :=
   ⟨hatFunction hx hn ((i : ℕ) + 1),
     (hatFunction_mem_lagrangeSpaceZero hab hx hn (by omega) (by have := i.isLt; omega)).2⟩
 
-/-- The interior hat functions are linearly independent in `H^1_0(a, b)`. -/
+/-- The interior hat functions $\varphi_1, \dots, \varphi_{n-1}$ are linearly independent in
+$H^1_0(a, b)$. -/
 theorem linearIndependent_hatElemH0 (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (hatElemH0 hab hx hn) :=
   (linearIndependent_hatFunction_succ hab hx hn).of_comp (SobolevIntervalZero a b).subtype
 
-/-- **The stiffness matrix is symmetric positive definite** ([quarteroni2000numerical] §12.4.4):
-for `β = 0`, `α ≥ α₀ > 0` and `γ ≥ 0` the form is symmetric and coercive on `H^1_0(a, b)`, and
-the interior hat functions are linearly independent. -/
+/-- **The stiffness matrix is symmetric positive definite** (§12.4.4 of [quarteroni2000numerical]).
+Let $a < b$, let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and let
+$\alpha, \gamma \in L^\infty(a, b)$ with $\alpha \ge \alpha_0$ and $\gamma \ge 0$ almost
+everywhere, for a constant $\alpha_0 > 0$. Then the stiffness matrix of the interior hat
+functions $\varphi_1, \dots, \varphi_{n-1}$ for the coefficients $\alpha$, $\beta = 0$, $\gamma$
+is positive definite.
+
+For $\beta = 0$ the form is symmetric and coercive on $H^1_0(a, b)$, and the interior hat
+functions are linearly independent. -/
 theorem stiffnessMatrix_posDef (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ t ∂(volume.restrict (Ioo a b)), α₀ ≤ α t)
@@ -1449,8 +1648,10 @@ open scoped Matrix.Norms.L2Operator
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The model stiffness matrix** `-u'' = f` on a uniform mesh: `A_fe = h⁻¹ tridiag(-1, 2, -1)`,
-which is `h` times the centred finite difference matrix. -/
+/-- **The model stiffness matrix.** For the problem $-u'' = f$ ($\alpha = 1$, $\beta = \gamma = 0$)
+on a partition with $n \ge 1$ and all panel lengths equal to $h > 0$, the stiffness matrix of
+the interior hat functions is $$A_{fe} = h^{-1} \operatorname{tridiag}(-1, 2, -1),$$ which is
+$h$ times the centred finite difference matrix. -/
 theorem stiffnessMatrix_model_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     (stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
@@ -1459,10 +1660,16 @@ theorem stiffnessMatrix_model_eq (hx : IsIntervalPartition a b n x) (hn : 1 ≤ 
   rw [stiffnessMatrix_uniform_eq hx hn hh huni 1 0 0]
   simp [one_div]
 
-/-- **The spectral condition number of the model stiffness matrix**
-([quarteroni2000numerical] §12.4.5): `K₂(A_fe) = cot²(π/(2n))`, the scaling `h⁻¹` cancelling
-between `A_fe` and its inverse; in terms of the mesh size `h = (b - a)/n` this is the growth
-`O(h⁻²)` that the book quotes from [QV94]. -/
+/-- **The spectral condition number of the model stiffness matrix** (§12.4.5 of
+[quarteroni2000numerical]). For the problem $-u'' = f$ on a partition
+$a = x_0 < \dots < x_n = b$ with $n \ge 1$ and all panel lengths equal to $h > 0$, the stiffness
+matrix $A_{fe}$ of the interior hat functions satisfies $$K_2(A_{fe}) = \|A_{fe}\|_2
+\|A_{fe}^{-1}\|_2 = \cot^2\Big(\frac{\pi}{2n}\Big).$$ In terms of the mesh size $h = (b - a)/n$
+this is the growth $O(h^{-2})$ that the source quotes from its reference QV94.
+
+The factor $h^{-1}$ of $A_{fe}$ cancels between $A_{fe}$ and its inverse. The norm is the
+operator norm for the Euclidean norm, and the inverse is `Matrix.inv`. For $n = 1$ the matrix is
+empty and both sides are $0$. -/
 theorem condNumber_stiffnessMatrix_model (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     ‖stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
@@ -1499,8 +1706,13 @@ section Centred
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The Galerkin equation at an interior node on a uniform mesh** is the centred finite
-difference stencil ([quarteroni2000numerical] (12.75)). -/
+/-- **The Galerkin equation at an interior node on a uniform mesh is the centred finite difference
+stencil** ((12.75) of [quarteroni2000numerical]). Let $a = x_0 < \dots < x_n = b$ be a partition
+with $n \ge 1$ and all panel lengths equal to $h > 0$, let $\varepsilon$ and $\beta$ be
+constants and $\gamma = 0$, and let $u_0, \dots, u_n$ be real numbers. Then for every interior
+node $1 \le i < n$ $$a\Big(\sum_{j=0}^{n} u_j \varphi_j,\ \varphi_i\Big) =
+\frac{\varepsilon}{h}(-u_{i-1} + 2u_i - u_{i+1}) + \frac{\beta}{2}(u_{i+1} - u_{i-1}).$$
+-/
 theorem form_sum_hatFunction_uniform (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) {i : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
@@ -1541,11 +1753,16 @@ theorem form_sum_hatFunction_uniform (hx : IsIntervalPartition a b n x) (hn : 1 
     have e3 : ¬ (m + 1 + 1 = k) := by omega
     simp [e1, e3, hk'.1]
 
-/-- **Galerkin `P_1` on a uniform mesh is the centred difference scheme**
-([quarteroni2000numerical] (12.75)): for constant `ε` and `β` and `γ = 0`, a piecewise linear
-function with nodal values `u_j` is a Galerkin solution of the homogeneous problem on
-`X_h^{1,0}` exactly when `(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0` at
-every interior node. -/
+/-- **The Galerkin method with $X_h^1$ on a uniform mesh is the centred difference scheme** ((12.75)
+of [quarteroni2000numerical]). Let $a < b$, let $a = x_0 < \dots < x_n = b$ be a partition with
+$n \ge 1$ and all panel lengths equal to $h > 0$, let $\varepsilon$ and $\beta$ be constants and
+$\gamma = 0$, and let $u_h = \sum_{j=0}^{n} u_j \varphi_j$ be the piecewise linear function with
+nodal values $u_j$. Then $a(u_h, v) = 0$ for all $v \in X_h^{1,0}$ if and only if
+$$\frac{\varepsilon}{h}(-u_{i-1} + 2u_i - u_{i+1}) + \frac{\beta}{2}(u_{i+1} - u_{i-1}) = 0
+\quad \text{for every } 1 \le i < n.$$
+
+The boundary values $u_0$ and $u_n$ are arbitrary, so the statement covers the problem with
+homogeneous right-hand side and any Dirichlet data. -/
 theorem galerkin_iff_centredScheme (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) :
     (∀ v ∈ lagrangeSpaceZero hab n x 1,
@@ -1569,40 +1786,44 @@ end Centred
 
 /-! ### The reference element -/
 
-/-- **The affine map of the reference interval onto a panel**,
-[quarteroni2000numerical] (12.62): `x = φ(ξ) = x_j + ξ (x_{j+1} - x_j)`. -/
+/-- **The affine map of the reference interval onto a panel** ((12.62) of
+[quarteroni2000numerical]): $$x = \phi(\xi) = x_j + \xi (x_{j+1} - x_j).$$
+-/
 noncomputable def affineMap (x : ℕ → ℝ) (j : ℕ) : ℝ → ℝ := fun ξ ↦ x j + ξ * (x (j + 1) - x j)
 
-/-- The inverse of `FiniteElement.affineMap`, the reference coordinate
-`ξ(x) = (x - x_j)/(x_{j+1} - x_j)` of [quarteroni2000numerical] §12.4.5. -/
+/-- The reference coordinate $\xi(x) = (x - x_j)/(x_{j+1} - x_j)$ of the panel $[x_j, x_{j+1}]$
+(§12.4.5 of [quarteroni2000numerical]), the inverse of `FiniteElement.affineMap`. -/
 noncomputable def refCoord (x : ℕ → ℝ) (j : ℕ) : ℝ → ℝ := fun t ↦ (t - x j) / (x (j + 1) - x j)
 
-/-- **The reference shape functions of `X_h^1`** ([quarteroni2000numerical] §12.4.5):
-`φ̂₀(ξ) = 1 - ξ` and `φ̂₁(ξ) = ξ`. -/
+/-- **The reference shape functions of $X_h^1$** (§12.4.5 of [quarteroni2000numerical]):
+$\hat\varphi_0(\xi) = 1 - \xi$ and $\hat\varphi_1(\xi) = \xi$. -/
 noncomputable def referenceHat : Fin 2 → ℝ → ℝ := ![fun ξ ↦ 1 - ξ, fun ξ ↦ ξ]
 
-/-- **The reference shape functions of `X_h^2`**, [quarteroni2000numerical] (12.65):
-`φ̂₀(ξ) = (1 - ξ)(1 - 2ξ)`, `φ̂₁(ξ) = 4(1 - ξ)ξ`, `φ̂₂(ξ) = ξ(2ξ - 1)`. -/
+/-- **The reference shape functions of $X_h^2$** ((12.65) of [quarteroni2000numerical]):
+$$\hat\varphi_0(\xi) = (1 - \xi)(1 - 2\xi), \qquad \hat\varphi_1(\xi) = 4(1 - \xi)\xi, \qquad
+\hat\varphi_2(\xi) = \xi(2\xi - 1).$$
+-/
 noncomputable def referenceQuadratic : Fin 3 → ℝ → ℝ :=
   ![fun ξ ↦ (1 - ξ) * (1 - 2 * ξ), fun ξ ↦ 4 * (1 - ξ) * ξ, fun ξ ↦ ξ * (2 * ξ - 1)]
 
-/-- **The hierarchical basis of `P_2` on the reference interval**,
-[quarteroni2000numerical] (12.66): `ψ̂₀(ξ) = 1 - ξ`, `ψ̂₁(ξ) = (1 - ξ)ξ`, `ψ̂₂(ξ) = ξ`, the two
-linear shape functions together with the bubble. -/
+/-- **The hierarchical basis of $\mathbb{P}_2$ on the reference interval** ((12.66) of
+[quarteroni2000numerical]): $$\hat\psi_0(\xi) = 1 - \xi, \qquad \hat\psi_1(\xi) = (1 - \xi)\xi,
+\qquad \hat\psi_2(\xi) = \xi,$$ the two linear shape functions together with the bubble. -/
 noncomputable def referenceHierarchical : Fin 3 → ℝ → ℝ :=
   ![fun ξ ↦ 1 - ξ, fun ξ ↦ (1 - ξ) * ξ, fun ξ ↦ ξ]
 
-/-- The affine map of the reference interval, unfolded. -/
+/-- The affine map of the reference interval sends $\xi$ to $x_j + \xi(x_{j+1} - x_j)$. -/
 @[simp]
 theorem affineMap_apply (x : ℕ → ℝ) (j : ℕ) (ξ : ℝ) :
     affineMap x j ξ = x j + ξ * (x (j + 1) - x j) := rfl
 
-/-- The reference coordinate, unfolded. -/
+/-- The reference coordinate sends $t$ to $(t - x_j)/(x_{j+1} - x_j)$. -/
 @[simp]
 theorem refCoord_apply (x : ℕ → ℝ) (j : ℕ) (t : ℝ) :
     refCoord x j t = (t - x j) / (x (j + 1) - x j) := rfl
 
-/-- The reference coordinate inverts the affine map (12.62). -/
+/-- If $x_j \ne x_{j+1}$, the affine map (12.62) inverts the reference coordinate:
+$\phi(\xi(t)) = t$. -/
 theorem affineMap_refCoord {x : ℕ → ℝ} {j : ℕ} (hj : x j ≠ x (j + 1)) (t : ℝ) :
     affineMap x j (refCoord x j t) = t := by
   have hne : x (j + 1) - x j ≠ 0 := sub_ne_zero.2 (Ne.symm hj)
@@ -1610,7 +1831,8 @@ theorem affineMap_refCoord {x : ℕ → ℝ} {j : ℕ} (hj : x j ≠ x (j + 1)) 
   field_simp
   ring
 
-/-- The affine map inverts the reference coordinate (12.62). -/
+/-- If $x_j \ne x_{j+1}$, the reference coordinate inverts the affine map (12.62):
+$\xi(\phi(\xi)) = \xi$. -/
 theorem refCoord_affineMap {x : ℕ → ℝ} {j : ℕ} (hj : x j ≠ x (j + 1)) (ξ : ℝ) :
     refCoord x j (affineMap x j ξ) = ξ := by
   have hne : x (j + 1) - x j ≠ 0 := sub_ne_zero.2 (Ne.symm hj)
@@ -1622,7 +1844,10 @@ section Reference
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **`φ_k = φ̂₀ ∘ ξ` on the panel `I_k`** ([quarteroni2000numerical] §12.4.5). -/
+/-- **The hat function $\varphi_k$ is the reference function $\hat\varphi_0$ on the panel $I_k$**
+(§12.4.5 of [quarteroni2000numerical]). For a partition of $[a, b]$ and $k < n$,
+$$\varphi_k(t) = \hat\varphi_0(\xi(t)) \quad \text{for } x_k \le t \le x_{k+1},$$ where $\xi$ is
+the reference coordinate of the panel $[x_k, x_{k+1}]$. -/
 theorem hatFun_eq_referenceHat_zero (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x k t = referenceHat 0 (refCoord x k t) := by
@@ -1632,7 +1857,10 @@ theorem hatFun_eq_referenceHat_zero (hx : IsIntervalPartition a b n x) {k : ℕ}
   field_simp
   ring
 
-/-- **`φ_{k+1} = φ̂₁ ∘ ξ` on the panel `I_k`** ([quarteroni2000numerical] §12.4.5). -/
+/-- **The hat function $\varphi_{k+1}$ is the reference function $\hat\varphi_1$ on the panel
+$I_k$** (§12.4.5 of [quarteroni2000numerical]). For a partition of $[a, b]$ and $k < n$,
+$\varphi_{k+1}(t) = \hat\varphi_1(\xi(t))$ for $x_k \le t \le x_{k+1}$, where $\xi$ is the
+reference coordinate of the panel $[x_k, x_{k+1}]$. -/
 theorem hatFun_eq_referenceHat_one (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     hatFun n x (k + 1) t = referenceHat 1 (refCoord x k t) := by
@@ -1641,9 +1869,14 @@ theorem hatFun_eq_referenceHat_one (hx : IsIntervalPartition a b n x) {k : ℕ} 
 
 end Reference
 
-/-- **The hierarchical basis (12.66) is linearly independent**
-([quarteroni2000numerical] §12.4.5): `α₀ + ξ(α₁ - α₀ + α₂) - α₁ξ² ≡ 0` forces
-`α₀ = α₁ = α₂ = 0`, as the book's check evaluates at `ξ = 0`, `1` and `1/2`. -/
+/-- **The hierarchical basis (12.66) is linearly independent** (§12.4.5 of
+[quarteroni2000numerical]): the functions $\hat\psi_0$, $\hat\psi_1$, $\hat\psi_2$ on
+$\mathbb{R}$ are linearly independent.
+
+The combination $\alpha_0 \hat\psi_0 + \alpha_1 \hat\psi_1 + \alpha_2 \hat\psi_2 = \alpha_0 +
+\xi(\alpha_1 - \alpha_0 + \alpha_2) - \alpha_1 \xi^2$ vanishes identically only for
+$\alpha_0 = \alpha_1 = \alpha_2 = 0$, as the evaluations at $\xi = 0$, $1$ and $1/2$ in the
+source show. -/
 theorem referenceHierarchical_linearIndependent :
     LinearIndependent ℝ referenceHierarchical := by
   rw [Fintype.linearIndependent_iff]
@@ -1657,27 +1890,32 @@ theorem referenceHierarchical_linearIndependent :
   norm_num at h0 h1 h2
   fin_cases i <;> simp <;> linarith
 
-/-! ### The piecewise linear interpolation operator into `H^1(a, b)` -/
+/-! ### The piecewise linear interpolation operator into $H^1(a, b)$ -/
 
 section Interp
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The piecewise linear interpolant** `Π_h^1 u` of [quarteroni2000numerical] §8.3, as an
-element of `H^1(a, b)`: the combination of the hat functions with the nodal values of the
-continuous representative of `u`. -/
+/-- **The piecewise linear interpolant** $\Pi_h^1 u$ of §8.3 of [quarteroni2000numerical], as an
+element of $H^1(a, b)$. For a partition of $[a, b]$ with $n \ge 1$ and $u \in H^1(a, b)$ with
+continuous representative $\tilde u$, $$\Pi_h^1 u = \sum_{i=0}^{n} \tilde u(x_i)\, \varphi_i.$$
+-/
 noncomputable def lagrangeInterp (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) : SobolevInterval 1 a b :=
   ∑ i ∈ Finset.range (n + 1), SobolevInterval.rep u (x i) • hatFunction hx hn i
 
-/-- The interpolant lies in `X_h^1`. -/
+/-- **The interpolant lies in $X_h^1$.** Let $a < b$, let $a = x_0 < \dots < x_n = b$ be a partition
+with $n \ge 1$, and let $u \in H^1(a, b)$. Then $\Pi_h^1 u \in X_h^1$. -/
 theorem lagrangeInterp_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) :
     lagrangeInterp hx hn u ∈ lagrangeSpace hab n x 1 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
     (hatFunction_mem_lagrangeSpace hab hx hn i)
 
-/-- **A combination of the hat functions takes the prescribed values at the nodes**. -/
+/-- **A combination of the hat functions takes the prescribed values at the nodes.** Let $a < b$,
+let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and let $c_0, \dots, c_n$ be real
+numbers. Then the continuous representative of $\sum_{i=0}^{n} c_i \varphi_i$ takes the value
+$c_j$ at $x_j$, for every $j \le n$. -/
 theorem rep_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (c : ℕ → ℝ) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j) = c j := by
@@ -1690,21 +1928,26 @@ theorem rep_sum_hatFunction (hab : a < b) (hx : IsIntervalPartition a b n x) (hn
     (rep_hatFunction_node hx hn (i := i) (j := j) hj)]
   simp [Finset.sum_ite_eq' (Finset.range (n + 1)) j, Nat.lt_succ_iff.2 hj]
 
-/-- **The interpolant matches `u` at the nodes**. -/
+/-- **The interpolant matches $u$ at the nodes.** Let $a < b$, let $a = x_0 < \dots < x_n = b$ be a
+partition with $n \ge 1$, and let $u \in H^1(a, b)$. Then the continuous representatives satisfy
+$(\Pi_h^1 u)(x_j) = u(x_j)$ for every $j \le n$. -/
 theorem rep_lagrangeInterp_node (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (lagrangeInterp hx hn u) (x j) = SobolevInterval.rep u (x j) :=
   rep_sum_hatFunction hab hx hn _ hj
 
-/-- **A combination of the hat functions lies in `X_h^1`**. -/
+/-- **A combination of the hat functions lies in $X_h^1$.** Let $a < b$, let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and let $c_0, \dots, c_n$ be real
+numbers. Then $\sum_{i=0}^{n} c_i \varphi_i \in X_h^1$. -/
 theorem sum_hatFunction_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) (c : ℕ → ℝ) :
     (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) ∈ lagrangeSpace hab n x 1 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
     (hatFunction_mem_lagrangeSpace hab hx hn i)
 
-/-- **The interpolant of an element of `H^1_0(a, b)` lies in `X_h^{1,0}`**: it vanishes at both
-endpoints because `u` does. -/
+/-- **The interpolant of an element of $H^1_0(a, b)$ lies in $X_h^{1,0}$.** Let $a < b$, let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$, and let $u \in H^1_0(a, b)$. Then
+$\Pi_h^1 u \in X_h^{1,0}$, because it vanishes at both endpoints where $u$ does. -/
 theorem lagrangeInterp_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {u : SobolevInterval 1 a b} (hu : u ∈ SobolevIntervalZero a b) :
     lagrangeInterp hx hn u ∈ lagrangeSpaceZero hab n x 1 := by
@@ -1719,12 +1962,14 @@ theorem lagrangeInterp_mem_lagrangeSpaceZero (hab : a < b) (hx : IsIntervalParti
     rw [h]
     exact SobolevIntervalZero.rep_right_eq_zero hab hu
 
-/-- The piecewise constant difference quotient of a function at the nodes: the derivative of the
-piecewise linear interpolant, panel by panel. -/
+/-- The piecewise constant difference quotient of a function $f$ at the nodes,
+$\sum_{i=0}^{n} f(x_i)\, \varphi_i'$: on each panel it is the derivative of the piecewise linear
+interpolant of $f$. -/
 noncomputable def diffQuotFun (n : ℕ) (x : ℕ → ℝ) (f : ℝ → ℝ) : ℝ → ℝ :=
   fun t ↦ ∑ i ∈ Finset.range (n + 1), f (x i) * hatDerivFun n x i t
 
-/-- On the panel `k` the difference quotient is `(f(x_{k+1}) - f(x_k))/h_k`. -/
+/-- For a partition of $[a, b]$ and $k < n$, on the open panel $(x_k, x_{k+1})$ the difference
+quotient of $f$ equals $(f(x_{k+1}) - f(x_k))/(x_{k+1} - x_k)$. -/
 theorem diffQuotFun_eq (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n) (f : ℝ → ℝ)
     {t : ℝ} (ht : t ∈ Ioo (x k) (x (k + 1))) :
     diffQuotFun n x f t = (f (x (k + 1)) - f (x k)) / (x (k + 1) - x k) := by
@@ -1742,12 +1987,14 @@ theorem diffQuotFun_eq (hx : IsIntervalPartition a b n x) {k : ℕ} (hk : k < n)
   rw [Finset.sum_congr rfl key, ← Finset.sum_div, Finset.sum_sub_distrib]
   simp [Finset.sum_ite_eq', hk1, hk2]
 
-/-- The difference quotient is measurable. -/
+/-- The difference quotient of a function at the nodes is measurable. -/
 theorem measurable_diffQuotFun (n : ℕ) (x : ℕ → ℝ) (f : ℝ → ℝ) :
     Measurable (diffQuotFun n x f) :=
   Finset.measurable_sum _ fun i _ ↦ measurable_const.mul (measurable_hatDerivFun n x i)
 
-/-- The weak derivative of the interpolant is the difference quotient of the representative. -/
+/-- For a partition of $[a, b]$ with $n \ge 1$ and $u \in H^1(a, b)$, the weak derivative of
+$\Pi_h^1 u$ equals almost everywhere on $(a, b)$ the difference quotient of the continuous
+representative of $u$. -/
 theorem coeFn_deriv_lagrangeInterp (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) :
     ⇑(SobolevInterval.deriv (lagrangeInterp hx hn u) 1)
@@ -1774,12 +2021,15 @@ theorem coeFn_deriv_lagrangeInterp (hx : IsIntervalPartition a b n x) (hn : 1 �
   rw [h1, diffQuotFun]
   exact Finset.sum_congr rfl h2
 
-/-- **The interpolation estimate (8.27) in the `H^1` seminorm**
-([quarteroni2000numerical] (8.27), Theorem 8.3 at `k = 1`, `m = 1`, with the constant `1`): for
-`u ∈ H²(a, b)` on a partition of mesh at most `h`,
-`|u - Π_h^1 u|_{H¹(a,b)} ≤ h |u|_{H²(a,b)}`. This is chapter 8's
-`integral_sq_deriv_sub_piecewiseLinearInterpCLM_le` read through the weak derivative of
-`FiniteElement.lagrangeInterp`, which is the panelwise difference quotient. -/
+/-- **The interpolation estimate in the $H^1$ seminorm for $X_h^1$** ((8.27) and Theorem 8.3 of
+[quarteroni2000numerical] at $k = 1$, $m = 1$, with the constant $1$). Let $a < b$, let
+$a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$ whose panels have length at most $h$,
+and let $u \in H^2(a, b)$. Then $$|u - \Pi_h^1 u|_{H^1(a, b)} \le h\, |u|_{H^2(a, b)}.$$
+
+On the left $u$ is read in $H^1(a, b)$ through `SobolevInterval.inclusionCLM`, and the seminorm
+$|v|_{H^m(a, b)}$ is the $L^2$ norm of $v^{(m)}$ (`SobolevInterval.seminorm`). The proof reads
+`integral_sq_deriv_sub_piecewiseLinearInterpCLM_le` through the weak derivative of
+`FiniteElement.lagrangeInterp`, which is the difference quotient on each panel. -/
 theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : IsIntervalPartition a b n x)
     (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ k < n, x (k + 1) - x k ≤ h) (u : SobolevInterval 2 a b) :
     SobolevInterval.seminorm 1 a b (SobolevInterval.inclusionCLM 1 a b u
@@ -1875,9 +2125,12 @@ theorem seminorm_sub_lagrangeInterp_le (hab : a < b) (hx : IsIntervalPartition a
     two_ne_zero).1 hsq
 
 
-/-- **The approximation property of `X_h^{1,0}`** that the Aubin–Nitsche estimate consumes: every
-`Φ ∈ H²(a, b)` whose inclusion lies in `H^1_0(a, b)` is approximated in the `H^1` seminorm to
-within `h ‖Φ‖_{H²}` by an element of `X_h^{1,0}`, namely its piecewise linear interpolant. -/
+/-- **The approximation property of $X_h^{1,0}$** that the Aubin–Nitsche estimate uses. Let $a < b$,
+let $a = x_0 < \dots < x_n = b$ be a partition with $n \ge 1$ whose panels have length at most
+$h$, and let $\Phi \in H^2(a, b)$ with $\Phi \in H^1_0(a, b)$. Then there is $v \in X_h^{1,0}$
+with $$|\Phi - v|_{H^1(a, b)} \le h\, \|\Phi\|_{H^2(a, b)}.$$
+
+The element $v$ is the piecewise linear interpolant $\Pi_h^1 \Phi$. -/
 theorem exists_mem_lagrangeSpaceZero_seminorm_sub_le (hab : a < b)
     (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (Φ : SobolevInterval 2 a b)
@@ -1896,60 +2149,72 @@ theorem exists_mem_lagrangeSpaceZero_seminorm_sub_le (hab : a < b)
 end Interp
 
 
-/-! ### The quadratic element `X_h^2`
+/-!
+### The quadratic element $X_h^2$
 
-The shape functions of [quarteroni2000numerical] (12.63)-(12.64) are built, like the hat
-functions, as honest functions `ℝ → ℝ` and only then pushed into `H^1(a, b)`.  The node sequence
-is the book's own relabelling `x_0 < x_1 < ⋯ < x_{2n}`, the even-indexed nodes being the
-endpoints of the `n` elements `[x_{2m}, x_{2m+2}]` and the odd-indexed ones their interior
-nodes; `FiniteElement.evenNodes` extracts the element partition.  The formulas (12.63)-(12.64)
-are the local Lagrange bases of the three nodes of an element, so nothing below assumes that the
-interior node is the *midpoint*; that hypothesis enters only in the reference description
-(12.65).
+The shape functions of (12.63)–(12.64) of [quarteroni2000numerical] are built like the hat
+functions: first as functions $\mathbb{R} \to \mathbb{R}$, and only then as elements of $H^1(a, b)$.
+The nodes are the source's relabelling $x_0 < x_1 < \dots < x_{2n}$. The even-indexed nodes are the
+endpoints of the $n$ elements $[x_{2m}, x_{2m+2}]$, and the odd-indexed nodes are their interior
+nodes; `FiniteElement.evenNodes` extracts the element partition. The formulas (12.63)–(12.64) are
+the local Lagrange bases of the three nodes of an element, so nothing below assumes that the
+interior node is the midpoint. That hypothesis enters only in the reference description (12.65).
 
-There is no ramp trick here: the sum of the two quadratic branches of an even-indexed shape
-function is not `1` on an element, because the bubble takes up the slack.  Instead each branch is
-clamped to the element it belongs to — `FiniteElement.quadFall` is `1` to the left of its element
-and `0` to its right, `FiniteElement.quadRise` the other way round — and the shape function at an
-even node is the **product** of the rise across the element on its left and the fall across the
-element on its right, which is `φ̂₂` on the one and `φ̂₀` on the other and `0` elsewhere.  The
-shape function at an odd node is the bubble, clamped to vanish outside its element.
+The ramp construction of the hat functions does not apply here: the sum of the two quadratic
+branches of an even-indexed shape function is not $1$ on an element, because the bubble takes up the
+difference. Instead each branch is clamped to its element. `FiniteElement.quadFall` is $1$ to the
+left of its element and $0$ to its right, and `FiniteElement.quadRise` is the other way round. The
+shape function at an even node is the product of the rise across the element on its left and the
+fall across the element on its right. This product is $\hat\varphi_2$ on the one element,
+$\hat\varphi_0$ on the other, and $0$ elsewhere. The shape function at an odd node is the bubble,
+clamped to vanish outside its element.
 
-The element of `H^1(a, b)` is obtained from `FiniteElement.exists_mem_lagrangeSpace`: a
-continuous piecewise polynomial *is* the continuous representative of an element of `X_h^2`, and
-the embedding `H^1(a, b) ↪ C([a, b], ℝ)` is injective, so the element is unique and every nodal
-statement about it is a statement about `FiniteElement.quadShapeFun`.
+The element of $H^1(a, b)$ comes from `FiniteElement.exists_mem_lagrangeSpace`: a continuous
+piecewise polynomial is the continuous representative of an element of $X_h^2$. The embedding
+$H^1(a, b) \hookrightarrow C([a, b])$ is injective, so the element is unique, and every statement
+about its nodal values is a statement about `FiniteElement.quadShapeFun`.
 -/
 
-/-- The quadratic Lagrange basis polynomial at `p` for the three nodes `p`, `q`, `r`. -/
+/-- The quadratic Lagrange basis polynomial at $p$ for the three nodes $p$, $q$, $r$: $$\frac{(X -
+q)(X - r)}{(p - q)(p - r)},$$ written by its coefficients. If $p = q$ or $p = r$, the division
+by zero makes it the zero polynomial. -/
 noncomputable def quadPoly (p q r : ℝ) : Polynomial ℝ :=
   Polynomial.C ((p - q) * (p - r))⁻¹ * Polynomial.X ^ 2 +
     Polynomial.C (-(q + r) * ((p - q) * (p - r))⁻¹) * Polynomial.X +
     Polynomial.C (q * r * ((p - q) * (p - r))⁻¹)
 
-/-- The quadratic Lagrange basis function at `p` for the three nodes `p`, `q`, `r`. -/
+/-- The quadratic Lagrange basis function at $p$ for the three nodes $p$, $q$, $r$:
+$t \mapsto (t - q)(t - r)/((p - q)(p - r))$. If $p = q$ or $p = r$, the division by zero makes
+it the zero function. -/
 noncomputable def quadLagrangeFun (p q r : ℝ) : ℝ → ℝ :=
   fun t ↦ (t - q) * (t - r) / ((p - q) * (p - r))
 
+/-- The quadratic Lagrange basis polynomial evaluates to the quadratic Lagrange basis function. -/
 theorem quadPoly_eval (p q r t : ℝ) : (quadPoly p q r).eval t = quadLagrangeFun p q r t := by
   simp only [quadPoly, quadLagrangeFun, Polynomial.eval_add, Polynomial.eval_mul,
     Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X, div_eq_mul_inv]
   ring
 
+/-- The quadratic Lagrange basis polynomial has degree at most $2$. -/
 theorem quadPoly_degree_le (p q r : ℝ) : (quadPoly p q r).degree ≤ 2 :=
   Polynomial.degree_quadratic_le
 
+/-- If $p \ne q$ and $p \ne r$, the quadratic Lagrange basis function at $p$ for the nodes $p$, $q$,
+$r$ takes the value $1$ at $p$. -/
 theorem quadLagrangeFun_self {p q r : ℝ} (hq : p ≠ q) (hr : p ≠ r) :
     quadLagrangeFun p q r p = 1 := by
   rw [quadLagrangeFun, div_self]
   exact mul_ne_zero (sub_ne_zero.2 hq) (sub_ne_zero.2 hr)
 
+/-- The quadratic Lagrange basis function at $p$ for the nodes $p$, $q$, $r$ vanishes at $q$. -/
 theorem quadLagrangeFun_left (p q r : ℝ) : quadLagrangeFun p q r q = 0 := by
   simp [quadLagrangeFun]
 
+/-- The quadratic Lagrange basis function at $p$ for the nodes $p$, $q$, $r$ vanishes at $r$. -/
 theorem quadLagrangeFun_right (p q r : ℝ) : quadLagrangeFun p q r r = 0 := by
   simp [quadLagrangeFun]
 
+/-- The quadratic Lagrange basis function is continuous. -/
 theorem continuous_quadLagrangeFun (p q r : ℝ) : Continuous (quadLagrangeFun p q r) := by
   unfold quadLagrangeFun
   fun_prop
@@ -1957,46 +2222,59 @@ theorem continuous_quadLagrangeFun (p q r : ℝ) : Continuous (quadLagrangeFun p
 
 /-! ### The clamped pieces on an element -/
 
-/-- The element `[x_{2k}, x_{2k+2}]` of the quadratic mesh, with `t` clamped into it. -/
+/-- The point $t$ clamped into the element $[x_{2k}, x_{2k+2}]$ of the quadratic mesh:
+$\min(\max(t, x_{2k}), x_{2k+2})$. -/
 noncomputable def quadClamp (x : ℕ → ℝ) (k : ℕ) (t : ℝ) : ℝ :=
   min (max t (x (2 * k))) (x (2 * k + 2))
 
+/-- If $x_{2k} \le x_{2k+2}$ and $t \le x_{2k}$, then $t$ clamped into $[x_{2k}, x_{2k+2}]$ is
+$x_{2k}$. -/
 theorem quadClamp_of_le {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (hx : x (2 * k) ≤ x (2 * k + 2))
     (ht : t ≤ x (2 * k)) : quadClamp x k t = x (2 * k) := by
   rw [quadClamp, max_eq_right ht, min_eq_left hx]
 
+/-- If $x_{2k} \le t \le x_{2k+2}$, then $t$ clamped into $[x_{2k}, x_{2k+2}]$ is $t$. -/
 theorem quadClamp_of_mem {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (h1 : x (2 * k) ≤ t)
     (h2 : t ≤ x (2 * k + 2)) : quadClamp x k t = t := by
   rw [quadClamp, max_eq_left h1, min_eq_left h2]
 
+/-- If $x_{2k} \le x_{2k+2}$ and $t \ge x_{2k+2}$, then $t$ clamped into $[x_{2k}, x_{2k+2}]$ is
+$x_{2k+2}$. -/
 theorem quadClamp_of_ge {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (hx : x (2 * k) ≤ x (2 * k + 2))
     (ht : x (2 * k + 2) ≤ t) : quadClamp x k t = x (2 * k + 2) := by
   rw [quadClamp, max_eq_left (hx.trans ht), min_eq_right ht]
 
+/-- Clamping into an element is continuous. -/
 theorem continuous_quadClamp (x : ℕ → ℝ) (k : ℕ) : Continuous (quadClamp x k) :=
   (continuous_id.max continuous_const).min continuous_const
 
-/-- `φ̂₀` on the element `k`: the quadratic that is `1` at `x_{2k}` and `0` at the other two
-nodes of the element, clamped to be `1` to the left of the element and `0` to its right. -/
+/-- The shape function $\hat\varphi_0$ on the element $k$: the quadratic that is $1$ at $x_{2k}$ and
+$0$ at $x_{2k+1}$ and $x_{2k+2}$, evaluated at the point clamped into $[x_{2k}, x_{2k+2}]$. For
+increasing nodes it is $1$ to the left of the element and $0$ to its right. -/
 noncomputable def quadFall (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   fun t ↦ quadLagrangeFun (x (2 * k)) (x (2 * k + 1)) (x (2 * k + 2)) (quadClamp x k t)
 
-/-- `φ̂₁` on the element `k`: the bubble, `1` at the interior node `x_{2k+1}` and `0` outside
-the element. -/
+/-- The bubble $\hat\varphi_1$ on the element $k$: the quadratic that is $1$ at the interior node
+$x_{2k+1}$ and $0$ at $x_{2k}$ and $x_{2k+2}$, evaluated at the point clamped into
+$[x_{2k}, x_{2k+2}]$. It is $0$ outside the element. -/
 noncomputable def quadBubble (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   fun t ↦ quadLagrangeFun (x (2 * k + 1)) (x (2 * k)) (x (2 * k + 2)) (quadClamp x k t)
 
-/-- `φ̂₂` on the element `k`: the quadratic that is `1` at `x_{2k+2}` and `0` at the other two
-nodes of the element, clamped to be `0` to the left of the element and `1` to its right. -/
+/-- The shape function $\hat\varphi_2$ on the element $k$: the quadratic that is $1$ at $x_{2k+2}$
+and $0$ at $x_{2k}$ and $x_{2k+1}$, evaluated at the point clamped into $[x_{2k}, x_{2k+2}]$.
+For increasing nodes it is $0$ to the left of the element and $1$ to its right. -/
 noncomputable def quadRise (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   fun t ↦ quadLagrangeFun (x (2 * k + 2)) (x (2 * k)) (x (2 * k + 1)) (quadClamp x k t)
 
+/-- The clamped function $\hat\varphi_0$ of an element is continuous. -/
 theorem continuous_quadFall (x : ℕ → ℝ) (k : ℕ) : Continuous (quadFall x k) :=
   (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
 
+/-- The clamped bubble of an element is continuous. -/
 theorem continuous_quadBubble (x : ℕ → ℝ) (k : ℕ) : Continuous (quadBubble x k) :=
   (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
 
+/-- The clamped function $\hat\varphi_2$ of an element is continuous. -/
 theorem continuous_quadRise (x : ℕ → ℝ) (k : ℕ) : Continuous (quadRise x k) :=
   (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
 
@@ -2004,45 +2282,62 @@ section Element
 
 variable {x : ℕ → ℝ} {k : ℕ}
 
-/-- The three nodes of an element are distinct. -/
+/-- If $x_{2k} < x_{2k+1} < x_{2k+2}$, the three nodes of the element are pairwise distinct. -/
 theorem quad_ne (h1 : x (2 * k) < x (2 * k + 1)) (h2 : x (2 * k + 1) < x (2 * k + 2)) :
     x (2 * k) ≠ x (2 * k + 1) ∧ x (2 * k) ≠ x (2 * k + 2) ∧ x (2 * k + 1) ≠ x (2 * k + 2) :=
   ⟨h1.ne, (h1.trans h2).ne, h2.ne⟩
 
+/-- On the element $[x_{2k}, x_{2k+2}]$ the clamped function $\hat\varphi_0$ is the quadratic
+Lagrange basis function at $x_{2k}$ for the nodes $x_{2k}$, $x_{2k+1}$, $x_{2k+2}$. -/
 theorem quadFall_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
     quadFall x k t = quadLagrangeFun (x (2 * k)) (x (2 * k + 1)) (x (2 * k + 2)) t := by
   rw [quadFall, quadClamp_of_mem h1 h2]
 
+/-- On the element $[x_{2k}, x_{2k+2}]$ the clamped bubble is the quadratic Lagrange basis function
+at $x_{2k+1}$ for the nodes $x_{2k+1}$, $x_{2k}$, $x_{2k+2}$. -/
 theorem quadBubble_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
     quadBubble x k t = quadLagrangeFun (x (2 * k + 1)) (x (2 * k)) (x (2 * k + 2)) t := by
   rw [quadBubble, quadClamp_of_mem h1 h2]
 
+/-- On the element $[x_{2k}, x_{2k+2}]$ the clamped function $\hat\varphi_2$ is the quadratic
+Lagrange basis function at $x_{2k+2}$ for the nodes $x_{2k+2}$, $x_{2k}$, $x_{2k+1}$. -/
 theorem quadRise_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
     quadRise x k t = quadLagrangeFun (x (2 * k + 2)) (x (2 * k)) (x (2 * k + 1)) t := by
   rw [quadRise, quadClamp_of_mem h1 h2]
 
+/-- If $x_{2k} < x_{2k+1} < x_{2k+2}$, the clamped function $\hat\varphi_0$ of the element equals
+$1$ at every $t \le x_{2k}$. -/
 theorem quadFall_of_le {t : ℝ} (h1 : x (2 * k) < x (2 * k + 1))
     (h2 : x (2 * k + 1) < x (2 * k + 2)) (ht : t ≤ x (2 * k)) : quadFall x k t = 1 := by
   rw [quadFall, quadClamp_of_le (h1.trans h2).le ht,
     quadLagrangeFun_self h1.ne (h1.trans h2).ne]
 
+/-- If $x_{2k} \le x_{2k+2}$, the clamped function $\hat\varphi_0$ of the element vanishes at every
+$t \ge x_{2k+2}$. -/
 theorem quadFall_of_ge {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) :
     quadFall x k t = 0 := by
   rw [quadFall, quadClamp_of_ge h ht, quadLagrangeFun_right]
 
+/-- If $x_{2k} \le x_{2k+2}$, the clamped function $\hat\varphi_2$ of the element vanishes at every
+$t \le x_{2k}$. -/
 theorem quadRise_of_le {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : t ≤ x (2 * k)) :
     quadRise x k t = 0 := by
   rw [quadRise, quadClamp_of_le h ht, quadLagrangeFun_left]
 
+/-- If $x_{2k} < x_{2k+1} < x_{2k+2}$, the clamped function $\hat\varphi_2$ of the element equals
+$1$ at every $t \ge x_{2k+2}$. -/
 theorem quadRise_of_ge {t : ℝ} (h1 : x (2 * k) < x (2 * k + 1))
     (h2 : x (2 * k + 1) < x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) : quadRise x k t = 1 := by
   rw [quadRise, quadClamp_of_ge (h1.trans h2).le ht,
     quadLagrangeFun_self (h1.trans h2).ne' h2.ne']
 
+/-- If $x_{2k} \le x_{2k+2}$, the clamped bubble of the element vanishes at every $t \le x_{2k}$. -/
 theorem quadBubble_of_le {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : t ≤ x (2 * k)) :
     quadBubble x k t = 0 := by
   rw [quadBubble, quadClamp_of_le h ht, quadLagrangeFun_left]
 
+/-- If $x_{2k} \le x_{2k+2}$, the clamped bubble of the element vanishes at every $t \ge x_{2k+2}$.
+-/
 theorem quadBubble_of_ge {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) :
     quadBubble x k t = 0 := by
   rw [quadBubble, quadClamp_of_ge h ht, quadLagrangeFun_right]
@@ -2050,51 +2345,68 @@ theorem quadBubble_of_ge {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : x (2 
 end Element
 
 
-/-! ### The global shape functions of `X_h^2` -/
+/-! ### The global shape functions of $X_h^2$ -/
 
-/-- The left factor of the shape function at an even node `x_{2k}`: the constant `1` for `k = 0`,
-the quadratic rise across the element `k - 1` for `1 ≤ k ≤ n`, and `0` beyond. -/
+/-- The left factor of the shape function at the even node $x_{2k}$: the constant $1$ for $k = 0$,
+the clamped function $\hat\varphi_2$ of the element $k - 1$ for $1 \le k \le n$, and the
+constant $0$ for $k > n$. -/
 noncomputable def quadStepL (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   if k = 0 then fun _ ↦ 1 else if k ≤ n then quadRise x (k - 1) else fun _ ↦ 0
 
-/-- The right factor of the shape function at an even node `x_{2k}`: the quadratic fall across
-the element `k`, and the constant `1` when there is no such element. -/
+/-- The right factor of the shape function at the even node $x_{2k}$: the clamped function
+$\hat\varphi_0$ of the element $k$ for $k < n$, and the constant $1$ for $k \ge n$. -/
 noncomputable def quadStepR (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   if k < n then quadFall x k else fun _ ↦ 1
 
-/-- The shape function at an odd (interior) node `x_{2k+1}`: the bubble of the element `k`, and
-`0` when there is no such element. -/
+/-- The shape function at the odd node $x_{2k+1}$: the clamped bubble of the element $k$ for
+$k < n$, and the constant $0$ for $k \ge n$. -/
 noncomputable def quadStepB (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
   if k < n then quadBubble x k else fun _ ↦ 0
 
-/-- **The shape functions of `X_h^2`** of [quarteroni2000numerical] (12.63)-(12.64), as functions
-`ℝ → ℝ`. -/
+/-- **The shape functions of $X_h^2$** of (12.63)–(12.64) of [quarteroni2000numerical], as functions
+$\mathbb{R} \to \mathbb{R}$, for a quadratic mesh $x_0 < x_1 < \dots < x_{2n}$. The shape
+function $\varphi_{2k}$ at an even node is the product of the left factor
+`FiniteElement.quadStepL` and the right factor `FiniteElement.quadStepR` at $k$, and the shape
+function $\varphi_{2k+1}$ at an odd node is `FiniteElement.quadStepB` at $k$.
+
+On each element $[x_{2m}, x_{2m+2}]$ the shape functions of its three nodes are the local
+quadratic Lagrange basis functions, and all other shape functions vanish there. -/
 noncomputable def quadShapeFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
   fun t ↦ if i % 2 = 0 then quadStepL n x (i / 2) t * quadStepR n x (i / 2) t
     else quadStepB n x (i / 2) t
 
+/-- The left factor at $k = 0$ is the constant $1$. -/
 theorem quadStepL_zero (n : ℕ) (x : ℕ → ℝ) : quadStepL n x 0 = fun _ ↦ 1 := by simp [quadStepL]
 
+/-- If $k + 1 \le n$, the left factor at $k + 1$ is the clamped function $\hat\varphi_2$ of the
+element $k$. -/
 theorem quadStepL_succ {n k : ℕ} (x : ℕ → ℝ) (hk : k + 1 ≤ n) :
     quadStepL n x (k + 1) = quadRise x k := by simp [quadStepL, hk]
 
+/-- If $k > n$, the left factor at $k$ is the constant $0$. -/
 theorem quadStepL_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : n < k) : quadStepL n x k = fun _ ↦ 0 := by
   rw [quadStepL]
   have hk0 : ¬ k = 0 := by omega
   simp [hk0, Nat.not_le.2 hk]
 
+/-- If $k < n$, the right factor at $k$ is the clamped function $\hat\varphi_0$ of the element $k$.
+-/
 theorem quadStepR_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : k < n) : quadStepR n x k = quadFall x k := by
   simp [quadStepR, hk]
 
+/-- If $k \ge n$, the right factor at $k$ is the constant $1$. -/
 theorem quadStepR_of_le {n k : ℕ} (x : ℕ → ℝ) (hk : n ≤ k) : quadStepR n x k = fun _ ↦ 1 := by
   simp [quadStepR, Nat.not_lt.2 hk]
 
+/-- If $k < n$, the odd shape function at $k$ is the clamped bubble of the element $k$. -/
 theorem quadStepB_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : k < n) :
     quadStepB n x k = quadBubble x k := by simp [quadStepB, hk]
 
+/-- If $k \ge n$, the odd shape function at $k$ is the constant $0$. -/
 theorem quadStepB_of_le {n k : ℕ} (x : ℕ → ℝ) (hk : n ≤ k) :
     quadStepB n x k = fun _ ↦ 0 := by simp [quadStepB, Nat.not_lt.2 hk]
 
+/-- The left factor is continuous. -/
 theorem continuous_quadStepL (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepL n x k) := by
   rcases Nat.eq_zero_or_pos k with rfl | hk0
   · rw [quadStepL_zero]; exact continuous_const
@@ -2103,28 +2415,35 @@ theorem continuous_quadStepL (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous 
     rw [quadStepL_succ x hk]; exact continuous_quadRise x k'
   · rw [quadStepL_of_lt x hk]; exact continuous_const
 
+/-- The right factor is continuous. -/
 theorem continuous_quadStepR (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepR n x k) := by
   rcases lt_or_ge k n with hk | hk
   · rw [quadStepR_of_lt x hk]; exact continuous_quadFall x k
   · rw [quadStepR_of_le x hk]; exact continuous_const
 
+/-- The odd shape function is continuous. -/
 theorem continuous_quadStepB (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepB n x k) := by
   rcases lt_or_ge k n with hk | hk
   · rw [quadStepB_of_lt x hk]; exact continuous_quadBubble x k
   · rw [quadStepB_of_le x hk]; exact continuous_const
 
+/-- The shape function at the even node $x_{2k}$ is the product of the left and the right factor at
+$k$. -/
 theorem quadShapeFun_even (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
     quadShapeFun n x (2 * k) t = quadStepL n x k t * quadStepR n x k t := by
   have h1 : (2 * k) % 2 = 0 := by omega
   have h2 : (2 * k) / 2 = k := by omega
   simp only [quadShapeFun, h1, h2, reduceIte]
 
+/-- The shape function at the even node $x_{2k+2}$ is the product of the left and the right factor
+at $k + 1$. -/
 theorem quadShapeFun_even_succ (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
     quadShapeFun n x (2 * k + 2) t = quadStepL n x (k + 1) t * quadStepR n x (k + 1) t := by
   have h1 : (2 * k + 2) % 2 = 0 := by omega
   have h2 : (2 * k + 2) / 2 = k + 1 := by omega
   simp only [quadShapeFun, h1, h2, reduceIte]
 
+/-- The shape function at the odd node $x_{2k+1}$ is `FiniteElement.quadStepB` at $k$. -/
 theorem quadShapeFun_odd (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
     quadShapeFun n x (2 * k + 1) t = quadStepB n x k t := by
   have h1 : (2 * k + 1) % 2 = 1 := by omega
@@ -2132,6 +2451,7 @@ theorem quadShapeFun_odd (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
   simp only [quadShapeFun, h1, h2]
   norm_num
 
+/-- Every shape function of $X_h^2$ is continuous. -/
 theorem continuous_quadShapeFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) :
     Continuous (quadShapeFun n x i) := by
   rcases Nat.even_or_odd i with ⟨j, hj⟩ | ⟨j, hj⟩
@@ -2148,7 +2468,8 @@ theorem continuous_quadShapeFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) :
     rw [he]
     exact continuous_quadStepB n x j
 
-/-- Only the `2n + 1` nodes carry a shape function. -/
+/-- Only the $2n + 1$ nodes carry a shape function: for $i > 2n$ the shape function $\varphi_i$ is
+the constant $0$. -/
 theorem quadShapeFun_of_lt {n : ℕ} (x : ℕ → ℝ) {i : ℕ} (hi : 2 * n < i) :
     quadShapeFun n x i = fun _ ↦ 0 := by
   funext t
@@ -2165,8 +2486,10 @@ section Panel
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its left endpoint is the local
-Lagrange basis function `φ̂₀` of [quarteroni2000numerical] (12.63). -/
+/-- For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$ and $m < n$, on the element
+$[x_{2m}, x_{2m+2}]$ the shape function $\varphi_{2m}$ of its left endpoint is the local
+Lagrange basis function $\hat\varphi_0$ of (12.63) of [quarteroni2000numerical], the quadratic
+at $x_{2m}$ for the nodes $x_{2m}$, $x_{2m+1}$, $x_{2m+2}$. -/
 theorem quadShapeFun_even_left (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
     {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m) t
@@ -2181,16 +2504,19 @@ theorem quadShapeFun_even_left (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ
       rw [he]; exact h1
   rw [quadShapeFun_even, hL, quadStepR_of_lt x hm, one_mul, quadFall_of_mem h1 h2]
 
-/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its interior node is the bubble
-`φ̂₁` of [quarteroni2000numerical] (12.64). -/
+/-- For $m < n$, on the element $[x_{2m}, x_{2m+2}]$ the shape function $\varphi_{2m+1}$ of its
+interior node is the bubble $\hat\varphi_1$ of (12.64) of [quarteroni2000numerical], the
+quadratic at $x_{2m+1}$ for the nodes $x_{2m+1}$, $x_{2m}$, $x_{2m+2}$. -/
 theorem quadShapeFun_midpoint {m : ℕ} (hm : m < n) {t : ℝ} (h1 : x (2 * m) ≤ t)
     (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m + 1) t
       = quadLagrangeFun (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2)) t := by
   rw [quadShapeFun_odd, quadStepB_of_lt x hm, quadBubble_of_mem h1 h2]
 
-/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its right endpoint is `φ̂₂`
-of [quarteroni2000numerical] (12.63). -/
+/-- For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$ and $m < n$, on the element
+$[x_{2m}, x_{2m+2}]$ the shape function $\varphi_{2m+2}$ of its right endpoint is
+$\hat\varphi_2$ of (12.63) of [quarteroni2000numerical], the quadratic at $x_{2m+2}$ for the
+nodes $x_{2m+2}$, $x_{2m}$, $x_{2m+1}$. -/
 theorem quadShapeFun_even_right (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
     {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
     quadShapeFun n x (2 * m + 2) t
@@ -2204,9 +2530,10 @@ theorem quadShapeFun_even_right (hx : IsIntervalPartition a b (2 * n) x) {m : �
     · rw [quadStepR_of_le x hm1]
   rw [quadShapeFun_even_succ, quadStepL_succ x (by omega), hR, mul_one, quadRise_of_mem h1 h2]
 
-/-- **The local support of the quadratic shape functions** ([quarteroni2000numerical] §12.4.5):
-on the element `[x_{2m}, x_{2m+2}]` only the three shape functions of its own nodes are
-nonzero. -/
+/-- **The local support of the quadratic shape functions** (§12.4.5 of [quarteroni2000numerical]).
+Let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh and $m < n$. If
+$i \notin \{2m, 2m + 1, 2m + 2\}$, then the shape function $\varphi_i$ vanishes on the element
+$[x_{2m}, x_{2m+2}]$. -/
 theorem quadShapeFun_eq_zero_of_panel (hx : IsIntervalPartition a b (2 * n) x) {m i : ℕ}
     (hm : m < n) (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2)
     {t : ℝ} (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) : quadShapeFun n x i t = 0 := by
@@ -2239,8 +2566,10 @@ theorem quadShapeFun_eq_zero_of_panel (hx : IsIntervalPartition a b (2 * n) x) {
     · refine quadBubble_of_le (hx.mono (by omega) (by omega)) (ht2.trans ?_)
       exact hx.mono (show 2 * m + 2 ≤ 2 * j by omega) (by omega)
 
-/-- **The Lagrange interpolation property `φ_i(x_l) = δ_{il}` on one element**
-([quarteroni2000numerical] §12.4.5). -/
+/-- **The Lagrange interpolation property on one element** (§12.4.5 of [quarteroni2000numerical]).
+For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$, $m < n$ and a node $x_l$ of the element
+$[x_{2m}, x_{2m+2}]$, that is, $2m \le l \le 2m + 2$, every shape function satisfies
+$\varphi_i(x_l) = \delta_{il}$. -/
 theorem quadShapeFun_apply_node_of_panel (hx : IsIntervalPartition a b (2 * n) x) {m i l : ℕ}
     (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
     quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
@@ -2274,8 +2603,10 @@ theorem quadShapeFun_apply_node_of_panel (hx : IsIntervalPartition a b (2 * n) x
     have hil : i ≠ l := by rcases hnode with rfl | rfl | rfl <;> omega
     simp [hil]
 
-/-- **The Lagrange interpolation property** `φ_i(x_l) = δ_{il}` of
-[quarteroni2000numerical] (12.63)-(12.64). -/
+/-- **The Lagrange interpolation property of the quadratic shape functions** ((12.63)–(12.64) of
+[quarteroni2000numerical]). Let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with
+$n \ge 1$. For every index $i$ and every $l \le 2n$, $$\varphi_i(x_l) = \delta_{il}.$$
+-/
 theorem quadShapeFun_apply_node (hx : IsIntervalPartition a b (2 * n) x) {i l : ℕ}
     (hl : l ≤ 2 * n) (hn : 1 ≤ n) : quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
   rcases lt_or_ge l (2 * n) with hlt | hge
@@ -2286,18 +2617,21 @@ theorem quadShapeFun_apply_node (hx : IsIntervalPartition a b (2 * n) x) {i l : 
 
 end Panel
 
-/-! ### The element partition and the shape functions inside `H^1(a, b)` -/
+/-! ### The element partition and the shape functions inside $H^1(a, b)$ -/
 
-/-- The endpoints of the `n` elements of a quadratic mesh: the even-indexed nodes
-`x_0 < x_2 < ⋯ < x_{2n}` of [quarteroni2000numerical] §12.4.5. -/
+/-- The endpoints of the $n$ elements of a quadratic mesh (§12.4.5 of [quarteroni2000numerical]):
+the even-indexed nodes $x_0 < x_2 < \dots < x_{2n}$, as a sequence $k \mapsto x_{2k}$. -/
 noncomputable def evenNodes (x : ℕ → ℝ) : ℕ → ℝ := fun k ↦ x (2 * k)
 
+/-- The $k$-th element endpoint is $x_{2k}$. -/
 theorem evenNodes_apply (x : ℕ → ℝ) (k : ℕ) : evenNodes x k = x (2 * k) := rfl
 
+/-- The $(k + 1)$-th element endpoint is $x_{2k+2}$. -/
 theorem evenNodes_succ (x : ℕ → ℝ) (k : ℕ) : evenNodes x (k + 1) = x (2 * k + 2) := by
   simp only [evenNodes, Nat.mul_succ]
 
-/-- The even-indexed nodes of a partition into `2n` panels form a partition into `n` elements. -/
+/-- If $a = x_0 < \dots < x_{2n} = b$ is a partition into $2n$ panels, then the even-indexed nodes
+form a partition of $[a, b]$ into $n$ elements. -/
 theorem isIntervalPartition_evenNodes {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition a b (2 * n) x) :
     IsIntervalPartition a b n (evenNodes x) where
   step j hj := by
@@ -2306,17 +2640,20 @@ theorem isIntervalPartition_evenNodes {n : ℕ} {x : ℕ → ℝ} (hx : IsInterv
   first := hx.first
   last := hx.last
 
-/-- The shape function of `X_h^2`, as a continuous function on `[a, b]`. -/
+/-- The shape function $\varphi_i$ of $X_h^2$, as a continuous function on $[a, b]$. -/
 noncomputable def quadShapeCM (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : C(Icc a b, ℝ) :=
   ⟨fun t ↦ quadShapeFun n x i t, (continuous_quadShapeFun n x i).comp continuous_subtype_val⟩
 
+/-- The continuous function `FiniteElement.quadShapeCM` takes the values of
+`FiniteElement.quadShapeFun`. -/
 @[simp]
 theorem quadShapeCM_apply (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : Icc a b) :
     quadShapeCM a b n x i t = quadShapeFun n x i t := rfl
 
-/-- **The shape functions of `X_h^2` are continuous piecewise quadratics**: on every element
-`[x_{2m}, x_{2m+2}]` the shape function is one of the three local Lagrange polynomials, or
-zero. -/
+/-- **The shape functions of $X_h^2$ are continuous piecewise quadratics.** For a quadratic mesh
+$a = x_0 < \dots < x_{2n} = b$, every shape function $\varphi_i$ lies in the spline space of
+degree $2$ and smoothness $0$ on the element partition $x_0 < x_2 < \dots < x_{2n}$. On each
+element it is one of the three local Lagrange polynomials, or zero. -/
 theorem quadShapeCM_mem_splineSpace {n : ℕ} {x : ℕ → ℝ}
     (hx : IsIntervalPartition a b (2 * n) x) (i : ℕ) :
     quadShapeCM a b n x i ∈ Spline.splineSpace a b n (evenNodes x) 2 0 := by
@@ -2348,40 +2685,48 @@ section QuadElement
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The shape functions `φ_i` of `X_h^2`** ([quarteroni2000numerical] (12.63)-(12.64)), as
-elements of `H^1(a, b)`: the unique element whose continuous representative is
-`FiniteElement.quadShapeFun`.  The nodes `x_0 < x_1 < ⋯ < x_{2n}` are those of the quadratic
-mesh, the even-indexed ones being the endpoints of the `n` elements and the odd-indexed ones
-their interior nodes; `φ_i(x_j) = δ_{ij}`
-(`FiniteElement.rep_quadraticShape_node`). -/
+/-- **The shape functions $\varphi_i$ of $X_h^2$** ((12.63)–(12.64) of [quarteroni2000numerical]),
+as elements of $H^1(a, b)$. Let $a < b$ and let $a = x_0 < \dots < x_{2n} = b$ be a quadratic
+mesh with $n \ge 1$. Then $\varphi_i$ is the element of $H^1(a, b)$ whose continuous
+representative is `FiniteElement.quadShapeFun`. The even-indexed nodes are the endpoints of the
+$n$ elements and the odd-indexed nodes are their interior nodes, and
+$\varphi_i(x_j) = \delta_{ij}$ (`FiniteElement.rep_quadraticShape_node`).
+
+The element is chosen from `FiniteElement.exists_mem_lagrangeSpace`. It is unique, because the
+embedding $H^1(a, b) \hookrightarrow C([a, b])$ is injective. -/
 noncomputable def quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) : SobolevInterval 1 a b :=
   (exists_mem_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn
     (quadShapeCM_mem_splineSpace hx i)).choose
 
-/-- The continuous representative of the quadratic shape element is
-`FiniteElement.quadShapeFun`. -/
+/-- The continuous representative of the quadratic shape element $\varphi_i$ is
+`FiniteElement.quadShapeCM`. -/
 theorem toContinuousMap_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval.toContinuousMap hab (quadraticShape hab hx hn i) = quadShapeCM a b n x i :=
   (exists_mem_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn
     (quadShapeCM_mem_splineSpace hx i)).choose_spec
 
-/-- The continuous representative of the quadratic shape element, pointwise. -/
+/-- The continuous representative of the quadratic shape element $\varphi_i$ takes the values of
+`FiniteElement.quadShapeFun` on $[a, b]$. -/
 theorem rep_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (i : ℕ) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (quadraticShape hab hx hn i) t = quadShapeFun n x i t :=
   congrArg (fun f : C(Icc a b, ℝ) ↦ f ⟨t, ht⟩) (toContinuousMap_quadraticShape hab hx hn i)
 
-/-- **The quadratic shape elements lie in `X_h^2`.** -/
+/-- **The quadratic shape elements lie in $X_h^2$**, the space of continuous piecewise quadratics on
+the element partition $x_0 < x_2 < \dots < x_{2n}$. -/
 theorem quadraticShape_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : ℕ) :
     quadraticShape hab hx hn i ∈ lagrangeSpace hab n (evenNodes x) 2 := by
   rw [mem_lagrangeSpace_iff, toContinuousMap_quadraticShape]
   exact quadShapeCM_mem_splineSpace hx i
 
-/-- **`φ_i(x_j) = δ_{ij}`** for the quadratic shape elements of `H^1(a, b)`
-([quarteroni2000numerical] (12.63)-(12.64)). -/
+/-- **The Lagrange interpolation property of the quadratic shape elements** ((12.63)–(12.64) of
+[quarteroni2000numerical]). Let $a < b$ and let $a = x_0 < \dots < x_{2n} = b$ be a quadratic
+mesh with $n \ge 1$. For every index $i$ and every $l \le 2n$, the continuous representative of
+$\varphi_i \in H^1(a, b)$ satisfies $$\varphi_i(x_l) = \delta_{il}.$$
+-/
 theorem rep_quadraticShape_node (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) {i l : ℕ} (hl : l ≤ 2 * n) :
     SobolevInterval.rep (quadraticShape hab hx hn i) (x l) = if i = l then 1 else 0 := by
@@ -2389,9 +2734,11 @@ theorem rep_quadraticShape_node (hab : a < b) (hx : IsIntervalPartition a b (2 *
   rw [rep_quadraticShape hab hx hn i hmem]
   exact quadShapeFun_apply_node hx hl hn
 
-/-- **The local support of the quadratic shape functions** ([quarteroni2000numerical] §12.4.5):
-`φ_i` vanishes on every element none of whose three nodes is `x_i`; in particular the bubble
-`φ_{2m+1}` is supported in the single element `[x_{2m}, x_{2m+2}]`. -/
+/-- **The local support of the quadratic shape elements** (§12.4.5 of [quarteroni2000numerical]).
+Let $a < b$, let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, and let
+$m < n$. If $i \notin \{2m, 2m + 1, 2m + 2\}$, then the continuous representative of
+$\varphi_i \in H^1(a, b)$ vanishes on the element $[x_{2m}, x_{2m+2}]$. In particular the bubble
+$\varphi_{2m+1}$ is supported in the single element $[x_{2m}, x_{2m+2}]$. -/
 theorem rep_quadraticShape_eq_zero_of_panel (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {m i : ℕ} (hm : m < n)
     (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2) {t : ℝ}
@@ -2403,13 +2750,14 @@ theorem rep_quadraticShape_eq_zero_of_panel (hab : a < b)
   rw [rep_quadraticShape hab hx hn i hmem]
   exact quadShapeFun_eq_zero_of_panel hx hm hne0 hne1 hne2 ht1 ht2
 
-/-- The quadratic shape functions as elements of `X_h^2`, indexed by the `2n + 1` nodes. -/
+/-- The quadratic shape functions $\varphi_0, \dots, \varphi_{2n}$ as elements of $X_h^2$, indexed
+by the $2n + 1$ nodes. -/
 noncomputable def quadraticElem (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (i : Fin (2 * n + 1)) : lagrangeSpace hab n (evenNodes x) 2 :=
   ⟨quadraticShape hab hx hn (i : ℕ), quadraticShape_mem_lagrangeSpace hab hx hn (i : ℕ)⟩
 
-/-- The quadratic shape functions are linearly independent: evaluating a vanishing combination
-at the node `x_j` returns its `j`-th coefficient. -/
+/-- The quadratic shape functions $\varphi_0, \dots, \varphi_{2n}$ are linearly independent in
+$X_h^2$. Evaluating a vanishing combination at the node $x_j$ gives its $j$-th coefficient. -/
 theorem linearIndependent_quadraticElem (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) :
     LinearIndependent ℝ (quadraticElem hab hx hn) := by
@@ -2427,9 +2775,13 @@ theorem linearIndependent_quadraticElem (hab : a < b)
     (rep_quadraticShape_node hab hx hn (i := (i : ℕ)) (l := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
 
-/-- **The nodal basis of `X_h^2`** ([quarteroni2000numerical] (12.63)-(12.64)): the `2n + 1`
-shape functions attached to the nodes of the quadratic mesh are a basis of `X_h^2`, the nodal
-values being the degrees of freedom. -/
+/-- **The nodal basis of $X_h^2$** ((12.63)–(12.64) of [quarteroni2000numerical]). Let $a < b$ and
+let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$. Then the $2n + 1$ shape
+functions $\varphi_0, \dots, \varphi_{2n}$ form a basis of $X_h^2$ on the element partition. The
+nodal values are the degrees of freedom.
+
+The basis comes from the linear independence and the dimension $\dim X_h^2 = 2n + 1$ of
+`FiniteElement.finrank_lagrangeSpace`. -/
 noncomputable def quadraticBasis (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) : Module.Basis (Fin (2 * n + 1)) ℝ (lagrangeSpace hab n (evenNodes x) 2) :=
   haveI := finiteDimensional_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn 2
@@ -2438,7 +2790,7 @@ noncomputable def quadraticBasis (hab : a < b) (hx : IsIntervalPartition a b (2 
       rw [Fintype.card_fin, finrank_lagrangeSpace hab (isIntervalPartition_evenNodes hx) hn 2]
       ring)
 
-/-- The quadratic basis consists of the quadratic shape functions. -/
+/-- The $i$-th element of the quadratic basis is the shape function $\varphi_i$. -/
 @[simp]
 theorem quadraticBasis_apply (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (i : Fin (2 * n + 1)) : quadraticBasis hab hx hn i = quadraticElem hab hx hn i := by
@@ -2446,11 +2798,14 @@ theorem quadraticBasis_apply (hab : a < b) (hx : IsIntervalPartition a b (2 * n)
 
 /-! ### The quadratic reference element -/
 
-/-- The quadratic Lagrange basis function, unfolded. -/
+/-- The quadratic Lagrange basis function at $p$ for the nodes $p$, $q$, $r$ takes the value
+$(t - q)(t - r)/((p - q)(p - r))$ at $t$. -/
 theorem quadLagrangeFun_apply (p q r t : ℝ) :
     quadLagrangeFun p q r t = (t - q) * (t - r) / ((p - q) * (p - r)) := rfl
 
-/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_zero`. -/
+/-- For $p \ne q$, with midpoint $c = (p + q)/2$ and $\xi = (t - p)/(q - p)$: $$\frac{(t - c)(t -
+q)}{(p - c)(p - q)} = (1 - \xi)(1 - 2\xi).$$ This identity gives
+`FiniteElement.quadShapeFun_eq_referenceQuadratic_zero`. -/
 theorem quadRef_aux_zero {p q t : ℝ} (hpq : p ≠ q) :
     (t - (p + q) / 2) * (t - q) / ((p - (p + q) / 2) * (p - q))
       = (1 - (t - p) / (q - p)) * (1 - 2 * ((t - p) / (q - p))) := by
@@ -2460,7 +2815,9 @@ theorem quadRef_aux_zero {p q t : ℝ} (hpq : p ≠ q) :
   field_simp
   ring
 
-/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_one`. -/
+/-- For $p \ne q$, with midpoint $c = (p + q)/2$ and $\xi = (t - p)/(q - p)$: $$\frac{(t - p)(t -
+q)}{(c - p)(c - q)} = 4(1 - \xi)\xi.$$ This identity gives
+`FiniteElement.quadShapeFun_eq_referenceQuadratic_one`. -/
 theorem quadRef_aux_one {p q t : ℝ} (hpq : p ≠ q) :
     (t - p) * (t - q) / (((p + q) / 2 - p) * ((p + q) / 2 - q))
       = 4 * (1 - (t - p) / (q - p)) * ((t - p) / (q - p)) := by
@@ -2470,7 +2827,9 @@ theorem quadRef_aux_one {p q t : ℝ} (hpq : p ≠ q) :
   field_simp
   ring
 
-/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_two`. -/
+/-- For $p \ne q$, with midpoint $c = (p + q)/2$ and $\xi = (t - p)/(q - p)$: $$\frac{(t - p)(t -
+c)}{(q - p)(q - c)} = \xi(2\xi - 1).$$ This identity gives
+`FiniteElement.quadShapeFun_eq_referenceQuadratic_two`. -/
 theorem quadRef_aux_two {p q t : ℝ} (hpq : p ≠ q) :
     (t - p) * (t - (p + q) / 2) / ((q - p) * (q - (p + q) / 2))
       = (t - p) / (q - p) * (2 * ((t - p) / (q - p)) - 1) := by
@@ -2480,8 +2839,12 @@ theorem quadRef_aux_two {p q t : ℝ} (hpq : p ≠ q) :
   field_simp
   ring
 
-/-- **`φ_{2m} = φ̂₀ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)): the reference
-shape functions of `X_h^2` describe the element only when its interior node is the midpoint. -/
+/-- **The shape function $\varphi_{2m}$ is $\hat\varphi_0 \circ \xi$ on the element $I_m$** ((12.65)
+of [quarteroni2000numerical]). Let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh, let
+$m < n$, and let the interior node be the midpoint: $x_{2m+1} = (x_{2m} + x_{2m+2})/2$. Then
+$\varphi_{2m}(t) = \hat\varphi_0(\xi(t))$ for $x_{2m} \le t \le x_{2m+2}$, where $\xi$ is the
+reference coordinate of the element. Without the midpoint condition the reference shape
+functions do not describe the element. -/
 theorem quadShapeFun_eq_referenceQuadratic_zero (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
@@ -2492,7 +2855,10 @@ theorem quadShapeFun_eq_referenceQuadratic_zero (hx : IsIntervalPartition a b (2
   simp only [referenceQuadratic, Matrix.cons_val_zero, refCoord_apply, evenNodes_succ]
   exact quadRef_aux_zero hne
 
-/-- **`φ_{2m+1} = φ̂₁ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
+/-- **The shape function $\varphi_{2m+1}$ is $\hat\varphi_1 \circ \xi$ on the element $I_m$**
+((12.65) of [quarteroni2000numerical]). For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$,
+$m < n$ and $x_{2m+1} = (x_{2m} + x_{2m+2})/2$, $\varphi_{2m+1}(t) = \hat\varphi_1(\xi(t))$ for
+$x_{2m} \le t \le x_{2m+2}$. -/
 theorem quadShapeFun_eq_referenceQuadratic_one (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
@@ -2503,7 +2869,10 @@ theorem quadShapeFun_eq_referenceQuadratic_one (hx : IsIntervalPartition a b (2 
   simp only [referenceQuadratic, Matrix.cons_val_one, refCoord_apply, evenNodes_succ]
   exact quadRef_aux_one hne
 
-/-- **`φ_{2m+2} = φ̂₂ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
+/-- **The shape function $\varphi_{2m+2}$ is $\hat\varphi_2 \circ \xi$ on the element $I_m$**
+((12.65) of [quarteroni2000numerical]). For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$,
+$m < n$ and $x_{2m+1} = (x_{2m} + x_{2m+2})/2$, $\varphi_{2m+2}(t) = \hat\varphi_2(\xi(t))$ for
+$x_{2m} \le t \le x_{2m+2}$. -/
 theorem quadShapeFun_eq_referenceQuadratic_two (hx : IsIntervalPartition a b (2 * n) x) {m : ℕ}
     (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
@@ -2515,9 +2884,14 @@ theorem quadShapeFun_eq_referenceQuadratic_two (hx : IsIntervalPartition a b (2 
     refCoord_apply, evenNodes_succ]
   exact quadRef_aux_two hne
 
-/-- **The shape functions (12.63)-(12.64) are the images of the reference shape functions
-(12.65) under the affine map (12.62)** ([quarteroni2000numerical] §12.4.5), for a mesh whose
-interior nodes are the midpoints of the elements. -/
+/-- **The shape functions (12.63)–(12.64) are the images of the reference shape functions (12.65)
+under the affine map (12.62)** (§12.4.5 of [quarteroni2000numerical]). Let $a < b$, let
+$a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, let $m < n$, and let the
+interior node be the midpoint: $x_{2m+1} = (x_{2m} + x_{2m+2})/2$. Then for
+$x_{2m} \le t \le x_{2m+2}$ the continuous representatives of the shape elements satisfy
+$$\varphi_{2m}(t) = \hat\varphi_0(\xi(t)), \qquad \varphi_{2m+1}(t) = \hat\varphi_1(\xi(t)),
+\qquad \varphi_{2m+2}(t) = \hat\varphi_2(\xi(t)),$$ where
+$\xi(t) = (t - x_{2m})/(x_{2m+2} - x_{2m})$ is the reference coordinate of the element. -/
 theorem rep_quadraticShape_eq_referenceQuadratic (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
     (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
@@ -2539,8 +2913,10 @@ theorem rep_quadraticShape_eq_referenceQuadratic (hab : a < b)
   · rw [rep_quadraticShape hab hx hn _ hmem]
     exact quadShapeFun_eq_referenceQuadratic_two hx hm hmid h1 h2
 
-/-- **The interior quadratic shape elements lie in `X_h^{2,0}`** ([quarteroni2000numerical]
-(12.57) at `k = 2`): they vanish at both endpoints. -/
+/-- **The interior quadratic shape elements lie in $X_h^{2,0}$** ((12.57) of
+[quarteroni2000numerical] at $k = 2$). Let $a < b$ and let $a = x_0 < \dots < x_{2n} = b$ be a
+quadratic mesh with $n \ge 1$. Then every shape element $\varphi_i$ with $i \ne 0$ and
+$i \ne 2n$ lies in $X_h^{2,0}$, because it vanishes at both endpoints. -/
 theorem quadraticShape_mem_lagrangeSpaceZero (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
     quadraticShape hab hx hn i ∈ lagrangeSpaceZero hab n (evenNodes x) 2 := by
@@ -2563,8 +2939,10 @@ section Nodal
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The nodal values are the degrees of freedom of `X_h^1`**: two continuous piecewise linear
-functions with the same values at the nodes are equal ([quarteroni2000numerical] §12.4.5). -/
+/-- **The nodal values are the degrees of freedom of $X_h^1$** (§12.4.5 of
+[quarteroni2000numerical]). Let $a < b$, and let $a = x_0 < \dots < x_n = b$ be a partition with
+$n \ge 1$. If $v, w \in X_h^1$ have continuous representatives with $v(x_i) = w(x_i)$ for every
+$i \le n$, then $v = w$. -/
 theorem eq_of_rep_node_eq (hab : a < b) (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     {v w : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpace hab n x 1)
     (hw : w ∈ lagrangeSpace hab n x 1)
@@ -2576,20 +2954,26 @@ theorem eq_of_rep_node_eq (hab : a < b) (hx : IsIntervalPartition a b n x) (hn :
 
 end Nodal
 
-/-! ### The piecewise quadratic interpolation operator into `H^1(a, b)` -/
+/-! ### The piecewise quadratic interpolation operator into $H^1(a, b)$ -/
 
 section QuadInterp
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- **The piecewise quadratic interpolant** `Π_h^2 u` of [quarteroni2000numerical] §8.3 and
-§12.4.5, as an element of `H^1(a, b)`: the combination of the quadratic shape functions with the
-nodal values of the continuous representative of `u`. -/
+/-- **The piecewise quadratic interpolant** $\Pi_h^2 u$ of §8.3 and §12.4.5 of
+[quarteroni2000numerical], as an element of $H^1(a, b)$. For a quadratic mesh
+$a = x_0 < \dots < x_{2n} = b$ with $n \ge 1$, $a < b$, and $u \in H^1(a, b)$ with continuous
+representative $\tilde u$, $$\Pi_h^2 u = \sum_{i=0}^{2n} \tilde u(x_i)\, \varphi_i.$$
+-/
 noncomputable def quadraticInterp (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) : SobolevInterval 1 a b :=
   ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) • quadraticShape hab hx hn i
 
-/-- **A combination of the quadratic shape functions has the expected representative**. -/
+/-- **A combination of the quadratic shape functions has the expected representative.** Let $a < b$,
+let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, and let
+$c_0, \dots, c_{2n}$ be real numbers. Then the continuous representative of
+$\sum_{i=0}^{2n} c_i \varphi_i$ takes the value $\sum_{i=0}^{2n} c_i \varphi_i(t)$ at every
+$t \in [a, b]$, with $\varphi_i$ the function `FiniteElement.quadShapeFun`. -/
 theorem rep_sum_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (c : ℕ → ℝ) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
@@ -2603,15 +2987,20 @@ theorem rep_sum_quadraticShape (hab : a < b) (hx : IsIntervalPartition a b (2 * 
   simp only [map_smul, smul_eq_mul, SobolevInterval.evalCLM_apply]
   exact Finset.sum_congr rfl fun i _ ↦ by rw [rep_quadraticShape hab hx hn i ht]
 
-/-- The representative of the quadratic interpolant is the nodal combination of the shape
-functions. -/
+/-- The continuous representative of the quadratic interpolant is the nodal combination of the shape
+functions. Let $a < b$, let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$,
+and let $u \in H^1(a, b)$ with continuous representative $\tilde u$. Then for every
+$t \in [a, b]$ $$(\Pi_h^2 u)(t) = \sum_{i=0}^{2n} \tilde u(x_i)\, \varphi_i(t).$$
+-/
 theorem rep_quadraticInterp (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n)
     (u : SobolevInterval 1 a b) {t : ℝ} (ht : t ∈ Icc a b) :
     SobolevInterval.rep (quadraticInterp hab hx hn u) t
       = ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) * quadShapeFun n x i t :=
   rep_sum_quadraticShape hab hx hn _ ht
 
-/-- **The quadratic interpolant matches `u` at the nodes**. -/
+/-- **The quadratic interpolant matches $u$ at the nodes.** Let $a < b$, let
+$a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, and let $u \in H^1(a, b)$.
+Then the continuous representatives satisfy $(\Pi_h^2 u)(x_l) = u(x_l)$ for every $l \le 2n$. -/
 theorem rep_quadraticInterp_node (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {l : ℕ} (hl : l ≤ 2 * n) :
     SobolevInterval.rep (quadraticInterp hab hx hn u) (x l) = SobolevInterval.rep u (x l) := by
@@ -2621,14 +3010,18 @@ theorem rep_quadraticInterp_node (hab : a < b) (hx : IsIntervalPartition a b (2 
       (quadShapeFun_apply_node hx hl hn)]
   simp [Finset.sum_ite_eq' (Finset.range (2 * n + 1)) l, Nat.lt_succ_iff.2 hl]
 
-/-- **The quadratic interpolant lies in `X_h^2`.** -/
+/-- **The quadratic interpolant lies in $X_h^2$.** Let $a < b$, let $a = x_0 < \dots < x_{2n} = b$
+be a quadratic mesh with $n \ge 1$, and let $u \in H^1(a, b)$. Then $\Pi_h^2 u \in X_h^2$ on the
+element partition $x_0 < x_2 < \dots < x_{2n}$. -/
 theorem quadraticInterp_mem_lagrangeSpace (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) :
     quadraticInterp hab hx hn u ∈ lagrangeSpace hab n (evenNodes x) 2 :=
   Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
     (quadraticShape_mem_lagrangeSpace hab hx hn i)
 
-/-- **The quadratic interpolant of an element of `H^1_0(a, b)` lies in `X_h^{2,0}`.** -/
+/-- **The quadratic interpolant of an element of $H^1_0(a, b)$ lies in $X_h^{2,0}$.** Let $a < b$,
+let $a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, and let
+$u \in H^1_0(a, b)$. Then $\Pi_h^2 u \in X_h^{2,0}$ on the element partition. -/
 theorem quadraticInterp_mem_lagrangeSpaceZero (hab : a < b)
     (hx : IsIntervalPartition a b (2 * n) x) (hn : 1 ≤ n) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
@@ -2646,14 +3039,16 @@ theorem quadraticInterp_mem_lagrangeSpaceZero (hab : a < b)
 
 /-! ### The local Lagrange polynomial of an element -/
 
-/-- **The local quadratic Lagrange interpolant** of the nodal values `c` on the element
-`[x_{2m}, x_{2m+2}]`, as a polynomial. -/
+/-- **The local quadratic Lagrange interpolant** of the values $c$ on the element
+$[x_{2m}, x_{2m+2}]$, as a polynomial: $$c_{2m}\, \ell_{2m} + c_{2m+1}\, \ell_{2m+1} +
+c_{2m+2}\, \ell_{2m+2},$$ where $\ell_l$ is the quadratic Lagrange basis polynomial at $x_l$ for
+the three nodes $x_{2m}$, $x_{2m+1}$, $x_{2m+2}$. -/
 noncomputable def quadElemPoly (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) : Polynomial ℝ :=
   c (2 * m) • quadPoly (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2))
     + c (2 * m + 1) • quadPoly (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2))
     + c (2 * m + 2) • quadPoly (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1))
 
-/-- The local Lagrange interpolant has degree at most two. -/
+/-- The local quadratic Lagrange interpolant has degree at most $2$. -/
 theorem quadElemPoly_degree_le (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) :
     (quadElemPoly x c m).degree ≤ 2 :=
   (Polynomial.degree_add_le _ _).trans (max_le
@@ -2662,7 +3057,9 @@ theorem quadElemPoly_degree_le (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) :
       ((Polynomial.degree_smul_le _ _).trans (quadPoly_degree_le _ _ _))))
     ((Polynomial.degree_smul_le _ _).trans (quadPoly_degree_le _ _ _)))
 
-/-- The value of the local Lagrange interpolant. -/
+/-- The value of the local quadratic Lagrange interpolant at $t$ is $c_{2m}\, \ell_{2m}(t) +
+c_{2m+1}\, \ell_{2m+1}(t) + c_{2m+2}\, \ell_{2m+2}(t)$, with $\ell_l$ the quadratic Lagrange
+basis functions of the three nodes of the element. -/
 theorem quadElemPoly_eval (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) (t : ℝ) :
     (quadElemPoly x c m).eval t
       = c (2 * m) * quadLagrangeFun (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2)) t
@@ -2670,8 +3067,10 @@ theorem quadElemPoly_eval (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) (t : ℝ
         + c (2 * m + 2) * quadLagrangeFun (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1)) t := by
   simp [quadElemPoly, quadPoly_eval]
 
-/-- **The local Lagrange interpolant takes the nodal values at the three nodes of its
-element.** -/
+/-- **The local Lagrange interpolant takes the prescribed values at the three nodes of its
+element.** For a quadratic mesh $a = x_0 < \dots < x_{2n} = b$, $m < n$ and
+$2m \le l \le 2m + 2$, the local quadratic Lagrange interpolant of $c$ on the element $m$ takes
+the value $c_l$ at $x_l$. -/
 theorem quadElemPoly_eval_node (hx : IsIntervalPartition a b (2 * n) x) (c : ℕ → ℝ) {m l : ℕ}
     (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
     (quadElemPoly x c m).eval (x l) = c l := by
@@ -2688,7 +3087,11 @@ theorem quadElemPoly_eval_node (hx : IsIntervalPartition a b (2 * n) x) (c : ℕ
   · rw [quadLagrangeFun_self h02.ne' h12.ne', quadLagrangeFun_right, quadLagrangeFun_right]
     ring
 
-/-- **On an element the quadratic interpolant is the local Lagrange polynomial.** -/
+/-- **On an element the quadratic interpolant is the local Lagrange polynomial.** Let $a < b$, let
+$a = x_0 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$, let $u \in H^1(a, b)$ with
+continuous representative $\tilde u$, and let $m < n$. Then for $x_{2m} \le t \le x_{2m+2}$ the
+continuous representative of $\Pi_h^2 u$ at $t$ equals the local quadratic Lagrange interpolant
+of the values $\tilde u(x_l)$ on the element $m$, evaluated at $t$. -/
 theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)
     (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {m : ℕ} (hm : m < n) {t : ℝ}
     (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
@@ -2714,15 +3117,18 @@ theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : IsIntervalPartition a b 
     quadShapeFun_even_right hx hm h1 h2, quadElemPoly_eval]
   ring
 
-/-! ### The interpolation estimate for `X_h^2` -/
+/-! ### The interpolation estimate for $X_h^2$ -/
 
-/-- **The interpolation estimate (8.26) in the `H^1` seminorm at `k = 2`**
-([quarteroni2000numerical] (8.26), Theorem 8.3 at `k = 2`, `m = 1`, with the constant `1`): for
-`u ∈ H³(a, b)` on a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}` whose `n` elements
-`[x_{2m}, x_{2m+2}]` have length at most `h`,
-`|u - Π_h^2 u|_{H¹(a,b)} ≤ h² |u|_{H³(a,b)}`.  The route is chapter 8's panel estimate
-`integral_sq_iteratedDeriv_sub_le`, applied on each element to the local Lagrange polynomial
-`FiniteElement.quadElemPoly`: inside an element the continuous representative of `Π_h^2 u` *is*
+/-- **The interpolation estimate in the $H^1$ seminorm for $X_h^2$** ((8.26) and Theorem 8.3 of
+[quarteroni2000numerical] at $k = 2$, $m = 1$, with the constant $1$). Let $a < b$, let
+$a = x_0 < x_1 < \dots < x_{2n} = b$ be a quadratic mesh with $n \ge 1$ whose $n$ elements
+$[x_{2m}, x_{2m+2}]$ have length at most $h$, and let $u \in H^3(a, b)$. Then $$|u - \Pi_h^2
+u|_{H^1(a, b)} \le h^2\, |u|_{H^3(a, b)}.$$
+
+On the left $u$ is read in $H^1(a, b)$ through two applications of
+`SobolevInterval.inclusionCLM`. The proof applies the panel estimate
+`integral_sq_iteratedDeriv_sub_le` on each element to the local Lagrange polynomial
+`FiniteElement.quadElemPoly`. Inside an element the continuous representative of $\Pi_h^2 u$ is
 that polynomial (`FiniteElement.rep_quadraticInterp_eq_eval`), so the weak derivative of the
 interpolant is its classical derivative there, by `SobolevInterval.ae_deriv_rep_eq`. -/
 theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : IsIntervalPartition a b (2 * n) x)

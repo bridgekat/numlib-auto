@@ -10,45 +10,58 @@ import Numlib.IntegralEquations.Basic
 /-!
 # Truncated expansions in an orthonormal system, as integral operators
 
-Let `p₀, …, p_N` be continuous real functions on a compact space `X` carrying a finite Borel
-measure `μ`. The **truncated expansion** `u ↦ ∑ᵢ (u, pᵢ)_{L²(μ)} pᵢ` is then an operator on the
-Banach space `C(X, ℝ)`, and it is the integral operator whose kernel is the *reproducing kernel*
+Let $p_0, \dots, p_N$ be continuous real functions on a compact space $X$ that carries a finite
+Borel measure $\mu$. The **truncated expansion** $u \mapsto \sum_i (u, p_i)_{L^2(\mu)}\, p_i$ is an
+operator on the Banach space $C(X)$, and it is the integral operator whose kernel is the
+**reproducing kernel**
+$$K(x, t) = \sum_i p_i(x)\, p_i(t)$$
+of the system. By the norm formula for a kernel operator, its operator norm is the largest row
+integral $\max_x \int |K(x, t)|\, d\mu(t)$. When the system is orthonormal in $L^2(\mu)$, the
+operator is the least-squares projection onto the span of the system: it is idempotent, and its
+range is that span. The material is [han2009theoretical], §3.7.1, (3.7.13)–(3.7.17), and the
+Chebyshev case is Example 3.7.4 of [han2009theoretical].
 
-`K (x, t) = ∑ᵢ pᵢ(x) pᵢ(t)`
-
-of the system. Consequently its operator norm is the largest row integral of `|K|`, by the norm
-formula for a kernel operator. When the system is orthonormal in `L²(μ)` the operator is the
-least-squares projection onto the span of `p`: it is idempotent, and its range is that span.
-
-The point of the identification is the norm: the size of a least-squares projection *in the uniform
-norm* is a statement about the kernel, and for the orthonormal polynomials of a weight the kernel is
-computable from the Christoffel–Darboux identity.
+The identification gives the norm: the size of a least-squares projection in the uniform norm is a
+statement about the kernel. For the orthonormal polynomials of a weight, the kernel can be computed
+from the Christoffel–Darboux identity. For the orthonormal Chebyshev system on $[-1, 1]$, the kernel
+in the angle variables $x = \cos\theta$, $t = \cos\varphi$ is $\frac{1}{\pi}[D_N(\theta - \varphi) +
+D_N(\theta + \varphi)]$, with $D_N$ the Dirichlet kernel, and the norm of the projection is exactly
+the Lebesgue constant of the Fourier projection.
 
 ## Main definitions
 
-* `Approximation.reproducingKernel p` — the kernel `K (x, t) = ∑ᵢ pᵢ(x) pᵢ(t)`.
-* `Approximation.IsOrthonormal μ p` — `∫ pᵢ pⱼ dμ = δᵢⱼ`.
-* `Approximation.expansionCLM μ p` — the truncated expansion, as a bounded operator on `C(X, ℝ)`.
-* `Approximation.chebyshevOrthonormal`, `Approximation.chebyshevProj` — the orthonormal Chebyshev
-  system on `[-1, 1]` for the weight `(1 - x²)^{-1/2}` (`Approximation.chebyshevMeasureIcc`), and
-  the truncated expansion in it.
+* `Approximation.reproducingKernel`: the kernel $K(x, t) = \sum_i p_i(x)\, p_i(t)$ of a finite
+  family.
+* `Approximation.IsOrthonormal`: the condition $\int p_i p_j \, d\mu = \delta_{ij}$.
+* `Approximation.expansionCLM`: the truncated expansion, as a bounded operator on $C(X)$.
+* `Approximation.chebyshevMeasureIcc`: the Chebyshev weight $(1 - x^2)^{-1/2}\,dx$ as a measure on
+  $[-1, 1]$.
+* `Approximation.chebyshevOrthonormal`: the orthonormal Chebyshev system $1/\sqrt{\pi}$,
+  $\sqrt{2/\pi}\, T_n$.
+* `Approximation.chebyshevProj`: the truncated expansion in the first $N + 1$ members of the
+  orthonormal Chebyshev system.
 
 ## Main results
 
-* `Approximation.expansionCLM_eq_sum` — the defining formula `∑ᵢ (u, pᵢ) pᵢ`.
-* `Approximation.norm_expansionCLM` — `‖P‖ = ⨆ₓ ∫ |K (x, t)| dμ(t)`.
-* `Approximation.IsOrthonormal.isIdempotentElem_expansionCLM`,
-  `Approximation.IsOrthonormal.range_expansionCLM` — for an orthonormal system, `P` is a projection
-  with range the span of the system.
-* `Approximation.norm_chebyshevProj` — `‖chebyshevProj N‖` is exactly the Lebesgue constant
-  `PeriodicCont.lebesgueConstant N` of the Fourier projection, through the angle form
-  `Approximation.chebyshevKernel_cos` of the Chebyshev reproducing kernel.
+* `Approximation.expansionCLM_eq_sum`: the truncated expansion is $\sum_i (u, p_i)\, p_i$.
+* `Approximation.norm_expansionCLM`: $\|P\| = \sup_x \int |K(x, t)|\, d\mu(t)$.
+* `Approximation.IsOrthonormal.isIdempotentElem_expansionCLM`: for an orthonormal system, the
+  truncated expansion is a projection.
+* `Approximation.IsOrthonormal.range_expansionCLM`: for an orthonormal system, the range of the
+  truncated expansion is the span of the system.
+* `Approximation.IsOrthonormal.norm_sub_expansionCLM_le`: the Lebesgue lemma $\|u - Pu\| \le (1 +
+  \|P\|) \operatorname{dist}(u, \operatorname{span} p)$.
+* `Approximation.chebyshevKernel_cos`: the Chebyshev reproducing kernel in the angle variables.
+* `Approximation.norm_chebyshevProj`: the norm of the Chebyshev least-squares projection is the
+  Lebesgue constant `PeriodicCont.lebesgueConstant` of the Fourier projection.
 
-## References
+## Implementation notes
 
-The material is [han2009theoretical], §3.7.1, (3.7.13)–(3.7.17), stated there for the orthonormal
-polynomials of a weight on `[-1, 1]`; nothing below uses more than continuity of the system, except
-the Chebyshev section, which is [han2009theoretical] Example 3.7.4.
+* [han2009theoretical] states the material for the orthonormal polynomials of a weight on $[-1, 1]$.
+  The general results here use only the continuity of the functions of the system; the Chebyshev
+  section is the only place that uses polynomials.
+* The truncated expansion `Approximation.expansionCLM` is defined for every finite family.
+  Orthonormality enters only in the results of the namespace `Approximation.IsOrthonormal`.
 -/
 
 open MeasureTheory Set
@@ -59,13 +72,15 @@ namespace Approximation
 
 variable {X ι : Type*} [TopologicalSpace X] [Fintype ι]
 
-/-- **The reproducing kernel** `K (x, t) = ∑ᵢ pᵢ(x) pᵢ(t)` of a finite family of continuous
-functions ([han2009theoretical], (3.7.16)). -/
+/-- The **reproducing kernel** of a finite family $(p_i)$ of continuous functions on $X$ is the
+continuous function on $X \times X$
+$$K(x, t) = \sum_i p_i(x)\, p_i(t).$$
+This is (3.7.16) of [han2009theoretical]. -/
 def reproducingKernel (p : ι → C(X, ℝ)) : C(X × X, ℝ) :=
   ⟨fun q => ∑ i, p i q.1 * p i q.2, continuous_finsetSum _ fun i _ =>
     ((p i).continuous.comp continuous_fst).mul ((p i).continuous.comp continuous_snd)⟩
 
-/-- The defining formula of `Approximation.reproducingKernel`. -/
+/-- The value of the reproducing kernel: $K(x, t) = \sum_i p_i(x)\, p_i(t)$. -/
 @[simp]
 theorem reproducingKernel_apply (p : ι → C(X, ℝ)) (x t : X) :
     reproducingKernel p (x, t) = ∑ i, p i x * p i t :=
@@ -73,29 +88,36 @@ theorem reproducingKernel_apply (p : ι → C(X, ℝ)) (x t : X) :
 
 variable [MeasurableSpace X]
 
-/-- A finite family of continuous functions is **orthonormal in `L²(μ)`** when `∫ pᵢ pⱼ dμ = δᵢⱼ`.
-This is the standing hypothesis of [han2009theoretical], §3.7.1, where the family is the orthonormal
-polynomial family of a weight on `[-1, 1]`. -/
+/-- A finite family $(p_i)$ of continuous functions on $X$ is **orthonormal in $L^2(\mu)$** if
+$$\int p_i\, p_j \, d\mu = \delta_{ij}$$
+for all indices $i$ and $j$.
+
+This is the standing hypothesis of [han2009theoretical], §3.7.1, where the family is the family
+of orthonormal polynomials of a weight on $[-1, 1]$. -/
 structure IsOrthonormal (μ : Measure X) (p : ι → C(X, ℝ)) : Prop where
-  /-- Each member has unit `L²(μ)` norm. -/
+  /-- Each member has unit norm in $L^2(\mu)$: $\int p_i\, p_i \, d\mu = 1$. -/
   integral_mul_self : ∀ i, (∫ t, p i t * p i t ∂μ) = 1
-  /-- Distinct members are `L²(μ)`-orthogonal. -/
+  /-- Distinct members are orthogonal in $L^2(\mu)$: $\int p_i\, p_j \, d\mu = 0$ for $i \neq j$. -/
   integral_mul_of_ne : ∀ ⦃i j⦄, i ≠ j → (∫ t, p i t * p j t ∂μ) = 0
 
 variable [CompactSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
 
-/-- **The truncated expansion** `u ↦ ∑ᵢ (u, pᵢ)_{L²(μ)} pᵢ` in a finite family of continuous
-functions, as a bounded operator on `C(X, ℝ)`: the integral operator of the reproducing kernel
-([han2009theoretical], (3.7.15)).
+/-- Let $X$ be a compact space with a finite Borel measure $\mu$, and let $(p_i)$ be a finite family
+in $C(X)$. The **truncated expansion** in $(p_i)$ is the bounded operator on $C(X)$
+$$Pu = \sum_i (u, p_i)_{L^2(\mu)}\, p_i,$$
+defined as the integral operator `IntegralOperator.kernelCLM` with the reproducing kernel
+`Approximation.reproducingKernel` as kernel. This is (3.7.15) of [han2009theoretical].
 
-For an orthonormal family this is the least-squares projection onto the span of the family — the
-orthogonal projection of `L²(μ)`, restricted to the continuous functions
-(`Approximation.IsOrthonormal.isIdempotentElem_expansionCLM`,
-`Approximation.IsOrthonormal.range_expansionCLM`). -/
+For an orthonormal family, $P$ is the least-squares projection onto the span of the family: the
+orthogonal projection of $L^2(\mu)$, restricted to the continuous functions. See
+`Approximation.IsOrthonormal.isIdempotentElem_expansionCLM` and
+`Approximation.IsOrthonormal.range_expansionCLM`. -/
 def expansionCLM (p : ι → C(X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   IntegralOperator.kernelCLM μ (reproducingKernel p)
 
-/-- The truncated expansion, pointwise ([han2009theoretical], (3.7.13)). -/
+/-- The value of the truncated expansion at a point $x$ is
+$$(Pu)(x) = \sum_i \Bigl(\int u(t)\, p_i(t)\, d\mu(t)\Bigr) p_i(x).$$
+This is (3.7.13) of [han2009theoretical]. -/
 theorem expansionCLM_apply (p : ι → C(X, ℝ)) (u : C(X, ℝ)) (x : X) :
     expansionCLM μ p u x = ∑ i, (∫ t, u t * p i t ∂μ) * p i x := by
   have hint : ∀ i : ι, Integrable (fun t : X => p i x * (u t * p i t)) μ := fun i =>
@@ -109,15 +131,15 @@ theorem expansionCLM_apply (p : ι → C(X, ℝ)) (u : C(X, ℝ)) (x : X) :
     integral_finsetSum _ fun i _ => hint i]
   exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
 
-/-- The truncated expansion as a linear combination of the family ([han2009theoretical],
-(3.7.13)). -/
+/-- The truncated expansion is the linear combination $Pu = \sum_i \bigl(\int u\, p_i \, d\mu\bigr)
+p_i$ of the members of the family. This is (3.7.13) of [han2009theoretical]. -/
 theorem expansionCLM_eq_sum (p : ι → C(X, ℝ)) (u : C(X, ℝ)) :
     expansionCLM μ p u = ∑ i, (∫ t, u t * p i t ∂μ) • p i := by
   ext x
   rw [expansionCLM_apply, ContinuousMap.coe_sum, Finset.sum_apply]
   exact Finset.sum_congr rfl fun i _ => rfl
 
-/-- The truncated expansion lands in the span of the family. -/
+/-- The truncated expansion $Pu$ lies in the span of the family $(p_i)$. -/
 theorem expansionCLM_mem_span (p : ι → C(X, ℝ)) (u : C(X, ℝ)) :
     expansionCLM μ p u ∈ Submodule.span ℝ (Set.range p) := by
   rw [expansionCLM_eq_sum]
@@ -125,8 +147,13 @@ theorem expansionCLM_mem_span (p : ι → C(X, ℝ)) (u : C(X, ℝ)) :
     Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_range_self i))
 
 /-- **The uniform norm of a truncated expansion is the largest row integral of its reproducing
-kernel** ([han2009theoretical], (3.7.17)), by the norm formula for a kernel operator on a compact
-space. -/
+kernel.** Let $X$ be a nonempty compact space with a finite Borel measure $\mu$, and let $(p_i)$
+be a finite family in $C(X)$. Then the truncated expansion $P$ satisfies
+$$\|P\| = \sup_{x \in X} \int \Bigl|\sum_i p_i(x)\, p_i(t)\Bigr| \, d\mu(t).$$
+This is (3.7.17) of [han2009theoretical].
+
+The proof specializes `IntegralOperator.norm_kernelCLM`, the norm formula for a kernel operator
+on a compact space. -/
 theorem norm_expansionCLM [Nonempty X] (p : ι → C(X, ℝ)) :
     ‖expansionCLM μ p‖ = ⨆ x, ∫ t, |∑ i, p i x * p i t| ∂μ := by
   rw [expansionCLM, IntegralOperator.norm_kernelCLM]
@@ -136,7 +163,8 @@ variable {μ}
 
 namespace IsOrthonormal
 
-/-- An orthonormal system is fixed by its own truncated expansion. -/
+/-- The truncated expansion in an orthonormal family fixes each member of the family: $P p_j = p_j$.
+-/
 theorem expansionCLM_apply_eq_self {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) (j : ι) :
     expansionCLM μ p (p j) = p j := by
   ext x
@@ -145,7 +173,8 @@ theorem expansionCLM_apply_eq_self {p : ι → C(X, ℝ)} (h : IsOrthonormal μ 
       (fun hj => absurd (Finset.mem_univ j) hj),
     h.integral_mul_self j, one_mul]
 
-/-- The truncated expansion in an orthonormal system fixes the span of that system. -/
+/-- The truncated expansion in an orthonormal family fixes every function $u$ in the span of the
+family: $Pu = u$. -/
 theorem expansionCLM_eq_self {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) {u : C(X, ℝ)}
     (hu : u ∈ Submodule.span ℝ (Set.range p)) : expansionCLM μ p u = u := by
   induction hu using Submodule.span_induction with
@@ -154,14 +183,15 @@ theorem expansionCLM_eq_self {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) {u 
   | add v w _ _ hv hw => rw [map_add, hv, hw]
   | smul c v _ hv => rw [map_smul, hv]
 
-/-- **The truncated expansion in an orthonormal system is a projection** ([han2009theoretical],
-(3.7.13)). -/
+/-- **The truncated expansion in an orthonormal system is a projection.** If $(p_i)$ is orthonormal
+in $L^2(\mu)$, then $P \circ P = P$. This is part of (3.7.13) of [han2009theoretical]. -/
 theorem isIdempotentElem_expansionCLM {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) :
     IsIdempotentElem (expansionCLM μ p) := by
   ext u x
   exact congrFun (congrArg _ (h.expansionCLM_eq_self (expansionCLM_mem_span μ p u))) x
 
-/-- **The range of the truncated expansion in an orthonormal system is the span of the system.** -/
+/-- **The range of the truncated expansion in an orthonormal system is the span of the system.** If
+$(p_i)$ is orthonormal in $L^2(\mu)$, then the range of $P$ is the span of $\{p_i\}$. -/
 theorem range_expansionCLM {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) :
     LinearMap.range ((expansionCLM μ p : C(X, ℝ) →L[ℝ] C(X, ℝ)) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ))
       = Submodule.span ℝ (Set.range p) := by
@@ -169,9 +199,12 @@ theorem range_expansionCLM {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) :
   rintro _ ⟨u, rfl⟩
   exact expansionCLM_mem_span μ p u
 
-/-- **The Lebesgue lemma for a least-squares projection** ([han2009theoretical], (3.7.14)): the
-uniform error of the truncated expansion in an orthonormal system is at most `1 + ‖P‖` times the
-distance to the span of the system. -/
+/-- **The Lebesgue lemma for a least-squares projection.** If $(p_i)$ is orthonormal in $L^2(\mu)$
+and $P$ is the truncated expansion in $(p_i)$, then for every $u \in C(X)$
+$$\|u - Pu\| \le (1 + \|P\|)\, \operatorname{dist}(u, \operatorname{span}\{p_i\}),$$
+where the norm and the distance are the uniform ones. This is (3.7.14) of [han2009theoretical].
+
+The proof specializes `norm_sub_apply_le_of_isIdempotentElem`. -/
 theorem norm_sub_expansionCLM_le {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p) (u : C(X, ℝ)) :
     ‖u - expansionCLM μ p u‖
       ≤ (1 + ‖expansionCLM μ p‖) *
@@ -182,12 +215,14 @@ theorem norm_sub_expansionCLM_le {p : ι → C(X, ℝ)} (h : IsOrthonormal μ p)
 
 end IsOrthonormal
 
-/-! ### The Chebyshev least-squares projection
+/-!
+### The Chebyshev least-squares projection
 
-The orthonormal Chebyshev system on `[-1, 1]` for the weight `(1 - x²)^{-1/2}`, its reproducing
-kernel in the angle variables, and the norm of the truncated expansion in it: exactly the Lebesgue
-constant `PeriodicCont.lebesgueConstant N` of the Fourier projection ([han2009theoretical]
-Example 3.7.4). -/
+The orthonormal Chebyshev system on $[-1, 1]$ for the weight $(1 - x^2)^{-1/2}$, its reproducing
+kernel in the angle variables, and the norm of the truncated expansion in it. This norm is exactly
+the Lebesgue constant `PeriodicCont.lebesgueConstant` of the Fourier projection (Example 3.7.4 of
+[han2009theoretical]).
+-/
 
 section Chebyshev
 
@@ -195,8 +230,10 @@ open Real PeriodicCont
 
 open Polynomial.Chebyshev (T measureT)
 
-/-- Mathlib's Chebyshev weight `√(1 - x²)⁻¹ dx` on `(-1, 1]` is a finite measure, of total mass `π`.
-An upstreaming candidate: only integrability of the constant function is used. -/
+/-- Mathlib's Chebyshev measure `Polynomial.Chebyshev.measureT`, Lebesgue measure on $(-1, 1]$ with
+the density $(1 - x^2)^{-1/2}$, is a finite measure. Its total mass is $\pi$.
+
+The proof uses only the integrability of the constant function $1$. -/
 instance : IsFiniteMeasure measureT := by
   rcases integrable_const_iff.1
       (Polynomial.Chebyshev.integrable_measureT (f := fun _ => (1 : ℝ)) continuousOn_const) with
@@ -204,8 +241,12 @@ instance : IsFiniteMeasure measureT := by
   · exact absurd h one_ne_zero
   · exact h
 
-/-- **The Chebyshev weight as a measure on the compact space `[-1, 1]`**: Lebesgue measure scaled by
-`(1 - x²)^{-1/2}`, which is the weight of [han2009theoretical], (3.5.8) and Example 3.7.4. -/
+/-- **The Chebyshev weight as a measure on the compact space $[-1, 1]$**: Lebesgue measure with the
+density $(1 - x^2)^{-1/2}$. This is the weight of (3.5.8) and Example 3.7.4 of
+[han2009theoretical].
+
+It is the pullback of `Polynomial.Chebyshev.measureT` along the inclusion of $[-1, 1]$ in
+$\mathbb{R}$. -/
 noncomputable def chebyshevMeasureIcc : Measure (Set.Icc (-1 : ℝ) 1) :=
   Measure.comap Subtype.val measureT
 
@@ -214,8 +255,9 @@ instance : IsFiniteMeasure chebyshevMeasureIcc := by
   rw [chebyshevMeasureIcc, comap_subtype_coe_apply measurableSet_Icc]
   exact measure_lt_top _ _
 
-/-- An integral over the space `[-1, 1]` against the Chebyshev weight is the corresponding integral
-over the line: the weight gives the two endpoints no mass. -/
+/-- For every function $f$ on $\mathbb{R}$, the integral of $f$ over the space $[-1, 1]$ against
+`Approximation.chebyshevMeasureIcc` equals the integral of $f$ over the line against
+`Polynomial.Chebyshev.measureT`. The endpoints carry no mass. -/
 theorem integral_chebyshevMeasureIcc (f : ℝ → ℝ) :
     ∫ t : Set.Icc (-1 : ℝ) 1, f t ∂chebyshevMeasureIcc = ∫ x, f x ∂measureT := by
   have hrestrict : measureT.restrict (Set.Icc (-1 : ℝ) 1) = measureT := by
@@ -224,30 +266,39 @@ theorem integral_chebyshevMeasureIcc (f : ℝ → ℝ) :
     exact Set.inter_eq_right.2 (Set.Ioc_subset_Icc_self (a := (-1 : ℝ)) (b := 1))
   rw [chebyshevMeasureIcc, integral_subtype_comap measurableSet_Icc, hrestrict]
 
-/-- The normalizing coefficients of the orthonormal Chebyshev system: `√(1/π)` in degree `0` and
-`√(2/π)` in every higher degree, from the values `π` and `π/2` of [han2009theoretical] (3.5.9). -/
+/-- The normalizing coefficients of the orthonormal Chebyshev system: $c_0 = \sqrt{1/\pi}$ and
+$c_n = \sqrt{2/\pi}$ for $n \ge 1$. They come from the values $\int T_0^2 = \pi$ and
+$\int T_n^2 = \pi/2$ of (3.5.9) of [han2009theoretical]. -/
 noncomputable def chebyshevCoeff (n : ℕ) : ℝ := if n = 0 then √(1 / π) else √(2 / π)
 
+/-- The normalizing coefficient in degree $0$ satisfies $c_0^2 = 1/\pi$. -/
 theorem chebyshevCoeff_mul_self_zero : chebyshevCoeff 0 * chebyshevCoeff 0 = 1 / π := by
   rw [chebyshevCoeff, ite_eq_left rfl, Real.mul_self_sqrt (by positivity)]
 
+/-- The normalizing coefficient in degree $n \neq 0$ satisfies $c_n^2 = 2/\pi$. -/
 theorem chebyshevCoeff_mul_self_of_ne {n : ℕ} (hn : n ≠ 0) :
     chebyshevCoeff n * chebyshevCoeff n = 2 / π := by
   rw [chebyshevCoeff, ite_eq_right hn, Real.mul_self_sqrt (by positivity)]
 
-/-- **The orthonormal Chebyshev system** on `[-1, 1]` for the weight `(1 - x²)^{-1/2}`:
-`p₀ = 1/√π` and `pₙ = √(2/π) Tₙ` for `n ≥ 1` ([han2009theoretical], (3.5.8) and Example 3.7.4). -/
+/-- **The orthonormal Chebyshev system** on $[-1, 1]$ for the weight $(1 - x^2)^{-1/2}$: the
+continuous functions
+$$p_0 = \frac{1}{\sqrt{\pi}}, \qquad p_n = \sqrt{\frac{2}{\pi}}\, T_n \quad (n \ge 1),$$
+where $T_n$ is the Chebyshev polynomial of degree $n$. This is (3.5.8) and Example 3.7.4 of
+[han2009theoretical]. -/
 noncomputable def chebyshevOrthonormal (n : ℕ) : C(Set.Icc (-1 : ℝ) 1, ℝ) :=
   ⟨fun x => chebyshevCoeff n * (T ℝ n).eval (x : ℝ),
     continuous_const.mul ((T ℝ (n : ℤ)).continuous_aeval.comp continuous_subtype_val)⟩
 
+/-- The value of the $n$-th orthonormal Chebyshev function at $x$ is $c_n T_n(x)$, with the
+coefficient $c_n$ of `Approximation.chebyshevCoeff`. -/
 @[simp]
 theorem chebyshevOrthonormal_apply (n : ℕ) (x : Set.Icc (-1 : ℝ) 1) :
     chebyshevOrthonormal n x = chebyshevCoeff n * (T ℝ n).eval (x : ℝ) :=
   rfl
 
-/-- The Chebyshev system is orthonormal for the Chebyshev weight: this is [han2009theoretical]
-(3.5.9), normalized. -/
+/-- The Chebyshev system is orthonormal for the Chebyshev weight:
+$\int_{[-1, 1]} p_m\, p_n \, d\mu = 1$ if $m = n$, and $0$ otherwise. This is (3.5.9) of
+[han2009theoretical], normalized. -/
 theorem integral_chebyshevOrthonormal_mul (m n : ℕ) :
     (∫ t : Set.Icc (-1 : ℝ) 1,
         chebyshevOrthonormal m t * chebyshevOrthonormal n t ∂chebyshevMeasureIcc)
@@ -273,20 +324,25 @@ theorem integral_chebyshevOrthonormal_mul (m n : ℕ) :
   · rw [Polynomial.Chebyshev.integral_eval_T_real_mul_eval_T_real_measureT_of_ne hmn,
       mul_zero, ite_eq_right hmn]
 
-/-- The orthonormal Chebyshev system, as an orthonormal family in the sense of the backbone. -/
+/-- For every $N$, the first $N + 1$ functions $p_0, \dots, p_N$ of the orthonormal Chebyshev system
+form an orthonormal family in $L^2(\mu)$ for the Chebyshev weight $\mu$, in the sense of
+`Approximation.IsOrthonormal`. -/
 theorem isOrthonormal_chebyshevOrthonormal (N : ℕ) :
     IsOrthonormal chebyshevMeasureIcc fun i : Fin (N + 1) => chebyshevOrthonormal i where
   integral_mul_self i := by rw [integral_chebyshevOrthonormal_mul, ite_eq_left rfl]
   integral_mul_of_ne i j hij := by
     rw [integral_chebyshevOrthonormal_mul, ite_eq_right (fun h => hij (Fin.val_injective h))]
 
-/-- The reproducing kernel of the orthonormal Chebyshev system, as a function of two real
-arguments: `K (x, t) = (1/π) T₀(x) T₀(t) + (2/π) ∑_{n=1}^{N} Tₙ(x) Tₙ(t)`
-([han2009theoretical], Example 3.7.4). -/
+/-- The reproducing kernel of the orthonormal Chebyshev system $p_0, \dots, p_N$, as a function of
+two real arguments:
+$$K_N(x, t) = \frac{1}{\pi}\, T_0(x)\, T_0(t) + \frac{2}{\pi} \sum_{n=1}^{N} T_n(x)\, T_n(t).$$
+This is the kernel of Example 3.7.4 of [han2009theoretical]. -/
 noncomputable def chebyshevKernel (N : ℕ) (x t : ℝ) : ℝ :=
   ∑ n ∈ Finset.range (N + 1),
     (chebyshevCoeff n * chebyshevCoeff n) * ((T ℝ n).eval x * (T ℝ n).eval t)
 
+/-- On $[-1, 1]$, the reproducing kernel of $p_0, \dots, p_N$ is the Chebyshev kernel:
+$\sum_{i=0}^{N} p_i(x)\, p_i(t) = K_N(x, t)$. -/
 theorem sum_chebyshevOrthonormal_mul (N : ℕ) (x t : Set.Icc (-1 : ℝ) 1) :
     ∑ i : Fin (N + 1), chebyshevOrthonormal i x * chebyshevOrthonormal i t
       = chebyshevKernel N x t := by
@@ -295,13 +351,15 @@ theorem sum_chebyshevOrthonormal_mul (N : ℕ) (x t : Set.Icc (-1 : ℝ) 1) :
       ((T ℝ n).eval (x : ℝ) * (T ℝ n).eval (t : ℝ)))]
   exact Finset.sum_congr rfl fun i _ => by simp only [chebyshevOrthonormal_apply]; ring
 
-/-- **The Chebyshev reproducing kernel in the angle variables** ([han2009theoretical], Example
-3.7.4, in the form Rivlin gives): with `x = cos θ` and `t = cos φ`,
+/-- **The Chebyshev reproducing kernel in the angle variables.** For all real $\theta$ and
+$\varphi$,
+$$K_N(\cos\theta, \cos\varphi) = \frac{1}{\pi} \bigl[D_N(\theta - \varphi) + D_N(\theta +
+  \varphi)\bigr],$$
+where $D_N(s) = \frac12 + \sum_{j=1}^{N} \cos(js)$ is the Dirichlet kernel `dirichletKernel`.
+This is the identity of Example 3.7.4 of [han2009theoretical], in the form that Rivlin gives.
 
-`K (x, t) = (1/π) [Dₙ(θ − φ) + Dₙ(θ + φ)]`,
-
-`Dₙ` being the Dirichlet kernel `dirichletKernel`. [han2009theoretical] prints the same identity
-with `Dₙ` written out as `sin ((N + 1/2) ·) / (2 sin (·/2))`. -/
+[han2009theoretical] prints the same identity with $D_N(s)$ written out as
+$\sin((N + \frac12) s) / (2 \sin(s/2))$. -/
 theorem chebyshevKernel_cos (N : ℕ) (θ φ : ℝ) :
     chebyshevKernel N (cos θ) (cos φ)
       = (dirichletKernel N (θ - φ) + dirichletKernel N (θ + φ)) / π := by
@@ -337,14 +395,17 @@ theorem chebyshevKernel_cos (N : ℕ) (θ φ : ℝ) :
     hshift N, hshift N, ← Finset.sum_div, Finset.sum_add_distrib]
   ring
 
-/-- **The Chebyshev least-squares projection** `P_N` of [han2009theoretical], Example 3.7.4: the
-truncated expansion of a continuous function on `[-1, 1]` in the orthonormal Chebyshev system, as a
-bounded operator on `C[-1, 1]`. -/
+/-- **The Chebyshev least-squares projection** $P_N$ of Example 3.7.4 of [han2009theoretical]: the
+truncated expansion of a continuous function on $[-1, 1]$ in the orthonormal Chebyshev system
+$p_0, \dots, p_N$, as a bounded operator on $C[-1, 1]$. -/
 noncomputable def chebyshevProj (N : ℕ) :
     C(Set.Icc (-1 : ℝ) 1, ℝ) →L[ℝ] C(Set.Icc (-1 : ℝ) 1, ℝ) :=
   expansionCLM chebyshevMeasureIcc fun i : Fin (N + 1) => chebyshevOrthonormal i
 
-/-- The row integral of the Chebyshev kernel, in the angle variable. -/
+/-- The row integral of the Chebyshev kernel, in the angle variable: for real $\theta$,
+$$\int_{[-1, 1]} |K_N(\cos\theta, t)| \, d\mu(t) = \frac{1}{\pi} \int_0^\pi \bigl|D_N(\theta -
+  \varphi) + D_N(\theta + \varphi)\bigr| \, d\varphi,$$
+where $\mu$ is the Chebyshev weight. -/
 theorem integral_abs_chebyshevKernel (N : ℕ) (θ : ℝ) :
     (∫ t : Set.Icc (-1 : ℝ) 1, |chebyshevKernel N (cos θ) t| ∂chebyshevMeasureIcc)
       = 1 / π * ∫ φ in (0 : ℝ)..π,
@@ -357,9 +418,12 @@ theorem integral_abs_chebyshevKernel (N : ℕ) (θ : ℝ) :
   rw [chebyshevKernel_cos, abs_div, abs_of_pos hπ]
   ring
 
-/-- The Lebesgue function of the Chebyshev projection never exceeds the Lebesgue constant of the
-Fourier projection: `|Dₙ(θ − φ) + Dₙ(θ + φ)|` integrates over half a period to at most what `|Dₙ|`
-integrates to over a full one. -/
+/-- The Lebesgue function of the Chebyshev projection never exceeds the Lebesgue constant $L_N$ of
+the Fourier projection: for real $\theta$,
+$$\frac{1}{\pi} \int_0^\pi \bigl|D_N(\theta - \varphi) + D_N(\theta + \varphi)\bigr| \, d\varphi
+  \le L_N.$$
+The integral of $|D_N(\theta - \varphi) + D_N(\theta + \varphi)|$ over half a period is at most
+the integral of $|D_N|$ over a full period. -/
 theorem integral_abs_chebyshevKernel_le (N : ℕ) (θ : ℝ) :
     (1 / π * ∫ φ in (0 : ℝ)..π, |dirichletKernel N (θ - φ) + dirichletKernel N (θ + φ)|)
       ≤ lebesgueConstant N := by
@@ -413,8 +477,10 @@ theorem integral_abs_chebyshevKernel_le (N : ℕ) (θ : ℝ) :
     exact hmono
   exact mul_le_mul_of_nonneg_left hle (by positivity)
 
-/-- At `x = 1`, that is `θ = 0`, the Lebesgue function of the Chebyshev projection attains the
-Lebesgue constant. -/
+/-- At $\theta = 0$, that is at $x = 1$, the Lebesgue function of the Chebyshev projection equals
+the Lebesgue constant:
+$$\frac{1}{\pi} \int_0^\pi \bigl|D_N(0 - \varphi) + D_N(0 + \varphi)\bigr| \, d\varphi = L_N.$$
+-/
 theorem integral_abs_chebyshevKernel_zero (N : ℕ) :
     (1 / π * ∫ φ in (0 : ℝ)..π, |dirichletKernel N (0 - φ) + dirichletKernel N (0 + φ)|)
       = lebesgueConstant N := by
@@ -427,14 +493,17 @@ theorem integral_abs_chebyshevKernel_zero (N : ℕ) :
     lebesgueConstant_eq]
   ring
 
-/-- **The norm of the Chebyshev least-squares projection** ([han2009theoretical] Example 3.7.4):
-the operator norm of `chebyshevProj N` on `C[-1, 1]` is exactly the `N`-th Lebesgue constant of the
-Fourier projection.
+/-- **The norm of the Chebyshev least-squares projection.** For every $N$, the operator norm of the
+Chebyshev least-squares projection $P_N$ on $C[-1, 1]$ is exactly the $N$-th Lebesgue constant
+of the Fourier projection:
+$$\|P_N\| = L_N = \frac{1}{\pi} \int_{-\pi}^{\pi} |D_N(s)| \, ds.$$
+This is Example 3.7.4 of [han2009theoretical].
 
-The change of variables `x = cos θ`, `t = cos φ` turns the kernel into
-`(1/π)[D_N(θ − φ) + D_N(θ + φ)]` (`chebyshevKernel_cos`), the row integral into
-`(1/π) ∫₀^π |D_N(θ − φ) + D_N(θ + φ)| dφ`, and that is largest at `θ = 0`, where it is
-`(2/π) ∫₀^π |D_N| = L_N`. -/
+The Lebesgue constant is `PeriodicCont.lebesgueConstant`. The change of variables
+$x = \cos\theta$, $t = \cos\varphi$ turns the kernel into $\frac{1}{\pi}[D_N(\theta - \varphi) +
+D_N(\theta + \varphi)]$ (`Approximation.chebyshevKernel_cos`) and the row integral into
+$\frac{1}{\pi} \int_0^\pi |D_N(\theta - \varphi) + D_N(\theta + \varphi)| \, d\varphi$. This
+integral is largest at $\theta = 0$, where it is $\frac{2}{\pi} \int_0^\pi |D_N| = L_N$. -/
 theorem norm_chebyshevProj (N : ℕ) : ‖chebyshevProj N‖ = lebesgueConstant N := by
   have : Nonempty (Set.Icc (-1 : ℝ) 1) := ⟨⟨1, by norm_num⟩⟩
   have hrow : ∀ x : Set.Icc (-1 : ℝ) 1,

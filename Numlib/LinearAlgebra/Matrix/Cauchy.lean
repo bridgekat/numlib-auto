@@ -17,50 +17,75 @@ import Numlib.LinearAlgebra.Matrix.Cholesky
 /-!
 # The Cauchy matrix and its determinant
 
-The **Cauchy matrix** of two families `x, y : Fin n → K` is the matrix `C` with entries `C i j = (x
-i + y j)⁻¹`. Its determinant has the closed form
+Let $K$ be a field and let $x, y \in K^n$ with $x_i + y_j \ne 0$ for all $i, j$. The **Cauchy
+matrix** of $x$ and $y$ is the matrix $C$ with entries $C_{ij} = (x_i + y_j)^{-1}$. Its determinant
+has the closed form
+$$\det C = \frac{\prod_{i < j} (x_j - x_i)(y_j - y_i)}{\prod_{i, j} (x_i + y_j)}.$$
+In particular, a Cauchy matrix with distinct $x_i$ and distinct $y_j$ is nonsingular. So the
+functions $t \mapsto t^{x_i}$ on $L^2(0, 1)$, whose Gram matrix $((x_i + x_j + 1)^{-1})_{ij}$ is a
+Cauchy matrix, are linearly independent when the $x_i$ are distinct.
 
-`det C = ∏_{i < j} (x j - x i) (y j - y i) / ∏_{i, j} (x i + y j)`,
+The **Hilbert matrix** $H_n$ with entries $h_{ij} = 1 / (i + j + 1)$, for indices from $0$, is the
+Cauchy matrix of $x_i = i + 1$ and $y_j = j$. It is nonsingular in characteristic $0$, its
+determinant is positive over an ordered field, and over $\mathbb{R}$ it is positive definite.
 
-which is `Matrix.det_cauchy`. In particular a Cauchy matrix with distinct `x i` and distinct `y j`
-is nonsingular (`Matrix.det_cauchy_ne_zero`), so the family of functions whose Gram matrix it is —
-`t ↦ t ^ (x i)` on `L²(0, 1)`, whose Gram matrix is `(x i + x j + 1)⁻¹` — is linearly independent.
+## Main definitions
 
-The proof is the classical row reduction, in the shape that suits `Fin (n + 1)`: subtracting row `0`
-from every other row makes the entry at `(i, j)` a multiple of `(x i + y j)⁻¹ (x 0 + y j)⁻¹`, which
-factors as a scaling of the rows and of the columns of a matrix whose first row is constant;
-subtracting column `0` from every other column then clears the first row, and a Laplace expansion
-along it leaves a Cauchy matrix of one size less, again up to scalings.
+* `Matrix.cauchy`: the Cauchy matrix $((x_i + y_j)^{-1})_{ij}$.
+* `Matrix.hilbert`: the Hilbert matrix $(1 / (i + j + 1))_{ij}$ of order $n$.
 
 ## Main results
 
-* `Matrix.det_cauchy`: the closed form of the determinant.
-* `Matrix.det_cauchy_ne_zero`: it is nonzero when the `x i` are distinct and the `y j` are distinct.
+* `Matrix.det_cauchy`: the closed form of the Cauchy determinant.
+* `Matrix.det_cauchy_ne_zero`: the Cauchy determinant is nonzero when the $x_i$ are distinct and the
+  $y_j$ are distinct.
+* `Matrix.hilbert_eq_cauchy`: the Hilbert matrix is the Cauchy matrix of $x_i = i + 1$ and
+  $y_j = j$.
+* `Matrix.isUnit_hilbert`: in characteristic $0$, the Hilbert matrix is nonsingular.
+* `Matrix.det_hilbert_pos`: over an ordered field, $\det H_n > 0$.
+* `Matrix.posDef_hilbert`: the real Hilbert matrix is positive definite.
 
-## The Hilbert matrix
+## Proof outline
 
-`Matrix.hilbert K n` is the Hilbert matrix `h_ij = 1 / (i + j + 1)`, the Cauchy matrix of
-`x i = i + 1`, `y j = j` (`Matrix.hilbert_eq_cauchy`). It is nonsingular (`Matrix.isUnit_hilbert`),
-its determinant is positive over an ordered field (`Matrix.det_hilbert_pos`), and it is positive
-definite (`Matrix.posDef_hilbert`), by Sylvester's criterion of
-`Numlib/LinearAlgebra/Matrix/Cholesky`: its leading principal submatrices are Hilbert matrices
-(`Matrix.hilbert_submatrix_castLE`, `Matrix.det_leadingPrincipalSubmatrix_fin`).
+The Cauchy determinant follows from the classical row reduction. Subtracting row $0$ from every
+other row makes the entry $(i, j)$ a multiple of $(x_i + y_j)^{-1} (x_0 + y_j)^{-1}$. This factors
+as a scaling of the rows and of the columns of a matrix whose first row is constant. Subtracting
+column $0$ from every other column then clears the first row, and a Laplace expansion along it
+leaves a Cauchy matrix of one size less, again up to scalings. The positive definiteness of the
+Hilbert matrix follows from Sylvester's criterion of `Numlib.LinearAlgebra.Matrix.Cholesky`, because
+its leading principal submatrices are Hilbert matrices with positive determinants.
+
+## Implementation notes
+
+* The matrices are indexed by `Fin n`, so the indices start from $0$. The induction of the row
+  reduction is on `Fin (n + 1)`.
+* The entries are field inverses, which are $0$ at $0$. In positive characteristic, an entry
+  $(i + j + 1)^{-1}$ of the Hilbert matrix can be $0$ for this reason.
 -/
 
 namespace Matrix
 
 variable {K : Type*} [Field K]
 
-/-- The **Cauchy matrix** of `x` and `y`: the matrix with entries `(x i + y j)⁻¹`. -/
+/-- The **Cauchy matrix** of $x, y \in K^n$ is the $n \times n$ matrix $C$ with entries
+$$C_{ij} = (x_i + y_j)^{-1}.$$
+The inverse is the field inverse, which is $0$ at $0$. -/
 def cauchy {n : ℕ} (x y : Fin n → K) : Matrix (Fin n) (Fin n) K :=
   .of fun i j => (x i + y j)⁻¹
 
+/-- The entries of the Cauchy matrix are $C_{ij} = (x_i + y_j)^{-1}$. -/
 @[simp]
 theorem cauchy_apply {n : ℕ} (x y : Fin n → K) (i j : Fin n) :
     cauchy x y i j = (x i + y j)⁻¹ :=
   rfl
 
-/-- **The Cauchy determinant.** -/
+/-- **The Cauchy determinant.** Let $K$ be a field and let $x, y \in K^n$ with $x_i + y_j \ne 0$ for
+all $i, j$. Then the Cauchy matrix $C$ of $x$ and $y$ has the determinant
+$$\det C = \frac{\prod_{i < j} (x_j - x_i)(y_j - y_i)}{\prod_{i, j} (x_i + y_j)}.$$
+
+The proof is by induction on $n$: a row reduction and a column reduction with the index $0$,
+followed by a Laplace expansion along the first row, leave a Cauchy matrix of size $n - 1$ up to
+scalings of the rows and the columns. -/
 theorem det_cauchy : ∀ {n : ℕ} (x y : Fin n → K), (∀ i j, x i + y j ≠ 0) →
     (cauchy x y).det = (∏ i : Fin n, ∏ j ∈ Finset.Ioi i, ((x j - x i) * (y j - y i)))
       / ∏ i : Fin n, ∏ j : Fin n, (x i + y j) := by
@@ -207,7 +232,9 @@ theorem det_cauchy : ∀ {n : ℕ} (x y : Fin n → K), (∀ i j, x i + y j ≠ 
     set PN := ∏ i : Fin n, ∏ j ∈ Finset.Ioi i, ((x j.succ - x i.succ) * (y j.succ - y i.succ))
     field_simp
 
-/-- A Cauchy matrix whose `x` and whose `y` are injective is nonsingular. -/
+/-- Let $K$ be a field and let $x, y \in K^n$ with $x_i + y_j \ne 0$ for all $i, j$. If the entries
+of $x$ are distinct and the entries of $y$ are distinct, then the Cauchy matrix of $x$ and $y$
+has a nonzero determinant. -/
 theorem det_cauchy_ne_zero {n : ℕ} {x y : Fin n → K} (h : ∀ i j, x i + y j ≠ 0)
     (hx : Function.Injective x) (hy : Function.Injective y) : (cauchy x y).det ≠ 0 := by
   rw [det_cauchy x y h, div_ne_zero_iff]
@@ -217,35 +244,49 @@ theorem det_cauchy_ne_zero {n : ℕ} {x y : Fin n → K} (h : ∀ i j, x i + y j
   exact mul_ne_zero (sub_ne_zero.2 fun heq => hij (hx heq).symm)
     (sub_ne_zero.2 fun heq => hij (hy heq).symm)
 
-/-! ### The Hilbert matrix -/
+/-!
+### The Hilbert matrix
+
+The Hilbert matrix $h_{ij} = 1 / (i + j + 1)$ is the Cauchy matrix of $x_i = i + 1$ and $y_j = j$.
+It is nonsingular, its determinant is positive over an ordered field, and it is positive definite by
+Sylvester's criterion, since its leading principal submatrices are Hilbert matrices
+(`Matrix.hilbert_submatrix_castLE`, `Matrix.det_leadingPrincipalSubmatrix_fin`).
+-/
 
 section Hilbert
 
 open scoped ComplexOrder
 
-/-- The **Hilbert matrix** of order `n`, with entries `h_ij = 1 / (i + j + 1)` in `0`-based
-indexing (the `1 / (i + j - 1)` of [quarteroni2000numerical] (3.32) in `1`-based indexing). It is
-the Cauchy matrix of `x i = i + 1`, `y j = j` (`Matrix.hilbert_eq_cauchy`), the Gram matrix of the
-monomials `1, t, …, t^{n-1}` on `L²(0, 1)`, and the standard example of an ill-conditioned
-symmetric positive definite matrix. -/
+/-- The **Hilbert matrix** of order $n$ over a field $K$ is the matrix $H_n$ with entries
+$$h_{ij} = \frac{1}{i + j + 1}, \qquad 0 \le i, j < n.$$
+With indices from $1$, this is the matrix $h_{ij} = 1 / (i + j - 1)$ of
+[quarteroni2000numerical], (3.32).
+
+It is the Cauchy matrix of $x_i = i + 1$ and $y_j = j$ (`Matrix.hilbert_eq_cauchy`), the Gram
+matrix of the monomials $1, t, \dots, t^{n-1}$ in $L^2(0, 1)$, and the standard example of an
+ill-conditioned symmetric positive definite matrix. The entry is the field inverse of
+$i + j + 1$, which is $0$ if $i + j + 1 = 0$ in $K$. -/
 def hilbert (K : Type*) [Field K] (n : ℕ) : Matrix (Fin n) (Fin n) K :=
   .of fun i j => ((i : K) + j + 1)⁻¹
 
 variable (K)
 
-/-- The entries of the Hilbert matrix. -/
+/-- The entries of the Hilbert matrix are $h_{ij} = 1 / (i + j + 1)$. -/
 theorem hilbert_apply (n : ℕ) (i j : Fin n) : hilbert K n i j = 1 / ((i : K) + j + 1) := by
   simp [hilbert]
 
-/-- The Hilbert matrix is the Cauchy matrix of `x i = i + 1` and `y j = j`. -/
+/-- The Hilbert matrix is the Cauchy matrix of $x_i = i + 1$ and $y_j = j$. -/
 theorem hilbert_eq_cauchy (n : ℕ) :
     hilbert K n = cauchy (fun i : Fin n => (i : K) + 1) fun j => (j : K) := by
   ext i j
   simp only [hilbert, of_apply, cauchy_apply]
   ring_nf
 
-/-- The Hilbert matrix is nonsingular, being a Cauchy matrix with distinct `x i` and distinct
-`y j` (`Matrix.det_cauchy_ne_zero`). -/
+/-- Let $K$ be a field of characteristic $0$. Then the Hilbert matrix of every order $n$ is
+nonsingular.
+
+It is a Cauchy matrix with distinct $x_i$ and distinct $y_j$, so `Matrix.det_cauchy_ne_zero`
+applies. -/
 theorem isUnit_hilbert [CharZero K] (n : ℕ) : IsUnit (hilbert K n) := by
   rw [isUnit_iff_isUnit_det, hilbert_eq_cauchy, isUnit_iff_ne_zero]
   refine det_cauchy_ne_zero (fun i j => ?_) (fun i j h => ?_) fun i j h => ?_
@@ -255,8 +296,11 @@ theorem isUnit_hilbert [CharZero K] (n : ℕ) : IsUnit (hilbert K n) := by
   · exact Fin.ext (Nat.cast_injective (add_right_cancel h))
   · exact Fin.ext (Nat.cast_injective h)
 
-/-- The determinant of the Hilbert matrix is positive: in the Cauchy determinant every factor
-`(x j - x i) (y j - y i) = (j - i)²`, `i < j`, and every `x i + y j` is positive. -/
+/-- Let $K$ be an ordered field. Then the Hilbert matrix of every order $n$ has a positive
+determinant.
+
+In the Cauchy determinant every factor is $(x_j - x_i)(y_j - y_i) = (j - i)^2$ with $i < j$, and
+every $x_i + y_j = i + j + 1$ is positive. -/
 theorem det_hilbert_pos [LinearOrder K] [IsStrictOrderedRing K] (n : ℕ) :
     0 < (hilbert K n).det := by
   rw [hilbert_eq_cauchy, det_cauchy _ _ fun i j => by positivity]
@@ -267,22 +311,26 @@ theorem det_hilbert_pos [LinearOrder K] [IsStrictOrderedRing K] (n : ℕ) :
   have h2 : (0 : K) < (j : K) - i := by linarith
   exact mul_pos h1 h2
 
-/-- The leading principal submatrices of the Hilbert matrix are Hilbert matrices. -/
+/-- For $m \le n$, the leading principal submatrix of order $m$ of the Hilbert matrix $H_n$ is
+$H_m$. -/
 theorem hilbert_submatrix_castLE (n m : ℕ) (h : m ≤ n) :
     (hilbert K n).submatrix (Fin.castLE h) (Fin.castLE h) = hilbert K m := by
   ext i j
   simp [hilbert]
 
-/-- The Hilbert matrix is symmetric. -/
+/-- Over a field with the trivial involution, the Hilbert matrix is symmetric. -/
 theorem isHermitian_hilbert [StarRing K] [TrivialStar K] (n : ℕ) : (hilbert K n).IsHermitian := by
   ext i j
   simp only [conjTranspose_apply, hilbert, of_apply, star_trivial]
   ring_nf
 
-/-- **The Hilbert matrix is positive definite** ([quarteroni2000numerical] §3.4.2 factors `H₃` as
-`L D Lᵀ` with positive `D`; Example 3.2 runs Gaussian elimination on it without pivoting), by
-Sylvester's criterion: its leading principal minors are determinants of smaller Hilbert matrices,
-which are positive. -/
+/-- **The Hilbert matrix is positive definite.** For every $n$, the real Hilbert matrix $H_n$ is
+symmetric positive definite.
+
+The proof is Sylvester's criterion: the leading principal minors are determinants of smaller
+Hilbert matrices, which are positive. Section 3.4.2 of [quarteroni2000numerical] factors $H_3$
+as $LDL^T$ with positive $D$, and Example 3.2 there runs Gaussian elimination on it without
+pivoting. -/
 theorem posDef_hilbert (n : ℕ) : (hilbert ℝ n).PosDef := by
   refine (posDef_iff_forall_det_leadingPrincipalSubmatrix_pos (isHermitian_hilbert ℝ n)).2
     fun k => ?_

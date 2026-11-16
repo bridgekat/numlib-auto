@@ -8,42 +8,48 @@ import Numlib.Analysis.Convex.Recession.Closedness
 /-!
 # The recession cone of a polyhedral set
 
-Both descriptions of a polyhedral set give its recession cone directly. On the inequality side,
-dropping the right-hand sides of the system `⟨aᵢ, x⟩ ≤ αᵢ` leaves `0⁺C = {y | ⟨aᵢ, y⟩ ≤ 0}`; on
-the generator side, the recession cone of a nonempty finitely generated set `conv P + cone D` is
-`cone D` itself. The consequence of the second, `Polyhedral.recessionCone_image`, is that a
-linear map commutes with `0⁺` on polyhedral sets with no hypothesis on the map. The general
-recession calculus cannot supply that: it computes `0⁺(A '' C)` only when `A` kills no direction
-of recession of `C`.
+The recession cone $0^+ C$ of a convex set $C$ is the set of directions $y$ such that $x + ay \in C$
+for every $x \in C$ and $a \ge 0$. Both descriptions of a nonempty polyhedral set give its recession
+cone directly ([rockafellar1970convex], §19). On the side of inequalities, dropping the right-hand
+sides of the system $\varphi_i(x) \le b_i$ gives $0^+ C = \{ y \mid \varphi_i(y) \le 0 \text{ for
+every } i \}$. On the side of generators, the recession cone of a nonempty finitely generated set
+$\operatorname{conv} P + \operatorname{cone} D$ is $\operatorname{cone} D$.
+
+A consequence of the second description is that a linear map $A$ commutes with $0^+$ on nonempty
+polyhedral sets, $0^+(AC) = A(0^+ C)$, with no hypothesis on $A$. The general recession calculus
+cannot give this: it computes $0^+(AC)$ only when $A$ maps no nonzero direction of recession of $C$
+to $0$.
 
 ## Main results
 
-* `recessionCone_polyhedral_system`, `Polyhedral.polyhedralCone_recessionCone` — the inequality
-  side: the recession cone of a nonempty polyhedral set is a polyhedral cone.
-* `recessionCone_of_finitelyGenerated`, `FinitelyGenerated.finitelyGeneratedCone_recessionCone` —
-  the generator side: it is a finitely generated cone.
-* `Polyhedral.recessionCone_image` — a linear map commutes with `0⁺` on polyhedral sets.
-
-## References
-
-* [rockafellar1970convex] §19.
+* `ConvexAnalysis.recessionCone_polyhedral_system`,
+  `ConvexAnalysis.Polyhedral.polyhedralCone_recessionCone`: the recession cone of a nonempty
+  polyhedral set is the polyhedral cone obtained by dropping the right-hand sides.
+* `ConvexAnalysis.recessionCone_of_finitelyGenerated`,
+  `ConvexAnalysis.FinitelyGenerated.finitelyGeneratedCone_recessionCone`: the recession cone of a
+  nonempty set $\operatorname{conv} P + \operatorname{cone} D$ is $\operatorname{cone} D$, a
+  finitely generated cone.
+* `ConvexAnalysis.Polyhedral.recessionCone_image`: $0^+(AC) = A(0^+ C)$ for a nonempty polyhedral
+  set $C$ and any linear map $A$.
 -/
 
 open Set Pointwise
 
 namespace ConvexAnalysis
 
-/-! ### The inequality side -/
+/-! ### The side of inequalities -/
 
 section Inequalities
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- The recession cone of a nonempty polyhedral set is obtained by dropping the right-hand sides of
-its system of inequalities.
+/-- Let $s$ be a finite set of pairs $(\varphi, b)$ of a linear functional $\varphi$ on $E$ and a
+real number $b$, and let $C = \{ x \mid \varphi(x) \le b \text{ for every } (\varphi, b) \in s
+\}$ be nonempty. Then $$0^+ C = \{ y \in E \mid \varphi(y) \le 0 \text{ for every } (\varphi, b)
+\in s \}.$$
 
-This is `recessionCone_setOf_forall_le` (`Recession/Cone.lean`) with the inequalities turned
-around, which is where the two `neg`s come from. -/
+This is `ConvexAnalysis.recessionCone_setOf_forall_le` with the inequalities reversed, which is
+where the two negations in the proof come from. -/
 theorem recessionCone_polyhedral_system {s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)}
     (hne : {x : E | ∀ q ∈ s, q.1 x ≤ q.2}.Nonempty) :
     recessionCone {x : E | ∀ q ∈ s, q.1 x ≤ q.2} = {y : E | ∀ q ∈ s, q.1 y ≤ 0} := by
@@ -56,8 +62,9 @@ theorem recessionCone_polyhedral_system {s : Finset ((E →ₗ[ℝ] ℝ) × ℝ)
   ext y
   simp only [Set.mem_ofPred_eq, Subtype.forall, LinearMap.neg_apply, Left.nonneg_neg_iff]
 
-/-- The recession cone of a nonempty polyhedral set is a polyhedral cone: the same statement, in
-the form that does not name the system. -/
+/-- The recession cone of a nonempty polyhedral set $C$ is a polyhedral cone. This is
+`ConvexAnalysis.recessionCone_polyhedral_system` in a form that does not name the system of
+inequalities. -/
 theorem Polyhedral.polyhedralCone_recessionCone {C : Set E} (hC : Polyhedral C)
     (hne : C.Nonempty) : PolyhedralCone (recessionCone C) := by
   classical
@@ -75,16 +82,20 @@ theorem Polyhedral.polyhedralCone_recessionCone {C : Set E} (hC : Polyhedral C)
 
 end Inequalities
 
-/-! ### The generator side -/
+/-! ### The side of generators -/
 
 section Generators
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
 
-/-- The recession cone of a nonempty finitely generated convex set `conv P + cone D` is `cone D`
-itself. The inclusion `⊇` needs nothing; `⊆` is the recession cone of a sum, whose hypothesis is
-vacuous because `conv P` is compact. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $P, D \subseteq E$ be finite, and let
+$C = \operatorname{conv} P + \operatorname{cone} D$ be nonempty. Then
+$0^+ C = \operatorname{cone} D$.
+
+The inclusion $0^+ C \supseteq \operatorname{cone} D$ needs no hypothesis. The inclusion
+$\subseteq$ is the formula for the recession cone of a sum, whose hypothesis holds because
+$\operatorname{conv} P$ is compact. -/
 theorem recessionCone_of_finitelyGenerated {C : Set E} {P D : Finset E}
     (hPD : C = convexHull ℝ (P : Set E) + (PointedCone.hull ℝ (D : Set E) : Set E))
     (hne : C.Nonempty) :
@@ -115,17 +126,22 @@ theorem recessionCone_of_finitelyGenerated {C : Set E} {P D : Finset E}
     simpa using hb
   · exact fun hy => ⟨0, rfl, y, hy, zero_add y⟩
 
-/-- The recession cone of a nonempty finitely generated convex set is a finitely generated cone:
-the twin of `Polyhedral.polyhedralCone_recessionCone`, in the form that does not name the
+/-- In a finite-dimensional real normed space, the recession cone of a nonempty finitely generated
+convex set is a finitely generated cone. This is the counterpart of
+`ConvexAnalysis.Polyhedral.polyhedralCone_recessionCone`, in a form that does not name the
 generators. -/
 theorem FinitelyGenerated.finitelyGeneratedCone_recessionCone {C : Set E}
     (hC : FinitelyGenerated C) (hne : C.Nonempty) : FinitelyGeneratedCone (recessionCone C) :=
   let ⟨_, D, hPD⟩ := hC
   ⟨D, recessionCone_of_finitelyGenerated hPD hne⟩
 
-/-- **A linear map commutes with `0⁺` on polyhedral sets**: `0⁺(A '' C) = A '' 0⁺C`, with no
-hypothesis whatever on `A`. For a general closed convex `C` this fails — the image need not even
-be closed — and the general criterion repairs it only under `0⁺C ∩ ker A = {0}`. -/
+/-- **A linear map commutes with the recession cone on polyhedral sets.** Let $E$ and $F$ be
+finite-dimensional real normed spaces, let $C \subseteq E$ be a nonempty polyhedral set, and let
+$A \colon E \to F$ be a linear map. Then $$0^+(A C) = A(0^+ C).$$
+
+No hypothesis on $A$ is needed. For a general closed convex set $C$ this fails, and the image
+$AC$ need not even be closed. The general criterion gives the identity only when
+$0^+ C \cap \ker A = \{0\}$. -/
 theorem Polyhedral.recessionCone_image {C : Set E} (hC : Polyhedral C) (hne : C.Nonempty)
     (A : E →ₗ[ℝ] F) : recessionCone (A '' C) = A '' recessionCone C := by
   classical

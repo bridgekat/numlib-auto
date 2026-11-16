@@ -8,49 +8,57 @@ import Numlib.Analysis.Convex.RelativeInterior
 /-!
 # Relative interiors, interiors and affine hulls from the support function
 
-The support function of a set records the closed half-spaces containing it, and therefore knows the
-closed convex hull exactly: `x ∈ cl (conv s)` if and only if `⟨x, y⟩ ≤ δ*(y ∣ s)` for every `y`. In
-finite dimensions it knows more — the relative interior, the interior and the affine hull of a
-convex set can all be read off from *which* of those inequalities are strict.
+Let $B$ be a bilinear pairing of real vector spaces $E$ and $F$, written
+$\langle x, y \rangle = B(x, y)$, and let $\delta^*(y \mid s) = \sup_{x \in s} \langle x, y \rangle$
+be the support function of a set $s \subseteq E$. The support function records the closed
+half-spaces that contain $s$, and therefore it determines the closed convex hull:
+$x \in \operatorname{cl}(\operatorname{conv} s)$ if and only if
+$\langle x, y \rangle \le \delta^*(y \mid s)$ for every $y$. In finite dimensions it determines
+more. The relative interior, the interior and the affine hull of a convex set are all determined by
+which of these inequalities are strict. The presentation follows §1 and §13 of
+[rockafellar1970convex].
 
-The dividing line is the set of directions in which the support function is **additively
-reversible**, `-δ*(-y ∣ C) = δ*(y ∣ C)`. These are exactly the directions in which `⟨·, y⟩` is
-constant on `C`, i.e. along which `C` lies inside a hyperplane; no inequality can be strict there.
-The relative interior asks for strictness everywhere else; the interior asks for strictness in
-every direction but `0`, so there are no reversible directions to spare; and the affine hull asks
-for equality in the reversible directions and nothing at all elsewhere.
+The dividing line is the set of directions $y$ in which the support function is **additively
+reversible**, $-\delta^*(-y \mid C) = \delta^*(y \mid C)$. These are exactly the directions in which
+$\langle \cdot, y \rangle$ is constant on $C$, that is, in which $C$ lies in a hyperplane; no
+inequality can be strict there. The relative interior asks for strictness in every other direction.
+The interior asks for strictness in every direction except $0$, so no reversible directions other
+than $0$ can exist. The affine hull asks for equality in the reversible directions and for nothing
+in the other directions.
 
 ## Main results
 
-* `supportFn_neg_eq_neg_iff`, `neg_supportFn_neg_eq_iff` — the reversible directions of a support
-  function are its directions of constancy.
-* `mem_relint_iff_lt_supportFn`, `mem_interior_iff_lt_supportFn` — the `ri` and `int` clauses
-  ([rockafellar1970convex] Theorem 13.1).
-* `mem_affineSpan_iff_eq_supportFn` — the `aff` clause: the affine hull of a set is the
-  intersection of the hyperplanes containing it. No convexity is needed.
-* `isBounded_iff_forall_bddAbove` — a set is bounded in the norm exactly when its support function
-  is finite everywhere.
+* `ConvexAnalysis.supportFn_neg_eq_neg_iff`, `ConvexAnalysis.neg_supportFn_neg_eq_iff`: the
+  reversible directions of a support function are its directions of constancy.
+* `ConvexAnalysis.mem_relint_iff_lt_supportFn`, `ConvexAnalysis.mem_interior_iff_lt_supportFn`: the
+  descriptions of $\operatorname{ri} C$ and $\operatorname{int} C$ (Theorem 13.1 of
+  [rockafellar1970convex]).
+* `ConvexAnalysis.mem_affineSpan_iff_eq_supportFn`: the description of $\operatorname{aff} C$. The
+  affine hull of a set is the intersection of the hyperplanes that contain it. No convexity is
+  needed.
+* `ConvexAnalysis.isBounded_iff_forall_bddAbove`: a set is bounded in the norm exactly when its
+  support function is finite everywhere.
 
-The closure clause is `mem_closure_convexHull_iff_le_supportFn`, in `Duality/Support.lean`; it is
-the one clause of the four that holds in any locally convex space.
+The description of the closure is `ConvexAnalysis.mem_closure_convexHull_iff_le_supportFn` in
+`Numlib.Analysis.Convex.Duality.Support`. It is the only one of the four descriptions that holds in
+every locally convex space.
 
-## Divergences from the reference
+## Implementation notes
 
-All three clauses here are genuinely finite-dimensional. Let `φ` be a discontinuous linear
-functional and `C = ker φ`, a dense proper subspace: then `aff C = ri C = C` while `int C = ∅`, and
-since a continuous functional constant on a dense set vanishes, the reversible directions of
-`δ*(· ∣ C)` are exactly the `y` with `⟨·, y⟩ = 0` and `δ*(y ∣ C) = +∞` elsewhere. All three
-conditions are then satisfied by every point of the space.
-
-The `int` clause carries two hypotheses the book does not write. **`B.SeparatingRight`**: over `ℝⁿ`
-paired with itself, `y ≠ 0` and `⟨·, y⟩ ≠ 0` are the same condition, but over a general pairing a
-`y ≠ 0` pairing trivially with `E` would demand `⟨x, y⟩ = 0 < δ*(y ∣ C) = 0`. **`C.Nonempty`**: for
-`C = ∅` the condition is false as soon as some `y ≠ 0` exists, and vacuously true over the zero
-space, where `int ∅ = ∅`.
-
-## References
-
-* [rockafellar1970convex] §13 and §1.
+* All three descriptions in this module need finite dimension. Let $\varphi$ be a discontinuous
+  linear functional and $C = \ker \varphi$, a dense proper subspace. Then
+  $\operatorname{aff} C = \operatorname{ri} C = C$, while $\operatorname{int} C = \emptyset$. A
+  continuous functional that is constant on a dense set vanishes, so the reversible directions of
+  $\delta^*(\cdot \mid C)$ are exactly the $y$ with $\langle \cdot, y \rangle = 0$, and
+  $\delta^*(y \mid C) = +\infty$ for all other $y$. Then every point of the space satisfies all
+  three conditions.
+* The description of the interior has two hypotheses that the classical statement does not write.
+  The first is that $B$ separates the points of $F$. Over $\mathbb{R}^n$ paired with itself,
+  $y \neq 0$ and $\langle \cdot, y \rangle \neq 0$ are the same condition. Over a general pairing, a
+  $y \neq 0$ that pairs trivially with $E$ would demand $\langle x, y \rangle = 0 < \delta^*(y \mid
+  C) = 0$. The second is that $C$ is nonempty. For $C = \emptyset$ the condition is false as soon as
+  some $y \neq 0$ exists, and it is vacuously true over the zero space, where
+  $\operatorname{int} \emptyset = \emptyset$.
 -/
 
 namespace ConvexAnalysis
@@ -62,7 +70,9 @@ section Constancy
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {s : Set E} {y : F}
 
-/-- **The support function in a direction of constancy is that constant.** -/
+/-- **The support function in a direction of constancy is that constant.** Let $s \subseteq E$ be
+nonempty, $y \in F$ and $c \in \mathbb{R}$. If $\langle x, y \rangle = c$ for every $x \in s$,
+then $\delta^*(y \mid s) = c$. -/
 theorem supportFn_eq_coe_of_forall_eq (hs : s.Nonempty) {c : ℝ} (h : ∀ x ∈ s, B x y = c) :
     supportFn B s y = ((c : ℝ) : EReal) := by
   obtain ⟨x₀, hx₀⟩ := hs
@@ -70,9 +80,14 @@ theorem supportFn_eq_coe_of_forall_eq (hs : s.Nonempty) {c : ℝ} (h : ∀ x ∈
   rw [← h x₀ hx₀]
   exact le_supportFn hx₀ y
 
-/-- **A support function is additively reversible in the direction `y` exactly when `⟨·, y⟩` is
-constant on the set**: `δ*(-y | s) = -δ*(y | s)` says that the supremum and the infimum of `⟨·, y⟩`
-over `s` agree. Nonemptiness is needed — for `s = ∅` both sides are `-∞` and `-(-∞) = +∞`. -/
+/-- **A support function is additively reversible in a direction exactly when the pairing is
+constant on the set.** Let $s \subseteq E$ be nonempty and $y \in F$. Then
+$$\delta^*(-y \mid s) = -\delta^*(y \mid s) \iff \langle \cdot, y \rangle \text{ is constant on
+  } s.$$
+
+The left side says that the supremum and the infimum of $\langle \cdot, y \rangle$ over $s$
+agree. Nonemptiness is necessary: for $s = \emptyset$ both $\delta^*(-y \mid s)$ and
+$\delta^*(y \mid s)$ are $-\infty$, and $-(-\infty) = +\infty$. -/
 theorem supportFn_neg_eq_neg_iff (hs : s.Nonempty) (y : F) :
     supportFn B s (-y) = -supportFn B s y ↔ ∃ c : ℝ, ∀ x ∈ s, B x y = c := by
   obtain ⟨x₀, hx₀⟩ := hs
@@ -100,8 +115,12 @@ theorem supportFn_neg_eq_neg_iff (hs : s.Nonempty) (y : F) :
       supportFn_eq_coe_of_forall_eq ⟨x₀, hx₀⟩ fun x hx => by rw [map_neg, hc x hx]
     rw [hy, hy', EReal.coe_neg]
 
-/-- `supportFn_neg_eq_neg_iff` in the orientation the clauses below use:
-`-δ*(-y | s) = δ*(y | s)`. -/
+/-- **Reversible directions are directions of constancy**, in the orientation that the descriptions
+below use. Let $s \subseteq E$ be nonempty and $y \in F$. Then
+$$-\delta^*(-y \mid s) = \delta^*(y \mid s) \iff \langle \cdot, y \rangle \text{ is constant on
+  } s.$$
+
+This is `ConvexAnalysis.supportFn_neg_eq_neg_iff` with the two sides of the equation exchanged. -/
 theorem neg_supportFn_neg_eq_iff (hs : s.Nonempty) (y : F) :
     -supportFn B s (-y) = supportFn B s y ↔ ∃ c : ℝ, ∀ x ∈ s, B x y = c := by
   rw [neg_eq_iff_eq_neg]
@@ -116,9 +135,15 @@ section FiniteDim
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [AddCommGroup F] [Module ℝ F] {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {C : Set E}
 
-/-- **A point outside the affine hull is cut away from it by a direction of constancy.** The affine
-hull is closed because the dimension is finite, so a point outside it is strongly separated from
-it, and a functional bounded below on an affine set is constant on it. -/
+/-- **A point outside the affine hull is cut away from it by a direction of constancy.** Let $E$ be
+a finite-dimensional normed space, and let the pairing be compatible with its topology. Let
+$C \subseteq E$ be nonempty and $x \notin \operatorname{aff} C$. Then there are $y \in F$ and
+$c \in \mathbb{R}$ with $\langle z, y \rangle = c$ for every $z \in C$ and
+$\langle x, y \rangle \neq c$.
+
+The affine hull is closed because the dimension is finite, so a point outside it is strongly
+separated from it, and a linear functional that is bounded below on an affine set is constant on
+it. -/
 theorem exists_forall_eq_of_notMem_affineSpan (hne : C.Nonempty) {x : E}
     (hx : x ∉ affineSpan ℝ C) :
     ∃ (y : F) (c : ℝ), (∀ z ∈ C, B z y = c) ∧ B x y ≠ c := by
@@ -136,13 +161,19 @@ theorem exists_forall_eq_of_notMem_affineSpan (hne : C.Nonempty) {x : E}
     have h₂ : v < g p := hgA p (subset_affineSpan ℝ C hp)
     exact ne_of_lt (by linarith)
 
-/-- **The `ri` clause**: a point lies in the relative interior of a convex set exactly when it
-satisfies every inequality the support function records, *strictly* in every direction in which the
-support function is not additively reversible.
+/-- **The relative interior from the support function.** Let $E$ be a finite-dimensional normed
+space, and let the pairing be compatible with its topology: every functional
+$\langle \cdot, y \rangle$ is continuous, and every continuous linear functional on $E$ has this
+form. Let $C \subseteq E$ be convex and $x \in E$. Then $x \in \operatorname{ri} C$ if and only
+if
+* $\langle x, y \rangle \le \delta^*(y \mid C)$ for every $y \in F$, and
+* $\langle x, y \rangle < \delta^*(y \mid C)$ for every $y \in F$ with
+  $-\delta^*(-y \mid C) \neq \delta^*(y \mid C)$.
 
-Read through the pairing: `⟨x, y⟩ ≤ δ*(y | C)` is an equality precisely when `⟨·, y⟩` attains its
-maximum over `C` at `x`, and that is compatible with `x ∈ ri C` only for a `⟨·, y⟩` constant
-on `C`. -/
+This is the description of the relative interior in Theorem 13.1 of [rockafellar1970convex]. In
+terms of the pairing, $\langle x, y \rangle = \delta^*(y \mid C)$ holds exactly when
+$\langle \cdot, y \rangle$ attains its maximum over $C$ at $x$, and this is compatible with
+$x \in \operatorname{ri} C$ only when $\langle \cdot, y \rangle$ is constant on $C$. -/
 theorem mem_relint_iff_lt_supportFn (hC : Convex ℝ C) (x : E) :
     x ∈ ri C ↔ (∀ y : F, ((B x y : ℝ) : EReal) ≤ supportFn B C y) ∧
       ∀ y : F, -supportFn B C (-y) ≠ supportFn B C y →
@@ -191,10 +222,18 @@ theorem mem_relint_iff_lt_supportFn (hC : Convex ℝ C) (x : E) :
     have hx' : B x y = c := hclc hxcl
     exact hzne (by rw [hy z, hy x, hz', hx'])
 
-/-- **The `int` clause**: a point lies in the interior of a nonempty convex set exactly when it
-satisfies *strictly* every inequality the support function records in a nonzero direction. The
-relative interior is the interior exactly when `0` is the only reversible direction, and asking for
-strictness in every nonzero direction asks for both at once. -/
+/-- **The interior from the support function.** Let $E$ be a finite-dimensional normed space, and
+let the pairing be compatible with its topology. Let the pairing separate the points of $F$: if
+$\langle x, y \rangle = 0$ for every $x$, then $y = 0$. Let $C \subseteq E$ be nonempty and
+convex, and $x \in E$. Then
+$$x \in \operatorname{int} C \iff \langle x, y \rangle < \delta^*(y \mid C) \text{ for every } y
+  \in F \text{ with } y \neq 0.$$
+This is the description of the interior in Theorem 13.1 of [rockafellar1970convex].
+
+The relative interior is the interior exactly when $0$ is the only reversible direction, and
+strictness in every nonzero direction asks for both conditions at once. The hypotheses on the
+pairing and on nonemptiness are not in the classical statement; the module documentation
+explains why they are needed. -/
 theorem mem_interior_iff_lt_supportFn (hC : Convex ℝ C) (hne : C.Nonempty)
     (hB : B.SeparatingRight) (x : E) :
     x ∈ interior C ↔ ∀ y : F, y ≠ 0 → ((B x y : ℝ) : EReal) < supportFn B C y := by
@@ -249,8 +288,13 @@ theorem mem_interior_iff_lt_supportFn (hC : Convex ℝ C) (hne : C.Nonempty)
       subst hy
       exact hrev (by simp [supportFn_zero hne])
 
-/-- **The `aff` clause**: the affine hull of a nonempty set is the set of points satisfying with
-equality every inequality the support function records reversibly. Convexity is not needed. -/
+/-- **The affine hull from the support function.** Let $E$ be a finite-dimensional normed space, and
+let the pairing be compatible with its topology. Let $C \subseteq E$ be nonempty and $x \in E$.
+Then $x \in \operatorname{aff} C$ if and only if
+$$\langle x, y \rangle = \delta^*(y \mid C) \quad\text{for every } y \in F \text{ with }
+  -\delta^*(-y \mid C) = \delta^*(y \mid C).$$
+
+Convexity of $C$ is not needed. -/
 theorem mem_affineSpan_iff_eq_supportFn (hne : C.Nonempty) (x : E) :
     x ∈ affineSpan ℝ C ↔ ∀ y : F, -supportFn B C (-y) = supportFn B C y →
       ((B x y : ℝ) : EReal) = supportFn B C y := by
@@ -273,12 +317,13 @@ theorem mem_affineSpan_iff_eq_supportFn (hne : C.Nonempty) (x : E) :
 
 /-! ### Boundedness in the norm -/
 
-/-- **Boundedness in the norm**: in finite dimensions a set is bounded in the norm exactly when
-every `⟨·, y⟩` is bounded above on it, i.e. exactly when its support function is finite
-everywhere.
+/-- **Boundedness in the norm.** Let $E$ be a finite-dimensional normed space, and let the pairing
+be compatible with its topology. A set $C \subseteq E$ is bounded in the norm if and only if for
+every $y \in F$ the functional $\langle \cdot, y \rangle$ is bounded above on $C$, that is, if
+and only if $\delta^*(\cdot \mid C) < +\infty$ everywhere.
 
-`exists_supportFn_finite_iff` states the same equivalence with "bounded" read in the *pairing*
-sense, and holds in any locally convex space. What is finite-dimensional here is the upgrade to
+`ConvexAnalysis.exists_supportFn_finite_iff` uses boundedness in the sense of the pairing and
+holds in every locally convex space. The step that needs finite dimension is the passage to
 `Bornology.IsBounded`, a coordinate estimate against a finite basis. -/
 theorem isBounded_iff_forall_bddAbove :
     Bornology.IsBounded C ↔ ∀ y : F, ∃ c : ℝ, ∀ x ∈ C, B x y ≤ c := by

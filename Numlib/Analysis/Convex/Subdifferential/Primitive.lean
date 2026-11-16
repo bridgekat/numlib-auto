@@ -7,47 +7,52 @@ import Numlib.Analysis.Convex.Subdifferential.OneDim
 /-!
 # The convex primitive of a nondecreasing function on the line
 
-A nondecreasing `φ : ℝ → [-∞, +∞]` that is finite somewhere is squeezed between the two one-sided
-derivatives of a closed proper convex function on `ℝ`, uniquely determined up to an additive
-constant. The uniqueness clause is in `Subdifferential/OneDim.lean`; this module supplies the
-existence clause.
+Let $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$ be nondecreasing and finite at some point.
+Then there is a closed proper convex function $f$ on $\mathbb{R}$ with $f'_- \le \varphi \le f'_+$,
+and $f$ is unique up to an additive constant. This is Theorem 24.2 of [rockafellar1970convex]. The
+uniqueness part is in `Numlib.Analysis.Convex.Subdifferential.OneDim`, and this module proves the
+existence part.
 
-The object that carries the construction is the region
+The construction uses the region
+$$\Gamma(\varphi) = \{(x, y) \in \mathbb{R} \times \mathbb{R} \mid \varphi_-(x) \le y \le
+  \varphi_+(x)\}, \qquad \varphi_-(x) = \sup_{z < x} \varphi(z), \quad \varphi_+(x) = \inf_{z > x}
+  \varphi(z),$$
+a **complete non-decreasing curve**. It is a chain for the coordinatewise order, and it meets every
+antidiagonal $\{(u, v) \mid u + v = s\}$. This makes it a maximal chain. A maximal monotone relation
+on the line is a subdifferential, so there is a closed proper convex $f$ with
+$\partial f = \Gamma(\varphi)$. The endpoints of the fibres of $\Gamma(\varphi)$ and of $\partial f$
+then give $f'_- = \varphi_- \le \varphi \le \varphi_+ = f'_+$. No integral is used: the classical
+formula $f(x) = \int_a^x \varphi(t) \, dt$ is replaced by the subdifferential.
 
-```
-Γ(φ) = {(x, y) ∈ ℝ × ℝ | φ⁻(x) ≤ y ≤ φ⁺(x)},   φ⁻(x) = ⨆_{z < x} φ z,  φ⁺(x) = ⨅_{z > x} φ z,
-```
+## Main definitions
 
-a *complete non-decreasing curve*. It is a chain for the coordinatewise order and it meets every
-antidiagonal `{(u, v) | u + v = s}`, which is exactly what makes it a *maximal* chain. A maximal
-monotone relation on the line is a subdifferential, so this yields a closed proper convex `f` with
-`∂f = Γ(φ)`; reading the endpoints of `Γ(φ)ₓ` off `∂f(x)` gives `f'₋ = φ⁻ ≤ φ ≤ φ⁺ = f'₊`. No
-integral appears anywhere: the classical `f(x) = ∫ₐˣ φ(t) dt` is replaced by `∂f` itself.
+* `ConvexAnalysis.monotoneCurve`: the region $\Gamma(\varphi)$.
 
 ## Main results
 
-* `monotoneCurve` — the region `Γ(φ)` above; `isMaximalMonotoneRel_monotoneCurve` says it is a
-  maximal monotone mapping, and `subgradientRel_eq_monotoneCurve_rightDeriv` is the converse, that
-  every `∂f` on the line is the curve of its own right derivative.
-* `exists_monotone_ne_bot_ne_top_monotoneCurve_eq` — every `∂f` is `Γ(φ)` for a `φ` finite at a
-  point, since moving `φ` at one point changes neither its monotonicity nor `Γ(φ)`.
-* `exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq` — the existence clause, with the
-  identification `f'₋ = φ⁻` and `f'₊ = φ⁺`.
-* `exists_closedProperConvexFn_forall_le_le` — existence with uniqueness
-  ([rockafellar1970convex] Theorem 24.2).
+* `ConvexAnalysis.isMaximalMonotoneRel_monotoneCurve`: for a nondecreasing $\varphi$ that is finite
+  at a point, $\Gamma(\varphi)$ is maximal monotone.
+* `ConvexAnalysis.subgradientRel_eq_monotoneCurve_rightDeriv`: conversely, every $\partial f$ on the
+  line is the curve $\Gamma(f'_+)$.
+* `ConvexAnalysis.exists_monotone_ne_bot_ne_top_monotoneCurve_eq`: every $\partial f$ on the line is
+  $\Gamma(\varphi)$ for a nondecreasing $\varphi$ that is finite at a point. A change of $\varphi$
+  at one point changes neither its monotonicity nor $\Gamma(\varphi)$.
+* `ConvexAnalysis.exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq`: the existence part, with
+  $f'_- = \varphi_-$ and $f'_+ = \varphi_+$.
+* `ConvexAnalysis.exists_closedProperConvexFn_forall_le_le`: existence and uniqueness
+  ([rockafellar1970convex], Theorem 24.2).
 
 ## Implementation notes
 
-Maximality of `Γ(φ)` is proved from the antidiagonal statement rather than by case analysis on the
-places where `φ` is `±∞`: if `p` is comparable with every element of `Γ(φ)`, then a `q ∈ Γ(φ)` with
-the same coordinate sum must equal it. `Γ(φ)ₓ` can be empty — to the left of a point where
-`φ = -∞` — so the identity `Γ(φ) = ∂f` says nothing pointwise there; what settles the endpoints is
-that an empty extended-real interval has both of them `-∞` or both `+∞`, the two alternatives being
-separated by comparison with a fibre that is not empty.
-
-## References
-
-* [rockafellar1970convex] §24.
+* The maximality of $\Gamma(\varphi)$ is proved from the antidiagonal statement, not by a case
+  analysis on the points where $\varphi = \pm\infty$. If a pair $p$ is comparable with every element
+  of $\Gamma(\varphi)$, then $p$ equals the element of $\Gamma(\varphi)$ with the same coordinate
+  sum.
+* The fibre $\{y \mid (x, y) \in \Gamma(\varphi)\}$ can be empty, for example to the left of a point
+  where $\varphi = -\infty$. There the identity $\Gamma(\varphi) = \partial f$ gives no information
+  at $x$. What decides the endpoints is that an extended-real interval with no real point has both
+  endpoints $-\infty$ or both $+\infty$. A comparison with a fibre that is not empty decides between
+  the two cases.
 -/
 
 open Set Filter Topology
@@ -58,8 +63,9 @@ namespace ConvexAnalysis
 
 section Interval
 
-/-- Two extended-real intervals with the same real points have the same endpoints, as soon as one
-of them contains a real point. -/
+/-- Let $A_1, B_1, A_2, B_2 \in [-\infty, +\infty]$, and let some real $y$ satisfy
+$A_1 \le y \le B_1$. If the intervals $[A_1, B_1]$ and $[A_2, B_2]$ contain the same real
+numbers, then $A_1 = A_2$ and $B_1 = B_2$. -/
 theorem eq_and_eq_of_forall_coe_mem_iff {A₁ B₁ A₂ B₂ : EReal}
     (hne : ∃ y : ℝ, A₁ ≤ (y : EReal) ∧ (y : EReal) ≤ B₁)
     (h : ∀ y : ℝ, (A₁ ≤ (y : EReal) ∧ (y : EReal) ≤ B₁) ↔
@@ -87,9 +93,10 @@ theorem eq_and_eq_of_forall_coe_mem_iff {A₁ B₁ A₂ B₂ : EReal}
       obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       exact absurd ((h r).2 ⟨hy₃.trans (hy₂.trans hr₁.le), hr₂.le⟩).2 (not_le.2 hr₁)
 
-/-- **An extended-real interval with no real point is degenerate at one end of the line.** If
-`A ≤ B` and no real `y` satisfies `A ≤ y ≤ B`, then `A = B = -∞` or `A = B = +∞`: a finite `A`
-would be such a `y`, and `A = -∞` with `B ≠ -∞` leaves room for one. -/
+/-- Let $A \le B$ in $[-\infty, +\infty]$, and let no real $y$ satisfy $A \le y \le B$. Then
+$A = B = -\infty$ or $A = B = +\infty$.
+
+A finite $A$ would be such a $y$, and $A = -\infty$ with $B \neq -\infty$ leaves room for one. -/
 theorem eq_bot_or_eq_top_of_forall_not_coe_mem {A B : EReal} (hAB : A ≤ B)
     (h : ∀ y : ℝ, ¬(A ≤ (y : EReal) ∧ (y : EReal) ≤ B)) :
     (A = ⊥ ∧ B = ⊥) ∨ (A = ⊤ ∧ B = ⊤) := by
@@ -104,31 +111,36 @@ theorem eq_bot_or_eq_top_of_forall_not_coe_mem {A B : EReal} (hAB : A ≤ B)
 
 end Interval
 
-/-! ### The complete non-decreasing curve of a nondecreasing function -/
+/-! ### The complete non-decreasing curve of a function -/
 
 section Curve
 
 variable {φ : ℝ → EReal}
 
-/-- The region between the two one-sided limits of `φ`,
+/-- The region between the two one-sided limits of $\varphi \colon \mathbb{R} \to [-\infty,
++\infty]$:
+$$\Gamma(\varphi) = \{(x, y) \in \mathbb{R} \times \mathbb{R} \mid \sup_{z < x} \varphi(z) \le y
+  \le \inf_{z > x} \varphi(z)\}.$$
 
-```
-Γ(φ) = {(x, y) | ⨆_{z < x} φ z ≤ y ≤ ⨅_{z > x} φ z},
-```
-
-a **complete non-decreasing curve**. For nondecreasing `φ` it is a chain for the coordinatewise
-order on `ℝ × ℝ`, and it is the graph of `∂f` for a closed proper convex `f`. -/
+For a nondecreasing $\varphi$ that is finite at a point, it is a **complete non-decreasing
+curve**: a maximal chain for the coordinatewise order on $\mathbb{R} \times \mathbb{R}$, and the
+graph of $\partial f$ for a closed proper convex $f$. -/
 def monotoneCurve (φ : ℝ → EReal) : SetRel ℝ ℝ :=
   {p : ℝ × ℝ | (⨆ z ∈ Iio p.1, φ z) ≤ (p.2 : EReal) ∧ (p.2 : EReal) ≤ ⨅ z ∈ Ioi p.1, φ z}
 
+/-- A pair $(x, y)$ is in $\Gamma(\varphi)$ if and only if $\sup_{z < x} \varphi(z) \le y \le
+\inf_{z > x} \varphi(z)$. -/
 @[simp] theorem mem_monotoneCurve {x y : ℝ} :
     ((x, y) : ℝ × ℝ) ∈ monotoneCurve φ ↔
       (⨆ z ∈ Iio x, φ z) ≤ (y : EReal) ∧ (y : EReal) ≤ ⨅ z ∈ Ioi x, φ z :=
   Iff.rfl
 
-/-- The curve is a monotone mapping, for *every* `φ`, monotone or not: between two of its points
-with distinct abscissas sits a value of `φ` itself, which bounds the left ordinate from above and
-the right ordinate from below. -/
+/-- For every $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$, monotone or not, the region
+$\Gamma(\varphi)$ is a monotone relation.
+
+Between two of its points with different first coordinates lies a value of $\varphi$. This value
+bounds the second coordinate of the left point from above and that of the right point from
+below. -/
 theorem isMonotoneRel_monotoneCurve (φ : ℝ → EReal) :
     IsMonotoneRel (innerₗ ℝ) (monotoneCurve φ) := by
   have key : ∀ p ∈ monotoneCurve φ, ∀ q ∈ monotoneCurve φ, p.1 < q.1 → p.2 ≤ q.2 := by
@@ -149,9 +161,12 @@ theorem isMonotoneRel_monotoneCurve (φ : ℝ → EReal) :
     · exact Or.inr (Prod.le_def.2 ⟨heq.ge, hle⟩)
   · exact Or.inr (Prod.le_def.2 ⟨hgt.le, key q hq p hp hgt⟩)
 
-/-- The curve meets every antidiagonal: for each `s : ℝ` there is a `u` with `(u, s - u) ∈ Γ(φ)`.
-Equivalently `(x, y) ↦ x + y` maps a complete non-decreasing curve onto `ℝ`, and that is what makes
-the curve a *maximal* chain. The point is `u = sup {t | φ t ≤ s - t}`. -/
+/-- Let $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$ be nondecreasing and finite at some point
+$a$. Then $\Gamma(\varphi)$ meets every antidiagonal: for each $s \in \mathbb{R}$ there is $u$
+with $(u, s - u) \in \Gamma(\varphi)$.
+
+Equivalently, $(x, y) \mapsto x + y$ maps $\Gamma(\varphi)$ onto $\mathbb{R}$. This makes
+$\Gamma(\varphi)$ a maximal chain. The point is $u = \sup \{t \mid \varphi(t) \le s - t\}$. -/
 theorem exists_mem_monotoneCurve_sub (hφ : Monotone φ) {a : ℝ} (hb : φ a ≠ ⊥) (ht : φ a ≠ ⊤)
     (s : ℝ) : ∃ u : ℝ, ((u, s - u) : ℝ × ℝ) ∈ monotoneCurve φ := by
   obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (lt_top_iff_ne_top.2 ht)
@@ -195,9 +210,11 @@ theorem exists_mem_monotoneCurve_sub (hφ : Monotone φ) {a : ℝ} (hb : φ a �
       exact_mod_cast (by linarith [min_le_right z (s - r)] : r ≤ s - min z (s - r))
     exact hwT (h₁.le.trans h₂)
 
-/-- The curve of a nondecreasing `φ` finite at one point is a maximal monotone mapping: a pair `p`
-comparable with everything on the curve equals the point of the curve with the same coordinate
-sum. -/
+/-- Let $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$ be nondecreasing and finite at some
+point. Then $\Gamma(\varphi)$ is a maximal monotone relation on $\mathbb{R}$.
+
+A pair $p$ that is comparable with every point of $\Gamma(\varphi)$ equals the point of
+$\Gamma(\varphi)$ with the same coordinate sum. -/
 theorem isMaximalMonotoneRel_monotoneCurve (hφ : Monotone φ) {a : ℝ} (hb : φ a ≠ ⊥)
     (ht : φ a ≠ ⊤) : IsMaximalMonotoneRel (innerₗ ℝ) (monotoneCurve φ) := by
   refine ⟨isMonotoneRel_monotoneCurve φ, fun σ hσ hsub p hp => ?_⟩
@@ -210,27 +227,34 @@ theorem isMaximalMonotoneRel_monotoneCurve (hφ : Monotone φ) {a : ℝ} (hb : �
   rw [heq]
   exact hu
 
-/-- Every subdifferential on the line is such a curve, namely the one of its own right derivative.
-This is the two crossed one-sided limit formulas read through `mem_subgradientRel_iff`. -/
+/-- Let $f \colon \mathbb{R} \to [-\infty, +\infty]$ be a closed proper convex function. Then the
+graph of $\partial f$ is the curve of its own right derivative:
+$$\partial f = \Gamma(f'_+).$$
+
+This is the two crossed one-sided limit formulas `ConvexAnalysis.iInf_leftDeriv_Ioi` and
+`ConvexAnalysis.iSup_rightDeriv_Iio`, read through `ConvexAnalysis.mem_subgradientRel_iff`. -/
 theorem subgradientRel_eq_monotoneCurve_rightDeriv {f : ℝ → EReal} (hf : ClosedProperConvexFn f) :
     subgradientRel (innerₗ ℝ) f = monotoneCurve (rightDeriv f) := by
   ext p
   rw [show p = ((p.1, p.2) : ℝ × ℝ) from rfl, mem_subgradientRel_iff hf.proper,
     mem_monotoneCurve, iSup_rightDeriv_Iio hf, iInf_rightDeriv_Ioi hf]
 
-/-! ### Perturbing `φ` at a single point
+/-!
+### Perturbation of a function at a single point
 
-`Γ(φ)` reads `φ` only through its two one-sided limits, so the value of `φ` at one isolated point
-is invisible to it — provided the new value stays between those limits, so that monotonicity
-survives. This is what lets a `φ` that is `±∞` everywhere be replaced by one that is finite
-somewhere. -/
+The region $\Gamma(\varphi)$ depends on $\varphi$ only through its two one-sided limits. So it does
+not see the value of $\varphi$ at one point, provided that the new value stays between these limits,
+so that monotonicity is kept. This lets a $\varphi$ that is $\pm\infty$ everywhere be replaced by
+one that is finite at a point.
+-/
 
 section Perturb
 
 variable {φ ψ : ℝ → EReal} {a : ℝ}
 
-/-- **A nondecreasing `φ` stays nondecreasing when its value at one point is moved anywhere between
-the two one-sided limits there.** -/
+/-- Let $\varphi$ be nondecreasing, and let $\psi$ agree with $\varphi$ except at $a$, with
+$$\sup_{z < a} \varphi(z) \le \psi(a) \le \inf_{z > a} \varphi(z).$$
+Then $\psi$ is nondecreasing. -/
 theorem monotone_of_forall_ne_of_le_of_le (hφ : Monotone φ) (heq : ∀ z, z ≠ a → ψ z = φ z)
     (h₁ : (⨆ z ∈ Iio a, φ z) ≤ ψ a) (h₂ : ψ a ≤ ⨅ z ∈ Ioi a, φ z) : Monotone ψ := by
   intro s t hst
@@ -248,10 +272,14 @@ theorem monotone_of_forall_ne_of_le_of_le (hφ : Monotone φ) (heq : ∀ z, z �
     · rw [heq t ht]
       exact hφ hst
 
-/-- Such a perturbation leaves the curve unchanged: neither `⨆_{z < x} φ z` nor `⨅_{z > x} φ z`
-can see the value at `a`, since `ψ a` is squeezed between values of `φ` at points strictly between
-`a` and `x`, which are themselves in the range of the supremum. This is what turns
-`subgradientRel_eq_monotoneCurve_rightDeriv` into a statement about a `φ` finite at a point. -/
+/-- Let $\varphi$ be nondecreasing, and let $\psi$ agree with $\varphi$ except at $a$, with $\sup_{z
+< a} \varphi(z) \le \psi(a) \le \inf_{z > a} \varphi(z)$. Then $\Gamma(\psi) = \Gamma(\varphi)$.
+
+For $x \neq a$, neither $\sup_{z < x}$ nor $\inf_{z > x}$ sees the value at $a$, because
+$\psi(a)$ lies between values of $\varphi$ at points strictly between $a$ and $x$, and these
+points are in the range of the supremum or infimum. This is what turns
+`ConvexAnalysis.subgradientRel_eq_monotoneCurve_rightDeriv` into a statement about a $\varphi$
+that is finite at a point. -/
 theorem monotoneCurve_eq_of_forall_ne (hφ : Monotone φ) (heq : ∀ z, z ≠ a → ψ z = φ z)
     (h₁ : (⨆ z ∈ Iio a, φ z) ≤ ψ a) (h₂ : ψ a ≤ ⨅ z ∈ Ioi a, φ z) :
     monotoneCurve ψ = monotoneCurve φ := by
@@ -306,14 +334,18 @@ theorem monotoneCurve_eq_of_forall_ne (hφ : Monotone φ) (heq : ∀ z, z ≠ a 
   rw [show p = ((p.1, p.2) : ℝ × ℝ) from rfl, mem_monotoneCurve, mem_monotoneCurve,
     hsup p.1, hinf p.1]
 
-/-- Every subdifferential on the line is the curve of a nondecreasing function that is finite
-somewhere — the implication from the order-theoretic *characterisation* of a complete
-non-decreasing curve back to the usual *definition* of one.
+/-- Let $f \colon \mathbb{R} \to [-\infty, +\infty]$ be a closed proper convex function. Then there
+is a nondecreasing $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$, finite at some point,
+with
+$$\partial f = \Gamma(\varphi).$$
+This is the passage from the order-theoretic characterization of a complete non-decreasing curve
+back to its usual definition.
 
-`subgradientRel_eq_monotoneCurve_rightDeriv` gives `∂f = Γ(f'₊)` with `f'₊` nondecreasing, so only
-finiteness at a point is missing. `f'₊` is finite on `int (dom f)`; the one case that does not cover
-is `dom f` a single point `a`, and there `f'₊` is replaced at *one* point of `ri (dom f)` by a
-subgradient, which the curve does not notice. -/
+`ConvexAnalysis.subgradientRel_eq_monotoneCurve_rightDeriv` gives $\partial f = \Gamma(f'_+)$
+with $f'_+$ nondecreasing, so only finiteness at a point is missing. $f'_+$ is finite on
+$\operatorname{int}(\operatorname{dom} f)$. The case that this does not cover is
+$\operatorname{dom} f = \{a\}$, a single point. There $f'_+$ is replaced at $a$ by a
+subgradient, and the curve does not change. -/
 theorem exists_monotone_ne_bot_ne_top_monotoneCurve_eq {f : ℝ → EReal}
     (hf : ClosedProperConvexFn f) :
     ∃ φ : ℝ → EReal, Monotone φ ∧ (∃ a, φ a ≠ ⊥ ∧ φ a ≠ ⊤) ∧
@@ -350,14 +382,18 @@ section Primitive
 
 variable {φ : ℝ → EReal}
 
-/-- **The existence clause**, in its sharpest form: a nondecreasing `φ : ℝ → [-∞, +∞]` finite at
-one point is the derivative of a closed proper convex function on the line, in the precise sense
-that the one-sided limits of `φ` *are* the one-sided derivatives of `f`.
+/-- Let $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$ be nondecreasing and finite at some
+point. Then there is a closed proper convex function
+$f \colon \mathbb{R} \to [-\infty, +\infty]$ whose one-sided derivatives are the one-sided
+limits of $\varphi$:
+$$f'_-(x) = \sup_{z < x} \varphi(z), \qquad f'_+(x) = \inf_{z > x} \varphi(z) \qquad \text{for
+  every } x \in \mathbb{R}.$$
 
-Maximality of `Γ(φ)` turns it into an `f` with `∂f = Γ(φ)`; at a fixed `x` that says
-the intervals `[φ⁻(x), φ⁺(x)]` and `[f'₋(x), f'₊(x)]` have the same real points, hence the same
-endpoints whenever either has a real point at all. Where neither has, both are `{-∞}` or both
-`{+∞}`, decided by comparison across the point where `φ` is finite. -/
+The maximality of $\Gamma(\varphi)$ gives an $f$ with $\partial f = \Gamma(\varphi)$. At a fixed
+$x$ this says that the intervals $[\varphi_-(x), \varphi_+(x)]$ and $[f'_-(x), f'_+(x)]$ contain
+the same real numbers, so they have the same endpoints if one of them contains a real number. If
+neither does, both are $\{-\infty\}$ or both are $\{+\infty\}$, and a comparison across the
+point where $\varphi$ is finite decides which. -/
 theorem exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq (hφ : Monotone φ) {a : ℝ}
     (hb : φ a ≠ ⊥) (ht : φ a ≠ ⊤) :
     ∃ f : ℝ → EReal, ClosedProperConvexFn f ∧
@@ -415,9 +451,15 @@ theorem exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq (hφ : Monotone �
         (lt_irrefl ⊥)
     · exact ⟨g₁.trans h₁.symm, g₂.trans h₂.symm⟩
 
-/-- A nondecreasing `φ : ℝ → [-∞, +∞]` that is finite at one point lies
-between the one-sided derivatives of a closed proper convex function on the line, and that function
-is unique up to an additive constant. -/
+/-- Let $\varphi \colon \mathbb{R} \to [-\infty, +\infty]$ be nondecreasing and finite at some
+point. Then there is a closed proper convex function
+$f \colon \mathbb{R} \to [-\infty, +\infty]$ with
+$$f'_-(x) \le \varphi(x) \le f'_+(x) \qquad \text{for every } x \in \mathbb{R},$$
+and every closed proper convex $g$ with $g'_- \le \varphi \le g'_+$ is $g = f + \alpha$ for some
+$\alpha \in \mathbb{R}$. This is Theorem 24.2 of [rockafellar1970convex].
+
+Existence is `ConvexAnalysis.exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq`, and
+uniqueness is `ConvexAnalysis.exists_eq_add_coe_of_le_le`. -/
 theorem exists_closedProperConvexFn_forall_le_le (hφ : Monotone φ) {a : ℝ} (hb : φ a ≠ ⊥)
     (ht : φ a ≠ ⊤) :
     ∃ f : ℝ → EReal, ClosedProperConvexFn f ∧ (∀ x, leftDeriv f x ≤ φ x) ∧

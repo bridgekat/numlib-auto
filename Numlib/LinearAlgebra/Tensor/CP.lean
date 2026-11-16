@@ -13,30 +13,40 @@ import Numlib.LinearAlgebra.Tensor.Unfolding
 /-!
 # The CP format and tensor rank
 
-A CP (CANDECOMP/PARAFAC) tensor ([golub2013matrix] §12.5.4–12.5.5) is a weighted sum of `r`
-rank-one tensors, `𝒳 = ∑_j λ_j F⁽¹⁾(:, j) ∘ ⋯ ∘ F⁽ᵈ⁾(:, j)`, given by the weights `c : ρ → R` and
-the factor matrices `F i : Matrix (κ i) ρ R` whose columns are the rank-one factors. Its unfoldings
-are products with the Khatri–Rao product of the other factors, and the tensor rank is the least
-number of terms of a CP representation.
-
-The ALS iteration of the book is an unnumbered "Repeat" framework; what each of its updates
-solves is a matrix least-squares problem on the unfolding `Tensor.modeUnfold_cp`. The weights'
-normalization (unit columns) is a constraint of the approximation problem, not of the format.
+A CP (CANDECOMP/PARAFAC) tensor ([golub2013matrix], §12.5.4–12.5.5) is a weighted sum of $r$
+rank-one tensors,
+$$\mathcal{X} = \sum_j \lambda_j \, F^{(1)}(:, j) \circ \cdots \circ F^{(d)}(:, j).$$
+It is given by the weights $\lambda_j$ and the factor matrices $F^{(i)}$, whose columns are the
+vectors of the rank-one terms. Its mode-$k$ unfolding is $\mathcal{X}_{(k)} = F^{(k)}
+\operatorname{diag}(\lambda) (\bigodot_{j \neq k} F^{(j)})^T$, where $\bigodot$ is the Khatri–Rao
+product, and its vectorization is $\operatorname{vec}(\mathcal{X}) = (F^{(d)} \odot \cdots \odot
+F^{(1)}) \lambda$. The tensor rank of a tensor is the least number of terms of a CP representation
+of it.
 
 ## Main definitions
 
-* `Tensor.cp c F`: the CP tensor.
-* `Tensor.tensorRank A`: the least number of rank-one terms representing `A`.
+* `Tensor.cp`: the CP tensor with given weights and factor matrices.
+* `Tensor.tensorRank`: the least number of rank-one terms in a CP representation of a tensor.
 
-## Main statements
+## Main results
 
-* `Tensor.modeUnfold_cp`: `𝒳_(k) = F_k diag(c) (⊙_{j ≠ k} F_j)ᵀ`.
-* `Tensor.vecFin_cp`: `vec 𝒳 = (F_d ⊙ ⋯ ⊙ F_1) c`.
-* `Tensor.tensorRank_le_iff`, `Tensor.isRankOne_iff_tensorRank_le_one`.
+* `Tensor.modeUnfold_cp`: $\mathcal{X}_{(k)} = F^{(k)} \operatorname{diag}(\lambda) (\bigodot_{j
+  \neq k} F^{(j)})^T$.
+* `Tensor.vecFin_cp`: $\operatorname{vec}(\mathcal{X}) = (F^{(d)} \odot \cdots \odot F^{(1)})
+  \lambda$.
+* `Tensor.tensorRank_le_iff`: the tensor rank is at most $r$ if and only if the tensor is a CP
+  tensor with $r$ terms.
+* `Tensor.isRankOne_iff_tensorRank_le_one`: a tensor with at least one mode is rank-one if and only
+  if its tensor rank is at most one.
 
-## References
+## Implementation notes
 
-* [golub2013matrix], §12.5.4–12.5.5.
+* The weights are a vector `c : ρ → R`, and the factor matrices are `F i : Matrix (κ i) ρ R`. The
+  terms are indexed by an arbitrary finite type $\rho$.
+* The alternating least-squares iteration of [golub2013matrix] is an unnumbered "Repeat" framework.
+  Each of its updates solves a matrix least-squares problem in the unfolding of
+  `Tensor.modeUnfold_cp`. The normalization of the factors to unit columns is a constraint of the
+  approximation problem, not of the format, so it is not part of `Tensor.cp`.
 -/
 
 universe u v w
@@ -51,16 +61,23 @@ section CP
 
 variable [Fintype ι] [CommSemiring R] [Fintype ρ]
 
-/-- The CP tensor ([golub2013matrix] (12.5.15), (12.5.21)): `∑_j c_j F_1(:, j) ∘ ⋯ ∘ F_d(:, j)`. -/
+/-- The **CP tensor** ([golub2013matrix], (12.5.15) and (12.5.21)). Let $R$ be a commutative
+semiring, let the set of modes $\iota$ and the index set $\rho$ of the terms be finite, let
+$c \in R^\rho$ be the weights, and let $F_i$ be matrices with rows indexed by $\kappa_i$ and
+columns indexed by $\rho$. The CP tensor is
+$$\sum_{j \in \rho} c_j \, F_1(:, j) \circ \cdots \circ F_d(:, j).$$
+-/
 def cp (c : ρ → R) (F : ∀ i, Matrix (κ i) ρ R) : Tensor κ R :=
   ∑ j, c j • rankOne fun i a => F i a j
 
-/-- The entries of a CP tensor. -/
+/-- The entries of a CP tensor are $\sum_j c_j \prod_i F_i(a_i, j)$. -/
 theorem cp_apply (c : ρ → R) (F : ∀ i, Matrix (κ i) ρ R) (a : ∀ i, κ i) :
     cp c F a = ∑ j, c j * ∏ i, F i (a i) j := by
   simp [cp]
 
-/-- A CP tensor is a CP tensor over any larger index set of terms, padded by zero weights. -/
+/-- A CP tensor is a CP tensor over any larger index set of terms: if $e \colon \rho \to \rho'$ is
+injective and $\rho'$ is finite, then a CP tensor with terms indexed by $\rho$ is also a CP
+tensor with terms indexed by $\rho'$. The new terms have zero weights. -/
 theorem cp_eq_cp_of_injective (e : ρ → ρ') (he : Function.Injective e) [Fintype ρ']
     (c : ρ → R) (F : ∀ i, Matrix (κ i) ρ R) :
     ∃ (c' : ρ' → R) (F' : ∀ i, Matrix (κ i) ρ' R), cp c F = cp c' F' := by
@@ -78,8 +95,15 @@ theorem cp_eq_cp_of_injective (e : ρ → ρ') (he : Function.Injective e) [Fint
 
 variable [DecidableEq ι]
 
-/-- The mode-`k` unfolding of a CP tensor ([golub2013matrix] the displays before (12.5.16) and
-after (12.5.21)): `𝒳_(k) = F_k diag(c) (⊙_{j ≠ k} F_j)ᵀ`. -/
+/-- The mode-$k$ unfolding of a CP tensor ([golub2013matrix], the displays before (12.5.16) and
+after (12.5.21)). Let $R$ be a commutative semiring, let $\iota$ and $\rho$ be finite, and let
+$\mathcal{X}$ be the CP tensor with the weights $c$ and the factor matrices $F_i$. Then for
+every mode $k$,
+$$\mathcal{X}_{(k)} = F_k \operatorname{diag}(c) \Bigl(\bigodot_{j \neq k} F_j\Bigr)^T.$$
+
+The Khatri–Rao product $\bigodot_{j \neq k} F_j$ is `Matrix.piKhatriRao` of the family
+restricted to the modes $j \neq k$. Its rows are indexed by the tuples of indices of these
+modes. -/
 theorem modeUnfold_cp [DecidableEq ρ] (c : ρ → R) (F : ∀ i, Matrix (κ i) ρ R) (k : ι) :
     (cp c F).modeUnfold k = F k * diagonal c * (piKhatriRao fun j : {j // j ≠ k} => F j)ᵀ := by
   ext x col
@@ -102,8 +126,13 @@ section VecFin
 
 variable {d : ℕ} {n : Fin d → ℕ} [CommSemiring R] [Fintype ρ]
 
-/-- `vec 𝒳 = (F_d ⊙ ⋯ ⊙ F_1) c` for a `Fin`-shaped CP tensor ([golub2013matrix] P12.5.6), the
-flattened `piKhatriRao` being the book's reversed Khatri–Rao product. -/
+/-- The vectorization of a CP tensor ([golub2013matrix], P12.5.6). Let $R$ be a commutative
+semiring, let $\rho$ be finite, and let $\mathcal{X} \in R^{n_1 \times \cdots \times n_d}$ be
+the CP tensor with the weights $c$ and the factor matrices $F_k \in R^{n_k \times \rho}$. Then
+$$\operatorname{vec}(\mathcal{X}) = (F_d \odot \cdots \odot F_1) \, c.$$
+
+The matrix on the right is `Matrix.piKhatriRao F` with its rows flattened by `finPiFinEquiv`;
+this is the reversed Khatri–Rao product of the book. -/
 theorem vecFin_cp (c : ρ → R) (F : ∀ k, Matrix (Fin (n k)) ρ R) :
     vecFin (cp c F) = (piKhatriRao F).reindex finPiFinEquiv (Equiv.refl _) *ᵥ c := by
   funext t
@@ -119,7 +148,7 @@ section Rank
 
 variable [Fintype ι] [CommSemiring R]
 
-/-- Every tensor is a CP tensor, with one term per entry. -/
+/-- Every tensor with finite index types is a CP tensor, with one term for each entry. -/
 theorem exists_eq_cp [DecidableEq ι] [∀ i, Fintype (κ i)] (A : Tensor κ R) :
     ∃ (c : Fin (Fintype.card (∀ i, κ i)) → R) (F : ∀ i, Matrix (κ i) _ R), A = cp c F := by
   classical
@@ -131,12 +160,17 @@ theorem exists_eq_cp [DecidableEq ι] [∀ i, Fintype (κ i)] (A : Tensor κ R) 
     (fun j => A (e j) • rankOne fun i x => (Pi.single (e j i) (1 : R) : κ i → R) x)
     (fun b => A b • rankOne fun i => (Pi.single (b i) (1 : R) : κ i → R)) fun _ => rfl).symm
 
-/-- The rank of a tensor ([golub2013matrix] §12.5.5): the least `r` such that `A` is a sum of `r`
-rank-one tensors (with weights). -/
+/-- The **tensor rank** of a tensor $\mathcal{A}$ ([golub2013matrix], §12.5.5) is the least $r$ such
+that $\mathcal{A}$ is a CP tensor with $r$ terms, that is, a weighted sum of $r$ rank-one
+tensors.
+
+If $\mathcal{A}$ has no CP representation, the value is $0$, the infimum of the empty set of
+natural numbers. This can happen only when some index type is infinite. -/
 noncomputable def tensorRank (A : Tensor κ R) : ℕ :=
   sInf {r | ∃ (c : Fin r → R) (F : ∀ i, Matrix (κ i) (Fin r) R), A = cp c F}
 
-/-- `tensorRank A ≤ r` iff `A` is a CP tensor with `r` terms. -/
+/-- Let all index types be finite. The tensor rank of $\mathcal{A}$ is at most $r$ if and only if
+$\mathcal{A}$ is a CP tensor with $r$ terms. -/
 theorem tensorRank_le_iff [∀ i, Finite (κ i)] (A : Tensor κ R) (r : ℕ) :
     tensorRank A ≤ r ↔ ∃ (c : Fin r → R) (F : ∀ i, Matrix (κ i) (Fin r) R), A = cp c F := by
   classical
@@ -151,7 +185,8 @@ theorem tensorRank_le_iff [∀ i, Finite (κ i)] (A : Tensor κ R) (r : ℕ) :
   · rintro ⟨c, F, hA⟩
     exact Nat.sInf_le ⟨c, F, hA⟩
 
-/-- A scalar multiple of a rank-one tensor is rank-one, when there is a mode to absorb it. -/
+/-- If the set of modes is nonempty, then a scalar multiple $a \, (z_1 \circ \cdots \circ z_d)$ of a
+rank-one tensor is rank-one: one of the vectors absorbs the scalar. -/
 theorem smul_rankOne_isRankOne [Nonempty ι] (a : R) (z : ∀ i, κ i → R) :
     (a • rankOne z).IsRankOne := by
   classical
@@ -159,7 +194,8 @@ theorem smul_rankOne_isRankOne [Nonempty ι] (a : R) (z : ∀ i, κ i → R) :
   refine ⟨Function.update z k (a • z k), ?_⟩
   rw [rankOne_update_smul, Function.update_eq_self]
 
-/-- A tensor with at least one mode is rank-one iff its tensor rank is at most one. -/
+/-- Let the set of modes be nonempty and all index types be finite. A tensor is rank-one if and only
+if its tensor rank is at most one. -/
 theorem isRankOne_iff_tensorRank_le_one [Nonempty ι] [∀ i, Finite (κ i)] (A : Tensor κ R) :
     A.IsRankOne ↔ tensorRank A ≤ 1 := by
   rw [tensorRank_le_iff]

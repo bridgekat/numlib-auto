@@ -9,69 +9,115 @@ import Numlib.Analysis.PDE.Elliptic.Spectral
 /-!
 # The heat equation
 
-The heat equation `∂ₜu − Δu = 0` on `Ω × (0, ∞)`, `u = 0` on `∂Ω × (0, ∞)`, `u(·, 0) = u₀`, in the
-form of [brezis2011functional] chapter 10: a curve `u : ℝ → L²(Ω)` with `u' + A u = 0`, `A` the
-Dirichlet Laplacian of `Numlib/Analysis/PDE/DirichletLaplacian`, to which the Hille–Yosida theory
-of chapter 7 (`Numlib/Analysis/InnerProductSpace/MaximalMonotone`,
-`Numlib/Analysis/ODE/HilleYosida`) applies because `A` is self-adjoint and maximal monotone. This
-module carries §10.1 — existence, uniqueness, the smoothing estimates, the regularity classes,
-the energy identities (Theorems 10.1 and 10.2, Remarks 1, 3) — and is the parent of
-`Heat/MaximumPrinciple` (§10.2, Theorems 10.3–10.5, Stampacchia's truncation in time) and
-`Heat/Classical` (§10.2, Theorem 10.6, the classical maximum principle, and Remark 4).
-`Ω : Opens (EuclideanSpace ℝ (Fin N))`, `L²(Ω) = Lp ℝ 2 (volume.restrict Ω)`.
+Let $\Omega \subseteq \mathbb{R}^N$ be open with boundary $\Gamma$. This module studies the heat
+equation
+$$\partial_t u - \Delta u = 0 \text{ in } \Omega \times (0, \infty), \qquad u = 0 \text{ on } \Gamma
+  \times (0, \infty), \qquad u(\cdot, 0) = u_0,$$
+in the form of §10.1 of [brezis2011functional]. A solution is a curve
+$u : \mathbb{R} \to L^2(\Omega)$ with $u' + Au = 0$ for $t > 0$ and $u(0) = u_0$, where
+$A = -\Delta$ is the Dirichlet Laplacian with domain $D(A) = \{u \in H^1_0(\Omega) : \Delta u \in
+L^2(\Omega)\}$. The operator $A$ is self-adjoint and maximal monotone, so the Hille–Yosida theory of
+Chapter 7 of [brezis2011functional] applies. The solution is $u(t) = S_A(t) u_0$, where $S_A$ is the
+contraction semigroup of $A$. The boundary condition is part of the domain:
+$D(A) \subseteq H^1_0(\Omega)$.
 
-## The solution notion
+The module proves Theorems 10.1 and 10.2 and Remarks 1 and 3 of [brezis2011functional]: existence
+and uniqueness, the smoothing estimates $\|u(t)\| \le \|u_0\|$ and $\|u'(t)\| \le \|u_0\|/t$, the
+regularity of the solution in time and in space, the energy identities, the backward problem, and
+the expansion $u(t) = \sum_n e^{-\lambda_n t} \langle u_0, e_n \rangle e_n$ in the Dirichlet
+eigenfunctions. The maximum principles of §10.2 are in `Numlib.Analysis.PDE.Heat.MaximumPrinciple`
+and `Numlib.Analysis.PDE.Heat.Classical`.
 
-The book fixes the Bochner reading ("when we write `u(t)` we mean the function `x ↦ u(x, t)`, an
-element of `H`"): `Heat.IsSolution Ω u₀ u` is chapter 7's
-`LinearPMap.IsSolutionOn (dirichletLaplacian Ω) u₀ (Ioi 0) u` (`u 0 = u₀`, `u t ∈ D(A)` and
-`u' = −A u` for `t > 0`) together with `ContinuousOn u (Ici 0)` and `ContDiffOn ℝ 1 u (Ioi 0)`,
-the class `C([0, ∞); H) ∩ C¹((0, ∞); H) ∩ C((0, ∞); D(A))` of Theorem 7.7 (the last clause is
-automatic from the equation). The solution is the semigroup,
-`Heat.solution Ω u₀ = fun t ↦ (dirichletLaplacian Ω).semigroup t u₀`, so that its linearity in
-`u₀` and the contraction `‖u(t)‖ ≤ ‖u₀‖` are chapter 7's. The boundary condition sits in
-`D(A) ⊆ H¹₀(Ω)`, as the book says ("the boundary condition (2) has been incorporated in the
-definition of the domain of `A`").
+## Main definitions
 
-## What holds on an arbitrary open set, and what needs a regular domain
+* `Heat.IsSolution`: $u$ solves the heat equation with datum $u_0$, in the class $C([0, \infty);
+  L^2(\Omega)) \cap C^1((0, \infty); L^2(\Omega))$.
+* `Heat.solution`: the solution $t \mapsto S_A(t) u_0$.
+* `Heat.IsBackwardSolution`: $u$ solves the backward problem $-\partial_t u - \Delta u = 0$ on
+  $(-\infty, T)$ with final datum $u(T) = u_T$.
 
-With the weak domain `D(A) = {u ∈ H¹₀ : Δu ∈ L²}`, existence and uniqueness
-(`Heat.existsUnique_isSolution`), the estimates `‖u(t)‖ ≤ ‖u₀‖` and `‖u'(t)‖ ≤ ‖u₀‖ / t`, the
-smoothing `u ∈ C^∞((0, ∞); L²)` with `u(t) ∈ D(A^ℓ)` and the parabolic bound
-`‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖`, the energy identity (6), Theorem 10.2 (a)'s `u ∈ C([0, ∞); H¹₀)`
-with (11), and (b)'s `u ∈ C([0, ∞); D(A))` with its identity all hold for every open `Ω` — they
-are Theorems 7.4, 7.5, 7.7 plus the identity `⟪A u, u⟫ = ∫ |∇u|²`. The regular-domain hypothesis
-of the book (`IsContDiffChartDomain n Ω`, `Bornology.IsBounded (frontier Ω)`) enters only through
-the identification of `D(A^ℓ)` with `H^{2ℓ}(Ω)` (`dirichletLaplacian.powDomainToSobolevL`,
-Theorem 9.25) to yield the clauses `u ∈ C^k((0, ∞); H^{2ℓ}(Ω))` and, with the Sobolev embedding
-of Corollary 9.15 and the space–time bridge of `Numlib/Analysis/PDE/Bochner/SpaceTime`, the
-book's `u ∈ C^∞(Ω̄ × [ε, ∞))`.
+## Main results
 
-## The semigroup lifts
+* `Heat.existsUnique_isSolution`: Theorem 10.1, existence and uniqueness on every open set.
+* `Heat.IsSolution.norm_le`, `Heat.IsSolution.norm_deriv_le`,
+  `Heat.IsSolution.norm_iteratedDeriv_le`: $\|u(t)\| \le \|u_0\|$, $\|u'(t)\| \le \|u_0\|/t$ and
+  $\|u^{(k)}(t)\| \le (k/t)^k \|u_0\|$.
+* `Heat.IsSolution.contDiffOn_top`, `Heat.IsSolution.exists_powDomain`:
+  $u \in C^\infty((0, \infty); L^2(\Omega))$ and $u(t) \in D(A^\ell)$ for all $t > 0$ and all
+  $\ell$.
+* `Heat.IsSolution.energy`, `Heat.IsSolution.integral_inner_apply_le`: the energy identity (6) and
+  $\int_0^\infty \|\nabla u(t)\|^2 \, dt \le \frac12 \|u_0\|^2$.
+* `Heat.IsSolution.contDiffOnThrough_sobolevZero_of_mem`, `Heat.IsSolution.energy_sobolevZero`:
+  Theorem 10.2 (a), $u \in C([0, \infty); H^1_0(\Omega))$ and the identity (11) for
+  $u_0 \in H^1_0(\Omega)$.
+* `Heat.IsSolution.contDiffOn_Ici_of_mem_domain`, `Heat.IsSolution.energy_domain`: Theorem 10.2 (b)
+  for $u_0 \in D(A)$.
+* `Heat.IsSolution.contDiffOnPowDomain_Ici_of_powDomain`,
+  `Heat.IsSolution.contDiffOnThrough_sobolev_Ici_of_powDomain`: Theorem 10.2 (c) for
+  $u_0 \in D(A^k)$.
+* `Heat.IsSolution.contDiffOnThrough_sobolev`: $u \in C^\infty((0, \infty); H^{2\ell}(\Omega))$ on a
+  domain of class $C^{2\ell}$.
+* `Heat.IsSolution.contDiffOnClosure_spaceTime`, `Heat.IsSolution.contDiffOnClosure_spaceTime_Ici`:
+  $u \in C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ for every $\varepsilon > 0$, and
+  $u \in C^\infty(\overline{\Omega} \times [0, \infty))$ when $u_0 \in D(A^k)$ for every $k$.
+* `Heat.IsSolution.memLpThrough_sobolevZero_of_isBounded`,
+  `Heat.IsSolution.memLpThrough_two_of_isBounded`,
+  `Heat.IsSolution.memLpThrough_three_of_isBounded`: the memberships
+  $u \in L^2(0, \infty; H^1_0(\Omega))$, $L^2(0, \infty; H^2(\Omega))$ and
+  $L^2(0, \infty; H^3(\Omega))$ on a bounded $\Omega$.
+* `Heat.existsUnique_isSolution_backward`: Remark 1, the backward problem is well posed.
+* `Heat.IsSolution.hasSum_eigenfunction`: Remark 3, the expansion (14) of $u(t)$ in the Dirichlet
+  eigenfunctions.
 
-The derivatives `u^{(j)} = (−A)^j u` and the parabolic bounds are proved for the semigroup of any
-self-adjoint maximal monotone operator: `LinearPMap.semigroupLift A u₀ ℓ t` is the unique element
-of `D(A^ℓ)` over `S_A(t) u₀` (`t > 0`), its coordinates `A^j S_A(t) u₀` are differentiable in
-`t` with `d/dt A^j S_A(t) u₀ = −A^{j+1} S_A(t) u₀`
-(`LinearPMap.hasDerivAt_applyL_semigroupLift`), and `‖A^j S_A(t) u₀‖ ≤ (j/t)^j ‖u₀‖`
-(`LinearPMap.norm_applyL_semigroupLift_le`). The energy identity (6) is likewise abstract
-(`LinearPMap.IsSolutionOn.energy_Ioi`, for a monotone `A`). These belong beside Theorem 7.7 in
-`Numlib/Analysis/ODE/HilleYosida` and are recorded here because chapter 10 is their consumer.
+## Proof outline
 
-## Two clauses stated in weaker form, deliberately
+Existence, uniqueness and the estimate $\|u'(t)\| \le \|u_0\|/t$ are Theorem 7.7 of
+[brezis2011functional] for $A$. The derivatives are $u^{(j)}(t) = (-A)^j u(t)$, and they are proved
+for the semigroup of any self-adjoint maximal monotone operator in
+`Numlib.Analysis.ODE.HilleYosida`. There, `LinearPMap.semigroupLift A u₀ ℓ t` is the element of
+$D(A^\ell)$ over $S_A(t) u_0$ for $t > 0$. Its coordinates $A^j S_A(t) u_0$ have the derivatives
+$-A^{j+1} S_A(t) u_0$ (`LinearPMap.hasDerivAt_applyL_semigroupLift`), and
+$\|A^j S_A(t) u_0\| \le (j/t)^j \|u_0\|$ (`LinearPMap.norm_applyL_semigroupLift_le`). The energy
+identity (6) holds for any monotone operator (`LinearPMap.IsSolutionOn.energy_Ioi`), with $\langle
+Au, u \rangle = \int_\Omega |\nabla u|^2$. For $u_0 \in H^1_0(\Omega)$ the same theory applies to
+the realization $A_1$ of $-\Delta$ in $H^1_0(\Omega)$, and uniqueness identifies its solution with
+$u$.
 
-`u ∈ L²(0, ∞; H¹₀(Ω))` in Theorem 10.1 and `u ∈ L²(0, ∞; H²)`, `L²(0, ∞; H³)` in Theorem 10.2
-are false on unbounded domains as written (on `Ω = ℝ` with a Gaussian datum,
-`‖u(t)‖²_{L²} ~ (1 + 2t)^{−1/2}` is not integrable in `t`); what the book's proofs show, and what
-is stated here, is `∫₀^∞ ‖∇u(t)‖² dt ≤ ½ ‖u₀‖²`, `∫₀^∞ ‖u'(t)‖² dt ≤ ½ ‖∇u₀‖²`,
-`∫₀^∞ ‖∇Δu(t)‖² dt ≤ ½ ‖Δu₀‖²`; the Bochner memberships follow for bounded `Ω` by Poincaré
-(Corollary 9.19, `SobolevEuclideanZero.norm_le_gradNorm`) and are stated under
-`Bornology.IsBounded (Ω : Set _)`.
+## Implementation notes
 
-## References
-
-[brezis2011functional], §10.1: Theorems 10.1, 10.2, Remarks 1, 3; chapter 7, Theorems 7.4, 7.5,
-7.7.
+* $L^2(\Omega)$ is `Lp ℝ 2 (volume.restrict Ω)` for `Ω : Opens (EuclideanSpace ℝ (Fin N))`. The
+  solution is the semigroup, `Heat.solution Ω u₀ = fun t ↦ (dirichletLaplacian Ω).semigroup t u₀`,
+  so that its linearity in $u_0$ and the contraction property come from Chapter 7.
+* [brezis2011functional] reads $u(t)$ as the function $x \mapsto u(x, t)$, an element of
+  $L^2(\Omega)$. `Heat.IsSolution` is the solution notion `LinearPMap.IsSolutionOn` of Chapter 7 on
+  $(0, \infty)$ together with continuity on $[0, \infty)$ and class $C^1$ on $(0, \infty)$. This is
+  the class of Theorem 7.7. The clause $u \in C((0, \infty); D(A))$ follows from the equation.
+* With the weak domain $D(A)$, the following results hold on every open set $\Omega$: existence and
+  uniqueness, the estimates of $\|u(t)\|$ and $\|u'(t)\|$, the smoothing
+  $u \in C^\infty((0, \infty); L^2(\Omega))$ with $u(t) \in D(A^\ell)$, the bounds on
+  $\|u^{(k)}(t)\|$, the energy identity (6), Theorem 10.2 (a) with (11), and Theorem 10.2 (b) with
+  its identity. They are Theorems 7.4, 7.5 and 7.7 of [brezis2011functional] together with the
+  identity $\langle Au, u \rangle = \int_\Omega |\nabla u|^2$.
+* The regularity hypothesis of [brezis2011functional] on $\Omega$ is `IsContDiffChartDomain n Ω`
+  together with `Bornology.IsBounded (frontier Ω)`. It enters only through the identification of
+  $D(A^\ell)$ with a subspace of $H^{2\ell}(\Omega)$ (Theorem 9.25,
+  `dirichletLaplacian.powDomainToSobolevL`). That identification gives
+  $u \in C^k((0, \infty); H^{2\ell}(\Omega))$ and, with the space–time results of
+  `Numlib.Analysis.PDE.Bochner.SpaceTime`, $u \in C^\infty(\overline{\Omega} \times [\varepsilon,
+  \infty))$.
+* A curve $u : \mathbb{R} \to L^2(\Omega)$ is in $C^k(s; V)$ for a space $V$ that maps continuously
+  into $L^2(\Omega)$, such as $H^m(\Omega)$, when it factors on $s$ through a curve of class $C^k$
+  into $V$ (`Bochner.ContDiffOnThrough`). The class $L^2(s; V)$ is `Bochner.MemLpThrough` in the
+  same way. The class $C^k(s; D(A^j))$ is `LinearPMap.ContDiffOnPowDomain`.
+* Theorem 10.1 of [brezis2011functional] states $u \in L^2(0, \infty; H^1_0(\Omega))$, and Theorem
+  10.2 states $u \in L^2(0, \infty; H^2(\Omega))$ and $u \in L^2(0, \infty; H^3(\Omega))$. These
+  memberships are false on unbounded domains: on $\Omega = \mathbb{R}$ with a Gaussian datum,
+  $\|u(t)\|_{L^2}^2$ behaves like $(1 + 2t)^{-1/2}$ and is not integrable in $t$. The proofs of the
+  book show $\int_0^\infty \|\nabla u(t)\|^2 \, dt \le \frac12 \|u_0\|^2$, $\int_0^\infty
+  \|u'(t)\|^2 \, dt \le \frac12 \|\nabla u_0\|^2$ and $\int_0^\infty \|\nabla \Delta u(t)\|^2 \, dt
+  \le \frac12 \|\Delta u_0\|^2$, and these are stated for every open $\Omega$. The memberships
+  follow for a bounded $\Omega$ by Poincaré's inequality (Corollary 9.19,
+  `SobolevEuclideanZero.norm_le_gradNorm`), and they are stated under `Bornology.IsBounded Ω`.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -88,20 +134,29 @@ open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 variable (Ω) in
-/-- **A solution of the heat equation** `∂ₜu − Δu = 0` in `Ω × (0, ∞)`, `u = 0` on `Γ × (0, ∞)`,
-`u(·, 0) = u₀` ([brezis2011functional] §10.1, (1)–(3)) in the class (4) of Theorem 10.1 with the
-weak domain `D(A)` in place of `H² ∩ H¹₀`: a curve `u : ℝ → L²(Ω)` which solves `u' + A u = 0`
-on `(0, ∞)` with `u(0) = u₀` for the Dirichlet Laplacian `A` (chapter 7's `IsSolutionOn`: (1) is
-the derivative clause, (2) is `u t ∈ D(A) ⊆ H¹₀(Ω)`, (3) is `u 0 = u₀`), continuous on `[0, ∞)`
-and `C¹` on `(0, ∞)`. The clause `u ∈ C((0, ∞); D(A))` follows
-(`Heat.IsSolution.continuousOn_apply`), since `A (u t) = −u'(t)`. -/
+/-- A **solution of the heat equation** with datum $u_0 \in L^2(\Omega)$ is a curve
+$u : \mathbb{R} \to L^2(\Omega)$ such that $u(0) = u_0$, $u(t) \in D(A)$ and $u'(t) = -A u(t)$
+for every $t > 0$, $u$ is continuous on $[0, \infty)$, and $u$ is of class $C^1$ on
+$(0, \infty)$. Here $A$ is the Dirichlet Laplacian.
+
+This is the problem (1)–(3) of §10.1 of [brezis2011functional], $\partial_t u - \Delta u = 0$ in
+$\Omega \times (0, \infty)$, $u = 0$ on $\Gamma \times (0, \infty)$, $u(\cdot, 0) = u_0$, in the
+class (4) of Theorem 10.1, with the weak domain $D(A)$ in place of
+$H^2(\Omega) \cap H^1_0(\Omega)$. The equation (1) is the derivative clause, the boundary
+condition (2) is $u(t) \in D(A) \subseteq H^1_0(\Omega)$, and (3) is $u(0) = u_0$.
+
+The first three conditions are the solution notion `LinearPMap.IsSolutionOn` of Chapter 7 on
+$(0, \infty)$. The clause $u \in C((0, \infty); D(A))$ follows
+(`Heat.IsSolution.continuousOn_apply`), because $Au(t) = -u'(t)$. The definition puts no
+condition on $u(t)$ for $t < 0$. -/
 structure IsSolution (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop where
-  /-- `u' + A u = 0` on `(0, ∞)`, `u 0 = u₀`, `u t ∈ D(A)` for `t > 0`. -/
+  /-- The curve solves $u' + Au = 0$ on $(0, \infty)$ with $u(0) = u_0$ and $u(t) \in D(A)$ for
+  $t > 0$. -/
   toIsSolutionOn : (dirichletLaplacian Ω).IsSolutionOn u₀ (Ioi 0) u
-  /-- `u ∈ C([0, ∞); L²(Ω))`. -/
+  /-- The curve is continuous on $[0, \infty)$: $u \in C([0, \infty); L^2(\Omega))$. -/
   continuousOn : ContinuousOn u (Ici 0)
-  /-- `u ∈ C¹((0, ∞); L²(Ω))`. -/
+  /-- The curve is of class $C^1$ on $(0, \infty)$: $u \in C^1((0, \infty); L^2(\Omega))$. -/
   contDiffOn : ContDiffOn ℝ 1 u (Ioi 0)
 
 namespace IsSolution
@@ -109,27 +164,31 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {u v : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- The initial condition (3): `u 0 = u₀`. -/
+/-- A solution satisfies the initial condition (3): $u(0) = u_0$. -/
 theorem apply_zero (h : IsSolution Ω u₀ u) : u 0 = u₀ := h.toIsSolutionOn.apply_zero
 
-/-- The boundary condition (2): `u t ∈ D(A) ⊆ H¹₀(Ω)` for `t > 0`. -/
+/-- A solution satisfies the boundary condition (2): $u(t) \in D(A) \subseteq H^1_0(\Omega)$ for
+every $t > 0$. -/
 theorem mem_domain (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     u t ∈ (dirichletLaplacian Ω).domain :=
   h.toIsSolutionOn.mem_domain t ht
 
-/-- The equation (1): `u'(t) = −A (u t) = Δ u(t)` for `t > 0`. -/
+/-- A solution satisfies the equation (1): for every $t > 0$, $u$ is differentiable at $t$ with
+$u'(t) = -A u(t) = \Delta u(t)$. -/
 theorem hasDerivAt (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     HasDerivAt u (-(dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩)) t :=
   (h.toIsSolutionOn.hasDerivWithinAt t ht).hasDerivAt (Ioi_mem_nhds ht)
 
-/-- `deriv u t = −A (u t)` for `t > 0`. -/
+/-- For a solution $u$ and $t > 0$, the derivative is $u'(t) = -A u(t)$. -/
 theorem deriv_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     deriv u t = -(dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩) :=
   (h.hasDerivAt ht).deriv
 
-/-- **Uniqueness** ([brezis2011functional] Theorem 10.1): two solutions with the same datum agree
-on `[0, ∞)` — chapter 7's Step 1 (`‖u − v‖` is nonincreasing on `(0, ∞)` by the monotonicity of
-`A`, continuous on `[0, ∞)`, and zero at `0`). -/
+/-- **Uniqueness** in Theorem 10.1 of [brezis2011functional]: two solutions $u$ and $v$ with the
+same datum $u_0$ agree on $[0, \infty)$.
+
+This is Step 1 of the proof in Chapter 7: $\|u - v\|$ is nonincreasing on $(0, \infty)$ because
+$A$ is monotone, it is continuous on $[0, \infty)$, and it is zero at $0$. -/
 theorem unique (h : IsSolution Ω u₀ u) (h' : IsSolution Ω u₀ v) : EqOn u v (Ici 0) :=
   dirichletLaplacian_isMonotone.eqOn_of_isSolutionOn_Ioi h.toIsSolutionOn h'.toIsSolutionOn
     h.continuousOn h'.continuousOn
@@ -137,50 +196,63 @@ theorem unique (h : IsSolution Ω u₀ u) (h' : IsSolution Ω u₀ v) : EqOn u v
 end IsSolution
 
 variable (Ω) in
-/-- **The solution of the heat equation with datum `u₀`**: the contraction semigroup of chapter 7
-(Remark 5) applied to the datum, `t ↦ S_A(t) u₀` for the Dirichlet Laplacian `A`. -/
+/-- The **solution of the heat equation** with datum $u_0 \in L^2(\Omega)$: the curve
+$t \mapsto S_A(t) u_0$, where $S_A$ is the contraction semigroup of the Dirichlet Laplacian $A$
+(Remark 5 of Chapter 7 of [brezis2011functional]). -/
 def solution (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   fun t ↦ (dirichletLaplacian Ω).semigroup t u₀
 
 variable (u₀ v₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
 
-/-- `solution Ω u₀ t = S_A(t) u₀`. -/
+/-- The solution with datum $u_0$ is $S_A(t) u_0$ at every time $t$. -/
 theorem solution_apply (t : ℝ) : solution Ω u₀ t = (dirichletLaplacian Ω).semigroup t u₀ :=
   rfl
 
-/-- The solution is additive in the datum. -/
+/-- The solution is additive in the datum: the solution with datum $u_0 + v_0$ is the sum of the
+solutions with data $u_0$ and $v_0$. -/
 theorem solution_add (t : ℝ) : solution Ω (u₀ + v₀) t = solution Ω u₀ t + solution Ω v₀ t :=
   map_add _ _ _
 
-/-- The solution is homogeneous in the datum. -/
+/-- The solution is homogeneous in the datum: the solution with datum $c u_0$ is $c$ times the
+solution with datum $u_0$, for $c \in \mathbb{R}$. -/
 theorem solution_smul (c : ℝ) (t : ℝ) : solution Ω (c • u₀) t = c • solution Ω u₀ t :=
   map_smul _ _ _
 
-/-- The solution of a difference of data is the difference of the solutions. -/
+/-- The solution with datum $u_0 - v_0$ is the difference of the solutions with data $u_0$ and
+$v_0$. -/
 theorem solution_sub (t : ℝ) : solution Ω (u₀ - v₀) t = solution Ω u₀ t - solution Ω v₀ t :=
   map_sub _ _ _
 
-/-- The solution with datum `0` is `0`. -/
+/-- The solution with datum $0$ is $0$. -/
 theorem solution_zero (t : ℝ) : solution Ω 0 t = 0 :=
   map_zero _
 
-/-- **The contraction property** `‖u(t)‖ ≤ ‖u₀‖` for `t ≥ 0` (chapter 7's Remark 5 (a)); applied
-to differences of solutions it is the estimate of Corollary 10.5's proof. -/
+/-- The **contraction property**: the solution with datum $u_0$ satisfies $\|u(t)\| \le \|u_0\|$ for
+every $t \ge 0$.
+
+This is Remark 5 (a) of Chapter 7 of [brezis2011functional]. Applied to differences of solutions
+it is the estimate in the proof of Corollary 10.5. -/
 theorem norm_solution_le {t : ℝ} (ht : 0 ≤ t) : ‖solution Ω u₀ t‖ ≤ ‖u₀‖ :=
   dirichletLaplacian_isMaximalMonotone.norm_semigroup_apply_le ht u₀
 
-/-- **Existence** ([brezis2011functional] Theorem 10.1): on every open `Ω` and for every
-`u₀ ∈ L²(Ω)`, `t ↦ S_A(t) u₀` is a solution — Theorem 7.7 for the self-adjoint maximal monotone
-Dirichlet Laplacian (`LinearPMap.isSolutionOn_semigroup_Ioi`). -/
+/-- **Existence** in Theorem 10.1 of [brezis2011functional]: on every open set $\Omega$ and for
+every $u_0 \in L^2(\Omega)$, the curve $t \mapsto S_A(t) u_0$ is a solution of the heat equation
+with datum $u_0$.
+
+The proof is Theorem 7.7 for the self-adjoint maximal monotone Dirichlet Laplacian
+(`LinearPMap.isSolutionOn_semigroup_Ioi`). -/
 theorem isSolution_solution : IsSolution Ω u₀ (solution Ω u₀) :=
   let h := isSolutionOn_semigroup_Ioi dirichletLaplacian_isMaximalMonotone
     dirichletLaplacian_isFormalAdjoint u₀
   ⟨h.1, h.2.1, h.2.2.1⟩
 
-/-- **Theorem 10.1, existence and uniqueness** ([brezis2011functional]) on an arbitrary open
-set: for every `u₀ ∈ L²(Ω)` there is a solution, and any two solutions agree on `[0, ∞)`
-(`IsSolution` does not constrain negative times). -/
+/-- Theorem 10.1 of [brezis2011functional], existence and uniqueness, on an arbitrary open set
+$\Omega$: for every $u_0 \in L^2(\Omega)$ there is a solution $u$ of the heat equation with
+datum $u_0$, and every solution with datum $u_0$ agrees with $u$ on $[0, \infty)$.
+
+Uniqueness holds only on $[0, \infty)$ because `Heat.IsSolution` puts no condition on negative
+times. -/
 theorem existsUnique_isSolution :
     ∃ u, IsSolution Ω u₀ u ∧ ∀ v, IsSolution Ω u₀ v → EqOn v u (Ici 0) :=
   ⟨solution Ω u₀, isSolution_solution u₀, fun _ hv ↦ hv.unique (isSolution_solution u₀)⟩
@@ -191,22 +263,24 @@ namespace IsSolution
 
 variable {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- Every solution is the semigroup applied to its datum, on `[0, ∞)`. -/
+/-- Every solution with datum $u_0$ agrees on $[0, \infty)$ with the semigroup solution
+$t \mapsto S_A(t) u_0$. -/
 theorem eqOn_solution (h : IsSolution Ω u₀ u) : EqOn u (solution Ω u₀) (Ici 0) :=
   h.unique (isSolution_solution u₀)
 
-/-- `u t = S_A(t) u₀` for `t ≥ 0`. -/
+/-- A solution with datum $u_0$ satisfies $u(t) = S_A(t) u_0$ for every $t \ge 0$. -/
 theorem apply_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 ≤ t) :
     u t = (dirichletLaplacian Ω).semigroup t u₀ :=
   h.eqOn_solution ht
 
-/-- **`‖u(t)‖ ≤ ‖u₀‖` for `t ≥ 0`** ([brezis2011functional] Theorem 7.7's first estimate). -/
+/-- A solution satisfies $\|u(t)\| \le \|u_0\|$ for every $t \ge 0$. This is the first estimate of
+Theorem 7.7 of [brezis2011functional]. -/
 theorem norm_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 ≤ t) : ‖u t‖ ≤ ‖u₀‖ := by
   rw [h.eqOn_solution ht]
   exact norm_solution_le u₀ ht
 
-/-- **The smoothing estimate `‖A u(t)‖ ≤ ‖u₀‖ / t`** for `t > 0` ([brezis2011functional]
-Theorem 7.7 (26)). -/
+/-- The **smoothing estimate**: a solution satisfies $\|A u(t)\| \le \|u_0\| / t$ for every $t > 0$.
+This is (26) of Theorem 7.7 of [brezis2011functional]. -/
 theorem norm_apply_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     ‖dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩‖ ≤ ‖u₀‖ / t := by
   obtain ⟨hmem, hb⟩ := semigroup_apply_mem_domain_of_isFormalAdjoint
@@ -216,26 +290,33 @@ theorem norm_apply_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
   rw [this]
   exact hb
 
-/-- **The parabolic smoothing bound `‖u'(t)‖ = ‖A u(t)‖ ≤ ‖u₀‖ / t`** for `t > 0`
-([brezis2011functional] Theorem 7.7 (26)). -/
+/-- The **parabolic smoothing bound**: a solution satisfies $\|u'(t)\| \le \|u_0\| / t$ for every
+$t > 0$. This is (26) of Theorem 7.7 of [brezis2011functional], since $u'(t) = -A u(t)$. -/
 theorem norm_deriv_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) : ‖deriv u t‖ ≤ ‖u₀‖ / t := by
   rw [h.deriv_eq ht, norm_neg]
   exact h.norm_apply_le ht
 
-/-- **Smoothing in time, chapter 7's form** ([brezis2011functional] Theorem 7.7 (27)):
-`u ∈ C^k((0, ∞); D(A^ℓ))` for all `k, ℓ`. -/
+/-- **Smoothing in time**, in the form of Chapter 7: a solution lies in
+$C^k((0, \infty); D(A^\ell))$ for all $k, \ell \in \mathbb{N}$. This is (27) of Theorem 7.7 of
+[brezis2011functional].
+
+The class $C^k((0, \infty); D(A^\ell))$ is `LinearPMap.ContDiffOnPowDomain`. -/
 theorem contDiffOnPowDomain (h : IsSolution Ω u₀ u) (k ℓ : ℕ) :
     (dirichletLaplacian Ω).ContDiffOnPowDomain k ℓ u (Ioi 0) :=
   (contDiffOnPowDomain_semigroup_Ioi dirichletLaplacian_isMaximalMonotone
     dirichletLaplacian_isFormalAdjoint u₀ k ℓ).congr fun _ ht ↦ (h.apply_eq (le_of_lt ht)).symm
 
-/-- `u ∈ C((0, ∞); D(A))`, in chapter 7's spelling. -/
+/-- A solution lies in $C((0, \infty); D(A))$, in the form `LinearPMap.ContDiffOnPowDomain` of
+Chapter 7. -/
 theorem contDiffOnPowDomain_one (h : IsSolution Ω u₀ u) :
     (dirichletLaplacian Ω).ContDiffOnPowDomain 0 1 u (Ioi 0) :=
   h.contDiffOnPowDomain 0 1
 
-/-- **`u ∈ C((0, ∞); D(A))`**: any function equal to `t ↦ A (u t)` on `(0, ∞)` is continuous
-there, being `−u'` ([brezis2011functional] Theorem 10.1, (4)). -/
+/-- A solution lies in $C((0, \infty); D(A))$: every function $g$ with $g(t) = A u(t)$ for all
+$t > 0$ is continuous on $(0, \infty)$. This is part of the class (4) of Theorem 10.1 of
+[brezis2011functional].
+
+The proof is $A u(t) = -u'(t)$. -/
 theorem continuousOn_apply (h : IsSolution Ω u₀ u)
     {g : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (hg : ∀ t (ht : 0 < t), g t = dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩) :
@@ -244,22 +325,28 @@ theorem continuousOn_apply (h : IsSolution Ω u₀ u)
   change g t = -deriv u t
   rw [hg t ht, h.deriv_eq ht, neg_neg]
 
-/-- **`u(t) ∈ D(A^ℓ)` for every `t > 0` and every `ℓ`** ([brezis2011functional] Theorem 7.7,
-and Remark 1's necessary condition (12) on final data). -/
+/-- A solution satisfies $u(t) \in D(A^\ell)$ for every $t > 0$ and every $\ell \in \mathbb{N}$:
+there is $x \in D(A^\ell)$ whose $0$-th coordinate is $u(t)$.
+
+This follows from Theorem 7.7 of [brezis2011functional]. It is the necessary condition (12) on
+final data in Remark 1 of Chapter 10. -/
 theorem exists_powDomain (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) (ℓ : ℕ) :
     ∃ x : (dirichletLaplacian Ω).PowDomain ℓ, applyL (dirichletLaplacian Ω) ℓ 0 x = u t := by
   rw [h.apply_eq ht.le]
   exact exists_powDomain_semigroup_apply_of_isFormalAdjoint dirichletLaplacian_isMaximalMonotone
     dirichletLaplacian_isFormalAdjoint u₀ ℓ ht
 
-/-- **`u ∈ C^∞((0, ∞); L²(Ω))`** ([brezis2011functional] Theorem 10.1, the smoothing). -/
+/-- **Smoothing in time**: a solution lies in $C^\infty((0, \infty); L^2(\Omega))$. This is part of
+Theorem 10.1 of [brezis2011functional]. -/
 theorem contDiffOn_top (h : IsSolution Ω u₀ u) : ContDiffOn ℝ ∞ u (Ioi 0) := by
   refine contDiffOn_infty.2 fun k ↦ ?_
   obtain ⟨w, hw0, hw⟩ := h.contDiffOnPowDomain k 0
   exact ((applyL (dirichletLaplacian Ω) 0 0).contDiff.comp_contDiffOn hw).congr
     fun t ht ↦ (hw0 t ht).symm
 
-/-- `u` agrees near every `t > 0` with `τ ↦ A^0 (semigroupLift τ)`. -/
+/-- For a solution $u$, $t > 0$ and $\ell \in \mathbb{N}$, the curve $u$ agrees near $t$ with
+$\tau \mapsto x_0(\tau)$, the $0$-th coordinate of the lift `LinearPMap.semigroupLift` of
+$S_A(\tau) u_0$ into $D(A^\ell)$. -/
 theorem eventuallyEq_applyL_semigroupLift (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) (ℓ : ℕ) :
     u =ᶠ[𝓝 t] fun τ ↦ applyL (dirichletLaplacian Ω) ℓ 0
       (semigroupLift (dirichletLaplacian Ω) u₀ ℓ τ) := by
@@ -267,9 +354,13 @@ theorem eventuallyEq_applyL_semigroupLift (h : IsSolution Ω u₀ u) {t : ℝ} (
   rw [applyL_zero_semigroupLift dirichletLaplacian_isMaximalMonotone
     dirichletLaplacian_isFormalAdjoint hτ, h.apply_eq (le_of_lt hτ)]
 
-/-- **The derivatives are the iterates**: `u^{(j)}(t) = (−A)^j u(t)` for `t > 0` and `j ≤ ℓ`,
-the iterate read on the lift `semigroupLift`. Induction on `j` with
-`LinearPMap.hasDerivAt_applyL_semigroupLift`. -/
+/-- **The derivatives are the iterates.** For a solution $u$, $\ell \in \mathbb{N}$, $j \le \ell$
+and $t > 0$,
+$$u^{(j)}(t) = (-1)^j A^j u(t),$$
+where $A^j u(t)$ is the $j$-th coordinate of the lift `LinearPMap.semigroupLift` of $u(t)$ into
+$D(A^\ell)$.
+
+The proof is an induction on $j$ with `LinearPMap.hasDerivAt_applyL_semigroupLift`. -/
 theorem iteratedDeriv_eq_applyL_semigroupLift (h : IsSolution Ω u₀ u) (ℓ : ℕ) :
     ∀ j : ℕ, ∀ hj : j ≤ ℓ, ∀ t : ℝ, 0 < t → iteratedDeriv j u t
       = (-1 : ℝ) ^ j • applyL (dirichletLaplacian Ω) ℓ ⟨j, Nat.lt_succ_of_le hj⟩
@@ -299,8 +390,11 @@ theorem iteratedDeriv_eq_applyL_semigroupLift (h : IsSolution Ω u₀ u) (ℓ : 
     rw [iteratedDeriv_succ, hloc.deriv_eq, hd.deriv, smul_neg, pow_succ, mul_neg, mul_one,
       neg_smul]
 
-/-- **`u^{(j)} = (−A)^j u` on `(0, ∞)`** ([brezis2011functional] §10.1, lines after (7)): for
-`t > 0`, any lift `x ∈ D(A^ℓ)` of `u(t)` and `j ≤ ℓ`, `iteratedDeriv j u t = (−1)^j A^j x`. -/
+/-- For a solution $u$, $t > 0$, any $x \in D(A^\ell)$ whose $0$-th coordinate is $u(t)$, and
+$j \le \ell$,
+$$u^{(j)}(t) = (-1)^j A^j x,$$
+where $A^j x$ is the $j$-th coordinate of $x$. This is the identity $u^{(j)} = (-A)^j u$ on
+$(0, \infty)$ stated after (7) in §10.1 of [brezis2011functional]. -/
 theorem iteratedDeriv_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) {ℓ : ℕ}
     (x : (dirichletLaplacian Ω).PowDomain ℓ) (hx : applyL (dirichletLaplacian Ω) ℓ 0 x = u t)
     (j : Fin (ℓ + 1)) :
@@ -311,10 +405,14 @@ theorem iteratedDeriv_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) {ℓ 
   rw [hx']
   exact h.iteratedDeriv_eq_applyL_semigroupLift ℓ j (Nat.lt_succ_iff.1 j.2) t ht
 
-/-- **Parabolic smoothing of every order**: `‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖` for `t > 0`
-(`Heat.IsSolution.norm_deriv_le` iterated along the subdivision `0 < t/k < 2t/k < ⋯ < t` with
-the semigroup law, `LinearPMap.norm_applyL_semigroupLift_le`). Not in the book; it is the
-ingredient `‖u_t(t)‖ ≤ C ‖u₀‖ / t` of parabolic error analyses. -/
+/-- **Parabolic smoothing of every order**: a solution satisfies, for every $t > 0$ and
+$k \in \mathbb{N}$,
+$$\|u^{(k)}(t)\| \le \left(\frac{k}{t}\right)^k \|u_0\|.$$
+
+This bound is not in [brezis2011functional]. It is the bound $\|u_t(t)\| \le C \|u_0\| / t$ used
+in error analyses of parabolic problems. The proof applies the bound $\|A u(s)\| \le \|u_0\|/s$
+along the subdivision $0 < t/k < 2t/k < \dots < t$ with the semigroup law
+(`LinearPMap.norm_applyL_semigroupLift_le`). -/
 theorem norm_iteratedDeriv_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) (k : ℕ) :
     ‖iteratedDeriv k u t‖ ≤ ((k : ℝ) / t) ^ k * ‖u₀‖ := by
   have := h.iteratedDeriv_eq_applyL_semigroupLift k k le_rfl t ht
@@ -323,10 +421,14 @@ theorem norm_iteratedDeriv_le (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) 
     dirichletLaplacian_isFormalAdjoint (u₀ := u₀) (ℓ := k) ht ⟨k, Nat.lt_succ_self k⟩
   exact hb
 
-/-- **The energy identity (6)** ([brezis2011functional] Theorem 10.1): for `T > 0` and
-`g t = ⟪A u(t), u(t)⟫ = ∫_Ω |∇u(t)|²` (`dirichletLaplacian_inner_self_eq_dirichletForm`) on
-`(0, ∞)`, `g` is integrable on `(0, T]` and `½ ‖u(T)‖² + ∫₀ᵀ g = ½ ‖u₀‖²`
-(`LinearPMap.IsSolutionOn.energy_Ioi`). -/
+/-- **The energy identity** (6) of Theorem 10.1 of [brezis2011functional]. Let $u$ be a solution,
+let $T > 0$, and let $g(t) = \langle A u(t), u(t) \rangle = \int_\Omega |\nabla u(t)|^2$ for
+$t > 0$. Then $g$ is integrable on $(0, T]$ and
+$$\frac12 \|u(T)\|^2 + \int_0^T g(t) \, dt = \frac12 \|u_0\|^2.$$
+
+The identity $\langle Au, u \rangle = \int_\Omega |\nabla u|^2$ is
+`dirichletLaplacian_inner_self_eq_dirichletForm`. The proof is
+`LinearPMap.IsSolutionOn.energy_Ioi`. -/
 theorem energy (h : IsSolution Ω u₀ u) {g : ℝ → ℝ}
     (hg : ∀ t (ht : 0 < t), g t = ⟪dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩, u t⟫_ℝ)
     {T : ℝ} (hT : 0 < T) :
@@ -335,9 +437,12 @@ theorem energy (h : IsSolution Ω u₀ u) {g : ℝ → ℝ}
   IsSolutionOn.energy_Ioi dirichletLaplacian_isMonotone h.toIsSolutionOn h.continuousOn
     h.contDiffOn hg hT
 
-/-- **The gradient part of `u ∈ L²(0, ∞; H¹₀(Ω))`** ([brezis2011functional] Theorem 10.1): the
-function `g t = ⟪A u(t), u(t)⟫ = ∫_Ω |∇u(t)|²` is integrable on `(0, ∞)` with
-`∫₀^∞ g ≤ ½ ‖u₀‖²`, by the energy identity for every `T` and `‖u(T)‖² ≥ 0`. -/
+/-- The gradient part of $u \in L^2(0, \infty; H^1_0(\Omega))$ in Theorem 10.1 of
+[brezis2011functional]. Let $u$ be a solution and let $g(t) = \langle A u(t), u(t) \rangle =
+\int_\Omega |\nabla u(t)|^2$ for $t > 0$. Then $g$ is integrable on $(0, \infty)$ and
+$$\int_0^\infty g(t) \, dt \le \frac12 \|u_0\|^2.$$
+
+The proof is the energy identity for every $T$ and $\|u(T)\|^2 \ge 0$. -/
 theorem integral_inner_apply_le (h : IsSolution Ω u₀ u) {g : ℝ → ℝ}
     (hg : ∀ t (ht : 0 < t), g t = ⟪dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩, u t⟫_ℝ) :
     IntegrableOn g (Ioi 0) ∧ ∫ t in Ioi 0, g t ≤ 1 / 2 * ‖u₀‖ ^ 2 := by
@@ -354,7 +459,7 @@ end IsSolution
 
 end Heat
 
-/-! ### The second derivative, and the `H¹₀`-lift of `D(A)` -/
+/-! ### The second derivative, and the $H^1_0$-lift of $D(A)$ -/
 
 namespace Heat
 
@@ -367,22 +472,26 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- `deriv u t = −A² x` on the lift `x ∈ D(A²)` of `u(t)`, `t > 0`. -/
+/-- For a solution $u$ and $t > 0$, $u'(t) = -A u(t)$, where $A u(t)$ is the first coordinate of the
+lift `LinearPMap.semigroupLift` of $u(t)$ into $D(A^2)$. -/
 theorem deriv_eq_neg_applyL_semigroupLift (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     deriv u t = -applyL (dirichletLaplacian Ω) 2 1
       (semigroupLift (dirichletLaplacian Ω) u₀ 2 t) := by
   have := h.iteratedDeriv_eq_applyL_semigroupLift 2 1 (by norm_num) t ht
   rwa [iteratedDeriv_one, pow_one, neg_one_smul] at this
 
-/-- **`u'(t) ∈ D(A)` for `t > 0`**: `u'(t) = −A u(t)` and `u(t) ∈ D(A²)`. -/
+/-- For a solution $u$ and $t > 0$, $u'(t) \in D(A)$. The proof is $u'(t) = -A u(t)$ and
+$u(t) \in D(A^2)$. -/
 theorem deriv_mem_domain (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     deriv u t ∈ (dirichletLaplacian Ω).domain := by
   rw [h.deriv_eq_neg_applyL_semigroupLift ht]
   exact neg_mem (applyL_mem_domain _ 1)
 
-/-- **The equation for the derivative, `u'' = −A u'`** on `(0, ∞)`: `u'` is again a solution of
-the equation, since `u' = −A u = −A² x` on the lift and the iterates are differentiable
-(`LinearPMap.hasDerivAt_applyL_semigroupLift`). -/
+/-- **The equation for the derivative**: for a solution $u$ and $t > 0$, the derivative $u'$ is
+differentiable at $t$ with $u''(t) = -A u'(t)$.
+
+The proof writes $u'(t) = -A u(t)$ as a coordinate of the lift of $u(t)$ into $D(A^2)$, whose
+coordinates are differentiable (`LinearPMap.hasDerivAt_applyL_semigroupLift`). -/
 theorem hasDerivAt_deriv (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     HasDerivAt (deriv u) (-(dirichletLaplacian Ω ⟨deriv u t, h.deriv_mem_domain ht⟩)) t := by
   have hloc : deriv u =ᶠ[𝓝 t] fun τ ↦ -applyL (dirichletLaplacian Ω) 2 1
@@ -400,8 +509,9 @@ theorem hasDerivAt_deriv (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
   rw [e1, LinearPMap.map_neg, neg_neg]
   exact (apply_applyL _ 1).symm
 
-/-- `‖u'(t)‖² = ⟪A u(t), u(t)⟫`'s companion: `⟪A u'(t), u(t)⟫ = −‖u'(t)‖²` for `t > 0`, by the
-symmetry of `A` and `u' = −A u`. -/
+/-- For a solution $u$ and $t > 0$, $\langle A u'(t), u(t) \rangle = -\|u'(t)\|^2$.
+
+The proof uses the symmetry of $A$ and $u' = -Au$. -/
 theorem inner_apply_deriv_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     ⟪dirichletLaplacian Ω ⟨deriv u t, h.deriv_mem_domain ht⟩, u t⟫_ℝ = -‖deriv u t‖ ^ 2 := by
   have hFA := dirichletLaplacian_isFormalAdjoint ⟨deriv u t, h.deriv_mem_domain ht⟩
@@ -417,7 +527,7 @@ end IsSolution
 
 end Heat
 
-/-! ### Theorem 10.2 (a): `u₀ ∈ H¹₀(Ω)` -/
+/-! ### Theorem 10.2 (a): $u_0 \in H^1_0(\Omega)$ -/
 
 namespace Heat
 
@@ -430,9 +540,14 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- **The solution of the `H¹₀`-realization is a solution in `L²`**: for `v₀ ∈ H¹₀(Ω)` and the
-Theorem 7.7 solution `w` of `w' + A₁ w = 0`, `w(0) = v₀`, in `H¹₀(Ω)`, the curve `fnL ∘ w` solves
-the heat equation in `L²(Ω)` with datum `fnL v₀` (`fnL_dirichletLaplacianH10_apply`). -/
+/-- **The solution of the realization in $H^1_0(\Omega)$ is a solution in $L^2(\Omega)$.** Let
+$v_0 \in H^1_0(\Omega)$ have the function $u_0$, and let $w : \mathbb{R} \to H^1_0(\Omega)$
+satisfy $w' + A_1 w = 0$ on $(0, \infty)$ with $w(0) = v_0$, be continuous on $[0, \infty)$ and
+of class $C^1$ on $(0, \infty)$. Here $A_1$ is the Dirichlet Laplacian in $H^1_0(\Omega)$
+(`dirichletLaplacianH10`). Then the curve of the functions of $w(t)$ is a solution of the heat
+equation in $L^2(\Omega)$ with datum $u_0$.
+
+The proof uses `fnL_dirichletLaplacianH10_apply`. -/
 theorem _root_.Heat.isSolution_fnL_of_isSolutionOn_H10 {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
       = u₀) {w : ℝ → SobolevEuclideanZero N 1 2 Ω}
@@ -453,11 +568,15 @@ theorem _root_.Heat.isSolution_fnL_of_isSolutionOn_H10 {v₀ : SobolevEuclideanZ
   contDiffOn := (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
     volume).contDiff.comp_contDiffOn hwd
 
-/-- **Theorem 10.2 (a), first clause** ([brezis2011functional]): if `u₀ = fnL v₀` with
-`v₀ ∈ H¹₀(Ω)`, then `u ∈ C([0, ∞); H¹₀(Ω))`. Theorem 7.7 for the self-adjoint maximal monotone
-`A₁ = dirichletLaplacianH10 Ω` in the Hilbert space `H¹₀(Ω)` gives `w ∈ C([0, ∞); H¹₀)` solving
-`w' + A₁ w = 0`, `w(0) = v₀`; `fnL ∘ w` is a solution in `L²`, so it is `u` by uniqueness. Any
-open `Ω`. -/
+/-- The first clause of Theorem 10.2 (a) of [brezis2011functional]. Let $u$ be a solution with datum
+$u_0$, and let $u_0$ be the function of some $v_0 \in H^1_0(\Omega)$. Then
+$u \in C([0, \infty); H^1_0(\Omega))$: on $[0, \infty)$, $u$ is the function of a continuous
+curve in $H^1_0(\Omega)$. This holds on every open set $\Omega$.
+
+Theorem 7.7 for the self-adjoint maximal monotone operator $A_1$ = `dirichletLaplacianH10 Ω` in
+the Hilbert space $H^1_0(\Omega)$ gives $w \in C([0, \infty); H^1_0(\Omega))$ with
+$w' + A_1 w = 0$ and $w(0) = v_0$. The functions of $w(t)$ form a solution in $L^2(\Omega)$,
+which is $u$ by uniqueness. -/
 theorem contDiffOnThrough_sobolevZero_of_mem (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
@@ -469,8 +588,10 @@ theorem contDiffOnThrough_sobolevZero_of_mem (h : IsSolution Ω u₀ u)
   have hsol := Heat.isSolution_fnL_of_isSolutionOn_H10 hv₀ h4.1 h4.2.1 h4.2.2.1
   exact ⟨_, contDiffOn_zero.2 h4.2.1, fun t ht ↦ h.unique hsol ht⟩
 
-/-- **The solution is the `A₁`-semigroup read in `L²`**: for `u₀ = fnL v₀`, `v₀ ∈ H¹₀(Ω)`,
-`u(t) = fnL (S_{A₁}(t) v₀)` for `t ≥ 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, and let $u_0$ be the function of
+$v_0 \in H^1_0(\Omega)$. Then for every $t \ge 0$, $u(t)$ is the function of
+$S_{A_1}(t) v_0 \in H^1_0(\Omega)$, where $S_{A_1}$ is the semigroup of the Dirichlet Laplacian
+$A_1$ in $H^1_0(\Omega)$. -/
 theorem apply_eq_fnL_semigroup_H10 (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
       = u₀) {t : ℝ} (ht : 0 ≤ t) :
@@ -481,7 +602,9 @@ theorem apply_eq_fnL_semigroup_H10 (h : IsSolution Ω u₀ u) {v₀ : SobolevEuc
   have hsol := Heat.isSolution_fnL_of_isSolutionOn_H10 hv₀ h4.1 h4.2.1 h4.2.2.1
   exact h.unique hsol ht
 
-/-- The `0`-th coordinate of the `A₁`-semigroup lift is `u(t)` in `L²`, for `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the function of the $0$-th coordinate of the lift of $S_{A_1}(t) v_0$ into
+$D(A_1)$ is $u(t)$. -/
 theorem fnL_applyL_zero_semigroupLift_H10 (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
@@ -492,8 +615,12 @@ theorem fnL_applyL_zero_semigroupLift_H10 (h : IsSolution Ω u₀ u)
   (congrArg _ (applyL_zero_semigroupLift dirichletLaplacianH10_isMaximalMonotone
     dirichletLaplacianH10_isFormalAdjoint ht)).trans (h.apply_eq_fnL_semigroup_H10 hv₀ ht.le).symm
 
-/-- The `1`-st coordinate of the `A₁`-semigroup lift is `−u'(t)` in `L²`, for `t > 0`:
-`fnL (A₁ y) = A (fnL y) = A u(t) = −u'(t)`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the function of the first coordinate of the lift $y$ of $S_{A_1}(t) v_0$
+into $D(A_1)$ is $-u'(t)$.
+
+The proof is that the function of $A_1 y$ is $A$ applied to the function of $y$, which is
+$A u(t) = -u'(t)$. -/
 theorem fnL_applyL_one_semigroupLift_H10 (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
@@ -512,7 +639,9 @@ theorem fnL_applyL_one_semigroupLift_H10 (h : IsSolution Ω u₀ u)
   have h4 := congrArg (fun z : (dirichletLaplacian Ω).domain ↦ dirichletLaplacian Ω z) h3
   exact (congrArg _ h1.symm).trans (h2.trans (h4.trans (neg_eq_iff_eq_neg.1 (h.deriv_eq ht).symm)))
 
-/-- `⟪A u(t), u(t)⟫ = ∫_Ω |∇v|²` for an `H¹₀`-lift `v` of `u(t)`, `t > 0`. -/
+/-- For a solution $u$, $t > 0$ and any $v \in H^1_0(\Omega)$ whose function is $u(t)$,
+$$\langle A u(t), u(t) \rangle = \int_\Omega |\nabla v|^2.$$
+-/
 theorem inner_apply_self_eq_dirichletForm (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t)
     {v : SobolevEuclideanZero N 1 2 Ω}
     (hv : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v
@@ -521,16 +650,22 @@ theorem inner_apply_self_eq_dirichletForm (h : IsSolution Ω u₀ u) {t : ℝ} (
       = dirichletForm Ω (v : SobolevEuclidean N 1 2 Ω) (v : SobolevEuclidean N 1 2 Ω) :=
   dirichletLaplacian_inner_self_eq_dirichletForm ⟨u t, h.mem_domain ht⟩ v.2 hv
 
-/-- `−½ ⟪u'(t), u(t)⟫ = ½ ⟪A u(t), u(t)⟫` for `t > 0`: the book's `φ(t) = ½ ‖∇u(t)‖²` written
-without the membership proof. -/
+/-- For a solution $u$ and $t > 0$, $-\frac12 \langle u'(t), u(t) \rangle = \frac12 \langle A u(t),
+u(t) \rangle$.
+
+The left side is the function $\varphi(t) = \frac12 \|\nabla u(t)\|^2$ of the proof of Theorem
+10.2 (a) of [brezis2011functional], written without the proof that $u(t) \in D(A)$. -/
 theorem neg_half_inner_deriv_eq (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     -(1 / 2) * ⟪deriv u t, u t⟫_ℝ
       = 1 / 2 * ⟪dirichletLaplacian Ω ⟨u t, h.mem_domain ht⟩, u t⟫_ℝ := by
   rw [h.deriv_eq ht, inner_neg_left]
   ring
 
-/-- **`φ' = −‖u'‖²`** for `φ(t) = −½ ⟪u'(t), u(t)⟫ = ½ ‖∇u(t)‖²` on `(0, ∞)` (the book's
-computation in the proof of Theorem 10.2 (a)): `u'' = −A u'` and the symmetry of `A`. -/
+/-- For a solution $u$ and $t > 0$, the function $\varphi(t) = -\frac12 \langle u'(t), u(t)
+\rangle$, which is $\frac12 \|\nabla u(t)\|^2$, has the derivative $\varphi'(t) = -\|u'(t)\|^2$.
+
+This is the computation in the proof of Theorem 10.2 (a) of [brezis2011functional]. It uses
+$u'' = -Au'$ and the symmetry of $A$. -/
 theorem hasDerivAt_neg_half_inner_deriv (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     HasDerivAt (fun t ↦ -(1 / 2) * ⟪deriv u t, u t⟫_ℝ) (-(‖deriv u t‖ ^ 2)) t := by
   have := ((h.hasDerivAt_deriv ht).inner ℝ (h.hasDerivAt ht)).const_mul (-(1 / 2))
@@ -538,8 +673,12 @@ theorem hasDerivAt_neg_half_inner_deriv (h : IsSolution Ω u₀ u) {t : ℝ} (ht
   rw [← h.deriv_eq ht, inner_neg_left, h.inner_apply_deriv_eq ht, real_inner_self_eq_norm_sq]
   ring
 
-/-- **`½ ‖∇u(t)‖² → ½ ‖∇v₀‖²` as `t → 0⁺`** for `u₀ = fnL v₀`, `v₀ ∈ H¹₀(Ω)`: the continuity
-into `H¹₀` at `0` of Theorem 10.2 (a). -/
+/-- Let $u$ be a solution with datum $u_0$, and let $u_0$ be the function of
+$v_0 \in H^1_0(\Omega)$. Then $-\frac12 \langle u'(t), u(t) \rangle \to \frac12 \int_\Omega
+|\nabla v_0|^2$ as $t \to 0^+$.
+
+This is the continuity of $u$ into $H^1_0(\Omega)$ at $0$ from Theorem 10.2 (a), since the left
+side is $\frac12 \|\nabla u(t)\|^2$. -/
 theorem tendsto_neg_half_inner_deriv_of_mem (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
@@ -570,12 +709,17 @@ theorem tendsto_neg_half_inner_deriv_of_mem (h : IsSolution Ω u₀ u)
   rw [hw0] at h1
   exact h1.congr' h2.symm
 
-/-- **(11) of Theorem 10.2 (a)** ([brezis2011functional]): for `u₀ = fnL v₀`, `v₀ ∈ H¹₀(Ω)`, and
-`T > 0`, `t ↦ ‖u'(t)‖²` is integrable on `(0, T]` and
-`∫₀ᵀ ‖u'(t)‖² dt + ½ ⟪A u(T), u(T)⟫ = ½ ∫_Ω |∇v₀|²`, i.e.
-`∫₀ᵀ ‖∂ₜu‖² + ½ ‖∇u(T)‖² = ½ ‖∇u₀‖²`. The function `φ(t) = ½ ⟪A u, u⟫ = −½ ⟪u', u⟫` has
-`φ' = −‖u'‖²` on `(0, ∞)` (`hasDerivAt_neg_half_inner_deriv`), and `φ(ε) → ½ ∫ |∇v₀|²` by the
-continuity into `H¹₀` at `0` (`tendsto_neg_half_inner_deriv_of_mem`). -/
+/-- The identity (11) of Theorem 10.2 (a) of [brezis2011functional]. Let $u$ be a solution with
+datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$, and let $T > 0$. Then
+$t \mapsto \|u'(t)\|^2$ is integrable on $(0, T]$ and
+$$\int_0^T \|u'(t)\|^2 \, dt + \frac12 \langle A u(T), u(T) \rangle = \frac12 \int_\Omega
+  |\nabla v_0|^2,$$
+that is, $\int_0^T \|\partial_t u\|^2 + \frac12 \|\nabla u(T)\|^2 = \frac12 \|\nabla u_0\|^2$.
+
+The function $\varphi(t) = \frac12 \langle Au, u \rangle = -\frac12 \langle u', u \rangle$ has
+$\varphi' = -\|u'\|^2$ on $(0, \infty)$ (`Heat.IsSolution.hasDerivAt_neg_half_inner_deriv`), and
+$\varphi(\varepsilon) \to \frac12 \int_\Omega |\nabla v_0|^2$ by the continuity into
+$H^1_0(\Omega)$ at $0$ (`Heat.IsSolution.tendsto_neg_half_inner_deriv_of_mem`). -/
 theorem energy_sobolevZero (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
       = u₀) {T : ℝ} (hT : 0 < T) :
@@ -597,8 +741,11 @@ theorem energy_sobolevZero (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZe
   beta_reduce at h2
   linarith
 
-/-- **`∂ₜu ∈ L²(0, ∞; L²(Ω))`** for `u₀ = fnL v₀`, `v₀ ∈ H¹₀(Ω)` ([brezis2011functional]
-Theorem 10.2 (a)): `u' ∈ L²((0, ∞); L²(Ω))` with `∫₀^∞ ‖u'(t)‖² dt ≤ ½ ∫_Ω |∇v₀|²`. -/
+/-- The clause $\partial_t u \in L^2(0, \infty; L^2(\Omega))$ of Theorem 10.2 (a) of
+[brezis2011functional]. Let $u$ be a solution with datum $u_0$, and let $u_0$ be the function of
+$v_0 \in H^1_0(\Omega)$. Then the curve $u'$ lies in $L^2((0, \infty); L^2(\Omega))$ and
+$$\int_0^\infty \|u'(t)\|^2 \, dt \le \frac12 \int_\Omega |\nabla v_0|^2.$$
+-/
 theorem memLp_deriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero N 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v₀
       = u₀) :
@@ -622,12 +769,15 @@ theorem memLp_deriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero N 1 
       measurableSet_Ioi)]
   exact key.1
 
-/-! ### Theorem 10.2 (b): `u₀ ∈ D(A)` -/
+/-! ### Theorem 10.2 (b): $u_0 \in D(A)$ -/
 
-/-- **Theorem 10.2 (b), first clause, abstractly** ([brezis2011functional], and Theorem 7.4):
-for `u₀ ∈ D(A)`, `u ∈ C¹([0, ∞); L²(Ω))` with `u'(0) = −A u₀` (one-sided), and
-`u ∈ C([0, ∞); D(A))`. This is the Hille–Yosida theorem for the datum `u₀ ∈ D(A)`, transported
-along `u = S_A(·) u₀`. Any open `Ω`. -/
+/-- The first clause of Theorem 10.2 (b) of [brezis2011functional], in abstract form. Let $u$ be a
+solution with datum $u_0 \in D(A)$. Then $u \in C^1([0, \infty); L^2(\Omega))$, the one-sided
+derivative of $u$ at $0$ within $[0, \infty)$ is $-A u_0$, and $u \in C([0, \infty); D(A))$.
+This holds on every open set $\Omega$.
+
+This is the Hille–Yosida theorem (Theorem 7.4) for the datum $u_0 \in D(A)$, transported along
+$u = S_A(\cdot) u_0$. -/
 theorem contDiffOn_Ici_of_mem_domain (h : IsSolution Ω u₀ u)
     (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain) :
     ContDiffOn ℝ 1 u (Ici 0) ∧
@@ -648,8 +798,9 @@ theorem contDiffOn_Ici_of_mem_domain (h : IsSolution Ω u₀ u)
     rw [hx0] at this
     exact this.congr fun t ht ↦ (h.apply_eq ht).symm
 
-/-- **`u'(t) → −A u₀` as `t → 0⁺`** for `u₀ ∈ D(A)`: `u'(t) = −S_A(t) (A u₀)` and the semigroup
-is continuous at `0`. -/
+/-- Let $u$ be a solution with datum $u_0 \in D(A)$. Then $u'(t) \to -A u_0$ as $t \to 0^+$.
+
+The proof is $u'(t) = -S_A(t) (A u_0)$ and the continuity of the semigroup at $0$. -/
 theorem tendsto_deriv_of_mem_domain (h : IsSolution Ω u₀ u)
     (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain) :
     Tendsto (deriv u) (𝓝[>] 0) (𝓝 (-(dirichletLaplacian Ω ⟨u₀, hu₀⟩))) := by
@@ -663,11 +814,17 @@ theorem tendsto_deriv_of_mem_domain (h : IsSolution Ω u₀ u)
   congr 2
   exact Subtype.ext (h.apply_eq (le_of_lt ht)).symm
 
-/-- **Theorem 10.2 (b), the identity** ([brezis2011functional], lines after (b)): for
-`u₀ ∈ D(A)`, `T > 0` and `g t = ⟪A u'(t), u'(t)⟫ = ∫_Ω |∇ Δu(t)|²` on `(0, ∞)`, `g` is
-integrable on `(0, T]` and `½ ‖u'(T)‖² + ∫₀ᵀ g = ½ ‖A u₀‖²`, i.e.
-`½ ‖Δu(T)‖² + ∫₀ᵀ ‖∇Δu‖² = ½ ‖Δu₀‖²`. The function `φ = ½ ‖u'‖²` has `φ' = ⟪u', u''⟫ = −g`
-(`u'' = −A u'`) and `φ(ε) → ½ ‖A u₀‖²` (`tendsto_deriv_of_mem_domain`). -/
+/-- The identity of Theorem 10.2 (b) of [brezis2011functional], stated after (b). Let $u$ be a
+solution with datum $u_0 \in D(A)$, let $T > 0$, and let $g(t) = \langle A u'(t), u'(t)
+\rangle = \int_\Omega |\nabla \Delta u(t)|^2$ for $t > 0$. Then $g$ is integrable on $(0, T]$
+and
+$$\frac12 \|u'(T)\|^2 + \int_0^T g(t) \, dt = \frac12 \|A u_0\|^2,$$
+that is, $\frac12 \|\Delta u(T)\|^2 + \int_0^T \|\nabla \Delta u\|^2 = \frac12 \|\Delta
+u_0\|^2$.
+
+The function $\varphi = \frac12 \|u'\|^2$ has $\varphi' = \langle u', u'' \rangle = -g$, because
+$u'' = -Au'$, and $\varphi(\varepsilon) \to \frac12 \|A u_0\|^2$
+(`Heat.IsSolution.tendsto_deriv_of_mem_domain`). -/
 theorem energy_domain (h : IsSolution Ω u₀ u) (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain)
     {g : ℝ → ℝ}
     (hg : ∀ t (ht : 0 < t),
@@ -702,9 +859,10 @@ theorem energy_domain (h : IsSolution Ω u₀ u) (hu₀ : u₀ ∈ (dirichletLap
   exact integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg hT hφ hg0 hgc
     (fun t _ ↦ by positivity) hL
 
-/-- **Theorem 10.2 (c), Bochner form** ([brezis2011functional], and Theorem 7.5): if
-`u₀ ∈ D(A^k)` (`u₀ = A^0 x` for some `x ∈ D(A^k)`) then `u ∈ C^{k−j}([0, ∞); D(A^j))` for every
-`j ≤ k`. Any open `Ω`. -/
+/-- Theorem 10.2 (c) of [brezis2011functional], in the form of Chapter 7. Let $u$ be a solution with
+datum $u_0 \in D(A^k)$, given as the $0$-th coordinate of some $x \in D(A^k)$. Then
+$u \in C^{k-j}([0, \infty); D(A^j))$ for every $j \le k$. This holds on every open set $\Omega$;
+it is Theorem 7.5 of [brezis2011functional]. -/
 theorem contDiffOnPowDomain_Ici_of_powDomain (h : IsSolution Ω u₀ u) {k : ℕ}
     (x : (dirichletLaplacian Ω).PowDomain k) (hx : applyL (dirichletLaplacian Ω) k 0 x = u₀)
     {j : ℕ} (hj : j ≤ k) :
@@ -717,7 +875,7 @@ end IsSolution
 
 end Heat
 
-/-! ### The regular-domain clauses: `H^{2ℓ}(Ω)` -/
+/-! ### The regular-domain clauses: $H^{2\ell}(\Omega)$ -/
 
 namespace Heat
 
@@ -730,11 +888,14 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- **`u ∈ C^∞((0, ∞); H^{2ℓ}(Ω))` on a `C^{2ℓ}` domain with bounded boundary**
-([brezis2011functional] §10.1, the display after (7)): the `C^∞` lift into `D(A^ℓ)`
-(`LinearPMap.contDiffOn_semigroupLift`) composed with the bounded injection
-`D(A^ℓ) ↪ H^{2ℓ}(Ω)` of Theorem 9.25 (`dirichletLaplacian.powDomainToSobolevL`). Every finite
-order follows by `Bochner.ContDiffOnThrough.of_le`. -/
+/-- A solution lies in $C^\infty((0, \infty); H^{2\ell}(\Omega))$ on a domain $\Omega$ of class
+$C^{2\ell}$ with bounded boundary. This is the display after (7) in §10.1 of
+[brezis2011functional].
+
+The proof composes the $C^\infty$ lift into $D(A^\ell)$ (`LinearPMap.contDiffOn_semigroupLift`)
+with the bounded injection $D(A^\ell) \to H^{2\ell}(\Omega)$ of Theorem 9.25
+(`dirichletLaplacian.powDomainToSobolevL`). Every finite order follows by
+`Bochner.ContDiffOnThrough.of_le`. Here $\Omega \subseteq \mathbb{R}^N$ with $N = d + 1$. -/
 theorem contDiffOnThrough_sobolev (h : IsSolution Ω u₀ u) {ℓ : ℕ}
     (hΩ : IsContDiffChartDomain (2 * ℓ) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -749,9 +910,10 @@ theorem contDiffOnThrough_sobolev (h : IsSolution Ω u₀ u) {ℓ : ℕ}
       rw [fnL_powDomainToSobolevL, applyL_zero_semigroupLift dirichletLaplacian_isMaximalMonotone
         dirichletLaplacian_isFormalAdjoint ht, h.apply_eq ht.le]⟩
 
-/-- **The clause `u ∈ C((0, ∞); H²(Ω) ∩ H¹₀(Ω))` of (4)** ([brezis2011functional] Theorem 10.1),
-on a `C²` domain with bounded boundary: `u` factors continuously through `H²(Ω) → L²(Ω)` on
-`(0, ∞)`, and `u(t)` lies in `H¹₀(Ω)` (the range of `SobolevMultiIndexZero.fnL`) for `t > 0`. -/
+/-- The clause $u \in C((0, \infty); H^2(\Omega) \cap H^1_0(\Omega))$ of (4) in Theorem 10.1 of
+[brezis2011functional]. Let $\Omega$ be a domain of class $C^2$ with bounded boundary, and let
+$u$ be a solution. Then on $(0, \infty)$ the curve $u$ is the function of a continuous curve in
+$H^2(\Omega)$, and $u(t)$ is the function of an element of $H^1_0(\Omega)$ for every $t > 0$. -/
 theorem contDiffOnThrough_two (h : IsSolution Ω u₀ u)
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -764,8 +926,10 @@ theorem contDiffOnThrough_two (h : IsSolution Ω u₀ u)
   exact ⟨(h.contDiffOnThrough_sobolev hΩ' hΓ).of_le bot_le, fun t ht ↦
     dirichletLaplacian_exists_sobolevZero_lift ⟨u t, h.mem_domain ht⟩⟩
 
-/-- **Theorem 10.2 (c), the `H^{2ℓ}` reading** ([brezis2011functional]): if `u₀ ∈ D(A^k)` then,
-on a `C^{2ℓ}` domain with bounded boundary and `ℓ ≤ k`, `u ∈ C^{k−ℓ}([0, ∞); H^{2ℓ}(Ω))`. -/
+/-- Theorem 10.2 (c) of [brezis2011functional], in the form with $H^{2\ell}(\Omega)$. Let $u$ be a
+solution with datum $u_0 \in D(A^k)$, given as the $0$-th coordinate of some $x \in D(A^k)$, let
+$\ell \le k$, and let $\Omega$ be a domain of class $C^{2\ell}$ with bounded boundary. Then $u
+\in C^{k-\ell}([0, \infty); H^{2\ell}(\Omega))$. -/
 theorem contDiffOnThrough_sobolev_Ici_of_powDomain (h : IsSolution Ω u₀ u) {k : ℕ}
     (x : (dirichletLaplacian Ω).PowDomain k) (hx : applyL (dirichletLaplacian Ω) k 0 x = u₀)
     {ℓ : ℕ} (hℓ : ℓ ≤ k)
@@ -776,8 +940,9 @@ theorem contDiffOnThrough_sobolev_Ici_of_powDomain (h : IsSolution Ω u₀ u) {k
   Bochner.ContDiffOnThrough.of_contDiffOnPowDomain (h.contDiffOnPowDomain_Ici_of_powDomain x hx hℓ)
     (dirichletLaplacian.powDomainToSobolevL hΩ hΓ) _ (fnL_powDomainToSobolevL hΩ hΓ)
 
-/-- **`u ∈ C([0, ∞); H²(Ω))` for `u₀ ∈ D(A)`** ([brezis2011functional] Theorem 10.2 (b)) on a
-`C²` domain with bounded boundary. -/
+/-- The clause $u \in C([0, \infty); H^2(\Omega))$ of Theorem 10.2 (b) of [brezis2011functional]: a
+solution with datum $u_0 \in D(A)$ on a domain of class $C^2$ with bounded boundary lies in
+$C([0, \infty); H^2(\Omega))$. -/
 theorem contDiffOnThrough_two_Ici_of_mem_domain (h : IsSolution Ω u₀ u)
     (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain)
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -793,11 +958,19 @@ end IsSolution
 
 end Heat
 
-/-! ### The Bochner memberships `L²(0, ∞; H¹₀(Ω))`, `L²(0, ∞; H²(Ω))` on bounded domains -/
+/-!
+### Square integrability in time on bounded domains
 
-/-- **Poincaré's inequality on `H¹₀(Ω)`, squared**: for a bounded `Ω` there is `C ≥ 0` with
-`‖v‖²_{H¹} ≤ C ∫_Ω |∇v|²` for every `v ∈ H¹₀(Ω)` (Corollary 9.19,
-`Elliptic.dirichletForm_restrict_isCoercive`). -/
+On a bounded domain, $u \in L^2(0, \infty; H^1_0(\Omega))$. On a bounded domain of class $C^2$ with
+bounded boundary, $u \in L^2(0, \infty; H^2(\Omega))$ for $u_0 \in H^1_0(\Omega)$.
+-/
+
+/-- **Poincaré's inequality on $H^1_0(\Omega)$, squared.** Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be bounded. Then there is $C \ge 0$ with
+$$\|v\|_{H^1}^2 \le C \int_\Omega |\nabla v|^2 \qquad \text{for every } v \in H^1_0(\Omega).$$
+
+This is Corollary 9.19 of [brezis2011functional]. The proof uses
+`Elliptic.dirichletForm_restrict_isCoercive`. -/
 theorem SobolevEuclideanZero.exists_norm_sq_le_dirichletForm {d : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -825,14 +998,18 @@ variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d
 end IsSolution
 
 variable (Ω) in
-/-- **The `H¹₀`-lift of the solution curve**: `t ↦ v(t) ∈ H¹₀(Ω)` with `fnL (v t) = u t` for
-`t > 0` (`Heat.IsSolution.fnL_sobolevZeroLift`), the bounded lift `D(A) → H¹₀(Ω)` applied to the
-semigroup lift into `D(A)`; `C^∞` on `(0, ∞)`. -/
+/-- The **$H^1_0$-lift of the solution curve**: the curve $t \mapsto v(t) \in H^1_0(\Omega)$
+obtained by applying the bounded lift $D(A) \to H^1_0(\Omega)$
+(`dirichletLaplacian.sobolevZeroLiftL`) to the lift of $S_A(t) u_0$ into $D(A)$
+(`LinearPMap.semigroupLift`).
+
+For a solution $u$ with datum $u_0$ and $t > 0$, the function of $v(t)$ is $u(t)$
+(`Heat.IsSolution.fnL_sobolevZeroLift`). The curve is $C^\infty$ on $(0, \infty)$. -/
 def sobolevZeroLift (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (t : ℝ) : SobolevEuclideanZero (d + 1) 1 2 Ω :=
   dirichletLaplacian.sobolevZeroLiftL Ω (semigroupLift (dirichletLaplacian Ω) u₀ 1 t)
 
-/-- The `H¹₀`-lift is `C^∞` on `(0, ∞)`. -/
+/-- The $H^1_0$-lift of the solution curve is of class $C^\infty$ on $(0, \infty)$. -/
 theorem contDiffOn_sobolevZeroLift
     (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     ContDiffOn ℝ ∞ (sobolevZeroLift Ω u₀) (Ioi 0) :=
@@ -845,15 +1022,20 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- The function of the `H¹₀`-lift is `u(t)`, for `t > 0`. -/
+/-- For a solution $u$ with datum $u_0$ and $t > 0$, the function of the $H^1_0$-lift $v(t)$ is
+$u(t)$. -/
 theorem fnL_sobolevZeroLift (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
       (sobolevZeroLift Ω u₀ t) = u t :=
   (fnL_sobolevZeroLiftL _).trans ((applyL_zero_semigroupLift dirichletLaplacian_isMaximalMonotone
     dirichletLaplacian_isFormalAdjoint ht).trans (h.apply_eq ht.le).symm)
 
-/-- **`‖v(t)‖²_{H¹} ≤ C ⟪A u(t), u(t)⟫`** for the `H¹₀`-lift `v`, with the Poincaré constant
-`C` of `SobolevEuclideanZero.exists_norm_sq_le_dirichletForm`. -/
+/-- Let $C$ satisfy $\|w\|_{H^1}^2 \le C \int_\Omega |\nabla w|^2$ for every $w \in H^1_0(\Omega)$.
+Then for a solution $u$ and $t > 0$, the $H^1_0$-lift $v$ satisfies
+$$\|v(t)\|_{H^1}^2 \le C \langle A u(t), u(t) \rangle.$$
+
+Such a constant $C$ exists on a bounded $\Omega$
+(`SobolevEuclideanZero.exists_norm_sq_le_dirichletForm`). -/
 theorem norm_sq_sobolevZeroLift_le (h : IsSolution Ω u₀ u) {C : ℝ}
     (hC : ∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
       ‖v‖ ^ 2 ≤ C * dirichletForm Ω (v : SobolevEuclidean (d + 1) 1 2 Ω)
@@ -864,8 +1046,11 @@ theorem norm_sq_sobolevZeroLift_le (h : IsSolution Ω u₀ u) {C : ℝ}
   (hC _).trans_eq (congrArg (C * ·)
     (h.inner_apply_self_eq_dirichletForm ht (h.fnL_sobolevZeroLift ht)).symm)
 
-/-- **`∫₀^∞ ‖v(t)‖²_{H¹} dt < ∞` on a bounded `Ω`** for the `H¹₀`-lift `v`: Poincaré's
-inequality and the energy identity (`integral_inner_apply_le`). -/
+/-- Let $\Omega$ be bounded and let $u$ be a solution. Then $t \mapsto \|v(t)\|_{H^1}^2$ is
+integrable on $(0, \infty)$, where $v$ is the $H^1_0$-lift of $u$.
+
+The proof is Poincaré's inequality and the energy identity
+(`Heat.IsSolution.integral_inner_apply_le`). -/
 theorem integrableOn_norm_sq_sobolevZeroLift
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (h : IsSolution Ω u₀ u) :
     IntegrableOn (fun t ↦ ‖sobolevZeroLift Ω u₀ t‖ ^ 2) (Ioi 0) := by
@@ -880,10 +1065,13 @@ theorem integrableOn_norm_sq_sobolevZeroLift
   rw [Real.norm_of_nonneg (by positivity)]
   exact hC _
 
-/-- **`u ∈ L²(0, ∞; H¹₀(Ω))` for bounded `Ω`** ([brezis2011functional] Theorem 10.1, the clause
-"`u ∈ L²(0, ∞; H¹₀(Ω))`", which on an unbounded domain only holds in its gradient form
-`Heat.IsSolution.integral_inner_apply_le`): `u` factors through `H¹₀(Ω) → L²(Ω)` on `(0, ∞)` by a
-curve of `L²((0, ∞); H¹₀(Ω))`, the `H¹₀`-lift. -/
+/-- The clause $u \in L^2(0, \infty; H^1_0(\Omega))$ of Theorem 10.1 of [brezis2011functional], for
+a bounded $\Omega$. Let $\Omega$ be bounded and let $u$ be a solution. Then on $(0, \infty)$ the
+curve $u$ is the function of a curve in $L^2((0, \infty); H^1_0(\Omega))$, namely the
+$H^1_0$-lift.
+
+On an unbounded domain only the gradient form of this clause holds
+(`Heat.IsSolution.integral_inner_apply_le`). -/
 theorem memLpThrough_sobolevZero_of_isBounded
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (h : IsSolution Ω u₀ u) :
     Bochner.MemLpThrough (SobolevMultiIndexZero.fnL ℝ
@@ -896,7 +1084,10 @@ theorem memLpThrough_sobolevZero_of_isBounded
     (contDiffOn_sobolevZeroLift u₀).continuousOn (fun t ht ↦ (h.fnL_sobolevZeroLift ht).symm)
     measurableSet_Ioi two_ne_zero ENNReal.ofNat_ne_top hint2
 
-/-- `∫₀^∞ ‖u(t)‖² dt < ∞` on a bounded `Ω`: `‖u(t)‖ ≤ ‖v(t)‖_{H¹}` for the `H¹₀`-lift. -/
+/-- Let $\Omega$ be bounded and let $u$ be a solution. Then $t \mapsto \|u(t)\|^2$ is integrable on
+$(0, \infty)$.
+
+The proof is $\|u(t)\| \le \|v(t)\|_{H^1}$ for the $H^1_0$-lift $v$. -/
 theorem integrableOn_norm_sq_of_isBounded
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (h : IsSolution Ω u₀ u) :
     IntegrableOn (fun t ↦ ‖u t‖ ^ 2) (Ioi 0) := by
@@ -906,8 +1097,10 @@ theorem integrableOn_norm_sq_of_isBounded
   rw [Real.norm_of_nonneg (by positivity), ← h.fnL_sobolevZeroLift ht]
   exact pow_le_pow_left₀ (norm_nonneg _) (SobolevMultiIndexZero.norm_fnL_apply_le _) 2
 
-/-- `∫₀^∞ ‖u'(t)‖² dt < ∞` for `u₀ ∈ H¹₀(Ω)`, as an `IntegrableOn` (the form of (11) that the
-Bochner memberships consume). -/
+/-- Let $u$ be a solution with datum $u_0$, and let $u_0$ be the function of
+$v_0 \in H^1_0(\Omega)$. Then $t \mapsto \|u'(t)\|^2$ is integrable on $(0, \infty)$.
+
+This is the form of (11) that the $L^2$ memberships use. -/
 theorem integrableOn_norm_sq_deriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
       volume v₀ = u₀) :
@@ -915,15 +1108,17 @@ theorem integrableOn_norm_sq_deriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEuc
   (memLp_two_iff_integrable_sq_norm ((h.contDiffOn.continuousOn_deriv_of_isOpen isOpen_Ioi
     le_rfl).aestronglyMeasurable measurableSet_Ioi)).1 (h.memLp_deriv hv₀).1
 
-/-- `deriv u t = −A x_t` on the lift `x_t ∈ D(A)` of `u(t)`, `t > 0`. -/
+/-- For a solution $u$ and $t > 0$, $u'(t) = -A u(t)$, where $A u(t)$ is the first coordinate of the
+lift $x_t$ of $u(t)$ into $D(A)$. -/
 theorem deriv_eq_neg_applyL_semigroupLift_one (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     deriv u t = -applyL (dirichletLaplacian Ω) 1 1
       (semigroupLift (dirichletLaplacian Ω) u₀ 1 t) := by
   have := h.iteratedDeriv_eq_applyL_semigroupLift 1 1 le_rfl t ht
   rwa [iteratedDeriv_one, pow_one, neg_one_smul] at this
 
-/-- **The graph norm of the semigroup lift**: `‖x_t‖²_{D(A)} = ‖u(t)‖² + ‖u'(t)‖²` for the lift
-`x_t ∈ D(A)` of `u(t)`, `t > 0`. -/
+/-- For a solution $u$ and $t > 0$, the lift $x_t$ of $u(t)$ into $D(A)$ has the graph norm
+$$\|x_t\|_{D(A)}^2 = \|u(t)\|^2 + \|u'(t)\|^2.$$
+-/
 theorem norm_sq_semigroupLift_one (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 < t) :
     ‖semigroupLift (dirichletLaplacian Ω) u₀ 1 t‖ ^ 2 = ‖u t‖ ^ 2 + ‖deriv u t‖ ^ 2 := by
   have h1 : applyL (dirichletLaplacian Ω) 1 0 (semigroupLift (dirichletLaplacian Ω) u₀ 1 t) = u t :=
@@ -936,9 +1131,13 @@ theorem norm_sq_semigroupLift_one (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 <
 end IsSolution
 
 variable (Ω) in
-/-- **The `H²`-lift of the solution curve** on a `C²` domain with bounded boundary:
-`dirichletLaplacian.powDomainToSobolevL` applied to the semigroup lift into `D(A)`, so that
-`fnL (w t) = u t` for `t > 0` (`Heat.IsSolution.fnL_sobolevTwoLift`). -/
+/-- The **$H^2$-lift of the solution curve** on a domain $\Omega$ of class $C^2$ with bounded
+boundary: the curve $t \mapsto w(t) \in H^2(\Omega)$ obtained by applying the bounded injection
+$D(A) \to H^2(\Omega)$ (`dirichletLaplacian.powDomainToSobolevL`) to the lift of $S_A(t) u_0$
+into $D(A)$.
+
+For a solution $u$ with datum $u_0$ and $t > 0$, the function of $w(t)$ is $u(t)$
+(`Heat.IsSolution.fnL_sobolevTwoLift`). -/
 def sobolevTwoLift
     (hΩ : IsContDiffChartDomain (2 * 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -946,7 +1145,7 @@ def sobolevTwoLift
     SobolevEuclidean (d + 1) (2 * 1) 2 Ω :=
   dirichletLaplacian.powDomainToSobolevL hΩ hΓ (semigroupLift (dirichletLaplacian Ω) u₀ 1 t)
 
-/-- The `H²`-lift is `C^∞` on `(0, ∞)`. -/
+/-- The $H^2$-lift of the solution curve is of class $C^\infty$ on $(0, \infty)$. -/
 theorem contDiffOn_sobolevTwoLift
     (hΩ : IsContDiffChartDomain (2 * 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -961,7 +1160,8 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- The function of the `H²`-lift is `u(t)`, for `t > 0`. -/
+/-- For a solution $u$ with datum $u_0$ and $t > 0$, the function of the $H^2$-lift $w(t)$ is
+$u(t)$. -/
 theorem fnL_sobolevTwoLift
     (hΩ : IsContDiffChartDomain (2 * 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -972,8 +1172,9 @@ theorem fnL_sobolevTwoLift
     ((applyL_zero_semigroupLift dirichletLaplacian_isMaximalMonotone
       dirichletLaplacian_isFormalAdjoint ht).trans (h.apply_eq ht.le).symm)
 
-/-- **`‖w(t)‖²_{H²} ≤ C (‖u(t)‖² + ‖u'(t)‖²)`** for the `H²`-lift `w`, with
-`C = ‖powDomainToSobolevL‖²`. -/
+/-- For a solution $u$ and $t > 0$, the $H^2$-lift $w$ satisfies
+$$\|w(t)\|_{H^2}^2 \le C \left( \|u(t)\|^2 + \|u'(t)\|^2 \right),$$
+where $C$ is the square of the norm of the injection `dirichletLaplacian.powDomainToSobolevL`. -/
 theorem norm_sq_sobolevTwoLift_le
     (hΩ : IsContDiffChartDomain (2 * 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -989,10 +1190,15 @@ theorem norm_sq_sobolevTwoLift_le
     _ = ‖dirichletLaplacian.powDomainToSobolevL hΩ hΓ‖ ^ 2 * (‖u t‖ ^ 2 + ‖deriv u t‖ ^ 2) := by
         rw [mul_pow, h.norm_sq_semigroupLift_one ht]
 
-/-- **`u ∈ L²(0, ∞; H²(Ω))` for `u₀ ∈ H¹₀(Ω)` on a bounded `C²` domain** ([brezis2011functional]
-Theorem 10.2 (a)): the `H²`-lift satisfies `‖w(t)‖²_{H²} ≤ C (‖u(t)‖² + ‖u'(t)‖²)`, both
-integrable on `(0, ∞)` (Poincaré and (11)). On an unbounded domain only
-`∫₀^∞ ‖Δu(t)‖² dt < ∞` holds. -/
+/-- The clause $u \in L^2(0, \infty; H^2(\Omega))$ of Theorem 10.2 (a) of [brezis2011functional],
+for a bounded domain. Let $\Omega$ be bounded and of class $C^2$ with bounded boundary, let $u$
+be a solution with datum $u_0$, and let $u_0$ be the function of some $v_0 \in H^1_0(\Omega)$.
+Then on $(0, \infty)$ the curve $u$ is the function of a curve in
+$L^2((0, \infty); H^2(\Omega))$.
+
+The $H^2$-lift $w$ satisfies $\|w(t)\|_{H^2}^2 \le C (\|u(t)\|^2 + \|u'(t)\|^2)$, and both terms
+are integrable on $(0, \infty)$, by Poincaré's inequality and by (11). On an unbounded domain
+only $\int_0^\infty \|\Delta u(t)\|^2 \, dt < \infty$ holds. -/
 theorem memLpThrough_two_of_isBounded
     (hΩb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1034,29 +1240,34 @@ open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 variable (Ω) in
-/-- **A solution of the backward-in-time problem (9'), (10), (11)** of [brezis2011functional]
-Chapter 10, Remark 1: `−∂ₜu − Δu = 0` on `Ω × (−∞, T)`, `u = 0` on `Γ × (−∞, T)`, with the final
-datum `u(T) = u_T`, in the class `C((−∞, T]; L²) ∩ C¹((−∞, T); L²)` with `u(t) ∈ D(A)` for
-`t < T`. The equation reads `u' = A u` (`A = −Δ`). -/
+/-- A **solution of the backward problem** (9'), (10), (11) of Remark 1 in Chapter 10 of
+[brezis2011functional]: $-\partial_t u - \Delta u = 0$ on $\Omega \times (-\infty, T)$, $u = 0$
+on $\Gamma \times (-\infty, T)$, and $u(T) = u_T$. It is a curve
+$u : \mathbb{R} \to L^2(\Omega)$ such that $u(T) = u_T$, $u(t) \in D(A)$ and $u'(t) = A u(t)$
+for every $t < T$, $u$ is continuous on $(-\infty, T]$, and $u$ is of class $C^1$ on
+$(-\infty, T)$.
+
+The equation reads $u' = Au$ because $A = -\Delta$. -/
 structure IsBackwardSolution (T : ℝ)
     (uT : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop where
-  /-- The final condition `u(T) = u_T`. -/
+  /-- The final condition $u(T) = u_T$. -/
   apply_eq : u T = uT
-  /-- `u(t) ∈ D(A)` for `t < T`. -/
+  /-- The curve takes values in $D(A)$: $u(t) \in D(A)$ for every $t < T$. -/
   mem_domain : ∀ t, t < T → u t ∈ (dirichletLaplacian Ω).domain
-  /-- The equation `u' = A u = −Δu` for `t < T`. -/
+  /-- The equation $u'(t) = A u(t) = -\Delta u(t)$ for every $t < T$. -/
   hasDerivAt : ∀ t (ht : t < T), HasDerivAt u (dirichletLaplacian Ω ⟨u t, mem_domain t ht⟩) t
-  /-- `u ∈ C((−∞, T]; L²(Ω))`. -/
+  /-- The curve is continuous on $(-\infty, T]$: $u \in C((-\infty, T]; L^2(\Omega))$. -/
   continuousOn : ContinuousOn u (Iic T)
-  /-- `u ∈ C¹((−∞, T); L²(Ω))`. -/
+  /-- The curve is of class $C^1$ on $(-\infty, T)$: $u \in C^1((-\infty, T); L^2(\Omega))$. -/
   contDiffOn : ContDiffOn ℝ 1 u (Iio T)
 
 variable {T : ℝ} {uT : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- **The change of variables `t ↦ T − t`**: `u` solves the backward problem with final datum
-`u_T` iff `s ↦ u(T − s)` solves the heat equation with initial datum `u_T`. -/
+/-- **The change of variables $t \mapsto T - t$**: $u$ solves the backward problem with final datum
+$u_T$ at time $T$ if and only if $s \mapsto u(T - s)$ solves the heat equation with initial
+datum $u_T$. -/
 theorem isBackwardSolution_iff :
     IsBackwardSolution Ω T uT u ↔ IsSolution Ω uT fun s ↦ u (T - s) := by
   constructor
@@ -1093,11 +1304,14 @@ theorem isBackwardSolution_iff :
       change u t = u (T - (T - t))
       rw [sub_sub_cancel]
 
-/-- **Remark 1, the well-posed half** ([brezis2011functional] Chapter 10, Remark 1): for every
-`T` and `u_T ∈ L²(Ω)` the backward problem `−∂ₜu − Δu = 0` on `Ω × (−∞, T)`, `u = 0` on
-`Γ × (−∞, T)`, `u(T) = u_T` has exactly one solution on `(−∞, T]`, namely
-`t ↦ solution Ω u_T (T − t)` ("change `t` into `T − t` and apply Theorem 10.1"). The ill-posed
-problem (9), (10), (11) is not a theorem of the book; its necessary condition (12) is
+/-- The well-posed half of Remark 1 in Chapter 10 of [brezis2011functional]. For every
+$T \in \mathbb{R}$ and every $u_T \in L^2(\Omega)$, the backward problem
+$-\partial_t u - \Delta u = 0$ on $\Omega \times (-\infty, T)$, $u = 0$ on
+$\Gamma \times (-\infty, T)$, $u(T) = u_T$ has a solution $u$, and every solution agrees with
+$u$ on $(-\infty, T]$. The solution is $t \mapsto S_A(T - t) u_T$.
+
+The book says: "change $t$ into $T - t$ and apply Theorem 10.1". The ill-posed problem (9),
+(10), (11) is not a theorem of the book. Its necessary condition (12) is
 `Heat.IsSolution.exists_powDomain`. -/
 theorem existsUnique_isSolution_backward (T : ℝ)
     (uT : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -1123,9 +1337,11 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- **The Dirichlet eigenfunctions lie in `D(A)` with `A e_n = λ_n e_n`**: the weak eigenvalue
-equation (83) of Theorem 9.31 is the defining identity of the weak domain
-(`dirichletLaplacianDomain`) with the datum `λ_n e_n`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set. Then every
+Dirichlet eigenfunction $e_n$ lies in $D(A)$, and $A e_n = \lambda_n e_n$.
+
+The weak eigenvalue equation (83) of Theorem 9.31 is the defining identity of the weak domain
+(`dirichletLaplacianDomain`) with the datum $\lambda_n e_n$. -/
 theorem dirichletLaplacian_apply_dirichletEigenbasis (n : ℕ) :
     ∃ h : dirichletEigenbasis Ω hΩ hne n ∈ (dirichletLaplacian Ω).domain,
       dirichletLaplacian Ω ⟨dirichletEigenbasis Ω hΩ hne n, h⟩
@@ -1152,8 +1368,12 @@ namespace Heat.IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- The coefficient `a_n(t) = ⟪u(t), e_n⟫` satisfies `a_n' = −λ_n a_n` on `(0, ∞)`:
-`⟪u', e_n⟫ = −⟪A u, e_n⟫ = −⟪u, A e_n⟫ = −λ_n ⟪u, e_n⟫`. -/
+/-- Let $\Omega$ be bounded and nonempty, let $u$ be a solution, and let
+$a_n(t) = \langle u(t), e_n \rangle$ be its coefficient in the Dirichlet eigenbasis. Then for
+every $t > 0$, $a_n$ is differentiable at $t$ with $a_n'(t) = -\lambda_n a_n(t)$.
+
+The proof is $\langle u', e_n \rangle = -\langle Au, e_n \rangle = -\langle u, A e_n \rangle =
+-\lambda_n \langle u, e_n \rangle$. -/
 theorem hasDerivAt_inner_eigenfunction (h : IsSolution Ω u₀ u) (n : ℕ) {t : ℝ} (ht : 0 < t) :
     HasDerivAt (fun t ↦ ⟪u t, dirichletEigenbasis Ω hΩ hne n⟫_ℝ)
       (-dirichletEigenvalue Ω hΩ n * ⟪u t, dirichletEigenbasis Ω hΩ hne n⟫_ℝ) t := by
@@ -1164,10 +1384,14 @@ theorem hasDerivAt_inner_eigenfunction (h : IsSolution Ω u₀ u) (n : ℕ) {t :
     dirichletLaplacian_isFormalAdjoint ⟨u t, h.mem_domain ht⟩ ⟨_, hmem⟩, hAe,
     inner_smul_right, neg_mul]
 
-/-- **Remark 3, the coefficients (13)** ([brezis2011functional] Chapter 10, Remark 3): for
-bounded nonempty `Ω`, the coefficients `a_n(t) = ⟪u(t), e_n⟫` of the solution in the Dirichlet
-eigenbasis are `a_n(t) = e^{−λ_n t} ⟪u₀, e_n⟫` for `t ≥ 0`: `e^{λ_n t} a_n(t)` has zero
-derivative on `(0, ∞)` and is continuous on `[0, ∞)`. -/
+/-- The coefficients (13) of Remark 3 in Chapter 10 of [brezis2011functional]. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set, and let $u$ be a
+solution with datum $u_0$. Then for every $t \ge 0$ and every $n$,
+$$\langle u(t), e_n \rangle = e^{-\lambda_n t} \langle u_0, e_n \rangle,$$
+where $(e_n)$ is the Dirichlet eigenbasis and $\lambda_n$ are the Dirichlet eigenvalues.
+
+The function $e^{\lambda_n t} \langle u(t), e_n \rangle$ has derivative zero on $(0, \infty)$
+and is continuous on $[0, \infty)$. -/
 theorem inner_eigenfunction (h : IsSolution Ω u₀ u) (n : ℕ) {t : ℝ} (ht : 0 ≤ t) :
     ⟪u t, dirichletEigenbasis Ω hΩ hne n⟫_ℝ
       = Real.exp (-dirichletEigenvalue Ω hΩ n * t) * ⟪u₀, dirichletEigenbasis Ω hΩ hne n⟫_ℝ := by
@@ -1201,9 +1425,13 @@ theorem inner_eigenfunction (h : IsSolution Ω u₀ u) (n : ℕ) {t : ℝ} (ht :
   rw [← hconst, hFt, neg_mul, Real.exp_neg, ← mul_assoc, inv_mul_cancel₀ (Real.exp_pos _).ne',
     one_mul]
 
-/-- **Remark 3, the series (14)** ([brezis2011functional] Chapter 10, Remark 3): for bounded
-nonempty `Ω` and `t ≥ 0`, `u(t) = ∑ₙ e^{−λ_n t} ⟪u₀, e_n⟫ e_n` in `L²(Ω)` — the expansion of
-`u(t)` in the Hilbert basis with the coefficients of `inner_eigenfunction`. -/
+/-- The series (14) of Remark 3 in Chapter 10 of [brezis2011functional]. Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded nonempty open set, and let $u$ be a
+solution with datum $u_0$. Then for every $t \ge 0$,
+$$u(t) = \sum_{n} e^{-\lambda_n t} \langle u_0, e_n \rangle e_n \qquad \text{in } L^2(\Omega).$$
+
+This is the expansion of $u(t)$ in the Hilbert basis $(e_n)$, with the coefficients of
+`Heat.IsSolution.inner_eigenfunction`. -/
 theorem hasSum_eigenfunction (h : IsSolution Ω u₀ u) {t : ℝ} (ht : 0 ≤ t) :
     HasSum (fun n ↦ (Real.exp (-dirichletEigenvalue Ω hΩ n * t)
       * ⟪u₀, dirichletEigenbasis Ω hΩ hne n⟫_ℝ) • dirichletEigenbasis Ω hΩ hne n) (u t) := by
@@ -1216,7 +1444,12 @@ end Heat.IsSolution
 
 end Eigen
 
-/-! ### Theorem 10.2 (b): `u ∈ L²(0, ∞; H³(Ω))` and `∂ₜu ∈ L²(0, ∞; H¹₀(Ω))` -/
+/-!
+### Theorem 10.2 (b): $H^3$ in space, and $\partial_t u$ in $H^1_0$
+
+For $u_0 \in D(A)$: on a bounded domain, $\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$, and on a
+bounded domain of class $C^3$ with bounded boundary, $u \in L^2(0, \infty; H^3(\Omega))$.
+-/
 
 section SobolevThree
 
@@ -1227,14 +1460,17 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 namespace Heat
 
 variable (Ω) in
-/-- **The `H¹₀`-lift of `u'`**: `t ↦ −A₁^1 x_t ∈ H¹₀(Ω)` on the `A₁`-semigroup lift
-`x_t ∈ D(A₁)` of the datum `v₀ ∈ H¹₀(Ω)`; its function is `u'(t)` for `t > 0`
-(`Heat.IsSolution.fnL_sobolevZeroLiftDeriv`). -/
+/-- The **$H^1_0$-lift of $u'$**: for $v_0 \in H^1_0(\Omega)$, the curve
+$t \mapsto z(t) = -A_1 x_t \in H^1_0(\Omega)$, where $x_t$ is the lift of $S_{A_1}(t) v_0$ into
+$D(A_1)$ and $A_1 x_t$ is its first coordinate.
+
+For a solution $u$ whose datum is the function of $v_0$, the function of $z(t)$ is $u'(t)$ for
+every $t > 0$ (`Heat.IsSolution.fnL_sobolevZeroLiftDeriv`). -/
 def sobolevZeroLiftDeriv (v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω) (t : ℝ) :
     SobolevEuclideanZero (d + 1) 1 2 Ω :=
   -applyL (dirichletLaplacianH10 Ω) 1 1 (semigroupLift (dirichletLaplacianH10 Ω) v₀ 1 t)
 
-/-- The `H¹₀`-lift of `u'` is `C^∞` on `(0, ∞)`. -/
+/-- The $H^1_0$-lift of $u'$ is of class $C^\infty$ on $(0, \infty)$. -/
 theorem contDiffOn_sobolevZeroLiftDeriv (v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     ContDiffOn ℝ ∞ (sobolevZeroLiftDeriv Ω v₀) (Ioi 0) :=
   ((applyL (dirichletLaplacianH10 Ω) 1 1).contDiff.comp_contDiffOn
@@ -1246,7 +1482,9 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- The function of the `H¹₀`-lift of `u'` is `u'(t)`, for `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, and let $u_0$ be the function of
+$v_0 \in H^1_0(\Omega)$. Then for every $t > 0$, the function of the $H^1_0$-lift $z(t)$ of $u'$
+is $u'(t)$. -/
 theorem fnL_sobolevZeroLiftDeriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
       volume v₀ = u₀) {t : ℝ} (ht : 0 < t) :
@@ -1255,7 +1493,10 @@ theorem fnL_sobolevZeroLiftDeriv (h : IsSolution Ω u₀ u) {v₀ : SobolevEucli
   (_root_.map_neg _ _).trans ((congrArg Neg.neg (h.fnL_applyL_one_semigroupLift_H10 hv₀ ht)).trans
     (neg_neg _))
 
-/-- `∫_Ω |∇z(t)|² = ⟪A u'(t), u'(t)⟫` for the `H¹₀`-lift `z` of `u'`, `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the $H^1_0$-lift $z$ of $u'$ satisfies
+$$\int_\Omega |\nabla z(t)|^2 = \langle A u'(t), u'(t) \rangle.$$
+-/
 theorem dirichletForm_sobolevZeroLiftDeriv (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
@@ -1266,8 +1507,11 @@ theorem dirichletForm_sobolevZeroLiftDeriv (h : IsSolution Ω u₀ u)
   (dirichletLaplacian_inner_self_eq_dirichletForm ⟨deriv u t, h.deriv_mem_domain ht⟩
     (sobolevZeroLiftDeriv Ω v₀ t).2 (h.fnL_sobolevZeroLiftDeriv hv₀ ht)).symm
 
-/-- **`∫₀^∞ ‖z(t)‖²_{H¹} dt < ∞`** for the `H¹₀`-lift `z` of `u'`, on a bounded `Ω` with
-`u₀ ∈ D(A)`: Poincaré's inequality and the identity of Theorem 10.2 (b). -/
+/-- Let $\Omega$ be bounded, let $u$ be a solution with datum $u_0 \in D(A)$, and let $u_0$ be the
+function of $v_0 \in H^1_0(\Omega)$. Then $t \mapsto \|z(t)\|_{H^1}^2$ is integrable on
+$(0, \infty)$, where $z$ is the $H^1_0$-lift of $u'$.
+
+The proof is Poincaré's inequality and the identity of Theorem 10.2 (b). -/
 theorem integrableOn_norm_sq_sobolevZeroLiftDeriv
     (hΩb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (h : IsSolution Ω u₀ u) (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain)
@@ -1291,9 +1535,10 @@ theorem integrableOn_norm_sq_sobolevZeroLiftDeriv
   rw [Real.norm_of_nonneg (by positivity)]
   exact hC _
 
-/-- **`∂ₜu ∈ L²(0, ∞; H¹₀(Ω))`** for `u₀ ∈ D(A)` on a bounded `Ω` ([brezis2011functional]
-Theorem 10.2 (b)): `u'` factors through `H¹₀(Ω) → L²(Ω)` on `(0, ∞)` by a curve of
-`L²((0, ∞); H¹₀(Ω))`, the `H¹₀`-lift of `u'`. -/
+/-- The clause $\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$ of Theorem 10.2 (b) of
+[brezis2011functional], for a bounded domain. Let $\Omega$ be bounded and let $u$ be a solution
+with datum $u_0 \in D(A)$. Then on $(0, \infty)$ the curve $u'$ is the function of a curve in
+$L^2((0, \infty); H^1_0(\Omega))$, namely the $H^1_0$-lift of $u'$. -/
 theorem memLpThrough_sobolevZero_deriv_of_isBounded
     (hΩb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (h : IsSolution Ω u₀ u) (hu₀ : u₀ ∈ (dirichletLaplacian Ω).domain) :
@@ -1310,7 +1555,9 @@ theorem memLpThrough_sobolevZero_deriv_of_isBounded
     (fun t ht ↦ (h.fnL_sobolevZeroLiftDeriv hv₀ ht).symm) measurableSet_Ioi two_ne_zero
     ENNReal.ofNat_ne_top hint2
 
-/-- The `0`-th coordinate of the `A₁`-semigroup lift is the `H¹₀`-lift of `u`, for `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the $0$-th coordinate of the lift of $S_{A_1}(t) v_0$ into $D(A_1)$ is the
+$H^1_0$-lift $v(t)$ of $u$. -/
 theorem applyL_zero_semigroupLift_H10_eq (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
@@ -1320,14 +1567,17 @@ theorem applyL_zero_semigroupLift_H10_eq (h : IsSolution Ω u₀ u)
   SobolevMultiIndexZero.fnL_injective
     ((h.fnL_applyL_zero_semigroupLift_H10 hv₀ ht).trans (h.fnL_sobolevZeroLift ht).symm)
 
-/-- `‖z(t)‖ = ‖A₁^1 x_t‖` for the `H¹₀`-lift `z` of `u'`. -/
+/-- For $v_0 \in H^1_0(\Omega)$ and every $t$, the $H^1_0$-lift $z(t)$ of $u'$ has the norm
+$\|z(t)\|_{H^1} = \|A_1 x_t\|_{H^1}$, where $x_t$ is the lift of $S_{A_1}(t) v_0$ into $D(A_1)$. -/
 theorem _root_.Heat.norm_sobolevZeroLiftDeriv (v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω) (t : ℝ) :
     ‖sobolevZeroLiftDeriv Ω v₀ t‖
       = ‖applyL (dirichletLaplacianH10 Ω) 1 1 (semigroupLift (dirichletLaplacianH10 Ω) v₀ 1 t)‖ :=
   norm_neg _
 
-/-- **The graph norm of the `A₁`-semigroup lift**: `‖x_t‖²_{D(A₁)} = ‖v(t)‖²_{H¹} + ‖z(t)‖²_{H¹}`
-for the `H¹₀`-lifts `v` of `u` and `z` of `u'`, `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the lift $x_t$ of $S_{A_1}(t) v_0$ into $D(A_1)$ has the graph norm
+$$\|x_t\|_{D(A_1)}^2 = \|v(t)\|_{H^1}^2 + \|z(t)\|_{H^1}^2,$$
+where $v$ is the $H^1_0$-lift of $u$ and $z$ is the $H^1_0$-lift of $u'$. -/
 theorem norm_sq_semigroupLift_H10_one (h : IsSolution Ω u₀ u)
     {v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω}
     (hv₀ : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
@@ -1341,15 +1591,18 @@ theorem norm_sq_semigroupLift_H10_one (h : IsSolution Ω u₀ u)
 end IsSolution
 
 variable (Ω) in
-/-- **The `H³`-lift of the solution curve** on a `C³` domain with bounded boundary, for a datum
-`u₀ = fnL v₀ ∈ D(A)`: the injection `D(A₁) ↪ H³(Ω)` applied to the `A₁`-semigroup lift. -/
+/-- The **$H^3$-lift of the solution curve** on a domain $\Omega$ of class $C^3$ with bounded
+boundary, for $v_0 \in H^1_0(\Omega)$: the curve $t \mapsto U(t) \in H^3(\Omega)$ obtained by
+applying the bounded injection $D(A_1) \to H^3(\Omega)$
+(`dirichletLaplacianH10.powDomainOneToSobolevThreeL`) to the lift of $S_{A_1}(t) v_0$ into
+$D(A_1)$. -/
 def sobolevThreeLift (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v₀ : SobolevEuclideanZero (d + 1) 1 2 Ω) (t : ℝ) : SobolevEuclidean (d + 1) 3 2 Ω :=
   dirichletLaplacianH10.powDomainOneToSobolevThreeL Ω hΩ hΓ
     (semigroupLift (dirichletLaplacianH10 Ω) v₀ 1 t)
 
-/-- The `H³`-lift is `C^∞` on `(0, ∞)`. -/
+/-- The $H^3$-lift of the solution curve is of class $C^\infty$ on $(0, \infty)$. -/
 theorem contDiffOn_sobolevThreeLift
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -1359,7 +1612,9 @@ theorem contDiffOn_sobolevThreeLift
     (contDiffOn_semigroupLift dirichletLaplacianH10_isMaximalMonotone
       dirichletLaplacianH10_isFormalAdjoint v₀ 1)
 
-/-- `‖U(t)‖_{H³} ≤ ‖T‖ ‖x_t‖_{D(A₁)}` for the `H³`-lift `U`. -/
+/-- For every $t$, the $H^3$-lift satisfies $\|U(t)\|_{H^3} \le \|J\| \, \|x_t\|_{D(A_1)}$, where
+$J$ is the injection `dirichletLaplacianH10.powDomainOneToSobolevThreeL` and $x_t$ is the lift
+of $S_{A_1}(t) v_0$ into $D(A_1)$. -/
 theorem norm_sobolevThreeLift_le
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -1374,7 +1629,8 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- The function of the `H³`-lift is `u(t)`, for `t > 0`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then the function of the $H^3$-lift $U(t)$ is $u(t)$. -/
 theorem fnL_sobolevThreeLift
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -1385,8 +1641,12 @@ theorem fnL_sobolevThreeLift
       (sobolevThreeLift Ω hΩ hΓ v₀ t) = u t :=
   (fnL_powDomainOneToSobolevThreeL hΩ hΓ _).trans (h.fnL_applyL_zero_semigroupLift_H10 hv₀ ht)
 
-/-- **`‖U(t)‖²_{H³} ≤ ‖T‖² (‖v(t)‖²_{H¹} + ‖z(t)‖²_{H¹})`** for the `H³`-lift `U` and the
-`H¹₀`-lifts `v`, `z` of `u`, `u'`. -/
+/-- Let $u$ be a solution with datum $u_0$, let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$,
+and let $t > 0$. Then
+$$\|U(t)\|_{H^3}^2 \le \|J\|^2 \left( \|v(t)\|_{H^1}^2 + \|z(t)\|_{H^1}^2 \right),$$
+where $U$ is the $H^3$-lift, $J$ is the injection
+`dirichletLaplacianH10.powDomainOneToSobolevThreeL`, and $v$ and $z$ are the $H^1_0$-lifts of
+$u$ and $u'$. -/
 theorem norm_sq_sobolevThreeLift_le
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -1408,7 +1668,8 @@ theorem norm_sq_sobolevThreeLift_le
         * (‖sobolevZeroLift Ω u₀ t‖ ^ 2 + ‖sobolevZeroLiftDeriv Ω v₀ t‖ ^ 2) :=
         congrArg (‖dirichletLaplacianH10.powDomainOneToSobolevThreeL Ω hΩ hΓ‖ ^ 2 * ·) h2
 
-/-- The bound of `norm_sq_sobolevThreeLift_le` in the form the integrability comparison uses. -/
+/-- The bound of `Heat.IsSolution.norm_sq_sobolevThreeLift_le` for the absolute value
+$\left| \|U(t)\|_{H^3}^2 \right|$, the form that the comparison test for integrability uses. -/
 theorem norm_norm_sq_sobolevThreeLift_le
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -1420,8 +1681,9 @@ theorem norm_norm_sq_sobolevThreeLift_le
         * (‖sobolevZeroLift Ω u₀ t‖ ^ 2 + ‖sobolevZeroLiftDeriv Ω v₀ t‖ ^ 2) :=
   (Real.norm_of_nonneg (sq_nonneg _)).le.trans (h.norm_sq_sobolevThreeLift_le hΩ hΓ hv₀ ht)
 
-/-- **`∫₀^∞ ‖U(t)‖²_{H³} dt < ∞`** for the `H³`-lift `U` on a bounded `C³` domain with
-`u₀ ∈ D(A)`. -/
+/-- Let $\Omega$ be bounded and of class $C^3$ with bounded boundary, let $u$ be a solution with
+datum $u_0 \in D(A)$, and let $u_0$ be the function of $v_0 \in H^1_0(\Omega)$. Then
+$t \mapsto \|U(t)\|_{H^3}^2$ is integrable on $(0, \infty)$, where $U$ is the $H^3$-lift. -/
 theorem integrableOn_norm_sq_sobolevThreeLift
     (hΩb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1440,11 +1702,15 @@ theorem integrableOn_norm_sq_sobolevThreeLift
     (ae_restrict_of_forall_mem measurableSet_Ioi fun t ht ↦
       h.norm_norm_sq_sobolevThreeLift_le hΩ hΓ hv₀ ht)
 
-/-- **`u ∈ L²(0, ∞; H³(Ω))` for `u₀ ∈ D(A)` on a bounded `C³` domain** ([brezis2011functional]
-Theorem 10.2 (b), the "why?"): the `H³`-lift `U` of the solution satisfies
-`‖U(t)‖²_{H³} ≤ ‖T‖² (‖v(t)‖²_{H¹} + ‖z(t)‖²_{H¹})` with `v`, `z` the `H¹₀`-lifts of `u`, `u'`,
-both square integrable on `(0, ∞)` (Poincaré with the identities of Theorems 10.1 and
-10.2 (b)). -/
+/-- The clause $u \in L^2(0, \infty; H^3(\Omega))$ of Theorem 10.2 (b) of [brezis2011functional],
+for a bounded domain. Let $\Omega$ be bounded and of class $C^3$ with bounded boundary, and let
+$u$ be a solution with datum $u_0 \in D(A)$. Then on $(0, \infty)$ the curve $u$ is the function
+of a curve in $L^2((0, \infty); H^3(\Omega))$.
+
+This answers the question "why?" that the book asks at this clause. The $H^3$-lift $U$ satisfies
+$\|U(t)\|_{H^3}^2 \le \|J\|^2 (\|v(t)\|_{H^1}^2 + \|z(t)\|_{H^1}^2)$, where $v$ and $z$ are the
+$H^1_0$-lifts of $u$ and $u'$. Both are square integrable on $(0, \infty)$ by Poincaré's
+inequality and the identities of Theorems 10.1 and 10.2 (b). -/
 theorem memLpThrough_three_of_isBounded
     (hΩb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1469,7 +1735,12 @@ end Heat
 
 end SobolevThree
 
-/-! ### The space–time reading: `u ∈ C^∞(Ω̄ × [ε, ∞))`, `u ∈ C^∞(Ω̄ × [0, ∞))` -/
+/-!
+### The space–time reading: smoothness up to the boundary
+
+The clauses $u \in C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ for every
+$\varepsilon > 0$, and $u \in C^\infty(\overline{\Omega} \times [0, \infty))$ for a smooth datum.
+-/
 
 section SpaceTime
 
@@ -1484,9 +1755,12 @@ namespace IsSolution
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- **`u ∈ C^∞((0, ∞); H^m(Ω))` for every `m` on a `C^∞` domain with bounded boundary**: the
-`H^{2ℓ}` clauses `contDiffOnThrough_sobolev` for every `ℓ`, lowered to every order `m ≤ 2ℓ`
-(`Bochner.ContDiffOnThrough.sobolev_of_le`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a domain of class $C^\infty$ with bounded
+boundary, and let $u$ be a solution. Then $u \in C^\infty((0, \infty); H^m(\Omega))$ for every
+$m \in \mathbb{N}$.
+
+The proof uses `Heat.IsSolution.contDiffOnThrough_sobolev` for every $\ell$ and lowers the order
+from $2\ell$ to $m \le 2\ell$ (`Bochner.ContDiffOnThrough.sobolev_of_le`). -/
 theorem contDiffOnThrough_sobolev_forall (h : IsSolution Ω u₀ u)
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) (m : ℕ) :
@@ -1495,17 +1769,25 @@ theorem contDiffOnThrough_sobolev_forall (h : IsSolution Ω u₀ u)
   (h.contDiffOnThrough_sobolev (ℓ := m) (hΩ.of_le (WithTop.coe_le_coe.2 le_top)) hΓ).sobolev_of_le
     (by omega)
 
-/-- **(5): `u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`** ([brezis2011functional] Theorem 10.1), on a
-`C^∞` domain with bounded boundary: there is `U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` almost
-everywhere on `Ω` for every `t > 0`, such that for every `ε > 0`, `U` is `C^∞` on `Ω × (ε, ∞)`
-with every derivative extending continuously to `closure Ω × [ε, ∞)` (`ContDiffOnClosure`). The
-conclusion cannot be strengthened to `Ω̄ × [0, ∞)`: with `L²` data the solution is not smooth
-up to `t = 0`. Proof: `u ∈ C^∞((0, ∞); H^m(Ω))` for every `m` (`contDiffOnThrough_sobolev_forall`,
-Theorem 9.25 through `D(A^ℓ) ↪ H^{2ℓ}`) and the space–time bridge
-`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi` on the extension domain
-`Ω` (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`). The book invokes Corollary 9.15
-for `H^{2ℓ} ⊆ C^k(Ω̄)`, whose hypothesis "`m − N/p` not an integer" fails at `p = 2` for even
-`N`; the bridge uses the integer-safe form `k + N/2 < m`. -/
+/-- The clause (5) of Theorem 10.1 of [brezis2011functional], $u \in C^\infty(\overline{\Omega}
+\times [\varepsilon, \infty))$ for every $\varepsilon > 0$. Let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be a domain of class $C^\infty$ with bounded boundary, and let $u$ be a solution.
+Then there is $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ such that $U(\cdot, t) = u(t)$
+almost everywhere on $\Omega$ for every $t > 0$, and for every $\varepsilon > 0$, $U$ is of
+class $C^\infty$ on $\Omega \times (\varepsilon, \infty)$ and every derivative of $U$ there
+extends continuously to $\overline{\Omega} \times [\varepsilon, \infty)$.
+
+The conclusion cannot be strengthened to $\overline{\Omega} \times [0, \infty)$: with a datum in
+$L^2(\Omega)$ the solution is not smooth up to $t = 0$. The book uses Corollary 9.15 for
+$H^{2\ell}(\Omega) \subseteq C^k(\overline{\Omega})$. The hypothesis of that corollary,
+"$m - N/p$ is not an integer", fails at $p = 2$ for even $N$. The proof here uses the condition
+$k + N/2 < m$ instead, which is valid for all $N$.
+
+The class $C^\infty$ up to the closure is `ContDiffOnClosure`. The proof is
+$u \in C^\infty((0, \infty); H^m(\Omega))$ for every $m$
+(`Heat.IsSolution.contDiffOnThrough_sobolev_forall`) and the space–time result
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi`, for the extension domain
+$\Omega$ (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`). -/
 theorem contDiffOnClosure_spaceTime (h : IsSolution Ω u₀ u)
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -1518,10 +1800,14 @@ theorem contDiffOnClosure_spaceTime (h : IsSolution Ω u₀ u)
     (IsSobolevExtensionDomainAll.of_isContDiffChartDomain (hΩ.of_le (by simp)) hΓ)
     (h.contDiffOnThrough_sobolev_forall hΩ hΓ)
 
-/-- **`u ∈ C^∞([0, ∞); H^{2ℓ}(Ω))` for `u₀ ∈ D(A^k)` for every `k`**: one lift for all orders.
-The lifts of `contDiffOnThrough_sobolev_Ici_of_powDomain` at the orders `n` agree on `[0, ∞)`
-(`SobolevMultiIndex.fnL_injective`), so the lift at order `0` is `C^n` on `[0, ∞)` for every
-`n`. -/
+/-- Let $u$ be a solution with datum $u_0$, where $u_0 \in D(A^k)$ for every $k$, and let $\Omega$
+be a domain of class $C^{2\ell}$ with bounded boundary. Then
+$u \in C^\infty([0, \infty); H^{2\ell}(\Omega))$.
+
+One lift serves for all orders. The lifts of
+`Heat.IsSolution.contDiffOnThrough_sobolev_Ici_of_powDomain` at the orders $n$ agree on
+$[0, \infty)$ (`SobolevMultiIndex.fnL_injective`), so the lift of order $0$ is of class $C^n$ on
+$[0, \infty)$ for every $n$. -/
 theorem contDiffOnThrough_sobolev_Ici_of_forall_powDomain (h : IsSolution Ω u₀ u)
     (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
     {ℓ : ℕ}
@@ -1543,8 +1829,9 @@ theorem contDiffOnThrough_sobolev_Ici_of_forall_powDomain (h : IsSolution Ω u�
   refine hw.congr fun t ht ↦ ?_
   exact fnL_injective ((huv t ht).symm.trans (huw t ht))
 
-/-- **`u ∈ C^∞([0, ∞); H^m(Ω))` for every `m`** when `u₀ ∈ D(A^k)` for every `k`, on a `C^∞`
-domain with bounded boundary. -/
+/-- Let $u$ be a solution with datum $u_0$, where $u_0 \in D(A^k)$ for every $k$, and let $\Omega$
+be a domain of class $C^\infty$ with bounded boundary. Then
+$u \in C^\infty([0, \infty); H^m(\Omega))$ for every $m \in \mathbb{N}$. -/
 theorem contDiffOnThrough_sobolev_Ici_forall (h : IsSolution Ω u₀ u)
     (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1554,14 +1841,21 @@ theorem contDiffOnThrough_sobolev_Ici_forall (h : IsSolution Ω u₀ u)
   (h.contDiffOnThrough_sobolev_Ici_of_forall_powDomain hu₀ (ℓ := m)
     (hΩ.of_le (WithTop.coe_le_coe.2 le_top)) hΓ).sobolev_of_le (by omega)
 
-/-- **Theorem 10.2 (c)** ([brezis2011functional]): on a `C^∞` domain with bounded boundary, if
-`u₀ ∈ D(A^k)` for every `k` — the book's `u₀ ∈ H^{2k}(Ω)` with the compatibility conditions (8)
-`Δ^j u₀ = 0` on `Γ`, by `dirichletLaplacian_mem_powDomain_iff` — then `u ∈ C^∞(Ω̄ × [0, ∞))`:
-there is `U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` almost everywhere on `Ω` for every `t ≥ 0`,
-`C^∞` on `Ω × (0, ∞)` with every derivative extending continuously to `closure Ω × [0, ∞)`
-(`ContDiffOnClosure`). Proof: `u ∈ C^∞([0, ∞); H^m(Ω))` for every `m`
-(`contDiffOnThrough_sobolev_Ici_forall`) and the space–time bridge on `[0, ∞)`
-(`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
+/-- Theorem 10.2 (c) of [brezis2011functional]. Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be
+a domain of class $C^\infty$ with bounded boundary, and let $u$ be a solution with datum
+$u_0 \in D(A^k)$ for every $k$. Then $u \in C^\infty(\overline{\Omega} \times [0, \infty))$:
+there is $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ such that $U(\cdot, t) = u(t)$
+almost everywhere on $\Omega$ for every $t \ge 0$, $U$ is of class $C^\infty$ on
+$\Omega \times (0, \infty)$, and every derivative of $U$ there extends continuously to
+$\overline{\Omega} \times [0, \infty)$.
+
+The book states the hypothesis as $u_0 \in H^{2k}(\Omega)$ for every $k$ with the compatibility
+conditions (8), $\Delta^j u_0 = 0$ on $\Gamma$. It is equivalent to $u_0 \in D(A^k)$ for every
+$k$ by `dirichletLaplacian_mem_powDomain_iff`.
+
+The proof is $u \in C^\infty([0, \infty); H^m(\Omega))$ for every $m$
+(`Heat.IsSolution.contDiffOnThrough_sobolev_Ici_forall`) and the space–time result on
+$[0, \infty)$ (`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
 theorem contDiffOnClosure_spaceTime_Ici (h : IsSolution Ω u₀ u)
     (hu₀ : ∀ k, ∃ x : (dirichletLaplacian Ω).PowDomain k, applyL (dirichletLaplacian Ω) k 0 x = u₀)
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))

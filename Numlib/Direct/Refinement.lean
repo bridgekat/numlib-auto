@@ -9,47 +9,78 @@ import Numlib.Stationary.Basic
 /-!
 # Iterative refinement and scaling
 
-The devices of [quarteroni2000numerical] §3.12 for improving the accuracy of a direct solve.
+This module formalizes the devices of [quarteroni2000numerical], §3.12, that improve the accuracy of
+a direct solve of $Ax = b$. **Iterative refinement** with an approximate inverse $C$ repeats the
+step $x \mapsto x + C(b - Ax)$: compute the residual, solve for a correction, and update. In exact
+arithmetic this is the stationary iteration with the iteration operator $I - CA$. So the error after
+$k$ steps is $(I - CA)^k (x_0 - x^*)$, the error contracts by the factor $\|I - CA\|$ in each step,
+and one step is exact when $CA = I$. On a finite-dimensional complex space with $C$ onto, refinement
+converges for every right-hand side and every start if and only if $\rho(I - CA) < 1$. **Scaling**
+replaces $Ax = b$ by $(D_1 A D_2) y = D_1 b$ with $y = D_2^{-1} x$ (§3.12.1).
 
-* **Iterative refinement** (§3.12.2) with an approximate inverse `C` — in practice the LU solve
-  of §3.12.2, `C = luSolve` as a linear map — is the step `x ↦ x + C (b - A x)`
-  (`Refinement.step`), which is the stationary iteration `Stationary.step (1 - C A) (C b)` of
-  `Numlib/Stationary/Basic` (`Refinement.step_eq_stationary_step`). Hence its error after `k`
-  steps is `(1 - C A)^k (x₀ - x*)` (`Refinement.iterate_sub_eq`), it contracts by `‖1 - C A‖`
-  per step (`Refinement.norm_iterate_sub_le`), it is exact after one step when `C A = 1`
-  (`Refinement.step_eq_of_eq_inverse`, the book's "in absence of rounding errors, the process
-  would stop at the first step"), and, on a finite-dimensional complex space with `C` onto, it
-  converges for every right-hand side and start iff `ρ(1 - C A) < 1`
-  (`Refinement.forall_tendsto_iff_spectralRadius_lt_one`). The quantity `‖1 - C A‖` is the
-  `‖R‖` of the book's Property 3.1 with the factors in the other order.
-* **One computed step** (§3.12.2 again), the rigorous content those asymptotics summarize: the
-  error identity `(A + ΔA)(x - ŷ) = ΔA (x - x̂) - ξ - (A + ΔA) η` for a residual, a solve and an
-  update each carrying a backward error (`Refinement.step_error`), its `∞`-norm form
-  (`Refinement.norm_step_error_le`), and its instantiation in the relational rounding model of
-  `Numlib/FloatingPoint`, where the three errors are bounded by `γ_{3n} |L| |U|`,
-  `γ_{n+1}(|A| |x̂| + |b|)` and `u |x̂ + ẑ|` (`Refinement.step_error_fp`). These are stated on
-  matrices over `ℝ`, since the rounding models are.
-* **Convergence in finite precision** ([higham2002accuracy] §12.1, Theorems 12.1–12.2, the
-  rigorous form of the book's `ρ ≃ 2 n cond(A, x) u` in fixed precision and `ρ ≃ u` in mixed
-  precision): solving the error identity with `A⁻¹` in place of `(A + ΔA)⁻¹` gives the recursion
-  `(1 - 2u - θ) ‖x - ŷ‖_∞ ≤ (θ + α cond(A)) ‖x - x̂‖_∞ + β cond(A, x) ‖x‖_∞ + u (1 + θ) ‖x‖_∞`
-  with `θ = γ ‖|A⁻¹| W‖_∞` (`Refinement.norm_step_error_le_of_abs_le`), which for the LU solve
-  reads with `θ = γ_{3n} ‖|A⁻¹| |L| |U|‖_∞` and `α = γ_{n+1}`, `β = 2 γ_{n+1}` in fixed
-  precision (`Refinement.norm_sub_le_of_roundsStepLU`) or `α = u + (1 + u) γ̄_{n+1}`,
-  `β = 2 (1 + u) γ̄_{n+1}` with the constant `γ̄` of the finer model in mixed precision
-  (`Refinement.norm_sub_le_of_roundsStepLUMixed`); iterating gives the contraction by
-  `ρ = (θ + α cond(A)) / (1 - 2u - θ)` down to the limiting accuracy `φ / (1 - ρ)`
-  (`Refinement.norm_sub_le_of_forall_roundsStepLU`,
-  `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`), which is `≈ 2 n cond(A, x) u` in
-  fixed precision and `≈ u` in mixed precision. The computed steps are the predicates
-  `Refinement.RoundsStepLU` and `Refinement.RoundsStepLUMixed`.
-* **Scaling** (§3.12.1): `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x` for nonsingular `D₁`,
-  `D₂` (`Matrix.scaled_mulVec_eq_iff`), diagonal in the book and arbitrary here.
+The rounding-error analysis follows [higham2002accuracy], §12.1. A computed refinement step has
+three errors: the residual error $\xi$, the backward error $\Delta A$ of the solve, and the error
+$\eta$ of the update. They satisfy the exact identity $(A + \Delta A)(x - \hat y) = \Delta A (x -
+\hat x) - \xi - (A + \Delta A) \eta$. In the $\infty$-norm this gives the recursion $\|x - \hat
+y\|_\infty \le \rho \|x - \hat x\|_\infty + \varphi$ with explicit $\rho$ and $\varphi$, and
+iterating it gives the contraction by $\rho$ down to the limiting accuracy $\varphi / (1 - \rho)$.
+This is the rigorous form of Theorems 12.1–12.2 of [higham2002accuracy], which
+[quarteroni2000numerical], §3.12.2, quotes as $\rho \simeq 2n \operatorname{cond}(A, x) u$ in fixed
+precision and $\rho \simeq u$ in mixed precision.
 
-The condition estimate of §3.11 is `Numlib/Direct/ConditionEstimation`.
+## Main definitions
 
-Stated on a normed space (`E →L[𝕜] E`) where possible, on matrices only for scaling and the
-rounding-error analysis.
+* `Refinement.step`: one step $x \mapsto x + C(b - Ax)$ of iterative refinement with an approximate
+  inverse $C$.
+* `Refinement.RoundsStepLU`: one computed refinement step with computed LU factors, in fixed
+  precision.
+* `Refinement.RoundsStepLUMixed`: the same step with the residual computed in a finer precision.
+
+## Main results
+
+* `Refinement.step_eq_stationary_step`: refinement is the stationary iteration with the iteration
+  operator $I - CA$ and the constant $Cb$.
+* `Refinement.step_eq_of_eq_inverse`: if $CA = I$, one step from any start gives the solution.
+* `Refinement.iterate_sub_eq`, `Refinement.norm_iterate_sub_le`: the error after $k$ steps is
+  $(I - CA)^k (x_0 - x^*)$, and its norm is at most $\|I - CA\|^k \|x_0 - x^*\|$.
+* `Refinement.forall_tendsto_iff_spectralRadius_lt_one`: on a finite-dimensional complex space with
+  $C$ onto, refinement converges for every $b$ and every start if and only if $\rho(I - CA) < 1$.
+* `Refinement.step_error`: the error identity of one computed step.
+* `Refinement.norm_step_error_le`: the $\infty$-norm form of the error identity.
+* `Refinement.step_error_fp`: in the rounding model, the three errors are bounded by
+  $\gamma_{3n} |L| |U|$, $\gamma_{n+1} (|A| |\hat x| + |b|)$ and $u |\hat x + \hat z|$.
+* `Refinement.norm_step_error_le_of_abs_le`: the one-step recursion of [higham2002accuracy] (12.5)
+  in the $\infty$-norm, for any solver with $|\Delta A| \le \gamma W$.
+* `Refinement.norm_sub_le_of_roundsStepLU`, `Refinement.norm_sub_le_of_roundsStepLUMixed`: one step
+  of [higham2002accuracy] Theorems 12.2 and 12.1.
+* `Refinement.norm_sub_le_of_forall_roundsStepLU`,
+  `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`: [higham2002accuracy] Theorems 12.2 and 12.1,
+  with the limiting accuracy $\varphi / (1 - \rho)$.
+* `Matrix.scaled_mulVec_eq_iff`: $Ax = b$ if and only if $(D_1 A D_2)(D_2^{-1} x) = D_1 b$.
+
+## Notation
+
+* $u$: the unit roundoff of a rounding model `FloatingPoint.RoundingModel`, and
+  $\gamma_k = ku / (1 - ku)$ (`FloatingPoint.gamma`). In mixed precision, $\bar u$ and
+  $\bar\gamma_k$ are those of the finer model.
+* $|A|$ and $|x|$: the matrix and the vector of the absolute values of the entries. Inequalities
+  between matrices or vectors hold entry by entry.
+* $\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty$, the Skeel condition number, and
+  $\operatorname{cond}(A, x) = \| |A^{-1}| \, |A| \, |x| \|_\infty / \|x\|_\infty$.
+
+## Implementation notes
+
+* The exact-arithmetic results are stated for continuous linear maps $C, A : E \to E$ of a normed
+  space where possible. In practice $C$ is the LU solve as a linear map. The rounding-error analysis
+  and scaling are stated for matrices; the rounding-error analysis is over $\mathbb{R}$, because the
+  rounding models of `Numlib.FloatingPoint.Model` are.
+* The iteration operator is `1 - C * A`, and the stationary iteration is `Stationary.step` of
+  `Numlib.Stationary.Basic`. The quantity $\|I - CA\|$ is the $\|R\|$ of Property 3.1 of
+  [quarteroni2000numerical] with the factors in the other order.
+* The norms in the rounding-error analysis are the $\infty$-norm on `Fin n → ℝ` and the operator
+  norm that it induces on matrices, from `Matrix.Norms.Operator`.
+* The condition estimate of [quarteroni2000numerical], §3.11, is in
+  `Numlib.Direct.ConditionEstimation`.
 -/
 
 open Filter Topology
@@ -60,15 +91,17 @@ namespace Refinement
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **One step of iterative refinement** with the approximate inverse `C`
-([quarteroni2000numerical] §3.12.2, steps 1–3): compute the residual `b - A x`, solve for the
-correction with `C`, update. -/
+/-- **One step of iterative refinement** with the approximate inverse $C$
+([quarteroni2000numerical], §3.12.2, steps 1–3). For continuous linear maps $C, A : E \to E$ and
+$b, x \in E$, compute the residual $b - Ax$, solve for the correction with $C$, and update:
+$$x \mapsto x + C(b - Ax).$$
+-/
 def step (C A : E →L[𝕜] E) (b x : E) : E := x + C (b - A x)
 
 variable (C A : E →L[𝕜] E) (b : E)
 
-/-- Iterative refinement is the stationary iteration with iteration operator `1 - C A` and
-constant `C b`. -/
+/-- Iterative refinement is the stationary iteration $x \mapsto (I - CA) x + Cb$, with the iteration
+operator $I - CA$ and the constant $Cb$. -/
 theorem step_eq_stationary_step : step C A b = Stationary.step (1 - C * A) (C b) := by
   funext x
   simp only [step, Stationary.step, sub_apply, one_apply_eq_self, mul_apply_eq_comp, map_sub]
@@ -76,8 +109,12 @@ theorem step_eq_stationary_step : step C A b = Stationary.step (1 - C * A) (C b)
 
 variable {C A b}
 
-/-- **Exact arithmetic stops after one step**: if `C A = 1` (in particular `C = A⁻¹`) and
-`A x* = b`, one refinement step from any `x` lands on `x*`. -/
+/-- **Exact arithmetic stops after one step**. Let $C, A : E \to E$ be continuous linear maps with
+$CA = I$, for example $C = A^{-1}$, and let $Ax^* = b$. Then one refinement step from any
+$x \in E$ gives $x^*$.
+
+This is the book's remark "in absence of rounding errors, the process would stop at the first
+step". -/
 theorem step_eq_of_eq_inverse (hCA : C * A = 1) {xs : E} (hxs : A xs = b) (x : E) :
     step C A b x = xs := by
   have h : C (A (xs - x)) = xs - x := by
@@ -86,8 +123,10 @@ theorem step_eq_of_eq_inverse (hCA : C * A = 1) {xs : E} (hxs : A xs = b) (x : E
   rw [step, ← hxs, ← map_sub, h]
   abel
 
-/-- **Error propagation**: the error after `k` refinement steps is `(1 - C A)^k` applied to the
-initial error, for any solution `x*` of `A x* = b`. -/
+/-- **Error propagation**. Let $C, A : E \to E$ be continuous linear maps, and let $Ax^* = b$. Then
+for every start $x_0$ and every $k$, the $k$-th refinement iterate $x_k$ satisfies
+$$x_k - x^* = (I - CA)^k (x_0 - x^*).$$
+-/
 theorem iterate_sub_eq {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
     (step C A b)^[k] x₀ - xs = ((1 - C * A) ^ k) (x₀ - xs) := by
   rw [step_eq_stationary_step]
@@ -97,10 +136,14 @@ theorem iterate_sub_eq {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
   rw [hxs]
   abel
 
-/-- **Linear convergence of iterative refinement**: the error after `k` steps is at most
-`‖1 - C A‖ ^ k` times the initial error, so the iteration converges from every start when
-`‖1 - C A‖ < 1`. Bounds of the type `‖1 - C A‖ ≤ ‖C‖ ‖A - C⁻¹‖` relate this to the backward a
-priori analysis of [quarteroni2000numerical] Property 3.1. -/
+/-- **Linear convergence of iterative refinement**. Let $C, A : E \to E$ be continuous linear maps,
+and let $Ax^* = b$. Then for every start $x_0$ and every $k$, the $k$-th refinement iterate
+$x_k$ satisfies
+$$\|x_k - x^*\| \le \|I - CA\|^k \, \|x_0 - x^*\|.$$
+So the iteration converges from every start when $\|I - CA\| < 1$.
+
+Bounds of the type $\|I - CA\| \le \|C\| \, \|A - C^{-1}\|$ relate this to the backward a priori
+analysis of [quarteroni2000numerical], Property 3.1. -/
 theorem norm_iterate_sub_le {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
     ‖(step C A b)^[k] x₀ - xs‖ ≤ ‖1 - C * A‖ ^ k * ‖x₀ - xs‖ := by
   rw [iterate_sub_eq hxs x₀ k]
@@ -109,12 +152,14 @@ theorem norm_iterate_sub_le {xs : E} (hxs : A xs = b) (x₀ : E) (k : ℕ) :
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 
-/-- **Convergence of iterative refinement iff `ρ(1 - C A) < 1`** ([quarteroni2000numerical]
-§3.12.2 through [saad2003iterative] Theorem 4.1): on a finite-dimensional complex space, and
-for an approximate inverse `C` that is onto (as the LU solve is), refinement converges for every
-right-hand side and every start iff the spectral radius of `1 - C A` is less than one. The
-surjectivity of `C` is needed for the "only if": with `C = 0` the iteration is constant, hence
-convergent, while `ρ(1 - 0) = 1`. -/
+/-- **Convergence of iterative refinement if and only if $\rho(I - CA) < 1$**
+([quarteroni2000numerical], §3.12.2, through [saad2003iterative], Theorem 4.1). Let $F$ be a
+finite-dimensional complex normed space, and let $C, A : F \to F$ be continuous linear maps with
+$C$ onto. Then the refinement iterates converge for every right-hand side $b$ and every start
+$x_0$ if and only if the spectral radius of $I - CA$ is less than $1$.
+
+The LU solve is onto. The "only if" needs $C$ onto: for $C = 0$ the iteration is constant, so it
+converges, but $\rho(I - 0) = 1$. -/
 theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] {C A : F →L[ℂ] F}
     (hC : Function.Surjective C) :
     (∀ b x₀, ∃ x, Tendsto (fun k => (step C A b)^[k] x₀) atTop (𝓝 x)) ↔
@@ -131,13 +176,15 @@ theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] {C A 
 
 end Refinement
 
-/-! ### Iterative refinement on real matrices
+/-!
+### Iterative refinement on real matrices
 
-The matrix form `x ↦ x + C (b - A x)` of `Refinement.step`, for real square matrices: its error
-recursion and the convergence criterion `ρ(I - C A) < 1` in terms of the complex spectral radius
-of `Numlib/LinearAlgebra/Matrix/Complexify`. Unlike
-`Refinement.forall_tendsto_iff_spectralRadius_lt_one` no surjectivity of `C` is needed, because the
-convergence asked for is to one limit independent of the start. -/
+This section gives the matrix form $x \mapsto x + C(b - Ax)$ of `Refinement.step` for real square
+matrices: its error recursion, and the convergence criterion $\rho(I - CA) < 1$ with the complex
+spectral radius of `Numlib.LinearAlgebra.Matrix.Complexify`. Unlike
+`Refinement.forall_tendsto_iff_spectralRadius_lt_one`, the criterion needs no surjectivity of $C$,
+because the convergence asked for is to one limit independent of the start.
+-/
 
 namespace Refinement
 
@@ -145,9 +192,11 @@ open Matrix
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- **Error propagation for the matrix refinement step** ([quarteroni2000numerical] §3.12.2): for a
-solution `x*` of `A x* = b`, the iterates of `x ↦ x + C (b - A x)` satisfy
-`x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)`. -/
+/-- **Error propagation for the matrix refinement step** ([quarteroni2000numerical], §3.12.2). Let
+$C, A \in \mathbb{R}^{n \times n}$, and let $Ax^* = b$. Then for every start $x^{(0)}$ and every
+$k$, the iterates of $x \mapsto x + C(b - Ax)$ satisfy
+$$x^{(k)} - x^* = (I - CA)^k (x^{(0)} - x^*).$$
+-/
 theorem iterate_sub_eq_mulVec (C A : Matrix ι ι ℝ) {b xs : ι → ℝ} (hxs : A *ᵥ xs = b)
     (x₀ : ι → ℝ) (k : ℕ) :
     (fun x => x + C *ᵥ (b - A *ᵥ x))^[k] x₀ - xs = ((1 - C * A) ^ k) *ᵥ (x₀ - xs) := by
@@ -160,12 +209,17 @@ theorem iterate_sub_eq_mulVec (C A : Matrix ι ι ℝ) {b xs : ι → ℝ} (hxs 
     simp only [sub_mulVec, one_mulVec, ← mulVec_mulVec, mulVec_sub]
     abel
 
-/-- **Convergence of iterative refinement iff `ρ(I - C A) < 1`** ([quarteroni2000numerical]
-§3.12.2 with Theorem 1.5): for real square matrices, the iterates of `x ↦ x + C (b - A x)`
-converge, for every right-hand side `b`, to one limit independent of the start iff the spectral
-radius of `I - C A` is less than one. The "only if" takes `b = 0` and compares the iterates from
-`v` and from `0`, whose difference is `(I - C A)ᵏ v`; the "if" makes `C A` and hence `A`
-nonsingular, the limit being `A⁻¹ b`. -/
+/-- **Convergence of iterative refinement if and only if $\rho(I - CA) < 1$**
+([quarteroni2000numerical], §3.12.2, with Theorem 1.5). Let $C, A \in \mathbb{R}^{n \times n}$.
+Then the following are equivalent:
+
+* for every $b \in \mathbb{R}^n$ there is an $x$ such that the iterates of
+  $x \mapsto x + C(b - Ax)$ converge to $x$ from every start;
+* the spectral radius of $I - CA$, computed over $\mathbb{C}$, is less than $1$.
+
+The spectral radius is `Matrix.complexSpectralRadius`. For the "only if", take $b = 0$ and
+compare the iterates from $v$ and from $0$, whose difference is $(I - CA)^k v$. For the "if",
+$CA$ and hence $A$ are nonsingular, and the limit is $A^{-1} b$. -/
 theorem forall_exists_forall_tendsto_iff_complexSpectralRadius_lt_one (C A : Matrix ι ι ℝ) :
     (∀ b : ι → ℝ, ∃ x, ∀ x₀,
         Tendsto (fun k => (fun x => x + C *ᵥ (b - A *ᵥ x))^[k] x₀) atTop (𝓝 x)) ↔
@@ -202,11 +256,13 @@ theorem forall_exists_forall_tendsto_iff_complexSpectralRadius_lt_one (C A : Mat
 
 end Refinement
 
-/-! ### The error of one computed refinement step
+/-!
+### The error of one computed refinement step
 
-`Refinement.step` is the step in exact arithmetic; what an implementation computes is something
-else, and the three results here are the error analysis of one computed step. They are stated on
-matrices over `ℝ`, because the rounding models of `Numlib/FloatingPoint` are. -/
+`Refinement.step` is the step in exact arithmetic. An implementation computes something else, and
+the three results here are the error analysis of one computed step. They are stated for matrices
+over $\mathbb{R}$, because the rounding models of `Numlib.FloatingPoint.Model` are.
+-/
 
 namespace Refinement
 
@@ -214,20 +270,21 @@ open Matrix
 
 variable {n : ℕ}
 
-/-- **The error of one computed refinement step, exactly** ([quarteroni2000numerical] §3.12.2,
-[higham2002accuracy] §12.1). Let `x` solve `A x = b`, let `xhat` be the current iterate, let the
-computed residual be `rhat = b - A xhat + ξ`, let the computed correction `zhat` solve the
-perturbed system `(A + ΔA) zhat = rhat` — which is what a solve with computed `LU` factors
-delivers, [quarteroni2000numerical] (3.64) — and let the computed update be
-`yhat = xhat + zhat + η`. Then
+/-- **The error of one computed refinement step, exactly** ([quarteroni2000numerical], §3.12.2;
+[higham2002accuracy], §12.1). Let $A, \Delta A \in \mathbb{R}^{n \times n}$, and let $x$ solve
+$Ax = b$. Let $\hat x$ be the current iterate, let the computed residual be
+$\hat r = b - A\hat x + \xi$, let the computed correction $\hat z$ solve the perturbed system
+$(A + \Delta A) \hat z = \hat r$, and let the computed update be
+$\hat y = \hat x + \hat z + \eta$. Then
+$$(A + \Delta A)(x - \hat y) = \Delta A (x - \hat x) - \xi - (A + \Delta A) \eta.$$
 
-`(A + ΔA) (x - yhat) = ΔA (x - xhat) - ξ - (A + ΔA) η`.
-
-Every term on the right is small: `ΔA` is the backward error of the solve, `ξ` that of the residual
-and `η` that of the update, so the new error is the old error multiplied by `(A + ΔA)⁻¹ ΔA` plus a
-floor of the size of the rounding errors. This is the algebraic core of the convergence claim of
-[quarteroni2000numerical] §3.12.2 and of [higham2002accuracy] Theorems 12.1–12.2. It is an
-identity: no hypothesis on the sizes of `ΔA`, `ξ`, `η` is used. -/
+A solve with computed LU factors gives a correction of this form, by [quarteroni2000numerical]
+(3.64). Every term on the right is small: $\Delta A$ is the backward error of the solve, $\xi$
+the error of the residual and $\eta$ the error of the update. So the new error is the old error
+multiplied by $(A + \Delta A)^{-1} \Delta A$, plus a floor of the size of the rounding errors.
+This is the algebraic core of the convergence claim of [quarteroni2000numerical], §3.12.2, and
+of [higham2002accuracy], Theorems 12.1–12.2. It is an identity: no hypothesis on the sizes of
+$\Delta A$, $\xi$ and $\eta$ is used. -/
 theorem step_error {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat zhat yhat rhat ξ η : Fin n → ℝ} (hx : A *ᵥ x = b)
     (hr : rhat = b - A *ᵥ xhat + ξ) (hz : (A + ΔA) *ᵥ zhat = rhat)
@@ -241,15 +298,19 @@ theorem step_error {A ΔA : Matrix (Fin n) (Fin n) ℝ}
   abel
 
 open scoped Matrix.Norms.Operator in
-/-- **The error recursion of a computed refinement step, in the `∞`-norm.** With the data of
-`step_error` and `A + ΔA` nonsingular,
+/-- **The error recursion of a computed refinement step, in the $\infty$-norm.** Let
+$A, \Delta A \in \mathbb{R}^{n \times n}$ with $A + \Delta A$ nonsingular, and let $x$,
+$\hat x$, $\hat r$, $\hat z$, $\hat y$, $\xi$ and $\eta$ be as in `Refinement.step_error`:
+$Ax = b$, $\hat r = b - A\hat x + \xi$, $(A + \Delta A) \hat z = \hat r$ and
+$\hat y = \hat x + \hat z + \eta$. Then
+$$\|x - \hat y\|_\infty \le \|(A + \Delta A)^{-1} \Delta A\|_\infty \, \|x - \hat x\|_\infty +
+  \|(A + \Delta A)^{-1}\|_\infty \, \|\xi\|_\infty + \|\eta\|_\infty.$$
 
-`‖x - yhat‖_∞ ≤ ‖(A + ΔA)⁻¹ ΔA‖_∞ ‖x - xhat‖_∞ + ‖(A + ΔA)⁻¹‖_∞ ‖ξ‖_∞ + ‖η‖_∞`:
-
-the error is reduced by the factor `‖(A + ΔA)⁻¹ ΔA‖_∞` down to a floor set by the residual and
-update roundings. With `|ΔA| ≤ γ_{3n} |L| |U|` from the LU backward error the factor is at most
-`γ_{3n} ‖ |(A + ΔA)⁻¹| |L| |U| ‖_∞`, which is the quantity [quarteroni2000numerical] §3.12.2 asks
-to be "sufficiently small", with `(A + ΔA)⁻¹` in place of `A⁻¹`. -/
+The error is reduced by the factor $\|(A + \Delta A)^{-1} \Delta A\|_\infty$ down to a floor set
+by the roundings of the residual and the update. With $|\Delta A| \le \gamma_{3n} |L| |U|$ from
+the backward error of the LU solve, the factor is at most $\gamma_{3n} \| |(A + \Delta A)^{-1}|
+\, |L| \, |U| \|_\infty$. This is the quantity that [quarteroni2000numerical], §3.12.2, asks to
+be "sufficiently small", with $(A + \Delta A)^{-1}$ in place of $A^{-1}$. -/
 theorem norm_step_error_le {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat zhat yhat rhat ξ η : Fin n → ℝ} (hinv : IsUnit (A + ΔA).det) (hx : A *ᵥ x = b)
     (hr : rhat = b - A *ᵥ xhat + ξ) (hz : (A + ΔA) *ᵥ zhat = rhat) (hy : yhat = xhat + zhat + η) :
@@ -270,20 +331,24 @@ theorem norm_step_error_le {A ΔA : Matrix (Fin n) (Fin n) ℝ}
         gcongr <;> exact linfty_opNorm_mulVec _ _
 
 open FloatingPoint in
-/-- **One computed refinement step in the relational rounding model**
-([quarteroni2000numerical] §3.12.2, steps 1–3; [higham2002accuracy] §12.1), with the three backward
-errors named. The residual is computed as an affine step
-(`FloatingPoint.RoundsAffineStep m (-A) b xhat rhat`), the correction by a solve with the computed
-factors `L`, `U` of `A` (`FloatingPoint.RoundsLU` and the two substitutions), and the update
-entrywise. Then there are `ΔA`, `ξ`, `η` with
+/-- **One computed refinement step in the rounding model** ([quarteroni2000numerical], §3.12.2,
+steps 1–3; [higham2002accuracy], §12.1). Let $n \ge 1$, and let the rounding model have unit
+roundoff $u < 1$ with $3nu < 1$. Let $Ax = b$, and let $L$, $U$ be computed LU factors of $A$
+with $u_{jj} \neq 0$ for every $j$. Suppose that the residual $\hat r$ is computed from $\hat x$
+as the affine step $-A\hat x + b$, the correction $\hat z$ is computed by forward substitution
+with $L$ and backward substitution with $U$, and the update $\hat y_i$ is a rounding of
+$\hat x_i + \hat z_i$ for every $i$. Then there are $\Delta A$, $\xi$ and $\eta$ with
+$$|\Delta A| \le \gamma_{3n} |L| \, |U|, \qquad |\xi| \le \gamma_{n+1} (|A| \, |\hat x| + |b|),
+  \qquad |\eta_i| \le u \, |\hat x_i + \hat z_i|,$$
+that satisfy the error identity of `Refinement.step_error`.
 
-`|ΔA| ≤ γ_{3n} |L| |U|`, `|ξ| ≤ γ_{n+1} (|A| |xhat| + |b|)`, `|η_i| ≤ u |xhat_i + zhat_i|`
-
-satisfying the error identity of `step_error`. This is the rigorous content behind the asymptotic
-convergence factors `ρ ≃ 2n cond(A, x) u` (fixed precision) and `ρ ≃ u` (mixed precision) that
-[quarteroni2000numerical] §3.12.2 quotes from [higham2002accuracy] Theorems 12.1–12.2; the
-theorems themselves are `norm_sub_le_of_forall_roundsStepLU` and
-`norm_sub_le_of_forall_roundsStepLUMixed` below. -/
+The computations are `FloatingPoint.RoundsAffineStep m (-A) b xhat rhat`,
+`FloatingPoint.RoundsLU`, `FloatingPoint.RoundsForwardSubst` and
+`FloatingPoint.RoundsBackSubst`. This is the rigorous content behind the asymptotic convergence
+factors $\rho \simeq 2n \operatorname{cond}(A, x) u$ in fixed precision and $\rho \simeq u$ in
+mixed precision that [quarteroni2000numerical], §3.12.2, quotes from [higham2002accuracy],
+Theorems 12.1–12.2. The theorems themselves are `Refinement.norm_sub_le_of_forall_roundsStepLU`
+and `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`. -/
 theorem step_error_fp [NeZero n] {m : RoundingModel ℝ} (hu : m.u < 1)
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) {A L U : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat rhat y zhat yhat : Fin n → ℝ} (hx : A *ᵥ x = b)
@@ -315,25 +380,31 @@ theorem step_error_fp [NeZero n] {m : RoundingModel ℝ} (hu : m.u < 1)
     rw [hξeq, neg_mulVec]
     abel
 
-/-! ### The convergence of iterative refinement in finite precision
+/-!
+### The convergence of iterative refinement in finite precision
 
-[higham2002accuracy] §12.1, Theorems 12.1–12.2, in rigorous form: the one-step recursion
-`‖x - ŷ‖_∞ ≤ ρ ‖x - x̂‖_∞ + φ` with explicit `ρ` and `φ` (`norm_step_error_le_of_abs_le`, the
-`∞`-norm form of Higham's (12.5), for any solver with `|ΔA| ≤ γ W` and any residual with
-`|ξ| ≤ α |A| |x - x̂| + β |A| |x|`), its two instances for the LU solve with residuals in the
-working precision (`norm_sub_le_of_roundsStepLU`, Theorem 12.2) and in a finer precision
-(`norm_sub_le_of_roundsStepLUMixed`, Theorem 12.1), and the iterated statements with the
-limiting accuracy `φ / (1 - ρ)` (`norm_sub_le_of_forall_roundsStepLU`,
-`norm_sub_le_of_forall_roundsStepLUMixed`). The computed steps are the predicates `RoundsStepLU`
-and `RoundsStepLUMixed`, the latter carrying two rounding models. -/
+This section proves [higham2002accuracy], §12.1, Theorems 12.1–12.2, in rigorous form. The one-step
+recursion $\|x - \hat y\|_\infty \le \rho \|x - \hat x\|_\infty + \varphi$ with explicit $\rho$ and
+$\varphi$ is `Refinement.norm_step_error_le_of_abs_le`, the $\infty$-norm form of Higham's (12.5),
+for any solver with $|\Delta A| \le \gamma W$ and any residual with $|\xi| \le \alpha |A| |x - \hat
+x| + \beta |A| |x|$. Its two instances for the LU solve, with the residual computed in the working
+precision (Theorem 12.2) and in a finer precision (Theorem 12.1), are
+`Refinement.norm_sub_le_of_roundsStepLU` and `Refinement.norm_sub_le_of_roundsStepLUMixed`. The
+iterated statements with the limiting accuracy $\varphi / (1 - \rho)$ are
+`Refinement.norm_sub_le_of_forall_roundsStepLU` and
+`Refinement.norm_sub_le_of_forall_roundsStepLUMixed`. The computed steps are the predicates
+`Refinement.RoundsStepLU` and `Refinement.RoundsStepLUMixed`; the latter has two rounding models.
+-/
 
 section Convergence
 
 open FloatingPoint
 open scoped Matrix.Norms.Operator
 
-/-- A perturbed contraction: a real sequence with `a (k + 1) ≤ ρ a k + c`, `0 ≤ ρ < 1`, `0 ≤ c`,
-satisfies `a k ≤ ρ ^ k a 0 + c / (1 - ρ)`. -/
+/-- A **perturbed contraction**. Let $0 \le \rho < 1$ and $c \ge 0$, and let $(a_k)$ be a real
+sequence with $a_{k+1} \le \rho a_k + c$ for every $k$. Then for every $k$,
+$$a_k \le \rho^k a_0 + \frac{c}{1 - \rho}.$$
+-/
 theorem le_pow_mul_add_div_of_forall_le_mul_add {a : ℕ → ℝ} {ρ c : ℝ} (hρ0 : 0 ≤ ρ)
     (hρ1 : ρ < 1) (hc : 0 ≤ c) (h : ∀ k, a (k + 1) ≤ ρ * a k + c) (k : ℕ) :
     a k ≤ ρ ^ k * a 0 + c / (1 - ρ) := by
@@ -352,8 +423,10 @@ theorem le_pow_mul_add_div_of_forall_le_mul_add {a : ℕ → ℝ} {ρ c : ℝ} (
       _ = ρ ^ (k + 1) * a 0 + (ρ * (c / (1 - ρ)) + c) := by ring
       _ = ρ ^ (k + 1) * a 0 + c / (1 - ρ) := by rw [h2]
 
-/-- The limiting value of a perturbed contraction: a nonnegative real sequence with
-`a (k + 1) ≤ ρ a k + c`, `0 ≤ ρ < 1`, `0 ≤ c`, has `limsup a ≤ c / (1 - ρ)`. -/
+/-- The **limiting value of a perturbed contraction**. Let $0 \le \rho < 1$ and $c \ge 0$, and let
+$(a_k)$ be a nonnegative real sequence with $a_{k+1} \le \rho a_k + c$ for every $k$. Then
+$$\limsup_{k \to \infty} a_k \le \frac{c}{1 - \rho}.$$
+-/
 theorem limsup_le_div_of_forall_le_mul_add {a : ℕ → ℝ} {ρ c : ℝ} (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
     (hc : 0 ≤ c) (ha : ∀ k, 0 ≤ a k) (h : ∀ k, a (k + 1) ≤ ρ * a k + c) :
     limsup a atTop ≤ c / (1 - ρ) := by
@@ -367,9 +440,11 @@ theorem limsup_le_div_of_forall_le_mul_add {a : ℕ → ℝ} {ρ c : ℝ} (hρ0 
   rw [hv.limsup_eq] at hle
   simpa using hle
 
-/-- The residual error in the form of [higham2002accuracy] (12.2): a bound
-`|ξ| ≤ c (|A| |x̂| + |b|)` on the error of a computed residual of `A x = b` at `x̂` is the bound
-`|ξ| ≤ c |A| |x - x̂| + 2 c |A| |x|` in terms of the error `x - x̂` and the solution `x`. -/
+/-- The **residual error in the form of [higham2002accuracy] (12.2)**. Let
+$A \in \mathbb{R}^{n \times n}$, $Ax = b$ and $c \ge 0$. If the error $\xi$ of a computed
+residual at $\hat x$ satisfies $|\xi| \le c (|A| \, |\hat x| + |b|)$, then
+$$|\xi| \le c \, |A| \, |x - \hat x| + 2c \, |A| \, |x|,$$
+a bound in terms of the error $x - \hat x$ and the solution $x$. -/
 theorem abs_le_of_abs_le_smul_mulVec_abs_add_abs {A : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat ξ : Fin n → ℝ} (hx : A *ᵥ x = b) {c : ℝ} (hc : 0 ≤ c)
     (hξ : |ξ| ≤ c • (A.abs *ᵥ |xhat| + |b|)) :
@@ -388,23 +463,26 @@ theorem abs_le_of_abs_le_smul_mulVec_abs_add_abs {A : Matrix (Fin n) (Fin n) ℝ
   nlinarith
 
 /-- **The forward error of one computed refinement step**, [higham2002accuracy] (12.5) in the
-`∞`-norm. With the data of `step_error` — `A x = b`, a computed residual `r̂ = b - A x̂ + ξ`, a
-computed correction with `(A + ΔA) ẑ = r̂`, an update `ŷ = x̂ + ẑ + η` — and the bounds
+$\infty$-norm. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular, and let
+$\Delta A, W \in \mathbb{R}^{n \times n}$. Let $Ax = b$, let $\hat r = b - A\hat x + \xi$ be a
+computed residual, let $(A + \Delta A) \hat z = \hat r$, and let
+$\hat y = \hat x + \hat z + \eta$. Let $\gamma, \alpha, \beta, u \ge 0$, and suppose that
+$$|\Delta A| \le \gamma W, \qquad |\xi| \le \alpha |A| \, |x - \hat x| + \beta |A| \, |x|,
+  \qquad |\eta_i| \le u \, |\hat x_i + \hat z_i|.$$
+The first bound is [higham2002accuracy] (12.1) and the second is (12.2). If
+$\theta = \gamma \| |A^{-1}| W \|_\infty$ satisfies $\theta + 2u < 1$, then
+$$(1 - 2u - \theta) \|x - \hat y\|_\infty \le (\theta + \alpha \| |A^{-1}| \, |A| \|_\infty)
+  \|x - \hat x\|_\infty + \beta \| |A^{-1}| \, |A| \, |x| \|_\infty + u (1 + \theta)
+  \|x\|_\infty.$$
 
-`|ΔA| ≤ γ W` ([higham2002accuracy] (12.1)),
-`|ξ| ≤ α |A| |x - x̂| + β |A| |x|` ([higham2002accuracy] (12.2)),
-`|η_i| ≤ u |x̂_i + ẑ_i|`,
-
-if `θ := γ ‖|A⁻¹| W‖_∞` satisfies `θ + 2u < 1`, then
-
-`(1 - 2u - θ) ‖x - ŷ‖_∞ ≤ (θ + α ‖|A⁻¹| |A|‖_∞) ‖x - x̂‖_∞ + β ‖|A⁻¹| |A| |x|‖_∞ + u (1 + θ) ‖x‖_∞`.
-
-The error contracts by the factor `(θ + α cond(A)) / (1 - 2u - θ)` — [higham2002accuracy]'s
-"approximately `η = u ‖|A⁻¹| (|A| + W)‖_∞`" — down to the floor
-`(β cond(A, x) + u (1 + θ)) ‖x‖_∞ / (1 - 2u - θ)`. The proof solves the identity of `step_error`
-for `x - ŷ` with `A⁻¹` rather than `(A + ΔA)⁻¹`, `x - ŷ = A⁻¹ (ΔA (x - x̂) - ξ - ΔA η
-- ΔA (x - ŷ)) - η`, bounds entrywise, and absorbs the `ΔA (x - ŷ)` and `η` terms into the
-left-hand side, which is where `2u + θ` comes from. -/
+So the error contracts by the factor $(\theta + \alpha \operatorname{cond}(A)) / (1 - 2u -
+\theta)$ down to the floor $(\beta \operatorname{cond}(A, x) + u(1 + \theta)) \|x\|_\infty /
+(1 - 2u - \theta)$. Higham writes the factor as "approximately
+$\eta = u \| |A^{-1}| (|A| + W) \|_\infty$". The proof solves the identity of
+`Refinement.step_error` for $x - \hat y$ with $A^{-1}$ instead of $(A + \Delta A)^{-1}$, $x -
+\hat y = A^{-1} (\Delta A (x - \hat x) - \xi - \Delta A \eta - \Delta A (x - \hat y)) - \eta$,
+bounds it entrywise, and moves the terms in $\Delta A (x - \hat y)$ and $\eta$ to the left side;
+this gives the factor $1 - 2u - \theta$. -/
 theorem norm_step_error_le_of_abs_le {A ΔA W : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat zhat yhat rhat ξ η : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b)
     (hr : rhat = b - A *ᵥ xhat + ξ) (hz : (A + ΔA) *ᵥ zhat = rhat) (hy : yhat = xhat + zhat + η)
@@ -511,15 +589,19 @@ theorem norm_step_error_le_of_abs_le {A ΔA W : Matrix (Fin n) (Fin n) ℝ}
       + β * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖)) := by positivity
   linarith
 
-/-! #### The computed steps, and Higham's Theorems 12.1–12.2 -/
+/-! ### The computed steps, and Higham's Theorems 12.1–12.2 -/
 
 /-- **One computed step of iterative refinement with LU factors, in fixed precision**
-([quarteroni2000numerical] §3.12.2, FPR; [higham2002accuracy] §12.1 with `ū = u`).
-`RoundsStepLU m A L U b x̂ ŷ` says that `ŷ` is an admissible computed value of one refinement
-step from `x̂` in the rounding model `m`: the residual `r̂ = fl(b - A x̂)` is computed as an
-affine step (`FloatingPoint.RoundsAffineStep`), the correction `ẑ` by forward and back
-substitution with the computed factors `L`, `U` (`FloatingPoint.RoundsForwardSubst`,
-`FloatingPoint.RoundsBackSubst`), and the update `ŷ = fl(x̂ + ẑ)` entrywise. -/
+([quarteroni2000numerical], §3.12.2, FPR; [higham2002accuracy], §12.1 with $\bar u = u$). For a
+rounding model, matrices $A, L, U \in \mathbb{R}^{n \times n}$ and vectors $b$, $\hat x$,
+$\hat y$, the predicate says that $\hat y$ is an admissible computed value of one refinement
+step from $\hat x$. That is, there are $\hat r$, $y$ and $\hat z$ such that the residual
+$\hat r = \operatorname{fl}(b - A\hat x)$ is computed as an affine step, the correction $\hat z$
+is computed by forward substitution with $L$ ($Ly = \hat r$) and backward substitution with $U$
+($U \hat z = y$), and $\hat y_i$ is a rounding of $\hat x_i + \hat z_i$ for every $i$.
+
+The computations are `FloatingPoint.RoundsAffineStep`, `FloatingPoint.RoundsForwardSubst` and
+`FloatingPoint.RoundsBackSubst`. -/
 def RoundsStepLU (m : RoundingModel ℝ) (A L U : Matrix (Fin n) (Fin n) ℝ)
     (b xhat yhat : Fin n → ℝ) : Prop :=
   ∃ rhat y zhat : Fin n → ℝ, RoundsAffineStep m (-A) b xhat rhat ∧
@@ -527,10 +609,11 @@ def RoundsStepLU (m : RoundingModel ℝ) (A L U : Matrix (Fin n) (Fin n) ℝ)
     ∀ i, m.Rounds (xhat i + zhat i) (yhat i)
 
 /-- **One computed step of iterative refinement with LU factors, in mixed precision**
-([quarteroni2000numerical] §3.12.2, MPR; [higham2002accuracy] §12.1 with `ū = u²`).
-`RoundsStepLUMixed m m' A L U b x̂ ŷ` is `RoundsStepLU` with the residual computed in a second,
-finer rounding model `m'` (in the book, double precision) and then rounded once to the working
-precision `m`: `s = fl'(b - A x̂)`, `r̂ = fl(s)`; the solve and the update are in `m`. -/
+([quarteroni2000numerical], §3.12.2, MPR; [higham2002accuracy], §12.1 with $\bar u = u^2$). For
+two rounding models `m` and `m'`, the predicate is `Refinement.RoundsStepLU` with the residual
+computed in the second, finer model `m'` (in the book, double precision) and then rounded once
+to the working precision `m`: $s = \operatorname{fl}'(b - A\hat x)$ and
+$\hat r = \operatorname{fl}(s)$. The solve and the update are in `m`. -/
 def RoundsStepLUMixed (m m' : RoundingModel ℝ) (A L U : Matrix (Fin n) (Fin n) ℝ)
     (b xhat yhat : Fin n → ℝ) : Prop :=
   ∃ s rhat y zhat : Fin n → ℝ, RoundsAffineStep m' (-A) b xhat s ∧
@@ -538,9 +621,12 @@ def RoundsStepLUMixed (m m' : RoundingModel ℝ) (A L U : Matrix (Fin n) (Fin n)
     RoundsForwardSubst m L rhat y ∧ RoundsBackSubst m U y zhat ∧
     ∀ i, m.Rounds (xhat i + zhat i) (yhat i)
 
-/-- The residual computed as an affine step, with the error in the form of
-[higham2002accuracy] (12.2): `r̂ = b - A x̂ + ξ` with
-`|ξ| ≤ γ_{n+1} |A| |x - x̂| + 2 γ_{n+1} |A| |x|` when `A x = b`. -/
+/-- The **residual computed as an affine step**, with its error in the form of [higham2002accuracy]
+(12.2). Let the rounding model have unit roundoff $u < 1$ with $(n + 1) u < 1$, let $Ax = b$,
+and let $\hat r$ be computed from $\hat x$ as the affine step $-A\hat x + b$. Then
+$\hat r = b - A\hat x + \xi$ for some $\xi$ with
+$$|\xi| \le \gamma_{n+1} |A| \, |x - \hat x| + 2 \gamma_{n+1} |A| \, |x|.$$
+-/
 theorem exists_roundsAffineStep_residual_eq_add {m : RoundingModel ℝ} (hu : m.u < 1)
     (hcard : ((n + 1 : ℕ) : ℝ) * m.u < 1) {A : Matrix (Fin n) (Fin n) ℝ} {b x xhat rhat : Fin n → ℝ}
     (hx : A *ᵥ x = b) (hres : RoundsAffineStep m (-A) b xhat rhat) :
@@ -555,10 +641,14 @@ theorem exists_roundsAffineStep_residual_eq_add {m : RoundingModel ℝ} (hu : m.
   refine abs_le_of_abs_le_smul_mulVec_abs_add_abs hx (gamma_nonneg m.u_nonneg hcard) ?_
   simpa [Fintype.card_fin, habs] using hξle
 
-/-- The mixed-precision residual, [higham2002accuracy] (12.2): computed in the model `m'` and
-rounded once to the model `m`, `r̂ = b - A x̂ + ξ` with
-`|ξ| ≤ (u + (1 + u) γ̄_{n+1}) |A| |x - x̂| + 2 (1 + u) γ̄_{n+1} |A| |x|`, where `u = m.u` and
-`γ̄_{n+1}` is the constant of `m'`. -/
+/-- The **mixed-precision residual**, with its error in the form of [higham2002accuracy] (12.2). Let
+the finer model `m'` have unit roundoff $\bar u < 1$ with $(n + 1) \bar u < 1$, and let $u$ be
+the unit roundoff of the model `m`. Let $Ax = b$, let $s$ be computed in `m'` from $\hat x$ as
+the affine step $-A\hat x + b$, and let $\hat r_i$ be a rounding of $s_i$ in `m` for every $i$.
+Then $\hat r = b - A\hat x + \xi$ for some $\xi$ with
+$$|\xi| \le (u + (1 + u) \bar\gamma_{n+1}) |A| \, |x - \hat x| + 2 (1 + u) \bar\gamma_{n+1} |A|
+  \, |x|,$$
+where $\bar\gamma_{n+1}$ is the constant of `m'`. -/
 theorem exists_mixed_residual_eq_add {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
     (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1) {A : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat s rhat : Fin n → ℝ} (hx : A *ᵥ x = b) (hres : RoundsAffineStep m' (-A) b xhat s)
@@ -586,18 +676,22 @@ theorem exists_mixed_residual_eq_add {m m' : RoundingModel ℝ} (hu' : m'.u < 1)
   simp only [Pi.abs_apply, Pi.add_apply, Pi.smul_apply, smul_eq_mul] at *
   nlinarith
 
-/-- **[higham2002accuracy] Theorem 12.2, one step** (fixed-precision iterative refinement with
-LU factors, [quarteroni2000numerical] §3.12.2 FPR): for a computed step `RoundsStepLU` from `x̂`
-to `ŷ`, with `A x = b`, `A` nonsingular, computed factors `L`, `U` of `A` with nonzero pivots and
-`3 n u < 1`, let `θ = γ_{3n} ‖|A⁻¹| |L| |U|‖_∞`. If `θ + 2u < 1` then
+/-- **Theorem 12.2 of [higham2002accuracy], one step** (fixed-precision iterative refinement with LU
+factors, [quarteroni2000numerical], §3.12.2, FPR). Let $n \ge 1$, and let the rounding model
+have unit roundoff $u$ with $3nu < 1$. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular with
+$Ax = b$, and let $L$, $U$ be computed LU factors of $A$ with $u_{jj} \neq 0$ for every $j$. Let
+$\hat y$ be a computed refinement step from $\hat x$ (`Refinement.RoundsStepLU`), and let
+$\theta = \gamma_{3n} \| |A^{-1}| \, |L| \, |U| \|_\infty$. If $\theta + 2u < 1$, then
+$$(1 - 2u - \theta) \|x - \hat y\|_\infty \le (\theta + \gamma_{n+1} \operatorname{cond}(A))
+  \|x - \hat x\|_\infty + 2 \gamma_{n+1} \| |A^{-1}| \, |A| \, |x| \|_\infty + u (1 + \theta)
+  \|x\|_\infty,$$
+where $\operatorname{cond}(A) = \| |A^{-1}| \, |A| \|_\infty$ is the Skeel condition number.
 
-`(1 - 2u - θ) ‖x - ŷ‖_∞ ≤ (θ + γ_{n+1} cond(A)) ‖x - x̂‖_∞ + 2 γ_{n+1} ‖|A⁻¹| |A| |x|‖_∞
-  + u (1 + θ) ‖x‖_∞`,
-
-with `cond(A) = ‖|A⁻¹| |A|‖_∞` the Skeel condition number. This is `norm_step_error_le_of_abs_le`
-with the three backward errors of `step_error_fp`: `|ΔA| ≤ γ_{3n} |L| |U|`
+This is `Refinement.norm_step_error_le_of_abs_le` with the three errors of
+`Refinement.step_error_fp`: $|\Delta A| \le \gamma_{3n} |L| |U|$
 (`FloatingPoint.exists_roundsLU_solve_eq`), the residual error of
-`exists_roundsAffineStep_residual_eq_add`, and `|η_i| ≤ u |x̂_i + ẑ_i|` for the update. -/
+`Refinement.exists_roundsAffineStep_residual_eq_add`, and $|\eta_i| \le u |\hat x_i + \hat z_i|$
+for the update. -/
 theorem norm_sub_le_of_roundsStepLU [NeZero n] {m : RoundingModel ℝ}
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) {A L U : Matrix (Fin n) (Fin n) ℝ}
     {b x xhat yhat : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hLU : RoundsLU m A L U)
@@ -632,18 +726,22 @@ theorem norm_sub_le_of_roundsStepLU [NeZero n] {m : RoundingModel ℝ}
     (by positivity) m.u_nonneg hΔA hξle hη hsmall
   linarith
 
-/-- **[higham2002accuracy] Theorem 12.1, one step** (mixed-precision iterative refinement with
-LU factors, [quarteroni2000numerical] §3.12.2 MPR): for a computed step `RoundsStepLUMixed`
-from `x̂` to `ŷ` whose residual is computed in the finer model `m'` and rounded to `m`, with the
-data of `norm_sub_le_of_roundsStepLU` and `(n + 1) ū < 1` for `ū = m'.u`, let
-`θ = γ_{3n} ‖|A⁻¹| |L| |U|‖_∞` and `γ̄_{n+1}` the constant of `m'`. If `θ + 2u < 1` then
+/-- **Theorem 12.1 of [higham2002accuracy], one step** (mixed-precision iterative refinement with LU
+factors, [quarteroni2000numerical], §3.12.2, MPR). Let $n \ge 1$, let the working model `m` have
+unit roundoff $u$ with $3nu < 1$, and let the finer model `m'` have unit roundoff $\bar u$ with
+$(n + 1) \bar u < 1$. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular with $Ax = b$, and let
+$L$, $U$ be computed LU factors of $A$ in `m` with $u_{jj} \neq 0$ for every $j$. Let $\hat y$
+be a computed refinement step from $\hat x$ whose residual is computed in `m'` and rounded to
+`m` (`Refinement.RoundsStepLUMixed`), and let $\theta = \gamma_{3n} \| |A^{-1}| \, |L| \, |U|
+\|_\infty$. If $\theta + 2u < 1$, then
+$$(1 - 2u - \theta) \|x - \hat y\|_\infty \le (\theta + (u + (1 + u) \bar\gamma_{n+1})
+  \operatorname{cond}(A)) \|x - \hat x\|_\infty + 2 (1 + u) \bar\gamma_{n+1} \| |A^{-1}| \, |A|
+  \, |x| \|_\infty + u (1 + \theta) \|x\|_\infty,$$
+where $\bar\gamma_{n+1}$ is the constant of `m'`.
 
-`(1 - 2u - θ) ‖x - ŷ‖_∞ ≤ (θ + (u + (1 + u) γ̄_{n+1}) cond(A)) ‖x - x̂‖_∞
-  + 2 (1 + u) γ̄_{n+1} ‖|A⁻¹| |A| |x|‖_∞ + u (1 + θ) ‖x‖_∞`.
-
-With `ū = u²` the floor `2 (1 + u) γ̄_{n+1} cond(A, x) + u (1 + θ)` is
-`u (1 + θ) + O(n u² cond(A, x))`, independent of the condition number to first order, which is
-the book's `ρ ≃ u`. -/
+With $\bar u = u^2$, the floor $2 (1 + u) \bar\gamma_{n+1} \operatorname{cond}(A, x) + u (1 +
+\theta)$ is $u (1 + \theta) + O(n u^2 \operatorname{cond}(A, x))$. To first order it does not
+depend on the condition number; this is the book's $\rho \simeq u$. -/
 theorem norm_sub_le_of_roundsStepLUMixed [NeZero n] {m m' : RoundingModel ℝ}
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1)
     {A L U : Matrix (Fin n) (Fin n) ℝ} {b x xhat yhat : Fin n → ℝ} (hA : IsUnit A)
@@ -682,32 +780,37 @@ theorem norm_sub_le_of_roundsStepLUMixed [NeZero n] {m m' : RoundingModel ℝ}
     (by positivity) (by positivity) hu0 hΔA hξle hη hsmall
   linarith
 
-/-- The one-step recursion of [higham2002accuracy] (12.5) in the shape
-`‖x - ŷ‖ ≤ ρ ‖x - x̂‖ + φ`, from its product form: for `0 < 1 - 2u - θ`,
-`ρ = (θ + σ) / (1 - 2u - θ)` and `φ = (c + u (1 + θ) ‖x‖) / (1 - 2u - θ)`. -/
+/-- The one-step recursion of [higham2002accuracy] (12.5) in the form $N' \le \rho N + \varphi$,
+from its product form. Let $u, \theta, \sigma, c, N, N', X$ be real numbers with
+$1 - 2u - \theta > 0$ and
+$$(1 - 2u - \theta) N' \le (\theta + \sigma) N + c + u (1 + \theta) X.$$
+Then $N' \le \rho N + \varphi$ with $\rho = (\theta + \sigma) / (1 - 2u - \theta)$ and
+$\varphi = (c + u (1 + \theta) X) / (1 - 2u - \theta)$. -/
 theorem norm_sub_le_mul_add_of_mul_le {u θ σ c N N' X : ℝ} (hpos : 0 < 1 - 2 * u - θ)
     (h : (1 - 2 * u - θ) * N' ≤ (θ + σ) * N + c + u * (1 + θ) * X) :
     N' ≤ (θ + σ) / (1 - 2 * u - θ) * N + (c + u * (1 + θ) * X) / (1 - 2 * u - θ) := by
   rw [div_mul_eq_mul_div, ← add_div, le_div_iff₀ hpos]
   linarith
 
-/-- **[higham2002accuracy] Theorem 12.2 (fixed precision iterative refinement)**, in rigorous
-form. Let `A x = b` with `A` nonsingular, let `L`, `U` be computed LU factors of `A` with nonzero
-pivots in a rounding model with unit roundoff `u`, `3 n u < 1`, and let `x⁽⁰⁾, x⁽¹⁾, …` be a
-sequence of computed refinement iterates (`RoundsStepLU` at every step). Put
+/-- **Theorem 12.2 of [higham2002accuracy]** (fixed-precision iterative refinement), in rigorous
+form. Let $n \ge 1$, and let the rounding model have unit roundoff $u$ with $3nu < 1$. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with $Ax = b$, let $L$, $U$ be computed LU
+factors of $A$ with $u_{jj} \neq 0$ for every $j$, and let $x^{(0)}, x^{(1)}, \dots$ be computed
+refinement iterates: $x^{(k+1)}$ is a computed step from $x^{(k)}$ (`Refinement.RoundsStepLU`)
+for every $k$. Put
+$$\theta = \gamma_{3n} \| |A^{-1}| \, |L| \, |U| \|_\infty, \qquad \rho = \frac{\theta +
+  \gamma_{n+1} \operatorname{cond}(A)}{1 - 2u - \theta}, \qquad \varphi = \frac{2 \gamma_{n+1}
+  \| |A^{-1}| \, |A| \, |x| \|_\infty + u (1 + \theta) \|x\|_\infty}{1 - 2u - \theta}.$$
+If $2\theta + \gamma_{n+1} \operatorname{cond}(A) + 2u < 1$, then $\rho < 1$, and for every $k$
+$$\|x - x^{(k+1)}\|_\infty \le \rho \|x - x^{(k)}\|_\infty + \varphi, \qquad \|x -
+  x^{(k)}\|_\infty \le \rho^k \|x - x^{(0)}\|_\infty + \frac{\varphi}{1 - \rho},$$
+and the limiting accuracy is $\limsup_k \|x - x^{(k)}\|_\infty \le \varphi / (1 - \rho)$.
 
-`θ = γ_{3n} ‖|A⁻¹| |L| |U|‖_∞`, `ρ = (θ + γ_{n+1} cond(A)) / (1 - 2u - θ)`,
-`φ = (2 γ_{n+1} ‖|A⁻¹| |A| |x|‖_∞ + u (1 + θ) ‖x‖_∞) / (1 - 2u - θ)`.
-
-If `2θ + γ_{n+1} cond(A) + 2u < 1` — the theorem's "`η` sufficiently less than `1`", with
-`η ≈ u ‖|A⁻¹| (|A| + W)‖_∞`, `uW = γ_{3n} |L| |U|` — then `ρ < 1`, the forward error is reduced by
-the factor `ρ` at each step up to the floor `φ`,
-
-`‖x - x⁽ᵏ⁺¹⁾‖_∞ ≤ ρ ‖x - x⁽ᵏ⁾‖_∞ + φ`, hence `‖x - x⁽ᵏ⁾‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ + φ / (1 - ρ)`,
-
-and the limiting accuracy is `limsup_k ‖x - x⁽ᵏ⁾‖_∞ ≤ φ / (1 - ρ)`, where
-`φ / ‖x‖_∞ = (2 γ_{n+1} cond(A, x) + u (1 + θ)) / (1 - 2u - θ) ≈ 2 n cond(A, x) u` is the
-theorem's "until `‖x - x̂_i‖_∞ / ‖x‖_∞ ≲ 2n cond(A, x) u`". -/
+The hypothesis is the theorem's "$\eta$ sufficiently less than $1$", with
+$\eta \approx u \| |A^{-1}| (|A| + W) \|_\infty$ and $uW = \gamma_{3n} |L| |U|$. The relative
+floor $\varphi / \|x\|_\infty = (2 \gamma_{n+1} \operatorname{cond}(A, x) + u (1 + \theta)) /
+(1 - 2u - \theta) \approx 2n \operatorname{cond}(A, x) u$ is the theorem's "until $\|x - \hat
+x_i\|_\infty / \|x\|_\infty \lesssim 2n \operatorname{cond}(A, x) u$". -/
 theorem norm_sub_le_of_forall_roundsStepLU [NeZero n] {m : RoundingModel ℝ}
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) {A L U : Matrix (Fin n) (Fin n) ℝ}
     {b x : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hLU : RoundsLU m A L U)
@@ -750,22 +853,29 @@ theorem norm_sub_le_of_forall_roundsStepLU [NeZero n] {m : RoundingModel ℝ}
     le_pow_mul_add_div_of_forall_le_mul_add (a := fun k => ‖x - xs k‖) hρ0 hρ1 hφ0 hrec k, ?_⟩
   exact limsup_le_div_of_forall_le_mul_add hρ0 hρ1 hφ0 (fun k => norm_nonneg _) hrec
 
-/-- **[higham2002accuracy] Theorem 12.1 (mixed precision iterative refinement)**, in rigorous
-form: as `norm_sub_le_of_forall_roundsStepLU`, with the residuals computed in a finer model `m'`
-(`RoundsStepLUMixed` at every step, `(n + 1) ū < 1` for `ū = m'.u`) and the constants
+/-- **Theorem 12.1 of [higham2002accuracy]** (mixed-precision iterative refinement), in rigorous
+form. Let $n \ge 1$, let the working model `m` have unit roundoff $u$ with $3nu < 1$, and let
+the finer model `m'` have unit roundoff $\bar u$ with $(n + 1) \bar u < 1$. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with $Ax = b$, let $L$, $U$ be computed LU
+factors of $A$ in `m` with $u_{jj} \neq 0$ for every $j$, and let $x^{(k+1)}$ be a computed step
+from $x^{(k)}$ with the residual computed in `m'` (`Refinement.RoundsStepLUMixed`) for every
+$k$. Put
+$$\theta = \gamma_{3n} \| |A^{-1}| \, |L| \, |U| \|_\infty, \qquad \rho = \frac{\theta + (u +
+  (1 + u) \bar\gamma_{n+1}) \operatorname{cond}(A)}{1 - 2u - \theta}, \qquad \varphi = \frac{2
+  (1 + u) \bar\gamma_{n+1} \| |A^{-1}| \, |A| \, |x| \|_\infty + u (1 + \theta)
+  \|x\|_\infty}{1 - 2u - \theta},$$
+where $\bar\gamma_{n+1}$ is the constant of `m'`. If $2\theta + (u + (1 + u) \bar\gamma_{n+1})
+\operatorname{cond}(A) + 2u < 1$, then $\rho < 1$, and for every $k$
+$$\|x - x^{(k+1)}\|_\infty \le \rho \|x - x^{(k)}\|_\infty + \varphi, \qquad \|x -
+  x^{(k)}\|_\infty \le \rho^k \|x - x^{(0)}\|_\infty + \frac{\varphi}{1 - \rho},$$
+and $\limsup_k \|x - x^{(k)}\|_\infty \le \varphi / (1 - \rho)$. Moreover, in "double the
+working precision", that is, if $\bar u \le u^2$ and $2 (n + 1) \bar u \le 1$, the floor is of
+the order of the working precision:
+$$\varphi \le \frac{u \bigl(4 (1 + u)(n + 1) u \, \| |A^{-1}| \, |A| \, |x| \|_\infty + (1 +
+  \theta) \|x\|_\infty\bigr)}{1 - 2u - \theta}.$$
 
-`θ = γ_{3n} ‖|A⁻¹| |L| |U|‖_∞`, `ρ = (θ + (u + (1 + u) γ̄_{n+1}) cond(A)) / (1 - 2u - θ)`,
-`φ = (2 (1 + u) γ̄_{n+1} ‖|A⁻¹| |A| |x|‖_∞ + u (1 + θ) ‖x‖_∞) / (1 - 2u - θ)`,
-
-`γ̄_{n+1}` being the constant of `m'`. If `2θ + (u + (1 + u) γ̄_{n+1}) cond(A) + 2u < 1` then
-`ρ < 1`, `‖x - x⁽ᵏ⁺¹⁾‖_∞ ≤ ρ ‖x - x⁽ᵏ⁾‖_∞ + φ`, `‖x - x⁽ᵏ⁾‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ + φ / (1 - ρ)` and
-`limsup_k ‖x - x⁽ᵏ⁾‖_∞ ≤ φ / (1 - ρ)`. Moreover, in "double the working precision", `ū ≤ u²`
-with `2 (n + 1) ū ≤ 1`, the floor is of the order of the working precision,
-
-`φ ≤ u (4 (1 + u) (n + 1) u ‖|A⁻¹| |A| |x|‖_∞ + (1 + θ) ‖x‖_∞) / (1 - 2u - θ)`,
-
-which is the theorem's "until `‖x - x̂_i‖_∞ / ‖x‖_∞ ≈ u`", independent of the condition number
-to first order in `u`. -/
+This is the theorem's "until $\|x - \hat x_i\|_\infty / \|x\|_\infty \approx u$", which does not
+depend on the condition number to first order in $u$. -/
 theorem norm_sub_le_of_forall_roundsStepLUMixed [NeZero n] {m m' : RoundingModel ℝ}
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1)
     {A L U : Matrix (Fin n) (Fin n) ℝ} {b x : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b)
@@ -828,9 +938,13 @@ namespace Matrix
 
 variable {n K : Type*} [Fintype n] [DecidableEq n] [Field K]
 
-/-- **Scaling a linear system** ([quarteroni2000numerical] §3.12.1): for nonsingular `D₁`, `D₂`
-(diagonal in the book: `D₁` scales the equations, `D₂` the unknowns), `A x = b` iff
-`(D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x`; row scaling alone is `D₂ = 1`. -/
+/-- **Scaling a linear system** ([quarteroni2000numerical], §3.12.1). Let $K$ be a field, let
+$A \in K^{n \times n}$, and let $D_1, D_2 \in K^{n \times n}$ be nonsingular. Then for all
+$x, b \in K^n$,
+$$Ax = b \iff (D_1 A D_2)(D_2^{-1} x) = D_1 b.$$
+
+In the book $D_1$ and $D_2$ are diagonal: $D_1$ scales the equations and $D_2$ scales the
+unknowns. Here they are arbitrary nonsingular matrices. Row scaling alone is the case $D_2 = I$. -/
 theorem scaled_mulVec_eq_iff {D₁ D₂ : Matrix n n K} (h₁ : IsUnit D₁) (h₂ : IsUnit D₂)
     (A : Matrix n n K) (x b : n → K) :
     A *ᵥ x = b ↔ (D₁ * A * D₂) *ᵥ (D₂⁻¹ *ᵥ x) = D₁ *ᵥ b := by

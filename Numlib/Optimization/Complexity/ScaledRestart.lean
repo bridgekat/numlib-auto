@@ -9,17 +9,20 @@ import Mathlib.Algebra.Order.Field.GeomSum
 /-!
 # Counting for scaled-restart outer loops
 
-Some methods of [cartis2022evaluation] (LENq-SC, Algorithm 14.3.1) run an outer loop in which
-each iteration calls an inner solver with a tolerance proportional to the current residual
-`r_{k-1}`, and the residual contracts geometrically, `r_k < β r_{k-1}`, as long as the outer
-termination test fails. This file contains the two real-variable counting facts behind
-Theorems 14.3.3 and 14.3.4.
+Some methods of [cartis2022evaluation], such as LENq-SC (Algorithm 14.3.1), run an outer loop. Each
+outer iteration $k$ calls an inner solver with a tolerance proportional to the current residual
+$r_{k-1}$, and the residual contracts geometrically, $r_k < \beta r_{k-1}$ with $0 < \beta < 1$, as
+long as the outer termination test fails. This module proves the two real-variable counting facts
+behind Theorems 14.3.3 and 14.3.4 of [cartis2022evaluation]: a bound on the number of outer
+iterations, and a bound on the geometric series that bounds the total cost of the inner calls.
 
-* `Optimization.le_ceil_log_of_contract`: the outer loop terminates after at most
-  `⌈log (ε₀ / r₀) / log β⌉₊` iterations.
-* `Optimization.sum_rpow_le_of_geometric_lower`: if `r_{k-1} ≥ β^{k-K} ε₀` for `k ∈ [1, K]`, then
-  `∑_{k=1}^K r_{k-1}^{1-π} ≤ ε₀^{1-π} β^{1-π} / (β^{1-π} - 1)` for `π > 1` (the series bounding
-  the total cost of the inner calls).
+## Main results
+
+* `Optimization.le_ceil_log_of_contract`: the outer loop terminates after at most $\lceil
+  \log(\varepsilon_0/r_0) / \log \beta \rceil$ iterations.
+* `Optimization.sum_rpow_le_of_geometric_lower`: if $r_{k-1} \ge \beta^{k-K} \varepsilon_0$ for
+  $k = 1, \dots, K$ and $\pi > 1$, then $\sum_{k=1}^K r_{k-1}^{1-\pi} \le \varepsilon_0^{1-\pi}
+  \beta^{1-\pi} / (\beta^{1-\pi} - 1)$.
 -/
 
 open Finset
@@ -28,8 +31,9 @@ namespace Optimization
 
 variable {r : ℕ → ℝ} {test : ℕ → Prop} {β ε₀ : ℝ}
 
-/-- Geometric decrease of a contracting residual: if `r_j < β r_{j-1}` at every `j ∈ [1, k]` and
-`0 < β`, then `r_k ≤ β^k r_0`, with strict inequality for `k ≥ 1`. -/
+/-- **Geometric decrease of a contracting residual.** Let $\beta > 0$ and let $r_0, r_1, \dots$ be
+real numbers with $r_j < \beta r_{j-1}$ for every $j$ with $1 \le j \le k$. Then
+$r_k \le \beta^k r_0$, and the inequality is strict if $k \ge 1$. -/
 theorem lt_pow_mul_of_contract (hβ : 0 < β) {k : ℕ}
     (hcontr : ∀ j, 1 ≤ j → j ≤ k → r j < β * r (j - 1)) :
     r k ≤ β ^ k * r 0 ∧ (1 ≤ k → r k < β ^ k * r 0) := by
@@ -45,13 +49,20 @@ theorem lt_pow_mul_of_contract (hβ : 0 < β) {k : ℕ}
         _ = β ^ (k + 1) * r 0 := by ring
     exact ⟨this.le, fun _ => this⟩
 
-/-- **Termination of a scaled-restart outer loop** ([cartis2022evaluation], Theorem 14.3.3,
-with the integer ceiling). Let `0 < β < 1` and `0 < ε₀`. Suppose that the outer test `test k`
-holds whenever `r_k ≤ ε₀`, and that at every iteration `k ≥ 1` reached without termination
-(`test j` fails for `j ≤ k`) the residual contracts: `r_k < β r_{k-1}`. Then the loop terminates
-at an index `k ≤ ⌈log (ε₀ / r_0) / log β⌉₊`. (For LENq-SC, `test k` is (14.3.23); the plain
-residual test is `test k ↔ r k ≤ ε₀`. The ceiling is needed: if `log (ε₀ / r_0) / log β = 2.5`,
-termination may happen at iteration `3`.) -/
+/-- **Termination of a scaled-restart outer loop.** Let $0 < \beta < 1$ and $\varepsilon_0 > 0$, let
+$r_0, r_1, \dots$ be real numbers, and let $\mathrm{test}$ be a predicate on the iterations.
+Suppose that $\mathrm{test}(k)$ holds whenever $r_k \le \varepsilon_0$. Suppose also that the
+residual contracts, $r_k < \beta r_{k-1}$, at every iteration $k \ge 1$ such that
+$\mathrm{test}(j)$ fails for all $j \le k$. Then the loop terminates at some iteration $k$,
+which means that $\mathrm{test}(k)$ holds and $\mathrm{test}(j)$ fails for all $j < k$, and
+$$k \le \left\lceil \frac{\log(\varepsilon_0/r_0)}{\log \beta} \right\rceil.$$
+This is Theorem 14.3.3 of [cartis2022evaluation], with the integer ceiling.
+
+For LENq-SC, $\mathrm{test}(k)$ is the test (14.3.23). The plain residual test is
+$\mathrm{test}(k) \iff r_k \le \varepsilon_0$. The ceiling is necessary: if
+$\log(\varepsilon_0/r_0)/\log \beta = 2.5$, the loop can terminate at iteration $3$. The ceiling
+is `Nat.ceil`, which is $0$ at a negative argument. Termination at $k$ is
+`Optimization.IsFirstHit test k`. -/
 theorem le_ceil_log_of_contract (hβ : 0 < β) (hβ1 : β < 1) (hε₀ : 0 < ε₀)
     (htest : ∀ k, ¬ test k → ε₀ < r k)
     (hcontr : ∀ k, 1 ≤ k → (∀ j ≤ k, ¬ test j) → r k < β * r (k - 1)) :
@@ -77,10 +88,16 @@ theorem le_ceil_log_of_contract (hβ : 0 < β) (hβ1 : β < 1) (hε₀ : 0 < ε�
   have : β ^ N * r 0 ≤ ε₀ := by rwa [le_div_iff₀ hr0pos] at hpow
   linarith
 
-/-- **Geometric cost sum** (the series in the proof of [cartis2022evaluation], Theorem 14.3.4, for
-one exponent `π`). Let `0 < β < 1`, `0 < ε₀`, `1 < π`, and `r_{k-1} ≥ β^{k-K} ε₀` for
-`k ∈ [1, K]`. Then
-`∑_{k=1}^K r_{k-1}^{1-π} ≤ ε₀^{1-π} β^{1-π} / (β^{1-π} - 1)` (the denominator is positive). -/
+/-- **Geometric cost sum.** Let $0 < \beta < 1$, $\varepsilon_0 > 0$ and $\pi > 1$, and let
+$K \in \mathbb{N}$. If $r_{k-1} \ge \beta^{k-K} \varepsilon_0$ for every
+$k \in \{1, \dots, K\}$, then
+$$\sum_{k=1}^K r_{k-1}^{1-\pi} \le \frac{\varepsilon_0^{1-\pi} \beta^{1-\pi}}{\beta^{1-\pi} -
+  1},$$
+and the denominator is positive.
+
+This is the series in the proof of Theorem 14.3.4 of [cartis2022evaluation], for one exponent
+$\pi$. The power $\beta^{k-K}$ has an integer exponent, and the powers with exponent $1 - \pi$
+are real powers (`Real.rpow`). -/
 theorem sum_rpow_le_of_geometric_lower (hβ : 0 < β) (hβ1 : β < 1) (hε₀ : 0 < ε₀) {π : ℝ}
     (hπ : 1 < π) {K : ℕ} (hr : ∀ k ∈ Icc 1 K, β ^ ((k : ℤ) - K) * ε₀ ≤ r (k - 1)) :
     ∑ k ∈ Icc 1 K, r (k - 1) ^ (1 - π) ≤

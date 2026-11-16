@@ -12,49 +12,73 @@ import Numlib.LinearAlgebra.Matrix.PosDef
 /-!
 # The polar decomposition as a function of matrices
 
-The polar decomposition `A = U P` itself — the specification `Matrix.IsPolarDecomposition`, its
-existence and the symmetric factor `P = (Aᴴ A)^{1/2}` — is the decomposition module
-`Numlib/LinearAlgebra/Matrix/Polar`. Here are the facts about it that belong to the functions of
-matrices of [golub2013matrix] §9.4.3:
+A polar decomposition of $A \in \mathbb{K}^{m \times n}$ is a factorization $A = UP$ in which $U$
+has orthonormal columns and $P$ is positive semidefinite. The definition
+`Matrix.IsPolarDecomposition`, the existence of the factorization and the formula
+$P = (A^H A)^{1/2}$ are in `Numlib.LinearAlgebra.Matrix.Polar`. This module proves the facts about
+the polar decomposition that belong to the functions of matrices in [golub2013matrix], §9.4.3: $P$
+is the primary square root of $A^H A$; for a nonsingular square $A$, Newton's iteration $X_0 = A$,
+$X_{k+1} = (X_k + X_k^{-H})/2$ converges quadratically to $U$; the unitary factor satisfies the
+perturbation bounds of Li and Sun; and the sign of the matrix
+$\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$ is
+$\begin{bmatrix} 0 & U \\ U^H & 0 \end{bmatrix}$.
 
-* `Matrix.IsPolarDecomposition.eq_pfc_sqrt`: `P` is the primary square root of `Aᴴ A`;
-* `Matrix.newtonPolarIterate`: Newton's iteration `X_{k+1} = (X_k + X_k⁻ᴴ)/2`
-  ([golub2013matrix] (9.4.11)); `Matrix.newtonPolarIterate_eq`: `X_k = U P_k` with `P_k` the
-  same iteration started at `P` ((9.4.12)), and `Matrix.tendsto_newtonPolarIterate`:
-  `X_k → U`, with `‖X_k − U‖₂ = ‖P_k − 1‖₂` (`Matrix.l2_opNorm_newtonPolarIterate_sub`) and the
-  quadratic step `P_{k+1} − 1 = ½ P_k⁻¹ (P_k − 1)²`
-  (`Matrix.newtonPolarIterate_succ_sub_one`);
-* `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues`: the complex form
-  of the Li–Sun perturbation bound `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`, from the
-  Sylvester bound `Matrix.frobenius_norm_le_of_mul_add_mul_eq`;
-* `Matrix.frobenius_norm_polar_sub_le`: the real Li–Sun bound
-  `‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n-1} + σ_n + σ̃_{n-1} + σ̃_n)` (the two smallest singular values
-  of each) when `det A · det Ã > 0`, from the pairing inequality `Matrix.le_trace_mul_one_sub`
-  for a rotation `W`: `tr(P (1 - W)) ≥ (σ_{n-1} + σ_n)/2 · tr(1 - W)`;
-* `Matrix.matrixSign_hermitianDilation`: the sign of the Jordan–Wielandt matrix `[0 A; Aᴴ 0]` of a
-  nonsingular `A = U P` is `[0 U; Uᴴ 0]`.
+The perturbation bounds are from W. Li and W. Sun, *Perturbation bounds of unitary and subunitary
+polar factors*, SIAM J. Matrix Anal. Appl. 23 (2002) 1183–1193, which [golub2013matrix] quotes. For
+square $A$ and $\tilde A$ with polar decompositions $A = UP$ and $\tilde A = \tilde U P'$, the
+complex bound is $\|U - \tilde U\|_F \le 2 \|A - \tilde A\|_F / (\sigma_{\min}(A) +
+\sigma_{\min}(\tilde A))$. The real bound, under the condition $\det A \cdot \det \tilde A > 0$, has
+the numerator $4 \|A - \tilde A\|_F$ and the sum of the two smallest singular values of $A$ and of
+$\tilde A$ as the denominator.
 
-Every statement about "the polar factor `U`" takes an `IsPolarDecomposition A U P` hypothesis.
+## Main definitions
+
+* `Matrix.newtonPolarIterate`: Newton's polar iteration $X_0 = A$, $X_{k+1} = (X_k + X_k^{-H})/2$.
+
+## Main results
+
+* `Matrix.IsPolarDecomposition.eq_pfc_sqrt`: $P$ is the primary square root of $A^H A$.
+* `Matrix.newtonPolarIterate_eq`: for nonsingular $A = UP$, $X_k = U P_k$, where $P_k$ is Newton's
+  polar iteration started at $P$.
+* `Matrix.l2_opNorm_newtonPolarIterate_sub`: $\|X_k - U\|_2 = \|P_k - I\|_2$.
+* `Matrix.newtonPolarIterate_succ_sub_one`: $P_{k+1} - I = \frac12 P_k^{-1} (P_k - I)^2$ for
+  positive definite $P$.
+* `Matrix.tendsto_newtonPolarIterate`: $X_k \to U$ for nonsingular $A = UP$.
+* `Matrix.frobenius_norm_le_of_mul_add_mul_eq`: if $P \succeq \sigma I$, $Q \succeq \tau I$,
+  $\sigma + \tau > 0$ and $PX + XQ = R$, then $\|X\|_F \le \|R\|_F / (\sigma + \tau)$.
+* `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues`: the complex Li–Sun
+  bound.
+* `Matrix.frobenius_norm_polar_sub_le`: the real Li–Sun bound.
+* `Matrix.matrixSign_hermitianDilation`: for nonsingular $A = UP$, the sign of
+  $\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$ is
+  $\begin{bmatrix} 0 & U \\ U^H & 0 \end{bmatrix}$.
+
+## Proof outline
+
+The convergence proof diagonalizes $P = V \operatorname{diag}(\sigma) V^H$ with
+`Matrix.IsHermitian.spectral_theorem`. Then $P_k = V \operatorname{diag}(r_k(\sigma_i)) V^H$, where
+$r_k$ are the iterates of the scalar Newton map $r \mapsto (r + 1/r)/2$, and these converge to $1$
+from every $r > 0$. So the proof needs no complex sign function.
+
+The real Li–Sun bound is not proved as Li and Sun prove it. Let $W = U^T \tilde U$, which is a
+rotation because $\det A \cdot \det \tilde A > 0$, and let $X = I - W$. Then $PX + XP' = R$ with
+$\|R\|_F \le 2 \|A - \tilde A\|_F$, and the identity $X X^T = X^T X = X + X^T$ turns
+$\operatorname{tr}(X^T R)$ into $2 \operatorname{tr}(PX) + 2 \operatorname{tr}(P'X)$. The pairing
+inequality `Matrix.le_trace_mul_one_sub` bounds each trace from below. This inequality needs only
+two facts about orthogonal matrices $O$: $\operatorname{tr}(RO) \le \operatorname{tr} R$ for
+$R \succeq 0$ (`Matrix.PosSemidef.trace_mul_le_trace`), and $\operatorname{tr} O \le n - 2$ when
+$\det O = -1$ (`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`), applied to $O = (I - 2uu^T) W$.
 
 ## Implementation notes
 
-The convergence proof diagonalizes `P = V diag(σ) Vᴴ` (`Matrix.IsHermitian.spectral_theorem`):
-then `P_k = V diag(r_k(σ_i)) Vᴴ` with the scalar Newton map `r ↦ (r + 1/r)/2`, which converges to
-`1` from every `r > 0` — so no complex sign-function machinery is needed and the statements hold
-over every `RCLike` field.
-
-The real Li–Sun bound is not proved as Li and Sun do. With `W = Uᵀ Ũ` a rotation (this is where
-`det A · det Ã > 0` enters) and `X = 1 − W`, `P X + X P' = R` with `‖R‖_F ≤ 2 ‖A − Ã‖_F`, and
-`X Xᵀ = Xᵀ X = X + Xᵀ` turns `tr(Xᵀ R)` into `2 tr(P X) + 2 tr(P' X)`. Each is bounded below by the
-pairing inequality, which needs only two facts about orthogonal matrices: `tr(R O) ≤ tr R` for
-`R ⪰ 0` (`Matrix.PosSemidef.trace_mul_le_trace`) and `tr O ≤ n − 2` when `det O = −1`
-(`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`), applied to `O = (1 − 2 u uᵀ) W`.
-
-## References
-
-* [golub2013matrix] §9.4.3.
-* W. Li and W. Sun, *Perturbation bounds of unitary and subunitary polar factors*, SIAM J. Matrix
-  Anal. Appl. 23 (2002) 1183–1193.
+* Every statement about the polar factor $U$ takes a hypothesis `Matrix.IsPolarDecomposition A U P`.
+* The field $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$ (`RCLike`). The real Li–Sun bound is over
+  $\mathbb{R}$, and the sign of the block matrix is over $\mathbb{C}$.
+* $\|\cdot\|_2$ is the spectral norm of `Matrix.Norms.L2Operator`, and $\|\cdot\|_F$ is the
+  Frobenius norm of `Matrix.Norms.Frobenius`.
+* A lower bound $P \succeq \sigma I$ in the Loewner order is written `(P - (σ : 𝕜) • 1).PosSemidef`.
+* The block matrix $\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$ is
+  `Matrix.hermitianDilation Aᴴ`.
 -/
 
 open Filter Topology
@@ -69,9 +93,16 @@ section Sqrt
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 open scoped MatrixOrder in
-/-- **The symmetric polar factor is the primary square root of `Aᴴ A`** ([golub2013matrix] §9.4.3,
-"`P = (AᵀA)^{1/2}`" read in chapter 9's functional calculus): `P = pfc √· (Aᴴ A)`
-(`Matrix.IsPolarDecomposition.eq_cfcSqrt`, `Matrix.PosSemidef.cfcSqrt_eq_pfc`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the polar decomposition $A = UP$. Then **$P$ is the
+primary square root of $A^H A$**:
+$$P = f(A^H A), \qquad f(z) = \sqrt{\operatorname{Re} z},$$
+where $f(A^H A)$ is the primary functional calculus `pfc`. This is the formula
+$P = (A^T A)^{1/2}$ of [golub2013matrix], §9.4.3, read in the functional calculus of Chapter 9
+of [golub2013matrix].
+
+The function $f$ agrees with the square root on $[0, \infty)$, which contains the eigenvalues of
+$A^H A$. The proof combines `Matrix.IsPolarDecomposition.eq_cfcSqrt` and
+`Matrix.PosSemidef.cfcSqrt_eq_pfc`. -/
 theorem IsPolarDecomposition.eq_pfc_sqrt {A U : Matrix m n 𝕜} {P : Matrix n n 𝕜}
     (h : IsPolarDecomposition A U P) :
     P = pfc (fun z : 𝕜 => ((Real.sqrt (RCLike.re z) : ℝ) : 𝕜)) (Aᴴ * A) := by
@@ -83,20 +114,26 @@ section Newton
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **Newton's polar iteration** ([golub2013matrix] (9.4.11), whose body the conversion lost;
-reconstructed from (9.4.12)): `X₀ = A`, `X_{k+1} = (X_k + (X_k⁻¹)ᴴ)/2`. -/
+/-- **Newton's polar iteration**: for a square matrix $A$,
+$$X_0 = A, \qquad X_{k+1} = \tfrac12 \big(X_k + X_k^{-H}\big),$$
+where $X^{-H} = (X^{-1})^H$. This is (9.4.11) of [golub2013matrix].
+
+The formula is the one that (9.4.12) of [golub2013matrix] implies. The inverse is the Mathlib
+matrix inverse, which is $0$ at a singular matrix. -/
 noncomputable def newtonPolarIterate (A : Matrix n n 𝕜) : ℕ → Matrix n n 𝕜
   | 0 => A
   | k + 1 => (2 : 𝕜)⁻¹ • (newtonPolarIterate A k + (newtonPolarIterate A k)⁻¹ᴴ)
 
+/-- Newton's polar iteration starts at $X_0 = A$. -/
 @[simp]
 theorem newtonPolarIterate_zero (A : Matrix n n 𝕜) : newtonPolarIterate A 0 = A := rfl
 
+/-- Newton's polar iteration satisfies $X_{k+1} = (X_k + X_k^{-H})/2$. -/
 theorem newtonPolarIterate_succ (A : Matrix n n 𝕜) (k : ℕ) :
     newtonPolarIterate A (k + 1)
       = (2 : 𝕜)⁻¹ • (newtonPolarIterate A k + (newtonPolarIterate A k)⁻¹ᴴ) := rfl
 
-/-- The scalar Newton map `r ↦ (r + 1/r)/2`, iterated from `s`. -/
+/-- The scalar Newton map $r \mapsto (r + 1/r)/2$, iterated from $s$. -/
 private noncomputable def newtonScalar (s : ℝ) : ℕ → ℝ
   | 0 => s
   | k + 1 => 2⁻¹ * (newtonScalar s k + (newtonScalar s k)⁻¹)
@@ -108,8 +145,9 @@ private theorem newtonScalar_pos {s : ℝ} (hs : 0 < s) (k : ℕ) : 0 < newtonSc
     change 0 < 2⁻¹ * (newtonScalar s k + (newtonScalar s k)⁻¹)
     positivity
 
-/-- From the first step on, the scalar Newton iterates lie in `[1, ∞)` and halve their distance to
-`1` at each step: `r − 1 ≥ 0` and `(r + 1/r)/2 − 1 = (r − 1)²/(2r) ≤ (r − 1)/2`. -/
+/-- From the first step on, the scalar Newton iterates $r_k$ from $s > 0$ satisfy $r_{k+1} \ge 1$
+and $r_{k+1} - 1 \le (r_1 - 1)/2^k$, because $(r + 1/r)/2 - 1 = (r - 1)^2/(2r) \le (r - 1)/2$
+for $r \ge 1$. -/
 private theorem newtonScalar_succ_bounds {s : ℝ} (hs : 0 < s) (k : ℕ) :
     1 ≤ newtonScalar s (k + 1) ∧
       newtonScalar s (k + 1) - 1 ≤ (newtonScalar s 1 - 1) / 2 ^ k := by
@@ -137,7 +175,7 @@ private theorem newtonScalar_succ_bounds {s : ℝ} (hs : 0 < s) (k : ℕ) :
       _ ≤ (newtonScalar s 1 - 1) / 2 ^ k / 2 := div_le_div_of_nonneg_right h2 (by norm_num)
       _ = (newtonScalar s 1 - 1) / 2 ^ (k + 1) := by rw [pow_succ, div_div]
 
-/-- The scalar Newton iteration converges to `1` from every `s > 0`. -/
+/-- The scalar Newton iterates converge to $1$ from every $s > 0$. -/
 private theorem tendsto_newtonScalar {s : ℝ} (hs : 0 < s) :
     Tendsto (newtonScalar s) atTop (𝓝 1) := by
   rw [← tendsto_add_atTop_iff_nat 1]
@@ -152,7 +190,8 @@ private theorem tendsto_newtonScalar {s : ℝ} (hs : 0 < s) :
     simp only
     linarith
 
-/-- The inverse of a unitary conjugate of an invertible real diagonal matrix. -/
+/-- For unitary $V$ and a real diagonal matrix $D$ with nonzero diagonal entries,
+$(V D V^H)^{-1} = V D^{-1} V^H$. -/
 private theorem inv_conj_diagonal {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜) {d : n → ℝ}
     (hd : ∀ i, d i ≠ 0) :
     (V * diagonal (fun i => ((d i : ℝ) : 𝕜)) * Vᴴ)⁻¹
@@ -170,9 +209,9 @@ private theorem inv_conj_diagonal {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup
               RCLike.ofReal_one], diagonal_one, Matrix.mul_one]
     _ = 1 := mul_conjTranspose_self_of_mem_unitaryGroup hV
 
-/-- **Newton's polar iteration on a positive definite matrix, diagonalized**: if
-`P = V diag(s) Vᴴ` with `V` unitary and `s > 0`, then `P_k = V diag(r_k(s_i)) Vᴴ` with the scalar
-Newton iterates `r_k`. -/
+/-- If $P = V \operatorname{diag}(s) V^H$ with $V$ unitary and $s > 0$, then the Newton polar
+iterates of $P$ are $P_k = V \operatorname{diag}(r_k(s_i)) V^H$, with the scalar Newton iterates
+$r_k$. -/
 private theorem newtonPolarIterate_conj_diagonal {V : Matrix n n 𝕜} (hV : V ∈ unitaryGroup n 𝕜)
     {s : n → ℝ} (hs : ∀ i, 0 < s i) (k : ℕ) :
     newtonPolarIterate (V * diagonal (fun i => ((s i : ℝ) : 𝕜)) * Vᴴ) k
@@ -196,7 +235,8 @@ private theorem newtonPolarIterate_conj_diagonal {V : Matrix n n 𝕜} (hV : V �
     push_cast
     ring
 
-/-- The Newton polar iterates of a positive definite matrix are positive definite. -/
+/-- Let $P \in \mathbb{K}^{n \times n}$ be positive definite. Then every iterate $P_k$ of Newton's
+polar iteration started at $P$ is positive definite. -/
 theorem PosDef.newtonPolarIterate {P : Matrix n n 𝕜} (hP : P.PosDef) (k : ℕ) :
     (newtonPolarIterate P k).PosDef := by
   have hV := hP.isHermitian.eigenvectorUnitary.2
@@ -212,10 +252,15 @@ theorem PosDef.newtonPolarIterate {P : Matrix n n 𝕜} (hP : P.PosDef) (k : ℕ
 
 variable {A U P : Matrix n n 𝕜}
 
-/-- **Newton's polar iterates in polar form** ([golub2013matrix] (9.4.12)): for a nonsingular `A`
-with polar decomposition `A = U P`, `X_k = U P_k`, where `P_k` is the same iteration started at
-`P` — `P_{k+1} = (P_k + P_k⁻¹)/2`, the Newton sign iteration of `P` — and every `P_k` is positive
-definite, so every `X_k` is nonsingular. Induction: `(U P_k)⁻ᴴ = U P_k⁻ᴴ`, `U` being unitary. -/
+/-- **Newton's polar iterates in polar form.** Let $A \in \mathbb{K}^{n \times n}$ be nonsingular
+with polar decomposition $A = UP$, and let $X_k$ and $P_k$ be the iterates of Newton's polar
+iteration started at $A$ and at $P$. Then for every $k$,
+$$X_k = U P_k,$$
+and $P_k$ is positive definite. This is (9.4.12) of [golub2013matrix].
+
+Since every $P_k$ is Hermitian, $P_{k+1} = (P_k + P_k^{-1})/2$ is the Newton sign iteration of
+$P$. Since every $P_k$ is positive definite, every $X_k$ is nonsingular. The proof is an
+induction that uses $(U P_k)^{-H} = U P_k^{-H}$ for unitary $U$. -/
 theorem newtonPolarIterate_eq (hA : IsUnit A) (h : IsPolarDecomposition A U P) (k : ℕ) :
     newtonPolarIterate A k = U * newtonPolarIterate P k ∧ (newtonPolarIterate P k).PosDef := by
   have hP : P.PosDef := h.posSemidef.posDef_iff_isUnit.2 (h.isUnit hA)
@@ -228,8 +273,13 @@ theorem newtonPolarIterate_eq (hA : IsUnit A) (h : IsPolarDecomposition A U P) (
       conjTranspose_conjTranspose, ← Matrix.mul_add, Matrix.mul_smul]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The error of Newton's polar iteration** ([golub2013matrix] §9.4.3):
-`‖X_k − U‖₂ = ‖U (P_k − I)‖₂ = ‖P_k − I‖₂`. -/
+/-- **The error of Newton's polar iteration.** Let $A \in \mathbb{K}^{n \times n}$ be nonsingular
+with polar decomposition $A = UP$, and let $X_k$ and $P_k$ be the iterates of Newton's polar
+iteration started at $A$ and at $P$. Then for every $k$, in the spectral norm,
+$$\|X_k - U\|_2 = \|P_k - I\|_2.$$
+This is in [golub2013matrix], §9.4.3.
+
+The proof writes $X_k - U = U (P_k - I)$ and uses that $U$ is unitary. -/
 theorem l2_opNorm_newtonPolarIterate_sub (hA : IsUnit A) (h : IsPolarDecomposition A U P)
     (k : ℕ) :
     ‖newtonPolarIterate A k - U‖ = ‖newtonPolarIterate P k - 1‖ := by
@@ -237,8 +287,11 @@ theorem l2_opNorm_newtonPolarIterate_sub (hA : IsUnit A) (h : IsPolarDecompositi
     Matrix.one_mul]
   exact l2_opNorm_mul_of_conjTranspose_mul_self_eq_one h.conjTranspose_mul_self _
 
-/-- **The quadratic step of Newton's polar iteration**: for a positive definite `P`,
-`P_{k+1} − I = ½ P_k⁻¹ (P_k − I)²`. -/
+/-- **The quadratic step of Newton's polar iteration.** Let $P \in \mathbb{K}^{n \times n}$ be
+positive definite, and let $P_k$ be the iterates of Newton's polar iteration started at $P$.
+Then for every $k$,
+$$P_{k+1} - I = \tfrac12 P_k^{-1} (P_k - I)^2.$$
+-/
 theorem newtonPolarIterate_succ_sub_one {P : Matrix n n 𝕜} (hP : P.PosDef) (k : ℕ) :
     newtonPolarIterate P (k + 1) - 1
       = (2 : 𝕜)⁻¹ • ((newtonPolarIterate P k)⁻¹ *
@@ -252,8 +305,11 @@ theorem newtonPolarIterate_succ_sub_one {P : Matrix n n 𝕜} (hP : P.PosDef) (k
   module
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Quadratic convergence of Newton's polar iteration**, the step bound
-([golub2013matrix] §9.4.3): `‖P_{k+1} − I‖₂ ≤ ½ ‖P_k⁻¹‖₂ ‖P_k − I‖₂²`. -/
+/-- **Quadratic convergence of Newton's polar iteration.** Let $P \in \mathbb{K}^{n \times n}$ be
+positive definite, and let $P_k$ be the iterates of Newton's polar iteration started at $P$.
+Then for every $k$, in the spectral norm,
+$$\|P_{k+1} - I\|_2 \le \tfrac12 \|P_k^{-1}\|_2\, \|P_k - I\|_2^2.$$
+This is the step bound of [golub2013matrix], §9.4.3. -/
 theorem l2_opNorm_newtonPolarIterate_succ_sub_one_le {P : Matrix n n 𝕜} (hP : P.PosDef)
     (k : ℕ) :
     ‖newtonPolarIterate P (k + 1) - 1‖
@@ -269,10 +325,15 @@ theorem l2_opNorm_newtonPolarIterate_succ_sub_one_le {P : Matrix n n 𝕜} (hP :
   rw [sq]
   linarith
 
-/-- **Newton's polar iteration converges to the orthonormal polar factor** ([golub2013matrix]
-§9.4.3, quadratically by `Matrix.l2_opNorm_newtonPolarIterate_succ_sub_one_le`): for a
-nonsingular `A = U P`, `X_k → U`. In an eigenbasis of `P = V diag(σ) Vᴴ`,
-`X_k = U V diag(r_k(σ_i)) Vᴴ` with the scalar Newton iterates `r_k(σ) → 1`. -/
+/-- **Newton's polar iteration converges to the unitary polar factor.** Let
+$A \in \mathbb{K}^{n \times n}$ be nonsingular with polar decomposition $A = UP$, and let $X_k$
+be the iterates of Newton's polar iteration started at $A$. Then $X_k \to U$ as $k \to \infty$.
+This is in [golub2013matrix], §9.4.3. The convergence is quadratic by
+`Matrix.l2_opNorm_newtonPolarIterate_succ_sub_one_le`.
+
+In an eigenbasis $P = V \operatorname{diag}(\sigma) V^H$, the iterates are $X_k = U V
+\operatorname{diag}(r_k(\sigma_i)) V^H$, where $r_k$ are the iterates of the scalar Newton map
+$r \mapsto (r + 1/r)/2$, and $r_k(\sigma) \to 1$. -/
 theorem tendsto_newtonPolarIterate (hA : IsUnit A) (h : IsPolarDecomposition A U P) :
     Tendsto (newtonPolarIterate A) atTop (𝓝 U) := by
   have hP : P.PosDef := h.posSemidef.posDef_iff_isUnit.2 (h.isUnit hA)
@@ -310,10 +371,16 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **A Sylvester equation with coefficients bounded below** (the step behind the perturbation
-bound of the polar factor, Li and Sun 2003): if `σ ≤ P` and `τ ≤ Q` in the Loewner order with
-`σ + τ > 0`, the solution of `P X + X Q = R` satisfies `‖X‖_F ≤ ‖R‖_F / (σ + τ)`. Indeed
-`(σ + τ) ‖X‖_F² ≤ re tr(Xᴴ P X) + re tr(X Q Xᴴ) = re tr(Xᴴ R) ≤ ‖X‖_F ‖R‖_F`. -/
+/-- **A Sylvester equation with coefficients bounded below.** Let
+$P, Q, X, R \in \mathbb{K}^{n \times n}$ and $\sigma, \tau \in \mathbb{R}$ with
+$\sigma + \tau > 0$. Suppose that $P - \sigma I$ and $Q - \tau I$ are positive semidefinite, and
+that $PX + XQ = R$. Then
+$$\|X\|_F \le \frac{\|R\|_F}{\sigma + \tau}.$$
+This is the step behind the perturbation bound of Li and Sun (2002) for the polar factor.
+
+The proof is $(\sigma + \tau) \|X\|_F^2 \le \operatorname{Re} \operatorname{tr}(X^H P X) +
+\operatorname{Re} \operatorname{tr}(X Q X^H) = \operatorname{Re} \operatorname{tr}(X^H R) \le
+\|X\|_F \|R\|_F$. -/
 theorem frobenius_norm_le_of_mul_add_mul_eq {P Q X R : Matrix n n 𝕜} {σ τ : ℝ}
     (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hQ : (Q - (τ : 𝕜) • 1).PosSemidef)
     (hστ : 0 < σ + τ) (h : P * X + X * Q = R) : ‖X‖ ≤ ‖R‖ / (σ + τ) := by
@@ -342,9 +409,10 @@ theorem frobenius_norm_le_of_mul_add_mul_eq {P Q X R : Matrix n n 𝕜} {σ τ :
   · refine le_of_mul_le_mul_right ?_ hX
     nlinarith
 
-/-- The Sylvester equation of two polar decompositions (shared by the complex and the real bounds):
-with `X = Uᴴ (U - Ũ)`, `P X + X P' = Uᴴ Δ - Δᴴ Ũ` for `Δ = A - Ã`, whose Frobenius norm is at most
-`2 ‖Δ‖_F`; and `‖X‖_F = ‖U - Ũ‖_F`. -/
+/-- For polar decompositions $A = UP$ and $\tilde A = \tilde U P'$ and $\Delta = A - \tilde A$, the
+matrix $X = U^H (U - \tilde U)$ satisfies $\|X\|_F = \|U - \tilde U\|_F$ and
+$PX + XP' = U^H \Delta - \Delta^H \tilde U$, and the right side has Frobenius norm at most
+$2 \|\Delta\|_F$. -/
 private theorem IsPolarDecomposition.sylvester {A Ã U Ũ P P' : Matrix n n 𝕜}
     (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') :
     ‖Uᴴ * (U - Ũ)‖ = ‖U - Ũ‖ ∧
@@ -380,14 +448,19 @@ private theorem IsPolarDecomposition.sylvester {A Ã U Ũ P P' : Matrix n n 𝕜
     calc ‖Uᴴ * (A - Ã) - (A - Ã)ᴴ * Ũ‖ ≤ ‖Uᴴ * (A - Ã)‖ + ‖(A - Ã)ᴴ * Ũ‖ := norm_sub_le _ _
       _ = 2 * ‖A - Ã‖ := by rw [h1, h2]; ring
 
-/-- **The perturbation of the unitary polar factor** (the complex form of the Li–Sun bound,
-[golub2013matrix] §9.4.3; W. Li and W. Sun 2002): if `A = U P` and `Ã = Ũ P'` are polar
-decompositions of square matrices with `σ ≤ P`, `σ̃ ≤ P'` in the Loewner order and `σ + σ̃ > 0`
-(for instance `σ`, `σ̃` the smallest singular values), then
-`‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ + σ̃)`. With `W = Uᴴ Ũ` and `Δ = A − Ã`, `X = 1 − W` solves
-`P X + X P' = Uᴴ Δ − Δᴴ Ũ` (`Matrix.frobenius_norm_le_of_mul_add_mul_eq`), and `‖X‖_F = ‖U − Ũ‖_F`.
-The real refinement with the two smallest singular values is
-`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`. -/
+/-- **The perturbation of the unitary polar factor.** Let $A, \tilde A \in \mathbb{K}^{n \times n}$
+have polar decompositions $A = UP$ and $\tilde A = \tilde U P'$, and let
+$\sigma, \sigma' \in \mathbb{R}$ with $\sigma + \sigma' > 0$ be such that $P - \sigma I$ and
+$P' - \sigma' I$ are positive semidefinite. Then
+$$\|U - \tilde U\|_F \le \frac{2 \|A - \tilde A\|_F}{\sigma + \sigma'}.$$
+This is the complex form of the bound of Li and Sun (2002), quoted in [golub2013matrix], §9.4.3.
+One can take for $\sigma$ and $\sigma'$ the smallest singular values of $A$ and $\tilde A$; see
+`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues`.
+
+With $W = U^H \tilde U$ and $\Delta = A - \tilde A$, the matrix $X = I - W$ solves
+$PX + XP' = U^H \Delta - \Delta^H \tilde U$, so `Matrix.frobenius_norm_le_of_mul_add_mul_eq`
+applies, and $\|X\|_F = \|U - \tilde U\|_F$. The real refinement with the two smallest singular
+values is `Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`. -/
 theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 𝕜}
     (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P') {σ σ' : ℝ}
     (hP : (P - (σ : 𝕜) • 1).PosSemidef) (hP' : (P' - (σ' : 𝕜) • 1).PosSemidef)
@@ -398,9 +471,12 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le {A Ã U Ũ P P' : Matrix n n 
         frobenius_norm_le_of_mul_add_mul_eq hP hP' hσ hsyl
     _ ≤ 2 * ‖A - Ã‖ / (σ + σ') := div_le_div_of_nonneg_right hR hσ.le
 
-/-- The symmetric polar factor dominates the smallest singular value: `σ_min(A) ≤ P` in the
-Loewner order. The eigenvalues of `P` are the stretches `‖A v‖ = ‖P v‖` of its unit
-eigenvectors. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ have the polar decomposition $A = UP$, and let
+$\sigma_{\min}(A)$ be the smallest singular value of $A$. Then $P - \sigma_{\min}(A) I$ is
+positive semidefinite, that is, $\sigma_{\min}(A) I \preceq P$ in the Loewner order.
+
+The eigenvalues of $P$ are the values $\|Av\| = \|Pv\|$ at its unit eigenvectors $v$. The number
+$\sigma_{\min}(A)$ is the infimum of `Matrix.colSingularValues A`. -/
 theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matrix n n 𝕜}
     (h : IsPolarDecomposition A U P) :
     (P - ((⨅ i, A.colSingularValues i : ℝ) : 𝕜) • 1).PosSemidef := by
@@ -441,9 +517,16 @@ theorem IsPolarDecomposition.posSemidef_sub_iInf_colSingularValues {A U P : Matr
   refine (PosSemidef.diagonal fun i => ?_).mul_mul_conjTranspose_same V
   exact RCLike.ofReal_nonneg.2 (sub_nonneg.2 (hc i))
 
-/-- **The perturbation of the unitary polar factor by the smallest singular values** (the complex
-Li–Sun bound, [golub2013matrix] §9.4.3): `‖U − Ũ‖_F ≤ 2 ‖A − Ã‖_F / (σ_min(A) + σ_min(Ã))`
-when the denominator is positive (for instance when `A` is nonsingular). -/
+/-- **The perturbation of the unitary polar factor by the smallest singular values.** Let
+$A, \tilde A \in \mathbb{K}^{n \times n}$ have polar decompositions $A = UP$ and
+$\tilde A = \tilde U P'$, and suppose that $\sigma_{\min}(A) + \sigma_{\min}(\tilde A) > 0$.
+Then
+$$\|U - \tilde U\|_F
+  \le \frac{2 \|A - \tilde A\|_F}{\sigma_{\min}(A) + \sigma_{\min}(\tilde A)}.$$
+This is the complex form of the Li–Sun bound in [golub2013matrix], §9.4.3. The hypothesis holds,
+for instance, when $A$ is nonsingular and $n \ge 1$.
+
+The number $\sigma_{\min}(A)$ is the infimum of `Matrix.colSingularValues A`. -/
 theorem IsPolarDecomposition.frobenius_norm_sub_le_div_iInf_colSingularValues
     {A Ã U Ũ P P' : Matrix n n 𝕜} (h : IsPolarDecomposition A U P)
     (h' : IsPolarDecomposition Ã Ũ P')
@@ -463,8 +546,7 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 open scoped Matrix.Norms.Frobenius
 
 omit [Fintype n] in
-/-- A symmetric matrix bounded below by `b` off a unit vector `u` and by `a ≤ b` along it is
-symmetric: the hypothesis shape of `Matrix.le_trace_mul_one_sub`. -/
+/-- If $P - bI + (b - a) uu^T$ is positive semidefinite, then $P$ is symmetric. -/
 private theorem transpose_eq_of_posSemidef_pair {P : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ}
     (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) : Pᵀ = P := by
   have h := hP.isHermitian.eq
@@ -472,11 +554,19 @@ private theorem transpose_eq_of_posSemidef_pair {P : Matrix n n ℝ} {u : n → 
     transpose_smul, transpose_one, transpose_vecMulVec] at h
   simpa using h
 
-/-- **A real Sylvester equation for `1 - W` with `W` a rotation** (the step behind the real
-Li–Sun bound): if `P X + X Q = R` with `X = 1 - W`, `Wᵀ W = 1`, `det W = 1`, and `P`, `Q` bounded
-below as in `Matrix.le_trace_mul_one_sub` by `a ≤ b` and `a' ≤ b'`, then
-`‖X‖_F ≤ 2 ‖R‖_F / (a + b + a' + b')`. Since `X Xᵀ = Xᵀ X = X + Xᵀ`,
-`tr(Xᵀ R) = 2 tr(P X) + 2 tr(Q X) ≥ (a + b + a' + b') tr X = (a + b + a' + b')/2 · ‖X‖_F²`. -/
+/-- **A real Sylvester equation for $I - W$ with a rotation $W$.** Let
+$P, Q, W, R \in \mathbb{R}^{n \times n}$, let $u, v \in \mathbb{R}^n$ be unit vectors, and let
+$a \le b$ and $a' \le b'$ be real numbers with $a + b + a' + b' > 0$. Suppose that
+$$P \succeq b (I - uu^T) + a\, uu^T, \qquad Q \succeq b' (I - vv^T) + a'\, vv^T$$
+in the Loewner order, that $W^T W = I$ and $\det W = 1$, and that $P(I - W) + (I - W) Q = R$.
+Then
+$$\|I - W\|_F \le \frac{2 \|R\|_F}{a + b + a' + b'}.$$
+This is the step behind the real Li–Sun bound.
+
+The lower bounds are the hypotheses of `Matrix.le_trace_mul_one_sub`, written as `(P - b • 1 +
+(b - a) • vecMulVec u u).PosSemidef`. With $X = I - W$, the identity $X X^T = X^T X = X + X^T$
+gives $\operatorname{tr}(X^T R) = 2 \operatorname{tr}(PX) + 2 \operatorname{tr}(QX) \ge (a + b +
+a' + b') \operatorname{tr} X = \frac{a + b + a' + b'}{2} \|X\|_F^2$. -/
 theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {u v : n → ℝ}
     {a b a' b' : ℝ} (hab : a ≤ b) (hu : u ⬝ᵥ u = 1)
     (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef) (hab' : a' ≤ b')
@@ -519,12 +609,18 @@ theorem frobenius_norm_one_sub_le_of_mul_add_mul_eq {P Q W R : Matrix n n ℝ} {
   · refine le_of_mul_le_mul_right ?_ hX0
     nlinarith
 
-/-- **The real Li–Sun bound, in Loewner form**: if `A = U P` and `Ã = Ũ P'` are real polar
-decompositions with `det A · det Ã > 0` and `P`, `P'` are bounded below as in
-`Matrix.le_trace_mul_one_sub` by `a ≤ b` and `a' ≤ b'` (for instance the two smallest singular
-values of `A` and of `Ã`), then `‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (a + b + a' + b')`. The determinant
-condition makes `W = Uᵀ Ũ` a rotation, and `1 - W = Uᵀ (U - Ũ)` solves the Sylvester equation of
-`Matrix.frobenius_norm_one_sub_le_of_mul_add_mul_eq`. -/
+/-- **The real Li–Sun bound, in Loewner form.** Let $A, \tilde A \in \mathbb{R}^{n \times n}$ have
+polar decompositions $A = UP$ and $\tilde A = \tilde U P'$, with
+$\det A \cdot \det \tilde A > 0$. Let $u, v \in \mathbb{R}^n$ be unit vectors, and let $a \le b$
+and $a' \le b'$ be real numbers with $a + b + a' + b' > 0$, such that
+$$P \succeq b (I - uu^T) + a\, uu^T, \qquad P' \succeq b' (I - vv^T) + a'\, vv^T$$
+in the Loewner order. Then
+$$\|U - \tilde U\|_F \le \frac{4 \|A - \tilde A\|_F}{a + b + a' + b'}.$$
+One can take for $a \le b$ the two smallest singular values of $A$, and likewise for $\tilde A$;
+see `Matrix.IsPolarDecomposition.exists_posSemidef_sub_sortedSingularValues`.
+
+The determinant condition makes $W = U^T \tilde U$ a rotation, and $I - W = U^T (U - \tilde U)$
+solves the Sylvester equation of `Matrix.frobenius_norm_one_sub_le_of_mul_add_mul_eq`. -/
 theorem IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos {A Ã U Ũ P P' : Matrix n n ℝ}
     (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P')
     (hdet : 0 < A.det * Ã.det) {u v : n → ℝ} {a b a' b' : ℝ} (hab : a ≤ b) (hu : u ⬝ᵥ u = 1)
@@ -563,11 +659,19 @@ theorem IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos {A Ã U Ũ P P
     _ ≤ 2 * (2 * ‖A - Ã‖) / (a + b + a' + b') := by gcongr
     _ = 4 * ‖A - Ã‖ / (a + b + a' + b') := by ring
 
-/-- **The symmetric polar factor above its two smallest singular values**: for a real polar
-decomposition `A = U P` of order `n ≥ 1` there is a unit vector `u` (a right singular vector for
-`σ_{n-1}`) with `P ⪰ σ_{n-2} (1 - u uᵀ) + σ_{n-1} u uᵀ`, the sorted singular values `σ_k` being
-`Matrix.sortedSingularValues` (0-based). Read off an SVD `A = W diag(σ) Vᵀ`, where
-`P = V diag(σ) Vᵀ` (`Matrix.IsSVD.isPolarDecomposition_of_square` and uniqueness of `P`). -/
+/-- **The symmetric polar factor above its two smallest singular values.** Let
+$A \in \mathbb{R}^{m \times m}$ with $m \ge 1$ have the polar decomposition $A = UP$, and let
+$\sigma_0 \ge \sigma_1 \ge \dots \ge \sigma_{m-1}$ be the singular values of $A$. Then there is
+a unit vector $u \in \mathbb{R}^m$ with
+$$P \succeq \sigma_{m-2} (I - uu^T) + \sigma_{m-1}\, uu^T$$
+in the Loewner order.
+
+The singular values are `Matrix.sortedSingularValues A`, indexed from $0$. For $m = 1$ the index
+$m - 2$ is the natural-number difference $0$, so $\sigma_{m-2} = \sigma_{m-1}$. The proof reads
+the bound off an SVD $A = W \operatorname{diag}(\sigma) V^T$, for which
+$P = V \operatorname{diag}(\sigma) V^T$ by `Matrix.IsSVD.isPolarDecomposition_of_square` and the
+uniqueness of $P$, and it takes for $u$ a right singular vector of $A$ for $\sigma_{m-1}$. The
+statement does not record this property of $u$. -/
 theorem IsPolarDecomposition.exists_posSemidef_sub_sortedSingularValues {m : ℕ}
     {A U P : Matrix (Fin m) (Fin m) ℝ} (h : IsPolarDecomposition A U P) (hm : m ≠ 0) :
     ∃ u : Fin m → ℝ, u ⬝ᵥ u = 1 ∧
@@ -621,19 +725,28 @@ theorem IsPolarDecomposition.exists_posSemidef_sub_sortedSingularValues {m : ℕ
   have := (PosSemidef.diagonal hd0).mul_mul_conjTranspose_same V
   rwa [conjTranspose_eq_transpose_of_trivial] at this
 
-/-- **The Li–Sun perturbation bound for the orthogonal polar factor** ([golub2013matrix] §9.4.3,
-quoted there from W. Li and W. Sun, SIAM J. Matrix Anal. Appl. 23 (2002) 1183–1193): for real
-`A, Ã : Matrix (Fin m) (Fin m) ℝ` with `det A · det Ã > 0` and polar decompositions `A = U P`,
-`Ã = Ũ P'`,
-`‖U - Ũ‖_F ≤ 4 ‖A - Ã‖_F / (σ_{m-2}(A) + σ_{m-1}(A) + σ_{m-2}(Ã) + σ_{m-1}(Ã))`, the sum of the two
-smallest singular values of each (`Matrix.sortedSingularValues`, 0-based).
+/-- **The Li–Sun perturbation bound for the orthogonal polar factor.** Let
+$A, \tilde A \in \mathbb{R}^{m \times m}$ have polar decompositions $A = UP$ and
+$\tilde A = \tilde U P'$, and suppose that $\det A \cdot \det \tilde A > 0$. Let
+$\sigma_0 \ge \dots \ge \sigma_{m-1}$ be the singular values of $A$, and $\tilde \sigma_0 \ge
+\dots \ge \tilde \sigma_{m-1}$ those of $\tilde A$. Then
+$$\|U - \tilde U\|_F \le \frac{4 \|A - \tilde A\|_F}
+  {\sigma_{m-2} + \sigma_{m-1} + \tilde \sigma_{m-2} + \tilde \sigma_{m-1}},$$
+where the denominator is the sum of the two smallest singular values of each matrix.
+[golub2013matrix], §9.4.3, quotes this bound from W. Li and W. Sun, SIAM J. Matrix Anal. Appl.
+23 (2002) 1183–1193.
 
-The determinant condition cannot be dropped: `A = diag(1, ε)`, `Ã = diag(1, -ε)` have
-`‖U - Ũ‖_F = 2` and `‖A - Ã‖_F = 2ε`. Li and Sun assume `‖A - Ã‖₂ < σ_{m-1}(A) + σ_{m-1}(Ã)`, which
-keeps the segment from `A` to `Ã` nonsingular and so implies it. The proof
-(`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`) is not Li and Sun's: with
-`W = Uᵀ Ũ` a rotation, the pairing inequality `Matrix.le_trace_mul_one_sub` replaces their
-eigenvalue pairing. -/
+The determinant condition cannot be dropped: $A = \operatorname{diag}(1, \varepsilon)$ and
+$\tilde A = \operatorname{diag}(1, -\varepsilon)$ have $\|U - \tilde U\|_F = 2$ and
+$\|A - \tilde A\|_F = 2 \varepsilon$. Li and Sun assume $\|A - \tilde A\|_2 < \sigma_{m-1} +
+\tilde \sigma_{m-1}$, which keeps the segment from $A$ to $\tilde A$ nonsingular and so implies
+the determinant condition.
+
+The singular values are `Matrix.sortedSingularValues`, indexed from $0$; for $m = 1$ the index
+$m - 2$ is $0$. For $m = 0$ both sides are $0$. The proof, through
+`Matrix.IsPolarDecomposition.frobenius_norm_sub_le_of_det_mul_pos`, is not that of Li and Sun:
+with the rotation $W = U^T \tilde U$, the pairing inequality `Matrix.le_trace_mul_one_sub`
+replaces their pairing of eigenvalues. -/
 theorem frobenius_norm_polar_sub_le {m : ℕ} {A Ã U Ũ P P' : Matrix (Fin m) (Fin m) ℝ}
     (h : IsPolarDecomposition A U P) (h' : IsPolarDecomposition Ã Ũ P')
     (hdet : 0 < A.det * Ã.det) :
@@ -672,13 +785,19 @@ section Sign
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The sign of the Jordan–Wielandt matrix** ([golub2013matrix] §9.4.3): for a nonsingular
-`A : Matrix n n ℂ` with polar decomposition `A = U P`, the sign of `[0 A; Aᴴ 0]` (the Hermitian
-dilation of `Aᴴ`, `Matrix.hermitianDilation Aᴴ = fromBlocks 0 A Aᴴ 0`) is `[0 U; Uᴴ 0]`. With
-`M = U P Uᴴ` (positive definite) and `X = [1 1; −Uᴴ Uᴴ]`, whose inverse is `½ [1 −U; 1 U]`,
-`X⁻¹ [0 A; Aᴴ 0] X = diag(−M, M)`, so `Matrix.matrixSign_conj_fromBlocks` gives
-`X diag(−1, 1) X⁻¹ = [0 U; Uᴴ 0]`. (The book omits "nonsingular", needed so that no eigenvalue
-`±σᵢ` of the dilation is `0`.) -/
+/-- **The sign of the Jordan–Wielandt matrix.** Let $A \in \mathbb{C}^{n \times n}$ be nonsingular
+with polar decomposition $A = UP$. Then
+$$\operatorname{sign} \begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}
+  = \begin{bmatrix} 0 & U \\ U^H & 0 \end{bmatrix}.$$
+This is in [golub2013matrix], §9.4.3. [golub2013matrix] does not state that $A$ is nonsingular.
+This hypothesis is needed so that no eigenvalue $\pm \sigma_i$ of the block matrix is $0$.
+
+The block matrix is `Matrix.hermitianDilation Aᴴ`, which is `fromBlocks 0 A Aᴴ 0`, and the sign
+is `Matrix.matrixSign`. Let $M = U P U^H$, which is positive definite, and $X = \begin{bmatrix}
+I & I \\ -U^H & U^H \end{bmatrix}$, whose inverse is $\frac12 \begin{bmatrix} I & -U \\ I & U
+\end{bmatrix}$. Then $X^{-1} \begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix} X =
+\operatorname{diag}(-M, M)$, and `Matrix.matrixSign_conj_fromBlocks` gives the sign $X
+\operatorname{diag}(-I, I) X^{-1} = \begin{bmatrix} 0 & U \\ U^H & 0 \end{bmatrix}$. -/
 theorem matrixSign_hermitianDilation {A U P : Matrix n n ℂ} (hA : IsUnit A)
     (h : IsPolarDecomposition A U P) :
     matrixSign (hermitianDilation Aᴴ) = hermitianDilation Uᴴ := by

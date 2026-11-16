@@ -10,25 +10,39 @@ import Mathlib.Topology.MetricSpace.Contracting
 /-!
 # Linear-plus-quadratic equations in a Banach space
 
-Stewart's lemma on the equation `L x + φ x = g`, where `L` is an invertible bounded operator and `φ`
-is a "quadratic" perturbation: `φ 0 = 0` and `φ` is Lipschitz on each ball with a constant
-proportional to the radius, `‖φ x - φ y‖ ≤ η (‖x‖ + ‖y‖) ‖x - y‖`. If `‖L⁻¹‖ ≤ 1/δ` and
-`4 ‖g‖ η < δ²`, the equation has a solution of norm at most `2 ‖g‖ / δ`
-(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`). In finite dimension it suffices that
-`L` be bounded below, `δ ‖x‖ ≤ ‖L x‖` (`LinearMap.exists_apply_add_eq_of_quadratic_of_le_norm`).
+This file proves Stewart's lemma on the equation $Lx + \varphi(x) = g$ in a Banach space $F$. Here
+$L$ is an invertible bounded operator and $\varphi$ is a quadratic perturbation: $\varphi(0) = 0$
+and $\|\varphi(x) - \varphi(y)\| \le \eta (\|x\| + \|y\|) \|x - y\|$, so that $\varphi$ is Lipschitz
+on each ball with a constant proportional to the radius. If $\|L^{-1}\| \le 1/\delta$ and
+$4 \|g\| \eta < \delta^2$, the equation has a solution of norm at most $2 \|g\| / \delta$. In finite
+dimension it suffices that $L$ is bounded below, $\delta \|x\| \le \|Lx\|$.
 
-This is the fixed-point engine of the perturbation theory of invariant and singular subspaces: in
-[golub2013matrix] Theorem 7.2.4 (and its singular-subspace analogue Theorem 8.6.5) the unknown is
-the matrix `P` describing the perturbed subspace as a graph, `L` is a Sylvester operator whose
-inverse is bounded by `1 / sep`, and `φ P = P E₁₂ P` is quadratic. The statement and the proof
-follow G. W. Stewart, *Error and perturbation bounds for subspaces associated with certain
-eigenvalue problems*, SIAM Rev. 15 (1973), Theorem 3.1: the map `x ↦ L⁻¹ (g - φ x)` sends the
-closed ball of radius `2 ‖g‖ / δ` into itself and contracts there with constant `4 ‖g‖ η / δ² < 1`,
-so the Banach fixed point theorem (`ContractingWith.exists_fixedPoint'`) applies on that complete
-ball.
+The lemma is the fixed-point step of the perturbation theory of invariant and singular subspaces. In
+Theorem 7.2.4 of [golub2013matrix], and in its analogue for singular subspaces, Theorem 8.6.5, the
+unknown is the matrix $P$ that describes the perturbed subspace as a graph, $L$ is a Sylvester
+operator whose inverse is bounded by $1 / \operatorname{sep}$, and $\varphi(P) = P E_{12} P$ is
+quadratic. The statement and the proof follow G. W. Stewart, *Error and perturbation bounds for
+subspaces associated with certain eigenvalue problems*, SIAM Rev. 15 (1973), Theorem 3.1.
 
-Upstreaming candidate; natural home `Mathlib.Analysis.Normed.Operator` or
-`Mathlib.Topology.MetricSpace.Contracting`.
+## Main results
+
+* `ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`: if $\|L^{-1}\| \le 1/\delta$,
+  $\|g\| \le \gamma$ and $4 \gamma \eta < \delta^2$, then $Lx + \varphi(x) = g$ has a solution with
+  $\|x\| \le 2\gamma/\delta$.
+* `LinearMap.exists_apply_add_eq_of_quadratic_of_le_norm`: the same conclusion on a
+  finite-dimensional space when $\delta \|x\| \le \|Lx\|$ for all $x$.
+
+## Proof outline
+
+The map $x \mapsto L^{-1}(g - \varphi(x))$ sends the closed ball of radius $2\gamma/\delta$ into
+itself and is a contraction there with constant $4 \gamma \eta / \delta^2 < 1$. The ball is
+complete, so the Banach fixed-point theorem (`ContractingWith.exists_fixedPoint'`) gives a fixed
+point, which solves the equation.
+
+## Implementation notes
+
+* The results use nothing specific to numerical analysis. Their natural place in Mathlib is
+  `Mathlib.Analysis.Normed.Operator` or `Mathlib.Topology.MetricSpace.Contracting`.
 -/
 
 open Metric Set
@@ -38,11 +52,16 @@ namespace ContinuousLinearEquiv
 variable {𝕜 F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
   [CompleteSpace F]
 
-/-- **Stewart's quadratic-equation lemma** ([golub2013matrix] Theorem 7.2.4, the lemma behind it;
-Stewart 1973, Theorem 3.1). In a Banach space, let `L` be an invertible bounded operator with
-`‖L⁻¹‖ ≤ 1 / δ`, let `‖g‖ ≤ γ`, and let `φ` vanish at `0` and satisfy
-`‖φ x - φ y‖ ≤ η (‖x‖ + ‖y‖) ‖x - y‖`. If `4 γ η < δ²`, then `L x + φ x = g` has a solution with
-`‖x‖ ≤ 2 γ / δ`. -/
+/-- **Stewart's lemma on quadratic equations.** Let $F$ be a Banach space over a nontrivially normed
+field, let $L : F \to F$ be an invertible bounded linear operator, and let $\delta > 0$ with
+$\|L^{-1}\| \le 1/\delta$. Let $g \in F$ with $\|g\| \le \gamma$. Let $\varphi : F \to F$
+satisfy $\varphi(0) = 0$ and $$\|\varphi(x) - \varphi(y)\| \le \eta (\|x\| + \|y\|) \|x - y\|
+\qquad \text{for all } x, y \in F.$$ If $4 \gamma \eta < \delta^2$, then there is $x \in F$ with
+$$Lx + \varphi(x) = g \qquad \text{and} \qquad \|x\| \le 2\gamma / \delta.$$
+
+This is the lemma behind Theorem 7.2.4 of [golub2013matrix], and it is Theorem 3.1 of G. W.
+Stewart (SIAM Rev. 15, 1973). The proof applies the Banach fixed-point theorem to
+$x \mapsto L^{-1}(g - \varphi(x))$ on the closed ball of radius $2\gamma/\delta$. -/
 theorem exists_apply_add_eq_of_quadratic (L : F ≃L[𝕜] F) {δ γ η : ℝ} (hδ : 0 < δ)
     (hL : ‖(L.symm : F →L[𝕜] F)‖ ≤ 1 / δ) {g : F} (hg : ‖g‖ ≤ γ) {φ : F → F} (hφ0 : φ 0 = 0)
     (hφ : ∀ x y, ‖φ x - φ y‖ ≤ η * (‖x‖ + ‖y‖) * ‖x - y‖) (h : 4 * γ * η < δ ^ 2) :
@@ -114,11 +133,17 @@ namespace LinearMap
 variable {𝕜 F : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜] [NormedAddCommGroup F]
   [NormedSpace 𝕜 F] [FiniteDimensional 𝕜 F]
 
-/-- **Stewart's quadratic-equation lemma for an operator bounded below** on a finite-dimensional
-normed space: if `δ ‖x‖ ≤ ‖L x‖` then `L` is invertible with `‖L⁻¹‖ ≤ 1/δ`, and
-`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` applies. (Stated for a general `F` so
-that the operator norm is formed on `F`, not on a type with a scoped norm such as the Frobenius
-norm on matrices.) -/
+/-- **Stewart's lemma for an operator bounded below.** Let $F$ be a finite-dimensional normed space
+over a complete nontrivially normed field, and let $L : F \to F$ be linear with
+$\delta \|x\| \le \|Lx\|$ for all $x$, where $\delta > 0$. Let $\|g\| \le \gamma$, and let
+$\varphi : F \to F$ satisfy $\varphi(0) = 0$ and $\|\varphi(x) - \varphi(y)\| \le \eta (\|x\| +
+\|y\|) \|x - y\|$ for all $x, y$. If $4 \gamma \eta < \delta^2$, then there is $x$ with
+$Lx + \varphi(x) = g$ and $\|x\| \le 2\gamma/\delta$.
+
+The lower bound makes $L$ invertible with $\|L^{-1}\| \le 1/\delta$, and then
+`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic` applies. The statement is for a general
+normed space $F$ so that the operator norm is formed on $F$, and not on a type with a scoped
+norm such as the Frobenius norm on matrices. -/
 theorem exists_apply_add_eq_of_quadratic_of_le_norm (L : F →ₗ[𝕜] F) {δ γ η : ℝ} (hδ : 0 < δ)
     (hL : ∀ x, δ * ‖x‖ ≤ ‖L x‖) {g : F} (hg : ‖g‖ ≤ γ) {φ : F → F} (hφ0 : φ 0 = 0)
     (hφ : ∀ x y, ‖φ x - φ y‖ ≤ η * (‖x‖ + ‖y‖) * ‖x - y‖) (h : 4 * γ * η < δ ^ 2) :

@@ -13,19 +13,26 @@ import Mathlib.LinearAlgebra.Dimension.Finrank
 /-!
 # The dimension of the image of a subspace under an injective map
 
-`LinearMap.finrank_map_of_injective`: an injective linear map preserves the dimension of every
-subspace it is applied to, the `finrank` form of `Submodule.equivMapOfInjective` and the
-injective-map counterpart of Mathlib's `LinearEquiv.finrank_map_eq`. It is the step by which a
-subspace of a smaller space is carried into a larger one in every Courant–Fischer and Sylvester
-inertia argument.
+Let $R$ be a ring, let $f \colon M \to N$ be an injective linear map of $R$-modules, and let $S$ be
+a submodule of $M$. This module proves that the image $f(S)$ has the same dimension as $S$. This is
+the injective-map counterpart of Mathlib's `LinearEquiv.finrank_map_eq`, and the dimension form of
+`Submodule.equivMapOfInjective`. It is the step by which a subspace of a smaller space is carried
+into a larger one in the arguments of the Courant–Fischer theorem and of Sylvester's law of inertia.
+
+## Main results
+
+* `LinearMap.finrank_map_of_injective`: for an injective linear map $f$, $\dim f(S) = \dim S$.
 -/
 
 open Module
 
 namespace LinearMap
 
-/-- The dimension of the image of a subspace under an injective linear map is the dimension of
-the subspace: the `finrank` form of `Submodule.equivMapOfInjective`. -/
+/-- Let $R$ be a ring, let $f \colon M \to N$ be an injective linear map of $R$-modules, and let $S$
+be a submodule of $M$. Then $\dim f(S) = \dim S$.
+
+The dimension is `Module.finrank`. The proof applies `Module.finrank` to the linear equivalence
+`Submodule.equivMapOfInjective` between $S$ and $f(S)$. -/
 theorem finrank_map_of_injective {R M N : Type*} [Ring R] [AddCommGroup M] [Module R M]
     [AddCommGroup N] [Module R N] (f : M →ₗ[R] N) (hf : Function.Injective f)
     (S : Submodule R M) : finrank R (S.map f) = finrank R S :=

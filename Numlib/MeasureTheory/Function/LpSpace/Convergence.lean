@@ -16,38 +16,50 @@ import Mathlib.MeasureTheory.Function.LpSpace.InfiniteSum
 import Mathlib.MeasureTheory.Measure.OpenPos
 
 /-!
-# The dominated a.e.-convergent subsequence of an `L^p`-convergent sequence
+# A dominated subsequence of a sequence that converges in $L^p$
 
-An `L^p`-convergent sequence has a subsequence that converges almost everywhere *and is dominated
-by a single `L^p` function*. Mathlib has the first clause — convergence in `L^p` gives convergence
-in measure (`MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm`) and convergence in measure gives
-an a.e.-convergent subsequence (`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`) — and not
-the domination clause, `‖f (nₖ) x‖ ≤ h x` for all `k` a.e. with `h ∈ L^p`. The domination is what
-makes the dominated convergence theorem available after passing to a subsequence, and it is used in
-that role throughout the Sobolev theory: chain rules, truncations, traces.
+Let $1 \le p \le \infty$. A sequence that converges in $L^p$ has a subsequence that converges almost
+everywhere and is dominated by a single function in $L^p$: there are $n_0 < n_1 < \cdots$ and
+$h \in L^p$ with $f_{n_k} \to g$ almost everywhere and $\|f_{n_k}(x)\| \le h(x)$ for almost every
+$x$ and every $k$. This is Theorem 4.9 of [brezis2011functional]. Mathlib has the first part:
+convergence in $L^p$ gives convergence in measure
+(`MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm`), and convergence in measure gives a
+subsequence that converges almost everywhere
+(`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`). The domination makes the dominated
+convergence theorem available after the passage to a subsequence. The Sobolev theory uses it in this
+role for chain rules, truncations and traces.
 
-The proof is the telescoping-series argument of Fischer–Riesz read off Mathlib's
-`MeasureTheory.summable_norm_of_tsum_eLpNorm_ne_top` and `MeasureTheory.Lp.hasSum_coeFn_tsum`:
-extract a subsequence with `‖f (nₖ) - g‖_p ≤ 2⁻ᵏ`; the series `∑ₖ ‖f (nₖ) - g‖` converges in
-`L^p` and hence a.e., so its a.e. sum dominates every term and the terms tend to zero. No case
-split on `p = ∞` is needed. Two forms: `MemLp`/`eLpNorm` on functions
-(`MeasureTheory.exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm`), and `Lp`
-(`MeasureTheory.Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto`).
+The file also proves that $L^p(U, \mu)$ is infinite-dimensional for a nonempty open set $U$ of a
+nontrivial real normed space and a locally finite measure $\mu$ that is positive on nonempty open
+sets. This is the hypothesis of infinite dimension in the spectral theorem for the Dirichlet
+Laplacian. Finally, an element of $L^\infty$ is bounded almost everywhere by its norm.
 
-Also here, as the first module of the `LpSpace/` directory in dependency order:
+## Main results
 
-* the exponent glue instance `MeasureTheory.fact_one_le_of_one_lt` (`Fact (1 < p) → Fact (1 ≤ p)`),
-  which lets an instance stated under `[Fact (1 < p)] [Fact (p ≠ ∞)]` (uniform convexity,
-  reflexivity of `Lp`) elaborate the normed structure of `Lp E p μ`;
-* `MeasureTheory.Lp.not_finiteDimensional_of_isOpen`: `L^p` of a nonempty open subset of a
-  nontrivial real normed space is infinite-dimensional, for any measure positive on open sets and
-  locally finite — the indicators of a sequence of disjoint annuli are linearly independent. It is
-  the "infinite dimension" hypothesis of the spectral theorems for the Dirichlet Laplacian.
+* `MeasureTheory.exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm`: the dominated subsequence, for
+  functions in $L^p$.
+* `MeasureTheory.Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto`: the dominated subsequence, for
+  elements of the space `MeasureTheory.Lp`.
+* `MeasureTheory.Lp.not_finiteDimensional_of_isOpen`: $L^p(U, \mu)$ is infinite-dimensional.
+* `MeasureTheory.Lp.ae_norm_le_norm_top`: $\|u(x)\| \le \|u\|_\infty$ for almost every $x$.
 
-## References
+## Proof outline
 
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], Theorem 4.9 and the proof of Theorem 8.22.
+The dominated subsequence comes from the telescoping series of the Riesz–Fischer theorem, with
+Mathlib's `MeasureTheory.summable_norm_of_tsum_eLpNorm_ne_top` and
+`MeasureTheory.Lp.hasSum_coeFn_tsum`. Choose a subsequence with $\|f_{n_k} - g\|_p \le 2^{-k}$. The
+series $\sum_k \|f_{n_k} - g\|$ converges in $L^p$ and hence almost everywhere. So its sum dominates
+every term, and the terms tend to zero almost everywhere. The case $p = \infty$ needs no separate
+argument.
+
+For the infinite dimension, the indicator functions of a sequence of disjoint annuli around a point
+of $U$ are linearly independent in $L^p(U, \mu)$.
+
+## Implementation notes
+
+* The instance `MeasureTheory.fact_one_le_of_one_lt` derives `Fact (1 ≤ p)` from `Fact (1 < p)`. An
+  instance stated under `[Fact (1 < p)] [Fact (p ≠ ∞)]`, such as uniform convexity or reflexivity of
+  `MeasureTheory.Lp`, then finds the normed structure of `Lp E p μ`.
 -/
 
 noncomputable section
@@ -59,16 +71,21 @@ namespace MeasureTheory
 
 variable {α E : Type*} [MeasurableSpace α] {μ : Measure α} {p : ℝ≥0∞} [NormedAddCommGroup E]
 
-/-- Exponent glue: `Fact (1 < p)` gives `Fact (1 ≤ p)`, so that a statement about `Lp E p μ` under
-the hypotheses `[Fact (1 < p)] [Fact (p ≠ ∞)]` (the spelling of `1 < p < ∞` on instances) finds
-the normed structure of `Lp E p μ`, which asks for `Fact (1 ≤ p)`. -/
+/-- The hypothesis $1 < p$ implies $1 \le p$. With this instance, a statement about `Lp E p μ` under
+`[Fact (1 < p)] [Fact (p ≠ ∞)]`, the form of $1 < p < \infty$ for instances, finds the normed
+structure of `Lp E p μ`, which needs `Fact (1 ≤ p)`. -/
 instance (priority := 100) fact_one_le_of_one_lt [h : Fact (1 < p)] : Fact (1 ≤ p) := ⟨h.out.le⟩
 
-/-- **The dominated a.e.-convergent subsequence**, function form ([brezis2011functional]
-Theorem 4.9). If `f n → g` in `L^p` (`1 ≤ p ≤ ∞`), there is a strictly increasing `ns` and
-`h ∈ L^p` such that `f (ns k) x → g x` for a.e. `x` and `‖f (ns k) x‖ ≤ h x` a.e., for every `k`.
-The dominating function is `h = ‖g‖ + ∑ₖ ‖f (ns k) - g‖`, the series converging in `L^p` and
-hence almost everywhere. -/
+/-- **The dominated subsequence**, for functions in $L^p$. Let $1 \le p \le \infty$, let $E$ be a
+normed group, and let $f_n, g \colon \alpha \to E$ be functions in $L^p(\mu)$ with
+$\|f_n - g\|_p \to 0$. Then there are a strictly increasing sequence $n_0 < n_1 < \cdots$ of
+indices and a real function $h \in L^p(\mu)$ such that $f_{n_k}(x) \to g(x)$ for $\mu$-almost
+every $x$, and, for every $k$,
+$$\|f_{n_k}(x)\| \le h(x) \quad \text{for } \mu\text{-almost every } x.$$
+This is Theorem 4.9 of [brezis2011functional].
+
+The dominating function is $h = \|g\| + \sum_k \|f_{n_k} - g\|$, where the series converges in
+$L^p$ and hence almost everywhere. -/
 theorem exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm [Fact (1 ≤ p)] {f : ℕ → α → E}
     {g : α → E} (hf : ∀ n, MemLp (f n) p μ) (hg : MemLp g p μ)
     (hfg : Tendsto (fun n => eLpNorm (f n - g) p μ) atTop (𝓝 0)) :
@@ -106,9 +123,12 @@ theorem exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm [Fact (1 ≤ p)] {f : 
         rw [← hxk k]
         exact le_hasSum hx k fun j _ => by rw [hxk]; positivity
 
-/-- **The dominated a.e.-convergent subsequence**, `Lp` form ([brezis2011functional] Theorem 4.9).
-If `f n → g` in `Lp E p μ` (`1 ≤ p ≤ ∞`), there is a strictly increasing `ns` and `h : Lp ℝ p μ`
-such that `f (ns k) x → g x` for a.e. `x` and `‖f (ns k) x‖ ≤ h x` a.e., for every `k`. -/
+/-- **The dominated subsequence**, for elements of the space `MeasureTheory.Lp`. Let
+$1 \le p \le \infty$, let $E$ be a normed group, and let $f_n \to g$ in $L^p(\mu; E)$. Then
+there are a strictly increasing sequence $n_0 < n_1 < \cdots$ of indices and
+$h \in L^p(\mu; \mathbb{R})$ such that $f_{n_k}(x) \to g(x)$ for $\mu$-almost every $x$, and,
+for every $k$, $\|f_{n_k}(x)\| \le h(x)$ for $\mu$-almost every $x$. This is Theorem 4.9 of
+[brezis2011functional]. -/
 theorem Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto [Fact (1 ≤ p)] {f : ℕ → Lp E p μ}
     {g : Lp E p μ} (hfg : Tendsto f atTop (𝓝 g)) :
     ∃ ns : ℕ → ℕ, StrictMono ns ∧ ∃ h : Lp ℝ p μ,
@@ -125,13 +145,16 @@ section Infinite
 variable {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [Nontrivial G] [MeasurableSpace G]
   [OpensMeasurableSpace G]
 
-/-- **`L^p` of a nonempty open set is infinite-dimensional.** For a measure `μ` on a nontrivial
-real normed space `G` that is positive on nonempty open sets and locally finite (any Haar measure
-on a finite-dimensional space, in particular Lebesgue measure on `ℝⁿ`), a nonempty open `U ⊆ G`
-and any exponent `p`, the space `Lp ℝ p (μ.restrict U)` is not finite-dimensional: the indicators
-of a sequence of disjoint annuli around a point of `U` are linearly independent. This is the
-"infinite dimension" hypothesis of the spectral theorem for the Dirichlet problem
-([brezis2011functional] Theorem 8.22 and Theorem 9.31). -/
+/-- **$L^p$ of a nonempty open set is infinite-dimensional.** Let $G$ be a nontrivial real normed
+space in which open sets are measurable, and let $\mu$ be a locally finite measure on $G$ that
+is positive on nonempty open sets, for example a Haar measure on a finite-dimensional space, in
+particular the Lebesgue measure on $\mathbb{R}^n$. Let $U \subseteq G$ be a nonempty open set
+and let $p \in [0, \infty]$. Then the real space $L^p(U, \mu)$ is not finite-dimensional.
+
+The space $L^p(U, \mu)$ is `Lp ℝ p (μ.restrict U)`. The indicator functions of a sequence of
+disjoint annuli around a point of $U$ are linearly independent. This is the hypothesis of
+infinite dimension in the spectral theorem for the Dirichlet problem, Theorems 8.22 and 9.31 of
+[brezis2011functional]. -/
 theorem Lp.not_finiteDimensional_of_isOpen (μ : Measure G) [μ.IsOpenPosMeasure]
     [IsLocallyFiniteMeasure μ] (p : ℝ≥0∞) {U : Set G} (hU : IsOpen U) (hne : U.Nonempty) :
     ¬ FiniteDimensional ℝ (Lp ℝ p (μ.restrict U)) := by
@@ -216,11 +239,12 @@ theorem Lp.not_finiteDimensional_of_isOpen (μ : Measure G) [μ.IsOpenPosMeasure
 
 end Infinite
 
-/-! ### `L^∞` elements are bounded by their norm -/
+/-! ### Elements of $L^\infty$ are bounded by their norm -/
 
 namespace Lp
 
-/-- An element of `L^∞` is a.e. bounded by its norm. -/
+/-- Let $E$ be a normed group. Every $u \in L^\infty(\mu; E)$ satisfies $\|u(x)\| \le \|u\|_\infty$
+for $\mu$-almost every $x$. -/
 theorem ae_norm_le_norm_top (u : Lp E ∞ μ) :
     ∀ᵐ x ∂μ, ‖u x‖ ≤ ‖u‖ := by
   have hne : eLpNormEssSup (⇑u) μ ≠ ∞ := by

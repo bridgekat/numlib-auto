@@ -15,92 +15,138 @@ import Numlib.RingTheory.Polynomial.SchurCohn
 /-!
 # Linear multistep methods
 
-Linear multistep methods for the Cauchy problem `y' = f(t, y)` on a real normed space `E`
-([quarteroni2000numerical] §11.5–11.7; [hairer1993solving] III.2–III.4 states the same theory).
+A linear multistep method with $p + 1$ steps approximates the solution of the Cauchy problem
+$y' = f(t, y)$, with values in a real normed space $E$, at the nodes $t_n = t_0 + nh$ by the
+recursion
+$$u_{n+1} = \sum_{j=0}^p a_j u_{n-j} + h \sum_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1},
+  \qquad f_k = f(t_k, u_k),$$
+with real coefficients $a_j$, $b_j$ and $b_{-1}$. The method is explicit if $b_{-1} = 0$ and
+implicit otherwise. This module develops the theory of linear multistep methods of
+[quarteroni2000numerical], §11.5–11.7, which [hairer1993solving], Sections III.2–III.4, also
+presents. On a horizon $[t_0, t_0 + T]$ the method takes the steps $p \le n < N_h$, where
+$N_h = \lfloor T / h \rfloor$.
 
-**The method** is the structure `LinearMultistep` of coefficients `p`, `a b : Fin (p + 1) → ℝ`,
-`bm1 : ℝ` of the scheme
-`u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h ∑_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1}`,
-a `p + 1`-step method, implicit iff `b_{-1} ≠ 0` (`IsImplicit`). The book's normalization
-`a_p ≠ 0 ∨ b_p ≠ 0` is not part of the structure (predictor–corrector pairs pad a corrector with
-zeros); it is the predicate `IsGenuine`. Orbits (`IsOrbitWith f h t₀ δ z`, `IsOrbit`) are the
-recursion at every `n ≥ p`, written `z (n + p + 1) = …` so that no natural subtraction underflows,
-with the perturbation `h δ_{n+1}` of [quarteroni2000numerical] (11.59); the `p + 1` starting
-values are free data.
+The local truncation error $\tau_{n+1}(h)$ is $h^{-1} \mathcal{L}[y; h](t_n)$, where
+$$\mathcal{L}[w; h](t) = w(t + h) - \sum_{j=0}^p a_j w(t - jh) - h \sum_{j=-1}^p b_j w'(t - jh),$$
+and $\tau(h)$ is its maximum over the steps. The method has order $q$ if and only if the order
+conditions $\sum_j (-j)^i a_j + i \sum_{j=-1}^p (-j)^{i-1} b_j = 1$ hold for $i \le q$ (Theorem 11.3
+of [quarteroni2000numerical]). With the characteristic polynomials
+$\rho(r) = r^{p+1} - \sum_j a_j r^{p-j}$ and $\sigma(r) = b_{-1} r^{p+1} + \sum_j b_j r^{p-j}$, the
+method is zero-stable for every scalar field that is Lipschitz in the state if and only if $\rho$
+satisfies the root condition (Theorem 11.4), and a consistent method converges if and only if it is
+zero-stable (Theorem 11.5 and Corollary 11.1). The module also treats absolute stability through the
+polynomial $\Pi_z = \rho - z \sigma$, the Adams, BDF, midpoint and Simpson methods, and
+predictor–corrector pairs with their order (Property 11.3).
 
-**Truncation error.** `opL h w t` is the linear operator
-`L[w; h](t) = w(t + h) - ∑ a_j w(t - jh) - h ∑_{j=-1}^p b_j w'(t - jh)` of
-[quarteroni2000numerical] (11.48), with the honest derivative `deriv w`; `lte h y t = L[y; h](t)/h`
-is the local truncation error `τ_{n+1}(h)` at `t = t_n`, `globalLte` the maximum `τ(h)` over the
-steps the method takes (`p ≤ n < N_h`), `IsConsistentFor`/`HasOrderFor` consistency and order
-along one curve, and `IsConsistent`/`HasOrder q` the properties of the method, quantified over all
-`C¹` (resp. `C^{q+1}`) scalar curves — which is quantifying over all scalar Cauchy problems with
-such a solution, every curve solving `y' = f(t, ·)` for the state-independent field `f t v = y' t`.
+## Main definitions
 
-**Theorem 11.3** is the algebraic characterization `orderCondition i`, `i ≤ q`:
-`∑ a_j = 1` and `∑ (-j)^i a_j + i ∑_{j=-1}^p (-j)^{i-1} b_j = 1`. The proof is the Taylor
-expansion of `L[w; h](t)` about `t` (`opL_eq_sum_add_remainder`): with the tower of derivatives
-`y 0 = w, y 1, …, y (q+1)` and `‖y (q+1)‖ ≤ K` on `[t - ph, t + h]`,
-`L[w; h](t) = ∑_{m ≤ q} (h^m/m!) C_m y_m(t) + O(K h^{q+1})`, where
-`C_m = 1 - ∑ (-j)^m a_j - m ∑_{j=-1}^p (-j)^{m-1} b_j` (`taylorCoeff`) is `1` minus the left side
-of the `m`-th order condition; the error constant of a method of order `q` is
-`errorConstant q = C_{q+1}/(q+1)!` (the values of the book's Table 11.1). The Taylor bound itself
-is `norm_sub_sum_smul_le` of `Numlib/Analysis/Calculus/Taylor`, stated for explicit derivative
-functions with `HasDerivWithinAt` on a closed interval. The necessity
-halves test the monomials `t ↦ t^i` (`opL_pow`, `lte_pow_node`) and read the coefficients off the
-`O(h^q)` truncation error with `eq_zero_of_isBigO_pow_succ` (`Numlib/Analysis/Asymptotics/Pow`).
+* `ODE.LinearMultistep`: the coefficients $p$, $a_0, \dots, a_p$, $b_0, \dots, b_p$ and $b_{-1}$ of
+  a method.
+* `ODE.LinearMultistep.IsOrbit`, `ODE.LinearMultistep.IsOrbitWith`: a sequence that satisfies the
+  recursion, without or with a perturbation $h \delta_{n+1}$.
+* `ODE.LinearMultistep.opL`, `ODE.LinearMultistep.lte`, `ODE.LinearMultistep.globalLte`: the
+  operator $\mathcal{L}$, the local truncation error $\tau_{n+1}(h)$ and the global truncation error
+  $\tau(h)$.
+* `ODE.LinearMultistep.IsConsistent`, `ODE.LinearMultistep.HasOrder`: consistency and order $q$ of
+  the method.
+* `ODE.LinearMultistep.orderCondition`, `ODE.LinearMultistep.taylorCoeff`,
+  `ODE.LinearMultistep.errorConstant`: the order conditions, the Taylor coefficients $c_m$ of
+  $\mathcal{L}$ and the error constant $c_{q+1} / (q + 1)!$.
+* `ODE.LinearMultistep.rho`, `ODE.LinearMultistep.sigma`, `ODE.LinearMultistep.charPoly`: the
+  polynomials $\rho$, $\sigma$ and $\Pi_z = \rho - z \sigma$.
+* `ODE.LinearMultistep.SatisfiesRootCondition`: every root of $\rho$ lies in the closed unit disc,
+  and the roots on the unit circle are simple.
+* `ODE.LinearMultistep.IsZeroStable`, `ODE.LinearMultistep.IsConvergentFor`: zero-stability and
+  convergence for one field on one horizon.
+* `ODE.LinearMultistep.absStabilityRegion`, `ODE.LinearMultistep.absStabilityRegionStar`: the set
+  $\mathcal{A}$ of $z = h\lambda$ at which all solutions on $y' = \lambda y$ tend to zero, and the
+  set $\mathcal{A}^*$ at which they are bounded.
+* `ODE.LinearMultistep.IsAStable`, `ODE.LinearMultistep.IsThetaStable`: A-stability and ϑ-stability.
+* `ODE.LinearMultistep.adamsBashforth`, `ODE.LinearMultistep.adamsMoulton`,
+  `ODE.LinearMultistep.bdf`, `ODE.LinearMultistep.midpoint`, `ODE.LinearMultistep.simpson`: the
+  classical methods.
+* `ODE.PredictorCorrector`, `ODE.PredictorCorrector.IsOrbitPEC`,
+  `ODE.PredictorCorrector.IsOrbitPECE`: a predictor–corrector pair and its $P(EC)^m$ and $P(EC)^m E$
+  schemes.
 
-**Characteristic polynomials and root conditions.** `rho = X^{p+1} - ∑ a_j X^{p-j}`,
-`sigma = b_{-1} X^{p+1} + ∑ b_j X^{p-j}` in `ℝ[X]`, `charPoly z = ρ - zσ` in `ℂ[X]` (11.55). The
-root conditions are those of `Polynomial.SatisfiesRootCondition` and
-`Polynomial.SatisfiesStrongRootCondition` (`Numlib/Analysis/LinearRecurrence`) applied to `ρ`
-read in `ℂ[X]`.
+## Main results
 
-**Zero-stability** (`IsZeroStable`, Definition 11.13) and **Theorem 11.4**: the root condition is
-equivalent to zero-stability for every field Lipschitz in the state. Sufficiency is the estimate
-`norm_sub_le_of_satisfiesRootCondition` (the book's (11.65)): the difference of a perturbed and an
-unperturbed recursion solves the real linear recurrence `toLinearRecurrenceZero` (coefficients
-`a_{p-i}`, characteristic polynomial `ρ`) with a source bounded through the Lipschitz constant;
-Lemma 11.3 of the book for `E`-valued sequences on a finite horizon
-(`LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le`, obtained from the complex scalar
-lemma by Hahn–Banach) and the discrete Gronwall lemma `Gronwall.discrete_sum_const_of_le` finish.
-Necessity uses the unbounded real solution of a recurrence violating the root condition
-(`LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`) on the
-problem `y' = 0`. Consistency is not used in either direction. **Theorem 11.5** (convergence,
-`IsConvergentFor` with the joint limit in the starting error and the step, and
-`IsConvergentWithOrderFor`) and **Corollary 11.1** (the equivalence theorem) follow from the same
-estimate with `δ_m = τ_m(h)`, and from the same counterexample scaled by `h`, which needs the
-witness to grow at least linearly (`LinearRecurrence.exists_isSolution_real_frequently_le`).
+* `ODE.LinearMultistep.isConsistent_iff`, `ODE.LinearMultistep.hasOrder_iff`: the method is
+  consistent if and only if the order conditions $0$ and $1$ hold, and it has order $q$ if and only
+  if the order conditions $0, \dots, q$ hold.
+* `ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition`: under the root condition, two
+  solutions of the scheme, one of them perturbed, differ by at most
+  $K(\varepsilon_0 + T \varepsilon_1)$.
+* `ODE.LinearMultistep.isZeroStable_iff_satisfiesRootCondition`: the method is zero-stable for every
+  scalar field that is Lipschitz in the state if and only if it satisfies the root condition.
+* `ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition`,
+  `ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor`: under the root condition a
+  consistent method converges, and convergence on $y' = 0$ forces the root condition.
+* `ODE.LinearMultistep.isConvergentFor_iff_isZeroStable`: a consistent method is convergent for all
+  Lipschitz scalar problems with a $C^1$ solution if and only if it is zero-stable for all Lipschitz
+  scalar problems.
+* `ODE.LinearMultistep.mem_absStabilityRegion_iff`: $z \in \mathcal{A}$ if and only if
+  $1 - z b_{-1} \neq 0$ and every root of $\Pi_z$ has modulus less than $1$.
+* `ODE.LinearMultistep.adamsBashforth_hasOrder`, `ODE.LinearMultistep.adamsMoulton_hasOrder`,
+  `ODE.LinearMultistep.bdf_hasOrder`: the orders of the Adams and BDF methods.
+* `ODE.LinearMultistep.bdf_satisfiesRootCondition_all`: the six BDF methods satisfy the root
+  condition.
+* `ODE.LinearMultistep.absStabilityRegion_midpoint`: the midpoint method has
+  $\mathcal{A} = \emptyset$ and $\mathcal{A}^* = \{ i\alpha : |\alpha| < 1 \}$.
+* `ODE.LinearMultistep.not_isAStable_of_bm1_eq_zero`: an explicit method with $\sum_j a_j = 1$ is
+  not A-stable.
+* `ODE.PredictorCorrector.heun_eq_pece`: Heun's method is the $P(EC)E$ scheme of forward Euler and
+  Crank–Nicolson.
+* `ODE.PredictorCorrector.hasOrderFor_of`: a pair with a predictor of order $\tilde q$ and a
+  corrector of order $q$ has order $\min(q, \tilde q + m)$ in the $P(EC)^m E$ mode.
 
-**Instances.** One-step methods `ofOneStep a₀ b₀ b₋₁` (forward Euler, backward Euler and
-Crank–Nicolson through the θ-method of `Numlib/ODE/OneStep`), the Adams–Bashforth and
-Adams–Moulton families defined by their interpolatory weights `∫_0^1 ℓ_j` (`adamsWeight`), whose
-orders come from the exactness of the interpolatory quadrature on polynomials (the moment
-identities `sum_pow_mul_adamsWeight`) and whose printed rows (11.50)–(11.51) are identified by
-the uniqueness of the weights with given moments (a Vandermonde system); the BDF methods of
-Table 11.2 (with `b_{-1} = 60/147` in the last row); the midpoint and Simpson methods with
-`ρ = r² - 1`.
+## Proof outline
 
-**Absolute stability** (§11.6.4). On the test equation `y' = λy` the method is the complex linear
-recurrence `toLinearRecurrence z`, `z = hλ`, well defined when `1 - z b_{-1} ≠ 0`;
-`absStabilityRegion` is the set of such `z` at which every solution decays, which by
-`LinearRecurrence.forall_tendsto_zero_iff` is the *absolute root condition* at `z`
-(`mem_absStabilityRegion_iff`); `SatisfiesAbsRootCondition λ` is Definition 11.12, `IsAStable`
-and `IsThetaStable` the containments of the left half-plane and of the sector,
-`absStabilityRegionStar` the region `𝒜*` of bounded solutions (Remark 11.3), with
-`0 ∈ 𝒜* ↔` root condition, and the
-midpoint rule's `𝒜 = ∅`, `𝒜* = {iα : |α| < 1}` (open: at `α = ±1` the root `±i` is double). The
-one-step instances recover the regions of `Numlib/ODE/OneStep`. The Dahlquist barriers are quoted
-in the surface, not formalized.
+The order conditions come from the Taylor expansion of $\mathcal{L}[w; h](t)$ about $t$:
+$\mathcal{L}[w; h](t) = \sum_{m \le q} (h^m / m!) c_m w^{(m)}(t) + O(h^{q+1})$, where $c_m$ is $1$
+minus the left side of the $m$-th order condition. For the converse, the monomials $t \mapsto t^i$
+have the truncation error $h^{i-1} c_i$, which is $O(h^q)$ only if $c_i = 0$. For zero-stability,
+the difference of a perturbed and an unperturbed solution solves the linear recurrence with
+characteristic polynomial $\rho$, with a source that the Lipschitz constant bounds; the bound for
+such recurrences under the root condition (Lemma 11.3 of [quarteroni2000numerical], which extends
+from complex scalar sequences to sequences in $E$ through a norming functional given by the
+Hahn–Banach theorem) and the discrete Gronwall lemma give the estimate. When the root condition
+fails, the recurrence has an unbounded real solution, which is a perturbed solution of the scheme
+for $y' = 0$. Convergence follows from the same estimate with the perturbation
+$\delta_{n+1} = \tau_{n+1}(h)$; its necessity uses a solution that grows at least linearly, scaled
+by $h$. The orders of the Adams methods follow from the exactness of interpolatory quadrature on
+polynomials, and the zero-stability of the BDF methods with four to six steps from the Schur–Cohn
+test.
 
-**Predictor–corrector methods** (§11.7). `PredictorCorrector` pairs an explicit predictor and a
-corrector padded to the same number of steps (`LinearMultistep.pad`, `PredictorCorrector.ofPair`)
-with `m ≥ 1` corrections; `IsOrbitPEC` and `IsOrbitPECE` are the `P(EC)^m` and `P(EC)^mE`
-recursions (11.69), Heun's method is `P(EC)E` with forward Euler and Crank–Nicolson
-(`heun_eq_pece` — with `PEC` the function values are those of the predicted values and the scheme
-is not Heun's), the order of a pair is `min q (q̃ + m)` (`norm_lte_le`, Property 11.3: each
-correction is a contraction with constant `h |b_{-1}| L`), and the ABM pairs have the padded
-characteristic polynomials of Example 11.10.
+## Implementation notes
+
+* The normalization $a_p \neq 0$ or $b_p \neq 0$ of the source is not part of the structure, because
+  a predictor–corrector pair pads a corrector with zero coefficients. It is the separate predicate
+  `ODE.LinearMultistep.IsGenuine`.
+* Sequences are indexed by $\mathbb{N}$. The recursion is imposed at every $n \ge p$ and written for
+  $u_{n+p+1}$, so that no natural subtraction underflows. The $p + 1$ starting values
+  $u_0, \dots, u_p$ are free.
+* The operator $\mathcal{L}$ uses the derivative `deriv w` of the curve, not the field $f$.
+* `ODE.LinearMultistep.IsConsistent` and `ODE.LinearMultistep.HasOrder` quantify over all real $C^1$
+  (respectively $C^{q+1}$) curves on all horizons $T > 0$. Every such curve $y$ solves
+  $y' = f(t, y)$ for the field $f(t, v) = y'(t)$, which is Lipschitz in $v$ with constant $0$, so
+  this is the same as quantifying over all scalar Cauchy problems with such a solution.
+* The root conditions are those of `Polynomial.SatisfiesRootCondition` and
+  `Polynomial.SatisfiesStrongRootCondition` for $\rho$ read in $\mathbb{C}[X]$.
+* The difference equations are Mathlib's `LinearRecurrence`, with the convention
+  $u_{n+k} = \sum_{i<k} \alpha_i u_{n+i}$. The real recurrence of the method has the coefficients
+  $\alpha_i = a_{p-i}$.
+* The regions $\mathcal{A}$ and $\mathcal{A}^*$ contain only points $z$ with $1 - z b_{-1} \neq 0$,
+  at which the scheme on $y' = \lambda y$ determines $u_{n+1}$.
+* Theorem 11.4 is proved without the consistency hypothesis of [quarteroni2000numerical], and
+  Theorem 11.3 also for $q = 0$.
+* Table 11.2 of [quarteroni2000numerical] prints $b_{-1} = 60/137$ in its last row. This is a
+  misprint: with it the order condition $1$ fails. `ODE.LinearMultistep.bdf` uses $60/147$.
+* Remark 11.3 of [quarteroni2000numerical] prints $\mathcal{A}^* = \{ i\alpha : \alpha \in [-1, 1]
+  \}$ for the midpoint method. At $\alpha = \pm 1$ the root $\pm i$ of $\Pi_z$ is double, so the
+  endpoints are excluded.
+* The first Dahlquist barrier, the order bound of the second barrier and Widlund's statement on
+  ϑ-stability are not formalized. The explicit clause of the second barrier is proved here.
 -/
 
 open Set Filter Topology Asymptotics Polynomial
@@ -110,55 +156,68 @@ namespace ODE
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **A linear multistep method** with `p + 1` steps ([quarteroni2000numerical] (11.45)):
-`u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h ∑_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1}`, given by its
-coefficients `a_0, …, a_p`, `b_0, …, b_p` and `b_{-1} = bm1`. The book's normalization
-`a_p ≠ 0 ∨ b_p ≠ 0` is the separate predicate `IsGenuine`. -/
+/-- A **linear multistep method** with $p + 1$ steps is given by real coefficients
+$a_0, \dots, a_p$, $b_0, \dots, b_p$ and $b_{-1}$. It defines the scheme (11.45) of
+[quarteroni2000numerical]
+$$u_{n+1} = \sum_{j=0}^p a_j u_{n-j} + h \sum_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1},
+  \qquad f_k = f(t_k, u_k).$$
+
+The coefficient $b_{-1}$ is the field `bm1`. The normalization $a_p \neq 0$ or $b_p \neq 0$ of
+the source is not part of the structure; it is the predicate `ODE.LinearMultistep.IsGenuine`. -/
 structure LinearMultistep where
-  /-- `p + 1` is the number of steps. -/
+  /-- The number $p$; the method has $p + 1$ steps. -/
   p : ℕ
-  /-- The coefficients `a_0, …, a_p` of the past values. -/
+  /-- The coefficients $a_0, \dots, a_p$ of the past values $u_n, \dots, u_{n-p}$. -/
   a : Fin (p + 1) → ℝ
-  /-- The coefficients `b_0, …, b_p` of the past function values. -/
+  /-- The coefficients $b_0, \dots, b_p$ of the past function values $f_n, \dots, f_{n-p}$. -/
   b : Fin (p + 1) → ℝ
-  /-- The coefficient `b_{-1}` of `f_{n+1}`; the method is implicit iff it is nonzero. -/
+  /-- The coefficient $b_{-1}$ of $f_{n+1}$. The method is implicit if and only if $b_{-1} \neq 0$.
+  -/
   bm1 : ℝ
 
 namespace LinearMultistep
 
 variable (M : LinearMultistep) {f : ℝ → E → E} {h t₀ T : ℝ} {n : ℕ}
 
-/-- A method is **implicit** when `b_{-1} ≠ 0` ([quarteroni2000numerical] §11.5). -/
+/-- A method is **implicit** if $b_{-1} \neq 0$ ([quarteroni2000numerical], §11.5). -/
 def IsImplicit : Prop := M.bm1 ≠ 0
 
-/-- The book's normalization: `a_p ≠ 0` or `b_p ≠ 0`, so that the method genuinely has `p + 1`
-steps ([quarteroni2000numerical] §11.5). -/
+/-- A method is **genuine** if $a_p \neq 0$ or $b_p \neq 0$, so that it really uses $p + 1$ steps.
+This is the normalization of [quarteroni2000numerical], §11.5. -/
 def IsGenuine : Prop := M.a (Fin.last M.p) ≠ 0 ∨ M.b (Fin.last M.p) ≠ 0
 
 /-! ### Orbits -/
 
-/-- **The right-hand side of the scheme** ([quarteroni2000numerical] (11.45)) at the step from
-`t_{n+p}` to `t_{n+p+1}`, for the history `w`:
-`∑_j a_j w_{n+p-j} + h ∑_j b_j f(t_{n+p-j}, w_{n+p-j}) + h b_{-1} f(t_{n+p+1}, w_{n+p+1})`; the
-last term makes an implicit method implicit. -/
+/-- The **right-hand side of the scheme** (11.45) of [quarteroni2000numerical] at the step from
+$t_{n+p}$ to $t_{n+p+1}$, for a sequence $w$:
+$$\sum_{j=0}^p a_j w_{n+p-j} + h \sum_{j=0}^p b_j f(t_{n+p-j}, w_{n+p-j}) + h b_{-1}
+  f(t_{n+p+1}, w_{n+p+1}),$$
+where $t_k = t_0 + kh$. The last term contains the new value $w_{n+p+1}$ when the method is
+implicit. -/
 def rhs (f : ℝ → E → E) (h t₀ : ℝ) (w : ℕ → E) (n : ℕ) : E :=
   ∑ j : Fin (M.p + 1), M.a j • w (n + M.p - j) +
     h • ∑ j : Fin (M.p + 1), M.b j • f (node t₀ h (n + M.p - j)) (w (n + M.p - j)) +
     (h * M.bm1) • f (node t₀ h (n + M.p + 1)) (w (n + M.p + 1))
 
-/-- **A perturbed orbit** ([quarteroni2000numerical] (11.59)) of the method for the field `f`,
-step `h`, from time `t₀`: for every `n ≥ p` (written `n + p`),
-`z_{n+1} = ∑_j a_j z_{n-j} + h ∑_j b_j f(t_{n-j}, z_{n-j}) + h b_{-1} f(t_{n+1}, z_{n+1})
-  + h δ_{n+1}`.
-The starting values `z 0, …, z p` are unconstrained. -/
+/-- A **perturbed orbit** of the method for the field $f$, with step $h$ from the time $t_0$ and
+perturbation $\delta$, is a sequence $z$ such that for every $n \ge p$
+$$z_{n+1} = \sum_{j=0}^p a_j z_{n-j} + h \sum_{j=0}^p b_j f(t_{n-j}, z_{n-j}) + h b_{-1}
+  f(t_{n+1}, z_{n+1}) + h \delta_{n+1}.$$
+This is (11.59) of [quarteroni2000numerical].
+
+The starting values $z_0, \dots, z_p$ are not constrained. The recursion is written for
+$z_{n+p+1}$ with $n \in \mathbb{N}$, through `ODE.LinearMultistep.rhs`. -/
 def IsOrbitWith (f : ℝ → E → E) (h t₀ : ℝ) (δ : ℕ → E) (z : ℕ → E) : Prop :=
   ∀ n, z (n + M.p + 1) = M.rhs f h t₀ z n + h • δ (n + M.p + 1)
 
-/-- **An orbit** of the method ([quarteroni2000numerical] (11.45), (11.60)): a perturbed orbit
-with zero perturbation. -/
+/-- An **orbit** of the method is a perturbed orbit with zero perturbation: a sequence that
+satisfies the scheme (11.45) of [quarteroni2000numerical] at every $n \ge p$, from arbitrary
+starting values. This is (11.60) of the source. -/
 def IsOrbit (f : ℝ → E → E) (h t₀ : ℝ) (u : ℕ → E) : Prop := M.IsOrbitWith f h t₀ 0 u
 
-/-- A perturbed orbit, unfolded. -/
+/-- A sequence $z$ is a perturbed orbit with perturbation $\delta$ if and only if, for every $n$,
+$z_{n+p+1}$ equals the right-hand side of the scheme at $n + p$ plus $h \delta_{n+p+1}$, written
+out in full. -/
 theorem isOrbitWith_iff {δ z : ℕ → E} :
     M.IsOrbitWith f h t₀ δ z ↔ ∀ n, z (n + M.p + 1) =
       ∑ j : Fin (M.p + 1), M.a j • z (n + M.p - j) +
@@ -166,56 +225,69 @@ theorem isOrbitWith_iff {δ z : ℕ → E} :
       (h * M.bm1) • f (node t₀ h (n + M.p + 1)) (z (n + M.p + 1)) + h • δ (n + M.p + 1) :=
   Iff.rfl
 
-/-- An orbit, unfolded: the recursion (11.45) at every `n ≥ p`. -/
+/-- A sequence $u$ is an orbit if and only if it satisfies the scheme (11.45), written out in full,
+at every $n \ge p$. -/
 theorem isOrbit_iff {u : ℕ → E} :
     M.IsOrbit f h t₀ u ↔ ∀ n, u (n + M.p + 1) = ∑ j : Fin (M.p + 1), M.a j • u (n + M.p - j) +
       h • ∑ j : Fin (M.p + 1), M.b j • f (node t₀ h (n + M.p - j)) (u (n + M.p - j)) +
       (h * M.bm1) • f (node t₀ h (n + M.p + 1)) (u (n + M.p + 1)) := by
   simp [IsOrbit, IsOrbitWith, rhs]
 
-/-- An orbit, in terms of the right-hand side `rhs`. -/
+/-- A sequence $u$ is an orbit if and only if $u_{n+p+1}$ equals `ODE.LinearMultistep.rhs` at $n$
+for every $n$. -/
 theorem isOrbit_iff_rhs {u : ℕ → E} :
     M.IsOrbit f h t₀ u ↔ ∀ n, u (n + M.p + 1) = M.rhs f h t₀ u n :=
   M.isOrbit_iff
 
-/-! ### The operator `L`, the local and global truncation errors -/
+/-! ### The operator $\mathcal{L}$ and the local and global truncation errors -/
 
-/-- **The linear operator**
-`L[w; h](t) = w(t + h) - ∑_{j=0}^p a_j w(t - jh) - h ∑_{j=-1}^p b_j w'(t - jh)`
-([quarteroni2000numerical] (11.48)), for a curve `w : ℝ → E`, with `w' = deriv w`. -/
+/-- The **linear operator** $\mathcal{L}$ of the method, (11.48) of [quarteroni2000numerical]: for a
+curve $w \colon \mathbb{R} \to E$, a step $h$ and a time $t$,
+$$\mathcal{L}[w; h](t) = w(t + h) - \sum_{j=0}^p a_j w(t - jh) - h \Bigl( b_{-1} w'(t + h) +
+  \sum_{j=0}^p b_j w'(t - jh) \Bigr).$$
+
+The derivative $w'$ is `deriv w`, which is $0$ at a point where $w$ is not differentiable. -/
 noncomputable def opL (h : ℝ) (w : ℝ → E) (t : ℝ) : E :=
   w (t + h) - ∑ j : Fin (M.p + 1), M.a j • w (t - j * h) -
     h • (M.bm1 • deriv w (t + h) + ∑ j : Fin (M.p + 1), M.b j • deriv w (t - j * h))
 
-/-- The operator `L` is additive in the curve. -/
+/-- The operator $\mathcal{L}$ is additive in the curve: if $w$ and $v$ are differentiable
+everywhere, then $\mathcal{L}[w + v; h](t) = \mathcal{L}[w; h](t) + \mathcal{L}[v; h](t)$. -/
 theorem opL_add (h : ℝ) (w v : ℝ → E) (t : ℝ) (hw : ∀ s, DifferentiableAt ℝ w s)
     (hv : ∀ s, DifferentiableAt ℝ v s) : M.opL h (w + v) t = M.opL h w t + M.opL h v t := by
   simp only [opL, Pi.add_apply, deriv_add (hw _) (hv _), smul_add, Finset.sum_add_distrib]
   abel
 
-/-- The operator `L` is homogeneous in the curve. -/
+/-- The operator $\mathcal{L}$ is homogeneous in the curve: if $w$ is differentiable everywhere,
+then $\mathcal{L}[cw; h](t) = c \, \mathcal{L}[w; h](t)$ for every real $c$. -/
 theorem opL_smul (h : ℝ) (c : ℝ) (w : ℝ → E) (t : ℝ) (hw : ∀ s, DifferentiableAt ℝ w s) :
     M.opL h (c • w) t = c • M.opL h w t := by
   simp only [opL, Pi.smul_apply, deriv_const_smul c (hw _), smul_sub, smul_add, Finset.smul_sum,
     smul_comm c]
 
-/-- **The local truncation error** `τ_{n+1}(h)` of the method along the curve `y` at `t = t_n`
-([quarteroni2000numerical] Definition 11.8, (11.47)): `h τ_{n+1}(h) = L[y; h](t_n)`. -/
+/-- The **local truncation error** of the method along the curve $y$ at the time $t$ is
+$$\tau(h; t) = h^{-1} \mathcal{L}[y; h](t).$$
+At $t = t_n$ this is $\tau_{n+1}(h)$ of Definition 11.8 and (11.47) of
+[quarteroni2000numerical].
+
+At $h = 0$ the value is $0$, since $0^{-1} = 0$ in Lean. -/
 noncomputable def lte (h : ℝ) (y : ℝ → E) (t : ℝ) : E := h⁻¹ • M.opL h y t
 
-/-- The local truncation error is the operator `L` divided by `h`. -/
+/-- The local truncation error is $h^{-1} \mathcal{L}[y; h](t)$. -/
 theorem lte_eq (h : ℝ) (y : ℝ → E) (t : ℝ) : M.lte h y t = h⁻¹ • M.opL h y t := rfl
 
-/-- A grid node shifted back by `j` steps is a grid node. -/
+/-- If $j \le m$, then $t_m - jh = t_{m-j}$ for the nodes $t_k = t_0 + kh$. -/
 theorem node_sub_mul {j m : ℕ} (hj : j ≤ m) :
     node t₀ h m - j * h = node t₀ h (m - j) := by
   simp only [node, Nat.cast_sub hj]
   ring
 
-/-- **The exact curve satisfies the scheme up to `h` times its local truncation error**
-([quarteroni2000numerical] (11.47)): if `y' = f(·, y ·)` at the points `t - jh`, `j = -1, …, p`,
-then
-`y(t + h) = ∑ a_j y(t - jh) + h ∑ b_j f(t - jh, y(t - jh)) + h b_{-1} f(t + h, y(t + h)) + h τ`.
+/-- The exact curve satisfies the scheme up to $h$ times its local truncation error, (11.47) of
+[quarteroni2000numerical]. Let $h \neq 0$, and let $y \colon \mathbb{R} \to E$ satisfy
+$y'(s) = f(s, y(s))$ at the points $s = t - jh$, $j = -1, 0, \dots, p$, where $y'$ is `deriv y`.
+Then
+$$y(t + h) = \sum_{j=0}^p a_j y(t - jh) + h \sum_{j=0}^p b_j f(t - jh, y(t - jh)) + h b_{-1}
+  f(t + h, y(t + h)) + h \tau(h; t).$$
 -/
 theorem lte_spec (hh : h ≠ 0) {y : ℝ → E} {t : ℝ}
     (hd : ∀ j : Fin (M.p + 1), deriv y (t - j * h) = f (t - j * h) (y (t - j * h)))
@@ -229,12 +301,18 @@ theorem lte_spec (hh : h ≠ 0) {y : ℝ → E} {t : ℝ}
   simp only [hd, hd']
   module
 
-/-- **The global truncation error** `τ(h) = max_{p ≤ n < N_h} ‖τ_{n+1}(h)‖` over the steps the
-method takes on the horizon `[t₀, t₀ + T]` (`0` when there is none). -/
+/-- The **global truncation error** of the method along the curve $y$ on the horizon
+$[t_0, t_0 + T]$ is
+$$\tau(h) = \max_{p \le n < N_h} \|\tau_{n+1}(h)\|, \qquad N_h = \lfloor T / h \rfloor,$$
+the maximum over the steps that the method takes, with $\tau_{n+1}(h)$ the local truncation
+error at $t_n = t_0 + nh$. It is $0$ when the method takes no step.
+
+The maximum is a supremum over $n < N_h$ in which the terms with $n < p$ are $0$. -/
 noncomputable def globalLte (t₀ T : ℝ) (y : ℝ → E) (h : ℝ) : ℝ :=
   ⨆ n : Fin (gridCount T h), if M.p ≤ (n : ℕ) then ‖M.lte h y (node t₀ h n)‖ else 0
 
-/-- Every local truncation error of a step taken on the grid is bounded by the global one. -/
+/-- The local truncation error of each step taken on the grid is bounded by the global one: if
+$p \le n < N_h$, then $\|\tau_{n+1}(h)\| \le \tau(h)$. -/
 theorem norm_lte_le_globalLte {y : ℝ → E} (hp : M.p ≤ n) (hn : n < gridCount T h) :
     ‖M.lte h y (node t₀ h n)‖ ≤ M.globalLte t₀ T y h := by
   refine le_ciSup_of_le (f := fun n : Fin (gridCount T h) =>
@@ -245,107 +323,131 @@ theorem norm_lte_le_globalLte {y : ℝ → E} (hp : M.p ≤ n) (hn : n < gridCou
 theorem globalLte_nonneg (y : ℝ → E) : 0 ≤ M.globalLte t₀ T y h :=
   Real.iSup_nonneg fun _ => by split_ifs <;> simp
 
-/-- A uniform bound on the local truncation errors of the steps taken bounds the global one. -/
+/-- Let $C \ge 0$. If $\|\tau_{n+1}(h)\| \le C$ for every step $p \le n < N_h$, then
+$\tau(h) \le C$. -/
 theorem globalLte_le {y : ℝ → E} {C : ℝ} (hC : 0 ≤ C)
     (hle : ∀ n, M.p ≤ n → n < gridCount T h → ‖M.lte h y (node t₀ h n)‖ ≤ C) :
     M.globalLte t₀ T y h ≤ C :=
   Real.iSup_le (fun i => by split_ifs with hi; exacts [hle i hi i.2, hC]) hC
 
-/-- **Consistency along a curve** ([quarteroni2000numerical] Definition 11.9): the global
-truncation error along `y` on `[t₀, t₀ + T]` tends to zero with the step. -/
+/-- The method is **consistent along the curve** $y$ on the horizon $[t_0, t_0 + T]$ if the global
+truncation error $\tau(h)$ tends to $0$ as $h \to 0^+$. This is Definition 11.9 of
+[quarteroni2000numerical] for one solution. -/
 def IsConsistentFor (t₀ T : ℝ) (y : ℝ → E) : Prop :=
   Tendsto (M.globalLte t₀ T y) (𝓝[>] 0) (𝓝 0)
 
-/-- **Order `q` along a curve** ([quarteroni2000numerical] Definition 11.9): `τ(h) = O(h^q)`
-as `h → 0⁺`. -/
+/-- The method has **order $q$ along the curve** $y$ on the horizon $[t_0, t_0 + T]$ if
+$\tau(h) = O(h^q)$ as $h \to 0^+$. This is Definition 11.9 of [quarteroni2000numerical] for one
+solution. -/
 def HasOrderFor (t₀ T : ℝ) (y : ℝ → E) (q : ℕ) : Prop :=
   M.globalLte t₀ T y =O[𝓝[>] 0] fun h => h ^ q
 
-/-- Order `q ≥ 1` along a curve implies consistency along it. -/
+/-- If the method has order $q \ge 1$ along a curve, then it is consistent along that curve. -/
 theorem HasOrderFor.isConsistentFor {y : ℝ → E} {q : ℕ} (hq : 1 ≤ q)
     (hM : M.HasOrderFor t₀ T y q) : M.IsConsistentFor t₀ T y :=
   hM.trans_tendsto <| ((continuous_pow q).tendsto' 0 0
     (by simp [zero_pow (Nat.one_le_iff_ne_zero.1 hq)])).mono_left nhdsWithin_le_nhds
 
-/-- **Consistency of the method** ([quarteroni2000numerical] Definition 11.9): consistent along
-every `C¹` scalar curve on every horizon. Every such curve is the solution of a scalar Cauchy
-problem (for the state-independent field `f t v = y' t`, Lipschitz with constant `0`), so this is
-consistency for every scalar problem with a `C¹` solution. -/
+/-- The method is **consistent** if it is consistent along every real $C^1$ curve $y$ on every
+horizon $[t_0, t_0 + T]$ with $T > 0$. This is Definition 11.9 of [quarteroni2000numerical].
+
+Every $C^1$ curve $y$ solves the scalar Cauchy problem with the field $f(t, v) = y'(t)$, which
+does not depend on the state and is Lipschitz with constant $0$. Hence this definition is
+consistency for every scalar problem with a $C^1$ solution. -/
 def IsConsistent : Prop :=
   ∀ t₀ T : ℝ, 0 < T → ∀ y : ℝ → ℝ, ContDiff ℝ 1 y → M.IsConsistentFor t₀ T y
 
-/-- **Order `q` of the method** ([quarteroni2000numerical] Definition 11.9): order `q` along
-every `C^{q+1}` scalar curve on every horizon. -/
+/-- The method has **order $q$** if it has order $q$ along every real $C^{q+1}$ curve on every
+horizon $[t_0, t_0 + T]$ with $T > 0$. This is Definition 11.9 of [quarteroni2000numerical].
+
+As for `ODE.LinearMultistep.IsConsistent`, the quantification over curves is a quantification
+over all scalar Cauchy problems with a $C^{q+1}$ solution. -/
 def HasOrder (q : ℕ) : Prop :=
   ∀ t₀ T : ℝ, 0 < T → ∀ y : ℝ → ℝ, ContDiff ℝ (q + 1) y → M.HasOrderFor t₀ T y q
 
 /-! ### The order conditions -/
 
-/-- **The `i`-th algebraic order condition** ([quarteroni2000numerical] Theorem 11.3):
-`∑_{j=0}^p (-j)^i a_j + i (b_{-1} + ∑_{j=0}^p (-j)^{i-1} b_j) = 1`. For `i = 0` it reads
-`∑ a_j = 1` (`orderCondition_zero`), and conditions `0` and `1` are the consistency conditions
-(11.52). -/
+/-- The **$i$-th order condition** of the method, from Theorem 11.3 of [quarteroni2000numerical]:
+$$\sum_{j=0}^p (-j)^i a_j + i \Bigl( b_{-1} + \sum_{j=0}^p (-j)^{i-1} b_j \Bigr) = 1.$$
+For $i = 0$ it reads $\sum_j a_j = 1$ (`ODE.LinearMultistep.orderCondition_zero`). The
+conditions $0$ and $1$ are the consistency conditions (11.52) of the source.
+
+The term $b_{-1}$ is the term $j = -1$, since $(-(-1))^{i-1} = 1$. For $i = 0$ the exponent
+$i - 1$ is the natural subtraction $0$, which does not matter because the factor $i$ is $0$. -/
 def orderCondition (i : ℕ) : Prop :=
   ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ i * M.a j +
     i * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ (i - 1) * M.b j) = 1
 
-/-- The order condition `0`: `∑ a_j = 1`. -/
+/-- The order condition $0$ is $\sum_{j=0}^p a_j = 1$. -/
 theorem orderCondition_zero : M.orderCondition 0 ↔ ∑ j, M.a j = 1 := by
   simp [orderCondition]
 
-/-- The order condition `i + 1`:
-`∑ (-j)^{i+1} a_j + (i + 1) (b_{-1} + ∑ (-j)^i b_j) = 1`. -/
+/-- The order condition $i + 1$ is
+$$\sum_{j=0}^p (-j)^{i+1} a_j + (i + 1) \Bigl( b_{-1} + \sum_{j=0}^p (-j)^i b_j \Bigr) = 1.$$
+-/
 theorem orderCondition_succ (i : ℕ) :
     M.orderCondition (i + 1) ↔ ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ (i + 1) * M.a j +
       (i + 1 : ℝ) * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ i * M.b j) = 1 := by
   simp [orderCondition]
 
-/-- The order condition `1`: `-∑ j a_j + ∑_{j=-1}^p b_j = 1`, the second condition of
-[quarteroni2000numerical] (11.52). -/
+/-- The order condition $1$ is $-\sum_j j a_j + \sum_{j=-1}^p b_j = 1$, the second condition of
+(11.52) of [quarteroni2000numerical]. -/
 theorem orderCondition_one :
     M.orderCondition 1 ↔ -∑ j : Fin (M.p + 1), (j : ℝ) * M.a j + (M.bm1 + ∑ j, M.b j) = 1 := by
   simp [orderCondition, Finset.sum_neg_distrib]
 
-/-- **The Taylor coefficients** `C_m = 1 - ∑ (-j)^m a_j - m (b_{-1} + ∑ (-j)^{m-1} b_j)` of the
-expansion of `L[w; h](t)` about `t`: `L[w; h](t) = ∑_m (h^m/m!) C_m w^{(m)}(t)`
-([quarteroni2000numerical] §11.5, expanded about `t_n` rather than the book's `t_{n-p}`, which
-does not change the values). `C_m = 0` is the `m`-th order condition. -/
+/-- The **Taylor coefficients** of the method are
+$$c_m = 1 - \sum_{j=0}^p (-j)^m a_j - m \Bigl( b_{-1} + \sum_{j=0}^p (-j)^{m-1} b_j \Bigr).$$
+They are the coefficients of the Taylor expansion $\mathcal{L}[w; h](t) = \sum_m (h^m / m!) c_m
+w^{(m)}(t)$ of the operator $\mathcal{L}$ about $t$, and $c_m = 0$ is the $m$-th order
+condition.
+
+The expansion follows [quarteroni2000numerical], §11.5, which expands about $t_{n-p}$ instead of
+$t_n$. The conditions $c_0 = \dots = c_q = 0$ and the value of $c_{q+1}$ under them do not
+depend on the point of expansion. -/
 noncomputable def taylorCoeff (m : ℕ) : ℝ :=
   1 - ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ m * M.a j -
     m * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ (m - 1) * M.b j)
 
-/-- The `m`-th order condition is the vanishing of the `m`-th Taylor coefficient. -/
+/-- The $m$-th order condition holds if and only if the $m$-th Taylor coefficient $c_m$ is $0$. -/
 theorem orderCondition_iff_taylorCoeff_eq_zero (m : ℕ) :
     M.orderCondition m ↔ M.taylorCoeff m = 0 := by
   rw [orderCondition, taylorCoeff, sub_sub, sub_eq_zero, eq_comm]
 
-/-- **The error constant** `C_{q+1}` of a method of order `q` ([quarteroni2000numerical] §11.5):
-the coefficient of `h^{q+1} y^{(q+1)}(t_n)` in the principal local truncation error,
-`(1 - ∑ (-j)^{q+1} a_j - (q + 1) ∑_{j=-1}^p (-j)^q b_j) / (q + 1)!`. -/
+/-- The **error constant** of a method of order $q$ is
+$$C_{q+1} = \frac{c_{q+1}}{(q + 1)!}
+  = \frac{1 - \sum_{j=0}^p (-j)^{q+1} a_j - (q + 1) \sum_{j=-1}^p (-j)^q b_j}{(q + 1)!},$$
+the coefficient of $h^{q+1} y^{(q+1)}(t_n)$ in the principal part of $h \tau_{n+1}(h)$
+([quarteroni2000numerical], §11.5). -/
 noncomputable def errorConstant (q : ℕ) : ℝ := M.taylorCoeff (q + 1) / (q + 1).factorial
 
 
-/-! ### The Taylor expansion of `L` -/
+/-! ### The Taylor expansion of $\mathcal{L}$ -/
 
 section Expansion
 
 variable {y : ℕ → ℝ → E} {a b K h t : ℝ} {q : ℕ}
 
-/-- The constant of the remainder of the Taylor expansion of `L[w; h](t)` to order `q`:
-`(1 + ∑ |a_j| j^{q+1}) / (q+1)! + (|b_{-1}| + ∑ |b_j| j^q) / q!`. -/
+/-- The constant of the remainder of the Taylor expansion of $\mathcal{L}[w; h](t)$ to order $q$:
+$$R_q = \frac{1 + \sum_{j=0}^p |a_j| j^{q+1}}{(q + 1)!} + \frac{|b_{-1}| + \sum_{j=0}^p |b_j|
+  j^q}{q!}.$$
+-/
 noncomputable def remainderConst (q : ℕ) : ℝ :=
   (1 + ∑ j : Fin (M.p + 1), |M.a j| * (j : ℝ) ^ (q + 1)) / (q + 1).factorial +
     (|M.bm1| + ∑ j : Fin (M.p + 1), |M.b j| * (j : ℝ) ^ q) / q.factorial
 
-/-- The remainder constant is nonnegative. -/
+/-- The remainder constant $R_q$ is nonnegative. -/
 theorem remainderConst_nonneg (q : ℕ) : 0 ≤ M.remainderConst q := by
   unfold remainderConst
   positivity
 
-/-- **The algebraic identity behind the Taylor expansion of `L`**: if `w(t + s)` and `w'(t + s)`
-are their Taylor polynomials in `s` about `t` with coefficients `Y m` plus remainders `S s`,
-`S' s`, then `L[w; h](t) = ∑_{m ≤ q} (h^m/m!) C_m • Y m` plus the same combination of the
-remainders. -/
+/-- The algebraic identity behind the Taylor expansion of $\mathcal{L}$. Suppose that for every $s$
+$$w(t + s) = \sum_{m=0}^q \frac{s^m}{m!} Y_m + S(s), \qquad
+  w'(t + s) = \sum_{m=0}^{q-1} \frac{s^m}{m!} Y_{m+1} + S'(s),$$
+where $w'$ is `deriv w`, and $S$ and $S'$ are arbitrary functions. Then
+$$\mathcal{L}[w; h](t) = \sum_{m=0}^q \frac{h^m}{m!} c_m Y_m + S(h) - \sum_{j=0}^p a_j S(-jh) -
+  h \Bigl( b_{-1} S'(h) + \sum_{j=0}^p b_j S'(-jh) \Bigr).$$
+-/
 theorem opL_eq_sum_add {w S S' : ℝ → E} {Y : ℕ → E}
     (hw : ∀ s, w (t + s) = (∑ m ∈ range (q + 1), (s ^ m / m.factorial) • Y m) + S s)
     (hw' : ∀ s, deriv w (t + s) = (∑ m ∈ range q, (s ^ m / m.factorial) • Y (m + 1)) + S' s) :
@@ -410,12 +512,18 @@ theorem opL_eq_sum_add {w S S' : ℝ → E} {Y : ℕ → E}
   simp only [smul_add]
   abel
 
-/-- **The Taylor expansion of `L[w; h](t)` about `t`** ([quarteroni2000numerical] §11.5): for a
-tower `y 0 = w, y 1, …, y (q+1)` of derivative functions on `Icc a b ⊇ [t - ph, t + h]` with
-`deriv w = y 1` there and `‖y (q+1)‖ ≤ K`, and `0 < h`,
-`‖L[w; h](t) - ∑_{m ≤ q} (h^m/m!) C_m • y m t‖ ≤ K · remainderConst q · h^{q+1}`. Each of
-`w(t + h)`, `w(t - jh)`, `w'(t + h)`, `w'(t - jh)` is expanded about `t` by
-`norm_sub_sum_smul_le`, and the coefficients are collected by `opL_eq_sum_add`. -/
+/-- The **Taylor expansion of $\mathcal{L}[w; h](t)$ about $t$** ([quarteroni2000numerical], §11.5).
+Let $y_0, y_1, \dots, y_{q+1} \colon \mathbb{R} \to E$ and let $[a, b]$ be an interval that
+contains $t - ph$ and $t + h$, with $h > 0$. Suppose that on $[a, b]$ each $y_{m+1}$, $m \le q$,
+is the derivative of $y_m$ within $[a, b]$, that $y_0' = y_1$, where $y_0'$ is `deriv` of
+$y_0$, and that $\|y_{q+1}\| \le K$. Then
+$$\Bigl\| \mathcal{L}[y_0; h](t) - \sum_{m=0}^q \frac{h^m}{m!} c_m y_m(t) \Bigr\|
+  \le K R_q h^{q+1},$$
+where $R_q$ is `ODE.LinearMultistep.remainderConst`.
+
+Each of $w(t + h)$, $w(t - jh)$, $w'(t + h)$ and $w'(t - jh)$ is expanded about $t$ with the
+Taylor bound `norm_sub_sum_smul_le`, and `ODE.LinearMultistep.opL_eq_sum_add` collects the
+coefficients. -/
 theorem opL_eq_sum_add_remainder
     (hy : ∀ m ≤ q, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
     (hd : ∀ s ∈ Icc a b, deriv (y 0) s = y 1 s) (hK : ∀ s ∈ Icc a b, ‖y (q + 1) s‖ ≤ K)
@@ -500,10 +608,14 @@ theorem opL_eq_sum_add_remainder
           · refine Finset.sum_congr rfl fun j _ => ?_
             ring
 
-/-- **Order `q` with an explicit constant** ([quarteroni2000numerical] Theorem 11.3, the
-sufficiency): under the order conditions `0, …, q`, for a tower of derivatives of `y` on
-`Icc a b` with `‖y^{(q+1)}‖ ≤ K`, `‖τ(h)‖ ≤ K · remainderConst q · h^q` at every `t` with
-`t - ph, t + h ∈ Icc a b`. -/
+/-- **Order $q$ with an explicit constant**, the sufficiency part of Theorem 11.3 of
+[quarteroni2000numerical]. Assume the order conditions $0, \dots, q$. Let $y_0, \dots, y_{q+1}$,
+$[a, b]$, $h > 0$ and $K$ be as in `ODE.LinearMultistep.opL_eq_sum_add_remainder`: $[a, b]$
+contains $t - ph$ and $t + h$, each $y_{m+1}$ is the derivative of $y_m$ within $[a, b]$,
+$y_0' = y_1$, where $y_0'$ is `deriv` of $y_0$, and $\|y_{q+1}\| \le K$ on $[a, b]$. Then the
+local truncation error along $y_0$ satisfies
+$$\|\tau(h; t)\| \le K R_q h^q.$$
+-/
 theorem norm_lte_le_of_orderCondition (hq : ∀ i ≤ q, M.orderCondition i)
     (hy : ∀ m ≤ q, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
     (hd : ∀ s ∈ Icc a b, deriv (y 0) s = y 1 s) (hK : ∀ s ∈ Icc a b, ‖y (q + 1) s‖ ≤ K)
@@ -519,8 +631,8 @@ theorem norm_lte_le_of_orderCondition (hq : ∀ i ≤ q, M.orderCondition i)
   calc h⁻¹ * ‖M.opL h (y 0) t‖ ≤ h⁻¹ * (K * M.remainderConst q * h ^ (q + 1)) := by gcongr
     _ = K * M.remainderConst q * h ^ q := by field_simp; ring
 
-/-- A uniform bound `‖τ_{n+1}(h)‖ ≤ C h^q` on the steps taken, for every `h > 0`, gives order
-`q`. -/
+/-- If $\|\tau_{n+1}(h)\| \le C h^q$ for every $h > 0$ and every step $p \le n < N_h$, then the
+method has order $q$ along $y$ on $[t_0, t_0 + T]$. -/
 theorem hasOrderFor_of_forall_norm_lte_le {t₀ T : ℝ} {y : ℝ → E} {C : ℝ}
     (hle : ∀ h > 0, ∀ n, M.p ≤ n → n < gridCount T h →
       ‖M.lte h y (node t₀ h n)‖ ≤ C * h ^ q) : M.HasOrderFor t₀ T y q := by
@@ -529,9 +641,11 @@ theorem hasOrderFor_of_forall_norm_lte_le {t₀ T : ℝ} {y : ℝ → E} {C : �
   refine M.globalLte_le (by positivity) fun n hp hn => (hle h hh n hp hn).trans ?_
   exact mul_le_mul_of_nonneg_right (le_max_left _ _) (by positivity)
 
-/-- **Order `q` along a curve from the order conditions**: with a tower of derivatives of `y` on
-`[t₀, t₀ + T]` and `‖y^{(q+1)}‖ ≤ K` there, the order conditions `0, …, q` give
-`HasOrderFor t₀ T y q`. -/
+/-- **Order $q$ along a curve from the order conditions.** Assume the order conditions
+$0, \dots, q$. Let $y_0, \dots, y_{q+1}$ be curves such that on $[t_0, t_0 + T]$ each $y_{m+1}$,
+$m \le q$, is the derivative of $y_m$ within the interval, $y_0' = y_1$, where $y_0'$ is `deriv`
+of $y_0$, and $\|y_{q+1}\| \le K$. Then the method has order $q$ along $y_0$ on
+$[t_0, t_0 + T]$. -/
 theorem hasOrderFor_of_orderCondition {t₀ T : ℝ} (hq : ∀ i ≤ q, M.orderCondition i)
     (hy : ∀ m ≤ q, ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (y m) (y (m + 1) s) (Icc t₀ (t₀ + T)) s)
     (hd : ∀ s ∈ Icc t₀ (t₀ + T), deriv (y 0) s = y 1 s)
@@ -550,10 +664,12 @@ section Consistency
 
 variable {t₀ T h : ℝ}
 
-/-- The residual of `L` in terms of the first-order Taylor remainders: under the order
-conditions `0` and `1`, with `y' = deriv y` at the points used,
-`L[y; h](t) = R(h) - ∑ a_j R(-jh) - h (b_{-1} R'(h) + ∑ b_j R'(-jh))` where
-`R(s) = y(t + s) - y(t) - s y'(t)` and `R'(s) = y'(t + s) - y'(t)`. -/
+/-- The operator $\mathcal{L}$ in terms of first-order Taylor remainders. Assume the order
+conditions $0$ and $1$, and let $y'$ be a function that equals `deriv y` at the points $t - jh$,
+$j = -1, \dots, p$. Then
+$$\mathcal{L}[y; h](t) = R(h) - \sum_{j=0}^p a_j R(-jh) - h \Bigl( b_{-1} R'(h) + \sum_{j=0}^p
+  b_j R'(-jh) \Bigr),$$
+where $R(s) = y(t + s) - y(t) - s y'(t)$ and $R'(s) = y'(t + s) - y'(t)$. -/
 theorem opL_eq_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orderCondition 1)
     {y y' : ℝ → E} {t : ℝ} (hd : ∀ j : Fin (M.p + 1), deriv y (t - j * h) = y' (t - j * h))
     (hd' : deriv y (t + h) = y' (t + h)) :
@@ -576,10 +692,13 @@ theorem opL_eq_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orderConditio
   simp only [opL, hd, hd', smul_sub, Finset.sum_sub_distrib, f1, f2, f3]
   module
 
-/-- **Consistency from the two consistency conditions** ([quarteroni2000numerical] Theorem 11.3,
-sufficiency, for a curve with values in `E`): under the order conditions `0` and `1`, the
-method is consistent along every curve `y` with a continuous derivative `y'` on `[t₀, t₀ + T]`
-(two-sided at every point of the closed interval). -/
+/-- **Consistency from the two consistency conditions**, the sufficiency part of Theorem 11.3 of
+[quarteroni2000numerical] for curves with values in $E$. Assume the order conditions $0$ and
+$1$. Let $y \colon \mathbb{R} \to E$ have the derivative $y'(s)$ at every
+$s \in [t_0, t_0 + T]$, with $y'$ continuous on $[t_0, t_0 + T]$. Then the method is consistent
+along $y$ on $[t_0, t_0 + T]$.
+
+The derivative is two-sided at every point of the closed interval, including the endpoints. -/
 theorem isConsistentFor_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orderCondition 1)
     {y y' : ℝ → E} (hy : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivAt y (y' s) s)
     (hy' : ContinuousOn y' (Icc t₀ (t₀ + T))) : M.IsConsistentFor t₀ T y := by
@@ -678,15 +797,19 @@ theorem isConsistentFor_of_orderCondition (h0 : M.orderCondition 0) (h1 : M.orde
 
 end Consistency
 
-/-! ### Regularity bridges: global `C^{q+1}` curves and the monomials -/
+/-! ### Regularity: globally smooth curves and the monomials -/
 
 section Bridges
 
 variable {t₀ T h : ℝ} {q : ℕ}
 
-/-- **Order `q` along a globally `C^{q+1}` curve** from the order conditions `0, …, q`
-([quarteroni2000numerical] Theorem 11.3, the sufficiency): the tower of derivatives is
-`iteratedDeriv m y`, and `‖y^{(q+1)}‖` is bounded on the compact horizon. -/
+/-- **Order $q$ along a globally $C^{q+1}$ curve**, the sufficiency part of Theorem 11.3 of
+[quarteroni2000numerical]. Assume the order conditions $0, \dots, q$. If
+$y \colon \mathbb{R} \to E$ is $C^{q+1}$, then the method has order $q$ along $y$ on every
+horizon $[t_0, t_0 + T]$.
+
+The derivatives are the iterated derivatives of $y$, and $\|y^{(q+1)}\|$ is bounded on the
+compact horizon. -/
 theorem hasOrderFor_of_contDiff (hq : ∀ i ≤ q, M.orderCondition i) {y : ℝ → E}
     (hy : ContDiff ℝ (q + 1) y) (t₀ T : ℝ) : M.HasOrderFor t₀ T y q := by
   obtain ⟨K, hK⟩ := (isCompact_Icc (a := t₀) (b := t₀ + T)).exists_bound_of_continuousOn
@@ -702,14 +825,16 @@ theorem hasOrderFor_of_contDiff (hq : ∀ i ≤ q, M.orderCondition i) {y : ℝ 
     (fun s _ => (hder 0 (Nat.zero_le q) s).deriv) hK
   simpa using this
 
-/-- **Order `q` of the method from the order conditions `0, …, q`** ([quarteroni2000numerical]
-Theorem 11.3, the sufficiency). -/
+/-- **Order $q$ from the order conditions**, the sufficiency part of Theorem 11.3 of
+[quarteroni2000numerical]: if the order conditions $0, \dots, q$ hold, then the method has order
+$q$. -/
 theorem hasOrder_of_orderCondition (hq : ∀ i ≤ q, M.orderCondition i) : M.HasOrder q :=
   fun t₀ T _ _ hy => M.hasOrderFor_of_contDiff hq hy t₀ T
 
-/-- **The operator `L` on the monomials** `t ↦ t^i`: for `0 < h`,
-`L[t^i; h](t) = ∑_{m ≤ i} (i choose m) t^{i-m} h^m C_m`, the Taylor expansion with vanishing
-remainder. -/
+/-- The operator $\mathcal{L}$ on the monomials. For $h > 0$, $i \in \mathbb{N}$ and
+$t \in \mathbb{R}$,
+$$\mathcal{L}[s \mapsto s^i; h](t) = \sum_{m=0}^i \binom{i}{m} t^{i-m} h^m c_m.$$
+This is the Taylor expansion of $\mathcal{L}$ with zero remainder. -/
 theorem opL_pow (hh : 0 < h) (i : ℕ) (t : ℝ) :
     M.opL h (fun s : ℝ => s ^ i) t =
       ∑ m ∈ range (i + 1), (i.choose m : ℝ) * t ^ (i - m) * h ^ m * M.taylorCoeff m := by
@@ -737,22 +862,28 @@ theorem opL_pow (hh : 0 < h) (i : ℕ) (t : ℝ) :
   push_cast
   field_simp
 
-/-- The local truncation error of the monomial `t ↦ t^i` at the first step of the grid from
-`t₀ = 0`, when the lower Taylor coefficients vanish: `τ = h^{i-1} C_i`, written
-`h⁻¹ h^i C_i`. -/
+/-- The truncation error of a monomial at the first step. Let $h > 0$ and suppose that $c_m = 0$ for
+$m < i$. Then the local truncation error of $s \mapsto s^i$ at the node $t_p = ph$ of the grid
+from $t_0 = 0$ is
+$$\tau = h^{-1} h^i c_i.$$
+-/
 theorem lte_pow_node (hh : 0 < h) {i : ℕ} (hlow : ∀ m < i, M.taylorCoeff m = 0) :
     M.lte h (fun s : ℝ => s ^ i) (node 0 h M.p) = h⁻¹ * h ^ i * M.taylorCoeff i := by
   rw [lte, M.opL_pow hh, smul_eq_mul, Finset.sum_eq_single i (fun m hm hmi => ?_) (by simp)]
   · simp only [Nat.choose_self, Nat.cast_one, one_mul, Nat.sub_self, pow_zero, mul_assoc]
   · rw [hlow m (lt_of_le_of_ne (Nat.lt_succ_iff.1 (Finset.mem_range.1 hm)) hmi), mul_zero]
 
-/-- On the horizon `T = 1` from `t₀ = 0`, the first step `n = p` is taken once `(p + 1) h ≤ 1`. -/
+/-- Let $h > 0$ with $(p + 1) h \le 1$. Then $p < N_h = \lfloor 1 / h \rfloor$, so the method takes
+the step $n = p$ on the horizon $[0, 1]$. -/
 theorem lt_gridCount_one (hh : 0 < h) (hph : (M.p + 1) * h ≤ 1) : M.p < gridCount 1 h :=
   (le_gridCount_iff zero_le_one hh).2 (by exact_mod_cast hph)
 
-/-- **The Taylor coefficient `C_i` vanishes when the method has order `q ≥ i` and the lower
-coefficients vanish**: the truncation error of `t ↦ t^i` is `h^{i-1} C_i`, which is `O(h^q)`
-only if `C_i = 0`. -/
+/-- The Taylor coefficients of a method of order $q$ vanish up to $q$. Let $i \le q$, let the method
+have order $q$, and let $c_m = 0$ for $m < i$. Then $c_i = 0$.
+
+The truncation error of $s \mapsto s^i$ at the first step is $h^{i-1} c_i$, which is $O(h^q)$
+only if $c_i = 0$. The proof reads the coefficient off with
+`Asymptotics.eq_zero_of_isBigO_pow_succ`. -/
 theorem taylorCoeff_eq_zero_of_hasOrder {i : ℕ} (hiq : i ≤ q) (hq : M.HasOrder q)
     (hlow : ∀ m < i, M.taylorCoeff m = 0) : M.taylorCoeff i = 0 := by
   have hbig := hq 0 1 one_pos (fun s => s ^ i) (contDiff_id.pow i)
@@ -793,8 +924,10 @@ end Bridges
 
 section Theorem113
 
-/-- **Consistency of the method is the two conditions (11.52)** ([quarteroni2000numerical]
-Theorem 11.3, first part): `M.IsConsistent ↔ ∑ a_j = 1 ∧ -∑ j a_j + ∑_{j=-1}^p b_j = 1`. -/
+/-- **Consistency is the two conditions (11.52)**, the first part of Theorem 11.3 of
+[quarteroni2000numerical]: the method is consistent if and only if
+$$\sum_{j=0}^p a_j = 1 \quad \text{and} \quad -\sum_{j=0}^p j a_j + \sum_{j=-1}^p b_j = 1.$$
+-/
 theorem isConsistent_iff : M.IsConsistent ↔ M.orderCondition 0 ∧ M.orderCondition 1 := by
   constructor
   · intro hc
@@ -833,9 +966,12 @@ theorem isConsistent_iff : M.IsConsistent ↔ M.orderCondition 0 ∧ M.orderCond
       (fun s _ => ((hy.differentiable one_ne_zero) s).hasDerivAt)
       (hy.continuous_deriv le_rfl).continuousOn
 
-/-- **Order `q` of the method is the order conditions `0, …, q`** ([quarteroni2000numerical]
-Theorem 11.3, second part). The book states it for `q ≥ 1`; it holds for `q = 0` as well, where
-it reads "`τ(h)` is bounded along every `C¹` curve iff `∑ a_j = 1`". -/
+/-- **Order $q$ is the order conditions $0, \dots, q$**, the second part of Theorem 11.3 of
+[quarteroni2000numerical]: for every $q \in \mathbb{N}$, the method has order $q$ if and only if
+$$\sum_{j=0}^p (-j)^i a_j + i \sum_{j=-1}^p (-j)^{i-1} b_j = 1 \qquad (0 \le i \le q).$$
+
+The source states the theorem for $q \ge 1$. It also holds for $q = 0$, where it says that
+$\tau(h)$ is bounded along every $C^1$ curve if and only if $\sum_j a_j = 1$. -/
 theorem hasOrder_iff {q : ℕ} : M.HasOrder q ↔ ∀ i ≤ q, M.orderCondition i := by
   refine ⟨fun H i hi => ?_, M.hasOrder_of_orderCondition⟩
   rw [orderCondition_iff_taylorCoeff_eq_zero]
@@ -843,7 +979,7 @@ theorem hasOrder_iff {q : ℕ} : M.HasOrder q ↔ ∀ i ≤ q, M.orderCondition 
   | _ i ih =>
     exact M.taylorCoeff_eq_zero_of_hasOrder hi H fun m hm => ih m hm (by omega)
 
-/-- A method of order `q ≥ 1` is consistent. -/
+/-- A method of order $q \ge 1$ is consistent. -/
 theorem HasOrder.isConsistent {q : ℕ} (hq : 1 ≤ q) (H : M.HasOrder q) : M.IsConsistent := by
   rw [isConsistent_iff]
   rw [M.hasOrder_iff] at H
@@ -856,36 +992,41 @@ end Theorem113
 
 section CharPoly
 
-/-- **The first characteristic polynomial** `ρ(r) = r^{p+1} - ∑_{j=0}^p a_j r^{p-j}`
-([quarteroni2000numerical] §11.6.2). -/
+/-- The **first characteristic polynomial** of the method ([quarteroni2000numerical], §11.6.2):
+$$\rho(r) = r^{p+1} - \sum_{j=0}^p a_j r^{p-j} \in \mathbb{R}[r].$$
+-/
 noncomputable def rho : ℝ[X] :=
   X ^ (M.p + 1) - ∑ j : Fin (M.p + 1), C (M.a j) * X ^ (M.p - j)
 
-/-- **The second characteristic polynomial** `σ(r) = b_{-1} r^{p+1} + ∑_{j=0}^p b_j r^{p-j}`
-([quarteroni2000numerical] §11.6.2). -/
+/-- The **second characteristic polynomial** of the method ([quarteroni2000numerical], §11.6.2):
+$$\sigma(r) = b_{-1} r^{p+1} + \sum_{j=0}^p b_j r^{p-j} \in \mathbb{R}[r].$$
+-/
 noncomputable def sigma : ℝ[X] :=
   C M.bm1 * X ^ (M.p + 1) + ∑ j : Fin (M.p + 1), C (M.b j) * X ^ (M.p - j)
 
-/-- **The characteristic polynomial of the method on the test equation**
-([quarteroni2000numerical] (11.55)): `Π(r) = ρ(r) - z σ(r)` in `ℂ[X]`, at `z = hλ`. -/
+/-- The **characteristic polynomial of the method on the test equation**, (11.55) of
+[quarteroni2000numerical]: for $z \in \mathbb{C}$,
+$$\Pi_z(r) = \rho(r) - z \sigma(r) \in \mathbb{C}[r],$$
+with $\rho$ and $\sigma$ read in $\mathbb{C}[r]$. On $y' = \lambda y$ with step $h$ the relevant
+value is $z = h\lambda$. -/
 noncomputable def charPoly (z : ℂ) : ℂ[X] :=
   M.rho.map (algebraMap ℝ ℂ) - C z * M.sigma.map (algebraMap ℝ ℂ)
 
-/-- At `z = 0` the characteristic polynomial is `ρ`. -/
+/-- At $z = 0$ the characteristic polynomial $\Pi_0$ is $\rho$, read in $\mathbb{C}[r]$. -/
 theorem charPoly_zero : M.charPoly 0 = M.rho.map (algebraMap ℝ ℂ) := by
   simp [charPoly]
 
-/-- `ρ` evaluated: `ρ(r) = r^{p+1} - ∑ a_j r^{p-j}`. -/
+/-- The value of $\rho$ at a real $r$ is $r^{p+1} - \sum_j a_j r^{p-j}$. -/
 theorem eval_rho (r : ℝ) :
     M.rho.eval r = r ^ (M.p + 1) - ∑ j : Fin (M.p + 1), M.a j * r ^ (M.p - j) := by
   simp [rho, eval_finsetSum]
 
-/-- `σ` evaluated: `σ(r) = b_{-1} r^{p+1} + ∑ b_j r^{p-j}`. -/
+/-- The value of $\sigma$ at a real $r$ is $b_{-1} r^{p+1} + \sum_j b_j r^{p-j}$. -/
 theorem eval_sigma (r : ℝ) :
     M.sigma.eval r = M.bm1 * r ^ (M.p + 1) + ∑ j : Fin (M.p + 1), M.b j * r ^ (M.p - j) := by
   simp [sigma, eval_finsetSum]
 
-/-- The sum in `ρ` has degree at most `p`. -/
+/-- The polynomial $\sum_{j=0}^p a_j r^{p-j}$ has degree less than $p + 1$. -/
 theorem degree_sum_lt :
     (∑ j : Fin (M.p + 1), C (M.a j) * X ^ (M.p - j)).degree < ((M.p + 1 : ℕ) : WithBot ℕ) := by
   refine (degree_sum_le _ _).trans_lt ?_
@@ -894,25 +1035,25 @@ theorem degree_sum_lt :
   refine (degree_C_mul_X_pow_le _ _).trans_lt ?_
   exact_mod_cast Nat.lt_succ_of_le (Nat.sub_le _ _)
 
-/-- `ρ` is monic. -/
+/-- The polynomial $\rho$ is monic. -/
 theorem rho_monic : M.rho.Monic := monic_X_pow_sub M.degree_sum_lt
 
-/-- `ρ` has degree `p + 1`. -/
+/-- The polynomial $\rho$ has degree $p + 1$. -/
 theorem degree_rho : M.rho.degree = ((M.p + 1 : ℕ) : WithBot ℕ) := by
   rw [rho, degree_sub_eq_left_of_degree_lt, degree_X_pow]
   rw [degree_X_pow]
   exact M.degree_sum_lt
 
-/-- `ρ` has natural degree `p + 1`. -/
+/-- The polynomial $\rho$ has natural degree $p + 1$. -/
 theorem natDegree_rho : M.rho.natDegree = M.p + 1 := natDegree_eq_of_degree_eq_some M.degree_rho
 
-/-- **The consistency root** ([quarteroni2000numerical] §11.6.2): under the order condition
-`0`, `ρ(1) = 1 - ∑ a_j = 0`. -/
+/-- The **consistency root** ([quarteroni2000numerical], §11.6.2): if the order condition $0$ holds,
+then $\rho(1) = 1 - \sum_j a_j = 0$. -/
 theorem rho_isRoot_one (h : M.orderCondition 0) : M.rho.IsRoot 1 := by
   rw [orderCondition_zero] at h
   simp [IsRoot, eval_rho, h]
 
-/-- `ρ'(1) = (p + 1) - ∑ (p - j) a_j`. -/
+/-- The derivative of $\rho$ at $1$ is $\rho'(1) = (p + 1) - \sum_{j=0}^p (p - j) a_j$. -/
 theorem derivative_rho_eval_one :
     (derivative M.rho).eval 1 = (M.p + 1) - ∑ j : Fin (M.p + 1), ((M.p : ℝ) - j) * M.a j := by
   simp only [rho, derivative_sub, derivative_X_pow, derivative_sum, derivative_C_mul_X_pow,
@@ -923,8 +1064,10 @@ theorem derivative_rho_eval_one :
   rw [Nat.cast_sub (Nat.lt_succ_iff.1 j.2)]
   ring
 
-/-- **The classical form of consistency**, `ρ'(1) = σ(1)`: under the order conditions `0` and
-`1`, `(p + 1) - ∑ (p - j) a_j = b_{-1} + ∑ b_j`. -/
+/-- The **classical form of consistency**: if the order conditions $0$ and $1$ hold, then
+$\rho'(1) = \sigma(1)$, that is,
+$$(p + 1) - \sum_{j=0}^p (p - j) a_j = b_{-1} + \sum_{j=0}^p b_j.$$
+-/
 theorem derivative_rho_eval_one_eq_sigma (h0 : M.orderCondition 0) (h1 : M.orderCondition 1) :
     (derivative M.rho).eval 1 = M.sigma.eval 1 := by
   rw [orderCondition_zero] at h0
@@ -933,13 +1076,18 @@ theorem derivative_rho_eval_one_eq_sigma (h0 : M.orderCondition 0) (h1 : M.order
   simp only [one_pow, mul_one, sub_mul, Finset.sum_sub_distrib, ← Finset.mul_sum, h0]
   linarith
 
-/-- **The root condition** for the method ([quarteroni2000numerical] Definition 11.10, (11.56)):
-every root of `ρ` (in `ℂ`) lies in the closed unit disc and the roots on the unit circle are
-simple. -/
+/-- The **root condition** for the method, Definition 11.10 and (11.56) of
+[quarteroni2000numerical]: every complex root of $\rho$ lies in the closed unit disc, and every
+root of modulus $1$ is simple.
+
+This is `Polynomial.SatisfiesRootCondition` for $\rho$ read in $\mathbb{C}[X]$. -/
 def SatisfiesRootCondition : Prop := (M.rho.map (algebraMap ℝ ℂ)).SatisfiesRootCondition
 
-/-- **The strong root condition** ([quarteroni2000numerical] Definition 11.11, (11.57)): the
-root condition, and `1` is the only root of `ρ` on the unit circle. -/
+/-- The **strong root condition**, Definition 11.11 and (11.57) of [quarteroni2000numerical]: $\rho$
+satisfies the root condition, and every complex root of $\rho$ other than $1$ has modulus less
+than $1$.
+
+This is `Polynomial.SatisfiesStrongRootCondition` for $\rho$ read in $\mathbb{C}[X]$. -/
 def SatisfiesStrongRootCondition : Prop :=
   (M.rho.map (algebraMap ℝ ℂ)).SatisfiesStrongRootCondition
 
@@ -954,7 +1102,9 @@ end CharPoly
 
 section Recurrence
 
-/-- Reindexing the history sum by `j ↦ p - j`: `∑ g (p - i) • w (n + i) = ∑ g j • w (n + p - j)`.
+/-- Reindexing by $j = p - i$: for $g \colon \{0, \dots, p\} \to \mathbb{R}$ and a sequence $w$ in
+$E$,
+$$\sum_{i=0}^p g_{p-i} w_{n+i} = \sum_{j=0}^p g_j w_{n+p-j}.$$
 -/
 theorem sum_rev_smul (g : Fin (M.p + 1) → ℝ) (w : ℕ → E) (n : ℕ) :
     ∑ i : Fin (M.p + 1), g (Fin.rev i) • w (n + i) =
@@ -967,15 +1117,20 @@ theorem sum_rev_smul (g : Fin (M.p + 1) → ℝ) (w : ℕ → E) (n : ℕ) :
   have := i.is_lt
   omega
 
-/-- **The real linear recurrence of the method** ([quarteroni2000numerical] (11.46) at `f = 0`):
-order `p + 1`, coefficients `α_i = a_{p-i}` in Mathlib's convention
-`u (n + k) = ∑ coeffs i * u (n + i)`; its characteristic polynomial is `ρ`. -/
+/-- The **real linear recurrence of the method**, the scheme (11.46) of [quarteroni2000numerical]
+for the zero field: the recurrence of order $p + 1$
+$$u_{n+p+1} = \sum_{i=0}^p a_{p-i} u_{n+i}.$$
+Its characteristic polynomial is $\rho$ (`ODE.LinearMultistep.charPoly_toLinearRecurrenceZero`).
+
+The coefficients $\alpha_i = a_{p-i}$ follow the convention of Mathlib's `LinearRecurrence`,
+$u_{n+k} = \sum_{i<k} \alpha_i u_{n+i}$. -/
 def toLinearRecurrenceZero : LinearRecurrence ℝ := ⟨M.p + 1, fun i => M.a (Fin.rev i)⟩
 
-/-- The order of the recurrence is `p + 1`. -/
+/-- The real recurrence of the method has order $p + 1$. -/
 @[simp] theorem toLinearRecurrenceZero_order : M.toLinearRecurrenceZero.order = M.p + 1 := rfl
 
-/-- The characteristic polynomial of the real recurrence is `ρ`. -/
+/-- The characteristic polynomial of the real recurrence
+`ODE.LinearMultistep.toLinearRecurrenceZero` is the first characteristic polynomial $\rho$. -/
 theorem charPoly_toLinearRecurrenceZero : M.toLinearRecurrenceZero.charPoly = M.rho := by
   simp only [LinearRecurrence.charPoly, toLinearRecurrenceZero, rho, ← C_mul_X_pow_eq_monomial,
     C_1, one_mul]
@@ -988,13 +1143,16 @@ theorem charPoly_toLinearRecurrenceZero : M.toLinearRecurrenceZero.charPoly = M.
   have := i.is_lt
   omega
 
-/-- The history sum of the real recurrence is the history sum of the method. -/
+/-- The sum $\sum_i \alpha_i w_{n+i}$ of the real recurrence equals the sum $\sum_j a_j w_{n+p-j}$
+of the method, for a sequence $w$ in $E$. -/
 theorem sum_coeffs_smul (w : ℕ → E) (n : ℕ) :
     ∑ i : Fin M.toLinearRecurrenceZero.order, M.toLinearRecurrenceZero.coeffs i • w (n + i) =
       ∑ j : Fin (M.p + 1), M.a j • w (n + M.p - j) :=
   M.sum_rev_smul M.a w n
 
-/-- The orbits of the method for the zero field are the solutions of the real recurrence. -/
+/-- For the zero field $f = 0$, a real sequence is an orbit of the method if and only if it is a
+solution of the real recurrence `ODE.LinearMultistep.toLinearRecurrenceZero`. This holds for
+every step $h$ and every initial time $t_0$. -/
 theorem isOrbit_zero_iff_isSolution {h t₀ : ℝ} {u : ℕ → ℝ} :
     M.IsOrbit (fun _ _ => (0 : ℝ)) h t₀ u ↔ M.toLinearRecurrenceZero.IsSolution u := by
   simp only [isOrbit_iff, smul_zero, Finset.sum_const_zero, add_zero]
@@ -1011,25 +1169,33 @@ end Recurrence
 
 section ZeroStability
 
-/-- Every coefficient `|b_j|`, `j = -1, …, p`, is at most `β = |b_{-1}| + ∑ |b_j|`. -/
+/-- Each coefficient satisfies $|b_j| \le \beta$, where $\beta = |b_{-1}| + \sum_{j=0}^p |b_j|$. -/
 theorem abs_b_le (j : Fin (M.p + 1)) : |M.b j| ≤ |M.bm1| + ∑ j, |M.b j| :=
   le_add_of_nonneg_of_le (abs_nonneg _)
     (Finset.single_le_sum (f := fun j => |M.b j|) (fun _ _ => abs_nonneg _) (Finset.mem_univ j))
 
-/-- `|b_{-1}| ≤ β`. -/
+/-- The coefficient $b_{-1}$ satisfies $|b_{-1}| \le \beta = |b_{-1}| + \sum_{j=0}^p |b_j|$. -/
 theorem abs_bm1_le : |M.bm1| ≤ |M.bm1| + ∑ j, |M.b j| :=
   le_add_of_le_of_nonneg le_rfl (Finset.sum_nonneg fun _ _ => abs_nonneg _)
 
-/-- **The zero-stability estimate** ([quarteroni2000numerical] (11.65), behind Theorem 11.4):
-let the method satisfy the root condition, `0 ≤ T`, and `f t` be `L`-Lipschitz for
-`t ∈ [t₀, t₀ + T]`. There are `h₀ > 0` and `K > 0` such that for every `h ∈ (0, h₀]`, every pair
-of sequences `u`, `z` satisfying the scheme, `z` perturbed by `h δ_{n+1}`, for the steps
-`n + p + 1 ≤ N_h`, with `‖z_k - u_k‖ ≤ ε₀` for `k ≤ p` and `‖δ_k‖ ≤ ε₁` for `p + 1 ≤ k ≤ N_h`,
-`‖z_n - u_n‖ ≤ K (ε₀ + T ε₁)` for `n ≤ N_h`. Here `h₀ = 1/(Q + 1)`, `K = 2 M₀ e^{TQ}`,
-`Q = 2 M₀ β L (p + 2)`, `β = |b_{-1}| + ∑ |b_j|` and `M₀` the constant of Lemma 11.3 for the
-recurrence `toLinearRecurrenceZero`. The difference `w = z - u` solves that recurrence with a
-source bounded by `h (β L (‖w_l‖ + ∑_j ‖w_{l-1-j}‖) + ‖δ_l‖)`; Lemma 11.3, the `1 - hQ/2 ≥ 1/2`
-trick to isolate `‖w_n‖`, and the discrete Gronwall lemma on the horizon conclude. -/
+/-- The **zero-stability estimate**, (11.65) of [quarteroni2000numerical], which is the core of
+Theorem 11.4. Let the method satisfy the root condition, let $T \ge 0$, and let $f(t, \cdot)$ be
+$L$-Lipschitz for every $t \in [t_0, t_0 + T]$. Then there are $h_0 > 0$ and $K > 0$ with the
+following property. Let $h \in (0, h_0]$, $N_h = \lfloor T / h \rfloor$, and
+$\varepsilon_0, \varepsilon_1 \ge 0$. Let $u$ and $z$ be sequences in $E$ such that, for every
+step with $n + p + 1 \le N_h$, $u$ satisfies the scheme and $z$ satisfies the scheme with the
+added perturbation $h \delta_{n+p+1}$. If $\|z_k - u_k\| \le \varepsilon_0$ for $k \le p$ and
+$\|\delta_k\| \le \varepsilon_1$ for $p + 1 \le k \le N_h$, then
+$$\|z_n - u_n\| \le K (\varepsilon_0 + T \varepsilon_1) \qquad (n \le N_h).$$
+
+The proof takes $h_0 = 1 / (Q + 1)$ and $K = 2 M_0 e^{TQ}$, where $Q = 2 M_0 \beta L (p + 2)$,
+$\beta = |b_{-1}| + \sum_j |b_j|$, and $M_0$ is the constant of Lemma 11.3 of
+[quarteroni2000numerical] for the recurrence `ODE.LinearMultistep.toLinearRecurrenceZero`. The
+difference $w = z - u$ solves that recurrence with a source bounded by $h (\beta L (\|w_l\| +
+\sum_j \|w_{l-1-j}\|) + \|\delta_l\|)$. Lemma 11.3
+(`LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le`), the bound $1 - hQ/2 \ge 1/2$
+that isolates $\|w_n\|$, and the discrete Gronwall lemma `Gronwall.discrete_sum_const_of_le`
+finish the proof. -/
 theorem norm_sub_le_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition) (hT : 0 ≤ T)
     {L : NNReal} (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t)) :
     ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ K : ℝ, 0 < K ∧ ∀ h ∈ Ioc 0 h₀, ∀ {ε₀ ε₁ : ℝ}, 0 ≤ ε₀ → 0 ≤ ε₁ →
@@ -1186,19 +1352,26 @@ section Theorem114
 
 variable {L : NNReal}
 
-/-- **Zero-stability** ([quarteroni2000numerical] Definition 11.13, (11.58)) of the method for
-the field `f` on the horizon `[t₀, t₀ + T]`: there are `h₀ > 0` and `C > 0` such that for every
-`h ∈ (0, h₀]`, every perturbation `δ` bounded by `ε` on the grid, an orbit `u` from arbitrary
-starting values `w_k = u_k` and a perturbed orbit `z` from `w_k + δ_k`, `k ≤ p`, stay
-`C ε`-close at every node `n ≤ N_h`. -/
+/-- **Zero-stability** of the method for the field $f$ on the horizon $[t_0, t_0 + T]$, Definition
+11.13 and (11.58) of [quarteroni2000numerical]. There are $h_0 > 0$ and $C > 0$ with the
+following property. Let $h \in (0, h_0]$, $\varepsilon \ge 0$, and let $\delta$ be a sequence
+with $\|\delta_k\| \le \varepsilon$ for $k \le N_h = \lfloor T / h \rfloor$. Let $u$ be an
+orbit, and let $z$ be a perturbed orbit with perturbation $\delta$ and starting values
+$z_k = u_k + \delta_k$ for $k \le p$. Then
+$$\|z_n - u_n\| \le C \varepsilon \qquad (n \le N_h).$$
+
+The starting values $u_0, \dots, u_p$ of the unperturbed orbit are arbitrary. -/
 def IsZeroStable (f : ℝ → E → E) (t₀ T : ℝ) : Prop :=
   ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ C : ℝ, 0 < C ∧ ∀ h ∈ Ioc 0 h₀, ∀ ε : ℝ, 0 ≤ ε → ∀ δ : ℕ → E,
     (∀ k ≤ gridCount T h, ‖δ k‖ ≤ ε) → ∀ u z : ℕ → E, M.IsOrbit f h t₀ u →
       M.IsOrbitWith f h t₀ δ z → (∀ k ≤ M.p, z k = u k + δ k) →
         ∀ n ≤ gridCount T h, ‖z n - u n‖ ≤ C * ε
 
-/-- **Theorem 11.4, sufficiency** ([quarteroni2000numerical]): a method satisfying the root
-condition is zero-stable for every field Lipschitz in the state, uniformly on the horizon. -/
+/-- **Theorem 11.4** of [quarteroni2000numerical], sufficiency. Let the method satisfy the root
+condition, let $T \ge 0$, and let $f(t, \cdot)$ be $L$-Lipschitz for every
+$t \in [t_0, t_0 + T]$. Then the method is zero-stable for $f$ on $[t_0, t_0 + T]$.
+
+The proof specializes `ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition`. -/
 theorem isZeroStable_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition) (hT : 0 ≤ T)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t)) : M.IsZeroStable f t₀ T := by
   obtain ⟨h₀, hh₀, K, hK, hest⟩ := M.norm_sub_le_of_satisfiesRootCondition hroot hT hf
@@ -1215,20 +1388,25 @@ theorem isZeroStable_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition
     refine (hδ n hn).trans (le_mul_of_one_le_left hε ?_)
     nlinarith [mul_nonneg hK.le hT]
 
-/-- A perturbed orbit whose perturbation vanishes after the starting values is an orbit. -/
+/-- An orbit is a perturbed orbit for every perturbation $\delta$ with $\delta_k = 0$ for
+$k \ge p + 1$. -/
 theorem isOrbitWith_of_isOrbit {δ u : ℕ → E} (hu : M.IsOrbit f h t₀ u)
     (hδ : ∀ k, M.p + 1 ≤ k → δ k = 0) : M.IsOrbitWith f h t₀ δ u := fun n => by
   rw [hδ (n + M.p + 1) (by omega), smul_zero, add_zero]
   exact M.isOrbit_iff_rhs.1 hu n
 
-/-- **Theorem 11.4, necessity** ([quarteroni2000numerical]): zero-stability for the single
-problem `y' = 0` on a horizon `T > 0` forces the root condition. When the root condition fails,
-the real recurrence of the method has an unbounded real solution `v`
-(`LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`); `v` is a
-perturbed orbit of `y' = 0` from the starting perturbations `δ_k = v_k`, `k ≤ p`, all bounded
-by `ε = max_{k ≤ p} |v_k|`, against the zero orbit, and zero-stability bounds `|v_n|` by `C ε`
-at every `n` (taking `h` so small that `n ≤ N_h`). The book's witnesses `ε r_i^n` and
-`ε (r_i + r̄_i)^n` do not work; see the errata. -/
+/-- **Theorem 11.4** of [quarteroni2000numerical], necessity. Let $T > 0$. If the method is
+zero-stable for the scalar problem $y' = 0$ on $[t_0, t_0 + T]$, then it satisfies the root
+condition.
+
+When the root condition fails, the real recurrence of the method has an unbounded real solution
+$v$ (`LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`). The
+zero sequence is an orbit of $y' = 0$, and $v$ is a perturbed orbit with the perturbation
+$\delta_k = v_k$ for $k \le p$ and $\delta_k = 0$ for $k > p$, which is bounded by
+$\varepsilon = \max_{k \le p} |v_k|$. Zero-stability then bounds every $|v_n|$ by
+$C \varepsilon$, with $h$ so small that $n \le N_h$. The proof of the source uses the sequences
+$\varepsilon r_i^n$ and $\varepsilon (r_i + \bar r_i)^n$ as witnesses, and these do not work;
+the proof here does not use them. -/
 theorem satisfiesRootCondition_of_isZeroStable (hT : 0 < T)
     (h : M.IsZeroStable (E := ℝ) (fun _ _ => 0) t₀ T) : M.SatisfiesRootCondition := by
   by_contra hroot
@@ -1268,10 +1446,12 @@ theorem satisfiesRootCondition_of_isZeroStable (hT : 0 < T)
     rw [Real.norm_eq_abs]; exact hδle k) _ v hu hz (fun k hk => by simp [hδ, hk]) n hnN
   simpa using this
 
-/-- **Theorem 11.4** ([quarteroni2000numerical], equivalence of zero-stability and the root
-condition): on a horizon `T > 0`, a multistep method is zero-stable for every scalar problem
-with `f` Lipschitz in the state iff it satisfies the root condition. Consistency, part of the
-book's statement, is not needed. -/
+/-- **Theorem 11.4** of [quarteroni2000numerical], the equivalence of zero-stability and the root
+condition. Let $T > 0$. The method is zero-stable on $[t_0, t_0 + T]$ for every scalar field $f$
+such that $f(t, \cdot)$ is Lipschitz, with one constant $L$, for all $t \in [t_0, t_0 + T]$, if
+and only if it satisfies the root condition.
+
+The source also assumes that the method is consistent. The proof does not need it. -/
 theorem isZeroStable_iff_satisfiesRootCondition (hT : 0 < T) :
     (∀ (f : ℝ → ℝ → ℝ) (L : NNReal), (∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t)) →
       M.IsZeroStable f t₀ T) ↔ M.SatisfiesRootCondition :=
@@ -1287,33 +1467,45 @@ section Theorem115
 
 variable {L : NNReal} {y : ℝ → E}
 
-/-- **Convergence** ([quarteroni2000numerical] Definition 11.5, read for a multistep method with
-starting values as Theorem 11.5 requires): there are `h₀ > 0` and a bound `C ε h` tending to
-zero as the starting error `ε` and the step `h` tend to zero jointly, such that every orbit
-with step `h ∈ (0, h₀]` satisfies `‖u_n - y(t_n)‖ ≤ C (max_{k ≤ p} ‖u_k - y(t_k)‖) h` at every
-node `n ≤ N_h`. The book's "the error on the initial data tends to zero as `h → 0`" is the
-hypothesis on a family of orbits; the joint limit makes the conclusion follow for every such
-family. -/
+/-- **Convergence** of the method for the field $f$ to the curve $y$ on the horizon
+$[t_0, t_0 + T]$. There are $h_0 > 0$ and a function $C(\varepsilon, h)$ with
+$C(\varepsilon, h) \to 0$ as $\varepsilon \to 0^+$ (with $\varepsilon \ge 0$) and $h \to 0^+$
+jointly, such that for every $h \in (0, h_0]$ every orbit $u$ satisfies
+$$\|u_n - y(t_n)\| \le C\Bigl( \max_{k \le p} \|u_k - y(t_k)\|, \, h \Bigr) \qquad (n \le
+  N_h).$$
+
+This reads Definition 11.5 of [quarteroni2000numerical] for a multistep method with starting
+values, as Theorem 11.5 of the source requires. The source assumes that the error in the
+starting values tends to $0$ as $h \to 0$; that is a hypothesis on a family of orbits. Because
+the limit here is joint, the conclusion follows for every such family. -/
 def IsConvergentFor (f : ℝ → E → E) (t₀ T : ℝ) (y : ℝ → E) : Prop :=
   ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ C : ℝ → ℝ → ℝ,
     Tendsto (fun p : ℝ × ℝ => C p.1 p.2) (𝓝[≥] 0 ×ˢ 𝓝[>] 0) (𝓝 0) ∧
     ∀ h ∈ Ioc 0 h₀, ∀ u : ℕ → E, M.IsOrbit f h t₀ u → ∀ n ≤ gridCount T h,
       ‖u n - y (node t₀ h n)‖ ≤ C (⨆ k : Fin (M.p + 1), ‖u k - y (node t₀ h k)‖) h
 
-/-- **Convergence with order `q`** ([quarteroni2000numerical] Theorem 11.5, second sentence):
-`‖u_n - y(t_n)‖ ≤ K (max_{k ≤ p} ‖u_k - y(t_k)‖ + h^q)`, so that starting errors `O(h^q)` give a
-global error `O(h^q)`. -/
+/-- **Convergence with order $q$** of the method for the field $f$ to the curve $y$ on
+$[t_0, t_0 + T]$, from Theorem 11.5 of [quarteroni2000numerical]. There are $h_0 > 0$ and
+$K > 0$ such that for every $h \in (0, h_0]$ every orbit $u$ satisfies
+$$\|u_n - y(t_n)\| \le K \Bigl( \max_{k \le p} \|u_k - y(t_k)\| + h^q \Bigr) \qquad (n \le
+  N_h).$$
+Hence starting errors of size $O(h^q)$ give a global error $O(h^q)$. -/
 def IsConvergentWithOrderFor (f : ℝ → E → E) (t₀ T : ℝ) (y : ℝ → E) (q : ℕ) : Prop :=
   ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ K : ℝ, 0 < K ∧ ∀ h ∈ Ioc 0 h₀, ∀ u : ℕ → E, M.IsOrbit f h t₀ u →
     ∀ n ≤ gridCount T h,
       ‖u n - y (node t₀ h n)‖ ≤ K * ((⨆ k : Fin (M.p + 1), ‖u k - y (node t₀ h k)‖) + h ^ q)
 
-/-- **The convergence estimate** ([quarteroni2000numerical] Theorem 11.5, from (11.65) with
-`δ_m = τ_m(h)`): under the root condition and the Lipschitz condition, for a solution `y` of
-`y' = f(t, y)` on `[t₀, t₀ + T]` there are `h₀ > 0` and `K > 0` such that every orbit with step
-`h ∈ (0, h₀]` satisfies `‖u_n - y(t_n)‖ ≤ K (max_{k ≤ p} ‖u_k - y(t_k)‖ + T τ(h))` for
-`n ≤ N_h`. The exact solution is a perturbed orbit on the horizon with `δ_{n+1} = τ_{n+1}(h)`
-(`lte_spec`). -/
+/-- The **convergence estimate**, from (11.65) of [quarteroni2000numerical] with
+$\delta_m = \tau_m(h)$, behind Theorem 11.5. Let the method satisfy the root condition, let
+$T \ge 0$, let $f(t, \cdot)$ be $L$-Lipschitz for every $t \in [t_0, t_0 + T]$, and let $y$ have
+the derivative $f(t, y(t))$ at every $t \in [t_0, t_0 + T]$. Then there are $h_0 > 0$ and
+$K > 0$ such that for every $h \in (0, h_0]$ every orbit $u$ satisfies
+$$\|u_n - y(t_n)\| \le K \Bigl( \max_{k \le p} \|u_k - y(t_k)\| + T \tau(h) \Bigr)
+  \qquad (n \le N_h),$$
+where $\tau(h)$ is the global truncation error along $y$.
+
+The exact solution is a perturbed orbit on the horizon with $\delta_{n+1} = \tau_{n+1}(h)$, by
+`ODE.LinearMultistep.lte_spec`. -/
 theorem norm_sub_le_globalLte_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition)
     (hT : 0 ≤ T) (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t))
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) :
@@ -1356,9 +1548,13 @@ theorem norm_sub_le_globalLte_of_satisfiesRootCondition (hroot : M.SatisfiesRoot
     (fun n _ => (M.isOrbit_iff_rhs.1 hu) n) hz hδ0 hδ1 n hn
   rwa [norm_sub_rev] at this
 
-/-- **Theorem 11.5, sufficiency** ([quarteroni2000numerical]): a method satisfying the root
-condition, consistent along the solution `y` of a problem with `f` Lipschitz in the state, is
-convergent, with `C ε h = K (ε + T τ(h))`. -/
+/-- **Theorem 11.5** of [quarteroni2000numerical], sufficiency. Let the method satisfy the root
+condition, let $T \ge 0$, let $f(t, \cdot)$ be $L$-Lipschitz for every $t \in [t_0, t_0 + T]$,
+and let $y$ have the derivative $f(t, y(t))$ at every $t \in [t_0, t_0 + T]$. If the method is
+consistent along $y$, then it is convergent for $f$ to $y$ on $[t_0, t_0 + T]$.
+
+The bound is $C(\varepsilon, h) = K (\varepsilon + T \tau(h))$, from
+`ODE.LinearMultistep.norm_sub_le_globalLte_of_satisfiesRootCondition`. -/
 theorem isConvergentFor_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition) (hT : 0 ≤ T)
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t))
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) (hcons : M.IsConsistentFor t₀ T y) :
@@ -1372,9 +1568,11 @@ theorem isConvergentFor_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondit
   have := (h1.add (h2.const_mul T)).const_mul K
   simpa using this
 
-/-- **Theorem 11.5, order of convergence** ([quarteroni2000numerical]): a method satisfying the
-root condition, of order `q` along the solution `y` of a problem with `f` Lipschitz in the
-state, is convergent with order `q`. -/
+/-- **Theorem 11.5** of [quarteroni2000numerical], order of convergence. Let the method satisfy the
+root condition, let $T \ge 0$, let $f(t, \cdot)$ be $L$-Lipschitz for every
+$t \in [t_0, t_0 + T]$, and let $y$ have the derivative $f(t, y(t))$ at every
+$t \in [t_0, t_0 + T]$. If the method has order $q$ along $y$, then it is convergent with order
+$q$ for $f$ to $y$ on $[t_0, t_0 + T]$. -/
 theorem isConvergentWithOrderFor_of_satisfiesRootCondition (hroot : M.SatisfiesRootCondition)
     (hT : 0 ≤ T) (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t))
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) {q : ℕ}
@@ -1401,12 +1599,16 @@ end Theorem115
 
 section Theorem115Necessity
 
-/-- **Theorem 11.5, necessity** ([quarteroni2000numerical]): convergence for the problem
-`y' = 0`, `y = 0` on a horizon `T > 0` forces the root condition. When it fails, the real
-recurrence of the method has a solution `v` with `|v_n| ≥ c n` for infinitely many `n`
-(`LinearRecurrence.exists_isSolution_real_frequently_le`); the orbits `h • v` have starting error
-`h max_{k ≤ p} |v_k| → 0`, so with `h = T/n` convergence gives `(T/n)|v_n| ≤ C(h m₀, h) → 0`,
-while `(T/n) |v_n| ≥ T c` frequently. -/
+/-- **Theorem 11.5** of [quarteroni2000numerical], necessity. Let $T > 0$. If the method is
+convergent for the scalar problem $y' = 0$ to the solution $y = 0$ on $[t_0, t_0 + T]$, then it
+satisfies the root condition.
+
+When the root condition fails, the real recurrence of the method has a solution $v$ with
+$|v_n| \ge cn$ for infinitely many $n$
+(`LinearRecurrence.exists_isSolution_real_frequently_le`). The orbits $hv$ have the starting
+error $h \max_{k \le p} |v_k| \to 0$. With $h = T / n$, convergence gives
+$(T / n) |v_n| \le C(h m_0, h) \to 0$, where $m_0 = \max_{k \le p} |v_k|$, while
+$(T / n) |v_n| \ge Tc$ for infinitely many $n$. -/
 theorem satisfiesRootCondition_of_isConvergentFor (hT : 0 < T)
     (h : M.IsConvergentFor (E := ℝ) (fun _ _ => 0) t₀ T fun _ => 0) : M.SatisfiesRootCondition := by
   by_contra hroot
@@ -1457,10 +1659,18 @@ theorem satisfiesRootCondition_of_isConvergentFor (hT : 0 < T)
   obtain ⟨n, hn1, hn2, hn3⟩ := (hfreq.and_eventually (hbound.and hev)).exists
   linarith [hn2 hn1]
 
-/-- **Corollary 11.1** ([quarteroni2000numerical], the equivalence theorem, Lax–Richtmyer): on
-a horizon `T > 0`, a consistent multistep method is convergent for every scalar Cauchy problem
-with `f` Lipschitz in the state and a `C¹` solution iff it is zero-stable for every such problem
-— both being the root condition, by Theorems 11.4 and 11.5. -/
+/-- **Corollary 11.1** of [quarteroni2000numerical] (the Lax–Richtmyer equivalence theorem). Let the
+method be consistent and let $T > 0$. Then the following are equivalent:
+
+* for every scalar field $f$ such that $f(t, \cdot)$ is $L$-Lipschitz for all
+  $t \in [t_0, t_0 + T]$, and every $y$ with the derivative $f(t, y(t))$ at every
+  $t \in [t_0, t_0 + T]$ such that $t \mapsto f(t, y(t))$ is continuous on $[t_0, t_0 + T]$, the
+  method is convergent for $f$ to $y$;
+* for every scalar field $f$ such that $f(t, \cdot)$ is $L$-Lipschitz for all
+  $t \in [t_0, t_0 + T]$, the method is zero-stable for $f$ on $[t_0, t_0 + T]$.
+
+Both statements are equivalent to the root condition, by Theorems 11.4 and 11.5. The continuity
+of $t \mapsto f(t, y(t))$ says that the solution $y$ is $C^1$ on the horizon. -/
 theorem isConvergentFor_iff_isZeroStable (hcons : M.IsConsistent) (hT : 0 < T) :
     (∀ (f : ℝ → ℝ → ℝ) (L : NNReal) (y : ℝ → ℝ), (∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t)) →
       (∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) →
@@ -1494,17 +1704,20 @@ namespace LinearMultistep
 
 variable (M : LinearMultistep) {f : ℝ → E → E} {h t₀ T : ℝ} {n : ℕ}
 
-/-! ### One-step methods as one-step multistep methods -/
+/-! ### One-step methods as multistep methods -/
 
 section OneStepInstance
 
-/-- **A one-step method** as a linear multistep method with `p = 0`:
-`u_{n+1} = a₀ u_n + h (b₀ f_n + b_{-1} f_{n+1})`. Forward Euler is `ofOneStep 1 1 0`, backward
-Euler `ofOneStep 1 0 1`, Crank–Nicolson `ofOneStep 1 (1/2) (1/2)`, the θ-method
-`ofOneStep 1 (1 - θ) θ`. -/
+/-- **A one-step method** as a linear multistep method with $p = 0$:
+$$u_{n+1} = a_0 u_n + h (b_0 f_n + b_{-1} f_{n+1}).$$
+Forward Euler is `ofOneStep 1 1 0`, backward Euler is `ofOneStep 1 0 1`, Crank–Nicolson is
+`ofOneStep 1 (1/2) (1/2)`, and the θ-method is `ofOneStep 1 (1 - θ) θ`. -/
 def ofOneStep (a₀ b₀ bm1 : ℝ) : LinearMultistep := ⟨0, ![a₀], ![b₀], bm1⟩
 
-/-- The orbits of a one-step multistep method, unfolded. -/
+/-- A sequence $u$ is an orbit of `ODE.LinearMultistep.ofOneStep a₀ b₀ bm1` if and only if, for
+every $n$,
+$$u_{n+1} = a_0 u_n + h \bigl( b_0 f(t_n, u_n) + b_{-1} f(t_{n+1}, u_{n+1}) \bigr).$$
+-/
 theorem isOrbit_ofOneStep_iff {a₀ b₀ bm1 : ℝ} {u : ℕ → E} :
     (ofOneStep a₀ b₀ bm1).IsOrbit f h t₀ u ↔ ∀ n, u (n + 1) =
       a₀ • u n + h • (b₀ • f (node t₀ h n) (u n) + bm1 • f (node t₀ h (n + 1)) (u (n + 1))) := by
@@ -1513,47 +1726,53 @@ theorem isOrbit_ofOneStep_iff {a₀ b₀ bm1 : ℝ} {u : ℕ → E} :
   simp only [Fin.sum_univ_succ, Fin.sum_univ_zero, Fin.val_zero, Nat.sub_zero,
     Matrix.cons_val_zero, add_zero, smul_add, smul_smul, add_assoc]
 
-/-- The orbits of `ofOneStep 1 (1 - θ) θ` are the orbits of the θ-method of
-`Numlib/ODE/OneStep`. -/
+/-- The orbits of `ofOneStep 1 (1 - θ) θ` are the orbits of the θ-method `ODE.OneStep.theta` of
+`Numlib.ODE.OneStep`, $u_{n+1} = u_n + h ((1 - \theta) f(t_n, u_n) + \theta f(t_{n+1},
+u_{n+1}))$. -/
 theorem isOrbit_ofOneStep_theta_iff {θ : ℝ} {u : ℕ → E} :
     (ofOneStep 1 (1 - θ) θ).IsOrbit f h t₀ u ↔
       OneStep.IsOrbit (OneStep.ofIncrement (OneStep.theta f θ)) h t₀ u := by
   rw [isOrbit_ofOneStep_iff, OneStep.isOrbit_ofIncrement_iff]
   simp only [OneStep.theta, one_smul, node_succ]
 
-/-- The orbits of `ofOneStep 1 1 0` are the orbits of forward Euler. -/
+/-- The orbits of `ofOneStep 1 1 0` are the orbits of forward Euler, `ODE.OneStep.forwardEuler`. -/
 theorem isOrbit_ofOneStep_forwardEuler_iff {u : ℕ → E} :
     (ofOneStep 1 1 0).IsOrbit f h t₀ u ↔
       OneStep.IsOrbit (OneStep.ofIncrement (OneStep.forwardEuler f)) h t₀ u := by
   rw [isOrbit_ofOneStep_iff, OneStep.isOrbit_ofIncrement_iff]
   simp only [OneStep.forwardEuler, one_smul, zero_smul, add_zero]
 
-/-- The orbits of `ofOneStep 1 0 1` are the orbits of backward Euler. -/
+/-- The orbits of `ofOneStep 1 0 1` are the orbits of backward Euler, `ODE.OneStep.backwardEuler`.
+-/
 theorem isOrbit_ofOneStep_backwardEuler_iff {u : ℕ → E} :
     (ofOneStep 1 0 1).IsOrbit f h t₀ u ↔
       OneStep.IsOrbit (OneStep.ofIncrement (OneStep.backwardEuler f)) h t₀ u := by
   rw [isOrbit_ofOneStep_iff, OneStep.isOrbit_ofIncrement_iff]
   simp only [OneStep.backwardEuler, one_smul, zero_smul, zero_add, node_succ]
 
-/-- The orbits of `ofOneStep 1 (1/2) (1/2)` are the orbits of Crank–Nicolson. -/
+/-- The orbits of `ofOneStep 1 (1/2) (1/2)` are the orbits of Crank–Nicolson,
+`ODE.OneStep.crankNicolson`. -/
 theorem isOrbit_ofOneStep_crankNicolson_iff {u : ℕ → E} :
     (ofOneStep 1 (1 / 2) (1 / 2)).IsOrbit f h t₀ u ↔
       OneStep.IsOrbit (OneStep.ofIncrement (OneStep.crankNicolson f)) h t₀ u := by
   rw [isOrbit_ofOneStep_iff, OneStep.isOrbit_ofIncrement_iff]
   simp only [OneStep.crankNicolson, one_smul, smul_add, node_succ, one_div]
 
-/-- The first characteristic polynomial of a one-step method is `X - a₀`. -/
+/-- The first characteristic polynomial of `ODE.LinearMultistep.ofOneStep a₀ b₀ bm1` is
+$\rho(r) = r - a_0$. -/
 theorem rho_ofOneStep (a₀ b₀ bm1 : ℝ) : (ofOneStep a₀ b₀ bm1).rho = X - C a₀ := by
   unfold rho ofOneStep
   simp
 
-/-- The second characteristic polynomial of a one-step method is `b₋₁ X + b₀`. -/
+/-- The second characteristic polynomial of `ODE.LinearMultistep.ofOneStep a₀ b₀ bm1` is
+$\sigma(r) = b_{-1} r + b_0$. -/
 theorem sigma_ofOneStep (a₀ b₀ bm1 : ℝ) : (ofOneStep a₀ b₀ bm1).sigma = C bm1 * X + C b₀ := by
   unfold sigma ofOneStep
   simp
 
-/-- **Consistent one-step methods satisfy the root condition** ([quarteroni2000numerical]
-§11.6.3): with `p = 0` and `∑ a_j = 1`, `ρ = X - 1`. -/
+/-- **Consistent one-step methods satisfy the root condition** ([quarteroni2000numerical], §11.6.3).
+If $p = 0$ and the order condition $0$ holds, then $\rho(r) = r - 1$, and the method satisfies
+the root condition. -/
 theorem satisfiesRootCondition_of_p_eq_zero (hp : M.p = 0) (h0 : M.orderCondition 0) :
     M.SatisfiesRootCondition := by
   obtain ⟨p, a, b, bm1⟩ := M
@@ -1569,29 +1788,36 @@ theorem satisfiesRootCondition_of_p_eq_zero (hp : M.p = 0) (h0 : M.orderConditio
 
 end OneStepInstance
 
-/-! ### Adams-type methods: `a = e₀` -/
+/-!
+### Adams-type methods
+
+An Adams-type method has $a_0 = 1$ and $a_j = 0$ for $j \ge 1$, that is, $a = e_0$.
+-/
 
 section AdamsType
 
-/-- The order condition `0` of an Adams-type method (`a = e₀`) holds. -/
+/-- An Adams-type method, with $a = e_0$, satisfies the order condition $0$. -/
 theorem orderCondition_zero_of_a_single (ha : M.a = Pi.single 0 1) : M.orderCondition 0 := by
   rw [orderCondition_zero, ha, Fintype.sum_pi_single']
 
-/-- The sum `∑ (-j)^{i+1} a_j` of an Adams-type method vanishes. -/
+/-- For an Adams-type method, with $a = e_0$, the sum $\sum_j (-j)^{i+1} a_j$ is $0$ for every $i$.
+-/
 theorem sum_pow_succ_mul_a_eq_zero (ha : M.a = Pi.single 0 1) (i : ℕ) :
     ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ (i + 1) * M.a j = 0 := by
   rw [ha, Finset.sum_eq_single 0 (fun j _ hj => by simp [Pi.single_eq_of_ne hj]) (by simp)]
   simp
 
-/-- The order conditions of an Adams-type method: condition `i + 1` reads
-`(i + 1) (b_{-1} + ∑ (-j)^i b_j) = 1`. -/
+/-- For an Adams-type method, with $a = e_0$, the order condition $i + 1$ reads
+$$(i + 1) \Bigl( b_{-1} + \sum_{j=0}^p (-j)^i b_j \Bigr) = 1.$$
+-/
 theorem orderCondition_succ_of_a_single (ha : M.a = Pi.single 0 1) (i : ℕ) :
     M.orderCondition (i + 1) ↔
       (i + 1 : ℝ) * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ i * M.b j) = 1 := by
   rw [orderCondition_succ, M.sum_pow_succ_mul_a_eq_zero ha, zero_add]
 
-/-- The Taylor coefficient `C_{i+1}` of an Adams-type method:
-`1 - (i + 1)(b_{-1} + ∑ (-j)^i b_j)`. -/
+/-- For an Adams-type method, with $a = e_0$, the Taylor coefficient $c_{i+1}$ is
+$$c_{i+1} = 1 - (i + 1) \Bigl( b_{-1} + \sum_{j=0}^p (-j)^i b_j \Bigr).$$
+-/
 theorem taylorCoeff_succ_of_a_single (ha : M.a = Pi.single 0 1) (i : ℕ) :
     M.taylorCoeff (i + 1) =
       1 - (i + 1 : ℝ) * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ i * M.b j) := by
@@ -1599,23 +1825,25 @@ theorem taylorCoeff_succ_of_a_single (ha : M.a = Pi.single 0 1) (i : ℕ) :
   push_cast
   ring
 
-/-- The error constant of an Adams-type method of order `q`:
-`(1 - (q + 1)(b_{-1} + ∑ (-j)^q b_j)) / (q + 1)!`. -/
+/-- For an Adams-type method, with $a = e_0$, the error constant of order $q$ is
+$$C_{q+1} = \frac{1 - (q + 1) \bigl( b_{-1} + \sum_{j=0}^p (-j)^q b_j \bigr)}{(q + 1)!}.$$
+-/
 theorem errorConstant_of_a_single (ha : M.a = Pi.single 0 1) (q : ℕ) :
     M.errorConstant q =
       (1 - (q + 1 : ℝ) * (M.bm1 + ∑ j : Fin (M.p + 1), (-(j : ℝ)) ^ q * M.b j)) /
         (q + 1).factorial := by
   rw [errorConstant, M.taylorCoeff_succ_of_a_single ha]
 
-/-- The first characteristic polynomial of an Adams-type method is `X^{p+1} - X^p = X^p (X - 1)`.
--/
+/-- For an Adams-type method, with $a = e_0$, the first characteristic polynomial is
+$\rho(r) = r^{p+1} - r^p = r^p (r - 1)$. -/
 theorem rho_of_a_single (ha : M.a = Pi.single 0 1) : M.rho = X ^ M.p * (X - C 1) := by
   rw [rho, ha, Finset.sum_eq_single 0 (fun j _ hj => by simp [Pi.single_eq_of_ne hj]) (by simp)]
   simp only [Pi.single_eq_same, map_one, one_mul, Fin.val_zero, Nat.sub_zero]
   ring
 
-/-- **Adams-type methods satisfy the root condition** ([quarteroni2000numerical] §11.6.3): the
-roots of `ρ = X^p (X - 1)` are `0`, of multiplicity `p`, and `1`, simple. -/
+/-- **Adams-type methods satisfy the root condition** ([quarteroni2000numerical], §11.6.3). If
+$a = e_0$, then the roots of $\rho(r) = r^p (r - 1)$ are $0$, of multiplicity $p$, and $1$,
+which is simple. -/
 theorem satisfiesRootCondition_of_a_single (ha : M.a = Pi.single 0 1) :
     M.SatisfiesRootCondition := by
   rw [SatisfiesRootCondition, M.rho_of_a_single ha]
@@ -1627,14 +1855,21 @@ end AdamsType
 
 section AdamsWeight
 
-/-- **The Adams weights of a node vector** `x : Fin k → ℝ` in the normalized variable
-`s = (t - t_n)/h`: `w_i = ∫_0^1 ℓ_i(s) ds`, the integral over `[t_n, t_{n+1}]` of the Lagrange
-basis polynomial of the node `x_i` ([quarteroni2000numerical] §11.5.1). -/
+/-- The **Adams weights** of a node vector $x = (x_0, \dots, x_{k-1})$ are
+$$w_i = \int_0^1 \ell_i(s) \, ds,$$
+where $\ell_i$ is the Lagrange basis polynomial of the node $x_i$. In the normalized variable
+$s = (t - t_n) / h$, this is the integral over $[t_n, t_{n+1}]$ that defines the coefficients of
+the Adams methods ([quarteroni2000numerical], §11.5.1).
+
+The definition does not assume that the nodes are distinct. -/
 noncomputable def adamsWeight {k : ℕ} (x : Fin k → ℝ) (i : Fin k) : ℝ :=
   ∫ s in (0 : ℝ)..1, (Lagrange.basis Finset.univ x i).eval s
 
-/-- **The moment identities** of the Adams weights: the interpolatory quadrature
-`g ↦ ∑ w_i g(x_i)` is exact on the monomials `s^m`, `m < k`: `∑ x_i^m w_i = 1/(m + 1)`. -/
+/-- The **moment identities** of the Adams weights. If the nodes $x_0, \dots, x_{k-1}$ are distinct
+and $m < k$, then
+$$\sum_{i=0}^{k-1} x_i^m w_i = \frac{1}{m + 1}.$$
+That is, the interpolatory quadrature $g \mapsto \sum_i w_i g(x_i)$ of $\int_0^1 g$ is exact on
+the monomials $s^m$, $m < k$. -/
 theorem sum_pow_mul_adamsWeight {k : ℕ} {x : Fin k → ℝ} (hx : Function.Injective x) {m : ℕ}
     (hm : m < k) : ∑ i, x i ^ m * adamsWeight x i = 1 / (m + 1) := by
   have hint : ∀ i : Fin k, IntervalIntegrable (fun s => (Lagrange.basis Finset.univ x i).eval s)
@@ -1652,9 +1887,12 @@ theorem sum_pow_mul_adamsWeight {k : ℕ} {x : Fin k → ℝ} (hx : Function.Inj
   rw [← intervalIntegral.integral_finsetSum fun i _ => (hint i).const_mul _]
   simp only [e, integral_pow, one_pow, zero_pow (Nat.succ_ne_zero m), sub_zero]
 
-/-- **Uniqueness of weights with given moments**: a weight vector with the moments of the Adams
-weights on `k` distinct nodes is the Adams weight vector (the moment system is a transposed
-Vandermonde system). This is how the printed coefficient rows are identified. -/
+/-- **Uniqueness of weights with given moments.** Let the nodes $x_0, \dots, x_{k-1}$ be distinct.
+If a weight vector $w$ satisfies $\sum_i x_i^m w_i = 1 / (m + 1)$ for all $m < k$, then $w$ is
+the vector of Adams weights of $x$.
+
+The moment system is a transposed Vandermonde system. This identifies the printed coefficient
+rows of the Adams methods. -/
 theorem eq_adamsWeight_of_moments {k : ℕ} {x : Fin k → ℝ} (hx : Function.Injective x)
     {w : Fin k → ℝ} (hw : ∀ m < k, ∑ i, x i ^ m * w i = 1 / (m + 1)) : w = adamsWeight x := by
   set V := (Matrix.vandermonde x).transpose with hV
@@ -1675,21 +1913,23 @@ end AdamsWeight
 
 section AdamsBashforth
 
-/-- The Adams–Bashforth nodes `-j`, `j = 0, …, p`, in the normalized variable. -/
+/-- The Adams–Bashforth nodes $x_j = -j$, $j = 0, \dots, p$, in the normalized variable. -/
 def adamsBashforthNode (p : ℕ) (j : Fin (p + 1)) : ℝ := -(j : ℝ)
 
 /-- The Adams–Bashforth nodes are distinct. -/
 theorem injective_adamsBashforthNode (p : ℕ) : Function.Injective (adamsBashforthNode p) :=
   fun _ _ hij => Fin.ext (Nat.cast_injective (neg_injective hij))
 
-/-- **The `p + 1`-step Adams–Bashforth method** ([quarteroni2000numerical] (11.49), case 1):
-`u_{n+1} = u_n + h ∑_{j=0}^p b_j f_{n-j}` with the interpolatory weights `b_j = ∫_0^1 ℓ_j` of
-the nodes `t_n, …, t_{n-p}` (`s = 0, -1, …, -p`); explicit. `adamsBashforth 0` is forward
-Euler. -/
+/-- The **Adams–Bashforth method with $p + 1$ steps**, (11.49) of [quarteroni2000numerical], case 1:
+$$u_{n+1} = u_n + h \sum_{j=0}^p b_j f_{n-j},$$
+with $b_{-1} = 0$ and the Adams weights $b_j = \int_0^1 \ell_j(s) \, ds$ of the nodes
+$t_n, t_{n-1}, \dots, t_{n-p}$, that is, $s = 0, -1, \dots, -p$. The method is explicit, and
+`adamsBashforth 0` is forward Euler. -/
 noncomputable def adamsBashforth (p : ℕ) : LinearMultistep :=
   ⟨p, Pi.single 0 1, adamsWeight (adamsBashforthNode p), 0⟩
 
-/-- The quadrature sum of an Adams–Bashforth method is the moment sum of its weights. -/
+/-- For the Adams–Bashforth method, $b_{-1} + \sum_j (-j)^i b_j = \sum_j x_j^i w_j$, the $i$-th
+moment of the Adams weights $w$ of the nodes $x_j = -j$. -/
 theorem adamsBashforth_bm1_add_sum (p i : ℕ) :
     (adamsBashforth p).bm1 + ∑ j : Fin ((adamsBashforth p).p + 1),
       (-(j : ℝ)) ^ i * (adamsBashforth p).b j =
@@ -1698,9 +1938,11 @@ theorem adamsBashforth_bm1_add_sum (p i : ℕ) :
   rw [zero_add]
   rfl
 
-/-- **`q`-step Adams–Bashforth methods have order `q`** ([quarteroni2000numerical] §11.5.1):
-`(adamsBashforth p).HasOrder (p + 1)`. The order conditions are the moment identities of the
-interpolatory weights. -/
+/-- **The Adams–Bashforth methods have order equal to their number of steps**
+([quarteroni2000numerical], §11.5.1): the method with $p + 1$ steps has order $p + 1$.
+
+The order conditions are the moment identities `ODE.LinearMultistep.sum_pow_mul_adamsWeight` of
+the interpolatory weights. -/
 theorem adamsBashforth_hasOrder (p : ℕ) : (adamsBashforth p).HasOrder (p + 1) := by
   rw [hasOrder_iff]
   intro i hi
@@ -1710,20 +1952,21 @@ theorem adamsBashforth_hasOrder (p : ℕ) : (adamsBashforth p).HasOrder (p + 1) 
       sum_pow_mul_adamsWeight (injective_adamsBashforthNode p) (by omega)]
     field_simp
 
-/-- Adams–Bashforth methods satisfy the root condition. -/
+/-- The Adams–Bashforth methods satisfy the root condition. -/
 theorem adamsBashforth_satisfiesRootCondition (p : ℕ) :
     (adamsBashforth p).SatisfiesRootCondition :=
   (adamsBashforth p).satisfiesRootCondition_of_a_single rfl
 
-/-- The Adams–Bashforth weights of `p + 1` nodes are identified by their moments. -/
+/-- Let $w_0, \dots, w_p$ satisfy $\sum_i (-i)^m w_i = 1 / (m + 1)$ for all $m \le p$. Then
+`adamsBashforth p` is the method with $p + 1$ steps, $a = e_0$, $b = w$ and $b_{-1} = 0$. -/
 theorem adamsBashforth_eq {p : ℕ} {w : Fin (p + 1) → ℝ}
     (hw : ∀ m < p + 1, ∑ i, adamsBashforthNode p i ^ m * w i = 1 / (m + 1)) :
     adamsBashforth p = ⟨p, Pi.single 0 1, w, 0⟩ := by
   unfold adamsBashforth
   rw [eq_adamsWeight_of_moments (injective_adamsBashforthNode p) hw]
 
-/-- **Forward Euler is the one-step Adams–Bashforth method** ([quarteroni2000numerical]
-§11.5.1). -/
+/-- **Forward Euler is the Adams–Bashforth method with one step** ([quarteroni2000numerical],
+§11.5.1): `adamsBashforth 0 = ofOneStep 1 1 0`. -/
 theorem adamsBashforth_zero_eq : adamsBashforth 0 = ofOneStep 1 1 0 := by
   rw [adamsBashforth_eq (w := ![1]) fun m hm => by rw [Nat.lt_one_iff.1 hm]; simp]
   unfold ofOneStep
@@ -1732,8 +1975,9 @@ theorem adamsBashforth_zero_eq : adamsBashforth 0 = ofOneStep 1 1 0 := by
   fin_cases j
   simp
 
-/-- **The two-step Adams–Bashforth method** ([quarteroni2000numerical] (11.50)):
-`u_{n+1} = u_n + (h/2)(3 f_n - f_{n-1})`, `a = ![1, 0]`, `b = ![3/2, -1/2]`. -/
+/-- **The Adams–Bashforth method with two steps**, (11.50) of [quarteroni2000numerical]:
+$$u_{n+1} = u_n + \frac{h}{2} (3 f_n - f_{n-1}),$$
+that is, $a = (1, 0)$, $b = (3/2, -1/2)$ and $b_{-1} = 0$. -/
 theorem adamsBashforth_one_eq : adamsBashforth 1 = ⟨1, ![1, 0], ![3 / 2, -1 / 2], 0⟩ := by
   rw [adamsBashforth_eq (w := ![3 / 2, -1 / 2]) fun m hm => by
     interval_cases m <;> simp [Fin.sum_univ_succ, adamsBashforthNode] <;> norm_num]
@@ -1741,8 +1985,9 @@ theorem adamsBashforth_one_eq : adamsBashforth 1 = ⟨1, ![1, 0], ![3 / 2, -1 / 
   funext j
   fin_cases j <;> simp
 
-/-- **The three-step Adams–Bashforth method** ([quarteroni2000numerical] §11.5.1):
-`u_{n+1} = u_n + (h/12)(23 f_n - 16 f_{n-1} + 5 f_{n-2})`. -/
+/-- **The Adams–Bashforth method with three steps** ([quarteroni2000numerical], §11.5.1):
+$$u_{n+1} = u_n + \frac{h}{12} (23 f_n - 16 f_{n-1} + 5 f_{n-2}).$$
+-/
 theorem adamsBashforth_two_eq :
     adamsBashforth 2 = ⟨2, ![1, 0, 0], ![23 / 12, -16 / 12, 5 / 12], 0⟩ := by
   rw [adamsBashforth_eq (w := ![23 / 12, -16 / 12, 5 / 12]) fun m hm => by
@@ -1751,8 +1996,9 @@ theorem adamsBashforth_two_eq :
   funext j
   fin_cases j <;> simp
 
-/-- **The four-step Adams–Bashforth method** ([quarteroni2000numerical] §11.5.1):
-`u_{n+1} = u_n + (h/24)(55 f_n - 59 f_{n-1} + 37 f_{n-2} - 9 f_{n-3})`. -/
+/-- **The Adams–Bashforth method with four steps** ([quarteroni2000numerical], §11.5.1):
+$$u_{n+1} = u_n + \frac{h}{24} (55 f_n - 59 f_{n-1} + 37 f_{n-2} - 9 f_{n-3}).$$
+-/
 theorem adamsBashforth_three_eq :
     adamsBashforth 3 = ⟨3, ![1, 0, 0, 0], ![55 / 24, -59 / 24, 37 / 24, -9 / 24], 0⟩ := by
   rw [adamsBashforth_eq (w := ![55 / 24, -59 / 24, 37 / 24, -9 / 24]) fun m hm => by
@@ -1761,8 +2007,9 @@ theorem adamsBashforth_three_eq :
   funext j
   fin_cases j <;> simp
 
-/-- **The error constants of the Adams–Bashforth methods of orders 1–4**
-([quarteroni2000numerical] Table 11.1, `C*_{q+1}`): `1/2, 5/12, 3/8, 251/720`. -/
+/-- **The error constants of the Adams–Bashforth methods of orders 1 to 4** (Table 11.1 of
+[quarteroni2000numerical], the column $C^*_{q+1}$): the method with $q$ steps has the error
+constant $C_{q+1}$ equal to $1/2$, $5/12$, $3/8$ and $251/720$ for $q = 1, 2, 3, 4$. -/
 theorem adamsBashforth_errorConstant :
     (adamsBashforth 0).errorConstant 1 = 1 / 2 ∧ (adamsBashforth 1).errorConstant 2 = 5 / 12 ∧
       (adamsBashforth 2).errorConstant 3 = 3 / 8 ∧
@@ -1787,27 +2034,34 @@ end AdamsBashforth
 
 section AdamsMoulton
 
-/-- The Adams–Moulton nodes `1, 0, -1, …, -(p-1)` in the normalized variable, `x_i = 1 - i`. -/
+/-- The Adams–Moulton nodes $x_i = 1 - i$, $i = 0, \dots, p$, that is, $1, 0, -1, \dots, -(p - 1)$,
+in the normalized variable. -/
 def adamsMoultonNode (p : ℕ) (i : Fin (p + 1)) : ℝ := 1 - (i : ℝ)
 
 /-- The Adams–Moulton nodes are distinct. -/
 theorem injective_adamsMoultonNode (p : ℕ) : Function.Injective (adamsMoultonNode p) :=
   fun _ _ hij => Fin.ext (Nat.cast_injective (sub_right_injective hij))
 
-/-- The Adams–Moulton weights of the nodes `1, 0, …, -(p-1)`, indexed by `ℕ` and extended by
-zero: `adamsMoultonWeight p 0 = b_{-1}`, `adamsMoultonWeight p (k + 1) = b_k`. -/
+/-- The Adams–Moulton weights of the nodes $1, 0, \dots, -(p - 1)$, indexed by $\mathbb{N}$ and
+extended by zero: the value at $i \le p$ is the Adams weight $w_i$ of the node $1 - i$, and the
+value at $i > p$ is $0$. Thus the value at $0$ is $b_{-1}$ and the value at $k + 1$ is $b_k$. -/
 noncomputable def adamsMoultonWeight (p : ℕ) (i : ℕ) : ℝ :=
   if h : i < p + 1 then adamsWeight (adamsMoultonNode p) ⟨i, h⟩ else 0
 
-/-- **The `p`-step Adams–Moulton method** ([quarteroni2000numerical] (11.49), case 2):
-`u_{n+1} = u_n + h ∑_{j=-1}^{p-1} b_j f_{n-j}` with the interpolatory weights of the nodes
-`t_{n+1}, t_n, …, t_{n-p+1}` (`s = 1, 0, …, -(p-1)`); implicit. `adamsMoulton 0` is backward
-Euler (the single node `t_{n+1}`, the book's `p = -1`), `adamsMoulton 1` is Crank–Nicolson. The
-structure has `p - 1` in its `p` field, so that `adamsMoulton p` has `p` steps for `p ≥ 1`. -/
+/-- The **Adams–Moulton method with $p$ steps**, (11.49) of [quarteroni2000numerical], case 2:
+$$u_{n+1} = u_n + h \sum_{j=-1}^{p-1} b_j f_{n-j},$$
+with the Adams weights of the nodes $t_{n+1}, t_n, \dots, t_{n-p+1}$, that is,
+$s = 1, 0, \dots, -(p - 1)$. The method is implicit. `adamsMoulton 0` is backward Euler, with
+the single node $t_{n+1}$ (the case $p = -1$ of the source), and `adamsMoulton 1` is
+Crank–Nicolson.
+
+The field `p` of the structure is $p - 1$, a natural subtraction, so that `adamsMoulton p` has
+$p$ steps for $p \ge 1$ and one step for $p = 0$. -/
 noncomputable def adamsMoulton (p : ℕ) : LinearMultistep :=
   ⟨p - 1, Pi.single 0 1, fun k => adamsMoultonWeight p (k + 1), adamsMoultonWeight p 0⟩
 
-/-- The quadrature sum of an Adams–Moulton method is the moment sum over all `p + 1` nodes. -/
+/-- For the Adams–Moulton method, $b_{-1} + \sum_k (-k)^i b_k = \sum_{l=0}^p x_l^i w_l$, the $i$-th
+moment of the Adams weights $w$ over all $p + 1$ nodes $x_l = 1 - l$. -/
 theorem adamsMoulton_bm1_add_sum (p i : ℕ) :
     (adamsMoulton p).bm1 + ∑ k : Fin ((adamsMoulton p).p + 1),
       (-(k : ℝ)) ^ i * (adamsMoulton p).b k =
@@ -1835,8 +2089,10 @@ theorem adamsMoulton_bm1_add_sum (p i : ℕ) :
     push_cast
     ring_nf
 
-/-- **`q`-step Adams–Moulton methods have order `q + 1`** ([quarteroni2000numerical] §11.5.1):
-`(adamsMoulton p).HasOrder (p + 1)` (with `adamsMoulton 0`, backward Euler, of order `1`). -/
+/-- **The Adams–Moulton methods have order one more than their number of steps**
+([quarteroni2000numerical], §11.5.1): `adamsMoulton p` has order $p + 1$. For $p \ge 1$ the
+method has $p$ steps. The exception is `adamsMoulton 0`, backward Euler, which has one step and
+order $1$. -/
 theorem adamsMoulton_hasOrder (p : ℕ) : (adamsMoulton p).HasOrder (p + 1) := by
   rw [hasOrder_iff]
   intro i hi
@@ -1846,26 +2102,29 @@ theorem adamsMoulton_hasOrder (p : ℕ) : (adamsMoulton p).HasOrder (p + 1) := b
       sum_pow_mul_adamsWeight (injective_adamsMoultonNode p) (by omega)]
     field_simp
 
-/-- Adams–Moulton methods satisfy the root condition. -/
+/-- The Adams–Moulton methods satisfy the root condition. -/
 theorem adamsMoulton_satisfiesRootCondition (p : ℕ) : (adamsMoulton p).SatisfiesRootCondition :=
   (adamsMoulton p).satisfiesRootCondition_of_a_single rfl
 
-/-- **Every Adams method is zero-stable** ([quarteroni2000numerical] §11.6.3): for
-`a = e₀`, `ρ = X^{p+1} - X^p` has the roots `1` (simple) and `0` (multiplicity `p`), so
-Adams–Bashforth and Adams–Moulton methods satisfy the root condition and are zero-stable for
-every field Lipschitz in the state. -/
+/-- **The Adams methods satisfy the root condition** ([quarteroni2000numerical], §11.6.3): for every
+$p$, `adamsBashforth p` and `adamsMoulton p` satisfy the root condition.
+
+For $a = e_0$ the polynomial $\rho(r) = r^{p+1} - r^p$ has the simple root $1$ and the root $0$
+of multiplicity $p$. By `ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition`, the Adams
+methods are therefore zero-stable for every field that is Lipschitz in the state. -/
 theorem adams_satisfiesRootCondition (p : ℕ) :
     (adamsBashforth p).SatisfiesRootCondition ∧ (adamsMoulton p).SatisfiesRootCondition :=
   ⟨adamsBashforth_satisfiesRootCondition p, adamsMoulton_satisfiesRootCondition p⟩
 
-/-- The Adams–Moulton weights, identified by their moments. -/
+/-- Let $w_0, \dots, w_p$ satisfy $\sum_i (1 - i)^m w_i = 1 / (m + 1)$ for all $m \le p$. Then the
+Adams–Moulton weight at $i$ is $w_i$ for $i \le p$ and $0$ for $i > p$. -/
 theorem adamsMoultonWeight_eq {p : ℕ} {w : Fin (p + 1) → ℝ}
     (hw : ∀ m < p + 1, ∑ i, adamsMoultonNode p i ^ m * w i = 1 / (m + 1)) (i : ℕ) :
     adamsMoultonWeight p i = if h : i < p + 1 then w ⟨i, h⟩ else 0 := by
   rw [adamsMoultonWeight, ← eq_adamsWeight_of_moments (injective_adamsMoultonNode p) hw]
 
-/-- **Backward Euler is the Adams–Moulton method with the single node `t_{n+1}`**
-([quarteroni2000numerical] §11.5.1). -/
+/-- **Backward Euler is the Adams–Moulton method with the single node $t_{n+1}$**
+([quarteroni2000numerical], §11.5.1): `adamsMoulton 0 = ofOneStep 1 0 1`. -/
 theorem adamsMoulton_zero_eq : adamsMoulton 0 = ofOneStep 1 0 1 := by
   have hw := adamsMoultonWeight_eq (p := 0) (w := ![1]) fun m hm => by
     rw [Nat.lt_one_iff.1 hm]; simp
@@ -1875,8 +2134,8 @@ theorem adamsMoulton_zero_eq : adamsMoulton 0 = ofOneStep 1 0 1 := by
   simp only [hw]
   congr 1 <;> (funext j; fin_cases j; simp)
 
-/-- **Crank–Nicolson is the one-step Adams–Moulton method** ([quarteroni2000numerical]
-§11.5.1). -/
+/-- **Crank–Nicolson is the Adams–Moulton method with one step** ([quarteroni2000numerical],
+§11.5.1): `adamsMoulton 1 = ofOneStep 1 (1/2) (1/2)`. -/
 theorem adamsMoulton_one_eq : adamsMoulton 1 = ofOneStep 1 (1 / 2) (1 / 2) := by
   have hw := adamsMoultonWeight_eq (p := 1) (w := ![1 / 2, 1 / 2]) fun m hm => by
     interval_cases m <;> simp [Fin.sum_univ_succ, adamsMoultonNode] <;> norm_num
@@ -1886,8 +2145,9 @@ theorem adamsMoulton_one_eq : adamsMoulton 1 = ofOneStep 1 (1 / 2) (1 / 2) := by
   simp only [hw]
   congr 1 <;> (funext j; fin_cases j; simp)
 
-/-- **The two-step Adams–Moulton method** ([quarteroni2000numerical] (11.51)):
-`u_{n+1} = u_n + (h/12)(5 f_{n+1} + 8 f_n - f_{n-1})`. -/
+/-- **The Adams–Moulton method with two steps**, (11.51) of [quarteroni2000numerical]:
+$$u_{n+1} = u_n + \frac{h}{12} (5 f_{n+1} + 8 f_n - f_{n-1}).$$
+-/
 theorem adamsMoulton_two_eq : adamsMoulton 2 = ⟨1, ![1, 0], ![8 / 12, -1 / 12], 5 / 12⟩ := by
   have hw := adamsMoultonWeight_eq (p := 2) (w := ![5 / 12, 8 / 12, -1 / 12]) fun m hm => by
     interval_cases m <;> simp [Fin.sum_univ_succ, adamsMoultonNode] <;> norm_num
@@ -1896,8 +2156,9 @@ theorem adamsMoulton_two_eq : adamsMoulton 2 = ⟨1, ![1, 0], ![8 / 12, -1 / 12]
   simp only [hw]
   congr 1 <;> funext j <;> fin_cases j <;> simp
 
-/-- **The three-step Adams–Moulton method** ([quarteroni2000numerical] §11.5.1):
-`u_{n+1} = u_n + (h/24)(9 f_{n+1} + 19 f_n - 5 f_{n-1} + f_{n-2})`. -/
+/-- **The Adams–Moulton method with three steps** ([quarteroni2000numerical], §11.5.1):
+$$u_{n+1} = u_n + \frac{h}{24} (9 f_{n+1} + 19 f_n - 5 f_{n-1} + f_{n-2}).$$
+-/
 theorem adamsMoulton_three_eq :
     adamsMoulton 3 = ⟨2, ![1, 0, 0], ![19 / 24, -5 / 24, 1 / 24], 9 / 24⟩ := by
   have hw := adamsMoultonWeight_eq (p := 3) (w := ![9 / 24, 19 / 24, -5 / 24, 1 / 24])
@@ -1907,8 +2168,10 @@ theorem adamsMoulton_three_eq :
   simp only [hw]
   congr 1 <;> funext j <;> fin_cases j <;> simp
 
-/-- **The four-step Adams–Moulton method** ([quarteroni2000numerical] §11.5.1):
-`u_{n+1} = u_n + (h/720)(251 f_{n+1} + 646 f_n - 264 f_{n-1} + 106 f_{n-2} - 19 f_{n-3})`. -/
+/-- **The Adams–Moulton method with four steps** ([quarteroni2000numerical], §11.5.1):
+$$u_{n+1} = u_n + \frac{h}{720} (251 f_{n+1} + 646 f_n - 264 f_{n-1} + 106 f_{n-2} - 19
+  f_{n-3}).$$
+-/
 theorem adamsMoulton_four_eq :
     adamsMoulton 4 =
       ⟨3, ![1, 0, 0, 0], ![646 / 720, -264 / 720, 106 / 720, -19 / 720], 251 / 720⟩ := by
@@ -1920,9 +2183,12 @@ theorem adamsMoulton_four_eq :
   simp only [hw]
   congr 1 <;> funext j <;> fin_cases j <;> simp
 
-/-- **The error constants of the Adams–Moulton methods of orders 1–4**
-([quarteroni2000numerical] Table 11.1, `C_{q+1}`, the column indexed by the *order*):
-`-1/2, -1/12, -1/24, -19/720`. -/
+/-- **The error constants of the Adams–Moulton methods of orders 1 to 4** (Table 11.1 of
+[quarteroni2000numerical], the column $C_{q+1}$): the Adams–Moulton method of order $q$,
+`adamsMoulton (q - 1)`, has the error constant $C_{q+1}$ equal to $-1/2$, $-1/12$, $-1/24$ and
+$-19/720$ for $q = 1, 2, 3, 4$.
+
+The column of the table is indexed by the order of the method, not by its number of steps. -/
 theorem adamsMoulton_errorConstant :
     (adamsMoulton 0).errorConstant 1 = -1 / 2 ∧ (adamsMoulton 1).errorConstant 2 = -1 / 12 ∧
       (adamsMoulton 2).errorConstant 3 = -1 / 24 ∧
@@ -1947,10 +2213,13 @@ end AdamsMoulton
 
 section BDF
 
-/-- **The backward differentiation formulae** ([quarteroni2000numerical] Table 11.2):
-`u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h b_{-1} f_{n+1}` for `p = 0, …, 5`. The table's last row has
-`b_{-1} = 60/147` (the printed `60/137` is a misprint: with it the first-order condition fails).
-`bdf 0` is backward Euler. -/
+/-- The **backward differentiation formulae** of Table 11.2 of [quarteroni2000numerical]: for
+$p = 0, \dots, 5$, the implicit method with $p + 1$ steps
+$$u_{n+1} = \sum_{j=0}^p a_j u_{n-j} + h b_{-1} f_{n+1},$$
+with $b_0 = \dots = b_p = 0$ and the coefficients of the table. `bdf 0` is backward Euler.
+
+The table prints $b_{-1} = 60/137$ in the row $p = 5$. This is a misprint: with it the order
+condition $1$ fails. The definition uses $b_{-1} = 60/147$. -/
 noncomputable def bdf : Fin 6 → LinearMultistep :=
   ![⟨0, ![1], ![0], 1⟩,
     ⟨1, ![4 / 3, -1 / 3], 0, 2 / 3⟩,
@@ -1959,29 +2228,36 @@ noncomputable def bdf : Fin 6 → LinearMultistep :=
     ⟨4, ![300 / 137, -300 / 137, 200 / 137, -75 / 137, 12 / 137], 0, 60 / 137⟩,
     ⟨5, ![360 / 147, -450 / 147, 400 / 147, -225 / 147, 72 / 147, -10 / 147], 0, 60 / 147⟩]
 
-/-- `bdf 0` is backward Euler. -/
+/-- `bdf 0` is backward Euler: `bdf 0 = ofOneStep 1 0 1`. -/
 theorem bdf_zero_eq : bdf 0 = ofOneStep 1 0 1 := rfl
 
-/-- The two-step BDF method. -/
+/-- The BDF method with two steps is $u_{n+1} = \frac{4}{3} u_n - \frac{1}{3} u_{n-1} + \frac{2}{3}
+h f_{n+1}$. -/
 theorem bdf_one_eq : bdf 1 = ⟨1, ![4 / 3, -1 / 3], 0, 2 / 3⟩ := rfl
 
-/-- The three-step BDF method. -/
+/-- The BDF method with three steps is $u_{n+1} = \frac{18}{11} u_n - \frac{9}{11} u_{n-1} +
+\frac{2}{11} u_{n-2} + \frac{6}{11} h f_{n+1}$. -/
 theorem bdf_two_eq : bdf 2 = ⟨2, ![18 / 11, -9 / 11, 2 / 11], 0, 6 / 11⟩ := rfl
 
-/-- The four-step BDF method. -/
+/-- The BDF method with four steps is $u_{n+1} = \frac{1}{25} (48 u_n - 36 u_{n-1} + 16 u_{n-2} - 3
+u_{n-3}) + \frac{12}{25} h f_{n+1}$. -/
 theorem bdf_three_eq : bdf 3 = ⟨3, ![48 / 25, -36 / 25, 16 / 25, -3 / 25], 0, 12 / 25⟩ := rfl
 
-/-- The five-step BDF method. -/
+/-- The BDF method with five steps is $u_{n+1} = \frac{1}{137} (300 u_n - 300 u_{n-1} + 200
+u_{n-2} - 75 u_{n-3} + 12 u_{n-4}) + \frac{60}{137} h f_{n+1}$. -/
 theorem bdf_four_eq :
     bdf 4 = ⟨4, ![300 / 137, -300 / 137, 200 / 137, -75 / 137, 12 / 137], 0, 60 / 137⟩ := rfl
 
-/-- The six-step BDF method, with `b_{-1} = 60/147`. -/
+/-- The BDF method with six steps is $u_{n+1} = \frac{1}{147} (360 u_n - 450 u_{n-1} + 400 u_{n-2} -
+225 u_{n-3} + 72 u_{n-4} - 10 u_{n-5}) + \frac{60}{147} h f_{n+1}$, with $b_{-1} = 60/147$. -/
 theorem bdf_five_eq :
     bdf 5 = ⟨5, ![360 / 147, -450 / 147, 400 / 147, -225 / 147, 72 / 147, -10 / 147], 0,
       60 / 147⟩ := rfl
 
-/-- **The `p + 1`-step BDF method has order `p + 1`** ([quarteroni2000numerical] §11.5.2):
-`(bdf k).HasOrder (k + 1)` for `k = 0, …, 5`; the order conditions are rational identities. -/
+/-- **The BDF method with $k + 1$ steps has order $k + 1$** ([quarteroni2000numerical], §11.5.2),
+for $k = 0, \dots, 5$.
+
+The order conditions are identities between rational numbers. -/
 theorem bdf_hasOrder (k : Fin 6) : (bdf k).HasOrder (k + 1) := by
   fin_cases k
   · change (ofOneStep 1 0 1).HasOrder 1
@@ -2017,8 +2293,8 @@ theorem bdf_hasOrder (k : Fin 6) : (bdf k).HasOrder (k + 1) := by
     unfold orderCondition
     interval_cases i <;> simp [Fin.sum_univ_succ] <;> norm_num
 
-/-- The first characteristic polynomial of the two-step BDF method, read in `ℂ[X]`, is
-`X² - (4/3) X + 1/3 = (X - 1)(X - 1/3)`. -/
+/-- The first characteristic polynomial of the BDF method with two steps, read in $\mathbb{C}[r]$,
+is $r^2 - \frac{4}{3} r + \frac{1}{3} = (r - 1)(r - \frac{1}{3})$. -/
 theorem rho_bdf_one_map : (bdf 1).rho.map (algebraMap ℝ ℂ) = (X - C 1) * (X - C (1 / 3)) := by
   rw [bdf_one_eq]
   unfold rho
@@ -2027,8 +2303,11 @@ theorem rho_bdf_one_map : (bdf 1).rho.map (algebraMap ℝ ℂ) = (X - C 1) * (X 
   simp [Fin.sum_univ_succ]
   ring
 
-/-- The first characteristic polynomial of the three-step BDF method, read in `ℂ[X]`, is
-`X³ - (18/11) X² + (9/11) X - 2/11 = (X - 1)(X - r₊)(X - r₋)` with `r± = 7/22 ± i√39/22`. -/
+/-- The first characteristic polynomial of the BDF method with three steps, read in $\mathbb{C}[r]$,
+is
+$$r^3 - \frac{18}{11} r^2 + \frac{9}{11} r - \frac{2}{11} = (r - 1)(r - r_+)(r - r_-),
+  \qquad r_\pm = \frac{7}{22} \pm \frac{\sqrt{39}}{22} i.$$
+-/
 theorem rho_bdf_two_map : (bdf 2).rho.map (algebraMap ℝ ℂ) =
     (X - C 1) * ((X - C (7 / 22 + (Real.sqrt 39 / 22 : ℝ) * Complex.I)) *
       (X - C (7 / 22 - (Real.sqrt 39 / 22 : ℝ) * Complex.I))) := by
@@ -2043,11 +2322,14 @@ theorem rho_bdf_two_map : (bdf 2).rho.map (algebraMap ℝ ℂ) =
   linear_combination ((z - 1) / 484) * (39 * Complex.I_sq + Complex.I ^ 2 * hsq)
 
 /-- **The BDF methods with at most three steps satisfy the root condition**
-([quarteroni2000numerical] §11.6.3, "BDF methods are zero-stable for `p ≤ 5`", the cases
-`p ≤ 2`): `ρ = X - 1`, `(X - 1)(X - 1/3)`, and `(X - 1)(X² - (7/11)X + 2/11)`, whose complex
-roots `7/22 ± i√39/22` have modulus `√(2/11) < 1`. The cases `p = 3, 4, 5` need the location of
-the roots of a cubic, quartic and quintic and are the open node `bdf_satisfiesRootCondition_all`.
--/
+([quarteroni2000numerical], §11.6.3, which states that the BDF methods are zero-stable for
+$p \le 5$): if $k \le 2$, then `bdf k` satisfies the root condition.
+
+The polynomials $\rho$ are $r - 1$, $(r - 1)(r - 1/3)$ and
+$(r - 1)(r^2 - \frac{7}{11} r + \frac{2}{11})$. The complex roots $7/22 \pm i\sqrt{39}/22$ of
+the last factor have modulus $\sqrt{2/11} < 1$. The cases $k = 3, 4, 5$ need the location of the
+roots of a cubic, a quartic and a quintic; they are in
+`ODE.LinearMultistep.bdf_satisfiesRootCondition_all`. -/
 theorem bdf_satisfiesRootCondition (k : Fin 6) (hk : k ≤ 2) : (bdf k).SatisfiesRootCondition := by
   classical
   fin_cases k
@@ -2098,18 +2380,22 @@ theorem bdf_satisfiesRootCondition (k : Fin 6) (hk : k ≤ 2) : (bdf k).Satisfie
       · exact absurd h1 hlt.2.ne
   all_goals exact absurd hk (by decide)
 
-/-! #### Zero-stability of the four-, five- and six-step formulae
+/-!
+### Zero-stability of the BDF methods with four, five and six steps
 
-For `p = 3, 4, 5` the spurious roots of `ρ` are those of a cubic, a quartic and a quintic with no
-closed form, and they are located inside the unit disc by the Schur–Cohn recursion of
-`Numlib/RingTheory/Polynomial/SchurCohn`: each chain below runs the reduction
-`Q ↦ (a_n Q - a_0 Q^♯)/X` (with the greatest common divisor of the coefficients scaled out) down
-to a nonzero constant, every step satisfying `|a_0| < |a_n|`. -/
+For $p = 3, 4, 5$ the roots of $\rho$ other than $1$ are the roots of a cubic, a quartic and a
+quintic without a closed form. The Schur–Cohn test of `Numlib.RingTheory.Polynomial.SchurCohn`
+places them inside the unit disc. Each chain below applies the reduction
+$Q \mapsto (a_n Q - a_0 Q^\sharp) / X$, with the greatest common divisor of the coefficients divided
+out, down to a nonzero constant. Here $a_n$ and $a_0$ are the leading and the constant coefficient
+of $Q$, and $Q^\sharp$ is $Q$ with its coefficients reversed. Every step satisfies $|a_0| < |a_n|$.
+-/
 
-/-- **The spurious factor of the four-step BDF method is Schur stable**: every complex root of
-`25 r^3 - 23 r^2 + 13 r - 3` has modulus `< 1`. The Schur-Cohn chain is
-`(25, -23, 13, -3) -> (77, -67, 32) -> (109, -67) -> (7392)`, each step dividing out the
-greatest common divisor of the coefficients. -/
+/-- **The extra factor of $\rho$ for the BDF method with four steps is Schur stable**: every complex
+root of $25 r^3 - 23 r^2 + 13 r - 3$ has modulus less than $1$.
+
+The Schur–Cohn chain is $(25, -23, 13, -3) \to (77, -67, 32) \to (109, -67) \to (7392)$, where
+each step divides out the greatest common divisor of the coefficients. -/
 theorem isSchurStable_bdfFactor3 : Polynomial.IsSchurStable
     (C 25 * X ^ 3 + C (-23) * X ^ 2 + C 13 * X + C (-3)) := by
   have h3 : Polynomial.IsSchurCohnPair (C 7392) (C 7392) :=
@@ -2134,10 +2420,13 @@ theorem isSchurStable_bdfFactor3 : Polynomial.IsSchurStable
       (by simp only [map_ofNat, map_neg]; ring)
   exact h0.isSchurStable
 
-/-- **The spurious factor of the five-step BDF method is Schur stable**: every complex root of
-`137 r^4 - 163 r^3 + 137 r^2 - 63 r + 12` has modulus `< 1`, by the Schur-Cohn chain
-`(137, -163, 137, -63, 12) -> (745, -863, 685, -267) -> (60467, -57505, 34988) ->
-(19091, -11501) -> (232193280)`. -/
+/-- **The extra factor of $\rho$ for the BDF method with five steps is Schur stable**: every complex
+root of $137 r^4 - 163 r^3 + 137 r^2 - 63 r + 12$ has modulus less than $1$.
+
+The Schur–Cohn chain is
+$$(137, -163, 137, -63, 12) \to (745, -863, 685, -267) \to (60467, -57505, 34988)
+  \to (19091, -11501) \to (232193280).$$
+-/
 theorem isSchurStable_bdfFactor4 : Polynomial.IsSchurStable
     (C 137 * X ^ 4 + C (-163) * X ^ 3 + C 137 * X ^ 2 + C (-63) * X + C 12) := by
   have h4 : Polynomial.IsSchurCohnPair (C 232193280) (C 232193280) :=
@@ -2168,11 +2457,14 @@ theorem isSchurStable_bdfFactor4 : Polynomial.IsSchurStable
       (by simp only [map_ofNat, map_neg]; ring)
   exact h0.isSchurStable
 
-/-- **The spurious factor of the six-step BDF method is Schur stable**: every complex root of
-`147 r^5 - 213 r^4 + 237 r^3 - 163 r^2 + 62 r - 10` has modulus `< 1`, by the Schur-Cohn chain
-`(147, -213, 237, -163, 62, -10) -> (21509, -30691, 33209, -21591, 6984) ->
-(2364919, -2910521, 2756347, -1428885) -> (20637463, -17112857, 13713664) ->
-(413869, -206179) -> (128777769120)`. -/
+/-- **The extra factor of $\rho$ for the BDF method with six steps is Schur stable**: every complex
+root of $147 r^5 - 213 r^4 + 237 r^3 - 163 r^2 + 62 r - 10$ has modulus less than $1$.
+
+The Schur–Cohn chain is
+$$(147, -213, 237, -163, 62, -10) \to (21509, -30691, 33209, -21591, 6984)
+  \to (2364919, -2910521, 2756347, -1428885)$$
+$$\to (20637463, -17112857, 13713664) \to (413869, -206179) \to (128777769120).$$
+-/
 theorem isSchurStable_bdfFactor5 : Polynomial.IsSchurStable
     (C 147 * X ^ 5 + C (-213) * X ^ 4 + C 237 * X ^ 3 + C (-163) * X ^ 2 + C 62 * X +
       C (-10)) := by
@@ -2210,8 +2502,8 @@ theorem isSchurStable_bdfFactor5 : Polynomial.IsSchurStable
       (by simp only [map_ofNat, map_neg, map_one]; ring)
   exact h0.isSchurStable
 
-/-- The factorisation of the first characteristic polynomial of the four-step BDF method:
-`25 ρ(r) = (r - 1)(25 r³ - 23 r² + 13 r - 3)`. -/
+/-- The first characteristic polynomial of the BDF method with four steps factors as $25 \rho(r) =
+(r - 1)(25 r^3 - 23 r^2 + 13 r - 3)$. -/
 theorem rho_bdf_three_factor : (bdf 3).rho =
     C (1 / 25) * ((X - C 1) * (C 25 * X ^ 3 + C (-23) * X ^ 2 + C 13 * X + C (-3))) := by
   rw [bdf_three_eq]
@@ -2221,8 +2513,8 @@ theorem rho_bdf_three_factor : (bdf 3).rho =
   simp [Fin.sum_univ_succ]
   ring
 
-/-- The factorisation of the first characteristic polynomial of the five-step BDF method:
-`137 ρ(r) = (r - 1)(137 r⁴ - 163 r³ + 137 r² - 63 r + 12)`. -/
+/-- The first characteristic polynomial of the BDF method with five steps factors as $137 \rho(r) =
+(r - 1)(137 r^4 - 163 r^3 + 137 r^2 - 63 r + 12)$. -/
 theorem rho_bdf_four_factor : (bdf 4).rho =
     C (1 / 137) * ((X - C 1) *
       (C 137 * X ^ 4 + C (-163) * X ^ 3 + C 137 * X ^ 2 + C (-63) * X + C 12)) := by
@@ -2233,8 +2525,8 @@ theorem rho_bdf_four_factor : (bdf 4).rho =
   simp [Fin.sum_univ_succ]
   ring
 
-/-- The factorisation of the first characteristic polynomial of the six-step BDF method:
-`147 ρ(r) = (r - 1)(147 r⁵ - 213 r⁴ + 237 r³ - 163 r² + 62 r - 10)`. -/
+/-- The first characteristic polynomial of the BDF method with six steps factors as $147 \rho(r) =
+(r - 1)(147 r^5 - 213 r^4 + 237 r^3 - 163 r^2 + 62 r - 10)$. -/
 theorem rho_bdf_five_factor : (bdf 5).rho =
     C (1 / 147) * ((X - C 1) *
       (C 147 * X ^ 5 + C (-213) * X ^ 4 + C 237 * X ^ 3 + C (-163) * X ^ 2 + C 62 * X +
@@ -2246,12 +2538,15 @@ theorem rho_bdf_five_factor : (bdf 5).rho =
   simp [Fin.sum_univ_succ]
   ring
 
-/-- **Every BDF method of Table 11.2 satisfies the root condition**
-([quarteroni2000numerical] §11.6.3, "BDF methods are zero-stable for `p ≤ 5`", quoted there from
-Cryer without proof). For `p ≤ 2` this is `bdf_satisfiesRootCondition`; for `p = 3, 4, 5` the
-first characteristic polynomial factors as `ρ = c (r - 1) Q` with `Q` Schur stable
-(`isSchurStable_bdfFactor3`, `isSchurStable_bdfFactor4`, `isSchurStable_bdfFactor5`), and
-`Polynomial.satisfiesRootCondition_of_isSchurStable` concludes. -/
+/-- **Every BDF method of Table 11.2 satisfies the root condition** ([quarteroni2000numerical],
+§11.6.3): `bdf k` satisfies the root condition for $k = 0, \dots, 5$. The source states that the
+BDF methods are zero-stable for $p \le 5$ and quotes this from Cryer without proof.
+
+For $k \le 2$ this is `ODE.LinearMultistep.bdf_satisfiesRootCondition`. For $k = 3, 4, 5$,
+$\rho$ factors as $c (r - 1) Q$ with $Q$ Schur stable
+(`ODE.LinearMultistep.isSchurStable_bdfFactor3`, `ODE.LinearMultistep.isSchurStable_bdfFactor4`,
+`ODE.LinearMultistep.isSchurStable_bdfFactor5`), and
+`Polynomial.satisfiesRootCondition_of_isSchurStable` gives the root condition. -/
 theorem bdf_satisfiesRootCondition_all (k : Fin 6) : (bdf k).SatisfiesRootCondition := by
   fin_cases k
   · exact bdf_satisfiesRootCondition _ (by decide)
@@ -2270,16 +2565,19 @@ end BDF
 
 section MidpointSimpson
 
-/-- **The midpoint method** ([quarteroni2000numerical] (11.43)): `u_{n+1} = u_{n-1} + 2h f_n`,
-an explicit two-step method, `a = ![0, 1]`, `b = ![2, 0]`, `b_{-1} = 0`. -/
+/-- The **midpoint method**, (11.43) of [quarteroni2000numerical]: the explicit method with two
+steps
+$$u_{n+1} = u_{n-1} + 2h f_n,$$
+that is, $a = (0, 1)$, $b = (2, 0)$ and $b_{-1} = 0$. -/
 noncomputable def midpoint : LinearMultistep := ⟨1, ![0, 1], ![2, 0], 0⟩
 
-/-- **The Simpson method** ([quarteroni2000numerical] (11.44)):
-`u_{n+1} = u_{n-1} + (h/3)(f_{n-1} + 4 f_n + f_{n+1})`, an implicit two-step method,
-`a = ![0, 1]`, `b = ![4/3, 1/3]`, `b_{-1} = 1/3`. -/
+/-- The **Simpson method**, (11.44) of [quarteroni2000numerical]: the implicit method with two steps
+$$u_{n+1} = u_{n-1} + \frac{h}{3} (f_{n-1} + 4 f_n + f_{n+1}),$$
+that is, $a = (0, 1)$, $b = (4/3, 1/3)$ and $b_{-1} = 1/3$. -/
 noncomputable def simpson : LinearMultistep := ⟨1, ![0, 1], ![4 / 3, 1 / 3], 1 / 3⟩
 
-/-- The orbits of the midpoint method: `u_{n+2} = u_n + 2h f(t_{n+1}, u_{n+1})`. -/
+/-- A sequence $u$ is an orbit of the midpoint method if and only if
+$u_{n+2} = u_n + 2h f(t_{n+1}, u_{n+1})$ for every $n$. -/
 theorem isOrbit_midpoint_iff {u : ℕ → E} :
     midpoint.IsOrbit f h t₀ u ↔
       ∀ n, u (n + 2) = u n + (2 * h) • f (node t₀ h (n + 1)) (u (n + 1)) := by
@@ -2292,8 +2590,10 @@ theorem isOrbit_midpoint_iff {u : ℕ → E} :
     mul_zero, smul_smul, Nat.add_sub_cancel]
   exact forall_congr' fun n => by rw [mul_comm h 2]
 
-/-- The orbits of the Simpson method:
-`u_{n+2} = u_n + (h/3) (f(t_n, u_n) + 4 f(t_{n+1}, u_{n+1}) + f(t_{n+2}, u_{n+2}))`. -/
+/-- A sequence $u$ is an orbit of the Simpson method if and only if, for every $n$,
+$$u_{n+2} = u_n + \frac{h}{3} \bigl( f(t_n, u_n) + 4 f(t_{n+1}, u_{n+1}) + f(t_{n+2}, u_{n+2})
+  \bigr).$$
+-/
 theorem isOrbit_simpson_iff {u : ℕ → E} :
     simpson.IsOrbit f h t₀ u ↔ ∀ n, u (n + 2) = u n + (h / 3) •
       (f (node t₀ h n) (u n) + (4 : ℝ) • f (node t₀ h (n + 1)) (u (n + 1)) +
@@ -2309,52 +2609,54 @@ theorem isOrbit_simpson_iff {u : ℕ → E} :
   rw [show n + 1 + 1 = n + 2 from rfl]
   refine ⟨fun H => H.trans ?_, fun H => H.trans ?_⟩ <;> module
 
-/-- The first characteristic polynomial of the midpoint method is `X² - 1`. -/
+/-- The first characteristic polynomial of the midpoint method is $\rho(r) = r^2 - 1$. -/
 theorem rho_midpoint : midpoint.rho = X ^ 2 - 1 := by
   unfold rho midpoint
   simp [Fin.sum_univ_succ]
 
-/-- The second characteristic polynomial of the midpoint method is `2X`. -/
+/-- The second characteristic polynomial of the midpoint method is $\sigma(r) = 2r$. -/
 theorem sigma_midpoint : midpoint.sigma = C 2 * X := by
   unfold sigma midpoint
   simp [Fin.sum_univ_succ]
 
-/-- The first characteristic polynomial of the Simpson method is `X² - 1`. -/
+/-- The first characteristic polynomial of the Simpson method is $\rho(r) = r^2 - 1$. -/
 theorem rho_simpson : simpson.rho = X ^ 2 - 1 := by
   unfold rho simpson
   simp [Fin.sum_univ_succ]
 
-/-- The second characteristic polynomial of the Simpson method is `(X² + 4X + 1)/3`. -/
+/-- The second characteristic polynomial of the Simpson method is $\sigma(r) = (r^2 + 4r + 1) / 3$.
+-/
 theorem sigma_simpson : simpson.sigma = C (1 / 3) * X ^ 2 + C (4 / 3) * X + C (1 / 3) := by
   unfold sigma simpson
   simp [Fin.sum_univ_succ]
   ring
 
-/-- **The midpoint method satisfies the root condition** ([quarteroni2000numerical] §11.6.3):
-`ρ = r² - 1`, roots `±1`. -/
+/-- **The midpoint method satisfies the root condition** ([quarteroni2000numerical], §11.6.3): the
+roots of $\rho(r) = r^2 - 1$ are $\pm 1$, and both are simple. -/
 theorem midpoint_satisfiesRootCondition : midpoint.SatisfiesRootCondition := by
   rw [SatisfiesRootCondition, rho_midpoint]
   exact Polynomial.satisfiesRootCondition_X_sq_sub_one
 
-/-- **The Simpson method satisfies the root condition** ([quarteroni2000numerical] §11.6.3). -/
+/-- **The Simpson method satisfies the root condition** ([quarteroni2000numerical], §11.6.3): the
+roots of $\rho(r) = r^2 - 1$ are $\pm 1$, and both are simple. -/
 theorem simpson_satisfiesRootCondition : simpson.SatisfiesRootCondition := by
   rw [SatisfiesRootCondition, rho_simpson]
   exact Polynomial.satisfiesRootCondition_X_sq_sub_one
 
-/-- **The midpoint method has order 2.** -/
+/-- **The midpoint method has order $2$.** -/
 theorem midpoint_hasOrder : midpoint.HasOrder 2 := by
   rw [hasOrder_iff]
   intro i hi
   unfold orderCondition midpoint
   interval_cases i <;> norm_num [Fin.sum_univ_succ]
 
-/-- The midpoint method does not have order 3: the third order condition fails. -/
+/-- The midpoint method does not satisfy the order condition $3$, so it does not have order $3$. -/
 theorem midpoint_not_orderCondition_three : ¬ midpoint.orderCondition 3 := by
   unfold orderCondition midpoint
   simp [Fin.sum_univ_succ]
   norm_num
 
-/-- **The Simpson method has order 4.** -/
+/-- **The Simpson method has order $4$.** -/
 theorem simpson_hasOrder : simpson.HasOrder 4 := by
   rw [hasOrder_iff]
   intro i hi
@@ -2368,17 +2670,23 @@ end MidpointSimpson
 
 section AbsoluteStability
 
-/-- **The complex linear recurrence of the method on the test equation**
-([quarteroni2000numerical] (11.54)), at `z = hλ` with `1 - z b_{-1} ≠ 0`: order `p + 1`,
-coefficients `(a_{p-i} + z b_{p-i}) / (1 - z b_{-1})` in Mathlib's convention (any value when
-`1 - z b_{-1} = 0`, where the scheme does not determine `u_{n+1}`). -/
+/-- The **complex linear recurrence of the method on the test equation** $y' = \lambda y$, (11.54)
+of [quarteroni2000numerical], at $z = h\lambda$: the recurrence of order $p + 1$
+$$u_{n+p+1} = \sum_{i=0}^p \frac{a_{p-i} + z b_{p-i}}{1 - z b_{-1}} u_{n+i}.$$
+
+The coefficients follow the convention of Mathlib's `LinearRecurrence`. If $1 - z b_{-1} = 0$,
+the scheme does not determine $u_{n+1}$; the division by zero then makes all coefficients $0$,
+and the results below exclude this case. -/
 noncomputable def toLinearRecurrence (z : ℂ) : LinearRecurrence ℂ :=
   ⟨M.p + 1, fun i => ((M.a (Fin.rev i) : ℂ) + z * M.b (Fin.rev i)) / (1 - z * M.bm1)⟩
 
-/-- The order of the complex recurrence is `p + 1`. -/
+/-- The complex recurrence of the method has order $p + 1$. -/
 @[simp] theorem toLinearRecurrence_order (z : ℂ) : (M.toLinearRecurrence z).order = M.p + 1 := rfl
 
-/-- Reindexing a sum over the coefficients of the complex recurrence by `j ↦ p - j`. -/
+/-- Reindexing by $j = p - i$: for $g \colon \{0, \dots, p\} \to \mathbb{C}$ and a complex sequence
+$w$,
+$$\sum_{i=0}^p g_{p-i} w_{n+i} = \sum_{j=0}^p g_j w_{n+p-j}.$$
+-/
 theorem sum_rev_mul (g : Fin (M.p + 1) → ℂ) (w : ℕ → ℂ) (n : ℕ) :
     ∑ i : Fin (M.p + 1), g (Fin.rev i) * w (n + i) =
       ∑ j : Fin (M.p + 1), g j * w (n + M.p - j) := by
@@ -2390,9 +2698,11 @@ theorem sum_rev_mul (g : Fin (M.p + 1) → ℂ) (w : ℕ → ℂ) (n : ℕ) :
   have := i.is_lt
   omega
 
-/-- **The characteristic polynomial of the complex recurrence is `Π(z)/(1 - z b_{-1})`**
-([quarteroni2000numerical] (11.55)): `(toLinearRecurrence z).charPoly = C (1 - z b_{-1})⁻¹ * Π(z)`,
-so both have the same roots. -/
+/-- **The characteristic polynomial of the complex recurrence is $\Pi_z / (1 - z b_{-1})$**, from
+(11.55) of [quarteroni2000numerical]. If $1 - z b_{-1} \neq 0$, then the characteristic
+polynomial of `ODE.LinearMultistep.toLinearRecurrence z` is
+$$(1 - z b_{-1})^{-1} \Pi_z,$$
+so the two polynomials have the same roots. -/
 theorem charPoly_toLinearRecurrence {z : ℂ} (hz : 1 - z * M.bm1 ≠ 0) :
     (M.toLinearRecurrence z).charPoly = C (1 - z * M.bm1)⁻¹ * M.charPoly z := by
   apply Polynomial.funext
@@ -2422,16 +2732,20 @@ theorem charPoly_toLinearRecurrence {z : ℂ} (hz : 1 - z * M.bm1 ≠ 0) :
   field_simp
   ring
 
-/-- The roots of the characteristic polynomial of the complex recurrence are the roots of
-`Π(z)`. -/
+/-- If $1 - z b_{-1} \neq 0$, then the characteristic polynomial of the complex recurrence and
+$\Pi_z$ have the same roots. -/
 theorem isRoot_charPoly_toLinearRecurrence_iff {z : ℂ} (hz : 1 - z * M.bm1 ≠ 0) (r : ℂ) :
     (M.toLinearRecurrence z).charPoly.IsRoot r ↔ (M.charPoly z).IsRoot r := by
   rw [M.charPoly_toLinearRecurrence hz]
   simp [IsRoot, hz]
 
-/-- **The method on the test equation is the complex recurrence** ([quarteroni2000numerical]
-(11.54)): for `1 - hλ b_{-1} ≠ 0`, the orbits of the method for `y' = λy` with step `h` from `0`
-are the solutions of `toLinearRecurrence (hλ)`. -/
+/-- **The method on the test equation is the complex recurrence**, (11.54) of
+[quarteroni2000numerical]. Let $h$ be real, $\lambda \in \mathbb{C}$ and
+$1 - h\lambda b_{-1} \neq 0$. A complex sequence is an orbit of the method for $y' = \lambda y$
+with step $h$ from $t_0 = 0$ if and only if it solves the recurrence
+`ODE.LinearMultistep.toLinearRecurrence (h * lam)`.
+
+The test field is `ODE.OneStep.testField`. -/
 theorem isOrbit_testField_iff {h : ℝ} {lam : ℂ} (hz : 1 - (h : ℂ) * lam * M.bm1 ≠ 0) {u : ℕ → ℂ} :
     M.IsOrbit (testField lam) h 0 u ↔ (M.toLinearRecurrence (h * lam)).IsSolution u := by
   rw [isOrbit_iff]
@@ -2462,16 +2776,23 @@ theorem isOrbit_testField_iff {h : ℝ} {lam : ℂ} (hz : 1 - (h : ℂ) * lam * 
   rw [e2, eq_div_iff hz]
   constructor <;> intro H <;> linear_combination H
 
-/-- **The region of absolute stability** ([quarteroni2000numerical] (11.26) for a multistep
-method): the set of `z = hλ` at which the scheme on the test equation determines `u_{n+1}`
-(`1 - z b_{-1} ≠ 0`) and every solution of the resulting recurrence tends to zero
-(Definition 11.6). -/
+/-- The **region of absolute stability** $\mathcal{A}$ of the method, (11.26) of
+[quarteroni2000numerical] for a multistep method: the set of $z \in \mathbb{C}$ with
+$1 - z b_{-1} \neq 0$ such that every solution of the recurrence
+`ODE.LinearMultistep.toLinearRecurrence z` tends to $0$.
+
+The condition $1 - z b_{-1} \neq 0$ says that the scheme on $y' = \lambda y$, with
+$z = h\lambda$, determines $u_{n+1}$. The decay of all solutions is absolute stability in the
+sense of Definition 11.6 of the source. -/
 def absStabilityRegion : Set ℂ :=
   {z | 1 - z * M.bm1 ≠ 0 ∧
     ∀ u : ℕ → ℂ, (M.toLinearRecurrence z).IsSolution u → Tendsto u atTop (𝓝 0)}
 
-/-- **Absolute stability is the absolute root condition** ([quarteroni2000numerical] §11.6.4):
-`z ∈ 𝒜 ↔ 1 - z b_{-1} ≠ 0 ∧ ∀ r, Π_z(r) = 0 → |r| < 1`. -/
+/-- **Absolute stability is the absolute root condition** ([quarteroni2000numerical], §11.6.4):
+$z \in \mathcal{A}$ if and only if $1 - z b_{-1} \neq 0$ and every root $r$ of $\Pi_z$ satisfies
+$|r| < 1$.
+
+The proof uses `LinearRecurrence.forall_tendsto_zero_iff`. -/
 theorem mem_absStabilityRegion_iff (z : ℂ) :
     z ∈ M.absStabilityRegion ↔
       1 - z * M.bm1 ≠ 0 ∧ ∀ r : ℂ, (M.charPoly z).IsRoot r → ‖r‖ < 1 := by
@@ -2480,9 +2801,11 @@ theorem mem_absStabilityRegion_iff (z : ℂ) :
   rw [LinearRecurrence.forall_tendsto_zero_iff]
   simp only [M.isRoot_charPoly_toLinearRecurrence_iff hz]
 
-/-- **Absolute stability of the method with step `h` at `λ` is membership of `hλ` in the
-region** ([quarteroni2000numerical] Definition 11.6 and (11.26)): for `h > 0`,
-`1 - hλ b_{-1} ≠ 0` and every orbit on `y' = λy` tends to zero iff `hλ ∈ 𝒜`. -/
+/-- **Absolute stability with step $h$ at $\lambda$ is membership of $h\lambda$ in $\mathcal{A}$**
+(Definition 11.6 and (11.26) of [quarteroni2000numerical]). Let $h$ be real and
+$\lambda \in \mathbb{C}$. Then $1 - h\lambda b_{-1} \neq 0$ and every orbit of the method for
+$y' = \lambda y$ with step $h$ from $t_0 = 0$ tends to $0$, if and only if
+$h\lambda \in \mathcal{A}$. -/
 theorem isAbsStable_iff_mem {h : ℝ} (lam : ℂ) :
     (1 - (h : ℂ) * lam * M.bm1 ≠ 0 ∧
       ∀ u : ℕ → ℂ, M.IsOrbit (testField lam) h 0 u → Tendsto u atTop (𝓝 0)) ↔
@@ -2490,12 +2813,13 @@ theorem isAbsStable_iff_mem {h : ℝ} (lam : ℂ) :
   simp only [absStabilityRegion, Set.mem_ofPred_eq]
   exact and_congr_right fun hz => forall_congr' fun u => by rw [M.isOrbit_testField_iff hz]
 
-/-- **The absolute root condition** ([quarteroni2000numerical] Definition 11.12) at `λ`: there
-is `h₀ > 0` such that every root of `Π(hλ)` lies in the open unit disc for `h ∈ (0, h₀]`. -/
+/-- The **absolute root condition** at $\lambda \in \mathbb{C}$, Definition 11.12 of
+[quarteroni2000numerical]: there is $h_0 > 0$ such that for every $h \in (0, h_0]$ every root
+$r$ of $\Pi_{h\lambda}$ satisfies $|r| < 1$. -/
 def SatisfiesAbsRootCondition (lam : ℂ) : Prop :=
   ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h ∈ Ioc 0 h₀, ∀ r : ℂ, (M.charPoly (h * lam)).IsRoot r → ‖r‖ < 1
 
-/-- For `h` small, `1 - hλ b_{-1} ≠ 0`. -/
+/-- If $0 < h < 1 / (|\lambda| |b_{-1}| + 1)$, then $1 - h\lambda b_{-1} \neq 0$. -/
 theorem one_sub_mul_bm1_ne_zero {h : ℝ} (lam : ℂ) (hh : 0 < h)
     (hh' : h < 1 / (‖lam‖ * |M.bm1| + 1)) : 1 - (h : ℂ) * lam * M.bm1 ≠ 0 := by
   intro h0
@@ -2508,9 +2832,12 @@ theorem one_sub_mul_bm1_ne_zero {h : ℝ} (lam : ℂ) (hh : 0 < h)
   nlinarith [norm_nonneg lam, abs_nonneg M.bm1]
 
 /-- **The absolute root condition is absolute stability for all small steps**
-([quarteroni2000numerical] §11.6.4): `M` satisfies the absolute root condition at `λ` iff there
-is `h₀ > 0` with `hλ ∈ 𝒜` for every `h ∈ (0, h₀]`; the nondegeneracy `1 - hλ b_{-1} ≠ 0` holds
-automatically for small `h`. -/
+([quarteroni2000numerical], §11.6.4): the method satisfies the absolute root condition at
+$\lambda$ if and only if there is $h_0 > 0$ such that $h\lambda \in \mathcal{A}$ for every
+$h \in (0, h_0]$.
+
+The condition $1 - h\lambda b_{-1} \neq 0$ in $\mathcal{A}$ holds automatically for small $h$,
+by `ODE.LinearMultistep.one_sub_mul_bm1_ne_zero`. -/
 theorem satisfiesAbsRootCondition_iff (lam : ℂ) :
     M.SatisfiesAbsRootCondition lam ↔
       ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h ∈ Ioc 0 h₀, (h : ℂ) * lam ∈ M.absStabilityRegion := by
@@ -2525,16 +2852,21 @@ theorem satisfiesAbsRootCondition_iff (lam : ℂ) :
   · rintro ⟨h₀, hh₀, H⟩
     exact ⟨h₀, hh₀, fun h hh => ((M.mem_absStabilityRegion_iff _).1 (H h hh)).2⟩
 
-/-- **A-stability** ([quarteroni2000numerical] §11.3.3, §11.6.4): the region of absolute
-stability contains the open left half-plane. -/
+/-- The method is **A-stable** if its region of absolute stability contains the open left
+half-plane: every $z \in \mathbb{C}$ with $\operatorname{Re} z < 0$ lies in $\mathcal{A}$
+([quarteroni2000numerical], §11.3.3 and §11.6.4). -/
 def IsAStable : Prop := ∀ z : ℂ, z.re < 0 → z ∈ M.absStabilityRegion
 
-/-- **ϑ-stability** ([quarteroni2000numerical] §11.6.4): the region of absolute stability
-contains the sector `{z ≠ 0 : -ϑ < π - arg z < ϑ}`, written `|arg (-z)| < ϑ`. -/
+/-- The method is **ϑ-stable** if its region of absolute stability contains the sector of the left
+half-plane with half-angle $\vartheta$ about the negative real axis: every $z \neq 0$ with
+$|\arg(-z)| < \vartheta$ lies in $\mathcal{A}$ ([quarteroni2000numerical], §11.6.4).
+
+The source writes the sector as $-\vartheta < \pi - \arg z < \vartheta$. Here `Complex.arg`
+takes values in $(-\pi, \pi]$. -/
 def IsThetaStable (ϑ : ℝ) : Prop :=
   ∀ z : ℂ, z ≠ 0 → |Complex.arg (-z)| < ϑ → z ∈ M.absStabilityRegion
 
-/-- An A-stable method is ϑ-stable for every `ϑ ≤ π/2`. -/
+/-- An A-stable method is ϑ-stable for every $\vartheta \le \pi / 2$. -/
 theorem IsAStable.isThetaStable (hA : M.IsAStable) {ϑ : ℝ} (hϑ : ϑ ≤ Real.pi / 2) :
     M.IsThetaStable ϑ := by
   intro z hz harg
@@ -2543,14 +2875,16 @@ theorem IsAStable.isThetaStable (hA : M.IsAStable) {ϑ : ℝ} (hϑ : ϑ ≤ Real
   · simpa using h
   · exact absurd (neg_eq_zero.1 h) hz
 
-/-- **The region `𝒜*`** of [quarteroni2000numerical] Remark 11.3: the set of `z = hλ` at which
-the scheme is determined and every solution of the recurrence is *bounded*. -/
+/-- The **region $\mathcal{A}^*$** of Remark 11.3 of [quarteroni2000numerical]: the set of
+$z \in \mathbb{C}$ with $1 - z b_{-1} \neq 0$ such that every solution of the recurrence
+`ODE.LinearMultistep.toLinearRecurrence z` is bounded. -/
 def absStabilityRegionStar : Set ℂ :=
   {z | 1 - z * M.bm1 ≠ 0 ∧ ∀ u : ℕ → ℂ, (M.toLinearRecurrence z).IsSolution u →
     BddAbove (Set.range fun n => ‖u n‖)}
 
-/-- **`𝒜*` is the root condition on `Π(z)`** ([quarteroni2000numerical] Remark 11.3, through
-Lemma 11.3): `z ∈ 𝒜* ↔ 1 - z b_{-1} ≠ 0 ∧ Π(z)` satisfies the root condition. -/
+/-- **$\mathcal{A}^*$ is the root condition on $\Pi_z$** (Remark 11.3 of [quarteroni2000numerical],
+through Lemma 11.3): $z \in \mathcal{A}^*$ if and only if $1 - z b_{-1} \neq 0$ and $\Pi_z$
+satisfies the root condition. -/
 theorem mem_absStabilityRegionStar_iff (z : ℂ) :
     z ∈ M.absStabilityRegionStar ↔
       1 - z * M.bm1 ≠ 0 ∧ (M.charPoly z).SatisfiesRootCondition := by
@@ -2559,21 +2893,28 @@ theorem mem_absStabilityRegionStar_iff (z : ℂ) :
   rw [LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition, M.charPoly_toLinearRecurrence hz,
     Polynomial.satisfiesRootCondition_C_mul_iff (inv_ne_zero hz)]
 
-/-- `𝒜 ⊆ 𝒜*`: a solution tending to zero is bounded. -/
+/-- The region of absolute stability is contained in $\mathcal{A}^*$: a sequence that tends to $0$
+is bounded. -/
 theorem absStabilityRegion_subset_star : M.absStabilityRegion ⊆ M.absStabilityRegionStar :=
   fun _ hz => ⟨hz.1, fun u hu => (hz.2 u hu).norm.bddAbove_range⟩
 
-/-- **Zero-stable methods are those with `0 ∈ 𝒜*`** ([quarteroni2000numerical] Remark 11.3):
-`0 ∈ 𝒜* ↔` the root condition, since `Π(0) = ρ`; with Theorem 11.4 this is zero-stability for
-every Lipschitz problem. -/
+/-- **Zero-stable methods are those with $0 \in \mathcal{A}^*$** (Remark 11.3 of
+[quarteroni2000numerical]): $0 \in \mathcal{A}^*$ if and only if the method satisfies the root
+condition.
+
+Since $\Pi_0 = \rho$, this follows from `ODE.LinearMultistep.mem_absStabilityRegionStar_iff`.
+With Theorem 11.4 (`ODE.LinearMultistep.isZeroStable_iff_satisfiesRootCondition`), the condition
+is zero-stability for every Lipschitz problem. -/
 theorem zero_mem_absStabilityRegionStar_iff :
     (0 : ℂ) ∈ M.absStabilityRegionStar ↔ M.SatisfiesRootCondition := by
   rw [mem_absStabilityRegionStar_iff, charPoly_zero]
   simp [SatisfiesRootCondition]
 
-/-- **The one-step region**: for a one-step method `ofOneStep a₀ b₀ b₋₁`,
-`z ∈ 𝒜 ↔ 1 - z b₋₁ ≠ 0 ∧ ‖(a₀ + z b₀)/(1 - z b₋₁)‖ < 1`, the single root of
-`Π(z) = (1 - z b₋₁) X - (a₀ + z b₀)`. -/
+/-- **The region of a one-step method.** For `ODE.LinearMultistep.ofOneStep a₀ b₀ bm1` and
+$z \in \mathbb{C}$,
+$$z \in \mathcal{A} \iff 1 - z b_{-1} \neq 0 \ \text{and} \
+  \Bigl| \frac{a_0 + z b_0}{1 - z b_{-1}} \Bigr| < 1.$$
+The quotient is the single root of $\Pi_z(r) = (1 - z b_{-1}) r - (a_0 + z b_0)$. -/
 theorem mem_absStabilityRegion_ofOneStep_iff (a₀ b₀ bm1 : ℝ) (z : ℂ) :
     z ∈ (ofOneStep a₀ b₀ bm1).absStabilityRegion ↔
       1 - z * bm1 ≠ 0 ∧ ‖((a₀ : ℂ) + z * b₀) / (1 - z * bm1)‖ < 1 := by
@@ -2589,8 +2930,8 @@ theorem mem_absStabilityRegion_ofOneStep_iff (a₀ b₀ bm1 : ℝ) (z : ℂ) :
     constructor <;> intro H <;> linear_combination H
   simp only [hroot, forall_eq]
 
-/-- **Forward Euler's region as a multistep method** agrees with the one-step region of
-`Numlib/ODE/OneStep`, the disc `‖1 + z‖ < 1`. -/
+/-- **The region of forward Euler as a multistep method** equals the region of
+`ODE.OneStep.forwardEuler` in `Numlib.ODE.OneStep`, the disc $|1 + z| < 1$. -/
 theorem absStabilityRegion_ofOneStep_forwardEuler :
     (ofOneStep 1 1 0).absStabilityRegion =
       OneStep.absStabilityRegion fun f => OneStep.ofIncrement (OneStep.forwardEuler f) := by
@@ -2598,8 +2939,8 @@ theorem absStabilityRegion_ofOneStep_forwardEuler :
   rw [mem_absStabilityRegion_ofOneStep_iff, OneStep.mem_absStabilityRegion_forwardEuler_iff]
   simp
 
-/-- **Backward Euler's region as a multistep method** agrees with the one-step region,
-`1 < ‖1 - z‖`. -/
+/-- **The region of backward Euler as a multistep method** equals the region of
+`ODE.OneStep.backwardEuler` in `Numlib.ODE.OneStep`, the set $|1 - z| > 1$. -/
 theorem absStabilityRegion_ofOneStep_backwardEuler :
     (ofOneStep 1 0 1).absStabilityRegion =
       OneStep.absStabilityRegion fun f => OneStep.ofIncrement (OneStep.backwardEuler f) := by
@@ -2614,8 +2955,8 @@ theorem absStabilityRegion_ofOneStep_backwardEuler :
     have hz : (1 : ℂ) - z ≠ 0 := norm_pos_iff.1 (by linarith)
     exact ⟨hz, (div_lt_one (norm_pos_iff.2 hz)).2 h⟩
 
-/-- **Crank–Nicolson's region as a multistep method** agrees with the one-step region, the open
-left half-plane. -/
+/-- **The region of Crank–Nicolson as a multistep method** equals the region of
+`ODE.OneStep.crankNicolson` in `Numlib.ODE.OneStep`, the open left half-plane. -/
 theorem absStabilityRegion_ofOneStep_crankNicolson :
     (ofOneStep 1 (1 / 2) (1 / 2)).absStabilityRegion =
       OneStep.absStabilityRegion fun f => OneStep.ofIncrement (OneStep.crankNicolson f) := by
@@ -2643,22 +2984,24 @@ theorem absStabilityRegion_ofOneStep_crankNicolson :
       Complex.one_im, Complex.div_ofNat_re, Complex.div_ofNat_im, zero_add, zero_sub]
     nlinarith [h]
 
-/-- **Backward Euler is A-stable as a multistep method** (`bdf 0`). -/
+/-- **Backward Euler is A-stable as a multistep method**: `ofOneStep 1 0 1`, which is `bdf 0`, is
+A-stable. -/
 theorem isAStable_ofOneStep_backwardEuler : (ofOneStep 1 0 1).IsAStable := by
   intro z hz
   rw [absStabilityRegion_ofOneStep_backwardEuler]
   exact OneStep.isAStable_backwardEuler z hz
 
-/-- **Crank–Nicolson is A-stable as a multistep method** (`adamsMoulton 1`). -/
+/-- **Crank–Nicolson is A-stable as a multistep method**: `ofOneStep 1 (1/2) (1/2)`, which is
+`adamsMoulton 1`, is A-stable. -/
 theorem isAStable_ofOneStep_crankNicolson : (ofOneStep 1 (1 / 2) (1 / 2)).IsAStable := by
   intro z hz
   rw [absStabilityRegion_ofOneStep_crankNicolson]
   exact OneStep.isAStable_crankNicolson z hz
 
-/-- **The regions of the one-step instances agree with the one-step regions**
-([quarteroni2000numerical] §11.6.4): forward Euler, backward Euler and Crank–Nicolson; in
-particular backward Euler (`bdf 0`) and Crank–Nicolson (`adamsMoulton 1`) are A-stable as
-multistep methods. -/
+/-- **The regions of the one-step methods** ([quarteroni2000numerical], §11.6.4). As multistep
+methods, forward Euler, backward Euler and Crank–Nicolson have the same regions of absolute
+stability as the corresponding one-step methods of `Numlib.ODE.OneStep`. In particular backward
+Euler (`bdf 0`) and Crank–Nicolson (`adamsMoulton 1`) are A-stable. -/
 theorem absStabilityRegion_ofOneStep :
     ((ofOneStep 1 1 0).absStabilityRegion =
       OneStep.absStabilityRegion fun f => OneStep.ofIncrement (OneStep.forwardEuler f)) ∧
@@ -2673,7 +3016,7 @@ theorem absStabilityRegion_ofOneStep :
     isAStable_ofOneStep_crankNicolson⟩
 
 /-- The characteristic polynomial of the midpoint method on the test equation is
-`X² - 2zX - 1`. -/
+$\Pi_z(r) = r^2 - 2zr - 1$. -/
 theorem charPoly_midpoint (z : ℂ) : midpoint.charPoly z = X ^ 2 - C (2 * z) * X - 1 := by
   rw [charPoly, rho_midpoint, sigma_midpoint]
   simp only [Polynomial.map_sub, Polynomial.map_pow, map_X, Polynomial.map_one,
@@ -2682,9 +3025,11 @@ theorem charPoly_midpoint (z : ℂ) : midpoint.charPoly z = X ^ 2 - C (2 * z) * 
     show (C (2 : ℂ)) = 2 from rfl]
   ring
 
-/-- **The midpoint method has an empty region of absolute stability**
-([quarteroni2000numerical] Remark 11.3): the roots of `r² - 2zr - 1` have product `-1`, so they
-cannot both lie in the open unit disc. -/
+/-- **The midpoint method has an empty region of absolute stability** (Remark 11.3 of
+[quarteroni2000numerical]).
+
+The roots of $r^2 - 2zr - 1$ have the product $-1$, so they cannot both lie in the open unit
+disc. -/
 theorem absStabilityRegion_midpoint_eq_empty : midpoint.absStabilityRegion = ∅ := by
   ext z
   simp only [Set.mem_empty_iff_false, iff_false]
@@ -2717,22 +3062,25 @@ end AbsoluteStability
 
 section Pad
 
-/-- **Padding** a `p + 1`-step method to `q + 1 ≥ p + 1` steps by zero coefficients: the same
-scheme, read as a method with more steps (the convention of [quarteroni2000numerical] §11.7 after
-Example 11.8 for the corrector of a predictor–corrector pair). -/
+/-- **Padding** a method with $p + 1$ steps to $q + 1 \ge p + 1$ steps: the method with the
+coefficients $a_j$ and $b_j$ for $j \le p$, the coefficients $a_j = b_j = 0$ for $p < j \le q$,
+and the same $b_{-1}$. It defines the same scheme, read as a method with more steps.
+
+This is the convention of [quarteroni2000numerical], §11.7, after Example 11.8, for the
+corrector of a predictor–corrector pair. -/
 def pad (q : ℕ) (_hq : M.p ≤ q) : LinearMultistep :=
   ⟨q, fun i => if h : (i : ℕ) < M.p + 1 then M.a ⟨i, h⟩ else 0,
     fun i => if h : (i : ℕ) < M.p + 1 then M.b ⟨i, h⟩ else 0, M.bm1⟩
 
-/-- The padded method has `q` in its `p` field. -/
+/-- The padded method has $q + 1$ steps: its field `p` is $q$. -/
 @[simp] theorem pad_p (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).p = q := rfl
 
-/-- The padded method has the same `b_{-1}`. -/
+/-- The padded method has the same coefficient $b_{-1}$. -/
 @[simp] theorem pad_bm1 (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).bm1 = M.bm1 := rfl
 
-/-- Padding a coefficient vector by zeros multiplies its polynomial by a power of `X`:
-`X^{q - p} ∑_{j ≤ p} c_j X^{p - j} = ∑_{i ≤ q} c'_i X^{q - i}`, with `c'` the extension of `c` by
-zeros; the common step of `rho_pad` and `sigma_pad`. -/
+/-- Padding a coefficient vector by zeros multiplies its polynomial by a power of $X$: for
+$p \le q$, $X^{q-p} \sum_{j \le p} c_j X^{p-j} = \sum_{i \le q} c'_i X^{q-i}$, where $c'$ is $c$
+extended by zeros. -/
 private theorem X_pow_mul_sum_eq_sum_pad {p q : ℕ} (hq : p ≤ q) (c : Fin (p + 1) → ℝ) :
     X ^ (q - p) * ∑ j : Fin (p + 1), C (c j) * X ^ (p - j)
       = ∑ i : Fin (q + 1), C (if h : (i : ℕ) < p + 1 then c ⟨i, h⟩ else 0) * X ^ (q - i) := by
@@ -2744,21 +3092,23 @@ private theorem X_pow_mul_sum_eq_sum_pad {p q : ℕ} (hq : p ≤ q) (c : Fin (p 
   refine Finset.sum_congr rfl fun i _ => ?_
   split_ifs <;> first | rfl | simp
 
-/-- The first characteristic polynomial of the padded method is `X^{q - p} ρ`. -/
+/-- The first characteristic polynomial of the method padded to $q + 1$ steps is $X^{q-p} \rho$. -/
 theorem rho_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).rho = X ^ (q - M.p) * M.rho := by
   unfold rho pad
   dsimp only
   rw [mul_sub, ← pow_add, show q - M.p + (M.p + 1) = q + 1 by omega,
     X_pow_mul_sum_eq_sum_pad hq]
 
-/-- The second characteristic polynomial of the padded method is `X^{q - p} σ`. -/
+/-- The second characteristic polynomial of the method padded to $q + 1$ steps is $X^{q-p} \sigma$.
+-/
 theorem sigma_pad (q : ℕ) (hq : M.p ≤ q) : (M.pad q hq).sigma = X ^ (q - M.p) * M.sigma := by
   unfold sigma pad
   dsimp only
   rw [mul_add, mul_left_comm (X ^ (q - M.p)) (C M.bm1), ← pow_add,
     show q - M.p + (M.p + 1) = q + 1 by omega, X_pow_mul_sum_eq_sum_pad hq]
 
-/-- Padding an Adams-type method keeps `a = e₀`. -/
+/-- Padding an Adams-type method gives an Adams-type method: if $a = e_0$, then the padded method
+also has $a = e_0$. -/
 theorem pad_a_single (q : ℕ) (hq : M.p ≤ q) (ha : M.a = Pi.single 0 1) :
     (M.pad q hq).a = Pi.single 0 1 := by
   change (fun i : Fin (q + 1) => if h : (i : ℕ) < M.p + 1 then M.a ⟨i, h⟩ else 0) =
@@ -2785,42 +3135,49 @@ end LinearMultistep
 
 /-! ### Predictor–corrector methods -/
 
-/-- **A predictor–corrector pair** ([quarteroni2000numerical] §11.7): an explicit predictor with
-coefficients `pa`, `pb`, a corrector with coefficients `a`, `b`, `bm1`, both with `p + 1` steps
-(the corrector padded by zeros if it has fewer, the book's convention after Example 11.8), and
-the number `m` of corrections per step. -/
+/-- A **predictor–corrector pair** ([quarteroni2000numerical], §11.7) consists of a predictor with
+the coefficients $\tilde a_j$ and $\tilde b_j$, a corrector with the coefficients $a_j$, $b_j$
+and $b_{-1}$, both with $p + 1$ steps, and a number $m$ of corrections per step. The predictor
+is explicit.
+
+A corrector with fewer steps is padded with zeros (`ODE.LinearMultistep.pad`), as the source
+does after Example 11.8. The number $m$ is any natural number; the source has $m \ge 1$. -/
 structure PredictorCorrector where
-  /-- `p + 1` is the number of steps of the pair (those of the predictor). -/
+  /-- The number $p$; the pair has the $p + 1$ steps of the predictor. -/
   p : ℕ
-  /-- The coefficients `ã_j` of the predictor. -/
+  /-- The coefficients $\tilde a_0, \dots, \tilde a_p$ of the predictor. -/
   pa : Fin (p + 1) → ℝ
-  /-- The coefficients `b̃_j` of the predictor. -/
+  /-- The coefficients $\tilde b_0, \dots, \tilde b_p$ of the predictor. -/
   pb : Fin (p + 1) → ℝ
-  /-- The coefficients `a_j` of the corrector. -/
+  /-- The coefficients $a_0, \dots, a_p$ of the corrector. -/
   a : Fin (p + 1) → ℝ
-  /-- The coefficients `b_j` of the corrector. -/
+  /-- The coefficients $b_0, \dots, b_p$ of the corrector. -/
   b : Fin (p + 1) → ℝ
-  /-- The coefficient `b_{-1}` of the corrector. -/
+  /-- The coefficient $b_{-1}$ of the corrector. -/
   bm1 : ℝ
-  /-- The number of corrections per step. -/
+  /-- The number $m$ of corrections per step. -/
   m : ℕ
 
 namespace PredictorCorrector
 
 variable (PC : PredictorCorrector) {f : ℝ → E → E} {h t₀ T : ℝ}
 
-/-- The predictor as a linear multistep method (explicit). -/
+/-- The predictor as a linear multistep method: the coefficients $\tilde a$ and $\tilde b$, with
+$b_{-1} = 0$. -/
 def toPredictor : LinearMultistep := ⟨PC.p, PC.pa, PC.pb, 0⟩
 
-/-- The corrector as a linear multistep method. -/
+/-- The corrector as a linear multistep method: the coefficients $a$, $b$ and $b_{-1}$. -/
 def toCorrector : LinearMultistep := ⟨PC.p, PC.a, PC.b, PC.bm1⟩
 
-/-- **The pair of two methods** with the corrector padded to the steps of the predictor
-([quarteroni2000numerical] §11.7): `ofPair P C hpc m` for `C.p ≤ P.p`. -/
+/-- **The pair of two methods** ([quarteroni2000numerical], §11.7): for methods $P$ and $C$ such
+that $C$ has at most as many steps as $P$, the pair with the predictor $P$, the corrector $C$
+padded to the steps of $P$, and $m$ corrections.
+
+The coefficient $b_{-1}$ of $P$ is dropped, so the predictor of the pair is explicit. -/
 def ofPair (P C : LinearMultistep) (hpc : C.p ≤ P.p) (m : ℕ) : PredictorCorrector :=
   ⟨P.p, P.a, P.b, (C.pad P.p hpc).a, (C.pad P.p hpc).b, C.bm1, m⟩
 
-/-- The predictor of a pair. -/
+/-- If the method $P$ is explicit, then the predictor of the pair of $P$ and $C$ is $P$. -/
 theorem toPredictor_ofPair (P C : LinearMultistep) (hpc : C.p ≤ P.p) (m : ℕ) (hP : P.bm1 = 0) :
     (ofPair P C hpc m).toPredictor = P := by
   obtain ⟨p, a, b, bm1⟩ := P
@@ -2828,55 +3185,70 @@ theorem toPredictor_ofPair (P C : LinearMultistep) (hpc : C.p ≤ P.p) (m : ℕ)
   subst hP
   rfl
 
-/-- The corrector of a pair is the padded corrector. -/
+/-- The corrector of the pair of $P$ and $C$ is $C$ padded to the steps of $P$. -/
 theorem toCorrector_ofPair (P C : LinearMultistep) (hpc : C.p ≤ P.p) (m : ℕ) :
     (ofPair P C hpc m).toCorrector = C.pad P.p hpc := rfl
 
-/-- **One correction** ([quarteroni2000numerical] §11.7, step `[C]`): from the history sum
-`G = ∑ a_j u_{n-j} + h ∑ b_j f_{n-j}` and the value `v = u^{(k)}_{n+1}`,
-`u^{(k+1)}_{n+1} = G + h b_{-1} f(t_{n+1}, v)`. -/
+/-- **One correction** ([quarteroni2000numerical], §11.7, the step $[C]$). Given the history sum
+$G = \sum_j a_j u_{n-j} + h \sum_j b_j f_{n-j}$ and the current value $v = u^{(k)}_{n+1}$, the
+corrected value is
+$$u^{(k+1)}_{n+1} = G + h b_{-1} f(t_{n+1}, v),$$
+with $t = t_n$ and $t_{n+1} = t + h$. -/
 def correct (f : ℝ → E → E) (h t : ℝ) (G v : E) : E := G + (h * PC.bm1) • f (t + h) v
 
-/-- **The predicted value** `u^{(0)}_{n+1} = ∑ ã_j u_{n-j} + h ∑ b̃_j f_{n-j}` from the histories
-`uh j = u_{n-j}` and `fh j = f_{n-j}` ([quarteroni2000numerical] (11.69), step `[P]`). -/
+/-- **The predicted value** ([quarteroni2000numerical], (11.69), the step $[P]$): from the history
+values $u_{n-j}$ and the history function values $f_{n-j}$, $j = 0, \dots, p$,
+$$u^{(0)}_{n+1} = \sum_{j=0}^p \tilde a_j u_{n-j} + h \sum_{j=0}^p \tilde b_j f_{n-j}.$$
+-/
 def predict (h : ℝ) (uh fh : Fin (PC.p + 1) → E) : E :=
   ∑ j, PC.pa j • uh j + h • ∑ j, PC.pb j • fh j
 
-/-- The history sum `G = ∑ a_j u_{n-j} + h ∑ b_j f_{n-j}` of the corrector. -/
+/-- The history sum of the corrector, $G = \sum_{j=0}^p a_j u_{n-j} + h \sum_{j=0}^p b_j f_{n-j}$,
+from the history values $u_{n-j}$ and the history function values $f_{n-j}$. -/
 def historySum (h : ℝ) (uh fh : Fin (PC.p + 1) → E) : E :=
   ∑ j, PC.a j • uh j + h • ∑ j, PC.b j • fh j
 
-/-- **The `P(EC)^m` step** ([quarteroni2000numerical] (11.69)) at `t = t_n` from the histories
-`uh j = u^{(m)}_{n-j}`, `fh j = f^{(m-1)}_{n-j}`: the pair `(u^{(m)}_{n+1}, f^{(m-1)}_{n+1})`, with
-`u^{(k+1)}_{n+1} = G + h b_{-1} f(t_{n+1}, u^{(k)}_{n+1})` iterated `m` times from the predicted
-value and `f^{(m-1)}_{n+1} = f(t_{n+1}, u^{(m-1)}_{n+1})`. -/
+/-- **The $P(EC)^m$ step**, (11.69) of [quarteroni2000numerical], at $t = t_n$. The input is the
+history $u^{(m)}_{n-j}$ of values and the history $f^{(m-1)}_{n-j}$ of function values,
+$j = 0, \dots, p$. The output is the pair $(u^{(m)}_{n+1}, f^{(m-1)}_{n+1})$: the corrections
+$u^{(k+1)}_{n+1} = G + h b_{-1} f(t_{n+1}, u^{(k)}_{n+1})$ are applied $m$ times to the
+predicted value $u^{(0)}_{n+1}$, and $f^{(m-1)}_{n+1} = f(t_{n+1}, u^{(m-1)}_{n+1})$.
+
+For $m = 0$ the natural subtraction gives $m - 1 = 0$, so the step returns the predicted value
+and $f$ at the predicted value. -/
 noncomputable def pecStep (f : ℝ → E → E) (h t : ℝ) (uh fh : Fin (PC.p + 1) → E) : E × E :=
   ((PC.correct f h t (PC.historySum h uh fh))^[PC.m] (PC.predict h uh fh),
     f (t + h) ((PC.correct f h t (PC.historySum h uh fh))^[PC.m - 1] (PC.predict h uh fh)))
 
-/-- **The `P(EC)^mE` step** ([quarteroni2000numerical] §11.7) at `t = t_n` from the history
-`uh j = u^{(m)}_{n-j}`, the function values being those of the corrected values
-`f_{n-j} = f(t_{n-j}, u^{(m)}_{n-j})`: `u^{(m)}_{n+1}`. -/
+/-- **The $P(EC)^m E$ step** ([quarteroni2000numerical], §11.7) at $t = t_n$. The input is the
+history $u^{(m)}_{n-j}$, $j = 0, \dots, p$. The function values are recomputed from the
+corrected values, $f_{n-j} = f(t_{n-j}, u^{(m)}_{n-j})$. The output is $u^{(m)}_{n+1}$, the
+predicted value corrected $m$ times. -/
 noncomputable def peceStep (f : ℝ → E → E) (h t : ℝ) (uh : Fin (PC.p + 1) → E) : E :=
   (PC.correct f h t (PC.historySum h uh fun j => f (t - j * h) (uh j)))^[PC.m]
     (PC.predict h uh fun j => f (t - j * h) (uh j))
 
-/-- **An orbit of the `P(EC)^m` scheme**: the pair of sequences `u = u^{(m)}`, `fv = f^{(m-1)}`
-follows the `P(EC)^m` step at every `n ≥ p`. -/
+/-- An **orbit of the $P(EC)^m$ scheme** is a pair of sequences $u = u^{(m)}$ and $f^{(m-1)}$ such
+that, for every $n \ge p$, the pair $(u_{n+1}, f^{(m-1)}_{n+1})$ is the $P(EC)^m$ step at $t_n$
+from the histories $u_{n-j}$ and $f^{(m-1)}_{n-j}$.
+
+The second sequence is the argument `fv`. -/
 def IsOrbitPEC (f : ℝ → E → E) (h t₀ : ℝ) (u fv : ℕ → E) : Prop :=
   ∀ n, (u (n + PC.p + 1), fv (n + PC.p + 1)) =
     PC.pecStep f h (node t₀ h (n + PC.p)) (fun j => u (n + PC.p - j)) fun j => fv (n + PC.p - j)
 
-/-- **An orbit of the `P(EC)^mE` scheme**: the sequence `u = u^{(m)}` follows the `P(EC)^mE` step
-at every `n ≥ p`. -/
+/-- An **orbit of the $P(EC)^m E$ scheme** is a sequence $u = u^{(m)}$ such that, for every
+$n \ge p$, $u_{n+1}$ is the $P(EC)^m E$ step at $t_n$ from the history $u_{n-j}$. -/
 def IsOrbitPECE (f : ℝ → E → E) (h t₀ : ℝ) (u : ℕ → E) : Prop :=
   ∀ n, u (n + PC.p + 1) = PC.peceStep f h (node t₀ h (n + PC.p)) fun j => u (n + PC.p - j)
 
-/-- **Heun's method is the `PECE` scheme with forward Euler as predictor and Crank–Nicolson as
-corrector** ([quarteroni2000numerical] Example 11.8): the `P(EC)E` orbits of the pair
-`(ofOneStep 1 1 0, ofOneStep 1 (1/2) (1/2))` with `m = 1` are the orbits of Heun's method. (With
-`P(EC)` the stored function values are those of the *predicted* values and the scheme is not
-Heun's.) -/
+/-- **Heun's method is the $P(EC)E$ scheme of forward Euler and Crank–Nicolson** (Example 11.8 of
+[quarteroni2000numerical]): the $P(EC)E$ orbits of the pair with predictor `ofOneStep 1 1 0`,
+corrector `ofOneStep 1 (1/2) (1/2)` and $m = 1$ are the orbits of Heun's method
+`ODE.OneStep.heun`.
+
+In the $P(EC)$ scheme the stored function values are those of the predicted values, and that
+scheme is not Heun's method. -/
 theorem heun_eq_pece {u : ℕ → E} :
     (ofPair (LinearMultistep.ofOneStep 1 1 0) (LinearMultistep.ofOneStep 1 (1 / 2) (1 / 2))
       le_rfl 1).IsOrbitPECE f h t₀ u ↔
@@ -2890,17 +3262,22 @@ theorem heun_eq_pece {u : ℕ → E} :
     one_smul, Nat.zero_lt_succ, ↓reduceDIte, Fin.zero_eta, smul_add, smul_smul]
   refine ⟨fun H => H.trans ?_, fun H => H.trans ?_⟩ <;> module
 
-/-- **The Adams–Bashforth–Moulton pair with `p` steps** ([quarteroni2000numerical] §11.7,
-Example 11.10): the `p`-step Adams–Bashforth predictor `adamsBashforth (p - 1)` with the
-`p - 1`-step Adams–Moulton corrector `adamsMoulton (p - 1)`, padded, and `m` corrections. -/
+/-- **The Adams–Bashforth–Moulton pair with $p$ steps** ([quarteroni2000numerical], §11.7, Example
+11.10): the predictor `adamsBashforth (p - 1)`, which has $p$ steps, the corrector
+`adamsMoulton (p - 1)` padded to $p$ steps, and $m$ corrections.
+
+The number $p - 1$ is a natural subtraction. -/
 noncomputable def abm (p m : ℕ) : PredictorCorrector :=
   ofPair (LinearMultistep.adamsBashforth (p - 1)) (LinearMultistep.adamsMoulton (p - 1))
     (Nat.sub_le _ _) m
 
-/-- **Example 11.10** ([quarteroni2000numerical]): for the ABM pair with `p ≥ 2` steps, the
-padded corrector and the predictor have the same first characteristic polynomial
-`ρ̂ = ρ̃ = X^p - X^{p-1} = X (X^{p-1} - X^{p-2})`, and the padded corrector's second characteristic
-polynomial is `σ̂ = X σ`, `σ` that of the Adams–Moulton corrector. -/
+/-- **Example 11.10** of [quarteroni2000numerical]. For the Adams–Bashforth–Moulton pair with
+$p \ge 2$ steps, the padded corrector and the predictor have the same first characteristic
+polynomial
+$$\hat\rho(r) = \tilde\rho(r) = r^p - r^{p-1} = r (r^{p-1} - r^{p-2}),$$
+and the second characteristic polynomial of the padded corrector is
+$\hat\sigma(r) = r \sigma(r)$, where $\sigma$ is that of the Adams–Moulton corrector
+`adamsMoulton (p - 1)`. -/
 theorem abm_charPoly (p m : ℕ) (hp : 2 ≤ p) :
     (abm p m).toCorrector.rho = X ^ p - X ^ (p - 1) ∧
       (abm p m).toPredictor.rho = X ^ p - X ^ (p - 1) ∧
@@ -2942,15 +3319,20 @@ section Order
 
 variable {t : ℝ} {L : NNReal} {y : ℝ → E}
 
-/-- **The local truncation error of the `P(EC)^mE` scheme** along a curve `y` at `t = t_n`: the
-residual of the exact values in the one-step-in-history form,
-`h τ = y(t + h) - Ψ_h(t; y(t), …, y(t - ph))`. -/
+/-- The **local truncation error of the $P(EC)^m E$ scheme** along the curve $y$ at the time $t$:
+$$\tau(h; t) = h^{-1} \bigl( y(t + h) - \Psi_h(t; y(t), y(t - h), \dots, y(t - ph)) \bigr),$$
+where $\Psi_h$ is the $P(EC)^m E$ step. At $t = t_n$ it measures how far the exact values fail
+to satisfy the scheme. -/
 noncomputable def lte (f : ℝ → E → E) (h : ℝ) (y : ℝ → E) (t : ℝ) : E :=
   h⁻¹ • (y (t + h) - PC.peceStep f h t fun j => y (t - j * h))
 
-/-- **Each correction is a contraction towards the corrector's fixed point**: if
-`w = correct G w + h τ` (the exact value, up to `h` times the corrector's truncation error), then
-`‖correct^[k] v₀ - w‖ ≤ (h |b_{-1}| L)^k ‖v₀ - w‖ + h ‖τ‖ ∑_{i<k} (h |b_{-1}| L)^i`. -/
+/-- **Each correction is a contraction towards the fixed point of the corrector.** Let
+$f(t + h, \cdot)$ be $L$-Lipschitz and $h \ge 0$, and let
+$w = G + h b_{-1} f(t + h, w) + h \tau$, so that $w$ is a fixed point of the correction up to
+$h \tau$. Then for every $k$ and every starting value $v_0$, the $k$-fold correction $v_k$ of
+$v_0$ satisfies
+$$\|v_k - w\| \le (h |b_{-1}| L)^k \|v_0 - w\| + h \|\tau\| \sum_{i<k} (h |b_{-1}| L)^i.$$
+-/
 theorem norm_iterate_correct_sub_le (hL : LipschitzWith L (f (t + h))) (hh : 0 ≤ h) {G v₀ w τ : E}
     (hw : w = PC.correct f h t G w + h • τ) (k : ℕ) :
     ‖(PC.correct f h t G)^[k] v₀ - w‖ ≤ (h * |PC.bm1| * L) ^ k * ‖v₀ - w‖ +
@@ -2982,11 +3364,16 @@ theorem norm_iterate_correct_sub_le (hL : LipschitzWith L (f (t + h))) (hh : 0 �
           rw [hsum]
           ring
 
-/-- **Property 11.3, the local truncation error of a pair** ([quarteroni2000numerical] §11.7): if
-`f(t + h, ·)` is `L`-Lipschitz and `y' = f(·, y ·)` at the nodes used, the `P(EC)^mE` truncation
-error is bounded by the predictor's, damped by `(h |b_{-1}| L)^m`, plus the corrector's times
-`∑_{i<m} (h |b_{-1}| L)^i`. Each correction is a contraction with constant `h |b_{-1}| L` towards
-the value the corrector assigns to the exact history. -/
+/-- **Property 11.3** of [quarteroni2000numerical], the local truncation error of a pair. Let
+$f(t + h, \cdot)$ be $L$-Lipschitz, let $h > 0$, and let $y$ satisfy $y'(s) = f(s, y(s))$ at the
+points $s = t - jh$, $j = -1, 0, \dots, p$, where $y'$ is `deriv y`. Then the truncation error
+$\tau$ of the $P(EC)^m E$ scheme satisfies
+$$\|\tau\| \le (h |b_{-1}| L)^m \|\tilde\tau\| + \|\hat\tau\| \sum_{i<m} (h |b_{-1}| L)^i,$$
+where $\tilde\tau$ and $\hat\tau$ are the local truncation errors of the predictor and of the
+corrector along $y$ at $t$.
+
+Each correction is a contraction with the constant $h |b_{-1}| L$ towards the value that the
+corrector assigns to the exact history. -/
 theorem norm_lte_le (hL : LipschitzWith L (f (t + h))) (hh : 0 < h)
     (hd : ∀ j : Fin (PC.p + 1), deriv y (t - j * h) = f (t - j * h) (y (t - j * h)))
     (hd' : deriv y (t + h) = f (t + h) (y (t + h))) :
@@ -3020,23 +3407,30 @@ theorem norm_lte_le (hL : LipschitzWith L (f (t + h))) (hh : 0 < h)
           ‖PC.toCorrector.lte h y t‖ * ∑ i ∈ range PC.m, (h * |PC.bm1| * L) ^ i := by
         field_simp
 
-/-- The global truncation error `τ(h)` of the `P(EC)^mE` scheme along `y` on `[t₀, t₀ + T]`. -/
+/-- The global truncation error $\tau(h)$ of the $P(EC)^m E$ scheme along $y$ on $[t_0, t_0 + T]$:
+the maximum of $\|\tau(h; t_n)\|$ over the steps $p \le n < N_h$, and $0$ if there is no such
+step. -/
 noncomputable def globalLte (f : ℝ → E → E) (t₀ T : ℝ) (y : ℝ → E) (h : ℝ) : ℝ :=
   ⨆ n : Fin (gridCount T h), if PC.p ≤ (n : ℕ) then ‖PC.lte f h y (node t₀ h n)‖ else 0
 
-/-- The global truncation error of the scheme is nonnegative. -/
+/-- The global truncation error of the $P(EC)^m E$ scheme is nonnegative. -/
 theorem globalLte_nonneg (f : ℝ → E → E) (t₀ T : ℝ) (y : ℝ → E) (h : ℝ) :
     0 ≤ PC.globalLte f t₀ T y h :=
   Real.iSup_nonneg fun _ => by split_ifs <;> simp
 
-/-- **Order `q` of the `P(EC)^mE` scheme along a curve**: `τ(h) = O(h^q)` as `h → 0⁺`. -/
+/-- The $P(EC)^m E$ scheme has **order $q$ along the curve** $y$ on $[t_0, t_0 + T]$ if its global
+truncation error satisfies $\tau(h) = O(h^q)$ as $h \to 0^+$. -/
 def HasOrderFor (f : ℝ → E → E) (t₀ T : ℝ) (y : ℝ → E) (q : ℕ) : Prop :=
   PC.globalLte f t₀ T y =O[𝓝[>] 0] fun h => h ^ q
 
-/-- **Property 11.3, the order of a predictor–corrector pair** ([quarteroni2000numerical] §11.7):
-if the predictor has order `q̃` and the corrector order `q` along the solution `y` of a problem
-with `f` Lipschitz in the state, the `P(EC)^mE` scheme has order `min q (q̃ + m)`: order `q` when
-`q̃ ≥ q` or `m ≥ q - q̃`, order `q̃ + m` when `m ≤ q - q̃`. -/
+/-- **Property 11.3** of [quarteroni2000numerical], the order of a predictor–corrector pair. Let
+$f(t, \cdot)$ be $L$-Lipschitz for every $t \in [t_0, t_0 + T]$, and let $y$ have the derivative
+$f(t, y(t))$ at every $t \in [t_0, t_0 + T]$. If the predictor has order $\tilde q$ and the
+corrector has order $q$ along $y$ on $[t_0, t_0 + T]$, then the $P(EC)^m E$ scheme has order
+$\min(q, \tilde q + m)$ along $y$.
+
+Thus the scheme has order $q$ when $m \ge q - \tilde q$, and order $\tilde q + m$ when
+$m \le q - \tilde q$. -/
 theorem hasOrderFor_of (hf : ∀ t ∈ Icc t₀ (t₀ + T), LipschitzWith L (f t))
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) {qp qc : ℕ}
     (hP : PC.toPredictor.HasOrderFor t₀ T y qp) (hC : PC.toCorrector.HasOrderFor t₀ T y qc) :
@@ -3109,18 +3503,19 @@ end Order
 
 end PredictorCorrector
 
-/-! ### The midpoint method's region `𝒜*` -/
+/-! ### The region $\mathcal{A}^*$ of the midpoint method -/
 
 namespace LinearMultistep
 
-/-- The characteristic polynomial `X² - 2zX - 1` of the midpoint method has degree `2`. -/
+/-- The characteristic polynomial $\Pi_z(r) = r^2 - 2zr - 1$ of the midpoint method has degree $2$.
+-/
 theorem degree_charPoly_midpoint (z : ℂ) : (midpoint.charPoly z).degree = 2 := by
   rw [charPoly_midpoint, show (X ^ 2 - C (2 * z) * X - 1 : ℂ[X]) =
     C 1 * X ^ 2 + C (-(2 * z)) * X + C (-1) by simp only [map_one, map_neg, one_mul]; ring,
     degree_quadratic one_ne_zero]
 
-/-- For a root `r` of `X² - 2zX - 1`, `-1/r` is a root as well (the product of the roots is
-`-1`). -/
+/-- If $r$ is a root of $\Pi_z(r) = r^2 - 2zr - 1$, then $r \neq 0$ and $-1/r$ is also a root, since
+the product of the roots is $-1$. -/
 theorem isRoot_charPoly_midpoint_neg_inv {z r : ℂ} (hr : (midpoint.charPoly z).IsRoot r) :
     r ≠ 0 ∧ (midpoint.charPoly z).IsRoot (-1 / r) := by
   rw [charPoly_midpoint] at hr ⊢
@@ -3135,11 +3530,18 @@ theorem isRoot_charPoly_midpoint_neg_inv {z r : ℂ} (hr : (midpoint.charPoly z)
   rw [this, hr]
   simp
 
-/-- **The region `𝒜*` of the midpoint method** ([quarteroni2000numerical] Remark 11.3):
-`𝒜* = {iα : |α| < 1}`. For `z = iα`, `|α| < 1`, the roots `iα ± √(1 - α²)` of `r² - 2zr - 1` are
-distinct and of modulus one; conversely a root `r` and `-1/r` both in the closed disc lie on the
-circle, so `2z = r - 1/r = r - r̄ = 2i Im r`, and `|Im r| = 1` would make `r = ±i` a double root.
-The book prints `α ∈ [-1, 1]`; the endpoints are excluded (see the errata). -/
+/-- **The region $\mathcal{A}^*$ of the midpoint method** (Remark 11.3 of
+[quarteroni2000numerical]):
+$$\mathcal{A}^* = \{ i\alpha : \alpha \in \mathbb{R}, \ |\alpha| < 1 \}.$$
+
+The source prints $\alpha \in [-1, 1]$. At $\alpha = \pm 1$ the root $\pm i$ of
+$r^2 \mp 2ir - 1$ is double, so the solution $n (\pm i)^n$ is unbounded, and the endpoints are
+excluded.
+
+For $z = i\alpha$ with $|\alpha| < 1$ the roots $i\alpha \pm \sqrt{1 - \alpha^2}$ are distinct
+and have modulus $1$. Conversely, if a root $r$ and $-1/r$ both lie in the closed disc, they lie
+on the circle, so $2z = r - 1/r = r - \bar r = 2i \operatorname{Im} r$; and
+$|\operatorname{Im} r| = 1$ would make $r = \pm i$ a double root. -/
 theorem absStabilityRegionStar_midpoint :
     midpoint.absStabilityRegionStar = {z | ∃ α : ℝ, |α| < 1 ∧ z = α * Complex.I} := by
   classical
@@ -3255,8 +3657,9 @@ theorem absStabilityRegionStar_midpoint :
       · simp [hpm]
       · simp [hpm.symm]
 
-/-- **Remark 11.3's example** ([quarteroni2000numerical]): the midpoint method has `𝒜 = ∅` and
-`𝒜* = {iα : |α| < 1}`. -/
+/-- **Remark 11.3** of [quarteroni2000numerical], the midpoint method: the midpoint method has
+$\mathcal{A} = \emptyset$ and $\mathcal{A}^* = \{ i\alpha : \alpha \in \mathbb{R}, \ |\alpha| <
+1 \}$. -/
 theorem absStabilityRegion_midpoint :
     midpoint.absStabilityRegion = ∅ ∧
       midpoint.absStabilityRegionStar = {z | ∃ α : ℝ, |α| < 1 ∧ z = α * Complex.I} :=
@@ -3264,19 +3667,22 @@ theorem absStabilityRegion_midpoint :
 
 end LinearMultistep
 
-/-! ### The explicit clause of the second Dahlquist barrier
+/-!
+### The explicit clause of the second Dahlquist barrier
 
-An explicit consistent method is neither A-stable nor ϑ-stable ([quarteroni2000numerical]
-Property 11.2, first sentence): `Π(-t)` is monic of degree `p + 1`, and if all its roots were in
-the open unit disc its value at a point `x₀ ∈ [0, 1]` would be bounded by `2^{p+1}`, while
-`|Π(-t)(x₀)| = |ρ(x₀) + t σ(x₀)| ≥ t |σ(x₀)| - |ρ(x₀)|` is unbounded in `t` once `σ(x₀) ≠ 0`. The
-order-2 barrier and Widlund's ϑ-stability statement are not formalized. -/
+An explicit method with $\sum_j a_j = 1$ is neither A-stable nor ϑ-stable (Property 11.2 of
+[quarteroni2000numerical], first sentence). For such a method and real $t$, $\Pi_{-t}$ is monic of
+degree $p + 1$. If all its roots were in the open unit disc, its value at a point $x_0 \in [0, 1]$
+would be bounded by $2^{p+1}$. But $|\Pi_{-t}(x_0)| = |\rho(x_0) + t \sigma(x_0)| \ge t
+|\sigma(x_0)| - |\rho(x_0)|$ is unbounded in $t$ once $\sigma(x_0) \neq 0$. The order bound of the
+second barrier and Widlund's statement on ϑ-stability are not formalized.
+-/
 
 namespace LinearMultistep
 
 variable (M : LinearMultistep)
 
-/-- The sum in `σ` has degree at most `p`. -/
+/-- The polynomial $\sum_{j=0}^p b_j X^{p-j}$ has degree less than $p + 1$. -/
 theorem degree_sigma_sum_lt :
     (∑ j : Fin (M.p + 1), C (M.b j) * X ^ (M.p - j)).degree < ((M.p + 1 : ℕ) : WithBot ℕ) := by
   refine (degree_sum_le _ _).trans_lt ?_
@@ -3285,13 +3691,14 @@ theorem degree_sigma_sum_lt :
   refine (degree_C_mul_X_pow_le _ _).trans_lt ?_
   exact_mod_cast Nat.lt_succ_of_le (Nat.sub_le _ _)
 
-/-- For an explicit method, `σ` has degree at most `p`. -/
+/-- For an explicit method ($b_{-1} = 0$), $\sigma$ has degree less than $p + 1$. -/
 theorem degree_sigma_lt_of_bm1_eq_zero (h : M.bm1 = 0) :
     M.sigma.degree < ((M.p + 1 : ℕ) : WithBot ℕ) := by
   rw [sigma, h, C_0, zero_mul, zero_add]
   exact M.degree_sigma_sum_lt
 
-/-- For an explicit method, `Π(z)` is monic. -/
+/-- For an explicit method ($b_{-1} = 0$), the polynomial $\Pi_z$ is monic for every
+$z \in \mathbb{C}$. -/
 theorem charPoly_monic_of_bm1_eq_zero (h : M.bm1 = 0) (z : ℂ) : (M.charPoly z).Monic := by
   refine (M.rho_monic.map _).sub_of_left ?_
   rw [degree_map, degree_rho, ← smul_eq_C_mul]
@@ -3299,7 +3706,8 @@ theorem charPoly_monic_of_bm1_eq_zero (h : M.bm1 = 0) (z : ℂ) : (M.charPoly z)
   rw [degree_map]
   exact M.degree_sigma_lt_of_bm1_eq_zero h
 
-/-- For an explicit method, `Π(z)` has natural degree `p + 1`. -/
+/-- For an explicit method ($b_{-1} = 0$), the polynomial $\Pi_z$ has natural degree $p + 1$ for
+every $z \in \mathbb{C}$. -/
 theorem natDegree_charPoly_of_bm1_eq_zero (h : M.bm1 = 0) (z : ℂ) :
     (M.charPoly z).natDegree = M.p + 1 := by
   apply natDegree_eq_of_degree_eq_some
@@ -3309,7 +3717,8 @@ theorem natDegree_charPoly_of_bm1_eq_zero (h : M.bm1 = 0) (z : ℂ) :
   rw [degree_map]
   exact M.degree_sigma_lt_of_bm1_eq_zero h
 
-/-- The value of `Π(z)` at a real point, in terms of `ρ` and `σ`. -/
+/-- The value of $\Pi_z$ at a real point $x$ is $\Pi_z(x) = \rho(x) - z \sigma(x)$, with $\rho(x)$
+and $\sigma(x)$ real. -/
 theorem eval_ofReal_charPoly (z : ℂ) (x : ℝ) :
     (M.charPoly z).eval (x : ℂ) = ((M.rho.eval x : ℝ) : ℂ) - z * ((M.sigma.eval x : ℝ) : ℂ) := by
   have e : ∀ P : ℝ[X], (P.map (algebraMap ℝ ℂ)).eval (x : ℂ) = ((P.eval x : ℝ) : ℂ) := fun P => by
@@ -3317,9 +3726,13 @@ theorem eval_ofReal_charPoly (z : ℂ) (x : ℝ) :
     exact eval₂_at_apply (algebraMap ℝ ℂ) x
   rw [charPoly, eval_sub, eval_mul, eval_C, e, e]
 
-/-- **The explicit clause of the second Dahlquist barrier** ([quarteroni2000numerical] Property
-11.2): a consistent explicit method has points `-t`, `t` arbitrarily large, outside its region of
-absolute stability. -/
+/-- **The explicit clause of the second Dahlquist barrier** (Property 11.2 of
+[quarteroni2000numerical]). Let the method be explicit ($b_{-1} = 0$) and satisfy
+$\sum_j a_j = 1$. Then for every $t_1$ there is $t > \max(t_1, 0)$ such that
+$-t \notin \mathcal{A}$.
+
+So the region of absolute stability misses points of the negative real axis arbitrarily far from
+$0$. The hypothesis is the order condition $0$ alone, not full consistency. -/
 theorem exists_neg_notMem_absStabilityRegion_of_bm1_eq_zero (h : M.bm1 = 0)
     (h0 : M.orderCondition 0) (t₁ : ℝ) :
     ∃ t : ℝ, t₁ < t ∧ 0 < t ∧ -(t : ℂ) ∉ M.absStabilityRegion := by
@@ -3377,16 +3790,16 @@ theorem exists_neg_notMem_absStabilityRegion_of_bm1_eq_zero (h : M.bm1 = 0)
     rw [abs_mul, abs_of_pos ht0] at h3
     linarith
 
-/-- **Explicit consistent methods are not A-stable** ([quarteroni2000numerical] Property 11.2).
--/
+/-- **Explicit methods are not A-stable** (Property 11.2 of [quarteroni2000numerical]): an explicit
+method ($b_{-1} = 0$) with $\sum_j a_j = 1$ is not A-stable. -/
 theorem not_isAStable_of_bm1_eq_zero (h : M.bm1 = 0) (h0 : M.orderCondition 0) :
     ¬ M.IsAStable := by
   intro hA
   obtain ⟨t, -, ht0, hmem⟩ := M.exists_neg_notMem_absStabilityRegion_of_bm1_eq_zero h h0 0
   exact hmem (hA _ (by simpa using ht0))
 
-/-- **Explicit consistent methods are not ϑ-stable** for any `ϑ > 0` ([quarteroni2000numerical]
-Property 11.2). -/
+/-- **Explicit methods are not ϑ-stable** (Property 11.2 of [quarteroni2000numerical]): an explicit
+method ($b_{-1} = 0$) with $\sum_j a_j = 1$ is not ϑ-stable for any $\vartheta > 0$. -/
 theorem not_isThetaStable_of_bm1_eq_zero (h : M.bm1 = 0) (h0 : M.orderCondition 0) {ϑ : ℝ}
     (hϑ : 0 < ϑ) : ¬ M.IsThetaStable ϑ := by
   intro hA

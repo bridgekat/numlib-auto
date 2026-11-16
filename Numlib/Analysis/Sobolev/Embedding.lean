@@ -16,112 +16,144 @@ import Numlib.MeasureTheory.Constructions.Pi
 import Numlib.MeasureTheory.Function.LpInterpolation
 
 /-!
-# The Sobolev inequalities on the whole space
+# Sobolev inequalities on the whole space
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.3.A, on
-`W^{1,p}(ℝ^N)`: the Sobolev–Gagliardo–Nirenberg inequality (Theorem 9.9), its consequence for the
-intermediate exponents `p ≤ q ≤ p*` (Corollary 9.10), the limiting case `p = N` (Corollary 9.11),
-and Morrey's theorem for `p > N` (Theorem 9.12) with the continuous representative of Remark 11
-and the decay at infinity of Remark 12; then, on `W^{m,p}(ℝ^N)`, the higher-order embeddings of
-Corollary 9.13 (`L^q`, `L^∞` and `C^k` with Hölder top derivatives) and the local `C^k`
-representatives of `W^{m,p}_loc(Ω)`. The domain versions (Corollaries 9.14–9.15) are
-`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`, the compactness (Theorem 9.16)
-`Numlib/Analysis/Sobolev/Compactness.lean`.
+This file proves the Sobolev embeddings of $W^{1,p}(\mathbb{R}^N)$ and $W^{m,p}(\mathbb{R}^N)$,
+following [brezis2011functional], §9.3.A: Theorem 9.9, Corollaries 9.10 and 9.11, Theorem 9.12 with
+Remarks 11 and 12, Corollary 9.13 with its footnotes 12–14, and Remark 13, together with the step
+"$e_n \in C^\infty(\Omega)$" of the proof of Theorem 9.31. For $1 \le p < N$ and the Sobolev
+conjugate exponent $p^*$, defined by $1/p^* = 1/p - 1/N$, the **Sobolev–Gagliardo–Nirenberg
+inequality** $\|u\|_{p^*} \le C \|\nabla u\|_p$ gives $W^{1,p}(\mathbb{R}^N) \subset
+L^q(\mathbb{R}^N)$ for $p \le q \le p^*$. For $p = N \ge 2$ the inclusion holds for every
+$q \in [N, \infty)$. For $N < p < \infty$, **Morrey's theorem** gives a continuous representative
+$\tilde u$ with
+$$|\tilde u(x) - \tilde u(y)| \le C \|x - y\|^{1 - N/p} \|\nabla u\|_p, \qquad |\tilde u(x)| \le C'
+  \|u\|_{W^{1,p}},$$
+and $\tilde u(x) \to 0$ as $\|x\| \to \infty$.
+
+Repeated application of these first-order results gives Corollary 9.13: $W^{m,p}(\mathbb{R}^N)
+\subset L^q(\mathbb{R}^N)$ for $p \le q < \infty$ with $1/p - m/N \le 1/q$, $W^{m,p}(\mathbb{R}^N)
+\subset L^\infty(\mathbb{R}^N)$ with a Hölder continuous representative for $m > N/p$, and
+$W^{m,p}(\mathbb{R}^N) \subset C^k(\mathbb{R}^N)$ for $k + N/p < m$, with the derivatives of order
+$k$ Hölder continuous. The local form gives a $C^k$ representative on $\Omega$ for every function of
+$W^{m,p}_{\mathrm{loc}}(\Omega)$. Remark 13 gives $W^{N,1}(\mathbb{R}^N) \subset
+L^\infty(\mathbb{R}^N)$. The versions on domains are in `Numlib.Analysis.Sobolev.EmbeddingDomain`,
+the compact embeddings (Theorem 9.16) are in `Numlib.Analysis.Sobolev.Compactness`, and the
+one-dimensional theory is in `Numlib.Analysis.Sobolev.Interval.Embedding`.
+
+## Main definitions
+
+* `SobolevEuclidean.gnsConst`: the constant $C(p, N)$ of the Sobolev–Gagliardo–Nirenberg inequality
+  on $\mathbb{R}^N$.
+* `MeasureTheory.morreyConst`, `MeasureTheory.morreySupConst`: the constants
+  $C = 4 \mu(B(0,1))^{-1/p} / (1 - N/p)$ and $C' = 2 \mu(B(0,1))^{-1/p} / (1 - N/p)$ of Morrey's
+  inequalities.
+* `SobolevEuclidean.contRep`: the continuous representative of $u \in W^{1,p}(\mathbb{R}^N)$ for
+  $N < p < \infty$, as a bounded continuous function.
+* `SobolevEuclidean.toBoundedContinuousMapL`: the bounded linear map $u \mapsto \tilde u$ from
+  $W^{1,p}(\mathbb{R}^N)$ to the bounded continuous functions, for $N < p < \infty$.
 
 ## Main results
 
-Every inequality is stated first at the predicate level, for `HasWeakFDerivOn f w ⊤ μ` on a
-finite-dimensional real normed space `E` with an additive Haar measure `μ` (the setting of
-Mathlib's `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`), and then on the typed space
-`SobolevEuclidean N 1 p ⊤` of `Numlib/Analysis/Sobolev/MultiIndex.lean`, as a bound on
-`fn u` and as an `IsContinuousEmbedding` of the inclusion `SobolevMultiIndex.toLpₗ` into `L^q`.
-
-* `HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top`: the whole-space clause of
-  Friedrichs' theorem read on the function and its gradient — smooth compactly supported `u_n`
-  with `u_n → f` and `∇u_n → w` in `L^p`, which is what every density argument below uses.
-* `HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`, `SobolevEuclidean.eLpNorm_fn_le_of_eq`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq`: **Theorem 9.9**, `‖f‖_{p*} ≤ C ‖∇f‖_p` for
-  `1 ≤ p < N`, `1/p* = 1/p − 1/N`, with Mathlib's constant `SNormLESNormFDerivOfEqConst`
-  (`SobolevEuclidean.gnsConst` on `ℝ^N`); by density and Fatou's lemma from the compactly
-  supported `C¹` case.
-* `SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le`: **Corollary 9.10**,
-  `W^{1,p}(ℝ^N) ↪ L^q(ℝ^N)` for `p ≤ q ≤ p*`, by the interpolation inequality in the additive form
-  `‖f‖_q ≤ ‖f‖_p + ‖f‖_{p*}` (`MeasureTheory.eLpNorm_le_eLpNorm_add_eLpNorm_of_le_of_le`).
+* `HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top`: a function
+  $f \in W^{1,p}(\mathbb{R}^N)$, $1 \le p < \infty$, with weak derivative $w$ is the limit of smooth
+  compactly supported $u_n$ with $u_n \to f$ and $\nabla u_n \to w$ in $L^p$.
+* `HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`: the Sobolev–Gagliardo–Nirenberg inequality
+  $\|f\|_{p^*} \le C \|w\|_p$ for $f \in W^{1,p}(\mathbb{R}^N)$, $1 \le p < N$ (Theorem 9.9).
+* `SobolevEuclidean.eLpNorm_fn_le_of_eq`, `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq`: the
+  same inequality on the space $W^{1,p}(\mathbb{R}^N)$, and $W^{1,p}(\mathbb{R}^N) \hookrightarrow
+  L^{p^*}(\mathbb{R}^N)$.
+* `SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le`: $W^{1,p}(\mathbb{R}^N) \hookrightarrow
+  L^q(\mathbb{R}^N)$ for $1 \le p < N$ and $p \le q \le p^*$ (Corollary 9.10).
 * `MeasureTheory.exists_forall_eLpNorm_le_of_eq_finrank`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank`: **Corollary 9.11**,
-  `W^{1,N}(ℝ^N) ↪ L^q(ℝ^N)` for `N ≥ 2` and every `q ∈ [N, ∞)`: the `p = 1` inequality applied to
-  `‖u‖^γ` gives the book's (20) (`ContDiff.eLpNorm_rpow_le_of_hasCompactSupport`), Young's
-  inequality its (21), an induction on `γ = N, N + 1, …` and the interpolation inequality cover
-  every `q`, and density and Fatou extend it to `W^{1,N}`.
+  `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank`: $W^{1,N}(\mathbb{R}^N)
+  \hookrightarrow L^q(\mathbb{R}^N)$ for $N \ge 2$ and $N \le q < \infty$ (Corollary 9.11).
 * `ContDiff.lintegral_enorm_sub_le_of_mem_closedBall`, `ContDiff.enorm_sub_le_of_lt`,
-  `ContDiff.enorm_le_of_lt`: **Morrey's estimates for `C¹` functions**, on balls rather than the
-  book's cubes: `∫_B ‖u − u(x)‖ ≤ (2r/(1 − N/p)) μ(B)^{1−1/p} ‖∇u‖_{L^p(B)}` for `x` in a ball `B`
-  of radius `r` (the segment bound, Fubini, the homothety `z ↦ x + t(z − x)` and Hölder), whence
-  the Hölder estimate (25) `‖u x − u y‖ ≤ C ‖x − y‖^{1−N/p} ‖∇u‖_p` and the sup bound (24)
-  `‖u x‖ ≤ C' (‖u‖_p + ‖∇u‖_p)`, with the explicit constants `MeasureTheory.morreyConst` and
-  `MeasureTheory.morreySupConst`.
-* `HasWeakFDerivOn.exists_continuous_holderWith_ae_eq`: **Theorem 9.12 (Morrey) with
-  Remarks 11 and 12**, for `N < p < ∞`: the continuous representative, its Hölder estimate, its
-  sup bound and its decay at infinity, by the uniform Cauchy property of the approximants in the
-  Banach space of bounded continuous functions.
-* `SobolevEuclidean.contRep`, `SobolevEuclidean.toBoundedContinuousMapL`,
-  `SobolevEuclidean.isContinuousEmbedding_toBoundedContinuousMapL`: the continuous representative
-  on the typed space and **`W^{1,p}(ℝ^N) ↪ C_b(ℝ^N) ⊆ L^∞(ℝ^N)`** as a bounded linear map.
-* `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le` lifts an `L^q` bound on
-  `W^{m,p}(ℝ^N)` to `W^{m+1,p}(ℝ^N) ⊆ W^{1,q}(ℝ^N)`, the inductive step of Corollary 9.13.
-* `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`, `SobolevEuclidean.memLp_fn_of_order`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_order`: **Corollary 9.13, the `L^q` clauses**
-  in one statement, `W^{m,p}(ℝ^N) ↪ L^q(ℝ^N)` for `p ≤ q < ∞` with `1/p − m/N ≤ 1/q` (so
-  `1/q = 1/p − m/N` when `1/p − m/N > 0`, every `q ∈ [p, ∞)` otherwise), by induction on `m` from
-  the first-order case `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`.
+  `ContDiff.enorm_le_of_lt`: Morrey's estimates for $C^1$ functions, on balls.
+* `HasWeakFDerivOn.exists_continuous_holderWith_ae_eq`: Morrey's theorem for $N < p < \infty$, with
+  the continuous representative, its Hölder estimate, its sup bound and its decay at infinity
+  (Theorem 9.12 with Remarks 11 and 12).
+* `SobolevEuclidean.isContinuousEmbedding_toBoundedContinuousMapL`: $W^{1,p}(\mathbb{R}^N)
+  \hookrightarrow C_b(\mathbb{R}^N)$ for $N < p < \infty$.
+* `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le`: a bound of
+  $W^{m,p}(\mathbb{R}^N)$ in $L^q$ gives $W^{m+1,p}(\mathbb{R}^N) \subset W^{1,q}(\mathbb{R}^N)$.
+* `SobolevEuclidean.isContinuousEmbedding_toLp_of_order`: $W^{m,p}(\mathbb{R}^N) \hookrightarrow
+  L^q(\mathbb{R}^N)$ for $p \le q < \infty$ with $1/p - m/N \le 1/q$ (Corollary 9.13).
 * `SobolevEuclidean.exists_forall_continuous_ae_eq_of_order`,
-  `SobolevEuclidean.memLp_fn_top_of_order`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order`:
-  **Corollary 9.13, the `L^∞` clause**, `W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` for `1/p − m/N < 0`, with a
-  continuous Hölder representative.
-* `SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order`,
-  `SobolevEuclidean.exists_contDiff_ae_eq_of_order`, `SobolevEuclidean.exists_contDiff_ae_eq_of_lt`:
-  **Corollary 9.13, the `C^k` clause**, `W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` for `k + N/p < m`, with the
-  derivatives of order `≤ k` bounded by `C ‖u‖` and those of order `k` Hölder — of the sharp
-  exponent `m − N/p − k` when it is less than `1` — by induction on `k` through Remark 2's
-  converse `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`.
-* `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt`, `MemSobolevMultiIndexLoc.exists_contDiffOn`:
-  the local form, `W^{m,p}_loc(Ω) ⊂ C^k(Ω)` for `k + N/p < m` and `⋂_m H^m_loc(Ω) ⊂ C^∞(Ω)`,
-  by cut-offs and gluing.
-* `SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one`: **Remark 13**,
-  `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)` with a continuous representative bounded by `‖∂_1 ⋯ ∂_N u‖_1 ≤ ‖u‖`,
-  from the iterated fundamental theorem of calculus over the coordinates
-  (`ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank`, through the line bound
-  `ContDiff.enorm_le_lintegral_fderiv_line` and the Fubini step
-  `MeasureTheory.lintegral_fin_succ_eq`).
+  `SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order`: for $m > N/p$, a Hölder continuous
+  representative and $W^{m,p}(\mathbb{R}^N) \hookrightarrow L^\infty(\mathbb{R}^N)$ (Corollary
+  9.13).
+* `SobolevEuclidean.exists_contDiff_ae_eq_of_order`, `SobolevEuclidean.exists_contDiff_ae_eq_of_lt`:
+  for $k + N/p < m$, a $C^k$ representative with bounded derivatives of order at most $k$ and Hölder
+  derivatives of order $k$ (Corollary 9.13).
+* `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt`, `MemSobolevMultiIndexLoc.exists_contDiffOn`: a
+  function of $W^{m,p}_{\mathrm{loc}}(\Omega)$ with $k + N/p < m$ has a $C^k$ representative on
+  $\Omega$, and a function of $H^m_{\mathrm{loc}}(\Omega)$ for every $m$ has a $C^\infty$
+  representative on $\Omega$.
+* `SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one`: every
+  $u \in W^{N,1}(\mathbb{R}^N)$ has a continuous representative bounded by $\|u\|$ (Remark 13).
+* `MeasureTheory.lintegral_prod_comp_succAbove_le`: Gagliardo's lemma in its general form (Lemma
+  9.4).
 
-## Design
+## Proof outline
 
-Exponents are `ℝ≥0` with the Sobolev conjugate written by its defining relation
-`(p' : ℝ)⁻¹ = p⁻¹ − N⁻¹`, as Mathlib does; the typed spaces carry `[Fact (1 ≤ (p : ℝ≥0∞))]`.
-Morrey's theorem is stated for finite `p` only: the case `p = ∞` is the Lipschitz representative
-of Remark 7 (`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`) and is not restated here.
-Balls replace the cubes of the book's proof of Theorem 9.12 because the homothety
-`z ↦ x + t(z − x)` maps any convex set containing `x` into itself and scales the Haar measure by
-`t^N` (`MeasureTheory.setLIntegral_comp_homothety`), so no coordinates enter; the constants
-differ from the book's cube constants accordingly. The higher-order statements carry the
-hypothesis `2 ≤ N ∨ 1 < p`: the chain of first-order embeddings is stuck at `W^{1,1}(ℝ)`, where
-Corollary 9.11 needs `N ≥ 2` (that case is the one-dimensional theory of
-`Numlib/Analysis/Sobolev/Interval/Embedding.lean`). Remark 13 is the one case the chain misses
-that the book settles, `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)`; it is proved directly on the smooth
-approximants, and its tensor-to-multi-index step reads the mixed derivative `∂_1 ⋯ ∂_N` off the
-weak derivative of order `N` through `HasWeakIteratedFDerivOn.lineDeriv` and the permutation
-lemma `multiIndexDirections_multiIndexCount_perm`. Lemma 9.4 (Gagliardo's product lemma) in its
-general form, `∫_{ℝ^N} ∏ i, f i x̃_i ≤ ∏ i, ‖f i‖_{L^{N−1}(ℝ^{N−1})}`, is
-`MeasureTheory.lintegral_prod_comp_succAbove_le`, proved by the book's induction on `N` with the
-coordinates split as `Fin.cons s t` (Hölder against the factor independent of the new coordinate,
-the induction hypothesis, and the generalized Hölder inequality in the new coordinate); Theorem 9.9
-itself goes through Mathlib's special case `MeasureTheory.lintegral_prod_lintegral_pow_le`.
+Each inequality is first proved for $C^1$ (or smooth) compactly supported functions. It passes to
+$W^{1,p}(\mathbb{R}^N)$ by density and Fatou's lemma: the smooth approximants converge in $L^p$,
+hence almost everywhere along a subsequence. Morrey's estimates on a ball $B$ of radius $r$ come
+from the segment bound $|u(z) - u(x)| \le \|z - x\| \int_0^1 |\nabla u(x + t(z - x))| \, dt$,
+Fubini's theorem, the homothety $z \mapsto x + t(z - x)$ and Hölder's inequality. In Morrey's
+theorem the approximants form a Cauchy sequence of bounded continuous functions, whose limit is the
+continuous representative. Corollary 9.13 is proved by induction on $m$, and its $C^k$ clause by
+induction on $k$, through the converse of Remark 2
+(`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`). Remark 13 comes from the fundamental
+theorem of calculus applied in each coordinate in turn.
 
-## References
+## Notation
 
-[brezis2011functional], §9.3.A: Theorem 9.9, Corollaries 9.10–9.11, Theorem 9.12, Remarks 11–12,
-Corollary 9.13 (footnotes 12–14), Remark 13, and the proof of Theorem 9.31 (`e_n ∈ C^∞(Ω)`).
+* $N$ is the dimension of the space $E$, and $\mu$ is an additive Haar measure on $E$; on
+  $\mathbb{R}^N$ the measure is Lebesgue measure.
+* $\nabla u$ is the derivative of $u$, a function with values in the continuous linear maps
+  $E \to F$, and $\|\nabla u\|_p$ is the $L^p$ norm of its operator norm.
+* $p^*$ is the Sobolev conjugate exponent, $1/p^* = 1/p - 1/N$, and $N' = N/(N-1)$.
+* $W^{k,p}(\Omega)$ is `SobolevEuclidean N k p Ω`, with the norm $\|u\| = (\sum_{|\alpha| \le k}
+  \|\partial^\alpha u\|_p^p)^{1/p}$ for $p < \infty$ and $\|u\| = \max_{|\alpha| \le k}
+  \|\partial^\alpha u\|_\infty$ for $p = \infty$, and $\partial_i u$ is `SobolevMultiIndex.weakDeriv
+  u (MultiIndexLE.single i)`.
+* For $u$ in a Sobolev space, $\|u\|_q$ is the $L^q$ norm of its function `SobolevMultiIndex.fn u`,
+  and $\|u\|$ without an index is its Sobolev norm.
+
+## Implementation notes
+
+* Each inequality is stated twice: for a function with a weak derivative on the whole space
+  (`HasWeakFDerivOn f w ⊤ μ`, on a finite-dimensional real normed space with an additive Haar
+  measure, as in Mathlib's `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`), and on the space
+  `SobolevEuclidean N k p ⊤`, as a bound on `SobolevMultiIndex.fn u` and as an
+  `IsContinuousEmbedding` of the inclusion `SobolevMultiIndex.toLpₗ`.
+* Exponents are in `ℝ≥0`. The Sobolev conjugate $p^*$ is given by its defining relation
+  `(p' : ℝ)⁻¹ = p⁻¹ - N⁻¹`, as in Mathlib. The spaces carry `[Fact (1 ≤ p)]`.
+* The ratios $m/N$, $1/N$ and $N/p$ are real divisions. At $N = 0$ the ratios $m/N$ and $1/N$ are
+  $0$.
+* Morrey's theorem is stated for finite $p$ only. The case $p = \infty$ is the Lipschitz
+  representative of Remark 7, `HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`, and is not
+  restated here.
+* The proof of Morrey's estimates uses balls instead of the cubes of [brezis2011functional]. The
+  homothety $z \mapsto x + t(z - x)$, $0 \le t \le 1$, maps every convex set that contains $x$ into
+  itself and scales the Haar measure by $t^N$ (`MeasureTheory.setLIntegral_comp_homothety`), so no
+  coordinates are needed. The constants differ from the cube constants of the source.
+* The higher-order statements carry the hypothesis $N \ge 2$ or $p > 1$. The chain of first-order
+  embeddings cannot start from $W^{1,1}(\mathbb{R})$, because Corollary 9.11 needs $N \ge 2$; the
+  one-dimensional case is in `Numlib.Analysis.Sobolev.Interval.Embedding`. Remark 13,
+  $W^{N,1}(\mathbb{R}^N) \subset L^\infty(\mathbb{R}^N)$, is the one case that the chain misses and
+  the source settles. It is proved directly on the smooth approximants. Its step from the derivative
+  of order $N$ as a multilinear map to the multi-index derivative $\partial_1 \cdots \partial_N u$
+  uses `HasWeakIteratedFDerivOn.lineDeriv` and `multiIndexDirections_multiIndexCount_perm`.
+* The standard basis vectors are indexed from $0$: `EuclideanSpace.stdVec N n` is $e_n$ for $n < N$.
+  The mixed derivative $\partial_1 \cdots \partial_N$ of the source is the derivative in the
+  directions $e_0, \dots, e_{N-1}$.
+* Lemma 9.4 (Gagliardo's lemma) in its general form is
+  `MeasureTheory.lintegral_prod_comp_succAbove_le`, proved by the induction on $N$ of the source
+  with the coordinates split as `Fin.cons s t`. The proof of Theorem 9.9 uses Mathlib's special case
+  `MeasureTheory.lintegral_prod_lintegral_pow_le` instead.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -139,8 +171,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {p : ℝ≥0∞}
 
 omit [μ.IsAddHaarMeasure] in
-/-- The `L^p` norm of a function with a first-order weak derivative on the whole space is bounded
-by its Sobolev norm of order one. -/
+/-- Let $E$ be a finite-dimensional real normed space with a measure $\mu$, let $F$ be a real Banach
+space, and let $1 \le p < \infty$. If $w$ is a weak derivative of $f : E \to F$ on $E$, then
+$\|f\|_p$ is at most the Sobolev norm of order one of $f$, `sobolevNorm f 1 p ⊤ μ`. -/
 theorem HasWeakFDerivOn.eLpNorm_le_sobolevNorm_one (h : HasWeakFDerivOn f w ⊤ μ) (hp : 1 ≤ p)
     (hp' : p ≠ ⊤) : eLpNorm f p μ ≤ sobolevNorm f 1 p ⊤ μ := by
   have hloc : LocallyIntegrable f μ :=
@@ -156,8 +189,9 @@ theorem HasWeakFDerivOn.eLpNorm_le_sobolevNorm_one (h : HasWeakFDerivOn f w ⊤ 
     _ ≤ sobolevNorm f 1 p ⊤ μ := eLpNorm_weakIteratedFDeriv_le_sobolevNorm hp hp' (Nat.zero_le 1)
 
 omit [μ.IsAddHaarMeasure] in
-/-- The `L^p` norm of a first-order weak derivative on the whole space is bounded by the Sobolev
-norm of order one of the function. -/
+/-- Let $E$ be a finite-dimensional real normed space with a measure $\mu$, let $F$ be a real Banach
+space, and let $1 \le p < \infty$. If $w$ is a weak derivative of $f : E \to F$ on $E$, then
+$\|w\|_p$ is at most the Sobolev norm of order one of $f$, `sobolevNorm f 1 p ⊤ μ`. -/
 theorem HasWeakFDerivOn.eLpNorm_weakDeriv_le_sobolevNorm_one (h : HasWeakFDerivOn f w ⊤ μ)
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) : eLpNorm w p μ ≤ sobolevNorm f 1 p ⊤ μ := by
   have hloc : LocallyIntegrable w μ :=
@@ -172,8 +206,9 @@ theorem HasWeakFDerivOn.eLpNorm_weakDeriv_le_sobolevNorm_one (h : HasWeakFDerivO
     _ ≤ sobolevNorm f 1 p ⊤ μ := eLpNorm_weakIteratedFDeriv_le_sobolevNorm hp hp' le_rfl
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- A difference of functions with first-order weak derivatives has the difference of the weak
-derivatives as weak derivative. -/
+/-- Let $\Omega$ be an open subset of a real normed space $E$ with a measure $\mu$. If $w_1$ and
+$w_2$ are weak derivatives of $f_1$ and $f_2$ on $\Omega$, then $w_1 - w_2$ is a weak derivative
+of $f_1 - f_2$ on $\Omega$. -/
 protected theorem HasWeakFDerivOn.sub {Ω : Opens E} {f₁ f₂ : E → F} {w₁ w₂ : E → E →L[ℝ] F}
     (h₁ : HasWeakFDerivOn f₁ w₁ Ω μ) (h₂ : HasWeakFDerivOn f₂ w₂ Ω μ) :
     HasWeakFDerivOn (f₁ - f₂) (w₁ - w₂) Ω μ := by
@@ -183,7 +218,9 @@ protected theorem HasWeakFDerivOn.sub {Ω : Opens E} {f₁ f₂ : E → F} {w₁
   simp
 
 omit [CompleteSpace F] in
-/-- A `C¹` function has its classical derivative as weak derivative on any open set. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$\Omega \subseteq E$ be open. A $C^1$ function $g : E \to F$ has its derivative $\nabla g$ as
+weak derivative on $\Omega$. -/
 theorem ContDiff.hasWeakFDerivOn {Ω : Opens E} {g : E → F} (hg : ContDiff ℝ 1 g) :
     HasWeakFDerivOn g (fderiv ℝ g) Ω μ := by
   have := ContDiffOn.hasWeakIteratedFDerivOn (μ := μ) (Ω := Ω) (m := 1) hg.contDiffOn le_rfl
@@ -191,12 +228,16 @@ theorem ContDiff.hasWeakFDerivOn {Ω : Opens E} {g : E → F} (hg : ContDiff ℝ
   convert this using 2 with x
   rw [iteratedFDeriv_one_eq_symm_fderiv]
 
-/-- **Density of `C_c^∞` in `W^{1,p}(ℝ^N)`, read on the function and its gradient**: for
-`f ∈ W^{1,p}(ℝ^N)` with weak derivative `w`, `1 ≤ p < ∞`, there are smooth compactly supported
-`u_n` with `u_n → f` and `∇u_n → w` in `L^p`. This is the whole-space clause of
-[brezis2011functional] Theorem 9.2 in the form the proofs of §9.3 use, obtained from
-`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` by reading the two components of the
-Sobolev norm of `u_n - f`. -/
+/-- **Density of $C_c^\infty$ in $W^{1,p}(\mathbb{R}^N)$, for the function and its gradient.** Let
+$E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let $F$ be a
+real Banach space, and let $1 \le p < \infty$. Let $f, w \in L^p$, where $w$ is a weak
+derivative of $f$ on $E$. Then there are smooth compactly supported $u_n : E \to F$ with
+$$\|u_n - f\|_p \to 0 \quad \text{and} \quad \|\nabla u_n - w\|_p \to 0.$$
+This is the whole-space part of Theorem 9.2 of [brezis2011functional], in the form that the
+proofs of §9.3 use.
+
+The proof reads the two components of the Sobolev norm of $u_n - f$ in
+`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`. -/
 theorem HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top
     (h : HasWeakFDerivOn f w ⊤ μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hf : MemLp f p μ)
     (hw : MemLp w p μ) :
@@ -218,7 +259,11 @@ theorem HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top
 
 end Approximation
 
-/-! ### Theorem 9.9: the Sobolev–Gagliardo–Nirenberg inequality on `W^{1,p}(ℝ^N)` -/
+/-!
+### The Sobolev–Gagliardo–Nirenberg inequality on $W^{1,p}(\mathbb{R}^N)$
+
+This is Theorem 9.9 of [brezis2011functional].
+-/
 
 section GNS
 
@@ -226,14 +271,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [FiniteDimensional ℝ F] {μ : Measure E} [μ.IsAddHaarMeasure] {f : E → F} {w : E → E →L[ℝ] F}
 
-/-- **Theorem 9.9 (Sobolev–Gagliardo–Nirenberg) on `W^{1,p}(ℝ^N)`**: for `1 ≤ p < N`,
-`1/p* = 1/p − 1/N`, and `f ∈ W^{1,p}(ℝ^N)` with weak derivative `w`,
-`‖f‖_{p*} ≤ C ‖w‖_p` with Mathlib's constant `SNormLESNormFDerivOfEqConst`. The inequality for
-compactly supported `C¹` functions is Mathlib's `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`;
-it passes to `W^{1,p}` by density and Fatou's lemma: the approximants of
-`HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top` converge in `L^p`, hence
-almost everywhere along a subsequence, and their `L^{p*}` norms are eventually bounded by
-`C (‖w‖_p + δ)` for every `δ > 0`. [brezis2011functional] Theorem 9.9. -/
+/-- The **Sobolev–Gagliardo–Nirenberg inequality**. Let $E$ be a real normed space of finite
+dimension $N$ with an additive Haar measure $\mu$, and let $F$ be a finite-dimensional real
+normed space. Let $1 \le p < N$ and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. If $f, w \in L^p$ and
+$w$ is a weak derivative of $f$ on $E$, then
+$$\|f\|_{p^*} \le C \|w\|_p,$$
+where $C$ is Mathlib's constant `MeasureTheory.SNormLESNormFDerivOfEqConst F μ p`. This is
+Theorem 9.9 of [brezis2011functional].
+
+For compactly supported $C^1$ functions the inequality is Mathlib's
+`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`. It passes to $f$ by density and Fatou's lemma:
+the approximants of `HasWeakFDerivOn.exists_seq_contDiff_hasCompactSupport_tendsto_top` converge
+almost everywhere along a subsequence, and their $L^{p^*}$ norms are eventually at most
+$C (\|w\|_p + \delta)$ for every $\delta > 0$. -/
 theorem HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq (h : HasWeakFDerivOn f w ⊤ μ)
     {p p' : ℝ≥0} (hp : 1 ≤ p) (hpN : p < finrank ℝ E)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (finrank ℝ E : ℝ)⁻¹) (hf : MemLp f p μ) (hw : MemLp w p μ) :
@@ -277,8 +327,9 @@ theorem HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq (h : HasWeakFDerivOn
     exact ENNReal.Tendsto.const_mul this (Or.inr ENNReal.coe_ne_top)
   exact ge_of_tendsto hlim (eventually_nhdsWithin_of_forall fun δ hδ ↦ key δ hδ)
 
-/-- `MemLp` for the Sobolev conjugate exponent: the bound of
-`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq` is finite. -/
+/-- Under the hypotheses of `HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq` ($1 \le p < N$,
+$1/p^* = 1/p - 1/N$, and $f, w \in L^p$ with $w$ a weak derivative of $f$ on $E$), the function
+$f$ lies in $L^{p^*}$. -/
 theorem HasWeakFDerivOn.memLp_of_eq (h : HasWeakFDerivOn f w ⊤ μ)
     {p p' : ℝ≥0} (hp : 1 ≤ p) (hpN : p < finrank ℝ E)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (finrank ℝ E : ℝ)⁻¹) (hf : MemLp f p μ) (hw : MemLp w p μ) :
@@ -288,7 +339,7 @@ theorem HasWeakFDerivOn.memLp_of_eq (h : HasWeakFDerivOn f w ⊤ μ)
 
 end GNS
 
-/-! ### Theorem 9.9 on the typed space `W^{1,p}(ℝ^N)` -/
+/-! ### The Sobolev–Gagliardo–Nirenberg inequality on the space $W^{1,p}(\mathbb{R}^N)$ -/
 
 section Typed
 
@@ -296,8 +347,10 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open SobolevMultiIndex
 
-/-- The `ℓ¹` sum of the `L^p` norms of the partial derivatives of `u ∈ W^{1,p}(Ω)` is at most
-`N ‖u‖`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p$. For $u \in W^{1,p}(\Omega)$, the
+partial derivatives satisfy
+$$\sum_{i} \|\partial_i u\|_{L^p(\Omega)} \le N \|u\|.$$
+-/
 theorem SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u : SobolevEuclidean N 1 p Ω) :
     ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖ ≤ N * ENNReal.ofReal ‖u‖ := by
@@ -308,13 +361,16 @@ theorem SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le
         simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
 omit [Fact (1 ≤ p)] in
-/-- The function of an element of `W^{k,p}(ℝ^N)` lies in `L^p(ℝ^N)`. -/
+/-- For $u \in W^{k,p}(\mathbb{R}^N)$, the function `SobolevMultiIndex.fn u` lies in
+$L^p(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.memLp_fn {k : ℕ} (u : SobolevEuclidean N k p ⊤) :
     MemLp (fn u) p volume := by
   simpa [Measure.restrict_coe_top] using SobolevMultiIndex.memLp u
 
-/-- A weak gradient of `u ∈ W^{1,p}(ℝ^N)` in the tensor reading, with its `L^p` bound by the
-`ℓ¹` sum of the partial derivatives. -/
+/-- Let $1 \le p$. Every $u \in W^{1,p}(\mathbb{R}^N)$ has a weak derivative $w$ on $\mathbb{R}^N$,
+with values in the linear functionals on $\mathbb{R}^N$, such that $w \in L^p$ and
+$$\|w\|_p \le \sum_i \|\partial_i u\|_p.$$
+-/
 theorem SobolevEuclidean.exists_hasWeakFDerivOn (u : SobolevEuclidean N 1 p ⊤) :
     ∃ w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ,
       HasWeakFDerivOn (fn u) w ⊤ volume ∧ MemLp w p volume ∧
@@ -332,15 +388,21 @@ variable {N : ℕ} {p p' : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 open SobolevMultiIndex
 
 variable (N) in
-/-- **The constant of the Sobolev–Gagliardo–Nirenberg inequality on `ℝ^N`**, Mathlib's
-`SNormLESNormFDerivOfEqConst` for real-valued functions and Lebesgue measure: the `C = C(p, N)`
-of [brezis2011functional] Theorem 9.9. -/
+/-- The **constant of the Sobolev–Gagliardo–Nirenberg inequality on $\mathbb{R}^N$**: the constant
+$C(p, N)$ of Theorem 9.9 of [brezis2011functional], defined as Mathlib's
+`MeasureTheory.SNormLESNormFDerivOfEqConst` for real-valued functions and Lebesgue measure on
+$\mathbb{R}^N$. -/
 def SobolevEuclidean.gnsConst (p : ℝ) : ℝ≥0 :=
   SNormLESNormFDerivOfEqConst ℝ (volume : Measure (EuclideanSpace ℝ (Fin N))) p
 
-/-- **Theorem 9.9 on the typed space**: for `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < N`, `1/p* = 1/p − 1/N`,
-`‖u‖_{p*} ≤ C ∑_i ‖∂_i u‖_p`, with Mathlib's constant `C = SNormLESNormFDerivOfEqConst`.
-[brezis2011functional] Theorem 9.9, the inequality (17). -/
+/-- The **Sobolev–Gagliardo–Nirenberg inequality on $W^{1,p}(\mathbb{R}^N)$**. Let $1 \le p < N$ and
+let $p^*$ satisfy $1/p^* = 1/p - 1/N$. For every $u \in W^{1,p}(\mathbb{R}^N)$,
+$$\|u\|_{p^*} \le C \sum_i \|\partial_i u\|_p,$$
+where $C$ is `SobolevEuclidean.gnsConst N p`. This is the inequality (17) of Theorem 9.9 of
+[brezis2011functional].
+
+The proof applies `HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq` to the weak derivative
+of `SobolevEuclidean.exists_hasWeakFDerivOn`. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclidean N 1 p ⊤) :
     eLpNorm (fn u) (p' : ℝ≥0∞) volume ≤ SobolevEuclidean.gnsConst N p
@@ -352,14 +414,20 @@ theorem SobolevEuclidean.eLpNorm_fn_le_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻�
     (by rw [hN]; exact hp') (SobolevEuclidean.memLp_fn u) hwp).trans ?_
   exact mul_le_mul' le_rfl hwle
 
-/-- **`W^{1,p}(ℝ^N) ⊆ L^{p*}(ℝ^N)`** for `1 ≤ p < N`: [brezis2011functional] Theorem 9.9, the
-inclusion. -/
+/-- Let $1 \le p < N$ and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. Then $W^{1,p}(\mathbb{R}^N)
+\subseteq L^{p^*}(\mathbb{R}^N)$: for every $u \in W^{1,p}(\mathbb{R}^N)$, the function
+`SobolevMultiIndex.fn u` lies in $L^{p^*}(\mathbb{R}^N)$. This is the inclusion of Theorem 9.9
+of [brezis2011functional]. -/
 theorem SobolevEuclidean.memLp_fn_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclidean N 1 p ⊤) : MemLp (fn u) (p' : ℝ≥0∞) volume :=
   memLp_iff.2 ((SobolevEuclidean.eLpNorm_fn_le_of_eq hpN hp' u).trans_lt
     (ENNReal.mul_lt_top ENNReal.coe_lt_top (ENNReal.sum_lt_top.2 fun _ _ ↦ ENNReal.ofReal_lt_top)))
 
-/-- **Theorem 9.9, the bound in the norm of `W^{1,p}(ℝ^N)`**: `‖u‖_{p*} ≤ C N ‖u‖`. -/
+/-- Let $1 \le p < N$ and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. For every
+$u \in W^{1,p}(\mathbb{R}^N)$,
+$$\|u\|_{p^*} \le C N \|u\|,$$
+where $C$ is `SobolevEuclidean.gnsConst N p`. This is Theorem 9.9 of [brezis2011functional] with
+the bound in the norm of $W^{1,p}(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_norm_of_eq (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (u : SobolevEuclidean N 1 p ⊤) :
     eLpNorm (fn u) (p' : ℝ≥0∞) volume
@@ -369,9 +437,10 @@ theorem SobolevEuclidean.eLpNorm_fn_le_norm_of_eq (hpN : p < N)
     ENNReal.ofReal_natCast, ENNReal.ofReal_coe_nnreal, mul_assoc]
   exact mul_le_mul' le_rfl (SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le u)
 
-/-- **Theorem 9.9 as a continuous embedding**: `W^{1,p}(ℝ^N) ↪ L^{p*}(ℝ^N)` for `1 ≤ p < N`,
-along the inclusion `SobolevMultiIndex.toLpₗ`. [brezis2011functional] Theorem 9.9, "with
-continuous injection". -/
+/-- Let $1 \le p < N$ and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. Then $W^{1,p}(\mathbb{R}^N)
+\hookrightarrow L^{p^*}(\mathbb{R}^N)$ is a continuous embedding: the inclusion
+`SobolevMultiIndex.toLpₗ` is injective and bounded. This is the "continuous injection" of
+Theorem 9.9 of [brezis2011functional]. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_eq [Fact (1 ≤ (p' : ℝ≥0∞))] (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) :
     IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p ⊤ volume
@@ -387,13 +456,20 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_eq [Fact (1 ≤ (p' : ℝ
 
 end TypedGNS
 
-/-! ### Corollary 9.10: the intermediate exponents -/
+/-!
+### The intermediate exponents
+
+This is Corollary 9.10 of [brezis2011functional].
+-/
 
 section Interpolation
 
-/-- A weighted geometric mean is at most the sum: `a ^ θ * b ^ (1 - θ) ≤ a + b` for
-`0 ≤ θ ≤ 1` — the form of Young's inequality that [brezis2011functional] Corollary 9.10 uses to
-read the interpolation inequality `‖u‖_q ≤ ‖u‖_p^θ ‖u‖_{p*}^{1−θ}` as `‖u‖_q ≤ ‖u‖_p + ‖u‖_{p*}`. -/
+/-- For $a, b \in [0, \infty]$ and $0 \le \theta \le 1$,
+$$a^\theta b^{1 - \theta} \le a + b.$$
+
+This is the form of Young's inequality that the proof of Corollary 9.10 of
+[brezis2011functional] uses to turn the interpolation inequality $\|u\|_q \le \|u\|_p^\theta
+\|u\|_{p^*}^{1 - \theta}$ into $\|u\|_q \le \|u\|_p + \|u\|_{p^*}$. -/
 theorem ENNReal.rpow_mul_rpow_one_sub_le_add (a b : ℝ≥0∞) {θ : ℝ} (hθ₀ : 0 ≤ θ) (hθ₁ : θ ≤ 1) :
     a ^ θ * b ^ (1 - θ) ≤ a + b := by
   calc a ^ θ * b ^ (1 - θ) ≤ (a + b) ^ θ * (a + b) ^ (1 - θ) :=
@@ -402,8 +478,10 @@ theorem ENNReal.rpow_mul_rpow_one_sub_le_add (a b : ℝ≥0∞) {θ : ℝ} (hθ�
     _ = a + b := by
         rw [← ENNReal.rpow_add_of_nonneg _ _ hθ₀ (by linarith), add_sub_cancel, ENNReal.rpow_one]
 
-/-- **The interpolation inequality in additive form** ([brezis2011functional] Corollary 9.10,
-proof): for `p ≤ r ≤ q` and `p ≠ 0`, `‖f‖_r ≤ ‖f‖_p + ‖f‖_q`. -/
+/-- The **interpolation inequality in additive form**. Let $f$ be an almost everywhere strongly
+measurable function on a measure space, and let $0 < p \le r \le q \le \infty$. Then
+$$\|f\|_r \le \|f\|_p + \|f\|_q.$$
+This is used in the proof of Corollary 9.10 of [brezis2011functional]. -/
 theorem MeasureTheory.eLpNorm_le_eLpNorm_add_eLpNorm_of_le_of_le {α G : Type*}
     [MeasurableSpace α] {ν : Measure α} [NormedAddCommGroup G] {f : α → G}
     (hf : AEStronglyMeasurable f ν) {p q r : ℝ≥0∞} (hp : p ≠ 0) (hpr : p ≤ r) (hrq : r ≤ q) :
@@ -420,7 +498,8 @@ variable {N : ℕ} {p p' q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
 open SobolevMultiIndex
 
-/-- The `L^p` norm of the function of `u ∈ W^{k,p}(ℝ^N)` is at most `‖u‖`. -/
+/-- Let $1 \le p \le \infty$. For $u \in W^{k,p}(\mathbb{R}^N)$, the $L^p$ norm of the function
+`SobolevMultiIndex.fn u` is at most the norm $\|u\|$ of $u$ in $W^{k,p}(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_ofReal_norm {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
     (u : SobolevEuclidean N k p ⊤) : eLpNorm (fn u) p volume ≤ ENNReal.ofReal ‖u‖ := by
   have h : ‖weakDeriv u 0‖ = (eLpNorm (fn u) p volume).toReal := by
@@ -429,9 +508,13 @@ theorem SobolevEuclidean.eLpNorm_fn_le_ofReal_norm {k : ℕ} {p : ℝ≥0∞} [F
   rw [← ENNReal.ofReal_toReal (SobolevEuclidean.memLp_fn u).eLpNorm_ne_top]
   exact ENNReal.ofReal_le_ofReal (h ▸ norm_weakDeriv_le u 0)
 
-/-- **Corollary 9.10, the bound**: for `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`,
-`‖u‖_q ≤ (1 + C N) ‖u‖` for `u ∈ W^{1,p}(ℝ^N)`, by the interpolation inequality between `p` and
-`p*` and Theorem 9.9. [brezis2011functional] Corollary 9.10. -/
+/-- Let $1 \le p < N$, let $p^*$ satisfy $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. For every
+$u \in W^{1,p}(\mathbb{R}^N)$,
+$$\|u\|_q \le (1 + C N) \|u\|,$$
+where $C$ is `SobolevEuclidean.gnsConst N p`. This is the bound of Corollary 9.10 of
+[brezis2011functional].
+
+The proof combines the interpolation inequality between $p$ and $p^*$ with Theorem 9.9. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_norm_of_le_of_le (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p')
     (u : SobolevEuclidean N 1 p ⊤) :
@@ -453,16 +536,19 @@ theorem SobolevEuclidean.eLpNorm_fn_le_norm_of_le_of_le (hpN : p < N)
         congr 1
         ring
 
-/-- **`W^{1,p}(ℝ^N) ⊆ L^q(ℝ^N)` for `p ≤ q ≤ p*`**: [brezis2011functional] Corollary 9.10, the
-inclusion. -/
+/-- Let $1 \le p < N$, let $p^*$ satisfy $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Then
+$W^{1,p}(\mathbb{R}^N) \subseteq L^q(\mathbb{R}^N)$: for every $u \in W^{1,p}(\mathbb{R}^N)$,
+the function `SobolevMultiIndex.fn u` lies in $L^q(\mathbb{R}^N)$. This is the inclusion of
+Corollary 9.10 of [brezis2011functional]. -/
 theorem SobolevEuclidean.memLp_fn_of_le_of_le (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (hpq : p ≤ q) (hqp' : q ≤ p') (u : SobolevEuclidean N 1 p ⊤) :
     MemLp (fn u) (q : ℝ≥0∞) volume :=
   memLp_iff.2 ((SobolevEuclidean.eLpNorm_fn_le_norm_of_le_of_le hpN hp' hpq hqp' u).trans_lt
     ENNReal.ofReal_lt_top)
 
-/-- **Corollary 9.10**: `W^{1,p}(ℝ^N) ↪ L^q(ℝ^N)` with continuous injection for `1 ≤ p < N` and
-`p ≤ q ≤ p*`, `1/p* = 1/p − 1/N`. [brezis2011functional] Corollary 9.10. -/
+/-- Let $1 \le p < N$, let $p^*$ satisfy $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Then
+$W^{1,p}(\mathbb{R}^N) \hookrightarrow L^q(\mathbb{R}^N)$ is a continuous embedding along
+`SobolevMultiIndex.toLpₗ`. This is Corollary 9.10 of [brezis2011functional]. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le [Fact (1 ≤ (q : ℝ≥0∞))]
     (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
     IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p ⊤ volume
@@ -478,14 +564,16 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le [Fact (1 ≤ (q 
 
 end TypedGNSLe
 
-/-! ### Morrey's estimate for `C¹` functions
+/-!
+### Morrey's estimate for $C^1$ functions
 
-The analytic core of Theorem 9.12, on balls rather than the book's cubes: for `x` in a closed
-ball `B` of radius `r` and `u ∈ C¹`,
-`∫_B ‖u z − u x‖ dz ≤ (2r/(1 − N/p)) μ(B)^{1−1/p} ‖∇u‖_{L^p(B)}`, from the segment bound
-`‖u z − u x‖ ≤ ‖z − x‖ ∫_0^1 ‖∇u(x + t(z − x))‖ dt`, Fubini, the homothety `z ↦ x + t(z − x)` of
-ratio `t` (which maps `B` into itself and scales the measure by `t^N`), and Hölder's inequality
-on the image. -/
+This is the analytic core of Theorem 9.12 of [brezis2011functional], on balls instead of the cubes
+of the source. For $x$ in a closed ball $B$ of radius $r$ and $u \in C^1$,
+$$\int_B |u(z) - u(x)| \, dz \le \frac{2r}{1 - N/p} \mu(B)^{1 - 1/p} \|\nabla u\|_{L^p(B)}.$$
+The proof uses the segment bound $|u(z) - u(x)| \le \|z - x\| \int_0^1 |\nabla u(x + t(z - x))| \,
+dt$, Fubini's theorem, the homothety $z \mapsto x + t(z - x)$ of ratio $t$, which maps $B$ into
+itself and scales the measure by $t^N$, and Hölder's inequality on the image.
+-/
 
 section MorreyC1
 
@@ -494,9 +582,12 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {u : E → F}
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [μ.IsAddHaarMeasure] in
-/-- **The segment bound**: for `u ∈ C¹`,
-`‖u z − u x‖ ≤ ‖z − x‖ ∫_0^1 ‖∇u(x + t(z − x))‖ dt`, the inequality (26) of
-[brezis2011functional] §9.3, proof of Theorem 9.12. -/
+/-- The **segment bound**. Let $E$ be a real normed space, let $F$ be a real Banach space, and let
+$u : E \to F$ be $C^1$. For all $x, z \in E$,
+$$\|u(z) - u(x)\| \le \|z - x\| \int_0^1 \|\nabla u(x + t(z - x))\| \, dt.$$
+This is the inequality (26) of the proof of Theorem 9.12 of [brezis2011functional].
+
+The integral is a Lebesgue integral over $(0, 1]$ of the operator norm. -/
 theorem ContDiff.enorm_sub_le_enorm_mul_lintegral_fderiv (hu : ContDiff ℝ 1 u) (x z : E) :
     ‖u z - u x‖ₑ ≤ ‖z - x‖ₑ * ∫⁻ t in Ioc (0 : ℝ) 1, ‖fderiv ℝ u (x + t • (z - x))‖ₑ := by
   have hd : Differentiable ℝ u := hu.differentiable one_ne_zero
@@ -521,13 +612,15 @@ theorem ContDiff.enorm_sub_le_enorm_mul_lintegral_fderiv (hu : ContDiff ℝ 1 u)
   exact ContinuousLinearMap.le_opENorm _ _
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The homothety of centre `x` and ratio `t ≠ 0` is injective. -/
+/-- Let $E$ be a real normed space. The homothety of centre $x$ and ratio $t \neq 0$,
+$z \mapsto x + t(z - x)$, is injective. -/
 theorem AffineMap.homothety_injective_of_ne_zero (x : E) {t : ℝ} (ht : t ≠ 0) :
     Function.Injective (AffineMap.homothety x t) :=
   AffineMap.homothety_injective x ht
 
 omit [FiniteDimensional ℝ E] in
-/-- The image of a measurable set under a homothety of nonzero ratio is measurable. -/
+/-- Let $E$ be a real normed space with its Borel $\sigma$-algebra. The image of a measurable set
+under the homothety of centre $x$ and ratio $t \neq 0$ is measurable. -/
 theorem MeasurableSet.image_homothety {s : Set E} (hs : MeasurableSet s) (x : E) {t : ℝ}
     (ht : t ≠ 0) : MeasurableSet (AffineMap.homothety x t '' s) := by
   have h : AffineMap.homothety x t '' s = AffineMap.homothety x t⁻¹ ⁻¹' s := by
@@ -540,8 +633,9 @@ theorem MeasurableSet.image_homothety {s : Set E} (hs : MeasurableSet s) (x : E)
   rw [h]
   exact hs.preimage (AffineMap.homothety_continuous x t⁻¹).measurable
 
-/-- **A Haar measure under a homothety**: the pushforward of `μ` by the homothety of centre `x`
-and ratio `t ≠ 0` is `|t^N|⁻¹ μ`. -/
+/-- **A Haar measure under a homothety.** Let $E$ be a real normed space of finite dimension $N$
+with an additive Haar measure $\mu$. The pushforward of $\mu$ by the homothety of centre $x$ and
+ratio $t \neq 0$ is $|t^N|^{-1} \mu$. -/
 theorem MeasureTheory.Measure.map_homothety (x : E) {t : ℝ} (ht : t ≠ 0) :
     μ.map (AffineMap.homothety x t) = ENNReal.ofReal |(t ^ finrank ℝ E)⁻¹| • μ := by
   have hφ : (AffineMap.homothety x t : E → E)
@@ -554,9 +648,11 @@ theorem MeasureTheory.Measure.map_homothety (x : E) {t : ℝ} (ht : t ≠ 0) :
     map_add_right_eq_self μ (-x), Measure.map_addHaar_smul μ ht,
     Measure.map_smul _ (measurable_add_const x).aemeasurable, map_add_right_eq_self μ x]
 
-/-- **Change of variables under a homothety** for a Lebesgue integral over a set: for measurable
-`G` and `t ≠ 0`, `∫_s G(x + t(z − x)) dz = |t^N|⁻¹ ∫_{x + t(s − x)} G(y) dy`. This is the
-substitution `y = tx` of [brezis2011functional] §9.3, proof of Theorem 9.12. -/
+/-- **Change of variables under a homothety.** Let $E$ be a real normed space of finite dimension
+$N$ with an additive Haar measure $\mu$. Let $G : E \to [0, \infty]$ be measurable, let
+$t \neq 0$, and let $s \subseteq E$ be measurable. Then
+$$\int_s G(x + t(z - x)) \, d\mu(z) = |t^N|^{-1} \int_{x + t(s - x)} G(y) \, d\mu(y).$$
+This is the substitution $y = tx$ of the proof of Theorem 9.12 of [brezis2011functional]. -/
 theorem MeasureTheory.setLIntegral_comp_homothety {G : E → ℝ≥0∞} (hG : Measurable G) (x : E)
     {t : ℝ} (ht : t ≠ 0) {s : Set E} (hs : MeasurableSet s) :
     ∫⁻ z in s, G (AffineMap.homothety x t z) ∂μ
@@ -572,7 +668,8 @@ theorem MeasureTheory.setLIntegral_comp_homothety {G : E → ℝ≥0∞} (hG : M
         rw [Measure.map_homothety x ht, Measure.restrict_smul, lintegral_smul_measure, smul_eq_mul]
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The homothety of centre `x ∈ s` and ratio `t ∈ [0, 1]` maps a convex set `s` into itself. -/
+/-- Let $s$ be a convex subset of a real normed space, let $x \in s$, and let $t \in [0, 1]$. The
+homothety of centre $x$ and ratio $t$ maps $s$ into itself. -/
 theorem Convex.image_homothety_subset {s : Set E} (hs : Convex ℝ s) {x : E} (hx : x ∈ s) {t : ℝ}
     (ht : t ∈ Icc (0 : ℝ) 1) : AffineMap.homothety x t '' s ⊆ s := by
   rintro _ ⟨z, hz, rfl⟩
@@ -582,8 +679,10 @@ theorem Convex.image_homothety_subset {s : Set E} (hs : Convex ℝ s) {x : E} (h
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E]
   [NormedSpace ℝ F] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- **Hölder's inequality on a subset**: the `L¹` norm of `g` on a set `S ⊆ B` is at most
-`‖g‖_{L^p(B)} μ(S)^{1 − 1/p}`, for `1 ≤ p`. -/
+/-- **Hölder's inequality on a subset.** Let $\mu$ be a measure, let $g$ be almost everywhere
+strongly measurable, let $1 \le p < \infty$, and let $S \subseteq B$. Then
+$$\int_S \|g\| \, d\mu \le \|g\|_{L^p(B)} \, \mu(S)^{1 - 1/p}.$$
+-/
 theorem MeasureTheory.lintegral_enorm_le_eLpNorm_mul_measure_rpow {g : E → F}
     (hg : AEStronglyMeasurable g μ) {p : ℝ≥0} (hp : 1 ≤ p) {S B : Set E} (hSB : S ⊆ B) :
     ∫⁻ y in S, ‖g y‖ₑ ∂μ
@@ -596,7 +695,9 @@ theorem MeasureTheory.lintegral_enorm_le_eLpNorm_mul_measure_rpow {g : E → F}
   rw [h]
   exact mul_le_mul' (eLpNorm_mono_measure _ (Measure.restrict_mono hSB le_rfl)) le_rfl
 
-/-- The integral `∫_0^1 t^{−N/p} dt = 1/(1 − N/p)` for `N < p`, as a Lebesgue integral. -/
+/-- Let $N$ be a natural number and $p$ a real number with $N < p$. Then
+$$\int_0^1 t^{-N/p} \, dt = \frac{1}{1 - N/p},$$
+as a Lebesgue integral over $(0, 1]$. -/
 theorem MeasureTheory.lintegral_Ioc_ofReal_rpow_neg_div {N : ℕ} {p : ℝ} (hp : N < p) :
     ∫⁻ t in Ioc (0 : ℝ) 1, ENNReal.ofReal (t ^ (-(N / p)))
       = ENNReal.ofReal (1 / (1 - N / p)) := by
@@ -613,7 +714,9 @@ theorem MeasureTheory.lintegral_Ioc_ofReal_rpow_neg_div {N : ℕ} {p : ℝ} (hp 
   have h1 : -(N / p) + 1 = 1 - N / p := by ring
   rw [h1, Real.one_rpow, Real.zero_rpow (sub_pos.2 ((div_lt_one hp0).2 hp)).ne', sub_zero, one_div]
 
-/-- The real identity `(t^N)⁻¹ (t^N)^{1 − 1/p} = t^{−N/p}` for `t > 0`. -/
+/-- For real $t > 0$, a natural number $N$ and a real $p \neq 0$,
+$$(t^N)^{-1} (t^N)^{1 - 1/p} = t^{-N/p}.$$
+-/
 theorem Real.inv_pow_mul_pow_rpow_eq_rpow_neg_div {t : ℝ} (ht : 0 < t) (N : ℕ) {p : ℝ}
     (hp : p ≠ 0) : (t ^ N)⁻¹ * (t ^ N) ^ (1 - 1 / p) = t ^ (-(N / p)) := by
   rw [← Real.rpow_natCast, ← Real.rpow_neg ht.le, ← Real.rpow_mul ht.le, ← Real.rpow_add ht]
@@ -621,12 +724,17 @@ theorem Real.inv_pow_mul_pow_rpow_eq_rpow_neg_div {t : ℝ} (ht : 0 < t) (N : �
   field_simp
   ring
 
-/-- **Morrey's mean estimate on a ball, `C¹` case**: for `u ∈ C¹`, a closed ball `B` of radius
-`r > 0`, `x ∈ B` and `1 ≤ p`, `N < p`,
-`∫_B ‖u z − u x‖ dz ≤ (2r / (1 − N/p)) μ(B)^{1 − 1/p} ‖∇u‖_{L^p(B)}`.
-This is the estimate (27) of [brezis2011functional] §9.3, proof of Theorem 9.12, with the mean
-over `B` replaced by the integral of `‖u z − u x‖` (the mean value at the end is not needed)
-and the cube replaced by a ball. -/
+/-- **Morrey's mean estimate on a ball, $C^1$ case.** Let $E$ be a real normed space of finite
+dimension $N$ with an additive Haar measure $\mu$, let $F$ be a real Banach space, and let
+$u : E \to F$ be $C^1$. Let $1 \le p < \infty$ with $N < p$, let $B$ be the closed ball of
+centre $c$ and radius $r > 0$, and let $x \in B$. Then
+$$\int_B \|u(z) - u(x)\| \, d\mu(z) \le \frac{2r}{1 - N/p} \, \mu(B)^{1 - 1/p} \, \|\nabla
+  u\|_{L^p(B)}.$$
+This is the estimate (27) of the proof of Theorem 9.12 of [brezis2011functional], with a ball
+instead of a cube.
+
+The source bounds the mean value $|\bar u - u(x)|$ over the cube. Here the integral of
+$\|u(z) - u(x)\|$ is bounded instead, because the later proofs do not need the mean value. -/
 theorem ContDiff.lintegral_enorm_sub_le_of_mem_closedBall (hu : ContDiff ℝ 1 u) {p : ℝ≥0}
     (hp1 : 1 ≤ p) (hp : finrank ℝ E < p) {c x : E} {r : ℝ} (hr : 0 < r)
     (hx : x ∈ closedBall c r) :
@@ -706,37 +814,52 @@ theorem ContDiff.lintegral_enorm_sub_le_of_mem_closedBall (hu : ContDiff ℝ 1 u
         rw [← mul_assoc, ← ENNReal.ofReal_mul (by positivity), mul_one_div]
 
 variable (μ) in
-/-- **The constant of Morrey's inequality** on a normed space `E` of dimension `N` with Haar
-measure `μ`, for the exponent `p > N`: `C(p, N) = 4 μ(B(0,1))^{−1/p} / (1 − N/p)`, so that
-`‖u x − u y‖ ≤ C ‖x − y‖^{1 − N/p} ‖∇u‖_p` (`ContDiff.enorm_sub_le_of_lt`). It is finite
-(`morreyConst_ne_top`). The book's constant `2 · 2^{1−N/p}/(1 − N/p)` is for cubes; balls give
-this one. -/
+/-- The **constant of Morrey's inequality**. For a measure $\mu$ on a real normed space $E$ of
+finite dimension $N$, and an exponent $p > N$,
+$$C(p, N) = \frac{4}{1 - N/p} \, \mu(B(0,1))^{-1/p},$$
+where $B(0,1)$ is the open unit ball. With this constant, $\|u(x) - u(y)\| \le C \|x - y\|^{1 -
+N/p} \|\nabla u\|_p$ for $C^1$ functions $u$ (`ContDiff.enorm_sub_le_of_lt`).
+
+The constant of [brezis2011functional] is $2 \cdot 2^{1 - N/p} / (1 - N/p)$, for cubes; balls
+give this constant. The factor $4/(1 - N/p)$ is a real number converted to $[0, \infty]$, so it
+is $0$ when $1 - N/p \le 0$. The constant is finite (`MeasureTheory.morreyConst_ne_top`). -/
 def MeasureTheory.morreyConst (p : ℝ) : ℝ≥0∞ :=
   ENNReal.ofReal (4 / (1 - finrank ℝ E / p)) * μ (ball (0 : E) 1) ^ (-(1 / p))
 
 variable (μ) in
-/-- **The constant of the sup bound of Morrey's theorem**:
-`C'(p, N) = 2 μ(B(0,1))^{−1/p}/(1 − N/p)`, so that `‖u x‖ ≤ C' (‖u‖_p + ‖∇u‖_p)`
-(`ContDiff.enorm_le_of_lt`). Finite (`morreySupConst_ne_top`). -/
+/-- The **constant of the sup bound of Morrey's theorem**. For a measure $\mu$ on a real normed
+space $E$ of finite dimension $N$, and an exponent $p > N$,
+$$C'(p, N) = \frac{2}{1 - N/p} \, \mu(B(0,1))^{-1/p},$$
+where $B(0,1)$ is the open unit ball. With this constant,
+$\|u(x)\| \le C' (\|u\|_p + \|\nabla u\|_p)$ for $C^1$ functions $u$
+(`ContDiff.enorm_le_of_lt`).
+
+The factor $2/(1 - N/p)$ is a real number converted to $[0, \infty]$, so it is $0$ when
+$1 - N/p \le 0$. The constant is finite (`MeasureTheory.morreySupConst_ne_top`). -/
 def MeasureTheory.morreySupConst (p : ℝ) : ℝ≥0∞ :=
   ENNReal.ofReal (2 / (1 - finrank ℝ E / p)) * μ (ball (0 : E) 1) ^ (-(1 / p))
 
 variable (μ) in
 omit [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- The constant of Morrey's inequality is finite. -/
+/-- For an additive Haar measure $\mu$ on a finite-dimensional real normed space and every real $p$,
+the constant `MeasureTheory.morreyConst μ p` of Morrey's inequality is finite. -/
 theorem MeasureTheory.morreyConst_ne_top (p : ℝ) : morreyConst μ p ≠ ⊤ :=
   ENNReal.mul_ne_top ENNReal.ofReal_ne_top
     (ENNReal.rpow_ne_top_of_nonneg' (measure_ball_pos μ 0 one_pos) measure_ball_lt_top.ne)
 
 variable (μ) in
 omit [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- The constant of the sup bound of Morrey's theorem is finite. -/
+/-- For an additive Haar measure $\mu$ on a finite-dimensional real normed space and every real $p$,
+the constant `MeasureTheory.morreySupConst μ p` of the sup bound of Morrey's theorem is finite. -/
 theorem MeasureTheory.morreySupConst_ne_top (p : ℝ) : morreySupConst μ p ≠ ⊤ :=
   ENNReal.mul_ne_top ENNReal.ofReal_ne_top
     (ENNReal.rpow_ne_top_of_nonneg' (measure_ball_pos μ 0 one_pos) measure_ball_lt_top.ne)
 
 omit [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- `μ(B)^{1 − 1/p} / μ(B) = μ(B)^{−1/p}` for a ball `B` of radius `r > 0`. -/
+/-- Let $\mu$ be an additive Haar measure on a finite-dimensional real normed space, let $B$ be a
+closed ball of radius $r > 0$, and let $p$ be real. Then
+$$\frac{\mu(B)^{1 - 1/p}}{\mu(B)} = \mu(B)^{-1/p}.$$
+-/
 theorem MeasureTheory.Measure.closedBall_rpow_div_self {x : E} {r : ℝ} (hr : 0 < r) (p : ℝ) :
     μ (closedBall x r) ^ (1 - 1 / p) / μ (closedBall x r) = μ (closedBall x r) ^ (-(1 / p)) := by
   have h0 : μ (closedBall x r) ≠ 0 := (measure_closedBall_pos μ x hr).ne'
@@ -745,12 +868,18 @@ theorem MeasureTheory.Measure.closedBall_rpow_div_self {x : E} {r : ℝ} (hr : 0
   congr 1
   ring
 
-/-- **Morrey's inequality (25) for a `C¹` function**: for `1 ≤ p`, `N < p` and all `x y`,
-`‖u x − u y‖ ≤ C(p, N) ‖x − y‖^{1 − N/p} ‖∇u‖_{L^p(B(x, ‖x − y‖))}`, with
-`C(p, N) = morreyConst μ p`. Both points lie in the closed ball `B` of centre `x` and radius
-`‖x − y‖`, `‖u x − u y‖ ≤ ‖u z − u x‖ + ‖u z − u y‖` for every `z ∈ B`, and integrating over
-`B` reduces to `ContDiff.lintegral_enorm_sub_le_of_mem_closedBall` twice.
-[brezis2011functional] §9.3, proof of Theorem 9.12, the inequality (25) for `u ∈ C_c^1`. -/
+/-- **Morrey's inequality for a $C^1$ function.** Let $E$ be a real normed space of finite dimension
+$N$ with an additive Haar measure $\mu$, let $F$ be a real Banach space, and let $u : E \to F$
+be $C^1$. Let $1 \le p < \infty$ with $N < p$. For all $x, y \in E$,
+$$\|u(x) - u(y)\| \le C(p, N) \, \|x - y\|^{1 - N/p} \, \|\nabla u\|_{L^p(B)},$$
+where $B$ is the closed ball of centre $x$ and radius $\|x - y\|$ and $C(p, N)$ is
+`MeasureTheory.morreyConst μ p`. This is the inequality (25) of the proof of Theorem 9.12 of
+[brezis2011functional], which the source states for $u \in C_c^1$; here $u$ need not have
+compact support.
+
+Both points lie in $B$, and $\|u(x) - u(y)\| \le \|u(z) - u(x)\| + \|u(z) - u(y)\|$ for every
+$z \in B$. Integration over $B$ reduces the bound to
+`ContDiff.lintegral_enorm_sub_le_of_mem_closedBall`, applied twice. -/
 theorem ContDiff.enorm_sub_le_of_lt (hu : ContDiff ℝ 1 u) {p : ℝ≥0} (hp1 : 1 ≤ p)
     (hp : finrank ℝ E < p) (x y : E) :
     ‖u x - u y‖ₑ ≤ morreyConst μ p * ENNReal.ofReal (‖x - y‖ ^ (1 - finrank ℝ E / (p : ℝ)))
@@ -811,12 +940,17 @@ theorem ContDiff.enorm_sub_le_of_lt (hu : ContDiff ℝ 1 u) {p : ℝ≥0} (hp1 :
     ENNReal.ofReal_mul (by positivity)]
   ring
 
-/-- **The sup bound (24) for a `C¹` function**: for `1 ≤ p`, `N < p` and all `x`,
-`‖u x‖ ≤ C'(p, N) (‖u‖_p + ‖∇u‖_p)`, with `C'(p, N) = morreySupConst μ p`: on the closed unit
-ball `B` about `x`, `‖u x‖ ≤ ‖u z − u x‖ + ‖u z‖` for every `z ∈ B`; integrating over `B`,
-`ContDiff.lintegral_enorm_sub_le_of_mem_closedBall` bounds the first term and Hölder's
-inequality the second. [brezis2011functional] §9.3, proof of Theorem 9.12, the inequality (24)
-for `u ∈ C_c^1`. -/
+/-- **The sup bound for a $C^1$ function.** Let $E$ be a real normed space of finite dimension $N$
+with an additive Haar measure $\mu$, let $F$ be a real Banach space, and let $u : E \to F$ be
+$C^1$. Let $1 \le p < \infty$ with $N < p$. For every $x \in E$,
+$$\|u(x)\| \le C'(p, N) \left( \|u\|_p + \|\nabla u\|_p \right),$$
+where $C'(p, N)$ is `MeasureTheory.morreySupConst μ p`. This is the inequality (24) of the proof
+of Theorem 9.12 of [brezis2011functional], which the source states for $u \in C_c^1$; here $u$
+need not have compact support.
+
+On the closed unit ball $B$ about $x$, $\|u(x)\| \le \|u(z) - u(x)\| + \|u(z)\|$ for every
+$z \in B$. After integration over $B$, `ContDiff.lintegral_enorm_sub_le_of_mem_closedBall`
+bounds the first term and Hölder's inequality bounds the second. -/
 theorem ContDiff.enorm_le_of_lt (hu : ContDiff ℝ 1 u) {p : ℝ≥0} (hp1 : 1 ≤ p)
     (hp : finrank ℝ E < p) (x : E) :
     ‖u x‖ₑ ≤ morreySupConst μ p * (eLpNorm u p μ + eLpNorm (fderiv ℝ u) p μ) := by
@@ -881,11 +1015,16 @@ theorem ContDiff.enorm_le_of_lt (hu : ContDiff ℝ 1 u) {p : ℝ≥0} (hp1 : 1 �
 
 end MorreyC1
 
-/-! ### Theorem 9.12: Morrey's theorem on `W^{1,p}(ℝ^N)`, `N < p < ∞` -/
+/-!
+### Morrey's theorem on $W^{1,p}(\mathbb{R}^N)$, $N < p < \infty$
+
+This is Theorem 9.12 of [brezis2011functional].
+-/
 
 section ENNRealLimits
 
-/-- If `a ≤ K (b + δ)` for every `δ > 0` and `K < ∞`, then `a ≤ K b`. -/
+/-- Let $a, b, K \in [0, \infty]$ with $K < \infty$. If $a \le K (b + \delta)$ for every
+$\delta > 0$, then $a \le K b$. -/
 theorem ENNReal.le_mul_of_forall_pos_le_mul_add {a b K : ℝ≥0∞} (hK : K ≠ ⊤)
     (h : ∀ δ : ℝ≥0∞, 0 < δ → a ≤ K * (b + δ)) : a ≤ K * b := by
   have hlim : Tendsto (fun δ : ℝ≥0∞ ↦ K * (b + δ)) (𝓝[>] 0) (𝓝 (K * b)) := by
@@ -895,7 +1034,10 @@ theorem ENNReal.le_mul_of_forall_pos_le_mul_add {a b K : ℝ≥0∞} (hK : K ≠
     exact ENNReal.Tendsto.const_mul this (Or.inr hK)
   exact ge_of_tendsto hlim (eventually_nhdsWithin_of_forall fun δ hδ ↦ h δ hδ)
 
-/-- `‖f‖_p ≤ ‖f − g‖_p + ‖g‖_p` for `1 ≤ p`. -/
+/-- Let $1 \le p \le \infty$. For all functions $f$ and $g$ on a measure space with values in a
+normed group,
+$$\|f\|_p \le \|f - g\|_p + \|g\|_p.$$
+-/
 theorem MeasureTheory.eLpNorm_le_eLpNorm_sub_add {α G : Type*} [MeasurableSpace α] {ν : Measure α}
     [NormedAddCommGroup G] {p : ℝ≥0∞} (hp : 1 ≤ p) (f g : α → G) :
     eLpNorm f p ν ≤ eLpNorm (fun x ↦ f x - g x) p ν + eLpNorm g p ν := by
@@ -915,20 +1057,22 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {f : E → F} {w : E → E →L[ℝ] F}
 
-/-- **Theorem 9.12 (Morrey), with Remarks 11 and 12, on `W^{1,p}(ℝ^N)` for `N < p < ∞`**: a
-function `f ∈ W^{1,p}(ℝ^N)` with weak derivative `w` has a continuous representative `ũ`
-(Remark 11) which is Hölder continuous of exponent `1 − N/p`,
-`‖ũ x − ũ y‖ ≤ C ‖x − y‖^{1 − N/p} ‖w‖_p` (the inequality (25)), bounded by
-`‖ũ x‖ ≤ C' (‖f‖_p + ‖w‖_p)` (the inequality (24), `W^{1,p} ⊂ L^∞` with continuous injection),
-and tends to `0` at infinity (Remark 12). The constants are `morreyConst μ p` and
-`morreySupConst μ p`.
+/-- **Morrey's theorem.** Let $E$ be a real normed space of finite dimension $N$ with an additive
+Haar measure $\mu$, and let $F$ be a real Banach space. Let $1 \le p < \infty$ with $N < p$, and
+let $f, w \in L^p$, where $w$ is a weak derivative of $f$ on $E$. Then there is a continuous
+$\tilde u : E \to F$ with $f = \tilde u$ almost everywhere and, for all $x, y \in E$,
+$$\|\tilde u(x) - \tilde u(y)\| \le C \|x - y\|^{1 - N/p} \|w\|_p, \qquad \|\tilde u(x)\| \le C'
+  (\|f\|_p + \|w\|_p),$$
+and $\tilde u(x) \to 0$ as $x$ leaves every compact set. Here $C$ is
+`MeasureTheory.morreyConst μ p` and $C'$ is `MeasureTheory.morreySupConst μ p`. This is Theorem
+9.12 of [brezis2011functional], with the inequalities (25) and (24), the continuous
+representative of Remark 11 and the decay at infinity of Remark 12.
 
-The proof is the "standard density argument" made explicit: the smooth compactly supported
-approximants `u_n → f`, `∇u_n → w` in `L^p` satisfy (24) for their differences, so they form a
-Cauchy sequence in the Banach space of bounded continuous functions; the limit `ũ` is continuous,
-equals `f` almost everywhere (both are limits of `u_n`, uniformly and in `L^p`), inherits (25)
-and (24) in the limit, and is a uniform limit of compactly supported functions.
-[brezis2011functional] Theorem 9.12, Remark 11, Remark 12. -/
+The proof makes the "standard density argument" of the source explicit. The smooth compactly
+supported approximants $u_n \to f$, $\nabla u_n \to w$ in $L^p$ satisfy (24) for their
+differences, so they form a Cauchy sequence in the Banach space of bounded continuous functions.
+The limit $\tilde u$ is continuous, equals $f$ almost everywhere, satisfies (25) and (24), and
+is a uniform limit of compactly supported functions. -/
 theorem HasWeakFDerivOn.exists_continuous_holderWith_ae_eq (h : HasWeakFDerivOn f w ⊤ μ)
     {p : ℝ≥0} (hp1 : 1 ≤ p) (hp : finrank ℝ E < p) (hf : MemLp f p μ) (hw : MemLp w p μ) :
     ∃ ũ : E → F, Continuous ũ ∧ f =ᵐ[μ] ũ ∧
@@ -1057,7 +1201,12 @@ theorem HasWeakFDerivOn.exists_continuous_holderWith_ae_eq (h : HasWeakFDerivOn 
 
 end Morrey
 
-/-! ### Morrey's theorem on the typed space, and the map into the bounded continuous functions -/
+/-!
+### Morrey's theorem on the space $W^{1,p}(\mathbb{R}^N)$
+
+This part also gives the bounded linear map from $W^{1,p}(\mathbb{R}^N)$ to the bounded continuous
+functions.
+-/
 
 section TypedMorrey
 
@@ -1066,10 +1215,15 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- **Theorem 9.12 (Morrey) on the typed space `W^{1,p}(ℝ^N)`, `N < p < ∞`**: every
-`u ∈ W^{1,p}(ℝ^N)` has a continuous representative `ũ` with
-`‖ũ x − ũ y‖ ≤ C ‖x − y‖^{1 − N/p} ∑_i ‖∂_i u‖_p`, `‖ũ x‖ ≤ C' (N + 1) ‖u‖`, and `ũ → 0` at
-infinity. [brezis2011functional] Theorem 9.12, Remarks 11–12. -/
+/-- **Morrey's theorem on $W^{1,p}(\mathbb{R}^N)$.** Let $1 \le p < \infty$ with $N < p$. Every
+$u \in W^{1,p}(\mathbb{R}^N)$ has a continuous representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$, equal to `SobolevMultiIndex.fn u` almost everywhere,
+such that for all $x, y$
+$$|\tilde u(x) - \tilde u(y)| \le C \|x - y\|^{1 - N/p} \sum_i \|\partial_i u\|_p, \qquad
+  |\tilde u(x)| \le C' (N + 1) \|u\|,$$
+and $\tilde u(x) \to 0$ as $\|x\| \to \infty$. Here $C$ and $C'$ are `MeasureTheory.morreyConst`
+and `MeasureTheory.morreySupConst` for Lebesgue measure. This is Theorem 9.12 of
+[brezis2011functional] with Remarks 11 and 12. -/
 theorem SobolevEuclidean.exists_continuous_ae_eq_of_lt (hp : N < p)
     (u : SobolevEuclidean N 1 p ⊤) :
     ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧ fn u =ᵐ[volume] ũ ∧
@@ -1096,8 +1250,10 @@ theorem SobolevEuclidean.exists_continuous_ae_eq_of_lt (hp : N < p)
             (hwle.trans (SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le u))
       _ = (N + 1) * ENNReal.ofReal ‖u‖ := by ring
 
-/-- The sup bound of Morrey's theorem on the typed space, in real form:
-`‖ũ x‖ ≤ (C' (N + 1)).toReal ‖u‖`. -/
+/-- Let $1 \le p$ and $u \in W^{1,p}(\mathbb{R}^N)$. If a function
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ satisfies $|\tilde u(x)| \le C' (N + 1) \|u\|$ in
+$[0, \infty]$ for all $x$, where $C'$ is `MeasureTheory.morreySupConst` for Lebesgue measure,
+then $|\tilde u(x)| \le c \|u\|$ for all $x$, where $c$ is the real number $C' (N + 1)$. -/
 theorem SobolevEuclidean.norm_le_of_enorm_le_morreySupConst
     (u : SobolevEuclidean N 1 p ⊤) {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (h : ∀ x, ‖ũ x‖ₑ ≤ morreySupConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p * (N + 1)
@@ -1109,10 +1265,13 @@ theorem SobolevEuclidean.norm_le_of_enorm_le_morreySupConst
   rw [← toReal_enorm, ← ENNReal.toReal_ofReal (norm_nonneg u), ← ENNReal.toReal_mul]
   exact ENNReal.toReal_mono (ENNReal.mul_ne_top hK ENNReal.ofReal_ne_top) (h x)
 
-/-- **The continuous representative of `u ∈ W^{1,p}(ℝ^N)`, `N < p < ∞`**, as a bounded
-continuous function: a choice of the `ũ` of `SobolevEuclidean.exists_continuous_ae_eq_of_lt`.
-Two continuous functions that agree almost everywhere agree everywhere, so the choice is
-unique, and the map `u ↦ ũ` is linear (`SobolevEuclidean.toBoundedContinuousMapL`). -/
+/-- The **continuous representative** of $u \in W^{1,p}(\mathbb{R}^N)$, for $1 \le p < \infty$ with
+$N < p$: the function $\tilde u$ of `SobolevEuclidean.exists_continuous_ae_eq_of_lt`, as a
+bounded continuous function on $\mathbb{R}^N$.
+
+Two continuous functions that agree almost everywhere agree everywhere, so $\tilde u$ does not
+depend on the choice (`SobolevEuclidean.contRep_eq_of_ae_eq`), and $u \mapsto \tilde u$ is
+linear (`SobolevEuclidean.toBoundedContinuousMapL`). -/
 noncomputable def SobolevEuclidean.contRep (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     EuclideanSpace ℝ (Fin N) →ᵇ ℝ :=
   BoundedContinuousFunction.ofNormedAddCommGroup
@@ -1121,12 +1280,19 @@ noncomputable def SobolevEuclidean.contRep (hp : N < p) (u : SobolevEuclidean N 
     (SobolevEuclidean.norm_le_of_enorm_le_morreySupConst u
       (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.2.2.1)
 
-/-- The continuous representative is a representative. -/
+/-- For $1 \le p < \infty$ with $N < p$ and $u \in W^{1,p}(\mathbb{R}^N)$, the function
+`SobolevMultiIndex.fn u` equals the continuous representative `SobolevEuclidean.contRep` of $u$
+almost everywhere. -/
 theorem SobolevEuclidean.fn_ae_eq_contRep (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     fn u =ᵐ[volume] SobolevEuclidean.contRep hp u :=
   (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.1
 
-/-- The Hölder estimate (25) for the continuous representative. -/
+/-- **The Hölder estimate for the continuous representative.** Let $1 \le p < \infty$ with $N < p$,
+and let $\tilde u$ be the continuous representative of $u \in W^{1,p}(\mathbb{R}^N)$. For all
+$x, y$,
+$$|\tilde u(x) - \tilde u(y)| \le C \|x - y\|^{1 - N/p} \sum_i \|\partial_i u\|_p,$$
+where $C$ is `MeasureTheory.morreyConst` for Lebesgue measure. This is the inequality (25) of
+[brezis2011functional], §9.3. -/
 theorem SobolevEuclidean.enorm_contRep_sub_le (hp : N < p) (u : SobolevEuclidean N 1 p ⊤)
     (x y : EuclideanSpace ℝ (Fin N)) :
     ‖SobolevEuclidean.contRep hp u x - SobolevEuclidean.contRep hp u y‖ₑ
@@ -1135,7 +1301,11 @@ theorem SobolevEuclidean.enorm_contRep_sub_le (hp : N < p) (u : SobolevEuclidean
         * ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖ :=
   (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.2.1 x y
 
-/-- The sup bound (24) for the continuous representative. -/
+/-- **The sup bound for the continuous representative.** Let $1 \le p < \infty$ with $N < p$, and
+let $\tilde u$ be the continuous representative of $u \in W^{1,p}(\mathbb{R}^N)$. For every $x$,
+$$|\tilde u(x)| \le C' (N + 1) \|u\|,$$
+where $C'$ is `MeasureTheory.morreySupConst` for Lebesgue measure. This is the inequality (24)
+of [brezis2011functional], §9.3. -/
 theorem SobolevEuclidean.norm_contRep_apply_le (hp : N < p) (u : SobolevEuclidean N 1 p ⊤)
     (x : EuclideanSpace ℝ (Fin N)) :
     ‖SobolevEuclidean.contRep hp u x‖
@@ -1144,13 +1314,18 @@ theorem SobolevEuclidean.norm_contRep_apply_le (hp : N < p) (u : SobolevEuclidea
   SobolevEuclidean.norm_le_of_enorm_le_morreySupConst u
     (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.2.2.1 x
 
-/-- The continuous representative tends to `0` at infinity (Remark 12). -/
+/-- Let $1 \le p < \infty$ with $N < p$. The continuous representative $\tilde u$ of
+$u \in W^{1,p}(\mathbb{R}^N)$ satisfies $\tilde u(x) \to 0$ as $\|x\| \to \infty$. This is
+Remark 12 of [brezis2011functional], Chapter 9. -/
 theorem SobolevEuclidean.tendsto_contRep_cocompact (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     Tendsto (SobolevEuclidean.contRep hp u) (cocompact (EuclideanSpace ℝ (Fin N))) (𝓝 0) :=
   (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.2.2.2
 
-/-- A bounded continuous function almost everywhere equal to `fn u` is the continuous
-representative: continuous functions agreeing almost everywhere for Lebesgue measure agree. -/
+/-- Let $1 \le p < \infty$ with $N < p$, and let $u \in W^{1,p}(\mathbb{R}^N)$. A bounded continuous
+function $g$ that equals `SobolevMultiIndex.fn u` almost everywhere is the continuous
+representative `SobolevEuclidean.contRep` of $u$.
+
+Two continuous functions that agree almost everywhere for Lebesgue measure are equal. -/
 theorem SobolevEuclidean.contRep_eq_of_ae_eq (hp : N < p) (u : SobolevEuclidean N 1 p ⊤)
     {g : EuclideanSpace ℝ (Fin N) →ᵇ ℝ} (hg : fn u =ᵐ[volume] g) :
     SobolevEuclidean.contRep hp u = g :=
@@ -1158,7 +1333,9 @@ theorem SobolevEuclidean.contRep_eq_of_ae_eq (hp : N < p) (u : SobolevEuclidean 
     ((SobolevEuclidean.fn_ae_eq_contRep hp u).symm.trans hg)
     (SobolevEuclidean.contRep hp u).continuous g.continuous
 
-/-- The sup norm of the continuous representative is bounded by `C ‖u‖`. -/
+/-- Let $1 \le p < \infty$ with $N < p$. The sup norm of the continuous representative $\tilde u$ of
+$u \in W^{1,p}(\mathbb{R}^N)$ satisfies $\|\tilde u\|_\infty \le C' (N + 1) \|u\|$, where $C'$
+is `MeasureTheory.morreySupConst` for Lebesgue measure. -/
 theorem SobolevEuclidean.norm_contRep_le (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     ‖SobolevEuclidean.contRep hp u‖
       ≤ (morreySupConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p * (N + 1)).toReal
@@ -1167,10 +1344,13 @@ theorem SobolevEuclidean.norm_contRep_le (hp : N < p) (u : SobolevEuclidean N 1 
     (SobolevEuclidean.norm_contRep_apply_le hp u)
 
 variable (N p) in
-/-- **`W^{1,p}(ℝ^N) ⊂ L^∞(ℝ^N)` with continuous injection, `N < p < ∞`, as a bounded linear
-map into the bounded continuous functions**: `u ↦ ũ`, the continuous representative of Morrey's
-theorem, with `‖ũ‖_∞ ≤ C ‖u‖`. This is the map along which [brezis2011functional] Theorem 9.12
-reads `W^{1,p}(ℝ^N) ⊂ L^∞(ℝ^N)`, and the pattern of `SobolevInterval.toContinuousMap`. -/
+/-- **The map $W^{1,p}(\mathbb{R}^N) \to C_b(\mathbb{R}^N)$.** For $1 \le p < \infty$ with $N < p$,
+this is the bounded linear map $u \mapsto \tilde u$ that sends $u$ to its continuous
+representative of Morrey's theorem, with $\|\tilde u\|_\infty \le C' (N + 1) \|u\|$.
+
+Theorem 9.12 of [brezis2011functional] reads $W^{1,p}(\mathbb{R}^N) \subset
+L^\infty(\mathbb{R}^N)$ along this map. The construction follows
+`SobolevIntervalLp.toContinuousMap`. -/
 noncomputable def SobolevEuclidean.toBoundedContinuousMapL (hp : N < p) :
     SobolevEuclidean N 1 p ⊤ →L[ℝ] (EuclideanSpace ℝ (Fin N) →ᵇ ℝ) :=
   LinearMap.mkContinuousOfExistsBound
@@ -1186,19 +1366,25 @@ noncomputable def SobolevEuclidean.toBoundedContinuousMapL (hp : N < p) :
         simp [hu] }
     ⟨_, SobolevEuclidean.norm_contRep_le hp⟩
 
-/-- `SobolevEuclidean.toBoundedContinuousMapL` is the continuous representative. -/
+/-- For $1 \le p < \infty$ with $N < p$, the map `SobolevEuclidean.toBoundedContinuousMapL` sends
+$u$ to its continuous representative `SobolevEuclidean.contRep`. -/
 @[simp]
 theorem SobolevEuclidean.toBoundedContinuousMapL_apply (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     SobolevEuclidean.toBoundedContinuousMapL N p hp u = SobolevEuclidean.contRep hp u :=
   rfl
 
-/-- `SobolevEuclidean.toBoundedContinuousMapL u` is `fn u` almost everywhere. -/
+/-- For $1 \le p < \infty$ with $N < p$ and $u \in W^{1,p}(\mathbb{R}^N)$, the function
+`SobolevMultiIndex.fn u` equals the image of $u$ under
+`SobolevEuclidean.toBoundedContinuousMapL` almost everywhere. -/
 theorem SobolevEuclidean.fn_ae_eq_toBoundedContinuousMapL (hp : N < p)
     (u : SobolevEuclidean N 1 p ⊤) :
     fn u =ᵐ[volume] SobolevEuclidean.toBoundedContinuousMapL N p hp u :=
   SobolevEuclidean.fn_ae_eq_contRep hp u
 
-/-- The bound `‖toBoundedContinuousMapL u‖ ≤ C ‖u‖` of [brezis2011functional] Theorem 9.12 (24). -/
+/-- Let $1 \le p < \infty$ with $N < p$. The image $\tilde u$ of $u \in W^{1,p}(\mathbb{R}^N)$ under
+`SobolevEuclidean.toBoundedContinuousMapL` satisfies $\|\tilde u\|_\infty \le C' (N + 1) \|u\|$,
+where $C'$ is `MeasureTheory.morreySupConst` for Lebesgue measure. This is the bound (24) of
+Theorem 9.12 of [brezis2011functional]. -/
 theorem SobolevEuclidean.norm_toBoundedContinuousMapL_apply_le (hp : N < p)
     (u : SobolevEuclidean N 1 p ⊤) :
     ‖SobolevEuclidean.toBoundedContinuousMapL N p hp u‖
@@ -1206,8 +1392,8 @@ theorem SobolevEuclidean.norm_toBoundedContinuousMapL_apply_le (hp : N < p)
         * ‖u‖ :=
   SobolevEuclidean.norm_contRep_le hp u
 
-/-- `SobolevEuclidean.toBoundedContinuousMapL` is injective: the representative determines the
-element. -/
+/-- For $1 \le p < \infty$ with $N < p$, the map `SobolevEuclidean.toBoundedContinuousMapL` is
+injective: the continuous representative determines the element of $W^{1,p}(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.toBoundedContinuousMapL_injective (hp : N < p) :
     Function.Injective (SobolevEuclidean.toBoundedContinuousMapL N p hp) := fun u v huv ↦ by
   refine ext_of_fn_ae_eq (eventuallyEq_restrict_coe_top_iff.2 ?_)
@@ -1215,15 +1401,20 @@ theorem SobolevEuclidean.toBoundedContinuousMapL_injective (hp : N < p) :
   rw [huv]
   exact (SobolevEuclidean.fn_ae_eq_toBoundedContinuousMapL hp v).symm
 
-/-- **`W^{1,p}(ℝ^N) ↪ C_b(ℝ^N)` is a continuous embedding for `N < p < ∞`**:
-[brezis2011functional] Theorem 9.12, "`W^{1,p}(ℝ^N) ⊂ L^∞(ℝ^N)` with continuous injection". -/
+/-- For $1 \le p < \infty$ with $N < p$, the map $W^{1,p}(\mathbb{R}^N) \to C_b(\mathbb{R}^N)$,
+$u \mapsto \tilde u$, is a continuous embedding. This is "$W^{1,p}(\mathbb{R}^N) \subset
+L^\infty(\mathbb{R}^N)$ with continuous injection" of Theorem 9.12 of [brezis2011functional]. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toBoundedContinuousMapL (hp : N < p) :
     IsContinuousEmbedding (SobolevEuclidean.toBoundedContinuousMapL N p hp).toLinearMap :=
   ⟨SobolevEuclidean.toBoundedContinuousMapL_injective hp, _,
     SobolevEuclidean.norm_toBoundedContinuousMapL_apply_le hp⟩
 
-/-- **`W^{1,p}(ℝ^N) ⊆ L^∞(ℝ^N)` for `N < p < ∞`**: the function of `u` is essentially bounded,
-with `‖fn u‖_∞ ≤ C ‖u‖`. -/
+/-- Let $1 \le p < \infty$ with $N < p$. For every $u \in W^{1,p}(\mathbb{R}^N)$, the function
+`SobolevMultiIndex.fn u` is essentially bounded, with
+$$\|u\|_\infty \le C' (N + 1) \|u\|,$$
+where $C'$ is `MeasureTheory.morreySupConst` for Lebesgue measure. This is
+$W^{1,p}(\mathbb{R}^N) \subseteq L^\infty(\mathbb{R}^N)$ of Theorem 9.12 of
+[brezis2011functional], with the bound. -/
 theorem SobolevEuclidean.eLpNorm_fn_top_le_of_lt (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     eLpNorm (fn u) ⊤ volume ≤ morreySupConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p
       * (N + 1) * ENNReal.ofReal ‖u‖ := by
@@ -1233,7 +1424,10 @@ theorem SobolevEuclidean.eLpNorm_fn_top_le_of_lt (hp : N < p) (u : SobolevEuclid
       (SobolevEuclidean.exists_continuous_ae_eq_of_lt hp u).choose_spec.2.2.2.1)).trans ?_
   simp
 
-/-- **`W^{1,p}(ℝ^N) ⊆ L^∞(ℝ^N)` for `N < p < ∞`**, the membership. -/
+/-- Let $1 \le p < \infty$ with $N < p$. Then $W^{1,p}(\mathbb{R}^N) \subseteq
+L^\infty(\mathbb{R}^N)$: for every $u \in W^{1,p}(\mathbb{R}^N)$, the function
+`SobolevMultiIndex.fn u` lies in $L^\infty(\mathbb{R}^N)$. This is the inclusion of Theorem 9.12
+of [brezis2011functional]. -/
 theorem SobolevEuclidean.memLp_fn_top_of_lt (hp : N < p) (u : SobolevEuclidean N 1 p ⊤) :
     MemLp (fn u) ⊤ volume :=
   memLp_iff.2 ((SobolevEuclidean.eLpNorm_fn_top_le_of_lt hp u).trans_lt
@@ -1242,13 +1436,18 @@ theorem SobolevEuclidean.memLp_fn_top_of_lt (hp : N < p) (u : SobolevEuclidean N
 
 end TypedMorrey
 
-/-! ### Corollary 9.11: the limiting case `p = N`
+/-!
+### The limiting case $p = N$
 
-For `u ∈ C_c^1`, the `p = 1` Gagliardo–Nirenberg–Sobolev inequality applied to `‖u‖^γ`, `γ > 1`,
-gives the inequality (20) of [brezis2011functional] §9.3,
-`‖u‖_{γN'}^γ ≤ C γ ‖u‖_{(γ−1)N'}^{γ−1} ‖∇u‖_N`, where `N' = N/(N − 1)`; Young's inequality turns
-it into (21), `‖u‖_{γN'} ≤ K (‖u‖_{(γ−1)N'} + ‖∇u‖_N)`, and the induction on `γ = N, N + 1, …`
-with the interpolation inequality between consecutive exponents covers every `q ∈ [N, ∞)`. -/
+This is Corollary 9.11 of [brezis2011functional]. For $u \in C_c^1$, the Gagliardo–Nirenberg–Sobolev
+inequality for $p = 1$, applied to $\|u\|^\gamma$ with $\gamma > 1$, gives the inequality (20) of
+the source,
+$$\|u\|_{\gamma N'}^\gamma \le C \gamma \|u\|_{(\gamma - 1) N'}^{\gamma - 1} \|\nabla u\|_N, \qquad
+  N' = \frac{N}{N - 1}.$$
+Young's inequality turns it into (21), $\|u\|_{\gamma N'} \le K (\|u\|_{(\gamma - 1) N'} + \|\nabla
+u\|_N)$. Induction on $\gamma = N, N + 1, \dots$ and the interpolation inequality between
+consecutive exponents cover every $q \in [N, \infty)$.
+-/
 
 section LimitingCase
 
@@ -1256,11 +1455,17 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
   {μ : Measure E} [μ.IsAddHaarMeasure] {u : E → F}
 
-/-- **The inequality (20) of [brezis2011functional] §9.3, proof of Corollary 9.11**: for
-`u ∈ C_c^1(ℝ^N)`, `N ≥ 2`, `N' = N/(N − 1)` and `γ > 1`,
-`‖u‖_{γN'}^γ ≤ C γ ‖u‖_{(γ−1)N'}^{γ−1} ‖∇u‖_N`, with `C = eLpNormLESNormFDerivOneConst μ N'`:
-Mathlib's `p = 1` inequality applied to `‖u‖^γ`, whose derivative is bounded by
-`γ ‖u‖^{γ−1} ‖∇u‖`, followed by Hölder's inequality with the exponents `N'` and `N`. -/
+/-- Let $E$ be a real normed space of finite dimension $N \ge 2$ with an additive Haar measure
+$\mu$, and let $F$ be a real inner product space. Let $u : E \to F$ be $C^1$ with compact
+support, let $N' = N/(N - 1)$, and let $\gamma > 1$. Then
+$$\|u\|_{\gamma N'}^\gamma \le C \gamma \, \|u\|_{(\gamma - 1) N'}^{\gamma - 1} \, \|\nabla
+  u\|_N,$$
+where $C$ is Mathlib's constant `MeasureTheory.eLpNormLESNormFDerivOneConst μ N'`. This is the
+inequality (20) of the proof of Corollary 9.11 of [brezis2011functional].
+
+The proof applies Mathlib's inequality for $p = 1$ to $\|u\|^\gamma$, whose derivative is
+bounded by $\gamma \|u\|^{\gamma - 1} \|\nabla u\|$, and then Hölder's inequality with the
+exponents $N'$ and $N$. The exponent $N'$ is `NNReal.conjExponent N`. -/
 theorem ContDiff.eLpNorm_rpow_le_of_hasCompactSupport (hu : ContDiff ℝ 1 u)
     (h2u : HasCompactSupport u) (hN : 2 ≤ finrank ℝ E) {γ : ℝ≥0} (hγ : 1 < γ) :
     eLpNorm u ((γ * NNReal.conjExponent (finrank ℝ E) : ℝ≥0) : ℝ≥0∞) μ ^ (γ : ℝ)
@@ -1332,10 +1537,15 @@ theorem ContDiff.eLpNorm_rpow_le_of_hasCompactSupport (hu : ContDiff ℝ 1 u)
           lintegral_congr fun x ↦ by rw [← ENNReal.rpow_mul, NNReal.coe_mul, hγ1c]
         rw [hexp, hint, NNReal.coe_natCast]
 
-/-- **The inequality (21)**: for `γ > 1` there is a finite `K` with
-`‖u‖_{γN'} ≤ K (‖u‖_{(γ−1)N'} + ‖∇u‖_N)` for every `u ∈ C_c^1(ℝ^N)`, `N ≥ 2` — from (20) by
-Young's inequality in the form `b^θ c^{1−θ} ≤ b + c`. [brezis2011functional] §9.3, proof of
-Corollary 9.11, (21). -/
+/-- Let $E$ be a real normed space of finite dimension $N \ge 2$ with an additive Haar measure
+$\mu$, let $F$ be a real inner product space, let $N' = N/(N - 1)$, and let $\gamma > 1$. Then
+there is a finite $K$ such that every $C^1$ function $u : E \to F$ with compact support
+satisfies
+$$\|u\|_{\gamma N'} \le K \left( \|u\|_{(\gamma - 1) N'} + \|\nabla u\|_N \right).$$
+This is the inequality (21) of the proof of Corollary 9.11 of [brezis2011functional].
+
+It follows from (20), `ContDiff.eLpNorm_rpow_le_of_hasCompactSupport`, by Young's inequality in
+the form $b^\theta c^{1 - \theta} \le b + c$. -/
 theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_one_lt (hN : 2 ≤ finrank ℝ E)
     {γ : ℝ≥0} (hγ : 1 < γ) : ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : E → F, ContDiff ℝ 1 u →
       HasCompactSupport u →
@@ -1369,11 +1579,16 @@ theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_one_lt (h
         mul_le_mul' le_rfl (ENNReal.rpow_mul_rpow_one_sub_le_add _ _ (by positivity)
           ((div_le_one hγr).2 (by linarith)))
 
-/-- **The induction of Corollary 9.11 on `C_c^1`**: for every `m`, there is a finite `K` with
-`‖u‖_{(N − 1 + m) N'} ≤ K (‖u‖_N + ‖∇u‖_N)` for all `u ∈ C_c^1(ℝ^N)`, `N ≥ 2` — the case
-`m = 0` is `(N − 1) N' = N`, and each step is the inequality (21) with `γ = N − 1 + m + 1`.
-[brezis2011functional] §9.3, proof of Corollary 9.11, "reiterating this argument with
-`m = N + 1`, `m = N + 2`, etc.". -/
+/-- Let $E$ be a real normed space of finite dimension $N \ge 2$ with an additive Haar measure
+$\mu$, let $F$ be a real inner product space, and let $N' = N/(N - 1)$. For every natural number
+$m$ there is a finite $K$ such that every $C^1$ function $u : E \to F$ with compact support
+satisfies
+$$\|u\|_{(N - 1 + m) N'} \le K \left( \|u\|_N + \|\nabla u\|_N \right).$$
+This is the induction of the proof of Corollary 9.11 of [brezis2011functional], "reiterating
+this argument with $m = N + 1$, $m = N + 2$, etc.".
+
+The case $m = 0$ holds because $(N - 1) N' = N$. Each step is the inequality (21) with
+$\gamma = N + m$. -/
 theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finrank_aux
     (hN : 2 ≤ finrank ℝ E) (m : ℕ) :
     ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : E → F, ContDiff ℝ 1 u → HasCompactSupport u →
@@ -1414,10 +1629,14 @@ theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finran
           rw [mul_assoc, add_mul, one_mul]
           exact mul_le_mul' le_rfl (add_le_add le_rfl le_add_self)
 
-/-- **Corollary 9.11 on `C_c^1`**: for `N ≥ 2` and `q ≥ N` there is a finite `K` with
-`‖u‖_q ≤ K (‖u‖_N + ‖∇u‖_N)` for all `u ∈ C_c^1(ℝ^N)`: the inequality for the exponent
-`(N − 1 + m) N' ≥ q` of the induction, interpolated with the exponent `N`.
-[brezis2011functional] §9.3, proof of Corollary 9.11, the inequality (23). -/
+/-- Let $E$ be a real normed space of finite dimension $N \ge 2$ with an additive Haar measure
+$\mu$, let $F$ be a real inner product space, and let $N \le q < \infty$. Then there is a finite
+$K$ such that every $C^1$ function $u : E \to F$ with compact support satisfies
+$$\|u\|_q \le K \left( \|u\|_N + \|\nabla u\|_N \right).$$
+This is the inequality (23) of the proof of Corollary 9.11 of [brezis2011functional].
+
+The proof interpolates between the exponent $N$ and an exponent $(N - 1 + m) N' \ge q$ of
+`MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finrank_aux`. -/
 theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finrank
     (hN : 2 ≤ finrank ℝ E) {q : ℝ≥0} (hq : (finrank ℝ E : ℝ≥0) ≤ q) :
     ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : E → F, ContDiff ℝ 1 u → HasCompactSupport u →
@@ -1450,11 +1669,18 @@ theorem MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finran
 
 variable [CompleteSpace F]
 
-/-- **Corollary 9.11 (the limiting case `p = N`) on `W^{1,N}(ℝ^N)`**: for `N ≥ 2` and every
-`q ∈ [N, ∞)` there is a finite `K = K(q, N)` such that every `f ∈ W^{1,N}(ℝ^N)` with weak
-derivative `w` satisfies `‖f‖_q ≤ K (‖f‖_N + ‖w‖_N)` — in particular `W^{1,N}(ℝ^N) ⊆ L^q(ℝ^N)`
-with continuous injection. The inequality on `C_c^1` extends by density and Fatou's lemma as in
-Theorem 9.9. [brezis2011functional] Corollary 9.11. -/
+/-- **The limiting case $p = N$ of the Sobolev embedding.** Let $E$ be a real normed space of finite
+dimension $N \ge 2$ with an additive Haar measure $\mu$, let $F$ be a real Hilbert space, and
+let $N \le q < \infty$. Then there is a finite $K$ such that, for all $f, w \in L^N$ where $w$
+is a weak derivative of $f$ on $E$,
+$$\|f\|_q \le K \left( \|f\|_N + \|w\|_N \right).$$
+In particular $W^{1,N}(\mathbb{R}^N) \subseteq L^q(\mathbb{R}^N)$ with continuous injection.
+This is Corollary 9.11 of [brezis2011functional].
+
+The inequality for $C_c^1$ functions,
+`MeasureTheory.exists_forall_eLpNorm_le_of_hasCompactSupport_of_eq_finrank`, extends to $f$ by
+density and Fatou's lemma, as in the proof of
+`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`. -/
 theorem MeasureTheory.exists_forall_eLpNorm_le_of_eq_finrank (hN : 2 ≤ finrank ℝ E) {q : ℝ≥0}
     (hq : (finrank ℝ E : ℝ≥0) ≤ q) :
     ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ (f : E → F) (w : E → E →L[ℝ] F), HasWeakFDerivOn f w ⊤ μ →
@@ -1499,9 +1725,10 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {q : ℝ≥0}
 
-/-- **Corollary 9.11 on the typed space, the bound**: for `N ≥ 2` and `q ∈ [N, ∞)` there is a
-finite `K = K(q, N)` with `‖u‖_q ≤ K ‖u‖` for every `u ∈ W^{1,N}(ℝ^N)`.
-[brezis2011functional] Corollary 9.11. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$. Then there is a finite $K$ such that every
+$u \in W^{1,N}(\mathbb{R}^N)$ satisfies
+$$\|u\|_q \le K \|u\|.$$
+This is the bound of Corollary 9.11 of [brezis2011functional]. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))]
     (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
     ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : SobolevEuclidean N 1 N ⊤,
@@ -1522,16 +1749,17 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank [Fact (1 ≤ 
           (hwle.trans (SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le u))
     _ = (N + 1) * ENNReal.ofReal ‖u‖ := by ring
 
-/-- **`W^{1,N}(ℝ^N) ⊆ L^q(ℝ^N)` for `N ≥ 2`, `q ∈ [N, ∞)`**: [brezis2011functional]
-Corollary 9.11, the inclusion. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$. Then $W^{1,N}(\mathbb{R}^N) \subseteq L^q(\mathbb{R}^N)$:
+for every $u \in W^{1,N}(\mathbb{R}^N)$, the function `SobolevMultiIndex.fn u` lies in
+$L^q(\mathbb{R}^N)$. This is the inclusion of Corollary 9.11 of [brezis2011functional]. -/
 theorem SobolevEuclidean.memLp_fn_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))] (hN : 2 ≤ N)
     (hq : (N : ℝ≥0) ≤ q) (u : SobolevEuclidean N 1 N ⊤) : MemLp (fn u) q volume := by
   obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank hN hq
   exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
 
-/-- **Corollary 9.11 (the limiting case `p = N`)**: `W^{1,N}(ℝ^N) ↪ L^q(ℝ^N)` with continuous
-injection for `N ≥ 2` and every `q ∈ [N, ∞)`, along `SobolevMultiIndex.toLpₗ`.
-[brezis2011functional] Corollary 9.11. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$. Then $W^{1,N}(\mathbb{R}^N) \hookrightarrow
+L^q(\mathbb{R}^N)$ is a continuous embedding along `SobolevMultiIndex.toLpₗ`. This is Corollary
+9.11 of [brezis2011functional]. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))]
     [Fact (1 ≤ (q : ℝ≥0∞))] (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
     IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 N ⊤ volume
@@ -1547,7 +1775,7 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank [Fact (1 ≤ (
 
 end TypedLimitingCase
 
-/-! ### Lifting an `L^q` bound at order `m` to `W^{1,q}` at order `m + 1` -/
+/-! ### Lifting an $L^q$ bound at order $m$ to $W^{1,q}$ at order $m + 1$ -/
 
 section Lift
 
@@ -1555,11 +1783,13 @@ open SobolevMultiIndex
 
 variable {N m : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
 
-/-- **The inductive step of Corollary 9.15**: if `W^{m,p}(Ω) ⊆ L^q(Ω)` with the bound
-`‖fn v‖_{L^q(Ω)} ≤ K ‖v‖`, then every `u ∈ W^{m+1,p}(Ω)` is (almost everywhere on `Ω`) the
-function of an element `w ∈ W^{1,q}(Ω)` with `‖w‖ ≤ (N + 1) K ‖u‖`, the domain form of
-the inductive step of Corollary 9.13.
-[brezis2011functional] Corollary 9.15, proof ("repeated application of Corollary 9.14"). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 \le p \le \infty$ and $1 \le q \le \infty$,
+and let $K < \infty$. Suppose that every $v \in W^{m,p}(\Omega)$ satisfies
+$\|v\|_{L^q(\Omega)} \le K \|v\|$. Then for every $u \in W^{m+1,p}(\Omega)$ there is
+$w \in W^{1,q}(\Omega)$ whose function equals that of $u$ almost everywhere on $\Omega$, with
+$$\|w\| \le (N + 1) K \|u\|.$$
+This is the inductive step of the proof of Corollary 9.15 of [brezis2011functional] ("repeated
+application of Corollary 9.14"), and the domain form of the inductive step of Corollary 9.13. -/
 theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} {K : ℝ≥0∞} (hK : K ≠ ⊤)
     (h : ∀ v : SobolevEuclidean N m p Ω, eLpNorm (fn v) q
@@ -1645,11 +1875,17 @@ theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restri
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         ring
 
-/-- **The inductive step of Corollary 9.13**: if `W^{m,p}(ℝ^N) ⊆ L^q(ℝ^N)` with the bound
-`‖fn v‖_q ≤ K ‖v‖`, then every `u ∈ W^{m+1,p}(ℝ^N)` is (almost everywhere) the function of an
-element `w ∈ W^{1,q}(ℝ^N)` with `‖w‖ ≤ (N + 1) K ‖u‖` — `u` and its partial derivatives `∂_i u`
-lie in `W^{m,p}(ℝ^N)`, hence in `L^q(ℝ^N)`, and `∂_i u` is the weak derivative of `u`.
-[brezis2011functional] Corollary 9.13, proof ("repeated applications"). The case `Ω = ℝ^N` of
+/-- Let $1 \le p \le \infty$ and $1 \le q \le \infty$, and let $K < \infty$. Suppose that every
+$v \in W^{m,p}(\mathbb{R}^N)$ satisfies $\|v\|_q \le K \|v\|$. Then for every
+$u \in W^{m+1,p}(\mathbb{R}^N)$ there is $w \in W^{1,q}(\mathbb{R}^N)$ whose function equals
+that of $u$ almost everywhere, with
+$$\|w\| \le (N + 1) K \|u\|.$$
+This is the inductive step of the proof of Corollary 9.13 of [brezis2011functional] ("repeated
+applications").
+
+The function $u$ and its partial derivatives $\partial_i u$ lie in $W^{m,p}(\mathbb{R}^N)$,
+hence in $L^q(\mathbb{R}^N)$, and $\partial_i u$ is the weak derivative of $u$. The statement is
+the case $\Omega = \mathbb{R}^N$ of
 `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le`. -/
 theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le {K : ℝ≥0∞}
     (hK : K ≠ ⊤)
@@ -1663,7 +1899,11 @@ theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le {K 
 
 end Lift
 
-/-! ### Corollary 9.13: the `L^q` clauses of the higher-order embeddings -/
+/-!
+### The $L^q$ clauses of the higher-order embeddings
+
+This is Corollary 9.13 of [brezis2011functional].
+-/
 
 section HigherOrderLq
 
@@ -1671,11 +1911,15 @@ open SobolevMultiIndex
 
 variable {N : ℕ}
 
-/-- **The first-order embeddings of §9.3.A in one statement**: for `1 ≤ p ≤ q < ∞` with
-`1/p − 1/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with `‖u‖_q ≤ K ‖u‖` for every
-`u ∈ W^{1,p}(ℝ^N)`: Corollary 9.10 when `p < N` (then `q ≤ p*`), Corollary 9.11 when `p = N`,
-and Morrey's theorem interpolated with `L^p` when `p > N`. The case `N = 1 = p`, where
-Corollary 9.11 does not apply, is excluded. [brezis2011functional] Corollary 9.13 at `m = 1`. -/
+/-- **The first-order embeddings in one statement.** Let $1 \le p \le q < \infty$ with
+$1/p - 1/N \le 1/q$, and let $N \ge 2$ or $p > 1$. Then there is a finite $K$ such that every
+$u \in W^{1,p}(\mathbb{R}^N)$ satisfies
+$$\|u\|_q \le K \|u\|.$$
+This is Corollary 9.13 of [brezis2011functional] for $m = 1$.
+
+The proof uses Corollary 9.10 when $p < N$ (then $q \le p^*$), Corollary 9.11 when $p = N$, and
+Morrey's theorem interpolated with $L^p$ when $p > N$. The case $N = p = 1$ is excluded, because
+Corollary 9.11 does not apply there. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
@@ -1737,9 +1981,14 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le {p q : ℝ≥0}
             (SobolevEuclidean.eLpNorm_fn_top_le_of_lt hpN u)
       _ = (1 + morreySupConst volume p * (N + 1)) * ENNReal.ofReal ‖u‖ := by ring
 
-/-- The exponent `r` of the inductive step of Corollary 9.13: `1/r = max (1/p − m/N) (1/q)`,
-which lies between `1/q` and `1/p` and satisfies `1/r − 1/N ≤ 1/q` when
-`1/p − (m + 1)/N ≤ 1/q`. -/
+/-- Let $0 < p \le q$ and let $m$ be a natural number with $1/p - (m + 1)/N \le 1/q$. Then there is
+an exponent $r$ with $p \le r \le q$,
+$$\frac{1}{p} - \frac{m}{N} \le \frac{1}{r} \quad \text{and} \quad \frac{1}{r} - \frac{1}{N} \le
+  \frac{1}{q}.$$
+This is the intermediate exponent of the inductive step of Corollary 9.13 of
+[brezis2011functional].
+
+The proof takes $1/r = \max(1/p - m/N, 1/q)$. -/
 theorem NNReal.exists_intermediate_sobolev_exponent {p q : ℝ≥0} (m : ℕ) (hp0 : 0 < p)
     (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (m + 1 : ℕ) / N ≤ (q : ℝ)⁻¹) :
     ∃ r : ℝ≥0, p ≤ r ∧ r ≤ q ∧ (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹ ∧
@@ -1768,15 +2017,19 @@ theorem NNReal.exists_intermediate_sobolev_exponent {p q : ℝ≥0} (m : ℕ) (h
       rw [add_div]
       ring
 
-/-- **Corollary 9.13, the `L^q` bound at every order**: for `m ≥ 0`, `1 ≤ p ≤ q < ∞` with
-`1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with `‖u‖_q ≤ K ‖u‖` for every
-`u ∈ W^{m,p}(ℝ^N)`. This contains the book's first two clauses — `W^{m,p} ⊂ L^q` for
-`1/q = 1/p − m/N` when `1/p − m/N > 0`, and for every `q ∈ [p, ∞)` when `1/p − m/N ≤ 0` — and is
-proved by induction on `m` through
+/-- **The higher-order $L^q$ embeddings.** Let $m$ be a natural number, let $1 \le p \le q < \infty$
+with $1/p - m/N \le 1/q$, and let $N \ge 2$ or $p > 1$. Then there is a finite $K$ such that
+every $u \in W^{m,p}(\mathbb{R}^N)$ satisfies
+$$\|u\|_q \le K \|u\|.$$
+This contains the first two clauses of Corollary 9.13 of [brezis2011functional]:
+$W^{m,p}(\mathbb{R}^N) \subset L^q(\mathbb{R}^N)$ for $1/q = 1/p - m/N$ when $1/p - m/N > 0$,
+and for every $q \in [p, \infty)$ when $1/p - m/N \le 0$.
+
+The proof is by induction on $m$, through
 `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le` and the first-order
 statement `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`, with the intermediate
-exponent `1/r = max (1/p − m/N) (1/q)`. [brezis2011functional] Corollary 9.13
-("repeated applications of Theorem 9.9, Corollary 9.11 and Theorem 9.12"). -/
+exponent $1/r = \max(1/p - m/N, 1/q)$. The source proves the corollary by "repeated applications
+of Theorem 9.9, Corollary 9.11 and Theorem 9.12". -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order (m : ℕ) {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) :
@@ -1821,7 +2074,11 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order (m : ℕ) {p q : �
 
 end HigherOrderLq
 
-/-! ### Corollary 9.13: the continuous representative at every order -/
+/-!
+### The continuous representative at every order
+
+This is part of Corollary 9.13 of [brezis2011functional].
+-/
 
 section HigherOrderContinuous
 
@@ -1829,8 +2086,11 @@ open SobolevMultiIndex
 
 variable {N : ℕ}
 
-/-- The Hölder estimate (25) for the continuous representative of `u ∈ W^{1,p}(ℝ^N)`, `N < p`,
-in real form: `‖ũ x − ũ y‖ ≤ (C N).toReal ‖u‖ ‖x − y‖^{1 − N/p}`. -/
+/-- Let $1 \le p < \infty$ with $N < p$, and let $\tilde u$ be the continuous representative of
+$u \in W^{1,p}(\mathbb{R}^N)$. For all $x, y$,
+$$|\tilde u(x) - \tilde u(y)| \le C N \|u\| \, \|x - y\|^{1 - N/p},$$
+where $C$ is `MeasureTheory.morreyConst` for Lebesgue measure, as a real number. This is the
+Hölder estimate (25) of [brezis2011functional], §9.3, in the norm of $W^{1,p}(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.norm_contRep_sub_le {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hp : N < p)
     (u : SobolevEuclidean N 1 p ⊤) (x y : EuclideanSpace ℝ (Fin N)) :
     ‖SobolevEuclidean.contRep hp u x - SobolevEuclidean.contRep hp u y‖
@@ -1859,10 +2119,16 @@ theorem SobolevEuclidean.norm_contRep_sub_le {p : ℝ≥0} [Fact (1 ≤ (p : ℝ
   rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_ofReal (norm_nonneg _),
     ENNReal.toReal_ofReal (by positivity)]
 
-/-- The exponent `r` of the continuous-representative step of Corollary 9.13: for `N/p < m + 1`,
-an `r ≥ p` with `N < r` and `1/p − m/N ≤ 1/r` (so that `W^{m+1,p} ⊆ W^{1,r}` by
-`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`), whose Hölder exponent `1 − N/r` is the
-sharp `(m + 1) − N/p` when the latter is less than `1`. -/
+/-- Let $p > 0$ and let $m$ be a natural number with $N/p < m + 1$. Then there is an exponent
+$r \ge p$ with $N < r$ and $1/p - m/N \le 1/r$ such that, if $(m + 1) - N/p < 1$, then
+$$1 - \frac{N}{r} = (m + 1) - \frac{N}{p}.$$
+This is the exponent of the step of Corollary 9.13 of [brezis2011functional] that gives the
+continuous representative.
+
+The condition $1/p - m/N \le 1/r$ gives $W^{m+1,p}(\mathbb{R}^N) \subseteq
+W^{1,r}(\mathbb{R}^N)$ by `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`. The last
+condition says that the Hölder exponent $1 - N/r$ of Morrey's theorem is the sharp exponent
+$(m + 1) - N/p$ when the latter is less than $1$. -/
 theorem NNReal.exists_morrey_exponent {p : ℝ≥0} (m : ℕ) (hp0 : 0 < p)
     (hm : (N : ℝ) / p < (m + 1 : ℕ)) :
     ∃ r : ℝ≥0, p ≤ r ∧ N < r ∧ (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹ ∧
@@ -1907,14 +2173,20 @@ theorem NNReal.exists_morrey_exponent {p : ℝ≥0} (m : ℕ) (hp0 : 0 < p)
         rw [sub_nonpos, le_div_iff₀ hN0, inv_mul_eq_div, div_le_iff₀ hp0']
         rwa [div_le_iff₀ hp0'] at h
 
-/-- **Corollary 9.13, the continuous representative**: for `m > N/p` (`m ≥ 1`, `1 ≤ p < ∞`,
-and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a Hölder exponent `θ ∈ (0, 1]` — equal to the
-sharp `m − N/p` when `m − N/p < 1` — such that every `u ∈ W^{m,p}(ℝ^N)` has a continuous
-representative `ũ` with `‖ũ x‖ ≤ C ‖u‖` and `‖ũ x − ũ y‖ ≤ C ‖u‖ ‖x − y‖^θ`; in particular
-`W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` when `1/p − m/N < 0`. Proof: `W^{m,p} ⊆ W^{1,r}` for an `r > N` with
-`1/r = 1/p − (m − 1)/N` when that is positive (`NNReal.exists_morrey_exponent`,
-`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`), then Morrey's theorem.
-[brezis2011functional] Corollary 9.13, the third clause and the case `k = 0` of the `C^k` clause. -/
+/-- **The continuous representative at every order.** Let $1 \le p < \infty$, let $m$ be a natural
+number with $N/p < m$, and let $N \ge 2$ or $p > 1$. Then there are $C \ge 0$ and
+$\theta \in (0, 1]$, with $\theta = m - N/p$ when $m - N/p < 1$, such that every
+$u \in W^{m,p}(\mathbb{R}^N)$ has a continuous representative $\tilde u$ with, for all $x, y$,
+$$|\tilde u(x)| \le C \|u\|, \qquad |\tilde u(x) - \tilde u(y)| \le C \|u\| \, \|x -
+  y\|^\theta.$$
+In particular $W^{m,p}(\mathbb{R}^N) \subset L^\infty(\mathbb{R}^N)$ when $1/p - m/N < 0$. This
+is the third clause of Corollary 9.13 of [brezis2011functional], and the case $k = 0$ of its
+$C^k$ clause.
+
+For $N \ge 1$ the condition $N/p < m$ is $1/p - m/N < 0$. The proof gives $W^{m,p}(\mathbb{R}^N)
+\subseteq W^{1,r}(\mathbb{R}^N)$ for an $r > N$, with $1/r = 1/p - (m - 1)/N$ when this is
+positive (`NNReal.exists_morrey_exponent`,
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`), and then applies Morrey's theorem. -/
 theorem SobolevEuclidean.exists_forall_continuous_ae_eq_of_order {m : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
     ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ((m : ℝ) - N / p < 1 → θ = m - N / p) ∧
@@ -1967,9 +2239,11 @@ theorem SobolevEuclidean.exists_forall_continuous_ae_eq_of_order {m : ℕ} {p : 
           gcongr
           exact le_max_right _ _
 
-/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` for `1/p − m/N < 0`, the bound**: there is a
-finite `K` with `‖u‖_∞ ≤ K ‖u‖` for every `u ∈ W^{m,p}(ℝ^N)` (`N ≥ 2` or `p > 1`).
-[brezis2011functional] Corollary 9.13, the third clause. -/
+/-- Let $1 \le p < \infty$, let $m$ be a natural number with $N/p < m$, and let $N \ge 2$ or
+$p > 1$. Then there is a finite $K$ such that every $u \in W^{m,p}(\mathbb{R}^N)$ satisfies
+$$\|u\|_\infty \le K \|u\|.$$
+This is the bound of the third clause of Corollary 9.13 of [brezis2011functional],
+$W^{m,p}(\mathbb{R}^N) \subset L^\infty(\mathbb{R}^N)$ for $1/p - m/N < 0$. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order {m : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
     ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : SobolevEuclidean N m p ⊤,
@@ -1983,15 +2257,21 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order {m : ℕ} {p :
   rw [← ofReal_norm]
   exact ENNReal.ofReal_le_ofReal (hb x)
 
-/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ⊆ L^∞(ℝ^N)` for `1/p − m/N < 0`**, the membership. -/
+/-- Let $1 \le p < \infty$, let $m$ be a natural number with $N/p < m$, and let $N \ge 2$ or
+$p > 1$. Then $W^{m,p}(\mathbb{R}^N) \subseteq L^\infty(\mathbb{R}^N)$: for every
+$u \in W^{m,p}(\mathbb{R}^N)$, the function `SobolevMultiIndex.fn u` lies in
+$L^\infty(\mathbb{R}^N)$. This is the inclusion of the third clause of Corollary 9.13 of
+[brezis2011functional]. -/
 theorem SobolevEuclidean.memLp_fn_top_of_order {m : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) (u : SobolevEuclidean N m p ⊤) :
     MemLp (fn u) ⊤ volume := by
   obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order hN hm
   exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
 
-/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ↪ L^∞(ℝ^N)` with continuous injection** for
-`1/p − m/N < 0`, along `SobolevMultiIndex.toLpₗ`. [brezis2011functional] Corollary 9.13. -/
+/-- Let $1 \le p < \infty$, let $m$ be a natural number with $N/p < m$, and let $N \ge 2$ or
+$p > 1$. Then $W^{m,p}(\mathbb{R}^N) \hookrightarrow L^\infty(\mathbb{R}^N)$ is a continuous
+embedding along `SobolevMultiIndex.toLpₗ`. This is the third clause of Corollary 9.13 of
+[brezis2011functional]. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order {m : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
     IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis m p ⊤ volume
@@ -2004,20 +2284,24 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order {m : ℕ} {p : 
   refine ENNReal.toReal_mono (ENNReal.mul_ne_top hK ENNReal.ofReal_ne_top) ?_
   exact (eLpNorm_restrict_coe_top (fn u) ⊤).trans_le (hKu u)
 
-/-- **Corollary 9.13, the `L^q` clauses, the membership**: for `1 ≤ p ≤ q < ∞` with
-`1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, `fn u ∈ L^q(ℝ^N)` for every `u ∈ W^{m,p}(ℝ^N)` —
-`W^{m,p} ⊂ L^q` for `1/q = 1/p − m/N` when `1/p − m/N > 0`, and for every `q ∈ [p, ∞)` when
-`1/p − m/N ≤ 0`. The `L^∞` clause is `SobolevEuclidean.memLp_fn_top_of_order`.
-[brezis2011functional] Corollary 9.13, the first two clauses. -/
+/-- Let $m$ be a natural number, let $1 \le p \le q < \infty$ with $1/p - m/N \le 1/q$, and let
+$N \ge 2$ or $p > 1$. Then $W^{m,p}(\mathbb{R}^N) \subseteq L^q(\mathbb{R}^N)$: for every
+$u \in W^{m,p}(\mathbb{R}^N)$, the function `SobolevMultiIndex.fn u` lies in
+$L^q(\mathbb{R}^N)$. This contains the first two clauses of Corollary 9.13 of
+[brezis2011functional]: $1/q = 1/p - m/N$ when $1/p - m/N > 0$, and every $q \in [p, \infty)$
+when $1/p - m/N \le 0$.
+
+The clause for $L^\infty$ is `SobolevEuclidean.memLp_fn_top_of_order`. -/
 theorem SobolevEuclidean.memLp_fn_of_order {m : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹)
     (u : SobolevEuclidean N m p ⊤) : MemLp (fn u) q volume := by
   obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order m hN hpq hq
   exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
 
-/-- **Corollary 9.13, the `L^q` clauses, as continuous embeddings**: `W^{m,p}(ℝ^N) ↪ L^q(ℝ^N)`
-along `SobolevMultiIndex.toLpₗ` for `1 ≤ p ≤ q < ∞` with `1/p − m/N ≤ 1/q` (`N ≥ 2` or `p > 1`).
-[brezis2011functional] Corollary 9.13, "all these injections are continuous". -/
+/-- Let $m$ be a natural number, let $1 \le p \le q < \infty$ with $1/p - m/N \le 1/q$, and let
+$N \ge 2$ or $p > 1$. Then $W^{m,p}(\mathbb{R}^N) \hookrightarrow L^q(\mathbb{R}^N)$ is a
+continuous embedding along `SobolevMultiIndex.toLpₗ`. This is Corollary 9.13 of
+[brezis2011functional], "all these injections are continuous", for the first two clauses. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_order {m : ℕ} {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) :
@@ -2033,7 +2317,11 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_order {m : ℕ} {p q : �
 
 end HigherOrderContinuous
 
-/-! ### Corollary 9.13: the `C^k` representative -/
+/-!
+### The $C^k$ representative
+
+This is part of Corollary 9.13 of [brezis2011functional].
+-/
 
 section HigherOrderContDiff
 
@@ -2041,8 +2329,8 @@ open SobolevMultiIndex
 
 variable {N : ℕ}
 
-/-- A continuous linear functional on `ℝ^N` is the sum of its values on the standard basis vectors
-times the coordinate projections. -/
+/-- A continuous linear functional $T$ on $\mathbb{R}^N$ is the sum $T = \sum_i T(e_i) \, \pi_i$,
+where $e_i$ are the standard basis vectors and $\pi_i$ are the coordinate projections. -/
 theorem ContinuousLinearMap.eq_sum_apply_single_smul_proj
     (T : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ) :
     T = ∑ i, T (EuclideanSpace.single i 1) • PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i := by
@@ -2050,8 +2338,10 @@ theorem ContinuousLinearMap.eq_sum_apply_single_smul_proj
   conv_lhs => rw [← (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr v]
   simp [EuclideanSpace.basisFun_repr, mul_comm]
 
-/-- `‖g ∘ a − g ∘ b‖ ≤ ‖g‖ ‖a − b‖` for the composition of continuous multilinear maps with a
-continuous linear map. -/
+/-- Let $g : G \to G'$ be a continuous linear map between real normed spaces, and let $a, b$ be
+continuous multilinear maps with values in $G$. Then
+$$\|g \circ a - g \circ b\| \le \|g\| \, \|a - b\|.$$
+-/
 theorem ContinuousLinearMap.norm_compContinuousMultilinearMap_sub_le {ι G G' : Type*} [Fintype ι]
     {E : ι → Type*} [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace ℝ (E i)]
     [NormedAddCommGroup G] [NormedSpace ℝ G] [NormedAddCommGroup G'] [NormedSpace ℝ G']
@@ -2064,8 +2354,11 @@ theorem ContinuousLinearMap.norm_compContinuousMultilinearMap_sub_le {ι G G' : 
   rw [e, mul_assoc]
   exact g.le_opNorm_of_le ((a - b).le_opNorm m)
 
-/-- The iterated derivatives of `x ↦ ∑ i, g i x • P i` at a point where the scalar functions
-`g i` are `C^k`, `j ≤ k`: the pointwise form of `iteratedFDeriv_fun_sum_smul_const`. -/
+/-- Let $g_i : E \to \mathbb{R}$, $i$ in a finite set, be $C^k$ at a point $x$, let $P_i \in F$, and
+let $j \le k$. Then the $j$-th derivative at $x$ of $y \mapsto \sum_i g_i(y) P_i$ is
+$$D^j \Big( \sum_i g_i P_i \Big)(x) = \sum_i D^j g_i(x) \, P_i,$$
+that is, the sum of the compositions of $D^j g_i(x)$ with the maps $c \mapsto c P_i$. This is
+the pointwise form of `iteratedFDeriv_fun_sum_smul_const`. -/
 theorem iteratedFDeriv_fun_sum_smul_const_of_contDiffAt {E F : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι]
     {g : ι → E → ℝ} {k : ℕ} {x : E} (hg : ∀ i, ContDiffAt ℝ k (g i) x) (P : ι → F) {j : ℕ}
@@ -2082,9 +2375,10 @@ theorem iteratedFDeriv_fun_sum_smul_const_of_contDiffAt {E F : Type*} [NormedAdd
     simp
   rw [e, ContinuousLinearMap.iteratedFDeriv_comp_left _ (hg i) hjk]
 
-/-- The iterated derivatives of `x ↦ ∑ i, g i x • P i` for `C^k` scalar functions `g i` and
-constant vectors `P i`: the composition of the iterated derivatives of the `g i` with the maps
-`c ↦ c • P i`. -/
+/-- Let $g_i : E \to \mathbb{R}$, $i$ in a finite set, be $C^k$, let $P_i \in F$, and let $j \le k$.
+Then at every $x$ the $j$-th derivative of $y \mapsto \sum_i g_i(y) P_i$ is
+$$D^j \Big( \sum_i g_i P_i \Big)(x) = \sum_i D^j g_i(x) \, P_i,$$
+that is, the sum of the compositions of $D^j g_i(x)$ with the maps $c \mapsto c P_i$. -/
 theorem iteratedFDeriv_fun_sum_smul_const {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι] {g : ι → E → ℝ} {k : ℕ}
     (hg : ∀ i, ContDiff ℝ k (g i)) (P : ι → F) {j : ℕ} (hj : j ≤ k) (x : E) :
@@ -2093,9 +2387,13 @@ theorem iteratedFDeriv_fun_sum_smul_const {E F : Type*} [NormedAddCommGroup E] [
           (iteratedFDeriv ℝ j (g i) x) :=
   iteratedFDeriv_fun_sum_smul_const_of_contDiffAt (fun i ↦ (hg i).contDiffAt) P hj
 
-/-- The tensor weak derivative of `u ∈ W^{m+1,p}(Ω)` assembled from (representatives of) its
-partial derivatives: if `g i = ∂_i u` almost everywhere on `Ω`, then `x ↦ ∑ i, g i x • proj i` is
-a weak derivative of `fn u` on `Ω`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $u \in W^{m+1,p}(\Omega)$. If
+$g_i = \partial_i u$ almost everywhere on $\Omega$ for each $i$, then
+$x \mapsto \sum_i g_i(x) \, \pi_i$, where $\pi_i$ are the coordinate projections, is a weak
+derivative of $u$ on $\Omega$.
+
+Here $\partial_i u$ is the function of `SobolevMultiIndex.partialDeriv`, and the weak derivative
+has values in the linear functionals on $\mathbb{R}^N$. -/
 theorem SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj {m : ℕ} {p : ℝ≥0∞}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u : SobolevEuclidean N (m + 1) p Ω)
     {g : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
@@ -2130,16 +2428,21 @@ theorem SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj {m : ℕ} {p : ℝ≥0∞
   filter_upwards [hae] with x hx
   simp only [hx]
 
-/-- **Corollary 9.13, the `C^k` representative, in the form of the induction**: for `k + N/p < m`
-(`1 ≤ p < ∞`, and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a Hölder exponent `θ ∈ (0, 1]` —
-equal to the sharp `m − N/p − k` when that is less than `1` — such that every
-`u ∈ W^{m,p}(ℝ^N)` has a `C^k` representative `ũ` with `‖D^j ũ x‖ ≤ C ‖u‖` for `j ≤ k` and
-`‖D^k ũ x − D^k ũ y‖ ≤ C ‖u‖ ‖x − y‖^θ`. Induction on `k`: `u` and `∂_i u` lie in
-`W^{m−1,p}(ℝ^N)` and have `C^{k−1}` representatives `ũ`, `g̃_i`; `x ↦ ∑ g̃_i x • proj i` is a
-continuous weak derivative of `ũ`, so `ũ` is `C¹` with that derivative
-(`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`, Remark 2), hence `C^k`, and its
-derivatives of order `j + 1` are assembled from those of order `j` of the `g̃_i`.
-[brezis2011functional] Corollary 9.13, the `C^k` clause. -/
+/-- **The $C^k$ representative, in the form of the induction.** Let $1 \le p < \infty$, let $k$ and
+$m$ be natural numbers with $k + N/p < m$, and let $N \ge 2$ or $p > 1$. Then there are
+$C \ge 0$ and $\theta \in (0, 1]$, with $\theta = m - N/p - k$ when $m - N/p - k < 1$, such that
+every $u \in W^{m,p}(\mathbb{R}^N)$ has a $C^k$ representative $\tilde u$ with, for all $x, y$,
+$$\|D^j \tilde u(x)\| \le C \|u\| \quad (j \le k), \qquad \|D^k \tilde u(x) - D^k \tilde u(y)\|
+  \le C \|u\| \, \|x - y\|^\theta.$$
+This is the $C^k$ clause of Corollary 9.13 of [brezis2011functional].
+
+The proof is by induction on $k$. The function $u$ and its partial derivatives $\partial_i u$
+lie in $W^{m-1,p}(\mathbb{R}^N)$ and have $C^{k-1}$ representatives $\tilde u$ and $\tilde g_i$.
+The function $x \mapsto \sum_i \tilde g_i(x) \pi_i$ is a continuous weak derivative of
+$\tilde u$, so $\tilde u$ is $C^1$ with this derivative
+(`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`, Remark 2 of the source), hence
+$C^k$. Its derivatives of order $j + 1$ are assembled from those of order $j$ of the
+$\tilde g_i$. -/
 theorem SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order (k : ℕ) {m : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
     ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ((m : ℝ) - N / p - k < 1 → θ = m - N / p - k) ∧
@@ -2261,7 +2564,7 @@ theorem SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order (k : ℕ) {m : �
 
 end HigherOrderContDiff
 
-/-! ### Corollary 9.13, the `C^k` clause, and the local `C^k` representatives -/
+/-! ### The $C^k$ clause of Corollary 9.13, and the local $C^k$ representatives -/
 
 section HigherOrderCorollaries
 
@@ -2269,12 +2572,20 @@ open SobolevMultiIndex
 
 variable {N : ℕ}
 
-/-- **Corollary 9.13, the `C^k` clause**: for `m − N/p > 0` not an integer, `k = ⌊m − N/p⌋` and
-`θ = m − N/p − k ∈ (0, 1)` — encoded as `0 < m − N/p − k < 1` — with `1 ≤ p < ∞` and `N ≥ 2` or
-`p > 1`, there is `C` such that every `u ∈ W^{m,p}(ℝ^N)` has a representative `ũ` of class
-`C^k` whose derivatives of order `≤ k` are bounded by `C ‖u‖` and whose derivatives of order `k`
-are `θ`-Hölder with constant `C ‖u‖`; in particular `W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` modulo the choice
-of a representative. [brezis2011functional] Corollary 9.13 (footnotes 13–14). -/
+/-- **The $C^k$ clause of the Sobolev embedding.** Let $1 \le p < \infty$, let $N \ge 2$ or $p > 1$,
+and let $m$ and $k$ be natural numbers with
+$$0 < m - N/p - k < 1.$$
+Then there is $C \ge 0$ such that every $u \in W^{m,p}(\mathbb{R}^N)$ has a $C^k$ representative
+$\tilde u$ with, for all $x, y$,
+$$\|D^j \tilde u(x)\| \le C \|u\| \quad (j \le k), \qquad \|D^k \tilde u(x) - D^k \tilde u(y)\|
+  \le C \|u\| \, \|x - y\|^{m - N/p - k}.$$
+In particular $W^{m,p}(\mathbb{R}^N) \subset C^k(\mathbb{R}^N)$, up to the choice of a
+representative. This is the $C^k$ clause of Corollary 9.13 of [brezis2011functional], with its
+footnotes 13 and 14.
+
+The source states the clause for $m - N/p > 0$ not an integer, with
+$k = \lfloor m - N/p \rfloor$ and $\theta = m - N/p - k$. The hypothesis $0 < m - N/p - k < 1$
+is this condition. -/
 theorem SobolevEuclidean.exists_contDiff_ae_eq_of_order {m k : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hθ0 : 0 < (m : ℝ) - N / p - k)
     (hθ1 : (m : ℝ) - N / p - k < 1) :
@@ -2288,13 +2599,17 @@ theorem SobolevEuclidean.exists_contDiff_ae_eq_of_order {m k : ℕ} {p : ℝ≥0
   obtain rfl := hθ hθ1
   exact ⟨C, hC0, hC⟩
 
-/-- **Corollary 9.13's `C^k` clause without the non-integer restriction**: for `1 ≤ p < ∞`,
-integers `m, k` with `k + N/p < m`, and `N ≥ 2` or `p > 1`, there are `C` and a Hölder exponent
-`θ ∈ (0, 1]` such that every `u ∈ W^{m,p}(ℝ^N)` has a `C^k` representative `ũ` with every
-derivative of order `≤ k` bounded by `C ‖u‖` and the derivatives of order `k` `θ`-Hölder with
-constant `C ‖u‖`. This is the form the heat equation needs (`H^{2ℓ}(ℝ^N) ⊆ C^k` for
-`k + N/2 < 2ℓ`), where `2ℓ − N/2` is an integer for every even `N`.
-[brezis2011functional] Corollary 9.13, and the proofs of Theorems 10.1 and 10.8. -/
+/-- **The $C^k$ clause without the non-integer restriction.** Let $1 \le p < \infty$, let $k$ and
+$m$ be natural numbers with $k + N/p < m$, and let $N \ge 2$ or $p > 1$. Then there are
+$C \ge 0$ and $\theta \in (0, 1]$ such that every $u \in W^{m,p}(\mathbb{R}^N)$ has a $C^k$
+representative $\tilde u$ with, for all $x, y$,
+$$\|D^j \tilde u(x)\| \le C \|u\| \quad (j \le k), \qquad \|D^k \tilde u(x) - D^k \tilde u(y)\|
+  \le C \|u\| \, \|x - y\|^\theta.$$
+This follows from Corollary 9.13 of [brezis2011functional], and it is the form that the proofs
+of Theorems 10.1 and 10.8 of the source use.
+
+The heat equation needs $H^{2\ell}(\mathbb{R}^N) \subseteq C^k(\mathbb{R}^N)$ for
+$k + N/2 < 2\ell$, where $2\ell - N/2$ is an integer for every even $N$. -/
 theorem SobolevEuclidean.exists_contDiff_ae_eq_of_lt {m k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
     ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ∀ u : SobolevEuclidean N m p ⊤,
@@ -2307,12 +2622,16 @@ theorem SobolevEuclidean.exists_contDiff_ae_eq_of_lt {m k : ℕ} {p : ℝ≥0} [
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **`W^{m,p}_loc(Ω) ⊆ C^k(Ω)` for `k + N/p < m`** (`1 ≤ p < ∞`, `N ≥ 2` or `p > 1`): a function
-of `W^{m,p}_loc(Ω)` has a representative of class `C^k` on `Ω`. On a ball `B` with
-`closure B ⊆ Ω`, `θ f ∈ W^{m,p}(ℝ^N)` for a bump `θ = 1` on `B`
-(`MemSobolevMultiIndexLoc.smul_testFunction`), which has a `C^k` representative by Corollary 9.13
-(`SobolevEuclidean.exists_contDiff_ae_eq_of_lt`); the local representatives glue
-(`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`) and `ContDiffOn` is local. -/
+/-- **The local $C^k$ representative.** Let $\Omega \subseteq \mathbb{R}^N$ be open, let
+$1 \le p < \infty$, let $k$ and $m$ be natural numbers with $k + N/p < m$, and let $N \ge 2$ or
+$p > 1$. If $f \in W^{m,p}_{\mathrm{loc}}(\Omega)$, then there is a function $\tilde u$ of class
+$C^k$ on $\Omega$ with $f = \tilde u$ almost everywhere on $\Omega$.
+
+On a ball $B$ with closure in $\Omega$, $\theta f \in W^{m,p}(\mathbb{R}^N)$ for a test function
+$\theta$ equal to $1$ on $B$ (`MemSobolevMultiIndexLoc.smul_testFunction`). This function has a
+$C^k$ representative by `SobolevEuclidean.exists_contDiff_ae_eq_of_lt`. The local
+representatives glue (`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`), and the
+class $C^k$ on $\Omega$ is a local property. -/
 theorem MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt {m k : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m)
     {f : EuclideanSpace ℝ (Fin N) → ℝ}
@@ -2357,11 +2676,15 @@ theorem MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt {m k : ℕ} {p : ℝ≥0
   exact ⟨ball x r, isOpen_ball, mem_ball_self hr,
     (hg.mono inter_subset_right).congr fun y hy ↦ hvg hy.2⟩
 
-/-- **A function of `H^m_loc(Ω)` for every `m` has a `C^∞` representative on `Ω`**: this is the
-sentence "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`, as a consequence `e_n ∈ C^∞(Ω)`" of the proof of
-[brezis2011functional] Theorem 9.31. The `C^k` representatives of
-`MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt` are continuous on `Ω` and almost everywhere
-equal, hence equal on `Ω`, so the `C^0` one is `C^k` for every `k`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open. If $f \in H^m_{\mathrm{loc}}(\Omega)$ for every
+natural number $m$, then there is a function $\tilde u$ of class $C^\infty$ on $\Omega$ with
+$f = \tilde u$ almost everywhere on $\Omega$. This is the step "$e_n \in \bigcap_m H^m(\omega)$
+for all $\omega \subset\subset \Omega$, as a consequence $e_n \in C^\infty(\Omega)$" of the
+proof of Theorem 9.31 of [brezis2011functional].
+
+The $C^k$ representatives of `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt` are continuous on
+$\Omega$ and equal almost everywhere, hence equal on $\Omega$. So the $C^0$ representative is
+$C^k$ for every $k$. -/
 theorem MemSobolevMultiIndexLoc.exists_contDiffOn {f : EuclideanSpace ℝ (Fin N) → ℝ}
     (hf : ∀ m, MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f m 2 Ω volume) :
     ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiffOn ℝ ∞ ũ Ω ∧
@@ -2386,15 +2709,22 @@ theorem MemSobolevMultiIndexLoc.exists_contDiffOn {f : EuclideanSpace ℝ (Fin N
 
 end HigherOrderCorollaries
 
-/-! ### Remark 13: `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)` -/
+/-!
+### The embedding $W^{N,1}(\mathbb{R}^N) \subset L^\infty(\mathbb{R}^N)$
+
+This is Remark 13 of [brezis2011functional], Chapter 9.
+-/
 
 section LineFTC
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The fundamental theorem of calculus along a line, as a bound**: for a compactly supported
-`C¹` function `g` and a direction `v ≠ 0`, `|g x| ≤ ∫_ℝ |∂_v g (x + s v)| ds`, since `g` vanishes
-far out along the line. -/
+/-- **The fundamental theorem of calculus along a line, as a bound.** Let $E$ be a real normed
+space, let $g : E \to \mathbb{R}$ be $C^1$ with compact support, and let $v \in E$, $v \neq 0$.
+For every $x \in E$,
+$$|g(x)| \le \int_{\mathbb{R}} |Dg(x + s v) \, v| \, ds.$$
+
+The bound holds because $g$ vanishes far out along the line. -/
 theorem ContDiff.enorm_le_lintegral_fderiv_line {g : E → ℝ} (hg : ContDiff ℝ 1 g)
     (hgc : HasCompactSupport g) {v : E} (hv : v ≠ 0) (x : E) :
     ‖g x‖ₑ ≤ ∫⁻ s : ℝ, ‖fderiv ℝ g (x + s • v) v‖ₑ := by
@@ -2448,28 +2778,31 @@ section IteratedFTC
 
 variable {N : ℕ}
 
-/-- The standard basis vectors of `ℝ^N` indexed by `ℕ`, `0` beyond `N`. -/
+/-- The standard basis vectors of $\mathbb{R}^N$ indexed by the natural numbers: the $n$-th vector
+is $e_n$ for $n < N$ and $0$ for $n \ge N$. The indices start at $0$. -/
 def EuclideanSpace.stdVec (N : ℕ) (n : ℕ) : EuclideanSpace ℝ (Fin N) :=
   if h : n < N then EuclideanSpace.single ⟨n, h⟩ 1 else 0
 
-/-- `stdVec N n` for `n < N` is the basis vector `e_n`. -/
+/-- For $n < N$, `EuclideanSpace.stdVec N n` is the basis vector $e_n$. -/
 theorem EuclideanSpace.stdVec_of_lt {n : ℕ} (h : n < N) :
     EuclideanSpace.stdVec N n = EuclideanSpace.single ⟨n, h⟩ 1 := by
   simp [EuclideanSpace.stdVec, h]
 
-/-- `stdVec N n ≠ 0` for `n < N`. -/
+/-- For $n < N$, `EuclideanSpace.stdVec N n` is not zero. -/
 theorem EuclideanSpace.stdVec_ne_zero {n : ℕ} (h : n < N) : EuclideanSpace.stdVec N n ≠ 0 := by
   rw [EuclideanSpace.stdVec_of_lt h]
   intro h0
   have := congrArg (fun v : EuclideanSpace ℝ (Fin N) ↦ v ⟨n, h⟩) h0
   simp at this
 
-/-- The tuple of directions `(e_{N−j}, …, e_{N−1})` of length `j`, the last `j` basis vectors of
-`ℝ^N`: `stdDirs N j i = e_{N − j + i}`. -/
+/-- The tuple of $j$ directions $(e_{N-j}, \dots, e_{N-1})$ in $\mathbb{R}^N$: its $i$-th entry is
+`EuclideanSpace.stdVec N (N - j + i)`. For $j \le N$ these are the last $j$ standard basis
+vectors. For $j > N$ the subtraction $N - j$ is truncated to $0$. -/
 def EuclideanSpace.stdDirs (N j : ℕ) : Fin j → EuclideanSpace ℝ (Fin N) :=
   fun i ↦ EuclideanSpace.stdVec N (N - j + i)
 
-/-- `stdDirs N (j + 1)` is `e_{N − 1 − j}` followed by `stdDirs N j`, for `j + 1 ≤ N`. -/
+/-- For $j + 1 \le N$, the tuple `EuclideanSpace.stdDirs N (j + 1)` is $e_{N-1-j}$ followed by the
+tuple `EuclideanSpace.stdDirs N j`. -/
 theorem EuclideanSpace.stdDirs_succ {j : ℕ} (hj : j + 1 ≤ N) :
     EuclideanSpace.stdDirs N (j + 1)
       = Fin.cons (EuclideanSpace.stdVec N (N - 1 - j)) (EuclideanSpace.stdDirs N j) := by
@@ -2482,16 +2815,22 @@ theorem EuclideanSpace.stdDirs_succ {j : ℕ} (hj : j + 1 ≤ N) :
     congr 1
     omega
 
-/-- `stdDirs N N` is the standard basis in order. -/
+/-- The tuple `EuclideanSpace.stdDirs N N` is the standard basis $(e_0, \dots, e_{N-1})$ of
+$\mathbb{R}^N$ in order. -/
 theorem EuclideanSpace.stdDirs_self (i : Fin N) :
     EuclideanSpace.stdDirs N N i = EuclideanSpace.single i 1 := by
   simp only [EuclideanSpace.stdDirs, Nat.sub_self, zero_add]
   rw [EuclideanSpace.stdVec_of_lt i.2]
 
-/-- **The iterated fundamental theorem of calculus, one direction at a time**: for a smooth
-compactly supported `φ` on `ℝ^N` and `j ≤ N`,
-`|φ x| ≤ ∫_{ℝ^j} |D^j φ (x + ∑ t_i e_{N−j+i}) (e_{N−j}, …, e_{N−1})| dt`, by induction on `j`
-through the line bound `ContDiff.enorm_le_lintegral_fderiv_line` and the Fubini step
+/-- **The iterated fundamental theorem of calculus, one direction at a time.** Let
+$\varphi : \mathbb{R}^N \to \mathbb{R}$ be smooth with compact support, and let
+$x \in \mathbb{R}^N$. For every $j \le N$, with $(d_0, \dots, d_{j-1}) = (e_{N-j}, \dots,
+e_{N-1})$,
+$$|\varphi(x)| \le \int_{\mathbb{R}^j} \Big| D^j \varphi\Big(x + \sum_i t_i d_i\Big)(d_0, \dots,
+  d_{j-1}) \Big| \, dt.$$
+
+The proof is by induction on $j$, through the line bound
+`ContDiff.enorm_le_lintegral_fderiv_line` and the Fubini step
 `MeasureTheory.lintegral_fin_succ_eq`. -/
 theorem ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs {φ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) (x : EuclideanSpace ℝ (Fin N)) :
@@ -2563,15 +2902,21 @@ open scoped BoundedContinuousFunction
 
 variable {N : ℕ}
 
-/-- The product of the norms of the standard basis vectors is one. -/
+/-- The product of the norms of the standard basis vectors $e_0, \dots, e_{N-1}$ of $\mathbb{R}^N$
+is $1$. -/
 theorem EuclideanSpace.prod_norm_stdDirs_self :
     ∏ i : Fin N, ‖EuclideanSpace.stdDirs N N i‖ = 1 := by
   simp [EuclideanSpace.stdDirs_self]
 
-/-- **Remark 13, the bound on smooth functions**: for `φ ∈ C_c^∞(ℝ^N)`,
-`|φ x| ≤ ∫_{ℝ^N} |∂_1 ⋯ ∂_N φ|`, the iterated fundamental theorem of calculus over the
-coordinates (`ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs` at `j = N`, then the change
-of variables `t ↦ x + t` in `ℝ^N`). [brezis2011functional] Chapter 9, Remark 13. -/
+/-- Let $\varphi : \mathbb{R}^N \to \mathbb{R}$ be smooth with compact support. For every
+$x \in \mathbb{R}^N$,
+$$|\varphi(x)| \le \int_{\mathbb{R}^N} |\partial_1 \cdots \partial_N \varphi(y)| \, dy.$$
+This is the bound of Remark 13 of [brezis2011functional], Chapter 9, for smooth functions.
+
+The mixed derivative $\partial_1 \cdots \partial_N \varphi(y)$ is
+$D^N \varphi(y)(e_0, \dots, e_{N-1})$. The proof is
+`ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs` at $j = N$, followed by the change of
+variables $t \mapsto x + t$ in $\mathbb{R}^N$. -/
 theorem ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank {φ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) (x : EuclideanSpace ℝ (Fin N)) :
     ‖φ x‖ₑ ≤ ∫⁻ y, ‖iteratedFDeriv ℝ N φ y (EuclideanSpace.stdDirs N N)‖ₑ := by
@@ -2594,8 +2939,10 @@ theorem ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank {φ : EuclideanSpace 
         lintegral_add_left_eq_self (μ := volume)
           (fun y ↦ ‖iteratedFDeriv ℝ N φ y (EuclideanSpace.stdDirs N N)‖ₑ) x
 
-/-- The `L¹` norm of the mixed component `∂_1 ⋯ ∂_N` of a tensor-valued function is at most the
-`L¹` norm of the tensor. -/
+/-- Let $T$ be a function on $\mathbb{R}^N$ with values in the continuous $N$-linear forms on
+$\mathbb{R}^N$. Then
+$$\int_{\mathbb{R}^N} |T(y)(e_0, \dots, e_{N-1})| \, dy \le \|T\|_1.$$
+-/
 theorem lintegral_enorm_apply_stdDirs_le_eLpNorm_one
     (T : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) [×N]→L[ℝ] ℝ) :
     ∫⁻ y, ‖T y (EuclideanSpace.stdDirs N N)‖ₑ ≤ eLpNorm T 1 volume := by
@@ -2604,13 +2951,16 @@ theorem lintegral_enorm_apply_stdDirs_le_eLpNorm_one
   refine ENNReal.ofReal_le_ofReal ?_
   simpa [EuclideanSpace.prod_norm_stdDirs_self] using (T y).le_opNorm (EuclideanSpace.stdDirs N N)
 
-/-- **Remark 13 (`W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)`)**: every `u ∈ W^{N,1}(ℝ^N)` has a bounded continuous
-representative `ũ` with `‖ũ x‖ ≤ ‖∂_1 ⋯ ∂_N u‖_1 ≤ ‖u‖`. For `φ ∈ C_c^∞`,
-`|φ x| ≤ ∫ |∂_1 ⋯ ∂_N φ|` (`ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank`), so the smooth
-approximants of `u` in `W^{N,1}(ℝ^N)`
-(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`) are uniformly Cauchy; their
-uniform limit is continuous, equals `u` almost everywhere, and inherits the bound.
-[brezis2011functional] Chapter 9, Remark 13. -/
+/-- **The embedding $W^{N,1}(\mathbb{R}^N) \subset L^\infty(\mathbb{R}^N)$.** Every
+$u \in W^{N,1}(\mathbb{R}^N)$ has a continuous representative $\tilde u$ with
+$|\tilde u(x)| \le \|u\|$ for every $x$. This is Remark 13 of [brezis2011functional], Chapter 9.
+
+The proof gives the finer bound $|\tilde u(x)| \le \|\partial_1 \cdots \partial_N u\|_1 \le
+\|u\|$. For $\varphi \in C_c^\infty$, $|\varphi(x)| \le \int |\partial_1 \cdots \partial_N
+\varphi|$ by `ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank`. So the smooth approximants of
+$u$ in $W^{N,1}(\mathbb{R}^N)$ (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`)
+are uniformly Cauchy. Their uniform limit is continuous, equals $u$ almost everywhere, and
+satisfies the bound. -/
 theorem SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one
     (u : SobolevEuclidean N N 1 ⊤) :
     ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧ fn u =ᵐ[volume] ũ ∧ ∀ x, ‖ũ x‖ ≤ ‖u‖ := by
@@ -2772,11 +3122,20 @@ theorem SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one
 
 end Remark13
 
-/-! ### Lemma 9.4: Gagliardo's product lemma in its general form -/
+/-!
+### Gagliardo's lemma in its general form
+
+This is Lemma 9.4 of [brezis2011functional].
+-/
 
 section Gagliardo
 
-/-- **Lemma 9.4 (Gagliardo's lemma), the case `N = 2`**: `∫∫ f₀(x₁) f₁(x₀) = (∫ f₀) (∫ f₁)`. -/
+/-- **Gagliardo's lemma for $N = 2$.** For measurable $f_0, f_1 : \mathbb{R} \to [0, \infty]$,
+$$\int_{\mathbb{R}^2} f_0(x_1) f_1(x_0) \, dx = \int_{\mathbb{R}} f_0 \int_{\mathbb{R}} f_1.$$
+This is the case $N = 2$ of Lemma 9.4 of [brezis2011functional].
+
+Here $x = (x_0, x_1)$, and $f_i$ is applied to $x$ with its $i$-th coordinate omitted,
+`x ∘ i.succAbove`, a function on `Fin 1`. -/
 theorem MeasureTheory.lintegral_prod_comp_succAbove_two
     (f : Fin 2 → (Fin 1 → ℝ) → ℝ≥0∞) (hf : ∀ i, Measurable (f i)) :
     ∫⁻ x, ∏ i, f i (x ∘ i.succAbove) = ∏ i, ∫⁻ y, f i y := by
@@ -2806,14 +3165,23 @@ theorem MeasureTheory.lintegral_prod_comp_succAbove_two
   refine lintegral_congr fun s ↦ ?_
   rw [lintegral_fin_zero]
 
-/-- **Lemma 9.4 (Gagliardo's lemma), the inductive step**, from `N = n + 2` functions of `N − 1`
-variables to `N + 1` functions of `N` variables: fix the first coordinate `s` (Fubini,
-`MeasureTheory.lintegral_fin_succ_eq'`); for fixed `s` the factor `f 0` does not depend on `s`
-and Hölder's inequality with exponents `N` and `N' = N/(N − 1)` separates it from the product of
-the other `N` factors, to which the induction hypothesis applies with the functions
-`f_i(s, ·)^{N'}`; then integrate in `s`, where each `s ↦ ‖f_i(s, ·)‖_{L^N}` lies in `L^N(ℝ)`, by
-the generalized Hölder inequality for `N` factors (`ENNReal.lintegral_prod_norm_pow_le`) and
-Fubini again ([brezis2011functional] §9.3, proof of Lemma 9.4). -/
+/-- **The inductive step of Gagliardo's lemma.** Let $n$ be a natural number, and suppose that
+Gagliardo's lemma holds for $n + 2$ functions of $n + 1$ variables: for all measurable
+$g_i : \mathbb{R}^{n+1} \to [0, \infty]$, $i < n + 2$,
+$$\int_{\mathbb{R}^{n+2}} \prod_i g_i(\tilde x_i) \, dx \le \prod_i
+  \|g_i\|_{L^{n+1}(\mathbb{R}^{n+1})},$$
+where $\tilde x_i$ is $x$ with its $i$-th coordinate omitted. Then the same inequality holds for
+$n + 3$ measurable functions $f_i : \mathbb{R}^{n+2} \to [0, \infty]$, with the norms of
+$L^{n+2}(\mathbb{R}^{n+2})$. This is the induction of the proof of Lemma 9.4 of
+[brezis2011functional].
+
+Write $N = n + 2$ and $N' = N/(N - 1)$. Fix the first coordinate $s$ by Fubini's theorem
+(`MeasureTheory.lintegral_fin_succ_eq'`). For fixed $s$ the factor $f_0$ does not depend on $s$,
+and Hölder's inequality with the exponents $N$ and $N'$ separates it from the product of the
+other $N$ factors. The induction hypothesis applies to these with the functions
+$f_i(s, \cdot)^{N'}$. Then integrate in $s$: each $s \mapsto \|f_i(s, \cdot)\|_{L^N}$ lies in
+$L^N(\mathbb{R})$, and the generalized Hölder inequality for $N$ factors
+(`ENNReal.lintegral_prod_norm_pow_le`) and Fubini's theorem conclude. -/
 theorem MeasureTheory.lintegral_prod_comp_succAbove_le_succ {n : ℕ}
     (ih : ∀ f : Fin (n + 2) → (Fin (n + 1) → ℝ) → ℝ≥0∞, (∀ i, Measurable (f i)) →
       ∫⁻ x, ∏ i, f i (x ∘ i.succAbove)
@@ -2905,16 +3273,20 @@ theorem MeasureTheory.lintegral_prod_comp_succAbove_le_succ {n : ℕ}
     push_cast
     field_simp
 
-/-- **Lemma 9.4 (Gagliardo's lemma), general form**: for `N = n + 2 ≥ 2` and measurable
-`f i : ℝ^{N−1} → ℝ≥0∞`, `i < N`, the function `x ↦ ∏ i, f i x̃_i`, where `x̃_i = x ∘ i.succAbove` is
-`x ∈ ℝ^N` with its `i`-th coordinate omitted, satisfies
-`∫_{ℝ^N} ∏ i, f i x̃_i ≤ ∏ i, ‖f i‖_{L^{N−1}(ℝ^{N−1})}`; in particular it is integrable when every
-`f i ∈ L^{N−1}(ℝ^{N−1})`. The case `N = 2` is Fubini
-(`MeasureTheory.lintegral_prod_comp_succAbove_two`), the induction on `N` is
+/-- **Gagliardo's lemma.** Let $N = n + 2 \ge 2$, and let $f_i : \mathbb{R}^{N-1} \to [0, \infty]$,
+$i < N$, be measurable. For $x \in \mathbb{R}^N$ let $\tilde x_i \in \mathbb{R}^{N-1}$ be $x$
+with its $i$-th coordinate omitted. Then
+$$\int_{\mathbb{R}^N} \prod_i f_i(\tilde x_i) \, dx \le \prod_i
+  \|f_i\|_{L^{N-1}(\mathbb{R}^{N-1})}.$$
+In particular the product is integrable when every $f_i$ lies in $L^{N-1}(\mathbb{R}^{N-1})$.
+This is Lemma 9.4 of [brezis2011functional].
+
+The point $\tilde x_i$ is `x ∘ i.succAbove`. The case $N = 2$ is
+`MeasureTheory.lintegral_prod_comp_succAbove_two`, and the induction on $N$ is
 `MeasureTheory.lintegral_prod_comp_succAbove_le_succ`. Mathlib's
-`MeasureTheory.lintegral_prod_lintegral_pow_le` is the special case
-`f i x̃_i = (∫ f (update x i t) dt)^{1/(N−1)}` for a single `f`, which is all Theorem 9.9 needs.
-[brezis2011functional] §9.3, Lemma 9.4. -/
+`MeasureTheory.lintegral_prod_lintegral_pow_le` is the special case $f_i(\tilde x_i) = (\int
+f(x_1, \dots, t, \dots, x_N) \, dt)^{1/(N-1)}$ for a single $f$, with $t$ in the $i$-th place,
+which is all that Theorem 9.9 needs. -/
 theorem MeasureTheory.lintegral_prod_comp_succAbove_le {n : ℕ}
     (f : Fin (n + 2) → (Fin (n + 1) → ℝ) → ℝ≥0∞) (hf : ∀ i, Measurable (f i)) :
     ∫⁻ x, ∏ i, f i (x ∘ i.succAbove)

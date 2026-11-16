@@ -11,71 +11,87 @@ import Numlib.Topology.Algebra.Polynomial
 /-!
 # Sturm sequences and Givens' bisection method
 
-The eigenvalues of a real symmetric tridiagonal matrix can be located one at a time by bisection,
-because the characteristic polynomials of its leading principal submatrices form a **Sturm
-sequence** whose sign changes count the eigenvalues below any given point
-([quarteroni2000numerical] §5.10.2; Wilkinson, *The Algebraic Eigenvalue Problem*, Ch. 5 §§36–39;
-[golub1989matrix] §8.5.2; [kress1998numerical] §7.4).
+Let $T_n$ be the real symmetric tridiagonal matrix of order $n$ with diagonal $d_0, \dots, d_{n-1}$
+and off-diagonal $b_0, \dots, b_{n-2}$, and let $T_i$ be its leading principal submatrix of order
+$i$. The polynomials $p_i(x) = \det(T_i - x I)$ satisfy the three-term recurrence
+$$p_0 = 1, \qquad p_1 = d_0 - x, \qquad p_{i+2} = (d_{i+1} - x) \, p_{i+1} - b_i^2 \, p_i,$$
+and they form a **Sturm sequence**: if no $b_i$ vanishes, the number of sign changes in
+$p_0(\mu), \dots, p_n(\mu)$ is the number of eigenvalues of $T_n$ that are at most $\mu$. So the
+eigenvalues can be located one at a time by bisection (Givens' method). The presentation follows
+[quarteroni2000numerical], §5.10.2, with (5.65) for the recurrence and Property 5.11 for interlacing
+and the count; the same material is in Wilkinson, *The Algebraic Eigenvalue Problem*, Chapter 5,
+§§36–39, in Golub and Van Loan, *Matrix Computations* (1989), §8.5.2, and in [kress1998numerical],
+§7.4.
+
+The module also proves that strict interlacing holds for an unreduced matrix: the eigenvalues of
+$T_i$ strictly separate those of $T_{i+1}$, so all eigenvalues of $T_n$ are simple. It locates the
+spectrum in a Gershgorin interval, which gives a starting interval for the bisection.
 
 ## Main definitions
 
-* `Matrix.symmTridiagonalOf d b n`: the symmetric tridiagonal matrix of order `n` with diagonal
-  `d 0, …, d (n-1)` and off-diagonal `b 0, …, b (n-2)`, built from `ℕ`-indexed data so that the
-  leading principal submatrix of order `i` is the same construction at `i`
-  (`Matrix.symmTridiagonalOf_submatrix_castSucc`).
-* `Sturm.seq d b`: the Sturm sequence `p_0 = 1`, `p_1 = d_0 - X`,
-  `p_{i+2} = (d_{i+1} - X) p_{i+1} - b_i² p_i` ([quarteroni2000numerical] (5.65)), which is
-  `det (T_i - X)` (`Sturm.seq_eq_det`), that is, `(-1)^i` times the characteristic polynomial of
-  the leading principal submatrix of order `i` (`Sturm.seq_eq_charpoly`).
-* `Sturm.eigenvalues d b n`: the eigenvalues of `T_n` sorted decreasingly and indexed by `Fin n`,
-  the backbone's `Matrix.IsHermitian.sortedEigenvalues`.
-* `Sturm.sign d b μ`, `Sturm.signChanges d b n μ`: the signs of `p_0(μ), …, p_n(μ)` with the
-  convention that a vanishing `p_i(μ)` takes the sign opposite to `p_{i-1}(μ)`, and the number
-  `s(μ)` of sign changes among them.
-* `Sturm.bisectionStep`, `Sturm.bisectionIterate`: Givens' bisection for the `idx`-th largest
-  eigenvalue, driven by `s(μ)`.
+* `Matrix.symmTridiagonalOf`: the symmetric tridiagonal matrix $T_n$ of order $n$ built from
+  sequences $d$ and $b$ indexed by $\mathbb{N}$.
+* `Sturm.IsUnreduced`: the off-diagonal entries $b_0, \dots, b_{n-2}$ of $T_n$ are nonzero.
+* `Sturm.seq`: the Sturm sequence $p_0, p_1, \dots$ of (5.65) of [quarteroni2000numerical].
+* `Sturm.eigenvalues`: the eigenvalues $\lambda_0(T_n) \ge \dots \ge \lambda_{n-1}(T_n)$ of $T_n$,
+  sorted decreasingly.
+* `Sturm.count`: the number $N_n(\mu)$ of eigenvalues of $T_n$ that are at most $\mu$.
+* `Sturm.sign` and `Sturm.signChanges`: the signs attached to $p_0(\mu), \dots, p_n(\mu)$, where a
+  vanishing $p_i(\mu)$ takes the sign opposite to that of $p_{i-1}(\mu)$, and the number $s_n(\mu)$
+  of sign changes among them.
+* `Sturm.bisectionStep` and `Sturm.bisectionIterate`: Givens' bisection for the $j$-th largest
+  eigenvalue, driven by $s_n$.
 
 ## Main results
 
-* `Sturm.eval_ne_zero_or_eval_ne_zero`: for an unreduced matrix consecutive members of the
+* `Sturm.seq_eq_det`: $p_i = \det(T_i - x I)$.
+* `Sturm.eval_ne_zero_or_eval_ne_zero`: for an unreduced matrix, consecutive members of the Sturm
   sequence have no common root.
-* `Sturm.eigenvalues_strictInterlace`: **strict interlacing** ([quarteroni2000numerical]
-  Property 5.11): the eigenvalues of `T_i` strictly separate those of `T_{i+1}`. It is Cauchy's
-  weak interlacing for a principal submatrix (`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`)
-  sharpened by the absence of common roots; `Sturm.eigenvalues_simple` (the eigenvalues of an
-  unreduced matrix are simple) is a corollary.
-* `Sturm.signChanges_eq_countRootsIn`: **the Sturm count** ([quarteroni2000numerical]
-  Property 5.11): `s(μ)` is the number of eigenvalues of `T_n` that are `≤ μ`. The book says
-  "strictly less than `μ`", which is the same off the spectrum; at an eigenvalue its own convention
-  counts `μ` (for `n = 1`, `μ = d_0`, the sequence `1, 0` has one sign change). The proof is the
-  invariant `sign_i(μ) = (-1)^{N_i(μ)}`, `N_i(μ)` the number of eigenvalues of `T_i` at most `μ`:
-  off the roots it is the sign of `∏ (λ_k - μ)`, and at a root of `p_{i+1}` strict interlacing
-  places exactly one more eigenvalue of `T_{i+1}` than of `T_i` below `μ`.
+* `Sturm.eigenvalues_strictInterlace`: strict interlacing, $\lambda_{k+1}(T_{i+1}) < \lambda_k(T_i)
+  < \lambda_k(T_{i+1})$, for an unreduced matrix.
+* `Sturm.eigenvalues_simple`: the eigenvalues of an unreduced $T_n$ are simple.
+* `Sturm.signChanges_eq_count` and `Sturm.signChanges_eq_countRootsIn`: the Sturm count
+  $s_n(\mu) = N_n(\mu)$ for an unreduced $T_n$.
+* `Sturm.spectrum_subset_Icc`: the spectrum of $T_n$ lies in its Gershgorin interval.
+* `Sturm.eigenvalues_mem_bisectionIterate`: Givens' bisection keeps the $j$-th largest eigenvalue in
+  an interval that halves at each step.
 * `Matrix.IsHermitian.eigenvalues_injective_of_isUnreducedUpperHessenberg`: a Hermitian unreduced
-  (tridiagonal) matrix has simple eigenvalues, from the geometric simplicity
-  `Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one`; and
-  `Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm`: its eigenvectors have a
-  nonzero first component (the positivity of the Gauss weights of `Numlib/Krylov/Quadrature`).
-* `Sturm.eigenvalues_mem_bisectionIterate`: Givens' bisection keeps the `idx`-th largest
-  eigenvalue in an interval that halves at each step (`Sturm.bisectionIterate_length`), starting
-  from any interval `(a, b']` with `s(a) ≤ n - idx < s(b')`, which the Gershgorin interval of
-  `Sturm.spectrum_subset_Icc` provides.
+  upper Hessenberg matrix has simple eigenvalues.
+* `Matrix.IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm`: an eigenvector of a real
+  symmetric unreduced tridiagonal matrix has a nonzero first component.
+
+## Proof outline
+
+Strict interlacing is Cauchy's weak interlacing for a principal submatrix
+(`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`), sharpened by the absence of common roots of
+$p_i$ and $p_{i+1}$. The Sturm count rests on the invariant that the sign attached to $p_i(\mu)$ is
+$(-1)^{N_i(\mu)}$. Off the roots of $p_i$ this holds because
+$p_i(\mu) = \prod_k (\lambda_k(T_i) - \mu)$. At a root of $p_{i+1}$, strict interlacing puts exactly
+one more eigenvalue of $T_{i+1}$ than of $T_i$ at or below $\mu$.
 
 ## Implementation notes
 
-*Unreduced* is the hypothesis `Sturm.IsUnreduced b n`, that is `∀ j, j + 1 < n → b j ≠ 0`, on the
-off-diagonal entries that actually occur in `T_n`; a statement about `T_i` and `T_{i+1}` takes it
-at order `i + 1`. Nothing is assumed about the entries `b j` with `j + 1 ≥ n`, which
-`symmTridiagonalOf d b n` does not read. The hypothesis says exactly that
-`symmTridiagonalOf d b n` is an unreduced upper Hessenberg matrix
-(`Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`).
-
-The sorted eigenvalues of Mathlib, `Matrix.IsHermitian.eigenvalues₀`, are indexed by
-`Fin (Fintype.card (Fin i))`; `Sturm.eigenvalues d b i` is `Matrix.IsHermitian.sortedEigenvalues`
-(`Numlib/Eigen/MinMax`), which reindexes them along `Fintype.card_fin` so that the interlacing and
-counting statements read on `Fin i` and `Fin (i + 1)` with `Fin.succ` and `Fin.castSucc`. All
-counting is done through `Finset.card` of index sets of these sorted lists, which
-`Polynomial.countRootsIn` reaches by `Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`.
+* The indices start at $0$, both for the entries $d_i$, $b_i$ and for the sorted eigenvalues
+  $\lambda_k$. The bisection index $j$ of the $j$-th largest eigenvalue starts at $1$, as in Program
+  42 of [quarteroni2000numerical].
+* *Unreduced* is the hypothesis `Sturm.IsUnreduced b n`, that is, $b_j \neq 0$ for $j + 1 < n$, on
+  the off-diagonal entries that occur in $T_n$. A statement about $T_i$ and $T_{i+1}$ takes it at
+  order $i + 1$. Nothing is assumed about the entries $b_j$ with $j + 1 \ge n$, which $T_n$ does not
+  use. The hypothesis says exactly that $T_n$ is an unreduced upper Hessenberg matrix
+  (`Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`).
+* Mathlib's sorted eigenvalues `Matrix.IsHermitian.eigenvalues₀` are indexed by
+  `Fin (Fintype.card (Fin i))`. `Sturm.eigenvalues d b i` is `Matrix.IsHermitian.sortedEigenvalues`
+  of `Numlib.Eigen.MinMax`, which reindexes them along `Fintype.card_fin`, so that the interlacing
+  and counting statements use `Fin i` and `Fin (i + 1)` with `Fin.succ` and `Fin.castSucc`.
+* All counting is done with `Finset.card` of index sets of the sorted eigenvalues.
+  `Polynomial.countRootsIn` is reached through
+  `Matrix.IsHermitian.roots_charpoly_eq_sortedEigenvalues`.
+* [quarteroni2000numerical] states the Sturm count for the eigenvalues strictly less than $\mu$.
+  This agrees with the count here off the spectrum. At an eigenvalue $\mu$, the sign convention of
+  the source counts $\mu$ itself: for $n = 1$ and $\mu = d_0$ the sequence $1, 0$ has one sign
+  change. So the formal statement counts the eigenvalues at most $\mu$.
+* The nonzero first component of an eigenvector of an unreduced tridiagonal matrix is what makes the
+  Gauss weights of `Numlib.Krylov.Quadrature` positive.
 -/
 
 open Polynomial Finset
@@ -84,9 +100,12 @@ namespace Matrix
 
 /-! ### The symmetric tridiagonal matrix of a diagonal and an off-diagonal -/
 
-/-- The symmetric tridiagonal matrix `tridiag(b, d, b)` of order `n`, built from `ℕ`-indexed data:
-`d i` on the diagonal, `b i` at `(i, i + 1)` and `(i + 1, i)`, zero elsewhere. Its leading principal
-submatrix of order `i` is `symmTridiagonalOf d b i`. -/
+/-- The **symmetric tridiagonal matrix** $T_n$ of order $n$ built from sequences
+$d, b : \mathbb{N} \to R$: its entries are
+$$(T_n)_{ij} = \begin{cases} d_i & \text{if } i = j, \\ b_i & \text{if } j = i + 1, \\ b_j &
+  \text{if } i = j + 1, \\ 0 & \text{otherwise}, \end{cases}$$
+for $0 \le i, j < n$. Its leading principal submatrix of order $i$ is $T_i$
+(`Matrix.symmTridiagonalOf_submatrix_castSucc`). -/
 def symmTridiagonalOf {R : Type*} [Zero R] (d b : ℕ → R) (n : ℕ) : Matrix (Fin n) (Fin n) R :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then d i
@@ -96,7 +115,8 @@ def symmTridiagonalOf {R : Type*} [Zero R] (d b : ℕ → R) (n : ℕ) : Matrix 
 
 variable {R : Type*} [Zero R] (d b : ℕ → R)
 
-/-- Entrywise description of `symmTridiagonalOf`. -/
+/-- The entries of $T_n$: $d_i$ on the diagonal, $b_i$ at the positions $(i, i + 1)$ and
+$(i + 1, i)$, and $0$ elsewhere. -/
 theorem symmTridiagonalOf_apply {n : ℕ} (i j : Fin n) :
     symmTridiagonalOf d b n i j =
       if (i : ℕ) = j then d i
@@ -104,15 +124,14 @@ theorem symmTridiagonalOf_apply {n : ℕ} (i j : Fin n) :
       else if (j : ℕ) + 1 = i then b j
       else 0 := rfl
 
-/-- The leading principal submatrix of `symmTridiagonalOf d b (n + 1)` is
-`symmTridiagonalOf d b n`. -/
+/-- The leading principal submatrix of order $n$ of $T_{n+1}$ is $T_n$. -/
 theorem symmTridiagonalOf_submatrix_castSucc (n : ℕ) :
     (symmTridiagonalOf d b (n + 1)).submatrix Fin.castSucc Fin.castSucc
       = symmTridiagonalOf d b n := by
   ext i j
   simp [symmTridiagonalOf_apply]
 
-/-- `symmTridiagonalOf` is tridiagonal. -/
+/-- The matrix $T_n$ is tridiagonal. -/
 theorem isTridiagonal_symmTridiagonalOf (n : ℕ) : (symmTridiagonalOf d b n).IsTridiagonal := by
   intro i j hij
   rw [symmTridiagonalOf_apply]
@@ -125,7 +144,7 @@ theorem isTridiagonal_symmTridiagonalOf (n : ℕ) : (symmTridiagonalOf d b n).Is
   have h3 : (j : ℕ) + 1 ≠ i := by omega
   simp [h1, h2, h3]
 
-/-- `symmTridiagonalOf` is symmetric. -/
+/-- The matrix $T_n$ is symmetric. -/
 theorem isSymm_symmTridiagonalOf (n : ℕ) : (symmTridiagonalOf d b n).IsSymm := by
   ext i j
   simp only [transpose_apply, symmTridiagonalOf_apply]
@@ -138,28 +157,32 @@ theorem isSymm_symmTridiagonalOf (n : ℕ) : (symmTridiagonalOf d b n).IsSymm :=
       simp [h2, h3]
     · simp [h2]
 
-/-- A real `symmTridiagonalOf` is Hermitian. -/
+/-- For real sequences $d$ and $b$, the matrix $T_n$ is Hermitian. -/
 theorem isHermitian_symmTridiagonalOf (d b : ℕ → ℝ) (n : ℕ) :
     (symmTridiagonalOf d b n).IsHermitian :=
   isHermitian_iff_isSymm.mpr (isSymm_symmTridiagonalOf d b n)
 
-/-- The off-diagonal of `symmTridiagonalOf d b n` does not vanish, `b j ≠ 0` for `j + 1 < n`: the
-hypothesis of the Sturm theorems, which is `Matrix.IsUnreducedUpperHessenberg` for
-`symmTridiagonalOf d b n` (`Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`). -/
+/-- The off-diagonal $b$ is **unreduced** at order $n$ if $b_j \neq 0$ for every $j$ with
+$j + 1 < n$. These are the off-diagonal entries of $T_n$, and the condition is the hypothesis of
+the Sturm theorems.
+
+The condition says that $T_n$ is an unreduced upper Hessenberg matrix
+(`Matrix.isUnreducedUpperHessenberg_symmTridiagonalOf_iff`). -/
 def _root_.Sturm.IsUnreduced {R : Type*} [Zero R] (b : ℕ → R) (n : ℕ) : Prop :=
   ∀ j, j + 1 < n → b j ≠ 0
 
-/-- An unreduced off-diagonal stays unreduced when truncated. -/
+/-- If $b$ is unreduced at order $n$ and $m \le n$, then $b$ is unreduced at order $m$. -/
 theorem _root_.Sturm.IsUnreduced.mono {R : Type*} [Zero R] {b : ℕ → R} {m n : ℕ}
     (h : Sturm.IsUnreduced b n) (hmn : m ≤ n) : Sturm.IsUnreduced b m :=
   fun j hj => h j (by omega)
 
-/-- **The Sturm notion of "unreduced" is the Hessenberg one**: `symmTridiagonalOf d b n` is an
-unreduced upper Hessenberg matrix exactly when the off-diagonal entries it reads are nonzero
-(`Sturm.IsUnreduced b n`). It is tridiagonal, hence upper Hessenberg, and its subdiagonal entry
-`(i + 1, i)` is `b i`. So the hypothesis of the Sturm theorems below is
-`Matrix.IsUnreducedUpperHessenberg`, to which the implicit Q theorem and the geometric simplicity
-of the eigenvalues of an unreduced Hessenberg matrix apply. -/
+/-- The matrix $T_n$ is an unreduced upper Hessenberg matrix if and only if $b$ is unreduced at
+order $n$, that is, $b_j \neq 0$ for $j + 1 < n$.
+
+$T_n$ is tridiagonal, hence upper Hessenberg, and its subdiagonal entry at $(i + 1, i)$ is
+$b_i$. So the hypothesis of the Sturm theorems is `Matrix.IsUnreducedUpperHessenberg`, to which
+the implicit Q theorem and the geometric simplicity of the eigenvalues of an unreduced
+Hessenberg matrix apply. -/
 theorem isUnreducedUpperHessenberg_symmTridiagonalOf_iff (n : ℕ) :
     (symmTridiagonalOf d b n).IsUnreducedUpperHessenberg ↔ Sturm.IsUnreduced b n := by
   rw [isUnreducedUpperHessenberg_iff_fin]
@@ -177,8 +200,12 @@ theorem IsUnreducedUpperHessenberg.isTridiagonal_of_isSymm {ι R : Type*} [Linea
     {M : Matrix ι ι R} (hM : M.IsUnreducedUpperHessenberg) (hS : M.IsSymm) : M.IsTridiagonal :=
   fun i j h => h.elim (hM.1 i j) fun hk => by rw [← hS.apply i j]; exact hM.1 j i hk
 
-/-- An eigenvector of a tridiagonal matrix with nonzero superdiagonal has a nonzero first
-component. Row `k` of `M s = θ s` determines `s_{k+1}` from the previous coordinates. -/
+/-- Let $R$ be a commutative ring without zero divisors, and let $M \in R^{n \times n}$ be
+tridiagonal with nonzero superdiagonal entries $M_{i,i+1} \neq 0$ for $i + 1 < n$. If $s \neq 0$
+satisfies $Ms = \theta s$ and $n \ge 1$, then the first component $s_0$ is nonzero.
+
+Row $k$ of $Ms = \theta s$ determines $s_{k+1}$ from the earlier components, so $s_0 = 0$ would
+give $s = 0$. -/
 theorem IsTridiagonal.apply_zero_ne_zero_of_superdiag_ne_zero {R : Type*}
     [CommRing R] [NoZeroDivisors R] {n : ℕ} {M : Matrix (Fin n) (Fin n) R}
     (hT : M.IsTridiagonal)
@@ -213,8 +240,12 @@ theorem IsTridiagonal.apply_zero_ne_zero_of_superdiag_ne_zero {R : Type*}
   funext i
   exact key i i.isLt
 
-/-- The first component of an eigenvector of a real symmetric unreduced tridiagonal matrix
-is nonzero. Symmetry transfers the nonzero subdiagonal to the superdiagonal. -/
+/-- Let $M \in \mathbb{R}^{n \times n}$ be a symmetric unreduced upper Hessenberg matrix (hence
+tridiagonal). If $s \neq 0$ satisfies $Ms = \theta s$ and $n \ge 1$, then the first component
+$s_0$ is nonzero.
+
+Symmetry turns the nonzero subdiagonal into a nonzero superdiagonal, and
+`Matrix.IsTridiagonal.apply_zero_ne_zero_of_superdiag_ne_zero` applies. -/
 theorem IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm {n : ℕ}
     {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsUnreducedUpperHessenberg) (hS : M.IsSymm) {θ : ℝ}
     {s : Fin n → ℝ} (hs : M *ᵥ s = θ • s) (hs0 : s ≠ 0) (h0 : 0 < n) : s ⟨0, h0⟩ ≠ 0 := by
@@ -223,11 +254,15 @@ theorem IsUnreducedUpperHessenberg.apply_zero_ne_zero_of_isSymm {n : ℕ}
   rw [← hS.apply]
   exact (isUnreducedUpperHessenberg_iff_fin.1 hM).2 i hi
 
-/-- **The eigenvalues of a Hermitian unreduced upper Hessenberg matrix are simple** (such a matrix
-is tridiagonal): `Matrix.IsHermitian.eigenvalues` is injective. Two orthonormal eigenvectors for
-one eigenvalue would span a plane inside an eigenspace, which is at most a line
-(`Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one`, [golub2013matrix] Theorem 7.4.4).
--/
+/-- Let $M \in \mathbb{K}^{N \times N}$, over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, be
+Hermitian and unreduced upper Hessenberg (such a matrix is tridiagonal). Then the eigenvalues of
+$M$ are **simple**: the map `Matrix.IsHermitian.eigenvalues` from indices to eigenvalues is
+injective.
+
+Two orthonormal eigenvectors for one eigenvalue would span a plane in an eigenspace, but the
+eigenspaces of an unreduced Hessenberg matrix have dimension at most $1$
+(`Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one`, Theorem 7.4.4 of
+[golub2013matrix]). -/
 theorem IsHermitian.eigenvalues_injective_of_isUnreducedUpperHessenberg {𝕜 : Type*} [RCLike 𝕜]
     {N : ℕ} {M : Matrix (Fin N) (Fin N) 𝕜} (hT : M.IsHermitian)
     (hM : M.IsUnreducedUpperHessenberg) : Function.Injective hT.eigenvalues := by
@@ -267,23 +302,28 @@ variable (d b : ℕ → ℝ)
 
 /-! ### The Sturm sequence -/
 
-/-- **The Sturm sequence** of `symmTridiagonalOf d b`, [quarteroni2000numerical] (5.65),
-`0`-based: `p_0 = 1`, `p_1 = d_0 - X`, `p_{i+2} = (d_{i+1} - X) p_{i+1} - b_i² p_i`. -/
+/-- **The Sturm sequence** of $T_n$, (5.65) of [quarteroni2000numerical]: the real polynomials
+$$p_0 = 1, \qquad p_1 = d_0 - x, \qquad p_{i+2} = (d_{i+1} - x) \, p_{i+1} - b_i^2 \, p_i.$$
+
+The indices start at $0$. By `Sturm.seq_eq_det`, $p_i = \det(T_i - x I)$. -/
 noncomputable def seq : ℕ → ℝ[X]
   | 0 => 1
   | 1 => C (d 0) - X
   | (i + 2) => (C (d (i + 1)) - X) * seq (i + 1) - C (b i) ^ 2 * seq i
 
+/-- The first member of the Sturm sequence is $p_0 = 1$. -/
 @[simp] theorem seq_zero : seq d b 0 = 1 := rfl
 
+/-- The second member of the Sturm sequence is $p_1 = d_0 - x$. -/
 @[simp] theorem seq_one : seq d b 1 = C (d 0) - X := rfl
 
-/-- The three-term recurrence of the Sturm sequence. -/
+/-- The three-term recurrence of the Sturm sequence: $p_{i+2} = (d_{i+1} - x) \, p_{i+1} - b_i^2 \,
+p_i$. -/
 theorem seq_add_two (i : ℕ) :
     seq d b (i + 2) = (C (d (i + 1)) - X) * seq d b (i + 1) - C (b i) ^ 2 * seq d b i := rfl
 
-/-- The characteristic matrix `T_n - X` of `symmTridiagonalOf d b n`, sign convention of the
-Sturm sequence. -/
+/-- The matrix $T_n - x I$ with polynomial entries, with the sign convention of the Sturm sequence.
+-/
 private noncomputable def charMat (n : ℕ) : Matrix (Fin n) (Fin n) ℝ[X] :=
   (Matrix.symmTridiagonalOf d b n).map C - (X : ℝ[X]) • 1
 
@@ -373,14 +413,17 @@ private theorem seq_eq_det_charMat (i : ℕ) : seq d b i = (charMat d b i).det :
     rw [hs1, hs2]
     ring
 
-/-- `p_i = det (T_i - X)`, by Laplace expansion of the tridiagonal determinant along its last row
-and then along the last column of the remaining minor. -/
+/-- For every $i$, the Sturm polynomial $p_i$ is the determinant
+$$p_i = \det(T_i - x I).$$
+
+The proof expands the tridiagonal determinant along its last row, and then the remaining minor
+along its last column. -/
 theorem seq_eq_det (i : ℕ) :
     seq d b i = ((Matrix.symmTridiagonalOf d b i).map C - (X : ℝ[X]) • 1).det :=
   seq_eq_det_charMat d b i
 
-/-- `p_i` is `(-1)^i` times the characteristic polynomial of the leading principal submatrix of
-order `i`. -/
+/-- For every $i$, $p_i = (-1)^i \chi_{T_i}$, where $\chi_{T_i} = \det(x I - T_i)$ is the
+characteristic polynomial of $T_i$. -/
 theorem seq_eq_charpoly (i : ℕ) :
     seq d b i = (-1) ^ i * (Matrix.symmTridiagonalOf d b i).charpoly := by
   have h : charMat d b i = -(Matrix.symmTridiagonalOf d b i).charmatrix := by
@@ -388,27 +431,29 @@ theorem seq_eq_charpoly (i : ℕ) :
     simp [charMat_apply, Matrix.charmatrix_apply, Matrix.diagonal_apply]
   rw [seq_eq_det_charMat, h, Matrix.det_neg, Fintype.card_fin, Matrix.charpoly]
 
-/-- `p_i` has degree `i`. -/
+/-- The Sturm polynomial $p_i$ has degree $i$. -/
 theorem natDegree_seq (i : ℕ) : (seq d b i).natDegree = i := by
   rw [seq_eq_charpoly, natDegree_mul (pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero))
     (Matrix.charpoly_monic _).ne_zero, natDegree_pow, natDegree_neg, natDegree_one, mul_zero,
     zero_add, Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
 
-/-- `p_i` has leading coefficient `(-1)^i`. -/
+/-- The Sturm polynomial $p_i$ has leading coefficient $(-1)^i$. -/
 theorem leadingCoeff_seq (i : ℕ) : (seq d b i).leadingCoeff = (-1) ^ i := by
   rw [seq_eq_charpoly, leadingCoeff_mul, leadingCoeff_pow, leadingCoeff_neg, leadingCoeff_one,
     (Matrix.charpoly_monic _).leadingCoeff, mul_one]
 
-/-- No member of the Sturm sequence is the zero polynomial. -/
+/-- No Sturm polynomial $p_i$ is the zero polynomial. -/
 theorem seq_ne_zero (i : ℕ) : seq d b i ≠ 0 := by
   intro h
   have := leadingCoeff_seq d b i
   rw [h, leadingCoeff_zero] at this
   exact pow_ne_zero i (neg_ne_zero.mpr one_ne_zero) this.symm
 
-/-- **Consecutive members of the Sturm sequence have no common root** when the off-diagonal
-does not vanish: a common root of `p_{i+1}` and `p_{i+2}` is a root of `p_i` by the recurrence,
-and so on down to `p_0 = 1`. -/
+/-- **Consecutive members of the Sturm sequence have no common root.** If $b$ is unreduced at order
+$i + 1$, then for every $\mu \in \mathbb{R}$, $p_i(\mu) \neq 0$ or $p_{i+1}(\mu) \neq 0$.
+
+By the recurrence, a common root of $p_{j+1}$ and $p_{j+2}$ is a root of $p_j$, because
+$b_j \neq 0$. Descending gives a root of $p_0 = 1$, which is impossible. -/
 theorem eval_ne_zero_or_eval_ne_zero (i : ℕ) (hb : IsUnreduced b (i + 1)) (μ : ℝ) :
     (seq d b i).eval μ ≠ 0 ∨ (seq d b (i + 1)).eval μ ≠ 0 := by
   induction i with
@@ -425,9 +470,13 @@ theorem eval_ne_zero_or_eval_ne_zero (i : ℕ) (hb : IsUnreduced b (i + 1)) (μ 
     · exact h h3
     · exact h h1
 
-/-- At a root of `p_{i+1}` the neighbours `p_i` and `p_{i+2}` have opposite signs, since then
-`p_{i+2}(μ) = -b_i² p_i(μ)` with `p_i(μ) ≠ 0`. This is the lemma behind the sign convention for a
-vanishing member. -/
+/-- Let $b$ be unreduced at order $i + 2$. If $p_{i+1}(\mu) = 0$, then $p_i(\mu)$ and $p_{i+2}(\mu)$
+have opposite signs:
+$$p_{i+2}(\mu) \, p_i(\mu) < 0.$$
+
+The recurrence gives $p_{i+2}(\mu) = -b_i^2 \, p_i(\mu)$, and $p_i(\mu) \neq 0$ by
+`Sturm.eval_ne_zero_or_eval_ne_zero`. This lemma justifies the sign convention for a vanishing
+member. -/
 theorem eval_seq_add_two_mul_eval_seq_neg (i : ℕ) (hb : IsUnreduced b (i + 2)) {μ : ℝ}
     (h : (seq d b (i + 1)).eval μ = 0) :
     (seq d b (i + 2)).eval μ * (seq d b i).eval μ < 0 := by
@@ -440,35 +489,36 @@ theorem eval_seq_add_two_mul_eval_seq_neg (i : ℕ) (hb : IsUnreduced b (i + 2))
 
 /-! ### The sorted eigenvalues -/
 
-/-- The eigenvalues of `symmTridiagonalOf d b n`, sorted decreasingly and indexed by `Fin n`:
-the backbone's `Matrix.IsHermitian.sortedEigenvalues`. -/
+/-- The eigenvalues $\lambda_0(T_n) \ge \dots \ge \lambda_{n-1}(T_n)$ of $T_n$, sorted decreasingly
+and indexed from $0$. This is `Matrix.IsHermitian.sortedEigenvalues` of `Numlib.Eigen.MinMax`. -/
 noncomputable def eigenvalues (n : ℕ) : Fin n → ℝ :=
   (Matrix.isHermitian_symmTridiagonalOf d b n).sortedEigenvalues
 
-/-- The sorted eigenvalues, in terms of `Matrix.IsHermitian.sortedEigenvalues` for any proof of
-Hermitianness. -/
+/-- `Sturm.eigenvalues d b n` is `Matrix.IsHermitian.sortedEigenvalues` for any proof that $T_n$ is
+Hermitian. -/
 theorem eigenvalues_eq_sortedEigenvalues {n : ℕ}
     (hT : (Matrix.symmTridiagonalOf d b n).IsHermitian) :
     eigenvalues d b n = hT.sortedEigenvalues :=
   rfl
 
-/-- The sorted eigenvalues, in terms of `Matrix.IsHermitian.eigenvalues₀` for any proof of
-Hermitianness. -/
+/-- The $k$-th sorted eigenvalue $\lambda_k(T_n)$ is the $k$-th entry of Mathlib's sorted
+eigenvalues `Matrix.IsHermitian.eigenvalues₀`, for any proof that $T_n$ is Hermitian. -/
 theorem eigenvalues_eq_eigenvalues₀ {n : ℕ} (hT : (Matrix.symmTridiagonalOf d b n).IsHermitian)
     (k : Fin n) : eigenvalues d b n k = hT.eigenvalues₀ (Fin.cast (Fintype.card_fin n).symm k) :=
   rfl
 
-/-- The sorted eigenvalues decrease. -/
+/-- The sorted eigenvalues decrease: $k \le k'$ implies $\lambda_{k'}(T_n) \le \lambda_k(T_n)$. -/
 theorem antitone_eigenvalues (n : ℕ) : Antitone (eigenvalues d b n) :=
   (Matrix.isHermitian_symmTridiagonalOf d b n).sortedEigenvalues_antitone
 
-/-- The roots of the characteristic polynomial of `T_n` are the sorted eigenvalues. -/
+/-- The roots of the characteristic polynomial of $T_n$, with multiplicity, are the sorted
+eigenvalues $\lambda_0(T_n), \dots, \lambda_{n-1}(T_n)$. -/
 theorem roots_charpoly_eq (n : ℕ) :
     (Matrix.symmTridiagonalOf d b n).charpoly.roots
       = Multiset.map (eigenvalues d b n) univ.val :=
   (Matrix.isHermitian_symmTridiagonalOf d b n).roots_charpoly_eq_sortedEigenvalues
 
-/-- The characteristic polynomial of `T_n` splits as `∏ (X - λ_k)` over the sorted eigenvalues. -/
+/-- The characteristic polynomial of $T_n$ is $\prod_{k < n} (x - \lambda_k(T_n))$. -/
 theorem charpoly_eq_prod (n : ℕ) :
     (Matrix.symmTridiagonalOf d b n).charpoly = ∏ k, (X - C (eigenvalues d b n k)) := by
   rw [Finset.prod_eq_multiset_prod,
@@ -478,7 +528,9 @@ theorem charpoly_eq_prod (n : ℕ) :
   exact (prod_multiset_X_sub_C_of_monic_of_roots_card_eq (Matrix.charpoly_monic _)
     (Matrix.isHermitian_symmTridiagonalOf d b n).splits_charpoly.natDegree_eq_card_roots.symm).symm
 
-/-- `p_n(μ) = ∏ (λ_k - μ)` over the sorted eigenvalues of `T_n`. -/
+/-- For every $\mu \in \mathbb{R}$,
+$$p_n(\mu) = \prod_{k < n} (\lambda_k(T_n) - \mu).$$
+-/
 theorem eval_seq_eq_prod (n : ℕ) (μ : ℝ) :
     (seq d b n).eval μ = ∏ k, (eigenvalues d b n k - μ) := by
   rw [seq_eq_charpoly, charpoly_eq_prod, eval_mul, eval_pow, eval_neg, eval_one, eval_prod]
@@ -486,12 +538,12 @@ theorem eval_seq_eq_prod (n : ℕ) (μ : ℝ) :
   rw [show ∏ k, (eigenvalues d b n k - μ) = ∏ k, -(μ - eigenvalues d b n k) by
     simp only [neg_sub], Finset.prod_neg, Finset.card_univ, Fintype.card_fin]
 
-/-- The sorted eigenvalues are roots of `p_n`. -/
+/-- Every sorted eigenvalue $\lambda_k(T_n)$ is a root of $p_n$. -/
 theorem eval_seq_eigenvalues (n : ℕ) (k : Fin n) : (seq d b n).eval (eigenvalues d b n k) = 0 := by
   rw [eval_seq_eq_prod]
   exact Finset.prod_eq_zero (Finset.mem_univ k) (sub_self _)
 
-/-- Roots of `p_n` are sorted eigenvalues. -/
+/-- Every root $\mu$ of $p_n$ is a sorted eigenvalue: $\mu = \lambda_k(T_n)$ for some $k$. -/
 theorem exists_eigenvalues_eq_of_eval_eq_zero {n : ℕ} {μ : ℝ} (h : (seq d b n).eval μ = 0) :
     ∃ k, eigenvalues d b n k = μ := by
   rw [eval_seq_eq_prod, Finset.prod_eq_zero_iff] at h
@@ -500,8 +552,10 @@ theorem exists_eigenvalues_eq_of_eval_eq_zero {n : ℕ} {μ : ℝ} (h : (seq d b
 
 /-! ### Interlacing -/
 
-/-- **Weak (Cauchy) interlacing** for the leading principal submatrix:
-`λ_{k+1}(T_{i+1}) ≤ λ_k(T_i) ≤ λ_k(T_{i+1})`. -/
+/-- **Weak (Cauchy) interlacing** for the leading principal submatrix. For every $i$ and
+$0 \le k < i$,
+$$\lambda_{k+1}(T_{i+1}) \le \lambda_k(T_i) \le \lambda_k(T_{i+1}).$$
+-/
 theorem eigenvalues_interlace (i : ℕ) (k : Fin i) :
     eigenvalues d b (i + 1) k.succ ≤ eigenvalues d b i k ∧
       eigenvalues d b i k ≤ eigenvalues d b (i + 1) k.castSucc := by
@@ -515,9 +569,12 @@ theorem eigenvalues_interlace (i : ℕ) (k : Fin i) :
     (Matrix.isHermitian_symmTridiagonalOf d b i)] at h
   exact h
 
-/-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11), lower half: for an
-unreduced matrix, `λ_{k+1}(T_{i+1}) < λ_k(T_i)`. Equality would make `λ_k(T_i)` a common root of
-`p_i` and `p_{i+1}`. -/
+/-- **Strict interlacing**, lower half (Property 5.11 of [quarteroni2000numerical]). If $b$ is
+unreduced at order $i + 1$, then for $0 \le k < i$,
+$$\lambda_{k+1}(T_{i+1}) < \lambda_k(T_i).$$
+
+Equality would make $\lambda_k(T_i)$ a common root of $p_i$ and $p_{i+1}$, which
+`Sturm.eval_ne_zero_or_eval_ne_zero` excludes. -/
 theorem eigenvalues_succ_lt (i : ℕ) (hb : IsUnreduced b (i + 1)) (k : Fin i) :
     eigenvalues d b (i + 1) k.succ < eigenvalues d b i k := by
   refine lt_of_le_of_ne (eigenvalues_interlace d b i k).1 fun h => ?_
@@ -528,8 +585,10 @@ theorem eigenvalues_succ_lt (i : ℕ) (hb : IsUnreduced b (i + 1)) (k : Fin i) :
   · exact h' h2
   · exact h' h1
 
-/-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11), upper half: for an
-unreduced matrix, `λ_k(T_i) < λ_k(T_{i+1})`. -/
+/-- **Strict interlacing**, upper half (Property 5.11 of [quarteroni2000numerical]). If $b$ is
+unreduced at order $i + 1$, then for $0 \le k < i$,
+$$\lambda_k(T_i) < \lambda_k(T_{i+1}).$$
+-/
 theorem eigenvalues_lt_castSucc (i : ℕ) (hb : IsUnreduced b (i + 1)) (k : Fin i) :
     eigenvalues d b i k < eigenvalues d b (i + 1) k.castSucc := by
   refine lt_of_le_of_ne (eigenvalues_interlace d b i k).2 fun h => ?_
@@ -540,9 +599,13 @@ theorem eigenvalues_lt_castSucc (i : ℕ) (hb : IsUnreduced b (i + 1)) (k : Fin 
   · exact h' h2
   · exact h' h1
 
-/-- **Strict interlacing** ([quarteroni2000numerical] Property 5.11) in the form of Mathlib's
-sorted `Matrix.IsHermitian.eigenvalues₀`: for an unreduced matrix the eigenvalues of `T_i`
-strictly separate those of `T_{i+1}`, `λ_{k+1}(T_{i+1}) < λ_k(T_i) < λ_k(T_{i+1})`. -/
+/-- **Strict interlacing** (Property 5.11 of [quarteroni2000numerical]). If $b$ is unreduced at
+order $i + 1$, then the eigenvalues of $T_i$ strictly separate those of $T_{i+1}$: for
+$0 \le k < i$,
+$$\lambda_{k+1}(T_{i+1}) < \lambda_k(T_i) < \lambda_k(T_{i+1}).$$
+
+This form uses Mathlib's sorted eigenvalues `Matrix.IsHermitian.eigenvalues₀`, for any proofs
+that $T_i$ and $T_{i+1}$ are Hermitian. -/
 theorem eigenvalues_strictInterlace (i : ℕ) (hb : IsUnreduced b (i + 1))
     (hT : (Matrix.symmTridiagonalOf d b (i + 1)).IsHermitian)
     (hT' : (Matrix.symmTridiagonalOf d b i).IsHermitian) (k : Fin i) :
@@ -553,8 +616,8 @@ theorem eigenvalues_strictInterlace (i : ℕ) (hb : IsUnreduced b (i + 1))
   rw [eigenvalues_eq_eigenvalues₀ d b hT, eigenvalues_eq_eigenvalues₀ d b hT'] at h1 h2
   exact ⟨h1, h2⟩
 
-/-- The eigenvalues of an unreduced symmetric tridiagonal matrix are **simple**: the sorted list
-strictly decreases. -/
+/-- If $b$ is unreduced at order $n$, then the sorted eigenvalues of $T_n$ strictly decrease:
+$\lambda_0(T_n) > \dots > \lambda_{n-1}(T_n)$. So the eigenvalues are simple. -/
 theorem strictAnti_eigenvalues (n : ℕ) (hb : IsUnreduced b n) :
     StrictAnti (eigenvalues d b n) := by
   cases n with
@@ -564,8 +627,9 @@ theorem strictAnti_eigenvalues (n : ℕ) (hb : IsUnreduced b n) :
     intro k
     exact (eigenvalues_succ_lt d b n hb k).trans (eigenvalues_lt_castSucc d b n hb k)
 
-/-- **The eigenvalues of an unreduced symmetric tridiagonal matrix are simple**: the roots of its
-characteristic polynomial have no repetition ([quarteroni2000numerical] Property 5.11). -/
+/-- **The eigenvalues of an unreduced symmetric tridiagonal matrix are simple** (Property 5.11 of
+[quarteroni2000numerical]). If $b$ is unreduced at order $n$, then the roots of the
+characteristic polynomial of $T_n$ have no repetition. -/
 theorem eigenvalues_simple (n : ℕ) (hb : IsUnreduced b n) :
     (Matrix.symmTridiagonalOf d b n).charpoly.roots.Nodup := by
   rw [roots_charpoly_eq]
@@ -573,37 +637,40 @@ theorem eigenvalues_simple (n : ℕ) (hb : IsUnreduced b n) :
 
 /-! ### The Sturm count -/
 
-/-- `N_n(μ)`: the number of eigenvalues of `T_n` that are at most `μ`, counted through the sorted
-list `Sturm.eigenvalues d b n`. -/
+/-- The number $N_n(\mu)$ of eigenvalues of $T_n$ that are at most $\mu$, counted with multiplicity:
+the number of indices $k < n$ with $\lambda_k(T_n) \le \mu$. -/
 noncomputable def count (n : ℕ) (μ : ℝ) : ℕ :=
   (univ.filter fun k => eigenvalues d b n k ≤ μ).card
 
-/-- The count is the number of roots of the characteristic polynomial in `(-∞, μ]`. -/
+/-- $N_n(\mu)$ is the number of roots of the characteristic polynomial of $T_n$ in $(-\infty, \mu]$,
+counted with multiplicity. -/
 theorem countRootsIn_Iic_eq_count (n : ℕ) (μ : ℝ) :
     (Matrix.symmTridiagonalOf d b n).charpoly.countRootsIn (Set.Iic μ) = count d b n μ := by
   classical
   rw [countRootsIn, roots_charpoly_eq, Multiset.filter_map, Multiset.card_map, count]
   congr 1
 
-/-- The count as a sum of indicators over the sorted eigenvalues. -/
+/-- $N_n(\mu) = \sum_{k < n} [\lambda_k(T_n) \le \mu]$, where $[\cdot]$ is $1$ for a true condition
+and $0$ otherwise. -/
 theorem count_eq_sum (n : ℕ) (μ : ℝ) :
     count d b n μ = ∑ k, if eigenvalues d b n k ≤ μ then 1 else 0 :=
   Finset.card_filter _ _
 
+/-- For the empty matrix, $N_0(\mu) = 0$. -/
 @[simp] theorem count_zero (μ : ℝ) : count d b 0 μ = 0 := by simp [count]
 
-/-- At most `n` eigenvalues. -/
+/-- $N_n(\mu) \le n$. -/
 theorem count_le (n : ℕ) (μ : ℝ) : count d b n μ ≤ n :=
   (Finset.card_filter_le _ _).trans (by simp)
 
-/-- The count is monotone in `μ`. -/
+/-- $N_n(\mu)$ is monotone in $\mu$. -/
 theorem count_mono (n : ℕ) : Monotone (count d b n) := fun μ ν hμν =>
   Finset.card_le_card fun k hk => by
     simp only [mem_filter, mem_univ, true_and] at hk ⊢
     exact hk.trans hμν
 
-/-- The count at the `k`-th sorted eigenvalue of an unreduced matrix is `n - k`: the eigenvalues
-at most `λ_k` are `λ_k, …, λ_{n-1}`. -/
+/-- If $b$ is unreduced at order $n$, then $N_n(\lambda_k(T_n)) = n - k$ for $0 \le k < n$: the
+eigenvalues at most $\lambda_k(T_n)$ are $\lambda_k(T_n), \dots, \lambda_{n-1}(T_n)$. -/
 theorem count_eigenvalues {n : ℕ} (hb : IsUnreduced b n) (k : Fin n) :
     count d b n (eigenvalues d b n k) = n - k := by
   have : (univ.filter fun j => eigenvalues d b n j ≤ eigenvalues d b n k) = Finset.Ici k := by
@@ -611,8 +678,9 @@ theorem count_eigenvalues {n : ℕ} (hb : IsUnreduced b n) (k : Fin n) :
     simp [(strictAnti_eigenvalues d b n hb).le_iff_ge]
   rw [count, this, Fin.card_Ici]
 
-/-- The count of `T_i` at the `k`-th sorted eigenvalue of `T_{i+1}` is `i - k`: by strict
-interlacing the eigenvalues of `T_i` at most `λ_k(T_{i+1})` are `θ_k, …, θ_{i-1}`. -/
+/-- If $b$ is unreduced at order $i + 1$, then $N_i(\lambda_k(T_{i+1})) = i - k$ for
+$0 \le k \le i$. By strict interlacing, the eigenvalues of $T_i$ at most $\lambda_k(T_{i+1})$
+are $\lambda_k(T_i), \dots, \lambda_{i-1}(T_i)$. -/
 theorem count_eigenvalues_succ {i : ℕ} (hb : IsUnreduced b (i + 1)) (k : Fin (i + 1)) :
     count d b i (eigenvalues d b (i + 1) k) = i - k := by
   have hset : (univ.filter fun j : Fin i => eigenvalues d b i j ≤ eigenvalues d b (i + 1) k)
@@ -645,7 +713,8 @@ theorem count_eigenvalues_succ {i : ℕ} (hb : IsUnreduced b (i + 1)) (k : Fin (
     rw [this, Finset.card_empty]
     omega
 
-/-- Passing from `T_i` to `T_{i+1}` never loses an eigenvalue below `μ`: weak interlacing. -/
+/-- $N_i(\mu) \le N_{i+1}(\mu)$: passing from $T_i$ to $T_{i+1}$ loses no eigenvalue at or below
+$\mu$. This follows from weak interlacing. -/
 theorem count_le_count_succ (i : ℕ) (μ : ℝ) : count d b i μ ≤ count d b (i + 1) μ := by
   rw [count_eq_sum, count_eq_sum, Fin.sum_univ_succ]
   refine le_add_of_nonneg_of_le (by positivity) (Finset.sum_le_sum fun k _ => ?_)
@@ -655,7 +724,8 @@ theorem count_le_count_succ (i : ℕ) (μ : ℝ) : count d b i μ ≤ count d b 
   · exact zero_le_one
   · exact le_rfl
 
-/-- Passing from `T_i` to `T_{i+1}` adds at most one eigenvalue below `μ`: weak interlacing. -/
+/-- $N_{i+1}(\mu) \le N_i(\mu) + 1$: passing from $T_i$ to $T_{i+1}$ adds at most one eigenvalue at
+or below $\mu$. This follows from weak interlacing. -/
 theorem count_succ_le (i : ℕ) (μ : ℝ) : count d b (i + 1) μ ≤ count d b i μ + 1 := by
   rw [count_eq_sum, count_eq_sum, Fin.sum_univ_castSucc]
   refine add_le_add (Finset.sum_le_sum fun k _ => ?_) (by split_ifs <;> simp)
@@ -667,31 +737,36 @@ theorem count_succ_le (i : ℕ) (μ : ℝ) : count d b (i + 1) μ ≤ count d b 
 
 /-! ### The sign convention and the sign changes -/
 
-/-- The sign attached to `p_i(μ)` by the convention of [quarteroni2000numerical] Property 5.11:
-the sign of `p_i(μ)` when it is nonzero, and the opposite of the sign attached to `p_{i-1}(μ)`
-when it vanishes. -/
+/-- The sign $\sigma_i(\mu) \in \{1, -1\}$ attached to $p_i(\mu)$ by the convention of Property 5.11
+of [quarteroni2000numerical]: $\sigma_0(\mu) = 1$, and for $i \ge 1$, $\sigma_i(\mu)$ is the
+sign of $p_i(\mu)$ when $p_i(\mu) \neq 0$, and $-\sigma_{i-1}(\mu)$ when $p_i(\mu) = 0$. -/
 noncomputable def sign (μ : ℝ) : ℕ → ℝ
   | 0 => 1
   | (i + 1) =>
     if (seq d b (i + 1)).eval μ = 0 then -sign μ i
     else if 0 < (seq d b (i + 1)).eval μ then 1 else -1
 
+/-- The sign attached to $p_0(\mu) = 1$ is $\sigma_0(\mu) = 1$. -/
 @[simp] theorem sign_zero (μ : ℝ) : sign d b μ 0 = 1 := rfl
 
-/-- The sign convention, unfolded one step. -/
+/-- The sign convention for $i \ge 1$: $\sigma_i(\mu) = -\sigma_{i-1}(\mu)$ if $p_i(\mu) = 0$,
+$\sigma_i(\mu) = 1$ if $p_i(\mu) > 0$, and $\sigma_i(\mu) = -1$ if $p_i(\mu) < 0$. -/
 theorem sign_succ (μ : ℝ) (i : ℕ) :
     sign d b μ (i + 1) =
       if (seq d b (i + 1)).eval μ = 0 then -sign d b μ i
       else if 0 < (seq d b (i + 1)).eval μ then 1 else -1 := rfl
 
-/-- The number `s(μ)` of sign changes in `p_0(μ), …, p_n(μ)`, with the convention `Sturm.sign`
-for vanishing members. -/
+/-- The number $s_n(\mu)$ of sign changes in $p_0(\mu), \dots, p_n(\mu)$: the number of $i < n$ with
+$\sigma_{i+1}(\mu) \neq \sigma_i(\mu)$, where the signs $\sigma_i$ follow the convention of
+`Sturm.sign` for vanishing members. -/
 noncomputable def signChanges (n : ℕ) (μ : ℝ) : ℕ :=
   ((range n).filter fun i => sign d b μ (i + 1) ≠ sign d b μ i).card
 
+/-- For the empty matrix, $s_0(\mu) = 0$. -/
 @[simp] theorem signChanges_zero (μ : ℝ) : signChanges d b 0 μ = 0 := by simp [signChanges]
 
-/-- Extending the sequence by one member adds one sign change or none. -/
+/-- $s_{n+1}(\mu) = s_n(\mu) + 1$ if $\sigma_{n+1}(\mu) \neq \sigma_n(\mu)$, and
+$s_{n+1}(\mu) = s_n(\mu)$ otherwise. -/
 theorem signChanges_succ (n : ℕ) (μ : ℝ) :
     signChanges d b (n + 1) μ =
       signChanges d b n μ + if sign d b μ (n + 1) ≠ sign d b μ n then 1 else 0 := by
@@ -700,8 +775,10 @@ theorem signChanges_succ (n : ℕ) (μ : ℝ) :
   · rw [Finset.card_insert_of_notMem (by simp)]
   · rfl
 
-/-- Off the spectrum of `T_n`, `p_n(μ)` is positive exactly when an even number of eigenvalues lie
-below `μ`: `p_n(μ) = ∏ (λ_k - μ)` has one negative factor per eigenvalue below `μ`. -/
+/-- If $\mu$ is not an eigenvalue of $T_n$, then $p_n(\mu) > 0$ if and only if $N_n(\mu)$ is even.
+
+The product $p_n(\mu) = \prod_k (\lambda_k(T_n) - \mu)$ has one negative factor for each
+eigenvalue below $\mu$. -/
 theorem eval_seq_pos_iff {n : ℕ} {μ : ℝ} (hμ : ∀ k, eigenvalues d b n k ≠ μ) :
     0 < (seq d b n).eval μ ↔ Even (count d b n μ) := by
   have hfac : ∀ k, eigenvalues d b n k - μ
@@ -722,10 +799,12 @@ theorem eval_seq_pos_iff {n : ℕ} {μ : ℝ} (hμ : ∀ k, eigenvalues d b n k 
     exact ⟨fun h' => absurd (h'.trans hpos) (lt_irrefl _),
       fun h' => absurd h' (Nat.not_even_iff_odd.mpr h)⟩
 
-/-- **The sign invariant**: with the convention for vanishing members, the sign attached to
-`p_i(μ)` is `(-1)^{N_i(μ)}`, `N_i(μ)` the number of eigenvalues of `T_i` at most `μ`. Off the
-roots this is `Sturm.eval_seq_pos_iff`; at a root of `p_{i+1}` strict interlacing places exactly
-one more eigenvalue of `T_{i+1}` than of `T_i` at or below `μ`. -/
+/-- **The sign invariant.** If $b$ is unreduced at order $i$, then the sign attached to $p_i(\mu)$
+is
+$$\sigma_i(\mu) = (-1)^{N_i(\mu)}.$$
+
+Off the roots of $p_i$ this is `Sturm.eval_seq_pos_iff`. At a root of $p_{i+1}$, strict
+interlacing puts exactly one more eigenvalue of $T_{i+1}$ than of $T_i$ at or below $\mu$. -/
 theorem sign_eq_neg_one_pow (μ : ℝ) (i : ℕ) (hb : IsUnreduced b i) :
     sign d b μ i = (-1) ^ count d b i μ := by
   induction i with
@@ -746,11 +825,17 @@ theorem sign_eq_neg_one_pow (μ : ℝ) (i : ℕ) (hb : IsUnreduced b i) :
       · rw [ite_eq_right fun h' => Nat.not_even_iff_odd.mpr h ((eval_seq_pos_iff d b hμ).mp h'),
           h.neg_one_pow]
 
-/-- **The Sturm count** ([quarteroni2000numerical] Property 5.11; Wilkinson Ch. 5 §37;
-[golub1989matrix] Theorem 8.5.1): for an unreduced symmetric tridiagonal matrix, the number of sign
-changes in `p_0(μ), …, p_n(μ)` — with a vanishing member taking the sign opposite to its
-predecessor — is the number of eigenvalues of `T_n` that are at most `μ`. The book says "strictly
-less than `μ`", which agrees off the spectrum; at an eigenvalue its own convention counts `μ`. -/
+/-- **The Sturm count** (Property 5.11 of [quarteroni2000numerical]). If $b$ is unreduced at order
+$n$, then for every $\mu \in \mathbb{R}$ the number of sign changes in
+$p_0(\mu), \dots, p_n(\mu)$, where a vanishing member takes the sign opposite to that of its
+predecessor, is the number of eigenvalues of $T_n$ that are at most $\mu$:
+$$s_n(\mu) = N_n(\mu).$$
+The same theorem is in Wilkinson, *The Algebraic Eigenvalue Problem*, Chapter 5, §37, and in
+Golub and Van Loan, *Matrix Computations* (1989), Theorem 8.5.1.
+
+The source counts the eigenvalues strictly less than $\mu$. The two counts agree off the
+spectrum. At an eigenvalue, the sign convention of the source counts $\mu$ itself: for $n = 1$
+and $\mu = d_0$, the sequence $1, 0$ has one sign change. -/
 theorem signChanges_eq_count (n : ℕ) (hb : IsUnreduced b n) (μ : ℝ) :
     signChanges d b n μ = count d b n μ := by
   induction n with
@@ -770,15 +855,15 @@ theorem signChanges_eq_count (n : ℕ) (hb : IsUnreduced b n) (μ : ℝ) :
     · have heq : count d b (n + 1) μ = count d b n μ := le_antisymm h h1
       rw [heq, ite_eq_right (by simp), add_zero]
 
-/-- **The Sturm count** in terms of `Polynomial.countRootsIn`: `s(μ)` is the number of roots of
-the characteristic polynomial of `T_n` in `(-∞, μ]`, with multiplicity (all simple, by
-`Sturm.eigenvalues_simple`). -/
+/-- **The Sturm count** with `Polynomial.countRootsIn`. If $b$ is unreduced at order $n$, then
+$s_n(\mu)$ is the number of roots of the characteristic polynomial of $T_n$ in $(-\infty, \mu]$,
+counted with multiplicity. All these roots are simple, by `Sturm.eigenvalues_simple`. -/
 theorem signChanges_eq_countRootsIn (n : ℕ) (hb : IsUnreduced b n) (μ : ℝ) :
     signChanges d b n μ =
       (Matrix.symmTridiagonalOf d b n).charpoly.countRootsIn (Set.Iic μ) := by
   rw [signChanges_eq_count d b n hb, countRootsIn_Iic_eq_count]
 
-/-- The Sturm count is monotone in `μ`. -/
+/-- If $b$ is unreduced at order $n$, then $s_n(\mu)$ is monotone in $\mu$. -/
 theorem signChanges_monotone (n : ℕ) (hb : IsUnreduced b n) :
     Monotone (signChanges d b n) := by
   intro μ ν h
@@ -787,12 +872,13 @@ theorem signChanges_monotone (n : ℕ) (hb : IsUnreduced b n) :
 
 /-! ### The Gershgorin interval -/
 
-/-- The Gershgorin radius of row `i` of `symmTridiagonalOf d b n`: `|b (i-1)| + |b i|`, with the
-boundary terms dropped in the first and the last row. -/
+/-- The Gershgorin radius $r_i$ of row $i$ of $T_n$: $r_i = |b_{i-1}| + |b_i|$, where the term
+$|b_{i-1}|$ is omitted in the first row and the term $|b_i|$ is omitted in the last row. -/
 noncomputable def gershgorinRadius (n : ℕ) (i : Fin n) : ℝ :=
   (if 0 < (i : ℕ) then |b (i - 1)| else 0) + if (i : ℕ) + 1 < n then |b i| else 0
 
-/-- The off-diagonal row sum of `symmTridiagonalOf d b n` is its Gershgorin radius. -/
+/-- The sum of the absolute values of the off-diagonal entries in row $i$ of $T_n$ is the Gershgorin
+radius $r_i$. -/
 theorem sum_erase_abs_eq_gershgorinRadius (n : ℕ) (i : Fin n) :
     ∑ j ∈ univ.erase i, |Matrix.symmTridiagonalOf d b n i j| = gershgorinRadius b n i := by
   have hsplit : ∀ j ∈ univ.erase i, |Matrix.symmTridiagonalOf d b n i j|
@@ -837,9 +923,10 @@ theorem sum_erase_abs_eq_gershgorinRadius (n : ℕ) (i : Fin n) :
       have : ¬ ((i : ℕ) + 1 = j) := fun h => hi (h ▸ j.isLt)
       simp [this]
 
-/-- **Gershgorin for the tridiagonal matrix** (the interval of Program 44 in
-[quarteroni2000numerical] §5.10.2): every real eigenvalue lies within the Gershgorin radius of some
-diagonal entry. -/
+/-- **Gershgorin's theorem for $T_n$.** Every real eigenvalue $\mu$ of $T_n$ satisfies
+$|\mu - d_i| \le r_i$ for some $i < n$.
+
+This gives the interval of Program 44 in §5.10.2 of [quarteroni2000numerical]. -/
 theorem exists_abs_sub_le_of_mem_spectrum {n : ℕ} {μ : ℝ}
     (hμ : μ ∈ spectrum ℝ (Matrix.symmTridiagonalOf d b n)) :
     ∃ i : Fin n, |μ - d i| ≤ gershgorinRadius b n i := by
@@ -852,21 +939,27 @@ theorem exists_abs_sub_le_of_mem_spectrum {n : ℕ} {μ : ℝ}
   have hd : Matrix.symmTridiagonalOf d b n i i = d i := by simp [Matrix.symmTridiagonalOf_apply]
   rwa [hd] at hi
 
-/-- `p_n` and the characteristic polynomial of `T_n` have the same roots. -/
+/-- For every $\mu \in \mathbb{R}$, $p_n(\mu) = 0$ if and only if $\mu$ is a root of the
+characteristic polynomial of $T_n$. -/
 theorem eval_seq_eq_zero_iff (n : ℕ) (μ : ℝ) :
     (seq d b n).eval μ = 0 ↔ (Matrix.symmTridiagonalOf d b n).charpoly.eval μ = 0 := by
   rw [seq_eq_charpoly, eval_mul, eval_pow, eval_neg, eval_one, mul_eq_zero,
     or_iff_right (pow_ne_zero _ (by norm_num))]
 
-/-- The sorted eigenvalues are eigenvalues. -/
+/-- Every sorted eigenvalue $\lambda_k(T_n)$ is in the real spectrum of $T_n$. -/
 theorem eigenvalues_mem_spectrum (n : ℕ) (k : Fin n) :
     eigenvalues d b n k ∈ spectrum ℝ (Matrix.symmTridiagonalOf d b n) := by
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly, IsRoot.def, ← eval_seq_eq_zero_iff]
   exact eval_seq_eigenvalues d b n k
 
-/-- **The Gershgorin interval encloses the spectrum** ([quarteroni2000numerical] §5.10.2, the
-`[α, β]` of Givens' method): every real eigenvalue of `symmTridiagonalOf d b n` lies in
-`[⨅ (d i - r i), ⨆ (d i + r i)]` with `r` the Gershgorin radii. -/
+/-- **The Gershgorin interval encloses the spectrum.** Every real eigenvalue of $T_n$ lies in the
+interval
+$$\left[ \min_{i < n} (d_i - r_i), \ \max_{i < n} (d_i + r_i) \right],$$
+where $r_i$ are the Gershgorin radii. This is the interval $[\alpha, \beta]$ of Givens' method
+in §5.10.2 of [quarteroni2000numerical].
+
+The minimum and the maximum are `iInf` and `iSup` over `Fin n`. For $n = 0$ they take the junk
+value $0$, but the spectrum is then empty. -/
 theorem spectrum_subset_Icc (n : ℕ) :
     spectrum ℝ (Matrix.symmTridiagonalOf d b n) ⊆
       Set.Icc (⨅ i : Fin n, (d i - gershgorinRadius b n i))
@@ -880,20 +973,23 @@ theorem spectrum_subset_Icc (n : ℕ) :
     le_ciSup (f := fun j : Fin n => d j + gershgorinRadius b n j) (Set.finite_range _).bddAbove i
   constructor <;> linarith [hi.1, hi.2]
 
-/-- The sorted eigenvalues lie in the Gershgorin interval. -/
+/-- Every sorted eigenvalue $\lambda_k(T_n)$ lies in the Gershgorin interval
+$[\min_i (d_i - r_i), \max_i (d_i + r_i)]$. -/
 theorem eigenvalues_mem_Icc (n : ℕ) (k : Fin n) :
     eigenvalues d b n k ∈ Set.Icc (⨅ i : Fin n, (d i - gershgorinRadius b n i))
       (⨆ i : Fin n, (d i + gershgorinRadius b n i)) :=
   spectrum_subset_Icc d b n (eigenvalues_mem_spectrum d b n k)
 
-/-- Below the Gershgorin interval no eigenvalue is counted. -/
+/-- If $a < \min_i (d_i - r_i)$, then $N_n(a) = 0$: no eigenvalue lies at or below a point below the
+Gershgorin interval. -/
 theorem count_eq_zero_of_lt {n : ℕ} {a : ℝ}
     (ha : a < ⨅ i : Fin n, (d i - gershgorinRadius b n i)) : count d b n a = 0 := by
   rw [count, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   intro k _
   exact not_le.mpr (lt_of_lt_of_le ha (eigenvalues_mem_Icc d b n k).1)
 
-/-- At or above the Gershgorin interval every eigenvalue is counted. -/
+/-- If $\max_i (d_i + r_i) \le b'$, then $N_n(b') = n$: every eigenvalue lies at or below a point at
+or above the Gershgorin interval. -/
 theorem count_eq_of_le {n : ℕ} {b' : ℝ}
     (hb' : (⨆ i : Fin n, (d i + gershgorinRadius b n i)) ≤ b') : count d b n b' = n := by
   rw [count, Finset.filter_true_of_mem fun k _ => (eigenvalues_mem_Icc d b n k).2.trans hb',
@@ -901,34 +997,41 @@ theorem count_eq_of_le {n : ℕ} {b' : ℝ}
 
 /-! ### Givens' bisection -/
 
-/-- One step of **Givens' bisection** for the `idx`-th largest eigenvalue (`1`-based, as in
-[quarteroni2000numerical] Program 42): with `c` the midpoint of `(a, b')`, keep `(a, c)` if more
-than `n - idx` eigenvalues are at most `c`, and `(c, b')` otherwise. -/
+/-- One step of **Givens' bisection** for the $j$-th largest eigenvalue of $T_n$, with $j$ counted
+from $1$ as in Program 42 of [quarteroni2000numerical]. Let $c = (a + b') / 2$ be the midpoint
+of the interval $(a, b')$. The step keeps $(a, c)$ if $n - j < s_n(c)$, and $(c, b')$ otherwise.
+
+For an unreduced matrix, $s_n(c)$ is the number of eigenvalues at most $c$
+(`Sturm.signChanges_eq_count`). So the step keeps $(a, c)$ when more than $n - j$ eigenvalues
+are at most $c$. -/
 noncomputable def bisectionStep (n idx : ℕ) (ab : ℝ × ℝ) : ℝ × ℝ :=
   if n - idx < signChanges d b n ((ab.1 + ab.2) / 2) then (ab.1, (ab.1 + ab.2) / 2)
   else ((ab.1 + ab.2) / 2, ab.2)
 
-/-- `r` steps of Givens' bisection from the interval `ab`. -/
+/-- The interval after $r$ steps of Givens' bisection from the interval $(a, b')$. -/
 noncomputable def bisectionIterate (n idx : ℕ) (ab : ℝ × ℝ) : ℕ → ℝ × ℝ
   | 0 => ab
   | (r + 1) => bisectionStep d b n idx (bisectionIterate n idx ab r)
 
+/-- After $0$ steps, Givens' bisection gives the starting interval. -/
 @[simp] theorem bisectionIterate_zero (n idx : ℕ) (ab : ℝ × ℝ) :
     bisectionIterate d b n idx ab 0 = ab := rfl
 
-/-- One more bisection step. -/
+/-- Step $r + 1$ of Givens' bisection is one bisection step applied to the interval after $r$ steps.
+-/
 theorem bisectionIterate_succ (n idx : ℕ) (ab : ℝ × ℝ) (r : ℕ) :
     bisectionIterate d b n idx ab (r + 1)
       = bisectionStep d b n idx (bisectionIterate d b n idx ab r) :=
   rfl
 
-/-- Each bisection step halves the interval. -/
+/-- A bisection step halves the length of the interval: from $(a, b')$ to an interval of length
+$(b' - a) / 2$. -/
 theorem bisectionStep_length (n idx : ℕ) (ab : ℝ × ℝ) :
     (bisectionStep d b n idx ab).2 - (bisectionStep d b n idx ab).1 = (ab.2 - ab.1) / 2 := by
   rw [bisectionStep]
   split_ifs <;> simp only <;> ring
 
-/-- After `r` steps the interval has length `(b' - a) / 2 ^ r`. -/
+/-- After $r$ bisection steps from $(a, b')$, the interval has length $(b' - a) / 2^r$. -/
 theorem bisectionIterate_length (n idx : ℕ) (ab : ℝ × ℝ) (r : ℕ) :
     (bisectionIterate d b n idx ab r).2 - (bisectionIterate d b n idx ab r).1
       = (ab.2 - ab.1) / 2 ^ r := by
@@ -936,7 +1039,8 @@ theorem bisectionIterate_length (n idx : ℕ) (ab : ℝ × ℝ) (r : ℕ) :
   | zero => simp
   | succ r ih => rw [bisectionIterate_succ, bisectionStep_length, ih, pow_succ, div_div]
 
-/-- The bracketing invariant `s(a) ≤ n - idx < s(b')` is preserved by a bisection step. -/
+/-- A bisection step preserves the bracketing condition $s_n(a) \le n - j < s_n(b')$ on the end
+points $a$ and $b'$ of the interval. -/
 theorem bisectionStep_invariant (n idx : ℕ) {ab : ℝ × ℝ}
     (h : signChanges d b n ab.1 ≤ n - idx ∧ n - idx < signChanges d b n ab.2) :
     signChanges d b n (bisectionStep d b n idx ab).1 ≤ n - idx ∧
@@ -946,7 +1050,8 @@ theorem bisectionStep_invariant (n idx : ℕ) {ab : ℝ × ℝ}
   · exact ⟨h.1, hc⟩
   · exact ⟨not_lt.mp hc, h.2⟩
 
-/-- The bracketing invariant holds along the whole iteration. -/
+/-- If the starting interval $(a, b')$ satisfies $s_n(a) \le n - j < s_n(b')$, then the interval
+after $r$ bisection steps satisfies the same condition, for every $r$. -/
 theorem bisectionIterate_invariant (n idx : ℕ) {ab : ℝ × ℝ}
     (h : signChanges d b n ab.1 ≤ n - idx ∧ n - idx < signChanges d b n ab.2) (r : ℕ) :
     signChanges d b n (bisectionIterate d b n idx ab r).1 ≤ n - idx ∧
@@ -955,8 +1060,12 @@ theorem bisectionIterate_invariant (n idx : ℕ) {ab : ℝ × ℝ}
   | zero => exact h
   | succ r ih => exact bisectionStep_invariant d b n idx ih
 
-/-- The `idx`-th largest eigenvalue lies in `(a, b']` exactly when at most `n - idx` eigenvalues
-are at most `a` and more than `n - idx` are at most `b'`. -/
+/-- Let $b$ be unreduced at order $n$, let $1 \le j \le n$, and let $a, b' \in \mathbb{R}$. If at
+most $n - j$ eigenvalues of $T_n$ are at most $a$, and more than $n - j$ eigenvalues are at most
+$b'$, that is, $N_n(a) \le n - j < N_n(b')$, then the $j$-th largest eigenvalue lies in
+$(a, b']$:
+$$a < \lambda_{j-1}(T_n) \le b'.$$
+-/
 theorem eigenvalues_mem_Ioc_of_count {n idx : ℕ} (hb : IsUnreduced b n) (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) {a b' : ℝ} (ha : count d b n a ≤ n - idx) (hb' : n - idx < count d b n b') :
     eigenvalues d b n ⟨idx - 1, by omega⟩ ∈ Set.Ioc a b' := by
@@ -985,11 +1094,14 @@ theorem eigenvalues_mem_Ioc_of_count {n idx : ℕ} (hb : IsUnreduced b n) (hidx 
     rw [count] at hb'
     omega
 
-/-- **Givens' bisection converges** ([quarteroni2000numerical] §5.10.2): for an unreduced matrix,
-`1 ≤ idx ≤ n`, and a starting interval `(a, b']` with `s(a) ≤ n - idx < s(b')`, the `idx`-th largest
-eigenvalue lies in the `r`-th bisection interval for every `r`, whose length is `(b' - a) / 2^r`
-(`Sturm.bisectionIterate_length`); the midpoint is therefore within `(b' - a) / 2^(r+1)` of it. The
-Gershgorin interval supplies a starting bracket (`Sturm.signChanges_gershgorin`). -/
+/-- **Givens' bisection converges** (§5.10.2 of [quarteroni2000numerical]). Let $b$ be unreduced at
+order $n$, let $1 \le j \le n$, and let the starting interval $(a, b')$ satisfy
+$s_n(a) \le n - j < s_n(b')$. Then for every $r$, the $j$-th largest eigenvalue
+$\lambda_{j-1}(T_n)$ lies in the half-open interval $(a_r, b'_r]$ given by $r$ bisection steps.
+
+The interval has length $(b' - a) / 2^r$ (`Sturm.bisectionIterate_length`), so its midpoint is
+within $(b' - a) / 2^{r+1}$ of the eigenvalue. The Gershgorin interval gives a starting interval
+(`Sturm.signChanges_gershgorin`). -/
 theorem eigenvalues_mem_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n)
     (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) {ab : ℝ × ℝ}
@@ -1000,8 +1112,10 @@ theorem eigenvalues_mem_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n)
   rw [signChanges_eq_count d b n hb, signChanges_eq_count d b n hb] at hinv
   exact eigenvalues_mem_Ioc_of_count d b hb hidx hidxn hinv.1 hinv.2
 
-/-- `Sturm.eigenvalues_mem_bisectionIterate` for Mathlib's sorted `Matrix.IsHermitian.eigenvalues₀`:
-the `idx`-th largest eigenvalue `hT.eigenvalues₀ ⟨idx - 1, _⟩` stays in the bisection interval. -/
+/-- **Givens' bisection converges**, for Mathlib's sorted eigenvalues. Under the hypotheses of
+`Sturm.eigenvalues_mem_bisectionIterate`, the $j$-th largest eigenvalue, the entry $j - 1$ of
+`Matrix.IsHermitian.eigenvalues₀`, lies in the interval $(a_r, b'_r]$ given by $r$ bisection
+steps, for every $r$. -/
 theorem eigenvalues₀_mem_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n)
     (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) (hT : (Matrix.symmTridiagonalOf d b n).IsHermitian) {ab : ℝ × ℝ}
@@ -1010,14 +1124,16 @@ theorem eigenvalues₀_mem_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n)
       Set.Ioc (bisectionIterate d b n idx ab r).1 (bisectionIterate d b n idx ab r).2 :=
   eigenvalues_mem_bisectionIterate d b hb hidx hidxn h r
 
-/-- **Givens' bisection from a lower bound of the spectrum keeps the eigenvalue in the closed
-interval** ([quarteroni2000numerical] §5.10.2): for an unreduced matrix, `1 ≤ idx ≤ n`, and a
-starting interval `(a, b')` whose left end `a` is at most every eigenvalue and whose right end has
-`n - idx < s(b')`, the `idx`-th largest eigenvalue lies in the *closed* `r`-th bisection interval
-for every `r`. When `s(a) ≤ n - idx` this is `Sturm.eigenvalues_mem_bisectionIterate`; otherwise
-`a` is itself the smallest eigenvalue, `idx = n`, and the left endpoint never moves — the case in
-which the half-open bracket of `Sturm.eigenvalues_mem_bisectionIterate` fails, as it does for the
-Gershgorin interval when its left end is an eigenvalue. -/
+/-- **Givens' bisection from a lower bound of the spectrum** (§5.10.2 of [quarteroni2000numerical]).
+Let $b$ be unreduced at order $n$, let $1 \le j \le n$, and let the starting interval $(a, b')$
+satisfy $a \le \lambda_k(T_n)$ for every $k$ and $n - j < s_n(b')$. Then for every $r$, the
+$j$-th largest eigenvalue $\lambda_{j-1}(T_n)$ lies in the closed interval $[a_r, b'_r]$ given
+by $r$ bisection steps.
+
+When $s_n(a) \le n - j$ this is `Sturm.eigenvalues_mem_bisectionIterate`. Otherwise $a$ is the
+smallest eigenvalue, $j = n$, and the left end point never moves. In this case the half-open
+interval of `Sturm.eigenvalues_mem_bisectionIterate` does not contain the eigenvalue; this
+happens for the Gershgorin interval when its left end is an eigenvalue. -/
 theorem eigenvalues_mem_Icc_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n) (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n) {ab : ℝ × ℝ} (ha : ∀ k, ab.1 ≤ eigenvalues d b n k)
     (hb' : n - idx < signChanges d b n ab.2) (r : ℕ) :
@@ -1072,8 +1188,12 @@ theorem eigenvalues_mem_Icc_bisectionIterate {n idx : ℕ} (hb : IsUnreduced b n
   rw [hlast, (hleft r).1]
   exact ⟨le_rfl, (hleft r).2⟩
 
-/-- The Gershgorin interval brackets every eigenvalue: a point `a` below it and a point `b'` at or
-above it satisfy `s(a) = 0 ≤ n - idx < n = s(b')` for `1 ≤ idx ≤ n`. -/
+/-- Let $b$ be unreduced at order $n$ and let $1 \le j \le n$. If $a$ is below the Gershgorin
+interval and $b'$ is at or above it, that is, $a < \min_i (d_i - r_i)$ and
+$\max_i (d_i + r_i) \le b'$, then
+$$s_n(a) \le n - j < s_n(b').$$
+In fact $s_n(a) = 0$ and $s_n(b') = n$. So these end points give a starting interval for Givens'
+bisection. -/
 theorem signChanges_gershgorin {n idx : ℕ} (hb : IsUnreduced b n) (hidx : 1 ≤ idx)
     (hidxn : idx ≤ n)
     {a b' : ℝ} (ha : a < ⨅ i : Fin n, (d i - gershgorinRadius b n i))

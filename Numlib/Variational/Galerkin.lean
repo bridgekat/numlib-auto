@@ -11,80 +11,141 @@ import Numlib.Variational.LaxMilgram
 /-!
 # Galerkin and Petrov–Galerkin methods for variational problems
 
-* `IsGalerkinSolution a ℓ K u`: `u ∈ K` and `a u v = ℓ v` for all `v ∈ K` ([han2009theoretical]
-  (9.1.4)); bridge to the operator specification `IsGalerkin (toOperator a) (rieszRep ℓ) 0 K u` of
-  `Numlib.Projection.Basic`, and to the stiffness-matrix system (9.1.5).
-* Céa's lemma `‖u - u_N‖ ≤ (M / c) inf_{v ∈ K} ‖u - v‖` ([han2009theoretical] Prop 9.1.3, their
-  inequality (9.1.11)), the Hermitian sharpening `√(M / c)` (from the energy-norm optimality of
-  `u_N` remarked on just after that proposition, with the energy functional (9.1.7) and the
-  equivalent Ritz problem (9.1.8)), and convergence for monotone dense families
-  ([han2009theoretical] Cor 9.1.4).
-* `IsPetrovGalerkinSolution a ℓ K L u` for two-space forms, Babuška's theorem `‖u - u_N‖ ≤ (1 + M /
-  α_N) inf ‖u - v‖` under the discrete inf–sup condition ([han2009theoretical] Thm 9.2.1), and the
-  convergence corollary it yields ([han2009theoretical] Cor 9.2.3).
-* The Petrov–Galerkin projector `IsPetrovGalerkinSolution.projection` (`P_N : u ↦ u_N`, a bounded
-  idempotent with range `K` and `‖P_N‖ ≤ M / α_N`) and the Xu–Zikatanov sharpening `‖u - u_N‖ ≤ (M /
-  α_N) inf ‖u - v‖` of Babuška's bound it yields through Kato's identity `‖1 - P‖ = ‖P‖`
-  ([han2009theoretical] Rem 9.2.2).
-* Strang's first lemma for the generalized Galerkin method on an abstract normed space `W`
-  ([han2009theoretical] Thm 9.3.1).
-* The Aubin–Nitsche duality argument `norm_map_sq_le_of_dual` and its uniform form
-  `norm_map_le_of_dual_approx`, which bound the Galerkin error in a norm *weaker* than the one the
-  form is coercive in ([han2009theoretical] Thm 10.4.3, Cor 10.4.4).
-* Céa's lemma and Strang's first lemma in a *seminorm* `q`, relative to a subspace `W` on which the
-  form is bounded and coercive for `q` (`seminorm_sub_le_of_galerkin_orthogonal`,
-  `seminorm_sub_le_of_generalizedGalerkin`).  These carry no topology and no completeness, and they
-  are what the `H¹`-seminorm estimates of [quarteroni2000numerical] Thm 12.3 and Thm 12.4 need: on
-  `H¹(a, b)` the elliptic form is bounded and coercive for `|·|_{H¹}` only on the subspace
-  `H¹₀(a, b)`, so a statement quantifying boundedness over the whole space would not apply.
+Let $a$ be a bounded sesquilinear form on an inner product space $V$, let $\ell$ be a bounded
+functional, and let $u^*$ solve $a(u^*, v) = \ell(v)$ for all $v \in V$. The **Galerkin solution**
+on a subspace $K$ is the $u_N \in K$ with $a(u_N, v) = \ell(v)$ for all $v \in K$
+([han2009theoretical], (9.1.4)). In matrix form, this is a linear system in the stiffness matrix
+$A_{ij} = a(\varphi_j, \varphi_i)$ of a basis $\varphi$ of $K$ ((9.1.5)). If $a$ is bounded with
+constant $M$ and coercive with constant $c > 0$, **Céa's lemma** gives $\|u^* - u_N\| \le (M / c)
+\inf_{v \in K} \|u^* - v\|$ (Proposition 9.1.3, inequality (9.1.11)). If $a$ is also Hermitian,
+$u_N$ is the best approximation of $u^*$ from $K$ in the energy norm, and the constant improves to
+$\sqrt{M / c}$. Galerkin solutions on a monotone family of subspaces with dense union converge to
+$u^*$ (Corollary 9.1.4).
+
+The **Petrov–Galerkin method** for a form on $U \times V$ takes its solution in a trial space
+$K \subseteq U$ and tests with a test space $L \subseteq V$ ((9.2.5)). Under the discrete inf–sup
+condition with constant $\alpha_N > 0$ and $\dim K = \dim L$, the solution exists, is unique and
+satisfies Babuška's bound $\|u^* - u_N\| \le (1 + M / \alpha_N) \|u^* - w\|$ for $w \in K$ (Theorem
+9.2.1), and the solutions converge (Corollary 9.2.3). The map $u \mapsto u_N$ is a bounded
+idempotent operator $P_N$ with range $K$ and $\|P_N\| \le M / \alpha_N$. With Kato's identity
+$\|1 - P\| = \|P\|$, this gives the Xu–Zikatanov bound $\|u^* - u_N\| \le (M / \alpha_N) \inf_{w \in
+K} \|u^* - w\|$ (Remark 9.2.2). The module also proves Strang's first lemma for the generalized
+Galerkin method (Theorem 9.3.1), the Aubin–Nitsche duality argument, which bounds the Galerkin error
+in a norm weaker than the norm of coercivity (Theorem 10.4.3 and Corollary 10.4.4), and versions of
+Céa's lemma and Strang's first lemma in a seminorm.
+
+## Main definitions
+
+* `IsGalerkinSolution`: the Galerkin problem on a subspace $K$.
+* `IsPetrovGalerkinSolution`: the Petrov–Galerkin problem with trial space $K$ and test space $L$.
+* `SesqForm.gramMatrix`: the stiffness matrix $A_{ij} = a(\varphi_j, \varphi_i)$ of a finite family
+  $\varphi$.
+* `IsPetrovGalerkinSolution.DiscreteInfSup`: the discrete inf–sup condition.
+* `IsPetrovGalerkinSolution.projection`: the Petrov–Galerkin projector $P_N$.
+* `IsGeneralizedGalerkinSolution`: the generalized Galerkin problem with an approximate form and an
+  approximate functional.
+
+## Main results
+
+* `IsGalerkinSolution.existsUnique`: the Galerkin problem for a coercive form on a complete subspace
+  has exactly one solution.
+* `IsGalerkinSolution.norm_sub_le`, `IsGalerkinSolution.norm_sub_le_infDist`: Céa's lemma.
+* `IsGalerkinSolution.energyNorm_sub_le`, `IsGalerkinSolution.norm_sub_le_sqrt`: for a Hermitian
+  form, the Galerkin solution is optimal in the energy norm, and Céa's constant improves to
+  $\sqrt{M / c}$.
+* `IsGalerkinSolution.iff_mulVec`, `IsGalerkinSolution.iff_gramMatrix_mulVec`: the Galerkin problem
+  is a linear system in the stiffness matrix.
+* `SesqForm.gramMatrix_posDef`: the stiffness matrix of a symmetric coercive real form in a linearly
+  independent family is positive definite.
+* `IsGalerkinSolution.tendsto`, `IsPetrovGalerkinSolution.tendsto`: convergence for a monotone
+  family of trial spaces with dense union.
+* `IsPetrovGalerkinSolution.existsUnique`, `IsPetrovGalerkinSolution.norm_sub_le`: Babuška's
+  theorem.
+* `IsPetrovGalerkinSolution.norm_projection_le`,
+  `IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`: the bound on the Petrov–Galerkin projector
+  and the Xu–Zikatanov bound.
+* `strang_first`: Strang's first lemma.
+* `norm_map_sq_le_of_dual`, `norm_map_le_of_dual_approx`: the Aubin–Nitsche estimate.
+* `seminorm_sub_le_of_galerkin_orthogonal`, `seminorm_sub_le_of_generalizedGalerkin`: Céa's lemma
+  and Strang's first lemma in a seminorm.
+
+## Implementation notes
+
+* `IsGalerkinSolution a ℓ K u` and `IsPetrovGalerkinSolution a ℓ K K u` are the same proposition.
+  `IsGalerkinSolution.iff_isGalerkin` relates the Galerkin problem for the form to the operator
+  specification `IsGalerkin` of `Numlib.Projection.Basic`, with the operator `SesqForm.toOperator a`
+  and the right-hand side `SesqForm.rieszRep ℓ`.
+* The exact solution $u^*$ is a hypothesis `hstar : ∀ v, a ustar v = ℓ v`, not a definition. The
+  quasi-optimality bounds are stated for every $v \in K$, and also against the distance
+  `Metric.infDist`.
+* Several bounds assume $M \ge 0$ or $\delta \ge 0$. In degenerate cases, such as a zero trial
+  space, the other hypotheses do not imply these signs, and the bounds are false without them.
+  `IsPetrovGalerkinSolution.norm_sub_le` and `strang_first` give counterexamples.
+* The seminorm versions need no topology, no completeness and no inner product. They are the form of
+  the estimates that the $H^1$-seminorm bounds of Theorems 12.3 and 12.4 of
+  [quarteroni2000numerical] use: on $H^1(a, b)$ the elliptic form is bounded and coercive for the
+  seminorm $|\cdot|_{H^1}$ only on the subspace $H^1_0(a, b)$, so a hypothesis of boundedness on the
+  whole space would not apply.
 -/
 
 open scoped InnerProductSpace
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
 
-/-- The Galerkin problem: `u ∈ K`, `a u v = ℓ v` for all `v ∈ K` ([han2009theoretical], (9.1.4)).
-The trial space and the test space are the same subspace `K`. -/
+/-- The **Galerkin problem** on a subspace $K$ ([han2009theoretical], (9.1.4)): a vector $u$ is a
+Galerkin solution for the form $a$ and the functional $\ell$ if $u \in K$ and
+$a(u, v) = \ell(v)$ for all $v \in K$.
+
+The trial space and the test space are the same subspace $K$. -/
 def IsGalerkinSolution (a : SesqForm 𝕜 V) (ℓ : V →L[𝕜] 𝕜) (K : Submodule 𝕜 V) (u : V) : Prop :=
   u ∈ K ∧ ∀ v ∈ K, a u v = ℓ v
 
-/-- The Petrov–Galerkin problem: `u ∈ K`, `a u v = ℓ v` for all `v ∈ L` ([han2009theoretical],
-(9.2.5)).  Here the trial space `K` and the test space `L` are allowed to differ, and may even live
-in different spaces. -/
+/-- The **Petrov–Galerkin problem** ([han2009theoretical], (9.2.5)): for a form $a$ on $U \times V$,
+a functional $\ell$ on $V$, a trial space $K \subseteq U$ and a test space $L \subseteq V$, a
+vector $u$ is a Petrov–Galerkin solution if $u \in K$ and $a(u, v) = \ell(v)$ for all $v \in L$.
+
+The trial space and the test space can differ, and they can lie in different spaces. -/
 def IsPetrovGalerkinSolution {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U]
     (a : SesqForm₂ 𝕜 U V) (ℓ : V →L[𝕜] 𝕜) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V) (u : U) :
     Prop :=
   u ∈ K ∧ ∀ v ∈ L, a u v = ℓ v
 
-/-- The Galerkin method is the Petrov–Galerkin method with the test space equal to the trial space,
-so every Petrov–Galerkin result specializes to it.  The two definitions are the same proposition,
-not merely equivalent ones. -/
+/-- A vector $u$ is a Galerkin solution on $K$ if and only if it is a Petrov–Galerkin solution with
+trial space $K$ and test space $K$, for $a$ as a form on $V \times V$.
+
+So every result on the Petrov–Galerkin method applies to the Galerkin method. The two
+definitions are the same proposition. -/
 theorem isGalerkinSolution_iff_isPetrovGalerkinSolution (a : SesqForm 𝕜 V) (ℓ : V →L[𝕜] 𝕜)
     (K : Submodule 𝕜 V) (u : V) :
     IsGalerkinSolution a ℓ K u ↔ IsPetrovGalerkinSolution (a : SesqForm₂ 𝕜 V V) ℓ K K u :=
   Iff.rfl
 
-/-- The restriction of a two-space bounded form to a pair of subspaces. -/
+/-- The restriction of a form on $U \times V$ to a pair of subspaces $K \subseteq U$ and
+$L \subseteq V$. -/
 private noncomputable def SesqForm₂.restrict {U : Type*} [NormedAddCommGroup U]
     [InnerProductSpace 𝕜 U] (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V) :
     SesqForm₂ 𝕜 K L :=
   ((a.comp K.subtypeL).flip.comp L.subtypeL).flip
 
-/-! ### Quasi-optimality, in the abstract
+/-!
+### Quasi-optimality in a normed space
 
-Céa's lemma, Babuška's lemma and the Xu–Zikatanov bound all say the same thing: the error of the
+Céa's lemma, Babuška's lemma and the Xu–Zikatanov bound have the same form: the error of the
 discrete solution is at most a constant times the distance from the exact solution to any element of
-the trial space.  The two consequences that every one of them needs — the same bound against the
-*infimum*, and convergence along a monotone family with dense union — depend on nothing but that
-shape, so they are proved once here on a bare normed space. -/
+the trial space. Two consequences of this form are needed for each of them: the same bound with the
+infimum over the trial space, and convergence along a monotone family of trial spaces with dense
+union. They depend only on this form, so they are proved once here in a normed space.
+-/
 
 section QuasiOptimal
 
 variable {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- A pointwise quasi-optimality bound `‖u* - u‖ ≤ C ‖u* - w‖`, valid for every `w` in the trial
-space, gives the same bound against the distance from `u*` to that space.  No sign hypothesis on `C`
-is needed: testing at `w = u` makes a negative constant force `u = u*`. -/
+/-- Let $X$ be a normed space, let $K$ be a subspace, let $C \in \mathbb{R}$, and let $u^* \in X$
+and $u \in K$. If $\|u^* - u\| \le C \|u^* - w\|$ for every $w \in K$, then
+$$\|u^* - u\| \le C \operatorname{dist}(u^*, K).$$
+
+No sign hypothesis on $C$ is needed: if $C < 0$, the test $w = u$ gives $u = u^*$. -/
 theorem norm_sub_le_mul_infDist {K : Submodule 𝕜 X} {C : ℝ} {ustar u : X} (hu : u ∈ K)
     (h : ∀ w ∈ K, ‖ustar - u‖ ≤ C * ‖ustar - w‖) :
     ‖ustar - u‖ ≤ C * Metric.infDist ustar (K : Set X) := by
@@ -100,9 +161,11 @@ theorem norm_sub_le_mul_infDist {K : Submodule 𝕜 X} {C : ℝ} {ustar u : X} (
     rw [div_le_iff₀' hC, dist_eq_norm]
     exact h w hw
 
-/-- Distances to a monotone family of subspaces with dense union tend to zero.  This is the
-approximation-theoretic half shared by [han2009theoretical], Cor 9.1.4 and Cor 9.2.3; combined with
-a quasi-optimality bound it gives convergence of the discrete solutions. -/
+/-- Let $(K_n)$ be a monotone sequence of subspaces of a normed space $X$ whose union is dense in
+$X$. Then $\operatorname{dist}(u, K_n) \to 0$ as $n \to \infty$ for every $u \in X$.
+
+This is the part on approximation that Corollaries 9.1.4 and 9.2.3 of [han2009theoretical]
+share. Together with a quasi-optimality bound, it gives convergence of the discrete solutions. -/
 theorem tendsto_infDist_of_monotone_dense {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set X))) (u : X) :
     Filter.Tendsto (fun n => Metric.infDist u (K n : Set X)) Filter.atTop (nhds 0) := by
@@ -116,10 +179,13 @@ theorem tendsto_infDist_of_monotone_dense {K : ℕ → Submodule 𝕜 X} (hmono 
   rw [Real.dist_eq, sub_zero, abs_of_nonneg Metric.infDist_nonneg]
   linarith
 
-/-- Quasi-optimality with one constant for the whole family, plus a monotone family of trial spaces
-with dense union, gives convergence of the discrete solutions.  This is the common core of
-[han2009theoretical], Cor 9.1.4 and Cor 9.2.3: the approximation error tends to zero by
-`tendsto_infDist_of_monotone_dense`, and quasi-optimality transports that to the error itself. -/
+/-- Let $(K_n)$ be a monotone sequence of subspaces of a normed space $X$ whose union is dense, let
+$C \in \mathbb{R}$, let $u^* \in X$, and let $u_n \in K_n$ satisfy
+$\|u^* - u_n\| \le C \|u^* - w\|$ for every $n$ and every $w \in K_n$. Then $u_n \to u^*$.
+
+This is the common core of Corollaries 9.1.4 and 9.2.3 of [han2009theoretical]: the
+approximation error tends to zero by `tendsto_infDist_of_monotone_dense`, and the
+quasi-optimality bound transfers this to the error. -/
 theorem tendsto_of_forall_norm_sub_le {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set X))) {C : ℝ} {uN : ℕ → X} {ustar : X}
     (hmem : ∀ n, uN n ∈ K n) (h : ∀ n, ∀ w ∈ K n, ‖ustar - uN n‖ ≤ C * ‖ustar - w‖) :
@@ -137,8 +203,12 @@ namespace IsGalerkinSolution
 
 variable {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜} {K : Submodule 𝕜 V} {u : V}
 
-/-- Bridge to the operator specification `IsGalerkin` of `Numlib.Projection.Basic`:
-Galerkin for the form is Galerkin for `A = toOperator a`, `b = rieszRep ℓ`, `x₀ = 0`. -/
+/-- On a Hilbert space $V$, a vector $u$ is a Galerkin solution on $K$ for the form $a$ and the
+functional $\ell$ if and only if $u \in K$ and $f - Au \perp K$, where $A$ is the operator of
+$a$ and $f$ is the Riesz representative of $\ell$.
+
+The right side is the operator specification `IsGalerkin` of `Numlib.Projection.Basic` with the
+initial guess $x_0 = 0$. -/
 theorem iff_isGalerkin [CompleteSpace V] :
     IsGalerkinSolution a ℓ K u ↔
       IsGalerkin (SesqForm.toOperator a : V →ₗ[𝕜] V) (SesqForm.rieszRep ℓ) 0 K u := by
@@ -154,9 +224,11 @@ theorem iff_isGalerkin [CompleteSpace V] :
       SesqForm.inner_toOperator, sub_eq_zero] at hz
     exact hz.symm
 
-/-- Existence and uniqueness on a complete subspace for coercive `a`: the restriction of `a` to `K`
-is still bounded and coercive with the same constant, so Lax–Milgram applies on `K`
-([han2009theoretical], §9.1). -/
+/-- Let $a$ be coercive with a constant $c > 0$, and let $K$ be a complete subspace. Then the
+Galerkin problem on $K$ has exactly one solution.
+
+The restriction of $a$ to $K$ is bounded and coercive with the same constant, so the Lax–Milgram
+theorem applies on $K$ ([han2009theoretical], §9.1). -/
 theorem existsUnique {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) [CompleteSpace K] :
     ∃! u, IsGalerkinSolution a ℓ K u := by
   have hcoer : SesqForm.IsCoerciveWith
@@ -167,21 +239,26 @@ theorem existsUnique {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) [CompleteS
   rintro y ⟨hyK, hy⟩
   exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z => hy (z : V) z.2)
 
-/-- Galerkin orthogonality: `a (u - u_N) v = 0` for `v ∈ K` when `u` is the exact solution. -/
+/-- **Galerkin orthogonality.** Let $u$ be a Galerkin solution on $K$, and let $u^*$ satisfy
+$a(u^*, v) = \ell(v)$ for all $v \in V$. Then $a(u^* - u, v) = 0$ for every $v \in K$. -/
 theorem apply_sub_eq_zero (hN : IsGalerkinSolution a ℓ K u) {ustar : V}
     (hstar : ∀ v, a ustar v = ℓ v) {v : V} (hv : v ∈ K) : a (ustar - u) v = 0 := by
   rw [map_sub, sub_apply, hstar v, hN.2 v hv, sub_self]
 
-/-- If `a` is bounded by `M` then `M * ‖z‖ ≥ 0` for every `z`: no sign hypothesis on `M` is needed,
-because testing the bound on `z` itself forces `M ≥ 0` unless `z = 0`. -/
+/-- If $a$ is bounded with constant $M$, then $M \|z\| \ge 0$ for every $z$, with no sign hypothesis
+on $M$. -/
 private theorem nonneg_mul_norm {M : ℝ} (hM : a.IsBoundedWith M) (z : V) : 0 ≤ M * ‖z‖ := by
   rcases eq_or_lt_of_le (norm_nonneg z) with h | h
   · simp [← h]
   · nlinarith [norm_nonneg (a z z), hM z z]
 
-/-- Céa's lemma ([han2009theoretical], Prop 9.1.3, inequality (9.1.11)), pointwise form: `‖u - u_N‖
-≤ (M / c) ‖u - v‖` for all `v ∈ K`.  So the Galerkin error is, up to the factor `M / c`, no worse
-than the best approximation error from `K`. -/
+/-- **Céa's lemma** ([han2009theoretical], Proposition 9.1.3, inequality (9.1.11)). Let $a$ be
+bounded with constant $M$ and coercive with constant $c > 0$. Let $u$ be a Galerkin solution on
+$K$, and let $u^*$ satisfy $a(u^*, v) = \ell(v)$ for all $v \in V$. Then for every $v \in K$,
+$$\|u^* - u\| \le \frac{M}{c} \|u^* - v\|.$$
+
+So the Galerkin error is, up to the factor $M / c$, no worse than the error of the best
+approximation from $K$. -/
 theorem norm_sub_le {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.IsCoerciveWith c)
     (hN : IsGalerkinSolution a ℓ K u) {ustar : V} (hstar : ∀ v, a ustar v = ℓ v) {v : V}
     (hv : v ∈ K) : ‖ustar - u‖ ≤ M / c * ‖ustar - v‖ := by
@@ -206,23 +283,31 @@ theorem norm_sub_le {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.Is
   rw [div_mul_eq_mul_div, le_div_iff₀ hc, mul_comm]
   exact hcM
 
-/-- Céa's lemma with the infimum. -/
+/-- **Céa's lemma** with the infimum. Under the hypotheses of `IsGalerkinSolution.norm_sub_le`,
+$$\|u^* - u\| \le \frac{M}{c} \operatorname{dist}(u^*, K).$$
+-/
 theorem norm_sub_le_infDist {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M)
     (ha : a.IsCoerciveWith c) (hN : IsGalerkinSolution a ℓ K u) {ustar : V}
     (hstar : ∀ v, a ustar v = ℓ v) : ‖ustar - u‖ ≤ M / c * Metric.infDist ustar (K : Set V) :=
   norm_sub_le_mul_infDist hN.1 fun _ hv => norm_sub_le hc hM ha hN hstar hv
 
-/-- Hermitian case: `u_N` is the best approximation to `u` in the energy norm, that is, the
-orthogonal projection of `u` onto `K` for the inner product `a`.  This is the remark following Céa's
-inequality in [han2009theoretical], Prop 9.1.3; it is the exact form of the equivalence between the
-Galerkin problem (9.1.4) and the Ritz problem (9.1.8) of minimizing the energy functional (9.1.7)
-over `K`.
+/-- Let $a$ be Hermitian with $\operatorname{Re} a(v, v) \ge 0$ for all $v$. Let $u$ be a Galerkin
+solution on $K$, and let $u^*$ satisfy $a(u^*, v) = \ell(v)$ for all $v \in V$. Then for every
+$v \in K$,
+$$\|u^* - u\|_a \le \|u^* - v\|_a,$$
+where $\|w\|_a = \sqrt{\operatorname{Re} a(w, w)}$ is the energy norm.
 
-The hypothesis `hpos : a.IsCoerciveWith 0` was added to the original statement, which is false
-without it: take `V = ℝ²`, `a = diag (1, -1)`, `K = span (1, 2)`, `ustar = (3, 0)` and `ℓ = a
-ustar`.  Then `u = (-1, -2)` is the Galerkin solution and `v = 0 ∈ K` gives `energyNorm (ustar - u)
-= √12 > 3 = energyNorm (ustar - v)`.  Positivity is exactly what makes `energyNorm` a norm, so it is
-the minimal repair. -/
+So $u$ is the best approximation of $u^*$ from $K$ in the energy norm, that is, the orthogonal
+projection of $u^*$ onto $K$ for the inner product $a$. This is the remark after Proposition
+9.1.3 of [han2009theoretical], and it is the exact form of the equivalence between the Galerkin
+problem (9.1.4) and the Ritz problem (9.1.8) of minimizing the energy functional (9.1.7) over
+$K$.
+
+The positivity hypothesis cannot be dropped. Take $V = \mathbb{R}^2$,
+$a(u, v) = u_1 v_1 - u_2 v_2$, $K = \operatorname{span}\{(1, 2)\}$, $u^* = (3, 0)$ and
+$\ell = a(u^*, \cdot)$. Then $u = (-1, -2)$ is the Galerkin solution, and $v = 0 \in K$ gives
+$\|u^* - u\|_a = \sqrt{12} > 3 = \|u^* - v\|_a$. Positivity is what makes the energy norm a
+seminorm, so it is the minimal additional hypothesis. -/
 theorem energyNorm_sub_le (ha : a.IsHermitian) (hpos : a.IsCoerciveWith 0)
     (hN : IsGalerkinSolution a ℓ K u) {ustar : V} (hstar : ∀ v, a ustar v = ℓ v) {v : V}
     (hv : v ∈ K) : a.energyNorm (ustar - u) ≤ a.energyNorm (ustar - v) := by
@@ -240,9 +325,14 @@ theorem energyNorm_sub_le (ha : a.IsHermitian) (hpos : a.IsCoerciveWith 0)
   simp only [zero_mul] at this
   linarith
 
-/-- Hermitian sharpening of Céa's lemma: the constant improves from `M / c` to `√(M / c)`, obtained
-by passing through the energy norm, in which `u_N` is exactly optimal, and paying the norm
-equivalence `√c ‖·‖ ≤ ‖·‖_a ≤ √M ‖·‖` at each end. -/
+/-- **Céa's lemma for a Hermitian form.** Let $a$ be bounded with constant $M$, coercive with
+constant $c > 0$ and Hermitian. Let $u$ be a Galerkin solution on $K$, and let $u^*$ satisfy
+$a(u^*, v) = \ell(v)$ for all $v \in V$. Then for every $v \in K$,
+$$\|u^* - u\| \le \sqrt{\frac{M}{c}} \, \|u^* - v\|.$$
+
+The proof passes through the energy norm, in which $u$ is optimal by
+`IsGalerkinSolution.energyNorm_sub_le`, and uses the norm equivalence
+$\sqrt{c} \|w\| \le \|w\|_a \le \sqrt{M} \|w\|$ at each end. -/
 theorem norm_sub_le_sqrt {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.IsCoerciveWith c)
     (hh : a.IsHermitian) (hN : IsGalerkinSolution a ℓ K u) {ustar : V}
     (hstar : ∀ v, a ustar v = ℓ v) {v : V} (hv : v ∈ K) :
@@ -257,14 +347,19 @@ theorem norm_sub_le_sqrt {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M) (ha :
   rw [Real.sqrt_div' M hc.le, div_mul_eq_mul_div, le_div_iff₀ hsc, mul_comm]
   linarith
 
-/-- Stiffness-matrix form ([han2009theoretical], (9.1.5)): with a basis `φ` of `K`, `∑ ξ_j φ_j` is
-the Galerkin solution iff `(a (φ j) (φ i))_{ij} ξ = (ℓ (φ i))_i`.  The matrix on the left is the
-stiffness matrix and the right-hand side the load vector, so this is the step that turns the
-Galerkin problem into a linear system.
+/-- **The Galerkin problem as a linear system** ([han2009theoretical], (9.1.5)). Let
+$\varphi = (\varphi_j)_{j \in \iota}$ be a finite basis of $K$, and let
+$\xi \in \mathbb{K}^\iota$. Then $\sum_j \xi_j \varphi_j$ is a Galerkin solution on $K$ if and
+only if
+$$\sum_j a(\varphi_j, \varphi_i) \, \overline{\xi_j} = \ell(\varphi_i) \quad \text{for all }
+  i.$$
 
-The statement was corrected from `.mulVec ξ` to `.mulVec (star ξ)`.  `a` is conjugate-linear in its
-first slot, so `a (∑ ξ_j φ_j) φ_i = ∑ conj (ξ_j) * a (φ_j) (φ_i)`; over `ℝ` (`star = id`) this is
-exactly the textbook statement. -/
+The matrix $(a(\varphi_j, \varphi_i))_{ij}$ is the stiffness matrix and the right side is the
+load vector.
+
+The coefficient vector is conjugated because $a$ is conjugate-linear in its first argument:
+$a(\sum_j \xi_j \varphi_j, \varphi_i) = \sum_j \overline{\xi_j} \, a(\varphi_j, \varphi_i)$.
+Over $\mathbb{R}$, `star` is the identity, and the statement is (9.1.5) as printed. -/
 theorem iff_mulVec {ι : Type*} [Fintype ι] (φ : Module.Basis ι 𝕜 K) (ξ : ι → 𝕜) :
     IsGalerkinSolution a ℓ K (∑ j, ξ j • (φ j : V)) ↔
       (Matrix.of fun i j => a (φ j : V) (φ i)).mulVec (star ξ) = fun i => ℓ (φ i) := by
@@ -305,8 +400,10 @@ theorem iff_mulVec {ι : Type*} [Fintype ι] (φ : Module.Basis ι 𝕜 K) (ξ :
 
 end IsGalerkinSolution
 
-/-- [han2009theoretical], Cor 9.1.4: Galerkin solutions on a monotone family of subspaces whose
-union is dense converge to the exact solution. -/
+/-- **Corollary 9.1.4** of [han2009theoretical]. Let $a$ be bounded with constant $M$ and coercive
+with constant $c > 0$. Let $(K_n)$ be a monotone sequence of subspaces whose union is dense in
+$V$, let $u_n$ be a Galerkin solution on $K_n$ for every $n$, and let $u^*$ satisfy
+$a(u^*, v) = \ell(v)$ for all $v \in V$. Then $u_n \to u^*$. -/
 theorem IsGalerkinSolution.tendsto {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜} {M c : ℝ} (hc : 0 < c)
     (hM : a.IsBoundedWith M) (ha : a.IsCoerciveWith c) {K : ℕ → Submodule 𝕜 V}
     (hmono : Monotone K) (hdense : Dense (⋃ n, (K n : Set V))) {uN : ℕ → V}
@@ -316,13 +413,15 @@ theorem IsGalerkinSolution.tendsto {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] �
   tendsto_of_forall_norm_sub_le hmono hdense (fun n => (hN n).1)
     fun n _ hw => (hN n).norm_sub_le hc hM ha hstar hw
 
-/-! ### The stiffness matrix of a form in a finite family
+/-!
+### The stiffness matrix of a form in a finite family
 
-The matrix `A_{ij} = a(φ_j, φ_i)` — the *stiffness matrix* of the finite element literature, the
-Gram matrix of `φ` in the energy inner product when `a` is Hermitian and coercive. It is the matrix
-of `IsGalerkinSolution.iff_mulVec` above, and the two facts a linear solver needs about it,
-Hermitian symmetry and positive definiteness, come straight from the corresponding properties of
-the form. -/
+For a finite family $\varphi$, the matrix $A_{ij} = a(\varphi_j, \varphi_i)$ is the stiffness matrix
+of the finite element literature. When $a$ is Hermitian and coercive, it is the Gram matrix of
+$\varphi$ for the energy inner product. It is the matrix of `IsGalerkinSolution.iff_mulVec`. A
+linear solver needs two facts about it, Hermitian symmetry and positive definiteness, and both
+follow from the corresponding properties of the form.
+-/
 
 section GramMatrix
 
@@ -330,19 +429,24 @@ variable {ι : Type*}
 
 namespace SesqForm
 
-/-- The **stiffness matrix** (Gram matrix) `A_{ij} = a(φ_j, φ_i)` of a bounded form in a family of
-vectors. The index order is the one that makes the Galerkin problem the linear system `A ξ = b`
-with `b_i = ℓ (φ i)`, as in `IsGalerkinSolution.iff_mulVec`. -/
+/-- The **stiffness matrix** (Gram matrix) of a form $a$ in a family
+$\varphi = (\varphi_i)_{i \in \iota}$ of vectors: the matrix $A$ with entries
+$A_{ij} = a(\varphi_j, \varphi_i)$.
+
+With this order of the indices, the Galerkin problem is the linear system $A \xi = b$ with
+$b_i = \ell(\varphi_i)$, as in `IsGalerkinSolution.iff_mulVec`. -/
 def gramMatrix (a : SesqForm 𝕜 V) (φ : ι → V) : Matrix ι ι 𝕜 :=
   Matrix.of fun i j => a (φ j) (φ i)
 
-/-- The entries of the stiffness matrix, `A i j = a (φ j) (φ i)`: the form is evaluated with the
-*column* index first, which is what makes the Galerkin condition read as `A ξ = b`. -/
+/-- The entries of the stiffness matrix are $A_{ij} = a(\varphi_j, \varphi_i)$.
+
+The form is evaluated with the column index first, so that the Galerkin condition is
+$A \xi = b$. -/
 @[simp]
 theorem gramMatrix_apply (a : SesqForm 𝕜 V) (φ : ι → V) (i j : ι) :
     a.gramMatrix φ i j = a (φ j) (φ i) := rfl
 
-/-- A Hermitian form has a Hermitian stiffness matrix. -/
+/-- The stiffness matrix of a Hermitian form in any family is Hermitian. -/
 theorem gramMatrix_isHermitian {a : SesqForm 𝕜 V} (h : a.IsHermitian) (φ : ι → V) :
     (a.gramMatrix φ).IsHermitian := by
   ext i j
@@ -351,17 +455,25 @@ theorem gramMatrix_isHermitian {a : SesqForm 𝕜 V} (h : a.IsHermitian) (φ : �
 
 variable [Fintype ι]
 
-/-- The Galerkin problem as the linear system `A ξ = b` in the stiffness matrix.  This is
-`IsGalerkinSolution.iff_mulVec` with the matrix named. -/
+/-- **The Galerkin problem as a linear system in the stiffness matrix.** Let $\varphi$ be a finite
+basis of $K$, let $A$ be the stiffness matrix of $a$ in $\varphi$, and let
+$\xi \in \mathbb{K}^\iota$. Then $\sum_j \xi_j \varphi_j$ is a Galerkin solution on $K$ if and
+only if $A \overline{\xi} = (\ell(\varphi_i))_i$.
+
+This is `IsGalerkinSolution.iff_mulVec` with the matrix named. -/
 theorem _root_.IsGalerkinSolution.iff_gramMatrix_mulVec {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜}
     {K : Submodule 𝕜 V} (φ : Module.Basis ι 𝕜 K) (ξ : ι → 𝕜) :
     IsGalerkinSolution a ℓ K (∑ j, ξ j • (φ j : V)) ↔
       (a.gramMatrix fun i => (φ i : V)).mulVec (star ξ) = fun i => ℓ (φ i) :=
   IsGalerkinSolution.iff_mulVec φ ξ
 
-/-- The quadratic form of the stiffness matrix is the form itself, evaluated at the two elements
-the coefficient vectors expand to.  The conjugation on `ξ` is the one `a` carries in its first
-slot, and disappears over real scalars. -/
+/-- For the stiffness matrix $A$ of $a$ in a finite family $\varphi$ and vectors
+$\xi, \eta \in \mathbb{K}^\iota$,
+$$\sum_i \eta_i \, (A \overline{\xi})_i = a\Big(\sum_j \xi_j \varphi_j, \sum_i \eta_i
+  \varphi_i\Big).$$
+
+The conjugation of $\xi$ is the one that $a$ carries in its first argument, and it disappears
+over $\mathbb{R}$. -/
 theorem dotProduct_gramMatrix_mulVec (a : SesqForm 𝕜 V) (φ : ι → V) (ξ η : ι → 𝕜) :
     η ⬝ᵥ (a.gramMatrix φ).mulVec (star ξ) = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) := by
   have hfirst : ∀ w : V, a (∑ j, ξ j • φ j) w = ∑ j, starRingEnd 𝕜 (ξ j) * a (φ j) w := by
@@ -381,14 +493,17 @@ section Real
 
 variable [Fintype ι] {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
 
-/-- Over real scalars the quadratic form of the stiffness matrix is `ηᵀ A ξ = a(φ_ξ, φ_η)` with no
-conjugation, where `φ_ξ = ∑ ξ_i φ_i`. -/
+/-- Over $\mathbb{R}$, for the stiffness matrix $A$ of $a$ in a finite family $\varphi$ and vectors
+$\xi, \eta \in \mathbb{R}^\iota$,
+$$\eta^T A \xi = a\Big(\sum_j \xi_j \varphi_j, \sum_i \eta_i \varphi_i\Big).$$
+-/
 theorem SesqForm.dotProduct_gramMatrix_mulVec_real (a : SesqForm ℝ W) (φ : ι → W) (ξ η : ι → ℝ) :
     η ⬝ᵥ (a.gramMatrix φ).mulVec ξ = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) :=
   a.dotProduct_gramMatrix_mulVec φ ξ η
 
-/-- The entries of `A ξ` for the stiffness matrix `A = a.gramMatrix φ`:
-`(A ξ) i = a (∑ j, ξ j • φ j) (φ i)`. -/
+/-- Over $\mathbb{R}$, for the stiffness matrix $A$ of $a$ in a finite family $\varphi$ and a vector
+$\xi \in \mathbb{R}^\iota$, the entries of $A \xi$ are $(A \xi)_i = a(\sum_j \xi_j \varphi_j,
+\varphi_i)$. -/
 theorem SesqForm.gramMatrix_mulVec_apply (a : SesqForm ℝ W) (φ : ι → W) (ξ : ι → ℝ)
     (i : ι) : (a.gramMatrix φ).mulVec ξ i = a (∑ j, ξ j • φ j) (φ i) := by
   rw [Matrix.mulVec, dotProduct]
@@ -396,8 +511,11 @@ theorem SesqForm.gramMatrix_mulVec_apply (a : SesqForm ℝ W) (φ : ι → W) (�
     _root_.sum_apply, _root_.smul_apply, smul_eq_mul]
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-- Coercivity of the form makes the quadratic form of the stiffness matrix strictly positive off
-the origin, provided the family is linearly independent.  Symmetry is not needed for this half. -/
+/-- Over $\mathbb{R}$, let $a$ be coercive with a constant $c > 0$, let $\varphi$ be a finite
+linearly independent family, and let $A$ be the stiffness matrix of $a$ in $\varphi$. Then
+$\xi^T A \xi > 0$ for every $\xi \neq 0$.
+
+Symmetry of $a$ is not needed for this half of positive definiteness. -/
 theorem SesqForm.gramMatrix_dotProduct_pos {a : SesqForm ℝ W} {c : ℝ} (hc : 0 < c)
     (ha : a.IsCoerciveWith c) {φ : ι → W} (hφ : LinearIndependent ℝ φ) {ξ : ι → ℝ}
     (hξ : ξ ≠ 0) : 0 < ξ ⬝ᵥ (a.gramMatrix φ).mulVec ξ := by
@@ -408,9 +526,12 @@ theorem SesqForm.gramMatrix_dotProduct_pos {a : SesqForm ℝ W} {c : ℝ} (hc : 
   exact lt_of_lt_of_le (mul_pos hc (pow_pos hnorm 2)) (ha _)
 
 set_option linter.unusedFintypeInType false in
-/-- The stiffness matrix of a symmetric coercive real form in a linearly independent family is
-positive definite.  This is why the linear systems of the finite element method are solved by
-conjugate gradients: the coercivity constant of the form is inherited by the matrix. -/
+/-- Over $\mathbb{R}$, let $a$ be symmetric and coercive with a constant $c > 0$, and let $\varphi$
+be a finite linearly independent family. Then the stiffness matrix of $a$ in $\varphi$ is
+positive definite.
+
+This is why the linear systems of the finite element method can be solved by conjugate
+gradients. -/
 theorem SesqForm.gramMatrix_posDef {a : SesqForm ℝ W} {c : ℝ} (hc : 0 < c)
     (hsymm : a.IsHermitian) (ha : a.IsCoerciveWith c) {φ : ι → W}
     (hφ : LinearIndependent ℝ φ) : (a.gramMatrix φ).PosDef :=
@@ -427,17 +548,21 @@ namespace IsPetrovGalerkinSolution
 variable {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] {a : SesqForm₂ 𝕜 U V}
   {ℓ : V →L[𝕜] 𝕜} {K : Submodule 𝕜 U} {L : Submodule 𝕜 V} {u : U}
 
-/-- The discrete inf–sup condition ([han2009theoretical], (9.2.6)): `α ‖w‖ ≤ sup_{v ∈ L, v ≠ 0} |a w
-v| / ‖v‖` for `w ∈ K`, stated with the restricted functional's norm.  It is the discrete counterpart
-of `SesqForm₂.InfSupWith`, and does *not* follow from it: the supremum is taken over the smaller
-test space `L`. -/
+/-- The **discrete inf–sup condition** ([han2009theoretical], (9.2.6)) with constant $\alpha$, for a
+form $a$ on $U \times V$, a trial space $K \subseteq U$ and a test space $L \subseteq V$:
+$$\alpha \|w\| \le \sup_{v \in L, \, v \neq 0} \frac{|a(w, v)|}{\|v\|} \quad \text{for all } w
+  \in K.$$
+
+The supremum is stated as the norm of the functional $a(w, \cdot)$ restricted to $L$. This is
+the discrete counterpart of `SesqForm₂.InfSupWith`, and it does not follow from it, because the
+supremum is taken over the smaller test space $L$. -/
 def DiscreteInfSup (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V) (α : ℝ) :
     Prop :=
   ∀ w ∈ K, α * ‖w‖ ≤ ‖(a w).comp L.subtypeL‖
 
-/-- The Riesz operator of the form restricted to `K × L`.  Both `a` and the inverse Riesz map are
-conjugate-linear, so the composite is *linear*; only linearity (not continuity) is needed below, so
-this is packaged as a plain `LinearMap`. -/
+/-- The operator from $K$ to $L$ that sends $w$ to the Riesz representative in $L$ of the functional
+$a(w, \cdot)$ on $L$; it is linear because both $a$ and the inverse Riesz map are
+conjugate-linear. -/
 private noncomputable def rieszOp (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U)
     (L : Submodule 𝕜 V) [CompleteSpace L] : K →ₗ[𝕜] L where
   toFun w := (InnerProductSpace.toDual 𝕜 L).symm (SesqForm₂.restrict a K L w)
@@ -445,23 +570,26 @@ private noncomputable def rieszOp (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜
   map_smul' r x := by
     simp only [map_smulₛₗ, RingHom.id_apply, starRingEnd_self_apply]
 
-/-- The defining property of `rieszOp`: the inner product against `rieszOp a K L w` on the test
-space is the form. -/
+/-- The inner product of the image of $w$ under this operator with $v \in L$ is $a(w, v)$. -/
 private theorem inner_rieszOp (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [CompleteSpace L] (w : K) (v : L) :
     inner 𝕜 (rieszOp a K L w) v = a (w : U) (v : V) := by
   change inner 𝕜 ((InnerProductSpace.toDual 𝕜 L).symm (SesqForm₂.restrict a K L w)) v = _
   exact InnerProductSpace.toDual_symm_apply
 
-/-- `rieszOp` is isometric on each vector, because the inverse Riesz map is. -/
+/-- The image of $w$ under this operator has the norm of the functional $a(w, \cdot)$ on $L$. -/
 private theorem norm_rieszOp_apply (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [CompleteSpace L] (w : K) : ‖rieszOp a K L w‖ = ‖(a (w : U)).comp L.subtypeL‖ := by
   change ‖(InnerProductSpace.toDual 𝕜 L).symm (SesqForm₂.restrict a K L w)‖ = _
   exact (InnerProductSpace.toDual 𝕜 L).symm.norm_map _
 
-/-- Babuška ([han2009theoretical], Thm 9.2.1): with `dim K = dim L` and the discrete inf–sup
-condition, the Petrov–Galerkin problem is uniquely solvable.  The equal dimensions turn injectivity
-into surjectivity, so no density argument is needed here. -/
+/-- **Theorem 9.2.1** of [han2009theoretical] (Babuška), existence and uniqueness. Let
+$K \subseteq U$ and $L \subseteq V$ be finite-dimensional with $\dim K = \dim L$, and let the
+discrete inf–sup condition hold with a constant $\alpha > 0$. Then for every functional $\ell$
+on $V$, the Petrov–Galerkin problem has exactly one solution.
+
+Because the dimensions are equal, injectivity gives surjectivity, so no density argument is
+needed. -/
 theorem existsUnique [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
     (hinf : DiscreteInfSup a K L α) : ∃! u, IsPetrovGalerkinSolution a ℓ K L u := by
@@ -491,17 +619,21 @@ theorem existsUnique [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     exact congrArg Subtype.val (hinj hkey)
 
 set_option linter.unusedVariables false in
-/-- Babuška's quasi-optimality bound `‖u - u_N‖ ≤ (1 + M / α) ‖u - w‖` ([han2009theoretical],
-estimate (9.2.7) of Thm 9.2.1): the Petrov–Galerkin analogue of Céa's lemma.
+/-- **Theorem 9.2.1** of [han2009theoretical] (Babuška), estimate (9.2.7). Let $K \subseteq U$ and
+$L \subseteq V$ be finite-dimensional with $\dim K = \dim L$, let $a$ be bounded with a constant
+$M \ge 0$, and let the discrete inf–sup condition hold with a constant $\alpha > 0$. Let $u$ be
+a Petrov–Galerkin solution, and let $u^* \in U$ satisfy $a(u^*, v) = \ell(v)$ for all $v \in V$.
+Then for every $w \in K$,
+$$\|u^* - u\| \le \Big(1 + \frac{M}{\alpha}\Big) \|u^* - w\|.$$
 
-The hypothesis `hM0 : 0 ≤ M` was added: the statement is false without it.  Take `V = 0`, `U = ℝ`,
-`K = L = 0`, `a = 0`, `α = 1`, `M = -1`; every hypothesis holds vacuously and the conclusion reads
-`‖ustar‖ ≤ 0`.
+This is the Petrov–Galerkin analogue of Céa's lemma.
 
-`hdim` and the two finite-dimensionality instances are carried because the book's Thm 9.2.1 states
-the estimate together with unique solvability, but the estimate itself never uses them: it holds for
-any `u` that happens to solve the discrete problem.  That is why the unused-variable linter is
-switched off here. -/
+The hypothesis $M \ge 0$ cannot be dropped. Take $V = 0$, $U = \mathbb{R}$, $K = L = 0$,
+$a = 0$, $\alpha = 1$ and $M = -1$. Then every hypothesis holds, and the conclusion is
+$\|u^*\| \le 0$. The hypotheses $\dim K = \dim L$ and finite dimension are part of the statement
+because Theorem 9.2.1 states the estimate together with unique solvability, but the proof of the
+estimate does not use them: it holds for any solution of the discrete problem. For this reason
+the linter for unused variables is off here. -/
 theorem norm_sub_le [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {M α : ℝ} (hα : 0 < α) (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hinf : DiscreteInfSup a K L α)
@@ -529,9 +661,14 @@ theorem norm_sub_le [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     _ ≤ ‖ustar - w‖ + M / α * ‖ustar - w‖ := by linarith
     _ = (1 + M / α) * ‖ustar - w‖ := by ring
 
-/-- [han2009theoretical], Cor 9.2.3: under a discrete inf–sup condition holding with one constant
-`α` for the whole family, and with trial spaces that are monotone with dense union, the
-Petrov–Galerkin solutions converge.  The hypothesis `hM0 : 0 ≤ M` was added, as in
+/-- **Corollary 9.2.3** of [han2009theoretical]. Let $(K_n)$ and $(L_n)$ be finite-dimensional trial
+and test spaces with $\dim K_n = \dim L_n$, let $a$ be bounded with a constant $M \ge 0$, and
+let the discrete inf–sup condition hold on $K_n \times L_n$ with one constant $\alpha > 0$ for
+all $n$. Let $(K_n)$ be monotone with dense union in $U$, let $u_n$ be a Petrov–Galerkin
+solution on $K_n \times L_n$, and let $u^*$ satisfy $a(u^*, v) = \ell(v)$ for all $v \in V$.
+Then $u_n \to u^*$.
+
+The hypothesis $M \ge 0$ is needed for the same reason as in
 `IsPetrovGalerkinSolution.norm_sub_le`. -/
 theorem tendsto {K : ℕ → Submodule 𝕜 U} {L : ℕ → Submodule 𝕜 V} [∀ n, FiniteDimensional 𝕜 (K n)]
     [∀ n, FiniteDimensional 𝕜 (L n)] (hdim : ∀ n, Module.finrank 𝕜 (K n) = Module.finrank 𝕜 (L n))
@@ -547,7 +684,8 @@ theorem tendsto {K : ℕ → Submodule 𝕜 U} {L : ℕ → Submodule 𝕜 V} [�
 
 section Projector
 
-/-- A bound `M` on the form bounds the restricted functional `a u ·` on the test space. -/
+/-- If $a$ is bounded with a constant $M \ge 0$, then the functional $a(u, \cdot)$ restricted to $L$
+has norm at most $M \|u\|$. -/
 private theorem norm_comp_subtypeL_le {M : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (u : U) :
     ‖(a u).comp L.subtypeL‖ ≤ M * ‖u‖ :=
@@ -555,27 +693,30 @@ private theorem norm_comp_subtypeL_le {M : ℝ} (hM0 : 0 ≤ M)
 
 variable [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
 
-/-- The Petrov–Galerkin approximation of an arbitrary `u : U`: the unique solution in `K` of the
-Petrov–Galerkin problem whose data is `ℓ = a u ·`, which exists by `existsUnique`. -/
+/-- The Petrov–Galerkin approximation of $u \in U$: the unique solution in $K$ of the
+Petrov–Galerkin problem with the functional $a(u, \cdot)$. -/
 private noncomputable def projFun (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
     (hinf : DiscreteInfSup a K L α) (u : U) : U :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose
 
-/-- `projFun a K L … u` does solve the Petrov–Galerkin problem with data `a u ·`. -/
+/-- The Petrov–Galerkin approximation of $u$ solves the Petrov–Galerkin problem with the functional
+$a(u, \cdot)$. -/
 private theorem projFun_spec (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (u : U) :
     IsPetrovGalerkinSolution a (a u) K L (projFun a K L hdim hα hinf u) :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.1
 
-/-- … and it is the only solution, which is what makes `projFun` a function of `u` alone. -/
+/-- Every solution of the Petrov–Galerkin problem with the functional $a(u, \cdot)$ is the
+Petrov–Galerkin approximation of $u$. -/
 private theorem eq_projFun (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {u w : U}
     (hw : IsPetrovGalerkinSolution a (a u) K L w) : w = projFun a K L hdim hα hinf u :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.2 w hw
 
-/-- The bound `‖P_N u‖ ≤ (M / α) ‖u‖` on the projector, before it is bundled as an operator. -/
+/-- If $a$ is bounded with a constant $M \ge 0$, the Petrov–Galerkin approximation of $u$ has norm
+at most $(M / \alpha) \|u\|$. -/
 private theorem norm_projFun_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (u : U) :
@@ -592,15 +733,15 @@ private theorem norm_projFun_le (hdim : Module.finrank 𝕜 K = Module.finrank �
   rw [div_mul_eq_mul_div, le_div_iff₀ hα, mul_comm]
   exact h1
 
-/-- **The Petrov–Galerkin projector** `P_N : u ↦ u_N` ([han2009theoretical], Rem 9.2.2).  Under the
-hypotheses of `IsPetrovGalerkinSolution.existsUnique` — finite dimensional trial and test spaces of
-equal dimension and the discrete inf–sup condition with constant `α > 0` — the map sending `u` to
-the unique `u_N ∈ K` with `a u_N v = a u v` for every `v ∈ L` is a bounded idempotent operator with
-range `K`.
+/-- **The Petrov–Galerkin projector** $P_N$ ([han2009theoretical], Remark 9.2.2). Let
+$K \subseteq U$ and $L \subseteq V$ be finite-dimensional with $\dim K = \dim L$, and let the
+discrete inf–sup condition hold with a constant $\alpha > 0$. Then $P_N$ is the bounded operator
+on $U$ that sends $u$ to the unique $u_N \in K$ with $a(u_N, v) = a(u, v)$ for every $v \in L$.
 
-The map itself does not depend on `α`, which enters through the well-posedness proof and through the
-bound `‖P_N‖ ≤ M / α` of `norm_projection_le`.  Boundedness is not automatic: `U` is not assumed
-finite dimensional, and the discrete inf–sup condition is exactly what makes the solution operator
+The map does not depend on $\alpha$. The constant $\alpha$ enters through the proof of unique
+solvability and through the bound $\|P_N\| \le M / \alpha$ of
+`IsPetrovGalerkinSolution.norm_projection_le`. Boundedness is not automatic, because $U$ need
+not be finite-dimensional; the discrete inf–sup condition makes the solution operator
 continuous. -/
 noncomputable def projection (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
@@ -623,35 +764,35 @@ noncomputable def projection (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (
     (norm_projFun_le hdim hα hinf (norm_nonneg a) fun w v =>
       ((a w).le_opNorm v).trans (mul_le_mul_of_nonneg_right (a.le_opNorm w) (norm_nonneg v)))
 
-/-- The defining property of the Petrov–Galerkin projector: `P_N u` solves the Petrov–Galerkin
-problem whose data is `a u ·`. -/
+/-- For every $u \in U$, the vector $P_N u$ solves the Petrov–Galerkin problem with the functional
+$a(u, \cdot)$: $P_N u \in K$ and $a(P_N u, v) = a(u, v)$ for all $v \in L$. -/
 theorem projection_spec
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
     (hinf : DiscreteInfSup a K L α) (u : U) :
     IsPetrovGalerkinSolution a (a u) K L (projection a K L hdim hα hinf u) :=
   projFun_spec hdim hα hinf u
 
-/-- The Petrov–Galerkin projector maps into the trial space. -/
+/-- The Petrov–Galerkin projector maps $U$ into the trial space: $P_N u \in K$ for every $u \in U$.
+-/
 theorem projection_apply_mem (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (u : U) :
     projection a K L hdim hα hinf u ∈ K :=
   (projection_spec hdim hα hinf u).1
 
-/-- The Petrov–Galerkin projector fixes the trial space: an element of `K` solves its own problem.
--/
+/-- The Petrov–Galerkin projector fixes the trial space: $P_N w = w$ for every $w \in K$. -/
 theorem projection_apply_of_mem (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {w : U} (hw : w ∈ K) :
     projection a K L hdim hα hinf w = w :=
   (eq_projFun hdim hα hinf ⟨hw, fun _ _ => rfl⟩).symm
 
-/-- The Petrov–Galerkin projector is idempotent. -/
+/-- The Petrov–Galerkin projector is idempotent: $P_N^2 = P_N$. -/
 theorem isIdempotentElem_projection (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) :
     IsIdempotentElem (projection a K L hdim hα hinf) :=
   ContinuousLinearMap.ext fun u =>
     projection_apply_of_mem hdim hα hinf (projection_apply_mem hdim hα hinf u)
 
-/-- The range of the Petrov–Galerkin projector is the trial space. -/
+/-- The range of the Petrov–Galerkin projector is the trial space $K$. -/
 theorem range_projection (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) :
     LinearMap.range (projection a K L hdim hα hinf : U →ₗ[𝕜] U) = K := by
@@ -659,34 +800,42 @@ theorem range_projection (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) 
   rintro _ ⟨v, rfl⟩
   exact projection_apply_mem hdim hα hinf v
 
-/-- The Petrov–Galerkin iterate is the projection of the exact solution, which is what turns the
-error `u* - u_N` into a value of `1 - P_N`. -/
+/-- Let $u$ be a Petrov–Galerkin solution, and let $u^* \in U$ satisfy $a(u^*, v) = \ell(v)$ for all
+$v \in V$. Then $P_N u^* = u$.
+
+So the error $u^* - u$ is the value $(1 - P_N) u^*$. -/
 theorem projection_apply_eq_of_isPetrovGalerkinSolution
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
     (hinf : DiscreteInfSup a K L α) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
     (hstar : ∀ v, a ustar v = ℓ v) : projection a K L hdim hα hinf ustar = u :=
   (eq_projFun hdim hα hinf ⟨hN.1, fun v hv => by rw [hN.2 v hv, hstar v]⟩).symm
 
-/-- `‖P_N‖ ≤ M / α` ([han2009theoretical], Rem 9.2.2): the Petrov–Galerkin projector is bounded by
-the ratio of the boundedness constant of the form to the discrete inf–sup constant. -/
+/-- ([han2009theoretical], Remark 9.2.2.) Let $a$ be bounded with a constant $M \ge 0$, and let the
+discrete inf–sup condition hold with a constant $\alpha > 0$. Then the Petrov–Galerkin projector
+satisfies $\|P_N\| \le M / \alpha$. -/
 theorem norm_projection_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) : ‖projection a K L hdim hα hinf‖ ≤ M / α :=
   ContinuousLinearMap.opNorm_le_bound _ (div_nonneg hM0 hα.le)
     (norm_projFun_le hdim hα hinf hM0 hM)
 
-/-- **The Xu–Zikatanov sharpening of Babuška's bound** ([han2009theoretical], Rem 9.2.2, their
-estimate (9.2.10)): `‖u* - u_N‖ ≤ (M / α) inf_{w ∈ K} ‖u* - w‖`, which improves the factor `1 + M /
-α` of `norm_sub_le` to `M / α`.
+/-- **The Xu–Zikatanov bound** ([han2009theoretical], Remark 9.2.2, estimate (9.2.10)). Let
+$K \subseteq U$ and $L \subseteq V$ be finite-dimensional with $\dim K = \dim L$ and $K \neq 0$,
+let $a$ be bounded with a constant $M \ge 0$, and let the discrete inf–sup condition hold with a
+constant $\alpha > 0$. Let $u$ be a Petrov–Galerkin solution, and let $u^* \in U$ satisfy
+$a(u^*, v) = \ell(v)$ for all $v \in V$. Then
+$$\|u^* - u\| \le \frac{M}{\alpha} \operatorname{dist}(u^*, K).$$
 
-The proof is the identity `u* - u_N = (1 - P_N)(u* - w)`, valid for every `w ∈ K`, together with
-Kato's identity `‖1 - P‖ = ‖P‖` for a nontrivial idempotent
-(`ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`).
+This improves the factor $1 + M / \alpha$ of `IsPetrovGalerkinSolution.norm_sub_le` to
+$M / \alpha$. When $K \neq 0$, the constants satisfy $\alpha \le M$, so $M / \alpha \ge 1$.
 
-The hypothesis `K ≠ ⊥` is needed and not decorative: with `K = ⊥` the projector is `0` and the bound
-reads `‖u*‖ ≤ (M / α) ‖u*‖`, which fails for `a = 0`, `M = 0`, `α = 1`, where every other hypothesis
-holds vacuously.  When `K ≠ ⊥` the two constants automatically satisfy `α ≤ M`, so `M / α ≥ 1` and
-the bound is indeed stronger than Babuška's. -/
+The hypothesis $K \neq 0$ cannot be dropped. For $K = 0$, the projector is $0$ and the bound is
+$\|u^*\| \le (M / \alpha) \|u^*\|$, which fails for $a = 0$, $M = 0$ and $\alpha = 1$, where
+every other hypothesis holds.
+
+The proof uses the identity $u^* - u = (1 - P_N)(u^* - w)$ for every $w \in K$ and Kato's
+identity $\|1 - P\| = \|P\|$ for an idempotent $P \neq 0, 1$
+(`ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`). -/
 theorem norm_sub_le_div_mul_infDist (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (hK : K ≠ ⊥) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
@@ -728,28 +877,32 @@ end IsPetrovGalerkinSolution
 
 section Strang
 
-/-! ### The generalized Galerkin method
+/-!
+### The generalized Galerkin method
 
-Following [han2009theoretical], §9.3, where the discrete space is no longer required to be a
-subspace of `V` and the form and functional are themselves approximated, so that the error picks up
-a consistency term on top of the approximation term.
+This section follows [han2009theoretical], §9.3. The discrete space need not be a subspace of $V$,
+and the form and the functional are themselves approximated. So the error has a consistency term in
+addition to the approximation term.
 
-Stated here on one abstract normed space `W` (their `V + V_N` carrying the discretization-dependent
-norm `‖·‖_N`): the exact solution `u`, a form `a_N` bounded on `W × K` and coercive on `K`, a
-functional `ℓ_N` on `K`; the Hilbert space `V` and the original problem never enter. -/
+The results are stated in one normed space $W$, which stands for the space $V + V_N$ of the source
+with the norm $\|\cdot\|_N$ that depends on the discretization. The data are the exact solution $u$,
+a form $a_N$ that is bounded on $W \times K$ and coercive on $K$, and a functional $\ell_N$ on $K$.
+The Hilbert space $V$ and the original problem do not appear.
+-/
 
 section Defn
 
 variable {W : Type*} [AddCommGroup W] [Module 𝕜 W]
 
-/-- The generalized Galerkin problem `u_N ∈ K`, `a_N u_N v = ℓ_N v` for all `v ∈ K`
-([han2009theoretical], (9.3.1)).
+/-- The **generalized Galerkin problem** ([han2009theoretical], (9.3.1)): for a bilinear map $a_N$
+and a linear functional $\ell_N$ on a vector space $W$, and a subspace $K$, a vector $u_N$ is a
+generalized Galerkin solution if $u_N \in K$ and $a_N(u_N, v) = \ell_N(v)$ for all $v \in K$.
 
-Only the module structure of `W` is used: the norm enters the *analysis* of the method
-(`strang_first`), not its statement.  This matters for discretizations whose trial space is not
-a subspace of a normed function space — a generalized Galerkin method whose form evaluates
-derivatives pointwise at quadrature nodes, for instance, lives naturally on the polynomials
-`𝕜[X]`, which carry no norm. -/
+Only the vector space structure of $W$ is used. The norm enters the analysis of the method
+(`strang_first`), not its statement. This matters for discretizations whose trial space is not a
+subspace of a normed function space: for example, a generalized Galerkin method whose form
+evaluates derivatives at quadrature nodes lives on the polynomials $\mathbb{K}[X]$, which carry
+no norm. -/
 def IsGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜) (ℓN : W →ₗ[𝕜] 𝕜) (K : Submodule 𝕜 W)
     (uN : W) : Prop :=
   uN ∈ K ∧ ∀ v ∈ K, aN uN v = ℓN v
@@ -758,15 +911,22 @@ end Defn
 
 variable {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- Strang's first lemma ([han2009theoretical], Thm 9.3.1, estimate (9.3.2)): with `a_N` bounded by
-`M` on `W × K` and coercive with constant `c` on `K`, `‖u - u_N‖ ≤ (1 + M/c) ‖u - v‖ + δ/c`, where
-`δ` bounds the consistency error `|a_N(u, w) - ℓ_N(w)| / ‖w‖` over `w ∈ K`.  The first term is the
-Céa-type approximation error and the second measures how far the exact solution is from solving the
-perturbed problem; when `a_N = a` and `ℓ_N = ℓ` one may take `δ = 0` and recover Céa's lemma.
+/-- **Strang's first lemma** ([han2009theoretical], Theorem 9.3.1, estimate (9.3.2)). Let $W$ be a
+normed space over $\mathbb{K}$, let $K \subseteq W$ be a subspace, let $a_N$ be a bilinear map
+on $W$ and let $\ell_N$ be a linear functional on $W$. Let $c > 0$ and $M \ge 0$, and assume
+$$|a_N(w, v)| \le M \|w\| \|v\| \quad (w \in W, \ v \in K), \qquad c \|v\|^2 \le
+  \operatorname{Re} a_N(v, v) \quad (v \in K).$$
+Let $u_N$ be a generalized Galerkin solution on $K$, let $u \in W$, and let $\delta \ge 0$
+satisfy $|a_N(u, w) - \ell_N(w)| \le \delta \|w\|$ for all $w \in K$. Then for every $v \in K$,
+$$\|u - u_N\| \le \Big(1 + \frac{M}{c}\Big) \|u - v\| + \frac{\delta}{c}.$$
 
-The hypotheses `hM0 : 0 ≤ M` and `hδ0 : 0 ≤ δ` were added: they do not follow from the bounds, which
-are vacuous when `K = ⊥`, and without them the statement is false (`W = ℝ`, `K = ⊥`, `c = 1`, `M = δ
-= -1`, `u = uN = v = 0` gives `0 ≤ -1`). -/
+The first term is the approximation error, as in Céa's lemma. The second term measures how far
+$u$ is from a solution of the perturbed problem. When $a_N = a$ and $\ell_N = \ell$, one can
+take $\delta = 0$ and obtain Céa's lemma.
+
+The hypotheses $M \ge 0$ and $\delta \ge 0$ do not follow from the two bounds, which hold for
+any constants when $K = 0$. Without them the statement is false: $W = \mathbb{R}$, $K = 0$,
+$c = 1$, $M = \delta = -1$ and $u = u_N = v = 0$ give $0 \le -1$. -/
 theorem strang_first {aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜} {ℓN : W →ₗ[𝕜] 𝕜} {K : Submodule 𝕜 W} {M c : ℝ}
     (hc : 0 < c) (hM0 : 0 ≤ M) (hM : ∀ w, ∀ v ∈ K, ‖aN w v‖ ≤ M * ‖w‖ * ‖v‖)
     (hcoer : ∀ v ∈ K, c * ‖v‖ ^ 2 ≤ RCLike.re (aN v v)) {uN : W}
@@ -807,8 +967,12 @@ theorem strang_first {aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜} {ℓN : W →ₗ[
         exact hstep
     _ = (1 + M / c) * ‖u - v‖ + δ / c := by field_simp; ring
 
-/-- Unique solvability of the generalized Galerkin problem on a finite-dimensional `K` with coercive
-`a_N` (needs only finite dimension, not Lax–Milgram). -/
+/-- Let $K$ be a finite-dimensional subspace of a normed space $W$, let $a_N$ be a bilinear map and
+$\ell_N$ a linear functional on $W$, and let $c \|v\|^2 \le \operatorname{Re} a_N(v, v)$ for all
+$v \in K$ with a constant $c > 0$. Then the generalized Galerkin problem on $K$ has exactly one
+solution.
+
+The proof uses only finite dimension, not the Lax–Milgram theorem. -/
 theorem existsUnique_isGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜) (ℓN : W →ₗ[𝕜] 𝕜)
     (K : Submodule 𝕜 W) [FiniteDimensional 𝕜 K] {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ v ∈ K, c * ‖v‖ ^ 2 ≤ RCLike.re (aN v v)) :
@@ -841,40 +1005,44 @@ end Strang
 
 section AubinNitsche
 
-/-! ### The Aubin–Nitsche duality argument
+/-!
+### The Aubin–Nitsche duality argument
 
-An error bound for a Galerkin approximation measured in a norm *weaker* than the one the form is
-coercive in.  The setting is two inner product spaces `V` and `H` and a continuous linear map `ι : V
-→L[𝕜] H`, standing for the embedding of the energy space into the pivot space; in the finite element
-application it is `H¹(Ω) ⊆ L²(Ω)`, but nothing below needs a function space.
+This section bounds a Galerkin error in a norm that is weaker than the norm in which the form is
+coercive. The setting is two inner product spaces $V$ and $H$ and a bounded linear map
+$\iota \colon V \to H$, which stands for the embedding of the energy space into the pivot space. In
+the finite element method it is the embedding $H^1(\Omega) \subseteq L^2(\Omega)$, but the results
+do not need a function space.
 
-Given an error `e : V` that is orthogonal to a subspace `K` in the form `a` — which is what
-`IsGalerkinSolution.apply_sub_eq_zero` provides for `e = u - u_N` — and a solution `φ` of the *dual*
-problem `a v φ = ⟪ι v, ι e⟫` for all `v`, testing the dual problem at `v = e` gives `‖ι e‖² = a e
-φ`; orthogonality then replaces `φ` by `φ - w` for any `w ∈ K`, and boundedness of the form
-finishes:
+Let $e \in V$ be an error with $a(e, v) = 0$ for all $v \in K$, as
+`IsGalerkinSolution.apply_sub_eq_zero` gives for $e = u - u_N$. Let $\varphi$ solve the dual problem
+$a(v, \varphi) = \langle \iota v, \iota e \rangle$ for all $v$. The test $v = e$ in the dual problem
+gives $\|\iota e\|^2 = a(e, \varphi)$. Orthogonality then replaces $\varphi$ by $\varphi - w$ for
+any $w \in K$, and boundedness of the form gives
+$$\|\iota e\|^2 \le M \|e\| \|\varphi - w\|.$$
 
-  `‖ι e‖² ≤ M ‖e‖ ‖φ - w‖`.
+This is the complete argument, and `norm_map_sq_le_of_dual` states it for each $w$, with no infimum,
+no supremum and no claim that $\varphi$ exists. The theorem `norm_map_le_of_dual_approx` is the form
+in which it is used: if every dual solution can be approximated from $K$ to within $\delta$ times
+the norm of its datum, then $\|\iota e\| \le M \delta \|e\|$. In a finite element space, $\delta$ is
+of order $h$, and this is the origin of the extra power of $h$ in an $L^2$ error estimate. The bound
+on $\delta$ comes from elliptic regularity theory and is not part of the argument.
 
-That is the whole of the argument, and `norm_map_sq_le_of_dual` states it pointwise — no infimum, no
-supremum, and no existence claim for `φ`.  `norm_map_le_of_dual_approx` is the form in which it is
-used: if the dual solutions can be approximated from `K` to within `δ` times the norm of the datum,
-the error in the weaker norm gains the whole factor `δ`, `‖ι e‖ ≤ M δ ‖e‖`.  In a finite element
-space `δ` is of order `h`, which is where the extra power of `h` in an `L²` error estimate comes
-from; the bound on `δ` itself is elliptic regularity theory and is not part of the argument.
-
-The theorem is due to Aubin and to Nitsche; the account followed here is Theorem 10.4.3 and
-Corollary 10.4.4 of [han2009theoretical]. -/
+The theorem is due to Aubin and to Nitsche. The presentation follows Theorem 10.4.3 and Corollary
+10.4.4 of [han2009theoretical].
+-/
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H]
 
-/-- The Aubin–Nitsche estimate, pointwise form: for a form `a` bounded with constant `M`, an error
-`e` orthogonal to `K` in `a`, and a solution `φ` of the dual problem `a v φ = ⟪ι v, ι e⟫`,
+/-- **The Aubin–Nitsche estimate.** Let $V$ and $H$ be inner product spaces, let
+$\iota \colon V \to H$ be a bounded linear map, let $a$ be a form on $V$ that is bounded with
+constant $M$, and let $K$ be a subspace of $V$. Let $e \in V$ satisfy $a(e, v) = 0$ for all
+$v \in K$, and let $\varphi \in V$ satisfy $a(v, \varphi) = \langle \iota v, \iota e \rangle$
+for all $v \in V$. Then for every $w \in K$,
+$$\|\iota e\|^2 \le M \|e\| \|\varphi - w\|.$$
 
-  `‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖`  for every `w ∈ K`.
-
-Testing the dual problem at `v = e` turns `‖ι e‖ ^ 2` into `a e φ`, orthogonality replaces `φ` by `φ
-- w`, and boundedness of `a` does the rest. -/
+The test $v = e$ in the dual problem gives $\|\iota e\|^2 = a(e, \varphi)$, orthogonality
+replaces $\varphi$ by $\varphi - w$, and boundedness of $a$ gives the bound. -/
 theorem norm_map_sq_le_of_dual {a : SesqForm 𝕜 V} {M : ℝ} (hM : a.IsBoundedWith M)
     {K : Submodule 𝕜 V} (ι : V →L[𝕜] H) {e : V} (horth : ∀ v ∈ K, a e v = 0) {φ : V}
     (hφ : ∀ v : V, a v φ = inner 𝕜 (ι v) (ι e)) {w : V} (hw : w ∈ K) :
@@ -886,12 +1054,15 @@ theorem norm_map_sq_le_of_dual {a : SesqForm 𝕜 V} {M : ℝ} (hM : a.IsBounded
     _ ≤ ‖a e (φ - w)‖ := RCLike.re_le_norm _
     _ ≤ M * ‖e‖ * ‖φ - w‖ := hM _ _
 
-/-- The Aubin–Nitsche estimate with a uniform bound on the approximation of the dual solutions: if
-every datum `g : H` gives a dual solution `φ` whose distance to `K` is at most `δ ‖g‖`, then an
-error `e` orthogonal to `K` in `a` satisfies `‖ι e‖ ≤ M * δ * ‖e‖`.
+/-- **The Aubin–Nitsche estimate** with a uniform bound on the approximation of the dual solutions.
+Let $V$, $H$, $\iota$, $a$, $M$ and $K$ be as in `norm_map_sq_le_of_dual`, and let
+$\delta \ge 0$. Assume that for every $g \in H$ there is a $\varphi \in V$ with
+$a(v, \varphi) = \langle \iota v, g \rangle$ for all $v \in V$ and $\operatorname{dist}(\varphi,
+K) \le \delta \|g\|$. Then every $e \in V$ with $a(e, v) = 0$ for all $v \in K$ satisfies
+$$\|\iota e\| \le M \delta \|e\|.$$
 
-The duality argument gains exactly the approximation power of the dual problem, which is one power
-of the mesh size more than the energy-norm estimate has. -/
+The duality argument gains exactly the approximation power of the dual problem, which in a
+finite element space is one power of the mesh size more than the energy-norm estimate has. -/
 theorem norm_map_le_of_dual_approx {a : SesqForm 𝕜 V} {M δ : ℝ} (hM : a.IsBoundedWith M)
     (hδ : 0 ≤ δ) {K : Submodule 𝕜 V} (ι : V →L[𝕜] H) {e : V} (horth : ∀ v ∈ K, a e v = 0)
     (hdual : ∀ g : H, ∃ φ : V, (∀ v : V, a v φ = inner 𝕜 (ι v) g) ∧
@@ -921,32 +1092,37 @@ theorem norm_map_le_of_dual_approx {a : SesqForm 𝕜 V} {M δ : ℝ} (hM : a.Is
 
 end AubinNitsche
 
-/-! ### Céa's and Strang's lemmas in a seminorm
+/-!
+### Céa's and Strang's lemmas in a seminorm
 
-The quasi-optimality arguments above need neither a topology nor an inner product: they are the
-two-line manipulation `c q(e)² ≤ a(e, e) = a(e, u - w) ≤ M q(e) q(u - w)`, valid for a seminorm `q`
-on a bare real vector space.  Two generalizations matter for the finite-element estimates of
-[quarteroni2000numerical] §12.4:
+The quasi-optimality arguments above need neither a topology nor an inner product. They are the
+short computation $c \, q(e)^2 \le a(e, e) = a(e, u - w) \le M q(e) q(u - w)$, which holds for a
+seminorm $q$ on a real vector space. Two generalizations are needed for the finite element estimates
+of [quarteroni2000numerical], §12.4:
 
-* the error is measured in a *seminorm*, because the natural constants of an elliptic problem on an
-  interval are those of the `H¹` seminorm and not of the `H¹` norm;
-* boundedness and coercivity hold only *relative to a submodule* `W`, because a Poincaré inequality
-  — which is what makes the form bounded and coercive in the seminorm — holds only on the subspace
-  of functions vanishing at the boundary.
+* the error is measured in a seminorm, because the natural constants of an elliptic problem on an
+  interval are those of the $H^1$ seminorm and not those of the $H^1$ norm;
+* boundedness and coercivity hold only on a subspace $W$, because the Poincaré inequality, which
+  makes the form bounded and coercive for the seminorm, holds only on the subspace of functions that
+  vanish at the boundary.
 
-`IsGalerkinSolution.norm_sub_le` and `strang_first` are the norm cases on a Hilbert space. -/
+`IsGalerkinSolution.norm_sub_le` and `strang_first` are the cases of a norm on a Hilbert space.
+-/
 
 section SeminormQuasiOptimal
 
-/-- **Céa's lemma in a seminorm, relative to a subspace `W`**: if the bilinear form `B` is bounded
-by `M` and coercive with constant `c` for the seminorm `q` on `W`, then for `u ∈ W` and `uh ∈ K ≤ W`
-with the Galerkin orthogonality `B (u - uh) v = 0` on `K`,
+/-- **Céa's lemma in a seminorm, on a subspace $W$.** Let $V$ be a real vector space with a seminorm
+$q$, let $B \colon V \times V \to \mathbb{R}$ be additive in its second argument, and let $W$ be
+a subspace. Let $c > 0$, and assume
+$$|B(u, v)| \le M q(u) q(v) \quad \text{and} \quad c \, q(v)^2 \le B(v, v) \quad \text{for all }
+  u, v \in W.$$
+Let $K \subseteq W$ be a subspace, let $u \in W$ and $u_h \in K$, and let $B(u - u_h, v) = 0$
+for all $v \in K$. Then for every $w \in K$,
+$$q(u - u_h) \le \frac{M}{c} \, q(u - w).$$
 
-  `q (u - uh) ≤ (M / c) * q (u - w)`  for every `w ∈ K`.
-
-Only additivity of `B` in its second slot is used, so `B` is taken as a plain function; no topology,
-completeness or inner product enters.  `0 ≤ M` is not assumed: it follows from the two bounds tested
-at `u - w`. -/
+Only additivity of $B$ in its second argument is used, so $B$ is any function. No topology,
+completeness or inner product appears. The condition $M \ge 0$ is not assumed, because it
+follows from the two bounds at $u - w$. -/
 theorem seminorm_sub_le_of_galerkin_orthogonal {V : Type*} [AddCommGroup V] [Module ℝ V]
     (q : Seminorm ℝ V) (B : V → V → ℝ) (hadd : ∀ x y z, B x (y + z) = B x y + B x z)
     {W : Submodule ℝ V} {M c : ℝ} (hc : 0 < c)
@@ -979,18 +1155,22 @@ theorem seminorm_sub_le_of_galerkin_orthogonal {V : Type*} [AddCommGroup V] [Mod
   · rw [div_mul_eq_mul_div, le_div_iff₀ hc]
     nlinarith [key, apply_nonneg q (u - w)]
 
-/-- **Strang's first lemma in a seminorm, relative to a subspace `W`**: for a perturbed form `B`
-bounded by `M` on `W × K` and coercive with constant `c` on `K` for the seminorm `q`, a functional
-`ℓ`, a solution `uN ∈ K` of the perturbed problem `B uN v = ℓ v` on `K`, and an element `u ∈ W`
-whose consistency defect is `|B u v - ℓ v| ≤ δ q v` on `K`,
+/-- **Strang's first lemma in a seminorm, on a subspace $W$.** Let $V$ be a real vector space with a
+seminorm $q$, let $B \colon V \times V \to \mathbb{R}$ satisfy
+$B(x - y, z) = B(x, z) - B(y, z)$, and let $\ell \colon V \to \mathbb{R}$ be any function. Let
+$W$ be a subspace, $K \subseteq W$ a subspace, $c > 0$, $M \ge 0$ and $\delta \ge 0$, and assume
+$$|B(x, v)| \le M q(x) q(v) \quad (x \in W, \ v \in K), \qquad c \, q(v)^2 \le B(v, v) \quad (v
+  \in K).$$
+Let $u \in W$ and $u_N \in K$ with $B(u_N, v) = \ell(v)$ and
+$|B(u, v) - \ell(v)| \le \delta \, q(v)$ for all $v \in K$. Then for every $w \in K$,
+$$q(u - u_N) \le \Big(1 + \frac{M}{c}\Big) q(u - w) + \frac{\delta}{c}.$$
 
-  `q (u - uN) ≤ (1 + M / c) * q (u - w) + δ / c`  for every `w ∈ K`.
-
-The first term is the Céa-type approximation error and the second measures how far `u` is from
-solving the perturbed problem; `δ = 0` recovers `seminorm_sub_le_of_galerkin_orthogonal` up to the
-constant.  Only additivity of `B` in its *first* slot is used, and `ℓ` may be any function.  As in
-`strang_first`, `0 ≤ M` and `0 ≤ δ` have to be assumed: the two bounds are vacuous when `q` vanishes
-on `K`. -/
+The first term is the approximation error, as in Céa's lemma. The second term measures how far
+$u$ is from a solution of the perturbed problem. The case $\delta = 0$ gives
+`seminorm_sub_le_of_galerkin_orthogonal`, with a larger constant. Only additivity of $B$ in its
+first argument is used, and $\ell$ can be any function. As in `strang_first`, the conditions
+$M \ge 0$ and $\delta \ge 0$ must be assumed, because the two bounds hold for any constants when
+$q$ is zero on $K$. -/
 theorem seminorm_sub_le_of_generalizedGalerkin {V : Type*} [AddCommGroup V] [Module ℝ V]
     (q : Seminorm ℝ V) (B : V → V → ℝ) (ℓ : V → ℝ)
     (hsub : ∀ x y z, B (x - y) z = B x z - B y z) {W : Submodule ℝ V} {M c δ : ℝ} (hc : 0 < c)

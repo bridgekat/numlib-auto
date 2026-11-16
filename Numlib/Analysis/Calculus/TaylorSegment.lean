@@ -18,25 +18,39 @@ import Numlib.RingTheory.MvPolynomial.TotalDegree
 /-!
 # Taylor's theorem along a segment, with the Lagrange bound
 
-The multivariate Taylor expansion of `f : E → F` at `a` in the direction `w`, obtained by
-restricting `f` to the segment `s ↦ a + s • w`, `s ∈ [0, 1]`, and applying the one-dimensional
-Lagrange bound `norm_sub_taylorSum_le` of `Numlib/Analysis/Calculus/Taylor` to the curve. The
-`k`-th derivative of the restricted function is the `k`-th Fréchet derivative of `f` applied to
-`w` in every slot (`hasDerivAt_iteratedFDeriv_segment`), so that the Taylor polynomial of `f` at
-`a` of degree `n` reads `∑_{k ≤ n} (1/k!) D^k f(a)[w, …, w]` and the remainder is bounded by
-`M ‖w‖^{n+1}/(n+1)!` when `‖D^{n+1} f‖ ≤ M` along the segment
-(`norm_sub_taylorSum_segment_le`). The hypothesis is `C^{n+1}` *at each point of the segment*
-(`ContDiffAt`), so the statement applies to a function of class `C^{n+1}` on any open set
-containing the segment, with the two-sided derivatives `iteratedFDeriv`.
+Let $E$ and $F$ be real normed spaces, $f : E \to F$, and $a, w \in E$. Restricting $f$ to the
+segment $s \mapsto a + s w$, $s \in [0, 1]$, gives a curve whose $k$-th derivative is the $k$-th
+Fréchet derivative of $f$ applied to $w$ in every argument. The one-dimensional Lagrange bound
+`norm_sub_taylorSum_le` of `Numlib.Analysis.Calculus.Taylor`, applied to this curve, gives the
+multivariate Taylor expansion
+$$\Bigl\| f(a + w) - \sum_{k=0}^{n} \frac{1}{k!} D^k f(a)[w, \dots, w] \Bigr\|
+  \le \frac{M \|w\|^{n+1}}{(n+1)!}$$
+when $f$ is of class $C^{n+1}$ at each point of the segment and $\|D^{n+1} f\| \le M$ along it.
 
-For `f` real-valued and `w = ∑_i c_i w_i` a linear combination of fixed vectors, the Taylor
-polynomial is a polynomial of total degree `≤ n` in the coefficients `c`
-(`exists_mvPolynomial_taylorSum`), because a multilinear form evaluated on the diagonal of a
-linear combination is a polynomial (`ContinuousMultilinearMap.exists_mvPolynomial_apply_sum_smul`,
-by expanding multilinearly); on `ι → ℝ` itself the Taylor polynomial at `a` is a polynomial of
-total degree `≤ n` in the point (`exists_mvPolynomial_taylorSum_pi`). This is what identifies the
-Taylor polynomial of `f` composed with an affine parametrization of a simplex as an element of
-`𝒫_n`, which the sup-norm interpolation and quadrature error estimates on a triangle rest on.
+For $f$ real-valued and $w = \sum_i c_i w_i$ a linear combination of fixed vectors, the Taylor
+polynomial is a polynomial of total degree at most $n$ in the coefficients $c$. On
+$\mathbb{R}^\iota$ itself, the Taylor polynomial at $a$ is a polynomial of total degree at most $n$
+in the point. This identifies the Taylor polynomial of $f$ composed with an affine parametrization
+of a simplex as a polynomial of degree at most $n$, on which the sup-norm interpolation and
+quadrature error estimates on a triangle rest.
+
+## Main results
+
+* `hasDerivAt_iteratedFDeriv_segment`: the derivative of $s \mapsto D^n f(a + s w)[w, \dots, w]$ is
+  $D^{n+1} f(a + s w)[w, \dots, w]$.
+* `norm_sub_taylorSum_segment_le`: Taylor's theorem along a segment, with the Lagrange bound.
+* `ContinuousMultilinearMap.exists_mvPolynomial_apply_sum_smul`: a multilinear form on the diagonal
+  of a linear combination is a polynomial in the coefficients.
+* `exists_mvPolynomial_taylorSum` and `exists_mvPolynomial_taylorSum_pi`: the Taylor polynomial is a
+  polynomial in the coefficients of the direction, and on $\mathbb{R}^\iota$ in the point.
+
+## Implementation notes
+
+* $D^k f(a)$ is `iteratedFDeriv ℝ k f a`, the two-sided iterated Fréchet derivative. The smoothness
+  hypothesis is `ContDiffAt` at each point of the segment, so the statement applies to a function of
+  class $C^{n+1}$ on any open set that contains the segment.
+* A polynomial in the variables $\iota$ is an `MvPolynomial ι ℝ`, and its value at $c$ is
+  `MvPolynomial.eval c`.
 -/
 
 open Set
@@ -47,9 +61,14 @@ section Segment
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- **The derivative along a line of an iterated derivative applied to fixed vectors**: if `f` is
-`C^{n+1}` at `a + t • s`, then `t ↦ D^n f(a + t • s)[u]` has derivative
-`D^{n+1} f(a + t • s)[s, u]` (the direction `s` prepended to `u`) at `t`. -/
+/-- **The derivative along a line of an iterated derivative applied to fixed vectors.** Let $E$ and
+$F$ be real normed spaces, $f : E \to F$, $a, s \in E$ and $t \in \mathbb{R}$, and let $f$ be of
+class $C^{n+1}$ at $a + t s$. Then for every $u = (u_1, \dots, u_n) \in E^n$ the function
+$t \mapsto D^n f(a + t s)[u_1, \dots, u_n]$ has the derivative
+$D^{n+1} f(a + t s)[s, u_1, \dots, u_n]$ at $t$, with the direction $s$ put before $u$.
+
+The family $(s, u_1, \dots, u_n)$ is `Fin.cons s u`, and $D^n f(z)$ is
+`iteratedFDeriv ℝ n f z`. -/
 theorem hasDerivAt_iteratedFDeriv_line_apply {f : E → F} {n : ℕ} {a s : E} {t : ℝ}
     (hf : ContDiffAt ℝ (n + 1) f (a + t • s)) (u : Fin n → E) :
     HasDerivAt (fun t : ℝ => iteratedFDeriv ℝ n f (a + t • s) u)
@@ -65,9 +84,13 @@ theorem hasDerivAt_iteratedFDeriv_line_apply {f : E → F} {n : ℕ} {a s : E} {
   convert h using 1
   rw [iteratedFDeriv_succ_apply_left, Fin.cons_zero, Fin.tail_cons]
 
-/-- **The derivative along a segment of an iterated derivative applied to the direction**: if `f`
-is `C^{n+1}` at `a + s • w`, then `s ↦ D^n f(a + s • w)[w, …, w]` has derivative
-`D^{n+1} f(a + s • w)[w, …, w]` at `s`. The case `u = (w, …, w)` of
+/-- **The derivative along a segment of an iterated derivative applied to the direction.** Let $E$
+and $F$ be real normed spaces, $f : E \to F$, $a, w \in E$ and $s \in \mathbb{R}$, and let $f$
+be of class $C^{n+1}$ at $a + s w$. Then the function $s \mapsto D^n f(a + s w)[w, \dots, w]$
+has the derivative $D^{n+1} f(a + s w)[w, \dots, w]$ at $s$.
+
+The constant family $[w, \dots, w]$ is `fun _ => w`, and $D^n f(z)$ is
+`iteratedFDeriv ℝ n f z`. This is the case $u = (w, \dots, w)$ of
 `hasDerivAt_iteratedFDeriv_line_apply`. -/
 theorem hasDerivAt_iteratedFDeriv_segment {f : E → F} {n : ℕ} {a w : E} {s : ℝ}
     (hf : ContDiffAt ℝ (n + 1) f (a + s • w)) :
@@ -76,12 +99,17 @@ theorem hasDerivAt_iteratedFDeriv_segment {f : E → F} {n : ℕ} {a w : E} {s :
   convert hasDerivAt_iteratedFDeriv_line_apply hf (fun _ => w) using 2
   exact (Fin.cons_self_tail (fun _ : Fin (n + 1) => w)).symm
 
-/-- **Taylor's theorem along a segment, with the Lagrange bound.** If `f : E → F` is `C^{n+1}` at
-every point of the segment `a + s • w`, `s ∈ [0, 1]`, and `‖D^{n+1} f‖ ≤ M` along it, then
-`‖f(a + w) - ∑_{k ≤ n} (1/k!) D^k f(a)[w, …, w]‖ ≤ M ‖w‖^{n+1}/(n+1)!`. The curve
-`s ↦ f(a + s • w)` has the derivative chain `s ↦ D^k f(a + s • w)[w, …, w]`
-(`hasDerivAt_iteratedFDeriv_segment`), and `norm_sub_taylorSum_le` bounds its expansion on
-`[0, 1]`. -/
+/-- **Taylor's theorem along a segment, with the Lagrange bound.** Let $E$ and $F$ be real normed
+spaces, $f : E \to F$, $n \in \mathbb{N}$ and $a, w \in E$. Let $f$ be of class $C^{n+1}$ at
+every point $a + s w$ with $s \in [0, 1]$, and let $\|D^{n+1} f(a + s w)\| \le M$ for all
+$s \in [0, 1]$. Then
+$$\Bigl\| f(a + w) - \sum_{k=0}^{n} \frac{1}{k!} D^k f(a)[w, \dots, w] \Bigr\|
+  \le \frac{M \|w\|^{n+1}}{(n+1)!}.$$
+
+The constant family $[w, \dots, w]$ is `fun _ => w`, and $D^k f(a)$ is
+`iteratedFDeriv ℝ k f a`. The curve $s \mapsto f(a + s w)$ has the chain of derivatives
+$s \mapsto D^k f(a + s w)[w, \dots, w]$ (`hasDerivAt_iteratedFDeriv_segment`), and
+`norm_sub_taylorSum_le` bounds its expansion on $[0, 1]$. -/
 theorem norm_sub_taylorSum_segment_le {f : E → F} {n : ℕ} {a w : E} {M : ℝ}
     (hf : ∀ s ∈ Icc (0 : ℝ) 1, ContDiffAt ℝ (n + 1) f (a + s • w))
     (hM : ∀ s ∈ Icc (0 : ℝ) 1, ‖iteratedFDeriv ℝ (n + 1) f (a + s • w)‖ ≤ M) :
@@ -105,8 +133,13 @@ theorem norm_sub_taylorSum_segment_le {f : E → F} {n : ℕ} {a w : E} {M : ℝ
   simp only [e0, e1, sub_zero, one_pow, one_div] at key
   simpa [div_eq_mul_inv] using key
 
-/-- The remainder bound `norm_sub_taylorSum_segment_le` for a function of class `C^{n+1}` on the
-whole space, the bound `M` on `‖D^{n+1} f‖` being required along the segment only. -/
+/-- Taylor's theorem along a segment for a function of class $C^{n+1}$ on the whole space. Let $E$
+and $F$ be real normed spaces, let $f : E \to F$ be of class $C^{n+1}$, let $a, w \in E$, and
+let $\|D^{n+1} f(a + s w)\| \le M$ for all $s \in [0, 1]$. Then
+$$\Bigl\| f(a + w) - \sum_{k=0}^{n} \frac{1}{k!} D^k f(a)[w, \dots, w] \Bigr\|
+  \le \frac{M \|w\|^{n+1}}{(n+1)!}.$$
+
+The bound $M$ is required along the segment only. This is `norm_sub_taylorSum_segment_le`. -/
 theorem ContDiff.norm_sub_taylorSum_segment_le {f : E → F} {n : ℕ} (hf : ContDiff ℝ (n + 1) f)
     {a w : E} {M : ℝ} (hM : ∀ s ∈ Icc (0 : ℝ) 1, ‖iteratedFDeriv ℝ (n + 1) f (a + s • w)‖ ≤ M) :
     ‖f (a + w) - ∑ k ∈ Finset.range (n + 1),
@@ -121,10 +154,15 @@ section Polynomial
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι : Type*} [Fintype ι]
 
 /-- **A multilinear form on the diagonal of a linear combination is a polynomial in the
-coefficients**: for `A` continuous `j`-linear on `E` and vectors `w_i`, `i ∈ ι`, the function
-`c ↦ A(∑_i c_i w_i, …, ∑_i c_i w_i)` is `MvPolynomial.eval c q` for a polynomial `q` in the
-variables `ι` of total degree at most `j`, namely
-`q = ∑_{r : Fin j → ι} A(w_{r 0}, …, w_{r (j-1)}) ∏_l X_{r l}` (multilinear expansion). -/
+coefficients.** Let $E$ be a real normed space, $\iota$ a finite type, $A$ a continuous
+$j$-linear form on $E$, and $w_i \in E$ for $i \in \iota$. Then there is a real polynomial $q$
+in the variables $(X_i)_{i \in \iota}$, of total degree at most $j$, such that for all
+$c \in \mathbb{R}^\iota$
+$$A\Bigl( \sum_i c_i w_i, \dots, \sum_i c_i w_i \Bigr) = q(c).$$
+
+By multilinear expansion, $q = \sum_{r} A(w_{r(0)}, \dots, w_{r(j-1)}) \prod_{l} X_{r(l)}$,
+where $r$ runs over the maps $\{0, \dots, j - 1\} \to \iota$. The value $q(c)$ is
+`MvPolynomial.eval c q`. -/
 theorem ContinuousMultilinearMap.exists_mvPolynomial_apply_sum_smul {j : ℕ}
     (A : ContinuousMultilinearMap ℝ (fun _ : Fin j => E) ℝ) (w : ι → E) :
     ∃ q : MvPolynomial ι ℝ, q.totalDegree ≤ j ∧
@@ -143,10 +181,15 @@ theorem ContinuousMultilinearMap.exists_mvPolynomial_apply_sum_smul {j : ℕ}
     refine Finset.sum_congr rfl fun r _ => ?_
     rw [ContinuousMultilinearMap.map_smul_univ, smul_eq_mul, mul_comm]
 
-/-- **The Taylor polynomial along a linear parametrization is a polynomial**: for `f : E → ℝ`,
-a point `a` and vectors `w_i`, `i ∈ ι`, the degree-`n` Taylor polynomial of `f` at `a`, evaluated
-in the direction `∑_i c_i w_i`, is `MvPolynomial.eval c q` for a polynomial `q` of total degree at
-most `n` in the coefficients `c`. -/
+/-- **The Taylor polynomial along a linear parametrization is a polynomial.** Let $E$ be a real
+normed space, $f : E \to \mathbb{R}$, $a \in E$, $n \in \mathbb{N}$, $\iota$ a finite type, and
+$w_i \in E$ for $i \in \iota$. Then there is a real polynomial $q$ in the variables
+$(X_i)_{i \in \iota}$, of total degree at most $n$, such that for all $c \in \mathbb{R}^\iota$
+$$\sum_{k=0}^{n} \frac{1}{k!} D^k f(a)\Bigl[ \sum_i c_i w_i, \dots, \sum_i c_i w_i \Bigr]
+  = q(c).$$
+
+No smoothness of $f$ is needed: each $D^k f(a)$ is a continuous multilinear form, possibly zero.
+$D^k f(a)$ is `iteratedFDeriv ℝ k f a`, and $q(c)$ is `MvPolynomial.eval c q`. -/
 theorem exists_mvPolynomial_taylorSum {f : E → ℝ} (a : E) (n : ℕ) (w : ι → E) :
     ∃ q : MvPolynomial ι ℝ, q.totalDegree ≤ n ∧ ∀ c : ι → ℝ,
       ∑ k ∈ Finset.range (n + 1),
@@ -163,11 +206,15 @@ theorem exists_mvPolynomial_taylorSum {f : E → ℝ} (a : E) (n : ℕ) (w : ι 
       ((hq k).1.trans (Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)))
   · simp only [map_sum, MvPolynomial.smul_eval, (hq _).2, smul_eq_mul]
 
-/-- **The Taylor polynomial of a function on `ι → ℝ` is a polynomial in the point**: for
-`f : (ι → ℝ) → ℝ` and `a : ι → ℝ`, the degree-`n` Taylor polynomial of `f` at `a`,
-`y ↦ ∑_{k ≤ n} (1/k!) D^k f(a)[y - a, …, y - a]`, is `MvPolynomial.eval y q` for a polynomial `q`
-of total degree at most `n` — `exists_mvPolynomial_taylorSum` along the standard basis, followed
-by the substitution `X_i ↦ X_i - a_i`, which does not raise the total degree. -/
+/-- **The Taylor polynomial of a function on $\mathbb{R}^\iota$ is a polynomial in the point.** Let
+$\iota$ be a finite type, $f : \mathbb{R}^\iota \to \mathbb{R}$, $a \in \mathbb{R}^\iota$ and
+$n \in \mathbb{N}$. Then there is a real polynomial $q$ in the variables $(X_i)_{i \in \iota}$,
+of total degree at most $n$, such that for all $y \in \mathbb{R}^\iota$
+$$\sum_{k=0}^{n} \frac{1}{k!} D^k f(a)[y - a, \dots, y - a] = q(y).$$
+
+The proof is `exists_mvPolynomial_taylorSum` along the standard basis, followed by the
+substitution $X_i \mapsto X_i - a_i$, which does not raise the total degree. $D^k f(a)$ is
+`iteratedFDeriv ℝ k f a`, and $q(y)$ is `MvPolynomial.eval y q`. -/
 theorem exists_mvPolynomial_taylorSum_pi {f : (ι → ℝ) → ℝ} (a : ι → ℝ) (n : ℕ) :
     ∃ q : MvPolynomial ι ℝ, q.totalDegree ≤ n ∧ ∀ y : ι → ℝ,
       ∑ k ∈ Finset.range (n + 1), ((k ! : ℝ)⁻¹) • iteratedFDeriv ℝ k f a (fun _ => y - a)

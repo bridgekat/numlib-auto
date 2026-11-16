@@ -9,78 +9,102 @@ import Numlib.Approximation.Hermite
 /-!
 # The Newton form of the interpolating polynomial
 
-The Newton divided difference `f[x₀, …, x_m]` is `DividedDifference.newton` of
-`Numlib/Approximation/DividedDifference`, in its explicit symmetric form
-`∑ᵢ f(xᵢ) / ∏_{j ≠ i} (xᵢ - xⱼ)`, together with `newton_eq_coeff` (it is the coefficient of `X^m`
-in the interpolant) and the divided-difference error form `sub_eval_interpolate_eq_newton`. This
-module is the rest of the classical theory of that object, [quarteroni2000numerical] §8.2 and
-[kress1998numerical] §8.2: the Newton form of the interpolant, the recursion in the nodes, the
-algebraic rules (symmetry, linearity, Leibniz), the mean-value form `f[x₀, …, x_m] = f^{(m)}(ξ)/m!`,
-the divided differences of `t ↦ 1/(z - t)` (the engine of Runge-type divergence arguments), the
-derivative of a divided difference in its last argument, and confluent divided differences at
-repeated nodes, which B-splines with coincident knots need.
+Let $x_0, \dots, x_m$ be distinct real nodes. The Newton divided difference
+$$f[x_0, \dots, x_m] = \sum_{i=0}^m \frac{f(x_i)}{\prod_{j \neq i} (x_i - x_j)}$$
+is `DividedDifference.newton` of `Numlib.Approximation.DividedDifference`. That module also proves
+that it is the coefficient of $X^m$ in the interpolant (`DividedDifference.newton_eq_coeff`) and the
+divided-difference form of the interpolation error
+(`DividedDifference.sub_eval_interpolate_eq_newton`). This module develops the rest of the classical
+theory of divided differences, following [quarteroni2000numerical], §8.2 and Remark 8.3, and
+[kress1998numerical], §8.2: the Newton form of the interpolant, the recursion in the nodes, the
+algebraic rules (symmetry, linearity and the Leibniz formula), the mean value form
+$f[x_0, \dots, x_m] = f^{(m)}(\xi)/m!$, the divided differences of $t \mapsto 1/(z - t)$ (the engine
+of divergence arguments of Runge type), the derivative of a divided difference in its last argument,
+and confluent divided differences at repeated nodes, which B-splines with coincident knots need.
 
-## The divided difference over a finite index set
+Write $\Pi_m f$ for the interpolant of $f$ at $x_0, \dots, x_m$ and
+$\omega_k = \prod_{j < k} (X - x_j)$ for the nodal polynomial of the first $k$ nodes, with
+$\omega_0 = 1$.
 
-The classical statements are indexed by `Fin (m + 1)`, but the arguments behind them — adding a
-node, deleting one, splitting the node set into a prefix and a suffix — are cleaner on an
-arbitrary finite set of indices, where they need no dependent types. So the module first develops
-`DividedDifference.newtonOn s v f`, the divided difference of `f` at the nodes `v i`, `i ∈ s`, over
-any field, in the setting of Mathlib's `Lagrange.interpolate s v`; `newton f v` is
-`newtonOn Finset.univ v f` by definition. The Newton form over a linearly ordered index set
-(`interpolate_eq_sum_newtonOn_mul_nodal`), the recursion in two arbitrary nodes
-(`newtonOn_eq_sub_div`) and the Leibniz formula (`newtonOn_mul`) are proved there, and the
-`Fin`-indexed statements are read off through the reindexing lemma `newtonOn_map`.
+## Main definitions
 
-## Conventions
-
-Nodes are `v : Fin (m + 1) → ℝ`; `Fin.init v`, `Fin.tail v` and `Fin.snoc v t` drop the last, drop
-the first and append a node, so that the recursion reads
-`newton f v = (newton f (Fin.tail v) - newton f (Fin.init v)) / (v (Fin.last _) - v 0)`. The
-truncations `prefixNodes v k = (x₀, …, x_k)` and `suffixNodes v k = (x_k, …, x_m)` carry the Newton
-sum and the Leibniz formula, and `prefixNodal v k = ∏_{j < k} (X - x_j)` is the nodal polynomial
-`ω_k` of the first `k` nodes. The interpolant is Mathlib's
-`Lagrange.interpolate Finset.univ v (f ∘ v)` and the nodal polynomial is
-`Lagrange.nodal Finset.univ v`, as in `DividedDifference`.
+* `DividedDifference.newtonOn`: the divided difference $f[v_i : i \in s]$ at the nodes indexed by a
+  finite set $s$, over any field.
+* `DividedDifference.prefixNodes`, `DividedDifference.suffixNodes`: the truncations
+  $(x_0, \dots, x_k)$ and $(x_k, \dots, x_m)$ of the nodes.
+* `DividedDifference.prefixNodal`: the nodal polynomial $\omega_k$ of the first $k$ nodes.
+* `DividedDifference.confluent`: the confluent divided difference at possibly repeated nodes.
 
 ## Main results
 
-* `interpolate_snoc_eq` and `eval_interpolate_snoc_sub` — adding a node adds
-  `f[x₀, …, x_m, t] ω_{m+1}` to the interpolant, and the new coefficient is the book's definition
-  `(f(t) - Π_m f(t)) / ω_{m+1}(t)` of the divided difference.
-* `interpolate_eq_sum_newton_mul_prefixNodal` — the **Newton divided difference formula**
-  `Π_m f = ∑_k f[x₀, …, x_k] ω_k`.
-* `newton_succ` — the recursion `f[x₀, …, x_m] = (f[x₁, …, x_m] - f[x₀, …, x_{m-1}]) / (x_m - x₀)`.
-* `newton_comp_perm`, `newton_add`, `newton_smul`, `newton_mul` — symmetry, linearity and the
-  **Leibniz formula** `(gh)[x₀, …, x_m] = ∑_j g[x₀, …, x_j] h[x_j, …, x_m]`.
-* `newton_eval_eq_coeff` and `newton_eq_zero_of_degree_lt` — on a polynomial of degree `≤ m` the
-  divided difference reads off the coefficient of `X^m`, and it vanishes on `𝒫_{m-1}`.
-* `exists_newton_eq_iteratedDeriv_div` and `abs_newton_le` — the **mean-value form**
-  `f[x₀, …, x_m] = f^{(m)}(ξ)/m!` and the bound it gives.
-* `newton_inv_sub` — `f[x₀, …, x_m] = 1/∏ᵢ (z - xᵢ)` for `f(t) = 1/(z - t)`.
-* `hasDerivAt_newton_snoc` — the derivative of `x ↦ f[x₀, …, x_n, x]` is the confluent divided
-  difference `f[x₀, …, x_n, x, x]`, the top coefficient of the Hermite interpolant with a double
-  node at `x`.
-* `confluent`, `confluent_eq_newton`, `confluent_const` — confluent divided differences at
-  repeated nodes.
-* `continuous_confluent` and `exists_confluent_eq_iteratedDeriv_div` — for `f` of class `C^m` the
-  confluent divided difference is continuous on the nondecreasing tuples, and it is again
-  `f^{(m)}(ξ)/m!` for a `ξ` between the extreme nodes.
-* `newtonOn_eq_divDiff` and `confluent_eq_divDiff` — both are instances of the divided difference
-  `Hermite.divDiff f s` at a multiset of possibly repeated nodes
-  (`Numlib/Analysis/Calculus/HermiteInterpolation`), the leading coefficient of the Hermite
-  interpolant: at distinct nodes, and at a nondecreasing tuple respectively.
+* `DividedDifference.interpolate_snoc_eq`: adding a node $t$ adds
+  $f[x_0, \dots, x_m, t] \, \omega_{m+1}$ to the interpolant.
+* `DividedDifference.eval_interpolate_snoc_sub`: $f[x_0, \dots, x_m, t] = (f(t) - \Pi_m
+  f(t))/\omega_{m+1}(t)$, the definition of the divided difference in [quarteroni2000numerical].
+* `DividedDifference.interpolate_eq_sum_newton_mul_prefixNodal`: the **Newton divided difference
+  formula** $\Pi_m f = \sum_{k=0}^m f[x_0, \dots, x_k] \, \omega_k$.
+* `DividedDifference.newton_succ`: the recursion $f[x_0, \dots, x_m] = (f[x_1, \dots, x_m] - f[x_0,
+  \dots, x_{m-1}])/(x_m - x_0)$.
+* `DividedDifference.newton_comp_perm`: a divided difference does not depend on the order of the
+  nodes.
+* `DividedDifference.newton_add`, `DividedDifference.newton_smul`: a divided difference is linear in
+  the function.
+* `DividedDifference.newton_mul`: the **Leibniz formula** $(gh)[x_0, \dots, x_m] = \sum_{j=0}^m
+  g[x_0, \dots, x_j] \, h[x_j, \dots, x_m]$.
+* `DividedDifference.newton_eval_eq_coeff`: on a polynomial of degree at most $m$, the divided
+  difference is the coefficient of $X^m$.
+* `DividedDifference.newton_eq_zero_of_degree_lt`: the divided difference of a polynomial of degree
+  less than $m$ vanishes.
+* `DividedDifference.exists_newton_eq_iteratedDeriv_div`: the **mean value form**
+  $f[x_0, \dots, x_m] = f^{(m)}(\xi)/m!$.
+* `DividedDifference.abs_newton_le`: $|f[x_0, \dots, x_m]| \le M/m!$ if $|f^{(m)}| \le M$.
+* `DividedDifference.newton_inv_sub`: for $f(t) = 1/(z - t)$,
+  $f[x_0, \dots, x_m] = 1/\prod_i (z - x_i)$.
+* `DividedDifference.hasDerivAt_newton_snoc`: the derivative of $x \mapsto f[x_0, \dots, x_n, x]$ is
+  the confluent divided difference $f[x_0, \dots, x_n, x, x]$, the top coefficient of the Hermite
+  interpolant with a double node at $x$.
+* `DividedDifference.confluent_eq_newton`, `DividedDifference.confluent_const`: the confluent
+  divided difference is the classical one at distinct nodes, and $f^{(m)}(x)/m!$ at $m + 1$ copies
+  of $x$.
+* `DividedDifference.continuous_confluent`: for $f$ of class $C^m$, the confluent divided difference
+  is continuous on the nondecreasing tuples of nodes.
+* `DividedDifference.exists_confluent_eq_iteratedDeriv_div`: the mean value form of the confluent
+  divided difference, with $\xi$ between the extreme nodes.
+* `DividedDifference.newtonOn_eq_divDiff`, `DividedDifference.confluent_eq_divDiff`: both divided
+  differences are instances of the divided difference `Hermite.divDiff` at a multiset of possibly
+  repeated nodes (`Numlib.Analysis.Calculus.HermiteInterpolation`), the leading coefficient of the
+  Hermite interpolant: at distinct nodes, and at a nondecreasing tuple of nodes.
 
-## References
+## Implementation notes
 
-[quarteroni2000numerical] §8.2 and Remark 8.3; [kress1998numerical] §8.2; the Leibniz formula is
-Steffensen's, *Interpolation*, §19. The book prints the value of the `n`-th divided difference at
-`n + 1` coincident nodes as `f^{(n+1)}(x₀)/(n+1)!`; the correct value `f^{(n)}(x₀)/n!` is used.
+* The classical statements are indexed by `Fin (m + 1)`. The arguments behind them (adding a node,
+  deleting a node, splitting the nodes into a prefix and a suffix) are simpler on an arbitrary
+  finite set of indices, where they need no dependent types. So the module first develops
+  `DividedDifference.newtonOn s v f`, the divided difference of $f$ at the nodes $v_i$, $i \in s$,
+  over any field, in the setting of Mathlib's `Lagrange.interpolate s v`. By definition,
+  `DividedDifference.newton f v` is `DividedDifference.newtonOn Finset.univ v f`. The Newton form
+  over a linearly ordered index set (`DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal`), the
+  recursion in two arbitrary nodes (`DividedDifference.newtonOn_eq_sub_div`) and the Leibniz formula
+  (`DividedDifference.newtonOn_mul`) are proved for `DividedDifference.newtonOn`, and the
+  `Fin`-indexed statements follow through the reindexing lemma `DividedDifference.newtonOn_map`.
+* The nodes are `v : Fin (m + 1) → ℝ`. `Fin.init v`, `Fin.tail v` and `Fin.snoc v t` drop the last
+  node, drop the first node, and append the node $t$, so the recursion reads `newton f v = (newton f
+  (Fin.tail v) - newton f (Fin.init v)) / (v (Fin.last _) - v 0)`. The truncations
+  `DividedDifference.prefixNodes v k` and `DividedDifference.suffixNodes v k` carry the Newton sum
+  and the Leibniz formula. The interpolant is Mathlib's `Lagrange.interpolate Finset.univ v (f ∘ v)`
+  and the nodal polynomial is `Lagrange.nodal Finset.univ v`, as in
+  `Numlib.Approximation.DividedDifference`.
+* The Leibniz formula has Steffensen's proof (*Interpolation*, §19).
+* Remark 8.3 of [quarteroni2000numerical] gives the value $f^{(n+1)}(x_0)/(n + 1)!$ for the divided
+  difference at $n + 1$ coincident nodes $x_0 = \dots = x_n$. The correct value is
+  $f^{(n)}(x_0)/n!$, and `DividedDifference.confluent` uses it.
 -/
 
 open Polynomial Finset
 
-/-- Reindexing a Lagrange interpolant along an embedding of the index set. -/
+/-- Reindexing a Lagrange interpolant along an embedding $e : \kappa \hookrightarrow \iota$ of index
+sets: the interpolant of the values $r$ at the nodes $v$ over the image $e(t)$ of a finite set
+$t$ is the interpolant of the values $r \circ e$ at the nodes $v \circ e$ over $t$. -/
 theorem Lagrange.interpolate_map {F : Type*} [Field F] {ι κ : Type*} [DecidableEq ι]
     [DecidableEq κ] (e : κ ↪ ι) (t : Finset κ) (v r : ι → F) :
     Lagrange.interpolate (t.map e) v r = Lagrange.interpolate t (v ∘ e) (r ∘ e) := by
@@ -90,16 +114,24 @@ theorem Lagrange.interpolate_map {F : Type*} [Field F] {ι κ : Type*} [Decidabl
   simp only [Lagrange.basis, ← Finset.map_erase, Finset.prod_map]
   rfl
 
-/-- Reindexing a nodal polynomial along an embedding of the index set. -/
+/-- Reindexing a nodal polynomial along an embedding $e : \kappa \hookrightarrow \iota$ of index
+sets: the nodal polynomial of the nodes $v$ over $e(t)$ is the nodal polynomial of the nodes
+$v \circ e$ over $t$. -/
 theorem Lagrange.nodal_map {R : Type*} [CommRing R] {ι κ : Type*} (e : κ ↪ ι) (t : Finset κ)
     (v : ι → R) : Lagrange.nodal (t.map e) v = Lagrange.nodal t (v ∘ e) := by
   simp only [Lagrange.nodal, Finset.prod_map]
   rfl
 
-/-- **Adding a node to a Lagrange interpolant**: the interpolant at `insert a t` is the interpolant
-at `t` plus its own coefficient of `X^{#t}` times the nodal polynomial of `t`. The difference of the
-two interpolants vanishes at the nodes of `t` and has degree at most `#t`, so it is that multiple
-of the nodal polynomial. -/
+/-- **Adding a node to a Lagrange interpolant.** Let $F$ be a field, let $t$ be a finite index set
+and $a \notin t$, and let the nodes $v_i$, $i \in t \cup \{a\}$, be distinct. Then for all
+values $r$,
+$$\Pi_{t \cup \{a\}} = \Pi_t + c \, \omega_t,$$
+where $\Pi_s$ is the Lagrange interpolant of $r$ at the nodes indexed by $s$,
+$\omega_t = \prod_{i \in t} (X - v_i)$ is the nodal polynomial of $t$, and $c$ is the
+coefficient of $X^{\# t}$ in $\Pi_{t \cup \{a\}}$.
+
+The difference of the two interpolants vanishes at the nodes of $t$ and has degree at most
+$\# t$, so it is a multiple of $\omega_t$. -/
 theorem Lagrange.interpolate_insert_eq {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
     {v : ι → F} {a : ι} {t : Finset ι} (hvs : Set.InjOn v ((insert a t : Finset ι) : Set ι))
     (ha : a ∉ t) (r : ι → F) :
@@ -141,34 +173,42 @@ section Finset
 
 variable {F : Type*} [Field F] {ι : Type*} [DecidableEq ι] {s : Finset ι} {v : ι → F}
 
-/-- **The Newton divided difference over a finite index set**: `f[v i : i ∈ s]`, in the explicit
-form `∑_{i ∈ s} f(v i) / ∏_{j ∈ s, j ≠ i} (v i - v j)`. For injective nodes it is the coefficient of
-`X^{#s - 1}` in `Lagrange.interpolate s v (f ∘ v)` (`DividedDifference.newtonOn_eq_coeff`);
-`DividedDifference.newton f v` is the case `s = Finset.univ` of a `Fin`-indexed family. -/
+/-- The **Newton divided difference over a finite index set**: for a finite set $s$ of indices,
+nodes $v_i$ in a field $F$ and $f : F \to F$,
+$$f[v_i : i \in s] = \sum_{i \in s} \frac{f(v_i)}{\prod_{j \in s, \, j \neq i} (v_i - v_j)}.$$
+
+For injective nodes it is the coefficient of $X^{\# s - 1}$ in the interpolant
+`Lagrange.interpolate s v (f ∘ v)` (`DividedDifference.newtonOn_eq_coeff`). The divided
+difference `DividedDifference.newton f v` of a `Fin`-indexed family is the case
+`s = Finset.univ`. -/
 noncomputable def newtonOn (s : Finset ι) (v : ι → F) (f : F → F) : F :=
   ∑ i ∈ s, f (v i) / ∏ j ∈ s.erase i, (v i - v j)
 
-/-- The `Fin`-indexed divided difference is the one over the full index set. -/
+/-- The divided difference $f[x_0, \dots, x_m]$ of a `Fin`-indexed family of real nodes is the
+divided difference over the full index set. -/
 theorem newton_eq_newtonOn {m : ℕ} (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) :
     newton f v = newtonOn univ v f := rfl
 
+/-- The divided difference over the empty index set is $0$. -/
 @[simp]
 theorem newtonOn_empty (v : ι → F) (f : F → F) : newtonOn ∅ v f = 0 := by
   simp [newtonOn]
 
-/-- The divided difference at a single node is the value of the function there. -/
+/-- The divided difference at a single node $v_i$ is the value $f(v_i)$. -/
 @[simp]
 theorem newtonOn_singleton (v : ι → F) (f : F → F) (i : ι) : newtonOn {i} v f = f (v i) := by
   simp [newtonOn]
 
-/-- Reindexing the nodes along an embedding of the index set. -/
+/-- Reindexing the nodes along an embedding $e : \kappa \hookrightarrow \iota$:
+$f[v_i : i \in e(t)] = f[v_{e(j)} : j \in t]$. -/
 theorem newtonOn_map {κ : Type*} [DecidableEq κ] (e : κ ↪ ι) (t : Finset κ) (v : ι → F)
     (f : F → F) : newtonOn (t.map e) v f = newtonOn t (v ∘ e) f := by
   simp only [newtonOn, Finset.sum_map, Function.comp_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Finset.map_erase, Finset.prod_map]
 
-/-- The divided difference depends on the nodes only through their values on the index set. -/
+/-- The divided difference depends on the nodes only through their values on the index set: if
+$v_i = w_i$ for every $i \in s$, then $f[v_i : i \in s] = f[w_i : i \in s]$. -/
 theorem newtonOn_congr {w : ι → F} (h : ∀ i ∈ s, v i = w i) (f : F → F) :
     newtonOn s v f = newtonOn s w f := by
   refine Finset.sum_congr rfl fun i hi => ?_
@@ -176,8 +216,12 @@ theorem newtonOn_congr {w : ι → F} (h : ∀ i ∈ s, v i = w i) (f : F → F)
   congr 1
   exact Finset.prod_congr rfl fun l hl => by rw [h l (Finset.mem_of_mem_erase hl)]
 
-/-- **Deleting one node**, written as a sum over the whole index set: the term of the deleted
-node carries the factor `v a - v a = 0`, so it may be added back. -/
+/-- **Deleting one node, written as a sum over the whole index set.** Let the nodes $v_i$,
+$i \in s$, be distinct and let $a \in s$. Then
+$$f[v_i : i \in s \setminus \{a\}] = \sum_{w \in s} \frac{f(v_w)(v_w - v_a)}{\prod_{j \in s, \,
+  j \neq w} (v_w - v_j)}.$$
+
+The term of the deleted node carries the factor $v_a - v_a = 0$, so it may be added to the sum. -/
 theorem newtonOn_erase_eq_sum (hvs : Set.InjOn v s) (f : F → F) {a : ι} (ha : a ∈ s) :
     newtonOn (s.erase a) v f
       = ∑ w ∈ s, f (v w) * (v w - v a) / ∏ j ∈ s.erase w, (v w - v j) := by
@@ -192,12 +236,14 @@ theorem newtonOn_erase_eq_sum (hvs : Set.InjOn v s) (f : F → F) {a : ι} (ha :
   rw [hsplit, Finset.erase_right_comm]
   field_simp
 
-/-- **A three-term identity for divided differences.** If the node `v p` is the affine combination
-`b • v q + (1 - b) • v r` of two other nodes of the family, then the divided difference over the
-index set with `p` deleted is that same combination of the ones with `q` and with `r` deleted.
-In the explicit form of `newtonOn_erase_eq_sum` it is the pointwise identity
-`v w - v p = b (v w - v q) + (1 - b) (v w - v r)`. This is the engine of Boehm's knot insertion
-for B-splines. -/
+/-- **A three-term identity for divided differences.** Let the nodes $v_i$, $i \in s$, be distinct,
+let $p, q, r \in s$, and let $v_p = b v_q + (1 - b) v_r$ for some $b \in F$. Then
+$$f[v_i : i \in s \setminus \{p\}] = b \, f[v_i : i \in s \setminus \{q\}] + (1 - b) \, f[v_i :
+  i \in s \setminus \{r\}].$$
+
+In the form of `DividedDifference.newtonOn_erase_eq_sum`, this is the pointwise identity
+$v_w - v_p = b (v_w - v_q) + (1 - b)(v_w - v_r)$. It is the engine of Boehm's knot insertion for
+B-splines. -/
 theorem newtonOn_erase_eq_affine_comb (hvs : Set.InjOn v s) {p q r : ι} (hp : p ∈ s) (hq : q ∈ s)
     (hr : r ∈ s) {b : F} (hb : v p = b * v q + (1 - b) * v r) (f : F → F) :
     newtonOn (s.erase p) v f
@@ -209,8 +255,9 @@ theorem newtonOn_erase_eq_affine_comb (hvs : Set.InjOn v s) {p q r : ι} (hp : p
   field_simp
   ring
 
-/-- The divided difference over the `m + 1` consecutive nodes `v i, …, v (i + m)` of a sequence,
-as a divided difference over the index interval. -/
+/-- For a sequence $v_0, v_1, \dots$ of real nodes, a function $g$ and $m, i \in \mathbb{N}$, the
+divided difference $g[v_i, \dots, v_{i+m}]$ at $m + 1$ consecutive nodes equals the divided
+difference over the index interval $\{i, \dots, i + m\}$. -/
 theorem newton_shift_eq_newtonOn (v : ℕ → ℝ) (g : ℝ → ℝ) (m i : ℕ) :
     newton g (fun r : Fin (m + 1) => v (i + r)) = newtonOn (Finset.Icc i (i + m)) v g := by
   have hinj : Function.Injective (fun r : Fin (m + 1) => i + (r : ℕ)) :=
@@ -230,34 +277,42 @@ theorem newton_shift_eq_newtonOn (v : ℕ → ℝ) (g : ℝ → ℝ) (m i : ℕ)
   rw [← hmap, newtonOn_map, newton_eq_newtonOn]
   rfl
 
-/-- **The divided difference is the top coefficient of the interpolant**: for injective nodes,
-`newtonOn s v f` is the coefficient of `X^{#s - 1}` in `Lagrange.interpolate s v (f ∘ v)`. This is
-`Lagrange.coeff_eq_sum` read backwards. -/
+/-- **The divided difference is the top coefficient of the interpolant.** If the nodes $v_i$,
+$i \in s$, are distinct, then $f[v_i : i \in s]$ is the coefficient of $X^{\# s - 1}$ in the
+Lagrange interpolant of $f$ at these nodes.
+
+This is Mathlib's `Lagrange.coeff_eq_sum` read backwards. -/
 theorem newtonOn_eq_coeff (hvs : Set.InjOn v s) (f : F → F) :
     newtonOn s v f = (Lagrange.interpolate s v fun i => f (v i)).coeff (s.card - 1) := by
   rw [Lagrange.coeff_eq_sum hvs (Lagrange.degree_interpolate_lt _ hvs)]
   refine Finset.sum_congr rfl fun i hi => ?_
   rw [Lagrange.eval_interpolate_at_node _ hvs hi]
 
-/-- On a polynomial of degree `< #s` the divided difference reads off the coefficient of
-`X^{#s - 1}`. -/
+/-- Let the nodes $v_i$, $i \in s$, be distinct, and let $p$ be a polynomial of degree less than
+$\# s$. Then $p[v_i : i \in s]$ is the coefficient of $X^{\# s - 1}$ in $p$. -/
 theorem newtonOn_eval_eq_coeff (hvs : Set.InjOn v s) {p : F[X]} (hp : p.degree < s.card) :
     newtonOn s v (fun t => p.eval t) = p.coeff (s.card - 1) := by
   rw [newtonOn_eq_coeff hvs, ← Lagrange.eq_interpolate hvs hp]
 
-/-- Divided differences are additive in the function. -/
+/-- Divided differences are additive in the function: $(f + g)[v_i : i \in s] = f[v_i : i \in s] +
+g[v_i : i \in s]$. -/
 theorem newtonOn_add (s : Finset ι) (v : ι → F) (f g : F → F) :
     newtonOn s v (fun t => f t + g t) = newtonOn s v f + newtonOn s v g := by
   simp only [newtonOn, add_div, Finset.sum_add_distrib]
 
-/-- Divided differences are homogeneous in the function. -/
+/-- Divided differences are homogeneous in the function:
+$(cf)[v_i : i \in s] = c \, f[v_i : i \in s]$. -/
 theorem newtonOn_smul (s : Finset ι) (v : ι → F) (c : F) (f : F → F) :
     newtonOn s v (fun t => c * f t) = c * newtonOn s v f := by
   simp only [newtonOn, Finset.mul_sum, mul_div_assoc]
 
-/-- **The recursion in two nodes**: deleting either of two distinct nodes `v i`, `v j`,
-`f[S] = (f[S ∖ {v j}] - f[S ∖ {v i}]) / (v i - v j)`. It is the coefficient of `X^{#s - 1}` in
-Mathlib's `Lagrange.interpolate_eq_add_interpolate_erase`. -/
+/-- **The recursion in two nodes.** Let the nodes $v_k$, $k \in s$, be distinct, and let
+$i, j \in s$ with $i \neq j$. Then
+$$f[v_k : k \in s] = \frac{f[v_k : k \in s \setminus \{j\}] - f[v_k : k \in s \setminus
+  \{i\}]}{v_i - v_j}.$$
+
+This is the coefficient of $X^{\# s - 1}$ in Mathlib's
+`Lagrange.interpolate_eq_add_interpolate_erase`. -/
 theorem newtonOn_eq_sub_div (hvs : Set.InjOn v s) (f : F → F) {i j : ι} (hi : i ∈ s)
     (hj : j ∈ s) (hij : i ≠ j) :
     newtonOn s v f = (newtonOn (s.erase j) v f - newtonOn (s.erase i) v f) / (v i - v j) := by
@@ -289,8 +344,11 @@ theorem newtonOn_eq_sub_div (hvs : Set.InjOn v s) (f : F → F) {i j : ι} (hi :
   field_simp
   ring
 
-/-- **Adding a node** (the Newton step): for `a ∉ t` and injective nodes,
-`Π_{insert a t} f = Π_t f + f[v i : i ∈ insert a t] · nodal t`. -/
+/-- **Adding a node (the Newton step).** Let $a \notin t$ and let the nodes $v_i$,
+$i \in t \cup \{a\}$, be distinct. Then
+$$\Pi_{t \cup \{a\}} f = \Pi_t f + f[v_i : i \in t \cup \{a\}] \, \omega_t,$$
+where $\Pi_s f$ is the Lagrange interpolant of $f$ at the nodes indexed by $s$ and $\omega_t$ is
+the nodal polynomial of $t$. -/
 theorem interpolate_insert_eq_newtonOn {a : ι} {t : Finset ι}
     (hvs : Set.InjOn v ((insert a t : Finset ι) : Set ι)) (ha : a ∉ t) (f : F → F) :
     (Lagrange.interpolate (insert a t) v fun i => f (v i))
@@ -299,8 +357,10 @@ theorem interpolate_insert_eq_newtonOn {a : ι} {t : Finset ι}
   rw [newtonOn_eq_coeff hvs, Finset.card_insert_of_notMem ha, Nat.add_sub_cancel]
   exact Lagrange.interpolate_insert_eq hvs ha _
 
-/-- **The Newton divided difference formula over a linearly ordered index set**: for injective
-nodes, `Π_s f = ∑_{j ∈ s} f[v i : i ∈ s, i ≤ j] · ∏_{i ∈ s, i < j} (X - v i)`. -/
+/-- **The Newton divided difference formula over a linearly ordered index set.** Let the index set
+be linearly ordered and let the nodes $v_i$, $i \in s$, be distinct. Then
+$$\Pi_s f = \sum_{j \in s} f[v_i : i \in s, \, i \le j] \prod_{i \in s, \, i < j} (X - v_i).$$
+-/
 theorem interpolate_eq_sum_newtonOn_mul_nodal [LinearOrder ι] (hvs : Set.InjOn v s)
     (f : F → F) :
     (Lagrange.interpolate s v fun i => f (v i))
@@ -319,16 +379,20 @@ theorem interpolate_eq_sum_newtonOn_mul_nodal [LinearOrder ι] (hvs : Set.InjOn 
       rw [Finset.filter_insert, ite_eq_right (not_le.mpr (hlt j hj)), Finset.filter_insert,
         ite_eq_right (not_lt.mpr (hlt j hj).le)]
 
-/-- **The reversed Newton formula**: the same expansion built from the largest node down,
-`Π_s f = ∑_{j ∈ s} f[v i : i ∈ s, j ≤ i] · ∏_{i ∈ s, j < i} (X - v i)`; it is
-`interpolate_eq_sum_newtonOn_mul_nodal` for the reversed order. -/
+/-- **The reversed Newton formula.** Let the index set be linearly ordered and let the nodes $v_i$,
+$i \in s$, be distinct. Then
+$$\Pi_s f = \sum_{j \in s} f[v_i : i \in s, \, j \le i] \prod_{i \in s, \, j < i} (X - v_i).$$
+This is the expansion built from the largest node down.
+
+It is `DividedDifference.interpolate_eq_sum_newtonOn_mul_nodal` for the reversed order. -/
 theorem interpolate_eq_sum_newtonOn_mul_nodal' [LinearOrder ι] (hvs : Set.InjOn v s)
     (f : F → F) :
     (Lagrange.interpolate s v fun i => f (v i))
       = ∑ j ∈ s, C (newtonOn (s.filter (j ≤ ·)) v f) * Lagrange.nodal (s.filter (j < ·)) v := by
   exact interpolate_eq_sum_newtonOn_mul_nodal (ι := ιᵒᵈ) hvs f
 
-/-- The nodes below `j` and the nodes above `l ≥ j` all differ from `j`. -/
+/-- For $j \le l$, the indices in $s$ below $j$ and the indices in $s$ above $l$ all differ from
+$j$. -/
 private theorem filter_lt_union_filter_lt_subset [LinearOrder ι] {j l : ι} (hjl : j ≤ l) :
     s.filter (· < j) ∪ s.filter (l < ·) ⊆ s.erase j := by
   intro i hi
@@ -345,13 +409,16 @@ private theorem disjoint_filter_lt_filter_lt [LinearOrder ι] {j l : ι} (hjl : 
   intro i _ hij hli
   exact absurd (hjl.trans_lt hli) (not_lt.mpr hij.le)
 
-/-- **The Leibniz formula over a linearly ordered index set**: for injective nodes,
-`(gh)[v i : i ∈ s] = ∑_{j ∈ s} g[v i : i ≤ j] · h[v i : j ≤ i]`.
+/-- **The Leibniz formula over a linearly ordered index set.** Let the index set be linearly ordered
+and let the nodes $v_i$, $i \in s$, be distinct. Then
+$$(gh)[v_i : i \in s] = \sum_{j \in s} g[v_i : i \in s, \, i \le j] \, h[v_i : i \in s, \, j \le
+  i].$$
 
-Steffensen's proof: multiplying the Newton form of `Π_s g` by the reversed Newton form of `Π_s h`
-gives a double sum of terms `g[…, v j] h[v l, …] ω_j ω'_l`; the terms with `j > l` vanish at every
-node, and the rest form a polynomial of degree `< #s` taking the values `g h` at the nodes, hence
-`Π_s (gh)`, whose top coefficient comes from the terms `j = l` alone. -/
+The proof is Steffensen's. The product of the Newton form of $\Pi_s g$ and the reversed Newton
+form of $\Pi_s h$ is a double sum of terms $g[\dots, v_j] \, h[v_l, \dots] \, \omega_j
+\omega'_l$. The terms with $j > l$ vanish at every node. The other terms form a polynomial of
+degree less than $\# s$ that takes the values $gh$ at the nodes, so this polynomial is
+$\Pi_s (gh)$, and its top coefficient comes from the terms with $j = l$ alone. -/
 theorem newtonOn_mul [LinearOrder ι] (hvs : Set.InjOn v s) (g h : F → F) :
     newtonOn s v (fun t => g t * h t)
       = ∑ j ∈ s, newtonOn (s.filter (· ≤ j)) v g * newtonOn (s.filter (j ≤ ·)) v h := by
@@ -448,9 +515,12 @@ theorem newtonOn_mul [LinearOrder ι] (hvs : Set.InjOn v s) (g h : F → F) :
       coeff_eq_zero_of_natDegree_lt (hnat_lt j hj l hl.1 (lt_of_le_of_ne hl.2 (Ne.symm hlj))),
       mul_zero]
 
-/-- **Divided differences of a Cauchy kernel**: for `z` distinct from every node,
-`f[v i : i ∈ s] = 1 / ∏_{i ∈ s} (z - v i)` for `f(t) = 1/(z - t)`. Induction on the node set with
-the recursion `newtonOn_eq_sub_div`. -/
+/-- **Divided differences of a Cauchy kernel.** Let the nodes $v_i$, $i \in s$, be distinct, let $s$
+be nonempty, and let $z \neq v_i$ for every $i \in s$. Then for $f(t) = 1/(z - t)$,
+$$f[v_i : i \in s] = \frac{1}{\prod_{i \in s} (z - v_i)}.$$
+
+The proof is an induction on the index set with the recursion
+`DividedDifference.newtonOn_eq_sub_div`. -/
 theorem newtonOn_inv_sub (hvs : Set.InjOn v s) (hne : s.Nonempty) {z : F}
     (hz : ∀ i ∈ s, z ≠ v i) :
     newtonOn s v (fun t => 1 / (z - t)) = 1 / ∏ i ∈ s, (z - v i) := by
@@ -490,10 +560,12 @@ section Multiset
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [DecidableEq 𝕜] {ι : Type*} [DecidableEq ι]
 
-/-- **At distinct nodes the multiset divided difference is the classical one**: for injective
-nodes, `newtonOn s v f` is `Hermite.divDiff f` at the multiset of nodes `v i`, `i ∈ s`. Both are the
-coefficient of `X^{#s - 1}` of the interpolant of degree `< #s`, and at simple nodes jet
-interpolation is Lagrange interpolation. -/
+/-- **At distinct nodes, the multiset divided difference is the classical one.** Let $\mathbb{K}$ be
+a nontrivially normed field and let the nodes $v_i \in \mathbb{K}$, $i \in s$, be distinct. Then
+$f[v_i : i \in s]$ is `Hermite.divDiff f` at the multiset of the nodes $v_i$, $i \in s$.
+
+Both are the coefficient of $X^{\# s - 1}$ of the interpolant of degree less than $\# s$, and at
+simple nodes jet interpolation is Lagrange interpolation. -/
 theorem newtonOn_eq_divDiff {s : Finset ι} {v : ι → 𝕜} (hvs : Set.InjOn v s) (f : 𝕜 → 𝕜) :
     newtonOn s v f = Hermite.divDiff f (s.val.map v) := by
   have hnd : (s.val.map v).Nodup := s.nodup.map_on fun i hi j hj h => hvs hi hj h
@@ -517,26 +589,29 @@ section Fin
 
 variable {m : ℕ}
 
-/-- The first `k + 1` nodes `x₀, …, x_k` of `x₀, …, x_m`. -/
+/-- The first $k + 1$ nodes $x_0, \dots, x_k$ of the nodes $x_0, \dots, x_m$. -/
 def prefixNodes (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) : Fin ((k : ℕ) + 1) → ℝ :=
   fun i => v (Fin.castLE k.isLt i)
 
-/-- The last nodes `x_k, …, x_m` of `x₀, …, x_m`. -/
+/-- The last $m - k + 1$ nodes $x_k, \dots, x_m$ of the nodes $x_0, \dots, x_m$. -/
 def suffixNodes (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) : Fin (m - k + 1) → ℝ :=
   fun i => v ⟨k + i, by have := k.isLt; have := i.isLt; omega⟩
 
-/-- The nodal polynomial `ω_k = ∏_{j < k} (X - x_j)` of the first `k` nodes; `ω_0 = 1`. -/
+/-- The nodal polynomial $\omega_k = \prod_{j < k} (X - x_j)$ of the first $k$ nodes, with
+$\omega_0 = 1$. -/
 noncomputable def prefixNodal (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) : ℝ[X] :=
   ∏ j : Fin (k : ℕ), (X - C (v (Fin.castLE k.isLt.le j)))
 
-/-- The embedding `i ↦ k + i` of the indices of the suffix `x_k, …, x_m`. -/
+/-- The embedding $i \mapsto k + i$ of the indices $0, \dots, m - k$ of the suffix $x_k, \dots, x_m$
+into the indices $0, \dots, m$. -/
 def suffixEmb (m : ℕ) (k : Fin (m + 1)) : Fin (m - k + 1) ↪ Fin (m + 1) :=
   ⟨fun i => ⟨k + i, by have := k.isLt; have := i.isLt; omega⟩, fun i j hij => by
     have := congrArg Fin.val hij
     simp only at this
     exact Fin.ext (by omega)⟩
 
-/-- The prefix indices `0, …, k` are the indices `≤ k`. -/
+/-- The image of the prefix indices $0, \dots, k$ in the indices $0, \dots, m$ is the set of indices
+$i \le k$. -/
 theorem map_castLEEmb_univ_eq_filter (k : Fin (m + 1)) :
     (univ : Finset (Fin ((k : ℕ) + 1))).map (Fin.castLEEmb k.isLt) = univ.filter (· ≤ k) := by
   ext i
@@ -549,7 +624,7 @@ theorem map_castLEEmb_univ_eq_filter (k : Fin (m + 1)) :
   · intro hi
     exact ⟨⟨i, by omega⟩, Fin.ext rfl⟩
 
-/-- The suffix indices `k, …, m` are the indices `≥ k`. -/
+/-- The image of the suffix indices under $i \mapsto k + i$ is the set of indices $i \ge k$. -/
 theorem map_suffixEmb_univ_eq_filter (k : Fin (m + 1)) :
     (univ : Finset (Fin (m - k + 1))).map (suffixEmb m k) = univ.filter (k ≤ ·) := by
   ext i
@@ -564,7 +639,8 @@ theorem map_suffixEmb_univ_eq_filter (k : Fin (m + 1)) :
     change (k : ℕ) + ((i : ℕ) - k) = i
     omega
 
-/-- The indices `< k` are the image of `Fin k`. -/
+/-- The image of the indices $0, \dots, k - 1$ in the indices $0, \dots, m$ is the set of indices
+$i < k$. -/
 theorem map_castLEEmb_univ_eq_filter_lt (k : Fin (m + 1)) :
     (univ : Finset (Fin (k : ℕ))).map (Fin.castLEEmb k.isLt.le) = univ.filter (· < k) := by
   ext i
@@ -576,32 +652,34 @@ theorem map_castLEEmb_univ_eq_filter_lt (k : Fin (m + 1)) :
   · intro hi
     exact ⟨⟨i, hi⟩, Fin.ext rfl⟩
 
-/-- The divided difference at the first `k + 1` nodes, over the index set `{i | i ≤ k}`. -/
+/-- The divided difference $f[x_0, \dots, x_k]$ at the first $k + 1$ nodes is the divided difference
+over the index set $\{i : i \le k\}$. -/
 theorem newton_prefixNodes (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) :
     newton f (prefixNodes v k) = newtonOn (univ.filter (· ≤ k)) v f := by
   rw [← map_castLEEmb_univ_eq_filter, newtonOn_map]
   rfl
 
-/-- The divided difference at the last nodes, over the index set `{i | k ≤ i}`. -/
+/-- The divided difference $f[x_k, \dots, x_m]$ at the last nodes is the divided difference over the
+index set $\{i : i \ge k\}$. -/
 theorem newton_suffixNodes (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) :
     newton f (suffixNodes v k) = newtonOn (univ.filter (k ≤ ·)) v f := by
   rw [← map_suffixEmb_univ_eq_filter, newtonOn_map]
   rfl
 
-/-- The nodal polynomial of the first `k` nodes is Mathlib's nodal polynomial over the indices
-`< k`. -/
+/-- The nodal polynomial $\omega_k$ of the first $k$ nodes is Mathlib's nodal polynomial over the
+indices $i < k$. -/
 theorem prefixNodal_eq_nodal (v : Fin (m + 1) → ℝ) (k : Fin (m + 1)) :
     prefixNodal v k = Lagrange.nodal (univ.filter (· < k)) v := by
   rw [← map_castLEEmb_univ_eq_filter_lt, Lagrange.nodal_map]
   rfl
 
-/-- The nodal polynomial of all `m + 1` nodes factors as `ω_m · (X - x_m)`. -/
+/-- The nodal polynomial of all $m + 1$ nodes factors as $\omega_m (X - x_m)$. -/
 theorem prefixNodal_last_mul (v : Fin (m + 1) → ℝ) :
     prefixNodal v (Fin.last m) * (X - C (v (Fin.last m))) = Lagrange.nodal univ v := by
   rw [Lagrange.nodal_eq, Fin.prod_univ_castSucc]
   rfl
 
-/-- The divided difference at a single node is the value of the function there. -/
+/-- The divided difference $f[x_0]$ at a single node is $f(x_0)$. -/
 @[simp]
 theorem newton_zero (f : ℝ → ℝ) (v : Fin 1 → ℝ) : newton f v = f (v 0) := by
   have : (univ : Finset (Fin (0 + 1))) = {0} := by
@@ -609,7 +687,8 @@ theorem newton_zero (f : ℝ → ℝ) (v : Fin 1 → ℝ) : newton f v = f (v 0)
     simp [Fin.fin_one_eq_zero i]
   rw [newton_eq_newtonOn, this, newtonOn_singleton]
 
-/-- The divided difference at the nodes `x₁, …, x_m`, over the index set `{i | i ≠ 0}`. -/
+/-- The divided difference $f[x_1, \dots, x_{m+1}]$ at the nodes without the first one is the
+divided difference over the index set $\{i : i \neq 0\}$. -/
 theorem newton_tail (f : ℝ → ℝ) (v : Fin (m + 2) → ℝ) :
     newton f (Fin.tail v) = newtonOn (univ.erase 0) v f := by
   have : (univ : Finset (Fin (m + 2))).erase 0 = univ.map (Fin.succEmb (m + 1)) := by
@@ -618,7 +697,8 @@ theorem newton_tail (f : ℝ → ℝ) (v : Fin (m + 2) → ℝ) :
   rw [this, newtonOn_map]
   rfl
 
-/-- The divided difference at the nodes `x₀, …, x_{m-1}`, over the index set `{i | i ≠ m}`. -/
+/-- The divided difference $f[x_0, \dots, x_m]$ at the nodes $x_0, \dots, x_{m+1}$ without the last
+one is the divided difference over the index set $\{i : i \neq m + 1\}$. -/
 theorem newton_init (f : ℝ → ℝ) (v : Fin (m + 2) → ℝ) :
     newton f (Fin.init v) = newtonOn (univ.erase (Fin.last (m + 1))) v f := by
   have : (univ : Finset (Fin (m + 2))).erase (Fin.last (m + 1))
@@ -628,9 +708,11 @@ theorem newton_init (f : ℝ → ℝ) (v : Fin (m + 2) → ℝ) :
   rw [this, newtonOn_map]
   rfl
 
-/-- **Adding a node** ([quarteroni2000numerical] (8.16)): for nodes `x₀, …, x_m` and a new node
-`t` distinct from them, the interpolant at `x₀, …, x_m, t` is the interpolant at `x₀, …, x_m`
-plus `f[x₀, …, x_m, t] ω_{m+1}`. -/
+/-- **Adding a node.** Let $x_0, \dots, x_m, t$ be distinct real nodes. Then
+$$\Pi_{m+1} f = \Pi_m f + f[x_0, \dots, x_m, t] \, \omega_{m+1},$$
+where $\Pi_{m+1} f$ is the interpolant of $f$ at $x_0, \dots, x_m, t$, $\Pi_m f$ the interpolant
+at $x_0, \dots, x_m$, and $\omega_{m+1} = \prod_{i=0}^m (X - x_i)$. This is (8.16) of
+[quarteroni2000numerical]. -/
 theorem interpolate_snoc_eq (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} {t : ℝ}
     (hv : Function.Injective (Fin.snoc v t : Fin (m + 2) → ℝ)) :
     (Lagrange.interpolate univ (Fin.snoc v t : Fin (m + 2) → ℝ)
@@ -647,8 +729,11 @@ theorem interpolate_snoc_eq (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} {t : ℝ
     Lagrange.interpolate_map, Lagrange.nodal_map, ← hcons]
   simp only [Function.comp_def, Fin.coe_castSuccEmb, Fin.snoc_castSucc]
 
-/-- **The book's definition of the divided difference** ([quarteroni2000numerical] (8.14)):
-`f[x₀, …, x_m, t] = (f(t) - Π_m f(t)) / ω_{m+1}(t)` for a new node `t`. -/
+/-- **The divided difference as the coefficient of the new node.** Let $x_0, \dots, x_m, t$ be
+distinct real nodes. Then
+$$f[x_0, \dots, x_m, t] = \frac{f(t) - \Pi_m f(t)}{\prod_{i=0}^m (t - x_i)},$$
+where $\Pi_m f$ is the interpolant of $f$ at $x_0, \dots, x_m$. This is the definition (8.14) of
+the divided difference in [quarteroni2000numerical]. -/
 theorem eval_interpolate_snoc_sub (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} {t : ℝ}
     (hv : Function.Injective (Fin.snoc v t : Fin (m + 2) → ℝ)) :
     newton f (Fin.snoc v t)
@@ -659,8 +744,9 @@ theorem eval_interpolate_snoc_sub (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} {t
     Finset.prod_ne_zero_iff.mpr fun i _ => sub_ne_zero.mpr (ht' i).symm
   rw [sub_eval_interpolate_eq_newton f hv' ht', mul_div_cancel_left₀ _ hprod]
 
-/-- **The Newton divided difference formula** ([quarteroni2000numerical] (8.17)):
-`Π_m f = ∑_{k=0}^m f[x₀, …, x_k] ω_k`. -/
+/-- **The Newton divided difference formula.** Let $x_0, \dots, x_m$ be distinct real nodes. Then
+$$\Pi_m f = \sum_{k=0}^m f[x_0, \dots, x_k] \, \omega_k.$$
+This is (8.17) of [quarteroni2000numerical]. -/
 theorem interpolate_eq_sum_newton_mul_prefixNodal (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) :
     (Lagrange.interpolate univ v fun i => f (v i))
@@ -668,16 +754,18 @@ theorem interpolate_eq_sum_newton_mul_prefixNodal (f : ℝ → ℝ) {v : Fin (m 
   rw [interpolate_eq_sum_newtonOn_mul_nodal hv.injOn]
   exact Finset.sum_congr rfl fun k _ => by rw [newton_prefixNodes, prefixNodal_eq_nodal]
 
-/-- **The recursion** ([quarteroni2000numerical] (8.19), Exercise 8.7):
-`f[x₀, …, x_m] = (f[x₁, …, x_m] - f[x₀, …, x_{m-1}]) / (x_m - x₀)`. -/
+/-- **The recursion of divided differences.** Let $x_0, \dots, x_{m+1}$ be distinct real nodes. Then
+$$f[x_0, \dots, x_{m+1}] = \frac{f[x_1, \dots, x_{m+1}] - f[x_0, \dots, x_m]}{x_{m+1} - x_0}.$$
+This is (8.19) and Exercise 8.7 of [quarteroni2000numerical]. -/
 theorem newton_succ (f : ℝ → ℝ) {v : Fin (m + 2) → ℝ} (hv : Function.Injective v) :
     newton f v
       = (newton f (Fin.tail v) - newton f (Fin.init v)) / (v (Fin.last (m + 1)) - v 0) := by
   rw [newton_tail, newton_init, newton_eq_newtonOn]
   exact newtonOn_eq_sub_div hv.injOn f (mem_univ _) (mem_univ _) (Fin.last_pos).ne'
 
-/-- **Symmetry** ([quarteroni2000numerical] §8.2.1, property 1): a divided difference does not
-depend on the order of its nodes. -/
+/-- **Symmetry of divided differences.** For all real nodes $x_0, \dots, x_m$ and every permutation
+$\sigma$ of the indices, $f[x_{\sigma(0)}, \dots, x_{\sigma(m)}] = f[x_0, \dots, x_m]$. This is
+property 1 of §8.2.1 of [quarteroni2000numerical]. -/
 theorem newton_comp_perm (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) (σ : Equiv.Perm (Fin (m + 1))) :
     newton f (v ∘ σ) = newton f v := by
   have h := newtonOn_map σ.toEmbedding univ v f
@@ -685,26 +773,31 @@ theorem newton_comp_perm (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) (σ : Equiv
   rw [newton_eq_newtonOn, newton_eq_newtonOn, h]
   rfl
 
-/-- **Linearity** ([quarteroni2000numerical] §8.2.1, property 2), additivity. -/
+/-- **Linearity of divided differences, additivity.** For all real nodes $x_0, \dots, x_m$, $(f +
+g)[x_0, \dots, x_m] = f[x_0, \dots, x_m] + g[x_0, \dots, x_m]$. This is property 2 of §8.2.1 of
+[quarteroni2000numerical]. -/
 theorem newton_add (f g : ℝ → ℝ) (v : Fin (m + 1) → ℝ) :
     newton (f + g) v = newton f v + newton g v :=
   newtonOn_add univ v f g
 
-/-- **Linearity** ([quarteroni2000numerical] §8.2.1, property 2), homogeneity. -/
+/-- **Linearity of divided differences, homogeneity.** For all real nodes $x_0, \dots, x_m$ and
+$c \in \mathbb{R}$, $(cf)[x_0, \dots, x_m] = c \, f[x_0, \dots, x_m]$. This is property 2 of
+§8.2.1 of [quarteroni2000numerical]. -/
 theorem newton_smul (c : ℝ) (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) :
     newton (fun t => c * f t) v = c * newton f v :=
   newtonOn_smul univ v c f
 
-/-- **The Leibniz formula** ([quarteroni2000numerical] §8.2.1, property 3):
-`(gh)[x₀, …, x_m] = ∑_{j=0}^m g[x₀, …, x_j] h[x_j, …, x_m]`. -/
+/-- **The Leibniz formula.** Let $x_0, \dots, x_m$ be distinct real nodes. Then
+$$(gh)[x_0, \dots, x_m] = \sum_{j=0}^m g[x_0, \dots, x_j] \, h[x_j, \dots, x_m].$$
+This is property 3 of §8.2.1 of [quarteroni2000numerical]. -/
 theorem newton_mul (g h : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) :
     newton (fun t => g t * h t) v
       = ∑ j : Fin (m + 1), newton g (prefixNodes v j) * newton h (suffixNodes v j) := by
   rw [newton_eq_newtonOn, newtonOn_mul hv.injOn]
   exact Finset.sum_congr rfl fun j _ => by rw [newton_prefixNodes, newton_suffixNodes]
 
-/-- On a polynomial of degree at most `m`, the divided difference at `m + 1` nodes is the
-coefficient of `X^m`. -/
+/-- Let $x_0, \dots, x_m$ be distinct real nodes and let $p$ be a polynomial of degree at most $m$.
+Then $p[x_0, \dots, x_m]$ is the coefficient of $X^m$ in $p$. -/
 theorem newton_eval_eq_coeff {p : ℝ[X]} (hp : p.degree ≤ m) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) : newton (fun t => p.eval t) v = p.coeff m := by
   have hcard : (univ : Finset (Fin (m + 1))).card = m + 1 := by simp
@@ -712,27 +805,31 @@ theorem newton_eval_eq_coeff {p : ℝ[X]} (hp : p.degree ≤ m) {v : Fin (m + 1)
     rw [hcard]; exact lt_of_le_of_lt hp (by exact_mod_cast Nat.lt_succ_self m)), hcard,
     Nat.add_sub_cancel]
 
-/-- A divided difference of order `m` of a polynomial of degree `< m` vanishes
-([quarteroni2000numerical] §8.2.1, the remark after Example 8.3). -/
+/-- Let $x_0, \dots, x_m$ be distinct real nodes and let $p$ be a polynomial of degree less than
+$m$. Then $p[x_0, \dots, x_m] = 0$. This is the remark after Example 8.3 in §8.2.1 of
+[quarteroni2000numerical]. -/
 theorem newton_eq_zero_of_degree_lt {p : ℝ[X]} (hp : p.degree < m) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) : newton (fun t => p.eval t) v = 0 := by
   rw [newton_eval_eq_coeff hp.le hv]
   exact coeff_eq_zero_of_degree_lt hp
 
-/-- A divided difference of order `m` of a polynomial of degree `m` is its leading coefficient. -/
+/-- Let $x_0, \dots, x_m$ be distinct real nodes and let $p$ be a polynomial of degree $m$. Then
+$p[x_0, \dots, x_m]$ is the leading coefficient of $p$. -/
 theorem newton_eval_eq_leadingCoeff {p : ℝ[X]} (hp : p.degree = m) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) : newton (fun t => p.eval t) v = p.leadingCoeff := by
   rw [newton_eval_eq_coeff hp.le hv, leadingCoeff, natDegree_eq_of_degree_eq_some hp]
 
 /-! ### The mean-value form -/
 
-/-- **The mean-value form of a divided difference, for a function smooth only near the interval**
-([quarteroni2000numerical] (8.21), [kress1998numerical] Theorem 8.9): for `f` of class `C^{m+1}`
-on an open set containing `[a, b]` and `m + 2` distinct nodes in `[a, b]`,
-`f[x₀, …, x_{m+1}] = f^{(m+1)}(ξ)/(m+1)!` for some `ξ` strictly inside `[a, b]`.
+/-- **The mean value form of a divided difference, with an interior point.** Let $f$ be of class
+$C^{m+1}$ on an open set $U \supseteq [a, b]$, and let $x_0, \dots, x_{m+1}$ be distinct nodes
+in $[a, b]$. Then there is $\xi \in (a, b)$ with
+$$f[x_0, \dots, x_{m+1}] = \frac{f^{(m+1)}(\xi)}{(m + 1)!}.$$
+This is (8.21) of [quarteroni2000numerical] and Theorem 8.9 of [kress1998numerical].
 
-The function `f - Π_{m+1} f` vanishes at the `m + 2` nodes, so by the generalized Rolle theorem its
-`(m+1)`-st derivative vanishes somewhere, and that derivative is `f^{(m+1)} - (m+1)! · f[x₀, …]`. -/
+The function $f - \Pi_{m+1} f$ vanishes at the $m + 2$ nodes, so by the generalized Rolle
+theorem its derivative of order $m + 1$ vanishes somewhere, and this derivative is
+$f^{(m+1)} - (m + 1)! \, f[x_0, \dots, x_{m+1}]$. -/
 theorem exists_newton_eq_iteratedDeriv_div_of_contDiffOn {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ}
     (hU : IsOpen U) (hUsub : Set.Icc a b ⊆ U) (hf : ContDiffOn ℝ ((m + 1 : ℕ) : WithTop ℕ∞) f U)
     {v : Fin (m + 2) → ℝ} (hv : Function.Injective v) (hmem : ∀ i, v i ∈ Set.Icc a b) :
@@ -772,11 +869,14 @@ theorem exists_newton_eq_iteratedDeriv_div_of_contDiffOn {a b : ℝ} {f : ℝ �
   field_simp
   linarith
 
-/-- **The mean-value form of a divided difference** ([quarteroni2000numerical] (8.21),
-[kress1998numerical] Theorem 8.9): for `f` of class `C^m` on an open set containing `[a, b]` and
-`m + 1` distinct nodes in `[a, b]`, `f[x₀, …, x_m] = f^{(m)}(ξ)/m!` for some `ξ ∈ [a, b]`. For
-`m = 0` the divided difference is `f(x₀)`; otherwise `ξ` may be taken strictly inside `[a, b]`
-(`exists_newton_eq_iteratedDeriv_div_of_contDiffOn`). -/
+/-- **The mean value form of a divided difference.** Let $f$ be of class $C^m$ on an open set
+$U \supseteq [a, b]$, and let $x_0, \dots, x_m$ be distinct nodes in $[a, b]$. Then there is
+$\xi \in [a, b]$ with
+$$f[x_0, \dots, x_m] = \frac{f^{(m)}(\xi)}{m!}.$$
+This is (8.21) of [quarteroni2000numerical] and Theorem 8.9 of [kress1998numerical].
+
+For $m = 0$ the divided difference is $f(x_0)$. For $m \ge 1$ the point $\xi$ can be taken in
+$(a, b)$ (`DividedDifference.exists_newton_eq_iteratedDeriv_div_of_contDiffOn`). -/
 theorem exists_newton_eq_iteratedDeriv_div {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U)
     (hUsub : Set.Icc a b ⊆ U) (hf : ContDiffOn ℝ (m : WithTop ℕ∞) f U) {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) (hmem : ∀ i, v i ∈ Set.Icc a b) :
@@ -788,15 +888,18 @@ theorem exists_newton_eq_iteratedDeriv_div {a b : ℝ} {f : ℝ → ℝ} {U : Se
       exists_newton_eq_iteratedDeriv_div_of_contDiffOn hU hUsub hf hv hmem
     exact ⟨ξ, Set.Ioo_subset_Icc_self hξ, h⟩
 
-/-- **The mean-value form of a divided difference, for a globally smooth function.** -/
+/-- **The mean value form of a divided difference, for a globally smooth function.** Let
+$f \in C^m(\mathbb{R})$ and let $x_0, \dots, x_m$ be distinct nodes in $[a, b]$. Then there is
+$\xi \in [a, b]$ with $f[x_0, \dots, x_m] = f^{(m)}(\xi)/m!$. -/
 theorem exists_newton_eq_iteratedDeriv_div_of_contDiff {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ (m : WithTop ℕ∞) f) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v)
     (hmem : ∀ i, v i ∈ Set.Icc a b) :
     ∃ ξ ∈ Set.Icc a b, newton f v = iteratedDeriv m f ξ / m.factorial :=
   exists_newton_eq_iteratedDeriv_div isOpen_univ (Set.subset_univ _) hf.contDiffOn hv hmem
 
-/-- **The bound on a divided difference**: if `|f^{(m)}| ≤ M` on `[a, b]`, then
-`|f[x₀, …, x_m]| ≤ M / m!` for any `m + 1` distinct nodes in `[a, b]`. -/
+/-- **A bound on a divided difference.** Let $f$ be of class $C^m$ on an open set
+$U \supseteq [a, b]$, let $|f^{(m)}| \le M$ on $[a, b]$, and let $x_0, \dots, x_m$ be distinct
+nodes in $[a, b]$. Then $|f[x_0, \dots, x_m]| \le M/m!$. -/
 theorem abs_newton_le {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U) (hUsub : Set.Icc a b ⊆ U)
     (hf : ContDiffOn ℝ (m : WithTop ℕ∞) f U) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v)
     (hmem : ∀ i, v i ∈ Set.Icc a b) {M : ℝ}
@@ -805,26 +908,33 @@ theorem abs_newton_le {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U
   rw [h, abs_div, abs_of_pos (by positivity : (0 : ℝ) < m.factorial)]
   exact div_le_div_of_nonneg_right (hM ξ hξ) (by positivity)
 
-/-- **Divided differences of a Cauchy kernel** ([quarteroni2000numerical] Example 8.1, the
-real-variable route to Runge's phenomenon): for `z` distinct from every node,
-`f[x₀, …, x_m] = 1 / ∏ᵢ (z - xᵢ)` for `f(t) = 1/(z - t)`. The same identity over any field is
-`newtonOn_inv_sub`. -/
+/-- **Divided differences of a Cauchy kernel.** Let $x_0, \dots, x_m$ be distinct real nodes and let
+$z \in \mathbb{R}$ differ from every node. Then for $f(t) = 1/(z - t)$,
+$$f[x_0, \dots, x_m] = \frac{1}{\prod_{i=0}^m (z - x_i)}.$$
+This is the real-variable route to Runge's phenomenon of Example 8.1 of
+[quarteroni2000numerical].
+
+The same identity over any field is `DividedDifference.newtonOn_inv_sub`. -/
 theorem newton_inv_sub {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) {z : ℝ}
     (hz : ∀ i, z ≠ v i) : newton (fun t => 1 / (z - t)) v = 1 / ∏ i, (z - v i) :=
   newtonOn_inv_sub hv.injOn univ_nonempty fun i _ => hz i
 
 /-! ### The derivative in the last node -/
 
-/-- **The derivative of a divided difference in its last argument** ([quarteroni2000numerical]
-(9.22), Exercise 9.4): for distinct nodes `x₀, …, x_n`, a point `x` distinct from them and `f`
-differentiable at `x`, the derivative of `x ↦ f[x₀, …, x_n, x]` at `x` is the *confluent* divided
-difference `f[x₀, …, x_n, x, x]`: the coefficient of `X^{n+2}` in the Hermite interpolant of `f`
-at the simple nodes `x₀, …, x_n` and the double node `x`.
+/-- **The derivative of a divided difference in its last argument.** Let $x_0, \dots, x_n$ be
+distinct real nodes, let $x$ differ from every node, and let $f$ be differentiable at $x$. Then
+the function $y \mapsto f[x_0, \dots, x_n, y]$ has at $x$ the derivative
+$$f[x_0, \dots, x_n, x, x],$$
+the confluent divided difference: the coefficient of $X^{n+2}$ in the Hermite interpolant of $f$
+at the simple nodes $x_0, \dots, x_n$ and the double node $x$. This is (9.22) and Exercise 9.4
+of [quarteroni2000numerical].
 
-Near `x` the function is `(f - Π_n f)/ω_{n+1}` (`eval_interpolate_snoc_sub`), whose derivative is
-computed by the quotient rule; the Hermite interpolant `H` is the Lagrange interpolant at
-`x₀, …, x_n, x` plus `c (X - x) ω_{n+1}` with `c` its top coefficient, and differentiating this
-identity at `x`, where `H' = f'`, identifies `c` with that derivative. -/
+The Hermite interpolant is `Hermite.interpolate` with the multiplicity $0$ at $x_0, \dots, x_n$
+and $1$ at $x$. Near $x$ the function is $(f - \Pi_n f)/\omega_{n+1}$
+(`DividedDifference.eval_interpolate_snoc_sub`), whose derivative follows from the quotient
+rule. The Hermite interpolant $H$ is the Lagrange interpolant at $x_0, \dots, x_n, x$ plus
+$c (X - x) \omega_{n+1}$, where $c$ is its top coefficient. The derivative of this identity at
+$x$, where $H' = f'$, identifies $c$ with the derivative. -/
 theorem hasDerivAt_newton_snoc {n : ℕ} {f : ℝ → ℝ} {v : Fin (n + 1) → ℝ}
     (hv : Function.Injective v) {x : ℝ} (hx : x ∉ Set.range v) (hf : DifferentiableAt ℝ f x) :
     HasDerivAt (fun y => newton f (Fin.snoc v y))
@@ -915,30 +1025,39 @@ theorem hasDerivAt_newton_snoc {n : ℕ} {f : ℝ → ℝ} {v : Fin (n + 1) → 
 
 /-! ### Confluent divided differences -/
 
-/-- **Confluent divided differences** ([quarteroni2000numerical] Remark 8.3, with the corrected
-diagonal value): by recursion on the number of nodes, `f[x₀] = f(x₀)`, and for `m + 2` nodes
-`f[x₀, …, x_{m+1}] = f^{(m+1)}(x₀)/(m+1)!` when `x₀ = x_{m+1}` (so, for a nondecreasing family,
-when all the nodes coincide) and `(f[x₁, …, x_{m+1}] - f[x₀, …, x_m]) / (x_{m+1} - x₀)` otherwise.
+/-- The **confluent divided difference** at possibly repeated nodes, by recursion on the number of
+nodes: $f[x_0] = f(x_0)$, and for $m + 2$ nodes
+$$f[x_0, \dots, x_{m+1}] = \begin{cases} f^{(m+1)}(x_0)/(m + 1)! & \text{if } x_0 = x_{m+1}, \\
+  \dfrac{f[x_1, \dots, x_{m+1}] - f[x_0, \dots, x_m]}{x_{m+1} - x_0} & \text{otherwise.}
+  \end{cases}$$
+For a nondecreasing family of nodes, the condition $x_0 = x_{m+1}$ says that all the nodes
+coincide. This is Remark 8.3 of [quarteroni2000numerical], with a corrected value at coincident
+nodes.
 
-The book prints `f^{(n+1)}(x₀)/(n+1)!` for `n + 1` coincident nodes `x₀ = ⋯ = x_n`; the `n`-th
-divided difference at those nodes is `f^{(n)}(x₀)/n!` (for instance `f[x₀, x₀] = f'(x₀)`), which
-is the value used here. -/
+Remark 8.3 of [quarteroni2000numerical] gives the value $f^{(n+1)}(x_0)/(n + 1)!$ at $n + 1$
+coincident nodes $x_0 = \dots = x_n$. The divided difference at these nodes is $f^{(n)}(x_0)/n!$
+(for example, $f[x_0, x_0] = f'(x_0)$), and this is the value used here. -/
 noncomputable def confluent (f : ℝ → ℝ) : {m : ℕ} → (Fin (m + 1) → ℝ) → ℝ
   | 0, v => f (v 0)
   | m + 1, v =>
     if v 0 = v (Fin.last (m + 1)) then iteratedDeriv (m + 1) f (v 0) / (m + 1).factorial
     else (confluent f (Fin.tail v) - confluent f (Fin.init v)) / (v (Fin.last (m + 1)) - v 0)
 
+/-- The confluent divided difference at a single node $x_0$ is $f(x_0)$. -/
 @[simp]
 theorem confluent_zero (f : ℝ → ℝ) (v : Fin 1 → ℝ) : confluent f v = f (v 0) := rfl
 
+/-- The recursion of the confluent divided difference at $m + 2$ nodes: the value is
+$f^{(m+1)}(x_0)/(m + 1)!$ if $x_0 = x_{m+1}$, and $(f[x_1, \dots, x_{m+1}] - f[x_0, \dots,
+x_m])/(x_{m+1} - x_0)$ otherwise. -/
 theorem confluent_succ (f : ℝ → ℝ) (v : Fin (m + 2) → ℝ) :
     confluent f v = if v 0 = v (Fin.last (m + 1))
       then iteratedDeriv (m + 1) f (v 0) / (m + 1).factorial
       else (confluent f (Fin.tail v) - confluent f (Fin.init v)) / (v (Fin.last (m + 1)) - v 0) :=
   rfl
 
-/-- At distinct nodes the confluent divided difference is the classical one. -/
+/-- At distinct real nodes, the confluent divided difference is the classical divided difference
+`DividedDifference.newton`. -/
 theorem confluent_eq_newton (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) :
     confluent f v = newton f v := by
   induction m with
@@ -948,14 +1067,15 @@ theorem confluent_eq_newton (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Fu
     rw [confluent_succ, ite_eq_right h0, ih (v := Fin.tail v) (hv.comp (Fin.succ_injective _)),
       ih (v := Fin.init v) (hv.comp (Fin.castSucc_injective _)), newton_succ f hv]
 
-/-- At `m + 1` copies of one node `x`, the confluent divided difference is `f^{(m)}(x)/m!`. -/
+/-- At $m + 1$ copies of one node $x$, the confluent divided difference is $f^{(m)}(x)/m!$. -/
 theorem confluent_const (f : ℝ → ℝ) (x : ℝ) :
     confluent f (fun _ : Fin (m + 1) => x) = iteratedDeriv m f x / m.factorial := by
   cases m with
   | zero => simp
   | succ m => rw [confluent_succ, ite_eq_left rfl]
 
-/-- The multiset of the last `m + 1` nodes of `m + 2`. -/
+/-- The multiset of the last $m + 1$ of $m + 2$ nodes is $x_{m+1}$ added to the multiset of
+$x_1, \dots, x_m$. -/
 private theorem univ_val_map_tail (v : Fin (m + 2) → ℝ) :
     (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.tail v)
       = v (Fin.last _) ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
@@ -963,7 +1083,8 @@ private theorem univ_val_map_tail (v : Fin (m + 2) → ℝ) :
     Multiset.coe_eq_coe.mpr (List.perm_append_singleton _ _), ← Multiset.cons_coe]
   simp only [Fin.tail, Fin.succ_last, Fin.succ_castSucc]
 
-/-- The multiset of the first `m + 1` nodes of `m + 2`. -/
+/-- The multiset of the first $m + 1$ of $m + 2$ nodes is $x_0$ added to the multiset of
+$x_1, \dots, x_m$. -/
 private theorem univ_val_map_init (v : Fin (m + 2) → ℝ) :
     (Finset.univ : Finset (Fin (m + 1))).val.map (Fin.init v)
       = v 0 ::ₘ (List.ofFn fun i : Fin m => v i.succ.castSucc : Multiset ℝ) := by
@@ -971,10 +1092,12 @@ private theorem univ_val_map_init (v : Fin (m + 2) → ℝ) :
   simp only [Fin.init, Fin.castSucc_zero]
   rfl
 
-/-- **Confluent divided differences are the multiset divided differences**: at a nondecreasing
-tuple of nodes, `confluent f v` is `Hermite.divDiff f` at the multiset of the nodes. No smoothness
-of `f` is needed, since both sides read only the jets of `f` at the nodes; the two recursions are
-`Hermite.divDiff_replicate` and `Hermite.divDiff_cons_cons`. -/
+/-- **Confluent divided differences are multiset divided differences.** For every $f$ and every
+nondecreasing tuple of real nodes $x_0 \le \dots \le x_m$, the confluent divided difference
+$f[x_0, \dots, x_m]$ is `Hermite.divDiff f` at the multiset of the nodes.
+
+No smoothness of $f$ is needed, since both sides read only the jets of $f$ at the nodes. The two
+recursions are `Hermite.divDiff_replicate` and `Hermite.divDiff_cons_cons`. -/
 theorem confluent_eq_divDiff (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Monotone v) :
     confluent f v = Hermite.divDiff f ((Finset.univ : Finset (Fin (m + 1))).val.map v) := by
   induction m with
@@ -1002,11 +1125,10 @@ theorem confluent_eq_divDiff (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : M
         ih (v := Fin.init v) (hv.comp Fin.strictMono_castSucc.monotone), univ_val_map_tail,
         univ_val_map_init, hmap, Hermite.divDiff_cons_cons f (Ne.symm h)]
 
-/-- Continuity of `confluent f` at a nondecreasing tuple whose extreme nodes differ. There the
-recursion of `confluent` takes its second branch on a whole neighbourhood — `v 0 ≠ v (last)` is an
-open condition — so the value is a quotient of two confluent divided differences over `m + 1`
-nodes by a nonvanishing denominator, and the continuity of those is the induction hypothesis
-`hC`. -/
+/-- If the confluent divided difference over $m + 1$ nodes is continuous on the nondecreasing
+tuples, then the one over $m + 2$ nodes is continuous, within the nondecreasing tuples, at every
+nondecreasing tuple whose extreme nodes differ, because there it is a difference quotient with a
+nonzero denominator on a whole neighbourhood. -/
 private lemma continuousWithinAt_confluent_of_ne {f : ℝ → ℝ}
     (hC : ContinuousOn (fun w : Fin (m + 1) → ℝ => confluent f w) {w | Monotone w})
     {v : Fin (m + 2) → ℝ} (hv : Monotone v) (hne : v 0 ≠ v (Fin.last (m + 1))) :
@@ -1038,15 +1160,11 @@ private lemma continuousWithinAt_confluent_of_ne {f : ℝ → ℝ}
     rw [confluent_succ, ite_eq_right hu]
   · rw [confluent_succ, ite_eq_right hne]
 
-/-- The mean-value form of a confluent divided difference over `m + 2` nondecreasing nodes,
-granted the continuity of `confluent f` over `m + 1` nodes.
-
-Away from the diagonal the tuple `v` is a limit of *strictly* increasing tuples `w n` taken inside
-`[v 0, v (last)]` — convex combinations of `v` with a uniform grid — along which
-`confluent f (w n) = newton f (w n) = f^{(m+1)}(ξ_n)/(m+1)!` by `confluent_eq_newton` and
-`exists_newton_eq_iteratedDeriv_div_of_contDiff`. The continuity supplied by `hC` through
-`continuousWithinAt_confluent_of_ne` passes to the limit, which therefore lies in the closed set
-`f^{(m+1)}([v 0, v (last)])`. -/
+/-- If $f$ is of class $C^{m+1}$ and the confluent divided difference over $m + 1$ nodes is
+continuous on the nondecreasing tuples, then for every nondecreasing tuple
+$x_0 \le \dots \le x_{m+1}$ there is $\xi \in [x_0, x_{m+1}]$ with $f[x_0, \dots, x_{m+1}] =
+f^{(m+1)}(\xi)/(m + 1)!$; the proof approximates the tuple by strictly increasing tuples inside
+$[x_0, x_{m+1}]$ and passes to the limit. -/
 private lemma exists_confluent_eq_of_continuousOn {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) f)
     (hC : ContinuousOn (fun w : Fin (m + 1) → ℝ => confluent f w) {w | Monotone w})
@@ -1140,19 +1258,21 @@ private lemma exists_confluent_eq_of_continuousOn {f : ℝ → ℝ}
   rw [hξ₀]
   field_simp
 
-/-- **Continuity of the confluent divided difference** ([quarteroni2000numerical] Remark 8.3): for
-`f` of class `C^m`, the map `v ↦ f[v₀, …, v_m]` is continuous on the nondecreasing tuples
-`v : Fin (m + 1) → ℝ`. This is what makes `confluent` the right extension of `newton` to
-coincident nodes: the nondecreasing tuples with distinct entries are dense among the nondecreasing
-ones, so `confluent f` is the unique continuous extension of `newton f` from them.
+/-- **Continuity of the confluent divided difference.** Let $f \in C^m(\mathbb{R})$. Then the map
+$(x_0, \dots, x_m) \mapsto f[x_0, \dots, x_m]$ of `DividedDifference.confluent` is continuous on
+the set of nondecreasing tuples. This is the continuity stated in Remark 8.3 of
+[quarteroni2000numerical].
 
-The induction on `m` alternates two facts. Where `v 0 ≠ v (last)` — an open condition that covers
-every partially coincident tuple — the value is a difference quotient of `confluent f` over `m`
-nodes, continuous by the induction hypothesis (`continuousWithinAt_confluent_of_ne`). That
-hypothesis in turn yields the mean-value form `f[v₀, …, v_m] = f^{(m)}(ξ)/m!` with
-`ξ ∈ [v 0, v (last)]` (`exists_confluent_eq_of_continuousOn`), and at a fully diagonal tuple
-`(c, …, c)`, where the value is `f^{(m)}(c)/m!`, that form together with the continuity of
-`f^{(m)}` gives the continuity directly. -/
+This makes `DividedDifference.confluent` the right extension of `DividedDifference.newton` to
+coincident nodes: the nondecreasing tuples with distinct entries are dense in the nondecreasing
+tuples, so `DividedDifference.confluent f` is the unique continuous extension of
+`DividedDifference.newton f` from them. The proof is an induction on $m$. Where $x_0 \neq x_m$,
+an open condition that covers every partially coincident tuple, the value is a difference
+quotient of confluent divided differences over $m$ nodes, which are continuous by the induction
+hypothesis. The induction hypothesis also gives the mean value form
+$f[x_0, \dots, x_m] = f^{(m)}(\xi)/m!$ with $\xi \in [x_0, x_m]$. At a tuple $(c, \dots, c)$
+with all nodes equal, where the value is $f^{(m)}(c)/m!$, this mean value form and the
+continuity of $f^{(m)}$ give the continuity. -/
 theorem continuous_confluent {f : ℝ → ℝ} (hf : ContDiff ℝ (m : WithTop ℕ∞) f) :
     ContinuousOn (fun v : Fin (m + 1) → ℝ => confluent f v) {v | Monotone v} := by
   induction m with
@@ -1193,11 +1313,14 @@ theorem continuous_confluent {f : ℝ → ℝ} (hf : ContDiff ℝ (m : WithTop �
       exact h4
     · exact continuousWithinAt_confluent_of_ne hC hv h0
 
-/-- **The mean-value form of a confluent divided difference** ([quarteroni2000numerical] (8.21)
-and Remark 8.3): for `f` of class `C^m` and a nondecreasing `v : Fin (m + 1) → ℝ`,
-`f[v₀, …, v_m] = f^{(m)}(ξ)/m!` for some `ξ ∈ [v₀, v_m]`. At distinct nodes this is
-`exists_newton_eq_iteratedDeriv_div` and at coincident nodes `confluent_const`; the content is
-that the two interpolate. -/
+/-- **The mean value form of a confluent divided difference.** Let $f \in C^m(\mathbb{R})$ and let
+$x_0 \le \dots \le x_m$ be real nodes. Then there is $\xi \in [x_0, x_m]$ with
+$$f[x_0, \dots, x_m] = \frac{f^{(m)}(\xi)}{m!}.$$
+This is (8.21) together with Remark 8.3 of [quarteroni2000numerical].
+
+At distinct nodes this is `DividedDifference.exists_newton_eq_iteratedDeriv_div`, and at
+coincident nodes it is `DividedDifference.confluent_const`. The content of the theorem is that
+the two cases fit together. -/
 theorem exists_confluent_eq_iteratedDeriv_div {f : ℝ → ℝ} (hf : ContDiff ℝ (m : WithTop ℕ∞) f)
     {v : Fin (m + 1) → ℝ} (hv : Monotone v) :
     ∃ ξ ∈ Set.Icc (v 0) (v (Fin.last m)), confluent f v = iteratedDeriv m f ξ / m.factorial := by

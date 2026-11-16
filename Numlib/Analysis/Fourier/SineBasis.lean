@@ -12,42 +12,56 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Numlib.Analysis.Fourier.CosineBasis
 
 /-!
-# The half-range sine system as a Hilbert basis of `L²(0, π)`, and of `L²(0, 1)`
+# The half-range sine system as a Hilbert basis of $L^2(0, \pi)$ and of $L^2(0, 1)$
 
-The system `√(2/π) sin ((n + 1) x)`, `n ≥ 0`, is orthonormal and complete in `L²(0, π)`; its
-rescaling `√2 sin ((n + 1) π x)` is a Hilbert basis of `L²(0, 1)`. These are the Dirichlet
-eigenfunctions of `−d²/dx²` on an interval: Brezis, *Functional Analysis, Sobolev Spaces and
-Partial Differential Equations*, §8.6, the Example after Theorem 8.22.
-
-Completeness is deduced from that of the cosine system of
-`Numlib/Analysis/Fourier/CosineBasis.lean` by the product-to-sum trick: if `f ⊥ sin ((n+1) x)`
-for every `n`, then `g = f · sin` satisfies
-`2 ⟪g, cos (m x)⟫ = ⟪f, sin ((m+1) x)⟫ + ⟪f, sin ((1−m) x)⟫ = 0` for every `m`, so `g = 0` by the
-completeness of the cosines, and `f = 0` because `sin` vanishes
-only at the endpoints. The basis on `(0, 1)` is obtained from the one on `(0, π)` by the change
-of variables `x ↦ x/π`, which carries `L²(0, π)` to `L²(0, 1)` up to the factor `π`.
+The functions $\sqrt{2/\pi} \sin((n + 1) x)$, $n \ge 0$, form an orthonormal and complete system in
+$L^2(0, \pi)$, and their rescalings $\sqrt{2} \sin((n + 1) \pi x)$ form a Hilbert basis of
+$L^2(0, 1)$. These functions are the eigenfunctions of $-d^2/dx^2$ on an interval with Dirichlet
+boundary conditions; see [brezis2011functional], §8.6, the Example after Theorem 8.22. The module
+also defines the sine polynomials $\sum_{j < n} c_j \sin((j + 1) x)$ on $[0, \pi]$ and proves that
+the functions $\sin((k + 1) x)$ are linearly independent.
 
 ## Main definitions
 
-* `sinMap k`, `sinFun k`, `sinLp k`: the raw system `x ↦ sin ((k + 1) x)` on `[0, π]`, its
-  normalization by `√(2/π)`, and the latter inside `L²(0, π)`;
-* `sinBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 halfRangeMeasure)`, the sine system as a Hilbert basis
-  of `L²(0, π)`;
-* `sinUnitFun k`, `sinUnitLp k`: `x ↦ √2 sin ((k + 1) π x)` and its class in
-  `L²(0, 1) = Lp ℝ 2 (volume.restrict (Ioo 0 1))`;
-* `sinBasisUnit : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo 0 1)))`.
+* `sinLp`: the half-range sine system $\sqrt{2/\pi} \sin((k + 1) x)$ in $L^2(0, \pi)$.
+* `sinBasis`: the half-range sine system as a Hilbert basis of $L^2(0, \pi)$.
+* `sinUnitLp`: the sine system $\sqrt{2} \sin((k + 1) \pi x)$ in $L^2(0, 1)$.
+* `sinBasisUnit`: the sine system as a Hilbert basis of $L^2(0, 1)$.
+* `sinePolynomial`: the sine polynomial $\sum_{j < n} c_j \sin((j + 1) x)$ as a continuous function
+  on $[0, \pi]$.
 
-## Main statements
+## Main results
 
-* `orthonormal_sinLp`, `orthogonal_span_sinLp_eq_bot`: orthonormality and completeness on
-  `(0, π)`;
-* `orthonormal_sinUnitLp`, `orthogonal_span_sinUnitLp_eq_bot`: the same on `(0, 1)`;
-* `measurePreserving_div_pi`: the change of variables `[0, π] → [0, 1]`, `y ↦ y/π`, carries
-  `halfRangeMeasure` to `π` times Lebesgue measure on `[0, 1]`.
+* `orthonormal_sinLp`: the half-range sine system is orthonormal in $L^2(0, \pi)$.
+* `orthogonal_span_sinLp_eq_bot`: the half-range sine system is complete in $L^2(0, \pi)$.
+* `measurePreserving_div_pi`: the map $y \mapsto y / \pi$ carries Lebesgue measure on $[0, \pi]$ to
+  $\pi$ times Lebesgue measure on $(0, 1)$.
+* `orthonormal_sinUnitLp`: the sine system is orthonormal in $L^2(0, 1)$.
+* `orthogonal_span_sinUnitLp_eq_bot`: the sine system is complete in $L^2(0, 1)$.
+* `mem_span_sinMap_iff`: the span of the functions $\sin((k + 1) x)$ consists of the sine
+  polynomials.
+* `linearIndependent_sinMap`: the functions $\sin((k + 1) x)$ on $[0, \pi]$ are linearly
+  independent.
 
-## References
+## Proof outline
 
-[brezis2011functional], §8.6, Example.
+Completeness on $(0, \pi)$ follows from the completeness of the half-range cosine system of
+`Numlib.Analysis.Fourier.CosineBasis` by a product-to-sum identity. If $f \perp \sin((n + 1) x)$ for
+every $n$, then $g = f \sin$ satisfies
+$$2 \langle g, \cos(m x) \rangle = \langle f, \sin((m + 1) x) \rangle + \langle f, \sin((1 - m) x)
+  \rangle = 0$$
+for every $m$. So $g = 0$ by the completeness of the cosines, and $f = 0$ because $\sin$ vanishes on
+$[0, \pi]$ only at the endpoints. The basis on $(0, 1)$ comes from the basis on $(0, \pi)$ by the
+change of variables $x \mapsto x / \pi$, which carries $L^2(0, \pi)$ to $L^2(0, 1)$ up to the factor
+$\pi$.
+
+## Implementation notes
+
+* $L^2(0, \pi)$ is `Lp ℝ 2 halfRangeMeasure`, a space of classes of functions on the subtype
+  `Icc 0 π`. The measure `halfRangeMeasure` is Lebesgue measure pulled back to this subtype.
+* $L^2(0, 1)$ is `Lp ℝ 2 (volume.restrict (Ioo 0 1))`, a space of classes of functions on
+  $\mathbb{R}$.
+* The systems are indexed by $\mathbb{N}$, and the index $k$ gives the frequency $k + 1$.
 -/
 
 open MeasureTheory Set Submodule
@@ -56,38 +70,51 @@ open scoped ENNReal Real
 
 noncomputable section
 
-/-! ### The sine system on `[0, π]` -/
+/-! ### The sine system on $[0, \pi]$ -/
 
-/-- The raw sine system `x ↦ sin ((k + 1) x)` on `[0, π]`. -/
+/-- The **raw sine system**: for $k \in \mathbb{N}$, the continuous function
+$x \mapsto \sin((k + 1) x)$ on $[0, \pi]$. -/
 def sinMap (k : ℕ) : C(Icc (0 : ℝ) π, ℝ) :=
   ⟨fun x ↦ Real.sin ((k + 1) * x), by fun_prop⟩
 
-/-- The normalized sine system `x ↦ √(2/π) sin ((k + 1) x)` on `[0, π]`. -/
+/-- The **normalized sine system**: for $k \in \mathbb{N}$, the continuous function
+$x \mapsto \sqrt{2/\pi} \sin((k + 1) x)$ on $[0, \pi]$. -/
 def sinFun (k : ℕ) : C(Icc (0 : ℝ) π, ℝ) := √(2 / π) • sinMap k
 
-/-- The half-range sine system as a family in `L²(0, π)`. -/
+/-- The **half-range sine system** in $L^2(0, \pi)$: for $k \in \mathbb{N}$, the class of the
+function $x \mapsto \sqrt{2/\pi} \sin((k + 1) x)$ on $[0, \pi]$.
+
+The space $L^2(0, \pi)$ is `Lp ℝ 2 halfRangeMeasure`. The element is the class of the continuous
+function `sinFun k`. -/
 def sinLp (k : ℕ) : Lp ℝ 2 halfRangeMeasure :=
   ContinuousMap.toLp 2 halfRangeMeasure ℝ (sinFun k)
 
+/-- For $x \in [0, \pi]$, the value of `sinMap k` at $x$ is $\sin((k + 1) x)$. -/
 theorem sinMap_apply (k : ℕ) (x : Icc (0 : ℝ) π) : sinMap k x = Real.sin ((k + 1) * (x : ℝ)) :=
   rfl
 
+/-- For $x \in [0, \pi]$, the value of `sinFun k` at $x$ is $\sqrt{2/\pi} \sin((k + 1) x)$. -/
 theorem sinFun_apply (k : ℕ) (x : Icc (0 : ℝ) π) :
     sinFun k x = √(2 / π) * Real.sin ((k + 1) * (x : ℝ)) :=
   rfl
 
-/-- The normalized system is a nonzero multiple of the raw one, inside `L²(0, π)`. -/
+/-- In $L^2(0, \pi)$, the element `sinLp k` equals the class of `sinMap k` multiplied by
+$\sqrt{2/\pi}$. -/
 theorem sinLp_eq_smul (k : ℕ) :
     sinLp k = √(2 / π) • ContinuousMap.toLp 2 halfRangeMeasure ℝ (sinMap k) := by
   rw [sinLp, sinFun, map_smul]
 
+/-- The normalizing constant is nonzero: $\sqrt{2/\pi} \neq 0$. -/
 theorem sqrt_two_div_pi_ne_zero : √(2 / π) ≠ 0 :=
   (Real.sqrt_pos.2 (by positivity)).ne'
 
+/-- The function `sinFun k` represents the class `sinLp k`: the two agree almost everywhere on
+$[0, \pi]$. -/
 theorem coeFn_sinLp (k : ℕ) : (sinLp k : Icc (0 : ℝ) π → ℝ) =ᵐ[halfRangeMeasure] sinFun k :=
   ContinuousMap.coeFn_toLp (E := ℝ) (p := 2) (𝕜 := ℝ) halfRangeMeasure (sinFun k)
 
-/-- The inner products of the half-range sine system: it is orthonormal. -/
+/-- For $j, k \in \mathbb{N}$, the inner product of `sinLp j` and `sinLp k` in $L^2(0, \pi)$ is $1$
+if $j = k$ and $0$ otherwise. -/
 theorem inner_sinLp (j k : ℕ) : inner ℝ (sinLp j) (sinLp k) = if j = k then 1 else 0 := by
   rw [MeasureTheory.L2.inner_def]
   have key : ∫ x, inner ℝ ((sinLp j : Icc (0 : ℝ) π → ℝ) x) ((sinLp k : Icc (0 : ℝ) π → ℝ) x)
@@ -109,10 +136,14 @@ theorem inner_sinLp (j k : ℕ) : inner ℝ (sinLp j) (sinLp k) = if j = k then 
     field_simp
   · simp [hjk]
 
-/-- **The half-range sine system is orthonormal in `L²(0, π)`.** -/
+/-- The half-range sine system $(\sqrt{2/\pi} \sin((k + 1) x))_{k \ge 0}$ is **orthonormal** in
+$L^2(0, \pi)$. -/
 theorem orthonormal_sinLp : Orthonormal ℝ sinLp := orthonormal_iff_ite.2 inner_sinLp
 
-/-- The endpoints are the only zeros of `sin` on `[0, π]`, and they form a null set. -/
+/-- For almost every $x \in [0, \pi]$ with respect to Lebesgue measure, $\sin x \neq 0$.
+
+The only zeros of $\sin$ on $[0, \pi]$ are the endpoints $0$ and $\pi$, and they form a null
+set. -/
 theorem ae_sin_ne_zero : ∀ᵐ x : Icc (0 : ℝ) π ∂halfRangeMeasure, Real.sin x ≠ 0 := by
   have hemb := MeasurableEmbedding.subtype_coe (measurableSet_Icc (a := (0 : ℝ)) (b := π))
   rw [ae_iff]
@@ -127,7 +158,8 @@ theorem ae_sin_ne_zero : ∀ᵐ x : Icc (0 : ℝ) π ∂halfRangeMeasure, Real.s
     exact measure_mono_null (image_preimage_subset _ _)
       (((finite_singleton π).insert 0).measure_zero volume)
 
-/-- A function of `L²(0, π)` is integrable against every continuous function. -/
+/-- Let $f \in L^2(0, \pi)$ and let $h$ be a continuous function on $[0, \pi]$. Then the product
+$f h$ is integrable on $[0, \pi]$. -/
 theorem integrable_mul_continuousMap (f : Lp ℝ 2 halfRangeMeasure) (h : C(Icc (0 : ℝ) π, ℝ)) :
     Integrable (fun x ↦ (f : Icc (0 : ℝ) π → ℝ) x * h x) halfRangeMeasure := by
   obtain ⟨C, hC⟩ := (isCompact_univ (X := Icc (0 : ℝ) π)).exists_bound_of_continuousOn
@@ -135,10 +167,15 @@ theorem integrable_mul_continuousMap (f : Lp ℝ 2 halfRangeMeasure) (h : C(Icc 
   exact (Lp.memLp f).integrable (by norm_num) |>.mul_bdd (c := C)
     h.continuous.aestronglyMeasurable (Filter.Eventually.of_forall fun x ↦ hC x (mem_univ x))
 
-/-- **The half-range sine system is complete in `L²(0, π)`**: a function orthogonal to every
-`sin ((n+1) x)` is, after multiplication by `sin x`, orthogonal to every `cos (m x)` — by
-`2 sin x cos (m x) = sin ((m+1) x) + sin ((1−m) x)` — hence zero by the completeness of the
-cosines, hence itself zero since `sin` vanishes only at the endpoints. -/
+/-- **Completeness of the half-range sine system** in $L^2(0, \pi)$: the orthogonal complement of
+the span of the functions $\sqrt{2/\pi} \sin((n + 1) x)$, $n \ge 0$, is $\{0\}$. Equivalently, a
+function $f \in L^2(0, \pi)$ that is orthogonal to every $\sin((n + 1) x)$ is zero.
+
+The proof multiplies $f$ by $\sin x$. By the identity
+$$2 \sin x \cos(m x) = \sin((m + 1) x) + \sin((1 - m) x),$$
+the product $f \sin x$ is orthogonal to every $\cos(m x)$ with $m \ge 0$. It is therefore zero
+by the completeness of the half-range cosine system, and $f$ is zero because $\sin x \neq 0$ for
+almost every $x$ (`ae_sin_ne_zero`). -/
 theorem orthogonal_span_sinLp_eq_bot : (span ℝ (Set.range sinLp))ᗮ = ⊥ := by
   rw [Submodule.eq_bot_iff]
   intro f hf
@@ -231,23 +268,30 @@ theorem orthogonal_span_sinLp_eq_bot : (span ℝ (Set.range sinLp))ᗮ = ⊥ := 
   rw [hx'] at hx
   simpa [sinC, hs] using hx
 
-/-- **The half-range sine system is a Hilbert basis of `L²(0, π)`.** -/
+/-- The half-range sine system $(\sqrt{2/\pi} \sin((n + 1) x))_{n \ge 0}$ as a **Hilbert basis** of
+$L^2(0, \pi)$.
+
+It is built from `orthonormal_sinLp` and `orthogonal_span_sinLp_eq_bot`. -/
 def sinBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 halfRangeMeasure) :=
   HilbertBasis.mkOfOrthogonalEqBot orthonormal_sinLp orthogonal_span_sinLp_eq_bot
 
-/-- The Hilbert basis `sinBasis` is the half-range sine system. -/
+/-- The members of the Hilbert basis `sinBasis` are the elements `sinLp n`. -/
 @[simp]
 theorem coe_sinBasis : ⇑sinBasis = sinLp := HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- The span of the half-range sine system is dense in `L²(0, π)`. -/
+/-- The span of the half-range sine system is dense in $L^2(0, \pi)$. -/
 theorem dense_span_sinLp : (span ℝ (Set.range sinLp)).topologicalClosure = ⊤ := by
   have h := sinBasis.dense_span
   rwa [coe_sinBasis] at h
 
-/-! ### The change of variables `[0, π] → [0, 1]` -/
+/-! ### The change of variables from $[0, \pi]$ to $[0, 1]$ -/
 
-/-- **The change of variables `y ↦ y/π`** carries Lebesgue measure on `[0, π]` (read on the
-subtype, `halfRangeMeasure`) to `π` times Lebesgue measure on `(0, 1)`. -/
+/-- **Change of variables** $y \mapsto y / \pi$. The map $y \mapsto y / \pi$ from $[0, \pi]$ to
+$\mathbb{R}$ is measure preserving from Lebesgue measure on $[0, \pi]$ to $\pi$ times Lebesgue
+measure restricted to $(0, 1)$.
+
+The measure on $[0, \pi]$ is `halfRangeMeasure`, on the subtype `Icc 0 π`. The measure on
+$\mathbb{R}$ is `ENNReal.ofReal π • volume.restrict (Ioo 0 1)`. -/
 theorem measurePreserving_div_pi :
     MeasurePreserving (fun y : Icc (0 : ℝ) π ↦ (y : ℝ) / π) halfRangeMeasure
       (ENNReal.ofReal π • volume.restrict (Ioo (0 : ℝ) 1)) := by
@@ -275,14 +319,16 @@ theorem measurePreserving_div_pi :
       Measure.restrict_smul]
   exact h2.comp h1
 
-/-! ### The sine system on `(0, 1)` -/
+/-! ### The sine system on $(0, 1)$ -/
 
-/-- The normalized sine `x ↦ √2 sin ((k + 1) π x)` on `(0, 1)`, as a function on `ℝ`. -/
+/-- The normalized sine $x \mapsto \sqrt{2} \sin((k + 1) \pi x)$, as a function on $\mathbb{R}$. -/
 def sinUnitFun (k : ℕ) (x : ℝ) : ℝ := √2 * Real.sin ((k + 1) * π * x)
 
+/-- The function `sinUnitFun k` is continuous on $\mathbb{R}$. -/
 theorem continuous_sinUnitFun (k : ℕ) : Continuous (sinUnitFun k) := by
   unfold sinUnitFun; fun_prop
 
+/-- For every exponent $p \in [0, \infty]$, the function `sinUnitFun k` is in $L^p(0, 1)$. -/
 theorem memLp_sinUnitFun (k : ℕ) (p : ℝ≥0∞) :
     MemLp (sinUnitFun k) p (volume.restrict (Ioo (0 : ℝ) 1)) :=
   MemLp.of_bound (continuous_sinUnitFun k).aestronglyMeasurable √2
@@ -290,15 +336,22 @@ theorem memLp_sinUnitFun (k : ℕ) (p : ℝ≥0∞) :
       rw [sinUnitFun, Real.norm_eq_abs, abs_mul, abs_of_nonneg (Real.sqrt_nonneg 2)]
       exact mul_le_of_le_one_right (Real.sqrt_nonneg 2) (Real.abs_sin_le_one _))
 
-/-- The sine system `√2 sin ((k + 1) π x)` as a family in `L²(0, 1)`. -/
+/-- The **sine system on $(0, 1)$**: for $k \in \mathbb{N}$, the class in $L^2(0, 1)$ of the
+function $x \mapsto \sqrt{2} \sin((k + 1) \pi x)$.
+
+The space $L^2(0, 1)$ is `Lp ℝ 2 (volume.restrict (Ioo 0 1))`, a space of classes of functions
+on $\mathbb{R}$. -/
 def sinUnitLp (k : ℕ) : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)) :=
   (memLp_sinUnitFun k 2).toLp _
 
+/-- The function `sinUnitFun k` represents the class `sinUnitLp k`: the two agree almost everywhere
+on $(0, 1)$. -/
 theorem coeFn_sinUnitLp (k : ℕ) :
     (sinUnitLp k : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] sinUnitFun k :=
   (memLp_sinUnitFun k 2).coeFn_toLp
 
-/-- The inner products of the sine system on `(0, 1)`: it is orthonormal. -/
+/-- For $j, k \in \mathbb{N}$, the inner product of `sinUnitLp j` and `sinUnitLp k` in $L^2(0, 1)$
+is $1$ if $j = k$ and $0$ otherwise. -/
 theorem inner_sinUnitLp (j k : ℕ) :
     inner ℝ (sinUnitLp j) (sinUnitLp k) = if j = k then 1 else 0 := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
@@ -324,12 +377,15 @@ theorem inner_sinUnitLp (j k : ℕ) :
     field_simp
   · simp [hjk]
 
-/-- **The sine system `√2 sin ((k + 1) π x)` is orthonormal in `L²(0, 1)`.** -/
+/-- The sine system $(\sqrt{2} \sin((k + 1) \pi x))_{k \ge 0}$ is **orthonormal** in $L^2(0, 1)$. -/
 theorem orthonormal_sinUnitLp : Orthonormal ℝ sinUnitLp := orthonormal_iff_ite.2 inner_sinUnitLp
 
-/-- **The sine system is complete in `L²(0, 1)`**: a function orthogonal to every
-`sin ((n+1) π x)` on `(0, 1)` is carried by `y ↦ y/π` to a function on `[0, π]` orthogonal to
-every `sin ((n+1) y)`, which vanishes by `orthogonal_span_sinLp_eq_bot`. -/
+/-- **Completeness of the sine system** in $L^2(0, 1)$: the orthogonal complement of the span of the
+functions $\sqrt{2} \sin((n + 1) \pi x)$, $n \ge 0$, is $\{0\}$.
+
+The change of variables $y \mapsto y / \pi$ (`measurePreserving_div_pi`) carries a function on
+$(0, 1)$ that is orthogonal to every $\sin((n + 1) \pi x)$ to a function on $[0, \pi]$ that is
+orthogonal to every $\sin((n + 1) y)$. That function is zero by `orthogonal_span_sinLp_eq_bot`. -/
 theorem orthogonal_span_sinUnitLp_eq_bot : (span ℝ (Set.range sinUnitLp))ᗮ = ⊥ := by
   rw [Submodule.eq_bot_iff]
   intro f hf
@@ -411,44 +467,57 @@ theorem orthogonal_span_sinUnitLp_eq_bot : (span ℝ (Set.range sinUnitLp))ᗮ =
   rw [Filter.EventuallyEq, ae_iff]
   simpa using hmap.resolve_left h0
 
-/-- **The sine system `√2 sin ((n + 1) π x)` is a Hilbert basis of `L²(0, 1)`**: the Dirichlet
-eigenfunctions of `−d²/dx²` on `(0, 1)`, [brezis2011functional] §8.6, Example. -/
+/-- The sine system $(\sqrt{2} \sin((n + 1) \pi x))_{n \ge 0}$ as a **Hilbert basis** of
+$L^2(0, 1)$. Its members are the eigenfunctions of $-d^2/dx^2$ on $(0, 1)$ with Dirichlet
+boundary conditions; see [brezis2011functional], §8.6, the Example after Theorem 8.22.
+
+It is built from `orthonormal_sinUnitLp` and `orthogonal_span_sinUnitLp_eq_bot`. -/
 def sinBasisUnit : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :=
   HilbertBasis.mkOfOrthogonalEqBot orthonormal_sinUnitLp orthogonal_span_sinUnitLp_eq_bot
 
-/-- The Hilbert basis `sinBasisUnit` is the sine system on `(0, 1)`. -/
+/-- The members of the Hilbert basis `sinBasisUnit` are the elements `sinUnitLp n`. -/
 @[simp]
 theorem coe_sinBasisUnit : ⇑sinBasisUnit = sinUnitLp := HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
-/-- The members of `sinBasisUnit` are the functions `√2 sin ((n + 1) π x)`. -/
+/-- For $n \in \mathbb{N}$, the member $n$ of the Hilbert basis `sinBasisUnit` agrees almost
+everywhere on $(0, 1)$ with the function $x \mapsto \sqrt{2} \sin((n + 1) \pi x)$. -/
 theorem coeFn_sinBasisUnit (n : ℕ) :
     (sinBasisUnit n : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
       fun x ↦ √2 * Real.sin ((n + 1) * π * x) := by
   rw [coe_sinBasisUnit]
   exact coeFn_sinUnitLp n
 
-/-! ### Sine polynomials on `[0, π]` -/
+/-! ### Sine polynomials on $[0, \pi]$ -/
 
 section SinePolynomial
 
 open Submodule
 
-/-- **The sine polynomial** `∑_{j < n} c j sin ((j + 1) x)` on `[0, π]`, as a continuous map:
-the initial datum of the sine series `Heat.sineSeries ν n c`. -/
+/-- The **sine polynomial** with $n$ terms and coefficients $c \colon \mathbb{N} \to \mathbb{R}$:
+the continuous function
+$$x \mapsto \sum_{j < n} c_j \sin((j + 1) x)$$
+on $[0, \pi]$.
+
+It is the initial value of the finite sine series `Heat.sineSeries`, which solves the heat
+equation on $(0, \pi)$. -/
 noncomputable def sinePolynomial (n : ℕ) (c : ℕ → ℝ) : C(Icc (0 : ℝ) π, ℝ) :=
   ∑ j ∈ Finset.range n, c j • sinMap j
 
-/-- The value of a sine polynomial at a point of `[0, π]`. -/
+/-- For $x \in [0, \pi]$, the value of `sinePolynomial n c` at $x$ is
+$\sum_{j < n} c_j \sin((j + 1) x)$. -/
 theorem sinePolynomial_apply (n : ℕ) (c : ℕ → ℝ) (x : Icc (0 : ℝ) π) :
     sinePolynomial n c x = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * (x : ℝ)) := by
   simp [sinePolynomial, sinMap_apply]
 
-/-- A sine polynomial lies in the span of the sine system. -/
+/-- Every sine polynomial lies in the span of the functions $\sin((k + 1) x)$, $k \in \mathbb{N}$.
+-/
 theorem sinePolynomial_mem_span (n : ℕ) (c : ℕ → ℝ) :
     sinePolynomial n c ∈ span ℝ (Set.range sinMap) :=
   Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (subset_span ⟨j, rfl⟩)
 
-/-- The span of the sine system consists exactly of the sine polynomials. -/
+/-- A continuous function $v$ on $[0, \pi]$ lies in the span of the functions $\sin((k + 1) x)$,
+$k \in \mathbb{N}$, if and only if there are $n \in \mathbb{N}$ and
+$c \colon \mathbb{N} \to \mathbb{R}$ with $v = \sum_{j < n} c_j \sin((j + 1) x)$. -/
 theorem mem_span_sinMap_iff {v : C(Icc (0 : ℝ) π, ℝ)} :
     v ∈ span ℝ (Set.range sinMap) ↔ ∃ (n : ℕ) (c : ℕ → ℝ), v = sinePolynomial n c := by
   constructor
@@ -462,8 +531,10 @@ theorem mem_span_sinMap_iff {v : C(Icc (0 : ℝ) π, ℝ)} :
   · rintro ⟨n, c, rfl⟩
     exact sinePolynomial_mem_span n c
 
-/-- **The sine system is linearly independent** in `C(Icc 0 π, ℝ)`: its image in `L²(0, π)`
-is orthonormal. -/
+/-- The functions $x \mapsto \sin((k + 1) x)$, $k \in \mathbb{N}$, are **linearly independent** in
+the space of continuous functions on $[0, \pi]$.
+
+Their classes in $L^2(0, \pi)$, multiplied by $\sqrt{2/\pi}$, are orthonormal. -/
 theorem linearIndependent_sinMap : LinearIndependent ℝ sinMap := by
   have h : LinearIndependent ℝ sinLp := orthonormal_sinLp.linearIndependent
   have e : sinLp = ⇑(√(2 / π) • (ContinuousMap.toLp (E := ℝ) 2 halfRangeMeasure ℝ :

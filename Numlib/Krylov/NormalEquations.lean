@@ -6,31 +6,54 @@ import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
 
 /-!
-# Krylov methods on the normal equations (CGNR and CGNE)
+# Krylov methods on the normal equations: CGNR and CGNE
 
-The two ways of running a symmetric Krylov method on a system that is not symmetric: CGNR is CG on
-`Aᴴ A x = Aᴴ b`, and CGNE (Craig's method) is CG on `A Aᴴ u = b` with `x = Aᴴ u`
-([saad2003iterative] §8.3, Algorithms 8.4 and 8.5).
+Let $E$ and $F$ be inner product spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$A : E \to F$ be linear, and let $A^* : F \to E$ satisfy $\langle A^* u, v \rangle = \langle u, Av
+\rangle$ for all $u \in F$, $v \in E$. A system $Ax = b$ that is not symmetric can be solved by a
+symmetric Krylov method in two ways ([saad2003iterative], §8.3, Algorithms 8.4 and 8.5). CGNR is CG
+on the normal equations $A^* A x = A^* b$. CGNE, or Craig's method, is CG on $A A^* u = b$ with
+$x = A^* u$. The operator may be rectangular, as in [golub2013matrix], §11.3.9 and Figure 11.3.1:
+CGNR is the normal-equation method for full-rank least squares, and CGNE is the method for
+consistent underdetermined systems.
 
-Nothing here is a new algorithm. The module records that the specifications of
-`Numlib/Krylov/Iterate` applied to `Aᴴ A` on the Krylov space `𝒦_m(Aᴴ A, Aᴴ r₀)` are, read back in
-the original variables, a minimal-residual specification for `A x = b`
-(`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`, CGNR) and a minimal-error specification
-(`Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`, CGNE) — [saad2003iterative] two optimality
-properties of §8.3. Every convergence theorem of the CG layer then applies with the spectrum of `Aᴴ
-A`, that is with `κ(A)²` in place of `κ(A)`
-(`Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp`). `Krylov.CGNR.iterate` and
-`Krylov.CGNE.iterate` are the two recurrences as a program writes them — one application of `A` and
-one of `Aᴴ` per step, never forming a product — identified with the corresponding CG iterates.
+This file introduces no new algorithm. It proves the two optimality properties of
+[saad2003iterative], §8.3, for the specifications of `Numlib.Krylov.Iterate` applied to $A^* A$ on
+the Krylov space $\mathcal{K}_m(A^* A, A^* r_0)$, with $r_0 = b - A x_0$. Read in the original
+variables, a Galerkin iterate of CGNR minimizes the residual $\|b - Ax\|$, and the CGNE iterate
+minimizes the error $\|x^* - x\|$, both over $x_0 + \mathcal{K}_m(A^* A, A^* r_0)$. Every
+convergence theorem for CG then applies with the spectrum of $A^* A$, that is with $\kappa(A)^2$ in
+place of $\kappa(A)$. The file also defines the two recurrences as a program writes them, with one
+application of $A$ and one of $A^*$ per step, and identifies them with the corresponding CG
+iterates.
 
-The operator may be rectangular, `A : E →ₗ F`, throughout — the general lemmas, the two
-optimality properties, the convergence bound and the two recurrences — as in [golub2013matrix]
-§11.3.9 and Figure 11.3.1: CGNR is the normal-equation method for full-rank least squares, CGNE
-for consistent underdetermined systems. The adjoint enters as a *hypothesis*, that `A` and a second
-operator `Aᴴ` are an adjoint pair for the inner products (`LinearMap.IsAdjointPair` of the flipped
-`innerₛₗ`, that is `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫`, `LinearMap.isAdjointPair_inner_iff`), rather than
-as `LinearMap.adjoint A`, so that the module needs neither finite-dimensionality nor completeness;
-`LinearMap.isAdjointPair_inner` supplies the hypothesis where the adjoint is available.
+## Main definitions
+
+* `Krylov.CGNR.iterate`: the CGNR recurrence, [saad2003iterative], Algorithm 8.4.
+* `Krylov.CGNE.iterate`: the CGNE (Craig) recurrence, [saad2003iterative], Algorithm 8.5.
+
+## Main results
+
+* `Krylov.energyNorm_adjoint_comp`: $\|x\|_{A^* A} = \|Ax\|$.
+* `Krylov.adjoint_comp_isSymmetricCoercive`: $A^* A$ is symmetric coercive when $A$ is bounded
+  below.
+* `Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`: a Galerkin iterate of the normal
+  equations is a minimal-residual iterate of $Ax = b$ (the optimality of CGNR).
+* `Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`: the CGNE iterate minimizes the error (the
+  optimality of CGNE).
+* `Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp`: the CG convergence bound for CGNR, with
+  $\kappa = \sigma_{\max} / \sigma_{\min}$.
+* `Krylov.CGNR.iterate_eq`, `Krylov.CGNE.iterate_eq`: the two recurrences compute the CG iterates of
+  $A^* A$ and of $A A^*$.
+
+## Implementation notes
+
+* The map $A^*$ is a hypothesis, not `LinearMap.adjoint A`: the pair $(A, A^*)$ satisfies
+  `LinearMap.IsAdjointPair` of the flipped `innerₛₗ`, which is $\langle A^* u, v \rangle = \langle
+  u, Av \rangle$ by `LinearMap.isAdjointPair_inner_iff`. Therefore the file needs neither finite
+  dimension nor completeness. Where the adjoint exists, Mathlib's `LinearMap.isAdjointPair_inner`
+  supplies the hypothesis. In the Lean code $A^*$ is `Astar`, and $A^* A$ is `Astar ∘ₗ A`.
+* The energy norm is $\|x\|_B = \sqrt{\operatorname{Re} \langle Bx, x \rangle}$ (`energyNorm`).
 -/
 
 open Krylov
@@ -47,37 +70,45 @@ variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 variable (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
 include hadj
 
-/-- The quadratic form of `Aᴴ A` is the squared norm of `A`: `⟪Aᴴ A x, x⟫ = ‖A x‖²`. This one
-identity is what turns every statement about the energy norm of `Aᴴ A` into a statement about the
-residual norm of `A`. -/
+/-- Let $A^*$ be an adjoint of $A$. For every $x \in E$, $\langle A^* A x, x \rangle = \|Ax\|^2$.
+
+This identity turns every statement about the energy norm of $A^* A$ into a statement about the
+norm of the residual of $A$. -/
 theorem inner_adjoint_comp_self (x : E) :
     inner 𝕜 ((Astar ∘ₗ A) x) x = ((‖A x‖ ^ 2 : ℝ) : 𝕜) := by
   rw [LinearMap.comp_apply, hadj.inner_apply_eq, inner_self_eq_norm_sq_to_K]
   push_cast
   ring
 
-/-- The energy norm of `Aᴴ A` is the norm of the image under `A`: `‖x‖_{AᴴA} = ‖A x‖`. -/
+/-- Let $A^*$ be an adjoint of $A$. For every $x \in E$, the energy norm of $A^* A$ is the norm of
+the image under $A$: $\|x\|_{A^* A} = \|Ax\|$. -/
 theorem energyNorm_adjoint_comp (x : E) : energyNorm (Astar ∘ₗ A) x = ‖A x‖ := by
   rw [energyNorm, inner_adjoint_comp_self hadj, RCLike.ofReal_re]
   exact Real.sqrt_sq (norm_nonneg _)
 
-/-- `Aᴴ A` is symmetric, whatever `A` is. -/
+/-- Let $A^*$ be an adjoint of $A$. Then $A^* A$ is symmetric, for every $A$. -/
 theorem adjoint_comp_isSymmetric : (Astar ∘ₗ A).IsSymmetric := by
   intro x y
   rw [LinearMap.comp_apply, LinearMap.comp_apply, hadj.inner_apply_eq,
     ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
-/-- `Aᴴ A` is coercive with constant `c` as soon as `A` is bounded below by `√c`, that is `c ‖x‖² ≤
-‖A x‖²`. -/
+/-- Let $A^*$ be an adjoint of $A$, and let $c \in \mathbb{R}$ satisfy $c \|x\|^2 \le \|Ax\|^2$ for
+all $x \in E$. Then $c \|x\|^2 \le \operatorname{Re} \langle A^* A x, x \rangle$ for all $x$,
+that is, $A^* A$ is coercive with the constant $c$. -/
 theorem adjoint_comp_isCoerciveWith {c : ℝ} (hc : ∀ x : E, c * ‖x‖ ^ 2 ≤ ‖A x‖ ^ 2) :
     (Astar ∘ₗ A).IsCoerciveWith c := by
   intro x
   rw [inner_adjoint_comp_self hadj, RCLike.ofReal_re]
   exact hc x
 
-/-- Singular value bounds are quadratic form bounds on `Aᴴ A`: if `σmin ‖x‖ ≤ ‖A x‖ ≤ σmax ‖x‖` then
-`Aᴴ A` is symmetric with form between `σmin²` and `σmax²`. This is the shape in which the Chebyshev
-convergence theory consumes them. -/
+/-- Let $A^*$ be an adjoint of $A$, and let $\sigma_{\min}, \sigma_{\max} \in \mathbb{R}$ satisfy
+$$\sigma_{\min}^2 \|x\|^2 \le \|Ax\|^2 \le \sigma_{\max}^2 \|x\|^2$$
+for all $x \in E$. Then $A^* A$ is symmetric, and its quadratic form satisfies $\sigma_{\min}^2
+\|x\|^2 \le \operatorname{Re} \langle A^* A x, x \rangle \le \sigma_{\max}^2 \|x\|^2$.
+
+Thus bounds on the singular values of $A$ become bounds on the quadratic form of $A^* A$
+(`LinearMap.IsSymmetricBoundedBy`), which is the form in which the Chebyshev convergence theory
+uses them. -/
 theorem adjoint_comp_isSymmetricBoundedBy {smin smax : ℝ}
     (hmin : ∀ x : E, smin ^ 2 * ‖x‖ ^ 2 ≤ ‖A x‖ ^ 2)
     (hmax : ∀ x : E, ‖A x‖ ^ 2 ≤ smax ^ 2 * ‖x‖ ^ 2) :
@@ -86,9 +117,11 @@ theorem adjoint_comp_isSymmetricBoundedBy {smin smax : ℝ}
   le_re_inner x := by rw [inner_adjoint_comp_self hadj, RCLike.ofReal_re]; exact hmin x
   re_inner_le x := by rw [inner_adjoint_comp_self hadj, RCLike.ofReal_re]; exact hmax x
 
-/-- `Aᴴ A` is symmetric coercive as soon as `A` is bounded below: `c ‖x‖ ≤ ‖A x‖` with `c > 0`. This
-is the hypothesis under which the normal equations are a well-posed SPD system, and hence under
-which CGNR and CGNE are well defined. -/
+/-- Let $A^*$ be an adjoint of $A$, and let $c > 0$ satisfy $c \|x\| \le \|Ax\|$ for all $x \in E$.
+Then $A^* A$ is symmetric coercive.
+
+This is the hypothesis under which the normal equations are a well-posed symmetric positive
+definite system, and hence under which CGNR and CGNE are well defined. -/
 theorem adjoint_comp_isSymmetricCoercive {c : ℝ} (hc : 0 < c)
     (hbound : ∀ x : E, c * ‖x‖ ≤ ‖A x‖) : (Astar ∘ₗ A).IsSymmetricCoercive where
   isSymmetric := adjoint_comp_isSymmetric hadj
@@ -97,9 +130,11 @@ theorem adjoint_comp_isSymmetricCoercive {c : ℝ} (hc : 0 < c)
     have h0 : 0 ≤ c * ‖x‖ := by positivity
     nlinarith [norm_nonneg (A x)]⟩
 
-/-- In finite dimension injectivity is enough: `Aᴴ A` is symmetric coercive whenever `A` is
-injective, since `⟪Aᴴ A x, x⟫ = ‖A x‖² > 0` off the origin and compactness of the sphere supplies
-the constant (`LinearMap.isCoercive_iff_forall_pos`). -/
+/-- Let $E$ be finite-dimensional, let $A^*$ be an adjoint of $A$, and let $A$ be injective. Then
+$A^* A$ is symmetric coercive.
+
+The quadratic form $\langle A^* A x, x \rangle = \|Ax\|^2$ is positive for $x \neq 0$, and
+compactness of the unit sphere supplies the constant (`LinearMap.isCoercive_iff_forall_pos`). -/
 theorem adjoint_comp_isSymmetricCoercive_of_injective [FiniteDimensional 𝕜 E]
     (hinj : Function.Injective A) : (Astar ∘ₗ A).IsSymmetricCoercive where
   isSymmetric := adjoint_comp_isSymmetric hadj
@@ -117,17 +152,22 @@ variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 include hadj
 
 omit hadj in
-/-- The initial residual of the normal equations is the image of the initial residual: `Aᴴ b - Aᴴ A
-x₀ = Aᴴ (b - A x₀)`. -/
+/-- For every $b \in F$ and $x_0 \in E$, the initial residual of the normal equations is the image
+of the initial residual of $Ax = b$:
+$$A^* b - A^* A x_0 = A^* (b - A x_0).$$
+-/
 theorem adjoint_residual : Astar b - (Astar ∘ₗ A) x₀ = Astar (b - A x₀) :=
   (Astar.map_sub b (A x₀)).symm
 
-/-- CGNR's optimality ([saad2003iterative], §8.3.1): a Galerkin iterate for the normal equations `Aᴴ
-A x = Aᴴ b` is exactly a minimal-residual iterate for `A x = b` over the same affine space `x₀ +
-𝒦_m(Aᴴ A, Aᴴ r₀)`.
+/-- Let $A^*$ be an adjoint of $A$, let $b \in F$, $x_0 \in E$, $m \in \mathbb{N}$, and let
+$r_0 = b - A x_0$. A point $x \in E$ is a Galerkin iterate at step $m$ for the normal equations
+$A^* A x = A^* b$ from $x_0$ if and only if $x$ minimizes $\|b - Ax\|$ over
+$x_0 + \mathcal{K}_m(A^* A, A^* r_0)$. This is the optimality of CGNR, [saad2003iterative],
+§8.3.1.
 
-Both sides say that `b - A x` is orthogonal to `A 𝒦_m`: on the left because the residual of the
-normal equations is `Aᴴ (b - A x)`, on the right by `Krylov.IsMinResidual.iff_isPetrovGalerkin`. -/
+Both sides say that $b - Ax$ is orthogonal to $A \mathcal{K}_m(A^* A, A^* r_0)$. On the left
+this holds because the residual of the normal equations is $A^*(b - Ax)$, and on the right by
+`IsMinResidual.iff_isPetrovGalerkin`. -/
 theorem isGalerkinIterate_adjoint_comp_iff_isMinResidual (m : ℕ) (x : E) :
     IsGalerkinIterate (Astar ∘ₗ A) (Astar b) x₀ m x ↔
       IsMinResidual A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x := by
@@ -146,16 +186,17 @@ theorem isGalerkinIterate_adjoint_comp_iff_isMinResidual (m : ℕ) (x : E) :
     have h := (Submodule.mem_orthogonal _ _).1 horth (A w) (Submodule.mem_map_of_mem hw)
     rwa [LinearMap.comp_apply, ← map_sub, ← LinearMap.inner_apply_eq_inner_apply_of_adjoint hadj]
 
-/-- CGNE's optimality ([saad2003iterative], §8.3.2): if `u` is a Galerkin iterate for `A Aᴴ u = b`
-over `𝒦_m(A Aᴴ, r₀)` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error* `‖x* - y‖` over `y ∈
-x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` — the same affine space CGNR minimizes the residual over, with the other
-optimality.
+/-- Let $A^*$ be an adjoint of $A$, let $b \in F$, let $x^* \in E$ satisfy $A x^* = b$, and let
+$x_0 = A^* u_0$ for some $u_0 \in F$. Let $r_0 = b - A x_0$. If $u$ is a Galerkin iterate at
+step $m$ for $A A^* u = b$ from $u_0$, then the point $x = x_0 + A^*(u - u_0)$ minimizes the
+error $\|x^* - y\|$ over $y \in x_0 + \mathcal{K}_m(A^* A, A^* r_0)$. This is the optimality of
+CGNE, [saad2003iterative], §8.3.2. CGNR minimizes the residual over the same affine space.
 
-The conclusion is `Krylov.IsMinError` over `𝒦_m(Aᴴ A, Aᴴ r₀)` and *not* `Krylov.IsMinErrorIterate
-(Aᴴ ∘ₗ A) xstar x₀ m x`: that abbreviation is the SYMMLQ specification, whose subspace carries an
-extra application of the operator, since `IsMinErrorIterate B xstar x₀ m` minimizes over `x₀ + B
-𝒦_m(B, B (x* - x₀))`, which for `B = Aᴴ A` is `x₀ + 𝒦_m(Aᴴ A, Aᴴ A Aᴴ r₀)` — one step short of the
-space CGNE searches. -/
+The conclusion is `IsMinError` over $\mathcal{K}_m(A^* A, A^* r_0)$, not
+`Krylov.IsMinErrorIterate (Astar ∘ₗ A) xstar x₀ m x`. That specification is the one of SYMMLQ:
+for an operator $B$ it minimizes over $x_0 + B \mathcal{K}_m(B, B(x^* - x_0))$, which for
+$B = A^* A$ is $x_0 + \mathcal{K}_m(A^* A, A^* A A^* r_0)$, because $B(x^* - x_0) = A^* r_0$.
+This space has one more factor $A^* A$ than the space that CGNE searches. -/
 theorem isMinError_of_isGalerkinIterate_comp_adjoint {u₀ u : F} {xstar : E} {m : ℕ}
     (hx₀ : x₀ = Astar u₀) (hstar : A xstar = b)
     (hu : IsGalerkinIterate (A ∘ₗ Astar) b u₀ m u) :
@@ -193,13 +234,16 @@ variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
   (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
 include hadj
 
-/-- The CG convergence bound transported to CGNR: with singular values in `[σmin, σmax]`, a
-minimal-residual iterate over the normal-equations Krylov space satisfies `‖r_m‖ ≤ 2 ((κ - 1)/(κ +
-1))^m ‖r₀‖` with `κ = σmax/σmin`.
+/-- Let $A^*$ be an adjoint of $A$, let $0 < \sigma_{\min} \le \sigma_{\max}$, and let the quadratic
+form of $A^* A$ satisfy $\sigma_{\min}^2 \|x\|^2 \le \operatorname{Re} \langle A^* A x, x
+\rangle \le \sigma_{\max}^2 \|x\|^2$ for all $x$. Let $A x^* = b$, and let $x$ minimize
+$\|b - Ax\|$ over $x_0 + \mathcal{K}_m(A^* A, A^* (b - A x_0))$. Then, with
+$\kappa = \sigma_{\max} / \sigma_{\min}$,
+$$\|b - Ax\| \le 2 \left( \frac{\kappa - 1}{\kappa + 1} \right)^m \|b - A x_0\|.$$
+This is the CG convergence bound transported to CGNR.
 
-The condition number that appears is the condition number of `Aᴴ A`, whose square root is `κ(A)`;
-that squaring is the price of the normal equations, and it is the reason CGNR is slow on an
-ill-conditioned system. -/
+The condition number of $A^* A$ is $\kappa^2$. This squaring is the cost of the normal
+equations, and it is the reason that CGNR is slow on an ill-conditioned system. -/
 theorem IsMinResidual.norm_residual_le_of_adjoint_comp {smin smax : ℝ} (hs : 0 < smin)
     (hss : smin ≤ smax) (hB : (Astar ∘ₗ A).IsSymmetricBoundedBy (smin ^ 2) (smax ^ 2))
     {b : F} {x₀ : E} {m : ℕ} {x xstar : E} (hstar : A xstar = b)
@@ -219,72 +263,83 @@ theorem IsMinResidual.norm_residual_le_of_adjoint_comp {smin smax : ℝ} (hs : 0
 
 end Convergence
 
-/-! ### The two recurrences
+/-!
+### The two recurrences
 
-[saad2003iterative] Algorithms 8.4 and 8.5, written in the original variables: one application of
-`A` and one of `Aᴴ` per step, and the product `Aᴴ A` never formed. Each is identified with the
-corresponding `CG.iterate`, so the whole CG theory — the orthogonality relations, finite
-termination, the Chebyshev bounds — transfers without a second induction. -/
+The recurrences of [saad2003iterative], Algorithms 8.4 and 8.5, in the original variables: one
+application of $A$ and one of $A^*$ per step, without forming the product $A^* A$. Each is
+identified with the corresponding `CG.iterate`, so the whole theory of CG (the orthogonality
+relations, finite termination, the Chebyshev bounds) transfers without a second induction.
+-/
 
 namespace CGNR
 
-/-- State of the CGNR iteration ([saad2003iterative], Algorithm 8.4): iterate, residual `r = b - A
-x`, and search direction. The normal-equations residual `z = Aᴴ r` is recomputed rather than stored.
--/
+/-- The state of the CGNR iteration ([saad2003iterative], Algorithm 8.4): the iterate $x$, the
+residual $r = b - Ax$ and the search direction $p$. The residual $z = A^* r$ of the normal
+equations is computed again at each step, not stored. -/
 structure State (E F : Type*) where
-  /-- The current iterate. -/
+  /-- The current iterate $x$. -/
   x : E
-  /-- The residual `b - A x` of the *original* system. -/
+  /-- The residual $r = b - Ax$ of the original system. -/
   r : F
-  /-- The search direction. -/
+  /-- The search direction $p$. -/
   p : E
 
-/-- The CGNR step length `α = ‖Aᴴ r‖² / ‖A p‖²`, which is the CG step length of `Aᴴ A`. -/
+/-- The CGNR step length $\alpha = \|A^* r\|^2 / \|Ap\|^2$, which is the CG step length for $A^* A$.
+It is $0$ when $Ap = 0$, by Lean's convention for division by zero. -/
 noncomputable def alpha (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (Astar s.r) (Astar s.r) / inner 𝕜 (A s.p) (A s.p)
 
-/-- One CGNR step. -/
+/-- One CGNR step: with $\alpha$ the step length, $r' = r - \alpha A p$ and
+$\beta = \|A^* r'\|^2 / \|A^* r\|^2$, the new state is
+$(x + \alpha p, \ r', \ A^* r' + \beta p)$. -/
 noncomputable def step (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : State E F :=
   let α := alpha A Astar s
   let r' := s.r - α • A s.p
   let β : 𝕜 := inner 𝕜 (Astar r') (Astar r') / inner 𝕜 (Astar s.r) (Astar s.r)
   { x := s.x + α • s.p, r := r', p := Astar r' + β • s.p }
 
-/-- The CGNR direction update coefficient `β = ‖Aᴴ r'‖² / ‖Aᴴ r‖²`. -/
+/-- The CGNR direction update coefficient $\beta = \|A^* r'\|^2 / \|A^* r\|^2$, where $r'$ is the
+residual after the step. -/
 noncomputable def beta (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (Astar (step A Astar s).r) (Astar (step A Astar s).r) /
     inner 𝕜 (Astar s.r) (Astar s.r)
 
-/-- The starting state: `r₀ = b - A x₀` and `p₀ = Aᴴ r₀`. -/
+/-- The starting state of CGNR: the iterate $x_0$, the residual $r_0 = b - A x_0$ and the direction
+$p_0 = A^* r_0$. -/
 def init (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) : State E F :=
   { x := x₀, r := b - A x₀, p := Astar (b - A x₀) }
 
-/-- The `k`-th CGNR state for `A x = b` started at `x₀`. -/
+/-- The CGNR state at step $k$ for $Ax = b$ started at $x_0$: the $k$-th application of
+`Krylov.CGNR.step` to `Krylov.CGNR.init`. -/
 noncomputable def iterate (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) (k : ℕ) :
     State E F :=
   (step A Astar)^[k] (init A Astar b x₀)
 
 variable (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E)
 
-/-- The recurrence: state `k + 1` is one `CGNR.step` applied to state `k`. -/
+/-- The state at step $k + 1$ is one `Krylov.CGNR.step` applied to the state at step $k$. -/
 theorem iterate_succ (k : ℕ) :
     iterate A Astar b x₀ (k + 1) = step A Astar (iterate A Astar b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- The iterate update `x' = x + α p` of one CGNR step. -/
+/-- The iterate update of one CGNR step: $x' = x + \alpha p$. -/
 theorem step_x (s : State E F) : (step A Astar s).x = s.x + alpha A Astar s • s.p := rfl
 
-/-- The residual update `r' = r - α A p` of one CGNR step. -/
+/-- The residual update of one CGNR step: $r' = r - \alpha A p$. -/
 theorem step_r (s : State E F) : (step A Astar s).r = s.r - alpha A Astar s • A s.p := rfl
 
-/-- The direction update `p' = Aᴴ r' + β p` of one CGNR step. -/
+/-- The direction update of one CGNR step: $p' = A^* r' + \beta p$. -/
 theorem step_p (s : State E F) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 
-/-- CGNR is CG on the normal equations, state by state: the iterate and the search direction are the
-CG ones for `Aᴴ A x = Aᴴ b`, the CG residual is `Aᴴ` of the CGNR residual, and the CGNR residual is
-the true residual `b - A x`.  Everything proved of `CG.iterate` — the orthogonality relations,
-finite termination, the Chebyshev bounds — therefore holds of CGNR. -/
+/-- Let $A^*$ be an adjoint of $A$. CGNR is CG on the normal equations $A^* A x = A^* b$, state by
+state: for every $k$, the CGNR iterate and search direction are the CG iterate and search
+direction for $A^* A x = A^* b$ from $x_0$, the CG residual is $A^*$ applied to the CGNR
+residual, and the CGNR residual is the true residual $b - A x_k$.
+
+Therefore everything proved about `CG.iterate` (the orthogonality relations, finite termination,
+the Chebyshev bounds) holds for CGNR. -/
 theorem iterate_eq
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x ∧
@@ -315,13 +370,15 @@ theorem iterate_eq
     · rw [iterate_succ, step_p, ← iterate_succ, hr', hbeta, hp, CG.iterate_succ_p]
     · rw [iterate_succ, step_r, step_x, hres, map_add, map_smul, sub_sub]
 
-/-- [saad2003iterative], Algorithm 8.4 computes the CG iterates of the normal equations. -/
+/-- Let $A^*$ be an adjoint of $A$. For every $k$, the CGNR iterate of [saad2003iterative],
+Algorithm 8.4, is the CG iterate for the normal equations $A^* A x = A^* b$ from $x_0$. -/
 theorem iterate_x_eq
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).x = (CG.iterate (Astar ∘ₗ A) (Astar b) x₀ k).x :=
   (iterate_eq A Astar b x₀ hadj k).1
 
-/-- The CGNR state's residual field is the true residual `b - A x`. -/
+/-- Let $A^*$ be an adjoint of $A$. For every $k$, the residual stored in the CGNR state is the true
+residual $b - A x_k$. -/
 theorem residual_eq
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) (k : ℕ) :
     (iterate A Astar b x₀ k).r = b - A (iterate A Astar b x₀ k).x :=
@@ -331,60 +388,70 @@ end CGNR
 
 namespace CGNE
 
-/-- State of the CGNE (Craig) iteration ([saad2003iterative], Algorithm 8.5): iterate, residual `r =
-b - A x`, and search direction `p`, which is `Aᴴ` of the direction of the `A Aᴴ` system. -/
+/-- The state of the CGNE (Craig) iteration ([saad2003iterative], Algorithm 8.5): the iterate $x$,
+the residual $r = b - Ax$ and the search direction $p$, which is $A^*$ applied to the search
+direction of the system $A A^* u = b$. -/
 structure State (E F : Type*) where
-  /-- The current iterate. -/
+  /-- The current iterate $x$. -/
   x : E
-  /-- The residual `b - A x`. -/
+  /-- The residual $r = b - Ax$. -/
   r : F
-  /-- The search direction. -/
+  /-- The search direction $p$. -/
   p : E
 
-/-- The CGNE step length `α = ‖r‖² / ‖p‖²`.  Unlike the other step lengths of this file it takes no
-operator, so `𝕜` is fixed only by the expected type and call sites read `(alpha s : 𝕜)`. -/
+/-- The CGNE step length $\alpha = \|r\|^2 / \|p\|^2$. It is $0$ when $p = 0$, by Lean's convention
+for division by zero.
+
+Unlike the other step lengths of this file, it takes no operator, so the field $\mathbb{K}$ is
+fixed only by the expected type, and call sites write `(alpha s : 𝕜)`. -/
 noncomputable def alpha (s : State E F) : 𝕜 := inner 𝕜 s.r s.r / inner 𝕜 s.p s.p
 
-/-- One CGNE step. -/
+/-- One CGNE step: with $\alpha$ the step length, $r' = r - \alpha A p$ and
+$\beta = \|r'\|^2 / \|r\|^2$, the new state is $(x + \alpha p, \ r', \ A^* r' + \beta p)$. -/
 noncomputable def step (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : State E F :=
   let α : 𝕜 := alpha s
   let r' := s.r - α • A s.p
   let β : 𝕜 := inner 𝕜 r' r' / inner 𝕜 s.r s.r
   { x := s.x + α • s.p, r := r', p := Astar r' + β • s.p }
 
-/-- The CGNE direction update coefficient `β = ‖r'‖² / ‖r‖²`. -/
+/-- The CGNE direction update coefficient $\beta = \|r'\|^2 / \|r\|^2$, where $r'$ is the residual
+after the step. -/
 noncomputable def beta (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (s : State E F) : 𝕜 :=
   inner 𝕜 (step A Astar s).r (step A Astar s).r / inner 𝕜 s.r s.r
 
-/-- The starting state: `r₀ = b - A x₀` and `p₀ = Aᴴ r₀`. -/
+/-- The starting state of CGNE: the iterate $x_0$, the residual $r_0 = b - A x_0$ and the direction
+$p_0 = A^* r_0$. -/
 def init (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) : State E F :=
   { x := x₀, r := b - A x₀, p := Astar (b - A x₀) }
 
-/-- The `k`-th CGNE state for `A x = b` started at `x₀`. -/
+/-- The CGNE state at step $k$ for $Ax = b$ started at $x_0$: the $k$-th application of
+`Krylov.CGNE.step` to `Krylov.CGNE.init`. -/
 noncomputable def iterate (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E) (k : ℕ) :
     State E F :=
   (step A Astar)^[k] (init A Astar b x₀)
 
 variable (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (b : F) (x₀ : E)
 
-/-- The recurrence: state `k + 1` is one `CGNE.step` applied to state `k`. -/
+/-- The state at step $k + 1$ is one `Krylov.CGNE.step` applied to the state at step $k$. -/
 theorem iterate_succ (k : ℕ) :
     iterate A Astar b x₀ (k + 1) = step A Astar (iterate A Astar b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- The iterate update `x' = x + α p` of one CGNE step. -/
+/-- The iterate update of one CGNE step: $x' = x + \alpha p$. -/
 theorem step_x (s : State E F) : (step A Astar s).x = s.x + (alpha s : 𝕜) • s.p := rfl
 
-/-- The residual update `r' = r - α A p` of one CGNE step. -/
+/-- The residual update of one CGNE step: $r' = r - \alpha A p$. -/
 theorem step_r (s : State E F) : (step A Astar s).r = s.r - (alpha s : 𝕜) • A s.p := rfl
 
-/-- The direction update `p' = Aᴴ r' + β p` of one CGNE step. -/
+/-- The direction update of one CGNE step: $p' = A^* r' + \beta p$. -/
 theorem step_p (s : State E F) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 
-/-- CGNE is CG on `A Aᴴ u = b` read through `x = Aᴴ u`: for any `u₀` with `Aᴴ u₀ = x₀`, the CGNE
-iterate is `Aᴴ` of the CG iterate, the CGNE direction is `Aᴴ` of the CG direction, and the two
-residuals agree.  This is [saad2003iterative], Algorithm 8.5 (Craig's method). -/
+/-- Let $A^*$ be an adjoint of $A$, and let $u_0 \in F$ satisfy $A^* u_0 = x_0$. CGNE is CG on
+$A A^* u = b$ read through $x = A^* u$: for every $k$, the CGNE iterate is $A^*$ applied to the
+CG iterate for $A A^* u = b$ from $u_0$, the CGNE direction is $A^*$ applied to the CG
+direction, and the two residuals are equal. This is Craig's method, [saad2003iterative],
+Algorithm 8.5. -/
 theorem iterate_eq
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :
@@ -421,7 +488,8 @@ theorem iterate_eq
     · rw [iterate_succ, step_p, ← iterate_succ, hr', hbeta, hp, CG.iterate_succ_p, map_add,
         map_smul]
 
-/-- Craig's method computes `Aᴴ` of the CG iterates of `A Aᴴ u = b`. -/
+/-- Let $A^*$ be an adjoint of $A$, and let $u_0 \in F$ satisfy $A^* u_0 = x_0$. For every $k$, the
+CGNE iterate (Craig's method) is $A^*$ applied to the CG iterate for $A A^* u = b$ from $u_0$. -/
 theorem iterate_x_eq
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) {u₀ : F}
     (hu₀ : Astar u₀ = x₀) (k : ℕ) :

@@ -16,47 +16,81 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 /-!
 # Toeplitz, Hankel and persymmetric matrices
 
-Matrices on `Fin n` that are constant along diagonals or antidiagonals, or symmetric about the
-antidiagonal ([golub2013matrix] §4.7, §4.8.2, §12.1.7):
+This file studies square and rectangular matrices on `Fin n` that are constant along diagonals,
+constant along antidiagonals, or symmetric about the antidiagonal, following [golub2013matrix] §4.7,
+§4.8.2 and §12.1.7. Indices run from $0$ to $n - 1$, and $\bar{\imath} = n - 1 - i$ is the reversal
+of the index $i$. A **Toeplitz matrix** has entries $a_{ij} = r_{j-i}$ for a two-sided sequence $r$,
+a **Hankel matrix** has entries $a_{ij} = h_{i+j}$, and a square matrix $A$ is **persymmetric** if
+$a_{\bar{\jmath}\bar{\imath}} = a_{ij}$ for all $i, j$. With the exchange matrix $\mathcal{E}_n$,
+which has ones on the antidiagonal, persymmetry is $\mathcal{E}_n A \mathcal{E}_n = A^T$.
 
-* persymmetry, `Matrix.IsPersymmetric A : ∀ i j, A (rev j) (rev i) = A i j` — symmetry about the
-  antidiagonal, `A.submatrix rev rev = Aᵀ` (`Matrix.isPersymmetric_iff_submatrix_rev`), the book's
-  `ℰ_n A ℰ_n = Aᵀ` (`Matrix.isPersymmetric_iff_exchange_mul_mul_exchange`), equivalently `ℰ_n A`
-  symmetric (`Matrix.IsPersymmetric.isSymm_exchange_mul`), preserved by inversion
-  (`Matrix.IsPersymmetric.inv`);
-* the Toeplitz matrix of a two-sided sequence, `Matrix.toeplitz r` with entries `r (j - i)`, and the
-  predicate `Matrix.IsToeplitz` (constant along each diagonal, `Matrix.isToeplitz_iff`); a square
-  Toeplitz matrix is persymmetric (`Matrix.IsToeplitz.isPersymmetric`);
-* the symmetric Toeplitz matrix `Matrix.symmToeplitz n r = (r_{|i-j|})` of the
-  Levinson–Durbin–Trench theory, with its nesting `T_k ⊂ T_n`
-  (`Matrix.leadingPrincipal_symmToeplitz`), its bordering `T_{k+1} = [T_k, ℰ r; rᵀ ℰ, r₀]`
-  (`Matrix.symmToeplitz_succ_eq_fromBlocks`) and its commutation with `ℰ_n`
-  (`Matrix.exchange_mul_symmToeplitz`, `Matrix.inv_symmToeplitz_mul_exchange`);
-* the Hankel matrix `Matrix.hankel h = (h_{i+j})` and the predicate `Matrix.IsHankel`; reversing the
-  rows of a Hankel matrix gives a Toeplitz matrix (`Matrix.IsHankel.isToeplitz_submatrix_rev`,
-  `Matrix.IsHankel.isToeplitz_exchange_mul`), and `Matrix.isHankel_iff` is the antidiagonal
-  characterization dual to `Matrix.isToeplitz_iff`;
-* and the facts that the tridiagonal Toeplitz matrices of
-  `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` are Toeplitz
-  (`Matrix.symmTridiagonalToeplitz_eq_toeplitz`), that Mathlib's `Matrix.circulant` is Toeplitz
-  (`Matrix.isToeplitz_circulant`, "a Toeplitz matrix with wraparound") and a polynomial in the
-  downshift (`Matrix.circulant_eq_sum_downshift_pow`), and that the periodic second difference is a
-  circulant (`Matrix.secondDifferencePeriodic_eq_circulant`).
+A square Toeplitz matrix is persymmetric, and the inverse of a persymmetric matrix is persymmetric.
+The symmetric Toeplitz matrices $T_n = (r_{|i-j|})$ of the Levinson–Durbin–Trench theory are nested,
+$T_k$ is the leading block of $T_n$, and they satisfy the bordering identity
+$$T_{k+1} = \begin{bmatrix} T_k & \mathcal{E}_k r \\ r^T \mathcal{E}_k & r_0 \end{bmatrix}, \qquad
+  r = (r_1, \dots, r_k)^T.$$
+Reversing the rows of a Hankel matrix gives a Toeplitz matrix. A circulant matrix is a Toeplitz
+matrix with wraparound and a polynomial in the downshift $\mathcal{D}_n$.
 
-## Design
+## Main definitions
 
-Everything is on `Fin n`, entrywise. The Toeplitz matrix is rectangular and indexed by an
-integer-valued offset, so that unsymmetric Toeplitz matrices (`r_{j-i}` above the diagonal,
-`p_{i-j}` below, [golub2013matrix] §4.7.8) need no second definition. The book states persymmetry
-and the Hankel–Toeplitz correspondence with the exchange matrix `ℰ_n` (`ℰ A ℰ = Aᵀ`, "`ℰ H` is
-Toeplitz"); here they are first statements about the reversal `Fin.rev` of rows and columns, and
-then read through the exchange matrix `ℰ_n` and the downshift `𝒟_n`, which are `Matrix.exchange`
-and `Matrix.downshift` of `Numlib.LinearAlgebra.Matrix.Permutation`: `ℰ_n A ℰ_n` is
-`A.submatrix rev rev` (`Matrix.exchange_mul_mul_exchange_eq_submatrix`).
+* `Matrix.IsPersymmetric`: $A$ is symmetric about the antidiagonal,
+  $a_{\bar{\jmath}\bar{\imath}} = a_{ij}$.
+* `Matrix.toeplitz`: the $m \times n$ Toeplitz matrix $(r_{j-i})$ of a sequence
+  $r : \mathbb{Z} \to R$.
+* `Matrix.IsToeplitz`: $A$ is a Toeplitz matrix, that is, constant along each diagonal.
+* `Matrix.symmToeplitz`: the $n \times n$ symmetric Toeplitz matrix $(r_{|i-j|})$ of a sequence
+  $r : \mathbb{N} \to R$.
+* `Matrix.hankel`: the $m \times n$ Hankel matrix $(h_{i+j})$ of a sequence $h : \mathbb{N} \to R$.
+* `Matrix.IsHankel`: $A$ is a Hankel matrix, that is, constant along each antidiagonal.
 
-The diagonalization of a circulant by the discrete Fourier transform is in
-`Numlib.Analysis.Fourier.Circulant`, so that this module — and the displacement and Levinson
-theories built on it — do not depend on the discrete Fourier transform.
+## Main results
+
+* `Matrix.isPersymmetric_iff_submatrix_rev`, `Matrix.isPersymmetric_iff_exchange_mul_mul_exchange`:
+  $A$ is persymmetric if and only if reversing its rows and columns gives $A^T$, that is,
+  $\mathcal{E}_n A \mathcal{E}_n = A^T$.
+* `Matrix.isPersymmetric_iff_isSymm_exchange_mul`: $A$ is persymmetric if and only if
+  $\mathcal{E}_n A$ is symmetric.
+* `Matrix.IsPersymmetric.inv`: the inverse of a persymmetric matrix is persymmetric.
+* `Matrix.isToeplitz_iff`: a matrix is Toeplitz if and only if entries with the same offset $j - i$
+  are equal.
+* `Matrix.IsToeplitz.isPersymmetric`: a square Toeplitz matrix is persymmetric.
+* `Matrix.symmTridiagonalToeplitz_eq_toeplitz`, `Matrix.tridiagonalToeplitz_eq_toeplitz`: the
+  tridiagonal Toeplitz matrices of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` are Toeplitz
+  matrices.
+* `Matrix.leadingPrincipal_symmToeplitz`: the leading $k \times k$ block of $T_n$ is $T_k$.
+* `Matrix.symmToeplitz_succ_eq_fromBlocks`: the bordering identity for $T_{k+1}$.
+* `Matrix.exchange_mul_symmToeplitz`, `Matrix.inv_symmToeplitz_mul_exchange`: $T_n$ and $T_n^{-1}$
+  commute with $\mathcal{E}_n$.
+* `Matrix.isHankel_iff`: a matrix is Hankel if and only if entries with the same index sum $i + j$
+  are equal.
+* `Matrix.IsHankel.isToeplitz_submatrix_rev`, `Matrix.IsHankel.isToeplitz_exchange_mul`: for a
+  Hankel matrix $H$, the matrix $\mathcal{E}_m H$ is Toeplitz.
+* `Matrix.isToeplitz_circulant`: a circulant matrix is Toeplitz.
+* `Matrix.circulant_eq_sum_downshift_pow`: a circulant matrix is a polynomial in the downshift.
+* `Matrix.secondDifferencePeriodic_eq_circulant`: for $n \ge 3$ the periodic second difference
+  matrix is a circulant matrix.
+
+## Notation
+
+* $\mathcal{E}_n$: the exchange matrix `Matrix.exchange n`.
+* $\mathcal{D}_n$: the downshift matrix `Matrix.downshift n`.
+
+## Implementation notes
+
+* All matrices are indexed by `Fin n`, and all statements are entrywise.
+* The Toeplitz matrix is rectangular and takes a sequence indexed by `ℤ`. An unsymmetric Toeplitz
+  matrix, with $r_{j-i}$ above the diagonal and $p_{i-j}$ below it as in [golub2013matrix] §4.7.8,
+  therefore needs no second definition.
+* [golub2013matrix] states persymmetry and the relation between Hankel and Toeplitz matrices with
+  the exchange matrix: $\mathcal{E} A \mathcal{E} = A^T$, and "$\mathcal{E} H$ is Toeplitz". Here
+  they are first stated with the reversal `Fin.rev` of rows and columns, and then with
+  `Matrix.exchange` and `Matrix.downshift` from `Numlib.LinearAlgebra.Matrix.Permutation`. The link
+  is `Matrix.exchange_mul_mul_exchange_eq_submatrix`: $\mathcal{E}_n A \mathcal{E}_n$ is
+  `A.submatrix Fin.rev Fin.rev`.
+* The diagonalization of a circulant matrix by the discrete Fourier transform is in
+  `Numlib.Analysis.Fourier.Circulant`. This module, and the displacement and Levinson theories built
+  on it, do not depend on the discrete Fourier transform.
 -/
 
 open scoped Fin.IntCast Fin.CommRing
@@ -67,14 +101,20 @@ variable {R : Type*} {m n : ℕ}
 
 /-! ### Persymmetry -/
 
-/-- Persymmetry, symmetry about the antidiagonal ([golub2013matrix] §4.7.1):
-`IsPersymmetric A := ∀ i j, A (rev j) (rev i) = A i j`. The book's definition `ℰ_n A ℰ_n = Aᵀ` is
-`Matrix.isPersymmetric_iff_submatrix_rev`. -/
+/-- A square matrix $A$ of order $n$ is **persymmetric** if it is symmetric about the antidiagonal:
+$$a_{\bar{\jmath}\bar{\imath}} = a_{ij} \quad \text{for all } i, j,$$
+where $\bar{\imath} = n - 1 - i$. This is §4.7.1 of [golub2013matrix].
+
+The reversal $\bar{\imath}$ is `Fin.rev i`. The definition $\mathcal{E}_n A \mathcal{E}_n = A^T$
+of [golub2013matrix] is `Matrix.isPersymmetric_iff_exchange_mul_mul_exchange`. -/
 def IsPersymmetric (A : Matrix (Fin n) (Fin n) R) : Prop :=
   ∀ i j, A (Fin.rev j) (Fin.rev i) = A i j
 
-/-- Persymmetry is invariance of the transpose under the reversal of rows and columns:
-`A.submatrix rev rev = Aᵀ`, the book's `ℰ A ℰ = Aᵀ` without the permutation matrices. -/
+/-- A square matrix $A$ is persymmetric if and only if reversing the order of its rows and columns
+gives its transpose: $(a_{\bar{\imath}\bar{\jmath}})_{ij} = A^T$.
+
+This is the condition $\mathcal{E}_n A \mathcal{E}_n = A^T$ of [golub2013matrix] §4.7.1, written
+without the permutation matrices. -/
 theorem isPersymmetric_iff_submatrix_rev {A : Matrix (Fin n) (Fin n) R} :
     A.IsPersymmetric ↔ A.submatrix Fin.rev Fin.rev = Aᵀ := by
   constructor
@@ -84,9 +124,12 @@ theorem isPersymmetric_iff_submatrix_rev {A : Matrix (Fin n) (Fin n) R} :
   · intro h i j
     exact congrFun (congrFun h j) i
 
-/-- **The inverse of a persymmetric matrix is persymmetric** ([golub2013matrix] §4.7.1,
-`ℰ B⁻¹ ℰ = (ℰ B ℰ)⁻¹ = (Bᵀ)⁻¹ = (B⁻¹)ᵀ`), over a commutative ring and with Mathlib's inverse (junk
-value included). -/
+/-- Let $A$ be a persymmetric matrix over a commutative ring. Then $A^{-1}$ is persymmetric. This is
+§4.7.1 of [golub2013matrix]:
+$$\mathcal{E} A^{-1} \mathcal{E} = (\mathcal{E} A \mathcal{E})^{-1} = (A^T)^{-1} = (A^{-1})^T.$$
+
+The inverse is Mathlib's `Matrix.inv`, so the statement also holds for a singular $A$, whose
+inverse is $0$. -/
 theorem IsPersymmetric.inv [CommRing R] {A : Matrix (Fin n) (Fin n) R}
     (hA : A.IsPersymmetric) : A⁻¹.IsPersymmetric := by
   rw [isPersymmetric_iff_submatrix_rev] at hA ⊢
@@ -98,13 +141,15 @@ section Exchange
 
 variable [NonAssocSemiring R]
 
-/-- **Persymmetry in the book's form** ([golub2013matrix] §4.7.1): `A` is persymmetric iff
-`ℰ_n A ℰ_n = Aᵀ`. -/
+/-- A square matrix $A$ of order $n$ is persymmetric if and only if
+$$\mathcal{E}_n A \mathcal{E}_n = A^T.$$
+This is the definition of persymmetry in [golub2013matrix] §4.7.1. -/
 theorem isPersymmetric_iff_exchange_mul_mul_exchange {A : Matrix (Fin n) (Fin n) R} :
     A.IsPersymmetric ↔ exchange n * A * exchange n = Aᵀ := by
   rw [exchange_mul_mul_exchange_eq_submatrix, isPersymmetric_iff_submatrix_rev]
 
-/-- `A` is persymmetric iff `ℰ_n A` is symmetric. -/
+/-- A square matrix $A$ of order $n$ is persymmetric if and only if $\mathcal{E}_n A$ is symmetric.
+-/
 theorem isPersymmetric_iff_isSymm_exchange_mul {A : Matrix (Fin n) (Fin n) R} :
     A.IsPersymmetric ↔ (exchange n * A).IsSymm := by
   rw [exchange_mul_eq_submatrix, IsSymm, ← Matrix.ext_iff]
@@ -114,14 +159,16 @@ theorem isPersymmetric_iff_isSymm_exchange_mul {A : Matrix (Fin n) (Fin n) R} :
   · intro h i j
     simpa using h (Fin.rev i) j
 
-/-- **`ℰ_n B` is symmetric for a persymmetric `B`** ([golub2013matrix] §4.7.1). -/
+/-- If $A$ is persymmetric of order $n$, then $\mathcal{E}_n A$ is symmetric. This is §4.7.1 of
+[golub2013matrix]. -/
 theorem IsPersymmetric.isSymm_exchange_mul {A : Matrix (Fin n) (Fin n) R}
     (hA : A.IsPersymmetric) : (exchange n * A).IsSymm :=
   isPersymmetric_iff_isSymm_exchange_mul.mp hA
 
 end Exchange
 
-/-- A symmetric persymmetric matrix commutes with the exchange matrix: `ℰ_n A = A ℰ_n`. -/
+/-- If $A$ is symmetric and persymmetric of order $n$, then $A$ commutes with the exchange matrix:
+$\mathcal{E}_n A = A \mathcal{E}_n$. -/
 theorem IsPersymmetric.exchange_mul_eq_mul_exchange [Semiring R] {A : Matrix (Fin n) (Fin n) R}
     (hA : A.IsPersymmetric) (hS : A.IsSymm) : exchange n * A = A * exchange n := by
   have h := isPersymmetric_iff_exchange_mul_mul_exchange.mp hA
@@ -132,22 +179,24 @@ theorem IsPersymmetric.exchange_mul_eq_mul_exchange [Semiring R] {A : Matrix (Fi
 
 /-! ### Toeplitz matrices -/
 
-/-- The Toeplitz matrix of a two-sided sequence ([golub2013matrix] §4.7, `a_ij = r_{j-i}`):
-`toeplitz r i j = r (j - i)`, rectangular. -/
+/-- The $m \times n$ **Toeplitz matrix** of a two-sided sequence $r : \mathbb{Z} \to R$ has the
+entries
+$$a_{ij} = r_{j-i}.$$
+This is the Toeplitz matrix of [golub2013matrix] §4.7. -/
 def toeplitz (r : ℤ → R) : Matrix (Fin m) (Fin n) R :=
   of fun (i : Fin m) (j : Fin n) => r ((j : ℤ) - i)
 
-/-- The entries of a Toeplitz matrix. -/
+/-- The entry $(i, j)$ of `Matrix.toeplitz r` is $r_{j-i}$. -/
 theorem toeplitz_apply (r : ℤ → R) (i : Fin m) (j : Fin n) :
     (toeplitz r : Matrix (Fin m) (Fin n) R) i j = r ((j : ℤ) - i) := rfl
 
-/-- A matrix is Toeplitz, constant along each diagonal, when it is `toeplitz r` for some
-two-sided sequence `r`. -/
+/-- An $m \times n$ matrix $A$ **is Toeplitz** if $A$ is the Toeplitz matrix $(r_{j-i})$ of some
+sequence $r : \mathbb{Z} \to R$. -/
 def IsToeplitz (A : Matrix (Fin m) (Fin n) R) : Prop :=
   ∃ r : ℤ → R, A = toeplitz r
 
-/-- A Toeplitz matrix is one constant along each diagonal: entries with the same offset `j - i`
-agree. -/
+/-- An $m \times n$ matrix $A$ is Toeplitz if and only if it is constant along each diagonal:
+$a_{ij} = a_{kl}$ whenever $j - i = l - k$. -/
 theorem isToeplitz_iff [Zero R] {A : Matrix (Fin m) (Fin n) R} :
     A.IsToeplitz ↔ ∀ (i : Fin m) (j : Fin n) (k : Fin m) (l : Fin n),
       (j : ℤ) - i = (l : ℤ) - k → A i j = A k l := by
@@ -163,7 +212,8 @@ theorem isToeplitz_iff [Zero R] {A : Matrix (Fin m) (Fin n) R} :
     rw [toeplitz_apply, dite_eq_left hex]
     exact hA _ _ _ _ hex.choose_spec.symm
 
-/-- **A square Toeplitz matrix is persymmetric**: `(rev j) - (rev i) = j - i`. -/
+/-- A square Toeplitz matrix is persymmetric, because the entry $(\bar{\jmath}, \bar{\imath})$ has
+the same offset $\bar{\imath} - \bar{\jmath} = j - i$ as the entry $(i, j)$. -/
 theorem IsToeplitz.isPersymmetric {A : Matrix (Fin n) (Fin n) R} (hA : A.IsToeplitz) :
     A.IsPersymmetric := by
   obtain ⟨r, rfl⟩ := hA
@@ -172,8 +222,9 @@ theorem IsToeplitz.isPersymmetric {A : Matrix (Fin n) (Fin n) R} (hA : A.IsToepl
   congr 1
   omega
 
-/-- The symmetric tridiagonal Toeplitz matrix `tridiag(a, b, a)` of
-`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` is Toeplitz. -/
+/-- The symmetric tridiagonal Toeplitz matrix $\operatorname{tridiag}(a, b, a)$ of order $n$,
+`Matrix.symmTridiagonalToeplitz n a b`, is the Toeplitz matrix of the sequence $r$ with
+$r_0 = b$, $r_{\pm 1} = a$, and $r_d = 0$ for $|d| \ge 2$. -/
 theorem symmTridiagonalToeplitz_eq_toeplitz (n : ℕ) (a b : ℝ) :
     symmTridiagonalToeplitz n a b
       = toeplitz fun d : ℤ => if d = 0 then b else if |d| = 1 then a else 0 := by
@@ -182,8 +233,11 @@ theorem symmTridiagonalToeplitz_eq_toeplitz (n : ℕ) (a b : ℝ) :
   simp only [abs_eq (zero_le_one' ℤ)]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- The tridiagonal Toeplitz matrix `tridiag(a, b, c)` (subdiagonal `a`, superdiagonal `c`) is
-Toeplitz. -/
+/-- The tridiagonal Toeplitz matrix $\operatorname{tridiag}(a, b, c)$ of order $n$, with subdiagonal
+$a$, diagonal $b$ and superdiagonal $c$, is the Toeplitz matrix of the sequence $r$ with
+$r_{-1} = a$, $r_0 = b$, $r_1 = c$, and $r_d = 0$ for $|d| \ge 2$.
+
+The matrix is `Matrix.tridiagonalToeplitz n a b c`. -/
 theorem tridiagonalToeplitz_eq_toeplitz (n : ℕ) (a b c : ℝ) :
     tridiagonalToeplitz n a b c
       = toeplitz fun d : ℤ =>
@@ -192,13 +246,17 @@ theorem tridiagonalToeplitz_eq_toeplitz (n : ℕ) (a b c : ℝ) :
   rw [tridiagonalToeplitz_apply, toeplitz_apply]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- The transpose of a Toeplitz matrix is the Toeplitz matrix of the reflected sequence. -/
+/-- The transpose of the $m \times n$ Toeplitz matrix of $\rho$ is the $n \times m$ Toeplitz matrix
+of the reflected sequence $d \mapsto \rho_{-d}$. -/
 theorem transpose_toeplitz (ρ : ℤ → R) :
     (toeplitz ρ : Matrix (Fin m) (Fin n) R)ᵀ = toeplitz fun d => ρ (-d) := by
   ext i j
   simp only [transpose_apply, toeplitz_apply, neg_sub]
 
-/-- A Toeplitz matrix times a vector, as a sum over `range n` of `ℕ`-indexed data. -/
+/-- Let $T$ be the $n \times n$ Toeplitz matrix of $\rho$, and let $v$ be a sequence indexed by
+$\mathbb{N}$. Then
+$$(T v)_i = \sum_{j=0}^{n-1} \rho_{j-i} v_j,$$
+where $T$ acts on the vector $(v_0, \dots, v_{n-1})$. -/
 theorem toeplitz_mulVec_apply [NonUnitalNonAssocSemiring R] (ρ : ℤ → R) (v : ℕ → R)
     (i : Fin n) :
     ((toeplitz ρ : Matrix (Fin n) (Fin n) R) *ᵥ fun j : Fin n => v j) i =
@@ -206,35 +264,40 @@ theorem toeplitz_mulVec_apply [NonUnitalNonAssocSemiring R] (ρ : ℤ → R) (v 
   simp only [mulVec, dotProduct, toeplitz_apply]
   exact Fin.sum_univ_eq_sum_range (fun j => ρ ((j : ℤ) - (i : ℕ)) * v j) n
 
-/-- The symmetric tridiagonal Toeplitz matrices are Toeplitz in the sense of
-`Matrix.IsToeplitz`. -/
+/-- The symmetric tridiagonal Toeplitz matrix `Matrix.symmTridiagonalToeplitz n a b` is Toeplitz. -/
 theorem isToeplitz_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
     (symmTridiagonalToeplitz n a b).IsToeplitz :=
   ⟨_, symmTridiagonalToeplitz_eq_toeplitz n a b⟩
 
-/-- The tridiagonal Toeplitz matrices are Toeplitz in the sense of `Matrix.IsToeplitz`. -/
+/-- The tridiagonal Toeplitz matrix `Matrix.tridiagonalToeplitz n a b c` is Toeplitz. -/
 theorem isToeplitz_tridiagonalToeplitz (n : ℕ) (a b c : ℝ) :
     (tridiagonalToeplitz n a b c).IsToeplitz :=
   ⟨_, tridiagonalToeplitz_eq_toeplitz n a b c⟩
 
 /-! ### Symmetric Toeplitz matrices -/
 
-/-- The symmetric Toeplitz matrix `T = (r_{|i-j|})` ([golub2013matrix] §4.7.2, where `r 0 = 1`):
-`symmToeplitz n r i j = r |i - j|`. -/
+/-- The $n \times n$ **symmetric Toeplitz matrix** of a sequence $r : \mathbb{N} \to R$ has the
+entries
+$$t_{ij} = r_{|i-j|}.$$
+This is the matrix $T_n$ of [golub2013matrix] §4.7.2, where $r_0 = 1$. Here $r_0$ is arbitrary. -/
 def symmToeplitz (n : ℕ) (r : ℕ → R) : Matrix (Fin n) (Fin n) R :=
   of fun (i j : Fin n) => r ((i : ℤ) - j).natAbs
 
-/-- The entries of a symmetric Toeplitz matrix. -/
+/-- The entry $(i, j)$ of `Matrix.symmToeplitz n r` is $r_{|i-j|}$. -/
 theorem symmToeplitz_apply (r : ℕ → R) (i j : Fin n) :
     symmToeplitz n r i j = r ((i : ℤ) - j).natAbs := rfl
 
-/-- A symmetric Toeplitz matrix is the Toeplitz matrix of the even sequence `d ↦ r |d|`. -/
+/-- The symmetric Toeplitz matrix of $r$ is the Toeplitz matrix of the even sequence
+$d \mapsto r_{|d|}$. -/
 theorem symmToeplitz_eq_toeplitz (n : ℕ) (r : ℕ → R) :
     symmToeplitz n r = toeplitz fun d => r d.natAbs := by
   ext i j
   rw [symmToeplitz_apply, toeplitz_apply, ← Int.natAbs_neg, neg_sub]
 
-/-- A symmetric Toeplitz matrix times a vector, as a sum over `range n` of `ℕ`-indexed data. -/
+/-- Let $T_n$ be the symmetric Toeplitz matrix of $r$, and let $v$ be a sequence indexed by
+$\mathbb{N}$. Then
+$$(T_n v)_i = \sum_{j=0}^{n-1} r_{|i-j|} v_j,$$
+where $T_n$ acts on the vector $(v_0, \dots, v_{n-1})$. -/
 theorem symmToeplitz_mulVec_apply [NonUnitalNonAssocSemiring R] (r : ℕ → R) (v : ℕ → R)
     (i : Fin n) :
     (symmToeplitz n r *ᵥ fun j : Fin n => v j) i =
@@ -255,36 +318,46 @@ theorem isToeplitz_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).I
 theorem isPersymmetric_symmToeplitz (n : ℕ) (r : ℕ → R) : (symmToeplitz n r).IsPersymmetric :=
   (isToeplitz_symmToeplitz n r).isPersymmetric
 
-/-- A symmetric Toeplitz matrix is invariant under the reversal of rows and columns — the book's
-`ℰ T ℰ = T` ([golub2013matrix] §4.7.3), which with `ℰ² = I` is `ℰ T = T ℰ`. -/
+/-- A symmetric Toeplitz matrix $T_n$ is unchanged when the order of its rows and columns is
+reversed. This is $\mathcal{E}_n T_n \mathcal{E}_n = T_n$ of [golub2013matrix] §4.7.3, which
+with $\mathcal{E}_n^2 = I$ is $\mathcal{E}_n T_n = T_n \mathcal{E}_n$. -/
 theorem symmToeplitz_submatrix_rev (n : ℕ) (r : ℕ → R) :
     (symmToeplitz n r).submatrix Fin.rev Fin.rev = symmToeplitz n r := by
   rw [isPersymmetric_iff_submatrix_rev.mp (isPersymmetric_symmToeplitz n r), isSymm_symmToeplitz]
 
-/-- **The nesting of the `T_k`** ([golub2013matrix] §4.7.2): the leading `k × k` block of `T_n` is
-`T_k`. -/
+/-- **Nesting of the symmetric Toeplitz matrices.** For $k \le n$, the leading $k \times k$ block of
+$T_n$ is $T_k$. This is §4.7.2 of [golub2013matrix]. -/
 theorem leadingPrincipal_symmToeplitz {k : ℕ} (h : k ≤ n) (r : ℕ → R) :
     (symmToeplitz n r).submatrix (Fin.castLE h) (Fin.castLE h) = symmToeplitz k r := by
   ext i j
   rfl
 
-/-- **A symmetric Toeplitz matrix commutes with the exchange matrix** ([golub2013matrix] §4.7.3):
-`ℰ_n T = T ℰ_n`. -/
+/-- A symmetric Toeplitz matrix commutes with the exchange matrix:
+$$\mathcal{E}_n T_n = T_n \mathcal{E}_n.$$
+This is §4.7.3 of [golub2013matrix]. -/
 theorem exchange_mul_symmToeplitz [Semiring R] (n : ℕ) (r : ℕ → R) :
     exchange n * symmToeplitz n r = symmToeplitz n r * exchange n :=
   (isPersymmetric_symmToeplitz n r).exchange_mul_eq_mul_exchange (isSymm_symmToeplitz n r)
 
-/-- **The inverse of a symmetric Toeplitz matrix commutes with the exchange matrix**
-([golub2013matrix] §4.7.3, "`T_k⁻¹ ℰ_k = ℰ_k T_k⁻¹`"), with Mathlib's inverse (junk value
-included). -/
+/-- Over a commutative ring, the inverse of a symmetric Toeplitz matrix commutes with the exchange
+matrix: $T_n^{-1} \mathcal{E}_n = \mathcal{E}_n T_n^{-1}$. This is §4.7.3 of [golub2013matrix].
+
+The inverse is Mathlib's `Matrix.inv`, so the statement also holds for a singular $T_n$, whose
+inverse is $0$. -/
 theorem inv_symmToeplitz_mul_exchange [CommRing R] (n : ℕ) (r : ℕ → R) :
     (symmToeplitz n r)⁻¹ * exchange n = exchange n * (symmToeplitz n r)⁻¹ :=
   ((isPersymmetric_symmToeplitz n r).inv.exchange_mul_eq_mul_exchange
     (by rw [IsSymm, transpose_nonsing_inv, (isSymm_symmToeplitz n r).eq])).symm
 
-/-- **The bordering of the symmetric Toeplitz matrices** ([golub2013matrix] §4.7.3):
-`T_{k+1} = [T_k, ℰ_k r; rᵀ ℰ_k, r₀]` with `r = (r₁, …, r_k)`, the blocks glued along
-`Fin (k + 1) ≃ Fin k ⊕ Fin 1`. -/
+/-- **Bordering of the symmetric Toeplitz matrices.** Let $\rho : \mathbb{N} \to R$, let $T_k$ be
+the symmetric Toeplitz matrix of $\rho$ of order $k$, and let $r = (\rho_1, \dots, \rho_k)^T$.
+Then
+$$T_{k+1} = \begin{bmatrix} T_k & \mathcal{E}_k r \\ r^T \mathcal{E}_k & \rho_0 \end{bmatrix}.$$
+This is §4.7.3 of [golub2013matrix].
+
+The blocks are glued along `finSumFinEquiv : Fin k ⊕ Fin 1 ≃ Fin (k + 1)`. The column
+$\mathcal{E}_k r$ is a `Matrix.replicateCol`, and the row $r^T \mathcal{E}_k$ is a
+`Matrix.replicateRow`. -/
 theorem symmToeplitz_succ_eq_fromBlocks [NonAssocSemiring R] (k : ℕ) (ρ : ℕ → R) :
     symmToeplitz (k + 1) ρ =
       (fromBlocks (symmToeplitz k ρ)
@@ -315,21 +388,24 @@ theorem symmToeplitz_succ_eq_fromBlocks [NonAssocSemiring R] (k : ℕ) (ρ : ℕ
 
 /-! ### Hankel matrices -/
 
-/-- The Hankel matrix `hankel h = (h_{i+j})`, constant along antidiagonals ([golub2013matrix]
-§12.1.7). -/
+/-- The $m \times n$ **Hankel matrix** of a sequence $h : \mathbb{N} \to R$ has the entries
+$$a_{ij} = h_{i+j},$$
+so it is constant along each antidiagonal. This is the Hankel matrix of [golub2013matrix]
+§12.1.7. -/
 def hankel (h : ℕ → R) : Matrix (Fin m) (Fin n) R :=
   of fun (i : Fin m) (j : Fin n) => h (i + j)
 
-/-- The entries of a Hankel matrix. -/
+/-- The entry $(i, j)$ of `Matrix.hankel h` is $h_{i+j}$. -/
 theorem hankel_apply (h : ℕ → R) (i : Fin m) (j : Fin n) :
     (hankel h : Matrix (Fin m) (Fin n) R) i j = h (i + j) := rfl
 
-/-- A matrix is Hankel, constant along each antidiagonal, when it is `hankel h` for some `h`. -/
+/-- An $m \times n$ matrix $A$ **is Hankel** if $A$ is the Hankel matrix $(h_{i+j})$ of some
+sequence $h : \mathbb{N} \to R$. -/
 def IsHankel (A : Matrix (Fin m) (Fin n) R) : Prop :=
   ∃ h : ℕ → R, A = hankel h
 
-/-- A Hankel matrix is one constant along each antidiagonal: entries with the same index sum
-`i + j` agree, the dual of `Matrix.isToeplitz_iff`. -/
+/-- An $m \times n$ matrix $A$ is Hankel if and only if it is constant along each antidiagonal:
+$a_{ij} = a_{kl}$ whenever $i + j = k + l$. This is the counterpart of `Matrix.isToeplitz_iff`. -/
 theorem isHankel_iff [Zero R] {A : Matrix (Fin m) (Fin n) R} :
     A.IsHankel ↔ ∀ (i : Fin m) (j : Fin n) (k : Fin m) (l : Fin n),
       (i : ℕ) + j = k + l → A i j = A k l := by
@@ -345,9 +421,10 @@ theorem isHankel_iff [Zero R] {A : Matrix (Fin m) (Fin n) R} :
     rw [hankel_apply, dite_eq_left hex]
     exact hA _ _ _ _ hex.choose_spec.symm
 
-/-- **Reversing the rows of a Hankel matrix gives a Toeplitz matrix** — the book's "`ℰ_m H` is
-Toeplitz" ([golub2013matrix] §12.1.7) without the permutation matrix: the entry `h (m - 1 - i + j)`
-depends on `j - i` only. -/
+/-- If $A$ is an $m \times n$ Hankel matrix, then reversing the order of its rows gives a Toeplitz
+matrix: the entry $(i, j)$ of the result is $h_{m-1-i+j}$, which depends only on $j - i$. This
+is the statement "$\mathcal{E}_m H$ is Toeplitz" of [golub2013matrix] §12.1.7, written without
+the permutation matrix. -/
 theorem IsHankel.isToeplitz_submatrix_rev {A : Matrix (Fin m) (Fin n) R} (hA : A.IsHankel) :
     (A.submatrix Fin.rev id).IsToeplitz := by
   obtain ⟨h, rfl⟩ := hA
@@ -357,7 +434,8 @@ theorem IsHankel.isToeplitz_submatrix_rev {A : Matrix (Fin m) (Fin n) R} (hA : A
   congr 1
   omega
 
-/-- **`ℰ_m H` is Toeplitz for a Hankel `H`** ([golub2013matrix] §12.1.7). -/
+/-- If $H$ is an $m \times n$ Hankel matrix, then $\mathcal{E}_m H$ is Toeplitz. This is §12.1.7 of
+[golub2013matrix]. -/
 theorem IsHankel.isToeplitz_exchange_mul [NonAssocSemiring R] {A : Matrix (Fin m) (Fin n) R}
     (hA : A.IsHankel) : (exchange m * A).IsToeplitz := by
   rw [exchange_mul_eq_submatrix]
@@ -365,8 +443,10 @@ theorem IsHankel.isToeplitz_exchange_mul [NonAssocSemiring R] {A : Matrix (Fin m
 
 /-! ### Circulant matrices -/
 
-/-- **A circulant is a Toeplitz matrix with wraparound** ([golub2013matrix] §4.8.2): Mathlib's
-`circulant v`, with entries `v (i - j)`, is Toeplitz, of the sequence `d ↦ v (-d)`. -/
+/-- A **circulant matrix is a Toeplitz matrix with wraparound**. Mathlib's circulant matrix
+`Matrix.circulant v` of $v : \mathbb{Z}/n \to R$ has the entries $v_{i-j}$, with the subtraction
+modulo $n$. It is the Toeplitz matrix of the sequence $d \mapsto v_{-d \bmod n}$. This is §4.8.2
+of [golub2013matrix]. -/
 theorem isToeplitz_circulant [Zero R] (v : Fin n → R) : (circulant v).IsToeplitz := by
   rcases n with _ | n
   · exact ⟨0, by ext i; exact i.elim0⟩
@@ -377,8 +457,13 @@ theorem isToeplitz_circulant [Zero R] (v : Fin n → R) : (circulant v).IsToepli
     push_cast
     simp
 
-/-- **A circulant is a polynomial in the downshift** ([golub2013matrix] (4.8.3)):
-`circulant z = ∑ k, z k 𝒟_n ^ k`. -/
+/-- A **circulant matrix is a polynomial in the downshift**. For $n \ge 1$ and
+$z = (z_0, \dots, z_{n-1})$,
+$$\operatorname{circ}(z) = \sum_{k=0}^{n-1} z_k \mathcal{D}_n^k.$$
+This is (4.8.3) of [golub2013matrix].
+
+The circulant matrix $\operatorname{circ}(z)$ is Mathlib's `Matrix.circulant z`, and the
+hypothesis $n \ge 1$ is `[NeZero n]`. -/
 theorem circulant_eq_sum_downshift_pow [Semiring R] [NeZero n] (z : Fin n → R) :
     circulant z = ∑ k : Fin n, z k • (downshift n : Matrix (Fin n) (Fin n) R) ^ (k : ℕ) := by
   ext i j
@@ -386,16 +471,22 @@ theorem circulant_eq_sum_downshift_pow [Semiring R] [NeZero n] (z : Fin n → R)
     circulant_apply, Pi.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq,
     Finset.mem_univ, ite_true]
 
-/-- The value of a difference in `Fin n`: `i - j` if `j ≤ i`, `n + i - j` otherwise. -/
+/-- For $i, j$ in `Fin n`, the value of $i - j$ is $i - j$ if $j \le i$, and $n + i - j$ otherwise.
+-/
 private theorem val_sub_fin (i j : Fin n) :
     ((i - j : Fin n) : ℕ) = if (j : ℕ) ≤ i then (i : ℕ) - j else n + i - j := by
   split_ifs with h
   · exact Fin.coe_sub_iff_le.mpr h
   · exact Fin.coe_sub_iff_lt.mpr (by omega)
 
-/-- **The periodic second difference is a circulant** ([golub2013matrix] §4.8.6): for `3 ≤ n`,
-`𝒯^{(P)}_n` is the circulant of its first column `(2, −1, 0, …, 0, −1)`. (For `n = 2` the two
-corrections fall on the off-diagonal and the claim fails: `𝒯^{(P)}_2 = [2 −2; −2 2]`.) -/
+/-- **The periodic second difference matrix is a circulant matrix.** For $n \ge 3$, the periodic
+second difference matrix $\mathcal{T}^{(P)}_n$ is the circulant matrix with the first column
+$(2, -1, 0, \dots, 0, -1)$. This is §4.8.6 of [golub2013matrix].
+
+The hypothesis $n \ge 3$ is necessary. For $n = 2$ the two corner corrections fall on the
+off-diagonal entries, and $\mathcal{T}^{(P)}_2 = \begin{bmatrix} 2 & -2 \\ -2 & 2 \end{bmatrix}$
+is not this circulant matrix. The matrix $\mathcal{T}^{(P)}_n$ is
+`Matrix.secondDifferencePeriodic n`. -/
 theorem secondDifferencePeriodic_eq_circulant (hn : 3 ≤ n) :
     secondDifferencePeriodic n = circulant fun k : Fin n =>
       if (k : ℕ) = 0 then 2 else if (k : ℕ) = 1 ∨ (k : ℕ) + 1 = n then -1 else 0 := by

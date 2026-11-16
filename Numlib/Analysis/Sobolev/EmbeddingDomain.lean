@@ -19,106 +19,146 @@ import Numlib.Analysis.Sobolev.Embedding
 import Numlib.Analysis.Sobolev.Zero
 
 /-!
-# The Sobolev embeddings on a domain with an extension operator
+# Sobolev embeddings on a domain with an extension operator
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.3.B: the
-embeddings of `W^{1,p}(Ω)` for an open set `Ω ⊆ ℝ^N` of class `C¹` with bounded boundary, or the
-half space — Corollary 9.14 in its three cases `p < N`, `p = N`, `p > N`, with the Hölder
-estimate and the continuous representative up to the boundary (`W^{1,p}(Ω) ⊂ C(Ω̄)`) for
-`p > N` — and their higher-order form, Corollary 9.15: `W^{m,p}(Ω) ⊂ L^q(Ω)`, `L^∞(Ω)` and
-`C^k(Ω̄)` by repeated application of Corollary 9.14.
+Let $\Omega \subseteq \mathbb{R}^N$ be open. This module proves the Sobolev embeddings of
+$W^{1,p}(\Omega)$ and $W^{m,p}(\Omega)$ on a domain that has an extension operator: a bounded linear
+map $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ with $Pu = u$ almost everywhere on $\Omega$. The
+presentation follows [brezis2011functional], §9.3.B: Corollary 9.14 with footnote 15, Corollary 9.15
+with footnotes 16 and 17, and Remarks 15, 16 and 20. For $1 \le p < N$ and $1/p^* = 1/p - 1/N$, the
+space $W^{1,p}(\Omega)$ embeds continuously in $L^q(\Omega)$ for $p \le q \le p^*$. For
+$p = N \ge 2$ it embeds in $L^q(\Omega)$ for $N \le q < \infty$. For $N < p < \infty$ every
+$u \in W^{1,p}(\Omega)$ has a representative that is continuous on $\bar\Omega$, bounded by
+$C \|u\|$ and Hölder continuous of exponent $1 - N/p$ with constant $C \|u\|$. Repeated application
+gives $W^{m,p}(\Omega) \subset L^q(\Omega)$ for $p \le q < \infty$ with $1/p - m/N \le 1/q$,
+$W^{m,p}(\Omega) \subset L^\infty(\Omega)$ for $m > N/p$, and
+$W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ for $k + N/p < m$.
 
-## Design
+Each result is the whole-space theorem of `Numlib.Analysis.Sobolev.Embedding` applied to $Pu$ and
+restricted to $\Omega$. The hypothesis on $\Omega$ is therefore the existence of an extension
+operator, `HasSobolevExtensionOn` on a subspace $S \subseteq W^{1,p}(\Omega)$ and
+`IsSobolevExtensionDomain` for $S = W^{1,p}(\Omega)$. An open set of class $C^1$ with bounded
+boundary and the half space are extension domains. For an arbitrary open set,
+$S = W_0^{1,p}(\Omega)$ has the extension by zero, so the embeddings hold on $W_0^{1,p}(\Omega)$
+(Remark 20). The module also proves that $\|\nabla u\|_p + \|u\|_q$ is an equivalent norm on
+$W^{1,p}(\Omega)$ for a bounded extension domain (Remark 15), and that $u(x) = (\log(1/|x|))^\alpha$
+lies in $W^{1,N}(B(0, 1/2))$ but not in $L^\infty$ (Remark 16).
 
-The book's standing hypothesis for §9.3.B is replaced by the abstract predicate
-`HasSobolevExtensionOn S` of `Numlib/Analysis/Sobolev/Cutoff.lean` — a subspace `S` of
-`W^{1,p}(Ω)` carrying a bounded extension operator `P : S → W^{1,p}(ℝ^N)` with `P u = u` on `Ω` —
-and its instance `IsSobolevExtensionDomain N p Ω` (`S = ⊤`). Theorem 9.7
-(`IsSobolevExtensionDomain.of_isContDiffChartDomain`, `Numlib/Analysis/Sobolev/Extension.lean`),
-the half space (`IsSobolevExtensionDomain.upperHalfSpace`,
-`Numlib/Analysis/Sobolev/Reflection.lean`) and the extension by zero on `W_0^{1,p}(Ω)` of an
-arbitrary open set (Remark 20, `SobolevEuclideanZero.hasSobolevExtensionOn` of
-`Numlib/Analysis/Sobolev/Zero.lean`) are the instances; this module imports `Zero.lean` for the
-last one (and so `Extension.lean` through it) but uses nothing of Theorem 9.7 itself. Every
-statement is "obtain `P`, apply the whole-space theorem of
-`Numlib/Analysis/Sobolev/Embedding.lean` to `P u`, restrict"
-(`HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le`), with a constant `C` that depends on `P`
-and is therefore existential.
+## Main definitions
+
+* `SobolevMultiIndex.toLpₗOn`: the inclusion of a subspace $S \subseteq W^{k,p}(\Omega)$ into
+  $L^q(\Omega)$, for a subspace whose elements lie in $L^q(\Omega)$.
+* `SobolevMultiIndexZero.toLowerExponentL`: the inclusion $W_0^{k,p}(\Omega) \to W_0^{k,r}(\Omega)$
+  for $r \le p$ and $|\Omega| < \infty$.
+* `HasSobolevExtensionOn.toContinuousMapOnL`, `SobolevEuclidean.toContinuousMapL`: for
+  $N < p < \infty$, the bounded linear map $u \mapsto \tilde u|_K$ into $C(K)$, where $\tilde u$ is
+  the continuous representative and $K \supseteq \Omega$ is compact, typically $K = \bar\Omega$.
+* `IsSobolevExtensionDomainAll`: $\Omega$ is an extension domain for every exponent, the hypothesis
+  of Corollary 9.15.
+* `logRpow`: the function $u(x) = (\log(1/|x|))^\alpha$ of Remark 16.
 
 ## Main results
 
-* `SobolevMultiIndex.toLpₗOn`: the inclusion of a subspace `S ⊆ W^{k,p}(Ω)` into `L^q(Ω)`, the
-  shape in which the results hold on `W_0^{1,p}(Ω)`, with `isContinuousEmbedding_toLpₗOn` and
-  `isContinuousEmbedding_toLpₗ_of_eLpNorm_le` turning an `eLpNorm` bound into an
-  `IsContinuousEmbedding`.
+* `HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le`: an $L^q$ bound on $W^{1,p}(\mathbb{R}^N)$
+  gives an $L^q(\Omega)$ bound on a subspace with an extension operator.
 * `HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt`:
-  **Corollary 9.14, case `p < N`**, `W^{1,p}(Ω) ↪ L^q(Ω)` for `p ≤ q ≤ p*`.
+  `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt`: Corollary 9.14 for
+  $p < N$, $W^{1,p}(\Omega) \hookrightarrow L^q(\Omega)$ for $p \le q \le p^*$.
 * `HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_eq_finrank`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq`:
-  **Corollary 9.14, case `p = N`**, `W^{1,N}(Ω) ↪ L^q(Ω)` for `N ≤ q < ∞`, `N ≥ 2`.
+  `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq`: Corollary 9.14 for
+  $p = N \ge 2$, $W^{1,N}(\Omega) \hookrightarrow L^q(\Omega)$ for $N \le q < \infty$.
 * `HasSobolevExtensionOn.exists_forall_continuous_holderWith_ae_eq`,
   `SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt`:
-  **Corollary 9.14, case `p > N`** (`N < p < ∞`): a representative continuous on all of `ℝ^N`,
-  Hölder with exponent `1 − N/p` and constant `C ‖u‖`, bounded by `C ‖u‖`, so
-  `W^{1,p}(Ω) ⊂ L^∞(Ω)` and `W^{1,p}(Ω) ⊂ C(Ω̄)`.
-* `HasSobolevExtensionOn.toContinuousMapOnL`, `SobolevEuclidean.toContinuousMapL`: the trace
-  `u ↦ ũ|_K` of the continuous representative on a compact `K ⊇ Ω` (typically `closure Ω`) as a
-  bounded linear map into `C(K, ℝ)`, independent of the extension operator
-  (`toContinuousMapOnL_apply_of_ae_eq`), injective, bounded and uniformly Hölder on the unit
-  ball — the map the third case of Theorem 9.16 is about.
-
-* `IsSobolevExtensionDomainAll`: an extension domain for every exponent, the standing
-  hypothesis of Corollary 9.15 (supplied for `C¹` chart domains with bounded boundary by
-  Theorem 9.7, in `Numlib/Analysis/Sobolev/Compactness.lean`).
+  `SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt`: Corollary 9.14 for
+  $N < p < \infty$, a continuous, bounded and Hölder continuous representative, and $W^{1,p}(\Omega)
+  \hookrightarrow L^\infty(\Omega)$.
+* `SobolevEuclidean.isContinuousEmbedding_toContinuousMapL`: $W^{1,p}(\Omega) \hookrightarrow C(K)$
+  for $N < p < \infty$ and a compact $K \supseteq \Omega$.
 * `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension`,
-  `SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension`,
-  `SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension`:
-  **Corollary 9.15, the `L^q` clauses**, `W^{m,p}(Ω) ↪ L^q(Ω)` for `p ≤ q < ∞` with
-  `1/p − m/N ≤ 1/q`, by induction on `m` through the domain form of the inductive step
-  (`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le`) and
-  Corollary 9.14.
+  `SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension`: Corollary 9.15,
+  $W^{m,p}(\Omega) \hookrightarrow L^q(\Omega)$ for $p \le q < \infty$ with $1/p - m/N \le 1/q$.
 * `SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`,
-  `SobolevEuclidean.memLp_fn_top_of_order_of_hasSobolevExtension`: **Corollary 9.15, the `L^∞`
-  clause**, with a representative continuous on `ℝ^N` and Hölder.
+  `SobolevEuclidean.memLp_fn_top_of_order_of_hasSobolevExtension`: Corollary 9.15,
+  $W^{m,p}(\Omega) \subset L^\infty(\Omega)$ for $m > N/p$, with a continuous Hölder representative.
 * `SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`,
   `SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`,
-  `SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`: **Corollary 9.15, the `C^k(Ω̄)`
-  clause** (footnote 16) for `k + N/p < m`: a representative of class `C^k` on `Ω`, each of
-  whose derivatives of order `≤ k` agrees on `Ω` with a continuous function on `ℝ^N` bounded by
-  `C ‖u‖`, the top one Hölder — of the sharp exponent `m − N/p − k` when it is less than `1`.
+  `SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`: Corollary 9.15,
+  $W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ for $k + N/p < m$, with bounded derivatives and a Hölder
+  continuous derivative of order $k$.
+* `SobolevEuclidean.exists_continuousLinearMap_lower_of_order`:
+  $W^{m+1+j,p}(\Omega) \to W^{j+1,r}(\Omega)$ is a bounded linear map for $p \le r < \infty$ with
+  $1/p - m/N \le 1/r$.
+* `isContDiffDomain_ball`, `isContDiffChartDomain_ball`: an open ball of $\mathbb{R}^{d+1}$ is a
+  domain of class $C^\infty$.
+* `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_lt`,
+  `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_eq_finrank`,
+  `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt`: Remark 15,
+  $\|\nabla u\|_p + \|u\|_q$ is equivalent to the norm of $W^{1,p}(\Omega)$ on a bounded extension
+  domain, for the $q$ of Corollary 9.14.
+* `SobolevEuclideanZero.isContinuousEmbedding_toLp`,
+  `SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`: Remark 20, the embeddings of
+  Corollary 9.14 on $W_0^{1,p}(\Omega)$ for an arbitrary open set $\Omega$.
+* `ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`: on a bounded open set, a function of
+  class $C^n(\bar\Omega)$ lies in $W^{m,p}(\Omega)$ for $m \le n$.
+* `memSobolevMultiIndex_logRpow`, `eLpNorm_logRpow_top`: Remark 16, for $N \ge 2$ and
+  $0 < \alpha < 1 - 1/N$ the function $(\log(1/|x|))^\alpha$ lies in $W^{1,N}(B(0, 1/2))$ and is not
+  essentially bounded.
 
-* `isContDiffDomain_ball`, `isContDiffChartDomain_ball`: an open ball of `ℝ^{d+1}` is a domain
-  of class `C^∞` (graph and chart senses), the standard example of a `C¹` domain with bounded
-  boundary.
+## Proof outline
 
-* `SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded`,
-  `SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm`,
-  `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_lt` / `_of_eq_finrank` /
-  `_of_gt`: **Remark 15**, the norm `‖∇u‖_p + ‖u‖_q` is equivalent to the norm of `W^{1,p}(Ω)`
-  on a bounded extension domain for the `q` of Corollary 9.14, by interpolation and an
-  Ehrling-type absorption (`ENNReal.le_max_mul_add_of_le_rpow_mul_rpow`).
+For a subspace $S$ with an extension operator $P$, an inequality
+$\|v\|_{L^q(\mathbb{R}^N)} \le K \|v\|$ on $W^{1,p}(\mathbb{R}^N)$ gives $\|u\|_{L^q(\Omega)} \le
+\|Pu\|_{L^q(\mathbb{R}^N)} \le K \|P\| \|u\|$, and the continuous representative of $Pu$ is one of
+$u$ on $\Omega$. Corollary 9.15 follows by induction on $m$: an $L^q$ bound on $W^{m,p}(\Omega)$
+makes $W^{m+1,p}(\Omega) \subseteq W^{1,q}(\Omega)$, and Corollary 9.14 applies at the exponent $q$.
+The $C^k(\bar\Omega)$ clause follows by a second induction on $k$, applied to the partial
+derivatives. Remark 15 combines Hölder's inequality on a set of finite measure, the interpolation
+inequality between $L^q$ and $L^r$, and an absorption argument. In Remark 16 the classical gradient
+of $u$ off the origin is its weak gradient on the ball, by a removable-singularity lemma, and
+$|\nabla u|^N$ is integrable by a computation in polar coordinates.
 
-* `HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le`,
-  `SobolevEuclideanZero.isContinuousEmbedding_toLp`, `_of_lt`, `_of_eq`, `_top_of_lt`,
-  `SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`: **Remark 20**, the
-  embeddings of Corollary 9.14 on `W_0^{1,p}(Ω)` of an *arbitrary* open set, with no regularity
-  of `Ω`, through the extension by zero; the `L^q` clauses also in one statement
-  (`p ≤ q < ∞`, `1/p − 1/N ≤ 1/q`, `N ≥ 2` or `p > 1`).
+## Notation
 
-* `memSobolevMultiIndex_logRpow`, `eLpNorm_logRpow_top`: **Remark 16**, the limiting case
-  `p = N`: on `B(0, 1/2) ⊆ ℝ^N`, `N ≥ 2`, the function `u(x) = (log(1/|x|))^α` with
-  `0 < α < 1 − 1/N` lies in `W^{1,N}` but not in `L^∞`. Its classical gradient off the origin is
-  its weak gradient on the whole ball by the removable-singularity lemma of
-  `Numlib/Analysis/Sobolev/RemovableSingularity.lean`, and `|∇u|^N` is integrable by the radial
-  computation `∫_0^{1/2} (log(1/r))^{−N(1−α)} dr/r < ∞`, with the antiderivative
-  `(log(1/r))^{1−N(1−α)}` continuous down to `r = 0` (no substitution).
+* $W^{k,p}(\Omega)$ is `SobolevEuclidean N k p Ω`, with the norm $\|u\| = (\sum_{|\alpha| \le k}
+  \|\partial^\alpha u\|_{L^p(\Omega)}^p)^{1/p}$. The general space `SobolevMultiIndex F b k p Ω μ`
+  uses a basis $b$ of $E$ and a measure $\mu$.
+* $W_0^{k,p}(\Omega)$ is `SobolevEuclideanZero N k p Ω`, the closure of the test functions in
+  $W^{k,p}(\Omega)$.
+* An element $u$ of $W^{k,p}(\Omega)$ and its function `SobolevMultiIndex.fn u` are both written
+  $u$.
+* $\|\nabla u\|_p = (\sum_i \|\partial_i u\|_p^p)^{1/p}$ is `SobolevMultiIndex.gradNorm u`.
+* $p^*$ is the Sobolev exponent, $1/p^* = 1/p - 1/N$.
+* $V \hookrightarrow W$ is a continuous embedding `IsContinuousEmbedding`: an injective linear map
+  $\iota$ with $\|\iota v\| \le c \|v\|$.
+* $\bar\Omega$ is the closure of $\Omega$, and $|\Omega|$ its Lebesgue measure.
 
-## References
+## Implementation notes
 
-[brezis2011functional], §9.3.B: Corollary 9.14, footnote 15, Corollary 9.15 (footnotes 16–17),
-Remark 15, Remark 16, Remark 20.
+* The standing hypothesis of [brezis2011functional] §9.3.B, that $\Omega$ is of class $C^1$ with
+  bounded boundary or is the half space, is replaced by the existence of an extension operator. The
+  instances are `IsSobolevExtensionDomain.of_isContDiffChartDomain` (Theorem 9.7),
+  `IsSobolevExtensionDomain.upperHalfSpace` (the half space) and
+  `SobolevEuclideanZero.hasSobolevExtensionOn` (the extension by zero on $W_0^{1,p}(\Omega)$).
+  Theorem 9.7 enters this module only through
+  `IsSobolevExtensionDomainAll.of_isContDiffChartDomain`.
+* The constants depend on the extension operator, and so they are existential.
+* An exponent `p : ℝ≥0` with `[Fact (1 ≤ (p : ℝ≥0∞))]` is a finite exponent $1 \le p < \infty$. An
+  exponent in `ℝ≥0∞` can also be infinite. The exponent $p^*$ is a variable `p'` with the hypothesis
+  `(p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹`.
+* Each $L^q$ clause is stated three times: as a bound $\|u\|_{L^q(\Omega)} \le C \|u\|$, as a
+  membership $u \in L^q(\Omega)$, and as a continuous embedding along `SobolevMultiIndex.toLpₗ` (for
+  $W^{k,p}(\Omega)$) or `SobolevMultiIndex.toLpₗOn` (for a subspace).
+* The continuous representative is continuous on all of $\mathbb{R}^N$, which is stronger than
+  continuity on $\bar\Omega$. A function lies in $C^k(\bar\Omega)$ when it is of class $C^k$ on
+  $\Omega$ and each derivative of order at most $k$ agrees on $\Omega$ with a function that is
+  continuous on $\bar\Omega$, as in `ContDiffOnClosure` (footnote 16). The $C^k(\bar\Omega)$ results
+  of this module give extensions of the derivatives that are continuous on all of $\mathbb{R}^N$,
+  which is stronger.
+* The statements that cover all three cases of Corollary 9.14 at once assume $N \ge 2$ or $p > 1$.
+  They exclude the case $N = 1 = p$, as Corollary 9.13 does.
+* The function of Remark 16 is defined on all of $\mathbb{R}^N$ by $(-\log |x|)^\alpha$. Lean's
+  conventions $\log 0 = 0$ and $0^\alpha = 0$ for $\alpha \neq 0$ give it the value $0$ at the
+  origin.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -126,7 +166,7 @@ open scoped ContDiff Distributions ENNReal NNReal Topology
 
 noncomputable section
 
-/-! ### The inclusion of a subspace of `W^{k,p}(Ω)` into `L^q(Ω)` -/
+/-! ### The inclusion of a subspace of $W^{k,p}(\Omega)$ into $L^q(\Omega)$ -/
 
 section Inclusion
 
@@ -138,9 +178,12 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 namespace SobolevMultiIndex
 
 variable (F b k p Ω μ) in
-/-- **The inclusion of a subspace `S ⊆ W^{k,p}(Ω)` into `L^q(Ω)`**, given the membership of its
-elements: `u ↦ fn u`. This is `SobolevMultiIndex.toLpₗ` for the subspace, the shape in which
-[brezis2011functional] Remark 20 reads Corollary 9.14 on `W_0^{1,p}(Ω)`. -/
+/-- Let $S$ be a subspace of $W^{k,p}(\Omega)$ whose elements all lie in $L^q(\Omega)$. The
+**inclusion of $S$ into $L^q(\Omega)$** is the linear map $S \to L^q(\Omega)$ that sends $u$ to
+the class of its function.
+
+This is `SobolevMultiIndex.toLpₗ` for a subspace. It is the form in which the embeddings hold on
+$W_0^{1,p}(\Omega)$, as in Remark 20 of [brezis2011functional]. -/
 def toLpₗOn (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ))
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E))) :
     S →ₗ[ℝ] Lp F q (μ.restrict (Ω : Set E)) where
@@ -152,14 +195,16 @@ def toLpₗOn (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ))
     rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
     exact MemLp.toLp_congr _ _ (fn_smul c _)
 
-/-- `SobolevMultiIndex.toLpₗOn S h u` is the function of `u`, almost everywhere on `Ω`. -/
+/-- The inclusion $S \to L^q(\Omega)$ of `SobolevMultiIndex.toLpₗOn` sends $u$ to a class whose
+representatives agree with $u$ almost everywhere on $\Omega$. -/
 theorem toLpₗOn_coeFn {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E)))
     (u : S) :
     toLpₗOn F b k p Ω μ S h u =ᵐ[μ.restrict (Ω : Set E)] fn (u : SobolevMultiIndex F b k p Ω μ) :=
   MemLp.coeFn_toLp (h u)
 
-/-- The norm of `SobolevMultiIndex.toLpₗOn S h u` is the `L^q(Ω)` norm of the function. -/
+/-- The norm of the image of $u \in S$ under `SobolevMultiIndex.toLpₗOn` is $\|u\|_{L^q(\Omega)}$.
+-/
 theorem norm_toLpₗOn {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E)))
     (u : S) :
@@ -167,7 +212,8 @@ theorem norm_toLpₗOn {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
       = (eLpNorm (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E))).toReal :=
   Lp.norm_toLp _ (h u)
 
-/-- The inclusion of a subspace into `L^q(Ω)` is injective. -/
+/-- Let $E$ be finite-dimensional and $F$ complete. The inclusion `SobolevMultiIndex.toLpₗOn` of a
+subspace $S \subseteq W^{k,p}(\Omega)$ into $L^q(\Omega)$ is injective. -/
 theorem toLpₗOn_injective [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
     {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E))) :
@@ -175,8 +221,10 @@ theorem toLpₗOn_injective [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSp
   Subtype.ext <| ext_of_fn_ae_eq <| (toLpₗOn_coeFn h u).symm.trans <|
     (Lp.ext_iff.1 huv).trans (toLpₗOn_coeFn h v)
 
-/-- **A bound `‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` on a subspace makes its inclusion into `L^q(Ω)` a
-continuous embedding.** -/
+/-- Let $E$ be finite-dimensional, $F$ complete and $p, q \ge 1$. Let $S$ be a subspace of
+$W^{k,p}(\Omega)$ whose elements lie in $L^q(\Omega)$. If there is $C$ with
+$\|u\|_{L^q(\Omega)} \le C \|u\|$ for all $u \in S$, then the inclusion
+`SobolevMultiIndex.toLpₗOn` is a continuous embedding $S \hookrightarrow L^q(\Omega)$. -/
 theorem isContinuousEmbedding_toLpₗOn [Fact (1 ≤ p)] [Fact (1 ≤ q)] [FiniteDimensional ℝ E]
     [BorelSpace E] [CompleteSpace F] {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E)))
@@ -190,8 +238,13 @@ theorem isContinuousEmbedding_toLpₗOn [Fact (1 ≤ p)] [Fact (1 ≤ q)] [Finit
     exact (max_le_max_right 0 (mul_le_mul_of_nonneg_right (le_max_left C 0) (norm_nonneg _))).trans
       (max_eq_left (by positivity)).le⟩
 
-/-- **A bound `‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` makes the inclusion `W^{k,p}(Ω) → L^q(Ω)` a continuous
-embedding**, the `eLpNorm` form of `SobolevMultiIndex.isContinuousEmbedding_toLpₗ`. -/
+/-- Let $E$ be finite-dimensional, $F$ complete and $p, q \ge 1$. If every $u \in W^{k,p}(\Omega)$
+lies in $L^q(\Omega)$ and there is $C$ with $\|u\|_{L^q(\Omega)} \le C \|u\|$ for all $u$, then
+the inclusion `SobolevMultiIndex.toLpₗ` is a continuous embedding
+$W^{k,p}(\Omega) \hookrightarrow L^q(\Omega)$.
+
+This is the form of `SobolevMultiIndex.isContinuousEmbedding_toLpₗ` with the bound stated by
+`MeasureTheory.eLpNorm`. -/
 theorem isContinuousEmbedding_toLpₗ_of_eLpNorm_le [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
     (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E)))
@@ -209,7 +262,9 @@ end SobolevMultiIndex
 
 end Inclusion
 
-/-! ### The inclusion of a subspace into `L^p(Ω)` itself, and `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)` -/
+/-!
+### The inclusion of a subspace into $L^p(\Omega)$, and $W_0^{k,p}(\Omega) \to W_0^{k,r}(\Omega)$
+-/
 
 section ZeroInclusion
 
@@ -220,14 +275,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p q r : ℝ≥0∞} [Fact (1 ≤ p)]
   [Fact (1 ≤ q)] [Fact (1 ≤ r)] {Ω : Opens E} {μ : Measure E}
 
-/-- The inclusion `SobolevMultiIndex.toLpₗOn` of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` itself
-is `SobolevMultiIndex.fnL` restricted to `S`. -/
+/-- For a subspace $S \subseteq W^{k,p}(\Omega)$, the inclusion `SobolevMultiIndex.toLpₗOn` of $S$
+into $L^p(\Omega)$ is the restriction of `SobolevMultiIndex.fnL` to $S$. -/
 theorem SobolevMultiIndex.toLpₗOn_self (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
     toLpₗOn F b k p Ω μ S (fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ))
       = ((fnL F b k p Ω μ).comp S.subtypeL).toLinearMap :=
   LinearMap.ext fun u ↦ Lp.ext ((toLpₗOn_coeFn _ u).trans (Eventually.of_forall fun _ ↦ rfl))
 
-/-- The inclusion `W_0^{k,p}(Ω) → L^p(Ω)` along `SobolevMultiIndex.toLpₗOn` is
+/-- The inclusion `SobolevMultiIndex.toLpₗOn` of $W_0^{k,p}(\Omega)$ into $L^p(\Omega)$ is
 `SobolevMultiIndexZero.fnL`. -/
 theorem SobolevMultiIndexZero.toLpₗOn_eq_fnL :
     toLpₗOn F b k p Ω μ (SobolevMultiIndexZero F b k p Ω μ)
@@ -235,11 +290,14 @@ theorem SobolevMultiIndexZero.toLpₗOn_eq_fnL :
       = (SobolevMultiIndexZero.fnL F b k p Ω μ).toLinearMap :=
   SobolevMultiIndex.toLpₗOn_self _
 
-/-- **A compact embedding of a subspace into `L^q(Ω)` pulls back along a continuous embedding
-that preserves the function**: for subspaces `S ⊆ W^{k,p}(Ω)`, `S' ⊆ W^{k,r}(Ω)` and a bounded
-injective `T : S → S'` with `fn (T u) = fn u` on `Ω`, the compactness of `S' → L^q(Ω)` gives that of
-`S → L^q(Ω)`, the latter being the composite. Stated with the operators as variables so that the
-typed instances (`W_0^{1,N}(Ω) → W_0^{1,r}(Ω)`) cost nothing. -/
+/-- Let $p, q, r \ge 1$, and let $S \subseteq W^{k,p}(\Omega)$ and $S' \subseteq W^{k,r}(\Omega)$ be
+subspaces whose elements lie in $L^q(\Omega)$. Let $T : S \to S'$ be a bounded linear map that
+is a continuous embedding and satisfies $Tu = u$ almost everywhere on $\Omega$. If the inclusion
+$S' \to L^q(\Omega)$ is a compact embedding, then the inclusion $S \to L^q(\Omega)$ is a compact
+embedding.
+
+The inclusion of $S$ is the inclusion of $S'$ composed with $T$. The operators are variables, so
+that the statement applies directly to maps such as $W_0^{1,N}(\Omega) \to W_0^{1,r}(\Omega)$. -/
 theorem SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp
     {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
     {S' : Submodule ℝ (SobolevMultiIndex F b k r Ω μ)} (T : S →L[ℝ] S')
@@ -257,8 +315,9 @@ theorem SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
-/-- **The inclusion of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` is a continuous embedding**:
-injective, of norm at most one. -/
+/-- Let $E$ be finite-dimensional, $F$ complete and $p \ge 1$. For every subspace
+$S \subseteq W^{k,p}(\Omega)$, the inclusion `SobolevMultiIndex.toLpₗOn` of $S$ into
+$L^p(\Omega)$ is a continuous embedding: it is injective and of norm at most $1$. -/
 theorem SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self
     (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
     IsContinuousEmbedding (toLpₗOn F b k p Ω μ S
@@ -267,9 +326,12 @@ theorem SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self
   exact ⟨fun _ _ huv ↦ Subtype.ext (fnL_injective huv), _,
     ((fnL F b k p Ω μ).comp S.subtypeL).le_opNorm⟩
 
-/-- **`SobolevMultiIndex.toLowerExponentL` maps `W_0^{k,p}(Ω)` into `W_0^{k,r}(Ω)`**, `r ≤ p`, on
-a set of finite measure: it maps the test functions to the test functions (the function is
-unchanged) and is continuous, so it maps the closure into the closure. -/
+/-- Let $E$ be finite-dimensional, $F$ complete, $|\Omega| < \infty$ and $1 \le r \le p$. The
+inclusion `SobolevMultiIndex.toLowerExponentL` of $W^{k,p}(\Omega)$ into $W^{k,r}(\Omega)$ maps
+$W_0^{k,p}(\Omega)$ into $W_0^{k,r}(\Omega)$.
+
+The inclusion maps test functions to test functions and is continuous, so it maps the closure of
+the test functions into the closure. -/
 theorem SobolevMultiIndexZero.toLowerExponentL_mem (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
     {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
     toLowerExponentL F b k p r μ hΩ hrp u ∈ SobolevMultiIndexZero F b k r Ω μ := by
@@ -284,17 +346,18 @@ theorem SobolevMultiIndexZero.toLowerExponentL_mem (hΩ : μ Ω ≠ ⊤) (hrp : 
   exact h hu
 
 variable (F b k p r μ) in
-/-- **The inclusion `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)`, `r ≤ p`, on a set of finite measure**, as a
-bounded linear map: `SobolevMultiIndex.toLowerExponentL` restricted to the closures of the test
-functions. -/
+/-- Let $E$ be finite-dimensional, $F$ complete, $|\Omega| < \infty$ and $1 \le r \le p$. The
+**inclusion $W_0^{k,p}(\Omega) \to W_0^{k,r}(\Omega)$** is the bounded linear map that
+`SobolevMultiIndex.toLowerExponentL` induces on the closures of the test functions. -/
 def SobolevMultiIndexZero.toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
     SobolevMultiIndexZero F b k p Ω μ →L[ℝ] SobolevMultiIndexZero F b k r Ω μ :=
   ((SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp).comp
     (SobolevMultiIndexZero F b k p Ω μ).subtypeL).codRestrict _
       fun u ↦ SobolevMultiIndexZero.toLowerExponentL_mem hΩ hrp u.2
 
-/-- `SobolevMultiIndexZero.toLowerExponentL` is `SobolevMultiIndex.toLowerExponentL` on the
-underlying element. -/
+/-- As an element of $W^{k,r}(\Omega)$, the image of $u$ under
+`SobolevMultiIndexZero.toLowerExponentL` is the image of $u$ under
+`SobolevMultiIndex.toLowerExponentL`. -/
 @[simp]
 theorem SobolevMultiIndexZero.coe_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
     (u : SobolevMultiIndexZero F b k p Ω μ) :
@@ -302,7 +365,8 @@ theorem SobolevMultiIndexZero.coe_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : 
       = SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp u :=
   rfl
 
-/-- The function of `SobolevMultiIndexZero.toLowerExponentL u` is the function of `u`. -/
+/-- The image of $u$ under `SobolevMultiIndexZero.toLowerExponentL` agrees with $u$ almost
+everywhere on $\Omega$. -/
 theorem SobolevMultiIndexZero.fn_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
     (u : SobolevMultiIndexZero F b k p Ω μ) :
     fn ((SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp u : _) :
@@ -311,8 +375,9 @@ theorem SobolevMultiIndexZero.fn_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r
   rw [SobolevMultiIndexZero.coe_toLowerExponentL]
   exact SobolevMultiIndex.fn_toLowerExponentL hΩ hrp _
 
-/-- **`W_0^{k,p}(Ω) ↪ W_0^{k,r}(Ω)` is a continuous embedding** for `r ≤ p` on a set of finite
-measure. -/
+/-- Let $E$ be finite-dimensional, $F$ complete, $|\Omega| < \infty$ and $1 \le r \le p$. The
+inclusion $W_0^{k,p}(\Omega) \hookrightarrow W_0^{k,r}(\Omega)$ of
+`SobolevMultiIndexZero.toLowerExponentL` is a continuous embedding. -/
 theorem SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
     IsContinuousEmbedding (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp).toLinearMap :=
   ⟨fun _ _ huv ↦ Subtype.ext (toLowerExponentL_injective hΩ hrp (congrArg Subtype.val huv)), _,
@@ -329,8 +394,9 @@ open SobolevMultiIndex
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- The bound of an extension operator on `S`: `HasSobolevExtensionOn S` provides
-`P : S →L W^{1,p}(ℝ^N)` with `P u = u` on `Ω` and `‖P u‖ ≤ ‖P‖ ‖u‖`. -/
+/-- Let $1 \le p \le \infty$, and let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension
+operator. Then there are a bounded linear map $P : S \to W^{1,p}(\mathbb{R}^N)$ and $C \ge 0$
+such that, for every $u \in S$, $Pu = u$ almost everywhere on $\Omega$ and $\|Pu\| \le C \|u\|$. -/
 theorem HasSobolevExtensionOn.exists_forall_norm_le (hS : HasSobolevExtensionOn S) :
     ∃ (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) (C : ℝ), 0 ≤ C ∧ ∀ u : S,
       fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -338,9 +404,13 @@ theorem HasSobolevExtensionOn.exists_forall_norm_le (hS : HasSobolevExtensionOn 
   obtain ⟨P, hP⟩ := hS
   exact ⟨P, ‖P‖, norm_nonneg _, fun u ↦ ⟨hP u, P.le_opNorm u⟩⟩
 
-/-- **The transfer principle of [brezis2011functional] §9.3.B**: a bound `‖fn v‖_{L^q(ℝ^N)} ≤ K ‖v‖`
-on `W^{1,p}(ℝ^N)` gives `‖fn u‖_{L^q(Ω)} ≤ K C ‖u‖` on a subspace `S` of `W^{1,p}(Ω)` with an
-extension operator of norm `C`, since `fn u = fn (P u)` on `Ω`. -/
+/-- The **transfer principle** of §9.3.B of [brezis2011functional]. Let $1 \le p \le \infty$, and
+let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator. Suppose that
+$\|v\|_{L^q(\mathbb{R}^N)} \le K \|v\|$ for every $v \in W^{1,p}(\mathbb{R}^N)$. Then there is
+$C \ge 0$ with $$\|u\|_{L^q(\Omega)} \le C \|u\| \qquad \text{for all } u \in S.$$
+
+For an extension operator $P$ with $\|Pu\| \le C_P \|u\|$, the function $u$ agrees with $Pu$ on
+$\Omega$, so $C = \max\{K, 0\} \, C_P$ works. -/
 theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le (hS : HasSobolevExtensionOn S)
     {q : ℝ≥0∞} {K : ℝ} (hK : ∀ v : SobolevEuclidean N 1 p ⊤,
       eLpNorm (fn v) q volume ≤ ENNReal.ofReal (K * ‖v‖)) :
@@ -365,11 +435,12 @@ open scoped BoundedContinuousFunction
 variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-! #### The case `p < N` -/
+/-! ### Corollary 9.14, the case $p < N$ -/
 
-/-- **Corollary 9.14, case `p < N`, on a subspace with an extension operator, the bound**: for
-`HasSobolevExtensionOn S`, `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`, there is `C`
-with `‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` for all `u ∈ S`. [brezis2011functional] Corollary 9.14. -/
+/-- Let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Let $S$ be a subspace of
+$W^{1,p}(\Omega)$ with an extension operator. Then there is $C \ge 0$ with
+$\|u\|_{L^q(\Omega)} \le C \|u\|$ for all $u \in S$. This is Corollary 9.14 of
+[brezis2011functional] for $p < N$, on a subspace. -/
 theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le_of_le
     (hS : HasSobolevExtensionOn S) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
@@ -378,7 +449,8 @@ theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le_of_le
   hS.exists_forall_eLpNorm_fn_le fun v ↦
     SobolevEuclidean.eLpNorm_fn_le_norm_of_le_of_le hpN hp' hpq hqp' v
 
-/-- **Corollary 9.14, case `p < N`, on a subspace, the membership**: `fn u ∈ L^q(Ω)`. -/
+/-- Let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. If $S$ is a subspace of
+$W^{1,p}(\Omega)$ with an extension operator, then every $u \in S$ lies in $L^q(\Omega)$. -/
 theorem HasSobolevExtensionOn.memLp_fn_of_le_of_le (hS : HasSobolevExtensionOn S) {p' : ℝ≥0}
     (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') (u : S) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
@@ -386,9 +458,11 @@ theorem HasSobolevExtensionOn.memLp_fn_of_le_of_le (hS : HasSobolevExtensionOn S
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_le_of_le hpN hp' hpq hqp'
   exact memLp_iff.2 ((hC u).trans_lt ENNReal.ofReal_lt_top)
 
-/-- **Corollary 9.14, case `p < N`, on a subspace with an extension operator**: `S ↪ L^q(Ω)`
-with continuous injection for `p ≤ q ≤ p*`, along `SobolevMultiIndex.toLpₗOn`.
-[brezis2011functional] Corollary 9.14 and Remark 20. -/
+/-- Let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. If $S$ is a subspace of
+$W^{1,p}(\Omega)$ with an extension operator, then $S \hookrightarrow L^q(\Omega)$. This is
+Corollary 9.14 of [brezis2011functional] for $p < N$, in the form of Remark 20.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le [Fact (1 ≤ (q : ℝ≥0∞))]
     (hS : HasSobolevExtensionOn S) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
@@ -397,8 +471,8 @@ theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le [Fact (1 
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_le_of_le hpN hp' hpq hqp'
   exact isContinuousEmbedding_toLpₗOn _ hC
 
-/-- **Corollary 9.14, case `p < N`, the membership** on an extension domain: `fn u ∈ L^q(Ω)`
-for every `u ∈ W^{1,p}(Ω)` and `p ≤ q ≤ p*`. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, let $1 \le p < N$, let $1/p^* = 1/p - 1/N$,
+and let $p \le q \le p^*$. Then every $u \in W^{1,p}(\Omega)$ lies in $L^q(\Omega)$. -/
 theorem SobolevEuclidean.memLp_fn_of_isSobolevExtensionDomain_of_le_of_le
     (hΩ : IsSobolevExtensionDomain N p Ω) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p')
@@ -406,11 +480,12 @@ theorem SobolevEuclidean.memLp_fn_of_isSobolevExtensionDomain_of_le_of_le
     MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hΩ.memLp_fn_of_le_of_le hpN hp' hpq hqp' ⟨u, Submodule.mem_top⟩
 
-/-- **Corollary 9.14, case `p < N`**: for an extension domain `Ω` (a `C¹` open set with bounded
-boundary, or the half space), `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`,
-`W^{1,p}(Ω) ↪ L^q(Ω)` with continuous injection, along `SobolevMultiIndex.toLpₗ`.
-[brezis2011functional] Corollary 9.14, the first line, with the range of `q` of
-Corollary 9.10. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, for example an open set of class $C^1$ with
+bounded boundary, or the half space. Let $1 \le p < N$, let $1/p^* = 1/p - 1/N$, and let
+$p \le q \le p^*$. Then $$W^{1,p}(\Omega) \hookrightarrow L^q(\Omega).$$ This is Corollary 9.14
+of [brezis2011functional], first case, with the range of $q$ of Corollary 9.10.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗ`. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt
     [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω) {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
@@ -420,11 +495,11 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt
   exact isContinuousEmbedding_toLpₗ_of_eLpNorm_le _ fun u ↦ by
     simpa using hC ⟨u, Submodule.mem_top⟩
 
-/-! #### The case `p = N` -/
+/-! ### Corollary 9.14, the case $p = N$ -/
 
-/-- **Corollary 9.14, case `p = N`, on a subspace with an extension operator, the bound**: for
-`N ≥ 2`, `HasSobolevExtensionOn S` with `S ⊆ W^{1,N}(Ω)`, and `N ≤ q < ∞`, there is `C` with
-`‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` for all `u ∈ S`. [brezis2011functional] Corollary 9.14. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$, and let $S$ be a subspace of $W^{1,N}(\Omega)$ with an
+extension operator. Then there is $C \ge 0$ with $\|u\|_{L^q(\Omega)} \le C \|u\|$ for all
+$u \in S$. This is Corollary 9.14 of [brezis2011functional] for $p = N$, on a subspace. -/
 theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))]
     {S : Submodule ℝ (SobolevEuclidean N 1 N Ω)} (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N)
     (hq : (N : ℝ≥0) ≤ q) :
@@ -435,7 +510,8 @@ theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_eq_finrank [Fact (1
   rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
   exact hKu v
 
-/-- **Corollary 9.14, case `p = N`, on a subspace, the membership**: `fn u ∈ L^q(Ω)`. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$. If $S$ is a subspace of $W^{1,N}(\Omega)$ with an
+extension operator, then every $u \in S$ lies in $L^q(\Omega)$. -/
 theorem HasSobolevExtensionOn.memLp_fn_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))]
     {S : Submodule ℝ (SobolevEuclidean N 1 N Ω)} (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N)
     (hq : (N : ℝ≥0) ≤ q) (u : S) :
@@ -444,8 +520,11 @@ theorem HasSobolevExtensionOn.memLp_fn_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0�
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_eq_finrank hN hq
   exact memLp_iff.2 ((hC u).trans_lt ENNReal.ofReal_lt_top)
 
-/-- **Corollary 9.14, case `p = N`, on a subspace with an extension operator**: `S ↪ L^q(Ω)`
-with continuous injection for `N ≤ q < ∞`. [brezis2011functional] Corollary 9.14 and Remark 20. -/
+/-- Let $N \ge 2$ and $N \le q < \infty$. If $S$ is a subspace of $W^{1,N}(\Omega)$ with an
+extension operator, then $S \hookrightarrow L^q(\Omega)$. This is Corollary 9.14 of
+[brezis2011functional] for $p = N$, in the form of Remark 20.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_eq_finrank [Fact (1 ≤ (N : ℝ≥0∞))]
     [Fact (1 ≤ (q : ℝ≥0∞))] {S : Submodule ℝ (SobolevEuclidean N 1 N Ω)}
     (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
@@ -454,16 +533,19 @@ theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_eq_finrank [Fact (
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_eq_finrank hN hq
   exact isContinuousEmbedding_toLpₗOn _ hC
 
-/-- **Corollary 9.14, case `p = N`, the membership** on an extension domain. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,N}$, with $N \ge 2$, and let $N \le q < \infty$.
+Then every $u \in W^{1,N}(\Omega)$ lies in $L^q(\Omega)$. -/
 theorem SobolevEuclidean.memLp_fn_of_isSobolevExtensionDomain_of_eq_finrank
     [Fact (1 ≤ (N : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N N Ω) (hN : 2 ≤ N)
     (hq : (N : ℝ≥0) ≤ q) (u : SobolevEuclidean N 1 N Ω) :
     MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hΩ.memLp_fn_of_eq_finrank hN hq ⟨u, Submodule.mem_top⟩
 
-/-- **Corollary 9.14, case `p = N`**: for an extension domain `Ω`, `N ≥ 2` and `N ≤ q < ∞`,
-`W^{1,N}(Ω) ↪ L^q(Ω)` with continuous injection. [brezis2011functional] Corollary 9.14, the
-second line. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,N}$, with $N \ge 2$, and let $N \le q < \infty$.
+Then $$W^{1,N}(\Omega) \hookrightarrow L^q(\Omega).$$ This is Corollary 9.14 of
+[brezis2011functional], second case.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗ`. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq
     [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N N Ω)
     (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
@@ -473,16 +555,18 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq
   exact isContinuousEmbedding_toLpₗ_of_eLpNorm_le _ fun u ↦ by
     simpa using hC ⟨u, Submodule.mem_top⟩
 
-/-! #### The case `p > N`: the continuous representative up to the boundary -/
+/-! ### Corollary 9.14, the case $p > N$: the continuous representative up to the boundary -/
 
-/-- **Corollary 9.14, case `p > N`, on a subspace with an extension operator**: for
-`HasSobolevExtensionOn S` and `N < p < ∞` there is `C = C(Ω, p, N)` such that every `u ∈ S` has
-a representative `ũ`, continuous on all of `ℝ^N` (so on `Ω̄`), equal to `fn u` almost everywhere
-on `Ω`, Hölder continuous of exponent `1 − N/p` with constant `C ‖u‖` (the inequality
-`|u(x) − u(y)| ≤ C ‖u‖_{W^{1,p}} |x − y|^α`), and bounded by `C ‖u‖` everywhere
-(`W^{1,p}(Ω) ⊂ L^∞(Ω)`). The representative is Morrey's for `P u`, whose Hölder and sup bounds
-are in terms of `‖P u‖ ≤ ‖P‖ ‖u‖`. [brezis2011functional] Corollary 9.14, the case `p > N`,
-and Remark 20. -/
+/-- Let $N < p < \infty$, and let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator.
+Then there is $C \ge 0$ such that every $u \in S$ has a representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these properties: $\tilde u$ is continuous on
+$\mathbb{R}^N$, $u = \tilde u$ almost everywhere on $\Omega$, and for all
+$x, y \in \mathbb{R}^N$ $$|\tilde u(x) - \tilde u(y)| \le C \|u\| \, |x - y|^{1 - N/p}, \qquad
+|\tilde u(x)| \le C \|u\|.$$ This is Corollary 9.14 of [brezis2011functional] for $p > N$, in
+the form of Remark 20.
+
+The representative is the continuous representative of $Pu$ given by Morrey's theorem, for an
+extension operator $P$. Its bounds follow from $\|Pu\| \le \|P\| \|u\|$. -/
 theorem HasSobolevExtensionOn.exists_forall_continuous_holderWith_ae_eq
     (hS : HasSobolevExtensionOn S) (hp : N < p) :
     ∃ C : ℝ≥0, ∀ u : S, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
@@ -549,7 +633,8 @@ theorem HasSobolevExtensionOn.exists_forall_continuous_holderWith_ae_eq
           ring
       _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (by exact_mod_cast h2) (norm_nonneg _)
 
-/-- **Corollary 9.14, case `p > N`, on a subspace, `L^∞` membership**: `fn u ∈ L^∞(Ω)`. -/
+/-- Let $N < p < \infty$, and let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator.
+Then there is $C \ge 0$ with $\|u\|_{L^\infty(\Omega)} \le C \|u\|$ for all $u \in S$. -/
 theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_top_le (hS : HasSobolevExtensionOn S)
     (hp : N < p) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : S, eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) ⊤
@@ -563,7 +648,8 @@ theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_top_le (hS : HasSobolevEx
   rw [← ofReal_norm]
   exact ENNReal.ofReal_le_ofReal (hb x)
 
-/-- **Corollary 9.14, case `p > N`, on a subspace, the membership**: `fn u ∈ L^∞(Ω)`. -/
+/-- Let $N < p < \infty$. If $S$ is a subspace of $W^{1,p}(\Omega)$ with an extension operator, then
+every $u \in S$ lies in $L^\infty(\Omega)$. -/
 theorem HasSobolevExtensionOn.memLp_fn_top_of_lt (hS : HasSobolevExtensionOn S) (hp : N < p)
     (u : S) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) ⊤
@@ -571,8 +657,11 @@ theorem HasSobolevExtensionOn.memLp_fn_top_of_lt (hS : HasSobolevExtensionOn S) 
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_top_le hp
   exact memLp_iff.2 ((hC u).trans_lt ENNReal.ofReal_lt_top)
 
-/-- **Corollary 9.14, case `p > N`, on a subspace with an extension operator**: `S ↪ L^∞(Ω)` with
-continuous injection. [brezis2011functional] Corollary 9.14, the third line, and Remark 20. -/
+/-- Let $N < p < \infty$. If $S$ is a subspace of $W^{1,p}(\Omega)$ with an extension operator, then
+$S \hookrightarrow L^\infty(\Omega)$. This is Corollary 9.14 of [brezis2011functional], third
+case, in the form of Remark 20.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_top_of_lt (hS : HasSobolevExtensionOn S)
     (hp : N < p) :
     IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume S
@@ -580,12 +669,16 @@ theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_top_of_lt (hS : HasSo
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_top_le hp
   exact isContinuousEmbedding_toLpₗOn _ hC
 
-/-- **Corollary 9.14, case `p > N`**: for an extension domain `Ω` and `N < p < ∞` there is
-`C = C(Ω, p, N)` such that every `u ∈ W^{1,p}(Ω)` has a representative `ũ` continuous on `ℝ^N`
-(so `W^{1,p}(Ω) ⊂ C(Ω̄)`, footnote 15), equal to `fn u` almost everywhere on `Ω`, Hölder
-continuous of exponent `1 − N/p` with constant `C ‖u‖`
-(`|u(x) − u(y)| ≤ C ‖u‖_{W^{1,p}} |x − y|^α`), and bounded by `C ‖u‖` (`W^{1,p}(Ω) ⊂ L^∞(Ω)`).
-[brezis2011functional] Corollary 9.14, the case `p > N`. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, and let $N < p < \infty$. Then there is
+$C \ge 0$ such that every $u \in W^{1,p}(\Omega)$ has a representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these properties: $\tilde u$ is continuous on
+$\mathbb{R}^N$, $u = \tilde u$ almost everywhere on $\Omega$, and for all
+$x, y \in \mathbb{R}^N$ $$|\tilde u(x) - \tilde u(y)| \le C \|u\| \, |x - y|^{1 - N/p}, \qquad
+|\tilde u(x)| \le C \|u\|.$$ This is Corollary 9.14 of [brezis2011functional] for $p > N$, with
+$W^{1,p}(\Omega) \subset C(\bar\Omega)$ of footnote 15.
+
+The representative is continuous on all of $\mathbb{R}^N$, and so in particular on $\bar\Omega$.
+The sup bound gives $W^{1,p}(\Omega) \subset L^\infty(\Omega)$. -/
 theorem SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq
     (hΩ : IsSobolevExtensionDomain N p Ω) (hp : N < p) :
     ∃ C : ℝ≥0, ∀ u : SobolevEuclidean N 1 p Ω, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
@@ -594,14 +687,18 @@ theorem SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq
   obtain ⟨C, hC⟩ := hΩ.exists_forall_continuous_holderWith_ae_eq hp
   exact ⟨C, fun u ↦ hC ⟨u, Submodule.mem_top⟩⟩
 
-/-- **Corollary 9.14, case `p > N`, the membership** on an extension domain: `fn u ∈ L^∞(Ω)`. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, and let $N < p < \infty$. Then every
+$u \in W^{1,p}(\Omega)$ lies in $L^\infty(\Omega)$. -/
 theorem SobolevEuclidean.memLp_fn_top_of_isSobolevExtensionDomain_of_lt
     (hΩ : IsSobolevExtensionDomain N p Ω) (hp : N < p) (u : SobolevEuclidean N 1 p Ω) :
     MemLp (fn u) ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hΩ.memLp_fn_top_of_lt hp ⟨u, Submodule.mem_top⟩
 
-/-- **Corollary 9.14, case `p > N`, as a continuous embedding**: `W^{1,p}(Ω) ↪ L^∞(Ω)` for an
-extension domain `Ω` and `N < p < ∞`. [brezis2011functional] Corollary 9.14, the third line. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, and let $N < p < \infty$. Then
+$$W^{1,p}(\Omega) \hookrightarrow L^\infty(\Omega).$$ This is Corollary 9.14 of
+[brezis2011functional], third case.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗ`. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt
     (hΩ : IsSobolevExtensionDomain N p Ω) (hp : N < p) :
     IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
@@ -612,14 +709,15 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_o
 
 end Domain
 
-/-! ### The trace of the continuous representative on a compact set, `W^{1,p}(Ω) ⊂ C(Ω̄)` -/
+/-! ### The continuous representative on a compact set: $W^{1,p}(\Omega) \subset C(\bar\Omega)$ -/
 
 section ToContinuousMap
 
 open scoped BoundedContinuousFunction
 
-/-- **Restriction of a bounded continuous function to a compact set** `K`, as a bounded linear
-map `(E →ᵇ ℝ) →L[ℝ] C(K, ℝ)` of norm at most one. -/
+/-- Let $E$ be a topological space and $K \subseteq E$ compact. The **restriction to $K$** is the
+bounded linear map $f \mapsto f|_K$ from the bounded continuous functions on $E$ to $C(K)$, of
+norm at most $1$. -/
 def BoundedContinuousFunction.restrictCLM {E : Type*} [TopologicalSpace E] (K : Set E)
     [CompactSpace K] : (E →ᵇ ℝ) →L[ℝ] C(K, ℝ) :=
   LinearMap.mkContinuous
@@ -630,13 +728,14 @@ def BoundedContinuousFunction.restrictCLM {E : Type*} [TopologicalSpace E] (K : 
       rw [one_mul]
       exact (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun x ↦ f.norm_coe_le_norm x
 
-/-- The restriction evaluates as the function. -/
+/-- The restriction `BoundedContinuousFunction.restrictCLM K f` takes the value $f(x)$ at $x \in K$.
+-/
 @[simp]
 theorem BoundedContinuousFunction.restrictCLM_apply {E : Type*} [TopologicalSpace E] (K : Set E)
     [CompactSpace K] (f : E →ᵇ ℝ) (x : K) : restrictCLM K f x = f x :=
   rfl
 
-/-- Restriction does not increase the sup norm. -/
+/-- The restriction to a compact set $K$ does not increase the sup norm: $\|f|_K\| \le \|f\|$. -/
 theorem BoundedContinuousFunction.norm_restrictCLM_apply_le {E : Type*} [TopologicalSpace E]
     (K : Set E) [CompactSpace K] (f : E →ᵇ ℝ) : ‖restrictCLM K f‖ ≤ ‖f‖ :=
   (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun x ↦ f.norm_coe_le_norm x
@@ -646,27 +745,33 @@ open SobolevMultiIndex
 variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- **`W^{1,p}(Ω) ⊂ C(Ω̄)` as a bounded linear map, `N < p < ∞`**: on a subspace `S` with an
-extension operator `P`, the map `u ↦ (P u)~|_K`, the trace on a compact set `K ⊇ Ω` (typically
-`K = closure Ω`) of the continuous representative of the extension. It does not depend on the
-choice of `P` (`HasSobolevExtensionOn.toContinuousMapOnL_apply_of_ae_eq`): two continuous
-functions equal to `fn u` almost everywhere on `Ω` agree on `Ω`, hence on `closure Ω`. This is
-the map Theorem 9.16's third case is about ([brezis2011functional] Corollary 9.14, footnote 15,
-and Theorem 9.16). -/
+/-- Let $N < p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator, and
+let $K \subseteq \mathbb{R}^N$ be compact. The **continuous representative on $K$** is the
+bounded linear map $S \to C(K)$ that sends $u$ to $\widetilde{Pu}|_K$, where $P$ is a chosen
+extension operator and $\widetilde{Pu}$ is the continuous representative of $Pu$.
+
+The values on $K \cap \bar\Omega$ do not depend on the choice of $P$, by
+`HasSobolevExtensionOn.toContinuousMapOnL_apply_of_ae_eq`. For $K \supseteq \Omega$, typically
+$K = \bar\Omega$, this is the map $W^{1,p}(\Omega) \subset C(\bar\Omega)$ of footnote 15 to
+Corollary 9.14 of [brezis2011functional], and the map that the third case of Theorem 9.16 makes
+compact. -/
 noncomputable def HasSobolevExtensionOn.toContinuousMapOnL (hS : HasSobolevExtensionOn S)
     (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K] : S →L[ℝ] C(K, ℝ) :=
   (BoundedContinuousFunction.restrictCLM K).comp
     ((SobolevEuclidean.toBoundedContinuousMapL N p hp).comp hS.choose)
 
-/-- The value of the trace map at a point of `K`. -/
+/-- The value of `HasSobolevExtensionOn.toContinuousMapOnL` at $u$ and $x \in K$ is
+$\widetilde{Pu}(x)$, the value of `SobolevEuclidean.contRep` at $Pu$, for the chosen extension
+operator $P$. -/
 theorem HasSobolevExtensionOn.toContinuousMapOnL_apply (hS : HasSobolevExtensionOn S)
     (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K] (u : S) (x : K) :
     hS.toContinuousMapOnL hp K u x = SobolevEuclidean.contRep hp (hS.choose u) x :=
   rfl
 
-/-- The trace map is the continuous representative: for `u ∈ S`, `fn u` is a.e. on `Ω` the
-continuous representative of the extension (which is what `toContinuousMapOnL hp K` restricts
-to `K`). -/
+/-- Let $N < p < \infty$, and let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator.
+For every $u \in S$, $u = \widetilde{Pu}$ almost everywhere on $\Omega$, where $\widetilde{Pu}$
+is the continuous representative of $Pu$ for the chosen extension operator $P$. This is the
+function that `HasSobolevExtensionOn.toContinuousMapOnL` restricts to $K$. -/
 theorem HasSobolevExtensionOn.fn_ae_eq_toContinuousMapOnL (hS : HasSobolevExtensionOn S)
     (hp : N < p) (u : S) :
     fn (u : SobolevEuclidean N 1 p Ω) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -674,8 +779,14 @@ theorem HasSobolevExtensionOn.fn_ae_eq_toContinuousMapOnL (hS : HasSobolevExtens
   (hS.choose_spec u).symm.trans
     (ae_restrict_of_ae (SobolevEuclidean.fn_ae_eq_contRep hp (hS.choose u)))
 
-/-- **The trace map does not depend on the extension operator**: any continuous `g` equal to
-`fn u` almost everywhere on `Ω` agrees with `hS.toContinuousMapOnL hp K u` on `K ∩ closure Ω`. -/
+/-- Let $N < p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator, and
+let $K$ be compact. Let $u \in S$, and let $g$ be a continuous function on $\mathbb{R}^N$ with
+$u = g$ almost everywhere on $\Omega$. Then the image of $u$ under
+`HasSobolevExtensionOn.toContinuousMapOnL` agrees with $g$ on $K \cap \bar\Omega$.
+
+So on $K \cap \bar\Omega$ the map does not depend on the extension operator. Two continuous
+functions that agree almost everywhere on the open set $\Omega$ agree on $\Omega$, and hence on
+$\bar\Omega$. -/
 theorem HasSobolevExtensionOn.toContinuousMapOnL_apply_of_ae_eq (hS : HasSobolevExtensionOn S)
     (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K] (u : S)
     {g : EuclideanSpace ℝ (Fin N) → ℝ} (hg : Continuous g)
@@ -691,7 +802,10 @@ theorem HasSobolevExtensionOn.toContinuousMapOnL_apply_of_ae_eq (hS : HasSobolev
   exact heq.of_subset_closure (SobolevEuclidean.contRep hp (hS.choose u)).continuous.continuousOn
     hg.continuousOn subset_closure subset_rfl hx
 
-/-- **The trace map is bounded**: `‖u~|_K‖_∞ ≤ C ‖u‖`, with `C` depending on `S`, `p`, `N`. -/
+/-- Let $N < p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator, and
+let $K$ be compact. Then there is $C \ge 0$ with $\|\tilde u|_K\|_\infty \le C \|u\|$ for all
+$u \in S$, where $\tilde u|_K$ is the image of $u$ under
+`HasSobolevExtensionOn.toContinuousMapOnL`. -/
 theorem HasSobolevExtensionOn.exists_forall_norm_toContinuousMapOnL_le
     (hS : HasSobolevExtensionOn S) (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N)))
     [CompactSpace K] :
@@ -699,8 +813,10 @@ theorem HasSobolevExtensionOn.exists_forall_norm_toContinuousMapOnL_le
   refine ⟨‖hS.toContinuousMapOnL hp K‖, norm_nonneg _, fun u ↦ ?_⟩
   exact (hS.toContinuousMapOnL hp K).le_opNorm u
 
-/-- **The trace map is injective when `K ⊇ Ω`**: an element of `S` whose continuous
-representative vanishes on `K ⊇ Ω` vanishes almost everywhere on `Ω`. -/
+/-- Let $N < p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator, and
+let $K \supseteq \Omega$ be compact. Then `HasSobolevExtensionOn.toContinuousMapOnL` is
+injective on $S$: if the continuous representative of $u$ vanishes on $K$, then $u = 0$ almost
+everywhere on $\Omega$. -/
 theorem HasSobolevExtensionOn.toContinuousMapOnL_injective (hS : HasSobolevExtensionOn S)
     (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
     (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
@@ -713,9 +829,13 @@ theorem HasSobolevExtensionOn.toContinuousMapOnL_injective (hS : HasSobolevExten
   have := congrArg (fun f : C(K, ℝ) ↦ f ⟨x, hK hx⟩) huv
   simpa [HasSobolevExtensionOn.toContinuousMapOnL_apply] using this
 
-/-- **The trace map is uniformly Hölder on the unit ball**: there is `C` with
-`‖u~ x − u~ y‖ ≤ C ‖u‖ ‖x − y‖^{1 − N/p}` for `x, y ∈ K` — the equicontinuity that Arzelà–Ascoli
-needs in the third case of [brezis2011functional] Theorem 9.16. -/
+/-- Let $N < p < \infty$, let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator, and
+let $K$ be compact. Then there is $C \ge 0$ such that, for all $u \in S$ and $x, y \in K$,
+$$|\tilde u(x) - \tilde u(y)| \le C \|u\| \, |x - y|^{1 - N/p},$$ where $\tilde u$ is the image
+of $u$ under `HasSobolevExtensionOn.toContinuousMapOnL`.
+
+The images of the unit ball of $S$ are therefore equicontinuous. This is the equicontinuity that
+the Arzelà–Ascoli theorem needs in the third case of Theorem 9.16 of [brezis2011functional]. -/
 theorem HasSobolevExtensionOn.exists_forall_norm_toContinuousMapOnL_sub_le
     (hS : HasSobolevExtensionOn S) (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N)))
     [CompactSpace K] :
@@ -762,17 +882,21 @@ theorem HasSobolevExtensionOn.exists_forall_norm_toContinuousMapOnL_sub_le
     _ = K₁.toReal * C₀ * ‖u‖ * ‖(x : EuclideanSpace ℝ (Fin N)) - y‖ ^ (1 - N / (p : ℝ)) := by
         ring
 
-/-- **`W^{1,p}(Ω) ⊂ C(Ω̄)` as a bounded linear map on the whole space `W^{1,p}(Ω)`** of an
-extension domain, `N < p < ∞`: `HasSobolevExtensionOn.toContinuousMapOnL` on `S = ⊤`, with the
-compact set `K ⊇ Ω` (typically `closure Ω`) as target. [brezis2011functional] Corollary 9.14,
-footnote 15. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, let $N < p < \infty$, and let
+$K \subseteq \mathbb{R}^N$ be compact. The **continuous representative on $K$** is the bounded
+linear map $W^{1,p}(\Omega) \to C(K)$, $u \mapsto \tilde u|_K$. For $K \supseteq \Omega$,
+typically $K = \bar\Omega$, it is the inclusion $W^{1,p}(\Omega) \subset C(\bar\Omega)$ of
+footnote 15 to Corollary 9.14 of [brezis2011functional].
+
+It is `HasSobolevExtensionOn.toContinuousMapOnL` for the subspace $S = W^{1,p}(\Omega)$. -/
 noncomputable def SobolevEuclidean.toContinuousMapL (hΩ : IsSobolevExtensionDomain N p Ω)
     (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K] :
     SobolevEuclidean N 1 p Ω →L[ℝ] C(K, ℝ) :=
   (hΩ.toContinuousMapOnL hp K).comp
     ((ContinuousLinearMap.id ℝ (SobolevEuclidean N 1 p Ω)).codRestrict ⊤ fun _ ↦ Submodule.mem_top)
 
-/-- `SobolevEuclidean.toContinuousMapL` is the trace map on `⊤`. -/
+/-- The map `SobolevEuclidean.toContinuousMapL` at $u$ is `HasSobolevExtensionOn.toContinuousMapOnL`
+for the subspace $W^{1,p}(\Omega)$ at $u$. -/
 theorem SobolevEuclidean.toContinuousMapL_apply (hΩ : IsSobolevExtensionDomain N p Ω)
     (hp : N < p) (K : Set (EuclideanSpace ℝ (Fin N))) [CompactSpace K]
     (u : SobolevEuclidean N 1 p Ω) :
@@ -780,14 +904,18 @@ theorem SobolevEuclidean.toContinuousMapL_apply (hΩ : IsSobolevExtensionDomain 
       = hΩ.toContinuousMapOnL hp K ⟨u, Submodule.mem_top⟩ :=
   rfl
 
-/-- The trace map on `W^{1,p}(Ω)` is the continuous representative on `Ω`. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, and let $N < p < \infty$. For every
+$u \in W^{1,p}(\Omega)$, $u = \widetilde{Pu}$ almost everywhere on $\Omega$, where
+$\widetilde{Pu}$ is the continuous representative of $Pu$ for the chosen extension operator $P$. -/
 theorem SobolevEuclidean.fn_ae_eq_toContinuousMapL (hΩ : IsSobolevExtensionDomain N p Ω)
     (hp : N < p) (u : SobolevEuclidean N 1 p Ω) :
     fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevEuclidean.contRep hp (hΩ.choose ⟨u, Submodule.mem_top⟩) :=
   hΩ.fn_ae_eq_toContinuousMapOnL hp ⟨u, Submodule.mem_top⟩
 
-/-- The trace map on `W^{1,p}(Ω)` is injective for `K ⊇ Ω`. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, let $N < p < \infty$, and let
+$K \supseteq \Omega$ be compact. Then the map $W^{1,p}(\Omega) \to C(K)$ of
+`SobolevEuclidean.toContinuousMapL` is injective. -/
 theorem SobolevEuclidean.toContinuousMapL_injective (hΩ : IsSobolevExtensionDomain N p Ω)
     (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))} [CompactSpace K]
     (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
@@ -795,9 +923,12 @@ theorem SobolevEuclidean.toContinuousMapL_injective (hΩ : IsSobolevExtensionDom
   have := hΩ.toContinuousMapOnL_injective hp hK huv
   simpa using congrArg Subtype.val this
 
-/-- **`W^{1,p}(Ω) ↪ C(K)` is a continuous embedding** for an extension domain `Ω`, `N < p < ∞`
-and a compact `K ⊇ Ω`: [brezis2011functional] Corollary 9.14, "`W^{1,p}(Ω) ⊂ C(Ω̄)`" with
-continuous injection. -/
+/-- Let $\Omega$ be an extension domain for $W^{1,p}$, let $N < p < \infty$, and let
+$K \supseteq \Omega$ be compact. Then $$W^{1,p}(\Omega) \hookrightarrow C(K).$$ This is the
+inclusion $W^{1,p}(\Omega) \subset C(\bar\Omega)$ of Corollary 9.14 of [brezis2011functional],
+with continuous injection.
+
+The embedding is `SobolevEuclidean.toContinuousMapL`. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toContinuousMapL
     (hΩ : IsSobolevExtensionDomain N p Ω) (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))}
     [CompactSpace K] (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
@@ -816,20 +947,27 @@ open SobolevMultiIndex
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 variable (N Ω) in
-/-- **`Ω` is a `W^{1,q}`-extension domain for every exponent `q`**: the standing hypothesis of
-[brezis2011functional] Corollary 9.15 (an open set of class `C¹` with bounded boundary, for
-which Theorem 9.7 holds for every `p`; or the half space), under which the higher-order embeddings
-are proved by repeated application of Corollary 9.14 at the exponents that arise. -/
+/-- An open set $\Omega \subseteq \mathbb{R}^N$ is an **extension domain for every exponent** if it
+is an extension domain for $W^{1,q}$ for every $q \in [1, \infty]$.
+
+This is the hypothesis of Corollary 9.15 of [brezis2011functional], which assumes an open set of
+class $C^1$ with bounded boundary, or the half space. The higher-order embeddings apply
+Corollary 9.14 at the exponents that arise in the induction. -/
 def IsSobolevExtensionDomainAll : Prop :=
   ∀ (q : ℝ≥0∞) [Fact (1 ≤ q)], IsSobolevExtensionDomain N q Ω
 
-/-- An extension domain for every exponent is one for each. -/
+/-- If $\Omega$ is an extension domain for every exponent, then it is an extension domain for
+$W^{1,q}$ for each $q \in [1, \infty]$. -/
 theorem IsSobolevExtensionDomainAll.isSobolevExtensionDomain (h : IsSobolevExtensionDomainAll N Ω)
     (q : ℝ≥0∞) [Fact (1 ≤ q)] : IsSobolevExtensionDomain N q Ω :=
   h q
 
-/-- **Corollary 9.15's standing hypothesis holds for a bounded `C¹` chart domain**: Theorem 9.7
-gives an extension operator at every exponent. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be an open set of class $C^1$, in the sense of charts,
+with bounded boundary. Then $\Omega$ is an extension domain for every exponent. So the
+hypothesis of Corollary 9.15 of [brezis2011functional] holds for such a set.
+
+The extension operators come from Theorem 9.7,
+`IsSobolevExtensionDomain.of_isContDiffChartDomain`. -/
 theorem IsSobolevExtensionDomainAll.of_isContDiffChartDomain {d : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -837,11 +975,14 @@ theorem IsSobolevExtensionDomainAll.of_isContDiffChartDomain {d : ℕ}
     IsSobolevExtensionDomainAll (d + 1) Ω :=
   fun _ _ ↦ IsSobolevExtensionDomain.of_isContDiffChartDomain hΩ hΓ
 
-/-- **The first-order embeddings of Corollary 9.14 in one statement**: for an extension domain,
-`1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with
-`‖u‖_{L^q(Ω)} ≤ K ‖u‖` for every `u ∈ W^{1,p}(Ω)`: the whole-space statement
-`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le` transferred along the extension
-operator. [brezis2011functional] Corollary 9.14. -/
+/-- Let $1 \le p \le q < \infty$ with $1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$.
+Let $\Omega$ be an extension domain for $W^{1,p}$. Then there is a finite $K \ge 0$ with
+$$\|u\|_{L^q(\Omega)} \le K \|u\| \qquad \text{for all } u \in W^{1,p}(\Omega).$$ This covers
+the $L^q$ clauses of Corollary 9.14 of [brezis2011functional] in one statement: $q \le p^*$ for
+$p < N$, any $q \ge N$ for $p = N$, and any $q \ge p$ for $p > N$.
+
+The proof transfers the whole-space statement
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le` along the extension operator. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le_of_hasSobolevExtension {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N p Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
@@ -857,12 +998,14 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le_of_hasSobolevEx
     rw [← ENNReal.ofReal_mul hC0]
     exact hC ⟨u, Submodule.mem_top⟩⟩
 
-/-- **Corollary 9.15, the `L^q` bound at every order**: for an extension domain (for every
-exponent), `1 ≤ p ≤ q < ∞` with `1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K`
-with `‖u‖_{L^q(Ω)} ≤ K ‖u‖` for every `u ∈ W^{m,p}(Ω)`; by induction on `m` through
+/-- Let $m \in \mathbb{N}$ and $1 \le p \le q < \infty$ with $1/p - m/N \le 1/q$, and suppose that
+$N \ge 2$ or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there is a
+finite $K \ge 0$ with $$\|u\|_{L^q(\Omega)} \le K \|u\| \qquad \text{for all } u \in
+W^{m,p}(\Omega).$$ This is the $L^q$ bound of Corollary 9.15 of [brezis2011functional].
+
+The proof is by induction on $m$, through
 `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le`, as for
-Corollary 9.13. [brezis2011functional] Corollary 9.15 ("by repeated application of
-Corollary 9.14"). -/
+Corollary 9.13. This is the "repeated application of Corollary 9.14" of the source. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension (m : ℕ)
     {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) :
@@ -907,10 +1050,13 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExten
           rw [ENNReal.ofReal_add (by positivity) zero_le_one, ENNReal.ofReal_one,
             ENNReal.ofReal_natCast]
 
-/-- **Corollary 9.15, the `L^q` clauses, the membership**: for an extension domain,
-`1 ≤ p ≤ q < ∞` with `1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, `fn u ∈ L^q(Ω)` for every
-`u ∈ W^{m,p}(Ω)` — `W^{m,p}(Ω) ⊂ L^q(Ω)` for `1/q = 1/p − m/N` when `1/p − m/N > 0`, and for
-every `q ∈ [p, ∞)` when `1/p − m/N ≤ 0`. [brezis2011functional] Corollary 9.15. -/
+/-- Let $m \in \mathbb{N}$ and $1 \le p \le q < \infty$ with $1/p - m/N \le 1/q$, and suppose that
+$N \ge 2$ or $p > 1$. If $\Omega$ is an extension domain for every exponent, then every
+$u \in W^{m,p}(\Omega)$ lies in $L^q(\Omega)$. This is the $L^q$ clauses of Corollary 9.15 of
+[brezis2011functional].
+
+For $1/p - m/N > 0$ the largest $q$ is given by $1/q = 1/p - m/N$. For $1/p - m/N \le 0$ every
+$q \in [p, \infty)$ is allowed. -/
 theorem SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension {m : ℕ} {p q : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) (u : SobolevEuclidean N m p Ω) :
@@ -919,9 +1065,12 @@ theorem SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension {m : ℕ} {p q
     SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension m hΩ hN hpq hq
   exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
 
-/-- **Corollary 9.15, the `L^q` clauses, as continuous embeddings**: `W^{m,p}(Ω) ↪ L^q(Ω)`
-along `SobolevMultiIndex.toLpₗ` for an extension domain, `1 ≤ p ≤ q < ∞` with
-`1/p − m/N ≤ 1/q` (`N ≥ 2` or `p > 1`). [brezis2011functional] Corollary 9.15. -/
+/-- Let $m \in \mathbb{N}$ and $1 \le p \le q < \infty$ with $1/p - m/N \le 1/q$, and suppose that
+$N \ge 2$ or $p > 1$. If $\Omega$ is an extension domain for every exponent, then
+$$W^{m,p}(\Omega) \hookrightarrow L^q(\Omega).$$ This is the $L^q$ clauses of Corollary 9.15 of
+[brezis2011functional].
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗ`. -/
 theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension {m : ℕ}
     {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
@@ -934,13 +1083,18 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtens
   rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
   exact hKu u
 
-/-- **Corollary 9.15, the continuous representative**: for an extension domain, `m > N/p`
-(`1 ≤ p < ∞`, and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a Hölder exponent `θ ∈ (0, 1]` —
-the sharp `m − N/p` when it is less than `1` — such that every `u ∈ W^{m,p}(Ω)` has a
-representative `ũ` continuous on all of `ℝ^N` (hence on `Ω̄`) with `‖ũ x‖ ≤ C ‖u‖` and
-`‖ũ x − ũ y‖ ≤ C ‖u‖ ‖x − y‖^θ`; in particular `W^{m,p}(Ω) ⊂ L^∞(Ω) ∩ C(Ω̄)` when
-`1/p − m/N < 0`. `W^{m,p}(Ω) ⊆ W^{1,r}(Ω)` for the `r > N` of `NNReal.exists_morrey_exponent`,
-then Corollary 9.14 for `r > N`. [brezis2011functional] Corollary 9.15, footnote 16 at `k = 0`. -/
+/-- Let $m \in \mathbb{N}$ and $1 \le p < \infty$ with $m > N/p$, and suppose that $N \ge 2$ or
+$p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there are $C \ge 0$ and
+$\theta \in (0, 1]$, with $\theta = m - N/p$ when $m - N/p < 1$, such that every
+$u \in W^{m,p}(\Omega)$ has a representative $\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these
+properties: $\tilde u$ is continuous on $\mathbb{R}^N$, $u = \tilde u$ almost everywhere on
+$\Omega$, and for all $x, y \in \mathbb{R}^N$ $$|\tilde u(x)| \le C \|u\|, \qquad |\tilde u(x) -
+\tilde u(y)| \le C \|u\| \, |x - y|^\theta.$$ In particular $W^{m,p}(\Omega) \subset
+L^\infty(\Omega) \cap C(\bar\Omega)$ when $1/p - m/N < 0$. This is Corollary 9.15 of
+[brezis2011functional], footnote 16 for $k = 0$.
+
+The proof embeds $W^{m,p}(\Omega)$ in $W^{1,r}(\Omega)$ for the exponent $r > N$ of
+`NNReal.exists_morrey_exponent`, and then applies Corollary 9.14 for $r > N$. -/
 theorem SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension {m : ℕ}
     {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
@@ -982,8 +1136,11 @@ theorem SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevEx
       _ ≤ C₁ * (D * ‖u‖) * ‖x - y‖ ^ (1 - N / (r : ℝ)) := by gcongr
       _ = C₁ * D * ‖u‖ * ‖x - y‖ ^ (1 - N / (r : ℝ)) := by ring
 
-/-- **Corollary 9.15, `W^{m,p}(Ω) ⊆ L^∞(Ω)` for `1/p − m/N < 0`**, the membership, on an
-extension domain (`N ≥ 2` or `p > 1`). -/
+/-- Let $m \in \mathbb{N}$ and $1 \le p < \infty$ with $m > N/p$, and suppose that $N \ge 2$ or
+$p > 1$. If $\Omega$ is an extension domain for every exponent, then every
+$u \in W^{m,p}(\Omega)$ lies in $L^\infty(\Omega)$. This is the inclusion
+$W^{m,p}(\Omega) \subset L^\infty(\Omega)$ of Corollary 9.15 of [brezis2011functional] for
+$1/p - m/N < 0$. -/
 theorem SobolevEuclidean.memLp_fn_top_of_order_of_hasSobolevExtension {m : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hm : (N : ℝ) / p < m) (u : SobolevEuclidean N m p Ω) :
@@ -998,16 +1155,27 @@ theorem SobolevEuclidean.memLp_fn_top_of_order_of_hasSobolevExtension {m : ℕ} 
   rw [← ofReal_norm]
   exact ENNReal.ofReal_le_ofReal (hb x)
 
-/-- **Corollary 9.15, the `C^k(Ω̄)` representative, in the form of the induction**: for an
-extension domain, `k + N/p < m` (`1 ≤ p < ∞`, and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a
-Hölder exponent `θ ∈ (0, 1]` — the sharp `m − N/p − k` when that is less than `1` — such that
-every `u ∈ W^{m,p}(Ω)` has a representative `ũ`, continuous on `ℝ^N` and of class `C^k` on `Ω`,
-each of whose derivatives `D^j ũ`, `j ≤ k`, agrees on `Ω` with a continuous `G_j : ℝ^N → ⋯`
-bounded by `C ‖u‖` (the continuous extension to `Ω̄` of the book's `C^k(Ω̄)`), the one of order
-`k` being `θ`-Hölder with constant `C ‖u‖`. Induction on `k` as in
-`SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order`, the derivatives being assembled from
-the extensions of the partial derivatives' derivatives. [brezis2011functional] Corollary 9.15,
-footnote 16. -/
+/-- Let $k, m \in \mathbb{N}$ and $1 \le p < \infty$ with $k + N/p < m$, and suppose that $N \ge 2$
+or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there are $C \ge 0$ and
+$\theta \in (0, 1]$, with $\theta = m - N/p - k$ when $m - N/p - k < 1$, such that every
+$u \in W^{m,p}(\Omega)$ has a representative $\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these
+properties.
+
+* $\tilde u$ is continuous on $\mathbb{R}^N$, of class $C^k$ on $\Omega$, and $u = \tilde u$
+  almost everywhere on $\Omega$.
+* For each $j \le k$ there is a continuous $G_j$ on $\mathbb{R}^N$ with $D^j \tilde u = G_j$ on
+  $\Omega$ and $\|G_j(x)\| \le C \|u\|$ for all $x$.
+* There is a continuous $G$ on $\mathbb{R}^N$ with $D^k \tilde u = G$ on $\Omega$,
+  $\|G(x)\| \le C \|u\|$ and $\|G(x) - G(y)\| \le C \|u\| \, |x - y|^\theta$ for all $x, y$.
+
+This is the clause $W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ of Corollary 9.15 of
+[brezis2011functional], footnote 16, in the form that the induction needs. The functions $G_j$
+are the continuous extensions to $\bar\Omega$ of the derivatives, which define $C^k(\bar\Omega)$
+in the source.
+
+The proof is by induction on $k$, as in
+`SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order`. The derivatives are assembled from the
+extensions of the derivatives of the partial derivatives. -/
 theorem SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order (k : ℕ) {m : ℕ}
     {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
@@ -1171,13 +1339,23 @@ theorem SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order (k : �
         _ = C₀ * (∑ i, ‖L i‖) * ‖u‖ * ‖x - y‖ ^ θ := by rw [← Finset.sum_mul]; ring
         _ ≤ C₀ * (1 + ∑ i, ‖L i‖) * ‖u‖ * ‖x - y‖ ^ θ := by gcongr; linarith
 
-/-- **Corollary 9.15, the `C^k(Ω̄)` clause**: for `m − N/p > 0` not an integer, `k = ⌊m − N/p⌋`
-and `θ = m − N/p − k ∈ (0, 1)` (encoded as `0 < m − N/p − k < 1`), on an extension domain
-(`1 ≤ p < ∞`, and `N ≥ 2` or `p > 1`), there is `C` such that every `u ∈ W^{m,p}(Ω)` has a
-representative `ũ` continuous on `ℝ^N` and of class `C^k` on `Ω`, each of whose derivatives of
-order `≤ k` agrees on `Ω` with a continuous function on `ℝ^N` bounded by `C ‖u‖` — so `ũ` lies
-in the book's `C^k(Ω̄)` — the extension of the order-`k` derivative being `θ`-Hölder with
-constant `C ‖u‖`. [brezis2011functional] Corollary 9.15, footnote 16. -/
+/-- Let $k, m \in \mathbb{N}$ and $1 \le p < \infty$ with $0 < m - N/p - k < 1$, and suppose that
+$N \ge 2$ or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there is
+$C \ge 0$ such that every $u \in W^{m,p}(\Omega)$ has a representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these properties.
+
+* $\tilde u$ is continuous on $\mathbb{R}^N$, of class $C^k$ on $\Omega$, and $u = \tilde u$
+  almost everywhere on $\Omega$.
+* For each $j \le k$ there is a continuous $G_j$ on $\mathbb{R}^N$ with $D^j \tilde u = G_j$ on
+  $\Omega$ and $\|G_j(x)\| \le C \|u\|$ for all $x$.
+* There is a continuous $G$ on $\mathbb{R}^N$ with $D^k \tilde u = G$ on $\Omega$ and $\|G(x) -
+  G(y)\| \le C \|u\| \, |x - y|^{m - N/p - k}$ for all $x, y$.
+
+This is the clause $W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ of Corollary 9.15 of
+[brezis2011functional], footnote 16, for $m - N/p$ not an integer, $k = \lfloor m - N/p \rfloor$
+and $\theta = m - N/p - k$.
+
+The conditions on $k$ and $\theta$ are encoded as $0 < m - N/p - k < 1$. -/
 theorem SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order {m k : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hθ0 : 0 < (m : ℝ) - N / p - k) (hθ1 : (m : ℝ) - N / p - k < 1) :
@@ -1197,14 +1375,23 @@ theorem SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order {m k : ℕ} {p
   obtain ⟨ũ, hc, hk, hae, hG, G, hGc, hGeq, -, hGh⟩ := hC u
   exact ⟨ũ, hc, hk, hae, hG, G, hGc, hGeq, hGh⟩
 
-/-- **Corollary 9.15's `C^k(Ω̄)` clause without the non-integer restriction**: for `1 ≤ p < ∞`,
-integers `m, k` with `k + N/p < m`, and an extension domain (`N ≥ 2` or `p > 1`), there are `C`
-and a Hölder exponent `θ ∈ (0, 1]` such that every `u ∈ W^{m,p}(Ω)` has a representative `ũ`,
-continuous on `ℝ^N` and of class `C^k` on `Ω`, each of whose derivatives of order `≤ k` agrees
-on `Ω` with a continuous function on `ℝ^N` bounded by `C ‖u‖` — the sup bound that makes
-`D(A^ℓ) → C^k(Ω̄)` a bounded linear map for the heat equation — the extension of the order-`k`
-derivative being `θ`-Hölder. [brezis2011functional] Corollary 9.15, and the proofs of
-Theorems 10.1 and 10.8. -/
+/-- Let $k, m \in \mathbb{N}$ and $1 \le p < \infty$ with $k + N/p < m$, and suppose that $N \ge 2$
+or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there are $C \ge 0$ and
+$\theta \in (0, 1]$ such that every $u \in W^{m,p}(\Omega)$ has a representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these properties.
+
+* $\tilde u$ is continuous on $\mathbb{R}^N$, of class $C^k$ on $\Omega$, and $u = \tilde u$
+  almost everywhere on $\Omega$.
+* For each $j \le k$ there is a continuous $G_j$ on $\mathbb{R}^N$ with $D^j \tilde u = G_j$ on
+  $\Omega$ and $\|G_j(x)\| \le C \|u\|$ for all $x$.
+* There is a continuous $G$ on $\mathbb{R}^N$ with $D^k \tilde u = G$ on $\Omega$ and
+  $\|G(x) - G(y)\| \le C \|u\| \, |x - y|^\theta$ for all $x, y$.
+
+This is the clause $W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ of Corollary 9.15 of
+[brezis2011functional] without the condition that $m - N/p$ is not an integer.
+
+The sup bound makes the map into $C^k(\bar\Omega)$ bounded, as the proofs of Theorems 10.1 and
+10.8 of [brezis2011functional] need for the heat equation. -/
 theorem SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt {m k : ℕ} {p : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p)
     (hm : (k : ℝ) + N / p < m) :
@@ -1224,7 +1411,7 @@ theorem SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt {m k : ℕ} {p : 
 
 end HigherOrderDomain
 
-/-! ### Lowering the order: `W^{m+j+1,p}(Ω) → W^{j+1,q}(Ω)` as a bounded linear map -/
+/-! ### Lowering the order: $W^{m+j+1,p}(\Omega) \to W^{j+1,q}(\Omega)$ as a bounded linear map -/
 
 section Lower
 
@@ -1232,13 +1419,17 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Lowering the order to `j + 1`**: if `W^{m,p}(Ω) ⊆ L^q(Ω)` with the bound
-`‖fn v‖_{L^q(Ω)} ≤ K ‖v‖`, there is a bounded linear map `W^{m+j+1,p}(Ω) → W^{j+1,q}(Ω)`
-preserving the function. By induction on `j`, the case `j = 0` being
-`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le` and the step
-`SobolevMultiIndex.exists_succ_of_partialDeriv` applied to `u` and its partial derivatives, all in
-`W^{m+j+1,p}(Ω)`; the map is unique (`SobolevMultiIndex.ext_of_fn_ae_eq`), hence linear.
-[brezis2011functional] Corollary 9.15, proof ("repeated application"). -/
+/-- Let $j, m \in \mathbb{N}$ and $p, q \in [1, \infty]$, and let $\Omega \subseteq \mathbb{R}^N$ be
+open. Suppose that there is a finite $K$ with $\|v\|_{L^q(\Omega)} \le K \|v\|$ for every
+$v \in W^{m,p}(\Omega)$. Then there is a bounded linear map
+$T : W^{m+j+1,p}(\Omega) \to W^{j+1,q}(\Omega)$ with $Tu = u$ almost everywhere on $\Omega$ for
+every $u$.
+
+The proof is by induction on $j$. The case $j = 0$ is
+`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le`, and the step is
+`SobolevMultiIndex.exists_succ_of_partialDeriv`, applied to $u$ and its partial derivatives. The
+map is unique by `SobolevMultiIndex.ext_of_fn_ae_eq`, and hence linear. This is the "repeated
+application" in the proof of Corollary 9.15 of [brezis2011functional]. -/
 theorem SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le (j : ℕ) {m : ℕ}
     {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] {K : ℝ≥0∞} (hK : K ≠ ⊤)
     (h : ∀ v : SobolevEuclidean N m p Ω, eLpNorm (fn v) q
@@ -1302,12 +1493,16 @@ theorem SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le (j :
     · exact (hz _).trans ((fn_smul c u).trans
         (((hz u).symm.const_smul c).trans (fn_smul _ _).symm))
 
-/-- **The inclusion `W^{m+1,p}(Ω) ⊆ W^{1,r}(Ω)` of an extension domain as a bounded linear
-map**, for `1 ≤ p ≤ r < ∞` with `1/p − m/N ≤ 1/r` (and `N ≥ 2` or `p > 1`): the case `j = 0` of
-`SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le` for the `L^r` bound of
-[brezis2011functional] Corollary 9.15 at order `m`
-(`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension`). This is the
-device by which the embeddings of `W^{m+1,p}(Ω)` are read off those of `W^{1,r}(Ω)`. -/
+/-- Let $m \in \mathbb{N}$ and $1 \le p \le r < \infty$ with $1/p - m/N \le 1/r$, and suppose that
+$N \ge 2$ or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there is a
+bounded linear map $T : W^{m+1,p}(\Omega) \to W^{1,r}(\Omega)$ with $Tu = u$ almost everywhere
+on $\Omega$ for every $u$.
+
+This is the case $j = 0$ of
+`SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le`, for the $L^r$ bound of
+Corollary 9.15 of [brezis2011functional] at order $m$,
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension`. Through it, the
+embeddings of $W^{m+1,p}(\Omega)$ follow from those of $W^{1,r}(\Omega)$. -/
 theorem SobolevEuclidean.exists_continuousLinearMap_orderOne (m : ℕ) {p r : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (r : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hN : 2 ≤ N ∨ 1 < p) (hpr : p ≤ r) (hr : (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹) :
@@ -1317,10 +1512,13 @@ theorem SobolevEuclidean.exists_continuousLinearMap_orderOne (m : ℕ) {p r : �
     SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order_of_hasSobolevExtension m hΩ hN hpr hr
   exact SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le 0 hK hKu
 
-/-- **Membership in `W^{j+1,r}(Ω)` from `W^{m+1+j,p}(Ω)`**, given the order-one inclusion
-`W^{m+1,p}(Ω) ⊆ W^{1,r}(Ω)` on functions: induction on `j` through
-`memSobolevMultiIndex_succ_iff`, each partial derivative of `f ∈ W^{m+1+(j+1),p}` lying in
-`W^{m+1+j,p}`. -/
+/-- Let $m \in \mathbb{N}$ and $p, r \in [0, \infty]$, and let $\Omega \subseteq \mathbb{R}^N$ be
+open. Suppose that every function in $W^{m+1,p}(\Omega)$ lies in $W^{1,r}(\Omega)$. Then, for
+every $j \in \mathbb{N}$, every function in $W^{m+1+j,p}(\Omega)$ lies in $W^{j+1,r}(\Omega)$.
+
+Here the spaces are read through the membership predicate `MemSobolevMultiIndex` for the
+standard basis. The proof is by induction on $j$ through `memSobolevMultiIndex_succ_iff`: each
+partial derivative of a function in $W^{m+1+(j+1),p}(\Omega)$ lies in $W^{m+1+j,p}(\Omega)$. -/
 theorem MemSobolevMultiIndex.of_forall_mem_one (m : ℕ) {p r : ℝ≥0∞}
     (h1 : ∀ f : EuclideanSpace ℝ (Fin N) → ℝ,
       MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f (m + 1) p Ω volume →
@@ -1337,14 +1535,17 @@ theorem MemSobolevMultiIndex.of_forall_mem_one (m : ℕ) {p r : ℝ≥0∞}
     obtain ⟨g, hg, hgm⟩ := hfd i
     exact ⟨g, hg, ih g hgm⟩
 
-/-- **The inclusion `W^{k,p}(Ω) ⊆ W^{j+1,r}(Ω)` of an extension domain as a bounded linear map**,
-for `k = m + 1 + j`, `1 ≤ p ≤ r < ∞` with `1/p − m/N ≤ 1/r` (and `N ≥ 2` or `p > 1`): the
-order-one inclusion `W^{m+1,p}(Ω) → W^{1,r}(Ω)` of Corollary 9.15
-(`SobolevEuclidean.exists_continuousLinearMap_orderOne`) applied to the derivatives of order
-`≤ j`, with the bound from the closed graph theorem
-(`SobolevMultiIndex.exists_continuousLinearMap_of_forall_memSobolevMultiIndex`). This is the
-device by which the embeddings of `W^{k,p}(Ω)` into the Hölder spaces `C^{j,β}` are read off
-those of `W^{j+1,r}(Ω)` for every large `r`, the integer case of the Sobolev embedding
+/-- Let $m, j \in \mathbb{N}$ and $1 \le p \le r < \infty$ with $1/p - m/N \le 1/r$, and suppose
+that $N \ge 2$ or $p > 1$. Let $\Omega$ be an extension domain for every exponent. Then there is
+a bounded linear map $T : W^{m+1+j,p}(\Omega) \to W^{j+1,r}(\Omega)$ with $Tu = u$ almost
+everywhere on $\Omega$ for every $u$.
+
+The proof applies the inclusion $W^{m+1,p}(\Omega) \to W^{1,r}(\Omega)$ of
+`SobolevEuclidean.exists_continuousLinearMap_orderOne` to the derivatives of order at most $j$,
+and obtains the bound from the closed graph theorem,
+`SobolevMultiIndex.exists_continuousLinearMap_of_forall_memSobolevMultiIndex`. Through it, the
+embeddings of $W^{m+1+j,p}(\Omega)$ into the Hölder spaces $C^{j,\beta}$ follow from those of
+$W^{j+1,r}(\Omega)$ for every large $r$. This is the integer case of the Sobolev embedding
 theorem. -/
 theorem SobolevEuclidean.exists_continuousLinearMap_lower_of_order (m j : ℕ) {p r : ℝ≥0}
     [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (r : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll N Ω)
@@ -1378,14 +1579,17 @@ theorem SobolevEuclidean.exists_continuousLinearMap_lower_of_order (m j : ℕ) {
 
 end Lower
 
-/-! ### Balls are domains of class `C^∞` -/
+/-! ### Balls are domains of class $C^\infty$ -/
 
 section Ball
 
 variable {d : ℕ}
 
-/-- A smooth positive function on `ℝ` equal to `a − s` for `0 ≤ s ≤ a / 4` (`a > 0`):
-`a − s χ(s)` for a bump `χ` equal to `1` on `[−a/4, a/4]` and vanishing outside `(−a/2, a/2)`. -/
+/-- Let $a > 0$. Then there is a function $\varphi : \mathbb{R} \to \mathbb{R}$ of class $C^\infty$
+with $\varphi(s) > 0$ for all $s$ and $\varphi(s) = a - s$ for $0 \le s \le a/4$.
+
+One such function is $a - s \chi(s)$, for a smooth bump $\chi$ that equals $1$ on $[-a/4, a/4]$
+and vanishes outside $(-a/2, a/2)$. -/
 theorem exists_contDiff_pos_eq_sub {a : ℝ} (ha : 0 < a) :
     ∃ φ : ℝ → ℝ, ContDiff ℝ ∞ φ ∧ (∀ s, 0 < φ s) ∧ ∀ s, 0 ≤ s → s ≤ a / 4 → φ s = a - s := by
   obtain ⟨χ, hχ⟩ : ∃ χ : ContDiffBump (0 : ℝ), χ = ⟨a / 4, a / 2, by positivity, by linarith⟩ :=
@@ -1412,12 +1616,14 @@ theorem exists_contDiff_pos_eq_sub {a : ℝ} (ha : 0 < a) :
     change a - s * χ s = a - s
     rw [this, mul_one]
 
-/-- **An open ball of `ℝ^{d+1}` is a domain of class `C^∞`** in the graph sense: near a boundary
-point `x₀`, after the rigid motion `x ↦ R (x − c)` taking the unit vector from `x₀` to the
-centre `c` to the last basis vector (so that `x₀` becomes the south pole `−r e_{d+1}`), the ball
-is the region above the graph of `y' ↦ −√(r² − ‖y'‖²)`, a function made globally smooth by
-freezing `r² − ‖y'‖²` away from `‖y'‖² ≤ r²/4` (`exists_contDiff_pos_eq_sub`), on the ball of
-radius `r/2` about `x₀`. -/
+/-- Let $c \in \mathbb{R}^{d+1}$ and $r > 0$. The open ball $B(c, r)$ is a domain of class
+$C^\infty$ in the graph sense of `IsContDiffDomain`.
+
+Near a boundary point $x_0$, a rigid motion $x \mapsto R(x - c)$ takes the unit vector from
+$x_0$ to $c$ to the last basis vector, so that $x_0$ becomes the south pole $-r e_{d+1}$. On the
+ball of radius $r/2$ about $x_0$, the ball $B(c, r)$ is then the region above the graph of
+$y' \mapsto -\sqrt{r^2 - |y'|^2}$. This function is made smooth on all of $\mathbb{R}^d$ by
+changing $r^2 - |y'|^2$ away from $|y'|^2 \le r^2/4$, with `exists_contDiff_pos_eq_sub`. -/
 theorem isContDiffDomain_ball (c : EuclideanSpace ℝ (Fin (d + 1))) {r : ℝ} (hr : 0 < r) :
     IsContDiffDomain ∞ (ball c r) := by
   refine ⟨isOpen_ball, fun x₀ hx₀ ↦ ?_⟩
@@ -1498,24 +1704,30 @@ theorem isContDiffDomain_ball (c : EuclideanSpace ℝ (Fin (d + 1))) {r : ℝ} (
   · rintro ⟨hxB, hgx⟩
     exact ⟨(key x hxB).2 hgx, hxB⟩
 
-/-- **An open ball of `ℝ^{d+1}` is an open set of class `C^n`** in the chart sense of
-[brezis2011functional] §9.2, for every `n : ℕ∞`: `isContDiffDomain_ball` through the bridge
-`IsContDiffDomain.isContDiffChartDomain`. This is the standard example of a `C¹` domain with
-bounded boundary, on which Corollary 9.15 applies to give the interior regularity of the
-Dirichlet eigenfunctions ([brezis2011functional] Theorem 9.31). -/
+/-- Let $c \in \mathbb{R}^{d+1}$, $r > 0$, and $n \in \mathbb{N} \cup \{\infty\}$. The open ball
+$B(c, r)$ is an open set of class $C^n$ in the sense of charts of §9.2 of
+[brezis2011functional].
+
+This follows from `isContDiffDomain_ball` and `IsContDiffDomain.isContDiffChartDomain`. The ball
+is the standard example of a $C^1$ domain with bounded boundary, on which Corollary 9.15 gives
+the interior regularity of the Dirichlet eigenfunctions in Theorem 9.31 of
+[brezis2011functional]. -/
 theorem isContDiffChartDomain_ball (n : ℕ∞) (c : EuclideanSpace ℝ (Fin (d + 1))) {r : ℝ}
     (hr : 0 < r) : IsContDiffChartDomain n (ball c r) :=
   (isContDiffDomain_ball c hr).isContDiffChartDomain.of_le (by exact_mod_cast le_top)
 
 end Ball
 
-/-! ### Remark 15: an equivalent norm on `W^{1,p}(Ω)` -/
+/-! ### Remark 15: an equivalent norm on $W^{1,p}(\Omega)$ -/
 
 section EquivalentNorm
 
-/-- **The absorption step of an Ehrling-type inequality**, on `ℝ≥0∞`: if
-`A ≤ B^θ (K (A + G))^{1−θ}` with `0 < θ ≤ 1` and `A < ∞`, then `A ≤ C (B + G)` with
-`C = max 1 (2K)^{(1−θ)/θ}` — either `A ≤ G`, or `A + G ≤ 2A` and `A^θ ≤ B^θ (2K)^{1−θ}`. -/
+/-- Let $A, B, G, K \in [0, \infty]$ with $A < \infty$, and let $0 < \theta \le 1$. If
+$A \le B^\theta (K (A + G))^{1 - \theta}$, then $$A \le \max\{1, (2K)^{(1 - \theta)/\theta}\} \,
+(B + G).$$
+
+This is the absorption step of an Ehrling-type inequality. Either $A \le G$, or $A + G \le 2A$
+and then $A^\theta \le B^\theta (2K)^{1 - \theta}$. -/
 theorem ENNReal.le_max_mul_add_of_le_rpow_mul_rpow {A B G K : ℝ≥0∞} (hA : A ≠ ⊤) {θ : ℝ}
     (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) (h : A ≤ B ^ θ * (K * (A + G)) ^ (1 - θ)) :
     A ≤ max 1 ((2 * K) ^ ((1 - θ) / θ)) * (B + G) := by
@@ -1557,7 +1769,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   {Ω : Opens E} {μ : Measure E}
 
-/-- The norm of `W^{1,p}(Ω)` is at most `‖u‖_p + |ι| ‖∇u‖_p`. -/
+/-- Let $p \ge 1$. For $u \in W^{1,p}(\Omega)$, $$\|u\| \le \|u\|_{L^p(\Omega)} + n \|\nabla
+u\|_p,$$ where $n$ is the number of vectors of the basis $b$.
+
+The term $\|u\|_{L^p(\Omega)}$ is the norm of the weak derivative of order $0$,
+`SobolevMultiIndex.weakDeriv u 0`. -/
 theorem SobolevMultiIndex.norm_le_norm_weakDeriv_zero_add_gradNorm
     (u : SobolevMultiIndex F b 1 p Ω μ) :
     ‖u‖ ≤ ‖SobolevMultiIndex.weakDeriv u 0‖ + Fintype.card ι * SobolevMultiIndex.gradNorm u := by
@@ -1581,8 +1797,10 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- `1/q − 1/r ≥ 0` for `1 ≤ q ≤ r` in `ℝ≥0∞`, the exponent of `|Ω|` in
-`‖f‖_q ≤ ‖f‖_r |Ω|^{1/q − 1/r}`. -/
+/-- Let $1 \le q \le r \le \infty$. Then $1/q - 1/r \ge 0$, with $1/\infty = 0$. This is the
+exponent of $|\Omega|$ in $\|f\|_q \le |\Omega|^{1/q - 1/r} \|f\|_r$.
+
+The reciprocals are taken of `ENNReal.toReal`, so that $1/\infty$ is $1/0 = 0$ in Lean. -/
 theorem ENNReal.one_div_toReal_sub_nonneg_of_le {q r : ℝ≥0∞} (hq : 1 ≤ q) (hqr : q ≤ r) :
     0 ≤ 1 / q.toReal - 1 / r.toReal := by
   rw [sub_nonneg]
@@ -1591,8 +1809,13 @@ theorem ENNReal.one_div_toReal_sub_nonneg_of_le {q r : ℝ≥0∞} (hq : 1 ≤ q
   · exact one_div_le_one_div_of_le (ENNReal.toReal_pos (one_pos.trans_le hq).ne'
       (ne_top_of_le_ne_top hr hqr)) (ENNReal.toReal_mono hr hqr)
 
-/-- **Lowering the exponent of an embedding**: from `‖u‖_{L^r(Ω)} ≤ K ‖u‖` and `q ≤ r` follows
-`‖u‖_{L^q(Ω)} ≤ K |Ω|^{1/q − 1/r} ‖u‖`; when `|Ω| = ∞` (and `q < r`) the factor is `∞`. -/
+/-- Let $p \ge 1$, $q \le r$ in $[0, \infty]$, and $K \in [0, \infty]$. Suppose that
+$\|u\|_{L^r(\Omega)} \le K \|u\|$ for every $u \in W^{1,p}(\Omega)$. Then for every
+$u \in W^{1,p}(\Omega)$ $$\|u\|_{L^q(\Omega)} \le K \, |\Omega|^{1/q - 1/r} \, \|u\|.$$ This
+lowers the exponent of an embedding.
+
+The exponent is computed with `ENNReal.toReal`, so $1/\infty = 0$. When $|\Omega| = \infty$ and
+$1/q > 1/r$, the factor $|\Omega|^{1/q - 1/r}$ is $\infty$. -/
 theorem SobolevEuclidean.eLpNorm_fn_le_mul_of_le
     {q r : ℝ≥0∞} (hqr : q ≤ r)
     {K : ℝ≥0∞}
@@ -1615,9 +1838,13 @@ theorem SobolevEuclidean.eLpNorm_fn_le_mul_of_le
         exact hKu u
     _ = _ := by ring
 
-/-- **Remark 15, the converse bound**: `‖∇u‖_p + ‖u‖_q ≤ C ‖u‖` on `Ω` of finite measure whenever
-`W^{1,p}(Ω) ↪ L^r(Ω)` for some `r ≥ q` (the embedding of Corollary 9.14), since
-`‖u‖_q ≤ |Ω|^{1/q − 1/r} ‖u‖_r`. -/
+/-- Let $p \ge 1$, $|\Omega| < \infty$, and $1 \le q \le r \le \infty$. Suppose that there is a
+finite $K$ with $\|u\|_{L^r(\Omega)} \le K \|u\|$ for every $u \in W^{1,p}(\Omega)$, as
+Corollary 9.14 gives. Then there is $C \ge 0$ with $$\|\nabla u\|_p + \|u\|_{L^q(\Omega)} \le C
+\|u\| \qquad \text{for all } u \in W^{1,p}(\Omega).$$ This is the upper bound of Remark 15 of
+[brezis2011functional].
+
+It follows from $\|u\|_q \le |\Omega|^{1/q - 1/r} \|u\|_r$. -/
 theorem SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {q r : ℝ≥0∞} (hq : 1 ≤ q) (hqr : q ≤ r)
     {K : ℝ≥0∞} (hK : K ≠ ⊤)
@@ -1640,14 +1867,19 @@ theorem SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm
       ≤ ‖u‖ + M.toReal * ‖u‖ := add_le_add (gradNorm_le_norm u) h2
     _ = (1 + M.toReal) * ‖u‖ := by ring
 
-/-- **Remark 15 (an equivalent norm on `W^{1,p}(Ω)`), the main bound**: on an open `Ω` of finite
-measure, `1 ≤ p < ∞`, if `W^{1,p}(Ω) ↪ L^r(Ω)` for some `r > p` (Corollary 9.14) and `1 ≤ q ≤ r`,
-then `‖u‖_{W^{1,p}} ≤ C (‖∇u‖_p + ‖u‖_q)`. For `q ≥ p` this is `‖u‖_p ≤ |Ω|^{1/p − 1/q} ‖u‖_q`; for
-`q < p` the interpolation `‖u‖_p ≤ ‖u‖_q^θ ‖u‖_r^{1−θ}` with `‖u‖_r ≤ K (‖u‖_p + N ‖∇u‖_p)` and the
-absorption `ENNReal.le_max_mul_add_of_le_rpow_mul_rpow`. Together with
-`SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm` this is the equivalence of the norms
-`‖∇u‖_p + ‖u‖_q` and `‖u‖_{W^{1,p}}` of [brezis2011functional] Chapter 9, Remark 15, whose three
-cases are `SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_lt`, `…_of_eq_finrank` and `…_of_gt`. -/
+/-- Let $p \ge 1$, $|\Omega| < \infty$, $1 \le q \le r \le \infty$ and $p < r$. Suppose that there
+is a finite $K$ with $\|u\|_{L^r(\Omega)} \le K \|u\|$ for every $u \in W^{1,p}(\Omega)$, as
+Corollary 9.14 gives. Then there is $C \ge 0$ with $$\|u\| \le C \left( \|\nabla u\|_p +
+\|u\|_{L^q(\Omega)} \right) \qquad \text{for all } u \in W^{1,p}(\Omega).$$ This is the lower
+bound of Remark 15 of [brezis2011functional].
+
+The name refers to a bounded set, but the statement assumes only $|\Omega| < \infty$. With
+`SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm` it gives the equivalence of the
+two norms, `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le`. For $q \ge p$ the
+proof uses $\|u\|_p \le |\Omega|^{1/p - 1/q} \|u\|_q$. For $q < p$ it uses the interpolation
+inequality $\|u\|_p \le \|u\|_q^\theta \|u\|_r^{1 - \theta}$, the bound
+$\|u\|_r \le K (\|u\|_p + N \|\nabla u\|_p)$, and the absorption step
+`ENNReal.le_max_mul_add_of_le_rpow_mul_rpow`. -/
 theorem SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {q r : ℝ≥0∞} (hq : 1 ≤ q) (hqr : q ≤ r)
     (hpr : p < r) {K : ℝ≥0∞} (hK : K ≠ ⊤)
@@ -1766,9 +1998,12 @@ theorem SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded
           + (eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal) := by
           rw [hB]
 
-/-- **Remark 15 as an equivalence of norms**, abstractly: on `Ω` of finite measure, if
-`W^{1,p}(Ω) ↪ L^r(Ω)` for some `r > p` and `1 ≤ q ≤ r`, the quantity `‖∇u‖_p + ‖u‖_q` is
-equivalent to the norm of `W^{1,p}(Ω)`. -/
+/-- Let $p \ge 1$, $|\Omega| < \infty$, $1 \le q \le r \le \infty$ and $p < r$. Suppose that there
+is a finite $K$ with $\|u\|_{L^r(\Omega)} \le K \|u\|$ for every $u \in W^{1,p}(\Omega)$. Then
+$\|\nabla u\|_p + \|u\|_{L^q(\Omega)}$ is equivalent to the norm of $W^{1,p}(\Omega)$: there are
+$C, C' \ge 0$ with $$\|u\| \le C \left( \|\nabla u\|_p + \|u\|_{L^q(\Omega)} \right), \qquad
+\|\nabla u\|_p + \|u\|_{L^q(\Omega)} \le C' \|u\|$$ for all $u \in W^{1,p}(\Omega)$. This is
+Remark 15 of [brezis2011functional], with the embedding as a hypothesis. -/
 theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {q r : ℝ≥0∞} (hq : 1 ≤ q) (hqr : q ≤ r)
     (hpr : p < r) {K : ℝ≥0∞} (hK : K ≠ ⊤)
@@ -1782,7 +2017,12 @@ theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le
   ⟨SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded hΩ hq hqr hpr hK hKu,
     SobolevEuclidean.exists_forall_gradNorm_add_eLpNorm_le_norm hΩ hq hqr hK hKu⟩
 
-/-- The bound of Corollary 9.14 in the form `‖u‖_r ≤ K ‖u‖` with `K : ℝ≥0∞`. -/
+/-- Let $p \ge 1$ and $r \in [0, \infty]$. Suppose that there is $C \ge 0$ with
+$\|u\|_{L^r(\Omega)} \le C \|u\|$ for every $u \in W^{1,p}(\Omega)$. Then there is a finite
+$K \in [0, \infty]$ with $\|u\|_{L^r(\Omega)} \le K \|u\|$ for every $u \in W^{1,p}(\Omega)$.
+
+This converts the bound of Corollary 9.14, which is stated on the subspace $S = W^{1,p}(\Omega)$
+with a real constant, to the form with a constant in `ℝ≥0∞` that the results of Remark 15 use. -/
 theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_mul_ofReal_of_exists_forall
     {r : ℝ≥0∞} (h : ∃ C : ℝ, 0 ≤ C ∧ ∀ u : (⊤ : Submodule ℝ (SobolevEuclidean N 1 p Ω)),
       eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) r
@@ -1796,9 +2036,12 @@ theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_mul_ofReal_of_exists_forall
 
 variable {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- **Remark 15, case `p < N`**: for a bounded extension domain, `1 ≤ p < N` and `1 ≤ q ≤ p*`,
-the norm `‖∇u‖_p + ‖u‖_q` is equivalent to the norm of `W^{1,p}(Ω)`.
-[brezis2011functional] Chapter 9, Remark 15. -/
+/-- Let $\Omega$ be a bounded extension domain for $W^{1,p}$, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $1 \le q \le p^*$. Then $\|\nabla u\|_p + \|u\|_{L^q(\Omega)}$ is
+equivalent to the norm of $W^{1,p}(\Omega)$: there are $C, C' \ge 0$ with $$\|u\| \le C \left(
+\|\nabla u\|_p + \|u\|_{L^q(\Omega)} \right), \qquad \|\nabla u\|_p + \|u\|_{L^q(\Omega)} \le C'
+\|u\|$$ for all $u \in W^{1,p}(\Omega)$. This is Remark 15 of [brezis2011functional] for
+$p < N$. -/
 theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_lt
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) {p' : ℝ≥0} (hpN : p < N)
@@ -1821,9 +2064,11 @@ theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_lt
   exact SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le hb.measure_lt_top.ne hq hqp'
     (by exact_mod_cast hpp') hK hKu
 
-/-- **Remark 15, case `p = N`**: for a bounded extension domain, `N ≥ 2` and `1 ≤ q < ∞`, the
-norm `‖∇u‖_N + ‖u‖_q` is equivalent to the norm of `W^{1,N}(Ω)`.
-[brezis2011functional] Chapter 9, Remark 15. -/
+/-- Let $N \ge 2$, let $\Omega$ be a bounded extension domain for $W^{1,N}$, and let
+$1 \le q < \infty$. Then $\|\nabla u\|_N + \|u\|_{L^q(\Omega)}$ is equivalent to the norm of
+$W^{1,N}(\Omega)$: there are $C, C' \ge 0$ with $$\|u\| \le C \left( \|\nabla u\|_N +
+\|u\|_{L^q(\Omega)} \right), \qquad \|\nabla u\|_N + \|u\|_{L^q(\Omega)} \le C' \|u\|$$ for all
+$u \in W^{1,N}(\Omega)$. This is Remark 15 of [brezis2011functional] for $p = N$. -/
 theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_eq_finrank
     [Fact (1 ≤ (N : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomain N N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN : 2 ≤ N) {q : ℝ≥0}
@@ -1841,9 +2086,11 @@ theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_eq_finran
   exact SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le hb.measure_lt_top.ne
     (by exact_mod_cast hq) (by exact_mod_cast le_max_left q (N + 1)) hNlt hK hKu
 
-/-- **Remark 15, case `p > N`**: for a bounded extension domain, `N < p < ∞` and `1 ≤ q ≤ ∞`,
-the norm `‖∇u‖_p + ‖u‖_q` is equivalent to the norm of `W^{1,p}(Ω)`.
-[brezis2011functional] Chapter 9, Remark 15. -/
+/-- Let $\Omega$ be a bounded extension domain for $W^{1,p}$, let $N < p < \infty$, and let
+$1 \le q \le \infty$. Then $\|\nabla u\|_p + \|u\|_{L^q(\Omega)}$ is equivalent to the norm of
+$W^{1,p}(\Omega)$: there are $C, C' \ge 0$ with $$\|u\| \le C \left( \|\nabla u\|_p +
+\|u\|_{L^q(\Omega)} \right), \qquad \|\nabla u\|_p + \|u\|_{L^q(\Omega)} \le C' \|u\|$$ for all
+$u \in W^{1,p}(\Omega)$. This is Remark 15 of [brezis2011functional] for $p > N$. -/
 theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt
     (hΩ : IsSobolevExtensionDomain N p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hp : N < p) {q : ℝ≥0∞}
@@ -1860,7 +2107,7 @@ theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt
 
 end Remark15
 
-/-! ### Remark 20: the embeddings on `W_0^{1,p}(Ω)` of an arbitrary open set -/
+/-! ### Remark 20: the embeddings on $W_0^{1,p}(\Omega)$ of an arbitrary open set -/
 
 section Zero
 
@@ -1869,12 +2116,15 @@ open SobolevMultiIndex
 variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
   {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
 
-/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace with an extension
-operator, the bound**: for `HasSobolevExtensionOn S`, `1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`, and
-`N ≥ 2` or `p > 1`, there is `C` with `‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` for all `u ∈ S` — the case `p < N`
-with `q ≤ p*`, the case `p = N` with any `q ≥ N`, and the case `p > N` with any `q ≥ p`, through
-the whole-space bound `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`.
-[brezis2011functional] Corollary 9.14, the `L^q` clauses, and Corollary 9.13 at `m = 1`. -/
+/-- Let $1 \le p \le q < \infty$ with $1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$.
+Let $S$ be a subspace of $W^{1,p}(\Omega)$ with an extension operator. Then there is $C \ge 0$
+with $\|u\|_{L^q(\Omega)} \le C \|u\|$ for all $u \in S$. This covers the $L^q$ clauses of
+Corollary 9.14 of [brezis2011functional] in one statement: $q \le p^*$ for $p < N$, any
+$q \ge N$ for $p = N$, and any $q \ge p$ for $p > N$.
+
+The proof transfers the whole-space bound
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`, which is Corollary 9.13 of
+[brezis2011functional] for $m = 1$. -/
 theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le (hS : HasSobolevExtensionOn S)
     (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : S, eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) q
@@ -1885,8 +2135,9 @@ theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le (hS : HasSobolev
   rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
   exact hKu v
 
-/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace, the membership**:
-`fn u ∈ L^q(Ω)` for `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q` (`N ≥ 2` or `p > 1`). -/
+/-- Let $1 \le p \le q < \infty$ with $1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$. If
+$S$ is a subspace of $W^{1,p}(\Omega)$ with an extension operator, then every $u \in S$ lies in
+$L^q(\Omega)$. -/
 theorem HasSobolevExtensionOn.memLp_fn_of_le (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N ∨ 1 < p)
     (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) (u : S) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
@@ -1894,10 +2145,12 @@ theorem HasSobolevExtensionOn.memLp_fn_of_le (hS : HasSobolevExtensionOn S) (hN 
   obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_le hN hpq hq
   exact memLp_iff.2 ((hC u).trans_lt ENNReal.ofReal_lt_top)
 
-/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace with an extension
-operator**: `S ↪ L^q(Ω)` with continuous injection for `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
-(`N ≥ 2` or `p > 1`), along `SobolevMultiIndex.toLpₗOn`. [brezis2011functional] Corollary 9.14
-and Remark 20. -/
+/-- Let $1 \le p \le q < \infty$ with $1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$. If
+$S$ is a subspace of $W^{1,p}(\Omega)$ with an extension operator, then
+$S \hookrightarrow L^q(\Omega)$. This is the $L^q$ clauses of Corollary 9.14 of
+[brezis2011functional], in the form of Remark 20.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le [Fact (1 ≤ (q : ℝ≥0∞))]
     (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
@@ -1908,75 +2161,85 @@ theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le [Fact (1 ≤ (q
 
 namespace SobolevEuclideanZero
 
-/-- **Remark 20, the `L^q` membership on `W_0^{1,p}(Ω)` of an arbitrary open set**:
-`fn u ∈ L^q(Ω)` for every `u ∈ W_0^{1,p}(Ω)` and `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
-(`N ≥ 2` or `p > 1`), by the extension by zero `SobolevEuclideanZero.hasSobolevExtensionOn`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $1 \le p \le q < \infty$ with
+$1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$. Then every $u \in W_0^{1,p}(\Omega)$
+lies in $L^q(\Omega)$. This is Remark 20 of [brezis2011functional] for the $L^q$ clauses.
+
+The proof uses the extension by zero, `SobolevEuclideanZero.hasSobolevExtensionOn`. -/
 theorem memLp_fn_of_le (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) (u : SobolevEuclideanZero N 1 p Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hasSobolevExtensionOn.memLp_fn_of_le hN hpq hq u
 
-/-- **Remark 20: the embeddings of Corollary 9.14 hold on `W_0^{1,p}(Ω)` for an arbitrary open
-set `Ω`, with no regularity of `Ω`** — the `L^q` clauses in one statement:
-`W_0^{1,p}(Ω) ↪ L^q(Ω)` with continuous injection for `1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
-(`q ≤ p*` when `p < N`; any `q ≥ N` when `p = N`, `N ≥ 2`; any `q ≥ p` when `p > N`), along the
-inclusion `SobolevMultiIndex.toLpₗOn` of the subspace `SobolevEuclideanZero N 1 p Ω`. The three
-cases separately are `SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`,
-`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_eq` and, into `L^∞(Ω)` with the continuous
-Hölder representative, `SobolevEuclideanZero.isContinuousEmbedding_toLp_top_of_lt` /
-`SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`; each is the corresponding
-`HasSobolevExtensionOn` statement instantiated with the extension by zero
-`SobolevEuclideanZero.hasSobolevExtensionOn`. "It follows, in particular, that the conclusion of
-Corollary 9.14 is true for `W_0^{1,p}(Ω)` with an arbitrary open set `Ω`"
-([brezis2011functional] Chapter 9, Remark 20). The case `N = 1 = p` is excluded, as in
-Corollary 9.13. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $1 \le p \le q < \infty$ with
+$1/p - 1/N \le 1/q$, and suppose that $N \ge 2$ or $p > 1$. Then $$W_0^{1,p}(\Omega)
+\hookrightarrow L^q(\Omega).$$ The admissible $q$ are $q \le p^*$ for $p < N$, any $q \ge N$ for
+$p = N \ge 2$, and any $q \ge p$ for $p > N$. This is Remark 20 of [brezis2011functional]: "the
+conclusion of Corollary 9.14 is true for $W_0^{1,p}(\Omega)$ with an arbitrary open set
+$\Omega$". No regularity of $\Omega$ is needed.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn` of the subspace
+`SobolevEuclideanZero N 1 p Ω`. The three cases separately are
+`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`,
+`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_eq`, and, into $L^\infty(\Omega)$ with the
+continuous Hölder representative, `SobolevEuclideanZero.isContinuousEmbedding_toLp_top_of_lt`
+and `SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`. Each is the corresponding
+statement for `HasSobolevExtensionOn` with the extension by zero,
+`SobolevEuclideanZero.hasSobolevExtensionOn`. The case $N = 1 = p$ is excluded, as in Corollary
+9.13. -/
 theorem isContinuousEmbedding_toLp [Fact (1 ≤ (q : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
     (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
     IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
       (SobolevEuclideanZero N 1 p Ω) (memLp_fn_of_le hN hpq hq)) :=
   hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le hN hpq hq
 
-/-- **Remark 20, case `p < N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,p}(Ω)` and
-`p ≤ q ≤ p*`, on an arbitrary open set. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Then every $u \in W_0^{1,p}(\Omega)$ lies in
+$L^q(\Omega)$. -/
 theorem memLp_fn_of_lt {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (hpq : p ≤ q) (hqp' : q ≤ p') (u : SobolevEuclideanZero N 1 p Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hasSobolevExtensionOn.memLp_fn_of_le_of_le hpN hp' hpq hqp' u
 
-/-- **Remark 20, case `p < N`**: `W_0^{1,p}(Ω) ↪ L^q(Ω)` with continuous injection for
-`1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`, on an arbitrary open set `Ω`
-([brezis2011functional] Remark 20; Corollary 9.14, the first line). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $1 \le p < N$, let
+$1/p^* = 1/p - 1/N$, and let $p \le q \le p^*$. Then $$W_0^{1,p}(\Omega) \hookrightarrow
+L^q(\Omega).$$ This is Remark 20 of [brezis2011functional] for the first case of Corollary 9.14.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem isContinuousEmbedding_toLp_of_lt [Fact (1 ≤ (q : ℝ≥0∞))] {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
     IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
       (SobolevEuclideanZero N 1 p Ω) (memLp_fn_of_lt hpN hp' hpq hqp')) :=
   hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le hpN hp' hpq hqp'
 
-/-- **Remark 20, case `p = N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,N}(Ω)`, `N ≥ 2`
-and `N ≤ q < ∞`, on an arbitrary open set. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $N \ge 2$, and let
+$N \le q < \infty$. Then every $u \in W_0^{1,N}(\Omega)$ lies in $L^q(\Omega)$. -/
 theorem memLp_fn_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q)
     (u : SobolevEuclideanZero N 1 N Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 N Ω)) q
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hasSobolevExtensionOn.memLp_fn_of_eq_finrank hN hq u
 
-/-- **Remark 20, case `p = N`**: `W_0^{1,N}(Ω) ↪ L^q(Ω)` with continuous injection for `N ≥ 2`
-and `N ≤ q < ∞`, on an arbitrary open set `Ω` ([brezis2011functional] Remark 20;
-Corollary 9.14, the second line). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, let $N \ge 2$, and let
+$N \le q < \infty$. Then $$W_0^{1,N}(\Omega) \hookrightarrow L^q(\Omega).$$ This is Remark 20 of
+[brezis2011functional] for the second case of Corollary 9.14.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem isContinuousEmbedding_toLp_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
     IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 N Ω volume
       (SobolevEuclideanZero N 1 N Ω) (memLp_fn_of_eq hN hq)) :=
   hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_eq_finrank hN hq
 
-/-- **Remark 20, case `p > N`: the continuous representative**. On an arbitrary open set `Ω` and
-for `N < p < ∞` there is `C = C(p, N)` such that every `u ∈ W_0^{1,p}(Ω)` has a representative
-`ũ` continuous on all of `ℝ^N` (so on `closure Ω`), equal to `fn u` almost everywhere on `Ω`,
-Hölder continuous of exponent `1 − N/p` with constant `C ‖u‖`, and bounded by `C ‖u‖`
-everywhere: `W_0^{1,p}(Ω) ⊂ C(Ω̄) ∩ L^∞(Ω)` ([brezis2011functional] Remark 20; Corollary 9.14,
-the case `p > N`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, and let $N < p < \infty$. Then
+there is $C \ge 0$ such that every $u \in W_0^{1,p}(\Omega)$ has a representative
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ with these properties: $\tilde u$ is continuous on
+$\mathbb{R}^N$, $u = \tilde u$ almost everywhere on $\Omega$, and for all
+$x, y \in \mathbb{R}^N$ $$|\tilde u(x) - \tilde u(y)| \le C \|u\| \, |x - y|^{1 - N/p}, \qquad
+|\tilde u(x)| \le C \|u\|.$$ So $W_0^{1,p}(\Omega) \subset C(\bar\Omega) \cap L^\infty(\Omega)$.
+This is Remark 20 of [brezis2011functional] for the case $p > N$ of Corollary 9.14. -/
 theorem exists_forall_continuous_holderWith_ae_eq (hp : N < p) :
     ∃ C : ℝ≥0, ∀ u : SobolevEuclideanZero N 1 p Ω, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ,
       Continuous ũ ∧
@@ -1984,16 +2247,18 @@ theorem exists_forall_continuous_holderWith_ae_eq (hp : N < p) :
       HolderWith (C * ‖u‖₊) (1 - (N : ℝ≥0) / p) ũ ∧ ∀ x, ‖ũ x‖ ≤ C * ‖u‖ :=
   hasSobolevExtensionOn.exists_forall_continuous_holderWith_ae_eq hp
 
-/-- **Remark 20, case `p > N`, the `L^∞` membership**: `fn u ∈ L^∞(Ω)` for `u ∈ W_0^{1,p}(Ω)`
-and `N < p < ∞`, on an arbitrary open set. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, and let $N < p < \infty$. Then
+every $u \in W_0^{1,p}(\Omega)$ lies in $L^\infty(\Omega)$. -/
 theorem memLp_fn_top_of_lt (hp : N < p) (u : SobolevEuclideanZero N 1 p Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) ⊤
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hasSobolevExtensionOn.memLp_fn_top_of_lt hp u
 
-/-- **Remark 20, case `p > N`**: `W_0^{1,p}(Ω) ↪ L^∞(Ω)` with continuous injection for
-`N < p < ∞`, on an arbitrary open set `Ω` ([brezis2011functional] Remark 20; Corollary 9.14,
-the third line). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an arbitrary open set, and let $N < p < \infty$. Then
+$$W_0^{1,p}(\Omega) \hookrightarrow L^\infty(\Omega).$$ This is Remark 20 of
+[brezis2011functional] for the third case of Corollary 9.14.
+
+The embedding is the inclusion `SobolevMultiIndex.toLpₗOn`. -/
 theorem isContinuousEmbedding_toLp_top_of_lt (hp : N < p) :
     IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
       (SobolevEuclideanZero N 1 p Ω) (memLp_fn_top_of_lt hp)) :=
@@ -2003,14 +2268,17 @@ end SobolevEuclideanZero
 
 end Zero
 
-/-! ### Functions of class `C¹(Ω̄)` on a bounded open set lie in `W^{1,p}(Ω)` -/
+/-! ### Functions of class $C^1(\bar\Omega)$ on a bounded open set lie in $W^{1,p}(\Omega)$ -/
 
 section ClassicalMembership
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) {u : EuclideanSpace ℝ (Fin N) → ℝ}
 
-/-- A function of class `C^n(Ω̄)` on a bounded open set lies in every `L^p(Ω)`: it is bounded on
-`Ω`, being the restriction of a function continuous on the compact `closure Ω`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set, and let $u$ be of class
+$C^n(\bar\Omega)$ for some $n$. Then $u \in L^p(\Omega)$ for every $p \in [0, \infty]$.
+
+The function $u$ is bounded on $\Omega$, because it is the restriction of a function that is
+continuous on the compact set $\bar\Omega$. -/
 theorem ContDiffOnClosure.memLp_of_isBounded {n : WithTop ℕ∞}
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ n u Ω) (p : ℝ≥0∞) :
@@ -2025,10 +2293,13 @@ theorem ContDiffOnClosure.memLp_of_isBounded {n : WithTop ℕ∞}
   rw [← hg hx]
   exact hC x (subset_closure hx)
 
-/-- **A function of class `C^n(Ω̄)` on a bounded open set lies in `W^{m,p}(Ω)` for every
-`m ≤ n`**: its derivatives of order `≤ n` extend continuously to the compact `closure Ω`
-(`ContDiffOnClosure`), so they are bounded on `Ω` and lie in `L^p(Ω)`, and the classical
-derivatives are the weak ones (`ContDiffOn.hasWeakIteratedFDerivOn`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set, let $u$ be of class
+$C^n(\bar\Omega)$, and let $m \in \mathbb{N}$ with $m \le n$. Then $u \in W^{m,p}(\Omega)$ for
+every $p \in [0, \infty]$.
+
+The derivatives of $u$ of order at most $n$ extend continuously to the compact set $\bar\Omega$,
+as `ContDiffOnClosure` requires. So they are bounded on $\Omega$ and lie in $L^p(\Omega)$. The
+classical derivatives are the weak derivatives, by `ContDiffOn.hasWeakIteratedFDerivOn`. -/
 theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le {n : WithTop ℕ∞}
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ n u Ω) (p : ℝ≥0∞) {m : ℕ} (hm : (m : WithTop ℕ∞) ≤ n) :
@@ -2050,10 +2321,13 @@ theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le {n : WithTop �
   have hk' : (k : WithTop ℕ∞) ≤ n := (by exact_mod_cast hk : (k : WithTop ℕ∞) ≤ m).trans hm
   exact ⟨iteratedFDeriv ℝ k u, hu.contDiffOn.hasWeakIteratedFDerivOn hk', hbound k hk'⟩
 
-/-- **A function of class `C¹(Ω̄)` on a bounded open set lies in `W^{1,p}(Ω)`**, with its
-classical partial derivatives as weak derivatives: the case `m = n = 1` of
-`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`. This is [brezis2011functional]
-Remark 2 of Chapter 9 read on `Ω̄`, the membership step of §9.5, Example 1, Step A. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set, and let $u$ be of class
+$C^1(\bar\Omega)$. Then $u \in W^{1,p}(\Omega)$ for every $p \in [0, \infty]$.
+
+This is the case $m = n = 1$ of `ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`,
+whose proof shows that the classical partial derivatives of $u$ are its weak derivatives. It is
+Remark 2 of Chapter 9 of [brezis2011functional] read on $\bar\Omega$, the membership step of
+Step A of Example 1 in §9.5. -/
 theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ 1 u Ω) (p : ℝ≥0∞) :
@@ -2062,13 +2336,14 @@ theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded
 
 end ClassicalMembership
 
-/-! ### Remark 16: an unbounded function of `W^{1,N}(B(0, 1/2))` -/
+/-! ### Remark 16: an unbounded function of $W^{1,N}(B(0, 1/2))$ -/
 
 section Remark16
 
 variable {N : ℕ}
 
-/-- `log(1/r) ≤ 4 r^{-1/4}` for every `r > 0`: the logarithm grows more slowly than any power. -/
+/-- For every $r > 0$, $\log(1/r) \le 4 r^{-1/4}$. The logarithm grows more slowly than any power.
+-/
 theorem Real.neg_log_le_four_mul_rpow {r : ℝ} (hr0 : 0 < r) :
     -Real.log r ≤ 4 * r ^ (-1 / 4 : ℝ) := by
   have hs : (0 : ℝ) < r ^ (-1 / 4 : ℝ) := Real.rpow_pos_of_pos hr0 _
@@ -2077,23 +2352,27 @@ theorem Real.neg_log_le_four_mul_rpow {r : ℝ} (hr0 : 0 < r) :
   rw [hlog] at h1
   linarith
 
-/-- The function of [brezis2011functional] Chapter 9, Remark 16, `u(x) = (log(1/|x|))^α` on
-`ℝ^N`, written with `log(1/r) = -log r`; it is `0` at the origin under Lean's conventions
-(`Real.log 0 = 0`, `0 ^ α = 0` for `α ≠ 0`). -/
+/-- For $\alpha \in \mathbb{R}$, the **function of Remark 16** of Chapter 9 of
+[brezis2011functional] is $u(x) = (-\log |x|)^\alpha = (\log(1/|x|))^\alpha$ on $\mathbb{R}^N$.
+
+Lean's conventions $\log 0 = 0$ and $0^\alpha = 0$ for $\alpha \neq 0$ give $u(0) = 0$ for
+$\alpha \neq 0$. -/
 def logRpow (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) : ℝ := (-Real.log ‖x‖) ^ α
 
-/-- `logRpow α` is the book's `(log(1/|x|))^α`. -/
+/-- For all $x \in \mathbb{R}^N$, `logRpow α x` is $(\log(1/|x|))^\alpha$, the form of the function
+in the source. -/
 theorem logRpow_eq (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) :
     logRpow α x = Real.log (1 / ‖x‖) ^ α := by
   rw [logRpow, one_div, Real.log_inv]
 
-/-- The classical gradient of `u(x) = (log(1/|x|))^α` away from the origin, as a linear
-functional: `h ↦ -α (log(1/|x|))^{α−1} ⟪x, h⟫ / |x|²`. -/
+/-- The **classical gradient** of $u(x) = (\log(1/|x|))^\alpha$, as a linear functional: $$h \mapsto
+-\alpha \, (\log(1/|x|))^{\alpha - 1} \, \frac{\langle x, h \rangle}{|x|^2}.$$
+-/
 def logRpowGrad (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ :=
   (-(α * (-Real.log ‖x‖) ^ (α - 1)) * (‖x‖ ^ 2)⁻¹) • innerSL ℝ x
 
-/-- Away from the origin and inside the unit ball, `logRpowGrad α` is the classical derivative
-of `logRpow α`. -/
+/-- Let $x \in \mathbb{R}^N$ with $0 < |x| < 1$. Then `logRpow α` is differentiable at $x$, with
+derivative `logRpowGrad α x`. -/
 theorem hasFDerivAt_logRpow {α : ℝ} {x : EuclideanSpace ℝ (Fin N)} (hx0 : x ≠ 0)
     (hx1 : ‖x‖ < 1) : HasFDerivAt (logRpow α) (logRpowGrad α x) x := by
   have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
@@ -2113,7 +2392,10 @@ theorem hasFDerivAt_logRpow {α : ℝ} {x : EuclideanSpace ℝ (Fin N)} (hx0 : x
   rw [hcoef] at h3
   exact h3
 
-/-- `|∇u| = α (log(1/|x|))^{α−1} / |x|` for `0 < |x| < 1`. -/
+/-- Let $\alpha > 0$, and let $x \in \mathbb{R}^N$ with $0 < |x| < 1$. Then the gradient of
+$u(x) = (\log(1/|x|))^\alpha$ has norm $$|\nabla u(x)| = \frac{\alpha \, (\log(1/|x|))^{\alpha -
+1}}{|x|}.$$
+-/
 theorem norm_logRpowGrad {α : ℝ} (hα : 0 < α) {x : EuclideanSpace ℝ (Fin N)} (hx0 : x ≠ 0)
     (hx1 : ‖x‖ < 1) : ‖logRpowGrad α x‖ = α * (-Real.log ‖x‖) ^ (α - 1) / ‖x‖ := by
   have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
@@ -2123,11 +2405,11 @@ theorem norm_logRpowGrad {α : ℝ} (hα : 0 < α) {x : EuclideanSpace ℝ (Fin 
     abs_of_pos hpos, abs_inv, abs_of_pos (by positivity : (0 : ℝ) < ‖x‖ ^ 2)]
   field_simp
 
-/-- `logRpow α` is measurable. -/
+/-- The function `logRpow α` is measurable. -/
 theorem measurable_logRpow (α : ℝ) : Measurable (logRpow (N := N) α) :=
   (Real.measurable_log.comp measurable_norm).neg.pow_const α
 
-/-- `logRpowGrad α` is measurable. -/
+/-- The gradient `logRpowGrad α` is almost everywhere strongly measurable, for every measure. -/
 theorem aestronglyMeasurable_logRpowGrad (α : ℝ) (μ : Measure (EuclideanSpace ℝ (Fin N))) :
     AEStronglyMeasurable (logRpowGrad α) μ :=
   AEStronglyMeasurable.smul
@@ -2135,8 +2417,8 @@ theorem aestronglyMeasurable_logRpowGrad (α : ℝ) (μ : Measure (EuclideanSpac
       (measurable_norm.pow_const 2).inv).aestronglyMeasurable)
     (innerSL ℝ).continuous.aestronglyMeasurable
 
-/-- On `B(0, 1/2)` the function `u(x) = (log(1/|x|))^α`, `α > 0`, is dominated by the power
-`4^α |x|^{-α/4}`. -/
+/-- Let $\alpha > 0$. For every $x \in B(0, 1/2)$, the function $u(x) = (\log(1/|x|))^\alpha$
+satisfies $|u(x)| \le 4^\alpha |x|^{-\alpha/4}$. -/
 theorem abs_logRpow_le {α : ℝ} (hα : 0 < α) :
     ∀ x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2),
       |logRpow α x| ≤ 4 ^ α * ‖x‖ ^ (-(α / 4)) := by
@@ -2156,7 +2438,8 @@ theorem abs_logRpow_le {α : ℝ} (hα : 0 < α) :
         rw [Real.mul_rpow (by norm_num) (Real.rpow_nonneg hn.le _), ← Real.rpow_mul hn.le]
         ring_nf
 
-/-- `|x|^s ∈ L^N(B(0, t))` when `s N > -N`. -/
+/-- Let $N \ge 1$, $t \in \mathbb{R}$ and $s \in \mathbb{R}$ with $sN > -N$. Then $x \mapsto |x|^s$
+lies in $L^N(B(0, t))$. -/
 theorem memLp_norm_rpow_ball (hN : 1 ≤ N) {s : ℝ} (hs : -(N : ℝ) < s * N) (t : ℝ) :
     MemLp (fun x : EuclideanSpace ℝ (Fin N) ↦ ‖x‖ ^ s) N (volume.restrict (ball 0 t)) := by
   have hfr : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
@@ -2172,7 +2455,8 @@ theorem memLp_norm_rpow_ball (hN : 1 ≤ N) {s : ℝ} (hs : -(N : ℝ) < s * N) 
     abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _)]
   rw [← Real.rpow_mul (norm_nonneg _)]
 
-/-- **`u ∈ L^N(B(0, 1/2))`** for `u(x) = (log(1/|x|))^α`, `0 < α`, `N ≥ 1`. -/
+/-- Let $N \ge 1$ and $0 < \alpha < 1$. Then $u(x) = (\log(1/|x|))^\alpha$ lies in $L^N(B(0, 1/2))$.
+-/
 theorem memLp_logRpow (hN : 1 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1) :
     MemLp (logRpow α) N (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2))) := by
   have hpow : MemLp (fun x : EuclideanSpace ℝ (Fin N) ↦ 4 ^ α * ‖x‖ ^ (-(α / 4))) N
@@ -2187,8 +2471,9 @@ theorem memLp_logRpow (hN : 1 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1) :
     abs_of_nonneg (by positivity : (0 : ℝ) ≤ 4 ^ α * ‖x‖ ^ (-(α / 4)))]
   exact abs_logRpow_le hα x hx
 
-/-- The antiderivative of the radial integrand `(log(1/r))^{c−1}/r` of Remark 16 is
-`-(log(1/r))^c / c`, for `c ≠ 0` and `0 < r < 1`. -/
+/-- Let $c \neq 0$ and $0 < y < 1$. The function $t \mapsto -(\log(1/t))^c / c$ has the derivative
+$(\log(1/y))^{c - 1} / y$ at $y$. So it is an antiderivative of the radial integrand of
+Remark 16. -/
 theorem hasDerivAt_neg_neg_log_rpow_div {c : ℝ} (hc : c ≠ 0) {y : ℝ} (hy0 : 0 < y) (hy1 : y < 1) :
     HasDerivAt (fun t : ℝ ↦ -((-Real.log t) ^ c / c)) ((-Real.log y) ^ (c - 1) / y) y := by
   have hlog : 0 < -Real.log y := by linarith [Real.log_neg hy0 hy1]
@@ -2199,8 +2484,11 @@ theorem hasDerivAt_neg_neg_log_rpow_div {c : ℝ} (hc : c ≠ 0) {y : ℝ} (hy0 
   refine h.congr_deriv ?_
   field_simp
 
-/-- The antiderivative `-(log(1/r))^c / c`, `c < 0`, extends continuously to the origin by `0`,
-which is the value Lean's conventions already give it. -/
+/-- Let $c < 0$. The function $t \mapsto -(\log(1/t))^c / c$ is continuous on $[0, 1/2]$, with the
+value $0$ at $t = 0$.
+
+The value at $0$ is the limit, and it is also the value that Lean's conventions give:
+$\log 0 = 0$ and $0^c = 0$. -/
 theorem continuousOn_neg_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
     ContinuousOn (fun t : ℝ ↦ -((-Real.log t) ^ c / c)) (Icc 0 (1 / 2)) := by
   intro t ht
@@ -2223,9 +2511,11 @@ theorem continuousOn_neg_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
     have hlog : 0 < -Real.log t := by linarith [Real.log_neg hpos (by linarith [ht.2])]
     exact (((Real.continuousAt_log ht0).neg.rpow_const (Or.inl hlog.ne')).div_const c).neg
 
-/-- **The radial integrability of Remark 16**: `∫_0^{1/2} (log(1/r))^{c−1} dr/r < ∞` for `c < 0`
-(that is, `∫_0^{1/2} (log(1/r))^{−β} dr/r < ∞` for `β > 1`), the antiderivative
-`-(log(1/r))^c / c` being continuous and monotone on `[0, 1/2]`. -/
+/-- Let $c < 0$. Then $y \mapsto (\log(1/y))^{c - 1} / y$ is integrable on $(0, 1/2)$. Equivalently,
+$\int_0^{1/2} (\log(1/r))^{-\beta} \, dr/r < \infty$ for $\beta > 1$. This is the radial
+integrability of Remark 16 of [brezis2011functional].
+
+The antiderivative $-(\log(1/r))^c / c$ is continuous and monotone on $[0, 1/2]$. -/
 theorem integrableOn_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
     IntegrableOn (fun y : ℝ ↦ (-Real.log y) ^ (c - 1) / y) (Ioo 0 (1 / 2)) := by
   have hd : ∀ y ∈ Ioo (0 : ℝ) (1 / 2), HasDerivAt (fun t : ℝ ↦ -((-Real.log t) ^ c / c))
@@ -2237,8 +2527,10 @@ theorem integrableOn_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
   exact (intervalIntegral.integrableOn_deriv_of_nonneg (continuousOn_neg_neg_log_rpow_div hc) hd
     hpos).mono_set Ioo_subset_Ioc_self
 
-/-- `|∇u|^N` as a radial function: `|∇u(x)|^N = α^N (log(1/|x|))^{N(α−1)} |x|^{−N}` on
-`B(0, 1/2)`, the origin included (both sides vanish there). -/
+/-- Let $0 < \alpha < 1$ and $N \ge 1$. For every $x \in B(0, 1/2)$, including the origin, $$|\nabla
+u(x)|^N = \alpha^N \, (\log(1/|x|))^{N(\alpha - 1)} \, |x|^{-N}.$$
+
+Both sides vanish at the origin under Lean's conventions. -/
 theorem norm_logRpowGrad_rpow_eq {α : ℝ} (hα : 0 < α) (hα1 : α < 1) (hN : 1 ≤ N) :
     ∀ x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2), ‖logRpowGrad α x‖ ^ (N : ℝ)
       = α ^ (N : ℝ) * ((-Real.log ‖x‖) ^ ((N : ℝ) * (α - 1)) * ‖x‖ ^ (-(N : ℝ))) := by
@@ -2257,9 +2549,12 @@ theorem norm_logRpowGrad_rpow_eq {α : ℝ} (hα : 0 < α) (hα1 : α < 1) (hN :
   congr 3
   ring
 
-/-- **`|∇u|^N` is integrable on `B(0, 1/2)`** for `N ≥ 2` and `0 < α < 1 − 1/N`: in polar
-coordinates, `∫_0^{1/2} r^{N−1} α^N (log(1/r))^{N(α−1)} r^{−N} dr` is
-`α^N ∫_0^{1/2} (log(1/r))^{−β} dr/r` with `β = N(1 − α) > 1` (`integrableOn_neg_log_rpow_div`). -/
+/-- Let $N \ge 2$ and $0 < \alpha < 1 - 1/N$. Then $|\nabla u|^N$ is integrable on $B(0, 1/2)$, for
+$u(x) = (\log(1/|x|))^\alpha$.
+
+In polar coordinates the integral is a multiple of $\int_0^{1/2} r^{N-1} \alpha^N
+(\log(1/r))^{N(\alpha - 1)} r^{-N} \, dr = \alpha^N \int_0^{1/2} (\log(1/r))^{-\beta} \, dr/r$
+with $\beta = N(1 - \alpha) > 1$, which is finite by `integrableOn_neg_log_rpow_div`. -/
 theorem integrableOn_norm_logRpowGrad_rpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α)
     (hα1 : α < 1 - 1 / N) :
     IntegrableOn (fun x : EuclideanSpace ℝ (Fin N) ↦ ‖logRpowGrad α x‖ ^ (N : ℝ))
@@ -2303,8 +2598,8 @@ theorem integrableOn_norm_logRpowGrad_rpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < 
   simp only [Real.rpow_natCast]
   exact key _ _
 
-/-- **`∇u ∈ L^N(B(0, 1/2))`** for `u(x) = (log(1/|x|))^α`, `N ≥ 2`, `0 < α < 1 − 1/N`: the
-finiteness of the integral of `|∇u|^N`. -/
+/-- Let $N \ge 2$ and $0 < \alpha < 1 - 1/N$. Then the gradient of $u(x) = (\log(1/|x|))^\alpha$
+lies in $L^N(B(0, 1/2))$. -/
 theorem memLp_logRpowGrad (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
     MemLp (logRpowGrad α) N (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2))) := by
   have hN0 : (N : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : N ≠ 0)
@@ -2314,15 +2609,18 @@ theorem memLp_logRpowGrad (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 
   simp only [ENNReal.toReal_natCast]
   exact integrableOn_norm_logRpowGrad_rpow hN hα hα1
 
-/-- The restriction of Lebesgue measure to a ball of `ℝ^N` is finite. -/
+/-- The restriction of Lebesgue measure to a ball of $\mathbb{R}^N$ is a finite measure. -/
 theorem isFiniteMeasure_volume_restrict_ball (c : EuclideanSpace ℝ (Fin N)) (t : ℝ) :
     IsFiniteMeasure (volume.restrict (ball c t)) :=
   ⟨by rw [Measure.restrict_apply_univ]; exact measure_ball_lt_top⟩
 
-/-- **The classical gradient of `u(x) = (log(1/|x|))^α` on `B(0, 1/2) ∖ {0}` is its weak gradient
-on all of `B(0, 1/2)`**, the origin included: the removable-singularity lemma
-`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`, whose smallness hypothesis
-`∫_{B(0,δ)} |u| = o(δ)` holds because `|u| ≤ 4^α |x|^{-α/4}` and `-α/4 > 1 - N`. -/
+/-- Let $N \ge 2$ and $0 < \alpha < 1 - 1/N$. The classical gradient of
+$u(x) = (\log(1/|x|))^\alpha$ on $B(0, 1/2) \setminus \{0\}$ is its weak gradient on all of
+$B(0, 1/2)$, the origin included.
+
+The proof is the removable-singularity lemma `hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`.
+Its smallness hypothesis $\int_{B(0, \delta)} |u| = o(\delta)$ holds because
+$|u(x)| \le 4^\alpha |x|^{-\alpha/4}$ and $-\alpha/4 > 1 - N$. -/
 theorem hasWeakFDerivOn_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
     HasWeakFDerivOn (logRpow α) (logRpowGrad α)
       ⟨ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2), isOpen_ball⟩ volume := by
@@ -2348,15 +2646,17 @@ theorem hasWeakFDerivOn_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 :
   rw [Real.norm_eq_abs]
   exact abs_logRpow_le hα x hx
 
-/-- **[brezis2011functional] Chapter 9, Remark 16 (the limiting case `p = N`), the membership**:
-on `Ω = B(0, 1/2) ⊆ ℝ^N`, `N ≥ 2`, and for `0 < α < 1 − 1/N`, the function
-`u(x) = (log(1/|x|))^α` lies in `W^{1,N}(Ω)`, in the multi-index formulation over the standard
-basis. Its gradient `−α (log(1/|x|))^{α−1} x/|x|²` is its weak gradient on all of `Ω` by the
-removable-singularity lemma (`hasWeakFDerivOn_logRpow`), and
-`|∇u|^N = α^N (log(1/|x|))^{N(α−1)} |x|^{−N}` is integrable near the origin exactly because
-`N(1 − α) > 1` (`integrableOn_norm_logRpowGrad_rpow`); `u ∈ L^N` since the logarithm grows more
-slowly than any power (`memLp_logRpow`). The function is not essentially bounded:
-`eLpNorm_logRpow_top`. -/
+/-- Let $N \ge 2$ and $0 < \alpha < 1 - 1/N$. Then the function $u(x) = (\log(1/|x|))^\alpha$ lies
+in $W^{1,N}(\Omega)$ for $\Omega = B(0, 1/2) \subseteq \mathbb{R}^N$. This is Remark 16 of
+Chapter 9 of [brezis2011functional], the limiting case $p = N$, membership.
+
+The space is read through the membership predicate `MemSobolevMultiIndex` for the standard
+basis. The gradient $-\alpha (\log(1/|x|))^{\alpha - 1} x / |x|^2$ is the weak gradient on all
+of $\Omega$, by `hasWeakFDerivOn_logRpow`. The function $|\nabla u|^N = \alpha^N
+(\log(1/|x|))^{N(\alpha - 1)} |x|^{-N}$ is integrable near the origin because
+$N(1 - \alpha) > 1$, by `integrableOn_norm_logRpowGrad_rpow`. The function $u$ lies in $L^N$
+because the logarithm grows more slowly than any power, by `memLp_logRpow`. The function is not
+essentially bounded, by `eLpNorm_logRpow_top`. -/
 theorem memSobolevMultiIndex_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
       (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) 1 N
@@ -2370,11 +2670,14 @@ theorem memSobolevMultiIndex_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (h
   exact ((hasWeakFDerivOn_logRpow hN hα hα1).memSobolev (memLp_logRpow (by omega) hα hα1')
     (memLp_logRpowGrad hN hα hα1)).memSobolevMultiIndex
 
-/-- **[brezis2011functional] Chapter 9, Remark 16, the unboundedness**: `u(x) = (log(1/|x|))^α`,
-`α > 0`, is not essentially bounded on `B(0, 1/2) ⊆ ℝ^N` (`N ≥ 1`): it exceeds every constant on a
-small ball away from the origin, and such a ball has positive measure. So `u ∉ L^∞(Ω)`, although
-`u ∈ W^{1,N}(Ω)` for `α < 1 − 1/N` (`memSobolevMultiIndex_logRpow`): the embedding
-`W^{1,p}(Ω) ⊂ L^∞(Ω)` of Corollary 9.14 fails at `p = N`. -/
+/-- Let $N \ge 1$ and $\alpha > 0$. Then $u(x) = (\log(1/|x|))^\alpha$ is not essentially bounded on
+$B(0, 1/2) \subseteq \mathbb{R}^N$: $\|u\|_{L^\infty(B(0, 1/2))} = \infty$. This is Remark 16 of
+Chapter 9 of [brezis2011functional], unboundedness.
+
+The function exceeds every constant on a small ball away from the origin, and such a ball has
+positive measure. Since $u \in W^{1,N}(\Omega)$ for $\alpha < 1 - 1/N$ by
+`memSobolevMultiIndex_logRpow`, the inclusion $W^{1,p}(\Omega) \subset L^\infty(\Omega)$ of
+Corollary 9.14 fails for $p = N$. -/
 theorem eLpNorm_logRpow_top (hN : 1 ≤ N) {α : ℝ} (hα : 0 < α) :
     eLpNorm (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) ⊤
       (volume.restrict (ball 0 (1 / 2))) = ⊤ := by

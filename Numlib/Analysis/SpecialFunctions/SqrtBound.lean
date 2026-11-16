@@ -5,17 +5,27 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.Real.Sqrt
 
 /-!
-# A lower bound for `-b + √(b² + a c)`
+# A lower bound for $-b + \sqrt{b^2 + ac}$
 
-For `a, c ≥ 0` (and any `b`), `(-b + √(b² + a)) min(1, c) ≤ -b + √(b² + a c)`
-(`neg_add_sqrt_sq_add_mul_ge`; [cartis2022evaluation] Lemma B.3.1, after Royer–Wright). It turns a
-quadratic inequality `σ t² + b' t ≥ a' c` on a step length `t` into an explicit lower bound on `t`.
-The quantity `-b + √(b² + a)` is also `a / (b + √(b² + a))` (`neg_add_sqrt_sq_add_eq_div`).
-A cruder explicit form: `0 ≤ G ≤ a t² + ε t` gives `t ≥ min(ε, G/ε)/√(1 + 4a)`
-(`le_of_le_quadratic`).
+For $a, c \ge 0$ and any real $b$, this file proves
+$$\bigl(-b + \sqrt{b^2 + a}\bigr) \min\{1, c\} \le -b + \sqrt{b^2 + ac}.$$
+This is Lemma B.3.1 of [cartis2022evaluation], which follows Royer and Wright. It turns a quadratic
+inequality $\sigma t^2 + b' t \ge a' c$ on a step length $t$ into an explicit lower bound on $t$.
+The file also proves the rationalization $-b + \sqrt{b^2 + a} = a / (b + \sqrt{b^2 + a})$ for
+$a, b \ge 0$, and a cruder explicit bound: if $0 \le G \le a t^2 + \varepsilon t$, then $t \ge
+\min\{\varepsilon, G/\varepsilon\} / \sqrt{1 + 4a}$.
+
+## Main results
+
+* `neg_add_sqrt_sq_add_eq_div`: $-b + \sqrt{b^2 + a} = a / (b + \sqrt{b^2 + a})$ for $a, b \ge 0$.
+* `neg_add_sqrt_sq_add_mul_ge`: $(-b + \sqrt{b^2 + a}) \min\{1, c\} \le -b + \sqrt{b^2 + ac}$ for
+  $a, c \ge 0$ and any $b$.
+* `le_of_le_quadratic`: if $a \ge 0$, $\varepsilon > 0$, $t \ge 0$ and
+  $0 \le G \le a t^2 + \varepsilon t$, then $t \ge \min\{\varepsilon, G/\varepsilon\} / \sqrt{1 +
+  4a}$.
 -/
 
-/-- Rationalization: `-b + √(b² + a) = a / (b + √(b² + a))` for `a, b ≥ 0`. -/
+/-- Let $a, b \ge 0$. Then $-b + \sqrt{b^2 + a} = a / (b + \sqrt{b^2 + a})$. -/
 theorem neg_add_sqrt_sq_add_eq_div {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
     -b + √(b ^ 2 + a) = a / (b + √(b ^ 2 + a)) := by
   have hs : √(b ^ 2 + a) ^ 2 = b ^ 2 + a := Real.sq_sqrt (by positivity)
@@ -27,8 +37,11 @@ theorem neg_add_sqrt_sq_add_eq_div {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
   · rw [eq_div_iff h.ne']
     nlinarith
 
-/-- **Lemma B.3.1 of [cartis2022evaluation].** For `a, c ≥ 0` and any `b`,
-`(-b + √(b² + a)) min(1, c) ≤ -b + √(b² + a c)`. (The sign of `b` plays no role.) -/
+/-- Let $a, c \ge 0$, and let $b$ be any real number. Then
+$$\bigl(-b + \sqrt{b^2 + a}\bigr) \min\{1, c\} \le -b + \sqrt{b^2 + ac}.$$
+This is Lemma B.3.1 of [cartis2022evaluation].
+
+The sign of $b$ plays no role in the proof. -/
 theorem neg_add_sqrt_sq_add_mul_ge {a b c : ℝ} (ha : 0 ≤ a) (hc : 0 ≤ c) :
     (-b + √(b ^ 2 + a)) * min 1 c ≤ -b + √(b ^ 2 + a * c) := by
   set r := -b + √(b ^ 2 + a) with hr
@@ -48,9 +61,10 @@ theorem neg_add_sqrt_sq_add_mul_ge {a b c : ℝ} (ha : 0 ≤ a) (hc : 0 ≤ c) :
       Real.sqrt_le_sqrt (by nlinarith)
     linarith
 
-/-- **Step length from a quadratic inequality** (the real inequality behind Lemma 3.4.3 of
-[cartis2022evaluation]): if `0 ≤ G ≤ a t² + ε t` with `a ≥ 0`, `ε > 0`, `t ≥ 0`,
-then `t ≥ min(ε, G/ε)/√(1 + 4a)`. -/
+/-- **Step length from a quadratic inequality.** Let $a \ge 0$, $\varepsilon > 0$, $t \ge 0$ and
+$G \ge 0$ be real numbers. If $G \le a t^2 + \varepsilon t$, then
+$$\frac{1}{\sqrt{1 + 4a}} \min\Bigl\{\varepsilon, \frac{G}{\varepsilon}\Bigr\} \le t.$$
+This is the real inequality behind Lemma 3.4.3 of [cartis2022evaluation]. -/
 theorem le_of_le_quadratic {a ε t G : ℝ} (ha : 0 ≤ a) (hε : 0 < ε) (ht : 0 ≤ t) (hG : 0 ≤ G)
     (h : G ≤ a * t ^ 2 + ε * t) : 1 / √(1 + 4 * a) * min ε (G / ε) ≤ t := by
   set u := √(1 + 4 * a) with hu

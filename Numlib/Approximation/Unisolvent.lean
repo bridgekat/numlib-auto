@@ -10,44 +10,60 @@ import Numlib.Approximation.Chebyshev
 /-!
 # The abstract interpolation problem
 
-Given a subspace `Vₙ` of a normed space `V` and `n` bounded linear functionals `L i`, the
-*interpolation problem* asks for a `u ∈ Vₙ` with `L i u = b i` for prescribed data `b`. The problem
-is **unisolvent** when it has exactly one solution for every datum. The material is
-[han2009theoretical] §3.2 and §3.3.4.
+Let $V_n$ be a subspace of a normed space $V$ over a field $\mathbb{K}$, and let $L_1, \dots, L_n$
+be bounded linear functionals on $V$. The **interpolation problem** asks, for given data
+$b \in \mathbb{K}^n$, for an element $u \in V_n$ with $L_i u = b_i$ for all $i$. The problem is
+**unisolvent** if it has exactly one solution for every $b$. This file follows §3.2 and §3.3.4 of
+[han2009theoretical].
+
+When $V_n$ has dimension $n$ and $v_1, \dots, v_n$ is a basis, the problem is the linear system with
+matrix $(L_i v_j)$, so it is unisolvent if and only if $\det(L_i v_j) \neq 0$. For point evaluations
+$L_i f = f(x_i)$ on the space $C(X)$ of continuous real functions on a compact space $X$, a
+unisolvent problem has a **cardinal basis** $\varphi_1, \dots, \varphi_n$ with
+$\varphi_i(x_j) = \delta_{ij}$, and the **interpolation projection** $I f = \sum_i f(x_i) \varphi_i$
+is a bounded projection of $C(X)$ onto the subspace. Its operator norm is the largest value of the
+**Lebesgue function** $t \mapsto \sum_i |\varphi_i(t)|$.
 
 ## Main definitions
 
-* `Approximation.interpMap Vₙ L` is the linear map `u ↦ (L i u)` from `Vₙ` to `Fin n → 𝕜`.
-* `Approximation.IsUnisolvent Vₙ L` says that the interpolation problem has exactly one solution for
-  every datum, equivalently that `interpMap` is bijective
-  (`Approximation.isUnisolvent_iff_bijective`).
-* `Approximation.IsUnisolvent.interpolate` is the resulting interpolation operator, a linear
-  equivalence from the data to the subspace.
-* For a point-evaluation problem on `C(X, ℝ)`, `Approximation.IsUnisolvent.cardinalBasisCM` is the
-  cardinal basis `φ i (x j) = δ i j` of the problem, and
-  `Approximation.IsUnisolvent.interpCLM` is the interpolation projection `f ↦ ∑ i, f (x i) • φ i`.
+* `Approximation.interpMap`: the linear map $u \mapsto (L_1 u, \dots, L_n u)$ from $V_n$ to
+  $\mathbb{K}^n$.
+* `Approximation.IsUnisolvent`: the interpolation problem has exactly one solution for every datum.
+* `Approximation.IsUnisolvent.interpolate`: the interpolation operator, a linear equivalence from
+  the data to $V_n$.
+* `Approximation.IsUnisolvent.cardinalBasisCM`: the cardinal basis $\varphi_i$ of a unisolvent
+  point-evaluation problem on $C(X)$.
+* `Approximation.IsUnisolvent.interpCLM`: the interpolation projection
+  $f \mapsto \sum_i f(x_i) \varphi_i$.
 
 ## Main results
 
-* In a basis `v` of `Vₙ` the map is the matrix `(L i (v j))`, so unisolvence is the nonvanishing of
-  its determinant, `Approximation.isUnisolvent_iff_det_ne_zero`. Since the left-hand side does not
-  mention the basis, the determinant condition does not depend on it.
-* `Approximation.isUnisolvent_tfae` collects the four classical forms: unique solvability, linear
-  independence of the functionals over `Vₙ`, triviality of the homogeneous problem, and solvability
-  for every datum.
-* `Approximation.haarCondition_iff_isUnisolvent` is the bridge to the Haar condition of
-  `Numlib/Approximation/Chebyshev`: a subspace of `C(X, ℝ)` of dimension `n` satisfies the Haar
-  condition in dimension `n` exactly when every family of `n` distinct point evaluations is
-  unisolvent over it. Both say that a nonzero element has fewer than `n` zeros.
-* `Approximation.IsUnisolvent.range_interpCLM` and
-  `Approximation.IsUnisolvent.isIdempotentElem_interpCLM` say that the interpolation projection is a
-  bounded projection of `C(X, ℝ)` onto the subspace it interpolates in. It is the general form of
-  the Lagrange interpolation operator of `Numlib/Approximation/Interpolation`, and it is what turns
-  a Haar subspace into a projection operator with no formula for a cardinal basis.
-* `Approximation.IsUnisolvent.isGreatest_norm_interpCLM` and
-  `Approximation.IsUnisolvent.norm_interpCLM` give its operator norm as the largest value of the
-  Lebesgue function `t ↦ ∑ i, |φᵢ t|` — the Lebesgue constant of the interpolation scheme, which is
-  what the uniform error bounds of [han2009theoretical] §3.7.3 are stated in terms of.
+* `Approximation.isUnisolvent_iff_det_ne_zero`: for a basis $(v_j)$ of $V_n$, the problem is
+  unisolvent if and only if $\det(L_i v_j) \neq 0$.
+* `Approximation.isUnisolvent_tfae`: unique solvability, linear independence of the functionals on
+  $V_n$, triviality of the homogeneous problem, and solvability for every datum are equivalent.
+* `Approximation.IsUnisolvent.range_interpCLM`,
+  `Approximation.IsUnisolvent.isIdempotentElem_interpCLM`: the interpolation projection is a bounded
+  projection of $C(X)$ onto the subspace.
+* `Approximation.IsUnisolvent.isGreatest_norm_interpCLM`,
+  `Approximation.IsUnisolvent.norm_interpCLM`: the operator norm of the interpolation projection is
+  the largest value of its Lebesgue function.
+* `Approximation.haarCondition_iff_isUnisolvent`: an $n$-dimensional subspace of $C(X)$ satisfies
+  the Haar condition if and only if the interpolation problem at every $n$ distinct points is
+  unisolvent.
+
+## Implementation notes
+
+* The functionals are a family `L : Fin n → StrongDual 𝕜 V`, and the data are `b : Fin n → 𝕜`.
+* Since unisolvence does not mention a basis, the determinant criterion shows that the nonvanishing
+  of $\det(L_i v_j)$ does not depend on the choice of the basis.
+* The Haar condition is `HaarCondition` of `Numlib.Approximation.Chebyshev`. It and unisolvence both
+  say that a nonzero element of the subspace has fewer than $n$ zeros.
+* The interpolation projection `Approximation.IsUnisolvent.interpCLM` is the general form of the
+  Lagrange interpolation operator of `Numlib.Approximation.Interpolation`. It gives a projection
+  onto a Haar subspace with no formula for a cardinal basis.
+* The Lebesgue constant of the interpolation scheme is the quantity in which the uniform error
+  bounds of §3.7.3 of [han2009theoretical] are stated.
 -/
 
 open scoped Matrix
@@ -57,28 +73,32 @@ namespace Approximation
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
   {n : ℕ}
 
-/-- The **interpolation map** of a family of functionals on a subspace: `u ↦ (L i u)`. The
-interpolation problem is the equation `interpMap Vₙ L u = b`. -/
+/-- The **interpolation map** of a family of functionals $L_1, \dots, L_n$ on a subspace $V_n$: the
+linear map $u \mapsto (L_1 u, \dots, L_n u)$ from $V_n$ to $\mathbb{K}^n$. The interpolation
+problem for the data $b$ is the equation `Approximation.interpMap Vₙ L u = b`. -/
 def interpMap (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) : Vₙ →ₗ[𝕜] Fin n → 𝕜 where
   toFun u i := L i (u : V)
   map_add' u u' := by ext i; simp
   map_smul' c u := by ext i; simp
 
-/-- The interpolation map, evaluated at one index. -/
+/-- The $i$-th component of the interpolation map at $u$ is $L_i u$. -/
 @[simp]
 theorem interpMap_apply (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) (u : Vₙ)
     (i : Fin n) : interpMap Vₙ L u i = L i (u : V) := rfl
 
-/-- **The interpolation problem is unisolvent** when, for every datum `b`, there is exactly one `u`
-in the subspace `Vₙ` with `L i u = b i` for all `i`.
+/-- The interpolation problem for the functionals $L_1, \dots, L_n$ on the subspace $V_n$ is
+**unisolvent** if for every datum $b \in \mathbb{K}^n$ there is exactly one $u \in V_n$ with
+$$L_i u = b_i \quad \text{for all } i = 1, \dots, n.$$
 
-Reference: [han2009theoretical], Definition 3.2.1 and Theorem 3.2.3. -/
+This is Definition 3.2.1 of [han2009theoretical], in the form of unique solvability. Theorem
+3.2.3 of [han2009theoretical] gives the equivalent forms (`Approximation.isUnisolvent_tfae`). -/
 def IsUnisolvent (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) : Prop :=
   ∀ b : Fin n → 𝕜, ∃! u : Vₙ, ∀ i, L i (u : V) = b i
 
 variable {Vₙ : Submodule 𝕜 V} {L : Fin n → StrongDual 𝕜 V}
 
-/-- Unisolvence is bijectivity of the interpolation map. -/
+/-- The interpolation problem is unisolvent if and only if the interpolation map
+$u \mapsto (L_i u)_i$ is bijective. -/
 theorem isUnisolvent_iff_bijective :
     IsUnisolvent Vₙ L ↔ Function.Bijective (interpMap Vₙ L) := by
   rw [Function.bijective_iff_existsUnique]
@@ -92,8 +112,8 @@ variable (v : Module.Basis (Fin n) 𝕜 Vₙ)
 
 include v
 
-/-- In a basis of the subspace, the interpolation map is multiplication by the matrix `(L i (v j))`.
--/
+/-- Let $v_1, \dots, v_n$ be a basis of $V_n$. For $u \in V_n$ with coordinates $c$ in this basis,
+the interpolation map at $u$ is the matrix-vector product $(L_i v_j)_{ij}\, c$. -/
 theorem interpMap_eq_mulVec (u : Vₙ) :
     interpMap Vₙ L u = (Matrix.of fun i j => L i (v j : V)) *ᵥ v.equivFun u := by
   have hu : (u : V) = ∑ j, v.equivFun u j • (v j : V) := by
@@ -105,57 +125,61 @@ theorem interpMap_eq_mulVec (u : Vₙ) :
   simp only [map_smul, smul_eq_mul, Matrix.mulVec, dotProduct, Matrix.of_apply]
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-- The interpolation map is the matrix of the problem composed with the coordinate isomorphism of
-the basis. -/
+/-- For a basis $(v_j)$ of $V_n$, the interpolation map is the composition of the coordinate
+isomorphism of the basis with multiplication by the matrix $(L_i v_j)$. -/
 private theorem coe_interpMap_eq :
     ⇑(interpMap Vₙ L) = (Matrix.of fun i j => L i (v j : V)).mulVec ∘ v.equivFun :=
   funext fun u => interpMap_eq_mulVec v u
 
-/-- The homogeneous problem has only the trivial solution exactly when the matrix is invertible. -/
+/-- For a basis $(v_j)$ of $V_n$, the interpolation map is injective if and only if the matrix
+$(L_i v_j)$ is invertible. -/
 private theorem injective_interpMap_iff_isUnit :
     Function.Injective (interpMap Vₙ L) ↔ IsUnit (Matrix.of fun i j => L i (v j : V)) := by
   classical
   rw [coe_interpMap_eq v, Function.Injective.of_comp_iff' _ v.equivFun.bijective,
     Matrix.mulVec_injective_iff_isUnit]
 
-/-- The problem is solvable for every datum exactly when the matrix is invertible. -/
+/-- For a basis $(v_j)$ of $V_n$, the interpolation map is surjective if and only if the matrix
+$(L_i v_j)$ is invertible. -/
 private theorem surjective_interpMap_iff_isUnit :
     Function.Surjective (interpMap Vₙ L) ↔ IsUnit (Matrix.of fun i j => L i (v j : V)) := by
   classical
   rw [coe_interpMap_eq v, Function.Surjective.of_comp_iff _ v.equivFun.surjective,
     Matrix.mulVec_surjective_iff_isUnit]
 
-/-- Unisolvence is invertibility of the matrix of the problem. -/
+/-- For a basis $(v_j)$ of $V_n$, the interpolation problem is unisolvent if and only if the matrix
+$(L_i v_j)$ is invertible. -/
 theorem isUnisolvent_iff_isUnit :
     IsUnisolvent Vₙ L ↔ IsUnit (Matrix.of fun i j => L i (v j : V)) := by
   rw [isUnisolvent_iff_bijective]
   exact ⟨fun h => (injective_interpMap_iff_isUnit v).1 h.1,
     fun h => ⟨(injective_interpMap_iff_isUnit v).2 h, (surjective_interpMap_iff_isUnit v).2 h⟩⟩
 
-/-- **The determinant criterion.** For a basis `v` of the `n`-dimensional subspace `Vₙ`, the
-interpolation problem is unisolvent exactly when `det (L i (v j)) ≠ 0`. The left-hand side does not
-mention the basis, so neither does the nonvanishing of the determinant.
+/-- **The determinant criterion.** Let $V_n$ have a basis $v_1, \dots, v_n$, so that $\dim V_n = n$.
+The interpolation problem for $L_1, \dots, L_n$ on $V_n$ is unisolvent if and only if
+$$\det (L_i v_j)_{i,j=1}^n \neq 0.$$
 
-Reference: [han2009theoretical], Lemma 3.2.2. -/
+This is Lemma 3.2.2 of [han2009theoretical]. Since unisolvence does not mention the basis, the
+nonvanishing of the determinant does not depend on the choice of the basis. -/
 theorem isUnisolvent_iff_det_ne_zero :
     IsUnisolvent Vₙ L ↔ (Matrix.of fun i j => L i (v j : V)).det ≠ 0 := by
   classical
   rw [isUnisolvent_iff_isUnit v, Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero]
 
-/-- **The homogeneous form.** The problem is unisolvent exactly when the only element of `Vₙ`
-annihilated by every functional is `0`.
+/-- **The homogeneous form.** Let $V_n$ have a basis $v_1, \dots, v_n$. The interpolation problem is
+unisolvent if and only if the only $u \in V_n$ with $L_i u = 0$ for all $i$ is $u = 0$.
 
-Reference: [han2009theoretical], Theorem 3.2.3. -/
+This is part of Theorem 3.2.3 of [han2009theoretical]. -/
 theorem isUnisolvent_iff_forall_eq_zero :
     IsUnisolvent Vₙ L ↔ ∀ u : Vₙ, (∀ i, L i (u : V) = 0) → u = 0 := by
   rw [isUnisolvent_iff_isUnit v, ← injective_interpMap_iff_isUnit v,
     injective_iff_map_eq_zero (interpMap Vₙ L)]
   exact forall_congr' fun u => imp_congr_left (funext_iff (g := (0 : Fin n → 𝕜)))
 
-/-- **The solvability form.** The problem is unisolvent exactly when it is solvable for every datum;
-on an `n`-dimensional subspace with `n` functionals, existence already forces uniqueness.
-
-Reference: [han2009theoretical], Theorem 3.2.3. -/
+/-- **The solvability form.** Let $V_n$ have a basis $v_1, \dots, v_n$. The interpolation problem is
+unisolvent if and only if for every datum $b \in \mathbb{K}^n$ there is some $u \in V_n$ with
+$L_i u = b_i$ for all $i$. Thus, for $n$ functionals on an $n$-dimensional subspace, existence
+of a solution implies its uniqueness. This is part of Theorem 3.2.3 of [han2009theoretical]. -/
 theorem isUnisolvent_iff_forall_exists :
     IsUnisolvent Vₙ L ↔ ∀ b : Fin n → 𝕜, ∃ u : Vₙ, ∀ i, L i (u : V) = b i := by
   rw [isUnisolvent_iff_isUnit v, ← surjective_interpMap_iff_isUnit v]
@@ -165,11 +189,12 @@ theorem isUnisolvent_iff_forall_exists :
   · obtain ⟨u, hu⟩ := h b
     exact ⟨u, funext hu⟩
 
-/-- **Linear independence of the functionals over the subspace**, the form in which
-[han2009theoretical] state the definition: the restrictions of `L i` to `Vₙ` are linearly
-independent in the dual of `Vₙ`.
+/-- **Linear independence of the functionals.** Let $V_n$ have a basis $v_1, \dots, v_n$. The
+interpolation problem is unisolvent if and only if the restrictions of $L_1, \dots, L_n$ to
+$V_n$ are linearly independent linear functionals on $V_n$.
 
-Reference: [han2009theoretical], Definition 3.2.1 and Theorem 3.2.3. -/
+This is the form of the definition in Definition 3.2.1 of [han2009theoretical], and its
+equivalence with unique solvability is part of Theorem 3.2.3 of [han2009theoretical]. -/
 theorem isUnisolvent_iff_linearIndependent :
     IsUnisolvent Vₙ L ↔
       LinearIndependent 𝕜 fun i => (L i : V →ₗ[𝕜] 𝕜).domRestrict Vₙ := by
@@ -185,10 +210,16 @@ theorem isUnisolvent_iff_linearIndependent :
   rw [isUnisolvent_iff_isUnit v, hrow, ← Matrix.linearIndependent_row_iff_isUnit]
   exact ⟨fun h => h.map' _ hker, fun h => h.of_comp (v.constr (M' := 𝕜) 𝕜).toLinearMap⟩
 
-/-- **The four equivalent forms of unisolvence**: unique solvability, linear independence of the
-functionals over `Vₙ`, triviality of the homogeneous problem, and solvability for every datum.
+/-- **The four equivalent forms of unisolvence.** Let $V_n$ have a basis $v_1, \dots, v_n$. The
+following are equivalent:
 
-Reference: [han2009theoretical], Theorem 3.2.3. -/
+1. the interpolation problem is unisolvent: for every $b \in \mathbb{K}^n$ there is exactly one
+   $u \in V_n$ with $L_i u = b_i$ for all $i$;
+2. the restrictions of $L_1, \dots, L_n$ to $V_n$ are linearly independent;
+3. if $u \in V_n$ and $L_i u = 0$ for all $i$, then $u = 0$;
+4. for every $b \in \mathbb{K}^n$ there is some $u \in V_n$ with $L_i u = b_i$ for all $i$.
+
+This is Theorem 3.2.3 of [han2009theoretical]. -/
 theorem isUnisolvent_tfae :
     List.TFAE
       [IsUnisolvent Vₙ L,
@@ -204,14 +235,17 @@ end Matrix
 
 /-! ### The interpolation operator -/
 
-/-- **The interpolation operator** of a unisolvent problem: the linear equivalence from the data `b`
-to the unique element of `Vₙ` interpolating them.
+/-- **The interpolation operator** of a unisolvent problem: the linear equivalence from
+$\mathbb{K}^n$ to $V_n$ that maps the data $b$ to the unique $u \in V_n$ with $L_i u = b_i$ for
+all $i$.
 
-Reference: [han2009theoretical], (3.2.3). -/
+This is the operator of (3.2.3) of [han2009theoretical]. It is the inverse of the interpolation
+map `Approximation.interpMap`. -/
 noncomputable def IsUnisolvent.interpolate (h : IsUnisolvent Vₙ L) : (Fin n → 𝕜) ≃ₗ[𝕜] Vₙ :=
   (LinearEquiv.ofBijective (interpMap Vₙ L) (isUnisolvent_iff_bijective.mp h)).symm
 
-/-- The interpolant takes the prescribed values. -/
+/-- For a unisolvent problem and data $b$, the interpolant $u$ of $b$ satisfies $L_i u = b_i$ for
+every $i$. -/
 @[simp]
 theorem IsUnisolvent.apply_interpolate (h : IsUnisolvent Vₙ L) (b : Fin n → 𝕜) (i : Fin n) :
     L i ((h.interpolate b : Vₙ) : V) = b i := by
@@ -219,7 +253,8 @@ theorem IsUnisolvent.apply_interpolate (h : IsUnisolvent Vₙ L) (b : Fin n → 
     (isUnisolvent_iff_bijective.mp h)).apply_symm_apply b
   exact congrFun this i
 
-/-- The interpolant is the only element of `Vₙ` with the prescribed values. -/
+/-- For a unisolvent problem, if $u \in V_n$ satisfies $L_i u = b_i$ for all $i$, then $u$ is the
+interpolant of $b$. -/
 theorem IsUnisolvent.eq_interpolate (h : IsUnisolvent Vₙ L) {b : Fin n → 𝕜} {u : Vₙ}
     (hu : ∀ i, L i (u : V) = b i) : u = h.interpolate b :=
   ((h b).unique hu) fun i => h.apply_interpolate b i
@@ -231,18 +266,24 @@ section InterpCLM
 variable {X : Type*} [TopologicalSpace X] [CompactSpace X] {d : ℕ}
   {W : Submodule ℝ C(X, ℝ)} {x : Fin d → X}
 
-/-- The **cardinal basis** of a unisolvent point-evaluation problem: `cardinalBasisCM h i` is the
-unique element of the subspace taking the value `1` at the node `x i` and `0` at the others. For
-polynomials it is the `i`-th Lagrange basis function. -/
+/-- The **cardinal basis** of a unisolvent point-evaluation problem. Let $X$ be a compact space, let
+$W$ be a subspace of $C(X)$, and let $x_1, \dots, x_d \in X$ be nodes at which the interpolation
+problem $f(x_i) = b_i$ on $W$ is unisolvent. The function $\varphi_i$ is the unique element of
+$W$ with $\varphi_i(x_i) = 1$ and $\varphi_i(x_j) = 0$ for $j \neq i$.
+
+For polynomials, $\varphi_i$ is the $i$-th Lagrange basis function. -/
 noncomputable def IsUnisolvent.cardinalBasisCM
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i : Fin d) : C(X, ℝ) :=
   (h.interpolate (Pi.single i 1) : C(X, ℝ))
 
+/-- Each cardinal basis function $\varphi_i$ lies in the subspace $W$. -/
 theorem IsUnisolvent.cardinalBasisCM_mem
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i : Fin d) :
     h.cardinalBasisCM i ∈ W :=
   (h.interpolate (Pi.single i 1)).2
 
+/-- The cardinal basis function $\varphi_i$ takes the value $\varphi_i(x_j) = \delta_{ij}$ at the
+node $x_j$. -/
 @[simp]
 theorem IsUnisolvent.cardinalBasisCM_apply_node
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i j : Fin d) :
@@ -250,17 +291,23 @@ theorem IsUnisolvent.cardinalBasisCM_apply_node
   have := h.apply_interpolate (Pi.single i (1 : ℝ)) j
   simpa [IsUnisolvent.cardinalBasisCM, Pi.single_apply] using this
 
-/-- **The interpolation projection** of a unisolvent point-evaluation problem: the bounded operator
-`f ↦ ∑ i, f (x i) • φ_i` of `C(X, ℝ)` onto the subspace `W`, where `φ_i` is the cardinal basis. -/
+/-- **The interpolation projection** of a unisolvent point-evaluation problem on a subspace $W$ of
+$C(X)$, with nodes $x_1, \dots, x_d$ and cardinal basis $\varphi_1, \dots, \varphi_d$: the
+bounded linear operator
+$$I f = \sum_{i=1}^d f(x_i)\, \varphi_i$$
+on $C(X)$. It is a projection onto $W$ (`Approximation.IsUnisolvent.range_interpCLM`,
+`Approximation.IsUnisolvent.isIdempotentElem_interpCLM`). -/
 noncomputable def IsUnisolvent.interpCLM
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   ∑ i, (ContinuousMap.evalCLM ℝ (x i)).smulRight (h.cardinalBasisCM i)
 
+/-- The interpolation projection at a point $t$ is $I f(t) = \sum_i f(x_i)\, \varphi_i(t)$. -/
 theorem IsUnisolvent.interpCLM_apply
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) (t : X) :
     h.interpCLM f t = ∑ i, f (x i) * h.cardinalBasisCM i t := by
   simp [IsUnisolvent.interpCLM]
 
+/-- For every $f \in C(X)$, the interpolant $I f$ lies in the subspace $W$. -/
 theorem IsUnisolvent.interpCLM_mem
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) :
     h.interpCLM f ∈ W := by
@@ -269,6 +316,7 @@ theorem IsUnisolvent.interpCLM_mem
   rw [this]
   exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (h.cardinalBasisCM_mem i)
 
+/-- The interpolant agrees with $f$ at the nodes: $I f(x_j) = f(x_j)$ for every $j$. -/
 @[simp]
 theorem IsUnisolvent.interpCLM_apply_node
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) (j : Fin d) :
@@ -281,7 +329,7 @@ theorem IsUnisolvent.interpCLM_apply_node
   · intro hj
     exact absurd (Finset.mem_univ j) hj
 
-/-- The interpolation projection fixes the subspace it projects onto. -/
+/-- The interpolation projection fixes the subspace: if $g \in W$, then $I g = g$. -/
 theorem IsUnisolvent.interpCLM_eq_self
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) {g : C(X, ℝ)} (hg : g ∈ W) :
     h.interpCLM g = g := by
@@ -291,13 +339,13 @@ theorem IsUnisolvent.interpCLM_eq_self
     h.eq_interpolate fun _ => rfl
   exact congrArg Subtype.val (h1.trans h2.symm)
 
-/-- The interpolation projection is idempotent. -/
+/-- The interpolation projection is idempotent: $I \circ I = I$. -/
 theorem IsUnisolvent.isIdempotentElem_interpCLM
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
     IsIdempotentElem h.interpCLM :=
   ContinuousLinearMap.ext fun f => h.interpCLM_eq_self (h.interpCLM_mem f)
 
-/-- The range of the interpolation projection is the subspace it interpolates in. -/
+/-- The range of the interpolation projection $I$ is the subspace $W$. -/
 theorem IsUnisolvent.range_interpCLM
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
     LinearMap.range (h.interpCLM : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) = W := by
@@ -307,15 +355,19 @@ theorem IsUnisolvent.range_interpCLM
   · intro g hg
     exact ⟨g, h.interpCLM_eq_self hg⟩
 
-/-- **The Lebesgue constant of an interpolation projection.** The operator norm of the projection
-`f ↦ ∑ i, f (x i) • φ_i` is the largest value of its *Lebesgue function* `t ↦ ∑ i, |φ_i t|`.
+/-- **The Lebesgue constant of an interpolation projection.** Let $X$ be a nonempty compact
+Hausdorff space, and let the point-evaluation problem at the nodes $x_1, \dots, x_d$ be
+unisolvent on a subspace $W$ of $C(X)$, with cardinal basis $\varphi_1, \dots, \varphi_d$. The
+operator norm of the interpolation projection $I$ is the largest value of its **Lebesgue
+function**:
+$$\|I\| = \max_{t \in X} \sum_{i=1}^d |\varphi_i(t)|,$$
+and the maximum is attained.
 
-The upper bound is the triangle inequality. The lower bound needs a continuous function of norm at
-most `1` taking the sign of `φ_i t₀` at the node `x i`: the combination `∑ i, sign (φ_i t₀) • φ_i`
-already takes those values at the nodes, and the Tietze extension theorem replaces it by a function
-with the same values whose range lies in `[-1, 1]`.
-
-Reference: [han2009theoretical], §3.7.3. -/
+This is the Lebesgue constant of §3.7.3 of [han2009theoretical]. The upper bound is the triangle
+inequality. For the lower bound, the combination $\sum_i \operatorname{sign}(\varphi_i(t_0))\,
+\varphi_i$ takes the values $\operatorname{sign}(\varphi_i(t_0))$ at the nodes, and the Tietze
+extension theorem replaces it by a continuous function with the same values at the nodes and
+with values in $[-1, 1]$. -/
 theorem IsUnisolvent.isGreatest_norm_interpCLM [Nonempty X] [T2Space X]
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
     IsGreatest (Set.range fun t : X => ∑ i, |h.cardinalBasisCM i t|) ‖h.interpCLM‖ := by
@@ -394,7 +446,11 @@ theorem IsUnisolvent.isGreatest_norm_interpCLM [Nonempty X] [T2Space X]
       _ = ‖h.interpCLM‖ := mul_one _
   exact ⟨⟨t₀, (le_antisymm hle hge).symm⟩, by rintro _ ⟨t, rfl⟩; exact (hmax' t).trans hge⟩
 
-/-- The operator norm of an interpolation projection is the supremum of its Lebesgue function. -/
+/-- Let $X$ be a nonempty compact Hausdorff space, and let the point-evaluation problem at the nodes
+$x_1, \dots, x_d$ be unisolvent on a subspace $W$ of $C(X)$. The operator norm of the
+interpolation projection is the supremum of its Lebesgue function:
+$$\|I\| = \sup_{t \in X} \sum_{i=1}^d |\varphi_i(t)|.$$
+-/
 theorem IsUnisolvent.norm_interpCLM [Nonempty X] [T2Space X]
     (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
     ‖h.interpCLM‖ = sSup (Set.range fun t : X => ∑ i, |h.cardinalBasisCM i t|) :=
@@ -404,11 +460,13 @@ end InterpCLM
 
 /-! ### The Haar condition -/
 
-/-- **The Haar condition is unisolvence at every family of distinct points.** For a subspace of
-`C(X, ℝ)` of dimension `n`, no nonzero element vanishes at `n` distinct points exactly when the
-interpolation problem at every `n` distinct points is uniquely solvable.
+/-- **The Haar condition is unisolvence at every family of distinct points.** Let $X$ be a compact
+space, and let $V_n$ be a subspace of $C(X)$ of dimension $n$. Then no nonzero element of $V_n$
+vanishes at $n$ distinct points of $X$ (`HaarCondition`) if and only if, for all distinct points
+$x_1, \dots, x_n \in X$, the interpolation problem $f(x_i) = b_i$ on $V_n$ is unisolvent.
 
-Reference: [han2009theoretical], §3.3.4. -/
+This is the relation between the Haar condition and interpolation in §3.3.4 of
+[han2009theoretical]. -/
 theorem haarCondition_iff_isUnisolvent {X : Type*} [TopologicalSpace X] [CompactSpace X]
     (Vₙ : Submodule ℝ C(X, ℝ)) [FiniteDimensional ℝ Vₙ] (hdim : Module.finrank ℝ Vₙ = n) :
     HaarCondition Vₙ n ↔

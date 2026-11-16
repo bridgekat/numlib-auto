@@ -10,9 +10,47 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 /-!
 # Constraint preconditioning with a zero trailing block
 
-For two saddle matrices with common off-diagonal blocks, the left-preconditioned matrix
-is the identity plus an operator with primal range in the null space of the constraint.
-Compression to that null space gives the nontrivial characteristic-polynomial factor.
+Let $K$ be a field with an involution, let $A, G \in K^{n \times n}$ and $B \in K^{m \times n}$.
+This file studies the saddle-point matrix $\mathcal{A} = \begin{bmatrix} A & B^H \\ B & 0
+\end{bmatrix}$ preconditioned from the left by the constraint preconditioner $\mathcal{P} =
+\begin{bmatrix} G & B^H \\ B & 0 \end{bmatrix}$, which has the same off-diagonal blocks. Since
+$\mathcal{A} = \mathcal{P} + \operatorname{diag}(A - G, 0)$, the preconditioned matrix
+$\mathcal{P}^{-1} \mathcal{A}$ is the identity plus a matrix whose primal part has its range in the
+null space of $B$. Let the columns of $Z \in K^{n \times k}$ form a basis of $\ker B$. Compression
+to $\ker B$ gives the reduced pencil $(Z^H A Z, Z^H G Z)$, and the main results are
+$$\det(\lambda I - \mathcal{P}^{-1} \mathcal{A}) = (\lambda - 1)^{2m} \det\bigl(\lambda I - (Z^H G
+  Z)^{-1} Z^H A Z\bigr)$$
+when $B$ has full row rank, and a description of the eigenvectors of $\mathcal{P}^{-1} \mathcal{A}$
+at the eigenvalue $1$ and at the other eigenvalues. This is the setting of Theorem 10.1 of
+[benzi2005numerical].
+
+## Main definitions
+
+* `Matrix.constraintPreconditioned`: the preconditioned matrix $\mathcal{P}^{-1} \mathcal{A}$.
+
+## Main results
+
+* `Matrix.isUnit_nullspaceCompression`: if $\mathcal{P}$ is nonsingular, then $Z^H G Z$ is
+  nonsingular.
+* `Matrix.charpoly_constraintPreconditioned`: the characteristic polynomial of
+  $\mathcal{P}^{-1} \mathcal{A}$ is $(X - 1)^{2m}$ times that of $(Z^H G Z)^{-1} Z^H A Z$.
+* `Matrix.constraintPreconditioned_mulVec_eq_self_iff`: $(x, y)$ is fixed by
+  $\mathcal{P}^{-1} \mathcal{A}$ if and only if $Ax = Gx$.
+* `Matrix.constraintPreconditioned_mulVec_eq_smul_iff`: for $\mu \neq 1$, the eigenvectors at $\mu$
+  are the lifts $(Zz, y)$ of eigenvectors $z$ of the reduced pencil.
+* `Matrix.exists_constraintPreconditioned_eigenvectors`: if $A$ is Hermitian and $Z^H G Z$ is
+  positive definite, there is a linearly independent family of eigenvectors of
+  $\mathcal{P}^{-1} \mathcal{A}$ made of the multiplier coordinate vectors, the vectors $(w, 0)$
+  with $Aw = Gw$, and the lifts of the reduced eigenvectors with eigenvalue different from $1$.
+
+## Implementation notes
+
+* The saddle-point matrices are `Matrix.saddleMatrix A Bᴴ 0` and `Matrix.saddleMatrix G Bᴴ 0`,
+  indexed by `n ⊕ m`. A vector $(x, y)$ is `Sum.elim x y`.
+* The basis of $\ker B$ is a matrix `Z` with injective `Z.mulVec` and with range equal to the kernel
+  of `B.mulVecLin`.
+* The reduced factor of the characteristic polynomial can also have the root $1$. So the eigenvalue
+  $1$ of $\mathcal{P}^{-1} \mathcal{A}$ can have algebraic multiplicity greater than $2m$.
 -/
 
 open Polynomial
@@ -22,7 +60,15 @@ namespace Matrix
 variable {n m k K : Type*} [Fintype n] [Fintype m] [Fintype k]
 variable [DecidableEq n] [DecidableEq m] [DecidableEq k] [Field K] [StarRing K]
 
-/-- The left-preconditioned matrix for two saddle matrices sharing their constraints. -/
+/-- The **constraint-preconditioned matrix** $\mathcal{P}^{-1} \mathcal{A}$ for the saddle-point
+matrices
+$$\mathcal{A} = \begin{bmatrix} A & B^H \\ B & 0 \end{bmatrix}, \qquad \mathcal{P} =
+  \begin{bmatrix} G & B^H \\ B & 0 \end{bmatrix},$$
+with $A, G \in K^{n \times n}$ and $B \in K^{m \times n}$.
+
+The two matrices are `Matrix.saddleMatrix A Bᴴ 0` and `Matrix.saddleMatrix G Bᴴ 0`. The inverse
+is the matrix inverse of Mathlib, which is $0$ when $\mathcal{P}$ is singular, so in that case
+the definition gives the zero matrix. -/
 noncomputable def constraintPreconditioned (A G : Matrix n n K) (B : Matrix m n K) :
     Matrix (n ⊕ m) (n ⊕ m) K :=
   (saddleMatrix G Bᴴ 0)⁻¹ * saddleMatrix A Bᴴ 0
@@ -32,8 +78,11 @@ private theorem saddleMatrix_add_primal (A G : Matrix n n K) (B : Matrix m n K) 
     saddleMatrix A Bᴴ 0 = saddleMatrix G Bᴴ 0 + fromBlocks (A - G) 0 0 0 := by
   simp [saddleMatrix, fromBlocks_add, add_comm G (A - G)]
 
-/-- The preconditioned matrix has an identity trailing block and a zero upper-right block.
-The remaining two blocks are obtained from the first block column of the inverse preconditioner. -/
+/-- If $\mathcal{P}$ is nonsingular, the preconditioned matrix has the block form
+$$\mathcal{P}^{-1} \mathcal{A} = \begin{bmatrix} I + (\mathcal{P}^{-1})_{11} (A - G) & 0 \\
+  (\mathcal{P}^{-1})_{21} (A - G) & I \end{bmatrix},$$
+where $(\mathcal{P}^{-1})_{11}$ and $(\mathcal{P}^{-1})_{21}$ are the blocks of the first block
+column of $\mathcal{P}^{-1}$. -/
 theorem constraintPreconditioned_eq_fromBlocks {A G : Matrix n n K} {B : Matrix m n K}
     (hP : IsUnit (saddleMatrix G Bᴴ 0)) :
     constraintPreconditioned A G B =
@@ -84,8 +133,12 @@ private theorem nullspace_factor_inv {G : Matrix n n K} {B : Matrix m n K} {Z : 
   have hh := congrArg (fun M => Zᴴ * M) h₁
   simpa [Matrix.mul_add, ← Matrix.mul_assoc, hZB, hHU] using hh
 
-/-- A nonsingular constraint saddle matrix has a nonsingular compression to a basis of the
-null space of its constraint. -/
+/-- Let $B \in K^{m \times n}$ and $G \in K^{n \times n}$, and let $Z \in K^{n \times k}$ have
+linearly independent columns that span $\ker B$. If $\mathcal{P} = \begin{bmatrix} G & B^H \\ B
+& 0 \end{bmatrix}$ is nonsingular, then the compression $Z^H G Z$ is nonsingular.
+
+The hypotheses on $Z$ are that `Z.mulVec` is injective and that its range is the kernel of
+`B.mulVecLin`. -/
 theorem isUnit_nullspaceCompression {G : Matrix n n K} {B : Matrix m n K} {Z : Matrix n k K}
     (hZi : Function.Injective Z.mulVec)
     (hZ : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)
@@ -135,9 +188,15 @@ private theorem charpoly_one_add_rectangular {Z : Matrix n k K} (U : Matrix k n 
   rw [charpoly_one_add, charpoly_one_add, charpoly_mul_comm_of_le _ _ hcard, Polynomial.mul_comp,
     Polynomial.pow_comp, Polynomial.X_comp]
 
-/-- The characteristic polynomial of the constraint-preconditioned matrix factors into
-`(X - 1) ^ (2 * card m)` times the characteristic polynomial of the reduced pencil operator.
-The reduced factor may contribute additional roots at 1. -/
+/-- Let $A, G \in K^{n \times n}$, let $B \in K^{m \times n}$ have full row rank, and let
+$Z \in K^{n \times k}$ have linearly independent columns that span $\ker B$. If $\mathcal{P} =
+\begin{bmatrix} G & B^H \\ B & 0 \end{bmatrix}$ is nonsingular, then the characteristic
+polynomial of $\mathcal{P}^{-1} \mathcal{A}$ is
+$$\chi_{\mathcal{P}^{-1} \mathcal{A}} = (X - 1)^{2m} \, \chi_{(Z^H G Z)^{-1} (Z^H A Z)}.$$
+
+The reduced factor $\chi_{(Z^H G Z)^{-1} (Z^H A Z)}$ can also have roots at $1$, so the
+multiplicity of the eigenvalue $1$ can be larger than $2m$. Full row rank of $B$ is the
+surjectivity of `B.mulVec`. -/
 theorem charpoly_constraintPreconditioned {A G : Matrix n n K} {B : Matrix m n K}
     {Z : Matrix n k K} (hB : Function.Surjective B.mulVec) (hZi : Function.Injective Z.mulVec)
     (hZ : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)
@@ -157,8 +216,11 @@ theorem charpoly_constraintPreconditioned {A G : Matrix n n K} {B : Matrix m n K
   rw [show Fintype.card n - Fintype.card k = Fintype.card m by omega, two_mul, pow_add]
   ac_rfl
 
-/-- The eigenspace at 1 consists of vectors with primal part in the kernel of `A - G`
-and arbitrary multiplier part. -/
+/-- If $\mathcal{P}$ is nonsingular, then for all $x \in K^n$ and $y \in K^m$,
+$$\mathcal{P}^{-1} \mathcal{A} \begin{bmatrix} x \\ y \end{bmatrix} = \begin{bmatrix} x \\ y
+  \end{bmatrix} \iff Ax = Gx.$$
+Thus the eigenspace at $1$ consists of the vectors whose primal part is in $\ker(A - G)$, with
+an arbitrary multiplier part $y$. -/
 theorem constraintPreconditioned_mulVec_eq_self_iff {A G : Matrix n n K} {B : Matrix m n K}
     (hP : IsUnit (saddleMatrix G Bᴴ 0)) (x : n → K) (y : m → K) :
     constraintPreconditioned A G B *ᵥ Sum.elim x y = Sum.elim x y ↔ A *ᵥ x = G *ᵥ x := by
@@ -170,9 +232,16 @@ theorem constraintPreconditioned_mulVec_eq_self_iff {A G : Matrix n n K} {B : Ma
   simp [P, saddleMatrix, fromBlocks_mulVec, Sum.elim_eq_iff]
 
 omit [DecidableEq k] in
-/-- At an eigenvalue different from 1, the primal component of the eigenvector is `Z *ᵥ z`
-for a vector of the compressed pencil. The multiplier is determined by the lower-left block
-of the preconditioned matrix and the eigenvalue. -/
+/-- Let $Z \in K^{n \times k}$ have linearly independent columns that span $\ker B$, let
+$\mathcal{P}$ be nonsingular, and let $\mu \in K$ with $\mu \neq 1$. Then for all $x \in K^n$
+and $y \in K^m$, the equation $\mathcal{P}^{-1} \mathcal{A} (x, y) = \mu (x, y)$ holds if and
+only if there is $z \in K^k$ with
+$$x = Zz, \qquad Z^H A Z z = \mu \, Z^H G Z z, \qquad y = (\mu - 1)^{-1} (\mathcal{P}^{-1})_{21}
+  (A - G) x.$$
+
+Thus the primal part of an eigenvector at an eigenvalue $\mu \neq 1$ is the lift $Zz$ of a
+solution $z$ of the reduced pencil equation, and the multiplier part is determined by $x$ and
+$\mu$. -/
 theorem constraintPreconditioned_mulVec_eq_smul_iff {A G : Matrix n n K} {B : Matrix m n K}
     {Z : Matrix n k K} (hZi : Function.Injective Z.mulVec)
     (hZ : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)
@@ -269,10 +338,25 @@ private theorem linearIndependent_join_one_eigenvectors {ι ι' V : Type*} [AddC
 variable {𝕜 : Type*} [RCLike 𝕜]
 
 omit [DecidableEq k] in
-/-- If the reduced preconditioner is positive definite, a basis of its symmetric pencil
-supplies one lifted eigenvector for each reduced eigenvalue different from 1, counted with
-multiplicity. These lifts, the multiplier coordinate vectors, and the primal vectors
-of a basis of the kernel of `A - G` are jointly linearly independent. -/
+/-- Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $A, G \in \mathbb{K}^{n \times n}$ with $A$
+Hermitian, let $B \in \mathbb{K}^{m \times n}$, and let $Z \in \mathbb{K}^{n \times k}$ have
+linearly independent columns that span $\ker B$. Assume that $\mathcal{P}$ is nonsingular and
+that $Z^H G Z$ is positive definite. Let $r = \dim \ker(A - G)$. Then there are vectors
+$w_1, \dots, w_r \in \mathbb{K}^n$, real numbers $d_j$ and vectors $z_j \in \mathbb{K}^k$ for
+$j = 1, \dots, k$, and vectors $y_j \in \mathbb{K}^m$ for the $j$ with $d_j \neq 1$, with the
+following properties:
+* $A w_i = G w_i$ for each $i$;
+* each $(d_j, z_j)$ is an eigenpair of the pencil $(Z^H A Z, Z^H G Z)$, and the $z_j$ are
+  linearly independent;
+* let $u$ be the family of the multiplier coordinate vectors $(0, e_l)$ for $l = 1, \dots, m$
+  and the vectors $(w_i, 0)$, and let $v_j = (Z z_j, y_j)$ for $d_j \neq 1$. Then the family $u$
+  together with $v$ is linearly independent, $\mathcal{P}^{-1} \mathcal{A} \, u = u$ for each
+  vector $u$ of the first family, and $\mathcal{P}^{-1} \mathcal{A} \, v_j = d_j v_j$.
+
+Thus a basis of the reduced pencil gives one lifted eigenvector for each reduced eigenvalue
+different from $1$, counted with multiplicity. The $d_j$ and $z_j$ come from a simultaneous
+diagonalization of $Z^H A Z$ and $Z^H G Z$. The eigenpairs of the pencil are
+`Matrix.HasPencilEigenvector`. -/
 theorem exists_constraintPreconditioned_eigenvectors {A G : Matrix n n 𝕜} {B : Matrix m n 𝕜}
     {Z : Matrix n k 𝕜} (hA : A.IsHermitian) (hZi : Function.Injective Z.mulVec)
     (hZ : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)

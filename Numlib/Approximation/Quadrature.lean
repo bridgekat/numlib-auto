@@ -18,92 +18,112 @@ import Numlib.Topology.TietzeExtension
 /-!
 # Numerical quadrature
 
-A quadrature rule is the bounded linear functional `f ↦ ∑ i, w i * f (x i)` on the continuous
-functions of a compact space: finitely many *nodes* `x i` with *weights* `w i`, approximating an
-integral. This file has the rule itself, its norm, the criterion by which a sequence of rules
-converges for every continuous integrand, and Peano's kernel representation of the error of a
-single rule, then the Gauss theory with respect to a weight: Jacobi's characterization of the
-degree of exactness, the discrete inner product of a rule and the Gauss remainder. The material is
-[han2009theoretical] §2.4, [kress1998numerical] §9.1--§9.3 and [quarteroni2000numerical] §10.2.
+A quadrature rule with nodes $x_i$ in a compact space $X$ and weights $w_i \in \mathbb{R}$ is the
+bounded linear functional $f \mapsto \sum_i w_i f(x_i)$ on $C(X)$, an approximation of an integral.
+This module computes the norm of a rule, proves the criterion of Szegő and Pólya for the convergence
+of a sequence of rules at every continuous integrand, and proves Peano's kernel representation of
+the error of one rule. It then develops the Gauss theory for a weight $\mu$ on $\mathbb{R}$: Gauss
+quadrature, Jacobi's characterization of the degree of exactness, the discrete inner product of a
+rule, and the remainder of a rule through Hermite interpolation, with the Gauss remainder and the
+Gauss and Gauss–Radau bounds as special cases. The material is from [han2009theoretical], §2.4,
+[kress1998numerical], §9.1–§9.3, [quarteroni2000numerical], §10.2, and [golub2013matrix], §10.2.
 
 ## Main definitions
 
-* `Quadrature.functional w x` is the rule, as an element of the dual of `C(X, ℝ)`.
-* `Quadrature.IsExactOn L w x d` says that the rule reproduces a target functional `L` on the
-  polynomials of degree at most `d`, and `Quadrature.degreeOfExactness` is the largest such `d`.
-* `Quadrature.IsInterpolatory L w x` says that the weights are the values of `L` at the Lagrange
-  basis functions of the nodes.
-* `Quadrature.truncPow m y t` is the truncated power `(y - t)_+^m`, and
-  `Quadrature.peanoKernel a b w z m` is the Peano kernel of the rule with weights `w` at nodes `z`:
-  the error functional applied to `(· - t)_+^m`, divided by `m!`.
-* `Quadrature.IsExactOnMeasure μ w x d` and `Quadrature.IsInterpolatoryMeasure μ w x` are the
-  same two notions at the level of a measure `μ` on `ℝ` and polynomials, the form the Gauss theory
-  is stated in; `Quadrature.discreteInner w x f g` is the discrete inner product `∑ w i f (x i) g
-  (x i)` of a rule.
+* `Quadrature.functional`: the rule $f \mapsto \sum_i w_i f(x_i)$, as an element of the dual of
+  $C(X)$.
+* `Quadrature.IsExactOn`: the rule agrees with a target functional $L$ on the polynomials of degree
+  at most $d$. `Quadrature.degreeOfExactness` is the largest such $d$.
+* `Quadrature.IsInterpolatory`: the weights are the values of $L$ at the Lagrange basis functions of
+  the nodes.
+* `Quadrature.IsExactOnMeasure`, `Quadrature.IsInterpolatoryMeasure`: the same two notions for a
+  measure $\mu$ on $\mathbb{R}$ and real polynomials, the form in which the Gauss theory is stated.
+* `Quadrature.discreteInner`: the discrete inner product $(f, g)_n = \sum_i w_i f(x_i) g(x_i)$ of a
+  rule.
+* `Quadrature.truncPow`: the truncated power $(y - t)_+^m$.
+* `Quadrature.peanoKernel`: the Peano kernel of a rule, which is the error functional applied to
+  $x \mapsto (x - t)_+^m$ and divided by $m!$.
 
 ## Main results
 
-* `Quadrature.norm_functional`: for distinct nodes the norm of the rule is `∑ i, |w i|`. The
-  inequality `≤` is the triangle inequality; `≥` needs a continuous function of norm `1` taking the
-  value `sign (w i)` at each node, which the Tietze extension theorem supplies.
-* `Quadrature.isInterpolatory_iff_isExactOn`: for `n + 1` distinct nodes, being interpolatory and
-  being exact to degree `n` agree, both being the statement that the rule is `L` applied to the
-  interpolant.
-* `Quadrature.tendsto_iff_bddAbove_sum_abs` is the convergence criterion of Szegő and Pólya: rules
-  that are exact on polynomials of a degree tending to infinity converge for *every* continuous
-  integrand exactly when their weights are uniformly absolutely summable. Sufficiency is the density
-  of the polynomials — Weierstrass — together with the ε/3 argument
-  `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`; necessity is the uniform boundedness
-  principle. `Quadrature.tendsto_of_nonneg` is the corollary for nonnegative weights, whose absolute
-  sum is the value of the rule at the constant function `1`.
-* `Quadrature.exists_gauss` is Gauss quadrature: the roots of the `n`-th orthogonal polynomial of a
-  weight carry positive weights making the rule exact on the polynomials of degree less than `2n`,
-  and `Quadrature.not_forall_eq_integral_of_degree_le` says that no `n`-point rule does better. Both
-  are stated about polynomials and a measure rather than through `IsExactOn`, which lives on `C(X,
-  ℝ)` for a compact `X` and would need the weight to be carried by `X`.
-* `Quadrature.isExactOnMeasure_add_iff` is **Jacobi's theorem**: a rule with `n + 1` distinct
-  nodes is exact to degree `n + m` for `μ` exactly when it is interpolatory and its nodal polynomial
-  is `μ`-orthogonal to the polynomials of degree at most `m - 1`;
-  `Quadrature.isExactOnMeasure_two_mul_add_one_iff` is the case `m = n + 1`, characterizing the
-  Gauss nodes as the roots of the orthogonal polynomial, and
-  `Quadrature.not_isExactOnMeasure_two_mul_add_two` the impossibility of degree `2n + 2`.
-  `Quadrature.isExactOnMeasure_iff_isExactOn` bridges to the functional level, and
-  `Quadrature.isExactOnMeasure_map_affine` transports a rule along an affine change of interval.
-  `Quadrature.mem_Icc_of_isExactOnMeasure`: a node carrying a positive weight of a rule exact to
-  high enough degree lies in the interval carrying the weight.
-* `Quadrature.interpolate_eq_sum_discreteInner_smul`: for a rule exact to degree `2n - 1` the
-  interpolant at its `n + 1` nodes is the discrete truncation `∑ (f, p_k)_n / (p_k, p_k)_n · p_k`
-  of the orthogonal expansion — the discrete Chebyshev and Legendre transforms are its instances.
-* `Quadrature.exists_error_eq_of_hermite_of_convex` is the **remainder through Hermite
-  interpolation** `f^{(N+1)}(ξ)/(N+1)! · ∫ ω ∂μ`, for any measure carried by a convex set with
-  finite moments and any rule exact to degree `N` whose nodal polynomial `ω` with multiplicities
-  has constant sign on the carrier: the error is `∫ (f - H) ∂μ` for the Hermite interpolant `H`,
-  and `f - H - c ω` integrates to zero, so `f^{(N+1)}/(N+1)!` cannot stay strictly on one side of
-  `c` on the carrier, and the intermediate value theorem produces `ξ`.
-  `Quadrature.exists_error_eq_of_hermite` is the case of a finite measure on a compact interval,
-  and `Quadrature.gauss_le_integral_le_gaussRadau` the two-sided bound it gives for an integrand
-  with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}` (the right-end twin `gauss_le_integral_le_gaussRadau_right`
-  for `f^{(2k)}, f^{(2k+1)} ≥ 0`).
-* `Quadrature.exists_gauss_error_eq_of_convex` is the **Gauss remainder**
-  `f^{(2n)}(ξ)/(2n)! · ∫ p_n² ∂μ`, for a weight carried by any convex set and with no bound asked
-  of `f^{(2n)}`: the case of double nodes, whose nodal polynomial is `p_n²`.
-  `Quadrature.exists_gauss_error_eq` is the special case of a weight carried by a compact interval,
-  where the integrability of the integrand is automatic; the Laguerre weight on `(0, ∞)` and the
-  Hermite weight on `ℝ` need the general form.
-* `Quadrature.error_eq_integral_peanoKernel` is **Peano's kernel theorem**: a rule exact on the
-  polynomials of degree at most `m` has, at an integrand of class `C^{m+1}`, the error
-  `∫_a^b K(t) f^{(m+1)}(t) dt` with `K` the Peano kernel; and
-  `Quadrature.abs_error_le_integral_abs_peanoKernel` is the bound it is used for.  Unlike the rest
-  of this file the statement is not about an arbitrary target functional: the interchange it rests
-  on needs the target to be the integral itself, so it is stated for `f ↦ ∫ t in a..b, f t` and for
-  a rule given by plain real nodes and weights.
+* `Quadrature.norm_functional`: for distinct nodes, the norm of the rule is $\sum_i |w_i|$.
+* `Quadrature.isInterpolatory_iff_isExactOn`: a rule with $n + 1$ distinct nodes is interpolatory if
+  and only if it is exact to degree $n$.
+* `Quadrature.tendsto_iff_bddAbove_sum_abs`: the **Szegő–Pólya criterion**: rules that are exact to
+  degrees tending to infinity converge at every continuous integrand if and only if the sums
+  $\sum_i |w_i|$ are bounded. `Quadrature.tendsto_of_nonneg` is the corollary for nonnegative
+  weights.
+* `Quadrature.exists_gauss`: **Gauss quadrature**: the $n$ roots of the $n$-th orthogonal polynomial
+  of a weight carry positive weights for which the rule is exact on the polynomials of degree less
+  than $2n$. By `Quadrature.not_forall_eq_integral_of_degree_le`, no $n$-point rule is exact to
+  degree $2n$.
+* `Quadrature.isExactOnMeasure_add_iff`: **Jacobi's theorem**: a rule with $n + 1$ distinct nodes is
+  exact to degree $n + m$ if and only if it is interpolatory and its nodal polynomial is orthogonal
+  to the polynomials of degree at most $m - 1$. `Quadrature.isExactOnMeasure_two_mul_add_one_iff` is
+  the case $m = n + 1$, which characterizes the Gauss nodes as the roots of the orthogonal
+  polynomial, and `Quadrature.not_isExactOnMeasure_two_mul_add_two` excludes the degree $2n + 2$.
+* `Quadrature.isExactOnMeasure_iff_isExactOn`: for a measure carried by $[a, b]$, exactness for the
+  measure is exactness for the integral functional on $C([a, b])$.
+* `Quadrature.isExactOnMeasure_map_affine`, `Quadrature.isExactOnMeasure_volume_Icc_of_affine`: an
+  affine change of the interval preserves exactness.
+* `Quadrature.tendsto_of_isExactOnMeasure`: for a finite measure carried by $[a, b]$, rules with
+  nonnegative weights and degrees of exactness tending to infinity converge at every continuous
+  integrand.
+* `Quadrature.mem_Icc_of_isExactOnMeasure`: a node with positive weight of a rule exact to a high
+  enough degree lies in the interval that carries the measure.
+* `Quadrature.interpolate_eq_sum_discreteInner_smul`: for a rule with $n + 1$ nodes exact to degree
+  $2n - 1$, the interpolant at the nodes is the discrete truncation $\sum_{k \le n} \frac{(f,
+  p_k)_n}{(p_k, p_k)_n}\, p_k$ of the orthogonal expansion. The discrete Chebyshev and Legendre
+  transforms are instances.
+* `Quadrature.exists_error_eq_of_hermite_of_convex`: the **remainder through Hermite
+  interpolation**, $\int f\,d\mu - \sum_i w_i f(x_i) = \frac{f^{(N+1)}(\xi)}{(N+1)!} \int
+  \omega\,d\mu$, when the nodal polynomial $\omega$ with multiplicities has constant sign.
+  `Quadrature.exists_error_eq_of_hermite` is the case of a finite measure on a compact interval.
+* `Quadrature.exists_gauss_error_eq_of_convex`, `Quadrature.exists_gauss_error_eq`: the **Gauss
+  remainder** $\frac{f^{(2n)}(\xi)}{(2n)!} \int p_n^2\,d\mu$.
+* `Quadrature.gauss_le_integral_le_gaussRadau`, `Quadrature.gauss_le_integral_le_gaussRadau_right`:
+  a Gauss rule and a Gauss–Radau rule bound the integral from below and from above when $f^{(2k)}$
+  and $f^{(2k+1)}$ have suitable signs.
+* `Quadrature.error_eq_integral_peanoKernel`: **Peano's kernel theorem**: a rule exact to degree $m$
+  has the error $\int_a^b K(t)\, f^{(m+1)}(t)\,dt$ with the Peano kernel $K$.
+  `Quadrature.abs_error_le_integral_abs_peanoKernel` is the resulting error bound.
 
-  The proof needs no Fubini step.  `Quadrature.eq_taylorSum_add_integral` is Taylor's formula with
-  the integral remainder in the derivative-family form used here, and
-  `Quadrature.integral_eq_taylorSum_add_integral` is the same telescoping identity with the kernel
-  `(b - t)^{m+1}/(m+1)!`, which is exactly the integral over the panel of the pointwise remainder;
-  applying the first at each node and the second over the panel puts both halves of the error on
-  one interval.
+## Proof outline
+
+For the norm of a rule, the inequality $\le$ is the triangle inequality, and for $\ge$ the Tietze
+extension theorem gives a continuous function of norm $1$ with the value $\operatorname{sign} w_i$
+at each node. In the Szegő–Pólya criterion, sufficiency is the density of the polynomials
+(Weierstrass' theorem) together with the $\varepsilon/3$ argument
+`ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`, and necessity is the uniform
+boundedness principle. For the Hermite remainder, the error is $\int (f - H)\,d\mu$ for the Hermite
+interpolant $H$, and $f - H - c\omega$ has integral $0$ for a suitable $c$. So $f^{(N+1)}/(N+1)!$
+cannot stay strictly on one side of $c$ on the carrier, and the intermediate value theorem gives
+$\xi$. The Gauss remainder is the case of double nodes, whose nodal polynomial is $p_n^2$.
+
+Peano's theorem needs no Fubini step. `Quadrature.eq_taylorSum_add_integral` is Taylor's formula
+with the integral remainder, and `Quadrature.integral_eq_taylorSum_add_integral` is the same
+telescoping identity with the kernel $(b - t)^{m+1}/(m+1)!$, which is the integral over $[a, b]$ of
+the pointwise remainder. The first is applied at each node and the second over $[a, b]$, so that
+both parts of the error are integrals over the same interval.
+
+## Implementation notes
+
+* Exactness has two forms. `Quadrature.IsExactOn` is stated for a target functional on `C(X, ℝ)`
+  with $X \subseteq \mathbb{R}$ compact. The Gauss theory uses `Quadrature.IsExactOnMeasure`, stated
+  for a measure on $\mathbb{R}$ and polynomials, so that it covers weights of unbounded support,
+  such as the Laguerre weight on $(0, \infty)$ and the Hermite weight on $\mathbb{R}$.
+  `Quadrature.isExactOnMeasure_iff_isExactOn` connects the two forms.
+* `Quadrature.exists_gauss` and `Quadrature.not_forall_eq_integral_of_degree_le` are stated for
+  polynomials and a measure, not through `Quadrature.IsExactOn`, which would need the weight to be
+  carried by a compact set.
+* Peano's theorem is stated for the target functional $f \mapsto \int_a^b f$ and a rule given by
+  real nodes and weights, because the interchange in its proof needs the target to be the integral
+  itself. The integrand and its derivatives are a sequence of functions `F : ℕ → ℝ → ℝ`, where
+  `F (k + 1)` is the derivative of `F k`.
+* $p_n$ is the monic orthogonal polynomial `OrthogonalPolynomial.family μ n`, and $\int p_n^2\,d\mu$
+  is `OrthogonalPolynomial.normSq μ n`. A weight is a measure in the sense of
+  `OrthogonalPolynomial.IsWeight`: all its moments are finite and it is not carried by a finite set.
+* Nodes and weights are indexed by `Fin n`, so the indices start at $0$.
 -/
 
 open Filter Topology
@@ -116,14 +136,15 @@ section Definition
 
 variable {X : Type*} [TopologicalSpace X]
 
-/-- **A quadrature rule.** The bounded linear functional `f ↦ ∑ i, w i * f (x i)` on `C(X, ℝ)` with
-nodes `x` and weights `w`, the elementary approximation to an integral.
-
-Reference: [han2009theoretical], (2.4.3). -/
+/-- A **quadrature rule** on a topological space $X$ with nodes $x_i \in X$ and weights
+$w_i \in \mathbb{R}$, $i = 0, \dots, n - 1$: the bounded linear functional
+$$f \mapsto \sum_i w_i\, f(x_i)$$
+on $C(X)$, the elementary approximation of an integral. This is (2.4.3) of [han2009theoretical]. -/
 noncomputable def functional {n : ℕ} (w : Fin n → ℝ) (x : Fin n → X) : C(X, ℝ) →L[ℝ] ℝ :=
   ∑ i, w i • ContinuousMap.evalCLM ℝ (x i)
 
-/-- The value of a quadrature rule at an integrand. -/
+/-- The quadrature rule with weights $w_i$ and nodes $x_i$ takes the value $\sum_i w_i\, f(x_i)$ at
+$f$. -/
 @[simp]
 theorem functional_apply {n : ℕ} (w : Fin n → ℝ) (x : Fin n → X) (f : C(X, ℝ)) :
     functional w x f = ∑ i, w i * f (x i) := by
@@ -135,10 +156,15 @@ section Norm
 
 variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [T2Space X]
 
-/-- **The norm of a quadrature rule is the absolute sum of its weights.** The nodes must be
-distinct: otherwise the rule with weights `1` and `-1` at one repeated node is the zero functional.
+/-- Let $X$ be a compact Hausdorff space, let $x_0, \dots, x_{n-1} \in X$ be distinct nodes, and let
+$w_0, \dots, w_{n-1} \in \mathbb{R}$. Then the quadrature rule $f \mapsto \sum_i w_i f(x_i)$ has
+the norm $\sum_i |w_i|$ in the dual of $C(X)$. This is (2.4.4) and Exercise 2.4.2 of
+[han2009theoretical].
 
-Reference: [han2009theoretical], (2.4.4) and Exercise 2.4.2. -/
+The nodes must be distinct: the rule with the weights $1$ and $-1$ at one repeated node is the
+zero functional. The inequality $\le$ is the triangle inequality. For $\ge$, the Tietze
+extension theorem gives a continuous function of norm $1$ with the value
+$\operatorname{sign} w_i$ at each node $x_i$. -/
 theorem norm_functional {n : ℕ} (w : Fin n → ℝ) {x : Fin n → X} (hx : Function.Injective x) :
     ‖functional w x‖ = ∑ i, |w i| := by
   have hnn : (0 : ℝ) ≤ ∑ i, |w i| := by positivity
@@ -177,12 +203,13 @@ section Exactness
 
 variable {X : Set ℝ} [CompactSpace X] {n : ℕ}
 
-/-- The constant function `1` is a polynomial of every degree. -/
+/-- The constant function $1$ on $X$ is a polynomial of degree at most $d$, for every $d$. -/
 private theorem one_mem_polyLE (X : Set ℝ) (d : ℕ) : (1 : C(X, ℝ)) ∈ polyLE X d :=
   mem_polyLE_iff.mpr
     ⟨1, Polynomial.degree_one_le.trans (by exact_mod_cast Nat.zero_le d), fun t => by simp⟩
 
-/-- Lagrange interpolation at `n + 1` distinct nodes fixes the polynomials of degree at most `n`. -/
+/-- Lagrange interpolation at $n + 1$ distinct nodes fixes every polynomial of degree at most $n$.
+-/
 private theorem interpolateCLM_of_mem_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x)
     {p : C(X, ℝ)} (hp : p ∈ polyLE X n) : Lagrange.interpolateCLM x p = p := by
   obtain ⟨q, hq⟩ := (Lagrange.range_interpolateCLM hx).ge hp
@@ -190,42 +217,52 @@ private theorem interpolateCLM_of_mem_polyLE {x : Fin (n + 1) → X} (hx : Funct
   rw [← hq]
   simpa using ContinuousLinearMap.ext_iff.mp (Lagrange.isIdempotentElem_interpolateCLM hx) q
 
-/-- A rule is **exact to degree `d`** for a target functional `L` when it reproduces `L` on every
-polynomial of degree at most `d`. The *degree of exactness* of a rule is the largest such `d`. -/
+/-- Let $X \subseteq \mathbb{R}$ and let $L$ be a bounded linear functional on $C(X)$. A quadrature
+rule with weights $w_i$ and nodes $x_i \in X$ is **exact to degree $d$** for $L$ if
+$$\sum_i w_i\, p(x_i) = L(p)$$
+for every polynomial $p$ of degree at most $d$, restricted to $X$.
+
+The polynomials of degree at most $d$ on $X$ are `polyLE X d`. -/
 def IsExactOn (L : C(X, ℝ) →L[ℝ] ℝ) {m : ℕ} (w : Fin m → ℝ) (x : Fin m → X) (d : ℕ) : Prop :=
   ∀ p ∈ polyLE X d, functional w x p = L p
 
 omit [CompactSpace X] in
-/-- Exactness to a degree implies exactness to every smaller degree. -/
+/-- A rule that is exact to degree $d$ for $L$ is exact to every degree $e \le d$ for $L$. -/
 theorem IsExactOn.mono {L : C(X, ℝ) →L[ℝ] ℝ} {m : ℕ} {w : Fin m → ℝ} {x : Fin m → X} {d e : ℕ}
     (h : IsExactOn L w x d) (hed : e ≤ d) : IsExactOn L w x e := fun p hp => by
   obtain ⟨P, hP, hPval⟩ := mem_polyLE_iff.mp hp
   exact h p (mem_polyLE_iff.mpr ⟨P, hP.trans (by exact_mod_cast hed), hPval⟩)
 
-/-- The **degree of exactness** of a quadrature rule: the largest degree up to which it reproduces
-the target functional. The value is junk when the rule is exact to every degree, as it is when the
-target functional is the rule itself. -/
+/-- The **degree of exactness** of a quadrature rule for a target functional $L$: the largest $d$
+such that the rule is exact to degree $d$ for $L$.
+
+The value is $0$ when the set of these degrees is unbounded, as it is when $L$ is the rule
+itself, and also when the set is empty. -/
 noncomputable def degreeOfExactness (L : C(X, ℝ) →L[ℝ] ℝ) {m : ℕ} (w : Fin m → ℝ)
     (x : Fin m → X) : ℕ :=
   sSup {d | IsExactOn L w x d}
 
 omit [CompactSpace X] in
-/-- Every degree of exactness is at most the degree of exactness, provided the latter is not the
-junk value of an unbounded set. -/
+/-- If a rule is exact to degree $d$ for $L$, and the set of degrees to which it is exact is
+bounded, then $d$ is at most the degree of exactness of the rule. -/
 theorem IsExactOn.le_degreeOfExactness {L : C(X, ℝ) →L[ℝ] ℝ} {m : ℕ} {w : Fin m → ℝ}
     {x : Fin m → X} {d : ℕ} (h : IsExactOn L w x d) (hbdd : BddAbove {e | IsExactOn L w x e}) :
     d ≤ degreeOfExactness L w x :=
   le_csSup hbdd h
 
-/-- **An interpolatory rule.** Its weights are the values of the target functional at the Lagrange
-basis functions of its nodes, so that the rule is `L` applied to the interpolant.
+/-- Let $X \subseteq \mathbb{R}$ and let $L$ be a bounded linear functional on $C(X)$. A quadrature
+rule with nodes $x_0, \dots, x_n \in X$ is **interpolatory** for $L$ if its weights are
+$$w_i = L(\ell_i), \quad i = 0, \dots, n,$$
+where $\ell_i$ is the $i$-th Lagrange basis polynomial of the nodes. The rule is then $L$
+applied to the Lagrange interpolant. See [kress1998numerical], §9.1.
 
-Reference: [kress1998numerical], §9.1. -/
+The basis function $\ell_i$ on $X$ is `Lagrange.basisCM x i`. -/
 def IsInterpolatory (L : C(X, ℝ) →L[ℝ] ℝ) (w : Fin (n + 1) → ℝ) (x : Fin (n + 1) → X) : Prop :=
   ∀ i, w i = L (Lagrange.basisCM x i)
 
-/-- Exactness on the polynomials of degree at most `n` says exactly that the rule is the target
-functional applied to the Lagrange interpolant at its nodes. -/
+/-- Let $X \subseteq \mathbb{R}$ be compact and let $x_0, \dots, x_n \in X$ be distinct. A rule with
+these nodes is exact to degree $n$ for $L$ if and only if the rule equals $L \circ I_n$, where
+$I_n$ is Lagrange interpolation at the nodes. -/
 theorem isExactOn_iff_functional_eq {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n + 1) → ℝ}
     {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     IsExactOn L w x n ↔ functional w x = L.comp (Lagrange.interpolateCLM x) := by
@@ -240,10 +277,9 @@ theorem isExactOn_iff_functional_eq {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n + 
   · intro h p hp
     rw [h, ContinuousLinearMap.comp_apply, interpolateCLM_of_mem_polyLE hx hp]
 
-/-- **An `n + 1`-point rule at distinct nodes is interpolatory exactly when it is exact on the
-polynomials of degree at most `n`.**
-
-Reference: [kress1998numerical], §9.1. -/
+/-- Let $X \subseteq \mathbb{R}$ be compact and let $x_0, \dots, x_n \in X$ be distinct. A rule with
+these nodes is interpolatory for $L$ if and only if it is exact to degree $n$ for $L$. See
+[kress1998numerical], §9.1. -/
 theorem isInterpolatory_iff_isExactOn {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n + 1) → ℝ}
     {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     IsInterpolatory L w x ↔ IsExactOn L w x n := by
@@ -284,10 +320,13 @@ theorem isInterpolatory_iff_isExactOn {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n 
     exact this
 
 open Set intervalIntegral in
-/-- **Degree of exactness, read in the backbone.** A formula `∑ᵢ αᵢ f(xᵢ)` with nodes in `[a, b]`
-has degree of exactness at least `d` — `I_n(p) = I(p)` for every `p ∈ ℙ_d` — exactly when it is
-`Quadrature.IsExactOn` for the integral functional `ContinuousMap.integralIccCLM hab b` on
-`C([a, b], ℝ)`. -/
+/-- Let $a \le b$, let $x_0, \dots, x_{m-1} \in [a, b]$, and let
+$\alpha_0, \dots, \alpha_{m-1} \in \mathbb{R}$. The formula $\sum_i \alpha_i f(x_i)$ has degree
+of exactness at least $d$, that is,
+$$\sum_i \alpha_i\, p(x_i) = \int_a^b p(t)\,dt$$
+for every real polynomial $p$ of degree at most $d$, if and only if it is exact to degree $d$ in
+the sense of `Quadrature.IsExactOn` for the integral functional
+`ContinuousMap.integralIccCLM hab b` on $C([a, b])$. -/
 theorem isExactOn_integralIccCLM_iff {a b : ℝ} (hab : a ≤ b) {m : ℕ} {x : Fin m → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) (α : Fin m → ℝ) (d : ℕ) :
     Quadrature.IsExactOn (ContinuousMap.integralIccCLM hab b) α
@@ -322,7 +361,7 @@ section Convergence
 
 variable {a b : ℝ}
 
-/-- Weierstrass' theorem: the polynomial functions are dense in `C([a, b], ℝ)`. -/
+/-- **Weierstrass' theorem**: the polynomial functions are dense in $C([a, b])$. -/
 private theorem dense_polynomialFunctions (a b : ℝ) :
     Dense ((polynomialFunctions (Set.Icc a b) : Subalgebra ℝ C(Set.Icc a b, ℝ)) :
       Set C(Set.Icc a b, ℝ)) := by
@@ -330,16 +369,16 @@ private theorem dense_polynomialFunctions (a b : ℝ) :
   rw [SetLike.ext'_iff, Subalgebra.topologicalClosure_coe, Algebra.coe_top] at h
   exact dense_iff_closure_eq.2 h
 
-/-- **The Szegő–Pólya convergence criterion for quadrature rules.** A sequence of rules at distinct
-nodes of `[a, b]`, exact for a bounded functional `L` on the polynomials of degree at most `d k`
-with `d k → ∞`, converges to `L` at every continuous integrand if and only if the absolute sums of
-its weights are bounded.
+/-- The **Szegő–Pólya convergence criterion**. Let $L$ be a bounded linear functional on
+$C([a, b])$. For each $k$, let a rule with distinct nodes $x_{k,i} \in [a, b]$ and weights
+$w_{k,i}$ be exact to degree $d_k$ for $L$, where $d_k \to \infty$. Then
+$$\sum_i w_{k,i}\, v(x_{k,i}) \to L(v) \quad \text{for every } v \in C([a, b])$$
+if and only if there is a constant $C$ with $\sum_i |w_{k,i}| \le C$ for every $k$. See
+[han2009theoretical], §2.4.4, and Theorem 9.10 of [kress1998numerical].
 
-Sufficiency is Weierstrass' theorem — on a polynomial the rules are eventually equal to `L` —
-together with the ε/3 argument for a uniformly bounded family. Necessity is the uniform boundedness
-principle applied to the rules, whose norms are the absolute sums of their weights.
-
-Reference: [han2009theoretical], §2.4.4; [kress1998numerical], Theorem 9.10. -/
+Sufficiency is Weierstrass' theorem, because on a polynomial the rules are eventually equal to
+$L$, together with the $\varepsilon/3$ argument for a uniformly bounded family. Necessity is the
+uniform boundedness principle applied to the rules, whose norms are the sums $\sum_i |w_{k,i}|$. -/
 theorem tendsto_iff_bddAbove_sum_abs {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
     {x : ∀ k, Fin (m k) → Set.Icc a b} (hx : ∀ k, Function.Injective (x k))
     {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ} (hd : Tendsto d atTop atTop)
@@ -361,11 +400,15 @@ theorem tendsto_iff_bddAbove_sum_abs {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) �
     refine (hexact k _ ⟨P, Polynomial.mem_degreeLE.mpr ?_, rfl⟩).symm
     exact P.degree_le_natDegree.trans (by exact_mod_cast hk)
 
-/-- **Rules with nonnegative weights converge.** Under the exactness hypothesis of
-`Quadrature.tendsto_iff_bddAbove_sum_abs`, nonnegative weights are automatically bounded in absolute
-sum, because that sum is the value of the rule at the constant function `1`, hence `L 1`.
+/-- **Rules with nonnegative weights converge.** Let $L$ be a bounded linear functional on
+$C([a, b])$. For each $k$, let a rule with distinct nodes $x_{k,i} \in [a, b]$ and weights
+$w_{k,i} \ge 0$ be exact to degree $d_k$ for $L$, where $d_k \to \infty$. Then
+$\sum_i w_{k,i}\, v(x_{k,i}) \to L(v)$ for every $v \in C([a, b])$. This is Exercise 2.4.3 of
+[han2009theoretical].
 
-Reference: [han2009theoretical], Exercise 2.4.3. -/
+The sums $\sum_i |w_{k,i}|$ are bounded, because they are the values of the rules at the
+constant function $1$, which equal $L(1)$ by exactness. So
+`Quadrature.tendsto_iff_bddAbove_sum_abs` applies. -/
 theorem tendsto_of_nonneg {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
     {x : ∀ k, Fin (m k) → Set.Icc a b} (hx : ∀ k, Function.Injective (x k))
     {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ} (hd : Tendsto d atTop atTop)
@@ -388,23 +431,22 @@ open OrthogonalPolynomial Polynomial MeasureTheory
 
 variable {μ : Measure ℝ}
 
-/-- **Gauss quadrature.** For a weight `μ` and every `n`, the `n` roots of the `n`-th orthogonal
-polynomial of `μ` carry positive weights making the rule exact on every polynomial of degree less
-than `2n` — twice as far as the `n` degrees of freedom of the nodes alone would give.
+/-- **Gauss quadrature.** Let $\mu$ be a weight on $\mathbb{R}$ and let $n \in \mathbb{N}$. There
+are distinct nodes $x_0, \dots, x_{n-1}$ and positive weights $w_0, \dots, w_{n-1}$ such that
+$$\sum_i w_i\, p(x_i) = \int p\,d\mu$$
+for every real polynomial $p$ of degree less than $2n$. This is twice the degree that an
+interpolatory rule at $n$ arbitrary nodes reaches. See [kress1998numerical], §9.3, and
+[han2009theoretical], §3.5.
 
-The nodes are the roots of `OrthogonalPolynomial.family μ n`, which are `n` and distinct
-(`OrthogonalPolynomial.exists_injective_family_eq_prod`), and the weights are the integrals of the
-Lagrange basis functions of those nodes, so the rule is interpolatory and hence exact to degree `n -
-1` by construction. Exactness to degree `2n - 1` is division with remainder by the orthogonal
-polynomial: the quotient has degree less than `n`, so its integral against the orthogonal polynomial
-vanishes, while the nodes annihilate that term in the sum. Positivity of the weights is exactness
-applied to the square of a Lagrange basis function.
-
-`Quadrature.not_forall_eq_integral_of_degree_le` is the converse: no `n`-point rule at all is exact
-to degree `2n`.
-
-Reference: [kress1998numerical], §9.3; [han2009theoretical], §3.5.
--/
+The nodes are the $n$ distinct roots of the orthogonal polynomial
+`OrthogonalPolynomial.family μ n` (`OrthogonalPolynomial.exists_injective_family_eq_prod`), and
+the weights are the integrals of the Lagrange basis polynomials of the nodes. So the rule is
+interpolatory, and it is exact to degree $n - 1$ by construction. Exactness to degree $2n - 1$
+follows by division with remainder by the orthogonal polynomial: the quotient has degree less
+than $n$, so its product with the orthogonal polynomial has integral $0$, and this product
+vanishes at the nodes. The weights are positive by exactness at the square of a Lagrange basis
+polynomial. `Quadrature.not_forall_eq_integral_of_degree_le` is the converse: no $n$-point rule
+is exact to degree $2n$. -/
 theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
@@ -495,11 +537,12 @@ theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
   rw [h1]
   exact hw.integral_eval_pos (pow_ne_zero 2 hne) fun t => by rw [eval_pow]; positivity
 
-/-- **No `n`-point rule is exact to degree `2n`**: the square of the nodal polynomial is a
-polynomial of degree `2n` that the rule evaluates to zero and the weight integrates to something
-positive. Gauss quadrature is therefore optimal.
+/-- Let $\mu$ be a weight on $\mathbb{R}$. No rule with $n$ nodes $x_i$ and weights $w_i$ satisfies
+$\sum_i w_i\, p(x_i) = \int p\,d\mu$ for every real polynomial $p$ of degree at most $2n$. So
+Gauss quadrature is optimal. See [kress1998numerical], §9.3.
 
-Reference: [kress1998numerical], §9.3. -/
+The square of the nodal polynomial $\prod_i (X - x_i)$ has degree $2n$. The rule gives it the
+value $0$, but its integral against the weight is positive. -/
 theorem not_forall_eq_integral_of_degree_le (hw : IsWeight μ) {n : ℕ} (x w : Fin n → ℝ) :
     ¬ ∀ p : ℝ[X], p.degree ≤ ((2 * n : ℕ) : WithBot ℕ) →
       ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by
@@ -538,20 +581,24 @@ open OrthogonalPolynomial Polynomial MeasureTheory
 
 variable {μ : Measure ℝ} {n : ℕ}
 
-/-- A rule with weights `w` at nodes `x` is **exact to degree `d` for the weight `μ`** when it
-integrates every polynomial of degree at most `d` exactly against `μ`. This is the polynomial-level
-degree of exactness of [quarteroni2000numerical] §10.2, stated for a measure on `ℝ` rather than
-for a functional on `C(X, ℝ)` as `Quadrature.IsExactOn` is, so that it can host a weight of
-unbounded support (the Laguerre and Hermite weights). -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$. A rule with weights $w_i$ and nodes $x_i \in \mathbb{R}$
+is **exact to degree $d$ for $\mu$** if
+$$\sum_i w_i\, p(x_i) = \int p\,d\mu$$
+for every real polynomial $p$ of degree at most $d$. This is the degree of exactness of
+[quarteroni2000numerical], §10.2.
+
+Unlike `Quadrature.IsExactOn`, which is stated for a functional on `C(X, ℝ)`, this definition is
+stated for a measure on $\mathbb{R}$, so that it covers weights of unbounded support, such as
+the Laguerre and Hermite weights. -/
 def IsExactOnMeasure (μ : Measure ℝ) {n : ℕ} (w x : Fin n → ℝ) (d : ℕ) : Prop :=
   ∀ p : ℝ[X], p.degree ≤ d → ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ
 
-/-- Exactness to a degree implies exactness to every smaller degree. -/
+/-- A rule that is exact to degree $d$ for $\mu$ is exact to every degree $e \le d$ for $\mu$. -/
 theorem IsExactOnMeasure.mono {w x : Fin n → ℝ} {d e : ℕ} (h : IsExactOnMeasure μ w x d)
     (hed : e ≤ d) : IsExactOnMeasure μ w x e := fun p hp =>
   h p (hp.trans (by exact_mod_cast hed))
 
-/-- `degree < d + 1` is `degree ≤ d`, for the degree of a polynomial. -/
+/-- For a polynomial $p$, $\deg p < d + 1$ if and only if $\deg p \le d$. -/
 private theorem degree_lt_succ_iff {p : ℝ[X]} {d : ℕ} :
     p.degree < ((d + 1 : ℕ) : WithBot ℕ) ↔ p.degree ≤ d := by
   rcases eq_or_ne p 0 with rfl | hp
@@ -559,22 +606,25 @@ private theorem degree_lt_succ_iff {p : ℝ[X]} {d : ℕ} :
   · rw [degree_eq_natDegree hp]
     exact_mod_cast Nat.lt_succ_iff
 
-/-- Exactness to degree `d` in the strict form `degree < d + 1` used by `Quadrature.exists_gauss`.
--/
+/-- A rule is exact to degree $d$ for $\mu$ if and only if $\sum_i w_i\, p(x_i) = \int p\,d\mu$ for
+every real polynomial $p$ with $\deg p < d + 1$. This is the strict form of the degree condition
+that `Quadrature.exists_gauss` uses. -/
 theorem isExactOnMeasure_iff_forall_degree_lt {w x : Fin n → ℝ} {d : ℕ} :
     IsExactOnMeasure μ w x d ↔ ∀ p : ℝ[X], p.degree < ((d + 1 : ℕ) : WithBot ℕ) →
       ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ :=
   forall_congr' fun _ => imp_congr_left degree_lt_succ_iff.symm
 
-/-- A rule with `n + 1` nodes is **interpolatory for the weight `μ`** when its weights are the
-integrals of the Lagrange basis polynomials of its nodes, so that the rule is the integral of the
-Lagrange interpolant. This is [quarteroni2000numerical] (10.14), the measure-level twin of
-`Quadrature.IsInterpolatory`. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$. A rule with nodes $x_0, \dots, x_n$ is **interpolatory
+for $\mu$** if its weights are
+$$w_i = \int \ell_i\,d\mu, \quad i = 0, \dots, n,$$
+where $\ell_i$ is the $i$-th Lagrange basis polynomial of the nodes. The rule is then the
+integral of the Lagrange interpolant. This is (10.14) of [quarteroni2000numerical], and it is
+the measure version of `Quadrature.IsInterpolatory`. -/
 def IsInterpolatoryMeasure (μ : Measure ℝ) (w x : Fin (n + 1) → ℝ) : Prop :=
   ∀ i, w i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ
 
-/-- The value of a rule at a Lagrange basis polynomial of its own nodes is the corresponding
-weight. -/
+/-- For distinct nodes $x_0, \dots, x_n$, the rule with weights $w_j$ takes the value $w_i$ at the
+$i$-th Lagrange basis polynomial of the nodes. -/
 private theorem sum_mul_eval_basis {w x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (i : Fin (n + 1)) : ∑ j, w j * (Lagrange.basis Finset.univ x i).eval (x j) = w i := by
   rw [Finset.sum_eq_single i]
@@ -584,11 +634,12 @@ private theorem sum_mul_eval_basis {w x : Fin (n + 1) → ℝ} (hx : Function.In
   · intro h
     exact absurd (Finset.mem_univ i) h
 
-/-- **An `n + 1`-point rule at distinct nodes is interpolatory for `μ` exactly when it is exact to
-degree `n` for `μ`.** Exactness applied to a Lagrange basis polynomial reads off the weight; and
-conversely every polynomial of degree at most `n` is its own Lagrange interpolant.
+/-- Let $\mu$ be a weight on $\mathbb{R}$ and let $x_0, \dots, x_n$ be distinct. A rule with these
+nodes is interpolatory for $\mu$ if and only if it is exact to degree $n$ for $\mu$. See
+[quarteroni2000numerical], §10.2, (10.14), and [kress1998numerical], §9.1.
 
-Reference: [quarteroni2000numerical] §10.2, (10.14); [kress1998numerical] §9.1. -/
+Exactness at a Lagrange basis polynomial gives the weight. Conversely, every polynomial of
+degree at most $n$ is its own Lagrange interpolant. -/
 theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) : IsInterpolatoryMeasure μ w x ↔ IsExactOnMeasure μ w x n := by
   have hcard : (Finset.univ : Finset (Fin (n + 1))).card = n + 1 := by simp
@@ -613,8 +664,8 @@ theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fi
       simp
     rw [← h _ hdeg, sum_mul_eval_basis hx]
 
-/-- Division with remainder by the nodal polynomial of `n + 1` nodes: a polynomial of degree at
-most `n + m` is `ω q + r` with `q` of degree at most `m - 1` and `r` of degree at most `n`. -/
+/-- Let $\omega$ be the nodal polynomial of $n + 1$ nodes and let $m \ge 1$. Every polynomial of
+degree at most $n + m$ is $\omega q + r$ with $\deg q \le m - 1$ and $\deg r \le n$. -/
 private theorem exists_nodal_mul_add {x : Fin (n + 1) → ℝ} {m : ℕ} (hm : 1 ≤ m) {p : ℝ[X]}
     (hp : p.degree ≤ ((n + m : ℕ) : WithBot ℕ)) :
     ∃ q r : ℝ[X], p = Lagrange.nodal Finset.univ x * q + r ∧
@@ -633,17 +684,22 @@ private theorem exists_nodal_mul_add {x : Fin (n + 1) → ℝ} {m : ℕ} (hm : 1
     rw [degree_eq_natDegree hmonic.ne_zero, hnat] at h
     exact degree_lt_succ_iff.mp h
 
-/-- **Jacobi's theorem.** For `m ≥ 1`, a rule with `n + 1` distinct nodes is exact to degree
-`n + m` for the weight `μ` if and only if it is interpolatory and its nodal polynomial
-`ω = ∏ (X - x i)` is `μ`-orthogonal to every polynomial of degree at most `m - 1`.
+/-- **Jacobi's theorem.** Let $\mu$ be a weight on $\mathbb{R}$, let $m \ge 1$, and let
+$x_0, \dots, x_n$ be distinct. A rule with these nodes and weights $w_i$ is exact to degree
+$n + m$ for $\mu$ if and only if it is interpolatory for $\mu$ and the nodal polynomial
+$\omega = \prod_i (X - x_i)$ satisfies
+$$\int \omega\, p\,d\mu = 0$$
+for every real polynomial $p$ of degree at most $m - 1$. This is Theorem 10.1 of
+[quarteroni2000numerical].
 
-Sufficiency: divide `f ∈ P_{n+m}` by the monic `ω`, `f = ω q + r` with `deg q ≤ m - 1` and
-`deg r ≤ n`; the rule kills `ω q`, which vanishes at the nodes, the integral kills it by the
-orthogonality, and on `r` an interpolatory rule is exact. Necessity: exactness to degree `n + m ≥
-n` makes the rule interpolatory, and for `p ∈ P_{m-1}` the polynomial `ω p ∈ P_{n+m}` vanishes at
-the nodes, so its integral is the value of the rule at it, namely `0`.
+For sufficiency, divide $f \in \mathbb{P}_{n+m}$ by the monic polynomial $\omega$:
+$f = \omega q + r$ with $\deg q \le m - 1$ and $\deg r \le n$. The rule gives $\omega q$ the
+value $0$ because $\omega q$ vanishes at the nodes, the integral of $\omega q$ is $0$ by the
+orthogonality, and an interpolatory rule is exact on $r$. For necessity, exactness to degree
+$n + m \ge n$ makes the rule interpolatory, and for $p \in \mathbb{P}_{m-1}$ the polynomial
+$\omega p \in \mathbb{P}_{n+m}$ vanishes at the nodes, so its integral is $0$.
 
-Reference: [quarteroni2000numerical] Theorem 10.1. -/
+The nodal polynomial is `Lagrange.nodal Finset.univ x`. -/
 theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
     {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ w x (n + m) ↔
@@ -683,25 +739,26 @@ theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
       integral_add (hw.integrable_eval_mul _ _) (hw.integrable_eval r), horth q hq, zero_add]
     exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mp hint r hr
 
-/-- **No rule with `n + 1` nodes is exact to degree `2n + 2`**; the Gauss rule's degree `2n + 1`
-is the maximum. This is `Quadrature.not_forall_eq_integral_of_degree_le` restated.
-
-Reference: [quarteroni2000numerical] Corollary 10.1. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$. No rule with $n + 1$ nodes is exact to degree $2n + 2$
+for $\mu$, so the degree $2n + 1$ of the Gauss rule is the maximum. This is Corollary 10.1 of
+[quarteroni2000numerical], and a restatement of
+`Quadrature.not_forall_eq_integral_of_degree_le`. -/
 theorem not_isExactOnMeasure_two_mul_add_two (hw : IsWeight μ) (w x : Fin (n + 1) → ℝ) :
     ¬ IsExactOnMeasure μ w x (2 * n + 2) := fun h =>
   not_forall_eq_integral_of_degree_le hw x w fun p hp =>
     h p (hp.trans (by exact_mod_cast (by omega : 2 * n + 2 ≤ 2 * (n + 1))))
 
-/-- **The Gauss nodes are the roots of the orthogonal polynomial.** A rule with `n + 1` distinct
-nodes is exact to degree `2n + 1` for the weight `μ` exactly when its nodal polynomial is the monic
-orthogonal polynomial `family μ (n + 1)` — so that its nodes are the roots of that polynomial —
-and it is interpolatory.
+/-- **The Gauss nodes are the roots of the orthogonal polynomial.** Let $\mu$ be a weight on
+$\mathbb{R}$ and let $x_0, \dots, x_n$ be distinct. A rule with these nodes and weights $w_i$ is
+exact to degree $2n + 1$ for $\mu$ if and only if its nodal polynomial $\prod_i (X - x_i)$
+equals the monic orthogonal polynomial $p_{n+1}$ of $\mu$ and the rule is interpolatory for
+$\mu$. So the nodes are the roots of $p_{n+1}$. This is (10.16) of [quarteroni2000numerical].
 
-This is Jacobi's theorem at `m = n + 1`: a monic polynomial of degree `n + 1` orthogonal to every
-polynomial of degree at most `n` differs from `family μ (n + 1)` by a polynomial of degree at most
-`n` orthogonal to all of `P_n`, hence zero.
-
-Reference: [quarteroni2000numerical] (10.16). -/
+This is Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff` at $m = n + 1$. A monic
+polynomial of degree $n + 1$ that is orthogonal to every polynomial of degree at most $n$
+differs from $p_{n+1}$ by a polynomial of degree at most $n$ that is orthogonal to
+$\mathbb{P}_n$, so it equals $p_{n+1}$. The polynomial $p_{n+1}$ is
+`OrthogonalPolynomial.family μ (n + 1)`. -/
 theorem isExactOnMeasure_two_mul_add_one_iff (hw : IsWeight μ) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ w x (2 * n + 1) ↔
@@ -729,11 +786,15 @@ theorem isExactOnMeasure_two_mul_add_one_iff (hw : IsWeight μ) {x : Fin (n + 1)
   · rw [h]
     exact integral_family_mul_of_degree_lt hw (degree_lt_succ_iff.mpr hp)
 
-/-- **The bridge to the functional level.** For a finite weight carried by `[a, b]`, nodes in
-`[a, b]`, and `L` the functional `f ↦ ∫ f ∂μ` on `C([a, b], ℝ)`, exactness for `μ` at the
-polynomial level is exactness for `L` in the sense of `Quadrature.IsExactOn`. This is what lets the
-Szegő–Pólya criterion `Quadrature.tendsto_of_nonneg` apply to the Gauss and Gauss–Lobatto rules,
-which are stated at the measure level. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let $L$
+be a bounded linear functional on $C([a, b])$ with $L(f) = \int f\,d\mu$ for every $f$, where
+$\mu$ is read as a measure on $[a, b]$. For nodes $x_i \in [a, b]$, weights $w_i$ and
+$d \in \mathbb{N}$, the rule is exact to degree $d$ for $\mu$ if and only if it is exact to
+degree $d$ for $L$ in the sense of `Quadrature.IsExactOn`. So the Szegő–Pólya criterion
+`Quadrature.tendsto_of_nonneg` applies to the Gauss and Gauss–Lobatto rules, which are stated
+for measures.
+
+The measure on $[a, b]$ is `μ.comap Subtype.val`. -/
 theorem isExactOnMeasure_iff_isExactOn {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (w : Fin n → ℝ) (x : Fin n → Set.Icc a b) {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ}
     (hL : ∀ f : C(Set.Icc a b, ℝ), L f = ∫ t, f t ∂(μ.comap Subtype.val)) (d : ℕ) :
@@ -764,11 +825,13 @@ theorem isExactOnMeasure_iff_isExactOn {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ 
     rw [hint] at h1
     exact h1
 
-/-- **Change of interval.** A rule exact to degree `r` for `μ` transports along an affine map
-`φ t = c * t + d` to a rule exact to degree `r` for the image measure `μ.map φ`, with nodes `φ ∘ x`
-and the same weights: `p ∘ φ` is a polynomial of degree at most that of `p`.
+/-- **Change of variable.** Let $\mu$ be a measure on $\mathbb{R}$, let a rule with weights $w_i$
+and nodes $x_i$ be exact to degree $r$ for $\mu$, and let $\varphi(t) = ct + d$ with
+$c, d \in \mathbb{R}$. Then the rule with the same weights and the nodes $\varphi(x_i)$ is exact
+to degree $r$ for the image measure $\varphi_* \mu$. See Remark 10.3 of
+[quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] Remark 10.3. -/
+The proof uses that $p \circ \varphi$ is a polynomial of degree at most $\deg p$. -/
 theorem isExactOnMeasure_map_affine {w x : Fin n → ℝ} {r : ℕ} (h : IsExactOnMeasure μ w x r)
     (c d : ℝ) :
     IsExactOnMeasure (μ.map fun t => c * t + d) w ((fun t => c * t + d) ∘ x) r := by
@@ -787,12 +850,13 @@ theorem isExactOnMeasure_map_affine {w x : Fin n → ℝ} {r : ℕ} (h : IsExact
   have h2 : p.natDegree ≤ r := natDegree_le_iff_degree_le.mpr hp
   exact_mod_cast (Nat.mul_le_mul h2 h1).trans (by omega)
 
-/-- **Change of interval for Lebesgue measure**: a rule on `[-1, 1]` with nodes `ξ j` and weights
-`β j`, exact to degree `r`, gives on `[a, b]` the rule with nodes `((b - a)/2) ξ j + (a + b)/2` and
-weights `((b - a)/2) β j`, exact to the same degree.
+/-- **Change of interval for Lebesgue measure.** Let $a < b$, and let a rule with nodes $\xi_j$ and
+weights $\beta_j$ be exact to degree $r$ for Lebesgue measure on $[-1, 1]$. Then the rule with
+the nodes $\frac{b - a}{2}\xi_j + \frac{a + b}{2}$ and the weights $\frac{b - a}{2}\beta_j$ is
+exact to degree $r$ for Lebesgue measure on $[a, b]$.
 
-Reference: [quarteroni2000numerical] Remark 10.3 (with the affine map corrected to
-`φ(ξ) = ((b - a)/2) ξ + (a + b)/2`). -/
+This is Remark 10.3 of [quarteroni2000numerical], with the affine map corrected to
+$\varphi(\xi) = \frac{b - a}{2}\xi + \frac{a + b}{2}$. -/
 theorem isExactOnMeasure_volume_Icc_of_affine {a b : ℝ} (hab : a < b) {w x : Fin n → ℝ} {r : ℕ}
     (h : IsExactOnMeasure (volume.restrict (Set.Icc (-1 : ℝ) 1)) w x r) :
     IsExactOnMeasure (volume.restrict (Set.Icc a b)) (fun i => (b - a) / 2 * w i)
@@ -825,11 +889,12 @@ theorem isExactOnMeasure_volume_Icc_of_affine {a b : ℝ} (hab : a < b) {w x : F
           show (b - a) / 2 * 1 + (a + b) / 2 = b by ring, intervalIntegral.integral_of_le hab.le,
           integral_Icc_eq_integral_Ioc]
 
-/-! #### Positivity of weights, interpolatory rules, and convergence -/
+/-! ### Positivity of weights, interpolatory rules, and convergence -/
 
-/-- **A weight is positive once a suitable test polynomial exists**: if the rule is exact on a
-nonzero polynomial `p ≥ 0` (`μ`-a.e.) vanishing at every node but `x i`, where it is positive, then
-`w i p(x i) = ∫ p ∂μ > 0`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$, and let a rule with weights $w_k$ and nodes $x_k$ be
+exact to degree $d$ for $\mu$. Let $p \ne 0$ be a real polynomial of degree at most $d$ with
+$p \ge 0$ $\mu$-almost everywhere, $p(x_k) = 0$ for every $k \ne i$, and $p(x_i) > 0$. Then
+$w_i > 0$, because $w_i\, p(x_i) = \int p\,d\mu > 0$. -/
 theorem pos_of_isExactOnMeasure (hw : IsWeight μ) {n : ℕ} {w x : Fin n → ℝ} {d : ℕ}
     (hexact : IsExactOnMeasure μ w x d) {p : ℝ[X]} (hp : p.degree ≤ d) (hp0 : p ≠ 0)
     (hnn : ∀ᵐ t ∂μ, 0 ≤ p.eval t) (i : Fin n) (hzero : ∀ k, k ≠ i → p.eval (x k) = 0)
@@ -841,7 +906,9 @@ theorem pos_of_isExactOnMeasure (hw : IsWeight μ) {n : ℕ} {w x : Fin n → �
   rw [← h] at hint
   exact (mul_pos_iff_of_pos_right hpos).mp hint
 
-/-- Distinct nodes that are all roots of `p_{N+1}` have `p_{N+1}` as nodal polynomial. -/
+/-- Let $\mu$ be a measure on $\mathbb{R}$, and let $x_0, \dots, x_N$ be distinct roots of the monic
+orthogonal polynomial $p_{N+1}$ of $\mu$. Then their nodal polynomial $\prod_j (X - x_j)$ equals
+$p_{N+1}$. -/
 theorem nodal_eq_family_of_forall_eval_eq_zero (μ : Measure ℝ) {N : ℕ} {x : Fin (N + 1) → ℝ}
     (hx : Function.Injective x) (hroot : ∀ j, (family μ (N + 1)).eval (x j) = 0) :
     Lagrange.nodal Finset.univ x = family μ (N + 1) := by
@@ -855,8 +922,11 @@ theorem nodal_eq_family_of_forall_eval_eq_zero (μ : Measure ℝ) {N : ℕ} {x :
     simpa using this
   · rw [eval_sub, hroot j, Lagrange.eval_nodal_at_node (Finset.mem_univ j), sub_zero]
 
-/-- An interpolatory rule — weights `αᵢ = ∫ lᵢ ∂μ` — is the integral of the Lagrange
-interpolant: `∑ᵢ αᵢ f(xᵢ) = ∫ Π_n f ∂μ` for every function `f`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$, and let a rule with nodes $x_0, \dots, x_n$ and weights
+$\alpha_i$ be interpolatory for $\mu$, that is, $\alpha_i = \int \ell_i\,d\mu$. Then for every
+function $f \colon \mathbb{R} \to \mathbb{R}$
+$$\sum_i \alpha_i\, f(x_i) = \int \Pi_n f\,d\mu,$$
+where $\Pi_n f$ is the Lagrange interpolant of $f$ at the nodes. -/
 theorem sum_mul_eq_integral_interpolate (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
     (hint : IsInterpolatoryMeasure μ α x) (f : ℝ → ℝ) :
     ∑ i, α i * f (x i) =
@@ -865,8 +935,10 @@ theorem sum_mul_eq_integral_interpolate (hw : IsWeight μ) {x α : Fin (n + 1) �
   rw [integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
   exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul, hint i, mul_comm]
 
-/-- The weights of a rule with `n + 1` distinct nodes and degree of exactness at least `2n` are
-positive: exactness on `lᵢ² ∈ ℙ_{2n}` gives `αᵢ = ∫ lᵢ² ∂μ > 0`. -/
+/-- Let $\mu$ be a weight on $\mathbb{R}$, and let a rule with $n + 1$ distinct nodes $x_i$ and
+weights $\alpha_i$ be exact to degree $d \ge 2n$ for $\mu$. Then every weight is positive.
+Exactness at the square $\ell_i^2 \in \mathbb{P}_{2n}$ of the $i$-th Lagrange basis polynomial
+gives $\alpha_i = \int \ell_i^2\,d\mu > 0$. -/
 theorem pos_of_isExactOnMeasure_of_le (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) {d : ℕ} (hd : 2 * n ≤ d) (hexact : IsExactOnMeasure μ α x d)
     (i : Fin (n + 1)) : 0 < α i := by
@@ -882,7 +954,9 @@ theorem pos_of_isExactOnMeasure_of_le (hw : IsWeight μ) {x α : Fin (n + 1) →
   · rw [eval_pow, Lagrange.eval_basis_self hx.injOn (Finset.mem_univ i)]
     norm_num
 
-/-- Permuting the nodes and weights of a rule together does not change its exactness. -/
+/-- Let $\sigma$ be a permutation of the indices. The rule with weights $w \circ \sigma$ and nodes
+$x \circ \sigma$ is exact to degree $d$ for $\mu$ if and only if the rule with weights $w$ and
+nodes $x$ is exact to degree $d$ for $\mu$. -/
 theorem isExactOnMeasure_comp_equiv {m : ℕ} {w x : Fin m → ℝ}
     (σ : Equiv.Perm (Fin m)) {d : ℕ} :
     IsExactOnMeasure μ (w ∘ σ) (x ∘ σ) d ↔ IsExactOnMeasure μ w x d := by
@@ -893,8 +967,8 @@ section
 
 open Set
 
-/-- The integral against a finite measure on `[a, b]` as a bounded functional on `C([a, b], ℝ)`.
--/
+/-- The integral against a finite measure on $[a, b]$, as a bounded linear functional on
+$C([a, b])$. -/
 private noncomputable def integralCLM {a b : ℝ} (ν : Measure (Icc a b)) [IsFiniteMeasure ν] :
     C(Icc a b, ℝ) →L[ℝ] ℝ :=
   (L1.integralCLM (α := Icc a b) (E := ℝ) (μ := ν)).comp (ContinuousMap.toLp 1 ν ℝ)
@@ -904,9 +978,12 @@ private theorem integralCLM_apply {a b : ℝ} (ν : Measure (Icc a b)) [IsFinite
   rw [integralCLM, ContinuousLinearMap.comp_apply, ← L1.integral_eq, L1.integral_eq_integral]
   exact integral_congr_ae (ContinuousMap.coeFn_toLp (μ := ν) (𝕜 := ℝ) f)
 
-/-- **Convergence of quadrature rules with nonnegative weights.** For a finite weight `μ` carried
-by `[a, b]`, rules with distinct nodes in `[a, b]`, nonnegative weights and degrees of exactness
-`d k → ∞` for `μ` converge to `∫ f ∂μ` for every `f` continuous on `[a, b]`. -/
+/-- **Convergence of rules with nonnegative weights.** Let $\mu$ be a finite measure on $\mathbb{R}$
+with $\mu(\mathbb{R} \setminus [a, b]) = 0$. For each $k$, let a rule with distinct nodes
+$x_{k,i} \in [a, b]$ and weights $\alpha_{k,i} \ge 0$ be exact to degree $d_k$ for $\mu$, where
+$d_k \to \infty$. Then for every function $f$ that is continuous on $[a, b]$,
+$$\sum_i \alpha_{k,i}\, f(x_{k,i}) \to \int f\,d\mu.$$
+-/
 theorem tendsto_of_isExactOnMeasure [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0)
     {m d : ℕ → ℕ} {x α : ∀ k, Fin (m k) → ℝ} (hx : ∀ k, Function.Injective (x k))
     (hmem : ∀ k i, x k i ∈ Icc a b) (hα : ∀ k i, 0 ≤ α k i) (hd : Tendsto d atTop atTop)
@@ -939,11 +1016,14 @@ theorem tendsto_of_isExactOnMeasure [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ
 
 end
 
-/-- **Nodes of an exact rule lie in the support interval.** Let `μ` be carried by `[a, b]` with
-every polynomial integrable, `(w, x)` a rule exact to degree `d`, and `P` a polynomial of degree
-`< d`, nonnegative on `[a, b]`, vanishing at every node but `x j`, with `w_j P(x_j) > 0`. Then
-`x j ∈ [a, b]`: otherwise `∫ (x_j − t) P dμ` (or `∫ (t − x_j) P dμ`) would be both `0` (the rule)
-and `≥ dist(x_j, [a, b]) ∫ P dμ > 0`. -/
+/-- **The nodes of an exact rule lie in the interval of the measure.** Let $\mu$ be a measure on
+$\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$ for which every polynomial is
+integrable, and let a rule with weights $w_i$ and nodes $x_i$ be exact to degree $d$ for $\mu$.
+Let $P$ be a real polynomial with $\deg P + 1 \le d$, $P \ge 0$ on $[a, b]$, $P(x_i) = 0$ for
+every $i \ne j$, and $w_j P(x_j) > 0$. Then $x_j \in [a, b]$.
+
+Otherwise the integral $\int (x_j - t)\, P(t)\,d\mu$, or $\int (t - x_j)\, P(t)\,d\mu$, would be
+$0$ by exactness and at least $\operatorname{dist}(x_j, [a, b]) \int P\,d\mu > 0$. -/
 theorem mem_Icc_of_isExactOnMeasure {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {d : ℕ} {w x : Fin n → ℝ}
     (hexact : IsExactOnMeasure μ w x d) {P : ℝ[X]} (hPdeg : P.natDegree + 1 ≤ d)
@@ -997,49 +1077,56 @@ open OrthogonalPolynomial Polynomial MeasureTheory
 
 variable {μ : Measure ℝ} {n : ℕ}
 
-/-- **The discrete inner product** of a rule: `(f, g)_n = ∑ i, w i * f (x i) * g (x i)`, the rule
-applied to the product `f g`. It is a symmetric bilinear form, positive semidefinite for positive
-weights, and an inner product on the polynomials of degree less than the number of distinct nodes
-(`Quadrature.discreteInner_self_pos`).
-
-Reference: [quarteroni2000numerical] (10.28), (10.51). -/
+/-- The **discrete inner product** of a rule with weights $w_i$ and nodes $x_i$:
+$$(f, g)_n = \sum_i w_i\, f(x_i)\, g(x_i),$$
+which is the value of the rule at the product $fg$. It is a symmetric bilinear form, positive
+semidefinite for nonnegative weights. For positive weights and distinct nodes, it is an inner
+product on the polynomials of degree less than the number of nodes
+(`Quadrature.discreteInner_self_pos`). See (10.28) and (10.51) of [quarteroni2000numerical]. -/
 def discreteInner (w x : Fin n → ℝ) (f g : ℝ → ℝ) : ℝ :=
   ∑ i, w i * f (x i) * g (x i)
 
+/-- The discrete inner product is symmetric: $(f, g)_n = (g, f)_n$. -/
 theorem discreteInner_comm (w x : Fin n → ℝ) (f g : ℝ → ℝ) :
     discreteInner w x f g = discreteInner w x g f :=
   Finset.sum_congr rfl fun i _ => by ring
 
+/-- The discrete inner product is additive in its first argument:
+$(f_1 + f_2, g)_n = (f_1, g)_n + (f_2, g)_n$. -/
 theorem discreteInner_add_left (w x : Fin n → ℝ) (f₁ f₂ g : ℝ → ℝ) :
     discreteInner w x (f₁ + f₂) g = discreteInner w x f₁ g + discreteInner w x f₂ g := by
   simp only [discreteInner, Pi.add_apply, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun i _ => by ring
 
+/-- The discrete inner product is homogeneous in its first argument: $(cf, g)_n = c\,(f, g)_n$ for
+$c \in \mathbb{R}$. -/
 theorem discreteInner_smul_left (w x : Fin n → ℝ) (c : ℝ) (f g : ℝ → ℝ) :
     discreteInner w x (c • f) g = c * discreteInner w x f g := by
   simp only [discreteInner, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
   exact Finset.sum_congr rfl fun i _ => by ring
 
+/-- The discrete inner product commutes with finite sums in its first argument: $\bigl(\sum_{k \in
+s} f_k, g\bigr)_n = \sum_{k \in s} (f_k, g)_n$. -/
 theorem discreteInner_sum_left (w x : Fin n → ℝ) {ι : Type*} (s : Finset ι) (f : ι → ℝ → ℝ)
     (g : ℝ → ℝ) : discreteInner w x (∑ k ∈ s, f k) g = ∑ k ∈ s, discreteInner w x (f k) g := by
   simp only [discreteInner, Finset.sum_apply, Finset.mul_sum, Finset.sum_mul]
   rw [Finset.sum_comm]
 
-/-- The discrete inner product only sees the values at the nodes. -/
+/-- The discrete inner product depends only on the values at the nodes: if $f(x_i) = f'(x_i)$ and
+$g(x_i) = g'(x_i)$ for every $i$, then $(f, g)_n = (f', g')_n$. -/
 theorem discreteInner_congr (w x : Fin n → ℝ) {f f' g g' : ℝ → ℝ} (hf : ∀ i, f (x i) = f' (x i))
     (hg : ∀ i, g (x i) = g' (x i)) : discreteInner w x f g = discreteInner w x f' g' :=
   Finset.sum_congr rfl fun i _ => by rw [hf i, hg i]
 
-/-- For nonnegative weights the discrete inner product of a function with itself is nonnegative. -/
+/-- For nonnegative weights, $(f, f)_n \ge 0$ for every function $f$. -/
 theorem discreteInner_self_nonneg {w x : Fin n → ℝ} (hw : ∀ i, 0 ≤ w i) (f : ℝ → ℝ) :
     0 ≤ discreteInner w x f f :=
   Finset.sum_nonneg fun i _ => by rw [mul_assoc, ← sq]; exact mul_nonneg (hw i) (sq_nonneg _)
 
-/-- **The discrete inner product is an inner product on the polynomials of degree less than the
-number of nodes**: for positive weights at distinct nodes, `(p, p)_n > 0` for every nonzero
-polynomial `p` of degree `< n`, since such a polynomial cannot vanish at all `n` nodes.
-
-Reference: [quarteroni2000numerical] Exercise 10.4. -/
+/-- Let the weights $w_i$ be positive and the nodes $x_0, \dots, x_{n-1}$ be distinct. Then
+$(p, p)_n > 0$ for every nonzero real polynomial $p$ of degree less than $n$, because such a
+polynomial cannot vanish at all $n$ nodes. So the discrete inner product is an inner product on
+$\mathbb{P}_{n-1}$. This is Exercise 10.4 of [quarteroni2000numerical]. -/
 theorem discreteInner_self_pos {w x : Fin n → ℝ} (hw : ∀ i, 0 < w i) (hx : Function.Injective x)
     {p : ℝ[X]} (hp : p ≠ 0) (hdeg : p.degree < n) :
     0 < discreteInner w x (fun t => p.eval t) fun t => p.eval t := by
@@ -1054,8 +1141,9 @@ theorem discreteInner_self_pos {w x : Fin n → ℝ} (hw : ∀ i, 0 < w i) (hx :
   · rw [mul_assoc, ← sq]; exact mul_nonneg (hw j).le (sq_nonneg _)
   · rw [mul_assoc, ← sq]; exact mul_pos (hw i) (by positivity)
 
-/-- The discrete inner product of two polynomials agrees with the weighted `L²(μ)` inner product
-as long as the rule integrates their product exactly. -/
+/-- Let a rule be exact to degree $d$ for $\mu$, and let $p$ and $q$ be real polynomials with
+$\deg p + \deg q \le d$. Then the discrete inner product of $p$ and $q$ is their $L^2(\mu)$
+inner product: $(p, q)_n = \int pq\,d\mu$. -/
 theorem discreteInner_eq_integral_of_degree_le {w x : Fin n → ℝ} {d : ℕ}
     (h : IsExactOnMeasure μ w x d) {p q : ℝ[X]} (hpq : p.degree + q.degree ≤ d) :
     discreteInner w x (fun t => p.eval t) (fun t => q.eval t) = ∫ t, p.eval t * q.eval t ∂μ := by
@@ -1065,13 +1153,14 @@ theorem discreteInner_eq_integral_of_degree_le {w x : Fin n → ℝ} {d : ℕ}
   rw [← h1]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- **Discrete orthogonality.** For a rule with `n + 1` nodes exact to degree `2n - 1`, the monic
-orthogonal polynomials `p_0, …, p_n` of the weight are orthogonal for the discrete inner product:
-`(p_j, p_k)_n = 0` for `j ≠ k` with `j, k ≤ n`, because `p_j p_k` then has degree at most
-`2n - 1`. The rule need not integrate `p_n²` exactly, and `(p_n, p_n)_n` is where the Gauss and
-Gauss–Lobatto rules differ.
+/-- **Discrete orthogonality.** Let $\mu$ be a weight on $\mathbb{R}$, let $n \ge 1$, and let a rule
+with $n + 1$ nodes be exact to degree $2n - 1$ for $\mu$. Then the monic orthogonal polynomials
+$p_0, \dots, p_n$ of $\mu$ are orthogonal for the discrete inner product: $(p_j, p_k)_n = 0$ for
+$j \ne k$ with $j, k \le n$, because $p_j p_k$ then has degree at most $2n - 1$. See
+[quarteroni2000numerical], §10.1 and §10.3.
 
-Reference: [quarteroni2000numerical] §10.1, §10.3. -/
+The rule need not integrate $p_n^2$ exactly. The value $(p_n, p_n)_n$ is where the Gauss and the
+Gauss–Lobatto rules differ. -/
 theorem discreteInner_family_family (hw : IsWeight μ) (hn : 1 ≤ n) {w x : Fin (n + 1) → ℝ}
     (hexact : IsExactOnMeasure μ w x (2 * n - 1)) {j k : ℕ} (hjk : j ≠ k) (hj : j ≤ n)
     (hk : k ≤ n) :
@@ -1081,8 +1170,9 @@ theorem discreteInner_family_family (hw : IsWeight μ) (hn : 1 ≤ n) {w x : Fin
   norm_cast
   omega
 
-/-- The discrete norm of `p_k` for `k < n` is its `L²(μ)` norm: the rule integrates `p_k²` exactly.
--/
+/-- Let $n \ge 1$, and let a rule with $n + 1$ nodes be exact to degree $2n - 1$ for $\mu$. For
+$k < n$, the discrete norm of the monic orthogonal polynomial $p_k$ is its $L^2(\mu)$ norm,
+$(p_k, p_k)_n = \int p_k^2\,d\mu$, because the rule integrates $p_k^2$ exactly. -/
 theorem discreteInner_family_self (hn : 1 ≤ n) {w x : Fin (n + 1) → ℝ}
     (hexact : IsExactOnMeasure μ w x (2 * n - 1)) {k : ℕ} (hk : k < n) :
     discreteInner w x (fun t => (family μ k).eval t) (fun t => (family μ k).eval t) =
@@ -1094,14 +1184,18 @@ theorem discreteInner_family_self (hn : 1 ≤ n) {w x : Fin (n + 1) → ℝ}
     omega
 
 /-- **The interpolant at the nodes of a rule is the discrete truncation of the orthogonal
-expansion.** For a rule with `n + 1` distinct nodes, positive weights and degree of exactness
-`2n - 1`, the Lagrange interpolant of `f` at the nodes is `∑_{k ≤ n} f̃_k p_k` with the discrete
-Fourier coefficients `f̃_k = (f, p_k)_n / (p_k, p_k)_n`: expand the interpolant in the basis
-`p_0, …, p_n` of `P_n` and pair with `p_j` in the discrete inner product, where the basis is
-orthogonal by `Quadrature.discreteInner_family_family` and the interpolant agrees with `f` at the
-nodes.
+expansion.** Let $\mu$ be a weight on $\mathbb{R}$, let $n \ge 1$, and let a rule with $n + 1$
+distinct nodes $x_i$ and positive weights $w_i$ be exact to degree $2n - 1$ for $\mu$. Let $p_k$
+be the monic orthogonal polynomials of $\mu$. Then for every function
+$f \colon \mathbb{R} \to \mathbb{R}$, the Lagrange interpolant of $f$ at the nodes is
+$$\Pi_n f = \sum_{k=0}^{n} \tilde f_k\, p_k, \qquad \tilde f_k = \frac{(f, p_k)_n}{(p_k,
+  p_k)_n}.$$
+The discrete Chebyshev and Legendre transforms are instances. See (10.4)–(10.5), (10.29),
+(10.38) and §10.7 of [quarteroni2000numerical].
 
-Reference: [quarteroni2000numerical] (10.4)–(10.5), (10.29), (10.38), §10.7. -/
+The proof expands the interpolant in the basis $p_0, \dots, p_n$ of $\mathbb{P}_n$ and pairs it
+with $p_j$ in the discrete inner product. The basis is orthogonal by
+`Quadrature.discreteInner_family_family`, and the interpolant agrees with $f$ at the nodes. -/
 theorem interpolate_eq_sum_discreteInner_smul (hw : IsWeight μ) (hn : 1 ≤ n)
     {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {w : Fin (n + 1) → ℝ} (hwpos : ∀ i, 0 < w i)
     (hexact : IsExactOnMeasure μ w x (2 * n - 1)) (f : ℝ → ℝ) :
@@ -1157,7 +1251,8 @@ open OrthogonalPolynomial Polynomial MeasureTheory
 
 variable {μ : Measure ℝ}
 
-/-- A continuous function is integrable for a finite measure carried by a compact interval. -/
+/-- A continuous function is integrable for a finite measure carried by a compact interval $[a, b]$.
+-/
 private theorem integrable_of_continuous_of_compl_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {f : ℝ → ℝ} (hf : Continuous f) : Integrable f μ := by
   obtain ⟨C, hC⟩ := (isCompact_Icc.image hf).isBounded.exists_norm_le
@@ -1168,8 +1263,8 @@ private theorem integrable_of_continuous_of_compl_eq_zero [IsFiniteMeasure μ] {
   filter_upwards [hae] with t ht
   exact hC _ ⟨t, ht, rfl⟩
 
-/-- Finitely many nodes of a convex set `s`, together with a point `t` of `s`, lie in a compact
-interval contained in `s`. -/
+/-- Finitely many points of a convex set $s \subseteq \mathbb{R}$, at least one, together with a
+point $t \in s$, lie in a compact interval contained in $s$. -/
 private theorem exists_Icc_subset_of_convex {s : Set ℝ} (hs : Convex ℝ s) {n : ℕ} [NeZero n]
     {x : Fin n → ℝ} (hxmem : ∀ i, x i ∈ s) {t : ℝ} (ht : t ∈ s) :
     ∃ a b : ℝ, Set.Icc a b ⊆ s ∧ t ∈ Set.Icc a b ∧ ∀ i, x i ∈ Set.Icc a b := by
@@ -1185,28 +1280,27 @@ private theorem exists_Icc_subset_of_convex {s : Set ℝ} (hs : Convex ℝ s) {n
   · rw [← hi₀]; exact Finset.inf'_le _ (Finset.mem_univ i)
   · rw [← hi₁]; exact Finset.le_sup' _ (Finset.mem_univ i)
 
-/-- **The remainder of a rule through Hermite interpolation, on an arbitrary interval.** Let `μ` be
-a measure carried by a convex set `s ⊆ ℝ` (`μ sᶜ = 0`) against which every polynomial is
-integrable, `x : Fin n → ℝ` distinct nodes in `s` with multiplicities `m`, `∑ i, (m i + 1) = N + 1`,
-whose nodal polynomial `ω = ∏ i, (X - x i) ^ (m i + 1)` (`Hermite.nodal x m`) has constant sign on
-`s`, and `w` weights whose rule is exact on the polynomials of degree at most `N`. Then for a
-`μ`-integrable `f` of class `C^{N+1}`
+/-- **The remainder of a rule through Hermite interpolation.** Let $s \subseteq \mathbb{R}$ be
+convex, and let $\mu$ be a measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus s) = 0$ for
+which every polynomial is integrable. Let $x_0, \dots, x_{n-1} \in s$ be distinct nodes with
+multiplicities $m_i$, where $\sum_i (m_i + 1) = N + 1$, and suppose that the nodal polynomial
+$$\omega = \prod_i (X - x_i)^{m_i + 1}$$
+is nonnegative on $s$ or nonpositive on $s$. Let a rule with weights $w_i$ at these nodes be
+exact to degree $N$ for $\mu$. Then for every $\mu$-integrable function $f$ of class $C^{N+1}$
+on $\mathbb{R}$ there is $\xi \in s$ with
+$$\int f\,d\mu - \sum_i w_i\, f(x_i) = \frac{f^{(N+1)}(\xi)}{(N+1)!} \int \omega\,d\mu.$$
+The Gauss rule is the case where every $m_i = 1$ (`Quadrature.exists_gauss_error_eq_of_convex`).
+The Gauss–Radau rule has $m_i = 0$ at the fixed endpoint and $m_i = 1$ elsewhere. The
+Gauss–Lobatto rule has $m_i = 0$ at both endpoints and $m_i = 1$ elsewhere. See §10.2.2 of
+[golub2013matrix] and (10.41)–(10.42) of [quarteroni2000numerical].
 
-`(∫ f ∂μ) - ∑ i, w i * f (x i) = f^{(N+1)}(ξ) / (N+1)! * ∫ ω ∂μ`
-
-for some `ξ ∈ s`. The Gauss rule is the case `m i = 1`
-(`Quadrature.exists_gauss_error_eq_of_convex`), the Gauss–Radau rule `m = 0` at the fixed endpoint
-and `1` elsewhere, the Gauss–Lobatto rule `m = 0`
-at both endpoints and `1` elsewhere.
-
-Only the values of `f` at the nodes enter the rule, and the Hermite interpolant `H` of `f` has the
-same values and degree at most `N`, so the error is `∫ (f - H) ∂μ`;
-`Hermite.exists_sub_interpolate_eq`, on a compact interval of `s` holding `t` and the nodes, writes
-`f t - H t = f^{(N+1)}(ξ_t) / (N+1)! · ω(t)`, and the mean value theorem with a moving point
-(`exists_integral_eq_mul_integral`) finishes. No positivity of `μ` beyond the sign of `ω` is
-needed: if `∫ ω ∂μ = 0` the measure is carried by the nodes, where `f = H`, and the error is `0`.
-
-Reference: [golub2013matrix] §10.2.2; [quarteroni2000numerical] (10.41)–(10.42). -/
+The rule uses only the values of $f$ at the nodes. The Hermite interpolant $H$ of $f$ has the
+same values there and degree at most $N$, so the error is $\int (f - H)\,d\mu$. On a compact
+interval in $s$ that contains $t$ and the nodes, `Hermite.exists_sub_interpolate_eq` gives
+$f(t) - H(t) = f^{(N+1)}(\xi_t)\, \omega(t)/(N+1)!$, and the mean value theorem with a moving
+point `MeasureTheory.exists_integral_eq_mul_integral` ends the proof. The measure need not be a
+weight: if $\int \omega\,d\mu = 0$, then $\mu$ is carried by the nodes, where $f = H$, and the
+error is $0$. The nodal polynomial is `Hermite.nodal x m`. -/
 theorem exists_error_eq_of_hermite_of_convex {s : Set ℝ} (hs : Convex ℝ s) (hsupp : μ sᶜ = 0)
     (hpoly : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {N n : ℕ} {w x : Fin n → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ s) {m : Fin n → ℕ}
@@ -1244,21 +1338,19 @@ theorem exists_error_eq_of_hermite_of_convex {s : Set ℝ} (hs : Convex ℝ s) (
     (hpoly _) ((hf.continuous_iteratedDeriv _ le_rfl).div_const _).continuousOn hsign hpt
 
 /-- **The remainder of a rule through Hermite interpolation, for a finite measure on a compact
-interval.** Let `μ` be a finite measure carried by `[a, b]`, `x : Fin n → ℝ` distinct nodes in
-`[a, b]` with multiplicities `m`, `∑ i, (m i + 1) = N + 1`, whose nodal polynomial
-`ω = ∏ i, (X - x i) ^ (m i + 1)` (`Hermite.nodal x m`) has constant sign on `[a, b]`, and `w`
-weights whose rule is exact on the polynomials of degree at most `N`. Then for `f` of class
-`C^{N+1}`
+interval.** Let $\mu$ be a finite measure on $\mathbb{R}$ with
+$\mu(\mathbb{R} \setminus [a, b]) = 0$. Let $x_0, \dots, x_{n-1} \in [a, b]$ be distinct nodes
+with multiplicities $m_i$, where $\sum_i (m_i + 1) = N + 1$, and suppose that the nodal
+polynomial $\omega = \prod_i (X - x_i)^{m_i + 1}$ is nonnegative on $[a, b]$ or nonpositive on
+$[a, b]$. Let a rule with weights $w_i$ at these nodes be exact to degree $N$ for $\mu$. Then
+for every function $f$ of class $C^{N+1}$ on $\mathbb{R}$ there is $\xi \in [a, b]$ with
+$$\int f\,d\mu - \sum_i w_i\, f(x_i) = \frac{f^{(N+1)}(\xi)}{(N+1)!} \int \omega\,d\mu.$$
+Unlike the Gauss remainder, this result does not need $\mu$ to be a weight: a finitely supported
+measure, such as the spectral measure of a symmetric matrix, is allowed. See §10.2.2 and §10.2.6
+of [golub2013matrix].
 
-`(∫ f ∂μ) - ∑ i, w i * f (x i) = f^{(N+1)}(ξ) / (N+1)! * ∫ ω ∂μ`
-
-for some `ξ ∈ [a, b]`. Unlike the Gauss remainder, `μ` need not be a weight: a finitely supported
-measure, such as the spectral measure of a symmetric matrix, is allowed.
-
-The case `s = [a, b]` of `Quadrature.exists_error_eq_of_hermite_of_convex`, where the integrability
-of `f` and of the polynomials is automatic.
-
-Reference: [golub2013matrix] §10.2.2 and §10.2.6. -/
+This is the case $s = [a, b]$ of `Quadrature.exists_error_eq_of_hermite_of_convex`, where the
+integrability of $f$ and of the polynomials is automatic. -/
 theorem exists_error_eq_of_hermite [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {N n : ℕ} {w x : Fin n → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hsum : ∑ i, (m i + 1) = N + 1)
@@ -1272,29 +1364,30 @@ theorem exists_error_eq_of_hermite [IsFiniteMeasure μ] {a b : ℝ}
     (fun p => integrable_of_continuous_of_compl_eq_zero hsupp p.continuous) hx hxmem hsum hsign
     hexact hf (integrable_of_continuous_of_compl_eq_zero hsupp hf.continuous)
 
-/-- The nodal polynomial with double nodes is the square of the simple one, so it is
-nonnegative. -/
+/-- The nodal polynomial with every multiplicity $1$, that is, with double nodes, takes at $t$ the
+value $\prod_i (t - x_i)^2$, the square of the value of the nodal polynomial with simple nodes. -/
 private theorem eval_nodal_one {n : ℕ} (x : Fin n → ℝ) (t : ℝ) :
     (Hermite.nodal x fun _ => 1).eval t = (Lagrange.nodal Finset.univ x).eval t ^ 2 := by
   rw [Hermite.eval_nodal, Lagrange.eval_nodal, ← Finset.prod_pow]
 
-/-- **The Gauss remainder on an arbitrary interval.** Let `μ` be a weight carried by a convex set
-`s ⊆ ℝ` (`μ sᶜ = 0`), let `x : Fin n → ℝ` be distinct nodes in `s` and `w` weights whose rule is
-exact on the polynomials of degree less than `2n` — the Gauss rule of `Quadrature.exists_gauss` —
-and let `f` be `μ`-integrable of class `C^{2n}`. Then
+/-- **The Gauss remainder.** Let $\mu$ be a weight on $\mathbb{R}$ with
+$\mu(\mathbb{R} \setminus s) = 0$ for a convex set $s \subseteq \mathbb{R}$. Let
+$x_0, \dots, x_{n-1} \in s$ be distinct, and let a rule with weights $w_i$ at these nodes
+satisfy $\sum_i w_i\, p(x_i) = \int p\,d\mu$ for every real polynomial $p$ of degree less than
+$2n$, as the Gauss rule of `Quadrature.exists_gauss` does. Then for every $\mu$-integrable
+function $f$ of class $C^{2n}$ on $\mathbb{R}$ there is $\xi \in s$ with
+$$\int f\,d\mu - \sum_i w_i\, f(x_i) = \frac{f^{(2n)}(\xi)}{(2n)!} \int p_n^2\,d\mu,$$
+where $p_n$ is the monic orthogonal polynomial of degree $n$ of $\mu$, which is the nodal
+polynomial of the rule. See (10.41)–(10.42) of [quarteroni2000numerical] and §9.3 of
+[kress1998numerical].
 
-`(∫ f ∂μ) - ∑ i, w i * f (x i) = f^{(2n)}(ξ) / (2n)! * ∫ p_n² ∂μ`
-
-for some `ξ ∈ s`, where `p_n = family μ n` is the nodal polynomial of the rule.
-
-`Quadrature.exists_gauss_error_eq` is the special case of a compact carrier `[a, b]`, where the
-integrability of `f` comes for free; here neither the carrier nor `f^{(2n)}` need be bounded, which
-is what the Laguerre weight on `(0, ∞)` and the Hermite weight on `ℝ` require. For `n ≥ 1` this is
-`Quadrature.exists_error_eq_of_hermite_of_convex` with every multiplicity `1`: the nodal polynomial
-with double nodes is `p_n²`, since by Jacobi's theorem the nodes of an exact rule are the roots of
-`p_n`. For `n = 0` it is the first mean value theorem for integrals.
-
-Reference: [quarteroni2000numerical] (10.41)–(10.42); [kress1998numerical] §9.3. -/
+Neither $s$ nor $f^{(2n)}$ needs to be bounded, as the Laguerre weight on $(0, \infty)$ and the
+Hermite weight on $\mathbb{R}$ require. For $n \ge 1$ the proof is
+`Quadrature.exists_error_eq_of_hermite_of_convex` with every multiplicity $1$: the nodal
+polynomial with double nodes is $p_n^2$, because by Jacobi's theorem the nodes of the rule are
+the roots of $p_n$. For $n = 0$ it is the first mean value theorem for integrals. The number
+$\int p_n^2\,d\mu$ is `OrthogonalPolynomial.normSq μ n`. `Quadrature.exists_gauss_error_eq` is
+the case of a compact interval, where $f$ is integrable without a further hypothesis. -/
 theorem exists_gauss_error_eq_of_convex (hw : IsWeight μ) {s : Set ℝ} (hs : Convex ℝ s)
     (hsupp : μ sᶜ = 0) {n : ℕ} {x w : Fin n → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ s)
@@ -1330,17 +1423,19 @@ theorem exists_gauss_error_eq_of_convex (hw : IsWeight μ) {s : Set ℝ} (hs : C
     congr 1
     simp only [eval_nodal_one, hnodal, normSq]
 
-/-- **The Gauss remainder on a compact interval.** For a weight carried by `[a, b]`, an `n`-point
-rule at distinct nodes of `[a, b]` exact on the polynomials of degree less than `2n` — the Gauss
-rule of `Quadrature.exists_gauss` — and an integrand `f` of class `C^{2n}`, the error is
-`f^{(2n)}(ξ) / (2n)! · ∫ p_n² ∂μ` for some `ξ ∈ [a, b]`, where `p_n = family μ n` is the nodal
-polynomial of the rule. At `n = 0` the statement is the mean value theorem for integrals.
+/-- **The Gauss remainder on a compact interval.** Let $\mu$ be a weight on $\mathbb{R}$ with
+$\mu(\mathbb{R} \setminus [a, b]) = 0$. Let $x_0, \dots, x_{n-1} \in [a, b]$ be distinct, and
+let a rule with weights $w_i$ at these nodes satisfy $\sum_i w_i\, p(x_i) = \int p\,d\mu$ for
+every real polynomial $p$ of degree less than $2n$, as the Gauss rule of
+`Quadrature.exists_gauss` does. Then for every function $f$ of class $C^{2n}$ on $\mathbb{R}$
+there is $\xi \in [a, b]$ with
+$$\int f\,d\mu - \sum_i w_i\, f(x_i) = \frac{f^{(2n)}(\xi)}{(2n)!} \int p_n^2\,d\mu,$$
+where $p_n$ is the monic orthogonal polynomial of degree $n$ of $\mu$, the nodal polynomial of
+the rule. At $n = 0$ this is the mean value theorem for integrals. See (10.41)–(10.42) of
+[quarteroni2000numerical] and §9.3 of [kress1998numerical].
 
-The case `s = [a, b]` of `Quadrature.exists_gauss_error_eq_of_convex`: a compact carrier is the one
-case in which the integrability of `f` needs no hypothesis, being what that statement asks for in
-addition.
-
-Reference: [quarteroni2000numerical] (10.41)–(10.42); [kress1998numerical] §9.3. -/
+This is the case $s = [a, b]$ of `Quadrature.exists_gauss_error_eq_of_convex`. On a compact
+interval the integrability of $f$, which that result assumes, holds without a hypothesis. -/
 theorem exists_gauss_error_eq (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     {n : ℕ} {x w : Fin n → ℝ} (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
     (hexact : ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
@@ -1352,9 +1447,9 @@ theorem exists_gauss_error_eq (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Ic
   exact exists_gauss_error_eq_of_convex hw (convex_Icc a b) hsupp hx hxmem hexact hf
     (integrable_of_continuous_of_compl_eq_zero hsupp hf.continuous)
 
-/-- A function of class `C^k` on an open set containing `[a, b]` agrees near every point of
-`[a, b]` with a function of class `C^k` on all of `ℝ`: multiply it by a smooth bump equal to `1`
-near `[a, b]` and supported inside the open set. -/
+/-- A function of class $C^k$ on an open set $U \supseteq [a, b]$ agrees near every point of
+$[a, b]$ with a function of class $C^k$ on $\mathbb{R}$, obtained by multiplying it by a smooth
+bump function that equals $1$ near $[a, b]$ and has support in $U$. -/
 private theorem exists_contDiff_eventuallyEq {U : Set ℝ} (hU : IsOpen U) {a b : ℝ} (hab : a ≤ b)
     (hsub : Set.Icc a b ⊆ U) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiffOn ℝ (k : WithTop ℕ∞) f U) :
     ∃ g : ℝ → ℝ, ContDiff ℝ (k : WithTop ℕ∞) g ∧ ∀ t ∈ Set.Icc a b, g =ᶠ[𝓝 t] f := by
@@ -1393,10 +1488,11 @@ private theorem exists_contDiff_eventuallyEq {U : Set ℝ} (hU : IsOpen U) {a b 
     filter_upwards [hball] with z hz
     rw [φ.one_of_mem_closedBall (Metric.ball_subset_closedBall hz), one_mul]
 
-/-- **The Hermite remainder for a locally smooth integrand**:
-`Quadrature.exists_error_eq_of_hermite` for an `f` of class `C^{N+1}` only on an open set `U`
-containing `[a, b]`. Both sides see `f` only on `[a, b]`, where it agrees, with all its
-derivatives, with a function of class `C^{N+1}` on all of `ℝ`. -/
+/-- The Hermite remainder of `Quadrature.exists_error_eq_of_hermite` for a function $f$ that is of
+class $C^{N+1}$ only on an open set $U \supseteq [a, b]$: under the other hypotheses of that
+result, there is $\xi \in [a, b]$ with $\int f\,d\mu - \sum_i w_i\, f(x_i) =
+\frac{f^{(N+1)}(\xi)}{(N+1)!} \int \omega\,d\mu$. Both sides use $f$ only on $[a, b]$, where $f$
+agrees, with all its derivatives, with a function of class $C^{N+1}$ on $\mathbb{R}$. -/
 theorem exists_error_eq_of_hermite_of_contDiffOn [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {N n : ℕ} {w x : Fin n → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hsum : ∑ i, (m i + 1) = N + 1)
@@ -1421,12 +1517,15 @@ theorem exists_error_eq_of_hermite_of_contDiffOn [IsFiniteMeasure μ] {a b : ℝ
     Finset.sum_congr rfl fun i _ => by rw [hval _ (hxmem i)], ← (hgf ξ hξ).iteratedDeriv_eq]
   exact heq
 
-/-- **The Gauss rule is a lower bound** ([golub2013matrix] §10.2.2): for a finite measure `μ`
-carried by `[a, b]`, `k ≥ 1`, a `k`-point rule `(w, x)` at distinct nodes of `[a, b]` exact on the
-polynomials of degree at most `2k - 1`, and `f` of class `C^{2k}` on an open set containing
-`[a, b]` with `f^{(2k)} ≥ 0` there, `∑ w_i f(x_i) ≤ ∫ f ∂μ`. With every multiplicity `1` the nodal
-polynomial `∏ (X - x i)²` is nonnegative and the error is `f^{(2k)}(ξ)/(2k)! ∫ ω ∂μ ≥ 0`
-(`Quadrature.exists_error_eq_of_hermite_of_contDiffOn`). -/
+/-- **The Gauss rule is a lower bound.** Let $\mu$ be a finite measure on $\mathbb{R}$ with
+$\mu(\mathbb{R} \setminus [a, b]) = 0$, let $k \ge 1$, and let a rule with $k$ distinct nodes
+$x_i \in [a, b]$ and weights $w_i$ be exact to degree $2k - 1$ for $\mu$. If $f$ is of class
+$C^{2k}$ on an open set that contains $[a, b]$, and $f^{(2k)} \ge 0$ on $[a, b]$, then
+$\sum_i w_i\, f(x_i) \le \int f\,d\mu$. See §10.2.2 of [golub2013matrix].
+
+With every multiplicity $1$, the nodal polynomial $\omega = \prod_i (X - x_i)^2$ is nonnegative,
+so the error $f^{(2k)}(\xi) \int \omega\,d\mu / (2k)!$ of
+`Quadrature.exists_error_eq_of_hermite_of_contDiffOn` is nonnegative. -/
 theorem gauss_le_integral [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ}
     (hk : 1 ≤ k) {w x : Fin k → ℝ} (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
     (hexact : IsExactOnMeasure μ w x (2 * k - 1)) {U : Set ℝ} (hU : IsOpen U)
@@ -1445,7 +1544,8 @@ theorem gauss_le_integral [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc 
     div_nonneg (heven ξ hξ) (Nat.cast_nonneg _)
   nlinarith [mul_nonneg hD hω]
 
-/-- The Gauss–Radau multiplicities: the fixed node `0` simple, every other node double. -/
+/-- The Gauss–Radau multiplicities, $0$ at the node of index $0$ and $1$ at the other $k$ nodes,
+satisfy $\sum_i (m_i + 1) = 2k + 1$. -/
 private theorem sum_radau_multiplicity (k : ℕ) :
     ∑ i : Fin (k + 1), ((if i = 0 then 0 else 1 : ℕ) + 1) = 2 * k + 1 := by
   rw [Fin.sum_univ_succ]
@@ -1453,20 +1553,24 @@ private theorem sum_radau_multiplicity (k : ℕ) :
     Fintype.card_fin, smul_eq_mul]
   ring
 
-/-- The Gauss–Radau nodal polynomial `(X - x' 0) ∏_{i ≥ 1} (X - x' i)²`. -/
+/-- With the Gauss–Radau multiplicities, the nodal polynomial takes at $t$ the value
+$(t - x'_0) \prod_{i \ge 1} (t - x'_i)^2$. -/
 private theorem eval_nodal_radau {k : ℕ} (x' : Fin (k + 1) → ℝ) (t : ℝ) :
     (Hermite.nodal x' fun i => if i = 0 then 0 else 1).eval t =
       (t - x' 0) * ∏ i : Fin k, (t - x' i.succ) ^ 2 := by
   rw [Hermite.eval_nodal, Fin.prod_univ_succ]
   simp only [Fin.succ_ne_zero, ite_true, ite_false, zero_add, pow_one]
 
-/-- **The Gauss–Radau rule with the fixed node at the left end is an upper bound**
-([golub2013matrix] §10.2.6): for a finite measure `μ` carried by `[a, b]`, a `(k + 1)`-point rule
-`(w', x')` at distinct nodes of `[a, b]` with `x' 0 = a`, exact on the polynomials of degree at most
-`2k`, and `f` of class `C^{2k+1}` on an open set containing `[a, b]` with `f^{(2k+1)} ≤ 0` there,
-`∫ f ∂μ ≤ ∑ w'_i f(x'_i)`. With multiplicity `0` at `a` and `1` at the other nodes the nodal
-polynomial is `(X - a) ∏_{i ≥ 1} (X - x' i)² ≥ 0` on `[a, b]`, and the error is
-`f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ ≤ 0`. -/
+/-- **The Gauss–Radau rule with the fixed node at the left end is an upper bound.** Let $\mu$ be a
+finite measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let a rule with
+$k + 1$ distinct nodes $x'_i \in [a, b]$, where $x'_0 = a$, and weights $w'_i$ be exact to
+degree $2k$ for $\mu$. If $f$ is of class $C^{2k+1}$ on an open set that contains $[a, b]$, and
+$f^{(2k+1)} \le 0$ on $[a, b]$, then $\int f\,d\mu \le \sum_i w'_i\, f(x'_i)$. See §10.2.6 of
+[golub2013matrix].
+
+With multiplicity $0$ at $a$ and $1$ at the other nodes, the nodal polynomial
+$\omega = (X - a) \prod_{i \ge 1} (X - x'_i)^2$ is nonnegative on $[a, b]$, so the error
+$f^{(2k+1)}(\xi) \int \omega\,d\mu / (2k+1)!$ is nonpositive. -/
 theorem integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     {k : ℕ} {w' x' : Fin (k + 1) → ℝ} (hx' : Function.Injective x')
     (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = a)
@@ -1488,10 +1592,15 @@ theorem integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set
     div_nonpos_of_nonpos_of_nonneg (hodd ξ hξ) (Nat.cast_nonneg _)
   nlinarith [mul_nonpos_of_nonpos_of_nonneg hD hωint]
 
-/-- **The Gauss–Radau rule with the fixed node at the right end is an upper bound**
-([golub2013matrix] §10.2.6, the rule of (10.2.9)): as `Quadrature.integral_le_gaussRadau` with
-`x' 0 = b` and `f^{(2k+1)} ≥ 0` on `[a, b]`. The nodal polynomial `(X - b) ∏_{i ≥ 1} (X - x' i)²`
-is now `≤ 0` on `[a, b]`, and so is the error `f^{(2k+1)}(ξ)/(2k+1)! ∫ ω ∂μ`. -/
+/-- **The Gauss–Radau rule with the fixed node at the right end is an upper bound.** Let $\mu$ be a
+finite measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let a rule with
+$k + 1$ distinct nodes $x'_i \in [a, b]$, where $x'_0 = b$, and weights $w'_i$ be exact to
+degree $2k$ for $\mu$. If $f$ is of class $C^{2k+1}$ on an open set that contains $[a, b]$, and
+$f^{(2k+1)} \ge 0$ on $[a, b]$, then $\int f\,d\mu \le \sum_i w'_i\, f(x'_i)$. This is the rule
+of (10.2.9) in §10.2.6 of [golub2013matrix].
+
+The nodal polynomial $(X - b) \prod_{i \ge 1} (X - x'_i)^2$ is now nonpositive on $[a, b]$, and
+so is the error. -/
 theorem integral_le_gaussRadau_right [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {w' x' : Fin (k + 1) → ℝ}
     (hx' : Function.Injective x') (hx'mem : ∀ i, x' i ∈ Set.Icc a b) (hx'0 : x' 0 = b)
@@ -1514,21 +1623,21 @@ theorem integral_le_gaussRadau_right [IsFiniteMeasure μ] {a b : ℝ}
     div_nonneg (hodd ξ hξ) (Nat.cast_nonneg _)
   nlinarith [mul_nonpos_of_nonneg_of_nonpos hD hωint]
 
-/-- **The two-sided Gauss / Gauss–Radau bound.** Let `μ` be a finite measure carried by
-`[a, b]`, `k ≥ 1`, `(w, x)` a `k`-point rule at distinct nodes of `[a, b]` exact on the polynomials
-of degree at most `2k - 1` (a Gauss rule), and `(w', x')` a `(k + 1)`-point rule at distinct nodes
-of `[a, b]` with `x' 0 = a`, exact on the polynomials of degree at most `2k` (a Gauss–Radau rule
-with the fixed node at the left end). If `f` is of class `C^{2k+1}` on an open set containing
-`[a, b]` with `f^{(2k)} ≥ 0` and `f^{(2k+1)} ≤ 0` on `[a, b]`, then the Gauss rule is a lower and
-the Gauss–Radau rule an upper bound for `∫ f ∂μ` (`Quadrature.gauss_le_integral`,
-`Quadrature.integral_le_gaussRadau`; the right-end twin is
-`Quadrature.gauss_le_integral_le_gaussRadau_right`).
+/-- **The two-sided Gauss and Gauss–Radau bound.** Let $\mu$ be a finite measure on $\mathbb{R}$
+with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let $k \ge 1$. Let a rule with $k$ distinct
+nodes $x_i \in [a, b]$ and weights $w_i$ be exact to degree $2k - 1$ for $\mu$ (a Gauss rule).
+Let a rule with $k + 1$ distinct nodes $x'_i \in [a, b]$, where $x'_0 = a$, and weights $w'_i$
+be exact to degree $2k$ for $\mu$ (a Gauss–Radau rule with the fixed node at the left end). Let
+$f$ be of class $C^{2k+1}$ on an open set that contains $[a, b]$, with $f^{(2k)} \ge 0$ and
+$f^{(2k+1)} \le 0$ on $[a, b]$. Then
+$$\sum_i w_i\, f(x_i) \le \int f\,d\mu \le \sum_i w'_i\, f(x'_i).$$
+See §10.2.2 and §10.2.6 of [golub2013matrix].
 
-The instances are the Gauss and Gauss–Radau rules of a weight (`Quadrature.exists_gauss`,
-`Quadrature.exists_gaussRadau`) and the Lanczos rules of the spectral measure of a symmetric
-matrix, for `f(λ) = 1/λ²` on `0 < a`.
-
-Reference: [golub2013matrix] §10.2.2 and §10.2.6. -/
+The two bounds are `Quadrature.gauss_le_integral` and `Quadrature.integral_le_gaussRadau`.
+`Quadrature.gauss_le_integral_le_gaussRadau_right` is the version with the fixed node at the
+right end. The rules can be the Gauss and Gauss–Radau rules of a weight
+(`Quadrature.exists_gauss`, `Quadrature.exists_gaussRadau`), or the Lanczos rules of the
+spectral measure of a symmetric matrix, with $f(\lambda) = 1/\lambda^2$ and $0 < a$. -/
 theorem gauss_le_integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ k) {w x : Fin k → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
@@ -1544,10 +1653,17 @@ theorem gauss_le_integral_le_gaussRadau [IsFiniteMeasure μ] {a b : ℝ}
       (hf.of_le (by exact_mod_cast Nat.le_succ _)) heven,
     integral_le_gaussRadau hsupp hx' hx'mem hx'0 hexact' hU hUsub hf hodd⟩
 
-/-- **The two-sided Gauss / Gauss–Radau(b) bound**: `Quadrature.gauss_le_integral_le_gaussRadau`
-with the fixed node of the Gauss–Radau rule at the right end, `x' 0 = b`, under
-`f^{(2k)} ≥ 0` and `f^{(2k+1)} ≥ 0` on `[a, b]` ([golub2013matrix] §10.2.6). The rules are those of
-`Quadrature.exists_gauss` and `Quadrature.exists_gaussRadau_right`. -/
+/-- **The two-sided Gauss and Gauss–Radau bound, with the fixed node at the right end.** Let $\mu$
+be a finite measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let
+$k \ge 1$. Let a rule with $k$ distinct nodes $x_i \in [a, b]$ and weights $w_i$ be exact to
+degree $2k - 1$ for $\mu$. Let a rule with $k + 1$ distinct nodes $x'_i \in [a, b]$, where
+$x'_0 = b$, and weights $w'_i$ be exact to degree $2k$ for $\mu$. Let $f$ be of class $C^{2k+1}$
+on an open set that contains $[a, b]$, with $f^{(2k)} \ge 0$ and $f^{(2k+1)} \ge 0$ on $[a, b]$.
+Then
+$$\sum_i w_i\, f(x_i) \le \int f\,d\mu \le \sum_i w'_i\, f(x'_i).$$
+See §10.2.6 of [golub2013matrix].
+
+The rules can be those of `Quadrature.exists_gauss` and `Quadrature.exists_gaussRadau_right`. -/
 theorem gauss_le_integral_le_gaussRadau_right [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ k) {w x : Fin k → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
@@ -1574,10 +1690,9 @@ open MeasureTheory
 
 variable {F : ℕ → ℝ → ℝ}
 
-/-- The telescoping sum behind Taylor's formula with the integral remainder: for a chain of
-derivatives `F 0, F 1, …, F (m + 1)` the function `s ↦ ∑_{k ≤ m} F k s (v - s)^k / k!` has
-derivative `(v - t)^m F (m + 1) t / m!` at `t`, every other term cancelling against its
-neighbour. -/
+/-- For a chain of derivatives $F_0, \dots, F_{m+1}$, the function
+$s \mapsto \sum_{k \le m} F_k(s)\,(v - s)^k/k!$ has the derivative $(v - t)^m F_{m+1}(t)/m!$ at
+$t$, because the other terms cancel in pairs. -/
 private theorem hasDerivAt_taylorSum {v x : ℝ} :
     ∀ m : ℕ, (∀ k ≤ m, HasDerivAt (F k) (F (k + 1) x) x) →
       HasDerivAt (fun t => ∑ k ∈ Finset.range (m + 1), F k t * (v - t) ^ k / (k.factorial : ℝ))
@@ -1619,10 +1734,9 @@ private theorem hasDerivAt_taylorSum {v x : ℝ} :
     field_simp
     ring
 
-/-- The telescoping sum behind the *integrated* Taylor formula: `s ↦ ∑_{k ≤ m} F k s (b - s)^{k+1} /
-(k+1)!` has derivative `(b - t)^{m+1} F (m + 1) t / (m + 1)! - F 0 t`.  Integrating it over `[a, b]`
-gives `∫_a^b F 0` as the integral of the Taylor polynomial plus a single remainder integral, with no
-Fubini step. -/
+/-- For a chain of derivatives $F_0, \dots, F_{m+1}$, the function $s \mapsto \sum_{k \le m}
+F_k(s)\,(b - s)^{k+1}/(k+1)!$ has the derivative $(b - t)^{m+1} F_{m+1}(t)/(m+1)! - F_0(t)$ at
+$t$. -/
 private theorem hasDerivAt_integratedTaylorSum {b x : ℝ} :
     ∀ m : ℕ, (∀ k ≤ m, HasDerivAt (F k) (F (k + 1) x) x) →
       HasDerivAt
@@ -1685,12 +1799,15 @@ private theorem hasDerivAt_integratedTaylorSum {b x : ℝ} :
     field_simp
     ring
 
-/-- **Taylor's formula with the integral remainder**, for a chain of derivatives on an interval:
-`F 0 v = ∑_{k ≤ m} F k u (v - u)^k / k! + ∫_u^v (v - t)^m F (m + 1) t / m! dt`.
+/-- **Taylor's formula with the integral remainder.** Let $F_0, F_1, \dots, F_{m+1}$ be functions on
+$\mathbb{R}$ such that, for $k \le m$, $F_k$ has the derivative $F_{k+1}$ at every point of the
+closed interval between $u$ and $v$, and let $F_{m+1}$ be integrable on that interval. Then
+$$F_0(v) = \sum_{k=0}^{m} \frac{F_k(u)\,(v - u)^k}{k!} + \int_u^v \frac{(v - t)^m}{m!}\,
+  F_{m+1}(t)\,dt.$$
 
-This is Mathlib's `taylor_integral_remainder` in the derivative-family form the quadrature
-statements use, and it is proved from the telescoping identity above rather than by `m + 1`
-integrations by parts. -/
+This is Mathlib's `taylor_integral_remainder` in the form with a family of derivatives that the
+quadrature results use. It is proved from a telescoping identity, not by $m + 1$ integrations by
+parts. -/
 theorem eq_taylorSum_add_integral {u v : ℝ} {m : ℕ}
     (hF : ∀ k ≤ m, ∀ t ∈ Set.uIcc u v, HasDerivAt (F k) (F (k + 1) t) t)
     (hint : IntervalIntegrable (F (m + 1)) volume u v) :
@@ -1715,12 +1832,15 @@ theorem eq_taylorSum_add_integral {u v : ℝ} {m : ℕ}
   rw [hv] at hftc
   linarith
 
-/-- **The integrated Taylor formula.**  `∫_a^b F 0` is the integral of the Taylor polynomial of `F`
-at `a`, whose value is `∑_{k ≤ m} F k a (b - a)^{k+1}/(k+1)!`, plus one remainder integral against
-the kernel `(b - t)^{m+1}/(m+1)!`.
+/-- **The integrated Taylor formula.** Let $F_0, F_1, \dots, F_{m+1}$ be functions on $\mathbb{R}$
+such that, for $k \le m$, $F_k$ has the derivative $F_{k+1}$ at every point of the closed
+interval between $a$ and $b$, and let $F_{m+1}$ be integrable on that interval. Then
+$$\int_a^b F_0(t)\,dt = \sum_{k=0}^{m} \frac{F_k(a)\,(b - a)^{k+1}}{(k+1)!} + \int_a^b
+  \frac{(b - t)^{m+1}}{(m+1)!}\, F_{m+1}(t)\,dt.$$
+The sum is the integral over $[a, b]$ of the Taylor polynomial of $F_0$ at $a$.
 
-This is what replaces the Fubini step in the usual proof of Peano's theorem: the double integral
-`∫_a^b ∫_a^x (x - t)^m F^{(m+1)}(t) dt dx` never has to be formed. -/
+This identity replaces the Fubini step in the usual proof of Peano's theorem: the double
+integral $\int_a^b \int_a^x (x - t)^m F_{m+1}(t)\,dt\,dx$ is never formed. -/
 theorem integral_eq_taylorSum_add_integral {a b : ℝ} {m : ℕ}
     (hF : ∀ k ≤ m, ∀ t ∈ Set.uIcc a b, HasDerivAt (F k) (F (k + 1) t) t)
     (hint : IntervalIntegrable (F (m + 1)) volume a b) :
@@ -1748,23 +1868,28 @@ theorem integral_eq_taylorSum_add_integral {a b : ℝ} {m : ℕ}
   rw [hb] at hftc
   linarith
 
-/-- **The truncated power** `(y - t)_+^m`: it is `(y - t)^m` for `t ≤ y` and `0` beyond, so that
-`t ↦ (y - t)_+^m` is the piece of the monomial that Peano's kernel integrates against. -/
+/-- The **truncated power** $(y - t)_+^m$: it is $(y - t)^m$ for $t \le y$ and $0$ for $t > y$. The
+function $t \mapsto (y - t)_+^m$ is the part of the monomial that the Peano kernel integrates
+against.
+
+At $m = 0$ the value is $1$ for $t \le y$, so $(y - t)_+^0$ is the indicator of $t \le y$. -/
 noncomputable def truncPow (m : ℕ) (y t : ℝ) : ℝ := if t ≤ y then (y - t) ^ m else 0
 
-/-- The truncated power as the indicator of a half line, in the truncated variable. -/
+/-- As a function of $t$, the truncated power $(y - t)_+^m$ is the indicator of the half-line
+$(-\infty, y]$ times $(y - t)^m$. -/
 theorem truncPow_eq_indicator (m : ℕ) (y : ℝ) :
     truncPow m y = (Set.Iic y).indicator fun t => (y - t) ^ m := by
   funext t
   by_cases h : t ≤ y <;> simp [truncPow, h]
 
-/-- The truncated power as the indicator of a half line, in the other variable. -/
+/-- As a function of $y$, the truncated power $(y - t)_+^m$ is the indicator of the half-line
+$[t, \infty)$ times $(y - t)^m$. -/
 theorem truncPow_flip_eq_indicator (m : ℕ) (t : ℝ) :
     (fun y => truncPow m y t) = (Set.Ici t).indicator fun y => (y - t) ^ m := by
   funext y
   by_cases h : t ≤ y <;> simp [truncPow, h]
 
-/-- The truncated power is interval integrable in the variable it is truncated at. -/
+/-- The truncated power $t \mapsto (y - t)_+^m$ is integrable on every bounded interval. -/
 theorem intervalIntegrable_truncPow (m : ℕ) (y u v : ℝ) :
     IntervalIntegrable (truncPow m y) volume u v := by
   have hc : IntervalIntegrable (fun t : ℝ => (y - t) ^ m) volume u v :=
@@ -1773,7 +1898,7 @@ theorem intervalIntegrable_truncPow (m : ℕ) (y u v : ℝ) :
   rw [truncPow_eq_indicator]
   exact hc.indicator measurableSet_Iic
 
-/-- The truncated power is interval integrable in the variable it is a power of. -/
+/-- The truncated power $y \mapsto (y - t)_+^m$ is integrable on every bounded interval. -/
 theorem intervalIntegrable_truncPow_flip (m : ℕ) (t u v : ℝ) :
     IntervalIntegrable (fun y => truncPow m y t) volume u v := by
   have hc : IntervalIntegrable (fun y : ℝ => (y - t) ^ m) volume u v :=
@@ -1782,8 +1907,9 @@ theorem intervalIntegrable_truncPow_flip (m : ℕ) (t u v : ℝ) :
   rw [truncPow_flip_eq_indicator]
   exact hc.indicator measurableSet_Ici
 
-/-- Integrating against a truncated power over the whole panel is integrating against the plain
-power over the part of the panel below the truncation point. -/
+/-- Let $a \le y \le b$ and let $g$ be continuous on $[a, b]$. Then
+$$\int_a^b (y - t)_+^m\, g(t)\,dt = \int_a^y (y - t)^m\, g(t)\,dt.$$
+-/
 theorem integral_truncPow_mul {a b y : ℝ} {m : ℕ} {g : ℝ → ℝ} (hay : a ≤ y) (hyb : y ≤ b)
     (hg : ContinuousOn g (Set.Icc a b)) :
     (∫ t in a..b, truncPow m y t * g t) = ∫ t in a..y, (y - t) ^ m * g t := by
@@ -1810,8 +1936,9 @@ theorem integral_truncPow_mul {a b y : ℝ} {m : ℕ} {g : ℝ → ℝ} (hay : a
       MeasureTheory.integral_zero]
   rw [← intervalIntegral.integral_add_adjacent_intervals h1 h2, e1, e2, add_zero]
 
-/-- The integral of the truncated power in its *upper* variable:
-`∫_a^b (x - t)_+^m dx = (b - t)^{m+1}/(m + 1)` for `t` in the panel. -/
+/-- For $a \le t \le b$, the integral of the truncated power in its upper variable is
+$$\int_a^b (x - t)_+^m\,dx = \frac{(b - t)^{m+1}}{m + 1}.$$
+-/
 theorem integral_truncPow_flip {a b t : ℝ} {m : ℕ} (hat : a ≤ t) (htb : t ≤ b) :
     (∫ x in a..b, truncPow m x t) = (b - t) ^ (m + 1) / ((m : ℝ) + 1) := by
   have e1 : (∫ x in a..t, truncPow m x t) = 0 := by
@@ -1834,15 +1961,18 @@ theorem integral_truncPow_flip {a b t : ℝ} {m : ℕ} (hat : a ≤ t) (htb : t 
     (intervalIntegrable_truncPow_flip m t a t) (intervalIntegrable_truncPow_flip m t t b),
     e1, e2, e3, zero_add]
 
-/-- **The Peano kernel** of the rule with weights `w` at nodes `z` on `[a, b]`, at order `m`: the
-error functional applied to the truncated power `(· - t)_+^m`, divided by `m!`.
+/-- The **Peano kernel** of order $m$ of the rule with weights $w_i$ and nodes $z_i$ on $[a, b]$:
+$$K(t) = \frac{1}{m!}\Bigl(\int_a^b (x - t)_+^m\,dx - \sum_i w_i\,(z_i - t)_+^m\Bigr),$$
+the error functional of the rule applied to $x \mapsto (x - t)_+^m$ and divided by $m!$.
 
-`Quadrature.peanoKernel_eq` gives its closed form `(b - t)^{m+1}/(m+1)! - ∑ᵢ wᵢ (zᵢ - t)_+^m/m!`
-on the panel, and `Quadrature.error_eq_integral_peanoKernel` is Peano's theorem. -/
+`Quadrature.peanoKernel_eq` gives its closed form on $[a, b]$, and
+`Quadrature.error_eq_integral_peanoKernel` is Peano's theorem. -/
 noncomputable def peanoKernel {n : ℕ} (a b : ℝ) (w z : Fin n → ℝ) (m : ℕ) (t : ℝ) : ℝ :=
   ((∫ x in a..b, truncPow m x t) - ∑ i, w i * truncPow m (z i) t) / (m.factorial : ℝ)
 
-/-- The closed form of the Peano kernel on the panel. -/
+/-- For $t \in [a, b]$, the Peano kernel has the closed form
+$$K(t) = \frac{(b - t)^{m+1}}{(m+1)!} - \sum_i \frac{w_i\,(z_i - t)_+^m}{m!}.$$
+-/
 theorem peanoKernel_eq {n : ℕ} {a b : ℝ} (w z : Fin n → ℝ) (m : ℕ) {t : ℝ}
     (ht : t ∈ Set.Icc a b) :
     peanoKernel a b w z m t
@@ -1858,7 +1988,7 @@ theorem peanoKernel_eq {n : ℕ} {a b : ℝ} (w z : Fin n → ℝ) (m : ℕ) {t 
   congr 1
   field_simp
 
-/-- The truncated power `(y - t)_+^m` is continuous in `t` for `m ≥ 1`. -/
+/-- For $m \ge 1$, the truncated power $t \mapsto (y - t)_+^m$ is continuous. -/
 theorem continuous_truncPow {m : ℕ} (hm : 1 ≤ m) (y : ℝ) : Continuous (truncPow m y) := by
   unfold truncPow
   refine Continuous.if_le (by fun_prop) continuous_const continuous_id continuous_const
@@ -1867,7 +1997,7 @@ theorem continuous_truncPow {m : ℕ} (hm : 1 ≤ m) (y : ℝ) : Continuous (tru
   rw [ht', sub_self, zero_pow (by omega)]
 
 open Set in
-/-- The Peano kernel of order `m ≥ 1` is continuous on the panel. -/
+/-- For $m \ge 1$, the Peano kernel of order $m$ is continuous on $[a, b]$. -/
 theorem continuousOn_peanoKernel {a b : ℝ} {k : ℕ} (w z : Fin k → ℝ) {m : ℕ} (hm : 1 ≤ m) :
     ContinuousOn (peanoKernel a b w z m) (Icc a b) := by
   have hclosed : ∀ t ∈ Icc a b, peanoKernel a b w z m t
@@ -1878,23 +2008,21 @@ theorem continuousOn_peanoKernel {a b : ℝ} {k : ℕ} (w z : Fin k → ℝ) {m 
     |>.continuousOn.sub (continuousOn_finsetSum _ fun i _ => ?_)
   exact (((continuous_truncPow hm (z i)).const_mul (w i)).div_const _).continuousOn
 
-/-- **Peano's kernel theorem.**  A rule with weights `w` at nodes `z` in `[a, b]` that integrates
-every polynomial of degree at most `m` exactly has, at an integrand `F 0` carrying a chain of
-derivatives `F 1, …, F (m + 1)` on `[a, b]`, the error
+/-- **Peano's kernel theorem.** Let $a \le b$, and let a rule with weights $w_i$ and nodes
+$z_i \in [a, b]$ satisfy $\int_a^b p(t)\,dt = \sum_i w_i\, p(z_i)$ for every real polynomial $p$
+of degree at most $m$. Let $F_0, F_1, \dots, F_{m+1}$ be functions on $\mathbb{R}$ such that,
+for $k \le m$, $F_k$ has the derivative $F_{k+1}$ at every point of $[a, b]$, and let $F_{m+1}$
+be continuous on $[a, b]$. Then
+$$\int_a^b F_0(t)\,dt - \sum_i w_i\, F_0(z_i) = \int_a^b K(t)\, F_{m+1}(t)\,dt,$$
+where $K$ is the Peano kernel `Quadrature.peanoKernel a b w z m`. See §9.2 of
+[kress1998numerical].
 
-`∫_a^b F 0 - ∑ᵢ wᵢ F 0 (zᵢ) = ∫_a^b K(t) F (m + 1) t dt`,
-
-with `K = Quadrature.peanoKernel a b w z m` the error functional applied to the truncated power
-`(· - t)_+^m` and divided by `m!`.
-
-Taylor's formula with the integral remainder, applied once over the panel
+Taylor's formula with the integral remainder, applied once over $[a, b]$
 (`Quadrature.integral_eq_taylorSum_add_integral`) and once at each node
-(`Quadrature.eq_taylorSum_add_integral`), splits both halves of the error into the Taylor
-polynomial — which exactness annihilates — plus a remainder integral.  The truncated power is what
-puts the node remainders on the same interval as the panel remainder, and the finitely many node
-remainders come out of the integral by linearity, so no Fubini step is needed.
-
-Reference: [kress1998numerical], §9.2. -/
+(`Quadrature.eq_taylorSum_add_integral`), splits both parts of the error into a Taylor
+polynomial, on which the rule is exact, and a remainder integral. The truncated power puts the
+node remainders on the same interval as the remainder over $[a, b]$, and the finitely many node
+remainders come out of the integral by linearity, so no Fubini step is needed. -/
 theorem error_eq_integral_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w z : Fin n → ℝ}
     (hz : ∀ i, z i ∈ Set.Icc a b)
     (hF : ∀ k ≤ m, ∀ t ∈ Set.Icc a b, HasDerivAt (F k) (F (k + 1) t) t)
@@ -2023,8 +2151,10 @@ theorem error_eq_integral_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w
   rw [hK, hleft, hsumF, hkey]
   ring
 
-/-- **The Peano error bound.**  Under the hypotheses of `Quadrature.error_eq_integral_peanoKernel`,
-the error is at most the `L¹` norm of the kernel times a bound on `F (m + 1)`. -/
+/-- **The Peano error bound.** Under the hypotheses of `Quadrature.error_eq_integral_peanoKernel`,
+if $|F_{m+1}(t)| \le M$ for every $t \in [a, b]$, then
+$$\Bigl|\int_a^b F_0(t)\,dt - \sum_i w_i\, F_0(z_i)\Bigr| \le M \int_a^b |K(t)|\,dt,$$
+where $K$ is the Peano kernel of order $m$. -/
 theorem abs_error_le_integral_abs_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w z : Fin n → ℝ}
     {M : ℝ} (hz : ∀ i, z i ∈ Set.Icc a b)
     (hF : ∀ k ≤ m, ∀ t ∈ Set.Icc a b, HasDerivAt (F k) (F (k + 1) t) t)

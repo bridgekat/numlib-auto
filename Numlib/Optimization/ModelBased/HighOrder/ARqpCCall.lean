@@ -9,60 +9,81 @@ import Numlib.Optimization.ModelBased.HighOrder.TRqCall
 /-!
 # ARqpC runs as inner solvers
 
-The inner solver INNER of adaptive-regularization type of the two-phase method TPqp-GC
-([cartis2022evaluation], §14.3) is ARqp-SC: the high-order regularization method on `f` over a
-closed feasible set `X`, whose Step 2 is the detailed Step 2 of Algorithm 14.1.2. It is the
-ARqpC run (`IsARqpCRun`) with zero composite part `c = 0 : E → G`, `h = 0` (any normed space `G`
-serves as the codomain of `c`), with the book's halving set `compositeHalvingSet 0 X`
-(`j ≥ 2`, and `j = 1` when `X` is not convex). Each call starts afresh from the radii `1` at a
-point given by the outer method, and is cut either at its own termination or earlier by a test
-of the outer method. This file collects what an outer analysis needs about one call, with
-constants that depend on `f` only through the constants `L` of its derivatives on a set
-containing the sublevel set of the start of the call, so that they are uniform over all calls
-(symmetric with the trust-region inner solver of
-`Numlib.Optimization.ModelBased.HighOrder.TRqCall`).
+The two-phase method TPqp-GC of [cartis2022evaluation], §14.3, calls an inner solver INNER. Its
+inner solver of adaptive-regularization type is ARqp-SC: the high-order regularization method for
+$f : E \to \mathbb{R}$ on a closed feasible set $X$, whose Step 2 is the detailed Step 2 of
+Algorithm 14.1.2. This file realizes ARqp-SC as an ARqpC run (`Optimization.IsARqpCRun`) with zero
+composite part $c = 0 : E \to G$ and $h = 0$, where any normed space $G$ can be the codomain of $c$,
+and with the halving set `compositeHalvingSet 0 X` of the source. This halving set contains the
+orders $j \ge 2$, and also $j = 1$ when $X$ is not convex. Each call starts afresh from the radii
+$1$ at a point that the outer method gives. It stops at its own termination, or earlier at a test of
+the outer method. The file collects what an outer analysis needs about one call. The constants
+depend on $f$ only through the constants $L_j$ of its derivatives on a set that contains the
+sublevel set of the start of the call, so they are uniform over all calls. The trust-region inner
+solver of `Numlib.Optimization.ModelBased.HighOrder.TRqCall` has the same form.
 
-For `c = 0`, `h = 0` the model data are those of ARqp (`arqpcData_zero`), so such a run is an ARqp
-run with exact data (`IsARqpCRun.isARqpRun_zero`): both the composite analysis (decreases of order
-`ε_j^{j+1}`, the ARqpC-SC row of (14.2.12)) and the ARqp analysis (decreases of order `ε_j^{π_j}`,
-`π_j = arqpPiOf u p j`, the ARqp-SC row in radii mode `u`) apply.
+For $c = 0$ and $h = 0$ the model data are those of exact ARqp (`Optimization.arqpcData_zero`), so
+such a run is an ARqp run with exact data (`Optimization.IsARqpCRun.isARqpRun_zero`). Both analyses
+apply: the composite analysis gives decreases of order $\varepsilon_j^{j+1}$, the ARqpC-SC row of
+(14.2.12), and the ARqp analysis gives decreases of order $\varepsilon_j^{\pi_j}$, the ARqp-SC row.
+Here the exponents $\pi_j$ are those of `Optimization.arqpPiOf` in a radii mode $u$, as in
+`Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`. Below, $\bar L = \max(1, L_1, \dots,
+L_p)$ (`finMax 1 L p`), $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_p / (1 - \eta_2))$, and
+$\kappa_\delta(\sigma_{\max}) = \varsigma \theta / (8 (3 \bar L + \sigma_{\max}))$
+(`Optimization.arqpKappaDelta`). The usual hypotheses on $f$ are: $X \subseteq C$; $\nabla^p f$ is
+$L_p$-Lipschitz anchored at the points of a set $A$ with respect to $C$ (`LipschitzDerivsAnchored f
+C A p p L`); the jet bounds $\|\nabla^i f(y)\| \le \bar L$ hold for $i \in [2, p]$ and $y \in A$;
+and $A$ contains the sublevel set $\{y \in X : f(y) \le f(x_0)\}$ of the start $x_0$.
 
 ## Main definitions
 
-* `Optimization.arqpKappaUns`, `arqpCallKappaDecr`, `arqpCallKappaUnc`, `arqpCallKappaRad`: the
-  constants of Lemmas 14.2.2, 14.2.3 and of the radius policy for a call;
-* `Optimization.arqpJetBound`: the jet bound `max(1, max_{i ∈ [2, p]} ‖∇^i f(y)‖)`;
-* `Optimization.IsARqpOutput`, `IsARqpOutputCost`: a terminating call, with its evaluation counts;
-* `Optimization.IsARqpCallOut`: a call cut at any iteration up to its termination, with its
-  iterates, successful iterations and returned radii.
+* `Optimization.arqpCallKappaDecr`, `Optimization.arqpCallKappaUnc`,
+  `Optimization.arqpCallKappaRad`: the constants of Lemmas 14.2.2 and 14.2.3 and of the radius
+  policy for a call. The constant `Optimization.arqpKappaUns` is defined in
+  `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`.
+* `Optimization.arqpJetBound`: the jet bound $\max(1, \max_{i \in [2, p]} \|\nabla^i f(y)\|)$.
+* `Optimization.IsARqpOutput`, `Optimization.IsARqpOutputCost`: a terminating call, without and with
+  its evaluation counts.
+* `Optimization.IsARqpCallOut`: a call stopped at any iteration up to its termination, with its
+  iterates, its successful iterations and its returned radii.
 
 ## Main results
 
-* `Optimization.IsARqpCRun.isARqpRun_zero`, `arqpcStop_zero_iff`, `arqpRatio_zero`: the reduction
-  of `c = 0` to ARqp;
-* `Optimization.IsARqpCRun.radii_zero`, `decrease_zero`, `decrease_composite_zero`,
-  `radius_ge_zero`, `exists_cert_zero`: the radii, decreases and certificates of such runs;
-* `Optimization.exists_isARqpOutputCost`, `IsARqpOutputCost.cost_le`,
-  `IsARqpOutputCost.cost_le_arqp`: existence and cost of terminating calls, in both rows of
-  (14.2.12);
-* `Optimization.IsARqpCallOut.eq_of_not_succ`, `IsARqpCallOut.le_count`,
-  `IsARqpCallOut.decrease`, `IsARqpCallOut.decrease_arqp`, `IsARqpCallOut.radius_ge` and their
-  bundle `IsARqpCallOut.contract`: the contract of one call (Lemmas 14.2.2–14.2.3 and the radius
-  policy);
-* `Optimization.exists_isARqpRun_unit`, `IsARqpUnitOutputCost.cost_le`,
-  `IsARqpUnitCallOut.contract`, `exists_isARqpUnitCallOut_of_stop`: the calls of ARqp on the whole
-  space with unit radii (`q ≤ 2`);
-* `Optimization.exists_isARqpCallOut_of_stop`: calls stopped at the first iterate satisfying an
-  external test, or at termination, exist.
+* `Optimization.IsARqpCRun.isARqpRun_zero`, `Optimization.arqpcStop_zero_iff`,
+  `Optimization.arqpRatio_zero`: the reduction of the case $c = 0$, $h = 0$ to ARqp.
+* `Optimization.IsARqpCRun.radii_zero`, `Optimization.IsARqpCRun.decrease_zero`,
+  `Optimization.IsARqpCRun.decrease_composite_zero`, `Optimization.IsARqpCRun.radius_ge_zero`,
+  `Optimization.IsARqpCRun.exists_cert_zero`: the radii, the decreases and the certificates of such
+  runs.
+* `Optimization.exists_isARqpOutputCost`, `Optimization.IsARqpOutputCost.cost_le`,
+  `Optimization.IsARqpOutputCost.cost_le_arqp`: terminating calls exist, and their cost is bounded
+  in both rows of (14.2.12).
+* `Optimization.IsARqpCallOut.eq_of_not_succ`, `Optimization.IsARqpCallOut.le_count`,
+  `Optimization.IsARqpCallOut.decrease`, `Optimization.IsARqpCallOut.decrease_arqp`,
+  `Optimization.IsARqpCallOut.radius_ge`, and their bundle `Optimization.IsARqpCallOut.contract`:
+  the contract of one call (Lemmas 14.2.2–14.2.3 and the radius policy).
+* `Optimization.exists_isARqpRun_unit`, `Optimization.IsARqpUnitOutputCost.cost_le`,
+  `Optimization.IsARqpUnitCallOut.contract`, `Optimization.exists_isARqpUnitCallOut_of_stop`: the
+  calls of ARqp on the whole space with unit radii, for $q \le 2$.
+* `Optimization.exists_isARqpCallOut_of_stop`: there are calls that stop at the first iterate that
+  satisfies an external test, or at termination.
 
-## Design notes
+## Implementation notes
 
-The call predicates `IsARqpOutput`, `IsARqpOutputCost` and `IsARqpCallOut` take the codomain `G`
-of the zero constraint map as an explicit argument, so that they are literally the predicates of
-the ARqpC runs with `c = 0 : E → G` (in applications `G` is the codomain of the constraints of the
-composite problem, e.g. `ℝ⁰`); every result holds for every `G`. The detailed Step 2 of such a run
-is that of the ARqp model `regularizedModel` (`isARqpCDetailedStep_zero_iff`), and the runs are
-the ARqp runs with that Step 2 (`IsARqpCRun.isARqpRun_zero`, `IsARqpCRun.of_isARqpRun_zero`).
+* The call predicates `Optimization.IsARqpOutput`, `Optimization.IsARqpOutputCost` and
+  `Optimization.IsARqpCallOut` take the codomain $G$ of the zero constraint map as an explicit
+  argument. They are then literally the predicates of the ARqpC runs with $c = 0 : E \to G$. In
+  applications $G$ is the codomain of the constraints of the composite problem, for example
+  $\mathbb{R}^0$. Every result holds for every $G$.
+* The detailed Step 2 of such a run is that of the ARqp model `Optimization.regularizedModel`
+  (`Optimization.isARqpCDetailedStep_zero_iff`). The runs are the ARqp runs with that Step 2
+  (`Optimization.IsARqpCRun.isARqpRun_zero`, `Optimization.IsARqpCRun.of_isARqpRun_zero`).
+* An ARqpC run (`Optimization.IsARqpCRun`) includes the conditions $1 \le q \le p$,
+  $\varepsilon \in (0, 1]^q$ and $\delta_0 \in (0, 1]^q$. The notions "iteration $k$ is reached",
+  "does not terminate" and "successful", and the evaluation counts, are those of
+  `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity`.
+* The expression `finMin 1 u q` is $\min(1, u_1, \dots, u_q)$. For $u_j = \varepsilon_j^{\pi_j}$
+  with $\varepsilon_j \in (0, 1]$ it is $\min_j \varepsilon_j^{\pi_j}$.
 -/
 
 open Set Metric
@@ -73,7 +94,7 @@ namespace Optimization
 variable {E G : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup G]
   [NormedSpace ℝ G]
 
-/-! ### ARqpC with `c = 0` and `h = 0` -/
+/-! ### ARqpC with $c = 0$ and $h = 0$ -/
 
 section Zero
 
@@ -81,40 +102,51 @@ variable {f : E → ℝ} {X : Set E} {p q : ℕ} {P : ARqpParams} {J : Set ℕ} 
   {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E}
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedSpace ℝ G] in
-/-- The objective `f + 0 ∘ 0` is `f`. -/
+/-- The objective $y \mapsto f(y) + 0(0(y))$ of ARqpC with $c = 0$ and $h = 0$ is $f$. -/
 theorem add_zero_comp_zero (f : E → ℝ) :
     (fun y => f y + (0 : G → ℝ) ((0 : E → G) y)) = f :=
   funext fun _ => by simp
 
-/-- The model data of ARqpC with `c = 0`, `h = 0` are those of ARqp. -/
+/-- For $c = 0$ and $h = 0$, the model data of ARqpC are those of exact ARqp:
+`arqpcData f 0 0 p x σ = arqpData f p x σ`. -/
 @[simp] theorem arqpcData_zero (f : E → ℝ) (p : ℕ) (x : ℕ → E) (σ : ℕ → ℝ) :
     arqpcData f (0 : E → G) (0 : G → ℝ) p x σ = arqpData f p x σ :=
   funext fun _ => ARqpData.ofComposite_zero_fun _ _ _ _
 
-/-- The termination test of ARqpC with `c = 0`, `h = 0` is that of ARqp. -/
+/-- For $c = 0$ and $h = 0$, the termination test of ARqpC at iteration $k$ holds if and only if the
+termination test of exact ARqp holds at $k$. -/
 theorem arqpcStop_zero_iff {k : ℕ} :
     arqpcStop f (0 : E → G) 0 P p q ε x s σ δ d k ↔ arqpStop f P p q ε x s σ δ d k := by
   rw [arqpcStop_iff, arqpcData_zero]
 
-/-- The Step-1 test of ARqpC with `c = 0`, `h = 0` is that of ARqp. -/
+/-- For $c = 0$ and $h = 0$, the Step-1 test of ARqpC at iteration $k$ holds if and only if the
+Step-1 test of exact ARqp holds at $k$. -/
 theorem arqpStop₁_arqpcData_zero_iff {k : ℕ} :
     arqpStop₁ P q ε (arqpcData f (0 : E → G) 0 p x σ) δ d k ↔
       arqpStop₁ P q ε (arqpData f p x σ) δ d k := by
   rw [arqpcData_zero]
 
-/-- The ratio of ARqpC with `c = 0`, `h = 0` is that of ARqp. -/
+/-- For $c = 0$ and $h = 0$, the ratio of ARqpC for the objective $f + 0 \circ 0$ at iteration $k$
+equals the ratio $\rho_k$ of exact ARqp. -/
 theorem arqpRatio_zero {k : ℕ} :
     arqpRatio (fun y => f y + (0 : G → ℝ) ((0 : E → G) y)) (arqpcData f (0 : E → G) 0 p x σ) x s k =
       arqpRho f p x s σ k := by
   rw [add_zero_comp_zero, arqpcData_zero]
 
-/-- For `h = 0` the halving set is `{j ≥ 2}`, together with `j = 1` when `X` is not convex. -/
+/-- If $X$ is convex, then the order $1$ is not in the halving set `compositeHalvingSet 0 X` for
+$h = 0$. So for convex $X$ this halving set contains only the orders $j \ge 2$. -/
 theorem one_notMem_compositeHalvingSet_zero (hX : Convex ℝ X) :
     1 ∉ compositeHalvingSet (0 : G → ℝ) X :=
   one_notMem_compositeHalvingSet (convexOn_const 0 convex_univ) hX
 
-/-- The detailed Step 2 of ARqpC with `c = 0`, `h = 0` is the detailed Step 2 for the ARqp model
-`regularizedModel (ftaylorSeries ℝ f x) p σ` and its Taylor decrements. -/
+/-- For $c = 0$ and $h = 0$, a pair $(s, \delta_s)$ is an output of the detailed Step 2 of ARqpC at
+$x$ with weight $\sigma$ if and only if it is an output of the detailed Step 2
+(`Optimization.IsDetailedStepOutput`) for the ARqp model $m(s) = T_{f,p}(x, s) + \sigma
+\|s\|^{p+1} / (p+1)!$ over the feasible steps $\{s : x + s \in X\}$, with the displacements
+$\{d : x + s + d \in X\}$ and the Taylor decrements of $m$.
+
+The model is `regularizedModel (ftaylorSeries ℝ f x) p σ`, and its decrements are
+`Optimization.arqpDetailedModelDec`. -/
 theorem isARqpCDetailedStep_zero_iff {σ : ℝ} {x s : E} {δs : ℕ → ℝ} :
     IsARqpCDetailedStep f (0 : E → G) 0 X p q P ε J σ x s δs ↔
       IsDetailedStepOutput (regularizedModel (ftaylorSeries ℝ f x) p σ) {s | x + s ∈ X}
@@ -130,9 +162,12 @@ theorem isARqpCDetailedStep_zero_iff {σ : ℝ} {x s : E} {δs : ℕ → ℝ} :
   change IsDetailedStepOutput _ _ _ _ _ _ _ _ _ _ _ ↔ _
   rw [em, eΔ]
 
-/-- **ARqp runs with the detailed Step 2 are ARqpC runs with `c = 0`, `h = 0`**: an ARqp run with
-exact data on `X` whose Step-2 pairs are outputs of the detailed Step 2 for the ARqp model at every
-iteration reaching Step 2. -/
+/-- **ARqp runs with the detailed Step 2 are ARqpC runs with $c = 0$, $h = 0$.** Let
+$1 \le q \le p$, $\varepsilon \in (0, 1]^q$ and $\delta_0 \in (0, 1]^q$. Consider an ARqp run
+with exact data on $X$ and initial radii $\delta_0$ whose Step-2 pair $(s_k, \delta_{s_k})$ is
+an output of the detailed Step 2 for the ARqp model at $x_k$ with weight $\sigma_k$ and halving
+set $J$, at every iteration $k$ that is reached and at which the Step-1 test fails. Then the
+same sequences form an ARqpC run with $c = 0 : E \to G$, $h = 0$ and halving set $J$. -/
 theorem IsARqpCRun.of_isARqpRun_zero (hq : 1 ≤ q) (hqp : q ≤ p)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
     (hrun : IsARqpRun f X P q ε δ₀ (arqpData f p x σ) x s σ δ δs d dm)
@@ -151,13 +186,16 @@ namespace IsARqpCRun
 
 variable {C A : Set E} {L : ℕ → ℝ}
 
-/-- **ARqpC with `c = 0`, `h = 0` is ARqp**: such a run is an ARqp run with exact data on `X`. -/
+/-- **ARqpC with $c = 0$, $h = 0$ is ARqp.** An ARqpC run with $c = 0$ and $h = 0$ on $X$ is an ARqp
+run with exact data on $X$, with the same sequences. -/
 theorem isARqpRun_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm) :
     IsARqpRun f X P q ε δ₀ (arqpData f p x σ) x s σ δ δs d dm := by
   have h := hr.run
   rwa [add_zero_comp_zero, arqpcData_zero] at h
 
-/-- `f` does not increase along the run up to its first termination index. -/
+/-- Let an ARqpC run with $c = 0$ and $h = 0$ terminate at $k_\varepsilon$. Then $f$ does not
+increase along the run up to $k_\varepsilon$: $f(x_j) \le f(x_i)$ for all
+$i \le j \le k_\varepsilon$. -/
 theorem antitone_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     {kε : ℕ} (hhit : IsFirstHit (arqpcStop f (0 : E → G) 0 P p q ε x s σ δ d) kε) :
     ∀ i j, i ≤ j → j ≤ kε → f (x j) ≤ f (x i) := by
@@ -168,9 +206,15 @@ theorem antitone_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s 
     exact (hr.isARqpRun_zero.objective_le fun l hl =>
       arqpcStop_zero_iff.not.1 (hhit.2 l (by omega))).trans (ih (by omega))
 
-/-- The radius policy for `c = 0`: under `LipschitzDerivsAnchored f C A p p L` with jet bounds
-`finMax 1 L p` on `A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`, at every iteration reaching Step 2,
-`δ_{s_k,j} ≥ κ_δ(σ_max) ε_j` for `j ∈ [1, q]` (`σ_max = arSigmaMax P (L p)`). -/
+/-- The radius policy for $c = 0$. Consider an ARqpC run with $c = 0$ and $h = 0$, let
+$X \subseteq C$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect
+to $C$, let $\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and $y \in A$, and let $A$ contain
+$\{y \in X : f(y) \le f(x_0)\}$. Then at every iteration $k$ that is reached and at which the
+Step-1 test fails, $$\delta_{s_k, j} \ge \kappa_\delta(\sigma_{\max}) \varepsilon_j \quad
+\text{for all } j \in [1, q].$$
+
+Here $\sigma_{\max}$ is `arSigmaMax P.toARParams (L p)` and $\kappa_\delta$ is
+`Optimization.arqpKappaDelta` with the jet bound $\bar L$. -/
 theorem arqpKappaDelta_mul_le_radius_zero
     (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L)
@@ -187,9 +231,17 @@ theorem arqpKappaDelta_mul_le_radius_zero
     (fun y hy hy' => hA y hy (by simpa using hy'))
     (fun i hi => arqpcStop_zero_iff.not.2 (hk i hi)) (arqpStop₁_arqpcData_zero_iff.not.2 h1)
 
-/-- **The radii after a successful iteration in either radii mode** (the hypothesis of
-`IsARqpRun.decrease`): in mode `u` with `u → q = 1 ∧ 1 ∉ J` the radius of order `1` stays `1`;
-in every case the radii are at least `κ_δ(σ_max) ε_j`. -/
+/-- **The radii after a successful iteration in either radii mode.** Consider an ARqpC run with
+$c = 0$, $h = 0$ and halving set $J$, and assume the hypotheses on $f$ of
+`Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius_zero`. Let $u$ be a proposition such that
+$u$ implies $q = 1$ and $1 \notin J$. Let iteration $k$ be reached, not terminate, and be
+successful. Then
+
+* if $u$ holds, then $\delta_{k+1, j} = 1$ for all $j \in [1, q]$;
+* if $u$ fails, then $\|s_k\| \ge 1$, or $\delta_{k+1, j} \ge \kappa_\delta(\sigma_{\max})
+  \varepsilon_j$ for all $j \in [1, q]$.
+
+This is the radii hypothesis of `Optimization.IsARqpRun.decrease`. -/
 theorem radii_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -211,10 +263,13 @@ theorem radii_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ 
   · rw [hrad]
     exact hr.arqpKappaDelta_mul_le_radius_zero hf hjet hXC hA hk' h1 j hj
 
-/-- **Decrease with the exponents of the ARqp-SC row of (14.2.12)** ([cartis2022evaluation],
-Lemma 14.2.2): under the hypotheses of `radii_zero`, `L_p ≥ 1` and `θ < ς`, every successful
-iteration `k` not followed by termination decreases `f` by at least
-`η₁ κ_{Δm} min_j ε_j^{π_j}`, `κ_{Δm} = arqpKappaDmOf u P L p q`, `π_j = arqpPiOf u p j`. -/
+/-- **Decrease with the exponents of the ARqp-SC row of (14.2.12)** ([cartis2022evaluation], Lemma
+14.2.2). Assume the hypotheses of `Optimization.IsARqpCRun.radii_zero`, so that iteration $k$ is
+reached, does not terminate and is successful. Assume also $L_p \ge 1$ and $\theta < \varsigma$,
+and that the Step-1 test fails at $k + 1$. Then $$f(x_k) - f(x_{k+1}) \ge \eta_1 \kappa_{\Delta
+m} \min_{j \in [1, q]} \varepsilon_j^{\pi_j},$$ where $\kappa_{\Delta m}$ and $\pi_j$ are the
+constant and the exponents of the radii mode $u$ (`arqpKappaDmOf u P L p q` and
+`arqpPiOf u p j`). -/
 theorem decrease_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -227,8 +282,12 @@ theorem decrease_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s 
   (IsARqpRun.decrease hf hL hXC hA hr.one_le_q hr.q_le_p hθς hr.ε_mem hr.isARqpRun_zero hk hs h1
     (hr.radii_zero hf hjet hXC hA hu hk hs)).2
 
-/-- The radii of the run stay at least `κ_δ(σ_max) ε_j` if they start so (e.g. from `δ₀ = 1`),
-under the hypotheses of `arqpKappaDelta_mul_le_radius_zero`. -/
+/-- The radii of a run stay bounded below if they start so. Consider an ARqpC run with $c = 0$ and
+$h = 0$, and assume the hypotheses on $f$ of
+`Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius_zero`. If the initial radii satisfy
+$\delta_{0,j} \ge \kappa_\delta(\sigma_{\max}) \varepsilon_j$ for $j \in [1, q]$, for example
+$\delta_0 = 1$, then $\delta_{k,j} \ge \kappa_\delta(\sigma_{\max}) \varepsilon_j$ for
+$j \in [1, q]$ at every iteration $k$ that is reached. -/
 theorem radius_ge_zero (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -262,26 +321,34 @@ section Constants
 
 variable (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ)
 
-/-- The decrease constant `κ_decr = η₁ κ_{Δm}` of a call (Lemma 14.2.2 of [cartis2022evaluation],
-ARqpC-SC row with `c = 0`, `h = 0`, exponents `π_j = j + 1`), for constants `L` of the derivatives
-of the objective: `κ_{Δm} = arqpcKappaDm P (L p) (finMax 1 L p) p q`. -/
+/-- The decrease constant of a call, $$\kappa_{\mathrm{decr}} = \eta_1 \kappa_{\Delta m},$$ of Lemma
+14.2.2 of [cartis2022evaluation] in the ARqpC-SC row with $c = 0$, $h = 0$ and the exponents
+$\pi_j = j + 1$. Here $L_j$ are the constants of the derivatives of the objective, and
+$\kappa_{\Delta m}$ is `arqpcKappaDm P (L p) (finMax 1 L p) p q`, that is,
+`Optimization.arqpcKappaDm` with $L_w = L_p$ and $K_w = \bar L$. -/
 noncomputable def arqpCallKappaDecr : ℝ :=
   P.η₁ * arqpcKappaDm P (L p) (finMax 1 L p) p q
 
-/-- The constant `κ_unc = κ_uns + log(σ_max/σ₀)/log γ₂` bounding the number of iterations of a
-call in excess of `κ_uns` times its successful ones (Lemma 14.2.3 of [cartis2022evaluation], with
-`σ_max = arSigmaMax P (L p)`; the first `κ_uns` accounts for the last iteration of a call). -/
+/-- The constant $$\kappa_{\mathrm{unc}} = \kappa_{\mathrm{uns}} + \frac{\log(\sigma_{\max} /
+\sigma_0)}{\log \gamma_2}$$ of a call, with $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_p / (1 -
+\eta_2))$. It bounds the number of iterations of a call in excess of $\kappa_{\mathrm{uns}}$
+times its number of successful iterations (Lemma 14.2.3 of [cartis2022evaluation]).
+
+The first term $\kappa_{\mathrm{uns}}$ accounts for the last iteration of a call. -/
 noncomputable def arqpCallKappaUnc : ℝ :=
   arqpKappaUns P + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂
 
-/-- The radius constant `κ_ρ = min(κ_δ(σ_max), 1/(4(3 L̄ + σ_max)))` of a call
-(`L̄ = finMax 1 L p`): the radii certifying the output of a call are at least `κ_ρ ε_j`. -/
+/-- The radius constant of a call, $$\kappa_\rho = \min\left(\kappa_\delta(\sigma_{\max}),
+\frac{1}{4 (3 \bar L + \sigma_{\max})}\right),$$ where $\kappa_\delta$ is computed with
+$\bar L = \max(1, L_1, \dots, L_p)$. The radii that certify the output of a call are at least
+$\kappa_\rho \varepsilon_j$. -/
 noncomputable def arqpCallKappaRad : ℝ :=
   min (arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)))
     (1 / (4 * (3 * finMax 1 L p + arSigmaMax P.toARParams (L p))))
 
 variable {P L p q}
 
+/-- $\kappa_{\mathrm{unc}} \ge 0$. -/
 theorem arqpCallKappaUnc_nonneg (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) :
     0 ≤ arqpCallKappaUnc P L p := by
   unfold arqpCallKappaUnc
@@ -291,6 +358,8 @@ theorem arqpCallKappaUnc_nonneg (P : ARqpParams) (L : ℕ → ℝ) (p : ℕ) :
     Real.log_nonneg ((one_le_div P.σ₀_pos).2 (σ₀_le_arSigmaMax _ _))
   positivity
 
+/-- If $\sigma_{\min} > 0$, $\theta < \varsigma$ and $L_p \ge 1$, then $\kappa_{\mathrm{decr}} > 0$.
+-/
 theorem arqpCallKappaDecr_pos (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL : 1 ≤ L p) :
     0 < arqpCallKappaDecr P L p q := by
   have hσ := arSigmaMax_pos P.toARParams (L p)
@@ -306,6 +375,7 @@ theorem arqpCallKappaDecr_pos (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς) (hL :
   have := Real.rpow_pos_of_pos hb (((p : ℝ) + 1) / ((p : ℝ) - q + 1))
   positivity
 
+/-- $\kappa_\rho > 0$. -/
 theorem arqpCallKappaRad_pos : 0 < arqpCallKappaRad P L p := by
   have hσ := arSigmaMax_pos P.toARParams (L p)
   have hL1 : 1 ≤ finMax 1 L p := one_le_finMax
@@ -313,12 +383,13 @@ theorem arqpCallKappaRad_pos : 0 < arqpCallKappaRad P L p := by
   have : 0 < 4 * (3 * finMax 1 L p + arSigmaMax P.toARParams (L p)) := by positivity
   positivity
 
+/-- $\kappa_\rho \le \kappa_\delta(\sigma_{\max})$, with $\kappa_\delta$ computed with $\bar L$. -/
 theorem arqpCallKappaRad_le_arqpKappaDelta :
     arqpCallKappaRad P L p ≤ arqpKappaDelta P (finMax 1 L p) (arSigmaMax P.toARParams (L p)) :=
   min_le_left _ _
 
-/-- `κ_ρ ε_j ≤ min(1, ε_j/(4(3 J + σ)))` for `ε_j ∈ (0, 1]`, `1 ≤ J ≤ finMax 1 L p` and
-`0 < σ ≤ σ_max`. -/
+/-- Let $\varepsilon_j \in (0, 1]$, $1 \le K \le \bar L$ and $0 < \sigma \le \sigma_{\max}$. Then
+$\kappa_\rho \varepsilon_j \le \min(1, \varepsilon_j / (4 (3 K + \sigma)))$. -/
 theorem arqpCallKappaRad_mul_le_min {εj J σ : ℝ} (hε : εj ∈ Ioc 0 1) (hJ1 : 1 ≤ J)
     (hJ : J ≤ finMax 1 L p) (hσ0 : 0 < σ) (hσ : σ ≤ arSigmaMax P.toARParams (L p)) :
     arqpCallKappaRad P L p * εj ≤ min 1 (εj / (4 * (3 * J + σ))) := by
@@ -341,6 +412,8 @@ theorem arqpCallKappaRad_mul_le_min {εj J σ : ℝ} (hε : εj ∈ Ioc 0 1) (hJ
           rw [one_div_mul_eq_div]
           exact div_le_div_of_nonneg_left hε0.le hK hK'
 
+/-- $\kappa_{\mathrm{unc}} = \kappa_{\mathrm{uns}} + \log(\sigma_{\max} / \sigma_0) / \log
+\gamma_2$. -/
 theorem arqpCallKappaUnc_eq :
     arqpCallKappaUnc P L p =
       arqpKappaUns P + Real.log (arSigmaMax P.toARParams (L p) / P.σ₀) / Real.log P.γ₂ := rfl
@@ -352,10 +425,14 @@ section Zero
 variable {f : E → ℝ} {X : Set E} {p q : ℕ} {P : ARqpParams} {J : Set ℕ} {ε δ₀ : ℕ → ℝ}
   {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E} {C A : Set E} {L : ℕ → ℝ}
 
-/-- **Decrease with the exponents of the ARqpC-SC row of (14.2.12)** ([cartis2022evaluation],
-Lemma 14.2.2 with `c = 0`, `h = 0`): under the hypotheses of `IsARqpCRun.decrease_zero`, every
-successful iteration `k` not followed by termination decreases `f` by at least
-`κ_decr ε_j^{j+1}` for some `j ∈ [1, q]` (`κ_decr = arqpCallKappaDecr P L p q`). -/
+/-- **Decrease with the exponents of the ARqpC-SC row of (14.2.12)** ([cartis2022evaluation], Lemma
+14.2.2 with $c = 0$, $h = 0$). Consider an ARqpC run with $c = 0$ and $h = 0$, let
+$X \subseteq C$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect
+to $C$, with $L_p \ge 1$, let $\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and $y \in A$,
+let $A$ contain $\{y \in X : f(y) \le f(x_0)\}$, and let $\theta < \varsigma$. Let iteration $k$
+be reached, not terminate, and be successful, and let the Step-1 test fail at $k + 1$. Then for
+some $j \in [1, q]$ $$f(x_k) - f(x_{k+1}) \ge \kappa_{\mathrm{decr}} \varepsilon_j^{j+1},$$
+where $\kappa_{\mathrm{decr}}$ is `Optimization.arqpCallKappaDecr`. -/
 theorem IsARqpCRun.decrease_composite_zero
     (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
@@ -377,15 +454,20 @@ theorem IsARqpCRun.decrease_composite_zero
 
 end Zero
 
-/-- The jet bound `max(1, max_{i ∈ [2, p]} ‖∇^i f(y)‖)` at `y` (computable from the derivatives
-that Step 1 of ARqp evaluates at `y`). -/
+/-- The **jet bound** $$J(y) = \max\left(1, \max_{i \in [2, p]} \|\nabla^i f(y)\|\right)$$ of $f$ at
+$y$. It can be computed from the derivatives that Step 1 of ARqp evaluates at $y$.
+
+The definition is `finMax 1 (fun i => if i < p then ‖iteratedFDeriv ℝ (i + 1) f y‖ else 0) p`,
+in which the term of index $p$ is $0$. -/
 noncomputable def arqpJetBound (f : E → ℝ) (p : ℕ) (y : E) : ℝ :=
   finMax 1 (fun i => if i < p then ‖iteratedFDeriv ℝ (i + 1) f y‖ else 0) p
 
+/-- The jet bound is at least $1$. -/
 theorem one_le_arqpJetBound (f : E → ℝ) (p : ℕ) (y : E) : 1 ≤ arqpJetBound f p y :=
   le_finMax_left
 
-/-- `arqpJetBound f p y ≤ finMax 1 L p` when `‖∇^i f(y)‖ ≤ finMax 1 L p` for `i ∈ [2, p]`. -/
+/-- If $M \ge 1$ and $\|\nabla^i f(y)\| \le M$ for $i \in [2, p]$, then the jet bound satisfies
+$J(y) \le M$. -/
 theorem arqpJetBound_le {f : E → ℝ} {p : ℕ} {y : E} {M : ℝ} (hM : 1 ≤ M)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ‖iteratedFDeriv ℝ i f y‖ ≤ M) : arqpJetBound f p y ≤ M := by
   refine finMax_le hM fun i hi => ?_
@@ -393,7 +475,7 @@ theorem arqpJetBound_le {f : E → ℝ} {p : ℕ} {y : E} {M : ℝ} (hM : 1 ≤ 
   · exact hjet (i + 1) (Finset.mem_Icc.2 ⟨by have := (Finset.mem_Icc.1 hi).1; omega, by omega⟩)
   · exact zero_le_one.trans hM
 
-/-- The jet bound bounds the derivatives `‖∇^i f(y)‖`, `i ∈ [2, p]`. -/
+/-- The jet bound bounds the derivatives: $\|\nabla^i f(y)\| \le J(y)$ for $i \in [2, p]$. -/
 theorem norm_iteratedFDeriv_le_arqpJetBound (f : E → ℝ) {p : ℕ} (y : E) {i : ℕ}
     (hi : i ∈ Finset.Icc 2 p) : ‖iteratedFDeriv ℝ i f y‖ ≤ arqpJetBound f p y := by
   have hi' : i - 1 ∈ Finset.Icc 1 p := Finset.mem_Icc.2
@@ -410,9 +492,15 @@ section Certificate
 variable {f : E → ℝ} {X : Set E} {p q : ℕ} {P : ARqpParams} {J : Set ℕ} {ε δ₀ : ℕ → ℝ}
   {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E} {C A : Set E} {L : ℕ → ℝ}
 
-/-- **The certificate at a Step-2 termination**: if Step 2 terminates at `k`, the radii
-`min(1, ε_j/(4(3 J + σ_k)))`, `J = arqpJetBound f p x_k`, lie in `(0, 1]` and certify
-`(ε, δ)`-approximate `q`-th order optimality at `x_k`, since `0` minimizes the model there. -/
+/-- **The certificate at a termination in Step 2.** Consider an ARqpC run with $c = 0$ and $h = 0$,
+and an iteration $k$ that is reached, at which the Step-1 test fails and the Step-2 test
+$m_k(s_k) = m_k(0)$ holds. Let $f$ be of class $C^p$ at $x_k$, and let $J = J(x_k)$ be the jet
+bound. Then the radii $$r_j = \min\left(1, \frac{\varepsilon_j}{4 (3 J + \sigma_k)}\right)$$ lie
+in $(0, 1]$ for $j \in [1, q]$, and $x_k$ is an $(\varepsilon, r)$-approximate $q$-th order
+minimizer over $\{e : x_k + e \in X\}$.
+
+The reason is that $0$ minimizes the model at $x_k$. The proof specializes
+`Optimization.isEpsDeltaApprox_of_isMinOn_zero_of_jet`. -/
 theorem IsARqpCRun.isEpsDeltaApprox_of_stop₂_zero
     (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i)
@@ -427,10 +515,15 @@ theorem IsARqpCRun.isEpsDeltaApprox_of_stop₂_zero
     (fun i hi => norm_iteratedFDeriv_le_arqpJetBound f (x k) hi) hr.q_le_p hr.ε_mem
     (hrun.toIsARRun.sigma_pos hk k le_rfl) ((hrun.step hk h1).isMinOn_of_eq h2)
 
-/-- **The certificate of a terminating run with explicit radii**: under the hypotheses of
-`IsARqpCRun.radius_ge_zero` with `δ₀ = 1`, at the first termination index `k_ε` there are radii
-`δ_ε ∈ (0, 1]^q` with `δ_{ε,j} ≥ κ_ρ ε_j` (`κ_ρ = arqpCallKappaRad P L p`) certifying
-`(ε, δ_ε)`-approximate `q`-th order optimality of `x_{k_ε}`. -/
+/-- **The certificate of a terminating run with explicit radii.** Consider an ARqpC run with
+$c = 0$, $h = 0$ and initial radii $\delta_0 = 1$, and assume the hypotheses on $f$ of
+`Optimization.IsARqpCRun.arqpKappaDelta_mul_le_radius_zero`. Let the run terminate at
+$k_\varepsilon$. Then there are radii $\delta_\varepsilon \in (0, 1]^q$ with
+$\delta_{\varepsilon, j} \ge \kappa_\rho \varepsilon_j$ for $j \in [1, q]$ such that
+$x_{k_\varepsilon}$ is an $(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer
+over $\{e : x_{k_\varepsilon} + e \in X\}$.
+
+Here $\kappa_\rho$ is `Optimization.arqpCallKappaRad`. -/
 theorem IsARqpCRun.exists_cert_zero
     (hr : IsARqpCRun f (0 : E → G) 0 X p q P J ε (fun _ => 1) x s σ δ δs d dm)
     (hf : LipschitzDerivsAnchored f C A p p L)
@@ -477,10 +570,15 @@ variable {f : E → ℝ} {X : Set E} {p q : ℕ} {P : ARqpParams} {ε : ℕ → 
   {L : ℕ → ℝ}
 
 variable (G) in
-/-- `(y, δ)` is the output of a call `INNER(f, X, q, x^S, ε)` realized by ARqp-SC: `y` is the
-first termination iterate of an ARqpC run with `c = 0 : E → G`, `h = 0`, the halving set
-`compositeHalvingSet 0 X` and initial radii `1` on `f` from `x^S`, and the radii `δ ∈ (0, 1]^q`
-certify `(ε, δ)`-approximate `q`-th order optimality at `y` over `X`. -/
+/-- **The output of a call** $\mathrm{INNER}(f, X, q, x^S, \varepsilon)$ realized by ARqp-SC. A pair
+$(y, \delta)$ is such an output if
+
+* there is an ARqpC run with $c = 0 : E \to G$, $h = 0$, the halving set
+  `compositeHalvingSet 0 X` and initial radii $1$ on $f$, which starts at $x_0 = x^S$,
+  terminates at some $k_\varepsilon$, and has $x_{k_\varepsilon} = y$;
+* the radii satisfy $\delta \in (0, 1]^q$;
+* $y$ is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer over
+  $\{e : y + e \in X\}$. -/
 def IsARqpOutput (f : E → ℝ) (X : Set E) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ) (xS y : E)
     (δ : ℕ → ℝ) : Prop :=
   (∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) (kε : ℕ),
@@ -491,9 +589,11 @@ def IsARqpOutput (f : E → ℝ) (X : Set E) (p q : ℕ) (P : ARqpParams) (ε : 
   IsEpsDeltaApprox (ftaylorSeries ℝ f y) {e | y + e ∈ X} q ε δ
 
 variable (G) in
-/-- `(y, δ)` is the output of a call (as in `IsARqpOutput`) whose run uses `nF` evaluations of `f`
-and `nD` evaluations of its derivatives (`funEvalCount` and `derivEvalCount` at its first
-termination index). -/
+/-- **The output of a call with its cost.** A pair $(y, \delta)$ is the output of a call from $x^S$
+as in `Optimization.IsARqpOutput`, whose run uses $n_F$ evaluations of $f$ and $n_D$ evaluations
+of its derivatives. That is, $n_F = k_\varepsilon + 1$ (`Optimization.funEvalCount`) and $n_D$
+is one plus the number of successful iterations before $k_\varepsilon$
+(`Optimization.derivEvalCount`), where $k_\varepsilon$ is the termination index of the run. -/
 def IsARqpOutputCost (f : E → ℝ) (X : Set E) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ)
     (xS y : E) (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   (∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) (kε : ℕ),
@@ -510,21 +610,22 @@ namespace IsARqpOutput
 
 variable {xS y : E} {δ : ℕ → ℝ}
 
-/-- The output is feasible. -/
+/-- The output of a call is feasible: $y \in X$. -/
 theorem mem (h : IsARqpOutput G f X p q P ε xS y δ) : y ∈ X := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, -, rfl⟩, -⟩ := h
   exact hr.mem hhit.2
 
-/-- A call does not increase `f`. -/
+/-- A call does not increase $f$: $f(y) \le f(x^S)$. -/
 theorem le (h : IsARqpOutput G f X p q P ε xS y δ) : f y ≤ f xS := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, rfl, rfl⟩, -⟩ := h
   exact hr.antitone_zero hhit 0 kε (Nat.zero_le _) le_rfl
 
-/-- The output radii lie in `(0, 1]`. -/
+/-- The output radii lie in $(0, 1]$. -/
 theorem radius_mem (h : IsARqpOutput G f X p q P ε xS y δ) :
     ∀ j ∈ Finset.Icc 1 q, 0 < δ j ∧ δ j ≤ 1 := h.2.1
 
-/-- The output radii certify `(ε, δ)`-approximate optimality at the output. -/
+/-- The output $y$ is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer over
+$\{e : y + e \in X\}$, with the output radii $\delta$. -/
 theorem isEpsDeltaApprox (h : IsARqpOutput G f X p q P ε xS y δ) :
     IsEpsDeltaApprox (ftaylorSeries ℝ f y) {e | y + e ∈ X} q ε δ := h.2.2
 
@@ -534,37 +635,44 @@ namespace IsARqpOutputCost
 
 variable {xS y : E} {δ : ℕ → ℝ} {nF nD : ℕ}
 
+/-- The output of a call with its cost is the output of a call. -/
 theorem isARqpOutput (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD) :
     IsARqpOutput G f X p q P ε xS y δ := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, h0, hy, -, -⟩, hδ, happ⟩ := h
   exact ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, h0, hy⟩, hδ, happ⟩
 
-/-- The tolerances of a call lie in `(0, 1]`. -/
+/-- The tolerances of a call lie in $(0, 1]$: $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$. -/
 theorem ε_mem (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD) :
     ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, -⟩, -⟩ := h
   exact hr.ε_mem
 
+/-- A call has $q \ge 1$. -/
 theorem one_le_q (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD) : 1 ≤ q := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, -⟩, -⟩ := h
   exact hr.one_le_q
 
+/-- A call has $q \le p$. -/
 theorem q_le_p (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD) : q ≤ p := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, hr, -⟩, -⟩ := h
   exact hr.q_le_p
 
-/-- A call evaluates `f` and its derivatives at least once. -/
+/-- A call evaluates $f$ and its derivatives at least once: $n_F \ge 1$ and $n_D \ge 1$. -/
 theorem one_le (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD) : 1 ≤ nF ∧ 1 ≤ nD := by
   obtain ⟨⟨x, s, σ, δ, δs, d, dm, kε, -, -, -, -, rfl, rfl⟩, -, -⟩ := h
   simp [derivEvalCount, funEvalCount]
 
-/-- **The cost of a terminating call, ARqpC-SC row** ([cartis2022evaluation], Theorem 14.2.4
-with `c = 0`, `h = 0`, `π_j = j + 1`): for `f ≥ f_low` on `X`,
-`LipschitzDerivsAnchored f C A p p L` with `X ⊆ C`, `L_p ≥ 1`, jet bounds `finMax 1 L p` on
-`A ⊇ {y ∈ X | f(y) ≤ f(x^S)}`, `σ_min > 0` and `θ < ς`, the call uses at most
-`κ_uns (f(x^S) - f_low)/(κ_decr m_ε) + κ_C` evaluations of `f` and
-`(f(x^S) - f_low)/(κ_decr m_ε) + 2` evaluations of its derivatives, where
-`m_ε = min_j ε_j^{j+1}`, `κ_decr = arqpCallKappaDecr P L p q` and `κ_C = kappaCARqp P L p`. -/
+/-- **The cost of a terminating call, ARqpC-SC row** ([cartis2022evaluation], Theorem 14.2.4 with
+$c = 0$, $h = 0$ and $\pi_j = j + 1$). Let $(y, \delta)$ be the output of a call from $x^S$ with
+the costs $n_F$ and $n_D$. Let $f \ge f_{\mathrm{low}}$ on $X$, let $X \subseteq C$, let
+$\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect to $C$, with
+$L_p \ge 1$, let $\|\nabla^i f(z)\| \le \bar L$ for $i \in [2, p]$ and $z \in A$, let $A$
+contain $\{z \in X : f(z) \le f(x^S)\}$, and let $\sigma_{\min} > 0$ and $\theta < \varsigma$.
+Then, with $m_\varepsilon = \min_{j \in [1, q]} \varepsilon_j^{j+1}$, $$n_F \le
+\kappa_{\mathrm{uns}} \frac{f(x^S) - f_{\mathrm{low}}}{\kappa_{\mathrm{decr}} m_\varepsilon} +
+\kappa^c \quad\text{and}\quad n_D \le \frac{f(x^S) - f_{\mathrm{low}}}{\kappa_{\mathrm{decr}}
+m_\varepsilon} + 2,$$ where $\kappa_{\mathrm{decr}}$ is `Optimization.arqpCallKappaDecr` and
+$\kappa^c$ is `Optimization.kappaCARqp`. -/
 theorem cost_le {flow : ℝ} (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD)
     (hb : ∀ z ∈ X, flow ≤ f z) (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ z ∈ A, ‖iteratedFDeriv ℝ i f z‖ ≤ finMax 1 L p)
@@ -596,11 +704,14 @@ theorem cost_le {flow : ℝ} (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD)
   exact ⟨hF', hD'⟩
 
 /-- **The cost of a terminating call, ARqp-SC row** ([cartis2022evaluation], Theorem 14.2.4 for
-ARqp-SC, in radii mode `u` with `u → q = 1 ∧ X` convex): under the hypotheses of `cost_le`, the
-call uses at most `κ^a (f(x^S) - f_low)/m_ε + κ^c` evaluations of `f` and
-`κ^s (f(x^S) - f_low)/m_ε + 2` evaluations of its derivatives, where
-`m_ε = min_j ε_j^{π_j}`, `π_j = arqpPiOf u p j`, `κ^a = kappaAARqpOf u P L p q`,
-`κ^s = kappaSARqpOf u P L p q` and `κ^c = kappaCARqp P L p`. -/
+ARqp-SC). Assume the hypotheses of `Optimization.IsARqpOutputCost.cost_le`, and let $u$ be a
+radii mode such that $u$ implies $q = 1$ and the convexity of $X$. Then, with $m_\varepsilon =
+\min_{j \in [1, q]} \varepsilon_j^{\pi_j}$ and the exponents $\pi_j$ of the radii mode $u$
+(`arqpPiOf u p j`), $$n_F \le \frac{\kappa^a (f(x^S) - f_{\mathrm{low}})}{m_\varepsilon} +
+\kappa^c \quad\text{and}\quad n_D \le \frac{\kappa^s (f(x^S) -
+f_{\mathrm{low}})}{m_\varepsilon} + 2,$$ where $\kappa^a$ and $\kappa^s$ are the constants of
+the radii mode $u$ (`kappaAARqpOf u P L p q` and `kappaSARqpOf u P L p q`) and $\kappa^c$ is
+`Optimization.kappaCARqp`. -/
 theorem cost_le_arqp {flow : ℝ} (h : IsARqpOutputCost G f X p q P ε xS y δ nF nD)
     (hb : ∀ z ∈ X, flow ≤ f z) (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ z ∈ A, ‖iteratedFDeriv ℝ i f z‖ ≤ finMax 1 L p)
@@ -630,10 +741,16 @@ theorem cost_le_arqp {flow : ℝ} (h : IsARqpOutputCost G f X p q P ε xS y δ n
 end IsARqpOutputCost
 
 variable (G) in
-/-- **Terminating calls exist**: in finite dimension, for a closed `X`, `x^S ∈ X`, `f ≥ f_low` on
-`X`, `LipschitzDerivsAnchored f C A p p L` with `X ⊆ C`, jet bounds `finMax 1 L p` on
-`A ⊇ {y ∈ X | f(y) ≤ f(x^S)}`, `σ_min > 0`, `θ < ς`, `1 ≤ q ≤ p` and `ε ∈ (0, 1]^q`, there is a
-terminating call from `x^S`, with radii at least `κ_ρ ε_j`. -/
+/-- **Terminating calls exist.** Let $E$ be finite-dimensional, let $X$ be closed and $x^S \in X$,
+and let $f \ge f_{\mathrm{low}}$ on $X$. Let $X \subseteq C$, let $\nabla^p f$ be
+$L_p$-Lipschitz anchored at the points of $A$ with respect to $C$, with $L_p \ge 1$, let
+$\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and $y \in A$, and let $A$ contain
+$\{y \in X : f(y) \le f(x^S)\}$. Let $\sigma_{\min} > 0$, $\theta < \varsigma$, $1 \le q \le p$
+and $\varepsilon \in (0, 1]^q$. Then there is a terminating call from $x^S$ with some output
+$(y, \delta)$ and costs $n_F$, $n_D$ (`Optimization.IsARqpOutputCost`), whose radii satisfy
+$\delta_j \ge \kappa_\rho \varepsilon_j$ for $j \in [1, q]$.
+
+Here $\kappa_\rho$ is `Optimization.arqpCallKappaRad`. -/
 theorem exists_isARqpOutputCost [FiniteDimensional ℝ E] {flow : ℝ} (hX : IsClosed X) {xS : E}
     (hxS : xS ∈ X) (hb : ∀ y ∈ X, flow ≤ f y) (hf : LipschitzDerivsAnchored f C A p p L)
     (hL : 1 ≤ L p)
@@ -662,7 +779,7 @@ theorem exists_isARqpOutputCost [FiniteDimensional ℝ E] {flow : ℝ} (hX : IsC
 
 end Output
 
-/-! ### Calls cut by the outer method -/
+/-! ### Calls stopped by the outer method -/
 
 section CallOut
 
@@ -671,16 +788,24 @@ variable {f : E → ℝ} {X : Set E} {p q : ℕ} {P : ARqpParams} {ε : ℕ → 
 
 variable (G) in
 /-- **A call of ARqp-SC with its returned radii** ([cartis2022evaluation], Algorithm 14.1.1 with
-`c = 0`, `h = 0` used as INNER, e.g. in Algorithm 14.3.2): the points `xi 0, …, xi e` are the first
-`e + 1` iterates of an ARqpC run with `c = 0 : E → G`, `h = 0`, the halving set
-`compositeHalvingSet 0 X` and initial radii `1` on `f`, whose first termination index `k_ε` is at
-least `e` (the call may be cut before termination); `succ i` holds for `i < e` exactly when
-iteration `i` of the run is successful, and the returned radii `δo` are
-* the current radii `δ_e` (at a Step-1 termination these are certifying radii);
-* or, whenever Step 2 is computed at `e`, the Step-2 radii `δ_{s_e}`;
-* or, at a Step-2 termination (`e = k_ε`), the radii `min(1, ε_j/(4(3 J + σ_e)))`,
-  `J = arqpJetBound f p x_e`, which certify `(ε, δo)`-approximate optimality at `x_e`
-  (`IsARqpCRun.isEpsDeltaApprox_of_stop₂_zero`). -/
+$c = 0$, $h = 0$ used as INNER, for example in Algorithm 14.3.2). The points
+$x^i_0, \dots, x^i_e$, the predicate $\mathrm{succ}$ and the radii $\delta^o$ form such a call
+if there is an ARqpC run with $c = 0 : E \to G$, $h = 0$, the halving set
+`compositeHalvingSet 0 X` and initial radii $1$ on $f$ with the following properties.
+
+* The run terminates at some $k_\varepsilon \ge e$, so the call may be stopped before
+  termination.
+* The points $x^i_0, \dots, x^i_e$ are the first $e + 1$ iterates of the run.
+* For $i < e$, $\mathrm{succ}(i)$ holds if and only if iteration $i$ of the run is successful.
+* The returned radii $\delta^o$ are, at the orders $j \in [1, q]$, one of the following: the
+  current radii $\delta_e$ (at a termination in Step 1 these certify the output); or, if the
+  Step-1 test fails at $e$, the Step-2 radii $\delta_{s_e}$; or, if $e = k_\varepsilon$ and the
+  Step-1 test fails at $e$ (a termination in Step 2), the radii
+  $\min(1, \varepsilon_j / (4 (3 J + \sigma_e)))$ with the jet bound $J = J(x_e)$.
+
+In the last case the radii certify $(\varepsilon, \delta^o)$-approximate optimality at $x_e$, by
+`Optimization.IsARqpCRun.isEpsDeltaApprox_of_stop₂_zero`. In Lean the points are `xi`, the
+predicate is `succ` and the radii are `δo`. -/
 def IsARqpCallOut (f : E → ℝ) (X : Set E) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ)
     (xi : ℕ → E) (e : ℕ) (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   ∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) (kε : ℕ),
@@ -700,7 +825,7 @@ namespace IsARqpCallOut
 
 variable {xi : ℕ → E} {e : ℕ} {succ : ℕ → Prop} {δo : ℕ → ℝ}
 
-/-- `f` does not increase along a call. -/
+/-- A call does not increase $f$: $f(x^i_{i+1}) \le f(x^i_i)$ for all $i < e$. -/
 theorem antitone (h : IsARqpCallOut G f X p q P ε xi e succ δo) :
     ∀ i < e, f (xi (i + 1)) ≤ f (xi i) := by
   obtain ⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, he, hxi, -, -⟩ := h
@@ -708,7 +833,8 @@ theorem antitone (h : IsARqpCallOut G f X p q P ε xi e succ δo) :
   rw [hxi i (by omega), hxi (i + 1) (by omega)]
   exact hr.antitone_zero hhit i (i + 1) (by omega) (by omega)
 
-/-- Unsuccessful iterations of a call do not move. -/
+/-- The unsuccessful iterations of a call do not move: if $i < e$ and $\mathrm{succ}(i)$ fails, then
+$x^i_{i+1} = x^i_i$. -/
 theorem eq_of_not_succ (h : IsARqpCallOut G f X p q P ε xi e succ δo) :
     ∀ i < e, ¬ succ i → xi (i + 1) = xi i := by
   obtain ⟨x, s, σ, δ, δs, d, dm, kε, hr, hhit, he, hxi, hsucc, hδo⟩ := h
@@ -723,10 +849,12 @@ theorem eq_of_not_succ (h : IsARqpCallOut G f X p q P ε xi e succ δo) :
     (not_le.1 ((hsucc' i hi).not.1 hs))
 
 open Classical in
-/-- **The number of iterations of a call** ([cartis2022evaluation], Lemma 14.2.3):
-`e ≤ κ_uns |𝒮| + κ_unc`, `𝒮` the successful iterations of the call, for an objective with
-`LipschitzDerivsAnchored f C A p p L`, `X ⊆ C`, on a set `A` containing the sublevel set of `f`
-at the start of the call. -/
+/-- **The number of iterations of a call** ([cartis2022evaluation], Lemma 14.2.3). Let
+$X \subseteq C$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect
+to $C$, and let $A$ contain the sublevel set $\{y \in X : f(y) \le f(x^i_0)\}$ of the start of
+the call. Then $$e \le \kappa_{\mathrm{uns}} |\mathcal{S}| + \kappa_{\mathrm{unc}},$$ where
+$\mathcal{S} = \{i < e : \mathrm{succ}(i)\}$ is the set of successful iterations of the call and
+$\kappa_{\mathrm{unc}}$ is `Optimization.arqpCallKappaUnc`. -/
 theorem le_count (h : IsARqpCallOut G f X p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A p p L) (hXC : X ⊆ C)
     (hA : ∀ y ∈ X, f y ≤ f (xi 0) → y ∈ A) :
@@ -749,11 +877,15 @@ theorem le_count (h : IsARqpCallOut G f X p q P ε xi e succ δo)
   rw [arqpKappaUns_eq] at hκ ⊢
   nlinarith
 
-/-- **The decrease of a call, ARqpC-SC row** ([cartis2022evaluation], Lemma 14.2.2): under the
-hypotheses of `le_count`, `L_p ≥ 1`, jet bounds `finMax 1 L p` on `A` and `θ < ς`, every
-successful iteration `i < e` that is not the last one, or that is the last one of a call ending
-at a point failing the test of `(ε, δo)`-approximate optimality, decreases `f` by at least
-`κ_decr ε_l^{l+1}` for some `l`. -/
+/-- **The decrease of a call, ARqpC-SC row** ([cartis2022evaluation], Lemma 14.2.2). Let
+$X \subseteq C$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect
+to $C$, with $L_p \ge 1$, let $\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and $y \in A$,
+let $A$ contain $\{y \in X : f(y) \le f(x^i_0)\}$, and let $\theta < \varsigma$. Let $i < e$ be
+a successful iteration of the call. Assume that $i$ is not the last iteration ($i + 1 < e$), or
+that the last point $x^i_e$ is not an $(\varepsilon, \delta^o)$-approximate $q$-th order
+minimizer over $\{d : x^i_e + d \in X\}$. Then for some $l \in [1, q]$ $$f(x^i_i) - f(x^i_{i+1})
+\ge \kappa_{\mathrm{decr}} \varepsilon_l^{l+1},$$ where $\kappa_{\mathrm{decr}}$ is
+`Optimization.arqpCallKappaDecr`. -/
 theorem decrease (h : IsARqpCallOut G f X p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -791,9 +923,14 @@ theorem decrease (h : IsARqpCallOut G f X p q P ε xi e succ δo)
   rw [hxi i hi.le, hxi (i + 1) hi]
   exact hdec
 
-/-- **The decrease of a call, ARqp-SC row** ([cartis2022evaluation], Lemma 14.2.2): as
-`decrease`, with the decrease `η₁ κ_{Δm} ε_l^{π_l}` of the ARqp-SC row in a radii mode `u` with
-`u → q = 1 ∧ X` convex (`π_l = arqpPiOf u p l`). -/
+/-- **The decrease of a call, ARqp-SC row** ([cartis2022evaluation], Lemma 14.2.2). Assume the
+hypotheses of `Optimization.IsARqpCallOut.decrease`, and let $u$ be a radii mode such that $u$
+implies $q = 1$ and the convexity of $X$. Let $i < e$ be a successful iteration of the call that
+is not the last one, or let the last point fail the certificate as in
+`Optimization.IsARqpCallOut.decrease`. Then for some $l \in [1, q]$ $$f(x^i_i) - f(x^i_{i+1})
+\ge \eta_1 \kappa_{\Delta m} \varepsilon_l^{\pi_l},$$ where $\kappa_{\Delta m}$ and $\pi_l$ are
+the constant and the exponents of the radii mode $u$ (`arqpKappaDmOf u P L p q` and
+`arqpPiOf u p l`). -/
 theorem decrease_arqp (h : IsARqpCallOut G f X p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -839,9 +976,12 @@ theorem decrease_arqp (h : IsARqpCallOut G f X p q P ε xi e succ δo)
   rw [hxi i hi.le, hxi (i + 1) hi, mul_assoc]
   exact hdec
 
-/-- **The returned radii of a call** (the radius policy of Algorithm 14.1.2): under the
-hypotheses of `le_count` and jet bounds `finMax 1 L p` on `A`, the returned radii are at least
-`κ_ρ ε_j`. -/
+/-- **The returned radii of a call** (the radius policy of Algorithm 14.1.2 of
+[cartis2022evaluation]). Let $X \subseteq C$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at
+the points of $A$ with respect to $C$, let $\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and
+$y \in A$, and let $A$ contain $\{y \in X : f(y) \le f(x^i_0)\}$. Then the returned radii
+satisfy $\delta^o_j \ge \kappa_\rho \varepsilon_j$ for $j \in [1, q]$, where $\kappa_\rho$ is
+`Optimization.arqpCallKappaRad`. -/
 theorem radius_ge (h : IsARqpCallOut G f X p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A p p L)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -880,9 +1020,20 @@ theorem radius_ge (h : IsARqpCallOut G f X p q P ε xi e succ δo)
       (hrun.toIsARRun.sigma_pos hnot e le_rfl) (hrun.sigma_le_of_anchored hf hXC hA e hnot).2
 
 open Classical in
-/-- **The contract of one call** ([cartis2022evaluation], Lemmas 14.2.2 and 14.2.3 for ARqp-SC,
-and the radius policy of Algorithm 14.1.2), bundling `eq_of_not_succ`, `le_count`, `decrease`,
-`decrease_arqp` and `radius_ge` (the form used by the two-phase analysis). -/
+/-- **The contract of one call** ([cartis2022evaluation], Lemmas 14.2.2 and 14.2.3 for ARqp-SC, and
+the radius policy of Algorithm 14.1.2). Assume the hypotheses of
+`Optimization.IsARqpCallOut.decrease`. Then
+
+* the unsuccessful iterations do not move (`Optimization.IsARqpCallOut.eq_of_not_succ`);
+* $e \le \kappa_{\mathrm{uns}} |\mathcal{S}| + \kappa_{\mathrm{unc}}$
+  (`Optimization.IsARqpCallOut.le_count`);
+* the successful iterations decrease $f$ as in `Optimization.IsARqpCallOut.decrease`;
+* for every radii mode $u$ that implies $q = 1$ and the convexity of $X$, the successful
+  iterations decrease $f$ as in `Optimization.IsARqpCallOut.decrease_arqp`;
+* the returned radii satisfy $\delta^o_j \ge \kappa_\rho \varepsilon_j$ for $j \in [1, q]$
+  (`Optimization.IsARqpCallOut.radius_ge`).
+
+This is the form that the two-phase analysis uses. -/
 theorem contract (h : IsARqpCallOut G f X p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f C A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -905,12 +1056,22 @@ end IsARqpCallOut
 
 variable (G) in
 open Classical in
-/-- **Calls stopped by an external test exist**: in finite dimension, under the hypotheses of
-`exists_isARqpOutputCost` and for any test `stop` on points, there is a call from `x₀`
-(`IsARqpCallOut`) cut at the first iterate satisfying `stop` or at the termination of the run,
-whichever comes first. Its iterates stay in `X`, do not increase `f`, the returned radii lie in
-`(0, 1]`, and at the last iterate either `stop` holds or the returned radii certify
-`(ε, δo)`-approximate `q`-th order optimality. -/
+/-- **Calls stopped by an external test exist.** Let $E$ be finite-dimensional, let $X$ be closed
+and $x_0 \in X$, and let $f \ge f_{\mathrm{low}}$ on $X$. Let $X \subseteq C$, let $\nabla^p f$
+be $L_p$-Lipschitz anchored at the points of $A$ with respect to $C$, with $L_p \ge 1$, let
+$\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$ and $y \in A$, and let $A$ contain
+$\{y \in X : f(y) \le f(x_0)\}$. Let $\sigma_{\min} > 0$, $\theta < \varsigma$, $1 \le q \le p$
+and $\varepsilon \in (0, 1]^q$, and let $\mathrm{stop}$ be any predicate on points. Then there
+is a call $(x^i_0, \dots, x^i_e, \mathrm{succ}, \delta^o)$ in the sense of
+`Optimization.IsARqpCallOut` with $x^i_0 = x_0$ that is stopped at the first iterate that
+satisfies $\mathrm{stop}$ or at the termination of the run, whichever comes first. More
+precisely:
+
+* $x^i_e \in X$, and $\delta^o_j \in (0, 1]$ for $j \in [1, q]$;
+* $f(x^i_{i+1}) \le f(x^i_i)$ for $i < e$, and $f(x^i_i) \le f(x_0)$ for $i \le e$;
+* $\mathrm{stop}(x^i_i)$ fails for $i < e$;
+* $\mathrm{stop}(x^i_e)$ holds, or $x^i_e$ is an $(\varepsilon, \delta^o)$-approximate $q$-th
+  order minimizer over $\{d : x^i_e + d \in X\}$. -/
 theorem exists_isARqpCallOut_of_stop [FiniteDimensional ℝ E] {flow : ℝ} (hX : IsClosed X)
     {x₀ : E} (hx₀ : x₀ ∈ X) (hb : ∀ y ∈ X, flow ≤ f y) (hf : LipschitzDerivsAnchored f C A p p L)
     (hL : 1 ≤ L p)
@@ -983,23 +1144,34 @@ theorem exists_isARqpCallOut_of_stop [FiniteDimensional ℝ E] {flow : ℝ} (hX 
 
 end CallOut
 
-/-! ### Calls of ARqp with unit radii on the whole space
+/-!
+### Calls of ARqp with unit radii on the whole space
 
-For `X = E` and `q ≤ 2`, the detailed Step 2 of Algorithm 12.2.3 keeps the radii `1` at the orders
-`j ≤ 2` (`exists_isARqpRun`) and an ARqp run never terminates in Step 2
-(`IsARqpRun.arqpStop₁_of_isFirstHit_of_le_two`), so the radii `1` certify the output of a call;
-the analysis is that of the unit-radius mode of ARqp (exponents `π_j = (p+1)/(p-j+1)`). -/
+For $X = E$ and $q \le 2$, the detailed Step 2 of Algorithm 12.2.3 of [cartis2022evaluation] keeps
+the radii $1$ at the orders $j \le 2$ (`Optimization.exists_isARqpRun`), and an ARqp run never
+terminates in Step 2 (`Optimization.IsARqpRun.arqpStop₁_of_isFirstHit_of_le_two`). So the radii $1$
+certify the output of a call. The analysis is that of the unit-radius mode of ARqp, with the
+exponents $\pi_j = (p+1)/(p-j+1)$.
+-/
 
 section Unit
 
 variable {f : E → ℝ} {p q : ℕ} {P : ARqpParams} {ε : ℕ → ℝ} {A : Set E} {L : ℕ → ℝ}
 
-/-- **ARqp runs on the whole space with unit radii terminate**: in finite dimension, for
-`1 ≤ q ≤ min(2, p)`, `ε ∈ (0, 1]^q`, `σ_min > 0`, `θ < ς`, `f ≥ f_low`, and
-`LipschitzDerivsAnchored f univ A p p L` with `L_p ≥ 1` and jet bounds `finMax 1 L p` on a set
-`A ⊇ {y | f(y) ≤ f(x^S)}`, there is an ARqp run with exact data from `x^S` with initial radii `1`
-whose Step-2 radii are `1` before termination; it terminates at some `k_ε`, does not increase `f`,
-and the radii `1` certify `(ε, 1)`-approximate `q`-th order optimality at `x_{k_ε}`. -/
+/-- **ARqp runs on the whole space with unit radii terminate.** Let $E$ be finite-dimensional, let
+$f \ge f_{\mathrm{low}}$ on $E$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of
+$A$ with respect to $E$, with $L_p \ge 1$, let $\|\nabla^i f(y)\| \le \bar L$ for $i \in [2, p]$
+and $y \in A$, and let $A$ contain $\{y : f(y) \le f(x^S)\}$. Let $\sigma_{\min} > 0$,
+$\theta < \varsigma$, $1 \le q \le \min(2, p)$ and $\varepsilon \in (0, 1]^q$. Then there is an
+unconstrained ARqp run with exact data and initial radii $1$ from $x_0 = x^S$ with the following
+properties.
+
+* At every iteration $k$ that is reached and does not terminate, the Step-2 radii are
+  $\delta_{s_k, j} = 1$ for $j \in [1, q]$.
+* The run terminates at some $k_\varepsilon$.
+* $f(x_j) \le f(x_i)$ for all $i \le j \le k_\varepsilon$.
+* $x_{k_\varepsilon}$ is an $(\varepsilon, 1)$-approximate $q$-th order minimizer, with all
+  radii equal to $1$. -/
 theorem exists_isARqpRun_unit [FiniteDimensional ℝ E] {flow : ℝ} (hb : ∀ y, flow ≤ f y)
     (hf : LipschitzDerivsAnchored f univ A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -1040,11 +1212,18 @@ theorem exists_isARqpRun_unit [FiniteDimensional ℝ E] {flow : ℝ} (hb : ∀ y
   · have := hcert j hj
     rwa [hone j hj] at this
 
-/-- `(y, δ)` is the output of a call `INNER(f, E, q, x^S, ε)` realized by ARqp on the whole space
-with unit radii, using `nF` evaluations of `f` and `nD` of its derivatives: `y` is the first
-termination iterate of an ARqp run with exact data from `x^S` with initial radii `1` whose Step-2
-radii are `1` before termination, and the radii `δ = 1` certify `(ε, δ)`-approximate optimality at
-`y`. -/
+/-- **The output of a unit-radius call** $\mathrm{INNER}(f, E, q, x^S, \varepsilon)$ realized by
+ARqp on the whole space, with its cost. A pair $(y, \delta)$ is such an output with $n_F$
+evaluations of $f$ and $n_D$ evaluations of its derivatives if
+
+* there is an unconstrained ARqp run with exact data and initial radii $1$ from $x_0 = x^S$,
+  whose Step-2 radii are $1$ at the orders $j \in [1, q]$ at every iteration that is reached and
+  does not terminate;
+* the run terminates at some $k_\varepsilon$ with $x_{k_\varepsilon} = y$,
+  $n_F = k_\varepsilon + 1$, and $n_D$ one plus the number of successful iterations before
+  $k_\varepsilon$;
+* $\delta_j = 1$ for $j \in [1, q]$;
+* $y$ is an $(\varepsilon, \delta)$-approximate $q$-th order minimizer. -/
 def IsARqpUnitOutputCost (f : E → ℝ) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ) (xS y : E)
     (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   (∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δr δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) (kε : ℕ),
@@ -1056,7 +1235,9 @@ def IsARqpUnitOutputCost (f : E → ℝ) (p q : ℕ) (P : ARqpParams) (ε : ℕ 
   (∀ j ∈ Finset.Icc 1 q, δ j = 1) ∧
   IsEpsDeltaApprox (ftaylorSeries ℝ f y) {e | y + e ∈ (univ : Set E)} q ε δ
 
-/-- **Terminating unit-radius calls exist**, under the hypotheses of `exists_isARqpRun_unit`. -/
+/-- **Terminating unit-radius calls exist.** Under the hypotheses of
+`Optimization.exists_isARqpRun_unit`, there is an output $y$ of a unit-radius call from $x^S$
+with the radii $1$ and some costs $n_F$, $n_D$ (`Optimization.IsARqpUnitOutputCost`). -/
 theorem exists_isARqpUnitOutputCost [FiniteDimensional ℝ E] {flow : ℝ} (hb : ∀ y, flow ≤ f y)
     (hf : LipschitzDerivsAnchored f univ A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -1073,7 +1254,7 @@ namespace IsARqpUnitOutputCost
 
 variable {xS y : E} {δ : ℕ → ℝ} {nF nD : ℕ}
 
-/-- A call does not increase `f`. -/
+/-- A unit-radius call does not increase $f$: $f(y) \le f(x^S)$. -/
 theorem le (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD) : f y ≤ f xS := by
   obtain ⟨⟨x, s, σ, δr, δs, d, dm, kε, hr, -, hhit, rfl, rfl, -, -⟩, -⟩ := h
   have : ∀ j ≤ kε, f (x j) ≤ f (x 0) := by
@@ -1084,20 +1265,27 @@ theorem le (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD) : f y ≤ f xS :=
       exact (hr.objective_le fun l hl => hhit.2 l (by omega)).trans (ih (by omega))
   exact this kε le_rfl
 
-/-- The output radii are `1`. -/
+/-- The output radii of a unit-radius call are $1$ at the orders $j \in [1, q]$. -/
 theorem radius_eq_one (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD) :
     ∀ j ∈ Finset.Icc 1 q, δ j = 1 := h.2.1
 
-/-- The output radii certify `(ε, δ)`-approximate optimality at the output. -/
+/-- The output $y$ of a unit-radius call is an $(\varepsilon, \delta)$-approximate $q$-th order
+minimizer, with the output radii $\delta$. -/
 theorem isEpsDeltaApprox (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD) :
     IsEpsDeltaApprox (ftaylorSeries ℝ f y) {e | y + e ∈ (univ : Set E)} q ε δ := h.2.2
 
 /-- **The cost of a unit-radius call** ([cartis2022evaluation], Theorem 12.2.14 in the unit-radius
-mode): for `f ≥ f_low`, `LipschitzDerivsAnchored f univ A p p L` with `L_p ≥ 1` and jet bounds
-`finMax 1 L p` on `A ⊇ {y | f(y) ≤ f(x^S)}`, `σ_min > 0`, `θ < ς`, `1 ≤ q ≤ p` and
-`ε ∈ (0, 1]^q`, the call uses at most `κ^a (f(x^S) - f_low)/min_j ε_j^{π_j} + κ^c` evaluations
-of `f` and `κ^s (f(x^S) - f_low)/min_j ε_j^{π_j} + 2` of its derivatives, with the unit-radius
-exponents `π_j = arqpPiOf True p j`. -/
+mode). Let $(y, \delta)$ be the output of a unit-radius call from $x^S$ with the costs $n_F$ and
+$n_D$. Let $f \ge f_{\mathrm{low}}$ on $E$, let $\nabla^p f$ be $L_p$-Lipschitz anchored at the
+points of $A$ with respect to $E$, with $L_p \ge 1$, let $\|\nabla^i f(y')\| \le \bar L$ for
+$i \in [2, p]$ and $y' \in A$, and let $A$ contain $\{y' : f(y') \le f(x^S)\}$. Let
+$\sigma_{\min} > 0$, $\theta < \varsigma$, $1 \le q \le p$ and $\varepsilon \in (0, 1]^q$. Then,
+with $m_\varepsilon = \min_{j \in [1, q]} \varepsilon_j^{\pi_j}$ and the unit-radius exponents
+$\pi_j = (p+1)/(p-j+1)$, $$n_F \le \frac{\kappa^a (f(x^S) - f_{\mathrm{low}})}{m_\varepsilon} +
+\kappa^c \quad\text{and}\quad n_D \le \frac{\kappa^s (f(x^S) -
+f_{\mathrm{low}})}{m_\varepsilon} + 2,$$ where $\kappa^a$ and $\kappa^s$ are
+`kappaAARqpOf True P L p q` and `kappaSARqpOf True P L p q`, and $\kappa^c$ is
+`Optimization.kappaCARqp`. -/
 theorem cost_le {flow : ℝ} (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD)
     (hb : ∀ y, flow ≤ f y) (hf : LipschitzDerivsAnchored f univ A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)
@@ -1118,9 +1306,12 @@ theorem cost_le {flow : ℝ} (h : IsARqpUnitOutputCost f p q P ε xS y δ nF nD)
 
 end IsARqpUnitOutputCost
 
-/-- The iterates `x_0, …, x_e` and successful iterations of a call of ARqp on the whole space with
-unit radii: the first `e + 1` iterates of an ARqp run with exact data, initial radii `1` and
-Step-2 radii `1` before termination, whose first termination index is at least `e`. -/
+/-- **A unit-radius call of ARqp on the whole space.** The points $x^i_0, \dots, x^i_e$ and the
+predicate $\mathrm{succ}$ form such a call if there is an unconstrained ARqp run with exact data
+and initial radii $1$, whose Step-2 radii are $1$ at the orders $j \in [1, q]$ at every
+iteration that is reached and does not terminate, such that the run terminates at some
+$k_\varepsilon \ge e$, the points $x^i_0, \dots, x^i_e$ are its first $e + 1$ iterates, and for
+$i < e$, $\mathrm{succ}(i)$ holds if and only if iteration $i$ of the run is successful. -/
 def IsARqpUnitCall (f : E → ℝ) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ) (xi : ℕ → E) (e : ℕ)
     (succ : ℕ → Prop) : Prop :=
   ∃ (x s : ℕ → E) (σ : ℕ → ℝ) (δr δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) (kε : ℕ),
@@ -1130,7 +1321,9 @@ def IsARqpUnitCall (f : E → ℝ) (p q : ℕ) (P : ARqpParams) (ε : ℕ → �
     e ≤ kε ∧ (∀ i ≤ e, xi i = x i) ∧
     ∀ i < e, (succ i ↔ P.η₁ ≤ arqpRho f p x s σ i)
 
-/-- A unit-radius call returning the radii `1`. -/
+/-- **A unit-radius call with its returned radii**: a unit-radius call
+(`Optimization.IsARqpUnitCall`) whose returned radii $\delta^o$ are $1$ at the orders
+$j \in [1, q]$. -/
 def IsARqpUnitCallOut (f : E → ℝ) (p q : ℕ) (P : ARqpParams) (ε : ℕ → ℝ) (xi : ℕ → E) (e : ℕ)
     (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   IsARqpUnitCall f p q P ε xi e succ ∧ ∀ j ∈ Finset.Icc 1 q, δo j = 1
@@ -1139,11 +1332,11 @@ namespace IsARqpUnitCallOut
 
 variable {xi : ℕ → E} {e : ℕ} {succ : ℕ → Prop} {δo : ℕ → ℝ}
 
-/-- The returned radii are `1`. -/
+/-- The returned radii of a unit-radius call are $1$ at the orders $j \in [1, q]$. -/
 theorem radius_eq_one (h : IsARqpUnitCallOut f p q P ε xi e succ δo) :
     ∀ j ∈ Finset.Icc 1 q, δo j = 1 := h.2
 
-/-- `f` does not increase along a unit-radius call. -/
+/-- A unit-radius call does not increase $f$: $f(x^i_{i+1}) \le f(x^i_i)$ for all $i < e$. -/
 theorem antitone (h : IsARqpUnitCallOut f p q P ε xi e succ δo) :
     ∀ i < e, f (xi (i + 1)) ≤ f (xi i) := by
   obtain ⟨⟨x, s, σ, δr, δs, d, dm, kε, hr, -, hhit, he, hxi, -⟩, -⟩ := h
@@ -1152,13 +1345,23 @@ theorem antitone (h : IsARqpUnitCallOut f p q P ε xi e succ δo) :
   exact hr.objective_le fun l hl => hhit.2 l (by omega)
 
 open Classical in
-/-- **The contract of one unit-radius call** ([cartis2022evaluation], Lemmas 12.2.13 and 14.2.3
-with unit radii), for `LipschitzDerivsAnchored f univ A p p L` with `L_p ≥ 1` on a set `A`
-containing the sublevel set of `f` at the start of the call, `θ < ς` and `1 ≤ q ≤ p`:
-unsuccessful iterations do not move, `e ≤ κ_uns |𝒮| + κ_unc`, and, for tolerances in `(0, 1]`,
-every successful iteration that is not the last one, or the last one of a call ending at a point
-failing the test with radii `1`, decreases `f` by at least `η₁ κ_{Δm} ε_l^{π_l}` with the
-unit-radius exponents `π_l = (p+1)/(p-l+1)`. -/
+/-- **The contract of one unit-radius call** ([cartis2022evaluation], Lemmas 12.2.13 and 14.2.3 with
+unit radii). Let $\nabla^p f$ be $L_p$-Lipschitz anchored at the points of $A$ with respect to
+$E$, with $L_p \ge 1$, let $A$ contain the sublevel set $\{y : f(y) \le f(x^i_0)\}$ of the start
+of the call, and let $\theta < \varsigma$ and $1 \le q \le p$. Then
+
+* the unsuccessful iterations do not move: $x^i_{i+1} = x^i_i$ if $i < e$ and $\mathrm{succ}(i)$
+  fails;
+* $e \le \kappa_{\mathrm{uns}} |\mathcal{S}| + \kappa_{\mathrm{unc}}$, where
+  $\mathcal{S} = \{i < e : \mathrm{succ}(i)\}$;
+* if $\varepsilon \in (0, 1]^q$, then every successful iteration $i < e$ that is not the last
+  one, or that is the last one of a call whose last point $x^i_e$ is not an
+  $(\varepsilon, \delta^o)$-approximate $q$-th order minimizer, satisfies $f(x^i_i) -
+  f(x^i_{i+1}) \ge \eta_1 \kappa_{\Delta m} \varepsilon_l^{\pi_l}$ for some $l \in [1, q]$.
+
+Here $\kappa_{\Delta m}$ is `arqpKappaDmOf True P L p q` and $\pi_l = (p+1)/(p-l+1)$ are the
+unit-radius constant and exponents, and $\kappa_{\mathrm{unc}}$ is
+`Optimization.arqpCallKappaUnc`. -/
 theorem contract (h : IsARqpUnitCallOut f p q P ε xi e succ δo)
     (hf : LipschitzDerivsAnchored f univ A p p L) (hL : 1 ≤ L p)
     (hA : ∀ y, f y ≤ f (xi 0) → y ∈ A) (hθς : P.θ < P.ς) (hq : 1 ≤ q) (hqp : q ≤ p) :
@@ -1213,11 +1416,16 @@ theorem contract (h : IsARqpUnitCallOut f p q P ε xi e succ δo)
 end IsARqpUnitCallOut
 
 open Classical in
-/-- **Unit-radius calls stopped by an external test exist**: under the hypotheses of
-`exists_isARqpRun_unit` and for any test `stop` on points, there is a unit-radius call from `x₀`
-cut at the first iterate satisfying `stop` or at the termination of the run. Its iterates do not
-increase `f`, and at the last iterate either `stop` holds or the radii `1` certify
-`(ε, 1)`-approximate `q`-th order optimality. -/
+/-- **Unit-radius calls stopped by an external test exist.** Under the hypotheses of
+`Optimization.exists_isARqpRun_unit` with $x_0$ in place of $x^S$, and for any predicate
+$\mathrm{stop}$ on points, there is a unit-radius call $(x^i_0, \dots, x^i_e, \mathrm{succ})$
+with returned radii $1$ and $x^i_0 = x_0$ that is stopped at the first iterate that satisfies
+$\mathrm{stop}$ or at the termination of the run. More precisely:
+
+* $f(x^i_{i+1}) \le f(x^i_i)$ for $i < e$, and $f(x^i_i) \le f(x_0)$ for $i \le e$;
+* $\mathrm{stop}(x^i_i)$ fails for $i < e$;
+* $\mathrm{stop}(x^i_e)$ holds, or $x^i_e$ is an $(\varepsilon, 1)$-approximate $q$-th order
+  minimizer. -/
 theorem exists_isARqpUnitCallOut_of_stop [FiniteDimensional ℝ E] {flow : ℝ}
     (hb : ∀ y, flow ≤ f y) (hf : LipschitzDerivsAnchored f univ A p p L) (hL : 1 ≤ L p)
     (hjet : ∀ i ∈ Finset.Icc 2 p, ∀ y ∈ A, ‖iteratedFDeriv ℝ i f y‖ ≤ finMax 1 L p)

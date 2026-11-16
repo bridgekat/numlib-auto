@@ -13,43 +13,76 @@ import Mathlib.Topology.Order.MonotoneConvergence
 /-!
 # Recurrences for objective gaps
 
-Let `Γ_k ≥ 0` be the gap `f(x_k) - f_*` of a monotone method whose iterate only changes at the
-successful iterations `S` ([cartis2022evaluation], §5.3). For measure-dominated objectives the
-guaranteed decrease on successful iterations becomes a power of the gap itself:
-* adaptive-regularization-like methods (5.3.11): `c Γ_{k+1}^τ ≤ Γ_k - Γ_{k+1}`
-  (`Optimization.IsImplicitGapDecrease`);
-* trust-region-like methods (5.3.33): `c Γ_k^τ ≤ Γ_k - Γ_{k+1}`
-  (`Optimization.IsExplicitGapDecrease`);
-with `c > 0` and `τ = ν/μ > 0`. This file contains the resulting rates and success counts of §5.3
-(Lemma 5.3.1, Theorems 5.3.2–5.3.9 and their proofs in Appendix B), stated as "after `N`
-successful iterations the gap is at most `ε`", i.e. `Γ_{k+1} ≤ ε` whenever `N ≤ |𝒮_k|`, with
-explicit `N`:
-* `τ < 1`: `IsImplicitGapDecrease.superlinear`, the two-phase count
-  `IsImplicitGapDecrease.le_of_superlinear_count` (`O(log |log ε|)`), and for the explicit
-  recurrence finite termination `IsExplicitGapDecrease.eq_zero_of_lt_one`;
-* `τ = 1`: `IsImplicitGapDecrease.linear`, `IsImplicitGapDecrease.le_of_linear_count`
-  (`O(|log ε|)`);
-* `τ > 1`: `IsImplicitGapDecrease.sublinear`, `IsImplicitGapDecrease.le_of_sublinear_count`
-  (`O(ε^{-(τ-1)})`), and `Optimization.exists_le_of_halving` for the optimality measure.
-The exact count of Theorem 5.3.2 is `Optimization.implicitGapHitIndex`, the hitting time of the
-sequence `Optimization.implicitGapSeq` defined by `κ t_{n+1}^τ + t_{n+1} = t_n` (5.3.12).
-Finally `Optimization.le_two_pow_two_pow_of_sq` is the doubly exponential count of Lemma 5.4.3.
-Helpers for the measure-dominated complexity theorems: `Optimization.frequently_of_density`
-(density forces infinitely many successes), `Optimization.exists_le_of_gap_count` and
-`Optimization.exists_le_of_gap_count_nat` (measure counts from gap counts, (B.5.11)),
-`Optimization.superlinearCountConst` (the additive constant of the superlinear count),
-`Optimization.IsImplicitGapDecrease.mul_kappaDom`, and the first-success facts
-`Optimization.IsExplicitGapDecrease.mul_rpow_le_one`,
-`Optimization.IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow`.
+Let $\Gamma_k \ge 0$ be the gap $f(x_k) - f_*$ of a monotone method whose iterate changes only at
+the successful iterations $S$ ([cartis2022evaluation], §5.3). For measure-dominated objectives the
+guaranteed decrease at the successful iterations becomes a power of the gap itself.
+Adaptive-regularization-like methods satisfy the implicit recurrence (5.3.11), $c \Gamma_{k+1}^\tau
+\le \Gamma_k - \Gamma_{k+1}$, and trust-region-like methods satisfy the explicit recurrence
+(5.3.33), $c \Gamma_k^\tau \le \Gamma_k - \Gamma_{k+1}$, with $c > 0$ and $\tau = \nu / \mu > 0$.
+Write $\mathcal{S}_k$ for the set of successful iterations in $\{0, \dots, k\}$.
 
-## Remarks on the constants
+This module proves the rates and the success counts of §5.3 of [cartis2022evaluation] (Lemma 5.3.1,
+Theorems 5.3.2–5.3.9 and their proofs in Appendix B). A count says that the gap is at most
+$\epsilon$ after $N$ successful iterations, that is, $\Gamma_{k+1} \le \epsilon$ whenever
+$N \le |\mathcal{S}_k|$, with an explicit $N$. For $\tau < 1$ the implicit recurrence gives a
+superlinear rate and a count $O(\log |\log \epsilon|)$, and the explicit recurrence reaches
+$\Gamma = 0$ after finitely many successful iterations. For $\tau = 1$ both give a linear rate and a
+count $O(|\log \epsilon|)$. For $\tau > 1$ both give a sublinear rate and a count
+$O(\epsilon^{-(\tau - 1)})$. The module also contains the exact count of Theorem 5.3.2, the hitting
+time of the sequence $\kappa t_{n+1}^\tau + t_{n+1} = t_n$ of (5.3.12), and the doubly exponential
+count of Lemma 5.4.3.
 
-* (B.5.12): `(1 - t)^α ≤ 1 - α t` and `1 - t^α ≥ α (1 - t)` hold only for `α ∈ (0, 1]`; for all
-  `α > 0` one has `1 - t^α ≥ min 1 α * (1 - t)` (`Optimization.one_sub_rpow_ge`), which enters
-  the constant of the sublinear rate (`κdom`, (B.5.14)–(B.5.15)).
-* Superlinear case (Theorem 5.3.3): the second phase must reach the scaled gap `ω ≤ c^{1/α} ε`.
-* The halving argument of the sublinear case (Theorem 5.3.5) yields `2 ⌊M⌋₊ + 2` successful
-  iterations.
+## Main definitions
+
+* `Optimization.IsImplicitGapDecrease`: the implicit recurrence (5.3.11).
+* `Optimization.IsExplicitGapDecrease`: the explicit recurrence (5.3.33).
+* `Optimization.superlinearGapCount`: the two-phase count of the superlinear case.
+* `Optimization.implicitGapSeq`: the sequence (5.3.12).
+* `Optimization.implicitGapHitIndex`: the count $\Upsilon_{\kappa,\tau}(t_0, \epsilon)$ of (5.3.13),
+  the first index $n$ with $t_n \le \epsilon$.
+
+## Main results
+
+* `Optimization.IsImplicitGapDecrease.rates`: Lemma 5.3.1, the superlinear, linear and sublinear
+  rates for $\tau < 1$, $\tau = 1$ and $\tau > 1$.
+* `Optimization.IsImplicitGapDecrease.le_implicitGapSeq`: Theorem 5.3.2, the gap is at most the term
+  $t_{|\mathcal{S}_k|}$ of the sequence (5.3.12).
+* `Optimization.IsImplicitGapDecrease.le_of_superlinear_count` and
+  `Optimization.superlinearGapCount_le`: the count $O(\log |\log \epsilon|)$ of Theorem 5.3.3 and
+  (5.3.16).
+* `Optimization.IsImplicitGapDecrease.le_of_linear_count`: the count $O(|\log \epsilon|)$ in the
+  proof of Theorem 5.3.4.
+* `Optimization.IsImplicitGapDecrease.le_of_sublinear_count`: the count $O(\epsilon^{-(\tau-1)})$ in
+  the proof of Theorem 5.3.5.
+* `Optimization.exists_le_of_halving`: the halving argument in the proof of Theorem 5.3.5, which
+  turns a gap rate into a count for the optimality measure.
+* `Optimization.IsExplicitGapDecrease.eq_zero_of_lt_one`: Lemma 5.3.6(ii) and the proof of Theorem
+  5.3.7, finite termination of the explicit recurrence for $\tau < 1$.
+* `Optimization.IsExplicitGapDecrease.le_of_linear_count`: Lemma 5.3.6(i) and the count in the proof
+  of Theorem 5.3.8.
+* `Optimization.IsExplicitGapDecrease.le_of_sublinear_count`: the count in the proof of Theorem
+  5.3.9.
+* `Optimization.le_two_pow_two_pow_of_sq`: Lemma 5.4.3, if $u_{k+1} \le u_k^2 / \zeta$ and
+  $u_0 \le \zeta / 2$, then $u_n \le \zeta / 2^{2^n}$.
+
+## Implementation notes
+
+* The inequalities $(1 - t)^\alpha \le 1 - \alpha t$ and $1 - t^\alpha \ge \alpha (1 - t)$ of
+  (B.5.12) hold only for $\alpha \in (0, 1]$. For all $\alpha > 0$ one has
+  $1 - t^\alpha \ge \min(1, \alpha) (1 - t)$ (`Optimization.one_sub_rpow_ge`), and this enters the
+  constant $\kappa_{\mathrm{dom}}$ of the sublinear rate ((B.5.14)–(B.5.15)).
+* In the superlinear case (Theorem 5.3.3), the second phase must reach the scaled gap
+  $\omega \le c^{1/\alpha} \epsilon$.
+* The halving argument of the sublinear case (Theorem 5.3.5) yields $2 \lfloor M \rfloor + 2$
+  successful iterations.
+* The measure-dominated complexity theorems use the following facts:
+  `Optimization.frequently_of_density` (density forces infinitely many successes),
+  `Optimization.exists_le_of_gap_count` and `Optimization.exists_le_of_gap_count_nat` (counts for
+  the measure from counts for the gap, (B.5.11)), `Optimization.superlinearCountConst` (the additive
+  constant of the superlinear count), `Optimization.IsImplicitGapDecrease.mul_kappaDom`, and the
+  facts about the first successful iteration `Optimization.IsExplicitGapDecrease.mul_rpow_le_one`
+  and `Optimization.IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow`.
+* Powers with a real exponent are `Real.rpow`, so $0^x = 0$ for $x \neq 0$ and $0^0 = 1$.
 -/
 
 open Finset Filter Topology
@@ -60,9 +93,12 @@ namespace Optimization
 
 section Elementary
 
-/-- **(B.5.12)** for all `α > 0`. For `t ∈ [0, 1]` and `α > 0`: `min 1 α * (1 - t) ≤ 1 - t ^ α`.
-(The bound `α (1 - t) ≤ 1 - t ^ α` holds only for `α ≤ 1`, see
-`Optimization.mul_one_sub_le_one_sub_rpow`; for `α = 2`, `t = 1/2` it fails.) -/
+/-- The inequality (B.5.12) of [cartis2022evaluation] for all $\alpha > 0$. Let $t \in [0, 1]$ and
+$\alpha > 0$. Then
+$$\min(1, \alpha) (1 - t) \le 1 - t^\alpha.$$
+
+The bound $\alpha (1 - t) \le 1 - t^\alpha$ holds only for $\alpha \le 1$
+(`Optimization.mul_one_sub_le_one_sub_rpow`); for $\alpha = 2$ and $t = 1/2$ it fails. -/
 theorem one_sub_rpow_ge {t α : ℝ} (ht : 0 ≤ t) (ht1 : t ≤ 1) (hα : 0 < α) :
     min 1 α * (1 - t) ≤ 1 - t ^ α := by
   rcases le_total α 1 with hα1 | hα1
@@ -75,22 +111,26 @@ theorem one_sub_rpow_ge {t α : ℝ} (ht : 0 ≤ t) (ht1 : t ≤ 1) (hα : 0 < �
     rw [Real.rpow_one] at this
     linarith
 
-/-- (B.5.12) in its valid range: for `t ≥ 0` and `α ∈ [0, 1]`, `α (1 - t) ≤ 1 - t ^ α`. -/
+/-- The inequality (B.5.12) in its valid range: for $t \ge 0$ and $\alpha \in [0, 1]$,
+$\alpha (1 - t) \le 1 - t^\alpha$. -/
 theorem mul_one_sub_le_one_sub_rpow {t α : ℝ} (ht : 0 ≤ t) (hα : 0 ≤ α) (hα1 : α ≤ 1) :
     α * (1 - t) ≤ 1 - t ^ α := by
   have := rpow_one_add_le_one_add_mul_self (s := t - 1) (by linarith) hα hα1
   simp only [add_sub_cancel] at this
   linarith
 
-/-- (B.5.12) in its valid range: for `t ≤ 1` and `α ∈ [0, 1]`, `(1 - t) ^ α ≤ 1 - α t`. -/
+/-- The inequality (B.5.12) in its valid range: for $t \le 1$ and $\alpha \in [0, 1]$,
+$(1 - t)^\alpha \le 1 - \alpha t$. -/
 theorem one_sub_rpow_le {t α : ℝ} (ht1 : t ≤ 1) (hα : 0 ≤ α) (hα1 : α ≤ 1) :
     (1 - t) ^ α ≤ 1 - α * t := by
   have := rpow_one_add_le_one_add_mul_self (s := -t) (by linarith) hα hα1
   rw [← sub_eq_add_neg] at this
   linarith
 
-/-- **Mean-value form** used for the trust-region-like sublinear rate: for `0 < b ≤ a` and
-`α > 0`, `α a^{-α-1} (a - b) ≤ b^{-α} - a^{-α}`. -/
+/-- A mean-value inequality, used for the sublinear rate of trust-region-like methods. Let
+$0 < b \le a$ and $\alpha > 0$. Then
+$$\alpha a^{-\alpha - 1} (a - b) \le b^{-\alpha} - a^{-\alpha}.$$
+-/
 theorem mul_rpow_mul_sub_le_rpow_neg_sub {a b α : ℝ} (hb : 0 < b) (hba : b ≤ a) (hα : 0 < α) :
     α * a ^ (-α - 1) * (a - b) ≤ b ^ (-α) - a ^ (-α) := by
   rcases hba.lt_or_eq with hlt | rfl
@@ -114,31 +154,42 @@ end Elementary
 
 /-! ### The recurrences -/
 
-/-- **Implicit gap recurrence** ([cartis2022evaluation], (5.3.11)): `Γ ≥ 0` is unchanged at the
-unsuccessful iterations and decreases by at least `c Γ_{k+1}^τ` at the successful ones. -/
+/-- A sequence $\Gamma \colon \mathbb{N} \to \mathbb{R}$ satisfies the **implicit gap recurrence**
+(5.3.11) of [cartis2022evaluation] for the success predicate $S$ and the constants $c$ and
+$\tau$ if $\Gamma_k \ge 0$ for every $k$, $\Gamma_{k+1} = \Gamma_k$ at every unsuccessful
+iteration $k$, and
+$$c \Gamma_{k+1}^\tau \le \Gamma_k - \Gamma_{k+1}$$
+at every successful iteration $k$. -/
 structure IsImplicitGapDecrease (Γ : ℕ → ℝ) (S : ℕ → Prop) (c τ : ℝ) : Prop where
-  /-- The gaps are nonnegative. -/
+  /-- The gaps are nonnegative: $\Gamma_k \ge 0$. -/
   nonneg : ∀ k, 0 ≤ Γ k
-  /-- The gap is unchanged at unsuccessful iterations. -/
+  /-- The gap is unchanged at the unsuccessful iterations: $\Gamma_{k+1} = \Gamma_k$. -/
   eq_of_not : ∀ k, ¬ S k → Γ (k + 1) = Γ k
-  /-- The guaranteed decrease at successful iterations. -/
+  /-- The guaranteed decrease at the successful iterations: $c \Gamma_{k+1}^\tau \le \Gamma_k -
+  \Gamma_{k+1}$. -/
   decrease : ∀ k, S k → c * Γ (k + 1) ^ τ ≤ Γ k - Γ (k + 1)
 
-/-- **Explicit gap recurrence** ([cartis2022evaluation], (5.3.33)): `Γ ≥ 0` is unchanged at the
-unsuccessful iterations and decreases by at least `c Γ_k^τ` at the successful ones. -/
+/-- A sequence $\Gamma \colon \mathbb{N} \to \mathbb{R}$ satisfies the **explicit gap recurrence**
+(5.3.33) of [cartis2022evaluation] for the success predicate $S$ and the constants $c$ and
+$\tau$ if $\Gamma_k \ge 0$ for every $k$, $\Gamma_{k+1} = \Gamma_k$ at every unsuccessful
+iteration $k$, and
+$$c \Gamma_k^\tau \le \Gamma_k - \Gamma_{k+1}$$
+at every successful iteration $k$. -/
 structure IsExplicitGapDecrease (Γ : ℕ → ℝ) (S : ℕ → Prop) (c τ : ℝ) : Prop where
-  /-- The gaps are nonnegative. -/
+  /-- The gaps are nonnegative: $\Gamma_k \ge 0$. -/
   nonneg : ∀ k, 0 ≤ Γ k
-  /-- The gap is unchanged at unsuccessful iterations. -/
+  /-- The gap is unchanged at the unsuccessful iterations: $\Gamma_{k+1} = \Gamma_k$. -/
   eq_of_not : ∀ k, ¬ S k → Γ (k + 1) = Γ k
-  /-- The guaranteed decrease at successful iterations. -/
+  /-- The guaranteed decrease at the successful iterations:
+  $c \Gamma_k^\tau \le \Gamma_k - \Gamma_{k+1}$. -/
   decrease : ∀ k, S k → c * Γ k ^ τ ≤ Γ k - Γ (k + 1)
 
 variable {Γ : ℕ → ℝ} {S : ℕ → Prop} {c τ : ℝ}
 
 section Generic
 
-/-- Iterates of a map that is monotone and nonnegative on `[0, ∞)` are monotone there. -/
+/-- Let $F \colon \mathbb{R} \to \mathbb{R}$ be monotone on $[0, \infty)$ and map $[0, \infty)$ into
+itself. Then $F^n(x) \le F^n(y)$ for every $n$ and all $0 \le x \le y$. -/
 theorem iterate_le_iterate_of_monotoneOn {F : ℝ → ℝ} (hF : ∀ x y, 0 ≤ x → x ≤ y → F x ≤ F y)
     (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (n : ℕ) {x y : ℝ} (hx : 0 ≤ x) (hxy : x ≤ y) :
     F^[n] x ≤ F^[n] y := by
@@ -148,6 +199,8 @@ theorem iterate_le_iterate_of_monotoneOn {F : ℝ → ℝ} (hF : ∀ x y, 0 ≤ 
     rw [Function.iterate_succ_apply, Function.iterate_succ_apply]
     exact ih (hF0 x hx) (hF x y hx hxy)
 
+/-- If $F \colon \mathbb{R} \to \mathbb{R}$ maps $[0, \infty)$ into itself, then $F^n(x) \ge 0$ for
+every $n$ and every $x \ge 0$. -/
 theorem iterate_nonneg {F : ℝ → ℝ} (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (n : ℕ) {x : ℝ} (hx : 0 ≤ x) :
     0 ≤ F^[n] x := by
   induction n generalizing x with
@@ -155,9 +208,11 @@ theorem iterate_nonneg {F : ℝ → ℝ} (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (n
   | succ n ih => rw [Function.iterate_succ_apply]; exact ih (hF0 x hx)
 
 
-/-- Monotone bounds propagate along the successful iterations: if `F` is monotone on
-`[0, ∞)`, `Γ ≥ 0`, `Γ_{k+1} = Γ_k` at unsuccessful and `Γ_{k+1} ≤ F Γ_k` at
-successful iterations, then `Γ_{k+1} ≤ F^{|𝒮_k|} Γ_0`. -/
+/-- Monotone bounds propagate along the successful iterations. Let
+$F \colon \mathbb{R} \to \mathbb{R}$ be monotone on $[0, \infty)$, and let $\Gamma \ge 0$
+satisfy $\Gamma_{k+1} = \Gamma_k$ at the unsuccessful iterations and
+$\Gamma_{k+1} \le F(\Gamma_k)$ at the successful iterations. Then
+$\Gamma_{k+1} \le F^{|\mathcal{S}_k|}(\Gamma_0)$ for every $k$. -/
 theorem le_iterate_of_successSet {F : ℝ → ℝ} (hF : ∀ x y, 0 ≤ x → x ≤ y → F x ≤ F y)
     (hΓ : ∀ k, 0 ≤ Γ k) (heq : ∀ k, ¬ S k → Γ (k + 1) = Γ k)
     (hS : ∀ k, S k → Γ (k + 1) ≤ F (Γ k)) (k : ℕ) :
@@ -174,13 +229,14 @@ theorem le_iterate_of_successSet {F : ℝ → ℝ} (hF : ∀ x y, 0 ≤ x → x 
     · rw [card_successSet_add_one_of_not_succ hk, heq _ hk]
       exact ih
 
-/-- Iterates of `x ↦ q x`. -/
+/-- The $n$-th iterate of $x \mapsto qx$ is $x \mapsto q^n x$. -/
 theorem iterate_mul_left_apply (q x : ℝ) (n : ℕ) : (fun x => q * x)^[n] x = q ^ n * x := by
   induction n with
   | zero => simp
   | succ n ih => rw [Function.iterate_succ_apply', ih, pow_succ]; ring
 
-/-- If the number of successful iterations is unbounded (`S` infinite), so is `|𝒮_k|`. -/
+/-- If $S$ holds at infinitely many iterations, then for every $n$ there is $k$ with
+$n \le |\mathcal{S}_k|$. -/
 theorem exists_le_card_successSet (hS : ∀ N, ∃ k ≥ N, S k) (n : ℕ) :
     ∃ k, n ≤ (successSet S k).card := by
   induction n with
@@ -193,9 +249,12 @@ theorem exists_le_card_successSet (hS : ∀ N, ∃ k ≥ N, S k) (n : ℕ) :
     · exact mem_successSet.2 ⟨le_rfl, hSk'⟩
     · intro h; have := (mem_successSet.1 h).1; omega
 
-/-- **Density** ([cartis2022evaluation], (5.3.9), (5.3.15)): if `k ≤ κR |𝒮_k| + κA` for all `k`
-(`κR > 0`), then `N ≤ |𝒮_k|` as soon as `κR N + κA ≤ k`. Hence "`Γ_{k+1} ≤ ε` after `N`
-successful iterations" holds after `k + 1` iterations whenever `κR N + κA ≤ k`. -/
+/-- **Density** ([cartis2022evaluation], (5.3.9) and (5.3.15)). Let $\kappa_R > 0$ and
+$\kappa_A, N \in \mathbb{R}$, and suppose that $k \le \kappa_R |\mathcal{S}_k| + \kappa_A$ for
+every $k$. Then for every $k$ with $\kappa_R N + \kappa_A \le k$,
+$$N \le |\mathcal{S}_k|.$$
+Hence a count "$\Gamma_{k+1} \le \epsilon$ after $N$ successful iterations" holds after $k + 1$
+iterations whenever $\kappa_R N + \kappa_A \le k$. -/
 theorem le_card_of_density {κR κA N : ℝ} (hκR : 0 < κR)
     (h : ∀ k : ℕ, (k : ℝ) ≤ κR * (successSet S k).card + κA) {k : ℕ}
     (hk : κR * N + κA ≤ k) : N ≤ (successSet S k).card := by
@@ -210,7 +269,8 @@ namespace IsImplicitGapDecrease
 variable (h : IsImplicitGapDecrease Γ S c τ)
 include h
 
-/-- The gaps do not increase (for `c ≥ 0`). -/
+/-- If $\Gamma$ satisfies the implicit gap recurrence with $c \ge 0$, then
+$\Gamma_{k+1} \le \Gamma_k$ for every $k$. -/
 theorem le_self (hc : 0 ≤ c) (k : ℕ) : Γ (k + 1) ≤ Γ k := by
   by_cases hk : S k
   · have := h.decrease k hk
@@ -218,15 +278,22 @@ theorem le_self (hc : 0 ≤ c) (k : ℕ) : Γ (k + 1) ≤ Γ k := by
     linarith
   · exact (h.eq_of_not k hk).le
 
+/-- If $\Gamma$ satisfies the implicit gap recurrence with $c \ge 0$, then $\Gamma$ is antitone. -/
 theorem antitone (hc : 0 ≤ c) : Antitone Γ := antitone_nat_of_succ_le (h.le_self hc)
 
-/-- Telescoping: `Γ_{k+1} = Γ_0 - ∑_{j ∈ 𝒮_k} (Γ_j - Γ_{j+1})`. -/
+/-- If $\Gamma$ satisfies the implicit gap recurrence, then for every $k$
+$$\Gamma_{k+1} = \Gamma_0 - \sum_{j \in \mathcal{S}_k} (\Gamma_j - \Gamma_{j+1}).$$
+-/
 theorem eq_sub_sum (k : ℕ) :
     Γ (k + 1) = Γ 0 - ∑ j ∈ successSet S k, (Γ j - Γ (j + 1)) := by
   rw [sum_successSet_sub_eq fun j _ hj => h.eq_of_not j hj]; ring
 
-/-- **(5.3.10)**: at a successful iteration, `Γ_{k+1} ≤ Γ_k / (1 + c Γ_{k+1}^{τ-1})` (for
-`c ≥ 0`; with Lean's convention `0 ^ x = 0` for `x ≠ 0` this also holds when `Γ_{k+1} = 0`). -/
+/-- Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c \ge 0$ and $\tau$. Then at every
+successful iteration $k$
+$$\Gamma_{k+1} \le \frac{\Gamma_k}{1 + c \Gamma_{k+1}^{\tau - 1}}.$$
+
+This is (5.3.10) of [cartis2022evaluation]. With the convention $0^x = 0$ for $x \neq 0$ of
+`Real.rpow`, the bound also holds when $\Gamma_{k+1} = 0$. -/
 theorem le_div (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
     Γ (k + 1) ≤ Γ k / (1 + c * Γ (k + 1) ^ (τ - 1)) := by
   have hpos : 0 < 1 + c * Γ (k + 1) ^ (τ - 1) := by
@@ -240,8 +307,10 @@ theorem le_div (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
     linarith
   · rw [← hΓ, zero_mul]; exact h.nonneg k
 
-/-- The gaps converge to zero if there are infinitely many successful iterations
-([cartis2022evaluation], Lemma 5.3.1). -/
+/-- Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c > 0$ and $\tau > 0$, and let $S$
+hold at infinitely many iterations. Then $\Gamma_k \to 0$ as $k \to \infty$.
+
+This is part of Lemma 5.3.1 of [cartis2022evaluation]. -/
 theorem tendsto_zero (hc : 0 < c) (hτ : 0 < τ) (hS : ∀ N, ∃ k ≥ N, S k) :
     Tendsto Γ atTop (𝓝 0) := by
   have hanti := h.antitone hc.le
@@ -268,8 +337,11 @@ theorem tendsto_zero (hc : 0 < c) (hτ : 0 < τ) (hS : ∀ N, ∃ k ≥ N, S k) 
   rw [div_lt_iff₀ hd] at hn'
   linarith
 
-/-- **Linear rate** ([cartis2022evaluation], Lemma 5.3.1 (ii)): if `τ = 1`, every successful
-iteration has `Γ_{k+1} ≤ (1 + c)⁻¹ Γ_k`. -/
+/-- **Linear rate.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c \ge 0$ and
+$\tau = 1$. Then at every successful iteration $k$
+$$\Gamma_{k+1} \le (1 + c)^{-1} \Gamma_k.$$
+
+This is Lemma 5.3.1(ii) of [cartis2022evaluation]. -/
 theorem linear (hτ : τ = 1) (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
     Γ (k + 1) ≤ (1 + c)⁻¹ * Γ k := by
   have := h.decrease k hk
@@ -277,9 +349,12 @@ theorem linear (hτ : τ = 1) (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
   rw [inv_mul_eq_div, le_div_iff₀ (by linarith)]
   linarith
 
-/-- **Count for the linear case** ([cartis2022evaluation], proof of Theorem 5.3.4): if `τ = 1`,
-`c > 0`, `0 < ε` and `0 < Γ_0`, then `Γ_{k+1} ≤ ε` as soon as
-`(log Γ_0 - log ε) / log (1 + c) ≤ |𝒮_k|`. -/
+/-- **Count for the linear case.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c > 0$
+and $\tau = 1$, and let $\epsilon > 0$ and $\Gamma_0 > 0$. Then $\Gamma_{k+1} \le \epsilon$ for
+every $k$ with
+$$\frac{\log \Gamma_0 - \log \epsilon}{\log(1 + c)} \le |\mathcal{S}_k|.$$
+
+This is the count in the proof of Theorem 5.3.4 of [cartis2022evaluation]. -/
 theorem le_of_linear_count (hτ : τ = 1) (hc : 0 < c) {ε : ℝ} (hε : 0 < ε) (hΓ0 : 0 < Γ 0)
     {k : ℕ} (hk : (Real.log (Γ 0) - Real.log ε) / Real.log (1 + c) ≤ (successSet S k).card) :
     Γ (k + 1) ≤ ε := by
@@ -305,7 +380,8 @@ namespace IsExplicitGapDecrease
 variable (h : IsExplicitGapDecrease Γ S c τ)
 include h
 
-/-- The gaps do not increase (for `c ≥ 0`). -/
+/-- If $\Gamma$ satisfies the explicit gap recurrence with $c \ge 0$, then
+$\Gamma_{k+1} \le \Gamma_k$ for every $k$. -/
 theorem le_self (hc : 0 ≤ c) (k : ℕ) : Γ (k + 1) ≤ Γ k := by
   by_cases hk : S k
   · have := h.decrease k hk
@@ -313,14 +389,19 @@ theorem le_self (hc : 0 ≤ c) (k : ℕ) : Γ (k + 1) ≤ Γ k := by
     linarith
   · exact (h.eq_of_not k hk).le
 
-/-- The explicit recurrence implies the implicit one (for `c ≥ 0`, `τ ≥ 0`). -/
+/-- If $\Gamma$ satisfies the explicit gap recurrence for $S$, $c \ge 0$ and $\tau \ge 0$, then it
+satisfies the implicit gap recurrence for $S$, $c$ and $\tau$. -/
 theorem toImplicit (hc : 0 ≤ c) (hτ : 0 ≤ τ) : IsImplicitGapDecrease Γ S c τ where
   nonneg := h.nonneg
   eq_of_not := h.eq_of_not
   decrease k hk := (mul_le_mul_of_nonneg_left
     (Real.rpow_le_rpow (h.nonneg _) (h.le_self hc k) hτ) hc).trans (h.decrease k hk)
 
-/-- **(5.3.30)**: at a successful iteration, `Γ_{k+1} ≤ Γ_k (1 - c Γ_k^{τ-1})`. -/
+/-- Let $\Gamma$ satisfy the explicit gap recurrence for $S$, $c \ge 0$ and $\tau$. Then at every
+successful iteration $k$
+$$\Gamma_{k+1} \le \Gamma_k (1 - c \Gamma_k^{\tau - 1}).$$
+
+This is (5.3.30) of [cartis2022evaluation]. -/
 theorem le_mul (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
     Γ (k + 1) ≤ Γ k * (1 - c * Γ k ^ (τ - 1)) := by
   rcases (h.nonneg k).lt_or_eq with hΓ | hΓ
@@ -334,9 +415,13 @@ theorem le_mul (hc : 0 ≤ c) {k : ℕ} (hk : S k) :
     rw [← hΓ, zero_mul]
     linarith
 
-/-- **Count for the linear explicit case** ([cartis2022evaluation], Lemma 5.3.6 (i), proof of
-Theorem 5.3.8): if `τ = 1`, `0 < c < 1`, `0 < ε` and `0 < Γ_0`, then `Γ_{k+1} ≤ ε` as soon as
-`(log Γ_0 - log ε) / |log (1 - c)| ≤ |𝒮_k|`. -/
+/-- **Count for the linear explicit case.** Let $\Gamma$ satisfy the explicit gap recurrence for
+$S$, $0 < c < 1$ and $\tau = 1$, and let $\epsilon > 0$ and $\Gamma_0 > 0$. Then
+$\Gamma_{k+1} \le \epsilon$ for every $k$ with
+$$\frac{\log \Gamma_0 - \log \epsilon}{|\log(1 - c)|} \le |\mathcal{S}_k|.$$
+
+This is Lemma 5.3.6(i) of [cartis2022evaluation] and the count in the proof of its Theorem
+5.3.8. -/
 theorem le_of_linear_count (hτ : τ = 1) (hc : 0 < c) (hc1 : c < 1) {ε : ℝ} (hε : 0 < ε)
     (hΓ0 : 0 < Γ 0) {k : ℕ}
     (hk : (Real.log (Γ 0) - Real.log ε) / |Real.log (1 - c)| ≤ (successSet S k).card) :
@@ -360,8 +445,9 @@ theorem le_of_linear_count (hτ : τ = 1) (hc : 0 < c) (hc1 : c < 1) {ε : ℝ} 
     hΓ0.ne', Real.log_pow]
   linarith
 
-/-- If `τ = 1` and `c ≥ 1`, the gap vanishes after every successful iteration (and `c > 1`
-forces `Γ_k = 0` at every successful `k`). -/
+/-- Let $\Gamma$ satisfy the explicit gap recurrence for $S$, $c \ge 1$ and $\tau = 1$. Then at
+every successful iteration $k$, $\Gamma_{k+1} = 0$, and if moreover $c > 1$, then
+$\Gamma_k = 0$. -/
 theorem eq_zero_of_one_le (hτ : τ = 1) (hc : 1 ≤ c) {k : ℕ} (hk : S k) :
     Γ (k + 1) = 0 ∧ (1 < c → Γ k = 0) := by
   have := h.decrease k hk
@@ -378,8 +464,9 @@ section Iterates
 
 variable {F G : ℝ → ℝ}
 
-/-- If `F ≤ G` on `[0, ∞)`, `G` is monotone there and `F` preserves nonnegativity, then
-`F^[n] ≤ G^[n]` on `[0, ∞)`. -/
+/-- Let $F, G \colon \mathbb{R} \to \mathbb{R}$ with $F \le G$ on $[0, \infty)$, $G$ monotone on
+$[0, \infty)$ and $F$ mapping $[0, \infty)$ into itself. Then $F^n(x) \le G^n(x)$ for every $n$
+and every $x \ge 0$. -/
 theorem iterate_le_iterate_of_le (hFG : ∀ x, 0 ≤ x → F x ≤ G x)
     (hG : ∀ x y, 0 ≤ x → x ≤ y → G x ≤ G y) (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) (n : ℕ) {x : ℝ}
     (hx : 0 ≤ x) : F^[n] x ≤ G^[n] x := by
@@ -389,7 +476,8 @@ theorem iterate_le_iterate_of_le (hFG : ∀ x, 0 ≤ x → F x ≤ G x)
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
     exact (hFG _ (iterate_nonneg hF0 n hx)).trans (hG _ _ (iterate_nonneg hF0 n hx) ih)
 
-/-- If `F x ≤ x` on `[0, ∞)`, the iterates of `F` decrease. -/
+/-- Let $F \colon \mathbb{R} \to \mathbb{R}$ map $[0, \infty)$ into itself with $F(x) \le x$ for
+$x \ge 0$. Then $F^n(x) \le F^m(x)$ for all $m \le n$ and every $x \ge 0$. -/
 theorem iterate_le_iterate_of_le_self (hF : ∀ x, 0 ≤ x → F x ≤ x)
     (hF0 : ∀ x, 0 ≤ x → 0 ≤ F x) {m n : ℕ} (hmn : m ≤ n) {x : ℝ} (hx : 0 ≤ x) :
     F^[n] x ≤ F^[m] x := by
@@ -405,7 +493,7 @@ theorem iterate_le_iterate_of_le_self (hF : ∀ x, 0 ≤ x → F x ≤ x)
   rw [add_comm, Function.iterate_add_apply]
   exact hdec d _ (iterate_nonneg hF0 m hx)
 
-/-- Iterates of `x ↦ x ^ a` on `[0, ∞)`: `x ↦ x ^ (a ^ n)`. -/
+/-- For $x \ge 0$, the $n$-th iterate of $y \mapsto y^a$ at $x$ is $x^{a^n}$. -/
 theorem iterate_rpow_apply {a x : ℝ} (hx : 0 ≤ x) (n : ℕ) :
     (fun y : ℝ => y ^ a)^[n] x = x ^ (a ^ n) := by
   induction n with
@@ -414,10 +502,13 @@ theorem iterate_rpow_apply {a x : ℝ} (hx : 0 ≤ x) (n : ℕ) :
 
 end Iterates
 
-/-- Lower bounds on `Γ^{-α}` accumulate along the successful iterations: if `Γ ≥ 0` is
-nonincreasing, unchanged at unsuccessful iterations, and `d ≤ Γ_{k+1}^{-α} - Γ_k^{-α}` at every
-successful `k` with `Γ_{k+1} > 0`, then `Γ_0^{-α} + d |𝒮_k| ≤ Γ_{k+1}^{-α}` whenever
-`Γ_{k+1} > 0`. -/
+/-- Lower bounds on $\Gamma^{-\alpha}$ accumulate along the successful iterations. Let
+$\alpha, d \in \mathbb{R}$, and let $\Gamma$ be nonincreasing, with $\Gamma_{k+1} = \Gamma_k$ at
+the unsuccessful iterations and
+$$d \le \Gamma_{k+1}^{-\alpha} - \Gamma_k^{-\alpha}$$
+at every successful iteration $k$ with $\Gamma_{k+1} > 0$. Then $\Gamma_0^{-\alpha} + d
+|\mathcal{S}_k| \le \Gamma_{k+1}^{-\alpha}$ for every $k$ with $\Gamma_{k+1} > 0$.
+-/
 theorem add_mul_card_le_rpow_neg {α d : ℝ} (hΓ : ∀ k, Γ (k + 1) ≤ Γ k)
     (heq : ∀ k, ¬ S k → Γ (k + 1) = Γ k)
     (hstep : ∀ k, S k → 0 < Γ (k + 1) → d ≤ Γ (k + 1) ^ (-α) - Γ k ^ (-α)) (k : ℕ) :
@@ -442,8 +533,11 @@ theorem add_mul_card_le_rpow_neg {α d : ℝ} (hΓ : ∀ k, Γ (k + 1) ≤ Γ k)
     · rw [card_successSet_add_one_of_not_succ hk, heq _ hk]
       exact ih (by rwa [← heq _ hk])
 
-/-- From `Γ_0^{-α} + d |𝒮_k| ≤ Γ_{k+1}^{-α}` (when `Γ_{k+1} > 0`) to a count:
-`Γ_{k+1} ≤ ε` as soon as `(ε^{-α} - Γ_0^{-α}) / d ≤ |𝒮_k|`. -/
+/-- Let $\alpha > 0$, $d > 0$, $\epsilon > 0$ and $k \in \mathbb{N}$ with $\Gamma_{k+1} \ge 0$.
+Suppose that $\Gamma_0^{-\alpha} + d |\mathcal{S}_k| \le \Gamma_{k+1}^{-\alpha}$ if
+$\Gamma_{k+1} > 0$, and that
+$$\frac{\epsilon^{-\alpha} - \Gamma_0^{-\alpha}}{d} \le |\mathcal{S}_k|.$$
+Then $\Gamma_{k+1} \le \epsilon$. -/
 theorem le_of_add_mul_card_le_rpow_neg {α d ε : ℝ} (hα : 0 < α) (hd : 0 < d) (hε : 0 < ε)
     {k : ℕ} (hΓ : 0 ≤ Γ (k + 1))
     (hbound : 0 < Γ (k + 1) → Γ 0 ^ (-α) + d * (successSet S k).card ≤ Γ (k + 1) ^ (-α))
@@ -460,7 +554,9 @@ namespace IsImplicitGapDecrease
 variable (h : IsImplicitGapDecrease Γ S c τ)
 include h
 
-/-- Rescaling: `λ Γ` satisfies the implicit recurrence with constant `c λ^{1-τ}`. -/
+/-- Rescaling. If $\Gamma$ satisfies the implicit gap recurrence for $S$, $c$ and $\tau$, and
+$\lambda > 0$, then $\lambda \Gamma$ satisfies the implicit gap recurrence for $S$,
+$c \lambda^{1 - \tau}$ and $\tau$. -/
 theorem const_mul {l : ℝ} (hl : 0 < l) :
     IsImplicitGapDecrease (fun k => l * Γ k) S (c * l ^ (1 - τ)) τ where
   nonneg k := mul_nonneg hl.le (h.nonneg k)
@@ -476,9 +572,12 @@ theorem const_mul {l : ℝ} (hl : 0 < l) :
     have := mul_le_mul_of_nonneg_left this hl.le
     linarith
 
-/-- **Superlinear rate** ([cartis2022evaluation], Lemma 5.3.1 (i)): if `0 < τ < 1`, `c > 0` and
-there are infinitely many successful iterations, then for every `η > 0` eventually every
-successful iteration has `Γ_{k+1} ≤ η Γ_k`. -/
+/-- **Superlinear rate.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c > 0$ and
+$0 < \tau < 1$, and let $S$ hold at infinitely many iterations. Then for every $\eta > 0$ there
+is $K$ such that every successful iteration $k \ge K$ has
+$$\Gamma_{k+1} \le \eta \Gamma_k.$$
+
+This is Lemma 5.3.1(i) of [cartis2022evaluation]. -/
 theorem superlinear (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (hS : ∀ N, ∃ k ≥ N, S k)
     {η : ℝ} (hη : 0 < η) : ∃ K, ∀ k ≥ K, S k → Γ (k + 1) ≤ η * Γ k := by
   set δ := (c * η) ^ (1 / (1 - τ)) with hδ
@@ -505,12 +604,17 @@ theorem superlinear (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (hS : ∀ N, �
       _ = η * Γ k := by rw [div_inv_eq_mul, mul_comm]
   · rw [← hzero]; exact mul_nonneg hη.le (h.nonneg k)
 
-/-- The constant `κdom = min (Γ_0^{-α} c⁻¹ (2^α - 1)) (min 1 α / 2)` of the sublinear rate
-((B.5.14)–(B.5.15), `α = τ - 1`). -/
+/-- The constant
+$$\kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0) = \min\Big( \Gamma_0^{-\alpha} c^{-1} (2^\alpha -
+  1), \ \frac{\min(1, \alpha)}{2} \Big)$$
+of the sublinear rate, (B.5.14)–(B.5.15) of [cartis2022evaluation], used with
+$\alpha = \tau - 1$. -/
 noncomputable def kappaDom (c α Γ0 : ℝ) : ℝ :=
   min (Γ0 ^ (-α) * c⁻¹ * (2 ^ α - 1)) (min 1 α / 2)
 
 omit h in
+/-- If $c > 0$, $\alpha > 0$ and $\Gamma_0 > 0$, then
+$\kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0) > 0$. -/
 theorem kappaDom_pos {α Γ0 : ℝ} (hc : 0 < c) (hα : 0 < α) (hΓ0 : 0 < Γ0) :
     0 < kappaDom c α Γ0 := by
   have h2 : 0 < (2 : ℝ) ^ α - 1 := by
@@ -518,8 +622,12 @@ theorem kappaDom_pos {α Γ0 : ℝ} (hc : 0 < c) (hα : 0 < α) (hΓ0 : 0 < Γ0)
   exact lt_min (by have := Real.rpow_pos_of_pos hΓ0 (-α); positivity)
     (by have : 0 < min 1 α := lt_min one_pos hα; positivity)
 
-/-- One step of the sublinear analysis ((B.5.13)–(B.5.15)): at a successful iteration
-with `Γ_{k+1} > 0` and `τ > 1`, `Γ_{k+1}^{-α} - Γ_k^{-α} ≥ c κdom`. -/
+/-- One step of the sublinear analysis, (B.5.13)–(B.5.15) of [cartis2022evaluation]. Let $\Gamma$
+satisfy the implicit gap recurrence for $S$, $c > 0$ and $\tau > 1$, and let
+$\alpha = \tau - 1$. Then at every successful iteration $k$ with $\Gamma_{k+1} > 0$
+$$c \, \kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0) \le \Gamma_{k+1}^{-\alpha} -
+  \Gamma_k^{-\alpha}.$$
+-/
 theorem kappaDom_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos : 0 < Γ (k + 1)) :
     c * kappaDom c (τ - 1) (Γ 0) ≤ Γ (k + 1) ^ (-(τ - 1)) - Γ k ^ (-(τ - 1)) := by
   set α := τ - 1 with hα_def
@@ -569,9 +677,14 @@ theorem kappaDom_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos :
       _ ≤ y ^ (-α) * (1 - t ^ α) := mul_le_mul_of_nonneg_left hm hyα.le
       _ = y ^ (-α) - x ^ (-α) := by rw [hxy]; ring
 
-/-- **Sublinear rate** ([cartis2022evaluation], Lemma 5.3.1 (iii), (B.5.14)): if
-`τ > 1`, `c > 0` and `Γ_0 > 0`, then with `α = τ - 1`,
-`Γ_{k+1} ≤ (Γ_0^{-α} + c κdom |𝒮_k|)^{-1/α}` for all `k`. -/
+/-- **Sublinear rate.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$, $c > 0$ and
+$\tau > 1$, let $\Gamma_0 > 0$, and let $\alpha = \tau - 1$. Then for every $k$
+$$\Gamma_{k+1} \le \big( \Gamma_0^{-\alpha} + c \, \kappa_{\mathrm{dom}} |\mathcal{S}_k|
+  \big)^{-1/\alpha},$$
+where $\kappa_{\mathrm{dom}} = \kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0)$ is
+`Optimization.IsImplicitGapDecrease.kappaDom`.
+
+This is Lemma 5.3.1(iii) and (B.5.14) of [cartis2022evaluation]. -/
 theorem sublinear (hc : 0 < c) (hτ : 1 < τ) (hΓ0 : 0 < Γ 0) (k : ℕ) :
     Γ (k + 1) ≤
       (Γ 0 ^ (-(τ - 1)) + c * kappaDom c (τ - 1) (Γ 0) * (successSet S k).card) ^
@@ -594,14 +707,18 @@ theorem sublinear (hc : 0 < c) (hτ : 1 < τ) (hΓ0 : 0 < Γ 0) (k : ℕ) :
       have := (kappaDom_pos hc hα hΓ0).le
       positivity) _
 
-/-- **Lemma 5.3.1** ([cartis2022evaluation]), the three rates as upper bounds (the recurrence
-does not exclude faster or finite convergence): if `c > 0`, `τ > 0` and there are infinitely
-many successful iterations, then
-* (i) if `τ < 1`, for every `η > 0` eventually every successful iteration has
-  `Γ_{k+1} ≤ η Γ_k` (superlinear);
-* (ii) if `τ = 1`, every successful iteration has `Γ_{k+1} ≤ (1 + c)⁻¹ Γ_k` (linear);
-* (iii) if `τ > 1` and `Γ_0 > 0`, `Γ_{k+1} ≤ (Γ_0^{-α} + c κdom |𝒮_k|)^{-1/α}` with `α = τ - 1`
-  (sublinear). -/
+/-- **Lemma 5.3.1** of [cartis2022evaluation], the three rates. Let $\Gamma$ satisfy the implicit
+gap recurrence for $S$, $c > 0$ and $\tau > 0$, and let $S$ hold at infinitely many iterations.
+Then:
+* (i) if $\tau < 1$, then for every $\eta > 0$ there is $K$ such that every successful iteration
+  $k \ge K$ has $\Gamma_{k+1} \le \eta \Gamma_k$ (superlinear rate);
+* (ii) if $\tau = 1$, then every successful iteration $k$ has
+  $\Gamma_{k+1} \le (1 + c)^{-1} \Gamma_k$ (linear rate);
+* (iii) if $\tau > 1$ and $\Gamma_0 > 0$, then $\Gamma_{k+1} \le (\Gamma_0^{-\alpha} + c \,
+  \kappa_{\mathrm{dom}} |\mathcal{S}_k|)^{-1/\alpha}$ for every $k$, with $\alpha = \tau - 1$
+  and $\kappa_{\mathrm{dom}} = \kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0)$ (sublinear rate).
+
+The rates are upper bounds: the recurrence does not exclude faster or finite convergence. -/
 theorem rates (hc : 0 < c) (hτ0 : 0 < τ) (hS : ∀ N, ∃ k ≥ N, S k) :
     (τ < 1 → ∀ η, 0 < η → ∃ K, ∀ k ≥ K, S k → Γ (k + 1) ≤ η * Γ k) ∧
       (τ = 1 → ∀ k, S k → Γ (k + 1) ≤ (1 + c)⁻¹ * Γ k) ∧
@@ -611,9 +728,13 @@ theorem rates (hc : 0 < c) (hτ0 : 0 < τ) (hS : ∀ N, ∃ k ≥ N, S k) :
   ⟨fun hτ1 _ hη => h.superlinear hc hτ0 hτ1 hS hη, fun hτ _ hk => h.linear hτ hc.le hk,
     fun hτ hΓ0 k => h.sublinear hc hτ hΓ0 k⟩
 
-/-- **Count for the sublinear case** ([cartis2022evaluation], proof of Theorem 5.3.5):
-if `τ > 1`, `c > 0`, `Γ_0 > 0` and `ε > 0`, then with `α = τ - 1`, `Γ_{k+1} ≤ ε` as soon as
-`(ε^{-α} - Γ_0^{-α}) / (c κdom) ≤ |𝒮_k|`. -/
+/-- **Count for the sublinear case.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$,
+$c > 0$ and $\tau > 1$, let $\Gamma_0 > 0$ and $\epsilon > 0$, and let $\alpha = \tau - 1$. Then
+$\Gamma_{k+1} \le \epsilon$ for every $k$ with
+$$\frac{\epsilon^{-\alpha} - \Gamma_0^{-\alpha}}{c \, \kappa_{\mathrm{dom}}(c, \alpha,
+  \Gamma_0)} \le |\mathcal{S}_k|.$$
+
+This is the count in the proof of Theorem 5.3.5 of [cartis2022evaluation]. -/
 theorem le_of_sublinear_count (hc : 0 < c) (hτ : 1 < τ) (hΓ0 : 0 < Γ 0) {ε : ℝ} (hε : 0 < ε)
     {k : ℕ} (hk : (ε ^ (-(τ - 1)) - Γ 0 ^ (-(τ - 1))) / (c * kappaDom c (τ - 1) (Γ 0)) ≤
       (successSet S k).card) :
@@ -630,8 +751,11 @@ namespace IsExplicitGapDecrease
 variable (h : IsExplicitGapDecrease Γ S c τ)
 include h
 
-/-- One step of the trust-region-like sublinear analysis (mean-value theorem): at a successful
-iteration with `Γ_{k+1} > 0` and `τ > 1`, `Γ_{k+1}^{-α} - Γ_k^{-α} ≥ α c` (`α = τ - 1`). -/
+/-- One step of the sublinear analysis of trust-region-like methods, by the mean-value theorem. Let
+$\Gamma$ satisfy the explicit gap recurrence for $S$, $c > 0$ and $\tau > 1$, and let
+$\alpha = \tau - 1$. Then at every successful iteration $k$ with $\Gamma_{k+1} > 0$
+$$\alpha c \le \Gamma_{k+1}^{-\alpha} - \Gamma_k^{-\alpha}.$$
+-/
 theorem mul_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos : 0 < Γ (k + 1)) :
     (τ - 1) * c ≤ Γ (k + 1) ^ (-(τ - 1)) - Γ k ^ (-(τ - 1)) := by
   have hle := h.le_self hc.le k
@@ -648,9 +772,12 @@ theorem mul_le_sub (hc : 0 < c) (hτ : 1 < τ) {k : ℕ} (hk : S k) (hpos : 0 < 
     _ ≤ (τ - 1) * Γ k ^ (-(τ - 1) - 1) * (Γ k - Γ (k + 1)) := mul_le_mul_of_nonneg_left hdec hnn
     _ ≤ _ := hmvt
 
-/-- **Count for the trust-region-like sublinear case** ([cartis2022evaluation], proof of
-Theorem 5.3.9): if `τ > 1`, `c > 0` and `ε > 0`, then with `α = τ - 1`, `Γ_{k+1} ≤ ε` as soon as
-`(ε^{-α} - Γ_0^{-α}) / (α c) ≤ |𝒮_k|`. -/
+/-- **Count for the sublinear explicit case.** Let $\Gamma$ satisfy the explicit gap recurrence for
+$S$, $c > 0$ and $\tau > 1$, let $\epsilon > 0$, and let $\alpha = \tau - 1$. Then
+$\Gamma_{k+1} \le \epsilon$ for every $k$ with
+$$\frac{\epsilon^{-\alpha} - \Gamma_0^{-\alpha}}{\alpha c} \le |\mathcal{S}_k|.$$
+
+This is the count in the proof of Theorem 5.3.9 of [cartis2022evaluation]. -/
 theorem le_of_sublinear_count (hc : 0 < c) (hτ : 1 < τ) {ε : ℝ} (hε : 0 < ε) {k : ℕ}
     (hk : (ε ^ (-(τ - 1)) - Γ 0 ^ (-(τ - 1))) / ((τ - 1) * c) ≤ (successSet S k).card) :
     Γ (k + 1) ≤ ε :=
@@ -662,12 +789,18 @@ end IsExplicitGapDecrease
 
 /-! ### The two-phase count of the superlinear case -/
 
-/-- The number of successful iterations after which the implicit gap with `τ < 1` is at most `ε`
-(proof of [cartis2022evaluation], Theorem 5.3.3). With `α = τ - 1 < 0`, the scaled
-gap `ω_0 = c^{1/α} Γ_0`, the scaled tolerance `ε' = c^{1/α} ε` and `q = (1 + ω_0^α)⁻¹`:
-`N₁ = ⌈log ω_0 / log (1 + ω_0^α)⌉₊ + 1` successful iterations bring `ω` below `q` (linear
-phase), and `N₂ = ⌈(log (log (1/ε')) - log (log (1 + ω_0^α))) / log (1/τ)⌉₊` more bring it below
-`ε'` (superlinear phase, `N₂ = 0` if `ε' ≥ 1`). -/
+/-- The number of successful iterations after which a gap that satisfies the implicit recurrence
+with $\tau < 1$ is at most $\epsilon$. Let $\alpha = \tau - 1 < 0$, let
+$\omega_0 = c^{1/\alpha} \Gamma_0$ be the scaled gap and $\epsilon' = c^{1/\alpha} \epsilon$ the
+scaled tolerance. The count is $N_1 + N_2$ with
+$$N_1 = \left\lceil \frac{\log \omega_0}{\log(1 + \omega_0^\alpha)} \right\rceil + 1, \qquad
+  N_2 = \left\lceil \frac{\log \log(1 / \epsilon') - \log \log(1 + \omega_0^\alpha)}{\log(1 /
+  \tau)} \right\rceil$$
+if $\epsilon' < 1$, and $N_2 = 0$ if $\epsilon' \ge 1$.
+
+This is the count in the proof of Theorem 5.3.3 of [cartis2022evaluation]. In the first, linear
+phase, $N_1$ successful iterations bring $\omega$ below $q = (1 + \omega_0^\alpha)^{-1}$. In the
+second, superlinear phase, $N_2$ more bring it below $\epsilon'$. The ceilings are `Nat.ceil`. -/
 noncomputable def superlinearGapCount (c τ Γ0 ε : ℝ) : ℕ :=
   (⌈Real.log (c ^ (1 / (τ - 1)) * Γ0) /
       Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1))⌉₊ + 1) +
@@ -681,9 +814,13 @@ namespace IsImplicitGapDecrease
 variable (h : IsImplicitGapDecrease Γ S c τ)
 include h
 
-/-- **Count for the superlinear case** ([cartis2022evaluation], Theorem 5.3.3, proof in
-Appendix B): if `0 < τ < 1`, `c > 0`, `Γ_0 > 0` and `ε > 0`, then `Γ_{k+1} ≤ ε` as
-soon as `superlinearGapCount c τ Γ_0 ε ≤ |𝒮_k|`. -/
+/-- **Count for the superlinear case.** Let $\Gamma$ satisfy the implicit gap recurrence for $S$,
+$c > 0$ and $0 < \tau < 1$, and let $\Gamma_0 > 0$ and $\epsilon > 0$. Then
+$\Gamma_{k+1} \le \epsilon$ for every $k$ with
+$$N(c, \tau, \Gamma_0, \epsilon) \le |\mathcal{S}_k|,$$
+where $N$ is the two-phase count `Optimization.superlinearGapCount`.
+
+This is Theorem 5.3.3 of [cartis2022evaluation], with the proof of its Appendix B. -/
 theorem le_of_superlinear_count (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (hΓ0 : 0 < Γ 0)
     {ε : ℝ} (hε : 0 < ε) {k : ℕ} (hk : superlinearGapCount c τ (Γ 0) ε ≤ (successSet S k).card) :
     Γ (k + 1) ≤ ε := by
@@ -804,12 +941,17 @@ theorem le_of_superlinear_count (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1) (h�
 
 end IsImplicitGapDecrease
 
-/-- **The superlinear count is `O(log |log ε|)`** ([cartis2022evaluation], (5.3.16), explicit
-constants): for `c > 0`, `0 < τ < 1`, `Γ_0 > 0`, `ε > 0`, with `α = τ - 1`,
-`ω_0 = c^{1/α} Γ_0`,
-`superlinearGapCount c τ Γ_0 ε ≤ log (max 1 |log ε|) / log (1/τ) + κ`, where
-`κ = max 0 (log ω_0) / log (1 + ω_0^α) + 2
-  + (log (1 + |log c| / |α|) + |log (log (1 + ω_0^α))|) / log (1/τ) + 1`. -/
+/-- **The superlinear count is $O(\log |\log \epsilon|)$.** Let $c > 0$, $0 < \tau < 1$,
+$\Gamma_0 > 0$ and $\epsilon > 0$, let $\alpha = \tau - 1$ and
+$\omega_0 = c^{1/\alpha} \Gamma_0$. Then the two-phase count `Optimization.superlinearGapCount`
+satisfies
+$$N(c, \tau, \Gamma_0, \epsilon) \le \frac{\log \max(1, |\log \epsilon|)}{\log(1 / \tau)} +
+  \kappa,$$
+where
+$$\kappa = \frac{\max(0, \log \omega_0)}{\log(1 + \omega_0^\alpha)} + 2 + \frac{\log(1 + |\log
+  c| / |\alpha|) + |\log \log(1 + \omega_0^\alpha)|}{\log(1 / \tau)} + 1.$$
+
+This is (5.3.16) of [cartis2022evaluation] with explicit constants. -/
 theorem superlinearGapCount_le {Γ0 ε : ℝ} (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1)
     (hΓ0 : 0 < Γ0) (hε : 0 < ε) :
     (superlinearGapCount c τ Γ0 ε : ℝ) ≤
@@ -896,22 +1038,28 @@ theorem superlinearGapCount_le {Γ0 ε : ℝ} (hc : 0 < c) (hτ0 : 0 < τ) (hτ1
     rw [add_div]
   linarith
 
-/-! ### The explicit recurrence with `τ < 1`: finite termination -/
+/-! ### The explicit recurrence with $\tau < 1$: finite termination -/
 
 namespace IsExplicitGapDecrease
 
 variable (h : IsExplicitGapDecrease Γ S c τ)
 include h
 
-/-- **Finite termination of the explicit recurrence with `τ < 1`** ([cartis2022evaluation],
-Lemma 5.3.6 (ii), proof of Theorem 5.3.7). Let `c > 0`, `τ < 1`, `α = τ - 1` and
-`Γ□ = c^{-1/α}`.
-* Every successful iteration with `Γ_k > 0` has `Γ_k ≥ Γ□`.
-* If `Γ_0 > 0` and some iteration is successful, then `Γ_0 ≥ Γ□` (5.3.29).
-* With `ω_0 = Γ_0 / Γ□`: if `Γ_0 > 0`, then `Γ_{k+1} = 0` as soon as
-  `⌈log ω_0 / |log (1 - ω_0^α)|⌉₊ + 1 ≤ |𝒮_k|`. This is the integer form of the real
-  bound `log ω_0 / |log (1 - ω_0^α)| + 1` (proof of Theorem 5.3.7); no assumption that there are
-  infinitely many successful iterations is needed. -/
+/-- **Finite termination of the explicit recurrence for $\tau < 1$.** Let $\Gamma$ satisfy the
+explicit gap recurrence for $S$, $c > 0$ and $\tau < 1$, let $\alpha = \tau - 1$ and
+$\Gamma_\square = c^{-1/\alpha}$. Then:
+* every successful iteration $k$ with $\Gamma_k > 0$ has $\Gamma_k \ge \Gamma_\square$;
+* if $\Gamma_0 > 0$ and some iteration is successful, then $\Gamma_0 \ge \Gamma_\square$, which
+  is (5.3.29);
+* if $\Gamma_0 > 0$, then, with $\omega_0 = \Gamma_0 / \Gamma_\square$, $\Gamma_{k+1} = 0$ for
+  every $k$ with
+$$\left\lceil \frac{\log \omega_0}{|\log(1 - \omega_0^\alpha)|} \right\rceil + 1 \le
+  |\mathcal{S}_k|.$$
+
+This is Lemma 5.3.6(ii) of [cartis2022evaluation] and the count in the proof of its Theorem
+5.3.7. The last part is the integer form of the real bound $\log \omega_0 / |\log(1 -
+\omega_0^\alpha)| + 1$ of that proof. It needs no assumption that there are infinitely many
+successful iterations. -/
 theorem eq_zero_of_lt_one (hc : 0 < c) (hτ : τ < 1) :
     (∀ k, S k → 0 < Γ k → c ^ (-1 / (τ - 1)) ≤ Γ k) ∧
       (0 < Γ 0 → ∀ k, S k → c ^ (-1 / (τ - 1)) ≤ Γ 0) ∧
@@ -1060,8 +1208,8 @@ end IsExplicitGapDecrease
 
 /-! ### The halving argument for the optimality measure -/
 
-/-- If `n ≥ 1` successful iterations occurred in `[0, k]`, some successful `a ≤ k` is the `n`-th
-one: `|𝒮_a| = n`. -/
+/-- If $1 \le n \le |\mathcal{S}_k|$, then the $n$-th successful iteration is at most $k$: there is
+a successful $a \le k$ with $|\mathcal{S}_a| = n$. -/
 theorem exists_card_successSet_eq {n k : ℕ} (hn : 1 ≤ n) (hk : n ≤ (successSet S k).card) :
     ∃ a ≤ k, S a ∧ (successSet S a).card = n := by
   classical
@@ -1090,13 +1238,20 @@ theorem exists_card_successSet_eq {n k : ℕ} (hn : 1 ≤ n) (hk : n ≤ (succes
       exact hmin ha
     exact ⟨hSi, by omega⟩
 
-/-- **Measure counts from gap rates** ([cartis2022evaluation], proof of Theorem 5.3.5, the
-halving argument). Let `Γ ≥ 0` be unchanged at the unsuccessful iterations, with
-`Γ_{k+1} ≤ (A |𝒮_k|)^{-1/α}` whenever `|𝒮_k| ≥ 1` (`A, α > 0`), and let
-`κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful iterations (`κν, ν > 0`). Let `ε > 0` and
-`M = A^{-1/(α+1)} κν^{-α/(α+1)} ε^{-να/(α+1)}`. If at least `2 (⌊M⌋₊ + 1)` successful iterations
-occurred in `[0, k]`, one of the first `2 (⌊M⌋₊ + 1)` of them has `φ_j ≤ ε`. (With
-`α = (ν - μ)/μ`, `να/(α+1) = ν - μ`.) -/
+/-- **Measure counts from gap rates**, the halving argument in the proof of Theorem 5.3.5 of
+[cartis2022evaluation]. Let $A > 0$, $\alpha > 0$, $\kappa_\nu > 0$, $\nu > 0$ and
+$\epsilon > 0$, and let $\varphi \colon \mathbb{N} \to \mathbb{R}$. Let $\Gamma \ge 0$ satisfy
+$\Gamma_{k+1} = \Gamma_k$ at the unsuccessful iterations,
+$$\Gamma_{k+1} \le (A |\mathcal{S}_k|)^{-1/\alpha} \quad \text{whenever } |\mathcal{S}_k| \ge
+  1,$$
+and $\kappa_\nu \varphi_k^\nu \le \Gamma_k - \Gamma_{k+1}$ at the successful iterations. Let
+$$M = A^{-1/(\alpha + 1)} \kappa_\nu^{-\alpha/(\alpha + 1)} \epsilon^{-\nu\alpha/(\alpha +
+  1)}.$$
+If $2 (\lfloor M \rfloor + 1) \le |\mathcal{S}_k|$, then there is a successful iteration
+$j \le k$ with $|\mathcal{S}_j| \le 2 (\lfloor M \rfloor + 1)$ and $\varphi_j \le \epsilon$.
+
+With $\alpha = (\nu - \mu) / \mu$ one has $\nu\alpha / (\alpha + 1) = \nu - \mu$. The floor is
+`Nat.floor`. -/
 theorem exists_le_of_halving {φ : ℕ → ℝ} {A α κν ν ε : ℝ} (hA : 0 < A) (hα : 0 < α)
     (hκν : 0 < κν) (hν : 0 < ν) (hε : 0 < ε) (hΓ : ∀ k, 0 ≤ Γ k)
     (heq : ∀ k, ¬ S k → Γ (k + 1) = Γ k)
@@ -1188,13 +1343,15 @@ section ImplicitGapSeq
 
 variable {κ : ℝ}
 
-/-- `t ↦ κ t^τ + t` is strictly increasing on `[0, ∞)` for `κ ≥ 0`, `τ > 0`. -/
+/-- For $\kappa \ge 0$ and $\tau > 0$, the map $t \mapsto \kappa t^\tau + t$ is strictly increasing
+on $[0, \infty)$. -/
 theorem add_rpow_lt_add_rpow (hκ : 0 ≤ κ) (hτ : 0 < τ) {s t : ℝ} (hs : 0 ≤ s) (hst : s < t) :
     κ * s ^ τ + s < κ * t ^ τ + t := by
   have := mul_le_mul_of_nonneg_left (Real.rpow_le_rpow hs hst.le hτ.le) hκ
   linarith
 
-/-- For `y ≥ 0` there is `t ≥ 0` with `κ t^τ + t = y` (intermediate value theorem). -/
+/-- For $\kappa \ge 0$, $\tau > 0$ and $y \ge 0$ there is $t \ge 0$ with $\kappa t^\tau + t = y$, by
+the intermediate value theorem. -/
 theorem exists_add_rpow_eq (hκ : 0 ≤ κ) (hτ : 0 < τ) {y : ℝ} (hy : 0 ≤ y) :
     ∃ t, 0 ≤ t ∧ κ * t ^ τ + t = y := by
   have hcont : ContinuousOn (fun t : ℝ => κ * t ^ τ + t) (Set.Icc 0 y) :=
@@ -1206,24 +1363,29 @@ theorem exists_add_rpow_eq (hκ : 0 ≤ κ) (hτ : 0 < τ) {y : ℝ} (hy : 0 ≤
   exact ⟨t, ht.1, hteq⟩
 
 open Classical in
-/-- One step of the recurrence (5.3.12): for `y ≥ 0`, the unique `t ≥ 0` with `κ t^τ + t = y`
-(`κ ≥ 0`, `τ > 0`; the value `0` is used when no such `t` exists). -/
+/-- One step of the recurrence (5.3.12): for $y \ge 0$, the unique $t \ge 0$ with
+$\kappa t^\tau + t = y$, when $\kappa \ge 0$ and $\tau > 0$. The value is $0$ when no such $t$
+exists. -/
 noncomputable def implicitGapStep (κ τ y : ℝ) : ℝ :=
   if h : ∃ t, 0 ≤ t ∧ κ * t ^ τ + t = y then h.choose else 0
 
+/-- For $\kappa \ge 0$, $\tau > 0$ and $y \ge 0$, the step $t$ of (5.3.12) satisfies $t \ge 0$ and
+$\kappa t^\tau + t = y$. -/
 theorem implicitGapStep_spec (hκ : 0 ≤ κ) (hτ : 0 < τ) {y : ℝ} (hy : 0 ≤ y) :
     0 ≤ implicitGapStep κ τ y ∧ κ * implicitGapStep κ τ y ^ τ + implicitGapStep κ τ y = y := by
   have hex := exists_add_rpow_eq hκ hτ hy
   rw [implicitGapStep, dite_eq_left hex]
   exact hex.choose_spec
 
+/-- The step of (5.3.12) is nonnegative for all arguments. -/
 theorem implicitGapStep_nonneg (κ τ y : ℝ) : 0 ≤ implicitGapStep κ τ y := by
   unfold implicitGapStep
   split_ifs with h
   · exact h.choose_spec.1
   · exact le_rfl
 
-/-- `implicitGapStep κ τ y` is the only `t ≥ 0` with `κ t^τ + t = y`. -/
+/-- For $\kappa \ge 0$, $\tau > 0$, $y \ge 0$ and $t \ge 0$, $t$ is the step of (5.3.12) at $y$ if
+and only if $\kappa t^\tau + t = y$. -/
 theorem eq_implicitGapStep_iff (hκ : 0 ≤ κ) (hτ : 0 < τ) {y t : ℝ} (hy : 0 ≤ y) (ht : 0 ≤ t) :
     t = implicitGapStep κ τ y ↔ κ * t ^ τ + t = y := by
   obtain ⟨h0, heq⟩ := implicitGapStep_spec hκ hτ hy
@@ -1233,7 +1395,8 @@ theorem eq_implicitGapStep_iff (hκ : 0 ≤ κ) (hτ : 0 < τ) {y t : ℝ} (hy :
   · exact heq'
   · have := add_rpow_lt_add_rpow hκ hτ h0 hgt; linarith
 
-/-- If `t ≥ 0` and `κ t^τ + t ≤ y`, then `t ≤ implicitGapStep κ τ y`. -/
+/-- For $\kappa \ge 0$, $\tau > 0$ and $t \ge 0$, if $\kappa t^\tau + t \le y$, then $t$ is at most
+the step of (5.3.12) at $y$. -/
 theorem le_implicitGapStep (hκ : 0 ≤ κ) (hτ : 0 < τ) {y t : ℝ} (ht : 0 ≤ t)
     (h : κ * t ^ τ + t ≤ y) : t ≤ implicitGapStep κ τ y := by
   have hy : 0 ≤ y := le_trans (by have := Real.rpow_nonneg ht τ; positivity) h
@@ -1243,50 +1406,65 @@ theorem le_implicitGapStep (hκ : 0 ≤ κ) (hτ : 0 < τ) {y t : ℝ} (ht : 0 �
   have := add_rpow_lt_add_rpow hκ hτ h0 hlt
   linarith
 
+/-- For $\kappa \ge 0$ and $\tau > 0$, the step of (5.3.12) is monotone on $[0, \infty)$. -/
 theorem implicitGapStep_mono (hκ : 0 ≤ κ) (hτ : 0 < τ) {x y : ℝ} (hx : 0 ≤ x) (hxy : x ≤ y) :
     implicitGapStep κ τ x ≤ implicitGapStep κ τ y :=
   le_implicitGapStep hκ hτ (implicitGapStep_nonneg κ τ x)
     ((implicitGapStep_spec hκ hτ hx).2.le.trans hxy)
 
-/-- **The sequence (5.3.12)** ([cartis2022evaluation]): `t_0 = t₀` and `t_{n+1}` is the unique
-`t ≥ 0` with `κ t^τ + t = t_n`. -/
+/-- **The sequence (5.3.12)** of [cartis2022evaluation]: $t_0$ is given, and $t_{n+1}$ is the unique
+$t \ge 0$ with
+$$\kappa t^\tau + t = t_n.$$
+
+The step is `Optimization.implicitGapStep`, which is defined for all arguments and equals $0$
+where no such $t$ exists. -/
 noncomputable def implicitGapSeq (κ τ t₀ : ℝ) : ℕ → ℝ
   | 0 => t₀
   | n + 1 => implicitGapStep κ τ (implicitGapSeq κ τ t₀ n)
 
+/-- The sequence (5.3.12) starts at $t_0$. -/
 @[simp] theorem implicitGapSeq_zero (κ τ t₀ : ℝ) : implicitGapSeq κ τ t₀ 0 = t₀ := rfl
 
+/-- The term $t_{n+1}$ of the sequence (5.3.12) is the step of (5.3.12) at $t_n$. -/
 @[simp] theorem implicitGapSeq_succ (κ τ t₀ : ℝ) (n : ℕ) :
     implicitGapSeq κ τ t₀ (n + 1) = implicitGapStep κ τ (implicitGapSeq κ τ t₀ n) := rfl
 
+/-- The term $t_n$ of the sequence (5.3.12) is the $n$-th iterate of the step at $t_0$. -/
 theorem implicitGapSeq_eq_iterate (κ τ t₀ : ℝ) (n : ℕ) :
     implicitGapSeq κ τ t₀ n = (implicitGapStep κ τ)^[n] t₀ := by
   induction n with
   | zero => rfl
   | succ n ih => rw [implicitGapSeq_succ, ih, Function.iterate_succ_apply']
 
+/-- If $t_0 \ge 0$, every term of the sequence (5.3.12) is nonnegative. -/
 theorem implicitGapSeq_nonneg {t₀ : ℝ} (ht₀ : 0 ≤ t₀) (n : ℕ) : 0 ≤ implicitGapSeq κ τ t₀ n := by
   cases n with
   | zero => exact ht₀
   | succ n => exact implicitGapStep_nonneg _ _ _
 
-/-- The recurrence (5.3.12): `κ t_{n+1}^τ + t_{n+1} = t_n`. -/
+/-- For $\kappa \ge 0$, $\tau > 0$ and $t_0 \ge 0$, the sequence (5.3.12) satisfies
+$\kappa t_{n+1}^\tau + t_{n+1} = t_n$ for every $n$. -/
 theorem implicitGapSeq_rec (hκ : 0 ≤ κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) (n : ℕ) :
     κ * implicitGapSeq κ τ t₀ (n + 1) ^ τ + implicitGapSeq κ τ t₀ (n + 1) =
       implicitGapSeq κ τ t₀ n :=
   (implicitGapStep_spec hκ hτ (implicitGapSeq_nonneg ht₀ n)).2
 
-/-- The sequence (5.3.12) satisfies the implicit recurrence (with equality) at every index. -/
+/-- For $\kappa \ge 0$, $\tau > 0$ and $t_0 \ge 0$, the sequence (5.3.12) satisfies the implicit gap
+recurrence with constants $\kappa$ and $\tau$, with equality, when every iteration is
+successful. -/
 theorem isImplicitGapDecrease_implicitGapSeq (hκ : 0 ≤ κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) :
     IsImplicitGapDecrease (implicitGapSeq κ τ t₀) (fun _ => True) κ τ where
   nonneg := implicitGapSeq_nonneg ht₀
   eq_of_not _ h := absurd trivial h
   decrease n _ := by have := implicitGapSeq_rec hκ hτ ht₀ n; linarith
 
+/-- For $\kappa \ge 0$, $\tau > 0$ and $t_0 \ge 0$, the sequence (5.3.12) is antitone. -/
 theorem implicitGapSeq_antitone (hκ : 0 ≤ κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) :
     Antitone (implicitGapSeq κ τ t₀) :=
   (isImplicitGapDecrease_implicitGapSeq hκ hτ ht₀).antitone hκ
 
+/-- For $\kappa \ge 0$, $\tau > 0$ and $t_0 > 0$, every term of the sequence (5.3.12) is positive.
+-/
 theorem implicitGapSeq_pos (hκ : 0 ≤ κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ : 0 < t₀) (n : ℕ) :
     0 < implicitGapSeq κ τ t₀ n := by
   induction n with
@@ -1298,21 +1476,29 @@ theorem implicitGapSeq_pos (hκ : 0 ≤ κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ :
       rw [← h, Real.zero_rpow hτ.ne'] at this
       linarith
 
+/-- For $\kappa > 0$, $\tau > 0$ and $t_0 \ge 0$, the sequence (5.3.12) tends to $0$. -/
 theorem tendsto_implicitGapSeq (hκ : 0 < κ) (hτ : 0 < τ) {t₀ : ℝ} (ht₀ : 0 ≤ t₀) :
     Tendsto (implicitGapSeq κ τ t₀) atTop (𝓝 0) :=
   (isImplicitGapDecrease_implicitGapSeq hκ.le hτ ht₀).tendsto_zero hκ hτ
     fun N => ⟨N, le_rfl, trivial⟩
 
 open Classical in
-/-- **The count `Υ_{κ,τ}(t₀, ε)` of (5.3.13)**: the smallest `n` with `t_n ≤ ε` (`0` if there
-is none, which does not happen for `κ, τ, ε > 0`, `t₀ ≥ 0`). -/
+/-- **The count $\Upsilon_{\kappa,\tau}(t_0, \epsilon)$ of (5.3.13)** of [cartis2022evaluation]: the
+smallest $n$ with $t_n \le \epsilon$, for the sequence $t$ of (5.3.12).
+
+The value is $0$ if there is no such $n$. This does not happen for $\kappa, \tau, \epsilon > 0$
+and $t_0 \ge 0$ (`Optimization.exists_implicitGapSeq_le`). -/
 noncomputable def implicitGapHitIndex (κ τ t₀ ε : ℝ) : ℕ :=
   if h : ∃ n, implicitGapSeq κ τ t₀ n ≤ ε then Nat.find h else 0
 
+/-- For $\kappa > 0$, $\tau > 0$, $t_0 \ge 0$ and $\epsilon > 0$, some term of the sequence (5.3.12)
+is at most $\epsilon$. -/
 theorem exists_implicitGapSeq_le (hκ : 0 < κ) (hτ : 0 < τ) {t₀ ε : ℝ} (ht₀ : 0 ≤ t₀)
     (hε : 0 < ε) : ∃ n, implicitGapSeq κ τ t₀ n ≤ ε :=
   ((tendsto_implicitGapSeq hκ hτ ht₀).eventually (ge_mem_nhds hε)).exists
 
+/-- For $\kappa > 0$, $\tau > 0$, $t_0 \ge 0$ and $\epsilon > 0$, the term $t_n$ of the sequence
+(5.3.12) at $n = \Upsilon_{\kappa,\tau}(t_0, \epsilon)$ is at most $\epsilon$. -/
 theorem implicitGapSeq_hitIndex_le (hκ : 0 < κ) (hτ : 0 < τ) {t₀ ε : ℝ} (ht₀ : 0 ≤ t₀)
     (hε : 0 < ε) : implicitGapSeq κ τ t₀ (implicitGapHitIndex κ τ t₀ ε) ≤ ε := by
   classical
@@ -1320,6 +1506,7 @@ theorem implicitGapSeq_hitIndex_le (hκ : 0 < κ) (hτ : 0 < τ) {t₀ ε : ℝ}
   rw [implicitGapHitIndex, dite_eq_left hex]
   exact Nat.find_spec hex
 
+/-- If $n < \Upsilon_{\kappa,\tau}(t_0, \epsilon)$, then $\epsilon < t_n$. -/
 theorem lt_implicitGapSeq_of_lt_hitIndex {t₀ ε : ℝ} {n : ℕ}
     (hn : n < implicitGapHitIndex κ τ t₀ ε) : ε < implicitGapSeq κ τ t₀ n := by
   classical
@@ -1330,10 +1517,14 @@ theorem lt_implicitGapSeq_of_lt_hitIndex {t₀ ε : ℝ} {n : ℕ}
 
 end ImplicitGapSeq
 
-/-- **Comparison with the sequence (5.3.12)** ([cartis2022evaluation], proof of
-Theorem 5.3.2): if `Γ` satisfies the implicit recurrence with `c > 0`, `τ > 0`, then
-`Γ_{k+1} ≤ t_{|𝒮_k|}` for the sequence `t = implicitGapSeq c τ Γ_0`. Hence `Γ_{k+1} ≤ ε` as soon
-as `implicitGapHitIndex c τ Γ_0 ε ≤ |𝒮_k|` (`ε > 0`), which is Theorem 5.3.2. -/
+/-- **Comparison with the sequence (5.3.12).** Let $\Gamma$ satisfy the implicit gap recurrence for
+$S$, $c > 0$ and $\tau > 0$, and let $t$ be the sequence (5.3.12) with $\kappa = c$ and
+$t_0 = \Gamma_0$. Then $\Gamma_{k+1} \le t_{|\mathcal{S}_k|}$ for every $k$. Hence for every
+$\epsilon > 0$, $\Gamma_{k+1} \le \epsilon$ for every $k$ with
+$$\Upsilon_{c,\tau}(\Gamma_0, \epsilon) \le |\mathcal{S}_k|.$$
+
+The second part is Theorem 5.3.2 of [cartis2022evaluation], and the first part is its proof. The
+count $\Upsilon$ is `Optimization.implicitGapHitIndex`. -/
 theorem IsImplicitGapDecrease.le_implicitGapSeq (h : IsImplicitGapDecrease Γ S c τ)
     (hc : 0 < c) (hτ : 0 < τ) :
     (∀ k, Γ (k + 1) ≤ implicitGapSeq c τ (Γ 0) (successSet S k).card) ∧
@@ -1351,9 +1542,14 @@ theorem IsImplicitGapDecrease.le_implicitGapSeq (h : IsImplicitGapDecrease Γ S 
 
 /-! ### The doubly exponential count -/
 
-/-- **Lemma 5.4.3** ([cartis2022evaluation], (5.4.15)). If `0 ≤ u_{k+1} ≤ u_k^2 / ζ` and
-`u_0 ≤ ζ / 2` (`ζ > 0`), then `u_n ≤ ζ / 2^{2^n}`; hence `u_n ≤ ε` for every
-`n ≥ ⌈log₂ (log₂ (ζ / ε))⌉₊` when `0 < ε < ζ`, and for every `n` when `ζ / 2 ≤ ε`. -/
+/-- **Lemma 5.4.3** of [cartis2022evaluation], the doubly exponential count (5.4.15). Let
+$\zeta > 0$ and let $u \colon \mathbb{N} \to \mathbb{R}$ satisfy $u_k \ge 0$ and
+$u_{k+1} \le u_k^2 / \zeta$ for every $k$, and $u_0 \le \zeta / 2$. Then
+$$u_n \le \frac{\zeta}{2^{2^n}} \quad \text{for every } n.$$
+Hence, for every $\epsilon > 0$, $u_n \le \epsilon$ for every $n$ with $\zeta / 2 \le \epsilon$
+or $\lceil \log_2 \log_2 (\zeta / \epsilon) \rceil \le n$.
+
+The ceiling is `Nat.ceil`. The base-2 logarithm is `Real.logb 2`. -/
 theorem le_two_pow_two_pow_of_sq {u : ℕ → ℝ} {ζ : ℝ} (hζ : 0 < ζ) (hu : ∀ k, 0 ≤ u k)
     (hrec : ∀ k, u (k + 1) ≤ u k ^ 2 / ζ) (h0 : u 0 ≤ ζ / 2) :
     (∀ n, u n ≤ ζ / 2 ^ 2 ^ n) ∧
@@ -1405,7 +1601,9 @@ section Counting
 variable {Γ : ℕ → ℝ} {S : ℕ → Prop}
 
 
-/-- The density (5.3.9) forces infinitely many successful iterations. -/
+/-- Let $\kappa_R \ge 0$ and $\kappa_A \in \mathbb{R}$. If
+$k \le \kappa_R |\mathcal{S}_k| + \kappa_A$ for every $k$, which is the density (5.3.9), then
+$S$ holds at infinitely many iterations. -/
 theorem frequently_of_density {κR κA : ℝ} (hκR : 0 ≤ κR)
     (h : ∀ k : ℕ, (k : ℝ) ≤ κR * (successSet S k).card + κA) : ∀ N, ∃ k ≥ N, S k := by
   intro N
@@ -1423,10 +1621,15 @@ theorem frequently_of_density {κR κA : ℝ} (hκR : 0 ≤ κR)
     mul_le_mul_of_nonneg_left (by exact_mod_cast hcard k) hκR
   linarith
 
-/-- **Measure counts from gap counts** (the step (B.5.11) of [cartis2022evaluation], Appendix B):
-let `Γ ≥ 0` with infinitely many successful iterations, `Γ_{k+1} ≤ ε` whenever `N ≤ |𝒮_k|`, and
-`κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful `k`. Then some successful `k` has
-`κν φ_k^ν ≤ ε` and `|𝒮_k| ≤ max N 0 + 2`. -/
+/-- **Measure counts from gap counts**, the step (B.5.11) of Appendix B of [cartis2022evaluation].
+Let $\Gamma \ge 0$, let $S$ hold at infinitely many iterations, and let
+$\varphi \colon \mathbb{N} \to \mathbb{R}$ and $\kappa_\nu, \nu, \epsilon, N \in \mathbb{R}$.
+Suppose that $\Gamma_{k+1} \le \epsilon$ whenever $N \le |\mathcal{S}_k|$, and that $\kappa_\nu
+\varphi_k^\nu \le \Gamma_k - \Gamma_{k+1}$ at the successful iterations. Then some successful
+iteration $k$ has
+$$\kappa_\nu \varphi_k^\nu \le \epsilon \quad\text{and}\quad |\mathcal{S}_k| \le \max(N, 0) +
+  2.$$
+-/
 theorem exists_le_of_gap_count {φ : ℕ → ℝ} {κν ν ε N : ℝ} (hΓ : ∀ k, 0 ≤ Γ k)
     (hS : ∀ M, ∃ k ≥ M, S k) (hcount : ∀ k, N ≤ (successSet S k).card → Γ (k + 1) ≤ ε)
     (hdec : ∀ k, S k → κν * φ k ^ ν ≤ Γ k - Γ (k + 1)) :
@@ -1462,11 +1665,15 @@ theorem exists_le_of_gap_count {φ : ℕ → ℝ} {κν ν ε N : ℝ} (hΓ : �
       push_cast
       linarith
 
-/-- **Measure counts from gap counts, integer form** (the step (B.5.11) of [cartis2022evaluation],
-Appendix B): let `Γ ≥ 0` with infinitely many successful iterations, `Γ_{k+1} ≤ ε` whenever
-`n ≤ |𝒮_k|` (`n` a natural number), and `κν φ_k^ν ≤ Γ_k - Γ_{k+1}` at the successful `k`. Then
-some successful `k` has `κν φ_k^ν ≤ ε` and `|𝒮_k| ≤ max n 1 + 1` (one successful iteration
-more than the gap count). -/
+/-- **Measure counts from gap counts**, integer form of the step (B.5.11) of Appendix B of
+[cartis2022evaluation]. Let $\Gamma \ge 0$, let $S$ hold at infinitely many iterations, and let
+$\varphi \colon \mathbb{N} \to \mathbb{R}$, $\kappa_\nu, \nu, \epsilon \in \mathbb{R}$ and
+$n \in \mathbb{N}$. Suppose that $\Gamma_{k+1} \le \epsilon$ whenever $n \le |\mathcal{S}_k|$,
+and that $\kappa_\nu \varphi_k^\nu \le \Gamma_k - \Gamma_{k+1}$ at the successful iterations.
+Then some successful iteration $k$ has
+$$\kappa_\nu \varphi_k^\nu \le \epsilon \quad\text{and}\quad |\mathcal{S}_k| \le \max(n, 1) +
+  1,$$
+that is, one successful iteration more than the gap count. -/
 theorem exists_le_of_gap_count_nat {φ : ℕ → ℝ} {κν ν ε : ℝ} {n : ℕ} (hΓ : ∀ k, 0 ≤ Γ k)
     (hS : ∀ M, ∃ k ≥ M, S k) (hcount : ∀ k, n ≤ (successSet S k).card → Γ (k + 1) ≤ ε)
     (hdec : ∀ k, S k → κν * φ k ^ ν ≤ Γ k - Γ (k + 1)) :
@@ -1488,10 +1695,12 @@ theorem exists_le_of_gap_count_nat {φ : ℕ → ℝ} {κν ν ε : ℝ} {n : �
 
 end Counting
 
-/-- The additive constant of the superlinear count (`superlinearGapCount_le`; `κ^F_{AR,gap,1}`
-of Theorem 5.3.3 of [cartis2022evaluation]): with `α = τ - 1` and `ω_0 = c^{1/α} Γ_0`,
-`max(0, log ω_0)/log(1 + ω_0^α) + 2 + (log(1 + |log c|/|α|) + |log log(1 + ω_0^α)|)/log(1/τ)`
-`+ 1`. -/
+/-- The additive constant of the superlinear count, $\kappa^F_{\mathrm{AR,gap},1}$ of Theorem 5.3.3
+of [cartis2022evaluation]. With $\alpha = \tau - 1$ and $\omega_0 = c^{1/\alpha} \Gamma_0$, it
+is
+$$\frac{\max(0, \log \omega_0)}{\log(1 + \omega_0^\alpha)} + 2 + \frac{\log(1 + |\log c| /
+  |\alpha|) + |\log \log(1 + \omega_0^\alpha)|}{\log(1 / \tau)} + 1.$$
+It is the constant $\kappa$ of `Optimization.superlinearGapCount_le`. -/
 noncomputable def superlinearCountConst (c τ Γ0 : ℝ) : ℝ :=
   max 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0)) /
       Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)) + 2 +
@@ -1499,6 +1708,8 @@ noncomputable def superlinearCountConst (c τ Γ0 : ℝ) : ℝ :=
         |Real.log (Real.log (1 + (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1)))|) /
       Real.log (1 / τ) + 1
 
+/-- For $c \ge 0$, $0 < \tau \le 1$ and $\Gamma_0 \ge 0$, the additive constant of the superlinear
+count is nonnegative. -/
 theorem superlinearCountConst_nonneg {c τ Γ0 : ℝ} (hc : 0 ≤ c) (hτ0 : 0 < τ) (hτ1 : τ ≤ 1)
     (hΓ0 : 0 ≤ Γ0) : 0 ≤ superlinearCountConst c τ Γ0 := by
   have h1 : 0 ≤ (c ^ (1 / (τ - 1)) * Γ0) ^ (τ - 1) :=
@@ -1513,7 +1724,11 @@ theorem superlinearCountConst_nonneg {c τ Γ0 : ℝ} (hc : 0 ≤ c) (hτ0 : 0 <
   have := le_max_left 0 (Real.log (c ^ (1 / (τ - 1)) * Γ0))
   positivity
 
-/-- `superlinearGapCount_le` with the constant `superlinearCountConst`. -/
+/-- For $c > 0$, $0 < \tau < 1$, $\Gamma_0 > 0$ and $\epsilon > 0$, the two-phase count
+`Optimization.superlinearGapCount` is at most
+$$\frac{\log \max(1, |\log \epsilon|)}{\log(1 / \tau)} + \kappa^F_{\mathrm{AR,gap},1},$$
+where $\kappa^F_{\mathrm{AR,gap},1}$ is `Optimization.superlinearCountConst`. This is
+`Optimization.superlinearGapCount_le` with that constant. -/
 theorem superlinearGapCount_le_const {c τ Γ0 ε : ℝ} (hc : 0 < c) (hτ0 : 0 < τ) (hτ1 : τ < 1)
     (hΓ0 : 0 < Γ0) (hε : 0 < ε) :
     (superlinearGapCount c τ Γ0 ε : ℝ) ≤
@@ -1521,7 +1736,10 @@ theorem superlinearGapCount_le_const {c τ Γ0 ε : ℝ} (hc : 0 < c) (hτ0 : 0 
   have := superlinearGapCount_le (Γ0 := Γ0) hc hτ0 hτ1 hΓ0 hε
   rw [superlinearCountConst]; linarith
 
-/-- `c κdom = min(Γ_0^{-α} (2^α - 1), min(1, α) c / 2)` for `c > 0`. -/
+/-- For $c > 0$,
+$$c \, \kappa_{\mathrm{dom}}(c, \alpha, \Gamma_0) = \min\Big( \Gamma_0^{-\alpha} (2^\alpha - 1),
+  \ \frac{\min(1, \alpha) \, c}{2} \Big).$$
+-/
 theorem IsImplicitGapDecrease.mul_kappaDom {c α Γ0 : ℝ} (hc : 0 < c) :
     c * IsImplicitGapDecrease.kappaDom c α Γ0 =
       min (Γ0 ^ (-α) * (2 ^ α - 1)) (min 1 α * c / 2) := by
@@ -1534,7 +1752,9 @@ section ExplicitFirst
 
 variable {Γ : ℕ → ℝ} {S : ℕ → Prop} {c τ : ℝ}
 
-/-- Before the first successful iteration the gap is unchanged. -/
+/-- If $\Gamma$ satisfies the explicit gap recurrence for $S$ and no iteration $j < k_1$ is
+successful, then $\Gamma_j = \Gamma_0$ for every $j \le k_1$: before the first successful
+iteration the gap is unchanged. -/
 theorem IsExplicitGapDecrease.eq_of_le_first (hg : IsExplicitGapDecrease Γ S c τ) {k₁ : ℕ}
     (hfirst : ∀ j < k₁, ¬ S j) : ∀ j ≤ k₁, Γ j = Γ 0 := by
   intro j
@@ -1544,8 +1764,11 @@ theorem IsExplicitGapDecrease.eq_of_le_first (hg : IsExplicitGapDecrease Γ S c 
     intro hj
     rw [hg.eq_of_not j (hfirst j (by omega)), ih (by omega)]
 
-/-- At the first successful iteration, `0 ≤ Γ_{k₁+1} ≤ Γ_0 (1 - c Γ_0^{τ-1})`; hence
-`c Γ_0^{τ-1} ≤ 1` when `Γ_0 > 0`. -/
+/-- Let $\Gamma$ satisfy the explicit gap recurrence for $S$, $c \ge 0$ and $\tau$, let some
+iteration be successful, and let $\Gamma_0 > 0$. Then
+$$c \, \Gamma_0^{\tau - 1} \le 1.$$
+The proof uses that at the first successful iteration $k_1$, $0 \le \Gamma_{k_1 + 1} \le
+\Gamma_0 (1 - c \Gamma_0^{\tau - 1})$. -/
 theorem IsExplicitGapDecrease.mul_rpow_le_one (hg : IsExplicitGapDecrease Γ S c τ) (hc : 0 ≤ c)
     (hS : ∃ k, S k) (hΓ0 : 0 < Γ 0) : c * Γ 0 ^ (τ - 1) ≤ 1 := by
   classical
@@ -1558,7 +1781,9 @@ theorem IsExplicitGapDecrease.mul_rpow_le_one (hg : IsExplicitGapDecrease Γ S c
   push Not at hcon
   nlinarith
 
-/-- If `c Γ_0^{τ-1} ≥ 1` (and `Γ_0 > 0`), the gap vanishes after every successful iteration. -/
+/-- Let $\Gamma$ satisfy the explicit gap recurrence for $S$, $c \ge 0$ and $\tau$, and let
+$\Gamma_0 > 0$ with $c \, \Gamma_0^{\tau - 1} \ge 1$. Then $\Gamma_{k+1} = 0$ at every
+successful iteration $k$. -/
 theorem IsExplicitGapDecrease.eq_zero_of_one_le_mul_rpow (hg : IsExplicitGapDecrease Γ S c τ)
     (hc : 0 ≤ c) (hΓ0 : 0 < Γ 0) (h1 : 1 ≤ c * Γ 0 ^ (τ - 1)) : ∀ k, S k → Γ (k + 1) = 0 := by
   classical

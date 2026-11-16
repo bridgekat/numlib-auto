@@ -11,36 +11,48 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Numlib.LinearAlgebra.Matrix.Complexify
 
 /-!
-# Norms in which a matrix is within `ε` of its spectral radius
+# Norms in which a matrix is within $\varepsilon$ of its spectral radius
 
-The spectral radius is a lower bound for every operator norm of a matrix, and it is the *greatest*
-such lower bound: for every `ε > 0` there is a vector norm on `𝕜ⁿ` (`𝕜 = ℝ` or `ℂ`) whose induced
-operator norm of `A` is at most `ρ(A) + ε`. Consequently `ρ(A)` is the infimum of `‖A‖` over the
-operator norms. This is [quarteroni2000numerical] Property 1.13 and display (1.23).
+Let $A$ be an $n \times n$ matrix over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with spectral
+radius $\rho(A)$. The spectral radius is a lower bound for every operator norm of $A$, and it is the
+greatest such lower bound: for every $\varepsilon > 0$ there is a vector norm on $\mathbb{K}^n$
+whose induced operator norm of $A$ is at most $\rho(A) + \varepsilon$. So $\rho(A)$ is the infimum
+of $\|A\|$ over the operator norms. This is Property 1.13 and display (1.23) of
+[quarteroni2000numerical].
 
-The vector norm is built from Gelfand's formula rather than from a triangularization: pick `k` with
-`‖Aᵏ‖ ≤ cᵏ`, where `c = ρ(A) + ε`, and set
-
-`p x = ∑_{j < k} c⁻ʲ ‖Aʲ x‖`.
-
-Then `c p x - p (A x) = c ‖x‖ - c¹⁻ᵏ ‖Aᵏ x‖ ≥ 0`, so `A` is `c`-Lipschitz for `p`; and `p ≥ ‖·‖`
-because the term `j = 0` is `‖x‖`, so `p` is a norm equivalent to the original one. The classical
-argument — Schur triangularization followed by the diagonal scaling `diag(δ, δ², …)` — gives the
-same conclusion with `p x = ‖D⁻¹ Qᴴ x‖`, but needs the triangular form; this one needs only that
-some power of `A` is small, which is what Gelfand's formula provides.
+The vector norm comes from Gelfand's formula. Let $c = \rho(A) + \varepsilon$, choose $k$ with
+$\|A^k\| \le c^k$, and set $$p(x) = \sum_{j < k} c^{-j} \|A^j x\|.$$ Then $c\, p(x) - p(Ax) = c
+\|x\| - c^{1-k} \|A^k x\| \ge 0$, so $p(Ax) \le c\, p(x)$. The term $j = 0$ is $\|x\|$, so
+$p \ge \|\cdot\|$, and $p$ is a norm equivalent to the original one.
 
 ## Main results
 
-* `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto`: the construction over `RCLike 𝕜`, taking
-  the Gelfand limit `‖Aᵏ‖ ^ (1 / k) → ρ` as its input, so that it applies verbatim to the real
-  spectral radius of a real matrix (computed over `ℂ`) and to the spectral radius of a complex one.
-* `Matrix.exists_seminorm_forall_mulVec_le` and `Matrix.exists_seminorm_forall_mulVec_le_complex`:
-  the norm `p` above for `A : Matrix n n ℝ` and for `A : Matrix n n ℂ`, with the equivalence
-  bounds `‖x‖ ≤ p x ≤ C ‖x‖` and `p (A x) ≤ (ρ(A) + ε) p x`.
-* `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`: the converse bound, that a constant
-  `c ≥ 0` with `p (A x) ≤ c p x` for a norm `p` equivalent to the original is at least `ρ(A)`. This
-  is the spectral radius bounding an operator norm, for an arbitrary vector norm; together the two
-  say that the operator norm of `A` for `p` lies in `[ρ(A), ρ(A) + ε]`.
+* `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto`: the construction over $\mathbb{K}$, with the
+  Gelfand limit $\|A^k\|^{1/k} \to \rho$ as hypothesis.
+* `Matrix.exists_seminorm_forall_mulVec_le`, `Matrix.exists_seminorm_forall_mulVec_le_complex`: for
+  a real and for a complex matrix $A$ and every $\varepsilon > 0$, a norm $p$ with
+  $\|x\| \le p(x) \le C \|x\|$ and $p(Ax) \le (\rho(A) + \varepsilon)\, p(x)$.
+* `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`: conversely, for a real matrix $A$,
+  if $p(Ax) \le c\, p(x)$ for a norm $p$ equivalent to the original one and $c \ge 0$, then
+  $\rho(A) \le c$.
+
+Together, for a real matrix $A$, the operator norm of $A$ induced by $p$ lies in
+$[\rho(A), \rho(A) + \varepsilon]$.
+
+## Implementation notes
+
+* The vector norms are of type `Seminorm`. The lower bound $m \|x\| \le p(x)$ with $m > 0$ makes
+  them norms.
+* The original norm on $\mathbb{K}^n$ is the supremum norm, and the norm on matrices in the Gelfand
+  limit is the maximum absolute row sum. The limit does not depend on the norm
+  (`Seminorm.tendsto_rpow_one_div`).
+* The spectral radius of a real matrix is computed over $\mathbb{C}$
+  (`Matrix.complexSpectralRadius`). Since the general construction takes the Gelfand limit as input,
+  it applies without change to a real matrix and to a complex one.
+* The classical argument, Schur triangularization followed by the diagonal scaling
+  $\operatorname{diag}(\delta, \delta^2, \dots)$, gives the same conclusion with
+  $p(x) = \|D^{-1} Q^H x\|$. It needs the triangular form. The argument here needs only that some
+  power of $A$ is small, which Gelfand's formula provides.
 -/
 
 open Filter Topology
@@ -51,13 +63,14 @@ namespace Matrix
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
 omit [DecidableEq n] in
-/-- A constant `c ≥ 0` for which `A` is `c`-Lipschitz in a norm `p` equivalent to the supremum norm
-is at least the spectral radius of `A`. Applied to the operator norm induced by `p`, this is the
-statement that the spectral radius is a lower bound for every operator norm.
+/-- Let $A \in \mathbb{R}^{n \times n}$, let $p$ be a seminorm on $\mathbb{R}^n$ with
+$m \|x\| \le p(x) \le M \|x\|$ for all $x$, where $m > 0$, and let $c \ge 0$ with
+$p(Ax) \le c\, p(x)$ for all $x$. Then $\rho(A) \le c$. Applied to the operator norm induced by
+$p$, this says that the spectral radius is a lower bound for every operator norm.
 
-The proof scales: `c'⁻¹ A` has all its entries bounded by `(M/m) (c/c')ᵏ` in the `k`-th power, so
-its powers tend to `0` and its spectral radius is less than one; hence `ρ(A) < c'` for every
-`c' > c`. -/
+Here $\|\cdot\|$ is the supremum norm and $\rho(A)$ is `Matrix.complexSpectralRadius A`. The
+proof scales: the entries of $(A/c')^k$ are bounded by $(M/m)(c/c')^k$, so for $c' > c$ the
+powers of $A/c'$ tend to $0$, and $\rho(A) < c'$. -/
 theorem complexSpectralRadius_toReal_le_of_forall_mulVec_le (A : Matrix n n ℝ)
     (p : Seminorm ℝ (n → ℝ)) {m M c : ℝ} (hm : 0 < m) (hlow : ∀ x, m * ‖x‖ ≤ p x)
     (hup : ∀ x, p x ≤ M * ‖x‖) (hc : 0 ≤ c) (hA : ∀ x, p (A *ᵥ x) ≤ c * p x) :
@@ -136,15 +149,17 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
-/-- **The `ε`-norm construction**, over `RCLike 𝕜` and with the Gelfand limit as its input: if
-`‖Aᵏ‖ ^ (1 / k) → ρ` (in the maximum-absolute-row-sum norm; the limit is the same for every norm,
-`Seminorm.tendsto_rpow_one_div`), then for every `ε > 0` there is a norm `p` on `𝕜ⁿ`, equivalent
-to the supremum norm, in which `A` is `(ρ + ε)`-Lipschitz: the operator norm of `A` induced by `p`
-is at most `ρ + ε`.
+/-- **The $\varepsilon$-norm construction.** Let $A \in \mathbb{K}^{n \times n}$ and suppose that
+$\|A^k\|^{1/k} \to \rho$ as $k \to \infty$, in the operator norm induced by the supremum norm
+(the maximum absolute row sum). Then for every $\varepsilon > 0$ there is a seminorm $p$ on
+$\mathbb{K}^n$ and a constant $C$ with $$\|x\| \le p(x) \le C \|x\| \quad \text{and} \quad p(Ax)
+\le (\rho + \varepsilon)\, p(x) \quad \text{for all } x.$$ So $p$ is a norm equivalent to the
+supremum norm, and the operator norm of $A$ induced by $p$ is at most $\rho + \varepsilon$.
 
-The norm is `p x = ∑_{j < k} c⁻ʲ ‖Aʲ x‖` with `c = ρ + ε` and `k` chosen from the limit so
-that `‖Aᵏ‖ ≤ cᵏ`; the telescoping identity `p (A x) = c (p x + c⁻ᵏ ‖Aᵏ x‖ - ‖x‖)` then gives the
-Lipschitz bound. -/
+The norm is $p(x) = \sum_{j < k} c^{-j} \|A^j x\|$ with $c = \rho + \varepsilon$ and $k$ chosen
+from the limit so that $\|A^k\| \le c^k$. The identity
+$p(Ax) = c\,(p(x) + c^{-k} \|A^k x\| - \|x\|)$ gives the bound. The limit is the same for every
+norm (`Seminorm.tendsto_rpow_one_div`). -/
 theorem exists_seminorm_forall_mulVec_le_of_tendsto {𝕜 : Type*} [RCLike 𝕜] (A : Matrix n n 𝕜)
     {ρ : ℝ} (hρ : Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 ρ)) {ε : ℝ}
     (hε : 0 < ε) :
@@ -239,12 +254,15 @@ theorem exists_seminorm_forall_mulVec_le_of_tendsto {𝕜 : Type*} [RCLike 𝕜]
            smul' := hsmul }, hnorm_le, ⟨_, hle_norm⟩, hkey⟩
 
 omit [DecidableEq n] in
-/-- **The `ε`-norm theorem.** For every `ε > 0` there is a norm `p` on `ℝⁿ`, equivalent to the
-supremum norm, in which `A` is `(ρ(A) + ε)`-Lipschitz: the operator norm of `A` induced by `p` is at
-most `ρ(A) + ε`. With `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` for the reverse
-inequality, this says that the spectral radius is the infimum of `‖A‖` over the operator norms.
+/-- **The $\varepsilon$-norm theorem.** Let $A \in \mathbb{R}^{n \times n}$ and $\varepsilon > 0$.
+There is a seminorm $p$ on $\mathbb{R}^n$ and a constant $C$ with $$\|x\| \le p(x) \le C \|x\|
+\quad \text{and} \quad p(Ax) \le (\rho(A) + \varepsilon)\, p(x) \quad \text{for all } x,$$ where
+$\|\cdot\|$ is the supremum norm and $\rho(A)$ is the spectral radius of $A$ computed over
+$\mathbb{C}$. So the operator norm of $A$ induced by the norm $p$ is at most
+$\rho(A) + \varepsilon$. With `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` for
+the reverse inequality, the spectral radius is the infimum of $\|A\|$ over the operator norms.
 
-This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at the Gelfand limit
+This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` with the Gelfand limit
 `Matrix.tendsto_pow_rpow_linfty_opNorm`. -/
 theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℝ (n → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
@@ -254,11 +272,16 @@ theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 
     exists_seminorm_forall_mulVec_le_of_tendsto A (tendsto_pow_rpow_linfty_opNorm A) hε
 
 omit [DecidableEq n] in
-/-- **The `ε`-norm theorem for a complex matrix**, [quarteroni2000numerical] Property 1.13: for
-every `ε > 0` there is a norm `p` on `ℂⁿ`, equivalent to the supremum norm, in which `A` is
-`(ρ(A) + ε)`-Lipschitz. This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at Gelfand's
-formula `spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius` for the Banach algebra
-`Matrix n n ℂ` with the maximum-absolute-row-sum norm. -/
+/-- **The $\varepsilon$-norm theorem for a complex matrix**, Property 1.13 of
+[quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ and $\varepsilon > 0$. There is a
+seminorm $p$ on $\mathbb{C}^n$ and a constant $C$ with $$\|x\| \le p(x) \le C \|x\| \quad
+\text{and} \quad p(Ax) \le (\rho(A) + \varepsilon)\, p(x) \quad \text{for all } x,$$ where
+$\|\cdot\|$ is the supremum norm. So the operator norm of $A$ induced by the norm $p$ is at most
+$\rho(A) + \varepsilon$.
+
+This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` with Gelfand's formula
+`spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius` for the Banach algebra of
+complex $n \times n$ matrices with the maximum absolute row sum norm. -/
 theorem exists_seminorm_forall_mulVec_le_complex (A : Matrix n n ℂ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℂ (n → ℂ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
       ∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x := by

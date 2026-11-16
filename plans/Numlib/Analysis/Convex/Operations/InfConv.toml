@@ -8,7 +8,6 @@ id = 'supConv'
 
 [[node]]
 id = 'subset_epi_infConv'
-desc = 'The sum of the two epigraphs is contained in the epigraph of the infimal convolution.'
 
 [[node]]
 id = 'epi_infConv'

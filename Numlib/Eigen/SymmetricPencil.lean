@@ -15,58 +15,85 @@ import Numlib.Eigen.Pencil
 /-!
 # Symmetric-definite and definite pencils
 
-Symmetric-definite pencils `A - λ B` (`A` Hermitian, `B` positive definite, or more generally a
-positive-semidefinite combination), their sorted eigenvalues and variational characterization, the
-Crawford number and Stewart's perturbation bound ([golub2013matrix] §8.7.1–8.7.3; G. W. Stewart,
-*Perturbation bounds for the definite generalized eigenvalue problem*, Lin. Alg. Appl. 23 (1979);
-Stewart–Sun, *Matrix Perturbation Theory*, §VI.1–VI.3).
+Let $A, B \in \mathbb{K}^{N \times N}$, over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, be
+Hermitian. The pencil $A - \lambda B$ is **symmetric-definite** if $B$ is positive definite. Its
+eigenvalues are real, and they are the eigenvalues of the Hermitian matrix $W^H A W$ for any $W$
+with $W^H B W = I$. This module sorts them decreasingly, $\lambda_0 \ge \dots \ge \lambda_{N-1}$,
+and gives their max–min and min–max characterizations by the generalized Rayleigh quotient
+$\operatorname{Re}(x^H A x) / \operatorname{Re}(x^H B x)$ and the trace-min principle. The pair
+$(A, B)$ is **definite** if its Crawford number
+$$c(A, B) = \min_{\|x\|_2 = 1} \sqrt{(x^H A x)^2 + (x^H B x)^2}$$
+is positive. The module proves Stewart's perturbation bound for the eigenvalues of a
+symmetric-definite pencil in terms of $c(A, B)$, the simultaneous diagonalization of a pair by
+congruence, and Gershgorin regions for a real pencil. The presentation follows [golub2013matrix],
+§8.7.1–8.7.3, together with G. W. Stewart, *Perturbation bounds for the definite generalized
+eigenvalue problem*, Linear Algebra Appl. 23 (1979), and Stewart and Sun, *Matrix Perturbation
+Theory*, §VI.1–VI.3.
 
-`Numlib/Eigen/Pencil` has the pencil vocabulary (`Matrix.pencilSpectrum`,
-`Matrix.HasPencilEigenvector`) and the simultaneous diagonalization of a Hermitian/positive-definite
-pair (`Matrix.exists_simultaneous_diagonalization`). This module is its symmetric-definite
-continuation, kept separate because it is where the *ordering* of the real eigenvalues enters
-(min–max, perturbation), which the general pencil theory does not have.
+`Numlib.Eigen.Pencil` has the general vocabulary of pencils (`Matrix.pencilSpectrum`,
+`Matrix.HasPencilEigenvector`) and the simultaneous diagonalization of a Hermitian and a positive
+definite matrix (`Matrix.exists_simultaneous_diagonalization`). This module continues it for
+symmetric-definite pencils, where the order of the real eigenvalues enters through min–max and
+perturbation theory.
+
+## Main definitions
+
+* `Matrix.pencilEigenvalues`: the eigenvalues of a symmetric-definite pencil, sorted decreasingly.
+* `Matrix.crawfordNumber`: the Crawford number $c(A, B)$ of a pair.
+* `Matrix.offDiagSum`: the off-diagonal absolute row sum $o_k^A = \sum_{i \neq k} |a_{ki}|$ of a
+  real matrix.
 
 ## Main results
 
-* `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination`: [golub2013matrix] Theorem 8.7.1,
-  simultaneous diagonalization by congruence when some `C = μ A + (1 - μ) B`, `μ ∈ [0, 1]`, is
-  positive semidefinite with `ker C = ker A ⊓ ker B`. The engine is
-  `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le` (a semidefinite `C` and a Hermitian
-  `D` with `ker C ≤ ker D`), through the simultaneous unitary diagonalization of commuting Hermitian
-  matrices over any `RCLike` field, `Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`
-  (in `Numlib/Eigen/Normal`).
-* `Matrix.exists_abs_sub_le_of_mulVec_eq`, `Matrix.mem_gershgorin_interval`: Gershgorin regions
-  `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ` of a real pencil and the intervals they bound.
-* `Matrix.pencilEigenvalues hA hB`: the eigenvalues of the pencil, sorted decreasingly — those of
-  `Wᴴ A W` for any `W` with `Wᴴ B W = 1` (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); they are
-  the pencil spectrum (`Matrix.pencilSpectrum_eq_range_pencilEigenvalues`) and satisfy the max–min
-  and min–max characterizations `Matrix.isGreatest_pencilEigenvalues`,
-  `Matrix.isLeast_pencilEigenvalues` for the generalized Rayleigh quotient
-  `re (xᴴ A x) / re (xᴴ B x)`.
-* `Matrix.isLeast_re_trace_conjTranspose_mul_mul`: the trace-min principle of Sameh–Wisniewski
-  ([golub2013matrix] §10.6.5), `min {re tr(Vᴴ A V) : Vᴴ B V = I_k}` is the sum of the `k` smallest
-  pencil eigenvalues, attained at pencil eigenvectors; Ky Fan's minimum principle
-  (`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner`) after a normalizer.
-* `Matrix.crawfordNumber A B = min_{‖x‖ = 1} √((xᴴ A x)² + (xᴴ B x)²)` (with the square root, as in
-  Stewart; the book's display (8.7.4) omits it), positive for a positive definite `B`
-  (`Matrix.crawfordNumber_pos_of_posDef`) and 1-Lipschitz in the pair
-  (`Matrix.crawfordNumber_sub_le`): a definite pair stays definite under perturbations of size
-  `ε < c`.
-* `Matrix.sin_abs_arctan_pencilEigenvalues_sub_le`: Stewart's perturbation theorem in its correct
-  form, `sin |arctan λ_i - arctan μ_i| ≤ ε / c`. The book's Theorem 8.7.3 asserts
-  `|arctan λ_i - arctan μ_i| ≤ arctan(ε / c)`, which is false already for `n = 1` (`A = 0`,
-  `B = 1`, `E_A = √3/4`, `E_B = -1/4`: `ε = 1/2 < c = 1`, the difference is `π/6 > arctan(1/2)`),
-  and its claim that the perturbed pencil is symmetric-definite fails too; `B + E_B` positive
-  definite is a hypothesis here.
-* `Matrix.isMinOn_pencil_residual`: the generalized Rayleigh quotient minimizes the `B⁻¹`-norm
-  residual `‖A x - λ B x‖_{B⁻¹}` ([golub2013matrix] (8.7.6)–(8.7.7)).
-* `Matrix.exists_posDef_rotation_of_crawfordNumber_pos_complex`: over `ℂ` a definite pair is a
-  rotation `(A, B) ↦ (sin θ A + cos θ B, …)` of a pair with a positive definite second matrix
-  (Crawford 1976; Stewart–Sun Theorem VI.1.18), by the Toeplitz–Hausdorff theorem and a separating
-  functional. Over `ℝ` this fails for `n = 2`, where the real joint numerical range need not be
-  convex: `A = diag(1, -1)`, `B = [[0, 1], [1, 0]]` have Crawford number `1` but every
-  `sin θ A + cos θ B` has trace `0`.
+* `Matrix.pencilEigenvalues_eq_of_conj_eq_one`: the pencil eigenvalues are the sorted eigenvalues of
+  $W^H A W$ for every $W$ with $W^H B W = I$.
+* `Matrix.pencilSpectrum_eq_range_pencilEigenvalues`: the pencil eigenvalues are the eigenvalues of
+  the pencil.
+* `Matrix.isGreatest_pencilEigenvalues` and `Matrix.isLeast_pencilEigenvalues`: the max–min and
+  min–max characterizations of the pencil eigenvalues by the generalized Rayleigh quotient.
+* `Matrix.isLeast_re_trace_conjTranspose_mul_mul`: the trace-min principle of Sameh and Wisniewski,
+  $\min \{\operatorname{Re} \operatorname{tr}(V^H A V) : V^H B V = I_k\}$ is the sum of the $k$
+  smallest pencil eigenvalues.
+* `Matrix.crawfordNumber_pos_of_posDef`: a pair with a positive definite second matrix is definite.
+* `Matrix.crawfordNumber_sub_le`: the Crawford number is $1$-Lipschitz in the pair.
+* `Matrix.sin_abs_arctan_pencilEigenvalues_sub_le`: Stewart's perturbation theorem, $\sin |\arctan
+  \lambda_i - \arctan \mu_i| \le \varepsilon / c(A, B)$.
+* `Matrix.isMinOn_pencil_residual`: the generalized Rayleigh quotient minimizes the $B^{-1}$-norm
+  residual $\|Ax - \lambda Bx\|_{B^{-1}}$.
+* `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_combination`: Theorem 8.7.1 of
+  [golub2013matrix], simultaneous diagonalization by congruence when a combination
+  $\mu A + (1 - \mu) B$ with $\mu \in [0, 1]$ is positive semidefinite with the right kernel.
+* `Matrix.exists_posDef_rotation_of_crawfordNumber_pos_complex`: over $\mathbb{C}$, a definite pair
+  has a rotation $\sin\theta \, A + \cos\theta \, B$ that is positive definite.
+* `Matrix.exists_abs_sub_le_of_mulVec_eq` and `Matrix.mem_gershgorin_interval`: the Gershgorin
+  regions $|h_{kk} - \mu m_{kk}| \le o_k^H + |\mu| \, o_k^M$ of a real pencil and the intervals that
+  they bound.
+
+## Implementation notes
+
+* The pencil eigenvalues are defined through a normalizer $W$ with $W^H B W = I$, chosen by
+  `Matrix.PosDef.exists_isUnit_conj_eq_one`. They are indexed by `Fin (Fintype.card n)`, from $0$,
+  and sorted decreasingly as Mathlib's `Matrix.IsHermitian.eigenvalues₀` are.
+* The Crawford number takes the square root, as Stewart does. The display (8.7.4) of
+  [golub2013matrix] omits it. With the square root, $c(A, B)$ scales like the matrices, which the
+  ratio $\varepsilon / c(A, B)$ of Theorem 8.7.3 needs.
+* Theorem 8.7.3 of [golub2013matrix] states $|\arctan \lambda_i - \arctan \mu_i| \le
+  \arctan(\varepsilon / c)$. This is false already for $N = 1$: for $A = 0$, $B = 1$,
+  $E_A = \sqrt{3}/4$ and $E_B = -1/4$, one has $\varepsilon = 1/2 < c = 1$, and the difference is
+  $\pi / 6 > \arctan(1/2)$. Its claim that the perturbed pencil is symmetric-definite also fails.
+  `Matrix.sin_abs_arctan_pencilEigenvalues_sub_le` proves the bound on
+  $\sin |\arctan \lambda_i - \arctan \mu_i|$, with the positive definiteness of $B + E_B$ as a
+  hypothesis. A definite pair stays definite under a perturbation with $\varepsilon < c(A, B)$
+  (`Matrix.crawfordNumber_sub_le`).
+* The rotation theorem fails over $\mathbb{R}$ for $N = 2$, because the real joint numerical range
+  need not be convex: $A = \operatorname{diag}(1, -1)$ and $B = \begin{bmatrix} 0 & 1 \\ 1 & 0
+  \end{bmatrix}$ have Crawford number $1$, but every $\sin\theta \, A + \cos\theta \, B$ has trace
+  $0$.
+* The simultaneous diagonalization rests on
+  `Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le` (a positive semidefinite $C$ and a
+  Hermitian $D$ with $\ker C \subseteq \ker D$), through the simultaneous unitary diagonalization of
+  commuting Hermitian matrices, `Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute` of
+  `Numlib.Eigen.Normal`.
 -/
 
 open scoped ComplexOrder
@@ -83,30 +110,38 @@ private theorem eigenvalues₀_eq_of_charpoly_eq {C C' : Matrix n n 𝕜} (hC : 
     ← hC'.sort_roots_charpoly_eq_eigenvalues₀, h]
 
 omit [DecidableEq n] in
-/-- The congruence `Wᴴ A W` of a Hermitian matrix is Hermitian (Mathlib's
-`Matrix.isHermitian_conjTranspose_mul_mul` with `star` for the conjugate transpose). -/
+/-- If $A$ is Hermitian, then the congruence $W^H A W$ is Hermitian for every square matrix $W$.
+This is Mathlib's `Matrix.isHermitian_conjTranspose_mul_mul`, with `star` for the conjugate
+transpose. -/
 theorem isHermitian_star_mul_mul {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (W : Matrix n n 𝕜) : (star W * A * W).IsHermitian := by
   rw [star_eq_conjTranspose]; exact isHermitian_conjTranspose_mul_mul W hA
 
-/-- **The sorted eigenvalues of a symmetric-definite pencil** `(A, B)` ([golub2013matrix] §8.7,
-the `λ₁ ≥ ⋯ ≥ λ_n` of Theorem 8.7.3): the eigenvalues, sorted decreasingly, of the Hermitian
-`Wᴴ A W` for a normalizer `W` with `Wᴴ B W = 1` (`Matrix.PosDef.exists_isUnit_conj_eq_one`). They
-do not depend on the normalizer (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`) and are the
-eigenvalues of the pencil (`Matrix.pencilSpectrum_eq_range_pencilEigenvalues`). -/
+/-- **The sorted eigenvalues of a symmetric-definite pencil.** Let $A \in \mathbb{K}^{N \times N}$
+be Hermitian and $B \in \mathbb{K}^{N \times N}$ positive definite. The pencil eigenvalues
+$\lambda_0 \ge \dots \ge \lambda_{N-1}$ of $(A, B)$ are the eigenvalues, sorted decreasingly, of
+the Hermitian matrix $W^H A W$, where $W$ is a normalizer with $W^H B W = I$. These are the
+$\lambda_1 \ge \dots \ge \lambda_n$ of Theorem 8.7.3 of [golub2013matrix], indexed here from
+$0$.
+
+The normalizer is chosen by `Matrix.PosDef.exists_isUnit_conj_eq_one`. The eigenvalues do not
+depend on it (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`), and they are the eigenvalues of the
+pencil (`Matrix.pencilSpectrum_eq_range_pencilEigenvalues`). -/
 noncomputable def pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.PosDef) :
     Fin (Fintype.card n) → ℝ :=
   (isHermitian_star_mul_mul hA hB.exists_isUnit_conj_eq_one.choose).eigenvalues₀
 
-/-- The pencil eigenvalues decrease. -/
+/-- The pencil eigenvalues decrease: $i \le j$ implies $\lambda_j \le \lambda_i$. -/
 theorem pencilEigenvalues_antitone {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.PosDef) :
     Antitone (pencilEigenvalues hA hB) :=
   IsHermitian.eigenvalues₀_antitone _
 
-/-- **Independence of the normalizer**: for any `W` with `Wᴴ B W = 1`, the sorted eigenvalues of
-`Wᴴ A W` are `pencilEigenvalues hA hB`. Two normalizers differ by a unitary right factor
-`U = W₀⁻¹ W` (`Uᴴ U = Wᴴ B W = 1`), and a unitary similarity preserves the characteristic
-polynomial. -/
+/-- **Independence of the normalizer.** Let $A$ be Hermitian and $B$ positive definite. For every
+$W$ with $W^H B W = I$, the sorted eigenvalues of $W^H A W$ are the pencil eigenvalues of
+$(A, B)$.
+
+Two normalizers $W_0$ and $W$ differ by the unitary right factor $U = W_0^{-1} W$, since
+$U^H U = W^H B W = I$, and a unitary similarity preserves the characteristic polynomial. -/
 theorem pencilEigenvalues_eq_of_conj_eq_one {A B W : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) (hW : star W * B * W = 1) :
     (isHermitian_star_mul_mul hA W).eigenvalues₀ = pencilEigenvalues hA hB := by
@@ -128,8 +163,10 @@ theorem pencilEigenvalues_eq_of_conj_eq_one {A B W : Matrix n n 𝕜} (hA : A.Is
   rw [hC, Matrix.mul_assoc, Matrix.charpoly_mul_comm, Matrix.mul_assoc,
     mem_unitaryGroup_iff.1 hUu, Matrix.mul_one]
 
-/-- **The pencil eigenvalues are the eigenvalues of the pencil**: `σ(A, B)` is the set of the
-`pencilEigenvalues hA hB i` (as scalars). -/
+/-- **The pencil eigenvalues are the eigenvalues of the pencil.** Let $A$ be Hermitian and $B$
+positive definite. Then the spectrum $\sigma(A, B) = \{\mu \in \mathbb{K} : \det(A - \mu B) =
+0\}$ of the pencil is the set of the pencil eigenvalues $\lambda_0, \dots, \lambda_{N-1}$, as
+elements of $\mathbb{K}$. -/
 theorem pencilSpectrum_eq_range_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) :
     pencilSpectrum A B = Set.range fun i => (pencilEigenvalues hA hB i : 𝕜) := by
@@ -144,8 +181,8 @@ theorem pencilSpectrum_eq_range_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : 
     hC.roots_charpoly_eq_eigenvalues₀]
   simp [eq_comm]
 
-/-- The generalized Rayleigh quotient `re (xᴴ A x) / re (xᴴ B x)` at `x = W y` is the Rayleigh
-quotient of `Wᴴ A W` at `y` when `Wᴴ B W = 1`. -/
+/-- If $W^H B W = I$, then the Rayleigh quotient of $W^H A W$ at $y$ is the generalized Rayleigh
+quotient $\operatorname{Re}(x^H A x) / \operatorname{Re}(x^H B x)$ at $x = W y$. -/
 private theorem rayleighQuotient_toEuclideanLin_conj {A B W : Matrix n n 𝕜}
     (hW : star W * B * W = 1) (y : EuclideanSpace 𝕜 n) :
     (toEuclideanLin (star W * A * W)).rayleighQuotient y =
@@ -161,9 +198,11 @@ private theorem rayleighQuotient_toEuclideanLin_conj {A B W : Matrix n n 𝕜}
   · rw [@norm_sq_eq_re_inner 𝕜, EuclideanSpace.inner_eq_star_dotProduct, dotProduct_comm]
 
 omit [DecidableEq n] in
-/-- The sets of Courant–Fischer bounds are transported by a linear equivalence: if `g (Φ y) = f y`,
-the bounds `R c (g x)` holding on the nonzero vectors of some `d`-dimensional subspace of `V'` are
-those holding for `f` on some `d`-dimensional subspace of `V`. -/
+/-- Let $\Phi : V \to V'$ be a linear equivalence, and let $f : V \to \mathbb{R}$ and
+$g : V' \to \mathbb{R}$ satisfy $g(\Phi y) = f(y)$. For a relation $R$ and a dimension $d$, the
+set of $c$ such that $R(c, g(x))$ holds at all nonzero $x$ of some $d$-dimensional subspace of
+$V'$ equals the set of $c$ such that $R(c, f(y))$ holds at all nonzero $y$ of some
+$d$-dimensional subspace of $V$. This transports the Courant–Fischer sets along $\Phi$. -/
 theorem setOf_exists_submodule_eq {V V' : Type*} [AddCommGroup V] [Module 𝕜 V]
     [AddCommGroup V'] [Module 𝕜 V'] (Φ : V ≃ₗ[𝕜] V') {f : V → ℝ} {g : V' → ℝ}
     (hfg : ∀ y, g (Φ y) = f y) (d : ℕ) (R : ℝ → ℝ → Prop) :
@@ -184,9 +223,9 @@ theorem setOf_exists_submodule_eq {V V' : Type*} [AddCommGroup V] [Module 𝕜 V
     rw [LinearEquiv.coe_coe, hfg]
     exact hSc y hy hy0'
 
-/-- The substitution `x = W y` behind both Courant–Fischer forms for a pencil: with `Wᴴ B W = 1`,
-`Φ y = W y` carries the Rayleigh quotient of `Wᴴ A W` to the pencil quotient
-`re (xᴴ A x) / re (xᴴ B x)`. -/
+/-- If $B$ is positive definite, there is a linear equivalence $\Phi$, the substitution $x = W y$
+with $W^H B W = I$, that carries the Rayleigh quotient of $W^H A W$ to the generalized Rayleigh
+quotient $\operatorname{Re}(x^H A x) / \operatorname{Re}(x^H B x)$. -/
 private theorem exists_linearEquiv_rayleighQuotient_eq {A B : Matrix n n 𝕜} (hB : B.PosDef) :
     ∃ Φ : EuclideanSpace 𝕜 n ≃ₗ[𝕜] (n → 𝕜), ∀ y,
       RCLike.re (star (Φ y) ⬝ᵥ A *ᵥ Φ y) / RCLike.re (star (Φ y) ⬝ᵥ B *ᵥ Φ y) =
@@ -196,11 +235,16 @@ private theorem exists_linearEquiv_rayleighQuotient_eq {A B : Matrix n n 𝕜} (
   refine ⟨(WithLp.linearEquiv 2 𝕜 (n → 𝕜)).trans (toLinearEquiv' _ hWu.invertible), fun y => ?_⟩
   exact (rayleighQuotient_toEuclideanLin_conj hW y).symm
 
-/-- **Courant–Fischer for a symmetric-definite pencil** ([golub2013matrix] §8.7.1): the `i`-th
-sorted pencil eigenvalue is the greatest `c` such that some `(i+1)`-dimensional subspace has
-`c ≤ re (xᴴ A x) / re (xᴴ B x)` at all its nonzero vectors. Substitute `x = W y` (`Wᴴ B W = 1`,
-`W` invertible, so subspaces correspond with their dimensions) in
-`LinearMap.IsSymmetric.isGreatest_eigenvalues` for `Wᴴ A W`. -/
+/-- **Courant–Fischer for a symmetric-definite pencil** ([golub2013matrix], §8.7.1). Let $A$ be
+Hermitian and $B$ positive definite, and let $0 \le i < N$. The $i$-th pencil eigenvalue
+$\lambda_i$ is the greatest $c \in \mathbb{R}$ for which some subspace
+$S \subseteq \mathbb{K}^N$ of dimension $i + 1$ satisfies
+$$c \le \frac{\operatorname{Re}(x^H A x)}{\operatorname{Re}(x^H B x)} \quad \text{for all
+  nonzero } x \in S.$$
+
+The proof substitutes $x = W y$ with $W^H B W = I$ in
+`LinearMap.IsSymmetric.isGreatest_eigenvalues` for $W^H A W$. Since $W$ is invertible, the
+subspaces correspond with their dimensions. -/
 theorem isGreatest_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.PosDef)
     (i : Fin (Fintype.card n)) :
     IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 (n → 𝕜), Module.finrank 𝕜 S = (i : ℕ) + 1 ∧
@@ -212,9 +256,12 @@ theorem isGreatest_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian
   exact (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_star_mul_mul hA _)).isGreatest_eigenvalues
     finrank_euclideanSpace i
 
-/-- **The min–max twin of `Matrix.isGreatest_pencilEigenvalues`**: the `i`-th sorted pencil
-eigenvalue is the least `c` such that some `(card n - i)`-dimensional subspace has
-`re (xᴴ A x) / re (xᴴ B x) ≤ c` at all its nonzero vectors. -/
+/-- **Min–max for a symmetric-definite pencil.** Let $A$ be Hermitian and $B$ positive definite, and
+let $0 \le i < N$. The $i$-th pencil eigenvalue $\lambda_i$ is the least $c \in \mathbb{R}$ for
+which some subspace $S \subseteq \mathbb{K}^N$ of dimension $N - i$ satisfies
+$$\frac{\operatorname{Re}(x^H A x)}{\operatorname{Re}(x^H B x)} \le c \quad \text{for all
+  nonzero } x \in S.$$
+This is the min–max form of `Matrix.isGreatest_pencilEigenvalues`. -/
 theorem isLeast_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.PosDef)
     (i : Fin (Fintype.card n)) :
     IsLeast {c : ℝ | ∃ S : Submodule 𝕜 (n → 𝕜), Module.finrank 𝕜 S = Fintype.card n - i ∧
@@ -226,7 +273,8 @@ theorem isLeast_pencilEigenvalues {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (
   exact (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_star_mul_mul hA _)).isLeast_eigenvalues
     finrank_euclideanSpace i
 
-/-- `(Vᴴ C V)(a, b) = ⟪v_a, C v_b⟫` over the columns `v_a` of `V`, in `EuclideanSpace`. -/
+/-- For $V \in \mathbb{K}^{N \times k}$ with columns $v_a$, the entry $(a, b)$ of $V^H C V$ is the
+inner product $\langle v_a, C v_b \rangle$ in Euclidean space. -/
 private theorem conjTranspose_mul_mul_apply {k : ℕ} (C : Matrix n n 𝕜) (V : Matrix n (Fin k) 𝕜)
     (a b : Fin k) :
     (Vᴴ * C * V) a b = inner 𝕜 (WithLp.toLp 2 (V.col a))
@@ -236,16 +284,21 @@ private theorem conjTranspose_mul_mul_apply {k : ℕ} (C : Matrix n n 𝕜) (V :
   rw [Finset.sum_comm]
   exact Finset.sum_congr rfl fun c _ => Finset.sum_congr rfl fun d _ => by ring
 
-/-- **The trace-min principle** of Sameh–Wisniewski ([golub2013matrix] §10.6.5): for a
-symmetric-definite pencil `(A, B)` and `k ≤ card n`, the minimum of `re tr(Vᴴ A V)` over the
-`V ∈ 𝕜^{n×k}` with `Vᴴ B V = I_k` is the sum of the `k` smallest pencil eigenvalues (the last `k`
-of the decreasing `Matrix.pencilEigenvalues`), attained at a `V` with `Vᴴ A V` the diagonal matrix
-of those eigenvalues whose columns are pencil eigenvectors, `A v_j = μ_j B v_j`. With a normalizer
-`W`, `Wᴴ B W = 1`, the feasible `V` are the `W X` with `Xᴴ X = I_k` and
-`re tr(Vᴴ A V) = re tr(Xᴴ (Wᴴ A W) X)`, so this is Ky Fan's minimum principle
-`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for `Wᴴ A W`, whose sorted eigenvalues are
-the pencil eigenvalues (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`); the minimizer is `W X` for
-`X` the last `k` eigenvectors. -/
+/-- **The trace-min principle** of Sameh and Wisniewski ([golub2013matrix], §10.6.5). Let $A$ be
+Hermitian and $B$ positive definite, and let $k \le N$. Then
+$$\min \left\{ \operatorname{Re} \operatorname{tr}(V^H A V) : V \in \mathbb{K}^{N \times k}, \
+  V^H B V = I_k \right\} = \sum_{i < k} \lambda_{i + N - k},$$
+the sum of the $k$ smallest pencil eigenvalues. Moreover the minimum is attained at a $V$ with
+$V^H B V = I_k$ and $V^H A V = \operatorname{diag}(\lambda_{N-k}, \dots, \lambda_{N-1})$, whose
+columns are pencil eigenvectors: $A v_j = \lambda_{j + N - k} B v_j$ for $j < k$.
+
+With a normalizer $W$, $W^H B W = I$, the feasible $V$ are the $W X$ with $X^H X = I_k$, and
+$\operatorname{Re} \operatorname{tr}(V^H A V) = \operatorname{Re} \operatorname{tr}(X^H (W^H A
+W) X)$. So this is Ky Fan's minimum principle
+`LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner` for $W^H A W$, whose sorted eigenvalues
+are the pencil eigenvalues (`Matrix.pencilEigenvalues_eq_of_conj_eq_one`). The minimizer is
+$W X$, where the columns of $X$ are the eigenvectors of $W^H A W$ for the $k$ smallest
+eigenvalues. -/
 theorem isLeast_re_trace_conjTranspose_mul_mul {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) {k : ℕ} (hkn : k ≤ Fintype.card n) :
     IsLeast {t : ℝ | ∃ V : Matrix n (Fin k) 𝕜, Vᴴ * B * V = 1 ∧
@@ -342,14 +395,17 @@ theorem isLeast_re_trace_conjTranspose_mul_mul {A B : Matrix n n 𝕜} (hA : A.I
     rw [inner_re_symm]
 
 omit [DecidableEq n] in
-/-- The real part `re (xᴴ M x)` of the quadratic form of a matrix at a vector of `EuclideanSpace`:
-for Hermitian `A`, `B` the pair `(reQuadForm A x, reQuadForm B x)` over the unit sphere is the
-joint numerical range whose distance to the origin is the Crawford number. -/
+/-- The real part $\operatorname{Re}(x^H M x)$ of the quadratic form of a matrix $M$ at a vector $x$
+of Euclidean space.
+
+For Hermitian $A$ and $B$, the pairs $(\operatorname{Re}(x^H A x), \operatorname{Re}(x^H B x))$
+over the unit sphere form the joint numerical range, whose distance to the origin is the
+Crawford number. -/
 noncomputable abbrev reQuadForm (M : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) : ℝ :=
   RCLike.re (star (WithLp.ofLp x) ⬝ᵥ M *ᵥ WithLp.ofLp x)
 
 omit [DecidableEq n] in
-/-- `re (xᴴ M x)` is quadratic under real scaling. -/
+/-- For real $t$, $\operatorname{Re}((tx)^H M (tx)) = t^2 \operatorname{Re}(x^H M x)$. -/
 private theorem qf_smul (M : Matrix n n 𝕜) (t : ℝ) (x : EuclideanSpace 𝕜 n) :
     reQuadForm M ((t : 𝕜) • x) = t ^ 2 * reQuadForm M x := by
   simp only [reQuadForm, WithLp.ofLp_smul, star_smul, mulVec_smul, dotProduct_smul, smul_dotProduct,
@@ -357,7 +413,7 @@ private theorem qf_smul (M : Matrix n n 𝕜) (t : ℝ) (x : EuclideanSpace 𝕜
     RCLike.re_ofReal_mul]
   ring
 
-/-- `|re (xᴴ M x)| ≤ ‖M‖₂ ‖x‖²`. -/
+/-- $|\operatorname{Re}(x^H M x)| \le \|M\|_2 \, \|x\|^2$. -/
 private theorem abs_qf_le (M : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
     |reQuadForm M x| ≤ lpOpNorm 2 M * ‖x‖ ^ 2 := by
   have h1 : star (WithLp.ofLp x) ⬝ᵥ M *ᵥ WithLp.ofLp x = inner 𝕜 x (lpCLM 2 M x) := by
@@ -370,11 +426,16 @@ private theorem abs_qf_le (M : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
     _ = lpOpNorm 2 M * ‖x‖ ^ 2 := by ring
 
 omit [DecidableEq n] in
-/-- **The Crawford number** of a Hermitian pair ([golub2013matrix] (8.7.4), with Stewart's square
-root): `c(A, B) = min_{‖x‖₂ = 1} √((xᴴ A x)² + (xᴴ B x)²)` (real parts). The pair is *definite*
-when it is positive. The book's display omits the square root; with it the number scales like
-the matrices, which is what the ratio `ε / c(A, B)` of Theorem 8.7.3 needs. It is `0` for an
-empty index type. -/
+/-- **The Crawford number** of a pair $A, B \in \mathbb{K}^{N \times N}$ ([golub2013matrix],
+(8.7.4), with Stewart's square root):
+$$c(A, B) = \inf_{\|x\|_2 = 1} \sqrt{\operatorname{Re}(x^H A x)^2 + \operatorname{Re}(x^H B
+  x)^2}.$$
+For Hermitian $A$ and $B$, the pair is **definite** if $c(A, B) > 0$.
+
+The display of the source omits the square root. With it, the number scales like the matrices,
+which the ratio $\varepsilon / c(A, B)$ of Theorem 8.7.3 needs. For Hermitian matrices the
+quadratic forms are real, and the infimum is a minimum when $N \ge 1$, because the unit sphere
+is compact. For $N = 0$ the unit sphere is empty and $c(A, B) = 0$. -/
 noncomputable def crawfordNumber (A B : Matrix n n 𝕜) : ℝ :=
   ⨅ x : Metric.sphere (0 : EuclideanSpace 𝕜 n) 1,
     Real.sqrt (reQuadForm A x ^ 2 + reQuadForm B x ^ 2)
@@ -385,8 +446,9 @@ theorem crawfordNumber_nonneg (A B : Matrix n n 𝕜) : 0 ≤ crawfordNumber A B
   Real.iInf_nonneg fun _ => Real.sqrt_nonneg _
 
 omit [DecidableEq n] in
-/-- **The pointwise Crawford bound**: `c(A, B) ‖x‖² ≤ √((xᴴ A x)² + (xᴴ B x)²)` for every `x`
-(homogeneity of degree two). -/
+/-- **The pointwise Crawford bound.** For all $A$, $B$ and every $x \in \mathbb{K}^N$,
+$$c(A, B) \, \|x\|^2 \le \sqrt{\operatorname{Re}(x^H A x)^2 + \operatorname{Re}(x^H B x)^2}.$$
+This follows from the homogeneity of degree two of both sides. -/
 theorem crawfordNumber_le_norm_mul (A B : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
     crawfordNumber A B * ‖x‖ ^ 2 ≤ Real.sqrt (reQuadForm A x ^ 2 + reQuadForm B x ^ 2) := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -420,8 +482,10 @@ theorem crawfordNumber_le_norm_mul (A B : Matrix n n 𝕜) (x : EuclideanSpace �
   rw [hscale, mul_comm]
   exact mul_le_mul_of_nonneg_left hle (by positivity)
 
-/-- The pointwise perturbation of the pair `(xᴴ A x, xᴴ B x)`:
-`|(xᴴ(A + E_A)x, xᴴ(B + E_B)x) - (xᴴ A x, xᴴ B x)| ≤ ε ‖x‖²` with `ε = √(‖E_A‖₂² + ‖E_B‖₂²)`. -/
+/-- The pair of quadratic forms changes little under a perturbation: the distance between
+$(\operatorname{Re}(x^H (A + E_A) x), \operatorname{Re}(x^H (B + E_B) x))$ and
+$(\operatorname{Re}(x^H A x), \operatorname{Re}(x^H B x))$ is at most $\varepsilon \|x\|^2$,
+with $\varepsilon = \sqrt{\|E_A\|_2^2 + \|E_B\|_2^2}$. -/
 private theorem norm_pair_sub_le (A B EA EB : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
     ‖((reQuadForm (A + EA) x : ℂ) + reQuadForm (B + EB) x * Complex.I) -
         ((reQuadForm A x : ℂ) + reQuadForm B x * Complex.I)‖ ≤
@@ -443,10 +507,14 @@ private theorem norm_pair_sub_le (A B EA EB : Matrix n n 𝕜) (x : EuclideanSpa
   have h2' := sq_le_sq' (abs_le.1 h2).1 (abs_le.1 h2).2
   nlinarith [h1', h2']
 
-/-- **The Crawford number is 1-Lipschitz in the pair** (Stewart–Sun, *Matrix Perturbation Theory*,
-§VI.1.3): `c(A, B) - ε ≤ c(A + E_A, B + E_B)` with `ε = √(‖E_A‖₂² + ‖E_B‖₂²)`. Hence a definite
-pair stays definite under perturbations with `ε < c(A, B)` — the correct form of
-[golub2013matrix] Theorem 8.7.3's claim that the perturbed pencil is symmetric-definite. -/
+/-- **The Crawford number is $1$-Lipschitz in the pair** (Stewart and Sun, *Matrix Perturbation
+Theory*, §VI.1.3). For all $A, B, E_A, E_B \in \mathbb{K}^{N \times N}$,
+$$c(A, B) - \varepsilon \le c(A + E_A, B + E_B), \qquad \varepsilon = \sqrt{\|E_A\|_2^2 +
+  \|E_B\|_2^2}.$$
+
+So a definite pair stays definite under perturbations with $\varepsilon < c(A, B)$. This is the
+correct form of the claim of Theorem 8.7.3 of [golub2013matrix] that the perturbed pencil is
+symmetric-definite. The norm $\|\cdot\|_2$ is the spectral norm `Matrix.lpOpNorm 2`. -/
 theorem crawfordNumber_sub_le (A B EA EB : Matrix n n 𝕜) :
     crawfordNumber A B - Real.sqrt (lpOpNorm 2 EA ^ 2 + lpOpNorm 2 EB ^ 2) ≤
       crawfordNumber (A + EA) (B + EB) := by
@@ -468,7 +536,8 @@ theorem crawfordNumber_sub_le (A B EA EB : Matrix n n 𝕜) :
   linarith
 
 omit [DecidableEq n] in
-/-- A pair with a positive definite second matrix is definite: `c(A, B) > 0`. -/
+/-- If $N \ge 1$ and $B$ is positive definite, then the pair $(A, B)$ is definite: $c(A, B) > 0$.
+The matrix $A$ is arbitrary. -/
 theorem crawfordNumber_pos_of_posDef [Nonempty n] (A : Matrix n n 𝕜) {B : Matrix n n 𝕜}
     (hB : B.PosDef) : 0 < crawfordNumber A B := by
   -- the minimum of the continuous positive `re (xᴴ B x)` on the compact sphere
@@ -498,7 +567,7 @@ theorem crawfordNumber_pos_of_posDef [Nonempty n] (A : Matrix n n 𝕜) {B : Mat
 
 section Planar
 
-/-- `sin (arctan (a/b)) = a / √(a² + b²)` for `b > 0`. -/
+/-- For $b > 0$, $\sin(\arctan(a / b)) = a / \sqrt{a^2 + b^2}$. -/
 private theorem sin_arctan_div {a b : ℝ} (hb : 0 < b) :
     Real.sin (Real.arctan (a / b)) = a / Real.sqrt (a ^ 2 + b ^ 2) := by
   have h : Real.sqrt (1 + (a / b) ^ 2) = Real.sqrt (a ^ 2 + b ^ 2) / b := by
@@ -507,7 +576,7 @@ private theorem sin_arctan_div {a b : ℝ} (hb : 0 < b) :
   rw [Real.sin_arctan, h]
   field_simp
 
-/-- `cos (arctan (a/b)) = b / √(a² + b²)` for `b > 0`. -/
+/-- For $b > 0$, $\cos(\arctan(a / b)) = b / \sqrt{a^2 + b^2}$. -/
 private theorem cos_arctan_div {a b : ℝ} (hb : 0 < b) :
     Real.cos (Real.arctan (a / b)) = b / Real.sqrt (a ^ 2 + b ^ 2) := by
   have h : Real.sqrt (1 + (a / b) ^ 2) = Real.sqrt (a ^ 2 + b ^ 2) / b := by
@@ -516,18 +585,16 @@ private theorem cos_arctan_div {a b : ℝ} (hb : 0 < b) :
   rw [Real.cos_arctan, h]
   field_simp
 
-/-- Cauchy–Schwarz in the plane: `|x b - a y| ≤ √(x² + y²) √(a² + b²)`. -/
+/-- Cauchy–Schwarz in the plane: $|xb - ay| \le \sqrt{x^2 + y^2} \, \sqrt{a^2 + b^2}$. -/
 private theorem abs_cross_le (x y a b : ℝ) :
     |x * b - a * y| ≤ Real.sqrt (x ^ 2 + y ^ 2) * Real.sqrt (a ^ 2 + b ^ 2) := by
   rw [← Real.sqrt_mul (by positivity)]
   refine Real.abs_le_sqrt ?_
   nlinarith [sq_nonneg (x * a + y * b)]
 
-/-- **The planar angle estimate** behind Stewart's theorem: if `u = (b, a)` and `u' = (b', a')` lie
-in the open right half-plane, `|u| ≥ c r` and `|u' - u| ≤ ε r` with `ε < c`, then their angles
-`arctan (a/b)` and `arctan (a'/b')` differ by at most `arcsin (ε / c)`: the difference `θ` has
-`cos θ > 0` (the disc of radius `ε r` about `u` misses the origin's half-plane) and
-`|sin θ| = |a' b - a b'| / (|u| |u'|) ≤ |u' - u| / |u|`. -/
+/-- The planar angle estimate behind Stewart's theorem: if $b, b' > 0$, $0 \le \varepsilon < c$,
+$r > 0$, $\sqrt{a^2 + b^2} \ge c r$ and $\sqrt{(a' - a)^2 + (b' - b)^2} \le \varepsilon r$, then
+$|\arctan(a'/b') - \arctan(a/b)| \le \arcsin(\varepsilon / c)$. -/
 private theorem abs_arctan_div_sub_le {a b a' b' c ε r : ℝ} (hb : 0 < b) (hb' : 0 < b')
     (hε : 0 ≤ ε) (hεc : ε < c) (hr : 0 < r) (hu : c * r ≤ Real.sqrt (a ^ 2 + b ^ 2))
     (hd : Real.sqrt ((a' - a) ^ 2 + (b' - b) ^ 2) ≤ ε * r) :
@@ -599,10 +666,9 @@ private theorem abs_arctan_div_sub_le {a b a' b' c ε r : ℝ} (hb : 0 < b) (hb'
         (Real.arcsin_sin (by linarith [abs_nonneg θ, Real.pi_pos]) hθlt.le).symm
     _ ≤ Real.arcsin (ε / c) := Real.arcsin_le_arcsin (by rw [hsabs]; exact hsinle)
 
-/-- Transfer of a pointwise angle bound through max–min: if the sets `{c | P c}`, `{c | P' c}`
-have greatest elements `λ`, `μ`, both of the form "some subspace has `c ≤ R x` at all its nonzero
-points", and `arctan (R x) - δ ≤ arctan (R' x)` at all nonzero `x`, then
-`arctan λ - δ ≤ arctan μ`. -/
+/-- If $\lambda$ and $\mu$ are the greatest elements of two Courant–Fischer sets for the functions
+$R$ and $R'$ at the same dimension, and $\arctan R(x) - \delta \le \arctan R'(x)$ for every
+nonzero $x$, with $\delta \ge 0$, then $\arctan \lambda - \delta \le \arctan \mu$. -/
 private theorem arctan_sub_le_of_isGreatest {V : Type*} [AddCommGroup V] [Module 𝕜 V]
     {i : ℕ} {R R' : V → ℝ} {l m δ : ℝ} (hδ : 0 ≤ δ)
     (hl : IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 V, Module.finrank 𝕜 S = i ∧
@@ -629,21 +695,27 @@ private theorem arctan_sub_le_of_isGreatest {V : Type*} [AddCommGroup V] [Module
 
 end Planar
 
-/-- **Stewart's perturbation theorem for definite pencils, corrected** ([golub2013matrix]
-Theorem 8.7.3; G. W. Stewart, Lin. Alg. Appl. 23 (1979)): let `A`, `A + E_A` be Hermitian, `B`
-and `B + E_B` positive definite, `ε = √(‖E_A‖₂² + ‖E_B‖₂²)` and `c = c(A, B)` the Crawford number,
-with `ε < c`. Then for every `i` the sorted pencil eigenvalues `λ_i` of `(A, B)` and `μ_i` of the
-perturbed pair satisfy `sin |arctan λ_i - arctan μ_i| ≤ ε / c`.
+/-- **Stewart's perturbation theorem for definite pencils**, corrected form of Theorem 8.7.3 of
+[golub2013matrix] (G. W. Stewart, Linear Algebra Appl. 23 (1979)). Let $A$ and $A + E_A$ be
+Hermitian, let $B$ and $B + E_B$ be positive definite, let
+$\varepsilon = \sqrt{\|E_A\|_2^2 + \|E_B\|_2^2}$, and let $c = c(A, B)$ be the Crawford number,
+with $\varepsilon < c$. Let $\lambda_i$ and $\mu_i$ be the pencil eigenvalues of $(A, B)$ and of
+$(A + E_A, B + E_B)$. Then for every $i$,
+$$\sin |\arctan \lambda_i - \arctan \mu_i| \le \frac{\varepsilon}{c}.$$
 
-The book's `|arctan λ_i - arctan μ_i| ≤ arctan (ε / c)` is false (`n = 1`, `A = 0`, `B = 1`,
-`E_A = √3/4`, `E_B = -1/4`: `ε = 1/2 < c = 1` and the difference is `π/6 > arctan (1/2)`), and so
-is its claim that the perturbed pencil is automatically symmetric-definite; the positive
-definiteness of `B + E_B` is a hypothesis here (a definite pair stays *definite*,
-`Matrix.crawfordNumber_sub_le`). Proof: at each `x ≠ 0` the points `u = (xᴴBx, xᴴAx)` and
-`u' = (xᴴ(B+E_B)x, xᴴ(A+E_A)x)` of the right half-plane have `|u| ≥ c ‖x‖²`
-(`Matrix.crawfordNumber_le_norm_mul`) and `|u' - u| ≤ ε ‖x‖²`, so their angles, the arctangents
-of the two Rayleigh quotients, differ by at most `arcsin (ε / c)`; the max–min characterization
-(`Matrix.isGreatest_pencilEigenvalues`) transfers the bound index by index. -/
+The source states $|\arctan \lambda_i - \arctan \mu_i| \le \arctan(\varepsilon / c)$. This is
+false: for $N = 1$, $A = 0$, $B = 1$, $E_A = \sqrt{3}/4$ and $E_B = -1/4$, one has
+$\varepsilon = 1/2 < c = 1$, and the difference is $\pi / 6 > \arctan(1/2)$. The claim of the
+source that the perturbed pencil is symmetric-definite is also false, so the positive
+definiteness of $B + E_B$ is a hypothesis here; a definite pair stays definite by
+`Matrix.crawfordNumber_sub_le`.
+
+At each $x \neq 0$, the points $u = (x^H B x, x^H A x)$ and
+$u' = (x^H (B + E_B) x, x^H (A + E_A) x)$ of the right half-plane satisfy $|u| \ge c \|x\|^2$
+(`Matrix.crawfordNumber_le_norm_mul`) and $|u' - u| \le \varepsilon \|x\|^2$. So their angles,
+the arctangents of the two Rayleigh quotients, differ by at most $\arcsin(\varepsilon / c)$, and
+the max–min characterization `Matrix.isGreatest_pencilEigenvalues` transfers the bound to each
+index. -/
 theorem sin_abs_arctan_pencilEigenvalues_sub_le {A B EA EB : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosDef) (hA' : (A + EA).IsHermitian) (hB' : (B + EB).PosDef)
     (hε : Real.sqrt (lpOpNorm 2 EA ^ 2 + lpOpNorm 2 EB ^ 2) < crawfordNumber A B)
@@ -694,11 +766,15 @@ theorem sin_abs_arctan_pencilEigenvalues_sub_le {A B EA EB : Matrix n n 𝕜} (h
           Real.pi_pos]) hδle habs
     _ = ε / c := Real.sin_arcsin (by linarith [div_nonneg hε0 hc.le]) hεc1
 
-/-- **The generalized Rayleigh quotient minimizes the `B⁻¹`-norm residual** ([golub2013matrix]
-(8.7.6)–(8.7.7)): for real `A` (the book's symmetry of `A` is not needed), positive definite `B`
-and `x ≠ 0`,
-`λ ↦ (A x - λ B x)ᵀ B⁻¹ (A x - λ B x)` (the book's `‖A x - λ B x‖²_{B⁻¹}`) is minimized at
-`λ = xᵀAx / xᵀBx`: it is the quadratic `xᵀAB⁻¹Ax - 2 λ xᵀAx + λ² xᵀBx`. -/
+/-- **The generalized Rayleigh quotient minimizes the $B^{-1}$-norm residual** ([golub2013matrix],
+(8.7.6)–(8.7.7)). Let $A \in \mathbb{R}^{N \times N}$, let $B \in \mathbb{R}^{N \times N}$ be
+positive definite, and let $x \neq 0$. Then the function
+$$\lambda \mapsto (Ax - \lambda Bx)^T B^{-1} (Ax - \lambda Bx) = \|Ax - \lambda
+  Bx\|_{B^{-1}}^2$$
+on $\mathbb{R}$ attains its minimum at $\lambda = x^T A x / x^T B x$.
+
+The symmetry of $A$ that the source assumes is not needed. The function is the quadratic $x^T A
+B^{-1} A x - 2 \lambda \, x^T A x + \lambda^2 \, x^T B x$. -/
 theorem isMinOn_pencil_residual {A B : Matrix n n ℝ} (hB : B.PosDef)
     {x : n → ℝ} (hx : x ≠ 0) :
     IsMinOn (fun μ : ℝ => (A *ᵥ x - μ • B *ᵥ x) ⬝ᵥ B⁻¹ *ᵥ (A *ᵥ x - μ • B *ᵥ x)) Set.univ
@@ -732,12 +808,17 @@ theorem isMinOn_pencil_residual {A B : Matrix n n ℝ} (hB : B.PosDef)
 
 /-! ### Simultaneous diagonalization by congruence -/
 
-/-- The key step of [golub2013matrix] Theorem 8.7.1: if `C` is positive semidefinite, `D` is
-Hermitian and `ker C ≤ ker D`, then one invertible congruence diagonalizes both. `C = V diag(d) Vᴴ`;
-`W = V diag(w)` with `w_i = d_i^{-1/2}` (or `1` where `d_i = 0`) makes `Wᴴ C W = P` a diagonal
-`0/1` projection, `Wᴴ D W` vanishes on the kernel coordinates and so commutes with `P`, and a
-simultaneous unitary diagonalization of the two finishes
-(`Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`). -/
+/-- Let $C$ be positive semidefinite and $D$ Hermitian with $\ker C \subseteq \ker D$. Then one
+invertible congruence diagonalizes both: there are an invertible $X$ and diagonal matrices
+$\operatorname{diag}(c)$, $\operatorname{diag}(e)$ with
+$$X^H C X = \operatorname{diag}(c), \qquad X^H D X = \operatorname{diag}(e).$$
+This is the key step of Theorem 8.7.1 of [golub2013matrix].
+
+Write $C = V \operatorname{diag}(d) V^H$. Then $W = V \operatorname{diag}(w)$, with
+$w_i = d_i^{-1/2}$ where $d_i \neq 0$ and $w_i = 1$ where $d_i = 0$, makes $W^H C W = P$ a
+diagonal projection with entries $0$ and $1$. The matrix $W^H D W$ vanishes on the kernel
+coordinates, so it commutes with $P$, and a simultaneous unitary diagonalization of the two
+(`Matrix.IsHermitian.exists_unitary_conj_diagonal_of_commute`) finishes the proof. -/
 theorem exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le {C D : Matrix n n 𝕜}
     (hC : C.PosSemidef) (hD : D.IsHermitian)
     (hker : ∀ x, C *ᵥ x = 0 → D *ᵥ x = 0) :
@@ -829,12 +910,16 @@ theorem exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le {C D : Matrix n n �
   · rw [star_mul, show star U * star W * D * (W * U) = star U * D₁ * U by
       simp only [hD₁, Matrix.mul_assoc], he]
 
-/-- **Simultaneous diagonalization of a semidefinite combination** ([golub2013matrix] Theorem
-8.7.1): for Hermitian `A`, `B` and `μ ∈ [0, 1]`, if `C = μ A + (1 - μ) B` is positive semidefinite
-and `ker C = ker A ⊓ ker B`, then one invertible congruence diagonalizes `A` and `B`, with real
-diagonals. For `μ ≠ 0` diagonalize `C` and `B` (`ker C ≤ ker B`,
-`Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le`) and read `A = μ⁻¹ (C - (1-μ) B)`
-off; for `μ = 0`, `C = B` and `ker B ≤ ker A`. -/
+/-- **Simultaneous diagonalization of a semidefinite combination** (Theorem 8.7.1 of
+[golub2013matrix]). Let $A$ and $B$ be Hermitian, let $\mu \in [0, 1]$, and let
+$C = \mu A + (1 - \mu) B$ be positive semidefinite with $\ker C = \ker A \cap \ker B$. Then
+there are an invertible $X$ and real vectors $a$ and $b$ with
+$$X^H A X = \operatorname{diag}(a), \qquad X^H B X = \operatorname{diag}(b).$$
+
+For $\mu \neq 0$, diagonalize $C$ and $B$ by
+`Matrix.exists_isUnit_conj_diagonal_of_posSemidef_of_ker_le`, since $\ker C \subseteq \ker B$,
+and read off $A = \mu^{-1}(C - (1 - \mu) B)$. For $\mu = 0$, $C = B$ and
+$\ker B \subseteq \ker A$. -/
 theorem exists_isUnit_conj_diagonal_of_posSemidef_combination {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) {μ : ℝ} (hμ : μ ∈ Set.Icc (0 : ℝ) 1)
     (hC : ((μ : 𝕜) • A + ((1 - μ : ℝ) : 𝕜) • B).PosSemidef)
@@ -875,23 +960,25 @@ theorem exists_isUnit_conj_diagonal_of_posSemidef_combination {A B : Matrix n n 
     exact ⟨X, hX, a, b, ha, hb⟩
 
 omit [DecidableEq n] in
-/-- For a Hermitian matrix over `ℂ` the quadratic form is real. -/
+/-- For a Hermitian matrix $M$ over $\mathbb{C}$, the quadratic form $v^H M v$ is real. -/
 private theorem star_dotProduct_mulVec_eq_ofReal {M : Matrix n n ℂ} (hM : M.IsHermitian)
     (v : n → ℂ) : star v ⬝ᵥ M *ᵥ v = ((star v ⬝ᵥ M *ᵥ v).re : ℂ) :=
   Complex.ext (by simp) (by simpa using hM.im_star_dotProduct_mulVec_self v)
 
 omit [DecidableEq n] in
 /-- **Definite pairs are rotations of pairs with a positive definite second matrix** (Crawford 1976;
-Stewart–Sun, *Matrix Perturbation Theory*, Theorem VI.1.18), over `ℂ`: for Hermitian `A`, `B` with
-`c(A, B) > 0` there is `θ` with `sin θ A + cos θ B` positive definite. The joint numerical range
-`{(xᴴ B x + i xᴴ A x) / ‖x‖²}` is the numerical range of `B + i A`, convex by the
-Toeplitz–Hausdorff theorem (`LinearMap.convex_numericalRange`), and its closure misses the disc of
-radius `c` about `0`; a real linear functional `z ↦ α re z + β im z` separating it from `0`
-(`geometric_hahn_banach_compact_closed`) gives `θ = arg (α + β i)`.
+Stewart and Sun, *Matrix Perturbation Theory*, Theorem VI.1.18). Let
+$A, B \in \mathbb{C}^{N \times N}$ be Hermitian with $c(A, B) > 0$. Then there is
+$\theta \in \mathbb{R}$ such that $\sin\theta \, A + \cos\theta \, B$ is positive definite.
 
-Over `ℝ` the statement is false for `n = 2`: `A = diag(1, -1)`, `B = [[0, 1], [1, 0]]` have
-`c(A, B) = 1` (the real joint range is the unit circle) but every `sin θ A + cos θ B` has trace
-`0`. -/
+The joint numerical range $\{(x^H B x + i \, x^H A x) / \|x\|^2\}$ is the numerical range of
+$B + iA$. It is convex by the Toeplitz–Hausdorff theorem (`LinearMap.convex_numericalRange`),
+and its closure misses the disc of radius $c(A, B)$ about $0$. A real linear functional $z
+\mapsto \alpha \operatorname{Re} z + \beta \operatorname{Im} z$ that separates it from $0$
+(`geometric_hahn_banach_compact_closed`) gives $\theta = \arg(\alpha + \beta i)$. Over
+$\mathbb{R}$ the statement is false for $N = 2$: $A = \operatorname{diag}(1, -1)$ and $B =
+\begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}$ have $c(A, B) = 1$, since the real joint range is
+the unit circle, but every $\sin\theta \, A + \cos\theta \, B$ has trace $0$. -/
 theorem exists_posDef_rotation_of_crawfordNumber_pos_complex {A B : Matrix n n ℂ}
     (hA : A.IsHermitian)
     (hB : B.IsHermitian) (hc : 0 < crawfordNumber A B) :
@@ -992,15 +1079,19 @@ section Gershgorin
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- The off-diagonal absolute row sum `o_kᴬ = ∑_{i ≠ k} |a_{ki}|`. -/
+/-- The off-diagonal absolute row sum of a real matrix $A$: $o_k^A = \sum_{i \neq k} |a_{ki}|$. -/
 noncomputable def offDiagSum (A : Matrix ι ι ℝ) (k : ι) : ℝ :=
   ∑ i ∈ Finset.univ.erase k, |A k i|
 
+/-- The off-diagonal absolute row sum $o_k^A$ is nonnegative. -/
 theorem offDiagSum_nonneg (A : Matrix ι ι ℝ) (k : ι) : 0 ≤ offDiagSum A k :=
   Finset.sum_nonneg fun _ _ => abs_nonneg _
 
-/-- **Gershgorin's theorem for a real pencil** (Cartis–Gould–Toint (9.3.6)–(9.3.7)): if
-`H u = μ M u` with `u ≠ 0`, then `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ` for some `k`. -/
+/-- **Gershgorin's theorem for a real pencil** ([cartis2022evaluation], (9.3.6)–(9.3.7)). Let $H, M$
+be real square matrices, $\mu \in \mathbb{R}$, and $u \neq 0$ with $Hu = \mu M u$. Then for some
+index $k$,
+$$|h_{kk} - \mu \, m_{kk}| \le o_k^H + |\mu| \, o_k^M.$$
+-/
 theorem exists_abs_sub_le_of_mulVec_eq {H M : Matrix ι ι ℝ} {μ : ℝ} {u : ι → ℝ} (hu : u ≠ 0)
     (h : H *ᵥ u = μ • M *ᵥ u) :
     ∃ k, |H k k - μ * M k k| ≤ offDiagSum H k + |μ| * offDiagSum M k := by
@@ -1016,10 +1107,12 @@ theorem exists_abs_sub_le_of_mulVec_eq {H M : Matrix ι ι ℝ} {μ : ℝ} {u : 
     Finset.mul_sum, ← Finset.sum_add_distrib]
   exact Finset.sum_le_sum fun i _ => (abs_sub _ _).trans (by rw [abs_mul])
 
-/-- The interval of a pencil Gershgorin region (Cartis–Gould–Toint §9.3.1): if
-`|h - μ m| ≤ o_H + |μ| o_M` with `0 ≤ o_M < m`, then `μ` lies between
-`min((h - o_H)/(m - o_M), (h - o_H)/(m + o_M))` and
-`max((h + o_H)/(m - o_M), (h + o_H)/(m + o_M))`. -/
+/-- The interval of a Gershgorin region of a pencil ([cartis2022evaluation], §9.3.1). Let
+$h, m, o_H, o_M, \mu \in \mathbb{R}$ with $0 \le o_M < m$ and
+$|h - \mu m| \le o_H + |\mu| \, o_M$. Then
+$$\min\left( \frac{h - o_H}{m - o_M}, \frac{h - o_H}{m + o_M} \right) \le \mu \le \max\left(
+  \frac{h + o_H}{m - o_M}, \frac{h + o_H}{m + o_M} \right).$$
+-/
 theorem mem_gershgorin_interval {h m oH oM μ : ℝ} (hoM : 0 ≤ oM) (hm : oM < m)
     (hμ : |h - μ * m| ≤ oH + |μ| * oM) :
     min ((h - oH) / (m - oM)) ((h - oH) / (m + oM)) ≤ μ ∧

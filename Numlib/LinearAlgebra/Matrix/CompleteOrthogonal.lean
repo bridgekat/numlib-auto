@@ -14,40 +14,52 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # Complete orthogonal decompositions
 
-A complete orthogonal decomposition of `A : Matrix (Fin M) (Fin N) 𝕜` is `Uᴴ A V = [T₁₁ 0; 0 0]`
-with `U`, `V` unitary and `T₁₁` an invertible `r × r` block ([golub2013matrix] §5.4.7 (5.4.12),
-§5.5.1; Hanson–Lawson 1969). Then `r = rank A`, the first `r` columns of `U` span the range of
-`A`, the last `N − r` columns of `V` span its kernel, and `x_LS = V [T₁₁⁻¹ c; 0]` (`Uᴴ b = [c; d]`)
-is the minimal-norm least-squares solution, with residual `‖d‖`.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{M \times N}$. A
+**complete orthogonal decomposition** of $A$ is a factorization
+$$U^H A V = \begin{bmatrix} T_{11} & 0 \\ 0 & 0 \end{bmatrix}$$
+with $U$ and $V$ unitary and $T_{11}$ a nonsingular $r \times r$ block ((5.4.12) in §5.4.7 and
+§5.5.1 of [golub2013matrix]; the decomposition is due to Hanson and Lawson, 1969). Then
+$r = \operatorname{rank} A$, the first $r$ columns of $U$ span the range of $A$, and the last
+$N - r$ columns of $V$ span the kernel of $A$. If $U^H b = (c, d)$ with $c \in \mathbb{K}^r$, then
+$$x_{LS} = V \begin{bmatrix} T_{11}^{-1} c \\ 0 \end{bmatrix}$$
+is the least-squares solution of least norm of $Ax \approx b$, and its residual has the norm
+$\|d\|$.
 
 ## Main definitions
 
-* `Matrix.IsCompleteOrthogonal A U V r`: the specification (5.4.12), a two-sided unitary
-  equivalence `Uᴴ A V = T` (`Matrix.IsCompleteOrthogonal.isUnitaryEquiv`, with
-  `Matrix.IsUnitaryEquiv` of `Numlib/LinearAlgebra/Matrix/UnitaryEquiv`) whose middle factor
-  `T = Uᴴ A V` is zero outside an invertible leading `r × r` block.
+* `Matrix.IsCompleteOrthogonal`: the specification (5.4.12) of [golub2013matrix], a two-sided
+  unitary equivalence $U^H A V = T$ whose middle factor $T$ is zero outside a nonsingular leading
+  $r \times r$ block.
 
 ## Main results
 
-* `Matrix.IsCompleteOrthogonal.hasRevealingBlock`: the middle factor `Uᴴ A V` has a revealing
-  block (`Matrix.HasRevealingBlock`), whose lemmas give
-  `Matrix.IsCompleteOrthogonal.rank_eq`, `…range_eq_span`; and `…ker_eq_span`.
-* `Matrix.isCompleteOrthogonal_of_svd`: an SVD is a complete orthogonal decomposition, so every
-  matrix has one (`Matrix.exists_isCompleteOrthogonal`).
-* `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution` ([golub2013matrix] §5.5.1).
+* `Matrix.IsCompleteOrthogonal.hasRevealingBlock`: the middle factor $U^H A V$ has a revealing block
+  of size $r$ (`Matrix.HasRevealingBlock`).
+* `Matrix.IsCompleteOrthogonal.rank_eq`: the block size $r$ is the rank of $A$.
+* `Matrix.IsCompleteOrthogonal.range_eq_span`: the first $r$ columns of $U$ span the range of $A$.
+* `Matrix.IsCompleteOrthogonal.ker_eq_span`: the last $N - r$ columns of $V$ span the kernel of $A$.
+* `Matrix.IsCompleteOrthogonal.isMinNormLeastSquaresSolution`: the formula for the least-squares
+  solution of least norm, and its residual (§5.5.1 of [golub2013matrix]).
+* `Matrix.isCompleteOrthogonal_of_svd`: a singular value decomposition is a complete orthogonal
+  decomposition.
+* `Matrix.exists_isCompleteOrthogonal`: every matrix has a complete orthogonal decomposition with
+  $r = \operatorname{rank} A$.
 
 ## Implementation notes
 
-The middle factor `T = Uᴴ A V` is determined by `U` and `V`, so it is not a parameter and the
-structure does not extend `Matrix.IsUnitaryEquiv`; `Matrix.IsCompleteOrthogonal.isUnitaryEquiv`
-is the projection to it, and the unitary algebra (`A = U T Vᴴ`, rank invariance) comes from there.
-The block structure is expressed entrywise, `(Uᴴ A V) i j = 0` whenever `r ≤ i` or `r ≤ j`, and
-the leading block is `(Uᴴ A V).submatrix (Fin.castLE _) (Fin.castLE _)`, as for
-`Matrix.IsPivotedQR.IsRankRevealing`; rank, range and least squares go through the
-`Matrix.HasRevealingBlock` lemmas of `Numlib/LinearAlgebra/Matrix/RankRevealing` for
-`A = U T W` with `W = Vᴴ`. Existence is
-proved from the SVD; the book's construction by two QR factorizations (a rank-revealing pivoted
-QR, then a QR of `[R₁₁ R₁₂]ᴴ`) produces another instance.
+* The middle factor $T = U^H A V$ is determined by $U$ and $V$. So it is not a parameter, and the
+  structure does not extend `Matrix.IsUnitaryEquiv`. `Matrix.IsCompleteOrthogonal.isUnitaryEquiv` is
+  the projection to it, and the facts of unitary algebra ($A = U T V^H$, the invariance of the rank)
+  come from there.
+* The block structure is stated entrywise: $(U^H A V)_{ij} = 0$ whenever $i \ge r$ or $j \ge r$,
+  with the indices $0, 1, \dots$. The leading block is `(Uᴴ * A * V).submatrix (Fin.castLE _)
+  (Fin.castLE _)`, as for `Matrix.IsPivotedQR.IsRankRevealing`.
+* The rank, the range and the least-squares solution come from the lemmas on
+  `Matrix.HasRevealingBlock` in `Numlib.LinearAlgebra.Matrix.RankRevealing`, for $A = U T W$ with
+  $W = V^H$.
+* Existence is proved from the singular value decomposition. The construction of the source by two
+  QR factorizations (a rank-revealing pivoted QR factorization, then a QR factorization of
+  $[R_{11} \; R_{12}]^H$) gives another complete orthogonal decomposition.
 -/
 
 open scoped Matrix
@@ -56,21 +68,27 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {M N : ℕ}
 
-/-- **A complete orthogonal decomposition** ([golub2013matrix] (5.4.12)): `U` and `V` unitary,
-`Uᴴ A V` zero outside its leading `r × r` block `T₁₁`, and `T₁₁` invertible. -/
+/-- A **complete orthogonal decomposition** of $A \in \mathbb{K}^{M \times N}$, (5.4.12) of
+[golub2013matrix]. The proposition `Matrix.IsCompleteOrthogonal A U V r` holds if
+$U \in \mathbb{K}^{M \times M}$ and $V \in \mathbb{K}^{N \times N}$ are unitary, $r \le M$ and
+$r \le N$, the matrix $U^H A V$ is zero outside its leading $r \times r$ block $T_{11}$, and
+$T_{11}$ is nonsingular:
+$$U^H A V = \begin{bmatrix} T_{11} & 0 \\ 0 & 0 \end{bmatrix}.$$
+-/
 structure IsCompleteOrthogonal (A : Matrix (Fin M) (Fin N) 𝕜) (U : Matrix (Fin M) (Fin M) 𝕜)
     (V : Matrix (Fin N) (Fin N) 𝕜) (r : ℕ) : Prop where
-  /-- The left factor is unitary. -/
+  /-- The left factor $U$ is unitary. -/
   mem_unitaryGroup_left : U ∈ unitaryGroup (Fin M) 𝕜
-  /-- The right factor is unitary. -/
+  /-- The right factor $V$ is unitary. -/
   mem_unitaryGroup_right : V ∈ unitaryGroup (Fin N) 𝕜
-  /-- The block size does not exceed the number of rows. -/
+  /-- The block size $r$ is at most the number $M$ of rows. -/
   le_rows : r ≤ M
-  /-- The block size does not exceed the number of columns. -/
+  /-- The block size $r$ is at most the number $N$ of columns. -/
   le_cols : r ≤ N
-  /-- `Uᴴ A V` vanishes outside its leading `r × r` block. -/
+  /-- The matrix $U^H A V$ is zero outside its leading $r \times r$ block: its entry $(i, j)$ is $0$
+  whenever $i \ge r$ or $j \ge r$. -/
   apply_eq_zero : ∀ (i : Fin M) (j : Fin N), r ≤ (i : ℕ) ∨ r ≤ (j : ℕ) → (Uᴴ * A * V) i j = 0
-  /-- The leading block `T₁₁` is invertible. -/
+  /-- The leading $r \times r$ block $T_{11}$ of $U^H A V$ is nonsingular. -/
   isUnit_block : IsUnit ((Uᴴ * A * V).submatrix (Fin.castLE le_rows) (Fin.castLE le_cols))
 
 namespace IsCompleteOrthogonal
@@ -78,40 +96,51 @@ namespace IsCompleteOrthogonal
 variable {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
   {V : Matrix (Fin N) (Fin N) 𝕜} {r : ℕ}
 
-/-- A complete orthogonal decomposition is a two-sided unitary equivalence `Uᴴ A V = T`, with
-middle factor `T = Uᴴ A V`. -/
+/-- A complete orthogonal decomposition is a two-sided unitary equivalence $U^H A V = T$
+(`Matrix.IsUnitaryEquiv`) with the middle factor $T = U^H A V$. -/
 theorem isUnitaryEquiv (h : IsCompleteOrthogonal A U V r) :
     IsUnitaryEquiv A U (Uᴴ * A * V) V :=
   isUnitaryEquiv_star_mul_mul h.mem_unitaryGroup_left h.mem_unitaryGroup_right
 
-/-- The middle factor `T = Uᴴ A V` of a complete orthogonal decomposition has a revealing block
-of size `r`: its rows from the `r`-th on vanish and `T₁₁` is invertible. -/
+/-- For a complete orthogonal decomposition, the middle factor $T = U^H A V$ has a revealing block
+of size $r$ (`Matrix.HasRevealingBlock`): its rows from the $r$-th on are zero, and its leading
+block $T_{11}$ is nonsingular. -/
 theorem hasRevealingBlock (h : IsCompleteOrthogonal A U V r) : (Uᴴ * A * V).HasRevealingBlock r :=
   ⟨h.le_rows, h.le_cols, fun i j hi => h.apply_eq_zero i j (Or.inl hi), h.isUnit_block⟩
 
-/-- `A = U T Vᴴ` with `T = Uᴴ A V`. -/
+/-- For a complete orthogonal decomposition, $A = U T V^H$ with $T = U^H A V$. -/
 theorem eq_mul (h : IsCompleteOrthogonal A U V r) : A = U * (Uᴴ * A * V) * Vᴴ :=
   h.isUnitaryEquiv.eq_mul_mul
 
-/-- The adjoint of the right factor is invertible. -/
+/-- For a complete orthogonal decomposition, the matrix $V^H$ is nonsingular. -/
 theorem isUnit_conjTranspose_right (h : IsCompleteOrthogonal A U V r) : IsUnit Vᴴ :=
   isUnit_of_mem_unitaryGroup (conjTranspose_mem_unitaryGroup h.mem_unitaryGroup_right)
 
-/-- **The block size is the rank** ([golub2013matrix] §5.4.7): rank is invariant under the unitary
-factors (`Matrix.IsUnitaryEquiv.rank_eq`), and `Uᴴ A V` has a revealing block. -/
+/-- **The block size is the rank**. Let $U^H A V$ be a complete orthogonal decomposition of
+$A \in \mathbb{K}^{M \times N}$ with the block size $r$. Then $\operatorname{rank} A = r$. This
+is in §5.4.7 of [golub2013matrix].
+
+The rank does not change under the unitary factors (`Matrix.IsUnitaryEquiv.rank_eq`), and
+$U^H A V$ has a revealing block of size $r$. -/
 theorem rank_eq (h : IsCompleteOrthogonal A U V r) : A.rank = r := by
   rw [h.isUnitaryEquiv.rank_eq]
   exact h.hasRevealingBlock.rank_eq
 
-/-- **The range of `A` is spanned by the first `r` columns of `U`** ([golub2013matrix] §5.4.7). -/
+/-- **The range of $A$ is spanned by the first $r$ columns of $U$**. Let $U^H A V$ be a complete
+orthogonal decomposition of $A \in \mathbb{K}^{M \times N}$ with the block size $r$. Then the
+range of $A$, as a linear map $\mathbb{K}^N \to \mathbb{K}^M$, is the span of the columns
+$u_0, \dots, u_{r-1}$ of $U$. This is in §5.4.7 of [golub2013matrix].
+
+The linear map is `Matrix.toEuclideanLin A`, and the columns are vectors of
+`EuclideanSpace 𝕜 (Fin M)`. -/
 theorem range_eq_span (h : IsCompleteOrthogonal A U V r) :
     LinearMap.range (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun i : Fin r =>
         (WithLp.toLp 2 (U.col (Fin.castLE h.le_rows i)) : EuclideanSpace 𝕜 (Fin M))) :=
   h.hasRevealingBlock.range_toEuclideanLin_eq_span h.eq_mul h.isUnit_conjTranspose_right
 
-/-- `T w` for `T = Uᴴ A V`: the leading block acts on the head of `w`, and nothing else
-survives. -/
+/-- For $T = U^H A V$ and a vector $w$, the entry $i$ of $Tw$ is the entry $i$ of $T_{11}$ times the
+first $r$ entries of $w$ if $i < r$, and $0$ otherwise. -/
 private theorem mulVec_apply (h : IsCompleteOrthogonal A U V r) (w : Fin N → 𝕜) (i : Fin M) :
     ((Uᴴ * A * V) *ᵥ w) i = if hi : (i : ℕ) < r then
       ((Uᴴ * A * V).submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols) *ᵥ
@@ -126,8 +155,13 @@ private theorem mulVec_apply (h : IsCompleteOrthogonal A U V r) (w : Fin N → �
   · exact Finset.sum_eq_zero fun k _ => by
       rw [h.apply_eq_zero _ _ (Or.inl (by omega)), zero_mul]
 
-/-- **The kernel of `A` is spanned by the last `N − r` columns of `V`** ([golub2013matrix]
-§5.4.7): `A x = 0` iff `T₁₁` kills the head of `Vᴴ x`, i.e. iff the head vanishes. -/
+/-- **The kernel of $A$ is spanned by the last $N - r$ columns of $V$**. Let $U^H A V$ be a complete
+orthogonal decomposition of $A \in \mathbb{K}^{M \times N}$ with the block size $r$. Then the
+kernel of $A$, as a linear map $\mathbb{K}^N \to \mathbb{K}^M$, is the span of the columns
+$v_r, \dots, v_{N-1}$ of $V$. This is in §5.4.7 of [golub2013matrix].
+
+The proof: $Ax = 0$ if and only if $T_{11}$ maps the first $r$ entries of $V^H x$ to $0$, that
+is, if and only if these entries are $0$. The trailing indices are `Matrix.tailIdx`. -/
 theorem ker_eq_span (h : IsCompleteOrthogonal A U V r) :
     LinearMap.ker (toEuclideanLin A) =
       Submodule.span 𝕜 (Set.range fun j : Fin (N - r) =>
@@ -188,10 +222,19 @@ theorem ker_eq_span (h : IsCompleteOrthogonal A U V r) :
     rw [this, mulVec_zero]
     rfl
 
-/-- **The minimal-norm least-squares solution** ([golub2013matrix] §5.5.1): with `Uᴴ b = [c; d]`
-and `T₁₁` the leading block, `x_LS = V [T₁₁⁻¹ c; 0]` is the least-squares solution of least
-norm, and the least residual is `‖d‖`. Writing `Vᴴ x = [w; y]`,
-`‖A x − b‖² = ‖T₁₁ w − c‖² + ‖d‖²` and `‖x‖² = ‖w‖² + ‖y‖²`. -/
+/-- **The least-squares solution of least norm**. Let $U^H A V$ be a complete orthogonal
+decomposition of $A \in \mathbb{K}^{M \times N}$ with the block size $r$, let
+$b \in \mathbb{K}^M$, and write
+$$U^H b = \begin{bmatrix} c \\ d \end{bmatrix}, \qquad c \in \mathbb{K}^r, \; d \in
+  \mathbb{K}^{M - r}.$$
+Then
+$$x_{LS} = V \begin{bmatrix} T_{11}^{-1} c \\ 0 \end{bmatrix}$$
+is the least-squares solution of $Ax \approx b$ of least norm
+(`Matrix.IsMinNormLeastSquaresSolution`), and its residual has the norm
+$\|A x_{LS} - b\| = \|d\|$. This is in §5.5.1 of [golub2013matrix].
+
+With $V^H x = (w, y)$, the proof uses $\|Ax - b\|^2 = \|T_{11} w - c\|^2 + \|d\|^2$ and
+$\|x\|^2 = \|w\|^2 + \|y\|^2$. The vector $(T_{11}^{-1} c, 0)$ is `Matrix.blockVec`. -/
 theorem isMinNormLeastSquaresSolution (h : IsCompleteOrthogonal A U V r)
     (b : EuclideanSpace 𝕜 (Fin M)) :
     IsMinNormLeastSquaresSolution A b (WithLp.toLp 2 (V *ᵥ blockVec h.le_cols
@@ -260,10 +303,14 @@ theorem isMinNormLeastSquaresSolution (h : IsCompleteOrthogonal A U V r)
 
 end IsCompleteOrthogonal
 
-/-- **An SVD is a complete orthogonal decomposition** ([golub2013matrix] §5.4.7): if
-`Uᴴ A V = rectDiagonal σ` is an SVD, then with `r = rank A` the entries outside the leading
-`r × r` block vanish (`σ i = 0` from the `r`-th on) and the leading block is `diagonal σ` with
-`σ i > 0` for `i < r` (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). -/
+/-- **A singular value decomposition is a complete orthogonal decomposition**. Let
+$U^H A V = \Sigma$ be a singular value decomposition of $A \in \mathbb{K}^{M \times N}$
+(`Matrix.IsSVD`). Then $U^H A V$ is a complete orthogonal decomposition of $A$ with the block
+size $r = \operatorname{rank} A$. This is in §5.4.7 of [golub2013matrix].
+
+The entries outside the leading $r \times r$ block are zero, because $\sigma_i = 0$ for
+$i \ge r$. The leading block is $\operatorname{diag}(\sigma_0, \dots, \sigma_{r-1})$, with
+$\sigma_i > 0$ for $i < r$ (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). -/
 theorem isCompleteOrthogonal_of_svd {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜}
     {σ : ℕ → ℝ} {V : Matrix (Fin N) (Fin N) 𝕜} (h : IsSVD A U σ V) :
     IsCompleteOrthogonal A U V A.rank := by
@@ -289,8 +336,12 @@ theorem isCompleteOrthogonal_of_svd {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matri
     rw [Ne, RCLike.ofReal_eq_zero, hσ i (by omega) (by omega)]
     omega
 
-/-- **Every matrix has a complete orthogonal decomposition** with `r = rank A`
-([golub2013matrix] §5.4.7), for instance an SVD (`Matrix.isCompleteOrthogonal_of_svd`). -/
+/-- **Every matrix has a complete orthogonal decomposition**. For every
+$A \in \mathbb{K}^{M \times N}$, there are unitary matrices $U$ and $V$ such that $U^H A V$ is a
+complete orthogonal decomposition of $A$ with the block size $r = \operatorname{rank} A$. This
+is in §5.4.7 of [golub2013matrix].
+
+A singular value decomposition is one (`Matrix.isCompleteOrthogonal_of_svd`). -/
 theorem exists_isCompleteOrthogonal (A : Matrix (Fin M) (Fin N) 𝕜) :
     ∃ U V, IsCompleteOrthogonal A U V A.rank := by
   obtain ⟨U, σ, V, h⟩ := exists_isSVD A

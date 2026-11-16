@@ -11,37 +11,50 @@ import Numlib.Optimization.Optimality.Unconstrained
 /-!
 # Slow runs of ARp on one-dimensional spike data
 
-The mechanism of the sharpness results for adaptive-regularization methods with `p`-th order
-Taylor models of [cartis2022evaluation] (Theorems 3.3.6, 3.3.10, 4.1.6, 12.2.15): a function of
-one variable whose jets at the points `x_k` have a single nonzero derivative ("spike jets", the
-data of `Optimization.exists_slowTaylorOrder_interpolant`), lifted to a one-dimensional inner
-product space along a unit vector `e` (`Optimization.ridge`), has the regularized Taylor model
-`G(x_k) + negMonomialRegModel p q σ α t`, whose global minimizer is explicit
-(`Optimization.isMinOn_neg_monomial_add_regularization`). Spacing the points by these minimizers
-gives ARp runs with `σ_k = σ₀`, exact model minimization and `ρ_k = 1`.
+This module proves the mechanism of the sharpness results of [cartis2022evaluation] for
+adaptive-regularization methods with Taylor models of order $p$ (Theorems 3.3.6, 3.3.10, 4.1.6 and
+12.2.15). Let $G : \mathbb{R} \to \mathbb{R}$ have, at points $x_k$, jets with a single nonzero
+derivative: $G^{(q)}(x_k) = -\alpha_k$, and $G^{(j)}(x_k) = 0$ for the other orders
+$j \in \{1, \dots, p\}$. These are the "spike jets" of
+`Optimization.exists_slowTaylorOrder_interpolant`. Lift $G$ to a one-dimensional inner product space
+along a unit vector $e$, as the ridge function $f(x) = G(\langle e, x \rangle)$. Then the
+regularized Taylor model of $f$ at $x_k e$ is
+$$m(s) = G(x_k) - \frac{\alpha_k t^q}{q!} + \frac{\sigma |t|^{p+1}}{(p+1)!}, \qquad t = \langle e, s
+  \rangle,$$
+whose global minimizer is explicit (`Optimization.isMinOn_neg_monomial_add_regularization`). Spacing
+the points by these minimizers gives runs of ARp with $\sigma_k = \sigma_0$, exact model
+minimization and ratios $\rho_k = 1$.
 
 ## Main definitions
 
-* `Optimization.monomialMinimizer p q σ α`: the minimizer `t* = (α/λ)^{1/(p-q+1)}`,
-  `λ = σ (q-1)!/p!`.
+* `Optimization.monomialMinimizer`: the minimizer $t_* = (\alpha/\lambda)^{1/(p-q+1)}$ of the
+  one-dimensional model, with $\lambda = \sigma (q-1)!/p!$.
 
-## Main statements
+## Main results
 
-* `Optimization.taylorPolynomial_ridge_spike`, `Optimization.regularizedModel_ridge_spike`: the
-  Taylor polynomial and the model of a ridge function at a spike jet.
-* `Optimization.taylorMeasure_eq_mul_pow_of_inner_pow`: the measure of a decrement
-  `a ⟪e, d⟫^q` along a unit vector.
-* `Optimization.iteratedDeriv_three_negMonomialRegModel_mem`,
-  `Optimization.iteratedDeriv_two_negMonomialRegModel_mem`: the derivatives of the model at `t*`
-  used by the third-order step condition (4.1.13) and the sets (4.1.14).
+* `Optimization.taylorPolynomial_ridge_spike` and `Optimization.regularizedModel_ridge_spike`: the
+  Taylor polynomial and the regularized model of a ridge function at a spike jet.
+* `Optimization.taylorMeasure_eq_mul_pow_of_inner_pow`: the Taylor measure of a decrement
+  $a \langle e, d \rangle^q$ along a unit vector is $a \delta^q$.
+* `Optimization.iteratedDeriv_three_negMonomialRegModel_mem` and
+  `Optimization.iteratedDeriv_two_negMonomialRegModel_mem`: bounds on the derivatives of the model
+  at $t_*$, used by the third-order step condition (4.1.13) and the sets (4.1.14).
 * `Optimization.ridge_const_mul_slow_bounds`: scaled ridges of the slow interpolants satisfy the
-  Lipschitz and lower bounds of the function classes, with constants independent of `ε`.
-* `Optimization.taylorDecrement_regularizedModel_ridge_spike`: the model decrements at a spike
-  jet along the ridge are those of the one-dimensional monomial model.
-* `Optimization.taylorDecrement_regularizedModel_ridge_linear_nonpos`: at a gradient spike the
-  model decrements at its minimizer are nonpositive on small balls (Example 12.1.3).
+  Lipschitz bounds and the lower bound of the function classes, with constants independent of
+  $\varepsilon$.
+* `Optimization.taylorDecrement_regularizedModel_ridge_spike`: the Taylor decrements of the model at
+  a spike jet along the ridge are those of the one-dimensional monomial model.
+* `Optimization.taylorDecrement_regularizedModel_ridge_linear_nonpos`: at a gradient spike, the
+  Taylor decrements of the model at its minimizer are nonpositive on small balls (Example 12.1.3).
 * `Optimization.isARpStep_of_isMinOn`: global model minimizers are admissible ARp steps.
 * `Optimization.arp_ridge_run`: the ARp run on spike data.
+
+## Implementation notes
+
+* The one-dimensional regularized model $-\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$ is
+  `Optimization.negMonomialRegModel p q σ α`, and the ridge function is `Optimization.ridge G e`.
+* That the space $E$ is one-dimensional and spanned by $e$ is the hypothesis
+  $\|s\| = |\langle e, s \rangle|$ for all $s \in E$.
 -/
 
 open Set Finset
@@ -51,7 +64,8 @@ namespace Optimization
 
 /-! ### One-dimensional spike jets and the monomial model -/
 
-/-- The regularized monomial model is `C^p`. -/
+/-- For all $p, q$ and $\sigma, \alpha \in \mathbb{R}$, the regularized monomial model $t \mapsto
+-\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$ is $C^p$. -/
 theorem contDiff_negMonomialRegModel (p q : ℕ) (σ α : ℝ) :
     ContDiff ℝ p (negMonomialRegModel p q σ α) := by
   have h := contDiff_norm_pow (E := ℝ) (r := p + 1) (by omega)
@@ -63,8 +77,16 @@ theorem contDiff_negMonomialRegModel (p q : ℕ) (σ α : ℝ) :
   exact ((contDiff_const.mul (contDiff_id.pow q)).div_const _).add
     ((contDiff_const.mul h).div_const _)
 
-/-- The global minimizer `t* = (α/λ)^{1/(p-q+1)}`, `λ = σ (q-1)!/p!`, of the one-dimensional
-model `negMonomialRegModel p q σ α`. -/
+/-- The point
+$$t_* = \left(\frac{\alpha}{\lambda}\right)^{1/(p-q+1)}, \qquad \lambda = \frac{\sigma
+  (q-1)!}{p!}.$$
+If $1 \le q \le p$, $\sigma > 0$ and $\alpha > 0$, then $t_*$ is the global minimizer of the
+one-dimensional model $-\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$
+(`Optimization.negMonomialRegModel p q σ α`), by
+`Optimization.isMinOn_neg_monomial_add_regularization`.
+
+The power is the real power `Real.rpow`, and $p - q + 1$ is computed in $\mathbb{N}$ with
+truncated subtraction. -/
 noncomputable def monomialMinimizer (p q : ℕ) (σ α : ℝ) : ℝ :=
   (α / (σ * (q - 1)! / p !)) ^ (1 / ((p - q + 1 : ℕ) : ℝ))
 
@@ -72,11 +94,12 @@ section Minimizer
 
 variable {p q : ℕ} {σ α : ℝ}
 
+/-- If $\sigma > 0$ and $\alpha > 0$, then $t_* > 0$. -/
 theorem monomialMinimizer_pos (hσ : 0 < σ) (hα : 0 < α) : 0 < monomialMinimizer p q σ α := by
   unfold monomialMinimizer
   exact Real.rpow_pos_of_pos (by positivity) _
 
-/-- `α = σ (q-1)!/p! t*^{p-q+1}`. -/
+/-- If $\sigma > 0$ and $\alpha > 0$, then $\alpha = \sigma (q-1)!/p! \cdot t_*^{p-q+1}$. -/
 theorem eq_mul_monomialMinimizer_pow (hσ : 0 < σ) (hα : 0 < α) :
     α = σ * (q - 1)! / p ! * monomialMinimizer p q σ α ^ (p - q + 1) := by
   have hl : 0 < σ * (q - 1)! / p ! := by positivity
@@ -85,8 +108,10 @@ theorem eq_mul_monomialMinimizer_pow (hσ : 0 < σ) (hα : 0 < α) :
     one_div_mul_cancel hR, Real.rpow_one]
   field_simp
 
-/-- The third derivative of the monomial model at its minimizer (for `q ≤ 3 ≤ p`):
-`0 ≤ m'''(t*) ≤ σ t*^{p-2}/(p-2)!`. -/
+/-- The third derivative of the monomial model at its minimizer. Let $1 \le q \le 3 \le p$,
+$\sigma > 0$ and $\alpha > 0$, and let $m(t) = -\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$. Then
+$$0 \le m'''(t_*) \le \frac{\sigma t_*^{p-2}}{(p-2)!}.$$
+-/
 theorem iteratedDeriv_three_negMonomialRegModel_mem (hq : 1 ≤ q) (hq3 : q ≤ 3) (hp : 3 ≤ p)
     (hσ : 0 < σ) (hα : 0 < α) :
     0 ≤ iteratedDeriv 3 (negMonomialRegModel p q σ α) (monomialMinimizer p q σ α) ∧
@@ -127,8 +152,10 @@ theorem iteratedDeriv_three_negMonomialRegModel_mem (hq : 1 ≤ q) (hq3 : q ≤ 
         positivity
       linarith
 
-/-- The second derivative of the monomial model with `q = 3` at its minimizer:
-`0 ≤ m''(t*) ≤ σ t*^{p-1}/(p-1)!`. -/
+/-- The second derivative of the monomial model with $q = 3$ at its minimizer. Let $p \ge 3$,
+$\sigma > 0$ and $\alpha > 0$, and let $m(t) = -\alpha t^3/3! + \sigma |t|^{p+1}/(p+1)!$. Then
+$$0 \le m''(t_*) \le \frac{\sigma t_*^{p-1}}{(p-1)!}.$$
+-/
 theorem iteratedDeriv_two_negMonomialRegModel_mem (hp : 3 ≤ p) (hσ : 0 < σ) (hα : 0 < α) :
     0 ≤ iteratedDeriv 2 (negMonomialRegModel p 3 σ α) (monomialMinimizer p 3 σ α) ∧
       iteratedDeriv 2 (negMonomialRegModel p 3 σ α) (monomialMinimizer p 3 σ α) ≤
@@ -169,11 +196,16 @@ section Ridge
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {e : E}
 
-/-- **Bounds for scaled ridges of slow-example interpolants**: if `G` is `C^p` with
-`L`-Lipschitz `p`-th derivative and `|G^{(j)}| ≤ B` for `j ≤ p` (the output of the interpolation
-lemmas of `Numlib.Optimization.Complexity.SlowExample.HighOrder`), then for `λ ∈ (0, 1]` and
-`‖e‖ ≤ 1` the ridge `f = λ G(⟪e, ·⟫)` is `C^p`, bounded below by `-B`, and its derivatives of
-orders `0, …, p` are `max(1, L, B)`-Lipschitz. -/
+/-- **Bounds for scaled ridges of slow-example interpolants.** Let $E$ be a real inner product space
+and let $e \in E$ with $\|e\| \le 1$. Let $G : \mathbb{R} \to \mathbb{R}$ be $C^p$ with
+$L$-Lipschitz $p$-th derivative, and let $B \ge 0$ satisfy $|G^{(j)}| \le B$ everywhere for
+$j \le p$. Let $\lambda \in (0, 1]$. Then the ridge function
+$f(y) = \lambda G(\langle e, y \rangle)$ is $C^p$, satisfies $f \ge -B$, and its derivatives of
+orders $0, \dots, p$ are Lipschitz continuous with constant $\max\{1, L, B\}$.
+
+The function $G$ is the output of the interpolation lemmas of
+`Numlib.Optimization.Complexity.SlowExample.HighOrder`. The Lipschitz conditions are
+`IteratedFDerivLipschitzOn` on the whole space. -/
 theorem ridge_const_mul_slow_bounds {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff ℝ p G) {L B lam : ℝ}
     (hB : 0 ≤ B)
     (hGL : ∀ s t, |iteratedDeriv p G s - iteratedDeriv p G t| ≤ L * |s - t|)
@@ -208,8 +240,10 @@ theorem ridge_const_mul_slow_bounds {G : ℝ → ℝ} {p : ℕ} (hG : ContDiff �
   rw [ridge_apply]
   nlinarith [(abs_le.1 h0).1, (abs_le.1 h0).2]
 
-/-- The Taylor measure over the ball of radius `δ` of a decrement `d ↦ a ⟪e, d⟫^q` (`a ≥ 0`,
-`‖e‖ = 1`) is `a δ^q`. -/
+/-- Let $E$ be a real inner product space, let $e \in E$ with $\|e\| = 1$, and let
+$a, \delta \ge 0$. If the Taylor decrement of order $j$ of the derivative data $D$ is
+$\Delta T_j(d) = a \langle e, d \rangle^q$ for all $d$, then the Taylor measure of order $j$
+over the ball of radius $\delta$ is $\phi^\delta_j = a \delta^q$. -/
 theorem taylorMeasure_eq_mul_pow_of_inner_pow {D : FormalMultilinearSeries ℝ E ℝ} {j q : ℕ}
     {a δ : ℝ} (he : ‖e‖ = 1) (ha : 0 ≤ a) (hδ : 0 ≤ δ)
     (hdec : ∀ d, D.taylorDecrement j d = a * ⟪e, d⟫ ^ q) :
@@ -221,7 +255,12 @@ section Spike
 
 variable {p q : ℕ} {G : ℝ → ℝ} {x : E} {α : ℝ}
 
-/-- At a spike jet, `T_{f,p}(x, s) = G(a) - α t^q/q!` with `a = ⟪e, x⟫`, `t = ⟪e, s⟫`. -/
+/-- Let $G$ be $C^p$, let $1 \le q \le p$, and suppose that $G$ has a spike jet of order $q$ and
+value $\alpha$ at $a = \langle e, x \rangle$: $G^{(q)}(a) = -\alpha$ and $G^{(j)}(a) = 0$ for
+the other $j \in \{1, \dots, p\}$. Then the Taylor polynomial of degree $p$ of the ridge
+function $f = G(\langle e, \cdot \rangle)$ at $x$ is
+$$T_{f,p}(x, s) = G(a) - \frac{\alpha t^q}{q!}, \qquad t = \langle e, s \rangle.$$
+-/
 theorem taylorPolynomial_ridge_spike (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) (s : E) :
     taylorPolynomial (ridge G e) p x s = G ⟪e, x⟫ - α * ⟪e, s⟫ ^ q / q ! := by
@@ -232,7 +271,14 @@ theorem taylorPolynomial_ridge_spike (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp
     rw [hd.2 c (by omega) (by simp at hc; omega) hc'.2]
     simp
 
-/-- At a spike jet the model (4.1.2) is `G(a) + negMonomialRegModel p q σ α t`. -/
+/-- Let $E$ be spanned by $e$, in the sense that $\|s\| = |\langle e, s \rangle|$ for all $s \in E$.
+Let $G$ be $C^p$, let $1 \le q \le p$, and suppose that $G$ has a spike jet of order $q$ and
+value $\alpha$ at $a = \langle e, x \rangle$. Then for every $\sigma$, the regularized model
+(4.1.2) of [cartis2022evaluation] of the ridge function $f = G(\langle e, \cdot \rangle)$ at $x$
+is
+$$m(s) = G(a) - \frac{\alpha t^q}{q!} + \frac{\sigma |t|^{p+1}}{(p+1)!}, \qquad t = \langle e, s
+  \rangle.$$
+-/
 theorem regularizedModel_ridge_spike (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) (hG : ContDiff ℝ p G)
     (hq : 1 ≤ q) (hqp : q ≤ p) (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) (σ : ℝ) :
     regularizedModel (ftaylorSeries ℝ (ridge G e) x) p σ =
@@ -243,6 +289,10 @@ theorem regularizedModel_ridge_spike (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|)
     negMonomialRegModel]
   ring
 
+/-- Let $G$ be $C^p$, let $1 \le q \le p$, and suppose that $G$ has a spike jet of order $q$ and
+value $\alpha$ at $\langle e, x \rangle$. Then the Taylor decrement of order $p$ of the ridge
+function $G(\langle e, \cdot \rangle)$ at $x$ is $\Delta T_p(s) = \alpha \langle e, s \rangle^q
+/ q!$. -/
 theorem taylorDecrement_ridge_spike (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) (s : E) :
     (ftaylorSeries ℝ (ridge G e) x).taylorDecrement p s = α * ⟪e, s⟫ ^ q / q ! := by
@@ -253,8 +303,11 @@ theorem taylorDecrement_ridge_spike (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp 
   rw [zero_pow (by omega)]
   ring
 
-/-- Below the order `q` of a spike jet (`G^{(i)}(⟪e, x⟫) = 0` for `1 ≤ i < q`) the Taylor
-decrements of the ridge function `ridge G e` at `x` vanish. -/
+/-- Below the order of a spike jet the Taylor decrements vanish. Let $G$ be $C^q$, suppose that $G$
+has a spike jet of order $q$ and value $\alpha$ at $\langle e, x \rangle$ (so
+$G^{(i)}(\langle e, x \rangle) = 0$ for $1 \le i < q$), and let $j < q$. Then the Taylor
+decrement of order $j$ of the ridge function $G(\langle e, \cdot \rangle)$ at $x$ is
+$\Delta T_j(s) = 0$ for every $s$. -/
 theorem taylorDecrement_ridge_of_lt {j : ℕ} (hG : ContDiff ℝ q G) (hjq : j < q)
     (hd : IsSpikeJetOf q G q ⟪e, x⟫ α) (s : E) :
     (ftaylorSeries ℝ (ridge G e) x).taylorDecrement j s = 0 := by
@@ -275,8 +328,13 @@ section Run
 
 variable {p q : ℕ} {G : ℝ → ℝ}
 
-/-- The derivatives of the model at a spike jet: `∇^j m(s)[d]^j = m_1^{(j)}(t) ⟪e, d⟫^j` with
-`m_1 = negMonomialRegModel p q σ α`, `t = ⟪e, s⟫`, for `1 ≤ j ≤ p`. -/
+/-- The derivatives of the model at a spike jet. Let $E$ be spanned by $e$, in the sense that
+$\|s\| = |\langle e, s \rangle|$ for all $s$. Let $G$ be $C^p$, let $1 \le q \le p$, suppose
+that $G$ has a spike jet of order $q$ and value $\alpha$ at $\langle e, x \rangle$, and let $m$
+be the regularized model of $G(\langle e, \cdot \rangle)$ at $x$ with weight $\sigma$. Then for
+$1 \le j \le p$,
+$$\nabla^j m(s)[d]^j = m_1^{(j)}(\langle e, s \rangle) \, \langle e, d \rangle^j,$$
+where $m_1(t) = -\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$. -/
 theorem iteratedFDeriv_regularizedModel_ridge_spike (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|)
     (hG : ContDiff ℝ p G) (hq : 1 ≤ q)
     (hqp : q ≤ p) {x : E} {α : ℝ} (hd : IsSpikeJetOf p G q ⟪e, x⟫ α)
@@ -287,9 +345,14 @@ theorem iteratedFDeriv_regularizedModel_ridge_spike (hspan : ∀ s : E, ‖s‖ 
     (contDiff_const.add (contDiff_negMonomialRegModel p q σ α)) (by exact_mod_cast hjp),
     iteratedDeriv_const_add (by omega)]
 
-/-- The Taylor decrements of the model at a spike jet, at a point `t e` along the ridge, are the
-one-dimensional Taylor decrements of `negMonomialRegModel p q σ α` at `t` along `⟪e, d⟫`
-(orders `ℓ ≤ p`). -/
+/-- The Taylor decrements of the model at a spike jet. Let $\|e\| = 1$ and let $E$ be spanned by
+$e$, in the sense that $\|s\| = |\langle e, s \rangle|$ for all $s$. Let $G$ be $C^p$, let
+$1 \le q \le p$, suppose that $G$ has a spike jet of order $q$ and value $\alpha$ at
+$\langle e, x \rangle$, and let $m$ be the regularized model of $G(\langle e, \cdot \rangle)$ at
+$x$ with weight $\sigma$. Then for every order $\ell \le p$, every $t \in \mathbb{R}$ and every
+$d \in E$, the Taylor decrement of order $\ell$ of $m$ at $te$ along $d$ equals the Taylor
+decrement of order $\ell$ of $m_1(t) = -\alpha t^q/q! + \sigma |t|^{p+1}/(p+1)!$ at $t$ along
+$\langle e, d \rangle$. -/
 theorem taylorDecrement_regularizedModel_ridge_spike (he : ‖e‖ = 1)
     (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) (hG : ContDiff ℝ p G) (hq : 1 ≤ q) (hqp : q ≤ p) {x : E}
     {α σ : ℝ} (hd : IsSpikeJetOf p G q ⟪e, x⟫ α) {ℓ : ℕ} (hℓp : ℓ ≤ p) (t : ℝ) (d : E) :
@@ -305,13 +368,19 @@ theorem taylorDecrement_regularizedModel_ridge_spike (he : ‖e‖ = 1)
     _ (fun _ => d) = _
   rw [iteratedFDeriv_regularizedModel_ridge_spike hspan hG hq hqp hd σ hi1 (hiℓ.trans hℓp), hee]
 
-/-- **The model at a gradient spike is approximately critical at its minimizer** (Example 12.1.3
-along a ridge): if `G'(⟪e, x⟫) = -β < 0` and the derivatives of orders `2, …, p` vanish, then the
-Taylor decrements of order `ℓ ∈ [1, p]` of the model `m_x` of `ridge G e` (weight `σ > 0`) at
-the point `t* e`, `t* = (β p!/σ)^{1/p}` (the global minimizer of `m_x`,
-`Optimization.isMinOn_neg_monomial_add_regularization`), are
-nonpositive on the ball of radius `δ`, provided `ℓ ≤ 2` or `(p - 1) δ ≤ 3 t*`
-(`Optimization.taylorMeasure_linearRegModel_eq_zero`). -/
+/-- **The model at a gradient spike is approximately critical at its minimizer.** Let $\|e\| = 1$
+and let $E$ be spanned by $e$, in the sense that $\|s\| = |\langle e, s \rangle|$ for all $s$.
+Let $p \ge 1$, let $G$ be $C^p$, and let $\beta > 0$ and $\sigma > 0$. Suppose that
+$G'(\langle e, x \rangle) = -\beta$ and that the derivatives of orders $2, \dots, p$ of $G$
+vanish at $\langle e, x \rangle$. Let $m$ be the regularized model of
+$G(\langle e, \cdot \rangle)$ at $x$ with weight $\sigma$, and let
+$t_* = (\beta p!/\sigma)^{1/p}$. Let $\ell \in \{1, \dots, p\}$ and suppose that $\ell \le 2$ or
+$(p - 1)\delta \le 3 t_*$. Then for every $d$ with $\|d\| \le \delta$, the Taylor decrement of
+order $\ell$ of $m$ at $t_* e$ along $d$ is nonpositive.
+
+This is Example 12.1.3 of [cartis2022evaluation] along a ridge. The point $t_* e$ is the global
+minimizer of $m$ (`Optimization.isMinOn_neg_monomial_add_regularization`). The one-dimensional
+statement is `Optimization.taylorMeasure_linearRegModel_eq_zero`. -/
 theorem taylorDecrement_regularizedModel_ridge_linear_nonpos (he : ‖e‖ = 1)
     (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) (hp : 1 ≤ p) (hG : ContDiff ℝ p G) {x : E} {β σ δ : ℝ}
     (hβ : 0 < β) (hσ : 0 < σ) (hd : IsSpikeJetOf p G 1 ⟪e, x⟫ β) {ℓ : ℕ} (hℓ : ℓ ∈ Finset.Icc 1 p)
@@ -343,10 +412,17 @@ theorem taylorDecrement_regularizedModel_ridge_linear_nonpos (he : ‖e‖ = 1)
   rw [iteratedFDeriv_regularizedModel_ridge_spike hspan hG le_rfl hp hd σ hi1
     (hip.trans (Finset.mem_Icc.1 hℓ).2), hee]
 
-/-- **Global model minimizers are admissible steps** ([cartis2022evaluation], Step 2 of
-Algorithm 4.1.1): a global minimizer `s` of the model (4.1.2) with `m(s) < m(0)` satisfies (4.1.10),
-(4.1.11) (`∇m(s) = 0`) and, if `q ≥ 2` (so `p ≥ 2`), (4.1.12) (`∇²m(s) ⪰ 0`); for `q ≥ 3` the
-condition (4.1.13) is an extra hypothesis. -/
+/-- **Global model minimizers are admissible steps.** Let $f : E \to \mathbb{R}$, let $P$ be the
+parameters of ARp, and let $q$ be the order of criticality sought, with $p \ge 2$ if $q \ge 2$.
+Let $m$ be the regularized model (4.1.2) of $f$ at $x$ with weight $\sigma$, and let $s$ be a
+global minimizer of $m$ with $m(s) < m(0)$. If $q \ge 3$, suppose also that
+$|\nabla^3 m(s)[d]^3| \le \theta_3 \|s\|^{p-2}$ for every $d$ in the set (4.1.14), that is, for
+every unit vector $d$ with $|\nabla^2 m(s)[d]^2| \le \theta_2 \|s\|^{p-1}$. Then $s$ is an
+admissible step of ARp: it satisfies (4.1.10), (4.1.11) ($\nabla m(s) = 0$), (4.1.12)
+($\nabla^2 m(s) \succeq 0$) if $q \ge 2$, and (4.1.13) if $q \ge 3$.
+
+This is Step 2 of Algorithm 4.1.1 of [cartis2022evaluation]. The admissible steps are
+`Optimization.IsARpStep`. -/
 theorem isARpStep_of_isMinOn {f : E → ℝ} {p q : ℕ} (P : ARpParams)
     {x s : E} {σ : ℝ} (hqp : 2 ≤ q → 2 ≤ p)
     (hmin : IsMinOn (regularizedModel (ftaylorSeries ℝ f x) p σ) univ s)
@@ -368,14 +444,30 @@ theorem isARpStep_of_isMinOn {f : E → ℝ} {p q : ℕ} (P : ARpParams)
     have : 0 ≤ P.θ₂ * ‖s‖ ^ (p - 1) := mul_nonneg P.θ₂_pos.le (by positivity)
     linarith
 
-/-- **ARp runs on one-dimensional spike data** (the mechanism of Theorem 4.1.6). Let `G` be `C^p`
-with spike jets `G^{(q)}(x_k) = -α_k < 0` (other derivatives of orders `1, …, p` zero) at points
-`x_k` (`k < K`, `1 ≤ q ≤ p`), spaced by the global minimizers `t_k` of the one-dimensional models
-`-α_k t^q/q! + σ₀ |t|^{p+1}/(p+1)!`, with `G(x_{k+1}) = G(x_k) - α_k t_k^q/q!`. If a test holds
-at `k ≤ K` exactly when `k = K`, then the points `x_k e` form an ARp run of order `r` on
-`ridge G e` with this test, `σ_k = σ₀`, global model minimizers as steps and `ρ_k = 1`, which
-terminates exactly at `K`. (For `r = 3`, (4.1.13) is guaranteed by `q ≤ 3 ≤ p` and
-`σ₀ ≤ (p-2)! θ₃`.) -/
+/-- **ARp runs on one-dimensional spike data.** Let $\|e\| = 1$ and let $E$ be spanned by $e$, in
+the sense that $\|s\| = |\langle e, s \rangle|$ for all $s$. Let $P$ be the parameters of ARp
+with initial weight $\sigma_0$, let $r$ be the order of criticality sought, and let
+$1 \le q \le p$. Suppose that $p \ge 2$ if $r \ge 2$, and that $q \le 3 \le p$ and
+$\sigma_0 \le (p-2)! \, \theta_3$ if $r \ge 3$. Let $G$ be $C^p$, and let $K \in \mathbb{N}$,
+points $x_0, \dots, x_K \in \mathbb{R}$ and values $\alpha_k > 0$ satisfy, for every $k < K$:
+
+* $G$ has a spike jet of order $q$ and value $\alpha_k$ at $x_k$: $G^{(q)}(x_k) = -\alpha_k$ and
+  $G^{(j)}(x_k) = 0$ for the other $j \in \{1, \dots, p\}$;
+* $x_{k+1} = x_k + t_k$, where $t_k$ is the global minimizer of $t \mapsto -\alpha_k t^q/q! +
+  \sigma_0 |t|^{p+1}/(p+1)!$;
+* $G(x_{k+1}) = G(x_k) - \alpha_k t_k^q/q!$.
+
+Let $\mathrm{test}$ be a predicate such that, for $k \le K$, $\mathrm{test}(k)$ holds exactly
+when $k = K$. Then the points $x_k e$, the steps $t_k e$ and the weights $\sigma_k = \sigma_0$
+form a run of ARp of order $r$ on the ridge function $G(\langle e, \cdot \rangle)$ with this
+test, the run terminates exactly at iteration $K$, and for every $k < K$ the step $t_k e$ is a
+global minimizer of the model and the ratio is $\rho_k = 1$.
+
+This is the mechanism of Theorem 4.1.6 of [cartis2022evaluation]. For $r = 3$, the hypotheses
+$q \le 3 \le p$ and $\sigma_0 \le (p-2)! \, \theta_3$ guarantee the condition (4.1.13). The
+minimizer $t_k$ is `Optimization.monomialMinimizer p q P.σ₀ (α k)`, the run is
+`Optimization.IsARpRun`, termination at $K$ is `Optimization.IsFirstHit test K`, and the ratio
+is `Optimization.taylorRatio`. -/
 theorem arp_ridge_run (P : ARpParams) (he : ‖e‖ = 1) (hspan : ∀ s : E, ‖s‖ = |⟪e, s⟫|) {r : ℕ}
     (hq : 1 ≤ q) (hqp : q ≤ p)
     (hrp : 2 ≤ r → 2 ≤ p) (hthird : 3 ≤ r → q ≤ 3 ∧ 3 ≤ p ∧ P.σ₀ ≤ (p - 2)! * P.θ₃)

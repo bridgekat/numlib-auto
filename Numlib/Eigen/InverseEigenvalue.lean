@@ -9,47 +9,69 @@ import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
-# The first-row resolvent and the eigenvector–eigenvalue identity
+# The resolvent in an eigenbasis and the eigenvector–eigenvalue identity
 
-For a matrix diagonalized by a unitary `Q`, `Qᴴ A Q = diag(d)`, every entry of the resolvent is a
-partial-fraction sum over the rows of `Q`, and every entry of the adjugate of `A - λ` is the
-corresponding polynomial:
+Let $A$ be a square matrix over a field with an involution, and let $Q$ be unitary with
+$Q^H A Q = \operatorname{diag}(d)$. Every entry of the resolvent $(A - \lambda I)^{-1}$ is then a
+partial-fraction sum over the rows of $Q$, and every entry of the adjugate of $A - \lambda I$ is the
+corresponding polynomial in $\lambda$. For a matrix of order $N + 1$ with indices $0, \dots, N$,
+write $A'$ for the trailing principal submatrix, obtained by deleting row $0$ and column $0$;
+[golub2013matrix] writes it $A(2{:}n, 2{:}n)$. Cramer's rule gives $((A - \lambda I)^{-1})_{00} =
+\det(A' - \lambda I) / \det(A - \lambda I)$. Comparing the two expressions for the $(0, 0)$ entry of
+the adjugate at $\lambda = d_i$ gives the **eigenvector–eigenvalue identity**: for a Hermitian $A$
+with eigenvalues $\lambda_j$ and $A'$ with eigenvalues $\mu_j$,
+$$|Q_{0i}|^2 \prod_{j \neq i} (\lambda_j - \lambda_i) = \prod_j (\mu_j - \lambda_i).$$
+Denton, Parke, Tao and Zhang call it by this name; it is equation (8.4.12) of [golub2013matrix]
+§8.4.6 read in reverse.
 
-* `Matrix.inv_sub_smul_one_apply_eq_sum`: `((A - λ)⁻¹) j k = ∑ i, Q j i conj(Q k i) / (d i - λ)`,
-  the book's (8.4.10) at `j = k = 0` ([golub2013matrix] §8.4.6), with its Hermitian form
-  `Matrix.IsHermitian.inv_sub_apply_eq_sum`;
-* `Matrix.inv_sub_apply_zero_zero_eq_det_div`: Cramer's rule at the corner,
-  `((A - λ)⁻¹) 0 0 = det (A(2:n, 2:n) - λ) / det (A - λ)`;
-* `Matrix.mul_star_mul_prod_eq_det_submatrix`: the two combined without a division, which holds at
-  every `λ` and so may be evaluated at an eigenvalue: `Q 0 i conj(Q 0 i) ∏_{j ≠ i} (d j - d i)` is
-  `det (A(2:n, 2:n) - d i)`. With the eigenvalues `μ` of the trailing block this is the
-  **eigenvector–eigenvalue identity** `Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq`,
-  `|Q 0 i|² ∏_{j ≠ i} (λ_j - λ_i) = ∏_j (μ_j - λ_i)` (Denton, Parke, Tao and Zhang call it by that
-  name; it is [golub2013matrix] (8.4.12) read in reverse);
-* `Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`: for strictly interlacing data
-  `λ_1 > μ_1 > λ_2 > ⋯ > μ_{n-1} > λ_n` the right-hand sides of (8.4.12) are positive and sum to
-  `1` ([golub2013matrix] P8.4.7), so they are the squares of the entries of a unit vector.
+For strictly interlacing data $\lambda_0 > \mu_0 > \lambda_1 > \dots > \mu_{N-1} > \lambda_N$, the
+ratios $\prod_j (\mu_j - \lambda_k) / \prod_{j \neq k} (\lambda_j - \lambda_k)$ are positive and sum
+to $1$ (Problem P8.4.7 of [golub2013matrix]). So they are the squares of the entries of a unit
+vector $d$. This is the basis of the inverse tridiagonal eigenproblem of [golub2013matrix] §8.4.6,
+after G. H. Golub, "Some modified matrix eigenvalue problems", SIAM Review 15 (1973): a real
+symmetric tridiagonal matrix with eigenvalues $\lambda$ whose trailing principal submatrix has
+eigenvalues $\mu$ is obtained by tridiagonalizing $W \Lambda W^T$, for an orthogonal $W$ with first
+row $d$.
 
-The last fact is what the inverse tridiagonal eigenproblem of [golub2013matrix] §8.4.6 (G. H.
-Golub, "Some modified matrix eigenvalue problems", SIAM Review 15 (1973)) rests on: given strictly
-interlacing `λ` and `μ`, a symmetric tridiagonal matrix with eigenvalues `λ` whose trailing
-principal submatrix has eigenvalues `μ` is obtained by tridiagonalizing `W Λ Wᵀ` for an orthogonal
-`W` with first row `d`. This is `Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace`,
-with `W` from `Matrix.exists_mem_unitaryGroup_mulVec_single_eq` (a unitary with a prescribed
-column, a scaled Householder reflector) and the tridiagonalization `Matrix.hessenbergReduce`, whose
-unitary fixes `e₀` (`Matrix.hessenbergQ_apply_zero`).
+## Main results
+
+* `Matrix.inv_sub_smul_one_apply_eq_sum`: if $Q^H A Q = \operatorname{diag}(d)$ with $Q$ unitary and
+  $\lambda \neq d_i$ for all $i$, then $((A - \lambda I)^{-1})_{jk} = \sum_i Q_{ji}
+  \overline{Q_{ki}} / (d_i - \lambda)$; the Hermitian form is
+  `Matrix.IsHermitian.inv_sub_apply_eq_sum`.
+* `Matrix.adjugate_sub_smul_one_apply_eq_sum`: the polynomial form $\operatorname{adj}(A - \lambda
+  I)_{jk} = \sum_i Q_{ji} \overline{Q_{ki}} \prod_{l \neq i} (d_l - \lambda)$, valid for every
+  $\lambda$.
+* `Matrix.inv_sub_apply_zero_zero_eq_det_div`: $((A - \lambda I)^{-1})_{00} = \det(A' - \lambda I) /
+  \det(A - \lambda I)$.
+* `Matrix.mul_star_mul_prod_eq_det_submatrix`: $Q_{0i} \overline{Q_{0i}} \prod_{j \neq i} (d_j -
+  d_i) = \det(A' - d_i I)$.
+* `Matrix.IsHermitian.norm_sq_eigenvector_mul_prod_eq`: the eigenvector–eigenvalue identity.
+* `Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`: the interlacing ratios are positive and sum
+  to $1$.
+* `Matrix.exists_isTridiagonal_eigenvalues_eq_of_strictInterlace`: for strictly interlacing
+  $\lambda$ and $\mu$ there is a real symmetric tridiagonal $T$ with eigenvalues $\lambda$ whose
+  trailing principal submatrix has eigenvalues $\mu$.
+
+## Proof outline
+
+The eigenvector–eigenvalue identity comes from the adjugate (`Matrix.adjugate_mul_distrib`,
+`Matrix.adjugate_diagonal`). It is an identity of polynomials in $\lambda$, evaluated directly at
+$\lambda = \lambda_i$, so no limit and no interpolation argument is needed. The positivity and the
+sum rule of the interlacing ratios come from Lagrange interpolation
+(`Lagrange.leadingCoeff_eq_sum`). The tridiagonal matrix is built with a unitary that has a
+prescribed column, `Matrix.exists_mem_unitaryGroup_mulVec_single_eq` (a scaled Householder
+reflector), and the Householder tridiagonalization `Matrix.hessenbergReduce`, whose unitary fixes
+$e_0$ (`Matrix.hessenbergQ_apply_zero`).
 
 ## Implementation notes
 
-The book indexes the first *column* of `Q` in `Qᵀ Λ Q = T`; with `T = Qᵀ Λ Q` the eigenvectors of
-`T` are the rows of `Q`, so the book's `Q(:, 1)` is the first row of the eigenvector matrix of `T`.
-The statements here are phrased on the eigenvector matrix of `A` itself, whose first row is
-`fun i => Q 0 i`.
-
-The route through the adjugate (`Matrix.adjugate_mul_distrib`, `Matrix.adjugate_diagonal`) gives
-the eigenvector–eigenvalue identity as an identity of polynomials in `λ` evaluated directly at
-`λ = λ_i`, with no limiting or polynomial-interpolation argument; the positivity and the sum rule
-of the interlacing ratios are Lagrange interpolation (`Lagrange.leadingCoeff_eq_sum`).
+* Indices start at $0$, so the first row and the first column of [golub2013matrix] are row $0$ and
+  column $0$ here.
+* [golub2013matrix] works with the first *column* of $Q$ in $Q^T \Lambda Q = T$. With
+  $T = Q^T \Lambda Q$ the eigenvectors of $T$ are the rows of $Q$, so this column is the first row
+  of the eigenvector matrix of $T$. The statements here use the eigenvector matrix of $A$ itself,
+  whose first row is `fun i => Q 0 i`.
 -/
 
 open Finset Polynomial
@@ -60,18 +82,22 @@ section Unitary
 
 variable {K : Type*} [Field K] [StarRing K] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The inverse of a unitary conjugate is the unitary conjugate of the inverse:
-`(Q M Qᴴ)⁻¹ = Q M⁻¹ Qᴴ` for `Q` unitary. `Matrix.mul_inv_rev` holds without invertibility, and
-`Q⁻¹ = Qᴴ`. -/
+/-- Let $Q$ be unitary and let $M$ be any square matrix. Then $(Q M Q^H)^{-1} = Q M^{-1} Q^H$.
+
+Here $M^{-1}$ is the Lean inverse `Matrix.inv`, which is $0$ for a singular matrix; the identity
+holds without invertibility because `Matrix.mul_inv_rev` does and $Q^{-1} = Q^H$. -/
 theorem inv_mul_mul_star_of_mem_unitaryGroup {Q : Matrix n n K} (hQ : Q ∈ unitaryGroup n K)
     (M : Matrix n n K) : (Q * M * star Q)⁻¹ = Q * M⁻¹ * star Q := by
   have h1 : Q⁻¹ = star Q := inv_eq_left_inv (mem_unitaryGroup_iff'.mp hQ)
   have h2 : (star Q)⁻¹ = Q := inv_eq_left_inv (mem_unitaryGroup_iff.mp hQ)
   rw [mul_inv_rev, mul_inv_rev, h1, h2, Matrix.mul_assoc]
 
-/-- The adjugate of a unitary conjugate is the unitary conjugate of the adjugate:
-`adj(Q M Qᴴ) = Q adj(M) Qᴴ` for `Q` unitary. `Matrix.adjugate_mul_distrib`, with
-`adj Q = det Q • Qᴴ`, `adj Qᴴ = det Qᴴ • Q` and `det Qᴴ det Q = 1`. -/
+/-- Let $Q$ be unitary and let $M$ be any square matrix over a field with an involution. Then the
+adjugate satisfies
+$$\operatorname{adj}(Q M Q^H) = Q \operatorname{adj}(M) Q^H.$$
+
+The proof applies `Matrix.adjugate_mul_distrib` with $\operatorname{adj} Q = \det Q \cdot Q^H$,
+$\operatorname{adj} Q^H = \det Q^H \cdot Q$ and $\det Q^H \det Q = 1$. -/
 theorem adjugate_mul_mul_star_of_mem_unitaryGroup {Q : Matrix n n K}
     (hQ : Q ∈ unitaryGroup n K) (M : Matrix n n K) :
     adjugate (Q * M * star Q) = Q * adjugate M * star Q := by
@@ -91,8 +117,9 @@ theorem adjugate_mul_mul_star_of_mem_unitaryGroup {Q : Matrix n n K}
 
 variable {A Q : Matrix n n K} {d : n → K}
 
-/-- A matrix diagonalized by a unitary `Q`, `Qᴴ A Q = diag(d)`, is `Q diag(d) Qᴴ`, and its shift by
-`λ` is `Q diag(d - λ) Qᴴ`. -/
+/-- If $Q$ is unitary and $Q^H A Q = \operatorname{diag}(d)$, then for every scalar $c$
+$$A - c I = Q \operatorname{diag}(d_i - c) Q^H.$$
+-/
 theorem sub_smul_one_eq_mul_diagonal_mul_star (hQ : Q ∈ unitaryGroup n K)
     (hQA : star Q * A * Q = diagonal d) (c : K) :
     A - c • 1 = Q * diagonal (fun i => d i - c) * star Q := by
@@ -105,9 +132,12 @@ theorem sub_smul_one_eq_mul_diagonal_mul_star (hQ : Q ∈ unitaryGroup n K)
   rw [hD, Matrix.mul_sub, Matrix.sub_mul, ← hA, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
     hQQ']
 
-/-- **The resolvent through an eigenbasis**: if `Qᴴ A Q = diag(d)` with `Q` unitary and `λ` is not
-a `d i`, then `((A - λ)⁻¹) j k = ∑ i, Q j i conj(Q k i) / (d i - λ)`. At `j = k` this is the
-partial-fraction expansion `∑ i, |Q j i|² / (d i - λ)` of [golub2013matrix] (8.4.10). -/
+/-- **The resolvent in an eigenbasis.** Let $Q$ be unitary with $Q^H A Q = \operatorname{diag}(d)$,
+and let $c$ be a scalar with $d_i \neq c$ for all $i$. Then for all indices $j$ and $k$
+$$((A - c I)^{-1})_{jk} = \sum_i \frac{Q_{ji} \overline{Q_{ki}}}{d_i - c}.$$
+
+At $j = k$ this is the partial-fraction expansion $\sum_i |Q_{ji}|^2 / (d_i - c)$ of equation
+(8.4.10) of [golub2013matrix]. The conjugate $\overline{Q_{ki}}$ is `star (Q k i)`. -/
 theorem inv_sub_smul_one_apply_eq_sum (hQ : Q ∈ unitaryGroup n K)
     (hQA : star Q * A * Q = diagonal d) {c : K} (hc : ∀ i, d i ≠ c) (j k : n) :
     (A - c • 1)⁻¹ j k = ∑ i, Q j i * star (Q k i) / (d i - c) := by
@@ -121,9 +151,13 @@ theorem inv_sub_smul_one_apply_eq_sum (hQ : Q ∈ unitaryGroup n K)
   rw [mul_diagonal, star_apply, div_eq_mul_inv]
   ring
 
-/-- **The adjugate through an eigenbasis**: if `Qᴴ A Q = diag(d)` with `Q` unitary then, for every
-`λ`, `adj(A - λ) j k = ∑ i, Q j i conj(Q k i) ∏_{l ≠ i} (d l - λ)`. The polynomial form of
-`Matrix.inv_sub_smul_one_apply_eq_sum`, valid at the eigenvalues too. -/
+/-- **The adjugate in an eigenbasis.** Let $Q$ be unitary with $Q^H A Q = \operatorname{diag}(d)$.
+Then for every scalar $c$ and all indices $j$ and $k$
+$$\operatorname{adj}(A - c I)_{jk} = \sum_i Q_{ji} \overline{Q_{ki}} \prod_{l \neq i} (d_l -
+  c).$$
+
+This is the polynomial form of `Matrix.inv_sub_smul_one_apply_eq_sum`. Unlike that statement, it
+also holds when $c$ is one of the $d_i$. -/
 theorem adjugate_sub_smul_one_apply_eq_sum (hQ : Q ∈ unitaryGroup n K)
     (hQA : star Q * A * Q = diagonal d) (c : K) (j k : n) :
     adjugate (A - c • 1) j k = ∑ i, Q j i * star (Q k i) * ∏ l ∈ univ.erase i, (d l - c) := by
@@ -139,17 +173,22 @@ section Cramer
 
 variable {K : Type*} [Field K] {N : ℕ}
 
-/-- The trailing principal submatrix of a shift is the shift of the trailing principal submatrix. -/
+/-- For a matrix $A$ of order $N + 1$ and a scalar $c$, the trailing principal submatrix of
+$A - c I$ (rows and columns $1, \dots, N$) is $A' - c I$, where $A'$ is the trailing principal
+submatrix of $A$. -/
 theorem submatrix_succ_sub_smul_one (A : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (c : K) :
     (A - c • 1).submatrix Fin.succ Fin.succ = A.submatrix Fin.succ Fin.succ - c • 1 := by
   ext i j
   simp [Matrix.one_apply, Fin.succ_inj]
 
-/-- **Cramer's rule at the corner** ([golub2013matrix] §8.4.6): the `(0, 0)` entry of the resolvent
-is a ratio of characteristic determinants,
-`((A - λ)⁻¹) 0 0 = det (A(2:n, 2:n) - λ) / det (A - λ)`. No hypothesis is needed: at an
-eigenvalue both sides are `0` (`Matrix.inv_def` and `x / 0 = 0`). The `(0, 0)` cofactor is the
-trailing principal minor (`Matrix.adjugate_fin_succ_eq_det_submatrix`). -/
+/-- **Cramer's rule at the corner.** Let $A$ be a matrix of order $N + 1$ over a field and let $A'$
+be its trailing principal submatrix. Then for every scalar $c$
+$$((A - c I)^{-1})_{00} = \frac{\det(A' - c I)}{\det(A - c I)}.$$
+
+This is used in [golub2013matrix] §8.4.6. No hypothesis on $c$ is needed: when
+$\det(A - c I) = 0$, both sides are $0$, because the Lean inverse of a singular matrix is $0$
+(`Matrix.inv_def`) and $x / 0 = 0$. The $(0, 0)$ cofactor is the trailing principal minor
+(`Matrix.adjugate_fin_succ_eq_det_submatrix`). -/
 theorem inv_sub_apply_zero_zero_eq_det_div (A : Matrix (Fin (N + 1)) (Fin (N + 1)) K) (c : K) :
     (A - c • 1)⁻¹ 0 0 = det (A.submatrix Fin.succ Fin.succ - c • 1) / det (A - c • 1) := by
   rw [inv_def, Matrix.smul_apply, adjugate_fin_succ_eq_det_submatrix, Ring.inverse_eq_inv',
@@ -163,12 +202,14 @@ section EigenvectorEigenvalue
 variable {K : Type*} [Field K] [StarRing K] {N : ℕ} {A Q : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
   {d : Fin (N + 1) → K}
 
-/-- **The eigenvector–eigenvalue identity**, determinant form: if `Qᴴ A Q = diag(d)` with `Q`
-unitary, then for every `i`,
-`Q 0 i conj(Q 0 i) ∏_{j ≠ i} (d j - d i) = det (A(2:n, 2:n) - d i)`. The `(0, 0)` entry of
-`adj(A - d i)` computed twice: through the eigenbasis
-(`Matrix.adjugate_sub_smul_one_apply_eq_sum`, where every term but the `i`-th carries the factor
-`d i - d i = 0`) and as the trailing principal minor
+/-- **The eigenvector–eigenvalue identity, determinant form.** Let $A$ be a matrix of order $N + 1$
+over a field with an involution, let $A'$ be its trailing principal submatrix, and let $Q$ be
+unitary with $Q^H A Q = \operatorname{diag}(d)$. Then for every index $i$
+$$Q_{0i} \overline{Q_{0i}} \prod_{j \neq i} (d_j - d_i) = \det(A' - d_i I).$$
+
+The proof computes the $(0, 0)$ entry of $\operatorname{adj}(A - d_i I)$ in two ways: in the
+eigenbasis (`Matrix.adjugate_sub_smul_one_apply_eq_sum`, where every term except the $i$-th has
+the factor $d_i - d_i = 0$), and as the trailing principal minor
 (`Matrix.adjugate_fin_succ_eq_det_submatrix`). -/
 theorem mul_star_mul_prod_eq_det_submatrix (hQ : Q ∈ unitaryGroup (Fin (N + 1)) K)
     (hQA : star Q * A * Q = diagonal d) (i : Fin (N + 1)) :
@@ -189,10 +230,13 @@ namespace IsHermitian
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The determinant of a shifted Hermitian matrix is the product of its shifted eigenvalues,
-`det (M - c) = ∏ (λ_i - c)`: the characteristic polynomial `∏ (X - λ_i)` (Mathlib's
-`Matrix.IsHermitian.charpoly_eq`) evaluated at `c`, up to the sign `(-1)^n` of
-`M - c = -(c - M)`. -/
+/-- Let $M$ be a Hermitian matrix with eigenvalues $\lambda_i$, over $\mathbb{R}$ or $\mathbb{C}$.
+Then for every scalar $c$
+$$\det(M - c I) = \prod_i (\lambda_i - c).$$
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. The proof evaluates the characteristic
+polynomial $\prod_i (X - \lambda_i)$ (`Matrix.IsHermitian.charpoly_eq`) at $c$ and corrects the
+sign $(-1)^n$ that comes from $M - c I = -(c I - M)$. -/
 theorem det_sub_smul_one_eq_prod {n : Type*} [Fintype n] [DecidableEq n] {M : Matrix n n 𝕜}
     (hM : M.IsHermitian) (c : 𝕜) : det (M - c • 1) = ∏ i, ((hM.eigenvalues i : 𝕜) - c) := by
   have h := congrArg (Polynomial.eval c) hM.charpoly_eq
@@ -203,10 +247,15 @@ theorem det_sub_smul_one_eq_prod {n : Type*} [Fintype n] [DecidableEq n] {M : Ma
   rw [hneg, det_neg, h, ← Finset.card_univ, ← Finset.prod_neg]
   simp [neg_sub]
 
-/-- The Hermitian form of `Matrix.inv_sub_smul_one_apply_eq_sum`, in Mathlib's eigenbasis: for a
-Hermitian `A` and a real `λ` that is not an eigenvalue,
-`((A - λ)⁻¹) j k = ∑ i, U j i conj(U k i) / (λ_i - λ)` with `U = hA.eigenvectorUnitary`
-([golub2013matrix] (8.4.10)). -/
+/-- Let $A$ be Hermitian, over $\mathbb{R}$ or $\mathbb{C}$, with eigenvalues $\lambda_i$ and
+unitary eigenvector matrix $U$, and let $c$ be a real number that is not an eigenvalue. Then for
+all indices $j$ and $k$
+$$((A - c I)^{-1})_{jk} = \sum_i \frac{U_{ji} \overline{U_{ki}}}{\lambda_i - c}.$$
+
+This is equation (8.4.10) of [golub2013matrix]. The matrix $U$ is
+`Matrix.IsHermitian.eigenvectorUnitary`, and the eigenvalues are
+`Matrix.IsHermitian.eigenvalues`. The statement is `Matrix.inv_sub_smul_one_apply_eq_sum` for
+this eigenbasis. -/
 theorem inv_sub_apply_eq_sum {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : ∀ i, hA.eigenvalues i ≠ c) (j k : n) :
     (A - (c : 𝕜) • 1)⁻¹ j k = ∑ i, (hA.eigenvectorUnitary : Matrix n n 𝕜) j i *
@@ -215,12 +264,17 @@ theorem inv_sub_apply_eq_sum {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix
   · exact hA.star_eigenvectorUnitary_mul_mul
   · exact_mod_cast h
 
-/-- **The eigenvector–eigenvalue identity** ([golub2013matrix] (8.4.12) read in reverse; Denton,
-Parke, Tao and Zhang): for a Hermitian `A` of order `N + 1` diagonalized by a unitary `Q`,
-`Qᴴ A Q = diag(l)`, and `μ` the eigenvalues of the trailing principal submatrix `A(2:n, 2:n)`,
-`|Q 0 i|² ∏_{j ≠ i} (l j - l i) = ∏_j (μ_j - l i)` for every `i`. The determinant form
-`Matrix.mul_star_mul_prod_eq_det_submatrix` with `det (A' - c) = ∏ (μ_j - c)`
-(`Matrix.IsHermitian.det_sub_smul_one_eq_prod`). -/
+/-- **The eigenvector–eigenvalue identity.** Let $A$ be a Hermitian matrix of order $N + 1$, over
+$\mathbb{R}$ or $\mathbb{C}$, and let $Q$ be unitary with $Q^H A Q = \operatorname{diag}(l)$ for
+real numbers $l_0, \dots, l_N$. Let $\mu_0, \dots, \mu_{N-1}$ be the eigenvalues of the trailing
+principal submatrix $A'$. Then for every index $i$
+$$|Q_{0i}|^2 \prod_{j \neq i} (l_j - l_i) = \prod_j (\mu_j - l_i).$$
+
+This is equation (8.4.12) of [golub2013matrix] read in reverse; Denton, Parke, Tao and Zhang
+call it the eigenvector–eigenvalue identity. The numbers $\mu_j$ are
+`Matrix.IsHermitian.eigenvalues` of the Hermitian matrix `A.submatrix Fin.succ Fin.succ`. The
+proof is `Matrix.mul_star_mul_prod_eq_det_submatrix` together with
+$\det(A' - c I) = \prod_j (\mu_j - c)$ (`Matrix.IsHermitian.det_sub_smul_one_eq_prod`). -/
 theorem norm_sq_eigenvector_mul_prod_eq {N : ℕ} {A Q : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜}
     (hA : A.IsHermitian) (hQ : Q ∈ unitaryGroup (Fin (N + 1)) 𝕜) {l : Fin (N + 1) → ℝ}
     (hQA : star Q * A * Q = diagonal fun i => (l i : 𝕜)) (i : Fin (N + 1)) :
@@ -232,14 +286,19 @@ theorem norm_sq_eigenvector_mul_prod_eq {N : ℕ} {A Q : Matrix (Fin (N + 1)) (F
 
 end IsHermitian
 
-/-- **The interlacing ratios are positive and sum to one** ([golub2013matrix] P8.4.7): for
-strictly interlacing `l : Fin (N + 1) → ℝ` and `μ : Fin N → ℝ`,
-`l 0 > μ 0 > l 1 > ⋯ > μ (N - 1) > l N` (the book's (8.4.7)), each
-`r k = ∏_j (μ_j - l_k) / ∏_{j ≠ k} (l_j - l_k)` is positive and `∑ r k = 1`. Positivity: pairing
-the `j`-th factor of the numerator with the factor of `l (k.succAbove j)` in the denominator, each
-quotient is a ratio of two positive numbers (`j < k`) or of two negative ones (`j ≥ k`). The sum
-is the leading coefficient `1` of `∏ (X - μ_j)` by Lagrange interpolation at the `l k`
-(`Lagrange.leadingCoeff_eq_sum`). -/
+/-- **The interlacing ratios are positive and sum to one.** Let $l_0, \dots, l_N$ and
+$\mu_0, \dots, \mu_{N-1}$ be real numbers that interlace strictly,
+$$l_0 > \mu_0 > l_1 > \mu_1 > \dots > \mu_{N-1} > l_N,$$
+as in (8.4.7) of [golub2013matrix]. Then each ratio
+$$r_k = \frac{\prod_j (\mu_j - l_k)}{\prod_{j \neq k} (l_j - l_k)}$$
+is positive, and $\sum_k r_k = 1$.
+
+This is Problem P8.4.7 of [golub2013matrix]. The interlacing is stated as $\mu_j < l_j$ and
+$l_{j+1} < \mu_j$ for all $j$. For positivity, pair the $j$-th factor of the numerator with the
+factor of $l_{j'}$ in the denominator, where $j'$ is the $j$-th index other than $k$
+(`Fin.succAbove`); each quotient is a ratio of two positive numbers ($j < k$) or of two negative
+numbers ($j \ge k$). The sum is the leading coefficient $1$ of $\prod_j (X - \mu_j)$, by
+Lagrange interpolation at the points $l_k$ (`Lagrange.leadingCoeff_eq_sum`). -/
 theorem prod_sub_div_prod_sub_pos_of_strictInterlace {N : ℕ} {l : Fin (N + 1) → ℝ}
     {μ : Fin N → ℝ} (h₁ : ∀ j, μ j < l j.castSucc) (h₂ : ∀ j, l j.succ < μ j) :
     (∀ k, 0 < (∏ j, (μ j - l k)) / ∏ j ∈ univ.erase k, (l j - l k)) ∧
@@ -278,9 +337,9 @@ theorem prod_sub_div_prod_sub_pos_of_strictInterlace {N : ℕ} {l : Fin (N + 1) 
         add_tsub_cancel_right] using this
     rw [hnum, hden, mul_div_mul_left _ _ (pow_ne_zero _ (by norm_num))]
 
-/-- The unit vector of square roots of the interlacing ratios: under strict interlacing
-([golub2013matrix] (8.4.7)), `d k = √(∏_j (μ_j - l_k) / ∏_{j ≠ k} (l_j - l_k))` has Euclidean
-length one (`Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`). -/
+/-- Under strict interlacing, the vector $d$ with entries $d_k = \sqrt{r_k}$, where $r_k$ are the
+interlacing ratios of `Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`, has Euclidean norm
+$1$. -/
 private theorem norm_sqrt_interlaceRatio {N : ℕ} {l : Fin (N + 1) → ℝ} {μ : Fin N → ℝ}
     (h₁ : ∀ j, μ j < l j.castSucc) (h₂ : ∀ j, l j.succ < μ j) :
     ‖(WithLp.toLp 2 (fun k => √((∏ j, (μ j - l k)) / ∏ j ∈ univ.erase k, (l j - l k))) :
@@ -290,19 +349,26 @@ private theorem norm_sqrt_interlaceRatio {N : ℕ} {l : Fin (N + 1) → ℝ} {μ
   refine Finset.sum_congr rfl fun k _ => ?_
   rw [PiLp.toLp_apply, Real.norm_eq_abs, sq_abs, Real.sq_sqrt (hpos k).le]
 
-/-- **Golub's inverse tridiagonal eigenproblem** ([golub2013matrix] §8.4.6, (8.4.7)–(8.4.9);
-G. H. Golub, "Some modified matrix eigenvalue problems", SIAM Review 15 (1973)): for strictly
-interlacing `l 0 > μ 0 > l 1 > ⋯ > μ (N - 1) > l N` there is a real symmetric tridiagonal `T` with
-characteristic polynomial `∏ (X - l i)` whose trailing principal submatrix `T(2:n, 2:n)` has
-characteristic polynomial `∏ (X - μ j)`.
+/-- **Golub's inverse tridiagonal eigenproblem.** Let $l_0, \dots, l_N$ and
+$\mu_0, \dots, \mu_{N-1}$ be real numbers that interlace strictly,
+$l_0 > \mu_0 > l_1 > \dots > \mu_{N-1} > l_N$. Then there is a real symmetric tridiagonal matrix
+$T$ of order $N + 1$ with
+$$\det(X I - T) = \prod_i (X - l_i), \qquad \det(X I - T') = \prod_j (X - \mu_j),$$
+where $T'$ is the trailing principal submatrix of $T$. So $T$ has the eigenvalues $l$, and $T'$
+has the eigenvalues $\mu$.
 
-The construction is the book's: `d` with `d k² = ∏_j (μ_j - l_k) / ∏_{j ≠ k} (l_j - l_k)` is a
-unit vector (`Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`); `W` orthogonal with first row
-`d` (`Matrix.exists_mem_unitaryGroup_mulVec_single_eq`); `T = Q₁ᵀ (W Λ Wᵀ) Q₁` the Householder
-tridiagonalization, whose `Q₁` fixes `e₀` (`Matrix.hessenbergQ_apply_zero`). Then `Q = Q₁ᵀ W`
-diagonalizes `T` with first row `d`, and the eigenvector–eigenvalue identity
-(`Matrix.mul_star_mul_prod_eq_det_submatrix`) gives `det (T(2:n, 2:n) - l k) = ∏_j (μ_j - l_k)` at
-the `N + 1` distinct points `l k`, which determines the degree-`N` characteristic polynomial. -/
+This is the problem of [golub2013matrix] §8.4.6, (8.4.7)–(8.4.9), after G. H. Golub, "Some
+modified matrix eigenvalue problems", SIAM Review 15 (1973). The interlacing is stated as
+$\mu_j < l_j$ and $l_{j+1} < \mu_j$ for all $j$, and the two conditions on $T$ are
+`Matrix.IsSymm` and `Matrix.IsTridiagonal`. The construction follows the source. The vector $d$
+with $d_k^2 = \prod_j (\mu_j - l_k) / \prod_{j \neq k} (l_j - l_k)$ is a unit vector
+(`Matrix.prod_sub_div_prod_sub_pos_of_strictInterlace`). Take $W$ orthogonal with first row $d$
+(`Matrix.exists_mem_unitaryGroup_mulVec_single_eq`) and let $T = Q_1^T (W \Lambda W^T) Q_1$ be
+the Householder tridiagonalization, whose $Q_1$ fixes $e_0$ (`Matrix.hessenbergQ_apply_zero`).
+Then $Q = Q_1^T W$ diagonalizes $T$ and has first row $d$. The eigenvector–eigenvalue identity
+(`Matrix.mul_star_mul_prod_eq_det_submatrix`) gives $\det(T' - l_k I) = \prod_j (\mu_j - l_k)$
+at the $N + 1$ distinct points $l_k$, and this determines the characteristic polynomial of $T'$,
+which has degree $N$. -/
 theorem exists_isTridiagonal_eigenvalues_eq_of_strictInterlace {N : ℕ} {l : Fin (N + 1) → ℝ}
     {μ : Fin N → ℝ} (h₁ : ∀ j, μ j < l j.castSucc) (h₂ : ∀ j, l j.succ < μ j) :
     ∃ T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ, T.IsSymm ∧ T.IsTridiagonal ∧

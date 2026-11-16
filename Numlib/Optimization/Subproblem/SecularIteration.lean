@@ -9,61 +9,76 @@ import Numlib.Optimization.Subproblem.Secular
 /-!
 # Iterations for the secular equation
 
-Let `H` be symmetric with leftmost eigenvalue `λ₁`, `g ≠ 0`, `s(λ) = -(H + λ)⁻¹ g` and
-`π(λ) = ‖s(λ)‖²` (`Numlib.Optimization.Subproblem.Secular`). The multiplier `λ*` of the
-trust-region and regularization subproblems is, in the easy case, the root in `(λₛ, ∞)` of a
-secular equation `π(λ) = τ(λ)`, with `τ = Δ²` (trust region) or `τ(λ) = (λ/σ)^{2/(r-2)}`
-(regularization). This file proves that the corrections of Cartis–Gould–Toint, *Evaluation
-complexity of algorithms for nonconvex optimization*, §8.2–§8.3, computed from a current
-`λc ∈ 𝓛 = (λₛ, λ*]`, never pass `λ*`, and that the resulting monotone iterations converge.
+Let $H$ be a symmetric operator on a finite-dimensional real inner product space, with leftmost
+eigenvalue $\lambda_1$, let $g \neq 0$, let $s(\lambda) = -(H + \lambda)^{-1} g$, and let
+$\pi(\lambda) = \|s(\lambda)\|^2$ be the secular function of
+`Numlib.Optimization.Subproblem.Secular`. Write $\lambda_s = \max(0, -\lambda_1)$. In the easy case,
+the multiplier $\lambda_*$ of the trust-region and regularization subproblems is the root in
+$(\lambda_s, \infty)$ of a secular equation $\pi(\lambda) = \tau(\lambda)$, with $\tau = \Delta^2$
+for the trust region and $\tau(\lambda) = (\lambda/\sigma)^{2/(r-2)}$ for regularization. This file
+follows §8.2–§8.3 of [cartis2022evaluation]. It proves that the corrections computed there from a
+current value $\lambda_c$ in $\mathcal{L} = (\lambda_s, \lambda_*]$ never pass $\lambda_*$, and that
+the resulting monotone iterations converge to $\lambda_*$.
+
+Two kinds of correction are treated. A Newton correction is a Newton step on a transformed secular
+function $\theta_\beta = \pi^\beta - \tau^\beta$, which is convex and decreasing or concave and
+increasing, so that the Newton step stays on the left of the root. A Taylor correction of odd order
+$k$ is the rightmost root $\delta$ of $t_k(\delta) = \tau(\lambda_c + \delta)$, where $t_k$ is the
+Taylor polynomial of $\pi$ at $\lambda_c$; since $t_k \le \pi$ to the right of $\lambda_c$, this
+root does not pass $\lambda_*$. From a point $\lambda_c \in \mathcal{G} = (\lambda_*, \infty)$, the
+Newton corrections overshoot to a point at most $\lambda_*$.
 
 ## Main definitions
 
-* `secularTaylor g H k λc δ`: the Taylor polynomial `tₖ(δ)` of `π` at `λc` (8.2.12), and
-  `taylorCorrection g H τ k λc`: the rightmost root of `tₖ(δ) = τ(λc + δ)` (8.2.15).
-* `trSecular g H Δ β` and `regSecular g H σ r β`: the transformed secular functions
-  `θ_β = π ^ β - τ ^ β` of the two subproblems.
-* `trNewtonCorrection g H Δ λc` (8.2.24) and `regNewtonCorrection g H σ r β λc` (8.2.25): the
-  Newton corrections on `θ_β`.
-* `IsSecularTarget hH g τ a λ*`: the standing hypotheses of the Taylor iterations.
+* `Subproblem.secularTaylor`: the Taylor polynomial $t_k(\delta)$ of $\pi$ at $\lambda_c$, as in
+  (8.2.12).
+* `Subproblem.taylorCorrection`: the rightmost root of $t_k(\delta) = \tau(\lambda_c + \delta)$, as
+  in (8.2.15).
+* `Subproblem.trSecular`, `Subproblem.regSecular`: the transformed secular functions
+  $\theta_\beta = \pi^\beta - \tau^\beta$ of the two subproblems.
+* `Subproblem.trNewtonCorrection`, `Subproblem.regNewtonCorrection`: the Newton corrections (8.2.24)
+  and (8.2.25) on $\theta_\beta$.
+* `Subproblem.IsSecularTarget`: the standing hypotheses of the Taylor iterations.
 
 ## Main results
 
-* `newtonCorrection_eq`, `trNewtonCorrection_eq`, `regNewtonCorrection_eq`: closed forms
-  ((B.8.7), (8.2.24), (8.2.25)).
-* `trSecular_shape`, `regSecular_shape`: convexity, monotonicity and derivative signs of `θ_β`.
-* `trNewtonCorrection_mem`, `regNewtonCorrection_mem`: from `λc ≤ λ*` the Newton corrections
-  land in `[λc, λ*]`; from `λc > λ*` (in `𝓖`) they overshoot to `≤ λ*`.
-* `IsSecularTarget.taylorCorrection_mem`, `IsSecularTarget.isGreatest_taylorCorrection`: odd-order
-  Taylor corrections are attained roots of (8.2.15) and land in `[λc, λ*]`.
-* `tendsto_of_trNewtonCorrection_le`, `tendsto_of_regNewtonCorrection_le`: iterations taking
-  steps at least as long as a Newton correction without passing `λ*` (plain Newton, the
-  `β`-maximizing iteration (8.2.26), Algorithms 8.3.1/8.3.2) increase to `λ*`, globally
-  `Q`-linearly and ultimately `Q`-superlinearly (Lemma B.8.1).
-* `IsSecularTarget.tendsto_of_taylorCorrection_le`: the same iterations with odd-order Taylor
-  corrections increase to `λ*`.
+* `Subproblem.newtonCorrection_eq`, `Subproblem.trNewtonCorrection_eq`,
+  `Subproblem.regNewtonCorrection_eq`: the Newton corrections in closed form, as in (B.8.7),
+  (8.2.24) and (8.2.25).
+* `Subproblem.trSecular_shape`, `Subproblem.regSecular_shape`: convexity, monotonicity and the sign
+  of the derivative of $\theta_\beta$.
+* `Subproblem.trNewtonCorrection_mem`, `Subproblem.regNewtonCorrection_mem`: from
+  $\lambda_c \le \lambda_*$ the Newton corrections land in $[\lambda_c, \lambda_*]$, and from
+  $\lambda_c > \lambda_*$ they land at most at $\lambda_*$.
+* `Subproblem.IsSecularTarget.taylorCorrection_mem`,
+  `Subproblem.IsSecularTarget.isGreatest_taylorCorrection`: the Taylor corrections of odd order are
+  attained roots of (8.2.15) and land in $[\lambda_c, \lambda_*]$.
+* `Subproblem.tendsto_of_trNewtonCorrection_le`, `Subproblem.tendsto_of_regNewtonCorrection_le`:
+  iterations that take steps at least as long as a Newton correction without passing $\lambda_*$
+  increase to $\lambda_*$, globally $Q$-linearly and $Q$-superlinearly. This covers plain Newton,
+  the $\beta$-maximizing iteration (8.2.26) and Algorithms 8.3.1 and 8.3.2.
+* `Subproblem.IsSecularTarget.tendsto_of_taylorCorrection_le`: the same iterations with Taylor
+  corrections of odd order increase to $\lambda_*$.
 
 ## Implementation notes
 
-The root `λ*` is a hypothesis (`π(λ*) = τ(λ*)` with `λ* > λₛ`, the easy case) rather than the
-multiplier of a global minimizer; the two agree by the optimality conditions of §8.3. Domains are
-`λ > -λ₁` for the trust region and the Taylor corrections and `λ > λₛ = max 0 (-λ₁)` for
-regularization, where `λ ↦ (λ/σ) ^ γ` needs `λ > 0`.
-
-## Hypotheses
-
-* In (8.2.25) `βⱼ ∈ [-1/2, (r-2)/2]` must be nonzero, since `θ₀ ≡ 0`. The `β → 0` limit of the
-  trust-region factor is `newtonFactor μ 0 = -log μ`, the Newton step for `log π - log τ`, which is
-  not treated here.
-* Convexity of `-λ^γ` for `γ ∈ (0, 1]` and concavity for `γ < 0` hold on `λ > 0`; the interval
-  `λ ≥ λₛ` may contain `0` when `λ₁ ≥ 0`.
-
-## Not formalized
-
-* The ultimate `Q`-order `k` of the odd-order Taylor iterations stated in §8.3: only their
-  convergence is proved.
-* The overshoot from `𝓖` in the hard case (when `λ* = λₛ` is not a root in the open domain), and
-  the "least-negative root" remark of §8.2.1.
+* The root $\lambda_*$ is a hypothesis ($\pi(\lambda_*) = \tau(\lambda_*)$ with
+  $\lambda_* > \lambda_s$, the easy case), not the multiplier of a global minimizer. The two agree
+  by the optimality conditions of §8.3 of [cartis2022evaluation].
+* The domain is $\lambda > -\lambda_1$ for the trust region and the Taylor corrections, and
+  $\lambda > \lambda_s = \max(0, -\lambda_1)$ for regularization, where
+  $\lambda \mapsto (\lambda/\sigma)^\gamma$ needs $\lambda > 0$. The convexity of $-\lambda^\gamma$
+  for $\gamma \in (0, 1]$ and its concavity for $\gamma < 0$ hold on $\lambda > 0$, and the interval
+  $\lambda \ge \lambda_s$ may contain $0$ when $\lambda_1 \ge 0$.
+* In (8.2.25) the parameter $\beta_j \in [-1/2, (r-2)/2]$ must be nonzero, since
+  $\theta_0 \equiv 0$. The limit $\beta \to 0$ of the trust-region factor is
+  $\operatorname{newtonFactor}(m, 0) = -\log m$ (`Subproblem.newtonFactor`), which gives the Newton
+  step for $\log \pi - \log \tau$; this step is not treated here.
+* The file does not prove the ultimate $Q$-order $k$ of the Taylor iterations of odd order that §8.3
+  states; it proves only their convergence.
+* The file does not treat the overshoot from $\mathcal{G}$ in the hard case, where
+  $\lambda_* = \lambda_s$ is not a root in the open domain, nor the remark on the least negative
+  root in §8.2.1.
 -/
 
 open Set Filter Topology
@@ -77,35 +92,52 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 /-! ### Definitions -/
 
-/-- The `k`-th order Taylor polynomial `tₖ(δ) = ∑_{j ≤ k} π⁽ʲ⁾(λc) / j! δʲ` of the secular
-function at `λc` (book (8.2.12)). -/
+/-- The **Taylor polynomial** of order $k$ of the secular function at $\lambda_c$:
+$$t_k(\delta) = \sum_{j=0}^{k} \frac{\pi^{(j)}(\lambda_c)}{j!} \delta^j.$$
+This is (8.2.12) of [cartis2022evaluation]. -/
 noncomputable def secularTaylor (g : E) (H : E →L[ℝ] E) (k : ℕ) (lamc δ : ℝ) : ℝ :=
   ∑ j ∈ range (k + 1), iteratedDeriv j (secular g H) lamc / j ! * δ ^ j
 
-/-- The Taylor correction `δₖᵀ(λc)` (book §8.2.1 and Algorithm 8.3.1): the rightmost real root of
-`tₖ(δ) = τ(λc + δ)` (8.2.15), defined as the supremum of the root set (which is nonempty and
-bounded above for odd `k` and `λc ∈ 𝓛`, `taylorCorrection_mem`). -/
+/-- The **Taylor correction** $\delta_k^T(\lambda_c)$ of [cartis2022evaluation], §8.2.1 and
+Algorithm 8.3.1: the rightmost real root $\delta$ of the equation (8.2.15)
+$$t_k(\delta) = \tau(\lambda_c + \delta),$$
+where $t_k$ is the Taylor polynomial `Subproblem.secularTaylor` of order $k$ of $\pi$ at
+$\lambda_c$.
+
+It is defined as the supremum of the set of roots. If this set is empty or not bounded above,
+the value is $0$, by the Lean convention for `sSup` on $\mathbb{R}$. For odd $k$ and
+$\lambda_c \in \mathcal{L}$ the set is nonempty and bounded above
+(`Subproblem.IsSecularTarget.taylorCorrection_mem`), and the supremum is attained
+(`Subproblem.IsSecularTarget.isGreatest_taylorCorrection`). -/
 noncomputable def taylorCorrection (g : E) (H : E →L[ℝ] E) (τ : ℝ → ℝ) (k : ℕ) (lamc : ℝ) : ℝ :=
   sSup {δ | secularTaylor g H k lamc δ = τ (lamc + δ)}
 
-/-- The transformed trust-region secular function `θ_β(λ) = π(λ) ^ β - Δ ^ (2 β)` (book (8.2.16)
-with `τ = Δ²`). -/
+/-- The **transformed trust-region secular function** $\theta_\beta(\lambda) = \pi(\lambda)^\beta -
+\Delta^{2\beta}$. This is (8.2.16) of [cartis2022evaluation] with $\tau = \Delta^2$. -/
 noncomputable def trSecular (g : E) (H : E →L[ℝ] E) (Δ β lam : ℝ) : ℝ :=
   secular g H lam ^ β - Δ ^ (2 * β)
 
-/-- The trust-region Newton correction (book (8.2.24)):
-`δᴺ = 2 π(λc) / π'(λc) (1 - ‖s(λc)‖ / Δ)`, the Newton step for `π(λ) ^ (-1/2) = Δ⁻¹`
-(`trNewtonCorrection_eq`). -/
+/-- The **trust-region Newton correction** at $\lambda_c$:
+$$\delta^N(\lambda_c) = \frac{2 \pi(\lambda_c)}{\pi'(\lambda_c)} \left(1 -
+  \frac{\|s(\lambda_c)\|}{\Delta}\right).$$
+This is (8.2.24) of [cartis2022evaluation].
+
+By `Subproblem.trNewtonCorrection_eq`, it is the Newton step for
+$\pi(\lambda)^{-1/2} = \Delta^{-1}$, that is, for $\theta_{-1/2} = 0$. -/
 noncomputable def trNewtonCorrection (g : E) (H : E →L[ℝ] E) (Δ lamc : ℝ) : ℝ :=
   2 * secular g H lamc / deriv (secular g H) lamc * (1 - ‖step g H lamc‖ / Δ)
 
-/-- The transformed regularization secular function
-`θ_β(λ) = π(λ) ^ β - (λ / σ) ^ (2 β / (r - 2))` (book §8.2.2). -/
+/-- The **transformed regularization secular function** $\theta_\beta(\lambda) =
+\pi(\lambda)^\beta - (\lambda / \sigma)^{2\beta/(r-2)}$, as in §8.2.2 of [cartis2022evaluation]. -/
 noncomputable def regSecular (g : E) (H : E →L[ℝ] E) (σ r β lam : ℝ) : ℝ :=
   secular g H lam ^ β - (lam / σ) ^ (2 * β / (r - 2))
 
-/-- The regularization Newton correction `δᴺ(λc, β) = -θ_β(λc) / θ_β'(λc)` (book (8.2.25), first
-line). -/
+/-- The **regularization Newton correction** at $\lambda_c$: the Newton step
+$$\delta^N(\lambda_c, \beta) = -\frac{\theta_\beta(\lambda_c)}{\theta_\beta'(\lambda_c)}$$
+on the transformed regularization secular function $\theta_\beta$. This is the first line of
+(8.2.25) of [cartis2022evaluation].
+
+The closed form of the last line of (8.2.25) is `Subproblem.regNewtonCorrection_eq`. -/
 noncomputable def regNewtonCorrection (g : E) (H : E →L[ℝ] E) (σ r β lamc : ℝ) : ℝ :=
   -regSecular g H σ r β lamc / deriv (regSecular g H σ r β) lamc
 
@@ -113,11 +145,19 @@ variable {g : E} {hH : (H : E →ₗ[ℝ] E).IsSymmetric}
 
 /-! ### Derivatives -/
 
+/-- For $g \neq 0$, $\lambda > -\lambda_1$ and $\Delta, \beta \in \mathbb{R}$, the transformed
+trust-region secular function $\theta_\beta$ has the derivative $\beta \, \pi(\lambda)^{\beta -
+1} \pi'(\lambda)$ at $\lambda$. -/
 theorem hasDerivAt_trSecular (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) (Δ β : ℝ) :
     HasDerivAt (trSecular g H Δ β)
       (β * secular g H lam ^ (β - 1) * deriv (secular g H) lam) lam :=
   (hasDerivAt_secular_rpow hg hlam β).sub_const _
 
+/-- For $g \neq 0$, $\sigma > 0$, $\lambda > -\lambda_1$ and $\lambda > 0$, the transformed
+regularization secular function $\theta_\beta$ has the derivative
+$$\beta \, \pi(\lambda)^{\beta - 1} \pi'(\lambda) - \frac{2\beta}{r - 2}
+  \left(\frac{\lambda}{\sigma}\right)^{2\beta/(r-2) - 1} \frac{1}{\sigma}$$
+at $\lambda$. -/
 theorem hasDerivAt_regSecular (hg : g ≠ 0) {σ r β lam : ℝ} (hσ : 0 < σ)
     (hlam : -leftmost hH < lam) (hpos : 0 < lam) :
     HasDerivAt (regSecular g H σ r β)
@@ -129,11 +169,18 @@ theorem hasDerivAt_regSecular (hg : g ≠ 0) {σ r β lam : ℝ} (hσ : 0 < σ)
 
 /-! ### Closed forms of the Newton corrections -/
 
-/-- **The Newton step on the transformed trust-region secular equation** (book (B.8.7)). For
-`g ≠ 0`, `λc > -λ₁`, `Δ > 0` and `β ≠ 0`, the Newton correction for
-`θ_β(λ) = π(λ) ^ β - Δ ^ (2 β) = 0` from `λc` is `(-π/π') · newtonFactor (Δ²/π) β`, with
-`π = π(λc)`, `π' = π'(λc)`. By `antitone_newtonFactor` (Lemma B.8.2) it decreases as `β`
-increases, so `β = -1/2` (`trNewtonCorrection_eq`) gives the longest step among `β ≥ -1/2`. -/
+/-- **The Newton step on the transformed trust-region secular equation.** Let $g \neq 0$,
+$\lambda_c > -\lambda_1$, $\Delta > 0$ and $\beta \neq 0$, and write $\pi = \pi(\lambda_c)$ and
+$\pi' = \pi'(\lambda_c)$. Then the Newton correction for $\theta_\beta(\lambda) =
+\pi(\lambda)^\beta - \Delta^{2\beta} = 0$ from $\lambda_c$ is
+$$-\frac{\theta_\beta(\lambda_c)}{\theta_\beta'(\lambda_c)} = -\frac{\pi}{\pi'}
+  \operatorname{newtonFactor}\left(\frac{\Delta^2}{\pi}, \beta\right) = -\frac{\pi}{\pi'} \cdot
+  \frac{1 - (\Delta^2/\pi)^\beta}{\beta}.$$
+This is (B.8.7) of [cartis2022evaluation].
+
+By `Subproblem.antitone_newtonFactor` (Lemma B.8.2), the correction decreases as $\beta$
+increases. So $\beta = -1/2$ (`Subproblem.trNewtonCorrection_eq`) gives the longest step among
+$\beta \ge -1/2$. -/
 theorem newtonCorrection_eq (hg : g ≠ 0) {lamc Δ β : ℝ} (hlam : -leftmost hH < lamc)
     (hΔ : 0 < Δ) (hβ : β ≠ 0) :
     -trSecular g H Δ β lamc / deriv (trSecular g H Δ β) lamc =
@@ -147,8 +194,11 @@ theorem newtonCorrection_eq (hg : g ≠ 0) {lamc Δ β : ℝ} (hlam : -leftmost 
   have hA : secular g H lamc ^ β ≠ 0 := (Real.rpow_pos_of_pos (secular_pos hg hlam) _).ne'
   field_simp
 
-/-- The trust-region correction (8.2.24) is the `β = -1/2` case of `newtonCorrection_eq`, i.e.
-the Newton step for `π(λ) ^ (-1/2) = Δ⁻¹`. -/
+/-- The trust-region Newton correction is the Newton step for $\theta_{-1/2}$. Let $g \neq 0$,
+$\lambda_c > -\lambda_1$ and $\Delta > 0$. Then
+$$\delta^N(\lambda_c) = -\frac{\theta_{-1/2}(\lambda_c)}{\theta_{-1/2}'(\lambda_c)},$$
+where $\theta_{-1/2}(\lambda) = \pi(\lambda)^{-1/2} - \Delta^{-1}$. This is (8.2.24) of
+[cartis2022evaluation], the case $\beta = -1/2$ of `Subproblem.newtonCorrection_eq`. -/
 theorem trNewtonCorrection_eq (hg : g ≠ 0) {lamc Δ : ℝ} (hlam : -leftmost hH < lamc)
     (hΔ : 0 < Δ) :
     trNewtonCorrection g H Δ lamc = -trSecular g H Δ (-1 / 2) lamc /
@@ -165,10 +215,17 @@ theorem trNewtonCorrection_eq (hg : g ≠ 0) {lamc Δ : ℝ} (hlam : -leftmost h
   rw [hpow]
   ring
 
-/-- **The regularization Newton correction in closed form** (book (8.2.25), last line). For
-`g ≠ 0`, `σ > 0`, `r > 2`, `β ≠ 0` and `λc > max 0 (-λ₁)`, with `π = π(λc)`, `π' = π'(λc)`,
-`μ = (λc/σ) ^ (2/(r-2)) / π` and `ω = 2π / ((r - 2) λc π')`:
-`δᴺ(λc, β) = (-π/π') (1 - μ^β) / (β (1 - ω μ^β))`, and `1 - ω μ^β > 0` (as `ω < 0`). -/
+/-- **The regularization Newton correction in closed form.** Let $g \neq 0$, $\sigma > 0$, $r > 2$,
+$\beta \neq 0$, and $\lambda_c > \max(0, -\lambda_1)$. Write $\pi = \pi(\lambda_c)$,
+$\pi' = \pi'(\lambda_c)$,
+$$\mu = \frac{(\lambda_c / \sigma)^{2/(r-2)}}{\pi}, \qquad \omega = \frac{2\pi}{(r - 2)
+  \lambda_c \pi'}.$$
+Then $1 - \omega \mu^\beta > 0$ and
+$$\delta^N(\lambda_c, \beta) = -\frac{\pi}{\pi'} \cdot \frac{1 - \mu^\beta}{\beta (1 - \omega
+  \mu^\beta)}.$$
+This is the last line of (8.2.25) of [cartis2022evaluation].
+
+The positivity of $1 - \omega \mu^\beta$ holds because $\pi' < 0$, so that $\omega < 0$. -/
 theorem regNewtonCorrection_eq (hg : g ≠ 0) {σ r β lamc : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     (hβ : β ≠ 0) (hlam : -leftmost hH < lamc) (hpos : 0 < lamc) :
     0 < 1 - 2 * secular g H lamc / ((r - 2) * lamc * deriv (secular g H) lamc) *
@@ -219,7 +276,7 @@ theorem regNewtonCorrection_eq (hg : g ≠ 0) {σ r β lamc : ℝ} (hσ : 0 < σ
 /-! ### Shape of the transformed secular functions -/
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- `x ↦ x ^ p` is convex on `(0, ∞)` for `p ≤ 0`. -/
+/-- For $p \le 0$, the function $x \mapsto x^p$ is convex on $(0, \infty)$. -/
 theorem convexOn_rpow_Ioi_of_nonpos {p : ℝ} (hp : p ≤ 0) :
     ConvexOn ℝ (Ioi 0) fun x : ℝ => x ^ p := by
   refine MonotoneOn.convexOn_of_deriv (convex_Ioi 0)
@@ -233,8 +290,8 @@ theorem convexOn_rpow_Ioi_of_nonpos {p : ℝ} (hp : p ≤ 0) :
     exact mul_le_mul_of_nonpos_left (Real.rpow_le_rpow_of_nonpos hx hxy (by linarith)) hp
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The regularization target `t ↦ (t / σ) ^ γ` on `(0, ∞)`: concave and monotone for
-`γ ∈ [0, 1]`, convex and antitone for `γ ≤ 0`. -/
+/-- The regularization target $t \mapsto (t / \sigma)^\gamma$ on $(0, \infty)$, for $\sigma > 0$: it
+is concave and monotone for $\gamma \in [0, 1]$, and convex and antitone for $\gamma \le 0$. -/
 theorem regTarget_shape {σ γ : ℝ} (hσ : 0 < σ) :
     (0 ≤ γ → γ ≤ 1 → ConcaveOn ℝ (Ioi 0) (fun t : ℝ => (t / σ) ^ γ) ∧
       MonotoneOn (fun t : ℝ => (t / σ) ^ γ) (Ioi 0)) ∧
@@ -251,8 +308,10 @@ theorem regTarget_shape {σ γ : ℝ} (hσ : 0 < σ) :
   · exact Real.rpow_le_rpow (div_pos hx hσ).le (div_le_div_of_nonneg_right hxy hσ.le) h0
   · exact Real.rpow_le_rpow_of_nonpos (div_pos hx hσ) (div_le_div_of_nonneg_right hxy hσ.le) h0
 
-/-- **Shape of the transformed trust-region secular function** for `β ∈ [-1/2, 0)`, on `λ > -λ₁`:
-`θ_β = π ^ β - Δ ^ (2 β)` is concave and strictly increasing with positive derivative. -/
+/-- **Shape of the transformed trust-region secular function.** Let $g \neq 0$,
+$\Delta \in \mathbb{R}$ and $\beta \in [-1/2, 0)$. Then on $(-\lambda_1, \infty)$ the function
+$\theta_\beta = \pi^\beta - \Delta^{2\beta}$ is concave and strictly increasing, and its
+derivative is positive. -/
 theorem trSecular_shape (hg : g ≠ 0) (Δ : ℝ) {β : ℝ} (hβ : β ∈ Ico (-1 / 2) 0) :
     ConcaveOn ℝ (Ioi (-leftmost hH)) (trSecular g H Δ β) ∧
       StrictMonoOn (trSecular g H Δ β) (Ioi (-leftmost hH)) ∧
@@ -266,10 +325,16 @@ theorem trSecular_shape (hg : g ≠ 0) (Δ : ℝ) {β : ℝ} (hβ : β ∈ Ico (
       (mul_neg_of_neg_of_pos hβ.2 (Real.rpow_pos_of_pos (secular_pos hg hx) _))
       (deriv_secular_neg hg hx)
 
-/-- **Shape of the transformed regularization secular function** (book §8.2.2), on
-`λ > λₛ = max 0 (-λ₁)`, for `σ > 0`, `r > 2`: `θ_β = π ^ β - (λ/σ) ^ (2β/(r-2))` is convex and
-strictly decreasing with negative derivative for `β ∈ (0, (r-2)/2]`, and concave and strictly
-increasing with positive derivative for `β ∈ [-1/2, 0)`. -/
+/-- **Shape of the transformed regularization secular function.** Let $g \neq 0$, $\sigma > 0$ and
+$r > 2$, and let $\theta_\beta = \pi^\beta - (\lambda/\sigma)^{2\beta/(r-2)}$ on
+$(\lambda_s, \infty)$, where $\lambda_s = \max(0, -\lambda_1)$. Then:
+
+* for $\beta \in (0, (r-2)/2]$, $\theta_\beta$ is convex and strictly decreasing, with negative
+  derivative;
+* for $\beta \in [-1/2, 0)$, $\theta_\beta$ is concave and strictly increasing, with positive
+  derivative.
+
+This is the shape used in §8.2.2 of [cartis2022evaluation]. -/
 theorem regSecular_shape (hg : g ≠ 0) {σ r β : ℝ} (hσ : 0 < σ) (hr : 2 < r) :
     (β ∈ Ioc 0 ((r - 2) / 2) →
       ConvexOn ℝ (Ioi (shiftThreshold hH)) (regSecular g H σ r β) ∧
@@ -328,8 +393,10 @@ theorem regSecular_shape (hg : g ≠ 0) {σ r β : ℝ} (hσ : 0 < σ) (hr : 2 <
 /-! ### Newton corrections stay on the correct side -/
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- A Newton correction `-θ x / θ' x` on a convex nonincreasing function with `θ' x < 0` does not
-pass a root `r`, and it is nonnegative from `x ≤ r`. -/
+/-- Let $\theta$ be convex and antitone on a set $S$, let $r \in S$ with $\theta(r) = 0$, and let
+$x \in S$ be a point where $\theta$ has the derivative $\theta'(x) < 0$. Then the Newton
+correction does not pass the root, $x - \theta(x)/\theta'(x) \le r$, and the correction
+$-\theta(x)/\theta'(x)$ is nonnegative if $x \le r$. -/
 theorem newtonCorrection_mem_of_convexOn {θ : ℝ → ℝ} {S : Set ℝ} {r x : ℝ}
     (hc : ConvexOn ℝ S θ) (hm : AntitoneOn θ S) (hr : r ∈ S) (hθr : θ r = 0) (hx : x ∈ S)
     (hd : HasDerivAt θ (deriv θ x) x) (hneg : deriv θ x < 0) :
@@ -341,7 +408,11 @@ theorem newtonCorrection_mem_of_convexOn {θ : ℝ → ℝ} {S : Set ℝ} {r x :
     exact div_nonneg_of_nonpos (neg_nonpos.2 this) hneg.le
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The concave mirror of `newtonCorrection_mem_of_convexOn`. -/
+/-- Let $\theta$ be concave and monotone on a set $S$, let $r \in S$ with $\theta(r) = 0$, and let
+$x \in S$ be a point where $\theta$ has the derivative $\theta'(x) > 0$. Then the Newton
+correction does not pass the root, $x - \theta(x)/\theta'(x) \le r$, and the correction
+$-\theta(x)/\theta'(x)$ is nonnegative if $x \le r$. This is the concave counterpart of
+`Subproblem.newtonCorrection_mem_of_convexOn`. -/
 theorem newtonCorrection_mem_of_concaveOn {θ : ℝ → ℝ} {S : Set ℝ} {r x : ℝ}
     (hc : ConcaveOn ℝ S θ) (hm : MonotoneOn θ S) (hr : r ∈ S) (hθr : θ r = 0) (hx : x ∈ S)
     (hd : HasDerivAt θ (deriv θ x) x) (hpos : 0 < deriv θ x) :
@@ -352,10 +423,19 @@ theorem newtonCorrection_mem_of_concaveOn {θ : ℝ → ℝ} {S : Set ℝ} {r x 
   · have : θ x ≤ 0 := hθr ▸ hm hx hr hxr
     exact div_nonneg (neg_nonneg.2 this) hpos.le
 
-/-- **Trust-region Newton corrections** (book §8.2.2 and §8.3.2, easy case). Let `Δ > 0` and let
-`λ* > -λ₁` solve `π(λ*) = Δ²`. From every `λc > -λ₁`, `λc + δᴺ(λc) ≤ λ*` (from `𝓖 = (λ*, ∞)`
-the correction overshoots to `≤ λ*`), and from `λc ≤ λ*` (in `𝓛`) the correction is
-nonnegative, so `λc + δᴺ(λc) ∈ [λc, λ*]`. -/
+/-- **Trust-region Newton corrections do not pass the root.** Let $\Delta > 0$, and let
+$\lambda_* > -\lambda_1$ satisfy $\pi(\lambda_*) = \Delta^2$. Then for every
+$\lambda_c > -\lambda_1$,
+$$\lambda_c + \delta^N(\lambda_c) \le \lambda_*,$$
+and if moreover $\lambda_c \le \lambda_*$, then $\lambda_c \le \lambda_c + \delta^N(\lambda_c)$.
+Here $\delta^N$ is the trust-region Newton correction (8.2.24).
+
+This is the easy case of §8.2.2 and §8.3.2 of [cartis2022evaluation]. From $\lambda_c \in
+\mathcal{G} = (\lambda_*, \infty)$, the correction overshoots to a point at most $\lambda_*$;
+from $\lambda_c \in \mathcal{L}$, the new point lies in $[\lambda_c, \lambda_*]$.
+
+The proof applies `Subproblem.newtonCorrection_mem_of_concaveOn` to $\theta_{-1/2}$, which is
+concave and increasing by `Subproblem.trSecular_shape`. -/
 theorem trNewtonCorrection_mem {Δ lamStar lamc : ℝ} (hΔ : 0 < Δ)
     (hstar : -leftmost hH < lamStar) (hroot : secular g H lamStar = Δ ^ 2)
     (hc : -leftmost hH < lamc) :
@@ -371,7 +451,9 @@ theorem trNewtonCorrection_mem {Δ lamStar lamc : ℝ} (hΔ : 0 < Δ)
   exact ⟨h.1, fun hle => le_add_of_nonneg_right (h.2 hle)⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- The root of the regularization secular equation is a root of every `θ_β`. -/
+/-- Let $\sigma > 0$ and $\lambda_* > 0$ satisfy the regularization secular equation
+$\pi(\lambda_*) = (\lambda_*/\sigma)^{2/(r-2)}$. Then $\lambda_*$ is a root of every transformed
+function: $\theta_\beta(\lambda_*) = 0$ for every $\beta \in \mathbb{R}$. -/
 theorem regSecular_root {σ r β lamStar : ℝ} (hσ : 0 < σ) (hpos : 0 < lamStar)
     (hroot : secular g H lamStar = (lamStar / σ) ^ (2 / (r - 2))) :
     regSecular g H σ r β lamStar = 0 := by
@@ -379,10 +461,21 @@ theorem regSecular_root {σ r β lamStar : ℝ} (hσ : 0 < σ) (hpos : 0 < lamSt
   congr 1
   ring
 
-/-- **Regularization Newton corrections** (book §8.2.2 and §8.3.1, easy case). Let `σ > 0`,
-`r > 2`, `β ∈ [-1/2, 0) ∪ (0, (r-2)/2]` and let `λ* > λₛ` solve the secular equation
-`π(λ*) = (λ*/σ) ^ (2/(r-2))` (8.2.42). From every `λc > λₛ`, `λc + δᴺ(λc, β) ≤ λ*`, and from
-`λc ≤ λ*` the correction is nonnegative. (`β = 0` is excluded since `θ₀ ≡ 0`.) -/
+/-- **Regularization Newton corrections do not pass the root.** Let $\sigma > 0$, $r > 2$ and
+$\beta \in [-1/2, 0) \cup (0, (r-2)/2]$, and let $\lambda_* > \lambda_s$ solve the secular
+equation (8.2.42)
+$$\pi(\lambda_*) = \left(\frac{\lambda_*}{\sigma}\right)^{2/(r-2)}.$$
+Then for every $\lambda_c > \lambda_s$,
+$$\lambda_c + \delta^N(\lambda_c, \beta) \le \lambda_*,$$
+and if moreover $\lambda_c \le \lambda_*$, then $\lambda_c \le \lambda_c + \delta^N(\lambda_c,
+\beta)$. Here $\delta^N(\lambda_c, \beta)$ is the regularization Newton correction (8.2.25).
+
+This is the easy case of §8.2.2 and §8.3.1 of [cartis2022evaluation]. The value $\beta = 0$ is
+excluded, since $\theta_0 \equiv 0$.
+
+The proof applies `Subproblem.newtonCorrection_mem_of_convexOn` or
+`Subproblem.newtonCorrection_mem_of_concaveOn` to $\theta_\beta$, according to the sign of
+$\beta$, with `Subproblem.regSecular_shape`. -/
 theorem regNewtonCorrection_mem {σ r β lamStar lamc : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     (hβ : β ∈ Ico (-1 / 2) 0 ∪ Ioc 0 ((r - 2) / 2)) (hstar : shiftThreshold hH < lamStar)
     (hroot : secular g H lamStar = (lamStar / σ) ^ (2 / (r - 2)))
@@ -410,12 +503,21 @@ theorem regNewtonCorrection_mem {σ r β lamStar lamc : ℝ} (hσ : 0 < σ) (hr 
 /-! ### Convergence of Newton-type iterations -/
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **Iterations at least as long as Newton's** on a convex decreasing function (the convergence
-argument behind Algorithms 8.3.1/8.3.2). Let `θ` satisfy the hypotheses of Lemma B.8.1 on
-`(a, ∞)` with root `r` (`Newton.IsConvexAntiRoot`) and `θ'` continuous at `r`. If
-`x 0 ∈ (a, r]` and `N(x j) ≤ x (j+1) ≤ r` for the Newton step `N`, then `x` increases to `r`,
-`r - x (j+1) ≤ γ (r - x j)` with `γ = 1 - θ'(r)/θ'(x 0) ∈ [0, 1)`, and the convergence is
-`Q`-superlinear. -/
+/-- **Iterations at least as long as Newton's** on a convex decreasing function. Let $\theta$ have
+the derivative $\theta'$ on $(a, \infty)$, and let $r$ be a root of $\theta$ in the sense of
+`Newton.IsConvexAntiRoot`: $\theta$ is convex and strictly decreasing on $(a, \infty)$, $r > a$,
+$\theta(r) = 0$ and $\theta'(r) \neq 0$. Let $\theta'$ be continuous at $r$ within
+$(a, \infty)$. Let $(x_j)$ be a sequence with $x_0 \in (a, r]$ and, for every $j$,
+$x_{j+1} \le r$ and
+$$x_j > a \implies N(x_j) \le x_{j+1}, \qquad N(x) = x - \theta(x)/\theta'(x).$$
+Then $(x_j)$ is increasing and converges to $r$, the number
+$\gamma = 1 - \theta'(r)/\theta'(x_0)$ lies in $[0, 1)$, and
+$$r - x_{j+1} \le \gamma \, (r - x_j)$$
+for every $j$; moreover the convergence is $Q$-superlinear.
+
+This is the convergence argument behind Algorithms 8.3.1 and 8.3.2 of [cartis2022evaluation],
+under the hypotheses of Lemma B.8.1 there. The Newton step $N$ is `Newton.scalarStep`, and
+$Q$-superlinear convergence is `ConvergesSuperlinearly`. -/
 theorem tendsto_of_scalarStep_le {θ θ' : ℝ → ℝ} {a r : ℝ}
     (h : Newton.IsConvexAntiRoot θ θ' (Ioi a) r) (hcont : ContinuousWithinAt θ' (Ioi a) r)
     {x : ℕ → ℝ} (hx0 : x 0 ∈ Ioc a r)
@@ -469,7 +571,14 @@ theorem tendsto_of_scalarStep_le {θ θ' : ℝ → ℝ} {a r : ℝ}
   exact hbound k
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The concave increasing mirror of `tendsto_of_scalarStep_le`. -/
+/-- **Iterations at least as long as Newton's** on a concave increasing function. Let $\theta$ be
+concave and strictly increasing on $(a, \infty)$, with derivative $\theta'$ there, let $r$
+satisfy $\theta(r) = 0$ and $\theta'(r) \neq 0$, and let $\theta'$ be continuous at $r$ within
+$(a, \infty)$. Let $(x_j)$ be a sequence with $x_0 \in (a, r]$ and, for every $j$,
+$x_{j+1} \le r$ and $N(x_j) \le x_{j+1}$ whenever $x_j > a$, where $N$ is the Newton step
+`Newton.scalarStep`. Then the conclusions of `Subproblem.tendsto_of_scalarStep_le` hold: $(x_j)$
+increases to $r$, $\gamma = 1 - \theta'(r)/\theta'(x_0) \in [0, 1)$,
+$r - x_{j+1} \le \gamma (r - x_j)$ for every $j$, and the convergence is $Q$-superlinear. -/
 theorem tendsto_of_scalarStep_le_of_concaveOn {θ θ' : ℝ → ℝ} {a r : ℝ}
     (hc : ConcaveOn ℝ (Ioi a) θ) (hm : StrictMonoOn θ (Ioi a))
     (hd : ∀ x ∈ Ioi a, HasDerivWithinAt θ (θ' x) (Ioi a) x) (hθr : θ r = 0) (hθ'r : θ' r ≠ 0)
@@ -484,11 +593,19 @@ theorem tendsto_of_scalarStep_le_of_concaveOn {θ θ' : ℝ → ℝ} {a r : ℝ}
     (fun j hj => by rw [Newton.scalarStep_neg]; exact hstep j hj) hle
   simpa only [neg_div_neg_eq] using this
 
-/-- **Convergence of trust-region Newton-type iterations** (book §8.3.2, Algorithm 8.3.2, easy
-case). Let `Δ > 0`, `λ* > -λ₁` with `π(λ*) = Δ²`, and let `λ : ℕ → ℝ` take steps at least as long
-as the Newton correction (8.2.24) without passing `λ*`: `λ 0 ∈ (-λ₁, λ*]` and
-`λ j + δᴺ(λ j) ≤ λ (j + 1) ≤ λ*`. Then `λ` increases to `λ*`, globally `Q`-linearly with factor
-`γ = 1 - θ'(λ*)/θ'(λ 0) ∈ [0, 1)` for `θ = trSecular g H Δ (-1/2)`, and `Q`-superlinearly. -/
+/-- **Convergence of trust-region Newton-type iterations.** Let $\Delta > 0$, and let
+$\lambda_* > -\lambda_1$ satisfy $\pi(\lambda_*) = \Delta^2$. Let $(\lambda_j)$ be a sequence
+that takes steps at least as long as the Newton correction (8.2.24) without passing $\lambda_*$:
+$$\lambda_0 \in (-\lambda_1, \lambda_*], \qquad \lambda_j + \delta^N(\lambda_j) \le
+  \lambda_{j+1} \le \lambda_* \quad \text{for all } j.$$
+Let $\theta = \theta_{-1/2}$ be the transformed trust-region secular function with
+$\beta = -1/2$, and let $\gamma = 1 - \theta'(\lambda_*)/\theta'(\lambda_0)$. Then $(\lambda_j)$
+is increasing and converges to $\lambda_*$, $\gamma \in [0, 1)$,
+$$\lambda_* - \lambda_{j+1} \le \gamma \, (\lambda_* - \lambda_j) \quad \text{for all } j,$$
+and the convergence is $Q$-superlinear.
+
+This is the easy case of Algorithm 8.3.2 in §8.3.2 of [cartis2022evaluation]. The function
+$\theta$ is `Subproblem.trSecular g H Δ (-1 / 2)`, and its derivative is taken with `deriv`. -/
 theorem tendsto_of_trNewtonCorrection_le {Δ lamStar : ℝ} (hΔ : 0 < Δ)
     (hstar : -leftmost hH < lamStar) (hroot : secular g H lamStar = Δ ^ 2) {x : ℕ → ℝ}
     (hx0 : x 0 ∈ Ioc (-leftmost hH) lamStar)
@@ -513,13 +630,20 @@ theorem tendsto_of_trNewtonCorrection_le {Δ lamStar : ℝ} (hΔ : 0 < Δ)
   rw [Newton.scalarStep, sub_eq_add_neg, ← neg_div, ← trNewtonCorrection_eq hg hj hΔ]
   exact (hstep j).1
 
-/-- **Convergence of regularization Newton-type iterations** (book §8.2.2 and §8.3.1,
-Algorithm 8.3.1, easy case; Lemma B.8.1). Let `σ > 0`, `r > 2`,
-`β ∈ [-1/2, 0) ∪ (0, (r-2)/2]`, `λ* > λₛ` with `π(λ*) = (λ*/σ) ^ (2/(r-2))`, and let
-`λ 0 ∈ (λₛ, λ*]`, `λ j + δᴺ(λ j, β) ≤ λ (j + 1) ≤ λ*` (e.g. the plain Newton iteration, the
-`β`-maximizing iteration (8.2.26), or Algorithm 8.3.1, which takes the largest of several
-corrections). Then `λ` increases to `λ*`, globally `Q`-linearly with factor
-`γ = 1 - θ_β'(λ*)/θ_β'(λ 0) ∈ [0, 1)`, and `Q`-superlinearly. -/
+/-- **Convergence of regularization Newton-type iterations.** Let $\sigma > 0$, $r > 2$ and
+$\beta \in [-1/2, 0) \cup (0, (r-2)/2]$, and let $\lambda_* > \lambda_s$ satisfy
+$\pi(\lambda_*) = (\lambda_*/\sigma)^{2/(r-2)}$. Let $(\lambda_j)$ be a sequence with
+$$\lambda_0 \in (\lambda_s, \lambda_*], \qquad \lambda_j + \delta^N(\lambda_j, \beta) \le
+  \lambda_{j+1} \le \lambda_* \quad \text{for all } j,$$
+and let $\gamma = 1 - \theta_\beta'(\lambda_*)/\theta_\beta'(\lambda_0)$. Then $(\lambda_j)$ is
+increasing and converges to $\lambda_*$, $\gamma \in [0, 1)$,
+$$\lambda_* - \lambda_{j+1} \le \gamma \, (\lambda_* - \lambda_j) \quad \text{for all } j,$$
+and the convergence is $Q$-superlinear.
+
+This is the easy case of §8.2.2, §8.3.1 and Algorithm 8.3.1 of [cartis2022evaluation], with
+Lemma B.8.1 there. The hypotheses hold for the plain Newton iteration, for the
+$\beta$-maximizing iteration (8.2.26), and for Algorithm 8.3.1, which takes the largest of
+several corrections. -/
 theorem tendsto_of_regNewtonCorrection_le {σ r β lamStar : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     (hβ : β ∈ Ico (-1 / 2) 0 ∪ Ioc 0 ((r - 2) / 2)) (hstar : shiftThreshold hH < lamStar)
     (hroot : secular g H lamStar = (lamStar / σ) ^ (2 / (r - 2))) {x : ℕ → ℝ}
@@ -564,37 +688,52 @@ theorem tendsto_of_regNewtonCorrection_le {σ r β lamStar : ℝ} (hσ : 0 < σ)
 /-! ### Taylor corrections -/
 
 omit [FiniteDimensional ℝ E] in
+/-- The Taylor polynomial of the secular function takes the value $t_k(0) = \pi(\lambda_c)$ at $0$.
+-/
 theorem secularTaylor_zero (g : E) (H : E →L[ℝ] E) (k : ℕ) (lamc : ℝ) :
     secularTaylor g H k lamc 0 = secular g H lamc := by
   simp [secularTaylor, Finset.sum_range_succ']
 
 omit [FiniteDimensional ℝ E] in
+/-- The Taylor polynomial $t_k$ of the secular function at $\lambda_c$ is continuous. -/
 theorem continuous_secularTaylor (g : E) (H : E →L[ℝ] E) (k : ℕ) (lamc : ℝ) :
     Continuous (secularTaylor g H k lamc) :=
   continuous_finsetSum _ fun j _ => continuous_const.mul (continuous_pow j)
 
-/-- **Odd-order Taylor polynomials underestimate `π` to the right** (Theorem 8.2.2): for
-`λc > -λ₁`, odd `k` and `δ > 0`, `tₖ(δ) ≤ π(λc + δ)`. -/
+/-- **Taylor polynomials of odd order underestimate $\pi$ to the right.** For
+$\lambda_c > -\lambda_1$, odd $k$ and $\delta > 0$, $t_k(\delta) \le \pi(\lambda_c + \delta)$.
+This is part of Theorem 8.2.2 of [cartis2022evaluation]. -/
 theorem secularTaylor_le_secular {lamc δ : ℝ} {k : ℕ} (hlam : -leftmost hH < lamc) (hk : Odd k)
     (hδ : 0 < δ) : secularTaylor g H k lamc δ ≤ secular g H (lamc + δ) :=
   ((secular_taylor_bounds hlam k).1 δ hδ).2 hk
 
-/-- **Even-order Taylor polynomials overestimate `π` to the right** (Theorem 8.2.2): for
-`λc > -λ₁`, even `k` and `δ > 0`, `π(λc + δ) ≤ tₖ(δ)`. -/
+/-- **Taylor polynomials of even order overestimate $\pi$ to the right.** For
+$\lambda_c > -\lambda_1$, even $k$ and $\delta > 0$, $\pi(\lambda_c + \delta) \le t_k(\delta)$.
+This is part of Theorem 8.2.2 of [cartis2022evaluation]. -/
 theorem secular_le_secularTaylor {lamc δ : ℝ} {k : ℕ} (hlam : -leftmost hH < lamc) (hk : Even k)
     (hδ : 0 < δ) : secular g H (lamc + δ) ≤ secularTaylor g H k lamc δ :=
   ((secular_taylor_bounds hlam k).1 δ hδ).1 hk
 
-/-- Standing hypotheses for the Taylor iterations: `g ≠ 0`, a target `τ` continuous and
-monotone on `(a, ∞) ⊆ (-λ₁, ∞)`, and a root `λ* > a` of `π = τ` (Lemma 8.2.1 gives one when
-`π > τ` near `a`). -/
+/-- The **standing hypotheses of the Taylor iterations** for a target
+$\tau : \mathbb{R} \to \mathbb{R}$, a left end $a$ and a root $\lambda_*$. They consist of
+$g \neq 0$; $a \ge -\lambda_1$, so that $(a, \infty) \subseteq (-\lambda_1, \infty)$; $\tau$
+continuous and monotone on $(a, \infty)$; and $\lambda_* > a$ with
+$\pi(\lambda_*) = \tau(\lambda_*)$.
+
+Lemma 8.2.1 of [cartis2022evaluation] gives such a root when $\pi > \tau$ near $a$. -/
 structure IsSecularTarget (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (g : E) (τ : ℝ → ℝ)
     (a lamStar : ℝ) : Prop where
+  /-- The vector $g$ is nonzero. -/
   ne_zero : g ≠ 0
+  /-- The left end lies to the right of the pole: $-\lambda_1 \le a$. -/
   le_left : -leftmost hH ≤ a
+  /-- The target $\tau$ is continuous on $(a, \infty)$. -/
   continuousOn : ContinuousOn τ (Ioi a)
+  /-- The target $\tau$ is monotone on $(a, \infty)$. -/
   monotoneOn : MonotoneOn τ (Ioi a)
+  /-- The root lies to the right of the left end: $a < \lambda_*$. -/
   lt_root : a < lamStar
+  /-- The root solves the secular equation: $\pi(\lambda_*) = \tau(\lambda_*)$. -/
   root : secular g H lamStar = τ lamStar
 
 namespace IsSecularTarget
@@ -602,17 +741,21 @@ namespace IsSecularTarget
 variable {τ : ℝ → ℝ} {a lamStar : ℝ} (h : IsSecularTarget hH g τ a lamStar)
 include h
 
+/-- Every $x > a$ satisfies $x > -\lambda_1$. -/
 theorem neg_leftmost_lt {x : ℝ} (hx : a < x) : -leftmost hH < x := h.le_left.trans_lt hx
 
-/-- `π ≥ τ` on `(a, λ*]` (the set `𝓛`). -/
+/-- On $\mathcal{L} = (a, \lambda_*]$ the secular function dominates the target:
+$\tau(x) \le \pi(x)$ for $x \in (a, \lambda_*]$. -/
 theorem tau_le_secular {x : ℝ} (hx : x ∈ Ioc a lamStar) : τ x ≤ secular g H x := by
   have hm := (secular_shape (hH := hH) h.ne_zero 0).2.2.1
   calc τ x ≤ τ lamStar := h.monotoneOn hx.1 h.lt_root hx.2
     _ = secular g H lamStar := h.root.symm
     _ ≤ secular g H x := hm.antitoneOn (h.neg_leftmost_lt hx.1) (h.neg_leftmost_lt h.lt_root) hx.2
 
-/-- Every root of `tₖ(δ) = τ(λc + δ)` for odd `k` and `λc ∈ (a, λ*]` satisfies `λc + δ ≤ λ*`:
-for `λc + δ > λ*`, `tₖ(δ) ≤ π(λc + δ) < π(λ*) = τ(λ*) ≤ τ(λc + δ)`. -/
+/-- For odd $k$ and $\lambda_c \in (a, \lambda_*]$, every root $\delta$ of
+$t_k(\delta) = \tau(\lambda_c + \delta)$ satisfies $\delta \le \lambda_* - \lambda_c$. If
+$\lambda_c + \delta > \lambda_*$, then $t_k(\delta) \le \pi(\lambda_c + \delta) <
+\pi(\lambda_*) = \tau(\lambda_*) \le \tau(\lambda_c + \delta)$, so $\delta$ is not a root. -/
 theorem taylor_root_le {k : ℕ} (hk : Odd k) {lamc δ : ℝ} (hc : lamc ∈ Ioc a lamStar)
     (hδ : secularTaylor g H k lamc δ = τ (lamc + δ)) : δ ≤ lamStar - lamc := by
   by_contra hlt
@@ -626,8 +769,11 @@ theorem taylor_root_le {k : ℕ} (hk : Odd k) {lamc δ : ℝ} (hc : lamc ∈ Ioc
     (show lamStar ≤ lamc + δ by linarith)
   linarith [h.root]
 
-/-- Odd-order Taylor equations have a root in `[η, λ* - λc]` as soon as `tₖ(η) ≥ τ(λc + η)` for
-some `0 ≤ η ≤ λ* - λc` (intermediate value theorem; at `η = 0` this holds on `𝓛`). -/
+/-- Let $k$ be odd, $\lambda_c \in (a, \lambda_*]$ and $0 \le \eta \le \lambda_* - \lambda_c$ with
+$\tau(\lambda_c + \eta) \le t_k(\eta)$. Then the equation
+$t_k(\delta) = \tau(\lambda_c + \delta)$ has a root $\delta \in [\eta, \lambda_* - \lambda_c]$.
+The proof is the intermediate value theorem; for $\eta = 0$ the hypothesis holds on
+$\mathcal{L}$. -/
 theorem exists_taylor_root {k : ℕ} (hk : Odd k) {lamc η : ℝ} (hc : lamc ∈ Ioc a lamStar)
     (hη0 : 0 ≤ η) (hη : η ≤ lamStar - lamc)
     (hfη : τ (lamc + η) ≤ secularTaylor g H k lamc η) :
@@ -652,9 +798,13 @@ theorem exists_taylor_root {k : ℕ} (hk : Odd k) {lamc η : ℝ} (hc : lamc ∈
     (show (0 : ℝ) ∈ Icc _ _ from ⟨sub_nonpos.2 hend, sub_nonneg.2 hfη⟩)
   exact ⟨δ, hδ, sub_eq_zero.1 hfδ⟩
 
-/-- **Odd-order Taylor corrections underestimate `λ*`** (book §8.2.1, Theorem 8.2.2). For odd `k`
-and `λc ∈ (a, λ*]`, the roots of (8.2.15) form a nonempty set bounded above, and its rightmost
-point `δₖᵀ(λc)` satisfies `λc ≤ λc + δₖᵀ(λc) ≤ λ*`. -/
+/-- **Taylor corrections of odd order underestimate $\lambda_*$.** Assume the standing hypotheses
+`Subproblem.IsSecularTarget` for $\tau$, $a$ and $\lambda_*$. Let $k$ be odd and
+$\lambda_c \in (a, \lambda_*]$. Then the set of roots $\delta$ of the equation (8.2.15)
+$$t_k(\delta) = \tau(\lambda_c + \delta)$$
+is nonempty and bounded above, and its supremum $\delta_k^T(\lambda_c)$ satisfies
+$$\lambda_c \le \lambda_c + \delta_k^T(\lambda_c) \le \lambda_*.$$
+This is §8.2.1 of [cartis2022evaluation], with Theorem 8.2.2 there. -/
 theorem taylorCorrection_mem {k : ℕ} (hk : Odd k) {lamc : ℝ} (hc : lamc ∈ Ioc a lamStar) :
     {δ | secularTaylor g H k lamc δ = τ (lamc + δ)}.Nonempty ∧
       BddAbove {δ | secularTaylor g H k lamc δ = τ (lamc + δ)} ∧
@@ -671,8 +821,12 @@ theorem taylorCorrection_mem {k : ℕ} (hk : Odd k) {lamc : ℝ} (hc : lamc ∈ 
       csSup_le ⟨δ, hroot⟩ fun δ hδ => h.taylor_root_le hk hc hδ
     linarith
 
-/-- The rightmost root is attained: `δₖᵀ(λc)` is the greatest root of (8.2.15) for odd `k` and
-`λc ∈ (a, λ*]` (the root set is closed near its supremum, where `τ` is continuous). -/
+/-- **The rightmost root is attained.** Assume the standing hypotheses `Subproblem.IsSecularTarget`
+for $\tau$, $a$ and $\lambda_*$. For odd $k$ and $\lambda_c \in (a, \lambda_*]$, the Taylor
+correction $\delta_k^T(\lambda_c)$ is the greatest root of (8.2.15)
+$t_k(\delta) = \tau(\lambda_c + \delta)$.
+
+The set of roots is closed near its supremum, because $\tau$ is continuous on $(a, \infty)$. -/
 theorem isGreatest_taylorCorrection {k : ℕ} (hk : Odd k) {lamc : ℝ}
     (hc : lamc ∈ Ioc a lamStar) :
     IsGreatest {δ | secularTaylor g H k lamc δ = τ (lamc + δ)} (taylorCorrection g H τ k lamc) := by
@@ -693,7 +847,8 @@ theorem isGreatest_taylorCorrection {k : ℕ} (hk : Odd k) {lamc : ℝ}
   exact hball (show dist δ T < η by rw [Real.dist_eq, abs_lt]; constructor <;> linarith)
     (sub_eq_zero.2 hδ)
 
-/-- The Taylor correction solves (8.2.15): `tₖ(δₖᵀ(λc)) = τ(λc + δₖᵀ(λc))`. -/
+/-- For odd $k$ and $\lambda_c \in (a, \lambda_*]$, the Taylor correction solves (8.2.15):
+$t_k(\delta_k^T(\lambda_c)) = \tau(\lambda_c + \delta_k^T(\lambda_c))$. -/
 theorem secularTaylor_taylorCorrection {k : ℕ} (hk : Odd k) {lamc : ℝ}
     (hc : lamc ∈ Ioc a lamStar) :
     secularTaylor g H k lamc (taylorCorrection g H τ k lamc) =
@@ -702,8 +857,17 @@ theorem secularTaylor_taylorCorrection {k : ℕ} (hk : Odd k) {lamc : ℝ}
 
 end IsSecularTarget
 
-/-- A uniform first-order bound on the Taylor polynomials: for `x₀ ≤ x` with `x₀ > -λ₁` and
-`δ ∈ [0, 1]`, `|tₖ(δ) - π(x)| ≤ B δ`, where `B` depends only on `x₀` and `k`. -/
+/-- A uniform first-order bound on the Taylor polynomials. Let $x_0 > -\lambda_1$, $x \ge x_0$,
+$\delta \in [0, 1]$ and $k \in \mathbb{N}$, and let $t_k$ be the Taylor polynomial of $\pi$ at
+$x$. Then
+$$|t_k(\delta) - \pi(x)| \le B \delta, \qquad B = \sum_{j=0}^{k} \frac{(j + 1)! \,
+  M_{j+2}(x_0)}{j!},$$
+where $M_m(x_0) = \sum_i \gamma_i^2 / (x_0 + \lambda_i)^m$ is the moment of order $m$ of the
+spectral form of $\pi$, with the eigenvalues $\lambda_i$ of $H$ and the weights $\gamma_i^2$ of
+$g$. The bound $B$ depends only on $x_0$ and $k$.
+
+The moment is `Subproblem.secularMoment` with the eigenvalues `hH.eigenvalues rfl` and the
+weights `Subproblem.secularWeight hH g`. -/
 theorem abs_secularTaylor_sub_le {x₀ x δ : ℝ} (hx₀ : -leftmost hH < x₀) (hx : x₀ ≤ x)
     (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1) (k : ℕ) :
     |secularTaylor g H k x δ - secular g H x| ≤
@@ -738,11 +902,19 @@ namespace IsSecularTarget
 variable {τ : ℝ → ℝ} {a lamStar : ℝ} (h : IsSecularTarget hH g τ a lamStar)
 include h
 
-/-- **Convergence of odd-order Taylor iterations** (book §8.2.1 and Algorithm 8.3.1 without
-Newton candidates). For odd `k`, if `λ 0 ∈ (a, λ*]` and
-`λ j + δₖᵀ(λ j) ≤ λ (j + 1) ≤ λ*` for all `j`, then `λ` increases to `λ*`. (At a limit
-`λ̄ < λ*`, `π - τ` is bounded below near `λ̄` by a positive constant and the Taylor coefficients are
-bounded, so the corrections stay bounded below, which contradicts convergence.) -/
+/-- **Convergence of Taylor iterations of odd order.** Assume the standing hypotheses
+`Subproblem.IsSecularTarget` for $\tau$, $a$ and $\lambda_*$, and let $k$ be odd. Let
+$(\lambda_j)$ be a sequence with
+$$\lambda_0 \in (a, \lambda_*], \qquad \lambda_j + \delta_k^T(\lambda_j) \le \lambda_{j+1} \le
+  \lambda_* \quad \text{for all } j.$$
+Then $(\lambda_j)$ is increasing and converges to $\lambda_*$.
+
+This is §8.2.1 of [cartis2022evaluation] and Algorithm 8.3.1 there without Newton candidates.
+
+The proof is by contradiction. At a limit $\bar\lambda < \lambda_*$, the difference $\pi - \tau$
+is bounded below near $\bar\lambda$ by a positive constant and the Taylor coefficients are
+bounded (`Subproblem.abs_secularTaylor_sub_le`), so the corrections stay bounded below, which
+contradicts convergence. -/
 theorem tendsto_of_taylorCorrection_le {k : ℕ} (hk : Odd k) {x : ℕ → ℝ}
     (hx0 : x 0 ∈ Ioc a lamStar)
     (hstep : ∀ j, x j + taylorCorrection g H τ k (x j) ≤ x (j + 1) ∧ x (j + 1) ≤ lamStar) :

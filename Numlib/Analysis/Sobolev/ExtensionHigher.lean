@@ -16,69 +16,118 @@ import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.Analysis.Sobolev.Extension
 
 /-!
-# The extension operator at every order on a `C^k` domain
+# The extension operator of every order on a $C^k$ domain
 
-The higher-order extension theorem: for an open set `Ω ⊆ ℝ^N` of class `C^k` (`k ≥ 1`) with
-bounded boundary and `1 ≤ p ≤ ∞`, there is a bounded linear extension operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` with `P u = u` on `Ω`, bounded at once on `W^{k,p}` and on `L^p`
-(`SobolevEuclidean.exists_extensionL_of_order`, `IsSobolevExtensionDomainOfOrder`); the operators
-of all exponents are one map on functions (`SobolevEuclidean.exists_extensionL_of_order_uniform`).
-With it comes the density of the restrictions of `C_c^∞(ℝ^N)` functions in `W^{k,p}(Ω)` for `p < ∞`
-(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order`). The order-one case
-is Brezis's Theorem 9.7 (`Numlib/Analysis/Sobolev/Extension.lean`); the higher-order operator is
-the classical variant by *higher-order reflection* (Brezis, Comments on Chapter 9; Lions–Magenes;
-Evans §5.4, remark after Theorem 1): on the half cylinder, `u` is extended across `x_N = 0` by
+Let $\Omega \subseteq \mathbb{R}^N$ be an open set of class $C^k$, $k \ge 1$, with bounded boundary,
+and let $1 \le p \le \infty$. This module constructs a bounded linear extension operator
+$P : W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^N)$ with $Pu = u$ on $\Omega$, which is also bounded
+from $L^p(\Omega)$ to $L^p(\mathbb{R}^N)$, and the operators of all exponents $p$ are given by one
+map on functions. As a consequence, the restrictions to $\Omega$ of the functions of
+$C_c^\infty(\mathbb{R}^N)$ are dense in $W^{k,p}(\Omega)$ for $p < \infty$. The case $k = 1$ is
+Theorem 9.7 and Corollary 9.8 of [brezis2011functional], formalized in
+`Numlib.Analysis.Sobolev.Extension`. The operator of higher order is the classical variant by
+higher-order reflection ([brezis2011functional], §9.2, Lemma 9.2, and Comments on Chapter 9, 3;
+Lions and Magenes; Evans, *Partial Differential Equations*, §5.4, remark after Theorem 1). The
+results correspond to Theorems 7.3.2 and 7.3.5 of [han2009theoretical].
 
-`(P u)(x', x_N) = ∑_{j} a_j u(x', λ_j x_N)`  for `x_N < 0`,
+Write $x = (x', x_N)$ for a point of $\mathbb{R}^N$, $N = d + 1$, write
+$S_\lambda(x', x_N) = (x', \lambda x_N)$, and let $Q_r = \{x : |x'| < r, |x_N| < r\}$ be the
+cylinder of radius $r$, with upper half $Q_r^+ = Q_r \cap \{x_N > 0\}$. For coefficients
+$a_1, \dots, a_m$ and distinct scales $\lambda_1, \dots, \lambda_m \in [-1, 0)$, the **higher-order
+reflection** of a function $u$ on the upper half is $P_a u = u$ on $\{x_N \ge 0\}$ and
+$$(P_a u)(x', x_N) = \sum_j a_j\, u(x', \lambda_j x_N) \qquad (x_N < 0).$$
+If the $a_j$ solve the Vandermonde system $\sum_j a_j \lambda_j^i = 1$ for $i < k$, the one-sided
+normal derivatives of order less than $k$ agree on the hyperplane $x_N = 0$, and $P_a$ maps
+$W^{k,p}(Q_r^+)$ into $W^{k,p}(Q_r)$.
 
-with distinct scales `λ_j ∈ [-1, 0)` and coefficients `a_j` solving the Vandermonde system
-`∑_j a_j λ_j^i = 1`, `i < k`, so that the one-sided normal derivatives of order `< k` match on the
-interface.
+## Main definitions
 
-## The proof
+* `higherReflection`: the higher-order reflection $P_a$ across the hyperplane $x_N = 0$.
+* `SobolevMultiIndex.higherReflectionL`: $P_a$ as a bounded linear map
+  $W^{1,p}(Q_r^+) \to W^{1,p}(Q_r)$, for $\sum_j a_j = 1$.
+* `ContDiffChart.opensUr`: the image $U_r = H(Q_r)$ of the cylinder $Q_r$, $r < 1$, under a chart
+  $H$.
+* `SobolevEuclidean.chartExtendLr`: the chart-local extension $W^{1,p}(\Omega) \to W^{1,p}(U_r)$,
+  $u \mapsto P_a(u \circ H) \circ H^{-1}$.
+* `IsSobolevExtensionDomainOfOrder`: $\Omega$ has a bounded linear extension operator
+  $W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^N)$.
 
-* **The higher-order reflection at order one** (`hasWeakFDerivOn_higherReflection`): for
-  `u ∈ W^{1,p}(V₊)` and `∑ a_j = 1`, `P u ∈ W^{1,p}(V)` with the expected piecewise derivative.
-  This is proved as Lemma 9.2 is not: the cancellation across the interface that the even
-  reflection enjoys is lost, and the identity is instead obtained by interior approximation. The
-  even reflection `u^⋆ ∈ W^{1,p}(V)` (Lemma 9.2) is approximated near any compact piece of `V`
-  by smooth functions `w_n` (`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`); for smooth `w_n`
-  the reflected function `P w_n = w_n + 1_{x_N < 0} g_n`, `g_n = ∑ a_j w_n ∘ S_j − w_n`, has
-  the piecewise derivative as weak derivative (`hasWeakFDerivOn_indicator_neg_of_contDiff`, the
-  gluing lemma: `g_n` vanishes on the interface, and `η(n x_N) g_n → 1_{x_N < 0} g_n` in
-  `W^{1,1}`), and the identity passes to the limit
-    (`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`).
-* **Every order** (`MemSobolevMultiIndex.higherReflection_of_order`): induction on `k` through
-  `memSobolevMultiIndex_succ_iff`; the tangential derivative of `P_a u` is `P_a (∂_i u)` and the
-  normal one is `P_{aλ} (∂_N u)` with the coefficients `a_j λ_j`, which satisfy the Vandermonde
-  conditions one order lower.
-* **Transport along a `C^k` chart** (`MemSobolevMultiIndex.comp_diffeoOn_of_order` of
-  `Numlib/Analysis/Sobolev/Calculus.lean`): `H^k` is preserved by composition with a `C^k`
-  diffeomorphism, by induction on `k` with the chain rule
-  `∂_i (w ∘ J) = ∑_l (∂_i J)_l (∂_l w) ∘ J` and the Leibniz rule for a `C^1` multiplier
-  (`HasWeakIteratedLineDerivOn.mul_contDiffOn_one`, from the `C_c^1` test functions of Remark 1).
-* **The closed graph theorem** (`SobolevMultiIndex.exists_continuousLinearMap_of_order` of
-  `Numlib/Analysis/Sobolev/Cutoff.lean`): the order-one operator `P₁` of Theorem 9.7, built with
-  the higher-order reflection in place of the even one, maps the functions of `W^{k,p}(Ω)` into
-  `W^{k,p}(ℝ^N)`; its restriction `W^{k,p}(Ω) → W^{k,p}(ℝ^N)` is then bounded by the closed graph
-  theorem, since convergence in `W^{k,p}` implies convergence in `W^{1,p}` and `P₁` is continuous
-  there. The closed graph theorem does not change the function of `P₁`, so the `L^p` bound of
-  `P₁` (each piece moves mass boundedly: `SobolevEuclidean.exists_eLpNorm_fn_chartExtendLr_le`)
-  is one of `P`, and so is its formula on functions
-  (`SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection`), which involves no exponent.
+## Main results
 
-The general tools of the proof live where they belong: the algebra of `MemSobolevMultiIndex`,
-the `C^k` multipliers and the zero extension at every order and exponent in `Cutoff.lean`, the
-scalings `scaleLast` and the cylinders `Q_r` in `Extension.lean`, the restriction of a
-diffeomorphism with bounded Jacobians in `Chart.lean`; the Rellich–Kondrachov theorem at `p = ∞`
-is in `Compactness.lean` and the bounded inclusion `W^{m+1+j,p}(Ω) → W^{j+1,r}(Ω)` of an
-extension domain (`SobolevEuclidean.exists_continuousLinearMap_lower_of_order`) in
-`EmbeddingDomain.lean`.
+* `hasWeakFDerivOn_indicator_lowerHalf_of_contDiff`: the gluing lemma; if $g \in C^1$ vanishes on
+  $x_N = 0$, then $1_{\{x_N < 0\}} g$ has the weak derivative $1_{\{x_N < 0\}} \nabla g$.
+* `hasWeakFDerivOn_higherReflection`: for $\sum_j a_j = 1$ and $w \in W^{1,p}(Q_r^+)$, the
+  reflection $P_a w$ has the piecewise weak derivative on $Q_r$.
+* `MemSobolev.higherReflection`: for $\sum_j a_j = 1$, $P_a$ maps $W^{1,p}(Q_r^+)$ into
+  $W^{1,p}(Q_r)$.
+* `HasWeakIteratedLineDerivOn.higherReflection_single`: a tangential derivative of $P_a u$ is $P_a$
+  of the derivative, and the normal derivative is $P_{a\lambda}(\partial_N u)$ with the coefficients
+  $a_j \lambda_j$.
+* `MemSobolevMultiIndex.higherReflection_of_order`: under the Vandermonde conditions of order $k$,
+  $P_a$ maps $W^{k,p}(Q_r^+)$ into $W^{k,p}(Q_r)$.
+* `exists_vandermonde_coeffs`: for the scales $\lambda_j = -1/(j+1)$ the Vandermonde system of order
+  $k$ has a solution.
+* `SobolevEuclidean.chartExtendLr_mem_of_order`: for a chart of class $C^k$, the chart-local
+  extension maps $W^{k,p}(\Omega)$ into $W^{k,p}(U_r)$.
+* `SobolevEuclidean.extension_mem_of_ops`: the operator assembled from a partition of unity maps
+  $W^{k,p}(\Omega)$ into $W^{k,p}(\mathbb{R}^N)$.
+* `SobolevEuclidean.exists_extensionL_of_order_of_atlas`: the extension operator of order $k$ for an
+  explicit atlas and partition of unity.
+* `SobolevEuclidean.exists_extensionL_of_order_uniform`: the extension theorem of order $k$, with
+  one map on functions for all exponents $p$.
+* `SobolevEuclidean.exists_extensionL_of_order`: the extension theorem of order $k$ for one exponent
+  $p$.
+* `IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`: an open set of class $C^k$ with
+  bounded boundary is a $W^{k,p}$-extension domain.
+* `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order`: on a
+  $W^{k,p}$-extension domain, $p < \infty$, the restrictions of $C_c^\infty(\mathbb{R}^N)$ functions
+  are dense in $W^{k,p}(\Omega)$.
+* `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isContDiffChartDomain`: the
+  same density on an open set of class $C^k$ with bounded boundary.
 
-## References
+## Proof outline
 
-[brezis2011functional], §9.2, Theorem 9.7 and Lemma 9.2; Comments on Chapter 9, 3 (the
-higher-order extension); [han2009theoretical], Theorems 7.3.2 and 7.3.5.
+At order one, $P_a w \in W^{1,p}$ cannot be proved as Lemma 9.2 of [brezis2011functional] proves it
+for the even reflection, because the cancellation across the interface is lost. Instead, the even
+reflection of $w$ is approximated near each compact piece of $Q_r$ by smooth functions $g_n$. For
+smooth $g_n$ one has $P_a g_n = g_n + 1_{\{x_N < 0\}} G_n$ with $G_n = \sum_j a_j\, g_n \circ
+S_{\lambda_j} - g_n$, which vanishes on the hyperplane because $\sum_j a_j = 1$, so the gluing lemma
+gives the piecewise weak derivative, and the identity passes to the limit in $L^1$. Every order
+follows by induction on $k$: the tangential derivatives of $P_a u$ are $P_a(\partial_i u)$ and the
+normal one is $P_{a\lambda}(\partial_N u)$, and the coefficients $a_j \lambda_j$ satisfy the
+Vandermonde conditions one order lower. The space $W^{k,p}$ is preserved by composition with a $C^k$
+diffeomorphism (`MemSobolevMultiIndex.comp_diffeoOn_of_order`, by induction on $k$ with the chain
+rule $\partial_i (w \circ J) = \sum_l (\partial_i J)_l\, (\partial_l w) \circ J$ and the Leibniz
+rule for a $C^1$ multiplier, `HasWeakIteratedLineDerivOn.mul_contDiffOn_one`). The operator $P_1$ of
+order one built as in Theorem 9.7, with the higher-order reflection in place of the even one,
+therefore maps $W^{k,p}(\Omega)$ into $W^{k,p}(\mathbb{R}^N)$. Its restriction to $W^{k,p}(\Omega)$
+is bounded by the closed graph theorem (`SobolevMultiIndex.exists_continuousLinearMap_of_order`),
+because convergence in $W^{k,p}$ implies convergence in $W^{1,p}$, where $P_1$ is continuous. The
+closed graph theorem does not change the function of $P_1$, so the $L^p$ bound of $P_1$ and its
+formula on functions, which involves no exponent, hold for the operator of order $k$.
+
+## Implementation notes
+
+* The space is `EuclideanSpace ℝ (Fin (d + 1))`, so $N = d + 1$. The last coordinate $x_N$ is
+  `x (Fin.last d)`. The cylinder $Q_r$ is `cylinder d r`. The upper half $V_+$ of an open set $V$ is
+  `posHalf (single (Fin.last d) 1) V`. The map `scaleLast l` is $S_l$. The scales are `l j`, indexed
+  from $0$.
+* Several lemmas take the operators of the construction as variables, together with the formulas for
+  their functions: `SobolevEuclidean.chartExtend_mem_of_ops`,
+  `SobolevEuclidean.extension_mem_of_ops` and `SobolevEuclidean.exists_extensionL_of_order_of_ops`.
+  The concrete operators are substituted once.
+* The construction gives one operator for every exponent $p$ at a fixed order $k$, but not one
+  operator for every order $k$, because the Vandermonde coefficients depend on $k$.
+* The general tools of the proof are in other modules: the algebra of `MemSobolevMultiIndex`, the
+  $C^k$ multipliers and the zero extension at every order in `Numlib.Analysis.Sobolev.Cutoff`; the
+  closed graph step in `Numlib.Analysis.Sobolev.Operators`; the maps `scaleLast` and the cylinders
+  $Q_r$ in `Numlib.Analysis.Sobolev.Extension`; the restriction of a diffeomorphism with bounded
+  Jacobians in `Numlib.Analysis.Sobolev.Chart`; the transport of $W^{k,p}$ along a $C^k$
+  diffeomorphism in `Numlib.Analysis.Sobolev.Calculus`. The Rellich–Kondrachov theorem at
+  $p = \infty$ is in `Numlib.Analysis.Sobolev.Compactness`, and the bounded inclusion
+  $W^{m+1+j,p}(\Omega) \to W^{j+1,r}(\Omega)$ of an extension domain
+  (`SobolevEuclidean.exists_continuousLinearMap_lower_of_order`) is in
+  `Numlib.Analysis.Sobolev.EmbeddingDomain`.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace EuclideanSpace
@@ -88,51 +137,54 @@ noncomputable section
 
 
 
-/-! ### The two halves of an open set, and the maps `scaleLast l` between them -/
+/-! ### The two halves of an open set, and the maps $S_\lambda$ between them -/
 
 section Halves
 
 variable {d : ℕ} {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **The negative half** `V₋ = V ∩ {x_N < 0}` of an open set of `ℝ^{d+1}`. Its positive half is
-`posHalf e_N V` of `Numlib/Analysis/Sobolev/Reflection.lean`. -/
+/-- The **negative half** $V_- = V \cap \{x_N < 0\}$ of an open set $V \subseteq \mathbb{R}^{d+1}$.
+
+The positive half $V_+ = V \cap \{x_N > 0\}$ is `posHalf (single (Fin.last d) 1) V` of
+`Numlib.Analysis.Sobolev.Reflection`. -/
 def negHalf (V : Opens (EuclideanSpace ℝ (Fin (d + 1)))) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
   (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ {x | x (Fin.last d) < 0}
 
-/-- Membership of the negative half. -/
+/-- A point $x$ lies in $V_-$ if and only if $x \in V$ and $x_N < 0$. -/
 theorem mem_negHalf {x : EuclideanSpace ℝ (Fin (d + 1))} :
     x ∈ negHalf V ↔ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∧ x (Fin.last d) < 0 :=
   Iff.rfl
 
-/-- The negative half is open. -/
+/-- The negative half $V_-$ is open. -/
 theorem isOpen_negHalf' : IsOpen (negHalf V) :=
   V.isOpen.inter (isOpen_lt continuous_apply_last continuous_const)
 
-/-- Membership of the positive half `posHalf e_N V`, in coordinates. -/
+/-- A point $x$ lies in the positive half $V_+$ if and only if $x \in V$ and $x_N > 0$. -/
 theorem mem_posHalf_last_iff {x : EuclideanSpace ℝ (Fin (d + 1))} :
     x ∈ (posHalf (single (Fin.last d) (1 : ℝ)) V : Set _) ↔
       x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∧ 0 < x (Fin.last d) := by
   rw [coe_posHalf]
   simp [EuclideanSpace.inner_single_last_one]
 
-/-- The positive half is a subset of `V`. -/
+/-- The positive half $V_+$ is a subset of $V$. -/
 theorem posHalf_last_subset :
     (posHalf (single (Fin.last d) (1 : ℝ)) V : Set _) ⊆ (V : Set (EuclideanSpace ℝ (Fin (d + 1))))
       :=
   fun _ hx ↦ (mem_posHalf_last_iff.1 hx).1
 
-/-- The negative half is a subset of `V`. -/
+/-- The negative half $V_-$ is a subset of $V$. -/
 theorem negHalf_subset : negHalf V ⊆ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) := fun _ hx ↦ hx.1
 
-/-- The hyperplane `x_N = 0` is a null set. -/
+/-- The hyperplane $\{x_N = 0\}$ is a null set: almost every $x \in \mathbb{R}^{d+1}$ has
+$x_N \ne 0$. -/
 theorem ae_apply_last_ne_zero : ∀ᵐ x : EuclideanSpace ℝ (Fin (d + 1)), x (Fin.last d) ≠ 0 := by
   have hv : (single (Fin.last d) (1 : ℝ) : EuclideanSpace ℝ (Fin (d + 1))) ≠ 0 :=
     ne_zero_of_norm_ne_zero (by rw [EuclideanSpace.norm_single_last_one]; exact one_ne_zero)
   filter_upwards [ae_inner_ne_zero hv] with x hx
   rwa [EuclideanSpace.inner_single_last_one] at hx
 
-/-- **A function equal to `A` on the positive half and to `B` on the negative half** agrees almost
-everywhere on `V` with `1_{V₊} A + 1_{V₋} B`. -/
+/-- Let $G$, $A$, $B$ be functions with values in a normed group. If $G = A$ on $V_+$ and $G = B$ on
+$V_-$, then $G = 1_{V_+} A + 1_{V_-} B$ almost everywhere on $V$. -/
 theorem ae_eq_indicator_add_of_piecewise {F : Type*} [NormedAddCommGroup F] {G A B : _ → F}
     (hA : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), 0 < x (Fin.last d) → G x = A x)
     (hB : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → G x = B x) :
@@ -150,7 +202,8 @@ theorem ae_eq_indicator_add_of_piecewise {F : Type*} [NormedAddCommGroup F] {G A
     have hxm : x ∉ negHalf V := fun h' ↦ lt_asymm h h'.2
     rw [Pi.add_apply, Set.indicator_of_mem hxp, Set.indicator_of_notMem hxm, add_zero, hA x hxV h]
 
-/-- Measurability of a function given by `A` on `V₊` and `B` on `V₋`. -/
+/-- Let $G = A$ on $V_+$ and $G = B$ on $V_-$. If $A$ is almost everywhere strongly measurable on
+$V_+$ and $B$ is so on $V_-$, then $G$ is almost everywhere strongly measurable on $V$. -/
 theorem aestronglyMeasurable_of_piecewise {F : Type*} [NormedAddCommGroup F] {G A B : _ → F}
     (hA : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), 0 < x (Fin.last d) → G x = A x)
     (hB : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → G x = B x)
@@ -165,8 +218,8 @@ theorem aestronglyMeasurable_of_piecewise {F : Type*} [NormedAddCommGroup F] {G 
   exact (h1.mono_measure Measure.restrict_le_self).congr (ae_eq_indicator_add_of_piecewise hA
     hB).symm
 
-/-- The `L^p(V)` norm of a function given by `A` on `V₊` and `B` on `V₋` is at most
-`‖A‖_{L^p(V₊)} + ‖B‖_{L^p(V₋)}`, `1 ≤ p`. -/
+/-- Let $1 \le p \le \infty$. If $G = A$ on $V_+$ and $G = B$ on $V_-$, then $\|G\|_{L^p(V)} \le
+\|A\|_{L^p(V_+)} + \|B\|_{L^p(V_-)}$. -/
 theorem eLpNorm_le_of_piecewise {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0∞} (hp : 1 ≤ p)
     {G A B : _ → F}
     (hA : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), 0 < x (Fin.last d) → G x = A x)
@@ -192,8 +245,8 @@ theorem eLpNorm_le_of_piecewise {F : Type*} [NormedAddCommGroup F] {p : ℝ≥0�
             (posHalf _ V).isOpen.measurableSet.nullMeasurableSet,
           eLpNorm_indicator_eq_eLpNorm_restrict isOpen_negHalf'.measurableSet.nullMeasurableSet]
 
-/-- `scaleLast l`, `l < 0`, maps the negative half of `V` into the positive half, when it maps it
-into `V`. -/
+/-- Let $\lambda < 0$, and let $S_\lambda$ map every point of $V_-$ into $V$. Then $S_\lambda$ maps
+every point of $V_-$ into $V_+$. -/
 theorem scaleLast_mem_posHalf {l : ℝ} (hl : l < 0)
     (hV : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → scaleLast l x ∈ V)
     {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : x ∈ negHalf V) :
@@ -201,14 +254,16 @@ theorem scaleLast_mem_posHalf {l : ℝ} (hl : l < 0)
   mem_posHalf_last_iff.2 ⟨hV x hx.1 hx.2, by
     rw [scaleLast_apply_last]; exact mul_pos_of_neg_of_neg hl hx.2⟩
 
-/-- The negative half lies in the preimage of the positive half under `scaleLast l`, `l < 0`. -/
+/-- Let $\lambda < 0$, and let $S_\lambda$ map $V_-$ into $V$. Then
+$V_- \subseteq S_\lambda^{-1}(V_+)$. -/
 theorem negHalf_subset_preimage_scaleLast {l : ℝ} (hl : l < 0)
     (hV : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → scaleLast l x ∈ V)
       :
     negHalf V ⊆ scaleLast l ⁻¹' (posHalf (single (Fin.last d) (1 : ℝ)) V : Set _) :=
   fun _ hx ↦ scaleLast_mem_posHalf hl hV hx
 
-/-- The image of the negative half under `scaleLast l`, `l < 0`, lies in the positive half. -/
+/-- Let $\lambda < 0$, and let $S_\lambda$ map $V_-$ into $V$. Then $S_\lambda(V_-) \subseteq V_+$.
+-/
 theorem image_negHalf_scaleLast_subset {l : ℝ} (hl : l < 0)
     (hV : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → scaleLast l x ∈ V)
       :
@@ -216,10 +271,14 @@ theorem image_negHalf_scaleLast_subset {l : ℝ} (hl : l < 0)
   rintro _ ⟨x, hx, rfl⟩
   exact scaleLast_mem_posHalf hl hV hx
 
-/-- **The transport facts for `f ↦ f ∘ scaleLast l` from the positive to the negative half**,
-`l < 0`: measurability, the `L^p` bound with a constant `D`, and the pull-back of almost
-everywhere statements. Packaged with the constant existential so that the consumers never see the
-Jacobian. -/
+/-- Let $\lambda < 0$, let $S_\lambda$ map $V_-$ into $V$, and let $p \in [0, \infty]$. There is a
+finite constant $D$ with the following properties. If $f$ is almost everywhere strongly
+measurable on $V_+$, then $f \circ S_\lambda$ is almost everywhere strongly measurable on $V_-$
+and $\|f \circ S_\lambda\|_{L^p(V_-)} \le D \|f\|_{L^p(V_+)}$. If a property holds for almost
+every point of $V_+$, then it holds at $S_\lambda x$ for almost every $x \in V_-$.
+
+The constant is stated existentially, so that the users of the lemma do not see the Jacobian of
+$S_\lambda$. -/
 theorem exists_scaleLast_negHalf_facts {l : ℝ} (hl : l < 0)
     (hV : ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → scaleLast l x ∈ V)
       (p : ℝ≥0∞) :
@@ -257,18 +316,25 @@ section HigherReflection
 
 variable {d : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] {m : ℕ}
 
-/-- **The higher-order reflection across `x_N = 0`**: `w` on `{x_N ≥ 0}`, and
-`∑_j a_j w(x', l_j x_N)` on `{x_N < 0}`, for coefficients `a` and scales `l` (with `l_j < 0`).
-For `m = 1`, `a = 1`, `l = −1` it is the even reflection `evenReflection e_N w`; with `a` solving
-the Vandermonde system `∑_j a_j l_j^i = 1`, `i < k`, it preserves `W^{k,p}` (Brezis, Comments on
-Chapter 9, 3; Lions–Magenes). -/
+/-- The **higher-order reflection** across the hyperplane $x_N = 0$, for coefficients
+$a \in \mathbb{R}^m$ and scales $\lambda \in \mathbb{R}^m$: for a function $w$ on
+$\mathbb{R}^{d+1}$,
+$$(P_a w)(x) = \begin{cases} w(x) & \text{if } x_N \ge 0, \\ \sum_j a_j\, w(S_{\lambda_j} x) &
+  \text{if } x_N < 0. \end{cases}$$
+
+The definition puts no condition on the scales; the results below take $-1 \le \lambda_j < 0$.
+For $m = 1$, $a = 1$ and $\lambda = -1$ it is the even reflection
+`evenReflection (single (Fin.last d) 1) w`. If $a$ solves the Vandermonde system
+$\sum_j a_j \lambda_j^i = 1$ for $i < k$, it preserves $W^{k,p}$ ([brezis2011functional],
+Comments on Chapter 9, 3; Lions and Magenes); see
+`MemSobolevMultiIndex.higherReflection_of_order`. -/
 def higherReflection (a l : Fin m → ℝ) (w : EuclideanSpace ℝ (Fin (d + 1)) → F)
     (x : EuclideanSpace ℝ (Fin (d + 1))) : F :=
   if 0 ≤ x (Fin.last d) then w x else ∑ j, a j • w (scaleLast (l j) x)
 
-/-- **The reflected tensor derivative**: `Dw` on `{x_N ≥ 0}`, and
-`∑_j a_j (Dw ∘ S_j) ∘ S_j` on `{x_N < 0}`, `S_j = scaleLast (l j)` — the chain rule applied to
-each term of the higher-order reflection. -/
+/-- The **reflected derivative**: for a field $Dw$ of linear maps on $\mathbb{R}^{d+1}$, it is
+$Dw(x)$ if $x_N \ge 0$, and $\sum_j a_j\, Dw(S_{\lambda_j} x) \circ S_{\lambda_j}$ if $x_N < 0$.
+This is the chain rule applied to each term of the higher-order reflection `higherReflection`. -/
 def higherReflectionFDeriv (a l : Fin m → ℝ)
     (Dw : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F)
     (x : EuclideanSpace ℝ (Fin (d + 1))) : EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F :=
@@ -277,26 +343,28 @@ def higherReflectionFDeriv (a l : Fin m → ℝ)
 
 variable (a l : Fin m → ℝ)
 
-/-- On `{x_N ≥ 0}` the reflection is the function. -/
+/-- On $\{x_N \ge 0\}$ the higher-order reflection is the function: $(P_a w)(x) = w(x)$. -/
 theorem higherReflection_of_nonneg {w : EuclideanSpace ℝ (Fin (d + 1)) → F}
     {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : 0 ≤ x (Fin.last d)) :
     higherReflection a l w x = w x := by
   simp only [higherReflection, hx, ↓reduceIte]
 
-/-- On `{x_N < 0}` the reflection is the combination of the scaled functions. -/
+/-- On $\{x_N < 0\}$ the higher-order reflection is the combination
+$(P_a w)(x) = \sum_j a_j\, w(S_{\lambda_j} x)$. -/
 theorem higherReflection_of_neg {w : EuclideanSpace ℝ (Fin (d + 1)) → F}
     {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : x (Fin.last d) < 0) :
     higherReflection a l w x = ∑ j, a j • w (scaleLast (l j) x) := by
   simp only [higherReflection, not_le.2 hx, ↓reduceIte]
 
-/-- On `{x_N ≥ 0}` the reflected derivative is the derivative. -/
+/-- On $\{x_N \ge 0\}$ the reflected derivative `higherReflectionFDeriv a l Dw` is $Dw(x)$. -/
 theorem higherReflectionFDeriv_of_nonneg
     {Dw : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F}
     {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : 0 ≤ x (Fin.last d)) :
     higherReflectionFDeriv a l Dw x = Dw x := by
   simp only [higherReflectionFDeriv, hx, ↓reduceIte]
 
-/-- On `{x_N < 0}` the reflected derivative is the combination of the transported derivatives. -/
+/-- On $\{x_N < 0\}$ the reflected derivative `higherReflectionFDeriv a l Dw` is $\sum_j a_j\,
+Dw(S_{\lambda_j} x) \circ S_{\lambda_j}$. -/
 theorem higherReflectionFDeriv_of_neg
     {Dw : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F}
     {x : EuclideanSpace ℝ (Fin (d + 1))} (hx : x (Fin.last d) < 0) :
@@ -304,7 +372,7 @@ theorem higherReflectionFDeriv_of_neg
       = ∑ j, a j • (Dw (scaleLast (l j) x)).comp (scaleLast (l j)) := by
   simp only [higherReflectionFDeriv, not_le.2 hx, ↓reduceIte]
 
-/-- The higher-order reflection is additive. -/
+/-- The higher-order reflection is additive: $P_a(f + g) = P_a f + P_a g$. -/
 theorem higherReflection_add (f g : EuclideanSpace ℝ (Fin (d + 1)) → F) :
     higherReflection a l (f + g) = higherReflection a l f + higherReflection a l g := by
   funext x
@@ -313,7 +381,7 @@ theorem higherReflection_add (f g : EuclideanSpace ℝ (Fin (d + 1)) → F) :
   · rfl
   · simp only [smul_add, Finset.sum_add_distrib]
 
-/-- The higher-order reflection commutes with scalar multiplication. -/
+/-- The higher-order reflection commutes with real scalar multiplication: $P_a(c f) = c\, P_a f$. -/
 theorem higherReflection_smul (c : ℝ) (f : EuclideanSpace ℝ (Fin (d + 1)) → F) :
     higherReflection a l (c • f) = c • higherReflection a l f := by
   funext x
@@ -324,24 +392,31 @@ theorem higherReflection_smul (c : ℝ) (f : EuclideanSpace ℝ (Fin (d + 1)) �
 
 variable {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))} {a l}
 
-/-- **The standing hypotheses on the scales and the set**: every `l j` lies in `[-1, 0)` and
-`scaleLast (l j)` maps the negative half of `V` into `V`. -/
+/-- The **standing hypotheses on the scales and the set**: every scale satisfies
+$-1 \le \lambda_j < 0$, and every $S_{\lambda_j}$ maps the negative half $V_-$ into $V$. -/
 structure IsReflectionSet (l : Fin m → ℝ) (V : Opens (EuclideanSpace ℝ (Fin (d + 1)))) : Prop where
+  /-- Every scale is negative: $\lambda_j < 0$. -/
   neg : ∀ j, l j < 0
+  /-- Every scale is at least $-1$: $-1 \le \lambda_j$. -/
   neg_one_le : ∀ j, -1 ≤ l j
+  /-- Every $S_{\lambda_j}$ maps each point $x \in V$ with $x_N < 0$ into $V$. -/
   mem : ∀ j, ∀ x ∈ (V : Set (EuclideanSpace ℝ (Fin (d + 1)))), x (Fin.last d) < 0 → scaleLast (l j)
     x ∈ V
 
-/-- The cylinders are reflection sets for scales in `[-1, 0)`. -/
+/-- If $-1 \le \lambda_j < 0$ for every $j$, then every cylinder $Q_r$ satisfies the standing
+hypotheses `IsReflectionSet` for the scales $\lambda$. -/
 theorem isReflectionSet_cylinder (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j) (r : ℝ) :
     IsReflectionSet l (cylinder d r) :=
   ⟨hl, hl1, fun j _ hx _ ↦
     scaleLast_mem_cylinder (abs_le.2 ⟨hl1 j, (hl j).le.trans zero_le_one⟩) hx⟩
 
-/-- **The `L^p` facts of the higher-order reflection**, packaged: for a measurable `w` on `V₊`,
-`P w` is measurable on `V` and `‖P w‖_{L^p(V)} ≤ C ‖w‖_{L^p(V₊)}`, and the same for
-`higherReflectionFDeriv` with the same constant; and almost everywhere statements on `V₊`
-transport to the `scaleLast (l j) x`, `x ∈ V₋`. -/
+/-- Let the scales $\lambda$ and the open set $V$ satisfy `IsReflectionSet`, let
+$a \in \mathbb{R}^m$ and $1 \le p \le \infty$. There is a finite constant $C$ with the following
+properties. If $w$ is almost everywhere strongly measurable on $V_+$, then $P_a w$ is almost
+everywhere strongly measurable on $V$ and $\|P_a w\|_{L^p(V)} \le C \|w\|_{L^p(V_+)}$. The same
+holds, with the same constant, for a field $Dw$ of linear maps and its reflected derivative
+`higherReflectionFDeriv a l Dw`. If a property holds for almost every point of $V_+$, then for
+almost every $x \in V_-$ it holds at $S_{\lambda_j} x$ for every $j$. -/
 theorem IsReflectionSet.exists_facts (hV : IsReflectionSet l V) (a : Fin m → ℝ) (p : ℝ≥0∞)
     [Fact (1 ≤ p)] :
     ∃ C : ℝ≥0∞, C ≠ ⊤ ∧
@@ -474,18 +549,18 @@ theorem IsReflectionSet.exists_facts (hV : IsReflectionSet l V) (a : Fin m → �
 
 end HigherReflection
 
-/-! ### The gluing lemma: a `C^1` function vanishing on the hyperplane, cut to the lower half -/
+/-! ### The gluing lemma: a $C^1$ function that vanishes on the hyperplane, cut to the lower half -/
 
 section Gluing
 
 variable {d : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The inner product with `-e_N` is minus the last coordinate. -/
+/-- The inner product of $x$ with $-e_N$ is $-x_N$. -/
 theorem inner_neg_single_last (x : EuclideanSpace ℝ (Fin (d + 1))) :
     ⟪x, -single (Fin.last d) (1 : ℝ)⟫ = -x (Fin.last d) := by
   rw [inner_neg_right, EuclideanSpace.inner_single_last_one]
 
-/-- `x − scaleLast 0 x = x_N e_N`. -/
+/-- $x - S_0 x = x_N e_N$. -/
 theorem sub_scaleLast_zero (x : EuclideanSpace ℝ (Fin (d + 1))) :
     x - scaleLast 0 x = x (Fin.last d) • single (Fin.last d) (1 : ℝ) := by
   ext i
@@ -494,25 +569,29 @@ theorem sub_scaleLast_zero (x : EuclideanSpace ℝ (Fin (d + 1))) :
   · subst h; ring
   · ring
 
-/-- `‖x − scaleLast 0 x‖ = |x_N|`. -/
+/-- $\|x - S_0 x\| = |x_N|$. -/
 theorem norm_sub_scaleLast_zero (x : EuclideanSpace ℝ (Fin (d + 1))) :
     ‖x - scaleLast 0 x‖ = |x (Fin.last d)| := by
   rw [sub_scaleLast_zero, norm_smul, EuclideanSpace.norm_single_last_one, mul_one,
     Real.norm_eq_abs]
 
-/-- The lower half space `{x_N < 0}` is measurable. -/
+/-- The lower half space $\{x_N < 0\}$ is measurable. -/
 theorem measurableSet_lowerHalf :
     MeasurableSet {x : EuclideanSpace ℝ (Fin (d + 1)) | x (Fin.last d) < 0} :=
   (isOpen_lt continuous_apply_last continuous_const).measurableSet
 
-/-- **The gluing lemma**: for `g` of class `C^1` vanishing on the hyperplane `x_N = 0`, the
-function `1_{x_N < 0} g` has the weak derivative `1_{x_N < 0} ∇g` on every bounded convex open
-set `Ω` closed under the projection `x ↦ (x', 0)`. Proof: `η_n g → 1_{x_N < 0} g` in `W^{1,1}(Ω)`
-for the cut-offs `η_n(x) = η((n + 1)(−x_N))`, which are `1` on `{x_N ≤ −1/(n+1)}` and `0` on
-`{x_N ≥ −1/(2(n+1))}`; the derivative term `g ∇η_n` is bounded because `|g| ≤ M |x_N|` (the mean
-value theorem, `g` vanishing on the hyperplane) and `|∇η_n| ≤ C (n + 1)` on a strip of width
-`1/(n+1)`, and it tends to `0` off the null hyperplane; the weak derivative is closed under `L^1`
-limits (`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`). -/
+/-- The **gluing lemma**. Let $F$ be a real normed space, and let $g : \mathbb{R}^{d+1} \to F$ be of
+class $C^1$ with $g(x) = 0$ whenever $x_N = 0$. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+convex open set with compact closure such that $S_0 x = (x', 0) \in \Omega$ for every
+$x \in \Omega$. Then on $\Omega$ the function $1_{\{x_N < 0\}}\, g$ has the weak derivative
+$1_{\{x_N < 0\}}\, Dg$.
+
+The proof shows that $\eta_n g \to 1_{\{x_N < 0\}}\, g$ in $W^{1,1}(\Omega)$ for the cut-off
+functions $\eta_n(x) = \eta(-(n+1) x_N)$, which are $1$ on $\{x_N \le -1/(n+1)\}$ and $0$ on
+$\{x_N \ge -1/(2(n+1))\}$. The term $g\, \nabla\eta_n$ stays bounded, because $|g| \le M |x_N|$
+by the mean value theorem and $|\nabla\eta_n| \le C(n+1)$ on a strip of width $1/(n+1)$, and it
+tends to $0$ off the hyperplane. The weak derivative is closed under limits in $L^1$
+(`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`). -/
 theorem hasWeakFDerivOn_indicator_lowerHalf_of_contDiff {g : EuclideanSpace ℝ (Fin (d + 1)) → F}
     (hg : ContDiff ℝ 1 g) (hg0 : ∀ x, x (Fin.last d) = 0 → g x = 0)
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩc : IsCompact (closure (Ω : Set (EuclideanSpace
@@ -780,14 +859,14 @@ theorem hasWeakFDerivOn_indicator_lowerHalf_of_contDiff {g : EuclideanSpace ℝ 
 
 end Gluing
 
-/-! ### The higher-order reflection at order one: the identity -/
+/-! ### The higher-order reflection at order one: the derivative -/
 
 section ReflectionIdentity
 
 variable {d : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] {m : ℕ}
   {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- A compact subset of `Q_r` lies in a cylinder `Q_{r'}` with `r' < r`. -/
+/-- Every compact subset $K$ of the cylinder $Q_r$ lies in a cylinder $Q_{r'}$ with $r' < r$. -/
 theorem exists_lt_subset_cylinder {r : ℝ} {K : Set (EuclideanSpace ℝ (Fin (d + 1)))}
     (hK : IsCompact K) (hKQ : K ⊆ cylinder d r) : ∃ r', r' < r ∧ K ⊆ cylinder d r' := by
   rcases K.eq_empty_or_nonempty with rfl | hne
@@ -801,20 +880,21 @@ theorem exists_lt_subset_cylinder {r : ℝ} {K : Set (EuclideanSpace ℝ (Fin (d
   exact ⟨by linarith [le_max_left ‖init x‖ |x (Fin.last d)|],
     by linarith [le_max_right ‖init x‖ |x (Fin.last d)|]⟩
 
-/-- The closure of `Q_{r'}`, `r' < r`, lies in `Q_r`. -/
+/-- If $r' < r$, the closure of $Q_{r'}$ lies in $Q_r$. -/
 theorem closure_cylinder_subset_cylinder {r' r : ℝ} (h : r' < r) :
     closure (cylinder d r' : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ cylinder d r :=
   fun _ hx ↦ ⟨(closure_cylinder_subset r' hx).1.trans_lt h,
     (closure_cylinder_subset r' hx).2.trans_lt h⟩
 
-/-- The higher-order reflection of a difference. -/
+/-- The higher-order reflection of a difference: $P_a(f - g) = P_a f - P_a g$. -/
 theorem higherReflection_sub (a l : Fin m → ℝ) (f g : EuclideanSpace ℝ (Fin (d + 1)) → F) :
     higherReflection a l (f - g) = higherReflection a l f - higherReflection a l g := by
   rw [sub_eq_add_neg, higherReflection_add, sub_eq_add_neg]
   congr 1
   rw [← neg_one_smul ℝ g, higherReflection_smul, neg_one_smul]
 
-/-- The reflected derivative of a difference. -/
+/-- The reflected derivative `higherReflectionFDeriv` of a difference is the difference of the
+reflected derivatives. -/
 theorem higherReflectionFDeriv_sub (a l : Fin m → ℝ)
     (D₁ D₂ : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F) :
     higherReflectionFDeriv a l (D₁ - D₂)
@@ -825,8 +905,10 @@ theorem higherReflectionFDeriv_sub (a l : Fin m → ℝ)
   · rfl
   · simp only [ContinuousLinearMap.sub_comp, smul_sub, Finset.sum_sub_distrib]
 
-/-- **The higher-order reflection of any function is the function plus a cut-off correction**:
-`P g = g + 1_{x_N < 0} (∑ a_j g ∘ S_j − g)`. -/
+/-- The higher-order reflection of any function $g$ is the function plus a correction on the lower
+half:
+$$P_a g = g + 1_{\{x_N < 0\}} \Big( \sum_j a_j\, g \circ S_{\lambda_j} - g \Big).$$
+-/
 theorem higherReflection_eq_add_indicator (a l : Fin m → ℝ)
     (g : EuclideanSpace ℝ (Fin (d + 1)) → F) :
     higherReflection a l g = g + {x | x (Fin.last d) < 0}.indicator
@@ -839,7 +921,9 @@ theorem higherReflection_eq_add_indicator (a l : Fin m → ℝ)
   · rw [Pi.add_apply, higherReflection_of_nonneg a l (not_lt.1 hx), Set.indicator_of_notMem
       (show x ∉ {x : EuclideanSpace ℝ (Fin (d + 1)) | x (Fin.last d) < 0} from hx), add_zero]
 
-/-- The derivative of the correction `∑ a_j g ∘ S_j − g` for a `C^1` function `g`. -/
+/-- Let $g$ be of class $C^1$. At every point $x$, the correction
+$G = \sum_j a_j\, g \circ S_{\lambda_j} - g$ has the derivative $\sum_j a_j\, Dg(S_{\lambda_j}
+x) \circ S_{\lambda_j} - Dg(x)$. -/
 theorem hasFDerivAt_sum_comp_scaleLast_sub (a l : Fin m → ℝ)
     {g : EuclideanSpace ℝ (Fin (d + 1)) → F} (hg : ContDiff ℝ 1 g)
     (x : EuclideanSpace ℝ (Fin (d + 1))) :
@@ -850,16 +934,22 @@ theorem hasFDerivAt_sum_comp_scaleLast_sub (a l : Fin m → ℝ)
   exact (hg.differentiable one_ne_zero (scaleLast (l j) x)).hasFDerivAt.comp x
     (scaleLast (l j)).hasFDerivAt
 
-/-- The correction `∑ a_j g ∘ S_j − g` is `C^1` when `g` is. -/
+/-- If $g$ is of class $C^1$, the correction $\sum_j a_j\, g \circ S_{\lambda_j} - g$ is of class
+$C^1$. -/
 theorem contDiff_sum_comp_scaleLast_sub (a l : Fin m → ℝ)
     {g : EuclideanSpace ℝ (Fin (d + 1)) → F} (hg : ContDiff ℝ 1 g) :
     ContDiff ℝ 1 fun x ↦ ∑ j, a j • g (scaleLast (l j) x) - g x :=
   (ContDiff.sum fun j _ ↦ (hg.comp (scaleLast (l j)).contDiff).const_smul (a j)).sub hg
 
-/-- **The higher-order reflection of a `C^1` function has the piecewise derivative as weak
-derivative** on the cylinder `Q_r`, when `∑ a_j = 1` and `|l_j| ≤ 1`: `P g = g + 1_{x_N<0} G`
-with `G = ∑ a_j g ∘ S_j − g` vanishing on the hyperplane (since `S_j` fixes it and
-`∑ a_j = 1`), and the gluing lemma `hasWeakFDerivOn_indicator_lowerHalf_of_contDiff`. -/
+/-- Let $\sum_j a_j = 1$, let $g : \mathbb{R}^{d+1} \to F$ be of class $C^1$, and let
+$r \in \mathbb{R}$. Then on the cylinder $Q_r$ the higher-order reflection $P_a g$ has the
+reflected derivative `higherReflectionFDeriv a l (fderiv ℝ g)` as weak derivative.
+
+The proof writes $P_a g = g + 1_{\{x_N < 0\}} G$ with
+$G = \sum_j a_j\, g \circ S_{\lambda_j} - g$. The function $G$ vanishes on the hyperplane,
+because $S_{\lambda_j}$ fixes it and $\sum_j a_j = 1$, and the gluing lemma
+`hasWeakFDerivOn_indicator_lowerHalf_of_contDiff` applies. The statement needs no hypothesis on
+the scales. -/
 theorem hasWeakFDerivOn_higherReflection_of_contDiff {a l : Fin m → ℝ} (ha : ∑ j, a j = 1)
     {g : EuclideanSpace ℝ (Fin (d + 1)) → F} (hg : ContDiff ℝ 1 g) (r : ℝ) :
     HasWeakFDerivOn (higherReflection a l g) (higherReflectionFDeriv a l (fderiv ℝ g))
@@ -898,8 +988,9 @@ theorem hasWeakFDerivOn_higherReflection_of_contDiff {a l : Fin m → ℝ} (ha :
           x (Fin.last d) < 0} from hx), higherReflectionFDeriv_of_nonneg a l (not_lt.1 hx),
             add_zero]
 
-/-- The `L^1(Q_{r'})` norm of a reflected function tends to zero with the `L^1(Q_{r'}₊)` norm of
-the function. -/
+/-- Let the scales $\lambda$ and the open set $V$ satisfy `IsReflectionSet`, and let $f_i$ be almost
+everywhere strongly measurable on $V_+$. If $\|f_i\|_{L^1(V_+)} \to 0$, then
+$\|P_a f_i\|_{L^1(V)} \to 0$. -/
 theorem tendsto_eLpNorm_higherReflection_of_tendsto {a l : Fin m → ℝ} (hl : IsReflectionSet l V)
     {f : ℕ → EuclideanSpace ℝ (Fin (d + 1)) → F}
     (hf : ∀ i, AEStronglyMeasurable (f i)
@@ -916,8 +1007,10 @@ theorem tendsto_eLpNorm_higherReflection_of_tendsto {a l : Fin m → ℝ} (hl : 
   exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h' (fun _ ↦ zero_le)
     fun i ↦ (hCf (f i) (hf i)).2
 
-/-- The `L^1(Q_{r'})` norm of a reflected derivative tends to zero with the `L^1(Q_{r'}₊)` norm
-of the derivative. -/
+/-- Let the scales $\lambda$ and the open set $V$ satisfy `IsReflectionSet`, and let $D_i$ be fields
+of linear maps, almost everywhere strongly measurable on $V_+$. If $\|D_i\|_{L^1(V_+)} \to 0$,
+then the reflected derivatives $\tilde D_i$ = `higherReflectionFDeriv a l (D i)` satisfy
+$\|\tilde D_i\|_{L^1(V)} \to 0$. -/
 theorem tendsto_eLpNorm_higherReflectionFDeriv_of_tendsto {a l : Fin m → ℝ}
     (hl : IsReflectionSet l V)
     {D : ℕ → EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F}
@@ -937,8 +1030,9 @@ theorem tendsto_eLpNorm_higherReflectionFDeriv_of_tendsto {a l : Fin m → ℝ}
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The tensor membership `w ∈ W^{1,1}(V₊)` from a weak derivative in `L^p`, on a set of finite
-volume. -/
+/-- Let $V$ be an open set of finite measure and $1 \le p \le \infty$. If $w$ has the weak
+derivative $Dw$ on $V$ and both $w$ and $Dw$ lie in $L^p(V)$, then $w \in W^{1,1}(V)$ in the
+formulation `MemSobolev` with iterated derivatives. -/
 theorem memSobolev_one_of_hasWeakFDerivOn {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hVfin : volume (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) ≠ ⊤)
     {w : EuclideanSpace ℝ (Fin (d + 1)) → F}
@@ -968,18 +1062,20 @@ theorem memSobolev_one_of_hasWeakFDerivOn {V : Opens (EuclideanSpace ℝ (Fin (d
 
 variable [CompleteSpace F]
 
-/-- **The higher-order reflection at order one, the identity** (the analogue of
-[brezis2011functional] Lemma 9.2 for the multi-scale reflection): for `u ∈ W^{1,p}(Q_r₊)` with
-weak derivative `Dw`, `1 ≤ p ≤ ∞`, scales `l_j ∈ [-1, 0)` and coefficients with `∑ a_j = 1`, the
-reflection `P u` has the weak derivative `higherReflectionFDeriv a l Dw` on `Q_r`.
+/-- Let $F$ be a real Banach space, $1 \le p \le \infty$ and $r \in \mathbb{R}$. Let
+$a, \lambda \in \mathbb{R}^m$ with $\sum_j a_j = 1$ and $-1 \le \lambda_j < 0$ for every $j$.
+Let $w \in L^p(Q_r^+; F)$ have the weak derivative $Dw \in L^p(Q_r^+)$ on $Q_r^+$. Then on $Q_r$
+the higher-order reflection $P_a w$ has the weak derivative
+$$D(P_a w)(x) = \begin{cases} Dw(x) & \text{if } x_N \ge 0, \\ \sum_j a_j\, Dw(S_{\lambda_j} x)
+  \circ S_{\lambda_j} & \text{if } x_N < 0. \end{cases}$$
 
-The cancellation across the interface that the even reflection enjoys is lost here, and the
-identity is obtained by approximation instead: the even reflection `u^⋆ ∈ W^{1,1}(Q_r)`
-(Lemma 9.2) is approximated on a smaller cylinder `Q_{r'}` by smooth functions `g_i`
-(`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`, the interior mollification); for the smooth
-`g_i`, `P g_i` has the piecewise derivative (`hasWeakFDerivOn_higherReflection_of_contDiff`);
-`P g_i → P u` and the derivatives converge in `L^1(Q_{r'})` (the `L^1` bound of the reflection);
-the weak derivative is closed under `L^1` limits; and the identity on `Q_r` is local. -/
+This is the analogue, for the reflection with several scales, of Lemma 9.2 of
+[brezis2011functional]. The derivative is `higherReflectionFDeriv a l Dw`. The cancellation
+across the interface that the even reflection has is lost here. The proof therefore approximates
+the even reflection of $w$, which lies in $W^{1,1}(Q_r)$ by Lemma 9.2, on a smaller cylinder
+$Q_{r'}$ by smooth functions $g_i$ (`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`), applies
+`hasWeakFDerivOn_higherReflection_of_contDiff` to the $g_i$, and passes to the limit in
+$L^1(Q_{r'})$. -/
 theorem hasWeakFDerivOn_higherReflection {r : ℝ} {a l : Fin m → ℝ} (ha : ∑ j, a j = 1)
     (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j) {w : EuclideanSpace ℝ (Fin (d + 1)) → F}
     {Dw : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F}
@@ -1133,14 +1229,15 @@ theorem hasWeakFDerivOn_higherReflection {r : ℝ} {a l : Fin m → ℝ} (ha : �
 
 end ReflectionIdentity
 
-/-! ### The higher-order reflection at order one: membership and the typed operator -/
+/-! ### The higher-order reflection at order one: membership and the bundled operator -/
 
 section ReflectionMembership
 
 variable {d : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] {m : ℕ}
   {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))} {a l : Fin m → ℝ}
 
-/-- The higher-order reflection only sees the function up to a null set of `V₊`. -/
+/-- Let the scales $\lambda$ and the open set $V$ satisfy `IsReflectionSet`. If $f = g$ almost
+everywhere on $V_+$, then $P_a f = P_a g$ almost everywhere on $V$. -/
 theorem IsReflectionSet.higherReflection_congr_ae (hV : IsReflectionSet l V) (a : Fin m → ℝ)
     {f g : EuclideanSpace ℝ (Fin (d + 1)) → F}
     (h : f =ᵐ[volume.restrict (posHalf (single (Fin.last d) (1 : ℝ)) V :
@@ -1164,9 +1261,12 @@ theorem IsReflectionSet.higherReflection_congr_ae (hV : IsReflectionSet l V) (a 
 variable {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ (EuclideanSpace ℝ (Fin (d + 1)))}
   [CompleteSpace F] {p : ℝ≥0∞} [Fact (1 ≤ p)] {r : ℝ}
 
-/-- **The higher-order reflection at order one, membership**: for scales `l_j ∈ [-1, 0)`,
-coefficients with `∑ a_j = 1` and `u ∈ W^{1,p}(Q_r₊)`, `1 ≤ p ≤ ∞`, the reflection `P u` lies in
-`W^{1,p}(Q_r)` (the analogue of [brezis2011functional] Lemma 9.2). -/
+/-- Let $F$ be a real Banach space, $1 \le p \le \infty$ and $r \in \mathbb{R}$. Let
+$a, \lambda \in \mathbb{R}^m$ with $\sum_j a_j = 1$ and $-1 \le \lambda_j < 0$ for every $j$. If
+$u \in W^{1,p}(Q_r^+; F)$, then $P_a u \in W^{1,p}(Q_r; F)$.
+
+This is the analogue of Lemma 9.2 of [brezis2011functional] for the reflection with several
+scales. Here $W^{1,p}$ is the formulation `MemSobolev` with iterated derivatives. -/
 theorem MemSobolev.higherReflection (ha : ∑ j, a j = 1) (hl : ∀ j, l j < 0)
     (hl1 : ∀ j, -1 ≤ l j) {u : EuclideanSpace ℝ (Fin (d + 1)) → F}
     (hu : MemSobolev u 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
@@ -1205,7 +1305,9 @@ theorem MemSobolev.higherReflection (ha : ∑ j, a j = 1) (hl : ∀ j, l j < 0)
     exact (continuousMultilinearCurryFin1 ℝ (EuclideanSpace ℝ (Fin (d + 1)))
       F).symm.toContinuousLinearEquiv.toContinuousLinearMap.comp_memLp' hWp
 
-/-- The higher-order reflection at order one in the multi-index formulation. -/
+/-- Let $\sum_j a_j = 1$ and $-1 \le \lambda_j < 0$ for every $j$, and let $b$ be a basis of
+$\mathbb{R}^{d+1}$. If $u \in W^{1,p}(Q_r^+; F)$ in the multi-index formulation
+`MemSobolevMultiIndex` over $b$, then $P_a u \in W^{1,p}(Q_r; F)$ in the same formulation. -/
 theorem MemSobolevMultiIndex.higherReflection (ha : ∑ j, a j = 1) (hl : ∀ j, l j < 0)
     (hl1 : ∀ j, -1 ≤ l j) {u : EuclideanSpace ℝ (Fin (d + 1)) → F}
     (hu : MemSobolevMultiIndex b u 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r))
@@ -1218,15 +1320,19 @@ namespace SobolevMultiIndex
 variable (ha : ∑ j, a j = 1) (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j)
 include ha hl hl1
 
-/-- **The higher-order reflection on the typed spaces**, as a function: the element of
-`W^{1,p}(Q_r)` whose function is `P u`. It is linear and bounded;
-`SobolevMultiIndex.higherReflectionL` is its bundled form. -/
+/-- The higher-order reflection on the Sobolev spaces: for $\sum_j a_j = 1$ and
+$-1 \le \lambda_j < 0$, the element of $W^{1,p}(Q_r)$ whose function is $P_a u$, for
+$u \in W^{1,p}(Q_r^+)$.
+
+The element is chosen by `MemSobolevMultiIndex.higherReflection`. It is linear and bounded, and
+`SobolevMultiIndex.higherReflectionL` is the bundled bounded linear map. -/
 def higherReflection (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     SobolevMultiIndex F b 1 p (cylinder d r) volume :=
   ((memSobolevMultiIndex u).higherReflection ha hl hl1).exists_sobolevMultiIndex.choose
 
-/-- The function of `SobolevMultiIndex.higherReflection ha hl hl1 u` is `P u`. -/
+/-- The function of `SobolevMultiIndex.higherReflection ha hl hl1 u` is $P_a u$ almost everywhere on
+$Q_r$. -/
 theorem fn_higherReflection (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     fn (higherReflection ha hl hl1 u)
@@ -1234,7 +1340,8 @@ theorem fn_higherReflection (u : SobolevMultiIndex F b 1 p
         _root_.higherReflection a l (fn u) :=
   ((memSobolevMultiIndex u).higherReflection ha hl hl1).exists_sobolevMultiIndex.choose_spec
 
-/-- On `Q_r₊`, the reflected element is `u`. -/
+/-- On $Q_r^+$, the function of `SobolevMultiIndex.higherReflection ha hl hl1 u` is almost
+everywhere the function of $u$. -/
 theorem fn_higherReflection_restrict (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     fn (higherReflection ha hl hl1 u)
@@ -1245,7 +1352,7 @@ theorem fn_higherReflection_restrict (u : SobolevMultiIndex F b 1 p
     ae_restrict_mem (posHalf _ (cylinder d r)).isOpen.measurableSet] with x hx hxV
   rw [hx, higherReflection_of_nonneg a l (mem_posHalf_last_iff.1 hxV).2.le]
 
-/-- The typed reflection is additive. -/
+/-- `SobolevMultiIndex.higherReflection` is additive. -/
 theorem higherReflection_add (u w : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     higherReflection ha hl hl1 (u + w)
@@ -1256,7 +1363,7 @@ theorem higherReflection_add (u w : SobolevMultiIndex F b 1 p
   rw [_root_.higherReflection_add]
   exact ((fn_higherReflection ha hl hl1 u).add (fn_higherReflection ha hl hl1 w)).symm
 
-/-- The typed reflection commutes with scalar multiplication. -/
+/-- `SobolevMultiIndex.higherReflection` commutes with real scalar multiplication. -/
 theorem higherReflection_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     higherReflection ha hl hl1 (c • u) = c • higherReflection ha hl hl1 u := by
@@ -1266,8 +1373,11 @@ theorem higherReflection_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p
   rw [_root_.higherReflection_smul]
   exact ((fn_higherReflection ha hl hl1 u).const_smul c).symm
 
-/-- The partial derivatives of the reflected element, in terms of a tensor derivative `w` of
-`u`: `∂ᵢ (P u) = (higherReflectionFDeriv a l w) (bᵢ)` almost everywhere on `Q_r`. -/
+/-- Let $u \in W^{1,p}(Q_r^+)$, and let $w \in L^p(Q_r^+)$ be a weak derivative of the function of
+$u$ on $Q_r^+$. Then for every index $i$ the weak partial derivative of
+`SobolevMultiIndex.higherReflection ha hl hl1 u` along the basis vector $b_i$ is
+$x \mapsto \tilde w(x)(b_i)$, almost everywhere on $Q_r$, where $\tilde w$ is the reflected
+derivative `higherReflectionFDeriv a l w`. -/
 theorem weakDeriv_higherReflection_single (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume)
     {w : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1)) →L[ℝ] F}
@@ -1285,7 +1395,8 @@ theorem weakDeriv_higherReflection_single (u : SobolevMultiIndex F b 1 p
   filter_upwards [(ae_restrict_iff' (cylinder d r).isOpen.measurableSet).2 (h1.ae_eq h2)] with x hx
   simpa using hx
 
-/-- **The typed reflection is bounded**: `‖P u‖ ≤ C ‖u‖`. -/
+/-- `SobolevMultiIndex.higherReflection` is bounded: there is a constant $C$ with $\|P_a
+u\|_{W^{1,p}(Q_r)} \le C \|u\|_{W^{1,p}(Q_r^+)}$ for every $u$. -/
 theorem exists_norm_higherReflection_le :
     ∃ C : ℝ, ∀ u : SobolevMultiIndex F b 1 p
       (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume,
@@ -1335,7 +1446,7 @@ theorem exists_norm_higherReflection_le :
         rw [hB]; ring
 
 variable (F b p) in
-/-- The higher-order reflection as a linear map `W^{1,p}(Q_r₊) → W^{1,p}(Q_r)`. -/
+/-- The higher-order reflection as a linear map $W^{1,p}(Q_r^+) \to W^{1,p}(Q_r)$. -/
 def higherReflectionₗ :
     SobolevMultiIndex F b 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume →ₗ[ℝ]
       SobolevMultiIndex F b 1 p (cylinder d r) volume where
@@ -1344,27 +1455,32 @@ def higherReflectionₗ :
   map_smul' := higherReflection_smul ha hl hl1
 
 variable (F b p) in
-/-- **The higher-order reflection as a bounded linear map `W^{1,p}(Q_r₊) → W^{1,p}(Q_r)`**,
-`u ↦ P u`, for scales `l_j ∈ [-1, 0)` and coefficients with `∑ a_j = 1`: its function is `P u`
-(`SobolevMultiIndex.fn_higherReflectionL`), it restricts to `u` on `Q_r₊`
-(`SobolevMultiIndex.fn_higherReflectionL_restrict`), and its `L^p` norm is bounded by a multiple
-of `‖u‖_{L^p(Q_r₊)}` (`SobolevMultiIndex.exists_eLpNorm_fn_higherReflectionL_le`). It replaces
-the even reflection `SobolevEuclidean.cubeReflectL` in the chart-local step of the proof of the
-extension theorem when the Vandermonde conditions of higher order are imposed on `a`. -/
+/-- The **higher-order reflection as a bounded linear map** $W^{1,p}(Q_r^+) \to W^{1,p}(Q_r)$,
+$u \mapsto P_a u$, for coefficients with $\sum_j a_j = 1$ and scales with
+$-1 \le \lambda_j < 0$. Its function is $P_a u$ (`SobolevMultiIndex.fn_higherReflectionL`), it
+equals $u$ on $Q_r^+$ (`SobolevMultiIndex.fn_higherReflectionL_restrict`), and its $L^p(Q_r)$
+norm is at most a constant times $\|u\|_{L^p(Q_r^+)}$
+(`SobolevMultiIndex.exists_eLpNorm_fn_higherReflectionL_le`).
+
+It replaces the even reflection `SobolevEuclidean.cubeReflectL` in the chart-local step of the
+proof of the extension theorem, when the Vandermonde conditions of higher order are imposed on
+$a$. -/
 def higherReflectionL :
     SobolevMultiIndex F b 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume →L[ℝ]
       SobolevMultiIndex F b 1 p (cylinder d r) volume :=
   (higherReflectionₗ F b p ha hl hl1).mkContinuousOfExistsBound
     (exists_norm_higherReflection_le ha hl hl1)
 
-/-- `SobolevMultiIndex.higherReflectionL` is `SobolevMultiIndex.higherReflection`. -/
+/-- `SobolevMultiIndex.higherReflectionL` applied to $u$ is
+`SobolevMultiIndex.higherReflection ha hl hl1 u`. -/
 @[simp]
 theorem higherReflectionL_apply (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     higherReflectionL F b p ha hl hl1 u = higherReflection ha hl hl1 u :=
   rfl
 
-/-- The function of `SobolevMultiIndex.higherReflectionL ha hl hl1 u` is `P u`. -/
+/-- The function of `SobolevMultiIndex.higherReflectionL F b p ha hl hl1 u` is $P_a u$ almost
+everywhere on $Q_r$. -/
 theorem fn_higherReflectionL (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     fn (higherReflectionL F b p ha hl hl1 u)
@@ -1372,7 +1488,8 @@ theorem fn_higherReflectionL (u : SobolevMultiIndex F b 1 p
         _root_.higherReflection a l (fn u) :=
   fn_higherReflection ha hl hl1 u
 
-/-- On `Q_r₊`, `SobolevMultiIndex.higherReflectionL ha hl hl1 u` is `u`. -/
+/-- On $Q_r^+$, the function of `SobolevMultiIndex.higherReflectionL F b p ha hl hl1 u` is almost
+everywhere the function of $u$. -/
 theorem fn_higherReflectionL_restrict (u : SobolevMultiIndex F b 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume) :
     fn (higherReflectionL F b p ha hl hl1 u)
@@ -1380,7 +1497,9 @@ theorem fn_higherReflectionL_restrict (u : SobolevMultiIndex F b 1 p
         Set (EuclideanSpace ℝ (Fin (d + 1))))] fn u :=
   fn_higherReflection_restrict ha hl hl1 u
 
-/-- The `L^p` bound on `SobolevMultiIndex.higherReflectionL`. -/
+/-- There is a finite constant $C$ such that $\|P_a u\|_{L^p(Q_r)} \le C \|u\|_{L^p(Q_r^+)}$ for
+every $u \in W^{1,p}(Q_r^+)$, where $P_a u$ is the function of
+`SobolevMultiIndex.higherReflectionL F b p ha hl hl1 u`. -/
 theorem exists_eLpNorm_fn_higherReflectionL_le : ∃ C : ℝ≥0∞, C ≠ ⊤ ∧
     ∀ u : SobolevMultiIndex F b 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) volume,
       eLpNorm (fn (higherReflectionL F b p ha hl hl1 u)) p
@@ -1405,7 +1524,8 @@ variable {d : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [Compl
 
 open SobolevMultiIndex
 
-/-- `scaleLast l` on the basis vectors: it scales `e_N` by `l` and fixes the others. -/
+/-- $S_\lambda$ on the standard basis vectors: $S_\lambda e_N = \lambda e_N$, and
+$S_\lambda e_i = e_i$ for $i \ne N$. -/
 theorem scaleLast_single (l : ℝ) (i : Fin (d + 1)) :
     scaleLast l (single i (1 : ℝ)) = if i = Fin.last d then l • single i 1 else single i 1 := by
   ext j
@@ -1418,10 +1538,19 @@ theorem scaleLast_single (l : ℝ) (i : Fin (d + 1)) :
     · subst hj; simp [scaleLast_apply, hi, Ne.symm hi]
     · simp [scaleLast_apply, hi, hj]
 
-/-- **The partial derivatives of the higher-order reflection**: for `u ∈ W^{1,p}(Q_r₊)` with
-`∂ᵢ u = g` and `∑ a_j = 1`, the derivative `∂ᵢ (P_a u)` is `P_a g` for a tangential direction
-`i ≠ N` and `P_{a l} (∂_N u)`, with the coefficients `a_j l_j`, for the normal one: the chain
-rule on each term `a_j u ∘ S_j`, `S_j` fixing `eᵢ` for `i ≠ N` and scaling `e_N` by `l_j`. -/
+/-- Let $F$ be a real Banach space and $1 \le p \le \infty$. Let $\sum_j a_j = 1$ and
+$-1 \le \lambda_j < 0$ for every $j$. Let $u \in W^{1,p}(Q_r^+; F)$ in the multi-index
+formulation over the standard basis, and let $g$ be a weak derivative of $u$ along $e_i$ on
+$Q_r^+$. Then on $Q_r$ the higher-order reflection $P_a u$ has a weak derivative along $e_i$,
+namely
+$$\partial_i (P_a u) = \begin{cases} P_a g & \text{if } i \ne N, \\ P_{a\lambda}\, g & \text{if
+  } i = N, \end{cases}$$
+where $P_{a\lambda}$ is the higher-order reflection with the coefficients $a_j \lambda_j$ and
+the same scales.
+
+The proof applies the chain rule to each term $a_j\, u \circ S_{\lambda_j}$: the map
+$S_{\lambda_j}$ fixes $e_i$ for $i \ne N$ and scales $e_N$ by $\lambda_j$. In Lean the
+coefficients $a_j \lambda_j$ are `a * l`. -/
 theorem HasWeakIteratedLineDerivOn.higherReflection_single (ha : ∑ j, a j = 1)
     (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j) {u : EuclideanSpace ℝ (Fin (d + 1)) → F}
     (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u 1 p
@@ -1472,20 +1601,29 @@ theorem HasWeakIteratedLineDerivOn.higherReflection_single (ha : ∑ j, a j = 1)
   · rw [higherReflectionFDeriv_of_nonneg a l h.le, higherReflection_of_nonneg _ l h.le]
     exact hx2 (mem_posHalf_last_iff.2 ⟨hxV, h⟩)
 
-/-- The Vandermonde conditions one order down for the coefficients `a_j l_j`. -/
+/-- The Vandermonde conditions one order lower for the coefficients $a_j \lambda_j$: if
+$\sum_j a_j \lambda_j^i = 1$ for every $i < k + 1$, then
+$\sum_j (a_j \lambda_j) \lambda_j^i = 1$ for every $i < k$. -/
 theorem vandermonde_mul_of_succ {k : ℕ} (h : ∀ i < k + 1, ∑ j, a j * l j ^ i = 1) :
     ∀ i < k, ∑ j, (a * l) j * l j ^ i = 1 := fun i hi ↦ by
   have := h (i + 1) (by omega)
   rw [← this]
   exact Finset.sum_congr rfl fun j _ ↦ by rw [Pi.mul_apply, pow_succ]; ring
 
-/-- **The higher-order reflection preserves `W^{k,p}`** ([brezis2011functional] Comments on
-Chapter 9; Lions–Magenes): for scales `l_j ∈ [-1, 0)` and coefficients `a` with the Vandermonde
-conditions `∑_j a_j l_j^i = 1` for `i < k`, the reflection `P_a` maps `W^{k,p}(Q_r₊)` into
-`W^{k,p}(Q_r)`, `1 ≤ p ≤ ∞`. Induction on `k` through `memSobolevMultiIndex_succ_iff`: the
-tangential derivatives of `P_a u` are `P_a (∂ᵢ u)` and the normal one is `P_{al} (∂_N u)`
-(`HasWeakIteratedLineDerivOn.higherReflection_single`), and the coefficients `a_j l_j` satisfy
-the Vandermonde conditions of order `k − 1` (`vandermonde_mul_of_succ`). -/
+/-- The **higher-order reflection preserves $W^{k,p}$**. Let $F$ be a real Banach space,
+$1 \le p \le \infty$, $r \in \mathbb{R}$ and $k \in \mathbb{N}$. Let $-1 \le \lambda_j < 0$ for
+every $j$, and let the coefficients $a$ satisfy the Vandermonde conditions
+$$\sum_j a_j \lambda_j^i = 1 \qquad (i < k).$$
+If $u \in W^{k,p}(Q_r^+; F)$, then $P_a u \in W^{k,p}(Q_r; F)$.
+
+The result is stated in [brezis2011functional], Comments on Chapter 9, and in Lions and Magenes.
+Here $W^{k,p}$ is the multi-index formulation `MemSobolevMultiIndex` over the standard basis,
+and the statement holds for every $a$ at once, as the induction needs. For $k = 0$ there is no
+condition on $a$. The proof is an induction on $k$ through `memSobolevMultiIndex_succ_iff`: the
+tangential derivatives of $P_a u$ are $P_a(\partial_i u)$ and the normal one is
+$P_{a\lambda}(\partial_N u)$ (`HasWeakIteratedLineDerivOn.higherReflection_single`), and the
+coefficients $a_j \lambda_j$ satisfy the Vandermonde conditions of order $k - 1$
+(`vandermonde_mul_of_succ`). -/
 theorem MemSobolevMultiIndex.higherReflection_of_order (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j)
     (k : ℕ) : ∀ (a : Fin m → ℝ), (∀ i < k, ∑ j, a j * l j ^ i = 1) →
     ∀ {u : EuclideanSpace ℝ (Fin (d + 1)) → F},
@@ -1517,9 +1655,12 @@ theorem MemSobolevMultiIndex.higherReflection_of_order (hl : ∀ j, l j < 0) (hl
     · exact ih (a * l) (vandermonde_mul_of_succ ha) hgk
     · exact ih a (fun i hi ↦ ha i (by omega)) hgk
 
-/-- **The Vandermonde coefficients**: for the scales `l_j = −1/(j+1)`, `j < k`, there are
-coefficients `a_j` with `∑_j a_j l_j^i = 1` for every `i < k`, the Vandermonde matrix of the
-distinct nodes `l_j` being invertible. -/
+/-- The **Vandermonde coefficients**. For every $k \in \mathbb{N}$ there are coefficients
+$a_0, \dots, a_{k-1}$ such that
+$$\sum_{j=0}^{k-1} a_j \Big( -\frac{1}{j+1} \Big)^i = 1 \qquad \text{for every } i < k.$$
+
+The scales $\lambda_j = -1/(j+1)$ are distinct, so the Vandermonde matrix of these nodes is
+invertible. The indices start at $0$. -/
 theorem exists_vandermonde_coeffs (k : ℕ) :
     ∃ a : Fin k → ℝ, ∀ i < k, ∑ j, a j * (-((j : ℕ) + 1 : ℝ)⁻¹) ^ i = 1 := by
   obtain ⟨l, hl⟩ : ∃ l : Fin k → ℝ, l = fun j : Fin k ↦ -(((j : ℕ) : ℝ) + 1)⁻¹ := ⟨_, rfl⟩
@@ -1544,13 +1685,14 @@ theorem exists_vandermonde_coeffs (k : ℕ) :
 
 end ReflectionHigher
 
-/-! ### The chart-local extension on the cylinders `Q_r` -/
+/-! ### The chart-local extension on the cylinders $Q_r$ -/
 
 section ChartCylinder
 
 variable {d : ℕ} {n : WithTop ℕ∞} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- The positive half of `Q_r`, `r < 1`, is `Q_r ∩ Q₊`. -/
+/-- For $r < 1$, the upper half of $Q_r$ is $Q_r^+ = Q_r \cap Q_+$, where $Q_+$ is the upper half
+`unitChartCubePos d` of the unit cylinder. -/
 theorem coe_posHalf_cylinder_eq_inter {r : ℝ} (hr : r < 1) :
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) : Set (EuclideanSpace ℝ (Fin (d + 1))))
       = (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ unitChartCubePos d := by
@@ -1563,7 +1705,8 @@ namespace ContDiffChart
 variable (c : ContDiffChart n (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) {r : ℝ} (hr : r < 1)
 include hr
 
-/-- The image of the cylinder `Q_r` under a chart is `U ∩ H⁻¹ ⁻¹' Q_r`. -/
+/-- For a chart $H : Q \to U$ with inverse $H^{-1}$ and $r < 1$, the image of the cylinder is
+$H(Q_r) = U \cap (H^{-1})^{-1}(Q_r)$. -/
 theorem image_cylinder_eq :
     c.toFun '' (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1))))
       = c.U ∩ c.invFun ⁻¹' (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) := by
@@ -1575,39 +1718,45 @@ theorem image_cylinder_eq :
   · rintro ⟨hx, hx'⟩
     exact ⟨c.invFun x, hx', c.toFun_invFun hx⟩
 
-/-- **The image `U_r = H(Q_r)` of the cylinder `Q_r` under a chart**, `r < 1`, as an `Opens`:
-the open subset of `U` on which the chart-local extension at higher order lives. -/
+/-- The image $U_r = H(Q_r)$ of the cylinder $Q_r$, $r < 1$, under a chart $H : Q \to U$ of
+$\Omega$, as an open set. It is the open subset of $U$ on which the chart-local extension of
+higher order lives.
+
+The set is open because $H(Q_r) = U \cap (H^{-1})^{-1}(Q_r)$ and $H^{-1}$ is continuous on $U$.
+The condition $r < 1$ gives $Q_r$ a compact closure inside the unit cylinder $Q$, on whose
+closure the chart is of class $C^k$. -/
 def opensUr : Opens (EuclideanSpace ℝ (Fin (d + 1))) :=
   ⟨c.toFun '' (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))), by
     rw [c.image_cylinder_eq hr]
     exact (c.contDiffOn_invFun.continuousOn.mono subset_closure).isOpen_inter_preimage c.isOpen_U
       (cylinder d r).isOpen⟩
 
-/-- The underlying set of `c.opensUr hr` is `H(Q_r)`. -/
+/-- The underlying set of `c.opensUr hr` is $H(Q_r)$. -/
 @[simp]
 theorem coe_opensUr : (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))
     = c.toFun '' (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) := rfl
 
-/-- `U_r ⊆ U`. -/
+/-- $U_r \subseteq U$. -/
 theorem opensUr_subset : (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ c.U :=
   fun _ ⟨_, hy, hxy⟩ ↦ hxy ▸ c.mapsTo (cylinder_subset_unitChartCube hr.le hy)
 
-/-- `U_r ∩ Ω` as an `Opens`. -/
+/-- The open set $U_r \cap \Omega$. -/
 def opensInterr : Opens (EuclideanSpace ℝ (Fin (d + 1))) :=
   ⟨(c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ Ω, (c.opensUr hr).isOpen.inter Ω.isOpen⟩
 
-/-- The underlying set of `c.opensInterr hr` is `U_r ∩ Ω`. -/
+/-- The underlying set of `c.opensInterr hr` is $U_r \cap \Omega$. -/
 @[simp]
 theorem coe_opensInterr : (c.opensInterr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))
     = (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ Ω := rfl
 
-/-- `U_r ∩ Ω ≤ Ω`. -/
+/-- $U_r \cap \Omega \subseteq \Omega$. -/
 theorem opensInterr_le : c.opensInterr hr ≤ Ω := fun _ hx ↦ hx.2
 
-/-- `U_r ∩ Ω ≤ U_r`. -/
+/-- $U_r \cap \Omega \subseteq U_r$. -/
 theorem opensInterr_le_opensUr : c.opensInterr hr ≤ c.opensUr hr := fun _ hx ↦ hx.1
 
-/-- **The chart maps the positive half of `Q_r` onto `U_r ∩ Ω`**. -/
+/-- For $r < 1$, the chart maps the upper half of the cylinder onto $U_r \cap \Omega$:
+$H(Q_r^+) = U_r \cap \Omega$. -/
 theorem image_posHalf_cylinder :
     c.toFun '' (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) :
       Set (EuclideanSpace ℝ (Fin (d + 1)))) = c.opensInterr hr := by
@@ -1617,8 +1766,9 @@ theorem image_posHalf_cylinder :
   congr 1
   exact inter_eq_left.2 (c.opensUr_subset hr)
 
-/-- A chart restricted to the positive half of `Q_r` is a `C^1` diffeomorphism onto `U_r ∩ Ω`
-with bounded Jacobians. -/
+/-- Let the chart be of class $C^n$ with $n \ge 1$, and let $r < 1$. Then there is a constant $M$
+such that $H$, restricted to $Q_r^+$, is a $C^1$ diffeomorphism onto $U_r \cap \Omega$ with
+inverse $H^{-1}$, and the derivatives of $H$ and $H^{-1}$ are bounded by $M$. -/
 theorem exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder (hn : 1 ≤ n) :
     ∃ M, IsDiffeoOnWithBoundedJacobian c.toFun c.invFun
       (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -1629,7 +1779,9 @@ theorem exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder (hn : 1 ≤ n) :
   rw [c.image_posHalf_cylinder hr] at this
   exact ⟨M, this⟩
 
-/-- A chart restricted to `Q_r` is a `C^1` diffeomorphism onto `U_r` with bounded Jacobians. -/
+/-- Let the chart be of class $C^n$ with $n \ge 1$, and let $r < 1$. Then there is a constant $M$
+such that $H$, restricted to $Q_r$, is a $C^1$ diffeomorphism onto $U_r$ with inverse $H^{-1}$,
+and the derivatives of $H$ and $H^{-1}$ are bounded by $M$. -/
 theorem exists_isDiffeoOnWithBoundedJacobian_cylinder (hn : 1 ≤ n) :
     ∃ M, IsDiffeoOnWithBoundedJacobian c.toFun c.invFun
       (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1))))
@@ -1637,7 +1789,7 @@ theorem exists_isDiffeoOnWithBoundedJacobian_cylinder (hn : 1 ≤ n) :
   obtain ⟨M, hM⟩ := c.isDiffeoOnWithBoundedJacobian hn
   exact ⟨M, hM.restrict (cylinder d r).isOpen (cylinder_subset_unitChartCube hr.le)⟩
 
-/-- The closure of `U_r` lies in the compact `H(closure Q_r)`. -/
+/-- For $r < 1$, the closure of $U_r$ lies in $H(\overline{Q_r})$, which is compact. -/
 theorem closure_opensUr_subset_image_closure :
     closure (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))
       ⊆ c.toFun '' closure (cylinder d r : Set (EuclideanSpace ℝ (Fin (d + 1)))) := by
@@ -1646,13 +1798,13 @@ theorem closure_opensUr_subset_image_closure :
       (c.continuousOn.mono (closure_mono (cylinder_subset_unitChartCube hr.le)))
   exact closure_minimal (image_mono subset_closure) hc.isClosed
 
-/-- The closure of `U_r`, `r < 1`, lies in `U`. -/
+/-- For $r < 1$, the closure of $U_r$ lies in $U$. -/
 theorem closure_opensUr_subset :
     closure (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ c.U :=
   (c.closure_opensUr_subset_image_closure hr).trans
     ((image_mono (closure_cylinder_subset_unitChartCube hr)).trans c.mapsTo.image_subset)
 
-/-- The closure of `U_r` is compact. -/
+/-- For $r < 1$, the closure of $U_r$ is compact. -/
 theorem isCompact_closure_opensUr :
     IsCompact (closure (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
   ((isCompact_closure_cylinder r).image_of_continuousOn
@@ -1660,7 +1812,7 @@ theorem isCompact_closure_opensUr :
     isClosed_closure (c.closure_opensUr_subset_image_closure hr)
 
 omit hr in
-/-- A compact subset of `U` lies in some `U_r`, `r < 1`. -/
+/-- Every compact subset $K$ of $U$ lies in $U_r$ for some $r < 1$. -/
 theorem exists_lt_one_subset_opensUr {K : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hK : IsCompact K)
     (hKU : K ⊆ c.U) : ∃ r, ∃ hr : r < 1, K ⊆ c.opensUr hr := by
   have hK' : IsCompact (c.invFun '' K) :=
@@ -1680,10 +1832,20 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 
 namespace SobolevEuclidean
 
-/-- **The chart-local extension preserves `W^{k,p}`, with the operators as variables**: for a
-chart `H` of class `C^k`, the transports preserve `W^{k,p}`
-(`MemSobolevMultiIndex.comp_diffeoOn_of_order`) and so does the higher-order reflection under the
-Vandermonde conditions of order `k` (`MemSobolevMultiIndex.higherReflection_of_order`). -/
+/-- The chart-local extension preserves $W^{k,p}$, with the operators as variables. Let $r < 1$,
+$-1 \le \lambda_j < 0$, and let $a$ satisfy the Vandermonde conditions
+$\sum_j a_j \lambda_j^i = 1$ for $i < k$. Let $R : W^{1,p}(\Omega) \to W^{1,p}(\Omega_c)$,
+$T_1 : W^{1,p}(\Omega_c) \to W^{1,p}(Q_r^+)$, $S : W^{1,p}(Q_r^+) \to W^{1,p}(Q_r)$ and
+$T_2 : W^{1,p}(Q_r) \to W^{1,p}(U)$ be bounded linear maps whose functions are $Ru = u$ on
+$\Omega_c \subseteq \Omega$, $T_1 v = v \circ H$, $S w = P_a w$ and $T_2 w = w \circ H^{-1}$,
+almost everywhere. Let $H$ be a $C^1$ diffeomorphism with bounded Jacobians from $Q_r^+$ onto
+$\Omega_c$ and from $Q_r$ onto $U$, with inverse $H^{-1}$, let $H$ be of class $C^k$ on the unit
+cylinder $Q$, let $H^{-1}$ be of class $C^k$ on an open set $W$ that contains the closure of
+$U$, and let the closure of $U$ be compact. If $u \in W^{1,p}(\Omega)$ and the function of $u$
+lies in $W^{k,p}(\Omega)$, then the function of $T_2(S(T_1(Ru)))$ lies in $W^{k,p}(U)$.
+
+The two transports preserve $W^{k,p}$ by `MemSobolevMultiIndex.comp_diffeoOn_of_order`, and the
+reflection does by `MemSobolevMultiIndex.higherReflection_of_order`. -/
 theorem chartExtend_mem_of_ops {r : ℝ} (hr : r < 1) (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j)
     {k : ℕ} {Ωc U : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     {H Hinv : EuclideanSpace ℝ (Fin (d + 1)) → EuclideanSpace ℝ (Fin (d + 1))} {M M' : ℝ}
@@ -1751,63 +1913,74 @@ namespace SobolevEuclidean
 variable (p) (c : ContDiffChart n (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hn : 1 ≤ n)
   {r : ℝ} (hr : r < 1) (ha : ∑ j, a j = 1) (hl : ∀ j, l j < 0) (hl1 : ∀ j, -1 ≤ l j)
 
-/-- The restriction `W^{1,p}(Ω) → W^{1,p}(U_r ∩ Ω)`. -/
+/-- The restriction $W^{1,p}(\Omega) \to W^{1,p}(U_r \cap \Omega)$, as a bounded linear map. -/
 def chartRestrictLr :
     SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p (c.opensInterr hr) :=
   SobolevMultiIndex.restrictL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p volume
     (c.opensInterr_le hr)
 
-/-- The transfer `u ↦ u ∘ H : W^{1,p}(U_r ∩ Ω) → W^{1,p}(Q_r₊)`. -/
+/-- The transfer $v \mapsto v \circ H$ from $W^{1,p}(U_r \cap \Omega)$ to $W^{1,p}(Q_r^+)$ along a
+chart $H$ of class $C^n$, $n \ge 1$, as a bounded linear map. -/
 def chartTransferLr : SobolevEuclidean (d + 1) 1 p (c.opensInterr hr) →L[ℝ]
     SobolevEuclidean (d + 1) 1 p (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) :=
   SobolevMultiIndex.compDiffeoL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume
     (c.exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder hr hn).choose_spec
 
-/-- The higher-order reflection `W^{1,p}(Q_r₊) → W^{1,p}(Q_r)`. -/
+/-- The higher-order reflection $W^{1,p}(Q_r^+) \to W^{1,p}(Q_r)$ over the standard basis,
+`SobolevMultiIndex.higherReflectionL`, for $\sum_j a_j = 1$ and $-1 \le \lambda_j < 0$. -/
 def cubeReflectLr : SobolevEuclidean (d + 1) 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r)) →L[ℝ]
     SobolevEuclidean (d + 1) 1 p (cylinder d r) :=
   SobolevMultiIndex.higherReflectionL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p ha hl
     hl1
 
-/-- The retransfer `w ↦ w ∘ H⁻¹ : W^{1,p}(Q_r) → W^{1,p}(U_r)`. -/
+/-- The transfer back $w \mapsto w \circ H^{-1}$ from $W^{1,p}(Q_r)$ to $W^{1,p}(U_r)$, as a bounded
+linear map. -/
 def chartRetransferLr : SobolevEuclidean (d + 1) 1 p (cylinder d r) →L[ℝ]
     SobolevEuclidean (d + 1) 1 p (c.opensUr hr) :=
   SobolevMultiIndex.compDiffeoL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume
     (c.exists_isDiffeoOnWithBoundedJacobian_cylinder hr hn).choose_spec.symm
 
-/-- **The chart-local extension at higher order**, `W^{1,p}(Ω) → W^{1,p}(U_r)`: restrict to
-`U_r ∩ Ω`, transfer to `Q_r₊` along `H`, reflect to `Q_r` by the higher-order reflection,
-transfer back to `U_r` along `H⁻¹`. It agrees with `u` on `U_r ∩ Ω`
-(`SobolevEuclidean.chartExtendLr_fn_ae_eq`) and, for a `C^k` chart and coefficients satisfying
-the Vandermonde conditions of order `k`, maps the functions of `W^{k,p}(Ω)` into `W^{k,p}(U_r)`
+/-- The **chart-local extension of higher order**: for a chart $H$ of $\Omega$ of class $C^n$ with
+$n \ge 1$, a radius $r < 1$, coefficients with $\sum_j a_j = 1$ and scales with
+$-1 \le \lambda_j < 0$, the bounded linear map $W^{1,p}(\Omega) \to W^{1,p}(U_r)$ that restricts
+$u$ to $U_r \cap \Omega$, transfers it to $Q_r^+$ along $H$, reflects it to $Q_r$ by the
+higher-order reflection $P_a$, and transfers it back to $U_r$ along $H^{-1}$. Its function is
+$P_a(u \circ H) \circ H^{-1}$.
+
+It agrees with $u$ on $U_r \cap \Omega$ (`SobolevEuclidean.chartExtendLr_fn_ae_eq`). For a chart
+of class $C^k$ and coefficients that satisfy the Vandermonde conditions of order $k$, it maps
+the functions of $W^{k,p}(\Omega)$ into $W^{k,p}(U_r)$
 (`SobolevEuclidean.chartExtendLr_mem_of_order`). -/
 def chartExtendLr : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p (c.opensUr
   hr) :=
   chartRetransferLr p c hn hr ∘L cubeReflectLr p ha hl hl1 ∘L chartTransferLr p c hn hr ∘L
     chartRestrictLr p c hr
 
-/-- `chartExtendLr` is the composite of its four steps. -/
+/-- `SobolevEuclidean.chartExtendLr` applied to $u$ is the composite of its four steps. -/
 theorem chartExtendLr_apply (u : SobolevEuclidean (d + 1) 1 p Ω) :
     chartExtendLr p c hn hr ha hl hl1 u = chartRetransferLr p c hn hr (cubeReflectLr p ha hl hl1
       (chartTransferLr p c hn hr (chartRestrictLr p c hr u))) :=
   rfl
 
-/-- The function of the restriction. -/
+/-- The function of the restriction `SobolevEuclidean.chartRestrictLr` of $u$ is the function of
+$u$, almost everywhere on $U_r \cap \Omega$. -/
 theorem fn_chartRestrictLr (u : SobolevEuclidean (d + 1) 1 p Ω) :
     SobolevMultiIndex.fn (chartRestrictLr p c hr u)
       =ᵐ[volume.restrict (c.opensInterr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))]
         SobolevMultiIndex.fn u :=
   SobolevMultiIndex.fn_restrictL _ _
 
-/-- The function of the transfer is `u ∘ H`. -/
+/-- The function of the transfer `SobolevEuclidean.chartTransferLr` of $v$ is $v \circ H$, almost
+everywhere on $Q_r^+$. -/
 theorem fn_chartTransferLr (v : SobolevEuclidean (d + 1) 1 p (c.opensInterr hr)) :
     SobolevMultiIndex.fn (chartTransferLr p c hn hr v)
       =ᵐ[volume.restrict (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) :
         Set (EuclideanSpace ℝ (Fin (d + 1))))] fun y ↦ SobolevMultiIndex.fn v (c.toFun y) :=
   SobolevMultiIndex.fn_compDiffeoL _ _
 
-/-- The function of the reflection is the higher-order reflection of the function. -/
+/-- The function of the reflection `SobolevEuclidean.cubeReflectLr` of $w$ is $P_a w$, almost
+everywhere on $Q_r$. -/
 theorem fn_cubeReflectLr (w : SobolevEuclidean (d + 1) 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r))) :
     SobolevMultiIndex.fn (cubeReflectLr p ha hl hl1 w)
@@ -1815,7 +1988,8 @@ theorem fn_cubeReflectLr (w : SobolevEuclidean (d + 1) 1 p
         higherReflection a l (SobolevMultiIndex.fn w) :=
   SobolevMultiIndex.fn_higherReflectionL ha hl hl1 w
 
-/-- On `Q_r₊`, the reflected function is the function. -/
+/-- On $Q_r^+$, the function of the reflection `SobolevEuclidean.cubeReflectLr` of $w$ is almost
+everywhere the function of $w$. -/
 theorem fn_cubeReflectLr_restrict (w : SobolevEuclidean (d + 1) 1 p
     (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r))) :
     SobolevMultiIndex.fn (cubeReflectLr p ha hl hl1 w)
@@ -1823,7 +1997,8 @@ theorem fn_cubeReflectLr_restrict (w : SobolevEuclidean (d + 1) 1 p
         Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn w :=
   SobolevMultiIndex.fn_higherReflectionL_restrict ha hl hl1 w
 
-/-- The function of the retransfer is `w ∘ H⁻¹`. -/
+/-- The function of the transfer back `SobolevEuclidean.chartRetransferLr` of $w$ is
+$w \circ H^{-1}$, almost everywhere on $U_r$. -/
 theorem fn_chartRetransferLr (w : SobolevEuclidean (d + 1) 1 p (cylinder d r)) :
     SobolevMultiIndex.fn (chartRetransferLr p c hn hr w)
       =ᵐ[volume.restrict (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))]
@@ -1831,7 +2006,8 @@ theorem fn_chartRetransferLr (w : SobolevEuclidean (d + 1) 1 p (cylinder d r)) :
   SobolevMultiIndex.fn_compDiffeoL _ _
 
 include hn in
-/-- Almost everywhere statements on `Q_r₊` pull back along `H⁻¹` to `U_r ∩ Ω`. -/
+/-- For a chart of class $C^n$, $n \ge 1$: if a property holds for almost every point of $Q_r^+$,
+then it holds at $H^{-1}(x)$ for almost every $x \in U_r \cap \Omega$. -/
 theorem ae_comp_chart_invFun_cylinder {P : EuclideanSpace ℝ (Fin (d + 1)) → Prop}
     (hP : ∀ᵐ y ∂volume.restrict (posHalf (single (Fin.last d) (1 : ℝ)) (cylinder d r) :
       Set (EuclideanSpace ℝ (Fin (d + 1)))), P y) :
@@ -1840,7 +2016,8 @@ theorem ae_comp_chart_invFun_cylinder {P : EuclideanSpace ℝ (Fin (d + 1)) → 
   (c.exists_isDiffeoOnWithBoundedJacobian_posHalf_cylinder hr hn).choose_spec.symm.ae_comp_restrict
     hP
 
-/-- **The chart-local extension agrees with `u` on `U_r ∩ Ω`**. -/
+/-- The function of the chart-local extension `SobolevEuclidean.chartExtendLr` of $u$ equals the
+function of $u$ almost everywhere on $U_r \cap \Omega$. -/
 theorem chartExtendLr_fn_ae_eq (u : SobolevEuclidean (d + 1) 1 p Ω) :
     SobolevMultiIndex.fn (chartExtendLr p c hn hr ha hl hl1 u)
       =ᵐ[volume.restrict (c.opensInterr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))]
@@ -1852,8 +2029,14 @@ theorem chartExtendLr_fn_ae_eq (u : SobolevEuclidean (d + 1) 1 p Ω) :
     (fn_chartRetransferLr p c hn hr) (fun h ↦ ae_comp_chart_invFun_cylinder c hn hr h)
     (c.opensInterr_le_opensUr hr) (fun x hx ↦ c.toFun_invFun (c.opensUr_subset hr hx.1)) u
 
-/-- **The chart-local extension preserves `W^{k,p}`** for a chart of class `C^k` and coefficients
-satisfying the Vandermonde conditions of order `k`. -/
+/-- The **chart-local extension preserves $W^{k,p}$**. Let $H$ be a chart of $\Omega$ of class $C^n$
+with $n \ge 1$, let $k \le n$, let $r < 1$, let $-1 \le \lambda_j < 0$, and let the coefficients
+satisfy $\sum_j a_j = 1$ and the Vandermonde conditions $\sum_j a_j \lambda_j^i = 1$ for
+$i < k$. If $u \in W^{1,p}(\Omega)$ and the function of $u$ lies in $W^{k,p}(\Omega)$, then the
+function of `SobolevEuclidean.chartExtendLr p c hn hr ha hl hl1 u` lies in $W^{k,p}(U_r)$.
+
+Here $W^{k,p}$ is the multi-index formulation `MemSobolevMultiIndex` over the standard basis.
+The proof specializes `SobolevEuclidean.chartExtend_mem_of_ops`. -/
 theorem chartExtendLr_mem_of_order {k : ℕ} (hnk : (k : WithTop ℕ∞) ≤ n)
     (hak : ∀ i < k, ∑ j, a j * l j ^ i = 1) (u : SobolevEuclidean (d + 1) 1 p Ω)
     (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -1870,10 +2053,14 @@ theorem chartExtendLr_mem_of_order {k : ℕ} (hnk : (k : WithTop ℕ∞) ≤ n)
     ((c.contDiffOn_invFun.of_le hnk).mono subset_closure) (c.closure_opensUr_subset hr)
     (c.isCompact_closure_opensUr hr) (c.opensInterr_le hr) hak u hu
 
-/-- **The `L^p` bound of the chart-local extension at higher order**:
-`‖w‖_{L^p(U_r)} ≤ C ‖u‖_{L^p(U_r ∩ Ω)}`. After the restriction, each step moves mass boundedly:
-the two transports along the chart (`SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le`) and the
-higher-order reflection, a finite sum of dilations
+/-- The $L^p$ bound of the chart-local extension of higher order: there is a finite constant $C$
+such that, for every $u \in W^{1,p}(\Omega)$, the function $w$ of
+`SobolevEuclidean.chartExtendLr p c hn hr ha hl hl1 u` satisfies $\|w\|_{L^p(U_r)} \le C
+\|u\|_{L^p(U_r \cap \Omega)}$.
+
+After the restriction, each step changes the $L^p$ norm by at most a constant factor: the two
+transports along the chart (`SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le`) and the
+higher-order reflection, which is a finite sum of dilations
 (`SobolevMultiIndex.exists_eLpNorm_fn_higherReflectionL_le`). -/
 theorem exists_eLpNorm_fn_chartExtendLr_le : ∃ C : ℝ≥0∞, C ≠ ⊤ ∧
     ∀ u : SobolevEuclidean (d + 1) 1 p Ω,
@@ -1899,10 +2086,13 @@ theorem exists_eLpNorm_fn_chartExtendLr_le : ∃ C : ℝ≥0∞, C ≠ ⊤ ∧
   gcongr
   exact (h₁ _).trans_eq (by rw [eLpNorm_congr_ae (fn_chartRestrictLr p c hr u)])
 
-/-- **The function of the chart-local extension on all of `U_r`**: `w = P(u ∘ H) ∘ H⁻¹` almost
-everywhere on `U_r`, for the higher-order reflection `P`. `SobolevEuclidean.chartExtendLr_fn_ae_eq`
-is its restriction to `U_r ∩ Ω`; this formula shows the operator at the level of functions, and in
-particular that it does not depend on the exponent `p`. -/
+/-- The function of the chart-local extension on all of $U_r$: the function of
+`SobolevEuclidean.chartExtendLr p c hn hr ha hl hl1 u` equals $P_a(u \circ H) \circ H^{-1}$
+almost everywhere on $U_r$.
+
+`SobolevEuclidean.chartExtendLr_fn_ae_eq` is the restriction of this formula to
+$U_r \cap \Omega$. The formula shows that the operator does not depend on the exponent $p$ at
+the level of functions. -/
 theorem chartExtendLr_fn_ae_eq_higherReflection (u : SobolevEuclidean (d + 1) 1 p Ω) :
     SobolevMultiIndex.fn (chartExtendLr p c hn hr ha hl hl1 u)
       =ᵐ[volume.restrict (c.opensUr hr : Set (EuclideanSpace ℝ (Fin (d + 1))))]
@@ -1927,18 +2117,27 @@ end SobolevEuclidean
 
 end ChartLocalHigher
 
-/-! ### The extension operator at every order -/
+/-! ### The extension operator of every order -/
 
 section AssemblyHigher
 
 variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **The assembled operator preserves `W^{k,p}`, with the operators as variables**: for
-`P u = E₀ u + ∑ E i (C i u)`, where `E₀` and `E i` are the zero extensions of `θ₀ ·` from `Ω` and
-of `θ i ·` from `U i`, and each `C i` maps the functions of `W^{k,p}(Ω)` into `W^{k,p}(U i)`, the
-function of `P u` lies in `W^{k,p}(ℝ^N)` whenever the function of `u` lies in `W^{k,p}(Ω)`
-(the zero extensions at every order,
-`MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub`). -/
+/-- The assembled operator preserves $W^{k,p}$, with the operators as variables. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ and $U_1, \dots, U_n$ be open sets, $1 \le p \le \infty$,
+and $k \in \mathbb{N}$. Let $\theta_0$ and $\theta_1, \dots, \theta_n$ be smooth real functions
+such that $\theta_0 - \kappa$ has compact support for some constant $\kappa$, the support of
+$\theta_0$ is disjoint from $\partial\Omega$, and each $\theta_i$ has compact support in $U_i$.
+Let the bounded linear maps $E_0 : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^{d+1})$ and $E_i :
+W^{1,p}(U_i) \to W^{1,p}(\mathbb{R}^{d+1})$ have the functions $1_\Omega\, \theta_0 u$ and
+$1_{U_i}\, \theta_i w$ almost everywhere, let $C_i : W^{1,p}(\Omega) \to W^{1,p}(U_i)$ be
+bounded linear maps that map the functions of $W^{k,p}(\Omega)$ into $W^{k,p}(U_i)$, and let
+$$P u = E_0 u + \sum_i E_i (C_i u).$$
+If $u \in W^{1,p}(\Omega)$ and the function of $u$ lies in $W^{k,p}(\Omega)$, then the function
+of $P u$ lies in $W^{k,p}(\mathbb{R}^{d+1})$.
+
+The proof applies the zero extension of every order,
+`MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub`, to each term. -/
 theorem SobolevEuclidean.extension_mem_of_ops {k n : ℕ}
     {U : Fin n → Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     {E₀ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤}
@@ -1988,18 +2187,19 @@ theorem SobolevEuclidean.extension_mem_of_ops {k n : ℕ}
     Finset.sum_congr rfl fun i _ ↦ hxi i]
   rfl
 
-/-- The scales `l_j = −1/(j+1)` of the higher-order reflection. -/
+/-- For $0 \le j < k$, the scale $\lambda_j = -1/(j+1)$ is negative. -/
 theorem neg_inv_succ_lt_zero {k : ℕ} (j : Fin k) : -(((j : ℕ) : ℝ) + 1)⁻¹ < 0 := by
   have : (0 : ℝ) < ((j : ℕ) : ℝ) + 1 := by positivity
   exact neg_neg_of_pos (inv_pos.2 this)
 
-/-- The scales `l_j = −1/(j+1)` lie in `[-1, 0)`. -/
+/-- For $0 \le j < k$, the scale $\lambda_j = -1/(j+1)$ is at least $-1$. -/
 theorem neg_one_le_neg_inv_succ {k : ℕ} (j : Fin k) : -1 ≤ -(((j : ℕ) : ℝ) + 1)⁻¹ := by
   rw [neg_le_neg_iff]
   exact inv_le_one_of_one_le₀ (by linarith [(Nat.cast_nonneg (j : ℕ) : (0 : ℝ) ≤ (j : ℕ))])
 
-/-- **The Vandermonde coefficients and scales, packaged**: scales `l_j ∈ [-1, 0)` and
-coefficients `a_j` with `∑ a_j = 1` and `∑_j a_j l_j^i = 1` for every `i < k`. -/
+/-- For $k \ge 1$ there are scales $\lambda \in \mathbb{R}^k$ with $-1 \le \lambda_j < 0$ and
+coefficients $a \in \mathbb{R}^k$ with $\sum_j a_j = 1$ and $\sum_j a_j \lambda_j^i = 1$ for
+every $i < k$. -/
 theorem exists_vandermonde_coeffs_scales (k : ℕ) (hk : 1 ≤ k) :
     ∃ a l : Fin k → ℝ, (∀ j, l j < 0) ∧ (∀ j, -1 ≤ l j) ∧ ∑ j, a j = 1 ∧
       ∀ i < k, ∑ j, a j * l j ^ i = 1 := by
@@ -2008,10 +2208,19 @@ theorem exists_vandermonde_coeffs_scales (k : ℕ) (hk : 1 ≤ k) :
     fun j ↦ neg_one_le_neg_inv_succ j, ?_, ha⟩
   simpa using ha 0 hk
 
-/-- **From an order-one operator preserving `W^{k,p}` to the operator at order `k`**: the closed
-graph theorem `SobolevMultiIndex.exists_continuousLinearMap_of_order` gives a bounded operator on
-`W^{k,p}(Ω)` whose function is the function of `P₁`. So the identity on `Ω` and an `L^p` bound
-`‖P₁ u‖_{L^p(ℝ^N)} ≤ K ‖u‖_{L^p(Ω)}` carry over to it, with one constant `C` for both bounds. -/
+/-- From an operator of order one that preserves $W^{k,p}$ to an operator of order $k$. Let
+$k \ge 1$ and let $P_1 : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^{d+1})$ be a bounded linear map
+such that $P_1 u = u$ almost everywhere on $\Omega$, the function of $P_1 u$ lies in
+$W^{k,p}(\mathbb{R}^{d+1})$ whenever the function of $u$ lies in $W^{k,p}(\Omega)$, and $\|P_1
+u\|_{L^p(\mathbb{R}^{d+1})} \le K \|u\|_{L^p(\Omega)}$ with a finite constant $K$. Then there
+are a bounded linear map $P : W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^{d+1})$ and a constant $C$
+such that, for every $u \in W^{k,p}(\Omega)$, the function of $P u$ is the function of $P_1 u$
+almost everywhere, $P u = u$ almost everywhere on $\Omega$, $\|P u\|_{L^p(\mathbb{R}^{d+1})} \le
+C \|u\|_{L^p(\Omega)}$, and $\|P u\| \le C \|u\|$.
+
+The operator $P$ is given by the closed graph theorem,
+`SobolevMultiIndex.exists_continuousLinearMap_of_order`. In $P_1 u$, the element $u$ is seen in
+$W^{1,p}(\Omega)$ through `SobolevMultiIndex.toLowerOrderL`. -/
 theorem SobolevEuclidean.exists_extensionL_of_order_of_ops {k : ℕ} (hk : 1 ≤ k)
     (P₁ : SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] SobolevEuclidean (d + 1) 1 p ⊤)
     (hid : ∀ u, SobolevMultiIndex.fn (P₁ u)
@@ -2056,21 +2265,29 @@ theorem SobolevEuclidean.exists_extensionL_of_order_of_ops {k : ℕ} (hk : 1 ≤
         (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := hlp _
   exact (eLpNorm_congr_ae (hfn u)).trans_le (h₁.trans (by gcongr))
 
-/-- **The extension operator at every order, over an explicit atlas, for every exponent at
-once**: for `C^k` charts `c i` (`k ≥ 1`), a partition of unity `θ₀, θ i` with
-`supp θ i ⊆ Hᵢ(Q_{rᵢ})`, and coefficients `a` with the Vandermonde conditions of order `k` for the
-scales `l`, there is one map on functions
-`E f = 1_Ω θ₀ f + ∑ᵢ 1_{Hᵢ(Q_{rᵢ})} θᵢ · (P(f ∘ Hᵢ) ∘ Hᵢ⁻¹)`
-(`P` the higher-order reflection) such that for every `1 ≤ p ≤ ∞` some bounded linear operator
-`W^{k,p}(Ω) → W^{k,p}(ℝ^N)` has `E` as its function, is the identity on `Ω`, and is bounded both
-`W^{k,p}(Ω) → W^{k,p}(ℝ^N)` and `L^p(Ω) → L^p(ℝ^N)` with one constant.
+/-- The **extension operator of every order for an explicit atlas, for every exponent at once**. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open and $k \ge 1$. Let $H_1, \dots, H_n$ be charts of
+$\Omega$ of class $C^k$, with radii $r_i < 1$. Let $\theta_0, \theta_1, \dots, \theta_n$ be
+smooth real functions with $\theta_0 + \sum_i \theta_i = 1$ everywhere, such that
+$\theta_0 - \kappa$ has compact support for some constant $\kappa$, the support of $\theta_0$ is
+disjoint from $\partial\Omega$, and each $\theta_i$ has compact support in $H_i(Q_{r_i})$. Let
+$-1 \le \lambda_j < 0$, $\sum_j a_j = 1$, and $\sum_j a_j \lambda_j^i = 1$ for $i < k$. Then
+there is a map $E$ on real functions such that for every $1 \le p \le \infty$ there are a
+bounded linear map $P : W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^{d+1})$ and a constant $C$ with,
+for every $u \in W^{k,p}(\Omega)$,
+$$P u = E u \text{ almost everywhere}, \quad P u = u \text{ on } \Omega, \quad \|P
+  u\|_{L^p(\mathbb{R}^{d+1})} \le C \|u\|_{L^p(\Omega)}, \quad \|P u\| \le C \|u\|.$$
 
-At order one the operator is `P₁ = E₀ + ∑ E i ∘ C i` (zero extensions of `θ₀ ·` and `θ i ·`,
-chart-local extensions `SobolevEuclidean.chartExtendLr`), whose function is `E` by
-`SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection` and whose `L^p` bound is
-`SobolevEuclidean.eLpNorm_fn_extension_le_of_ops`; the closed graph theorem
-(`SobolevEuclidean.exists_extensionL_of_order_of_ops`) lifts it to order `k` without changing its
-function. -/
+The map constructed in the proof is
+$$E f = 1_\Omega\, \theta_0 f + \sum_i 1_{H_i(Q_{r_i})}\, \theta_i \cdot \big( P_a(f \circ H_i)
+  \circ H_i^{-1} \big),$$
+with the higher-order reflection $P_a$. At order one the operator is
+$P_1 = E_0 + \sum_i E_i \circ C_i$, with the zero extensions $E_0$ and $E_i$ of $\theta_0 u$ and
+$\theta_i w$ and the chart-local extensions $C_i$ of `SobolevEuclidean.chartExtendLr`. Its
+function is $E u$ by `SobolevEuclidean.chartExtendLr_fn_ae_eq_higherReflection`, and its $L^p$
+bound is `SobolevEuclidean.eLpNorm_fn_extension_le_of_ops`. The closed graph theorem
+(`SobolevEuclidean.exists_extensionL_of_order_of_ops`) lifts $P_1$ to order $k$ without changing
+its function. -/
 theorem SobolevEuclidean.exists_extensionL_of_order_of_atlas {k n : ℕ} (hk : 1 ≤ k)
     (c : Fin n → ContDiffChart k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     {θ₀ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} {θ : Fin n → EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2188,24 +2405,31 @@ theorem SobolevEuclidean.exists_extensionL_of_order_of_atlas {k n : ℕ} (hk : 1
   -- the function of `u` read at order one is the function of `u`, by definition
   exact ⟨P, C, fun u ↦ ⟨(hP u).1.trans (hfn _), (hP u).2⟩⟩
 
-/-- **The extension theorem at every order, one operator for every exponent** (Brezis, Comments
-on Chapter 9; Lions–Magenes; [han2009theoretical] Theorem 7.3.5 at order `k`): for an open set
-`Ω ⊆ ℝ^N` of class `C^k`, `k ≥ 1`, with bounded boundary, there is a single map `E` on functions
-such that for every `1 ≤ p ≤ ∞` some bounded linear extension operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` has `E` as its function: `P u = E u`, `P u = u` on `Ω`,
-`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{k,p}(ℝ^N)} ≤ C ‖u‖_{W^{k,p}(Ω)}`.
+/-- The **extension theorem of every order, with one map for every exponent**. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be an open set of class $C^k$, $k \ge 1$, with bounded
+boundary. Then there is a map $E$ on real functions such that for every $1 \le p \le \infty$
+there are a bounded linear extension operator $P : W^{k,p}(\Omega) \to
+W^{k,p}(\mathbb{R}^{d+1})$ and a constant $C$ with, for every $u \in W^{k,p}(\Omega)$,
+$$P u = E u \text{ almost everywhere}, \quad P u = u \text{ on } \Omega, \quad \|P
+  u\|_{L^p(\mathbb{R}^{d+1})} \le C \|u\|_{L^p(\Omega)}, \quad \|P
+  u\|_{W^{k,p}(\mathbb{R}^{d+1})} \le C \|u\|_{W^{k,p}(\Omega)}.$$
 
-The operator is built at order one as in the proof of Theorem 9.7 — the partition of unity
-`θ₀, θᵢ` of Lemma 9.3 subordinate to a finite atlas of `C^k` charts, the zero extension of `θ₀ u`,
-and for each chart the zero extension of `θᵢ` times the chart-local extension
-`SobolevEuclidean.chartExtendLr` on the cylinder `Q_{rᵢ}` containing `Hᵢ⁻¹(supp θᵢ)` — with the
-*higher-order reflection* of `MemSobolevMultiIndex.higherReflection_of_order` in place of the
-even one, its coefficients solving the Vandermonde system of order `k`
-(`exists_vandermonde_coeffs`). This operator maps the functions of `W^{k,p}(Ω)` into
-`W^{k,p}(ℝ^N)` (`SobolevEuclidean.extension_mem_of_ops`), and the closed graph theorem
-(`SobolevMultiIndex.exists_continuousLinearMap_of_order`) makes its restriction to `W^{k,p}(Ω)`
-bounded without changing its function. None of these choices involves `p`, whence the single `E`;
-what the construction does not give is one operator for every order `k`. -/
+This is the result of [brezis2011functional], Comments on Chapter 9, and of Lions and Magenes,
+and Theorem 7.3.5 of [han2009theoretical] at order $k$. "Of class $C^k$" is
+`IsContDiffChartDomain k Ω`: every boundary point lies in the range of a chart of class $C^k$.
+The operator is built at order one as in the proof of Theorem 9.7 of [brezis2011functional]: the
+partition of unity $\theta_0, \theta_i$ of Lemma 9.3 for a finite atlas of $C^k$ charts, the
+zero extension of $\theta_0 u$, and for each chart the zero extension of $\theta_i$ times the
+chart-local extension `SobolevEuclidean.chartExtendLr` on a cylinder $Q_{r_i}$ with
+$H_i^{-1}(\operatorname{supp} \theta_i) \subseteq Q_{r_i}$. The even reflection is replaced by
+the higher-order reflection of `MemSobolevMultiIndex.higherReflection_of_order`, with
+coefficients that solve the Vandermonde system of order $k$ (`exists_vandermonde_coeffs`). This
+operator maps the functions of $W^{k,p}(\Omega)$ into $W^{k,p}(\mathbb{R}^{d+1})$
+(`SobolevEuclidean.extension_mem_of_ops`), and the closed graph theorem
+(`SobolevMultiIndex.exists_continuousLinearMap_of_order`) makes its restriction to
+$W^{k,p}(\Omega)$ bounded without changing its function. None of these choices involves $p$, so
+one map $E$ serves all exponents. The construction does not give one operator for every order
+$k$. -/
 theorem SobolevEuclidean.exists_extensionL_of_order_uniform {k : ℕ} (hk : 1 ≤ k)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -2247,14 +2471,18 @@ theorem SobolevEuclidean.exists_extensionL_of_order_uniform {k : ℕ} (hk : 1 �
   exact SobolevEuclidean.exists_extensionL_of_order_of_atlas hk c hθ₀ ⟨1, hθ₀κ⟩ hθ₀K hθ hθc hsum
     hr hθr ha0 hl0 hl1 hak
 
-/-- **The extension theorem at every order** (Brezis, Comments on Chapter 9; Lions–Magenes;
-[han2009theoretical] Theorem 7.3.5 at order `k`): for an open set `Ω ⊆ ℝ^N` of class `C^k`,
-`k ≥ 1`, with bounded boundary, and `1 ≤ p ≤ ∞`, there are a bounded linear extension operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` and a constant `C` with `P u = u` on `Ω`,
-`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{k,p}(ℝ^N)} ≤ C ‖u‖_{W^{k,p}(Ω)}` — the one
-operator bounded at the orders `0` and `k` at once. This is
-`SobolevEuclidean.exists_extensionL_of_order_uniform` at one exponent; at `k = 1` it is a second
-proof of Theorem 9.7 (`SobolevEuclidean.exists_extensionL`). -/
+/-- The **extension theorem of every order**. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be an open set
+of class $C^k$, $k \ge 1$, with bounded boundary, and let $1 \le p \le \infty$. Then there are a
+bounded linear extension operator $P : W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^{d+1})$ and a
+constant $C$ such that, for every $u \in W^{k,p}(\Omega)$,
+$$P u = u \text{ on } \Omega, \quad \|P u\|_{L^p(\mathbb{R}^{d+1})} \le C \|u\|_{L^p(\Omega)},
+  \quad \|P u\|_{W^{k,p}(\mathbb{R}^{d+1})} \le C \|u\|_{W^{k,p}(\Omega)}.$$
+
+This is the result of [brezis2011functional], Comments on Chapter 9, and of Lions and Magenes,
+and Theorem 7.3.5 of [han2009theoretical] at order $k$. One operator is bounded at the orders
+$0$ and $k$ at once. The theorem is `SobolevEuclidean.exists_extensionL_of_order_uniform` at one
+exponent. At $k = 1$ it is a second proof of Theorem 9.7 of [brezis2011functional]
+(`SobolevEuclidean.exists_extensionL`). -/
 theorem SobolevEuclidean.exists_extensionL_of_order {k : ℕ} (hk : 1 ≤ k)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -2271,18 +2499,24 @@ theorem SobolevEuclidean.exists_extensionL_of_order {k : ℕ} (hk : 1 ≤ k)
   exact ⟨P, C, fun u ↦ (hP u).2⟩
 
 variable (p Ω) in
-/-- **`Ω` is a `W^{k,p}`-extension domain**: there is a bounded linear operator
-`P : W^{k,p}(Ω) → W^{k,p}(ℝ^N)` with `P u = u` almost everywhere on `Ω`. At `k = 1` this is
-`IsSobolevExtensionDomain N p Ω`; the instances are the open sets of class `C^k` with bounded
-boundary (`IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`). -/
+/-- An open set $\Omega \subseteq \mathbb{R}^N$ is a **$W^{k,p}$-extension domain** if there is a
+bounded linear map $P : W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^N)$ with $P u = u$ almost
+everywhere on $\Omega$ for every $u \in W^{k,p}(\Omega)$.
+
+At $k = 1$ this is the condition `IsSobolevExtensionDomain N p Ω` (see
+`IsSobolevExtensionDomainOfOrder.isSobolevExtensionDomain`). The open sets of class $C^k$ with
+bounded boundary are examples (`IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`). -/
 def IsSobolevExtensionDomainOfOrder (N k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Prop :=
   ∃ P : SobolevEuclidean N k p Ω →L[ℝ] SobolevEuclidean N k p ⊤,
     ∀ u : SobolevEuclidean N k p Ω, SobolevMultiIndex.fn (P u)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevMultiIndex.fn u
 
-/-- **The extension theorem at every order as a domain predicate**: an open set of class `C^k`,
-`k ≥ 1`, with bounded boundary is a `W^{k,p}`-extension domain for every `1 ≤ p ≤ ∞`. -/
+/-- An open set $\Omega \subseteq \mathbb{R}^{d+1}$ of class $C^k$, $k \ge 1$, with bounded boundary
+is a $W^{k,p}$-extension domain for every $1 \le p \le \infty$.
+
+This is the extension theorem `SobolevEuclidean.exists_extensionL_of_order` stated as a property
+of the domain. -/
 theorem IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain {k : ℕ} (hk : 1 ≤ k)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -2290,8 +2524,8 @@ theorem IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain {k : ℕ} (hk :
   obtain ⟨P, _, hP⟩ := SobolevEuclidean.exists_extensionL_of_order (p := p) hk hΩ hΓ
   exact ⟨P, fun u ↦ (hP u).1⟩
 
-/-- A `W^{1,p}`-extension domain in the sense of every order is one in the sense of
-`IsSobolevExtensionDomain`. -/
+/-- A $W^{1,p}$-extension domain in the sense of `IsSobolevExtensionDomainOfOrder` is a
+$W^{1,p}$-extension domain in the sense of `IsSobolevExtensionDomain`. -/
 theorem IsSobolevExtensionDomainOfOrder.isSobolevExtensionDomain {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (h : IsSobolevExtensionDomainOfOrder N 1 p Ω) :
     IsSobolevExtensionDomain N p Ω := by
@@ -2300,20 +2534,27 @@ theorem IsSobolevExtensionDomainOfOrder.isSobolevExtensionDomain {N : ℕ}
 
 end AssemblyHigher
 
-/-! ### Density of `C_c^∞(ℝ^N)` in `W^{k,p}(Ω)` on a `W^{k,p}`-extension domain -/
+/-!
+### Density of $C_c^\infty(\mathbb{R}^N)$ in $W^{k,p}(\Omega)$ on a $W^{k,p}$-extension domain
+-/
 
 section DensityExtensionHigher
 
 variable {N : ℕ} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Density of the restrictions of `C_c^∞(ℝ^N)` functions in `W^{k,p}(Ω)` on a
-`W^{k,p}`-extension domain**, `1 ≤ p < ∞` (Brezis's Corollary 9.8 at every order;
-[han2009theoretical] Theorem 7.3.2): every `u ∈ W^{k,p}(Ω)` is the limit in `W^{k,p}(Ω)` of
-elements whose functions are (the restrictions to `Ω` of) smooth compactly supported functions.
-The extension `P u ∈ W^{k,p}(ℝ^N)` is approximated by `C_c^∞(ℝ^N)` functions in the tensor norm
-of `W^{k,p}(ℝ^N)` (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`), which
-dominates the multi-index norm (`SobolevMultiIndex.ofReal_norm_le_sobolevNorm_of_order`), and
-restriction to `Ω` is `1`-Lipschitz. -/
+/-- **Density of the restrictions of $C_c^\infty(\mathbb{R}^N)$ functions in $W^{k,p}(\Omega)$.**
+Let $\Omega \subseteq \mathbb{R}^N$ be a $W^{k,p}$-extension domain, $1 \le p < \infty$, and
+$u \in W^{k,p}(\Omega)$. Then there are smooth functions $v_n$ with compact support on
+$\mathbb{R}^N$ and elements $w_n \in W^{k,p}(\Omega)$ such that $w_n = v_n$ almost everywhere on
+$\Omega$ and $w_n \to u$ in $W^{k,p}(\Omega)$.
+
+This extends Corollary 9.8 of [brezis2011functional] to every order; it corresponds to Theorem
+7.3.2 of [han2009theoretical]. The proof approximates the extension
+$P u \in W^{k,p}(\mathbb{R}^N)$ by functions of $C_c^\infty(\mathbb{R}^N)$ in the norm of
+$W^{k,p}(\mathbb{R}^N)$ with iterated derivatives
+(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`). That norm dominates the
+multi-index norm (`SobolevMultiIndex.ofReal_norm_le_sobolevNorm_of_order`), and the restriction
+to $\Omega$ is $1$-Lipschitz. -/
 theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order (hp' : p ≠ ⊤)
     (hΩ : IsSobolevExtensionDomainOfOrder N k p Ω) (u : SobolevEuclidean N k p Ω) :
     ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧
@@ -2379,9 +2620,17 @@ theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order 
     have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp h1
     simpa [Function.comp_def] using this
 
-/-- **Density of `C^∞(closure Ω)` in `W^{k,p}(Ω)` on a `C^k` domain with bounded boundary**,
-`k ≥ 1`, `1 ≤ p < ∞` (Brezis's Corollary 9.8 at every order; [han2009theoretical]
-Theorem 7.3.2): the restrictions of `C_c^∞(ℝ^N)` functions are dense in `W^{k,p}(Ω)`. -/
+/-- **Density of $C^\infty(\overline{\Omega})$ in $W^{k,p}(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be an open set of class $C^k$, $k \ge 1$, with bounded
+boundary, let $1 \le p < \infty$, and let $u \in W^{k,p}(\Omega)$. Then there are smooth
+functions $v_n$ with compact support on $\mathbb{R}^{d+1}$ and elements
+$w_n \in W^{k,p}(\Omega)$ such that $w_n = v_n$ almost everywhere on $\Omega$ and $w_n \to u$ in
+$W^{k,p}(\Omega)$.
+
+This extends Corollary 9.8 of [brezis2011functional] to every order; it corresponds to Theorem
+7.3.2 of [han2009theoretical]. The proof combines
+`IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain` with
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_order`. -/
 theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isContDiffChartDomain
     {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hp' : p ≠ ⊤) (hk : 1 ≤ k)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))

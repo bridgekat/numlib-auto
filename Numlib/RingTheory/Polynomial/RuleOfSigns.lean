@@ -10,31 +10,46 @@ import Mathlib.Topology.Order.IntermediateValue
 /-!
 # The parity clause of Descartes' rule of signs
 
-Mathlib's `Mathlib/Algebra/Polynomial/RuleOfSigns.lean` defines `Polynomial.signVariations`, the
-number of sign changes in the coefficients (zero coefficients ignored), and proves the bound
-`P.roots.countP (0 < ·) ≤ signVariations P` over any linearly ordered commutative ring
-(`roots_countP_pos_le_signVariations`). The second half of the rule as textbooks state it
-([quarteroni2000numerical] Property 6.5; [isaacson1994analysis] §3.4) — the number of positive
-roots differs from the number of sign changes by an *even* number — is absent from Mathlib and is
-proved here over `ℝ`.
+**Descartes' rule of signs** says that the number $k$ of positive roots of a nonzero real polynomial
+$P$, counted with multiplicity, is at most the number $\nu$ of sign changes in its sequence of
+coefficients (zero coefficients ignored), and that $\nu - k$ is even. Mathlib defines the number of
+sign changes as `Polynomial.signVariations`, and it proves that $k$ is at most $\nu$ over any
+linearly ordered commutative ring, as `Polynomial.roots_countP_pos_le_signVariations`. This module
+proves the parity clause over $\mathbb{R}$. The rule is Property 6.5 of [quarteroni2000numerical];
+see also [isaacson1994analysis], §3.4.
 
-The combinatorial half is `signVariations_mod_two_eq`: the parity of the number of sign changes is
-the parity of the comparison of the leading and trailing coefficients, by walking the nonzero
-coefficients from the top with `signVariations_eq_eraseLead_add_ite`. The analytic half is
-`sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos`: a real polynomial with no positive root
-has leading and trailing coefficients of the same sign, since `P.eval` keeps one sign on `(0, ∞)`
-(intermediate value theorem), the sign of the leading coefficient for large `x`
-(`tendsto_atTop_of_leadingCoeff_nonneg`) and of the trailing coefficient near `0⁺`. Factoring out
-the positive roots one by one, each factor `X - η` flips the trailing sign and hence the parity,
-which gives `signVariations_mod_two_eq_roots_countP_pos_mod_two` and the clause
-`even_signVariations_sub_roots_countP_pos`. Upstreaming candidate (natural home: Mathlib's
-`RuleOfSigns.lean`).
+## Main results
+
+* `Polynomial.signVariations_mod_two_eq`: for $P \neq 0$, $\nu$ is even if and only if the leading
+  and trailing coefficients of $P$ have the same sign.
+* `Polynomial.sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos`: a nonzero real polynomial with
+  no positive root has leading and trailing coefficients of the same sign.
+* `Polynomial.signVariations_mod_two_eq_roots_countP_pos_mod_two`: for a nonzero real polynomial,
+  $\nu \equiv k \pmod 2$.
+* `Polynomial.even_signVariations_sub_roots_countP_pos`: for a nonzero real polynomial, $\nu - k$ is
+  even.
+
+## Proof outline
+
+The combinatorial half walks the nonzero coefficients from the top: erasing the leading term changes
+$\nu$ by one exactly when the two top nonzero coefficients have opposite signs. Hence the parity of
+$\nu$ records whether the leading and trailing coefficients have the same sign. The analytic half:
+if $P$ has no positive root, then $P(x)$ has one sign on $(0, \infty)$ by the intermediate value
+theorem. This sign is the sign of the leading coefficient for large $x$, and the sign of the
+trailing coefficient for small $x > 0$. Finally, the positive roots are factored out one at a time.
+Each factor $X - \eta$ with $\eta > 0$ flips the sign of the trailing coefficient, and hence the
+parity.
+
+## Implementation notes
+
+* The material is general and is a candidate for Mathlib, with natural home
+  `Mathlib.Algebra.Polynomial.RuleOfSigns`.
 -/
 
 open Filter Topology
 
-/-- Two nonzero elements of a linearly ordered ring have the same sign iff their product is
-positive. -/
+/-- Two nonzero elements $u$, $v$ of a linearly ordered ring have the same sign if and only if
+$uv > 0$. -/
 theorem sign_eq_sign_iff_mul_pos {α : Type*} [Ring α] [LinearOrder α] [IsStrictOrderedRing α]
     {u v : α} (hu : u ≠ 0) (hv : v ≠ 0) : SignType.sign u = SignType.sign v ↔ 0 < u * v := by
   rcases lt_or_gt_of_ne hu with hu' | hu' <;> rcases lt_or_gt_of_ne hv with hv' | hv'
@@ -50,15 +65,16 @@ section Semiring
 variable {R : Type*} [Semiring R] [LinearOrder R]
 
 omit [LinearOrder R] in
-/-- The trailing coefficient of a monomial is its coefficient. -/
+/-- The trailing coefficient of the monomial $a X^n$ with $a \neq 0$ is $a$. -/
 theorem trailingCoeff_monomial (n : ℕ) {a : R} (ha : a ≠ 0) :
     (monomial n a).trailingCoeff = a := by
   rw [trailingCoeff, natTrailingDegree_monomial ha, coeff_monomial]
   simp
 
 omit [LinearOrder R] in
-/-- Erasing the leading term of a polynomial with at least two nonzero coefficients does not change
-its trailing coefficient. -/
+/-- If erasing the leading term of a polynomial $P$ leaves a nonzero polynomial, that is, if $P$ has
+at least two nonzero coefficients, then erasing the leading term does not change the trailing
+coefficient. -/
 theorem trailingCoeff_eraseLead {P : R[X]} (h : P.eraseLead ≠ 0) :
     P.eraseLead.trailingCoeff = P.trailingCoeff := by
   have hP : P ≠ 0 := fun h0 => h (by simp [h0])
@@ -79,16 +95,22 @@ theorem trailingCoeff_eraseLead {P : R[X]} (h : P.eraseLead ≠ 0) :
       exact coeff_eq_zero_of_lt_natTrailingDegree hm
   rw [trailingCoeff, trailingCoeff, hntd, eraseLead_coeff_of_ne _ hlt.ne]
 
-/-- The parity bookkeeping of a chain of two sign comparisons. -/
+/-- For nonzero signs $a$, $b$, $c$, the number of sign changes in the chain $a, b, c$ (counting
+$a = -b$ and $b \neq c$) is even if and only if $a = c$. -/
 private theorem signType_parity (a b c : SignType) (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
     ((if b = c then 0 else 1) + if a = -b then 1 else 0) % 2 = if a = c then 0 else 1 := by
   revert a b c
   decide
 
-/-- **The parity of the number of sign changes** is that of the comparison between the leading and
-the trailing coefficient: for `P ≠ 0`, `signVariations P % 2 = 0` if they have the same sign and
-`1` otherwise. Induction through `signVariations_eq_eraseLead_add_ite`, which walks the nonzero
-coefficients from the top. -/
+/-- **The parity of the number of sign changes.** Let $R$ be a semiring with a linear order and let
+$P \in R[X]$ be nonzero. Then the number $\nu$ of sign changes in the coefficients of $P$
+satisfies
+$$\nu \bmod 2 = \begin{cases} 0 & \text{if the leading and trailing coefficients of } P \text{
+  have the same sign}, \\ 1 & \text{otherwise}. \end{cases}$$
+
+The number $\nu$ is `Polynomial.signVariations P`, and the sign is `SignType.sign`. The proof is
+by induction through Mathlib's `Polynomial.signVariations_eq_eraseLead_add_ite`, which walks the
+nonzero coefficients from the top. -/
 theorem signVariations_mod_two_eq {P : R[X]} (hP : P ≠ 0) :
     signVariations P % 2 =
       if SignType.sign P.leadingCoeff = SignType.sign P.trailingCoeff then 0 else 1 := by
@@ -125,9 +147,12 @@ section Real
 variable {P : ℝ[X]}
 
 /-- **A real polynomial with no positive root has leading and trailing coefficients of the same
-sign.** The values `P.eval x`, `x > 0`, have a constant sign by the intermediate value theorem; it
-is the sign of the leading coefficient for large `x` and, writing `P = X ^ t Q` with
-`Q(0) = P.trailingCoeff`, the sign of the trailing coefficient for small `x > 0`. -/
+sign.** Let $P \in \mathbb{R}[X]$ be nonzero with $P(x) \neq 0$ for every $x > 0$. Then the
+leading coefficient and the trailing coefficient of $P$ have the same sign.
+
+The values $P(x)$ for $x > 0$ have one sign by the intermediate value theorem. It is the sign of
+the leading coefficient for large $x$. Writing $P = X^t Q$ with $Q(0)$ the trailing coefficient
+of $P$, it is the sign of the trailing coefficient for small $x > 0$. -/
 theorem sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos (hP : P ≠ 0)
     (h : ∀ x, 0 < x → P.eval x ≠ 0) :
     SignType.sign P.leadingCoeff = SignType.sign P.trailingCoeff := by
@@ -195,7 +220,8 @@ theorem sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos (hP : P ≠ 0)
     exact h y hypos hy0
   rw [← hsign₁, ← hsame, hsign₀]
 
-/-- Multiplying by `X - η` with `η > 0` flips the sign of the trailing coefficient. -/
+/-- For $\eta > 0$ and every $Q \in \mathbb{R}[X]$, the trailing coefficient of $(X - \eta) Q$ has
+the sign opposite to that of the trailing coefficient of $Q$. -/
 theorem sign_trailingCoeff_X_sub_C_mul {η : ℝ} (hη : 0 < η) (Q : ℝ[X]) :
     SignType.sign ((X - C η) * Q).trailingCoeff = -SignType.sign Q.trailingCoeff := by
   have h1 : (X - C η).trailingCoeff = -η := by
@@ -204,18 +230,23 @@ theorem sign_trailingCoeff_X_sub_C_mul {η : ℝ} (hη : 0 < η) (Q : ℝ[X]) :
   rw [trailingCoeff_mul, h1, sign_mul, Left.sign_neg, sign_pos hη]
   simp
 
-/-- The parity flip of a chain of comparisons against a negated sign. -/
+/-- For nonzero signs $a$ and $c$, comparing $a$ with $-c$ has the opposite parity to comparing $a$
+with $c$. -/
 private theorem signType_parity_neg (a c : SignType) (ha : a ≠ 0) (hc : c ≠ 0) :
     (if a = -c then 0 else 1) = ((if a = c then 0 else 1) + 1) % 2 := by
   revert a c
   decide
 
-/-- **The parity clause of Descartes' rule of signs**, in the form
-`signVariations P % 2 = P.roots.countP (0 < ·) % 2`: the number of sign changes and the number of
-positive roots (with multiplicity) of a nonzero real polynomial have the same parity. Induction on
-the number of positive roots, each factor `X - η` flipping the parity
-(`sign_trailingCoeff_X_sub_C_mul`), with `sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos`
-for a polynomial without positive roots. -/
+/-- **Parity of the number of sign changes and of positive roots.** Let $P \in \mathbb{R}[X]$ be
+nonzero, let $\nu$ be the number of sign changes in its coefficients, and let $k$ be the number
+of its positive roots, counted with multiplicity. Then
+$$\nu \equiv k \pmod 2.$$
+
+The number $\nu$ is `Polynomial.signVariations P`, and $k$ is `P.roots.countP (0 < ·)`. The
+proof is by induction on $k$: each factor $X - \eta$ flips the parity
+(`Polynomial.sign_trailingCoeff_X_sub_C_mul`), and
+`Polynomial.sign_leadingCoeff_eq_sign_trailingCoeff_of_forall_pos` treats a polynomial without
+positive roots. -/
 theorem signVariations_mod_two_eq_roots_countP_pos_mod_two (hP : P ≠ 0) :
     signVariations P % 2 = P.roots.countP (0 < ·) % 2 := by
   generalize hn : P.roots.countP (0 < ·) = n
@@ -244,10 +275,13 @@ theorem signVariations_mod_two_eq_roots_countP_pos_mod_two (hP : P ≠ 0) :
         (sign_ne_zero.2 (trailingCoeff_ne_zero.2 hQ)), ihQ]
     omega
 
-/-- **Descartes' rule of signs, parity clause** ([quarteroni2000numerical] Property 6.5, second
-half): for a nonzero real polynomial, `ν - k` is even, where `ν` is the number of sign changes in
-the coefficients and `k` the number of positive roots counted with multiplicity (`k ≤ ν` by
-Mathlib's `roots_countP_pos_le_signVariations`, so the natural subtraction is the difference). -/
+/-- **Descartes' rule of signs, parity clause.** Let $P \in \mathbb{R}[X]$ be nonzero, let $\nu$ be
+the number of sign changes in its coefficients, and let $k$ be the number of its positive roots,
+counted with multiplicity. Then $\nu - k$ is even.
+
+This is the second half of Property 6.5 of [quarteroni2000numerical]. The difference is a
+subtraction of natural numbers; it is the true difference, because $k \le \nu$ by Mathlib's
+`Polynomial.roots_countP_pos_le_signVariations`. -/
 theorem even_signVariations_sub_roots_countP_pos (hP : P ≠ 0) :
     Even (signVariations P - P.roots.countP (0 < ·)) := by
   have h1 := roots_countP_pos_le_signVariations P

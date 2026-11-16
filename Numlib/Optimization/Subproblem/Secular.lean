@@ -10,67 +10,95 @@ import Numlib.Optimization.Subproblem.SecularSum
 /-!
 # The resolvent step and the secular function
 
-Let `H : E →L[ℝ] E` be a symmetric operator on a finite-dimensional real inner product space,
-`g : E`, and `λ` a real shift. This file studies the step `s(λ) = -(H + λ)⁻¹ g` solving
-`(H + λ) s = -g` (Cartis–Gould–Toint, *Evaluation complexity of algorithms for nonconvex
-optimization*, (8.2.2)) and the secular function `π(λ) = ‖s(λ)‖²` ((8.2.4)), on the interval
-`λ > -λ₁` to the right of the leftmost eigenvalue `λ₁` of `H`, where `H + λ` is positive definite.
+Let $E$ be a finite-dimensional real inner product space, let $H : E \to E$ be a symmetric
+continuous linear operator with leftmost (least) eigenvalue $\lambda_1$ and rightmost (greatest)
+eigenvalue $\lambda_n$, and let $g \in E$. For a real shift $\lambda$, the **step**
+$s(\lambda) = -(H + \lambda I)^{-1} g$ solves $(H + \lambda I) s = -g$, and the **secular function**
+is $\pi(\lambda) = \|s(\lambda)\|^2$. These are (8.2.2) and (8.2.4) of [cartis2022evaluation]. This
+file studies them on the interval $\lambda > -\lambda_1$, where $H + \lambda I$ is positive
+definite. In an orthonormal eigenvector basis $b_i$ of $H$ with eigenvalues $\lambda_i$,
+$$s(\lambda) = -\sum_i \frac{\langle b_i, g \rangle}{\lambda + \lambda_i} b_i, \qquad \pi(\lambda) =
+  \sum_i \frac{\langle b_i, g \rangle^2}{(\lambda + \lambda_i)^2},$$
+so the real-variable properties of $\pi$ follow from `Numlib.Optimization.Subproblem.SecularSum`.
 
-A scaling norm `‖·‖_M` of the book is not a parameter: it is the norm of the inner product space
-`E` (an energy space, in which the pencil `(H, M)` becomes the single symmetric operator `M⁻¹ H`).
+The file also treats the threshold $\lambda \downarrow -\lambda_1$, the minimum-norm solution of
+$(H + \lambda I) x = -g$, the derivatives of $s$ and $\pi$ (Theorem 8.2.6 of
+[cartis2022evaluation]), the Taylor estimates of $\pi$ (Theorem 8.2.2), and the transformed secular
+function $\pi^\beta$ (Lemma 8.2.3, Corollary 8.2.4 and Theorem 8.2.5). The number
+$\lambda_s = \max\{0, -\lambda_1\}$ is the threshold of Lemma 8.2.1.
 
 ## Main definitions
 
-* `leftmost hH`, `rightmost hH`: the least and greatest eigenvalues `λ₁`, `λₙ` of `H` (`0` on the
-  zero space), and
-  `shiftThreshold hH = max 0 (-λ₁)`, the book's `λₛ`.
-* `step g H λ = -(Ring.inverse (H + λ • 1)) g` and `secular g H λ = ‖step g H λ‖ ^ 2`.
-* `particular hH g λ`: the minimum-norm solution of `(H + λ) x = -g` when one exists (the book's
-  `sₛ` at `λ = -λ₁`), spectrally `-(H + λ)⁺ g`. "Minimum norm" refers to the norm of `E`: in the
-  scaled setting of the book, where `E` carries the energy inner product `⟪x, y⟫_M`, it is the
-  `M`-minimum-norm solution — the limit of `s(λ)` as `λ ↓ -λ₁` — and *not* the Euclidean
-  Moore–Penrose solution (the two differ by a kernel vector).
-* `stepDeriv g H k λ = (-1) ^ (k + 1) k! (H + λ)⁻⁽ᵏ⁺¹⁾ g`, the `k`-th derivative of `step`, and
-  `secularCoeff k = (2 k + 1)! / (k!)²`, the book's `αₖ`.
+* `Subproblem.leftmost` and `Subproblem.rightmost`: the least and greatest eigenvalues $\lambda_1$
+  and $\lambda_n$ of $H$, both $0$ on the zero space.
+* `Subproblem.shiftThreshold`: the number $\lambda_s = \max\{0, -\lambda_1\}$.
+* `Subproblem.step` and `Subproblem.secular`: the step $s(\lambda) = -(H + \lambda I)^{-1} g$ and
+  the secular function $\pi(\lambda) = \|s(\lambda)\|^2$.
+* `Subproblem.particular`: the minimum-norm solution of $(H + \lambda I) x = -g$, when a solution
+  exists; it is $-(H + \lambda I)^+ g$ for the pseudoinverse, and $s_s$ of the source at
+  $\lambda = -\lambda_1$.
+* `Subproblem.stepDeriv`: the $k$-th derivative $s^{(k)}(\lambda) = (-1)^{k+1} k! \, (H + \lambda
+  I)^{-(k+1)} g$ of the step.
+* `Subproblem.secularCoeff`: the coefficients $\alpha_k = (2k + 1)! / (k!)^2$ of Theorem 8.2.6.
 
 ## Main results
 
-* `isPositive_add_smul_iff`, `isSymmetricCoercive_add_smul_iff`: `H + λ` is positive
-  semidefinite iff `λ ≥ -λ₁` and positive definite iff `λ > -λ₁`;
-  `isPositive_add_smul_of_le` and `shiftThreshold_le_of_isPositive` need no nontriviality.
-* `le_leftmost_iff`, `le_leftmost_iff_forall`, `le_leftmost_iff_isCoerciveWith`: `λ₁` is the
-  greatest lower bound of the eigenvalues and the best constant in `c ‖v‖² ≤ ⟪v, H v⟫`;
-  `inner_le_rightmost_mul_norm_sq`, `rightmost_le_of_forall` are the same for `λₙ`, and
-  `norm_add_smul_apply_le` bounds `‖(H + λ) v‖ ≤ (λ + λₙ) ‖v‖` for `λ ≥ -λ₁`.
-* `step_spec`, `step_eq_sum`, `secular_eq_secularSum`: on `λ > -λ₁`, `step` is the unique
-  solution of `(H + λ) s = -g`, with the spectral expansions (8.2.6)–(8.2.7) in an orthonormal
-  eigenbasis `bᵢ`: `s(λ) = -∑ ⟪bᵢ, g⟫ / (λ + λᵢ) bᵢ` and `π(λ) = ∑ ⟪bᵢ, g⟫² / (λ + λᵢ)²`. All
-  real-variable properties of `π` then come from `Numlib.Optimization.Subproblem.SecularSum`.
-* `secular_shape`: shape of `π` and of `π ^ β` on `λ > -λ₁` (Corollary 8.2.4).
-* `hasDerivAt_secular`, `secular_pos`, `deriv_secular_neg`, `hasDerivAt_secular_rpow`,
-  `contDiffOn_secular_rpow`: calculus facts about `π` and `π ^ β` on `λ > -λ₁` for `g ≠ 0`.
-* `particular_spec`, `tendsto_step_threshold`: the minimum-norm solution, and the behaviour of
-  `s(λ)` and `π(λ)` as `λ ↓ -λ₁` (finite limit `sₛ` iff `g ⊥ ker (H - λ₁)`, otherwise `π → ∞`).
-  `tendsto_secular_rpow_threshold` is the corresponding statement for `π ^ β`.
-* `iteratedDeriv_step`, `stepDeriv_succ_unique`, `iteratedDeriv_secular`: the derivatives of `s`
-  and `π`, computed by the solves `(H + λ) s⁽ᵏ⁺¹⁾ = -(k + 1) s⁽ᵏ⁾` (Theorem 8.2.6).
-* `secular_taylor_bounds`, `secular_rpow_deriv_sign`, `secular_rpow_strictConcaveOn`,
-  `secular_rpow_tangent`: Theorem 8.2.2, Lemma 8.2.3 and Theorem 8.2.5 for `π`
-  (`secular_rpow_zero_left` is the degenerate case `g = 0`, where `π ≡ 0`).
+* `Subproblem.isPositive_add_smul_iff` and `Subproblem.isSymmetricCoercive_add_smul_iff`: on a
+  nonzero space, $H + \lambda I$ is positive semidefinite if and only if $\lambda \ge -\lambda_1$,
+  and positive definite if and only if $\lambda > -\lambda_1$.
+  `Subproblem.isPositive_add_smul_of_le` and `Subproblem.shiftThreshold_le_of_isPositive` need no
+  nontriviality.
+* `Subproblem.le_leftmost_iff`, `Subproblem.le_leftmost_iff_forall` and
+  `Subproblem.le_leftmost_iff_isCoerciveWith`: $\lambda_1$ is the greatest lower bound of the
+  eigenvalues and the best constant $c$ in $c \|v\|^2 \le \langle v, H v \rangle$.
+  `Subproblem.inner_le_rightmost_mul_norm_sq` and `Subproblem.rightmost_le_of_forall` give the same
+  for $\lambda_n$.
+* `Subproblem.norm_add_smul_apply_bounds`: for $\mu \ge -\lambda_1$, $(\mu + \lambda_1) \|s\| \le
+  \|(H + \mu I) s\| \le (\mu + \lambda_n) \|s\|$.
+* `Subproblem.step_spec`, `Subproblem.step_eq_sum` and `Subproblem.secular_eq_secularSum`: for
+  $\lambda > -\lambda_1$, the step is the unique solution of $(H + \lambda I) s = -g$, with the
+  spectral expansions (8.2.6) and (8.2.7).
+* `Subproblem.secular_shape`: the shape of $\pi$ and of $\pi^\beta$ on $\lambda > -\lambda_1$
+  (Corollary 8.2.4).
+* `Subproblem.hasDerivAt_secular`, `Subproblem.secular_pos`, `Subproblem.deriv_secular_neg`,
+  `Subproblem.hasDerivAt_secular_rpow` and `Subproblem.contDiffOn_secular_rpow`: calculus facts
+  about $\pi$ and $\pi^\beta$ on $\lambda > -\lambda_1$ for $g \neq 0$.
+* `Subproblem.particular_spec` and `Subproblem.tendsto_step_threshold`: the minimum-norm solution,
+  and the limits of $s(\lambda)$ and $\pi(\lambda)$ as $\lambda \downarrow -\lambda_1$. The limit
+  $s_s$ is finite if and only if $g \perp \ker(H - \lambda_1 I)$; otherwise $\pi \to +\infty$.
+  `Subproblem.tendsto_secular_rpow_threshold` is the same for $\pi^\beta$.
+* `Subproblem.iteratedDeriv_step`, `Subproblem.stepDeriv_succ_unique` and
+  `Subproblem.iteratedDeriv_secular`: the derivatives of $s$ and $\pi$, computed by the solves
+  $(H + \lambda I) s^{(k+1)} = -(k + 1) s^{(k)}$ (Theorem 8.2.6).
+* `Subproblem.secular_taylor_bounds`, `Subproblem.secular_rpow_deriv_sign`,
+  `Subproblem.secular_rpow_strictConcaveOn` and `Subproblem.secular_rpow_tangent`: Theorem 8.2.2,
+  Lemma 8.2.3 and Theorem 8.2.5 for $\pi$. `Subproblem.secular_rpow_zero_left` is the degenerate
+  case $g = 0$, where $\pi = 0$.
 
 ## Implementation notes
 
-Everything is computed in the orthonormal eigenvector basis `bᵢ = hH.eigenvectorBasis rfl i` with
-eigenvalues `λᵢ = hH.eigenvalues rfl i`: two vectors are equal when their coordinates are
-(`eq_of_inner_eigenvectorBasis`), and `⟪bᵢ, (H + λ) v⟫ = (λ + λᵢ) ⟪bᵢ, v⟫`. Mathlib sorts the
-eigenvalues decreasingly; `leftmost` is defined as their infimum, which is `0` on the zero space
-(hence the `[Nontrivial E]` hypotheses of the characterizations).
-
-## Strictness and domain
-
-The strict inequalities of Lemma 8.2.3 and Theorem 8.2.5 fail for `β = -1/2` when `g` is an
-eigenvector of `H` (then `π(λ) ^ (-1/2)` is affine); Theorem 8.2.5 also needs `δ ≠ 0` for
-strictness. The results are stated on the interval `λ > -λ₁`, which contains `λ > λₛ`.
+* A scaling norm $\|\cdot\|_M$ of the source is not a parameter. It is the norm of $E$, which can be
+  an energy space: there the pencil $(H, M)$ becomes the single symmetric operator $M^{-1} H$ (see
+  `Numlib.Optimization.Subproblem.Matrix`).
+* "Minimum norm" refers to the norm of $E$. In the scaled setting of the source, where $E$ carries
+  the inner product $\langle x, y \rangle_M$, `Subproblem.particular` is the solution of least
+  $M$-norm, which is the limit of $s(\lambda)$ as $\lambda \downarrow -\lambda_1$. It is not the
+  Euclidean Moore–Penrose solution. The two differ by a kernel vector.
+* The step uses `Ring.inverse`, so it is defined for every $\lambda$ and is $0$ when $H + \lambda I$
+  is not invertible.
+* All computations use the orthonormal eigenvector basis $b_i$ = `hH.eigenvectorBasis rfl i` with
+  eigenvalues $\lambda_i$ = `hH.eigenvalues rfl i`. Two vectors are equal when their coordinates are
+  equal (`Subproblem.eq_of_inner_eigenvectorBasis`), and $\langle b_i, (H + \lambda I) v \rangle =
+  (\lambda + \lambda_i) \langle b_i, v \rangle$.
+* Mathlib sorts the eigenvalues in decreasing order. `Subproblem.leftmost` is their infimum, which
+  is $0$ on the zero space. For this reason the characterizations of $\lambda_1$ assume that $E$ is
+  nontrivial.
+* The strict inequalities of Lemma 8.2.3 and Theorem 8.2.5 fail for $\beta = -1/2$ when $g$ is an
+  eigenvector of $H$, because then $\pi(\lambda)^{-1/2}$ is affine. The strict inequalities of
+  Theorem 8.2.5 also need $\delta \neq 0$. The results here assume these conditions for strictness
+  and prove equality in the exceptional case.
+* The results are stated on the interval $\lambda > -\lambda_1$, which contains the interval
+  $\lambda > \lambda_s$ of the source.
 -/
 
 open Set Filter Topology
@@ -88,55 +116,73 @@ section Leftmost
 
 variable (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 
-/-- The leftmost (least) eigenvalue `λ₁` of the symmetric operator `H`; `0` if `E` is the zero
-space. -/
+/-- The **leftmost eigenvalue** $\lambda_1$ of a symmetric operator $H$ on a finite-dimensional real
+inner product space: the least eigenvalue of $H$.
+
+It is the infimum of `hH.eigenvalues rfl`. On the zero space this is an empty infimum, so
+$\lambda_1 = 0$. -/
 noncomputable def leftmost : ℝ := ⨅ i, hH.eigenvalues rfl i
 
-/-- The book's `λₛ = max 0 (-λ₁)` (Lemma 8.2.1): the left end of the interval of shifts `λ ≥ 0`
-on which `H + λ` is positive definite. -/
+/-- The **shift threshold** $\lambda_s = \max\{0, -\lambda_1\}$ of a symmetric operator $H$ with
+leftmost eigenvalue $\lambda_1$.
+
+This is the number $\lambda_s$ of Lemma 8.2.1 of [cartis2022evaluation]. It is the left end of
+the interval of shifts $\lambda \ge 0$ on which $H + \lambda I$ is positive definite. -/
 noncomputable def shiftThreshold : ℝ := max 0 (-leftmost hH)
 
-/-- The rightmost (greatest) eigenvalue `λₙ` of the symmetric operator `H`; `0` if `E` is the
-zero space. -/
+/-- The **rightmost eigenvalue** $\lambda_n$ of a symmetric operator $H$: the greatest eigenvalue of
+$H$, and $0$ on the zero space. -/
 noncomputable def rightmost : ℝ := ⨆ i, hH.eigenvalues rfl i
 
+/-- The rightmost eigenvalue is the supremum of the eigenvalues, by definition. -/
 theorem rightmost_def : rightmost hH = ⨆ i, hH.eigenvalues rfl i := rfl
 
 variable {hH}
 
+/-- Every eigenvalue $\lambda_i$ of $H$ satisfies $\lambda_i \le \lambda_n$. -/
 theorem eigenvalues_le_rightmost (i : Fin (Module.finrank ℝ E)) :
     hH.eigenvalues rfl i ≤ rightmost hH :=
   le_ciSup (Set.finite_range _).bddAbove i
 
+/-- Every eigenvalue $\lambda_i$ of $H$ satisfies $\lambda_1 \le \lambda_i$. -/
 theorem leftmost_le_eigenvalues (i : Fin (Module.finrank ℝ E)) :
     leftmost hH ≤ hH.eigenvalues rfl i :=
   ciInf_le (Set.finite_range _).bddBelow i
 
+/-- The leftmost eigenvalue is at most the rightmost eigenvalue: $\lambda_1 \le \lambda_n$. -/
 theorem leftmost_le_rightmost : leftmost hH ≤ rightmost hH := by
   rcases isEmpty_or_nonempty (Fin (Module.finrank ℝ E)) with h | ⟨⟨i⟩⟩
   · simp [leftmost, rightmost]
   · exact (leftmost_le_eigenvalues i).trans (eigenvalues_le_rightmost i)
 
+/-- On a nonzero space, the leftmost eigenvalue $\lambda_1$ is one of the eigenvalues $\lambda_i$ of
+$H$. -/
 theorem exists_eigenvalues_eq_leftmost [Nontrivial E] :
     ∃ i, hH.eigenvalues rfl i = leftmost hH := by
   have : Nonempty (Fin (Module.finrank ℝ E)) := ⟨⟨0, Module.finrank_pos⟩⟩
   exact exists_eq_ciInf_of_finite
 
+/-- The shift threshold is nonnegative: $\lambda_s \ge 0$. -/
 theorem shiftThreshold_nonneg : 0 ≤ shiftThreshold hH := le_max_left _ _
 
+/-- The shift threshold satisfies $-\lambda_1 \le \lambda_s$. -/
 theorem neg_leftmost_le_shiftThreshold : -leftmost hH ≤ shiftThreshold hH := le_max_right _ _
 
+/-- The interval $(\lambda_s, \infty)$ is contained in $(-\lambda_1, \infty)$. -/
 theorem Ioi_shiftThreshold_subset : Ioi (shiftThreshold hH) ⊆ Ioi (-leftmost hH) :=
   Ioi_subset_Ioi neg_leftmost_le_shiftThreshold
 
-/-- The action of `H` on its eigenvector basis, with real scalars. -/
+/-- The operator $H$ maps each vector $b_i$ of its eigenvector basis to $\lambda_i b_i$, with a real
+scalar $\lambda_i$. -/
 theorem apply_eigenvectorBasis' (i : Fin (Module.finrank ℝ E)) :
     H (hH.eigenvectorBasis rfl i) = hH.eigenvalues rfl i • hH.eigenvectorBasis rfl i := by
   have h := hH.apply_eigenvectorBasis rfl i
   simp only [ContinuousLinearMap.coe_coe, RCLike.ofReal_real_eq_id, id] at h
   exact h
 
-/-- Coordinates of `(H + λ) v` in the eigenvector basis: `⟪bᵢ, (H + λ) v⟫ = (λ + λᵢ) ⟪bᵢ, v⟫`. -/
+/-- The coordinates of $(H + \lambda I) v$ in the eigenvector basis: $\langle b_i, (H + \lambda I) v
+\rangle = (\lambda + \lambda_i) \langle b_i, v \rangle$ for every $\lambda \in \mathbb{R}$ and
+$v \in E$. -/
 theorem inner_eigenvectorBasis_add_smul (lam : ℝ) (v : E) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, (H + lam • 1) v⟫ =
       (lam + hH.eigenvalues rfl i) * ⟪hH.eigenvectorBasis rfl i, v⟫ := by
@@ -148,26 +194,29 @@ theorem inner_eigenvectorBasis_add_smul (lam : ℝ) (v : E) (i : Fin (Module.fin
     real_inner_smul_left]
   ring
 
-/-- The inner product in the coordinates of the eigenvector basis. -/
+/-- The inner product in the coordinates of the eigenvector basis: $\langle x, y \rangle = \sum_i
+\langle b_i, x \rangle \langle b_i, y \rangle$. -/
 theorem inner_eq_sum_eigenvectorBasis (x y : E) :
     ⟪x, y⟫ = ∑ i, ⟪hH.eigenvectorBasis rfl i, x⟫ * ⟪hH.eigenvectorBasis rfl i, y⟫ := by
   rw [← (hH.eigenvectorBasis rfl).sum_inner_mul_inner x y]
   exact Finset.sum_congr rfl fun i _ => by rw [real_inner_comm x]
 
-/-- Two vectors with the same coordinates in the eigenvector basis are equal. -/
+/-- Two vectors $x, y \in E$ with $\langle b_i, x \rangle = \langle b_i, y \rangle$ for every $i$
+are equal. -/
 theorem eq_of_inner_eigenvectorBasis {x y : E}
     (h : ∀ i, ⟪hH.eigenvectorBasis rfl i, x⟫ = ⟪hH.eigenvectorBasis rfl i, y⟫) : x = y := by
   rw [← (hH.eigenvectorBasis rfl).sum_repr' x, ← (hH.eigenvectorBasis rfl).sum_repr' y]
   simp_rw [h]
 
-/-- The coordinates of a combination of the eigenvectors. -/
+/-- The coordinates of a combination of the eigenvectors:
+$\langle b_i, \sum_j c_j b_j \rangle = c_i$. -/
 theorem inner_eigenvectorBasis_sum (c : Fin (Module.finrank ℝ E) → ℝ)
     (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, ∑ j, c j • hH.eigenvectorBasis rfl j⟫ = c i :=
   (hH.eigenvectorBasis rfl).orthonormal.inner_right_fintype c i
 
-/-- The Rayleigh lower bound `λ₁ ‖v‖² ≤ ⟪v, H v⟫`, written for the shift `H + λ`:
-`(λ + λ₁) ‖v‖² ≤ ⟪(H + λ) v, v⟫`. -/
+/-- The Rayleigh lower bound for a shifted operator: for every $\lambda \in \mathbb{R}$ and
+$v \in E$, $(\lambda + \lambda_1) \|v\|^2 \le \langle (H + \lambda I) v, v \rangle$. -/
 theorem add_leftmost_mul_norm_sq_le (lam : ℝ) (v : E) :
     (lam + leftmost hH) * ‖v‖ ^ 2 ≤ ⟪(H + lam • 1) v, v⟫ := by
   rw [← real_inner_self_eq_norm_sq, real_inner_comm, inner_eq_sum_eigenvectorBasis (hH := hH),
@@ -177,18 +226,21 @@ theorem add_leftmost_mul_norm_sq_le (lam : ℝ) (v : E) :
   have := leftmost_le_eigenvalues (hH := hH) i
   nlinarith [mul_self_nonneg ⟪hH.eigenvectorBasis rfl i, v⟫]
 
+/-- The Rayleigh lower bound: $\lambda_1 \|v\|^2 \le \langle v, H v \rangle$ for every $v \in E$. -/
 theorem leftmost_mul_norm_sq_le (v : E) : leftmost hH * ‖v‖ ^ 2 ≤ ⟪v, H v⟫ := by
   simpa [real_inner_comm, inner_add_left, real_inner_self_eq_norm_sq] using
     add_leftmost_mul_norm_sq_le (hH := hH) 0 v
 
-/-- `leftmost` is characterized as the greatest lower bound of the eigenvalues. -/
+/-- On a nonzero space, $c \le \lambda_1$ if and only if $c \le \lambda_i$ for every eigenvalue
+$\lambda_i$ of $H$. That is, $\lambda_1$ is the greatest lower bound of the eigenvalues. -/
 theorem le_leftmost_iff [Nontrivial E] {c : ℝ} :
     c ≤ leftmost hH ↔ ∀ i, c ≤ hH.eigenvalues rfl i := by
   have : Nonempty (Fin (Module.finrank ℝ E)) := ⟨⟨0, Module.finrank_pos⟩⟩
   exact le_ciInf_iff (Set.finite_range _).bddBelow
 
-/-- `leftmost` is the best constant in the Rayleigh bound `c ‖v‖² ≤ ⟪v, H v⟫` (Courant–Fischer
-for the least eigenvalue). -/
+/-- On a nonzero space, $c \le \lambda_1$ if and only if $c \|v\|^2 \le \langle v, H v \rangle$ for
+every $v \in E$. That is, $\lambda_1$ is the best constant in the Rayleigh bound; this is the
+Courant–Fischer principle for the least eigenvalue. -/
 theorem le_leftmost_iff_forall [Nontrivial E] {c : ℝ} :
     c ≤ leftmost hH ↔ ∀ v, c * ‖v‖ ^ 2 ≤ ⟪v, H v⟫ := by
   constructor
@@ -201,21 +253,27 @@ theorem le_leftmost_iff_forall [Nontrivial E] {c : ℝ} :
       (hH.eigenvectorBasis rfl).norm_eq_one, hi] at h'
     simpa using h'
 
-/-- The same characterization in the language of `LinearMap.IsCoerciveWith`: `H` is coercive
-with constant `c` iff `c ≤ λ₁`. -/
+/-- On a nonzero space, $c \le \lambda_1$ if and only if $H$ is coercive with constant $c$, that is,
+$c \|v\|^2 \le \langle H v, v \rangle$ for every $v \in E$ (`LinearMap.IsCoerciveWith`). -/
 theorem le_leftmost_iff_isCoerciveWith [Nontrivial E] {c : ℝ} :
     c ≤ leftmost hH ↔ (H : E →ₗ[ℝ] E).IsCoerciveWith c := by
   rw [le_leftmost_iff_forall]
   refine forall_congr' fun v => ?_
   simp [real_inner_comm]
 
-/-- The leftmost eigenvalue is an eigenvalue (on a nonzero space). -/
+/-- On a nonzero space, the leftmost eigenvalue $\lambda_1$ is an eigenvalue of $H$. -/
 theorem hasEigenvalue_leftmost [Nontrivial E] :
     Module.End.HasEigenvalue (H : E →ₗ[ℝ] E) (leftmost hH) := by
   obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hH)
   simpa [hi] using hH.hasEigenvalue_eigenvalues rfl i
 
-/-- `H + λ` is positive semidefinite iff `λ ≥ -λ₁` (on a nonzero space). -/
+/-- Let $H$ be a symmetric operator on a nonzero finite-dimensional real inner product space. Then
+for every $\lambda \in \mathbb{R}$, $H + \lambda I$ is positive semidefinite if and only if
+$$\lambda \ge -\lambda_1.$$
+
+Positive semidefinite is `LinearMap.IsPositive`: symmetric with
+$\langle (H + \lambda I) x, x \rangle \ge 0$ for all $x$. On the zero space $\lambda_1 = 0$ and
+the equivalence fails for $\lambda < 0$, so the space is assumed nontrivial. -/
 theorem isPositive_add_smul_iff [Nontrivial E] (lam : ℝ) :
     ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive ↔ -leftmost hH ≤ lam := by
   rw [ContinuousLinearMap.isPositive_add_smul_one_iff hH]
@@ -231,13 +289,14 @@ theorem isPositive_add_smul_iff [Nontrivial E] (lam : ℝ) :
     exact le_trans (mul_nonneg (by linarith) (sq_nonneg _))
       (add_leftmost_mul_norm_sq_le (hH := hH) lam v)
 
-/-- On the zero space the leftmost eigenvalue is `0` (an empty infimum). -/
+/-- On the zero space the leftmost eigenvalue is $0$, an empty infimum. -/
 theorem leftmost_eq_zero_of_subsingleton [Subsingleton E] : leftmost hH = 0 := by
   have : IsEmpty (Fin (Module.finrank ℝ E)) := by
     rw [Module.finrank_zero_of_subsingleton]; infer_instance
   exact Real.iInf_of_isEmpty _
 
-/-- `H + λ` is positive semidefinite for `λ ≥ -λ₁` (no nontriviality needed). -/
+/-- If $\lambda \ge -\lambda_1$, then $H + \lambda I$ is positive semidefinite. The space may be the
+zero space. -/
 theorem isPositive_add_smul_of_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) :
     ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive := by
   rcases subsingleton_or_nontrivial E with hE | hE
@@ -245,14 +304,16 @@ theorem isPositive_add_smul_of_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) :
     intro v; simp [Subsingleton.elim v 0]
   · exact (isPositive_add_smul_iff (hH := hH) lam).2 hlam
 
-/-- A nonnegative shift making `H + μ` positive semidefinite is at least `λₛ`. -/
+/-- If $\mu \ge 0$ and $H + \mu I$ is positive semidefinite, then $\lambda_s \le \mu$. The space may
+be the zero space. -/
 theorem shiftThreshold_le_of_isPositive {μ : ℝ} (hμ : 0 ≤ μ)
     (hpos : ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsPositive) : shiftThreshold hH ≤ μ := by
   rcases subsingleton_or_nontrivial E with hE | hE
   · rw [shiftThreshold, leftmost_eq_zero_of_subsingleton]; simpa using hμ
   · exact max_le hμ ((isPositive_add_smul_iff (hH := hH) μ).1 hpos)
 
-/-- `H + λ` is positive definite (symmetric and coercive) iff `λ > -λ₁` (on a nonzero space). -/
+/-- On a nonzero space, $H + \lambda I$ is positive definite, that is, symmetric and coercive, if
+and only if $\lambda > -\lambda_1$. -/
 theorem isSymmetricCoercive_add_smul_iff [Nontrivial E] (lam : ℝ) :
     ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E).IsSymmetricCoercive ↔ -leftmost hH < lam := by
   constructor
@@ -270,7 +331,7 @@ theorem isSymmetricCoercive_add_smul_iff [Nontrivial E] (lam : ℝ) :
     exact lt_of_lt_of_le (mul_pos (by linarith) (by positivity))
       (add_leftmost_mul_norm_sq_le (hH := hH) lam x)
 
-/-- At the threshold `λ = -λ₁`, `H + λ` is singular (on a nonzero space). -/
+/-- On a nonzero space, $H - \lambda_1 I$ is singular: its kernel is not $\{0\}$. -/
 theorem ker_add_neg_leftmost_ne_bot [Nontrivial E] :
     LinearMap.ker ((H + (-leftmost hH) • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E) ≠ ⊥ := by
   obtain ⟨i, hi⟩ := exists_eigenvalues_eq_leftmost (hH := hH)
@@ -279,7 +340,7 @@ theorem ker_add_neg_leftmost_ne_bot [Nontrivial E] :
   rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe, add_apply, apply_eigenvectorBasis', hi]
   simp
 
-/-- For `λ > -λ₁`, `H + λ` is invertible. -/
+/-- For $\lambda > -\lambda_1$, the operator $H + \lambda I$ is invertible. -/
 theorem isUnit_add_smul {lam : ℝ} (hlam : -leftmost hH < lam) : IsUnit (H + lam • 1) := by
   have := FiniteDimensional.complete ℝ E
   rw [ContinuousLinearMap.isUnit_iff_isUnit_toLinearMap, LinearMap.isUnit_iff_ker_eq_bot,
@@ -294,7 +355,8 @@ theorem isUnit_add_smul {lam : ℝ} (hlam : -leftmost hH < lam) : IsUnit (H + la
   rw [inner_zero_right]
   exact (mul_eq_zero.1 h.symm).resolve_left hpos.ne'
 
-/-- The Rayleigh upper bound `⟪(H + λ) v, v⟫ ≤ (λ + λₙ) ‖v‖²`, `λₙ` the rightmost eigenvalue. -/
+/-- The Rayleigh upper bound for a shifted operator: for every $\lambda \in \mathbb{R}$ and
+$v \in E$, $\langle (H + \lambda I) v, v \rangle \le (\lambda + \lambda_n) \|v\|^2$. -/
 theorem inner_add_smul_le_add_rightmost (lam : ℝ) (v : E) :
     ⟪(H + lam • 1) v, v⟫ ≤ (lam + rightmost hH) * ‖v‖ ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, real_inner_comm, inner_eq_sum_eigenvectorBasis (hH := hH),
@@ -304,18 +366,20 @@ theorem inner_add_smul_le_add_rightmost (lam : ℝ) (v : E) :
   have := eigenvalues_le_rightmost (hH := hH) i
   nlinarith [mul_self_nonneg ⟪hH.eigenvectorBasis rfl i, v⟫]
 
-/-- The Rayleigh upper bound `⟪v, H v⟫ ≤ λₙ ‖v‖²`. -/
+/-- The Rayleigh upper bound: $\langle v, H v \rangle \le \lambda_n \|v\|^2$ for every $v \in E$. -/
 theorem inner_le_rightmost_mul_norm_sq (v : E) : ⟪v, H v⟫ ≤ rightmost hH * ‖v‖ ^ 2 := by
   simpa [real_inner_comm, inner_add_left, real_inner_self_eq_norm_sq] using
     inner_add_smul_le_add_rightmost (hH := hH) 0 v
 
-/-- The rightmost eigenvalue is an eigenvalue (on a nonzero space). -/
+/-- On a nonzero space, the rightmost eigenvalue $\lambda_n$ is one of the eigenvalues $\lambda_i$
+of $H$. -/
 theorem exists_eigenvalues_eq_rightmost [Nontrivial E] :
     ∃ i, hH.eigenvalues rfl i = rightmost hH := by
   have : Nonempty (Fin (Module.finrank ℝ E)) := ⟨⟨0, Module.finrank_pos⟩⟩
   exact exists_eq_ciSup_of_finite
 
-/-- `λₙ` is the least constant in the Rayleigh bound `⟪v, H v⟫ ≤ c ‖v‖²` (on a nonzero space). -/
+/-- On a nonzero space, if $\langle v, H v \rangle \le c \|v\|^2$ for every $v \in E$, then
+$\lambda_n \le c$. That is, $\lambda_n$ is the least constant in the Rayleigh upper bound. -/
 theorem rightmost_le_of_forall [Nontrivial E] {c : ℝ} (h : ∀ v, ⟪v, H v⟫ ≤ c * ‖v‖ ^ 2) :
     rightmost hH ≤ c := by
   obtain ⟨i, hi⟩ := exists_eigenvalues_eq_rightmost (hH := hH)
@@ -324,8 +388,8 @@ theorem rightmost_le_of_forall [Nontrivial E] {c : ℝ} (h : ∀ v, ⟪v, H v⟫
     (hH.eigenvectorBasis rfl).norm_eq_one, hi] at h'
   simpa using h'
 
-/-- **Norm bound for a positive semidefinite shift**: for `λ ≥ -λ₁`,
-`‖(H + λ) v‖ ≤ (λ + λₙ) ‖v‖`. -/
+/-- **Norm bound for a positive semidefinite shift.** For $\lambda \ge -\lambda_1$ and every
+$v \in E$, $\|(H + \lambda I) v\| \le (\lambda + \lambda_n) \|v\|$. -/
 theorem norm_add_smul_apply_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) (v : E) :
     ‖(H + lam • 1) v‖ ≤ (lam + rightmost hH) * ‖v‖ := by
   have hsq : ‖(H + lam • 1) v‖ ^ 2 ≤ ((lam + rightmost hH) * ‖v‖) ^ 2 := by
@@ -343,9 +407,13 @@ theorem norm_add_smul_apply_le {lam : ℝ} (hlam : -leftmost hH ≤ lam) (v : E)
   have h0 : 0 ≤ lam + rightmost hH := by linarith [leftmost_le_rightmost (hH := hH)]
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
 
-/-- **Rayleigh-quotient bounds for a shifted operator** (the generalized Rayleigh-quotient
-inequality as used in [cartis2022evaluation] (9.3.1)): for `μ ≥ -λ₁`,
-`(μ + λ₁) ‖s‖ ≤ ‖(H + μ) s‖ ≤ (μ + λₙ) ‖s‖`, with `λ₁ = leftmost`, `λₙ = rightmost`. -/
+/-- **Rayleigh-quotient bounds for a shifted operator.** Let $H$ be a symmetric operator on a
+finite-dimensional real inner product space $E$, with leftmost eigenvalue $\lambda_1$ and
+rightmost eigenvalue $\lambda_n$. Let $\mu \ge -\lambda_1$. Then for every $s \in E$
+$$(\mu + \lambda_1) \|s\| \le \|(H + \mu I) s\| \le (\mu + \lambda_n) \|s\|.$$
+
+This is the generalized Rayleigh-quotient inequality in the form used in (9.3.1) of
+[cartis2022evaluation]. -/
 theorem norm_add_smul_apply_bounds {μ : ℝ} (hμ : -leftmost hH ≤ μ) (s : E) :
     (μ + leftmost hH) * ‖s‖ ≤ ‖(H + μ • 1) s‖ ∧ ‖(H + μ • 1) s‖ ≤ (μ + rightmost hH) * ‖s‖ := by
   have hsq' : ∀ x : E, ‖x‖ ^ 2 = ∑ i, ⟪hH.eigenvectorBasis rfl i, x⟫ ^ 2 := fun x => by
@@ -378,31 +446,40 @@ end Leftmost
 
 /-! ### The step and the secular function -/
 
-/-- The step `s(λ) = -(H + λ)⁻¹ g` (book (8.2.2)), defined with `Ring.inverse` so that it is total;
-it solves `(H + λ) s = -g` whenever `H + λ` is invertible (`step_spec`). -/
+/-- The **step** $s(\lambda) = -(H + \lambda I)^{-1} g$, for $g \in E$, a continuous linear operator
+$H$ on $E$ and $\lambda \in \mathbb{R}$.
+
+This is (8.2.2) of [cartis2022evaluation]. The inverse is `Ring.inverse`, so the step is defined
+for every $\lambda$, and it is $0$ when $H + \lambda I$ is not invertible. It solves
+$(H + \lambda I) s = -g$ whenever $H + \lambda I$ is invertible (`Subproblem.step_spec`). -/
 noncomputable def step (g : E) (H : E →L[ℝ] E) (lam : ℝ) : E := -(Ring.inverse (H + lam • 1)) g
 
-/-- The secular function `π(λ) = ‖s(λ)‖²` (book (8.2.4)). The transformed secular function
-`π(λ; β)` of (8.2.17) is `secular g H λ ^ β` (`Real.rpow`). -/
+/-- The **secular function** $\pi(\lambda) = \|s(\lambda)\|^2$, where $s(\lambda)$ is the step
+`Subproblem.step`.
+
+This is (8.2.4) of [cartis2022evaluation]. The transformed secular function
+$\pi(\lambda; \beta) = \pi(\lambda)^\beta$ of (8.2.17) is written `secular g H λ ^ β`, with
+`Real.rpow`. -/
 noncomputable def secular (g : E) (H : E →L[ℝ] E) (lam : ℝ) : ℝ := ‖step g H lam‖ ^ 2
 
 variable {g : E} (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 
-/-- The spectral weights `⟪bᵢ, g⟫²` of `g` in the eigenvector basis of `H`; in the book's
-notation (8.2.7), `γᵢ²`. -/
+/-- The **spectral weights** $\gamma_i^2 = \langle b_i, g \rangle^2$ of $g$ in the eigenvector basis
+$b_i$ of $H$, in the notation of (8.2.7) of [cartis2022evaluation]. -/
 noncomputable def secularWeight (g : E) (i : Fin (Module.finrank ℝ E)) : ℝ :=
   ⟪hH.eigenvectorBasis rfl i, g⟫ ^ 2
 
 variable {hH}
 
+/-- The spectral weights are nonnegative. -/
 theorem secularWeight_nonneg : 0 ≤ secularWeight hH g := fun _ => sq_nonneg _
 
-/-- The spectral weights sum to `‖g‖²`. -/
+/-- The spectral weights sum to $\|g\|^2$: $\sum_i \gamma_i^2 = \|g\|^2$. -/
 theorem sum_secularWeight : ∑ i, secularWeight hH g i = ‖g‖ ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, inner_eq_sum_eigenvectorBasis (hH := hH)]
   simp [secularWeight, sq]
 
-/-- Some spectral weight is nonzero iff `g ≠ 0`. -/
+/-- Some spectral weight $\gamma_i^2$ is nonzero if and only if $g \neq 0$. -/
 theorem secularWeight_ne_zero_iff : secularWeight hH g ≠ 0 ↔ g ≠ 0 := by
   constructor
   · rintro hw rfl
@@ -413,8 +490,9 @@ theorem secularWeight_ne_zero_iff : secularWeight hH g ≠ 0 ↔ g ≠ 0 := by
     simp only [Pi.zero_apply, Finset.sum_const_zero] at this
     exact hg (by simpa using this.symm)
 
-/-- `g` is an eigenvector-or-zero of `H` (lies in a single eigenspace) iff its nonzero spectral
-weights sit at a single eigenvalue. -/
+/-- Let $g \neq 0$. Then $H g = c g$ for some $c \in \mathbb{R}$, that is, $g$ is an eigenvector of
+$H$, if and only if all nonzero spectral weights of $g$ belong to a single eigenvalue
+(`Subproblem.SinglePole`). -/
 theorem singlePole_secularWeight_iff (hg : g ≠ 0) :
     SinglePole (hH.eigenvalues rfl) (secularWeight hH g) ↔ ∃ c : ℝ, H g = c • g := by
   have hcoord : ∀ i, ⟪hH.eigenvectorBasis rfl i, H g⟫ =
@@ -442,29 +520,37 @@ theorem singlePole_secularWeight_iff (hg : g ≠ 0) :
       exact (mul_right_cancel₀ hk this).symm
     rw [key i ((hw i).1 hi), key j ((hw j).1 hj)]
 
-/-- The shifts `λ > -λ₁` lie to the right of every pole `-λᵢ`. -/
+/-- Every shift $\lambda > -\lambda_1$ lies to the right of every pole $-\lambda_i$, that is, in
+`Subproblem.secularDomain` of the eigenvalues. -/
 theorem mem_secularDomain_of_lt {lam : ℝ} (hlam : -leftmost hH < lam) :
     lam ∈ secularDomain (hH.eigenvalues rfl) := fun i => by
   have := leftmost_le_eigenvalues (hH := hH) i
   linarith
 
+/-- The interval $(-\lambda_1, \infty)$ is contained in the domain `Subproblem.secularDomain` of the
+spectral form of the secular function. -/
 theorem Ioi_subset_secularDomain :
     Ioi (-leftmost hH) ⊆ secularDomain (hH.eigenvalues rfl) := fun _ h =>
   mem_secularDomain_of_lt h
 
-/-- For `λ > -λ₁`, `Ring.inverse (H + λ)` is a right inverse of `H + λ`. -/
+/-- For $\lambda > -\lambda_1$, the inverse of $H + \lambda I$ is a right inverse:
+$(H + \lambda I) (H + \lambda I)^{-1} x = x$ for every $x \in E$. -/
 theorem add_smul_inverse_apply {lam : ℝ} (hlam : -leftmost hH < lam) (x : E) :
     (H + lam • 1) (Ring.inverse (H + lam • 1) x) = x :=
   congrArg (fun T : E →L[ℝ] E => T x) (Ring.mul_inverse_cancel _ (isUnit_add_smul hlam))
 
-/-- For `λ > -λ₁`, `H + λ` is injective. -/
+/-- For $\lambda > -\lambda_1$, the operator $H + \lambda I$ is injective. -/
 theorem injective_add_smul {lam : ℝ} (hlam : -leftmost hH < lam) :
     Function.Injective ⇑(H + lam • 1 : E →L[ℝ] E) :=
   Function.LeftInverse.injective fun x =>
     congrArg (fun T : E →L[ℝ] E => T x) (Ring.inverse_mul_cancel _ (isUnit_add_smul hlam))
 
-/-- **The step solves the shifted system** (book (8.2.2)): for `λ > -λ₁`,
-`(H + λ) (step g H λ) = -g`, and `step g H λ` is the only solution. -/
+/-- **The step solves the shifted system.** Let $H$ be a symmetric operator on a finite-dimensional
+real inner product space $E$, let $g \in E$, and let $\lambda > -\lambda_1$. Then
+$$(H + \lambda I) s(\lambda) = -g,$$
+and every $s \in E$ with $(H + \lambda I) s = -g$ equals $s(\lambda)$.
+
+This is (8.2.2) of [cartis2022evaluation]. -/
 theorem step_spec {lam : ℝ} (hlam : -leftmost hH < lam) :
     (H + lam • 1) (step g H lam) = -g ∧
       ∀ s, (H + lam • 1) s = -g → s = step g H lam := by
@@ -474,7 +560,8 @@ theorem step_spec {lam : ℝ} (hlam : -leftmost hH < lam) :
   have hinj := injective_add_smul (hH := hH) hlam
   exact hinj (hs.trans heq.symm)
 
-/-- The coordinates of a vector `y` with `(H + λ) y = v`: `⟪bᵢ, y⟫ = ⟪bᵢ, v⟫ / (λ + λᵢ)`. -/
+/-- Let $\lambda > -\lambda_1$. If $(H + \lambda I) y = v$, then the coordinates of $y$ in the
+eigenvector basis are $\langle b_i, y \rangle = \langle b_i, v \rangle / (\lambda + \lambda_i)$. -/
 theorem inner_eigenvectorBasis_eq_div {lam : ℝ} (hlam : -leftmost hH < lam) {y v : E}
     (hy : (H + lam • 1) y = v) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, y⟫ =
@@ -483,46 +570,67 @@ theorem inner_eigenvectorBasis_eq_div {lam : ℝ} (hlam : -leftmost hH < lam) {y
     have := leftmost_le_eigenvalues (hH := hH) i; linarith
   rw [← hy, inner_eigenvectorBasis_add_smul, mul_div_cancel_left₀ _ hpos.ne']
 
+/-- For $\lambda > -\lambda_1$, the coordinates of the step are $\langle b_i, s(\lambda) \rangle =
+-\langle b_i, g \rangle / (\lambda + \lambda_i)$. -/
 theorem inner_eigenvectorBasis_step {lam : ℝ} (hlam : -leftmost hH < lam)
     (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, step g H lam⟫ =
       -⟪hH.eigenvectorBasis rfl i, g⟫ / (lam + hH.eigenvalues rfl i) := by
   rw [inner_eigenvectorBasis_eq_div hlam (step_spec hlam).1, inner_neg_right]
 
-/-- **Spectral expansion of the step** (book (8.2.6)): for `λ > -λ₁`,
-`step g H λ = -∑ i, (⟪bᵢ, g⟫ / (λ + λᵢ)) • bᵢ` in the eigenvector basis `bᵢ` of `H` with
-eigenvalues `λᵢ`. The corresponding expansion of `π` is `secular_eq_secularSum`. -/
+/-- **Spectral expansion of the step.** Let $H$ be a symmetric operator on a finite-dimensional real
+inner product space $E$, with orthonormal eigenvector basis $b_i$ and eigenvalues $\lambda_i$.
+Let $g \in E$ and $\lambda > -\lambda_1$. Then
+$$s(\lambda) = -\sum_i \frac{\langle b_i, g \rangle}{\lambda + \lambda_i} b_i.$$
+
+This is (8.2.6) of [cartis2022evaluation]. The corresponding expansion of $\pi$ is
+`Subproblem.secular_eq_secularSum`. -/
 theorem step_eq_sum {lam : ℝ} (hlam : -leftmost hH < lam) :
     step g H lam = -∑ i, (⟪hH.eigenvectorBasis rfl i, g⟫ / (lam + hH.eigenvalues rfl i)) •
       hH.eigenvectorBasis rfl i := by
   refine eq_of_inner_eigenvectorBasis (hH := hH) fun i => ?_
   rw [inner_eigenvectorBasis_step hlam, inner_neg_right, inner_eigenvectorBasis_sum, neg_div]
 
-/-- **Spectral expansion of the secular function** (book (8.2.7)): for `λ > -λ₁`,
-`π(λ) = ∑ i, ⟪bᵢ, g⟫² / (λ + λᵢ)²`. -/
+/-- **Spectral expansion of the secular function.** For $\lambda > -\lambda_1$,
+$$\pi(\lambda) = \sum_i \frac{\langle b_i, g \rangle^2}{(\lambda + \lambda_i)^2}.$$
+This is (8.2.7) of [cartis2022evaluation]. The right side is `Subproblem.secularSum` of the
+eigenvalues and the spectral weights. -/
 theorem secular_eq_secularSum {lam : ℝ} (hlam : -leftmost hH < lam) :
     secular g H lam = secularSum (hH.eigenvalues rfl) (secularWeight hH g) lam := by
   rw [secular, ← real_inner_self_eq_norm_sq, inner_eq_sum_eigenvectorBasis (hH := hH)]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [inner_eigenvectorBasis_step hlam, secularWeight, neg_div, neg_mul_neg, ← sq, div_pow]
 
+/-- The secular function agrees with its spectral form `Subproblem.secularSum` on the interval
+$(-\lambda_1, \infty)$. -/
 theorem eqOn_secular_secularSum :
     EqOn (secular g H) (secularSum (hH.eigenvalues rfl) (secularWeight hH g))
       (Ioi (-leftmost hH)) := fun _ h => secular_eq_secularSum h
 
+/-- For $\lambda > -\lambda_1$, the secular function agrees with its spectral form
+`Subproblem.secularSum` on a neighbourhood of $\lambda$. -/
 theorem secular_eventuallyEq {lam : ℝ} (hlam : -leftmost hH < lam) :
     secular g H =ᶠ[𝓝 lam] secularSum (hH.eigenvalues rfl) (secularWeight hH g) :=
   Filter.eventually_of_mem (isOpen_Ioi.mem_nhds hlam) fun _ h => secular_eq_secularSum h
 
+/-- The secular function agrees with its spectral form `Subproblem.secularSum` for all large enough
+$\lambda$. -/
 theorem secular_eventuallyEq_atTop :
     secular g H =ᶠ[atTop] secularSum (hH.eigenvalues rfl) (secularWeight hH g) :=
   Filter.eventually_of_mem (Ioi_mem_atTop _) fun _ h => secular_eq_secularSum h
 
-/-- **Shape of the secular function** (book §8.2.1 and Corollary 8.2.4, on the interval
-`λ > -λ₁ ⊇ (λₛ, ∞)`). For `g ≠ 0`: `π` is positive, continuous, strictly decreasing and strictly
-convex on `λ > -λ₁` with limit `0` at `+∞`; `π ^ β` is strictly decreasing and strictly convex
-with limit `0` for `β > 0`, and strictly increasing and concave with limit `+∞` for
-`β ∈ [-1/2, 0)`. -/
+/-- **Shape of the secular function.** Let $H$ be a symmetric operator on a finite-dimensional real
+inner product space $E$, let $g \in E$ with $g \neq 0$, and let $\beta \in \mathbb{R}$. Then on
+the interval $\lambda > -\lambda_1$:
+* $\pi$ is positive, continuous, strictly decreasing and strictly convex, and
+  $\pi(\lambda) \to 0$ as $\lambda \to \infty$;
+* if $\beta > 0$, then $\pi^\beta$ is strictly decreasing and strictly convex, and
+  $\pi(\lambda)^\beta \to 0$ as $\lambda \to \infty$;
+* if $-1/2 \le \beta < 0$, then $\pi^\beta$ is strictly increasing and concave, and
+  $\pi(\lambda)^\beta \to +\infty$ as $\lambda \to \infty$.
+
+This is Section 8.2.1 and Corollary 8.2.4 of [cartis2022evaluation]. The interval
+$\lambda > -\lambda_1$ contains the interval $(\lambda_s, \infty)$ of the source. -/
 theorem secular_shape (hg : g ≠ 0) (β : ℝ) :
     (∀ lam ∈ Ioi (-leftmost hH), 0 < secular g H lam) ∧
     ContinuousOn (secular g H) (Ioi (-leftmost hH)) ∧
@@ -561,6 +669,8 @@ theorem secular_shape (hg : g ≠ 0) (β : ℝ) :
 
 /-! ### The minimum-norm solution and the threshold -/
 
+/-- A vector $v$ lies in $\ker(H + \lambda I)$ if and only if $(\lambda + \lambda_i) \langle b_i, v
+\rangle = 0$ for every $i$. -/
 theorem mem_ker_add_smul_iff {lam : ℝ} {v : E} :
     v ∈ LinearMap.ker ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E) ↔
       ∀ i, (lam + hH.eigenvalues rfl i) * ⟪hH.eigenvectorBasis rfl i, v⟫ = 0 := by
@@ -572,7 +682,7 @@ theorem mem_ker_add_smul_iff {lam : ℝ} {v : E} :
     refine eq_of_inner_eigenvectorBasis (hH := hH) fun i => ?_
     rw [inner_eigenvectorBasis_add_smul, h, inner_zero_right]
 
-/-- An eigenvector `bᵢ` with `λ + λᵢ = 0` lies in the kernel of `H + λ`. -/
+/-- An eigenvector $b_i$ with $\lambda + \lambda_i = 0$ lies in the kernel of $H + \lambda I$. -/
 theorem eigenvectorBasis_mem_ker {lam : ℝ} {i : Fin (Module.finrank ℝ E)}
     (hi : lam + hH.eigenvalues rfl i = 0) :
     hH.eigenvectorBasis rfl i ∈ LinearMap.ker ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E) := by
@@ -580,25 +690,34 @@ theorem eigenvectorBasis_mem_ker {lam : ℝ} {i : Fin (Module.finrank ℝ E)}
     smul_apply, one_apply_eq_self, ← add_smul, add_comm, hi, zero_smul]
 
 variable (hH) in
-/-- The minimum-norm solution of `(H + λ) x = -g` (when one exists, `particular_spec`):
-`-∑ i, (⟪bᵢ, g⟫ / (λ + λᵢ)) • bᵢ`, the terms with `λ + λᵢ = 0` being `0` (division by zero). It is
-`-(H + λ)⁺ g` for the pseudoinverse `(H + λ)⁺`, and at `λ = -λ₁` it is the book's `sₛ`
-(Section 8.3), the limit of `s(λ)` as `λ ↓ -λ₁` when that limit exists
-(`tendsto_step_threshold`). -/
+/-- The **minimum-norm solution** of $(H + \lambda I) x = -g$, for a symmetric operator $H$ with
+orthonormal eigenvector basis $b_i$ and eigenvalues $\lambda_i$:
+$$-\sum_i \frac{\langle b_i, g \rangle}{\lambda + \lambda_i} b_i,$$
+where a term with $\lambda + \lambda_i = 0$ is $0$.
+
+The vanishing terms come from the convention $a / 0 = 0$ of Lean. The vector is
+$-(H + \lambda I)^+ g$ for the pseudoinverse $(H + \lambda I)^+$. It solves the system when a
+solution exists (`Subproblem.particular_spec`). At $\lambda = -\lambda_1$ it is the vector $s_s$
+of Section 8.3 of [cartis2022evaluation], the limit of $s(\lambda)$ as
+$\lambda \downarrow -\lambda_1$ when that limit exists (`Subproblem.tendsto_step_threshold`). -/
 noncomputable def particular (g : E) (lam : ℝ) : E :=
   -∑ i, (⟪hH.eigenvectorBasis rfl i, g⟫ / (lam + hH.eigenvalues rfl i)) • hH.eigenvectorBasis rfl i
 
+/-- The coordinates of the minimum-norm solution are $\langle b_i, x \rangle = -\langle b_i, g
+\rangle / (\lambda + \lambda_i)$, with the value $0$ when $\lambda + \lambda_i = 0$. -/
 theorem inner_eigenvectorBasis_particular (lam : ℝ) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, particular hH g lam⟫ =
       -⟪hH.eigenvectorBasis rfl i, g⟫ / (lam + hH.eigenvalues rfl i) := by
   rw [particular, inner_neg_right, inner_eigenvectorBasis_sum, neg_div]
 
-/-- **The minimum-norm solution** of `(H + λ) x = -g`. Write `K = ker (H + λ)`.
-(i) `particular hH g λ ∈ Kᗮ`;
-(ii) if `g ∈ Kᗮ` (that is, the system is consistent), then `particular hH g λ` solves it, the
-solutions are exactly `particular hH g λ + v` with `v ∈ K`, `particular hH g λ` has the least norm
-among them, and `⟪g, v⟫ = 0` for `v ∈ K`;
-(iii) for `λ > -λ₁` it is the step `s(λ)`. -/
+/-- **The minimum-norm solution.** Let $H$ be a symmetric operator on a finite-dimensional real
+inner product space $E$, let $g \in E$ and $\lambda \in \mathbb{R}$, and put
+$K = \ker(H + \lambda I)$. Let $p$ be `Subproblem.particular` for $g$ and $\lambda$. Then:
+* (i) $p \in K^\perp$;
+* (ii) if $g \in K^\perp$, that is, the system $(H + \lambda I) x = -g$ is consistent, then $p$
+  solves it; the solutions are exactly the vectors $x$ with $x - p \in K$; every solution $x$
+  satisfies $\|p\| \le \|x\|$; and $\langle g, v \rangle = 0$ for every $v \in K$;
+* (iii) if $\lambda > -\lambda_1$, then $p = s(\lambda)$. -/
 theorem particular_spec (lam : ℝ) :
     particular hH g lam ∈ (LinearMap.ker ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ ∧
     (g ∈ (LinearMap.ker ((H + lam • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ →
@@ -640,11 +759,17 @@ theorem particular_spec (lam : ℝ) :
     nlinarith [mul_self_nonneg ‖x - particular hH g lam‖]
   · rw [step_eq_sum hlam, particular]
 
-/-- **Behaviour at the threshold** `λ ↓ -λ₁`. Let `K = ker (H - λ₁)` (written `H + (-λ₁) • 1`).
-(i) If `g ∈ Kᗮ`, the step `s(λ)` converges to the minimum-norm solution
-`sₛ = particular hH g (-λ₁)` and `π(λ) → ‖sₛ‖²` as `λ → -λ₁` from the right: `π` extends
-continuously to `[-λ₁, ∞)`, which is how the book's `π(λₛ)` is read.
-(ii) Otherwise `π(λ) → +∞`. -/
+/-- **Behaviour at the threshold.** Let $H$ be a symmetric operator on a finite-dimensional real
+inner product space $E$, let $g \in E$, and put $K = \ker(H - \lambda_1 I)$ and $s_s$ =
+`Subproblem.particular` at $-\lambda_1$.
+* (i) If $g \in K^\perp$, then $s(\lambda) \to s_s$ and $\pi(\lambda) \to \|s_s\|^2$ as
+  $\lambda \downarrow -\lambda_1$.
+* (ii) If $g \notin K^\perp$, then $\pi(\lambda) \to +\infty$ as
+  $\lambda \downarrow -\lambda_1$.
+
+By (i), $\pi$ extends continuously to $[-\lambda_1, \infty)$ when $g \in K^\perp$. This is how
+the value $\pi(\lambda_s)$ of [cartis2022evaluation] is read. The operator $H - \lambda_1 I$ is
+written `H + (-leftmost hH) • 1`. -/
 theorem tendsto_step_threshold :
     (g ∈ (LinearMap.ker ((H + (-leftmost hH) • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ →
       Tendsto (step g H) (𝓝[>] (-leftmost hH)) (𝓝 (particular hH g (-leftmost hH))) ∧
@@ -705,16 +830,23 @@ theorem tendsto_step_threshold :
 
 /-! ### Derivatives -/
 
-/-- The `k`-th derivative of the step, `s⁽ᵏ⁾(λ) = (-1) ^ (k + 1) k! (H + λ)⁻⁽ᵏ⁺¹⁾ g`
-(`iteratedDeriv_step`); `stepDeriv g H 0 = step g H`. -/
+/-- The **$k$-th derivative of the step**:
+$$s^{(k)}(\lambda) = (-1)^{k+1} k! \, (H + \lambda I)^{-(k+1)} g,$$
+with the inverse given by `Ring.inverse`.
+
+`Subproblem.iteratedDeriv_step` shows that it is the $k$-th derivative of $s$ for
+$\lambda > -\lambda_1$. For $k = 0$ it is the step $s(\lambda)$ (`Subproblem.stepDeriv_zero`). -/
 noncomputable def stepDeriv (g : E) (H : E →L[ℝ] E) (k : ℕ) (lam : ℝ) : E :=
   (((-1 : ℝ) ^ (k + 1) * k !) • (Ring.inverse (H + lam • 1) ^ (k + 1))) g
 
 omit [FiniteDimensional ℝ E] in
+/-- For $k = 0$, $s^{(0)}(\lambda)$ is the step $s(\lambda)$, for every $\lambda$. -/
 theorem stepDeriv_zero (lam : ℝ) : stepDeriv g H 0 lam = step g H lam := by
   simp [stepDeriv, step]
 
-/-- The coordinates of `(H + λ)⁻ᵐ v`: `⟪bᵢ, (H + λ)⁻ᵐ v⟫ = ⟪bᵢ, v⟫ / (λ + λᵢ) ^ m`. -/
+/-- For $\lambda > -\lambda_1$ and every $m \in \mathbb{N}$, the coordinates of
+$(H + \lambda I)^{-m} v$ are $\langle b_i, (H + \lambda I)^{-m} v \rangle = \langle b_i, v
+\rangle / (\lambda + \lambda_i)^m$. -/
 theorem inner_eigenvectorBasis_inverse_pow {lam : ℝ} (hlam : -leftmost hH < lam) (m : ℕ)
     (v : E) (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, (Ring.inverse (H + lam • 1) ^ m) v⟫ =
@@ -727,6 +859,9 @@ theorem inner_eigenvectorBasis_inverse_pow {lam : ℝ} (hlam : -leftmost hH < la
     rw [inner_eigenvectorBasis_eq_div hlam
       (add_smul_inverse_apply hlam _) i, ih, div_div, pow_succ]
 
+/-- For $\lambda > -\lambda_1$, the coordinates of $s^{(k)}(\lambda)$ are $\langle b_i,
+s^{(k)}(\lambda) \rangle = (-1)^{k+1} k! \, \langle b_i, g \rangle / (\lambda +
+\lambda_i)^{k+1}$. -/
 theorem inner_eigenvectorBasis_stepDeriv {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ)
     (i : Fin (Module.finrank ℝ E)) :
     ⟪hH.eigenvectorBasis rfl i, stepDeriv g H k lam⟫ =
@@ -735,13 +870,18 @@ theorem inner_eigenvectorBasis_stepDeriv {lam : ℝ} (hlam : -leftmost hH < lam)
   rw [stepDeriv, smul_apply, real_inner_smul_right,
     inner_eigenvectorBasis_inverse_pow hlam, mul_div_assoc]
 
-/-- The spectral expansion of `s⁽ᵏ⁾(λ)`. -/
+/-- The spectral expansion of the $k$-th derivative of the step: for $\lambda > -\lambda_1$,
+$$s^{(k)}(\lambda) = \sum_i \frac{(-1)^{k+1} k! \, \langle b_i, g \rangle}{(\lambda +
+  \lambda_i)^{k+1}} b_i.$$
+-/
 theorem stepDeriv_eq_sum {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
     stepDeriv g H k lam = ∑ i, ((-1) ^ (k + 1) * k ! * ⟪hH.eigenvectorBasis rfl i, g⟫ /
       (lam + hH.eigenvalues rfl i) ^ (k + 1)) • hH.eigenvectorBasis rfl i :=
   eq_of_inner_eigenvectorBasis (hH := hH) fun i => by
     rw [inner_eigenvectorBasis_stepDeriv hlam, inner_eigenvectorBasis_sum]
 
+/-- For $\lambda > -\lambda_1$, the map $\lambda \mapsto s^{(k)}(\lambda)$ has the derivative
+$s^{(k+1)}(\lambda)$. -/
 theorem hasDerivAt_stepDeriv {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
     HasDerivAt (stepDeriv g H k) (stepDeriv g H (k + 1) lam) lam := by
   have hev : stepDeriv g H k =ᶠ[𝓝 lam] fun t => ∑ i, ((-1) ^ (k + 1) * k ! *
@@ -760,9 +900,13 @@ theorem hasDerivAt_stepDeriv {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
   push_cast
   ring
 
-/-- **Derivatives of the step** (book (8.2.29)). For `λ > -λ₁` and every `k`,
-`iteratedDeriv k (step g H) λ = stepDeriv g H k λ`, and the derivatives are computed recursively
-by the solves `(H + λ) s⁽ᵏ⁺¹⁾ = -(k + 1) s⁽ᵏ⁾`. -/
+/-- **Derivatives of the step.** Let $H$ be a symmetric operator on a finite-dimensional real inner
+product space $E$, let $g \in E$, and let $\lambda > -\lambda_1$. Then for every
+$k \in \mathbb{N}$, the $k$-th derivative of the step at $\lambda$ is $s^{(k)}(\lambda)$
+(`Subproblem.stepDeriv`), and
+$$(H + \lambda I) s^{(k+1)}(\lambda) = -(k + 1) s^{(k)}(\lambda).$$
+
+The solves are (8.2.29) of [cartis2022evaluation]. They compute the derivatives recursively. -/
 theorem iteratedDeriv_step {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
     iteratedDeriv k (step g H) lam = stepDeriv g H k lam ∧
       (H + lam • 1) (stepDeriv g H (k + 1) lam) = -((k + 1 : ℝ) • stepDeriv g H k lam) := by
@@ -782,13 +926,16 @@ theorem iteratedDeriv_step {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
     field_simp
     ring
 
-/-- The coefficients `αₖ = (2 k + 1)! / (k!)²` of Theorem 8.2.6. -/
+/-- The coefficients $\alpha_k = \dfrac{(2k + 1)!}{(k!)^2}$ of Theorem 8.2.6 of
+[cartis2022evaluation]. -/
 noncomputable def secularCoeff (k : ℕ) : ℝ := ((2 * k + 1)! : ℝ) / (k ! : ℝ) ^ 2
 
+/-- The first coefficient is $\alpha_0 = 1$. -/
 @[simp]
 theorem secularCoeff_zero : secularCoeff 0 = 1 := by simp [secularCoeff]
 
-/-- The recursion `αₖ₊₁ = 2 (2 k + 3) / (k + 1) αₖ` (book (8.2.30)). -/
+/-- The recursion $\alpha_{k+1} = \dfrac{2 (2k + 3)}{k + 1} \alpha_k$, which is (8.2.30) of
+[cartis2022evaluation]. -/
 theorem secularCoeff_succ (k : ℕ) :
     secularCoeff (k + 1) = 2 * (2 * k + 3) / (k + 1) * secularCoeff k := by
   rw [secularCoeff, secularCoeff, show 2 * (k + 1) + 1 = 2 * k + 1 + 1 + 1 by ring,
@@ -797,18 +944,26 @@ theorem secularCoeff_succ (k : ℕ) :
   field_simp
   ring
 
-/-- The derivatives of the secular function in closed form (book (B.8.8)): for `λ > -λ₁`,
-`π⁽ʲ⁾(λ) = (-1) ^ j (j + 1)! ∑ i, ⟪bᵢ, g⟫² / (λ + λᵢ) ^ (j + 2)`. -/
+/-- The derivatives of the secular function in closed form: for $\lambda > -\lambda_1$ and every
+$j \in \mathbb{N}$,
+$$\pi^{(j)}(\lambda) = (-1)^j (j + 1)! \sum_i \frac{\langle b_i, g \rangle^2}{(\lambda +
+  \lambda_i)^{j+2}}.$$
+This is (B.8.8) of [cartis2022evaluation]. -/
 theorem iteratedDeriv_secular_eq {lam : ℝ} (hlam : -leftmost hH < lam) (j : ℕ) :
     iteratedDeriv j (secular g H) lam = (-1) ^ j * (j + 1)! *
       secularMoment (hH.eigenvalues rfl) (secularWeight hH g) (j + 2) lam := by
   rw [(secular_eventuallyEq hlam).iteratedDeriv_eq j,
     iteratedDeriv_secularSum j fun i => (mem_secularDomain_of_lt hlam i).ne']
 
-/-- **Derivatives of the secular function** (Cartis–Gould–Toint, Theorem 8.2.6). For `λ > -λ₁`
-and every `k`, with `s⁽ʲ⁾ = stepDeriv g H j λ` (computed by the solves of `iteratedDeriv_step`)
-and `αₖ = secularCoeff k`:
-`π⁽²ᵏ⁺¹⁾(λ) = 2 αₖ ⟪s⁽ᵏ⁾, s⁽ᵏ⁺¹⁾⟫` and `π⁽²ᵏ⁺²⁾(λ) = αₖ₊₁ ‖s⁽ᵏ⁺¹⁾‖²`. -/
+/-- **Derivatives of the secular function.** Let $H$ be a symmetric operator on a finite-dimensional
+real inner product space $E$, let $g \in E$, and let $\lambda > -\lambda_1$. Then for every
+$k \in \mathbb{N}$, with $s^{(j)} = s^{(j)}(\lambda)$ the derivatives of the step and $\alpha_k$
+the coefficients `Subproblem.secularCoeff`,
+$$\pi^{(2k+1)}(\lambda) = 2 \alpha_k \langle s^{(k)}, s^{(k+1)} \rangle, \qquad
+  \pi^{(2k+2)}(\lambda) = \alpha_{k+1} \|s^{(k+1)}\|^2.$$
+
+This is Theorem 8.2.6 of [cartis2022evaluation]. The vectors $s^{(j)}$ are
+`Subproblem.stepDeriv`, computed by the solves of `Subproblem.iteratedDeriv_step`. -/
 theorem iteratedDeriv_secular {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) :
     iteratedDeriv (2 * k + 1) (secular g H) lam =
         2 * secularCoeff k * ⟪stepDeriv g H k lam, stepDeriv g H (k + 1) lam⟫ ∧
@@ -839,18 +994,27 @@ theorem iteratedDeriv_secular {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) 
 
 /-! ### Taylor estimates -/
 
-/-- The Taylor polynomials of `π` and of its spectral form agree at `λ > -λ₁`. -/
+/-- For $\lambda > -\lambda_1$, the Taylor polynomials of $\pi$ at $\lambda$ equal those of its
+spectral form `Subproblem.secularSum`. -/
 theorem sum_taylor_secular_eq {lam : ℝ} (hlam : -leftmost hH < lam) (m : ℕ) (δ : ℝ) :
     ∑ j ∈ range m, iteratedDeriv j (secular g H) lam / j ! * δ ^ j =
       ∑ j ∈ range m, iteratedDeriv j
         (secularSum (hH.eigenvalues rfl) (secularWeight hH g)) lam / j ! * δ ^ j :=
   Finset.sum_congr rfl fun j _ => by rw [(secular_eventuallyEq hlam).iteratedDeriv_eq j]
 
-/-- **Lower and upper Taylor estimates of `π`** (Cartis–Gould–Toint, Theorem 8.2.2, on the
-interval `λ > -λ₁ ⊇ (λₛ, ∞)`). Let `λc > -λ₁` and `tₖ(δ) = ∑ j ≤ k, π⁽ʲ⁾(λc) / j! δʲ`. For
-`δ > 0`, `π(λc + δ) ≤ tₖ(δ)` for even `k` and `π(λc + δ) ≥ tₖ(δ)` for odd `k`; for
-`-λ₁ - λc < δ < 0`, `tₖ(δ) ≤ tₖ₊₁(δ) ≤ π(λc + δ)`. The strict forms (for `g ≠ 0`) are
-`secular_taylor_bounds_strict`. -/
+/-- **Lower and upper Taylor estimates of the secular function.** Let $H$ be a symmetric operator on
+a finite-dimensional real inner product space $E$, let $g \in E$, let $\lambda_c > -\lambda_1$
+and $k \in \mathbb{N}$, and let
+$$t_k(\delta) = \sum_{j=0}^{k} \frac{\pi^{(j)}(\lambda_c)}{j!} \delta^j.$$
+Then:
+* for $\delta > 0$, $\pi(\lambda_c + \delta) \le t_k(\delta)$ if $k$ is even, and
+  $t_k(\delta) \le \pi(\lambda_c + \delta)$ if $k$ is odd;
+* for $\delta < 0$ with $\lambda_c + \delta > -\lambda_1$, $t_k(\delta) \le t_{k+1}(\delta) \le
+  \pi(\lambda_c + \delta)$.
+
+This is Theorem 8.2.2 of [cartis2022evaluation]. The interval $\lambda > -\lambda_1$ contains
+the interval $(\lambda_s, \infty)$ of the source. The strict forms for $g \neq 0$ are
+`Subproblem.secular_taylor_bounds_strict`. -/
 theorem secular_taylor_bounds {lamc : ℝ} (hlam : -leftmost hH < lamc) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secular g H (lamc + δ) ≤
         ∑ j ∈ range (k + 1), iteratedDeriv j (secular g H) lamc / j ! * δ ^ j) ∧
@@ -870,7 +1034,12 @@ theorem secular_taylor_bounds {lamc : ℝ} (hlam : -leftmost hH < lamc) (k : ℕ
   · rw [secular_eq_secularSum hlamδ]
     exact hneg δ hδ (mem_secularDomain_of_lt hlamδ)
 
-/-- The strict form of `secular_taylor_bounds` for `g ≠ 0` (Theorem 8.2.2, strict part). -/
+/-- The strict Taylor estimates of the secular function. Let $g \neq 0$, $\lambda_c > -\lambda_1$
+and $k \in \mathbb{N}$, with $t_k$ as in `Subproblem.secular_taylor_bounds`. For $\delta > 0$,
+$\pi(\lambda_c + \delta) < t_k(\delta)$ if $k$ is even and
+$t_k(\delta) < \pi(\lambda_c + \delta)$ if $k$ is odd. For $\delta < 0$ with
+$\lambda_c + \delta > -\lambda_1$, $t_k(\delta) < t_{k+1}(\delta) < \pi(\lambda_c + \delta)$.
+This is the strict part of Theorem 8.2.2 of [cartis2022evaluation]. -/
 theorem secular_taylor_bounds_strict (hg : g ≠ 0) {lamc : ℝ} (hlam : -leftmost hH < lamc)
     (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secular g H (lamc + δ) <
@@ -893,15 +1062,22 @@ theorem secular_taylor_bounds_strict (hg : g ≠ 0) {lamc : ℝ} (hlam : -leftmo
 
 /-! ### The transformed secular function -/
 
+/-- For $\lambda > -\lambda_1$ and $\beta \in \mathbb{R}$, the function $t \mapsto \pi(t)^\beta$
+agrees near $\lambda$ with the $\beta$-th power of the spectral form `Subproblem.secularSum`. -/
 theorem secular_rpow_eventuallyEq {lam : ℝ} (hlam : -leftmost hH < lam) (β : ℝ) :
     (fun t => secular g H t ^ β) =ᶠ[𝓝 lam]
       fun t => secularSum (hH.eigenvalues rfl) (secularWeight hH g) t ^ β :=
   (secular_eventuallyEq (g := g) hlam).mono fun t ht => by simp only [ht]
 
-/-- **Derivatives of the transformed secular function** (Cartis–Gould–Toint, Lemma 8.2.3, on
-`λ > -λ₁`). Let `g ≠ 0` and `q = fun λ => π(λ) ^ β`. Then `q' < 0` for `β > 0` and `q' > 0` for
-`β < 0`; `q'' > 0` for `β > 0`; `q'' ≤ 0` for `β ∈ [-1/2, 0)`, strictly unless `β = -1/2` and `g`
-is an eigenvector of `H`, in which case `q'' = 0`. -/
+/-- **Derivatives of the transformed secular function.** Let $g \neq 0$, $\lambda > -\lambda_1$ and
+$\beta \in \mathbb{R}$, and let $q(t) = \pi(t)^\beta$. Then:
+* if $\beta > 0$, then $q'(\lambda) < 0$ and $q''(\lambda) > 0$;
+* if $\beta < 0$, then $q'(\lambda) > 0$;
+* if $-1/2 \le \beta < 0$, then $q''(\lambda) \le 0$, and $q''(\lambda) < 0$ unless
+  $\beta = -1/2$ and $g$ is an eigenvector of $H$;
+* if $\beta = -1/2$ and $H g = c g$ for some $c \in \mathbb{R}$, then $q''(\lambda) = 0$.
+
+This is Lemma 8.2.3 of [cartis2022evaluation], on the interval $\lambda > -\lambda_1$. -/
 theorem secular_rpow_deriv_sign (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) (β : ℝ) :
     (0 < β → deriv (fun t => secular g H t ^ β) lam < 0) ∧
     (β < 0 → 0 < deriv (fun t => secular g H t ^ β) lam) ∧
@@ -916,12 +1092,18 @@ theorem secular_rpow_deriv_sign (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH 
   exact secularSum_rpow_deriv_sign secularWeight_nonneg
     ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β (mem_secularDomain_of_lt hlam)
 
-/-- **First-order Taylor estimates of the transformed secular function** (Cartis–Gould–Toint,
-Theorem 8.2.5, on `λ > -λ₁`). Let `g ≠ 0`, `λc > -λ₁`, `λc + δ > -λ₁`, `q = fun λ => π(λ) ^ β`
-and `t₁(δ) = q(λc) + q'(λc) δ`. For `β > 0`, `q(λc + δ) ≥ t₁(δ)`; for `β ∈ [-1/2, 0)`,
-`q(λc + δ) ≤ t₁(δ)`. Both are strict for `δ ≠ 0`, except when `β = -1/2` and `g` is an
-eigenvector of `H`: then `q` is affine and `q(λc + δ) = t₁(δ)`. The sign statements of
-Lemma 8.2.3 are `secular_rpow_deriv_sign`. -/
+/-- **First-order Taylor estimates of the transformed secular function.** Let $g \neq 0$, let
+$\lambda_c > -\lambda_1$ and $\delta \in \mathbb{R}$ with $\lambda_c + \delta > -\lambda_1$, let
+$\beta \in \mathbb{R}$, let $q(t) = \pi(t)^\beta$, and let $t_1(\delta) = q(\lambda_c) +
+q'(\lambda_c) \delta$. Then:
+* if $\beta > 0$, then $t_1(\delta) \le q(\lambda_c + \delta)$, strictly when $\delta \neq 0$;
+* if $-1/2 \le \beta < 0$, then $q(\lambda_c + \delta) \le t_1(\delta)$, strictly when
+  $\delta \neq 0$ unless $\beta = -1/2$ and $g$ is an eigenvector of $H$;
+* if $\beta = -1/2$ and $H g = c g$ for some $c \in \mathbb{R}$, then $q$ is affine and
+  $q(\lambda_c + \delta) = t_1(\delta)$.
+
+This is Theorem 8.2.5 of [cartis2022evaluation], on the interval $\lambda > -\lambda_1$. The
+sign statements of Lemma 8.2.3 are `Subproblem.secular_rpow_deriv_sign`. -/
 theorem secular_rpow_tangent (hg : g ≠ 0) {lamc δ : ℝ} (hlam : -leftmost hH < lamc)
     (hlamδ : -leftmost hH < lamc + δ) (β : ℝ) :
     (0 < β → secular g H lamc ^ β + deriv (fun t => secular g H t ^ β) lamc * δ ≤
@@ -941,30 +1123,33 @@ theorem secular_rpow_tangent (hg : g ≠ 0) {lamc δ : ℝ} (hlam : -leftmost hH
     ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β (mem_secularDomain_of_lt hlam)
     (mem_secularDomain_of_lt hlamδ)
 
-/-- The defining solves of the derivatives determine them: for `λ > -λ₁`, the only solution of
-`(H + λ) s = -(k + 1) s⁽ᵏ⁾(λ)` is `s⁽ᵏ⁺¹⁾(λ)` (book (8.2.29)). -/
+/-- For $\lambda > -\lambda_1$, the only solution $s$ of
+$(H + \lambda I) s = -(k + 1) s^{(k)}(\lambda)$ is $s^{(k+1)}(\lambda)$. So the solves (8.2.29)
+of [cartis2022evaluation] determine the derivatives of the step. -/
 theorem stepDeriv_succ_unique {lam : ℝ} (hlam : -leftmost hH < lam) (k : ℕ) {s : E}
     (hs : (H + lam • 1) s = -((k + 1 : ℝ) • stepDeriv g H k lam)) :
     s = stepDeriv g H (k + 1) lam :=
   injective_add_smul hlam (hs.trans (iteratedDeriv_step hlam k).2.symm)
 
 omit [FiniteDimensional ℝ E] in
-/-- For `g = 0` the step and the secular function vanish identically. -/
+/-- For $g = 0$ the secular function is identically $0$. -/
 theorem secular_zero_left (H : E →L[ℝ] E) : secular 0 H = 0 := by
   ext lam
   simp [secular, step]
 
 omit [FiniteDimensional ℝ E] in
-/-- The degenerate case `g = 0` of Lemma 8.2.3: the transformed secular function is constant, so
-its derivatives vanish and the non-strict sign statements hold trivially. -/
+/-- The degenerate case $g = 0$ of Lemma 8.2.3 of [cartis2022evaluation]: the function
+$t \mapsto \pi(t)^\beta$ is constant, so all its derivatives of order $n + 1 \ge 1$ vanish.
+Hence the non-strict sign statements hold trivially. -/
 theorem secular_rpow_zero_left (H : E →L[ℝ] E) (β lam : ℝ) (n : ℕ) :
     iteratedDeriv (n + 1) (fun t => secular 0 H t ^ β) lam = 0 := by
   simp only [secular_zero_left, Pi.zero_apply]
   rw [iteratedDeriv_succ']
   simp
 
-/-- The transformed secular function is strictly concave on `λ > -λ₁` for `β ∈ [-1/2, 0)` and
-`g ≠ 0`, except when `β = -1/2` and `g` is an eigenvector of `H` (then it is affine). -/
+/-- Let $g \neq 0$ and $-1/2 \le \beta < 0$, and suppose that $\beta \neq -1/2$ or $g$ is not an
+eigenvector of $H$. Then the transformed secular function $\lambda \mapsto \pi(\lambda)^\beta$
+is strictly concave on $(-\lambda_1, \infty)$. In the excluded case it is affine. -/
 theorem secular_rpow_strictConcaveOn (hg : g ≠ 0) {β : ℝ} (hβ : β ∈ Ico (-1 / 2) 0)
     (hne : β ≠ -1 / 2 ∨ ¬ ∃ c : ℝ, H g = c • g) :
     StrictConcaveOn ℝ (Ioi (-leftmost hH)) (fun t => secular g H t ^ β) := by
@@ -974,9 +1159,12 @@ theorem secular_rpow_strictConcaveOn (hg : g ≠ 0) {β : ℝ} (hβ : β ∈ Ico
     (convex_Ioi _)).congr fun t ht => ?_
   simp only [secular_eq_secularSum ht]
 
-/-- The transformed secular function at the threshold `λ ↓ -λ₁`, with `K = ker (H - λ₁)` and
-`sₛ = particular hH g (-λ₁)`: if `g ∈ Kᗮ`, then `π(λ) ^ β → (‖sₛ‖²) ^ β` (when `sₛ ≠ 0` or
-`β ≥ 0`); otherwise `π(λ) ^ β → +∞` for `β > 0` and `→ 0` for `β < 0`. -/
+/-- The transformed secular function at the threshold. Let $K = \ker(H - \lambda_1 I)$ and $s_s$ =
+`Subproblem.particular` at $-\lambda_1$. As $\lambda \downarrow -\lambda_1$:
+* if $g \in K^\perp$, and $s_s \neq 0$ or $\beta \ge 0$, then
+  $\pi(\lambda)^\beta \to (\|s_s\|^2)^\beta$;
+* if $g \notin K^\perp$, then $\pi(\lambda)^\beta \to +\infty$ for $\beta > 0$ and
+  $\pi(\lambda)^\beta \to 0$ for $\beta < 0$. -/
 theorem tendsto_secular_rpow_threshold (β : ℝ) :
     (g ∈ (LinearMap.ker ((H + (-leftmost hH) • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ →
       (particular hH g (-leftmost hH) ≠ 0 ∨ 0 ≤ β) →
@@ -1001,18 +1189,19 @@ section SecularCalculus
 
 variable {g : E} {hH : (H : E →ₗ[ℝ] E).IsSymmetric}
 
-/-- `π` is differentiable on `λ > -λ₁`. -/
+/-- For $\lambda > -\lambda_1$, the secular function $\pi$ is differentiable at $\lambda$. -/
 theorem hasDerivAt_secular {lam : ℝ} (hlam : -leftmost hH < lam) :
     HasDerivAt (secular g H) (deriv (secular g H) lam) lam :=
   ((hasDerivAt_secularSum (μ := hH.eigenvalues rfl) (w := secularWeight hH g)
     fun i => (mem_secularDomain_of_lt hlam i).ne').congr_of_eventuallyEq
       (secular_eventuallyEq hlam)).differentiableAt.hasDerivAt
 
-/-- For `g ≠ 0`, `π(λ) > 0` on `λ > -λ₁`. -/
+/-- For $g \neq 0$ and $\lambda > -\lambda_1$, $\pi(\lambda) > 0$. -/
 theorem secular_pos (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) : 0 < secular g H lam :=
   (secular_shape (hH := hH) hg 0).1 lam hlam
 
-/-- For `g ≠ 0`, `π'(λ) < 0` on `λ > -λ₁` (book (8.2.4) and Theorem 8.2.6). -/
+/-- For $g \neq 0$ and $\lambda > -\lambda_1$, $\pi'(\lambda) < 0$. This follows from (8.2.4) and
+Theorem 8.2.6 of [cartis2022evaluation]. -/
 theorem deriv_secular_neg (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) :
     deriv (secular g H) lam < 0 := by
   rw [(secular_eventuallyEq hlam).deriv_eq,
@@ -1021,15 +1210,22 @@ theorem deriv_secular_neg (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam)
     (mem_secularDomain_of_lt hlam) 3
   linarith
 
-/-- The derivative of the transformed secular function: `(π ^ β)' = β π ^ (β - 1) π'`
-(book (8.2.18)). -/
+/-- The derivative of the transformed secular function: for $g \neq 0$, $\lambda > -\lambda_1$ and
+$\beta \in \mathbb{R}$,
+$$(\pi^\beta)'(\lambda) = \beta \, \pi(\lambda)^{\beta - 1} \pi'(\lambda).$$
+This is (8.2.18) of [cartis2022evaluation]. -/
 theorem hasDerivAt_secular_rpow (hg : g ≠ 0) {lam : ℝ} (hlam : -leftmost hH < lam) (β : ℝ) :
     HasDerivAt (fun t => secular g H t ^ β)
       (β * secular g H lam ^ (β - 1) * deriv (secular g H) lam) lam := by
   convert (hasDerivAt_secular hlam).rpow_const (p := β) (Or.inl (secular_pos hg hlam).ne') using 1
   ring
 
-/-- The second derivative of a power of the secular function above the leftmost pole. -/
+/-- The second derivative of the transformed secular function. Let $H$ be a symmetric operator on a
+finite-dimensional real inner product space $E$, let $g \in E$ with $g \neq 0$, let
+$\lambda > -\lambda_1$ and $\beta \in \mathbb{R}$. Then
+$$(\pi^\beta)''(\lambda) = \beta \, \pi(\lambda)^{\beta - 1} \pi''(\lambda) + \beta (\beta - 1)
+  \, \pi(\lambda)^{\beta - 2} \pi'(\lambda)^2.$$
+-/
 theorem iteratedDeriv_two_secular_rpow (hg : g ≠ 0) {lam : ℝ}
     (hlam : -leftmost hH < lam) (β : ℝ) :
     iteratedDeriv 2 (fun t => secular g H t ^ β) lam =
@@ -1041,14 +1237,18 @@ theorem iteratedDeriv_two_secular_rpow (hg : g ≠ 0) {lam : ℝ}
   exact iteratedDeriv_two_secularSum_rpow secularWeight_nonneg
     ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β (mem_secularDomain_of_lt hlam)
 
-/-- `π ^ β` is smooth on `λ > -λ₁` for `g ≠ 0`. -/
+/-- For $g \neq 0$ and $\beta \in \mathbb{R}$, the function $\lambda \mapsto \pi(\lambda)^\beta$ is
+$C^n$ on $(-\lambda_1, \infty)$ for every smoothness order $n$, including $n = \infty$ and the
+analytic order $\omega$. -/
 theorem contDiffOn_secular_rpow (hg : g ≠ 0) (β : ℝ) {n : WithTop ℕ∞} :
     ContDiffOn ℝ n (fun t => secular g H t ^ β) (Ioi (-leftmost hH)) :=
   ((contDiffOn_secularSum_rpow secularWeight_nonneg
     ((secularWeight_ne_zero_iff (hH := hH)).2 hg) β).mono Ioi_subset_secularDomain).congr
     fun x hx => by simp only [secular_eq_secularSum hx]
 
-/-- The spectral moments decrease in `λ` on `λ > -λ₁`. -/
+/-- For $-\lambda_1 < x_0 \le x$ and every $m \in \mathbb{N}$, the spectral moments decrease:
+$\sum_i \gamma_i^2 / (x + \lambda_i)^m \le \sum_i \gamma_i^2 / (x_0 + \lambda_i)^m$
+(`Subproblem.secularMoment`). -/
 theorem secularMoment_le_of_le {x₀ x : ℝ} (hx₀ : -leftmost hH < x₀) (hx : x₀ ≤ x) (m : ℕ) :
     secularMoment (hH.eigenvalues rfl) (secularWeight hH g) m x ≤
       secularMoment (hH.eigenvalues rfl) (secularWeight hH g) m x₀ := by
@@ -1059,7 +1259,7 @@ theorem secularMoment_le_of_le {x₀ x : ℝ} (hx₀ : -leftmost hH < x₀) (hx 
 end SecularCalculus
 
 omit [FiniteDimensional ℝ E] in
-/-- `g ≠ 0` as soon as the secular function has a positive value. -/
+/-- If $\pi(\lambda) > 0$ for some $\lambda$, then $g \neq 0$. -/
 theorem ne_zero_of_secular_pos {lam : ℝ} (h : 0 < secular g H lam) : g ≠ 0 := by
   rintro rfl
   simp [secular_zero_left] at h

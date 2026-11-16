@@ -11,32 +11,50 @@ import Numlib.Analysis.Convex.Subdifferential.StrictlyConvex
 /-!
 # Preservation of essential smoothness
 
-Essential smoothness survives infimal convolution and the image under a linear map, under the
-usual exactness hypotheses. Both are one argument. Essential smoothness of `f` is essential
-*strict* convexity of `f*`; the dual operation on the conjugate side is a sum, for `□`, or
-composition with the transpose, for the image; the subdifferential calculus puts the domain of the
-subdifferential of that dual object inside `dom ∂f*`; and strict convexity there survives adding a
-convex function or precomposing with an injective linear map. Read backwards, the same duality
-returns essential smoothness.
+Let $E$ and $G$ be finite-dimensional real inner product spaces. Essential smoothness of closed
+proper convex functions is preserved by infimal convolution $f_1 \mathbin{\square} f_2$ and by the
+image $Af$ under a linear map $A \colon E \to G$, under the usual exactness hypotheses. These are
+Corollaries 26.3.2 and 26.3.3 of [rockafellar1970convex].
+
+Both proofs use one argument. A closed proper convex function $f$ is essentially smooth if and only
+if $f^*$ is essentially strictly convex
+(`ConvexAnalysis.essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth`). On the conjugate
+side, infimal convolution becomes the sum $f_1^* + f_2^*$, and the image under $A$ becomes the
+composition $f^* A'$ with the transpose $A'$. The rules of subdifferential calculus put the domain
+of the subdifferential of this dual function inside $\operatorname{dom} \partial f^*$ (or
+$\operatorname{dom} \partial f_1^*$). Strict convexity there survives the addition of a convex
+function and the composition with an injective linear map. The same duality, read backwards, gives
+essential smoothness.
 
 ## Main results
 
-* `StrictConvexOnFn.add_convexFn`, `StrictConvexOnFn.compLin` — a strictly convex summand makes a
-  sum strictly convex, and strict convexity pulls back along an injective linear map.
-* `IsExactSum.essentiallySmooth_infConv` — infimal convolution
-  ([rockafellar1970convex] Corollary 26.3.2).
-* `IsExactImage.essentiallySmooth_mapLin` — linear images
-  ([rockafellar1970convex] Corollary 26.3.3). Each has an `_of_relint` variant asking
-  `ri (dom f₁*) ∩ ri (dom f₂*) ≠ ∅`, resp. `∃ y*, A' y* ∈ ri (dom f*)`.
+* `ConvexAnalysis.StrictConvexOnFn.add_convexFn`: a sum with a strictly convex summand is strictly
+  convex.
+* `ConvexAnalysis.StrictConvexOnFn.compLin`: strict convexity pulls back along an injective linear
+  map.
+* `ConvexAnalysis.IsExactSum.essentiallyStrictlyConvex_add`: if $g_1$ is essentially strictly convex
+  and $g_1 + g_2$ adds exactly, then $g_1 + g_2$ is essentially strictly convex.
+* `ConvexAnalysis.IsExactSum.essentiallySmooth_infConv`: if $f_1$ is essentially smooth and $f_1^*$
+  and $f_2^*$ add exactly, then $f_1 \mathbin{\square} f_2$ is essentially smooth
+  ([rockafellar1970convex], Corollary 26.3.2).
+* `ConvexAnalysis.essentiallySmooth_infConv_of_relint`: the same when
+  $\operatorname{ri}(\operatorname{dom} f_1^*) \cap \operatorname{ri}(\operatorname{dom} f_2^*) \neq
+  \emptyset$.
+* `ConvexAnalysis.IsExactImage.essentiallyStrictlyConvex_compLin`: if $g$ is essentially strictly
+  convex and pulls back exactly along an injective $A'$, then $g A'$ is essentially strictly convex.
+* `ConvexAnalysis.IsExactImage.essentiallySmooth_mapLin`: if $f$ is essentially smooth, $A'$ is
+  injective and $f^*$ pulls back exactly along $A'$, then $Af$ is essentially smooth
+  ([rockafellar1970convex], Corollary 26.3.3).
+* `ConvexAnalysis.essentiallySmooth_mapLin_of_relint`: the same when $A$ is onto and $A' y \in
+  \operatorname{ri}(\operatorname{dom} f^*)$ for some $y$.
 
 ## Implementation notes
 
-The linear-image result instantiates the exactness interface for the *transpose* `A'`, because the
-identity used is `A f = (f* A')*`; surjectivity of `A` enters only through injectivity of `A'`.
-
-## References
-
-* [rockafellar1970convex] §26.
+* The result on linear images uses the exactness condition `ConvexAnalysis.IsExactImage` for the
+  transpose $A'$, because the identity behind it is $Af = (f^* A')^*$. The surjectivity of $A$ is
+  used only through the injectivity of $A'$.
+* The transpose $A' \colon G \to E$ is data, with the adjointness $\langle A' z, x \rangle = \langle
+  z, Ax \rangle$ given as `IsAdjointPair (innerₗ G) (innerₗ E) A' A`.
 -/
 
 open Pointwise
@@ -50,9 +68,11 @@ section StrictConvexOps
 variable {E G : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup G] [Module ℝ G]
   {f g : E → EReal} {C : Set E}
 
-/-- A strictly convex summand makes the sum strictly convex. Both functions must be finite on `C`:
-the strict inequality for `f` is vacuous where `f x = ⊤`, while the one being proved for `f + g`
-is not. -/
+/-- Let $C \subseteq E$ be convex, let $f$ be strictly convex on $C$, let $g$ be convex, and let $f$
+and $g$ be proper and finite on $C$. Then $f + g$ is strictly convex on $C$.
+
+Both functions must be finite on $C$. The strict inequality for $f$ holds trivially at points
+where $f = +\infty$, but the strict inequality for $f + g$ does not. -/
 theorem StrictConvexOnFn.add_convexFn (hC : Convex ℝ C) (hsc : StrictConvexOnFn f C)
     (hg : ConvexFn g) (hpf : ProperConvex f) (hpg : ProperConvex g) (hCf : C ⊆ convexDom f)
         (hCg : C ⊆ convexDom g) :
@@ -72,7 +92,8 @@ theorem StrictConvexOnFn.add_convexFn (hC : Convex ℝ C) (hsc : StrictConvexOnF
     EReal.coe_le_coe_iff] at hstrict hconv ⊢
   linarith
 
-/-- The same with the summands the other way round. -/
+/-- Let $C \subseteq E$ be convex, let $f$ be convex, let $g$ be strictly convex on $C$, and let $f$
+and $g$ be proper and finite on $C$. Then $f + g$ is strictly convex on $C$. -/
 theorem ConvexFn.add_strictConvexOnFn (hC : Convex ℝ C) (hf : ConvexFn f)
     (hsc : StrictConvexOnFn g C) (hpf : ProperConvex f) (hpg : ProperConvex g)
         (hCf : C ⊆ convexDom f)
@@ -80,7 +101,9 @@ theorem ConvexFn.add_strictConvexOnFn (hC : Convex ℝ C) (hf : ConvexFn f)
   rw [add_comm]
   exact StrictConvexOnFn.add_convexFn hC hsc hf hpg hpf hCg hCf
 
-/-- Strict convexity pulls back along an injective linear map. -/
+/-- Let $A \colon G \to E$ be an injective linear map, let $D \subseteq G$, and let
+$f \colon E \to [-\infty, +\infty]$ be strictly convex on $A(D)$. Then the composition
+$f \circ A$ is strictly convex on $D$. -/
 theorem StrictConvexOnFn.compLin {A : G →ₗ[ℝ] E} {D : Set G} (h : StrictConvexOnFn f (A '' D))
     (hinj : Function.Injective A) : StrictConvexOnFn (compLin f A) D := by
   intro x hx y hy hne a b ha hb hab
@@ -97,9 +120,13 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   {f₁ f₂ : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- The conjugate-side content: if `g₁` is essentially strictly convex and `g₁ + g₂` adds exactly,
-then `g₁ + g₂` is essentially strictly convex. The sum rule for subdifferentials puts
-`dom ∂(g₁ + g₂)` inside `dom ∂g₁`. -/
+/-- Let $E$ be a real inner product space, let $g_1, g_2 \colon E \to [-\infty, +\infty]$, let $g_2$
+be convex, and let $g_1$ and $g_2$ add exactly. If $g_1$ is essentially strictly convex, then so
+is $g_1 + g_2$.
+
+The sum rule for subdifferentials puts $\operatorname{dom} \partial(g_1 + g_2)$ inside
+$\operatorname{dom} \partial g_1$. Exact addition is `ConvexAnalysis.IsExactSum` for the pairing
+`innerₗ E`. -/
 theorem IsExactSum.essentiallyStrictlyConvex_add {g₁ g₂ : E → EReal}
     (h : IsExactSum (innerₗ E) g₁ g₂) (hg₂ : ConvexFn g₂)
     (hesc : EssentiallyStrictlyConvex (B := innerₗ E) g₁) :
@@ -115,8 +142,14 @@ theorem IsExactSum.essentiallyStrictlyConvex_add {g₁ g₂ : E → EReal}
   obtain ⟨v₁, hv₁, -, -, -⟩ := hv
   exact ⟨v₁, hv₁⟩
 
-/-- If `f₁` is essentially smooth and the conjugates `f₁*` and `f₂*` add exactly, then `f₁ □ f₂` is
-essentially smooth: it is the conjugate of `f₁* + f₂*`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let
+$f_1, f_2 \colon E \to [-\infty, +\infty]$ be closed proper convex functions such that $f_1^*$
+and $f_2^*$ add exactly. If $f_1$ is essentially smooth, then the infimal convolution
+$f_1 \mathbin{\square} f_2$ is essentially smooth. This is Corollary 26.3.2 of
+[rockafellar1970convex].
+
+Under the exactness hypothesis, $f_1 \mathbin{\square} f_2$ is the conjugate of $f_1^* + f_2^*$,
+and `ConvexAnalysis.IsExactSum.essentiallyStrictlyConvex_add` applies on the conjugate side. -/
 theorem IsExactSum.essentiallySmooth_infConv
     (h : IsExactSum (innerₗ E) (convexConj (innerₗ E) f₁) (convexConj (innerₗ E) f₂))
     (h₁ : ClosedProperConvexFn f₁) (h₂ : ClosedProperConvexFn f₂)
@@ -136,8 +169,11 @@ theorem IsExactSum.essentiallySmooth_infConv
   exact (essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth h₁.convex h₁.proper
       h₁.closed).2 hes
 
-/-- The same under the classical hypothesis: a common relative interior point of `dom f₁*` and
-`dom f₂*` supplies the exactness. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let
+$f_1, f_2 \colon E \to [-\infty, +\infty]$ be closed proper convex functions with $f_1$
+essentially smooth. If some $y_0$ is in both $\operatorname{ri}(\operatorname{dom} f_1^*)$ and
+$\operatorname{ri}(\operatorname{dom} f_2^*)$, then $f_1 \mathbin{\square} f_2$ is essentially
+smooth. This common relative interior point gives the exactness of the sum $f_1^* + f_2^*$. -/
 theorem essentiallySmooth_infConv_of_relint (h₁ : ClosedProperConvexFn f₁)
     (h₂ : ClosedProperConvexFn f₂) (hes : EssentiallySmooth f₁) {y₀ : E}
     (hy₁ : y₀ ∈ ri (convexDom (convexConj (innerₗ E) f₁)))
@@ -159,7 +195,8 @@ variable {E G : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {f : E → EReal} {A : E →ₗ[ℝ] G} {A' : G →ₗ[ℝ] E}
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ G] in
-/-- An onto linear map has an injective transpose. -/
+/-- Let $A \colon E \to G$ be a linear map with the transpose $A' \colon G \to E$. If $A$ is onto,
+then $A'$ is injective. -/
 theorem injective_of_isAdjointPair_of_surjective (hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A)
     (hsurj : Function.Surjective A) : Function.Injective A' := by
   rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
@@ -171,9 +208,13 @@ theorem injective_of_isAdjointPair_of_surjective (hA : IsAdjointPair (innerₗ G
   exact norm_eq_zero.1 (by nlinarith [norm_nonneg y])
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ G] in
-/-- The conjugate-side content: if `g` is essentially strictly convex, `A'` is injective and `g`
-pulls back exactly along `A'`, then `g A'` is essentially strictly convex. The chain rule makes
-`dom ∂(g A')` the preimage of `dom ∂g`. -/
+/-- Let $E$ and $G$ be real inner product spaces, let $A \colon E \to G$ be a linear map with the
+transpose $A' \colon G \to E$, and let $g \colon E \to [-\infty, +\infty]$ pull back exactly
+along $A'$. If $A'$ is injective and $g$ is essentially strictly convex, then $g A'$ is
+essentially strictly convex.
+
+The chain rule makes $\operatorname{dom} \partial(g A')$ the preimage of
+$\operatorname{dom} \partial g$ under $A'$. Exact pullback is `ConvexAnalysis.IsExactImage`. -/
 theorem IsExactImage.essentiallyStrictlyConvex_compLin {g : E → EReal}
     {hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A}
     (h : IsExactImage (innerₗ G) (innerₗ E) A' A hA g) (hinj : Function.Injective A')
@@ -187,8 +228,15 @@ theorem IsExactImage.essentiallyStrictlyConvex_compLin {g : E → EReal}
   obtain ⟨w, hw, -⟩ := hv
   exact ⟨w, hw⟩
 
-/-- If `f` is essentially smooth, `A'` is injective, and `f*` pulls back exactly along `A'`, then
-the image `A f` is essentially smooth: it is the conjugate of `f* A'`. -/
+/-- Let $E$ and $G$ be finite-dimensional real inner product spaces, let $A \colon E \to G$ be a
+linear map with the transpose $A' \colon G \to E$, and let $f \colon E \to [-\infty, +\infty]$
+be a closed proper convex function such that $f^*$ pulls back exactly along $A'$. If $f$ is
+essentially smooth and $A'$ is injective, then the image
+$$(Af)(y) = \inf \{ f(x) \mid Ax = y \}$$
+is essentially smooth. This is Corollary 26.3.3 of [rockafellar1970convex].
+
+Under the exactness hypothesis, $Af$ is the conjugate of $f^* A'$, and
+`ConvexAnalysis.IsExactImage.essentiallyStrictlyConvex_compLin` applies on the conjugate side. -/
 theorem IsExactImage.essentiallySmooth_mapLin {hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A}
     (h : IsExactImage (innerₗ G) (innerₗ E) A' A hA (convexConj (innerₗ E) f))
     (hf : ClosedProperConvexFn f) (hes : EssentiallySmooth f) (hinj : Function.Injective A') :
@@ -206,8 +254,14 @@ theorem IsExactImage.essentiallySmooth_mapLin {hA : IsAdjointPair (innerₗ G) (
   exact (essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth hf.convex hf.proper
       hf.closed).2 hes
 
-/-- The same under the classical hypotheses: `A` onto and some `y₀` with `A' y₀ ∈ ri (dom f*)`.
-The first gives injectivity of the transpose, the second the exactness. -/
+/-- Let $E$ and $G$ be finite-dimensional real inner product spaces, let $A \colon E \to G$ be a
+linear map onto $G$ with the transpose $A' \colon G \to E$, and let
+$f \colon E \to [-\infty, +\infty]$ be a closed proper convex function that is essentially
+smooth. If $A' y_0 \in \operatorname{ri}(\operatorname{dom} f^*)$ for some $y_0 \in G$, then
+$Af$ is essentially smooth.
+
+The surjectivity of $A$ gives the injectivity of $A'$, and the relative interior point gives the
+exactness. -/
 theorem essentiallySmooth_mapLin_of_relint (hA : IsAdjointPair (innerₗ G) (innerₗ E) A' A)
     (hf : ClosedProperConvexFn f) (hes : EssentiallySmooth f) (hsurj : Function.Surjective A)
     {y₀ : G} (hy₀ : A' y₀ ∈ ri (convexDom (convexConj (innerₗ E) f))) :

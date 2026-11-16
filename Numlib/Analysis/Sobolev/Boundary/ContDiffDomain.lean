@@ -8,138 +8,135 @@ import Numlib.Analysis.Sobolev.Boundary.Trace
 import Numlib.Analysis.Sobolev.Compactness
 
 /-!
-# The divergence theorem, the boundary data and the trace of a bounded `C¹` domain
+# The divergence theorem, the boundary data and the trace of a bounded $C^1$ domain
 
-The assembly on a bounded `C¹` domain (decisions B1–B4 and B7 of
-`notes/boundary/planning-brief.md`): from the local divergence theorem on a graph chart
-(`Boundary/Divergence.lean`), the surface measure and outward normal with their chart
-characterizations (`Boundary/GraphMeasure.lean`) and the partition of unity of an atlas, the
-divergence theorem
+Let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be a bounded $C^1$ domain in the graph sense
+(`IsContDiffDomain 1 Ω`), with the surface measure $\sigma$ and the outward unit normal $\nu$ of
+`Numlib.Analysis.Sobolev.Boundary.GraphMeasure`. This module proves the divergence theorem
+$$\int_\Omega \operatorname{div} F \, dx = \int_{\partial\Omega} \langle F, \nu \rangle \, d\sigma
+  \qquad \text{for } F \in C^1(\overline{\Omega}),$$
+and so makes $(\sigma, \nu)$ a `BoundaryData` of $\Omega$. It constructs a transversal field, and
+with the density theorems of `Numlib.Analysis.Sobolev.Boundary.Density` it obtains the trace family
+of `Numlib.Analysis.Sobolev.Boundary.Trace`: the trace $W^{1,p}(\Omega) \to L^p(\sigma)$ for
+$1 \le p < \infty$ and Green's formula. With Rellich's theorem
+(`Numlib.Analysis.Sobolev.Compactness`), the trace is a compact operator for $1 < p < \infty$.
+Through `IsContDiffChartDomain.isContDiffDomain`, the same holds for a bounded $C^1$ domain in the
+chart sense of [brezis2011functional], §9.2.
 
-  `∫_Ω div F = ∫ ⟪F, ν⟫ dσ`  for `F ∈ C¹(Ω̄)`  (`IsContDiffDomain.integral_div_eq`),
+The results are those of [han2009theoretical], §7.3 (Theorem 7.3.10) and §7.6, of
+[grisvard2011elliptic], Theorems 1.5.1.3 and 1.5.3.1, of Nečas, *Direct Methods in the Theory of
+Elliptic Equations*, Chapter 2, §4, and of [brezis2011functional], §9.5, Example 4, and Comments on
+Chapter 9. The surface modules use this module for Theorem 7.3.10, Proposition 7.6.1 and Examples
+11.1.2 to 11.3.11 of [han2009theoretical] on a $C^1$ domain, and for Example 4 of §9.5 and the
+Neumann boundary condition of Theorem 9.26 of [brezis2011functional].
 
-hence the boundary data `IsContDiffDomain.boundaryData : BoundaryData Ω`; a transversal field
-(`IsContDiffDomain.hasTransversalField`); with the density theorems of `Boundary/Density.lean`
-the trace family `IsContDiffDomain.traceFamily` of `Boundary/Trace.lean`, and with Rellich's
-theorem (`Numlib/Analysis/Sobolev/Compactness.lean`) the compactness of the trace for `1 < p`.
-This is the module the `C¹`-domain consumers of the Atkinson–Han and Brezis surfaces import
-(Theorem 7.3.10, Proposition 7.6.1, Examples 11.1.2–11.3.11 on a `C¹` domain, Brezis Example 4
-of §9.5 and the Neumann boundary condition of Theorem 9.26).
+## Main results
 
-**The assembly.** For a graph atlas `a` of `Ω` with its partition of unity `θ₀ + ∑ θᵢ = 1`,
-`F = θ₀ F + ∑ θᵢ F` on `Ω` and the divergence is additive on differentiable fields
-(`EuclideanSpace.div_finset_sum`). The interior piece `θ₀ F` vanishes near `∂Ω`; the compact set
-`tsupport θ₀ ∩ closure Ω ⊆ Ω` carries a smooth cut-off `χ` supported in `Ω`, and
-`H := (χ θ₀) F` is a `C¹` field on all of `ℝ^N` with compact support, equal to `θ₀ F` on `Ω`
-and with `div H = 0` off `Ω`, so `∫_Ω div (θ₀ F) = ∫ div H = 0`
-(`EuclideanSpace.integral_div_smul_eq_zero_of_disjoint_tsupport_frontier`). Each chart piece
-`θᵢ F` is supported in its chart ball, so the local theorem
-`IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset` applies; read through
-`EuclideanSpace.integral_graphMeasure` it is `∫_Ω div (θᵢ F) = ∫ ⟪θᵢ F, graphNormal⟫ dσᵢ`
-(`IsBoundaryGraphAt.integral_div_eq_graphMeasure`: the density `√(1 + |∇g|²)` of the measure and
-the normalization of the normal cancel), and the local measure `σᵢ` is carried by
-`∂Ω ∩ B(xᵢ, rᵢ)`, where the chart normal is the normal of the atlas
-(`GraphAtlas.integral_div_smul_θ_eq`). The atlas measure `σ = ∑ θᵢ σᵢ` recombines the pieces
-(`GraphAtlas.integral_measure_eq_sum`). The theorem is proved for every atlas
-(`GraphAtlas.integral_div_eq`) and specialized to the chosen one. Integrability of the pieces:
-the derivative of a `C¹(Ω̄)` field is bounded on the bounded `Ω`
-(`ContDiffOnClosure.exists_norm_fderiv_le_of_isBounded`), so its divergence is integrable there
-(`ContDiffOnClosure.integrableOn_div`).
-
-**The transversal field** is `w = c ∑ᵢ θᵢ Tᵢ⁻¹(−e_N)`, the partition of unity applied to the
-downward directions of the charts: in the frame `Tᵢ` the outward normal is
-`(∇gᵢ, −1)/√(1 + |∇gᵢ|²)`, so `⟪Tᵢ⁻¹(−e_N), ν⟫ = 1/√(1 + |∇gᵢ|²) ≥ 1/c` on `∂Ω ∩ B(xᵢ, rᵢ)` for
-`c` bounding the densities over the (bounded) parameter domains, and `⟪w, ν⟫ ≥ ∑ θᵢ = 1` on
-`∂Ω` (`IsContDiffDomain.exists_transversalField`).
-
-**Regularity.** The divergence theorem is stated for `F ∈ C¹(Ω̄)` — `ContinuousOn F (closure Ω)`
-and `ContDiffOnClosure ℝ 1 F Ω` (`Numlib/Analysis/Calculus/ContDiffOnClosure.lean`), the
-regularity of the books' Green formulas; `ContDiff ℝ 1 F` is the corollary
-`BoundaryData.integral_div_eq_of_contDiff`. No Piola identity, no area formula, no Hausdorff
-measure enters (decision B4).
-
-## Main statements
-
-* `IsBoundaryGraphAt.integral_div_eq_graphMeasure`: the local divergence theorem in
-  surface-measure form;
+* `IsBoundaryGraphAt.integral_div_eq_graphMeasure`: the divergence theorem on one graph chart, with
+  the surface measure of the chart.
 * `GraphAtlas.integral_div_eq`, `IsContDiffDomain.integral_div_eq`: the divergence theorem on a
-  bounded `C¹` domain;
-* `IsContDiffDomain.boundaryData`, `IsContDiffChartDomain.boundaryData`: the boundary data;
-* `IsContDiffDomain.exists_transversalField`, `IsContDiffDomain.hasTransversalField`: the
-  transversal field;
+  bounded $C^1$ domain.
+* `IsContDiffDomain.boundaryData`, `IsContDiffChartDomain.boundaryData`: the boundary data of a
+  bounded $C^1$ domain.
+* `IsContDiffDomain.exists_transversalField`, `IsContDiffDomain.hasTransversalField`: a $C^1$ field
+  $w$ with compact support and $\langle w, \nu \rangle \ge 1$ almost everywhere on $\partial\Omega$.
 * `IsContDiffDomain.traceFamily`, `IsContDiffDomain.traceL`, `IsContDiffDomain.green`: the trace
-  theorem and Green's formula on a bounded `C¹` domain;
-* `IsContDiffDomain.isCompactOperator_traceL`: compactness of the trace for `1 < p < ∞`.
+  theorem and Green's formula on a bounded $C^1$ domain.
+* `IsContDiffDomain.isCompactOperator_traceL`: the trace is a compact operator for $1 < p < \infty$.
 
-## Not formalized here
+## Proof outline
 
-**Korn's second inequality and the mixed displacement–traction problem of linear elasticity**
-(Nečas–Hlaváček; Duvaut–Lions; Atkinson–Han §8.5, the `V`-ellipticity remark after (8.5.15)).
-This was planned as a module `Boundary/KornSecond.lean` of this directory and is recorded here
-instead, the trace family above being everything it was waiting for. Three statements, in the
-order they were planned: the first is a definition and is cheap, the second is the deep one, and
-the third follows from it.
+Take a graph atlas of $\Omega$ with a partition of unity $\theta_0 + \sum_i \theta_i = 1$. Then
+$F = \theta_0 F + \sum_i \theta_i F$ on $\Omega$, and the divergence is additive on differentiable
+fields. The interior piece $\theta_0 F$ vanishes near $\partial\Omega$. The compact set
+$\operatorname{tsupport} \theta_0 \cap \overline{\Omega}$ lies in $\Omega$, so it carries a smooth
+cut-off $\chi$ with support in $\Omega$. The field $H = (\chi \theta_0) F$ is a $C^1$ field on all
+of $\mathbb{R}^N$ with compact support, it equals $\theta_0 F$ on $\Omega$, and
+$\operatorname{div} H = 0$ outside $\Omega$, so $\int_\Omega \operatorname{div}(\theta_0 F) = \int
+\operatorname{div} H = 0$. Each chart piece $\theta_i F$ has support in its chart ball, so the local
+divergence theorem of `Numlib.Analysis.Sobolev.Boundary.Divergence` applies to it. In terms of the
+chart measure $\sigma_i$ it reads $\int_\Omega \operatorname{div}(\theta_i F) = \int \langle
+\theta_i F, \nu_i \rangle \, d\sigma_i$, because the density $\sqrt{1 + |\nabla g_i|^2}$ of
+$\sigma_i$ cancels the normalization of the chart normal $\nu_i$. The measure $\sigma_i$ is carried
+by $\partial\Omega \cap B(x_i, r_i)$, where $\nu_i$ is the normal of the atlas. The atlas measure
+$\sigma = \sum_i \theta_i \sigma_i$ recombines the pieces. The divergence of a field in
+$C^1(\overline{\Omega})$ is integrable on $\Omega$, because its derivative is bounded on the bounded
+set $\Omega$.
 
-* `[H¹(Ω)]^N` as a Hilbert space, and the mixed space `V` of Atkinson–Han (8.5.13). The type is
-  `PiLp 2 fun _ : Fin N ↦ SobolevEuclidean N 1 2 Ω`, the `ℓ²` product of `N` copies of `H¹(Ω)`
-  with `‖v‖² = ∑ᵢ ‖vᵢ‖²`; over it the partial derivatives `v ↦ ∂ⱼvᵢ` and the linearized strain
-  `ε(v)ᵢⱼ = ½ (∂ⱼvᵢ + ∂ᵢvⱼ)` as continuous linear maps into `L²(Ω)` — the analogues of
-  `SobolevEuclideanZeroVec.partialL` and `.strainL` of `Numlib/Analysis/Sobolev/Korn.lean`, of
-  which they are the extensions off the subspace `[H¹₀(Ω)]^N`; the trace taken componentwise,
-  `v ↦ fun i ↦ 𝒯.traceL 2 _ (v i)` for `𝒯 := hΩ.traceFamily hb`; and the subspace
-  `V = {v | ∀ i, 𝒯.traceL 2 _ (v i) = 0 σ-a.e. on Γ_D}` of the fields whose trace vanishes on a
-  measurable `Γ_D ⊆ ∂Ω`, closed because the trace is continuous. Nothing in this first item is
-  missing; it was never written because the two theorems below are.
-* **Korn's second inequality**: on a bounded `C¹` domain `Ω` there is a `C` with
-  `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})` for every `v ∈ [H¹(Ω)]^N`. On `[H¹₀(Ω)]^N` the
-  sharper inequality without the `L²` term is `SobolevEuclideanZeroVec.korn_first` and needs no
-  regularity of `Ω` at all; on `[H¹(Ω)]^N` the boundary terms of its two integrations by parts do
-  not vanish, and the standard proof (Duvaut–Lions, Nečas) runs the other way. It writes
-  `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` in `H^{−1}(Ω)` and invokes **Lions's lemma**: on a bounded
-  Lipschitz (a fortiori `C¹`) domain, a distribution `f` with `f ∈ H^{−1}(Ω)` and
-  `∇f ∈ H^{−1}(Ω)^N` lies in `L²(Ω)`, with `‖f‖_{L²} ≤ C (‖f‖_{H^{−1}} + ‖∇f‖_{H^{−1}})`.
-  Lions's lemma is itself proved through a right inverse of the divergence (Bogovskiĭ) or through
-  the Nečas inequality `‖f‖_{L²} ≤ C ‖∇f‖_{H^{−1}}` on `L²_0`, and neither is in Mathlib or in
-  `Numlib/`; the alternatives — Kondratiev–Oleĭnik's integral representation for star-shaped
-  domains, or the Fourier proof on `ℝ^N` combined with a `C¹` extension operator commuting with
-  `ε`, which does not exist — are no cheaper. What exists towards it is `H^{−1}(Ω)` as the dual
-  of `H¹₀(Ω)` with its norm (`SobolevEuclideanZero.exists_dual_repr` of
-  `Numlib/Analysis/Sobolev/Zero.lean`). Research-scale, 2000+ lines. **The trace is not what is
-  missing**: with `IsContDiffDomain.traceFamily` every statement of this section is statable, and
-  the boundary round of 2026-09-21 confirmed it.
-* **`V`-ellipticity of the elasticity form**: for `Ω` bounded, `C¹` and connected and a
-  measurable `Γ_D ⊆ ∂Ω` with `σ(Γ_D) > 0`, there is a `C` with `‖v‖²_{H¹} ≤ C ‖ε(v)‖²_{L²}` for
-  every `v ∈ V` — the missing step of Atkinson–Han Theorem 8.5.1. The route from Korn's second
-  inequality is a contradiction argument: a sequence `vₙ ∈ V` with `‖vₙ‖ = 1` and `ε(vₙ) → 0`
-  has, by Rellich on the extension domain (`SobolevEuclidean.isCompactEmbedding_fnL`), a
-  subsequence converging in `L²`, hence by Korn's second inequality in `H¹`, to some `v ∈ V` with
-  `‖v‖ = 1` and `ε(v) = 0`; and the kernel of `ε` on a connected domain is the infinitesimal
-  rigid motions `x ↦ a + W x` with `W` skew, because the same identity
-  `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` makes every second derivative vanish and
-  `Numlib/Analysis/Sobolev/DenyLions.lean`'s "`|u|_{2,p} = 0` forces a polynomial of degree
-  `≤ 1`" then makes `v` affine. **The last step is the non-obvious one, and is the part of this
-  route worth keeping.** It is *not* enough to say "an affine map vanishing on a set of positive
-  surface measure is zero": the zero set of a general affine map is a hyperplane, of dimension
-  `N − 1`, and a `C¹` boundary may perfectly well contain a flat face of positive `σ`-measure
-  inside one. What makes the step true is that `W` is **skew**. The zero set of a nonzero
-  infinitesimal rigid motion `a + W x` is an affine subspace of *even codimension* `≥ 2` — for
-  `N = 2` a point and for `N = 3` a line, which is the classical form of the argument — and an
-  affine subspace of dimension `≤ N − 2` is `σ`-null on a `C¹` hypersurface. That nullity is the
-  only piece of the step needing work: by `IsContDiffDomain.boundaryMeasure_restrict_ball` the
-  surface measure is a graph measure in each chart, and the preimage of an affine subspace of
-  dimension `≤ N − 2` under a graph parametrization over `ℝ^{N−1}` is Lebesgue-null — about 100
-  lines. The whole of this third statement is about 400 lines once Korn's second inequality
-  exists; it is blocked on that alone.
+The transversal field is $w = c \sum_i \theta_i T_i^{-1}(-e_N)$, the partition of unity applied to
+the downward directions of the charts. In the frame $T_i$ the outward normal is
+$(\nabla g_i, -1)/\sqrt{1 + |\nabla g_i|^2}$, so $\langle T_i^{-1}(-e_N), \nu \rangle = 1/\sqrt{1 +
+|\nabla g_i|^2} \ge 1/c$ on $\partial\Omega \cap B(x_i, r_i)$, where $c$ bounds the densities on the
+bounded parameter domains. Hence $\langle w, \nu \rangle \ge \sum_i \theta_i = 1$ on
+$\partial\Omega$.
 
-The consumer is `NumlibSurface/AtkinsonHan/Chapter08/Section05.lean`, whose module doc carries
-the same record from the elasticity side.
+## Implementation notes
 
-## References
+* The divergence theorem is stated for $F \in C^1(\overline{\Omega})$, that is,
+  `ContinuousOn F (closure Ω)` and `ContDiffOnClosure ℝ 1 F Ω`
+  (`Numlib.Analysis.Calculus.ContDiffOnClosure`). This is the regularity of the Green formulas of
+  the books. The case $F \in C^1(\mathbb{R}^N)$ is the corollary
+  `BoundaryData.integral_div_eq_of_contDiff`.
+* The proof uses no Piola identity, no area formula and no Hausdorff measure.
+* The divergence theorem is proved for every graph atlas (`GraphAtlas.integral_div_eq`) and then
+  specialized to the atlas that defines $\sigma$ and $\nu$.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, §7.3 (Theorem 7.3.10) and §7.6; Grisvard,
-*Elliptic Problems in Nonsmooth Domains*, Theorems 1.5.1.3 and 1.5.3.1; Nečas, *Direct Methods
-in the Theory of Elliptic Equations*, Ch. 2 §4; [brezis2011functional] §9.5 Example 4 and
-Comments on chapter 9.
+## Not formalized
+
+Korn's second inequality and the mixed displacement–traction problem of linear elasticity (Nečas and
+Hlaváček; Duvaut and Lions; [han2009theoretical], §8.5, the remark on $V$-ellipticity after
+(8.5.15)) are not formalized. The surface module `NumlibSurface.AtkinsonHan.Chapter08.Section05`
+records the same gap from the side of elasticity. Three statements are missing.
+
+* **The space $[H^1(\Omega)]^N$ and the mixed space $V$.** The space $[H^1(\Omega)]^N$ as a Hilbert
+  space, and the mixed space $V$ of (8.5.13) of [han2009theoretical]. The type would be `PiLp 2 fun
+  _ : Fin N ↦ SobolevEuclidean N 1 2 Ω`, the $\ell^2$ product of $N$ copies of $H^1(\Omega)$ with
+  $\|v\|^2 = \sum_i \|v_i\|^2$. On it, the partial derivatives $v \mapsto \partial_j v_i$ and the
+  linearized strain $\varepsilon(v)_{ij} = \frac12 (\partial_j v_i + \partial_i v_j)$ are continuous
+  linear maps into $L^2(\Omega)$; they extend `SobolevEuclideanZeroVec.partialL` and
+  `SobolevEuclideanZeroVec.strainL` of `Numlib.Analysis.Sobolev.Korn` from the subspace
+  $[H^1_0(\Omega)]^N$. The trace is taken componentwise with `IsContDiffDomain.traceFamily`, and $V$
+  is the subspace of the fields whose trace vanishes $\sigma$-almost everywhere on a
+  measurable $\Gamma_D \subseteq \partial\Omega$; it is closed because the trace is continuous.
+  Everything that this item needs exists; it is not written because the two theorems below are
+  missing.
+* **Korn's second inequality.** On a bounded $C^1$ domain $\Omega$ there is a $C$ with
+  $\|v\|_{H^1}^2 \le C (\|v\|_{L^2}^2 + \|\varepsilon(v)\|_{L^2}^2)$ for every
+  $v \in [H^1(\Omega)]^N$. On $[H^1_0(\Omega)]^N$ the sharper inequality without the $L^2$ term is
+  `SobolevEuclideanZeroVec.korn_first`, which needs no regularity of $\Omega$. On $[H^1(\Omega)]^N$
+  the boundary terms of its two integrations by parts do not vanish. The standard proof (Duvaut and
+  Lions, Nečas) writes $\partial_j \partial_k v_i = \partial_j \varepsilon_{ik} + \partial_k
+  \varepsilon_{ij} - \partial_i \varepsilon_{jk}$ in $H^{-1}(\Omega)$ and uses **Lions's lemma**: on
+  a bounded Lipschitz domain, a distribution $f$ with $f \in H^{-1}(\Omega)$ and
+  $\nabla f \in H^{-1}(\Omega)^N$ lies in $L^2(\Omega)$, with $\|f\|_{L^2} \le C (\|f\|_{H^{-1}} +
+  \|\nabla f\|_{H^{-1}})$. Lions's lemma is proved with a right inverse of the divergence
+  (Bogovskiĭ) or with the Nečas inequality $\|f\|_{L^2} \le C \|\nabla f\|_{H^{-1}}$ on $L^2_0$, and
+  neither is in Mathlib or in this library. The alternatives are not easier: the integral
+  representation of Kondratiev and Oleĭnik works only for star-shaped domains, and the Fourier proof
+  on $\mathbb{R}^N$ needs a $C^1$ extension operator that commutes with $\varepsilon$, which does
+  not exist. The space $H^{-1}(\Omega)$ as the dual of $H^1_0(\Omega)$ with its norm is available
+  (`SobolevEuclideanZero.exists_dual_repr` of `Numlib.Analysis.Sobolev.Zero`). The trace is not what
+  is missing: with `IsContDiffDomain.traceFamily` every statement of this section can be stated.
+* **$V$-ellipticity of the elasticity form.** Let $\Omega$ be bounded, $C^1$ and connected, and let
+  $\Gamma_D \subseteq \partial\Omega$ be measurable with $\sigma(\Gamma_D) > 0$. Then there is a $C$
+  with $\|v\|_{H^1}^2 \le C \|\varepsilon(v)\|_{L^2}^2$ for every $v \in V$. This is the missing
+  step of Theorem 8.5.1 of [han2009theoretical]. It follows from Korn's second inequality by
+  contradiction. A sequence $v_n \in V$ with $\|v_n\| = 1$ and $\varepsilon(v_n) \to 0$ has a
+  subsequence that converges in $L^2$ by Rellich's theorem on the extension domain
+  (`SobolevEuclidean.isCompactEmbedding_fnL`), hence in $H^1$ by Korn's second inequality, to some
+  $v \in V$ with $\|v\| = 1$ and $\varepsilon(v) = 0$. On a connected domain the kernel of
+  $\varepsilon$ consists of the infinitesimal rigid motions $x \mapsto a + Wx$ with $W$ skew: the
+  identity above makes every second derivative vanish, and the result of
+  `Numlib.Analysis.Sobolev.DenyLions` that $|u|_{2,p} = 0$ forces a polynomial of degree at most $1$
+  makes $v$ affine. The last step needs care. An affine map that vanishes on a set of positive
+  surface measure need not be zero, because its zero set can be a hyperplane, and a $C^1$ boundary
+  can contain a flat face of positive measure in a hyperplane. The step holds because $W$ is skew:
+  the zero set of a nonzero infinitesimal rigid motion is an affine subspace of even codimension at
+  least $2$ (a point for $N = 2$, a line for $N = 3$), and an affine subspace of dimension at most
+  $N - 2$ is $\sigma$-null on a $C^1$ hypersurface. This nullity follows from
+  `IsContDiffDomain.boundaryMeasure_restrict_ball`, since the preimage of such a subspace under a
+  graph parametrization over $\mathbb{R}^{N-1}$ is Lebesgue-null. This statement depends only on
+  Korn's second inequality.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -147,17 +144,24 @@ open scoped ContDiff ENNReal InnerProductSpace NNReal Topology
 
 noncomputable section
 
-/-! ### The divergence of a sum, its measurability and integrability -/
+/-!
+### The interior piece of the divergence theorem
 
-/-! ### The compactly supported piece: `∫_Ω div (θ F) = 0` for `θ` vanishing near `∂Ω` -/
+If $\theta$ vanishes near $\partial\Omega$, then $\int_\Omega \operatorname{div}(\theta F) = 0$.
+-/
 
-/-- **The interior piece of the divergence theorem**: for `θ` of class `C¹` with
-`Disjoint (tsupport θ) (frontier Ω)` and `F` of class `C¹` on the bounded open `Ω`,
-`∫_Ω div (θ F) = 0`. The compact `K := tsupport θ ∩ closure Ω` lies in `Ω`
-(`inter_closure_subset_of_disjoint_frontier`); with a smooth cut-off `χ` equal to `1` on `K` and
-supported in `Ω` (`IsCompact.exists_contDiff_eqOn_one`), the field `H := (χ θ) F` is `C¹` on all
-of `ℝ^N` with compact support, equals `θ F` on `Ω`, and has `div H = 0` off `Ω`, so
-`∫_Ω div (θ F) = ∫ div H = 0` (`EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport`). -/
+/-- **The interior piece of the divergence theorem.** Let $\Omega \subseteq \mathbb{R}^N$ be open
+and bounded, let $\theta \colon \mathbb{R}^N \to \mathbb{R}$ be $C^1$ with
+$\operatorname{tsupport} \theta$ disjoint from $\partial\Omega$, and let
+$F \colon \mathbb{R}^N \to \mathbb{R}^N$ be $C^1$ on $\Omega$. Then
+$$\int_\Omega \operatorname{div}(\theta F) \, dx = 0.$$
+
+The compact set $K = \operatorname{tsupport} \theta \cap \overline{\Omega}$ lies in $\Omega$
+(`inter_closure_subset_of_disjoint_frontier`). A smooth cut-off $\chi$ equal to $1$ on $K$ with
+support in $\Omega$ (`IsCompact.exists_contDiff_eqOn_one`) makes $H = (\chi \theta) F$ a $C^1$
+field on $\mathbb{R}^N$ with compact support. It equals $\theta F$ on $\Omega$ and has
+$\operatorname{div} H = 0$ outside $\Omega$, so $\int_\Omega \operatorname{div}(\theta F) = \int
+\operatorname{div} H = 0$ by `EuclideanSpace.integral_div_eq_zero_of_hasCompactSupport`. -/
 theorem EuclideanSpace.integral_div_smul_eq_zero_of_disjoint_tsupport_frontier {N : ℕ}
     {Ω : Set (EuclideanSpace ℝ (Fin N))} (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω)
     {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ 1 θ)
@@ -215,16 +219,23 @@ variable {d : ℕ}
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 local notation "𝔼'" => EuclideanSpace ℝ (Fin d)
 
-/-- **The divergence theorem on a graph chart, in surface-measure form**: for an open
-`Ω ⊆ ℝ^{d+1}`, a graph chart `(T, g)` at `(x₀, r)` — `ContDiff ℝ 1 g` and
-`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g` — and a field `F` of class `C¹(Ω̄)` with
-`tsupport F ⊆ B(x₀, r)`,
-`∫_Ω div F = ∫ ⟪F, graphNormal T g⟫ d(graphMeasure T g (graphDomain T g x₀ r))`.
-The right-hand side of `IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset` is
-`∫ ⟪F (graphParam x'), T.linear⁻¹ (∇g x', −1)⟫ dx'`; under `integral_graphMeasure` the surface
-integral is `∫_{graphDomain} √(1 + |∇g|²) ⟪F (graphParam x'), graphNormal (graphParam x')⟫ dx'`
-and the density cancels the normalization of `graphNormal`; the integrand vanishes off the
-parameter domain since `F` vanishes off the ball. -/
+/-- **The divergence theorem on a graph chart, with the surface measure.** Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open, let $T$ be a rigid motion of $\mathbb{R}^{d+1}$,
+let $g \colon \mathbb{R}^d \to \mathbb{R}$ be $C^1$, and assume that
+$$\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}(\{y : g(y') < y_N\}).$$
+Let $F \in C^1(\overline{\Omega})$ with $\operatorname{tsupport} F \subseteq B(x_0, r)$. Then
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu_{T,g} \rangle \, d\sigma_{T,g},$$
+where $\nu_{T,g}$ is the chart normal `EuclideanSpace.graphNormal T g` and $\sigma_{T,g}$ is the
+chart measure `EuclideanSpace.graphMeasure T g` on the parameter domain
+`EuclideanSpace.graphDomain T g x₀ r`.
+
+The right side of `IsBoundaryGraphAt.integral_div_eq_of_tsupport_subset` is $\int \langle
+F(\gamma(x')), T^{-1}(\nabla g(x'), -1) \rangle \, dx'$, where $\gamma$ is the graph
+parametrization `EuclideanSpace.graphParam T g`. By `EuclideanSpace.integral_graphMeasure`, the
+surface integral is $\int \sqrt{1 + |\nabla g|^2} \, \langle F(\gamma(x')),
+\nu_{T,g}(\gamma(x')) \rangle \, dx'$ over the parameter domain, and the density cancels the
+normalization of the normal. The integrand vanishes outside the parameter domain, because $F$
+vanishes outside the ball. -/
 theorem IsBoundaryGraphAt.integral_div_eq_graphMeasure {g : 𝔼' → ℝ} {Ω : Set 𝔼} (hΩ : IsOpen Ω)
     {x₀ : 𝔼} {r : ℝ} (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) (hg : ContDiff ℝ 1 g)
     (h : Ω ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g)
@@ -264,10 +275,16 @@ namespace GraphAtlas
 
 variable {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (a : GraphAtlas Ω)
 
-/-- **The chart piece of the divergence theorem**: `∫_Ω div (θᵢ F) = ∫ θᵢ ⟪F, ν⟫ dσᵢ` for the
-`i`-th chart of an atlas of the open `Ω` and `F ∈ C¹(Ω̄)`. The piece `θᵢ F` is supported in the
-chart ball (`IsBoundaryGraphAt.integral_div_eq_graphMeasure`), and the local measure `σᵢ` is
-carried by `∂Ω ∩ B(xᵢ, rᵢ)`, where the chart normal is the atlas normal
+/-- **The chart piece of the divergence theorem.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open
+with a graph atlas, let $\theta_i$ be the partition function of the $i$-th chart, $\sigma_i$ the
+measure of the $i$-th chart, and $\nu$ the normal of the atlas. For
+$F \in C^1(\overline{\Omega})$,
+$$\int_\Omega \operatorname{div}(\theta_i F) \, dx = \int \theta_i \langle F, \nu \rangle \,
+  d\sigma_i.$$
+
+The piece $\theta_i F$ has support in the chart ball, so
+`IsBoundaryGraphAt.integral_div_eq_graphMeasure` applies. The measure $\sigma_i$ is carried by
+$\partial\Omega \cap B(x_i, r_i)$, where the chart normal is the normal of the atlas
 (`GraphAtlas.normal_eq_graphNormal`). -/
 theorem integral_div_smul_θ_eq (hΩ : IsOpen Ω) {F : 𝔼 → 𝔼} (hF₀ : ContinuousOn F (closure Ω))
     (hF₁ : ContDiffOnClosure ℝ 1 F Ω) (i : Fin a.k) :
@@ -289,12 +306,16 @@ theorem integral_div_smul_θ_eq (hΩ : IsOpen Ω) {F : 𝔼 → 𝔼} (hF₀ : C
     (a.inter_ball_eq i)] at hx
   rw [a.normal_eq_graphNormal hx.1 hx.2, real_inner_smul_left, smul_eq_mul]
 
-/-- **The divergence theorem for a graph atlas** of a bounded open `Ω ⊆ ℝ^{d+1}`: for
-`F ∈ C¹(Ω̄)`, `∫_Ω div F = ∫ ⟪F, a.normal⟫ ∂a.measure`. The partition of unity splits
-`F = θ₀ F + ∑ θᵢ F` on `Ω`; the interior piece integrates to zero
+/-- **The divergence theorem for a graph atlas.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open
+and bounded, with a graph atlas whose measure is $\sigma$ and whose normal is $\nu$. For
+$F \in C^1(\overline{\Omega})$,
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu \rangle \, d\sigma.$$
+
+The partition of unity splits $F = \theta_0 F + \sum_i \theta_i F$ on $\Omega$. The interior
+piece integrates to zero
 (`EuclideanSpace.integral_div_smul_eq_zero_of_disjoint_tsupport_frontier`), each chart piece is
-`∫ θᵢ ⟪F, ν⟫ dσᵢ` (`integral_div_smul_θ_eq`), and the atlas measure recombines them
-(`integral_measure_eq_sum`). -/
+$\int \theta_i \langle F, \nu \rangle \, d\sigma_i$ (`GraphAtlas.integral_div_smul_θ_eq`), and
+the atlas measure recombines the pieces (`GraphAtlas.integral_measure_eq_sum`). -/
 theorem integral_div_eq (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω) {F : 𝔼 → 𝔼}
     (hF₀ : ContinuousOn F (closure Ω)) (hF₁ : ContDiffOnClosure ℝ 1 F Ω) :
     ∫ y in Ω, EuclideanSpace.div F y = ∫ x, ⟪F x, a.normal x⟫_ℝ ∂a.measure := by
@@ -348,7 +369,7 @@ theorem integral_div_eq (hΩ : IsOpen Ω) (hb : Bornology.IsBounded Ω) {F : �
 
 end GraphAtlas
 
-/-! ### The divergence theorem, the boundary data and the transversal field of a `C¹` domain -/
+/-! ### The divergence theorem, the boundary data and the transversal field of a $C^1$ domain -/
 
 namespace IsContDiffDomain
 
@@ -357,20 +378,31 @@ section Set
 variable {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : IsContDiffDomain 1 Ω)
   (hb : Bornology.IsBounded Ω)
 
-/-- **The divergence theorem on a bounded `C¹` domain** (Atkinson–Han §7.6 "Gauss's formula",
-Grisvard Theorem 1.5.3.1 for classical fields, [brezis2011functional] §9.5 Example 4): for
-`F ∈ C¹(Ω̄)` — `ContinuousOn F (closure Ω)` and `ContDiffOnClosure ℝ 1 F Ω` —
-`∫_Ω div F = ∫ ⟪F, ν⟫ dσ` with the surface measure `σ = hΩ.boundaryMeasure hb` and the outward
-normal `ν = hΩ.outwardNormal hb` of `Boundary/GraphMeasure.lean`. It is `GraphAtlas.integral_div_eq`
-for the chosen atlas. -/
+/-- **The divergence theorem on a bounded $C^1$ domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be
+a bounded $C^1$ domain, with the surface measure $\sigma$ (`IsContDiffDomain.boundaryMeasure`)
+and the outward unit normal $\nu$ (`IsContDiffDomain.outwardNormal`). For
+$F \in C^1(\overline{\Omega})$,
+$$\int_\Omega \operatorname{div} F \, dx = \int \langle F, \nu \rangle \, d\sigma.$$
+This is Gauss's formula of [han2009theoretical], §7.6, Theorem 1.5.3.1 of [grisvard2011elliptic]
+for classical fields, and Example 4 of §9.5 of [brezis2011functional].
+
+The hypothesis $F \in C^1(\overline{\Omega})$ is `ContinuousOn F (closure Ω)` together with
+`ContDiffOnClosure ℝ 1 F Ω`. The proof is `GraphAtlas.integral_div_eq` for the atlas that
+defines $\sigma$ and $\nu$. -/
 theorem integral_div_eq {F : 𝔼 → 𝔼} (hF₀ : ContinuousOn F (closure Ω))
     (hF₁ : ContDiffOnClosure ℝ 1 F Ω) :
     ∫ x in Ω, EuclideanSpace.div F x
       = ∫ x, ⟪F x, hΩ.outwardNormal hb x⟫_ℝ ∂(hΩ.boundaryMeasure hb) :=
   (hΩ.graphAtlas hb).integral_div_eq hΩ.isOpen hb hF₀ hF₁
 
-/-- The pairing of a chart's downward direction `T.linear⁻¹ (−e_N)` with the chart normal is
-`1/√(1 + |∇g|²)`: in the frame `T` the normal is `(∇g, −1)/√(1 + |∇g|²)`. -/
+/-- Let $T$ be a rigid motion of $\mathbb{R}^{d+1}$, let $g \colon \mathbb{R}^d \to \mathbb{R}$, and
+let $x \in \mathbb{R}^{d+1}$. The downward direction $T^{-1}(-e_N)$ of the chart and the chart
+normal $\nu_{T,g}(x)$ satisfy
+$$\langle T^{-1}(-e_N), \nu_{T,g}(x) \rangle = \frac{1}{\sqrt{1 + |\nabla g((Tx)')|^2}}.$$
+In the frame $T$ the normal is $(\nabla g, -1)/\sqrt{1 + |\nabla g|^2}$.
+
+Here $T^{-1}$ is the inverse of the linear part of $T$, and the right side is the inverse of
+`EuclideanSpace.graphDensity`. -/
 theorem inner_symm_neg_single_last_graphNormal (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) (g : 𝔼' → ℝ) (x : 𝔼) :
     ⟪T.linearIsometryEquiv.symm (-EuclideanSpace.single (Fin.last d) (1 : ℝ)),
         EuclideanSpace.graphNormal T g x⟫_ℝ
@@ -379,11 +411,17 @@ theorem inner_symm_neg_single_last_graphNormal (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼) (g
     inner_neg_left, EuclideanSpace.inner_single_left, EuclideanSpace.snocLast_apply_last]
   simp
 
-/-- **A bounded `C¹` domain has a transversal field**: a `C¹` compactly supported `w` with
-`⟪w, ν⟫ ≥ 1` `σ`-a.e. — the field `w = c ∑ᵢ θᵢ Tᵢ⁻¹(−e_N)` of the chosen atlas, `c ≥ 1` bounding
-the densities `√(1 + |∇gᵢ|²)` over the bounded parameter domains: on `∂Ω ∩ B(xᵢ, rᵢ)` the
-normal is the chart normal and `⟪Tᵢ⁻¹(−e_N), ν⟫ = 1/√(1 + |∇gᵢ|²) ≥ 1/c`
-(`inner_symm_neg_single_last_graphNormal`), so `⟪w, ν⟫ ≥ ∑ θᵢ = 1` on `∂Ω`. -/
+/-- **A bounded $C^1$ domain has a transversal field.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+bounded $C^1$ domain with the surface measure $\sigma$ and the outward unit normal $\nu$. Then
+there is a $C^1$ field $w \colon \mathbb{R}^{d+1} \to \mathbb{R}^{d+1}$ with compact support
+such that $\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere.
+
+The field is $w = c \sum_i \theta_i T_i^{-1}(-e_N)$ for the atlas that defines $\sigma$, where
+$c \ge 1$ bounds the densities $\sqrt{1 + |\nabla g_i|^2}$ on the bounded parameter domains. On
+$\partial\Omega \cap B(x_i, r_i)$ the normal is the chart normal, and $\langle T_i^{-1}(-e_N),
+\nu \rangle = 1/\sqrt{1 + |\nabla g_i|^2} \ge 1/c$ by
+`IsContDiffDomain.inner_symm_neg_single_last_graphNormal`. So
+$\langle w, \nu \rangle \ge \sum_i \theta_i = 1$ on $\partial\Omega$. -/
 theorem exists_transversalField :
     ∃ w : 𝔼 → 𝔼, ContDiff ℝ 1 w ∧ HasCompactSupport w ∧
       ∀ᵐ x ∂(hΩ.boundaryMeasure hb), 1 ≤ ⟪w x, hΩ.outwardNormal hb x⟫_ℝ := by
@@ -450,11 +488,13 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
 
-/-- **A bounded `C¹` domain is a `BoundaryData`**: the surface measure `hΩ.boundaryMeasure hb`,
-the outward normal `hΩ.outwardNormal hb`, and the divergence theorem
-`IsContDiffDomain.integral_div_eq` (decision B1 of `notes/boundary/planning-brief.md`). The
-surface nodes on `C¹` domains take `hΩ.boundaryData hb`; they compute with the chart
-characterizations `IsContDiffDomain.boundaryMeasure_restrict_ball` and
+/-- **The boundary data of a bounded $C^1$ domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+bounded $C^1$ domain. The surface measure `IsContDiffDomain.boundaryMeasure`, the outward unit
+normal `IsContDiffDomain.outwardNormal`, and the divergence theorem
+`IsContDiffDomain.integral_div_eq` form a `BoundaryData` of $\Omega$.
+
+The theorems on $C^1$ domains use `hΩ.boundaryData hb`. They compute with the descriptions on a
+chart ball, `IsContDiffDomain.boundaryMeasure_restrict_ball` and
 `IsContDiffDomain.outwardNormal_eq_graphNormal`. -/
 def boundaryData : BoundaryData Ω where
   σ := hΩ.boundaryMeasure hb
@@ -466,47 +506,64 @@ def boundaryData : BoundaryData Ω where
   ae_norm_ν := hΩ.ae_norm_outwardNormal hb
   integral_div_eq := fun _ hF₀ hF₁ ↦ hΩ.integral_div_eq hb hF₀ hF₁
 
-/-- The surface measure of the boundary data of a bounded `C¹` domain is `boundaryMeasure`. -/
+/-- The surface measure of the boundary data of a bounded $C^1$ domain is
+`IsContDiffDomain.boundaryMeasure`. -/
 @[simp]
 theorem boundaryData_σ : (hΩ.boundaryData hb).σ = hΩ.boundaryMeasure hb := rfl
 
-/-- The normal of the boundary data of a bounded `C¹` domain is `outwardNormal`. -/
+/-- The normal of the boundary data of a bounded $C^1$ domain is `IsContDiffDomain.outwardNormal`.
+-/
 @[simp]
 theorem boundaryData_ν : (hΩ.boundaryData hb).ν = hΩ.outwardNormal hb := rfl
 
-/-- **A bounded `C¹` domain has a transversal field** (`exists_transversalField`), the
-hypothesis of Nečas's trace construction in `Boundary/Trace.lean`. -/
+/-- **The boundary data of a bounded $C^1$ domain have a transversal field**: a $C^1$ field $w$ with
+compact support and $\langle w, \nu \rangle \ge 1$ $\sigma$-almost everywhere.
+
+This is `IsContDiffDomain.exists_transversalField`. It is the hypothesis of the trace
+construction of Nečas in `Numlib.Analysis.Sobolev.Boundary.Trace`. -/
 theorem hasTransversalField : (hΩ.boundaryData hb).HasTransversalField :=
   hΩ.exists_transversalField hb
 
-/-! ### The trace theorem on a bounded `C¹` domain -/
+/-! ### The trace theorem on a bounded $C^1$ domain -/
 
-/-- **The trace theorem on a bounded `C¹` domain** (Atkinson–Han Theorem 7.3.10 (a), (b) with
-`Lipschitz` restated as `C¹`; Grisvard Theorem 1.5.1.3 into `L^p(Γ)`; [brezis2011functional]
-Comments on chapter 9, 7): the trace family of `hΩ.boundaryData hb` — the trace
-`W^{1,p}(Ω) →L L^p(σ)` at every `1 ≤ p < ∞`, the restriction of continuous representatives, and
-Green's formula — from the transversal field (`hasTransversalField`) and the density theorems of
-`Boundary/Density.lean` (a bounded `C¹` graph domain has the segment property), through the
-constructor `BoundaryData.traceFamily` of `Boundary/Trace.lean`. -/
+/-- **The trace theorem on a bounded $C^1$ domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+bounded $C^1$ domain with the surface measure $\sigma$ and the outward unit normal $\nu$. This
+is a trace family of its boundary data: for every $1 \le p < \infty$ a bounded linear trace
+$W^{1,p}(\Omega) \to L^p(\sigma)$ that maps a function continuous on $\overline{\Omega}$ to its
+restriction, together with Green's formula. This is Theorem 7.3.10(a) and (b) of
+[han2009theoretical] with the Lipschitz domain replaced by a $C^1$ domain, Theorem 1.5.1.3 of
+[grisvard2011elliptic] with values in $L^p(\Gamma)$, and item 7 of the Comments on Chapter 9 of
+[brezis2011functional].
+
+The family is `BoundaryData.traceFamily` of `Numlib.Analysis.Sobolev.Boundary.Trace`, applied to
+the transversal field `IsContDiffDomain.hasTransversalField` and to the density theorems of
+`Numlib.Analysis.Sobolev.Boundary.Density`: a bounded $C^1$ graph domain has the segment
+property. -/
 def traceFamily : (hΩ.boundaryData hb).TraceFamily :=
   BoundaryData.traceFamily _ (hΩ.hasTransversalField hb) (fun _ _ hp ↦ hΩ.hasSmoothDensity hp)
     fun _ _ hp ↦ hΩ.hasUniformSmoothDensity hb hp
 
-/-- **The trace operator of a bounded `C¹` domain**, `W^{1,p}(Ω) →L L^p(σ)` for `1 ≤ p < ∞`:
-the trace of `hΩ.traceFamily hb`. -/
+/-- **The trace operator of a bounded $C^1$ domain.** For $1 \le p < \infty$, this is the bounded
+linear trace $T \colon W^{1,p}(\Omega) \to L^p(\sigma)$ of `IsContDiffDomain.traceFamily`. -/
 abbrev traceL (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     SobolevEuclidean (d + 1) 1 p Ω →L[ℝ] Lp ℝ p (hΩ.boundaryMeasure hb) :=
   (hΩ.traceFamily hb).traceL p hp
 
-/-- The trace of the trace family is `traceL` (and `BoundaryData.traceL` of the boundary data). -/
+/-- For $1 \le p < \infty$, the trace operator of `IsContDiffDomain.traceFamily` is the trace
+operator `BoundaryData.traceL` that the transversal field gives for the boundary data of
+$\Omega$. -/
 theorem traceFamily_traceL (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     (hΩ.traceFamily hb).traceL p hp
       = (hΩ.boundaryData hb).traceL (hΩ.hasTransversalField hb) p hp :=
   rfl
 
-/-- **The trace of a function continuous up to the boundary is its restriction**
-(Atkinson–Han Theorem 7.3.10 (a)): for `u ∈ W^{1,p}(Ω)` with `fn u = ũ` a.e. on `Ω` and `ũ`
-continuous on `closure Ω`, `traceL u = ũ` `σ`-a.e. -/
+/-- **The trace of a function continuous up to the boundary is its restriction.** Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain and let $1 \le p < \infty$. Let
+$u \in W^{1,p}(\Omega)$, and let $\tilde u$ be continuous on $\overline{\Omega}$ with
+$u = \tilde u$ almost everywhere on $\Omega$. Then $Tu = \tilde u$ $\sigma$-almost everywhere.
+This is Theorem 7.3.10(a) of [han2009theoretical].
+
+The function of $u$ is `SobolevMultiIndex.fn u`. -/
 theorem traceL_ae_eq_of_continuousOn (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (u : SobolevEuclidean (d + 1) 1 p Ω) {ũ : 𝔼 → ℝ}
     (hu : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
@@ -514,10 +571,17 @@ theorem traceL_ae_eq_of_continuousOn (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p �
     (hΩ.traceL hb p hp u : 𝔼 → ℝ) =ᵐ[hΩ.boundaryMeasure hb] ũ :=
   (hΩ.traceFamily hb).traceL_ae_eq p hp u ũ hu hc
 
-/-- **Green's formula on a bounded `C¹` domain** (Grisvard Theorem 1.5.3.1, Atkinson–Han (7.6.1)
-and (7.6.3), [brezis2011functional] Comments on chapter 9, 7 (iii)): for `u ∈ W^{1,p}(Ω)`,
-`v ∈ W^{1,q}(Ω)` at conjugate exponents `1 < p, q < ∞`,
-`∫_Ω ∂ᵢu v + ∫_Ω u ∂ᵢv = ∫ (Tu)(Tv) νᵢ dσ`. -/
+/-- **Green's formula on a bounded $C^1$ domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+bounded $C^1$ domain with the surface measure $\sigma$ and the outward unit normal $\nu$, and
+let $1 < p, q < \infty$ with $1/p + 1/q = 1$. For $u \in W^{1,p}(\Omega)$,
+$v \in W^{1,q}(\Omega)$ and every coordinate $i$,
+$$\int_\Omega \partial_i u \, v \, dx + \int_\Omega u \, \partial_i v \, dx = \int (Tu)(Tv) \,
+  \nu_i \, d\sigma.$$
+This is Theorem 1.5.3.1 of [grisvard2011elliptic], (7.6.1) and (7.6.3) of [han2009theoretical],
+and item 7(iii) of the Comments on Chapter 9 of [brezis2011functional].
+
+The weak derivative $\partial_i u$ is `SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`.
+The exponents are finite and Hölder conjugate, so both are greater than $1$. -/
 theorem green (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.HolderConjugate p q]
     (hp : p ≠ ⊤) (hq : q ≠ ⊤) (u : SobolevEuclidean (d + 1) 1 p Ω)
     (v : SobolevEuclidean (d + 1) 1 q Ω) (i : Fin (d + 1)) :
@@ -530,8 +594,13 @@ theorem green (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [ENNReal.Hold
           * hΩ.outwardNormal hb x i ∂(hΩ.boundaryMeasure hb) :=
   (hΩ.traceFamily hb).green p q hp hq u v i
 
-/-- **Green's formula against a compactly supported `C¹` test function**, at every `1 ≤ p < ∞`:
-`∫_Ω ∂ᵢu φ + ∫_Ω u ∂ᵢφ = ∫ (Tu) φ νᵢ dσ`. -/
+/-- **Green's formula against a test function of class $C^1$.** Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain and let $1 \le p < \infty$. For
+$u \in W^{1,p}(\Omega)$, a $C^1$ function $\varphi \colon \mathbb{R}^{d+1} \to \mathbb{R}$ with
+compact support, and every coordinate $i$,
+$$\int_\Omega \partial_i u \, \varphi \, dx + \int_\Omega u \, \partial_i \varphi \, dx = \int
+  (Tu) \, \varphi \, \nu_i \, d\sigma.$$
+-/
 theorem green_contDiff (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean (d + 1) 1 p Ω)
     {φ : 𝔼 → ℝ} (hφ : ContDiff ℝ 1 φ) (hφc : HasCompactSupport φ) (i : Fin (d + 1)) :
     (∫ x in (Ω : Set 𝔼),
@@ -542,19 +611,24 @@ theorem green_contDiff (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : S
           ∂(hΩ.boundaryMeasure hb) :=
   (hΩ.traceFamily hb).green_contDiff p hp u φ hφ hφc i
 
-/-- **`W_0^{1,p}(Ω) ⊆ ker T`** on a bounded `C¹` domain, `1 ≤ p < ∞` (the easy half of
-[brezis2011functional] Comments on chapter 9, 7 (ii)). -/
+/-- **$W_0^{1,p}(\Omega)$ lies in the kernel of the trace.** Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be a bounded $C^1$ domain and let $1 \le p < \infty$. If $u \in W_0^{1,p}(\Omega)$, then
+$Tu = 0$. This is the easy half of item 7(ii) of the Comments on Chapter 9 of
+[brezis2011functional]. -/
 theorem traceL_eq_zero_of_mem_zero (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p Ω) :
     hΩ.traceL hb p hp u = 0 :=
   (hΩ.traceFamily hb).traceL_eq_zero_of_mem_zero hp hu
 
-/-- **Compactness of the trace on a bounded `C¹` domain** (Atkinson–Han Theorem 7.3.10 (c)) for
-`1 < p < ∞`: `traceL : W^{1,p}(Ω) →L L^p(σ)` is a compact operator, by Nečas's sharp inequality
-(`BoundaryData.isCompactOperator_traceL`) and Rellich's theorem
-`SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`, which at `p ≠ 1` needs no restriction on
-the dimension. The hypothesis `1 < p` is necessary: the trace `W^{1,1}(Ω) → L¹(∂Ω)` is onto
-(Gagliardo), hence not compact; the book's `1 ≤ p` is an erratum. -/
+/-- **The trace is compact.** Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain and
+let $1 < p < \infty$. Then the trace $T \colon W^{1,p}(\Omega) \to L^p(\sigma)$ is a compact
+operator. This is Theorem 7.3.10(c) of [han2009theoretical] for $p > 1$.
+
+The proof combines the sharp inequality of Nečas (`BoundaryData.isCompactOperator_traceL`) with
+Rellich's theorem `SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`, which for $p \neq 1$
+needs no restriction on the dimension. The hypothesis $1 < p$ is necessary: the trace
+$W^{1,1}(\Omega) \to L^1(\partial\Omega)$ is onto (Gagliardo), so it is not compact. The source
+states the compactness for $1 \le p$, which is an error. -/
 theorem isCompactOperator_traceL (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤) (hp1 : 1 < p) :
     IsCompactOperator (hΩ.traceL hb p hp) := by
   refine BoundaryData.isCompactOperator_traceL _ (hΩ.hasTransversalField hb) p hp hp1
@@ -569,7 +643,7 @@ end Opens
 
 end IsContDiffDomain
 
-/-! ### Chart domains (Brezis's definition), through the chart ⇒ graph bridge -/
+/-! ### Chart domains in the sense of Brezis, through the graph domains -/
 
 namespace IsContDiffChartDomain
 
@@ -577,13 +651,17 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   (h : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
 
-/-- **A bounded `C¹` chart domain** ([brezis2011functional] §9.2's definition) **is a
-`BoundaryData`**: the boundary data of the graph domain it is by the implicit function theorem
-(`IsContDiffChartDomain.isContDiffDomain`, `Boundary/ChartGraph.lean`). -/
+/-- **The boundary data of a bounded $C^1$ chart domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be bounded and of class $C^1$ by local charts in the sense of §9.2 of [brezis2011functional].
+These are the boundary data `IsContDiffDomain.boundaryData` of $\Omega$ as a graph domain, which
+it is by the implicit function theorem (`IsContDiffChartDomain.isContDiffDomain`). -/
 def boundaryData : BoundaryData Ω :=
   (h.isContDiffDomain le_rfl WithTop.one_ne_top).boundaryData hb
 
-/-- **The trace theorem on a bounded `C¹` chart domain**, through the chart ⇒ graph bridge. -/
+/-- **The trace theorem on a bounded $C^1$ chart domain.** Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be bounded and of class $C^1$ by local charts. This is the trace family
+`IsContDiffDomain.traceFamily` of $\Omega$ as a graph domain, for the boundary data
+`IsContDiffChartDomain.boundaryData`. -/
 def traceFamily : (h.boundaryData hb).TraceFamily :=
   (h.isContDiffDomain le_rfl WithTop.one_ne_top).traceFamily hb
 

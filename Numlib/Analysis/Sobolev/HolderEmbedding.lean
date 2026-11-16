@@ -14,41 +14,64 @@ import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.MeasureTheory.Function.ContinuousOnClosure
 
 /-!
-# The Sobolev embeddings into the Hölder spaces `C^{k,θ}(Ω̄)`
+# The Sobolev embeddings into the Hölder spaces $C^{k,\theta}(\bar\Omega)$
 
-The Hölder clause of the Sobolev embedding theorem on a bounded extension domain `Ω ⊆ ℝ^N`, in
-the form of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorems 7.3.7 (c) and 7.3.8 (c): for
-`k + N/p < m` the space `W^{m,p}(Ω)` embeds continuously into the Hölder space `C^{k,θ}(Ω̄)` of
-`Numlib/Analysis/Calculus/HolderSpace.lean`, with the sharp exponent `θ = m − N/p − k` when that
-is less than `1` and every exponent `θ < 1` when `m − N/p − k = 1` (the case "`N/p` an
-integer"), and compactly into `C^{k,θ'}(Ω̄)` for every `θ' < θ`. The book's hypothesis is a
-Lipschitz domain; the backbone's is `IsSobolevExtensionDomainAll`, an open set with a bounded
-`W^{1,q}`-extension operator for every `q` (a bounded `C¹` domain by Brezis's Theorem 9.7).
+This module proves the Hölder case of the Sobolev embedding theorem on a bounded open set
+$\Omega \subseteq \mathbb{R}^N$ that is an extension domain, in the form of Theorems 7.3.7(c) and
+7.3.8(c) of [han2009theoretical] and of Corollary 9.15 and Theorem 9.16 of [brezis2011functional].
+Let $1 \le p < \infty$, with $N \ge 2$ or $p > 1$, and let $k + N/p < m$. Then the space
+$W^{m,p}(\Omega)$ embeds continuously into the Hölder space $C^{k,\theta}(\bar\Omega)$ of
+`Numlib.Analysis.Calculus.HolderSpace`. The exponent is the sharp $\theta = m - N/p - k$ when this
+number is less than $1$, and every $\theta < 1$ when $m - N/p - k = 1$, which is the case "$N/p$ an
+integer". The space $W^{m,p}(\Omega)$ also embeds compactly into $C^{k,\theta'}(\bar\Omega)$ for
+every $\theta'$ with $0 < \theta' < \theta$.
+
+Each embedding sends $u$ to its continuous representative $\tilde u$, of class $C^k$ on $\Omega$.
+The lower derivatives $D^i \tilde u$, $i < k$, are moreover uniformly Hölder continuous in terms of
+$\|u\|$, which is the equicontinuity that the Arzelà–Ascoli theorem needs for the compact
+embeddings.
 
 ## Main results
 
-The order lowering `W^{m+j+1,p}(Ω) → W^{j+1,q}(Ω)` from an `L^q` bound on `W^{m,p}(Ω)`
-(`SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le`, with its inductive step
-`SobolevMultiIndex.exists_succ_of_partialDeriv`) is in
-`Numlib/Analysis/Sobolev/EmbeddingDomain.lean` and `Operators.lean`.
-
-* `SobolevEuclidean.exists_continuousLinearMap_toHolderSpace`: **`W^{m,p}(Ω) ↪ C^{k,θ'}(Ω̄)`**
-  for `k + N/p < m` and every `θ' ≤ θ`, `θ` the exponent of Brezis's Corollary 9.15 (sharp when
-  `m − N/p − k < 1`), as a bounded linear map sending `u` to its `C^k` representative, with the
-  uniform Hölder continuity of the lower derivatives that Arzelà–Ascoli needs.
-* `SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one`: the **integer case**,
-  `m − N/p − k = 1`: `W^{m,p}(Ω) ↪ C^{k,θ'}(Ω̄)` for every `θ' < 1`, through
-  `W^{m,p}(Ω) → W^{k+1,q}(Ω)` for large `q` and Morrey's theorem at exponent `q`.
+* `SobolevEuclidean.exists_continuousLinearMap_toHolderSpace`: $W^{m,p}(\Omega) \hookrightarrow
+  C^{k,\theta'}(\bar\Omega)$ for $k + N/p < m$ and every $\theta' \le \theta$, where $\theta$ is the
+  exponent of Corollary 9.15 of [brezis2011functional], sharp when $m - N/p - k < 1$.
+* `SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one`: the integer case
+  $m - N/p - k = 1$, $W^{m,p}(\Omega) \hookrightarrow C^{k,\theta'}(\bar\Omega)$ for every
+  $\theta' < 1$.
 * `SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace`,
-  `SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_eq_one`:
-  **`W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)`** for every `θ' < θ` (respectively `θ' < 1`), by Arzelà–Ascoli
-  with Hölder interpolation in `C^{k,·}(Ω̄)` (`HolderSpace.isCompactEmbedding_toLowerL_comp`).
+  `SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_eq_one`: the compact embeddings
+  $W^{m,p}(\Omega) \hookrightarrow\hookrightarrow C^{k,\theta'}(\bar\Omega)$ for every $\theta'$
+  with $0 < \theta' < \theta$, and with $0 < \theta' < 1$ in the integer case.
+* `SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_le`,
+  `SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt`: the two cases in one statement,
+  in the form of [han2009theoretical].
 
-## References
+## Proof outline
 
-[brezis2011functional] Corollary 9.15 and Theorem 9.16; [han2009theoretical] Theorems 7.3.7 (c)
-and 7.3.8 (c).
+In the non-integer case, the representatives of Corollary 9.15 of [brezis2011functional]
+(`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`) give the derivatives of order
+at most $k$ as continuous functions on $\bar\Omega$, bounded by $C \|u\|$, the top one
+$\theta$-Hölder. They form an element of $C^{k,\theta'}(\bar\Omega)$, and the map is linear because
+the continuous representative is unique. In the integer case, the embedding factors as
+$W^{m,p}(\Omega) \to W^{k+1,q}(\Omega)$ for a large $q$, followed by Morrey's theorem
+$W^{k+1,q}(\Omega) \hookrightarrow C^{k,1 - N/q}(\bar\Omega)$. The compact embeddings follow from
+the Arzelà–Ascoli theorem with Hölder interpolation
+(`HolderSpace.isCompactEmbedding_toLowerL_comp`).
+
+## Implementation notes
+
+* $W^{m,p}(\Omega)$ is `SobolevEuclidean N m p Ω`, with `p : ℝ≥0` and `[Fact (1 ≤ (p : ℝ≥0∞))]`, and
+  $C^{k,\theta}(\bar\Omega)$ is `HolderSpace Ω ℝ k θ`. An element of `HolderSpace` is the tuple of
+  the continuous extensions of its derivatives to $\bar\Omega$, and `HolderSpace.deriv` gives its
+  entries.
+* The hypothesis of [han2009theoretical] is a Lipschitz domain. The hypothesis here is
+  `IsSobolevExtensionDomainAll N Ω`: $\Omega$ has a bounded $W^{1,q}$-extension operator for every
+  $q$. A bounded open set of class $C^1$ has this property by Theorem 9.7 of [brezis2011functional].
+* The lowering of the order $W^{m,p}(\Omega) \to W^{k+1,q}(\Omega)$ from an $L^q$ bound on
+  $W^{m-k-1,p}(\Omega)$ is `SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le`,
+  with its inductive step `SobolevMultiIndex.exists_succ_of_partialDeriv`. These are in
+  `Numlib.Analysis.Sobolev.EmbeddingDomain` and `Numlib.Analysis.Sobolev.Operators`.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -58,7 +81,7 @@ open scoped BoundedContinuousFunction ContDiff ENNReal NNReal Topology
 noncomputable section
 
 
-/-! ### The `C^k(Ω̄)` representative as a derivative tuple -/
+/-! ### The $C^k(\bar\Omega)$ representative as a tuple of derivatives -/
 
 section Rep
 
@@ -67,8 +90,11 @@ open SobolevMultiIndex
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
 omit [Fact (1 ≤ (p : ℝ≥0∞))] in
-/-- Two continuous functions that are both almost everywhere equal to `fn u` on `Ω` agree on
-`closure Ω`: `ContinuousOn.eqOn_closure_of_ae_eq`. -/
+/-- Let $u \in W^{m,p}(\Omega)$ for an open set $\Omega \subseteq \mathbb{R}^N$. If
+$f, g \colon \mathbb{R}^N \to \mathbb{R}$ are continuous and both are equal to $u$ almost
+everywhere on $\Omega$, then $f = g$ on the closure $\bar\Omega$.
+
+The proof is `ContinuousOn.eqOn_closure_of_ae_eq`. -/
 theorem SobolevEuclidean.eqOn_closure_of_ae_eq {m : ℕ} {u : SobolevEuclidean N m p Ω}
     {f g : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Continuous f) (hg : Continuous g)
     (hfu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] f)
@@ -76,14 +102,24 @@ theorem SobolevEuclidean.eqOn_closure_of_ae_eq {m : ℕ} {u : SobolevEuclidean N
     EqOn f g (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hf.continuousOn.eqOn_closure_of_ae_eq Ω.isOpen hg.continuousOn (hfu.symm.trans hgu)
 
-/-- **Corollary 9.15 in tuple form**: for an extension domain, `k + N/p < m`, there are `C ≥ 0`
-and `θ ∈ (0, 1]` (the sharp `m − N/p − k` when it is less than `1`) such that every
-`u ∈ W^{m,p}(Ω)` has a continuous representative `ũ`, of class `C^k` on `Ω`, together with
-continuous `G i : ℝ^N → (ℝ^N [×i]→L[ℝ] ℝ)`, `i ≤ k`, agreeing on `Ω` with `D^i ũ`, bounded by
-`C ‖u‖`, the top one `θ`-Hölder on `closure Ω` with constant `C ‖u‖`. The transfer of the Hölder
-bound from the extension of `D^k ũ` produced by
-`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order` to `G k` is by continuity, `Ω`
-being dense in its closure. [brezis2011functional] Corollary 9.15, footnote 16. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an open set that is a $W^{1,q}$-extension domain for
+every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let $k, m \in \mathbb{N}$ with
+$k + N/p < m$. Then there are $C \ge 0$ and $\theta \in (0, 1]$, with $\theta = m - N/p - k$ if
+$m - N/p - k < 1$, such that every $u \in W^{m,p}(\Omega)$ has the following representative.
+There are a continuous function $\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ of class $C^k$ on
+$\Omega$ with $u = \tilde u$ almost everywhere on $\Omega$, and continuous functions $G_i \colon
+\mathbb{R}^N \to \mathcal{L}^i(\mathbb{R}^N; \mathbb{R})$, $0 \le i \le k$, such that
+
+* $G_i = D^i \tilde u$ on $\Omega$ for every $i$,
+* $\|G_i(x)\| \le C \|u\|$ for every $i$ and every $x \in \mathbb{R}^N$,
+* $\|G_k(x) - G_k(y)\| \le C \|u\| \, \|x - y\|^\theta$ for all $x, y \in \bar\Omega$.
+
+This is Corollary 9.15 of [brezis2011functional], with footnote 16, in the form of a tuple of
+derivatives. Here $\mathcal{L}^i(\mathbb{R}^N; \mathbb{R})$ is the space of continuous
+$i$-linear forms, and $\|u\|$ is the norm of $W^{m,p}(\Omega)$. The functions $G_i$ are the
+extensions of the derivatives of $\tilde u$ given by
+`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`. The Hölder bound passes to
+$G_k$ by continuity, because $\Omega$ is dense in its closure. -/
 theorem SobolevEuclidean.exists_forall_rep_tuple (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
     ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ((m : ℝ) - N / p - k < 1 → θ = m - N / p - k) ∧
@@ -118,7 +154,7 @@ theorem SobolevEuclidean.exists_forall_rep_tuple (k : ℕ) {m : ℕ}
 
 end Rep
 
-/-! ### The embedding `W^{m,p}(Ω) ↪ C^{k,θ}(Ω̄)` -/
+/-! ### The embedding $W^{m,p}(\Omega) \hookrightarrow C^{k,\theta}(\bar\Omega)$ -/
 
 section Embedding
 
@@ -126,11 +162,18 @@ open SobolevMultiIndex HolderSpace
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- **The embedding built from the representatives**: given the data of
-`SobolevEuclidean.exists_forall_rep_tuple` with constants `C`, `θ`, for every `θ' ≤ θ` the map
-`u ↦ (the tuple of extensions)` is a bounded linear map `W^{m,p}(Ω) → C^{k,θ'}(Ω̄)`, `Ω` bounded,
-sending `u` to its continuous representative, whose `i`-th entry is `D^i ũ` on `Ω`. Linearity is
-the uniqueness of the continuous representative (`HolderSpace.ext_of_eqOn`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set, let $1 \le p < \infty$, let
+$k, m \in \mathbb{N}$, and let $C \ge 0$ and $\theta > 0$. Assume that every
+$u \in W^{m,p}(\Omega)$ has a representative $\tilde u$ with derivatives $G_0, \dots, G_k$ as in
+the conclusion of `SobolevEuclidean.exists_forall_rep_tuple`, with the constants $C$ and
+$\theta$. Then for every $\theta' \le \theta$ there is a bounded linear map $T \colon
+W^{m,p}(\Omega) \to C^{k,\theta'}(\bar\Omega)$ such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ of class $C^k$ on $\Omega$ with $u = \tilde u$
+almost everywhere on $\Omega$, $Tu = \tilde u$ on $\bar\Omega$, and $(Tu)_i = D^i \tilde u$ on
+$\Omega$ for every $i \le k$.
+
+Here $(Tu)_i$ is the $i$-th entry `HolderSpace.deriv (T u) i`. The map is linear because the
+continuous representative is unique (`HolderSpace.ext_of_eqOn`). -/
 theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_rep (k : ℕ) {m : ℕ}
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) {C θ : ℝ} (hC : 0 ≤ C)
     (hθ : 0 < θ)
@@ -215,7 +258,12 @@ theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_rep (k : �
 
 end Embedding
 
-/-! ### The main theorems: `W^{m,p}(Ω) ↪ C^{k,θ}(Ω̄)` and `W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)` -/
+/-!
+### The main theorems
+
+The embedding $W^{m,p}(\Omega) \hookrightarrow C^{k,\theta}(\bar\Omega)$ and the compact embeddings
+$W^{m,p}(\Omega) \hookrightarrow\hookrightarrow C^{k,\theta'}(\bar\Omega)$.
+-/
 
 section Main
 
@@ -223,12 +271,19 @@ open SobolevMultiIndex HolderSpace
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- **The lower derivatives of the representative are uniformly Hölder**: for a map
-`T : W^{m,p}(Ω) → C^{k,θ'}(Ω̄)` sending `u` to its `C^k` representative and `i < k`, the
-`i`-th entry of `T u` is `θᵢ`-Hölder with constant `C ‖u‖`, by the embedding theorem at order
-`i` (`SobolevEuclidean.exists_forall_rep_tuple`) and the uniqueness of the continuous
-representative. This is the equicontinuity that Arzelà–Ascoli needs for the compact embedding
-`W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be an open set that is a $W^{1,q}$-extension domain for
+every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let $k, m \in \mathbb{N}$ with
+$k + N/p < m$. Let $T \colon W^{m,p}(\Omega) \to C^{k,\theta'}(\bar\Omega)$ be a bounded linear
+map such that for every $u$ there is a continuous $\tilde u \colon \mathbb{R}^N \to \mathbb{R}$
+of class $C^k$ on $\Omega$ with $u = \tilde u$ almost everywhere on $\Omega$, $Tu = \tilde u$ on
+$\bar\Omega$, and $(Tu)_i = D^i \tilde u$ on $\Omega$ for every $i \le k$. Then for every
+$i < k$ there are $C \ge 0$ and $\theta_i > 0$ such that for every $u$ the entry $(Tu)_i$ is
+$\theta_i$-Hölder continuous with constant $C \|u\|$.
+
+This is the equicontinuity that the Arzelà–Ascoli theorem needs for the compact embedding
+$W^{m,p}(\Omega) \hookrightarrow\hookrightarrow C^{k,\theta'}(\bar\Omega)$. The proof applies
+the embedding theorem at order $i$ (`SobolevEuclidean.exists_forall_rep_tuple`) and uses the
+uniqueness of the continuous representative. -/
 theorem SobolevEuclidean.exists_forall_holderWith_deriv (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω) (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m)
     {θ' : ℝ≥0} {T : SobolevEuclidean N m p Ω →L[ℝ] HolderSpace Ω ℝ k θ'}
@@ -263,14 +318,21 @@ theorem SobolevEuclidean.exists_forall_holderWith_deriv (k : ℕ) {m : ℕ}
     Real.coe_toNNReal _ hC0, coe_nnnorm, Real.coe_toNNReal _ hθ0.le]
   exact hGᵢh x x.2 y y.2
 
-/-- **`W^{m,p}(Ω) ↪ C^{k,θ'}(Ω̄)`** for a bounded extension domain `Ω ⊆ ℝ^N` (for every
-exponent), `1 ≤ p < ∞` with `N ≥ 2` or `p > 1`, and `k + N/p < m`: there is a Hölder exponent
-`θ ∈ (0, 1]` — the sharp `m − N/p − k` when that is less than `1` — such that for every
-`θ' ≤ θ` there is a bounded linear `T : W^{m,p}(Ω) → C^{k,θ'}(Ω̄)` sending `u` to its continuous
-representative, whose entries of order `< k` are moreover uniformly Hölder in terms of `‖u‖`
-(the hypothesis of `HolderSpace.isCompactEmbedding_toLowerL_comp`). [brezis2011functional]
-Corollary 9.15; [han2009theoretical] Theorem 7.3.7 (c), the non-integer case (with the book's
-Lipschitz domain replaced by an extension domain). -/
+/-- The **Sobolev embedding** $W^{m,p}(\Omega) \hookrightarrow C^{k,\theta'}(\bar\Omega)$. Let
+$\Omega \subseteq \mathbb{R}^N$ be a bounded open set that is a $W^{1,q}$-extension domain for
+every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let $k, m \in \mathbb{N}$ with
+$k + N/p < m$. Then there is a Hölder exponent $\theta \in (0, 1]$, with $\theta = m - N/p - k$
+if $m - N/p - k < 1$, such that for every $\theta' \le \theta$ there is a bounded linear map $T
+\colon W^{m,p}(\Omega) \to C^{k,\theta'}(\bar\Omega)$ with the following two properties.
+
+* For every $u$ there is a continuous $\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with
+  $u = \tilde u$ almost everywhere on $\Omega$ and $Tu = \tilde u$ on $\bar\Omega$.
+* For every $i < k$ there are $C \ge 0$ and $\theta_i > 0$ such that for every $u$ the entry
+  $(Tu)_i$ is $\theta_i$-Hölder continuous with constant $C \|u\|$.
+
+This is Corollary 9.15 of [brezis2011functional] and the non-integer case of Theorem 7.3.7(c) of
+[han2009theoretical], with the Lipschitz domain of the second source replaced by an extension
+domain. The second property is the hypothesis of `HolderSpace.isCompactEmbedding_toLowerL_comp`. -/
 theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN : 2 ≤ N ∨ 1 < p)
@@ -292,7 +354,10 @@ theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace (k : ℕ) {m :
   obtain ⟨ũ, hc, -, hae, hv, -⟩ := hT u
   exact ⟨ũ, hc, hae, hv⟩
 
-/-- A map into `C^{k,θ'}(Ω̄)` sending `u` to a continuous representative is injective. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $T \colon W^{m,p}(\Omega) \to
+C^{k,\theta'}(\bar\Omega)$ be a bounded linear map such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with $u = \tilde u$ almost everywhere on $\Omega$
+and $Tu = \tilde u$ on $\bar\Omega$. Then $T$ is injective. -/
 theorem SobolevEuclidean.injective_of_forall_exists_ae_eq {m : ℕ} {k : ℕ} {θ' : ℝ≥0}
     (T : SobolevEuclidean N m p Ω →L[ℝ] HolderSpace Ω ℝ k θ')
     (hT : ∀ u, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
@@ -304,8 +369,11 @@ theorem SobolevEuclidean.injective_of_forall_exists_ae_eq {m : ℕ} {k : ℕ} {�
   refine ae_restrict_of_forall_mem Ω.isOpen.measurableSet fun x hx ↦ ?_
   rw [← hu' ⟨x, subset_closure hx⟩, ← hv' ⟨x, subset_closure hx⟩, huv]
 
-/-- A bounded linear map into `C^{k,θ'}(Ω̄)` sending `u` to a continuous representative is a
-continuous embedding. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $T \colon W^{m,p}(\Omega) \to
+C^{k,\theta'}(\bar\Omega)$ be a bounded linear map such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with $u = \tilde u$ almost everywhere on $\Omega$
+and $Tu = \tilde u$ on $\bar\Omega$. Then $T$ is a continuous embedding, that is, an injective
+bounded linear map (`IsContinuousEmbedding`). -/
 theorem SobolevEuclidean.isContinuousEmbedding_of_forall_exists_ae_eq {m : ℕ} {k : ℕ} {θ' : ℝ≥0}
     (T : SobolevEuclidean N m p Ω →L[ℝ] HolderSpace Ω ℝ k θ')
     (hT : ∀ u, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
@@ -313,11 +381,21 @@ theorem SobolevEuclidean.isContinuousEmbedding_of_forall_exists_ae_eq {m : ℕ} 
     IsContinuousEmbedding T.toLinearMap :=
   ⟨SobolevEuclidean.injective_of_forall_exists_ae_eq T hT, _, T.le_opNorm⟩
 
-/-- **`W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)` for every `θ' < θ`** on a bounded extension domain,
-`k + N/p < m`: the compact embedding into the Hölder space of any exponent below the one of
-`SobolevEuclidean.exists_continuousLinearMap_toHolderSpace`, by the Arzelà–Ascoli theorem with
-Hölder interpolation (`HolderSpace.isCompactEmbedding_toLowerL_comp`). [brezis2011functional]
-Theorem 9.16 at higher order; [han2009theoretical] Theorem 7.3.8 (c). -/
+/-- The **compact Sobolev embedding** $W^{m,p}(\Omega) \hookrightarrow\hookrightarrow
+C^{k,\theta'}(\bar\Omega)$. Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set that is a
+$W^{1,q}$-extension domain for every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and
+let $k, m \in \mathbb{N}$ with $k + N/p < m$. Then there is a Hölder exponent
+$\theta \in (0, 1]$, with $\theta = m - N/p - k$ if $m - N/p - k < 1$, such that for every
+$\theta'$ with $0 < \theta' < \theta$ there is a compact embedding $T \colon W^{m,p}(\Omega) \to
+C^{k,\theta'}(\bar\Omega)$ such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with $u = \tilde u$ almost everywhere on $\Omega$
+and $Tu = \tilde u$ on $\bar\Omega$.
+
+This is Theorem 9.16 of [brezis2011functional] at higher order, and Theorem 7.3.8(c) of
+[han2009theoretical]. The exponent $\theta$ is the one of
+`SobolevEuclidean.exists_continuousLinearMap_toHolderSpace`. The proof is the Arzelà–Ascoli
+theorem with Hölder interpolation (`HolderSpace.isCompactEmbedding_toLowerL_comp`). A compact
+embedding is `IsCompactEmbedding`. -/
 theorem SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN : 2 ≤ N ∨ 1 < p)
@@ -339,7 +417,7 @@ theorem SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace (k : ℕ) {m : 
 
 end Main
 
-/-! ### The integer case `m − N/p − k = 1`: every exponent `θ' < 1` -/
+/-! ### The integer case $m - N/p - k = 1$: every exponent $\theta' < 1$ -/
 
 section Integer
 
@@ -347,8 +425,10 @@ open SobolevMultiIndex HolderSpace
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- The auxiliary exponent of the integer case: for `θ' < 1` there is `q ≥ p` with `q > N` and
-`N/q ≤ 1 − θ'`, namely `max p (N/(1 − θ') + 1)`. -/
+/-- Let $N \in \mathbb{N}$, $p \ge 0$ and $0 \le \theta' < 1$. Then there is $q \ge p$ with $q > N$
+and $N/q \le 1 - \theta'$, for example $q = \max(p, N/(1 - \theta') + 1)$.
+
+This is the auxiliary exponent of the integer case. -/
 theorem NNReal.exists_integer_case_exponent (N : ℕ) (p : ℝ≥0) {θ' : ℝ≥0} (hθ' : θ' < 1) :
     ∃ q : ℝ≥0, p ≤ q ∧ (N : ℝ) < q ∧ (N : ℝ) / q ≤ 1 - θ' := by
   have hθ'r : (θ' : ℝ) < 1 := by exact_mod_cast hθ'
@@ -369,12 +449,24 @@ theorem NNReal.exists_integer_case_exponent (N : ℕ) (p : ℝ≥0) {θ' : ℝ�
   rw [div_le_iff₀ h1] at h2
   linarith
 
-/-- **`W^{m,p}(Ω) ↪ C^{k,θ'}(Ω̄)` in the integer case `m − N/p − k = 1`, for every `θ' < 1`**:
-`W^{m,p}(Ω) → W^{k+1,q}(Ω)` for a large `q` (the critical embedding `W^{m−k−1,p}(Ω) ⊂ L^q(Ω)`
-at every order, `SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le`) followed
-by Morrey's theorem `W^{k+1,q}(Ω) ↪ C^{k,1−N/q}(Ω̄)` with `1 − N/q ≥ θ'`. The map sends `u` to
-its continuous representative and its lower derivatives are uniformly Hölder.
-[han2009theoretical] Theorem 7.3.7 (c), the case "`N/p` an integer". -/
+/-- The **Sobolev embedding** $W^{m,p}(\Omega) \hookrightarrow C^{k,\theta'}(\bar\Omega)$ in the
+integer case $m - N/p - k = 1$. Let $\Omega \subseteq \mathbb{R}^N$, $N \ge 1$, be a bounded
+open set that is a $W^{1,q}$-extension domain for every $q$, let $1 \le p < \infty$ with
+$N \ge 2$ or $p > 1$, and let $k, m \in \mathbb{N}$ with $m - N/p - k = 1$. Then for every
+$\theta' < 1$ there is a bounded linear map $T \colon W^{m,p}(\Omega) \to
+C^{k,\theta'}(\bar\Omega)$ with the following two properties.
+
+* For every $u$ there is a continuous $\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with
+  $u = \tilde u$ almost everywhere on $\Omega$ and $Tu = \tilde u$ on $\bar\Omega$.
+* For every $i < k$ there are $C \ge 0$ and $\theta_i > 0$ such that for every $u$ the entry
+  $(Tu)_i$ is $\theta_i$-Hölder continuous with constant $C \|u\|$.
+
+This is Theorem 7.3.7(c) of [han2009theoretical] in the case "$N/p$ an integer". The map is the
+composition of $W^{m,p}(\Omega) \to W^{k+1,q}(\Omega)$ for a large $q$, from the critical
+embedding $W^{m-k-1,p}(\Omega) \subset L^q(\Omega)$ at every order
+(`SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le`), with Morrey's theorem
+$W^{k+1,q}(\Omega) \hookrightarrow C^{k,1 - N/q}(\bar\Omega)$, where $1 - N/q \ge \theta'$
+(`NNReal.exists_integer_case_exponent`). -/
 theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN0 : 0 < N)
@@ -433,9 +525,18 @@ theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one (k :
     gcongr
     exact T₁.le_opNNNorm u
 
-/-- **`W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)` in the integer case `m − N/p − k = 1`, for every `θ' < 1`**:
-the compact embedding, through `C^{k,θ''}(Ω̄)` for a `θ'' ∈ (θ', 1)` and Arzelà–Ascoli.
-[han2009theoretical] Theorem 7.3.8 (c), the case "`N/p` an integer". -/
+/-- The **compact Sobolev embedding** $W^{m,p}(\Omega) \hookrightarrow\hookrightarrow
+C^{k,\theta'}(\bar\Omega)$ in the integer case $m - N/p - k = 1$. Let
+$\Omega \subseteq \mathbb{R}^N$, $N \ge 1$, be a bounded open set that is a $W^{1,q}$-extension
+domain for every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let
+$k, m \in \mathbb{N}$ with $m - N/p - k = 1$. Then for every $\theta'$ with $0 < \theta' < 1$
+there is a compact embedding $T \colon W^{m,p}(\Omega) \to C^{k,\theta'}(\bar\Omega)$ such that
+for every $u$ there is a continuous $\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with
+$u = \tilde u$ almost everywhere on $\Omega$ and $Tu = \tilde u$ on $\bar\Omega$.
+
+This is Theorem 7.3.8(c) of [han2009theoretical] in the case "$N/p$ an integer". The proof goes
+through $C^{k,\theta''}(\bar\Omega)$ for some $\theta'' \in (\theta', 1)$ and the Arzelà–Ascoli
+theorem. -/
 theorem SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_eq_one (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN0 : 0 < N)
@@ -470,10 +571,18 @@ open SobolevMultiIndex HolderSpace
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
 
-/-- **`W^{m,p}(Ω) ↪↪ C^{k,θ'}(Ω̄)` for `0 < θ' < m − N/p − k ≤ 1`**, the non-integer and the
-integer case of [han2009theoretical] Theorem 7.3.8 (c) in one statement: with `k = m − [N/p] − 1`
-the bound `m − N/p − k = [N/p] + 1 − N/p` is the book's, equal to `1` exactly when `N/p` is an
-integer. -/
+/-- The **compact Sobolev embedding** for $0 < \theta' < m - N/p - k \le 1$. Let
+$\Omega \subseteq \mathbb{R}^N$, $N \ge 1$, be a bounded open set that is a $W^{1,q}$-extension
+domain for every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let
+$k, m \in \mathbb{N}$ with $k + N/p < m$ and $m - N/p - k \le 1$. Then for every $\theta'$ with
+$0 < \theta' < m - N/p - k$ there is a compact embedding $T \colon W^{m,p}(\Omega) \to
+C^{k,\theta'}(\bar\Omega)$ such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with $u = \tilde u$ almost everywhere on $\Omega$
+and $Tu = \tilde u$ on $\bar\Omega$.
+
+This states the non-integer and the integer case of Theorem 7.3.8(c) of [han2009theoretical]
+together. With $k = m - [N/p] - 1$, the bound $m - N/p - k = [N/p] + 1 - N/p$ is the one of the
+source, and it equals $1$ exactly when $N/p$ is an integer. -/
 theorem SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN0 : 0 < N)
@@ -490,8 +599,17 @@ theorem SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt (k : ℕ)
   · exact SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_eq_one k hΩ hb hN0 hN heq
       hθ'0 (by rw [← NNReal.coe_lt_coe, NNReal.coe_one, ← heq]; exact hθ')
 
-/-- **`W^{m,p}(Ω) ↪ C^{k,θ'}(Ω̄)` for `0 < θ' ≤ m − N/p − k ≤ 1`, `θ' < 1`**, the non-integer
-and the integer case of [han2009theoretical] Theorem 7.3.7 (c) in one statement. -/
+/-- The **Sobolev embedding** for $\theta' \le m - N/p - k \le 1$ and $\theta' < 1$. Let
+$\Omega \subseteq \mathbb{R}^N$, $N \ge 1$, be a bounded open set that is a $W^{1,q}$-extension
+domain for every $q$, let $1 \le p < \infty$ with $N \ge 2$ or $p > 1$, and let
+$k, m \in \mathbb{N}$ with $k + N/p < m$ and $m - N/p - k \le 1$. Then for every $\theta' \ge 0$
+with $\theta' \le m - N/p - k$ and $\theta' < 1$ there is a continuous embedding $T \colon
+W^{m,p}(\Omega) \to C^{k,\theta'}(\bar\Omega)$ such that for every $u$ there is a continuous
+$\tilde u \colon \mathbb{R}^N \to \mathbb{R}$ with $u = \tilde u$ almost everywhere on $\Omega$
+and $Tu = \tilde u$ on $\bar\Omega$.
+
+This states the non-integer and the integer case of Theorem 7.3.7(c) of [han2009theoretical]
+together. -/
 theorem SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_le (k : ℕ) {m : ℕ}
     (hΩ : IsSobolevExtensionDomainAll N Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hN0 : 0 < N)

@@ -11,35 +11,46 @@ import Numlib.LinearAlgebra.Matrix.Jordan
 /-!
 # Functions of matrices: the matrix forms of the primary functional calculus
 
-For a square matrix `A` over a nontrivially normed field `𝕜` and a function `f : 𝕜 → 𝕜`, the
-matrix function `f(A)` is `pfc f A`, the primary functional calculus of
-`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/Basic`: the Hermite interpolant of `f`
-on the eigenvalues of `A`, to their indices, evaluated at `A`. This module collects its matrix
-forms ([golub2013matrix] §9.1.1–9.1.2): similarity, diagonal, block diagonal and reindexed
-matrices, Jordan blocks and the Jordan-form expression that is the book's definition (9.1.3),
-the transpose, and realness on real matrices read in `ℂ`.
+Let $\mathbb{K}$ be a nontrivially normed field, let $A \in \mathbb{K}^{n \times n}$, and let
+$f : \mathbb{K} \to \mathbb{K}$. The matrix function $f(A)$ is `pfc f A`, the primary functional
+calculus of `Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Basic`: $f(A) = p(A)$, where
+$p$ is the Hermite interpolant of $f$ and its derivatives at the eigenvalues of $A$, each eigenvalue
+to its index. This file proves the matrix forms of this calculus that [golub2013matrix],
+§9.1.1–9.1.2, uses: the rules for similar, diagonal, block diagonal and reindexed matrices, the
+value at a Jordan block, the Jordan-form expression (9.1.3), which is the definition of $f(A)$ in
+[golub2013matrix], the transpose, and the realness of $f(A)$ for a real matrix $A$.
+
+For a Jordan block $J_k(\mu)$, with $\mu$ on the diagonal and $1$ on the superdiagonal, the result
+is the upper triangular Toeplitz matrix
+$$f(J_k(\mu)) = \sum_{j<k} \frac{f^{(j)}(\mu)}{j!} N^j, \qquad N = J_k(0).$$
 
 ## Main results
 
-* `Matrix.pfc_conj`: `f(P A P⁻¹) = P f(A) P⁻¹` ([golub2013matrix] (9.1.8), with `X` and `X⁻¹` in
-  the printed formula exchanged).
-* `Matrix.pfc_diagonal`, `Matrix.pfc_blockDiagonal'`, `Matrix.pfc_fromBlocks_zero`,
-  `Matrix.pfc_reindex`: diagonal and block diagonal matrices.
-* `Matrix.pfc_jordanBlock`, `Matrix.pfc_jordanBlock_apply`: a Jordan block ((9.1.4)–(9.1.6)).
-* `Matrix.pfc_conj_jordanForm`: the Jordan-form expression (9.1.3), a theorem here.
-* `Matrix.pfc_transpose`: `f(Aᵀ) = f(A)ᵀ`.
-* `Matrix.pfc_map_conj`, `Matrix.pfc_complexify_of_conj`: `f(Ā) = (f̄(A))‾` for
-  `f̄ = conj ∘ f ∘ conj`, hence `f(A)` is real for a real `A` (read in `ℂ` through
-  `Matrix.complexify`) when `f` commutes with conjugation near the spectrum.
+* `Matrix.pfc_conj`: $f(P A P^{-1}) = P f(A) P^{-1}$ for invertible $P$ ((9.1.8) of
+  [golub2013matrix]).
+* `Matrix.pfc_diagonal`, `Matrix.pfc_blockDiagonal'`, `Matrix.pfc_fromBlocks_zero` and
+  `Matrix.pfc_reindex`: $f$ acts entrywise on a diagonal matrix, blockwise on a block diagonal
+  matrix, and commutes with a reindexing.
+* `Matrix.pfc_jordanBlock` and `Matrix.pfc_jordanBlock_apply`: the value at a Jordan block,
+  (9.1.4)–(9.1.6) of [golub2013matrix].
+* `Matrix.pfc_conj_jordanForm`: the Jordan-form expression (9.1.3) of [golub2013matrix], here a
+  theorem.
+* `Matrix.pfc_transpose`: $f(A^T) = f(A)^T$.
+* `Matrix.pfc_map_conj` and `Matrix.pfc_complexify_of_conj`: $f(\bar{A}) = \overline{\bar{f}(A)}$
+  for $\bar{f}(z) = \overline{f(\bar{z})}$, so $f(A)$ is real for a real $A$ when $f$ commutes with
+  conjugation near the eigenvalues.
 
 ## Implementation notes
 
-`Matrix n n 𝕜` is finite-dimensional, so every matrix is integral (`Algebra.IsIntegral.isIntegral`);
-the splitting of the minimal polynomial is the only hypothesis `pfc` needs, and it is automatic
-over an algebraically closed field (`IsAlgClosed.splits`). Most results here need not even that:
-they go through `pfc_eq_aeval_of_isJetInterpolant` with an explicit multiset of eigenvalues (the
-diagonal entries, the eigenvalue of a Jordan block) or through algebra equivalences
-(`AlgEquiv.map_pfc`, similarity, reindexing, the transpose).
+* A matrix algebra is finite-dimensional, so every matrix is integral
+  (`Algebra.IsIntegral.isIntegral`). The only hypothesis that `pfc` needs is then that the minimal
+  polynomial splits, and this holds over an algebraically closed field (`IsAlgClosed.splits`). Most
+  results here do not need even this hypothesis. They use `pfc_eq_aeval_of_isJetInterpolant` with an
+  explicit multiset of eigenvalues (the diagonal entries, or the eigenvalue of a Jordan block), or
+  algebra equivalences (`AlgEquiv.map_pfc`, for similarity, reindexing and the transpose).
+* The derivatives $f^{(j)}$ are `iteratedDeriv`. Mathlib sets a derivative to $0$ at a point where
+  the function is not differentiable, so the results on Jordan blocks need no hypothesis on $f$.
+* A real matrix is read as a complex matrix through `Matrix.complexify`.
 -/
 
 open Polynomial Hermite
@@ -50,14 +61,21 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {n : Type*} [Fintype n] [
 
 /-! ### Similarity, diagonal and block diagonal matrices -/
 
-/-- **Similarity** ([golub2013matrix] (9.1.8), printed there as `f(X⁻¹AX) = X f(A) X⁻¹`, with `X`
-and `X⁻¹` exchanged): `f(P A P⁻¹) = P f(A) P⁻¹` for an invertible `P`. -/
+/-- **Similarity.** Let $P \in \mathbb{K}^{n \times n}$ be invertible, let
+$A \in \mathbb{K}^{n \times n}$, and let $f : \mathbb{K} \to \mathbb{K}$. Then
+$$f(P A P^{-1}) = P f(A) P^{-1}.$$
+This is (9.1.8) of [golub2013matrix].
+
+[golub2013matrix] prints (9.1.8) as $f(X^{-1} A X) = X f(A) X^{-1}$, with $X$ and $X^{-1}$
+exchanged on one side. There is no hypothesis on $f$ or on the minimal polynomial of $A$. -/
 theorem pfc_conj {P : Matrix n n 𝕜} (hP : IsUnit P) (f : 𝕜 → 𝕜) (A : Matrix n n 𝕜) :
     pfc f (P * A * P⁻¹) = P * pfc f A * P⁻¹ := by
   have h := pfc_units_conj (𝕜 := 𝕜) hP.unit f A
   rwa [coe_units_inv, IsUnit.unit_spec] at h
 
-/-- **Diagonal matrices**: `f(diag(d)) = diag(f ∘ d)`, with no hypothesis on `f`. -/
+/-- **Diagonal matrices.** For every $d \in \mathbb{K}^n$ and every $f : \mathbb{K} \to \mathbb{K}$,
+$$f(\operatorname{diag}(d_1, \dots, d_n)) = \operatorname{diag}(f(d_1), \dots, f(d_n)).$$
+There is no hypothesis on $f$. -/
 theorem pfc_diagonal (f : 𝕜 → 𝕜) (d : n → 𝕜) : pfc f (diagonal d) = diagonal (f ∘ d) := by
   classical
   set s := (Finset.univ.image d).val
@@ -83,8 +101,12 @@ section BlockDiagonal
 variable {o : Type*} [Fintype o] [DecidableEq o] {m : o → Type*} [∀ i, Fintype (m i)]
   [∀ i, DecidableEq (m i)]
 
-/-- **Block diagonal matrices**: `f(diag(M₁, …, M_k)) = diag(f(M₁), …, f(M_k))`, when every
-block has a split minimal polynomial (automatic over `ℂ`). -/
+/-- **Block diagonal matrices.** Let $M_1, \dots, M_k$ be square matrices over $\mathbb{K}$ whose
+minimal polynomials split over $\mathbb{K}$. Then for every $f : \mathbb{K} \to \mathbb{K}$,
+$$f(\operatorname{diag}(M_1, \dots, M_k)) = \operatorname{diag}(f(M_1), \dots, f(M_k)).$$
+
+The splitting hypothesis holds over $\mathbb{C}$. The blocks are indexed by a finite type, and
+the block diagonal matrix is `Matrix.blockDiagonal'`. -/
 theorem pfc_blockDiagonal' {M : ∀ i, Matrix (m i) (m i) 𝕜}
     (hs : ∀ i, (minpoly 𝕜 (M i)).Splits) (f : 𝕜 → 𝕜) :
     pfc f (blockDiagonal' M) = blockDiagonal' fun i => pfc f (M i) := by
@@ -112,7 +134,11 @@ section FromBlocks
 
 variable {l : Type*} [Fintype l] [DecidableEq l]
 
-/-- **Two diagonal blocks**: `f([B 0; 0 C]) = [f(B) 0; 0 f(C)]`. -/
+/-- **Two diagonal blocks.** Let $B$ and $C$ be square matrices over $\mathbb{K}$ whose minimal
+polynomials split over $\mathbb{K}$. Then for every $f : \mathbb{K} \to \mathbb{K}$,
+$$f\Bigl(\begin{bmatrix} B & 0 \\ 0 & C \end{bmatrix}\Bigr) = \begin{bmatrix} f(B) & 0 \\ 0 &
+  f(C) \end{bmatrix}.$$
+-/
 theorem pfc_fromBlocks_zero {B : Matrix l l 𝕜} {C : Matrix n n 𝕜} (hB : (minpoly 𝕜 B).Splits)
     (hC : (minpoly 𝕜 C).Splits) (f : 𝕜 → 𝕜) :
     pfc f (fromBlocks B 0 0 C) = fromBlocks (pfc f B) 0 0 (pfc f C) := by
@@ -133,7 +159,11 @@ theorem pfc_fromBlocks_zero {B : Matrix l l 𝕜} {C : Matrix n n 𝕜} (hB : (m
 
 end FromBlocks
 
-/-- **Reindexing**: `f(reindex e e A) = reindex e e (f(A))`. -/
+/-- **Reindexing.** Let $e$ be a bijection between the index sets, and let $A'$ be the matrix $A$
+with rows and columns renumbered by $e$. Then $f(A')$ is $f(A)$ with rows and columns renumbered
+by $e$.
+
+The renumbering is `Matrix.reindex e e`. There is no hypothesis on $f$. -/
 theorem pfc_reindex {l : Type*} [Fintype l] [DecidableEq l] (e : n ≃ l) (f : 𝕜 → 𝕜)
     (A : Matrix n n 𝕜) : pfc f (reindex e e A) = reindex e e (pfc f A) :=
   ((reindexAlgEquiv 𝕜 𝕜 e).map_pfc f A).symm
@@ -144,13 +174,18 @@ section Jordan
 
 variable (f : 𝕜 → 𝕜) (k : ℕ) (μ : 𝕜)
 
-/-- The nodal polynomial of `k` copies of `μ`. -/
+/-- The nodal polynomial of the multiset with $k$ copies of $\mu$ is $(X - \mu)^k$. -/
 private theorem nodalMultiset_replicate :
     nodalMultiset (Multiset.replicate k μ) = (X - C μ) ^ k := by
   simp [nodalMultiset, Multiset.map_replicate, Multiset.prod_replicate]
 
-/-- **A Jordan block** ([golub2013matrix] (9.1.5)–(9.1.6)):
-`f(J_k(μ)) = ∑_{j<k} f⁽ʲ⁾(μ)/j! N^j` with `N = J_k(0)` the nilpotent shift. No hypothesis on `f`. -/
+/-- **A Jordan block.** Let $J_k(\mu)$ be the Jordan block of order $k$ with eigenvalue $\mu$, and
+let $N = J_k(0)$ be the nilpotent shift. Then for every $f : \mathbb{K} \to \mathbb{K}$,
+$$f(J_k(\mu)) = \sum_{j=0}^{k-1} \frac{f^{(j)}(\mu)}{j!} N^j.$$
+This is (9.1.5)–(9.1.6) of [golub2013matrix].
+
+The coefficient $f^{(j)}(\mu) / j!$ is `Hermite.taylorJet f μ j`, with the derivatives of
+`iteratedDeriv`. There is no hypothesis on $f$. -/
 theorem pfc_jordanBlock :
     pfc f (jordanBlock k μ) = ∑ j ∈ Finset.range k, taylorJet f μ j • jordanBlock k 0 ^ j := by
   classical
@@ -168,8 +203,11 @@ theorem pfc_jordanBlock :
   rw [map_mul, aeval_C, map_pow, map_sub, aeval_X, aeval_C, Algebra.algebraMap_eq_smul_one μ,
     jordanBlock_sub_smul_one, sub_self, ← Algebra.smul_def]
 
-/-- **The entries of `f` of a Jordan block** ([golub2013matrix] (9.1.4)): upper triangular Toeplitz,
-`f(J_k(μ))_{ij} = f⁽ʲ⁻ⁱ⁾(μ)/(j - i)!` for `i ≤ j`. -/
+/-- **The entries of a function of a Jordan block.** For every $f : \mathbb{K} \to \mathbb{K}$ and
+all $i, j < k$,
+$$f(J_k(\mu))_{ij} = \begin{cases} \dfrac{f^{(j-i)}(\mu)}{(j-i)!} & \text{if } i \le j, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+So $f(J_k(\mu))$ is upper triangular and Toeplitz. This is (9.1.4) of [golub2013matrix]. -/
 theorem pfc_jordanBlock_apply (i j : Fin k) :
     pfc f (jordanBlock k μ) i j = if i ≤ j then taylorJet f μ (j - i) else 0 := by
   rw [pfc_jordanBlock, Matrix.sum_apply]
@@ -184,10 +222,16 @@ theorem pfc_jordanBlock_apply (i j : Fin k) :
 
 end Jordan
 
-/-- **The Jordan-form expression** ([golub2013matrix] (9.1.3), the book's definition of `f(A)`, a
-theorem here): if `P⁻¹ A P` is the Jordan form with blocks `J_{e i}(μ i)`, then
-`f(A) = P diag(f(J_{e i}(μ i))) P⁻¹`. In particular the right side does not depend on the Jordan
-decomposition. Each block is given by `Matrix.pfc_jordanBlock`. -/
+/-- **The Jordan-form expression.** Let $A, P \in \mathbb{K}^{n \times n}$ with $P$ invertible, and
+let $P^{-1} A P = \operatorname{diag}(J_{e_1}(\mu_1), \dots, J_{e_r}(\mu_r))$ be a Jordan form
+of $A$. Then for every $f : \mathbb{K} \to \mathbb{K}$,
+$$f(A) = P \operatorname{diag}\bigl(f(J_{e_1}(\mu_1)), \dots, f(J_{e_r}(\mu_r))\bigr) P^{-1}.$$
+This is (9.1.3) of [golub2013matrix], which is the definition of $f(A)$ there. Here it is a
+theorem, and in particular the right side does not depend on the choice of the Jordan
+decomposition.
+
+The Jordan form is `Matrix.jordanForm e μ`, with rows and columns renumbered by a bijection `σ`
+onto the index set of $A$. Each block is given by `Matrix.pfc_jordanBlock`. -/
 theorem pfc_conj_jordanForm {ι : Type*} [Finite ι] [DecidableEq ι] {e : ι → ℕ} {μ : ι → 𝕜}
     (σ : (Σ i, Fin (e i)) ≃ n) {A P : Matrix n n 𝕜} (hP : IsUnit P)
     (h : P⁻¹ * A * P = reindex σ σ (jordanForm e μ)) (f : 𝕜 → 𝕜) :
@@ -203,7 +247,8 @@ theorem pfc_conj_jordanForm {ι : Type*} [Finite ι] [DecidableEq ι] {e : ι �
 
 /-! ### The transpose -/
 
-/-- **The transpose**: `f(Aᵀ) = f(A)ᵀ`. -/
+/-- **The transpose.** For every $A \in \mathbb{K}^{n \times n}$ and every
+$f : \mathbb{K} \to \mathbb{K}$, $f(A^T) = f(A)^T$. -/
 theorem pfc_transpose (f : 𝕜 → 𝕜) (A : Matrix n n 𝕜) : pfc f Aᵀ = (pfc f A)ᵀ := by
   classical
   rw [pfc_def, pfc_def, minpoly_transpose, aeval_transpose]
@@ -214,8 +259,11 @@ section Conj
 
 open ComplexConjugate
 
-/-- **Conjugation** ([golub2013matrix] §9.1): `f(Ā) = (f̄(A))‾` for `f̄ = conj ∘ f ∘ conj`, with no
-hypothesis on `f`. -/
+/-- **Conjugation.** Let $A \in \mathbb{C}^{n \times n}$ and $f : \mathbb{C} \to \mathbb{C}$, and
+let $\bar{f}(z) = \overline{f(\bar{z})}$. Then
+$$f(\bar{A}) = \overline{\bar{f}(A)},$$
+where the bar on a matrix is the entrywise complex conjugate. See [golub2013matrix], §9.1. There
+is no hypothesis on $f$. -/
 theorem pfc_map_conj (f : ℂ → ℂ) (A : Matrix n n ℂ) :
     pfc f (A.map conj) = (pfc (conj ∘ f ∘ conj) A).map conj := by
   classical
@@ -239,9 +287,14 @@ theorem pfc_map_conj (f : ℂ → ℂ) (A : Matrix n n ℂ) :
     simp
   rw [pfc_eq_aeval_of_isJetInterpolant hdvd hP', pfc_def, map_aeval]
 
-/-- **Real matrices** ([golub2013matrix] §9.1): if `A` is real and `f` commutes with conjugation
-near every eigenvalue (e.g. `exp`, `sin`, `cos`, and `Complex.log` or `z ^ (1/2)` when no eigenvalue
-lies on `(-∞, 0]`), then `f(A)` is real. -/
+/-- **Real matrices.** Let $B \in \mathbb{R}^{n \times n}$, and let $f : \mathbb{C} \to \mathbb{C}$
+satisfy $\overline{f(\bar{z})} = f(z)$ for all $z$ in a neighbourhood of each eigenvalue of $B$.
+Then $f(B)$ is real: there is $C \in \mathbb{R}^{n \times n}$ with $f(B) = C$. See
+[golub2013matrix], §9.1.
+
+Examples of such $f$ are $\exp$, $\sin$ and $\cos$, and also `Complex.log` and $z^{1/2}$ when no
+eigenvalue lies in $(-\infty, 0]$. The real matrices are read as complex matrices through
+`Matrix.complexify`. -/
 theorem pfc_complexify_of_conj {f : ℂ → ℂ} (B : Matrix n n ℝ)
     (hf : ∀ μ ∈ spectrum ℂ (complexify B), (conj ∘ f ∘ conj) =ᶠ[nhds μ] f) :
     ∃ C : Matrix n n ℝ, pfc f (complexify B) = complexify C := by

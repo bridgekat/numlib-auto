@@ -11,48 +11,66 @@ import Numlib.LinearAlgebra.Matrix.QR
 /-!
 # Krylov and Arnoldi decompositions in matrix and operator form
 
-The Krylov layer states the Arnoldi and Lanczos processes for an operator on an inner product
-space with `ℕ`-indexed vectors (`Arnoldi.vec`, `Arnoldi.coeff`, `Lanczos.tridiag`); the books
-(Saad §6.3, Quarteroni–Sacco–Saleri §5.11, [golub2013matrix] §10.1 and §10.5) state them for a
-matrix as the identity `A Q_k = Q_k H_k + r_k e_kᵀ`. This module is that reading, once.
+The Krylov layer of the library states the Arnoldi and Lanczos processes for an operator on an inner
+product space, with vectors indexed by $\mathbb{N}$ (`Arnoldi.vec`, `Arnoldi.coeff`,
+`Lanczos.tridiag`). The books state them for a matrix $A$, as the identity
+$$A Q_k = Q_k H_k + r_k e_k^T,$$
+where $Q_k$ has the first $k$ Arnoldi vectors as columns and $H_k$ is upper Hessenberg
+([saad2003iterative], §6.3; [quarteroni2000numerical], §5.11; [golub2013matrix], §10.1 and §10.5).
+This module proves the matrix form from the operator form. Throughout, $\mathbb{K}$ is $\mathbb{R}$
+or $\mathbb{C}$. The module also defines Krylov and Arnoldi decompositions of an operator on an
+orthonormal family, relates them to the matrix decompositions of
+`Numlib.LinearAlgebra.Matrix.KrylovDecomposition`, and proves that an Arnoldi decomposition with
+positive subdiagonal is the Arnoldi process from its first column.
 
 ## Main definitions
 
-* `Krylov.lastVec β k`: the vector `β e_k` of `𝕜^k` (zero for `k = 0`), the sibling of
-  `Krylov.firstVec`; `Krylov.lastVec_succ` identifies it with `Pi.single (Fin.last k) β`.
-* `Arnoldi.basisMatrix A q k`: the `n × k` matrix `Q_k = [q_1 | ⋯ | q_k]` of Arnoldi vectors of
-  `Matrix.toEuclideanLin A` from `q`.
-* `Krylov.IsKrylovDecomposition A q B r b`, `Krylov.IsArnoldiDecomposition A q H r`: Krylov and
-  Arnoldi decompositions of an operator on an orthonormal family (the form of Saad's eigenvalue
-  book, Parlett and Stewart); `Matrix.isKrylovDecomposition_iff` and
-  `Matrix.isArnoldiDecomposition_iff` make the matrix predicates of
-  `Numlib/LinearAlgebra/Matrix/KrylovDecomposition` their `toEuclideanLin` instances.
+* `Krylov.lastVec`: the vector $\beta e_k \in \mathbb{K}^k$, whose last entry is $\beta$ and whose
+  other entries are $0$.
+* `Krylov.IsKrylovDecomposition`: a Krylov decomposition $A q_j = \sum_i B_{ij} q_i + b_j r$ of an
+  operator on an orthonormal family $(q_j)$ with residual $r$ orthogonal to it.
+* `Krylov.IsArnoldiDecomposition`: a Krylov decomposition with upper Hessenberg $H$ and
+  $b = e_{\mathrm{last}}$.
+* `Arnoldi.basisMatrix`: the $n \times k$ matrix $Q_k = [q_1 \mid \cdots \mid q_k]$ of Arnoldi
+  vectors of a matrix $A$ from a vector $q$.
 
 ## Main results
 
-* `Arnoldi.mul_basisMatrix` ([golub2013matrix] (10.5.2)) and `Lanczos.mul_basisMatrix`
-  ((10.1.4)): the Arnoldi and Lanczos relations in matrix form, at every step;
-  `Arnoldi.conjTranspose_basisMatrix_mul_self`, `Arnoldi.conjTranspose_basisMatrix_mulVec_w`,
-  `Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix`: orthonormal columns below the grade,
-  residual orthogonal to them, and `Qᴴ A Q = H`; `Arnoldi.range_basisMatrix`: the columns span the
-  Krylov subspace.
-* `Arnoldi.isArnoldiDecomposition`, `Arnoldi.isArnoldiDecomposition_basisMatrix`: the Arnoldi
-  process gives an Arnoldi decomposition below the grade.
-* `Krylov.IsArnoldiDecomposition.span_eq_subspace`: with an unreduced `H` the leading vectors of
-  any Arnoldi decomposition span the Krylov subspaces of its first vector.
-* `Matrix.IsArnoldiDecomposition.eq_basisMatrix`: the uniqueness of the Arnoldi process given its
-  first column — an Arnoldi decomposition with positive subdiagonal *is* the Arnoldi process. A
-  corollary of the implicit Q engine `Matrix.IsArnoldiDecomposition.implicitQ`.
-* `Matrix.range_krylovMatrix`, `Krylov.grade_eq_rank_krylovMatrix`: the Krylov subspace is the
-  range of the Krylov matrix, and the grade is its rank (the index `m = rank K(A, q₁, n)` of
-  [golub2013matrix] Theorem 10.1.1).
-* `Krylov.IsArnoldiDecomposition.hessenbergRelation`: every Arnoldi decomposition is a two-family
-  Hessenberg relation `Krylov.HessenbergRelation₂`, so the FOM/GMRES residual formulas apply to it.
-* `Matrix.exists_isUpperHessenberg_conj_lastCol` ([golub2013matrix] P10.5.2): a unitary reduction
-  to Hessenberg form sending a prescribed vector to a multiple of the last unit vector, which
-  Krylov–Schur restarting uses to return to Arnoldi form.
+* `Arnoldi.mul_basisMatrix`: the Arnoldi relation $A Q_{k+1} = Q_{k+1} H_{k+1} + w_k e_{k+1}^T$ at
+  every step, (10.5.2) of [golub2013matrix].
+* `Lanczos.mul_basisMatrix`: the Lanczos relation $A Q_{k+1} = Q_{k+1} T_{k+1} + w_k e_{k+1}^T$ for
+  Hermitian $A$, (10.1.4) of [golub2013matrix].
+* `Arnoldi.conjTranspose_basisMatrix_mul_self`, `Arnoldi.conjTranspose_basisMatrix_mulVec_w`,
+  `Arnoldi.conjTranspose_basisMatrix_mul_mul_basisMatrix`: below the grade, $Q_k$ has orthonormal
+  columns, the residual $w_k$ is orthogonal to them, and $Q_k^H A Q_k = H_k$.
+* `Arnoldi.range_basisMatrix`: the columns of $Q_k$ span the Krylov subspace $\mathcal{K}_k(A, q)$.
+* `Arnoldi.isArnoldiDecomposition`, `Arnoldi.isArnoldiDecomposition_basisMatrix`: below the grade,
+  the Arnoldi process gives an Arnoldi decomposition.
+* `Matrix.isKrylovDecomposition_iff`, `Matrix.isArnoldiDecomposition_iff`: the matrix decompositions
+  are the operator decompositions of `Matrix.toEuclideanLin A`.
+* `Krylov.IsArnoldiDecomposition.span_eq_subspace`: if $H$ is unreduced, the leading vectors of an
+  Arnoldi decomposition span the Krylov subspaces of its first vector.
+* `Matrix.IsArnoldiDecomposition.eq_basisMatrix`: an Arnoldi decomposition with positive subdiagonal
+  is the Arnoldi process from its first column. It follows from the implicit Q theorem
+  `Matrix.IsArnoldiDecomposition.implicitQ`.
+* `Matrix.range_krylovMatrix`, `Krylov.grade_eq_rank_krylovMatrix`: the Krylov subspace is the range
+  of the Krylov matrix, and the grade is its rank, the index $m = \operatorname{rank} K(A, q_1, n)$
+  of Theorem 10.1.1 of [golub2013matrix].
+* `Krylov.IsArnoldiDecomposition.hessenbergRelation`: every Arnoldi decomposition gives a two-family
+  Hessenberg relation `Krylov.HessenbergRelation₂`, so the residual formulas of FOM and GMRES apply
+  to it.
+* `Matrix.exists_isUpperHessenberg_conj_lastCol`: a unitary reduction to Hessenberg form that sends
+  a prescribed vector to a multiple of the last unit vector, Problem P10.5.2 of [golub2013matrix].
+  Krylov–Schur restarting uses it to return to Arnoldi form.
 
-Indices are `0`-based: column `j` of `Arnoldi.basisMatrix A q k` is the book's `q_{j+1}`.
+## Implementation notes
+
+* Indices start at $0$: column $j$ of `Arnoldi.basisMatrix A q k` is the vector $q_{j+1}$ of the
+  books.
+* The operator decompositions follow the form of [saad2011numerical], Parlett and Stewart. They need
+  no completeness and no finite dimension.
+* A matrix acts on `EuclideanSpace 𝕜 n` through `Matrix.toEuclideanLin`, and a column `Q.col j`
+  becomes a vector through `WithLp.toLp 2`.
 -/
 
 open Matrix Finset
@@ -61,13 +79,14 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 
 namespace Krylov
 
-/-- `β e_k ∈ 𝕜^k`, the last unit vector scaled by `β` (the zero vector when `k = 0`); the sibling
-of `Krylov.firstVec`. -/
+/-- The vector $\beta e_k \in \mathbb{K}^k$: its last entry is $\beta$ and its other entries are
+$0$. For $k = 0$ it is the zero vector of $\mathbb{K}^0$. It is the counterpart of
+`Krylov.firstVec`. -/
 def lastVec (β : 𝕜) (k : ℕ) : Fin k → 𝕜 :=
   fun j => if (j : ℕ) + 1 = k then β else 0
 
-/-- On `Fin (k + 1)` the last unit vector is `Pi.single (Fin.last k)`: the Krylov layer's `β e_k`
-meets the matrix layer's (`Matrix.IsArnoldiDecomposition`). -/
+/-- On $\operatorname{Fin}(k + 1)$, the vector $\beta e_{k+1}$ is `Pi.single (Fin.last k) β`. This
+connects the vector of the Krylov layer with the form that `Matrix.IsArnoldiDecomposition` uses. -/
 theorem lastVec_succ (β : 𝕜) (k : ℕ) :
     lastVec β (k + 1) = Pi.single (Fin.last k) β := by
   ext j
@@ -79,25 +98,34 @@ section Operator
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] {m : Type*} [Fintype m]
 
-/-- A **Krylov decomposition** of an operator (Stewart; [golub2013matrix] §10.5.4 in matrix form):
-an orthonormal family `q`, a residual `r` orthogonal to it, and `A q_j = ∑ᵢ B i j q_i + b_j r`. No
-completeness or finite dimension is assumed. -/
+/-- A **Krylov decomposition** of a linear operator $A$ on an inner product space $E$, after
+Stewart. It consists of a family $(q_j)_{j \in m}$ in $E$ indexed by a finite type, a matrix
+$B \in \mathbb{K}^{m \times m}$, a residual $r \in E$ and a vector $b \in \mathbb{K}^m$, such
+that $(q_j)$ is orthonormal, $\langle q_j, r \rangle = 0$ for every $j$, and
+$$A q_j = \sum_i B_{ij} q_i + b_j r \quad \text{for every } j.$$
+In matrix form this is §10.5.4 of [golub2013matrix].
+
+No completeness and no finite dimension are assumed. -/
 structure IsKrylovDecomposition (A : E →ₗ[𝕜] E) (q : m → E) (B : Matrix m m 𝕜) (r : E)
     (b : m → 𝕜) : Prop where
-  /-- The family is orthonormal. -/
+  /-- The family $(q_j)$ is orthonormal. -/
   orthonormal : Orthonormal 𝕜 q
-  /-- The residual is orthogonal to the family. -/
+  /-- The residual $r$ is orthogonal to every $q_j$. -/
   inner_residual : ∀ j, inner 𝕜 (q j) r = 0
-  /-- The decomposition, column by column. -/
+  /-- The decomposition, column by column: $A q_j = \sum_i B_{ij} q_i + b_j r$. -/
   apply_eq : ∀ j, A (q j) = ∑ i, B i j • q i + b j • r
 
-/-- An **Arnoldi decomposition** of an operator with `k + 1` vectors: a Krylov decomposition with
-upper Hessenberg `H` and `b = e_last`, i.e. `A q_j = ∑_{i ≤ j+1} h_{ij} q_i` for `j < k` and
-`A q_k = ∑_{i ≤ k} h_{ik} q_i + r`. -/
+/-- An **Arnoldi decomposition** of a linear operator $A$ with $k + 1$ vectors $q_0, \dots, q_k$: a
+Krylov decomposition with an upper Hessenberg matrix $H \in \mathbb{K}^{(k+1) \times (k+1)}$ and
+$b = e_{\mathrm{last}}$. That is, $(q_j)$ is orthonormal, $r$ is orthogonal to every $q_j$, and
+$$A q_j = \sum_{i \le j+1} h_{ij} q_i \quad (j < k), \qquad A q_k = \sum_{i \le k} h_{ik} q_i +
+  r.$$
+
+The vector $e_{\mathrm{last}}$ is `Pi.single (Fin.last k) 1`. -/
 structure IsArnoldiDecomposition {k : ℕ} (A : E →ₗ[𝕜] E) (q : Fin (k + 1) → E)
     (H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜) (r : E) : Prop
     extends IsKrylovDecomposition A q H r (Pi.single (Fin.last k) 1) where
-  /-- The coefficient matrix is upper Hessenberg. -/
+  /-- The coefficient matrix $H$ is upper Hessenberg. -/
   isUpperHessenberg : H.IsUpperHessenberg
 
 namespace IsArnoldiDecomposition
@@ -105,8 +133,9 @@ namespace IsArnoldiDecomposition
 variable {k : ℕ} {A : E →ₗ[𝕜] E} {q : Fin (k + 1) → E}
   {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} {r : E}
 
-/-- The Arnoldi recurrence of an operator-level decomposition, for `i < k`:
-`h_{i+1,i} q_{i+1} = A q_i − ∑_{l ≤ i} h_{l,i} q_l`. -/
+/-- The Arnoldi recurrence of an Arnoldi decomposition: for $i < k$,
+$$h_{i+1,i} \, q_{i+1} = A q_i - \sum_{l \le i} h_{li} q_l.$$
+-/
 theorem smul_succ (h : IsArnoldiDecomposition A q H r) (i : Fin k) :
     H i.succ i.castSucc • q i.succ =
       A (q i.castSucc) - ∑ l ∈ Iic i.castSucc, H l i.castSucc • q l := by
@@ -124,8 +153,9 @@ theorem smul_succ (h : IsArnoldiDecomposition A q H r) (i : Fin k) :
     omega
   rw [h.isUpperHessenberg l i.castSucc ⟨i.succ, Fin.castSucc_lt_succ, hsl⟩, zero_smul]
 
-/-- The vectors of an Arnoldi decomposition with unreduced `H` lie in the Krylov subspaces of the
-first one: `q_j ∈ 𝒦_{t+1}(A, q_0)` for `j ≤ t`. -/
+/-- If $H$ is unreduced upper Hessenberg, the vectors of an Arnoldi decomposition lie in the Krylov
+subspaces of the first vector: $q_j \in \mathcal{K}_{t+1}(A, q_0)$ for all $t$ and all
+$j \le t$. -/
 theorem mem_subspace (h : IsArnoldiDecomposition A q H r) (hH : H.IsUnreducedUpperHessenberg)
     (t : ℕ) : ∀ j : Fin (k + 1), (j : ℕ) ≤ t → q j ∈ subspace A (q 0) (t + 1) := by
   induction t with
@@ -151,10 +181,14 @@ theorem mem_subspace (h : IsArnoldiDecomposition A q H r) (hH : H.IsUnreducedUpp
       have := Fin.le_def.1 (mem_Iic.1 hl)
       simpa [hi] using this
 
-/-- With an unreduced `H`, the leading `i` vectors of an Arnoldi decomposition span the Krylov
-subspace `𝒦_i(A, q_0)` ([golub2013matrix] §10.5.3: after a restart "we are all set to perform
-step `j + 1` of the Arnoldi iteration"). The inclusion is `mem_subspace`; both sides have dimension
-`i`, the left one because the vectors are orthonormal. -/
+/-- Let $(q, H, r)$ be an Arnoldi decomposition of $A$ with $k + 1$ vectors and $H$ unreduced upper
+Hessenberg. For $i \le k + 1$, the leading $i$ vectors span the Krylov subspace of $q_0$:
+$$\operatorname{span}\{q_0, \dots, q_{i-1}\} = \mathcal{K}_i(A, q_0).$$
+This is the fact behind the remark in §10.5.3 of [golub2013matrix] that after a restart "we are
+all set to perform step $j + 1$ of the Arnoldi iteration".
+
+The inclusion is `Krylov.IsArnoldiDecomposition.mem_subspace`. Both sides have dimension $i$,
+the left side because the vectors are orthonormal. -/
 theorem span_eq_subspace (h : IsArnoldiDecomposition A q H r) (hH : H.IsUnreducedUpperHessenberg)
     {i : ℕ} (hi : i ≤ k + 1) :
     Submodule.span 𝕜 (Set.range fun a : Fin i => q (Fin.castLE hi a)) = subspace A (q 0) i := by
@@ -173,11 +207,16 @@ theorem span_eq_subspace (h : IsArnoldiDecomposition A q H r) (hH : H.IsUnreduce
   calc Module.finrank 𝕜 (subspace A (q 0) i) ≤ Fintype.card (Fin i) := finrank_range_le_card _
     _ = i := Fintype.card_fin i
 
-/-- **The bridge to the Hessenberg relation** (`Krylov.HessenbergRelation₂`,
-`Numlib/Krylov/Hessenberg`): extending an Arnoldi decomposition by `z_j = q_j` (`0` beyond `k`),
-`v_j = q_j` for `j ≤ k`, `v_{k+1} = r` (`0` beyond), `h_{ij} = H_{ij}` for `i, j ≤ k`,
-`h_{k+1,k} = 1` (`0` otherwise), gives a two-family Hessenberg relation, so that every FOM/GMRES
-residual formula stated through it applies to an Arnoldi decomposition. -/
+/-- Every Arnoldi decomposition gives a **two-family Hessenberg relation**
+`Krylov.HessenbergRelation₂`. Precisely, for an Arnoldi decomposition $(q, H, r)$ of $A$ with
+$k + 1$ vectors, there are sequences $(z_j)$, $(v_j)$ in $E$ and coefficients $(c_{ij})$ that
+satisfy the Hessenberg relation $A z_j = \sum_{i \le j+1} c_{ij} v_i$, with $z_j = v_j = q_j$
+for $j \le k$, $v_{k+1} = r$, and $c_{ij} = h_{ij}$ for $i, j \le k$.
+
+The construction takes $z_j = q_j$ for $j \le k$ and $z_j = 0$ beyond, $v_j = q_j$ for
+$j \le k$, $v_{k+1} = r$ and $v_j = 0$ beyond, $c_{ij} = h_{ij}$ for $i, j \le k$,
+$c_{k+1,k} = 1$, and $c_{ij} = 0$ otherwise. Every residual formula of FOM and GMRES that is
+stated through `Krylov.HessenbergRelation₂` then applies to an Arnoldi decomposition. -/
 theorem hessenbergRelation (h : IsArnoldiDecomposition A q H r) :
     ∃ (z v : ℕ → E) (c : ℕ → ℕ → 𝕜), HessenbergRelation₂ A z v c ∧
       (∀ j : Fin (k + 1), z j = q j ∧ v j = q j) ∧ v (k + 1) = r ∧
@@ -238,9 +277,16 @@ namespace Arnoldi
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The Arnoldi relation at every step, column by column: for `j ≤ k`,
-`A v_j = ∑_{i ≤ k} h_{ij} v_i + [j = k] w_k` ([golub2013matrix] (10.5.2)). It holds past
-breakdown, where both sides vanish. -/
+/-- The Arnoldi relation at every step, column by column. Let $v_j$ be the Arnoldi vectors of $A$
+from $b$ (`Arnoldi.vec`), $h_{ij} = \langle v_i, A v_j \rangle$ the Arnoldi coefficients, and
+$w_k = A v_k - \sum_{i \le k} h_{ik} v_i$ the unnormalized next vector (`Arnoldi.w`). For
+$j \le k$,
+$$A v_j = \sum_{i \le k} h_{ij} v_i + [j = k] \, w_k.$$
+This is (10.5.2) of [golub2013matrix].
+
+The relation holds also after a breakdown, where both sides are $0$. The coefficients are the
+entries of `Arnoldi.hessenbergSq A b (k + 1)`, and the indicator $[j = k]$ is the entry of
+`Krylov.lastVec 1 (k + 1)`. -/
 theorem apply_vec_eq_sum_add_lastVec (A : E →ₗ[𝕜] E) (b : E) (k : ℕ) (j : Fin (k + 1)) :
     A (vec A b j) = ∑ i : Fin (k + 1), hessenbergSq A b (k + 1) i j • vec A b i +
       Krylov.lastVec (1 : 𝕜) (k + 1) j • w A b k := by
@@ -256,9 +302,13 @@ theorem apply_vec_eq_sum_add_lastVec (A : E →ₗ[𝕜] E) (b : E) (k : ℕ) (j
     simp only [Krylov.lastVec, hj', ↓reduceIte, zero_smul, add_zero]
     exact apply_vec_of_le A b (n := k + 1) (by have := j.isLt; omega)
 
-/-- The Arnoldi process gives an Arnoldi decomposition below the grade: for `k + 1 ≤ grade A b`,
-the vectors `v_0, …, v_k` are orthonormal, `w_k` is orthogonal to them, and
-`A v_j = ∑ h_{ij} v_i + [j = k] w_k` with `H_{k+1}` upper Hessenberg. -/
+/-- The Arnoldi process gives an Arnoldi decomposition below the grade. Let the Krylov space of $A$
+and $b$ be finite-dimensional, and let $k + 1 \le \operatorname{grade}(A, b)$. Then the Arnoldi
+vectors $v_0, \dots, v_k$, the square Hessenberg matrix $H_{k+1}$ of Arnoldi coefficients, and
+the residual $w_k$ form an Arnoldi decomposition of $A$: the vectors are orthonormal, $w_k$ is
+orthogonal to them, $H_{k+1}$ is upper Hessenberg, and
+$$A v_j = \sum_{i \le k} h_{ij} v_i + [j = k] \, w_k \quad (j \le k).$$
+-/
 theorem isArnoldiDecomposition (A : E →ₗ[𝕜] E) (b : E)
     [FiniteDimensional 𝕜 (Krylov.fullSubspace A b)] {k : ℕ} (hk : k + 1 ≤ Krylov.grade A b) :
     Krylov.IsArnoldiDecomposition A (fun j : Fin (k + 1) => vec A b j) (hessenbergSq A b (k + 1))
@@ -283,7 +333,9 @@ namespace Matrix
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- The matrix Krylov decomposition is the `toEuclideanLin` instance of the operator one. -/
+/-- The matrix Krylov decomposition $A Q = Q B + r b^T$ (`Matrix.IsKrylovDecomposition`) holds if
+and only if the operator `Matrix.toEuclideanLin A` has the Krylov decomposition
+`Krylov.IsKrylovDecomposition` on the columns of $Q$, with the same $B$, $r$ and $b$. -/
 theorem isKrylovDecomposition_iff {A : Matrix n n 𝕜} {Q : Matrix n m 𝕜} {B : Matrix m m 𝕜}
     {r : n → 𝕜} {b : m → 𝕜} :
     IsKrylovDecomposition A Q B r b ↔
@@ -315,7 +367,10 @@ theorem isKrylovDecomposition_iff {A : Matrix n n 𝕜} {Q : Matrix n m 𝕜} {B
     rw [this]
     simp only [WithLp.toLp_add, WithLp.toLp_sum, WithLp.toLp_smul]
 
-/-- The matrix Arnoldi decomposition is the `toEuclideanLin` instance of the operator one. -/
+/-- The matrix Arnoldi decomposition $A Q = Q H + r e_{\mathrm{last}}^T$ with $H$ upper Hessenberg
+(`Matrix.IsArnoldiDecomposition`) holds if and only if the operator `Matrix.toEuclideanLin A`
+has the Arnoldi decomposition `Krylov.IsArnoldiDecomposition` on the columns of $Q$, with the
+same $H$ and $r$. -/
 theorem isArnoldiDecomposition_iff {k : ℕ} {A : Matrix n n 𝕜} {Q : Matrix n (Fin (k + 1)) 𝕜}
     {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} {r : n → 𝕜} :
     IsArnoldiDecomposition A Q H r ↔
@@ -324,9 +379,12 @@ theorem isArnoldiDecomposition_iff {k : ℕ} {A : Matrix n n 𝕜} {Q : Matrix n
   ⟨fun h => ⟨isKrylovDecomposition_iff.1 h.toIsKrylovDecomposition, h.isUpperHessenberg⟩,
     fun h => ⟨isKrylovDecomposition_iff.2 h.toIsKrylovDecomposition, h.isUpperHessenberg⟩⟩
 
-/-- With an unreduced `H`, the leading `i` columns of an Arnoldi decomposition span the Krylov
-subspace of `A` on the first column (`Krylov.IsArnoldiDecomposition.span_eq_subspace`, read for
-matrices). -/
+/-- Let $A Q = Q H + r e_{\mathrm{last}}^T$ be an Arnoldi decomposition of a matrix $A$ with $k + 1$
+columns, and let $H$ be unreduced upper Hessenberg. For $i \le k + 1$, the leading $i$ columns
+of $Q$ span the Krylov subspace $\mathcal{K}_i(A, q_1)$ of the first column $q_1 = Q e_1$.
+
+This is `Krylov.IsArnoldiDecomposition.span_eq_subspace` for `Matrix.toEuclideanLin A`. The
+first column is `Q *ᵥ Pi.single 0 1`. -/
 theorem IsArnoldiDecomposition.range_eq_subspace {k : ℕ} {A : Matrix n n 𝕜}
     {Q : Matrix n (Fin (k + 1)) 𝕜} {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} {r : n → 𝕜}
     (h : IsArnoldiDecomposition A Q H r) (hH : H.IsUnreducedUpperHessenberg) {i : ℕ}
@@ -336,8 +394,8 @@ theorem IsArnoldiDecomposition.range_eq_subspace {k : ℕ} {A : Matrix n n 𝕜}
   rw [mulVec_single_one]
   exact (isArnoldiDecomposition_iff.1 h).span_eq_subspace hH hi
 
-/-- `K(A, q, k)` spans the Krylov subspace: the range of the Krylov matrix is `𝒦_k(A, q)`
-([golub2013matrix] §10.1.1). -/
+/-- The range of the Krylov matrix $K(A, q, k) = [q \mid Aq \mid \cdots \mid A^{k-1} q]$ is the
+Krylov subspace $\mathcal{K}_k(A, q)$, as in §10.1.1 of [golub2013matrix]. -/
 theorem range_krylovMatrix (A : Matrix n n 𝕜) (q : n → 𝕜) (k : ℕ) :
     LinearMap.range (toEuclideanLin (krylovMatrix A q k)) =
       Krylov.subspace (toEuclideanLin A) (WithLp.toLp 2 q) k := by
@@ -346,8 +404,9 @@ theorem range_krylovMatrix (A : Matrix n n 𝕜) (q : n → 𝕜) (k : ℕ) :
 
 end Matrix
 
-/-- The grade is the rank of the Krylov matrix: the termination index `m = rank K(A, q₁, n)` of
-[golub2013matrix] Theorem 10.1.1. -/
+/-- The grade of $q$ with respect to a matrix $A \in \mathbb{K}^{n \times n}$ is the rank of the
+Krylov matrix $K(A, q, n)$. This is the termination index $m = \operatorname{rank} K(A, q_1, n)$
+of Theorem 10.1.1 of [golub2013matrix]. -/
 theorem Krylov.grade_eq_rank_krylovMatrix (A : Matrix n n 𝕜) (q : n → 𝕜) :
     Krylov.grade (toEuclideanLin A) (WithLp.toLp 2 q) =
       (krylovMatrix A q (Fintype.card n)).rank := by
@@ -361,21 +420,25 @@ theorem Krylov.grade_eq_rank_krylovMatrix (A : Matrix n n 𝕜) (q : n → 𝕜)
 
 namespace Arnoldi
 
-/-- The matrix `Q_k = [q_1 | ⋯ | q_k]` of Arnoldi vectors of `toEuclideanLin A` from `q` (for
-Hermitian `A`, Lanczos vectors). Past the grade its columns are `0`. -/
+/-- The matrix $Q_k = [q_1 \mid \cdots \mid q_k]$ of a matrix $A \in \mathbb{K}^{n \times n}$ and a
+vector $q$: column $j$ is the Arnoldi vector $v_j$ of `Matrix.toEuclideanLin A` from $q$. For
+Hermitian $A$ the columns are the Lanczos vectors.
+
+The Arnoldi vectors are $0$ after a breakdown, so the columns of $Q_k$ past the grade are $0$. -/
 noncomputable def basisMatrix (A : Matrix n n 𝕜) (q : EuclideanSpace 𝕜 n) (k : ℕ) :
     Matrix n (Fin k) 𝕜 :=
   Matrix.of fun i j => (vec (toEuclideanLin A) q j).ofLp i
 
 variable (A : Matrix n n 𝕜) (q : EuclideanSpace 𝕜 n)
 
-/-- The columns of `Q_k` are the Arnoldi vectors. -/
+/-- Column $j$ of $Q_k$ is the Arnoldi vector $v_j$. -/
 theorem col_basisMatrix (k : ℕ) (j : Fin k) :
     (basisMatrix A q k).col j = (vec (toEuclideanLin A) q j).ofLp :=
   rfl
 
-/-- The columns of `Q_k` span the Krylov subspace, for every `k` ([golub2013matrix] (10.5.1),
-Theorem 10.1.1). -/
+/-- For every $k$, the columns of $Q_k$ span the Krylov subspace:
+$\operatorname{range} Q_k = \mathcal{K}_k(A, q)$. This is (10.5.1) and Theorem 10.1.1 of
+[golub2013matrix]. -/
 theorem range_basisMatrix (k : ℕ) :
     LinearMap.range (toEuclideanLin (basisMatrix A q k)) =
       Krylov.subspace (toEuclideanLin A) q k := by
@@ -385,7 +448,8 @@ theorem range_basisMatrix (k : ℕ) :
   simp only [col_basisMatrix, WithLp.toLp_ofLp, Set.mem_range, Set.mem_image, Set.mem_Iio]
   exact ⟨fun ⟨j, hj⟩ => ⟨j, j.isLt, hj⟩, fun ⟨j, hj, hx⟩ => ⟨⟨j, hj⟩, hx⟩⟩
 
-/-- Orthonormal columns below the grade: `Q_kᴴ Q_k = 1` for `k ≤ grade`. -/
+/-- Below the grade, $Q_k$ has orthonormal columns: if $k \le \operatorname{grade}(A, q)$, then
+$Q_k^H Q_k = I$. -/
 theorem conjTranspose_basisMatrix_mul_self {k : ℕ} (hk : k ≤ Krylov.grade (toEuclideanLin A) q) :
     (basisMatrix A q k)ᴴ * basisMatrix A q k = 1 := by
   rw [Matrix.conjTranspose_mul_self_eq_one_iff_orthonormal]
@@ -393,7 +457,8 @@ theorem conjTranspose_basisMatrix_mul_self {k : ℕ} (hk : k ≤ Krylov.grade (t
   exact ⟨fun j => norm_vec_eq_one_of_lt_grade _ q (by have := j.isLt; omega),
     fun i j hij => inner_vec_eq_zero _ q fun h => hij (Fin.ext h)⟩
 
-/-- The residual `w_k` is orthogonal to the columns of `Q_{k+1}`. -/
+/-- For every $k$, the residual $w_k$ is orthogonal to the columns of $Q_{k+1}$:
+$Q_{k+1}^H w_k = 0$. -/
 theorem conjTranspose_basisMatrix_mulVec_w (k : ℕ) :
     (basisMatrix A q (k + 1))ᴴ *ᵥ (w (toEuclideanLin A) q k).ofLp = 0 := by
   rw [Matrix.conjTranspose_mulVec_eq_zero_iff]
@@ -403,8 +468,14 @@ theorem conjTranspose_basisMatrix_mulVec_w (k : ℕ) :
   exact Submodule.inner_right_of_mem_orthogonal (vec_mem_subspace_of_lt _ q j.isLt)
     (Submodule.sub_starProjection_mem_orthogonal _)
 
-/-- **The Arnoldi relation in matrix form** ([golub2013matrix] (10.5.2), [saad2003iterative]
-(6.7)), at every step: `A Q_{k+1} = Q_{k+1} H_{k+1} + w_k e_{k+1}ᵀ`. -/
+/-- The **Arnoldi relation in matrix form**: for a matrix $A$, a vector $q$ and every $k$,
+$$A Q_{k+1} = Q_{k+1} H_{k+1} + w_k e_{k+1}^T,$$
+where $H_{k+1}$ is the square Hessenberg matrix of Arnoldi coefficients (`Arnoldi.hessenbergSq`)
+and $w_k$ is the unnormalized next Arnoldi vector (`Arnoldi.w`). This is (10.5.2) of
+[golub2013matrix] and (6.7) of [saad2003iterative].
+
+No grade hypothesis is needed. The vector $e_{k+1}$ is `Krylov.lastVec 1 (k + 1)`, and
+$w_k e_{k+1}^T$ is `vecMulVec`. -/
 theorem mul_basisMatrix (k : ℕ) :
     A * basisMatrix A q (k + 1) =
       basisMatrix A q (k + 1) * hessenbergSq (toEuclideanLin A) q (k + 1) +
@@ -417,8 +488,9 @@ theorem mul_basisMatrix (k : ℕ) :
   rw [hx]
   simp [Matrix.mul_apply, vecMulVec_apply, Finset.sum_apply, basisMatrix, mul_comm]
 
-/-- The Arnoldi process gives an Arnoldi decomposition of the matrix below the grade:
-`Q_{k+1}`, `H_{k+1}`, `w_k` for `k + 1 ≤ grade`. -/
+/-- The Arnoldi process gives an Arnoldi decomposition of a matrix below the grade: if
+$k + 1 \le \operatorname{grade}(A, q)$, then $A Q_{k+1} = Q_{k+1} H_{k+1} + w_k e_{k+1}^T$ is a
+`Matrix.IsArnoldiDecomposition`. -/
 theorem isArnoldiDecomposition_basisMatrix {k : ℕ}
     (hk : k + 1 ≤ Krylov.grade (toEuclideanLin A) q) :
     Matrix.IsArnoldiDecomposition A (basisMatrix A q (k + 1))
@@ -427,7 +499,10 @@ theorem isArnoldiDecomposition_basisMatrix {k : ℕ}
   simpa only [col_basisMatrix, WithLp.toLp_ofLp] using
     isArnoldiDecomposition (toEuclideanLin A) q hk
 
-/-- `Q_kᴴ A Q_k = H_k` below the grade ([golub2013matrix] (10.1.6) and §10.5.1). -/
+/-- Below the grade, the Hessenberg matrix is the projection of $A$ onto the Krylov subspace: if
+$k \le \operatorname{grade}(A, q)$, then
+$$Q_k^H A Q_k = H_k.$$
+This is (10.1.6) and §10.5.1 of [golub2013matrix]. -/
 theorem conjTranspose_basisMatrix_mul_mul_basisMatrix {k : ℕ}
     (hk : k ≤ Krylov.grade (toEuclideanLin A) q) :
     (basisMatrix A q k)ᴴ * A * basisMatrix A q k = hessenbergSq (toEuclideanLin A) q k := by
@@ -437,8 +512,13 @@ theorem conjTranspose_basisMatrix_mul_mul_basisMatrix {k : ℕ}
 
 end Arnoldi
 
-/-- **The Lanczos relation in matrix form** ([golub2013matrix] (10.1.4)): for Hermitian `A`,
-`A Q_{k+1} = Q_{k+1} T_{k+1} + w_k e_{k+1}ᵀ` with the real tridiagonal `T_{k+1}`. -/
+/-- The **Lanczos relation in matrix form**: for a Hermitian matrix $A$, a vector $q$ and every $k$,
+$$A Q_{k+1} = Q_{k+1} T_{k+1} + w_k e_{k+1}^T,$$
+where $T_{k+1}$ is the real symmetric tridiagonal Lanczos matrix (`Lanczos.tridiag`). This is
+(10.1.4) of [golub2013matrix].
+
+The hypothesis "Hermitian" is that `Matrix.toEuclideanLin A` is symmetric. The real matrix
+$T_{k+1}$ is embedded entrywise into the scalar field. -/
 theorem Lanczos.mul_basisMatrix {A : Matrix n n 𝕜} (hA : (toEuclideanLin A).IsSymmetric)
     (q : EuclideanSpace 𝕜 n) (k : ℕ) :
     A * Arnoldi.basisMatrix A q (k + 1) =
@@ -449,12 +529,19 @@ theorem Lanczos.mul_basisMatrix {A : Matrix n n 𝕜} (hA : (toEuclideanLin A).I
   exact Arnoldi.mul_basisMatrix A q k
 
 open scoped ComplexOrder in
-/-- **Uniqueness of the Arnoldi process given its first column** (the `k`-step implicit Q theorem
-with positive normalization): an Arnoldi decomposition with `k + 1` columns and positive real
-subdiagonal *is* the Arnoldi process from its first column `q`: `k + 1 ≤ grade`, `Q = Q_{k+1}`,
-`H = H_{k+1}` and `r = w_k`. The engine `Matrix.IsArnoldiDecomposition.implicitQ` compares it with
-`Arnoldi.isArnoldiDecomposition_basisMatrix`; both subdiagonals are positive, which forces the
-unimodular diagonal to be `1`. -/
+/-- **Uniqueness of the Arnoldi process given its first column**, the $k$-step implicit Q theorem
+with positive normalization. Let $A Q = Q H + r e_{\mathrm{last}}^T$ be an Arnoldi decomposition
+of a matrix $A$ with $k + 1$ columns, whose subdiagonal entries $h_{i+1,i}$ are positive real
+numbers for $i < k$. Let $q = Q e_1$ be the first column. Then the decomposition is the Arnoldi
+process from $q$:
+$$k + 1 \le \operatorname{grade}(A, q), \qquad Q = Q_{k+1}, \qquad H = H_{k+1}, \qquad r =
+  w_k.$$
+
+The proof compares the decomposition with `Arnoldi.isArnoldiDecomposition_basisMatrix` through
+the implicit Q theorem `Matrix.IsArnoldiDecomposition.implicitQ`. Both subdiagonals are
+positive, so the diagonal factor of modulus $1$ that the implicit Q theorem gives is the
+identity. Positivity is stated in the order `ComplexOrder` of the scalar field, which makes a
+positive scalar real. -/
 theorem Matrix.IsArnoldiDecomposition.eq_basisMatrix {k : ℕ} {A : Matrix n n 𝕜}
     {Q : Matrix n (Fin (k + 1)) 𝕜} {H : Matrix (Fin (k + 1)) (Fin (k + 1)) 𝕜} {r : n → 𝕜}
     (h : IsArnoldiDecomposition A Q H r) (hpos : ∀ i : Fin k, 0 < H i.succ i.castSucc) :
@@ -523,12 +610,16 @@ end MatrixForm
 
 section LastCol
 
-/-- **Hessenberg reduction with a prescribed last column** ([golub2013matrix] P10.5.2, cited in
-§10.5.4): for `C` and `u` there is a unitary `Z` with `Zᴴ C Z` upper Hessenberg and
-`Zᴴ u = τ e_last`. A reflector `P` sends `u` to a multiple of `e₀`; the Householder reduction
-`Q` of `Pᴴ Cᴴ P` fixes `e₀`, so `W = P Q` has `Wᴴ u ∥ e₀` and `Wᴴ Cᴴ W` upper Hessenberg, i.e.
-`Wᴴ C W` lower Hessenberg; reversing the order of the columns of `W` turns lower into upper
-Hessenberg and `e₀` into `e_last`. -/
+/-- **Hessenberg reduction with a prescribed last column**. For every matrix
+$C \in \mathbb{K}^{(j+1) \times (j+1)}$ and every vector $u \in \mathbb{K}^{j+1}$, there are a
+unitary matrix $Z$ and a scalar $\tau$ such that $Z^H C Z$ is upper Hessenberg and
+$$Z^H u = \tau e_{\mathrm{last}}.$$
+This is Problem P10.5.2 of [golub2013matrix], cited in §10.5.4.
+
+Proof idea: a reflector $P$ sends $u$ to a multiple of $e_1$. The Householder reduction $Q$ of
+$P^H C^H P$ fixes $e_1$, so $W = PQ$ has $W^H u$ parallel to $e_1$, and $W^H C^H W$ is upper
+Hessenberg, that is, $W^H C W$ is lower Hessenberg. Reversing the order of the columns of $W$
+turns lower Hessenberg into upper Hessenberg and $e_1$ into $e_{\mathrm{last}}$. -/
 theorem Matrix.exists_isUpperHessenberg_conj_lastCol {j : ℕ}
     (C : Matrix (Fin (j + 1)) (Fin (j + 1)) 𝕜) (u : Fin (j + 1) → 𝕜) :
     ∃ Z ∈ unitaryGroup (Fin (j + 1)) 𝕜, (star Z * C * Z).IsUpperHessenberg ∧

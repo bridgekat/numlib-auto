@@ -6,33 +6,40 @@ import Mathlib.Order.GaloisConnection.Basic
 import Mathlib.Order.Hom.Basic
 
 /-!
-# A Galois connection restricts to an order isomorphism between the closed elements
+# The order isomorphism between the closed elements of a Galois connection
 
-For a Galois connection `l ⊣ u`, the elements of `α` fixed by `u ∘ l` and those of `β` fixed by
-`l ∘ u` correspond order-isomorphically, with `l` and `u` exchanging them. Mathlib has only the
-one-sided `ClosureOperator.gi`. Stated for a bare `GaloisConnection` on two `PartialOrder`s.
+Let $l \colon \alpha \to \beta$ and $u \colon \beta \to \alpha$ form a Galois connection between
+partial orders. The elements $a \in \alpha$ with $u(l(a)) = a$ and the elements $b \in \beta$ with
+$l(u(b)) = b$ correspond under an order isomorphism, and $l$ and $u$ exchange them. Mathlib has only
+the one-sided `ClosureOperator.gi`.
 
-Every "the operation is an involution on a characterised class" theorem of convex analysis is an
-instance: conjugacy on the closed convex functions on the two sides of a pairing (Rockafellar's
-Corollary 12.2.1), polarity on the closed convex cones (Theorem 14.1), the gauge and
-support-function correspondences. Those connections are antitone — presented, as Mathlib presents
-them, with one side an `OrderDual` — so the correspondences are order *anti*-isomorphisms.
+Every theorem of convex analysis of the form "the operation is an involution on a characterized
+class" is an instance. Examples are conjugacy on the closed convex functions on the two sides of a
+pairing (Corollary 12.2.1 of [rockafellar1970convex]), polarity on the closed convex cones (Theorem
+14.1 of [rockafellar1970convex]), and the gauge and support function correspondences. These
+connections are antitone. As in Mathlib, they are presented with one side an `OrderDual`, so the
+correspondences are order anti-isomorphisms.
 
-## Main results
+## Main definitions
 
-* `GaloisConnection.closedsOrderIso` — the isomorphism.
+* `GaloisConnection.closedsOrderIso`: the order isomorphism
+  $\{a : u(l(a)) = a\} \cong \{b : l(u(b)) = b\}$ given by $l$, with inverse $u$.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §12, §14.
+* The result is stated for a `GaloisConnection` between two partial orders, with no further
+  structure.
 -/
 
 namespace GaloisConnection
 
 variable {α β : Type*} [PartialOrder α] [PartialOrder β] {l : α → β} {u : β → α}
 
-/-- `{a // u (l a) = a}` and `{b // l (u b) = b}` are the two classes on which the connection's
-round trips are the identity, and `l`/`u` exchange them order-isomorphically. -/
+/-- Let $l \colon \alpha \to \beta$ and $u \colon \beta \to \alpha$ form a Galois connection between
+partial orders. Then $l$ restricts to an order isomorphism
+$$\{a \in \alpha : u(l(a)) = a\} \to \{b \in \beta : l(u(b)) = b\},$$
+with inverse the restriction of $u$. These are the two classes of elements on which the round
+trips $u \circ l$ and $l \circ u$ are the identity. -/
 def closedsOrderIso (gc : GaloisConnection l u) :
     {a : α // u (l a) = a} ≃o {b : β // l (u b) = b} where
   toFun a := ⟨l a.1, gc.l_u_l_eq_l a.1⟩
@@ -45,9 +52,11 @@ def closedsOrderIso (gc : GaloisConnection l u) :
     have := gc.monotone_u h
     rwa [a.2, a'.2] at this
 
+/-- The order isomorphism `GaloisConnection.closedsOrderIso` maps $a$ to $l(a)$. -/
 @[simp] theorem closedsOrderIso_apply (gc : GaloisConnection l u) (a : {a : α // u (l a) = a}) :
     (gc.closedsOrderIso a : β) = l a := rfl
 
+/-- The inverse of the order isomorphism `GaloisConnection.closedsOrderIso` maps $b$ to $u(b)$. -/
 @[simp] theorem closedsOrderIso_symm_apply (gc : GaloisConnection l u)
     (b : {b : β // l (u b) = b}) : (gc.closedsOrderIso.symm b : α) = u b := rfl
 

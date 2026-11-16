@@ -16,43 +16,73 @@ import Numlib.LinearAlgebra.Matrix.LU
 /-!
 # Block tridiagonal matrices and their block LU factorization
 
-A block tridiagonal matrix with `q × q` blocks ([golub2013matrix] §4.5.1–4.5.2; [higham2002accuracy]
-§13.2) is the scalar tridiagonal matrix `Matrix.tridiagonalOf E D F` of
-`Numlib.LinearAlgebra.Matrix.Hessenberg` *over the block ring* `Matrix (Fin q) (Fin q) K`, and the
-matrix the book writes is its flattening by Mathlib's `Matrix.comp`
-(`Matrix.blockTridiagonal E D F`, with the blocks in the order of `Matrix.tridiagonalOf`: sub,
-diagonal, super; `Matrix.compRingEquiv` is a ring isomorphism, so products and inverses
-transport).
+A block tridiagonal matrix with $q \times q$ blocks ([golub2013matrix], §4.5.1–4.5.2;
+[higham2002accuracy], §13.2) has diagonal blocks $D_0, \dots, D_N$, subdiagonal blocks
+$E_0, \dots, E_{N-1}$ and superdiagonal blocks $F_0, \dots, F_{N-1}$. Write
+$\operatorname{tridiag}(E, D, F)$ for it, with $E_i$ in block position $(i + 1, i)$ and $F_i$ in
+block position $(i, i + 1)$. It is the scalar tridiagonal matrix `Matrix.tridiagonalOf E D F` of
+`Numlib.LinearAlgebra.Matrix.Hessenberg` over the ring of $q \times q$ matrices, and the matrix that
+the source writes is its flattening to a matrix of order $(N + 1)q$.
 
-## The block LU recurrence
+The block LU factorization is a recurrence in a noncommutative ring. The pivots are $U_0 = D_0$ and
+$U_{i+1} = D_{i+1} - E_i U_i^{-1} F_i$, the multipliers are $L_i = E_i U_i^{-1}$, and when
+$U_0, \dots, U_{N-1}$ are invertible, $\operatorname{tridiag}(E, D, F) = \operatorname{tridiag}(L,
+I, 0) \operatorname{tridiag}(0, U, F)$. Strict block column diagonal dominance in the norm
+$\|\cdot\|_1$ makes all pivots invertible and the multipliers contractive, bounds the pivots by the
+matrix, and makes the matrix nonsingular. A block Cholesky factorization with given factors is also
+proved.
 
-The block LU factorization ([golub2013matrix] (4.5.3)–(4.5.4)) is a recurrence in a
-*noncommutative ring*: the pivots `U₀ = D₀`, `U_{i+1} = D_{i+1} − E_i U_i⁻¹ F_i`
-(`Matrix.tridiagonalLUPivot`, with `Ring.inverse`) and the multipliers `L_i = E_i U_i⁻¹`
-(`Matrix.tridiagonalLUMultiplier`), and when the pivots `U_0, …, U_{N−1}` are units,
-`tridiag(E, D, F) = tridiag(L, 1, 0) · tridiag(0, U, F)`, a unit lower bidiagonal times an upper
-bidiagonal matrix (`Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`), over any ring. The
-sequences are `ℕ`-indexed, the convention of the scalar Thomas recurrence `Matrix.thomasAlpha` of
-`Numlib.LinearAlgebra.Matrix.LU`, which is the case of a field
-(`Matrix.tridiagonalLUPivot_eq_thomasAlpha`, `Matrix.tridiagonalLUMultiplier_eq_thomasBeta`).
+## Main definitions
 
-## Block diagonal dominance
+* `Matrix.blockTridiagonal`: the flattened block tridiagonal matrix
+  $\operatorname{tridiag}(E, D, F)$.
+* `Matrix.tridiagonalLUPivot`, `Matrix.tridiagonalLUMultiplier`: the pivots $U_i$ and the
+  multipliers $L_i$ of the block LU recurrence.
+* `Matrix.IsStrictBlockColDiagDominant`: strict block column diagonal dominance in the norm
+  $\|\cdot\|_1$.
+* `Matrix.blockColOffNorm`: the sum $\|F_{i-1}\|_1 + \|E_i\|_1$ of the norms of the off-diagonal
+  blocks of block column $i$.
 
-Block column diagonal dominance in the induced `1`-norm ([golub2013matrix] (4.5.6), Feingold–Varga
-1962) is `Matrix.IsStrictBlockColDiagDominant`, for any square block matrix; on a block tridiagonal
-matrix it reads `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1`
-(`Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`, the off-diagonal column norm being
-`Matrix.blockColOffNorm`). It makes every pivot nonsingular with
-`‖U_i⁻¹‖₁ ≤ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁)`, the multipliers contractive, `‖L_i‖₁ < 1`
-((4.5.7), `Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`), the
-pivots bounded by the matrix, `‖U_i‖₁ ≤ ‖A‖₁` ((4.5.8)), and the matrix
-nonsingular. The Neumann bound behind all of them is `Matrix.inducedNorm_inv_one_sub_le` of
-`Numlib.Analysis.Matrix.OperatorNorm`.
+## Main results
 
-`Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` (`LU`) is the *labelling* form of the same
-shape statement; this module is the constructive form with the recurrence, and
-`Matrix.IsBlockLU.toBlock_recurrence_of_blockTridiagonal` reads the recurrence off a labelled
-block LU factorization ([quarteroni2000numerical] (3.58)).
+* `Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`: if $U_0, \dots, U_{N-1}$ are units,
+  then $\operatorname{tridiag}(E, D, F) = \operatorname{tridiag}(L, I, 0) \operatorname{tridiag}(0,
+  U, F)$, over any ring.
+* `Matrix.tridiagonalLUPivot_eq_thomasAlpha`, `Matrix.tridiagonalLUMultiplier_eq_thomasBeta`: over a
+  field, the block recurrence is the Thomas recurrence.
+* `Matrix.tridiagonalOf_eq_mul_of_mul_star`, `Matrix.blockTridiagonal_eq_mul_transpose`: the block
+  Cholesky factorization $\operatorname{tridiag}(E, D, E^*) = GG^*$ with a block lower bidiagonal
+  $G$.
+* `Matrix.isStrictBlockColDiagDominant_tridiagonalOf_iff`: on a block tridiagonal matrix, dominance
+  means $\|D_i^{-1}\|_1 (\|F_{i-1}\|_1 + \|E_i\|_1) < 1$ for every $i$, with invertible $D_i$.
+* `Matrix.IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot`: under dominance every pivot is
+  invertible, with $\|U_i^{-1}\|_1 \le \|D_i^{-1}\|_1 / (1 - \|D_i^{-1}\|_1 \|F_{i-1}\|_1)$.
+* `Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`: under dominance
+  $\|L_i\|_1 < 1$ ((4.5.7) of [golub2013matrix]).
+* `Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le`: under dominance
+  $\|U_i\|_1 \le \|A\|_1$ ((4.5.8) of [golub2013matrix]).
+* `Matrix.IsStrictBlockColDiagDominant.isUnit_blockTridiagonal`: a block tridiagonal matrix with
+  strict block column diagonal dominance is nonsingular.
+* `Matrix.IsBlockLU.toBlock_recurrence_of_blockTridiagonal`: the block Thomas recurrence for a block
+  LU factorization in the labelling form of `Matrix.IsBlockLU` ([quarteroni2000numerical], (3.58)).
+
+## Implementation notes
+
+* `Matrix.blockTridiagonal E D F` is `Matrix.comp` applied to `Matrix.tridiagonalOf E D F`. The
+  blocks come in the order of `Matrix.tridiagonalOf`: subdiagonal, diagonal, superdiagonal. Since
+  `Matrix.compRingEquiv` is a ring isomorphism, products and inverses transfer between the block
+  ring and the flattened matrices.
+* The recurrence uses `Ring.inverse`, which is $0$ at a non-unit. The sequences $E$, $D$, $F$ are
+  indexed by $\mathbb{N}$, as for the scalar Thomas recurrence `Matrix.thomasAlpha` of
+  `Numlib.LinearAlgebra.Matrix.LU`.
+* The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`, the matrix norm induced by the vector $1$-norm. The
+  Neumann bound behind the dominance results is `Matrix.inducedNorm_inv_one_sub_le` of
+  `Numlib.Analysis.Matrix.OperatorNorm`.
+* `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` of `Numlib.LinearAlgebra.Matrix.LU` states
+  that the factors of a block LU factorization of a block tridiagonal matrix are block bidiagonal,
+  with blocks given by a labelling of the indices. This module gives the constructive form with the
+  recurrence, and `Matrix.IsBlockLU.toBlock_recurrence_of_blockTridiagonal` reads the recurrence off
+  a factorization in the labelling form.
 -/
 
 open Finset
@@ -65,24 +95,30 @@ section Block
 
 variable {R : Type*} {N q : ℕ}
 
-/-- The block tridiagonal matrix ([golub2013matrix] (4.5.2)) with subdiagonal blocks `E i`,
-diagonal blocks `D i` and superdiagonal blocks `F i`, flattened: the tridiagonal matrix
-`tridiagonalOf E D F` over the block ring, read through `Matrix.comp`. The blocks are taken in the
-order of `Matrix.tridiagonalOf`. -/
+/-- The **block tridiagonal matrix** with subdiagonal blocks $E_0, \dots, E_{N-1}$, diagonal blocks
+$D_0, \dots, D_N$ and superdiagonal blocks $F_0, \dots, F_{N-1}$, all of size $q \times q$
+([golub2013matrix], (4.5.2)), as a matrix of order $(N + 1)q$:
+$$\operatorname{tridiag}(E, D, F) = \begin{bmatrix} D_0 & F_0 & & \\ E_0 & D_1 & \ddots & \\ &
+  \ddots & \ddots & F_{N-1} \\ & & E_{N-1} & D_N \end{bmatrix}.$$
+
+It is the tridiagonal matrix `Matrix.tridiagonalOf E D F` over the ring of $q \times q$
+matrices, flattened by `Matrix.comp`. The indices of the flattened matrix are pairs (block
+index, index within the block). -/
 def blockTridiagonal [Zero R] (E : Fin N → Matrix (Fin q) (Fin q) R)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (F : Fin N → Matrix (Fin q) (Fin q) R) :
     Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) R :=
   comp _ _ _ _ R (tridiagonalOf E D F)
 
-/-- The entries of a block tridiagonal matrix: the `(k, l)` entry of its `(i, j)` block. -/
+/-- The entry $(k, l)$ of the block $(i, j)$ of $\operatorname{tridiag}(E, D, F)$ is the entry
+$(k, l)$ of the block $(i, j)$ of the tridiagonal matrix over the block ring. -/
 theorem blockTridiagonal_apply [Zero R] (E : Fin N → Matrix (Fin q) (Fin q) R)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) R) (F : Fin N → Matrix (Fin q) (Fin q) R)
     (i j : Fin (N + 1)) (k l : Fin q) :
     blockTridiagonal E D F (i, k) (j, l) = tridiagonalOf E D F i j k l := rfl
 
-/-- The entries of a block tridiagonal matrix whose blocks are read off `ℕ`-indexed sequences:
-the `(k, l)` entry of block `(i, j)` is that of `D i` on the diagonal, of `E j` below it and of
-`F i` above it. -/
+/-- For blocks given by sequences $E$, $D$, $F$ indexed by $\mathbb{N}$, the entry $(k, l)$ of the
+block $(i, j)$ of $\operatorname{tridiag}(E, D, F)$ is $(D_i)_{kl}$ if $i = j$, $(E_j)_{kl}$ if
+$i = j + 1$, $(F_i)_{kl}$ if $j = i + 1$, and $0$ otherwise. -/
 theorem blockTridiagonal_apply_eq_ite [Zero R] (E D F : ℕ → Matrix (Fin q) (Fin q) R)
     (i j : Fin (N + 1)) (k l : Fin q) :
     blockTridiagonal (fun a : Fin N => E a) (fun a : Fin (N + 1) => D a) (fun a : Fin N => F a)
@@ -95,43 +131,62 @@ theorem blockTridiagonal_apply_eq_ite [Zero R] (E D F : ℕ → Matrix (Fin q) (
 
 end Block
 
-/-! ### The block LU recurrence -/
+/-!
+### The block LU recurrence
+
+The block LU factorization of [golub2013matrix], (4.5.3)–(4.5.4), is a recurrence in a
+noncommutative ring $R$. The pivots are $U_0 = D_0$ and $U_{i+1} = D_{i+1} - E_i U_i^{-1} F_i$, and
+the multipliers are $L_i = E_i U_i^{-1}$. If $U_0, \dots, U_{N-1}$ are units, then
+$\operatorname{tridiag}(E, D, F)$ is the product of the unit lower bidiagonal matrix
+$\operatorname{tridiag}(L, 1, 0)$ and the upper bidiagonal matrix $\operatorname{tridiag}(0, U, F)$.
+Over a field, this is the scalar Thomas recurrence of `Numlib.LinearAlgebra.Matrix.LU`.
+-/
 
 section Recurrence
 
 variable {R : Type*} [Ring R]
 
-/-- The pivots of the block LU recurrence ([golub2013matrix] (4.5.4)) over any ring:
-`U₀ = D₀` and `U_{i+1} = D_{i+1} − E_i U_i⁻¹ F_i` (`Ring.inverse`). -/
+/-- The **pivots** of the block LU recurrence ([golub2013matrix], (4.5.4)) over a ring $R$, for
+sequences $E$, $D$, $F$ in $R$:
+$$U_0 = D_0, \qquad U_{i+1} = D_{i+1} - E_i U_i^{-1} F_i.$$
+
+The inverse is `Ring.inverse`, which is $0$ at a non-unit. -/
 noncomputable def tridiagonalLUPivot (E D F : ℕ → R) : ℕ → R
   | 0 => D 0
   | i + 1 => D (i + 1) - E i * Ring.inverse (tridiagonalLUPivot E D F i) * F i
 
-/-- The multipliers of the block LU recurrence ([golub2013matrix] (4.5.4)):
-`L_i = E_i U_i⁻¹`, the solution of `L_i U_i = E_i`. -/
+/-- The **multipliers** of the block LU recurrence ([golub2013matrix], (4.5.4)):
+$L_i = E_i U_i^{-1}$, the solution of $L_i U_i = E_i$ when $U_i$ is a unit.
+
+The inverse is `Ring.inverse`, which is $0$ at a non-unit. -/
 noncomputable def tridiagonalLUMultiplier (E D F : ℕ → R) (i : ℕ) : R :=
   E i * Ring.inverse (tridiagonalLUPivot E D F i)
 
 variable (E D F : ℕ → R)
 
-/-- The first pivot is the first diagonal block. -/
+/-- The first pivot is the first diagonal block: $U_0 = D_0$. -/
 @[simp]
 theorem tridiagonalLUPivot_zero : tridiagonalLUPivot E D F 0 = D 0 := rfl
 
-/-- The pivot recurrence through the multipliers: `U_{i+1} = D_{i+1} − L_i F_i`. -/
+/-- The pivot recurrence in terms of the multipliers: $U_{i+1} = D_{i+1} - L_i F_i$. -/
 theorem tridiagonalLUPivot_succ (i : ℕ) :
     tridiagonalLUPivot E D F (i + 1) = D (i + 1) - tridiagonalLUMultiplier E D F i * F i := rfl
 
-/-- The multiplier solves `L_i U_i = E_i` when the pivot is a unit. -/
+/-- If the pivot $U_i$ is a unit, then the multiplier satisfies $L_i U_i = E_i$. -/
 theorem tridiagonalLUMultiplier_mul_tridiagonalLUPivot {i : ℕ}
     (h : IsUnit (tridiagonalLUPivot E D F i)) :
     tridiagonalLUMultiplier E D F i * tridiagonalLUPivot E D F i = E i :=
   Ring.inverse_mul_cancel_right _ _ h
 
-/-- **The block LU factorization** ([golub2013matrix] (4.5.3)) over any ring: if the pivots
-`U_0, …, U_{N−1}` are units, then `tridiag(E, D, F) = tridiag(L, 1, 0) · tridiag(0, U, F)` — a unit
-lower bidiagonal times an upper bidiagonal matrix. No hypothesis on the last pivot `U_N` (it may be
-singular, as for the scalar LU factorization). -/
+/-- **The block LU factorization** ([golub2013matrix], (4.5.3)). Let $R$ be a ring, and let $E$,
+$D$, $F$ be sequences in $R$. If the pivots $U_0, \dots, U_{N-1}$ are units, then
+$$\operatorname{tridiag}(E, D, F) = \operatorname{tridiag}(L, 1, 0) \cdot
+  \operatorname{tridiag}(0, U, F),$$
+the product of a unit lower bidiagonal and an upper bidiagonal matrix of order $N + 1$ over $R$.
+
+There is no hypothesis on the last pivot $U_N$, which may be singular, as for the scalar LU
+factorization. The tridiagonal matrices are `Matrix.tridiagonalOf` with the first $N$, $N + 1$
+and $N$ terms of the sequences. -/
 theorem tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot {N : ℕ}
     (hU : ∀ i, i < N → IsUnit (tridiagonalLUPivot E D F i)) :
     tridiagonalOf (N := N) (fun i => E i) (fun i => D i) (fun i => F i)
@@ -158,8 +213,8 @@ theorem tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot {N : ℕ}
        simp only [hi', Nat.add_sub_cancel, tridiagonalLUPivot_succ]
        abel1)
 
-/-- The pivots and multipliers over a field, by one induction (the two public halves are
-`Matrix.tridiagonalLUPivot_eq_thomasAlpha` and `Matrix.tridiagonalLUMultiplier_eq_thomasBeta`). -/
+/-- Over a field, the pivots and the multipliers of the block recurrence are the Thomas pivots and
+multipliers, proved together by one induction. -/
 private theorem tridiagonalLUPivot_eq_thomasAlpha_aux {K : Type*} [Field K] (E D F : ℕ → K)
     (i : ℕ) :
     tridiagonalLUPivot E D F i = thomasAlpha D (fun j => E (j - 1)) F i
@@ -177,16 +232,18 @@ private theorem tridiagonalLUPivot_eq_thomasAlpha_aux {K : Type*} [Field K] (E D
     rw [tridiagonalLUMultiplier, thomasBeta_succ, Ring.inverse_eq_inv', hU, div_eq_mul_inv]
     rfl
 
-/-- **Over a field the block recurrence is the Thomas recurrence** ([quarteroni2000numerical]
-(3.53)): the pivots are `U_i = α_i` for `Matrix.thomasAlpha` with the subdiagonal read one row
-lower (`b j = E (j − 1)`). -/
+/-- **Over a field, the block pivots are the Thomas pivots** ([quarteroni2000numerical], (3.53)).
+Let $K$ be a field and let $E$, $D$, $F$ be sequences in $K$. Then $U_i = \alpha_i$ for every
+$i$, where $\alpha$ is the Thomas recurrence `Matrix.thomasAlpha` with diagonal $a = D$,
+superdiagonal $c = F$ and subdiagonal read one row lower, $b_j = E_{j-1}$. -/
 theorem tridiagonalLUPivot_eq_thomasAlpha {K : Type*} [Field K] (E D F : ℕ → K) (i : ℕ) :
     tridiagonalLUPivot E D F i = thomasAlpha D (fun j => E (j - 1)) F i :=
   (tridiagonalLUPivot_eq_thomasAlpha_aux E D F i).1
 
-/-- **Over a field the block multipliers are the shifted Thomas multipliers**
-([quarteroni2000numerical] (3.53)): `L_i = β_{i+1}` for `Matrix.thomasBeta` with the subdiagonal
-read one row lower. -/
+/-- **Over a field, the block multipliers are the shifted Thomas multipliers**
+([quarteroni2000numerical], (3.53)). Let $K$ be a field and let $E$, $D$, $F$ be sequences in
+$K$. Then $L_i = \beta_{i+1}$ for every $i$, where $\beta$ is `Matrix.thomasBeta` with diagonal
+$a = D$, superdiagonal $c = F$ and subdiagonal $b_j = E_{j-1}$. -/
 theorem tridiagonalLUMultiplier_eq_thomasBeta {K : Type*} [Field K] (E D F : ℕ → K) (i : ℕ) :
     tridiagonalLUMultiplier E D F i = thomasBeta D (fun j => E (j - 1)) F (i + 1) :=
   (tridiagonalLUPivot_eq_thomasAlpha_aux E D F i).2
@@ -199,12 +256,19 @@ section Cholesky
 
 variable {R : Type*} [Ring R] [StarRing R]
 
-/-- **The block Cholesky factorization of a block tridiagonal matrix** ([golub2013matrix] §4.5,
-§11.5.9) over any star ring, the factors given: if `F_i G_iᴴ = E_i`, `G_0 G_0ᴴ = D_0` and
-`G_{i+1} G_{i+1}ᴴ + F_i F_iᴴ = D_{i+1}` for `i < N`, then
-`tridiag(E, D, Eᴴ) = tridiag(F, G, 0) · tridiag(0, Gᴴ, Fᴴ)`, a lower bidiagonal matrix times its
-adjoint (block by block; in the block ring `Matrix (Fin q) (Fin q) ℝ`, `star` is the transpose).
-The sequences are `ℕ`-indexed, as in `Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`. -/
+/-- **The block Cholesky factorization of a block tridiagonal matrix** ([golub2013matrix], §4.5 and
+§11.5.9), with the factors given. Let $R$ be a ring with an involution $*$, and let $E$, $D$,
+$G$, $F$ be sequences in $R$ with
+$$F_i G_i^* = E_i \ (i < N), \qquad G_0 G_0^* = D_0, \qquad G_{i+1} G_{i+1}^* + F_i F_i^* =
+  D_{i+1} \ (i < N).$$
+Then
+$$\operatorname{tridiag}(E, D, E^*) = \operatorname{tridiag}(F, G, 0) \cdot
+  \operatorname{tridiag}(0, G^*, F^*),$$
+a lower bidiagonal matrix times its conjugate transpose.
+
+The involution acts block by block. In the block ring of real $q \times q$ matrices, $*$ is the
+transpose. The sequences are indexed by $\mathbb{N}$, as in
+`Matrix.tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot`. -/
 theorem tridiagonalOf_eq_mul_of_mul_star {N : ℕ} (E D G F : ℕ → R)
     (hFG : ∀ i, i < N → F i * star (G i) = E i) (h0 : G 0 * star (G 0) = D 0)
     (hS : ∀ i, i < N → G (i + 1) * star (G (i + 1)) + F i * star (F i) = D (i + 1)) :
@@ -229,11 +293,17 @@ theorem tridiagonalOf_eq_mul_of_mul_star {N : ℕ} (E D G F : ℕ → R)
        rw [h1, hFG j (by omega)])
     | rw [← hFG i (by omega), star_mul, star_star]
 
-/-- **The block Cholesky factorization, flattened** ([golub2013matrix] §11.5.9): for real
-`q × q` blocks with `F_i G_iᵀ = E_i`, `G_0 G_0ᵀ = D_0` and `G_{i+1} G_{i+1}ᵀ + F_i F_iᵀ = D_{i+1}`,
-the block tridiagonal `A = [D₀ E₀ᵀ; E₀ D₁ E₁ᵀ; ⋱]` is `G Gᵀ` with the block lower bidiagonal
-`G = [G₀ 0; F₀ G₁ 0; ⋱]`: `Matrix.tridiagonalOf_eq_mul_of_mul_star` transported by the ring
-isomorphism `Matrix.compRingEquiv`. -/
+/-- **The block Cholesky factorization, flattened** ([golub2013matrix], §11.5.9). Let $E_i$, $D_i$,
+$G_i$, $F_i$ be real $q \times q$ matrices with
+$$F_i G_i^T = E_i \ (i < N), \qquad G_0 G_0^T = D_0, \qquad G_{i+1} G_{i+1}^T + F_i F_i^T =
+  D_{i+1} \ (i < N).$$
+Then the block tridiagonal matrix $A = \operatorname{tridiag}(E, D, E^T)$ is
+$A = \mathcal{G} \mathcal{G}^T$, where $\mathcal{G} = \operatorname{tridiag}(F, G, 0)$ is the
+block lower bidiagonal matrix with diagonal blocks $G_0, \dots, G_N$ and subdiagonal blocks
+$F_0, \dots, F_{N-1}$.
+
+The proof transfers `Matrix.tridiagonalOf_eq_mul_of_mul_star` along the ring isomorphism
+`Matrix.compRingEquiv`. -/
 theorem blockTridiagonal_eq_mul_transpose {N q : ℕ} (E D G F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hFG : ∀ i, i < N → F i * (G i)ᵀ = E i) (h0 : G 0 * (G 0)ᵀ = D 0)
     (hS : ∀ i, i < N → G (i + 1) * (G (i + 1))ᵀ + F i * (F i)ᵀ = D (i + 1)) :
@@ -256,30 +326,51 @@ theorem blockTridiagonal_eq_mul_transpose {N q : ℕ} (E D G F : ℕ → Matrix 
 
 end Cholesky
 
-/-! ### Block diagonal dominance -/
+/-!
+### Block diagonal dominance
+
+Block column diagonal dominance in the norm $\|\cdot\|_1$ induced by the vector $1$-norm is (4.5.6)
+of [golub2013matrix]; it goes back to Feingold and Varga (1962). On
+$\operatorname{tridiag}(E, D, F)$ it reads $\|D_i^{-1}\|_1 (\|F_{i-1}\|_1 + \|E_i\|_1) < 1$. It
+makes every pivot invertible with $\|U_i^{-1}\|_1 \le \|D_i^{-1}\|_1 / (1 - \|D_i^{-1}\|_1
+\|F_{i-1}\|_1)$, the multipliers contractive, $\|L_i\|_1 < 1$, the pivots bounded by the matrix,
+$\|U_i\|_1 \le \|A\|_1$, and the matrix nonsingular.
+-/
 
 section Dominance
 
 variable {𝕜 : Type*} [RCLike 𝕜] {q N : ℕ}
 
-/-- **Strict block column diagonal dominance** in the induced `1`-norm ([golub2013matrix] (4.5.6)
-for block tridiagonal matrices; the block analogue of column diagonal dominance, Feingold–Varga
-1962): for a square matrix `A` of `q × q` blocks, every diagonal block `A j j` is nonsingular and
-`‖(A j j)⁻¹‖₁ ∑_{i ≠ j} ‖A i j‖₁ < 1`. (The book writes the condition without the nonsingularity of
-the diagonal blocks, which `‖D_i⁻¹‖₁` presupposes.) -/
+/-- **Strict block column diagonal dominance** in the norm $\|\cdot\|_1$. A square matrix $A$ whose
+entries are $q \times q$ blocks $A_{ij}$ is strictly block column diagonally dominant if, for
+every $j$, the diagonal block $A_{jj}$ is invertible and
+$$\|A_{jj}^{-1}\|_1 \sum_{i \ne j} \|A_{ij}\|_1 < 1.$$
+This is (4.5.6) of [golub2013matrix] for block tridiagonal matrices, and the block analogue of
+column diagonal dominance due to Feingold and Varga (1962).
+
+The source writes the condition without the invertibility of the diagonal blocks, which the norm
+$\|A_{jj}^{-1}\|_1$ presupposes. The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`, the matrix norm
+induced by the vector $1$-norm. -/
 def IsStrictBlockColDiagDominant {ι : Type*} [Fintype ι] [DecidableEq ι]
     (A : Matrix ι ι (Matrix (Fin q) (Fin q) 𝕜)) : Prop :=
   ∀ j, IsUnit (A j j) ∧ lpOpNorm 1 (A j j)⁻¹ * ∑ i ∈ univ.erase j, lpOpNorm 1 (A i j) < 1
 
-/-- The `1`-norms of the off-diagonal blocks in block column `i` of `tridiag(E, D, F)` with `N + 1`
-block rows ([golub2013matrix] (4.5.6), `0`-based): `‖F_{i−1}‖₁ + ‖E_i‖₁`, with
-`E_N ≡ F_{−1} ≡ 0`. -/
+/-- The sum of the norms $\|\cdot\|_1$ of the off-diagonal blocks in block column $i$ of
+$\operatorname{tridiag}(E, D, F)$ with $N + 1$ block rows ([golub2013matrix], (4.5.6), with
+indices from $0$):
+$$\|F_{i-1}\|_1 + \|E_i\|_1,$$
+where the term $\|F_{i-1}\|_1$ is $0$ for $i = 0$ and the term $\|E_i\|_1$ is $0$ for $i \ge N$. -/
 noncomputable def blockColOffNorm (E F : ℕ → Matrix (Fin q) (Fin q) 𝕜) (N i : ℕ) : ℝ :=
   (if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0)
 
-/-- **Block dominance of a block tridiagonal matrix** ([golub2013matrix] (4.5.6), `0`-based, with
-`E_N ≡ F_{−1} ≡ 0`): column `i` has the off-diagonal blocks `F_{i−1}` and `E_i` only, so the
-condition reads `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1` for `i ≤ N` (`Matrix.blockColOffNorm`). -/
+/-- **Block dominance of a block tridiagonal matrix** ([golub2013matrix], (4.5.6), with indices from
+$0$). The matrix $\operatorname{tridiag}(E, D, F)$ with $N + 1$ block rows is strictly block
+column diagonally dominant if and only if, for every $i \le N$, $D_i$ is invertible and
+$$\|D_i^{-1}\|_1 (\|F_{i-1}\|_1 + \|E_i\|_1) < 1,$$
+where $\|F_{-1}\|_1 = 0$ and $\|E_N\|_1 = 0$.
+
+Block column $i$ has the off-diagonal blocks $F_{i-1}$ and $E_i$ only. The sum of their norms is
+`Matrix.blockColOffNorm E F N i`. -/
 theorem isStrictBlockColDiagDominant_tridiagonalOf_iff (E D F : ℕ → Matrix (Fin q) (Fin q) 𝕜) :
     (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
         (fun i => F i)).IsStrictBlockColDiagDominant ↔
@@ -319,12 +410,12 @@ theorem isStrictBlockColDiagDominant_tridiagonalOf_iff (E D F : ℕ → Matrix (
     rw [hcol, hT, tridiagonalOf_apply_self]
     exact h j (by omega)
 
-/-- On `0 × 0` blocks every norm vanishes. -/
+/-- Every matrix of size $0 \times 0$ has norm $\|\cdot\|_1$ equal to $0$. -/
 private theorem lpOpNorm_eq_zero_of_fin_zero (A : Matrix (Fin 0) (Fin 0) 𝕜) :
     lpOpNorm 1 A = 0 := by
   rw [Subsingleton.elim A 0, lpOpNorm_zero]
 
-/-- The column sums of a product: `∑_k ‖(L M) k c‖ ≤ ‖L‖₁ ∑_k ‖M k c‖`. -/
+/-- The column sums of a product satisfy $\sum_k |(LM)_{kc}| \le \|L\|_1 \sum_k |M_{kc}|$. -/
 private theorem sum_norm_mul_apply_le {m : Type*} [Fintype m] [DecidableEq m]
     (L M : Matrix m m 𝕜) (c : m) : ∑ k, ‖(L * M) k c‖ ≤ lpOpNorm 1 L * ∑ k, ‖M k c‖ := by
   have h := lpSeminorm_mulVec_le 1 L fun k => M k c
@@ -333,7 +424,8 @@ private theorem sum_norm_mul_apply_le {m : Type*} [Fintype m] [DecidableEq m]
 
 variable {E D F : ℕ → Matrix (Fin q) (Fin q) 𝕜}
 
-/-- The multiplier bound `‖L_i‖₁ < 1` from the pivot bound at `i` and dominance at `i < N`. -/
+/-- The multiplier bound $\|L_i\|_1 < 1$ for $i < N$, from the bound on $\|U_i^{-1}\|_1$ and the
+dominance in block column $i$. -/
 private theorem lpOpNorm_multiplier_lt_one {i : ℕ} (hN : i < N)
     (hd : IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * blockColOffNorm E F N i < 1)
     (hU : lpOpNorm 1 (tridiagonalLUPivot E D F i)⁻¹
@@ -356,8 +448,8 @@ private theorem lpOpNorm_multiplier_lt_one {i : ℕ} (hN : i < N)
         rw [← mul_div_assoc, div_lt_one hden]
         nlinarith [hd.2]
 
-/-- The pivots under dominance, with their inverse bound (the induction behind
-`IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot`). -/
+/-- Under dominance, the pivots $U_i$, $i \le N$, are invertible with the bound on $\|U_i^{-1}\|_1$
+of `Matrix.IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot`, for blocks of positive size. -/
 private theorem pivot_of_dominant (hq : 0 < q)
     (hd : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ * blockColOffNorm E F N i < 1) :
     ∀ i ≤ N, IsUnit (tridiagonalLUPivot E D F i) ∧ lpOpNorm 1 (tridiagonalLUPivot E D F i)⁻¹
@@ -412,11 +504,15 @@ private theorem pivot_of_dominant (hq : 0 < q)
           exact one_div_le_one_div_of_le hden (by linarith)
       _ = a / (1 - a * lpOpNorm 1 (F i)) := by ring
 
-/-- **Block dominance makes the pivots nonsingular** ([golub2013matrix] §4.5.2): under strict block
-column dominance of `tridiag(E, D, F)`, every pivot `U_i`, `i ≤ N`, is a unit and
-`‖U_i⁻¹‖₁ ≤ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁)`, so the factorization (4.5.3) exists. The
-induction carries `‖L_{i−1}‖₁ < 1`: `U_i = D_i (1 − D_i⁻¹ L_{i−1} F_{i−1})` with
-`‖D_i⁻¹ L_{i−1} F_{i−1}‖₁ ≤ ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁ < 1`, and the Neumann bound. -/
+/-- **Block dominance makes the pivots invertible** ([golub2013matrix], §4.5.2). Let
+$\operatorname{tridiag}(E, D, F)$ with $N + 1$ block rows be strictly block column diagonally
+dominant. Then for every $i \le N$ the pivot $U_i$ is invertible and
+$$\|U_i^{-1}\|_1 \le \frac{\|D_i^{-1}\|_1}{1 - \|D_i^{-1}\|_1 \|F_{i-1}\|_1},$$
+where $\|F_{-1}\|_1 = 0$. Thus the factorization (4.5.3) exists.
+
+The induction carries $\|L_{i-1}\|_1 < 1$. Then $U_i = D_i (I - D_i^{-1} L_{i-1} F_{i-1})$ with
+$\|D_i^{-1} L_{i-1} F_{i-1}\|_1 \le \|D_i^{-1}\|_1 \|F_{i-1}\|_1 < 1$, and the Neumann series
+gives the bound. -/
 theorem IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i ≤ N) :
@@ -427,9 +523,12 @@ theorem IsStrictBlockColDiagDominant.isUnit_tridiagonalLUPivot
   · exact ⟨isUnit_of_subsingleton _, by simp [lpOpNorm_eq_zero_of_fin_zero]⟩
   exact pivot_of_dominant hq ((isStrictBlockColDiagDominant_tridiagonalOf_iff E D F).mp h) i hi
 
-/-- [golub2013matrix] (4.5.7), strictly: under strict block column dominance the multipliers
-satisfy `‖L_i‖₁ < 1` for `i < N`:
-`‖E_i U_i⁻¹‖₁ ≤ ‖E_i‖₁ ‖D_i⁻¹‖₁ / (1 − ‖D_i⁻¹‖₁ ‖F_{i−1}‖₁) < 1`. -/
+/-- **Equation (4.5.7)** of [golub2013matrix], strict form. Let $\operatorname{tridiag}(E, D, F)$
+with $N + 1$ block rows be strictly block column diagonally dominant. Then for every $i < N$ the
+multiplier satisfies $\|L_i\|_1 < 1$.
+
+The reason is $\|E_i U_i^{-1}\|_1 \le \|E_i\|_1 \|D_i^{-1}\|_1 / (1 - \|D_i^{-1}\|_1
+\|F_{i-1}\|_1) < 1$. -/
 theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i < N) :
@@ -437,19 +536,25 @@ theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one
   lpOpNorm_multiplier_lt_one hi ((isStrictBlockColDiagDominant_tridiagonalOf_iff E D F).mp h i
     hi.le) (h.isUnit_tridiagonalLUPivot hi.le).2
 
-/-- [golub2013matrix] (4.5.7) as printed: under strict block column dominance the multipliers
-satisfy `‖L_i‖₁ ≤ 1` for `i < N` (strictly, by
-`Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`). -/
+/-- **Equation (4.5.7)** of [golub2013matrix], as printed. Let $\operatorname{tridiag}(E, D, F)$
+with $N + 1$ block rows be strictly block column diagonally dominant. Then for every $i < N$ the
+multiplier satisfies $\|L_i\|_1 \le 1$.
+
+The strict inequality is
+`Matrix.IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_lt_one`. -/
 theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUMultiplier_le
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i < N) :
     lpOpNorm 1 (tridiagonalLUMultiplier E D F i) ≤ 1 :=
   (h.lpOpNorm_tridiagonalLUMultiplier_lt_one hi).le
 
-/-- [golub2013matrix] (4.5.8), read as `‖U_i‖₁ ≤ ‖A‖₁` (the printed `‖A_n‖₁` has no referent):
-under strict block column dominance the pivots are bounded by the flattened block tridiagonal
-matrix. Column by column, `U_i e_c = D_i e_c − L_{i−1} (F_{i−1} e_c)` with `‖L_{i−1}‖₁ ≤ 1`, which
-is at most the `1`-norm of the column `(i, c)` of `A`. -/
+/-- **Equation (4.5.8)** of [golub2013matrix]. Let $\operatorname{tridiag}(E, D, F)$ with $N + 1$
+block rows be strictly block column diagonally dominant, and let $A$ be its flattening, of order
+$(N + 1)q$. Then for every $i \le N$ the pivot satisfies $\|U_i\|_1 \le \|A\|_1$.
+
+The source prints the bound $\|A_n\|_1$, which refers to no defined matrix; the statement here
+reads it as $\|A\|_1$. Column by column, $U_i e_c = D_i e_c - L_{i-1} F_{i-1} e_c$ with
+$\|L_{i-1}\|_1 \le 1$, and this is at most the $1$-norm of the column $(i, c)$ of $A$. -/
 theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) {i : ℕ} (hi : i ≤ N) :
@@ -496,11 +601,14 @@ theorem IsStrictBlockColDiagDominant.lpOpNorm_tridiagonalLUPivot_le
       _ ≤ ∑ r, g r :=
           Finset.sum_le_sum_of_subset_of_nonneg (subset_univ _) fun r _ _ => hg0 r
 
-/-- **A block column diagonally dominant block tridiagonal matrix is nonsingular**
-([golub2013matrix] P4.5.1(a), the fact §4.5.2 presupposes): all pivots `U_0, …, U_N` are units, so
-the factorization (4.5.3) is a product of a unit lower bidiagonal matrix and an upper bidiagonal
-matrix whose diagonal blocks are the pivots, both units of the block matrix ring, and the
-flattening `Matrix.compRingEquiv` preserves units. -/
+/-- **A block tridiagonal matrix with strict block column diagonal dominance is nonsingular**
+([golub2013matrix], Problem P4.5.1(a), the fact that §4.5.2 presupposes). If
+$\operatorname{tridiag}(E, D, F)$ with $N + 1$ block rows is strictly block column diagonally
+dominant, then its flattening is a unit.
+
+All pivots $U_0, \dots, U_N$ are invertible. So the factorization (4.5.3) is a product of a unit
+lower bidiagonal matrix and an upper bidiagonal matrix with invertible diagonal blocks, both
+units of the block matrix ring, and the flattening `Matrix.compRingEquiv` preserves units. -/
 theorem IsStrictBlockColDiagDominant.isUnit_blockTridiagonal
     (h : (tridiagonalOf (N := N) (fun i => E i) (fun i => D i)
       (fun i => F i)).IsStrictBlockColDiagDominant) :
@@ -523,7 +631,8 @@ section BlockLU
 
 variable {N m : ℕ} {b : Fin N → Fin m} {K : Type*} [Field K] {A L U : Matrix (Fin N) (Fin N) K}
 
-/-- A product of two blocks, entry by entry, as a sum over the labels of the middle block. -/
+/-- The entry $(i, j)$ of a product of two blocks, through the block of the label $k$, is the sum of
+$X_{i j'} Y_{j' j}$ over the indices $j'$ with label $k$. -/
 private theorem toBlock_mul_toBlock_apply (k : Fin m) {p r : Fin N → Prop}
     (X Y : Matrix (Fin N) (Fin N) K) (i : {x : Fin N // p x}) (j : {x : Fin N // r x}) :
     (X.toBlock p (fun x => b x = k) * Y.toBlock (fun x => b x = k) r) i j =
@@ -531,9 +640,8 @@ private theorem toBlock_mul_toBlock_apply (k : Fin m) {p r : Fin N → Prop}
   rw [Matrix.mul_apply]
   exact (Finset.sum_subtype _ (fun x => by simp) fun j' => X i.1 j' * Y j' j.1).symm
 
-/-- A row of `U` agrees with the corresponding row of `A` as soon as the entries of `U` in the
-blocks strictly below the label of that row do not meet the column: the first block row of a
-block LU factorization, and the superdiagonal blocks of a block bidiagonal one. -/
+/-- If $A = LU$ is a block LU factorization and $U_{j' j} = 0$ for every $j'$ whose label is below
+the label of $i$, then $U_{ij} = A_{ij}$. -/
 private theorem upper_apply_eq (h : IsBlockLU b A L U) {i j : Fin N}
     (hlow : ∀ j', b j' < b i → U j' j = 0) : U i j = A i j := by
   have key : (L * U) i j = ((1 : Matrix (Fin N) (Fin N) K) * U) i j := by
@@ -547,17 +655,26 @@ private theorem upper_apply_eq (h : IsBlockLU b A L U) {i j : Fin N}
   rw [h.mul_eq, Matrix.one_mul] at key
   exact key.symm
 
-/-- **The block Thomas recurrence** ([quarteroni2000numerical] §3.8.3, (3.58);
-[golub2013matrix] (4.5.3)–(4.5.4)), in the labelling form of `Matrix.IsBlockLU`. Let `A` be block
-tridiagonal with
-nonsingular leading principal block submatrices and let `A = L U` be its block LU factorization,
-which by `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` is block bidiagonal. Equating the
-blocks gives
-`U₁ = A₁₁`, the superdiagonal blocks of `U` are those of `A`, and the remaining blocks are
-obtained sequentially, for `i = 2, …, n`, by solving `L_{i-1} U_{i-1} = A_{i,i-1}` for the
-subdiagonal block of `L` and computing `U_i = A_{ii} - L_{i-1} A_{i-1,i}`. This is the recurrence
-`Matrix.tridiagonalLUPivot`, `Matrix.tridiagonalLUMultiplier` of the constructive form above, for
-blocks given by a labelling `b : Fin N → Fin m` of the indices. -/
+/-- **The block Thomas recurrence** ([quarteroni2000numerical], §3.8.3 and (3.58);
+[golub2013matrix], (4.5.3)–(4.5.4)), in the labelling form of `Matrix.IsBlockLU`. Let $K$ be a
+field, let $A$ be a square matrix over $K$ of order $N$, and let $b$ assign to each index a
+block label in $\{0, \dots, m - 1\}$. Write $A_{kl}$ for the block of $A$ with row labels $k$
+and column labels $l$. Assume that $A$ is block tridiagonal, that is, $A_{ij} = 0$ whenever
+$b(j) + 1 < b(i)$ or $b(i) + 1 < b(j)$, and that every leading principal block submatrix, on the
+indices with label at most $k$, is invertible. Let $A = LU$ be a block LU factorization along
+$b$. Then:
+
+* if $k$ is at most every label, then $U_{kk} = A_{kk}$;
+* if $l = k + 1$, then $U_{kl} = A_{kl}$;
+* if $l = k + 1$, then $L_{lk} U_{kk} = A_{lk}$;
+* if $l = k + 1$, then $U_{ll} = A_{ll} - L_{lk} A_{kl}$.
+
+Thus $U_1 = A_{11}$, the superdiagonal blocks of $U$ are those of $A$, and the other blocks
+follow in sequence by solving $L_{i-1} U_{i-1} = A_{i,i-1}$ for the subdiagonal block of $L$ and
+computing $U_i = A_{ii} - L_{i-1} A_{i-1,i}$. This is the recurrence of
+`Matrix.tridiagonalLUPivot` and `Matrix.tridiagonalLUMultiplier`, for blocks given by a
+labelling of the indices. By `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal`, the factors
+are block bidiagonal. The block $A_{kl}$ is `A.toBlock (b · = k) (b · = l)`. -/
 theorem IsBlockLU.toBlock_recurrence_of_blockTridiagonal (h : IsBlockLU b A L U)
     (htriL : ∀ i j, (b j : ℕ) + 1 < b i → A i j = 0)
     (htriU : ∀ i j, (b i : ℕ) + 1 < b j → A i j = 0)

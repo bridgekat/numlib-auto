@@ -22,25 +22,58 @@ import Numlib.LinearAlgebra.Matrix.Aeval
 /-!
 # Padé approximants of the exponential
 
-The `(p, q)` Padé approximant `R_pq(z) = D_pq(z)⁻¹ N_pq(z)` of `e^z` ([golub2013matrix] §9.3.1;
-Moler–Van Loan, "Nineteen dubious ways to compute the exponential of a matrix", SIAM Rev. 20
-(1978)), with
+The $(p, q)$ Padé approximant of $e^z$ is the rational function
+$R_{pq}(z) = D_{pq}(z)^{-1} N_{pq}(z)$, with
+$$N_{pq}(z) = \sum_{k=0}^{p} \frac{(p+q-k)!\, p!}{(p+q)!\, k!\, (p-k)!} z^k, \qquad
+  D_{pq}(z) = N_{qp}(-z).$$
+This module defines $N_{pq}$ and $D_{pq}$ as polynomials over any field, and the value
+$R_{pq}(a) = D_{pq}(a)^{-1} N_{pq}(a)$ at an element $a$ of an algebra. It shows that $D_{pq}(a)$ is
+invertible for $\|a\| < \log 2$, proves the remainder formula (9.3.1) of [golub2013matrix], and
+derives from it the backward error bound of Moler and Van Loan for scaling and squaring. The
+presentation follows [golub2013matrix], §9.3.1, and C. Moler and C. Van Loan, *Nineteen dubious ways
+to compute the exponential of a matrix*, SIAM Review 20 (1978).
 
-  `N_pq(z) = ∑_{k ≤ p} (p + q - k)! p! / ((p + q)! k! (p - k)!) z^k`,  `D_pq(z) = N_qp(-z)`,
+The backward error bound says: if $\|a / 2^j\| \le 1/2$, then $R_{pq}(a/2^j)^{2^j} = e^{a+e}$ for
+some $e$ that commutes with $a$ and satisfies $\|e\| \le \varepsilon(p, q) \|a\|$, where
+$\varepsilon(p, q) = 2^{3-(p+q)}\, p!\, q! / ((p+q)!\, (p+q+1)!)$.
 
-as polynomials over any field (`Pade.expNum`, `Pade.expDen`), and its value
-`Pade.expApprox 𝕂 p q a = D_pq(a)⁻¹ N_pq(a)` at an element of an algebra over `𝕂`.
+## Main definitions
+
+* `Pade.expNum`: the Padé numerator $N_{pq}$.
+* `Pade.expDen`: the Padé denominator $D_{pq}(z) = N_{qp}(-z)$.
+* `Pade.expApprox`: the Padé approximant $R_{pq}(a) = D_{pq}(a)^{-1} N_{pq}(a)$ at an element of an
+  algebra.
+* `Pade.errorBound`: the Moler–Van Loan constant $\varepsilon(p, q)$.
 
 ## Main results
 
-* `Pade.isUnit_aeval_expDen`: the denominator is invertible for `‖a‖ < log 2`, in particular in the
-  scaling-and-squaring regime `‖a‖ ≤ 1/2`, with `‖D_pq(a)⁻¹‖ ≤ 1/(2 - e^{‖a‖})`.
-* `Pade.exp_eq_expApprox_add`: the remainder formula [golub2013matrix] (9.3.1),
-  `e^a = R_pq(a) + ((-1)^q/(p + q)!) a^{p+q+1} D_pq(a)⁻¹ ∫₀¹ u^p (1 - u)^q e^{(1-u)a} du`, in any
-  complete normed `ℝ`-algebra, by `p + q + 1` integrations by parts.
+* `Pade.isUnit_aeval_expDen`: if $\|a\| < \log 2$, then $D_{pq}(a)$ is invertible and
+  $\|D_{pq}(a)^{-1}\| \le 1/(2 - e^{\|a\|})$.
+* `Pade.exp_eq_expApprox_add`: if $D_{pq}(a)$ is invertible, then $e^a = R_{pq}(a) +
+  \frac{(-1)^q}{(p+q)!} a^{p+q+1} D_{pq}(a)^{-1} \int_0^1 u^p (1-u)^q e^{(1-u)a}\,du$.
+* `Pade.exists_exp_add_eq_expApprox_pow`: if $\|a/2^j\| \le 1/2$, then
+  $R_{pq}(a/2^j)^{2^j} = e^{a+e}$ with $e$ commuting with $a$ and $\|e\| \le \varepsilon(p,q)\|a\|$.
+* `Pade.norm_exp_sub_expApprox_pow_le`: under the same hypothesis, $\|e^a - R_{pq}(a/2^j)^{2^j}\|
+  \le \varepsilon \|a\| e^{\varepsilon \|a\|} \|e^a\|$ with $\varepsilon = \varepsilon(p, q)$.
 
-The book's algorithm uses the `∞`-norm; every statement here holds for any submultiplicative norm
-with `‖1‖ = 1`. Neither Mathlib nor Numlib had Padé approximants.
+## Proof outline
+
+The remainder formula comes from $p + q + 1$ integrations by parts of $\int_0^1 P(u) e^{(1-u)a}\,du$
+with $P(u) = u^p (1-u)^q$. The boundary terms are reversed Taylor sums of $P$ at $0$ and at $1$, and
+these sums are $(-1)^q (p+q)!$ times $D_{pq}$ and $N_{pq}$. For the backward error bound, put
+$a' = a/2^j$. The remainder formula gives $e^{-a'} R_{pq}(a') = 1 + h$, and the Beta integral
+$\int_0^1 u^p (1-u)^q\,du = p!\,q!/(p+q+1)!$ bounds $\|h\|$. Then $e' = \log(1 + h)$ satisfies
+$\|e'\| \le -\log(1 - \|h\|) \le \varepsilon(p,q) \|a'\|$, and $e = 2^j e'$.
+
+## Implementation notes
+
+* [golub2013matrix] uses the $\infty$-norm. Every statement here holds in a normed algebra for any
+  submultiplicative norm with $\|1\| = 1$.
+* The remainder formula and the error bounds are stated in a complete normed $\mathbb{R}$-algebra.
+  Complex matrices are included through `NormedAlgebra.complexToReal`.
+* The inverse of $D_{pq}(a)$ is `Ring.inverse`, which is $0$ when $D_{pq}(a)$ is not invertible.
+* The coefficients of $N_{pq}$ are quotients of natural numbers, computed in the field. In positive
+  characteristic a denominator can be $0$, and then the coefficient is $0$.
 -/
 
 open Polynomial Finset
@@ -50,20 +83,29 @@ namespace Pade
 
 variable (K : Type*) [Field K]
 
-/-- The **Padé numerator** `N_pq(z) = ∑_{k ≤ p} (p + q - k)! p! / ((p + q)! k! (p - k)!) z^k` of the
-exponential ([golub2013matrix] §9.3.1). -/
+/-- The **Padé numerator** of the exponential: for $p, q \in \mathbb{N}$, the polynomial
+$$N_{pq}(z) = \sum_{k=0}^{p} \frac{(p+q-k)!\, p!}{(p+q)!\, k!\, (p-k)!} z^k$$
+over a field $K$. This is the numerator of the $(p, q)$ Padé approximant in [golub2013matrix],
+§9.3.1.
+
+Each coefficient is a quotient of natural numbers cast to $K$. In positive characteristic a
+denominator can be $0$, and then the coefficient is $0$. -/
 noncomputable def expNum (p q : ℕ) : K[X] :=
   ∑ k ∈ range (p + 1),
     C (((p + q - k)! * p ! : ℕ) / ((p + q)! * k ! * (p - k)! : ℕ) : K) * X ^ k
 
-/-- The **Padé denominator** `D_pq(z) = N_qp(-z)`. For the diagonal approximants `D_qq(z) =
-N_qq(-z)`, the even/odd splitting `N = U + V`, `D = U - V` of [golub2013matrix] §9.3.1. -/
+/-- The **Padé denominator** of the exponential: for $p, q \in \mathbb{N}$, the polynomial
+$D_{pq}(z) = N_{qp}(-z)$ over a field $K$. For the diagonal approximants,
+$D_{qq}(z) = N_{qq}(-z)$, so the splitting $N_{qq} = U + V$ into even and odd parts gives
+$D_{qq} = U - V$, as in [golub2013matrix], §9.3.1. -/
 noncomputable def expDen (p q : ℕ) : K[X] :=
   (expNum K q p).comp (-X)
 
 variable {K}
 
-/-- The coefficients of the Padé numerator. -/
+/-- The coefficients of the Padé numerator: the coefficient of $z^k$ in $N_{pq}$ is
+$$\frac{(p+q-k)!\, p!}{(p+q)!\, k!\, (p-k)!}$$
+if $k \le p$, and $0$ if $k > p$. -/
 theorem coeff_expNum (p q k : ℕ) :
     (expNum K p q).coeff k = if k ≤ p then
       (((p + q - k)! * p ! : ℕ) / ((p + q)! * k ! * (p - k)! : ℕ) : K) else 0 := by
@@ -71,7 +113,9 @@ theorem coeff_expNum (p q k : ℕ) :
   rw [Finset.sum_ite_eq]
   simp only [Finset.mem_range, Nat.lt_succ_iff]
 
-/-- The coefficients of the Padé denominator. -/
+/-- The coefficients of the Padé denominator: the coefficient of $z^k$ in $D_{pq}$ is
+$$(-1)^k \frac{(p+q-k)!\, q!}{(p+q)!\, k!\, (q-k)!}$$
+if $k \le q$, and $0$ if $k > q$. -/
 theorem coeff_expDen (p q k : ℕ) :
     (expDen K p q).coeff k = if k ≤ q then (-1) ^ k *
       (((p + q - k)! * q ! : ℕ) / ((p + q)! * k ! * (q - k)! : ℕ) : K) else 0 := by
@@ -82,7 +126,10 @@ theorem coeff_expDen (p q k : ℕ) :
 private theorem natCast_factorial_ne_zero [CharZero K] (m : ℕ) : ((m ! : ℕ) : K) ≠ 0 :=
   Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero m)
 
-/-- With `q = 0` the numerator is the Taylor polynomial of order `p`. -/
+/-- Let $K$ be a field of characteristic zero. For $q = 0$ the Padé numerator is the Taylor
+polynomial of $e^z$ of degree $p$:
+$$N_{p0}(z) = \sum_{k=0}^{p} \frac{z^k}{k!}.$$
+-/
 theorem expNum_zero_right [CharZero K] (p : ℕ) :
     expNum K p 0 = ∑ k ∈ range (p + 1), C ((k ! : K)⁻¹) * X ^ k := by
   refine Finset.sum_congr rfl fun k _ => ?_
@@ -93,7 +140,8 @@ theorem expNum_zero_right [CharZero K] (p : ℕ) :
   have h3 := natCast_factorial_ne_zero (K := K) k
   field_simp
 
-/-- With `q = 0` the denominator is `1`. -/
+/-- Let $K$ be a field of characteristic zero. For $q = 0$ the Padé denominator is $D_{p0} = 1$, so
+the $(p, 0)$ Padé approximant is the Taylor polynomial of degree $p$. -/
 theorem expDen_zero_right [CharZero K] (p : ℕ) : expDen K p 0 = 1 := by
   ext k
   rw [coeff_expDen, coeff_one]
@@ -107,23 +155,32 @@ section Approx
 
 variable (𝕂 : Type*) [Field 𝕂] {𝔸 : Type*} [Ring 𝔸] [Algebra 𝕂 𝔸]
 
-/-- **The `(p, q)` Padé approximant** `R_pq(a) = D_pq(a)⁻¹ N_pq(a)` of the exponential at an element
-of a `𝕂`-algebra ([golub2013matrix] §9.3.1; the two factors commute). -/
+/-- The **$(p, q)$ Padé approximant** of the exponential at an element $a$ of an algebra over a
+field $\mathbb{K}$:
+$$R_{pq}(a) = D_{pq}(a)^{-1} N_{pq}(a).$$
+This is the approximant of [golub2013matrix], §9.3.1.
+
+The two factors commute, because both are polynomials in $a$. The inverse is `Ring.inverse`, so
+$R_{pq}(a) = 0$ when $D_{pq}(a)$ is not invertible. -/
 noncomputable def expApprox (p q : ℕ) (a : 𝔸) : 𝔸 :=
   Ring.inverse (aeval a (expDen 𝕂 p q)) * aeval a (expNum 𝕂 p q)
 
 end Approx
 
-/-- **The Moler–Van Loan constant** `ε(p, q) = 2^{3-(p+q)} p! q! / ((p + q)! (p + q + 1)!)`
-([golub2013matrix] §9.3.1). -/
+/-- The **Moler–Van Loan constant**
+$$\varepsilon(p, q) = \frac{2^{3-(p+q)}\, p!\, q!}{(p+q)!\, (p+q+1)!}$$
+of [golub2013matrix], §9.3.1. The exponent $3 - (p+q)$ is an integer, and it is negative when
+$p + q > 3$. -/
 noncomputable def errorBound (p q : ℕ) : ℝ :=
   2 ^ (3 - (p + q : ℤ)) * (p ! * q ! : ℕ) / ((p + q)! * (p + q + 1)! : ℕ)
 
 /-! ### The denominator is invertible for small arguments -/
 
-/-- The factorial inequality behind the bound on the coefficients of `D_pq`:
-`(p + q - k)! q! ≤ (p + q)! (q - k)!` for `k ≤ q`, since `q!/(q - k)! ≤ (p + q)!/(p + q - k)!`
-(the falling factorials `q^(k) ≤ (p + q)^(k)`). -/
+/-- For $p, q, k \in \mathbb{N}$ with $k \le q$,
+$$(p+q-k)!\, q! \le (p+q)!\, (q-k)!.$$
+Equivalently, $q!/(q-k)! \le (p+q)!/(p+q-k)!$: the product of the $k$ largest factors of $q!$ is
+at most the product of the $k$ largest factors of $(p+q)!$. This inequality bounds the
+coefficients of $D_{pq}$. -/
 theorem _root_.Nat.factorial_add_sub_mul_factorial_le (p q k : ℕ) (hk : k ≤ q) :
     (p + q - k)! * q ! ≤ (p + q)! * (q - k)! := by
   have h1 := Nat.factorial_mul_descFactorial (show k ≤ q from hk)
@@ -138,7 +195,9 @@ section Norm
 variable {𝕂 : Type*} [RCLike 𝕂] {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra 𝕂 𝔸]
   [NormOneClass 𝔸] [CompleteSpace 𝔸]
 
-/-- The coefficients of `D_pq` are bounded by those of the exponential series. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$. The coefficients of the Padé denominator
+$D_{pq}$ over $\mathbb{K}$ are bounded by those of the exponential series: the coefficient $d_k$
+of $z^k$ satisfies $|d_k| \le 1/k!$. -/
 theorem norm_coeff_expDen_le (p q k : ℕ) : ‖(expDen 𝕂 p q).coeff k‖ ≤ 1 / (k ! : ℝ) := by
   rw [coeff_expDen]
   split_ifs with hk
@@ -155,14 +214,16 @@ theorem norm_coeff_expDen_le (p q k : ℕ) : ‖(expDen 𝕂 p q).coeff k‖ ≤
     positivity
 
 omit [NormedRing 𝔸] [NormedAlgebra 𝕂 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸] in
-/-- The constant coefficient of the Padé denominator is `1`. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$. The constant coefficient of the Padé
+denominator $D_{pq}$ over $\mathbb{K}$ is $1$. -/
 theorem coeff_expDen_zero (p q : ℕ) : (expDen 𝕂 p q).coeff 0 = 1 := by
   rw [coeff_expDen, ite_eq_left (Nat.zero_le _)]
   simp only [pow_zero, one_mul, Nat.sub_zero, Nat.factorial_zero, mul_one]
   exact div_self (Nat.cast_ne_zero.mpr (by positivity))
 
 omit [NormOneClass 𝔸] [CompleteSpace 𝔸] in
-/-- `‖D_pq(a) - 1‖ ≤ e^{‖a‖} - 1`. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $\mathcal{A}$ be a normed algebra over
+$\mathbb{K}$, and let $a \in \mathcal{A}$. Then $\|D_{pq}(a) - 1\| \le e^{\|a\|} - 1$. -/
 theorem norm_aeval_expDen_sub_one_le (p q : ℕ) (a : 𝔸) :
     ‖aeval a (expDen 𝕂 p q) - 1‖ ≤ Real.exp ‖a‖ - 1 := by
   rw [aeval_eq_sum_range, Finset.sum_range_succ', coeff_expDen_zero, pow_zero, one_smul,
@@ -180,9 +241,15 @@ theorem norm_aeval_expDen_sub_one_le (p q : ℕ) (a : 𝔸) :
           (norm_nonneg _) (by positivity)
     _ = ‖a‖ ^ (k + 1) / (k + 1)! := by ring
 
-/-- **The Padé denominator is invertible** for `‖a‖ < log 2` ([golub2013matrix] §9.3.1), with
-`‖D_pq(a)⁻¹‖ ≤ 1/(2 - e^{‖a‖})`: `‖D_pq(a) - 1‖ ≤ e^{‖a‖} - 1 < 1` and the Neumann series. In
-particular for `‖a‖ ≤ 1/2`. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $\mathcal{A}$ be a complete normed
+algebra over $\mathbb{K}$ with $\|1\| = 1$. If $a \in \mathcal{A}$ satisfies $\|a\| < \log 2$,
+then the **Padé denominator $D_{pq}(a)$ is invertible**, and
+$$\|D_{pq}(a)^{-1}\| \le \frac{1}{2 - e^{\|a\|}}.$$
+This holds in particular for $\|a\| \le 1/2$, the range that scaling and squaring uses in
+[golub2013matrix], §9.3.1.
+
+The proof bounds $\|D_{pq}(a) - 1\| \le e^{\|a\|} - 1 < 1$ and uses the Neumann series. The
+inverse is `Ring.inverse`. -/
 theorem isUnit_aeval_expDen (p q : ℕ) {a : 𝔸} (ha : ‖a‖ < Real.log 2) :
     IsUnit (aeval a (expDen 𝕂 p q)) ∧
       ‖Ring.inverse (aeval a (expDen 𝕂 p q))‖ ≤ 1 / (2 - Real.exp ‖a‖) := by
@@ -211,10 +278,11 @@ open NormedSpace intervalIntegral
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸]
 
-/-- The Beta-type weight `P(u) = u^p (1 - u)^q` of the remainder. -/
+/-- The weight $P(u) = u^p (1-u)^q$ of the remainder integral. -/
 private noncomputable def weight (p q : ℕ) : ℝ[X] := X ^ p * (1 - X) ^ q
 
-/-- The value of the `j`-th derivative of `P` at `0`: `j!` times its `j`-th coefficient. -/
+/-- The $j$-th derivative of the weight $P$ at $0$ is $j!$ times the coefficient of $u^j$ in $P$,
+which is $(-1)^{j-p} \binom{q}{j-p}$ for $j \ge p$ and $0$ for $j < p$. -/
 private theorem iterate_derivative_weight_eval_zero (p q j : ℕ) :
     (derivative^[j] (weight p q)).eval 0 =
       j ! * (if p ≤ j then (-1) ^ (j - p) * ((q.choose (j - p) : ℕ) : ℝ) else 0) := by
@@ -234,7 +302,8 @@ private theorem iterate_derivative_weight_eval_zero (p q j : ℕ) :
       simp
   · rfl
 
-/-- The value of the `j`-th derivative of `P` at `1`. -/
+/-- The $j$-th derivative of the weight $P$ at $1$ is $j!\, (-1)^q \binom{p}{j-q}$ for $j \ge q$ and
+$0$ for $j < q$. -/
 private theorem iterate_derivative_weight_eval_one (p q j : ℕ) :
     (derivative^[j] (weight p q)).eval 1 =
       j ! * (if q ≤ j then (-1) ^ q * ((p.choose (j - q) : ℕ) : ℝ) else 0) := by
@@ -252,8 +321,9 @@ private theorem iterate_derivative_weight_eval_one (p q j : ℕ) :
   · rw [coeff_X_add_C_pow, one_pow, one_mul]
   · rw [mul_zero]
 
-/-- One integration by parts: `a I_j = P^{(j)}(0) e^a - P^{(j)}(1) + I_{j+1}` for
-`I_j = ∫₀¹ P^{(j)}(u) e^{(1-u)a} du`. -/
+/-- One integration by parts: for a real polynomial $P$ and
+$I_j = \int_0^1 P^{(j)}(u) e^{(1-u)a}\,du$, one has
+$a I_j = P^{(j)}(0) e^a - P^{(j)}(1) + I_{j+1}$. -/
 private theorem mul_integral_iterate_derivative (P : ℝ[X]) (a : 𝔸) (j : ℕ) :
     a * ∫ u in (0 : ℝ)..1, (derivative^[j] P).eval u • exp ((1 - u) • a) =
       (derivative^[j] P).eval 0 • exp a - (derivative^[j] P).eval 1 • (1 : 𝔸) +
@@ -292,8 +362,8 @@ private theorem mul_integral_iterate_derivative (P : ℝ[X]) (a : 𝔸) (j : ℕ
   rw [← sub_eq_zero, ← neg_eq_zero, ← sub_eq_zero.mpr hFTC]
   abel
 
-/-- Repeated integration by parts:
-`a^m I_0 = ∑_{j<m} a^{m-1-j} (P^{(j)}(0) e^a - P^{(j)}(1)) + I_m`. -/
+/-- Repeated integration by parts: $a^m I_0 = \sum_{j<m} a^{m-1-j} \big(P^{(j)}(0) e^a -
+P^{(j)}(1)\big) + I_m$, with $I_j$ as in the single step. -/
 private theorem pow_mul_integral (P : ℝ[X]) (a : 𝔸) (m : ℕ) :
     a ^ m * ∫ u in (0 : ℝ)..1, P.eval u • exp ((1 - u) • a) =
       ∑ j ∈ Finset.range m, a ^ (m - 1 - j) *
@@ -311,7 +381,8 @@ private theorem pow_mul_integral (P : ℝ[X]) (a : 𝔸) (m : ℕ) :
     congr 2
     omega
 
-/-- The reversed Taylor sum at `0` of the weight is `(-1)^q (p + q)! D_pq`. -/
+/-- The reversed Taylor sum $\sum_{j=0}^{p+q} P^{(j)}(0)\, z^{p+q-j}$ of the weight $P$ at $0$ is
+$(-1)^q (p+q)!\, D_{pq}(z)$. -/
 private theorem sum_weight_zero (p q : ℕ) :
     ∑ j ∈ Finset.range (p + q + 1),
       C ((derivative^[j] (weight p q)).eval 0) * X ^ (p + q + 1 - 1 - j) =
@@ -338,7 +409,8 @@ private theorem sum_weight_zero (p q : ℕ) :
   · omega
   · simp
 
-/-- The reversed Taylor sum at `1` of the weight is `(-1)^q (p + q)! N_pq`. -/
+/-- The reversed Taylor sum $\sum_{j=0}^{p+q} P^{(j)}(1)\, z^{p+q-j}$ of the weight $P$ at $1$ is
+$(-1)^q (p+q)!\, N_{pq}(z)$. -/
 private theorem sum_weight_one (p q : ℕ) :
     ∑ j ∈ Finset.range (p + q + 1),
       C ((derivative^[j] (weight p q)).eval 1) * X ^ (p + q + 1 - 1 - j) =
@@ -362,17 +434,23 @@ private theorem sum_weight_one (p q : ℕ) :
   · simp
 
 omit [CompleteSpace 𝔸] in
-/-- The value of a reversed Taylor sum at `a`. -/
+/-- The value of a reversed sum $\sum_{j<m} c_j z^{m-1-j}$ at $a$ is $\sum_{j<m} c_j a^{m-1-j}$. -/
 private theorem aeval_sum_C_mul_X_pow (a : 𝔸) (m : ℕ) (c : ℕ → ℝ) :
     aeval a (∑ j ∈ Finset.range m, C (c j) * X ^ (m - 1 - j)) =
       ∑ j ∈ Finset.range m, c j • a ^ (m - 1 - j) := by
   simp only [map_sum, map_mul, aeval_C, map_pow, aeval_X, Algebra.smul_def]
 
-/-- **The Padé remainder** ([golub2013matrix] (9.3.1)): when `D_pq(a)` is invertible,
-`e^a = R_pq(a) + ((-1)^q/(p + q)!) a^{p+q+1} D_pq(a)⁻¹ ∫₀¹ u^p (1 - u)^q e^{(1-u)a} du`.
-Proof: `p + q + 1` integrations by parts of `∫₀¹ P(u) e^{(1-u)a} du`, `P(u) = u^p (1-u)^q`, give
-`a^{p+q+1} ∫₀¹ P(u) e^{(1-u)a} du = (-1)^q (p + q)! (D_pq(a) e^a - N_pq(a))`, the boundary terms
-being the reversed Taylor sums of `P` at `0` and `1`. -/
+/-- **The Padé remainder.** Let $\mathcal{A}$ be a complete normed $\mathbb{R}$-algebra, let
+$p, q \in \mathbb{N}$, and let $a \in \mathcal{A}$ be such that $D_{pq}(a)$ is invertible. Then
+$$e^a = R_{pq}(a) + \frac{(-1)^q}{(p+q)!}\, a^{p+q+1} D_{pq}(a)^{-1}
+  \int_0^1 u^p (1-u)^q e^{(1-u)a}\,du.$$
+This is (9.3.1) of [golub2013matrix].
+
+The proof integrates $\int_0^1 P(u) e^{(1-u)a}\,du$ with $P(u) = u^p (1-u)^q$ by parts
+$p + q + 1$ times. This gives $a^{p+q+1} \int_0^1 P(u) e^{(1-u)a}\,du = (-1)^q (p+q)!\,
+(D_{pq}(a) e^a - N_{pq}(a))$, because the boundary terms are the reversed Taylor sums of $P$ at
+$0$ and at $1$. The integral is an interval integral of a function with values in $\mathcal{A}$,
+and $e^a$ is `NormedSpace.exp`. -/
 theorem exp_eq_expApprox_add (p q : ℕ) (a : 𝔸) (hD : IsUnit (aeval a (expDen ℝ p q))) :
     exp a = expApprox ℝ p q a + ((-1) ^ q / (p + q)! : ℝ) •
       (a ^ (p + q + 1) * Ring.inverse (aeval a (expDen ℝ p q)) *
@@ -427,7 +505,8 @@ section MolerVanLoan
 
 open NormedSpace intervalIntegral
 
-/-- The constant `K = p! q!/((p + q)! (p + q + 1)!)` of the Moler–Van Loan bound. -/
+/-- The constant $K = p!\, q! / ((p+q)!\, (p+q+1)!)$, for which
+$\varepsilon(p, q) = 8 K\, 2^{-(p+q)}$. -/
 private noncomputable def mvlConst (p q : ℕ) : ℝ :=
   (p ! * q ! : ℕ) / ((p + q)! * (p + q + 1)! : ℕ)
 
@@ -441,7 +520,8 @@ private theorem errorBound_eq (p q : ℕ) :
   field_simp
   ring
 
-/-- `-log (1 - y) ≤ T x` from `y ≤ M x ≤ r < 1` and `M ≤ (1 - r) T`. -/
+/-- If $0 \le y \le Mx \le r < 1$, $x \ge 0$ and $M \le (1 - r) T$, then $y < 1$ and
+$-\log(1 - y) \le Tx$. -/
 private theorem neg_log_one_sub_le_of_le {y M x r T : ℝ} (hy0 : 0 ≤ y) (hyM : y ≤ M * x)
     (hMx : M * x ≤ r) (hr : r < 1) (hx : 0 ≤ x) (hM : M ≤ (1 - r) * T) :
     y < 1 ∧ -Real.log (1 - y) ≤ T * x := by
@@ -461,9 +541,10 @@ private theorem neg_log_one_sub_le_of_le {y M x r T : ℝ} (hy0 : 0 ≤ y) (hyM 
     nlinarith
   nlinarith [mul_le_mul_of_nonneg_right (show 1 - r ≤ 1 - y by linarith) hTx]
 
-/-- The scalar inequality behind the Moler–Van Loan bound: with `K = mvlConst p q`,
-`0 ≤ x ≤ 1/2` and `0 ≤ y ≤ K x^{p+q+1} e^x β`, where `β ≤ 2` when `p + q = 1` and
-`β ≤ 1/(2 - e^x)` when `p + q ≥ 2`, one has `y < 1` and `-log(1 - y) ≤ ε(p, q) x`. -/
+/-- The scalar inequality behind the Moler–Van Loan bound: if $p + q \ge 1$, $0 \le x \le 1/2$,
+$\beta \ge 0$ with $\beta \le 2$ when $p + q = 1$ and $\beta \le 1/(2 - e^x)$ when
+$p + q \ge 2$, and $0 \le y \le K x^{p+q+1} e^x \beta$, then $y < 1$ and
+$-\log(1 - y) \le \varepsilon(p, q)\, x$. -/
 private theorem mvl_scalar (p q : ℕ) (hpq : 1 ≤ p + q) {x y β : ℝ} (hx0 : 0 ≤ x)
     (hx : x ≤ 1 / 2) (hβ0 : 0 ≤ β)
     (hβ : (p + q = 1 → β ≤ 2) ∧ (2 ≤ p + q → β ≤ 1 / (2 - Real.exp x))) (hy0 : 0 ≤ y)
@@ -539,8 +620,9 @@ private theorem mvl_scalar (p q : ℕ) (hpq : 1 ≤ p + q) {x y β : ℝ} (hx0 :
 
 variable {𝔸 : Type*} [NormedRing 𝔸] [NormedAlgebra ℝ 𝔸] [NormOneClass 𝔸] [CompleteSpace 𝔸]
 
-/-- The core of the Moler–Van Loan bound for `‖a‖ ≤ 1/2`, given a bound `β` on the inverse Padé
-denominator: `R_pq(a) = e^{a + e}` with `e` commuting with `a` and `‖e‖ ≤ ε(p, q) ‖a‖`. -/
+/-- The Moler–Van Loan bound for $p + q \ge 1$ and $\|a\| \le 1/2$, given a bound $\beta$ on
+$\|D_{pq}(a)^{-1}\|$ as in the scalar inequality: $R_{pq}(a) = e^{a+e}$ for some $e$ that
+commutes with $a$ and has $\|e\| \le \varepsilon(p, q) \|a\|$. -/
 private theorem exists_expApprox_eq_exp_add_of_norm_inverse_le (p q : ℕ) (hpq : 1 ≤ p + q)
     {a : 𝔸} (ha : ‖a‖ ≤ 1 / 2) (hD : IsUnit (aeval a (expDen ℝ p q))) {β : ℝ} (hβ0 : 0 ≤ β)
     (hβ : ‖Ring.inverse (aeval a (expDen ℝ p q))‖ ≤ β)
@@ -644,7 +726,8 @@ private theorem expDen_zero_one : expDen ℝ 0 1 = 1 - X := by
   rw [coeff_expDen, coeff_sub, coeff_one, coeff_X]
   rcases k with _ | _ | k <;> norm_num
 
-/-- The Moler–Van Loan bound for `‖a‖ ≤ 1/2` (one squaring step removed). -/
+/-- The Moler–Van Loan bound without squaring: if $\|a\| \le 1/2$, then $R_{pq}(a) = e^{a+e}$ for
+some $e$ that commutes with $a$ and has $\|e\| \le \varepsilon(p, q) \|a\|$. -/
 private theorem exists_expApprox_eq_exp_add (p q : ℕ) {a : 𝔸} (ha : ‖a‖ ≤ 1 / 2) :
     ∃ e : 𝔸, Commute a e ∧ ‖e‖ ≤ errorBound p q * ‖a‖ ∧ expApprox ℝ p q a = exp (a + e) := by
   have hlog2 : ‖a‖ < Real.log 2 := by linarith [Real.log_two_gt_d9]
@@ -682,15 +765,23 @@ private theorem exists_expApprox_eq_exp_add (p q : ℕ) {a : 𝔸} (ha : ‖a‖
       (by rw [one_div]; exact inv_nonneg.mpr (by linarith)) hDinv
       ⟨fun h => by omega, fun _ => le_rfl⟩
 
-/-- **The Moler–Van Loan backward error bound** ([golub2013matrix] §9.3.1, quoted from Moler–Van
-Loan (1978)): in a complete normed `ℝ`-algebra with `‖1‖ = 1` (complex matrices included, through
-`NormedAlgebra.complexToReal`), if `‖a / 2^j‖ ≤ 1/2` then the scaled-and-squared Padé approximant
-is an exact exponential of a perturbed argument: `R_pq(a / 2^j)^{2^j} = e^{a + e}` with `e`
-commuting with `a` and `‖e‖ ≤ ε(p, q) ‖a‖`. Proof: (9.3.1) gives `e^{-a'} R_pq(a') = 1 + h` with
-`‖h‖ ≤ K ‖a'‖^{p+q+1} e^{‖a'‖} ‖D_pq(a')⁻¹‖` (the Beta integral `p! q!/(p + q + 1)!`), and
-`e' = log(1 + h)` has `‖e'‖ ≤ -log(1 - ‖h‖) ≤ ε ‖a'‖`; the constant needs the exact denominators
-`D_10 = 1` and `D_01 = 1 - z` when `p + q = 1` (with `‖D_01(a')⁻¹‖ ≤ 1/(1 - ‖a'‖)`, the general
-`1/(2 - e^{‖a'‖})` is too weak there), and at `p = q = 0`, `e = -a`. -/
+/-- The **Moler–Van Loan backward error bound**. Let $\mathcal{A}$ be a complete normed
+$\mathbb{R}$-algebra with $\|1\| = 1$, let $p, q, j \in \mathbb{N}$, and let $a \in \mathcal{A}$
+satisfy $\|a\| \le 2^j/2$, that is, $\|a/2^j\| \le 1/2$. Then there is $e \in \mathcal{A}$ that
+commutes with $a$, with $\|e\| \le \varepsilon(p, q) \|a\|$ and
+$$R_{pq}(a/2^j)^{2^j} = e^{a+e}.$$
+So the scaled and squared Padé approximant is the exact exponential of a perturbed argument.
+[golub2013matrix], §9.3.1, quotes this result from Moler and Van Loan (1978).
+
+The algebra $\mathcal{A}$ can be an algebra of complex matrices, through
+`NormedAlgebra.complexToReal`. The proof works with $a' = a/2^j$, for which $\|a'\| \le 1/2$.
+The remainder formula (9.3.1) gives $e^{-a'} R_{pq}(a') = 1 + h$ with $\|h\| \le K
+\|a'\|^{p+q+1} e^{\|a'\|} \|D_{pq}(a')^{-1}\|$, where $K = p!\, q!/((p+q)!\, (p+q+1)!)$ comes
+from the Beta integral $\int_0^1 u^p (1-u)^q\,du = p!\, q!/(p+q+1)!$. Then $e' = \log(1 + h)$
+has $\|e'\| \le -\log(1 - \|h\|) \le \varepsilon(p, q) \|a'\|$, and $e = 2^j e'$. When
+$p + q = 1$, the constant needs the exact denominators $D_{10} = 1$ and $D_{01}(z) = 1 - z$,
+with $\|D_{01}(a')^{-1}\| \le 1/(1 - \|a'\|)$, because the general bound $1/(2 - e^{\|a'\|})$ is
+too weak there. When $p = q = 0$, $e = -a$. -/
 theorem exists_exp_add_eq_expApprox_pow (p q j : ℕ) {a : 𝔸} (ha : ‖a‖ ≤ 2 ^ j / 2) :
     ∃ e : 𝔸, Commute a e ∧ ‖e‖ ≤ errorBound p q * ‖a‖ ∧
       expApprox ℝ p q ((2⁻¹ : ℝ) ^ j • a) ^ (2 ^ j) = exp (a + e) := by
@@ -714,9 +805,14 @@ theorem exists_exp_add_eq_expApprox_pow (p q j : ℕ) {a : 𝔸} (ha : ‖a‖ �
       _ = errorBound p q * ‖a‖ := by rw [hx]; field_simp
   · rw [he, ← exp_nsmul_real, ← hback, ← smul_add, Nat.cast_smul_eq_nsmul]
 
-/-- **The relative error of scaling and squaring** ([golub2013matrix] §9.3.1): under the hypotheses
-of `Pade.exists_exp_add_eq_expApprox_pow`, with `F = R_pq(a/2^j)^{2^j}` and `ε = ε(p, q)`,
-`‖e^a - F‖ ≤ ε ‖a‖ e^{ε ‖a‖} ‖e^a‖`: `F - e^a = e^a (e^e - 1)`. -/
+/-- **The relative error of scaling and squaring.** Let $\mathcal{A}$ be a complete normed
+$\mathbb{R}$-algebra with $\|1\| = 1$, let $p, q, j \in \mathbb{N}$, and let $a \in \mathcal{A}$
+satisfy $\|a\| \le 2^j/2$. Put $F = R_{pq}(a/2^j)^{2^j}$ and $\varepsilon = \varepsilon(p, q)$.
+Then
+$$\|e^a - F\| \le \varepsilon \|a\|\, e^{\varepsilon \|a\|}\, \|e^a\|.$$
+This is the relative error bound of [golub2013matrix], §9.3.1.
+
+The proof writes $F - e^a = e^a (e^e - 1)$ with $e$ from `Pade.exists_exp_add_eq_expApprox_pow`. -/
 theorem norm_exp_sub_expApprox_pow_le (p q j : ℕ) {a : 𝔸} (ha : ‖a‖ ≤ 2 ^ j / 2) :
     ‖exp a - expApprox ℝ p q ((2⁻¹ : ℝ) ^ j • a) ^ (2 ^ j)‖ ≤
       errorBound p q * ‖a‖ * Real.exp (errorBound p q * ‖a‖) * ‖exp a‖ := by

@@ -11,66 +11,78 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Triangular systems: forward and backward substitution
 
-Forward and backward substitution as *total functions* on a finite linear order, their correctness
-for triangular matrices with a nowhere-zero diagonal, the solve `x = U⁻¹ (L⁻¹ b)` through an LU
-factorization, the inverse of a triangular matrix column by column and leading block by leading
-block, and the two exact-arithmetic bounds on `|U⁻¹| |U|` of [higham2002accuracy] §8.2 that drive
-the componentwise error analysis of substitution ([quarteroni2000numerical] §3.2.2).
+Let $K$ be a field, and let the indices run over a finite linearly ordered set. Forward substitution
+solves a lower triangular system $Lx = b$ by
+$$x_i = \frac{b_i - \sum_{j < i} l_{ij} x_j}{l_{ii}},$$
+and backward substitution solves an upper triangular system $Ux = b$ by the same recurrence over the
+indices $j > i$ ([quarteroni2000numerical], §3.2). This module defines both as total functions and
+proves that they give the unique solution when the diagonal has no zero entry. It also solves
+$Ax = b$ through an LU factorization $A = LU$ or $PA = LU$ ([quarteroni2000numerical], §3.3.1 and
+§3.5), and computes the inverse of an upper triangular matrix column by column, by leading blocks,
+and by an entrywise recurrence ([quarteroni2000numerical], §3.2).
+
+Over a linearly ordered field, the module proves the two exact bounds on $|U^{-1}| \, |U|$ of
+[higham2002accuracy], §8.2, where $|A|$ is the matrix of the absolute values of the entries. If
+$|u_{ii}| \ge |u_{ij}|$ for $j > i$, then $(|U^{-1}| \, |U|)_{ij} \le 2^{j-i}$ (Lemma 8.6). If $U$
+is row diagonally dominant, then $(|U^{-1}| \, |U|)_{ij} \le j - i + 1$ (Lemma 8.8). These bounds
+drive the componentwise error analysis of substitution ([quarteroni2000numerical], §3.2.2).
 
 ## Main definitions
 
-* `Matrix.forwardSubst L b`: forward substitution, [quarteroni2000numerical] (3.22),
-  `x i = (b i - ∑_{j < i} l_ij x_j) / l_ii`, by well-founded recursion on the number of indices
-  below `i`; `Matrix.backSubst U b`: backward substitution, (3.23), which is forward substitution on
-  the dual order (`Matrix.backSubst_eq_forwardSubst_toDual`). Both are total: a zero diagonal entry
-  gives junk (`x / 0 = 0`) rather than a hypothesis.
-* `Matrix.luSolve L U b = backSubst U (forwardSubst L b)`: the solution of `A x = b` through
-  `A = L U` ([quarteroni2000numerical] §3.3.1).
+* `Matrix.forwardSubst`: forward substitution, [quarteroni2000numerical] (3.22).
+* `Matrix.backSubst`: backward substitution, [quarteroni2000numerical] (3.23), which is forward
+  substitution on the reversed order.
+* `Matrix.luSolve`: the solution of $Ax = b$ through $A = LU$, by forward and then backward
+  substitution.
 
 ## Main results
 
 * `Matrix.mulVec_forwardSubst`, `Matrix.mulVec_backSubst`: substitution solves a triangular system
-  with nowhere-zero diagonal, and `Matrix.forwardSubst_eq_of_mulVec_eq`,
-  `Matrix.backSubst_eq_of_mulVec_eq`: it is the only solution.
-* `Matrix.mulVec_luSolve`, `Matrix.mulVec_luSolve_of_mul`, `Matrix.mulVec_luSolve_permMatrix`:
-  the LU solve, plain and with a row permutation `P A = L U` (§3.5: solve `L y = P b`, `U x = y`).
-* `Matrix.inv_col_eq_backSubst` ((3.26)), `Matrix.inv_toBlock_le_of_isUpperTriangular` ((3.27)),
-  `Matrix.inv_apply_of_isUpperTriangular` ((3.28)): the inverse of an upper triangular matrix
-  through the systems `U v_i = e_i`, through its leading blocks, and by the entrywise recurrence.
+  whose diagonal has no zero entry.
+* `Matrix.forwardSubst_eq_of_mulVec_eq`, `Matrix.backSubst_eq_of_mulVec_eq`: this solution is
+  unique.
+* `Matrix.mulVec_luSolve`, `Matrix.mulVec_luSolve_of_mul`, `Matrix.mulVec_luSolve_permMatrix`: the
+  LU solve, without and with a row permutation $PA = LU$, where one solves $Ly = Pb$ and $Ux = y$.
+* `Matrix.inv_col_eq_backSubst`: the columns of $U^{-1}$ solve $U v_i = e_i$,
+  [quarteroni2000numerical] (3.26).
+* `Matrix.inv_toBlock_le_of_isUpperTriangular`: the leading blocks of $U^{-1}$ are the inverses of
+  the leading blocks of $U$, [quarteroni2000numerical] (3.27).
+* `Matrix.inv_apply_of_isUpperTriangular`: the entrywise recurrence for $U^{-1}$,
+  [quarteroni2000numerical] (3.28).
 * `Matrix.abs_inv_mul_abs_apply_le_two_pow`, `Matrix.sum_abs_inv_mul_abs_apply_le_two_pow`:
-  [higham2002accuracy] Lemma 8.6, `(|U⁻¹| |U|)_{ij} ≤ 2^{j-i}` when `|u_ii| ≥ |u_ij|` for `j > i`,
-  and the row sums are at most `2^{n-i+1} - 1`.
+  [higham2002accuracy] Lemma 8.6, $(|U^{-1}| \, |U|)_{ij} \le 2^{j-i}$ when $|u_{ii}| \ge |u_{ij}|$
+  for $j > i$, and the row sums are at most $2^{n-i+1} - 1$.
 * `Matrix.abs_inv_mul_abs_apply_le_of_isDiagDominant`,
   `Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant`: [higham2002accuracy] Lemma 8.8, the
-  linear bounds `(|U⁻¹| |U|)_{ij} ≤ j - i + 1` and `‖|U⁻¹| |U|‖_∞ ≤ 2n - 1` for a row diagonally
-  dominant upper triangular `U`, the `2n - 1` of [quarteroni2000numerical] §3.1.2.
+  linear bounds $(|U^{-1}| \, |U|)_{ij} \le j - i + 1$ and $\| |U^{-1}| \, |U| \|_\infty \le 2n - 1$
+  for a row diagonally dominant upper triangular $U$; the constant $2n - 1$ is also the one of
+  [quarteroni2000numerical], §3.1.2.
 
 ## Implementation notes
 
-The index type is any `[Fintype n] [LinearOrder n]`, never `Fin N`; "`j < i`" is all substitution
-uses, and counts of indices such as `#{k | i ≤ k ∧ k < j}` replace the differences `j - i` of the
-book (on `Fin N` they agree, `Matrix.card_filter_le_lt_fin`). Backward substitution is *defined*
-as forward substitution on `nᵒᵈ`, so that every fact about it is the dual instance of the forward
-one; `Matrix.IsUpperTriangular.isLowerTriangular_orderDual` is the bridge. It and the
-nonsingularity criterion `Matrix.IsUpperTriangular.isUnit_iff` (a triangular
-matrix is nonsingular exactly when its diagonal has no zero, the sentence opening
-[quarteroni2000numerical] §3.2) live in `Numlib/LinearAlgebra/Matrix/Triangular`.
-
-The two Higham lemmas are over a linearly ordered field with the entrywise absolute value
-`Matrix.abs` of `Numlib/LinearAlgebra/Matrix/Order`, which is where their floating-point consumers
-(`Numlib/FloatingPoint/Substitution`) live; row diagonal dominance there is
-`Matrix.IsAbsDiagDominant` of `Numlib/LinearAlgebra/Matrix/DiagDominant`,
-`∑_{j ≠ i} |u_ij| ≤ |u_ii|`, since `Matrix.IsDiagDominant` is stated with the norm of `RCLike`
-scalars (over `ℝ` the two agree, `Matrix.isDiagDominant_iff_isAbsDiagDominant`). Both
-proofs normalize `V = D⁻¹ U` implicitly, working with `|(U⁻¹)_{ik}| |u_kk| = |(V⁻¹)_{ik}|`, and
-the geometric sums `∑_{k ∈ s} 2^{#{l ∈ s | l < k}} = 2^{#s} - 1` over an arbitrary finset of a
-linear order (`Finset.sum_two_pow_card_filter_lt_add_one`) replace the book's
-`∑_{k=i+1}^j 2^{k-i-1}`.
-
-## References
-
-* [quarteroni2000numerical] §3.2, §3.3.1, §3.5, §3.6.
-* [higham2002accuracy] §8.1–8.2.
+* The index type is any `[Fintype n] [LinearOrder n]`, never `Fin N`. Substitution uses only the
+  order $j < i$. Counts of indices such as $\#\{k : i \le k < j\}$ replace the differences $j - i$
+  of the books; on `Fin N` the two agree, by `Matrix.card_filter_le_lt_fin`.
+* Both substitutions are total. A zero diagonal entry gives a value by the convention $t / 0 = 0$,
+  not a hypothesis of the definition.
+* Backward substitution is defined so that it is forward substitution on the reversed order `nᵒᵈ`,
+  and every fact about it is the dual instance of the forward fact. The bridge is
+  `Matrix.IsUpperTriangular.isLowerTriangular_orderDual`. This lemma and the criterion
+  `Matrix.IsUpperTriangular.isUnit_iff` (a triangular matrix is nonsingular exactly when its
+  diagonal has no zero entry, the first sentence of [quarteroni2000numerical], §3.2) are in
+  `Numlib.LinearAlgebra.Matrix.Triangular`.
+* The two lemmas of Higham are stated over a linearly ordered field with the entrywise absolute
+  value `Matrix.abs` of `Numlib.LinearAlgebra.Matrix.Order`, because their floating-point
+  applications in `Numlib.FloatingPoint.Substitution` use such fields. Row diagonal dominance there
+  is `Matrix.IsAbsDiagDominant` of `Numlib.LinearAlgebra.Matrix.DiagDominant`, that is,
+  $\sum_{j \neq i} |u_{ij}| \le |u_{ii}|$ for every $i$. The predicate `Matrix.IsDiagDominant` is
+  stated with the norm of `RCLike` scalars instead; over $\mathbb{R}$ the two agree, by
+  `Matrix.isDiagDominant_iff_isAbsDiagDominant`.
+* Both proofs normalize $V = D^{-1} U$, with $D$ the diagonal of $U$, implicitly: they work with
+  $|(U^{-1})_{ik}| \, |u_{kk}| = |(V^{-1})_{ik}|$. The geometric sums $\sum_{k \in s} 2^{\#\{l \in s
+  : l < k\}} = 2^{\# s} - 1$ over an arbitrary finite set of a linear order
+  (`Finset.sum_two_pow_card_filter_lt_add_one`) replace the sums $\sum_{k=i+1}^{j} 2^{k-i-1}$ of the
+  book.
 -/
 
 open Finset
@@ -81,8 +93,9 @@ namespace Finset
 
 variable {α : Type*} [LinearOrder α] {R : Type*} [Semiring R]
 
-/-- `∑_{k ∈ s} 2^{#{l ∈ s | l < k}} + 1 = 2^{#s}`: listing `s` in increasing order as `k₀ < k₁ < …`,
-the summand at `k_m` is `2^m`. -/
+/-- Let $s$ be a finite subset of a linear order, and let $R$ be a semiring. Then
+$$\sum_{k \in s} 2^{\#\{l \in s : l < k\}} + 1 = 2^{\# s}$$
+in $R$. If $s = \{k_0 < k_1 < \dots\}$, the summand at $k_m$ is $2^m$. -/
 theorem sum_two_pow_card_filter_lt_add_one (s : Finset α) :
     ∑ k ∈ s, (2 : R) ^ #(s.filter (· < k)) + 1 = 2 ^ #s := by
   induction s using Finset.induction_on_max with
@@ -102,8 +115,10 @@ theorem sum_two_pow_card_filter_lt_add_one (s : Finset α) :
     rw [sum_insert has, h1, sum_congr rfl fun k hk => by rw [h2 k hk], add_assoc, ih,
       card_insert_of_notMem has, pow_succ, mul_two]
 
-/-- `∑_{k ∈ s} 2^{#{l ∈ s | k < l}} + 1 = 2^{#s}`, the mirror image of
-`Finset.sum_two_pow_card_filter_lt_add_one`, of which it is the instance on the dual order. -/
+/-- Let $s$ be a finite subset of a linear order, and let $R$ be a semiring. Then
+$$\sum_{k \in s} 2^{\#\{l \in s : k < l\}} + 1 = 2^{\# s}$$
+in $R$. This is the mirror image of `Finset.sum_two_pow_card_filter_lt_add_one`, and its
+instance on the reversed order. -/
 theorem sum_two_pow_card_filter_gt_add_one (s : Finset α) :
     ∑ k ∈ s, (2 : R) ^ #(s.filter (k < ·)) + 1 = 2 ^ #s :=
   sum_two_pow_card_filter_lt_add_one (α := αᵒᵈ) s
@@ -118,8 +133,9 @@ variable {n : Type*} [Fintype n] [LinearOrder n]
 
 section Counts
 
-/-- The half-open intervals `(i, j]` and `[i, j)` hold the same number of indices when `i ≤ j`:
-both are `[i, j]` with one endpoint removed. -/
+/-- For indices $i \le j$ of a finite linear order, the half-open intervals $(i, j]$ and $[i, j)$
+have the same number of elements: $\#\{k : i < k \le j\} = \#\{k : i \le k < j\}$. Both are
+$[i, j]$ with one endpoint removed. -/
 theorem card_filter_lt_le_eq_card_filter_le_lt {i j : n} (hij : i ≤ j) :
     #{k | i < k ∧ k ≤ j} = #{k | i ≤ k ∧ k < j} := by
   have h1 : univ.filter (fun k => i ≤ k ∧ k ≤ j) =
@@ -150,20 +166,22 @@ theorem card_filter_lt_le_eq_card_filter_le_lt {i j : n} (hij : i ≤ j) :
   rw [card_insert_of_notMem (by simp), card_insert_of_notMem (by simp)] at this
   omega
 
-/-- The indices `≥ i` are `i` and the indices `> i`. -/
+/-- For an index $i$ of a finite linear order, $\{k : i \le k\} = \{i\} \cup \{k : i < k\}$. -/
 theorem filter_ge_eq_insert_filter_gt (i : n) :
     univ.filter (i ≤ ·) = insert i (univ.filter (i < ·)) := by
   ext k
   simp only [mem_filter, mem_univ, true_and, mem_insert]
   exact ⟨fun h => h.eq_or_lt.imp Eq.symm id, fun h => h.elim (fun h => h ▸ le_rfl) le_of_lt⟩
 
-/-- `#{k | i ≤ k} = #{k | i < k} + 1`. -/
+/-- For an index $i$ of a finite linear order, $\#\{k : i \le k\} = \#\{k : i < k\} + 1$. -/
 theorem card_filter_le_eq_card_filter_lt_add_one (i : n) :
     #{k | i ≤ k} = #{k | i < k} + 1 := by
   rw [filter_ge_eq_insert_filter_gt, card_insert_of_notMem (by simp)]
 
-/-- Splitting a sum over `{r ≥ i}` into the term at `i` and the sum over `{r > i}`, the mirror
-image of `Matrix.sum_filter_le_eq_add`. -/
+/-- For a function $f$ on a finite linear order with values in an additive commutative monoid, and
+an index $i$,
+$$\sum_{r \ge i} f(r) = f(i) + \sum_{r > i} f(r).$$
+This is the mirror image of `Matrix.sum_filter_le_eq_add`. -/
 theorem sum_filter_ge_eq_add {M : Type*} [AddCommMonoid M] (f : n → M) (i : n) :
     ∑ r ∈ univ.filter (i ≤ ·), f r = f i + ∑ r ∈ univ.filter (i < ·), f r := by
   rw [filter_ge_eq_insert_filter_gt, Finset.sum_insert (by simp)]
@@ -174,10 +192,15 @@ variable {K : Type*} [Field K]
 
 /-! ### Forward substitution -/
 
-/-- **Forward substitution**, [quarteroni2000numerical] (3.22): `x i = (b i - ∑_{j < i} l_ij x_j) /
-l_ii`, as one total function on a finite linear order, by well-founded recursion on the number of
-indices below `i`. A zero diagonal entry gives junk (`x / 0 = 0`) rather than a hypothesis;
-`Matrix.mulVec_forwardSubst` says when the result is the solution. -/
+/-- **Forward substitution**, [quarteroni2000numerical] (3.22). Let $K$ be a field, let the indices
+run over a finite linear order, and let $L \in K^{n \times n}$ and $b \in K^n$. The vector $x$
+is defined by
+$$x_i = \frac{b_i - \sum_{j < i} l_{ij} x_j}{l_{ii}}.$$
+
+The definition is a total function, by well-founded recursion on the number of indices below
+$i$. It uses only the entries $l_{ij}$ with $j \le i$. A zero diagonal entry gives a value by
+the convention $t / 0 = 0$, not a hypothesis; `Matrix.mulVec_forwardSubst` says when the result
+is the solution of $Lx = b$. -/
 noncomputable def forwardSubst (L : Matrix n n K) (b : n → K) : n → K
   | i => (b i - ∑ j ∈ (univ.filter (· < i)).attach, L i j * forwardSubst L b j) / L i i
 termination_by i => #{j | j < i}
@@ -187,15 +210,20 @@ section Forward
 
 variable (L : Matrix n n K) (b : n → K)
 
-/-- The recurrence of forward substitution, [quarteroni2000numerical] (3.22), without the
-`attach`. -/
+/-- The recurrence of forward substitution, [quarteroni2000numerical] (3.22): the vector $x$ of
+`Matrix.forwardSubst` satisfies, for every index $i$,
+$$x_i = \frac{b_i - \sum_{j < i} l_{ij} x_j}{l_{ii}}.$$
+This is the defining equation, with the sum over plain indices instead of the elements of a
+subtype. -/
 theorem forwardSubst_apply (i : n) :
     forwardSubst L b i = (b i - ∑ j ∈ univ.filter (· < i), L i j * forwardSubst L b j) / L i i := by
   rw [forwardSubst, Finset.sum_attach (univ.filter (· < i)) fun j => L i j * forwardSubst L b j]
 
 variable {L}
 
-/-- A row of `L x` for lower triangular `L` is the sum over the indices `≤ i`, split at `i`. -/
+/-- Let $L \in K^{n \times n}$ be lower triangular. Then for every vector $x$ and every index $i$,
+$$(Lx)_i = \sum_{j < i} l_{ij} x_j + l_{ii} x_i.$$
+-/
 theorem mulVec_apply_of_isLowerTriangular (hL : L.IsLowerTriangular) (x : n → K) (i : n) :
     (L *ᵥ x) i = (∑ j ∈ univ.filter (· < i), L i j * x j) + L i i * x i := by
   rw [mulVec, dotProduct, ← sum_filter_le_eq_add]
@@ -203,16 +231,18 @@ theorem mulVec_apply_of_isLowerTriangular (hL : L.IsLowerTriangular) (x : n → 
   by_contra h
   exact hj (by rw [hL (OrderDual.toDual_lt_toDual.2 (not_le.1 h)), zero_mul])
 
-/-- **Correctness of forward substitution**: for a lower triangular `L` with nowhere-zero diagonal,
-`L (forwardSubst L b) = b`. -/
+/-- **Correctness of forward substitution**. Let $K$ be a field, and let $L \in K^{n \times n}$ be
+lower triangular with $l_{ii} \neq 0$ for every $i$. Then for every $b \in K^n$, the vector $x$
+of `Matrix.forwardSubst` satisfies $Lx = b$. -/
 theorem mulVec_forwardSubst (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) :
     L *ᵥ forwardSubst L b = b := by
   ext i
   rw [mulVec_apply_of_isLowerTriangular hL, forwardSubst_apply, mul_div_cancel₀ _ (hd i),
     add_sub_cancel]
 
-/-- The solution of a nonsingular lower triangular system is unique, and it is the one forward
-substitution computes. -/
+/-- **Uniqueness for forward substitution**. Let $L \in K^{n \times n}$ be lower triangular with
+$l_{ii} \neq 0$ for every $i$, and let $Lx = b$. Then $x$ is the vector that forward
+substitution computes from $L$ and $b$. -/
 theorem forwardSubst_eq_of_mulVec_eq (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) {x : n → K}
     (hx : L *ᵥ x = b) : forwardSubst L b = x :=
   mulVec_injective_iff_isUnit.2 (hL.isUnit_iff.2 hd)
@@ -222,9 +252,14 @@ end Forward
 
 /-! ### Backward substitution -/
 
-/-- **Backward substitution**, [quarteroni2000numerical] (3.23): `x i = (b i - ∑_{j > i} u_ij x_j)
-/ u_ii`, by well-founded recursion on the number of indices above `i`. It is forward substitution
-on the dual order (`Matrix.backSubst_eq_forwardSubst_toDual`). -/
+/-- **Backward substitution**, [quarteroni2000numerical] (3.23). Let $K$ be a field, let the indices
+run over a finite linear order, and let $U \in K^{n \times n}$ and $b \in K^n$. The vector $x$
+is defined by
+$$x_i = \frac{b_i - \sum_{j > i} u_{ij} x_j}{u_{ii}}.$$
+
+The definition is a total function, by well-founded recursion on the number of indices above
+$i$. A zero diagonal entry gives a value by the convention $t / 0 = 0$. It is forward
+substitution on the reversed order, by `Matrix.backSubst_eq_forwardSubst_toDual`. -/
 noncomputable def backSubst (U : Matrix n n K) (b : n → K) : n → K
   | i => (b i - ∑ j ∈ (univ.filter (i < ·)).attach, U i j * backSubst U b j) / U i i
 termination_by i => #{j | i < j}
@@ -234,14 +269,17 @@ section Backward
 
 variable (U : Matrix n n K) (b : n → K)
 
-/-- The recurrence of backward substitution, [quarteroni2000numerical] (3.23), without the
-`attach`. -/
+/-- The recurrence of backward substitution, [quarteroni2000numerical] (3.23): the vector $x$ of
+`Matrix.backSubst` satisfies, for every index $i$,
+$$x_i = \frac{b_i - \sum_{j > i} u_{ij} x_j}{u_{ii}}.$$
+This is the defining equation, with the sum over plain indices instead of the elements of a
+subtype. -/
 theorem backSubst_apply (i : n) :
     backSubst U b i = (b i - ∑ j ∈ univ.filter (i < ·), U i j * backSubst U b j) / U i i := by
   rw [backSubst, Finset.sum_attach (univ.filter (i < ·)) fun j => U i j * backSubst U b j]
 
-/-- Backward substitution is forward substitution on the dual order `nᵒᵈ`: the two recurrences
-coincide term by term, by strong induction downwards. -/
+/-- Backward substitution with $U$ and $b$ is forward substitution with the same $U$ and $b$ on the
+reversed order `nᵒᵈ`: the two recurrences agree term by term. -/
 theorem backSubst_eq_forwardSubst_toDual : backSubst U b = forwardSubst (n := nᵒᵈ) U b := by
   funext i
   induction i using WellFoundedGT.induction with
@@ -257,7 +295,9 @@ theorem backSubst_eq_forwardSubst_toDual : backSubst U b = forwardSubst (n := n�
 
 variable {U}
 
-/-- A row of `U x` for upper triangular `U` is the sum over the indices `≥ i`, split at `i`. -/
+/-- Let $U \in K^{n \times n}$ be upper triangular. Then for every vector $x$ and every index $i$,
+$$(Ux)_i = u_{ii} x_i + \sum_{j > i} u_{ij} x_j.$$
+-/
 theorem mulVec_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (x : n → K) (i : n) :
     (U *ᵥ x) i = U i i * x i + ∑ j ∈ univ.filter (i < ·), U i j * x j := by
   rw [mulVec, dotProduct, ← sum_filter_ge_eq_add (fun j => U i j * x j) i]
@@ -265,16 +305,18 @@ theorem mulVec_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (x : n → 
   by_contra h
   exact hj (by rw [hU (not_le.1 h), zero_mul])
 
-/-- **Correctness of backward substitution**: for an upper triangular `U` with nowhere-zero
-diagonal, `U (backSubst U b) = b`. -/
+/-- **Correctness of backward substitution**. Let $K$ be a field, and let $U \in K^{n \times n}$ be
+upper triangular with $u_{ii} \neq 0$ for every $i$. Then for every $b \in K^n$, the vector $x$
+of `Matrix.backSubst` satisfies $Ux = b$. -/
 theorem mulVec_backSubst (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) :
     U *ᵥ backSubst U b = b := by
   ext i
   rw [mulVec_apply_of_isUpperTriangular hU, backSubst_apply, mul_div_cancel₀ _ (hd i),
     sub_add_cancel]
 
-/-- The solution of a nonsingular upper triangular system is unique, and it is the one backward
-substitution computes. -/
+/-- **Uniqueness for backward substitution**. Let $U \in K^{n \times n}$ be upper triangular with
+$u_{ii} \neq 0$ for every $i$, and let $Ux = b$. Then $x$ is the vector that backward
+substitution computes from $U$ and $b$. -/
 theorem backSubst_eq_of_mulVec_eq (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) {x : n → K}
     (hx : U *ᵥ x = b) : backSubst U b = x :=
   mulVec_injective_iff_isUnit.2 (hU.isUnit_iff.2 hd)
@@ -288,36 +330,47 @@ section LUSolve
 
 variable (L U : Matrix n n K) (b : n → K)
 
-/-- Solving `A x = b` through a factorization `A = L U`: `L y = b` by forward substitution, then
-`U x = y` by backward substitution ([quarteroni2000numerical] §3.3.1). -/
+/-- **The LU solve** ([quarteroni2000numerical], §3.3.1). For $L, U \in K^{n \times n}$ and
+$b \in K^n$, solve $Ly = b$ by forward substitution and then $Ux = y$ by backward substitution.
+The value is $x$. -/
 noncomputable def luSolve : n → K :=
   backSubst U (forwardSubst L b)
 
 variable {L U}
 
-/-- **The LU solve is correct**: if `A = L U` with nonzero pivots, `A (luSolve L U b) = b`. -/
+/-- **The LU solve is correct**. Let $K$ be a field, and let $A = LU$ be an LU factorization of
+$A \in K^{n \times n}$: $L$ is unit lower triangular, $U$ is upper triangular, and $LU = A$. If
+$u_{ii} \neq 0$ for every $i$, then for every $b \in K^n$ the vector $x$ of `Matrix.luSolve`
+satisfies $Ax = b$.
+
+The LU factorization is `Matrix.IsLU A L U`. -/
 theorem mulVec_luSolve {A : Matrix n n K} (h : IsLU A L U) (hd : ∀ i, U i i ≠ 0) :
     A *ᵥ luSolve L U b = b := by
   rw [luSolve, ← h.mul_eq, ← mulVec_mulVec, mulVec_backSubst _ h.isUpperTriangular hd,
     mulVec_forwardSubst _ h.isUnitLowerTriangular.isLowerTriangular fun i => by
       rw [h.isUnitLowerTriangular.diag_eq_one]; exact one_ne_zero]
 
-/-- **The LU solve with a row permutation**: if `P A = L U` for a nonsingular `P` and the pivots
-are nonzero, then solving `L y = P b`, `U x = y` solves `A x = b`
-([quarteroni2000numerical] §3.5). -/
+/-- **The LU solve with a row permutation** ([quarteroni2000numerical], §3.5). Let $K$ be a field,
+let $P, A \in K^{n \times n}$ with $P$ nonsingular, and let $PA = LU$ be an LU factorization
+with $u_{ii} \neq 0$ for every $i$. Then for every $b \in K^n$, solving $Ly = Pb$ and then
+$Ux = y$ gives a vector $x$ with $Ax = b$. -/
 theorem mulVec_luSolve_of_mul {P A : Matrix n n K} (hP : IsUnit P) (h : IsLU (P * A) L U)
     (hd : ∀ i, U i i ≠ 0) : A *ᵥ luSolve L U (P *ᵥ b) = b := by
   have := mulVec_luSolve (P *ᵥ b) h hd
   rw [← mulVec_mulVec] at this
   exact mulVec_injective_iff_isUnit.2 hP this
 
-/-- A permutation matrix is a unit: its determinant is the sign of the permutation. -/
+/-- A permutation matrix is nonsingular: its determinant is the sign $\pm 1$ of the permutation. -/
 theorem isUnit_permMatrix (σ : Equiv.Perm n) : IsUnit (σ.permMatrix K) := by
   rw [isUnit_iff_isUnit_det, det_permutation]
   rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with h | h <;> simp [h]
 
-/-- **The LU solve with partial pivoting**, [quarteroni2000numerical] §3.5: if `P A = L U` for a
-permutation matrix `P`, then `x = luSolve L U (P b)` solves `A x = b`. -/
+/-- **The LU solve with partial pivoting** ([quarteroni2000numerical], §3.5). Let $K$ be a field,
+let $P$ be the permutation matrix of a permutation $\sigma$, and let $PA = LU$ be an LU
+factorization with $u_{ii} \neq 0$ for every $i$. Then for every $b \in K^n$, solving $Ly = Pb$
+and then $Ux = y$ gives a vector $x$ with $Ax = b$.
+
+The matrix $P$ is `Equiv.Perm.permMatrix K σ`. -/
 theorem mulVec_luSolve_permMatrix {A : Matrix n n K} {σ : Equiv.Perm n}
     (h : IsLU (σ.permMatrix K * A) L U) (hd : ∀ i, U i i ≠ 0) :
     A *ᵥ luSolve L U (σ.permMatrix K *ᵥ b) = b :=
@@ -331,8 +384,10 @@ section Inverse
 
 variable {U : Matrix n n K}
 
-/-- [quarteroni2000numerical] (3.26): the columns of `U⁻¹` are the backward-substitution
-solutions of the systems `U v_i = e_i`. -/
+/-- **The columns of the inverse of a triangular matrix**, [quarteroni2000numerical] (3.26). Let
+$U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$. Then for every
+index $i$, the column $i$ of $U^{-1}$ is the solution $v_i$ of $U v_i = e_i$ that backward
+substitution computes. -/
 theorem inv_col_eq_backSubst (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) (i : n) :
     (fun r => U⁻¹ r i) = backSubst U (Pi.single i 1) := by
   have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
@@ -340,10 +395,17 @@ theorem inv_col_eq_backSubst (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0
   have : (fun r => U⁻¹ r i) = U⁻¹ *ᵥ Pi.single i 1 := (mulVec_single_one _ _).symm
   rw [this, mulVec_mulVec, mul_nonsing_inv U hUd, one_mulVec]
 
-/-- [quarteroni2000numerical] (3.27): the leading block `U⁻¹(≤ k)` of the inverse of an upper
-triangular matrix is the inverse of the leading block `U(≤ k)`, so the nonzero part of each column
-of `U⁻¹` is found from a leading-block system. Reading `U U⁻¹ = 1` on the block `(≤ k, ≤ k)`, the
-cross term vanishes because `U⁻¹` is upper triangular. -/
+/-- **The leading blocks of the inverse of a triangular matrix**, [quarteroni2000numerical] (3.27).
+Let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$, and let $k$
+be an index. Write $U_{\le k}$ for the leading block of $U$ with the rows and the columns of
+index at most $k$. Then
+$$(U_{\le k})^{-1} = (U^{-1})_{\le k}.$$
+So the nonzero part of each column of $U^{-1}$ is found from a system with a leading block of
+$U$.
+
+The block is `Matrix.toBlock` with the condition $\cdot \le k$ on rows and columns. The proof
+reads $U U^{-1} = I$ on the block of indices at most $k$; the other term vanishes because
+$U^{-1}$ is upper triangular. -/
 theorem inv_toBlock_le_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (k : n) : (U.toBlock (· ≤ k) (· ≤ k))⁻¹ = U⁻¹.toBlock (· ≤ k) (· ≤ k) := by
   have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
@@ -354,8 +416,9 @@ theorem inv_toBlock_le_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀
   rw [mul_nonsing_inv U hUd, toBlock_one_self, hz, Matrix.mul_zero, add_zero] at this
   exact this.symm
 
-/-- The diagonal of the inverse of an upper triangular matrix is the inverse of the diagonal:
-`(U⁻¹)_kk = 1 / u_kk`, the first line of [quarteroni2000numerical] (3.28). -/
+/-- Let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$. Then the
+diagonal of $U^{-1}$ is the inverse of the diagonal: $(U^{-1})_{kk} = 1 / u_{kk}$ for every $k$.
+This is the first line of [quarteroni2000numerical] (3.28). -/
 theorem inv_apply_self_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (k : n) : U⁻¹ k k = (U k k)⁻¹ := by
   have hUd : IsUnit U.det := hU.isUnit_det_of_diag_ne_zero hd
@@ -363,13 +426,18 @@ theorem inv_apply_self_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀
   rw [hU.mul_apply_self hU.inv, one_apply_eq] at h
   exact eq_inv_of_mul_eq_one_right h
 
-/-- Below the diagonal the inverse of an upper triangular matrix vanishes. -/
+/-- Let $U \in K^{n \times n}$ be upper triangular. Then $U^{-1}$ vanishes below the diagonal:
+$(U^{-1})_{ik} = 0$ for $k < i$.
+
+No condition on the diagonal is needed, because Mathlib's inverse of a singular matrix is $0$. -/
 theorem inv_apply_of_isUpperTriangular_of_lt (hU : U.IsUpperTriangular) {i k : n} (hki : k < i) :
     U⁻¹ i k = 0 :=
   hU.inv hki
 
-/-- The entry `(i, k)` of `U U⁻¹ = 1` above the diagonal, with the vanishing terms removed:
-`u_ii (U⁻¹)_ik = -∑_{i < j ≤ k} u_ij (U⁻¹)_jk`. -/
+/-- Let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$. Then for
+indices $i < k$, the entry $(i, k)$ of $U U^{-1} = I$ gives
+$$u_{ii} (U^{-1})_{ik} = -\sum_{i < j \le k} u_{ij} (U^{-1})_{jk}.$$
+-/
 theorem diag_mul_inv_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     {i k : n} (hik : i < k) :
     U i i * U⁻¹ i k = -∑ j ∈ univ.filter (fun j => i < j ∧ j ≤ k), U i j * U⁻¹ j k := by
@@ -396,11 +464,14 @@ theorem diag_mul_inv_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd :
     · exact hj (by rw [hU hji, zero_mul])
     · exact hj (by rw [hU.inv hkj, mul_zero])
 
-/-- **The inversion recurrence for upper triangular matrices**, [quarteroni2000numerical] (3.28):
-above the diagonal, `(U⁻¹)_ik = -u_ii⁻¹ ∑_{i < j ≤ k} u_ij (U⁻¹)_jk`; together with
-`Matrix.inv_apply_self_of_isUpperTriangular` (`(U⁻¹)_kk = u_kk⁻¹`) and
-`Matrix.inv_apply_of_isUpperTriangular_of_lt` (zero below the diagonal) this computes `U⁻¹` column
-by column, each column from the bottom up. -/
+/-- **The inversion recurrence for upper triangular matrices**, [quarteroni2000numerical] (3.28).
+Let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$. Then for
+indices $i < k$,
+$$(U^{-1})_{ik} = -\frac{1}{u_{ii}} \sum_{i < j \le k} u_{ij} (U^{-1})_{jk}.$$
+
+Together with `Matrix.inv_apply_self_of_isUpperTriangular` ($(U^{-1})_{kk} = 1 / u_{kk}$) and
+`Matrix.inv_apply_of_isUpperTriangular_of_lt` (zero below the diagonal), this computes $U^{-1}$
+column by column, and each column from the bottom up. -/
 theorem inv_apply_of_isUpperTriangular (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) {i k : n}
     (hik : i < k) :
     U⁻¹ i k = -(U i i)⁻¹ * ∑ j ∈ univ.filter (fun j => i < j ∧ j ≤ k), U i j * U⁻¹ j k := by
@@ -411,7 +482,7 @@ end Inverse
 
 end Matrix
 
-/-! ### The bounds of Higham on `|U⁻¹| |U|` -/
+/-! ### The bounds of Higham on $|U^{-1}| \, |U|$ -/
 
 namespace Matrix
 
@@ -421,15 +492,20 @@ variable {U : Matrix n n K}
 
 section Higham
 
-/-- The triangle inequality applied to the inversion recurrence: for `i < k`,
-`|u_ii| |(U⁻¹)_ik| ≤ ∑_{i < j ≤ k} |u_ij| |(U⁻¹)_jk|`. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular with
+$u_{ii} \neq 0$ for every $i$. Then for indices $i < k$, the triangle inequality in the
+inversion recurrence gives
+$$|u_{ii}| \, |(U^{-1})_{ik}| \le \sum_{i < j \le k} |u_{ij}| \, |(U^{-1})_{jk}|.$$
+-/
 theorem abs_diag_mul_abs_inv_apply_le (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) {i k : n}
     (hik : i < k) :
     |U i i| * |U⁻¹ i k| ≤ ∑ j ∈ univ.filter (fun j => i < j ∧ j ≤ k), |U i j| * |U⁻¹ j k| := by
   rw [← abs_mul, diag_mul_inv_apply_of_isUpperTriangular hU hd hik, abs_neg]
   exact (Finset.abs_sum_le_sum_abs _ _).trans_eq (Finset.sum_congr rfl fun j _ => abs_mul _ _)
 
-/-- The entrywise product `(|U⁻¹| |U|)_ij` vanishes below the diagonal. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular. Then
+$(|U^{-1}| \, |U|)_{ij} = 0$ for $j < i$, where $|A|$ is the matrix of the absolute values of
+the entries of $A$. -/
 theorem abs_inv_mul_abs_apply_of_lt (hU : U.IsUpperTriangular) {i j : n} (hji : j < i) :
     (U⁻¹.abs * U.abs) i j = 0 := by
   rw [Matrix.mul_apply]
@@ -438,7 +514,10 @@ theorem abs_inv_mul_abs_apply_of_lt (hU : U.IsUpperTriangular) {i j : n} (hji : 
   · rw [abs_apply, hU.inv hki, abs_zero, zero_mul]
   · rw [abs_apply U, hU (hji.trans_le hik), abs_zero, mul_zero]
 
-/-- On and above the diagonal, `(|U⁻¹| |U|)_ij` is the sum over the indices `i ≤ k ≤ j`. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular. Then
+for all indices $i$ and $j$,
+$$(|U^{-1}| \, |U|)_{ij} = \sum_{i \le k \le j} |(U^{-1})_{ik}| \, |u_{kj}|.$$
+For $j < i$ the sum is empty. -/
 theorem abs_inv_mul_abs_apply_eq_sum (hU : U.IsUpperTriangular) (i j : n) :
     (U⁻¹.abs * U.abs) i j = ∑ k ∈ univ.filter (fun k => i ≤ k ∧ k ≤ j), |U⁻¹ i k| * |U k j| := by
   rw [Matrix.mul_apply]
@@ -449,13 +528,20 @@ theorem abs_inv_mul_abs_apply_eq_sum (hU : U.IsUpperTriangular) (i j : n) :
   · exact hk (by rw [abs_apply, hU.inv hki, abs_zero, zero_mul])
   · exact hk (by rw [abs_apply U, hU hjk, abs_zero, mul_zero])
 
-/-- The normalized entry `|(U⁻¹)_kk| |u_kk|` is `1`. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular with
+$u_{ii} \neq 0$ for every $i$. Then the normalized diagonal entry satisfies
+$|(U^{-1})_{kk}| \, |u_{kk}| = 1$ for every $k$. -/
 theorem abs_inv_apply_self_mul_abs_diag (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) (k : n) :
     |U⁻¹ k k| * |U k k| = 1 := by
   rw [inv_apply_self_of_isUpperTriangular hU hd, abs_inv, inv_mul_cancel₀ (abs_ne_zero.2 (hd k))]
 
-/-- The normalized entries `a_ik = |(U⁻¹)_ik| |u_kk|` (the entries of `|V⁻¹|` for `V = D⁻¹ U`)
-satisfy `a_ik ≤ ∑_{i < j ≤ k} (|u_ij| / |u_ii|) a_jk` for `i < k`. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular with
+$u_{ii} \neq 0$ for every $i$. The normalized entries $a_{ik} = |(U^{-1})_{ik}| \, |u_{kk}|$
+satisfy, for $i < k$,
+$$a_{ik} \le \sum_{i < j \le k} \frac{|u_{ij}|}{|u_{ii}|} \, a_{jk}.$$
+
+The number $a_{ik}$ is the entry $(i, k)$ of $|V^{-1}|$ for $V = D^{-1} U$, where $D$ is the
+diagonal of $U$. -/
 theorem abs_inv_apply_mul_abs_diag_le_sum (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     {i k : n} (hik : i < k) :
     |U⁻¹ i k| * |U k k| ≤
@@ -467,10 +553,16 @@ theorem abs_inv_apply_mul_abs_diag_le_sum (hU : U.IsUpperTriangular) (hd : ∀ i
   rw [Finset.sum_mul]
   exact Finset.sum_congr rfl fun j _ => by ring
 
-/-- **[higham2002accuracy] Lemma 8.6, the inner bound**: if `|u_ii| ≥ |u_ij|` for `j > i`, then
-`|(U⁻¹)_ik| |u_kk| ≤ 2^{#(i, k)}` for `i < k`, where `#(i, k)` counts the indices strictly between
-`i` and `k` (the book's `2^{k-i-1}`). By downward induction on `i`: the recurrence bounds `a_ik` by
-`1 + ∑_{i < j < k} a_jk ≤ 1 + ∑_{i < j < k} 2^{#(j, k)} = 2^{#(i, k)}`. -/
+/-- **The inner bound of Lemma 8.6** of [higham2002accuracy]. Let $K$ be a linearly ordered field,
+and let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$ and
+$|u_{ij}| \le |u_{ii}|$ for all $i < j$. Then for indices $i < k$,
+$$|(U^{-1})_{ik}| \, |u_{kk}| \le 2^{\#\{l : i < l < k\}}.$$
+The exponent counts the indices strictly between $i$ and $k$; it is the exponent $k - i - 1$ of
+the book.
+
+The proof is by downward induction on $i$: the recurrence bounds
+$a_{ik} = |(U^{-1})_{ik}| \, |u_{kk}|$ by $1 + \sum_{i < j < k} a_{jk} \le 1 + \sum_{i < j < k}
+2^{\#\{l : j < l < k\}} = 2^{\#\{l : i < l < k\}}$. -/
 theorem abs_inv_apply_mul_abs_diag_le_two_pow (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (hrow : ∀ i j, i < j → |U i j| ≤ |U i i|) {i k : n} (hik : i < k) :
     |U⁻¹ i k| * |U k k| ≤ 2 ^ #{l | i < l ∧ l < k} := by
@@ -519,12 +611,16 @@ theorem abs_inv_apply_mul_abs_diag_le_two_pow (hU : U.IsUpperTriangular) (hd : �
         exact hih j hj
     _ = 2 ^ #{l | i < l ∧ l < k} := by rw [add_comm, hgeom]
 
-/-- **[higham2002accuracy] Lemma 8.6**: if `U` is upper triangular with nowhere-zero diagonal and
-`|u_ii| ≥ |u_ij|` for all `j > i` (as for the triangular factors of Gaussian elimination with
-pivoting, or of a QR factorization with column pivoting), then for `i ≤ j`
-`(|U⁻¹| |U|)_ij ≤ 2^{#[i, j)}`, the book's `2^{j-i}`; below the diagonal the entry is `0`
-(`Matrix.abs_inv_mul_abs_apply_of_lt`). This is the bound behind the componentwise error estimate
-of substitution in [quarteroni2000numerical] §3.2.2. -/
+/-- **Lemma 8.6** of [higham2002accuracy]. Let $K$ be a linearly ordered field, and let
+$U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$ and
+$|u_{ij}| \le |u_{ii}|$ for all $i < j$. Then for indices $i \le j$,
+$$(|U^{-1}| \, |U|)_{ij} \le 2^{\#\{k : i \le k < j\}}.$$
+The exponent is the exponent $j - i$ of the book. Below the diagonal the entry is $0$, by
+`Matrix.abs_inv_mul_abs_apply_of_lt`.
+
+The hypothesis holds for the triangular factors of Gaussian elimination with pivoting, and of a
+QR factorization with column pivoting. This is the bound behind the componentwise error estimate
+of substitution in [quarteroni2000numerical], §3.2.2. -/
 theorem abs_inv_mul_abs_apply_le_two_pow (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (hrow : ∀ i j, i < j → |U i j| ≤ |U i i|) {i j : n} (hij : i ≤ j) :
     (U⁻¹.abs * U.abs) i j ≤ 2 ^ #{k | i ≤ k ∧ k < j} := by
@@ -570,9 +666,14 @@ theorem abs_inv_mul_abs_apply_le_two_pow (hU : U.IsUpperTriangular) (hd : ∀ i,
         exact hih k hk
     _ = 2 ^ #{k | i < k ∧ k ≤ j} := by rw [add_comm, hgeom]
 
-/-- **[higham2002accuracy] Lemma 8.6, the row sums**: under its hypotheses,
-`∑_j (|U⁻¹| |U|)_ij ≤ 2^{#{k | i ≤ k}} - 1`, the book's `2^{n-i+1} - 1`, so that
-`‖|U⁻¹| |U|‖_∞ ≤ 2^n - 1` (his `cond(U) ≤ 2^n - 1`, and the `2^{n-i+1}` of Theorem 8.7). -/
+/-- **The row sums in Lemma 8.6** of [higham2002accuracy]. Let $K$ be a linearly ordered field, and
+let $U \in K^{n \times n}$ be upper triangular with $u_{ii} \neq 0$ for every $i$ and
+$|u_{ij}| \le |u_{ii}|$ for all $i < j$. Then for every index $i$,
+$$\sum_j (|U^{-1}| \, |U|)_{ij} \le 2^{\#\{k : i \le k\}} - 1.$$
+In 1-based indices this is the bound $2^{n-i+1} - 1$ of the book. It gives
+$\| |U^{-1}| \, |U| \|_\infty \le 2^n - 1$, which is Higham's
+$\operatorname{cond}(U) \le 2^n - 1$. The power $2^{n-i+1}$ is also the one in Theorem 8.7 of
+[higham2002accuracy]. -/
 theorem sum_abs_inv_mul_abs_apply_le_two_pow (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (hrow : ∀ i j, i < j → |U i j| ≤ |U i i|) (i : n) :
     ∑ j, (U⁻¹.abs * U.abs) i j ≤ 2 ^ #{k | i ≤ k} - 1 := by
@@ -590,20 +691,27 @@ theorem sum_abs_inv_mul_abs_apply_le_two_pow (hU : U.IsUpperTriangular) (hd : �
 
 end Higham
 
-/-! #### Row diagonally dominant triangular matrices -/
+/-! ### Row diagonally dominant triangular matrices -/
 
 section DiagDominant
 
-/-- Row diagonal dominance bounds every off-diagonal entry by the diagonal one. -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be row diagonally dominant:
+$\sum_{j \neq i} |u_{ij}| \le |u_{ii}|$ for every $i$. Then every off-diagonal entry satisfies
+$|u_{ij}| \le |u_{ii}|$. -/
 theorem abs_apply_le_abs_diag_of_sum_le (hdom : U.IsAbsDiagDominant)
     {i j : n} (hij : j ≠ i) : |U i j| ≤ |U i i| :=
   (Finset.single_le_sum (f := fun j => |U i j|) (fun _ _ => abs_nonneg _)
     (mem_erase.2 ⟨hij, mem_univ j⟩)).trans (hdom i)
 
-/-- **[higham2002accuracy] Lemma 8.8, the inner bound**: for a row diagonally dominant upper
-triangular `U` with nowhere-zero diagonal, the normalized inverse `|(U⁻¹)_ik| |u_kk|` (the entry of
-`|V⁻¹|` for `V = D⁻¹ U`) is at most `1`. By downward induction on `i`: `a_ik ≤ ∑_{i < j ≤ k}
-(|u_ij| / |u_ii|) a_jk ≤ ∑_{j ≠ i} |u_ij| / |u_ii| ≤ 1`. -/
+/-- **The inner bound of Lemma 8.8** of [higham2002accuracy]. Let $K$ be a linearly ordered field,
+and let $U \in K^{n \times n}$ be upper triangular and row diagonally dominant, with
+$u_{ii} \neq 0$ for every $i$. Then for all indices $i$ and $k$,
+$$|(U^{-1})_{ik}| \, |u_{kk}| \le 1.$$
+
+The left side is the entry $(i, k)$ of $|V^{-1}|$ for $V = D^{-1} U$, where $D$ is the diagonal
+of $U$. The proof is by downward induction on $i$: $a_{ik} \le \sum_{i < j \le k} (|u_{ij}| /
+|u_{ii}|) \, a_{jk} \le \sum_{j \neq i} |u_{ij}| / |u_{ii}| \le 1$.
+-/
 theorem abs_inv_apply_mul_abs_diag_le_one (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     (hdom : U.IsAbsDiagDominant) (i k : n) :
     |U⁻¹ i k| * |U k k| ≤ 1 := by
@@ -631,11 +739,15 @@ theorem abs_inv_apply_mul_abs_diag_le_one (hU : U.IsUpperTriangular) (hd : ∀ i
         rw [← Finset.sum_div, div_le_one hii]
         exact hdom i
 
-/-- **[higham2002accuracy] Lemma 8.8, entrywise**: for a row diagonally dominant upper triangular
-`U` with nowhere-zero diagonal and `i ≤ j`, `(|U⁻¹| |U|)_ij ≤ #[i, j]`, the number of indices
-between `i` and `j` inclusive (the book's `j - i + 1`; Higham states the weaker `i + j - 1`).
-Below the diagonal the entry is `0` (`Matrix.abs_inv_mul_abs_apply_of_lt`). This is the bound
-behind the "diagonally dominant" clause of [quarteroni2000numerical] §3.2.2. -/
+/-- **Lemma 8.8** of [higham2002accuracy], entrywise. Let $K$ be a linearly ordered field, and let
+$U \in K^{n \times n}$ be upper triangular and row diagonally dominant, with $u_{ii} \neq 0$ for
+every $i$. Then for indices $i \le j$,
+$$(|U^{-1}| \, |U|)_{ij} \le \#\{k : i \le k \le j\}.$$
+Below the diagonal the entry is $0$, by `Matrix.abs_inv_mul_abs_apply_of_lt`.
+
+The right side is the number of indices from $i$ to $j$ inclusive, that is, $j - i + 1$;
+[higham2002accuracy] states the weaker bound $i + j - 1$. This is the bound behind the clause on
+diagonally dominant matrices in [quarteroni2000numerical], §3.2.2. -/
 theorem abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) {i j : n}
     (hij : i ≤ j) : (U⁻¹.abs * U.abs) i j ≤ #{k | i ≤ k ∧ k ≤ j} := by
@@ -648,8 +760,10 @@ theorem abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
   · exact le_rfl
   · exact abs_apply_le_abs_diag_of_sum_le hdom hkj.ne'
 
-/-- The row sums of `|U|` for a row diagonally dominant upper triangular `U`: at most `2 |u_kk|`,
-and exactly `|u_kk|` in the last row (which has no entry to the right of the diagonal). -/
+/-- Let $K$ be a linearly ordered field, and let $U \in K^{n \times n}$ be upper triangular and row
+diagonally dominant. Then for every row $k$, $\sum_j |u_{kj}| \le 2 |u_{kk}|$, and
+$\sum_j |u_{kj}| \le |u_{kk}|$ if no index is greater than $k$ (the last row, which has no entry
+to the right of the diagonal). -/
 theorem sum_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
     (hdom : U.IsAbsDiagDominant) (k : n) :
     ∑ j, |U k j| ≤ |U k k| * if ∃ j, k < j then 2 else 1 := by
@@ -660,12 +774,17 @@ theorem sum_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
     rw [Finset.sum_eq_zero fun j hj => ?_, add_zero, mul_one]
     exact abs_eq_zero.2 (hU (lt_of_le_of_ne (h j) (mem_erase.1 hj).1))
 
-/-- **[higham2002accuracy] Lemma 8.8, the row sums**: for a row diagonally dominant upper
-triangular `U` with nowhere-zero diagonal, `∑_j (|U⁻¹| |U|)_ij ≤ 2 #{k | i < k} + 1`, the book's
-`2(n - i) + 1`; so `‖|U⁻¹| |U|‖_∞ ≤ 2n - 1`
-(`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`), his `cond(U) ≤ 2n - 1`, which is also
-the constant of [quarteroni2000numerical] §3.1.2. The proof is his:
-`|V⁻¹| |V| e ≤ |V⁻¹| (2, …, 2, 1)ᵀ` with the entries of `|V⁻¹|` at most `1`. -/
+/-- **The row sums in Lemma 8.8** of [higham2002accuracy]. Let $K$ be a linearly ordered field, and
+let $U \in K^{n \times n}$ be upper triangular and row diagonally dominant, with $u_{ii} \neq 0$
+for every $i$. Then for every index $i$,
+$$\sum_j (|U^{-1}| \, |U|)_{ij} \le 2 \, \#\{k : i < k\} + 1.$$
+In 1-based indices this is the bound $2(n - i) + 1$ of the book. It gives
+$\| |U^{-1}| \, |U| \|_\infty \le 2n - 1$, by
+`Matrix.sum_abs_inv_mul_abs_apply_le_of_isDiagDominant'`. This is Higham's
+$\operatorname{cond}(U) \le 2n - 1$, and the constant of [quarteroni2000numerical], §3.1.2.
+
+The proof is Higham's: $|V^{-1}| \, |V| e \le |V^{-1}| (2, \dots, 2, 1)^T$, and the entries of
+$|V^{-1}|$ are at most $1$. -/
 theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) (i : n) :
     ∑ j, (U⁻¹.abs * U.abs) i j ≤ 2 * #{k | i < k} + 1 := by
@@ -714,8 +833,10 @@ theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant (hU : U.IsUpperTriangular
   push_cast
   linarith
 
-/-- `‖|U⁻¹| |U|‖_∞ ≤ 2n - 1` for a row diagonally dominant upper triangular `U`
-([higham2002accuracy] Lemma 8.8): every row sum of `|U⁻¹| |U|` is at most `2 card n - 1`. -/
+/-- **The bound $2n - 1$ in Lemma 8.8** of [higham2002accuracy]. Let $K$ be a linearly ordered
+field, and let $U \in K^{n \times n}$ be upper triangular and row diagonally dominant, with
+$u_{ii} \neq 0$ for every $i$. Then every row sum of $|U^{-1}| \, |U|$ is at most $2n - 1$,
+where $n$ is the number of indices, so $\| |U^{-1}| \, |U| \|_\infty \le 2n - 1$. -/
 theorem sum_abs_inv_mul_abs_apply_le_of_isDiagDominant' (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) (hdom : U.IsAbsDiagDominant) (i : n) :
     ∑ j, (U⁻¹.abs * U.abs) i j ≤ 2 * Fintype.card n - 1 := by

@@ -14,17 +14,30 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 /-!
 # The Beta integral with natural exponents
 
-`∫₀¹ xᵃ (1 - x)ᵇ dx = a! b!/(a + b + 1)!` (`integral_pow_mul_one_sub_pow`), by induction on `b`
-with one integration by parts per step. Mathlib has the complex Beta function
-(`Complex.betaIntegral`, through the Gamma function); this is the elementary natural-exponent case,
-used for the remainder of Padé approximants and for Dirichlet's integral on a triangle.
+For natural numbers $a$ and $b$, this file proves
+$$\int_0^1 x^a (1 - x)^b\,dx = \frac{a!\,b!}{(a + b + 1)!}.$$
+The proof is an induction on $b$, with one integration by parts in each step. This elementary case
+of the Beta function is used for the remainder of Padé approximants and for Dirichlet's integral
+over a triangle.
+
+## Main results
+
+* `integral_pow_mul_one_sub_pow`: $\int_0^1 x^a (1 - x)^b\,dx = a!\,b!/(a + b + 1)!$ for natural
+  numbers $a$ and $b$.
+
+## Implementation notes
+
+* Mathlib has the complex Beta function `Complex.betaIntegral`, which it treats through the Gamma
+  function. The natural-exponent case here needs neither.
 -/
 
 open Set intervalIntegral
 open scoped Nat
 
-/-- **The Beta integral with natural exponents**: `∫₀¹ xᵃ (1 - x)ᵇ dx = a! b!/(a + b + 1)!`, by
-induction on `b` with one integration by parts per step. -/
+/-- The **Beta integral with natural exponents**: for natural numbers $a$ and $b$,
+$$\int_0^1 x^a (1 - x)^b\,dx = \frac{a!\,b!}{(a + b + 1)!}.$$
+
+The proof is an induction on $b$, with one integration by parts in each step. -/
 theorem integral_pow_mul_one_sub_pow (a b : ℕ) :
     ∫ x in (0 : ℝ)..1, x ^ a * (1 - x) ^ b = (a ! * b ! : ℝ) / (a + b + 1)! := by
   induction b generalizing a with

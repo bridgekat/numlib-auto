@@ -19,59 +19,81 @@ import Numlib.Eigen.MinMax
 /-!
 # Singular values of a linear map
 
-Facts about Mathlib's `LinearMap.singularValues` of a linear map `T : E →ₗ[𝕜] F` between
-finite-dimensional inner product spaces, stated coordinate-free. Mathlib's
-`LinearMap.singularValues` is the `ℕ`-indexed sequence of the square roots of the eigenvalues of
-`T† T`, sorted decreasingly and zero from `finrank E` on. Mathlib has no min–max characterization,
-no Weyl or interlacing inequality, no singular value decomposition of a map and no dilation; this
-module supplies them ([golub2013matrix] §2.4, §8.6.1–8.6.2).
+Let $E$ and $F$ be finite-dimensional inner product spaces over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, with $n = \dim E$, and let $T : E \to F$ be linear. Mathlib defines the singular
+values $\sigma_0(T) \ge \sigma_1(T) \ge \dots$ of $T$ as `LinearMap.singularValues`: the square
+roots of the eigenvalues of $T^* T$ in decreasing order, indexed by $\mathbb{N}$ from $0$, and
+$\sigma_k(T) = 0$ for $k \ge n$. This file proves the main facts about them without coordinates,
+following [golub2013matrix], §2.4 and §8.6.1–8.6.2. These are the max–min and min–max
+characterizations (the Courant–Fischer theorem for $T^* T$), for example
+$$\sigma_k(T) = \max_{\dim S = k + 1} \ \min_{x \in S,\, x \neq 0} \frac{\|Tx\|}{\|x\|} \qquad (k <
+  n),$$
+Weyl's inequality $\sigma_{i+j}(S + T) \le \sigma_i(S) + \sigma_j(T)$, the interlacing of the
+singular values under restriction of the domain, the invariance under isometries and adjoints, and
+the singular value decomposition of a map as a pair of orthonormal families.
+
+The file also defines the Hermitian dilation $(x, y) \mapsto (A^* y, Ax)$ of a linear map
+$A : E \to F$, a symmetric operator on $E \times F$, and shows that its eigenvalues in decreasing
+order are $\sigma_0, \dots, \sigma_{p-1}, 0, \dots, 0, -\sigma_{p-1}, \dots, -\sigma_0$ with
+$p = \min(\dim E, \dim F)$. Finally it proves the stacked-isometry identity
+$\|Q_2\|^2 = 1 - \sigma_{n-1}(Q_1)^2$ when $\|Q_1 x\|^2 + \|Q_2 x\|^2 = \|x\|^2$ for all $x$.
+
+## Main definitions
+
+* `LinearMap.hermitianDilation`: the Hermitian dilation (Jordan–Wielandt operator)
+  $(x, y) \mapsto (A^* y, Ax)$ on $E \times F$ with the Euclidean norm, for a given adjoint $A^*$ of
+  $A$.
 
 ## Main results
 
-* `LinearMap.isGreatest_singularValues`, `LinearMap.isLeast_singularValues`: the max–min and
-  min–max characterizations (Courant–Fischer for `T† T`), with the bilinear form
-  `LinearMap.isLeast_singularValues_bilinear` of [golub2013matrix] Theorem 8.6.1. The two one-sided
-  forms `LinearMap.le_singularValues_of_mul_norm_le` and
-  `LinearMap.singularValues_le_of_norm_le_mul` accept subspaces of *at least* the right dimension,
-  and are what the other proofs use.
-* `LinearMap.singularValues_add_le`: **Weyl's inequality** `σ_{i+j}(S + T) ≤ σ_i(S) + σ_j(T)`, the
-  one principle behind the perturbation bound `LinearMap.abs_singularValues_sub_le` and the lower
-  half of the Eckart–Young theorem.
-* `LinearMap.singularValues_comp_linearIsometry_le`,
-  `LinearMap.singularValues_add_le_singularValues_comp_linearIsometry` and
-  `LinearMap.singularValues_domRestrict_interlace`: interlacing under restriction of the domain.
-* `LinearMap.singularValues_eq_of_forall_norm_eq`, `LinearMap.singularValues_adjoint`,
-  `LinearMap.singularValues_comp_linearIsometryEquiv`: invariance under isometries and adjoints.
-* `LinearMap.exists_orthonormal_singularVectors`: the singular value decomposition of a map as a
-  pair of orthonormal families.
+* `LinearMap.isGreatest_singularValues` and `LinearMap.isLeast_singularValues`: the max–min and
+  min–max characterizations of $\sigma_k(T)$ by the stretch $\|Tx\| / \|x\|$ on subspaces.
+* `LinearMap.isLeast_singularValues_bilinear`: the min–max characterization by the bilinear form
+  $\operatorname{Re} \langle y, Tx \rangle / (\|x\| \|y\|)$ of [golub2013matrix], Theorem 8.6.1.
+* `LinearMap.le_singularValues_of_mul_norm_le` and `LinearMap.singularValues_le_of_norm_le_mul`:
+  one-sided bounds on $\sigma_k(T)$ from a subspace of at least the right dimension on which $T$
+  stretches by at least, or at most, $c$.
+* `LinearMap.singularValues_add_le`: **Weyl's inequality** $\sigma_{i+j}(S + T) \le \sigma_i(S) +
+  \sigma_j(T)$.
+* `LinearMap.abs_singularValues_sub_le`: if $\|(T - S)x\| \le C \|x\|$ for all $x$, then
+  $|\sigma_k(T) - \sigma_k(S)| \le C$.
+* `LinearMap.singularValues_domRestrict_interlace`: if $K \le E$ has codimension $r$, then
+  $\sigma_{k+r}(T) \le \sigma_k(T|_K) \le \sigma_k(T)$.
+* `LinearMap.singularValues_eq_of_forall_norm_eq`,
+  `LinearMap.singularValues_comp_linearIsometryEquiv` and `LinearMap.singularValues_adjoint`: two
+  maps with the same stretch at every vector have the same singular values, the singular values are
+  invariant under isometries, and $T^*$ has the same singular values as $T$.
+* `LinearMap.singularValues_comp_linearIsometry_eq_succ`: deflation of a top singular pair.
+* `LinearMap.exists_orthonormal_singularVectors`: if $\dim E \le \dim F$, there are an orthonormal
+  basis $(v_i)$ of $E$ and an orthonormal family $(u_i)$ in $F$ with $T v_i = \sigma_i u_i$.
 * `LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`: the **stacked-isometry
-  identity** `‖Q₂‖² = 1 - σ_min(Q₁)²` when `‖Q₁ x‖² + ‖Q₂ x‖² = ‖x‖²`.
-* `LinearMap.hermitianDilation`: the **Hermitian dilation** (Jordan–Wielandt operator)
-  `(x, y) ↦ (A† y, A x)` on `WithLp 2 (E × F)`, and its sorted spectrum
-  `LinearMap.eigenvalues_hermitianDilation`: `σ_0, …, σ_{p-1}, 0, …, 0, -σ_{p-1}, …, -σ_0`.
+  identity**.
+* `LinearMap.eigenvalues_hermitianDilation`: the $i$-th eigenvalue of the Hermitian dilation of $A$
+  is $\sigma_i(A) - \sigma_{N-1-i}(A)$, where $N = \dim E + \dim F$.
+
+## Proof outline
+
+Every inequality follows from the two one-sided max–min bounds. A subspace of dimension at least
+$k + 1$ on which $T$ stretches by at least $c$ gives $c \le \sigma_k(T)$, and a subspace of
+dimension at least $n - k$ on which $T$ stretches by at most $c$ gives $\sigma_k(T) \le c$. The
+spectrum of the dilation is also found in this way, not by the computation of an eigenbasis: the
+graph $\{(\sigma x, Ax)\}$ of $A$ over a max–min subspace bounds the eigenvalues from below, and the
+product of a min–max subspace with all of $F$ bounds them from above.
 
 ## Implementation notes
 
-The module is the coordinate-free rung of the library's singular-value theory: it imports nothing
-from the matrix layer, only Courant–Fischer (`Numlib/Eigen/MinMax`), and the matrix singular value
-decomposition (`Numlib/LinearAlgebra/Matrix/SVD`) and the matrix corollaries
-(`Numlib/Analysis/Matrix/SingularValues`) import it.
-
-Every inequality is proved from the two one-sided max–min lemmas: a subspace on which `T`
-stretches by at least `c` bounds a singular value from below, a subspace on which it stretches by
-at most `c` bounds one from above. The spectrum of the dilation, in particular, is read off by
-exhibiting such subspaces (a graph of `A` over a max–min subspace, and a product with the whole
-codomain), not by computing an eigenbasis. The dilation takes the adjoint as a second argument
-`Astar` with the hypothesis `LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar`,
-that is `⟪Astar u, x⟫ = ⟪u, A x⟫` (`LinearMap.isAdjointPair_inner_iff`), as in
-`Numlib/Krylov/NormalEquations`, so that it needs neither completeness nor finite dimension; its
-block order (domain factor first) is that of the matrix
-`Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0`.
-
-## References
-
-* [golub2013matrix] G. H. Golub and C. F. Van Loan, *Matrix Computations*, 4th ed., §2.4,
-  §8.6.1–8.6.2.
+* The singular values are indexed from $0$, so $\sigma_0(T)$ is the largest one. This differs from
+  the indexing from $1$ of [golub2013matrix].
+* The module does not use matrices. It uses the Courant–Fischer theorem of `Numlib.Eigen.MinMax`.
+  The matrix singular value decomposition in `Numlib.LinearAlgebra.Matrix.SVD` and the matrix
+  results in `Numlib.Analysis.Matrix.SingularValues` build on it.
+* `LinearMap.hermitianDilation` takes the adjoint as a second argument `Astar`, with the hypothesis
+  `LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar`, which says $\langle A^* u, x
+  \rangle = \langle u, Ax \rangle$ for all $u$ and $x$ (`LinearMap.isAdjointPair_inner_iff`). This
+  is the convention of `Numlib.Krylov.NormalEquations`. So the dilation needs neither completeness
+  nor finite dimension. The space $E \times F$ with the Euclidean norm is `WithLp 2 (E × F)`, with
+  the factor $E$ first, as in the matrix `Matrix.hermitianDilation A`, which is
+  `fromBlocks 0 Aᴴ A 0`.
 -/
 
 open Module
@@ -87,24 +109,30 @@ section Dilation
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
-/-- **The Hermitian dilation** (Jordan–Wielandt operator) of `A : E →ₗ[𝕜] F` with a given adjoint
-`Astar : F →ₗ[𝕜] E`: the operator `(x, y) ↦ (Astar y, A x)` on `WithLp 2 (E × F)`, domain factor
-first. Its matrix is `Matrix.hermitianDilation A = fromBlocks 0 Aᴴ A 0`, the Jordan–Wielandt matrix
-`S₃ = [0 Aᵀ; A 0]` of [golub2013matrix] §8.6.1 and `Ã` of (8.6.4); (10.4.16) writes it with the two
-factors exchanged. For `Astar = adjoint A` it is symmetric
-(`LinearMap.isSymmetric_hermitianDilation_adjoint`), with spectrum `±` the singular values of `A`
-padded by zeros (`LinearMap.eigenvalues_hermitianDilation`). -/
+/-- The **Hermitian dilation** (Jordan–Wielandt operator) of a linear map $A : E \to F$ with a given
+map $A^* : F \to E$: the operator
+$$H(x, y) = (A^* y, Ax)$$
+on $E \times F$ with the Euclidean norm $\|(x, y)\|^2 = \|x\|^2 + \|y\|^2$.
+
+The space is `WithLp 2 (E × F)`, with the factor $E$ first. The matrix of $H$ is
+`Matrix.hermitianDilation A`, which is `fromBlocks 0 Aᴴ A 0`. This is the Jordan–Wielandt matrix
+$S_3 = \begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix}$ of [golub2013matrix], §8.6.1, and the
+matrix $\tilde{A}$ of (8.6.4); (10.4.16) of [golub2013matrix] writes it with the two factors
+exchanged. When $A^*$ is the adjoint of $A$, the operator $H$ is symmetric
+(`LinearMap.isSymmetric_hermitianDilation_adjoint`), and its eigenvalues are $\pm$ the singular
+values of $A$, completed by zeros (`LinearMap.eigenvalues_hermitianDilation`). -/
 noncomputable def hermitianDilation (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) :
     WithLp 2 (E × F) →ₗ[𝕜] WithLp 2 (E × F) :=
   (WithLp.linearEquiv 2 𝕜 (E × F)).symm.toLinearMap ∘ₗ
     (Astar ∘ₗ WithLp.sndₗ 2 𝕜 E F).prod (A ∘ₗ WithLp.fstₗ 2 𝕜 E F)
 
+/-- The Hermitian dilation maps $(x, y)$ to $(A^* y, Ax)$. -/
 @[simp]
 theorem hermitianDilation_apply (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) (z : WithLp 2 (E × F)) :
     hermitianDilation A Astar z = WithLp.toLp 2 (Astar z.snd, A z.fst) :=
   rfl
 
-/-- The dilation of `-A` (with adjoint `-Astar`) is minus the dilation of `A`. -/
+/-- The dilation of $-A$ with the map $-A^*$ is minus the dilation of $A$ with $A^*$. -/
 theorem hermitianDilation_neg (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) :
     hermitianDilation (-A) (-Astar) = -hermitianDilation A Astar :=
   LinearMap.ext fun z => by
@@ -112,7 +140,12 @@ theorem hermitianDilation_neg (A : E →ₗ[𝕜] F) (Astar : F →ₗ[𝕜] E) 
 
 variable {A : E →ₗ[𝕜] F} {Astar : F →ₗ[𝕜] E}
 
-/-- The Hermitian dilation of a map with a given adjoint is symmetric. -/
+/-- Let $A : E \to F$ and $A^* : F \to E$ be linear with $\langle A^* u, x \rangle = \langle u, Ax
+\rangle$ for all $x \in E$ and $u \in F$. Then the Hermitian dilation
+$(x, y) \mapsto (A^* y, Ax)$ is a symmetric operator on $E \times F$.
+
+The hypothesis is `LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar`; see
+`LinearMap.isAdjointPair_inner_iff`. -/
 theorem isSymmetric_hermitianDilation
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar) :
     (hermitianDilation A Astar).IsSymmetric := by
@@ -123,7 +156,11 @@ theorem isSymmetric_hermitianDilation
     WithLp.ofLp_snd, hadj.inner_apply_eq, h]
   ring
 
-/-- The quadratic form of the Hermitian dilation: `re ⟪H (x, y), (x, y)⟫ = 2 re ⟪A x, y⟫`. -/
+/-- Let $A^*$ be an adjoint of $A$, that is, $\langle A^* u, x \rangle = \langle u, Ax \rangle$ for
+all $x$ and $u$. Then the quadratic form of the Hermitian dilation $H$ is
+$$\operatorname{Re} \langle H(x, y), (x, y) \rangle = 2 \operatorname{Re} \langle Ax, y
+  \rangle.$$
+-/
 theorem re_inner_hermitianDilation_apply_self
     (hadj : LinearMap.IsAdjointPair (innerₛₗ 𝕜).flip (innerₛₗ 𝕜).flip A Astar)
     (z : WithLp 2 (E × F)) :
@@ -140,8 +177,13 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E] [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F]
   (T : E →ₗ[𝕜] F)
 
-/-- The images under `T` of the sorted orthonormal eigenbasis of `T† T` are pairwise orthogonal,
-with squared norms the squared singular values. -/
+/-- Let $T : E \to F$ be linear, let $n = \dim E$, and let $v_0, \dots, v_{n-1}$ be the orthonormal
+eigenbasis of $T^* T$ sorted by decreasing eigenvalue. Then the images $T v_i$ are pairwise
+orthogonal, with $\|T v_j\|^2 = \sigma_j(T)^2$:
+$$\langle T v_i, T v_j \rangle = \begin{cases} \sigma_j(T)^2 & \text{if } i = j, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+
+The eigenbasis is `LinearMap.IsSymmetric.eigenvectorBasis` of $T^* T$. -/
 theorem inner_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n)
     (i j : Fin n) :
     inner 𝕜 (T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn i))
@@ -153,8 +195,11 @@ theorem inner_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank �
     ← T.sq_singularValues_fin hn j]
   split_ifs <;> simp
 
-/-- The image under `T` of the `j`-th vector of the sorted eigenbasis of `T† T` has norm the `j`-th
-singular value. -/
+/-- Let $T : E \to F$ be linear, let $n = \dim E$, and let $v_0, \dots, v_{n-1}$ be the orthonormal
+eigenbasis of $T^* T$ sorted by decreasing eigenvalue. Then $\|T v_j\| = \sigma_j(T)$ for every
+$j < n$.
+
+The eigenbasis is `LinearMap.IsSymmetric.eigenvectorBasis` of $T^* T$. -/
 theorem norm_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n) (j : Fin n) :
     ‖T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j)‖ = T.singularValues j := by
   have h := T.inner_apply_eigenvectorBasis_adjoint_comp_self hn j j
@@ -163,14 +208,15 @@ theorem norm_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank �
       = T.singularValues j ^ 2 := by exact_mod_cast h
   exact (pow_left_inj₀ (norm_nonneg _) (T.singularValues_nonneg j) two_ne_zero).1 h2
 
-/-- The singular values vanish from the dimension of the *codomain* on, as they do from the
-dimension of the domain on (`LinearMap.singularValues_of_finrank_le`): only `rank T` of them are
-nonzero. -/
+/-- Let $T : E \to F$ be linear. Then $\sigma_i(T) = 0$ for every $i \ge \dim F$.
+
+Mathlib's `LinearMap.singularValues_of_finrank_le` gives the same for $i \ge \dim E$. So at most
+$\min(\dim E, \dim F)$ singular values are nonzero. -/
 theorem singularValues_of_finrank_codomain_le {i : ℕ} (hi : finrank 𝕜 F ≤ i) :
     T.singularValues i = 0 :=
   T.singularValues_eq_zero_iff_le_finrank_range.2 ((Submodule.finrank_le _).trans hi)
 
-/-- A positive singular value sits below the dimension of the domain. -/
+/-- If $\sigma_k(T) > 0$, then $k < \dim E$. -/
 theorem lt_finrank_of_singularValues_pos {k : ℕ} (hk : 0 < T.singularValues k) :
     k < finrank 𝕜 E := by
   by_contra h
@@ -179,27 +225,33 @@ theorem lt_finrank_of_singularValues_pos {k : ℕ} (hk : 0 < T.singularValues k)
 
 /-! ### The max–min characterizations -/
 
-/-- The Rayleigh quotient of the Gram operator `T† T` is the squared stretch of `T`. -/
+/-- The Rayleigh quotient of $T^* T$ at $x \in E$ is
+$$\frac{\langle T^* T x, x \rangle}{\|x\|^2} = \frac{\|Tx\|^2}{\|x\|^2}.$$
+
+Both sides are $0$ at $x = 0$. -/
 theorem rayleighQuotient_adjoint_comp_self (x : E) :
     (adjoint T ∘ₗ T).rayleighQuotient x = ‖T x‖ ^ 2 / ‖x‖ ^ 2 := by
   rw [rayleighQuotient, comp_apply, adjoint_inner_left, inner_self_eq_norm_sq]
 
-/-- A lower bound `c ≥ 0` on the Rayleigh quotient of `T† T` by `c ^ 2` is a lower bound on the
-stretch by `c`. -/
+/-- Let $c \ge 0$ and $x \neq 0$. Then $c^2$ is at most the Rayleigh quotient of $T^* T$ at $x$ if
+and only if $c \|x\| \le \|Tx\|$. -/
 theorem sq_le_rayleighQuotient_adjoint_comp_self_iff {c : ℝ} (hc : 0 ≤ c) {x : E} (hx : x ≠ 0) :
     c ^ 2 ≤ (adjoint T ∘ₗ T).rayleighQuotient x ↔ c * ‖x‖ ≤ ‖T x‖ := by
   rw [rayleighQuotient_adjoint_comp_self, le_div_iff₀ (pow_pos (norm_pos_iff.2 hx) 2), ← mul_pow]
   exact pow_le_pow_iff_left₀ (mul_nonneg hc (norm_nonneg x)) (norm_nonneg _) two_ne_zero
 
-/-- An upper bound `c ≥ 0` on the Rayleigh quotient of `T† T` by `c ^ 2` is an upper bound on the
-stretch by `c`. -/
+/-- Let $c \ge 0$ and $x \neq 0$. Then the Rayleigh quotient of $T^* T$ at $x$ is at most $c^2$ if
+and only if $\|Tx\| \le c \|x\|$. -/
 theorem rayleighQuotient_adjoint_comp_self_le_sq_iff {c : ℝ} (hc : 0 ≤ c) {x : E} (hx : x ≠ 0) :
     (adjoint T ∘ₗ T).rayleighQuotient x ≤ c ^ 2 ↔ ‖T x‖ ≤ c * ‖x‖ := by
   rw [rayleighQuotient_adjoint_comp_self, div_le_iff₀ (pow_pos (norm_pos_iff.2 hx) 2), ← mul_pow]
   exact pow_le_pow_iff_left₀ (norm_nonneg _) (mul_nonneg hc (norm_nonneg x)) two_ne_zero
 
-/-- **Max–min, the easy direction**: if `T` stretches every vector of a subspace of dimension at
-least `k + 1` by at least `c`, then `c ≤ σ_k(T)`. -/
+/-- **Max–min bound, the easy direction.** Let $T : E \to F$ be linear, let $k \in \mathbb{N}$ and
+$c \in \mathbb{R}$, and let $S$ be a subspace of $E$ with $\dim S \ge k + 1$. If
+$c \|x\| \le \|Tx\|$ for all $x \in S$, then
+$$c \le \sigma_k(T).$$
+-/
 theorem le_singularValues_of_mul_norm_le {k : ℕ} {c : ℝ} {S : Submodule 𝕜 E}
     (hS : k + 1 ≤ finrank 𝕜 S) (h : ∀ x ∈ S, c * ‖x‖ ≤ ‖T x‖) : c ≤ T.singularValues k := by
   rcases le_or_gt c 0 with hc | hc
@@ -211,8 +263,11 @@ theorem le_singularValues_of_mul_norm_le {k : ℕ} {c : ℝ} {S : Submodule 𝕜
     T.rayleighQuotient_adjoint_comp_self_le_sq_iff (T.singularValues_nonneg k) hx0] at hle
   exact le_of_mul_le_mul_right ((h x hxS).trans hle) (norm_pos_iff.2 hx0)
 
-/-- **Min–max, the easy direction**: if `T` stretches every vector of a subspace of dimension at
-least `finrank E - k` by at most `c`, then `σ_k(T) ≤ c` (for `k < finrank E`). -/
+/-- **Min–max bound, the easy direction.** Let $T : E \to F$ be linear, let $n = \dim E$, let
+$k < n$ and $c \in \mathbb{R}$, and let $S$ be a subspace of $E$ with $\dim S \ge n - k$. If
+$\|Tx\| \le c \|x\|$ for all $x \in S$, then
+$$\sigma_k(T) \le c.$$
+-/
 theorem singularValues_le_of_norm_le_mul {k : ℕ} (hk : k < finrank 𝕜 E) {c : ℝ}
     {S : Submodule 𝕜 E} (hS : finrank 𝕜 E - k ≤ finrank 𝕜 S) (h : ∀ x ∈ S, ‖T x‖ ≤ c * ‖x‖) :
     T.singularValues k ≤ c := by
@@ -222,10 +277,14 @@ theorem singularValues_le_of_norm_le_mul {k : ℕ} (hk : k < finrank 𝕜 E) {c 
     T.sq_le_rayleighQuotient_adjoint_comp_self_iff (T.singularValues_nonneg k) hx0] at hle
   exact le_of_mul_le_mul_right (hle.trans (h x hxS)) (norm_pos_iff.2 hx0)
 
-/-- **Max–min characterization of singular values** ([golub2013matrix] Theorem 8.6.1, right-hand
-form): `σ_k(T)` is the largest `c` such that `T` stretches every vector of some subspace of
-dimension `k + 1` by at least `c`. At `k = finrank E - 1` the subspace is everything, and
-`σ_{n-1}` is the least stretch. -/
+/-- **Max–min characterization of the singular values.** Let $T : E \to F$ be linear and
+$k < \dim E$. Then $\sigma_k(T)$ is the largest real number $c$ for which there is a subspace
+$S$ of $E$ with $\dim S = k + 1$ and $c \|x\| \le \|Tx\|$ for all $x \in S$. That is,
+$$\sigma_k(T) = \max_{\dim S = k + 1} \ \min_{x \in S,\, x \neq 0} \frac{\|Tx\|}{\|x\|}.$$
+This is the right-hand form of Theorem 8.6.1 of [golub2013matrix].
+
+The statement is `IsGreatest` of the set of such $c$. For $k = \dim E - 1$ the subspace is $E$,
+so $\sigma_{n-1}(T)$ is the least stretch $\min_{x \neq 0} \|Tx\| / \|x\|$. -/
 theorem isGreatest_singularValues {k : ℕ} (hk : k < finrank 𝕜 E) :
     IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = k + 1 ∧ ∀ x ∈ S, c * ‖x‖ ≤ ‖T x‖}
       (T.singularValues k) := by
@@ -238,9 +297,13 @@ theorem isGreatest_singularValues {k : ℕ} (hk : k < finrank 𝕜 E) :
   rwa [← T.sq_singularValues_of_lt rfl hk,
     T.sq_le_rayleighQuotient_adjoint_comp_self_iff (T.singularValues_nonneg k) hx0] at this
 
-/-- **Min–max characterization of singular values**: `σ_k(T)` is the least `c` such that `T`
-stretches every vector of some subspace of dimension `finrank E - k` by at most `c`. At `k = 0`
-the subspace is everything, and `σ_0` is the operator norm. -/
+/-- **Min–max characterization of the singular values.** Let $T : E \to F$ be linear, let
+$n = \dim E$ and $k < n$. Then $\sigma_k(T)$ is the least real number $c$ for which there is a
+subspace $S$ of $E$ with $\dim S = n - k$ and $\|Tx\| \le c \|x\|$ for all $x \in S$. That is,
+$$\sigma_k(T) = \min_{\dim S = n - k} \ \max_{x \in S,\, x \neq 0} \frac{\|Tx\|}{\|x\|}.$$
+
+The statement is `IsLeast` of the set of such $c$. For $k = 0$ the subspace is $E$, so
+$\sigma_0(T)$ is the operator norm of $T$. -/
 theorem isLeast_singularValues {k : ℕ} (hk : k < finrank 𝕜 E) :
     IsLeast {c : ℝ | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = finrank 𝕜 E - k ∧
       ∀ x ∈ S, ‖T x‖ ≤ c * ‖x‖} (T.singularValues k) := by
@@ -253,9 +316,17 @@ theorem isLeast_singularValues {k : ℕ} (hk : k < finrank 𝕜 E) :
   rwa [← T.sq_singularValues_of_lt rfl hk,
     T.rayleighQuotient_adjoint_comp_self_le_sq_iff (T.singularValues_nonneg k) hx0] at this
 
-/-- **The bilinear min–max form** ([golub2013matrix] Theorem 8.6.1, left-hand form):
-`σ_k(T) = min_{dim S = n - k} max_{x ∈ S, y} re ⟪y, T x⟫ / (‖x‖ ‖y‖)`, as an `IsLeast`. The
-codomain must be nonzero: otherwise every `c` bounds the form `0`. -/
+/-- **Bilinear min–max characterization of the singular values.** Let $T : E \to F$ be linear with
+$F \neq 0$, let $n = \dim E$ and $k < n$. Then $\sigma_k(T)$ is the least real number $c$ for
+which there is a subspace $S$ of $E$ with $\dim S = n - k$ and $\operatorname{Re} \langle y, Tx
+\rangle \le c \, \|x\| \, \|y\|$ for all $x \in S$ and $y \in F$. That is,
+$$\sigma_k(T) = \min_{\dim S = n - k} \ \max_{x \in S,\, y \in F} \frac{\operatorname{Re}
+  \langle y, Tx \rangle}{\|x\| \, \|y\|}.$$
+This is the left-hand form of Theorem 8.6.1 of [golub2013matrix].
+
+The statement is `IsLeast` of the set of such $c$. The hypothesis $F \neq 0$ is
+`[Nontrivial F]`. It is needed: for $F = 0$ the form is $0$, and every real number $c$ is a
+bound. -/
 theorem isLeast_singularValues_bilinear [Nontrivial F] {k : ℕ} (hk : k < finrank 𝕜 E) :
     IsLeast {c : ℝ | ∃ S : Submodule 𝕜 E, finrank 𝕜 S = finrank 𝕜 E - k ∧
       ∀ x ∈ S, ∀ y : F, RCLike.re (inner 𝕜 y (T x)) ≤ c * (‖x‖ * ‖y‖)} (T.singularValues k) := by
@@ -282,8 +353,10 @@ theorem isLeast_singularValues_bilinear [Nontrivial F] {k : ℕ} (hk : k < finra
 
 /-! ### Weyl's inequality -/
 
-/-- There is a subspace of dimension at least `finrank E - k` on which `T` stretches by at most
-`σ_k(T)`, for every `k` (for `k ≥ finrank E`, the zero subspace). -/
+/-- For every $k \in \mathbb{N}$ there is a subspace $S$ of $E$ with $\dim S \ge \dim E - k$ and
+$\|Tx\| \le \sigma_k(T) \|x\|$ for all $x \in S$.
+
+The difference $\dim E - k$ is truncated at $0$; for $k \ge \dim E$ the subspace can be $\{0\}$. -/
 theorem exists_submodule_norm_apply_le (k : ℕ) :
     ∃ S : Submodule 𝕜 E, finrank 𝕜 E - k ≤ finrank 𝕜 S ∧
       ∀ x ∈ S, ‖T x‖ ≤ T.singularValues k * ‖x‖ := by
@@ -294,11 +367,15 @@ theorem exists_submodule_norm_apply_le (k : ℕ) :
     rw [(Submodule.mem_bot 𝕜).1 hx]
     simp
 
-/-- **Weyl's inequality for singular values, general form** (Weyl 1949; the principle behind
-[golub2013matrix] Corollary 2.4.4, Corollary 8.6.2 and the lower half of Theorem 2.4.8):
-`σ_{i+j}(S + T) ≤ σ_i(S) + σ_j(T)`. The min–max subspaces of `S` at `i` and of `T` at `j` meet in
-a subspace of dimension at least `finrank E - (i + j)`, on which `S + T` stretches by at most
-`σ_i(S) + σ_j(T)`. -/
+/-- **Weyl's inequality for singular values.** Let $S, T : E \to F$ be linear and let
+$i, j \in \mathbb{N}$. Then
+$$\sigma_{i+j}(S + T) \le \sigma_i(S) + \sigma_j(T).$$
+This inequality (Weyl, 1949) is the principle behind Corollaries 2.4.4 and 8.6.2 of
+[golub2013matrix] and the lower half of Theorem 2.4.8 of [golub2013matrix].
+
+The proof intersects the min–max subspaces of $S$ at $i$ and of $T$ at $j$. The intersection has
+dimension at least $\dim E - (i + j)$, and $S + T$ stretches every vector in it by at most
+$\sigma_i(S) + \sigma_j(T)$. -/
 theorem singularValues_add_le (S T : E →ₗ[𝕜] F) (i j : ℕ) :
     (S + T).singularValues (i + j) ≤ S.singularValues i + T.singularValues j := by
   by_cases h : finrank 𝕜 E ≤ i + j
@@ -314,7 +391,8 @@ theorem singularValues_add_le (S T : E →ₗ[𝕜] F) (i j : ℕ) :
   · rw [add_apply, add_mul]
     exact (norm_add_le _ _).trans (add_le_add (hS x hx.1) (hT x hx.2))
 
-/-- A bound on the stretch bounds every singular value. -/
+/-- Let $C \ge 0$ with $\|Tx\| \le C \|x\|$ for all $x \in E$. Then $\sigma_k(T) \le C$ for every
+$k$. -/
 theorem singularValues_le_of_forall_norm_apply_le {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, ‖T x‖ ≤ C * ‖x‖) (k : ℕ) : T.singularValues k ≤ C := by
   by_cases hk : k < finrank 𝕜 E
@@ -322,10 +400,13 @@ theorem singularValues_le_of_forall_norm_apply_le {C : ℝ} (hC : 0 ≤ C)
   · rw [singularValues_of_finrank_le _ (not_lt.1 hk)]
     exact hC
 
-/-- **Weyl's perturbation bound for singular values** ([golub2013matrix] Corollary 8.6.2 and
-Corollary 2.4.4): if `‖(T - S) x‖ ≤ C ‖x‖` for all `x`, then `|σ_k(T) - σ_k(S)| ≤ C`. The `j = 0`
-case of `LinearMap.singularValues_add_le`, twice. The hypothesis `0 ≤ C` is only needed when `E`
-is zero. -/
+/-- **Weyl's perturbation bound for singular values.** Let $S, T : E \to F$ be linear and let
+$C \ge 0$ with $\|(T - S)x\| \le C \|x\|$ for all $x \in E$. Then for every $k$,
+$$|\sigma_k(T) - \sigma_k(S)| \le C.$$
+This is Corollary 8.6.2 and Corollary 2.4.4 of [golub2013matrix].
+
+The proof applies `LinearMap.singularValues_add_le` with $j = 0$ twice. The hypothesis $C \ge 0$
+is needed only when $E = 0$. -/
 theorem abs_singularValues_sub_le {S T : E →ₗ[𝕜] F} {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, ‖(T - S) x‖ ≤ C * ‖x‖) (k : ℕ) :
     |T.singularValues k - S.singularValues k| ≤ C := by
@@ -344,8 +425,8 @@ theorem abs_singularValues_sub_le {S T : E →ₗ[𝕜] F} {C : ℝ} (hC : 0 ≤
 variable {E' F' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] [FiniteDimensional 𝕜 E']
   [NormedAddCommGroup F'] [InnerProductSpace 𝕜 F'] [FiniteDimensional 𝕜 F']
 
-/-- Singular values are monotone in the stretch: if `‖T x‖ ≤ ‖T' x‖` for all `x`, then
-`σ_k(T) ≤ σ_k(T')`. -/
+/-- Let $T : E \to F$ and $T' : E \to F'$ be linear with $\|Tx\| \le \|T'x\|$ for all $x \in E$.
+Then $\sigma_k(T) \le \sigma_k(T')$ for every $k$. -/
 theorem singularValues_le_of_forall_norm_le {T' : E →ₗ[𝕜] F'} (h : ∀ x, ‖T x‖ ≤ ‖T' x‖)
     (k : ℕ) : T.singularValues k ≤ T'.singularValues k := by
   by_cases hk : k < finrank 𝕜 E
@@ -354,27 +435,32 @@ theorem singularValues_le_of_forall_norm_le {T' : E →ₗ[𝕜] F'} (h : ∀ x,
   · rw [singularValues_of_finrank_le _ (not_lt.1 hk)]
     exact T'.singularValues_nonneg k
 
-/-- Two maps with the same stretch everywhere have the same singular values; in particular
-composing on the left with a linear isometry does not change them
-(`LinearMap.singularValues_linearIsometry_comp`). -/
+/-- Let $T : E \to F$ and $T' : E \to F'$ be linear with $\|Tx\| = \|T'x\|$ for all $x \in E$. Then
+$T$ and $T'$ have the same singular values.
+
+In particular, composition on the left with a linear isometry does not change the singular
+values (`LinearMap.singularValues_linearIsometry_comp`). -/
 theorem singularValues_eq_of_forall_norm_eq {T' : E →ₗ[𝕜] F'} (h : ∀ x, ‖T x‖ = ‖T' x‖) :
     T.singularValues = T'.singularValues := by
   ext k
   exact le_antisymm (T.singularValues_le_of_forall_norm_le (fun x => (h x).le) k)
     (T'.singularValues_le_of_forall_norm_le (fun x => (h x).ge) k)
 
-/-- Composing on the left with a linear isometry does not change the singular values. -/
+/-- Let $f : F \to F'$ be a linear isometry. Then $f \circ T$ has the same singular values as $T$.
+-/
 theorem singularValues_linearIsometry_comp (f : F →ₗᵢ[𝕜] F') :
     (f.toLinearMap ∘ₗ T).singularValues = T.singularValues :=
   singularValues_eq_of_forall_norm_eq _ fun x => by simp
 
-/-- Negation does not change the singular values. -/
+/-- The map $-T$ has the same singular values as $T$. -/
 @[simp]
 theorem singularValues_neg : (-T).singularValues = T.singularValues :=
   singularValues_eq_of_forall_norm_eq _ fun x => by simp
 
-/-- Restricting the domain along a linear isometry can only decrease the singular values: the
-upper half of the interlacing inequalities. -/
+/-- Let $e : E' \to E$ be a linear isometry. Then $\sigma_k(T \circ e) \le \sigma_k(T)$ for every
+$k$.
+
+This is the upper half of the interlacing inequalities for the restriction of the domain. -/
 theorem singularValues_comp_linearIsometry_le (e : E' →ₗᵢ[𝕜] E) (k : ℕ) :
     (T ∘ₗ e.toLinearMap).singularValues k ≤ T.singularValues k := by
   by_cases hk : k < finrank 𝕜 E'
@@ -386,8 +472,10 @@ theorem singularValues_comp_linearIsometry_le (e : E' →ₗᵢ[𝕜] E) (k : �
   · rw [singularValues_of_finrank_le _ (not_lt.1 hk)]
     exact T.singularValues_nonneg k
 
-/-- Restricting the domain along a linear isometry of codimension `r` decreases the singular values
-by at most `r` places: the lower half of the interlacing inequalities. -/
+/-- Let $e : E' \to E$ be a linear isometry with $\dim E' + r = \dim E$. Then
+$\sigma_{k+r}(T) \le \sigma_k(T \circ e)$ for every $k$.
+
+This is the lower half of the interlacing inequalities for the restriction of the domain. -/
 theorem singularValues_add_le_singularValues_comp_linearIsometry (e : E' →ₗᵢ[𝕜] E) {r : ℕ}
     (hr : finrank 𝕜 E' + r = finrank 𝕜 E) (k : ℕ) :
     T.singularValues (k + r) ≤ (T ∘ₗ e.toLinearMap).singularValues k := by
@@ -401,9 +489,13 @@ theorem singularValues_add_le_singularValues_comp_linearIsometry (e : E' →ₗ�
   · rw [singularValues_of_finrank_le _ (by omega : finrank 𝕜 E ≤ k + r)]
     exact singularValues_nonneg _ k
 
-/-- **Singular-value interlacing under restriction to a subspace** ([golub2013matrix] Corollary
-8.6.3 in operator form, for any codimension `r`; the Corollary is `r = 1`): for `K ≤ E` with
-`finrank K + r = finrank E`, `σ_{k+r}(T) ≤ σ_k(T|_K) ≤ σ_k(T)`. -/
+/-- **Interlacing of singular values under restriction to a subspace.** Let $T : E \to F$ be linear
+and let $K$ be a subspace of $E$ with $\dim K + r = \dim E$. Then for every $k$,
+$$\sigma_{k+r}(T) \le \sigma_k(T|_K) \le \sigma_k(T).$$
+This is Corollary 8.6.3 of [golub2013matrix] in operator form, for a subspace of any codimension
+$r$; the corollary is the case $r = 1$.
+
+The restriction $T|_K$ is `LinearMap.domRestrict T K`. -/
 theorem singularValues_domRestrict_interlace (K : Submodule 𝕜 E) {r : ℕ}
     (hr : finrank 𝕜 K + r = finrank 𝕜 E) (k : ℕ) :
     T.singularValues (k + r) ≤ (T.domRestrict K).singularValues k ∧
@@ -411,8 +503,9 @@ theorem singularValues_domRestrict_interlace (K : Submodule 𝕜 E) {r : ℕ}
   ⟨T.singularValues_add_le_singularValues_comp_linearIsometry K.subtypeₗᵢ hr k,
     T.singularValues_comp_linearIsometry_le K.subtypeₗᵢ k⟩
 
-/-- **Singular values are unitarily invariant**: composing with a linear isometry equivalence on
-the right and a linear isometry on the left does not change them. -/
+/-- **Singular values are unitarily invariant.** Let $e : E' \to E$ be a linear isometric
+isomorphism and $f : F \to F'$ a linear isometry. Then $f \circ T \circ e$ has the same singular
+values as $T$. -/
 theorem singularValues_comp_linearIsometryEquiv (e : E' ≃ₗᵢ[𝕜] E) (f : F →ₗᵢ[𝕜] F') :
     (f.toLinearMap ∘ₗ T ∘ₗ e.toLinearIsometry.toLinearMap).singularValues =
       T.singularValues := by
@@ -426,8 +519,10 @@ theorem singularValues_comp_linearIsometryEquiv (e : E' ≃ₗᵢ[𝕜] E) (f : 
     simp
   rwa [hT] at h
 
-/-- `σ_k(T) ≤ σ_k(T†)`: the image under `T` of a max–min subspace of `T` is one for `T†`, because
-`‖T x‖² = re ⟪T† T x, x⟫ ≤ ‖T† T x‖ ‖x‖`. -/
+/-- For every $k$, $\sigma_k(T) \le \sigma_k(T^*)$.
+
+The image under $T$ of a max–min subspace of $T$ is a max–min subspace of $T^*$, because
+$\|Tx\|^2 = \operatorname{Re} \langle T^* T x, x \rangle \le \|T^* T x\| \, \|x\|$. -/
 theorem singularValues_le_singularValues_adjoint (k : ℕ) :
     T.singularValues k ≤ (adjoint T).singularValues k := by
   rcases (T.singularValues_nonneg k).eq_or_lt with h0 | hpos
@@ -456,14 +551,18 @@ theorem singularValues_le_singularValues_adjoint (k : ℕ) :
     refine le_of_mul_le_mul_right ?_ hx
     nlinarith [norm_nonneg (T x), norm_nonneg (adjoint T (T x))]
 
-/-- **A map and its adjoint have the same singular values** (with Mathlib's zero padding). -/
+/-- **A linear map and its adjoint have the same singular values**: $\sigma_k(T^*) = \sigma_k(T)$
+for every $k \in \mathbb{N}$.
+
+The two sequences agree at all indices, including the zeros from $\dim E$ and from $\dim F$ on. -/
 @[simp]
 theorem singularValues_adjoint : (adjoint T).singularValues = T.singularValues := by
   ext k
   refine le_antisymm ?_ (T.singularValues_le_singularValues_adjoint k)
   simpa using (adjoint T).singularValues_le_singularValues_adjoint k
 
-/-- `σ_0(T)` bounds the stretch of `T` everywhere: it is the operator norm. -/
+/-- For every $x \in E$, $\|Tx\| \le \sigma_0(T) \|x\|$. So $\sigma_0(T)$ is an upper bound for the
+operator norm of $T$. -/
 theorem norm_apply_le_singularValues_zero_mul (x : E) :
     ‖T x‖ ≤ T.singularValues 0 * ‖x‖ := by
   rcases Nat.eq_zero_or_pos (finrank 𝕜 E) with h0 | hpos
@@ -472,12 +571,16 @@ theorem norm_apply_le_singularValues_zero_mul (x : E) :
     have hS' : S = ⊤ := Submodule.eq_top_of_finrank_eq (by rw [hS]; omega)
     exact h x (hS' ▸ Submodule.mem_top)
 
-/-- **Deflation of a top singular pair**: if `T v = σ_0 u` and `T† u = σ_0 v` for unit vectors `u`,
-`v`, and `e : E' →ₗᵢ E` is an isometry of codimension one whose range is orthogonal to `v`, then
-the singular values of `T` restricted along `e` are those of `T` shifted by one:
-`σ_i(T ∘ e) = σ_{i+1}(T)`. `T` maps `v⊥` into `u⊥`, and a max–min subspace of `T ∘ e` together
-with `v` is one for `T`, one dimension higher. This is what makes the recursive definition of the
-principal angles well posed. -/
+/-- **Deflation of a top singular pair.** Let $T : E \to F$ be linear, and let $u \in F$ and
+$v \in E$ be unit vectors with
+$$Tv = \sigma_0(T) u, \qquad T^* u = \sigma_0(T) v.$$
+Let $e : E' \to E$ be a linear isometry with $\dim E' + 1 = \dim E$ whose range is orthogonal to
+$v$. Then for every $i$,
+$$\sigma_i(T \circ e) = \sigma_{i+1}(T).$$
+
+The map $T$ maps $v^\perp$ into $u^\perp$, and a max–min subspace of $T \circ e$ together with
+$v$ is a max–min subspace of $T$ of one more dimension. This result makes the recursive
+definition of the principal angles (`Submodule.principalAngle`) well posed. -/
 theorem singularValues_comp_linearIsometry_eq_succ (e : E' →ₗᵢ[𝕜] E)
     (hr : finrank 𝕜 E' + 1 = finrank 𝕜 E) {u : F} {v : E} (hu : ‖u‖ = 1) (hv : ‖v‖ = 1)
     (hTv : T v = (T.singularValues 0 : 𝕜) • u)
@@ -534,10 +637,15 @@ theorem singularValues_comp_linearIsometry_eq_succ (e : E' →ₗᵢ[𝕜] E)
 
 /-! ### The singular value decomposition of a map -/
 
-/-- **The SVD of a linear map** (operator form of [golub2013matrix] Theorem 2.4.1 and Corollary
-2.4.2): if `finrank E = q ≤ finrank F`, there are an orthonormal basis `v` of `E` and an
-orthonormal family `u` in `F` with `T (v i) = σ_i • u i`. The basis `v` is the sorted eigenbasis of
-`T† T`; `u i = σ_i⁻¹ T (v i)` where `σ_i ≠ 0`, completed orthonormally elsewhere. -/
+/-- **The singular value decomposition of a linear map.** Let $T : E \to F$ be linear with
+$\dim E = q \le \dim F$. Then there are an orthonormal basis $v_0, \dots, v_{q-1}$ of $E$ and an
+orthonormal family $u_0, \dots, u_{q-1}$ in $F$ with
+$$T v_i = \sigma_i(T) \, u_i \qquad (i < q).$$
+This is Theorem 2.4.1 and Corollary 2.4.2 of [golub2013matrix] in operator form.
+
+The basis $(v_i)$ is the eigenbasis of $T^* T$ sorted by decreasing eigenvalue. The vector $u_i$
+is $\sigma_i^{-1} T v_i$ where $\sigma_i \neq 0$, and the other $u_i$ complete these to an
+orthonormal family. -/
 theorem exists_orthonormal_singularVectors {q : ℕ} (hq : finrank 𝕜 E = q)
     (hqF : q ≤ finrank 𝕜 F) :
     ∃ (v : OrthonormalBasis (Fin q) 𝕜 E) (u : Fin q → F), Orthonormal 𝕜 u ∧
@@ -575,11 +683,18 @@ theorem exists_orthonormal_singularVectors {q : ℕ} (hq : finrank 𝕜 E = q)
 
 /-! ### Stacked isometries -/
 
-/-- **The stacked-isometry identity**: if `‖Q₁ x‖² + ‖Q₂ x‖² = ‖x‖²` for all `x` (the map
-`x ↦ (Q₁ x, Q₂ x)` is an isometry) on a nonzero finite-dimensional `E`, then
-`‖Q₂‖² = 1 - σ_min(Q₁)²`, where `σ_min = σ_{finrank E - 1}` is the least stretch of `Q₁`. It is the
-one fact behind the subspace-distance identity of [golub2013matrix] Theorem 2.5.1, the norms of the
-blocks of a CS decomposition, (7.3.19), and the one-sided gap of `Submodule.gap`. -/
+/-- **The stacked-isometry identity.** Let $E$ be a finite-dimensional inner product space with
+$n = \dim E \ge 1$, let $F_1$ be a finite-dimensional inner product space, and let $F_2$ be a
+normed space. Let $Q_1 : E \to F_1$ and $Q_2 : E \to F_2$ be linear with
+$$\|Q_1 x\|^2 + \|Q_2 x\|^2 = \|x\|^2 \qquad \text{for all } x \in E,$$
+that is, $x \mapsto (Q_1 x, Q_2 x)$ is an isometry. Then
+$$\|Q_2\|^2 = 1 - \sigma_{n-1}(Q_1)^2,$$
+where $\sigma_{n-1}(Q_1)$ is the least singular value, the least stretch of $Q_1$.
+
+The norm $\|Q_2\|$ is the operator norm of `LinearMap.toContinuousLinearMap Q₂`. This identity
+is behind the subspace distance identity of Theorem 2.5.1 of [golub2013matrix], the norms of the
+blocks of a CS decomposition, the identity (7.3.19) of [golub2013matrix], and the one-sided gap
+`Submodule.gap`. -/
 theorem norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues {F₁ F₂ : Type*}
     [NormedAddCommGroup F₁] [InnerProductSpace 𝕜 F₁] [FiniteDimensional 𝕜 F₁]
     [NormedAddCommGroup F₂] [NormedSpace 𝕜 F₂] (Q₁ : E →ₗ[𝕜] F₁) (Q₂ : E →ₗ[𝕜] F₂)
@@ -627,13 +742,13 @@ section DilationSpectrum
 
 variable (A : E →ₗ[𝕜] F)
 
-/-- The dilation of a map with its adjoint is symmetric. -/
+/-- Let $A : E \to F$ be linear. Then the Hermitian dilation $(x, y) \mapsto (A^* y, Ax)$ of $A$
+with its adjoint $A^*$ is a symmetric operator on $E \times F$. -/
 theorem isSymmetric_hermitianDilation_adjoint : (hermitianDilation A (adjoint A)).IsSymmetric :=
   isSymmetric_hermitianDilation (isAdjointPair_inner A)
 
-/-- The eigenvalues of the dilation lie below the singular values: the product of a min–max
-subspace of `A` at `i` with the whole codomain has dimension at least `finrank - i`, and on it
-the quadratic form `2 re ⟪A x, y⟫` is at most `σ_i (‖x‖² + ‖y‖²)`. -/
+/-- The $i$-th eigenvalue of the Hermitian dilation of $A$, in decreasing order, is at most
+$\sigma_i(A)$. -/
 private theorem eigenvalues_hermitianDilation_le {N : ℕ}
     (hN : finrank 𝕜 (WithLp 2 (E × F)) = N) (i : Fin N) :
     A.isSymmetric_hermitianDilation_adjoint.eigenvalues hN i ≤ A.singularValues i := by
@@ -663,9 +778,8 @@ private theorem eigenvalues_hermitianDilation_le {N : ℕ}
   have h2 := mul_le_mul_of_nonneg_right (hVb x x.2) (norm_nonneg y)
   nlinarith [mul_nonneg hσ (sq_nonneg (‖(x : E)‖ - ‖y‖))]
 
-/-- The positive singular values lie below the eigenvalues of the dilation: the graph
-`{(σ x, A x)}` of `A` over a max–min subspace of `A` at `i` has dimension `i + 1`, and on it the
-quadratic form is at least `σ_i` times the squared norm. -/
+/-- If $\sigma_i(A) > 0$, then $\sigma_i(A)$ is at most the $i$-th eigenvalue of the Hermitian
+dilation of $A$, in decreasing order. -/
 private theorem singularValues_le_eigenvalues_hermitianDilation {N : ℕ}
     (hN : finrank 𝕜 (WithLp 2 (E × F)) = N) (i : Fin N) (hσ : 0 < A.singularValues i) :
     A.singularValues i ≤ A.isSymmetric_hermitianDilation_adjoint.eigenvalues hN i := by
@@ -695,13 +809,20 @@ private theorem singularValues_le_eigenvalues_hermitianDilation {N : ℕ}
     pow_le_pow_left₀ (mul_nonneg hσ.le (norm_nonneg _)) (hVb x x.2) 2
   nlinarith
 
-/-- **The spectrum of the Hermitian dilation** ([golub2013matrix] (8.6.3), operator form): the
-sorted eigenvalues of `(x, y) ↦ (A† y, A x)` on `WithLp 2 (E × F)` (of dimension `N = n + m`) are
-`λ_i = σ_i - σ_{N-1-i}`, that is `σ_0, …, σ_{p-1}`, then `N - 2p` zeros, then
-`-σ_{p-1}, …, -σ_0`, where `p = min n m` (at most one of the two terms is nonzero, since `σ_k = 0`
-for `k ≥ p`). Proof: `λ_i ≤ σ_i` for all `i`, and `σ_i ≤ λ_i` when `σ_i > 0`, by exhibiting
-subspaces for Courant–Fischer; the dilation of `-A` is `-H`, whose sorted eigenvalues are
-`-λ_{N-1-i}`, which gives the other half. -/
+/-- **The spectrum of the Hermitian dilation.** Let $A : E \to F$ be linear, let $H$ be the
+Hermitian dilation $(x, y) \mapsto (A^* y, Ax)$ on $E \times F$, and let $N = \dim E + \dim F$.
+Then the eigenvalues $\lambda_0 \ge \dots \ge \lambda_{N-1}$ of $H$ are
+$$\lambda_i = \sigma_i(A) - \sigma_{N-1-i}(A) \qquad (i < N).$$
+With $p = \min(\dim E, \dim F)$, at most one of the two terms is nonzero, because
+$\sigma_k(A) = 0$ for $k \ge p$. So the eigenvalues are $\sigma_0, \dots, \sigma_{p-1}$, then
+$N - 2p$ zeros, then $-\sigma_{p-1}, \dots, -\sigma_0$. This is (8.6.3) of [golub2013matrix] in
+operator form.
+
+The number $N$ is given as the dimension of `WithLp 2 (E × F)`, and the eigenvalues are
+`LinearMap.IsSymmetric.eigenvalues`. The proof shows $\lambda_i \le \sigma_i$ for all $i$, and
+$\sigma_i \le \lambda_i$ when $\sigma_i > 0$, from subspaces for the Courant–Fischer theorem.
+The dilation of $-A$ is $-H$, whose eigenvalues in decreasing order are $-\lambda_{N-1-i}$, and
+this gives the other half. -/
 theorem eigenvalues_hermitianDilation {N : ℕ} (hN : finrank 𝕜 (WithLp 2 (E × F)) = N)
     (i : Fin N) :
     A.isSymmetric_hermitianDilation_adjoint.eigenvalues hN i =

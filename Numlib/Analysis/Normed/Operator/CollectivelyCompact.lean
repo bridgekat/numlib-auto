@@ -15,40 +15,45 @@ import Mathlib.Topology.UniformSpace.UniformConvergence
 /-!
 # Collectively compact families of operators
 
-A family `K : ι → V →L[𝕜] W` is **collectively compact** when the union of the images of one
-neighborhood of the origin has compact closure — the exact analogue of Mathlib's
-`IsCompactOperator`, so that a constant family is collectively compact precisely when its member is
-a compact operator.
+A family $(K_i)_{i \in \iota}$ of bounded linear operators $V \to W$ is **collectively compact**
+when there is a neighbourhood $U$ of the origin such that $\bigcup_i K_i(U)$ has compact closure.
+This is the exact analogue of Mathlib's `IsCompactOperator`, so that a constant family is
+collectively compact precisely when its member is a compact operator.
 
-The point of the notion is that a pointwise convergent, collectively compact family `Kₙ → K`
-satisfies `‖(K - Kₙ) ∘ Kₙ‖ → 0` even though `‖K - Kₙ‖` does not tend to zero. That is what makes the
-Nyström method for integral equations of the second kind stable, and it is the hypothesis of
-[anselone1971collectively] perturbation theorem.
+The point of the notion is that a collectively compact family with $K_n \to K$ pointwise satisfies
+$\|(K - K_n) K_n\| \to 0$, although $\|K - K_n\|$ need not tend to zero. This makes the Nyström
+method for integral equations of the second kind stable, and it is the hypothesis of Anselone's
+perturbation theorem. This is the theory of Anselone [anselone1971collectively], as presented in
+[han2009theoretical], Section 12.4.3 (assumptions A1–A3 and Lemma 12.4.7) and Section 12.1 (Lemmas
+12.1.3 and 12.1.4).
 
-This is P. [anselone1971collectively] theory, as presented in [han2009theoretical], Section 12.4.3
-(assumptions A1–A3 and Lemma 12.4.7) and Section 12.1 (Lemmas 12.1.3 and 12.1.4).
+The file also proves the two consequences of the Banach–Steinhaus theorem on which both this theory
+and the theory of projection methods rest. A pointwise convergent sequence of bounded operators on a
+Banach space converges uniformly on every compact set. Hence $\|A_n M\| \to 0$ whenever $A_n \to 0$
+pointwise and $M$ is a compact operator. With $A_n = I - P_n$ this is the estimate
+$\|K - P_n K\| \to 0$ that makes a projection method for an equation of the second kind convergent,
+and with $A_n = K - K_n$ it is one clause of the lemma on collective compactness.
 
 ## Main definitions
 
-* `IsCollectivelyCompact`, with `isCollectivelyCompact_const_iff`,
-  `IsCollectivelyCompact.isCompactOperator` and `IsCollectivelyCompact.comp`.
+* `IsCollectivelyCompact`: a family of operators maps one neighbourhood of the origin into a
+  relatively compact set.
 
-## Main statements
+## Main results
 
-* `IsCollectivelyCompact.isCompactOperator_of_tendsto` — a pointwise limit of a collectively compact
-  family is a compact operator.
-* `IsCollectivelyCompact.exists_opNorm_le` — a collectively compact family is uniformly bounded.
-* `IsCollectivelyCompact.tendsto_opNorm_sub_comp` — the estimate above.
-
-The module also carries the two Banach–Steinhaus facts that both this theory and the theory of
-projection methods rest on:
-
-* `tendstoUniformlyOn_of_tendsto_of_isCompact` — a pointwise convergent sequence of bounded
-  operators on a Banach space converges uniformly on every compact set;
-* `tendsto_opNorm_comp_of_isCompactOperator` — hence `‖Aₙ ∘ M‖ → 0` whenever `Aₙ → 0` pointwise and
-  `M` is a compact operator. With `Aₙ = 1 - Pₙ` this is the estimate `‖K - Pₙ K‖ → 0` that makes a
-  projection method for a second-kind equation convergent, and with `Aₙ = K - Kₙ` it is one clause
-  of the collective-compactness lemma below; the two should not be proved separately.
+* `tendstoUniformlyOn_of_tendsto_of_isCompact`: pointwise convergence of bounded operators on a
+  Banach space is uniform on compact sets.
+* `tendsto_opNorm_comp_of_isCompactOperator`: if $A_n \to 0$ pointwise and $M$ is compact, then
+  $\|A_n M\| \to 0$.
+* `IsCollectivelyCompact.isCompactOperator`, `isCollectivelyCompact_const_iff`,
+  `IsCollectivelyCompact.comp`: each member of a collectively compact family is compact, a constant
+  family is collectively compact if and only if its member is compact, and a reindexed family is
+  collectively compact.
+* `IsCollectivelyCompact.isCompactOperator_of_tendsto`: a pointwise limit of a collectively compact
+  sequence is a compact operator.
+* `IsCollectivelyCompact.exists_opNorm_le`: a collectively compact family is uniformly bounded.
+* `IsCollectivelyCompact.tendsto_opNorm_sub_comp`: if $K_n \to L$ pointwise, then
+  $\|(L - K_n) K_n\| \to 0$.
 -/
 
 open Filter Topology Metric Set Bornology
@@ -58,8 +63,10 @@ section OpNorm
 variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- A uniform bound on a ball around the origin bounds the operator norm. The factor `‖c‖` is
-unavoidable over a general nontrivially normed field, where the norm need not take the value `1`. -/
+/-- Let $V$ and $W$ be normed spaces over a nontrivially normed field, let $c$ be a scalar with
+$\|c\| > 1$, and let $r > 0$ and $C \ge 0$. If a continuous linear map $f : V \to W$ satisfies
+$\|f x\| \le C$ for every $x$ with $\|x\| < r$, then $\|f\| \le \|c\| C / r$. The factor $\|c\|$
+is needed over a general nontrivially normed field, whose norm need not take the value $1$. -/
 theorem ContinuousLinearMap.opNorm_le_of_forall_norm_lt {c : 𝕜} (hc : 1 < ‖c‖) {f : V →L[𝕜] W}
     {r C : ℝ} (hr : 0 < r) (hC : 0 ≤ C) (h : ∀ x : V, ‖x‖ < r → ‖f x‖ ≤ C) : ‖f‖ ≤ ‖c‖ / r * C := by
   refine ContinuousLinearMap.opNorm_le_of_shell hr (by positivity) hc fun x hx hlt => ?_
@@ -75,11 +82,14 @@ variable {𝕜 U V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup U] [NormedSpace 𝕜 U]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- **Pointwise convergence of bounded operators is uniform on compact sets.** If `Aₙ → L` pointwise
-on a Banach space `V`, the convergence is uniform on every compact subset of `V`.
+/-- **Pointwise convergence of bounded operators is uniform on compact sets.** Let $V$ be a Banach
+space and $W$ a normed space over a nontrivially normed field, and let
+$L, A_0, A_1, \dots : V \to W$ be bounded linear operators with $A_n x \to L x$ for every
+$x \in V$. Then $A_n \to L$ uniformly on every compact set $S \subseteq V$. This is Lemma 12.1.3
+of [han2009theoretical].
 
-Uniform boundedness makes the family equicontinuous, and equicontinuity turns a finite net of a
-compact set into a uniform estimate. [han2009theoretical], Lemma 12.1.3. -/
+The uniform boundedness principle makes the family equicontinuous, and equicontinuity turns a
+finite net of a compact set into a uniform estimate. -/
 theorem tendstoUniformlyOn_of_tendsto_of_isCompact [CompleteSpace V] {A : ℕ → V →L[𝕜] W}
     {L : V →L[𝕜] W} (hA : ∀ x, Tendsto (fun n => A n x) atTop (𝓝 (L x)))
     {S : Set V} (hS : IsCompact S) :
@@ -126,12 +136,15 @@ theorem tendstoUniformlyOn_of_tendsto_of_isCompact [CompleteSpace V] {A : ℕ �
       _ = ε / 3 := by field_simp
   linarith
 
-/-- If `Aₙ → 0` pointwise and `M` is a compact operator, then `‖Aₙ ∘ M‖ → 0`.
+/-- Let $U$ be a normed space, $V$ a Banach space and $W$ a normed space over a nontrivially normed
+field. Let $A_0, A_1, \dots : V \to W$ be bounded linear operators with $A_n x \to 0$ for every
+$x \in V$, and let $M : U \to V$ be a compact operator. Then $$\|A_n M\| \to 0.$$
 
-The operator norm of `Aₙ ∘ M` is controlled by the values of `Aₙ` on the relatively compact image of
-a ball under `M`, on which the convergence is uniform. [han2009theoretical], Lemma 12.1.4 (with `Aₙ
-= 1 - Pₙ` for pointwise convergent projections, giving `‖K - Pₙ K‖ → 0` for compact `K`) and Lemma
-12.4.7 (3) (with `Aₙ = K - Kₙ`). -/
+This is Lemma 12.1.4 of [han2009theoretical], with $A_n = I - P_n$ for pointwise convergent
+projections $P_n$, which gives $\|K - P_n K\| \to 0$ for compact $K$. It is also Lemma 12.4.7(3)
+of [han2009theoretical], with $A_n = K - K_n$. The norm of $A_n M$ is controlled by the values
+of $A_n$ on the relatively compact image under $M$ of a ball, and on that set the convergence is
+uniform. -/
 theorem tendsto_opNorm_comp_of_isCompactOperator [CompleteSpace V] {A : ℕ → V →L[𝕜] W}
     (hA : ∀ x, Tendsto (fun n => A n x) atTop (𝓝 0)) {M : U →L[𝕜] V}
     (hM : IsCompactOperator M) :
@@ -168,13 +181,15 @@ theorem tendsto_opNorm_comp_of_isCompactOperator [CompleteSpace V] {A : ℕ → 
 
 end UniformOnCompact
 
-/-- A family of operators is **collectively compact** when the union of the images of one
-neighborhood of the origin is relatively compact.
+/-- **Collectively compact family.** Let $V$ and $W$ be normed spaces over a nontrivially normed
+field. A family $(K_i)_{i \in \iota}$ of bounded linear operators $V \to W$ is **collectively
+compact** if there is a neighbourhood $U$ of $0$ in $V$ such that the closure of
+$\bigcup_{i \in \iota} K_i(U)$ is compact.
 
-This is the exact analogue of Mathlib's `IsCompactOperator` for a family, and a constant family is
+This is the exact analogue of Mathlib's `IsCompactOperator` for a family. A constant family is
 collectively compact precisely when its member is a compact operator
 (`isCollectivelyCompact_const_iff`). It is assumption A3 of the theory of collectively compact
-operator approximations. -/
+operator approximations in [han2009theoretical], Section 12.4.3. -/
 def IsCollectivelyCompact {ι 𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
     [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     (K : ι → V →L[𝕜] W) : Prop :=
@@ -188,14 +203,15 @@ variable {ι ι' 𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
   {K : ι → V →L[𝕜] W}
 
-/-- Every member of a collectively compact family is a compact operator. -/
+/-- Every member $K_i$ of a collectively compact family is a compact operator. -/
 theorem isCompactOperator (hK : IsCollectivelyCompact K) (i : ι) : IsCompactOperator (K i) := by
   obtain ⟨U, hU, hcpt⟩ := hK
   refine (isCompactOperator_iff_exists_mem_nhds_image_subset_compact _).2 ⟨U, hU, _, hcpt, ?_⟩
   exact (subset_iUnion (fun j => K j '' U) i).trans subset_closure
 
-/-- A collectively compact family stays collectively compact after reindexing; in particular a
-subfamily of a collectively compact family is collectively compact. -/
+/-- If $(K_i)_{i \in \iota}$ is collectively compact and $f : \iota' \to \iota$ is any map, then
+$(K_{f(j)})_{j \in \iota'}$ is collectively compact. In particular, a subfamily of a
+collectively compact family is collectively compact. -/
 theorem comp (hK : IsCollectivelyCompact K) (f : ι' → ι) : IsCollectivelyCompact (K ∘ f) := by
   obtain ⟨U, hU, hcpt⟩ := hK
   refine ⟨U, hU, hcpt.of_isClosed_subset isClosed_closure (closure_mono ?_)⟩
@@ -210,8 +226,8 @@ section Const
 variable {ι 𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
-/-- A one-element family — more generally a constant family — is collectively compact exactly when
-its member is a compact operator. -/
+/-- Let $\iota$ be nonempty and let $T : V \to W$ be a bounded linear operator. The constant family
+$(T)_{i \in \iota}$ is collectively compact if and only if $T$ is a compact operator. -/
 theorem isCollectivelyCompact_const_iff [Nonempty ι] {T : V →L[𝕜] W} :
     IsCollectivelyCompact (fun _ : ι => T) ↔ IsCompactOperator T := by
   rw [isCompactOperator_iff_exists_mem_nhds_isCompact_closure_image]
@@ -225,9 +241,14 @@ section Limit
 
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **A pointwise limit of a collectively compact family is a compact operator**, because the image
-of a neighborhood of the origin under the limit lies in the compact set of the definition.
-[han2009theoretical], Lemma 12.4.7 (1). -/
+/-- **A pointwise limit of a collectively compact sequence is a compact operator.** Let $V$ and $W$
+be normed spaces over a nontrivially normed field, and let $(K_n)_{n \in \mathbb{N}}$ be a
+collectively compact sequence of bounded linear operators $V \to W$. If $L : V \to W$ is a
+bounded linear operator with $K_n x \to L x$ for every $x$, then $L$ is a compact operator. This
+is Lemma 12.4.7(1) of [han2009theoretical].
+
+The image under $L$ of the neighbourhood of the origin in the definition lies in the compact set
+of the definition. -/
 theorem isCompactOperator_of_tendsto {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     {K : ℕ → V →L[𝕜] W} {L : V →L[𝕜] W} (hK : IsCollectivelyCompact K)
     (hL : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))) :
@@ -238,8 +259,11 @@ theorem isCompactOperator_of_tendsto {W : Type*} [NormedAddCommGroup W] [NormedS
   refine isClosed_closure.mem_of_tendsto (hL x) (Eventually.of_forall fun n => ?_)
   exact subset_closure (mem_iUnion.2 ⟨n, ⟨x, hx, rfl⟩⟩)
 
-/-- **A collectively compact family is uniformly bounded in operator norm**, because the compact set
-of the definition is bounded. [han2009theoretical], Lemma 12.4.7 (2). -/
+/-- **A collectively compact family is uniformly bounded.** If $(K_i)_{i \in \iota}$ is a
+collectively compact family of bounded linear operators between normed spaces, then there is $C$
+with $\|K_i\| \le C$ for all $i$. This is Lemma 12.4.7(2) of [han2009theoretical].
+
+The compact set of the definition is bounded. -/
 theorem exists_opNorm_le {ι W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     {K : ι → V →L[𝕜] W} (hK : IsCollectivelyCompact K) : ∃ C, ∀ i, ‖K i‖ ≤ C := by
   obtain ⟨U, hU, hcpt⟩ := hK
@@ -251,9 +275,11 @@ theorem exists_opNorm_le {ι W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜
   exact (hM _ (subset_closure
     (mem_iUnion.2 ⟨i, ⟨x, hrU (mem_ball_zero_iff.2 hx), rfl⟩⟩))).trans (le_max_left _ _)
 
-/-- **The estimate that makes collectively compact approximation work**: if `Kₙ` is a collectively
-compact family converging pointwise to `K`, then `‖(K - Kₙ) ∘ Kₙ‖ → 0`, although `‖K - Kₙ‖` need not
-tend to zero. [han2009theoretical], Lemma 12.4.7 (4). -/
+/-- **The estimate behind collectively compact approximation.** Let $V$ be a Banach space over a
+nontrivially normed field, let $(K_n)_{n \in \mathbb{N}}$ be a collectively compact sequence of
+bounded linear operators on $V$, and let $L$ be a bounded linear operator on $V$ with
+$K_n x \to L x$ for every $x$. Then $$\|(L - K_n) K_n\| \to 0,$$ although $\|L - K_n\|$ need not
+tend to zero. This is Lemma 12.4.7(4) of [han2009theoretical]. -/
 theorem tendsto_opNorm_sub_comp [CompleteSpace V] {K : ℕ → V →L[𝕜] V} {L : V →L[𝕜] V}
     (hK : IsCollectivelyCompact K) (hL : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))) :
     Tendsto (fun n => ‖(L - K n) ∘L K n‖) atTop (𝓝 0) := by

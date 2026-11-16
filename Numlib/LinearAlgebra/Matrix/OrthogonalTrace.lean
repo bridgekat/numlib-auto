@@ -17,22 +17,28 @@ import Numlib.LinearAlgebra.Matrix.QR
 /-!
 # Trace inequalities for unitary and orthogonal matrices
 
-* `Matrix.re_trace_mul_le_trace_of_posSemidef`: a unitary factor does not increase the real trace
-  of a positive semidefinite matrix, `re tr(W P) ≤ re tr P`.
+This file proves trace inequalities for unitary and real orthogonal matrices. A unitary factor $W$
+does not increase the real part of the trace of a positive semidefinite matrix $P$:
+$\operatorname{Re} \operatorname{tr}(WP) \le \operatorname{Re} \operatorname{tr} P$. For a real
+orthogonal matrix $O \in O(n)$, $(\det O)^2 = 1$, and an improper orthogonal matrix ($\det O = -1$)
+has $\operatorname{tr} O \le n - 2$. These facts combine into a pairing inequality for a rotation
+$W \in SO(n)$. They are the trace estimates behind the orthogonal Procrustes problem
+(`Numlib.LinearAlgebra.Matrix.Procrustes`) and the real Li–Sun perturbation bound for the orthogonal
+polar factor (`Numlib.Analysis.Matrix.Function.Polar`).
 
-Facts about a real orthogonal matrix `O ∈ O(n)`:
+## Main results
 
-* `Matrix.det_sq_eq_one_of_mem_orthogonalGroup`: `(det O)² = 1`, over any commutative ring.
-* `Matrix.PosSemidef.trace_mul_le_trace`: the real case of the first item, `tr(R O) ≤ tr R`.
-* `Matrix.trace_le_card_sub_two_of_det_eq_neg_one`: an improper orthogonal matrix
-  (`det O = -1`) has `tr O ≤ n - 2`.
-* `Matrix.le_trace_mul_one_sub`: for a rotation `W ∈ SO(n)` and a symmetric
-  `P ⪰ b (1 - u uᵀ) + a u uᵀ` (`u` a unit vector, `a ≤ b`),
-  `(a + b)/2 · tr(1 - W) ≤ tr(P (1 - W))`.
-
-They are the trace estimates behind the orthogonal Procrustes problem
-(`Numlib/LinearAlgebra/Matrix/Procrustes`) and the real Li–Sun perturbation bound for the
-orthogonal polar factor (`Numlib/Analysis/Matrix/Function/Polar`).
+* `Matrix.re_trace_mul_le_trace_of_posSemidef`: $\operatorname{Re} \operatorname{tr}(WP) \le
+  \operatorname{Re} \operatorname{tr} P$ for $W$ unitary and $P$ positive semidefinite.
+* `Matrix.det_sq_eq_one_of_mem_orthogonalGroup`: $(\det O)^2 = 1$ for an orthogonal matrix $O$ over
+  any commutative ring.
+* `Matrix.PosSemidef.trace_mul_le_trace`: $\operatorname{tr}(RO) \le \operatorname{tr} R$ for $R$
+  real positive semidefinite and $O$ orthogonal.
+* `Matrix.trace_le_card_sub_two_of_det_eq_neg_one`: an orthogonal matrix $O$ with $\det O = -1$ has
+  $\operatorname{tr} O \le n - 2$.
+* `Matrix.le_trace_mul_one_sub`: for $W \in SO(n)$, a unit vector $u$, $a \le b$ and
+  $P \succeq b(I - uu^T) + a uu^T$, the inequality $\frac{a + b}{2} \operatorname{tr}(I - W) \le
+  \operatorname{tr}(P(I - W))$ holds.
 -/
 
 open scoped ComplexOrder
@@ -41,17 +47,22 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The determinant of an orthogonal matrix is `±1`: its square is `1`. -/
+/-- Let $R$ be a commutative ring and let $O \in R^{n \times n}$ be orthogonal, $O^T O = I$. Then
+$(\det O)^2 = 1$. -/
 theorem det_sq_eq_one_of_mem_orthogonalGroup {R : Type*} [CommRing R] {O : Matrix n n R}
     (hO : O ∈ orthogonalGroup n R) : O.det ^ 2 = 1 := by
   have := congrArg det ((mem_orthogonalGroup_iff' n R).1 hO)
   rw [det_mul, det_transpose, det_one] at this
   rw [sq]; exact this
 
-/-- **A unitary factor does not increase the real trace of a positive semidefinite matrix**:
-`re tr(W P) ≤ re tr P` for `W` unitary and `P ⪰ 0` — the step "`tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`" of
-[golub2013matrix] §6.4.1 in polar form. In an eigenbasis of `P`, `tr(W P) = ∑ z_ii λ_i` with
-`Z` unitary, so `|z_ii| ≤ 1`, and `λ_i ≥ 0`. -/
+/-- **A unitary factor does not increase the real trace of a positive semidefinite matrix.** Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $W \in \mathbb{K}^{n \times n}$ be unitary and
+let $P \in \mathbb{K}^{n \times n}$ be positive semidefinite. Then $$\operatorname{Re}
+\operatorname{tr}(WP) \le \operatorname{Re} \operatorname{tr} P.$$
+
+This is the step "$\operatorname{tr}(Z\Sigma) = \sum z_{ii} \sigma_i \le \sum \sigma_i$" of
+[golub2013matrix], §6.4.1, in polar form. In an eigenbasis of $P$, $\operatorname{tr}(WP) =
+\sum_i z_{ii} \lambda_i$ with $Z$ unitary, so $|z_{ii}| \le 1$, and $\lambda_i \ge 0$. -/
 theorem re_trace_mul_le_trace_of_posSemidef {𝕜 : Type*} [RCLike 𝕜] {W : Matrix n n 𝕜}
     (hW : W ∈ unitaryGroup n 𝕜) {P : Matrix n n 𝕜} (hP : P.PosSemidef) :
     RCLike.re (trace (W * P)) ≤ RCLike.re (trace P) := by
@@ -83,16 +94,21 @@ theorem re_trace_mul_le_trace_of_posSemidef {𝕜 : Type*} [RCLike 𝕜] {W : Ma
           (entry_norm_bound_of_unitary hZ i i)) (hP.eigenvalues_nonneg i)
     _ = d i := mul_one _
 
-/-- The trace of a positive semidefinite matrix is not increased by an orthogonal factor:
-`tr(R O) ≤ tr R`, the real case of `Matrix.re_trace_mul_le_trace_of_posSemidef`. -/
+/-- Let $R \in \mathbb{R}^{n \times n}$ be positive semidefinite and let
+$O \in \mathbb{R}^{n \times n}$ be orthogonal. Then
+$\operatorname{tr}(RO) \le \operatorname{tr} R$. This is the real case of
+`Matrix.re_trace_mul_le_trace_of_posSemidef`. -/
 theorem PosSemidef.trace_mul_le_trace {R O : Matrix n n ℝ} (hR : R.PosSemidef)
     (hO : O ∈ orthogonalGroup n ℝ) : trace (R * O) ≤ trace R := by
   have h := re_trace_mul_le_trace_of_posSemidef hO hR
   rwa [RCLike.re_to_real, RCLike.re_to_real, trace_mul_comm] at h
 
-/-- An improper orthogonal matrix has trace at most `n - 2`: `-1` is an eigenvalue
-(`det(O + 1) = det O det(1 + Oᵀ) = -det(O + 1)`), and on the orthogonal complement of its
-eigenvector the trace is at most the dimension (`Matrix.PosSemidef.trace_mul_le_trace`). -/
+/-- Let $O \in \mathbb{R}^{n \times n}$ be orthogonal with $\det O = -1$. Then
+$\operatorname{tr} O \le n - 2$.
+
+The proof shows that $-1$ is an eigenvalue, because $\det(O + I) = \det O \det(I + O^T) =
+-\det(O + I)$. On the orthogonal complement of its eigenvector, the trace is at most the
+dimension (`Matrix.PosSemidef.trace_mul_le_trace`). -/
 theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ}
     (hO : O ∈ orthogonalGroup n ℝ) (hdet : O.det = -1) : trace O ≤ Fintype.card n - 2 := by
   have hO' : O * Oᵀ = 1 := (mem_orthogonalGroup_iff n ℝ).1 hO
@@ -132,14 +148,20 @@ theorem trace_le_card_sub_two_of_det_eq_neg_one {O : Matrix n n ℝ}
   rw [htPr, htPrO] at h1
   linarith
 
-/-- **The pairing inequality** behind the real Li–Sun bound: if `W` is a rotation (`W ∈ SO(n)`)
-and the symmetric `P` satisfies `P ⪰ b (1 - u uᵀ) + a u uᵀ` for a unit vector `u` and `a ≤ b`
-(for instance `a`, `b` the two smallest eigenvalues of `P`), then
-`(a + b)/2 · tr(1 - W) ≤ tr(P (1 - W))`. Write `P - (a + b)/2 = R₀ + (b - a)/2 · H` with `R₀ ⪰ 0`
-and the reflection `H = 1 - 2 u uᵀ` (`Matrix.householder u`, of determinant `-1`):
-`tr(R₀ (1 - W)) ≥ 0` because `W` is orthogonal (`Matrix.PosSemidef.trace_mul_le_trace`), and
-`tr(H (1 - W)) = n - 2 - tr(H W) ≥ 0` because `H W` is an improper orthogonal matrix
-(`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`). -/
+/-- The **pairing inequality** behind the real Li–Sun bound. Let $P, W \in \mathbb{R}^{n \times n}$,
+let $u \in \mathbb{R}^n$ be a unit vector, $u^T u = 1$, and let $a \le b$ be real numbers. Let
+$W$ be a rotation, $W \in SO(n)$, and let $$P - b(I - uu^T) - a\, uu^T$$ be positive
+semidefinite (so $P$ is symmetric). Then $$\frac{a + b}{2} \operatorname{tr}(I - W) \le
+\operatorname{tr}(P(I - W)).$$ For instance, $a$ and $b$ can be the two smallest eigenvalues of
+$P$.
+
+The proof writes $P - \frac{a + b}{2} I = R_0 + \frac{b - a}{2} H$ with $R_0 \succeq 0$ and the
+reflection $H = I - 2uu^T$ (`Matrix.householder u`), of determinant $-1$. Then
+$\operatorname{tr}(R_0 (I - W)) \ge 0$ because $W$ is orthogonal
+(`Matrix.PosSemidef.trace_mul_le_trace`), and $\operatorname{tr}(H(I - W)) = n - 2 -
+\operatorname{tr}(HW) \ge 0$ because $HW$ is an improper orthogonal matrix
+(`Matrix.trace_le_card_sub_two_of_det_eq_neg_one`). In Lean the hypothesis on $P$ is that
+`P - b • 1 + (b - a) • vecMulVec u u` is positive semidefinite. -/
 theorem le_trace_mul_one_sub {P W : Matrix n n ℝ} {u : n → ℝ} {a b : ℝ} (hab : a ≤ b)
     (hu : u ⬝ᵥ u = 1) (hP : (P - b • 1 + (b - a) • vecMulVec u u).PosSemidef)
     (hW : W ∈ specialOrthogonalGroup n ℝ) :

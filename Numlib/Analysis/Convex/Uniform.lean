@@ -17,27 +17,31 @@ import Numlib.Analysis.Normed.Module.WeakDual
 /-!
 # The Radon–Riesz property
 
-A normed space has the **Radon–Riesz property** (also called the Kadec–Klee property, or property
-(H)) when weak convergence together with convergence of the norms implies convergence in norm. Every
-uniformly convex space has it, and so does every inner product space, where the proof is the
-expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity. Both statements are
-[han2009theoretical] Exercises 2.7.3 and 2.7.4 (c).
+A normed space has the **Radon–Riesz property**, also called the Kadec–Klee property or property
+(H), if weak convergence together with convergence of the norms implies convergence in norm: if
+$v_n \rightharpoonup u$ weakly and $\|v_n\| \to \|u\|$, then $v_n \to u$. This module proves that
+every uniformly convex space has this property, and that every inner product space has it. In an
+inner product space, the proof is the expansion of $\|v_n - u\|^2$, and it needs neither
+completeness nor uniform convexity. These two statements are Exercises 2.7.3 and 2.7.4(c) of
+[han2009theoretical].
 
-## Main statements
+## Main results
 
-* `tendsto_of_forall_dual_tendsto_of_tendsto_norm` — the uniformly convex case.
-* `tendsto_of_forall_dual_tendsto_of_limsup_norm_le` — the same with the one-sided hypothesis
-  `limsup ‖vₙ‖ ≤ ‖u‖`, which weak convergence upgrades to `‖vₙ‖ → ‖u‖`
-  ([brezis2011functional], Proposition 3.32).
-* `tendsto_of_forall_inner_tendsto_of_tendsto_norm` — the inner product case, as an `iff`.
-* `uniformConvexSpace_of_linearIsometryEquiv` — uniform convexity is transported along a linear
-  isometric isomorphism.
+* `tendsto_of_forall_dual_tendsto_of_tendsto_norm`: in a uniformly convex space,
+  $v_n \rightharpoonup u$ and $\|v_n\| \to \|u\|$ imply $v_n \to u$.
+* `tendsto_of_forall_dual_tendsto_of_limsup_norm_le`: the same conclusion with the one-sided
+  hypothesis $\limsup \|v_n\| \le \|u\|$, as in Proposition 3.32 of [brezis2011functional].
+* `tendsto_of_forall_inner_tendsto_of_tendsto_norm`: in an inner product space, $v_n \to u$ if and
+  only if $\langle v_n, w \rangle \to \langle u, w \rangle$ for every $w$ and $\|v_n\| \to \|u\|$.
+* `uniformConvexSpace_of_linearIsometryEquiv`: uniform convexity is preserved by a linear isometric
+  isomorphism.
 
 ## Implementation notes
 
-Weak convergence is written in the sequential form `∀ ℓ, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`
-rather than through a weak topology, because that is the form in which the numerical-analysis
-literature states it and the form the consumers of this module use.
+* Weak convergence is written in the sequential form `∀ ℓ, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ
+  u))`, with `ℓ` ranging over `StrongDual ℝ E`, and not through a weak topology. This is the form in
+  which the numerical analysis literature states it, and the form that the users of this module
+  need.
 -/
 
 open Filter Topology RCLike
@@ -47,12 +51,14 @@ section UniformConvex
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSpace E]
 
-/-- **The Radon–Riesz property of a uniformly convex space.** If `vₙ ⇀ u` weakly and `‖vₙ‖ → ‖u‖`,
-then `vₙ → u` in norm.
+/-- Let $E$ be a uniformly convex real normed space, and let $(v_n)$ be a sequence in $E$ and
+$u \in E$. If $\ell(v_n) \to \ell(u)$ for every continuous linear functional $\ell$ on $E$ and
+$\|v_n\| \to \|u\|$, then $v_n \to u$ in norm.
 
-The proof normalizes both `vₙ` and `u` by `max ‖vₙ‖ ‖u‖`, so that the two vectors lie in the closed
-unit ball, and tests the sum against a norming functional at `u`: `‖aₙ + bₙ‖ → 2` forces `‖aₙ - bₙ‖
-→ 0` by uniform convexity. -/
+This is the **Radon–Riesz property** of a uniformly convex space. The proof divides $v_n$ and
+$u$ by $\max(\|v_n\|, \|u\|)$, so that both vectors lie in the closed unit ball, and tests their
+sum against a norming functional at $u$. Then $\|a_n + b_n\| \to 2$ for the normalized vectors
+$a_n$ and $b_n$, and uniform convexity gives $\|a_n - b_n\| \to 0$. -/
 theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
     (hweak : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u)))
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) :
@@ -112,10 +118,14 @@ theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
     _ ≤ (‖u‖ + 1) * (ε / (‖u‖ + 1)) := mul_le_mul_of_nonneg_right hbd.le (by positivity)
     _ = ε := by field_simp
 
-/-- **The Radon–Riesz property with a one-sided norm hypothesis**: in a uniformly convex space, if
-`vₙ ⇀ u` weakly and `limsup ‖vₙ‖ ≤ ‖u‖`, then `vₙ → u` in norm. Weak convergence already gives
-`‖u‖ ≤ liminf ‖vₙ‖` (`norm_le_liminf_norm_of_weak_tendsto`) and a bound on `‖vₙ‖`, so the two
-inequalities force `‖vₙ‖ → ‖u‖` and `tendsto_of_forall_dual_tendsto_of_tendsto_norm` applies. -/
+/-- Let $E$ be a uniformly convex real normed space, and let $(v_n)$ be a sequence in $E$ and
+$u \in E$. If $\ell(v_n) \to \ell(u)$ for every continuous linear functional $\ell$ on $E$ and
+$$\limsup_{n \to \infty} \|v_n\| \le \|u\|,$$
+then $v_n \to u$ in norm.
+
+This is Proposition 3.32 of [brezis2011functional]. Weak convergence already gives
+$\|u\| \le \liminf \|v_n\|$ (`norm_le_liminf_norm_of_weak_tendsto`) and a bound on $\|v_n\|$, so
+$\|v_n\| \to \|u\|$, and `tendsto_of_forall_dual_tendsto_of_tendsto_norm` applies. -/
 theorem tendsto_of_forall_dual_tendsto_of_limsup_norm_le {v : ℕ → E} {u : E}
     (hweak : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u)))
     (hlim : limsup (fun n => ‖v n‖) atTop ≤ ‖u‖) :
@@ -135,8 +145,11 @@ section Transport
 variable {R E F : Type*} [Semiring R] [SeminormedAddCommGroup E] [SeminormedAddCommGroup F]
   [Module R E] [Module R F]
 
-/-- **Uniform convexity is transported along a linear isometric isomorphism**: the modulus of
-convexity only involves `‖x‖`, `‖x - y‖` and `‖x + y‖`, which `e` preserves. -/
+/-- Let $E$ and $F$ be seminormed modules over a semiring $R$, and let $e \colon E \to F$ be a
+linear isometric isomorphism. If $F$ is uniformly convex, then $E$ is uniformly convex.
+
+The modulus of convexity involves only the norms of $x$, $y$, $x - y$ and $x + y$, which $e$
+preserves. -/
 theorem uniformConvexSpace_of_linearIsometryEquiv [UniformConvexSpace F] (e : E ≃ₗᵢ[R] F) :
     UniformConvexSpace E := by
   refine ⟨fun ε hε => ?_⟩
@@ -152,12 +165,15 @@ section Inner
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- **The Radon–Riesz property of an inner product space**, as a characterization of norm
-convergence: `vₙ → u` in norm if and only if `⟪vₙ, w⟫ → ⟪u, w⟫` for every `w` and `‖vₙ‖ → ‖u‖`.
+/-- Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$(v_n)$ be a sequence in $E$ and $u \in E$. Then $v_n \to u$ in norm if and only if
+$$\langle v_n, w \rangle \to \langle u, w \rangle \text{ for every } w \in E
+  \quad\text{and}\quad \|v_n\| \to \|u\|.$$
 
-The forward direction is continuity of the inner product and of the norm; the converse is the
-expansion `‖vₙ - u‖² = ‖vₙ‖² - 2 re ⟪vₙ, u⟫ + ‖u‖²`, so neither completeness nor uniform convexity
-is used. -/
+This is the **Radon–Riesz property** of an inner product space, stated as a characterization of
+norm convergence. The forward direction is the continuity of the inner product and of the norm.
+The converse is the expansion $\|v_n - u\|^2 = \|v_n\|^2 - 2 \operatorname{Re} \langle v_n, u
+\rangle + \|u\|^2$, so neither completeness nor uniform convexity is used. -/
 theorem tendsto_of_forall_inner_tendsto_of_tendsto_norm {v : ℕ → E} {u : E} :
     Tendsto v atTop (𝓝 u) ↔
       (∀ w : E, Tendsto (fun n => ⟪v n, w⟫_𝕜) atTop (𝓝 ⟪u, w⟫_𝕜)) ∧

@@ -11,34 +11,55 @@ import Numlib.Analysis.InnerProductSpace.NormPow
 /-!
 # Quadratic and regularized quadratic models
 
-The quadratic model `m(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` of a step `s` and its regularization
-`m^R(s) = m(s) + σ/r ‖s‖^r`, on a real inner product space `E`, for a continuous linear operator
-`H : E →L[ℝ] E` (symmetric wherever it matters) and a vector `g : E`
-([cartis2022evaluation] (8.1.1), (8.1.4)). The book's scaling norm `‖·‖_M` is absorbed into the
-inner product of `E`.
+Let $E$ be a real inner product space, let $H : E \to E$ be a continuous linear operator, and let
+$g \in E$. The **quadratic model** of a step $s \in E$ is
+$$m(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle,$$
+and for real numbers $\sigma$ and $r$ the **regularized model** is
+$m^R(s) = m(s) + \frac{\sigma}{r} \|s\|^r$. These are (8.1.1) and (8.1.4) of [cartis2022evaluation].
+The file gives their gradients, the Hessian of $m^R$, and their values at a solution of a shifted
+linear system. Most results need $H$ to be symmetric.
 
-The algebraic heart of the subproblem theory is the *shifted-system identity*
-`quadModel_sub_eq_of_shifted`: if `(H + μ) s = -g` then for every `u`
-`m(u) - m(s) = ½ ⟪u - s, (H + μ)(u - s)⟫ + μ/2 (‖s‖² - ‖u‖²)`. The global optimality, uniqueness
-and value formulas of the trust-region and regularization subproblems are corollaries of it.
+The central algebraic fact of the subproblem theory is the **shifted-system identity**: if
+$(H + \mu I) s = -g$ and $H$ is symmetric, then for every $u \in E$
+$$m(u) - m(s) = \tfrac12 \langle u - s, (H + \mu I)(u - s) \rangle + \tfrac{\mu}{2} \left(\|s\|^2 -
+  \|u\|^2\right).$$
+The global optimality, uniqueness and value formulas for the trust-region and regularization
+subproblems follow from it.
 
 ## Main definitions
 
-* `Subproblem.quadModel g H s`: the quadratic model.
-* `Subproblem.regModel g H σ r s`: the regularized model (`‖s‖ ^ r` is `Real.rpow`).
-* `Subproblem.regModelHessian H σ r s`: the Hessian `H + λ I + (r-2) λ (s/‖s‖)(s/‖s‖)ᵀ` of the
-  regularized model, `λ = σ ‖s‖^{r-2}`; it is the derivative of the gradient for `r > 2`
-  (`hasFDerivAt_gradient_regModel`), and at `s = 0` it reduces to `H` only for `r > 2`.
+* `Subproblem.quadModel`: the quadratic model $m(s) = \langle g, s \rangle + \frac12 \langle s, H s
+  \rangle$.
+* `Subproblem.regModel`: the regularized model $m^R(s) = m(s) + \frac{\sigma}{r} \|s\|^r$.
+* `Subproblem.regModelHessian`: the operator $H + \lambda I + (r - 2) \lambda \, \hat s \hat s^T$
+  with $\lambda = \sigma \|s\|^{r-2}$ and $\hat s = s / \|s\|$, which is the Hessian of $m^R$ at $s$
+  for $r > 2$.
 
-## Main statements
+## Main results
 
-* `Subproblem.hasGradientAt_quadModel`, `Subproblem.hasGradientAt_regModel`,
-  `Subproblem.hasFDerivAt_gradient_regModel`: gradients and Hessian ([cartis2022evaluation]
-  (8.2.34)).
-* `Subproblem.inner_regModelHessian_ge`: the rank-one part of the Hessian is positive semidefinite.
+* `Subproblem.hasGradientAt_quadModel`: for symmetric $H$, the gradient of $m$ at $s$ is $g + H s$.
+* `Subproblem.hasGradientAt_regModel`: for symmetric $H$ and $r > 1$, the gradient of $m^R$ at $s$
+  is $g + H s + \sigma \|s\|^{r-2} s$.
+* `Subproblem.hasFDerivAt_gradient_regModel`: for $r > 2$, the derivative of the gradient map of
+  $m^R$ at every $s$, including $s = 0$, is `Subproblem.regModelHessian`.
+* `Subproblem.inner_regModelHessian_ge`: for $\sigma \ge 0$ and $r \ge 2$, the rank-one part of the
+  Hessian of $m^R$ is positive semidefinite.
 * `Subproblem.quadModel_sub_eq_of_shifted`: the shifted-system identity.
-* `Subproblem.quadModel_eq_of_shifted`, `Subproblem.regModel_eq_of_shifted`,
-  `Subproblem.regModel_eq_of_shifted_general`: model values at a solution of a shifted system.
+* `Subproblem.quadModel_eq_of_shifted`: if $(H + \mu I) s = -g$, then $m(s) = \frac12 (\langle g, s
+  \rangle - \mu \|s\|^2)$.
+* `Subproblem.regModel_eq_of_shifted` and `Subproblem.regModel_eq_of_shifted_general`: the value of
+  $m^R$ at a solution of a shifted system.
+* `Subproblem.hasGradientAt_regModel_of_shifted`: at a solution of $(H + \mu I) s = -g$, the
+  gradient of $m^R$ is $(\sigma \|s\|^{r-2} - \mu) s$.
+
+## Implementation notes
+
+* The source measures steps in a scaling norm $\|\cdot\|_M$. Here that norm is absorbed into the
+  inner product of $E$.
+* The exponent $r$ is real, and $\|s\|^r$ is `Real.rpow`. The conventions $0^0 = 1$ and $0^x = 0$
+  for $x \neq 0$ fix the values at $s = 0$.
+* The gradient results need $E$ to be complete, so that a derivative $\langle v, \cdot \rangle$ is
+  represented by the vector $v$. The derivative results do not.
 -/
 
 open Filter Topology Asymptotics
@@ -50,33 +71,46 @@ namespace Subproblem
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The **quadratic model** `m(s) = ⟪g, s⟫ + ½ ⟪s, H s⟫` ([cartis2022evaluation] (8.1.1)). -/
+/-- The **quadratic model** of a step $s \in E$, for $g \in E$ and a continuous linear operator $H$
+on $E$:
+$$m(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle.$$
+
+This is (8.1.1) of [cartis2022evaluation]. -/
 def quadModel (g : E) (H : E →L[ℝ] E) (s : E) : ℝ := ⟪g, s⟫ + (1 / 2) * ⟪s, H s⟫
 
-/-- The **regularized model** `m^R(s) = m(s) + σ/r ‖s‖^r` with a real exponent `r`
-([cartis2022evaluation] (8.1.4), the scaling norm absorbed into the inner product). -/
+/-- The **regularized model** of a step $s \in E$, for $g \in E$, a continuous linear operator $H$
+on $E$, and real numbers $\sigma$ and $r$:
+$$m^R(s) = m(s) + \frac{\sigma}{r} \|s\|^r,$$
+where $m$ is the quadratic model `Subproblem.quadModel`.
+
+This is (8.1.4) of [cartis2022evaluation], with the scaling norm of the source absorbed into the
+inner product of $E$. The power $\|s\|^r$ is `Real.rpow`. For $r = 0$ the term $\sigma / r$ is
+$0$ in Lean, so $m^R = m$. -/
 def regModel (g : E) (H : E →L[ℝ] E) (σ r : ℝ) (s : E) : ℝ := quadModel g H s + σ / r * ‖s‖ ^ r
 
-/-- Unfolding lemma for `quadModel`. -/
+/-- The quadratic model is $m(s) = \langle g, s \rangle + \frac12 \langle s, H s \rangle$, by
+definition. -/
 theorem quadModel_def (g : E) (H : E →L[ℝ] E) (s : E) :
     quadModel g H s = ⟪g, s⟫ + (1 / 2) * ⟪s, H s⟫ := rfl
 
-/-- Unfolding lemma for `regModel`. -/
+/-- The regularized model is $m^R(s) = m(s) + \frac{\sigma}{r} \|s\|^r$, by definition. -/
 theorem regModel_def (g : E) (H : E →L[ℝ] E) (σ r : ℝ) (s : E) :
     regModel g H σ r s = quadModel g H s + σ / r * ‖s‖ ^ r := rfl
 
+/-- The quadratic model vanishes at the origin: $m(0) = 0$. -/
 @[simp]
 theorem quadModel_zero (g : E) (H : E →L[ℝ] E) : quadModel g H 0 = 0 := by simp [quadModel]
 
+/-- For $r \neq 0$, the regularized model vanishes at the origin: $m^R(0) = 0$. -/
 @[simp]
 theorem regModel_zero (g : E) (H : E →L[ℝ] E) (σ : ℝ) {r : ℝ} (hr : r ≠ 0) :
     regModel g H σ r 0 = 0 := by simp [regModel, Real.zero_rpow hr]
 
-/-- The quadratic model is continuous. -/
+/-- The quadratic model $m$ is continuous on $E$. -/
 theorem continuous_quadModel (g : E) (H : E →L[ℝ] E) : Continuous (quadModel g H) := by
   unfold quadModel; fun_prop
 
-/-- The regularized model is continuous for a nonnegative exponent. -/
+/-- For $r \ge 0$, the regularized model $m^R$ is continuous on $E$. -/
 theorem continuous_regModel (g : E) (H : E →L[ℝ] E) (σ : ℝ) {r : ℝ} (hr : 0 ≤ r) :
     Continuous (regModel g H σ r) := by
   unfold regModel
@@ -87,13 +121,16 @@ section Symmetric
 
 variable {g : E} {H : E →L[ℝ] E}
 
-/-- Symmetry of `H` in the form `⟪H x, y⟫ = ⟪x, H y⟫` without coercions. -/
+/-- If $H$ is symmetric, then $\langle H x, y \rangle = \langle x, H y \rangle$ for all
+$x, y \in E$, stated for the continuous linear operator $H$ without coercion to a linear map. -/
 theorem inner_apply_comm_of_isSymmetric (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (x y : E) :
     ⟪H x, y⟫ = ⟪x, H y⟫ :=
   hH x y
 
-/-- Exact second-order expansion of the quadratic model:
-`m(s + h) = m(s) + ⟪g + H s, h⟫ + ½ ⟪h, H h⟫` for symmetric `H`. -/
+/-- Exact second-order expansion of the quadratic model: if $H$ is symmetric, then for all
+$s, h \in E$
+$$m(s + h) = m(s) + \langle g + H s, h \rangle + \tfrac12 \langle h, H h \rangle.$$
+-/
 theorem quadModel_add (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s h : E) :
     quadModel g H (s + h) = quadModel g H s + ⟪g + H s, h⟫ + (1 / 2) * ⟪h, H h⟫ := by
   have hs : ⟪h, H s⟫ = ⟪H s, h⟫ := real_inner_comm _ _
@@ -101,7 +138,10 @@ theorem quadModel_add (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s h : E) :
   simp only [quadModel, map_add, inner_add_left, inner_add_right, hs, hs']
   ring
 
-/-- Exact expansion along a line: `m(s + t v) = m(s) + t ⟪g + H s, v⟫ + t²/2 ⟪v, H v⟫`. -/
+/-- Exact expansion of the quadratic model along a line: if $H$ is symmetric, then for all
+$s, v \in E$ and $t \in \mathbb{R}$
+$$m(s + t v) = m(s) + t \langle g + H s, v \rangle + \frac{t^2}{2} \langle v, H v \rangle.$$
+-/
 theorem quadModel_add_smul (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s v : E) (t : ℝ) :
     quadModel g H (s + t • v) =
       quadModel g H s + t * ⟪g + H s, v⟫ + t ^ 2 / 2 * ⟪v, H v⟫ := by
@@ -109,7 +149,8 @@ theorem quadModel_add_smul (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s v : E) (t
   simp only [conj_trivial]
   ring
 
-/-- The quadratic model has derivative `⟪g + H s, ·⟫` at `s` (no completeness needed). -/
+/-- If $H$ is symmetric, then the quadratic model $m$ has the Fréchet derivative
+$h \mapsto \langle g + H s, h \rangle$ at every $s \in E$. The space $E$ need not be complete. -/
 theorem hasFDerivAt_quadModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s : E) :
     HasFDerivAt (quadModel g H) (innerSL ℝ (g + H s)) s := by
   have h₁ : HasFDerivAt (fun u : E => ⟪g, u⟫) (innerSL ℝ g) s := (innerSL ℝ g).hasFDerivAt
@@ -123,7 +164,8 @@ theorem hasFDerivAt_quadModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s : E) :
   simp [fderivInnerCLM_apply, hs, hs']
   ring
 
-/-- A derivative of the form `⟪v, ·⟫` is the gradient `v`. -/
+/-- Let $E$ be a real Hilbert space and $f : E \to \mathbb{R}$. If $f$ has the Fréchet derivative
+$h \mapsto \langle v, h \rangle$ at $x$, then $f$ has the gradient $v$ at $x$. -/
 theorem hasGradientAt_of_hasFDerivAt_innerSL [CompleteSpace E] {f : E → ℝ} {v x : E}
     (hf : HasFDerivAt f (innerSL ℝ v) x) : HasGradientAt f v x := by
   rw [hasGradientAt_iff_hasFDerivAt]
@@ -131,13 +173,17 @@ theorem hasGradientAt_of_hasFDerivAt_innerSL [CompleteSpace E] {f : E → ℝ} {
   ext y
   simp [InnerProductSpace.toDual_apply_apply]
 
-/-- The gradient of the quadratic model is `g + H s` ([cartis2022evaluation] (8.2.34) with
-`σ = 0`). -/
+/-- Let $E$ be a real Hilbert space and let $H$ be symmetric. Then the gradient of the quadratic
+model at every $s \in E$ is
+$$\nabla m(s) = g + H s.$$
+
+This is (8.2.34) of [cartis2022evaluation] with $\sigma = 0$. -/
 theorem hasGradientAt_quadModel [CompleteSpace E] (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (s : E) :
     HasGradientAt (quadModel g H) (g + H s) s :=
   hasGradientAt_of_hasFDerivAt_innerSL (hasFDerivAt_quadModel hH s)
 
-/-- The regularized model has derivative `⟪g + H s + σ ‖s‖^{r-2} s, ·⟫` at `s`, for `1 < r`. -/
+/-- Let $H$ be symmetric and $r > 1$. Then the regularized model $m^R$ has the Fréchet derivative $h
+\mapsto \langle g + H s + \sigma \|s\|^{r-2} s, h \rangle$ at every $s \in E$. -/
 theorem hasFDerivAt_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (σ : ℝ) {r : ℝ} (hr : 1 < r)
     (s : E) :
     HasFDerivAt (regModel g H σ r) (innerSL ℝ (g + H s + (σ * ‖s‖ ^ (r - 2)) • s)) s := by
@@ -148,9 +194,12 @@ theorem hasFDerivAt_regModel (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (σ : ℝ)
   simp
   field_simp
 
-/-- The gradient of the regularized model is `g + H s + σ ‖s‖^{r-2} s` for `1 < r`
-([cartis2022evaluation] (8.2.34), first line, with `λ = σ ‖s‖^{r-2}`; at `s = 0` the last term
-is `0`). -/
+/-- Let $E$ be a real Hilbert space, let $H$ be symmetric, and let $\sigma \in \mathbb{R}$ and
+$r > 1$. Then the gradient of the regularized model at every $s \in E$ is
+$$\nabla m^R(s) = g + H s + \sigma \|s\|^{r-2} s.$$
+
+This is the first line of (8.2.34) of [cartis2022evaluation], where
+$\lambda = \sigma \|s\|^{r-2}$. At $s = 0$ the last term is $0$. -/
 theorem hasGradientAt_regModel [CompleteSpace E] (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (σ : ℝ)
     {r : ℝ} (hr : 1 < r) (s : E) :
     HasGradientAt (regModel g H σ r) (g + H s + (σ * ‖s‖ ^ (r - 2)) • s) s :=
@@ -158,28 +207,37 @@ theorem hasGradientAt_regModel [CompleteSpace E] (hH : (H : E →ₗ[ℝ] E).IsS
 
 end Symmetric
 
-/-- The **Hessian of the regularized model** at `s`,
-`H + λ I + (r - 2) λ (s/‖s‖)(s/‖s‖)ᵀ` with `λ = σ ‖s‖^{r-2}` ([cartis2022evaluation] (8.2.34),
-second line), written as `H + (σ ‖s‖^{r-2}) • 1 + ((r - 2) σ ‖s‖^{r-4}) • s ⟪s, ·⟫`. At `s = 0`
-it equals `H` when `r > 2` (`regModelHessian_zero`). -/
+/-- The **Hessian of the regularized model** at $s \in E$, for a continuous linear operator $H$ on
+$E$ and real numbers $\sigma$ and $r$:
+$$\nabla^2 m^R(s) = H + \lambda I + (r - 2) \lambda \frac{s}{\|s\|}
+  \left(\frac{s}{\|s\|}\right)^T, \qquad \lambda = \sigma \|s\|^{r-2}.$$
+
+This is the second line of (8.2.34) of [cartis2022evaluation]. The definition writes the
+operator as $H + \sigma \|s\|^{r-2} I + (r - 2) \sigma \|s\|^{r-4} \, s \langle s, \cdot
+\rangle$, with the powers given by `Real.rpow`. At $s = 0$ the value is $H + \sigma I$ for
+$r = 2$ and $H$ for every other $r$. `Subproblem.hasFDerivAt_gradient_regModel` shows that it is
+the derivative of the gradient for $r > 2$. -/
 def regModelHessian (H : E →L[ℝ] E) (σ r : ℝ) (s : E) : E →L[ℝ] E :=
   H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E) +
     ((r - 2) * σ * ‖s‖ ^ (r - 4)) • (innerSL ℝ s).smulRight s
 
-/-- The Hessian of the regularized model applied to a vector. -/
+/-- The Hessian of the regularized model applied to $v \in E$ is
+$$\nabla^2 m^R(s) v = H v + \sigma \|s\|^{r-2} v + (r - 2) \sigma \|s\|^{r-4} \langle s, v
+  \rangle s.$$
+-/
 theorem regModelHessian_apply (H : E →L[ℝ] E) (σ r : ℝ) (s v : E) :
     regModelHessian H σ r s v =
       H v + (σ * ‖s‖ ^ (r - 2)) • v + ((r - 2) * σ * ‖s‖ ^ (r - 4) * ⟪s, v⟫) • s := by
   simp [regModelHessian, mul_smul]
 
-/-- At the origin the Hessian of the regularized model is `H`, for `r > 2`. -/
+/-- For $r > 2$, the Hessian of the regularized model at the origin is $H$. -/
 theorem regModelHessian_zero (H : E →L[ℝ] E) (σ : ℝ) {r : ℝ} (hr : 2 < r) :
     regModelHessian H σ r 0 = H := by
   ext v
   simp [regModelHessian_apply, Real.zero_rpow (show r - 2 ≠ 0 by linarith)]
 
-/-- The derivative of the regularization part `s ↦ σ ‖s‖^{r-2} s` of the gradient vanishes at the
-origin when `r > 2`. -/
+/-- For $r > 2$, the map $s \mapsto \sigma \|s\|^{r-2} s$, which is the regularization part of the
+gradient of $m^R$, has the Fréchet derivative $0$ at the origin. -/
 theorem hasFDerivAt_norm_rpow_smul_self_zero (σ : ℝ) {r : ℝ} (hr : 2 < r) :
     HasFDerivAt (fun s : E => (σ * ‖s‖ ^ (r - 2)) • s) (0 : E →L[ℝ] E) 0 := by
   rw [hasFDerivAt_iff_isLittleO_nhds_zero]
@@ -192,8 +250,10 @@ theorem hasFDerivAt_norm_rpow_smul_self_zero (σ : ℝ) {r : ℝ} (hr : 2 < r) :
   have h := (isLittleO_one_iff ℝ).mpr ht |>.smul_isBigO (isBigO_refl (fun s : E => s) (𝓝 0))
   simpa using h
 
-/-- The regularization part `s ↦ σ ‖s‖^{r-2} s` of the gradient has derivative
-`σ ‖s‖^{r-2} I + (r - 2) σ ‖s‖^{r-4} s ⟪s, ·⟫` at every `s`, for `r > 2`. -/
+/-- For $r > 2$, the map $s \mapsto \sigma \|s\|^{r-2} s$, which is the regularization part of the
+gradient of $m^R$, has at every $s \in E$ the Fréchet derivative
+$$\sigma \|s\|^{r-2} I + (r - 2) \sigma \|s\|^{r-4} \, s \langle s, \cdot \rangle.$$
+-/
 theorem hasFDerivAt_norm_rpow_smul_self (σ : ℝ) {r : ℝ} (hr : 2 < r) (s : E) :
     HasFDerivAt (fun s : E => (σ * ‖s‖ ^ (r - 2)) • s)
       ((σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E) +
@@ -210,10 +270,14 @@ theorem hasFDerivAt_norm_rpow_smul_self (σ : ℝ) {r : ℝ} (hr : 2 < r) (s : E
       ContinuousLinearMap.id_apply, smul_eq_mul, id_eq]
     module
 
-/-- The gradient map `s ↦ g + H s + σ ‖s‖^{r-2} s` of the regularized model has derivative
-`regModelHessian H σ r s` at every `s`, for `r > 2` (including `s = 0`); together with
-`hasGradientAt_regModel`, `regModelHessian` is the Hessian of `regModel`
-([cartis2022evaluation] (8.2.34)). -/
+/-- Let $g \in E$, let $H$ be a continuous linear operator on $E$, and let $\sigma \in \mathbb{R}$
+and $r > 2$. Then at every $s \in E$, including $s = 0$, the map
+$u \mapsto g + H u + \sigma \|u\|^{r-2} u$ has the Fréchet derivative $\nabla^2 m^R(s)$, the
+operator `Subproblem.regModelHessian H σ r s`.
+
+For symmetric $H$ on a Hilbert space, this map is the gradient of $m^R$ by
+`Subproblem.hasGradientAt_regModel`. So `Subproblem.regModelHessian` is the Hessian of $m^R$, as
+in (8.2.34) of [cartis2022evaluation]. -/
 theorem hasFDerivAt_gradient_regModel (g : E) (H : E →L[ℝ] E) (σ : ℝ) {r : ℝ} (hr : 2 < r)
     (s : E) :
     HasFDerivAt (fun u : E => g + H u + (σ * ‖u‖ ^ (r - 2)) • u) (regModelHessian H σ r s) s := by
@@ -222,8 +286,10 @@ theorem hasFDerivAt_gradient_regModel (g : E) (H : E →L[ℝ] E) (σ : ℝ) {r 
   convert h using 1
   simp [regModelHessian, add_assoc]
 
-/-- The rank-one part of the Hessian of the regularized model is positive semidefinite:
-`⟪v, ∇²m^R(s) v⟫ ≥ ⟪v, (H + σ ‖s‖^{r-2} I) v⟫` for `σ ≥ 0`, `r ≥ 2`. -/
+/-- Let $H$ be a continuous linear operator on $E$, and let $\sigma \ge 0$ and $r \ge 2$. Then for
+all $s, v \in E$
+$$\langle v, (H + \sigma \|s\|^{r-2} I) v \rangle \le \langle v, \nabla^2 m^R(s) v \rangle.$$
+That is, the rank-one part of the Hessian of the regularized model is positive semidefinite. -/
 theorem inner_regModelHessian_ge (H : E →L[ℝ] E) {σ r : ℝ} (hσ : 0 ≤ σ) (hr : 2 ≤ r) (s v : E) :
     ⟪v, (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) v⟫ ≤ ⟪v, regModelHessian H σ r s v⟫ := by
   rw [regModelHessian_apply]
@@ -240,16 +306,19 @@ section Shifted
 
 variable {g : E} {H : E →L[ℝ] E}
 
-/-- A solution of `(H + μ I) s = -g` makes the gradient `g + H s` of the quadratic model equal to
-`-μ s`. -/
+/-- If $(H + \mu I) s = -g$, then the gradient $g + H s$ of the quadratic model at $s$ equals
+$-\mu s$. -/
 theorem add_apply_eq_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     g + H s = -(μ • s) := by
   have hg : g = -(H s + μ • s) := by
     rw [← neg_neg g, ← hs]; simp
   rw [hg]; abel
 
-/-- **Shifted-system identity.** If `(H + μ I) s = -g` with `H` symmetric, then for every `u`,
-`m(u) - m(s) = ½ ⟪u - s, (H + μ I)(u - s)⟫ + μ/2 (‖s‖² - ‖u‖²)`. -/
+/-- The **shifted-system identity.** Let $H$ be symmetric, let $\mu \in \mathbb{R}$, and let
+$s \in E$ satisfy $(H + \mu I) s = -g$. Then for every $u \in E$
+$$m(u) - m(s) = \tfrac12 \langle u - s, (H + \mu I)(u - s) \rangle + \frac{\mu}{2}
+  \left(\|s\|^2 - \|u\|^2\right).$$
+-/
 theorem quadModel_sub_eq_of_shifted (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {μ : ℝ} {s : E}
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (u : E) :
     quadModel g H u - quadModel g H s =
@@ -264,14 +333,17 @@ theorem quadModel_sub_eq_of_shifted (hH : (H : E →ₗ[ℝ] E).IsSymmetric) {μ
   rw [real_inner_comm s (u - s)]
   ring
 
-/-- If `(H + μ I) s = -g` with `H` symmetric, then `⟪g, s⟫ = -⟪s, (H + μ I) s⟫`. -/
+/-- If $(H + \mu I) s = -g$, then $\langle g, s \rangle = -\langle s, (H + \mu I) s \rangle$. -/
 theorem inner_eq_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     ⟪g, s⟫ = -⟪s, (H + μ • (1 : E →L[ℝ] E)) s⟫ := by
   rw [hs, inner_neg_right, real_inner_comm, neg_neg]
 
-/-- The value of the quadratic model at a solution of `(H + μ I) s = -g`:
-`m(s) = ½ (⟪g, s⟫ - μ ‖s‖²)` (via [cartis2022evaluation] (8.3.4); the first step of the proof of
-(8.3.5)). -/
+/-- Let $\mu \in \mathbb{R}$ and let $s \in E$ satisfy $(H + \mu I) s = -g$. Then the value of the
+quadratic model at $s$ is
+$$m(s) = \tfrac12 \left(\langle g, s \rangle - \mu \|s\|^2\right).$$
+
+This uses (8.3.4) of [cartis2022evaluation] and is the first step of the proof of (8.3.5). The
+operator $H$ need not be symmetric. -/
 theorem quadModel_eq_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     quadModel g H s = (1 / 2) * (⟪g, s⟫ - μ * ‖s‖ ^ 2) := by
   have h := inner_eq_of_shifted hs
@@ -282,7 +354,9 @@ theorem quadModel_eq_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L
   linarith
 
 omit [InnerProductSpace ℝ E] in
-/-- `σ/r ‖s‖^r = ‖s‖² (σ/r ‖s‖^{r-2})`, for every real `r` (both sides vanish when `r = 0`). -/
+/-- For all real $\sigma$ and $r$ and every vector $s$ of a normed space,
+$$\frac{\sigma}{r} \|s\|^r = \|s\|^2 \left(\frac{\sigma}{r} \|s\|^{r-2}\right).$$
+For $r = 0$ both sides are $0$, because $\sigma / 0 = 0$ in Lean. -/
 theorem div_mul_norm_rpow_eq (σ r : ℝ) (s : E) :
     σ / r * ‖s‖ ^ r = ‖s‖ ^ 2 * (σ / r * ‖s‖ ^ (r - 2)) := by
   rcases eq_or_ne r 0 with rfl | hr
@@ -291,9 +365,11 @@ theorem div_mul_norm_rpow_eq (σ r : ℝ) (s : E) :
     norm_num
     ring
 
-/-- The value of the regularized model at a solution of `(H + λ I) s = -g` with
-`λ = σ ‖s‖^{r-2}` and `r ≠ 0`: `m^R(s) = ½ (⟪g, s⟫ - (r - 2)/r λ ‖s‖²)` (the first step of the
-proof of [cartis2022evaluation] (8.3.3)). -/
+/-- Let $\sigma \in \mathbb{R}$ and $r \neq 0$, and let $s \in E$ satisfy $(H + \lambda I) s = -g$
+with $\lambda = \sigma \|s\|^{r-2}$. Then the value of the regularized model at $s$ is
+$$m^R(s) = \tfrac12 \left(\langle g, s \rangle - \frac{r - 2}{r} \lambda \|s\|^2\right).$$
+
+This is the first step of the proof of (8.3.3) of [cartis2022evaluation]. -/
 theorem regModel_eq_of_shifted {σ r : ℝ} (hr : r ≠ 0) {s : E}
     (hs : (H + (σ * ‖s‖ ^ (r - 2)) • (1 : E →L[ℝ] E)) s = -g) :
     regModel g H σ r s =
@@ -302,10 +378,12 @@ theorem regModel_eq_of_shifted {σ r : ℝ} (hr : r ≠ 0) {s : E}
   field_simp
   ring
 
-/-- The value of the regularized model at a solution of `(H + μ I) s = -g`, for any `μ` (not
-necessarily `σ ‖s‖^{r-2}`):
-`m^R(s) = -½ ⟪s, (H + μ I) s⟫ + ‖s‖² (σ/r ‖s‖^{r-2} - μ/2)` ([cartis2022evaluation], proof of
-Theorem 9.3.2). -/
+/-- Let $\sigma, r, \mu \in \mathbb{R}$ and let $s \in E$ satisfy $(H + \mu I) s = -g$, where $\mu$
+need not equal $\sigma \|s\|^{r-2}$. Then the value of the regularized model at $s$ is
+$$m^R(s) = -\tfrac12 \langle s, (H + \mu I) s \rangle + \|s\|^2 \left(\frac{\sigma}{r}
+  \|s\|^{r-2} - \frac{\mu}{2}\right).$$
+
+This is used in the proof of Theorem 9.3.2 of [cartis2022evaluation]. -/
 theorem regModel_eq_of_shifted_general (σ r : ℝ) {μ : ℝ} {s : E}
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     regModel g H σ r s =
@@ -317,8 +395,12 @@ theorem regModel_eq_of_shifted_general (σ r : ℝ) {μ : ℝ} {s : E}
     one_apply_eq_self, inner_add_right, inner_smul_right, real_inner_self_eq_norm_sq]
   ring
 
-/-- At a solution of `(H + μ I) s = -g`, the gradient of the regularized model is
-`(σ ‖s‖^{r-2} - μ) s` ([cartis2022evaluation], proof of Theorem 9.3.2). -/
+/-- Let $E$ be a real Hilbert space, let $H$ be symmetric, let $\sigma \in \mathbb{R}$ and $r > 1$,
+and let $s \in E$ satisfy $(H + \mu I) s = -g$. Then the gradient of the regularized model at
+$s$ is
+$$\nabla m^R(s) = (\sigma \|s\|^{r-2} - \mu) s.$$
+
+This is used in the proof of Theorem 9.3.2 of [cartis2022evaluation]. -/
 theorem hasGradientAt_regModel_of_shifted [CompleteSpace E] (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (σ : ℝ) {r : ℝ} (hr : 1 < r) {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     HasGradientAt (regModel g H σ r) ((σ * ‖s‖ ^ (r - 2) - μ) • s) s := by
@@ -326,8 +408,8 @@ theorem hasGradientAt_regModel_of_shifted [CompleteSpace E] (hH : (H : E →ₗ[
   rw [add_apply_eq_of_shifted hs, sub_smul]
   abel
 
-/-- Two shifts solving the same shifted system at the same point differ by a multiple killing it:
-if `(H + μ I) s = -g` and `(H + μ' I) s = -g` then `(μ - μ') • s = 0`. -/
+/-- If $(H + \mu I) s = -g$ and $(H + \mu' I) s = -g$, then $(\mu - \mu') s = 0$. So two shifts that
+solve the same shifted system at the same nonzero point are equal. -/
 theorem sub_smul_eq_zero_of_shifted {μ μ' : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g)
     (hs' : (H + μ' • (1 : E →L[ℝ] E)) s = -g) : (μ - μ') • s = 0 := by
   have h := hs.trans hs'.symm

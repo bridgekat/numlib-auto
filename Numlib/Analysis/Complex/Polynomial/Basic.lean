@@ -13,14 +13,25 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 /-!
 # The complex roots of a real polynomial
 
-`Polynomial.roots_map_algebraMap_conj`: the complex roots of a real polynomial, counted with
-multiplicity, are closed under complex conjugation.
+Let $p$ be a polynomial with real coefficients, viewed as a polynomial over $\mathbb{C}$. This
+module proves that its complex roots, counted with multiplicity, are closed under complex
+conjugation: $\lambda$ is a root of multiplicity $m$ if and only if $\bar\lambda$ is.
+
+## Main results
+
+* `Polynomial.roots_map_algebraMap_conj`: conjugation maps the multiset of complex roots of a real
+  polynomial onto itself.
 -/
 
 namespace Polynomial
 
-/-- **The roots of the complexification of a real polynomial are closed under conjugation**, with
-multiplicities. -/
+/-- **The roots of a real polynomial are closed under conjugation**, with multiplicities. Let
+$p \in \mathbb{R}[X]$, and let $p_{\mathbb{C}} \in \mathbb{C}[X]$ be $p$ with its coefficients
+viewed as complex numbers. Then the multiset of roots of $p_{\mathbb{C}}$, with each root
+repeated by its multiplicity, is unchanged when every root is replaced by its complex conjugate.
+
+$p_{\mathbb{C}}$ is `p.map (algebraMap ℝ ℂ)`, its multiset of roots is `Polynomial.roots`, and
+complex conjugation is `starRingEnd ℂ`. -/
 theorem roots_map_algebraMap_conj (p : ℝ[X]) :
     (p.map (algebraMap ℝ ℂ)).roots.map (starRingEnd ℂ) = (p.map (algebraMap ℝ ℂ)).roots := by
   rw [roots_map_of_injective_of_card_eq_natDegree (starRingEnd ℂ).injective

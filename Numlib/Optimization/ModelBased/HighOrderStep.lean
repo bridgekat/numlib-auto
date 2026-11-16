@@ -11,42 +11,66 @@ import Numlib.Analysis.SpecialFunctions.FactorialSum
 # The step computation of high-order adaptive-regularization methods
 
 The adaptive-regularization methods ARqp ([cartis2022evaluation], Algorithm 12.2.2) and ARqpC
-(Algorithm 14.1.1) compute, at every iteration, a step `s_k` approximately minimizing the model
-`m_k` together with radii `δ_{s_k} ∈ (0, 1]^q` for which `s_k` is approximately `q`-th order
-critical for the model. The *detailed Step 2* that does so (Algorithms 12.2.3 and 14.1.2) is
-stated here once, for abstract data:
+(Algorithm 14.1.1) compute at every iteration a step $s_k$ that approximately minimizes the model
+$m_k$, together with radii $\delta_{s_k} \in (0, 1]^q$ for which $s_k$ is approximately critical of
+order $q$ for the model. The detailed Step 2 that does so (Algorithms 12.2.3 and 14.1.2) is stated
+here once, for abstract data: a model $m : E \to \mathbb{R}$, a set $T$ of feasible steps, sets
+$S_d(s)$ of feasible displacements at a trial step $s$, the order-$j$ Taylor decrement
+$\Delta T_j(s, d)$ of the model at $s$, the order $q$, constants $\varsigma$ and $\theta$,
+tolerances $\varepsilon_j$, and a set $J \subseteq \mathbb{N}$ of the orders at which the radius may
+be halved ($j \ge 3$ in Algorithm 12.2.3; $j \ge 2$, or all $j$ if the nonsmooth part is nonconvex,
+in Algorithm 14.1.2). The order-$j$ measure at $s$ with radius $\delta$ is
+$$\phi_j(s, \delta) = \sup\{\Delta T_j(s, d) : \|d\| \le \delta,\ d \in S_d(s)\},$$
+and $m^* = \inf\{m(t) : t \in T\}$ is the global minimal value of Step 2.2.
 
-* `m : E → ℝ` (the model), `T : Set E` (the feasible steps), `Sd s : Set E` (the feasible
-  displacements at a trial step `s`), `ΔT j s d` (the order-`j` Taylor decrement of the model at
-  `s`), the order `q`, constants `ς, θ`, tolerances `ε j`, and `J : Set ℕ`, the orders at which the
-  radius may be halved (`j ≥ 3` in Algorithm 12.2.3; `j ≥ 2`, or all `j` if the nonsmooth part is
-  nonconvex, in Algorithm 14.1.2).
+The procedure chooses an approximate global minimizer $s_\mu$ (Step 2.2) and approximate maximizers
+$d_{\mu,j}$ (Step 2.4.1). It is modelled as a nondeterministic transition system, and its outputs
+are the returned states that are reachable from an initial state. Every output satisfies the Step-2
+conditions, and a global minimizer of the model gives an output whose radii are bounded below. Under
+a bound on the halvings and a gap condition on the restarts, there is no infinite execution. The
+second part of the file is the step-length algebra shared by Lemmas 12.2.12, 13.1.17 and 14.1.8: if
+the measure inequality
+$$\frac{a\varepsilon\delta^j}{j!} \le A\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} +
+  Bt^{p+1}$$
+holds for the step length $t = \|s_k\|$, then $t$ is bounded below.
 
-The order-`j` measure at `s` with radius `δ` is `sSup (ΔT j s '' (closedBall 0 δ ∩ Sd s))`.
+## Main definitions
 
-The global minimal value `m* = sInf (m '' T)` of Step 2.2 is meaningful when `m` is bounded below
-on `T` (as the regularized models are); otherwise Lean's `sInf` of an unbounded set is `0`, and
-the results below still hold but say nothing about global minimization. The long-step test of
-Step 2.3 is `‖s‖ ≥ 1` as in Algorithms 12.2.3 and 14.1.2; the long-step branch of the outer
-algorithm (12.2.28) is taken in the same form, so that on the sphere `‖s‖ = 1` the short-step
-conditions are not checked.
+* `Optimization.DetailedStepState`, `Optimization.DetailedStepTrans`: the states and the transitions
+  of the detailed Step 2.
+* `Optimization.IsDetailedStepOutput`: the outputs of the detailed Step 2.
+* `Optimization.DetailedHalvingBound`, `Optimization.DetailedRestartGap`: the two hypotheses of the
+  termination theorem.
+* `Optimization.MeasureIneq`: the measure inequality.
 
-The procedure chooses an approximate global minimizer `s_μ` (Step 2.2) and approximate maximizers
-`d_{μ,j}` (Step 2.4.1); it is modelled as a nondeterministic transition system
-(`Optimization.DetailedStepTrans` on `Optimization.DetailedStepState`), and its outputs
-(`Optimization.IsDetailedStepOutput`) are the returned states reachable from an initial state.
+## Main results
 
 * `Optimization.IsDetailedStepOutput.spec`: every output satisfies the Step-2 conditions
-  (12.2.27)–(12.2.29) / (14.1.12)–(14.1.13);
-* `Optimization.exists_isDetailedStepOutput`: from a global minimizer of the model there is an
-  output whose radii are bounded below (Lemmas 12.2.9 and 14.1.3);
-* `Optimization.IsDetailedStepOutput.radius_ge`: every output has radii at least `δbar j / 2`
-  when the model-decrease property of Lemmas 12.2.8/14.1.2 holds at all short trial steps.
+  (12.2.27)–(12.2.29) and (14.1.12)–(14.1.13).
+* `Optimization.exists_isDetailedStepOutput`: a global minimizer of the model gives an output whose
+  radii are bounded below (Lemmas 12.2.9 and 14.1.3).
+* `Optimization.IsDetailedStepOutput.radius_ge`: every output has radii at least $\bar\delta_j/2$
+  when the model-decrease property of Lemmas 12.2.8 and 14.1.2 holds at all short trial steps.
+* `Optimization.IsDetailedStepOutput.of_short_step`: every short step that decreases the model and
+  is approximately critical for it is an output.
+* `Optimization.DetailedStepState.exists_trans`, `Optimization.detailedStep_terminates`: every
+  reachable state that is not final has a successor, and under the halving bound and the restart gap
+  there is no infinite execution.
+* `Optimization.pow_ge_of_measure_ineq`, `Optimization.norm_step_ge_of_measure_ineq`: lower bounds
+  on the step length from the measure inequality (Lemmas 12.2.12, 13.1.17 and 14.1.8).
 
-The second part is the step-length algebra shared by Lemmas 12.2.12, 13.1.17 and 14.1.8: if the
-measure inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} + B t^{p+1}` holds for the step
-length `t = ‖s_k‖`, then `t` is bounded below (`Optimization.pow_ge_of_measure_ineq`,
-`Optimization.norm_step_ge_of_measure_ineq`).
+## Implementation notes
+
+* The measure $\phi_j(s, \delta)$ is written out as `sSup (ΔT j s '' (closedBall 0 δ ∩ Sd s))`, and
+  the global minimal value $m^*$ is `sInf (m '' T)`. The value $m^*$ is meaningful when $m$ is
+  bounded below on $T$, as the regularized models are. Otherwise Lean's `sInf` of a set that is not
+  bounded below is $0$, and the results still hold but say nothing about global minimization.
+* The long-step test of Step 2.3 is $\|s\| \ge 1$, as in Algorithms 12.2.3 and 14.1.2. The long-step
+  branch (12.2.28) of the outer algorithm is taken in the same form, so on the sphere $\|s\| = 1$
+  the short-step conditions are not checked.
+* The radii are a sequence $\delta : \mathbb{N} \to \mathbb{R}$, and an execution is a sequence of
+  states linked by `Optimization.DetailedStepTrans`. An output is reached by finitely many
+  transitions (`Relation.ReflTransGen`).
 -/
 
 open Finset Metric
@@ -56,68 +80,88 @@ namespace Optimization
 
 /-! ### The detailed Step 2 -/
 
-/-- The states of the detailed Step 2 ([cartis2022evaluation], Algorithms 12.2.3, 14.1.2). -/
+/-- The states of the detailed Step 2 of [cartis2022evaluation], Algorithms 12.2.3 and 14.1.2. A
+state is about to compute a step (Step 2.2) with a parameter $\mu$ and radii $\delta$, or is
+checking order $j$ of a trial step $s$ (Step 2.4) with a parameter $\mu$ and radii $\delta$, or
+is final with the returned pair $(s, \delta)$. -/
 inductive DetailedStepState (E : Type*)
-  /-- About to execute Step 2.2 with parameter `μ` and radii `δ`. -/
+  /-- About to execute Step 2.2 with the parameter $\mu$ and the radii $\delta$. -/
   | findStep (μ : ℝ) (δ : ℕ → ℝ)
-  /-- In Step 2.4 at order `j`, with parameter `μ`, trial step `s` and radii `δ`. -/
+  /-- In Step 2.4 at order $j$, with the parameter $\mu$, the trial step $s$ and the radii $\delta$.
+  -/
   | check (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ)
-  /-- The pair `(s_k, δ_{s_k}) = (s, δ)` has been returned (Steps 2.3, 2.5). -/
+  /-- The pair $(s_k, \delta_{s_k}) = (s, \delta)$ has been returned (Steps 2.3 and 2.5). -/
   | done (s : E) (δ : ℕ → ℝ)
 
 open DetailedStepState
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- One transition of the detailed Step 2 ([cartis2022evaluation], Algorithm 12.2.3 for `J` the
-orders `j ≥ 3`, Algorithm 14.1.2 for `j ≥ 2` or all orders), with `m* = sInf (m '' T)` the global
-minimal value of the model and `φ j s δ = sSup (ΔT j s '' (closedBall 0 δ ∩ Sd s))` the order-`j`
-measure at `s`:
-* Steps 2.2–2.3: a step `s ∈ T` with `μ (m 0 - m*) ≤ m 0 - m s` is returned if `‖s‖ ≥ 1`, and
-  checked from order `1` otherwise;
-* Steps 2.4.1–2.4.2: a displacement `d` of norm at most `δ_j` with `ς φ j s δ_j ≤ ΔT j s d` and
-  `ΔT j s d ≤ ς θ ε_j δ_j^j / j!` passes order `j` (to order `j + 1`, or returning `(s, δ)` after
-  order `q`);
-* Step 2.4.3: if the decrement is too large, `j ∈ J` and the model decrease
-  `m s - m (s + d)` is smaller than `ς θ ε_j δ_j^j / (2 j!)`, the radius `δ_j` is halved;
-* Step 2.4.4: otherwise `μ` is replaced by `(1 + μ) / 2` and a new step is computed. -/
+/-- One transition of the detailed Step 2 of [cartis2022evaluation]: Algorithm 12.2.3 for
+$J = \{j : j \ge 3\}$, and Algorithm 14.1.2 for $J = \{j : j \ge 2\}$ or $J = \mathbb{N}$. With
+$m^* = \inf m(T)$ and $\phi_j(s, \delta) = \sup\{\Delta T_j(s, d) : \|d\| \le \delta,\ d \in
+S_d(s)\}$, the transitions are as follows.
+* Steps 2.2–2.3: from Step 2.2 with parameter $\mu$, a step $s \in T$ with
+  $\mu(m(0) - m^*) \le m(0) - m(s)$ is returned if $\|s\| \ge 1$, and is checked from order $1$
+  if $\|s\| < 1$.
+* Steps 2.4.1–2.4.2: when order $j$ of $s$ is checked, a displacement $d \in S_d(s)$ with
+  $\|d\| \le \delta_j$, $\varsigma\,\phi_j(s, \delta_j) \le \Delta T_j(s, d)$ and $\Delta T_j(s,
+  d) \le \varsigma\theta\varepsilon_j\delta_j^j/j!$ passes order $j$. The check goes on to order
+  $j + 1$ if $j < q$, and $(s, \delta)$ is returned if $j \ge q$.
+* Step 2.4.3: if such a $d$ has $\Delta T_j(s, d) > \varsigma\theta\varepsilon_j\delta_j^j/j!$,
+  $j \in J$ and $m(s) - m(s + d) < \varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, the radius
+  $\delta_j$ is halved and order $j$ is checked again.
+* Step 2.4.4: if such a $d$ has $\Delta T_j(s, d) > \varsigma\theta\varepsilon_j\delta_j^j/j!$,
+  and either $j \notin J$ or $m(s) - m(s + d) \ge
+  \varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, then $\mu$ is replaced by $(1 + \mu)/2$ and a
+  new step is computed. -/
 inductive DetailedStepTrans (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
     (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) :
     DetailedStepState E → DetailedStepState E → Prop
-  /-- Step 2.3: return a long step. -/
+  /-- Step 2.3: a step $s \in T$ with $\mu(m(0) - m^*) \le m(0) - m(s)$ and $\|s\| \ge 1$ is
+  returned with the current radii. -/
   | ret {μ : ℝ} {δ : ℕ → ℝ} {s : E} (hs : s ∈ T) (hdec : μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s)
       (hlong : 1 ≤ ‖s‖) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (findStep μ δ) (done s δ)
-  /-- Step 2.3: check a short step, starting from order `1`. -/
+  /-- Step 2.3: a step $s \in T$ with $\mu(m(0) - m^*) \le m(0) - m(s)$ and $\|s\| < 1$ is checked,
+  starting from order $1$. -/
   | start {μ : ℝ} {δ : ℕ → ℝ} {s : E} (hs : s ∈ T)
       (hdec : μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s) (hshort : ‖s‖ < 1) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (findStep μ δ) (check μ s δ 1)
-  /-- Step 2.4.2: order `j < q` passes, consider the next order. -/
+  /-- Step 2.4.2: order $j < q$ passes with a displacement $d$ that achieves the fraction
+  $\varsigma$ of the measure and has $\Delta T_j(s, d) \le
+  \varsigma\theta\varepsilon_j\delta_j^j/j!$, and the check goes on to order $j + 1$. -/
   | next {μ : ℝ} {s : E} {δ : ℕ → ℝ} {j : ℕ} {d : E} (hd : d ∈ closedBall 0 (δ j) ∩ Sd s)
       (happrox : ς * sSup (ΔT j s '' (closedBall 0 (δ j) ∩ Sd s)) ≤ ΔT j s d)
       (hsmall : ΔT j s d ≤ ς * θ * ε j * δ j ^ j / j !) (hj : j < q) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (check μ s δ j) (check μ s δ (j + 1))
-  /-- Steps 2.4.2 and 2.5: the last order passes, return `(s, δ)`. -/
+  /-- Steps 2.4.2 and 2.5: order $j \ge q$ passes in the same way, and $(s, \delta)$ is returned. -/
   | finish {μ : ℝ} {s : E} {δ : ℕ → ℝ} {j : ℕ} {d : E} (hd : d ∈ closedBall 0 (δ j) ∩ Sd s)
       (happrox : ς * sSup (ΔT j s '' (closedBall 0 (δ j) ∩ Sd s)) ≤ ΔT j s d)
       (hsmall : ΔT j s d ≤ ς * θ * ε j * δ j ^ j / j !) (hj : q ≤ j) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (check μ s δ j) (done s δ)
-  /-- Step 2.4.3: halve the radius of order `j`. -/
+  /-- Step 2.4.3: if the decrement is too large, $j \in J$ and the model decrease $m(s) - m(s + d)$
+  is less than $\varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, the radius $\delta_j$ is
+  halved. -/
   | halve {μ : ℝ} {s : E} {δ : ℕ → ℝ} {j : ℕ} {d : E} (hd : d ∈ closedBall 0 (δ j) ∩ Sd s)
       (happrox : ς * sSup (ΔT j s '' (closedBall 0 (δ j) ∩ Sd s)) ≤ ΔT j s d)
       (hlarge : ς * θ * ε j * δ j ^ j / j ! < ΔT j s d) (hJ : j ∈ J)
       (hmodel : m s - m (s + d) < ς * θ * ε j * δ j ^ j / (2 * j !)) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (check μ s δ j)
         (check μ s (Function.update δ j (δ j / 2)) j)
-  /-- Step 2.4.4: increase `μ` and compute a new step. -/
+  /-- Step 2.4.4: if the decrement is too large and either $j \notin J$ or the model decrease is at
+  least $\varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, then $\mu$ is replaced by
+  $(1 + \mu)/2$ and a new step is computed. -/
   | restart {μ : ℝ} {s : E} {δ : ℕ → ℝ} {j : ℕ} {d : E} (hd : d ∈ closedBall 0 (δ j) ∩ Sd s)
       (happrox : ς * sSup (ΔT j s '' (closedBall 0 (δ j) ∩ Sd s)) ≤ ΔT j s d)
       (hlarge : ς * θ * ε j * δ j ^ j / j ! < ΔT j s d)
       (hJ : j ∉ J ∨ ς * θ * ε j * δ j ^ j / (2 * j !) ≤ m s - m (s + d)) :
       DetailedStepTrans m T Sd ΔT q ς θ ε J (check μ s δ j) (findStep ((1 + μ) / 2) δ)
 
-/-- `(s, δs)` is an output of the detailed Step 2: it is returned by some execution of the
-procedure started (Step 2.1) with some `μ₀ ∈ (0, 1]` and all radii equal to `1`. -/
+/-- The pair $(s, \delta_s)$ is an **output of the detailed Step 2** if some execution started at
+Step 2.1, with some $\mu_0 \in (0, 1]$ and all radii equal to $1$, returns $(s, \delta_s)$: the
+final state with $(s, \delta_s)$ is reachable from the initial state by finitely many
+transitions of `Optimization.DetailedStepTrans`. -/
 def IsDetailedStepOutput (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
     (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (s : E) (δs : ℕ → ℝ) : Prop :=
   ∃ μ₀ ∈ Set.Ioc (0 : ℝ) 1,
@@ -129,18 +173,20 @@ section DetailedStep
 variable {m : E → ℝ} {T : Set E} {Sd : E → Set E} {ΔT : ℕ → E → E → ℝ} {q : ℕ} {ς θ : ℝ}
   {ε : ℕ → ℝ} {J : Set ℕ}
 
-/-- The radii stay in `(0, 1]`, and equal to `1` at the orders that are never halved. -/
+/-- The radii lie in $(0, 1]$ and equal $1$ at the orders outside $J$. -/
 private def RadiiOK (J : Set ℕ) (δ : ℕ → ℝ) : Prop :=
   ∀ i, 0 < δ i ∧ δ i ≤ 1 ∧ (i ∉ J → δ i = 1)
 
-/-- The order-`i` conditions (12.2.29) at the step `s` with radius `δ i`. -/
+/-- The order-$i$ conditions (12.2.29) at the step $s$ with the radius $\delta_i$: some
+$d \in S_d(s)$ with $\|d\| \le \delta_i$ has $\varsigma\,\phi_i(s, \delta_i) \le \Delta T_i(s,
+d) \le \varsigma\theta\varepsilon_i\delta_i^i/i!$. -/
 private def OrderOK (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ) (ς θ : ℝ) (ε : ℕ → ℝ) (s : E)
     (δ : ℕ → ℝ) (i : ℕ) : Prop :=
   ∃ d ∈ closedBall 0 (δ i) ∩ Sd s,
     ς * sSup (ΔT i s '' (closedBall 0 (δ i) ∩ Sd s)) ≤ ΔT i s d ∧
       ΔT i s d ≤ ς * θ * ε i * δ i ^ i / i !
 
-/-- The invariant of the detailed Step 2. -/
+/-- The invariant of the detailed Step 2 that gives `Optimization.IsDetailedStepOutput.spec`. -/
 private def StepInv (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ) (q : ℕ)
     (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) : DetailedStepState E → Prop
   | findStep μ δ => μ ∈ Set.Ioc (0 : ℝ) 1 ∧ RadiiOK J δ
@@ -187,15 +233,18 @@ private theorem stepInv_trans {a b : DetailedStepState E}
     obtain ⟨h0, h1⟩ := hμ
     exact ⟨⟨by linarith, by linarith⟩, hR⟩
 
-/-- **The outputs of the detailed Step 2 satisfy the Step-2 conditions** ([cartis2022evaluation],
-(12.2.27)–(12.2.29), (14.1.12)–(14.1.13)). If `(s, δs)` is an output, then `s ∈ T`;
-`μ (m 0 - m*) ≤ m 0 - m s` for some `μ ∈ (0, 1]`, with `m* = sInf (m '' T)`; the radii lie in
-`(0, 1]` and equal `1` at every order outside `J`; and either `‖s‖ ≥ 1`, or for every
-`j ∈ [1, q]` some displacement `d` of norm at most `δs j` (feasible at `s`) satisfies
-`ς φ j s (δs j) ≤ ΔT j s d ≤ ς θ ε_j δs_j^j / j!`.
+/-- **The outputs of the detailed Step 2 satisfy the Step-2 conditions.** Let $(s, \delta_s)$ be an
+output of the detailed Step 2. Then $s \in T$; $\mu(m(0) - m^*) \le m(0) - m(s)$ for some
+$\mu \in (0, 1]$; $0 < \delta_{s,j} \le 1$ for every $j$, and $\delta_{s,j} = 1$ for every
+$j \notin J$; and either $\|s\| \ge 1$, or for every $j \in [1, q]$ some $d \in S_d(s)$ with
+$\|d\| \le \delta_{s,j}$ satisfies
+$$\varsigma\,\phi_j(s, \delta_{s,j}) \le \Delta T_j(s, d) \le
+  \frac{\varsigma\theta\varepsilon_j\delta_{s,j}^j}{j!}.$$
+These are the Step-2 conditions (12.2.27)–(12.2.29) and (14.1.12)–(14.1.13) of
+[cartis2022evaluation].
 
-(When the step is long, the radii are those current at Step 2.3, which may differ from `1`; the
-outer algorithm is free to replace them, as in (12.2.28).) -/
+When the step is long, the radii are those current at Step 2.3, which may differ from $1$; the
+outer algorithm is free to replace them, as in (12.2.28). -/
 theorem IsDetailedStepOutput.spec {s : E} {δs : ℕ → ℝ}
     (h : IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs) :
     s ∈ T ∧ (∃ μ ∈ Set.Ioc (0 : ℝ) 1, μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s) ∧
@@ -211,7 +260,8 @@ theorem IsDetailedStepOutput.spec {s : E} {δs : ℕ → ℝ}
   obtain ⟨hR, hs, hμ, hord⟩ := hinv
   exact ⟨hs, hμ, fun j => ⟨(hR j).1, (hR j).2.1⟩, fun j hj => (hR j).2.2 hj, hord⟩
 
-/-- An output never increases the model when `0 ∈ T` and the model is bounded below on `T`. -/
+/-- If $(s, \delta_s)$ is an output of the detailed Step 2, $0 \in T$ and $m$ is bounded below on
+$T$, then $m(s) \le m(0)$. -/
 theorem IsDetailedStepOutput.le_of_bddBelow {s : E} {δs : ℕ → ℝ}
     (h : IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs) (h0 : (0 : E) ∈ T)
     (hb : BddBelow (m '' T)) : m s ≤ m 0 := by
@@ -219,8 +269,9 @@ theorem IsDetailedStepOutput.le_of_bddBelow {s : E} {δs : ℕ → ℝ}
   have : sInf (m '' T) ≤ m 0 := csInf_le hb ⟨0, h0, rfl⟩
   nlinarith [hμ.1]
 
-/-- If an output does not decrease the model (the termination test of Step 2 of ARqp), then `0`
-is a global minimizer of the model on `T` (given boundedness below). -/
+/-- If $(s, \delta_s)$ is an output of the detailed Step 2, $m$ is bounded below on $T$ and
+$m(s) = m(0)$, then $0$ is a global minimizer of $m$ on $T$. The condition $m(s) = m(0)$ is the
+termination test of Step 2 of ARqp. -/
 theorem IsDetailedStepOutput.isMinOn_of_eq {s : E} {δs : ℕ → ℝ}
     (h : IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs)
     (hb : BddBelow (m '' T)) (heq : m s = m 0) : IsMinOn m T 0 := by
@@ -233,9 +284,9 @@ theorem IsDetailedStepOutput.isMinOn_of_eq {s : E} {δs : ℕ → ℝ}
   intro t ht
   exact hle.trans (csInf_le hb ⟨t, ht, rfl⟩)
 
-/-- The invariant behind `IsDetailedStepOutput.radius_ge`: positive radii, bounded below by
-`δbar j / 2` at the halved orders `j ∈ J ∩ [1, q]`, and short feasible trial steps and orders in
-`[1, q]` while checking. -/
+/-- The invariant behind `Optimization.IsDetailedStepOutput.radius_ge`: the radii are positive and
+at least $\bar\delta_j/2$ at the orders $j \in J \cap [1, q]$, and while an order is checked,
+the trial step is feasible and short and the order lies in $[1, q]$. -/
 private def RadiusLB (T : Set E) (q : ℕ) (J : Set ℕ) (δbar : ℕ → ℝ) :
     DetailedStepState E → Prop
   | findStep _ δ => ∀ j, 0 < δ j ∧ (j ∈ J → j ∈ Icc 1 q → δbar j / 2 ≤ δ j)
@@ -243,12 +294,16 @@ private def RadiusLB (T : Set E) (q : ℕ) (J : Set ℕ) (δbar : ℕ → ℝ) :
       ‖s‖ < 1 ∧ i ∈ Icc 1 q
   | done _ δ => ∀ j, 0 < δ j ∧ (j ∈ J → j ∈ Icc 1 q → δbar j / 2 ≤ δ j)
 
-/-- **Lower bound on the radii of every output** of the detailed Step 2 (the argument of
-[cartis2022evaluation], Lemmas 12.2.9 and 14.1.3, for all executions): let `1 ≤ q`, let
-`δbar j ≤ 1` at the halved orders `j ∈ J ∩ [1, q]`, and suppose that at every short feasible trial
-step `s` a decrement `ΔT j s d ≥ ς θ ε_j δ^j/j!` with `0 < δ ≤ δbar j` forces the model decrease
-`m s - m (s + d) ≥ ς θ ε_j δ^j/(2 j!)` (Lemmas 12.2.8, 14.1.2). Then the radius `δ_j` is never
-halved below `δbar j / 2`: every output has `δs j ≥ δbar j / 2` for `j ∈ J ∩ [1, q]`. -/
+/-- **Lower bound on the radii of every output.** Let $(s, \delta_s)$ be an output of the detailed
+Step 2, let $1 \le q$, and let $\bar\delta_j \le 1$ for $j \in J \cap [1, q]$. Suppose that at
+every trial step $s' \in T$ with $\|s'\| < 1$, for every $j \in J \cap [1, q]$, every
+$\delta \in (0, \bar\delta_j]$ and every $d \in S_d(s')$ with $\|d\| \le \delta$, the decrement
+bound $\Delta T_j(s', d) \ge \varsigma\theta\varepsilon_j\delta^j/j!$ implies the model decrease
+$m(s') - m(s' + d) \ge \varsigma\theta\varepsilon_j\delta^j/(2\,j!)$ (Lemmas 12.2.8 and 14.1.2).
+Then $\delta_{s,j} \ge \bar\delta_j/2$ for every $j \in J \cap [1, q]$.
+
+This is the argument of Lemmas 12.2.9 and 14.1.3 of [cartis2022evaluation], for all executions:
+the radius $\delta_j$ is never halved below $\bar\delta_j/2$. -/
 theorem IsDetailedStepOutput.radius_ge {s : E} {δs : ℕ → ℝ} {δbar : ℕ → ℝ}
     (h : IsDetailedStepOutput m T Sd ΔT q ς θ ε J s δs) (hq : 1 ≤ q)
     (hδbar : ∀ j ∈ J, j ∈ Icc 1 q → δbar j ≤ 1)
@@ -285,13 +340,13 @@ theorem IsDetailedStepOutput.radius_ge {s : E} {δs : ℕ → ℝ} {δbar : ℕ 
     | restart hd happrox hlarge hJ => exact ih.1
   exact fun j hj hjq => (hinv j).2 hj hjq
 
-/-- The supremum of `f` over `S` is attained at a maximizer `d ∈ S`. -/
+/-- If $d \in S$ maximizes $f$ on $S$, then $\sup f(S) = f(d)$. -/
 private theorem sSup_image_eq_of_max {α : Type*} {f : α → ℝ} {S : Set α} {d : α} (hd : d ∈ S)
     (hmax : ∀ d' ∈ S, f d' ≤ f d) : sSup (f '' S) = f d :=
   IsGreatest.csSup_eq ⟨⟨d, hd, rfl⟩, by rintro _ ⟨d', hd', rfl⟩; exact hmax d' hd'⟩
 
-/-- The hypotheses of `Optimization.exists_isDetailedStepOutput` at one order `j`, at a global
-minimizer `sstar` of the model. -/
+/-- The hypotheses of `Optimization.exists_isDetailedStepOutput` at one order $j$, at a global
+minimizer $s^*$ of the model. -/
 private structure OrderHyp (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
     (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (sstar : E) (δbar : ℕ → ℝ) (j : ℕ) : Prop where
   min : ∀ t ∈ T, m sstar ≤ m t
@@ -308,8 +363,8 @@ private structure OrderHyp (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT :
     ς * θ * ε j * δ ^ j / j ! ≤ ΔT j sstar d →
       ς * θ * ε j * δ ^ j / (2 * j !) ≤ m sstar - m (sstar + d)
 
-/-- One visit of order `j` at the global minimizer `sstar`: either order `j` passes with the
-current radii, or `j ∈ J`, `δ j > δbar j` and the radius `δ j` is halved (Step 2.4.3). -/
+/-- One visit of order $j$ at the global minimizer $s^*$: either order $j$ passes with the current
+radii, or $j \in J$, $\delta_j > \bar\delta_j$ and the radius $\delta_j$ is halved (Step 2.4.3). -/
 private theorem pass_or_halve {sstar : E} {δbar : ℕ → ℝ} {j : ℕ}
     (H : OrderHyp m T Sd ΔT ς θ ε J sstar δbar j) {δ : ℕ → ℝ} (hR : RadiiOK J δ) :
     OrderOK Sd ΔT ς θ ε sstar δ j ∨
@@ -352,10 +407,9 @@ private theorem pass_or_halve {sstar : E} {δbar : ℕ → ℝ} {j : ℕ}
     · simp only [Function.update_of_ne hij]
       exact hR i
 
-/-- Halving the radius of order `j` until the order-`j` test passes (proof of Lemma 12.2.9).
-Starting from radii satisfying the invariant (with `δbar j / 2 ≤ δ j ≤ 2^n δbar j` if `j ∈ J`),
-the procedure at the global minimizer `sstar` reaches radii `δ'` that differ from `δ` only at `j`,
-with `δ' j ≥ δbar j / 2` if `j ∈ J`, at which order `j` passes. -/
+/-- Repeated halving of the radius of order $j$ at the global minimizer $s^*$ reaches radii at which
+order $j$ passes; they differ from the given radii only at $j$, and are at least
+$\bar\delta_j/2$ there if $j \in J$ (proof of Lemma 12.2.9). -/
 private theorem exists_pass_of_halving {sstar : E} {δbar : ℕ → ℝ} {j : ℕ}
     (H : OrderHyp m T Sd ΔT ς θ ε J sstar δbar j) (n : ℕ) :
     ∀ δ : ℕ → ℝ, RadiiOK J δ → (j ∈ J → δbar j / 2 ≤ δ j ∧ δ j ≤ 2 ^ n * δbar j) →
@@ -382,7 +436,8 @@ private theorem exists_pass_of_halving {sstar : E} {δbar : ℕ → ℝ} {j : �
     refine ⟨δ', hR'', hlow, fun i hi => ?_, Relation.ReflTransGen.head htrans hrun, hord⟩
     rw [hother i hi, Function.update_of_ne hi]
 
-/-- Order `j ∈ [1, q]` eventually passes at the global minimizer, keeping the radius bounds. -/
+/-- At the global minimizer, order $j \in [1, q]$ eventually passes, and the radii keep their lower
+bounds. -/
 private theorem exists_pass {sstar : E} {δbar : ℕ → ℝ} {j : ℕ} (hjI : j ∈ Icc 1 q)
     (H : OrderHyp m T Sd ΔT ς θ ε J sstar δbar j) {δ : ℕ → ℝ} (hR : RadiiOK J δ)
     (hlow : ∀ i ∈ J, i ∈ Icc 1 q → δbar i / 2 ≤ δ i) :
@@ -404,7 +459,8 @@ private theorem exists_pass {sstar : E} {δbar : ℕ → ℝ} {j : ℕ} (hjI : j
   · exact hlow' hiJ
   · rw [hother i hij]; exact hlow i hiJ hiI
 
-/-- The orders `j, …, q` pass one after the other (proof of Lemma 12.2.9). -/
+/-- At the global minimizer, the orders $j, \dots, q$ pass one after the other and the procedure
+returns (proof of Lemma 12.2.9). -/
 private theorem exists_done_of_check {sstar : E} {δbar : ℕ → ℝ}
     (H : ∀ j ∈ Icc 1 q, OrderHyp m T Sd ΔT ς θ ε J sstar δbar j) (k : ℕ) :
     ∀ j, q - j = k → 1 ≤ j → j ≤ q → ∀ δ : ℕ → ℝ, RadiiOK J δ →
@@ -427,18 +483,28 @@ private theorem exists_done_of_check {sstar : E} {δbar : ℕ → ℝ}
     exact ⟨δs, hRs, hlows,
       (hrun.tail (DetailedStepTrans.next hd happrox hsmall (by omega))).trans hruns⟩
 
-/-- **Existence of an output with bounded radii** ([cartis2022evaluation], Lemmas 12.2.9,
-14.1.3). Let `sstar ∈ T` be a global minimizer of the model on `T` with `sstar + d ∈ T` for every
-feasible displacement `d ∈ Sd sstar ∋ 0`, and let `1 ≤ q`, `0 < ς ≤ 1`, `0 < θ`. Suppose that for
-every order `j ∈ [1, q]`: `ε j > 0`; `ΔT j sstar 0 = 0`; for every `δ ∈ (0, 1]` the decrement
-`ΔT j sstar` attains its maximum on `closedBall 0 δ ∩ Sd sstar`; if `j ∉ J`, the decrement is
-nonpositive on `closedBall 0 1 ∩ Sd sstar` (the model is `j`-th order critical at `sstar` for the
-radius `1`); and if `j ∈ J`, there is `δbar j ∈ (0, 1]` such that, for `δ ∈ (0, δbar j]` and every
-feasible `d` of norm at most `δ`, `ς θ ε_j δ^j / j! ≤ ΔT j sstar d` implies the model decrease
-`m sstar - m (sstar + d) ≥ ς θ ε_j δ^j / (2 j!)` (Lemma 12.2.8, resp. 14.1.2, with
-`α = ς θ ε_j`). Then the procedure started with `μ = 1` returns `(sstar, δs)` with `δs j = 1` for
-`j ∉ J` and `δs j ≥ δbar j / 2` for `j ∈ J ∩ [1, q]`. (This is the termination of one
-execution; that every execution terminates is not proved here.) -/
+/-- **Existence of an output with bounded radii.** Let $s^* \in T$ be a global minimizer of $m$ on
+$T$ with $s^* + d \in T$ for every $d \in S_d(s^*)$, let $0 \in S_d(s^*)$, $1 \le q$,
+$0 < \varsigma \le 1$ and $\theta > 0$. Suppose that for every order $j \in [1, q]$ the
+following hold.
+* $\varepsilon_j > 0$ and $\Delta T_j(s^*, 0) = 0$.
+* For every $\delta \in (0, 1]$, the decrement $\Delta T_j(s^*, \cdot)$ attains its maximum on
+  $\{d \in S_d(s^*) : \|d\| \le \delta\}$.
+* If $j \notin J$, then $\Delta T_j(s^*, d) \le 0$ for every $d \in S_d(s^*)$ with
+  $\|d\| \le 1$: the model is critical of order $j$ at $s^*$ for the radius $1$.
+* If $j \in J$, then $\bar\delta_j \in (0, 1]$, and for every $\delta \in (0, \bar\delta_j]$ and
+  every $d \in S_d(s^*)$ with $\|d\| \le \delta$, the bound $\Delta T_j(s^*, d) \ge
+  \varsigma\theta\varepsilon_j\delta^j/j!$ implies $m(s^*) - m(s^* + d) \ge
+  \varsigma\theta\varepsilon_j\delta^j/(2\,j!)$.
+
+Then there are radii $\delta_s$ such that $(s^*, \delta_s)$ is an output of the detailed Step 2,
+with $\delta_{s,j} = 1$ for $j \notin J$ and $\delta_{s,j} \ge \bar\delta_j/2$ for
+$j \in J \cap [1, q]$. This is Lemmas 12.2.9 and 14.1.3 of [cartis2022evaluation].
+
+The last hypothesis is the model decrease of Lemma 12.2.8, or of Lemma 14.1.2, with
+$\alpha = \varsigma\theta\varepsilon_j$. The output comes from the execution started with
+$\mu = 1$. The theorem gives the termination of one execution; the termination of every
+execution, under further hypotheses, is `Optimization.detailedStep_terminates`. -/
 theorem exists_isDetailedStepOutput {sstar : E} {δbar : ℕ → ℝ} (hq : 1 ≤ q) (hs : sstar ∈ T)
     (hmin : ∀ t ∈ T, m sstar ≤ m t) (hfeas : ∀ d ∈ Sd sstar, sstar + d ∈ T)
     (h0 : (0 : E) ∈ Sd sstar) (hς : 0 < ς) (hς1 : ς ≤ 1) (hθ : 0 < θ)
@@ -472,17 +538,20 @@ theorem exists_isDetailedStepOutput {sstar : E} {δbar : ℕ → ℝ} (hq : 1 �
     exact ⟨δs, ⟨1, ⟨one_pos, le_rfl⟩, Relation.ReflTransGen.head
       (DetailedStepTrans.start hs hdec hshort) hrun⟩, hfin δs hRs, fun j hj hjJ => hlows j hjJ hj⟩
 
-/-- **Any short step decreasing the model is an output of the detailed Step 2**
-([cartis2022evaluation], Algorithms 12.2.3, 14.1.2) with unit radii, when it is approximately
-critical for the model at every order `j ∈ [1 : q]`: if `s ∈ T`, the model is bounded below on
-`T` (so `m* = sInf (m '' T)` is finite), `m(s) < m(0)`, `‖s‖ < 1`, and every `dm j` is a
-`ς`-approximate optimality displacement of the model at `s` with radius `1` and decrease at most
-`ς θ ε_j/j!`, then `(s, 1)` is an output. The step is reached by initializing
-`μ = (m(0) - m(s))/(m(0) - m*) ∈ (0, 1]` at Step 2.1 ("Initialize `μ ∈ (0, 1]`" in both
-algorithms; `μ` is chosen afresh at every Step 2 and is not a constant of the outer algorithm), then
-Steps 2.2, 2.4.1–2.4.2 for `j = 1, …, q` and 2.5: every approximately critical point of the model
-with `m(s) < m(0)` is an output, however small its decrease relative to `m(0) - m*` (global
-minimization is not required, as noted after the proof of Lemma 12.2.9). -/
+/-- **Any short step that decreases the model is an output of the detailed Step 2** with unit radii,
+if it is approximately critical for the model at every order $j \in [1, q]$. Let $1 \le q$,
+$s \in T$, let $m$ be bounded below on $T$, and let $m(s) < m(0)$ and $\|s\| < 1$. Suppose that
+for every $j \in [1, q]$ the displacement $d_j \in S_d(s)$ has $\|d_j\| \le 1$,
+$\varsigma\,\phi_j(s, 1) \le \Delta T_j(s, d_j)$ and $\Delta T_j(s, d_j) \le
+\varsigma\theta\varepsilon_j/j!$. Then $(s, \delta)$ with all radii $\delta_j = 1$ is an output
+of the detailed Step 2 of [cartis2022evaluation], Algorithms 12.2.3 and 14.1.2.
+
+The execution initializes $\mu = (m(0) - m(s))/(m(0) - m^*) \in (0, 1]$ at Step 2.1 ("Initialize
+$\mu \in (0, 1]$" in both algorithms; $\mu$ is chosen afresh at every Step 2 and is not a
+constant of the outer algorithm), and then runs Step 2.2, Steps 2.4.1–2.4.2 for
+$j = 1, \dots, q$, and Step 2.5. So every approximately critical point of the model with
+$m(s) < m(0)$ is an output, however small its decrease relative to $m(0) - m^*$: global
+minimization is not required, as noted after the proof of Lemma 12.2.9. -/
 theorem IsDetailedStepOutput.of_short_step {s : E} {dm : ℕ → E} (hq : 1 ≤ q) (hs : s ∈ T)
     (hbdd : BddBelow (m '' T)) (hlt : m s < m 0) (hs1 : ‖s‖ < 1)
     (hdm : ∀ j ∈ Icc 1 q, dm j ∈ closedBall 0 1 ∩ Sd s ∧
@@ -519,31 +588,36 @@ section Termination
 variable {m : E → ℝ} {T : Set E} {Sd : E → Set E} {ΔT : ℕ → E → E → ℝ} {q : ℕ} {ς θ : ℝ}
   {ε : ℕ → ℝ} {J : Set ℕ}
 
-/-- The radii of a state of the detailed Step 2. -/
+/-- The radii $\delta$ of a state of the detailed Step 2. -/
 def DetailedStepState.radii : DetailedStepState E → ℕ → ℝ
   | findStep _ δ => δ
   | check _ _ δ _ => δ
   | done _ δ => δ
 
 omit [NormedAddCommGroup E] in
+/-- The radii of the state of Step 2.2 with radii $\delta$ are $\delta$. -/
 @[simp] theorem DetailedStepState.radii_findStep (μ : ℝ) (δ : ℕ → ℝ) :
     (findStep μ δ : DetailedStepState E).radii = δ := rfl
 
 omit [NormedAddCommGroup E] in
+/-- The radii of the state of Step 2.4 with radii $\delta$ are $\delta$. -/
 @[simp] theorem DetailedStepState.radii_check (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ) :
     (check μ s δ j).radii = δ := rfl
 
 omit [NormedAddCommGroup E] in
+/-- The radii of the final state with the pair $(s, \delta)$ are $\delta$. -/
 @[simp] theorem DetailedStepState.radii_done (s : E) (δ : ℕ → ℝ) :
     (done s δ : DetailedStepState E).radii = δ := rfl
 
-/-- **Progress of the detailed Step 2** ([cartis2022evaluation], Algorithms 12.2.3, 14.1.2:
-every step of the procedure can be executed). Assume that Step 2.2 can always be performed (for
-every `μ ∈ (0, 1]` some `s ∈ T` has `μ (m(0) - m*) ≤ m(0) - m(s)`) and Step 2.4.1 can always be
-performed (for every feasible `s`, order `j` and radius `r ∈ (0, 1]` some feasible `d` of norm at
-most `r` achieves the fraction `ς` of the supremum of the decrements). Then every state reachable
-from `μ₀ ∈ (0, 1]` and unit radii that is not final has a successor: the tests of Steps 2.3–2.4
-cover all cases. -/
+/-- **Progress of the detailed Step 2.** Assume that Step 2.2 can always be performed: for every
+$\mu \in (0, 1]$ some $s \in T$ has $\mu(m(0) - m^*) \le m(0) - m(s)$. Assume also that Step
+2.4.1 can always be performed: for every $s \in T$, every order $j$ and every $r \in (0, 1]$,
+some $d \in S_d(s)$ with $\|d\| \le r$ has $\varsigma\,\phi_j(s, r) \le \Delta T_j(s, d)$. Then
+every state that is not final and is reachable from an initial state, with $\mu_0 \in (0, 1]$
+and unit radii, has a successor.
+
+So every step of Algorithms 12.2.3 and 14.1.2 of [cartis2022evaluation] can be executed: the
+tests of Steps 2.3–2.4 cover all cases. -/
 theorem DetailedStepState.exists_trans
     (hfind : ∀ μ ∈ Set.Ioc (0 : ℝ) 1, ∃ s ∈ T, μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s)
     (hdisp : ∀ s ∈ T, ∀ (j : ℕ) (r : ℝ), 0 < r → r ≤ 1 → ∃ d ∈ closedBall 0 r ∩ Sd s,
@@ -576,11 +650,11 @@ theorem DetailedStepState.exists_trans
         · exact Or.inl hjJ
   · exact absurd rfl (hb s δ)
 
-/-- Radii between the lower bounds `lb` and `1`, equal to `1` outside `J`. -/
+/-- Radii between the lower bounds $\underline\delta_j$ and $1$, equal to $1$ outside $J$. -/
 private def RadLB (J : Set ℕ) (lb δ : ℕ → ℝ) : Prop :=
   ∀ j, lb j ≤ δ j ∧ δ j ≤ 1 ∧ (j ∉ J → δ j = 1)
 
-/-- The invariant of an execution with radius lower bounds `lb`. -/
+/-- The invariant of an execution with the radius lower bounds $\underline\delta$. -/
 private def TermInv (m : E → ℝ) (T : Set E) (q : ℕ) (J : Set ℕ) (lb : ℕ → ℝ) :
     DetailedStepState E → Prop
   | findStep μ δ => μ ∈ Set.Ioc (0 : ℝ) 1 ∧ RadLB J lb δ
@@ -588,9 +662,13 @@ private def TermInv (m : E → ℝ) (T : Set E) (q : ℕ) (J : Set ℕ) (lb : �
       μ * (m 0 - sInf (m '' T)) ≤ m 0 - m s ∧ ‖s‖ < 1 ∧ 1 ≤ j ∧ j ≤ q
   | done _ δ => RadLB J lb δ
 
-/-- The halving hypothesis of the termination theorem: a halving (Step 2.4.3) at an order
-`j ∈ J ∩ [1, q]`, from radii within their bounds at a short feasible trial step, only happens
-when `δ_j ≥ 2 lb_j` (so the halved radius stays above `lb_j`). -/
+/-- The **halving bound** with the lower bounds $\underline\delta_j$, a hypothesis of the
+termination theorem. Let $s \in T$ with $\|s\| < 1$, let $j \in J \cap [1, q]$, let the radii
+satisfy $\underline\delta_j \le \delta_j \le 1$, and let $d \in S_d(s)$ with
+$\|d\| \le \delta_j$. If $\Delta T_j(s, d) > \varsigma\theta\varepsilon_j\delta_j^j/j!$ and
+$m(s) - m(s + d) < \varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, so that Step 2.4.3 halves
+the radius, then $\delta_j \ge 2\underline\delta_j$. Hence the halved radius stays at least
+$\underline\delta_j$. -/
 def DetailedHalvingBound (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
     (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (lb : ℕ → ℝ) : Prop :=
   ∀ (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E), s ∈ T → ‖s‖ < 1 → 1 ≤ j → j ≤ q → j ∈ J →
@@ -598,9 +676,13 @@ def DetailedHalvingBound (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : �
     ς * θ * ε j * δ j ^ j / j ! < ΔT j s d →
     m s - m (s + d) < ς * θ * ε j * δ j ^ j / (2 * j !) → 2 * lb j ≤ δ j
 
-/-- The restart-gap hypothesis of the termination theorem: there is `η > 0` such that a restart
-(Step 2.4.4) at a short feasible trial step `s`, with radii within their bounds, only happens when
-`m(s) - m* ≥ η`, with `m* = sInf (m '' T)`. -/
+/-- The **restart gap** with the lower bounds $\underline\delta_j$, a hypothesis of the termination
+theorem: there is $\eta > 0$ with the following property. Let $s \in T$ with $\|s\| < 1$, let
+$j \in [1, q]$, let the radii satisfy $\underline\delta_i \le \delta_i \le 1$ for every $i$ and
+$\delta_i = 1$ for $i \notin J$, and let $d \in S_d(s)$ with $\|d\| \le \delta_j$. If $\Delta
+T_j(s, d) > \varsigma\theta\varepsilon_j\delta_j^j/j!$, and either $j \notin J$ or $m(s) - m(s +
+d) \ge \varsigma\theta\varepsilon_j\delta_j^j/(2\,j!)$, so that Step 2.4.4 restarts, then
+$m(s) - m^* \ge \eta$. -/
 def DetailedRestartGap (m : E → ℝ) (T : Set E) (Sd : E → Set E) (ΔT : ℕ → E → E → ℝ)
     (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (J : Set ℕ) (lb : ℕ → ℝ) : Prop :=
   ∃ η > 0, ∀ (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E), s ∈ T → ‖s‖ < 1 → 1 ≤ j → j ≤ q →
@@ -646,9 +728,11 @@ private theorem termInv_of_reflTransGen {lb : ℕ → ℝ} (hq : 1 ≤ q) (hlb :
   Relation.ReflTransGen.rec (motive := fun b _ => TermInv m T q J lb b)
     (termInv_init hlb hμ₀) (fun _ hbc ih => termInv_trans hq hhalve hbc ih) h
 
-/-- **Radius lower bounds along executions** (proof of [cartis2022evaluation], Lemma 12.2.9):
-under the halving bound, every state reachable from `μ₀ ∈ (0, 1]` and unit radii has radii
-`lb_j ≤ δ_j ≤ 1` (for lower bounds `lb_j ≤ 1`). -/
+/-- **Radius lower bounds along executions.** Let $1 \le q$, let $\underline\delta_j \le 1$ for
+every $j$, and assume the halving bound `Optimization.DetailedHalvingBound` with the lower
+bounds $\underline\delta$. Then every state that is reachable from an initial state, with
+$\mu_0 \in (0, 1]$ and unit radii, has radii $\underline\delta_j \le \delta_j \le 1$ for every
+$j$. This is part of the proof of Lemma 12.2.9 of [cartis2022evaluation]. -/
 theorem DetailedStepState.lb_le_radii {lb : ℕ → ℝ} (hq : 1 ≤ q) (hlb : ∀ j, lb j ≤ 1)
     (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb) {μ₀ : ℝ}
     (hμ₀ : μ₀ ∈ Set.Ioc (0 : ℝ) 1) {b : DetailedStepState E}
@@ -661,13 +745,14 @@ theorem DetailedStepState.lb_le_radii {lb : ℕ → ℝ} (hq : 1 ≤ q) (hlb : �
   · exact ⟨(hinv.2.1 j).1, (hinv.2.1 j).2.1⟩
   · exact ⟨(hinv j).1, (hinv j).2.1⟩
 
-/-- The potential `C (1 - μ) + ∑_{i ≤ q} δ_i + ℓ (q + 1 - j)` of a state. -/
+/-- The potential of a state: $C(1 - \mu) + \sum_{i=1}^{q} \delta_i + \ell(q + 1 - j)$ while order
+$j$ is checked, the same with $j = 0$ at Step 2.2, and $0$ for a final state. -/
 private noncomputable def termPotential (q : ℕ) (C ℓ : ℝ) : DetailedStepState E → ℝ
   | findStep μ δ => C * (1 - μ) + ∑ i ∈ Icc 1 q, δ i + ℓ * ((q : ℝ) + 1)
   | check μ _ δ j => C * (1 - μ) + ∑ i ∈ Icc 1 q, δ i + ℓ * ((q : ℝ) + 1 - j)
   | done _ _ => 0
 
-/-- The potential decreases by `ℓ` at every transition to a state that is not final. -/
+/-- The potential decreases by at least $\ell$ at every transition to a state that is not final. -/
 private theorem termPotential_le {lb : ℕ → ℝ} {C ℓ : ℝ} (hℓ0 : 0 ≤ ℓ)
     (hℓ : ∀ j ∈ Icc 1 q, ℓ ≤ lb j / 2)
     (hrestart : ∀ (μ : ℝ) (s : E) (δ : ℕ → ℝ) (j : ℕ) (d : E),
@@ -704,12 +789,17 @@ private theorem termPotential_le {lb : ℕ → ℝ} {C ℓ : ℝ} (hℓ0 : 0 ≤
     simp only [termPotential]
     nlinarith
 
-/-- **Termination of the detailed Step 2** ([cartis2022evaluation], Lemma 12.2.9 for
-Algorithm 12.2.3, and Algorithm 14.1.2), abstract form. Let `1 ≤ q`, `0 ∈ T`, the model be bounded
-below on `T`, `lb_j ∈ (0, 1]`, and assume the halving bound (halvings stop at `2 lb_j`) and the
-restart gap (a restart needs `m(s) - m* ≥ η > 0`). Then there is no infinite execution started
-(Step 2.1) with `μ₀ ∈ (0, 1]` and unit radii. (A potential
-`C (1 - μ) + ∑ δ_i + ℓ (q + 1 - j)` decreases by `ℓ` at every transition.) -/
+/-- **Termination of the detailed Step 2.** Let $1 \le q$ and $0 \in T$, let $m$ be bounded below on
+$T$, let $0 < \underline\delta_j \le 1$ for every $j$, and assume the halving bound
+(`Optimization.DetailedHalvingBound`) and the restart gap (`Optimization.DetailedRestartGap`)
+with the lower bounds $\underline\delta$. Then there is no infinite execution started at Step
+2.1 with $\mu_0 \in (0, 1]$ and unit radii: there is no sequence of states $c_0, c_1, \dots$
+such that $c_0$ is the initial state and there is a transition from $c_n$ to $c_{n+1}$ for every
+$n$. This is the termination in Lemma 12.2.9 of [cartis2022evaluation] for Algorithm 12.2.3, and
+for Algorithm 14.1.2, in abstract form.
+
+The proof uses a potential $C(1 - \mu) + \sum_i \delta_i + \ell(q + 1 - j)$ that decreases by
+$\ell > 0$ at every transition. -/
 theorem detailedStep_terminates {lb : ℕ → ℝ} (hq : 1 ≤ q) (h0 : (0 : E) ∈ T)
     (hb : BddBelow (m '' T)) (hlb : ∀ j, 0 < lb j ∧ lb j ≤ 1)
     (hhalve : DetailedHalvingBound m T Sd ΔT q ς θ ε J lb)
@@ -796,7 +886,8 @@ section StepLength
 
 variable {A B a ε δ t : ℝ} {j p : ℕ}
 
-/-- `∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} = t^{p+1} χ_j(δ/t)` for `t > 0` and `j ≤ p`. -/
+/-- For $t > 0$ and $j \le p$, $\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} =
+t^{p+1}\sum_{\ell=1}^{j} \frac{(\delta/t)^\ell}{\ell!}$. -/
 private theorem sum_mul_pow_eq (ht : 0 < t) (hjp : j ≤ p) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) * t ^ (p - ℓ + 1) =
       t ^ (p + 1) * ∑ ℓ ∈ Icc 1 j, (δ / t) ^ ℓ / (ℓ ! : ℝ) := by
@@ -808,7 +899,9 @@ private theorem sum_mul_pow_eq (ht : 0 < t) (hjp : j ≤ p) :
   rw [hpow, div_pow]
   field_simp
 
-/-- For `0 < t ≤ δ` and `j ≤ p`: `∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} ≤ 2 δ^j t^{p-j+1}` (by (A.35)). -/
+/-- For $0 < t \le \delta$ and $j \le p$,
+$$\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} \le 2\delta^j t^{p-j+1}.$$
+The proof uses (A.35) of [cartis2022evaluation]. -/
 theorem sum_mul_pow_le_of_le (ht : 0 < t) (htδ : t ≤ δ) (hjp : j ≤ p) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) * t ^ (p - ℓ + 1) ≤ 2 * δ ^ j * t ^ (p - j + 1) := by
   rw [sum_mul_pow_eq ht hjp]
@@ -821,7 +914,9 @@ theorem sum_mul_pow_le_of_le (ht : 0 < t) (htδ : t ≤ δ) (hjp : j ≤ p) :
     _ = 2 * δ ^ j * t ^ (p - j + 1) := by
         rw [hpow, div_pow]; field_simp
 
-/-- For `0 ≤ δ ≤ t`, `0 < t` and `j ≤ p`: `∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} ≤ 2 δ t^p` (by (A.34)). -/
+/-- For $0 \le \delta \le t$ with $t > 0$, and $j \le p$,
+$$\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} \le 2\delta t^p.$$
+The proof uses (A.34) of [cartis2022evaluation]. -/
 theorem sum_mul_pow_le_of_ge (ht : 0 < t) (hδ : 0 ≤ δ) (hδt : δ ≤ t) (hjp : j ≤ p) :
     ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) * t ^ (p - ℓ + 1) ≤ 2 * δ * t ^ p := by
   rw [sum_mul_pow_eq ht hjp]
@@ -832,19 +927,27 @@ theorem sum_mul_pow_le_of_ge (ht : 0 < t) (hδ : 0 ≤ δ) (hδt : δ ≤ t) (hj
     _ = 2 * δ * t ^ p := by
         rw [pow_succ]; field_simp
 
-/-- The measure inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} + B t^{p+1}` of
-Lemmas 12.2.11, 13.1.16, 14.1.7 ([cartis2022evaluation], (12.2.52), (13.1.79), (14.1.30)),
-with `t = ‖s_k‖`. -/
+/-- For $A, B, a, \varepsilon, \delta, t \in \mathbb{R}$ and $j, p \in \mathbb{N}$, the **measure
+inequality** is
+$$\frac{a\varepsilon\delta^j}{j!} \le A\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} +
+  Bt^{p+1}.$$
+It is the inequality (12.2.52), (13.1.79) and (14.1.30) of Lemmas 12.2.11, 13.1.16 and 14.1.7 of
+[cartis2022evaluation], with $t = \|s_k\|$.
+
+The exponent $p - \ell + 1$ uses subtraction of natural numbers, so it is $1$ when $\ell > p$. -/
 def MeasureIneq (A B a ε δ t : ℝ) (j p : ℕ) : Prop :=
   a * ε * δ ^ j / j ! ≤ A * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) * t ^ (p - ℓ + 1) + B * t ^ (p + 1)
 
+/-- `Optimization.MeasureIneq A B a ε δ t j p` holds if and only if the measure inequality holds. -/
 theorem measureIneq_iff : MeasureIneq A B a ε δ t j p ↔
     a * ε * δ ^ j / j ! ≤
       A * ∑ ℓ ∈ Icc 1 j, δ ^ ℓ / (ℓ ! : ℝ) * t ^ (p - ℓ + 1) + B * t ^ (p + 1) :=
   Iff.rfl
 
-/-- The measure inequality when the step is shorter than the radius (`t ≤ δ`):
-`a ε / j! ≤ (2A + B) t^{p-j+1}` (proofs of Lemmas 12.2.12, 14.1.8, case `‖s_k‖ ≤ δ`). -/
+/-- Let the measure inequality hold with $A, B \ge 0$, $0 < t \le \delta$ and $j \le p$. Then
+$$\frac{a\varepsilon}{j!} \le (2A + B)t^{p-j+1}.$$
+This is the case $\|s_k\| \le \delta$ of the proofs of Lemmas 12.2.12 and 14.1.8 of
+[cartis2022evaluation]. -/
 theorem MeasureIneq.div_le_of_le (h : MeasureIneq A B a ε δ t j p) (hA : 0 ≤ A) (hB : 0 ≤ B)
     (ht : 0 < t) (htδ : t ≤ δ) (hjp : j ≤ p) :
     a * ε / j ! ≤ (2 * A + B) * t ^ (p - j + 1) := by
@@ -863,8 +966,11 @@ theorem MeasureIneq.div_le_of_le (h : MeasureIneq A B a ε δ t j p) (hA : 0 ≤
   rw [mul_div_right_comm, mul_comm (a * ε / j !)] at key
   exact le_of_mul_le_mul_left key hδj
 
-/-- The measure inequality when the step is longer than the radius (`δ ≤ t`):
-`a ε δ^j / j! ≤ 2 A δ t^p + B t^{p+1}` (proofs of Lemmas 12.2.12, 14.1.8, case `δ < ‖s_k‖`). -/
+/-- Let the measure inequality hold with $A \ge 0$, $t > 0$, $0 \le \delta \le t$ and $j \le p$.
+Then
+$$\frac{a\varepsilon\delta^j}{j!} \le 2A\delta t^p + Bt^{p+1}.$$
+This is the case $\delta < \|s_k\|$ of the proofs of Lemmas 12.2.12 and 14.1.8 of
+[cartis2022evaluation]. -/
 theorem MeasureIneq.le_of_ge (h : MeasureIneq A B a ε δ t j p) (hA : 0 ≤ A) (ht : 0 < t)
     (hδ : 0 ≤ δ) (hδt : δ ≤ t) (hjp : j ≤ p) :
     a * ε * δ ^ j / j ! ≤ 2 * A * δ * t ^ p + B * t ^ (p + 1) := by
@@ -872,12 +978,17 @@ theorem MeasureIneq.le_of_ge (h : MeasureIneq A B a ε δ t j p) (hA : 0 ≤ A) 
   unfold MeasureIneq at h
   linarith
 
-/-- **Step-length bound for ARqp and ARqpIDA** ([cartis2022evaluation], Lemmas 12.2.12, 13.1.17).
-Let `1 ≤ j ≤ p`, `A, a, ε > 0`, `t ∈ (0, 1]`, `δ > 0`, and suppose the measure inequality
-`a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1}` holds. If `κ > 0` and `κ ε ≤ δ`
-(e.g. `δ = 1`, `κ = 1`, `ε ≤ 1`), then with `τ = a / (A j!)` and `κ̂ = min κ (τ/2)`:
-`(τ/2) κ̂^{j-1} ε^j ≤ t^p`. (In the case `t ≤ δ` the bound with `κ` in place of `κ̂` needs
-`κ ≤ τ/2`.) -/
+/-- **Step-length bound for ARqp and ARqpIDA.** Let $1 \le j \le p$, $A, a, \varepsilon > 0$,
+$0 < t \le 1$ and $\delta > 0$, and let the measure inequality hold with $B = 0$:
+$$\frac{a\varepsilon\delta^j}{j!} \le A\sum_{\ell=1}^{j}
+  \frac{\delta^\ell}{\ell!}t^{p-\ell+1}.$$
+Let $\kappa > 0$ with $\kappa\varepsilon \le \delta$ (for example $\delta = 1$, $\kappa = 1$ and
+$\varepsilon \le 1$). Then, with $\tau = a/(A\,j!)$ and $\hat\kappa = \min(\kappa, \tau/2)$,
+$$\frac{\tau}{2}\hat\kappa^{j-1}\varepsilon^j \le t^p.$$
+This is Lemmas 12.2.12 and 13.1.17 of [cartis2022evaluation].
+
+In the case $t \le \delta$, the bound with $\kappa$ in place of $\hat\kappa$ needs
+$\kappa \le \tau/2$. -/
 theorem pow_ge_of_measure_ineq {κ : ℝ} (h : MeasureIneq A 0 a ε δ t j p) (hA : 0 < A)
     (ha : 0 < a) (hε : 0 < ε) (ht : 0 < t) (ht1 : t ≤ 1) (hδ : 0 < δ)
     (hj : 1 ≤ j) (hjp : j ≤ p) (hκ : 0 < κ) (hκε : κ * ε ≤ δ) :
@@ -932,26 +1043,31 @@ theorem pow_ge_of_measure_ineq {κ : ℝ} (h : MeasureIneq A 0 a ε δ t j p) (h
       _ ≤ τ / 2 * ε * δ ^ i := by gcongr
       _ ≤ t ^ p := h2
 
-/-- `x ≤ t^n` with `x, t ≥ 0`, `n ≠ 0` gives `x^{1/n} ≤ t`. -/
+/-- Let $n \ne 0$ be a natural number and $x, t \ge 0$. If $x \le t^n$, then $x^{1/n} \le t$. -/
 theorem rpow_one_div_le_of_le_pow {x t : ℝ} {n : ℕ} (hn : n ≠ 0) (hx : 0 ≤ x)
     (ht : 0 ≤ t) (h : x ≤ t ^ n) : x ^ (1 / (n : ℝ)) ≤ t := by
   calc x ^ (1 / (n : ℝ)) ≤ (t ^ n) ^ (1 / (n : ℝ)) :=
         Real.rpow_le_rpow hx h (by positivity)
     _ = t := by rw [one_div, Real.pow_rpow_inv_natCast ht hn]
 
-/-- `(t^m)^{r/m} = t^r` for `t ≥ 0`, `m ≠ 0`. -/
+/-- For $t \ge 0$, a natural number $m \ne 0$ and $r \in \mathbb{R}$, $(t^m)^{r/m} = t^r$, with real
+powers. -/
 theorem pow_rpow_div {t : ℝ} {m : ℕ} (hm : m ≠ 0) (ht : 0 ≤ t) (r : ℝ) :
     (t ^ m) ^ (r / (m : ℝ)) = t ^ r := by
   rw [← Real.rpow_natCast, ← Real.rpow_mul ht]
   congr 1
   field_simp
 
-/-- **Step-length bound for ARqpC** ([cartis2022evaluation], Lemma 14.1.8). Let
-`j ≤ p`, `A > 0`, `0 ≤ B ≤ A`, `0 < a ≤ j! A`, `ε ∈ (0, 1]`, `t > 0`, `δ > 0`, and suppose the
-measure inequality `a ε δ^j / j! ≤ A ∑_{ℓ=1}^j δ^ℓ/ℓ! t^{p-ℓ+1} + B t^{p+1}` holds. Let
-`α = a / (j! A) ∈ (0, 1]`.
-* If `t ≤ δ`, then `(α ε / 3)^{1/(p-j+1)} ≤ t`.
-* If `κ ∈ (0, 1]` and `κ ε ≤ δ`, then `(α κ^j / 3)^{1/(p-j+1)} ε^{(j+1)/(p+1)} ≤ t`. -/
+/-- **Step-length bound for ARqpC.** Let $j \le p$, $A > 0$, $0 \le B \le A$, $0 < a \le j!\,A$,
+$\varepsilon \in (0, 1]$, $t > 0$ and $\delta > 0$, and let the measure inequality hold:
+$$\frac{a\varepsilon\delta^j}{j!} \le A\sum_{\ell=1}^{j} \frac{\delta^\ell}{\ell!}t^{p-\ell+1} +
+  Bt^{p+1}.$$
+Let $\alpha = a/(j!\,A) \in (0, 1]$.
+* If $t \le \delta$, then $(\alpha\varepsilon/3)^{1/(p-j+1)} \le t$.
+* If $\kappa \in (0, 1]$ and $\kappa\varepsilon \le \delta$, then
+  $(\alpha\kappa^j/3)^{1/(p-j+1)}\,\varepsilon^{(j+1)/(p+1)} \le t$.
+
+This is Lemma 14.1.8 of [cartis2022evaluation]. The powers with real exponents are `Real.rpow`. -/
 theorem norm_step_ge_of_measure_ineq (h : MeasureIneq A B a ε δ t j p) (hA : 0 < A)
     (hB : 0 ≤ B) (hBA : B ≤ A) (ha : 0 < a) (haA : a ≤ j ! * A) (hε : 0 < ε) (hε1 : ε ≤ 1)
     (ht : 0 < t) (hδ : 0 < δ) (hjp : j ≤ p) :

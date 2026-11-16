@@ -8,65 +8,74 @@ import Numlib.Analysis.Calculus.SpaceTime
 /-!
 # The classical maximum principle for the heat equation
 
-The pointwise side of the heat equation: the parabolic maximum principle of [brezis2011functional]
-Theorem 10.6 for a function `u (x, t)` that is differentiable in `t`, `C²` in `x`, and satisfies
-`∂ₜ u - ν Δ u ≤ 0` on a bounded cylinder `Ω × (0, T)` — its maximum over `closure Ω × [0, T]` is
-attained on the *parabolic boundary* `P = (closure Ω × {0}) ∪ (frontier Ω × [0, T])`. Nothing here
-uses a Sobolev space: the function of two variables is `u : E × ℝ → ℝ` uncurried, `E` a
-finite-dimensional real inner product space (the surface takes `EuclideanSpace ℝ (Fin N)`), the
-Laplacian is Mathlib's `InnerProductSpace.laplacian` (`Δ f x`), and a diffusion constant `ν > 0`
-is carried (`∂ₜ u - ν Δ u ≤ 0`), the book's case being `ν = 1`, because the consumer
-`AtkinsonHan.Chapter06.example_6_2_4` has `u_t = ν u_xx`.
+Let $E$ be a finite-dimensional real inner product space, let $\Omega \subseteq E$ be open and
+bounded, and let $\nu > 0$ and $T > 0$. This module proves the parabolic maximum principle, Theorem
+10.6 of [brezis2011functional], for a function $u(x, t)$ that is continuous on
+$\overline{\Omega} \times [0, T]$, differentiable in $t$ and of class $C^2$ in $x$ on
+$\Omega \times (0, T)$, and satisfies $\partial_t u - \nu \Delta u \le 0$ there: the maximum of $u$
+over $\overline{\Omega} \times [0, T]$ is attained on the parabolic boundary
+$$P = (\overline{\Omega} \times \{0\}) \cup (\partial \Omega \times [0, T]).$$
+The source treats the case $\nu = 1$. For a solution of $\partial_t u = \nu \Delta u$ that vanishes
+on $\partial \Omega \times [0, T]$, the principle applied to $u$ and $-u$ gives $|u(x, t)| \le
+\max_{\overline{\Omega}} |u(\cdot, 0)|$.
+
+The module also proves Remark 4 of chapter 10 of [brezis2011functional]: if a solution is $C^\infty$
+and vanishes on the lateral boundary, then its initial datum $u_0 = u(\cdot, 0)$ satisfies the
+compatibility conditions $\Delta^j u_0 = 0$ on $\partial \Omega$ for every $j$. No Sobolev space is
+used in this module.
 
 ## Main definitions
 
-* `Heat.parabolicBoundary Ω T`: the parabolic boundary `P` of the cylinder `Ω × (0, T)`, closed,
-  contained in `closure Ω ×ˢ Icc 0 T`, compact for bounded `Ω`.
-* `Heat.IsClassicalSubsolution ν Ω T u`: the hypotheses (20)–(22) of Theorem 10.6 — continuity on
-  the closed cylinder, differentiability in `t` and `C²` in `x` at every point of the open
-  cylinder, and `∂ₜ u - ν Δ u ≤ 0` there; `Heat.IsClassicalSolution ν Ω T u` is the version with
-  `= 0`, so that `u` and `-u` are both subsolutions. The book's (21), "of class `C¹` in `t` and
-  `C²` in `x`", asks a little more continuity than the proof uses.
+* `Heat.parabolicBoundary`: the parabolic boundary $P$ of the cylinder $\Omega \times (0, T)$.
+* `Heat.IsClassicalSubsolution`: the hypotheses (20)–(22) of Theorem 10.6 of [brezis2011functional],
+  with $\partial_t u - \nu \Delta u \le 0$ on the open cylinder.
+* `Heat.IsClassicalSolution`: the same regularity, with $\partial_t u = \nu \Delta u$ on the open
+  cylinder.
 
-## Main statements
+## Main results
 
-* `Heat.mem_parabolicBoundary_of_isMaxOn_of_lt`: a *strict* subsolution (`∂ₜ v - ν Δ v < 0`)
-  attains its maximum over `closure Ω ×ˢ Icc 0 T'` only on the parabolic boundary — at an interior
-  maximum `Δ v ≤ 0` (`IsLocalMax.laplacian_nonpos` of
-  `Numlib.Analysis.Calculus.DerivativeTest.Laplacian`) and, `t` ranging over `[0, T']`, the
-  one-sided time derivative is `≥ 0`.
-* `Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary` and
-  `Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary`: **Theorem 10.6**, as a bound
-  (`u ≤ M` on the parabolic boundary gives `u ≤ M` on the closed cylinder) and as the existence of
-  a maximum point on the parabolic boundary.
-* `Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`: the form the numerical books use — a
-  solution vanishing on the lateral boundary satisfies `|u (x, t)| ≤ M` whenever `|u (·, 0)| ≤ M`
-  on `closure Ω`, Theorem 10.6 applied to `u` and `-u`.
-* `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`: **Remark 4 of chapter 10**, the
-  necessity of the compatibility conditions `Δ^j u₀ = 0` on `∂Ω` for a solution which is `C^∞` on
-  `E × ℝ` and vanishes on the lateral boundary — from the iterated heat equation
-  `∂ₜ^j u = ν^j Δ^j u` (`IsClassicalSolution.timeDeriv_iterate_eqOn`), which rests on the
-  commutation `∂ₜ Δ_x = Δ_x ∂ₜ` of the two partial operators `Heat.timeDeriv` and
-  `Heat.spaceLaplacian` on smooth functions of `(x, t)` (`timeDeriv_spaceLaplacian` of
-  `Numlib.Analysis.Calculus.SpaceTime`, a consequence of the symmetry of the iterated
-  derivative).
+* `Heat.mem_parabolicBoundary_of_isMaxOn_of_lt`: a strict subsolution, with
+  $\partial_t v - \nu \Delta v < 0$, attains its maximum over $\overline{\Omega} \times [0, T']$
+  only on the parabolic boundary.
+* `Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary`: Theorem 10.6 as a bound: if $u \le M$
+  on $P$, then $u \le M$ on $\overline{\Omega} \times [0, T]$.
+* `Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary`: Theorem 10.6 as the existence of a
+  maximum point on $P$, for nonempty $\Omega$.
+* `Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`: a solution that vanishes on the lateral
+  boundary satisfies $|u(x, t)| \le M$ whenever $|u(\cdot, 0)| \le M$ on $\overline{\Omega}$.
+* `Heat.IsClassicalSolution.timeDeriv_iterate_eqOn`: a smooth solution satisfies
+  $\partial_t^j u = \nu^j \Delta^j u$ on the open cylinder.
+* `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`: Remark 4, the necessity of the
+  compatibility conditions $\Delta^j u_0 = 0$ on $\partial \Omega$.
+
+## Proof outline
+
+For $\varepsilon > 0$ the function $v = u - \varepsilon t$ is a strict subsolution. At a maximum
+point $(x_0, t_0)$ of $v$ with $x_0 \in \Omega$ and $t_0 > 0$, the Laplacian of $v$ in $x$ is at
+most $0$ and the one-sided time derivative is at least $0$, which contradicts
+$\partial_t v - \nu \Delta v < 0$. Hence $v$ attains its maximum on $P$, so
+$u \le M + \varepsilon T$, and $\varepsilon \to 0$ gives the bound. As in footnote 8 of
+[brezis2011functional], the argument runs on $[0, T']$ with $T' < T$, where $v$ is differentiable in
+$t$ up to the right endpoint; the bound at $t = T$ then follows by continuity. Remark 4 follows from
+the iterated equation $\partial_t^j u = \nu^j \Delta^j u$, which rests on the commutation
+$\partial_t \Delta_x = \Delta_x \partial_t$ on smooth functions.
 
 ## Implementation notes
 
-The book perturbs by `ε |x|²`; the perturbation used here is `v = u - ε t`, which has
-`∂ₜ v - ν Δ v ≤ -ε < 0` in every dimension (including `dim E = 0`, where `Δ |x|² = 2N` vanishes),
-needs no computation of `Δ |x|²`, and costs the same limit `ε → 0`. The book's footnote — work on
-`[0, T']` with `T' < T`, where `v` is differentiable in `t` up to the right endpoint, then let
-`T' → T` — is made explicit: the bound is first proved on `closure Ω ×ˢ Ico 0 T` and then passed
-to `t = T` by continuity (`ContinuousWithinAt.closure_le`).
-
-The one-sided sign of the time derivative at a maximum with `t₀ ∈ (0, T']` is Mathlib's
-`IsLocalMaxOn.hasFDerivWithinAt_nonpos` applied to the direction `-t₀` of the positive tangent
-cone of `Icc 0 T'` at `t₀`, so the cases `t₀ < T'` and `t₀ = T'` of the book are one case.
-
-## References
-
-[brezis2011functional], §10.2, Theorem 10.6 and its footnote 8.
+* A function of space and time is uncurried, $u : E \times \mathbb{R} \to \mathbb{R}$. Applications
+  take $E = $ `EuclideanSpace ℝ (Fin N)`. The Laplacian is Mathlib's `InnerProductSpace.laplacian`,
+  and $\partial \Omega$ is `frontier Ω`.
+* The diffusion constant $\nu$ is a parameter because `AtkinsonHan.Chapter06.example_6_2_4` uses the
+  equation $u_t = \nu u_{xx}$.
+* The source asks that $u$ be of class $C^1$ in $t$ and $C^2$ in $x$. `Heat.IsClassicalSubsolution`
+  asks only for differentiability in $t$ and $C^2$ at each point in $x$, which is all that the proof
+  uses.
+* The source perturbs $u$ by $\varepsilon |x|^2$. The perturbation $u - \varepsilon t$ used here has
+  $\partial_t v - \nu \Delta v \le -\varepsilon < 0$ in every dimension, including $\dim E = 0$,
+  where $\Delta |x|^2 = 0$. It needs no computation of $\Delta |x|^2$ and uses the same limit
+  $\varepsilon \to 0$.
+* The partial operators $\partial_t$ and $\Delta_x$ on functions of $(x, t)$ are `Heat.timeDeriv`
+  and `Heat.spaceLaplacian` of `Numlib.Analysis.Calculus.SpaceTime`.
 -/
 
 open Filter Set Topology InnerProductSpace Laplacian
@@ -78,14 +87,16 @@ namespace Heat
 /-! ### The parabolic boundary -/
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **The parabolic boundary** `P = (closure Ω × {0}) ∪ (frontier Ω × [0, T])` of the cylinder
-`Ω × (0, T)` ([brezis2011functional] Theorem 10.6): the bottom and the lateral surface, without
-the top. -/
+/-- The **parabolic boundary** of the cylinder $\Omega \times (0, T)$ is the set
+$$P = (\overline{\Omega} \times \{0\}) \cup (\partial \Omega \times [0, T]),$$
+the bottom and the lateral surface of the cylinder, without the top. It is the set of Theorem
+10.6 of [brezis2011functional]. -/
 def parabolicBoundary (Ω : Set E) (T : ℝ) : Set (E × ℝ) :=
   closure Ω ×ˢ {0} ∪ frontier Ω ×ˢ Icc 0 T
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The parabolic boundary lies in the closed cylinder `closure Ω × [0, T]`. -/
+/-- If $T \ge 0$, the parabolic boundary of $\Omega \times (0, T)$ lies in the closed cylinder
+$\overline{\Omega} \times [0, T]$. -/
 theorem parabolicBoundary_subset {Ω : Set E} {T : ℝ} (hT : 0 ≤ T) :
     parabolicBoundary Ω T ⊆ closure Ω ×ˢ Icc 0 T := by
   rintro ⟨x, t⟩ (⟨hx, ht⟩ | ⟨hx, ht⟩)
@@ -93,17 +104,20 @@ theorem parabolicBoundary_subset {Ω : Set E} {T : ℝ} (hT : 0 ≤ T) :
   · exact ⟨frontier_subset_closure hx, ht⟩
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The parabolic boundary grows with the time horizon. -/
+/-- If $T' \le T$, the parabolic boundary for the horizon $T'$ is contained in the parabolic
+boundary for the horizon $T$. -/
 theorem parabolicBoundary_mono {Ω : Set E} {T T' : ℝ} (h : T' ≤ T) :
     parabolicBoundary Ω T' ⊆ parabolicBoundary Ω T :=
   union_subset_union_right _ (prod_mono_right (Icc_subset_Icc_right h))
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The parabolic boundary is closed. -/
+/-- The parabolic boundary of $\Omega \times (0, T)$ is closed, for every set $\Omega$ and every
+$T$. -/
 theorem isClosed_parabolicBoundary (Ω : Set E) (T : ℝ) : IsClosed (parabolicBoundary Ω T) :=
   (isClosed_closure.prod isClosed_singleton).union (isClosed_frontier.prod isClosed_Icc)
 
-/-- The parabolic boundary of a bounded cylinder is compact. -/
+/-- If $\Omega$ is bounded, then the parabolic boundary of $\Omega \times (0, T)$ is compact, for
+every $T$. -/
 theorem isCompact_parabolicBoundary {Ω : Set E} (hb : Bornology.IsBounded Ω) (T : ℝ) :
     IsCompact (parabolicBoundary Ω T) :=
   (hb.isCompact_closure.prod isCompact_singleton).union
@@ -112,46 +126,66 @@ theorem isCompact_parabolicBoundary {Ω : Set E} (hb : Bornology.IsBounded Ω) (
 
 /-! ### Classical subsolutions and solutions -/
 
-/-- **A classical subsolution of the heat equation** `∂ₜ u - ν Δ u ≤ 0` on the cylinder
-`Ω × (0, T)`: the hypotheses (20)–(22) of [brezis2011functional] Theorem 10.6. The function
-`u : E × ℝ → ℝ` is continuous on the closed cylinder `closure Ω × [0, T]`; at every point
-`(x, t)` of `Ω × (0, T)` it is differentiable in `t` and `C²` in `x`; and
-`∂ₜ u (x, t) - ν Δ u (·, t) (x) ≤ 0` there. The book's "of class `C¹` in `t` and `C²` in `x`"
-asks a little more continuity than the proof uses. -/
+/-- Let $\nu, T \in \mathbb{R}$ and $\Omega \subseteq E$. A function
+$u : E \times \mathbb{R} \to \mathbb{R}$ is a **classical subsolution of the heat equation**
+$\partial_t u - \nu \Delta u \le 0$ on $\Omega \times (0, T)$ if it satisfies the hypotheses
+(20)–(22) of Theorem 10.6 of [brezis2011functional]: $u$ is continuous on
+$\overline{\Omega} \times [0, T]$; at every point $(x, t) \in \Omega \times (0, T)$ the function
+$s \mapsto u(x, s)$ is differentiable at $t$ and the function $y \mapsto u(y, t)$ is of class
+$C^2$ at $x$; and at every such point
+$$\partial_t u(x, t) - \nu \Delta u(\cdot, t)(x) \le 0.$$
+
+The source asks that $u$ be of class $C^1$ in $t$ and $C^2$ in $x$. This structure asks for less
+continuity, which is all that the proof of Theorem 10.6 uses. -/
 structure IsClassicalSubsolution (ν : ℝ) (Ω : Set E) (T : ℝ) (u : E × ℝ → ℝ) : Prop where
-  /-- `u` is continuous on the closed cylinder. -/
+  /-- The function $u$ is continuous on the closed cylinder $\overline{\Omega} \times [0, T]$. -/
   continuousOn : ContinuousOn u (closure Ω ×ˢ Icc 0 T)
-  /-- `u` is differentiable in `t` at every point of the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the function $s \mapsto u(x, s)$ is
+  differentiable at $t$. -/
   differentiableAt_snd : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, DifferentiableAt ℝ (fun s ↦ u (x, s)) t
-  /-- `u` is `C²` in `x` at every point of the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the function $y \mapsto u(y, t)$ is of
+  class $C^2$ at $x$. -/
   contDiffAt_fst : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, ContDiffAt ℝ 2 (fun y ↦ u (y, t)) x
-  /-- The differential inequality `∂ₜ u - ν Δ u ≤ 0` on the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the inequality $\partial_t u(x, t) - \nu
+  \Delta u(\cdot, t)(x) \le 0$ holds. -/
   deriv_sub_laplacian_nonpos : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T,
     deriv (fun s ↦ u (x, s)) t - ν * Δ (fun y ↦ u (y, t)) x ≤ 0
 
-/-- **A classical solution of the heat equation** `∂ₜ u = ν Δ u` on the cylinder `Ω × (0, T)`,
-with the regularity of `IsClassicalSubsolution`: continuous on the closed cylinder, differentiable
-in `t` and `C²` in `x` on the open one. No boundary or initial condition is prescribed. -/
+/-- Let $\nu, T \in \mathbb{R}$ and $\Omega \subseteq E$. A function
+$u : E \times \mathbb{R} \to \mathbb{R}$ is a **classical solution of the heat equation**
+$\partial_t u = \nu \Delta u$ on $\Omega \times (0, T)$ if $u$ is continuous on
+$\overline{\Omega} \times [0, T]$, and at every point $(x, t) \in \Omega \times (0, T)$ the
+function $s \mapsto u(x, s)$ is differentiable at $t$, the function $y \mapsto u(y, t)$ is of
+class $C^2$ at $x$, and
+$$\partial_t u(x, t) = \nu \Delta u(\cdot, t)(x).$$
+
+No boundary condition and no initial condition is part of the definition. The regularity is that
+of `Heat.IsClassicalSubsolution`. -/
 structure IsClassicalSolution (ν : ℝ) (Ω : Set E) (T : ℝ) (u : E × ℝ → ℝ) : Prop where
-  /-- `u` is continuous on the closed cylinder. -/
+  /-- The function $u$ is continuous on the closed cylinder $\overline{\Omega} \times [0, T]$. -/
   continuousOn : ContinuousOn u (closure Ω ×ˢ Icc 0 T)
-  /-- `u` is differentiable in `t` at every point of the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the function $s \mapsto u(x, s)$ is
+  differentiable at $t$. -/
   differentiableAt_snd : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, DifferentiableAt ℝ (fun s ↦ u (x, s)) t
-  /-- `u` is `C²` in `x` at every point of the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the function $y \mapsto u(y, t)$ is of
+  class $C^2$ at $x$. -/
   contDiffAt_fst : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, ContDiffAt ℝ 2 (fun y ↦ u (y, t)) x
-  /-- The heat equation `∂ₜ u = ν Δ u` on the open cylinder. -/
+  /-- At every point $(x, t)$ of $\Omega \times (0, T)$, the heat equation
+  $\partial_t u(x, t) = \nu \Delta u(\cdot, t)(x)$ holds. -/
   deriv_eq_laplacian : ∀ x ∈ Ω, ∀ t ∈ Ioo 0 T,
     deriv (fun s ↦ u (x, s)) t = ν * Δ (fun y ↦ u (y, t)) x
 
 variable {ν T : ℝ} {Ω : Set E} {u : E × ℝ → ℝ}
 
-/-- A classical solution is a classical subsolution. -/
+/-- A classical solution of $\partial_t u = \nu \Delta u$ on $\Omega \times (0, T)$ is a classical
+subsolution on $\Omega \times (0, T)$. -/
 theorem IsClassicalSolution.isClassicalSubsolution (hu : IsClassicalSolution ν Ω T u) :
     IsClassicalSubsolution ν Ω T u :=
   ⟨hu.continuousOn, hu.differentiableAt_snd, hu.contDiffAt_fst, fun x hx t ht =>
     (sub_eq_zero.2 (hu.deriv_eq_laplacian x hx t ht)).le⟩
 
-/-- The negative of a classical solution is a classical solution (the heat equation is linear). -/
+/-- If $u$ is a classical solution of $\partial_t u = \nu \Delta u$ on $\Omega \times (0, T)$, then
+so is $-u$. -/
 theorem IsClassicalSolution.neg (hu : IsClassicalSolution ν Ω T u) :
     IsClassicalSolution ν Ω T (-u) := by
   refine ⟨hu.continuousOn.neg, fun x hx t ht => (hu.differentiableAt_snd x hx t ht).neg,
@@ -162,13 +196,23 @@ theorem IsClassicalSolution.neg (hu : IsClassicalSolution ν Ω T u) :
 
 /-! ### The maximum principle -/
 
-/-- **A strict subsolution attains its maximum only on the parabolic boundary.** If `v` is
-differentiable in `t`, `C²` in `x` and satisfies `∂ₜ v - ν Δ v < 0` at every point of
-`Ω × (0, T']` (the right endpoint included), then a maximum point of `v` over the closed cylinder
-`closure Ω × [0, T']` lies on `parabolicBoundary Ω T'`. At a maximum `(x₀, t₀)` with `x₀ ∈ Ω`
-and `t₀ > 0`, the Laplacian in `x` is `≤ 0` (`IsLocalMax.laplacian_nonpos`) and the time
-derivative is `≥ 0`, since `t ↦ v (x₀, t)` has a local maximum at `t₀` among `t ∈ [0, T']` and
-`-t₀` is in the positive tangent cone of `[0, T']` at `t₀`; so `∂ₜ v - ν Δ v ≥ 0` there. -/
+/-- **A strict subsolution attains its maximum only on the parabolic boundary.** Let
+$\Omega \subseteq E$ be open, let $\nu > 0$ and $T' \in \mathbb{R}$, and let
+$v : E \times \mathbb{R} \to \mathbb{R}$. Assume that at every point
+$(x, t) \in \Omega \times (0, T']$ (the right endpoint included) the function
+$s \mapsto v(x, s)$ is differentiable at $t$, the function $y \mapsto v(y, t)$ is of class $C^2$
+at $x$, and
+$$\partial_t v(x, t) - \nu \Delta v(\cdot, t)(x) < 0.$$
+If $p \in \overline{\Omega} \times [0, T']$ is a maximum point of $v$ on
+$\overline{\Omega} \times [0, T']$, then $p$ lies on the parabolic boundary of
+$\Omega \times (0, T')$.
+
+At a maximum point $(x_0, t_0)$ with $x_0 \in \Omega$ and $t_0 > 0$, the Laplacian in $x$ is at
+most $0$ by `IsLocalMax.laplacian_nonpos`. The function $t \mapsto v(x_0, t)$ has a local
+maximum at $t_0$ among $t \in [0, T']$, and $-t_0$ lies in the positive tangent cone of
+$[0, T']$ at $t_0$, so the time derivative is at least $0$ by
+`IsLocalMaxOn.hasFDerivWithinAt_nonpos`. This treats the cases $t_0 < T'$ and $t_0 = T'$ of the
+source together. Then $\partial_t v - \nu \Delta v \ge 0$ at $(x_0, t_0)$, a contradiction. -/
 theorem mem_parabolicBoundary_of_isMaxOn_of_lt (hΩ : IsOpen Ω) (hν : 0 < ν) {v : E × ℝ → ℝ}
     {T' : ℝ} (hd : ∀ x ∈ Ω, ∀ t ∈ Ioc 0 T', DifferentiableAt ℝ (fun s ↦ v (x, s)) t)
     (hx : ∀ x ∈ Ω, ∀ t ∈ Ioc 0 T', ContDiffAt ℝ 2 (fun y ↦ v (y, t)) x)
@@ -203,11 +247,17 @@ theorem mem_parabolicBoundary_of_isMaxOn_of_lt (hΩ : IsOpen Ω) (hν : 0 < ν) 
   have := hlt x₀ hx₀Ω t₀ ht₀'
   nlinarith [mul_nonneg hν.le (neg_nonneg.2 hΔ)]
 
-/-- **Theorem 10.6, the bound form**: a classical subsolution on a bounded cylinder that is at most
-`M` on the parabolic boundary is at most `M` on the closed cylinder. For `t < T` and `ε > 0`,
-the strict subsolution `v = u - ε t` on `[0, T']`, `t ≤ T' < T`, attains its maximum on the
-parabolic boundary (`mem_parabolicBoundary_of_isMaxOn_of_lt`), where `v ≤ u ≤ M`; hence
-`u (x, t) ≤ M + ε T`, and `ε → 0`. The value at `t = T` follows by continuity. -/
+/-- **The parabolic maximum principle**, bound form. Let $\Omega \subseteq E$ be open and bounded,
+and let $\nu > 0$ and $T > 0$. Let $u$ be a classical subsolution of
+$\partial_t u - \nu \Delta u \le 0$ on $\Omega \times (0, T)$, and let $M \in \mathbb{R}$ with
+$u \le M$ on the parabolic boundary of $\Omega \times (0, T)$. Then $u \le M$ on
+$\overline{\Omega} \times [0, T]$. This is Theorem 10.6 of [brezis2011functional].
+
+For $t < T$ and $\varepsilon > 0$, the strict subsolution $v = u - \varepsilon t$ on $[0, T']$,
+with $t \le T' < T$, attains its maximum on the parabolic boundary by
+`Heat.mem_parabolicBoundary_of_isMaxOn_of_lt`. There $v \le u \le M$, hence
+$u(x, t) \le M + \varepsilon T$, and $\varepsilon \to 0$ gives the bound. The bound at $t = T$
+follows by continuity (`ContinuousWithinAt.closure_le`). -/
 theorem IsClassicalSubsolution.le_of_le_on_parabolicBoundary (hΩ : IsOpen Ω)
     (hb : Bornology.IsBounded Ω) (hν : 0 < ν) (hT : 0 < T) (hu : IsClassicalSubsolution ν Ω T u)
     {M : ℝ} (hM : ∀ p ∈ parabolicBoundary Ω T, u p ≤ M) :
@@ -271,11 +321,16 @@ theorem IsClassicalSubsolution.le_of_le_on_parabolicBoundary (hΩ : IsOpen Ω)
   refine ContinuousWithinAt.closure_le hcl ?_ continuousWithinAt_const key
   exact (hu.continuousOn (x, t) ⟨hx, ht⟩).mono (prod_mono_right Ico_subset_Icc_self)
 
-/-- **The parabolic maximum principle** ([brezis2011functional] Theorem 10.6): a classical
-subsolution `u` of `∂ₜ u - ν Δ u ≤ 0` on a bounded cylinder `Ω × (0, T)` (nonempty `Ω`, so that
-the maximum exists) attains its maximum over `closure Ω × [0, T]` at a point of the parabolic
-boundary `P = (closure Ω × {0}) ∪ (frontier Ω × [0, T])`:
-`max_{closure Ω × [0, T]} u = max_P u`. -/
+/-- **The parabolic maximum principle.** Let $\Omega \subseteq E$ be open, bounded and nonempty, and
+let $\nu > 0$ and $T > 0$. Let $u$ be a classical subsolution of
+$\partial_t u - \nu \Delta u \le 0$ on $\Omega \times (0, T)$. Then $u$ attains its maximum over
+$\overline{\Omega} \times [0, T]$ at a point of the parabolic boundary $P = (\overline{\Omega}
+\times \{0\}) \cup (\partial \Omega \times [0, T])$, that is,
+$$\max_{\overline{\Omega} \times [0, T]} u = \max_P u.$$
+This is Theorem 10.6 of [brezis2011functional].
+
+The hypothesis that $\Omega$ is nonempty makes the maximum exist. The proof combines the
+compactness of $P$ with `Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary`. -/
 theorem IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary (hΩ : IsOpen Ω)
     (hb : Bornology.IsBounded Ω) (hne : Ω.Nonempty) (hν : 0 < ν) (hT : 0 < T)
     (hu : IsClassicalSubsolution ν Ω T u) :
@@ -287,10 +342,15 @@ theorem IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary (hΩ : IsOpen Ω
   exact ⟨p, hp, fun q hq =>
     hu.le_of_le_on_parabolicBoundary hΩ hb hν hT (fun r hr => hpmax hr) q hq⟩
 
-/-- **The maximum principle in the form the numerical books use**: a classical solution of
-`∂ₜ u = ν Δ u` on a bounded cylinder that vanishes on the lateral boundary `frontier Ω × [0, T]`
-satisfies `|u (x, t)| ≤ M` on the closed cylinder as soon as `|u (·, 0)| ≤ M` on `closure Ω` —
-the bound `max_x |u (x, t)| ≤ max_x |u₀ (x)|`, Theorem 10.6 applied to `u` and to `-u`. -/
+/-- **The maximum principle in the form of the numerical texts.** Let $\Omega \subseteq E$ be open
+and bounded, and let $\nu > 0$ and $T > 0$. Let $u$ be a classical solution of
+$\partial_t u = \nu \Delta u$ on $\Omega \times (0, T)$ with $u(x, t) = 0$ for
+$x \in \partial \Omega$ and $t \in [0, T]$. If $M \in \mathbb{R}$ and $|u(y, 0)| \le M$ for all
+$y \in \overline{\Omega}$, then
+$$|u(x, t)| \le M \quad \text{for all } x \in \overline{\Omega},\ t \in [0, T].$$
+
+This is the bound $\max_x |u(x, t)| \le \max_x |u_0(x)|$. The proof applies Theorem 10.6 of
+[brezis2011functional] to $u$ and to $-u$. -/
 theorem IsClassicalSolution.abs_le_of_eq_zero_frontier (hΩ : IsOpen Ω)
     (hb : Bornology.IsBounded Ω) (hν : 0 < ν) (hT : 0 < T) (hu : IsClassicalSolution ν Ω T u)
     (hΓ : ∀ x ∈ frontier Ω, ∀ t ∈ Icc 0 T, u (x, t) = 0) {M : ℝ}
@@ -319,10 +379,15 @@ theorem IsClassicalSolution.abs_le_of_eq_zero_frontier (hΩ : IsOpen Ω)
 variable {ν T : ℝ} {Ω : Set E} {u : E × ℝ → ℝ}
 
 open scoped ContDiff in
-/-- **The iterated heat equation**: a smooth classical solution of `∂ₜ u = ν Δ u` on
-`Ω × (0, T)` satisfies `∂ₜ^j u = ν^j Δ^j u` there, for every `j`: by induction, using the
-commutation `∂ₜ Δ_x^j = Δ_x^j ∂ₜ` of smooth functions (`timeDeriv_spaceLaplacian_iterate`) and
-the locality of both operators on the open cylinder. -/
+/-- **The iterated heat equation.** Let $\Omega \subseteq E$ be open, and let $u$ be a classical
+solution of $\partial_t u = \nu \Delta u$ on $\Omega \times (0, T)$ that is $C^\infty$ on
+$E \times \mathbb{R}$. Then for every $j \in \mathbb{N}$,
+$$\partial_t^j u = \nu^j \Delta_x^j u \quad \text{on } \Omega \times (0, T).$$
+
+Here `Heat.timeDeriv` and `Heat.spaceLaplacian` are $\partial_t$ and $\Delta_x$. The proof is by
+induction on $j$. It uses the commutation $\partial_t \Delta_x^j = \Delta_x^j \partial_t$ on
+smooth functions (`Heat.timeDeriv_spaceLaplacian_iterate`) and the locality of both operators on
+the open cylinder. -/
 theorem IsClassicalSolution.timeDeriv_iterate_eqOn (hΩ : IsOpen Ω)
     (hu : IsClassicalSolution ν Ω T u) (hsmooth : ContDiff ℝ ∞ u) (j : ℕ) :
     EqOn (timeDeriv^[j] u) (ν ^ j • spaceLaplacian^[j] u) (Ω ×ˢ Ioo 0 T) := by
@@ -343,24 +408,28 @@ theorem IsClassicalSolution.timeDeriv_iterate_eqOn (hΩ : IsOpen Ω)
     ring
 
 open scoped ContDiff in
-/-- **Remark 4: the compatibility conditions are necessary.** Let `u` be a classical solution of
-`∂ₜ u = ν Δ u` on the cylinder `Ω × (0, T)` (`ν ≠ 0`, `T > 0`, `Ω` open) which is `C^∞` on
-`E × ℝ` and vanishes on the lateral boundary `frontier Ω × (0, T)`. Then the initial datum
-`u (·, 0)` satisfies `Δ^j (u (·, 0)) = 0` on `frontier Ω` for every `j`, the compatibility
-conditions (8) of [brezis2011functional] Theorem 10.2 (c).
+/-- **The compatibility conditions are necessary.** Let $\Omega \subseteq E$ be open, let
+$\nu \neq 0$ and $T > 0$, and let $u$ be a classical solution of $\partial_t u = \nu \Delta u$
+on $\Omega \times (0, T)$ that is $C^\infty$ on $E \times \mathbb{R}$ and satisfies
+$u(x, t) = 0$ for $x \in \partial \Omega$ and $t \in (0, T)$. Then for every $j \in \mathbb{N}$
+the initial datum $u_0 = u(\cdot, 0)$ satisfies
+$$\Delta^j u_0 = 0 \quad \text{on } \partial \Omega.$$
+These are the compatibility conditions (8) of Theorem 10.2(c) of [brezis2011functional], and the
+statement is Remark 4 of chapter 10 of [brezis2011functional].
 
-Proof, [brezis2011functional] chapter 10 Remark 4: `∂ₜ^j u = ν^j Δ_x^j u` on `Ω × (0, T)`
-(`IsClassicalSolution.timeDeriv_iterate_eqOn`, the iterated commutation of `∂ₜ` with `Δ_x`);
-`∂ₜ^j u = 0` on `frontier Ω × (0, T)` since `u` vanishes there (`iterate_deriv_eq_zero_of_eqOn`);
-both sides are continuous on `E × ℝ`, so the identities pass to the closures
-`closure Ω × [0, T]` and `frontier Ω × [0, T]`, and comparing them at `(x, 0)` for
-`x ∈ frontier Ω` gives `ν^j Δ^j (u (·, 0)) x = 0`.
+The source states the remark for $u \in C^\infty(\overline{\Omega} \times [0, \infty))$ in the
+sense of its footnote 16. There $u(\cdot, 0)$ is only known to be continuous on
+$\overline{\Omega}$, and $\Delta^j u_0$ on the boundary means the continuous extension of
+$\Delta^j u$. The smoothness of $u$ on all of $E \times \mathbb{R}$ assumed here makes the
+statement meaningful as written. It is the smoothness that the solutions of Theorem 10.2(c) have
+in the interior of their domain of smoothness.
 
-The book states the remark for `u ∈ C^∞(Ω̄ × [0, ∞))` in the sense of its footnote 16, where
-`u (·, 0)` is only known to be continuous on `Ω̄` and `Δ^j (u (·, 0))` on the boundary refers to
-the continuous extension of `Δ^j u`; the smoothness of `u` on all of `E × ℝ` assumed here makes
-the statement meaningful as written, and is what Theorem 10.2 (c)'s solutions have on the
-interior of their domain of smoothness. -/
+The proof follows the source. By `Heat.IsClassicalSolution.timeDeriv_iterate_eqOn`,
+$\partial_t^j u = \nu^j \Delta_x^j u$ on $\Omega \times (0, T)$. Since $u$ vanishes on
+$\partial \Omega \times (0, T)$, also $\partial_t^j u = 0$ there
+(`Heat.iterate_deriv_eq_zero_of_eqOn`). Both sides are continuous on $E \times \mathbb{R}$, so
+the identities pass to $\overline{\Omega} \times [0, T]$ and $\partial \Omega \times [0, T]$.
+Comparing them at $(x, 0)$ for $x \in \partial \Omega$ gives $\nu^j \Delta^j u_0(x) = 0$. -/
 theorem IsClassicalSolution.iteratedLaplacian_eq_zero_frontier (hΩ : IsOpen Ω) (hν : ν ≠ 0)
     (hT : 0 < T) (hu : IsClassicalSolution ν Ω T u) (hsmooth : ContDiff ℝ ∞ u)
     (hΓ : ∀ x ∈ frontier Ω, ∀ t ∈ Ioo 0 T, u (x, t) = 0) (j : ℕ) :

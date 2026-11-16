@@ -16,45 +16,46 @@ import Mathlib.MeasureTheory.Integral.DivergenceTheorem
 # Integration by parts for a function differentiable off a finite union of segments
 
 Mathlib's integration by parts for line derivatives,
-`integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable`, asks the function `f` to be
-differentiable in the direction `v` at every point of the support of the test factor `g`. The
-finite element method needs it for a function that is only *piecewise* differentiable: a
-continuous function on a triangulated plane domain which is `C¹` on each open triangle, and
-whose derivative may jump across the edges. This file proves that version: `f` is continuous on
-the support of `g` and has the line derivative `f'` there **off a finite union of segments**
-`⋃ i, segment ℝ (P i) (Q i)`, and then
+`integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable`, requires the function $f$ to
+have a line derivative in the direction $v$ at every point of the support of the test factor $g$.
+The finite element method needs the formula for a function that is only piecewise differentiable: a
+continuous function on a triangulated plane domain that is $C^1$ on each open triangle, and whose
+derivative can jump across the edges. This module proves that version. If $f$ is continuous on the
+support of $g$ and has the line derivative $f'$ there except on a finite union of segments
+$\bigcup_i [P_i, Q_i]$, then still
+$$\int B(f(x), g'(x)) \, dx = -\int B(f'(x), g(x)) \, dx$$
+(`integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments`).
 
-  `∫ B (f x) (g' x) = -∫ B (f' x) (g x)`
+## Main results
 
-still holds (`integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments`).
-The point is that the fundamental theorem of calculus on a line survives countably many
-exceptional points (`MeasureTheory.integral_eq_of_hasDerivAt_off_countable_of_le`), and that a
-segment of a space of dimension at least `2` meets almost every line parallel to `v` in at most
-one point. So the proof is Mathlib's: a linear change of coordinates `L : E ≃L[ℝ] E' × ℝ` with
-`L v = (0, 1)`, Fubini on `E' × ℝ`, and on each line `t ↦ (x, t)` the one-dimensional
-integration by parts `integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable`, whose
-exceptional set is countable for almost every `x` (`subsingleton_setOf_mem_segment`).
+* `integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable`: integration by parts on
+  $\mathbb{R}$ for a function that is continuous on the support of a compactly supported test factor
+  and differentiable there off a countable set.
+* `integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments`: the version in a
+  finite-dimensional space of dimension at least $2$, for an additive Haar measure, with an
+  exceptional set contained in a finite union of segments.
+* `integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments`: its form for a
+  Fréchet-differentiable $f$ and a $C^1$ scalar test factor $g$, $\int (\partial_v g) f = -\int g \,
+  (\partial_v f)$. This is the integration by parts formula that defines a weak derivative.
 
-## Main statements
+## Proof outline
 
-* `integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable` — integration by parts on `ℝ`
-  for a function continuous on the support of the (compactly supported) test factor and
-  differentiable there off a countable set.
-* `integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments` — the
-  version in a finite-dimensional space of dimension at least `2`, for an additive Haar measure,
-  with an exceptional set contained in a finite union of segments.
-* `integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments` — its form for a
-  Fréchet-differentiable `f` and a `C¹` scalar test factor `g`,
-  `∫ (∂_v g) • f = -∫ g • (∂_v f)`, which is the integration by parts formula defining a weak
-  derivative.
+The fundamental theorem of calculus on a line remains true with countably many exceptional points
+(`MeasureTheory.integral_eq_of_hasDerivAt_off_countable_of_le`). In a space of dimension at least
+$2$, a segment meets almost every line parallel to $v$ in at most one point. So the proof is the
+proof of Mathlib: a linear change of coordinates $L : E \to E' \times \mathbb{R}$ with
+$L v = (0, 1)$, Fubini's theorem on $E' \times \mathbb{R}$, and on each line $t \mapsto (x, t)$ the
+one-dimensional integration by parts `integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable`.
+For almost every $x$ its exceptional set is countable (`subsingleton_setOf_mem_segment`).
 
 ## Implementation notes
 
-The hypothesis `2 ≤ finrank ℝ E` is needed: on the line a segment is an interval, and a
-function continuous on an interval and differentiable off it need not satisfy the fundamental
-theorem of calculus there. The exceptional set is written as a union of segments indexed by a
-finite type rather than as a set of a given shape, because that is what the transport along `L`
-preserves (`image_segment`) and what a triangulation produces (its edges).
+* The hypothesis $2 \le \dim E$ is necessary. On the line a segment is an interval, and a function
+  that is continuous on an interval and differentiable off it need not satisfy the fundamental
+  theorem of calculus there.
+* The exceptional set is a union of segments indexed by a finite type, and not a set of a given
+  shape. The transport along $L$ preserves this form (`image_segment`), and a triangulation produces
+  it (its edges).
 -/
 
 open MeasureTheory Measure Module Set Filter Topology
@@ -64,13 +65,19 @@ variable {F G W : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [NormedAddCo
 
 /-! ### The line -/
 
-/-- **Integration by parts on `ℝ` for a function differentiable off a countable set**, against a
-compactly supported factor: `∫ B u v' = -∫ B u' v` when `u` is continuous on the support of `v`
-and differentiable there off a countable set `s`, `v` is differentiable on the support of `u`
-and has compact support, and both products are integrable. The function `B (u x) (v x)` is then
-continuous, differentiable off `s` with derivative `B (u x) (v' x) + B (u' x) (v x)`, and
-vanishes outside a compact interval, so the fundamental theorem of calculus off a countable set
-gives that the integral of the derivative is zero. -/
+/-- **Integration by parts on $\mathbb{R}$ for a function differentiable off a countable set.** Let
+$W$ be complete, let $B : F \times G \to W$ be a continuous bilinear map, and let
+$s \subseteq \mathbb{R}$ be countable. Let $u : \mathbb{R} \to F$ be continuous at each point of
+the support of $v$, with derivative $u'(x)$ at each point $x \notin s$ of the support of $v$.
+Let $v : \mathbb{R} \to G$ have compact support and derivative $v'(x)$ at each point $x$ of the
+support of $u$. If $x \mapsto B(u(x), v'(x))$ and $x \mapsto B(u'(x), v(x))$ are integrable,
+then
+$$\int_{\mathbb{R}} B(u(x), v'(x)) \, dx = -\int_{\mathbb{R}} B(u'(x), v(x)) \, dx.$$
+
+The supports are the closed supports (`tsupport`). The function $x \mapsto B(u(x), v(x))$ is
+continuous, has the derivative $B(u(x), v'(x)) + B(u'(x), v(x))$ off $s$, and vanishes outside a
+compact interval. So the fundamental theorem of calculus off a countable set shows that the
+integral of the derivative is zero. -/
 theorem integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable [CompleteSpace W]
     {u u' : ℝ → F} {v v' : ℝ → G} {B : F →L[ℝ] G →L[ℝ] W} {s : Set ℝ} (hs : s.Countable)
     (huc : ∀ x ∈ tsupport v, ContinuousAt u x)
@@ -134,25 +141,29 @@ theorem integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable [CompleteSpa
   rw [hh', integral_add huv' hu'v] at key
   exact eq_neg_of_add_eq_zero_left key
 
-/-! ### The product `E × ℝ` -/
+/-! ### The product $E \times \mathbb{R}$ -/
 
 section Prod
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
 
 omit [NormedSpace ℝ G] [NormedSpace ℝ E] [MeasurableSpace E] in
-/-- Slicing a compactly supported function on `E × ℝ` at a point `x` of `E` gives a compactly
-supported function on `ℝ`: `t ↦ (x, t)` is an isometry, hence a closed embedding. -/
+/-- If $g$ on $E \times \mathbb{R}$ has compact support, then for each $x \in E$ the slice
+$t \mapsto g(x, t)$ on $\mathbb{R}$ has compact support.
+
+The map $t \mapsto (x, t)$ is an isometry, so it is a closed embedding. -/
 theorem HasCompactSupport.comp_prodMk {g : E × ℝ → G} (hg : HasCompactSupport g) (x : E) :
     HasCompactSupport fun t ↦ g (x, t) :=
   hg.comp_isClosedEmbedding (Isometry.isClosedEmbedding fun t t' ↦ by
     simp [edist_dist, Prod.dist_eq])
 
 omit [NormedSpace ℝ G] [MeasurableSpace E] in
-/-- **A line meets a segment in at most one point**, unless the segment lies on the line: the
-points `t` with `(x, t)` on the segment from `p` to `q` form a subsingleton when `x ≠ p.1`. If
-`p.1 = q.1` the segment lies on the line `{(p.1, t)}` and misses `{(x, t)}`; otherwise the first
-coordinate is injective along the segment. -/
+/-- **A line meets a segment in at most one point**, unless the segment lies on the line. Let
+$p, q \in E \times \mathbb{R}$ and $x \in E$ with $x \neq p_1$. Then the set of
+$t \in \mathbb{R}$ with $(x, t) \in [p, q]$ has at most one element.
+
+If $p_1 = q_1$, the segment lies on the line $\{(p_1, t)\}$ and does not meet $\{(x, t)\}$.
+Otherwise the first coordinate is injective along the segment. -/
 theorem subsingleton_setOf_mem_segment {p q : E × ℝ} {x : E} (hp : x ≠ p.1) :
     {t : ℝ | (x, t) ∈ segment ℝ p q}.Subsingleton := by
   intro t ht t' ht'
@@ -176,9 +187,18 @@ theorem subsingleton_setOf_mem_segment {p q : E × ℝ} {x : E} (hp : x ≠ p.1)
     · exact absurd (sub_eq_zero.1 h).symm hpq
   rw [← h2, ← h2', hss]
 
-/-- Integration by parts on `E × ℝ` in the direction `(0, 1)`, for a product measure, with an
-exceptional set `S` that almost every line `t ↦ (x, t)` meets in a countable set: Fubini and the
-one-dimensional statement on each line. -/
+/-- Integration by parts on $E \times \mathbb{R}$ in the direction $(0, 1)$ for a product measure.
+Let $W$ be complete, let $\mu$ be a $\sigma$-finite measure on $E$, and take on
+$E \times \mathbb{R}$ the product of $\mu$ with Lebesgue measure. Let
+$S \subseteq E \times \mathbb{R}$ be such that for $\mu$-almost every $x$ the set
+$\{t : (x, t) \in S\}$ is countable. Let $f$ be continuous at each point of the support of $g$,
+with line derivative $f'$ in the direction $(0, 1)$ at each point of the support of $g$ outside
+$S$. Let $g$ have compact support and line derivative $g'$ in the direction $(0, 1)$ at each
+point of the support of $f$. If $B(f', g)$ and $B(f, g')$ are integrable, then
+$\int B(f, g') = -\int B(f', g)$.
+
+The proof applies Fubini's theorem and
+`integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable` on each line. -/
 theorem integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux₁
     {μ : Measure E} [SigmaFinite μ] [CompleteSpace W]
     {f f' : E × ℝ → F} {g g' : E × ℝ → G} {B : F →L[ℝ] G →L[ℝ] W} {S : Set (E × ℝ)}
@@ -214,8 +234,20 @@ theorem integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux
 
 variable [BorelSpace E] [FiniteDimensional ℝ E]
 
-/-- Integration by parts on `E × ℝ` in the direction `(0, 1)`, for an additive Haar measure:
-it is a multiple of the product of a Haar measure on `E` with Lebesgue measure. -/
+/-- Integration by parts on $E \times \mathbb{R}$ in the direction $(0, 1)$ for an additive Haar
+measure. Let $E$ be a finite-dimensional real normed space, let $W$ be complete, let
+$B : F \times G \to W$ be a continuous bilinear map, and let $\mu$ be an additive Haar measure
+on $E \times \mathbb{R}$. Let $S \subseteq E \times \mathbb{R}$ be such that the set
+$\{t : (x, t) \in S\}$ is countable for almost every $x \in E$ with respect to an additive Haar
+measure on $E$. Let $f$ be continuous at each point of the support of $g$, with line derivative
+$f'$ in the direction $(0, 1)$ at each point of the support of $g$ outside $S$. Let $g$ have
+compact support and line derivative $g'$ in the direction $(0, 1)$ at each point of the support
+of $f$. If $B(f', g)$ and $B(f, g')$ are $\mu$-integrable, then
+$$\int B(f, g') \, d\mu = -\int B(f', g) \, d\mu.$$
+
+The measure $\mu$ is a multiple of the product of a Haar measure on $E$ with Lebesgue measure,
+so the statement follows from
+`integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux₁`. -/
 theorem integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux₂
     [CompleteSpace W] {μ : Measure (E × ℝ)} [μ.IsAddHaarMeasure]
     {f f' : E × ℝ → F} {g g' : E × ℝ → G} {B : F →L[ℝ] G →L[ℝ] W} {S : Set (E × ℝ)}
@@ -247,20 +279,25 @@ section Main
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
   [FiniteDimensional ℝ E] {μ : Measure E} [μ.IsAddHaarMeasure]
 
-/-- **Integration by parts for line derivatives, off a finite union of segments.** In a space
-of dimension at least `2` with an additive Haar measure, if `f` is continuous on the support of
-`g` and has the line derivative `f'` in the direction `v ≠ 0` there, except on a finite union
-of segments, and `g` has the line derivative `g'` on the support of `f` and compact support,
-then, both products being integrable,
+/-- **Integration by parts for line derivatives, off a finite union of segments.** Let $E$ be a
+finite-dimensional real normed space with $\dim E \ge 2$ and an additive Haar measure $\mu$, let
+$W$ be complete, and let $B : F \times G \to W$ be a continuous bilinear map. Let $v \in E$ with
+$v \neq 0$, and let $P_i, Q_i \in E$ for $i$ in a finite index set. Let $f : E \to F$ be
+continuous at each point of the support of $g$, with line derivative $f'(x)$ in the direction
+$v$ at each point $x$ of the support of $g$ outside $\bigcup_i [P_i, Q_i]$. Let $g : E \to G$
+have compact support and line derivative $g'(x)$ in the direction $v$ at each point $x$ of the
+support of $f$. If $x \mapsto B(f'(x), g(x))$ and $x \mapsto B(f(x), g'(x))$ are integrable,
+then
+$$\int_E B(f(x), g'(x)) \, d\mu(x) = -\int_E B(f'(x), g(x)) \, d\mu(x).$$
 
-  `∫ B (f x) (g' x) = -∫ B (f' x) (g x)`.
-
-This is Mathlib's `integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable` with the
-exceptional set, and its proof: a linear change of coordinates `L : E ≃L[ℝ] E' × ℝ` sending `v`
-to `(0, 1)`, then Fubini. Almost every line `t ↦ L⁻¹ (x, t)` meets each segment in at most one
-point (`subsingleton_setOf_mem_segment`, the exceptional `x` being the first coordinates of the
-images of the segments' endpoints, finitely many points of `E'`, a null set since `E'` is
-nontrivial), so the one-dimensional integration by parts off a countable set applies on it. -/
+This is Mathlib's `integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable` with an
+exceptional set, and the proof is Mathlib's: a linear change of coordinates
+$L : E \to E' \times \mathbb{R}$ that sends $v$ to $(0, 1)$, then Fubini's theorem. Almost every
+line $t \mapsto L^{-1}(x, t)$ meets each segment in at most one point
+(`subsingleton_setOf_mem_segment`). The exceptional $x$ are the first coordinates of the images
+of the endpoints, finitely many points of $E'$, and they form a null set because $E'$ is
+nontrivial. So the one-dimensional integration by parts off a countable set applies on almost
+every line. -/
 theorem integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments
     [CompleteSpace W] (h2 : 2 ≤ finrank ℝ E) {f f' : E → F} {g g' : E → G} {v : E} (hv : v ≠ 0)
     {B : F →L[ℝ] G →L[ℝ] W} {ι : Type*} [Finite ι] {P Q : ι → E}
@@ -346,12 +383,18 @@ theorem integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_seg
     · simp [← hL]
   · exact hgs.comp_homeomorph L.symm.toHomeomorph
 
-/-- **Integration by parts against a `C¹` scalar factor, off a finite union of segments**:
-`∫ (∂_v g) • f = -∫ g • (∂_v f)` in a space of dimension at least `2`, when `f` is continuous
-on the support of `g` and Fréchet differentiable there off a finite union of segments, with
-derivative `f'`, `g` is `C¹` with compact support, and both products are integrable. This is
-the integration by parts formula that defines a first-order weak derivative, for a function
-that is only piecewise differentiable. The direction `v = 0` is trivial (both sides vanish). -/
+/-- **Integration by parts against a $C^1$ scalar factor, off a finite union of segments.** Let $E$
+be a finite-dimensional real normed space with $\dim E \ge 2$ and an additive Haar measure
+$\mu$, let $F$ be complete, let $v \in E$, and let $P_i, Q_i \in E$ for $i$ in a finite index
+set. Let $f : E \to F$ be continuous at each point of the support of $g$, with Fréchet
+derivative $f'(x)$ at each point $x$ of the support of $g$ outside $\bigcup_i [P_i, Q_i]$. Let
+$g : E \to \mathbb{R}$ be $C^1$ with compact support. If $x \mapsto g(x) f'(x) v$ and
+$x \mapsto (Dg(x) v) f(x)$ are integrable, then
+$$\int_E (Dg(x) v) \, f(x) \, d\mu(x) = -\int_E g(x) \, f'(x) v \, d\mu(x).$$
+
+This is the integration by parts formula that defines a first-order weak derivative, here for a
+function that is only piecewise differentiable. The direction $v = 0$ is allowed; then both
+sides are $0$. -/
 theorem integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments [CompleteSpace F]
     (h2 : 2 ≤ finrank ℝ E) {f : E → F} {f' : E → E →L[ℝ] F} {g : E → ℝ} (v : E)
     {ι : Type*} [Finite ι] {P Q : ι → E}

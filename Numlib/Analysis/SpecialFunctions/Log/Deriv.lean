@@ -11,18 +11,26 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 
 /-!
-# A lower bound for `log ((1 + w) / (1 - w))`
+# A lower bound for $\log((1 + w)/(1 - w))$
 
-Mathlib's `Real.hasSum_log_sub_log_of_abs_lt_one` is the power series
-`log (1 + w) - log (1 - w) = ∑ 2 w^{2k+1} / (2k+1)` for `|w| < 1`. For `0 ≤ w < 1` its terms are
-nonnegative, so it dominates its first two: `Real.two_mul_add_le_log_sub_log`,
-`2 w + (2/3) w³ ≤ log (1 + w) - log (1 - w)`.
+For $|w| < 1$, Mathlib's `Real.hasSum_log_sub_log_of_abs_lt_one` gives the power series
+$$\log(1 + w) - \log(1 - w) = \sum_{k \ge 0} \frac{2 w^{2k+1}}{2k + 1}.$$
+For $0 \le w < 1$ all terms are nonnegative, so the sum is at least the sum of its first two terms.
+This file proves the resulting bound $2w + \frac{2}{3} w^3 \le \log(1 + w) - \log(1 - w)$.
+
+## Main results
+
+* `Real.two_mul_add_le_log_sub_log`: $2w + \frac{2}{3} w^3 \le \log(1 + w) - \log(1 - w)$ for
+  $0 \le w < 1$.
 -/
 
 namespace Real
 
-/-- The power series of `log ((1 + w) / (1 - w))` has nonnegative terms for `0 ≤ w < 1`, so it
-dominates the sum of its first two: `2 w + (2/3) w³ ≤ log (1 + w) - log (1 - w)`. -/
+/-- Let $0 \le w < 1$. Then
+$$2w + \frac{2}{3} w^3 \le \log(1 + w) - \log(1 - w).$$
+
+The power series $\log(1 + w) - \log(1 - w) = \sum_{k \ge 0} 2 w^{2k+1}/(2k + 1)$ has
+nonnegative terms for these $w$, and the bound is the sum of its first two terms. -/
 theorem two_mul_add_le_log_sub_log {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w < 1) :
     2 * w + 2 / 3 * w ^ 3 ≤ Real.log (1 + w) - Real.log (1 - w) := by
   have habs : |w| < 1 := by rwa [abs_of_nonneg hw0]

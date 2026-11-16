@@ -16,40 +16,71 @@ import Mathlib.Tactic.Ring
 /-!
 # The standard model of floating-point arithmetic
 
-Rounding is described here by a *relation* rather than by a function: a `RoundingModel K` on an
-ordered field `K` fixes a unit roundoff `u` and says which values `y` are admissible results of
-rounding `x`, namely those with `|y - x| ≤ u |x|`, equivalently `y = x (1 + δ)` with `|δ| ≤ u`. A
-theorem proved in the model therefore holds for *every* rounding rule meeting the bound, and, when
-the theorem is about an algorithm, for every evaluation order that its statement spells out. A
-concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
+Let $K$ be an ordered field. A rounding model on $K$ fixes a unit roundoff $u \ge 0$ and a relation
+that says which values $y$ are admissible results of rounding an exact value $x$. Every admissible
+pair satisfies $|y - x| \le u |x|$, or equivalently $y = x(1 + \delta)$ with $|\delta| \le u$. This
+is the standard model of [higham2002accuracy], (2.4), stated as a relation and not as a function. A
+theorem proved in the model therefore holds for every rounding rule that meets the bound, and, when
+the theorem is about an algorithm, for every evaluation order that its statement allows. A concrete
+number format is connected to the model by showing that its rounding relation is a rounding model.
 
-Three properties a model may have are named here for the program semantics of
-`Numlib/FloatingPoint/Program`: the exact model `RoundingModel.exact K` (`u = 0`, `Rounds x y ↔ y =
-x`), whose rounding hook is `pure`, so that an exact specification can be read off a theorem proved
-for every model; `RoundingModel.IsIdempotent` (rounding fixes its own outputs), which is what makes
-the first addition `0 + fl(x₁ y₁)` of a textbook inner-product loop exact and so gives the book's
-`γ_n` rather than `γ_{n+1}`; and `RoundingModel.IsTotal` (every value has a rounding), under which
-the run set of a program is nonempty, so that theorems about every run are not vacuous.
+The bookkeeping constants are those of [higham2002accuracy]: $\gamma_n = nu/(1 - nu)$, and a value
+$y$ is a relative perturbation of order $n$ of $x$ if $y = x(1 + \theta)$ for some
+$|\theta| \le \gamma_n$. Two facts drive every error analysis. A product of $n$ factors
+$(1 + \delta_i)^{\pm 1}$ with $|\delta_i| \le u$ is $1 + \theta$ with $|\theta| \le \gamma_n$, and
+relative perturbations compose by adding their orders. The sharp form of the first fact,
+$|\prod_i (1 + \delta_i) - 1| \le (1 + u)^n - 1$, needs no hypothesis on $nu$. It gives Wilkinson's
+classical constant $1.01\,nu$ for $nu \le 0.01$ (Lemma 2.7.1 of [golub2013matrix]), which $\gamma_n$
+does not give. The module also contains the arithmetic of the constants $\gamma_n$ and the steps
+that an algorithm takes one operation at a time: one more rounding as a multiplication or a
+division, a sum of nonnegative terms, a square root, a common factor, and the passage between a
+relative perturbation and an error bound.
 
-The bookkeeping constants are those of [higham2002accuracy]: `gamma u n = n u / (1 - n u)`, and
-`IsRelPert u n x y` says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive
-every error analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma
-u n` (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
-orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`). The sharp form of the first fact,
-`|∏ (1 + δ_i) - 1| ≤ (1 + u)^n - 1` (`abs_prod_one_add_sub_one_le_one_add_pow_sub_one`), needs no
-hypothesis on `n u` and gives Wilkinson's classical constant `1.01 n u` for `n u ≤ 0.01`
-(`abs_prod_one_add_sub_one_le_of_mul_le`, [golub2013matrix] Lemma 2.7.1), which `γ_n` does not;
-below `n u < 1` it is at most `γ_n` (`one_add_pow_sub_one_le_gamma`). The arithmetic of the
-constants themselves (`gamma_mono`, `gamma_lt_one`, `gamma_div_one_sub_gamma`,
-`three_mul_gamma_add_sq_le`, …) is here too, for every analysis to share.
+## Main definitions
 
-The calculus is completed by the steps an algorithm takes one operation at a time: one more
-rounding as a multiplication or a division (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
-`IsRelPert.rounds`), a sum of nonnegative terms (`IsRelPert.add_of_nonneg`,
-`IsRelPert.sum_of_nonneg`), a square root (`IsRelPert.sqrt`, over `ℝ`), a common factor
-(`IsRelPert.const_mul`), and the passage between a perturbation and an error bound
-(`isRelPert_of_abs_sub_le`, `IsRelPert.abs_sub_le`) — the forms the Householder, Givens and
-Cholesky analyses of `Numlib/FloatingPoint` need.
+* `FloatingPoint.RoundingModel`: a unit roundoff $u \ge 0$ and a rounding relation whose admissible
+  pairs satisfy $|y - x| \le u|x|$.
+* `FloatingPoint.RoundingModel.exact`: the exact model, with $u = 0$ and the rounding relation
+  $y = x$.
+* `FloatingPoint.RoundingModel.IsIdempotent`: rounding fixes its own outputs.
+* `FloatingPoint.RoundingModel.IsTotal`: every value has an admissible rounding.
+* `FloatingPoint.gamma`: the constant $\gamma_n = nu/(1 - nu)$.
+* `FloatingPoint.IsRelPert`: $y = x(1 + \theta)$ for some $|\theta| \le \gamma_n$.
+
+## Main results
+
+* `FloatingPoint.RoundingModel.Rounds.exists_delta`: an admissible rounding of $x$ is
+  $x(1 + \delta)$ for some $|\delta| \le u$.
+* `FloatingPoint.abs_prod_one_add_sub_one_le_gamma`: if $nu < 1$, then $|\prod_{i=1}^n (1 +
+  \delta_i)^{\rho_i} - 1| \le \gamma_n$ for $|\delta_i| \le u$ and $\rho_i = \pm 1$.
+* `FloatingPoint.abs_prod_one_add_sub_one_le_one_add_pow_sub_one`: $|\prod_{i=1}^n (1 + \delta_i) -
+  1| \le (1 + u)^n - 1$ for $|\delta_i| \le u$.
+* `FloatingPoint.abs_prod_one_add_sub_one_le_of_mul_le`: if $nu \le 0.01$, then $|\prod_{i=1}^n (1 +
+  \delta_i) - 1| \le 1.01\,nu$.
+* `FloatingPoint.gamma_add_gamma_add_mul_le`: $\gamma_j + \gamma_k + \gamma_j \gamma_k \le
+  \gamma_{j+k}$.
+* `FloatingPoint.IsRelPert.trans`, `FloatingPoint.IsRelPert.mul`, `FloatingPoint.IsRelPert.div`:
+  relative perturbations compose, multiply and divide, with orders $k + j$, $k + j$ and $k + 2j$.
+* `FloatingPoint.IsRelPert.rounds`: one more rounding raises the order of a relative perturbation by
+  one.
+* `FloatingPoint.IsRelPert.add_of_nonneg`: a sum of two nonnegative values perturbed to order $k$ is
+  perturbed to order $k$.
+* `FloatingPoint.IsRelPert.sqrt`: the square root of a relative perturbation of order $n$ is one of
+  order $n$ when $\gamma_n \le 1$.
+
+## Implementation notes
+
+* The rounding relation need not be functional, total or deterministic. Two further properties are
+  named for the program semantics of `Numlib.FloatingPoint.Program`. The exact model gives the exact
+  specification of an algorithm from a theorem proved for every model, and its rounding step is
+  `pure`. Idempotence makes the first addition $0 + fl(x_1 y_1)$ of an inner-product loop exact, so
+  that the analysis gives the constant $\gamma_n$ of the textbooks and not $\gamma_{n+1}$. Totality
+  makes the set of runs of a program nonempty, so that a theorem about every run is not vacuous.
+* The constant `FloatingPoint.gamma u n` is defined for all $u$ and $n$ by the formula
+  $nu/(1 - nu)$, with the convention $a / 0 = 0$ of Lean. It is meaningful only when $nu < 1$, and
+  every statement about it carries a hypothesis of this kind.
+* The square-root step `FloatingPoint.IsRelPert.sqrt` is stated over $\mathbb{R}$; all other results
+  hold over any linearly ordered field.
 -/
 
 open Finset
@@ -60,25 +91,30 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-! ### The rounding relation -/
 
-/-- **The standard model of floating-point arithmetic** ([higham2002accuracy], (2.4)): a unit
-roundoff `u` together with a relation saying which values are admissible roundings, each within a
-relative error `u` of its argument.
+/-- **The standard model of floating-point arithmetic** ([higham2002accuracy], (2.4)). A rounding
+model on an ordered field $K$ consists of a unit roundoff $u \ge 0$ and a relation
+$\operatorname{Rounds}(x, y)$, read "$y$ is an admissible floating-point value of the exact
+$x$", such that every admissible pair satisfies $$|y - x| \le u |x|.$$
 
-The relation is not required to be functional, total or deterministic, so a theorem stated for a
-`RoundingModel` holds for every rounding rule obeying the bound — which is exactly the strength an
-error analysis wants. -/
+The relation need not be functional, total or deterministic. So a theorem stated for a rounding
+model holds for every rounding rule that obeys the bound, and this is the strength that an error
+analysis needs. -/
 structure RoundingModel (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] where
-  /-- The unit roundoff. -/
+  /-- The unit roundoff $u$. -/
   u : K
-  /-- The unit roundoff is nonnegative. -/
+  /-- The unit roundoff is nonnegative: $u \ge 0$. -/
   u_nonneg : 0 ≤ u
-  /-- `Rounds x y` holds when `y` is an admissible floating-point value of the exact `x`. -/
+  /-- The rounding relation: `Rounds x y` holds when $y$ is an admissible floating-point value of
+  the exact value $x$. -/
   Rounds : K → K → Prop
-  /-- Every admissible rounding has relative error at most the unit roundoff. -/
+  /-- Every admissible rounding has relative error at most the unit roundoff: if $y$ is an
+  admissible rounding of $x$, then $|y - x| \le u|x|$. -/
   abs_sub_le : ∀ {x y : K}, Rounds x y → |y - x| ≤ u * |x|
 
-/-- [higham2002accuracy] form of the model: an admissible rounding of `x` is `x (1 + δ)` for some
-`|δ| ≤ u`. -/
+/-- The form of the standard model in [higham2002accuracy], (2.4). Let $m$ be a rounding model with
+unit roundoff $u$. If $y$ is an admissible rounding of $x$, then there is $\delta \in K$ with
+$$|\delta| \le u, \qquad y = x(1 + \delta).$$
+-/
 theorem RoundingModel.Rounds.exists_delta {m : RoundingModel K} {x y : K} (h : m.Rounds x y) :
     ∃ δ : K, |δ| ≤ m.u ∧ y = x * (1 + δ) := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -95,27 +131,31 @@ theorem RoundingModel.Rounds.exists_delta {m : RoundingModel K} {x y : K} (h : m
 
 namespace RoundingModel
 
-/-- **The exact model**: unit roundoff `0`, and the only admissible rounding of `x` is `x` itself.
-Every theorem proved for all rounding models specializes to exact arithmetic here; in the program
-semantics of `Numlib/FloatingPoint/Program` its rounding hook is `pure`. -/
+/-- **The exact model** on $K$: the unit roundoff is $u = 0$, and the only admissible rounding of
+$x$ is $x$ itself.
+
+Every theorem proved for all rounding models specializes here to exact arithmetic. In the
+program semantics of `Numlib.FloatingPoint.Program`, the rounding step of this model is `pure`. -/
 def exact (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K] : RoundingModel K where
   u := 0
   u_nonneg := le_rfl
   Rounds x y := y = x
   abs_sub_le := by rintro x y rfl; simp
 
-/-- The unit roundoff of the exact model is `0`. -/
+/-- The unit roundoff of the exact model is $0$. -/
 @[simp] theorem exact_u : (exact K).u = 0 := rfl
 
-/-- The rounding relation of the exact model is equality. -/
+/-- In the exact model, $y$ is an admissible rounding of $x$ if and only if $y = x$. -/
 @[simp] theorem exact_rounds_iff {x y : K} : (exact K).Rounds x y ↔ y = x := Iff.rfl
 
-/-- A rounding model is **idempotent** when rounding fixes its own outputs: an admissible rounding
-`y` of any `x` rounds only to itself. Every concrete floating-point format has this property
-(floating-point numbers round to themselves), but it does not follow from the relative-error bound
-of the model. It is what makes the first addition `fl(0 + fl(x₁ y₁))` of an inner-product loop
-started at `0` exact, the unstated assumption of the textbook analyses that start from `s = 0`
-([golub2013matrix] (2.7.9)). -/
+/-- A rounding model is **idempotent** if rounding fixes its own outputs: if $y$ is an admissible
+rounding of some $x$, and $z$ is an admissible rounding of $y$, then $z = y$.
+
+Every concrete floating-point format has this property, because a floating-point number rounds
+to itself. The property does not follow from the relative-error bound of the model. It makes
+exact the first addition $fl(0 + fl(x_1 y_1))$ of an inner-product loop that starts at $s = 0$.
+The textbook analyses that start from $s = 0$ assume this without saying so ([golub2013matrix],
+(2.7.9)). -/
 def IsIdempotent (m : RoundingModel K) : Prop :=
   ∀ ⦃x y z : K⦄, m.Rounds x y → m.Rounds y z → z = y
 
@@ -124,10 +164,11 @@ theorem isIdempotent_exact : (exact K).IsIdempotent := by
   rintro x y z rfl rfl
   rfl
 
-/-- A rounding model is **total** when every value has an admissible rounding. A statement about
-every run of a program in a model is vacuous when the run set is empty, which happens exactly when
-some value the program rounds has no admissible rounding; over a total model every run set is
-nonempty (`Numlib/FloatingPoint/Program`). -/
+/-- A rounding model is **total** if every $x \in K$ has an admissible rounding $y$.
+
+A statement about every run of a program in a model is vacuous when the set of runs is empty.
+This happens exactly when some value that the program rounds has no admissible rounding. Over a
+total model every set of runs is nonempty (see `Numlib.FloatingPoint.Program`). -/
 def IsTotal (m : RoundingModel K) : Prop := ∀ x : K, ∃ y, m.Rounds x y
 
 /-- The exact model is total. -/
@@ -135,34 +176,38 @@ theorem isTotal_exact : (exact K).IsTotal := fun x => ⟨x, rfl⟩
 
 end RoundingModel
 
-/-! ### The constants `γ_n` -/
+/-! ### The constants $\gamma_n$ -/
 
-/-- [higham2002accuracy] constant `γ_n = n u / (1 - n u)` (*Accuracy and Stability of Numerical
-Algorithms*, Lemma 3.1), the bound on the relative error accumulated by `n` roundings.  It is
-meaningful under the hypothesis `n u < 1`, which every statement below carries. -/
+/-- The constant $$\gamma_n = \frac{nu}{1 - nu}$$ of [higham2002accuracy], Lemma 3.1, which bounds
+the relative error that $n$ roundings with unit roundoff $u$ accumulate.
+
+The constant is meaningful only when $nu < 1$, and every statement about it carries a hypothesis
+of this kind. The definition uses the Lean convention $a / 0 = 0$, so $\gamma_n = 0$ when
+$nu = 1$. -/
 def gamma (u : K) (n : ℕ) : K := n * u / (1 - n * u)
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- The defining formula of `FloatingPoint.gamma`, as a rewrite rule. -/
+/-- By definition, $\gamma_n = nu/(1 - nu)$, over any field $K$. -/
 theorem gamma_def (u : K) (n : ℕ) : gamma u n = n * u / (1 - n * u) := rfl
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- No roundings, no error: `γ₀ = 0`. -/
+/-- With no roundings there is no error: $\gamma_0 = 0$, over any field $K$. -/
 @[simp]
 theorem gamma_zero (u : K) : gamma u 0 = 0 := by simp [gamma]
 
-/-- Below the breakdown point `n u = 1` the constant `γ_n` is nonnegative. -/
+/-- If $u \ge 0$ and $nu < 1$, then $\gamma_n \ge 0$. -/
 theorem gamma_nonneg {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u < 1) : 0 ≤ gamma u n :=
   div_nonneg (mul_nonneg (by positivity) hu) (by linarith)
 
-/-- `γ_k ≤ 2 k u` when `2 k u ≤ 1`. -/
+/-- If $u \ge 0$ and $2ku \le 1$, then $\gamma_k \le 2ku$. -/
 theorem gamma_le_two_mul {u : K} (hu : 0 ≤ u) {k : ℕ} (h : 2 * ((k : K) * u) ≤ 1) :
     gamma u k ≤ 2 * (k * u) := by
   have hk0 : 0 ≤ (k : K) * u := by positivity
   rw [gamma_def, div_le_iff₀ (by linarith)]
   nlinarith
 
-/-- `1 + γ_n = (1 - n u)⁻¹`, the identity behind the whole calculus of the constants. -/
+/-- If $nu < 1$, then $1 + \gamma_n = (1 - nu)^{-1}$. This identity is the basis of the arithmetic
+of the constants $\gamma_n$. -/
 theorem one_add_gamma {u : K} {n : ℕ} (h : (n : K) * u < 1) :
     1 + gamma u n = (1 - (n : K) * u)⁻¹ := by
   have hne : (1 : K) - (n : K) * u ≠ 0 := by linarith
@@ -170,7 +215,8 @@ theorem one_add_gamma {u : K} {n : ℕ} (h : (n : K) * u < 1) :
   field_simp
   ring
 
-/-- More roundings cannot help: `γ_n` increases with `n` below the breakdown point. -/
+/-- The constant $\gamma_n$ increases with $n$: if $u \ge 0$, $m \le n$ and $nu < 1$, then
+$\gamma_m \le \gamma_n$. -/
 theorem gamma_mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1) :
     gamma u m ≤ gamma u n := by
   have hcast : (m : K) * u ≤ (n : K) * u :=
@@ -178,21 +224,22 @@ theorem gamma_mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : 
   rw [gamma_def, gamma_def, div_le_div_iff₀ (by linarith) (by linarith)]
   nlinarith
 
-/-- A single rounding is bounded by `γ₁`. -/
+/-- One rounding is bounded by $\gamma_1$: if $0 \le u < 1$, then $u \le \gamma_1$. -/
 theorem le_gamma_one {u : K} (hu : 0 ≤ u) (h : u < 1) : u ≤ gamma u 1 := by
   rw [gamma_def, Nat.cast_one, one_mul, le_div_iff₀ (by linarith)]
   nlinarith
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
-/-- `γ₁ = u / (1 - u)`. -/
+/-- Over any field, $\gamma_1 = u/(1 - u)$. -/
 theorem gamma_one_eq {u : K} : gamma u 1 = u / (1 - u) := by simp [gamma_def]
 
-/-- `γ_k < 1` when `2 k u < 1`. -/
+/-- If $2ku < 1$, then $\gamma_k < 1$. -/
 theorem gamma_lt_one {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) : gamma u k < 1 := by
   rw [gamma_def, div_lt_one (by linarith)]
   linarith
 
-/-- `γ_k / (1 - γ_k) = k u / (1 - 2 k u)`. -/
+/-- If $2ku < 1$, then $$\frac{\gamma_k}{1 - \gamma_k} = \frac{ku}{1 - 2ku}.$$
+-/
 theorem gamma_div_one_sub_gamma {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
     gamma u k / (1 - gamma u k) = k * u / (1 - 2 * (k * u)) := by
   have h1 : (1 : K) - k * u ≠ 0 := by linarith
@@ -204,12 +251,14 @@ theorem gamma_div_one_sub_gamma {u : K} {k : ℕ} (h : 2 * ((k : K) * u) < 1) :
 
 /-! ### Products of rounding factors -/
 
-/-- **[higham2002accuracy] Lemma 3.1** (*Accuracy and Stability of Numerical Algorithms*): a product
-of `n` factors `(1 + δ_i)^{ρ_i}` with `|δ_i| ≤ u` and `ρ_i = ±1` differs from `1` by at most `γ_n`,
-provided `n u < 1`.
+/-- **Lemma 3.1** of [higham2002accuracy]. Let $u \ge 0$ and $nu < 1$, and let
+$\delta_1, \dots, \delta_n \in K$ with $|\delta_i| \le u$ and
+$\rho_1, \dots, \rho_n \in \{1, -1\}$. Then $$\Bigl|\prod_{i=1}^n (1 + \delta_i)^{\rho_i} -
+1\Bigr| \le \gamma_n.$$
 
-Every factor lies between `1 - u` and `(1 - u)⁻¹`, so the product lies between `(1 - u)^n` and `(1 -
-u)^{-n}`, and Bernoulli's inequality `1 - n u ≤ (1 - u)^n` turns the latter bound into `1 + γ_n`. -/
+Every factor lies between $1 - u$ and $(1 - u)^{-1}$. So the product lies between $(1 - u)^n$
+and $(1 - u)^{-n}$, and Bernoulli's inequality $1 - nu \le (1 - u)^n$ turns the upper bound into
+$1 + \gamma_n$. The indices run over `Fin n`, and the exponents $\rho_i$ are integers. -/
 theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu : (n : K) * u < 1)
     {δ : Fin n → K} (hδ : ∀ i, |δ i| ≤ u) {ρ : Fin n → ℤ} (hρ : ∀ i, ρ i = 1 ∨ ρ i = -1) :
     |∏ i, (1 + δ i) ^ (ρ i) - 1| ≤ gamma u n := by
@@ -279,8 +328,9 @@ theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu 
   rw [abs_le]
   exact ⟨by linarith, by linarith⟩
 
-/-- One more rounding factor in the sharp form: if `|α| ≤ (1 + u)^k - 1` and `|δ| ≤ u`, then
-`|(1 + α)(1 + δ) - 1| ≤ (1 + u)^(k+1) - 1`. -/
+/-- One more factor in the sharp product bound: if $|\alpha| \le (1 + u)^k - 1$ and
+$|\delta| \le u$, then $$|(1 + \alpha)(1 + \delta) - 1| \le (1 + u)^{k+1} - 1.$$
+-/
 theorem abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one {u : K} {k : ℕ} {α δ : K}
     (hα : |α| ≤ (1 + u) ^ k - 1) (hδ : |δ| ≤ u) :
     |(1 + α) * (1 + δ) - 1| ≤ (1 + u) ^ (k + 1) - 1 := by
@@ -291,9 +341,13 @@ theorem abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one {u : K} {k : ℕ}
         add_le_add (mul_le_mul hα h1 (abs_nonneg _) ((abs_nonneg _).trans hα)) hδ
     _ = (1 + u) ^ (k + 1) - 1 := by ring
 
-/-- **The sharp product bound** ([golub2013matrix] proof of Lemma 2.7.1): a product of `n`
-factors `1 + δ_i` with `|δ_i| ≤ u` differs from `1` by at most `(1 + u)^n - 1`. No hypothesis on
-`n u` is needed; compare `abs_prod_one_add_sub_one_le_gamma`, whose `γ_n` is larger. -/
+/-- **The sharp product bound** (from the proof of Lemma 2.7.1 of [golub2013matrix]). Let
+$\delta_1, \dots, \delta_n \in K$ with $|\delta_i| \le u$. Then $$\Bigl|\prod_{i=1}^n (1 +
+\delta_i) - 1\Bigr| \le (1 + u)^n - 1.$$
+
+No hypothesis on $nu$ is needed. The bound is smaller than the bound $\gamma_n$ of
+`FloatingPoint.abs_prod_one_add_sub_one_le_gamma` (see
+`FloatingPoint.one_add_pow_sub_one_le_gamma`). -/
 theorem abs_prod_one_add_sub_one_le_one_add_pow_sub_one {u : K} {n : ℕ} {δ : Fin n → K}
     (hδ : ∀ i, |δ i| ≤ u) : |∏ i, (1 + δ i) - 1| ≤ (1 + u) ^ n - 1 := by
   induction n with
@@ -304,8 +358,9 @@ theorem abs_prod_one_add_sub_one_le_one_add_pow_sub_one {u : K} {n : ℕ} {δ : 
     have h := abs_one_add_mul_one_add_sub_one_le_one_add_pow_sub_one hα (hδ (Fin.last n))
     rwa [add_sub_cancel] at h
 
-/-- `(1 + u)^r - 1 ≤ γ_r = r u / (1 - r u)` for `0 ≤ u` and `r u < 1` ([higham2002accuracy]
-Lemma 3.1 with all the `δ_i` equal to `u`): the passage from the sharp constant to `γ_r`. -/
+/-- The passage from the sharp constant to $\gamma_r$: if $u \ge 0$ and $ru < 1$, then $$(1 + u)^r -
+1 \le \gamma_r = \frac{ru}{1 - ru}.$$ This is Lemma 3.1 of [higham2002accuracy] with all
+$\delta_i$ equal to $u$. -/
 theorem one_add_pow_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {r : ℕ} (hr : (r : K) * u < 1) :
     (1 + u) ^ r - 1 ≤ gamma u r := by
   have h := abs_prod_one_add_sub_one_le_gamma (u := u) hu (n := r) hr (δ := fun _ => u)
@@ -313,8 +368,10 @@ theorem one_add_pow_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {r : ℕ} (hr : (r :
   simp only [zpow_one, Finset.prod_const, Finset.card_univ, Fintype.card_fin] at h
   exact (le_abs_self _).trans h
 
-/-- `(1 + u)^n - 1 ≤ n u + (n u)^2` when `n u ≤ 1`. The step `n → n + 1` reduces to
-`n² u³ ≤ n u² + u²`, which holds when `n u ≤ 1`. -/
+/-- If $u \ge 0$ and $nu \le 1$, then $(1 + u)^n - 1 \le nu + (nu)^2$.
+
+The induction step from $n$ to $n + 1$ reduces to $n^2 u^3 \le nu^2 + u^2$, which holds when
+$nu \le 1$. -/
 theorem one_add_pow_sub_one_le_mul_add_sq {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u ≤ 1) :
     (1 + u) ^ n - 1 ≤ n * u + (n * u) ^ 2 := by
   induction n with
@@ -335,9 +392,15 @@ theorem one_add_pow_sub_one_le_mul_add_sq {u : K} (hu : 0 ≤ u) {n : ℕ} (h : 
     have hgap : (n : K) * ((n : K) * u) ≤ n := by nlinarith
     nlinarith [mul_nonneg (mul_nonneg hu hu) (sub_nonneg.2 hgap)]
 
-/-- **Wilkinson's constant** ([golub2013matrix] Lemma 2.7.1): if `1 + α = ∏_{k<n} (1 + α_k)` with
-`|α_k| ≤ u` and `n u ≤ 0.01`, then `|α| ≤ 1.01 n u`. This does not follow from
-`abs_prod_one_add_sub_one_le_gamma`: at `n u = 0.01`, `γ_n = n u / 0.99 > 1.01 n u`. -/
+/-- **Lemma 2.7.1** of [golub2013matrix] (Wilkinson's constant). Let $u \ge 0$, and let
+$\delta_1, \dots, \delta_n \in K$ with $|\delta_i| \le u$. If $nu \le 0.01$ and
+$1 + \alpha = \prod_{i=1}^n (1 + \delta_i)$, then $$|\alpha| \le 1.01\,nu.$$
+
+This does not follow from `FloatingPoint.abs_prod_one_add_sub_one_le_gamma`: at $nu = 0.01$,
+$\gamma_n = nu/0.99 > 1.01\,nu$. The proof uses the sharp bound
+`FloatingPoint.abs_prod_one_add_sub_one_le_one_add_pow_sub_one` and
+`FloatingPoint.one_add_pow_sub_one_le_mul_add_sq`. The statement bounds
+$|\prod_i (1 + \delta_i) - 1|$ directly, with the indices in `Fin n`. -/
 theorem abs_prod_one_add_sub_one_le_of_mul_le {u : K} (hu : 0 ≤ u) {n : ℕ} {δ : Fin n → K}
     (hδ : ∀ i, |δ i| ≤ u) (h : (n : K) * u ≤ 1 / 100) :
     |∏ i, (1 + δ i) - 1| ≤ 101 / 100 * (n * u) := by
@@ -348,30 +411,33 @@ theorem abs_prod_one_add_sub_one_le_of_mul_le {u : K} (hu : 0 ≤ u) {n : ℕ} {
 
 /-! ### Relative perturbations -/
 
-/-- `IsRelPert u n x y` says that `y = x (1 + θ)` for some `|θ| ≤ γ_n`: the value `y` is `x` to
-within a relative perturbation of order `n` in a model of unit roundoff `u`.  This is
-[higham2002accuracy] `θ_n` notation (*Accuracy and Stability of Numerical Algorithms*, Lemma 3.1),
-turned into a relation so that it composes. -/
+/-- A value $y \in K$ is a **relative perturbation of order $n$** of $x \in K$, for the unit
+roundoff $u$, if $$y = x(1 + \theta) \quad \text{for some } |\theta| \le \gamma_n.$$
+
+This is the notation $\theta_n$ of [higham2002accuracy], Lemma 3.1, made into a relation so that
+it composes. -/
 def IsRelPert (u : K) (n : ℕ) (x y : K) : Prop := ∃ θ : K, |θ| ≤ gamma u n ∧ y = x * (1 + θ)
 
-/-- No perturbation at all is a relative perturbation of order `0`. -/
+/-- Every $x$ is a relative perturbation of order $0$ of itself. -/
 theorem IsRelPert.refl (u : K) (x : K) : IsRelPert u 0 x x := ⟨0, by simp, by simp⟩
 
-/-- A relative perturbation of order `m` is one of every larger order `n`, since `γ_n` grows with
-`n`. -/
+/-- A relative perturbation of order $m$ is one of every larger order $n$: if $u \ge 0$, $m \le n$,
+$nu < 1$ and $y$ is a relative perturbation of order $m$ of $x$, then it is one of order $n$.
+The reason is that $\gamma_n$ increases with $n$. -/
 theorem IsRelPert.mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1)
     {x y : K} (hxy : IsRelPert u m x y) : IsRelPert u n x y := by
   obtain ⟨θ, hθ, rfl⟩ := hxy
   exact ⟨θ, hθ.trans (gamma_mono hu hmn h), rfl⟩
 
-/-- A single rounding is a relative perturbation of order one. -/
+/-- One rounding is a relative perturbation of order one: if the unit roundoff satisfies $u < 1$ and
+$y$ is an admissible rounding of $x$, then $y$ is a relative perturbation of order $1$ of $x$. -/
 theorem RoundingModel.Rounds.isRelPert {m : RoundingModel K} (hu : m.u < 1) {x y : K}
     (h : m.Rounds x y) : IsRelPert m.u 1 x y := by
   obtain ⟨δ, hδ, rfl⟩ := h.exists_delta
   exact ⟨δ, hδ.trans (le_gamma_one m.u_nonneg hu), rfl⟩
 
-/-- The scalar inequality behind `IsRelPert.trans`, `γ_j + γ_k + γ_j γ_k ≤ γ_{j+k}`, written out
-with `x = j u` and `y = k u`. -/
+/-- The scalar inequality behind `FloatingPoint.IsRelPert.trans`, $\gamma_j + \gamma_k + \gamma_j
+\gamma_k \le \gamma_{j+k}$, written with $x = ju$ and $y = ku$. -/
 private theorem add_add_mul_div_le {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : x + y < 1) :
     x / (1 - x) + y / (1 - y) + x / (1 - x) * (y / (1 - y)) ≤ (x + y) / (1 - (x + y)) := by
   have h1 : (0 : K) < 1 - x := by linarith
@@ -385,8 +451,9 @@ private theorem add_add_mul_div_le {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : 
   rw [heq]
   exact div_nonneg (mul_nonneg hx hy) (by positivity)
 
-/-- **[higham2002accuracy] Lemma 3.3** (*Accuracy and Stability of Numerical Algorithms*): `γ_j +
-γ_k + γ_j γ_k ≤ γ_{j+k}`, which is `(1 + γ_j)(1 + γ_k) ≤ 1 + γ_{j+k}`. -/
+/-- **Lemma 3.3** of [higham2002accuracy]. If $u \ge 0$ and $(j + k)u < 1$, then $$\gamma_j +
+\gamma_k + \gamma_j \gamma_k \le \gamma_{j+k},$$ that is, $(1 + \gamma_j)(1 + \gamma_k) \le 1 +
+\gamma_{j+k}$. -/
 theorem gamma_add_gamma_add_mul_le {u : K} (hu : 0 ≤ u) {j k : ℕ}
     (h : ((j + k : ℕ) : K) * u < 1) :
     gamma u j + gamma u k + gamma u j * gamma u k ≤ gamma u (j + k) := by
@@ -397,8 +464,9 @@ theorem gamma_add_gamma_add_mul_le {u : K} (hu : 0 ≤ u) {j k : ℕ}
   have hmain := add_add_mul_div_le (x := (j : K) * u) (y := (k : K) * u) hj hk h
   rwa [gamma_def, gamma_def, gamma_def, hcast]
 
-/-- `3 γ_n + γ_n² ≤ γ_{3n}`, the constant of [higham2002accuracy] Theorem 9.4, from Lemma 3.3
-twice. -/
+/-- If $u \ge 0$ and $3ku < 1$, then $$3\gamma_k + \gamma_k^2 \le \gamma_{3k}.$$ This is the
+constant of Theorem 9.4 of [higham2002accuracy], and it follows from Lemma 3.3 of
+[higham2002accuracy] applied twice. -/
 theorem three_mul_gamma_add_sq_le {u : K} (hu : 0 ≤ u) {k : ℕ} (h : ((3 * k : ℕ) : K) * u < 1) :
     3 * gamma u k + gamma u k ^ 2 ≤ gamma u (3 * k) := by
   have h2 : ((k + k : ℕ) : K) * u < 1 := by
@@ -420,8 +488,8 @@ theorem three_mul_gamma_add_sq_le {u : K} (hu : 0 ≤ u) {k : ℕ} (h : ((3 * k 
   rw [h3k] at hB
   nlinarith [mul_nonneg hg2 hg]
 
-/-- The scalar inequality behind `IsRelPert.div`, `γ_k + γ_j + γ_{k+2j} γ_j ≤ γ_{k+2j}`, written out
-with `x = k u` and `y = j u`. -/
+/-- The scalar inequality behind `FloatingPoint.IsRelPert.div`, $\gamma_k + \gamma_j + \gamma_{k+2j}
+\gamma_j \le \gamma_{k+2j}$, written with $x = ku$ and $y = ju$. -/
 private theorem add_add_mul_div_le_div {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : x + 2 * y < 1) :
     x / (1 - x) + y / (1 - y)
         + (x + 2 * y) / (1 - (x + 2 * y)) * (y / (1 - y))
@@ -437,8 +505,9 @@ private theorem add_add_mul_div_le_div {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (
   rw [heq]
   exact div_nonneg (mul_nonneg hy (by linarith)) (by positivity)
 
-/-- The form of [higham2002accuracy] Lemma 3.3 that division needs: `γ_k + γ_j + γ_{k+2j} γ_j ≤
-γ_{k+2j}`. -/
+/-- The form of Lemma 3.3 of [higham2002accuracy] that division needs: if $u \ge 0$ and
+$(k + 2j)u < 1$, then $$\gamma_k + \gamma_j + \gamma_{k+2j} \gamma_j \le \gamma_{k+2j}.$$
+-/
 theorem gamma_add_gamma_add_mul_le_of_add_two_mul {u : K} (hu : 0 ≤ u) {k j : ℕ}
     (h : ((k + 2 * j : ℕ) : K) * u < 1) :
     gamma u k + gamma u j + gamma u (k + 2 * j) * gamma u j ≤ gamma u (k + 2 * j) := by
@@ -449,8 +518,10 @@ theorem gamma_add_gamma_add_mul_le_of_add_two_mul {u : K} (hu : 0 ≤ u) {k j : 
   have hmain := add_add_mul_div_le_div (x := (k : K) * u) (y := (j : K) * u) hk hj h
   rwa [gamma_def, gamma_def, gamma_def, hcast]
 
-/-- **Relative perturbations compose**: `(1 + θ_k)(1 + θ_j) = 1 + θ_{k+j}` ([higham2002accuracy],
-Lemma 3.3). -/
+/-- **Relative perturbations compose** ([higham2002accuracy], Lemma 3.3). Let $u \ge 0$ and
+$(k + j)u < 1$. If $y$ is a relative perturbation of order $k$ of $x$, and $z$ is a relative
+perturbation of order $j$ of $y$, then $z$ is a relative perturbation of order $k + j$ of $x$.
+In the notation of [higham2002accuracy], $(1 + \theta_k)(1 + \theta_j) = 1 + \theta_{k+j}$. -/
 theorem IsRelPert.trans {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K) * u < 1)
     {x y z : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j y z) : IsRelPert u (k + j) x z := by
   obtain ⟨θ₁, hθ₁, rfl⟩ := h₁
@@ -469,8 +540,9 @@ theorem IsRelPert.trans {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) :
         add_le_add (add_le_add hθ₁ hθ₂) (mul_le_mul hθ₁ hθ₂ (abs_nonneg _) hgk)
     _ ≤ gamma u (k + j) := gamma_add_gamma_add_mul_le hu h
 
-/-- **Products of relative perturbations**: a perturbation of order `k` times one of order `j` is
-one of order `k + j` ([higham2002accuracy], Lemma 3.3). -/
+/-- **Products of relative perturbations** ([higham2002accuracy], Lemma 3.3). Let $u \ge 0$ and
+$(k + j)u < 1$. If $y$ is a relative perturbation of order $k$ of $x$, and $w$ is a relative
+perturbation of order $j$ of $z$, then $yw$ is a relative perturbation of order $k + j$ of $xz$. -/
 theorem IsRelPert.mul {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K) * u < 1)
     {x y z w : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j z w) :
     IsRelPert u (k + j) (x * z) (y * w) := by
@@ -481,8 +553,13 @@ theorem IsRelPert.mul {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K
     ⟨θ₂, hθ₂, by ring⟩
   exact hmid.trans hu h hlast
 
-/-- **Quotients of relative perturbations**: dividing a perturbation of order `k` by one of order
-`j` gives one of order `k + 2 j` ([higham2002accuracy], Lemma 3.3). -/
+/-- **Quotients of relative perturbations** ([higham2002accuracy], Lemma 3.3). Let $u \ge 0$ and
+$(k + 2j)u < 1$. If $y$ is a relative perturbation of order $k$ of $x$, and $w$ is a relative
+perturbation of order $j$ of $z$, then $y/w$ is a relative perturbation of order $k + 2j$ of
+$x/z$.
+
+The statement has no hypothesis $z \neq 0$: if $z = 0$, then $w = 0$, and both quotients are $0$
+by the Lean convention $a / 0 = 0$. -/
 theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ) : K) * u < 1)
     {x y z w : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j z w) :
     IsRelPert u (k + 2 * j) (x / z) (y / w) := by
@@ -517,8 +594,9 @@ theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ)
 
 /-! ### One more rounding, multiplied or divided -/
 
-/-- One more rounding raises the order of a relative perturbation by one: `γ_k (1 + u) + u ≤
-γ_{k+1}`.  This is [higham2002accuracy] Lemma 3.3 together with `u ≤ γ₁`. -/
+/-- One more rounding raises the order of a relative perturbation by one: if $0 \le u < 1$ and
+$(k + 1)u < 1$, then $$\gamma_k (1 + u) + u \le \gamma_{k+1}.$$ This is Lemma 3.3 of
+[higham2002accuracy] together with $u \le \gamma_1$. -/
 theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
     (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
   have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
@@ -530,8 +608,10 @@ theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
   rw [mul_add, mul_one]
   linarith
 
-/-- Multiplying a relative perturbation of order `k` by one rounding factor gives one of order
-`k + 1`: `(1 + θ_k)(1 + δ) = 1 + θ_{k+1}` ([higham2002accuracy] Lemma 3.3). -/
+/-- Multiplying by one rounding factor raises the order by one: if $0 \le u < 1$, $(k + 1)u < 1$,
+$|\theta| \le \gamma_k$ and $|\delta| \le u$, then $$|(1 + \theta)(1 + \delta) - 1| \le
+\gamma_{k+1}.$$ In the notation of [higham2002accuracy], Lemma 3.3,
+$(1 + \theta_k)(1 + \delta) = 1 + \theta_{k+1}$. -/
 theorem abs_one_add_mul_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
     (h : ((k + 1 : ℕ) : K) * u < 1) {θ δ : K} (hθ : |θ| ≤ gamma u k) (hδ : |δ| ≤ u) :
     |(1 + θ) * (1 + δ) - 1| ≤ gamma u (k + 1) := by
@@ -549,10 +629,13 @@ theorem abs_one_add_mul_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) (hu1 : u
     _ = gamma u k * (1 + u) + u := by ring
     _ ≤ gamma u (k + 1) := gamma_mul_one_add_add_le hu hu1 h
 
-/-- Dividing a relative perturbation of order `k` by one rounding factor gives one of order
-`k + 1`: `(1 + θ_k) / (1 + δ) = 1 + θ_{k+1}`, because `(γ_k + u) / (1 - u) ≤ γ_{k+1}`. This is the
-case `ρ = -1` of [higham2002accuracy] Lemma 3.1, and the reason a division costs one rounding and
-not the two of `FloatingPoint.IsRelPert.div`. -/
+/-- Dividing by one rounding factor raises the order by one: if $u \ge 0$, $(k + 1)u < 1$,
+$|\theta| \le \gamma_k$ and $|\delta| \le u$, then $$\Bigl|\frac{1 + \theta}{1 + \delta} -
+1\Bigr| \le \gamma_{k+1}.$$
+
+The reason is that $(\gamma_k + u)/(1 - u) \le \gamma_{k+1}$. This is the case $\rho = -1$ of
+Lemma 3.1 of [higham2002accuracy]. It is the reason that a division by one rounding factor costs
+one order, and not the two of `FloatingPoint.IsRelPert.div`. -/
 theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ}
     (h : ((k + 1 : ℕ) : K) * u < 1) {θ δ : K} (hθ : |θ| ≤ gamma u k) (hδ : |δ| ≤ u) :
     |(1 + θ) / (1 + δ) - 1| ≤ gamma u (k + 1) := by
@@ -582,8 +665,9 @@ theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ
     _ ≤ gamma u (k + 1) * (1 - u) := hscalar
     _ ≤ gamma u (k + 1) * (1 + δ) := mul_le_mul_of_nonneg_left hlow hg1
 
-/-- A rounding read backwards costs `γ₁`: if `|δ| ≤ u < 1` then `|δ / (1 + δ)| ≤ γ₁`, so that
-`y = x (1 + δ)` gives `x = y (1 - δ / (1 + δ))`. -/
+/-- A rounding read backwards costs $\gamma_1$: if $|\delta| \le u < 1$, then
+$|\delta/(1 + \delta)| \le \gamma_1$. So $y = x(1 + \delta)$ gives
+$x = y(1 - \delta/(1 + \delta))$, a relative perturbation of order $1$ in the other direction. -/
 theorem abs_div_one_add_le_gamma_one {u δ : K} (hu : u < 1) (hδ : |δ| ≤ u) :
     |δ / (1 + δ)| ≤ gamma u 1 := by
   have hd : (0 : K) < 1 + δ := by linarith [neg_le_of_abs_le hδ]
@@ -595,14 +679,15 @@ theorem abs_div_one_add_le_gamma_one {u δ : K} (hu : u < 1) (hδ : |δ| ≤ u) 
 
 section Steps
 
-/-- Rounding `0` gives `0`. -/
+/-- In every rounding model, the only admissible rounding of $0$ is $0$. -/
 theorem RoundingModel.Rounds.eq_zero_of_zero {m : RoundingModel K} {y : K} (h : m.Rounds 0 y) :
     y = 0 := by
   have := m.abs_sub_le h
   rw [sub_zero, abs_zero, mul_zero] at this
   exact abs_nonpos_iff.1 this
 
-/-- A bound `|y - x| ≤ γ_n |x|` is a relative perturbation of order `n`. -/
+/-- An error bound gives a relative perturbation: if $\gamma_n \ge 0$ and
+$|y - x| \le \gamma_n |x|$, then $y$ is a relative perturbation of order $n$ of $x$. -/
 theorem isRelPert_of_abs_sub_le {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) {x y : K}
     (h : |y - x| ≤ gamma u n * |x|) : IsRelPert u n x y := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -614,7 +699,8 @@ theorem isRelPert_of_abs_sub_le {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) {x y :
     · field_simp
       ring
 
-/-- The error of a relative perturbation, `|y - x| ≤ γ_n |x|`. -/
+/-- A relative perturbation gives an error bound: if $y$ is a relative perturbation of order $n$ of
+$x$, then $|y - x| \le \gamma_n |x|$. -/
 theorem IsRelPert.abs_sub_le {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) :
     |y - x| ≤ gamma u n * |x| := by
   obtain ⟨θ, hθ, rfl⟩ := h
@@ -622,18 +708,20 @@ theorem IsRelPert.abs_sub_le {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y)
   exact mul_le_mul_of_nonneg_right hθ (abs_nonneg _)
 
 omit [IsStrictOrderedRing K] in
-/-- A relative perturbation is unchanged by a common factor. -/
+/-- A common factor keeps a relative perturbation: if $y$ is a relative perturbation of order $n$ of
+$x$, then $cy$ is one of order $n$ of $cx$, for every $c \in K$. -/
 theorem IsRelPert.const_mul {u : K} {n : ℕ} {x y : K} (h : IsRelPert u n x y) (c : K) :
     IsRelPert u n (c * x) (c * y) := by
   obtain ⟨θ, hθ, rfl⟩ := h
   exact ⟨θ, hθ, by ring⟩
 
-/-- A relative perturbation of `0` is `0`. -/
+/-- If $\gamma_n \ge 0$, then $0$ is a relative perturbation of order $n$ of $0$. -/
 theorem IsRelPert.zero {u : K} {n : ℕ} (hγ : 0 ≤ gamma u n) : IsRelPert u n (0 : K) 0 :=
   ⟨0, by simpa using hγ, by simp⟩
 
-/-- Multiplying a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
-order `k + 1`. -/
+/-- Multiplying by one rounding factor: if $u \ge 0$, $(k + 1)u < 1$, $y$ is a relative perturbation
+of order $k$ of $x$, and $|\delta| \le u$, then $y(1 + \delta)$ is a relative perturbation of
+order $k + 1$ of $x$. -/
 theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
     (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
     IsRelPert u (k + 1) x (y * (1 + δ)) := by
@@ -644,8 +732,9 @@ theorem IsRelPert.mul_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
   exact ⟨(1 + θ) * (1 + δ) - 1, abs_one_add_mul_one_add_sub_one_le_gamma hu hu1 hk hθ hδ,
     by ring⟩
 
-/-- Dividing a relative perturbation of order `k` by one rounding factor `1 + δ`, `|δ| ≤ u`:
-order `k + 1`. -/
+/-- Dividing by one rounding factor: if $u \ge 0$, $(k + 1)u < 1$, $y$ is a relative perturbation of
+order $k$ of $x$, and $|\delta| \le u$, then $y/(1 + \delta)$ is a relative perturbation of
+order $k + 1$ of $x$. -/
 theorem IsRelPert.div_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
     (hk : ((k + 1 : ℕ) : K) * u < 1) {x y δ : K} (h : IsRelPert u k x y) (hδ : |δ| ≤ u) :
     IsRelPert u (k + 1) x (y / (1 + δ)) := by
@@ -653,17 +742,23 @@ theorem IsRelPert.div_one_add {u : K} (hu : 0 ≤ u) {k : ℕ}
   refine ⟨(1 + θ) / (1 + δ) - 1, abs_one_add_div_one_add_sub_one_le_gamma hu hk hθ hδ, ?_⟩
   rw [show (1 : K) + ((1 + θ) / (1 + δ) - 1) = (1 + θ) / (1 + δ) by ring, mul_div_assoc]
 
-/-- One more rounding raises the order of a relative perturbation by one. -/
+/-- One more rounding raises the order of a relative perturbation by one. Let $m$ be a rounding
+model with unit roundoff $u$ and $(k + 1)u < 1$. If $y$ is a relative perturbation of order $k$
+of $x$, and $z$ is an admissible rounding of $y$, then $z$ is a relative perturbation of order
+$k + 1$ of $x$. -/
 theorem IsRelPert.rounds {m : RoundingModel K} {k : ℕ}
     (hk : ((k + 1 : ℕ) : K) * m.u < 1) {x y z : K} (h : IsRelPert m.u k x y)
     (hz : m.Rounds y z) : IsRelPert m.u (k + 1) x z := by
   obtain ⟨δ, hδ, rfl⟩ := hz.exists_delta
   exact h.mul_one_add m.u_nonneg hk hδ
 
-/-- The sum of two nonnegative quantities perturbed to the same relative order is perturbed to
-that order: the perturbation of the sum is the convex combination `(x₁ θ₁ + x₂ θ₂) / (x₁ + x₂)` of
-the two perturbations. The step of `1 + τ²`, `a² + b²` and the like in the Givens and Householder
-analyses. -/
+/-- Sums of nonnegative values: let $x_1, x_2 \ge 0$. If $y_1$ and $y_2$ are relative perturbations
+of order $k$ of $x_1$ and $x_2$, then $y_1 + y_2$ is a relative perturbation of order $k$ of
+$x_1 + x_2$.
+
+The perturbation of the sum is the convex combination
+$(x_1 \theta_1 + x_2 \theta_2)/(x_1 + x_2)$ of the two perturbations. This is the step for
+quantities such as $1 + \tau^2$ and $a^2 + b^2$ in the Givens and Householder analyses. -/
 theorem IsRelPert.add_of_nonneg {u : K} {k : ℕ} {x₁ x₂ y₁ y₂ : K} (hx₁ : 0 ≤ x₁) (hx₂ : 0 ≤ x₂)
     (h₁ : IsRelPert u k x₁ y₁) (h₂ : IsRelPert u k x₂ y₂) :
     IsRelPert u k (x₁ + x₂) (y₁ + y₂) := by
@@ -683,8 +778,12 @@ theorem IsRelPert.add_of_nonneg {u : K} {k : ℕ} {x₁ x₂ y₁ y₂ : K} (hx�
     · field_simp
       ring
 
-/-- Finite sums of nonnegative quantities perturbed to a common relative order are perturbed to
-that order (`IsRelPert.add_of_nonneg` by induction): the step of a computed `xᵀx` or `‖x‖₂²`. -/
+/-- Finite sums of nonnegative values: let $s$ be a finite set and $\gamma_k \ge 0$. If $x_i \ge 0$
+and $y_i$ is a relative perturbation of order $k$ of $x_i$ for every $i \in s$, then
+$\sum_{i \in s} y_i$ is a relative perturbation of order $k$ of $\sum_{i \in s} x_i$.
+
+This is `FloatingPoint.IsRelPert.add_of_nonneg` by induction, the step for a computed $x^T x$ or
+$\|x\|_2^2$. -/
 theorem IsRelPert.sum_of_nonneg {ι : Type*} (s : Finset ι) {u : K} {k : ℕ} (hγ : 0 ≤ gamma u k)
     {x y : ι → K} (hx : ∀ i ∈ s, 0 ≤ x i) (h : ∀ i ∈ s, IsRelPert u k (x i) (y i)) :
     IsRelPert u k (∑ i ∈ s, x i) (∑ i ∈ s, y i) := by
@@ -703,7 +802,7 @@ end Steps
 
 /-! ### Square roots -/
 
-/-- `|√(1 + θ) - 1| ≤ |θ|` for `θ ≥ -1`. -/
+/-- For real $\theta \ge -1$, $|\sqrt{1 + \theta} - 1| \le |\theta|$. -/
 theorem abs_sqrt_one_add_sub_one_le {θ : ℝ} (h : -1 ≤ θ) : |√(1 + θ) - 1| ≤ |θ| := by
   have h0 : 0 ≤ 1 + θ := by linarith
   have hs : 0 ≤ √(1 + θ) := Real.sqrt_nonneg _
@@ -716,8 +815,9 @@ theorem abs_sqrt_one_add_sub_one_le {θ : ℝ} (h : -1 ≤ θ) : |√(1 + θ) - 
         rw [abs_mul, abs_of_pos (by linarith : (0 : ℝ) < √(1 + θ) + 1)]
     _ = |θ| := by rw [key]
 
-/-- The square root of a relative perturbation of order `n` is one of order `n`, when `γ_n ≤ 1`.
--/
+/-- Square roots of relative perturbations: let $u \in \mathbb{R}$ with $\gamma_n \le 1$, and let
+$x \ge 0$. If $y$ is a relative perturbation of order $n$ of $x$, then $\sqrt{y}$ is a relative
+perturbation of order $n$ of $\sqrt{x}$. -/
 theorem IsRelPert.sqrt {u : ℝ} {n : ℕ} (hγ : gamma u n ≤ 1) {x y : ℝ} (hx : 0 ≤ x)
     (h : IsRelPert u n x y) : IsRelPert u n (√x) (√y) := by
   obtain ⟨θ, hθ, rfl⟩ := h

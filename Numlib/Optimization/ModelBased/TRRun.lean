@@ -9,82 +9,109 @@ import Numlib.Optimization.ModelBased.RatioTest
 /-!
 # Generic runs of trust-region methods
 
-Every trust-region (TR) method of [cartis2022evaluation] (Algorithms 2.3.1 TR1, 3.2.1 TR2,
-3.4.1 TRε, 12.2.1 TRq and its simply constrained variant of §14.2; per iteration also the
-trial iterations of 13.1.1 TRqIDA and 13.3.1 TRqEDA) shares Steps 3–4: given the ratio `ρ_k` of
-achieved to predicted decrease, the trial point `x_k + s_k` is accepted iff `η₁ ≤ ρ_k`, and the
-radius is updated by (2.3.7) (`Optimization.TRUpdate`). The methods differ only in the Step-1
-termination test, the Step-2 conditions on the step (which include the trust-region constraint)
-and the predicted decrease entering `ρ_k`.
+The trust-region methods of [cartis2022evaluation] share Steps 3 and 4 of each iteration. These
+methods are TR1 (Algorithm 2.3.1), TR2 (Algorithm 3.2.1), TRε (Algorithm 3.4.1), TRq (Algorithm
+12.2.1) and its variant for simple constraints in §14.2, and also the trial iterations of TRqIDA
+(Algorithm 13.1.1) and TRqEDA (Algorithm 13.3.1). Given the ratio $\rho_k$ of the achieved to the
+predicted decrease, the trial point $x_k + s_k$ is accepted if and only if $\rho_k \ge \eta_1$, and
+the radius is updated by the rule (2.3.7). The methods differ only in the termination test of Step
+1, in the conditions of Step 2 on the step (which include the trust-region constraint), and in the
+predicted decrease that enters $\rho_k$.
 
-* `Optimization.TRParams`: the constants `Δ₀, η₁, η₂, γ₁, γ₂, γ₃` of (2.3.3).
-* `Optimization.TRAcceptance P ρ x s x' Δ Δ'`: Steps 3–4 of one iteration, with its API
-  (`TRAcceptance.eq_add`, `TRAcceptance.eq_self`, `TRAcceptance.sub_ge`,
-  `Optimization.exists_trAcceptance`).
-* `Optimization.IsTRRun P stop step ρ x s Δ`: a run, the rules being imposed only before
-  termination (`Optimization.UntilHit`).
-* Consequences for every run: positivity and the lower bound on the radius
-  (`IsTRRun.delta_ge`, the mechanism of Lemmas 2.3.4, 3.2.5, 12.2.3), the count of all iterations
-  in terms of the successful ones (`IsTRRun.succ_count`, Lemma 2.3.1) and the decrease on
-  successful iterations (`IsTRRun.sub_ge_of_succ`).
-* `Optimization.exists_isTRRun`: existence of runs when an admissible step exists whenever the
-  test fails; the step conditions and the ratio may depend on the iteration counter (e.g. through
-  TR1's model Hessians `B_k`) as well as on the current iterate and radius.
+This file defines a run of a generic trust-region method, in which the rules apply only before
+termination. It proves for every run that the radii stay positive and bounded below, that the number
+of iterations is bounded in terms of the number of successful iterations, and that successful
+iterations decrease the objective. It also shows that runs exist when an admissible step exists
+whenever the termination test fails.
 
-A cap `Δ_{k+1} ≤ Δ_max` (TRq) is an additional condition of the method-specific predicates; the
-canonical successor radius of `Optimization.exists_trAcceptance` never exceeds `Δ_k`, so it is
-compatible with any cap.
+## Main definitions
+
+* `Optimization.TRParams`: the constants $\Delta_0, \eta_1, \eta_2, \gamma_1, \gamma_2, \gamma_3$ of
+  (2.3.3).
+* `Optimization.TRAcceptance`: Steps 3 and 4 of one iteration, the acceptance of the trial point and
+  the radius update.
+* `Optimization.IsTRRun`: a run of a trust-region method, with the rules imposed only before
+  termination.
+
+## Main results
+
+* `Optimization.exists_trAcceptance`: an admissible new radius $\Delta' \le \Delta$ always exists.
+* `Optimization.IsTRRun.delta_ge`: the lower bound $\Delta_k \ge \min(\Delta_0, \gamma_1 \theta_k)$
+  on the radius, the mechanism of Lemmas 2.3.4, 3.2.5 and 12.2.3 of [cartis2022evaluation].
+* `Optimization.IsTRRun.succ_count`: the number of iterations is bounded in terms of the number of
+  successful iterations, as in Lemma 2.3.1 of [cartis2022evaluation].
+* `Optimization.IsTRRun.sub_ge_of_succ`: a successful iteration decreases the objective by at least
+  $\eta_1$ times the predicted decrease.
+* `Optimization.exists_isTRRun`: a run exists from every starting point if an admissible step exists
+  whenever the termination test fails.
+
+## Implementation notes
+
+* The conditions on the step and the ratio may depend on the iteration counter, for example through
+  the model Hessians $B_k$ of TR1, and also on the current iterate and radius.
+* An upper bound $\Delta_{k+1} \le \Delta_{\max}$, which TRq imposes, is an additional condition in
+  the predicates of the specific methods. The new radius that `Optimization.exists_trAcceptance`
+  gives never exceeds $\Delta_k$, so it satisfies every such bound.
+* The rules before termination are stated with `Optimization.UntilHit`: a rule holds at iteration
+  $k$ if the termination test failed at every $j \le k$.
 -/
 
 namespace Optimization
 
-/-- The constants of a trust-region method ([cartis2022evaluation], (2.3.3), Step 0 of
-Algorithms 2.3.1, 12.2.1, 13.1.1): the initial radius `Δ₀ > 0`, the acceptance thresholds
-`0 < η₁ ≤ η₂ < 1` and the radius factors `0 < γ₁ ≤ γ₂ < 1 ≤ γ₃`. -/
+/-- The constants of a trust-region method, (2.3.3) of [cartis2022evaluation] and Step 0 of
+Algorithms 2.3.1, 12.2.1 and 13.1.1: the initial radius $\Delta_0 > 0$, the acceptance
+thresholds $0 < \eta_1 \le \eta_2 < 1$, and the radius factors
+$0 < \gamma_1 \le \gamma_2 < 1 \le \gamma_3$. -/
 structure TRParams where
-  /-- The initial trust-region radius. -/
+  /-- The initial trust-region radius $\Delta_0$. -/
   Δ₀ : ℝ
-  /-- The threshold for successful iterations. -/
+  /-- The threshold $\eta_1$ of the ratio for successful iterations. -/
   η₁ : ℝ
-  /-- The threshold for very successful iterations. -/
+  /-- The threshold $\eta_2$ of the ratio for very successful iterations. -/
   η₂ : ℝ
-  /-- The smallest shrinking factor. -/
+  /-- The smallest shrinking factor $\gamma_1$ of the radius. -/
   γ₁ : ℝ
-  /-- The largest shrinking factor. -/
+  /-- The largest shrinking factor $\gamma_2$ of the radius. -/
   γ₂ : ℝ
-  /-- The largest expansion factor. -/
+  /-- The largest expansion factor $\gamma_3$ of the radius. -/
   γ₃ : ℝ
-  /-- `Δ₀ > 0`. -/
+  /-- The initial radius is positive: $\Delta_0 > 0$. -/
   Δ₀_pos : 0 < Δ₀
-  /-- `η₁ > 0`. -/
+  /-- The first threshold is positive: $\eta_1 > 0$. -/
   η₁_pos : 0 < η₁
-  /-- `η₁ ≤ η₂`. -/
+  /-- The thresholds are ordered: $\eta_1 \le \eta_2$. -/
   η₁_le_η₂ : η₁ ≤ η₂
-  /-- `η₂ < 1`. -/
+  /-- The second threshold is less than one: $\eta_2 < 1$. -/
   η₂_lt_one : η₂ < 1
-  /-- `γ₁ > 0`. -/
+  /-- The smallest shrinking factor is positive: $\gamma_1 > 0$. -/
   γ₁_pos : 0 < γ₁
-  /-- `γ₁ ≤ γ₂`. -/
+  /-- The shrinking factors are ordered: $\gamma_1 \le \gamma_2$. -/
   γ₁_le_γ₂ : γ₁ ≤ γ₂
-  /-- `γ₂ < 1`. -/
+  /-- The largest shrinking factor is less than one: $\gamma_2 < 1$. -/
   γ₂_lt_one : γ₂ < 1
-  /-- `γ₃ ≥ 1`. -/
+  /-- The expansion factor is at least one: $\gamma_3 \ge 1$. -/
   one_le_γ₃ : 1 ≤ γ₃
 
 namespace TRParams
 
 variable (P : TRParams)
 
+/-- The largest shrinking factor is positive: $\gamma_2 > 0$. -/
 theorem γ₂_pos : 0 < P.γ₂ := P.γ₁_pos.trans_le P.γ₁_le_γ₂
 
+/-- The smallest shrinking factor is at most one: $\gamma_1 \le 1$. -/
 theorem γ₁_le_one : P.γ₁ ≤ 1 := P.γ₁_le_γ₂.trans P.γ₂_lt_one.le
 
+/-- The expansion factor is positive: $\gamma_3 > 0$. -/
 theorem γ₃_pos : 0 < P.γ₃ := one_pos.trans_le P.one_le_γ₃
 
+/-- The second threshold is positive: $\eta_2 > 0$. -/
 theorem η₂_pos : 0 < P.η₂ := P.η₁_pos.trans_le P.η₁_le_η₂
 
+/-- The number $1 - \eta_2$ is positive. -/
 theorem one_sub_η₂_pos : 0 < 1 - P.η₂ := sub_pos.2 P.η₂_lt_one
 
+/-- The smallest shrinking factor is less than one: $\gamma_1 < 1$. -/
 theorem γ₁_lt_one : P.γ₁ < 1 := P.γ₁_le_γ₂.trans_lt P.γ₂_lt_one
 
 end TRParams
@@ -93,15 +120,18 @@ section Acceptance
 
 variable {E : Type*} [Add E]
 
-/-- Steps 3–4 of a trust-region method for one iteration ([cartis2022evaluation], (2.3.6)–(2.3.7),
-(12.2.4)–(12.2.5), (13.1.16)–(13.1.17)): given the ratio `ρ`, the new iterate `x'` is the trial
-point `x + s` if `η₁ ≤ ρ` and `x` otherwise, and the new radius `Δ'` satisfies the update rule
-(2.3.7). -/
+/-- Steps 3 and 4 of one iteration of a trust-region method, (2.3.6)–(2.3.7), (12.2.4)–(12.2.5) and
+(13.1.16)–(13.1.17) of [cartis2022evaluation]. Given the ratio $\rho$, the pair $(x', \Delta')$
+is an **admissible outcome** of the iteration from $x$ with step $s$ and radius $\Delta$ if
+$$x' = \begin{cases} x + s & \text{if } \rho \ge \eta_1, \\ x & \text{otherwise,} \end{cases}$$
+and the new radius $\Delta'$ satisfies the update rule (2.3.7), `Optimization.TRUpdate`. -/
 def TRAcceptance (P : TRParams) (ρ : ℝ) (x s x' : E) (Δ Δ' : ℝ) : Prop :=
   x' = (if P.η₁ ≤ ρ then x + s else x) ∧ TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ ρ Δ Δ'
 
 variable {P : TRParams} {ρ : ℝ} {x s x' : E} {Δ Δ' : ℝ}
 
+/-- The defining property of `Optimization.TRAcceptance`: $x'$ is $x + s$ if $\rho \ge \eta_1$ and
+$x$ otherwise, and $\Delta'$ satisfies the update rule (2.3.7). -/
 theorem trAcceptance_iff :
     TRAcceptance P ρ x s x' Δ Δ' ↔
       x' = (if P.η₁ ≤ ρ then x + s else x) ∧ TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ ρ Δ Δ' :=
@@ -112,30 +142,34 @@ namespace TRAcceptance
 variable (h : TRAcceptance P ρ x s x' Δ Δ')
 include h
 
-/-- The radius update of an accepted iteration. -/
+/-- In an admissible outcome, the new radius satisfies the update rule (2.3.7). -/
 theorem update : TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ ρ Δ Δ' := h.2
 
-/-- A successful iteration moves to the trial point. -/
+/-- In an admissible outcome of a successful iteration ($\rho \ge \eta_1$), the new iterate is the
+trial point: $x' = x + s$. -/
 theorem eq_add (hρ : P.η₁ ≤ ρ) : x' = x + s := by
   rw [h.1, ite_eq_left hρ]
 
-/-- An unsuccessful iteration keeps the iterate. -/
+/-- In an admissible outcome of an unsuccessful iteration ($\rho < \eta_1$), the iterate does not
+change: $x' = x$. -/
 theorem eq_self (hρ : ρ < P.η₁) : x' = x := by
   rw [h.1, ite_eq_right (not_le.2 hρ)]
 
-/-- The update preserves positivity of the radius. -/
+/-- In an admissible outcome, the new radius is positive if the old radius is positive. -/
 theorem pos (hΔ : 0 < Δ) : 0 < Δ' :=
   h.2.pos P.γ₁_pos P.γ₁_le_γ₂ P.γ₁_le_one hΔ
 
-/-- **Decrease on a successful iteration**: if `ρ = (f x - f (x + s)) / pred` with `pred > 0` and
-`η₁ ≤ ρ`, then `f x - f x' ≥ η₁ pred`. -/
+/-- **Decrease on a successful iteration.** Let $(x', \Delta')$ be an admissible outcome, and let
+$\rho = (f(x) - f(x + s)) / \mathrm{pred}$ with $\mathrm{pred} > 0$. If $\rho \ge \eta_1$, then
+$$f(x) - f(x') \ge \eta_1 \, \mathrm{pred}.$$
+-/
 theorem sub_ge {f : E → ℝ} {pred : ℝ} (hρ : ρ = reductionRatio f x s pred) (hpred : 0 < pred)
     (hs : P.η₁ ≤ ρ) : P.η₁ * pred ≤ f x - f x' := by
   rw [h.eq_add hs]
   exact sub_le_of_le_reductionRatio hpred (hρ ▸ hs)
 
-/-- The objective does not increase along an iteration whose ratio is a reduction ratio with
-positive predicted decrease. -/
+/-- Let $(x', \Delta')$ be an admissible outcome, and let $\rho = (f(x) - f(x + s)) / \mathrm{pred}$
+with $\mathrm{pred} > 0$. Then the objective does not increase: $f(x') \le f(x)$. -/
 theorem le {f : E → ℝ} {pred : ℝ} (hρ : ρ = reductionRatio f x s pred) (hpred : 0 < pred) :
     f x' ≤ f x := by
   by_cases hs : P.η₁ ≤ ρ
@@ -145,9 +179,13 @@ theorem le {f : E → ℝ} {pred : ℝ} (hρ : ρ = reductionRatio f x s pred) (
 
 end TRAcceptance
 
-/-- **Existence of the next radius**: for `Δ ≥ 0` the radius `Δ' = γ₂ Δ` after an unsuccessful
-iteration and `Δ' = Δ` otherwise is admissible. In particular `Δ' ≤ Δ`, so any cap
-`Δ ≤ Δ_max` is preserved, and `Δ' > 0` if `Δ > 0`. -/
+/-- **Existence of the next radius.** Let $\Delta \ge 0$, and let the new iterate be $x + s$ if
+$\rho \ge \eta_1$ and $x$ otherwise. Then there is a new radius $\Delta'$ that gives an
+admissible outcome, with $\Delta' \le \Delta$, and with $\Delta' > 0$ if $\Delta > 0$.
+
+The proof takes $\Delta' = \gamma_2 \Delta$ after an unsuccessful iteration ($\rho < \eta_1$)
+and $\Delta' = \Delta$ after a successful iteration; the statement does not record this choice.
+Because $\Delta' \le \Delta$, the new radius keeps every upper bound $\Delta \le \Delta_{\max}$. -/
 theorem exists_trAcceptance (P : TRParams) (ρ : ℝ) (x s : E) {Δ : ℝ} (hΔ : 0 ≤ Δ) :
     ∃ Δ', TRAcceptance P ρ x s (if P.η₁ ≤ ρ then x + s else x) Δ Δ' ∧ Δ' ≤ Δ ∧
       (0 < Δ → 0 < Δ') := by
@@ -169,8 +207,8 @@ theorem exists_trAcceptance (P : TRParams) (ρ : ℝ) (x s : E) {Δ : ℝ} (hΔ 
     · exact mul_pos P.γ₂_pos hΔ'
     · exact hΔ'
 
-/-- An iteration with ratio `ρ ≥ 1` (very successful) may keep the radius: Steps 3–4 hold with
-`x' = x + s` and `Δ' = Δ`. -/
+/-- An iteration with ratio $\rho \ge 1$ is very successful and can keep the radius. If $\rho \ge 1$
+and $\Delta \ge 0$, then $x' = x + s$ and $\Delta' = \Delta$ give an admissible outcome. -/
 theorem trAcceptance_of_one_le (P : TRParams) {ρ : ℝ} (hρ : 1 ≤ ρ) (x s : E) {Δ : ℝ}
     (hΔ : 0 ≤ Δ) : TRAcceptance P ρ x s (x + s) Δ Δ := by
   have h1 : P.η₁ ≤ ρ := by linarith [P.η₁_le_η₂, P.η₂_lt_one]
@@ -180,18 +218,25 @@ theorem trAcceptance_of_one_le (P : TRParams) {ρ : ℝ} (hρ : 1 ≤ ρ) (x s :
 
 end Acceptance
 
-/-- A run of a trust-region method ([cartis2022evaluation], Algorithms 2.3.1, 3.2.1, 3.4.1,
-12.2.1, Steps 2–4): `stop k` is the Step-1 termination test at iteration `k`, `step k` the
-Step-2 conditions on the trial step `s k` (including the trust-region constraint), and `ρ k` the
-ratio of achieved to predicted decrease. Until termination, Step 2 holds and Steps 3–4 are
-`Optimization.TRAcceptance`. Iteration `k` is successful iff `P.η₁ ≤ ρ k`. -/
+/-- A **run of a trust-region method**, Steps 2–4 of Algorithms 2.3.1, 3.2.1, 3.4.1 and 12.2.1 of
+[cartis2022evaluation]. It consists of iterates $x_k$, trial steps $s_k$, radii $\Delta_k$ and
+ratios $\rho_k$ such that
+* the initial radius is $\Delta_0$ of the parameters `P`;
+* at every iteration $k$ before termination, the step $s_k$ satisfies the conditions of Step 2;
+* at every iteration $k$ before termination, $(x_{k+1}, \Delta_{k+1})$ is an admissible outcome
+  of Steps 3 and 4, `Optimization.TRAcceptance`.
+
+Here `stop k` is the termination test of Step 1 at iteration $k$, and `step k` is the set of
+conditions of Step 2 on the trial step $s_k$, which include the trust-region constraint.
+Iteration $k$ is before termination if the test failed at every $j \le k$. Iteration $k$ is
+successful if and only if $\rho_k \ge \eta_1$. -/
 structure IsTRRun {E : Type*} [Add E] (P : TRParams) (stop step : ℕ → Prop) (ρ : ℕ → ℝ)
     (x s : ℕ → E) (Δ : ℕ → ℝ) : Prop where
-  /-- The initial radius. -/
+  /-- The initial radius is the constant $\Delta_0$ of the parameters. -/
   delta_zero : Δ 0 = P.Δ₀
-  /-- Step 2 is executed at every iteration before termination. -/
+  /-- The conditions of Step 2 on the trial step hold at every iteration before termination. -/
   step : UntilHit stop step
-  /-- Steps 3–4 are executed at every iteration before termination. -/
+  /-- Steps 3 and 4 give an admissible outcome at every iteration before termination. -/
   accept : UntilHit stop fun k => TRAcceptance P (ρ k) (x k) (s k) (x (k + 1)) (Δ k) (Δ (k + 1))
 
 namespace IsTRRun
@@ -200,22 +245,25 @@ variable {E : Type*} [Add E] {P : TRParams} {stop step : ℕ → Prop} {ρ : ℕ
   {Δ : ℕ → ℝ} (h : IsTRRun P stop step ρ x s Δ)
 include h
 
-/-- A run with a stronger step condition is a run with a weaker one. -/
+/-- A run with a stronger step condition is also a run with a weaker step condition. -/
 theorem mono {step' : ℕ → Prop} (hst : ∀ k, step k → step' k) :
     IsTRRun P stop step' ρ x s Δ :=
   ⟨h.delta_zero, h.step.mono hst, h.accept⟩
 
-/-- The radius update before termination. -/
+/-- If the termination test failed at every $j \le k$, then $\Delta_{k+1}$ satisfies the update rule
+(2.3.7) with ratio $\rho_k$. -/
 theorem update {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j) :
     TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ (ρ k) (Δ k) (Δ (k + 1)) :=
   (h.accept k hk).update
 
-/-- A successful iteration before termination moves to the trial point. -/
+/-- If the termination test failed at every $j \le k$ and iteration $k$ is successful
+($\rho_k \ge \eta_1$), then $x_{k+1} = x_k + s_k$. -/
 theorem eq_add_of_succ {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j) (hs : P.η₁ ≤ ρ k) :
     x (k + 1) = x k + s k :=
   (h.accept k hk).eq_add hs
 
-/-- An unsuccessful iteration before termination keeps the iterate. -/
+/-- If the termination test failed at every $j \le k$ and iteration $k$ is unsuccessful
+($\rho_k < \eta_1$), then $x_{k+1} = x_k$. -/
 theorem eq_of_not_succ {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j) (hs : ρ k < P.η₁) :
     x (k + 1) = x k :=
   (h.accept k hk).eq_self hs
@@ -224,15 +272,19 @@ private theorem updates {K : ℕ} (hK : ∀ j < K, ¬ stop j) :
     ∀ k < K, TRUpdate P.η₁ P.η₂ P.γ₁ P.γ₂ P.γ₃ (ρ k) (Δ k) (Δ (k + 1)) :=
   fun _ hk => h.update fun j hj => hK j (hj.trans_lt hk)
 
-/-- The radii are positive up to (and including) the first termination index: if the test
-failed at every `j < K`, then `Δ k > 0` for all `k ≤ K`. -/
+/-- The radii are positive up to and including the first termination index: if the termination test
+failed at every $j < K$, then $\Delta_k > 0$ for all $k \le K$. -/
 theorem delta_pos {K : ℕ} (hK : ∀ j < K, ¬ stop j) : ∀ k ≤ K, 0 < Δ k :=
   pos_of_trUpdate P.γ₁_pos P.γ₁_le_γ₂ P.γ₁_le_one (h.delta_zero ▸ P.Δ₀_pos) (h.updates hK)
 
-/-- **Lower bound on the radius** for any TR run (the mechanism of [cartis2022evaluation],
-Lemmas 2.3.4, 3.2.5, 12.2.3). Suppose the test failed at every `j < K`, the threshold `θ` is
-nonincreasing on `[0, K]`, and every iteration `k < K` with `Δ_k < θ_k` is very successful. Then
-`Δ_k ≥ min(Δ₀, γ₁ θ_k)` for all `k ≤ K`. -/
+/-- **Lower bound on the radius** for every run of a trust-region method. Let $(\theta_k)$ be a real
+sequence with $\theta_{k+1} \le \theta_k$ for all $k < K$. Suppose that the termination test
+failed at every $j < K$, and that every iteration $k < K$ with $\Delta_k < \theta_k$ is very
+successful ($\rho_k \ge \eta_2$). Then
+$$\Delta_k \ge \min(\Delta_0, \gamma_1 \theta_k) \quad \text{for all } k \le K.$$
+
+This is the mechanism of Lemmas 2.3.4, 3.2.5 and 12.2.3 of [cartis2022evaluation]. The proof
+specializes `Optimization.le_delta_of_trUpdate`. -/
 theorem delta_ge {θ : ℕ → ℝ} {K : ℕ} (hK : ∀ j < K, ¬ stop j)
     (hθ : ∀ k < K, θ (k + 1) ≤ θ k) (hforce : ∀ k < K, Δ k < θ k → P.η₂ ≤ ρ k) :
     ∀ k ≤ K, min P.Δ₀ (P.γ₁ * θ k) ≤ Δ k := by
@@ -240,8 +292,9 @@ theorem delta_ge {θ : ℕ → ℝ} {K : ℕ} (hK : ∀ j < K, ¬ stop j)
     (h.updates hK) hθ hforce
   rwa [h.delta_zero] at this
 
-/-- **Lower bound on the next radius**: under the hypotheses of `IsTRRun.delta_ge`,
-`Δ_{k+1} ≥ min(Δ₀, γ₁ θ_k)` for all `k < K`. -/
+/-- **Lower bound on the next radius.** Under the hypotheses of `Optimization.IsTRRun.delta_ge`,
+$$\Delta_{k+1} \ge \min(\Delta_0, \gamma_1 \theta_k) \quad \text{for all } k < K.$$
+-/
 theorem delta_succ_ge {θ : ℕ → ℝ} {K : ℕ} (hK : ∀ j < K, ¬ stop j)
     (hθ : ∀ k < K, θ (k + 1) ≤ θ k) (hforce : ∀ k < K, Δ k < θ k → P.η₂ ≤ ρ k) :
     ∀ k < K, min P.Δ₀ (P.γ₁ * θ k) ≤ Δ (k + 1) := by
@@ -249,10 +302,13 @@ theorem delta_succ_ge {θ : ℕ → ℝ} {K : ℕ} (hK : ∀ j < K, ¬ stop j)
     (h.updates hK) hθ hforce
   rwa [h.delta_zero] at this
 
-/-- **Lemma 2.3.1** ([cartis2022evaluation]) for any TR run: if the test failed at every `j ≤ k`
-and `0 < Δmin ≤ Δ_{k+1}`, then
-`k + 1 ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ₀)| / |log γ₂|`,
-with `𝒮_k = {j ≤ k | η₁ ≤ ρ_j}`. -/
+/-- **Lemma 2.3.1** of [cartis2022evaluation] for every run of a trust-region method, with $k + 1$
+updates. Let $\mathcal{S}_k = \{ j \le k : \rho_j \ge \eta_1 \}$ be the set of successful
+iterations up to $k$. If the termination test failed at every $j \le k$ and
+$0 < \Delta_{\min} \le \Delta_{k+1}$, then
+$$k + 1 \le |\mathcal{S}_k| \left(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\right) +
+  \frac{1}{|\log \gamma_2|} \left|\log \frac{\Delta_{\min}}{\Delta_0}\right|.$$
+-/
 theorem succ_count {Δmin : ℝ} {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j) (hmin : 0 < Δmin)
     (hΔmin : Δmin ≤ Δ (k + 1)) :
     (k + 1 : ℝ) ≤
@@ -262,9 +318,12 @@ theorem succ_count {Δmin : ℝ} {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j) (hmin :
   exact succ_le_of_trUpdate P.γ₂_pos P.γ₂_lt_one P.one_le_γ₃
     (fun j hj => h.update fun i hi => hk i (hi.trans hj)) hmin hΔmin
 
-/-- **Lemma 2.3.1** ([cartis2022evaluation], (2.3.11)) with the book's indexing: if the test
-failed at every `j < k` and `0 < Δmin ≤ Δ_k`, then
-`k ≤ |𝒮_k| (1 + log γ₃ / |log γ₂|) + |log (Δmin / Δ₀)| / |log γ₂|`. -/
+/-- **Lemma 2.3.1** of [cartis2022evaluation], bound (2.3.11), with the indexing of the source, for
+every run of a trust-region method. Let $\mathcal{S}_k = \{ j \le k : \rho_j \ge \eta_1 \}$. If
+the termination test failed at every $j < k$ and $0 < \Delta_{\min} \le \Delta_k$, then
+$$k \le |\mathcal{S}_k| \left(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\right) + \frac{1}{|\log
+  \gamma_2|} \left|\log \frac{\Delta_{\min}}{\Delta_0}\right|.$$
+-/
 theorem le_succ_count {Δmin : ℝ} {k : ℕ} (hk : ∀ j < k, ¬ stop j) (hmin : 0 < Δmin)
     (hΔmin : Δmin ≤ Δ k) :
     (k : ℝ) ≤
@@ -273,19 +332,21 @@ theorem le_succ_count {Δmin : ℝ} {k : ℕ} (hk : ∀ j < k, ¬ stop j) (hmin 
   rw [← h.delta_zero]
   exact le_of_trUpdate P.γ₂_pos P.γ₂_lt_one P.one_le_γ₃ (h.updates hk) hmin hΔmin
 
-/-- **Decrease on successful iterations**: if, before termination, `ρ_k` is the reduction ratio
-of a positive predicted decrease `pred_k` and the iteration is successful, then
-`x_{k+1} = x_k + s_k` and `f(x_k) - f(x_{k+1}) ≥ η₁ pred_k`. -/
+/-- **Decrease on successful iterations.** Suppose that the termination test failed at every
+$j \le k$, that $\rho_k = (f(x_k) - f(x_k + s_k)) / \mathrm{pred}_k$ with $\mathrm{pred}_k > 0$,
+and that iteration $k$ is successful ($\rho_k \ge \eta_1$). Then $x_{k+1} = x_k + s_k$ and
+$$f(x_k) - f(x_{k+1}) \ge \eta_1 \, \mathrm{pred}_k.$$
+-/
 theorem sub_ge_of_succ {f : E → ℝ} {pred : ℕ → ℝ} {k : ℕ} (hk : ∀ j ≤ k, ¬ stop j)
     (hρ : ρ k = reductionRatio f (x k) (s k) (pred k)) (hpred : 0 < pred k)
     (hs : P.η₁ ≤ ρ k) :
     x (k + 1) = x k + s k ∧ P.η₁ * pred k ≤ f (x k) - f (x (k + 1)) :=
   ⟨h.eq_add_of_succ hk hs, (h.accept k hk).sub_ge hρ hpred hs⟩
 
-/-- **Monotonicity**: if the ratios are reduction ratios of positive predicted decreases at every
-iteration before termination, then `f ∘ x` is nonincreasing up to (and including) the first
-termination index: if the test failed at every `j < K`, then `f (x j) ≤ f (x i)` for
-`i ≤ j ≤ K`. -/
+/-- **Monotonicity of the objective.** Suppose that the termination test failed at every $j < K$,
+and that for every $k < K$ the ratio is $\rho_k = (f(x_k) - f(x_k + s_k)) / \mathrm{pred}_k$
+with $\mathrm{pred}_k > 0$. Then $f(x_j) \le f(x_i)$ for all $i \le j \le K$. Thus
+$k \mapsto f(x_k)$ is nonincreasing up to and including the first termination index. -/
 theorem objective_antitone {f : E → ℝ} {pred : ℕ → ℝ} {K : ℕ} (hK : ∀ j < K, ¬ stop j)
     (hρ : ∀ k < K, ρ k = reductionRatio f (x k) (s k) (pred k)) (hpred : ∀ k < K, 0 < pred k) :
     ∀ i j, i ≤ j → j ≤ K → f (x j) ≤ f (x i) := by
@@ -303,14 +364,20 @@ section Existence
 
 variable {E : Type*} [Add E]
 
-/-- **Existence of TR runs** with a state-based termination test. Let `Inv` be a property of
-iterates (e.g. membership in a feasible set; `fun _ => True` if none is needed) and assume that at
-every iteration `k`, every iterate `y` with `Inv y` at which the test fails and every radius
-`Δ > 0` an admissible step `s` exists (`stepOK k y Δ s`) with `Inv (y + s)`. Then from every `x₀`
-with `Inv x₀` there is a run with ratio `ρ_k = R k (x k) (Δ k) (s k)` (any ratio function), along
-which `Inv` holds up to (and including) termination. The step conditions and the ratio may depend
-on the iteration counter `k` (e.g. through model Hessians `B_k` chosen in advance). The new radii
-are those of `Optimization.exists_trAcceptance` (`Δ_{k+1} ≤ Δ_k`). -/
+/-- **Existence of runs of a trust-region method** with a termination test on the iterate. Let `Inv`
+be a property of points, for example membership in a feasible set, or the true property if none
+is needed. Suppose that for every iteration $k$, every point $y$ with `Inv y` at which the test
+fails, and every radius $\Delta > 0$, there is a step $s$ that satisfies the step conditions
+`stepOK k y Δ s` and has `Inv (y + s)`. Let $R$ be any ratio function. Then from every $x_0$
+with `Inv x₀` there is a run with $x_0$ as its first iterate, with the termination test applied
+to $x_k$, with the step conditions `stepOK k (x k) (Δ k) (s k)`, and with ratios
+$\rho_k = R(k, x_k, \Delta_k, s_k)$. Along this run, `Inv` holds at every $x_k$ such that the
+test failed at every $j < k$, so up to and including termination.
+
+The step conditions and the ratio can depend on the iteration counter $k$, for example through
+model Hessians $B_k$ chosen in advance. The proof takes the new radii of
+`Optimization.exists_trAcceptance`, so that $\Delta_{k+1} \le \Delta_k$, but the statement does
+not record this property. -/
 theorem exists_isTRRun (P : TRParams) {Inv : E → Prop} {test : E → Prop}
     {stepOK : ℕ → E → ℝ → E → Prop} (R : ℕ → E → ℝ → E → ℝ)
     (hstep : ∀ k y Δ, Inv y → 0 < Δ → ¬ test y → ∃ s, stepOK k y Δ s ∧ Inv (y + s))
@@ -356,9 +423,12 @@ theorem exists_isTRRun (P : TRParams) {Inv : E → Prop} {test : E → Prop}
 
 end Existence
 
-/-- While every iteration at the starting point of a trust-region run is unsuccessful as long as
-its radius is at least `γ₁^i Δ₀`, the run stays at its starting point and `Δ_i ≥ γ₁^i Δ₀`, up to
-iteration `L` and before termination. -/
+/-- Let $L \in \mathbb{N}$. Suppose that every iteration $i < L$ before termination at which the run
+is still at its starting point ($x_i = x_0$) and has radius $\Delta_i \ge \gamma_1^i \Delta_0$
+is unsuccessful ($\rho_i < \eta_1$). Then for every $i \le L$ such that the termination test
+failed at every $l < i$,
+$$x_i = x_0 \quad \text{and} \quad \Delta_i \ge \gamma_1^i \Delta_0.$$
+-/
 theorem IsTRRun.eq_zero_of_unsucc {E : Type*} [Add E] {P : TRParams} {stop step : ℕ → Prop}
     {ρ : ℕ → ℝ} {x s : ℕ → E} {Δ : ℕ → ℝ} (h : IsTRRun P stop step ρ x s Δ) {L : ℕ}
     (hunsucc : ∀ i < L, (∀ l ≤ i, ¬ stop l) → x i = x 0 → P.γ₁ ^ i * P.Δ₀ ≤ Δ i →

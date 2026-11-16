@@ -8,12 +8,50 @@ import Numlib.Krylov.Arnoldi
 /-!
 # The symmetric Lanczos process
 
-For symmetric `A` the Arnoldi coefficients are real and tridiagonal ([saad2003iterative] Thm 6.19 /
-[saad2011numerical] Thm 6.2), which gives the three-term recurrence `A v_j = β_j v_{j-1} + α_j v_j +
-β_{j+1} v_{j+1}` ([saad2003iterative], Alg 6.15, [choi2006iterative] §2.1, [meurant2006lanczos]
-§2.1, [fong2012cg] §1). Indexing is `0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and `beta A b j =
-h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} + beta (j+1) •
-v_{j+2}`.
+Let $A$ be a linear operator on an inner product space $E$ over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, let $b \in E$, and let $v_0, v_1, \dots$ be the Arnoldi vectors of $(A, b)$ with
+coefficients $h_{ij} = \langle v_i, A v_j \rangle$. When $A$ is symmetric, the coefficient array is
+Hermitian and upper Hessenberg, hence tridiagonal with a real diagonal ([saad2003iterative], Theorem
+6.19; [saad2011numerical], Theorem 6.2). The Arnoldi relation then becomes the three-term recurrence
+of the Lanczos process
+$$A v_{j+1} = \beta_j v_j + \alpha_{j+1} v_{j+1} + \beta_{j+1} v_{j+2}$$
+([saad2003iterative], Algorithm 6.15; [choi2006iterative], §2.1; [meurant2006lanczos], §2.1;
+[fong2012cg], §1). Here $\alpha_j = \langle v_j, A v_j \rangle$ and
+$\beta_j = h_{j+1,j} = \|w_j\| \ge 0$, where $w_j$ is the unnormalized next Arnoldi vector. This
+file defines these coefficients, the $m \times m$ Lanczos matrix $T_m$ and the $(m + 1) \times m$
+extended Lanczos matrix $\bar{T}_m$, and proves that $T_m$ and $\bar{T}_m$ are the Arnoldi
+Hessenberg matrices $H_m$ and $\bar{H}_m$.
+
+## Main definitions
+
+* `Lanczos.alpha`: the diagonal coefficient $\alpha_j = \operatorname{Re} \langle v_j, A v_j
+  \rangle$.
+* `Lanczos.beta`: the off-diagonal coefficient $\beta_j = \|w_j\|$.
+* `Lanczos.tridiag`: the real symmetric tridiagonal $m \times m$ matrix $T_m$.
+* `Lanczos.tridiagExt`: the $(m + 1) \times m$ matrix $\bar{T}_m$.
+
+## Main results
+
+* `Arnoldi.coeff_conj_of_isSymmetric`: for symmetric $A$, $h_{ij} = \overline{h_{ji}}$.
+* `Arnoldi.coeff_eq_zero_of_isSymmetric`: for symmetric $A$, $h_{ij} = 0$ when $j > i + 1$.
+* `Lanczos.apply_vec_zero`, `Lanczos.apply_vec`: the three-term recurrence.
+* `Lanczos.beta_eq_zero_iff`: $\beta_j = 0$ if and only if the grade of $b$ is at most $j + 1$.
+* `Lanczos.alpha_mem_Icc`: the coefficients $\alpha_j$ lie between the bounds of the quadratic form
+  of $A$.
+* `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.hessenberg_eq_map_tridiagExt`: $H_m = T_m$ and
+  $\bar{H}_m = \bar{T}_m$ for symmetric $A$.
+* `Lanczos.apply_sum`: $A V_{m+1} = V_{m+1} T_{m+1} + \beta_m v_{m+1} e_{m+1}^T$, in coordinates.
+* `Lanczos.apply_sum_grade`: at the grade $\ell$, $A V_\ell = V_\ell T_\ell$.
+
+## Implementation notes
+
+* Indices start at $0$. The vector $v_j$ is `Arnoldi.vec A b j`, $h_{ij}$ is
+  `Arnoldi.coeff A b i j`, and $w_j$ is `Arnoldi.w A b j`.
+* The inner product $\langle x, y \rangle$ is conjugate linear in $x$, as in Mathlib.
+* The coefficients and the matrices $T_m$, $\bar{T}_m$ are real. They are defined for every operator
+  $A$: $\alpha_j$ is the real part of $h_{jj}$, and $\beta_j$ is a norm. The identity
+  $\beta_j = h_{j+1,j}$ holds for every operator, while $\alpha_j = h_{jj}$ needs symmetry. A
+  statement over $\mathbb{K}$ uses `Matrix.map` with `algebraMap ℝ 𝕜`.
 -/
 
 open Krylov
@@ -25,17 +63,24 @@ namespace Arnoldi
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (b : E)
 include hA
 
-/-- For symmetric `A` the Arnoldi coefficient array is Hermitian: `h i j = conj (h j i)`. With the
-Hessenberg structure of `coeff_eq_zero_of_lt` this is what forces tridiagonality. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The Arnoldi
+coefficients of $(A, b)$ satisfy $h_{ij} = \overline{h_{ji}}$ for all $i, j$.
+
+Together with the Hessenberg property `Arnoldi.coeff_eq_zero_of_lt`, this makes the coefficient
+array tridiagonal. -/
 theorem coeff_conj_of_isSymmetric (i j : ℕ) : coeff A b i j = starRingEnd 𝕜 (coeff A b j i) := by
   rw [coeff, coeff, inner_conj_symm, hA]
 
-/-- Tridiagonal structure: `h i j = 0` for `j > i + 1`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The Arnoldi
+coefficients of $(A, b)$ satisfy $h_{ij} = 0$ when $i + 1 < j$. With the Hessenberg property
+this means that the coefficient array is tridiagonal. -/
 theorem coeff_eq_zero_of_isSymmetric {i j : ℕ} (h : i + 1 < j) : coeff A b i j = 0 := by
   rw [coeff_conj_of_isSymmetric hA b i j, coeff_eq_zero_of_lt A b h, map_zero]
 
-/-- The diagonal Arnoldi coefficients of a symmetric operator are real, which is what lets the
-Lanczos matrix be built over `ℝ`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The diagonal
+Arnoldi coefficients $h_{jj}$ of $(A, b)$ are real.
+
+This is the reason that the Lanczos matrix can be defined over $\mathbb{R}$. -/
 theorem coeff_diag_re_of_isSymmetric (j : ℕ) :
     coeff A b j j = (RCLike.re (coeff A b j j) : 𝕜) :=
   (RCLike.conj_eq_iff_re.1 (coeff_conj_of_isSymmetric hA b j j).symm).symm
@@ -46,21 +91,29 @@ namespace Lanczos
 
 variable (A : E →ₗ[𝕜] E) (b : E)
 
-/-- Diagonal Lanczos coefficient `α_j = ⟪v_j, A v_j⟫` (real for symmetric `A`). -/
+/-- The **diagonal Lanczos coefficient** $\alpha_j = \operatorname{Re} h_{jj} = \operatorname{Re}
+\langle v_j, A v_j \rangle$. For symmetric $A$ the number $h_{jj}$ is real, so
+$\alpha_j = h_{jj}$ (`Lanczos.coe_alpha`). -/
 noncomputable def alpha (j : ℕ) : ℝ := RCLike.re (Arnoldi.coeff A b j j)
 
-/-- Off-diagonal Lanczos coefficient `β_j = h_{j+1,j} = ‖w_j‖ ≥ 0`. -/
+/-- The **off-diagonal Lanczos coefficient** $\beta_j = \|w_j\|$, the norm of the unnormalized next
+Arnoldi vector $w_j$. It equals $h_{j+1,j}$ (`Lanczos.coe_beta`). -/
 noncomputable def beta (j : ℕ) : ℝ := ‖Arnoldi.w A b j‖
 
-/-- The off-diagonal Lanczos coefficients are nonnegative, being norms. -/
+/-- The off-diagonal Lanczos coefficients are nonnegative: $\beta_j \ge 0$. -/
 theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 
-/-- The off-diagonal coefficient is the subdiagonal Arnoldi entry: `β_j = h_{j+1,j}`. Symmetry of
-`A` is not needed — that entry is `‖w_j‖`, real and nonnegative for any operator. -/
+/-- For every operator $A$ and every $j$, the off-diagonal Lanczos coefficient is the subdiagonal
+Arnoldi coefficient: $\beta_j = h_{j+1,j}$.
+
+Symmetry of $A$ is not needed, because $h_{j+1,j} = \|w_j\|$ is real and nonnegative for every
+operator. -/
 theorem coe_beta (j : ℕ) : (beta A b j : 𝕜) = Arnoldi.coeff A b (j + 1) j :=
   (Arnoldi.coeff_succ_self A b j).symm
 
-/-- The real symmetric tridiagonal Lanczos matrix `T_m` ([saad2003iterative], (6.84)). -/
+/-- The **Lanczos matrix** $T_m$: the real $m \times m$ matrix with $(T_m)_{jj} = \alpha_j$,
+$(T_m)_{j,j+1} = (T_m)_{j+1,j} = \beta_j$, and all other entries $0$ ([saad2003iterative],
+(6.84)). -/
 noncomputable def tridiag (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then alpha A b i
@@ -68,7 +121,10 @@ noncomputable def tridiag (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
     else if (j : ℕ) + 1 = i then beta A b j
     else 0
 
-/-- The `(m+1) × m` extended Lanczos matrix `T̄_m`. -/
+/-- The **extended Lanczos matrix** $\bar{T}_m$: the real $(m + 1) \times m$ matrix with
+$(\bar{T}_m)_{jj} = \alpha_j$, $(\bar{T}_m)_{j,j+1} = (\bar{T}_m)_{j+1,j} = \beta_j$, and all
+other entries $0$. Its first $m$ rows form $T_m$. For $m \ge 1$ its last row is $0$ except for
+the entry $\beta_{m-1}$ in the last column. -/
 noncomputable def tridiagExt (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then alpha A b i
@@ -76,8 +132,10 @@ noncomputable def tridiagExt (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
     else if (j : ℕ) + 1 = i then beta A b j
     else 0
 
-/-- Entrywise description of `T_m`. The two matrices share it: `T_m` and `T̄_m` have the same entry
-function, read at different index ranges. -/
+/-- The entries of $T_m$: the entry $(i, j)$ is $\alpha_i$ if $i = j$, $\beta_i$ if $j = i + 1$,
+$\beta_j$ if $i = j + 1$, and $0$ otherwise.
+
+The matrices $T_m$ and $\bar{T}_m$ have the same entry function, read on different index ranges. -/
 theorem tridiag_apply {m : ℕ} (i j : Fin m) :
     tridiag A b m i j =
       if (i : ℕ) = j then alpha A b i
@@ -85,7 +143,9 @@ theorem tridiag_apply {m : ℕ} (i j : Fin m) :
       else if (j : ℕ) + 1 = i then beta A b j
       else 0 := rfl
 
-/-- Entrywise description of `T̄_m`; the same entry function as `Lanczos.tridiag_apply`. -/
+/-- The entries of $\bar{T}_m$: the entry $(i, j)$ is $\alpha_i$ if $i = j$, $\beta_i$ if
+$j = i + 1$, $\beta_j$ if $i = j + 1$, and $0$ otherwise. This is the same entry function as in
+`Lanczos.tridiag_apply`. -/
 theorem tridiagExt_apply {m : ℕ} (i : Fin (m + 1)) (j : Fin m) :
     tridiagExt A b m i j =
       if (i : ℕ) = j then alpha A b i
@@ -93,7 +153,8 @@ theorem tridiagExt_apply {m : ℕ} (i : Fin (m + 1)) (j : Fin m) :
       else if (j : ℕ) + 1 = i then beta A b j
       else 0 := rfl
 
-/-- `T_m` is tridiagonal: it vanishes outside the diagonal and the two neighbouring diagonals. -/
+/-- For every operator $A$, the Lanczos matrix $T_m$ is tridiagonal: its entries vanish outside the
+diagonal and the two neighbouring diagonals. -/
 theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
   intro i j hij
   have h : (j : ℕ) + 1 < (i : ℕ) ∨ (i : ℕ) + 1 < (j : ℕ) := by
@@ -105,7 +166,8 @@ theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
   simp only [tridiag_apply]
   rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega)]
 
-/-- `T_m` is symmetric: the same `β_j` sits above and below the diagonal. -/
+/-- For every operator $A$, the Lanczos matrix $T_m$ is symmetric: $T_m^T = T_m$, because the same
+$\beta_j$ is at the positions $(j, j + 1)$ and $(j + 1, j)$. -/
 theorem tridiag_isSymm (m : ℕ) : (tridiag A b m).IsSymm := by
   refine Matrix.IsSymm.ext_iff.2 fun i j => ?_
   simp only [tridiag_apply]
@@ -123,23 +185,28 @@ section CoeffEq
 variable {A b} {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] {A' : E' →ₗ[𝕜] E'}
   {b' : E'}
 
-/-- Two processes with the same Arnoldi coefficients have the same diagonal Lanczos
-coefficients. -/
+/-- Let $(A, b)$ and $(A', b')$ be two operators with starting vectors, possibly on different inner
+product spaces. If their Arnoldi coefficients are equal, then their diagonal Lanczos
+coefficients are equal: $\alpha_j(A', b') = \alpha_j(A, b)$. -/
 theorem alpha_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (j : ℕ) :
     alpha A' b' j = alpha A b j := by
   rw [alpha, alpha, h]
 
-/-- Two processes with the same Arnoldi coefficients have the same off-diagonal Lanczos
-coefficients. -/
+/-- Let $(A, b)$ and $(A', b')$ be two operators with starting vectors, possibly on different inner
+product spaces. If their Arnoldi coefficients are equal, then their off-diagonal Lanczos
+coefficients are equal: $\beta_j(A', b') = \beta_j(A, b)$. -/
 theorem beta_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (j : ℕ) :
     beta A' b' j = beta A b j := by
   have h1 := coe_beta (𝕜 := 𝕜) A' b' j
   rw [h, ← coe_beta] at h1
   exact_mod_cast h1
 
-/-- Two operators whose Arnoldi coefficients agree have the same Lanczos matrices: the Lanczos
-matrix is a function of the Arnoldi coefficients alone, which is how a Lanczos process is carried
-between isometric models of one space. -/
+/-- Let $(A, b)$ and $(A', b')$ be two operators with starting vectors, possibly on different inner
+product spaces. If their Arnoldi coefficients are equal, then their Lanczos matrices $T_m$ are
+equal for every $m$.
+
+Thus the Lanczos matrix depends only on the Arnoldi coefficients. This is how a Lanczos process
+is carried between isometric models of one space. -/
 theorem tridiag_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (m : ℕ) :
     tridiag A' b' m = tridiag A b m := by
   ext i j
@@ -147,14 +214,16 @@ theorem tridiag_eq_of_coeff_eq (h : Arnoldi.coeff A' b' = Arnoldi.coeff A b) (m 
 
 end CoeffEq
 
-/-- The rows of `T̄_n` below the last one are the rows of `T_n`. -/
+/-- For every $y \in \mathbb{K}^n$ and $i < n$, the entry $i$ of $\bar{T}_n y$ equals the entry $i$
+of $T_n y$: the rows of $\bar{T}_n$ above the last one are the rows of $T_n$. -/
 theorem mulVec_tridiagExt_castSucc {n : ℕ} (y : Fin n → 𝕜) (i : Fin n) :
     ((tridiagExt A b n).map (algebraMap ℝ 𝕜)).mulVec y i.castSucc =
       ((tridiag A b n).map (algebraMap ℝ 𝕜)).mulVec y i := by
   simp only [Matrix.mulVec, dotProduct, Matrix.map_apply, tridiagExt, tridiag, Matrix.of_apply,
     Fin.val_castSucc]
 
-/-- The last row of `T̄_m` has the single entry `β_m`. -/
+/-- The last row of $\bar{T}_{m+1}$ is $0$ except for the entry $\beta_m$ in the last column:
+$(\bar{T}_{m+1} y)_{m+1} = \beta_m y_m$. -/
 private theorem mulVec_tridiagExt_last (m : ℕ) (y : Fin (m + 1) → 𝕜) :
     ((tridiagExt A b (m + 1)).map (algebraMap ℝ 𝕜)).mulVec y (Fin.last (m + 1)) =
       (beta A b m : 𝕜) * y (Fin.last m) := by
@@ -180,23 +249,29 @@ private theorem mulVec_tridiagExt_last (m : ℕ) (y : Fin (m + 1) → 𝕜) :
 variable {A} (hA : A.IsSymmetric)
 include hA
 
-/-- The diagonal coefficient is the diagonal Arnoldi entry: `α_j = h_{j,j}`. The real part taken in
-`alpha` loses nothing, because for symmetric `A` that entry is already real. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The diagonal
+Lanczos coefficient is the diagonal Arnoldi coefficient: $\alpha_j = h_{jj}$.
+
+The real part in `Lanczos.alpha` loses nothing, because $h_{jj}$ is real for symmetric $A$. -/
 theorem coe_alpha (j : ℕ) : (alpha A b j : 𝕜) = Arnoldi.coeff A b j j :=
   (Arnoldi.coeff_diag_re_of_isSymmetric hA b j).symm
 
-/-- The subdiagonal entry read off the other side: `h_{j,j+1} = β_j` (real). -/
+/-- For symmetric $A$, the superdiagonal Arnoldi coefficient is $h_{j,j+1} = \beta_j$. -/
 private theorem coeff_succ_eq_beta (j : ℕ) : Arnoldi.coeff A b j (j + 1) = (beta A b j : 𝕜) := by
   rw [Arnoldi.coeff_conj_of_isSymmetric hA b j (j + 1), ← coe_beta A b j, RCLike.conj_ofReal]
 
-/-- Everything to the left of the subdiagonal drops out of the `(j+1)`-st Arnoldi expansion. -/
+/-- For symmetric $A$, the Arnoldi expansion of $A v_{j+1}$ has no terms $h_{i,j+1} v_i$ with
+$i < j$. -/
 private theorem sum_coeff_eq_zero (j : ℕ) :
     ∑ i ∈ Finset.range j, Arnoldi.coeff A b i (j + 1) • Arnoldi.vec A b i = 0 :=
   Finset.sum_eq_zero fun i hi => by
     rw [Arnoldi.coeff_eq_zero_of_isSymmetric hA b
       (by have := Finset.mem_range.1 hi; omega), zero_smul]
 
-/-- Three-term recurrence, first step: `A v_0 = α_0 v_0 + β_0 v_1`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The first step
+of the Lanczos recurrence is
+$$A v_0 = \alpha_0 v_0 + \beta_0 v_1.$$
+-/
 theorem apply_vec_zero :
     A (Arnoldi.vec A b 0) = (alpha A b 0 : 𝕜) • Arnoldi.vec A b 0 +
       (beta A b 0 : 𝕜) • Arnoldi.vec A b 1 := by
@@ -204,8 +279,13 @@ theorem apply_vec_zero :
     Arnoldi.apply_vec_of_le A b (j := 0) (n := 1 + 1) (by omega),
     Finset.sum_range_succ, Finset.sum_range_one]
 
-/-- Three-term recurrence ([saad2003iterative], Alg 6.15 and the display opening §6.6.2): `A v_{j+1}
-= β_j v_j + α_{j+1} v_{j+1} + β_{j+1} v_{j+2}`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The Lanczos
+vectors satisfy the **three-term recurrence**
+$$A v_{j+1} = \beta_j v_j + \alpha_{j+1} v_{j+1} + \beta_{j+1} v_{j+2}$$
+for every $j$. This is Algorithm 6.15 of [saad2003iterative], and the display that opens §6.6.2
+there.
+
+The identity also holds after a breakdown, where the Arnoldi vectors are $0$. -/
 theorem apply_vec (j : ℕ) :
     A (Arnoldi.vec A b (j + 1)) =
       (beta A b j : 𝕜) • Arnoldi.vec A b j + (alpha A b (j + 1) : 𝕜) • Arnoldi.vec A b (j + 1) +
@@ -216,7 +296,10 @@ theorem apply_vec (j : ℕ) :
     Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
     sum_coeff_eq_zero b hA j, zero_add]
 
-/-- The algorithmic form of the recurrence: `w_{j+1} = A v_{j+1} - α_{j+1} v_{j+1} - β_j v_j`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. The
+unnormalized next Arnoldi vector satisfies
+$$w_{j+1} = A v_{j+1} - \alpha_{j+1} v_{j+1} - \beta_j v_j.$$
+This is the form in which the Lanczos algorithm computes the recurrence. -/
 theorem w_succ_eq (j : ℕ) :
     Arnoldi.w A b (j + 1) = A (Arnoldi.vec A b (j + 1)) -
       (alpha A b (j + 1) : 𝕜) • Arnoldi.vec A b (j + 1) - (beta A b j : 𝕜) • Arnoldi.vec A b j := by
@@ -225,13 +308,24 @@ theorem w_succ_eq (j : ℕ) :
   abel
 
 omit hA in
-/-- Lanczos breaks down exactly at the grade: `β_j = 0` iff `grade ≤ j + 1`, so the recurrence runs
-with nonzero `β` for as long as there is a new direction to find. -/
+/-- Let $A$ be any operator on an inner product space $E$ and let $b \in E$ have a
+finite-dimensional Krylov space. Then $\beta_j = 0$ if and only if the grade of $b$ with respect
+to $A$ is at most $j + 1$.
+
+Thus the Lanczos process breaks down exactly at the grade, and the recurrence runs with nonzero
+$\beta_j$ for as long as there is a new direction to find. -/
 theorem beta_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     beta A b j = 0 ↔ grade A b ≤ j + 1 := by
   rw [← Arnoldi.coeff_succ_self_eq_zero_iff A b j, ← coe_beta A b j, RCLike.ofReal_eq_zero]
 
-/-- Rayleigh-quotient bound: `α_j ∈ [λmin, λmax]` when the eigenvalues of `A` are. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ with $\lambda_{\min} \|x\|^2 \le
+\operatorname{Re} \langle Ax, x \rangle \le \lambda_{\max} \|x\|^2$ for all $x \in E$, and let
+$b \in E$ have a finite-dimensional Krylov space. If $j$ is less than the grade of $b$, then
+$$\lambda_{\min} \le \alpha_j \le \lambda_{\max}.$$
+
+The bounds are `LinearMap.IsSymmetricBoundedBy`. They are bounds of the quadratic form and need
+not be eigenvalues of $A$. The number $\alpha_j$ is the Rayleigh quotient of the unit vector
+$v_j$. -/
 theorem alpha_mem_Icc {lmin lmax : ℝ} (hA' : A.IsSymmetricBoundedBy lmin lmax)
     [FiniteDimensional 𝕜 (fullSubspace A b)] {j : ℕ} (hj : j < grade A b) :
     alpha A b j ∈ Set.Icc lmin lmax := by
@@ -245,7 +339,9 @@ theorem alpha_mem_Icc {lmin lmax : ℝ} (hA' : A.IsSymmetricBoundedBy lmin lmax)
   · have h := hA'.re_inner_le (Arnoldi.vec A b j)
     rwa [hn, one_pow, mul_one] at h
 
-/-- The Arnoldi coefficients of a symmetric operator, entry by entry. -/
+/-- For symmetric $A$, the Arnoldi coefficient $h_{ij}$ is the entry $(i, j)$ of the Lanczos
+coefficient array: $\alpha_i$ if $i = j$, $\beta_i$ if $j = i + 1$, $\beta_j$ if $i = j + 1$,
+and $0$ otherwise. -/
 private theorem coeff_eq_ite (i j : ℕ) :
     Arnoldi.coeff A b i j =
       algebraMap ℝ 𝕜 (if i = j then alpha A b i else if i + 1 = j then beta A b i
@@ -270,22 +366,32 @@ private theorem coeff_eq_ite (i j : ℕ) :
         · exact Arnoldi.coeff_eq_zero_of_isSymmetric hA b (by omega)
         · exact Arnoldi.coeff_eq_zero_of_lt A b (by omega)
 
-/-- `H_m = T_m` for symmetric `A` ([saad2003iterative], Thm 6.19). -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. For every $m$
+the square Arnoldi Hessenberg matrix is the Lanczos matrix: $H_m = T_m$. This is Theorem 6.19 of
+[saad2003iterative].
+
+The real matrix $T_m$ is embedded entrywise in the matrices over $\mathbb{K}$. -/
 theorem hessenbergSq_eq_map_tridiag (m : ℕ) :
     Arnoldi.hessenbergSq A b m = (tridiag A b m).map (algebraMap ℝ 𝕜) := by
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `H̄_m = T̄_m` for symmetric `A`: the rectangular form of [saad2003iterative], Thm 6.19. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ and let $b \in E$. For every $m$
+the rectangular Arnoldi Hessenberg matrix is the extended Lanczos matrix:
+$\bar{H}_m = \bar{T}_m$. This is the rectangular form of Theorem 6.19 of [saad2003iterative]. -/
 theorem hessenberg_eq_map_tridiagExt (m : ℕ) :
     Arnoldi.hessenberg A b m = (tridiagExt A b m).map (algebraMap ℝ 𝕜) := by
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `A V_m = V_m T_m + β_m v_m e_mᵀ`, the symmetric case of [saad2003iterative], (6.6), where `H_m =
-T_m` by Thm 6.19; coordinate form. Written at `m + 1` steps, so that the number of steps is positive
-and the vector `v_{m+1}` that falls outside `V_{m+1}` is the one carrying the rank-one correction.
--/
+/-- Let $A$ be a symmetric operator on an inner product space $E$, let $b \in E$, $m \in \mathbb{N}$
+and $y \in \mathbb{K}^{m+1}$. Then
+$$A \sum_{j=0}^{m} y_j v_j = \sum_{i=0}^{m} (T_{m+1} y)_i \, v_i + \beta_m y_m v_{m+1}.$$
+This is the coordinate form of $A V_{m+1} = V_{m+1} T_{m+1} + \beta_m v_{m+1} e_{m+1}^T$, the
+symmetric case of (6.6) of [saad2003iterative], where $H_{m+1} = T_{m+1}$ by Theorem 6.19.
+
+The statement is written for $m + 1$ steps, so that the number of steps is positive and the
+vector $v_{m+1}$ outside the span of $V_{m+1}$ carries the rank-one correction. -/
 theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (m + 1), ((tridiag A b (m + 1)).map (algebraMap ℝ 𝕜)).mulVec y i •
@@ -301,8 +407,12 @@ theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
   rw [Arnoldi.apply_sum A b (m + 1) y, hessenberg_eq_map_tridiagExt b hA (m + 1),
     Fin.sum_univ_castSucc, mulVec_tridiagExt_last A b m y, Fin.val_last, hsum]
 
-/-- Termination ([choi2006iterative], (2.4)): at `ℓ = grade`, `A V_ℓ = V_ℓ T_ℓ` and `𝒦_ℓ` is
-invariant. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$, and let $b \in E$ have a
+finite-dimensional Krylov space of dimension $\ell$, the grade of $b$. Then for every
+$y \in \mathbb{K}^\ell$
+$$A \sum_{j < \ell} y_j v_j = \sum_{i < \ell} (T_\ell y)_i \, v_i,$$
+that is, $A V_\ell = V_\ell T_\ell$, and the Krylov space $\mathcal{K}_\ell$ is invariant under
+$A$. This is the termination statement (2.4) of [choi2006iterative]. -/
 theorem apply_sum_grade [FiniteDimensional 𝕜 (fullSubspace A b)] (y : Fin (grade A b) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (grade A b),

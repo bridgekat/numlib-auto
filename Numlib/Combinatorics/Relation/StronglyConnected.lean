@@ -17,39 +17,57 @@ import Mathlib.Tactic.Ring
 /-!
 # Strongly connected components of a relation on a finite type
 
-Two elements are *strongly connected* for a relation `r` when each is reachable from the other by a
-finite chain of `r`-steps, that is, when `Relation.ReflTransGen r` holds both ways. This is an
-equivalence relation, and its classes are the strongly connected components of the digraph of `r`.
+Let $r$ be a relation on a type $\alpha$. Two elements are **strongly connected** for $r$ when each
+is reachable from the other by a finite chain of $r$-steps. This is an equivalence relation, and its
+classes are the strongly connected components of the directed graph of $r$.
 
-The result of the file is `Relation.exists_rank_stronglyConnected`: on a finite type there is a
-**topological ordering** of the strongly connected components, that is, a rank `b : α → ℕ` which
-never decreases along `r` and whose fibres are *exactly* the components. Sorting the type by `b`
-lists the components in an order in which every arrow points forward, which is what puts a matrix
-into block triangular form with its strongly connected components on the diagonal.
+On a finite type there is a **topological ordering** of the strongly connected components: a rank
+$b \colon \alpha \to \mathbb{N}$ that never decreases along $r$ and whose fibres are exactly the
+components. If the elements are sorted by $b$, then the components appear in an order in which every
+arrow points forward. This order puts a matrix into block triangular form with its strongly
+connected components on the diagonal.
+
+## Main definitions
+
+* `Relation.StronglyConnected`: $i$ and $j$ are strongly connected for $r$.
+
+## Main results
+
+* `Relation.equivalence_stronglyConnected`: strong connectivity is an equivalence relation.
+* `Relation.apply_le_of_reflTransGen`: a function that does not decrease along $r$ does not decrease
+  along reachability.
+* `Relation.exists_rank_stronglyConnected`: on a finite type, there is a rank
+  $b \colon \alpha \to \mathbb{N}$ that does not decrease along $r$ and with $b(i) = b(j)$ if and
+  only if $i$ and $j$ are strongly connected.
+
+## Proof outline
+
+The proof needs no linear extension theorem and no quotient. Two numbers are attached to each
+element $i$. The first is the number $|L_i|$ of elements from which $i$ can be reached. It never
+decreases along $r$, and it is constant on a component. If $i$ reaches $j$ and $|L_i| = |L_j|$, then
+$L_i = L_j$, so $j$ reaches $i$ and the two are in the same component. The second number $q_i$
+separates the components that the first number does not separate. It is the least index, under a
+fixed enumeration of $\alpha$, of an element of the component of $i$. It is constant on a component,
+distinct components have distinct values, and it is at most $|\alpha|$. The rank is the pair read as
+one number in base $|\alpha| + 1$:
+$$b(i) = q_i + (|\alpha| + 1) \, |L_i|.$$
 
 ## Implementation notes
 
-No linear-extension theorem and no quotient are needed. Two numbers are attached to a vertex `i`:
-
-* the number of vertices from which `i` can be reached, `(L i).card`. It never decreases along `r`,
-  it is constant on a component, and — the point — when `i` reaches `j` and the two counts agree,
-  the two predecessor sets agree, so `j` reaches `i` and the two are in the same component;
-* a tag `q i` separating the components that the count fails to separate: the least index, under an
-  arbitrary enumeration of the type, of a vertex in the component of `i`. It is constant on a
-  component, distinct components get distinct tags, and it is bounded by the cardinality of the
-  type.
-
-The rank is that pair read as a single number in base `card α + 1`, namely
-`q i + (card α + 1) * (L i).card`.
+* Reachability by a finite chain of $r$-steps is `Relation.ReflTransGen r`, so every element is
+  reachable from itself.
+* Mathlib's `Quiver.stronglyConnectedSetoid` in `Mathlib.Combinatorics.Quiver.ConnectedComponent` is
+  the same equivalence relation for a quiver.
 -/
 
 namespace Relation
 
 variable {α : Type*} {r : α → α → Prop}
 
-/-- Two elements are **strongly connected** for a relation `r` when each is reachable from the other
-by a finite chain of `r`-steps. The classes of this equivalence relation are the strongly connected
-components of the digraph of `r`. -/
+/-- Let $r$ be a relation on $\alpha$. Two elements $i, j \in \alpha$ are **strongly connected** for
+$r$ if $j$ is reachable from $i$ and $i$ is reachable from $j$ by finite chains of $r$-steps,
+where a chain may be empty. The classes of this equivalence relation are the strongly connected
+components of the directed graph of $r$. -/
 def StronglyConnected (r : α → α → Prop) (i j : α) : Prop :=
   ReflTransGen r i j ∧ ReflTransGen r j i
 
@@ -57,30 +75,37 @@ def StronglyConnected (r : α → α → Prop) (i j : α) : Prop :=
 theorem StronglyConnected.refl (r : α → α → Prop) (i : α) : StronglyConnected r i i :=
   ⟨ReflTransGen.refl, ReflTransGen.refl⟩
 
-/-- Strong connectivity is symmetric. -/
+/-- Strong connectivity is symmetric: if $i$ and $j$ are strongly connected, then $j$ and $i$ are
+strongly connected. -/
 theorem StronglyConnected.symm {i j : α} (h : StronglyConnected r i j) :
     StronglyConnected r j i := ⟨h.2, h.1⟩
 
-/-- Strong connectivity is transitive. -/
+/-- Strong connectivity is transitive: if $i, j$ and $j, k$ are strongly connected, then $i, k$ are
+strongly connected. -/
 theorem StronglyConnected.trans {i j k : α} (h : StronglyConnected r i j)
     (h' : StronglyConnected r j k) : StronglyConnected r i k :=
   ⟨h.1.trans h'.1, h'.2.trans h.2⟩
 
-/-- Strong connectivity is an equivalence relation. -/
+/-- Strong connectivity for $r$ is an equivalence relation. -/
 theorem equivalence_stronglyConnected (r : α → α → Prop) : Equivalence (StronglyConnected r) :=
   ⟨StronglyConnected.refl r, StronglyConnected.symm, StronglyConnected.trans⟩
 
-/-- A single `r`-step is strong connectivity in one direction only, so a function that does not
-decrease along `r` does not decrease along reachability either. -/
+/-- Let $\beta$ be a preordered type and let $b \colon \alpha \to \beta$ satisfy $b(i) \le b(j)$
+whenever $r(i, j)$. If $j$ is reachable from $i$ by a finite chain of $r$-steps, then
+$b(i) \le b(j)$. -/
 theorem apply_le_of_reflTransGen {β : Type*} [Preorder β] {b : α → β}
     (hb : ∀ i j, r i j → b i ≤ b j) {i j : α} (h : ReflTransGen r i j) : b i ≤ b j := by
   induction h with
   | refl => exact le_rfl
   | tail _ hstep ih => exact ih.trans (hb _ _ hstep)
 
-/-- **A topological ordering of the strongly connected components** of a relation on a finite type:
-a rank `b : α → ℕ` that never decreases along `r` and whose fibres are exactly the strongly
-connected components. -/
+/-- A **topological ordering of the strongly connected components**. Let $\alpha$ be a finite type
+and let $r$ be a relation on $\alpha$. Then there is a function $b \colon \alpha \to \mathbb{N}$
+such that
+
+* $b(i) \le b(j)$ whenever $r(i, j)$, and
+* for all $i, j \in \alpha$, $b(i) = b(j)$ if and only if $i$ and $j$ are strongly connected for
+  $r$. -/
 theorem exists_rank_stronglyConnected [Finite α] (r : α → α → Prop) :
     ∃ b : α → ℕ, (∀ i j, r i j → b i ≤ b j) ∧ ∀ i j, b i = b j ↔ StronglyConnected r i j := by
   classical

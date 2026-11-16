@@ -80,11 +80,9 @@ id = 'concaveBiconj_eq_concaveCl'
 
 [[node]]
 id = 'properConvex_convexConj_iff'
-desc = 'For a closed convex `f`, the conjugate is proper exactly when `f` is.'
 
 [[node]]
 id = 'gc_convexConj_convexConj'
-desc = 'Conjugation against `B` and against `B.flip` form an antitone Galois connection.'
 
 [[node]]
 id = 'convexConjClosure'

@@ -16,21 +16,62 @@ import Numlib.Analysis.Normed.Algebra.SpectralRadius
 /-!
 # The matrix exponential: norms and perturbation
 
-The matrix statements of [golub2013matrix] §9.3.2–9.3.3 about `e^{At}` in the spectral norm, on
-top of the Banach-algebra layer `Numlib/Analysis/Normed/Algebra/Exponential` (variation of
-constants, Van Loan's condition number `ν(A, t)` and its equality criterion):
+Let $A \in \mathbb{C}^{n \times n}$, and let $\alpha(A) = \max \{\operatorname{Re} \lambda : \lambda
+\in \sigma(A)\}$ be its spectral abscissa. This file proves the statements of [golub2013matrix],
+§9.3.2–9.3.3, about $e^{tA}$ in the spectral norm $\|\cdot\|_2$. The spectrum of $e^{tA}$ is
+$\{e^{t\lambda} : \lambda \in \sigma(A)\}$, so $e^{\alpha(A) t} \le \|e^{tA}\|_2$ for every real
+$t$, with equality for a normal matrix $A$ and $t \ge 0$. For a Schur form $T = Q^H A Q$ with
+strictly upper triangular part $N$, the Schur bound
+$$\|e^{tA}\|_2 \le e^{\alpha(A) t} M_S(t), \qquad M_S(t) = \sum_{k=0}^{n-1} \frac{\|tN\|_2^k}{k!}
+  \qquad (t \ge 0),$$
+holds, and it gives the relative perturbation bound
+$$\frac{\|e^{t(A+E)} - e^{tA}\|_2}{\|e^{tA}\|_2} \le t \|E\|_2 \, M_S(t)^2 \, e^{t M_S(t)
+  \|E\|_2}.$$
+For a normal matrix, Van Loan's condition number of the exponential is $\nu(A, t) = t \|A\|_2$.
 
-* `Matrix.exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul`: `e^{α(A) t} ≤ ‖e^{At}‖₂`, the spectral
-  radius of `e^{At}` being at least `e^{α(A) t}` (`α` the spectral abscissa);
-* `Matrix.l2_opNorm_exp_smul_of_isStarNormal`: `‖e^{At}‖₂ = e^{α(A) t}` for normal `A` and `t ≥ 0`
-  ([golub2013matrix] (9.3.4));
-* `Matrix.expCondNumber_eq_of_isStarNormal`: `ν(A, t) = t ‖A‖₂` for normal `A`, the true direction
-  of [golub2013matrix] §9.3.2's "iff" (the other direction is false: see
-  `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`).
+The general facts about the exponential in a Banach algebra (variation of constants, the condition
+number $\nu(A, t)$ and its equality criterion) are in `Numlib.Analysis.Normed.Algebra.Exponential`.
 
-The exponential is Mathlib's `NormedSpace.exp`, which needs no norm on matrices; the norms are the
-spectral norm of `open scoped Matrix.Norms.L2Operator`. The spectrum of `e^{At}` is computed by the
-primary functional calculus (`pfc_exp_eq_normedSpace_exp`, `spectrum_pfc`).
+## Main definitions
+
+* `Matrix.schurExpFactor`: the factor $M_S(t)$ of the Schur bound (9.3.2) of [golub2013matrix].
+
+## Main results
+
+* `Matrix.spectrum_exp_smul`: the spectrum of $e^{tA}$ is
+  $\{e^{t\lambda} : \lambda \in \sigma(A)\}$.
+* `Matrix.exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul`: $e^{\alpha(A) t} \le \|e^{tA}\|_2$.
+* `Matrix.l2_opNorm_exp_smul_of_isStarNormal`: $\|e^{tA}\|_2 = e^{\alpha(A) t}$ for normal $A$ and
+  $t \ge 0$ ((9.3.4) of [golub2013matrix]).
+* `Matrix.expCondNumber_eq_of_isStarNormal`: $\nu(A, t) = t \|A\|_2$ for normal $A$ and $t \ge 0$.
+* `Matrix.l2_opNorm_exp_smul_le_of_schur`: the Schur bound $\|e^{tA}\|_2 \le e^{\alpha(A) t} M_S(t)$
+  ((9.3.2) of [golub2013matrix]).
+* `Matrix.l2_opNorm_exp_smul_add_sub_le`: the relative perturbation bound of [golub2013matrix],
+  §9.3.2.
+
+## Proof outline
+
+The Schur bound follows Van Loan's proof. Write $T = D + N$ with $D$ diagonal, and iterate the
+variation-of-constants identity
+$$e^{tT} = e^{tD} + \int_0^t e^{(t-s)D} N e^{sT} \, ds.$$
+The $k$-th term of the expansion is at most $e^{\alpha t} \|N\|^k t^k / k!$, and the remainder after
+$n$ steps has $n$ strictly upper triangular factors, so it is $0$. The perturbation bound combines
+the variation-of-constants formula, the Schur bound for $e^{(t-s)A}$, Gronwall's inequality for
+$e^{-\alpha s} \|e^{s(A+E)}\|_2$, and $\|e^{tA}\|_2 \ge e^{\alpha t}$.
+
+## Implementation notes
+
+* The exponential is Mathlib's `NormedSpace.exp`, which does not depend on a norm on the matrices.
+  The norm is the spectral norm of `open scoped Matrix.Norms.L2Operator`.
+* The spectrum of $e^{tA}$ is computed with the primary functional calculus
+  (`pfc_exp_eq_normedSpace_exp`, `spectrum_pfc`).
+* The spectral abscissa is `spectralAbscissa`, the supremum of the real parts of the eigenvalues.
+  The lower bound $e^{\alpha(A) t} \le \|e^{tA}\|_2$, the norm identity (9.3.4) and the condition
+  number for a normal matrix, and the relative perturbation bound assume $n \ge 1$. The Schur bound
+  (9.3.2) holds without this hypothesis.
+* [golub2013matrix] prints the Schur bound (9.3.2) as $e^{\alpha(A) t M_S(t)}$; the intended bound
+  is $e^{\alpha(A) t} M_S(t)$. [golub2013matrix] also states $\nu(A, t) = t \|A\|_2$ "if and only
+  if" $A$ is normal; only the direction from normality is true. See the declarations.
 -/
 
 open NormedSpace Polynomial
@@ -41,7 +82,10 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The spectrum of `e^{tA}` is `{e^{tλ} : λ ∈ σ(A)}` (spectral mapping through `pfc`). -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ and $t \in \mathbb{R}$. Then the spectrum of $e^{tA}$ is
+$$\sigma(e^{tA}) = \{e^{t\lambda} : \lambda \in \sigma(A)\}.$$
+
+The proof is the spectral mapping theorem of the primary functional calculus. -/
 theorem spectrum_exp_smul (A : Matrix n n ℂ) (t : ℝ) :
     spectrum ℂ (exp (t • A)) = (fun z => Complex.exp (t * z)) '' spectrum ℂ A := by
   have hI : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral _
@@ -56,21 +100,25 @@ theorem spectrum_exp_smul (A : Matrix n n ℂ) (t : ℝ) :
       (fun μ _ => Complex.contDiff_exp.contDiffAt), spectrum_pfc hI hs]
   rfl
 
-/-- The exponential is continuous on matrices with the spectral norm. -/
+/-- The exponential is continuous on the complex matrices with the spectral norm. -/
 private theorem continuous_exp_matrix : Continuous (exp : Matrix n n ℂ → Matrix n n ℂ) :=
   continuous_iff_continuousAt.mpr fun x => (NormedSpace.exp_analytic (𝕂 := ℂ) x).continuousAt
 
-/-! ### Van Loan's iterated variation of constants
+/-!
+### Van Loan's iterated variation of constants
 
-For `e^{t(D + N)}`, one step `F ↦ (t ↦ ∫₀ᵗ e^{(t - s)D} N F(s) ds)` of the variation-of-constants
-identity `e^{t(D+N)} = e^{tD} + ∫₀ᵗ e^{(t-s)D} N e^{s(D+N)} ds`, iterated:
-`e^{t(D+N)} = ∑_{k<m} stepᵏ(e^{·D})(t) + stepᵐ(e^{·(D+N)})(t)`. -/
+For $e^{t(D + N)}$, one step $F \mapsto \bigl(t \mapsto \int_0^t e^{(t-s)D} N F(s) \, ds\bigr)$ of
+the variation-of-constants identity $e^{t(D+N)} = e^{tD} + \int_0^t e^{(t-s)D} N e^{s(D+N)} \, ds$
+is iterated: with $\Phi$ the step, $e^{t(D+N)} = \sum_{k<m} \Phi^k(s \mapsto e^{sD})(t) + \Phi^m(s
+\mapsto e^{s(D+N)})(t)$.
+-/
 
 section VariationOfConstants
 
 variable (D N : Matrix n n ℂ)
 
-/-- One step of Van Loan's iteration for `e^{t(D + N)}`: `F ↦ (t ↦ ∫₀ᵗ e^{(t - s)D} N F(s) ds)`. -/
+/-- One step of Van Loan's iteration for $e^{t(D + N)}$: the map $F \mapsto \bigl(t \mapsto \int_0^t
+e^{(t-s)D} N F(s) \, ds\bigr)$. -/
 private noncomputable def vocStep (F : ℝ → Matrix n n ℂ) (t : ℝ) : Matrix n n ℂ :=
   ∫ s in (0 : ℝ)..t, exp ((t - s) • D) * N * F s
 
@@ -117,7 +165,8 @@ private theorem vocStep_add {F G : ℝ → Matrix n n ℂ} (hF : Continuous F) (
     ((((hE.comp (continuous_const.sub continuous_id)).mul continuous_const).mul
       hG).intervalIntegrable _ _)
 
-/-- **Van Loan's expansion** of `e^{t(D + N)}` after `m` steps of variation of constants. -/
+/-- **Van Loan's expansion**: $e^{s(D+N)} = \sum_{k<m} \Phi^k(u \mapsto e^{uD})(s) + \Phi^m(u
+\mapsto e^{u(D+N)})(s)$ for every $m$, where $\Phi$ is one step of the iteration. -/
 private theorem exp_smul_eq_sum_vocStep_add (m : ℕ) :
     (fun s : ℝ => exp (s • (D + N))) =
       (∑ k ∈ Finset.range m, (vocStep D N)^[k] fun s => exp (s • D)) +
@@ -144,8 +193,8 @@ private theorem exp_smul_eq_sum_vocStep_add (m : ℕ) :
     conv_lhs => rw [ih]
     rw [hsucc m, Finset.sum_range_succ, add_assoc]
 
-/-- The `k`-th term of Van Loan's expansion is at most `e^{αs} ‖N‖ᵏ sᵏ / k!` when
-`‖e^{sD}‖ ≤ e^{αs}` for `s ≥ 0`. -/
+/-- If $\|e^{sD}\| \le e^{\alpha s}$ for $s \ge 0$, the $k$-th term of Van Loan's expansion has norm
+at most $e^{\alpha s} \|N\|^k s^k / k!$ for $s \ge 0$. -/
 private theorem norm_vocStep_iterate_le {α : ℝ}
     (hD : ∀ s : ℝ, 0 ≤ s → ‖exp (s • D)‖ ≤ Real.exp (α * s)) (k : ℕ) {s : ℝ} (hs : 0 ≤ s) :
     ‖(vocStep D N)^[k] (fun u => exp (u • D)) s‖ ≤
@@ -184,19 +233,24 @@ private theorem norm_vocStep_iterate_le {α : ℝ}
 
 end VariationOfConstants
 
-/-! ### The factor `M_S(t)` of the Schur bound -/
+/-! ### The factor $M_S(t)$ of the Schur bound -/
 
-/-- The factor `M_S(t) = ∑_{k<n} ‖t N‖₂ᵏ / k!` of the Schur bound (9.3.2) of [golub2013matrix]
-§9.3.2, for `N` the strictly upper triangular part of `T = Qᴴ A Q` (a Schur form of `A` when `Q` is
-unitary and `T` upper triangular). -/
+/-- The factor $M_S(t)$ of the Schur bound (9.3.2) of [golub2013matrix], §9.3.2. Let
+$Q, A \in \mathbb{C}^{n \times n}$, let $T = Q^H A Q$, and let $N = T -
+\operatorname{diag}(t_{11}, \dots, t_{nn})$ be its off-diagonal part. Then
+$$M_S(t) = \sum_{k=0}^{n-1} \frac{\|tN\|_2^k}{k!}.$$
+
+When $Q$ is unitary and $T$ is upper triangular, $T$ is a Schur form of $A$ and $N$ is its
+strictly upper triangular part. -/
 noncomputable def schurExpFactor (Q A : Matrix n n ℂ) (t : ℝ) : ℝ :=
   ∑ k ∈ Finset.range (Fintype.card n),
     ‖t • (star Q * A * Q - diagonal fun i => (star Q * A * Q) i i)‖ ^ k / k.factorial
 
+/-- The factor $M_S(t)$ is nonnegative. -/
 theorem schurExpFactor_nonneg (Q A : Matrix n n ℂ) (t : ℝ) : 0 ≤ schurExpFactor Q A t :=
   Finset.sum_nonneg fun _ _ => by positivity
 
-/-- `M_S` is monotone on `[0, ∞)`. -/
+/-- The factor $M_S$ is monotone on $[0, \infty)$: $M_S(s) \le M_S(t)$ for $0 \le s \le t$. -/
 theorem schurExpFactor_mono (Q A : Matrix n n ℂ) {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
     schurExpFactor Q A s ≤ schurExpFactor Q A t :=
   Finset.sum_le_sum fun k _ => by
@@ -205,9 +259,14 @@ theorem schurExpFactor_mono (Q A : Matrix n n ℂ) {s t : ℝ} (hs : 0 ≤ s) (h
 
 variable [Nonempty n]
 
-/-- **The spectral radius bound** `e^{α(A) t} ≤ ‖e^{At}‖₂` ([golub2013matrix] §9.3.2), for every
-real `t`: an eigenvalue `λ` of `A` with `Re λ = α(A)` gives the eigenvalue `e^{tλ}` of `e^{At}`,
-of modulus `e^{α(A) t}`. -/
+/-- **The spectral radius bound.** Let $A \in \mathbb{C}^{n \times n}$ with $n \ge 1$, and let
+$t \in \mathbb{R}$. Then
+$$e^{\alpha(A) t} \le \|e^{tA}\|_2.$$
+See [golub2013matrix], §9.3.2.
+
+An eigenvalue $\lambda$ of $A$ with $\operatorname{Re} \lambda = \alpha(A)$ gives the eigenvalue
+$e^{t\lambda}$ of $e^{tA}$, of modulus $e^{\alpha(A) t}$. The spectral abscissa $\alpha(A)$ is
+`spectralAbscissa A`. -/
 theorem exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul (A : Matrix n n ℂ) (t : ℝ) :
     Real.exp (spectralAbscissa A * t) ≤ ‖exp (t • A)‖ := by
   obtain ⟨z, hz, hre⟩ := exists_mem_spectrum_re_eq_spectralAbscissa
@@ -220,15 +279,20 @@ theorem exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul (A : Matrix n n ℂ) (t :
   rwa [Complex.norm_exp, Complex.re_ofReal_mul, hre, mul_comm] at h
 
 omit [Nonempty n] in
-/-- The exponential of a normal matrix is normal. -/
+/-- If $A \in \mathbb{C}^{n \times n}$ is normal, then $e^{tA}$ is normal for every
+$t \in \mathbb{R}$. -/
 theorem isStarNormal_exp_smul {A : Matrix n n ℂ} (hA : IsStarNormal A) (t : ℝ) :
     IsStarNormal (exp (t • A)) := by
   refine ⟨?_⟩
   rw [star_exp, star_smul, star_trivial]
   exact ((hA.star_comm_self.symm.smul_left t).smul_right t).exp.symm
 
-/-- **[golub2013matrix] (9.3.4)**: for a normal matrix and `t ≥ 0`, `‖e^{At}‖₂ = e^{α(A) t}`. The
-exponential is normal, so its spectral norm is its spectral radius, the largest `|e^{tλ}|`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ be normal with $n \ge 1$, and let $t \ge 0$. Then
+$$\|e^{tA}\|_2 = e^{\alpha(A) t}.$$
+This is (9.3.4) of [golub2013matrix].
+
+The matrix $e^{tA}$ is normal, so its spectral norm is its spectral radius, the largest
+$|e^{t\lambda}|$. -/
 theorem l2_opNorm_exp_smul_of_isStarNormal {A : Matrix n n ℂ} (hA : IsStarNormal A) {t : ℝ}
     (ht : 0 ≤ t) : ‖exp (t • A)‖ = Real.exp (spectralAbscissa A * t) := by
   refine le_antisymm ?_ (exp_spectralAbscissa_mul_le_l2_opNorm_exp_smul A t)
@@ -246,10 +310,16 @@ theorem l2_opNorm_exp_smul_of_isStarNormal {A : Matrix n n ℂ} (hA : IsStarNorm
   exact Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_right
     (re_le_spectralAbscissa (Matrix.finite_spectrum A).isBounded hz) ht)
 
-/-- **Van Loan's condition number of a normal matrix** ([golub2013matrix] §9.3.2): for normal `A`
-and `t ≥ 0`, `ν(A, t) = t ‖A‖₂`. The book states "iff `A` is normal"; the converse is false
-(`[1] ⊕ [[0, 1], [0, 0]]` has `‖e^{sA}‖₂ = e^s` for all `s ≥ 0`, hence `ν(A, t) = t ‖A‖₂` by the
-same criterion `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`). -/
+/-- **Van Loan's condition number of a normal matrix.** Let $A \in \mathbb{C}^{n \times n}$ be
+normal with $n \ge 1$, and let $t \ge 0$. Then the condition number of the exponential is
+$$\nu(A, t) = t \|A\|_2.$$
+See [golub2013matrix], §9.3.2.
+
+[golub2013matrix] states that $\nu(A, t) = t \|A\|_2$ if and only if $A$ is normal. The converse
+is false: the matrix $A = [1] \oplus \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$ is not
+normal, but $\|e^{sA}\|_2 = e^s$ for all $s \ge 0$, so $\nu(A, t) = t \|A\|_2$ by the same
+criterion `NormedSpace.expCondNumber_eq_of_norm_exp_smul_eq`. The condition number is
+`NormedSpace.expCondNumber`. -/
 theorem expCondNumber_eq_of_isStarNormal {A : Matrix n n ℂ} (hA : IsStarNormal A) {t : ℝ}
     (ht : 0 ≤ t) : expCondNumber A t = t * ‖A‖ :=
   expCondNumber_eq_of_norm_exp_smul_eq A ht fun s hs =>
@@ -261,7 +331,8 @@ section Schur
 
 variable [LinearOrder n] [LocallyFiniteOrder n]
 
-/-- A matrix whose nonzero entries lie at least `m` steps above the diagonal. -/
+/-- A matrix is a band of level $m$ if every nonzero entry $(i, j)$ has $i \le j$ and at least $m$
+indices in $[i, j)$, that is, it lies at least $m$ places above the diagonal. -/
 private def IsBand (m : ℕ) (M : Matrix n n ℂ) : Prop :=
   ∀ i j, M i j ≠ 0 → i ≤ j ∧ m ≤ (Finset.Ico i j).card
 
@@ -296,7 +367,7 @@ private theorem IsBand.eq_zero {M : Matrix n n ℂ} (hM : IsBand (Fintype.card n
   have : 0 < Fintype.card n := Fintype.card_pos_iff.mpr ⟨i⟩
   omega
 
-/-- The entry `M ↦ M i j` as a continuous `ℝ`-linear map. -/
+/-- The entry map $M \mapsto M_{ij}$ as a continuous $\mathbb{R}$-linear map. -/
 private noncomputable def entryCLM (i j : n) : Matrix n n ℂ →L[ℝ] ℂ :=
   LinearMap.toContinuousLinearMap
     { toFun := fun M => M i j, map_add' := fun _ _ => rfl, map_smul' := fun _ _ => rfl }
@@ -329,13 +400,19 @@ private theorem isBand_vocStep {m : ℕ} {D N : Matrix n n ℂ} (hD : ∀ s : �
 variable {A Q : Matrix n n ℂ}
 
 omit [Nonempty n] in
-/-- **[golub2013matrix] (9.3.2)**, read as `‖e^{At}‖₂ ≤ e^{α(A) t} M_S(t)` (the printed
-`e^{α(A) t M_S(t)}` is a typesetting slip): if `Q` is unitary and `T = Qᴴ A Q` is upper triangular
-with strictly upper part `N`, then for `t ≥ 0`, `‖e^{tA}‖₂ ≤ e^{α(A) t} ∑_{k<n} ‖tN‖₂^k / k!`
-(`Matrix.schurExpFactor`). Van Loan's proof: iterate the variation-of-constants identity
-`e^{tT} = e^{tD} + ∫₀ᵗ e^{(t-s)D} N e^{sT} ds`, `D` the diagonal of `T`; the `k`-th term is bounded
-by `e^{αt} ‖N‖^k t^k/k!` because `‖e^{sD}‖₂ = e^{s max Re t_ii} ≤ e^{αs}`, and the remainder after
-`n` steps carries `n` strictly upper triangular factors and vanishes. -/
+/-- **The Schur bound.** Let $A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary, such that
+$T = Q^H A Q$ is upper triangular, and let $t \ge 0$. Then
+$$\|e^{tA}\|_2 \le e^{\alpha(A) t} M_S(t), \qquad M_S(t) = \sum_{k=0}^{n-1}
+  \frac{\|tN\|_2^k}{k!},$$
+where $N$ is the strictly upper triangular part of $T$. This is (9.3.2) of [golub2013matrix].
+
+[golub2013matrix] prints the bound as $e^{\alpha(A) t M_S(t)}$, which is a typesetting error for
+$e^{\alpha(A) t} M_S(t)$. The factor $M_S(t)$ is `Matrix.schurExpFactor Q A t`. The proof is Van
+Loan's: iterate the variation-of-constants identity $e^{tT} = e^{tD} + \int_0^t e^{(t-s)D} N
+e^{sT} \, ds$, where $D$ is the diagonal of $T$. The $k$-th term is at most
+$e^{\alpha t} \|N\|^k t^k / k!$, because $\|e^{sD}\|_2 = e^{s \max_i \operatorname{Re} t_{ii}}
+\le e^{\alpha s}$. The remainder after $n$ steps has $n$ strictly upper triangular factors, so
+it is $0$. -/
 theorem l2_opNorm_exp_smul_le_of_schur (hQ : Q ∈ unitaryGroup n ℂ)
     (hT : (star Q * A * Q).IsUpperTriangular) {t : ℝ} (ht : 0 ≤ t) :
     ‖exp (t • A)‖ ≤ Real.exp (spectralAbscissa A * t) * schurExpFactor Q A t := by
@@ -411,12 +488,17 @@ theorem l2_opNorm_exp_smul_le_of_schur (hQ : Q ∈ unitaryGroup n ℂ)
 
 /-! ### The relative perturbation bound -/
 
-/-- **The relative perturbation bound** of [golub2013matrix] §9.3.2: with `T = Qᴴ A Q` upper
-triangular with strictly upper part `N` and `M(t) = ∑_{k<n} ‖tN‖₂^k/k!` (`Matrix.schurExpFactor`),
-for `t ≥ 0`,
-`‖e^{t(A+E)} - e^{tA}‖₂ / ‖e^{tA}‖₂ ≤ t ‖E‖₂ M(t)² e^{t M(t) ‖E‖₂}`. The variation-of-constants
-bound, the Schur bound (9.3.2) on `e^{(t-s)A}`, Gronwall's inequality on `e^{-αs} ‖e^{s(A+E)}‖`, and
-`‖e^{tA}‖₂ ≥ e^{αt}`. -/
+/-- **The relative perturbation bound.** Let $A, Q \in \mathbb{C}^{n \times n}$ with $n \ge 1$ and
+$Q$ unitary, such that $T = Q^H A Q$ is upper triangular. Let $E \in \mathbb{C}^{n \times n}$
+and $t \ge 0$. Then
+$$\frac{\|e^{t(A+E)} - e^{tA}\|_2}{\|e^{tA}\|_2} \le t \|E\|_2 \, M_S(t)^2 \, e^{t M_S(t)
+  \|E\|_2},$$
+where $M_S(t) = \sum_{k<n} \|tN\|_2^k / k!$ and $N$ is the strictly upper triangular part of
+$T$. This is the bound of [golub2013matrix], §9.3.2.
+
+The factor $M_S(t)$ is `Matrix.schurExpFactor Q A t`. The proof combines the
+variation-of-constants formula, the Schur bound (9.3.2) for $e^{(t-s)A}$, Gronwall's inequality
+for $e^{-\alpha s} \|e^{s(A+E)}\|_2$, and $\|e^{tA}\|_2 \ge e^{\alpha t}$. -/
 theorem l2_opNorm_exp_smul_add_sub_le {A Q : Matrix n n ℂ}
     (hQ : Q ∈ unitaryGroup n ℂ) (hT : (star Q * A * Q).IsUpperTriangular) (E : Matrix n n ℂ)
     {t : ℝ} (ht : 0 ≤ t) :

@@ -11,74 +11,100 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 /-!
 # Regularized least squares
 
-Tikhonov regularization of a least-squares problem `A x ≈ b`, for `A : Matrix m n 𝕜`: the
-**ridge regression** (standard-form Tikhonov) solution `x(α) = (α + Aᴴ A)⁻¹ Aᴴ b` minimizing
-`‖A x - b‖² + α ‖x‖²`, and the **general-form** solution `(Aᴴ A + α Bᴴ B)⁻¹ Aᴴ b` minimizing
-`‖A x - b‖² + α ‖B x‖²` ([kress1998numerical] §5.3, [golub2013matrix] §6.1.4–6.1.6).
+Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$, with $\mathbb{K}$ either $\mathbb{R}$
+or $\mathbb{C}$, and let $\alpha > 0$. **Tikhonov regularization** replaces the least-squares
+problem $Ax \approx b$ by the minimization of $\|Ax - b\|^2 + \alpha \|x\|^2$. Its unique solution
+is the **ridge regression** solution $x(\alpha) = (\alpha I + A^H A)^{-1} A^H b$. The **general
+form** minimizes $\|Ax - b\|^2 + \alpha \|Bx\|^2$ for a second matrix
+$B \in \mathbb{K}^{p \times n}$, and its solution is $(A^H A + \alpha B^H B)^{-1} A^H b$ when
+$\ker A \cap \ker B = 0$. The presentation follows [kress1998numerical], §5.3, and
+[golub2013matrix], §5.3, §6.1 and §6.2.
+
+The module proves that the regularized normal equations characterize the minimizers, the discrepancy
+principle and its regularity, and the behaviour of $\|x(\alpha)\|$ in $\alpha$: it decreases
+continuously from $\|A^+ b\|$ at $0^+$ to $0$ at $\infty$, and $x(\alpha) \to A^+ b$ as
+$\alpha \to 0^+$. It expands $x(\alpha)$, $A^+ b$ and the residuals in a singular value
+decomposition $U^H A V = \Sigma$, and the general form in a generalized singular value decomposition
+(GSVD). Over $\mathbb{R}$, it gives the leave-one-out formulas of cross-validation. Below, $w_i$ are
+the right singular vectors and $\sigma_i$ the singular values of $A$, indexed by the columns of $A$
+and in no particular order, and $u_i$, $v_i$ are the columns of $U$ and $V$.
 
 ## Main definitions
 
-* `Matrix.tikhonov A α`: the Tikhonov (ridge) matrix `(α + Aᴴ A)⁻¹ Aᴴ`.
-* `Matrix.generalFormTikhonov A B α`: the general-form matrix `(Aᴴ A + α Bᴴ B)⁻¹ Aᴴ`, whose
-  `B = 1` case is `Matrix.tikhonov` (`Matrix.generalFormTikhonov_one`).
+* `Matrix.tikhonov`: the Tikhonov matrix $(\alpha I + A^H A)^{-1} A^H$.
+* `Matrix.generalFormTikhonov`: the general-form matrix $(A^H A + \alpha B^H B)^{-1} A^H$.
 
 ## Main results
 
-* `Matrix.norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram`: the exact expansion of the
-  penalized functional around a solution of the regularized normal equations, behind every
-  characterization here; `Matrix.tikhonov_unique`,
-  `Matrix.eq_toEuclideanLin_generalFormTikhonov_iff` and its `B = 1` case
-  `Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn` ([kress1998numerical] Theorem 5.7,
-  [golub2013matrix] (6.1.12), (6.1.21)); `Matrix.posDef_gram_add_smul_gram_iff`: the general form
-  is well posed exactly when `ker A ⊓ ker B = ⊥`.
-* The discrepancy principle `Matrix.exists_discrepancy_tikhonov` and its regularity
-  `Matrix.tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq` ([kress1998numerical] Theorem 5.10).
-* `Matrix.tendsto_tikhonov_pinv`: `x(α) → A⁺ b` as `α → 0⁺`;
-  `Matrix.antitoneOn_norm_toEuclideanLin_tikhonov`,
-  `Matrix.strictAntiOn_norm_toEuclideanLin_tikhonov`,
-  `Matrix.continuousOn_norm_toEuclideanLin_tikhonov` and
-  `Matrix.tendsto_norm_toEuclideanLin_tikhonov_atTop`: the solution norm decreases continuously
-  from `‖A⁺ b‖` to `0` ([golub2013matrix] §6.1.4, §6.2.1). The unique-root arguments go through
-  `existsUnique_pos_eq_of_strictMonoOn_Ioi`: a continuous strictly monotone function on `(0, ∞)`
-  takes every value between its two limits exactly once.
-* `Matrix.norm_fromRows_sub_sq`, `Matrix.isLeastSquaresSolution_fromRows_iff`: a penalized problem
-  is the least-squares problem of the stacked matrix ([golub2013matrix] (6.1.11), (6.1.20)).
-* Expansions in an arbitrary singular value decomposition `Matrix.IsSVD A U σ V`:
-  `Matrix.toEuclideanLin_tikhonov_eq_sum_of_isSVD` ((6.1.14)),
-  `Matrix.toEuclideanLin_pinv_eq_sum_of_isSVD`,
-  the norms `Matrix.norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD`,
-  `Matrix.norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD` ((6.2.3)) and the residuals
-  `Matrix.norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD` ((6.2.4)),
-  `Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD` ((5.3.3)).
-* `Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD`: the general form diagonalized by a
-  generalized SVD `Matrix.IsGSVD` ((6.1.26)), with the GSVD facts shared with
-  `LeastSquares/Constrained`: `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left`,
-  `Matrix.IsGSVD.sq_add_smul_sq_ne_zero`, `Matrix.IsGSVD.rank_eq_and_ne_zero`.
-* Leave-one-out cross-validation over `ℝ`: `Matrix.tikhonov_deleteRow_eq` and
-  `Matrix.tikhonov_deleteRow_residual_eq` ([golub2013matrix] (6.1.16)–(6.1.17)), with the positive
-  denominator `Matrix.one_sub_dotProduct_inv_gram_pos`; deleting a row is the weight update
-  `Matrix.conjTranspose_mul_diagonal_update_mul` of `LeastSquares/Weighted` at weight `0`.
+* `existsUnique_pos_eq_of_strictMonoOn_Ioi`: a continuous strictly increasing function on
+  $(0, \infty)$ takes every value between its two limits exactly once.
+* `Matrix.norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram`: the expansion of
+  $\|Ax - b\|^2 + \alpha \|Bx\|^2$ around a solution of $(A^H A + \alpha B^H B) z = A^H b$.
+* `Matrix.tikhonov_unique`: for $\alpha > 0$, $x(\alpha)$ is the unique solution of
+  $\alpha x + A^H A x = A^H b$.
+* `Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le`: for $\alpha > 0$, $x(\alpha)$ minimizes
+  $\|Ax - b\|^2 + \alpha \|x\|^2$.
+* `Matrix.exists_discrepancy_tikhonov`: the discrepancy principle, Theorem 5.10 of
+  [kress1998numerical].
+* `Matrix.tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq`: the discrepancy principle is regular,
+  Theorem 5.10 of [kress1998numerical].
+* `Matrix.antitoneOn_norm_toEuclideanLin_tikhonov`: $\alpha \mapsto \|x(\alpha)\|$ is antitone on
+  $(0, \infty)$.
+* `Matrix.strictAntiOn_norm_toEuclideanLin_tikhonov`: it is strictly decreasing if $A^H b \ne 0$.
+* `Matrix.continuousOn_norm_toEuclideanLin_tikhonov`: it is continuous on $(0, \infty)$.
+* `Matrix.tendsto_norm_toEuclideanLin_tikhonov_atTop`: it tends to $0$ as $\alpha \to \infty$.
+* `Matrix.tendsto_tikhonov_pinv`: the Tikhonov matrix tends to $A^+$ as $\alpha \to 0^+$.
+* `Matrix.isLeastSquaresSolution_fromRows_iff`: a penalized problem is the least-squares problem of
+  a stacked matrix, (6.1.11) and (6.1.20) of [golub2013matrix].
+* `Matrix.posDef_gram_add_smul_gram_iff`: $A^H A + \alpha B^H B$ is positive definite if and only if
+  $\ker A \cap \ker B = 0$.
+* `Matrix.eq_toEuclideanLin_generalFormTikhonov_iff`: the general-form solution is characterized by
+  its normal equations and as the minimizer, (6.1.20)–(6.1.21) of [golub2013matrix].
+* `Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn`: $x(\alpha)$ is the unique minimizer of
+  $\|Ax - b\|^2 + \alpha \|x\|^2$, (6.1.11)–(6.1.12) of [golub2013matrix].
+* `Matrix.tikhonov_deleteRow_eq`: the ridge solution with one equation deleted, (6.1.16) of
+  [golub2013matrix].
+* `Matrix.tikhonov_deleteRow_residual_eq`: the leave-one-out residual, (6.1.17) of
+  [golub2013matrix].
+* `Matrix.toEuclideanLin_tikhonov_eq_sum_of_isSVD`: $x(\alpha) = \sum_i \sigma_i \langle u_i, b
+  \rangle / (\sigma_i^2 + \alpha) \, v_i$, (6.1.14) of [golub2013matrix].
+* `Matrix.norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD`: $\|A^+ b\|^2 = \sum_i (|\langle u_i, b
+  \rangle| / \sigma_i)^2$, (6.2.3) of [golub2013matrix].
+* `Matrix.norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD`: the ridge residual, (6.2.4) of
+  [golub2013matrix].
+* `Matrix.norm_sub_sq_pinv_eq_sum_of_isSVD`: the least residual $\|A A^+ b - b\|^2 = \sum_{i >
+  \operatorname{rank} A} |\langle u_i, b \rangle|^2$, (5.3.3) of [golub2013matrix].
+* `Matrix.generalFormTikhonov_mulVec_eq_sum_of_isGSVD`: the general form in GSVD coordinates,
+  (6.1.26) of [golub2013matrix].
 
 ## Implementation notes
 
-The spectral facts that hold for every index type are proved in the right singular basis of
-`Numlib/LinearAlgebra/Matrix/SVD` (the resolvent `(α + Aᴴ A)⁻¹` is diagonal there); the
-statements that name singular vectors take a factorization `Matrix.IsSVD A U σ V` on `Fin` indices,
-not "the" SVD. The cross-validation formulas are real because they are statistical and use
-`a_kᵀ x` without conjugation.
-
-## References
-
-* [kress1998numerical] §5.3; [golub2013matrix] §5.3, §6.1, §6.2.
+* The facts that hold for every index type are proved in the right singular basis
+  `Matrix.rightSingularBasis` of `Numlib.LinearAlgebra.Matrix.SVD`, in which the resolvent
+  $(\alpha I + A^H A)^{-1}$ is diagonal. The statements that name singular vectors $u_i$, $v_i$ take
+  a factorization `Matrix.IsSVD A U σ V` on `Fin` indices, not a fixed SVD, because the SVD is not
+  unique.
+* The cross-validation formulas are stated over $\mathbb{R}$, because they are statistical and use
+  $a_k^T x$ without conjugation. Deleting a row is the weight update
+  `Matrix.conjTranspose_mul_diagonal_update_mul` of
+  `Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted` at weight $0$.
+* The GSVD facts that this module and `Numlib.LinearAlgebra.Matrix.LeastSquares.Constrained` use are
+  in `Numlib.LinearAlgebra.Matrix.GSVD`: `Matrix.IsGSVD.conjTranspose_mul_conjTranspose_left`,
+  `Matrix.IsGSVD.sq_add_smul_sq_ne_zero` and `Matrix.IsGSVD.rank_eq_and_ne_zero`.
+* The Lean inverse of a singular matrix is $0$. Hence `Matrix.tikhonov A α` and
+  `Matrix.generalFormTikhonov A B α` are $0$ when the matrix to be inverted is singular.
 -/
 
 open Module Filter Topology
 
 /-! ### A strictly monotone function between two limits takes every value once -/
 
-/-- **A continuous strictly increasing function on `(0, ∞)` with limits `a` at `0⁺` and `b` at
-`∞` takes every value strictly between `a` and `b` exactly once**: by the intermediate value
-theorem between a point below and a point above the value, and injectivity. -/
+/-- Let $f \colon \mathbb{R} \to \mathbb{R}$ be continuous and strictly increasing on $(0, \infty)$,
+with $f(t) \to a$ as $t \to 0^+$ and $f(t) \to b$ as $t \to \infty$. Then for every $c$ with
+$a < c < b$ there is exactly one $t > 0$ with $f(t) = c$.
+
+Existence is the intermediate value theorem between a point below and a point above $c$, and
+uniqueness is injectivity. -/
 theorem existsUnique_pos_eq_of_strictMonoOn_Ioi {f : ℝ → ℝ} {a b c : ℝ}
     (hf : StrictMonoOn f (Set.Ioi 0)) (hc : ContinuousOn f (Set.Ioi 0))
     (h0 : Tendsto f (𝓝[>] 0) (𝓝 a)) (htop : Tendsto f atTop (𝓝 b)) (hac : a < c)
@@ -95,9 +121,11 @@ theorem existsUnique_pos_eq_of_strictMonoOn_Ioi {f : ℝ → ℝ} {a b c : ℝ}
   exact ⟨t, ⟨lt_of_lt_of_le ht₁ ht.1, hft⟩, fun s hs =>
     hf.injOn hs.1 (lt_of_lt_of_le ht₁ ht.1) (hs.2.trans hft.symm)⟩
 
-/-- **A continuous strictly decreasing function on `(0, ∞)` with limits `a` at `0⁺` and `b` at
-`∞` takes every value strictly between `b` and `a` exactly once**
-(`existsUnique_pos_eq_of_strictMonoOn_Ioi` for `-f`). -/
+/-- Let $f \colon \mathbb{R} \to \mathbb{R}$ be continuous and strictly decreasing on $(0, \infty)$,
+with $f(t) \to a$ as $t \to 0^+$ and $f(t) \to b$ as $t \to \infty$. Then for every $c$ with
+$b < c < a$ there is exactly one $t > 0$ with $f(t) = c$.
+
+This is `existsUnique_pos_eq_of_strictMonoOn_Ioi` for $-f$. -/
 theorem existsUnique_pos_eq_of_strictAntiOn_Ioi {f : ℝ → ℝ} {a b c : ℝ}
     (hf : StrictAntiOn f (Set.Ioi 0)) (hc : ContinuousOn f (Set.Ioi 0))
     (h0 : Tendsto f (𝓝[>] 0) (𝓝 a)) (htop : Tendsto f atTop (𝓝 b)) (hbc : b < c)
@@ -120,10 +148,14 @@ section Identity
 
 variable [DecidableEq m]
 
-/-- **The penalized functional around a solution of the regularized normal equations**: if
-`(Aᴴ A + α Bᴴ B) z = Aᴴ b`, then for every `x`, `‖A x - b‖² + α ‖B x‖²` is its value at `z` plus
-`‖A (x - z)‖² + α ‖B (x - z)‖²` — the cross term is the real part of `⟪(Aᴴ A + α Bᴴ B) z - Aᴴ b,
-x - z⟫ = 0`. Every minimizer characterization of this module is read off from it. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{p \times n}$, $b \in \mathbb{K}^m$ and
+$\alpha \in \mathbb{R}$, and let $z \in \mathbb{K}^n$ solve the regularized normal equations
+$(A^H A + \alpha B^H B) z = A^H b$. Then for every $x \in \mathbb{K}^n$,
+$$\|Ax - b\|^2 + \alpha \|Bx\|^2 = \|Az - b\|^2 + \alpha \|Bz\|^2 + \bigl(\|A(x - z)\|^2 +
+  \alpha \|B(x - z)\|^2\bigr).$$
+
+The cross term is the real part of $\langle (A^H A + \alpha B^H B) z - A^H b, x - z \rangle =
+0$. Every characterization of minimizers in this module follows from this identity. -/
 theorem norm_sub_sq_add_mul_norm_sq_eq_of_gram_add_smul_gram (A : Matrix m n 𝕜)
     (B : Matrix p n 𝕜) (α : ℝ) (b : EuclideanSpace 𝕜 m) {z : EuclideanSpace 𝕜 n}
     (hz : toEuclideanLin (Aᴴ * A + (α : 𝕜) • (Bᴴ * B)) z = toEuclideanLin Aᴴ b)
@@ -163,19 +195,30 @@ section Tikhonov
 
 variable (α : ℝ)
 
-/-- The **Tikhonov regularization** of `A` at level `α`: the matrix `(α + Aᴴ A)⁻¹ Aᴴ`, whose action
-on `y` is the regularized solution of `A x = y`. For `α > 0` it is the unique solution of the
-regularized normal equations `α x + Aᴴ A x = Aᴴ y` (`Matrix.tikhonov_unique`) and the unique
-minimizer of `x ↦ ‖A x - y‖² + α ‖x‖²` (`Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le`). In the
-right singular basis it multiplies the `i`-th coordinate by `σ_i/(α + σ_i²)`, which is
-`Matrix.mul_inv_smul_one_add_gram` read through `Matrix.exists_singularSystem`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $\alpha \in \mathbb{R}$. The **Tikhonov regularization**
+of $A$ at level $\alpha$ is the matrix
+$$(\alpha I + A^H A)^{-1} A^H \in \mathbb{K}^{n \times m}.$$
+Applied to $y$, it gives the regularized solution of $Ax = y$.
+
+For $\alpha > 0$, its value at $y$ is the unique solution of the regularized normal equations
+$\alpha x + A^H A x = A^H y$ (`Matrix.tikhonov_unique`) and the unique minimizer of
+$x \mapsto \|Ax - y\|^2 + \alpha \|x\|^2$ (`Matrix.eq_toEuclideanLin_tikhonov_iff_isMinOn`). In
+the right singular basis it multiplies the $i$-th coordinate by
+$\sigma_i / (\alpha + \sigma_i^2)$, which is `Matrix.mul_inv_smul_one_add_gram` read through
+`Matrix.exists_singularSystem`. If $\alpha I + A^H A$ is singular, the matrix is $0$. -/
 noncomputable def tikhonov (A : Matrix m n 𝕜) (α : ℝ) : Matrix n m 𝕜 :=
   ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * Aᴴ
 
-/-- The Tikhonov regularization, unfolded. -/
+/-- For $A \in \mathbb{K}^{m \times n}$ and $\alpha \in \mathbb{R}$, the Tikhonov matrix is
+$(\alpha I + A^H A)^{-1} A^H$. This is the definition of `Matrix.tikhonov`. -/
 theorem tikhonov_def : A.tikhonov α = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * Aᴴ := rfl
 
-/-- The regularized Gram matrix is diagonal in the right singular basis, with entries `α + σ_i²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $\alpha \in \mathbb{R}$. With the right singular unitary
+$W$ of $A$ and the singular values $\sigma_i$,
+$$\alpha I + A^H A = W \operatorname{diag}(\alpha + \sigma_i^2) W^H.$$
+
+The singular values are `Matrix.colSingularValues`, and the matrix $W$ is
+`Matrix.rightSingularUnitary`. -/
 theorem smul_one_add_gram_eq :
     (α : 𝕜) • 1 + Aᴴ * A
       = A.rightSingularUnitary * diagonal (fun i => ((α + A.colSingularValues i ^ 2 : ℝ) : 𝕜))
@@ -197,8 +240,10 @@ theorem smul_one_add_gram_eq :
   push_cast
   ring
 
-/-- For `α > 0` the regularized Gram matrix has an explicit right inverse, obtained by inverting its
-diagonal in the right singular basis. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $\alpha > 0$. With the right singular unitary $W$ of $A$
+and the singular values $\sigma_i$,
+$$(\alpha I + A^H A) \, W \operatorname{diag}\bigl((\alpha + \sigma_i^2)^{-1}\bigr) W^H = I.$$
+-/
 theorem mul_inv_smul_one_add_gram (hα : 0 < α) :
     ((α : 𝕜) • 1 + Aᴴ * A) * (A.rightSingularUnitary *
         diagonal (fun i => ((α + A.colSingularValues i ^ 2 : ℝ) : 𝕜)⁻¹)
@@ -219,12 +264,13 @@ theorem mul_inv_smul_one_add_gram (hα : 0 < α) :
     · simp [h]
   rw [hone, hdiag, Matrix.mul_one, A.rightSingularUnitary_mul_star]
 
-/-- For `α > 0` the regularized Gram matrix is nonsingular. -/
+/-- For $A \in \mathbb{K}^{m \times n}$ and $\alpha > 0$, the matrix $\alpha I + A^H A$ is
+nonsingular. -/
 theorem isUnit_det_smul_one_add_gram (hα : 0 < α) :
     IsUnit ((α : 𝕜) • 1 + Aᴴ * A).det :=
   Matrix.isUnit_det_of_right_inverse (A.mul_inv_smul_one_add_gram α hα)
 
-/-- The regularized Gram matrix acts as `x ↦ α x + Aᴴ A x`. -/
+/-- The matrix $\alpha I + A^H A$ acts by $x \mapsto \alpha x + A^H A x$. -/
 theorem toEuclideanLin_smul_one_add_gram (x : EuclideanSpace 𝕜 n) :
     toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A) x = (α : 𝕜) • x + toEuclideanLin (Aᴴ * A) x := by
   rw [map_add, LinearMap.add_apply, map_smul, LinearMap.smul_apply, toLpLin_one,
@@ -232,8 +278,11 @@ theorem toEuclideanLin_smul_one_add_gram (x : EuclideanSpace 𝕜 n) :
 
 variable [DecidableEq m]
 
-/-- **The Tikhonov solution is the unique solution of the regularized normal equations** `α x + Aᴴ A
-x = Aᴴ y` ([kress1998numerical], Theorem 5.7). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $y \in \mathbb{K}^m$. A vector
+$x \in \mathbb{K}^n$ solves the regularized normal equations
+$$\alpha x + A^H A x = A^H y$$
+if and only if $x = (\alpha I + A^H A)^{-1} A^H y$. This is part of Theorem 5.7 of
+[kress1998numerical]. -/
 theorem tikhonov_unique (hα : 0 < α) (y : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
     (α : 𝕜) • x + toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ y
       ↔ x = toEuclideanLin (A.tikhonov α) y := by
@@ -249,10 +298,14 @@ theorem tikhonov_unique (hα : 0 < α) (y : EuclideanSpace 𝕜 m) (x : Euclidea
     rw [h, tikhonov_def, ← toEuclideanLin_mul_apply, ← Matrix.mul_assoc,
       Matrix.mul_nonsing_inv _ hdet, Matrix.one_mul]
 
-/-- **A solution of the regularized normal equations minimizes the regularized least-squares
-functional** `x ↦ ‖A x - y‖² + α ‖x‖²` ([kress1998numerical], Theorem 5.7). The first-order term of
-the expansion around `z` vanishes exactly because `z` solves the normal equations, and the remainder
-`‖A (x - z)‖² + α ‖x - z‖²` is nonnegative. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha \ge 0$ and $y \in \mathbb{K}^m$, and let $z$ solve
+the regularized normal equations $\alpha z + A^H A z = A^H y$. Then $z$ minimizes the
+regularized least-squares functional: for every $x \in \mathbb{K}^n$,
+$$\|Az - y\|^2 + \alpha \|z\|^2 \le \|Ax - y\|^2 + \alpha \|x\|^2.$$
+This is part of Theorem 5.7 of [kress1998numerical].
+
+The first-order term of the expansion around $z$ vanishes because $z$ solves the normal
+equations, and the remainder $\|A(x - z)\|^2 + \alpha \|x - z\|^2$ is nonnegative. -/
 theorem norm_sub_sq_add_mul_norm_sq_le_of_smul_add_gram (hα : 0 ≤ α) (y : EuclideanSpace 𝕜 m)
     {z : EuclideanSpace 𝕜 n} (hz : (α : 𝕜) • z + toEuclideanLin (Aᴴ * A) z = toEuclideanLin Aᴴ y)
     (x : EuclideanSpace 𝕜 n) :
@@ -266,7 +319,11 @@ theorem norm_sub_sq_add_mul_norm_sq_le_of_smul_add_gram (hα : 0 ≤ α) (y : Eu
   rw [key]
   nlinarith [sq_nonneg ‖toEuclideanLin A (x - z)‖, mul_nonneg hα (sq_nonneg ‖x - z‖)]
 
-/-- **The Tikhonov solution is the minimizer of the regularized least-squares functional.** -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $y \in \mathbb{K}^m$. Then
+$x(\alpha) = (\alpha I + A^H A)^{-1} A^H y$ minimizes the regularized least-squares functional:
+for every $x \in \mathbb{K}^n$,
+$$\|Ax(\alpha) - y\|^2 + \alpha \|x(\alpha)\|^2 \le \|Ax - y\|^2 + \alpha \|x\|^2.$$
+-/
 theorem norm_sub_sq_add_mul_norm_sq_tikhonov_le (hα : 0 < α) (y : EuclideanSpace 𝕜 m)
     (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) y) - y‖ ^ 2
@@ -281,8 +338,11 @@ end Tikhonov
 
 section Discrepancy
 
-/-- **The Tikhonov solution is a correction of the least-squares solution**: since `Aᴴ y` and
-`Aᴴ A A⁺ y` agree, `(α + Aᴴ A)⁻¹ Aᴴ = A⁺ - α (α + Aᴴ A)⁻¹ A⁺`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $\alpha > 0$. The Tikhonov matrix is a correction of the
+pseudoinverse:
+$$(\alpha I + A^H A)^{-1} A^H = A^+ - \alpha (\alpha I + A^H A)^{-1} A^+.$$
+
+The identity holds because $A^H y = A^H A A^+ y$ for every $y$. -/
 theorem tikhonov_eq_pinv_sub (α : ℝ) (hα : 0 < α) :
     A.tikhonov α = A.pinv - (α : 𝕜) • (((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * A.pinv) := by
   have hdet := A.isUnit_det_smul_one_add_gram α hα
@@ -300,8 +360,11 @@ theorem tikhonov_eq_pinv_sub (α : ℝ) (hα : 0 < α) :
     _ = A.pinv - (α : 𝕜) • (((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * A.pinv) := by
         rw [h2, Matrix.mul_sub, ← Matrix.mul_assoc, h1, Matrix.one_mul, Matrix.mul_smul]
 
-/-- The Tikhonov solution lies in the range of `Aᴴ`, on which `A⁺ A` is the identity: the
-projector `A⁺ A` commutes with the regularized Gram matrix, both being diagonal in the right
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $\alpha > 0$. Then $A^+ A (\alpha I + A^H A)^{-1} A^H =
+(\alpha I + A^H A)^{-1} A^H$: the Tikhonov solutions lie in the range of $A^H$, on which $A^+ A$
+is the identity.
+
+The projector $A^+ A$ commutes with $\alpha I + A^H A$, because both are diagonal in the right
 singular basis. -/
 theorem pinv_mul_self_mul_tikhonov (α : ℝ) (hα : 0 < α) :
     A.pinv * A * A.tikhonov α = A.tikhonov α := by
@@ -329,8 +392,11 @@ theorem pinv_mul_self_mul_tikhonov (α : ℝ) (hα : 0 < α) :
   rw [tikhonov_def, ← Matrix.mul_assoc, hinv, Matrix.mul_assoc,
     pinv_mul_self_mul_conjTranspose]
 
-/-- **The resolvent of the Gram matrix is diagonal in the right singular basis**: it divides the
-`i`-th coefficient by `α + σ_i²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $v \in \mathbb{K}^n$. The resolvent of
+$A^H A$ divides the $i$-th coefficient in the right singular basis by $\alpha + \sigma_i^2$:
+$$\langle w_i, (\alpha I + A^H A)^{-1} v \rangle = (\alpha + \sigma_i^2)^{-1} \langle w_i, v
+  \rangle.$$
+-/
 theorem inner_rightSingularBasis_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
     (v : EuclideanSpace 𝕜 n) (i : n) :
     (inner 𝕜 (A.rightSingularBasis i)
@@ -358,8 +424,10 @@ theorem inner_rightSingularBasis_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
     linear_combination hinner
   rw [← h2, ← mul_assoc, inv_mul_cancel₀ hne, one_mul]
 
-/-- The squared norm of the image under `A` of the resolvent applied to `v`, in the right singular
-basis: the `i`-th coefficient is multiplied by `σ_i/(α + σ_i²)`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $v \in \mathbb{K}^n$. Then
+$$\|A (\alpha I + A^H A)^{-1} v\|^2 = \sum_i \Bigl(\frac{\sigma_i}{\alpha + \sigma_i^2}\Bigr)^2
+  |\langle w_i, v \rangle|^2.$$
+-/
 theorem norm_sq_toEuclideanLin_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
     (v : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v)‖ ^ 2
@@ -375,10 +443,14 @@ theorem norm_sq_toEuclideanLin_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
 
 variable [DecidableEq m]
 
-/-- **The squared norm of the Tikhonov residual.** Writing `w = A⁺ yδ`, the residual splits
-orthogonally into the least-squares residual `A w - yδ`, which is independent of `α`, and a
-correction inside the range of `A` whose `i`-th coefficient in the right singular basis is
-`α σ_i/(α + σ_i²)` times that of `w`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $y^\delta \in \mathbb{K}^m$, and let
+$w = A^+ y^\delta$ and $x(\alpha) = (\alpha I + A^H A)^{-1} A^H y^\delta$. Then the squared norm
+of the Tikhonov residual is
+$$\|A x(\alpha) - y^\delta\|^2 = \|A w - y^\delta\|^2 + \sum_i \Bigl(\frac{\alpha
+  \sigma_i}{\alpha + \sigma_i^2}\Bigr)^2 |\langle w_i, w \rangle|^2.$$
+
+The residual splits orthogonally into the least-squares residual $Aw - y^\delta$, which does not
+depend on $\alpha$, and a correction in the range of $A$. -/
 theorem norm_sq_toEuclideanLin_tikhonov_sub (α : ℝ) (hα : 0 < α) (yδ : EuclideanSpace 𝕜 m) :
     ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) yδ) - yδ‖ ^ 2
       = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2
@@ -404,15 +476,18 @@ theorem norm_sq_toEuclideanLin_tikhonov_sub (α : ℝ) (hα : 0 < α) (yδ : Euc
   refine Finset.sum_congr rfl fun i _ => ?_
   ring
 
-/-- **The discrepancy principle for Tikhonov regularization** ([kress1998numerical], Theorem 5.10):
-if the best achievable residual `dist (yδ, range A)` is below the error level `δ`, which is in turn
-below `‖yδ‖`, then there is exactly one regularization parameter `α > 0` at which the Tikhonov
-residual has norm exactly `δ`.
+/-- The **discrepancy principle** for Tikhonov regularization. Let $A \in \mathbb{K}^{m \times n}$,
+$y^\delta \in \mathbb{K}^m$ and $\delta \in \mathbb{R}$ with
+$$\inf_{x} \|Ax - y^\delta\| < \delta < \|y^\delta\|.$$
+Then there is exactly one $\alpha > 0$ such that the Tikhonov solution $x(\alpha) = (\alpha I +
+A^H A)^{-1} A^H y^\delta$ satisfies $\|A x(\alpha) - y^\delta\| = \delta$. This is the existence
+part of Theorem 5.10 of [kress1998numerical].
 
-The two hypotheses are sharp: the residual norm increases strictly from `dist (yδ, range A)` at
-`α = 0` to `‖yδ‖` as `α → ∞`. Kress states the lower hypothesis as `‖yδ - y‖ ≤ δ` for some
-`y` in the range of `A`, which gives only `dist (yδ, range A) ≤ δ`; with equality there is no such
-`α`, as `A = diag (1, 0)`, `y = (1, 0)`, `yδ = (1, δ)` shows. -/
+The two hypotheses are sharp: the residual norm increases strictly from
+$\inf_x \|Ax - y^\delta\|$ at $\alpha = 0$ to $\|y^\delta\|$ as $\alpha \to \infty$. The source
+states the lower hypothesis as $\|y^\delta - y\| \le \delta$ for some $y$ in the range of $A$.
+This gives only $\inf_x \|Ax - y^\delta\| \le \delta$, and with equality no such $\alpha$
+exists, as $A = \operatorname{diag}(1, 0)$, $y = (1, 0)$, $y^\delta = (1, \delta)$ shows. -/
 theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
     (hlow : ⨅ x : EuclideanSpace 𝕜 n, ‖toEuclideanLin A x - yδ‖ < δ) (hhigh : δ < ‖yδ‖) :
     ∃! α : ℝ, 0 < α ∧
@@ -555,11 +630,16 @@ theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
     exact (pow_left_inj₀ (norm_nonneg _) hδ0.le two_ne_zero).1 h
   exact ⟨a, ⟨ha0, hres⟩, fun b hb => huniq b ⟨hb.1, by rw [← hFeq b hb.1, hb.2]⟩⟩
 
-/-- **The discrepancy principle is regular**: if the data error tends to `0`, the regularized
-solutions chosen by the discrepancy principle converge to the least-squares solution `A⁺ y` of the
-exact problem ([kress1998numerical], Theorem 5.10). No estimate on `α` is needed: the discrepancy
-condition alone forces the residual to `0`, and `A⁺ A` is the identity on the range of `Aᴴ`, where
-all the Tikhonov solutions live. -/
+/-- The discrepancy principle is **regular**. Let $A \in \mathbb{K}^{m \times n}$ and let $y$ lie in
+the range of $A$. Let $(y^\delta_i)$, $(\delta_i)$ and $(\alpha_i)$ be families indexed by $i$
+along a filter, with $\alpha_i > 0$, $\|y^\delta_i - y\| \le \delta_i$, and with $\alpha_i$
+chosen by the discrepancy principle: $\|A x_i - y^\delta_i\| = \delta_i$ for
+$x_i = (\alpha_i I + A^H A)^{-1} A^H y^\delta_i$. If $\delta_i \to 0$, then
+$$x_i \to A^+ y.$$
+This is the convergence part of Theorem 5.10 of [kress1998numerical].
+
+No estimate on $\alpha_i$ is needed. The discrepancy condition alone forces the residual to $0$,
+and $A^+ A$ is the identity on the range of $A^H$, which contains all Tikhonov solutions. -/
 theorem tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq {ι : Type*} {l : Filter ι}
     {y : EuclideanSpace 𝕜 m} (hy : y ∈ LinearMap.range (toEuclideanLin A))
     {yδ : ι → EuclideanSpace 𝕜 m} {δ α : ι → ℝ} (hα : ∀ i, 0 < α i)
@@ -613,11 +693,17 @@ end Discrepancy
 
 end Kress
 
+/-! ### The norm of the ridge solution -/
+
 section Spectral
 
 variable [DecidableEq m]
 
-/-- The squared norm of the Tikhonov solution in the right singular basis. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $b \in \mathbb{K}^m$. In the right
+singular basis,
+$$\|(\alpha I + A^H A)^{-1} A^H b\|^2 = \sum_i \frac{|\langle w_i, A^H b \rangle|^2}{(\alpha +
+  \sigma_i^2)^2}.$$
+-/
 theorem norm_sq_toEuclideanLin_tikhonov_apply (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 m) :
     ‖toEuclideanLin (A.tikhonov α) b‖ ^ 2
@@ -629,8 +715,11 @@ theorem norm_sq_toEuclideanLin_tikhonov_apply (A : Matrix m n 𝕜) {α : ℝ} (
   rw [A.inner_rightSingularBasis_inv_smul_one_add_gram α hα, norm_mul, norm_inv,
     RCLike.norm_ofReal, abs_of_pos hpos, mul_pow, inv_pow, inv_mul_eq_div]
 
-/-- **The ridge solution shrinks as `α` grows** ([golub2013matrix] §6.1.4): `α ↦ ‖x(α)‖` is
-antitone on `(0, ∞)`, each term of `Matrix.norm_sq_toEuclideanLin_tikhonov_apply` being so. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The norm $\|x(\alpha)\|$ of the
+ridge solution $x(\alpha) = (\alpha I + A^H A)^{-1} A^H b$ is antitone in $\alpha$ on
+$(0, \infty)$. This is stated in §6.1.4 of [golub2013matrix].
+
+Each term of `Matrix.norm_sq_toEuclideanLin_tikhonov_apply` is antitone. -/
 theorem antitoneOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     AntitoneOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
   intro α hα β hβ hαβ
@@ -640,8 +729,11 @@ theorem antitoneOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : Eucli
   refine Finset.sum_le_sum fun i _ => div_le_div_of_nonneg_left (sq_nonneg _) (by positivity) ?_
   exact pow_le_pow_left₀ (by positivity) (by linarith) 2
 
-/-- **Strictly, unless `Aᴴ b = 0`** ([golub2013matrix] §6.2.1, "`f'(λ) < 0`"): some coefficient
-`⟪w_i, Aᴴ b⟫` is then nonzero, and its term decreases strictly. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$ with $A^H b \ne 0$. Then
+$\|x(\alpha)\|$ is strictly decreasing in $\alpha$ on $(0, \infty)$. This is the statement
+$f'(\lambda) < 0$ of §6.2.1 of [golub2013matrix].
+
+Some coefficient $\langle w_i, A^H b \rangle$ is nonzero, and its term decreases strictly. -/
 theorem strictAntiOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) {b : EuclideanSpace 𝕜 m}
     (hb : toEuclideanLin Aᴴ b ≠ 0) :
     StrictAntiOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
@@ -660,8 +752,10 @@ theorem strictAntiOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) {b : Euc
   exact div_lt_div_of_pos_left hi₀ (by positivity)
     (pow_lt_pow_left₀ (by linarith) (by positivity) two_ne_zero)
 
-/-- `α ↦ ‖x(α)‖` is continuous on `(0, ∞)`: its square is a finite sum of continuous terms
-(`Matrix.norm_sq_toEuclideanLin_tikhonov_apply`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The norm $\|x(\alpha)\|$ of the
+ridge solution is continuous in $\alpha$ on $(0, \infty)$.
+
+Its square is a finite sum of continuous terms (`Matrix.norm_sq_toEuclideanLin_tikhonov_apply`). -/
 theorem continuousOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     ContinuousOn (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) (Set.Ioi 0) := by
   have hsq : ContinuousOn (fun α : ℝ => ∑ i,
@@ -676,8 +770,12 @@ theorem continuousOn_norm_toEuclideanLin_tikhonov (A : Matrix m n 𝕜) (b : Euc
   simp only [Function.comp_apply]
   rw [← norm_sq_toEuclideanLin_tikhonov_apply A this, Real.sqrt_sq (norm_nonneg _)]
 
-/-- **The ridge solution vanishes as `α → ∞`** ([golub2013matrix] §6.2.1): each term of
-`Matrix.norm_sq_toEuclideanLin_tikhonov_apply` has a denominator tending to `∞`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $b \in \mathbb{K}^m$. The ridge solution vanishes at
+infinity: $\|x(\alpha)\| \to 0$ as $\alpha \to \infty$. This is stated in §6.2.1 of
+[golub2013matrix].
+
+Each term of `Matrix.norm_sq_toEuclideanLin_tikhonov_apply` has a denominator that tends to
+$\infty$. -/
 theorem tendsto_norm_toEuclideanLin_tikhonov_atTop (A : Matrix m n 𝕜) (b : EuclideanSpace 𝕜 m) :
     Tendsto (fun α : ℝ => ‖toEuclideanLin (A.tikhonov α) b‖) atTop (𝓝 0) := by
   have hsq : Tendsto (fun α : ℝ => ∑ i,
@@ -695,11 +793,16 @@ theorem tendsto_norm_toEuclideanLin_tikhonov_atTop (A : Matrix m n 𝕜) (b : Eu
   rw [← norm_sq_toEuclideanLin_tikhonov_apply A hα, Real.sqrt_sq (norm_nonneg _)]
 
 omit [DecidableEq m] in
-/-- **Ridge regression tends to the minimal-norm least-squares solution** ([golub2013matrix]
-§6.1.4, `lim_{λ→0} x(λ) = x_LS`): `A.tikhonov α → A⁺` as `α → 0⁺`. By
-`Matrix.tikhonov_eq_pinv_sub` the difference is `α (α + Aᴴ A)⁻¹ A⁺`, which in the right singular
-basis has the diagonal `α/((α + σ_i²) σ_i²)` (zero when `σ_i = 0`), continuous with value `0` at
-`α = 0`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$. The Tikhonov matrix tends to the pseudoinverse:
+$$(\alpha I + A^H A)^{-1} A^H \to A^+ \quad \text{as } \alpha \to 0^+.$$
+Hence ridge regression tends to the least-squares solution of least norm,
+$\lim_{\lambda \to 0} x(\lambda) = x_{LS}$ in §6.1.4 of [golub2013matrix].
+
+By `Matrix.tikhonov_eq_pinv_sub`, the difference is $\alpha (\alpha I + A^H A)^{-1} A^+ = W
+\Delta_\alpha W^H A^H$, where $W$ is the right singular unitary `Matrix.rightSingularUnitary`
+and $\Delta_\alpha$ is diagonal with entries $\alpha / ((\alpha + \sigma_i^2) \sigma_i^2)$.
+These entries are $0$ when $\sigma_i = 0$, and they are continuous with value $0$ at
+$\alpha = 0$. -/
 theorem tendsto_tikhonov_pinv (A : Matrix m n 𝕜) :
     Tendsto A.tikhonov (𝓝[>] 0) (𝓝 A.pinv) := by
   set W := A.rightSingularUnitary with hW
@@ -756,10 +859,15 @@ theorem tendsto_tikhonov_pinv (A : Matrix m n 𝕜) :
 
 end Spectral
 
+/-! ### Stacked problems -/
+
 section Stacking
 
-/-- **Stacking least-squares problems** ([golub2013matrix] (6.1.11), (6.1.20), (6.2.13)):
-`‖[A; B] x - [b; d]‖² = ‖A x - b‖² + ‖B x - d‖²`. -/
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$, $B \in \mathbb{K}^{m_2 \times n}$,
+$b \in \mathbb{K}^{m_1}$ and $d \in \mathbb{K}^{m_2}$. Then for every $x \in \mathbb{K}^n$,
+$$\Bigl\| \begin{bmatrix} A \\ B \end{bmatrix} x - \begin{bmatrix} b \\ d \end{bmatrix}
+  \Bigr\|^2 = \|Ax - b\|^2 + \|Bx - d\|^2.$$
+This is how [golub2013matrix] (6.1.11), (6.1.20) and (6.2.13) stack least-squares problems. -/
 theorem norm_fromRows_sub_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (A : Matrix m₁ n 𝕜)
     (B : Matrix m₂ n 𝕜) (b : m₁ → 𝕜) (d : m₂ → 𝕜) (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin (fromRows A B) x - WithLp.toLp 2 (Sum.elim b d)‖ ^ 2
@@ -768,9 +876,13 @@ theorem norm_fromRows_sub_sq {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂] (
   simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, toEuclideanLin_apply,
     PiLp.sub_apply, fromRows_mulVec, Sum.elim_inl, Sum.elim_inr]
 
-/-- **A stacked problem is a penalized problem** ([golub2013matrix] (6.1.11), (6.1.20)): for
-`0 ≤ α`, the least-squares solutions of `[A; √α B] x ≈ [b; √α d]` are the minimizers of
-`‖A x - b‖² + α ‖B x - d‖²`. -/
+/-- Let $A \in \mathbb{K}^{m_1 \times n}$, $B \in \mathbb{K}^{m_2 \times n}$,
+$b \in \mathbb{K}^{m_1}$, $d \in \mathbb{K}^{m_2}$ and $\alpha \ge 0$. Then $x$ is a
+least-squares solution of
+$$\begin{bmatrix} A \\ \sqrt{\alpha} B \end{bmatrix} x \approx \begin{bmatrix} b \\
+  \sqrt{\alpha} d \end{bmatrix}$$
+if and only if $x$ minimizes $\|Ax - b\|^2 + \alpha \|Bx - d\|^2$. This is the stacked form
+(6.1.11), (6.1.20) of [golub2013matrix]. -/
 theorem isLeastSquaresSolution_fromRows_iff {m₁ m₂ : Type*} [Fintype m₁] [Fintype m₂]
     (A : Matrix m₁ n 𝕜) (B : Matrix m₂ n 𝕜) (b : m₁ → 𝕜)
     (d : m₂ → 𝕜) {α : ℝ} (hα : 0 ≤ α) (x : EuclideanSpace 𝕜 n) :
@@ -807,9 +919,13 @@ variable [DecidableEq m]
 
 omit [DecidableEq n] [DecidableEq m] in
 open scoped ComplexOrder in
-/-- **General-form Tikhonov is well posed iff the kernels meet trivially** ([golub2013matrix]
-§6.1.5): for `0 < α`, `Aᴴ A + α Bᴴ B` is positive definite iff `ker A ⊓ ker B = ⊥`. It is
-`Cᴴ C` for the stacked `C = [A; √α B]`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{p \times n}$ and $\alpha > 0$. Then
+$A^H A + \alpha B^H B$ is positive definite if and only if $\ker A \cap \ker B = 0$. Hence
+general-form Tikhonov regularization is well posed exactly in this case, as in §6.1.5 of
+[golub2013matrix].
+
+The matrix is $C^H C$ for the stacked matrix $C = \begin{bmatrix} A \\ \sqrt{\alpha} B
+\end{bmatrix}$. -/
 theorem posDef_gram_add_smul_gram_iff (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) {α : ℝ}
     (hα : 0 < α) :
     (Aᴴ * A + (α : 𝕜) • (Bᴴ * B)).PosDef ↔
@@ -852,23 +968,33 @@ theorem posDef_gram_add_smul_gram_iff (A : Matrix m n 𝕜) (B : Matrix p n 𝕜
     rw [h] at this
     exact this
 
-/-- **General-form Tikhonov regularization** ([golub2013matrix] (6.1.20)–(6.1.21)):
-`(Aᴴ A + α Bᴴ B)⁻¹ Aᴴ`, the solution operator of `min ‖A x - b‖² + α ‖B x‖²` when
-`ker A ⊓ ker B = ⊥` (`Matrix.eq_toEuclideanLin_generalFormTikhonov_iff`); junk otherwise. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{p \times n}$ and
+$\alpha \in \mathbb{R}$. The **general-form Tikhonov regularization** is the matrix
+$$(A^H A + \alpha B^H B)^{-1} A^H \in \mathbb{K}^{n \times m}.$$
+For $\alpha > 0$ and $\ker A \cap \ker B = 0$, it maps $b$ to the solution of
+$\min \|Ax - b\|^2 + \alpha \|Bx\|^2$ (`Matrix.eq_toEuclideanLin_generalFormTikhonov_iff`). This
+is (6.1.20)–(6.1.21) of [golub2013matrix].
+
+If $A^H A + \alpha B^H B$ is singular, the matrix is $0$. -/
 noncomputable def generalFormTikhonov (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) (α : ℝ) :
     Matrix n m 𝕜 :=
   (Aᴴ * A + (α : 𝕜) • (Bᴴ * B))⁻¹ * Aᴴ
 
 omit [DecidableEq m] in
-/-- General-form Tikhonov with `B = 1` is standard-form Tikhonov. -/
+/-- For $B = I$, general-form Tikhonov regularization is standard Tikhonov regularization: $(A^H A +
+\alpha I)^{-1} A^H = (\alpha I + A^H A)^{-1} A^H$. -/
 theorem generalFormTikhonov_one (A : Matrix m n 𝕜) (α : ℝ) :
     generalFormTikhonov A (1 : Matrix n n 𝕜) α = A.tikhonov α := by
   rw [generalFormTikhonov, tikhonov_def, conjTranspose_one, Matrix.mul_one, add_comm]
 
 open scoped ComplexOrder in
-/-- **General-form Tikhonov: normal equations and minimizer** ([golub2013matrix]
-(6.1.20)–(6.1.21)): for `0 < α` and `ker A ⊓ ker B = ⊥`, `x = generalFormTikhonov A B α b` iff
-`(Aᴴ A + α Bᴴ B) x = Aᴴ b`, iff `x` minimizes `‖A x - b‖² + α ‖B x‖²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{p \times n}$, $\alpha > 0$ with
+$\ker A \cap \ker B = 0$, and $b \in \mathbb{K}^m$. For $x \in \mathbb{K}^n$, the following are
+equivalent: $x = (A^H A + \alpha B^H B)^{-1} A^H b$; $x$ solves
+$(A^H A + \alpha B^H B) x = A^H b$; $x$ minimizes $y \mapsto \|Ay - b\|^2 + \alpha \|By\|^2$.
+This is (6.1.20)–(6.1.21) of [golub2013matrix].
+
+The statement is the conjunction of the first equivalence with each of the other two. -/
 theorem eq_toEuclideanLin_generalFormTikhonov_iff (A : Matrix m n 𝕜) (B : Matrix p n 𝕜)
     {α : ℝ} (hα : 0 < α) (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)
     (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
@@ -922,9 +1048,12 @@ theorem eq_toEuclideanLin_generalFormTikhonov_iff (A : Matrix m n 𝕜) (B : Mat
     linarith
 
 open scoped ComplexOrder in
-/-- **Ridge regression** ([golub2013matrix] (6.1.11)–(6.1.12)): for `0 < α`, `x(α) = A.tikhonov α b`
-is the unique minimizer of `‖A x - b‖² + α ‖x‖²` — the general form at `B = 1`
-(`Matrix.generalFormTikhonov_one`), where `ker B = ⊥`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $\alpha > 0$ and $b \in \mathbb{K}^m$. Then
+$x = (\alpha I + A^H A)^{-1} A^H b$ if and only if $x$ minimizes
+$y \mapsto \|Ay - b\|^2 + \alpha \|y\|^2$. So the ridge solution $x(\alpha)$ is the unique
+minimizer. This is ridge regression, (6.1.11)–(6.1.12) of [golub2013matrix].
+
+This is the general form at $B = I$ (`Matrix.generalFormTikhonov_one`), where $\ker B = 0$. -/
 theorem eq_toEuclideanLin_tikhonov_iff_isMinOn (A : Matrix m n 𝕜) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
     x = toEuclideanLin (A.tikhonov α) b ↔
@@ -947,14 +1076,16 @@ section DeleteRow
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n] [DecidableEq m]
 
 omit [DecidableEq m] in
-/-- Over `ℝ`, the Tikhonov matrix is `(Aᵀ A + α I)⁻¹ Aᵀ`. -/
+/-- For $A \in \mathbb{R}^{m \times n}$ and $\alpha \in \mathbb{R}$, the Tikhonov matrix is
+$(A^T A + \alpha I)^{-1} A^T$. -/
 theorem tikhonov_eq_real (A : Matrix m n ℝ) (α : ℝ) :
     A.tikhonov α = (Aᵀ * A + α • 1)⁻¹ * Aᵀ := by
   rw [tikhonov_def, conjTranspose_eq_transpose_of_trivial, add_comm]
   rfl
 
 omit [DecidableEq m] [Fintype n] in
-/-- Over `ℝ`, the regularized Gram matrix `Aᵀ A + α I` is positive definite for `α > 0`. -/
+/-- For $A \in \mathbb{R}^{m \times n}$ and $\alpha > 0$, the matrix $A^T A + \alpha I$ is positive
+definite. -/
 theorem posDef_transpose_mul_self_add_smul_one [Finite n] (A : Matrix m n ℝ) {α : ℝ}
     (hα : 0 < α) : (Aᵀ * A + α • (1 : Matrix n n ℝ)).PosDef := by
   cases nonempty_fintype n
@@ -963,9 +1094,13 @@ theorem posDef_transpose_mul_self_add_smul_one [Finite n] (A : Matrix m n ℝ) {
   exact PosDef.posSemidef_add h (PosDef.one.smul hα)
 
 omit [DecidableEq m] in
-/-- **The leave-one-out denominator is positive** ([golub2013matrix] (6.1.16)–(6.1.17)):
-`a_kᵀ (Aᵀ A + α I)⁻¹ a_k < 1` for `α > 0`. With `z = (Aᵀ A + α I)⁻¹ a_k` and `t = a_kᵀ z`,
-`t = ‖A z‖² + α ‖z‖² ≥ t² + α ‖z‖²`, so `t < 1` unless `z = 0`, when `t = 0`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ with rows $a_k^T$, and let $\alpha > 0$. Then for every $k$,
+the **leave-one-out denominator** is positive:
+$$a_k^T (A^T A + \alpha I)^{-1} a_k < 1.$$
+This is the denominator of (6.1.16)–(6.1.17) of [golub2013matrix].
+
+With $z = (A^T A + \alpha I)^{-1} a_k$ and $t = a_k^T z$, we have $t = \|Az\|^2 + \alpha \|z\|^2
+\ge t^2 + \alpha \|z\|^2$, so $t < 1$ unless $z = 0$, and then $t = 0$. -/
 theorem one_sub_dotProduct_inv_gram_pos (A : Matrix m n ℝ) {α : ℝ} (hα : 0 < α) (k : m) :
     0 < 1 - A k ⬝ᵥ ((Aᵀ * A + α • 1)⁻¹ *ᵥ A k) := by
   set M := Aᵀ * A + α • (1 : Matrix n n ℝ) with hM
@@ -993,8 +1128,8 @@ theorem one_sub_dotProduct_inv_gram_pos (A : Matrix m n ℝ) {α : ℝ} (hα : 0
     nlinarith [mul_pos hα hpos]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Deleting row `k` is the weight `0` on it: `(D_k A)ᵀ (D_k A) = Aᵀ A - a_k a_kᵀ`
-(`Matrix.conjTranspose_mul_diagonal_update_mul` at `w = 1`, `t = 0`). -/
+/-- Deleting row $k$ of $A$ by $D_k = \operatorname{diag}(1, \dots, 0, \dots, 1)$ gives
+$(D_k A)^T (D_k A) = A^T A - a_k a_k^T$. -/
 private theorem transpose_mul_diagonal_mul_self (A : Matrix m n ℝ) (k : m) :
     (diagonal (Function.update (1 : m → ℝ) k 0) * A)ᵀ *
         (diagonal (Function.update (1 : m → ℝ) k 0) * A)
@@ -1012,8 +1147,7 @@ private theorem transpose_mul_diagonal_mul_self (A : Matrix m n ℝ) (k : m) :
     diagonal_mul_diagonal, hdd, ← Matrix.mul_assoc, h]
 
 omit [Fintype n] [DecidableEq n] in
-/-- Deleting row `k` on the right-hand side: `(D_k A)ᵀ (D_k b) = Aᵀ b - b_k a_k`
-(`Matrix.conjTranspose_mul_diagonal_update_mulVec` at `w = 1`, `t = 0`). -/
+/-- Deleting row $k$ on the right-hand side gives $(D_k A)^T (D_k b) = A^T b - b_k a_k$. -/
 private theorem transpose_mulVec_diagonal_mulVec (A : Matrix m n ℝ) (b : m → ℝ) (k : m) :
     (diagonal (Function.update (1 : m → ℝ) k 0) * A)ᵀ *ᵥ
         (diagonal (Function.update (1 : m → ℝ) k 0) *ᵥ b)
@@ -1030,11 +1164,16 @@ private theorem transpose_mulVec_diagonal_mulVec (A : Matrix m n ℝ) (b : m →
   rw [transpose_mul, diagonal_transpose, mulVec_mulVec, Matrix.mul_assoc, diagonal_mul_diagonal,
     hdd, h]
 
-/-- **Ridge regression with one equation deleted** ([golub2013matrix] (6.1.16)): with
-`D_k = diag(1, …, 0, …, 1)` deleting equation `k`, `z_k = (Aᵀ A + α I)⁻¹ a_k` and `x = x(α)`,
-the ridge solution of the reduced problem is
-`x_k = x + ((a_kᵀ x - b_k)/(1 - z_kᵀ a_k)) z_k` (Sherman–Morrison for the rank-one downdate
-`(D_k A)ᵀ (D_k A) = Aᵀ A - a_k a_kᵀ`). -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ with rows $a_k^T$, $b \in \mathbb{R}^m$ and $\alpha > 0$,
+and let $x = (A^T A + \alpha I)^{-1} A^T b$ be the ridge solution. Let $D_k =
+\operatorname{diag}(1, \dots, 0, \dots, 1)$ delete equation $k$, and let
+$z_k = (A^T A + \alpha I)^{-1} a_k$. Then the ridge solution of the reduced problem
+$(D_k A) x \approx D_k b$ is
+$$x_k = x + \frac{a_k^T x - b_k}{1 - z_k^T a_k} z_k.$$
+This is (6.1.16) of [golub2013matrix].
+
+The formula is the Sherman–Morrison formula for the rank-one downdate
+$(D_k A)^T (D_k A) = A^T A - a_k a_k^T$. The matrix $D_k$ is `diagonal (Function.update 1 k 0)`. -/
 theorem tikhonov_deleteRow_eq (A : Matrix m n ℝ) (b : m → ℝ) {α : ℝ} (hα : 0 < α) (k : m) :
     (diagonal (Function.update (1 : m → ℝ) k 0) * A).tikhonov α *ᵥ
         (diagonal (Function.update (1 : m → ℝ) k 0) *ᵥ b)
@@ -1066,9 +1205,11 @@ theorem tikhonov_deleteRow_eq (A : Matrix m n ℝ) (b : m → ℝ) {α : ℝ} (h
   rw [tikhonov_eq_real, ← mulVec_mulVec, hD, transpose_mulVec_diagonal_mulVec, ← hD, hMk, ← key,
     nonsing_inv_mulVec_mulVec hMkpd.isUnit]
 
-/-- **The leave-one-out residual** ([golub2013matrix] (6.1.17)): with the ridge hat matrix
-`H = A (Aᵀ A + α I)⁻¹ Aᵀ`, the residual of equation `k` at the solution without it is
-`((1 - H) b)_k / (1 - H)_kk`, and `(1 - H)_kk > 0`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ with rows $a_k^T$, $b \in \mathbb{R}^m$ and $\alpha > 0$,
+let $H = A (A^T A + \alpha I)^{-1} A^T$ be the ridge hat matrix, and let $x_k$ be the ridge
+solution with equation $k$ deleted. Then the **leave-one-out residual** is
+$$b_k - a_k^T x_k = \frac{((I - H) b)_k}{(I - H)_{kk}}, \qquad (I - H)_{kk} > 0.$$
+This is (6.1.17) of [golub2013matrix]. -/
 theorem tikhonov_deleteRow_residual_eq (A : Matrix m n ℝ) (b : m → ℝ) {α : ℝ} (hα : 0 < α)
     (k : m) :
     b k - A k ⬝ᵥ ((diagonal (Function.update (1 : m → ℝ) k 0) * A).tikhonov α *ᵥ
@@ -1110,8 +1251,14 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 variable {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- **The Tikhonov matrix in a singular value decomposition**: if `Uᴴ A V = Σ` then
-`A.tikhonov α = V diag(σ_i/(σ_i² + α)) Uᴴ` for `0 < α`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$
+with singular values $\sigma_i$, and let $\alpha > 0$. Then
+$$(\alpha I + A^H A)^{-1} A^H = V \operatorname{diag}\Bigl(\frac{\sigma_i}{\sigma_i^2 +
+  \alpha}\Bigr) U^H,$$
+with the rectangular diagonal matrix of size $n \times m$.
+
+The singular value decomposition is `Matrix.IsSVD`, and the diagonal matrix is
+`Matrix.rectDiagonal`. -/
 theorem IsSVD.tikhonov_eq (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α) :
     A.tikhonov α = V * (rectDiagonal fun i => ((σ i / (σ i ^ 2 + α) : ℝ) : 𝕜) :
       Matrix (Fin n) (Fin m) 𝕜) * star U := by
@@ -1159,8 +1306,14 @@ theorem IsSVD.tikhonov_eq (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α) :
         rw [hmul, tikhonov_def]
     _ = V * D * star U := by rw [← Matrix.mul_assoc, nonsing_inv_mul _ hdet, Matrix.one_mul]
 
-/-- **Ridge regression in singular vectors** ([golub2013matrix] (6.1.14)):
-`x(α) = ∑_{i < min m n} σ_i ⟪u_i, b⟫/(σ_i² + α) v_i`; the terms with `σ_i = 0` vanish. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$, $v_i$ of $V$, and singular values $\sigma_i$. Then for $\alpha > 0$
+and $b \in \mathbb{K}^m$, the ridge solution is
+$$x(\alpha) = \sum_{i = 1}^{\min(m, n)} \frac{\sigma_i \langle u_i, b \rangle}{\sigma_i^2 +
+  \alpha} v_i.$$
+This is (6.1.14) of [golub2013matrix].
+
+The terms with $\sigma_i = 0$ vanish. Lean indices start at $0$. -/
 theorem toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     toEuclideanLin (A.tikhonov α) b
@@ -1169,8 +1322,12 @@ theorem toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} 
           (WithLp.toLp 2 (Vᵀ (Fin.castLE (min_le_right m n) i)) : EuclideanSpace 𝕜 (Fin n)) := by
   rw [h.tikhonov_eq hα, toEuclideanLin_mul_rectDiagonal_mul_star_apply]
 
-/-- **The secular function** ([golub2013matrix] §6.2.1):
-`‖x(α)‖² = ∑_{i < min m n} (σ_i |⟪u_i, b⟫|/(σ_i² + α))²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$ and singular values $\sigma_i$. Then for $\alpha > 0$ and
+$b \in \mathbb{K}^m$,
+$$\|x(\alpha)\|^2 = \sum_{i = 1}^{\min(m, n)} \Bigl(\frac{\sigma_i |\langle u_i, b
+  \rangle|}{\sigma_i^2 + \alpha}\Bigr)^2.$$
+This is the secular function of §6.2.1 of [golub2013matrix]. -/
 theorem norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin (A.tikhonov α) b‖ ^ 2
@@ -1184,8 +1341,11 @@ theorem norm_sq_toEuclideanLin_tikhonov_eq_sum_of_isSVD (h : IsSVD A U σ V) {α
   rw [RCLike.norm_ofReal, abs_of_nonneg (div_nonneg (h.nonneg i) hpos.le)]
   ring
 
-/-- **The minimal-norm least-squares solution in singular vectors** ([golub2013matrix] (6.2.3),
-(5.3.2)): `A⁺ b = ∑_{i < min m n} σ_i⁻¹ ⟪u_i, b⟫ v_i`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$, $v_i$ of $V$, and singular values $\sigma_i$. Then for every
+$b \in \mathbb{K}^m$, the least-squares solution of least norm is
+$$A^+ b = \sum_{i = 1}^{\min(m, n)} \sigma_i^{-1} \langle u_i, b \rangle v_i,$$
+where $0^{-1} = 0$. This is (6.2.3) and (5.3.2) of [golub2013matrix]. -/
 theorem toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpace 𝕜 (Fin m)) :
     toEuclideanLin A.pinv b
       = ∑ i : Fin (min m n), ((σ i : 𝕜))⁻¹ • inner 𝕜
@@ -1193,9 +1353,13 @@ theorem toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanS
           (WithLp.toLp 2 (Vᵀ (Fin.castLE (min_le_right m n) i)) : EuclideanSpace 𝕜 (Fin n)) := by
   rw [h.pinv_eq, toEuclideanLin_mul_rectDiagonal_mul_star_apply]
 
-/-- **The norm of the minimal-norm least-squares solution** ([golub2013matrix] (6.2.3)):
-`‖A⁺ b‖² = ∑_{i < min m n} (|⟪u_i, b⟫|/σ_i)²`, Lean's `x/0 = 0` dropping the terms beyond the
-rank. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$ and singular values $\sigma_i$. Then for every $b \in \mathbb{K}^m$,
+$$\|A^+ b\|^2 = \sum_{i = 1}^{\min(m, n)} \Bigl(\frac{|\langle u_i, b
+  \rangle|}{\sigma_i}\Bigr)^2,$$
+where a quotient with $\sigma_i = 0$ is $0$. This is (6.2.3) of [golub2013matrix].
+
+The Lean convention $x / 0 = 0$ drops the terms beyond the rank. -/
 theorem norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A.pinv b‖ ^ 2
@@ -1208,8 +1372,13 @@ theorem norm_sq_toEuclideanLin_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V)
   rw [norm_inv, RCLike.norm_ofReal, abs_of_nonneg (h.nonneg i)]
   ring
 
-/-- The residual of `x = V D Uᴴ b` in the coordinates of `U`: `‖A x - b‖² =
-∑_i |σ_i τ_i - 1|² |⟪u_i, b⟫|²` (with `σ_i τ_i` read as `0` beyond the width). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$ and singular values $\sigma_i$, and let
+$\tau_1, \tau_2, \dots \in \mathbb{K}$. For $x = V \operatorname{diag}(\tau_i) U^H b$, with the
+rectangular diagonal matrix of size $n \times m$, the residual is
+$$\|Ax - b\|^2 = \sum_{i = 1}^{m} |c_i - 1|^2 |\langle u_i, b \rangle|^2, \qquad c_i = \sigma_i
+  \tau_i \text{ for } i \le n, \quad c_i = 0 \text{ for } i > n.$$
+-/
 theorem IsSVD.norm_sq_toEuclideanLin_sub (h : IsSVD A U σ V) (τ : ℕ → 𝕜)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A (toEuclideanLin (V * (rectDiagonal τ : Matrix (Fin n) (Fin m) 𝕜) *
@@ -1242,8 +1411,12 @@ theorem IsSVD.norm_sq_toEuclideanLin_sub (h : IsSVD A U σ V) (τ : ℕ → 𝕜
   rw [hE, toEuclideanLin_apply, WithLp.ofLp_toLp, mulVec_diagonal, norm_mul, mul_pow,
     toEuclideanLin_apply, WithLp.ofLp_toLp, star_mulVec_apply_eq_inner]
 
-/-- **The ridge residual** ([golub2013matrix] (6.2.4)): `‖A x(α) - b‖²` is the least-squares
-residual `‖A A⁺ b - b‖²` plus `∑_{σ_i ≠ 0} (α |⟪u_i, b⟫|/(σ_i² + α))²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$ and singular values $\sigma_i$. Then for $\alpha > 0$ and
+$b \in \mathbb{K}^m$, the ridge residual is
+$$\|A x(\alpha) - b\|^2 = \|A A^+ b - b\|^2 + \sum_{\substack{1 \le i \le \min(m, n) \\ \sigma_i
+  \ne 0}} \Bigl(\frac{\alpha |\langle u_i, b \rangle|}{\sigma_i^2 + \alpha}\Bigr)^2.$$
+This is (6.2.4) of [golub2013matrix]. -/
 theorem norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD (h : IsSVD A U σ V) {α : ℝ} (hα : 0 < α)
     (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) b) - b‖ ^ 2
@@ -1285,8 +1458,13 @@ theorem norm_sq_toEuclideanLin_tikhonov_sub_eq_sum_of_isSVD (h : IsSVD A U σ V)
   · have hmin : ¬ (i : ℕ) < min m n := fun h => hin (lt_of_lt_of_le h (min_le_right m n))
     rw [ite_eq_right hin, ite_eq_right hin, ite_eq_right hmin, add_zero]
 
-/-- **The minimal residual in singular vectors** ([golub2013matrix] (5.3.3), (5.5.2)):
-`‖A A⁺ b - b‖² = ∑_{rank A ≤ i < m} |⟪u_i, b⟫|²`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have the singular value decomposition $U^H A V = \Sigma$,
+with columns $u_i$ of $U$, and let $r = \operatorname{rank} A$. Then for every
+$b \in \mathbb{K}^m$, the least residual is
+$$\|A A^+ b - b\|^2 = \sum_{i = r + 1}^{m} |\langle u_i, b \rangle|^2.$$
+This is (5.3.3) and (5.5.2) of [golub2013matrix].
+
+Lean indices start at $0$, so the sum is over the `i : Fin m` with `A.rank ≤ i`. -/
 theorem norm_sub_sq_pinv_eq_sum_of_isSVD (h : IsSVD A U σ V) (b : EuclideanSpace 𝕜 (Fin m)) :
     ‖toEuclideanLin A (toEuclideanLin A.pinv b) - b‖ ^ 2
       = ∑ i ∈ Finset.univ.filter (fun i : Fin m => A.rank ≤ i),
@@ -1324,13 +1502,19 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 
 variable {m n : ℕ}
 
-/-- **General-form Tikhonov diagonalized by the GSVD** ([golub2013matrix] (6.1.26) and the display
-before it): for a square invertible `B`, a GSVD `U₁ᴴ A X = D_A`, `U₂ᴴ B X = D_B` (then `p = 0`,
-`r = n` and every `β_k > 0`), `n ≤ m` and `0 < λ`,
-`x(λ) = ∑_k (α_k b̃_k / (α_k² + λ β_k²)) x_k` with `b̃ = U₁ᴴ b` and `x_k` the columns of `X`.
-Indeed `Xᴴ (AᴴA + λ BᴴB) X = diag(α² + λβ²)`
-(`Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`), so
-`(AᴴA + λ BᴴB)⁻¹ Aᴴ = X diag(α² + λβ²)⁻¹ D_Aᴴ U₁ᴴ`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ with $n \le m$, let $B \in \mathbb{K}^{n \times n}$ be
+invertible, and let $U_1^H A X = D_A$, $U_2^H B X = D_B$ be a GSVD with the numbers $\alpha_k$,
+$\beta_k$ and the columns $x_k$ of $X$. Then for $\mu > 0$ and $b \in \mathbb{K}^m$, with
+$\tilde b = U_1^H b$,
+$$(A^H A + \mu B^H B)^{-1} A^H b = \sum_{k = 1}^{n} \frac{\alpha_k \tilde b_k}{\alpha_k^2 + \mu
+  \beta_k^2} x_k.$$
+This is (6.1.26) of [golub2013matrix] and the display before it, with the regularization
+parameter $\lambda$ of the source written $\mu$.
+
+For square invertible $B$, the GSVD has $p = 0$, $r = n$ and every $\beta_k > 0$. Since $X^H
+(A^H A + \mu B^H B) X = \operatorname{diag}(\alpha_k^2 + \mu \beta_k^2)$
+(`Matrix.IsGSVD.conjTranspose_mul_gram_add_smul_gram_mul`), we get $(A^H A + \mu B^H B)^{-1}
+A^H = X \operatorname{diag}(\alpha_k^2 + \mu \beta_k^2)^{-1} D_A^H U_1^H$. -/
 theorem generalFormTikhonov_mulVec_eq_sum_of_isGSVD {A : Matrix (Fin m) (Fin n) 𝕜}
     {B : Matrix (Fin n) (Fin n) 𝕜} (hB : IsUnit B) {U₁ : Matrix (Fin m) (Fin m) 𝕜}
     {U₂ X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ} (h : IsGSVD A B U₁ U₂ X α β)

@@ -17,53 +17,81 @@ import Numlib.Analysis.Sobolev.Calculus
 /-!
 # Extension by reflection
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.2,
-Lemma 9.2: the even reflection `u^⋆` of `u ∈ W^{1,p}(Q₊)` across `x_N = 0` lies in `W^{1,p}(Q)`,
-with `‖u^⋆‖ ≤ 2 ‖u‖`; its tangential derivatives are the even reflections of those of `u` and its
-normal derivative is the odd reflection. With it, the extension operator for the half space,
-the case "`Ω = ℝ^N_+`" of Theorem 9.7, and Corollary 9.8 on the half space.
+This module formalizes Lemma 9.2 of [brezis2011functional], §9.2: the even reflection $u^\star$ of a
+function $u \in W^{1,p}(Q_+)$ across the hyperplane $x_N = 0$ lies in $W^{1,p}(Q)$, with
+$\|u^\star\|_{L^p(Q)} \le 2 \|u\|_{L^p(Q_+)}$. The tangential derivatives of $u^\star$ are the even
+reflections of those of $u$, and its normal derivative is the odd reflection of that of $u$. As
+consequences, the module proves the extension theorem for the half space, the case
+$\Omega = \mathbb{R}^N_+$ of Theorem 9.7, and Corollary 9.8 on the half space. It also proves the
+trace inequality of Lemma 9.9 of [brezis2011functional], Comments on Chapter 9, 7:
+$$\|u(\cdot, 0)\|_{L^p(\mathbb{R}^{N-1})} \le p^{1/p} \big(\|u\|_{L^p(\mathbb{R}^N_+)} +
+  \|\partial_N u\|_{L^p(\mathbb{R}^N_+)}\big)$$
+for $u \in C_c^1(\mathbb{R}^N)$ and $1 \le p < \infty$.
 
-## Generality
+The source proves the lemma on $Q_+$ and remarks that the proof is unchanged on $\mathbb{R}^N_+$. In
+Remark 9 it reflects a square across each of its sides. This module states all these cases as one
+result in general position. Let $E$ be a finite-dimensional real inner product space with its
+Lebesgue measure, let $v$ be a unit vector, let $\sigma$ be the reflection across the hyperplane
+$v^\perp$, let $V$ be an open set with $\sigma(V) = V$, and let
+$V_+ = V \cap \{x : \langle x, v \rangle > 0\}$.
 
-The book proves the lemma on `Q₊` and remarks that the proof is unchanged on `ℝ^N_+`; in
-Remark 9 it reflects a square across each of its sides. All of these are one statement, in
-general position: `E` a finite-dimensional real inner product space with its Lebesgue measure
-`volume`, `v` a unit vector, `σ = hyperplaneReflection v` the reflection across the hyperplane
-`v^⊥` (Mathlib's `Submodule.reflection (ℝ ∙ v)ᗮ`), `V` an open set with `σ '' V = V`, and
-`V₊ = V ∩ {0 < ⟪x, v⟫}` (`posHalf v V`). The tensor form `HasWeakFDerivOn` makes the tangential
-and normal cases one formula: the derivative of `u^⋆` on the reflected half is
-`(w ∘ σ) ∘ σ` (`reflectFDeriv v w`), the chain rule for the linear isometry `σ`, which evaluates
-to the even reflection of `∂_y u` for `y ⊥ v` and to the odd reflection of `∂_v u` along `v`.
+## Main definitions
+
+* `hyperplaneReflection`: the reflection $\sigma$ across the hyperplane $v^\perp$.
+* `evenReflection`, `oddReflection`: the extensions $u^\star$ and $f^\square$ of a function from the
+  half space $\langle x, v \rangle \ge 0$ to $E$.
+* `reflectFDeriv`: the reflected tensor derivative, which is the derivative of $u^\star$ when $w$ is
+  the derivative of $u$.
+* `posHalf`: the positive half $V_+$ of an open set $V$.
+* `SobolevMultiIndex.evenReflectionL`, `SobolevEuclidean.evenReflectionL`: the reflection
+  $u \mapsto u^\star$ as a bounded linear map $W^{1,p}(V_+) \to W^{1,p}(V)$.
 
 ## Main results
 
-* `hyperplaneReflection v`, with `inner_hyperplaneReflection : ⟪σ x, v⟫ = -⟪x, v⟫`, measure
-  preservation, and the null hyperplane `volume {⟪x, v⟫ = 0} = 0`;
-* `evenReflection v u`, `oddReflection v w`, `reflectFDeriv v w`: the extensions `u^⋆`, `f^□`
-  and the reflected tensor derivative;
-* `HasWeakFDerivOn.evenReflection`: **Lemma 9.2, the identity**
-  `∂(u^⋆) = reflectFDeriv v (∂u)` on `V`, by the book's proof: for a test function `φ` on `V`,
-  the cut-offs `η_k(⟪x, v⟫) φ` and `η_k(⟪x, v⟫) (φ ∘ σ)` are test functions on `V₊`; their
-  defining identities, in the directions `y` and `σ y`, add up to the identity for `φ` up to a
-  term carrying `k η'(k ⟪x, v⟫) (φ − φ ∘ σ)`, which tends to `0` because `φ − φ ∘ σ` vanishes
-  on the hyperplane and `u` is integrable near it;
-* `MemSobolev.evenReflection`: **Lemma 9.2, membership**, with `eLpNorm (u^⋆) ≤ 2 eLpNorm u`;
-* `SobolevMultiIndex.evenReflectionL`, `SobolevEuclidean.evenReflectionL`: the reflection as a
-  bounded linear map `W^{1,p}(V₊) → W^{1,p}(V)`;
+* `inner_hyperplaneReflection`, `measurePreserving_hyperplaneReflection`, `volume_inner_eq_zero`:
+  $\langle \sigma x, v \rangle = -\langle x, v \rangle$, $\sigma$ preserves Lebesgue measure, and
+  the hyperplane $v^\perp$ is a null set.
+* `HasWeakFDerivOn.evenReflection`: Lemma 9.2, the identity. If $u$ has the weak derivative $w$ on
+  $V_+$, then $u^\star$ has the weak derivative `reflectFDeriv v w` on $V$.
+* `MemSobolev.evenReflection`: Lemma 9.2, membership. If $u \in W^{1,p}(V_+)$, then
+  $u^\star \in W^{1,p}(V)$.
+* `eLpNorm_evenReflection_le`: the bound $\|u^\star\|_{L^p(V)} \le 2 \|u\|_{L^p(V_+)}$ of Lemma 9.2.
 * `SobolevEuclidean.exists_extensionL_upperHalfSpace`, `IsSobolevExtensionDomain.upperHalfSpace`:
-  **Theorem 9.7 for the half space**, and
-  `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace`, **Corollary
-  9.8 on the half space**.
-* `eLpNorm_lastZero_le_of_contDiff`: **Lemma 9.9 (Comments on Chapter 9, 7)**, the trace
-  inequality `‖u(·, 0)‖_{L^p(ℝ^{N−1})} ≤ p^{1/p} (‖u‖_{L^p(ℝ^N_+)} + ‖∂_N u‖_{L^p(ℝ^N_+)})` for
-  `u ∈ C_c^1(ℝ^N)`, `1 ≤ p < ∞`, from the one-dimensional inequality
-  `enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` (the fundamental theorem of calculus for `|v|^p`
-  along a half-line and Young's inequality) and Fubini along the last coordinate.
+  Theorem 9.7 for the half space.
+* `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace`: Corollary 9.8 on
+  the half space.
+* `eLpNorm_lastZero_le_of_contDiff`: Lemma 9.9, the trace inequality on the half space.
 
-## References
+## Proof outline
 
-[brezis2011functional], §9.2, Lemma 9.2 and the sentences after its proof; Remark 9; Comments
-on Chapter 9, 7, Lemma 9.9.
+For Lemma 9.2, let $\varphi$ be a test function on $V$, and let
+$\eta_k(x) = \eta(k \langle x, v \rangle)$ for a smooth cutoff $\eta$. The functions
+$\eta_k \varphi$ and $\eta_k (\varphi \circ \sigma)$ are test functions on $V_+$. Their defining
+identities, in the directions $y$ and $\sigma y$, add up to the identity for $\varphi$, up to a term
+that carries the factor $k \eta'(k \langle x, v \rangle) (\varphi - \varphi \circ \sigma)$. This
+term tends to $0$, because $\varphi - \varphi \circ \sigma$ vanishes on the hyperplane and $u$ is
+integrable near it.
+
+For Lemma 9.9, the one-dimensional inequality `enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` follows
+from the fundamental theorem of calculus for $|v|^p$ along a half-line and from Young's inequality.
+Fubini's theorem along the last coordinate gives the inequality on the half space.
+
+## Notation
+
+* $\sigma$: the reflection `hyperplaneReflection v`, and $V_+$: the positive half `posHalf v V`.
+* $u^\star$ and $f^\square$: the even reflection `evenReflection v u` and the odd reflection
+  `oddReflection v f`.
+* $\mathbb{R}^N_+ = \{x : x_N > 0\}$: the upper half space `EuclideanSpace.upperHalfSpace d`, with
+  $N = d + 1$. The vector $e_N$ is the last basis vector.
+
+## Implementation notes
+
+* The reflection $\sigma$ is Mathlib's `Submodule.reflection (ℝ ∙ v)ᗮ`.
+* The tensor form `HasWeakFDerivOn` makes the tangential and the normal cases of Lemma 9.2 one
+  formula. On the reflected half, the derivative of $u^\star$ is
+  $x \mapsto w(\sigma x) \circ \sigma$ (`reflectFDeriv v w`), by the chain rule for the linear
+  isometry $\sigma$. In a direction $y \perp v$ this is the even reflection of $\partial_y u$, and
+  along $v$ it is the odd reflection of $\partial_v u$.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -77,44 +105,50 @@ section HyperplaneReflection
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **The reflection across the hyperplane `v^⊥`**, `σ x = x - 2 ⟪x, v⟫ v` for a unit vector `v`:
-Mathlib's `Submodule.reflection (ℝ ∙ v)ᗮ`, a linear isometry equivalence of `E` fixing `v^⊥` and
-sending `v` to `-v`. It is the map `(x', x_N) ↦ (x', -x_N)` of [brezis2011functional] §9.2,
-Lemma 9.2, for `v = e_N`. -/
+/-- **The reflection across the hyperplane $v^\perp$**, as a linear isometry equivalence of $E$. It
+fixes $v^\perp$ and sends $v$ to $-v$. For a unit vector $v$ it is
+$$\sigma(x) = x - 2 \langle x, v \rangle v,$$
+and for $v = 0$ it is the identity.
+
+The definition is Mathlib's `Submodule.reflection (ℝ ∙ v)ᗮ`. For $v = e_N$ it is the map
+$(x', x_N) \mapsto (x', -x_N)$ of [brezis2011functional], §9.2, Lemma 9.2. -/
 def hyperplaneReflection (v : E) : E ≃ₗᵢ[ℝ] E := Submodule.reflection (ℝ ∙ v)ᗮ
 
 variable (v : E)
 
-/-- The reflection sends `v` to `-v`. -/
+/-- The reflection sends $v$ to $-v$: $\sigma(v) = -v$. -/
 @[simp]
 theorem hyperplaneReflection_apply_self : hyperplaneReflection v v = -v :=
   Submodule.reflection_orthogonalComplement_singleton_eq_neg v
 
-/-- The reflection is an involution. -/
+/-- The reflection is an involution: $\sigma(\sigma(x)) = x$ for every $x \in E$. -/
 @[simp]
 theorem hyperplaneReflection_hyperplaneReflection (x : E) :
     hyperplaneReflection v (hyperplaneReflection v x) = x :=
   Submodule.reflection_reflection _ x
 
-/-- The reflection reverses the component along `v`. -/
+/-- The reflection reverses the component along $v$: $\langle \sigma(x), v \rangle = -\langle x, v
+\rangle$ for every $x \in E$. -/
 theorem inner_hyperplaneReflection (x : E) : ⟪hyperplaneReflection v x, v⟫ = -⟪x, v⟫ := by
   have h := (hyperplaneReflection v).inner_map_map x v
   rw [hyperplaneReflection_apply_self, inner_neg_right] at h
   linarith
 
-/-- The reflection fixes the hyperplane. -/
+/-- The reflection fixes the hyperplane: if $\langle x, v \rangle = 0$, then $\sigma(x) = x$. -/
 theorem hyperplaneReflection_apply_of_inner_eq_zero {x : E} (h : ⟪x, v⟫ = 0) :
     hyperplaneReflection v x = x :=
   Submodule.reflection_mem_subspace_eq_self
     (Submodule.mem_orthogonal_singleton_iff_inner_left.2 h)
 
-/-- The reflection is an involution on sets. -/
+/-- The reflection is an involution on sets: $\sigma(\sigma(s)) = s$ for every set $s \subseteq E$.
+-/
 theorem hyperplaneReflection_image_image (s : Set E) :
     hyperplaneReflection v '' (hyperplaneReflection v '' s) = s := by
   rw [Set.image_image]
   simp
 
-/-- The preimage under the involution `σ` is the image. -/
+/-- The preimage of a set under the involution $\sigma$ is its image: $\sigma^{-1}(s) = \sigma(s)$
+for every set $s \subseteq E$. -/
 theorem preimage_hyperplaneReflection (s : Set E) :
     hyperplaneReflection v ⁻¹' s = hyperplaneReflection v '' s := by
   ext x
@@ -126,18 +160,20 @@ theorem preimage_hyperplaneReflection (s : Set E) :
 
 variable [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
 
-/-- The reflection preserves Lebesgue measure. -/
+/-- On a finite-dimensional space $E$, the reflection $\sigma$ preserves Lebesgue measure. -/
 theorem measurePreserving_hyperplaneReflection :
     MeasurePreserving (hyperplaneReflection v) volume volume :=
   (hyperplaneReflection v).measurePreserving
 
 omit [FiniteDimensional ℝ E] in
-/-- The reflection is a measurable embedding. -/
+/-- The reflection $\sigma$ is a measurable embedding. -/
 theorem measurableEmbedding_hyperplaneReflection :
     MeasurableEmbedding (hyperplaneReflection v) :=
   (hyperplaneReflection v).toHomeomorph.measurableEmbedding
 
-/-- **The hyperplane `v^⊥` is null** for `v ≠ 0`: a proper subspace of `E`. -/
+/-- **The hyperplane $v^\perp$ is a null set.** Let $E$ be finite-dimensional and let $v \neq 0$.
+Then the set $\{x \in E : \langle x, v \rangle = 0\}$ has Lebesgue measure $0$, because it is a
+proper subspace of $E$. -/
 theorem volume_inner_eq_zero {v : E} (hv : v ≠ 0) : volume {x : E | ⟪x, v⟫ = 0} = 0 := by
   have h1 : {x : E | ⟪x, v⟫ = 0} = ((ℝ ∙ v)ᗮ : Set E) := by
     ext x
@@ -149,47 +185,50 @@ theorem volume_inner_eq_zero {v : E} (hv : v ≠ 0) : volume {x : E | ⟪x, v⟫
   rw [h1]
   exact Measure.addHaar_submodule volume _ h2
 
-/-- Almost every point is off the hyperplane `v^⊥`, for `v ≠ 0`. -/
+/-- Let $E$ be finite-dimensional and let $v \neq 0$. Then $\langle x, v \rangle \neq 0$ for almost
+every $x \in E$. -/
 theorem ae_inner_ne_zero {v : E} (hv : v ≠ 0) : ∀ᵐ x : E, ⟪x, v⟫ ≠ 0 :=
   measure_eq_zero_iff_ae_notMem.1 (volume_inner_eq_zero hv)
 
 end HyperplaneReflection
 
-/-! ### The cut-off `η` in the normal direction -/
+/-! ### The cutoff $\eta$ in the normal direction -/
 
 section Cutoff
 
-/-- The cut-off `η(t) = smoothTransition (2t − 1)` of the proof of [brezis2011functional]
-Lemma 9.2: smooth, `η = 0` on `(−∞, 1/2]`, `η = 1` on `[1, ∞)`, with values in `[0, 1]`. -/
+/-- The cutoff $\eta(t) = \tau(2t - 1)$ of the proof of Lemma 9.2 of [brezis2011functional], where
+$\tau$ is `Real.smoothTransition`. It is smooth, $\eta = 0$ on $(-\infty, 1/2]$, $\eta = 1$ on
+$[1, \infty)$, and $\eta$ takes values in $[0, 1]$. -/
 def reflectionCutoff (t : ℝ) : ℝ := Real.smoothTransition (2 * t - 1)
 
-/-- The cut-off `reflectionCutoff` is smooth. -/
+/-- The cutoff $\eta$ is smooth ($C^\infty$). -/
 theorem contDiff_reflectionCutoff : ContDiff ℝ ∞ reflectionCutoff :=
   (Real.smoothTransition.contDiff (n := ⊤)).comp
     ((contDiff_const.mul contDiff_id).sub contDiff_const)
 
-/-- `reflectionCutoff t = 0` for `t ≤ 1/2`. -/
+/-- The cutoff vanishes on $(-\infty, 1/2]$: $\eta(t) = 0$ for $t \le 1/2$. -/
 theorem reflectionCutoff_of_le_half {t : ℝ} (ht : t ≤ 1 / 2) : reflectionCutoff t = 0 :=
   Real.smoothTransition.zero_of_nonpos (by linarith)
 
-/-- `reflectionCutoff t = 1` for `t ≥ 1`. -/
+/-- The cutoff equals $1$ on $[1, \infty)$: $\eta(t) = 1$ for $t \ge 1$. -/
 theorem reflectionCutoff_of_one_le {t : ℝ} (ht : 1 ≤ t) : reflectionCutoff t = 1 :=
   Real.smoothTransition.one_of_one_le (by linarith)
 
-/-- `reflectionCutoff` is nonnegative. -/
+/-- The cutoff is nonnegative: $\eta(t) \ge 0$ for every $t \in \mathbb{R}$. -/
 theorem reflectionCutoff_nonneg (t : ℝ) : 0 ≤ reflectionCutoff t :=
   Real.smoothTransition.nonneg _
 
-/-- `reflectionCutoff` is at most `1`. -/
+/-- The cutoff is at most $1$: $\eta(t) \le 1$ for every $t \in \mathbb{R}$. -/
 theorem reflectionCutoff_le_one (t : ℝ) : reflectionCutoff t ≤ 1 :=
   Real.smoothTransition.le_one _
 
-/-- `|reflectionCutoff t| ≤ 1`. -/
+/-- The cutoff satisfies $|\eta(t)| \le 1$ for every $t \in \mathbb{R}$. -/
 theorem abs_reflectionCutoff_le_one (t : ℝ) : |reflectionCutoff t| ≤ 1 := by
   rw [abs_of_nonneg (reflectionCutoff_nonneg t)]
   exact reflectionCutoff_le_one t
 
-/-- The derivative of `η` vanishes where `η` is locally constant, `t < 1/2` or `t > 1`. -/
+/-- The derivative of the cutoff vanishes where the cutoff is locally constant: $\eta'(t) = 0$ if
+$t < 1/2$ or $t > 1$. -/
 theorem deriv_reflectionCutoff_eq_zero {t : ℝ} (ht : t < 1 / 2 ∨ 1 < t) :
     deriv reflectionCutoff t = 0 := by
   rcases ht with ht | ht
@@ -202,7 +241,8 @@ theorem deriv_reflectionCutoff_eq_zero {t : ℝ} (ht : t < 1 / 2 ∨ 1 < t) :
       exact reflectionCutoff_of_one_le (le_of_lt hs)
     rw [this.deriv_eq, deriv_const]
 
-/-- The derivative of `η` is bounded. -/
+/-- The derivative of the cutoff is bounded: there is a constant $C \ge 0$ with $|\eta'(t)| \le C$
+for every $t \in \mathbb{R}$. -/
 theorem exists_abs_deriv_reflectionCutoff_le :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ t, |deriv reflectionCutoff t| ≤ C := by
   obtain ⟨C, hC⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := 1)).exists_bound_of_continuousOn
@@ -226,23 +266,32 @@ section Definitions
 
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **Extension by even reflection** across the hyperplane `v^⊥`: `u^⋆ x = u x` if `0 ≤ ⟪x, v⟫`
-and `u (σ x)` otherwise. This is `u^⋆` of [brezis2011functional] §9.2, Lemma 9.2, for `v = e_N`;
-the value on the hyperplane itself is irrelevant, the hyperplane being null. -/
+/-- **Extension by even reflection** across the hyperplane $v^\perp$:
+$$u^\star(x) = \begin{cases} u(x) & \text{if } \langle x, v \rangle \ge 0, \\ u(\sigma(x)) &
+  \text{otherwise.} \end{cases}$$
+
+This is the function $u^\star$ of [brezis2011functional], §9.2, Lemma 9.2, for $v = e_N$. The
+value on the hyperplane does not matter, because the hyperplane is a null set. -/
 def evenReflection (v : E) (u : E → F) (x : E) : F :=
   if 0 ≤ ⟪x, v⟫ then u x else u (hyperplaneReflection v x)
 
-/-- **Extension by odd reflection**: `f^□ x = f x` if `0 ≤ ⟪x, v⟫` and `−f (σ x)` otherwise, the
-`f^□` of [brezis2011functional] §9.2, proof of Lemma 9.2. -/
+/-- **Extension by odd reflection**:
+$$f^\square(x) = \begin{cases} f(x) & \text{if } \langle x, v \rangle \ge 0, \\ -f(\sigma(x)) &
+  \text{otherwise.} \end{cases}$$
+
+This is the function $f^\square$ of [brezis2011functional], §9.2, proof of Lemma 9.2. -/
 def oddReflection [Neg F] (v : E) (f : E → F) (x : E) : F :=
   if 0 ≤ ⟪x, v⟫ then f x else -f (hyperplaneReflection v x)
 
 variable [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- **The reflected tensor derivative**: `w x` if `0 ≤ ⟪x, v⟫` and `(w (σ x)) ∘ σ` otherwise —
-the derivative of `u^⋆` when `w` is the derivative of `u`, by the chain rule for the linear
-isometry `σ`. It evaluates to `evenReflection v (w · y)` for `y ⊥ v` and to
-`oddReflection v (w · v)` along `v`. -/
+/-- **The reflected tensor derivative** of $w : E \to \mathcal{L}(E, F)$:
+$$x \mapsto \begin{cases} w(x) & \text{if } \langle x, v \rangle \ge 0, \\ w(\sigma(x)) \circ
+  \sigma & \text{otherwise.} \end{cases}$$
+
+This is the derivative of $u^\star$ when $w$ is the derivative of $u$, by the chain rule for the
+linear isometry $\sigma$. In a direction $y \perp v$ it is the even reflection of
+$x \mapsto w(x) y$, and along $v$ it is the odd reflection of $x \mapsto w(x) v$. -/
 def reflectFDeriv (v : E) (w : E → E →L[ℝ] F) (x : E) : E →L[ℝ] F :=
   if 0 ≤ ⟪x, v⟫ then w x
   else (w (hyperplaneReflection v x)).comp
@@ -251,29 +300,34 @@ def reflectFDeriv (v : E) (w : E → E →L[ℝ] F) (x : E) : E →L[ℝ] F :=
 variable (v : E)
 
 omit [NormedAddCommGroup F] [NormedSpace ℝ F] in
-/-- On the half space `⟪x, v⟫ ≥ 0`, the even reflection is the function itself. -/
+/-- On the half space $\langle x, v \rangle \ge 0$, the even reflection is the function itself:
+$u^\star(x) = u(x)$. -/
 theorem evenReflection_of_nonneg {u : E → F} {x : E} (hx : 0 ≤ ⟪x, v⟫) :
     evenReflection v u x = u x := by
   simp [evenReflection, hx]
 
 omit [NormedAddCommGroup F] [NormedSpace ℝ F] in
-/-- On the half space `⟪x, v⟫ < 0`, the even reflection is the function at the reflected point. -/
+/-- On the half space $\langle x, v \rangle < 0$, the even reflection is the function at the
+reflected point: $u^\star(x) = u(\sigma(x))$. -/
 theorem evenReflection_of_neg {u : E → F} {x : E} (hx : ⟪x, v⟫ < 0) :
     evenReflection v u x = u (hyperplaneReflection v x) := by
   simp [evenReflection, not_le.2 hx]
 
-/-- On the half space `⟪x, v⟫ ≥ 0`, `reflectFDeriv v w` is `w`. -/
+/-- On the half space $\langle x, v \rangle \ge 0$, the reflected derivative `reflectFDeriv v w`
+equals $w(x)$. -/
 theorem reflectFDeriv_of_nonneg {w : E → E →L[ℝ] F} {x : E} (hx : 0 ≤ ⟪x, v⟫) :
     reflectFDeriv v w x = w x := by
   simp [reflectFDeriv, hx]
 
-/-- On the half space `⟪x, v⟫ < 0`, `reflectFDeriv v w` is `w ∘ σ` composed with `σ`. -/
+/-- On the half space $\langle x, v \rangle < 0$, the reflected derivative `reflectFDeriv v w`
+equals $w(\sigma(x)) \circ \sigma$. -/
 theorem reflectFDeriv_of_neg {w : E → E →L[ℝ] F} {x : E} (hx : ⟪x, v⟫ < 0) :
     reflectFDeriv v w x = (w (hyperplaneReflection v x)).comp
       ((hyperplaneReflection v).toContinuousLinearEquiv : E →L[ℝ] E) := by
   simp [reflectFDeriv, not_le.2 hx]
 
-/-- The reflected derivative in a direction `y ⊥ v` is the even reflection of `∂_y u`. -/
+/-- In a direction $y$ with $\langle y, v \rangle = 0$, the reflected derivative `reflectFDeriv v w`
+applied to $y$ is the even reflection of $x \mapsto w(x) y$. -/
 theorem reflectFDeriv_apply_of_inner_eq_zero (w : E → E →L[ℝ] F) {y : E} (hy : ⟪y, v⟫ = 0)
     (x : E) : reflectFDeriv v w x y = evenReflection v (fun z ↦ w z y) x := by
   by_cases hx : 0 ≤ ⟪x, v⟫
@@ -283,14 +337,16 @@ theorem reflectFDeriv_apply_of_inner_eq_zero (w : E → E →L[ℝ] F) {y : E} (
       LinearIsometryEquiv.coe_toContinuousLinearEquiv,
       hyperplaneReflection_apply_of_inner_eq_zero v hy]
 
-/-- The reflected derivative along `v` is the odd reflection of `∂_v u`. -/
+/-- Along $v$, the reflected derivative `reflectFDeriv v w` applied to $v$ is the odd reflection of
+$x \mapsto w(x) v$. -/
 theorem reflectFDeriv_apply_self (w : E → E →L[ℝ] F) (x : E) :
     reflectFDeriv v w x v = oddReflection v (fun z ↦ w z v) x := by
   by_cases hx : 0 ≤ ⟪x, v⟫
   · simp [reflectFDeriv, oddReflection, hx]
   · simp [reflectFDeriv, oddReflection, hx]
 
-/-- The reflected derivative has the norm of the derivative at the reflected point. -/
+/-- The reflected derivative has the norm of the derivative at the reflected point: the norm of
+`reflectFDeriv v w` at $x$ equals the norm of the even reflection of $w$ at $x$. -/
 theorem norm_reflectFDeriv (w : E → E →L[ℝ] F) (x : E) :
     ‖reflectFDeriv v w x‖ = ‖evenReflection v w x‖ := by
   by_cases hx : 0 ≤ ⟪x, v⟫
@@ -300,27 +356,31 @@ theorem norm_reflectFDeriv (w : E → E →L[ℝ] F) (x : E) :
 
 omit [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- **The positive half `V₊ = V ∩ {0 < ⟪x, v⟫}`** of an open set, on which the function to be
-reflected lives: `Q₊` for `Q` and `v = e_N`, the half space for `V = ⊤`. -/
+/-- **The positive half** $V_+ = V \cap \{x : \langle x, v \rangle > 0\}$ of an open set $V$, as an
+open set. The function to be reflected lives on $V_+$. For $V = Q$ and $v = e_N$ it is $Q_+$,
+and for $V = E$ it is a half space. -/
 def posHalf (v : E) (V : Opens E) : Opens E :=
   ⟨(V : Set E) ∩ {x | 0 < ⟪x, v⟫},
     V.isOpen.inter (isOpen_lt continuous_const (continuous_id.inner continuous_const))⟩
 
-/-- The underlying set of `posHalf v V` is `V ∩ {x | 0 < ⟪x, v⟫}`. -/
+/-- The underlying set of `posHalf v V` is $V \cap \{x : \langle x, v \rangle > 0\}$. -/
 @[simp]
 theorem coe_posHalf (V : Opens E) : (posHalf v V : Set E) = (V : Set E) ∩ {x | 0 < ⟪x, v⟫} :=
   rfl
 
-/-- `posHalf v V ≤ V`. -/
+/-- The positive half is a subset of the open set: $V_+ \subseteq V$. -/
 theorem posHalf_le (V : Opens E) : posHalf v V ≤ V := fun _ hx ↦ hx.1
 
 end Definitions
 
-/-! ### Integrals of reflected functions
+/-!
+### Integrals of reflected functions
 
-A function on `V` that agrees with `A` on `{0 ≤ ⟪x, v⟫}` and with `B ∘ σ` on `{⟪x, v⟫ < 0}` has
-integral `∫_{V₊} A + ∫_{V₊} B`, the hyperplane being null and `σ` measure preserving. Both
-`u^⋆` and `reflectFDeriv v w`, times a test function, have this shape. -/
+Let $G$ be a function on $V$ that agrees with $A$ on $\{\langle x, v \rangle \ge 0\}$ and with
+$B \circ \sigma$ on $\{\langle x, v \rangle < 0\}$. Then $\int_V G = \int_{V_+} A + \int_{V_+} B$,
+because the hyperplane is a null set and $\sigma$ preserves measure. Both $u^\star$ and
+`reflectFDeriv v w`, multiplied by a test function, have this form.
+-/
 
 section Shape
 
@@ -329,19 +389,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {v : E} {V : Opens E}
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The negative half `V₋ = V ∩ {⟪x, v⟫ < 0}`. -/
+/-- The negative half $V_- = V \cap \{x : \langle x, v \rangle < 0\}$ of an open set $V$ is open. -/
 theorem isOpen_negHalf : IsOpen ((V : Set E) ∩ {x | ⟪x, v⟫ < 0}) :=
   V.isOpen.inter (isOpen_lt (continuous_id.inner continuous_const) continuous_const)
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The positive and negative halves of `V` are disjoint. -/
+/-- The positive half $V_+$ and the negative half $V_-$ of $V$ are disjoint. -/
 theorem disjoint_posHalf_negHalf :
     Disjoint (posHalf v V : Set E) ((V : Set E) ∩ {x | ⟪x, v⟫ < 0}) :=
   Set.disjoint_left.2 fun x hx hx' ↦
     (lt_asymm (show (0 : ℝ) < ⟪x, v⟫ from hx.2) (show ⟪x, v⟫ < 0 from hx'.2)).elim
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- A set with `σ '' V = V` contains `σ x` with `x`. -/
+/-- If $\sigma(V) = V$, then $x \in V$ if and only if $\sigma(x) \in V$. -/
 theorem mem_of_image_eq (hV : hyperplaneReflection v '' (V : Set E) = V) {x : E} :
     x ∈ (V : Set E) ↔ hyperplaneReflection v x ∈ (V : Set E) := by
   constructor
@@ -354,7 +414,8 @@ theorem mem_of_image_eq (hV : hyperplaneReflection v '' (V : Set E) = V) {x : E}
     rwa [hyperplaneReflection_hyperplaneReflection, hV] at this
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The negative half is the reflection of the positive half. -/
+/-- If $\sigma(V) = V$, then the negative half is the reflection of the positive half:
+$\sigma^{-1}(V_+) = V \cap \{x : \langle x, v \rangle < 0\}$. -/
 theorem preimage_posHalf (hV : hyperplaneReflection v '' (V : Set E) = V) :
     hyperplaneReflection v ⁻¹' (posHalf v V : Set E) = (V : Set E) ∩ {x | ⟪x, v⟫ < 0} := by
   ext x
@@ -364,7 +425,8 @@ theorem preimage_posHalf (hV : hyperplaneReflection v '' (V : Set E) = V) :
   · rintro ⟨h1, h2⟩; exact ⟨h1, by linarith⟩
   · rintro ⟨h1, h2⟩; exact ⟨h1, by linarith⟩
 
-/-- Up to the null hyperplane, `V` is the union of its two halves. -/
+/-- Let $v \neq 0$. Then $V$ is equal to the union $V_+ \cup V_-$ of its two halves up to a null
+set. -/
 theorem ae_eq_posHalf_union_negHalf (hv : v ≠ 0) :
     (V : Set E) =ᵐ[volume] (posHalf v V : Set E) ∪ ((V : Set E) ∩ {x | ⟪x, v⟫ < 0}) := by
   filter_upwards [ae_inner_ne_zero hv] with x hx
@@ -382,8 +444,10 @@ variable (hv : v ≠ 0) (hV : hyperplaneReflection v '' (V : Set E) = V) {G A B 
 include hv hV hA hB
 
 omit [NormedSpace ℝ F] in
-/-- A reflected function is almost everywhere strongly measurable on `V` when its two halves
-are on `V₊`. -/
+/-- Let $v \neq 0$, let $\sigma(V) = V$, and let $G$ agree with $A$ on
+$V \cap \{\langle x, v \rangle \ge 0\}$ and with $B \circ \sigma$ on
+$V \cap \{\langle x, v \rangle < 0\}$. If $A$ and $B$ are almost everywhere strongly measurable
+on $V_+$, then $G$ is almost everywhere strongly measurable on $V$. -/
 theorem aestronglyMeasurable_of_reflected
     (hAm : AEStronglyMeasurable A (volume.restrict (posHalf v V : Set E)))
     (hBm : AEStronglyMeasurable B (volume.restrict (posHalf v V : Set E))) :
@@ -413,8 +477,12 @@ theorem aestronglyMeasurable_of_reflected
       hA x hxV h.le]
 
 omit [NormedSpace ℝ F] in
-/-- **The `L^p` norm of a reflected function** is at most the sum of the `L^p(V₊)` norms of its
-two halves, for `1 ≤ p`. -/
+/-- **The $L^p$ norm of a reflected function.** Let $v \neq 0$, let $\sigma(V) = V$, let $1 \le p$,
+and let $G$ agree with $A$ on $V \cap \{\langle x, v \rangle \ge 0\}$ and with $B \circ \sigma$
+on $V \cap \{\langle x, v \rangle < 0\}$. If $B$ is almost everywhere strongly measurable on
+$V_+$, then
+$$\|G\|_{L^p(V)} \le \|A\|_{L^p(V_+)} + \|B\|_{L^p(V_+)}.$$
+-/
 theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
     (hBm : AEStronglyMeasurable B (volume.restrict (posHalf v V : Set E))) :
     eLpNorm G p (volume.restrict (V : Set E))
@@ -464,7 +532,11 @@ theorem eLpNorm_le_of_reflected {p : ℝ≥0∞} (hp : 1 ≤ p)
             ((measurePreserving_hyperplaneReflection v).restrict_preimage_emb
               (measurableEmbedding_hyperplaneReflection v) _)]
 
-/-- **The integral of a reflected function** is `∫_{V₊} A + ∫_{V₊} B`. -/
+/-- **The integral of a reflected function.** Let $v \neq 0$, let $\sigma(V) = V$, and let $G$ agree
+with $A$ on $V \cap \{\langle x, v \rangle \ge 0\}$ and with $B \circ \sigma$ on
+$V \cap \{\langle x, v \rangle < 0\}$. If $A$ and $B$ are integrable on $V_+$, then
+$$\int_V G = \int_{V_+} A + \int_{V_+} B.$$
+-/
 theorem setIntegral_of_reflected
     (hAi : IntegrableOn A (posHalf v V : Set E)) (hBi : IntegrableOn B (posHalf v V : Set E)) :
     ∫ x in (V : Set E), G x = (∫ x in (posHalf v V : Set E), A x)
@@ -505,8 +577,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {v : E} {V : Opens E} {p : ℝ≥0∞}
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] [CompleteSpace F] in
-/-- A continuous compactly supported function times an `L^p` function on a measurable set,
-`1 ≤ p`, is integrable on the set. -/
+/-- Let $\mu$ be a measure that is finite on compact sets, let $S$ be a measurable set, let $g$ be a
+continuous real function with compact support, let $1 \le p$, and let $f \in L^p(S)$. Then
+$x \mapsto g(x) f(x)$ is integrable on $S$. -/
 theorem integrableOn_smul_of_memLp {μ : Measure E} [IsFiniteMeasureOnCompacts μ] {S : Set E}
     (hS : MeasurableSet S) {g : E → ℝ} (hg : Continuous g) (hgc : HasCompactSupport g)
     {f : E → F} (hp : 1 ≤ p) (hf : MemLp f p (μ.restrict S)) :
@@ -521,14 +594,16 @@ theorem integrableOn_smul_of_memLp {μ : Measure E} [IsFiniteMeasureOnCompacts �
   exact ((measure_mono inter_subset_left).trans_lt hgc.measure_lt_top).ne
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The derivative of `x ↦ ⟪x, v⟫` is `⟪·, v⟫`. -/
+/-- The derivative of $x \mapsto \langle x, v \rangle$ at every point is the linear form
+$y \mapsto \langle v, y \rangle$ (`innerSL ℝ v`). -/
 theorem hasFDerivAt_inner_right (v x : E) : HasFDerivAt (fun x ↦ ⟪x, v⟫) (innerSL ℝ v) x := by
   have : (fun x ↦ ⟪x, v⟫) = innerSL ℝ v := funext fun x ↦ by simp [real_inner_comm]
   rw [this]
   exact (innerSL ℝ v).hasFDerivAt
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The derivative of the cut-off `x ↦ η(c ⟪x, v⟫)`. -/
+/-- For $c \in \mathbb{R}$, the derivative of the cutoff $x \mapsto \eta(c \langle x, v \rangle)$ at
+$x$ is $\eta'(c \langle x, v \rangle) \, c \, \langle v, \cdot \rangle$. -/
 theorem hasFDerivAt_reflectionCutoff_inner (v : E) (c : ℝ) (x : E) :
     HasFDerivAt (fun x ↦ reflectionCutoff (c * ⟪x, v⟫))
       (deriv reflectionCutoff (c * ⟪x, v⟫) • (c • innerSL ℝ v)) x :=
@@ -536,7 +611,11 @@ theorem hasFDerivAt_reflectionCutoff_inner (v : E) (c : ℝ) (x : E) :
     ((hasFDerivAt_inner_right v x).const_mul c)
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The derivative of `η(c ⟪x, v⟫) φ(x)` in the direction `y`. -/
+/-- Let $\varphi : E \to \mathbb{R}$ be of class $C^1$ and $c \in \mathbb{R}$. Then the derivative
+of $x \mapsto \eta(c \langle x, v \rangle) \varphi(x)$ at $x$ in the direction $y$ is
+$$\eta(c \langle x, v \rangle) \, D\varphi(x) y + \eta'(c \langle x, v \rangle) \, c \, \langle
+  y, v \rangle \, \varphi(x).$$
+-/
 theorem fderiv_reflectionCutoff_mul_apply (v : E) {φ : E → ℝ} (hφ : ContDiff ℝ 1 φ) (c : ℝ)
     (x y : E) :
     fderiv ℝ (fun x ↦ reflectionCutoff (c * ⟪x, v⟫) * φ x) x y
@@ -551,7 +630,7 @@ theorem fderiv_reflectionCutoff_mul_apply (v : E) {φ : E → ℝ} (hφ : ContDi
   ring
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The cut-off `η((n + 1) ⟪x, v⟫)` tends to `1` at every point with `0 < ⟪x, v⟫`. -/
+/-- Let $t > 0$. Then $\eta((n + 1) t) \to 1$ as $n \to \infty$. -/
 theorem tendsto_reflectionCutoff_mul {t : ℝ} (ht : 0 < t) :
     Tendsto (fun n : ℕ ↦ reflectionCutoff (((n : ℝ) + 1) * t)) atTop (𝓝 1) := by
   refine tendsto_const_nhds.congr' ?_
@@ -562,7 +641,7 @@ theorem tendsto_reflectionCutoff_mul {t : ℝ} (ht : 0 < t) :
   rwa [div_le_iff₀ ht] at hn'
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- Eventually `(n + 1) t > 1` for `t > 0`, so that `η'((n + 1) t) = 0`. -/
+/-- Let $t > 0$. Then $\eta'((n + 1) t) = 0$ for all large $n$, since eventually $(n + 1) t > 1$. -/
 theorem eventually_deriv_reflectionCutoff_mul_eq_zero {t : ℝ} (ht : 0 < t) :
     ∀ᶠ n : ℕ in atTop, deriv reflectionCutoff (((n : ℝ) + 1) * t) = 0 := by
   obtain ⟨N, hN⟩ := exists_nat_ge (1 / t)
@@ -572,8 +651,9 @@ theorem eventually_deriv_reflectionCutoff_mul_eq_zero {t : ℝ} (ht : 0 < t) :
     hN.trans_lt (by exact_mod_cast Nat.lt_succ_of_le hn)
   rwa [div_lt_iff₀ ht] at hn'
 
-/-- The cut-off `η((n + 1) ⟪x, v⟫) φ` of a test function `φ` on `V` is a test function on
-`V₊`: its support lies in `tsupport φ ∩ {1/(2(n+1)) ≤ ⟪x, v⟫}`. -/
+/-- The cutoff $\theta_n(x) = \eta((n + 1) \langle x, v \rangle) \varphi(x)$ of a test function
+$\varphi$ on $V$, as a test function on $V_+$. Its support lies in $\operatorname{tsupport}
+\varphi \cap \{x : \langle x, v \rangle \ge 1/(2(n + 1))\}$. -/
 def cutoffTestFunction (v : E) (V : Opens E) (φ : 𝓓(V, ℝ)) (n : ℕ) : 𝓓(posHalf v V, ℝ) where
   toFun x := reflectionCutoff (((n : ℝ) + 1) * ⟪x, v⟫) * φ x
   contDiff' := (contDiff_reflectionCutoff.comp
@@ -596,20 +676,25 @@ def cutoffTestFunction (v : E) (V : Opens E) (φ : 𝓓(V, ℝ)) (n : ℕ) : �
       linarith
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The value of `cutoffTestFunction v V φ n` at `x`. -/
+/-- The value of `cutoffTestFunction v V φ n` at $x$ is
+$\eta((n + 1) \langle x, v \rangle) \varphi(x)$. -/
 theorem cutoffTestFunction_apply (φ : 𝓓(V, ℝ)) (n : ℕ) (x : E) :
     cutoffTestFunction v V φ n x = reflectionCutoff (((n : ℝ) + 1) * ⟪x, v⟫) * φ x :=
   rfl
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The derivative of `cutoffTestFunction v V φ n` in the direction `y`. -/
+/-- The derivative of `cutoffTestFunction v V φ n` at $x$ in the direction $y$ is
+$$\eta((n + 1) \langle x, v \rangle) \, D\varphi(x) y + \eta'((n + 1) \langle x, v \rangle) \,
+  (n + 1) \, \langle y, v \rangle \, \varphi(x).$$
+-/
 theorem fderiv_cutoffTestFunction_apply (φ : 𝓓(V, ℝ)) (n : ℕ) (x y : E) :
     fderiv ℝ (cutoffTestFunction v V φ n) x y
       = reflectionCutoff (((n : ℝ) + 1) * ⟪x, v⟫) * fderiv ℝ φ x y
         + deriv reflectionCutoff (((n : ℝ) + 1) * ⟪x, v⟫) * ((n : ℝ) + 1) * ⟪y, v⟫ * φ x :=
   fderiv_reflectionCutoff_mul_apply v (φ.contDiff.of_le (by simp)) _ x y
 
-/-- The reflected test function `φ ∘ σ` is a test function on `V`. -/
+/-- If $\sigma(V) = V$, then the reflected test function $\varphi \circ \sigma$ of a test function
+$\varphi$ on $V$ is a test function on $V$. -/
 def TestFunction.compHyperplaneReflection (hV : hyperplaneReflection v '' (V : Set E) = V)
     (φ : 𝓓(V, ℝ)) : 𝓓(V, ℝ) where
   toFun x := φ (hyperplaneReflection v x)
@@ -625,14 +710,17 @@ def TestFunction.compHyperplaneReflection (hV : hyperplaneReflection v '' (V : S
     exact image_mono φ.tsupport_subset
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The value of `φ.compHyperplaneReflection hV` at `x` is `φ (σ x)`. -/
+/-- The value of `TestFunction.compHyperplaneReflection hV φ` at $x$ is $\varphi(\sigma(x))$. -/
 theorem TestFunction.compHyperplaneReflection_apply (hV : hyperplaneReflection v '' (V : Set E) = V)
     (φ : 𝓓(V, ℝ)) (x : E) :
     TestFunction.compHyperplaneReflection hV φ x = φ (hyperplaneReflection v x) :=
   rfl
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The chain rule for the reflection: `∂_y (φ ∘ σ)(x) = ∂_{σ y} φ (σ x)`. -/
+/-- The chain rule for the reflection. Let $\varphi : E \to \mathbb{R}$ be of class $C^1$. Then for
+all $x, y \in E$,
+$$D(\varphi \circ \sigma)(x) y = D\varphi(\sigma(x)) \, \sigma(y).$$
+-/
 theorem fderiv_comp_hyperplaneReflection_apply {φ : E → ℝ} (hφ : ContDiff ℝ 1 φ) (x y : E) :
     fderiv ℝ (fun x ↦ φ (hyperplaneReflection v x)) x y
       = fderiv ℝ φ (hyperplaneReflection v x) (hyperplaneReflection v y) := by
@@ -644,22 +732,29 @@ theorem fderiv_comp_hyperplaneReflection_apply {φ : E → ℝ} (hφ : ContDiff 
   rfl
 
 omit [CompleteSpace F] in
-/-- **Lemma 9.2 (extension by reflection), the identity**: for a unit vector `v`, an open set
-`V` with `σ '' V = V`, and `u ∈ W^{1,p}(V₊)` with weak derivative `w`, `1 ≤ p`, the even
-reflection `u^⋆` has the weak derivative `reflectFDeriv v w` on `V`.
+/-- **Lemma 9.2** of [brezis2011functional] (extension by reflection), the identity. Let $E$ be a
+finite-dimensional real inner product space with Lebesgue measure, let $v \in E$ be a unit
+vector, let $V \subseteq E$ be an open set with $\sigma(V) = V$, and let $1 \le p \le \infty$.
+Let $u : E \to F$ have the weak derivative $w$ on $V_+$, with $u \in L^p(V_+)$ and
+$w \in L^p(V_+)$. Then the even reflection $u^\star$ has the weak derivative `reflectFDeriv v w`
+on $V$.
 
-Proof ([brezis2011functional] §9.2, proof of Lemma 9.2, cases (7) and (8) at once): for a test
-function `φ` on `V` and a direction `y`, the cut-offs `θ_n = η_n φ` and `θ'_n = η_n (φ ∘ σ)`,
-`η_n(x) = η((n + 1) ⟪x, v⟫)`, are test functions on `V₊`, so the defining identity of `w` holds
-for `θ_n` in the direction `y` and for `θ'_n` in the direction `σ y`. Adding the two,
-`∫_{V₊} η_n (∂_y φ + (∂_y φ) ∘ σ) u + ∫_{V₊} (n+1) η'_n ⟪y, v⟫ (φ − φ ∘ σ) u
-  = −∫_{V₊} η_n (φ w(y) + (φ ∘ σ) w(σ y))`.
-As `n → ∞` the first and last integrals converge by dominated convergence (`η_n → 1` off the
-null hyperplane, `|η_n| ≤ 1`), and the middle one tends to `0`: `|φ − φ ∘ σ| ≤ M ⟪x, v⟫` by
-the mean value theorem, `η'_n` vanishes off `{(n+1) ⟪x, v⟫ ≤ 1}`, so the integrand is bounded by
-a fixed multiple of `|u|` on the support and tends to `0` pointwise. The limit identity is the
-identity for `φ`, once `∫_V` is split into `∫_{V₊} + ∫_{V₋}` and `V₋` is folded onto `V₊` by
-the measure-preserving `σ` (`setIntegral_of_reflected`). -/
+The proof is the proof of the source, §9.2, with the cases (7) and (8) treated at once. Let
+$\varphi$ be a test function on $V$ and $y$ a direction, and let
+$\eta_n(x) = \eta((n + 1) \langle x, v \rangle)$. The cutoffs $\theta_n = \eta_n \varphi$ and
+$\theta'_n = \eta_n (\varphi \circ \sigma)$ are test functions on $V_+$. So the defining
+identity of $w$ holds for $\theta_n$ in the direction $y$ and for $\theta'_n$ in the direction
+$\sigma y$. The sum of the two identities is
+$$\int_{V_+} \eta_n \big(\partial_y \varphi + (\partial_y \varphi) \circ \sigma\big) u +
+  \int_{V_+} (n + 1) \eta'_n \langle y, v \rangle (\varphi - \varphi \circ \sigma) u =
+  -\int_{V_+} \eta_n \big(\varphi \, w(y) + (\varphi \circ \sigma) \, w(\sigma y)\big).$$
+As $n \to \infty$, the first and the last integral converge by dominated convergence, since
+$\eta_n \to 1$ off the null hyperplane and $|\eta_n| \le 1$. The middle integral tends to $0$:
+$|\varphi - \varphi \circ \sigma| \le M \langle x, v \rangle$ by the mean value theorem, and
+$\eta'_n$ vanishes off $\{(n + 1) \langle x, v \rangle \le 1\}$. So the integrand is bounded by
+a fixed multiple of $|u|$ on the support and tends to $0$ pointwise. The limit identity is the
+identity for $\varphi$, after $\int_V$ is split into $\int_{V_+} + \int_{V_-}$ and $V_-$ is
+folded onto $V_+$ by the measure-preserving map $\sigma$ (`setIntegral_of_reflected`). -/
 theorem HasWeakFDerivOn.evenReflection (hv : ‖v‖ = 1)
     (hV : hyperplaneReflection v '' (V : Set E) = V) (hp : 1 ≤ p) {u : E → F}
     {w : E → E →L[ℝ] F} (hu : HasWeakFDerivOn u w (posHalf v V) volume)
@@ -987,7 +1082,7 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {v : E} {V : Opens E} {p : ℝ≥0∞}
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] [NormedSpace ℝ F] in
-/-- The even reflection is additive. -/
+/-- The even reflection is additive: $(f + g)^\star = f^\star + g^\star$. -/
 theorem evenReflection_add (v : E) (f g : E → F) :
     evenReflection v (f + g) = evenReflection v f + evenReflection v g := by
   funext x
@@ -995,7 +1090,8 @@ theorem evenReflection_add (v : E) (f g : E → F) :
   split_ifs <;> rfl
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- The even reflection commutes with scalar multiplication. -/
+/-- The even reflection commutes with scalar multiplication: $(c f)^\star = c f^\star$ for
+$c \in \mathbb{R}$. -/
 theorem evenReflection_smul (v : E) (c : ℝ) (f : E → F) :
     evenReflection v (c • f) = c • evenReflection v f := by
   funext x
@@ -1003,7 +1099,9 @@ theorem evenReflection_smul (v : E) (c : ℝ) (f : E → F) :
   split_ifs <;> rfl
 
 omit [NormedAddCommGroup F] [NormedSpace ℝ F] in
-/-- The even reflection only sees the function up to a null set of `V₊`. -/
+/-- The even reflection depends on the function only up to a null set of $V_+$. Let $v \neq 0$ and
+$\sigma(V) = V$. If $f = g$ almost everywhere on $V_+$, then $f^\star = g^\star$ almost
+everywhere on $V$. -/
 theorem evenReflection_congr_ae (hv : v ≠ 0) (hV : hyperplaneReflection v '' (V : Set E) = V)
     {f g : E → F} (h : f =ᵐ[volume.restrict (posHalf v V : Set E)] g) :
     evenReflection v f =ᵐ[volume.restrict (V : Set E)] evenReflection v g := by
@@ -1024,7 +1122,10 @@ theorem evenReflection_congr_ae (hv : v ≠ 0) (hV : hyperplaneReflection v '' (
     exact hx1 ⟨hxV, h⟩
 
 omit [NormedSpace ℝ F] in
-/-- **The `L^p` bound of Lemma 9.2**: `‖u^⋆‖_{L^p(V)} ≤ 2 ‖u‖_{L^p(V₊)}` for `1 ≤ p`. -/
+/-- **The $L^p$ bound of Lemma 9.2.** Let $v \neq 0$, let $\sigma(V) = V$ and $1 \le p$, and let $u$
+be almost everywhere strongly measurable on $V_+$. Then
+$$\|u^\star\|_{L^p(V)} \le 2 \|u\|_{L^p(V_+)}.$$
+-/
 theorem eLpNorm_evenReflection_le (hv : v ≠ 0) (hV : hyperplaneReflection v '' (V : Set E) = V)
     (hp : 1 ≤ p) {u : E → F} (hu : AEStronglyMeasurable u (volume.restrict (posHalf v V : Set E))) :
     eLpNorm (evenReflection v u) p (volume.restrict (V : Set E))
@@ -1034,7 +1135,8 @@ theorem eLpNorm_evenReflection_le (hv : v ≠ 0) (hV : hyperplaneReflection v ''
     (fun x _ hx ↦ evenReflection_of_neg v hx) hp hu
 
 omit [NormedSpace ℝ F] in
-/-- The even reflection of a measurable function is measurable. -/
+/-- Let $v \neq 0$ and $\sigma(V) = V$. If $u$ is almost everywhere strongly measurable on $V_+$,
+then $u^\star$ is almost everywhere strongly measurable on $V$. -/
 theorem aestronglyMeasurable_evenReflection (hv : v ≠ 0)
     (hV : hyperplaneReflection v '' (V : Set E) = V) {u : E → F}
     (hu : AEStronglyMeasurable u (volume.restrict (posHalf v V : Set E))) :
@@ -1043,7 +1145,8 @@ theorem aestronglyMeasurable_evenReflection (hv : v ≠ 0)
     (fun _ _ hx ↦ evenReflection_of_neg v hx) hu hu
 
 omit [NormedSpace ℝ F] in
-/-- `L^p` membership of the even reflection. -/
+/-- Let $v \neq 0$, let $\sigma(V) = V$ and $1 \le p$. If $u \in L^p(V_+)$, then
+$u^\star \in L^p(V)$. -/
 theorem MeasureTheory.MemLp.evenReflection (hv : v ≠ 0)
     (hV : hyperplaneReflection v '' (V : Set E) = V)
     (hp : 1 ≤ p) {u : E → F} (hu : MemLp u p (volume.restrict (posHalf v V : Set E))) :
@@ -1051,8 +1154,12 @@ theorem MeasureTheory.MemLp.evenReflection (hv : v ≠ 0)
   (eLpNorm_evenReflection_le hv hV hp hu.aestronglyMeasurable).trans_lt
     (ENNReal.mul_lt_top ENNReal.ofNat_lt_top hu)
 
-/-- The reflected derivative has the norm of the even reflection of the derivative, so its `L^p`
-norm is at most `2 ‖w‖_{L^p(V₊)}`. -/
+/-- Let $v \neq 0$, let $\sigma(V) = V$ and $1 \le p$, and let $w : E \to \mathcal{L}(E, F)$ be
+almost everywhere strongly measurable on $V_+$. Then the reflected derivative $\tilde w$ =
+`reflectFDeriv v w` satisfies
+$$\|\tilde w\|_{L^p(V)} \le 2 \|w\|_{L^p(V_+)}.$$
+
+The reflected derivative has the norm of the even reflection of $w$ (`norm_reflectFDeriv`). -/
 theorem eLpNorm_reflectFDeriv_le (hv : v ≠ 0) (hV : hyperplaneReflection v '' (V : Set E) = V)
     (hp : 1 ≤ p) {w : E → E →L[ℝ] F}
     (hw : AEStronglyMeasurable w (volume.restrict (posHalf v V : Set E))) :
@@ -1069,10 +1176,12 @@ theorem eLpNorm_reflectFDeriv_le (hv : v ≠ 0) (hV : hyperplaneReflection v '' 
   exact eLpNorm_mono_ae hwσ (Eventually.of_forall fun z ↦
     (ContinuousLinearMap.opNorm_comp_linearIsometryEquiv _ _).le)
 
-/-- **Lemma 9.2, membership**: for a unit vector `v`, an open `V` with `σ '' V = V`, and
-`u ∈ W^{1,p}(V₊)`, `1 ≤ p ≤ ∞`, the even reflection `u^⋆` lies in `W^{1,p}(V)`, with
-`‖u^⋆‖_{L^p(V)} ≤ 2 ‖u‖_{L^p(V₊)}` (`eLpNorm_evenReflection_le`) and the derivative bound
-`eLpNorm_reflectFDeriv_le` ([brezis2011functional] Lemma 9.2). -/
+/-- **Lemma 9.2** of [brezis2011functional], membership. Let $v$ be a unit vector, let $V$ be an
+open set with $\sigma(V) = V$, and let $1 \le p \le \infty$. If $u \in W^{1,p}(V_+)$, then its
+even reflection $u^\star$ lies in $W^{1,p}(V)$.
+
+The bounds of the source are separate results: $\|u^\star\|_{L^p(V)} \le 2 \|u\|_{L^p(V_+)}$ is
+`eLpNorm_evenReflection_le`, and the bound of the derivative is `eLpNorm_reflectFDeriv_le`. -/
 theorem MemSobolev.evenReflection (hv : ‖v‖ = 1)
     (hV : hyperplaneReflection v '' (V : Set E) = V) (hp : 1 ≤ p) {u : E → F}
     (hu : MemSobolev u 1 p (posHalf v V) volume) :
@@ -1115,7 +1224,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteD
   {v : E} {V : Opens E}
 
 omit [CompleteSpace F] in
-/-- Lemma 9.2 in the multi-index formulation. -/
+/-- **Lemma 9.2** of [brezis2011functional] in the multi-index formulation. Let $b$ be a basis of
+$E$, let $v$ be a unit vector, let $V$ be an open set with $\sigma(V) = V$, and let
+$1 \le p \le \infty$. If $u$ lies in $W^{1,p}(V_+)$ in the sense of `MemSobolevMultiIndex`, then
+$u^\star$ lies in $W^{1,p}(V)$ in the same sense. -/
 theorem MemSobolevMultiIndex.evenReflection (hv : ‖v‖ = 1)
     (hV : hyperplaneReflection v '' (V : Set E) = V) {u : E → F}
     (hu : MemSobolevMultiIndex b u 1 p (posHalf v V) volume) :
@@ -1127,26 +1239,31 @@ namespace SobolevMultiIndex
 variable (hv : ‖v‖ = 1) (hV : hyperplaneReflection v '' (V : Set E) = V)
 include hv hV
 
-/-- **The extension by reflection of Lemma 9.2 on the typed spaces**, as a function: the element
-of `W^{1,p}(V)` whose function is `u^⋆`. It is linear and bounded;
+/-- **The extension by reflection of Lemma 9.2 on the typed spaces**, as a function. For a unit
+vector $v$ and an open set $V$ with $\sigma(V) = V$, it sends $u \in W^{1,p}(V_+)$ to an element
+of $W^{1,p}(V)$ whose function is $u^\star$.
+
+The element is chosen from `MemSobolevMultiIndex.evenReflection`. It is linear and bounded, and
 `SobolevMultiIndex.evenReflectionL` is its bundled form. -/
 def evenReflection (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     SobolevMultiIndex F b 1 p V volume :=
   ((memSobolevMultiIndex u).evenReflection hv hV).exists_sobolevMultiIndex.choose
 
-/-- The function of `SobolevMultiIndex.evenReflection hv hV u` is `u^⋆`. -/
+/-- The function of `SobolevMultiIndex.evenReflection hv hV u` is $u^\star$ almost everywhere on
+$V$. -/
 theorem fn_evenReflection (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     fn (evenReflection hv hV u) =ᵐ[volume.restrict (V : Set E)] _root_.evenReflection v (fn u) :=
   ((memSobolevMultiIndex u).evenReflection hv hV).exists_sobolevMultiIndex.choose_spec
 
-/-- On `V₊`, the reflected element is `u`. -/
+/-- On $V_+$, the function of `SobolevMultiIndex.evenReflection hv hV u` is the function of $u$,
+almost everywhere. -/
 theorem fn_evenReflection_restrict (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     fn (evenReflection hv hV u) =ᵐ[volume.restrict (posHalf v V : Set E)] fn u := by
   filter_upwards [ae_restrict_of_ae_restrict_of_subset (posHalf_le v V) (fn_evenReflection hv hV u),
     ae_restrict_mem (posHalf v V).isOpen.measurableSet] with x hx hxV
   rw [hx, evenReflection_of_nonneg v (le_of_lt (show (0 : ℝ) < ⟪x, v⟫ from hxV.2))]
 
-/-- The reflection is additive. -/
+/-- The typed reflection is additive: $(u + w)^\star = u^\star + w^\star$ in $W^{1,p}(V)$. -/
 theorem evenReflection_add (u w : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     evenReflection hv hV (u + w) = evenReflection hv hV u + evenReflection hv hV w := by
   refine ext_of_fn_ae_eq ((fn_evenReflection hv hV (u + w)).trans (EventuallyEq.trans ?_
@@ -1156,7 +1273,8 @@ theorem evenReflection_add (u w : SobolevMultiIndex F b 1 p (posHalf v V) volume
   rw [_root_.evenReflection_add]
   exact ((fn_evenReflection hv hV u).add (fn_evenReflection hv hV w)).symm
 
-/-- The reflection commutes with scalar multiplication. -/
+/-- The typed reflection commutes with scalar multiplication: $(c u)^\star = c u^\star$ in
+$W^{1,p}(V)$ for $c \in \mathbb{R}$. -/
 theorem evenReflection_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     evenReflection hv hV (c • u) = c • evenReflection hv hV u := by
   refine ext_of_fn_ae_eq ((fn_evenReflection hv hV (c • u)).trans (EventuallyEq.trans ?_
@@ -1166,7 +1284,8 @@ theorem evenReflection_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p (posHalf v 
   rw [_root_.evenReflection_smul]
   exact ((fn_evenReflection hv hV u).const_smul c).symm
 
-/-- **The `L^p` bound of the typed reflection**: `‖u^⋆‖_{L^p(V)} ≤ 2 ‖u‖_{L^p(V₊)}`. -/
+/-- **The $L^p$ bound of the typed reflection**: for $u \in W^{1,p}(V_+)$,
+$\|u^\star\|_{L^p(V)} \le 2 \|u\|_{L^p(V_+)}$. -/
 theorem eLpNorm_fn_evenReflection_le (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     eLpNorm (fn (evenReflection hv hV u)) p (volume.restrict (V : Set E))
       ≤ 2 * eLpNorm (fn u) p (volume.restrict (posHalf v V : Set E)) := by
@@ -1175,8 +1294,11 @@ theorem eLpNorm_fn_evenReflection_le (u : SobolevMultiIndex F b 1 p (posHalf v V
     Fact.out
     (memLp u).aestronglyMeasurable
 
-/-- The partial derivatives of the reflected element, in terms of a tensor derivative `w` of
-`u`: `∂ᵢ (u^⋆) = (reflectFDeriv v w) (bᵢ)` almost everywhere on `V`. -/
+/-- The partial derivatives of the reflected element. Let $u \in W^{1,p}(V_+)$, and let $w$ be a
+weak tensor derivative of $u$ on $V_+$ with $w \in L^p(V_+)$. Let $\tilde w$ be the reflected
+derivative `reflectFDeriv v w`. Then for every index $i$,
+$$\partial_i (u^\star)(x) = \tilde w(x)(b_i) \qquad \text{for almost every } x \in V.$$
+-/
 theorem weakDeriv_evenReflection_single (u : SobolevMultiIndex F b 1 p (posHalf v V) volume)
     {w : E → E →L[ℝ] F} (hw : HasWeakFDerivOn (fn u) w (posHalf v V) volume)
     (hwp : MemLp w p (volume.restrict (posHalf v V : Set E))) (i : ι) :
@@ -1190,8 +1312,10 @@ theorem weakDeriv_evenReflection_single (u : SobolevMultiIndex F b 1 p (posHalf 
   filter_upwards [(ae_restrict_iff' V.isOpen.measurableSet).2 (h1.ae_eq h2)] with x hx
   simpa using hx
 
-/-- **The typed reflection is bounded**: `‖u^⋆‖ ≤ C ‖u‖` for a constant depending on the
-basis only. -/
+/-- **The typed reflection is bounded**: there is a constant $C$ with $\|u^\star\|_{W^{1,p}(V)} \le
+C \|u\|_{W^{1,p}(V_+)}$ for every $u \in W^{1,p}(V_+)$.
+
+The constant of the proof depends only on the basis. -/
 theorem exists_norm_evenReflection_le :
     ∃ C : ℝ, ∀ u : SobolevMultiIndex F b 1 p (posHalf v V) volume,
       ‖evenReflection hv hV u‖ ≤ C * ‖u‖ := by
@@ -1237,7 +1361,7 @@ theorem exists_norm_evenReflection_le :
         rw [hB]; ring
 
 variable (F b p) in
-/-- The reflection as a linear map `W^{1,p}(V₊) → W^{1,p}(V)`. -/
+/-- The reflection $u \mapsto u^\star$ as a linear map $W^{1,p}(V_+) \to W^{1,p}(V)$. -/
 def evenReflectionₗ :
     SobolevMultiIndex F b 1 p (posHalf v V) volume →ₗ[ℝ] SobolevMultiIndex F b 1 p V volume where
   toFun := evenReflection hv hV
@@ -1245,35 +1369,40 @@ def evenReflectionₗ :
   map_smul' := evenReflection_smul hv hV
 
 variable (F b p) in
-/-- **Lemma 9.2 as a bounded linear map `W^{1,p}(V₊) → W^{1,p}(V)`**, `u ↦ u^⋆`, for a unit
-vector `v` and an open `V` with `σ '' V = V` ([brezis2011functional] Lemma 9.2): its function is
-`u^⋆` (`SobolevMultiIndex.fn_evenReflectionL`), it restricts to `u` on `V₊`
-(`SobolevMultiIndex.fn_evenReflectionL_restrict`), and its `L^p` norm is at most `2 ‖u‖_{L^p(V₊)}`
-(`SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le`). With `V = Q` and `v = e_N` it is the step
-`v_i ↦ v_i^⋆` of the proof of the extension theorem; with `V = ⊤` it is the extension operator of
-the half space. -/
+/-- **Lemma 9.2** of [brezis2011functional] **as a bounded linear map**
+$W^{1,p}(V_+) \to W^{1,p}(V)$, $u \mapsto u^\star$, for a unit vector $v$ and an open set $V$
+with $\sigma(V) = V$. Its function is $u^\star$ (`SobolevMultiIndex.fn_evenReflectionL`), it
+restricts to $u$ on $V_+$ (`SobolevMultiIndex.fn_evenReflectionL_restrict`), and its $L^p$ norm
+is at most $2 \|u\|_{L^p(V_+)}$ (`SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le`).
+
+With $V = Q$ and $v = e_N$ it is the step $v_i \mapsto v_i^\star$ of the proof of the extension
+theorem. With $V = E$ it is the extension operator of the half space. -/
 def evenReflectionL :
     SobolevMultiIndex F b 1 p (posHalf v V) volume →L[ℝ] SobolevMultiIndex F b 1 p V volume :=
   (evenReflectionₗ F b p hv hV).mkContinuousOfExistsBound (exists_norm_evenReflection_le hv hV)
 
-/-- `SobolevMultiIndex.evenReflectionL` is `SobolevMultiIndex.evenReflection`. -/
+/-- The bundled map `SobolevMultiIndex.evenReflectionL` agrees with
+`SobolevMultiIndex.evenReflection`. -/
 @[simp]
 theorem evenReflectionL_apply (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     evenReflectionL F b p hv hV u = evenReflection hv hV u :=
   rfl
 
-/-- The function of `SobolevMultiIndex.evenReflectionL hv hV u` is `u^⋆`. -/
+/-- The function of `SobolevMultiIndex.evenReflectionL F b p hv hV u` is $u^\star$ almost everywhere
+on $V$. -/
 theorem fn_evenReflectionL (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     fn (evenReflectionL F b p hv hV u) =ᵐ[volume.restrict (V : Set E)]
       _root_.evenReflection v (fn u) :=
   fn_evenReflection hv hV u
 
-/-- On `V₊`, `SobolevMultiIndex.evenReflectionL hv hV u` is `u`. -/
+/-- On $V_+$, the function of `SobolevMultiIndex.evenReflectionL F b p hv hV u` is the function of
+$u$, almost everywhere. -/
 theorem fn_evenReflectionL_restrict (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     fn (evenReflectionL F b p hv hV u) =ᵐ[volume.restrict (posHalf v V : Set E)] fn u :=
   fn_evenReflection_restrict hv hV u
 
-/-- The `L^p` bound on `SobolevMultiIndex.evenReflectionL`. -/
+/-- The $L^p$ bound of `SobolevMultiIndex.evenReflectionL`: the $L^p(V)$ norm of the function of the
+image of $u$ is at most $2 \|u\|_{L^p(V_+)}$. -/
 theorem eLpNorm_fn_evenReflectionL_le (u : SobolevMultiIndex F b 1 p (posHalf v V) volume) :
     eLpNorm (fn (evenReflectionL F b p hv hV u)) p (volume.restrict (V : Set E))
       ≤ 2 * eLpNorm (fn u) p (volume.restrict (posHalf v V : Set E)) :=
@@ -1288,13 +1417,16 @@ section Euclidean
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {v : EuclideanSpace ℝ (Fin N)}
   {V : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Lemma 9.2 on `W^{1,p}` of an open subset of `ℝ^N`**, as a bounded linear map
-`W^{1,p}(V₊) → W^{1,p}(V)`, `u ↦ u^⋆`, for `‖v‖ = 1` and `σ '' V = V`:
-`SobolevMultiIndex.evenReflectionL` on `SobolevEuclidean N 1 p V₊`, with
-`SobolevMultiIndex.fn_evenReflectionL`, `SobolevMultiIndex.fn_evenReflectionL_restrict` and
-`SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le` for its function, its restriction to `V₊` and
-its `L^p` bound. With `V = Q` and `v = e_N` it is the step `v_i ↦ v_i^⋆` of the proof of
-Theorem 9.7; with `V = ℝ^N` it is the extension operator of the half space. -/
+/-- **Lemma 9.2** of [brezis2011functional] **on $W^{1,p}$ of an open subset of $\mathbb{R}^N$**, as
+a bounded linear map $W^{1,p}(V_+) \to W^{1,p}(V)$, $u \mapsto u^\star$, for $\|v\| = 1$ and
+$\sigma(V) = V$.
+
+It is `SobolevMultiIndex.evenReflectionL` on `SobolevEuclidean N 1 p V₊`. Its function, its
+restriction to $V_+$ and its $L^p$ bound are given by `SobolevMultiIndex.fn_evenReflectionL`,
+`SobolevMultiIndex.fn_evenReflectionL_restrict` and
+`SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le`. With $V = Q$ and $v = e_N$ it is the step
+$v_i \mapsto v_i^\star$ of the proof of Theorem 9.7. With $V = \mathbb{R}^N$ it is the extension
+operator of the half space. -/
 noncomputable abbrev SobolevEuclidean.evenReflectionL (hv : ‖v‖ = 1)
     (hV : hyperplaneReflection v '' (V : Set (EuclideanSpace ℝ (Fin N))) = V) :
     SobolevEuclidean N 1 p (posHalf v V) →L[ℝ] SobolevEuclidean N 1 p V :=
@@ -1302,7 +1434,7 @@ noncomputable abbrev SobolevEuclidean.evenReflectionL (hv : ‖v‖ = 1)
 
 end Euclidean
 
-/-! ### The half space: Theorem 9.7 and Corollary 9.8 for `Ω = ℝ^N_+` -/
+/-! ### The half space: Theorem 9.7 and Corollary 9.8 for $\Omega = \mathbb{R}^N_+$ -/
 
 section HalfSpace
 
@@ -1310,51 +1442,67 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open EuclideanSpace
 
-/-- The last basis vector of `ℝ^{d+1}` is a unit vector. -/
+/-- The last basis vector $e_N$ of $\mathbb{R}^{d+1}$ is a unit vector. -/
 theorem EuclideanSpace.norm_single_last_one :
     ‖(single (Fin.last d) (1 : ℝ) : EuclideanSpace ℝ (Fin (d + 1)))‖ = 1 := by
   simp
 
-/-- The inner product with the last basis vector is the last coordinate. -/
+/-- The inner product of $x \in \mathbb{R}^{d+1}$ with the last basis vector is the last coordinate:
+$\langle x, e_N \rangle = x_N$. -/
 theorem EuclideanSpace.inner_single_last_one (x : EuclideanSpace ℝ (Fin (d + 1))) :
     ⟪x, single (Fin.last d) (1 : ℝ)⟫ = x (Fin.last d) := by
   rw [EuclideanSpace.inner_single_right]
   simp
 
-/-- The whole space is invariant under every reflection. -/
+/-- The whole space is invariant under every reflection: $\sigma(E) = E$. -/
 theorem hyperplaneReflection_image_top {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     (v : E) : hyperplaneReflection v '' ((⊤ : Opens E) : Set E) = ((⊤ : Opens E) : Set E) := by
   rw [Opens.coe_top, Set.image_univ, (hyperplaneReflection v).surjective.range_eq]
 
-/-- The positive half of the whole space for `v = e_N` is the upper half space. -/
+/-- For $v = e_N$, the positive half of the whole space $\mathbb{R}^{d+1}$ is the upper half space
+$\mathbb{R}^N_+$. -/
 theorem coe_posHalf_top_eq_upperHalfSpace :
     (posHalf (single (Fin.last d) (1 : ℝ)) (⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
       Set (EuclideanSpace ℝ (Fin (d + 1)))) = upperHalfSpace d := by
   ext x
   simp [coe_posHalf, upperHalfSpace, EuclideanSpace.inner_single_last_one]
 
-/-- The positive half of the whole space for `v = e_N` is the upper half space, as opens. -/
+/-- For $v = e_N$, the positive half of the whole space $\mathbb{R}^{d+1}$ is the upper half space
+$\mathbb{R}^N_+$, as an equality of open sets. -/
 theorem posHalf_top_eq_upperHalfSpaceOpens :
     posHalf (single (Fin.last d) (1 : ℝ)) (⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1))))
       = upperHalfSpaceOpens d :=
   Opens.ext coe_posHalf_top_eq_upperHalfSpace
 
-/-- An almost-everywhere equality for `μ.restrict s` is one for `μ.restrict t` when `s = t`;
-stated over plain functions so that rewriting never touches a dependent type. -/
+/-- If $f = g$ almost everywhere for $\mu$ restricted to $s$, and $s = t$, then $f = g$ almost
+everywhere for $\mu$ restricted to $t$.
+
+The statement is about plain functions, so that rewriting never touches a dependent type. -/
 theorem Filter.EventuallyEq.of_restrict_eq {α β : Type*} [MeasurableSpace α] {μ : Measure α}
     {s t : Set α} {f g : α → β} (h : f =ᵐ[μ.restrict s] g) (hst : s = t) : f =ᵐ[μ.restrict t] g :=
   hst ▸ h
 
-/-- `eLpNorm` for `μ.restrict s` and `μ.restrict t` agree when `s = t`; stated over plain
-functions so that rewriting never touches a dependent type. -/
+/-- If $s = t$, then the $L^p$ norms of $f$ for $\mu$ restricted to $s$ and for $\mu$ restricted to
+$t$ are equal.
+
+The statement is about plain functions, so that rewriting never touches a dependent type. -/
 theorem eLpNorm_restrict_congr_set_eq {α β : Type*} [MeasurableSpace α] [NormedAddCommGroup β]
     {μ : Measure α} {s t : Set α} (f : α → β) (p : ℝ≥0∞) (hst : s = t) :
     eLpNorm f p (μ.restrict s) = eLpNorm f p (μ.restrict t) :=
   hst ▸ rfl
 
-/-- The assembly of the half-space extension operator from a restriction `R` and a reflection
-`T`, with the operators as variables: the elaboration of the composite is expensive when the
-operators are concrete, cheap when they are not. -/
+/-- The assembly of the extension operator of the half space from a restriction $R$ and a reflection
+$T$. Let $V$ be an open set equal to $\mathbb{R}^N_+$, and let
+$R : W^{1,p}(\mathbb{R}^N_+) \to W^{1,p}(V)$, $T : W^{1,p}(V) \to W^{1,p}(\mathbb{R}^N)$ and $P
+: W^{1,p}(\mathbb{R}^N_+) \to W^{1,p}(\mathbb{R}^N)$ be bounded linear maps with $Pu = T(Ru)$.
+Assume that $Ru = u$ and $Tw = w$ almost everywhere on $V$, and that $\|Tw\|_{L^p(\mathbb{R}^N)}
+\le 2 \|w\|_{L^p(V)}$. Then there is a constant $C$ such that for every
+$u \in W^{1,p}(\mathbb{R}^N_+)$, $Pu = u$ almost everywhere on $\mathbb{R}^N_+$,
+$\|Pu\|_{L^p(\mathbb{R}^N)} \le C \|u\|_{L^p(\mathbb{R}^N_+)}$ and
+$\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\mathbb{R}^N_+)}$.
+
+The operators are variables because the elaboration of the composite is expensive when the
+operators are concrete, and cheap when they are not. -/
 theorem SobolevEuclidean.exists_extensionL_upperHalfSpace_of_ops
     {V : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hset : (V : Set (EuclideanSpace ℝ (Fin (d + 1)))) = upperHalfSpace d)
@@ -1392,9 +1540,19 @@ theorem SobolevEuclidean.exists_extensionL_upperHalfSpace_of_ops
   · exact (ContinuousLinearMap.le_opNorm _ _).trans
       (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _))
 
-/-- Theorem 9.7 for the half space, for any unit vector `v` whose positive half of the whole
-space is the upper half space: the statement of `SobolevEuclidean.exists_extensionL_upperHalfSpace`
-with `v` a variable. -/
+/-- **The half-space extension theorem with the normal direction as a parameter.** Let
+$1 \le p \le \infty$, and let $v \in \mathbb{R}^{d+1}$ be a unit vector whose positive half
+$\{x : \langle x, v \rangle > 0\}$ of the whole space is the upper half space $\mathbb{R}^N_+$,
+where $N = d + 1$. Then there are a bounded linear operator $P : W^{1,p}(\mathbb{R}^N_+) \to
+W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such that for every $u \in W^{1,p}(\mathbb{R}^N_+)$,
+$$Pu = u \text{ a.e. on } \mathbb{R}^N_+, \qquad \|Pu\|_{L^p(\mathbb{R}^N)} \le C
+  \|u\|_{L^p(\mathbb{R}^N_+)}, \qquad \|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C
+  \|u\|_{W^{1,p}(\mathbb{R}^N_+)}.$$
+This is Theorem 9.7 of [brezis2011functional] for the half space.
+
+The case $v = e_N$ is `SobolevEuclidean.exists_extensionL_upperHalfSpace`. The operator is the
+restriction to the positive half of $v$, followed by the even reflection
+`SobolevEuclidean.evenReflectionL` across $v^\perp$ with $V = \mathbb{R}^N$. -/
 theorem SobolevEuclidean.exists_extensionL_of_posHalf_top_eq {v : EuclideanSpace ℝ (Fin (d + 1))}
     (hv : ‖v‖ = 1)
     (hset : (posHalf v (⊤ : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
@@ -1422,14 +1580,19 @@ theorem SobolevEuclidean.exists_extensionL_of_posHalf_top_eq {v : EuclideanSpace
     (fun w ↦ SobolevMultiIndex.fn_evenReflectionL_restrict hv hV w)
     (fun w ↦ SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le hv hV w)⟩
 
-/-- **Theorem 9.7 for the half space** ([brezis2011functional] §9.2, "This establishes Theorem
-9.7 for `Ω = ℝ^N_+`"): for `1 ≤ p ≤ ∞` there are a bounded linear extension operator
-`P : W^{1,p}(ℝ^N_+) → W^{1,p}(ℝ^N)` and a constant `C` with `P u = u` on `ℝ^N_+`,
-`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(ℝ^N_+)}` and `‖P u‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(ℝ^N_+)}` —
-namely the even reflection `SobolevEuclidean.evenReflectionL` across `x_N = 0` with `V = ℝ^N`,
-whose `L^p` constant is `2`. The statement has the shape of the extension theorem of
-`Numlib/Analysis/Sobolev/Extension.lean` for a `C^1` domain, so that the two cases are consumed
-uniformly. -/
+/-- **Theorem 9.7** of [brezis2011functional] **for the half space**. Let $1 \le p \le \infty$.
+There are a bounded linear extension operator $P : W^{1,p}(\mathbb{R}^N_+) \to
+W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such that for every $u \in W^{1,p}(\mathbb{R}^N_+)$,
+$$Pu = u \text{ a.e. on } \mathbb{R}^N_+, \qquad \|Pu\|_{L^p(\mathbb{R}^N)} \le C
+  \|u\|_{L^p(\mathbb{R}^N_+)}, \qquad \|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C
+  \|u\|_{W^{1,p}(\mathbb{R}^N_+)}.$$
+
+The source states this case in §9.2: "This establishes Theorem 9.7 for
+$\Omega = \mathbb{R}^N_+$". The operator is the even reflection
+`SobolevEuclidean.evenReflectionL` across $x_N = 0$ with $V = \mathbb{R}^N$, whose $L^p$
+constant is $2$. The statement has the shape of the extension theorem
+`SobolevEuclidean.exists_extensionL` for a $C^1$ domain, so that the two cases are used in the
+same way. -/
 theorem SobolevEuclidean.exists_extensionL_upperHalfSpace :
     ∃ (P : SobolevEuclidean (d + 1) 1 p (upperHalfSpaceOpens d) →L[ℝ]
         SobolevEuclidean (d + 1) 1 p ⊤) (C : ℝ),
@@ -1442,19 +1605,27 @@ theorem SobolevEuclidean.exists_extensionL_upperHalfSpace :
   SobolevEuclidean.exists_extensionL_of_posHalf_top_eq EuclideanSpace.norm_single_last_one
     coe_posHalf_top_eq_upperHalfSpace
 
-/-- **The half space is a `W^{1,p}`-extension domain**, for every `1 ≤ p ≤ ∞`: the predicate of
-`Numlib/Analysis/Sobolev/Cutoff.lean` instantiated by
-`SobolevEuclidean.exists_extensionL_upperHalfSpace`. It is what lets the embedding and
-compactness theorems on a domain be read on `ℝ^N_+` without the general extension theorem. -/
+/-- **The half space is a $W^{1,p}$-extension domain** for every $1 \le p \le \infty$: there is a
+bounded linear operator $P : W^{1,p}(\mathbb{R}^N_+) \to W^{1,p}(\mathbb{R}^N)$ with $Pu = u$
+almost everywhere on $\mathbb{R}^N_+$.
+
+This is the predicate `IsSobolevExtensionDomain`, obtained from
+`SobolevEuclidean.exists_extensionL_upperHalfSpace`. It lets the embedding and compactness
+theorems on a domain be read on $\mathbb{R}^N_+$ without the general extension theorem. -/
 theorem IsSobolevExtensionDomain.upperHalfSpace :
     IsSobolevExtensionDomain (d + 1) p (upperHalfSpaceOpens d) := by
   obtain ⟨P, C, hP⟩ := SobolevEuclidean.exists_extensionL_upperHalfSpace (d := d) (p := p)
   exact ⟨P.comp (Submodule.subtypeL _), fun u ↦ (hP u).1⟩
 
-/-- **Corollary 9.8 on the half space**: for `1 ≤ p < ∞`, every `u ∈ W^{1,p}(ℝ^N_+)` is the
-limit in `W^{1,p}(ℝ^N_+)` of restrictions of `C_c^∞(ℝ^N)` functions — the abstract density
-`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` applied
-to the reflection extension ([brezis2011functional] Corollary 9.8, the case `Ω = ℝ^N_+`). -/
+/-- **Corollary 9.8** of [brezis2011functional] **on the half space**. Let $1 \le p < \infty$ and
+$u \in W^{1,p}(\mathbb{R}^N_+)$. Then there are smooth functions $v_n$ with compact support on
+$\mathbb{R}^N$ and elements $w_n \in W^{1,p}(\mathbb{R}^N_+)$ with $w_n = v_n$ almost everywhere
+on $\mathbb{R}^N_+$, such that $w_n \to u$ in $W^{1,p}(\mathbb{R}^N_+)$.
+
+So $u$ is the limit in $W^{1,p}(\mathbb{R}^N_+)$ of restrictions of functions of
+$C_c^\infty(\mathbb{R}^N)$. The proof applies the abstract density result
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` to the
+extension by reflection. -/
 theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace (hp' : p ≠ ⊤)
     (u : SobolevEuclidean (d + 1) 1 p (upperHalfSpaceOpens d)) :
     ∃ v : ℕ → EuclideanSpace ℝ (Fin (d + 1)) → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧
@@ -1471,7 +1642,9 @@ end HalfSpace
 
 section Trace
 
-/-- **Young's inequality in the form `P a^{P−1} b ≤ (P − 1) a^P + b^P`**, `P > 1`, `a, b ≥ 0`. -/
+/-- **Young's inequality** in the form
+$$P a^{P-1} b \le (P - 1) a^P + b^P \qquad \text{for } P > 1 \text{ and } a, b \ge 0.$$
+-/
 theorem Real.mul_rpow_sub_one_mul_le {P : ℝ} (hP : 1 < P) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
     P * (a ^ (P - 1) * b) ≤ (P - 1) * a ^ P + b ^ P := by
   have hpq := Real.HolderConjugate.conjExponent hP
@@ -1484,12 +1657,16 @@ theorem Real.mul_rpow_sub_one_mul_le {P : ℝ} (hP : 1 < P) {a b : ℝ} (ha : 0 
     _ = b ^ P + (P / Real.conjExponent P) * a ^ P := by field_simp
     _ = (P - 1) * a ^ P + b ^ P := by rw [e]; ring
 
-/-- **The one-dimensional trace inequality**: for a `C^1` function `v : ℝ → ℝ` vanishing beyond
-some `T`, with derivative `v'`, and `1 ≤ P < ∞`,
-`|v 0|^P ≤ ∫_0^∞ ((P − 1) |v|^P + |v'|^P)`. From `G(v(0)) = −∫_0^∞ (G ∘ v)'` with
-`G(t) = |t|^P` (for `P = 1`, `v(0) = −∫_0^∞ v'`) and Young's inequality
-`P |v|^{P−1} |v'| ≤ (P − 1) |v|^P + |v'|^P`. This is the line-by-line step of
-[brezis2011functional] Comments on Chapter 9, 7, proof of Lemma 9.9. -/
+/-- **The one-dimensional trace inequality.** Let $v : \mathbb{R} \to \mathbb{R}$ be of class $C^1$
+with continuous derivative $v'$, let $v(t) = 0$ for all $t \ge T$, and let $1 \le P < \infty$.
+Then
+$$|v(0)|^P \le \int_0^\infty \big((P - 1) |v(t)|^P + |v'(t)|^P\big) \, dt.$$
+
+The proof starts from $G(v(0)) = -\int_0^\infty (G \circ v)'$ with $G(t) = |t|^P$ (for $P = 1$,
+from $v(0) = -\int_0^\infty v'$), and uses Young's inequality
+$P |v|^{P-1} |v'| \le (P - 1) |v|^P + |v'|^P$. This is the step on one line in the proof of
+Lemma 9.9 of [brezis2011functional], Comments on Chapter 9, 7. The integral is a lower Lebesgue
+integral of extended nonnegative reals. -/
 theorem enorm_rpow_le_lintegral_Ioi_of_hasDerivAt {v v' : ℝ → ℝ} (hv : ContDiff ℝ 1 v)
     (hv' : ∀ t, HasDerivAt v (v' t) t) (hv'c : Continuous v') {T : ℝ}
     (hT : ∀ t, T ≤ t → v t = 0) {P : ℝ} (hP : 1 ≤ P) :
@@ -1557,13 +1734,16 @@ theorem enorm_rpow_le_lintegral_Ioi_of_hasDerivAt {v v' : ℝ → ℝ} (hv : Con
 
 variable {d : ℕ} {p : ℝ≥0∞}
 
-/-- The upper half space in the last-coordinate splitting: `(x', t) ∈ ℝ^N_+ ↔ 0 < t`. -/
+/-- The upper half space in the splitting by the last coordinate: $(x', t) \in \mathbb{R}^{d+1}_+$
+if and only if $t > 0$. -/
 theorem EuclideanSpace.snocLast_mem_upperHalfSpace_iff {x' : EuclideanSpace ℝ (Fin d)} {t : ℝ} :
     EuclideanSpace.snocLast x' t ∈ EuclideanSpace.upperHalfSpace d ↔ 0 < t := by
   simp [EuclideanSpace.mem_upperHalfSpace]
 
-/-- Fubini along the last coordinate on the upper half space:
-`∫_{ℝ^N_+} f = ∫_{ℝ^{N−1}} ∫_0^∞ f(x', t) dt dx'`. -/
+/-- Fubini's theorem along the last coordinate on the upper half space. For an almost everywhere
+measurable function $f : \mathbb{R}^{d+1} \to [0, \infty]$,
+$$\int_{\mathbb{R}^{d+1}_+} f = \int_{\mathbb{R}^d} \int_0^\infty f(x', t) \, dt \, dx'.$$
+-/
 theorem EuclideanSpace.lintegral_upperHalfSpace_lastInit (f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ≥0∞)
     (hf : AEMeasurable f) :
     ∫⁻ x in EuclideanSpace.upperHalfSpace d, f x
@@ -1580,13 +1760,15 @@ theorem EuclideanSpace.lintegral_upperHalfSpace_lastInit (f : EuclideanSpace ℝ
   · rw [Set.indicator_of_notMem (mt Set.mem_Ioi.1 ht),
       Set.indicator_of_notMem (mt EuclideanSpace.snocLast_mem_upperHalfSpace_iff.1 ht)]
 
-/-- **Lemma 9.9, the `p`-th power form**: for `u : ℝ^{d+1} → ℝ` of class `C^1` with compact
-support and `1 ≤ p < ∞`,
-`∫_{ℝ^{N−1}} |u(x', 0)|^p dx' ≤ (p − 1) ∫_{ℝ^N_+} |u|^p + ∫_{ℝ^N_+} |∂_N u|^p`,
-`∂_N u = fderiv ℝ u · e_N`: the one-dimensional inequality
-`enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` on each line `x' + t e_N`, integrated in `x'`
-by Fubini (`EuclideanSpace.lintegral_upperHalfSpace_lastInit`). [brezis2011functional] Comments
-on Chapter 9, 7, proof of Lemma 9.9. -/
+/-- **Lemma 9.9** of [brezis2011functional], Comments on Chapter 9, 7, the form with $p$-th powers.
+Let $1 \le p < \infty$, and let $u : \mathbb{R}^{d+1} \to \mathbb{R}$ be of class $C^1$ with
+compact support. Then
+$$\int_{\mathbb{R}^d} |u(x', 0)|^p \, dx' \le (p - 1) \int_{\mathbb{R}^N_+} |u|^p +
+  \int_{\mathbb{R}^N_+} |\partial_N u|^p,$$
+where $N = d + 1$ and $\partial_N u(x) = Du(x) e_N$.
+
+The proof applies `enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` on each line $x' + t e_N$, and
+integrates in $x'$ by Fubini's theorem (`EuclideanSpace.lintegral_upperHalfSpace_lastInit`). -/
 theorem lintegral_enorm_lastZero_rpow_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hu : ContDiff ℝ 1 u) (huc : HasCompactSupport u) :
     ∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal
@@ -1653,14 +1835,16 @@ theorem lintegral_enorm_lastZero_rpow_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠
           + ∫⁻ x in EuclideanSpace.upperHalfSpace d, ‖g x‖ₑ ^ p.toReal := by
         rw [lintegral_add_left' (hum.const_mul _).restrict, lintegral_const_mul'' _ hum.restrict]
 
-/-- **Lemma 9.9 (Comments on Chapter 9, 7): the trace inequality on the half space.** For
-`1 ≤ p < ∞` there is a constant `C = p^{1/p}` such that, for every `u : ℝ^{d+1} → ℝ` of class
-`C^1` with compact support,
-`(∫_{ℝ^{N−1}} |u(x', 0)|^p dx')^{1/p} ≤ C (‖u‖_{L^p(ℝ^N_+)} + ‖∂_N u‖_{L^p(ℝ^N_+)})`,
-`∂_N u = fderiv ℝ u · e_N`, so that `u ↦ u(·, 0)` is bounded from `C_c^1(ℝ^N)` with the
-`W^{1,p}(ℝ^N_+)` norm to `L^p(ℝ^{N−1})`. The `p`-th power form is
-`lintegral_enorm_lastZero_rpow_le_of_contDiff`. [brezis2011functional] Comments on Chapter 9, 7,
-Lemma 9.9. -/
+/-- **Lemma 9.9** of [brezis2011functional], Comments on Chapter 9, 7 (the trace inequality on the
+half space). Let $1 \le p < \infty$, and let $u : \mathbb{R}^{d+1} \to \mathbb{R}$ be of class
+$C^1$ with compact support. Then
+$$\Big(\int_{\mathbb{R}^d} |u(x', 0)|^p \, dx'\Big)^{1/p} \le p^{1/p}
+  \big(\|u\|_{L^p(\mathbb{R}^N_+)} + \|\partial_N u\|_{L^p(\mathbb{R}^N_+)}\big),$$
+where $N = d + 1$ and $\partial_N u(x) = Du(x) e_N$.
+
+So the map $u \mapsto u(\cdot, 0)$ is bounded from $C_c^1(\mathbb{R}^N)$ with the norm of
+$W^{1,p}(\mathbb{R}^N_+)$ to $L^p(\mathbb{R}^{N-1})$. The form with $p$-th powers is
+`lintegral_enorm_lastZero_rpow_le_of_contDiff`. -/
 theorem eLpNorm_lastZero_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hu : ContDiff ℝ 1 u) (huc : HasCompactSupport u) :
     eLpNorm (fun x' : EuclideanSpace ℝ (Fin d) ↦ u (EuclideanSpace.snocLast x' 0)) p volume

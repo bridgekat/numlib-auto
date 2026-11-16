@@ -10,70 +10,89 @@ import Numlib.Analysis.Convex.Saddle.Kernel
 /-!
 # Minimax problems and conjugate saddle-functions
 
-A function `K` of two variables has two iterated extrema, `maximin K = ⨆ u, ⨅ x, K (u, x)` and
-`minimax K = ⨅ x, ⨆ u, K (u, x)`, the first never above the second; when they agree their common
-value is the **saddle-value** of `K`. A **saddle-point** is a point `p` at which `K (·, p.2)` is
-maximised and `K (p.1, ·)` minimised, which is exactly a pair of optimal strategies together with
-the existence of the saddle-value. For a closed proper concave-convex `K` the whole space may be
-replaced by `dom K` without changing either extremum, and both depend only on the equivalence
-class of `K`.
+A function $K \colon U \times X \to [-\infty, +\infty]$ has two iterated extrema,
+$\sup_u \inf_x K(u, x)$ and $\inf_x \sup_u K(u, x)$, and the first is never above the second. When
+they are equal, their common value is the **saddle-value** of $K$. A **saddle-point** is a point
+$(\bar u, \bar x)$ at which $K(\cdot, \bar x)$ attains its maximum and $K(\bar u, \cdot)$ attains
+its minimum. This module develops these notions after §36 and §37 of [rockafellar1970convex]: the
+saddle-points of the Lagrangian of a convex program, the general Kuhn–Tucker theorem, the
+characterization of the Lagrangians of closed convex programs as the upper closed concave-convex
+functions, and the lower and upper conjugates of a saddle-function.
 
-The Lagrangian of a convex program is a saddle-function whose saddle-points are the pairs "optimal
-solution, Kuhn–Tucker vector", whence the general Kuhn–Tucker theorem; and the Lagrangians of
-closed convex programs are exactly the upper closed concave-convex functions.
-
-The last part turns the iterated extrema into a conjugacy: `-K̲*(0, 0)` and `-K̄*(0, 0)` are
-`minimax K` and `maximin K`, and both conjugates of every member of a class `Ω (F)` are read off
-from `F` alone — the upper one is the Lagrangian of `F`, the lower one the bracket of `F_*^*`. So
-the saddle-value exists exactly when the two conjugates agree at the origin.
+The first variable $u$ is the concave variable, which is maximized, and the second variable $x$ is
+the convex variable, which is minimized. For a closed proper concave-convex $K$, the extrema over
+the whole space equal the extrema over $\operatorname{dom} K = \operatorname{dom}_1 K \times
+\operatorname{dom}_2 K$, and they depend only on the equivalence class of $K$. The Lagrangian of the
+convex program attached to a convex bifunction $F$ from $U$ to $X$ is $L(v, x) = \inf_u (\langle u,
+v \rangle + (Fu)(x))$, and its saddle-points are the pairs (Kuhn–Tucker vector, optimal solution).
+The lower and upper conjugates $\underline{K}^*$ and $\overline{K}^*$ of $K$ satisfy
+$\inf_x \sup_u K = -\underline{K}^*(0, 0)$ and $\sup_u \inf_x K = -\overline{K}^*(0, 0)$, so the
+saddle-value exists if and only if the two conjugates agree at the origin. For every $K$ between the
+two brackets of a closed convex bifunction $F$, both conjugates depend only on $F$: the upper one is
+the Lagrangian of $F$, and the lower one is the bracket of $F_*^*$.
 
 ## Main definitions
 
-* `IsSaddlePoint K p`, `IsSaddlePointOn K C D p` — the saddle-point condition, over the whole space
-  and relative to `C × D`.
-* `maximin K`, `minimax K`, `HasSaddleValue K` — the two iterated extrema and their equality.
-* `saddleLagrangian Bu F` — the Lagrangian of `(P)` read as a saddle-function on `V × X`;
-  `flipBifun F` and `inverseBifun F` — arguments exchanged, and Rockafellar's `F_*`.
-* `lowerConjSaddle Bu Bx K`, `upperConjSaddle Bu Bx K` — the conjugates `K̲*`, `K̄*`;
-  `bifunSaddleClass Bu Bx F` — the class `Ω (F)`, squeezed between the two brackets of `F`.
+* `ConvexAnalysis.IsSaddlePoint`, `ConvexAnalysis.IsSaddlePointOn`: the saddle-point condition, over
+  the whole space and relative to a product $C \times D$.
+* `ConvexAnalysis.maximin`, `ConvexAnalysis.minimax`, `ConvexAnalysis.HasSaddleValue`: the two
+  iterated extrema $\sup_u \inf_x K$ and $\inf_x \sup_u K$, and their equality.
+* `ConvexAnalysis.saddleLagrangian`: the Lagrangian $L(v, x) = \inf_u (\langle u, v \rangle +
+  (Fu)(x))$, as a function on $V \times X$.
+* `ConvexAnalysis.lowerConjSaddle`, `ConvexAnalysis.upperConjSaddle`: the lower conjugate
+  $\underline{K}^*$ and the upper conjugate $\overline{K}^*$.
+* `ConvexAnalysis.bifunSaddleClass`: the class $\Omega(F)$ of the functions between the two brackets
+  of a bifunction $F$.
 
 ## Main results
 
-* `maximin_le_minimax` — `sup inf ≤ inf sup`; `isSaddlePoint_iff_attained` — a saddle-point is a
-  pair of attained outer extrema that agree. Neither needs any structure at all, not even
-  nonemptiness of the two spaces.
-* `isSaddlePoint_iff_iSup_eq_iInf` — the one-equation form of the saddle-point condition, on which
-  everything downstream is a computation of `⨆ u, K (u, x)` and `⨅ x, K (u, x)`.
-* `maximin_eq_biSup_biInf`, `isSaddlePoint_iff_isSaddlePointOn_dom` — for a closed proper `K` both
-  extrema and all saddle-points already live on `dom K`; `IsSaddlePoint.mem_domSaddle` — a
-  saddle-point of a proper `K` lies in `dom K`; `SaddleEquiv.maximin_eq` — the two extrema see
-  only the equivalence class.
-* `isSaddlePoint_lagrangian_iff` — the saddle-points of the Lagrangian are the pairs "Kuhn–Tucker
-  vector, optimal solution"; `isSaddlePoint_lagrangian_iff_normal_and_optimal` — the same read
-  through normality; `mem_argmin_iff_exists_isSaddlePoint_lagrangian` — the general Kuhn–Tucker
-  theorem ([rockafellar1970convex] Theorem 36.6);
-  `exists_unique_closedConvexBifun_saddleLagrangian_eq` — Lagrangians are exactly the upper closed
-  concave-convex functions ([rockafellar1970convex] Theorem 36.5).
-* `hasSaddleValue_iff_conjSaddle_zero_eq` — the saddle-value read off at the origin.
-* `upperConjSaddle_eq_saddleLagrangian`, `lowerConjSaddle_eq_bracket_lowerAdjointBifun` — the two
-  conjugates of a member of `Ω (F)`, in terms of `F` alone ([rockafellar1970convex] Theorem 37.1);
-  `concaveConvexFn_upperConjSaddle` and companions — they are again concave-convex, and closed.
+* `ConvexAnalysis.maximin_le_minimax`: $\sup_u \inf_x K \le \inf_x \sup_u K$, with no hypotheses
+  (Lemma 36.1).
+* `ConvexAnalysis.isSaddlePoint_iff_attained`: a saddle-point is a pair at which both outer extrema
+  are attained and the saddle-value exists (Lemma 36.2).
+* `ConvexAnalysis.isSaddlePoint_iff_iSup_eq_iInf`: $(\bar u, \bar x)$ is a saddle-point if and only
+  if $\sup_u K(u, \bar x) = \inf_x K(\bar u, x)$.
+* `ConvexAnalysis.maximin_eq_biSup_biInf`, `ConvexAnalysis.minimax_eq_biInf_biSup`,
+  `ConvexAnalysis.isSaddlePoint_iff_isSaddlePointOn_dom`: for a proper concave-convex $K$ with the
+  six structural properties of a closed function, the extrema and the saddle-points do not change
+  when the whole space is replaced by $\operatorname{dom} K$ (Theorem 36.3).
+* `ConvexAnalysis.IsSaddlePoint.mem_domSaddle`: a saddle-point of a proper $K$ lies in
+  $\operatorname{dom} K$ (Corollary 36.3.1).
+* `ConvexAnalysis.SaddleEquiv.maximin_eq`, `ConvexAnalysis.SaddleEquiv.minimax_eq`: equivalent
+  functions have the same iterated extrema (Theorem 36.4).
+* `ConvexAnalysis.isSaddlePoint_lagrangian_iff`: $(v, x)$ is a saddle-point of the Lagrangian if and
+  only if $v$ is a Kuhn–Tucker vector and $x$ is an optimal solution.
+* `ConvexAnalysis.isSaddlePoint_lagrangian_iff_normal_and_optimal`: the same condition in terms of
+  normality and the optimality of $x$ and $v$ in the primal and the dual program.
+* `ConvexAnalysis.mem_argmin_iff_exists_isSaddlePoint_lagrangian`: the general Kuhn–Tucker theorem
+  (Theorem 36.6).
+* `ConvexAnalysis.exists_unique_closedConvexBifun_saddleLagrangian_eq`: every upper closed
+  concave-convex function is the Lagrangian of exactly one closed convex bifunction (Theorem 36.5).
+* `ConvexAnalysis.upperConjSaddle_saddleSwap`, `ConvexAnalysis.lowerConjSaddle_saddleSwap`: the swap
+  of the two variables exchanges the two conjugates.
+* `ConvexAnalysis.hasSaddleValue_iff_conjSaddle_zero_eq`: the saddle-value exists if and only if
+  $\overline{K}^*(0, 0) = \underline{K}^*(0, 0)$.
+* `ConvexAnalysis.upperConjSaddle_eq_saddleLagrangian`,
+  `ConvexAnalysis.lowerConjSaddle_eq_bracket_lowerAdjointBifun`: the two conjugates of a member of
+  $\Omega(F)$, in terms of $F$ alone (Theorem 37.1).
+* `ConvexAnalysis.concaveConvexFn_upperConjSaddle`,
+  `ConvexAnalysis.concaveConvexFn_lowerConjSaddle`: these conjugates are concave-convex; they are
+  also upper closed and lower closed (Corollary 37.1.1).
 
 ## Implementation notes
 
-`HasSaddleValue K` is the bare equation `maximin K = minimax K`; as in the book, finiteness of the
-common value is a separate conclusion. The extrema are taken over the whole space, the `±∞`
-extension making a problem on `C × D` into one on the product; `IsSaddlePointOn` records that.
-
-Rockafellar writes the Lagrangian as `L (v, x) = ⟨v, F_* x⟩` and the bifunction behind the lower
-conjugate as `F_*^*`, both through the *concave* inverse. Here `F_*^*` is
-`lowerAdjointBifun Bu Bx F`, defined as the inverse of `F*`; and the characterisation of Lagrangians
-goes through `saddleSwap`, which turns the Lagrangian into a bracket of `flipBifun F` for the
-negated pairing, where the convex theory applies verbatim.
-
-## References
-
-* [rockafellar1970convex] §36, §37.
+* `ConvexAnalysis.HasSaddleValue K` is the equation $\sup_u \inf_x K = \inf_x \sup_u K$ alone. As in
+  the source, the finiteness of the common value is a separate conclusion
+  (`ConvexAnalysis.IsSaddlePoint.exists_maximin_eq_coe`).
+* The extrema are taken over the whole space. A minimax problem on $C \times D$ becomes a problem on
+  the whole product through the extension by $\pm\infty$; `ConvexAnalysis.IsSaddlePointOn` records
+  the saddle-points relative to $C \times D$.
+* The source writes the Lagrangian as $L(v, x) = \langle v, F_* x \rangle$ and the bifunction of the
+  lower conjugate as $F_*^*$, both through the concave inverse $F_*$ of $F$. Here $F_*^*$ is
+  `ConvexAnalysis.lowerAdjointBifun Bu Bx F`, defined as the inverse of the adjoint $F^*$. The
+  characterization of the Lagrangians goes through `ConvexAnalysis.saddleSwap`, which turns the
+  Lagrangian into a bracket of the flipped bifunction `ConvexAnalysis.flipBifun F` for the negated
+  pairing, where the theory of convex bifunctions applies without change.
 -/
 
 namespace ConvexAnalysis
@@ -84,52 +103,91 @@ section Basic
 
 variable {U X : Type*} {K : U × X → EReal} {p : U × X}
 
-/-- `p` is a **saddle-point** of `K`: the concave variable is maximised and the convex variable is
-minimised there. -/
+/-- A point $p = (\bar u, \bar x) \in U \times X$ is a **saddle-point** of
+$K \colon U \times X \to [-\infty, +\infty]$ if
+$$K(u, \bar x) \le K(\bar u, \bar x) \le K(\bar u, x) \qquad \text{for all } u \in U,\ x \in
+  X,$$
+that is, $K(\cdot, \bar x)$ attains its maximum and $K(\bar u, \cdot)$ attains its minimum at
+$p$.
+
+This is the saddle-point of §36 of [rockafellar1970convex], with the maximization in the first
+(concave) variable and the minimization in the second (convex) variable. -/
 def IsSaddlePoint (K : U × X → EReal) (p : U × X) : Prop :=
   (∀ u, K (u, p.2) ≤ K p) ∧ ∀ x, K p ≤ K (p.1, x)
 
-/-- `p` is a **saddle-point of `K` relative to `C × D`**: Rockafellar's saddle-point with respect
-to maximising over `C` and minimising over `D`. -/
+/-- A point $p = (\bar u, \bar x)$ is a **saddle-point of $K$ relative to $C \times D$**, for
+$C \subseteq U$ and $D \subseteq X$, if $\bar u \in C$, $\bar x \in D$ and
+$$K(u, \bar x) \le K(\bar u, \bar x) \le K(\bar u, x) \qquad \text{for all } u \in C,\ x \in
+  D.$$
+
+This is the saddle-point with respect to maximizing over $C$ and minimizing over $D$ in §36 of
+[rockafellar1970convex]. -/
 def IsSaddlePointOn (K : U × X → EReal) (C : Set U) (D : Set X) (p : U × X) : Prop :=
   p.1 ∈ C ∧ p.2 ∈ D ∧ (∀ u ∈ C, K (u, p.2) ≤ K p) ∧ ∀ x ∈ D, K p ≤ K (p.1, x)
 
-/-- Rockafellar's `sup inf`. -/
+/-- The **maximin** of $K \colon U \times X \to [-\infty, +\infty]$ is the iterated extremum
+$$\sup_{u \in U} \inf_{x \in X} K(u, x).$$
+
+This is the $\sup \inf$ of §36 of [rockafellar1970convex]. If $U$ is empty, the value is
+$-\infty$; if $X$ is empty, every inner infimum is $+\infty$. -/
 noncomputable def maximin (K : U × X → EReal) : EReal := ⨆ u, ⨅ x, K (u, x)
 
-/-- Rockafellar's `inf sup`. -/
+/-- The **minimax** of $K \colon U \times X \to [-\infty, +\infty]$ is the iterated extremum
+$$\inf_{x \in X} \sup_{u \in U} K(u, x).$$
+
+This is the $\inf \sup$ of §36 of [rockafellar1970convex]. If $X$ is empty, the value is
+$+\infty$; if $U$ is empty, every inner supremum is $-\infty$. -/
 noncomputable def minimax (K : U × X → EReal) : EReal := ⨅ x, ⨆ u, K (u, x)
 
+/-- The maximin of $K$ is $\sup_u \inf_x K(u, x)$. -/
 theorem maximin_apply (K : U × X → EReal) : maximin K = ⨆ u, ⨅ x, K (u, x) := rfl
 
+/-- The minimax of $K$ is $\inf_x \sup_u K(u, x)$. -/
 theorem minimax_apply (K : U × X → EReal) : minimax K = ⨅ x, ⨆ u, K (u, x) := rfl
 
-/-- The **saddle-value of `K` exists** when the two iterated extrema agree. Following Rockafellar,
-this says nothing about the common value being finite. -/
+/-- The **saddle-value of $K$ exists** if the two iterated extrema are equal:
+$$\sup_{u} \inf_{x} K(u, x) = \inf_{x} \sup_{u} K(u, x).$$
+The common value is then the saddle-value.
+
+This is the saddle-value of §36 of [rockafellar1970convex]. As in the source, the common value
+can be $\pm\infty$. -/
 def HasSaddleValue (K : U × X → EReal) : Prop := maximin K = minimax K
 
+/-- The saddle-value of $K$ exists if and only if $\sup_u \inf_x K(u, x) = \inf_x \sup_u K(u, x)$.
+-/
 theorem hasSaddleValue_iff : HasSaddleValue K ↔ maximin K = minimax K := Iff.rfl
 
-/-- **`sup inf ≤ inf sup`**. No hypothesis at all is needed — in particular neither `U` nor `X`
-need be nonempty. -/
+/-- For every $K \colon U \times X \to [-\infty, +\infty]$,
+$$\sup_{u} \inf_{x} K(u, x) \le \inf_{x} \sup_{u} K(u, x).$$
+
+This is Lemma 36.1 of [rockafellar1970convex]. No hypothesis is needed; in particular $U$ and
+$X$ can be empty. -/
 theorem maximin_le_minimax (K : U × X → EReal) : maximin K ≤ minimax K :=
   iSup_le fun u => le_iInf fun x => (iInf_le (fun x => K (u, x)) x).trans
     (le_iSup (fun u => K (u, x)) u)
 
+/-- For every $u$, $\inf_x K(u, x) \le \sup_{u'} \inf_x K(u', x)$. -/
 theorem iInf_slice_le_maximin (K : U × X → EReal) (u : U) : (⨅ x, K (u, x)) ≤ maximin K :=
   le_iSup (fun u => ⨅ x, K (u, x)) u
 
+/-- For every $x$, $\inf_{x'} \sup_u K(u, x') \le \sup_u K(u, x)$. -/
 theorem minimax_le_iSup_slice (K : U × X → EReal) (x : X) : minimax K ≤ ⨆ u, K (u, x) :=
   iInf_le (fun x => ⨆ u, K (u, x)) x
 
+/-- For every $p = (\bar u, \bar x)$, $\inf_x K(\bar u, x) \le K(\bar u, \bar x)$. -/
 theorem iInf_slice_le_self (K : U × X → EReal) (p : U × X) : (⨅ x, K (p.1, x)) ≤ K p :=
   iInf_le (fun x => K (p.1, x)) p.2
 
+/-- For every $p = (\bar u, \bar x)$, $K(\bar u, \bar x) \le \sup_u K(u, \bar x)$. -/
 theorem le_iSup_slice (K : U × X → EReal) (p : U × X) : K p ≤ ⨆ u, K (u, p.2) :=
   le_iSup (fun u => K (u, p.2)) p.1
 
-/-- **The saddle-point condition in one equation**: `p` is a saddle-point exactly when the maximum
-of `K (·, p.2)` and the minimum of `K (p.1, ·)` agree, the common value being `K p`. -/
+/-- A point $p = (\bar u, \bar x)$ is a saddle-point of $K$ if and only if
+$$\sup_{u} K(u, \bar x) = \inf_{x} K(\bar u, x).$$
+Then both sides equal $K(\bar u, \bar x)$.
+
+The results of this module about saddle-points reduce to this equation and to the computation of
+$\sup_u K(u, \bar x)$ and $\inf_x K(\bar u, x)$. -/
 theorem isSaddlePoint_iff_iSup_eq_iInf :
     IsSaddlePoint K p ↔ (⨆ u, K (u, p.2)) = ⨅ x, K (p.1, x) := by
   constructor
@@ -141,14 +199,23 @@ theorem isSaddlePoint_iff_iSup_eq_iInf :
     · exact ((le_iSup (fun u => K (u, p.2)) u).trans h.le).trans (iInf_slice_le_self K p)
     · exact ((le_iSup_slice K p).trans h.le).trans (iInf_le (fun x => K (p.1, x)) x)
 
+/-- At a saddle-point $(\bar u, \bar x)$, $\sup_u K(u, \bar x) = K(\bar u, \bar x)$. -/
 theorem IsSaddlePoint.iSup_eq (h : IsSaddlePoint K p) : (⨆ u, K (u, p.2)) = K p :=
   le_antisymm (iSup_le h.1) (le_iSup_slice K p)
 
+/-- At a saddle-point $(\bar u, \bar x)$, $\inf_x K(\bar u, x) = K(\bar u, \bar x)$. -/
 theorem IsSaddlePoint.iInf_eq (h : IsSaddlePoint K p) : (⨅ x, K (p.1, x)) = K p :=
   le_antisymm (iInf_slice_le_self K p) (le_iInf h.2)
 
-/-- `p` is a saddle-point exactly when the outer supremum in `sup inf` is attained at `p.1`, the
-outer infimum in `inf sup` is attained at `p.2`, and the two extrema are equal. -/
+/-- A point $p = (\bar u, \bar x)$ is a saddle-point of $K$ if and only if
+
+* the outer supremum of $\sup_u \inf_x K$ is attained at $\bar u$:
+  $\inf_x K(\bar u, x) = \sup_u \inf_x K(u, x)$,
+* the outer infimum of $\inf_x \sup_u K$ is attained at $\bar x$:
+  $\sup_u K(u, \bar x) = \inf_x \sup_u K(u, x)$, and
+* the saddle-value of $K$ exists.
+
+This is Lemma 36.2 of [rockafellar1970convex]. -/
 theorem isSaddlePoint_iff_attained :
     IsSaddlePoint K p ↔
       (⨅ x, K (p.1, x)) = maximin K ∧ (⨆ u, K (u, p.2)) = minimax K ∧ HasSaddleValue K := by
@@ -162,18 +229,21 @@ theorem isSaddlePoint_iff_attained :
   · rintro ⟨h1, h2, h3⟩
     exact isSaddlePoint_iff_iSup_eq_iInf.2 (by rw [h1, h2, hasSaddleValue_iff.1 h3])
 
-/-- At a saddle-point the saddle-value is `K p`. -/
+/-- At a saddle-point $p$ of $K$, $\sup_u \inf_x K(u, x) = K(p)$. -/
 theorem IsSaddlePoint.maximin_eq (h : IsSaddlePoint K p) : maximin K = K p :=
   (isSaddlePoint_iff_attained.1 h).1.symm.trans h.iInf_eq
 
+/-- At a saddle-point $p$ of $K$, $\inf_x \sup_u K(u, x) = K(p)$. -/
 theorem IsSaddlePoint.minimax_eq (h : IsSaddlePoint K p) : minimax K = K p :=
   (isSaddlePoint_iff_attained.1 h).2.1.symm.trans h.iSup_eq
 
+/-- If $K$ has a saddle-point, then the saddle-value of $K$ exists. -/
 theorem IsSaddlePoint.hasSaddleValue (h : IsSaddlePoint K p) : HasSaddleValue K :=
   (isSaddlePoint_iff_attained.1 h).2.2
 
-/-- A saddle-point relative to `C × D` is characterised by the same one equation, now with the
-two extrema restricted. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$, and let $p = (\bar u, \bar x)$ with $\bar u \in C$ and
+$\bar x \in D$. Then $p$ is a saddle-point of $K$ relative to $C \times D$ if and only if
+$\sup_{u \in C} K(u, \bar x) = \inf_{x \in D} K(\bar u, x)$. -/
 theorem isSaddlePointOn_iff_biSup_eq_biInf {C : Set U} {D : Set X} (h₁ : p.1 ∈ C)
     (h₂ : p.2 ∈ D) :
     IsSaddlePointOn K C D p ↔ (⨆ u ∈ C, K (u, p.2)) = ⨅ x ∈ D, K (p.1, x) := by
@@ -187,26 +257,29 @@ theorem isSaddlePointOn_iff_biSup_eq_biInf {C : Set U} {D : Set X} (h₁ : p.1 �
     · exact ((le_iSup₂ (f := fun u (_ : u ∈ C) => K (u, p.2)) u hu).trans h.le).trans hge
     · exact (hle.trans h.le).trans (iInf₂_le (f := fun x (_ : x ∈ D) => K (p.1, x)) x hx)
 
+/-- A saddle-point relative to $U \times X$ is a saddle-point. -/
 @[simp] theorem isSaddlePointOn_univ_univ :
     IsSaddlePointOn K Set.univ Set.univ p ↔ IsSaddlePoint K p := by
   simp only [IsSaddlePointOn, IsSaddlePoint, Set.mem_univ, true_and, forall_const]
 
 /-! ### Restricting the outer extrema to the effective domains -/
 
+/-- If $u \notin \operatorname{dom}_1 K$, then $\inf_x K(u, x) = -\infty$. -/
 theorem iInf_slice_eq_bot_of_notMem_dom₁ {u : U} (hu : u ∉ dom₁ K) : (⨅ x, K (u, x)) = ⊥ := by
   rw [mem_dom₁] at hu
   push Not at hu
   obtain ⟨x, hx⟩ := hu
   exact le_bot_iff.1 ((iInf_le (fun x => K (u, x)) x).trans hx)
 
+/-- If $x \notin \operatorname{dom}_2 K$, then $\sup_u K(u, x) = +\infty$. -/
 theorem iSup_slice_eq_top_of_notMem_dom₂ {x : X} (hx : x ∉ dom₂ K) : (⨆ u, K (u, x)) = ⊤ := by
   rw [mem_dom₂] at hx
   push Not at hx
   obtain ⟨u, hu⟩ := hx
   exact top_le_iff.1 (hu.trans (le_iSup (fun u => K (u, x)) u))
 
-/-- The outer supremum in `sup inf` may always be restricted to `dom₁ K`: off it the inner
-infimum is `−∞`. -/
+/-- For every $K$, $\sup_u \inf_x K(u, x) = \sup_{u \in \operatorname{dom}_1 K} \inf_x K(u, x)$: for
+$u \notin \operatorname{dom}_1 K$ the inner infimum is $-\infty$. -/
 theorem maximin_eq_biSup_dom₁ (K : U × X → EReal) :
     maximin K = ⨆ u ∈ dom₁ K, ⨅ x, K (u, x) := by
   refine le_antisymm (iSup_le fun u => ?_)
@@ -216,8 +289,8 @@ theorem maximin_eq_biSup_dom₁ (K : U × X → EReal) :
   · rw [iInf_slice_eq_bot_of_notMem_dom₁ hu]
     exact bot_le
 
-/-- The outer infimum in `inf sup` may always be restricted to `dom₂ K`: off it the inner
-supremum is `+∞`. -/
+/-- For every $K$, $\inf_x \sup_u K(u, x) = \inf_{x \in \operatorname{dom}_2 K} \sup_u K(u, x)$: for
+$x \notin \operatorname{dom}_2 K$ the inner supremum is $+\infty$. -/
 theorem minimax_eq_biInf_dom₂ (K : U × X → EReal) :
     minimax K = ⨅ x ∈ dom₂ K, ⨆ u, K (u, x) := by
   refine le_antisymm (le_iInf₂ fun x _ => iInf_le (fun x => ⨆ u, K (u, x)) x)
@@ -237,47 +310,62 @@ variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [TopologicalSpace X
   [AddCommGroup X] {K L : U × X → EReal} {p : U × X}
 
 omit [TopologicalSpace U] [AddCommGroup U] in
+/-- Let $X$ be an additive group with a topology. For every $u$, $\inf_x (\operatorname{cl}_2 K)(u,
+x) = \inf_x K(u, x)$. -/
 theorem iInf_partialCl₂_slice (K : U × X → EReal) (u : U) :
     (⨅ x, partialCl₂ K (u, x)) = ⨅ x, K (u, x) :=
   iInf_convexCl_eq_iInf fun x => K (u, x)
 
 omit [TopologicalSpace X] [AddCommGroup X] in
+/-- Let $U$ be an additive group with a topology. For every $x$, $\sup_u (\operatorname{cl}_1 K)(u,
+x) = \sup_u K(u, x)$. -/
 theorem iSup_partialCl₁_slice (K : U × X → EReal) (x : X) :
     (⨆ u, partialCl₁ K (u, x)) = ⨆ u, K (u, x) :=
   iSup_concaveCl_eq_iSup fun u => K (u, x)
 
 omit [AddCommGroup U] in
-/-- Equivalent saddle-functions have the same inner infima — "two convex functions with the same
-closure have the same infimum". -/
+/-- If $K$ and $L$ are equivalent, then $\inf_x K(u, x) = \inf_x L(u, x)$ for every $u$: two convex
+functions with the same closure have the same infimum. -/
 theorem SaddleEquiv.iInf_slice_eq (h : SaddleEquiv K L) (u : U) :
     (⨅ x, K (u, x)) = ⨅ x, L (u, x) := by
   rw [← iInf_partialCl₂_slice K u, ← iInf_partialCl₂_slice L u, h.2]
 
 omit [AddCommGroup X] in
-/-- Equivalent saddle-functions have the same inner suprema. -/
+/-- If $K$ and $L$ are equivalent, then $\sup_u K(u, x) = \sup_u L(u, x)$ for every $x$. -/
 theorem SaddleEquiv.iSup_slice_eq (h : SaddleEquiv K L) (x : X) :
     (⨆ u, K (u, x)) = ⨆ u, L (u, x) := by
   rw [← iSup_partialCl₁_slice K x, ← iSup_partialCl₁_slice L x, h.1]
 
 omit [AddCommGroup U] in
-/-- Equivalent saddle-functions have the same `sup inf`. -/
+/-- Let $U$ be a topological space, let $X$ be an additive group with a topology, and let
+$K, L \colon U \times X \to [-\infty, +\infty]$ be equivalent. Then
+$$\sup_{u} \inf_{x} K(u, x) = \sup_{u} \inf_{x} L(u, x).$$
+
+This is part of Theorem 36.4 of [rockafellar1970convex]. No convexity is needed: equivalent
+functions have the same $\operatorname{cl}_2$, and $\operatorname{cl}_2$ does not change the
+inner infima (`ConvexAnalysis.iInf_partialCl₂_slice`). -/
 theorem SaddleEquiv.maximin_eq (h : SaddleEquiv K L) : maximin K = maximin L :=
   iSup_congr fun u => h.iInf_slice_eq u
 
 omit [AddCommGroup X] in
-/-- Equivalent saddle-functions have the same `inf sup`. -/
+/-- Let $U$ be an additive group with a topology, let $X$ be a topological space, and let
+$K, L \colon U \times X \to [-\infty, +\infty]$ be equivalent. Then
+$$\inf_{x} \sup_{u} K(u, x) = \inf_{x} \sup_{u} L(u, x).$$
+
+This is part of Theorem 36.4 of [rockafellar1970convex]. -/
 theorem SaddleEquiv.minimax_eq (h : SaddleEquiv K L) : minimax K = minimax L :=
   iInf_congr fun x => h.iSup_slice_eq x
 
-/-- Equivalent saddle-functions have the same saddle-value. -/
+/-- If $K$ and $L$ are equivalent, then the saddle-value of $K$ exists if and only if the
+saddle-value of $L$ exists. -/
 theorem SaddleEquiv.hasSaddleValue_iff (h : SaddleEquiv K L) :
     HasSaddleValue K ↔ HasSaddleValue L := by
   change maximin K = minimax K ↔ maximin L = minimax L
   rw [h.maximin_eq, h.minimax_eq]
 
-/-- Equivalent saddle-functions have the same saddle-points. The saddle-point condition is an
-equation between an inner supremum and an inner infimum (`isSaddlePoint_iff_iSup_eq_iInf`), and
-equivalence preserves both. -/
+/-- If $K$ and $L$ are equivalent, then they have the same saddle-points. The saddle-point condition
+is an equation between an inner supremum and an inner infimum
+(`ConvexAnalysis.isSaddlePoint_iff_iSup_eq_iInf`), and equivalence preserves both. -/
 theorem SaddleEquiv.isSaddlePoint_iff (h : SaddleEquiv K L) :
     IsSaddlePoint K p ↔ IsSaddlePoint L p := by
   rw [isSaddlePoint_iff_iSup_eq_iInf, isSaddlePoint_iff_iSup_eq_iInf, h.iSup_slice_eq,
@@ -291,7 +379,11 @@ section ProperSaddlePoints
 
 variable {U X : Type*} {K : U × X → EReal} {p : U × X}
 
-/-- A saddle-point of a proper saddle-function lies in its effective domain. Only properness is
+/-- Let $K \colon U \times X \to [-\infty, +\infty]$ be proper, that is, $\operatorname{dom}_1 K$
+and $\operatorname{dom}_2 K$ are nonempty. Every saddle-point of $K$ lies in $\operatorname{dom}
+K = \operatorname{dom}_1 K \times \operatorname{dom}_2 K$.
+
+This is the first assertion of Corollary 36.3.1 of [rockafellar1970convex]. Only properness is
 used. -/
 theorem IsSaddlePoint.mem_domSaddle (hp : ProperSaddleFn K) (h : IsSaddlePoint K p) :
     p ∈ domSaddle K := by
@@ -307,7 +399,8 @@ theorem IsSaddlePoint.mem_domSaddle (hp : ProperSaddleFn K) (h : IsSaddlePoint K
     exact absurd (top_le_iff.1 (hKp ▸ h.2 x₀)) (ne_of_lt (hx₀ p.1))
   exact ⟨fun x => lt_of_lt_of_le hbot (h.2 x), fun u => lt_of_le_of_lt (h.1 u) htop⟩
 
-/-- The saddle-value at a saddle-point of a proper saddle-function is finite. -/
+/-- If $K$ is proper and has a saddle-point, then the saddle-value of $K$ is finite:
+$\sup_u \inf_x K(u, x)$ is a real number. -/
 theorem IsSaddlePoint.exists_maximin_eq_coe (hp : ProperSaddleFn K) (h : IsSaddlePoint K p) :
     ∃ r : ℝ, maximin K = (r : EReal) := by
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
@@ -324,8 +417,9 @@ section RelintMin
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- Minimising a convex function over any set that contains `ri (dom f)` already gives the global
-infimum. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f \colon E \to [-\infty, +\infty]$ be
+convex, and let $S \subseteq E$ contain $\operatorname{ri}(\operatorname{dom} f)$. Then
+$\inf_{x \in S} f(x) = \inf_{x \in E} f(x)$. -/
 theorem ConvexFn.biInf_eq_iInf_of_relint_convexDom_subset (hf : ConvexFn f) {S : Set E}
     (hS : ri (convexDom f) ⊆ S) : (⨅ x ∈ S, f x) = ⨅ x, f x := by
   refine le_antisymm ?_ (le_iInf₂ fun x _ => iInf_le f x)
@@ -339,7 +433,14 @@ theorem ConvexFn.biInf_eq_iInf_of_relint_convexDom_subset (hf : ConvexFn f) {S :
 
 end RelintMin
 
-/-! ### The extrema and the saddle-points live on the effective domain -/
+/-!
+### The extrema and the saddle-points live on the effective domain
+
+In this section $U$ and $X$ are finite-dimensional real normed spaces, unless a statement says
+otherwise. The hypothesis on $K$ is the saddle structure `ConvexAnalysis.SaddleStructure`, which for
+a proper concave-convex function is equivalent to closedness
+(`ConvexAnalysis.closedSaddleFn_iff_saddleStructure`).
+-/
 
 section DomainExtrema
 
@@ -348,8 +449,9 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   {p : U × X}
 
 omit [FiniteDimensional ℝ U] in
-/-- The inner infimum: for a closed proper concave-convex `K` the infimum of a slice over all of
-`X` is already reached over `D = dom₂ K`. -/
+/-- Let $X$ be finite-dimensional, and let $K$ be a proper concave-convex function with the saddle
+structure. For every $u$, $\inf_{x \in \operatorname{dom}_2 K} K(u, x) = \inf_{x \in X} K(u,
+x)$. -/
 theorem biInf_dom₂_eq_iInf_slice (hK : ConcaveConvexFn K) (hs : SaddleStructure K)
     (hp : ProperSaddleFn K) (u : U) : (⨅ x ∈ dom₂ K, K (u, x)) = ⨅ x, K (u, x) := by
   by_cases hu : u ∈ dom₁ K
@@ -366,8 +468,9 @@ theorem biInf_dom₂_eq_iInf_slice (hK : ConcaveConvexFn K) (hs : SaddleStructur
       (intrinsicInterior_subset hx₀)).trans hbot.le)
 
 omit [FiniteDimensional ℝ X] in
-/-- The inner supremum: the mirror of `biInf_dom₂_eq_iInf_slice`, obtained from it at the swapped
-saddle-function. -/
+/-- Let $U$ be finite-dimensional, and let $K$ be a proper concave-convex function with the saddle
+structure. For every $x$, $\sup_{u \in \operatorname{dom}_1 K} K(u, x) = \sup_{u \in U} K(u,
+x)$. The proof applies `ConvexAnalysis.biInf_dom₂_eq_iInf_slice` to the swapped function. -/
 theorem biSup_dom₁_eq_iSup_slice (hK : ConcaveConvexFn K) (hs : SaddleStructure K)
     (hp : ProperSaddleFn K) (x : X) : (⨆ u ∈ dom₁ K, K (u, x)) = ⨆ u, K (u, x) := by
   have h := biInf_dom₂_eq_iInf_slice hK.saddleSwap hs.saddleSwap hp.saddleSwap x
@@ -376,21 +479,40 @@ theorem biSup_dom₁_eq_iSup_slice (hK : ConcaveConvexFn K) (hs : SaddleStructur
   simpa only [EReal.neg_iInf, saddleSwap_apply, neg_neg] using hneg
 
 omit [FiniteDimensional ℝ U] in
-/-- `sup inf` over the whole space is `sup inf` over `C × D`. -/
+/-- Let $X$ be a finite-dimensional real normed space, let $U$ be a real normed space, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a proper concave-convex function with the saddle
+structure (`ConvexAnalysis.SaddleStructure`). Then, with $C = \operatorname{dom}_1 K$ and
+$D = \operatorname{dom}_2 K$,
+$$\sup_{u \in U} \inf_{x \in X} K(u, x) = \sup_{u \in C} \inf_{x \in D} K(u, x).$$
+
+This is part of Theorem 36.3 of [rockafellar1970convex], which assumes that $K$ is closed. For a
+proper concave-convex function, closedness is equivalent to the saddle structure
+(`ConvexAnalysis.closedSaddleFn_iff_saddleStructure`). -/
 theorem maximin_eq_biSup_biInf (hK : ConcaveConvexFn K) (hs : SaddleStructure K)
     (hp : ProperSaddleFn K) : maximin K = ⨆ u ∈ dom₁ K, ⨅ x ∈ dom₂ K, K (u, x) := by
   rw [maximin_eq_biSup_dom₁]
   exact iSup_congr fun u => iSup_congr fun _ => (biInf_dom₂_eq_iInf_slice hK hs hp u).symm
 
 omit [FiniteDimensional ℝ X] in
-/-- `inf sup` over the whole space is `inf sup` over `C × D`. -/
+/-- Let $U$ be a finite-dimensional real normed space, let $X$ be a real normed space, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a proper concave-convex function with the saddle
+structure (`ConvexAnalysis.SaddleStructure`). Then, with $C = \operatorname{dom}_1 K$ and
+$D = \operatorname{dom}_2 K$,
+$$\inf_{x \in X} \sup_{u \in U} K(u, x) = \inf_{x \in D} \sup_{u \in C} K(u, x).$$
+
+This is part of Theorem 36.3 of [rockafellar1970convex], which assumes that $K$ is closed. -/
 theorem minimax_eq_biInf_biSup (hK : ConcaveConvexFn K) (hs : SaddleStructure K)
     (hp : ProperSaddleFn K) : minimax K = ⨅ x ∈ dom₂ K, ⨆ u ∈ dom₁ K, K (u, x) := by
   rw [minimax_eq_biInf_dom₂]
   exact iInf_congr fun x => iInf_congr fun _ => (biSup_dom₁_eq_iSup_slice hK hs hp x).symm
 
-/-- The saddle-points of `K` with respect to the whole space are exactly its saddle-points with
-respect to `C × D = dom K`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, and let
+$K \colon U \times X \to [-\infty, +\infty]$ be a proper concave-convex function with the saddle
+structure (`ConvexAnalysis.SaddleStructure`). Then a point is a saddle-point of $K$ if and only
+if it is a saddle-point of $K$ relative to $C \times D = \operatorname{dom}_1 K \times
+\operatorname{dom}_2 K$.
+
+This is part of Theorem 36.3 of [rockafellar1970convex], which assumes that $K$ is closed. -/
 theorem isSaddlePoint_iff_isSaddlePointOn_dom (hK : ConcaveConvexFn K) (hs : SaddleStructure K)
     (hp : ProperSaddleFn K) :
     IsSaddlePoint K p ↔ IsSaddlePointOn K (dom₁ K) (dom₂ K) p := by
@@ -414,8 +536,9 @@ section SliceFlip
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {F : Bifun U X}
 
-/-- Each *first*-variable slice `F (·) x` of a convex bifunction is convex. Not an instance of
-`convexFn_compLin`, because `u ↦ (u, x)` is affine and not linear. -/
+/-- Let $F$ be a convex bifunction from $U$ to $X$. For every $x$, the function $u \mapsto (Fu)(x)$
+is convex. This is not a case of `ConvexAnalysis.convexFn_compLin`, because $u \mapsto (u, x)$
+is affine, not linear. -/
 theorem ConvexBifun.convexFn_flip (hF : ConvexBifun F) (x : X) : ConvexFn fun u => F u x := by
   refine convexFn_of_epi_combo fun u w mu nu hu hw a b ha hb hab => ?_
   have h := hF.epi_combo (x := (u, x)) (y := (w, x)) hu hw ha hb hab
@@ -430,8 +553,9 @@ section ClosedSliceFlip
 variable {U X : Type*} [TopologicalSpace U] [AddCommGroup U] [IsTopologicalAddGroup U]
   [TopologicalSpace X] [AddCommGroup X] [IsTopologicalAddGroup X] {F : Bifun U X}
 
-/-- Each *first*-variable slice of a closed bifunction is closed — the mirror of
-`ClosedConvexBifun.imageClosedBifun`. -/
+/-- Let $F$ be a closed convex bifunction from $U$ to $X$, where $U$ and $X$ are topological groups.
+For every $x$, the function $u \mapsto (Fu)(x)$ is closed. This is the mirror of
+`ConvexAnalysis.ClosedConvexBifun.imageClosedBifun`. -/
 theorem ClosedConvexBifun.closedConvex_flip (hF : ClosedConvexBifun F)
     (x : X) : ClosedConvex fun u => F u x := by
   rcases closedConvex_iff.1 (closedConvexBifun_iff.1 hF) with h | ⟨hlsc, hne⟩
@@ -447,17 +571,32 @@ section SaddleLagrangian
 
 variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
 
-/-- The Lagrangian of `(P)` read as a function on the product `V × X`, i.e. as a saddle-function.
-The minimax problem studied below is the one for exactly this function. -/
+/-- Let $F$ be a bifunction from $U$ to $X$ and let $\langle \cdot, \cdot \rangle \colon U \times V
+\to \mathbb{R}$ be a bilinear pairing. The **Lagrangian** of the convex program attached to $F$,
+as a function on $V \times X$, is
+$$L(v, x) = \inf_{u \in U} \bigl(\langle u, v \rangle + (Fu)(x)\bigr).$$
+The minimax problems for the Lagrangian below are the minimax problems for this function.
+
+This is the Lagrangian of §36 of [rockafellar1970convex], where it is written
+$L(v, x) = \langle v, F_* x \rangle$. It is `ConvexAnalysis.lagrangian Bu F` read as a function
+of one pair. -/
 noncomputable def saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) : V × X → EReal :=
   fun q => lagrangian Bu F q.1 q.2
 
+/-- The Lagrangian at $(v, x)$ is `ConvexAnalysis.lagrangian Bu F v x`. -/
 theorem saddleLagrangian_apply (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (q : V × X) :
     saddleLagrangian Bu F q = lagrangian Bu F q.1 q.2 := rfl
 
 end SaddleLagrangian
 
-/-! ### Saddle-points of the Lagrangian -/
+/-!
+### Saddle-points of the Lagrangian
+
+In this section $U$ is a locally convex real topological vector space with a compatible pairing
+$\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$, $X$ is a real vector space that is
+a topological group, and $F$ is a bifunction from $U$ to $X$. The program attached to $F$ is (P):
+minimize $(F0)(x)$ over $x \in X$.
+-/
 
 section LagrangianSaddlePoints
 
@@ -466,8 +605,8 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
   [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] [TopologicalSpace X] [IsTopologicalAddGroup X]
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {F : Bifun U X} {v : V} {x : X}
 
-/-- For a closed convex bifunction the supremum of the Lagrangian over the price variable is the
-objective `(F 0)(x)` itself. -/
+/-- If $F$ is a closed convex bifunction, then $\sup_w L(w, x) = (F0)(x)$ for every $x$: the
+supremum of the Lagrangian over the price variable is the objective of (P). -/
 theorem iSup_lagrangian_eq (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     (⨆ w, lagrangian Bu F w x) = F 0 x := by
   rw [iSup_lagrangian (hF.convexFn_flip x), congrFun (hcl.closedConvex_flip x) 0]
@@ -475,7 +614,8 @@ theorem iSup_lagrangian_eq (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
 omit [AddCommGroup X] [Module ℝ X] [TopologicalSpace U] [IsTopologicalAddGroup U]
   [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] [IsCompatiblePairing Bu] [TopologicalSpace X]
   [IsTopologicalAddGroup X] in
-/-- Properness bounds the Lagrangian's infimum away from `+∞`. -/
+/-- Let $U$, $V$ be real vector spaces. If the graph function $(u, x) \mapsto (Fu)(x)$ is proper,
+then $\inf_y L(v, y) < +\infty$ for every $v$. -/
 theorem iInf_lagrangian_ne_top (hpr : ProperConvex (graphFn F)) :
     (⨅ y, lagrangian Bu F v y) ≠ ⊤ := by
   obtain ⟨q, hq⟩ := hpr.convexDom_nonempty
@@ -483,11 +623,21 @@ theorem iInf_lagrangian_ne_top (hpr : ProperConvex (graphFn F)) :
   refine lt_of_le_of_lt (iInf_le (fun u => ((Bu u v : ℝ) : EReal) + F u q.2) q.1) ?_
   exact EReal.add_lt_top (EReal.coe_ne_top _) (ne_of_lt hq)
 
-/-- `(v, x)` is a saddle-point of the Lagrangian of `(P)` exactly when `v` is a Kuhn–Tucker vector
-for `(P)` and `x` is an optimal solution to `(P)`.
+/-- Let $U$ be a locally convex real topological vector space with a compatible pairing $\langle
+\cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$, let $X$ be a real vector space that is a
+topological group, and let $F$ be a closed convex bifunction from $U$ to $X$ whose graph
+function $(u, x) \mapsto (Fu)(x)$ is proper. Then $(v, x)$ is a saddle-point of the Lagrangian
+$L(v, x) = \inf_u (\langle u, v \rangle + (Fu)(x))$ if and only if
 
-The proof is the book's: `⨅ y, L (v, y) ≤ inf F 0 ≤ (F 0) x = ⨆ w, L (w, x)`, whose outer terms are
-respectively `≠ ⊤` and `≠ ⊥` by properness, so the saddle-point condition collapses the chain. -/
+* $v$ is a Kuhn–Tucker vector for (P): $\inf F0$ is finite and $\inf_u \bigl(\langle u, v
+  \rangle + \inf Fu\bigr) = \inf F0$, and
+* $x$ is an optimal solution of (P): $(F0)(x) \le (F0)(z)$ for every $z$.
+
+Here $\inf Fu = \inf_x (Fu)(x)$, and (P) is the program of minimizing $(F0)(x)$. This is part of
+Theorem 36.6 of [rockafellar1970convex]. The proof follows the source: $\inf_y L(v, y) \le \inf
+F0 \le (F0)(x) = \sup_w L(w, x)$, where the outer terms are not $+\infty$ and not $-\infty$ by
+properness, so the saddle-point condition makes the chain an equality. Kuhn–Tucker vectors are
+`ConvexAnalysis.KuhnTucker`, and the optimal solutions are `ConvexAnalysis.argmin (F 0)`. -/
 theorem isSaddlePoint_lagrangian_iff (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) :
     IsSaddlePoint (saddleLagrangian Bu F) (v, x)
@@ -513,7 +663,13 @@ theorem isSaddlePoint_lagrangian_iff (hF : ConvexBifun F) (hcl : ClosedConvexBif
 
 end LagrangianSaddlePoints
 
-/-! ### The general Kuhn–Tucker theorem -/
+/-!
+### The general Kuhn–Tucker theorem
+
+In this section the spaces and $F$ are as in the previous section, and $\langle \cdot, \cdot \rangle
+\colon X \times Y \to \mathbb{R}$ is a bilinear pairing. The dual objective is
+$v \mapsto (F^* 0)(v)$, where $F^*$ is the adjoint of $F$.
+-/
 
 section KuhnTucker
 
@@ -525,14 +681,15 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 omit [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   [IsCompatiblePairing Bu] [TopologicalSpace X] [IsTopologicalAddGroup X] in
-/-- Minimising the Lagrangian over the convex variable *is* evaluating the dual objective `F* 0`:
-both are `⨅ u (⟨u, v⟩ + inf F u)`. -/
+/-- For every $v$, $\inf_y L(v, y) = (F^* 0)(v)$: both sides are $\inf_{u, x} \bigl(\langle u, v
+\rangle + (Fu)(x)\bigr)$. So minimizing the Lagrangian in the convex variable evaluates the dual
+objective. -/
 theorem iInf_lagrangian_eq_convexAdjointBifun_zero (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) :
     (⨅ y, lagrangian Bu F v y) = convexAdjointBifun Bu Bx F 0 v := by
   rw [iInf_lagrangian, convexAdjointBifun_zero_apply]
 
-/-- `(v, x)` is a saddle-point of the Lagrangian exactly when the primal objective at `x` is no
-larger than the dual objective at `v` — in which case weak duality forces equality. -/
+/-- If $F$ is a closed convex bifunction, then $(v, x)$ is a saddle-point of the Lagrangian if and
+only if $(F0)(x) \le (F^* 0)(v)$. In that case weak duality gives equality. -/
 theorem isSaddlePoint_lagrangian_iff_le_convexAdjointBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     IsSaddlePoint (saddleLagrangian Bu F) (v, x) ↔ F 0 x ≤ convexAdjointBifun Bu Bx F 0 v := by
@@ -543,8 +700,19 @@ theorem isSaddlePoint_lagrangian_iff_le_convexAdjointBifun (Bx : X →ₗ[ℝ] Y
   rw [iSup_lagrangian_eq hF hcl, iInf_lagrangian_eq_convexAdjointBifun_zero (Bu := Bu) Bx]
   exact ⟨le_of_eq, fun h => le_antisymm h hge⟩
 
-/-- `(v, x)` is a saddle-point of the Lagrangian exactly when normality holds and `x`, `v` are
-optimal for `(P)` and `(P*)`. -/
+/-- Let $U$ be a locally convex real topological vector space with a compatible pairing
+$U \times V \to \mathbb{R}$, let $X$ be a real vector space that is a topological group, with a
+bilinear pairing $X \times Y \to \mathbb{R}$, and let $F$ be a closed convex bifunction from $U$
+to $X$ whose graph function is proper. Then $(v, x)$ is a saddle-point of the Lagrangian if and
+only if
+
+* $F$ is normal: $(\operatorname{cl} \inf F)(0) = \inf F0$, where $\inf F$ is the function
+  $u \mapsto \inf_x (Fu)(x)$;
+* $x$ is an optimal solution of the primal program (P): $(F0)(x) \le (F0)(z)$ for every $z$; and
+* $v$ is an optimal solution of the dual program (P*): $(F^* 0)(v) = \sup_w (F^* 0)(w)$.
+
+This is the saddle-point form of the optimality conditions of §36 of [rockafellar1970convex].
+Normality is `ConvexAnalysis.Normal`, and the adjoint is `ConvexAnalysis.convexAdjointBifun`. -/
 theorem isSaddlePoint_lagrangian_iff_normal_and_optimal (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F)) :
     IsSaddlePoint (saddleLagrangian Bu F) (v, x) ↔ Normal F ∧ x ∈ argmin (F 0) ∧
@@ -562,9 +730,16 @@ theorem isSaddlePoint_lagrangian_iff_normal_and_optimal (Bx : X →ₗ[ℝ] Y �
     exact mem_argmin_iff_le_iInf.1 hx
 
 omit [AddCommGroup Y] [Module ℝ Y] in
-/-- **The general Kuhn–Tucker theorem**: once one Kuhn–Tucker vector is known to exist, `x` solves
-`(P)` exactly when some `v` makes `(v, x)` a saddle-point of the Lagrangian, and the `v` that do
-are precisely the Kuhn–Tucker vectors. -/
+/-- Let $U$ be a locally convex real topological vector space with a compatible pairing $\langle
+\cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$, let $X$ be a real vector space that is a
+topological group, and let $F$ be a closed convex bifunction from $U$ to $X$ whose graph
+function is proper. Assume that (P) has at least one Kuhn–Tucker vector. Then $x$ is an optimal
+solution of (P) if and only if there is a $v \in V$ such that $(v, x)$ is a saddle-point of the
+Lagrangian.
+
+The **general Kuhn–Tucker theorem**, Theorem 36.6 of [rockafellar1970convex], in its
+saddle-point form. For an optimal $x$, the $v$ that make $(v, x)$ a saddle-point are exactly the
+Kuhn–Tucker vectors (`ConvexAnalysis.isSaddlePoint_lagrangian_iff_mem_kuhnTucker`). -/
 theorem mem_argmin_iff_exists_isSaddlePoint_lagrangian (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hkt : (KuhnTucker Bu F).Nonempty) :
@@ -577,8 +752,9 @@ theorem mem_argmin_iff_exists_isSaddlePoint_lagrangian (hF : ConvexBifun F)
     exact ((isSaddlePoint_lagrangian_iff hF hcl hpr).1 hw).2
 
 omit [AddCommGroup Y] [Module ℝ Y] in
-/-- The "which `v`" clause: for an optimal `x`, the prices `v` completing it to a saddle-point of
-the Lagrangian are exactly the Kuhn–Tucker vectors. -/
+/-- Let $F$ be a closed convex bifunction whose graph function is proper, and let $x$ be an optimal
+solution of (P). Then $(v, x)$ is a saddle-point of the Lagrangian if and only if $v$ is a
+Kuhn–Tucker vector for (P). -/
 theorem isSaddlePoint_lagrangian_iff_mem_kuhnTucker (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hx : x ∈ argmin (F 0)) :
     IsSaddlePoint (saddleLagrangian Bu F) (v, x) ↔ v ∈ KuhnTucker Bu F :=
@@ -593,9 +769,15 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimen
   {F : Bifun U X}
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {x : X}
 
-/-- The Kuhn–Tucker theorem under the strong-consistency qualification: for a strongly consistent
-closed proper convex program, `x` is an optimal solution exactly when it is the convex half of a
-saddle-point of the Lagrangian. -/
+/-- Let $U$ be a finite-dimensional real normed space with a compatible pairing
+$U \times V \to \mathbb{R}$, where $V$ and $X$ are real normed spaces. Let $F$ be a closed
+convex bifunction from $U$ to $X$ whose graph function is proper, assume that the function
+$u \mapsto \inf_x (Fu)(x)$ is proper, that $F$ is strongly consistent
+($0 \in \operatorname{ri}(\operatorname{dom} F)$), and that $\inf F0 < +\infty$. Then $x$ is an
+optimal solution of (P) if and only if there is a $v$ such that $(v, x)$ is a saddle-point of
+the Lagrangian.
+
+This is the Kuhn–Tucker theorem under the constraint qualification of strong consistency. -/
 theorem mem_argmin_iff_exists_isSaddlePoint_lagrangian_of_stronglyConsistent
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hpr : ProperConvex (graphFn F))
     (hip : ProperConvex (infBifun F)) (hs : StronglyConsistent F) (ht : infBifun F 0 ≠ ⊤) :
@@ -605,7 +787,12 @@ theorem mem_argmin_iff_exists_isSaddlePoint_lagrangian_of_stronglyConsistent
 
 end KuhnTuckerSlater
 
-/-! ### Lagrangians are exactly the upper closed concave-convex functions -/
+/-!
+### Lagrangians are exactly the upper closed concave-convex functions
+
+In this section $U$, $V$, $X$ and $Y$ are locally convex real topological vector spaces, unless a
+statement says otherwise.
+-/
 
 section LagrangianUpperClosed
 
@@ -623,10 +810,14 @@ omit [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
   [TopologicalSpace X]
   [IsTopologicalAddGroup X] [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X] [TopologicalSpace Y]
   [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] in
-/-- **The Lagrangian is a bracket, after swapping.** Rockafellar writes it `L (v, x) = ⟨v, F_* x⟩`,
-through the *inverse* bifunction; the same identity, negated and with the variables exchanged, is
-the bracket of `flipBifun F` for the **negated** pairing, where the convex theory applies
-verbatim. -/
+/-- Let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ be a bilinear pairing and
+$F$ a bifunction from $U$ to $X$. The swapped Lagrangian $(x, v) \mapsto -L(v, x)$ is the
+bracket of the flipped bifunction $x \mapsto F(\cdot)(x)$ for the negated pairing
+$-\langle \cdot, \cdot \rangle$:
+$$-L(v, x) = \sup_u \bigl(-\langle u, v \rangle - (Fu)(x)\bigr).$$
+
+The source writes the Lagrangian as $\langle v, F_* x \rangle$, through the inverse bifunction.
+In the form above the theory of convex bifunctions applies without change. -/
 theorem saddleSwap_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) :
     saddleSwap (saddleLagrangian Bu F)
       = fun q : X × V => bracket (-Bu) (flipBifun F) q.1 q.2 := by
@@ -643,8 +834,9 @@ omit [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
   [LocallyConvexSpace ℝ U] [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
   [LocallyConvexSpace ℝ V] [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
   [LocallyConvexSpace ℝ X] in
-/-- The Lagrangian of a convex program is a concave-convex function: the brackets of a convex
-bifunction are, and the Lagrangian is one of them after swapping. -/
+/-- Let $U$ and $X$ be real vector spaces. If $F$ is a convex bifunction, then its Lagrangian is
+concave-convex: the brackets of a convex bifunction are concave-convex, and the swapped
+Lagrangian is one of them. -/
 theorem concaveConvexFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (hF : ConvexBifun F) :
     ConcaveConvexFn (saddleLagrangian Bu F) := by
   have h : ConcaveConvexFn (saddleSwap (saddleLagrangian Bu F)) := by
@@ -655,7 +847,12 @@ theorem concaveConvexFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) 
 
 omit [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- The Lagrangian of a closed convex bifunction is an upper closed concave-convex function. -/
+/-- Let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ be a pairing that is
+compatible for both $U$ and $V$, and let $X$ have a compatible pairing with a real vector space
+$Y$. If $F$ is a closed convex bifunction from $U$ to $X$, then its Lagrangian is upper closed:
+$\operatorname{cl}_1 \operatorname{cl}_2 L = L$.
+
+This is part of Theorem 36.5 of [rockafellar1970convex]. -/
 theorem upperClosedFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) : UpperClosedFn (saddleLagrangian Bu F) := by
@@ -668,8 +865,19 @@ theorem upperClosedFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [I
 
 omit [TopologicalSpace Y] [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- Every upper closed concave-convex function on `V × X` is the Lagrangian of one and only one
-closed convex bifunction from `U` to `X`. -/
+/-- Let $U$, $V$ and $X$ be locally convex real topological vector spaces, let $Y$ be a real vector
+space, let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ be a pairing that is
+compatible for both $U$ and $V$, and let $\langle \cdot, \cdot \rangle \colon X \times Y \to
+\mathbb{R}$ be a compatible pairing. Let $L \colon V \times X \to [-\infty, +\infty]$ be an
+upper closed concave-convex function. Then there is exactly one closed convex bifunction $G$
+from $U$ to $X$ whose Lagrangian is $L$:
+$$L(v, x) = \inf_u \bigl(\langle u, v \rangle + (Gu)(x)\bigr) \qquad \text{for all } v, x.$$
+
+This is Theorem 36.5 of [rockafellar1970convex], the half that says every upper closed
+concave-convex function is a Lagrangian, together with uniqueness. The converse half is
+`ConvexAnalysis.upperClosedFn_saddleLagrangian` and
+`ConvexAnalysis.concaveConvexFn_saddleLagrangian`. The pairing of $X$ with $Y$ appears only in
+the proof. -/
 theorem exists_unique_closedConvexBifun_saddleLagrangian_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] (hL : ConcaveConvexFn L) (huc : UpperClosedFn L) :
@@ -693,43 +901,62 @@ theorem exists_unique_closedConvexBifun_saddleLagrangian_eq (Bu : U →ₗ[ℝ] 
 
 end LagrangianUpperClosed
 
-/-! ## Conjugate saddle-functions -/
+/-!
+### Conjugate saddle-functions: the lower and upper conjugates
 
-/-! ### The lower and upper conjugates of a saddle-function -/
+In this section $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ and $\langle \cdot,
+\cdot \rangle \colon X \times Y \to \mathbb{R}$ are bilinear pairings, and
+$K \colon U \times Y \to [-\infty, +\infty]$. The conjugates of $K$ are functions on $V \times X$.
+-/
 
 section ConjugateSaddle
 
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- **The lower conjugate `K̲*`** of a saddle-function:
-`K̲* (u*, x) = ⨆ y, ⨅ u, {⟨u, u*⟩ + ⟨x, y⟩ - K (u, y)}`. -/
+/-- The **lower conjugate** of $K \colon U \times Y \to [-\infty, +\infty]$ is the function on
+$V \times X$
+$$\underline{K}^*(u^*, x) = \sup_{y \in Y} \inf_{u \in U} \bigl(\langle u, u^* \rangle + \langle
+  x, y \rangle - K(u, y)\bigr).$$
+
+This is the lower conjugate of §37 of [rockafellar1970convex]. The supremum over the convex
+variable $y$ is the outer extremum. -/
 noncomputable def lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) : V × X → EReal :=
   fun q => ⨆ y, ⨅ u, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y))
 
-/-- **The upper conjugate `K̄*`** of a saddle-function:
-`K̄* (u*, x) = ⨅ u, ⨆ y, {⟨u, u*⟩ + ⟨x, y⟩ - K (u, y)}`. -/
+/-- The **upper conjugate** of $K \colon U \times Y \to [-\infty, +\infty]$ is the function on
+$V \times X$
+$$\overline{K}^*(u^*, x) = \inf_{u \in U} \sup_{y \in Y} \bigl(\langle u, u^* \rangle + \langle
+  x, y \rangle - K(u, y)\bigr).$$
+
+This is the upper conjugate of §37 of [rockafellar1970convex]. The infimum over the concave
+variable $u$ is the outer extremum. -/
 noncomputable def upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) : V × X → EReal :=
   fun q => ⨅ u, ⨆ y, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y))
 
+/-- The lower conjugate at $(u^*, x)$ is $\sup_y \inf_u \bigl(\langle u, u^* \rangle + \langle x, y
+\rangle - K(u, y)\bigr)$. -/
 theorem lowerConjSaddle_apply (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) (q : V × X) :
     lowerConjSaddle Bu Bx K q = ⨆ y, ⨅ u, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y)) := rfl
 
+/-- The upper conjugate at $(u^*, x)$ is $\inf_u \sup_y \bigl(\langle u, u^* \rangle + \langle x, y
+\rangle - K(u, y)\bigr)$. -/
 theorem upperConjSaddle_apply (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) (q : V × X) :
     upperConjSaddle Bu Bx K q = ⨅ u, ⨆ y, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y)) := rfl
 
-/-- The lower conjugate never exceeds the upper one, `K̲* ≤ K̄*`, by `sup inf ≤ inf sup`. -/
+/-- The lower conjugate is at most the upper one, $\underline{K}^* \le \overline{K}^*$, by
+$\sup \inf \le \inf \sup$. -/
 theorem lowerConjSaddle_le_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     lowerConjSaddle Bu Bx K ≤ upperConjSaddle Bu Bx K := fun q =>
   maximin_le_minimax fun p : Y × U => (((Bu p.2 q.1 + Bx q.2 p.1 : ℝ) : EReal) - K (p.2, p.1))
 
-/-- The sign rearrangement behind the swap of the two conjugates: `(-r) - (-z) = z - r` in
-`EReal`. -/
+/-- For $r \in \mathbb{R}$ and $z \in [-\infty, +\infty]$, $(-r) - (-z) = z - r$. This sign rule is
+used for the swap of the two conjugates. -/
 theorem coe_neg_sub_neg (r : ℝ) (z : EReal) :
     ((-r : ℝ) : EReal) - -z = z - ((r : ℝ) : EReal) := by
   induction z using EReal.rec with
@@ -737,9 +964,16 @@ theorem coe_neg_sub_neg (r : ℝ) (z : EReal) :
   | coe s => norm_cast; ring
   | top => simp
 
-/-- **The upper conjugate of `saddleSwap K` is the swap of the lower conjugate of `K`**, at the
-negated flipped pairings. Negating both pairings turns a supremum-of-infima into an
-infimum-of-suprema. -/
+/-- Let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ and $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be bilinear pairings, and let
+$K \colon U \times Y \to [-\infty, +\infty]$. Let $\tilde K(y, u) = -K(u, y)$ be the swapped
+function, and take the conjugates of $\tilde K$ with respect to the negated flipped pairings
+$(y, x) \mapsto -\langle x, y \rangle$ and $(v, u) \mapsto -\langle u, v \rangle$. Then for all
+$x$ and $u^*$,
+$$\overline{\tilde K}^*(x, u^*) = -\underline{K}^*(u^*, x).$$
+So the upper conjugate of the swapped function is the swapped lower conjugate.
+
+Negating both pairings turns a supremum of infima into an infimum of suprema. -/
 theorem upperConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) :
     upperConjSaddle (-Bx.flip) (-Bu.flip) (saddleSwap K)
@@ -754,8 +988,13 @@ theorem upperConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : 
     ring
   rw [hr, saddleSwap_apply, coe_neg_sub_neg, EReal.neg_coe_sub]
 
-/-- **The lower conjugate of `saddleSwap K` is the swap of the upper conjugate of `K`**: the upper
-statement at `saddleSwap K`, since negating and flipping a pairing twice gives it back. -/
+/-- With the notation of `ConvexAnalysis.upperConjSaddle_saddleSwap`, the lower conjugate of the
+swapped function $\tilde K(y, u) = -K(u, y)$, taken with respect to the negated flipped
+pairings, is the swapped upper conjugate of $K$: for all $x$ and $u^*$,
+$$\underline{\tilde K}^*(x, u^*) = -\overline{K}^*(u^*, x).$$
+
+The proof applies `ConvexAnalysis.upperConjSaddle_saddleSwap` to $\tilde K$: negating and
+flipping a pairing twice gives the pairing back. -/
 theorem lowerConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (K : U × Y → EReal) :
     lowerConjSaddle (-Bx.flip) (-Bu.flip) (saddleSwap K)
@@ -766,13 +1005,22 @@ theorem lowerConjSaddle_saddleSwap (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : 
   rw [e₁, e₂, saddleSwap_saddleSwap] at h
   rw [h, saddleSwap_saddleSwap]
 
-/-- The equivalence class `Ω (F)` of saddle-functions attached to a convex bifunction: the
-concave-convex functions squeezed between the two brackets of `F`. -/
+/-- Let $F$ be a bifunction from $U$ to $X$. The class $\Omega(F)$ is the set of all
+$K \colon U \times Y \to [-\infty, +\infty]$ that lie between the two brackets of $F$:
+$$\langle Fu, y \rangle \le K(u, y) \le \langle u, F^* y \rangle \qquad \text{for all } u, y.$$
+
+This is the class $\Omega(F)$ of §34 of [rockafellar1970convex], without the condition that $K$
+be concave-convex, which the source also imposes. For a closed convex bifunction $F$, the
+concave-convex members of $\Omega(F)$ form one equivalence class of closed functions (Theorem
+34.2 of [rockafellar1970convex]). The two brackets are `ConvexAnalysis.bracket` and
+`ConvexAnalysis.concaveBracket` of the adjoint `ConvexAnalysis.convexAdjointBifun`. -/
 noncomputable def bifunSaddleClass (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     (F : Bifun U X) : Set (U × Y → EReal) :=
   saddleClass (fun p : U × Y => bracket Bx F p.1 p.2)
     (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2)
 
+/-- $K \in \Omega(F)$ if and only if $\langle Fu, y \rangle \le K(u, y) \le \langle u, F^* y
+\rangle$ for all $u$ and $y$. -/
 theorem mem_bifunSaddleClass {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {F : Bifun U X}
     {K : U × Y → EReal} : K ∈ bifunSaddleClass Bu Bx F ↔
       ((fun p : U × Y => bracket Bx F p.1 p.2) ≤ K ∧
@@ -787,7 +1035,7 @@ section ConjugateSaddleZero
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- `inf sup K = -K̲* (0, 0)`: the `inf sup` is a value of the lower conjugate at the origin. -/
+/-- For every $K$, $\inf_y \sup_u K(u, y) = -\underline{K}^*(0, 0)$. -/
 theorem minimax_eq_neg_lowerConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     minimax K = -(lowerConjSaddle Bu Bx K 0) := by
@@ -802,7 +1050,7 @@ theorem minimax_eq_neg_lowerConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     rw [zero_add]
   rw [h, neg_neg]
 
-/-- `sup inf K = -K̄* (0, 0)`: the `sup inf` is a value of the upper conjugate at the origin. -/
+/-- For every $K$, $\sup_u \inf_y K(u, y) = -\overline{K}^*(0, 0)$. -/
 theorem maximin_eq_neg_upperConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     maximin K = -(upperConjSaddle Bu Bx K 0) := by
@@ -817,9 +1065,16 @@ theorem maximin_eq_neg_upperConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     rw [zero_add]
   rw [h, neg_neg]
 
-/-- The saddle-value of `K` exists exactly when the two conjugates agree at the origin. This is the
-reduction of minimax theory to the position of the origin relative to the effective domain of the
-conjugate class. -/
+/-- Let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$ and $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be bilinear pairings, and let
+$K \colon U \times Y \to [-\infty, +\infty]$. The saddle-value of $K$ exists if and only if the
+two conjugates agree at the origin:
+$$\overline{K}^*(0, 0) = \underline{K}^*(0, 0).$$
+
+So the existence of a saddle-value depends on the position of the origin relative to the
+effective domain of the conjugate class. The proof uses
+`ConvexAnalysis.minimax_eq_neg_lowerConjSaddle_zero` and
+`ConvexAnalysis.maximin_eq_neg_upperConjSaddle_zero`. -/
 theorem hasSaddleValue_iff_conjSaddle_zero_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     HasSaddleValue K ↔ upperConjSaddle Bu Bx K 0 = lowerConjSaddle Bu Bx K 0 := by
@@ -828,7 +1083,12 @@ theorem hasSaddleValue_iff_conjSaddle_zero_eq (Bu : U →ₗ[ℝ] V →ₗ[ℝ] 
 
 end ConjugateSaddleZero
 
-/-! ### The two conjugates of a member of `Ω (F)` -/
+/-!
+### The two conjugates of a member of $\Omega(F)$
+
+In this section $U$, $V$, $X$ and $Y$ are locally convex real topological vector spaces, unless a
+statement says otherwise.
+-/
 
 section ClassConjugates
 
@@ -844,7 +1104,9 @@ omit [AddCommGroup U] [Module ℝ U] [TopologicalSpace U] [IsTopologicalAddGroup
   [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] [TopologicalSpace X] [IsTopologicalAddGroup X]
   [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X] [TopologicalSpace Y] [IsTopologicalAddGroup Y]
   [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] in
-/-- `bifunOfSaddle` is antitone: it is a conjugate in disguise. -/
+/-- The bifunction attached to a function on $U \times Y$, $(Fu)(x) = \sup_y (\langle x, y \rangle -
+K(u, y))$ (`ConvexAnalysis.bifunOfSaddle`), is antitone in $K$: if $K \le L$, then the
+bifunction of $L$ is at most the bifunction of $K$. -/
 theorem bifunOfSaddle_antitone (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) {K L : U × Y → EReal} (h : K ≤ L) :
     bifunOfSaddle Bx L ≤ bifunOfSaddle Bx K :=
   fun u x => convexConj_antitone Bx.flip (fun y => h (u, y)) x
@@ -853,17 +1115,25 @@ omit [AddCommGroup U] [Module ℝ U] [TopologicalSpace U] [IsTopologicalAddGroup
   [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] [TopologicalSpace X] [IsTopologicalAddGroup X]
   [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X] [ContinuousSMul ℝ Y]
   [LocallyConvexSpace ℝ Y] in
-/-- **The convex bifunction attached to a saddle-function sees only its `cl₂` closure.** This is
-`convexConj_convexCl` on each slice. -/
+/-- Let the flipped pairing $Y \times X \to \mathbb{R}$ be compatible for $Y$. The bifunction
+attached to $K$ (`ConvexAnalysis.bifunOfSaddle`) is the same for $K$ and for
+$\operatorname{cl}_2 K$, because the conjugate of a function equals the conjugate of its convex
+closure (`ConvexAnalysis.convexConj_convexCl`), slice by slice. -/
 theorem bifunOfSaddle_partialCl₂ (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx.flip]
     (K : U × Y → EReal) : bifunOfSaddle Bx (partialCl₂ K) = bifunOfSaddle Bx K :=
   funext fun u => convexConj_convexCl (B := Bx.flip) fun y => K (u, y)
 
 omit [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
   [LocallyConvexSpace ℝ V] in
-/-- **Every member of the class `Ω (F)` has the same associated bifunction, namely `F`.** The two
-brackets have equal `bifunOfSaddle` — one is the `cl₂` of the other, and `bifunOfSaddle` sees only
-`cl₂` — so the sandwich collapses. This is the step that gives the upper conjugate. -/
+/-- Let $F$ be a closed convex bifunction from $U$ to $X$, let the pairing
+$U \times V \to \mathbb{R}$ be compatible, and let the pairing $X \times Y \to \mathbb{R}$ be
+compatible for both $X$ and $Y$. For every $K \in \Omega(F)$, the bifunction attached to $K$,
+$(u, x) \mapsto \sup_y (\langle x, y \rangle - K(u, y))$, is $F$.
+
+The two brackets of $F$ have the same attached bifunction, because one is $\operatorname{cl}_2$
+of the other and the attached bifunction depends only on $\operatorname{cl}_2$. Antitonicity
+then gives the same bifunction for every $K$ between them. This is the step that gives the upper
+conjugate. -/
 theorem bifunOfSaddle_eq_of_mem_bifunSaddleClass (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -894,9 +1164,14 @@ theorem bifunOfSaddle_eq_of_mem_bifunSaddleClass (Bu : U →ₗ[ℝ] V →ₗ[�
 
 omit [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
   [LocallyConvexSpace ℝ X] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] in
-/-- **The concave conjugate of a slice of `K` is a slice of the adjoint `F*`**, for every `K` in the
-class `Ω (F)`: the concave conjugate sees only `cl₁`, and `cl₁` of the lower bracket is the upper
-bracket. This is the step that gives the lower conjugate. -/
+/-- Let $F$ be a convex bifunction from $U$ to $X$, let the pairing $U \times V \to \mathbb{R}$ be
+compatible for both $U$ and $V$, and let the flipped pairing $Y \times X \to \mathbb{R}$ be
+compatible for $Y$. For every $K \in \Omega(F)$ and every $y$, the concave conjugate of the
+slice $K(\cdot, y)$ is $F^* y$:
+$$\inf_u \bigl(\langle u, v \rangle - K(u, y)\bigr) = (F^* y)(v) \qquad \text{for all } v.$$
+
+The concave conjugate depends only on $\operatorname{cl}_1$, and $\operatorname{cl}_1$ of the
+lower bracket is the upper bracket. This is the step that gives the lower conjugate. -/
 theorem concaveConj_slice_eq_convexAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) (y : Y) :
@@ -928,9 +1203,17 @@ theorem concaveConj_slice_eq_convexAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ
 
 omit [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
   [LocallyConvexSpace ℝ V] in
-/-- The *upper* conjugate of any `K` in the class `Ω (F)` of a closed convex bifunction `F` is the
-Lagrangian of `F`, `K̄* (u*, x) = ⟨u*, F_* x⟩ = ⨅ u, {⟨u, u*⟩ + (Fu)(x)}`. In particular it does
-not depend on the representative. -/
+/-- Let $U$, $X$ and $Y$ be locally convex real topological vector spaces, let $\langle \cdot, \cdot
+\rangle \colon U \times V \to \mathbb{R}$ be a compatible pairing, and let $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be a pairing that is compatible for both $X$ and $Y$.
+Let $F$ be a closed convex bifunction from $U$ to $X$, and let $K \in \Omega(F)$. Then the upper
+conjugate of $K$ is the Lagrangian of $F$:
+$$\overline{K}^*(u^*, x) = \inf_u \bigl(\langle u, u^* \rangle + (Fu)(x)\bigr) \qquad \text{for
+  all } u^*, x.$$
+In particular $\overline{K}^*$ does not depend on the choice of $K$ in $\Omega(F)$.
+
+This is the first equation of Theorem 37.1 of [rockafellar1970convex], where the right side is
+written $\langle u^*, F_* x \rangle$. -/
 theorem upperConjSaddle_eq_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
@@ -953,8 +1236,19 @@ theorem upperConjSaddle_eq_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
 
 omit [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
   [LocallyConvexSpace ℝ X] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] in
-/-- The *lower* conjugate of any `K` in the class `Ω (F)` is the bracket of the inverse adjoint,
-`K̲* (u*, x) = ⟨F_*^* u*, x⟩`; like the upper conjugate it depends only on the class. -/
+/-- Let $U$ and $V$ be locally convex real topological vector spaces, let $Y$ be a real vector space
+that is a topological group, let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$
+be a pairing that is compatible for both $U$ and $V$, and let $\langle \cdot, \cdot \rangle
+\colon X \times Y \to \mathbb{R}$ be a pairing whose flip is compatible for $Y$. Let $F$ be a
+convex bifunction from $U$ to $X$, and let $K \in \Omega(F)$. Then the lower conjugate of $K$ is
+the bracket of $F_*^*$:
+$$\underline{K}^*(u^*, x) = \langle F_*^* u^*, x \rangle = \sup_y \bigl(\langle x, y \rangle -
+  (F_*^* u^*)(y)\bigr), \qquad (F_*^* u^*)(y) = -(F^* y)(u^*).$$
+So $\underline{K}^*$ also depends only on $F$.
+
+This is the second equation of Theorem 37.1 of [rockafellar1970convex]. Here $F$ need not be
+closed. The bifunction $F_*^*$ from $V$ to $Y$ is `ConvexAnalysis.lowerAdjointBifun Bu Bx F`,
+and the bracket is `ConvexAnalysis.bracket` for the flipped pairing $Y \times X \to \mathbb{R}$. -/
 theorem lowerConjSaddle_eq_bracket_lowerAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
@@ -985,7 +1279,14 @@ theorem lowerConjSaddle_eq_bracket_lowerAdjointBifun (Bu : U →ₗ[ℝ] V →�
 
 omit [TopologicalSpace V] [IsTopologicalAddGroup V] [ContinuousSMul ℝ V]
   [LocallyConvexSpace ℝ V] in
-/-- The upper conjugate of a member of `Ω (F)` is a concave-convex function. -/
+/-- Let $U$, $X$ and $Y$ be locally convex real topological vector spaces, let $\langle \cdot, \cdot
+\rangle \colon U \times V \to \mathbb{R}$ be a compatible pairing, and let $\langle \cdot, \cdot
+\rangle \colon X \times Y \to \mathbb{R}$ be a pairing that is compatible for both $X$ and $Y$.
+Let $F$ be a closed convex bifunction from $U$ to $X$, and let $K \in \Omega(F)$. Then the upper
+conjugate $\overline{K}^*$ is concave-convex.
+
+This is part of Corollary 37.1.1 of [rockafellar1970convex]. The upper conjugate is the
+Lagrangian of $F$ (`ConvexAnalysis.upperConjSaddle_eq_saddleLagrangian`). -/
 theorem concaveConvexFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
@@ -993,8 +1294,10 @@ theorem concaveConvexFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
   rw [upperConjSaddle_eq_saddleLagrangian Bu Bx hF hcl hK]
   exact concaveConvexFn_saddleLagrangian Bu hF
 
-/-- The upper conjugate of a member of `Ω (F)` is *upper closed*: it is a Lagrangian, and the
-Lagrangians are exactly the upper closed concave-convex functions. -/
+/-- Let the pairing $U \times V \to \mathbb{R}$ be compatible for both $U$ and $V$, and let the
+pairing $X \times Y \to \mathbb{R}$ be compatible for both $X$ and $Y$. If $F$ is a closed
+convex bifunction and $K \in \Omega(F)$, then the upper conjugate $\overline{K}^*$ is upper
+closed: it is a Lagrangian, and Lagrangians of closed convex bifunctions are upper closed. -/
 theorem upperClosedFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
@@ -1004,7 +1307,15 @@ theorem upperClosedFn_upperConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [Is
 
 omit [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
   [LocallyConvexSpace ℝ X] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] in
-/-- The lower conjugate of a member of `Ω (F)` is a concave-convex function. -/
+/-- Let $U$ and $V$ be locally convex real topological vector spaces, let $Y$ be a real vector space
+that is a topological group, let $\langle \cdot, \cdot \rangle \colon U \times V \to \mathbb{R}$
+be a pairing that is compatible for both $U$ and $V$, and let $\langle \cdot, \cdot \rangle
+\colon X \times Y \to \mathbb{R}$ be a pairing whose flip is compatible for $Y$. Let $F$ be a
+convex bifunction from $U$ to $X$, and let $K \in \Omega(F)$. Then the lower conjugate
+$\underline{K}^*$ is concave-convex.
+
+This is part of Corollary 37.1.1 of [rockafellar1970convex]. The lower conjugate is the bracket
+of $F_*^*$ (`ConvexAnalysis.lowerConjSaddle_eq_bracket_lowerAdjointBifun`). -/
 theorem concaveConvexFn_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx.flip]
     (hF : ConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
@@ -1012,8 +1323,10 @@ theorem concaveConvexFn_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
   rw [lowerConjSaddle_eq_bracket_lowerAdjointBifun Bu Bx hF hK]
   exact concaveConvexFn_bracket (convexBifun_lowerAdjointBifun Bu Bx F) Bx.flip
 
-/-- The lower conjugate of a member of `Ω (F)` is *lower closed*: it is the bracket of the closed
-convex bifunction `F_*^*`. -/
+/-- Let the pairing $U \times V \to \mathbb{R}$ be compatible for both $U$ and $V$, and let the
+pairing $X \times Y \to \mathbb{R}$ be compatible for both $X$ and $Y$. If $F$ is a convex
+bifunction and $K \in \Omega(F)$, then the lower conjugate $\underline{K}^*$ is lower closed: it
+is the bracket of the closed convex bifunction $F_*^*$. -/
 theorem lowerClosedFn_lowerConjSaddle (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :

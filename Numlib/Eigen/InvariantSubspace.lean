@@ -13,70 +13,80 @@ import Numlib.LinearAlgebra.Matrix.Sylvester
 /-!
 # Invariant subspaces: uniqueness, perturbation, and subspace iteration
 
-Invariant subspaces of a matrix or operator: their uniqueness for a set of eigenvalues, their
-perturbation (Stewart's theorem), the transport of graph subspaces by powers, and the convergence of
-subspace (orthogonal) iteration to the dominant one with explicit constants.
+This file studies invariant subspaces of a matrix or operator $A$: their uniqueness for a set of
+eigenvalues, their perturbation (Stewart's theorem), the transport of graph subspaces by powers of
+$A$, and the convergence of subspace (orthogonal) iteration to the dominant invariant subspace with
+explicit constants. It follows §7.2–7.3, §7.6.2 and §8.2.2 of [golub2013matrix]. Distances between
+subspaces are measured by the gap $\operatorname{gap}(K, L) = \|P_K - P_L\|$ of the orthogonal
+projections (`Submodule.gap`), which is the $\operatorname{dist}$ of §2.5.3 of [golub2013matrix].
+The graph of a map $X : K \to W$ is the subspace $\{u + X u : u \in K\}$; in block coordinates it is
+the range of $\begin{bmatrix} I \\ X \end{bmatrix}$.
+
+The bound on orthogonal iteration is a corrected form of Theorem 7.3.1 of [golub2013matrix]. The
+printed theorem assumes $\operatorname{dist}(D_r(A), \operatorname{ran} Q_0) < 1$ and is false. The
+proof in the source uses $\operatorname{dist}(D_r(A^H), \operatorname{ran} Q_0) < 1$ instead, and
+the text after the theorem says so in words. `Matrix.gap_subspaceIterate_le_of_schur` states and
+proves the corrected theorem, without graphs or a CS decomposition.
 
 ## Main results
 
-* **Uniqueness.** An `A`-invariant subspace on which `A` has only eigenvalues from a set `Λ`, of the
-  dimension of the spectral subspace `⨆_{μ ∈ Λ} maxGenEigenspace A μ` (the total algebraic
-  multiplicity of `Λ`), *is* that subspace (`Module.End.invtSubmodule_eq_spectralSubspace`, in
-  `Numlib/LinearAlgebra/Eigenspace/Spectral`). That is the precise sense of
-  [golub2013matrix]'s "the unique invariant subspace associated with the eigenvalues λ₁, …, λ_r"
-  (§7.3.2, the dominant invariant subspace `D_r(A)`, and §7.6.2, the first `p` Schur vectors when
-  `λ(T₁₁) ∩ λ(T₂₂) = ∅`); the matrix form is `Matrix.span_cols_eq_spectralSubspace_of_conj`.
-* **Powers from a Schur form** ([golub2013matrix] Lemma 7.3.2): with `Qᴴ A Q = D + N`,
-  `‖A^k‖₂ ≤ (1+μ)^{n-1} (max |t_ii| + ‖N‖_F/(1+μ))^k` (`Matrix.l2_opNorm_pow_le_of_schur`) and the
-  inverse-power bound (`Matrix.l2_opNorm_inv_pow_le_of_schur`); the diagonal scaling
-  `Δ = diag(1, 1+μ, …, (1+μ)^{n-1})` shrinks the strictly upper part by `1+μ`
-  (`Matrix.frobenius_norm_diagonal_mul_mul_inv_le`).
-* **Stewart's perturbation theorem** ([golub2013matrix] Theorem 7.2.4, after G. W. Stewart, SIAM
-  Rev. 15 (1973), Theorem 4.11), `Matrix.exists_invariant_graph_of_sep`. In Schur coordinates
-  `T = fromBlocks T₁₁ T₁₂ 0 T₂₂` and a perturbation `E` with blocks `Eᵢⱼ`, the column space of
-  `fromRows 1 P` is `(T + E)`-invariant exactly when `P` solves the Riccati equation
-  `P A₁₁ - A₂₂ P + P A₁₂ P = E₂₁` (`Aᵢⱼ` the blocks of `T + E`). Its linear part is
-  `-sylvesterMap A₂₂ A₁₁`, bounded below by `sep(A₂₂, A₁₁) = sep(A₁₁, A₂₂)` (`Matrix.sep_comm`),
-  and `sep(A₁₁, A₂₂) ≥ sep(T₁₁, T₂₂) - ‖E₁₁‖_F - ‖E₂₂‖_F` (`Matrix.sep_sub_le_sep_add`); Stewart's
-  quadratic-equation lemma (`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`) solves it with
-  `‖P‖_F ≤ 2γ/δ` when `4γη < δ²`. With the book's hypothesis
-  `‖E‖_F (1 + 5‖T₁₂‖_F/sep) ≤ sep/5`: `δ ≥ 3 sep/5` and `γη ≤ sep²/25`, so `4γη < δ²` and
-  `‖P‖_F ≤ (10/3) ‖E₂₁‖_F/sep ≤ 4 ‖E₂₁‖_F/sep` — the book's constants, with room.
-* **Graph subspaces** ([golub2013matrix] Corollary 7.2.5 and (7.2.6)): the gap between
-  `ran [I; 0]` and `ran [I; P]` is at most `‖P‖₂` (`Matrix.gap_range_fromRows_le`); coordinate-free,
-  a subspace at gap `< 1` from `K` of the same dimension is the graph of some `X : K → Kᗮ`
-  (`Submodule.exists_eq_graph_of_gap_lt_one`) with `‖X‖ = d/√(1 - d²)`
-  (`Submodule.norm_eq_gap_graph_div`, inverting `Submodule.gap_graph` of
-  `Numlib/Analysis/InnerProductSpace/Projection/Gap`). The gap is unitarily invariant
-  (`Submodule.gap_map_linearIsometryEquiv`).
-* **Transport of graphs by powers** (`Krylov.subspaceIterate_graph`): for complementary invariant
-  `K`, `W` with `A` bijective on `K`, `A^k` carries the graph of `X : K → W` to the graph of
-  `A₂^k X A₁^{-k}`. Pure algebra; it is the coordinate-free core of the appendix proof of
-  [golub2013matrix] Theorem 7.3.1 and of Theorem 8.2.2.
-* **Subspace iteration for a symmetric operator** ([golub2013matrix] Theorem 8.2.2):
-  `gap D (A^k S) ≤ (r/ρ)^k d₀/√(1 - d₀²)` (`LinearMap.IsSymmetric.gap_subspaceIterate_le`, through
-  `LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant`), the `tan Θ` form of the book's
-  argument with no CS decomposition.
+* `Matrix.span_cols_eq_spectralSubspace_of_conj`: if $Q^{-1} A Q = \begin{bmatrix} T_{11} & T_{12}
+  \\ 0 & T_{22} \end{bmatrix}$ with $\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$, the leading
+  columns of $Q$ span the spectral subspace of $A$ for $\lambda(T_{11})$.
+* `Matrix.frobenius_norm_diagonal_mul_mul_inv_le`: the scaling $\Delta = \operatorname{diag}(1, 1 +
+  \mu, \dots, (1 + \mu)^{n-1})$ shrinks a strictly upper triangular matrix by the factor $1 + \mu$
+  in the Frobenius norm.
+* `Matrix.l2_opNorm_pow_le_of_schur` and `Matrix.l2_opNorm_inv_pow_le_of_schur`: the bounds of Lemma
+  7.3.2 of [golub2013matrix] on $\|A^k\|_2$ and $\|A^{-k}\|_2$ from a Schur form.
+* `Matrix.exists_invariant_graph_of_sep`: **Stewart's perturbation theorem**, Theorem 7.2.4 of
+  [golub2013matrix].
+* `Submodule.gap_map_linearIsometryEquiv`: the gap is invariant under linear isometries.
+* `Submodule.exists_eq_graph_of_gap_lt_one` and `Submodule.norm_eq_gap_graph_div`: a subspace at gap
+  $d < 1$ from $K$ with the dimension of $K$ is the graph of a map $X : K \to K^\perp$ with
+  $\|X\| = d / \sqrt{1 - d^2}$.
+* `Krylov.subspaceIterate_graph`: $A^k$ carries the graph of $X$ to the graph of $A_2^k X A_1^{-k}$.
+* `LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant` and
+  `LinearMap.IsSymmetric.gap_subspaceIterate_le`: subspace iteration for a symmetric operator, with
+  the bound $(r/\rho)^k d_0 / \sqrt{1 - d_0^2}$ of Theorem 8.2.2 of [golub2013matrix].
+* `Krylov.gap_subspaceIterate_le_of_isCompl`: subspace iteration toward an invariant subspace with
+  an invariant complement.
+* `Matrix.gap_range_fromRows_le`: the gap between $\operatorname{ran} \begin{bmatrix} I \\ 0
+  \end{bmatrix}$ and $\operatorname{ran} \begin{bmatrix} I \\ P \end{bmatrix}$ is at most $\|P\|_2$
+  (Corollary 7.2.5 and (7.2.6) of [golub2013matrix]).
+* `Matrix.gap_subspaceIterate_le_of_schur`: orthogonal iteration converges to the dominant invariant
+  subspace (Theorem 7.3.1 of [golub2013matrix], corrected).
 
-## The corrected Theorem 7.3.1
+## Proof outline
 
-[golub2013matrix] Theorem 7.3.1 bounds the distance of the orthogonal iterates to `D_r(A)` under the
-hypothesis `d₀ = dist(D_r(A), ran Q₀) < 1`. That hypothesis is the wrong one — the proof uses
-`dist(D_r(Aᴴ), ran Q₀) < 1`, and the text after the theorem says so in words — and the printed
-theorem is false: for `A = [[2, 1], [0, 1]]`, `r = 1` and `Q₀ = (1, -1)/√2` (an eigenvector for
-`λ₂ = 1`), `d₀ = 1/√2 < 1` but `d_k = 1/√2` for all `k`. The corrected statement
-(`Matrix.gap_subspaceIterate_le_of_schur`, with the factor `d₀/√(1 - d̃₀²)`,
-`d̃₀ = dist(D_r(Aᴴ), ran Q₀)`) is proved without graphs or a CS decomposition: its
-coordinate-free core `Krylov.gap_subspaceIterate_le_of_isCompl` bounds `gap D (A^k S)` for
-complementary invariant `D`, `W` by the norm of the oblique projection onto `D` along `W`, the
-compression of `A^k` to `Dᗮ` and the inverse of `A^k` on `D`; in Schur coordinates these are
-`1 + ‖X‖₂` (`X` the Sylvester solution, `W = ran [X; I]`), `‖T₂₂^k‖₂` and `‖T₁₁^{-k}‖₂`, bounded by
-Lemma 7.3.2 and `‖X‖_F ≤ ‖T₁₂‖_F/sep`.
+The uniqueness of an invariant subspace for a set $\Lambda$ of eigenvalues is
+`Module.End.invtSubmodule_eq_spectralSubspace` of `Numlib.LinearAlgebra.Eigenspace.Spectral`: an
+$A$-invariant subspace on which $A$ has only eigenvalues from $\Lambda$, with dimension the total
+algebraic multiplicity of $\Lambda$, is the spectral subspace $\bigoplus_{\mu \in \Lambda} \ker (A -
+\mu)^\infty$. This is the precise sense of "the unique invariant subspace associated with the
+eigenvalues $\lambda_1, \dots, \lambda_r$" of [golub2013matrix], for the dominant invariant subspace
+$D_r(A)$ of §7.3.2 and for the first $p$ Schur vectors of §7.6.2 when $\lambda(T_{11}) \cap
+\lambda(T_{22}) = \emptyset$. `Matrix.span_cols_eq_spectralSubspace_of_conj` is the matrix form.
 
-Mathlib has invariant submodules (`Module.End.invtSubmodule`) and generalized eigenspaces, nothing
-on their perturbation; `Numlib/Eigen/PowerMethod` has the qualitative convergence of subspace
-iteration (`Krylov.exists_gap_subspaceIterate_le`), which assumes diagonalizability and gives no
-constant.
+Stewart's theorem reduces the invariance of $\operatorname{ran} \begin{bmatrix} I \\ P
+\end{bmatrix}$ to a Riccati equation for $P$, and solves it by Stewart's lemma on quadratic
+equations (`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`). The corrected Theorem 7.3.1
+rests on `Krylov.gap_subspaceIterate_le_of_isCompl`, which bounds $\operatorname{gap}(D, A^k S)$ for
+complementary invariant subspaces $D$ and $W$ by the norm of the oblique projection onto $D$ along
+$W$, the compression of $A^k$ to $D^\perp$, and the inverse of $A^k$ on $D$. In Schur coordinates
+these are $1 + \|X\|_2$, with $X$ the solution of a Sylvester equation and $W = \operatorname{ran}
+\begin{bmatrix} X \\ I \end{bmatrix}$, then $\|T_{22}^k\|_2$ and $\|T_{11}^{-k}\|_2$. Lemma 7.3.2
+and $\|X\|_F \le \|T_{12}\|_F / \operatorname{sep}(T_{11}, T_{22})$ bound them.
+
+## Implementation notes
+
+* Mathlib has invariant submodules (`Module.End.invtSubmodule`) and generalized eigenspaces, but
+  nothing on their perturbation.
+* `Numlib.Eigen.PowerMethod` has the qualitative convergence of subspace iteration
+  (`Krylov.exists_gap_subspaceIterate_le`), which assumes that $A$ is diagonalizable and gives no
+  constant. The iterate $A^k S$ is `Krylov.subspaceIterate A S k`.
+* Matrix norms: $\|\cdot\|_2$ is `Matrix.lpOpNorm 2`, and $\|\cdot\|$ on matrices is the Frobenius
+  norm where `Matrix.Norms.Frobenius` is open. The strictly upper triangular part $N$ of $T$ is
+  `Matrix.strictUpper T`.
 -/
 
 namespace Module.End
@@ -91,7 +101,10 @@ variable {K : Type*} [Field K] {n p q : Type*} [Fintype n] [DecidableEq n] [Fint
   [DecidableEq p] [Fintype q] [DecidableEq q]
 
 omit [DecidableEq n] [DecidableEq p] [DecidableEq q] in
-/-- A matrix whose reindexing is block upper triangular acts blockwise on coordinates. -/
+/-- Let $T \in K^{n \times n}$, and let $e$ be a bijection of the indices onto $p \sqcup q$ such
+that $T$, reindexed by $e$, is $\begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$.
+Then for every $v$, the two blocks of $T v$ are $T_{11} v_1 + T_{12} v_2$ and $T_{22} v_2$,
+where $v_1$ and $v_2$ are the blocks of $v$. -/
 theorem mulVec_comp_symm_of_reindex_eq_fromBlocks {T : Matrix n n K} (e : n ≃ p ⊕ q)
     {T₁₁ : Matrix p p K} {T₁₂ : Matrix p q K} {T₂₂ : Matrix q q K}
     (hT : T.reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂) (v : n → K) :
@@ -105,15 +118,22 @@ theorem mulVec_comp_symm_of_reindex_eq_fromBlocks {T : Matrix n n K} (e : n ≃ 
   rw [← h, hT, fromBlocks_mulVec, zero_mulVec, zero_add]
   rfl
 
-/-- **The first `p` Schur vectors span the invariant subspace of `λ(T₁₁)`** ([golub2013matrix]
-§7.6.2, "the first `p` columns of `Q` span the unique invariant subspace associated with
-`λ(T₁₁)`"; and the dominant invariant subspace `D_r(A)` of §7.3.2): if `Q` is invertible and
-`(Q⁻¹ A Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂` with `λ(T₁₁) ∩ λ(T₂₂) = ∅`, then the span of the
-columns `Q.col (e.symm (inl i))` is the spectral subspace `⨆ μ ∈ λ(T₁₁), maxGenEigenspace A μ`. The
-span is invariant with eigenvalues in `λ(T₁₁)` (`Module.End.invtSubmodule_le_spectralSubspace`);
-conversely the
-trailing coordinates `π x = (Q⁻¹ x)(e.symm (inr ·))` intertwine `A` with `T₂₂`, so on a generalized
-eigenvector for `μ ∉ λ(T₂₂)` they vanish, and `ker π` is the span. -/
+/-- **The first $p$ Schur vectors span the invariant subspace of $\lambda(T_{11})$** (§7.6.2 of
+[golub2013matrix], "the first $p$ columns of $Q$ span the unique invariant subspace associated
+with $\lambda(T_{11})$", and the dominant invariant subspace $D_r(A)$ of §7.3.2). Let $K$ be an
+algebraically closed field, let $A, Q \in K^{n \times n}$ with $Q$ invertible, and let $e$ be a
+bijection of the indices onto $p \sqcup q$ with
+$$Q^{-1} A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$$
+after reindexing by $e$. If $T_{11}$ and $T_{22}$ have no common eigenvalue, then the span of
+the columns of $Q$ with indices in $p$ is the spectral subspace of $A$ for the eigenvalues of
+$T_{11}$, the sum of the generalized eigenspaces $\ker (A - \mu)^\infty$ for
+$\mu \in \lambda(T_{11})$.
+
+The span is invariant, and $A$ has on it only eigenvalues of $T_{11}$, so it lies in the
+spectral subspace (`Module.End.invtSubmodule_le_spectralSubspace`). Conversely, the trailing
+coordinates $\pi x = (Q^{-1} x)_q$ intertwine $A$ with $T_{22}$, so they vanish on a generalized
+eigenvector for $\mu \notin \lambda(T_{22})$, and $\ker \pi$ is the span. The spectral subspace
+is `Module.End.spectralSubspace` of `Matrix.toLin' A`. -/
 theorem span_cols_eq_spectralSubspace_of_conj [IsAlgClosed K] {A Q : Matrix n n K}
     (hQ : IsUnit Q) (e : n ≃ p ⊕ q) {T₁₁ : Matrix p p K} {T₁₂ : Matrix p q K}
     {T₂₂ : Matrix q q K} (hT : (Q⁻¹ * A * Q).reindex e e = fromBlocks T₁₁ T₁₂ 0 T₂₂)
@@ -259,7 +279,8 @@ section Aux
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- A diagonal matrix with entries of modulus at least `c` stretches every vector by `c`. -/
+/-- A diagonal matrix with entries of modulus at least $c \ge 0$ satisfies $\|D x\| \ge c \|x\|$ for
+every $x$. -/
 private theorem le_norm_diagonal_apply {d : m → 𝕜} {c : ℝ} (hc : 0 ≤ c) (hd : ∀ i, c ≤ ‖d i‖)
     (x : PiLp 2 fun _ : m => 𝕜) : c * ‖x‖ ≤ ‖lpCLM 2 (diagonal d) x‖ := by
   refine (sq_le_sq₀ (by positivity) (norm_nonneg _)).1 ?_
@@ -269,7 +290,8 @@ private theorem le_norm_diagonal_apply {d : m → 𝕜} {c : ℝ} (hc : 0 ≤ c)
   gcongr
   exact hd i
 
-/-- An operator bounded below by `c > 0` is invertible, with inverse of norm at most `1 / c`. -/
+/-- A matrix $Y$ with $\|Y x\| \ge c \|x\|$ for every $x$, with $c > 0$, is invertible with
+$\|Y^{-1}\|_2 \le 1 / c$. -/
 private theorem lpOpNorm_inv_le_of_le_norm {Y : Matrix m m 𝕜} {c : ℝ} (hc : 0 < c)
     (hY : ∀ x, c * ‖x‖ ≤ ‖lpCLM 2 Y x‖) : IsUnit Y ∧ lpOpNorm 2 Y⁻¹ ≤ 1 / c := by
   have hinj : Function.Injective Y.mulVec := by
@@ -295,7 +317,7 @@ private theorem lpOpNorm_inv_le_of_le_norm {Y : Matrix m m 𝕜} {c : ℝ} (hc :
   exact h
 
 open scoped Matrix.Norms.L2Operator in
-/-- Unitary conjugation preserves the `2`-norm. -/
+/-- Unitary conjugation preserves the $2$-norm: $\|Q X Q^H\|_2 = \|X\|_2$ for unitary $Q$. -/
 private theorem lpOpNorm_two_unitary_conj {Q : Matrix m m 𝕜} (hQ : Q ∈ unitaryGroup m 𝕜)
     (X : Matrix m m 𝕜) : lpOpNorm 2 (Q * X * star Q) = lpOpNorm 2 X := by
   rw [lpOpNorm_two, lpOpNorm_two]
@@ -303,12 +325,17 @@ private theorem lpOpNorm_two_unitary_conj {Q : Matrix m m 𝕜} (hQ : Q ∈ unit
 
 end Aux
 
+/-! ### Powers from a Schur form -/
+
 open scoped Matrix.Norms.Frobenius
 
-/-- The scaling step of [golub2013matrix] Lemma 7.3.2: for a strictly upper triangular
-`N : Matrix (Fin n) (Fin n) 𝕜`, `μ ≥ 0` and `Δ = diag((1+μ)^i)`,
-`‖Δ N Δ⁻¹‖_F ≤ ‖N‖_F / (1 + μ)`: entry `(i, j)`, `i < j`, is scaled by `(1+μ)^{i-j} ≤ (1+μ)⁻¹`.
-(`Δ⁻¹` is written out as the diagonal of the reciprocals.) -/
+/-- The scaling step of Lemma 7.3.2 of [golub2013matrix]. Let $N \in \mathbb{K}^{n \times n}$ be
+strictly upper triangular, with indices from $0$, let $\mu \ge 0$, and let
+$\Delta = \operatorname{diag}((1 + \mu)^i)$. Then
+$$\|\Delta N \Delta^{-1}\|_F \le \frac{\|N\|_F}{1 + \mu}.$$
+
+The entry $(i, j)$ with $i < j$ is scaled by $(1 + \mu)^{i - j} \le (1 + \mu)^{-1}$. The matrix
+$\Delta^{-1}$ is written as the diagonal matrix of the reciprocals. -/
 theorem frobenius_norm_diagonal_mul_mul_inv_le {N : Matrix (Fin n) (Fin n) 𝕜}
     (hN : ∀ i j, j ≤ i → N i j = 0) {μ : ℝ} (hμ : 0 ≤ μ) :
     ‖diagonal (fun i : Fin n => (((1 + μ) ^ (i : ℕ) : ℝ) : 𝕜)) * N *
@@ -337,8 +364,9 @@ theorem frobenius_norm_diagonal_mul_mul_inv_le {N : Matrix (Fin n) (Fin n) 𝕜}
       _ ≤ 1 := pow_le_one₀ (by positivity) hq
   nlinarith [sq_nonneg ‖N i j‖, hr]
 
-/-- The common setting of [golub2013matrix] Lemma 7.3.2: the scaling `Δ = diag((1+μ)^i)` turns
-the Schur form `T = D + N` into `Y = Δ T Δ⁻¹ = D + Δ N Δ⁻¹`. -/
+/-- The common setting of Lemma 7.3.2 of [golub2013matrix]: the scaling
+$\Delta = \operatorname{diag}((1 + \mu)^i)$ turns the Schur form $T = D + N$ into $Y = \Delta T
+\Delta^{-1} = D + \Delta N \Delta^{-1}$. -/
 private theorem schur_scaling {T : Matrix (Fin n) (Fin n) 𝕜} (hTu : T.IsUpperTriangular)
     {μ : ℝ} (hμ : 0 ≤ μ) :
     let d : Fin n → 𝕜 := fun i => (((1 + μ) ^ (i : ℕ) : ℝ) : 𝕜)
@@ -384,9 +412,9 @@ private theorem schur_scaling {T : Matrix (Fin n) (Fin n) 𝕜} (hTu : T.IsUpper
     refine frobenius_norm_diagonal_mul_mul_inv_le (fun i j hji => ?_) hμ
     simp [strictUpper_apply, not_lt.2 hji]
 
-/-- The power bound shared by the two halves of [golub2013matrix] Lemma 7.3.2: if
-`B = Q (Δ⁻¹ Y Δ) Qᴴ` with `Q` unitary, `‖Δ‖₂ ≤ a` for some `a ≥ 1`, `‖Δ⁻¹‖₂ ≤ 1` and
-`‖Y‖₂ ≤ c`, then `‖B^k‖₂ ≤ a c^k`. -/
+/-- If $B = Q (\Delta^{-1} Y \Delta) Q^H$ with $Q$ unitary, $\|\Delta\|_2 \le a$ for some $a \ge 1$,
+$\|\Delta^{-1}\|_2 \le 1$ and $\|Y\|_2 \le c$, then $\|B^k\|_2 \le a c^k$; this bound is shared
+by the two halves of Lemma 7.3.2 of [golub2013matrix]. -/
 private theorem lpOpNorm_pow_le_of_eq_conj {B Q Δ Δi Y : Matrix (Fin n) (Fin n) 𝕜}
     (hQ : Q ∈ unitaryGroup (Fin n) 𝕜) (hΔ : Δ * Δi = 1) (hΔ' : Δi * Δ = 1)
     (hB : B = Q * (Δi * Y * Δ) * star Q) {a c : ℝ} (ha : 1 ≤ a) (hc : 0 ≤ c)
@@ -414,12 +442,18 @@ private theorem lpOpNorm_pow_le_of_eq_conj {B Q Δ Δi Y : Matrix (Fin n) (Fin n
           (lpOpNorm_nonneg _ _) (mul_nonneg zero_le_one (pow_nonneg hc _))
     _ = _ := by ring
 
-/-- **Powers from a Schur form** ([golub2013matrix] Lemma 7.3.2, (7.3.15)): if `Q` is unitary,
-`Qᴴ A Q = T` is upper triangular with strictly upper part `N` and `μ ≥ 0`, then
-`‖A^k‖₂ ≤ (1 + μ)^{n-1} (max_i |t_ii| + ‖N‖_F / (1 + μ))^k` for every `k`.
-`A^k = Q Δ⁻¹ (D + Δ N Δ⁻¹)^k Δ Qᴴ` with `Δ = diag((1+μ)^i)`, `‖Δ‖₂ ≤ (1+μ)^{n-1}`,
-`‖Δ⁻¹‖₂ ≤ 1`, `‖D‖₂ = max |t_ii|` and `‖Δ N Δ⁻¹‖₂ ≤ ‖Δ N Δ⁻¹‖_F ≤ ‖N‖_F/(1+μ)`
-(`Matrix.frobenius_norm_diagonal_mul_mul_inv_le`). -/
+/-- **Powers from a Schur form** (Lemma 7.3.2 of [golub2013matrix], (7.3.15)). Let
+$A, Q, T \in \mathbb{K}^{n \times n}$ with $Q$ unitary and $Q^H A Q = T$ upper triangular, let
+$N$ be the strictly upper triangular part of $T$, and let $\mu \ge 0$. Then for every
+$k \in \mathbb{N}$
+$$\|A^k\|_2 \le (1 + \mu)^{n-1} \Bigl(\max_i |t_{ii}| + \frac{\|N\|_F}{1 + \mu}\Bigr)^k.$$
+
+The proof writes $A^k = Q \Delta^{-1} (D + \Delta N \Delta^{-1})^k \Delta Q^H$ with
+$\Delta = \operatorname{diag}((1 + \mu)^i)$, and uses $\|\Delta\|_2 \le (1 + \mu)^{n-1}$,
+$\|\Delta^{-1}\|_2 \le 1$, $\|D\|_2 = \max_i |t_{ii}|$ and $\|\Delta N \Delta^{-1}\|_2 \le
+\|\Delta N \Delta^{-1}\|_F \le \|N\|_F / (1 + \mu)$
+(`Matrix.frobenius_norm_diagonal_mul_mul_inv_le`). The maximum is a supremum over the indices,
+which is $0$ for $n = 0$, and $n - 1$ is truncated subtraction. -/
 theorem l2_opNorm_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
     (hQ : Q ∈ unitaryGroup (Fin n) 𝕜) (hT : star Q * A * Q = T) (hTu : T.IsUpperTriangular)
     {μ : ℝ} (hμ : 0 ≤ μ) (k : ℕ) :
@@ -447,12 +481,17 @@ theorem l2_opNorm_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
   exact lpOpNorm_pow_le_of_eq_conj hQ hΔ hΔ' (by rw [hA, hTY]) (one_le_pow₀ h1) (by positivity) hΔn
     hΔin hYn k
 
-/-- **Powers of the inverse from a Schur form** ([golub2013matrix] Lemma 7.3.2, (7.3.16)): in the
-setting of `Matrix.l2_opNorm_pow_le_of_schur`, if `(1 + μ) m > ‖N‖_F` for `m = min_i |t_ii|`,
-then `‖A⁻¹^k‖₂ ≤ (1 + μ)^{n-1} (1 / (m - ‖N‖_F/(1+μ)))^k`. The hypothesis already makes `A`
-nonsingular: `Y = D + Δ N Δ⁻¹` satisfies `‖Y x‖ ≥ (m - ‖Δ N Δ⁻¹‖₂) ‖x‖` (the Neumann-series bound
-`‖(1 + X)⁻¹‖ ≤ 1/(1 - ‖X‖)` of the book, in lower-bound form). The book's last display writes
-`|μ|` for `|λ_min|`. -/
+/-- **Powers of the inverse from a Schur form** (Lemma 7.3.2 of [golub2013matrix], (7.3.16)). Let
+$A, Q, T \in \mathbb{K}^{n \times n}$ with $Q$ unitary and $Q^H A Q = T$ upper triangular, let
+$N$ be the strictly upper triangular part of $T$, let $\mu \ge 0$, let $m = \min_i |t_{ii}|$,
+and let $\|N\|_F < (1 + \mu)\, m$. Then for every $k \in \mathbb{N}$
+$$\|(A^{-1})^k\|_2 \le (1 + \mu)^{n-1} \Bigl(\frac{1}{m - \|N\|_F / (1 + \mu)}\Bigr)^k.$$
+
+The hypothesis already makes $A$ nonsingular: $Y = D + \Delta N \Delta^{-1}$ satisfies $\|Y x\|
+\ge (m - \|\Delta N \Delta^{-1}\|_2) \|x\|$, which is the Neumann-series bound
+$\|(I + X)^{-1}\| \le 1 / (1 - \|X\|)$ of the source in the form of a lower bound. The last
+display of the source writes $|\mu|$ for $|\lambda_{\min}|$. The minimum is an infimum over the
+indices. -/
 theorem l2_opNorm_inv_pow_le_of_schur {A Q T : Matrix (Fin n) (Fin n) 𝕜}
     (hQ : Q ∈ unitaryGroup (Fin n) 𝕜) (hT : star Q * A * Q = T) (hTu : T.IsUpperTriangular)
     {μ : ℝ} (hμ : 0 ≤ μ) (hm : ‖strictUpper T‖ < (1 + μ) * ⨅ i, ‖T i i‖) (k : ℕ) :
@@ -516,18 +555,30 @@ open scoped Matrix.Norms.Frobenius
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
 
-/-- **Stewart's perturbation theorem for invariant subspaces** ([golub2013matrix] Theorem 7.2.4,
-after G. W. Stewart, SIAM Rev. 15 (1973), Theorem 4.11), in Schur coordinates: for
-`T = fromBlocks T₁₁ T₁₂ 0 T₂₂`, a perturbation `E` with `s = sep T₁₁ T₂₂ > 0` and
-`‖E‖_F (1 + 5 ‖T₁₂‖_F / s) ≤ s / 5`, there is `P` with `‖P‖_F ≤ 4 ‖E₂₁‖_F / s` such that the
-column space of `[I; P]` is `(T + E)`-invariant:
-`(T + E) [I; P] = [I; P] (T₁₁ + E₁₁ + (T₁₂ + E₁₂) P)`.
-The second block row is the Riccati equation `P A₁₁ - A₂₂ P + P A₁₂ P = E₂₁` (`Aᵢⱼ` the blocks of
-`T + E`), solved by Stewart's quadratic-equation lemma
-(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`) with `L = -sylvesterMap A₂₂ A₁₁`,
-`‖L⁻¹‖ ≤ 1 / sep A₁₁ A₂₂` (`Matrix.sep_comm`), `sep A₁₁ A₂₂ ≥ s - 2‖E‖_F`
-(`Matrix.sep_sub_le_sep_add`), `γ = ‖E₂₁‖_F` and `η = ‖A₁₂‖_F`: then `δ ≥ 3s/5` and
-`4γη ≤ 4s²/25 < δ²`, and the solution has `‖P‖_F ≤ 2γ/δ ≤ (10/3) γ/s`. -/
+/-! ### Stewart's perturbation theorem -/
+
+/-- **Stewart's perturbation theorem for invariant subspaces** (Theorem 7.2.4 of [golub2013matrix],
+after G. W. Stewart, SIAM Rev. 15 (1973), Theorem 4.11), in Schur coordinates. Let
+$T_{11} \in \mathbb{K}^{m \times m}$, $T_{12} \in \mathbb{K}^{m \times n}$ and
+$T_{22} \in \mathbb{K}^{n \times n}$, let $T = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22}
+\end{bmatrix}$, and let $E \in \mathbb{K}^{(m+n) \times (m+n)}$ have the blocks $E_{ij}$. Let
+$s = \operatorname{sep}(T_{11}, T_{22}) > 0$ and
+$$\|E\|_F \Bigl(1 + \frac{5 \|T_{12}\|_F}{s}\Bigr) \le \frac{s}{5}.$$
+Then there is a $P \in \mathbb{K}^{n \times m}$ with $\|P\|_F \le 4 \|E_{21}\|_F / s$ such that
+the column space of $\begin{bmatrix} I \\ P \end{bmatrix}$ is $(T + E)$-invariant:
+$$(T + E) \begin{bmatrix} I \\ P \end{bmatrix} = \begin{bmatrix} I \\ P \end{bmatrix}
+  \bigl(T_{11} + E_{11} + (T_{12} + E_{12}) P\bigr).$$
+
+The second block row is the Riccati equation $P A_{11} - A_{22} P + P A_{12} P = E_{21}$, where
+the $A_{ij}$ are the blocks of $T + E$. Its linear part $L$ is the negative of
+`Matrix.sylvesterMap A₂₂ A₁₁`, with $\|L^{-1}\| \le 1 / \operatorname{sep}(A_{11}, A_{22})$
+(`Matrix.sep_comm`) and $\operatorname{sep}(A_{11}, A_{22}) \ge s - 2 \|E\|_F$
+(`Matrix.sep_sub_le_sep_add`). Stewart's lemma on quadratic equations
+(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`) solves it with
+$\gamma = \|E_{21}\|_F$ and $\eta = \|A_{12}\|_F$: then $\delta \ge 3s/5$ and
+$4 \gamma \eta \le 4 s^2 / 25 < \delta^2$, and the solution has $\|P\|_F \le 2\gamma/\delta \le
+(10/3)\, \gamma / s$. These are the constants of the source, with room. The separation is
+`Matrix.sep`, and the norms of matrices are Frobenius norms. -/
 theorem exists_invariant_graph_of_sep {T₁₁ : Matrix m m 𝕜} {T₁₂ : Matrix m n 𝕜}
     {T₂₂ : Matrix n n 𝕜} {E : Matrix (m ⊕ n) (m ⊕ n) 𝕜} (hs : 0 < sep T₁₁ T₂₂)
     (hE : ‖E‖ * (1 + 5 * ‖T₁₂‖ / sep T₁₁ T₂₂) ≤ sep T₁₁ T₂₂ / 5) :
@@ -621,14 +672,19 @@ theorem exists_invariant_graph_of_sep {T₁₁ : Matrix m m 𝕜} {T₁₂ : Mat
 
 end Matrix
 
+/-! ### The gap and graph subspaces -/
+
 namespace Submodule
 
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
 
-/-- **The gap is invariant under isometries**: `gap (e K) (e L) = gap K L` for a linear isometry
-equivalence `e`, since `P_{eK} = e P_K e⁻¹` (`Submodule.starProjection_map_apply`). With unitary
-matrices this is the unitary invariance of [golub2013matrix]'s `dist` (§2.5.3). -/
+/-- **The gap is invariant under isometries.** Let $e : E \to F$ be a linear isometry equivalence of
+inner product spaces, and let $K, L \subseteq E$ be subspaces with orthogonal projections. Then
+$$\operatorname{gap}(e K, e L) = \operatorname{gap}(K, L).$$
+
+The reason is $P_{eK} = e P_K e^{-1}$ (`Submodule.starProjection_map_apply`). For unitary
+matrices this is the unitary invariance of $\operatorname{dist}$ in §2.5.3 of [golub2013matrix]. -/
 theorem gap_map_linearIsometryEquiv (e : E ≃ₗᵢ[𝕜] F) (K L : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] [L.HasOrthogonalProjection] :
     (K.map (e.toLinearEquiv : E →ₗ[𝕜] F)).gap (L.map (e.toLinearEquiv : E →ₗ[𝕜] F)) =
@@ -643,10 +699,14 @@ theorem gap_map_linearIsometryEquiv (e : E ≃ₗᵢ[𝕜] F) (K L : Submodule �
   rw [gap, gap, h, LinearIsometry.norm_toContinuousLinearMap_comp]
   exact ContinuousLinearMap.opNorm_comp_linearIsometryEquiv _ e.symm
 
-/-- **A subspace close to `K` is a graph over `K`**: if `gap K S < 1` and `S` has the dimension of
-`K` (finite), then `S = K.graph X` for some `X : K →L[𝕜] Kᗮ`. The restricted projection
-`P_K|_S` is injective (`Submodule.eq_zero_of_starProjection_eq_zero_of_gap_lt_one`), hence
-bijective, and `X = P_{Kᗮ}|_S ∘ (P_K|_S)⁻¹`. -/
+/-- **A subspace close to $K$ is a graph over $K$.** Let $E$ be a finite-dimensional inner product
+space, and let $K, S \subseteq E$ be subspaces with $\dim S = \dim K$ and
+$\operatorname{gap}(K, S) < 1$. Then there is a continuous linear map $X : K \to K^\perp$ with
+$S = \{u + X u : u \in K\}$.
+
+The restriction of $P_K$ to $S$ is injective
+(`Submodule.eq_zero_of_starProjection_eq_zero_of_gap_lt_one`), hence bijective, and
+$X = P_{K^\perp}|_S \circ (P_K|_S)^{-1}$. The graph is `Submodule.graph`. -/
 theorem exists_eq_graph_of_gap_lt_one [FiniteDimensional 𝕜 E] (K S : Submodule 𝕜 E)
     (hdim : Module.finrank 𝕜 S = Module.finrank 𝕜 K) (h : K.gap S < 1) :
     ∃ X : K →L[𝕜] Kᗮ, S = K.graph X := by
@@ -684,8 +744,10 @@ theorem exists_eq_graph_of_gap_lt_one [FiniteDimensional 𝕜 E] (K S : Submodul
     rw [this]
     exact (ψ.symm u).2
 
-/-- The norm of `X` is read off the gap of its graph: `‖X‖ = d / √(1 - d²)` for
-`d = gap K (graph X) < 1` (inverting `Submodule.gap_graph`). -/
+/-- Let $K$ be a finite-dimensional subspace of an inner product space, and let $X : K \to K^\perp$
+be continuous and linear, with graph $G$. Then, with $d = \operatorname{gap}(K, G)$,
+$$\|X\| = \frac{d}{\sqrt{1 - d^2}}.$$
+This inverts `Submodule.gap_graph`, which gives $d = \|X\| / \sqrt{1 + \|X\|^2} < 1$. -/
 theorem norm_eq_gap_graph_div (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] (X : K →L[𝕜] Kᗮ) :
     ‖X‖ = K.gap (K.graph X) / Real.sqrt (1 - K.gap (K.graph X) ^ 2) := by
   rw [gap_graph]
@@ -698,15 +760,20 @@ theorem norm_eq_gap_graph_div (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] 
 
 end Submodule
 
+/-! ### Subspace iteration -/
+
 namespace Krylov
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- **Transport of a graph subspace by powers** (the coordinate-free core of [golub2013matrix]
-Theorem 7.3.1's appendix proof and of Theorem 8.2.2): let `K`, `W` be `A`-invariant, `A` bijective
-on `K` (`A₁ = A|_K`), `A₂ = A|_W`, and `X : K →ₗ[𝕜] W`. The graph `{u + X u | u ∈ K}` is carried by
-`A^k` onto the graph of `A₂^k X A₁^{-k}`: `A^k (u + X u) = A₁^k u + A₂^k X u`, and `u ↦ A₁^k u` is a
-bijection of `K`. Pure algebra: no complement, inner product or dimension is used. -/
+/-- **Transport of a graph subspace by powers** (the coordinate-free core of the proof of Theorem
+7.3.1 of [golub2013matrix] in its appendix, and of Theorem 8.2.2). Let $A : E \to E$ be linear,
+let $K$ and $W$ be $A$-invariant subspaces, let the restriction $A_1 = A|_K$ be bijective, let
+$A_2 = A|_W$, and let $X : K \to W$ be linear. Then for every $k \in \mathbb{N}$, $A^k$ maps the
+graph $\{u + X u : u \in K\}$ onto the graph of $A_2^k X A_1^{-k}$.
+
+The reason is $A^k (u + X u) = A_1^k u + A_2^k X u$, and $u \mapsto A_1^k u$ is a bijection of
+$K$. The statement is pure algebra: no complement, inner product or dimension is used. -/
 theorem subspaceIterate_graph {A : Module.End 𝕜 E} {K W : Submodule 𝕜 E}
     (hK : K ∈ A.invtSubmodule) (hW : W ∈ A.invtSubmodule)
     (hA₁ : Function.Bijective (A.restrict hK))
@@ -752,13 +819,18 @@ namespace LinearMap.IsSymmetric
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E}
 
-/-- **Subspace iteration toward an invariant subspace of a symmetric operator, explicit
-constant**: let `D` be `A`-invariant with `‖A u‖ ≥ ρ ‖u‖` on `D` (`ρ > 0`) and `‖A w‖ ≤ r ‖w‖` on
-`Dᗮ` (`r ≥ 0`), and `S` of the dimension of `D` with `d₀ = gap D S < 1`. Then
-`gap D (A^k S) ≤ (r / ρ)^k d₀ / √(1 - d₀²)`. `Dᗮ` is invariant (symmetry), `S` is the graph of
-some `X : D → Dᗮ` with `‖X‖ = d₀ / √(1 - d₀²)` (`Submodule.exists_eq_graph_of_gap_lt_one`,
-`Submodule.norm_eq_gap_graph_div`), `A^k S` is the graph of `A₂^k X A₁^{-k}`
-(`Krylov.subspaceIterate_graph`), and `gap ≤ ‖X_k‖` (`Submodule.gap_graph`). -/
+/-- **Subspace iteration toward an invariant subspace of a symmetric operator, with an explicit
+constant.** Let $A$ be a symmetric operator on a finite-dimensional inner product space $E$. Let
+$D$ be $A$-invariant, let $\rho > 0$ and $r \ge 0$ with $\|A u\| \ge \rho \|u\|$ for $u \in D$
+and $\|A w\| \le r \|w\|$ for $w \in D^\perp$, and let $S$ be a subspace with $\dim S = \dim D$
+and $d_0 = \operatorname{gap}(D, S) < 1$. Then for every $k \in \mathbb{N}$
+$$\operatorname{gap}(D, A^k S) \le \Bigl(\frac{r}{\rho}\Bigr)^k \frac{d_0}{\sqrt{1 - d_0^2}}.$$
+
+The complement $D^\perp$ is invariant because $A$ is symmetric. The subspace $S$ is the graph of
+some $X : D \to D^\perp$ with $\|X\| = d_0 / \sqrt{1 - d_0^2}$
+(`Submodule.exists_eq_graph_of_gap_lt_one` and `Submodule.norm_eq_gap_graph_div`), $A^k S$ is
+the graph of $X_k = A_2^k X A_1^{-k}$ (`Krylov.subspaceIterate_graph`), and the gap is at most
+$\|X_k\|$ (`Submodule.gap_graph`). -/
 theorem gap_subspaceIterate_le_of_invariant (hA : A.IsSymmetric) {D S : Submodule 𝕜 E}
     (hD : D ∈ Module.End.invtSubmodule A) {ρ r : ℝ} (hρ : 0 < ρ) (hr : 0 ≤ r)
     (hlow : ∀ u ∈ D, ρ * ‖u‖ ≤ ‖A u‖) (hup : ∀ w ∈ Dᗮ, ‖A w‖ ≤ r * ‖w‖)
@@ -855,16 +927,20 @@ theorem gap_subspaceIterate_le_of_invariant (hA : A.IsSymmetric) {D S : Submodul
   calc ‖Y‖ / Real.sqrt (1 + ‖Y‖ ^ 2) ≤ ‖Y‖ := div_le_self (norm_nonneg _) hs
     _ ≤ (r / ρ) ^ k * ‖X‖ := hY
 
-/-- **Subspace iteration with the explicit constant** ([golub2013matrix] Theorem 8.2.2, (8.2.12)):
-let `A` be symmetric with an orthonormal eigenbasis `v` (`A (v i) = l i • v i`, `l` real), `J` a
-set of indices with `|l j| ≥ ρ > 0` for `j ∈ J` and `|l i| ≤ r` for `i ∉ J`,
-`D = span (v '' J)` the dominant invariant subspace, and `S` with `dim S = dim D` and
-`d₀ = gap D S < 1`. Then `gap D (A^k S) ≤ (r / ρ)^k d₀ / √(1 - d₀²)`: the `tan Θ` form of the
-book's argument, with no CS decomposition, through
-`LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant` (the eigenbasis gives
-`‖A u‖ ≥ ρ ‖u‖` on `D` and `‖A w‖ ≤ r ‖w‖` on `Dᗮ = span (v '' Jᶜ)`). Compare
-`Krylov.exists_gap_subspaceIterate_span_image_le` (any diagonalizable `A`, unspecified
-constant). -/
+/-- **Subspace iteration with the explicit constant** (Theorem 8.2.2 of [golub2013matrix],
+(8.2.12)). Let $A$ be a symmetric operator on a finite-dimensional inner product space $E$, with
+an orthonormal eigenbasis $(v_i)$ and real eigenvalues $l_i$, $A v_i = l_i v_i$. Let $J$ be a
+set of indices, and let $\rho > 0$ and $r$ satisfy $|l_j| \ge \rho$ for $j \in J$ and
+$|l_i| \le r$ for $i \notin J$. Let $D = \operatorname{span}\{v_j : j \in J\}$ be the dominant
+invariant subspace, and let $S$ be a subspace with $\dim S = \dim D$ and
+$d_0 = \operatorname{gap}(D, S) < 1$. Then for every $k \in \mathbb{N}$
+$$\operatorname{gap}(D, A^k S) \le \Bigl(\frac{r}{\rho}\Bigr)^k \frac{d_0}{\sqrt{1 - d_0^2}}.$$
+
+This is the $\tan \Theta$ form of the argument of the source, with no CS decomposition. It goes
+through `LinearMap.IsSymmetric.gap_subspaceIterate_le_of_invariant`: the eigenbasis gives
+$\|A u\| \ge \rho \|u\|$ on $D$ and $\|A w\| \le r \|w\|$ on $D^\perp = \operatorname{span}\{v_i
+: i \notin J\}$. Compare `Krylov.exists_gap_subspaceIterate_span_image_le`, which holds for any
+diagonalizable $A$ with a constant that is not given. -/
 theorem gap_subspaceIterate_le (hA : A.IsSymmetric) {ι : Type*} [Fintype ι]
     (v : OrthonormalBasis ι 𝕜 E) {l : ι → ℝ} (hv : ∀ i, A (v i) = (l i : 𝕜) • v i)
     (J : Set ι) {ρ r : ℝ} (hρ : 0 < ρ) (hJ : ∀ j ∈ J, ρ ≤ |l j|) (hJc : ∀ i ∉ J, |l i| ≤ r)
@@ -944,19 +1020,27 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
   [FiniteDimensional 𝕜 E]
 
 /-- **Subspace iteration toward an invariant subspace with an invariant complement** (the
-coordinate-free core of [golub2013matrix] Theorem 7.3.1, corrected): let `D` and `W` be
-complementary `A`-invariant subspaces (not necessarily orthogonal), `S` of the dimension of `D` with
-`d̃₀ = gap Wᗮ S < 1`, and let `c`, `β`, `γ` bound the oblique projection onto `D` along `W`
-(`‖Π x‖ ≤ c ‖x‖`), the compression of `A^k` to `Dᗮ` (`‖P_{Dᗮ} A^k w‖ ≤ β ‖w‖` on `Dᗮ`) and the
-inverse of `A^k` on `D` (`‖u‖ ≤ γ ‖A^k u‖` on `D`). Then
-`gap D (A^k S) ≤ c β γ · gap D S / √(1 - d̃₀²)`.
+coordinate-free core of Theorem 7.3.1 of [golub2013matrix], corrected). Let $A$ be a linear
+operator on a finite-dimensional inner product space $E$, and let $D$ and $W$ be complementary
+$A$-invariant subspaces, not necessarily orthogonal. Let $S$ be a subspace with
+$\dim S = \dim D$ and $\tilde{d}_0 = \operatorname{gap}(W^\perp, S) < 1$, and let
+$k \in \mathbb{N}$. Let $c, \beta, \gamma \ge 0$ satisfy
+* $\|\Pi x\| \le c \|x\|$ for every $x$, where $\Pi$ is the projection onto $D$ along $W$;
+* $\|P_{D^\perp} A^k w\| \le \beta \|w\|$ for every $w \in D^\perp$;
+* $\|u\| \le \gamma \|A^k u\|$ for every $u \in D$.
 
-Write `s₀ ∈ S` as `u₀ + ω₀` along `D ⊕ W`. Then `P_{Wᗮ} s₀ = P_{Wᗮ} u₀`, so
-`√(1 - d̃₀²) ‖s₀‖ ≤ ‖u₀‖`; for `s = A^k s₀` the component along `D` is `A^k u₀`, so
-`‖u₀‖ ≤ γ c ‖s‖`; and `P_{Dᗮ} s = P_{Dᗮ} A^k P_{Dᗮ} s₀` (`D` is invariant), so
-`‖P_{Dᗮ} s‖ ≤ β ‖P_{Dᗮ} s₀‖ ≤ β · gap D S · ‖s₀‖`. The gap of equal-dimensional subspaces is the
-one-sided `‖P_{Dᗮ} P_{A^k S}‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`). No graph
-representation and no CS decomposition are needed. -/
+Then
+$$\operatorname{gap}(D, A^k S) \le c \beta \gamma\, \frac{\operatorname{gap}(D, S)}{\sqrt{1 -
+  \tilde{d}_0^2}}.$$
+
+Write $s_0 \in S$ as $u_0 + \omega_0$ along $D \oplus W$. Then
+$P_{W^\perp} s_0 = P_{W^\perp} u_0$, so $\sqrt{1 - \tilde{d}_0^2}\, \|s_0\| \le \|u_0\|$. For
+$s = A^k s_0$ the component along $D$ is $A^k u_0$, so $\|u_0\| \le \gamma c \|s\|$. Since $D$
+is invariant, $P_{D^\perp} s = P_{D^\perp} A^k P_{D^\perp} s_0$, so $\|P_{D^\perp} s\| \le \beta
+\|P_{D^\perp} s_0\| \le \beta \operatorname{gap}(D, S) \|s_0\|$. The gap of subspaces of equal
+dimension is the one-sided $\|P_{D^\perp} P_{A^k S}\|$
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`). No graph and no CS decomposition are
+needed. The projection $\Pi$ is `Submodule.projection`. -/
 theorem gap_subspaceIterate_le_of_isCompl {A : E →ₗ[𝕜] E} {D W S : Submodule 𝕜 E}
     (hD : D ∈ Module.End.invtSubmodule A) (hW : W ∈ Module.End.invtSubmodule A) (hDW : IsCompl D W)
     (hdim : Module.finrank 𝕜 S = Module.finrank 𝕜 D) (h0 : Wᗮ.gap S < 1) (k : ℕ)
@@ -1078,12 +1162,16 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
   [DecidableEq n]
 
 omit [DecidableEq n] in
-/-- **The distance to a graph subspace** ([golub2013matrix] Corollary 7.2.5 and (7.2.6)): in
-`EuclideanSpace 𝕜 (m ⊕ n)`, `dist(ran [I; 0], ran [I; P]) ≤ ‖P‖₂` (and `‖P‖₂ ≤ ‖P‖_F`,
-`Matrix.l2_opNorm_le_frobenius_norm`). The two subspaces have equal dimension, so the gap is the
-one-sided `‖P_{K⊥} P_G‖`; a vector of `G` is `(x, P x)`, whose component orthogonal to
-`K = ran [I; 0]` is `(0, P x)`, of norm at most `‖P‖₂ ‖x‖ ≤ ‖P‖₂ ‖(x, P x)‖`. The exact value is
-`‖P‖₂ / √(1 + ‖P‖₂²)` (`Submodule.gap_graph`). -/
+/-- **The distance to a graph subspace** (Corollary 7.2.5 and (7.2.6) of [golub2013matrix]). Let
+$P \in \mathbb{K}^{n \times m}$. In the Euclidean space $\mathbb{K}^{m + n}$,
+$$\operatorname{gap}\Bigl(\operatorname{ran} \begin{bmatrix} I \\ 0 \end{bmatrix},
+  \operatorname{ran} \begin{bmatrix} I \\ P \end{bmatrix}\Bigr) \le \|P\|_2.$$
+
+Also $\|P\|_2 \le \|P\|_F$ (`Matrix.l2_opNorm_le_frobenius_norm`). The two subspaces have equal
+dimension, so the gap is the one-sided $\|P_{K^\perp} P_G\|$. A vector of $G$ is $(x, P x)$,
+whose component orthogonal to $K = \operatorname{ran} \begin{bmatrix} I \\ 0 \end{bmatrix}$ is
+$(0, P x)$, of norm at most $\|P\|_2 \|x\| \le \|P\|_2 \|(x, P x)\|$. The exact value is
+$\|P\|_2 / \sqrt{1 + \|P\|_2^2}$ (`Submodule.gap_graph`). -/
 theorem gap_range_fromRows_le (P : Matrix n m 𝕜) :
     (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix m m 𝕜) (0 : Matrix n m 𝕜)))).gap
         (LinearMap.range (toEuclideanLin (fromRows (1 : Matrix m m 𝕜) P))) ≤ lpOpNorm 2 P := by
@@ -1138,7 +1226,11 @@ theorem gap_range_fromRows_le (P : Matrix n m 𝕜) :
 
 end Matrix
 
-/-! ### Orthogonal iteration from a Schur form: [golub2013matrix] Theorem 7.3.1, corrected -/
+/-!
+### Orthogonal iteration from a Schur form
+
+This section proves Theorem 7.3.1 of [golub2013matrix] in a corrected form.
+-/
 
 namespace Matrix
 
@@ -1148,17 +1240,17 @@ open scoped Matrix.Norms.Frobenius
 
 variable {r s : ℕ}
 
-/-- A vector of `EuclideanSpace` on `p ⊕ q` from its two blocks. -/
+/-- The vector of the Euclidean space on $p \sqcup q$ with the blocks $u$ and $w$. -/
 private noncomputable abbrev blk {p q : Type*} (u : EuclideanSpace ℂ p) (w : EuclideanSpace ℂ q) :
     EuclideanSpace ℂ (p ⊕ q) :=
   WithLp.toLp 2 (Sum.elim (WithLp.ofLp u) (WithLp.ofLp w))
 
-/-- The first block of a vector on `p ⊕ q`. -/
+/-- The first block of a vector of the Euclidean space on $p \sqcup q$. -/
 private noncomputable abbrev fstB {p q : Type*} (x : EuclideanSpace ℂ (p ⊕ q)) :
     EuclideanSpace ℂ p :=
   WithLp.toLp 2 (WithLp.ofLp x ∘ Sum.inl)
 
-/-- The second block of a vector on `p ⊕ q`. -/
+/-- The second block of a vector of the Euclidean space on $p \sqcup q$. -/
 private noncomputable abbrev sndB {p q : Type*} (x : EuclideanSpace ℂ (p ⊕ q)) :
     EuclideanSpace ℂ q :=
   WithLp.toLp 2 (WithLp.ofLp x ∘ Sum.inr)
@@ -1222,11 +1314,12 @@ private theorem norm_toEuclideanLin_le_lpOpNorm {p q : Type*} [Fintype p] [Finty
     ‖toEuclideanLin M y‖ ≤ lpOpNorm 2 M * ‖y‖ :=
   (lpCLM 2 M).le_opNorm y
 
-/-- The block form of the corrected Theorem 7.3.1: in `EuclideanSpace ℂ (Fin r ⊕ Fin s)`, for
-`M = [T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` invertible and `X` solving `T₁₁ X - X T₂₂ = -T₁₂`, the ranges
-`D = ran [I; 0]`, `W = ran [X; I]` are complementary invariant subspaces, `Wᗮ = D' = ran [I; -Xᴴ]`,
-and `Krylov.gap_subspaceIterate_le_of_isCompl` applies with `c = 1 + ‖X‖₂`, `β = ‖T₂₂^k‖₂`,
-`γ = ‖T₁₁^{-k}‖₂`. -/
+/-- The block form of the corrected Theorem 7.3.1: for $M = \begin{bmatrix} T_{11} & T_{12} \\ 0 &
+T_{22} \end{bmatrix}$ with $T_{11}$ invertible and $T_{11} X - X T_{22} = -T_{12}$,
+`Krylov.gap_subspaceIterate_le_of_isCompl` applies to $D = \operatorname{ran} \begin{bmatrix} I
+\\ 0 \end{bmatrix}$ and $W = \operatorname{ran} \begin{bmatrix} X \\ I \end{bmatrix}$, with
+$W^\perp = \operatorname{ran} \begin{bmatrix} I \\ -X^H \end{bmatrix}$, $c = 1 + \|X\|_2$,
+$\beta = \|T_{22}^k\|_2$ and $\gamma = \|T_{11}^{-k}\|_2$. -/
 private theorem gap_subspaceIterate_le_of_blocks {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ} (hT₁₁ : IsUnit T₁₁)
     {X : Matrix (Fin r) (Fin s) ℂ} (hX : T₁₁ * X - X * T₂₂ = -T₁₂)
@@ -1393,24 +1486,42 @@ private theorem gap_subspaceIterate_le_of_blocks {T₁₁ : Matrix (Fin r) (Fin 
     hc0 (lpOpNorm_nonneg 2 _) (lpOpNorm_nonneg 2 _) hc hβ hγ).trans (le_of_eq ?_)
   rw [hgW]
 
-/-- **Orthogonal iteration converges to the dominant invariant subspace** ([golub2013matrix]
-Theorem 7.3.1, corrected). Let `Q` be unitary with `Qᴴ A Q` reindexed along `e` equal to the block
-triangular `[T₁₁ T₁₂; 0 T₂₂]` (`T₁₁` of size `r`, `0 < r < n`), both diagonal blocks upper
-triangular, `|t_ii| ≥ a` on `T₁₁`, `|t_jj| ≤ b < a` on `T₂₂`, the strictly upper parts of both
-blocks of Frobenius norm at most `ν`, `μ ≥ 0` with `ν < (1 + μ) a`, and `X` the solution of
-`T₁₁ X - X T₂₂ = -T₁₂`. Let `D = ran Q [I; 0]` (the dominant invariant subspace `D_r(A)`),
-`D' = ran Q [I; -Xᴴ]` (the book's `D_r(Aᴴ)`, the orthogonal complement of the complementary
-invariant subspace `ran Q [X; I]`), and `S₀` of dimension `r` with `d̃₀ = dist(D', S₀) < 1`. Then
-for every `k`,
-`dist(D, A^k S₀) ≤ (1 + μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂))
-  ((b + ν/(1+μ)) / (a - ν/(1+μ)))^k · dist(D, S₀) / √(1 - d̃₀²)`.
-The book's statement, with `a = |λ_r|`, `b = |λ_{r+1}|`, `ν = ‖N‖_F`, assumes `dist(D, S₀) < 1`
-instead of `d̃₀ < 1` and is false (see the module doc); its proof uses `d̃₀`, and so does this one.
-The block computation is `Matrix.gap_subspaceIterate_le_of_blocks`-shaped: the coordinate-free
-`Krylov.gap_subspaceIterate_le_of_isCompl` with the powers bounded by Lemma 7.3.2
-(`Matrix.l2_opNorm_pow_le_of_schur`, `Matrix.l2_opNorm_inv_pow_le_of_schur`) and
-`‖X‖_F ≤ ‖T₁₂‖_F / sep` (`Matrix.frobenius_norm_le_div_sep`), transported by the isometry
-`y ↦ Q (y ∘ e)` (`Submodule.gap_map_linearIsometryEquiv`). -/
+/-- **Orthogonal iteration converges to the dominant invariant subspace** (Theorem 7.3.1 of
+[golub2013matrix], corrected). Let $A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary, let
+$0 < r < n$, and let $e$ be a bijection of the indices onto
+$\{1, \dots, r\} \sqcup \{1, \dots, n - r\}$ such that, after reindexing by $e$,
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$$
+with $T_{11} \in \mathbb{C}^{r \times r}$, where both $T_{11}$ and $T_{22}$ are upper
+triangular. Let $a, b, \nu, \mu \in \mathbb{R}$ with $\mu \ge 0$, $|t_{ii}| \ge a$ for the
+diagonal entries of $T_{11}$, $|t_{jj}| \le b$ for those of $T_{22}$, $b < a$, the strictly
+upper triangular parts of $T_{11}$ and $T_{22}$ of Frobenius norm at most $\nu$, and
+$\nu < (1 + \mu) a$. Let $X$ solve $T_{11} X - X T_{22} = -T_{12}$. Let $D = \operatorname{ran}
+Q \begin{bmatrix} I \\ 0 \end{bmatrix}$ and $D' = \operatorname{ran} Q \begin{bmatrix} I \\ -X^H
+\end{bmatrix}$, with the rows of the block matrices placed by $e$. Let
+$S_0 \subseteq \mathbb{C}^n$ have dimension $r$ and
+$\tilde{d}_0 = \operatorname{dist}(D', S_0) < 1$. Then for every $k \in \mathbb{N}$
+$$\operatorname{dist}(D, A^k S_0) \le (1 + \mu)^{n-2} \Bigl(1 +
+  \frac{\|T_{12}\|_F}{\operatorname{sep}(T_{11}, T_{22})}\Bigr) \Bigl(\frac{b + \nu/(1 +
+  \mu)}{a - \nu/(1 + \mu)}\Bigr)^k \frac{\operatorname{dist}(D, S_0)}{\sqrt{1 -
+  \tilde{d}_0^2}}.$$
+
+The subspace $D$ is the dominant invariant subspace $D_r(A)$. The subspace $D'$ is $D_r(A^H)$ of
+the source, the orthogonal complement of the complementary invariant subspace
+$\operatorname{ran} Q \begin{bmatrix} X \\ I \end{bmatrix}$. The source states the theorem with
+$a = |\lambda_r|$, $b = |\lambda_{r+1}|$ and $\nu = \|N\|_F$, and assumes
+$\operatorname{dist}(D, S_0) < 1$ instead of $\tilde{d}_0 < 1$. With that hypothesis the theorem
+is false: for $A = \begin{bmatrix} 2 & 1 \\ 0 & 1 \end{bmatrix}$, $r = 1$ and
+$Q_0 = (1, -1)/\sqrt{2}$, an eigenvector for $\lambda_2 = 1$, $d_0 = 1/\sqrt{2} < 1$ but
+$d_k = 1/\sqrt{2}$ for every $k$. The proof in the source uses $\tilde{d}_0$, and so does this
+one.
+
+The proof applies the coordinate-free `Krylov.gap_subspaceIterate_le_of_isCompl` in block
+coordinates, with $c = 1 + \|X\|_2$, $\beta = \|T_{22}^k\|_2$ and $\gamma = \|T_{11}^{-k}\|_2$,
+and with the powers bounded by Lemma 7.3.2 (`Matrix.l2_opNorm_pow_le_of_schur` and
+`Matrix.l2_opNorm_inv_pow_le_of_schur`) and $\|X\|_F \le \|T_{12}\|_F /
+\operatorname{sep}(T_{11}, T_{22})$ (`Matrix.frobenius_norm_le_div_sep`). The isometry
+$y \mapsto Q (y \circ e)$ transports the bound (`Submodule.gap_map_linearIsometryEquiv`). Here
+$\operatorname{dist}$ is `Submodule.gap`, and the iterate $A^k S_0$ is `Krylov.subspaceIterate`. -/
 theorem gap_subspaceIterate_le_of_schur {n r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (e : Fin n ≃ Fin r ⊕ Fin (n - r))
     {T₁₁ : Matrix (Fin r) (Fin r) ℂ} {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ}

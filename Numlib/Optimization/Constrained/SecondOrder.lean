@@ -8,42 +8,62 @@ import Numlib.Optimization.Optimality.Unconstrained
 /-!
 # Second-order optimality conditions for constrained problems
 
-Second-order necessary and sufficient optimality conditions for `min f` subject to equality
-constraints `h i x = 0` and inequality constraints `g j x ≤ 0` on a finite-dimensional real normed
-space ([cartis2022evaluation], Theorems 1.1.3 and 1.1.4; Nocedal–Wright, *Numerical
-Optimization*, Theorems 12.5 and 12.6), in the conventions of `Numlib.Optimization.Constrained`:
-Lagrangian `ℒ = f + ∑ λ_i h_i + ∑ μ_j g_j`, multipliers `μ ≥ 0`, LICQ = `IsRegularPointIneq`.
-Constraints `c(x) ≥ 0` with `ℒ = f - ⟨y, c⟩`, as in [cartis2022evaluation], are the instance
-`g = -c`, `μ = y`, and the equality-constrained Theorem 1.1.3 is the instance with no inequality
-constraints (`κ = Empty`).
+This file proves second-order necessary and sufficient optimality conditions for $\min f$ subject to
+finitely many equality constraints $h_i(x) = 0$ and inequality constraints $g_j(x) \le 0$ on a real
+normed space, finite-dimensional where needed. It follows Theorems 1.1.3 and 1.1.4 of
+[cartis2022evaluation] and Theorems 12.5 and 12.6 of [nocedal2006numerical]. The conventions are
+those of `Numlib.Optimization.Constrained`: the Lagrangian is
+$$\mathcal{L}(y) = f(y) + \sum_i \lambda_i h_i(y) + \sum_j \mu_j g_j(y)$$
+with multipliers $\mu \ge 0$, and LICQ is `Constrained.IsRegularPointIneq`. The constraints
+$c(x) \ge 0$ of [cartis2022evaluation], with the Lagrangian $f - \langle y, c \rangle$, are the
+instance $g = -c$, $\mu = y$. The equality-constrained Theorem 1.1.3 is the instance with no
+inequality constraints ($\kappa$ empty).
+
+The conditions are stated on the **critical cone**: the directions $d$ that are tangent to the
+equality constraints and to the active inequality constraints with positive multiplier, and that
+point into the active inequality constraints with zero multiplier. The necessary condition is
+$\nabla^2 \mathcal{L}(x)[d]^2 \ge 0$ on the critical cone; the sufficient condition is
+$\nabla^2 \mathcal{L}(x)[d]^2 > 0$ for nonzero $d$ in the critical cone.
 
 ## Main definitions
 
-* `Constrained.kktLagrangian f h g l μ`: the Lagrangian `y ↦ f y + ∑ λ_i h_i y + ∑ μ_j g_j y`;
-* `Constrained.criticalCone h' g g' x μ`: the critical cone `𝒩₊` of (1.1.17).
+* `Constrained.kktLagrangian`: the Lagrangian $y \mapsto f(y) + \sum_i \lambda_i h_i(y) + \sum_j
+  \mu_j g_j(y)$ for fixed multipliers.
+* `Constrained.criticalCone`: the critical cone $\mathcal{N}_+$ of (1.1.17) of
+  [cartis2022evaluation].
+* `Constrained.stronglyActiveFeasible`: the feasible points at which every inequality constraint
+  with a positive multiplier is active.
 
 ## Main results
 
 * `Constrained.secondOrder_necessary_of_isKKTPoint`: at a regular local minimizer, for any
-  Karush–Kuhn–Tucker multipliers, `∇²ℒ(x)[d]² ≥ 0` on the critical cone ((1.1.14), (1.1.17));
-  `Constrained.secondOrder_necessary_ineq` is the form with existence of the multipliers;
-* `Constrained.secondOrder_necessary_of_isKKTPoint_of_tangent`: second-order necessity under
-  the tangent qualification for the feasible set with strongly active constraints held active;
+  Karush–Kuhn–Tucker multipliers, $\nabla^2 \mathcal{L}(x)[d]^2 \ge 0$ on the critical cone
+  ((1.1.14) and (1.1.17) of [cartis2022evaluation]).
+* `Constrained.secondOrder_necessary_ineq`: at a regular local minimizer there are
+  Karush–Kuhn–Tucker multipliers with this property.
+* `Constrained.secondOrder_necessary_of_isKKTPoint_of_tangent`: the second-order necessary condition
+  under the tangent qualification for the strongly active feasible set.
 * `Constrained.isStrictLocalMinOn_of_secondOrder_sufficient`: a Karush–Kuhn–Tucker point with
-  `∇²ℒ(x)[d]² > 0` for nonzero `d` of the critical cone is a strict local minimizer ((1.1.15),
-  (1.1.18)); no constraint qualification is needed;
+  $\nabla^2 \mathcal{L}(x)[d]^2 > 0$ for nonzero $d$ in the critical cone is a strict local
+  minimizer ((1.1.15) and (1.1.18) of [cartis2022evaluation]); no constraint qualification is
+  needed.
 * `Constrained.IsRegularPoint.isRegularPointIneq`, `Constrained.feasible_of_isEmpty`,
-  `Constrained.kktLagrangian_of_isEmpty`: the equality-constrained case (Theorem 1.1.3) is the
-  instance with no inequality constraints.
+  `Constrained.kktLagrangian_of_isEmpty`: the equality-constrained case (Theorem 1.1.3 of
+  [cartis2022evaluation]) is the instance with no inequality constraints.
 
-## Implementation notes
+## Proof outline
 
-The tangent qualification for second-order necessity places the critical directions in the
+The tangent qualification for second-order necessity asks that the critical directions lie in the
 positive tangent cone of the strongly active feasible set. On that set the Lagrangian equals the
-objective, so a second-order expansion of the stationary Lagrangian along tangent sequences yields
-nonnegative curvature. The feasible arcs of `Constrained.exists_contDiff_feasible_arc` establish
-this qualification under LICQ. The sufficient conditions (1.1.15) and (1.1.18) require positive
-curvature on the nonzero directions of the critical cone.
+objective, so a second-order expansion of the stationary Lagrangian along tangent sequences gives
+nonnegative curvature. Under LICQ the feasible arcs of `Constrained.exists_contDiff_feasible_arc`
+give this qualification. The sufficient conditions require positive curvature on the nonzero
+directions of the critical cone.
+
+## Notation
+
+* $\nabla^2 \mathcal{L}(x)[d]^2$: the second derivative of the Lagrangian at $x$ applied to
+  $(d, d)$, which is `iteratedFDeriv ℝ 2 (Constrained.kktLagrangian f h g l μ) x (fun _ => d)`.
 -/
 
 open Filter Set Topology
@@ -56,15 +76,24 @@ section Defs
 
 variable {E : Type*} {ι κ : Type*}
 
-/-- The critical cone `𝒩₊` of [cartis2022evaluation], (1.1.17) (with `g = -c`): directions
-tangent to the equality constraints and to the active inequality constraints with positive
-multiplier, and pointing into the active inequality constraints with zero multiplier. -/
+/-- The **critical cone** $\mathcal{N}_+$ at $x$ for the multipliers $\mu$: the set of directions
+$d$ with
+* $h_i'(x) d = 0$ for all $i$;
+* $g_j'(x) d = 0$ for every active $j$ with $\mu_j > 0$;
+* $g_j'(x) d \le 0$ for every active $j$ with $\mu_j = 0$.
+
+This is (1.1.17) of [cartis2022evaluation], with $g = -c$.
+
+The cone puts no condition for an active $j$ with $\mu_j < 0$; at a Karush–Kuhn–Tucker point
+this case does not occur. -/
 def criticalCone [TopologicalSpace E] [AddCommGroup E] [Module ℝ E] (h' : ι → E → E →L[ℝ] ℝ)
     (g : κ → E → ℝ) (g' : κ → E → E →L[ℝ] ℝ) (x : E) (μ : κ → ℝ) : Set E :=
   {d | (∀ i, h' i x d = 0) ∧ (∀ j ∈ activeSet g x, 0 < μ j → g' j x d = 0) ∧
     ∀ j ∈ activeSet g x, μ j = 0 → g' j x d ≤ 0}
 
-/-- Membership in the critical cone. -/
+/-- A direction $d$ is in the critical cone if and only if $h_i'(x) d = 0$ for all $i$,
+$g_j'(x) d = 0$ for every active $j$ with $\mu_j > 0$, and $g_j'(x) d \le 0$ for every active
+$j$ with $\mu_j = 0$. -/
 @[simp]
 theorem mem_criticalCone [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {μ : κ → ℝ}
@@ -75,17 +104,19 @@ theorem mem_criticalCone [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
 
 variable [Fintype ι] [Fintype κ]
 
-/-- The Lagrangian `ℒ(y) = f(y) + ∑ λ_i h_i(y) + ∑ μ_j g_j(y)` of the mixed problem as a function
-of `y`, for fixed multipliers `(λ, μ)` ([cartis2022evaluation], (1.1.1) with `g = -c`). -/
+/-- The **Lagrangian** of the mixed problem, for fixed multipliers $\lambda \in \mathbb{R}^\iota$
+and $\mu \in \mathbb{R}^\kappa$, as a function of $y$:
+$$\mathcal{L}(y) = f(y) + \sum_i \lambda_i h_i(y) + \sum_j \mu_j g_j(y).$$
+This is (1.1.1) of [cartis2022evaluation], with $g = -c$. -/
 def kktLagrangian (f : E → ℝ) (h : ι → E → ℝ) (g : κ → E → ℝ) (l : ι → ℝ) (μ : κ → ℝ) (y : E) :
     ℝ :=
   f y + ∑ i, l i * h i y + ∑ j, μ j * g j y
 
-/-- Unfolding lemma for `kktLagrangian`. -/
+/-- The Lagrangian at $y$ is $f(y) + \sum_i \lambda_i h_i(y) + \sum_j \mu_j g_j(y)$. -/
 theorem kktLagrangian_apply (f : E → ℝ) (h : ι → E → ℝ) (g : κ → E → ℝ) (l : ι → ℝ) (μ : κ → ℝ)
     (y : E) : kktLagrangian f h g l μ y = f y + ∑ i, l i * h i y + ∑ j, μ j * g j y := rfl
 
-/-- With nonnegative inequality multipliers, the Lagrangian is below `f` on the feasible set. -/
+/-- Let $\mu_j \ge 0$ for all $j$, and let $y$ be feasible. Then $\mathcal{L}(y) \le f(y)$. -/
 theorem kktLagrangian_le {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {l : ι → ℝ} {μ : κ → ℝ}
     (hμ : ∀ j, 0 ≤ μ j) {y : E} (hy : y ∈ feasible h g) : kktLagrangian f h g l μ y ≤ f y := by
   rw [kktLagrangian_apply]
@@ -94,27 +125,30 @@ theorem kktLagrangian_le {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E �
     Finset.sum_nonpos fun j _ => mul_nonpos_of_nonneg_of_nonpos (hμ j) (hy.2 j)
   linarith
 
-/-- If the equality constraints hold at `y` and every `μ_j g_j(y)` vanishes, the Lagrangian equals
-`f` at `y`. -/
+/-- Let $h_i(y) = 0$ for all $i$ and $\mu_j g_j(y) = 0$ for all $j$. Then $\mathcal{L}(y) = f(y)$.
+-/
 theorem kktLagrangian_eq {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {l : ι → ℝ} {μ : κ → ℝ}
     {y : E} (hh : ∀ i, h i y = 0) (hg : ∀ j, μ j * g j y = 0) :
     kktLagrangian f h g l μ y = f y := by
   simp [kktLagrangian_apply, hh, hg]
 
 /-- The Lagrangian of the mixed problem is the equality-constrained Lagrangian
-`Constrained.lagrangian` plus the inequality terms. -/
+`Constrained.lagrangian` plus the inequality terms: $\mathcal{L}(y) = f(y) + \sum_i \lambda_i
+h_i(y) + \sum_j \mu_j g_j(y)$, where the first two terms are `Constrained.lagrangian f h y l`. -/
 theorem kktLagrangian_eq_lagrangian_add (f : E → ℝ) (h : ι → E → ℝ) (g : κ → E → ℝ) (l : ι → ℝ)
     (μ : κ → ℝ) (y : E) :
     kktLagrangian f h g l μ y = lagrangian f h y l + ∑ j, μ j * g j y := rfl
 
-/-- Without inequality constraints the Lagrangian is `Constrained.lagrangian`. -/
+/-- If there are no inequality constraints ($\kappa$ is empty), the Lagrangian is the
+equality-constrained Lagrangian `Constrained.lagrangian`. -/
 theorem kktLagrangian_of_isEmpty [IsEmpty κ] (f : E → ℝ) (h : ι → E → ℝ) (g : κ → E → ℝ)
     (l : ι → ℝ) (μ : κ → ℝ) : kktLagrangian f h g l μ = fun y => lagrangian f h y l := by
   ext y
   simp [kktLagrangian_eq_lagrangian_add]
 
 omit [Fintype ι] [Fintype κ] in
-/-- Without inequality constraints the feasible set is that of the equality constraints. -/
+/-- If there are no inequality constraints ($\kappa$ is empty), the feasible set of the mixed
+constraints is the feasible set of the equality constraints. -/
 theorem feasible_of_isEmpty [IsEmpty κ] (h : ι → E → ℝ) (g : κ → E → ℝ) :
     feasible h g = feasibleEq h := by
   ext y
@@ -130,7 +164,8 @@ section Lagrangian
 variable {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
   {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}
 
-/-- The derivative of the Lagrangian: `∇ℒ = ∇f + ∑ λ_i ∇h_i + ∑ μ_j ∇g_j`. -/
+/-- Let $f$, $h_i$ and $g_j$ have the derivatives $f'(x)$, $h_i'(x)$ and $g_j'(x)$ at $x$. Then the
+Lagrangian has the derivative $f'(x) + \sum_i \lambda_i h_i'(x) + \sum_j \mu_j g_j'(x)$ at $x$. -/
 theorem hasFDerivAt_kktLagrangian (hf : HasFDerivAt f (f' x) x)
     (hh : ∀ i, HasFDerivAt (h i) (h' i x) x) (hg : ∀ j, HasFDerivAt (g j) (g' j x) x) :
     HasFDerivAt (kktLagrangian f h g l μ)
@@ -141,19 +176,22 @@ theorem hasFDerivAt_kktLagrangian (hf : HasFDerivAt f (f' x) x)
     HasFDerivAt.fun_sum fun j _ => (hg j).const_mul (μ j)
   exact (hf.add h1).add h2
 
-/-- The Lagrangian of `Cⁿ` data is `Cⁿ`. -/
+/-- If $f$ and all $h_i$ and $g_j$ are $C^n$ at $x$, then the Lagrangian is $C^n$ at $x$. -/
 theorem contDiffAt_kktLagrangian {n : WithTop ℕ∞} (hf : ContDiffAt ℝ n f x)
     (hh : ∀ i, ContDiffAt ℝ n (h i) x) (hg : ∀ j, ContDiffAt ℝ n (g j) x) :
     ContDiffAt ℝ n (kktLagrangian f h g l μ) x :=
   (hf.add (ContDiffAt.sum fun i _ => contDiffAt_const.mul (hh i))).add
     (ContDiffAt.sum fun j _ => contDiffAt_const.mul (hg j))
 
-/-- At a Karush–Kuhn–Tucker point the Lagrangian equals `f`. -/
+/-- At a Karush–Kuhn–Tucker point $x$ with multipliers $(\lambda, \mu)$, the Lagrangian satisfies
+$\mathcal{L}(x) = f(x)$. -/
 theorem IsKKTPoint.kktLagrangian_eq (hx : IsKKTPoint f' h h' g g' x l μ) :
     kktLagrangian f h g l μ x = f x :=
   Constrained.kktLagrangian_eq hx.feasible_eq hx.complementary
 
-/-- At a Karush–Kuhn–Tucker point the Lagrangian is stationary. -/
+/-- Let $x$ be a Karush–Kuhn–Tucker point with multipliers $(\lambda, \mu)$, and let $f$, $h_i$ and
+$g_j$ have the derivatives $f'(x)$, $h_i'(x)$ and $g_j'(x)$ at $x$. Then the Lagrangian has the
+derivative $0$ at $x$. -/
 theorem IsKKTPoint.hasFDerivAt_kktLagrangian (hx : IsKKTPoint f' h h' g g' x l μ)
     (hf : HasFDerivAt f (f' x) x) (hh : ∀ i, HasFDerivAt (h i) (h' i x) x)
     (hg : ∀ j, HasFDerivAt (g j) (g' j x) x) :
@@ -164,9 +202,9 @@ theorem IsKKTPoint.hasFDerivAt_kktLagrangian (hx : IsKKTPoint f' h h' g g' x l �
 end Lagrangian
 
 omit [Fintype ι] [Fintype κ] in
-/-- A regular point of the equality constraints is a regular point of the mixed constraints when
-there are no inequality constraints: the equality-constrained theory is the instance
-`κ = Empty`. -/
+/-- Let there be no inequality constraints ($\kappa$ is empty). Then a regular point of the equality
+constraints is a regular point of the mixed constraints, for any $g$ and $g'$. So the
+equality-constrained theory is the instance with $\kappa$ empty. -/
 theorem IsRegularPoint.isRegularPointIneq [IsEmpty κ] {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {x : E} (hx : IsRegularPoint h h' x) (g : κ → E → ℝ) (g' : κ → E → E →L[ℝ] ℝ) :
     IsRegularPointIneq h h' g g' x := by
@@ -179,20 +217,29 @@ theorem IsRegularPoint.isRegularPointIneq [IsEmpty κ] {h : ι → E → ℝ} {h
 
 /-! ### Second-order necessary conditions -/
 
-/-- Strict differentiability of a constraint `C²` at `x`, with prescribed derivative. -/
+/-- A real function that is $C^2$ at $x$ with derivative $c'$ at $x$ is strictly differentiable at
+$x$ with derivative $c'$. -/
 private theorem hasStrictFDerivAt_of_contDiffAt_two {c : E → ℝ} {c' : E →L[ℝ] ℝ} {x : E}
     (hc : ContDiffAt ℝ 2 c x) (hc' : HasFDerivAt c c' x) : HasStrictFDerivAt c c' x := by
   have := hc.hasStrictFDerivAt two_ne_zero
   rwa [hc'.fderiv] at this
 
-/-- The feasible points that keep every inequality with a positive multiplier
-active. -/
+/-- The **strongly active feasible set** for the multipliers $\mu$: the feasible points $y$ with
+$g_j(y) = 0$ for every $j$ with $\mu_j > 0$. -/
 def stronglyActiveFeasible (h : ι → E → ℝ) (g : κ → E → ℝ) (μ : κ → ℝ) : Set E :=
   {y ∈ feasible h g | ∀ j, 0 < μ j → g j y = 0}
 
-/-- Second-order necessity under tangent inclusion for the strongly active
-feasible set. This is the second-order constraint qualification in
-[conn2000trust], Theorem 3.2.5. -/
+/-- **Second-order necessary condition under the tangent qualification.** Let $x$ be a
+Karush–Kuhn–Tucker point with multipliers $(\lambda, \mu)$ and a local minimizer of $f$ on the
+feasible set. Let $f$ and all $h_i$ and $g_j$ be $C^2$ at $x$, with derivatives $f'(x)$,
+$h_i'(x)$ and $g_j'(x)$ at $x$. Suppose that the critical cone is contained in the positive
+tangent cone of the strongly active feasible set at $x$. Then
+$\nabla^2 \mathcal{L}(x)[d]^2 \ge 0$ for every $d$ in the critical cone.
+
+The inclusion of the critical cone in the tangent cone is the second-order constraint
+qualification of Theorem 3.2.5 of [conn2000trust]. The positive tangent cone is the Mathlib
+`posTangentConeAt`. On the strongly active feasible set the Lagrangian equals $f$, and the proof
+expands the stationary Lagrangian to second order along tangent sequences. -/
 theorem secondOrder_necessary_of_isKKTPoint_of_tangent {f : E → ℝ}
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
     {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}
@@ -239,7 +286,14 @@ theorem secondOrder_necessary_of_isKKTPoint_of_tangent {f : E → ℝ}
     (hge.mono fun _ hn ↦ div_nonneg (sub_nonneg.mpr hn) (sq_nonneg _))
   linarith
 
-/-- LICQ implies the tangent inclusion for the strongly active feasible set. -/
+/-- **LICQ implies the tangent qualification.** Let $E$ be finite-dimensional, and let $x$ be a
+regular point of the mixed constraints at which all $h_i$ and $g_j$ are strictly differentiable.
+Let $\mu_j \ge 0$ for all $j$, and let every $j$ with $\mu_j > 0$ be active at $x$. Then the
+critical cone is contained in the positive tangent cone of the strongly active feasible set at
+$x$.
+
+The directions are velocities of the feasible arcs of
+`Constrained.exists_contDiff_feasible_arc`. -/
 theorem criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq
     [FiniteDimensional ℝ E] {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {μ : κ → ℝ}
@@ -268,12 +322,17 @@ theorem criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq
     filter_upwards [self_mem_nhdsWithin] with t ht
     rw [NNReal.smul_def, Real.coe_toNNReal _ (inv_nonneg.mpr (le_of_lt ht))]
 
-/-- **Second-order necessary condition for given multipliers** ([cartis2022evaluation],
-Theorems 1.1.3 and 1.1.4, (1.1.14) and (1.1.17); Nocedal–Wright Theorem 12.5), under LICQ. In
-finite dimension, let `x` be a local minimizer of `f` on the feasible set, a regular point of the
-constraints, and a Karush–Kuhn–Tucker point with multipliers `(λ, μ)` (under LICQ these are
-unique, `kkt_multipliers_unique`), with `f` and all constraints `C²` at `x` with derivatives
-`f' x`, `h' i x`, `g' j x` there. Then `∇²ℒ(x)[d]² ≥ 0` for every `d` in the critical cone. -/
+/-- **Second-order necessary condition for given multipliers.** Let $E$ be finite-dimensional. Let
+$x$ be a local minimizer of $f$ on the feasible set, a regular point of the mixed constraints,
+and a Karush–Kuhn–Tucker point with multipliers $(\lambda, \mu)$. Let $f$ and all $h_i$ and
+$g_j$ be $C^2$ at $x$, with derivatives $f'(x)$, $h_i'(x)$ and $g_j'(x)$ at $x$. Then
+$\nabla^2 \mathcal{L}(x)[d]^2 \ge 0$ for every $d$ in the critical cone. This is (1.1.14) and
+(1.1.17) in Theorems 1.1.3 and 1.1.4 of [cartis2022evaluation], and Theorem 12.5 of
+[nocedal2006numerical].
+
+Under LICQ the multipliers are unique (`Constrained.kkt_multipliers_unique`). The proof combines
+`Constrained.criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq` with
+`Constrained.secondOrder_necessary_of_isKKTPoint_of_tangent`. -/
 theorem secondOrder_necessary_of_isKKTPoint [FiniteDimensional ℝ E] {f : E → ℝ}
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
     {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}
@@ -290,14 +349,18 @@ theorem secondOrder_necessary_of_isKKTPoint [FiniteDimensional ℝ E] {f : E →
     (fun j ↦ hasStrictFDerivAt_of_contDiffAt_two (hg j) (hg' j)) hkkt.nonneg
     (fun j hj ↦ (mem_activeSet).mpr ((mul_eq_zero.mp (hkkt.complementary j)).resolve_left hj.ne'))
 
-/-- **Second-order necessary condition** ([cartis2022evaluation], Theorems 1.1.3 and 1.1.4,
-(1.1.14) and (1.1.17); Nocedal–Wright Theorem 12.5), under LICQ. In finite dimension, let `x` be a
-local minimizer of `f` on the feasible set, a regular point of the constraints, with `f` and all
-constraints `C²` at `x` and the constraint derivatives at `x` given by `h' i x`, `g' j x`. Then
-there are multipliers `(λ, μ)` making `x` a Karush–Kuhn–Tucker point such that
-`∇²ℒ(x)[d]² ≥ 0` for every `d` in the critical cone (for any such multipliers:
-`secondOrder_necessary_of_isKKTPoint`). The equality-constrained case is the instance with no
-inequality constraints (`IsRegularPoint.isRegularPointIneq`). -/
+/-- **Second-order necessary condition.** Let $E$ be finite-dimensional. Let $x$ be a local
+minimizer of $f$ on the feasible set and a regular point of the mixed constraints. Let $f$ and
+all $h_i$ and $g_j$ be $C^2$ at $x$, with derivatives $h_i'(x)$ and $g_j'(x)$ at $x$. Then there
+are multipliers $(\lambda, \mu)$ such that $x$ is a Karush–Kuhn–Tucker point, with the Fréchet
+derivative of $f$ as $f'$, and $\nabla^2 \mathcal{L}(x)[d]^2 \ge 0$ for every $d$ in the
+critical cone. This is (1.1.14) and (1.1.17) in Theorems 1.1.3 and 1.1.4 of
+[cartis2022evaluation], and Theorem 12.5 of [nocedal2006numerical].
+
+The derivative of $f$ is `fderiv ℝ f`. The conclusion holds for any Karush–Kuhn–Tucker
+multipliers by `Constrained.secondOrder_necessary_of_isKKTPoint`. The equality-constrained case
+is the instance with no inequality constraints
+(`Constrained.IsRegularPoint.isRegularPointIneq`). -/
 theorem secondOrder_necessary_ineq [FiniteDimensional ℝ E] {f : E → ℝ} {h : ι → E → ℝ}
     {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E}
     (hx : IsRegularPointIneq h h' g g' x) (hmin : IsLocalMinOn f (feasible h g) x)
@@ -315,17 +378,20 @@ theorem secondOrder_necessary_ineq [FiniteDimensional ℝ E] {f : E → ℝ} {h 
 
 /-! ### Second-order sufficient conditions -/
 
-/-- **Second-order sufficient condition** ([cartis2022evaluation], Theorems 1.1.3 and 1.1.4,
-(1.1.15) and (1.1.18), for nonzero directions; Nocedal–Wright Theorem 12.6). In finite dimension,
-let `x` be a Karush–Kuhn–Tucker point with multipliers `(λ, μ)`, with `f` and all constraints `C²`
-at `x` and derivatives `f' x`, `h' i x`, `g' j x` there, and suppose `∇²ℒ(x)[d]² > 0` for every
-nonzero `d` in the critical cone. Then `x` is a strict local minimizer of `f` on the feasible
-set. No constraint qualification is needed.
+/-- **Second-order sufficient condition.** Let $E$ be finite-dimensional, and let $x$ be a
+Karush–Kuhn–Tucker point with multipliers $(\lambda, \mu)$. Let $f$ and all $h_i$ and $g_j$ be
+$C^2$ at $x$, with derivatives $f'(x)$, $h_i'(x)$ and $g_j'(x)$ at $x$. Suppose that
+$\nabla^2 \mathcal{L}(x)[d]^2 > 0$ for every nonzero $d$ in the critical cone. Then $x$ is a
+strict local minimizer of $f$ on the feasible set: $f(x) < f(y)$ for every feasible $y \neq x$
+near $x$. No constraint qualification is needed. This is (1.1.15) and (1.1.18) in Theorems 1.1.3
+and 1.1.4 of [cartis2022evaluation], for nonzero directions, and Theorem 12.6 of
+[nocedal2006numerical].
 
-Proof: a violating feasible sequence has
-unit directions converging to some `d ≠ 0`; first-order expansions and the sign conditions of the
-Karush–Kuhn–Tucker point put `d` in the critical cone, and the second-order expansion of `ℒ`,
-which is `≤ f` on the feasible set and `= f` at `x`, gives `∇²ℒ(x)[d]² ≤ 0`. -/
+The strict local minimizer is `Optimization.IsStrictLocalMinOn`. A feasible sequence that
+violates the conclusion has unit directions that converge to some $d \neq 0$. First-order
+expansions and the sign conditions of the Karush–Kuhn–Tucker point put $d$ in the critical cone.
+The second-order expansion of $\mathcal{L}$, which is at most $f$ on the feasible set and equal
+to $f$ at $x$, then gives $\nabla^2 \mathcal{L}(x)[d]^2 \le 0$. -/
 theorem isStrictLocalMinOn_of_secondOrder_sufficient [FiniteDimensional ℝ E] {f : E → ℝ}
     {f' : E → E →L[ℝ] ℝ} {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ} {g : κ → E → ℝ}
     {g' : κ → E → E →L[ℝ] ℝ} {x : E} {l : ι → ℝ} {μ : κ → ℝ}

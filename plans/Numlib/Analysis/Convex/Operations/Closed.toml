@@ -5,7 +5,6 @@ id = 'lowerSemicontinuous_comp'
 
 [[node]]
 id = 'lowerSemicontinuous_compLin'
-desc = 'A lower semicontinuous function composed with a continuous linear map is again such.'
 
 [[node]]
 id = 'closedConvex_compLin'

@@ -13,49 +13,52 @@ import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.Interval.Extension
 
 /-!
-# Density of `C_c^∞(ℝ)` in `W^{1,p}(I)`
+# Density of smooth compactly supported functions in $W^{1,p}(I)$
 
-The density theorem of [brezis2011functional] Theorem 8.7 — the restrictions to an open interval
-`I` of the smooth compactly supported functions on `ℝ` are dense in `W^{1,p}(I)` for
-`1 ≤ p < ∞` — together with Lemma 8.4 (convolution with an integrable kernel commutes with the
-weak derivative on `ℝ`) and the bridge between the one-dimensional space `SobolevIntervalLp` and
-the tensor formulation `MemSobolev` / `sobolevNorm` of `Numlib/Analysis/Sobolev/Domain.lean`,
-on which the whole-space theory of `Numlib/Analysis/Sobolev/Density.lean` and
-`Numlib/Analysis/Sobolev/Friedrichs.lean` is stated.
+Let $I \subseteq \mathbb{R}$ be a nonempty open interval and let $1 \le p < \infty$. The density
+theorem says that the restrictions to $I$ of the functions of $C_c^\infty(\mathbb{R})$ are dense in
+$W^{1,p}(I)$. This is Theorem 8.7 of [brezis2011functional]. The theorem fails at $p = \infty$: a
+uniform limit of $C^1$ functions has a continuous derivative, but a function of $W^{1,\infty}(I)$
+need not. Therefore every density statement here assumes $p < \infty$.
 
-## Main statements
+The module also proves Lemma 8.4 of [brezis2011functional]: for $\rho \in L^1(\mathbb{R})$ and
+$v \in W^{1,p}(\mathbb{R})$, $1 \le p \le \infty$, the convolution $\rho * v$ lies in
+$W^{1,p}(\mathbb{R})$ and $(\rho * v)' = \rho * v'$. Finally it compares the space
+`SobolevIntervalLp` with the formulation of Sobolev spaces on open subsets of a normed space in
+`Numlib.Analysis.Sobolev.Domain` (`MemSobolev`, `sobolevNorm`), in which the $k$-th weak derivative
+is a $k$-linear map. The two formulations have the same functions and the same norm in dimension
+one.
 
-* `HasWeakDerivOn.hasWeakFDerivOn` and `HasWeakFDerivOn.hasWeakDerivOn`: on the line, a weak
-  derivative `w` in the sense of `HasWeakDerivOn` is the weak derivative `x ↦ (t ↦ t w x)` in the
-  tensor sense, and conversely the tensor derivative evaluated at `1` is a weak derivative;
-  `memSobolevIntervalLp_iff_memSobolev`: `W^{1,p}(I)` in the two formulations contains the same
-  functions.
-* `SobolevIntervalLp.sobolevNorm_eq`: **the norm of `SobolevIntervalLp 1 p I` is the Sobolev norm
-  `sobolevNorm (fn u) 1 p I volume`** of the tensor formulation, exactly — in dimension one the
-  derivative tensor `ℝ →L[ℝ] ℝ` of `u` at `x` has operator norm `|u'(x)|`, so the `ℓ^p` sums
-  agree term by term.
-* `SobolevIntervalLp.exists_seq_contDiff_hasCompactSupport_tendsto` (**Theorem 8.7**): for
-  `1 ≤ p < ∞` and `u ∈ W^{1,p}(I)` there are `g n ∈ C_c^∞(ℝ)` whose restrictions to `I`, as
-  elements `v n` of `W^{1,p}(I)`, converge to `u`;
-  `SobolevIntervalLp.dense_contDiff_hasCompactSupport` is the same as the density of a set.
-* `SobolevIntervalLp.hasWeakDerivOn_convolution`, `memSobolevIntervalLp_convolution`
-  (**Lemma 8.4**): for `ρ ∈ L¹(ℝ)` and `v ∈ W^{1,p}(ℝ)`, `1 ≤ p ≤ ∞`, `ρ ⋆ v ∈ W^{1,p}(ℝ)` with
-  `(ρ ⋆ v)' = ρ ⋆ v'`.
+## Main results
 
-## Route
+* `HasWeakFDerivOn.hasWeakDerivOn` and `HasWeakDerivOn.hasWeakFDerivOn`: on the line, a weak
+  derivative $w$ of $f$ is the same as the weak derivative $x \mapsto (t \mapsto t\,w(x))$ in the
+  sense of linear maps.
+* `memSobolevIntervalLp_iff_memSobolev`: a function lies in $W^{m,p}(I)$ in one formulation if and
+  only if it lies in it in the other.
+* `SobolevIntervalLp.sobolevNorm_eq`: the norm of $u \in W^{1,p}(I)$ is the Sobolev norm
+  `sobolevNorm` of its function.
+* `SobolevIntervalLp.exists_seq_contDiff_hasCompactSupport_tendsto`: every $u \in W^{1,p}(I)$,
+  $1 \le p < \infty$, is the limit in $W^{1,p}(I)$ of restrictions to $I$ of functions of
+  $C_c^\infty(\mathbb{R})$ (Theorem 8.7 of [brezis2011functional]).
+* `SobolevIntervalLp.dense_contDiff_hasCompactSupport`: the same statement as the density of a set.
+* `SobolevIntervalLp.hasWeakDerivOn_convolution` and
+  `SobolevIntervalLp.memSobolevIntervalLp_convolution`: $(\rho * v)' = \rho * v'$ and
+  $\rho * v \in W^{1,p}(\mathbb{R})$ for $\rho \in L^1(\mathbb{R})$ and $v \in W^{1,p}(\mathbb{R})$
+  (Lemma 8.4 of [brezis2011functional]).
 
-Theorem 8.7 is not re-proved by the book's mollify-and-cut-off argument: the whole-space density
-theorem is in the backbone in the tensor formulation,
-`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`, whose proof is exactly the book's
-steps (a)–(c). So the theorem here is: extend `u` to `W^{1,p}(ℝ)` by the extension operator
-`SobolevIntervalLp.extensionCLM` (Theorem 8.6), pass to the tensor formulation on `ℝ`, apply the
-whole-space theorem, and restrict to `I` with `SobolevMultiIndex.restrictL`, which does not
-increase the norm; the comparison of the norms is `SobolevIntervalLp.sobolevNorm_eq`. Lemma 8.4
-is the one-dimensional case of [brezis2011functional] Lemma 9.1,
-`HasWeakIteratedLineDerivOn.convolution_of_integrable`, and is not needed for the theorem.
+## Proof outline
 
-Every statement about density needs `p < ∞`: Theorem 8.7 fails at `p = ∞`, where uniform limits
-of `C¹` functions have continuous derivatives but `W^{1,∞}` functions need not.
+The density theorem is not proved again by the mollification and cut-off argument of
+[brezis2011functional]. That argument proves the density theorem on the whole space, which is
+`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`. Here $u \in W^{1,p}(I)$ is extended
+to $Pu \in W^{1,p}(\mathbb{R})$ by the extension operator `SobolevIntervalLp.extensionCLM` (Theorem
+8.6 of [brezis2011functional]). The whole-space theorem approximates $Pu$ by functions of
+$C_c^\infty(\mathbb{R})$, and restriction to $I$ (`SobolevMultiIndex.restrictL`) does not increase
+the norm. The comparison of the norms is `SobolevIntervalLp.sobolevNorm_eq`.
+
+Lemma 8.4 is the one-dimensional case of Lemma 9.1 of [brezis2011functional],
+`HasWeakIteratedLineDerivOn.convolution_of_integrable`. The density theorem does not use it.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -69,16 +72,21 @@ section Bridge
 
 variable {I : Opens ℝ} {f w : ℝ → ℝ}
 
-/-- A first-order weak derivative in the tensor sense (`HasWeakFDerivOn`), evaluated at the
-direction `1`, is a weak derivative on the line (`HasWeakDerivOn`). -/
+/-- Let $I \subseteq \mathbb{R}$ be open and let $f : \mathbb{R} \to \mathbb{R}$. If a family of
+linear maps $W(x) : \mathbb{R} \to \mathbb{R}$ is a weak derivative of $f$ on $I$ in the sense
+of linear maps (`HasWeakFDerivOn`), then $x \mapsto W(x)(1)$ is a weak derivative of $f$ on $I$
+in the sense of `HasWeakDerivOn`. -/
 theorem HasWeakFDerivOn.hasWeakDerivOn {W : ℝ → ℝ →L[ℝ] ℝ} (h : HasWeakFDerivOn f W I volume) :
     HasWeakDerivOn f (fun x ↦ W x 1) I := by
   have := h.lineDeriv (fun _ : Fin 1 ↦ (1 : ℝ))
   simpa only [continuousMultilinearCurryFin1_symm_apply] using this
 
-/-- A weak derivative `w` on the line is, read as the family of linear maps `t ↦ t w x`, a
-first-order weak derivative in the tensor sense: on `ℝ` the Fréchet derivative of a test function
-in the direction `v` is `v φ'`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open. If $w$ is a weak derivative of $f$ on $I$
+(`HasWeakDerivOn`), then $x \mapsto (t \mapsto t\,w(x))$ is a weak derivative of $f$ on $I$ in
+the sense of linear maps (`HasWeakFDerivOn`).
+
+On $\mathbb{R}$ the Fréchet derivative of a test function $\varphi$ in the direction $v$ is
+$v\,\varphi'$, which gives the identification. -/
 theorem HasWeakDerivOn.hasWeakFDerivOn (h : HasWeakDerivOn f w I) :
     HasWeakFDerivOn f (fun x ↦ ContinuousLinearMap.toSpanSingleton ℝ (w x)) I volume := by
   obtain ⟨h1, h2, h3⟩ := hasWeakDerivOn_iff.1 h
@@ -91,9 +99,13 @@ theorem HasWeakDerivOn.hasWeakFDerivOn (h : HasWeakDerivOn f w I) :
       fun x ↦ by rw [ContinuousLinearMap.toSpanSingleton_apply, smul_eq_mul, smul_eq_mul]; ring
     simp only [e1, e2, integral_const_mul, h3 φ, mul_neg]
 
-/-- **The two formulations of `W^{m,p}(I)` agree**: a function lies in `W^{m,p}(I)` in the sense
-of `MemSobolevIntervalLp` (the multi-index formulation on the one-element basis of `ℝ`) if and
-only if it does in the tensor sense of `MemSobolev`. -/
+/-- **The two formulations of $W^{m,p}(I)$ agree.** Let $I \subseteq \mathbb{R}$ be open,
+$m \in \mathbb{N}$ and $p \in [0, \infty]$. Then `MemSobolevIntervalLp f m p I` holds if and
+only if `MemSobolev f m p I volume` holds: a function $f$ lies in $W^{m,p}(I)$ in one
+formulation if and only if it lies in $W^{m,p}(I)$ in the other.
+
+`MemSobolevIntervalLp` is the multi-index formulation on the one-element basis of $\mathbb{R}$.
+`MemSobolev` collects the weak derivatives of order $k$ into $k$-linear maps. -/
 theorem memSobolevIntervalLp_iff_memSobolev {m : ℕ} {p : ℝ≥0∞} :
     MemSobolevIntervalLp f m p I ↔ MemSobolev f m p I volume :=
   (memSobolev_iff_memSobolevMultiIndex (Module.Basis.singleton Unit ℝ)).symm
@@ -104,12 +116,14 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} {m : ℕ}
 
-/-- The function of an element of `W^{m,p}(I)` lies in `W^{m,p}(I)` in the tensor sense. -/
+/-- Let $I \subseteq \mathbb{R}$ be open. For $u \in W^{m,p}(I)$, the function of $u$ lies in
+$W^{m,p}(I)$ in the sense of `MemSobolev`. -/
 theorem memSobolev_fn (u : SobolevIntervalLp m p I) : MemSobolev (fn u) m p I volume :=
   memSobolevIntervalLp_iff_memSobolev.1 (memSobolevIntervalLp_fn u)
 
-/-- The weak derivative of order `0` of `fn u` chosen by `weakIteratedFDeriv` is `fn u` itself,
-almost everywhere on `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$ and $u \in W^{m,p}(I)$. The weak
+derivative of order $0$ of the function of $u$ that `weakIteratedFDeriv` chooses is that
+function itself, read as a $0$-linear map, almost everywhere on $I$. -/
 theorem weakIteratedFDeriv_zero_ae_eq [Fact (1 ≤ p)] (u : SobolevIntervalLp m p I) :
     weakIteratedFDeriv 0 (fn u) I volume =ᵐ[volume.restrict (I : Set ℝ)]
       fun x ↦ (continuousMultilinearCurryFin0 ℝ ℝ ℝ).symm (fn u x) :=
@@ -117,8 +131,9 @@ theorem weakIteratedFDeriv_zero_ae_eq [Fact (1 ≤ p)] (u : SobolevIntervalLp m 
     (hasWeakIteratedFDerivOn_zero (μ := volume)
       ((memLp_deriv u 0).locallyIntegrableOn Fact.out)).weakIteratedFDeriv_ae_eq
 
-/-- The weak derivative of order `1` of `fn u` chosen by `weakIteratedFDeriv` is the family of
-linear maps `t ↦ t u'(x)`, almost everywhere on `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open and $u \in W^{m+1,p}(I)$. The weak derivative of order $1$
+of the function of $u$ that `weakIteratedFDeriv` chooses is, almost everywhere on $I$, the
+linear map $t \mapsto t\,u'(x)$, read as a $1$-linear map. -/
 theorem weakIteratedFDeriv_one_ae_eq (u : SobolevIntervalLp (m + 1) p I) :
     weakIteratedFDeriv 1 (fn u) I volume =ᵐ[volume.restrict (I : Set ℝ)]
       fun x ↦ (continuousMultilinearCurryFin1 ℝ ℝ ℝ).symm
@@ -126,8 +141,9 @@ theorem weakIteratedFDeriv_one_ae_eq (u : SobolevIntervalLp (m + 1) p I) :
   (ae_restrict_iff' I.isOpen.measurableSet).2
     (HasWeakDerivOn.hasWeakFDerivOn (hasWeakDerivOn_deriv_succ u 0)).weakIteratedFDeriv_ae_eq
 
-/-- The `L^p(I)` norm of the weak derivative of order `j ≤ 1` of `fn u` in the tensor sense is
-the norm of `deriv u j`, for `u ∈ W^{1,p}(I)`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$, $u \in W^{1,p}(I)$ and
+$j \in \{0, 1\}$. The $L^p(I)$ norm of the weak derivative of order $j$ of the function of $u$
+that `weakIteratedFDeriv` chooses is $\|u^{(j)}\|_{L^p(I)}$. -/
 theorem eLpNorm_weakIteratedFDeriv_eq [Fact (1 ≤ p)] (u : SobolevIntervalLp 1 p I) (j : Fin 2) :
     eLpNorm (weakIteratedFDeriv j (fn u) I volume) p (volume.restrict (I : Set ℝ))
       = ‖deriv u j‖ₑ := by
@@ -146,7 +162,11 @@ theorem eLpNorm_weakIteratedFDeriv_eq [Fact (1 ≤ p)] (u : SobolevIntervalLp 1 
 
 variable [Fact (1 ≤ p)]
 
-/-- **The norm of `W^{m,p}(I)` in `ℝ≥0∞`, `p < ∞`**: `‖u‖ₑ = (∑_{j ≤ m} ‖u^{(j)}‖_p^p)^{1/p}`. -/
+/-- **The norm of $W^{m,p}(I)$ for $p < \infty$.** Let $I \subseteq \mathbb{R}$ be open,
+$1 \le p < \infty$ and $u \in W^{m,p}(I)$. Then
+$$\|u\|_{W^{m,p}(I)} = \Big(\sum_{j=0}^{m} \|u^{(j)}\|_{L^p(I)}^p\Big)^{1/p}.$$
+
+The identity is stated for the extended norms in `ℝ≥0∞`. -/
 theorem enorm_eq_sum (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
     ‖u‖ₑ = (∑ j : Fin (m + 1), ‖deriv u j‖ₑ ^ p.toReal) ^ (1 / p.toReal) := by
   rw [← ofReal_norm, norm_eq_sum hp,
@@ -156,7 +176,11 @@ theorem enorm_eq_sum (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
   rw [← ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) ENNReal.toReal_nonneg, ofReal_norm]
 
 omit [Fact (1 ≤ p)] in
-/-- **The norm of `W^{m,∞}(I)` in `ℝ≥0∞`**: `‖u‖ₑ = max_{j ≤ m} ‖u^{(j)}‖_∞`. -/
+/-- **The norm of $W^{m,\infty}(I)$.** Let $I \subseteq \mathbb{R}$ be open and
+$u \in W^{m,\infty}(I)$. Then
+$$\|u\|_{W^{m,\infty}(I)} = \max_{0 \le j \le m} \|u^{(j)}\|_{L^\infty(I)}.$$
+
+The identity is stated for the extended norms in `ℝ≥0∞`. -/
 theorem enorm_eq_iSup (u : SobolevIntervalLp m ⊤ I) :
     ‖u‖ₑ = ⨆ j : Fin (m + 1), ‖deriv u j‖ₑ := by
   have hne : (⨆ j : Fin (m + 1), ‖deriv u j‖ₑ) ≠ ⊤ := by
@@ -168,11 +192,14 @@ theorem enorm_eq_iSup (u : SobolevIntervalLp m ⊤ I) :
     ENNReal.toReal_iSup fun _ ↦ enorm_ne_top]
   simp only [toReal_enorm]
 
-/-- **The bridge to the tensor formulation in dimension one**: the norm of
-`u ∈ SobolevIntervalLp 1 p I` is the Sobolev norm `sobolevNorm (fn u) 1 p I volume` of the
-tensor formulation of `Numlib/Analysis/Sobolev/Domain.lean`, exactly: the derivative tensor
-`ℝ →L[ℝ] ℝ` of `u` at `x` is `t ↦ t u'(x)`, of operator norm `|u'(x)|`, so the two `ℓ^p` sums
-(the two maxima at `p = ∞`) of `L^p(I)` norms agree term by term. -/
+/-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$. The norm of
+$u$ in `SobolevIntervalLp 1 p I` equals the Sobolev norm `sobolevNorm` of the function of $u$ in
+the formulation of `Numlib.Analysis.Sobolev.Domain`.
+
+In dimension one the derivative of $u$ at $x$ in that formulation is the linear map
+$t \mapsto t\,u'(x)$, whose operator norm is $|u'(x)|$. Therefore the two $\ell^p$ sums of
+$L^p(I)$ norms (the two maxima at $p = \infty$) agree term by term. The identity is stated for
+the extended norm in `ℝ≥0∞`. -/
 theorem sobolevNorm_eq (u : SobolevIntervalLp 1 p I) :
     sobolevNorm (fn u) 1 p I volume = ‖u‖ₑ := by
   rcases eq_or_ne p ⊤ with rfl | hp
@@ -182,16 +209,21 @@ theorem sobolevNorm_eq (u : SobolevIntervalLp 1 p I) :
     congr 1
     exact Finset.sum_congr rfl fun j _ ↦ by rw [eLpNorm_weakIteratedFDeriv_eq u j]
 
-/-! ### Theorem 8.7: density of `C_c^∞(ℝ)` in `W^{1,p}(I)` -/
+/-! ### Theorem 8.7: density of $C_c^\infty(\mathbb{R})$ in $W^{1,p}(I)$ -/
 
-/-- **Theorem 8.7 of [brezis2011functional] (density)**: for `1 ≤ p < ∞`, a nonempty open
-interval `I` and `u ∈ W^{1,p}(I)`, there is a sequence `g n` of smooth compactly supported
-functions on `ℝ` whose restrictions to `I`, as elements `v n` of `W^{1,p}(I)`, converge to `u`
-in `W^{1,p}(I)`. The extension `P u ∈ W^{1,p}(ℝ)` (`SobolevIntervalLp.extensionCLM`, Theorem
-8.6) is approximated in `W^{1,p}(ℝ)` by `C_c^∞(ℝ)` functions
-(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`, the book's mollify-and-cut-off
-argument), the Sobolev norm being the norm of the type (`SobolevIntervalLp.sobolevNorm_eq`), and
-restriction to `I` (`SobolevMultiIndex.restrictL`) does not increase the norm. -/
+/-- Let $1 \le p < \infty$, let $I \subseteq \mathbb{R}$ be a nonempty open interval and let
+$u \in W^{1,p}(I)$. Then there are functions $g_n \in C_c^\infty(\mathbb{R})$ and elements
+$v_n \in W^{1,p}(I)$ such that $v_n = g_n$ almost everywhere on $I$ for every $n$ and
+$$v_n \to u \quad \text{in } W^{1,p}(I).$$
+This is the **density theorem**, Theorem 8.7 of [brezis2011functional].
+
+The extension $Pu \in W^{1,p}(\mathbb{R})$ of $u$ (`SobolevIntervalLp.extensionCLM`, Theorem 8.6
+of [brezis2011functional]) is approximated in $W^{1,p}(\mathbb{R})$ by functions of
+$C_c^\infty(\mathbb{R})$ (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`, the
+mollification and cut-off argument). The Sobolev norm there is the norm of `SobolevIntervalLp`
+by `SobolevIntervalLp.sobolevNorm_eq`, and restriction to $I$ (`SobolevMultiIndex.restrictL`)
+does not increase the norm. The hypothesis that $I$ is an interval is
+`(I : Set ℝ).OrdConnected`. -/
 theorem exists_seq_contDiff_hasCompactSupport_tendsto (hI : (I : Set ℝ).OrdConnected)
     (hne : (I : Set ℝ).Nonempty) (hp : p ≠ ⊤) (u : SobolevIntervalLp 1 p I) :
     ∃ g : ℕ → ℝ → ℝ, (∀ n, ContDiff ℝ ∞ (g n)) ∧ (∀ n, HasCompactSupport (g n)) ∧
@@ -236,9 +268,10 @@ theorem exists_seq_contDiff_hasCompactSupport_tendsto (hI : (I : Set ℝ).OrdCon
     have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp hgt
     simpa [Function.comp_def] using this
 
-/-- **Theorem 8.7 of [brezis2011functional], as the density of a set**: for `1 ≤ p < ∞` and a
-nonempty open interval `I`, the elements of `W^{1,p}(I)` carried by the restrictions of smooth
-compactly supported functions on `ℝ` are dense in `W^{1,p}(I)`. -/
+/-- Let $1 \le p < \infty$ and let $I \subseteq \mathbb{R}$ be a nonempty open interval. The set of
+$v \in W^{1,p}(I)$ that agree almost everywhere on $I$ with some $g \in C_c^\infty(\mathbb{R})$
+is dense in $W^{1,p}(I)$. This is Theorem 8.7 of [brezis2011functional], in the form of the
+density of a set. -/
 theorem dense_contDiff_hasCompactSupport (hI : (I : Set ℝ).OrdConnected)
     (hne : (I : Set ℝ).Nonempty) (hp : p ≠ ⊤) :
     Dense {v : SobolevIntervalLp 1 p I | ∃ g : ℝ → ℝ, ContDiff ℝ ∞ g ∧ HasCompactSupport g ∧
@@ -248,11 +281,15 @@ theorem dense_contDiff_hasCompactSupport (hI : (I : Set ℝ).OrdConnected)
 
 /-! ### Lemma 8.4: convolution with an integrable kernel -/
 
-/-- **Lemma 8.4 of [brezis2011functional]**: for `ρ ∈ L¹(ℝ)` and `v ∈ W^{1,p}(ℝ)`, `1 ≤ p ≤ ∞`,
-the convolution `ρ ⋆ v'` is the weak derivative of `ρ ⋆ v` on `ℝ`. This is the one-dimensional
-case of Lemma 9.1, `HasWeakIteratedLineDerivOn.convolution_of_integrable`, proved by Fubini's
-theorem rather than by the book's approximation of `ρ` by continuous compactly supported
-kernels. -/
+/-- Let $1 \le p \le \infty$, $v \in W^{1,p}(\mathbb{R})$ and $\rho \in L^1(\mathbb{R})$. Then
+$\rho * v'$ is a weak derivative of $\rho * v$ on $\mathbb{R}$. This is Lemma 8.4 of
+[brezis2011functional].
+
+The convolution is `ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] fn v`, and $\mathbb{R}$ is the open set
+`⊤`. The statement is the one-dimensional case of Lemma 9.1 of [brezis2011functional],
+`HasWeakIteratedLineDerivOn.convolution_of_integrable`, which is proved by Fubini's theorem
+rather than by the approximation of $\rho$ by continuous kernels of compact support in
+[brezis2011functional]. -/
 theorem hasWeakDerivOn_convolution (v : SobolevIntervalLp 1 p ⊤) {ρ : ℝ → ℝ}
     (hρ : Integrable ρ) :
     HasWeakDerivOn (ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] fn v)
@@ -260,9 +297,13 @@ theorem hasWeakDerivOn_convolution (v : SobolevIntervalLp 1 p ⊤) {ρ : ℝ →
   (hasWeakDerivOn_fn v).convolution_of_integrable hρ Fact.out
     (memLp_restrict_top_iff.1 (memLp_deriv v 0)) (memLp_restrict_top_iff.1 (memLp_deriv v 1))
 
-/-- **Lemma 8.4 of [brezis2011functional], membership form**: for `ρ ∈ L¹(ℝ)` and
-`v ∈ W^{1,p}(ℝ)`, `1 ≤ p ≤ ∞`, the convolution `ρ ⋆ v` lies in `W^{1,p}(ℝ)`; its function and
-weak derivative `ρ ⋆ v'` lie in `L^p(ℝ)` by Young's inequality. -/
+/-- Let $1 \le p \le \infty$, $v \in W^{1,p}(\mathbb{R})$ and $\rho \in L^1(\mathbb{R})$. Then
+$\rho * v \in W^{1,p}(\mathbb{R})$. This is Lemma 8.4 of [brezis2011functional], membership
+part.
+
+The functions $\rho * v$ and $\rho * v'$ lie in $L^p(\mathbb{R})$ by Young's inequality, and
+$\rho * v'$ is the weak derivative of $\rho * v$ by
+`SobolevIntervalLp.hasWeakDerivOn_convolution`. -/
 theorem memSobolevIntervalLp_convolution (v : SobolevIntervalLp 1 p ⊤) {ρ : ℝ → ℝ}
     (hρ : Integrable ρ) :
     MemSobolevIntervalLp (ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] fn v) 1 p ⊤ :=

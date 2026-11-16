@@ -15,36 +15,43 @@ import Numlib.Analysis.Normed.Module.BestApprox
 /-!
 # The projection onto a closed convex set of a Hilbert space
 
-The metric projection `P_K` onto a nonempty closed convex subset `K` of a real Hilbert space, as
-the function `bestApprox K` of `Numlib.Analysis.Normed.Module.BestApprox`: the projection theorem,
-its variational characterization, the nonexpansiveness of the projection, and its agreement
-with `Submodule.starProjection` on closed subspaces. This is [brezis2011functional] §5.1
-(Theorem 5.2, Proposition 5.3, Corollary 5.4) and [han2009theoretical] §3.4 (Theorem 3.4.3,
-Proposition 3.4.4, Theorem 3.4.6).
+Let $K$ be a nonempty closed convex subset of a real Hilbert space $V$. Every $u \in V$ has a unique
+best approximation $P_K u \in K$, that is, $\|u - P_K u\| \le \|u - v\|$ for all $v \in K$. This
+module proves this projection theorem, the variational characterization of $P_K u$ as the point
+$w \in K$ with
+$$\langle u - w, v - w \rangle \le 0 \quad \text{for all } v \in K,$$
+the monotonicity and nonexpansiveness of $P_K$, the explicit projection onto a closed ball, and the
+agreement of $P_K$ with the orthogonal projection when $K$ is a closed subspace. This is §5.1 of
+[brezis2011functional] (Theorem 5.2, Proposition 5.3, Corollary 5.4) and §3.4 of
+[han2009theoretical] (Theorem 3.4.3, Proposition 3.4.4, Theorem 3.4.6).
 
-Mathlib proves the projection theorem as an existence statement
-(`exists_norm_eq_iInf_of_complete_convex`) and characterizes the minimizer
-(`norm_eq_iInf_iff_real_inner_le_zero`), but bundles the projection as a map only for subspaces
-(`Submodule.starProjection`); the map onto a convex set is `bestApprox K`, defined in any
-seminormed space by choice, with the hypotheses of the projection theorem on the theorems.
+## Main results
 
-## Main statements
+* `exists_isBestApprox_of_isClosed` and `existsUnique_isBestApprox`: the **projection theorem**,
+  existence and uniqueness of the best approximation from $K$ (Theorem 5.2 of
+  [brezis2011functional]).
+* `isBestApprox_bestApprox_of_isClosed` and `bestApprox_mem`: the map `bestApprox K` gives the best
+  approximation, which lies in $K$.
+* `inner_sub_bestApprox_le_zero` and `bestApprox_eq_iff`: the variational inequality
+  $\langle u - P_K u, v - P_K u \rangle \le 0$ for $v \in K$, which determines $P_K u$.
+* `inner_bestApprox_sub_nonneg`, `norm_bestApprox_sub_bestApprox_le` and `lipschitzWith_bestApprox`:
+  $P_K$ is monotone and does not increase distances (Proposition 5.3 of [brezis2011functional]).
+* `bestApprox_closedBall_eq_radial`: the projection onto a closed ball is the identity inside the
+  ball and the radial projection outside it.
+* `bestApprox_eq_starProjection`: on a closed subspace the metric projection is the orthogonal
+  projection (Corollary 5.4 of [brezis2011functional]), over $\mathbb{R}$ or $\mathbb{C}$.
 
-* `exists_isBestApprox_of_isClosed`, `existsUnique_isBestApprox` — **the projection theorem**
-  ([brezis2011functional] Theorem 5.2): for `K` nonempty, closed and convex, every `u` has a
-  unique best approximation from `K`. Hence `isBestApprox_bestApprox_of_isClosed`,
-  `bestApprox_mem`.
-* `inner_sub_bestApprox_le_zero`, `bestApprox_eq_iff` — the variational characterization
-  `⟪u - P_K u, v - P_K u⟫ ≤ 0` for all `v ∈ K`, which determines `P_K u`.
-* `inner_bestApprox_sub_nonneg`, `norm_bestApprox_sub_bestApprox_le`, `lipschitzWith_bestApprox`
-  — the projection is monotone and does not increase distances
-  ([brezis2011functional] Proposition 5.3).
-* `bestApprox_eq_starProjection` — on a closed subspace the metric projection is the orthogonal
-  projection ([brezis2011functional] Corollary 5.4), over `RCLike 𝕜`.
+## Implementation notes
 
-The scalars are real for the convex-set theory, as in Mathlib's
-`norm_eq_iInf_iff_real_inner_le_zero`; over `RCLike 𝕜` the map is still the metric projection
-(it is defined from the norm alone) and the subspace clause is stated there.
+* Mathlib proves the projection theorem as an existence statement
+  (`exists_norm_eq_iInf_of_complete_convex`) and characterizes the minimizer
+  (`norm_eq_iInf_iff_real_inner_le_zero`), but it has the projection as a map only for subspaces
+  (`Submodule.starProjection`). The map onto a convex set is `bestApprox K` of
+  `Numlib.Analysis.Normed.Module.BestApprox`. It is defined by choice in any seminormed space, and
+  the hypotheses of the projection theorem are on the theorems.
+* The scalars are real for the theory of convex sets, as in Mathlib's
+  `norm_eq_iInf_iff_real_inner_le_zero`. Over an `RCLike` field the map is still the metric
+  projection, since it is defined from the norm alone, and the result on subspaces is stated there.
 -/
 
 open scoped InnerProductSpace
@@ -53,11 +60,14 @@ section Hilbert
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- **The projection theorem, existence** ([brezis2011functional] Theorem 5.2): in a real
-Hilbert space every point has a best approximation from a nonempty closed convex set. This is
-Mathlib's `exists_norm_eq_iInf_of_complete_convex` read through the metric description of
-`IsBestApprox`; the backbone's `exists_isBestApprox_of_convex`
-(`Numlib.Variational.WeakMinimization`) is the same statement by the direct method of the
+/-- The **projection theorem**, existence. Let $V$ be a real Hilbert space and let $K \subseteq V$
+be nonempty, closed and convex. Then every $u \in V$ has a best approximation from $K$: there is
+$v \in K$ with $\|u - v\| \le \|u - w\|$ for all $w \in K$. This is part of Theorem 5.2 of
+[brezis2011functional].
+
+This is Mathlib's `exists_norm_eq_iInf_of_complete_convex`, read through the metric description
+of `IsBestApprox`. The theorem `exists_isBestApprox_of_convex` of
+`Numlib.Variational.WeakMinimization` is the same statement, proved by the direct method of the
 calculus of variations. -/
 theorem exists_isBestApprox_of_isClosed {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hK : Convex ℝ K) (u : V) : ∃ v, IsBestApprox K u v := by
@@ -66,8 +76,12 @@ theorem exists_isBestApprox_of_isClosed {K : Set V} (hne : K.Nonempty) (hcl : Is
   rw [hnorm, Metric.infDist_eq_iInf]
   simp only [dist_eq_norm]
 
-/-- **The projection theorem** ([brezis2011functional] Theorem 5.2) as a `∃!`: existence from
-`exists_isBestApprox_of_isClosed`, uniqueness from strict convexity (`IsBestApprox.unique`). -/
+/-- The **projection theorem**. Let $V$ be a real Hilbert space and let $K \subseteq V$ be nonempty,
+closed and convex. Then every $u \in V$ has exactly one best approximation from $K$. This is
+Theorem 5.2 of [brezis2011functional].
+
+Existence is `exists_isBestApprox_of_isClosed`; uniqueness follows from strict convexity of the
+norm (`IsBestApprox.unique`). -/
 theorem existsUnique_isBestApprox {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hK : Convex ℝ K) (u : V) : ∃! v, IsBestApprox K u v := by
   obtain ⟨v, hv⟩ := exists_isBestApprox_of_isClosed hne hcl hK u
@@ -76,24 +90,31 @@ theorem existsUnique_isBestApprox {K : Set V} (hne : K.Nonempty) (hcl : IsClosed
 variable {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K)
 include hne hcl hK
 
-/-- For `K` nonempty closed convex, `bestApprox K u` is a best approximation of `u` from `K`:
-the projection `P_K u` of [brezis2011functional] §5.1, unconditionally. -/
+/-- Let $V$ be a real Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Then for
+every $u \in V$, `bestApprox K u` is a best approximation of $u$ from $K$. So `bestApprox K u`
+is the projection $P_K u$ of §5.1 of [brezis2011functional], with no further condition. -/
 theorem isBestApprox_bestApprox_of_isClosed (u : V) : IsBestApprox K u (bestApprox K u) :=
   isBestApprox_bestApprox (exists_isBestApprox_of_isClosed hne hcl hK u)
 
-/-- The projection onto a nonempty closed convex set lands in it. -/
+/-- Let $V$ be a real Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Then
+$P_K u \in K$ for every $u \in V$. -/
 theorem bestApprox_mem (u : V) : bestApprox K u ∈ K :=
   (isBestApprox_bestApprox_of_isClosed hne hcl hK u).1
 
-/-- **The variational inequality of the projection** ([brezis2011functional] Theorem 5.2,
-formula (3)): `⟪u - P_K u, v - P_K u⟫ ≤ 0` for every `v ∈ K`. -/
+/-- The **variational inequality of the projection**. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Then for every $u \in V$
+$$\langle u - P_K u, v - P_K u \rangle \le 0 \quad \text{for all } v \in K.$$
+This is formula (3) of Theorem 5.2 of [brezis2011functional]. -/
 theorem inner_sub_bestApprox_le_zero (u : V) :
     ∀ v ∈ K, ⟪u - bestApprox K u, v - bestApprox K u⟫_ℝ ≤ 0 :=
   (isBestApprox_iff_inner_le_zero hK (bestApprox_mem hne hcl hK u)).1
     (isBestApprox_bestApprox_of_isClosed hne hcl hK u)
 
-/-- **The variational characterization of the projection** ([brezis2011functional] Theorem 5.2):
-`P_K u = w` iff `w ∈ K` and `⟪u - w, v - w⟫ ≤ 0` for every `v ∈ K`. -/
+/-- The **variational characterization of the projection**. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Then for $u, w \in V$, $P_K u = w$ if and only
+if $w \in K$ and
+$$\langle u - w, v - w \rangle \le 0 \quad \text{for all } v \in K.$$
+This is part of Theorem 5.2 of [brezis2011functional]. -/
 theorem bestApprox_eq_iff {u w : V} :
     bestApprox K u = w ↔ w ∈ K ∧ ∀ v ∈ K, ⟪u - w, v - w⟫_ℝ ≤ 0 := by
   constructor
@@ -102,22 +123,28 @@ theorem bestApprox_eq_iff {u w : V} :
   · rintro ⟨hw, h⟩
     exact IsBestApprox.bestApprox_eq hK ((isBestApprox_iff_inner_le_zero hK hw).2 h)
 
-/-- **The projection is monotone**: `0 ≤ ⟪P_K u₁ - P_K u₂, u₁ - u₂⟫` (the first clause of
-`IsBestApprox.dist_le_dist`, [han2009theoretical] Proposition 3.4.4). -/
+/-- **The projection is monotone.** Let $V$ be a real Hilbert space and let $K \subseteq V$ be
+nonempty, closed and convex. Then for all $u_1, u_2 \in V$
+$$0 \le \langle P_K u_1 - P_K u_2, u_1 - u_2 \rangle.$$
+This is part of Proposition 3.4.4 of [han2009theoretical].
+
+This is the first part of `IsBestApprox.dist_le_dist`. -/
 theorem inner_bestApprox_sub_nonneg (u₁ u₂ : V) :
     0 ≤ ⟪bestApprox K u₁ - bestApprox K u₂, u₁ - u₂⟫_ℝ :=
   ((isBestApprox_bestApprox_of_isClosed hne hcl hK u₁).dist_le_dist hK
     (isBestApprox_bestApprox_of_isClosed hne hcl hK u₂)).1
 
-/-- **The projection does not increase distances** ([brezis2011functional] Proposition 5.3):
-`‖P_K u₁ - P_K u₂‖ ≤ ‖u₁ - u₂‖`. -/
+/-- **The projection does not increase distances.** Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Then for all $u_1, u_2 \in V$
+$$\|P_K u_1 - P_K u_2\| \le \|u_1 - u_2\|.$$
+This is Proposition 5.3 of [brezis2011functional]. -/
 theorem norm_bestApprox_sub_bestApprox_le (u₁ u₂ : V) :
     ‖bestApprox K u₁ - bestApprox K u₂‖ ≤ ‖u₁ - u₂‖ :=
   ((isBestApprox_bestApprox_of_isClosed hne hcl hK u₁).dist_le_dist hK
     (isBestApprox_bestApprox_of_isClosed hne hcl hK u₂)).2
 
-/-- The projection onto a nonempty closed convex set is `1`-Lipschitz
-([brezis2011functional] Proposition 5.3). -/
+/-- Let $V$ be a real Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Then
+$P_K$ is Lipschitz with constant $1$. This is Proposition 5.3 of [brezis2011functional]. -/
 theorem lipschitzWith_bestApprox : LipschitzWith 1 (bestApprox K) :=
   LipschitzWith.of_dist_le_mul fun u₁ u₂ => by
     rw [NNReal.coe_one, one_mul, dist_eq_norm, dist_eq_norm]
@@ -129,7 +156,12 @@ section ClosedBall
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] {r : ℝ}
 
-/-- Projection onto a closed ball is the identity inside the ball and radial outside. -/
+/-- Let $V$ be a real inner product space, let $x, y \in V$, and let $r \ge 0$. The projection of
+$y$ onto the closed ball $\bar B(x, r)$ is
+$$P_{\bar B(x, r)} y = \begin{cases} y & \text{if } \|y - x\| \le r, \\ x + \dfrac{r}{\|y - x\|}
+  (y - x) & \text{otherwise.} \end{cases}$$
+So it is the identity inside the ball and the radial projection outside it. Completeness of $V$
+is not needed. -/
 theorem bestApprox_closedBall_eq_radial (x y : V) (hr : 0 ≤ r) :
     bestApprox (Metric.closedBall x r) y =
       if ‖y - x‖ ≤ r then y else x + (r / ‖y - x‖) • (y - x) := by
@@ -174,11 +206,14 @@ section Subspace
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
 
-/-- **On a subspace the metric projection is the orthogonal projection**
-([brezis2011functional] Corollary 5.4): for `K : Submodule 𝕜 V` with an orthogonal projection,
-`bestApprox K u = K.starProjection u`. With `Submodule.starProjection` a bounded linear map,
-this is the corollary's "`P_M` is a linear operator"; its characterization "`u ∈ M` and
-`⟪f - u, v⟫ = 0` for all `v ∈ M`" is `isBestApprox_iff_mem_orthogonal`. -/
+/-- **On a subspace the metric projection is the orthogonal projection.** Let $V$ be an inner
+product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $K$ be a subspace of $V$
+that has an orthogonal projection. Then `bestApprox K u` is the orthogonal projection of $u$
+onto $K$ for every $u \in V$. This is Corollary 5.4 of [brezis2011functional].
+
+Since `Submodule.starProjection` is a bounded linear map, this gives the statement of the
+corollary that $P_M$ is a linear operator. Its characterization "$u \in M$ and
+$\langle f - u, v \rangle = 0$ for all $v \in M$" is `isBestApprox_iff_mem_orthogonal`. -/
 theorem bestApprox_eq_starProjection (K : Submodule 𝕜 V) [K.HasOrthogonalProjection] (u : V) :
     bestApprox (K : Set V) u = K.starProjection u :=
   (isBestApprox_bestApprox ⟨_, isBestApprox_starProjection K u⟩).eq_starProjection K

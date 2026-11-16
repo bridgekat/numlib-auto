@@ -17,64 +17,92 @@ import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.MultiIndex
 
 /-!
-# Cut-off functions and extension by zero in `W^{1,p}(Ω)`
+# Cut-off functions and extension by zero in Sobolev spaces
 
-The elementary tools that Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, chapter 9, uses in every proof of §9.2–§9.4, on an arbitrary open set `Ω` of a
-finite-dimensional real normed space with an additive Haar measure:
+This file collects the elementary tools that Chapter 9 of [brezis2011functional] uses in the proofs
+of §9.2–§9.4 (§9.1, Remarks 1 and 4 (ii) and footnote 5; §9.2, step (a) of the proof of Theorem 9.7;
+§9.3.B, the standing hypothesis; §9.4, Remark 25). The setting is an open set $\Omega$ of a
+finite-dimensional real normed space $E$, with a measure $\mu$ that is in most results an additive
+Haar measure. For a tuple $y = (y_1, \dots, y_n)$ of directions, a function $w$ is a **weak
+derivative of $f$ along $y$** on $\Omega$ if $f$ and $w$ are locally integrable on $\Omega$ and
+$\int_\Omega (D^n \varphi(x)\, y)\, f(x) \, d\mu = (-1)^n \int_\Omega \varphi(x)\, w(x) \, d\mu$ for
+every test function $\varphi \in C_c^\infty(\Omega)$ (`HasWeakIteratedLineDerivOn`). For one
+direction $y$ we write $w = \partial_y f$, and $\partial_y c(x) = Dc(x)\, y$ for a differentiable
+$c$.
 
-* **locality of the weak derivative**: a weak derivative on every relatively compact open subset
-  of `Ω` is a weak derivative on `Ω`
-  (`HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset`), the device by which the book
-  reduces a `W^{1,∞}` statement to `W^{1,q}`, `q < ∞`, on relatively compact subsets;
-* **`C_c^1` test functions** (Remark 1): the defining identity of a weak derivative holds for
-  every `C^1` test function with compact support in `Ω`
-  (`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`), by mollifying the function
-  rather than the test function;
-* **the zero extension of `α u`** for a cut-off `α` (Remark 4 (ii)): `IsSobolevCutoff Ω α` says
-  that `α` is smooth, bounded with bounded derivative, and supported away from `∂Ω`; for such `α`
-  and `u ∈ W^{1,p}(Ω)`, the extension of `α u` by zero lies in `W^{1,p}` of the whole space with
-  the derivative one expects (`HasWeakIteratedLineDerivOn.indicator_mul`,
-  `MemSobolevMultiIndex.indicator_mul`), with the `L^p` estimates of step (a) of the proof of
-  the extension theorem;
-* **the multipliers and the pointwise gradient**: `C^k` functions constant off a compact set
-  multiply `W^{k,p}(Ω)` (`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`), the gradient
-  `∇u : Ω → F^ι` of `u ∈ W^{1,p}(Ω)` (`SobolevMultiIndex.gradFn`) with its norms and algebra, and
-  the inclusion `L^p ⊆ L^q` on a finite measure as a bounded map (`MeasureTheory.Lp.monoExponentL`);
-* **the cut-off sequence** `ζ_n x = ζ (x / (n + 1))` of footnote 5
-  (`MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub` in the tensor reading,
-  `SobolevMultiIndex.tendsto_cutoff_smul` on the typed space): `ζ_n u → u` in `W^{1,p}(Ω)` for
-  `1 ≤ p < ∞`, with the tensor Leibniz rule `HasWeakIteratedFDerivOn.contDiff_mul_one`;
-* **the local space** `W^{k,p}_loc(Ω)` (`MemSobolevMultiIndexLoc`), with the cut-off lemma that
-  places `θ u` in `W^{k,p}(E)` for a test function `θ` on `Ω`;
-* **the abstract extension predicate** `HasSobolevExtensionOn S` / `IsSobolevExtensionDomain N p Ω`
-  ("a bounded linear extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on `S`"), under which
-  the embedding and compactness theorems on a domain are stated once;
-* **almost everywhere invariance**: the Sobolev seminorm and norm see the function only up to a
-  null set of `Ω` (`sobolevSeminorm_congr_ae`, `sobolevNorm_congr_ae`).
+The main facts are the following. A weak derivative on every relatively compact open subset of
+$\Omega$ is a weak derivative on $\Omega$. The test functions in the definition of a weak derivative
+may be taken in $C_c^1(\Omega)$ (Remark 1). For a **cut-off** $\alpha$ of $\Omega$, a smooth
+function that is bounded with bounded derivative and has support disjoint from $\partial\Omega$, and
+for $u \in W^{1,p}(\Omega)$, the extension of $\alpha u$ by zero lies in $W^{1,p}(E)$ and has the
+weak derivative $\alpha\, \partial_y u + (\partial_y \alpha) u$ extended by zero (Remark 4 (ii)).
+The file also proves that $C^k$ functions that are constant off a compact set multiply
+$W^{k,p}(\Omega)$, gives the pointwise gradient $\nabla u$ of $u \in W^{1,p}(\Omega)$ with its norms
+and its algebra, the inclusions $L^p(\mu) \subseteq L^p(\nu)$ for $\nu \le \mu$ and
+$L^p \subseteq L^q$ for $q \le p$ on a finite measure as bounded linear maps, the convergence
+$\zeta_n u \to u$ in $W^{1,p}(\Omega)$ of the cut-off sequence $\zeta_n(x) = \zeta(x / (n + 1))$
+(footnote 5), the local space $W^{k,p}_{\mathrm{loc}}(\Omega)$, the predicate "$\Omega$ is a
+$W^{1,p}$-extension domain", and the invariance of the Sobolev seminorm and norm under a change of
+the function on a null set.
 
-The typed operators between the spaces — restriction `SobolevMultiIndex.restrictL`, the zero
-extension `extendZeroMulL`, the inclusions `toLpₗ`, `toLowerExponentL`, `toLowerOrderL`, the
-partial derivative `partialDerivL`, Lemma 9.5 (`mem_zero_of_ae_eq_zero_compl_isCompact`) and the
-density of the restrictions of `C_c^∞(ℝ^N)` functions on an extension domain (Corollary 9.8) —
-are `Numlib/Analysis/Sobolev/Operators.lean`, which continues this module.
+## Main definitions
 
-## Design
+* `IsSobolevCutoff`: a smooth function $\alpha$ such that $\alpha$ and $D\alpha$ are bounded and the
+  support of $\alpha$ is disjoint from $\partial\Omega$.
+* `MeasureTheory.Lp.monoMeasureL`: the identity $L^p(\mu) \to L^p(\nu)$ for $\nu \le \mu$, a bounded
+  linear map of norm at most $1$.
+* `MeasureTheory.Lp.monoExponentL`: the inclusion $L^p(\mu) \to L^q(\mu)$ for $q \le p$ and a finite
+  measure $\mu$.
+* `MemSobolevMultiIndexLoc`: the local Sobolev space $W^{k,p}_{\mathrm{loc}}(\Omega)$.
+* `HasSobolevExtensionOn`: a subspace $S$ of $W^{1,p}(\Omega)$, $\Omega \subseteq \mathbb{R}^N$, has
+  a bounded linear extension operator $S \to W^{1,p}(\mathbb{R}^N)$.
+* `IsSobolevExtensionDomain`: all of $W^{1,p}(\Omega)$ has a bounded linear extension operator.
 
-Predicate-level statements are over a finite-dimensional real normed `E` with an additive Haar
-measure `μ`, in the `HasWeakIteratedLineDerivOn ![y] f w Ω μ` (single direction) or
-`HasWeakFDerivOn` (tensor) reading, as in `Numlib/Analysis/Sobolev/Mollification.lean` and
-`Numlib/Analysis/Sobolev/Density.lean`; typed statements are on `SobolevMultiIndex F b k p Ω μ`
-and its abbreviation `SobolevEuclidean N k p Ω` of `Numlib/Analysis/Sobolev/MultiIndex.lean`.
+## Main results
 
-A cut-off asks for smoothness `C^∞` rather than the book's `C^1` because the test functions are
-`C_c^∞` and `α φ` has to be a test function again; the `C^1` form is not needed anywhere, the
-partitions of unity of the extension theorem being smooth.
+* `HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset`: a weak derivative on every open
+  $\Omega' \Subset \Omega$ is a weak derivative on $\Omega$.
+* `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`: the identity that defines a weak
+  derivative holds for every $C^1$ test function with compact support in $\Omega$.
+* `HasWeakIteratedLineDerivOn.indicator_mul` and `MemSobolevMultiIndex.indicator_mul`: for a cut-off
+  $\alpha$ and $u \in W^{1,p}(\Omega)$, the extension of $\alpha u$ by zero lies in $W^{1,p}(E)$.
+* `MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`: a $C^k$ function that is constant off a
+  compact set multiplies $W^{k,p}(\Omega)$ into itself.
+* `MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub`: the zero extension of $\theta f$
+  lies in $W^{k,p}(E)$ for $f \in W^{k,p}(\Omega)$ and a smooth $\theta$ that is constant off a
+  compact set and has support disjoint from $\partial\Omega$.
+* `MeasureTheory.Lp.isContinuousEmbedding_monoExponentL`: $L^p(\mu) \hookrightarrow L^q(\mu)$ is a
+  continuous embedding for $q \le p$ and a finite measure $\mu$.
+* `MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub` and `SobolevMultiIndex.tendsto_cutoff_smul`:
+  $\zeta_n u \to u$ in $W^{1,p}(\Omega)$ for $1 \le p < \infty$ and any open $\Omega$.
+* `MemSobolevMultiIndex.indicator_smul_of_tsupport_subset`: the zero extension of $\alpha v$ from
+  $\Omega' \subseteq \Omega$ to $\Omega$ lies in $W^{k,p}(\Omega)$ for $v \in W^{k,p}(\Omega')$ and
+  a smooth compactly supported $\alpha$ with $\operatorname{supp} \alpha \cap \Omega \subseteq
+  \Omega'$.
+* `MemSobolevMultiIndexLoc.smul_testFunction`: for $u \in W^{k,p}_{\mathrm{loc}}(\Omega)$ and a test
+  function $\theta$ on $\Omega$, the zero extension of $\theta u$ lies in $W^{k,p}(E)$.
+* `sobolevSeminorm_congr_ae` and `sobolevNorm_congr_ae`: the Sobolev seminorm and norm do not change
+  when the function changes on a null set of $\Omega$.
 
-## References
+## Implementation notes
 
-[brezis2011functional], §9.1 (Remarks 1 and 4 (ii), footnote 5), §9.2 (proof of Theorem 9.7,
-step (a)), §9.3.B (the standing hypothesis), §9.4 (Remark 25).
+* The statements about predicates are over a finite-dimensional real normed space $E$ with an
+  additive Haar measure $\mu$. They use either `HasWeakIteratedLineDerivOn ![y] f w Ω μ` (one
+  direction) or `HasWeakIteratedFDerivOn` (all directions at once, valued in multilinear maps), as
+  in `Numlib.Analysis.Sobolev.Mollification` and `Numlib.Analysis.Sobolev.Density`. The statements
+  about the space are on `SobolevMultiIndex F b k p Ω μ` and on its abbreviation
+  `SobolevEuclidean N k p Ω` of `Numlib.Analysis.Sobolev.MultiIndex`.
+* A cut-off is required to be $C^\infty$, where [brezis2011functional] asks for $C^1$, because the
+  test functions are $C_c^\infty$ and $\alpha \varphi$ has to be a test function again. The $C^1$
+  form is not needed anywhere, because the partitions of unity of the extension theorem are smooth.
+* The bounded operators between the spaces are in `Numlib.Analysis.Sobolev.Operators`, which
+  continues this module: the restriction `SobolevMultiIndex.restrictL`, the zero extension
+  `SobolevMultiIndex.extendZeroMulL`, the inclusions `SobolevMultiIndex.toLpₗ`,
+  `SobolevMultiIndex.toLowerExponentL` and `SobolevMultiIndex.toLowerOrderL`, the partial derivative
+  `SobolevMultiIndex.partialDerivL`, Lemma 9.5 of [brezis2011functional]
+  (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and the density of the restrictions
+  of $C_c^\infty(\mathbb{R}^N)$ functions on an extension domain (Corollary 9.8 of
+  [brezis2011functional]).
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -90,12 +118,17 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {μ : Measure E}
   {n : ℕ} {y : Fin n → E} {f w : E → F}
 
-/-- **Locality of the weak derivative**: if `f` and `w` are locally integrable on `Ω`, and `w` is a
-weak derivative of `f` along `y` on every open `Ω'` with compact closure contained in `Ω`, then it
-is one on `Ω`. A test function on `Ω` has compact support, hence lives in such an `Ω'`, and the
-defining identity on `Ω'` is the identity on `Ω`. This is the step "fix an open set `Ω'` with
-`supp φ ⊂ Ω' ⊂⊂ Ω`" by which [brezis2011functional] handles `p = ∞` in Propositions 9.5 and 9.6,
-reducing a `W^{1,∞}` statement to `W^{1,q}`, `q < ∞`, on relatively compact subsets. -/
+/-- The **locality of the weak derivative**. Let $E$ be finite-dimensional, let $\Omega \subseteq E$
+be open, and let $y$ be a tuple of $n$ directions. Let $f$ and $w$ be locally integrable on
+$\Omega$. If $w$ is a weak derivative of $f$ along $y$ on every open set $\Omega'$ whose closure
+is compact and contained in $\Omega$, then $w$ is a weak derivative of $f$ along $y$ on
+$\Omega$.
+
+A test function on $\Omega$ has compact support, so it is a test function on such a set
+$\Omega'$, and the identity on $\Omega'$ is the identity on $\Omega$. This is the step "fix an
+open set $\Omega'$ with $\operatorname{supp} \varphi \subset \Omega' \subset\subset \Omega$" by
+which [brezis2011functional] treats $p = \infty$ in Propositions 9.5 and 9.6: it reduces a
+statement about $W^{1,\infty}$ to $W^{1,q}$, $q < \infty$, on relatively compact subsets. -/
 theorem HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset
     (hf : LocallyIntegrableOn f Ω μ) (hw : LocallyIntegrableOn w Ω μ)
     (h : ∀ Ω' : Opens E, IsCompact (closure (Ω' : Set E)) → closure (Ω' : Set E) ⊆ Ω →
@@ -121,15 +154,19 @@ theorem HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset
 
 end Locality
 
-/-! ### Remark 1: `C_c^1` test functions -/
+/-! ### Remark 1: test functions of class $C^1$ -/
 
 section TestFunctionOne
 
 variable {X G : Type*} [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G]
   [NormedSpace ℝ G]
 
-/-- **Passing to the limit against a bounded factor**: if `a j → a₀` in `L^1(ν)` and `b` is a
-bounded measurable scalar function, then `∫ b • a j → ∫ b • a₀`. -/
+/-- **Passing to the limit against a bounded factor.** Let $\nu$ be a measure on $X$, let
+$b : X \to \mathbb{R}$ be almost everywhere strongly measurable with $|b(x)| \le M$ for all $x$,
+and let $a_j$ and $a_0$ be integrable functions with values in a real normed space. If
+$\|a_j - a_0\|_{L^1(\nu)} \to 0$, then
+$$\int_X b\, a_j \, d\nu \to \int_X b\, a_0 \, d\nu.$$
+-/
 theorem MeasureTheory.tendsto_integral_smul_of_tendsto_eLpNorm_one {b : X → ℝ} {M : ℝ}
     (hb : ∀ x, |b x| ≤ M) (hbm : AEStronglyMeasurable b ν) {a : ℕ → X → G} {a₀ : X → G}
     (ha : ∀ j, Integrable (a j) ν) (ha₀ : Integrable a₀ ν)
@@ -162,17 +199,22 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   [CompleteSpace F] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure] {f w : E → F}
 
-/-- **Remark 1: `C_c^1` test functions.** If `w` is a weak derivative of `f` along `y` on `Ω`
-(`HasWeakIteratedLineDerivOn ![y] f w Ω μ`) and `φ : E → ℝ` is `C^1` with compact support
-contained in `Ω`, then the defining identity `∫_Ω (∂_y φ) f = −∫_Ω φ w` holds for `φ` as well:
-the test functions of the definition of `W^{1,p}` may be taken in `C_c^1(Ω)` instead of
-`C_c^∞(Ω)`. Proof by mollification of `f` rather than of `φ`: on a relatively compact open
-`V ⊇ supp φ` the local approximation
-`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm` gives smooth `g_j` with
-`g_j → f` and `∂_y g_j → w` in `L^1(V)`, the classical integration by parts
-`∫ (∂_y φ) g_j = −∫ φ ∂_y g_j` (`integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`) holds
-for each `j`, and both sides pass to the limit against the bounded factors `∂_y φ` and `φ`.
-[brezis2011functional] §9.1, Remark 1 ("to show this, use a sequence of mollifiers"). -/
+/-- **Test functions of class $C^1$.** Let $E$ be finite-dimensional with an additive Haar measure
+$\mu$, let $F$ be a real Banach space, and let $w$ be a weak derivative of $f : E \to F$ along
+the direction $y$ on the open set $\Omega$. Let $\varphi : E \to \mathbb{R}$ be of class $C^1$
+with compact support contained in $\Omega$. Then
+$$\int_\Omega (\partial_y \varphi)\, f \, d\mu = -\int_\Omega \varphi\, w \, d\mu.$$
+So the test functions in the definition of $W^{1,p}$ may be taken in $C_c^1(\Omega)$ instead of
+$C_c^\infty(\Omega)$. This is Remark 1 of [brezis2011functional], §9.1 ("to show this, use a
+sequence of mollifiers").
+
+The proof mollifies $f$, not $\varphi$. On a relatively compact open set
+$V \supseteq \operatorname{supp} \varphi$, the local approximation
+`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm` gives smooth $g_j$ with
+$g_j \to f$ and $\partial_y g_j \to w$ in $L^1(V)$. The classical integration by parts $\int
+(\partial_y \varphi) g_j = -\int \varphi\, \partial_y g_j$
+(`integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`) holds for each $j$, and both sides
+pass to the limit against the bounded factors $\partial_y \varphi$ and $\varphi$. -/
 theorem HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one {y : E}
     (h : HasWeakIteratedLineDerivOn ![y] f w Ω μ) {φ : E → ℝ} (hφ : ContDiff ℝ 1 φ)
     (hφc : HasCompactSupport φ) (hφΩ : tsupport φ ⊆ Ω) :
@@ -253,12 +295,15 @@ theorem HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one {y : E}
       setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by rw [hφ0 x hx, zero_smul]]
   rw [e1, e2, hlim]
 
-/-- **The Leibniz rule for a `C^1` multiplier**, at every exponent: if `w` is the weak
-derivative of `f` along `y` on `Ω` and `c` is of class `C^1` on `Ω`, then `c f` has the weak
-derivative `c w + (∂_y c) f` along `y`. The test functions of the defining identity may be taken
-`C_c^1` (`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`, Brezis's Remark 1), and
-`φ c` is one. Unlike `HasWeakIteratedLineDerivOn.mul` no exponent enters: only the local
-integrability of `f` and `w` is used. -/
+/-- **The Leibniz rule for a $C^1$ factor**, at every exponent. Let $E$ be finite-dimensional with
+an additive Haar measure $\mu$, and let $w$ be a weak derivative of the real function $f$ along
+the direction $y$ on the open set $\Omega$. If $c : E \to \mathbb{R}$ is of class $C^1$ on
+$\Omega$, then $c f$ has the weak derivative $c\, w + (\partial_y c) f$ along $y$ on $\Omega$.
+
+By `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` (Remark 1 of
+[brezis2011functional]) the test functions may be taken in $C_c^1(\Omega)$, and $\varphi c$ is
+such a function. Unlike `HasWeakIteratedLineDerivOn.mul`, no exponent enters: only the local
+integrability of $f$ and $w$ is used. -/
 theorem HasWeakIteratedLineDerivOn.mul_contDiffOn_one {y : E} {f w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] f w Ω μ) {c : E → ℝ} (hc : ContDiffOn ℝ 1 c Ω) :
     HasWeakIteratedLineDerivOn ![y] (fun x ↦ c x * f x)
@@ -315,24 +360,28 @@ theorem HasWeakIteratedLineDerivOn.mul_contDiffOn_one {y : E} {f w : E → ℝ}
 
 end ContDiffOne
 
-/-! ### Cut-off functions and the zero extension of `α u` -/
+/-! ### Cut-off functions and the zero extension of $\alpha u$ -/
 
 section Cutoff
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {Ω : Opens E} {α : E → ℝ}
 
-/-- **A Sobolev cut-off for the open set `Ω`**: a smooth function `α : E → ℝ`, bounded together
-with its derivative, whose support is disjoint from the frontier of `Ω`. This is the hypothesis of
-the last sentence of [brezis2011functional] Chapter 9, Remark 4 (ii) — "`α ∈ C^1(ℝ^N) ∩ L^∞(ℝ^N)`
-with `∇α ∈ L^∞` and `supp α ⊂ ℝ^N ∖ ∂Ω`" — with `C^∞` in place of `C^1`, and it is what the
-function `θ_0` of the partition of unity satisfies in the proof of the extension theorem. It covers
-the first form of that remark, `α ∈ C_c^1(Ω)`, through `IsSobolevCutoff.of_hasCompactSupport`. -/
+/-- A **Sobolev cut-off** for the open set $\Omega \subseteq E$ is a function
+$\alpha : E \to \mathbb{R}$ of class $C^\infty$ such that $\alpha$ and $D\alpha$ are bounded on
+$E$ and the support of $\alpha$ is disjoint from the frontier $\partial\Omega$.
+
+This is the hypothesis of the last sentence of Remark 4 (ii) in Chapter 9 of
+[brezis2011functional], "$\alpha \in C^1(\mathbb{R}^N) \cap L^\infty(\mathbb{R}^N)$ with
+$\nabla\alpha \in L^\infty$ and $\operatorname{supp} \alpha \subset \mathbb{R}^N \setminus
+\partial\Omega$", with $C^\infty$ in place of $C^1$. The function $\theta_0$ of the partition of
+unity in the proof of the extension theorem satisfies it. The first form of the remark,
+$\alpha \in C_c^1(\Omega)$, is covered by `IsSobolevCutoff.of_hasCompactSupport`. -/
 structure IsSobolevCutoff (Ω : Opens E) (α : E → ℝ) : Prop where
-  /-- A cut-off is smooth. -/
+  /-- A cut-off is of class $C^\infty$. -/
   contDiff : ContDiff ℝ ∞ α
-  /-- A cut-off is bounded, together with its derivative. -/
+  /-- There is a number $M$ with $|\alpha(x)| \le M$ and $\|D\alpha(x)\| \le M$ for all $x$. -/
   exists_bound : ∃ M : ℝ, ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M
-  /-- The support of a cut-off misses the frontier of `Ω`. -/
+  /-- The closed support of a cut-off is disjoint from the frontier of $\Omega$. -/
   disjoint_frontier : Disjoint (tsupport α) (frontier (Ω : Set E))
 
 namespace IsSobolevCutoff
@@ -340,27 +389,31 @@ namespace IsSobolevCutoff
 /-- A cut-off is continuous. -/
 theorem continuous (hα : IsSobolevCutoff Ω α) : Continuous α := hα.contDiff.continuous
 
-/-- The derivative of a cut-off in a fixed direction is smooth. -/
+/-- For a cut-off $\alpha$ and a direction $y$, the function $x \mapsto D\alpha(x)\, y$ is of class
+$C^\infty$. -/
 theorem contDiff_fderiv_apply (hα : IsSobolevCutoff Ω α) (y : E) :
     ContDiff ℝ ∞ fun x ↦ fderiv ℝ α x y :=
   (hα.contDiff.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
 
-/-- The bound of a cut-off may be taken nonnegative. -/
+/-- The bound of a cut-off can be taken nonnegative: there is $M \ge 0$ with $|\alpha(x)| \le M$ and
+$\|D\alpha(x)\| \le M$ for all $x$. -/
 theorem exists_nonneg_bound (hα : IsSobolevCutoff Ω α) :
     ∃ M : ℝ, 0 ≤ M ∧ ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M :=
   let ⟨M, hM⟩ := hα.exists_bound
   ⟨M, (abs_nonneg _).trans (hM 0).1, hM⟩
 
-/-- The support of a cut-off meets the closure of `Ω` inside `Ω`. -/
+/-- For a cut-off $\alpha$ of $\Omega$, the set $\operatorname{supp} \alpha \cap \overline{\Omega}$
+is contained in $\Omega$. -/
 theorem tsupport_inter_closure_subset (hα : IsSobolevCutoff Ω α) :
     tsupport α ∩ closure (Ω : Set E) ⊆ Ω := by
   rintro x ⟨hxα, hxc⟩
   by_contra hxΩ
   exact hα.disjoint_frontier.notMem_of_mem_left hxα ⟨hxc, fun h ↦ hxΩ (Ω.isOpen.interior_eq ▸ h)⟩
 
-/-- A smooth function with compact support inside `Ω` is a cut-off for `Ω`: the first form of
-[brezis2011functional] Chapter 9, Remark 4 (ii), `α ∈ C_c^1(Ω)`, used for the functions `θ_i`,
-`i ≥ 1`, in the proof of the extension theorem. -/
+/-- A function $\alpha$ of class $C^\infty$ with compact support contained in $\Omega$ is a cut-off
+for $\Omega$. This is the first form of Remark 4 (ii) in Chapter 9 of [brezis2011functional],
+$\alpha \in C_c^1(\Omega)$, which is used for the functions $\theta_i$, $i \ge 1$, in the proof
+of the extension theorem. -/
 theorem of_hasCompactSupport (hα : ContDiff ℝ ∞ α) (hαc : HasCompactSupport α)
     (hαΩ : tsupport α ⊆ Ω) : IsSobolevCutoff Ω α where
   contDiff := hα
@@ -382,10 +435,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {Ω : Opens E} {μ : Measure E} {α : E → ℝ}
 
-/-- **The zero extension of `g u` is locally integrable on the whole space**, for `u` locally
-integrable on `Ω` and a continuous `g` supported inside the support of a cut-off `α` of `Ω`: near
-a point of `Ω` the function `g` is bounded and `u` integrable, near a frontier point of `Ω` the
-function `g` vanishes, and outside the closure of `Ω` so does the indicator. -/
+/-- **The zero extension of $g u$ is locally integrable on the whole space.** Let $E$ be
+finite-dimensional, let $\alpha$ be a cut-off for the open set $\Omega$, and let
+$g : E \to \mathbb{R}$ be continuous with $\operatorname{supp} g \subseteq \operatorname{supp}
+\alpha$. If $u$ is locally integrable on $\Omega$, then the function equal to $g u$ on $\Omega$
+and to $0$ off $\Omega$ is locally integrable on $E$.
+
+Near a point of $\Omega$ the function $g$ is bounded and $u$ is integrable. Near a frontier
+point of $\Omega$ the function $g$ vanishes, and outside the closure of $\Omega$ the extension
+vanishes. -/
 theorem IsSobolevCutoff.locallyIntegrable_indicator_smul (hα : IsSobolevCutoff Ω α) {g : E → ℝ}
     (hg : Continuous g) (hgα : tsupport g ⊆ tsupport α) {u : E → F}
     (hu : LocallyIntegrableOn u Ω μ) :
@@ -422,20 +480,26 @@ theorem IsSobolevCutoff.locallyIntegrable_indicator_smul (hα : IsSobolevCutoff 
       · rw [Set.indicator_of_notMem hz]
         rfl
 
-/-- **The zero extension of `α u` is locally integrable on the whole space** for a locally
-integrable `u` on `Ω` and a cut-off `α`. -/
+/-- **The zero extension of $\alpha u$ is locally integrable on the whole space.** Let $E$ be
+finite-dimensional and let $\alpha$ be a cut-off for the open set $\Omega$. If $u$ is locally
+integrable on $\Omega$, then the function equal to $\alpha u$ on $\Omega$ and to $0$ off
+$\Omega$ is locally integrable on $E$. -/
 theorem IsSobolevCutoff.locallyIntegrable_indicator_mul (hα : IsSobolevCutoff Ω α) {u : E → F}
     (hu : LocallyIntegrableOn u Ω μ) :
     LocallyIntegrable ((Ω : Set E).indicator fun x ↦ α x • u x) μ :=
   hα.locallyIntegrable_indicator_smul hα.continuous le_rfl hu
 
 omit [MeasurableSpace E] [BorelSpace E] in
-/-- **A cut-off times a compactly supported smooth function is a test function on `Ω`**, after a
-correction off `Ω`: for a cut-off `α` of `Ω` and a smooth compactly supported `φ` there is a test
-function `ψ` on `Ω` with `ψ = α φ` on `Ω`. The set `tsupport (α φ) ∩ closure Ω` is a compact subset
-of `Ω`, the support of `α` missing the frontier; a smooth function `χ` equal to `1` there and
-supported in `Ω` gives `ψ = χ α φ`. This is the one technical point of the zero-extension argument
-of [brezis2011functional] Chapter 9, Remark 4 (ii), when `α` is merely supported off `∂Ω`. -/
+/-- **A cut-off times a test function on $E$ is a test function on $\Omega$**, after a change off
+$\Omega$. Let $E$ be finite-dimensional, let $\alpha$ be a cut-off for the open set $\Omega$,
+and let $\varphi : E \to \mathbb{R}$ be of class $C^\infty$ with compact support. Then there is
+a test function $\psi \in C_c^\infty(\Omega)$ with $\psi = \alpha \varphi$ on $\Omega$.
+
+The set $\operatorname{supp}(\alpha \varphi) \cap \overline{\Omega}$ is a compact subset of
+$\Omega$, because the support of $\alpha$ misses the frontier. A smooth function $\chi$ that is
+$1$ on this set and supported in $\Omega$ gives $\psi = \chi \alpha \varphi$. This is the one
+technical point of the zero-extension argument of Remark 4 (ii) in Chapter 9 of
+[brezis2011functional] when $\alpha$ is only supported off $\partial\Omega$. -/
 theorem IsSobolevCutoff.exists_testFunction_mul_eqOn (hα : IsSobolevCutoff Ω α) {φ : E → ℝ}
     (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) :
     ∃ ψ : 𝓓(Ω, ℝ), ∀ x ∈ (Ω : Set E), ψ x = α x * φ x := by
@@ -457,9 +521,11 @@ theorem IsSobolevCutoff.exists_testFunction_mul_eqOn (hα : IsSobolevCutoff Ω �
       rw [this, mul_zero]
 
 omit [FiniteDimensional ℝ E] in
-/-- A continuous compactly supported function `g` supported inside the support of a cut-off of
-`Ω`, times a locally integrable function on `Ω`, is integrable on `Ω`: the product vanishes on `Ω`
-outside the compact set `tsupport g ∩ closure Ω ⊆ Ω`. -/
+/-- Let $\alpha$ be a cut-off for the open set $\Omega$, let $g : E \to \mathbb{R}$ be continuous
+with compact support and $\operatorname{supp} g \subseteq \operatorname{supp} \alpha$, and let
+$u$ be locally integrable on $\Omega$. Then $g u$ is integrable on $\Omega$. The reason is that
+on $\Omega$ the product vanishes outside the compact set $\operatorname{supp} g \cap
+\overline{\Omega} \subseteq \Omega$. -/
 theorem IsSobolevCutoff.integrableOn_mul_of_locallyIntegrableOn (hα : IsSobolevCutoff Ω α)
     {u : E → F} (hu : LocallyIntegrableOn u Ω μ) {g : E → ℝ} (hg : Continuous g)
     (hgc : HasCompactSupport g) (hgα : tsupport g ⊆ tsupport α) :
@@ -475,14 +541,19 @@ theorem IsSobolevCutoff.integrableOn_mul_of_locallyIntegrableOn (hα : IsSobolev
   have : g x = 0 := image_eq_zero_of_notMem_tsupport fun h ↦ hx.2 ⟨h, subset_closure hx.1⟩
   rw [this, zero_smul]
 
-/-- **Extension by zero of `α u`** ([brezis2011functional] Chapter 9, Remark 4 (ii)): if `w` is
-the weak derivative of `u` along `y` on `Ω`, both locally integrable on `Ω`, and `α` is a cut-off
-for `Ω`, then the extension of `α u` by zero has, on the whole space, the weak derivative
-`α w + (∂_y α) u` extended by zero. The proof is the book's: for a test function `φ` on the whole
-space, `α φ` agrees on `Ω` with a test function `ψ` on `Ω`
-(`IsSobolevCutoff.exists_testFunction_mul_eqOn`), and
-`∫_Ω α u ∂_y φ = ∫_Ω u ∂_y ψ − ∫_Ω u (∂_y α) φ = −∫_Ω (α w + (∂_y α) u) φ`. Footnote 3 of the
-book ("in general `ū ∉ W^{1,p}(ℝ^N)`") is why the cut-off is needed. -/
+/-- **Extension by zero of $\alpha u$.** Let $E$ be finite-dimensional, let $\Omega \subseteq E$ be
+open, and let $w$ be a weak derivative of $u$ along the direction $y$ on $\Omega$. Let $\alpha$
+be a cut-off for $\Omega$. Write $\bar v$ for the extension of a function $v$ on $\Omega$ by
+zero. Then, on the whole space $E$, the function $\overline{\alpha u}$ has the weak derivative
+$$\overline{\alpha w + (\partial_y \alpha) u}$$
+along $y$. This is Remark 4 (ii) in Chapter 9 of [brezis2011functional].
+
+The proof is the one of the source. For a test function $\varphi$ on $E$, the function
+$\alpha \varphi$ agrees on $\Omega$ with a test function $\psi$ on $\Omega$
+(`IsSobolevCutoff.exists_testFunction_mul_eqOn`), and $\int_\Omega \alpha u\, \partial_y
+\varphi = \int_\Omega u\, \partial_y \psi - \int_\Omega u\, (\partial_y \alpha) \varphi =
+-\int_\Omega (\alpha w + (\partial_y \alpha) u) \varphi$. Footnote 3 of the source ("in general
+$\bar u \notin W^{1,p}(\mathbb{R}^N)$") is the reason for the cut-off. -/
 theorem HasWeakIteratedLineDerivOn.indicator_mul {y : E} {u w : E → F}
     (hu : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (hα : IsSobolevCutoff Ω α) :
     HasWeakIteratedLineDerivOn ![y] ((Ω : Set E).indicator fun x ↦ α x • u x)
@@ -554,8 +625,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω : Opens E} {μ : Measure E} {α : E → ℝ} {p : ℝ≥0∞}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The `L^p` norm of the zero extension of `g • u` off a measurable set `s`, for `g` bounded by
-`M` on `s`, is at most `M` times the `L^p(s)` norm of `u`. -/
+/-- Let $s$ be a measurable set, let $g$ be a real function with $|g(x)| \le M$ for $x \in s$, and
+let $g$ and $u$ be almost everywhere strongly measurable for $\mu$ restricted to $s$. Then the
+function $\mathbf{1}_s\, g u$, equal to $g u$ on $s$ and to $0$ off $s$, satisfies
+$$\|\mathbf{1}_s\, g u\|_{L^p(\mu)} \le \max(M, 0)\, \|u\|_{L^p(s)}.$$
+-/
 theorem eLpNorm_indicator_smul_le_of_forall_norm_le {s : Set E} (hs : MeasurableSet s)
     {g : E → ℝ} {M : ℝ} (hM : ∀ x ∈ s, ‖g x‖ ≤ M) (hg : AEStronglyMeasurable g (μ.restrict s))
     {u : E → F} (hu : AEStronglyMeasurable u (μ.restrict s)) :
@@ -568,8 +642,9 @@ theorem eLpNorm_indicator_smul_le_of_forall_norm_le {s : Set E} (hs : Measurable
   exact mul_le_mul_of_nonneg_right (hM x hx) (norm_nonneg _)
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The zero extension of `g • u` off a measurable set `s` lies in `L^p` when `g` is bounded and
-measurable on `s` and `u ∈ L^p(s)`. -/
+/-- Let $s$ be a measurable set, let $g$ be a real function that is almost everywhere strongly
+measurable on $s$ with $|g(x)| \le M$ for $x \in s$, and let $u \in L^p(s)$. Then the function
+$\mathbf{1}_s\, g u$, equal to $g u$ on $s$ and to $0$ off $s$, lies in $L^p(\mu)$. -/
 theorem memLp_indicator_smul_of_forall_norm_le {s : Set E} (hs : MeasurableSet s) {g : E → ℝ}
     {M : ℝ} (hM : ∀ x ∈ s, ‖g x‖ ≤ M) (hg : AEStronglyMeasurable g (μ.restrict s)) {u : E → F}
     (hu : MemLp u p (μ.restrict s)) : MemLp (s.indicator fun x ↦ g x • u x) p μ := by
@@ -578,11 +653,15 @@ theorem memLp_indicator_smul_of_forall_norm_le {s : Set E} (hs : MeasurableSet s
     memLp_top_of_bound hg M ((ae_restrict_mem hs).mono hM)
   exact hgtop.smul hu
 
-/-- **Membership form of Remark 4 (ii)** ([brezis2011functional] Chapter 9): for
-`u ∈ W^{1,p}(Ω)` and a cut-off `α` for `Ω`, the extension of `α u` by zero lies in
-`W^{1,p}(E)`, the whole space. Direction by direction this is
-`HasWeakIteratedLineDerivOn.indicator_mul`, after reading the multi-index `e_i` as the single
-direction `b i`; the `L^p` memberships come from the bounds on `α` and `∇α`. -/
+/-- **Remark 4 (ii), membership form.** Let $E$ be finite-dimensional with a locally finite measure
+$\mu$, let $b$ be a basis of $E$ indexed by a finite linearly ordered type, and let $p \ge 1$.
+If $u \in W^{1,p}(\Omega)$ and $\alpha$ is a cut-off for $\Omega$, then the extension of
+$\alpha u$ by zero lies in $W^{1,p}(E)$. This is Remark 4 (ii) in Chapter 9 of
+[brezis2011functional].
+
+The Sobolev spaces are `MemSobolevMultiIndex` for the basis $b$. For each direction this is
+`HasWeakIteratedLineDerivOn.indicator_mul`, after the multi-index $e_i$ is read as the single
+direction $b_i$. The $L^p$ memberships follow from the bounds on $\alpha$ and $D\alpha$. -/
 theorem MemSobolevMultiIndex.indicator_mul [IsLocallyFiniteMeasure μ] {ι : Type*} [Fintype ι]
     [LinearOrder ι] {b : Basis ι ℝ E} {u : E → F} (hp : 1 ≤ p)
     (hu : MemSobolevMultiIndex b u 1 p Ω μ) (hα : IsSobolevCutoff Ω α) :
@@ -619,14 +698,17 @@ theorem MemSobolevMultiIndex.indicator_mul [IsLocallyFiniteMeasure μ] {ι : Typ
 
 end MemIndicator
 
-/-! ### Multipliers: `C^k` functions constant off a compact set, and cut-offs at every order -/
+/-!
+### Multipliers: functions of class $C^k$ constant off a compact set, and cut-offs at every order
+-/
 
 section MulAbs
 
 variable {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [OpensMeasurableSpace E]
   {μ : Measure E} {Ω : Opens E} {p : ℝ≥0∞}
 
-/-- A bounded measurable coefficient times an `L^p(Ω)` function is in `L^p(Ω)`. -/
+/-- Let $c$ be a real function on $E$ that is almost everywhere strongly measurable on $\Omega$ with
+$|c(x)| \le C$ for $x \in \Omega$. If $w \in L^p(\Omega)$, then $c\, w \in L^p(\Omega)$. -/
 theorem _root_.MeasureTheory.MemLp.mul_of_forall_abs_le {c w : E → ℝ}
     (hc : AEStronglyMeasurable c (μ.restrict (Ω : Set E))) {C : ℝ}
     (hC : ∀ x ∈ (Ω : Set E), |c x| ≤ C) (hw : MemLp w p (μ.restrict (Ω : Set E))) :
@@ -646,8 +728,10 @@ section Euclidean
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-- A `C^1` function on an open set has its partial derivative `∂ᵢu = fderiv u · e_i` as weak
-derivative along `e_i`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $u : \mathbb{R}^N \to \mathbb{R}$ be of
+class $C^1$ on $\Omega$. Then for every $i$ the classical partial derivative
+$x \mapsto Du(x)\, e_i$ is a weak derivative of $u$ along $e_i$ on $\Omega$, for the Lebesgue
+measure. -/
 theorem ContDiffOn.hasWeakIteratedLineDerivOn_single {u : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : ContDiffOn ℝ 1 u Ω) (i : Fin N) :
     HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u
@@ -664,12 +748,17 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E}
   [μ.IsAddHaarMeasure]
 
-/-- **Multiplication by a `C^k` multiplier preserves `W^{k,p}(Ω)`**, `1 ≤ p ≤ ∞`: for a multiplier
-`c` (`IsContDiffConstOffCompact k c`, of class `C^k` and constant off a compact set) and
-`f ∈ W^{k,p}(Ω)`, the product `c f` lies in `W^{k,p}(Ω)`. By induction on `k` through
-`memSobolevMultiIndex_succ_iff` and the Leibniz rule `∂_i (c f) = c ∂_i f + (∂_i c) f` for the
-`C^1` factor `c` (`HasWeakIteratedLineDerivOn.mul_contDiffOn_one`); the `L^p` memberships come
-from the bounds on `c` and `∂_i c`. -/
+/-- **Multiplication by a multiplier preserves $W^{k,p}(\Omega)$.** Let $E$ be finite-dimensional
+with an additive Haar measure $\mu$, let $b$ be a basis of $E$, and let $1 \le p \le \infty$.
+Let $c : E \to \mathbb{R}$ be of class $C^k$ and constant off a compact set
+(`IsContDiffConstOffCompact`). If the real function $f$ lies in $W^{k,p}(\Omega)$, then
+$c f \in W^{k,p}(\Omega)$.
+
+The Sobolev spaces are `MemSobolevMultiIndex` for the basis $b$. The proof is an induction on
+$k$ through `memSobolevMultiIndex_succ_iff` and the Leibniz rule $\partial_i (c f) = c\,
+\partial_i f + (\partial_i c) f$ for the $C^1$ factor $c$
+(`HasWeakIteratedLineDerivOn.mul_contDiffOn_one`). The $L^p$ memberships follow from the bounds
+on $c$ and $\partial_i c$. -/
 theorem MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact (k : ℕ) :
     ∀ {c f : E → ℝ}, IsContDiffConstOffCompact k c → MemSobolevMultiIndex b f k p Ω μ →
     MemSobolevMultiIndex b (fun x ↦ c x * f x) k p Ω μ := by
@@ -691,7 +780,9 @@ theorem MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact (k : ℕ) :
     have h2 := ih (hc.fderiv_apply (b i)) hf0
     exact h1.add h2
 
-/-- A finite sum of products of multipliers and `W^{k,p}(Ω)` functions lies in `W^{k,p}(Ω)`. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure, and let $1 \le p \le \infty$. For a
+finite family of real functions $c_i$ of class $C^k$ that are constant off a compact set, and
+real functions $f_i \in W^{k,p}(\Omega)$, the sum $\sum_i c_i f_i$ lies in $W^{k,p}(\Omega)$. -/
 theorem MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact {k : ℕ} {κ : Type*}
     (s : Finset κ) {c : κ → E → ℝ} {f : κ → E → ℝ} (hc : ∀ i ∈ s, IsContDiffConstOffCompact k (c i))
     (hf : ∀ i ∈ s, MemSobolevMultiIndex b (f i) k p Ω μ) :
@@ -703,8 +794,10 @@ theorem MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact {k : ℕ} {κ 
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [Fact (1 ≤ p)]
   [μ.IsAddHaarMeasure] in
-/-- A smooth function constant off a compact set whose support misses the frontier of `Ω` is a
-Sobolev cut-off for `Ω` (bounded with bounded derivative). -/
+/-- Let $\theta : E \to \mathbb{R}$ be of class $C^\infty$, let $\theta - \kappa$ have compact
+support for a constant $\kappa$, and let the support of $\theta$ be disjoint from
+$\partial\Omega$. Then $\theta$ is a Sobolev cut-off for $\Omega$: $\theta$ and $D\theta$ are
+bounded. -/
 theorem IsSobolevCutoff.of_hasCompactSupport_sub {θ : E → ℝ}
     (hθ : ContDiff ℝ ∞ θ) {κ : ℝ} (hθκ : HasCompactSupport fun x ↦ θ x - κ)
     (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set E))) : IsSobolevCutoff Ω θ where
@@ -722,19 +815,24 @@ theorem IsSobolevCutoff.of_hasCompactSupport_sub {θ : E → ℝ}
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [Fact (1 ≤ p)]
   [μ.IsAddHaarMeasure] in
-/-- The support of a partial derivative of `θ` misses the frontier of `Ω` when that of `θ`
-does. -/
+/-- If the support of $\theta$ is disjoint from $\partial\Omega$, then for every direction $y$ the
+support of $x \mapsto D\theta(x)\, y$ is disjoint from $\partial\Omega$. -/
 theorem tsupport_fderiv_apply_disjoint_frontier {θ : E → ℝ}
     (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set E))) (y : E) :
     Disjoint (tsupport fun x ↦ fderiv ℝ θ x y) (frontier (Ω : Set E)) :=
   hθΓ.mono_left (tsupport_fderiv_apply_subset ℝ y)
 
-/-- **The zero extension of `θ f` at every order and exponent** ([brezis2011functional] Chapter 9,
-Remark 4 (ii), iterated): for a smooth `θ` constant off a compact set with support off the
-frontier of `Ω` (the function `θ₀ = 1 − ∑ θᵢ` of a partition of unity, or a `θᵢ` compactly
-supported in `Ω`) and `f ∈ W^{k,p}(Ω)`, the extension of `θ f` by zero lies in `W^{k,p}(E)`.
-Induction on `k` through `memSobolevMultiIndex_succ_iff`, the derivative of the extension being
-the extension of `θ ∂_i f + (∂_i θ) f` (`HasWeakIteratedLineDerivOn.indicator_mul`). -/
+/-- **The zero extension of $\theta f$, at every order and exponent.** Let $E$ be finite-dimensional
+with an additive Haar measure, let $b$ be a basis of $E$, and let $1 \le p \le \infty$. Let
+$\theta : E \to \mathbb{R}$ be of class $C^\infty$, constant off a compact set, with support
+disjoint from $\partial\Omega$. If the real function $f$ lies in $W^{k,p}(\Omega)$, then the
+extension of $\theta f$ by zero lies in $W^{k,p}(E)$. This is Remark 4 (ii) in Chapter 9 of
+[brezis2011functional], iterated.
+
+Examples of $\theta$ are the function $\theta_0 = 1 - \sum_i \theta_i$ of a partition of unity,
+and a function $\theta_i$ with compact support in $\Omega$. The proof is an induction on $k$
+through `memSobolevMultiIndex_succ_iff`. The derivative of the extension is the extension of
+$\theta\, \partial_i f + (\partial_i \theta) f$ (`HasWeakIteratedLineDerivOn.indicator_mul`). -/
 theorem MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub (k : ℕ) :
     ∀ {θ f : E → ℝ}, ContDiff ℝ ∞ θ → (∃ κ : ℝ, HasCompactSupport fun x ↦ θ x - κ) →
     Disjoint (tsupport θ) (frontier (Ω : Set E)) → MemSobolevMultiIndex b f k p Ω μ →
@@ -782,8 +880,9 @@ section PiLpNorm
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {ι : Type*} [Fintype ι]
 
-/-- **The `ℓ^p` norm is at most the `ℓ^1` norm**: `‖x‖ ≤ ∑ i, ‖x i‖`, by writing `x` as the sum of
-its coordinates and the triangle inequality. -/
+/-- **The $\ell^p$ norm is at most the $\ell^1$ norm.** For $p \ge 1$ and $x$ in a finite product of
+seminormed groups with the $\ell^p$ norm, $\|x\| \le \sum_i \|x_i\|$. The proof writes $x$ as
+the sum of its coordinates and uses the triangle inequality. -/
 theorem PiLp.norm_le_sum_norm {β : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
     (x : PiLp p β) : ‖x‖ ≤ ∑ i, ‖x i‖ := by
   classical
@@ -798,11 +897,13 @@ theorem PiLp.norm_le_sum_norm {β : ι → Type*} [∀ i, SeminormedAddCommGroup
 
 end PiLpNorm
 
-/-! ### The `L^p` norm as an integral -/
+/-! ### The $L^p$ norm as an integral -/
 
 namespace MeasureTheory
 
-/-- `‖g‖_{L^p}^p = ∫ ‖g‖^p` for `g ∈ L^p`, `0 < p < ∞`. -/
+/-- For $0 < p < \infty$ and $g \in L^p(\mu)$,
+$$\|g\|_{L^p}^p = \int \|g(x)\|^p \, d\mu.$$
+-/
 theorem Lp.norm_rpow_eq_integral {X F : Type*} [MeasurableSpace X] [NormedAddCommGroup F]
     {μ : Measure X} {p : ℝ≥0∞} (hp0 : p ≠ 0) (hp' : p ≠ ⊤) (g : Lp F p μ) :
     ‖g‖ ^ p.toReal = ∫ x, ‖g x‖ ^ p.toReal ∂μ := by
@@ -814,7 +915,7 @@ theorem Lp.norm_rpow_eq_integral {X F : Type*} [MeasurableSpace X] [NormedAddCom
 
 end MeasureTheory
 
-/-! ### The pointwise gradient `∇u : Ω → F^ι` of `u ∈ W^{1,p}(Ω)`: norms and algebra -/
+/-! ### The pointwise gradient of $u \in W^{1,p}(\Omega)$: norms and algebra -/
 
 section GradFnApi
 
@@ -825,17 +926,21 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- `|∇u(x)| ≤ ∑ᵢ |∂ᵢu(x)|`. -/
+/-- For $u \in W^{1,p}(\Omega)$ and every $x$, $|\nabla u(x)| \le \sum_i \|\partial_i u(x)\|$. Here
+$\nabla u(x) = (\partial_i u(x))_i$ has the Euclidean norm, and $\partial_i u$ is the chosen
+representative of the weak derivative for the multi-index $e_i$. -/
 theorem norm_gradFn_le_sum (u : SobolevMultiIndex F b 1 p Ω μ) (x : E) :
     ‖gradFn u x‖ ≤ ∑ i, ‖weakDeriv u (MultiIndexLE.single i) x‖ :=
   PiLp.norm_le_sum_norm _
 
-/-- `|∂ᵢu(x)| ≤ |∇u(x)|`. -/
+/-- For $u \in W^{1,p}(\Omega)$, every $x$ and every $i$, $\|\partial_i u(x)\| \le |\nabla u(x)|$.
+-/
 theorem norm_le_norm_gradFn (u : SobolevMultiIndex F b 1 p Ω μ) (x : E) (i : ι) :
     ‖weakDeriv u (MultiIndexLE.single i) x‖ ≤ ‖gradFn u x‖ :=
   PiLp.norm_apply_le (gradFn u x) i
 
-/-- `∇(u + v) = ∇u + ∇v` almost everywhere. -/
+/-- For $u, v \in W^{1,p}(\Omega)$, $\nabla(u + v) = \nabla u + \nabla v$ almost everywhere on
+$\Omega$. -/
 theorem gradFn_add (u v : SobolevMultiIndex F b 1 p Ω μ) :
     gradFn (u + v) =ᵐ[μ.restrict (Ω : Set E)] gradFn u + gradFn v := by
   have h : ∀ i, (weakDeriv (u + v) (MultiIndexLE.single i) : E → F) =ᵐ[μ.restrict (Ω : Set E)]
@@ -845,7 +950,8 @@ theorem gradFn_add (u v : SobolevMultiIndex F b 1 p Ω μ) :
   ext i
   simp [gradFn, hx i]
 
-/-- `∇(c v) = c ∇v` almost everywhere. -/
+/-- For $v \in W^{1,p}(\Omega)$ and $c \in \mathbb{R}$, $\nabla(c v) = c\, \nabla v$ almost
+everywhere on $\Omega$. -/
 theorem gradFn_smul (c : ℝ) (v : SobolevMultiIndex F b 1 p Ω μ) :
     gradFn (c • v) =ᵐ[μ.restrict (Ω : Set E)] c • gradFn v := by
   have h : ∀ i, (weakDeriv (c • v) (MultiIndexLE.single i) : E → F) =ᵐ[μ.restrict (Ω : Set E)]
@@ -854,14 +960,16 @@ theorem gradFn_smul (c : ℝ) (v : SobolevMultiIndex F b 1 p Ω μ) :
   ext i
   simp [gradFn, hx i]
 
-/-- `∇(u − v) = ∇u − ∇v` almost everywhere. -/
+/-- For $u, v \in W^{1,p}(\Omega)$, $\nabla(u - v) = \nabla u - \nabla v$ almost everywhere on
+$\Omega$. -/
 theorem gradFn_sub (u v : SobolevMultiIndex F b 1 p Ω μ) :
     gradFn (u - v) =ᵐ[μ.restrict (Ω : Set E)] gradFn u - gradFn v := by
   rw [sub_eq_add_neg, ← neg_one_smul ℝ v]
   filter_upwards [gradFn_add u ((-1 : ℝ) • v), gradFn_smul (-1) v] with x h1 h2
   rw [h1, Pi.add_apply, h2, Pi.smul_apply, neg_one_smul, Pi.sub_apply, sub_eq_add_neg]
 
-/-- `∇(a u + b v) = a ∇u + b ∇v` almost everywhere. -/
+/-- For $u, v \in W^{1,p}(\Omega)$ and $a, c \in \mathbb{R}$, $\nabla(a u + c v) = a\, \nabla u +
+c\, \nabla v$ almost everywhere on $\Omega$. -/
 theorem gradFn_combo (a c : ℝ) (u v : SobolevMultiIndex F b 1 p Ω μ) :
     gradFn (a • u + c • v) =ᵐ[μ.restrict (Ω : Set E)] a • gradFn u + c • gradFn v := by
   filter_upwards [gradFn_add (a • u) (c • v), gradFn_smul a u, gradFn_smul c v] with x h1 h2 h3
@@ -870,7 +978,9 @@ theorem gradFn_combo (a c : ℝ) (u v : SobolevMultiIndex F b 1 p Ω μ) :
 
 variable [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F]
 
-/-- `∇v ∈ L^p(Ω; F^ι)` ([han2009theoretical] Exercise 8.8.2). -/
+/-- For $v \in W^{1,p}(\Omega)$, the pointwise gradient $\nabla v$ lies in $L^p(\Omega; F^\iota)$,
+where $F^\iota$ has the Euclidean norm and $F$ has its Borel $\sigma$-algebra and is second
+countable. This is Exercise 8.8.2 of [han2009theoretical]. -/
 theorem memLp_gradFn (v : SobolevMultiIndex F b 1 p Ω μ) :
     MemLp (gradFn v) p (μ.restrict (Ω : Set E)) := by
   have hsum : MemLp (fun x ↦ ∑ i, ‖weakDeriv v (MultiIndexLE.single i) x‖) p
@@ -882,7 +992,10 @@ theorem memLp_gradFn (v : SobolevMultiIndex F b 1 p Ω μ) :
     exact norm_gradFn_le_sum v x)
 
 omit [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F] in
-/-- If `∇v = 0` almost everywhere then every `∂ᵢv = 0` in `L^p(Ω)`, so `‖∇v‖_{L^p} = 0`. -/
+/-- Let $p \ge 1$, $p \ne \infty$, and $v \in W^{1,p}(\Omega)$. If $\nabla v = 0$ almost everywhere
+on $\Omega$, then every $\partial_i v$ is $0$ in $L^p(\Omega)$, so the gradient norm $\|\nabla
+v\|_{L^p} = (\sum_i \|\partial_i v\|_{L^p(\Omega)}^p)^{1/p}$ (`SobolevMultiIndex.gradNorm`) is
+$0$. -/
 theorem gradNorm_eq_zero_of_gradFn_ae_eq_zero [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     {v : SobolevMultiIndex F b 1 p Ω μ} (h : gradFn v =ᵐ[μ.restrict (Ω : Set E)] 0) :
     gradNorm v = 0 := by
@@ -898,8 +1011,12 @@ theorem gradNorm_eq_zero_of_gradFn_ae_eq_zero [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
   simp only [hi, norm_zero, Real.zero_rpow hpr.ne', Finset.sum_const_zero]
   exact Real.zero_rpow (by positivity)
 
-/-- **The `ℓ^p` gradient norm against the Euclidean one**:
-`‖∇v‖_{L^p}^p = ∑ᵢ ∫ |∂ᵢv|^p ≤ #ι ∫ |∇v|^p`. -/
+/-- **The $\ell^p$ gradient norm against the Euclidean one.** Let $1 \le p < \infty$, let $F$ have
+its Borel $\sigma$-algebra and be second countable, and let $v \in W^{1,p}(\Omega)$. Then
+$$\|\nabla v\|_{L^p}^p = \sum_i \int_\Omega \|\partial_i v\|^p \, d\mu \le \#\iota \int_\Omega
+  |\nabla v|^p \, d\mu,$$
+where $\|\nabla v\|_{L^p}$ is `SobolevMultiIndex.gradNorm` and $|\nabla v(x)|$ is the Euclidean
+norm of the pointwise gradient. -/
 theorem gradNorm_rpow_le_integral [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     (v : SobolevMultiIndex F b 1 p Ω μ) :
     gradNorm v ^ p.toReal
@@ -921,8 +1038,12 @@ theorem gradNorm_rpow_le_integral [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     _ = (Fintype.card ι : ℝ) * ∫ x in (Ω : Set E), ‖gradFn v x‖ ^ p.toReal ∂μ := by
         simp
 
-/-- **The Euclidean gradient norm against the `ℓ^p` one**:
-`∫ |∇v|^p ≤ (#ι)^p ∑ᵢ ∫ |∂ᵢv|^p = (#ι)^p ‖∇v‖_{L^p}^p`. -/
+/-- **The Euclidean gradient norm against the $\ell^p$ one.** Let $1 \le p < \infty$, let $F$ have
+its Borel $\sigma$-algebra and be second countable, and let $v \in W^{1,p}(\Omega)$. Then
+$$\int_\Omega |\nabla v|^p \, d\mu \le (\#\iota)^p \sum_i \int_\Omega \|\partial_i v\|^p \,
+  d\mu = (\#\iota)^p\, \|\nabla v\|_{L^p}^p,$$
+where $\|\nabla v\|_{L^p}$ is `SobolevMultiIndex.gradNorm` and $|\nabla v(x)|$ is the Euclidean
+norm of the pointwise gradient. -/
 theorem integral_norm_gradFn_rpow_le [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     (v : SobolevMultiIndex F b 1 p Ω μ) :
     ∫ x in (Ω : Set E), ‖gradFn v x‖ ^ p.toReal ∂μ
@@ -969,7 +1090,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
   {Ω : Opens E} {μ : Measure E}
 
-/-- `∇u · ∇v = ∑ᵢ ⟪∂ᵢu, ∂ᵢv⟫`. -/
+/-- For $u, v \in W^{1,p}(\Omega)$ with values in a real inner product space and every $x$, $\langle
+\nabla u(x), \nabla v(x) \rangle = \sum_i \langle \partial_i u(x), \partial_i v(x) \rangle$. -/
 theorem SobolevMultiIndex.inner_gradFn (u v : SobolevMultiIndex F b 1 p Ω μ) (x : E) :
     ⟪gradFn u x, gradFn v x⟫_ℝ = ∑ i, ⟪weakDeriv u (MultiIndexLE.single i) x,
       weakDeriv v (MultiIndexLE.single i) x⟫_ℝ :=
@@ -977,18 +1099,21 @@ theorem SobolevMultiIndex.inner_gradFn (u v : SobolevMultiIndex F b 1 p Ω μ) (
 
 end GradFnInner
 
-/-! ### `L^p` of a smaller measure -/
+/-! ### $L^p$ of a smaller measure -/
 
 namespace MeasureTheory.Lp
 
 variable {X G : Type*} [MeasurableSpace X] [NormedAddCommGroup G] [NormedSpace ℝ G]
   {μ ν : Measure X} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **The identity `L^p(μ) → L^p(ν)` for a measure `ν ≤ μ`**, a bounded linear map of norm at most
-one: an `L^p(μ)` function is in `L^p(ν)`, its `L^p(ν)` norm is at most its `L^p(μ)` norm, and
-`μ`-almost everywhere equal functions are `ν`-almost everywhere equal. For `ν = μ.restrict s` this
-is restriction to the set `s`; for `ν = μ.restrict Ω'` with `Ω' ⊆ Ω` and `μ = μ.restrict Ω` it is
-the restriction `L^p(Ω) → L^p(Ω')` that `SobolevMultiIndex.restrictL` is built from. -/
+/-- **The identity $L^p(\mu) \to L^p(\nu)$ for a measure $\nu \le \mu$**, for $p \ge 1$. It is a
+bounded linear map of norm at most $1$: a function in $L^p(\mu)$ is in $L^p(\nu)$, its
+$L^p(\nu)$ norm is at most its $L^p(\mu)$ norm, and functions that are equal $\mu$-almost
+everywhere are equal $\nu$-almost everywhere.
+
+For $\nu = \mu$ restricted to a set $s$, this is the restriction to $s$. For $\nu = \mu$
+restricted to $\Omega'$ and $\mu$ restricted to $\Omega \supseteq \Omega'$, it is the
+restriction $L^p(\Omega) \to L^p(\Omega')$ from which `SobolevMultiIndex.restrictL` is built. -/
 def monoMeasureL (hνμ : ν ≤ μ) : Lp G p μ →L[ℝ] Lp G p ν :=
   LinearMap.mkContinuous
     { toFun := fun f ↦ ((Lp.memLp f).mono_measure hνμ).toLp f
@@ -1003,28 +1128,31 @@ def monoMeasureL (hνμ : ν ≤ μ) : Lp G p μ →L[ℝ] Lp G p ν :=
       rw [one_mul, Lp.norm_toLp, Lp.norm_def]
       exact ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_measure _ hνμ)
 
-/-- `MeasureTheory.Lp.monoMeasureL` is the class of the same function. -/
+/-- `MeasureTheory.Lp.monoMeasureL` maps the class of $f$ in $L^p(\mu)$ to the class of the same
+function in $L^p(\nu)$. -/
 theorem monoMeasureL_apply (hνμ : ν ≤ μ) (f : Lp G p μ) :
     monoMeasureL hνμ f = ((Lp.memLp f).mono_measure hνμ).toLp f :=
   rfl
 
-/-- `MeasureTheory.Lp.monoMeasureL` does not change the function, `ν`-almost everywhere. -/
+/-- The image of $f$ under `MeasureTheory.Lp.monoMeasureL` is equal to $f$ $\nu$-almost everywhere.
+-/
 theorem coeFn_monoMeasureL (hνμ : ν ≤ μ) (f : Lp G p μ) : monoMeasureL hνμ f =ᵐ[ν] f := by
   rw [monoMeasureL_apply]
   exact MemLp.coeFn_toLp _
 
-/-- `MeasureTheory.Lp.monoMeasureL` does not increase the norm. -/
+/-- For every $f \in L^p(\mu)$, the $L^p(\nu)$ norm of its image under
+`MeasureTheory.Lp.monoMeasureL` is at most $\|f\|_{L^p(\mu)}$. -/
 theorem norm_monoMeasureL_apply_le (hνμ : ν ≤ μ) (f : Lp G p μ) : ‖monoMeasureL hνμ f‖ ≤ ‖f‖ := by
   rw [monoMeasureL_apply, Lp.norm_toLp, Lp.norm_def]
   exact ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_measure _ hνμ)
 
-/-- The operator norm of `MeasureTheory.Lp.monoMeasureL` is at most one. -/
+/-- The operator norm of `MeasureTheory.Lp.monoMeasureL` is at most $1$. -/
 theorem norm_monoMeasureL_le (hνμ : ν ≤ μ) : ‖(monoMeasureL hνμ : Lp G p μ →L[ℝ] Lp G p ν)‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
 end MeasureTheory.Lp
 
-/-! ### `L^p ⊆ L^q` on a finite measure, as a bounded linear map -/
+/-! ### $L^p \subseteq L^q$ on a finite measure, as a bounded linear map -/
 
 section MonoExponent
 
@@ -1034,8 +1162,9 @@ variable {α G : Type*} [MeasurableSpace α] {μ : Measure α} [NormedAddCommGro
 namespace MeasureTheory.Lp
 
 variable (G p q μ) in
-/-- **The inclusion `L^p(μ) ⊆ L^q(μ)` for `q ≤ p` on a finite measure**, as a bounded linear map
-of norm at most `μ(univ)^{1/q − 1/p}`. -/
+/-- **The inclusion $L^p(\mu) \subseteq L^q(\mu)$ for $1 \le q \le p \le \infty$ and a finite
+measure $\mu$**, as a bounded linear map of norm at most $\mu(X)^{1/q - 1/p}$. At $p = \infty$
+the exponent is $1/q$. -/
 def monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) : Lp G p μ →L[ℝ] Lp G q μ :=
   LinearMap.mkContinuous
     { toFun := fun f ↦ ((Lp.memLp f).mono_exponent hqp).toLp f
@@ -1060,18 +1189,20 @@ def monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) : Lp G p μ →L[ℝ] Lp 
         (ENNReal.rpow_ne_top_of_nonneg hexp (measure_ne_top μ univ))) ?_
       exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hqp (Lp.aestronglyMeasurable f)
 
-/-- The inclusion `L^p ⊆ L^q` is the identity on functions, almost everywhere. -/
+/-- The inclusion $L^p(\mu) \subseteq L^q(\mu)$ maps $f$ to a function equal to $f$ almost
+everywhere. -/
 theorem coeFn_monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) (f : Lp G p μ) :
     monoExponentL G μ p q hqp f =ᵐ[μ] f :=
   MemLp.coeFn_toLp ((Lp.memLp f).mono_exponent hqp)
 
-/-- The inclusion `L^p ⊆ L^q` is injective. -/
+/-- The inclusion $L^p(\mu) \subseteq L^q(\mu)$ is injective. -/
 theorem monoExponentL_injective [IsFiniteMeasure μ] (hqp : q ≤ p) :
     Function.Injective (monoExponentL G μ p q hqp) := fun f g hfg ↦
   Lp.ext ((coeFn_monoExponentL hqp f).symm.trans ((Lp.ext_iff.1 hfg).trans
     (coeFn_monoExponentL hqp g)))
 
-/-- **`L^p(μ) ↪ L^q(μ)` is a continuous embedding for `q ≤ p` on a finite measure.** -/
+/-- **$L^p(\mu) \hookrightarrow L^q(\mu)$ is a continuous embedding** for $1 \le q \le p \le \infty$
+and a finite measure $\mu$: the inclusion is injective and bounded. -/
 theorem isContinuousEmbedding_monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) :
     IsContinuousEmbedding (monoExponentL G μ p q hqp).toLinearMap :=
   ⟨monoExponentL_injective hqp, _, (monoExponentL G μ p q hqp).le_opNorm⟩
@@ -1080,7 +1211,7 @@ end MeasureTheory.Lp
 
 end MonoExponent
 
-/-! ### The norm of `W^{k,p}(Ω)` against the norms of the weak derivatives -/
+/-! ### The norm of $W^{k,p}(\Omega)$ against the norms of the weak derivatives -/
 
 section NormSum
 
@@ -1091,7 +1222,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- The norm of `W^{k,p}(Ω)` is at most the sum of the `L^p(Ω)` norms of the weak derivatives. -/
+/-- For $p \ge 1$ and $u \in W^{k,p}(\Omega)$, $\|u\|_{W^{k,p}(\Omega)} \le \sum_{|\alpha| \le k}
+\|\partial^\alpha u\|_{L^p(\Omega)}$. -/
 theorem norm_le_sum_norm_weakDeriv (u : SobolevMultiIndex F b k p Ω μ) :
     ‖u‖ ≤ ∑ α, ‖weakDeriv u α‖ := by
   rw [← Submodule.norm_coe]
@@ -1109,7 +1241,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω Ω' : Opens E} {μ : Measure E}
 
 omit [OpensMeasurableSpace E] in
-/-- Membership of `W^{k,p}` is inherited by open subsets. -/
+/-- If $f \in W^{k,p}(\Omega)$ and $\Omega' \subseteq \Omega$ is open, then
+$f \in W^{k,p}(\Omega')$. -/
 theorem MemSobolevMultiIndex.mono_set (h : MemSobolevMultiIndex b f k p Ω μ) (hΩ : Ω' ≤ Ω) :
     MemSobolevMultiIndex b f k p Ω' μ :=
   ⟨h.1.mono_measure (Measure.restrict_mono hΩ le_rfl), fun α hα ↦
@@ -1117,15 +1250,19 @@ theorem MemSobolevMultiIndex.mono_set (h : MemSobolevMultiIndex b f k p Ω μ) (
     ⟨w, hw.mono hΩ, hwp.mono_measure (Measure.restrict_mono hΩ le_rfl)⟩⟩
 
 variable (b f k p Ω μ) in
-/-- **The local Sobolev space `W^{k,p}_loc(Ω)`**: `f` lies in `W^{k,p}(ω)` for every open `ω`
-whose closure is a compact subset of `Ω` (`ω ⋐ Ω`). This is the reading "`u ∈ H^{m+2}(ω)` for
-every `ω ⊂⊂ Ω`" of [brezis2011functional] Chapter 9, Remark 25. -/
+/-- **The local Sobolev space $W^{k,p}_{\mathrm{loc}}(\Omega)$**: $f$ lies in
+$W^{k,p}_{\mathrm{loc}}(\Omega)$ if $f \in W^{k,p}(\omega)$ for every open set $\omega$ whose
+closure is a compact subset of $\Omega$ ($\omega \Subset \Omega$).
+
+This is the reading "$u \in H^{m+2}(\omega)$ for every $\omega \subset\subset \Omega$" of Remark
+25 in Chapter 9 of [brezis2011functional]. The space $W^{k,p}(\omega)$ is `MemSobolevMultiIndex`
+for the basis $b$. -/
 def MemSobolevMultiIndexLoc : Prop :=
   ∀ V : Opens E, IsCompact (closure (V : Set E)) → closure (V : Set E) ⊆ Ω →
     MemSobolevMultiIndex b f k p V μ
 
 omit [OpensMeasurableSpace E] in
-/-- A function of `W^{k,p}(Ω)` lies in `W^{k,p}_loc(Ω)`. -/
+/-- A function of $W^{k,p}(\Omega)$ lies in $W^{k,p}_{\mathrm{loc}}(\Omega)$. -/
 theorem MemSobolevMultiIndex.memSobolevMultiIndexLoc (h : MemSobolevMultiIndex b f k p Ω μ) :
     MemSobolevMultiIndexLoc b f k p Ω μ := fun _ _ hV ↦
   h.mono_set (subset_closure.trans hV)
@@ -1133,19 +1270,22 @@ theorem MemSobolevMultiIndex.memSobolevMultiIndexLoc (h : MemSobolevMultiIndex b
 namespace MemSobolevMultiIndexLoc
 
 omit [OpensMeasurableSpace E] in
-/-- `W^{k,p}_loc(Ω)` decreases as the order increases. -/
+/-- If $f \in W^{k,p}_{\mathrm{loc}}(\Omega)$ and $k' \le k$, then
+$f \in W^{k',p}_{\mathrm{loc}}(\Omega)$. -/
 theorem mono_order {k' : ℕ} (h : MemSobolevMultiIndexLoc b f k p Ω μ) (hk : k' ≤ k) :
     MemSobolevMultiIndexLoc b f k' p Ω μ := fun V hVc hVΩ ↦
   (h V hVc hVΩ).mono_order hk
 
 omit [OpensMeasurableSpace E] in
-/-- `W^{k,p}_loc` is inherited by open subsets. -/
+/-- If $f \in W^{k,p}_{\mathrm{loc}}(\Omega)$ and $\Omega' \subseteq \Omega$ is open, then
+$f \in W^{k,p}_{\mathrm{loc}}(\Omega')$. -/
 theorem mono_set (h : MemSobolevMultiIndexLoc b f k p Ω μ) (hΩ : Ω' ≤ Ω) :
     MemSobolevMultiIndexLoc b f k p Ω' μ := fun V hVc hVΩ ↦
   h V hVc (hVΩ.trans hΩ)
 
 omit [OpensMeasurableSpace E] in
-/-- Membership of `W^{k,p}_loc(Ω)` only sees the function up to a null set of `Ω`. -/
+/-- If $f \in W^{k,p}_{\mathrm{loc}}(\Omega)$ and $f' = f$ almost everywhere on $\Omega$, then
+$f' \in W^{k,p}_{\mathrm{loc}}(\Omega)$. -/
 theorem congr_ae {f' : E → F} (h : MemSobolevMultiIndexLoc b f k p Ω μ)
     (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') : MemSobolevMultiIndexLoc b f' k p Ω μ :=
   fun V hVc hVΩ ↦ (h V hVc hVΩ).congr_ae
@@ -1157,10 +1297,14 @@ section Classical
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [μ.IsAddHaarMeasure]
 
-/-- **A `C^n` function on `Ω` lies in `W^{m,p}_loc(Ω)` for every `m ≤ n`**: on an open `V` with
-compact closure in `Ω`, its derivatives of order `≤ m` are continuous on the compact `closure V`,
-hence bounded, hence in `L^p(V)`, and the classical derivatives are the weak ones
-(`ContDiffOn.hasWeakIteratedFDerivOn`). -/
+/-- **A function of class $C^n$ on $\Omega$ lies in $W^{m,p}_{\mathrm{loc}}(\Omega)$ for every
+$m \le n$.** Let $E$ be finite-dimensional with an additive Haar measure, and let $f$ be of
+class $C^n$ on the open set $\Omega$, where $n$ may be infinite. Then
+$f \in W^{m,p}_{\mathrm{loc}}(\Omega)$ for every natural number $m \le n$ and every $p$.
+
+On an open set $V$ with compact closure in $\Omega$, the derivatives of order at most $m$ are
+continuous on the compact set $\overline{V}$, hence bounded, hence in $L^p(V)$. The classical
+derivatives are the weak ones (`ContDiffOn.hasWeakIteratedFDerivOn`). -/
 theorem _root_.ContDiffOn.memSobolevMultiIndexLoc {n : WithTop ℕ∞} (hf : ContDiffOn ℝ n f Ω)
     {m : ℕ} (hm : (m : WithTop ℕ∞) ≤ n) : MemSobolevMultiIndexLoc b f m p Ω μ := by
   intro V hVc hVΩ
@@ -1190,33 +1334,40 @@ end Classical
 
 end Loc
 
-/-! ### Extension domains
+/-!
+### Extension domains
 
 The abstract hypothesis under which the embedding and compactness theorems on a domain are stated
-once: a bounded linear extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on the subspace `S`.
-Its instances are the half space, the `C^1` chart domains with bounded boundary (the extension
-theorem), and `W_0^{1,p}(Ω)` on any open set (extension by zero). -/
+once: a bounded linear extension operator $W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ exists on a
+subspace $S$. Its instances are the half space, the $C^1$ chart domains with bounded boundary (the
+extension theorem), and $W_0^{1,p}(\Omega)$ on any open set (extension by zero).
+-/
 
 section ExtensionDomain
 
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **A subspace `S` of `W^{1,p}(Ω)` has a Sobolev extension operator** when there is a bounded
-linear `P : S → W^{1,p}(ℝ^N)` with `P u = u` almost everywhere on `Ω`. This is the standing
-hypothesis of [brezis2011functional] §9.3.B in the form its consequences use: the `L^p` bound of
-Theorem 9.7 is not part of it, only the `W^{1,p}` bound. The subspace form is the primary one
-because `W_0^{1,p}(Ω)` has such an operator on every open set (extension by zero, Remark 20) while
-`W^{1,p}(Ω)` itself needs a regular boundary. -/
+/-- **A subspace $S$ of $W^{1,p}(\Omega)$ has a Sobolev extension operator**, for an open set
+$\Omega \subseteq \mathbb{R}^N$ and $p \ge 1$, if there is a bounded linear map
+$P : S \to W^{1,p}(\mathbb{R}^N)$ with $P u = u$ almost everywhere on $\Omega$ for every
+$u \in S$.
+
+This is the standing hypothesis of §9.3.B of [brezis2011functional] in the form that its
+consequences use: the $L^p$ bound of Theorem 9.7 is not part of it, only the $W^{1,p}$ bound.
+The subspace form is the primary one because $W_0^{1,p}(\Omega)$ has such an operator on every
+open set (extension by zero, Remark 20), while $W^{1,p}(\Omega)$ itself needs a regular
+boundary. -/
 def HasSobolevExtensionOn (S : Submodule ℝ (SobolevEuclidean N 1 p Ω)) : Prop :=
   ∃ P : S →L[ℝ] SobolevEuclidean N 1 p ⊤, ∀ u : S,
     SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω)
 
 variable (N p Ω) in
-/-- **`Ω` is a `W^{1,p}`-extension domain**: all of `W^{1,p}(Ω)` has a Sobolev extension operator
-(`HasSobolevExtensionOn ⊤`), the standard name of the literature for the standing hypothesis of
-[brezis2011functional] §9.3.B. Its instances are the half space, and the `C^1` chart domains with
-bounded boundary of Theorem 9.7; a Lipschitz domain would enter through one more instance. -/
+/-- **$\Omega$ is a $W^{1,p}$-extension domain** if all of $W^{1,p}(\Omega)$ has a Sobolev extension
+operator, that is, `HasSobolevExtensionOn ⊤`. This is the standard name in the literature for
+the standing hypothesis of §9.3.B of [brezis2011functional]. Its instances are the half space
+and the $C^1$ chart domains with bounded boundary of Theorem 9.7; a Lipschitz domain would be
+one more instance. -/
 def IsSobolevExtensionDomain : Prop :=
   HasSobolevExtensionOn (⊤ : Submodule ℝ (SobolevEuclidean N 1 p Ω))
 
@@ -1232,9 +1383,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The Sobolev seminorm only sees the function up to a null set of `Ω`: the chosen weak
-derivatives of two almost everywhere equal functions are almost everywhere equal, or both
-absent. -/
+/-- Let $E$ be finite-dimensional and let $F$ be complete. If $f = g$ almost everywhere on $\Omega$,
+then the Sobolev seminorms of order $k$ of $f$ and $g$ on $\Omega$ are equal. The chosen weak
+derivatives of two functions that are equal almost everywhere are equal almost everywhere, or
+both absent. -/
 theorem sobolevSeminorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
     sobolevSeminorm f k p Ω μ = sobolevSeminorm g k p Ω μ := by
   by_cases h : ∃ w, HasWeakIteratedFDerivOn k f w Ω μ
@@ -1249,8 +1401,10 @@ theorem sobolevSeminorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.rest
     simp only [sobolevSeminorm, weakIteratedFDeriv, dite_eq_right h, dite_eq_right h']
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The Sobolev norm only sees the function up to a null set of `Ω`: the chosen weak derivatives
-of two almost everywhere equal functions are almost everywhere equal, or both absent. -/
+/-- Let $E$ be finite-dimensional and let $F$ be complete. If $f = g$ almost everywhere on $\Omega$,
+then the Sobolev norms of order $k$ of $f$ and $g$ on $\Omega$ are equal. The chosen weak
+derivatives of two functions that are equal almost everywhere are equal almost everywhere, or
+both absent. -/
 theorem sobolevNorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
     sobolevNorm f k p Ω μ = sobolevNorm g k p Ω μ := by
   have key : ∀ n : ℕ, eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E))
@@ -1263,15 +1417,22 @@ theorem sobolevNorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict
 namespace SobolevMultiIndex
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The function of a difference is the difference of the functions, almost everywhere on `Ω`. -/
+/-- For $u, v \in W^{k,p}(\Omega)$, the function of $u - v$ is the difference of the functions of
+$u$ and $v$, almost everywhere on $\Omega$. -/
 theorem fn_sub {k : ℕ} (u v : SobolevMultiIndex F b k p Ω μ) :
     fn (u - v) =ᵐ[μ.restrict (Ω : Set E)] fn u - fn v :=
   Lp.coeFn_sub (weakDeriv u 0) (weakDeriv v 0)
 
-/-- **The norm of `W^{1,p}(Ω)` in the multi-index formulation is bounded by the tensor Sobolev
-norm** of `Numlib/Analysis/Sobolev/Domain.lean`, up to the constant `1 + ∑ i, ‖ev_{b i}‖`: the
-function is the derivative of order `0`, and each partial derivative `∂_i u` is the weak
-derivative tensor of order one evaluated at `b i`. -/
+/-- **The norm of $W^{1,p}(\Omega)$ in the multi-index form is bounded by the tensor Sobolev norm.**
+Let $E$ be finite-dimensional with an additive Haar measure, let $F$ be complete, and let
+$1 \le p < \infty$. For $u \in W^{1,p}(\Omega)$,
+$$\|u\|_{W^{1,p}(\Omega)} \le \Big(1 + \sum_i \|\mathrm{ev}_{b_i}\|\Big) \|u\|_{1,p,\Omega},$$
+where $\mathrm{ev}_{b_i}$ evaluates a $1$-linear map at $b_i$, and $\|u\|_{1,p,\Omega}$ is
+`sobolevNorm` of `Numlib.Analysis.Sobolev.Domain`.
+
+The function is the derivative of order $0$, and each partial derivative $\partial_i u$ is the
+weak derivative tensor of order one evaluated at $b_i$. The left side is the real norm mapped to
+$[0, \infty]$. -/
 theorem ofReal_norm_le_sobolevNorm (hp' : p ≠ ⊤) (u : SobolevMultiIndex F b 1 p Ω μ) :
     ENNReal.ofReal ‖u‖ ≤ (1 + ∑ i, ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin 1 ↦ E) F
       ![b i]‖ₑ) * sobolevNorm (fn u) 1 p Ω μ := by
@@ -1320,10 +1481,17 @@ theorem ofReal_norm_le_sobolevNorm (hp' : p ≠ ⊤) (u : SobolevMultiIndex F b 
     _ = _ := by rw [add_mul, one_mul, Finset.sum_mul]
 
 omit [μ.IsAddHaarMeasure] in
-/-- **The norm of `W^{k,p}(Ω)` in the multi-index formulation is bounded by the tensor Sobolev
-norm** at every order, up to the constant `∑_α ‖ev_{multiIndexTuple b α}‖`: each `∂^α u` is the
-weak derivative tensor of order `|α|` evaluated at the tuple naming `α`
-(`SobolevMultiIndex.ofReal_norm_le_sobolevNorm` at order one). -/
+/-- **The norm of $W^{k,p}(\Omega)$ in the multi-index form is bounded by the tensor Sobolev norm**,
+at every order. Let $E$ be finite-dimensional, let $F$ be complete, and let $1 \le p < \infty$.
+Write $\|u\|_{k,p,\Omega}$ for `sobolevNorm`, and for a multi-index $\alpha$ write
+$\mathrm{ev}_\alpha$ for the evaluation of a multilinear map of order $|\alpha|$ at the tuple of
+directions that names $\alpha$ (`multiIndexTuple`). For $u \in W^{k,p}(\Omega)$,
+$$\|u\|_{W^{k,p}(\Omega)} \le \Big(\sum_{|\alpha| \le k} \|\mathrm{ev}_\alpha\|\Big)
+  \|u\|_{k,p,\Omega}.$$
+
+Each $\partial^\alpha u$ is the weak derivative tensor of order $|\alpha|$ evaluated at that
+tuple. The case of order one is `SobolevMultiIndex.ofReal_norm_le_sobolevNorm`. The left side is
+the real norm mapped to $[0, \infty]$. -/
 theorem ofReal_norm_le_sobolevNorm_of_order {k : ℕ} (hp' : p ≠ ⊤)
     (u : SobolevMultiIndex F b k p Ω μ) :
     ENNReal.ofReal ‖u‖ ≤ (∑ α : MultiIndexLE ι k, ‖ContinuousMultilinearMap.apply ℝ
@@ -1362,8 +1530,10 @@ theorem ofReal_norm_le_sobolevNorm_of_order {k : ℕ} (hp' : p ≠ ⊤)
     _ = _ := by rw [Finset.sum_mul]
 
 omit [Fact (1 ≤ p)] in
-/-- A `C^k` function with compact support is the function of an element of `W^{k,p}(Ω)`: the
-`C^∞` case is `ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport`. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure, and let $F$ be complete. A function
+$v$ of class $C^k$ with compact support is, almost everywhere on $\Omega$, the function of an
+element of $W^{k,p}(\Omega)$. The case of class $C^\infty$ is
+`ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport`. -/
 theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport' {k : ℕ} {v : E → F}
     (hv : ContDiff ℝ k v) (hvc : HasCompactSupport v) :
     ∃ u : SobolevMultiIndex F b k p Ω μ, SobolevMultiIndex.fn u =ᵐ[μ.restrict (Ω : Set E)] v := by
@@ -1374,14 +1544,20 @@ theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport' {k : ℕ}
     (hvc.iteratedFDeriv n)).restrict _
 
 omit [Fact (1 ≤ p)] in
-/-- A smooth compactly supported function is the function of an element of `W^{k,p}(Ω)`. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure, and let $F$ be complete. A function
+$v$ of class $C^\infty$ with compact support is, almost everywhere on $\Omega$, the function of
+an element of $W^{k,p}(\Omega)$. -/
 theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport {k : ℕ} {v : E → F}
     (hv : ContDiff ℝ ∞ v) (hvc : HasCompactSupport v) :
     ∃ u : SobolevMultiIndex F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] v :=
   (hv.of_le (by simp)).exists_sobolevMultiIndex_of_hasCompactSupport' hvc
 
-/-- **A smooth function is the function of an element of `W^{k,p}(Ω)` for a bounded open `Ω`**:
-multiply it by a smooth compactly supported cutoff equal to `1` on `closure Ω`. -/
+/-- **A smooth function is the function of an element of $W^{k,p}(\Omega)$ for a bounded open set
+$\Omega$.** Let $\Omega \subseteq \mathbb{R}^N$ be open and bounded, and let
+$\varphi : \mathbb{R}^N \to \mathbb{R}$ be of class $C^\infty$. Then there is
+$u \in W^{k,p}(\Omega)$ whose function equals $\varphi$ almost everywhere on $\Omega$. The proof
+multiplies $\varphi$ by a smooth compactly supported function equal to $1$ on
+$\overline{\Omega}$. -/
 theorem _root_.SobolevEuclidean.exists_fn_ae_eq_of_contDiff {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} {k : ℕ} {p : ℝ≥0∞}
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -1408,7 +1584,7 @@ theorem _root_.SobolevEuclidean.exists_fn_ae_eq_of_contDiff {N : ℕ}
 end SobolevMultiIndex
 
 end Compare
-/-! ### The cut-off sequence `ζ_n u → u` -/
+/-! ### The cut-off sequence $\zeta_n u \to u$ -/
 
 section CutoffSequence
 
@@ -1417,9 +1593,11 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   {b : Basis ι ℝ E} {p : ℝ≥0∞} {Ω : Opens E} {μ : Measure E}
 
 omit [FiniteDimensional ℝ E] in
-/-- **The Leibniz rule for a smooth factor**, in the form `∂_y (g u) = g ∂_y u + (∂_y g) u` with
-the classical derivative of `g` written through `fderiv`: `HasWeakIteratedLineDerivOn.mul_contDiff`
-with the factors in the other order. -/
+/-- **The Leibniz rule for a smooth factor.** Let $w$ be a weak derivative of the real function $u$
+along the direction $y$ on $\Omega$, and let $g : E \to \mathbb{R}$ be of class $C^\infty$. Then
+$g u$ has the weak derivative $g\, w + (\partial_y g) u$ along $y$ on $\Omega$, with
+$\partial_y g(x) = Dg(x)\, y$. This is `HasWeakIteratedLineDerivOn.mul_contDiff` with the
+factors in the other order. -/
 theorem HasWeakIteratedLineDerivOn.contDiff_mul {u w : E → ℝ} {y : E}
     (h : HasWeakIteratedLineDerivOn ![y] u w Ω μ) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) :
     HasWeakIteratedLineDerivOn ![y] (fun x ↦ g x * u x)
@@ -1430,10 +1608,12 @@ theorem HasWeakIteratedLineDerivOn.contDiff_mul {u w : E → ℝ} {y : E}
       rw [iteratedFDeriv_one_apply, Matrix.cons_val_zero]
       ring)
 
-/-- **The Leibniz rule for a smooth factor, in the tensor form at order one**: if `w` is a
-first-order weak derivative of the real function `f` on `Ω` and `g` is smooth, then `g f` has the
-weak derivative `g w + f ∂g`, `∂g = iteratedFDeriv ℝ 1 g` the classical derivative of `g`
-(`HasWeakIteratedLineDerivOn.mul_contDiff` along every direction at once). -/
+/-- **The Leibniz rule for a smooth factor, in the tensor form at order one.** Let $E$ be
+finite-dimensional, let $w$ be a first-order weak derivative of the real function $f$ on
+$\Omega$ (a $1$-linear map at each point), and let $g : E \to \mathbb{R}$ be of class
+$C^\infty$. Then $g f$ has the first-order weak derivative $g\, w + f\, D^1 g$ on $\Omega$,
+where $D^1 g$ is the classical derivative of $g$ as a $1$-linear map. This is
+`HasWeakIteratedLineDerivOn.mul_contDiff` in every direction at once. -/
 theorem HasWeakIteratedFDerivOn.contDiff_mul_one {f : E → ℝ} {w : E → E [×1]→L[ℝ] ℝ}
     (h : HasWeakIteratedFDerivOn 1 f w Ω μ) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) :
     HasWeakIteratedFDerivOn 1 (fun x ↦ g x * f x)
@@ -1460,9 +1640,11 @@ theorem HasWeakIteratedFDerivOn.contDiff_mul_one {f : E → ℝ} {w : E → E [�
 variable [IsLocallyFiniteMeasure μ]
 
 omit [FiniteDimensional ℝ E] in
-/-- **A smooth factor, bounded with bounded derivative, preserves `W^{1,p}(Ω)`**: for
-`u ∈ W^{1,p}(Ω)` and `g` smooth with `|g| ≤ M` and `‖∇g‖ ≤ M`, `g u ∈ W^{1,p}(Ω)`, with the weak
-derivatives `g ∂_i u + (∂_i g) u` (`HasWeakIteratedLineDerivOn.contDiff_mul`). -/
+/-- **A smooth factor, bounded with bounded derivative, preserves $W^{1,p}(\Omega)$.** Let $\mu$ be
+locally finite and $p \ge 1$. If $u \in W^{1,p}(\Omega)$ is real and $g : E \to \mathbb{R}$ is
+of class $C^\infty$ with $|g(x)| \le M$ and $\|Dg(x)\| \le M$ for all $x$, then
+$g u \in W^{1,p}(\Omega)$. The weak derivatives are $g\, \partial_i u + (\partial_i g) u$
+(`HasWeakIteratedLineDerivOn.contDiff_mul`). -/
 theorem MemSobolevMultiIndex.contDiff_mul {u : E → ℝ} (hp : 1 ≤ p)
     (hu : MemSobolevMultiIndex b u 1 p Ω μ) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) {M : ℝ}
     (hM : ∀ x, |g x| ≤ M ∧ ‖fderiv ℝ g x‖ ≤ M) :
@@ -1496,8 +1678,11 @@ theorem MemSobolevMultiIndex.contDiff_mul {u : E → ℝ} (hp : 1 ≤ p)
 variable [μ.IsAddHaarMeasure]
 
 omit [IsLocallyFiniteMeasure μ] in
-/-- The `L^p(s)` mass of a function outside a large ball tends to `0`: the restriction of
-`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball` to a measurable set. -/
+/-- Let $E$ be finite-dimensional with an additive Haar measure $\mu$, let $p \ne \infty$, let $s$
+be measurable, and let $f \in L^p(s)$. If $r_j \to \infty$, then
+$$\|\mathbf{1}_{E \setminus B(0, r_j)}\, f\|_{L^p(s)} \to 0.$$
+This is `MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball` for the measure restricted to
+$s$. -/
 theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict {G : Type*}
     [NormedAddCommGroup G] [NormedSpace ℝ G] (hp' : p ≠ ⊤) {s : Set E} (hs : MeasurableSet s)
     {f : E → G}
@@ -1511,8 +1696,10 @@ theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict {G : T
     measurableSet_ball.compl.nullMeasurableSet, Measure.restrict_restrict measurableSet_ball.compl]
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [IsLocallyFiniteMeasure μ] [μ.IsAddHaarMeasure] in
-/-- The function `(ζ_n − 1) f`, for a cut-off `ζ_n` with values in `[0, 1]` equal to `1` on
-`ball 0 R`, has `L^p(Ω)` norm at most the `L^p(Ω)` norm of `f` outside `ball 0 R`. -/
+/-- Let $c : E \to [0, 1]$ be continuous with $c = 1$ on the open ball $B(0, R)$, and let $f$ be
+almost everywhere strongly measurable on $\Omega$. Then
+$$\|(c - 1) f\|_{L^p(\Omega)} \le \|\mathbf{1}_{E \setminus B(0, R)}\, f\|_{L^p(\Omega)}.$$
+-/
 theorem eLpNorm_sub_one_mul_le_of_eqOn_ball {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     {c : E → ℝ} (hc : Continuous c) (hc01 : ∀ x, c x ∈ Icc (0 : ℝ) 1) {R : ℝ}
     (hcR : ∀ x ∈ ball (0 : E) R, c x = 1) {f : E → G}
@@ -1527,17 +1714,23 @@ theorem eLpNorm_sub_one_mul_le_of_eqOn_ball {G : Type*} [NormedAddCommGroup G] [
     refine mul_le_of_le_one_left (norm_nonneg _) (abs_le.2 ⟨?_, ?_⟩) <;>
       linarith [(hc01 x).1, (hc01 x).2]
 
-/-- **The cut-off sequence approximates in `W^{1,p}(Ω)`, tensor form**, any open `Ω`,
-`1 ≤ p < ∞`: for `ζ : E → ℝ` smooth with values in `[0, 1]`, equal to `1` on `closedBall 0 1`
-and supported in `closedBall 0 2` (`exists_contDiff_eqOn_one_closedBall_one` of `Density.lean`),
-put `ζ_n x = ζ ((n + 1)⁻¹ • x)`. Then for a real `f ∈ W^{1,p}(Ω)`, every `ζ_n f` lies in
-`W^{1,p}(Ω)`, with the weak gradient `ζ_n ∇f + f ∇ζ_n` (`HasWeakIteratedFDerivOn.contDiff_mul_one`),
-and `‖ζ_n f − f‖_{W^{1,p}(Ω)} → 0`: `(ζ_n − 1) f` and `(ζ_n − 1) ∇f` are bounded by the `L^p`
-mass outside `ball 0 (n + 1)` (`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict`)
-and `‖∇ζ_n‖_∞ ≤ ‖∇ζ‖_∞ / (n + 1)`. This is footnote 5 of [brezis2011functional] §9.1, the
-sequence `ζ_n u` of Corollary 9.8, Theorem 9.17 and Proposition 9.18, in the reading of
-`Numlib/Analysis/Sobolev/Domain.lean` (`MemSobolev`, `sobolevNorm`); the typed form is
-`SobolevMultiIndex.tendsto_cutoff_smul`. -/
+/-- **The cut-off sequence approximates in $W^{1,p}(\Omega)$, tensor form**, for any open set
+$\Omega$ and $1 \le p < \infty$. Let $E$ be finite-dimensional with a locally finite additive
+Haar measure. Let $\zeta : E \to [0, 1]$ be of class $C^\infty$, equal to $1$ on the closed ball
+$\bar B(0, 1)$ and supported in $\bar B(0, 2)$, and put $\zeta_n(x) = \zeta(x / (n + 1))$. Then
+for every real $f \in W^{1,p}(\Omega)$:
+* every $\zeta_n f$ lies in $W^{1,p}(\Omega)$;
+* $\|\zeta_n f - f\|_{W^{1,p}(\Omega)} \to 0$ as $n \to \infty$.
+
+This is footnote 5 of [brezis2011functional], §9.1, the sequence $\zeta_n u$ of Corollary 9.8,
+Theorem 9.17 and Proposition 9.18. The Sobolev space and norm are `MemSobolev` and `sobolevNorm`
+of `Numlib.Analysis.Sobolev.Domain`; the form for the space `SobolevMultiIndex` is
+`SobolevMultiIndex.tendsto_cutoff_smul`. A function $\zeta$ exists by
+`exists_contDiff_eqOn_one_closedBall_one`. The weak gradient of $\zeta_n f$ is
+$\zeta_n \nabla f + f \nabla \zeta_n$ (`HasWeakIteratedFDerivOn.contDiff_mul_one`). The terms
+$(\zeta_n - 1) f$ and $(\zeta_n - 1) \nabla f$ are bounded by the $L^p$ mass outside
+$B(0, n + 1)$ (`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict`), and
+$\|\nabla \zeta_n\|_\infty \le \|\nabla \zeta\|_\infty / (n + 1)$. -/
 theorem MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub (hp : 1 ≤ p) (hp' : p ≠ ⊤) {ζ : E → ℝ}
     (hζ : ContDiff ℝ ∞ ζ) (hζ01 : ∀ x, ζ x ∈ Icc (0 : ℝ) 1) (hζ1 : EqOn ζ 1 (closedBall 0 1))
     (hζs : tsupport ζ ⊆ closedBall 0 2) {f : E → ℝ} (hf : MemSobolev f 1 p Ω μ) :
@@ -1669,16 +1862,24 @@ namespace SobolevMultiIndex
 
 variable [Fact (1 ≤ p)]
 
-/-- **The cut-off sequence approximates in `W^{1,p}(Ω)`**, any open `Ω`, `1 ≤ p < ∞`: for
-`ζ : E → ℝ` smooth with values in `[0, 1]`, equal to `1` on `closedBall 0 1` and supported in
-`closedBall 0 2` (`exists_contDiff_eqOn_one_closedBall_one` of `Density.lean`), put
-`ζ_n x = ζ ((n + 1)⁻¹ • x)`. Then for `u ∈ W^{1,p}(Ω)` there is `v : ℕ → W^{1,p}(Ω)` with
-`fn (v n) = ζ_n fn u` on `Ω`, `fn (v n) = 0` off `closedBall 0 (2 (n + 1))`, and `v n → u`. The
-weak derivatives of `v n` are `ζ_n ∂_i u + (∂_i ζ_n) u` (`MemSobolevMultiIndex.contDiff_mul`);
-`(ζ_n − 1) u` and `(ζ_n − 1) ∂_i u` are bounded by the `L^p` mass outside `ball 0 (n + 1)`
-(`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict`) and
-`‖∇ζ_n‖_∞ ≤ ‖∇ζ‖_∞ / (n + 1)`. This is footnote 5 of [brezis2011functional] §9.1 and the
-sequence `ζ_n u` used in Corollary 9.8, Theorem 9.17 and Proposition 9.18. -/
+/-- **The cut-off sequence approximates in $W^{1,p}(\Omega)$**, for any open set $\Omega$ and
+$1 \le p < \infty$. Let $E$ be finite-dimensional with a locally finite additive Haar measure.
+Let $\zeta : E \to [0, 1]$ be of class $C^\infty$, equal to $1$ on $\bar B(0, 1)$ and supported
+in $\bar B(0, 2)$, and put $\zeta_n(x) = \zeta(x / (n + 1))$. Then for every
+$u \in W^{1,p}(\Omega)$ with real values there is a sequence $v_n \in W^{1,p}(\Omega)$ such
+that:
+* the function of $v_n$ is $\zeta_n u$ almost everywhere on $\Omega$;
+* for almost every $x \in \Omega$ with $\|x\| > 2(n + 1)$, the function of $v_n$ vanishes at
+  $x$;
+* $v_n \to u$ in $W^{1,p}(\Omega)$.
+
+This is footnote 5 of [brezis2011functional], §9.1, and the sequence $\zeta_n u$ used in
+Corollary 9.8, Theorem 9.17 and Proposition 9.18. A function $\zeta$ exists by
+`exists_contDiff_eqOn_one_closedBall_one`. The weak derivatives of $v_n$ are $\zeta_n\,
+\partial_i u + (\partial_i \zeta_n) u$ (`MemSobolevMultiIndex.contDiff_mul`). The terms
+$(\zeta_n - 1) u$ and $(\zeta_n - 1)\, \partial_i u$ are bounded by the $L^p$ mass outside
+$B(0, n + 1)$ (`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict`), and
+$\|\nabla \zeta_n\|_\infty \le \|\nabla \zeta\|_\infty / (n + 1)$. -/
 theorem tendsto_cutoff_smul (hp' : p ≠ ⊤) {ζ : E → ℝ} (hζ : ContDiff ℝ ∞ ζ)
     (hζ01 : ∀ x, ζ x ∈ Icc (0 : ℝ) 1) (hζ1 : EqOn ζ 1 (closedBall 0 1))
     (hζs : tsupport ζ ⊆ closedBall 0 2) (u : SobolevMultiIndex ℝ b 1 p Ω μ) :
@@ -1824,9 +2025,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {μ : Measure E} {α : E → ℝ}
 
 omit [NormedSpace ℝ E] in
-/-- **The zero extension of `α v` off `Ω'` is locally integrable on `Ω ⊇ Ω'`**, for `v` locally
-integrable on `Ω'` and `α` continuous with `tsupport α ∩ Ω ⊆ Ω'`: near a point of `Ω'` the
-function `α` is bounded and `v` integrable, near a point of `Ω ∖ Ω'` the function `α` vanishes. -/
+/-- **The zero extension of $\alpha v$ off $\Omega'$ is locally integrable on $\Omega$.** Let $E$ be
+a proper space, let $\Omega$ and $\Omega'$ be open, let $\alpha : E \to \mathbb{R}$ be
+continuous with $\operatorname{supp} \alpha \cap \Omega \subseteq \Omega'$, and let $v$ be
+locally integrable on $\Omega'$. Then the function equal to $\alpha v$ on $\Omega'$ and to $0$
+off $\Omega'$ is locally integrable on $\Omega$.
+
+Near a point of $\Omega'$ the function $\alpha$ is bounded and $v$ is integrable. Near a point
+of $\Omega \setminus \Omega'$ the function $\alpha$ vanishes. -/
 theorem LocallyIntegrableOn.indicator_smul_of_tsupport_inter_subset [ProperSpace E]
     (hα : Continuous α) (hαΩ' : tsupport α ∩ Ω ⊆ Ω') {v : E → F}
     (hv : LocallyIntegrableOn v Ω' μ) :
@@ -1858,8 +2064,10 @@ theorem LocallyIntegrableOn.indicator_smul_of_tsupport_inter_subset [ProperSpace
       rfl
 
 omit [NormedSpace ℝ E] in
-/-- **The zero extension of `α v` off `Ω'` lies in `L^p(Ω)`** for `v ∈ L^p(Ω')`, `Ω' ≤ Ω`, and a
-continuous `α` bounded by `M`. -/
+/-- **The zero extension of $\alpha v$ off $\Omega'$ lies in $L^p(\Omega)$.** Let $\Omega$ and
+$\Omega'$ be open, let $\alpha : E \to \mathbb{R}$ be continuous with $|\alpha(x)| \le M$ for
+all $x$, and let $v \in L^p(\Omega')$. Then the function equal to $\alpha v$ on $\Omega'$ and to
+$0$ off $\Omega'$ lies in $L^p(\Omega)$. No inclusion between $\Omega'$ and $\Omega$ is assumed. -/
 theorem MeasureTheory.MemLp.indicator_smul_of_le {p : ℝ≥0∞} (hα : Continuous α)
     {M : ℝ} (hM : ∀ x, |α x| ≤ M) {v : E → F} (hv : MemLp v p (μ.restrict (Ω' : Set E))) :
     MemLp ((Ω' : Set E).indicator fun x ↦ α x • v x) p (μ.restrict (Ω : Set E)) :=
@@ -1867,15 +2075,20 @@ theorem MeasureTheory.MemLp.indicator_smul_of_le {p : ℝ≥0∞} (hα : Continu
     (fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x)) hα.aestronglyMeasurable hv).mono_measure
     Measure.restrict_le_self
 
-/-- **Zero extension across the edge of a chart, at order one**: for opens `Ω' ≤ Ω`, a smooth
-compactly supported `α` with `tsupport α ∩ Ω ⊆ Ω'`, and `w` the weak derivative of `v` along `z`
-on `Ω'`, the extension of `α v` by zero off `Ω'` has, on `Ω`, the weak derivative
-`α w + (∂_z α) v` extended by zero. For a test function `φ` on `Ω`, `α φ` is a test function on
-`Ω'`, and
-`∫_{Ω'} α v ∂_z φ = ∫_{Ω'} v ∂_z (α φ) − ∫_{Ω'} v (∂_z α) φ = −∫_{Ω'} (α w + (∂_z α) v) φ`.
-Remark 4 (ii) of [brezis2011functional] Chapter 9 (`HasWeakIteratedLineDerivOn.indicator_mul`)
-is the case `Ω = ℝ^N` for a cut-off supported off `∂Ω'`; here `α` may reach `∂Ω' ∩ ∂Ω`, which is
-why the extension is only to `Ω`. -/
+/-- **Zero extension across the edge of a chart, at order one.** Let $E$ be a proper space, let
+$\Omega' \subseteq \Omega$ be open, and let $\alpha : E \to \mathbb{R}$ be of class $C^\infty$
+with $\operatorname{supp} \alpha \cap \Omega \subseteq \Omega'$. Let $w$ be a weak derivative of
+$v$ along the direction $z$ on $\Omega'$. Then the function equal to $\alpha v$ on $\Omega'$ and
+to $0$ off $\Omega'$ has, on $\Omega$, the weak derivative along $z$ equal to
+$\alpha w + (\partial_z \alpha) v$ on $\Omega'$ and to $0$ off $\Omega'$.
+
+For a test function $\varphi$ on $\Omega$, the function $\alpha \varphi$ is a test function on
+$\Omega'$, and $\int_{\Omega'} \alpha v\, \partial_z \varphi = \int_{\Omega'} v\, \partial_z
+(\alpha \varphi) - \int_{\Omega'} v\, (\partial_z \alpha) \varphi = -\int_{\Omega'} (\alpha w +
+(\partial_z \alpha) v) \varphi$. Remark 4 (ii) in Chapter 9 of [brezis2011functional]
+(`HasWeakIteratedLineDerivOn.indicator_mul`) is the case $\Omega = E$ for a cut-off supported
+off $\partial\Omega'$. Here $\alpha$ may reach $\partial\Omega' \cap \partial\Omega$, and this
+is why the extension is only to $\Omega$. -/
 theorem HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset [ProperSpace E]
     (hΩ' : Ω' ≤ Ω) (hα : ContDiff ℝ ∞ α) (hαΩ' : tsupport α ∩ Ω ⊆ Ω') {z : E} {v w : E → F}
     (h : HasWeakIteratedLineDerivOn ![z] v w Ω' μ) :
@@ -1951,11 +2164,18 @@ theorem HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset [Prop
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] {ι : Type*} [Fintype ι]
   [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [IsLocallyFiniteMeasure μ]
 
-/-- **The zero extension of `α v` off `Ω'` has weak derivatives of every order on `Ω`**, along
-every tuple of directions, when `v` has weak derivatives in `L^p(Ω')` along every tuple of
-length at most `m`: the induction of [brezis2011functional] Chapter 9, Remark 25, one direction
-at a time — `∂_z (α v) = α ∂_z v + (∂_z α) v` extended by zero
-(`HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset`), both terms again of the
+/-- **The zero extension of $\alpha v$ off $\Omega'$ has weak derivatives of every order on
+$\Omega$.** Let $E$ be finite-dimensional with a locally finite measure, let $F$ be complete,
+let $p \ge 1$, and let $\Omega' \subseteq \Omega$ be open. Let $m$ be a natural number, $y$ a
+tuple of $m$ directions, and $\alpha : E \to \mathbb{R}$ of class $C^\infty$ with compact
+support and $\operatorname{supp} \alpha \cap \Omega \subseteq \Omega'$. Let $v$ have, for every
+$m' \le m$ and every tuple $y'$ of $m'$ directions, a weak derivative along $y'$ on $\Omega'$
+that lies in $L^p(\Omega')$. Then the function equal to $\alpha v$ on $\Omega'$ and to $0$ off
+$\Omega'$ has a weak derivative along $y$ on $\Omega$ that lies in $L^p(\Omega)$.
+
+This is the induction of Remark 25 in Chapter 9 of [brezis2011functional], one direction at a
+time: $\partial_z (\alpha v) = \alpha\, \partial_z v + (\partial_z \alpha) v$ extended by zero
+(`HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset`), and both terms have the
 same form with one order less. -/
 theorem HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple (hp : 1 ≤ p)
     (hΩ' : Ω' ≤ Ω) : ∀ (m : ℕ) (y : Fin m → E) (α : E → ℝ), ContDiff ℝ ∞ α →
@@ -2000,13 +2220,18 @@ theorem HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple (hp : 1
     have := h1.cons' h2
     rwa [Fin.cons_self_tail] at this
 
-/-- **Zero extension across the edge of a chart, at every order**: for opens `Ω' ≤ Ω`, a smooth
-compactly supported `α` with `tsupport α ∩ Ω ⊆ Ω'`, and `v ∈ W^{k,p}(Ω')`, the function `α v`
-extended by zero off `Ω'` lies in `W^{k,p}(Ω)`. The case `Ω' = Ω ⊓ U` with `tsupport α ⊆ U` is
-"and thus, in fact, to `H²(Ω)`" of [brezis2011functional] §9.6, proof of Theorem 9.25, and the
-case `Ω = ℝ^N` is Remark 25. The derivatives are the induction
-`HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple`, fed by the tensor weak
-derivatives of `v` (`MemSobolevMultiIndex.memSobolev`), which exist along every tuple. -/
+/-- **Zero extension across the edge of a chart, at every order.** Let $E$ be finite-dimensional
+with a locally finite measure, let $F$ be complete, let $p \ge 1$, and let
+$\Omega' \subseteq \Omega$ be open. Let $\alpha : E \to \mathbb{R}$ be of class $C^\infty$ with
+compact support and $\operatorname{supp} \alpha \cap \Omega \subseteq \Omega'$. If
+$v \in W^{k,p}(\Omega')$, then the function equal to $\alpha v$ on $\Omega'$ and to $0$ off
+$\Omega'$ lies in $W^{k,p}(\Omega)$.
+
+The case $\Omega' = \Omega \cap U$ with $\operatorname{supp} \alpha \subseteq U$ is "and thus,
+in fact, to $H^2(\Omega)$" in the proof of Theorem 9.25 of [brezis2011functional], §9.6, and the
+case $\Omega = E$ is Remark 25. The derivatives come from the induction
+`HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple`, applied to the tensor weak
+derivatives of $v$ (`MemSobolevMultiIndex.memSobolev`), which exist along every tuple. -/
 theorem MemSobolevMultiIndex.indicator_smul_of_tsupport_subset {k : ℕ} (hp : 1 ≤ p)
     (hΩ' : Ω' ≤ Ω) (hα : ContDiff ℝ ∞ α) (hαc : HasCompactSupport α)
     (hαΩ' : tsupport α ∩ Ω ⊆ Ω') {v : E → F} (hv : MemSobolevMultiIndex b v k p Ω' μ) :
@@ -2024,12 +2249,16 @@ theorem MemSobolevMultiIndex.indicator_smul_of_tsupport_subset {k : ℕ} (hp : 1
   exact HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple hp hΩ' (∑ i, β i)
     (multiIndexTuple (b : ι → E) β) α hα hαc hαΩ' v fun m' y' hm' ↦ hall m' y' (hm'.trans hβ)
 
-/-- **The cut-off of a locally Sobolev function is globally Sobolev, at every order**: for
-`u ∈ W^{k,p}_loc(Ω)` and `θ ∈ 𝓓(Ω, ℝ)`, the function `θ u` extended by zero outside `Ω` lies in
-`W^{k,p}(ℝ^N)`. This is the `θ`-reading of `H^{m+2}_loc(Ω)` in [brezis2011functional] Chapter 9,
-Remark 25: `θ` is supported in an open `V ⋐ Ω`, on which `u ∈ W^{k,p}(V)`, and
-`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` extends `θ u` from `V` to the whole
-space. -/
+/-- **The cut-off of a locally Sobolev function is globally Sobolev, at every order.** Let $E$ be
+finite-dimensional with a locally finite measure, let $F$ be complete, and let $p \ge 1$. If
+$u \in W^{k,p}_{\mathrm{loc}}(\Omega)$ and $\theta$ is a test function on $\Omega$, then the
+function equal to $\theta u$ on $\Omega$ and to $0$ off $\Omega$ lies in $W^{k,p}(E)$.
+
+This is the reading of $H^{m+2}_{\mathrm{loc}}(\Omega)$ through test functions $\theta$ in
+Remark 25 in Chapter 9 of [brezis2011functional]. The support of $\theta$ lies in an open set
+$V \Subset \Omega$, on which $u \in W^{k,p}(V)$, and
+`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` extends $\theta u$ from $V$ to the
+whole space. -/
 theorem MemSobolevMultiIndexLoc.smul_testFunction {k : ℕ} {f : E → F} (hp : 1 ≤ p)
     (h : MemSobolevMultiIndexLoc b f k p Ω μ) (θ : 𝓓(Ω, ℝ)) :
     MemSobolevMultiIndex b ((Ω : Set E).indicator fun x ↦ θ x • f x) k p ⊤ μ := by

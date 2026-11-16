@@ -13,58 +13,86 @@ import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 import Numlib.Analysis.Normed.Operator.Unbounded.Basic
 
 /-!
-# The closed range theorem, and the characterization of surjective operators
+# The closed range theorem and the characterization of surjective operators
 
-For a densely defined closed operator `A : D(A) ⊆ E → F` between Banach spaces over `RCLike 𝕜`
-with Banach adjoint `A* : D(A*) ⊆ F* → E*` (`LinearPMap.strongDualAdjoint`), this file proves
-Banach's **closed range theorem** and the two **surjectivity criteria** of
-[brezis2011functional] §2.7:
+Let $E$ and $F$ be Banach spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$A \colon D(A) \subseteq E \to F$ be a closed operator with $D(A)$ dense in $E$, and let
+$A^* \colon D(A^*) \subseteq F^* \to E^*$ be its adjoint (`LinearPMap.strongDualAdjoint`). This file
+proves Banach's **closed range theorem** and the two **surjectivity criteria** of
+[brezis2011functional], §2.7:
 
-* Theorem 2.19: `R(A)` is closed ⟺ `R(A*)` is closed ⟺ `R(A) = N(A*)^⊥` ⟺ `R(A*) = N(A)^⊥`;
-* Theorem 2.20: `A` is onto ⟺ `‖v‖ ≤ C ‖A* v‖` on `D(A*)` ⟺ `A*` is injective with closed range;
-* Theorem 2.21: `A*` is onto ⟺ `‖u‖ ≤ C ‖A u‖` on `D(A)` ⟺ `A` is injective with closed range;
+* Theorem 2.19: $R(A)$ is closed $\iff$ $R(A^*)$ is closed $\iff$ $R(A) = N(A^*)^\perp$ $\iff$
+  $R(A^*) = N(A)^\perp$.
+* Theorem 2.20: $A$ is onto $\iff$ $\|v\| \le C \|A^* v\|$ on $D(A^*)$ for some $C$ $\iff$ $A^*$ is
+  injective with closed range.
+* Theorem 2.21: $A^*$ is onto $\iff$ $\|u\| \le C \|Au\|$ on $D(A)$ for some $C$ $\iff$ $A$ is
+  injective with closed range.
 
-together with the finite-dimensional equivalences of Remark 2.20 and the specializations to a
-bounded operator `T` and its adjoint `T.strongDualMap`, which the Fredholm alternative and the
-reflexivity theory consume.
+The file also proves the finite-dimensional equivalences of Remark 2.20 of [brezis2011functional],
+and the specializations to a bounded operator $T$ and its adjoint $T^*$
+(`ContinuousLinearMap.strongDualMap`), which the Fredholm alternative and the theory of reflexive
+spaces use. Theorem 2.19 also appears as Theorem 8.2.7 of [han2009theoretical].
 
-## The route
+## Main results
 
-The book proves Theorem 2.19 by transporting the characterization of closed sums
-(`Submodule.tfae_isClosed_sup`, Theorem 2.16) to `X = E × F` with `G = G(A)`, `L = E × {0}`,
-which requires carrying `(E × F)* ≃ E* × F*` through annihilators, sums and closures. Here every
-implication is proved directly, and the two substantial ones are:
+* `LinearPMap.IsClosed.isClosed_range_tfae`: the closed range theorem, the four equivalent
+  conditions of Theorem 2.19.
+* `LinearPMap.IsClosed.isClosed_range_strongDualAdjoint_iff`: $R(A^*)$ is closed if and only if
+  $R(A)$ is closed.
+* `LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint`: $A$ is onto if and
+  only if $\|v\| \le C \|A^* v\|$ on $D(A^*)$.
+* `LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint`:
+  $A$ is onto if and only if $A^*$ is injective with closed range.
+* `LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm`: $A^*$ is onto if and
+  only if $\|u\| \le C \|Au\|$ on $D(A)$.
+* `LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range`: $A^*$ is
+  onto if and only if $A$ is injective with closed range.
+* `LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensional` and
+  `LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_of_finiteDimensional`: if $E$
+  or $F$ is finite-dimensional, $A$ is onto if and only if $A^*$ is injective, and $A^*$ is onto if
+  and only if $A$ is injective.
+* `ContinuousLinearMap.isClosed_range_strongDualMap_iff`,
+  `ContinuousLinearMap.range_eq_strongDualCoannihilator_ker_strongDualMap`,
+  `ContinuousLinearMap.range_strongDualMap_eq_annihilator_ker`,
+  `ContinuousLinearMap.range_eq_top_iff_exists_norm_le_norm_strongDualMap` and
+  `ContinuousLinearMap.range_strongDualMap_eq_top_iff_exists_norm_le_norm`: the same results for a
+  bounded operator.
 
-* **Theorem 2.20 (b) ⇒ (a)**, the method of a priori estimates: a separation argument
-  (`LinearPMap.ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint`) shows that the
-  closure of `A(B_{D(A)})` contains the ball of radius `1 / C`, and the second step of the open
-  mapping theorem for a closed operator (`LinearPMap.IsClosed.exists_preimage_norm_le_of_approx`)
-  turns the approximate preimages into exact ones;
-* **Theorem 2.19 (ii) ⇒ (i)**: with `Z := closure R(A)` and `A₁ : D(A) ⊆ E → Z` the operator
-  with restricted codomain, `A₁` is closed with dense range, so `A₁*` is injective;
-  `R(A₁*) = R(A*)` by Hahn–Banach extension and restriction
-  (`LinearPMap.range_strongDualAdjoint_codRestrict`);
-  the closed range criterion for the closed injective `A₁*` gives `‖ζ‖ ≤ C ‖A₁* ζ‖`, and
-  Theorem 2.20 (b) ⇒ (a) for `A₁` makes it onto `Z`.
+## Proof outline
 
-Everything else is short: 2.19 (i) ⇒ (iv) is the closed range criterion `dist (u, N(A)) ≤ C ‖A u‖`
-followed by a Hahn–Banach extension of `A u ↦ f u` from `R(A)`; (i) ⇒ (iii) is Corollary 2.18 (iv);
-2.20 (a) ⇒ (b) is the uniform boundedness principle on `{v ∈ D(A*) | ‖A* v‖ ≤ 1}`; the remaining
-clauses are the closed range criteria of `Numlib.Analysis.Normed.Operator.Unbounded.Basic` for
-`A` and for `A*`.
+The source proves Theorem 2.19 by transporting the characterization of closed sums
+(`Submodule.tfae_isClosed_sup`, Theorem 2.16 of [brezis2011functional]) to $X = E \times F$ with
+$G = G(A)$ and $L = E \times \{0\}$. This needs the identification
+$(E \times F)^* \cong E^* \times F^*$ to be carried through annihilators, sums and closures. Here
+every implication is proved directly. The two substantial ones are these.
 
-## Hypotheses
+* Theorem 2.20, (b) $\Rightarrow$ (a), is the method of a priori estimates. A separation argument
+  (`LinearPMap.ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint`) shows that the closure
+  of $A(B_{D(A)})$ contains the ball of radius $1/C$. The second step of the open mapping theorem
+  for a closed operator (`LinearPMap.IsClosed.exists_preimage_norm_le_of_approx`) turns the
+  approximate preimages into exact ones.
+* Theorem 2.19, (ii) $\Rightarrow$ (i). Let $Z = \overline{R(A)}$ and let
+  $A_1 \colon D(A) \subseteq E \to Z$ be $A$ with its codomain restricted. Then $A_1$ is closed with
+  dense range, so $A_1^*$ is injective. Hahn–Banach extension and restriction give
+  $R(A_1^*) = R(A^*)$ (`LinearPMap.range_strongDualAdjoint_codRestrict`). The closed range criterion
+  for the closed injective operator $A_1^*$ gives $\|\zeta\| \le C \|A_1^* \zeta\|$, and Theorem
+  2.20, (b) $\Rightarrow$ (a), for $A_1$ makes $A_1$ onto $Z$.
 
-Each statement carries only the completeness it uses: Theorem 2.20 (a) ⇒ (b) needs `F` complete,
-(b) ⇒ (a) needs `E` complete, the closed range theorem needs both. `A` is assumed closed
-(`hc : A.IsClosed`) where the proof uses it and densely defined (`hd : Dense (A.domain : Set E)`)
-throughout, since the adjoint is only meaningful then. Names put the direction in the suffix
-(`…_of_isClosed_range`, `…_of_range_eq_top`), and the `iff`/`TFAE` forms are separate theorems.
+The other implications are short. Theorem 2.19, (i) $\Rightarrow$ (iv), is the closed range
+criterion $\operatorname{dist}(u, N(A)) \le C \|Au\|$ followed by a Hahn–Banach extension of
+$Au \mapsto f(u)$ from $R(A)$. The implication (i) $\Rightarrow$ (iii) is Corollary 2.18(iv).
+Theorem 2.20, (a) $\Rightarrow$ (b), is the uniform boundedness principle on
+$\{v \in D(A^*) : \|A^* v\| \le 1\}$. The remaining clauses are the closed range criteria of
+`Numlib.Analysis.Normed.Operator.Unbounded.Basic` for $A$ and for $A^*$.
 
-## References
+## Implementation notes
 
-[brezis2011functional], §2.7 (Theorems 2.19–2.21, Remarks 18–20) and Exercise 2.14; Atkinson and
-Han, *Theoretical Numerical Analysis*, Theorem 8.2.7, which is Theorem 2.19 verbatim.
+* Each statement carries only the completeness it uses. Theorem 2.20, (a) $\Rightarrow$ (b), needs
+  $F$ complete; (b) $\Rightarrow$ (a) needs $E$ complete; the closed range theorem needs both.
+* $A$ is assumed closed (`hc : A.IsClosed`) where the proof uses it, and densely defined
+  (`hd : Dense (A.domain : Set E)`) throughout, since the adjoint is only meaningful then.
+* Names put the direction in the suffix (`…_of_isClosed_range`, `…_of_range_eq_top`), and the forms
+  with `iff` and `TFAE` are separate theorems.
 -/
 
 open Filter Metric Topology
@@ -81,7 +109,7 @@ variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace �
 -/
 
 open scoped ComplexOrder in
-/-- The image of the open unit ball of `D(A)` under `A` is absolutely convex. -/
+/-- The image $A(B_{D(A)})$ of the open unit ball of $D(A)$ is absolutely convex. -/
 private theorem absConvex_image_ball (A : E →ₗ.[𝕜] F) :
     AbsConvex 𝕜 ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1}) := by
   refine ⟨fun c hc => ?_, ?_⟩
@@ -102,15 +130,19 @@ private theorem absConvex_image_ball (A : E →ₗ.[𝕜] F) :
     exact hball.linear_image A.toFun
 
 open scoped ComplexOrder in
-/-- **The separation step of Theorem 2.20 (b) ⇒ (a)** ([brezis2011functional], the argument of
-Theorem 2.16 (b) ⇒ (a), (24) ⇒ (25), transposed to a closed operator). If
-`‖v‖ ≤ C ‖A* v‖` for every `v ∈ D(A*)`, then the closure of `A(B_{D(A)})`, `B_{D(A)}` the open
-unit ball of `D(A)`, contains the ball of radius `1 / C` of `F`.
+/-- The **separation step of Theorem 2.20, (b) $\Rightarrow$ (a)**. Let
+$A \colon D(A) \subseteq E \to F$ be a linear operator between normed spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with $D(A)$ dense in $E$, and let $C > 0$ with
+$$\|v\| \le C \|A^* v\| \quad \text{for every } v \in D(A^*).$$
+Then the closure of $A(B_{D(A)})$, where $B_{D(A)} = \{u \in D(A) : \|u\| < 1\}$, contains the
+open ball $B(0, 1/C)$ of $F$. This is the argument of Theorem 2.16, (b) $\Rightarrow$ (a), step
+(24) $\Rightarrow$ (25), of [brezis2011functional], transposed to an operator.
 
-If `y₀` with `‖y₀‖ < 1 / C` were outside that closed absolutely convex set,
-`AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` would give `v ∈ F*` with
-`‖v (A u)‖ ≤ ‖u‖` on `D(A)` and `1 < ‖v y₀‖`; then `v ∈ D(A*)` with `‖A* v‖ ≤ 1`, so `‖v‖ ≤ C` and
-`‖v y₀‖ ≤ ‖v‖ ‖y₀‖ < 1`. Neither completeness nor closedness of `A` enters. -/
+Suppose that some $y_0$ with $\|y_0\| < 1/C$ lies outside that closed absolutely convex set.
+Then `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` gives $v \in F^*$ with
+$|v(Au)| \le \|u\|$ on $D(A)$ and $1 < |v(y_0)|$. So $v \in D(A^*)$ with $\|A^* v\| \le 1$,
+hence $\|v\| \le C$ and $|v(y_0)| \le \|v\| \|y_0\| < 1$, a contradiction. Neither completeness
+nor closedness of $A$ is used. -/
 theorem ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint
     (hd : Dense (A.domain : Set E)) {C : ℝ} (hC : 0 < C)
     (h : ∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖) :
@@ -169,11 +201,15 @@ theorem ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint
     rwa [mul_one_div, div_self hC.ne'] at this
   linarith
 
-/-- **Theorem 2.20 (b) ⇒ (a), the method of a priori estimates** ([brezis2011functional],
-Theorem 2.20 and Remark 2.19): if `A` is closed, densely defined, `E` is complete and
-`‖v‖ ≤ C ‖A* v‖` on `D(A*)`, then `A` is onto. The separation step puts the ball of radius
-`1 / C` in the closure of `A(B_{D(A)})`, and the second step of the open mapping theorem for a
-closed operator produces exact preimages. Completeness of `F` is not needed. -/
+/-- **Theorem 2.20, (b) $\Rightarrow$ (a)**, the method of a priori estimates. Let $E$ be a Banach
+space and $F$ a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense, and let $C > 0$ with
+$\|v\| \le C \|A^* v\|$ for every $v \in D(A^*)$. Then $A$ is onto: $R(A) = F$. This is Theorem
+2.20 and Remark 2.19 of [brezis2011functional].
+
+The separation step puts the ball of radius $1/C$ in the closure of $A(B_{D(A)})$, and the
+second step of the open mapping theorem for a closed operator gives exact preimages.
+Completeness of $F$ is not needed. -/
 theorem IsClosed.range_eq_top_of_norm_le_norm_strongDualAdjoint [CompleteSpace E]
     (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) {C : ℝ} (hC : 0 < C)
     (h : ∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖) :
@@ -186,12 +222,17 @@ theorem IsClosed.range_eq_top_of_norm_le_norm_strongDualAdjoint [CompleteSpace E
       (div_lt_div_of_pos_left one_pos hC (by linarith))) y
   exact LinearMap.mem_range.2 ⟨u, hu⟩
 
-/-- **Theorem 2.20 (a) ⇒ (b)** ([brezis2011functional]): if `A` is densely defined and onto the
-Banach space `F`, there is `C` with `‖v‖ ≤ C ‖A* v‖` for every `v ∈ D(A*)`. The set
-`B* := {v ∈ D(A*) | ‖A* v‖ ≤ 1}` is bounded at every `f₀ = A u₀` (`|v f₀| = |(A* v) u₀| ≤ ‖u₀‖`),
-hence bounded in norm by the uniform boundedness principle
-(`StrongDual.isBounded_of_forall_eval_isBounded`); homogeneity gives the estimate, and `A* v = 0`
-forces `v = 0` because `A` is onto. Closedness of `A` and completeness of `E` are not used. -/
+/-- **Theorem 2.20, (a) $\Rightarrow$ (b)**. Let $E$ be a normed space and $F$ a Banach space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ have dense
+domain and be onto. Then there is $C \in \mathbb{R}$ with
+$$\|v\| \le C \|A^* v\| \quad \text{for every } v \in D(A^*).$$
+This is part of Theorem 2.20 of [brezis2011functional].
+
+The set $\{v \in D(A^*) : \|A^* v\| \le 1\}$ is bounded at every $f_0 = Au_0$, since
+$|v(f_0)| = |(A^* v)(u_0)| \le \|u_0\|$. By the uniform boundedness principle
+(`StrongDual.isBounded_of_forall_eval_isBounded`) it is bounded in norm. Homogeneity gives the
+estimate, and $A^* v = 0$ forces $v = 0$ because $A$ is onto. Closedness of $A$ and completeness
+of $E$ are not used. -/
 theorem exists_norm_le_norm_strongDualAdjoint_of_range_eq_top [CompleteSpace F]
     (hd : Dense (A.domain : Set E)) (h : LinearMap.range A.toFun = ⊤) :
     ∃ C : ℝ, ∀ v : A.strongDualAdjoint.domain,
@@ -233,8 +274,11 @@ theorem exists_norm_le_norm_strongDualAdjoint_of_range_eq_top [CompleteSpace F]
     rw [norm_smul, hcn, inv_mul_le_iff₀ hn] at this
     linarith
 
-/-- **Theorem 2.20 (a) ⇔ (b)** ([brezis2011functional]): a closed densely defined operator between
-Banach spaces is onto iff `‖v‖ ≤ C ‖A* v‖` on `D(A*)` for some constant `C`. -/
+/-- **Theorem 2.20, (a) $\iff$ (b)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. Then $A$ is onto if and only if there is $C \in \mathbb{R}$ with
+$$\|v\| \le C \|A^* v\| \quad \text{for every } v \in D(A^*).$$
+This is part of Theorem 2.20 of [brezis2011functional]. -/
 theorem IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint [CompleteSpace E]
     [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     LinearMap.range A.toFun = ⊤ ↔ ∃ C : ℝ, ∀ v : A.strongDualAdjoint.domain,
@@ -246,11 +290,15 @@ theorem IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint [Complet
   gcongr
   exact le_max_left _ _
 
-/-- **Theorem 2.20 (a) ⇔ (c)** ([brezis2011functional]): a closed densely defined operator between
-Banach spaces is onto iff `A*` is injective with closed range. Both directions go through the a
-priori estimate (b): it gives the trivial kernel and the closed range of the closed operator `A*`
-(`LinearPMap.ker_eq_bot_of_norm_le`, `LinearPMap.IsClosed.isClosed_range_of_norm_le`), and
-conversely the closed range criterion for `A*` with `N(A*) = 0` reads `‖v‖ ≤ C ‖A* v‖`. -/
+/-- **Theorem 2.20, (a) $\iff$ (c)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. Then $A$ is onto if and only if $N(A^*) = \{0\}$ and $R(A^*)$ is closed in
+$E^*$. This is part of Theorem 2.20 of [brezis2011functional].
+
+Both directions go through the a priori estimate (b). It gives the trivial kernel and the closed
+range of the closed operator $A^*$ (`LinearPMap.ker_eq_bot_of_norm_le`,
+`LinearPMap.IsClosed.isClosed_range_of_norm_le`). Conversely, the closed range criterion for
+$A^*$ with $N(A^*) = \{0\}$ reads $\|v\| \le C \|A^* v\|$. -/
 theorem IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint
     [CompleteSpace E] [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     LinearMap.range A.toFun = ⊤ ↔ A.strongDualAdjoint.ker = ⊥ ∧
@@ -270,12 +318,16 @@ theorem IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_rang
 ### The closed range theorem
 -/
 
-/-- **`R(A*) = N(A)^⊥` when `R(A)` is closed** ([brezis2011functional], Theorem 2.19 (i) ⇒ (iv)),
-for a closed densely defined operator between Banach spaces. Given `f ∈ N(A)^⊥`, the functional
-`A u ↦ f u` is well defined on `R(A)` and bounded by `C ‖f‖`, where `dist (u, N(A)) ≤ C ‖A u‖` is
-the closed range criterion (`LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le`); a
-Hahn–Banach extension `v ∈ F*` of it satisfies `v (A u) = f u` on `D(A)`, so `v ∈ D(A*)` and
-`A* v = f`. -/
+/-- **Theorem 2.19, (i) $\Rightarrow$ (iv)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. If $R(A)$ is closed, then
+$$R(A^*) = N(A)^\perp.$$
+This is part of Theorem 2.19 of [brezis2011functional].
+
+Given $f \in N(A)^\perp$, the functional $Au \mapsto f(u)$ is well defined on $R(A)$ and bounded
+by $C \|f\|$, where $\operatorname{dist}(u, N(A)) \le C \|Au\|$ is the closed range criterion
+(`LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le`). A Hahn–Banach extension
+$v \in F^*$ of it satisfies $v(Au) = f(u)$ on $D(A)$, so $v \in D(A^*)$ and $A^* v = f$. -/
 theorem IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range [CompleteSpace E]
     [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
     (h : _root_.IsClosed (LinearMap.range A.toFun : Set F)) :
@@ -321,18 +373,26 @@ theorem IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range [C
   have hvD : v ∈ A.strongDualAdjoint.domain := mem_strongDualAdjoint_domain_of_exists v ⟨f, hvA⟩
   exact ⟨⟨v, hvD⟩, strongDualAdjoint_apply_eq hd _ hvA⟩
 
-/-- **`R(A) = N(A*)^⊥` when `R(A)` is closed** ([brezis2011functional], Theorem 2.19 (i) ⇒ (iii);
-Atkinson–Han, Theorem 8.2.7 (a) ⇒ (b)), the abstract Fredholm alternative: `A u = f` is solvable
-iff `v f = 0` for every `v ∈ D(A*)` with `A* v = 0`. This is Corollary 2.18 (iv) with the closure
-removed; neither closedness of `A` nor completeness is needed. -/
+/-- **Theorem 2.19, (i) $\Rightarrow$ (iii)**, the abstract Fredholm alternative. Let
+$A \colon D(A) \subseteq E \to F$ be a linear operator between normed spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, with $D(A)$ dense. If $R(A)$ is closed, then
+$$R(A) = N(A^*)^\perp:$$
+the equation $Au = f$ is solvable if and only if $v(f) = 0$ for every $v \in D(A^*)$ with
+$A^* v = 0$. This is part of Theorem 2.19 of [brezis2011functional], and (a) $\Rightarrow$ (b)
+of Theorem 8.2.7 of [han2009theoretical].
+
+This is Corollary 2.18(iv) with the closure removed. Neither closedness of $A$ nor completeness
+is needed. -/
 theorem range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range
     (hd : Dense (A.domain : Set E)) (h : _root_.IsClosed (LinearMap.range A.toFun : Set F)) :
     LinearMap.range A.toFun = A.strongDualAdjoint.ker.strongDualCoannihilator := by
   rw [strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range hd,
     h.submodule_topologicalClosure_eq]
 
-/-- The restriction of the codomain of a closed operator to a subspace containing its range is
-closed: its graph is the preimage of `G(A)` under the continuous map `E × p → E × F`. -/
+/-- Let $A \colon D(A) \subseteq E \to F$ be closed, and let $p$ be a subspace of $F$ that contains
+$R(A)$. Then $A$ with its codomain restricted to $p$ is closed.
+
+Its graph is the preimage of $G(A)$ under the continuous inclusion $E \times p \to E \times F$. -/
 theorem IsClosed.codRestrict (hc : A.IsClosed) (p : Submodule 𝕜 F) (H : ∀ x, A x ∈ p) :
     (A.codRestrict p H).IsClosed := by
   have hc' : _root_.IsClosed (A.graph : Set (E × F)) := hc
@@ -349,11 +409,14 @@ theorem IsClosed.codRestrict (hc : A.IsClosed) (p : Submodule 𝕜 F) (H : ∀ x
   rw [hgraph]
   exact hc'.preimage (continuous_fst.prodMk (continuous_subtype_val.comp continuous_snd))
 
-/-- **Restricting the codomain does not change the range of the adjoint**: for a densely defined
-`A` and a subspace `p ⊆ F` containing `R(A)`, the adjoint of `A₁ : D(A) ⊆ E → p` has the same
-range in `E*` as `A*`. A `ζ ∈ D(A₁*)` extends by Hahn–Banach to `v ∈ F*` with `v (A u) = ζ (A₁ u)`,
-so `v ∈ D(A*)` and `A* v = A₁* ζ`; conversely `v ∈ D(A*)` restricts to
-`ζ := v ∘ p.subtypeL ∈ D(A₁*)` with `A₁* ζ = A* v`. -/
+/-- **Restricting the codomain does not change the range of the adjoint**. Let
+$A \colon D(A) \subseteq E \to F$ have dense domain, let $p$ be a subspace of $F$ that contains
+$R(A)$, and let $A_1 \colon D(A) \subseteq E \to p$ be $A$ with its codomain restricted. Then
+$R(A_1^*) = R(A^*)$ in $E^*$.
+
+An element $\zeta \in D(A_1^*)$ extends by Hahn–Banach to some $v \in F^*$ with
+$v(Au) = \zeta(A_1 u)$, so $v \in D(A^*)$ and $A^* v = A_1^* \zeta$. Conversely, $v \in D(A^*)$
+restricts to $\zeta = v|_p \in D(A_1^*)$ with $A_1^* \zeta = A^* v$. -/
 theorem range_strongDualAdjoint_codRestrict (hd : Dense (A.domain : Set E)) (p : Submodule 𝕜 F)
     (H : ∀ x, A x ∈ p) :
     LinearMap.range (A.codRestrict p H).strongDualAdjoint.toFun =
@@ -378,7 +441,7 @@ theorem range_strongDualAdjoint_codRestrict (hd : Dense (A.domain : Set E)) (p :
       mem_strongDualAdjoint_domain_of_exists ζ ⟨_, hrel⟩
     exact ⟨⟨ζ, hζD⟩, strongDualAdjoint_apply_eq hd' _ hrel⟩
 
-/-- The range of `A`, restricted to `closure R(A)`, is dense there. -/
+/-- The range of $A$, viewed in $\overline{R(A)}$, is dense there. -/
 private theorem dense_range_codRestrict_topologicalClosure (A : E →ₗ.[𝕜] F) :
     Dense ((LinearMap.range (A.codRestrict (LinearMap.range A.toFun).topologicalClosure
       fun u => Submodule.le_topologicalClosure _ (LinearMap.mem_range_self _ u)).toFun :
@@ -401,13 +464,17 @@ private theorem dense_range_codRestrict_topologicalClosure (A : E →ₗ.[𝕜] 
   rw [hval, ← Submodule.topologicalClosure_coe]
   exact z.2
 
-/-- **`R(A)` is closed when `R(A*)` is** ([brezis2011functional], Theorem 2.19 (ii) ⇒ (i)), the
-substance of the closed range theorem, for a closed densely defined operator between Banach
-spaces. Let `Z := closure R(A)` and `A₁ : D(A) ⊆ E → Z` be `A` with its codomain restricted. Then
-`A₁` is closed with dense range, so `A₁*` is injective (`N(A₁*) = R(A₁)^⊥ = 0`); `R(A₁*) = R(A*)`
-is closed (`range_strongDualAdjoint_codRestrict`); the closed range criterion for the closed
-injective operator `A₁*` gives `‖ζ‖ ≤ C ‖A₁* ζ‖` on `D(A₁*)`, and Theorem 2.20 (b) ⇒ (a) for `A₁`
-makes it onto `Z`, i.e. `R(A) = Z`. -/
+/-- **Theorem 2.19, (ii) $\Rightarrow$ (i)**, the substance of the closed range theorem. Let $E$ be
+a Banach space and $F$ a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense. If $R(A^*)$ is closed in $E^*$,
+then $R(A)$ is closed in $F$. This is part of Theorem 2.19 of [brezis2011functional].
+
+Let $Z = \overline{R(A)}$ and let $A_1 \colon D(A) \subseteq E \to Z$ be $A$ with its codomain
+restricted. Then $A_1$ is closed with dense range, so $A_1^*$ is injective
+($N(A_1^*) = R(A_1)^\perp = \{0\}$). The range $R(A_1^*) = R(A^*)$ is closed
+(`LinearPMap.range_strongDualAdjoint_codRestrict`). The closed range criterion for the closed
+injective operator $A_1^*$ gives $\|\zeta\| \le C \|A_1^* \zeta\|$ on $D(A_1^*)$, and Theorem
+2.20, (b) $\Rightarrow$ (a), for $A_1$ makes $A_1$ onto $Z$, that is, $R(A) = Z$. -/
 theorem IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint [CompleteSpace E]
     (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
     (h : _root_.IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E))) :
@@ -448,8 +515,10 @@ theorem IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint [CompleteSpa
   rw [le_antisymm (Submodule.le_topologicalClosure _) hZle]
   exact hZc
 
-/-- **Theorem 2.19 (i) ⇔ (ii)** ([brezis2011functional]): for a closed densely defined operator
-between Banach spaces, `R(A*)` is closed iff `R(A)` is. -/
+/-- **Theorem 2.19, (i) $\iff$ (ii)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. Then $R(A^*)$ is closed in $E^*$ if and only if $R(A)$ is closed in $F$. This
+is part of Theorem 2.19 of [brezis2011functional]. -/
 theorem IsClosed.isClosed_range_strongDualAdjoint_iff [CompleteSpace E] [CompleteSpace F]
     (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     _root_.IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E)) ↔
@@ -458,10 +527,19 @@ theorem IsClosed.isClosed_range_strongDualAdjoint_iff [CompleteSpace E] [Complet
   rw [hc.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range hd h]
   exact Submodule.isClosed_strongDualAnnihilator _
 
-/-- **The closed range theorem** ([brezis2011functional], Theorem 2.19; Atkinson–Han,
-Theorem 8.2.7). For a closed densely defined operator `A : D(A) ⊆ E → F` between Banach spaces
-over `RCLike 𝕜`, the following are equivalent: (i) `R(A)` is closed; (ii) `R(A*)` is closed;
-(iii) `R(A) = N(A*)^⊥`; (iv) `R(A*) = N(A)^⊥`. -/
+/-- The **closed range theorem**. Let $E$ and $F$ be Banach spaces over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense. Then the
+following are equivalent:
+
+(i) $R(A)$ is closed;
+
+(ii) $R(A^*)$ is closed;
+
+(iii) $R(A) = N(A^*)^\perp$;
+
+(iv) $R(A^*) = N(A)^\perp$.
+
+This is Theorem 2.19 of [brezis2011functional] and Theorem 8.2.7 of [han2009theoretical]. -/
 theorem IsClosed.isClosed_range_tfae [CompleteSpace E] [CompleteSpace F] (hc : A.IsClosed)
     (hd : Dense (A.domain : Set E)) :
     [_root_.IsClosed (LinearMap.range A.toFun : Set F),
@@ -483,10 +561,13 @@ theorem IsClosed.isClosed_range_tfae [CompleteSpace E] [CompleteSpace F] (hc : A
 ### Theorem 2.21 and Remark 2.20
 -/
 
-/-- **Theorem 2.21 (a) ⇔ (c)** ([brezis2011functional]): for a closed densely defined operator
-between Banach spaces, `A*` is onto iff `A` is injective with closed range. Forward: `N(A) =
-R(A*)^⊥ = 0` and `R(A)` is closed by the closed range theorem since `R(A*) = E*` is; backward:
-`R(A*) = N(A)^⊥ = 0^⊥ = E*`. -/
+/-- **Theorem 2.21, (a) $\iff$ (c)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. Then $A^*$ is onto if and only if $N(A) = \{0\}$ and $R(A)$ is closed. This
+is part of Theorem 2.21 of [brezis2011functional].
+
+Forward: $N(A) = R(A^*)^\perp = \{0\}$, and $R(A)$ is closed by the closed range theorem since
+$R(A^*) = E^*$ is closed. Backward: $R(A^*) = N(A)^\perp = \{0\}^\perp = E^*$. -/
 theorem IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range [CompleteSpace E]
     [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔
@@ -501,11 +582,15 @@ theorem IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_rang
     rw [hc.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range hd hrange, hker,
       Submodule.strongDualAnnihilator_bot]
 
-/-- **Theorem 2.21 (a) ⇔ (b)** ([brezis2011functional]): for a closed densely defined operator
-between Banach spaces, `A*` is onto iff `‖u‖ ≤ C ‖A u‖` on `D(A)` for some constant `C`. Through
-(c): the estimate gives a trivial kernel and a closed range (`LinearPMap.ker_eq_bot_of_norm_le`,
-`LinearPMap.IsClosed.isClosed_range_of_norm_le`), and conversely the closed range criterion with
-`N(A) = 0` reads `‖u‖ ≤ C ‖A u‖`. -/
+/-- **Theorem 2.21, (a) $\iff$ (b)**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A \colon D(A) \subseteq E \to F$ be closed
+with $D(A)$ dense. Then $A^*$ is onto if and only if there is $C \in \mathbb{R}$ with
+$$\|u\| \le C \|Au\| \quad \text{for every } u \in D(A).$$
+This is part of Theorem 2.21 of [brezis2011functional].
+
+The proof goes through (c). The estimate gives a trivial kernel and a closed range
+(`LinearPMap.ker_eq_bot_of_norm_le`, `LinearPMap.IsClosed.isClosed_range_of_norm_le`).
+Conversely, the closed range criterion with $N(A) = \{0\}$ reads $\|u\| \le C \|Au\|$. -/
 theorem IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm [CompleteSpace E]
     [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔
@@ -520,9 +605,12 @@ theorem IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm [Complet
   · rintro ⟨C, hC⟩
     exact ⟨ker_eq_bot_of_norm_le hC, hc.isClosed_range_of_norm_le hC⟩
 
-/-- **Remark 2.20, the finite-dimensional case** ([brezis2011functional]): if `E` or `F` is
-finite-dimensional, a closed densely defined operator between Banach spaces is onto iff `A*` is
-injective, because `R(A*)` is then finite-dimensional, hence closed. -/
+/-- **Remark 2.20, the finite-dimensional case**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, at least one of them finite-dimensional, and let
+$A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense. Then $A$ is onto if and only if
+$N(A^*) = \{0\}$. This is Remark 2.20 of [brezis2011functional].
+
+The range $R(A^*)$ is then finite-dimensional, hence closed, and Theorem 2.20 applies. -/
 theorem IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensional
     [CompleteSpace E] [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
     (h : FiniteDimensional 𝕜 E ∨ FiniteDimensional 𝕜 F) :
@@ -537,9 +625,12 @@ theorem IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensio
       infer_instance
   exact Submodule.closed_of_finiteDimensional _
 
-/-- **Remark 2.20, the dual finite-dimensional case** ([brezis2011functional]): if `E` or `F` is
-finite-dimensional, `A*` is onto iff `A` is injective, because `R(A)` is then finite-dimensional,
-hence closed. -/
+/-- **Remark 2.20, the dual finite-dimensional case**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, at least one of them finite-dimensional, and let
+$A \colon D(A) \subseteq E \to F$ be closed with $D(A)$ dense. Then $A^*$ is onto if and only if
+$N(A) = \{0\}$. This is Remark 2.20 of [brezis2011functional].
+
+The range $R(A)$ is then finite-dimensional, hence closed, and Theorem 2.21 applies. -/
 theorem IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_of_finiteDimensional
     [CompleteSpace E] [CompleteSpace F] (hc : A.IsClosed) (hd : Dense (A.domain : Set E))
     (h : FiniteDimensional 𝕜 E ∨ FiniteDimensional 𝕜 F) :
@@ -565,22 +656,29 @@ namespace ContinuousLinearMap
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The whole space is a dense subspace. -/
+/-- The whole space is a dense subspace of itself. -/
 private theorem dense_top : Dense (((⊤ : Submodule 𝕜 E) : Submodule 𝕜 E) : Set E) := by
   rw [Submodule.top_coe]
   exact dense_univ
 
-/-- **The closed range theorem for a bounded operator** ([brezis2011functional], Theorem 2.19
-(i) ⇔ (ii)): for `T : E →L[𝕜] F` between Banach spaces, `R(T*)` is closed iff `R(T)` is. -/
+/-- The **closed range theorem for a bounded operator**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T \colon E \to F$ be bounded. Then $R(T^*)$
+is closed in $E^*$ if and only if $R(T)$ is closed in $F$. This is Theorem 2.19, (i) $\iff$
+(ii), of [brezis2011functional] for a bounded operator. -/
 theorem isClosed_range_strongDualMap_iff [CompleteSpace E] [CompleteSpace F] (T : E →L[𝕜] F) :
     IsClosed (Set.range T.strongDualMap) ↔ IsClosed (Set.range T) := by
   have := (T.isClosed_toPMap (p := ⊤) isClosed_univ).isClosed_range_strongDualAdjoint_iff dense_top
   rwa [T.toPMap_strongDualAdjoint dense_top, LinearMap.range_toPMap_top,
     LinearMap.range_toPMap_top, LinearMap.coe_range, LinearMap.coe_range, coe_coe, coe_coe] at this
 
-/-- **`R(T) = N(T*)^⊥` for a bounded operator with closed range** ([brezis2011functional],
-Theorem 2.19 (i) ⇒ (iii)), the shape of the Fredholm alternative `R(I - T) = N(I - T*)^⊥`
-(Theorem 6.6): `N(T*) = R(T)^⊥` and the bipolar identity. No completeness is needed. -/
+/-- Let $E$ and $F$ be normed spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$T \colon E \to F$ be bounded with closed range. Then
+$$R(T) = N(T^*)^\perp.$$
+This is Theorem 2.19, (i) $\Rightarrow$ (iii), of [brezis2011functional] for a bounded operator.
+
+This is the shape of the Fredholm alternative $R(I - T) = N(I - T^*)^\perp$ (Theorem 6.6 of
+[brezis2011functional]). The proof combines $N(T^*) = R(T)^\perp$ with the bipolar identity. No
+completeness is needed. -/
 theorem range_eq_strongDualCoannihilator_ker_strongDualMap (T : E →L[𝕜] F)
     (h : IsClosed (Set.range T)) :
     LinearMap.range (T : E →ₗ[𝕜] F) = T.strongDualMap.ker.strongDualCoannihilator := by
@@ -589,8 +687,10 @@ theorem range_eq_strongDualCoannihilator_ker_strongDualMap (T : E →L[𝕜] F)
     IsClosed.submodule_topologicalClosure_eq]
   rwa [LinearMap.coe_range, coe_coe]
 
-/-- **`R(T*) = N(T)^⊥` for a bounded operator with closed range** between Banach spaces
-([brezis2011functional], Theorem 2.19 (i) ⇒ (iv)). -/
+/-- Let $E$ and $F$ be Banach spaces over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$T \colon E \to F$ be bounded with closed range. Then
+$$R(T^*) = N(T)^\perp.$$
+This is Theorem 2.19, (i) $\Rightarrow$ (iv), of [brezis2011functional] for a bounded operator. -/
 theorem range_strongDualMap_eq_annihilator_ker [CompleteSpace E] [CompleteSpace F] (T : E →L[𝕜] F)
     (h : IsClosed (Set.range T)) :
     LinearMap.range (T.strongDualMap : StrongDual 𝕜 F →ₗ[𝕜] StrongDual 𝕜 E) =
@@ -604,8 +704,11 @@ theorem range_strongDualMap_eq_annihilator_ker [CompleteSpace E] [CompleteSpace 
     top_inf_eq]
     at this
 
-/-- **Theorem 2.20 for a bounded operator** ([brezis2011functional]): `T : E →L[𝕜] F` between
-Banach spaces is onto iff `‖v‖ ≤ C ‖T* v‖` for every `v ∈ F*`. -/
+/-- **Theorem 2.20 for a bounded operator**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T \colon E \to F$ be bounded. Then $T$ is
+onto if and only if there is $C \in \mathbb{R}$ with
+$$\|v\| \le C \|T^* v\| \quad \text{for every } v \in F^*.$$
+This is Theorem 2.20 of [brezis2011functional] for a bounded operator. -/
 theorem range_eq_top_iff_exists_norm_le_norm_strongDualMap [CompleteSpace E] [CompleteSpace F]
     (T : E →L[𝕜] F) :
     Function.Surjective T ↔ ∃ C : ℝ, ∀ v : StrongDual 𝕜 F, ‖v‖ ≤ C * ‖T.strongDualMap v‖ := by
@@ -618,11 +721,16 @@ theorem range_eq_top_iff_exists_norm_le_norm_strongDualMap [CompleteSpace E] [Co
   simp only [LinearMap.toPMap_domain, LinearMap.toPMap_apply, coe_coe, Subtype.forall,
     Submodule.mem_top, forall_const]
 
-/-- **Theorem 2.21 for a bounded operator** ([brezis2011functional]): the adjoint of
-`T : E →L[𝕜] F` between Banach spaces is onto iff `‖u‖ ≤ C ‖T u‖` for every `u`, i.e. iff `T` is
-bounded below (Mathlib's `AntilipschitzWith`; with
-`ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective` this is Theorem 2.21 (a) ⇔ (c)
-once more). -/
+/-- **Theorem 2.21 for a bounded operator**. Let $E$ and $F$ be Banach spaces over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $T \colon E \to F$ be bounded. Then $T^*$ is
+onto if and only if there is $C \in \mathbb{R}$ with
+$$\|u\| \le C \|Tu\| \quad \text{for every } u \in E,$$
+that is, if and only if $T$ is bounded below. This is Theorem 2.21 of [brezis2011functional] for
+a bounded operator.
+
+Being bounded below is Mathlib's `AntilipschitzWith`. With
+`ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective`, this gives Theorem 2.21,
+(a) $\iff$ (c), once more. -/
 theorem range_strongDualMap_eq_top_iff_exists_norm_le_norm [CompleteSpace E] [CompleteSpace F]
     (T : E →L[𝕜] F) :
     Function.Surjective T.strongDualMap ↔ ∃ C : ℝ, ∀ u, ‖u‖ ≤ C * ‖T u‖ := by

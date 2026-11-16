@@ -14,92 +14,106 @@ import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.Analysis.Calculus.ContDiffOnClosure
 
 /-!
-# Approximation in `W^{1,p}(Ω)` on an arbitrary open set, and the characterizations of `W^{1,p}`
+# Friedrichs' theorem and the characterizations of $W^{1,p}$
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.1, around
-Theorem 9.2 (Friedrichs): Lemma 9.1 (convolution with an integrable kernel commutes with the weak
-derivative), Theorem 9.2 itself with one approximating sequence for all `ω ⋐ Ω`, Proposition 9.3
-(the three characterizations of `W^{1,p}`, `1 < p ≤ ∞`, by a bound on the distributional
-derivative and by a translation estimate), Remark 4 (i), and the representatives of Remarks 2
-and 7 — the `C¹` representative of a function with continuous weak derivative, the Lipschitz and
-continuous representatives of `W^{1,∞}`, and the constancy of functions with vanishing weak
-derivative on a connected open set.
+This module proves the results of §9.1 of [brezis2011functional] around Theorem 9.2 (Friedrichs):
+Lemma 9.1, Theorem 9.2, Proposition 9.3, Remarks 2, 4(i) and 7, and the sentence of the proof of
+Proposition 9.4 on $L^\infty$ bounds. It also proves the convergence of approximate identities in
+$L^p$ that the proof of Proposition 9.18 in §9.4 of [brezis2011functional] needs. The setting is an
+open set $\Omega$ of a finite-dimensional real normed space $E$ with an additive Haar measure $\mu$,
+and functions $u \colon E \to F$ with values in a real Banach space $F$. A function
+$w \colon E \to \mathcal{L}(E, F)$ is a weak derivative of $u$ on $\Omega$ if $u$ and $w$ are
+locally integrable on $\Omega$ and
+$$\int_\Omega \partial_y \varphi \, u \, d\mu = -\int_\Omega \varphi \, w(\cdot)\, y \, d\mu$$
+for every test function $\varphi \in \mathcal{D}(\Omega)$ and every direction $y \in E$, where
+$\partial_y \varphi(x) = D\varphi(x)\, y$. The space $W^{1,p}(\Omega)$ consists of the functions of
+$L^p(\Omega)$ that have a weak derivative in $L^p(\Omega)$.
 
-Everything is on an open set `Ω` of a finite-dimensional real normed space `E` with an additive
-Haar measure `μ`, in the vocabulary of `Numlib/Analysis/Sobolev/WeakDeriv.lean` and
-`Numlib/Analysis/Sobolev/Domain.lean` (`HasWeakFDerivOn`, `MemSobolev`), with the mollification
-theory of `Numlib/Analysis/Sobolev/Mollification.lean` and the density theorems of
-`Numlib/Analysis/Sobolev/Density.lean` as the tools. What `Density.lean` already gives: the
-whole-space clause of Theorem 9.2 is `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`
-at order `1`, and the local approximation on one relatively compact open `ω ⋐ Ω` is
-`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`.
+Lemma 9.1 says that convolution with a kernel $\rho \in L^1$ commutes with weak derivatives on the
+whole space. Theorem 9.2 gives, for $u \in W^{1,p}(\Omega)$ and $1 \le p < \infty$, one sequence
+$u_n \in C_c^\infty(E)$ with $u_n \to u$ in $L^p(\Omega)$ and $\nabla u_n \to \nabla u$ in
+$L^p(\omega)$ for every $\omega$ with compact closure in $\Omega$. Proposition 9.3 characterizes
+$W^{1,p}(\Omega)$, $1 < p \le \infty$, among the functions $u \in L^p(\Omega)$ by (ii) the bound
+$|\int_\Omega \partial_y \varphi \, u| \le C \|y\| \|\varphi\|_{L^{p'}(\Omega)}$, and by (iii) the
+translation estimate $\|u(\cdot + h) - u\|_{L^p(\omega)} \le C \|h\|$. Remarks 2 and 7 give regular
+representatives: a $C^1$ representative when the weak derivative is continuous, a Lipschitz or
+locally Lipschitz representative when the weak derivative is essentially bounded, and a constant
+representative on a connected open set when the weak derivative vanishes.
 
 ## Main results
 
-* `MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support`: **approximate identities
-  converge in `L^p`**, for nonnegative integrable kernels of integral one whose supports shrink to
-  the origin — the general form of `ContDiffBump.tendsto_eLpNorm_convolution_sub`, which the
-  one-sided mollifiers of the proof of Proposition 9.18 need;
+* `MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support`: if nonnegative kernels of
+  integral $1$ have supports that shrink to the origin, then $\rho_i * f \to f$ in $L^p$ for
+  $1 \le p < \infty$.
 * `HasWeakIteratedLineDerivOn.convolution_of_integrable`,
-  `HasWeakIteratedFDerivOn.convolution_of_integrable`, `MemSobolev.convolution_of_integrable`:
-  **Lemma 9.1**, `∂(ρ ⋆ v) = ρ ⋆ ∂v` for `ρ ∈ L¹`, by Fubini's theorem against a translated test
-  function, with the Sobolev norm bound `MemSobolev.sobolevNorm_convolution_le`;
-* `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` and `…_of_ae_norm_le`: **Theorem 9.2
-  (Friedrichs)**, one sequence of `C_c^∞(E)` functions converging in `L^p(Ω)` whose gradients
-  converge in `L^p(ω)` for every `ω ⋐ Ω`, and the same with the `L^∞` bound of `u` preserved;
-* `HasWeakFDerivOn.abs_integral_smul_fderiv_le`: **Proposition 9.3, (i) ⇒ (ii)** with the book's
-  constant `C = ‖∇u‖_{L^p(Ω)}`;
-* `HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le` and
-  `MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`: **Proposition 9.3, (ii) ⇒ (i)**, by
-  Hahn–Banach and the Riesz representation theorem `MeasureTheory.Lp.exists_forall_eq_integral`,
-  for real-valued functions and `1 < p ≤ ∞`;
-* `HasWeakFDerivOn.eLpNorm_sub_translate_le`, `…_univ`, `MemSobolev.eLpNorm_sub_translate_le`,
-  `SobolevEuclidean.eLpNorm_fn_sub_translate_le`: **Proposition 9.3, (i) ⇒ (iii)**, the
-  translation estimate `‖u(· + h) − u‖_{L^p(ω)} ≤ ‖h‖ ‖∇u‖_{L^p(Ω)}` for `1 ≤ p < ∞`, from the
-  smooth case `ContDiff.eLpNorm_sub_translate_le` and the local approximation; and
-  `HasWeakFDerivOn.eLpNorm_sub_translate_le_top`, the same at `p = ∞`;
-* `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt` and
-  `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`: **Proposition 9.3, (iii) ⇒ (ii)**,
-  with the translation estimate assumed for small translations (the book's
-  `|h| < dist(ω, ∂Ω)`) or for every translation whose segments stay in `Ω`;
-* `MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`: **Remark 4 (i)**, an `L^p` limit of functions
-  with bounded gradients lies in `W^{1,p}`, `1 < p ≤ ∞`;
-* `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le`: **the local
-  approximation with an `L^∞` bound preserved**, the sentence "checking the proof of Theorem 9.2
-  we see that `‖u_n‖_∞ ≤ ‖u‖_∞`" of the proof of Proposition 9.4, which the endpoint product rule
-  `L^p × L^∞` needs;
-* `HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae`: **mollification near a compact set with
-  almost everywhere convergence**, the common core of the representatives below;
-* `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`: **Remark 2**, the `C¹`
-  representative of a function whose weak derivative is continuous;
+  `HasWeakIteratedFDerivOn.convolution_of_integrable`, `MemSobolev.convolution_of_integrable`: Lemma
+  9.1, $\partial(\rho * v) = \rho * \partial v$ for $\rho \in L^1$, with the norm bound
+  `MemSobolev.sobolevNorm_convolution_le`.
+* `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto`,
+  `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_of_ae_norm_le`: Theorem 9.2
+  (Friedrichs), without and with the bound $\|u_n\|_\infty \le \|u\|_\infty$.
+* `HasWeakFDerivOn.abs_integral_smul_fderiv_le`: Proposition 9.3, (i) $\Rightarrow$ (ii), with the
+  constant $C = \|\nabla u\|_{L^p(\Omega)}$.
+* `HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le`,
+  `MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`: Proposition 9.3, (ii) $\Rightarrow$
+  (i), for real-valued $u$ and $1 < p \le \infty$.
+* `HasWeakFDerivOn.eLpNorm_sub_translate_le`, `HasWeakFDerivOn.eLpNorm_sub_translate_le_univ`,
+  `MemSobolev.eLpNorm_sub_translate_le`, `SobolevEuclidean.eLpNorm_fn_sub_translate_le`: Proposition
+  9.3, (i) $\Rightarrow$ (iii), $\|u(\cdot + h) - u\|_{L^p(\omega)} \le \|h\| \|\nabla
+  u\|_{L^p(\Omega)}$ for $1 \le p < \infty$; `HasWeakFDerivOn.eLpNorm_sub_translate_le_top` is the
+  same estimate at $p = \infty$.
+* `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`,
+  `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`: Proposition 9.3, (iii) $\Rightarrow$
+  (ii), with the translation estimate for small translations, or for the translations whose segments
+  stay in $\Omega$.
+* `MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`: Remark 4(i), an $L^p$ limit of functions with
+  gradients bounded in $L^p$ lies in $W^{1,p}$, $1 < p \le \infty$.
+* `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le`: the local smooth
+  approximation keeps an $L^\infty$ bound, as the proof of Proposition 9.4 uses.
+* `HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae`: near a compact set, mollifications of $u$
+  have the mollified weak derivative as derivative and converge to $u$ almost everywhere.
+* `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`: Remark 2, a function with continuous
+  weak derivative has a $C^1$ representative.
 * `HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`,
   `HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le`,
-  `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`: **Remark 7**, the `M`-Lipschitz representative
-  of `W^{1,∞}` on a convex open set, the continuous (locally Lipschitz) representative on any open
-  set, and the constancy on a connected open set of a function with vanishing weak derivative.
+  `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`: Remark 7, the $M$-Lipschitz representative on a
+  convex open set, the continuous, locally $M$-Lipschitz representative on any open set, and the
+  constancy of a function with vanishing weak derivative on a connected open set.
 
-## Design
+## Proof outline
 
-Theorem 9.2 is proved without any Leibniz rule: the cut-off `ζ_n` equals `1` on a neighbourhood
-of any given `ω ⋐ Ω` for `n` large, so the gradient of `ζ_n (ρ_n ⋆ ū)` on `ω` is the mollified
-gradient there, and the `L^p` convergence of `ζ_n (ρ_n ⋆ ū)` only uses `0 ≤ ζ_n ≤ 1` and the
-vanishing of the `L^p` mass outside large balls. Proposition 9.3 (i) ⇒ (iii) is routed through the
-local approximation of `Density.lean` instead of Theorem 9.2, since the estimate is tested on one
-relatively compact set at a time, and an exhaustion (`MeasureTheory.eLpNorm_restrict_iUnion_le`)
-extends it to any open `ω`. The representatives of Remarks 2 and 7 share one construction,
-`HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae`: on a compact `K ⊆ Ω` the mollifications of a
-truncation of `u` have the mollified weak derivative as their derivative
-(`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`) and, along a subsequence, converge to `u`
-almost everywhere; the mean value theorem transfers gradient bounds to increments, and uniform
-convergence of the derivatives (`hasFDerivAt_of_tendstoUniformlyOn`) transfers continuity of the
-weak derivative to differentiability of the limit. Local representatives are glued by
-`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`. Remark 7 is stated for
-real-valued functions, where McShane's extension `LipschitzOnWith.extend_real` is available.
+Theorem 9.2 is proved without a Leibniz rule. The approximants are $\zeta_n (\rho_n * \bar u)$, with
+$\bar u$ the extension of $u$ by zero, $\rho_n$ mollifiers and $\zeta_n$ cut-off functions. For a
+given $\omega$ with compact closure in $\Omega$, the cut-off $\zeta_n$ equals $1$ on a neighbourhood
+of $\omega$ for $n$ large, so on $\omega$ the gradient of the approximant is the mollified gradient.
+The $L^p$ convergence of the approximants uses only $0 \le \zeta_n \le 1$ and the vanishing of the
+$L^p$ mass outside large balls.
 
-## References
+Proposition 9.3, (i) $\Rightarrow$ (iii), uses the local approximation on one relatively compact set
+at a time instead of Theorem 9.2, and an exhaustion of $\omega$ extends the estimate to any open
+$\omega$. The representatives of Remarks 2 and 7 share one construction: on a compact
+$K \subseteq \Omega$, the mollifications of a truncation of $u$ have the mollified weak derivative
+as derivative and, along a subsequence, converge to $u$ almost everywhere. The mean value theorem
+transfers gradient bounds to increments, and uniform convergence of the derivatives transfers
+continuity of the weak derivative to differentiability of the limit. Local representatives are glued
+by `MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`.
 
-[brezis2011functional], §9.1: Lemma 9.1, Theorem 9.2, Proposition 9.3, Remarks 2, 4 and 7, and
-the proof of Proposition 9.4; §9.4, proof of Proposition 9.18.
+## Implementation notes
+
+* A weak derivative is `HasWeakFDerivOn u w Ω μ`, from `Numlib.Analysis.Sobolev.WeakDeriv`.
+  Membership in $W^{1,p}(\Omega)$ is `MemSobolev u 1 p Ω μ`, from `Numlib.Analysis.Sobolev.Domain`.
+  A norm $\|g\|_{L^p(A)}$ is `eLpNorm g p (μ.restrict A)`, with values in $[0, \infty]$; for $g$
+  with values in $\mathcal{L}(E, F)$ it is taken of the operator norm.
+* The tools are the mollification theory of `Numlib.Analysis.Sobolev.Mollification` and the density
+  theorems of `Numlib.Analysis.Sobolev.Density`. The whole-space case of Theorem 9.2 is
+  `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` at order $1$, and the local
+  approximation on one relatively compact open $\omega$ is
+  `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`.
+* A set "$\omega \subset\subset \Omega$" is a set $V$ with `IsCompact (closure V)` and
+  `closure V ⊆ Ω`. The condition $|h| < \operatorname{dist}(\omega, \partial\Omega)$ of the source
+  is replaced by the condition that every segment $[x, x + h]$, $x \in \omega$, lies in $\Omega$.
+* The results of Remark 7 are stated for real-valued functions, because McShane's extension
+  `LipschitzOnWith.extend_real` is available there.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -107,7 +121,7 @@ open scoped ContDiff Convolution Distributions ENNReal Topology
 
 noncomputable section
 
-/-! ### Approximate identities converge in `L^p` -/
+/-! ### Approximate identities converge in $L^p$ -/
 
 section ApproximateIdentity
 
@@ -115,14 +129,19 @@ variable {G F : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [FiniteDimensi
   [MeasurableSpace G] [BorelSpace G] {μ : Measure G} [μ.IsAddHaarMeasure]
   [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] {p : ℝ≥0∞} {f : G → F}
 
-/-- **Approximate identities converge in `L^p`**: if the kernels `ρ n` are nonnegative,
-integrable, of integral `1`, supported in balls of radii `r n → 0`, and the convolutions
-`ρ n ⋆ f` exist, then `ρ n ⋆ f → f` in `L^p` for `f ∈ L^p`, `1 ≤ p < ∞`. It is the case of
-`MeasureTheory.tendsto_eLpNorm_convolution_sub` in which the supports shrink to `0` through balls
-of radii `r n → 0`; the proof only turns that support condition into the `smallSets` one.
-`ContDiffBump.tendsto_eLpNorm_convolution_sub` is the special case of normalized bumps; the
-general form is what the one-sided mollifiers `ρ_n(x) = n^N ρ(nx)`, `supp ρ ⊆ {1/2 < x_N < 1}`, of
-[brezis2011functional] §9.4, proof of Proposition 9.18 (iii) ⇒ (i), need. -/
+/-- Let $G$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let $F$
+be a real Banach space, and let $1 \le p < \infty$. Let $(\rho_i)$ be a family of functions
+$G \to \mathbb{R}$, indexed along a filter $l$, such that each $\rho_i$ is nonnegative and
+integrable with $\int \rho_i \, d\mu = 1$, and $\operatorname{supp} \rho_i$ lies in the closed
+ball of radius $r_i$ about $0$, where $r_i \to 0$ along $l$. Then for every $f \in L^p(G; F)$,
+$$\|\rho_i * f - f\|_{L^p} \to 0 \quad \text{along } l.$$
+
+This is the case of `MeasureTheory.tendsto_eLpNorm_convolution_sub` in which the supports shrink
+to $0$ through balls of radii $r_i \to 0$. The special case of normalized bumps is
+`ContDiffBump.tendsto_eLpNorm_convolution_sub`. The general form is what the one-sided
+mollifiers $\rho_n(x) = n^N \rho(nx)$, with $\operatorname{supp} \rho \subseteq \{1/2 < x_N <
+1\}$, of the proof of Proposition 9.18, (iii) $\Rightarrow$ (i), in §9.4 of
+[brezis2011functional] need. The convolution is `ρ i ⋆[ContinuousLinearMap.lsmul ℝ ℝ, μ] f`. -/
 theorem MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support {ι : Type*}
     {l : Filter ι} {ρ : ι → G → ℝ} {r : ι → ℝ} (hρ₀ : ∀ i t, 0 ≤ ρ i t)
     (hρ : ∀ i, Integrable (ρ i) μ) (hρ₁ : ∀ i, ∫ t, ρ i t ∂μ = 1)
@@ -137,7 +156,7 @@ theorem MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support {ι : T
 
 end ApproximateIdentity
 
-/-! ### Proposition 9.3, (i) ⇒ (ii) -/
+/-! ### Proposition 9.3, (i) $\Rightarrow$ (ii) -/
 
 section Characterization
 
@@ -145,12 +164,17 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [SecondCountableTopology E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {Ω : Opens E} {μ : Measure E} {u : E → F} {w : E → E →L[ℝ] F} {p q : ℝ≥0∞}
 
-/-- **Proposition 9.3, (i) ⇒ (ii)**, with the book's constant: if `w` is the weak derivative of
-`u` on `Ω` and `p, q` are Hölder conjugate, then for every test function `φ` on `Ω` and every
-direction `y`, `‖∫_Ω (∂_y φ) u‖ ≤ ‖y‖ ‖w‖_{L^p(Ω)} ‖φ‖_{L^q(Ω)}`: the defining identity turns the
-integral into `∫_Ω φ (w y)`, and Hölder's inequality bounds it. This is the implication
-[brezis2011functional] Proposition 9.3 calls obvious, with `C = ‖∇u‖_{L^p(Ω)}`, and it holds for
-`p = 1` as well (Remark 6). -/
+/-- Let $E$ be a separable real normed space with a measure $\mu$, let $\Omega \subseteq E$ be open,
+and let $p, q \in [1, \infty]$ be Hölder conjugate. If $w$ is a weak derivative of
+$u \colon E \to F$ on $\Omega$, then for every test function $\varphi \in \mathcal{D}(\Omega)$
+and every $y \in E$,
+$$\Big\| \int_\Omega \partial_y \varphi \, u \, d\mu \Big\| \le \|y\| \, \|w\|_{L^p(\Omega)} \,
+  \|\varphi\|_{L^q(\Omega)}.$$
+
+This is the implication (i) $\Rightarrow$ (ii) of Proposition 9.3 of [brezis2011functional],
+which the source calls obvious, with the constant $C = \|\nabla u\|_{L^p(\Omega)}$. It holds for
+$p = 1$ as well, as Remark 6 of the source says. The defining identity turns the integral into
+$-\int_\Omega \varphi \, w(\cdot) y$, and Hölder's inequality bounds it. -/
 theorem HasWeakFDerivOn.abs_integral_smul_fderiv_le (h : HasWeakFDerivOn u w Ω μ)
     [ENNReal.HolderConjugate p q] (φ : 𝓓(Ω, ℝ)) (y : E) :
     ‖∫ x in (Ω : Set E), fderiv ℝ φ x y • u x ∂μ‖ₑ
@@ -182,17 +206,23 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {n : ℕ} {y : Fin n → E}
   {f w : E → F} {p : ℝ≥0∞}
 
-/-- **The local approximation with an `L^∞` bound preserved**: the local approximation
-`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm` of
-`Numlib/Analysis/Sobolev/Mollification.lean` — on an open `V` with compact closure in `Ω`, smooth
-`g j` with `g j → f` and `∂^y (g j) → w` in `L^p(V)` — with the additional conclusion
-`‖g j x‖ ≤ M` for all `j` and `x` whenever `‖f‖ ≤ M` almost everywhere on `Ω`. The approximants
-are mollifications, by nonnegative normalized bumps, of a truncation of `f`, and such a
-mollification never exceeds the essential bound of the function
-(`ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`). This is the sentence "checking the
-proof of Theorem 9.2, we see easily that we have further `‖u_n‖_∞ ≤ ‖u‖_∞`" of
-[brezis2011functional] §9.1, proof of Proposition 9.4, in the local form that the endpoint product
-rule `L^p × L^∞` needs. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, let $y = (y_1, \dots, y_n)$ be a tuple of directions, and let
+$1 \le p < \infty$. Let $w$ be a weak derivative of $f \colon E \to F$ along $y$ on $\Omega$,
+with $f$ and $w$ locally in $L^p$ on $\Omega$, and let $M \ge 0$ with $\|f\| \le M$ almost
+everywhere on $\Omega$. Let $V$ be an open set whose closure is compact and contained in
+$\Omega$. Then there are functions $g_j \in C^\infty(E)$ such that $g_j$ and $\partial^y g_j$
+lie in $L^p(V)$, $\|g_j(x)\| \le M$ for all $j$ and $x$, and
+$$g_j \to f \quad \text{and} \quad \partial^y g_j \to w \quad \text{in } L^p(V).$$
+
+This is the local approximation `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`
+with the additional bound $\|g_j\| \le M$. It is the sentence "checking the proof of Theorem
+9.2, we see easily that we have further $\|u_n\|_\infty \le \|u\|_\infty$" of the proof of
+Proposition 9.4 in §9.1 of [brezis2011functional], in the local form that the product rule for
+$L^p \times L^\infty$ needs. The approximants are mollifications of a truncation of $f$ by
+nonnegative normalized bumps, and such a mollification never exceeds the essential bound of the
+function (`ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`). The derivative
+$\partial^y g_j(x)$ is `iteratedFDeriv ℝ n (g j) x y`. -/
 theorem HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le
     (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hf : LocallyMemLpOn f p Ω μ)
     (hw : LocallyMemLpOn w p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) {M : ℝ} (hM0 : 0 ≤ M)
@@ -222,11 +252,14 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {v w : E → F} {p q : ℝ≥0∞}
 
 omit [CompleteSpace F] in
-/-- The integrand `(x, t) ↦ b x • ρ t • g (x - t)` of `∫ b • (ρ ⋆ g)`, written out, is integrable
-on `μ × μ` for `b ∈ L^q`, `ρ ∈ L¹` and `g ∈ L^p` with `p, q` Hölder conjugate: Hölder's inequality
-in `x` and the translation invariance of `μ` bound the inner integral by `‖b‖_q ‖g‖_p`, uniformly
-in `t`. This is the integrability that justifies the two applications of Fubini's theorem in the
-proof of [brezis2011functional] Lemma 9.1. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$p, q \in [1, \infty]$ be Hölder conjugate. If $b \in L^q(E)$ and $\rho \in L^1(E)$ are
+real-valued and $g \in L^p(E; F)$, then the function $(x, t) \mapsto b(x)\, \rho(t)\, g(x - t)$
+is integrable on $E \times E$ for $\mu \otimes \mu$.
+
+This is the integrability that justifies the two applications of Fubini's theorem in the proof
+of Lemma 9.1 of [brezis2011functional]. Hölder's inequality in $x$ and the translation
+invariance of $\mu$ bound the inner integral by $\|b\|_{L^q} \|g\|_{L^p}$, uniformly in $t$. -/
 theorem MeasureTheory.integrable_smul_smul_sub_prod [ENNReal.HolderConjugate p q]
     {b ρ : E → ℝ} {g : E → F} (hb : MemLp b q μ) (hρ : Integrable ρ μ) (hg : MemLp g p μ) :
     Integrable (fun z : E × E ↦ b z.1 • ρ z.2 • g (z.1 - z.2)) (μ.prod μ) := by
@@ -270,8 +303,8 @@ theorem MeasureTheory.integrable_smul_smul_sub_prod [ENNReal.HolderConjugate p q
         (ENNReal.mul_lt_top hb.eLpNorm_lt_top hg.eLpNorm_lt_top)
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- The translate `z ↦ φ (z + t)` of a test function on the whole space, as a test function on
-the whole space. -/
+/-- The translate $z \mapsto \varphi(z + t)$ of a test function $\varphi$ on the whole space $E$, as
+a test function on $E$. -/
 def TestFunction.compAddRight (φ : 𝓓((⊤ : Opens E), F)) (t : E) : 𝓓((⊤ : Opens E), F) where
   toFun z := φ (z + t)
   contDiff' := φ.contDiff.comp (contDiff_id.add contDiff_const)
@@ -279,24 +312,28 @@ def TestFunction.compAddRight (φ : 𝓓((⊤ : Opens E), F)) (t : E) : 𝓓((�
   tsupport_subset' := by simp
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- `TestFunction.compAddRight` as a function. -/
+/-- The translate `TestFunction.compAddRight φ t` is the function $z \mapsto \varphi(z + t)$. -/
 @[simp]
 theorem TestFunction.compAddRight_coe (φ : 𝓓((⊤ : Opens E), F)) (t : E) :
     (φ.compAddRight t : E → F) = fun z ↦ φ (z + t) :=
   rfl
 
 omit [CompleteSpace F] in
-/-- **Lemma 9.1**: convolution with an integrable kernel commutes with the weak derivative on the
-whole space. If `w` is the weak derivative of `v` along the tuple `y` on `E`, with `v, w ∈ L^p`,
-`1 ≤ p ≤ ∞`, and `ρ ∈ L¹`, then `ρ ⋆ w` is the weak derivative of `ρ ⋆ v` along `y`.
+/-- **Lemma 9.1** of [brezis2011functional], along a tuple of directions. Let $E$ be a
+finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$y = (y_1, \dots, y_n)$ be a tuple of directions, and let $1 \le p \le \infty$. Let $w$ be a
+weak derivative of $v \colon E \to F$ along $y$ on the whole space $E$, with
+$v, w \in L^p(E; F)$, and let $\rho \in L^1(E)$ be real-valued. Then $\rho * w$ is a weak
+derivative of $\rho * v$ along $y$ on $E$:
+$$\partial^y (\rho * v) = \rho * \partial^y v.$$
 
-The kernel is not a bump, so `ρ ⋆ v` need not be smooth and the identity is proved by Fubini's
-theorem: `∫ (∂^y φ) (ρ ⋆ v) = ∫ ρ(t) ∫ (∂^y φ)(x) v(x - t) dx dt`, and the inner integral is the
-defining identity of the weak derivative of `v` tested against the translate `φ(· + t)`, which is
-again a test function on the whole space. Both interchanges are justified by
-`MeasureTheory.integrable_smul_smul_sub_prod`. This is [brezis2011functional] Lemma 9.1 ("adapt
-the proof of Lemma 8.4"), whose one-dimensional form is Lemma 8.4; the book's `W^{1,p}` reading is
-`MemSobolev.convolution_of_integrable`. -/
+The source proves Lemma 9.1 by "adapt the proof of Lemma 8.4", whose one-dimensional form is
+Lemma 8.4; the statement for $W^{k,p}$ is `MemSobolev.convolution_of_integrable`. The kernel is
+not a bump, so $\rho * v$ need not be smooth, and the identity is proved by Fubini's theorem:
+$\int \partial^y \varphi \, (\rho * v) = \int \rho(t) \int \partial^y \varphi(x)\, v(x - t) \,
+dx \, dt$, and the inner integral is the defining identity of the weak derivative of $v$, tested
+against the translate $\varphi(\cdot + t)$ (`TestFunction.compAddRight`). Both interchanges are
+justified by `MeasureTheory.integrable_smul_smul_sub_prod`. -/
 theorem HasWeakIteratedLineDerivOn.convolution_of_integrable
     (h : HasWeakIteratedLineDerivOn y v w ⊤ μ) {ρ : E → ℝ} (hρ : Integrable ρ μ) (hp : 1 ≤ p)
     (hv : MemLp v p μ) (hw : MemLp w p μ) :
@@ -360,11 +397,16 @@ theorem HasWeakIteratedLineDerivOn.convolution_of_integrable
 
 
 omit [CompleteSpace F] in
-/-- **Lemma 9.1, tensor form**: convolution with an integrable kernel commutes with the weak
-derivative of order `n` on the whole space, `(ρ ⋆ W)` being the convolution of the
-`E [×n]→L[ℝ] F`-valued weak derivative. Each direction is
-`HasWeakIteratedLineDerivOn.convolution_of_integrable`; the two convolutions agree at every point
-where the convolution `ρ ⋆ W` exists, which is almost everywhere. -/
+/-- **Lemma 9.1** of [brezis2011functional], tensor form. Let $E$ be a finite-dimensional real
+normed space with an additive Haar measure $\mu$, and let $1 \le p \le \infty$. Let
+$W \colon E \to \mathcal{L}^n(E; F)$ be a weak derivative of order $n$ of $v \colon E \to F$ on
+the whole space $E$, with $v, W \in L^p$, and let $\rho \in L^1(E)$ be real-valued. Then
+$\rho * W$ is a weak derivative of order $n$ of $\rho * v$ on $E$.
+
+Here $\mathcal{L}^n(E; F)$ is the space of continuous $n$-linear maps `E [×n]→L[ℝ] F`. Each
+direction is `HasWeakIteratedLineDerivOn.convolution_of_integrable`. The convolution of $W$ and
+its evaluation at a tuple $y$ agree at every point where the convolution $\rho * W$ exists,
+which is almost every point. -/
 theorem HasWeakIteratedFDerivOn.convolution_of_integrable {W : E → E [×n]→L[ℝ] F}
     (h : HasWeakIteratedFDerivOn n v W ⊤ μ) {ρ : E → ℝ} (hρ : Integrable ρ μ) (hp : 1 ≤ p)
     (hv : MemLp v p μ) (hW : MemLp W p μ) :
@@ -387,10 +429,14 @@ theorem HasWeakIteratedFDerivOn.convolution_of_integrable {W : E → E [×n]→L
     rfl
 
 omit [CompleteSpace F] in
-/-- **Lemma 9.1, `W^{k,p}` form**: for `ρ ∈ L¹` and `v ∈ W^{k,p}(E)`, `1 ≤ p ≤ ∞`, the
-convolution `ρ ⋆ v` lies in `W^{k,p}(E)`, its weak derivatives being the convolutions `ρ ⋆ ∂^n v`
-(`HasWeakIteratedFDerivOn.convolution_of_integrable`), which lie in `L^p` by Young's inequality.
-This is [brezis2011functional] Lemma 9.1, at every order. -/
+/-- **Lemma 9.1** of [brezis2011functional], for $W^{k,p}$. Let $E$ be a finite-dimensional real
+normed space with an additive Haar measure $\mu$, let $k \in \mathbb{N}$ and
+$1 \le p \le \infty$. If $v \in W^{k,p}(E; F)$ and $\rho \in L^1(E)$ is real-valued, then
+$\rho * v \in W^{k,p}(E; F)$.
+
+The weak derivatives of $\rho * v$ are the convolutions $\rho * \partial^n v$
+(`HasWeakIteratedFDerivOn.convolution_of_integrable`), and they lie in $L^p$ by Young's
+inequality. The source states the lemma for $W^{1,p}$; this version holds at every order. -/
 theorem MemSobolev.convolution_of_integrable {k : ℕ} (hv : MemSobolev v k p ⊤ μ) {ρ : E → ℝ}
     (hρ : Integrable ρ μ) (hp : 1 ≤ p) : MemSobolev (ρ ⋆[lsmul ℝ ℝ, μ] v) k p ⊤ μ := by
   have hρ1 : MemLp ρ 1 μ := memLp_one_iff_integrable.2 hρ
@@ -401,8 +447,13 @@ theorem MemSobolev.convolution_of_integrable {k : ℕ} (hv : MemSobolev v k p �
   exact ⟨_, hW.convolution_of_integrable hρ hp hv.memLp_top hWp,
     by simpa [Measure.restrict_coe_top] using MemLp.convolution hp hρ1 hWp⟩
 
-/-- The Sobolev norm of a convolution is bounded by the `L¹` norm of the kernel times the Sobolev
-norm of the function, on the whole space: Young's inequality order by order. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$k \in \mathbb{N}$ and $1 \le p \le \infty$. If $v \in W^{k,p}(E; F)$ and $\rho \in L^1(E)$ is
+real-valued, then
+$$\|\rho * v\|_{W^{k,p}(E)} \le \|\rho\|_{L^1} \, \|v\|_{W^{k,p}(E)}.$$
+
+The norm is `sobolevNorm`, built from the $L^p$ norms of the weak derivatives of orders
+$0, \dots, k$. The proof is Young's inequality at each order. -/
 theorem MemSobolev.sobolevNorm_convolution_le {k : ℕ} (hv : MemSobolev v k p ⊤ μ) {ρ : E → ℝ}
     (hρ : Integrable ρ μ) (hp : 1 ≤ p) :
     sobolevNorm (ρ ⋆[lsmul ℝ ℝ, μ] v) k p ⊤ μ ≤ eLpNorm ρ 1 μ * sobolevNorm v k p ⊤ μ := by
@@ -449,14 +500,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {w : E → E →L[ℝ] F} {p : ℝ≥0∞}
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] in
-/-- The first iterated derivative is the uncurried first derivative. -/
+/-- For $g \colon E \to F$ and $x \in E$, the first iterated derivative $D^1 g(x)$ is the derivative
+$Dg(x)$, read as a continuous $1$-linear map through `continuousMultilinearCurryFin1`. -/
 theorem iteratedFDeriv_one_eq_symm_fderiv (g : E → F) (x : E) :
     iteratedFDeriv ℝ 1 g x = (continuousMultilinearCurryFin1 ℝ E F).symm (fderiv ℝ g x) :=
   iteratedFDeriv_one_eq_symm_fderiv' g x
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- A function of `W^{1,p}(Ω)` has a first-order weak derivative in `L^p(Ω)`, in the
-`E →L[ℝ] F`-valued reading. -/
+/-- Let $\Omega \subseteq E$ be open, let $\mu$ be a measure on $E$, and let
+$f \in W^{1,p}(\Omega; F)$. Then $f$ has a weak derivative $w \colon E \to \mathcal{L}(E, F)$ on
+$\Omega$ with $w \in L^p(\Omega)$.
+
+This converts the weak derivative of order $1$ of `MemSobolev`, which takes values in the
+$1$-linear maps, into one with values in $\mathcal{L}(E, F)$. -/
 theorem MemSobolev.exists_hasWeakFDerivOn (hf : MemSobolev f 1 p Ω μ) :
     ∃ w : E → E →L[ℝ] F, HasWeakFDerivOn f w Ω μ ∧ MemLp w p (μ.restrict (Ω : Set E)) := by
   obtain ⟨W, hW, hWp⟩ := hf.exists_hasWeakIteratedFDerivOn (n := 1) le_rfl
@@ -468,7 +524,8 @@ theorem MemSobolev.exists_hasWeakFDerivOn (hf : MemSobolev f 1 p Ω μ) :
   simp
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- A function with a first-order weak derivative, both in `L^p(Ω)`, lies in `W^{1,p}(Ω)`. -/
+/-- Let $\Omega \subseteq E$ be open and let $\mu$ be a measure on $E$. If $f \in L^p(\Omega; F)$
+has a weak derivative $w \in L^p(\Omega)$ on $\Omega$, then $f \in W^{1,p}(\Omega; F)$. -/
 theorem HasWeakFDerivOn.memSobolev (h : HasWeakFDerivOn f w Ω μ)
     (hf : MemLp f p (μ.restrict (Ω : Set E))) (hw : MemLp w p (μ.restrict (Ω : Set E))) :
     MemSobolev f 1 p Ω μ := by
@@ -481,26 +538,40 @@ theorem HasWeakFDerivOn.memSobolev (h : HasWeakFDerivOn f w Ω μ)
       |>.toContinuousLinearMap.comp_memLp' hw⟩
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- A first-order weak derivative on `Ω` is one on every open subset of `Ω`. -/
+/-- Let $\Omega' \subseteq \Omega$ be open sets of $E$. A weak derivative of $f$ on $\Omega$ is a
+weak derivative of $f$ on $\Omega'$. -/
 theorem HasWeakFDerivOn.mono {Ω' : Opens E} (h : HasWeakFDerivOn f w Ω μ) (hΩ : Ω' ≤ Ω) :
     HasWeakFDerivOn f w Ω' μ :=
   HasWeakIteratedFDerivOn.mono h hΩ
 
 omit [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- Two first-order weak derivatives of the same function agree almost everywhere on `Ω`. -/
+/-- Let $E$ be a finite-dimensional real normed space with a Borel measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $F$ be a real Banach space. If $w_1$ and $w_2$ are weak
+derivatives of the same $f \colon E \to F$ on $\Omega$, then $w_1 = w_2$ almost everywhere on
+$\Omega$. -/
 theorem HasWeakFDerivOn.ae_eq [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
     {w₁ w₂ : E → E →L[ℝ] F} (h₁ : HasWeakFDerivOn f w₁ Ω μ) (h₂ : HasWeakFDerivOn f w₂ Ω μ) :
     ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x = w₂ x := by
   filter_upwards [HasWeakIteratedFDerivOn.ae_eq h₁ h₂] with x hx hxΩ
   exact (continuousMultilinearCurryFin1 ℝ E F).symm.injective (hx hxΩ)
 
-/-- **Theorem 9.2 (Friedrichs), the construction.** For `f ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, the
-sequence `u_n = ζ_n (ρ_n ⋆ f̄)`, with `f̄` the extension of `f` by zero, `ρ_n` normalized bumps of
-radii tending to `0` and `ζ_n = ζ(·/n)` the cut-offs of footnote 5, consists of smooth compactly
-supported functions with `u_n → f` in `L^p(Ω)`, `∇u_n → ∇f` in `L^p(V)` for every `V` with compact
-closure in `Ω`, and `‖u_n‖_∞ ≤ ‖f‖_∞`. The named theorems
-`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` and `…_of_ae_norm_le` are its two
-readings. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, let $1 \le p < \infty$, and let $f \in W^{1,p}(\Omega; F)$. Then
+there is a sequence $u_n \in C^\infty(E)$ of functions with compact support with the following
+three properties.
+
+* $u_n \to f$ in $L^p(\Omega)$.
+* For every weak derivative $w$ of $f$ on $\Omega$ and every set $V$ whose closure is compact
+  and contained in $\Omega$, $\nabla u_n \to w$ in $L^p(V)$.
+* For every $M \ge 0$ with $\|f\| \le M$ almost everywhere on $\Omega$, $\|u_n(x)\| \le M$ for
+  all $n$ and all $x \in E$.
+
+This is the construction of Theorem 9.2 (Friedrichs) of [brezis2011functional]. The functions
+are $u_n = \zeta_n (\rho_n * \bar f)$, where $\bar f$ is the extension of $f$ by zero, $\rho_n$
+are normalized bumps of radii tending to $0$, and $\zeta_n = \zeta(\cdot / (n + 1))$ are the
+cut-off functions of footnote 5 of the source. The theorems
+`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` and
+`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_of_ae_norm_le` are its two readings. -/
 theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_aux (hf : MemSobolev f 1 p Ω μ)
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) :
     ∃ u : ℕ → E → F, (∀ n, ContDiff ℝ ∞ (u n)) ∧ (∀ n, HasCompactSupport (u n)) ∧
@@ -657,21 +728,25 @@ theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_aux (hf : MemSo
           · exact (φ n).norm_convolution_normed_le_of_ae_norm_le hf'M x
       _ = M := one_mul M
 
-/-- **Theorem 9.2 (Friedrichs)**: for `f ∈ W^{1,p}(Ω)` with `1 ≤ p < ∞` there is a sequence
-`u_n ∈ C_c^∞(E)` with `u_n → f` in `L^p(Ω)` and `∇u_n → ∇f` in `L^p(V)` for every set `V` with
-compact closure in `Ω` — one sequence for all such `V`, which is what distinguishes the theorem
-from the local approximation `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`. Here `∇f` is any
-first-order weak derivative `w` of `f` on `Ω` (they agree almost everywhere on `Ω`,
-`HasWeakFDerivOn.ae_eq`).
+/-- The **Friedrichs theorem**. Let $E$ be a finite-dimensional real normed space with an additive
+Haar measure $\mu$, let $\Omega \subseteq E$ be open, let $1 \le p < \infty$, and let
+$f \in W^{1,p}(\Omega; F)$. Then there is a sequence $u_n \in C_c^\infty(E)$ with $u_n \to f$ in
+$L^p(\Omega)$ and, for every weak derivative $w$ of $f$ on $\Omega$ and every set $V$ whose
+closure is compact and contained in $\Omega$,
+$$\nabla u_n \to w \quad \text{in } L^p(V).$$
+This is Theorem 9.2 of [brezis2011functional].
 
-The sequence is `ζ_n (ρ_n ⋆ f̄)`, `f̄` the extension of `f` by zero, `ρ_n` normalized bumps of radii
-`ε_n → 0` and `ζ_n` the cut-offs of footnote 5. Away from the boundary — on `V`, once `ε_n` is
-below the distance from `closure V` to `Ωᶜ` — the commutation `∇(ρ_n ⋆ f̄) = ρ_n ⋆ w̄`
-(`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`) makes the gradient converge, and the
-cut-off is `1` on a neighbourhood of `V` for `n` large, so no Leibniz rule is needed; this
-replaces the book's detour through the cut-off `α` and Remark 4 (ii).
-[brezis2011functional] Theorem 9.2; the whole-space clause is
-`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`. -/
+One sequence serves all such $V$, which distinguishes the theorem from the local approximation
+`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`. Any two weak derivatives of $f$ agree almost
+everywhere on $\Omega$ (`HasWeakFDerivOn.ae_eq`). The whole-space case of the theorem is
+`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`. The sequence is
+$\zeta_n (\rho_n * \bar f)$, with $\bar f$ the extension of $f$ by zero, $\rho_n$ normalized
+bumps of radii $\varepsilon_n \to 0$, and $\zeta_n$ the cut-off functions of footnote 5 of the
+source. On $V$, once $\varepsilon_n$ is below the distance from $\overline V$ to the complement
+of $\Omega$, the identity $\nabla(\rho_n * \bar f) = \rho_n * \bar w$
+(`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`) makes the gradients converge. The cut-off
+is $1$ on a neighbourhood of $V$ for $n$ large, so no Leibniz rule is needed; this replaces the
+argument of the source with the cut-off $\alpha$ and Remark 4(ii). -/
 theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto (hf : MemSobolev f 1 p Ω μ)
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) :
     ∃ u : ℕ → E → F, (∀ n, ContDiff ℝ ∞ (u n)) ∧ (∀ n, HasCompactSupport (u n)) ∧
@@ -683,13 +758,19 @@ theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto (hf : MemSobole
   obtain ⟨u, h₁, h₂, h₃, h₄, -⟩ := hf.exists_seq_contDiff_hasCompactSupport_tendsto_aux hp hp'
   exact ⟨u, h₁, h₂, h₃, h₄⟩
 
-/-- **Theorem 9.2 (Friedrichs) with the `L^∞` bound preserved**: if moreover `‖f‖ ≤ M` almost
-everywhere on `Ω`, `0 ≤ M`, the sequence of
-`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` can be taken with `‖u_n‖ ≤ M`
-everywhere: mollification by a nonnegative normalized bump does not increase an `L^∞` bound
-(`ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`) and the cut-offs take values in
-`[0, 1]`. This is the sentence "checking the proof of Theorem 9.2, we see easily that we have
-further `‖u_n‖_∞ ≤ ‖u‖_∞`" of [brezis2011functional] §9.1, proof of Proposition 9.4. -/
+/-- The **Friedrichs theorem** with an $L^\infty$ bound. Let $E$ be a finite-dimensional real normed
+space with an additive Haar measure $\mu$, let $\Omega \subseteq E$ be open, let
+$1 \le p < \infty$, and let $f \in W^{1,p}(\Omega; F)$ with $\|f\| \le M$ almost everywhere on
+$\Omega$ for some $M \ge 0$. Then there is a sequence $u_n \in C_c^\infty(E)$ with
+$\|u_n(x)\| \le M$ for all $n$ and $x$, with $u_n \to f$ in $L^p(\Omega)$, and with
+$\nabla u_n \to w$ in $L^p(V)$ for every weak derivative $w$ of $f$ on $\Omega$ and every set
+$V$ whose closure is compact and contained in $\Omega$.
+
+This is the sentence "checking the proof of Theorem 9.2, we see easily that we have further
+$\|u_n\|_\infty \le \|u\|_\infty$" of the proof of Proposition 9.4 in §9.1 of
+[brezis2011functional]. Mollification by a nonnegative normalized bump does not increase an
+$L^\infty$ bound (`ContDiffBump.norm_convolution_normed_le_of_ae_norm_le`), and the cut-off
+functions take values in $[0, 1]$. -/
 theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_of_ae_norm_le
     (hf : MemSobolev f 1 p Ω μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), ‖f x‖ ≤ M) :
@@ -705,21 +786,22 @@ theorem MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_of_ae_norm_le
 
 end Friedrichs
 
-/-! ### Proposition 9.3, (ii) ⇒ (i): the Riesz representation route -/
+/-! ### Proposition 9.3, (ii) $\Rightarrow$ (i): the Riesz representation route -/
 
 section TestFunctionLp
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
   [OpensMeasurableSpace E] {Ω : Opens E} {q : ℝ≥0∞} {μ : Measure E} [IsFiniteMeasureOnCompacts μ]
 
-/-- The test functions on `Ω`, as elements of `L^q(Ω)`: the linear map `φ ↦ [φ]`. -/
+/-- The linear map $\mathcal{D}(\Omega) \to L^q(\Omega)$ that sends a real test function $\varphi$
+on $\Omega$ to its class in $L^q(\Omega)$, for a measure $\mu$ that is finite on compact sets. -/
 def TestFunction.toLpₗ (Ω : Opens E) (q : ℝ≥0∞) (μ : Measure E) [IsFiniteMeasureOnCompacts μ] :
     𝓓(Ω, ℝ) →ₗ[ℝ] Lp ℝ q (μ.restrict (Ω : Set E)) where
   toFun φ := ((φ.memLp q μ).restrict (Ω : Set E)).toLp φ
   map_add' _ _ := rfl
   map_smul' _ _ := rfl
 
-/-- `TestFunction.toLpₗ` is the class of the test function in `L^q(Ω)`. -/
+/-- `TestFunction.toLpₗ Ω q μ φ` is the class of the test function $\varphi$ in $L^q(\Omega)$. -/
 @[simp]
 theorem TestFunction.toLpₗ_apply (φ : 𝓓(Ω, ℝ)) :
     TestFunction.toLpₗ Ω q μ φ = ((φ.memLp q μ).restrict (Ω : Set E)).toLp φ :=
@@ -735,14 +817,20 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E}
   {u : E → ℝ} {p q : ℝ≥0∞}
 
-/-- **The weak derivative along one direction, from a bound on the distributional derivative**:
-if `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, and `|∫_Ω (∂_y φ) u| ≤ C ‖φ‖_{L^q(Ω)}` for every test function `φ`,
-`q` the conjugate exponent (so `q < ∞`), then `u` has a weak derivative along `y` in `L^p(Ω)`.
-The functional `φ ↦ ∫_Ω (∂_y φ) u` is bounded on the test functions for the `L^q(Ω)` norm, so it
-extends to `L^q(Ω)` by the Hahn–Banach theorem and is represented by a function of `L^p(Ω)`
-through the Riesz representation theorem `MeasureTheory.Lp.exists_forall_eq_integral`; density of
-the test functions is not needed. This is the step "proceed as in the proof of Proposition 8.3" of
-[brezis2011functional] Proposition 9.3, (ii) ⇒ (i), for one direction. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $p, q \in [1, \infty]$ be Hölder conjugate with
+$q < \infty$, that is, $1 < p \le \infty$. Let $u \in L^p(\Omega)$ be real-valued, let
+$y \in E$, and let $C < \infty$ with
+$$\Big| \int_\Omega \partial_y \varphi \, u \, d\mu \Big| \le C \|\varphi\|_{L^q(\Omega)}$$
+for every test function $\varphi \in \mathcal{D}(\Omega)$. Then $u$ has a weak derivative
+$w \in L^p(\Omega)$ along $y$ on $\Omega$.
+
+This is the step "proceed as in the proof of Proposition 8.3" of the proof of Proposition 9.3,
+(ii) $\Rightarrow$ (i), of [brezis2011functional], for one direction. The functional $\varphi
+\mapsto \int_\Omega \partial_y \varphi \, u$ is bounded on the test functions for the norm of
+$L^q(\Omega)$. The Hahn–Banach theorem extends it to $L^q(\Omega)$, and the Riesz representation
+theorem `MeasureTheory.Lp.exists_forall_eq_integral` represents it by a function of
+$L^p(\Omega)$. Density of the test functions is not needed. -/
 theorem exists_hasWeakIteratedLineDerivOn_of_forall_enorm_integral_smul_fderiv_le
     [ENNReal.HolderConjugate p q] (hq : q ≠ ⊤) (hu : MemLp u p (μ.restrict (Ω : Set E)))
     (y : E) {C : ℝ≥0∞} (hC : C ≠ ⊤)
@@ -824,14 +912,20 @@ theorem exists_hasWeakIteratedLineDerivOn_of_forall_enorm_integral_smul_fderiv_l
   exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
 
 
-/-- **Proposition 9.3, (ii) ⇒ (i), with one bound per basis direction**: if `u ∈ L^p(Ω)`,
-`1 < p ≤ ∞`, and for every vector `b i` of a basis of `E` there is `C i` with
-`|∫_Ω (∂_{b i} φ) u| ≤ C i ‖φ‖_{L^q(Ω)}` for all test functions `φ`, `q` the conjugate exponent
-(so `q < ∞`), then `u ∈ W^{1,p}(Ω)`. Each direction is
-`exists_hasWeakIteratedLineDerivOn_of_forall_enorm_integral_smul_fderiv_le`, and the
-multi-index formulation `MemSobolevMultiIndex.memSobolev` assembles the gradient. This is
-[brezis2011functional] Proposition 9.3, (ii) ⇒ (i), in the book's own shape (one inequality per
-coordinate direction). -/
+/-- **Proposition 9.3**, (ii) $\Rightarrow$ (i), with one bound for each vector of a basis. Let $E$
+be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $p, q \in [1, \infty]$ be Hölder conjugate with
+$q < \infty$, that is, $1 < p \le \infty$. Let $u \in L^p(\Omega)$ be real-valued, let $(b_i)$
+be a basis of $E$, and let $C_i < \infty$ be constants with
+$$\Big| \int_\Omega \partial_{b_i} \varphi \, u \, d\mu \Big| \le C_i
+  \|\varphi\|_{L^q(\Omega)}$$
+for every test function $\varphi \in \mathcal{D}(\Omega)$ and every $i$. Then
+$u \in W^{1,p}(\Omega)$.
+
+This is Proposition 9.3, (ii) $\Rightarrow$ (i), of [brezis2011functional] in the shape of the
+source, with one inequality for each coordinate direction. Each direction is
+`exists_hasWeakIteratedLineDerivOn_of_forall_enorm_integral_smul_fderiv_le`, and the multi-index
+formulation `MemSobolevMultiIndex.memSobolev` assembles the gradient. -/
 theorem MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) (hu : MemLp u p (μ.restrict (Ω : Set E))) {ι : Type*} [LinearOrder ι]
     (b : Basis ι ℝ E) {C : ι → ℝ≥0∞} (hC : ∀ i, C i ≠ ⊤)
@@ -853,12 +947,20 @@ theorem MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le [ENNReal.Holder
   · obtain rfl : α = Pi.single i 1 := congrArg Subtype.val hi
     exact ⟨w i, (hw i).of_perm (multiIndexTuple_single_perm (b : ι → E) i).symm, hwp i⟩
 
-/-- **Proposition 9.3, (ii) ⇒ (i)**: if `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, and there is `C` with
-`|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for all test functions `φ` and directions `y`, `q` the
-conjugate exponent (so `q < ∞`), then `u ∈ W^{1,p}(Ω)`. This is the direction-free form of
-`MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`, the converse of
-`HasWeakFDerivOn.abs_integral_smul_fderiv_le`; [brezis2011functional] Proposition 9.3,
-(ii) ⇒ (i). The weak gradient is `MemSobolev.exists_hasWeakFDerivOn`. -/
+/-- **Proposition 9.3**, (ii) $\Rightarrow$ (i). Let $E$ be a finite-dimensional real normed space
+with an additive Haar measure $\mu$, let $\Omega \subseteq E$ be open, and let
+$p, q \in [1, \infty]$ be Hölder conjugate with $q < \infty$, that is, $1 < p \le \infty$. Let
+$u \in L^p(\Omega)$ be real-valued, and let $C < \infty$ with
+$$\Big| \int_\Omega \partial_y \varphi \, u \, d\mu \Big| \le C \|y\| \,
+  \|\varphi\|_{L^q(\Omega)}$$
+for every test function $\varphi \in \mathcal{D}(\Omega)$ and every $y \in E$. Then
+$u \in W^{1,p}(\Omega)$.
+
+This is Proposition 9.3, (ii) $\Rightarrow$ (i), of [brezis2011functional], in a form without a
+choice of directions. It is the converse of `HasWeakFDerivOn.abs_integral_smul_fderiv_le`, and
+it follows from `MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`. The conclusion is
+membership in $W^{1,p}(\Omega)$; the weak derivative itself is given by
+`MemSobolev.exists_hasWeakFDerivOn`. -/
 theorem HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le [ENNReal.HolderConjugate p q]
     (hq : q ≠ ⊤) (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞} (hC : C ≠ ⊤)
     (h : ∀ (φ : 𝓓(Ω, ℝ)) (y : E), ‖∫ x in (Ω : Set E), fderiv ℝ φ x y • u x ∂μ‖ₑ
@@ -868,13 +970,19 @@ theorem HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le [ENNReal.HolderCon
     (C := fun i ↦ C * ‖Module.finBasis ℝ E i‖ₑ) (fun _ ↦ ENNReal.mul_ne_top hC enorm_ne_top)
     fun φ i ↦ h φ (Module.finBasis ℝ E i)
 
-/-- **Remark 4 (i), second sentence**: for `1 < p ≤ ∞`, if `u_n → f` in `L^p(Ω)` and the `u_n`
-have weak gradients `w_n` bounded in `L^p(Ω)`, then `f ∈ W^{1,p}(Ω)`. The bound (ii) of
-Proposition 9.3 holds for each `u_n` with the constant `‖w_n‖_{L^p(Ω)} ≤ M`
-(`HasWeakFDerivOn.abs_integral_smul_fderiv_le`) and passes to the limit by Hölder's inequality
-(`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`), so (ii) ⇒ (i) applies to `f`. This is
-the "why?" of [brezis2011functional] Chapter 9, Remark 4 (i); the first sentence of the remark,
-with convergent gradients, is `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`. -/
+/-- **Remark 4(i)** of [brezis2011functional], second sentence. Let $E$ be a finite-dimensional real
+normed space with an additive Haar measure $\mu$, let $\Omega \subseteq E$ be open, and let
+$p, q \in [1, \infty]$ be Hölder conjugate with $q < \infty$, that is, $1 < p \le \infty$. Let
+$u_n \in L^p(\Omega)$ be real-valued functions with weak derivatives $w_n$ on $\Omega$ such that
+$\|w_n\|_{L^p(\Omega)} \le M$ for all $n$, for some $M < \infty$. If $f \in L^p(\Omega)$ and
+$u_n \to f$ in $L^p(\Omega)$, then $f \in W^{1,p}(\Omega)$.
+
+This answers the "why?" of Remark 4(i) in Chapter 9 of the source. The bound (ii) of Proposition
+9.3 holds for each $u_n$ with the constant $M$ (`HasWeakFDerivOn.abs_integral_smul_fderiv_le`),
+passes to the limit by Hölder's inequality
+(`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`), and then (ii) $\Rightarrow$ (i)
+applies to $f$. The first sentence of the remark, with convergent gradients, is
+`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`. -/
 theorem MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le [ENNReal.HolderConjugate p q] (hq : q ≠ ⊤)
     {u : ℕ → E → ℝ} {w : ℕ → E → E →L[ℝ] ℝ} {f : E → ℝ}
     (hu : ∀ n, MemLp (u n) p (μ.restrict (Ω : Set E))) (hw : ∀ n, HasWeakFDerivOn (u n) (w n) Ω μ)
@@ -898,7 +1006,7 @@ theorem MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le [ENNReal.HolderConjugate p q
 
 end Riesz
 
-/-! ### Proposition 9.3, (i) ⇒ (iii): the translation estimate -/
+/-! ### Proposition 9.3, (i) $\Rightarrow$ (iii): the translation estimate -/
 
 section Translation
 
@@ -910,8 +1018,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {w : E → E →L[ℝ] F} {p : ℝ≥0∞}
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- A translate integrated over a set is bounded by the function integrated over any set that the
-translated set lies in: `∫⁻_A G (x + a) ≤ ∫⁻_s G` when `A + a ⊆ s`, by translation invariance. -/
+/-- Let $\mu$ be an additive Haar measure on $E$, let $G \colon E \to [0, \infty]$, let $a \in E$,
+and let $A, s \subseteq E$ be measurable with $x + a \in s$ for every $x \in A$. Then
+$$\int_A G(x + a) \, d\mu(x) \le \int_s G \, d\mu.$$
+-/
 theorem MeasureTheory.lintegral_comp_add_right_restrict_le (G : E → ℝ≥0∞) (a : E) {A s : Set E}
     (hA : MeasurableSet A) (hs : MeasurableSet s) (hAs : ∀ x ∈ A, x + a ∈ s) :
     ∫⁻ x in A, G (x + a) ∂μ ≤ ∫⁻ y in s, G y ∂μ := by
@@ -926,8 +1036,9 @@ theorem MeasureTheory.lintegral_comp_add_right_restrict_le (G : E → ℝ≥0∞
     _ = ∫⁻ y in s, G y ∂μ := lintegral_indicator hs _
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- A translate of a function almost everywhere strongly measurable on `s` is almost everywhere
-strongly measurable on any set `A` with `A + a ⊆ s`. -/
+/-- Let $\mu$ be an additive Haar measure on $E$, let $a \in E$, and let $A, s \subseteq E$ be
+measurable with $x + a \in s$ for every $x \in A$. If $f$ is almost everywhere strongly
+measurable on $s$, then $x \mapsto f(x + a)$ is almost everywhere strongly measurable on $A$. -/
 theorem MeasureTheory.aestronglyMeasurable_comp_add_right_restrict {f : E → F} (a : E)
     {A s : Set E} (hA : MeasurableSet A) (hs : MeasurableSet s) (hAs : ∀ x ∈ A, x + a ∈ s)
     (hf : AEStronglyMeasurable f (μ.restrict s)) :
@@ -941,8 +1052,11 @@ theorem MeasureTheory.aestronglyMeasurable_comp_add_right_restrict {f : E → F}
   exact Set.indicator_of_mem (hAs x hx) f
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedSpace ℝ F] [CompleteSpace F] in
-/-- The `L^p` norm of a translate on a set is bounded by the `L^p` norm of the function on any set
-that the translated set lies in, for `p < ∞`. -/
+/-- Let $\mu$ be an additive Haar measure on $E$, let $p < \infty$, let $a \in E$, and let
+$A, s \subseteq E$ be measurable with $x + a \in s$ for every $x \in A$. If $f$ is almost
+everywhere strongly measurable on $s$, then
+$$\|f(\cdot + a)\|_{L^p(A)} \le \|f\|_{L^p(s)}.$$
+-/
 theorem MeasureTheory.eLpNorm_comp_add_right_restrict_le (hp' : p ≠ ⊤) {f : E → F} (a : E)
     {A s : Set E} (hA : MeasurableSet A) (hs : MeasurableSet s) (hAs : ∀ x ∈ A, x + a ∈ s)
     (hf : AEStronglyMeasurable f (μ.restrict s)) :
@@ -957,12 +1071,16 @@ theorem MeasureTheory.eLpNorm_comp_add_right_restrict_le (hp' : p ≠ ⊤) {f : 
     ← lintegral_rpow_enorm_eq_rpow_eLpNorm hp₀ hp' hf]
   exact lintegral_comp_add_right_restrict_le (fun y ↦ ‖f y‖ₑ ^ p.toReal) a hA hs hAs
 
-/-- **The translation estimate for a `C¹` function**: if `g` is continuously differentiable and
-every segment `[x, x + h]`, `x ∈ A`, lies in `s`, then for `1 ≤ p < ∞`
-`‖g(· + h) − g‖_{L^p(A)} ≤ ‖h‖ ‖∇g‖_{L^p(s)}`. The identity
-`g(x + h) − g(x) = ∫_0^1 ∇g(x + th) h dt`, Jensen's inequality on `[0, 1]`, Fubini and the
-translation invariance of `μ` give it; this is the smooth case of [brezis2011functional]
-Proposition 9.3, proof of (i) ⇒ (iii). -/
+/-- The translation estimate for a $C^1$ function. Let $E$ be a finite-dimensional real normed space
+with an additive Haar measure $\mu$, let $1 \le p < \infty$, and let $g \colon E \to F$ be
+continuously differentiable. Let $A, s \subseteq E$ be measurable and $h \in E$ such that
+$x + th \in s$ for every $x \in A$ and $t \in [0, 1]$. Then
+$$\|g(\cdot + h) - g\|_{L^p(A)} \le \|h\| \, \|Dg\|_{L^p(s)}.$$
+
+This is the smooth case of the proof of Proposition 9.3, (i) $\Rightarrow$ (iii), of
+[brezis2011functional]. The proof uses the identity $g(x + h) - g(x) = \int_0^1 Dg(x + th)\, h
+\, dt$, Jensen's inequality on $[0, 1]$, Fubini's theorem and the translation invariance of
+$\mu$. -/
 theorem ContDiff.eLpNorm_sub_translate_le {g : E → F} (hg : ContDiff ℝ 1 g) (hp : 1 ≤ p)
     (hp' : p ≠ ⊤) {A s : Set E} (hA : MeasurableSet A) (hs : MeasurableSet s) (h : E)
     (hseg : ∀ x ∈ A, ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ s) :
@@ -1035,19 +1153,21 @@ theorem ContDiff.eLpNorm_sub_translate_le {g : E → F} (hg : ContDiff ℝ 1 g) 
         rw [setLIntegral_const, Real.volume_Ioc, sub_zero, ENNReal.ofReal_one, mul_one]
 
 
-/-- **Proposition 9.3, (i) ⇒ (iii), the translation estimate**: if `w` is the weak derivative of
-`u` on `Ω`, both in `L^p(Ω)` with `1 ≤ p < ∞`, `V` is open, and the segments `[x, x + a]`,
-`x ∈ V`, lie in `Ω` (the book's `|h| < dist(V, ∂Ω)`), then
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), the translation estimate. Let $E$ be a
+finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $1 \le p < \infty$. Let $w$ be a weak derivative of
+$u \colon E \to F$ on $\Omega$ with $u, w \in L^p(\Omega)$. Let $V \subseteq E$ be open and
+$a \in E$ such that $x + ta \in \Omega$ for every $x \in V$ and $t \in [0, 1]$. Then
+$$\|u(\cdot + a) - u\|_{L^p(V)} \le \|a\| \, \|w\|_{L^p(\Omega)}.$$
 
-`‖u(· + a) − u‖_{L^p(V)} ≤ ‖a‖ ‖w‖_{L^p(Ω)}`.
-
-On a relatively compact piece `U` of `V` the segments sweep out a compact subset of `Ω`, on an
-open neighbourhood `W` of which the local approximation
-`MemSobolev.exists_seq_contDiff_tendsto_eLpNorm` gives smooth `g_i → u`, `∇g_i → w` in `L^p(W)`;
-the smooth estimate `ContDiff.eLpNorm_sub_translate_le` on `U` passes to the limit, and an
-exhaustion of `V` by such pieces finishes (`MeasureTheory.eLpNorm_restrict_iUnion_le`). This is
-the route of [brezis2011functional] Proposition 9.3, proof of (i) ⇒ (iii), with the local
-approximation in place of Theorem 9.2. -/
+This is Proposition 9.3, (i) $\Rightarrow$ (iii), of [brezis2011functional]. The condition on
+the segments replaces the condition $|h| < \operatorname{dist}(\omega, \partial\Omega)$ of the
+source. The proof follows the source, with the local approximation in place of Theorem 9.2. On a
+relatively compact piece $U$ of $V$, the segments sweep out a compact subset of $\Omega$; on an
+open neighbourhood $W$ of this subset, `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm` gives
+smooth $g_i \to u$ with $\nabla g_i \to w$ in $L^p(W)$. The smooth estimate
+`ContDiff.eLpNorm_sub_translate_le` on $U$ passes to the limit, and an exhaustion of $V$ by such
+pieces finishes the proof (`MeasureTheory.eLpNorm_restrict_iUnion_le`). -/
 theorem HasWeakFDerivOn.eLpNorm_sub_translate_le (h : HasWeakFDerivOn u w Ω μ)
     (hu : MemLp u p (μ.restrict (Ω : Set E))) (hw : MemLp w p (μ.restrict (Ω : Set E)))
     (hp : 1 ≤ p) (hp' : p ≠ ⊤) {V : Set E} (hV : IsOpen V) (a : E)
@@ -1170,9 +1290,14 @@ theorem HasWeakFDerivOn.eLpNorm_sub_translate_le (h : HasWeakFDerivOn u w Ω μ)
   simp only [zero_add, add_zero]
   exact mul_le_mul' le_rfl (eLpNorm_mono_measure _ (Measure.restrict_mono hWΩ' le_rfl))
 
-/-- **Proposition 9.3, (i) ⇒ (iii), on the whole space**: for `u ∈ W^{1,p}(E)`, `1 ≤ p < ∞`, with
-weak derivative `w`, `‖u(· + a) − u‖_{L^p} ≤ ‖a‖ ‖w‖_{L^p}` for every `a` — the case `V = Ω = E`
-of `HasWeakFDerivOn.eLpNorm_sub_translate_le`, in which every segment stays in `Ω`. -/
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), on the whole space. Let $E$ be a
+finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$1 \le p < \infty$. If $w$ is a weak derivative of $u \colon E \to F$ on $E$ with
+$u, w \in L^p(E)$, then for every $a \in E$
+$$\|u(\cdot + a) - u\|_{L^p} \le \|a\| \, \|w\|_{L^p}.$$
+
+This is the case $V = \Omega = E$ of `HasWeakFDerivOn.eLpNorm_sub_translate_le`, in which every
+segment stays in $\Omega$. -/
 theorem HasWeakFDerivOn.eLpNorm_sub_translate_le_univ (h : HasWeakFDerivOn u w ⊤ μ)
     (hu : MemLp u p μ) (hw : MemLp w p μ) (hp : 1 ≤ p) (hp' : p ≠ ⊤) (a : E) :
     eLpNorm (fun x ↦ u (x + a) - u x) p μ ≤ ‖a‖ₑ * eLpNorm w p μ := by
@@ -1180,10 +1305,14 @@ theorem HasWeakFDerivOn.eLpNorm_sub_translate_le_univ (h : HasWeakFDerivOn u w �
     (fun _ _ _ _ ↦ by simp)
   simpa using this
 
-/-- **Proposition 9.3, (i) ⇒ (iii), on the whole space, for `W^{1,p}(E)`**: for
-`u ∈ W^{1,p}(E)`, `1 ≤ p < ∞`, `‖u(· + a) − u‖_{L^p} ≤ ‖a‖ ‖∇u‖_{L^p}` for every `a`, `∇u` the
-chosen weak derivative `weakIteratedFDeriv 1 u ⊤ μ`. This is the uniform translation modulus
-that the Kolmogorov–Riesz–Fréchet theorem needs of a bounded set of `W^{1,p}`. -/
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), for $W^{1,p}(E)$. Let $E$ be a finite-dimensional
+real normed space with an additive Haar measure $\mu$, and let $1 \le p < \infty$. For
+$u \in W^{1,p}(E; F)$ and every $a \in E$,
+$$\|u(\cdot + a) - u\|_{L^p} \le \|a\| \, \|\nabla u\|_{L^p},$$
+where $\nabla u$ is the chosen weak derivative `weakIteratedFDeriv 1 u ⊤ μ`.
+
+This is the uniform translation estimate that the Kolmogorov–Riesz–Fréchet theorem needs for a
+bounded set of $W^{1,p}$. -/
 theorem MemSobolev.eLpNorm_sub_translate_le (hf : MemSobolev u 1 p ⊤ μ) (hp : 1 ≤ p)
     (hp' : p ≠ ⊤) (a : E) :
     eLpNorm (fun x ↦ u (x + a) - u x) p μ ≤ ‖a‖ₑ * eLpNorm (weakIteratedFDeriv 1 u ⊤ μ) p μ := by
@@ -1198,7 +1327,7 @@ theorem MemSobolev.eLpNorm_sub_translate_le (hf : MemSobolev u 1 p ⊤ μ) (hp :
 
 end Translation
 
-/-! ### The translation estimate on `W^{1,p}(ℝ^N)` -/
+/-! ### The translation estimate on $W^{1,p}(\mathbb{R}^N)$ -/
 
 section Euclidean
 
@@ -1206,8 +1335,11 @@ open SobolevMultiIndex
 
 variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The operator norm of a linear map on a Euclidean space is at most the sum of the norms of its
-values on the standard basis vectors. -/
+/-- Let $G$ be a real normed space. The operator norm of a continuous linear map
+$L \colon \mathbb{R}^N \to G$ on the Euclidean space is at most the sum of the norms of its
+values on the standard basis vectors:
+$$\|L\| \le \sum_{i} \|L e_i\|.$$
+-/
 theorem ContinuousLinearMap.norm_le_sum_norm_apply_single {G : Type*} [NormedAddCommGroup G]
     [NormedSpace ℝ G] (L : EuclideanSpace ℝ (Fin N) →L[ℝ] G) :
     ‖L‖ ≤ ∑ i, ‖L (EuclideanSpace.single i 1)‖ := by
@@ -1227,9 +1359,13 @@ theorem ContinuousLinearMap.norm_le_sum_norm_apply_single {G : Type*} [NormedAdd
         rw [Finset.sum_mul]
         exact Finset.sum_congr rfl fun i _ ↦ mul_comm _ _
 
-/-- The tensor weak derivative of `u ∈ W^{1,p}(ℝ^N)` is bounded in `L^p` by the `ℓ¹` sum of the
-`L^p` norms of the partial derivatives: the operator norm of the derivative tensor is at most the
-sum of the norms of its values on the standard basis. -/
+/-- Let $1 \le p \le \infty$ and $u \in W^{1,p}(\mathbb{R}^N)$. If $w$ is a weak derivative of $u$
+on $\mathbb{R}^N$, then
+$$\|w\|_{L^p} \le \sum_{i=1}^N \|\partial_i u\|_{L^p}.$$
+
+Here $\partial_i u$ is the weak partial derivative `SobolevMultiIndex.weakDeriv u
+(MultiIndexLE.single i)`. The proof bounds the operator norm of $w(x)$ by the sum of the norms
+of its values on the standard basis (`ContinuousLinearMap.norm_le_sum_norm_apply_single`). -/
 theorem SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn (u : SobolevEuclidean N 1 p ⊤)
     {w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ}
     (hw : HasWeakFDerivOn (fn u) w ⊤ volume) :
@@ -1278,13 +1414,16 @@ theorem SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn (u : SobolevEuclidean
         rw [eLpNorm_norm _ hm, Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _),
           eLpNorm_restrict_coe_top]
 
-/-- **Proposition 9.3, (i) ⇒ (iii), on `W^{1,p}(ℝ^N)`**: for `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`,
-and every `a ∈ ℝ^N`, `‖u(· + a) − u‖_{L^p} ≤ ‖a‖ ∑_i ‖∂_i u‖_{L^p}` — the book's
-`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}`, with the gradient measured by the `ℓ¹` sum of
-its components (the operator norm of the derivative tensor is at most that sum,
-`ContinuousLinearMap.norm_le_sum_norm_apply_single`). This is the uniform translation modulus
-that the Kolmogorov–Riesz–Fréchet theorem needs of a bounded set of `W^{1,p}(ℝ^N)`; see
-`SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm` for the form with `gradNorm`. -/
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), on $W^{1,p}(\mathbb{R}^N)$. Let $1 \le p < \infty$
+and $u \in W^{1,p}(\mathbb{R}^N)$. Then for every $a \in \mathbb{R}^N$
+$$\|u(\cdot + a) - u\|_{L^p} \le \|a\| \sum_{i=1}^N \|\partial_i u\|_{L^p}.$$
+
+This is the estimate $\|\tau_h u - u\|_{L^p(\mathbb{R}^N)} \le |h| \, \|\nabla
+u\|_{L^p(\mathbb{R}^N)}$ of [brezis2011functional], with the gradient measured by the $\ell^1$
+sum of its components; the operator norm of the derivative is at most this sum
+(`ContinuousLinearMap.norm_le_sum_norm_apply_single`). It is the uniform translation estimate
+that the Kolmogorov–Riesz–Fréchet theorem needs for a bounded set of $W^{1,p}(\mathbb{R}^N)$.
+The form with the gradient norm is `SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm`. -/
 theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : SobolevEuclidean N 1 p ⊤)
     (a : EuclideanSpace ℝ (Fin N)) :
     eLpNorm (fun x ↦ fn u (x + a) - fn u x) p volume
@@ -1298,10 +1437,15 @@ theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le (hp' : p ≠ ⊤) (u : Sobo
     (mul_le_mul' le_rfl ?_)
   exact SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn u hw
 
-/-- **Proposition 9.3, (i) ⇒ (iii), on `W^{1,p}(ℝ^N)`, with the gradient norm**: for
-`u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`, `‖u(· + a) − u‖_{L^p} ≤ N ‖a‖ ‖∇u‖` with
-`‖∇u‖ = SobolevEuclidean.gradNorm u` the `ℓ^p` norm of the gradient; the factor `N` is the price
-of comparing the `ℓ¹` sum of the components with their `ℓ^p` norm. -/
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), on $W^{1,p}(\mathbb{R}^N)$, with the gradient
+norm. Let $1 \le p < \infty$ and $u \in W^{1,p}(\mathbb{R}^N)$. Then for every
+$a \in \mathbb{R}^N$
+$$\|u(\cdot + a) - u\|_{L^p} \le N \, \|a\| \, \|\nabla u\|,$$
+where $\|\nabla u\| = (\sum_i \|\partial_i u\|_{L^p}^p)^{1/p}$ is
+`SobolevMultiIndex.gradNorm u`.
+
+The factor $N$ comes from the comparison of the $\ell^1$ sum of the components with their
+$\ell^p$ norm. -/
 theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm (hp' : p ≠ ⊤)
     (u : SobolevEuclidean N 1 p ⊤) (a : EuclideanSpace ℝ (Fin N)) :
     eLpNorm (fun x ↦ fn u (x + a) - fn u x) p volume
@@ -1317,7 +1461,7 @@ theorem SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm (hp' : p ≠ ⊤)
 
 end Euclidean
 
-/-! ### Proposition 9.3, (iii) ⇒ (ii) -/
+/-! ### Proposition 9.3, (iii) $\Rightarrow$ (ii) -/
 
 section DifferenceQuotient
 
@@ -1325,17 +1469,25 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {u : E → F} {p q : ℝ≥0∞}
 
-/-- **Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`, for small translations: if `u ∈ L^p(Ω)`
-satisfies, on every open `V` with compact closure in `Ω`, the translation estimate
-`‖u(· + a) − u‖_{L^p(V)} ≤ C ‖a‖` for all `a` with `‖a‖ < δ`, for some `δ = δ(V) > 0` — the
-book's "`|h| < dist(V, ∂Ω)`" — then `|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for every test function
-`φ` and direction `y`, `q` the conjugate exponent.
+/-- **Proposition 9.3**, (iii) $\Rightarrow$ (ii), for small translations. Let $E$ be a
+finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, and let $p, q \in [1, \infty]$ be Hölder conjugate. Let
+$u \in L^p(\Omega; F)$ and $C \in [0, \infty]$. Assume that for every open $V$ whose closure is
+compact and contained in $\Omega$ there is $\delta > 0$ such that
+$$\|u(\cdot + a) - u\|_{L^p(V)} \le C \|a\| \quad \text{for all } a \in E \text{ with } \|a\| <
+  \delta.$$
+Then for every test function $\varphi \in \mathcal{D}(\Omega)$ and every $y \in E$,
+$$\Big\| \int_\Omega \partial_y \varphi \, u \, d\mu \Big\| \le C \|y\| \,
+  \|\varphi\|_{L^q(\Omega)}.$$
 
-With `V ⊇ supp φ`, the change of variables `∫_Ω (u(· + ty) − u) φ = ∫_Ω u (φ(· − ty) − φ)` and
-Hölder's inequality against the hypothesis bound the difference quotients
-`∫_Ω u (φ(· − ty) − φ)/t` by `C ‖y‖ ‖φ‖_q` for `t` small; as `t → 0` they converge to
-`−∫_Ω u ∂_y φ` by dominated convergence, the quotients being bounded by `‖∇φ‖_∞ ‖y‖` on one
-compact subset of `Ω`. [brezis2011functional] Proposition 9.3, (iii) ⇒ (ii). -/
+This is Proposition 9.3, (iii) $\Rightarrow$ (ii), of [brezis2011functional], for any
+$1 \le p \le \infty$. The radius $\delta$ plays the role of
+$\operatorname{dist}(\omega, \partial\Omega)$ in the source. With
+$V \supseteq \operatorname{supp} \varphi$, the change of variables $\int_\Omega (u(\cdot + ty) -
+u) \varphi = \int_\Omega u (\varphi(\cdot - ty) - \varphi)$ and Hölder's inequality bound the
+difference quotients $\int_\Omega u (\varphi(\cdot - ty) - \varphi)/t$ by
+$C \|y\| \|\varphi\|_{L^q}$ for small $t$. As $t \to 0$ they converge to
+$-\int_\Omega u \, \partial_y \varphi$ by dominated convergence. -/
 theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt
     [ENNReal.HolderConjugate p q] (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞}
     (h : ∀ V : Set E, IsOpen V → IsCompact (closure V) → closure V ⊆ (Ω : Set E) →
@@ -1494,15 +1646,22 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt
       hQbound (t n) (htpos n).ne' (htε n) (htδ n)
   simpa only [neg_smul, integral_neg, enorm_neg] using hfinal
 
-/-- **Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`, with the translation estimate assumed for
-every `a` whose segments `[x, x + a]`, `x ∈ V`, stay in `Ω` — the conclusion of
-`HasWeakFDerivOn.eLpNorm_sub_translate_le`: if `u ∈ L^p(Ω)` satisfies
-`‖u(· + a) − u‖_{L^p(V)} ≤ C ‖a‖` on every open `V` with compact closure in `Ω` and every such `a`,
-then `|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for every test function `φ` and direction `y`, `q` the
-conjugate exponent. This is the small-translation form
-`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`, the segments from `V` of
-length `< ε` staying in `Ω` for the `ε` of `IsCompact.exists_pos_forall_closedBall_subset`.
-[brezis2011functional] Proposition 9.3, (iii) ⇒ (ii). -/
+/-- **Proposition 9.3**, (iii) $\Rightarrow$ (ii), for the translations whose segments stay in
+$\Omega$. Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$,
+let $\Omega \subseteq E$ be open, and let $p, q \in [1, \infty]$ be Hölder conjugate. Let
+$u \in L^p(\Omega; F)$ and $C \in [0, \infty]$. Assume that for every open $V$ whose closure is
+compact and contained in $\Omega$, and every $a \in E$ with $x + ta \in \Omega$ for all
+$x \in V$ and $t \in [0, 1]$,
+$$\|u(\cdot + a) - u\|_{L^p(V)} \le C \|a\|.$$
+Then for every test function $\varphi \in \mathcal{D}(\Omega)$ and every $y \in E$,
+$$\Big\| \int_\Omega \partial_y \varphi \, u \, d\mu \Big\| \le C \|y\| \,
+  \|\varphi\|_{L^q(\Omega)}.$$
+
+This is Proposition 9.3, (iii) $\Rightarrow$ (ii), of [brezis2011functional]. The hypothesis is
+the conclusion of `HasWeakFDerivOn.eLpNorm_sub_translate_le`. The proof reduces to
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`: the segments of length
+less than $\varepsilon$ from $V$ stay in $\Omega$, for the $\varepsilon$ of
+`IsCompact.exists_pos_forall_closedBall_subset`. -/
 theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderConjugate p q]
     (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞}
     (h : ∀ V : Set E, IsOpen V → IsCompact (closure V) → closure V ⊆ (Ω : Set E) → ∀ a : E,
@@ -1532,16 +1691,23 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {u : E → F}
   {w : E → E →L[ℝ] F} {p : ℝ≥0∞}
 
-/-- **Mollification near a compact set, with almost everywhere convergence**: for `w` the weak
-derivative of `u` on `Ω` and a compact `K ⊆ Ω`, there are a compact `C ⊆ Ω` and normalized bumps
-`ρ_j` of radii `→ 0`, each ball `closedBall x (rOut ρ_j)`, `x ∈ K`, lying in the interior of `C`,
-such that the mollifications `g_j = ρ_j ⋆ (C.indicator u)` of the truncation of `u` to `C` are
-smooth, have derivative `ρ_j ⋆ (C.indicator w)` at every point of `K`
-(`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`), and converge to `u` almost everywhere on
-`K` (an almost everywhere convergent subsequence of an `L¹`-convergent sequence,
-`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`, has been extracted). This is the common
-core of the `L^∞` translation estimate `HasWeakFDerivOn.eLpNorm_sub_translate_le_top` and of
-the representatives of Remarks 2 and 7 of [brezis2011functional] Chapter 9. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, let
+$\Omega \subseteq E$ be open, let $w$ be a weak derivative of $u \colon E \to F$ on $\Omega$,
+and let $K \subseteq \Omega$ be compact. Then there are a compact set $C \subseteq \Omega$ and
+normalized bumps $\rho_j$ with outer radii $r_j \to 0$ such that the following hold for every
+$j$, with $g_j = \rho_j * (\mathbf{1}_C u)$ the mollification of the truncation of $u$ to $C$.
+
+* For every $x \in K$, the closed ball of radius $r_j$ about $x$ lies in the interior of $C$.
+* $g_j$ is smooth.
+* For every $x \in K$, $Dg_j(x) = (\rho_j * (\mathbf{1}_C w))(x)$.
+* $g_j(x) \to u(x)$ as $j \to \infty$, for almost every $x \in K$.
+
+This is the common core of the $L^\infty$ translation estimate
+`HasWeakFDerivOn.eLpNorm_sub_translate_le_top` and of the representatives of Remarks 2 and 7 of
+Chapter 9 of [brezis2011functional]. The normalized bump $\rho_j$ is `(φ j).normed μ`. The
+derivative identity is `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`. The almost
+everywhere convergence comes from an almost everywhere convergent subsequence of a sequence that
+converges in $L^1$ (`MeasureTheory.TendstoInMeasure.exists_seq_tendsto_ae`). -/
 theorem HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae (h : HasWeakFDerivOn u w Ω μ)
     {K : Set E} (hK : IsCompact K) (hKΩ : K ⊆ (Ω : Set E)) :
     ∃ (C : Set E) (φ : ℕ → ContDiffBump (0 : E)), IsCompact C ∧ C ⊆ (Ω : Set E) ∧
@@ -1611,15 +1777,19 @@ theorem HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae (h : HasWeakFDerivOn 
   rwa [Set.indicator_of_mem (hWC (hKW hxK) |> interior_subset) u] at hx
 
 
-/-- **Proposition 9.3, (i) ⇒ (iii) at `p = ∞`**: if `w` is the weak derivative of `u` on `Ω`,
-`V` is open and the segments `[x, x + a]`, `x ∈ V`, lie in `Ω`, then
-`‖u(· + a) − u‖_{L^∞(V)} ≤ ‖a‖ ‖w‖_{L^∞(Ω)}`; no integrability of `u` beyond `L¹_loc(Ω)` is
-needed. On a relatively compact piece of `V` the mollifications of
-`HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae` have gradients bounded by `‖w‖_∞` along
-the segments, so the mean value theorem bounds their increments by `‖w‖_∞ ‖a‖`, and the bound
-passes to `u` at the almost every point where the mollifications converge at both `x` and
-`x + a`. This is the case `p = ∞` of [brezis2011functional] Proposition 9.3, (i) ⇒ (iii), proved
-directly rather than by letting `p → ∞`. -/
+/-- **Proposition 9.3**, (i) $\Rightarrow$ (iii), at $p = \infty$. Let $E$ be a finite-dimensional
+real normed space with an additive Haar measure $\mu$, let $\Omega \subseteq E$ be open, and let
+$w$ be a weak derivative of $u \colon E \to F$ on $\Omega$. Let $V \subseteq E$ be open and
+$a \in E$ such that $x + ta \in \Omega$ for every $x \in V$ and $t \in [0, 1]$. Then
+$$\|u(\cdot + a) - u\|_{L^\infty(V)} \le \|a\| \, \|w\|_{L^\infty(\Omega)}.$$
+
+No integrability of $u$ beyond local integrability on $\Omega$ is needed. This is the case
+$p = \infty$ of Proposition 9.3, (i) $\Rightarrow$ (iii), of [brezis2011functional], proved
+directly and not as a limit $p \to \infty$. On a relatively compact piece of $V$, the
+mollifications of `HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae` have gradients bounded by
+$\|w\|_{L^\infty}$ along the segments. The mean value theorem bounds their increments by
+$\|w\|_{L^\infty} \|a\|$, and the bound passes to $u$ at almost every point where the
+mollifications converge at both $x$ and $x + a$. -/
 theorem HasWeakFDerivOn.eLpNorm_sub_translate_le_top (h : HasWeakFDerivOn u w Ω μ) {V : Set E}
     (hV : IsOpen V) (a : E) (hseg : ∀ x ∈ V, ∀ t ∈ Icc (0 : ℝ) 1, x + t • a ∈ (Ω : Set E)) :
     eLpNorm (fun x ↦ u (x + a) - u x) ⊤ (μ.restrict V)
@@ -1713,13 +1883,19 @@ theorem HasWeakFDerivOn.eLpNorm_sub_translate_le_top (h : HasWeakFDerivOn u w Ω
   rw [ENNReal.ofReal_mul hM0, hMdef, ENNReal.ofReal_toReal hne, ofReal_norm, mul_comm]
 
 omit [NormedSpace ℝ F] [CompleteSpace F] in
-/-- **Gluing local representatives**: if every point of an open set `Ω` has a ball inside `Ω` on
-which `u` agrees almost everywhere with a continuous function having a property `P` on that ball,
-then `u` agrees almost everywhere on `Ω` with a function `v` continuous on `Ω`, which on a ball
-around every point of `Ω` coincides with such a representative. Two continuous functions agreeing
-almost everywhere on an open set agree on it (`MeasureTheory.Measure.eqOn_open_of_ae_eq`), so the
-representatives are compatible; countably many of the balls cover `Ω`
-(`TopologicalSpace.isOpen_iUnion_countable`), which turns the local null sets into one. -/
+/-- Gluing of local continuous representatives. Let $E$ be a finite-dimensional real normed space
+with an additive Haar measure $\mu$, let $\Omega \subseteq E$ be open, and let $P$ be a property
+of a function on a ball. Assume that every $x \in \Omega$ has a ball $B(x, r) \subseteq \Omega$,
+$r > 0$, and a function $g$ with the property $P$ on $B(x, r)$, continuous on $B(x, r)$, with
+$u = g$ almost everywhere on $B(x, r)$. Then there is a function $v$, continuous on $\Omega$,
+with $u = v$ almost everywhere on $\Omega$, such that every $x \in \Omega$ has a ball
+$B(x, r) \subseteq \Omega$, $r > 0$, and a function $g$ with the property $P$ on $B(x, r)$ and
+$v = g$ on $B(x, r)$.
+
+Two continuous functions that agree almost everywhere on an open set agree on it
+(`MeasureTheory.Measure.eqOn_open_of_ae_eq`), so the local representatives are compatible.
+Countably many of the balls cover $\Omega$ (`TopologicalSpace.isOpen_iUnion_countable`), so the
+local null sets combine into one null set. -/
 theorem MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball {u : E → F}
     (P : (E → F) → Set E → Prop)
     (hP : ∀ x ∈ (Ω : Set E), ∃ r > 0, ball x r ⊆ (Ω : Set E) ∧ ∃ g : E → F, P g (ball x r) ∧
@@ -1763,7 +1939,7 @@ theorem MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball {u : E →
 
 end Core
 
-/-! ### Remark 7: Lipschitz and continuous representatives of `W^{1,∞}` -/
+/-! ### Remark 7: Lipschitz and continuous representatives of $W^{1,\infty}$ -/
 
 section Lipschitz
 
@@ -1771,12 +1947,16 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E}
   {u : E → ℝ} {w : E → E →L[ℝ] ℝ}
 
-/-- **The almost-everywhere Lipschitz bound on a convex open set**: if `w` is the weak derivative
-of `u` on the convex open `Ω` and `‖w‖ ≤ M` almost everywhere on `Ω`, then
-`|u x − u y| ≤ M ‖x − y‖` for almost every `x` and almost every `y` in `Ω`. The mollifications of
-`HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae`, taken on the compact set swept out by the
-segments between points of a relatively compact piece of `Ω`, are `M`-Lipschitz along those
-segments by the mean value theorem, and converge to `u` almost everywhere. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$\Omega \subseteq E$ be a convex open set. Let $w$ be a weak derivative of
+$u \colon E \to \mathbb{R}$ on $\Omega$, and let $M \ge 0$ with $\|w\| \le M$ almost everywhere
+on $\Omega$. Then for almost every $x \in \Omega$ and almost every $y \in \Omega$,
+$$|u(x) - u(y)| \le M \|x - y\|.$$
+
+The mollifications of `HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae`, taken on the compact
+set swept out by the segments between points of a relatively compact piece of $\Omega$, are
+$M$-Lipschitz along these segments by the mean value theorem, and they converge to $u$ almost
+everywhere. -/
 theorem HasWeakFDerivOn.ae_ae_norm_sub_le_of_convex (h : HasWeakFDerivOn u w Ω μ)
     (hΩ : Convex ℝ (Ω : Set E)) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), ‖w x‖ ≤ M) :
@@ -1860,16 +2040,19 @@ theorem HasWeakFDerivOn.ae_ae_norm_sub_le_of_convex (h : HasWeakFDerivOn u w Ω 
   exact hy (max n₀ m) (hUmono (le_max_left n₀ m) hn₀) (hUmono (le_max_right n₀ m) hm)
 
 
-/-- **Remark 7, convex case**: a function of `W^{1,∞}(Ω)` on a convex open set `Ω` has an
-`M`-Lipschitz representative, `M` an almost everywhere bound of its weak derivative: if `w` is the
-weak derivative of `u` on the convex open `Ω` and `‖w‖ ≤ M` almost everywhere on `Ω`, `0 ≤ M`,
-then there is `v` with `u = v` almost everywhere on `Ω` and `LipschitzOnWith M v Ω`.
+/-- **Remark 7** of [brezis2011functional], convex case. Let $E$ be a finite-dimensional real normed
+space with an additive Haar measure $\mu$, and let $\Omega \subseteq E$ be a convex open set.
+Let $w$ be a weak derivative of $u \colon E \to \mathbb{R}$ on $\Omega$, and let $M \ge 0$ with
+$\|w\| \le M$ almost everywhere on $\Omega$. Then there is a function $v$ with $u = v$ almost
+everywhere on $\Omega$ that is $M$-Lipschitz on $\Omega$.
 
-The almost-everywhere Lipschitz bound `HasWeakFDerivOn.ae_ae_norm_sub_le_of_convex` is a genuine
-Lipschitz bound on the full-measure set `G` of points `x` for which `|u x − u y| ≤ M ‖x − y‖`
-holds for almost every `y`: two such points are compared through a common good `y` arbitrarily
-close to one of them. McShane's extension `LipschitzOnWith.extend_real` then provides `v`. This is
-[brezis2011functional] Chapter 9, Remark 7 ("if `Ω` is convex then `dist_Ω(x, y) = |x − y|`"). -/
+This is the case of Remark 7 in Chapter 9 of the source that says "if $\Omega$ is convex then
+$\operatorname{dist}_\Omega(x, y) = |x - y|$". The almost everywhere bound
+`HasWeakFDerivOn.ae_ae_norm_sub_le_of_convex` is a true Lipschitz bound on the set $G$ of full
+measure of the points $x$ for which $|u(x) - u(y)| \le M \|x - y\|$ for almost every $y$: two
+such points are compared through a common good point $y$ arbitrarily close to one of them.
+McShane's extension `LipschitzOnWith.extend_real` then gives $v$. The Lipschitz constant is
+`Real.toNNReal M`. -/
 theorem HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex (h : HasWeakFDerivOn u w Ω μ)
     (hΩ : Convex ℝ (Ω : Set E)) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), ‖w x‖ ≤ M) :
@@ -1918,14 +2101,16 @@ theorem HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex (h : HasWeakFDeri
   filter_upwards [hG] with x hx
   exact huv hx
 
-/-- **Remark 7, first sentence, any open `Ω`**: a function of `W^{1,∞}(Ω)` has a continuous
-representative on `Ω`, locally `M`-Lipschitz for `M` an almost everywhere bound of its weak
-derivative: if `w` is the weak derivative of `u` on `Ω` and `‖w‖ ≤ M` almost everywhere on `Ω`,
-`0 ≤ M`, then there is `v`, continuous on `Ω`, with `u = v` almost everywhere on `Ω` and
-`LipschitzOnWith M v` on a ball around every point of `Ω`. The convex case
-`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex` on each ball, glued by
-`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`. [brezis2011functional] Chapter 9,
-Remark 7. -/
+/-- **Remark 7** of [brezis2011functional], first sentence, on any open set. Let $E$ be a
+finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$\Omega \subseteq E$ be open. Let $w$ be a weak derivative of $u \colon E \to \mathbb{R}$ on
+$\Omega$, and let $M \ge 0$ with $\|w\| \le M$ almost everywhere on $\Omega$. Then there is a
+function $v$, continuous on $\Omega$, with $u = v$ almost everywhere on $\Omega$, such that
+every point of $\Omega$ has a ball $B \subseteq \Omega$ about it on which $v$ is $M$-Lipschitz.
+
+In particular, a function of $W^{1,\infty}(\Omega)$ has a continuous representative. The proof
+applies the convex case `HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex` on each ball
+and glues the results by `MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`. -/
 theorem HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le (h : HasWeakFDerivOn u w Ω μ)
     {M : ℝ} (hM0 : 0 ≤ M) (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), ‖w x‖ ≤ M) :
     ∃ v : E → ℝ, ContinuousOn v Ω ∧ u =ᵐ[μ.restrict (Ω : Set E)] v ∧
@@ -1944,14 +2129,18 @@ theorem HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le (h : HasWeakFDer
   rw [hvg ha, hvg hb]
   exact lipschitzOnWith_iff_dist_le_mul.1 hg a ha b hb
 
-/-- **Remark 7, last sentence**: a function with vanishing weak derivative on a connected open set
-is almost everywhere constant there: if `w` is the weak derivative of `u` on `Ω`, `w = 0` almost
-everywhere on `Ω`, and `Ω` is connected, then `u = c` almost everywhere on `Ω` for some `c`. The
-continuous representative of `HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le` with
-`M = 0` is locally constant on `Ω`, hence constant on the connected `Ω`. On a general open set
-this applies to each connected component. [brezis2011functional] Chapter 9, Remark 7; this is the
-first-order case of the fact that `|v|_{k,p,Ω} = 0` on a connected open set forces a polynomial
-of degree `< k`. -/
+/-- **Remark 7** of [brezis2011functional], last sentence. Let $E$ be a finite-dimensional real
+normed space with an additive Haar measure $\mu$, and let $\Omega \subseteq E$ be a preconnected
+open set. If $w$ is a weak derivative of $u \colon E \to \mathbb{R}$ on $\Omega$ and $w = 0$
+almost everywhere on $\Omega$, then there is $c \in \mathbb{R}$ with $u = c$ almost everywhere
+on $\Omega$.
+
+A preconnected set is a connected set or the empty set. On a general open set, the result
+applies to each connected component. The continuous representative of
+`HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le` with $M = 0$ is locally constant on
+$\Omega$, hence constant on the connected set $\Omega$. This is the first-order case of the fact
+that a vanishing seminorm $|v|_{k,p,\Omega} = 0$ on a connected open set forces $v$ to be a
+polynomial of degree less than $k$. -/
 theorem HasWeakFDerivOn.ae_eq_const_of_isPreconnected (h : HasWeakFDerivOn u w Ω μ)
     (hw : w =ᵐ[μ.restrict (Ω : Set E)] 0) (hΩ : IsPreconnected (Ω : Set E)) :
     ∃ c : ℝ, u =ᵐ[μ.restrict (Ω : Set E)] fun _ ↦ c := by
@@ -1994,7 +2183,7 @@ theorem HasWeakFDerivOn.ae_eq_const_of_isPreconnected (h : HasWeakFDerivOn u w �
 
 end Lipschitz
 
-/-! ### Remark 2: the `C¹` representative of a function with continuous weak derivative -/
+/-! ### Remark 2: the $C^1$ representative of a function with continuous weak derivative -/
 
 section ContDiffRep
 
@@ -2005,15 +2194,21 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {u : E → F}
   {w : E → E →L[ℝ] F}
 
-/-- **Remark 2, converse, locally**: if `w` is the weak derivative of `u` on `Ω` and is continuous
-on `Ω`, then every point of `Ω` has a ball inside `Ω` on which `u` agrees almost everywhere with a
-function differentiable there with derivative `w`. On a closed ball `K` around the point the
-mollifications `g_j` of `HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae` have derivatives
-`ρ_j ⋆ w` converging uniformly to `w` (`ContDiffBump.dist_normed_convolution_le` and the uniform
-continuity of `w` on a compact neighbourhood), and converge at a point `x₁` of the ball, so they
-converge uniformly on a ball about `x₁` (`uniformCauchySeqOn_ball_of_fderiv`) to a function
-whose derivative is `w` (`hasFDerivAt_of_tendstoUniformlyOn`); that function agrees almost
-everywhere with `u`, both being limits of the `g_j`. -/
+/-- Let $E$ be a finite-dimensional real normed space with an additive Haar measure $\mu$, and let
+$\Omega \subseteq E$ be open. Let $w$ be a weak derivative of $u \colon E \to F$ on $\Omega$
+that is continuous on $\Omega$, and let $x_0 \in \Omega$. Then there are $r > 0$ with
+$B(x_0, r) \subseteq \Omega$ and a function $G$, continuous on $B(x_0, r)$, with $u = G$ almost
+everywhere on $B(x_0, r)$, such that $G$ is differentiable at every $y \in B(x_0, r)$ with
+derivative $w(y)$.
+
+This is the local form of the converse statement of Remark 2 of Chapter 9 of
+[brezis2011functional]. On a closed ball $K$ about $x_0$, the mollifications $g_j$ of
+`HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae` have derivatives $\rho_j * w$ that converge
+uniformly to $w$ (`ContDiffBump.dist_normed_convolution_le` and the uniform continuity of $w$ on
+a compact neighbourhood). They converge at one point $x_1$ of the ball, so they converge
+uniformly on a ball about $x_1$ (`uniformCauchySeqOn_ball_of_fderiv`) to a function whose
+derivative is $w$ (`hasFDerivAt_of_tendstoUniformlyOn`). This function agrees almost everywhere
+with $u$, because both are limits of the $g_j$. -/
 theorem HasWeakFDerivOn.exists_ball_hasFDerivAt_ae_eq_of_continuousOn (h : HasWeakFDerivOn u w Ω μ)
     (hw : ContinuousOn w Ω) {x₀ : E} (hx₀ : x₀ ∈ (Ω : Set E)) :
     ∃ r > 0, ball x₀ r ⊆ (Ω : Set E) ∧ ∃ G : E → F, (∀ y ∈ ball x₀ r, HasFDerivAt G (w y) y) ∧
@@ -2081,14 +2276,18 @@ theorem HasWeakFDerivOn.exists_ball_hasFDerivAt_ae_eq_of_continuousOn (h : HasWe
     self_mem_ae_restrict measurableSet_ball] with y hy hyB
   exact tendsto_nhds_unique hy (hG y (hx₀B hyB))
 
-/-- **Remark 2, converse**: a function of `W^{1,p}(Ω)` whose weak derivative is continuous on `Ω`
-has a `C¹` representative: if `w` is the weak derivative of `u` on `Ω` and `w` is continuous on
-`Ω`, there is `v` with `ContDiffOn ℝ 1 v Ω`, `u = v` almost everywhere on `Ω`, and
-`HasFDerivAt v (w x) x` (so `fderiv ℝ v x = w x`) at every point of `Ω`. The local
+/-- **Remark 2** of [brezis2011functional], converse statement. Let $E$ be a finite-dimensional real
+normed space with an additive Haar measure $\mu$, and let $\Omega \subseteq E$ be open. If $w$
+is a weak derivative of $u \colon E \to F$ on $\Omega$ and $w$ is continuous on $\Omega$, then
+there is a function $v$ of class $C^1$ on $\Omega$ with $u = v$ almost everywhere on $\Omega$
+and $Dv(x) = w(x)$ at every $x \in \Omega$.
+
+This is the sentence "conversely, one can show that …" of Remark 2 in Chapter 9 of the source.
+In particular, a function of $W^{1,p}(\Omega)$ whose weak derivative is continuous on $\Omega$
+has a $C^1$ representative. The derivative identity is `HasFDerivAt v (w x) x`. The local
 representatives of `HasWeakFDerivOn.exists_ball_hasFDerivAt_ae_eq_of_continuousOn` are glued by
-`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`. [brezis2011functional]
-Chapter 9, Remark 2 ("conversely, one can show that …"); it is also what produces the `C^k`
-representatives of the Sobolev embedding theorems. -/
+`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`. The result also produces the
+$C^k$ representatives of the Sobolev embedding theorems. -/
 theorem HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn (h : HasWeakFDerivOn u w Ω μ)
     (hw : ContinuousOn w Ω) :
     ∃ v : E → F, ContDiffOn ℝ 1 v Ω ∧ u =ᵐ[μ.restrict (Ω : Set E)] v ∧

@@ -5,15 +5,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Data.Set.Image
 
 /-!
-# Basic lemmas on sets
+# Feasible displacements in the whole space
 
-* `Set.setOf_add_mem_univ`: the translates of a point that lie in `univ` form `univ`; the set of
-  feasible displacements `{e | y + e ∈ X}` for `X = univ`.
+For a set $X$ in a type $\alpha$ with an addition and a point $y \in \alpha$, the feasible
+displacements from $y$ are the elements of $\{e \in \alpha : y + e \in X\}$. This module records
+that every displacement is feasible when $X$ is the whole type.
+
+## Main results
+
+* `Set.setOf_add_mem_univ`: $\{e \in \alpha : y + e \in \alpha\} = \alpha$.
 -/
 
 namespace Set
 
-/-- `{e | y + e ∈ univ} = univ`. -/
+/-- Let $\alpha$ be a type with an addition and let $y \in \alpha$. Then
+$$\{e \in \alpha : y + e \in \alpha\} = \alpha.$$
+That is, when the constraint set is the whole type `Set.univ`, every displacement $e$ from $y$
+is feasible. -/
 @[simp]
 theorem setOf_add_mem_univ {α : Type*} [Add α] (y : α) :
     {e : α | y + e ∈ (univ : Set α)} = univ :=

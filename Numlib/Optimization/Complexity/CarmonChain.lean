@@ -15,30 +15,53 @@ import Numlib.Optimization.Complexity.ResistingOracle
 /-!
 # The hard zero chain of Carmon, Duchi, Hinder and Sidford
 
-The difficult function of [cartis2022evaluation], (4.2.6) and Lemma 4.2.5, after Carmon, Duchi,
-Hinder and Sidford (*Lower bounds for finding stationary points I*, §3.2, Lemmas 1–3), and the
-resulting lower bound for `p`-th order methods (Theorem 4.2.6).
+This module constructs the difficult function of (4.2.6) and Lemma 4.2.5 of [cartis2022evaluation],
+and proves the resulting lower bound for $p$-th order methods, Theorem 4.2.6 of
+[cartis2022evaluation]. The construction follows Carmon, Duchi, Hinder and Sidford, *Lower bounds
+for finding stationary points I*, §3.2, Lemmas 1–3. On $\mathbb{R}^T$, with coordinates
+$x_0, \dots, x_{T-1}$, the function is
+$$\mathrm{chain}_T(x) = -\Psi(1) \Phi(x_0) + \sum_{i=1}^{T-1} \big[ \Psi(-x_{i-1}) \Phi(-x_i) -
+  \Psi(x_{i-1}) \Phi(x_i) \big],$$
+where $\Psi(y) = 0$ for $y \le 1/2$, $\Psi(y) = \exp(1 - (2y - 1)^{-2})$ for $y > 1/2$, and
+$$\Phi(y) = e^{1/2} \int_{-\infty}^y e^{-t^2/2} \, dt.$$
+The first term $-\Psi(1) \Phi(x_0)$, with $\Psi(1) = 1$, is the one of Carmon et al. It makes the
+gradient nonzero at $x = 0$, as Lemma 4.2.5(ii) requires.
 
-On `ℝ^T` (coordinates `x_0, …, x_{T-1}`):
-`chain T x = -Ψ(1) Φ(x_0) + ∑_{i=1}^{T-1} [Ψ(-x_{i-1}) Φ(-x_i) - Ψ(x_{i-1}) Φ(x_i)]`, with
-`Ψ y = 0` for `y ≤ 1/2`, `Ψ y = exp(1 - (2y-1)^{-2})` otherwise, and
-`Φ y = e^{1/2} ∫_{-∞}^y exp(-t²/2) dt`.
+The function is a zero chain: a method that only sees derivatives discovers at most one new
+coordinate per iteration. Its gradient has norm greater than $1$ as long as some coordinate has
+absolute value less than $1$, the gap $\mathrm{chain}_T(0) - \inf \mathrm{chain}_T$ is at most
+$12T$, and its $(p + 1)$-st derivative is bounded independently of $T$. Scaling the chain then gives
+a function in the class $\mathcal{F}(\Delta, p)$ on which every method needs many iterations.
 
-The first term `-Ψ(1) Φ(x_0)` (with `Ψ(1) = 1`) is that of Carmon et al.; it makes the gradient
-nonzero at `x = 0`, as Lemma 4.2.5 (ii) requires.
+## Main definitions
+
+* `Optimization.CarmonChain.psi` and `Optimization.CarmonChain.phi`: the functions $\Psi$ and $\Phi$
+  of (4.2.6), smooth, with bounded derivatives of every order.
+* `Optimization.CarmonChain.chain`: the function $\mathrm{chain}_T$.
+* `Optimization.CarmonChain.lipschitzConst`: an explicit bound on
+  $\|\nabla^{p+1} \mathrm{chain}_T\|$ that does not depend on $T$.
 
 ## Main results
 
-* `psi`, `phi`: the functions `Ψ`, `Φ`, smooth, with bounded derivatives of every order.
-* `isZeroChain_chain`: Lemma 4.2.5 (i).
-* `exists_abs_partial_chain_gt_one`: Lemma 4.2.5 (ii).
-* `chain_zero_sub_iInf_le`: Lemma 4.2.5 (iii).
-* `norm_iteratedFDeriv_chain_le`, `lipschitzOn_iteratedFDeriv_chain`: Lemma 4.2.5 (iv), with an
-  explicit constant `lipschitzConst p` independent of the dimension `T`.
-* `lipschitzConst_le_exp`: the growth `lipschitzConst p ≤ exp (5/2 p log p + c₁ p)` of
-  Lemma 4.2.5 (iv), with `c₁ = 20` (`lipschitzConst_le_exp_twenty`), via coefficient bounds for
-  the polynomials of the derivatives of `Ψ` and `Φ` and `x^k e^{-x} ≤ k!`.
-* `le_classComplexity_smoothClass`: the lower bound of Theorem 4.2.6.
+* `Optimization.CarmonChain.isZeroChain_chain`: Lemma 4.2.5(i), $\mathrm{chain}_T$ is a zero chain
+  of every order.
+* `Optimization.CarmonChain.exists_abs_partial_chain_gt_one`: Lemma 4.2.5(ii), the gradient has norm
+  greater than $1$ when some $|x_i| < 1$.
+* `Optimization.CarmonChain.chain_zero_sub_iInf_le`: Lemma 4.2.5(iii), $\mathrm{chain}_T(0) - \inf
+  \mathrm{chain}_T \le 12T$.
+* `Optimization.CarmonChain.norm_iteratedFDeriv_chain_le` and
+  `Optimization.CarmonChain.lipschitzOn_iteratedFDeriv_chain`: Lemma 4.2.5(iv),
+  $\nabla^p \mathrm{chain}_T$ is Lipschitz continuous with the constant
+  `Optimization.CarmonChain.lipschitzConst p`, which does not depend on $T$.
+* `Optimization.CarmonChain.lipschitzConst_le_exp`: the growth bound
+  $\exp(\tfrac52 p \log p + c_1 p)$ on that constant in Lemma 4.2.5(iv), with $c_1 = 20$
+  (`Optimization.CarmonChain.lipschitzConst_le_exp_twenty`).
+* `Optimization.CarmonChain.le_classComplexity_smoothClass`: the lower bound of Theorem 4.2.6.
+
+## Proof outline
+
+The growth bound comes from bounds on the sums of the absolute values of the coefficients of the
+polynomials that describe the derivatives of $\Psi$ and $\Phi$, together with $x^k e^{-x} \le k!$.
 -/
 
 open Real Polynomial Filter Topology Set MeasureTheory ContDiff
@@ -47,27 +70,34 @@ namespace Optimization
 
 namespace CarmonChain
 
-/-! ### The flat function `s ↦ exp(-s⁻²)` -/
+/-! ### The flat function $s \mapsto \exp(-s^{-2})$ -/
 
-/-- `flat s = exp(-1/s²)` for `s > 0` and `0` for `s ≤ 0`: a flat, smooth glue function. -/
+/-- The **flat function**: $\mathrm{flat}(s) = \exp(-1/s^2)$ for $s > 0$ and $\mathrm{flat}(s) = 0$
+for $s \le 0$. It is smooth, and all its derivatives vanish at $0$, so it glues smoothly to $0$. -/
 noncomputable def flat (s : ℝ) : ℝ :=
   if s ≤ 0 then 0 else exp (-(s ^ 2)⁻¹)
 
+/-- $\mathrm{flat}(s) = 0$ for $s \le 0$. -/
 theorem flat_of_nonpos {s : ℝ} (hs : s ≤ 0) : flat s = 0 := by simp [flat, hs]
 
+/-- $\mathrm{flat}(s) = \exp(-1/s^2)$ for $s > 0$. -/
 theorem flat_of_pos {s : ℝ} (hs : 0 < s) : flat s = exp (-(s ^ 2)⁻¹) := by
   simp [flat, not_le.2 hs]
 
+/-- $\mathrm{flat}(s) \ge 0$. -/
 theorem flat_nonneg (s : ℝ) : 0 ≤ flat s := by
   rcases le_or_gt s 0 with hs | hs
   · rw [flat_of_nonpos hs]
   · rw [flat_of_pos hs]; exact (exp_pos _).le
 
+/-- $\mathrm{flat}(s) \le 1$. -/
 theorem flat_le_one (s : ℝ) : flat s ≤ 1 := by
   rcases le_or_gt s 0 with hs | hs
   · rw [flat_of_nonpos hs]; exact zero_le_one
   · rw [flat_of_pos hs, exp_le_one_iff, neg_nonpos]; positivity
 
+/-- For $s \le 1$, $\mathrm{flat}(s)$ is at most Mathlib's glue function `expNegInvGlue`, which is
+$\exp(-1/s)$ for $s > 0$ and $0$ otherwise. -/
 theorem flat_le_expNegInvGlue {s : ℝ} (hs : s ≤ 1) : flat s ≤ expNegInvGlue s := by
   rcases le_or_gt s 0 with h0 | h0
   · rw [flat_of_nonpos h0]; exact expNegInvGlue.nonneg s
@@ -76,7 +106,7 @@ theorem flat_le_expNegInvGlue {s : ℝ} (hs : s ≤ 1) : flat s ≤ expNegInvGlu
     rw [inv_le_inv₀ h0 (by positivity)]
     nlinarith
 
-/-- `P(1/s) flat(s) → 0` as `s → 0`, for every polynomial `P`. -/
+/-- For every real polynomial $P$, $P(1/s) \, \mathrm{flat}(s) \to 0$ as $s \to 0$. -/
 theorem tendsto_polynomial_inv_mul_flat (P : ℝ[X]) :
     Tendsto (fun s => P.eval s⁻¹ * flat s) (𝓝 0) (𝓝 0) := by
   have h := (expNegInvGlue.tendsto_polynomial_inv_mul_zero P).norm
@@ -87,9 +117,15 @@ theorem tendsto_polynomial_inv_mul_flat (P : ℝ[X]) :
     Real.norm_of_nonneg (expNegInvGlue.nonneg s)]
   exact mul_le_mul_of_nonneg_left (flat_le_expNegInvGlue hs.le) (norm_nonneg _)
 
-/-- The polynomial of the derivative: `d/ds [P(1/s) flat(s)] = (2X³P - X²P')(1/s) flat(s)`. -/
+/-- The polynomial of the derivative: for a real polynomial $P$, the polynomial $2X^3 P - X^2 P'$,
+so that
+$$\frac{d}{ds} \big[ P(1/s) \, \mathrm{flat}(s) \big] = (2X^3 P - X^2 P')(1/s) \,
+  \mathrm{flat}(s).$$
+-/
 noncomputable def flatDerivPoly (P : ℝ[X]) : ℝ[X] := 2 * X ^ 3 * P - X ^ 2 * derivative P
 
+/-- For every real polynomial $P$ and every $x$, the map $s \mapsto P(1/s) \, \mathrm{flat}(s)$ has
+the derivative $(2X^3 P - X^2 P')(1/x) \, \mathrm{flat}(x)$ at $x$. -/
 theorem hasDerivAt_polynomial_inv_mul_flat (P : ℝ[X]) (x : ℝ) :
     HasDerivAt (fun s => P.eval s⁻¹ * flat s) ((flatDerivPoly P).eval x⁻¹ * flat x) x := by
   rcases lt_trichotomy x 0 with hx | rfl | hx
@@ -114,6 +150,8 @@ theorem hasDerivAt_polynomial_inv_mul_flat (P : ℝ[X]) (x : ℝ) :
       field_simp
       ring
 
+/-- For every real polynomial $P$, the map $s \mapsto P(1/s) \, \mathrm{flat}(s)$ is $C^n$ for every
+$n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_polynomial_inv_mul_flat {n : ℕ∞} (P : ℝ[X]) :
     ContDiff ℝ n (fun s => P.eval s⁻¹ * flat s) := by
   apply contDiff_all_iff_nat.2 (fun m => ?_) n
@@ -128,7 +166,8 @@ theorem contDiff_polynomial_inv_mul_flat {n : ℕ∞} (P : ℝ[X]) :
     convert ihm (flatDerivPoly P) using 2
     exact (hasDerivAt_polynomial_inv_mul_flat P _).deriv
 
-/-- `P(1/s) flat(s)` is bounded on `ℝ`. -/
+/-- For every real polynomial $P$, the map $s \mapsto P(1/s) \, \mathrm{flat}(s)$ is bounded on
+$\mathbb{R}$. -/
 theorem exists_abs_polynomial_inv_mul_flat_le (P : ℝ[X]) :
     ∃ C, ∀ s, |P.eval s⁻¹ * flat s| ≤ C := by
   obtain ⟨C₁, hC₁⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := 1)).exists_bound_of_continuousOn
@@ -149,13 +188,16 @@ theorem exists_abs_polynomial_inv_mul_flat_le (P : ℝ[X]) :
           mul_le_mul hP (flat_le_one s) (flat_nonneg s) ((abs_nonneg _).trans hP)
       _ = C₂ := mul_one _
 
-/-! ### The function `Ψ` -/
+/-! ### The function $\Psi$ -/
 
-/-- `Ψ(y) = 0` for `y ≤ 1/2` and `Ψ(y) = exp(1 - (2y - 1)^{-2})` otherwise
-([cartis2022evaluation], (4.2.6)). -/
+/-- The function $\Psi$ of (4.2.6) of [cartis2022evaluation]:
+$$\Psi(y) = \begin{cases} 0 & \text{if } y \le 1/2, \\ \exp\big(1 - (2y - 1)^{-2}\big) &
+  \text{if } y > 1/2. \end{cases}$$
+-/
 noncomputable def psi (y : ℝ) : ℝ :=
   if y ≤ 1 / 2 then 0 else exp (1 - ((2 * y - 1) ^ 2)⁻¹)
 
+/-- $\Psi(y) = e \, \mathrm{flat}(2y - 1)$. -/
 theorem psi_eq (y : ℝ) : psi y = exp 1 * flat (2 * y - 1) := by
   rcases le_or_gt y (1 / 2) with hy | hy
   · simp only [psi, hy, ↓reduceIte, flat_of_nonpos (by linarith : 2 * y - 1 ≤ 0), mul_zero]
@@ -163,20 +205,25 @@ theorem psi_eq (y : ℝ) : psi y = exp 1 * flat (2 * y - 1) := by
     rw [flat_of_pos (by linarith), ← exp_add]
     ring_nf
 
+/-- $\Psi(y) = 0$ for $y \le 1/2$. -/
 theorem psi_of_le {y : ℝ} (hy : y ≤ 1 / 2) : psi y = 0 := by simp only [psi, hy, ↓reduceIte]
 
+/-- $\Psi(1) = 1$. -/
 @[simp]
 theorem psi_one : psi 1 = 1 := by norm_num [psi]
 
+/-- $\Psi(y) \ge 0$. -/
 theorem psi_nonneg (y : ℝ) : 0 ≤ psi y := by
   rw [psi_eq]; exact mul_nonneg (exp_pos 1).le (flat_nonneg _)
 
+/-- $\Psi(y) \le e$. -/
 theorem psi_le (y : ℝ) : psi y ≤ exp 1 := by
   rw [psi_eq]
   calc exp 1 * flat (2 * y - 1) ≤ exp 1 * 1 :=
         mul_le_mul_of_nonneg_left (flat_le_one _) (exp_pos 1).le
     _ = exp 1 := mul_one _
 
+/-- The flat function is monotone. -/
 theorem flat_monotone : Monotone flat := by
   intro s t hst
   rcases le_or_gt s 0 with hs | hs
@@ -185,22 +232,28 @@ theorem flat_monotone : Monotone flat := by
       inv_le_inv₀ (pow_pos (hs.trans_le hst) 2) (pow_pos hs 2)]
     exact pow_le_pow_left₀ hs.le hst 2
 
+/-- $\Psi$ is monotone. -/
 theorem psi_monotone : Monotone psi := by
   intro y y' h
   rw [psi_eq, psi_eq]
   exact mul_le_mul_of_nonneg_left (flat_monotone (by linarith)) (exp_pos 1).le
 
+/-- $\Psi(y) \ge 1$ for $y \ge 1$. -/
 theorem one_le_psi {y : ℝ} (hy : 1 ≤ y) : 1 ≤ psi y := psi_one ▸ psi_monotone hy
 
-/-- The polynomials of the derivatives of `flat`. -/
+/-- The polynomials $P_j$ of the derivatives of the flat function: $P_0 = 1$ and
+$P_{j+1} = 2X^3 P_j - X^2 P_j'$, so that the $j$-th derivative of $\mathrm{flat}$ is
+$s \mapsto P_j(1/s) \, \mathrm{flat}(s)$. -/
 noncomputable def flatPoly : ℕ → ℝ[X]
   | 0 => 1
   | j + 1 => flatDerivPoly (flatPoly j)
 
-/-- The `j`-th derivative of `Ψ`, `y ↦ e 2^j P_j(1/(2y-1)) flat(2y-1)`. -/
+/-- The $j$-th derivative of $\Psi$, written as $y \mapsto e \, 2^j P_j\big(1/(2y - 1)\big) \,
+\mathrm{flat}(2y - 1)$, where $P_j$ is `Optimization.CarmonChain.flatPoly j`. -/
 noncomputable def psiDeriv (j : ℕ) (y : ℝ) : ℝ :=
   exp 1 * 2 ^ j * ((flatPoly j).eval (2 * y - 1)⁻¹ * flat (2 * y - 1))
 
+/-- The derivative of the $j$-th derivative formula of $\Psi$ is the $(j + 1)$-st one. -/
 theorem hasDerivAt_psiDeriv (j : ℕ) (y : ℝ) : HasDerivAt (psiDeriv j) (psiDeriv (j + 1) y) y := by
   have h1 : HasDerivAt (fun y : ℝ => 2 * y - 1) 2 y := by
     simpa using ((hasDerivAt_id y).const_mul 2).sub_const 1
@@ -211,6 +264,7 @@ theorem hasDerivAt_psiDeriv (j : ℕ) (y : ℝ) : HasDerivAt (psiDeriv j) (psiDe
   · simp only [psiDeriv, flatPoly, pow_succ]
     ring
 
+/-- The $j$-th derivative of $\Psi$ is `Optimization.CarmonChain.psiDeriv j`. -/
 theorem iteratedDeriv_psi (j : ℕ) : iteratedDeriv j psi = psiDeriv j := by
   induction j with
   | zero =>
@@ -221,6 +275,7 @@ theorem iteratedDeriv_psi (j : ℕ) : iteratedDeriv j psi = psiDeriv j := by
     rw [iteratedDeriv_succ, ih]
     exact (hasDerivAt_psiDeriv j y).deriv
 
+/-- $\Psi$ is $C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_psi {n : ℕ∞} : ContDiff ℝ n psi := by
   have h : psi = fun y => exp 1 * ((1 : ℝ[X]).eval (2 * y - 1)⁻¹ * flat (2 * y - 1)) := by
     funext y; simp [psi_eq]
@@ -228,6 +283,7 @@ theorem contDiff_psi {n : ℕ∞} : ContDiff ℝ n psi := by
   exact contDiff_const.mul ((contDiff_polynomial_inv_mul_flat 1).comp
     ((contDiff_const.mul contDiff_id).sub contDiff_const))
 
+/-- $\Psi'(y) \ge 0$ for every $y$. -/
 theorem deriv_psi_nonneg (y : ℝ) : 0 ≤ deriv psi y := by
   rw [← iteratedDeriv_one, iteratedDeriv_psi]
   simp only [psiDeriv, flatPoly, flatDerivPoly, derivative_one, mul_zero, sub_zero, mul_one,
@@ -237,32 +293,40 @@ theorem deriv_psi_nonneg (y : ℝ) : 0 ≤ deriv psi y := by
   · have := flat_nonneg (2 * y - 1)
     positivity
 
-/-- All derivatives of `Ψ` are bounded. -/
+/-- Every derivative of $\Psi$ is bounded: for every $j$ there is $C$ with $|\Psi^{(j)}(y)| \le C$
+for all $y$. -/
 theorem exists_abs_iteratedDeriv_psi_le (j : ℕ) : ∃ C, ∀ y, |iteratedDeriv j psi y| ≤ C := by
   obtain ⟨C, hC⟩ := exists_abs_polynomial_inv_mul_flat_le (flatPoly j)
   refine ⟨exp 1 * 2 ^ j * C, fun y => ?_⟩
   rw [iteratedDeriv_psi, psiDeriv, abs_mul, abs_of_pos (by positivity)]
   exact mul_le_mul_of_nonneg_left (hC _) (by positivity)
 
-/-! ### The function `Φ` -/
+/-! ### The function $\Phi$ -/
 
+/-- The Gaussian $t \mapsto e^{-t^2/2}$ is integrable on $\mathbb{R}$. -/
 theorem integrable_gauss : Integrable fun t : ℝ => exp (-t ^ 2 / 2) := by
   have := integrable_exp_neg_mul_sq (b := 1 / 2) (by norm_num)
   convert this using 2
   ring_nf
 
+/-- The Gaussian $t \mapsto e^{-t^2/2}$ is continuous. -/
 theorem continuous_gauss : Continuous fun t : ℝ => exp (-t ^ 2 / 2) := by fun_prop
 
-/-- `Φ(y) = e^{1/2} ∫_{-∞}^y exp(-t²/2) dt` ([cartis2022evaluation], (4.2.6)). -/
+/-- The function $\Phi$ of (4.2.6) of [cartis2022evaluation]:
+$$\Phi(y) = e^{1/2} \int_{-\infty}^y e^{-t^2/2} \, dt.$$
+-/
 noncomputable def phi (y : ℝ) : ℝ :=
   exp (1 / 2) * ∫ t in Iic y, exp (-t ^ 2 / 2)
 
+/-- $\Phi(y) = e^{1/2} \big( \int_{-\infty}^0 e^{-t^2/2} \, dt + \int_0^y e^{-t^2/2} \, dt \big)$.
+-/
 theorem phi_eq (y : ℝ) : phi y = exp (1 / 2) *
     ((∫ t in Iic 0, exp (-t ^ 2 / 2)) + ∫ t in (0 : ℝ)..y, exp (-t ^ 2 / 2)) := by
   rw [phi, ← intervalIntegral.integral_Iic_sub_Iic integrable_gauss.integrableOn
     integrable_gauss.integrableOn]
   ring
 
+/-- $\Phi$ has the derivative $e^{1/2} e^{-y^2/2}$ at every $y$. -/
 theorem hasDerivAt_phi (y : ℝ) : HasDerivAt phi (exp (1 / 2) * exp (-y ^ 2 / 2)) y := by
   have h := intervalIntegral.integral_hasDerivAt_right
     (continuous_gauss.intervalIntegrable 0 y)
@@ -270,13 +334,15 @@ theorem hasDerivAt_phi (y : ℝ) : HasDerivAt phi (exp (1 / 2) * exp (-y ^ 2 / 2
   have := (h.const_add (∫ t in Iic 0, exp (-t ^ 2 / 2))).const_mul (exp (1 / 2))
   exact this.congr_of_eventuallyEq (Eventually.of_forall fun y => phi_eq y)
 
+/-- $\Phi'(y) = e^{1/2} e^{-y^2/2}$. -/
 theorem deriv_phi : deriv phi = fun y => exp (1 / 2) * exp (-y ^ 2 / 2) :=
   funext fun y => (hasDerivAt_phi y).deriv
 
+/-- $\Phi(y) \ge 0$. -/
 theorem phi_nonneg (y : ℝ) : 0 ≤ phi y :=
   mul_nonneg (exp_pos _).le (setIntegral_nonneg measurableSet_Iic fun _ _ => (exp_pos _).le)
 
-/-- `Φ ≤ √(2π e)`. -/
+/-- $\Phi(y) \le e^{1/2} \sqrt{2\pi} = \sqrt{2 \pi e}$. -/
 theorem phi_le (y : ℝ) : phi y ≤ exp (1 / 2) * √(2 * π) := by
   refine mul_le_mul_of_nonneg_left ?_ (exp_pos _).le
   refine (setIntegral_le_integral integrable_gauss
@@ -286,6 +352,7 @@ theorem phi_le (y : ℝ) : phi y ≤ exp (1 / 2) * √(2 * π) := by
   · ext t; ring_nf
   · ring_nf
 
+/-- $\Phi$ is monotone. -/
 theorem monotone_phi : Monotone phi := by
   intro y y' h
   rw [phi_eq, phi_eq]
@@ -296,7 +363,7 @@ theorem monotone_phi : Monotone phi := by
     intervalIntegral.integral_nonneg h fun t _ => (exp_pos _).le
   linarith
 
-/-- `Φ'(y) = e^{1/2} exp(-y²/2) > 1` for `|y| < 1`. -/
+/-- $\Phi'(y) = e^{1/2} e^{-y^2/2} > 1$ for $|y| < 1$. -/
 theorem one_lt_deriv_phi {y : ℝ} (hy : |y| < 1) : 1 < deriv phi y := by
   rw [deriv_phi]
   dsimp only
@@ -307,14 +374,19 @@ theorem one_lt_deriv_phi {y : ℝ} (hy : |y| < 1) : 1 < deriv phi y := by
     simpa using this
   linarith
 
+/-- $\Phi'(y) > 0$ for every $y$. -/
 theorem deriv_phi_pos (y : ℝ) : 0 < deriv phi y := by
   rw [deriv_phi]; positivity
 
-/-- The polynomials of the derivatives of `y ↦ exp(-y²/2)`. -/
+/-- The polynomials $H_j$ of the derivatives of the Gaussian $y \mapsto e^{-y^2/2}$: $H_0 = 1$ and
+$H_{j+1} = H_j' - X H_j$, so that the $j$-th derivative of the Gaussian is
+$y \mapsto H_j(y) e^{-y^2/2}$. -/
 noncomputable def gaussPoly : ℕ → ℝ[X]
   | 0 => 1
   | j + 1 => derivative (gaussPoly j) - X * gaussPoly j
 
+/-- For every real polynomial $H$ and every $y$, the map $y \mapsto H(y) e^{-y^2/2}$ has the
+derivative $(H' - XH)(y) e^{-y^2/2}$ at $y$. -/
 theorem hasDerivAt_polynomial_mul_gauss (H : ℝ[X]) (y : ℝ) :
     HasDerivAt (fun y => H.eval y * exp (-y ^ 2 / 2))
       ((derivative H - X * H).eval y * exp (-y ^ 2 / 2)) y := by
@@ -326,7 +398,8 @@ theorem hasDerivAt_polynomial_mul_gauss (H : ℝ[X]) (y : ℝ) :
   simp only [eval_sub, eval_mul, eval_X]
   ring
 
-/-- The derivatives of `Φ`. -/
+/-- For every $j$, the $(j + 1)$-st derivative of $\Phi$ is $y \mapsto e^{1/2} H_j(y) e^{-y^2/2}$,
+where $H_j$ is `Optimization.CarmonChain.gaussPoly j`. -/
 theorem iteratedDeriv_succ_phi (j : ℕ) :
     iteratedDeriv (j + 1) phi =
       fun y => exp (1 / 2) * ((gaussPoly j).eval y * exp (-y ^ 2 / 2)) := by
@@ -339,13 +412,15 @@ theorem iteratedDeriv_succ_phi (j : ℕ) :
     funext y
     exact ((hasDerivAt_polynomial_mul_gauss (gaussPoly j) y).const_mul _).deriv
 
+/-- $\Phi$ is $C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_phi {n : ℕ∞} : ContDiff ℝ n phi := by
   refine (contDiff_infty_iff_deriv.2 ⟨fun y => (hasDerivAt_phi y).differentiableAt, ?_⟩).of_le
     (by exact_mod_cast le_top)
   rw [deriv_phi]
   fun_prop
 
-/-- `P(y) exp(-y²/2)` is bounded on `ℝ`. -/
+/-- For every real polynomial $H$, the map $y \mapsto H(y) e^{-y^2/2}$ is bounded on $\mathbb{R}$.
+-/
 theorem exists_abs_polynomial_mul_gauss_le (H : ℝ[X]) :
     ∃ C, ∀ y, |H.eval y * exp (-y ^ 2 / 2)| ≤ C := by
   -- far from the origin the Gaussian beats `exp(-|y|)`
@@ -379,7 +454,8 @@ theorem exists_abs_polynomial_mul_gauss_le (H : ℝ[X]) :
   · exact le_max_of_le_right (hR₁ y (by
       have := le_abs_self R₁; have := le_max_left |R₁| |R₂|; linarith))
 
-/-- All derivatives of `Φ` are bounded. -/
+/-- Every derivative of $\Phi$ is bounded: for every $j$ there is $C$ with $|\Phi^{(j)}(y)| \le C$
+for all $y$. -/
 theorem exists_abs_iteratedDeriv_phi_le (j : ℕ) : ∃ C, ∀ y, |iteratedDeriv j phi y| ≤ C := by
   rcases j with _ | j
   · refine ⟨exp (1 / 2) * √(2 * π), fun y => ?_⟩
@@ -390,29 +466,37 @@ theorem exists_abs_iteratedDeriv_phi_le (j : ℕ) : ∃ C, ∀ y, |iteratedDeriv
     rw [iteratedDeriv_succ_phi, abs_mul, abs_of_pos (exp_pos _)]
     exact mul_le_mul_of_nonneg_left (hC y) (exp_pos _).le
 
-/-! ### Uniform bounds on the derivatives of `Ψ` and `Φ` -/
+/-! ### Uniform bounds on the derivatives of $\Psi$ and $\Phi$ -/
 
-/-- `sup_y |Ψ^{(j)}(y)|`. -/
+/-- The supremum $\sup_y |\Psi^{(j)}(y)|$ of the $j$-th derivative of $\Psi$. -/
 noncomputable def psiBound (j : ℕ) : ℝ := ⨆ y, |iteratedDeriv j psi y|
 
-/-- `sup_y |Φ^{(j)}(y)|`. -/
+/-- The supremum $\sup_y |\Phi^{(j)}(y)|$ of the $j$-th derivative of $\Phi$. -/
 noncomputable def phiBound (j : ℕ) : ℝ := ⨆ y, |iteratedDeriv j phi y|
 
+/-- $|\Psi^{(j)}(y)| \le \sup_y |\Psi^{(j)}|$ for every $y$. -/
 theorem abs_iteratedDeriv_psi_le (j : ℕ) (y : ℝ) : |iteratedDeriv j psi y| ≤ psiBound j := by
   obtain ⟨C, hC⟩ := exists_abs_iteratedDeriv_psi_le j
   exact le_ciSup (f := fun y => |iteratedDeriv j psi y|) ⟨C, by rintro _ ⟨y, rfl⟩; exact hC y⟩ y
 
+/-- $|\Phi^{(j)}(y)| \le \sup_y |\Phi^{(j)}|$ for every $y$. -/
 theorem abs_iteratedDeriv_phi_le (j : ℕ) (y : ℝ) : |iteratedDeriv j phi y| ≤ phiBound j := by
   obtain ⟨C, hC⟩ := exists_abs_iteratedDeriv_phi_le j
   exact le_ciSup (f := fun y => |iteratedDeriv j phi y|) ⟨C, by rintro _ ⟨y, rfl⟩; exact hC y⟩ y
 
+/-- $\sup_y |\Psi^{(j)}(y)| \ge 0$. -/
 theorem psiBound_nonneg (j : ℕ) : 0 ≤ psiBound j :=
   (abs_nonneg _).trans (abs_iteratedDeriv_psi_le j 0)
 
+/-- $\sup_y |\Phi^{(j)}(y)| \ge 0$. -/
 theorem phiBound_nonneg (j : ℕ) : 0 ≤ phiBound j :=
   (abs_nonneg _).trans (abs_iteratedDeriv_phi_le j 0)
 
-/-- A derivative of `g ∘ L`, `g : ℝ → ℝ`, `‖L‖ ≤ 1`, is bounded by the derivative of `g`. -/
+/-- Let $E$ be a real normed space, let $g \colon \mathbb{R} \to \mathbb{R}$ be smooth, and let
+$L \colon E \to \mathbb{R}$ be a continuous linear form with $\|L\| \le 1$. Then for every $i$
+and every $z \in E$,
+$$\|\nabla^i (g \circ L)(z)\| \le |g^{(i)}(L z)|.$$
+-/
 theorem norm_iteratedFDeriv_comp_clm_le {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     {g : ℝ → ℝ} (hg : ContDiff ℝ ∞ g) {L : E →L[ℝ] ℝ} (hL : ‖L‖ ≤ 1) (i : ℕ) (z : E) :
     ‖iteratedFDeriv ℝ i (g ∘ L) z‖ ≤ |iteratedDeriv i g (L z)| := by
@@ -425,25 +509,35 @@ theorem norm_iteratedFDeriv_comp_clm_le {E : Type*} [NormedAddCommGroup E] [Norm
 
 /-! ### The pair terms -/
 
+/-- The first projection $\mathbb{R} \times \mathbb{R} \to \mathbb{R}$ has norm at most $1$. -/
 theorem norm_fst_clm_le : ‖ContinuousLinearMap.fst ℝ ℝ ℝ‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun z => by simpa using norm_fst_le z
 
+/-- The second projection $\mathbb{R} \times \mathbb{R} \to \mathbb{R}$ has norm at most $1$. -/
 theorem norm_snd_clm_le : ‖ContinuousLinearMap.snd ℝ ℝ ℝ‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun z => by simpa using norm_snd_le z
 
-/-- One link of the chain: `pair (a, b) = Ψ(-a) Φ(-b) - Ψ(a) Φ(b)`. -/
+/-- One link of the chain: $\mathrm{pair}(a, b) = \Psi(-a) \Phi(-b) - \Psi(a) \Phi(b)$. -/
 noncomputable def pair (z : ℝ × ℝ) : ℝ := psi (-z.1) * phi (-z.2) - psi z.1 * phi z.2
 
-/-- The bound `2 ∑_i C(q, i) sup|Ψ^{(i)}| sup|Φ^{(q-i)}|` on the `q`-th derivative of `pair`. -/
+/-- The bound
+$$\mathrm{pairBound}(q) = 2 \sum_{i=0}^q \binom{q}{i} \sup |\Psi^{(i)}| \, \sup |\Phi^{(q-i)}|$$
+on the $q$-th derivative of a link. -/
 noncomputable def pairBound (q : ℕ) : ℝ :=
   2 * ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) * psiBound i * phiBound (q - i)
 
+/-- A link of the chain is $C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_pair {n : ℕ∞} : ContDiff ℝ n pair := by
   unfold pair
   have h1 : ContDiff ℝ n psi := contDiff_psi
   have h2 : ContDiff ℝ n phi := contDiff_phi
   fun_prop
 
+/-- Let $L_1, L_2 \colon \mathbb{R} \times \mathbb{R} \to \mathbb{R}$ be continuous linear forms of
+norm at most $1$. Then for every $q$ and every $z$, the $q$-th derivative of
+$z \mapsto \Psi(L_1 z) \Phi(L_2 z)$ at $z$ has norm at most $\sum_{i=0}^q \binom{q}{i} \sup
+|\Psi^{(i)}| \, \sup |\Phi^{(q-i)}|$.
+-/
 theorem norm_iteratedFDeriv_prod_le {L₁ L₂ : ℝ × ℝ →L[ℝ] ℝ} (h₁ : ‖L₁‖ ≤ 1) (h₂ : ‖L₂‖ ≤ 1)
     (q : ℕ) (z : ℝ × ℝ) :
     ‖iteratedFDeriv ℝ q (fun z => psi (L₁ z) * phi (L₂ z)) z‖ ≤
@@ -457,6 +551,7 @@ theorem norm_iteratedFDeriv_prod_le {L₁ L₂ : ℝ × ℝ →L[ℝ] ℝ} (h₁
   · exact (norm_iteratedFDeriv_comp_clm_le contDiff_phi h₂ _ z).trans
       (abs_iteratedDeriv_phi_le _ _)
 
+/-- The $q$-th derivative of a link has norm at most $\mathrm{pairBound}(q)$ at every point. -/
 theorem norm_iteratedFDeriv_pair_le (q : ℕ) (z : ℝ × ℝ) :
     ‖iteratedFDeriv ℝ q pair z‖ ≤ pairBound q := by
   have hf : pair = (fun z => psi ((-ContinuousLinearMap.fst ℝ ℝ ℝ) z) *
@@ -482,49 +577,60 @@ theorem norm_iteratedFDeriv_pair_le (q : ℕ) (z : ℝ × ℝ) :
 
 variable {T : ℕ}
 
-/-- Coordinate `i` of `x ∈ ℝ^T` as a continuous linear form (`0` for `i ≥ T`). -/
+/-- Coordinate $i$ of $x \in \mathbb{R}^T$ as a continuous linear form: $x \mapsto x_i$ for $i < T$,
+and the zero form for $i \ge T$. -/
 noncomputable def coord (T i : ℕ) : EuclideanSpace ℝ (Fin T) →L[ℝ] ℝ :=
   if h : i < T then EuclideanSpace.proj (⟨i, h⟩ : Fin T) else 0
 
+/-- For $i < T$, coordinate $i$ of $x$ is $x_i$. -/
 theorem coord_apply_of_lt {i : ℕ} (h : i < T) (x : EuclideanSpace ℝ (Fin T)) :
     coord T i x = x ⟨i, h⟩ := by
   simp [coord, h]
 
+/-- For $j \in \{0, \dots, T - 1\}$, coordinate $j$ of $x$ is $x_j$. -/
 @[simp]
 theorem coord_apply_fin (j : Fin T) (x : EuclideanSpace ℝ (Fin T)) : coord T j x = x j :=
   coord_apply_of_lt j.2 x
 
+/-- For $i \ge T$, coordinate $i$ of $x$ is $0$. -/
 theorem coord_apply_of_le {i : ℕ} (h : T ≤ i) (x : EuclideanSpace ℝ (Fin T)) :
     coord T i x = 0 := by
   simp [coord, not_lt.2 h]
 
+/-- $|x_i| \le \|x\|$ for every coordinate $i$. -/
 theorem abs_coord_le (i : ℕ) (x : EuclideanSpace ℝ (Fin T)) : |coord T i x| ≤ ‖x‖ := by
   rcases lt_or_ge i T with h | h
   · rw [coord_apply_of_lt h, ← Real.norm_eq_abs]; exact PiLp.norm_apply_le x _
   · rw [coord_apply_of_le h, abs_zero]; exact norm_nonneg x
 
+/-- Every coordinate form has norm at most $1$. -/
 theorem norm_coord_le (i : ℕ) : ‖coord T i‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => by
     rw [one_mul, Real.norm_eq_abs]; exact abs_coord_le i x
 
-/-- `∑_{i < T} x_i² = ‖x‖²`. -/
+/-- For $x \in \mathbb{R}^T$, $\sum_{i < T} x_i^2 = \|x\|^2$. -/
 theorem sum_range_coord_sq (x : EuclideanSpace ℝ (Fin T)) :
     ∑ i ∈ Finset.range T, coord T i x ^ 2 = ‖x‖ ^ 2 := by
   rw [PiLp.norm_sq_eq_of_L2, ← Fin.sum_univ_eq_sum_range (fun i => coord T i x ^ 2)]
   simp [Real.norm_eq_abs, sq_abs]
 
-/-- The pair of consecutive coordinates `(x_{l-1}, x_l)`. -/
+/-- The pair of consecutive coordinates $x \mapsto (x_{l-1}, x_l)$, as a continuous linear map
+$\mathbb{R}^T \to \mathbb{R} \times \mathbb{R}$. -/
 noncomputable def pairMap (T l : ℕ) : EuclideanSpace ℝ (Fin T) →L[ℝ] ℝ × ℝ :=
   (coord T (l - 1)).prod (coord T l)
 
+/-- The pair map sends $x$ to $(x_{l-1}, x_l)$. -/
 @[simp]
 theorem pairMap_apply (l : ℕ) (x : EuclideanSpace ℝ (Fin T)) :
     pairMap T l x = (coord T (l - 1) x, coord T l x) := rfl
 
+/-- $\|(x_{l-1}, x_l)\| \le \|x\|$, where $\mathbb{R} \times \mathbb{R}$ carries the max norm. -/
 theorem norm_pairMap_apply_le (l : ℕ) (x : EuclideanSpace ℝ (Fin T)) : ‖pairMap T l x‖ ≤ ‖x‖ := by
   rw [pairMap_apply, Prod.norm_mk, Real.norm_eq_abs, Real.norm_eq_abs]
   exact max_le (abs_coord_le _ x) (abs_coord_le _ x)
 
+/-- For $x \in \mathbb{R}^T$, $\sum_{l=1}^{T-1} \|(x_{l-1}, x_l)\|^2 \le 2 \|x\|^2$, where
+$\mathbb{R} \times \mathbb{R}$ carries the max norm. -/
 theorem sum_sq_norm_pairMap_le (x : EuclideanSpace ℝ (Fin T)) :
     ∑ l ∈ Finset.Ico 1 T, ‖pairMap T l x‖ ^ 2 ≤ 2 * ‖x‖ ^ 2 := by
   have h1 : ∀ l, ‖pairMap T l x‖ ^ 2 ≤ coord T (l - 1) x ^ 2 + coord T l x ^ 2 := by
@@ -546,8 +652,13 @@ theorem sum_sq_norm_pairMap_le (x : EuclideanSpace ℝ (Fin T)) :
         Finset.sum_le_sum fun l _ => h1 l
     _ ≤ 2 * ‖x‖ ^ 2 := by rw [Finset.sum_add_distrib]; linarith
 
-/-- The dimension-free estimate behind Lemma 4.2.5 (iv): for `q ≥ 2` vectors,
-`∑_l ∏_m ‖(v_m)_{l-1}, (v_m)_l‖ ≤ 2 ∏_m ‖v_m‖` (Cauchy–Schwarz on the first two factors). -/
+/-- The estimate without dependence on the dimension behind Lemma 4.2.5(iv). Let $q \ge 2$ and
+$v_0, \dots, v_{q-1} \in \mathbb{R}^T$. Then
+$$\sum_{l=1}^{T-1} \prod_{m} \big\| \big( (v_m)_{l-1}, (v_m)_l \big) \big\| \le 2 \prod_m
+  \|v_m\|,$$
+where $\mathbb{R} \times \mathbb{R}$ carries the max norm.
+
+The proof applies the Cauchy–Schwarz inequality to the first two factors. -/
 theorem sum_prod_norm_pairMap_le {q : ℕ} (hq : 2 ≤ q) (v : Fin q → EuclideanSpace ℝ (Fin T)) :
     ∑ l ∈ Finset.Ico 1 T, ∏ m, ‖pairMap T l (v m)‖ ≤ 2 * ∏ m, ‖v m‖ := by
   obtain ⟨q, rfl⟩ : ∃ q', q = q' + 2 := ⟨q - 2, by omega⟩
@@ -583,36 +694,48 @@ theorem sum_prod_norm_pairMap_le {q : ℕ} (hq : 2 ≤ q) (v : Fin q → Euclide
 
 /-! ### The chain -/
 
-/-- The hard zero chain of [cartis2022evaluation], (4.2.6) (with first term
-`-Ψ(1) Φ(x_0)`, as in Carmon et al.), on `ℝ^T` with `coord T i x = x_i`:
-`chain T x = -Ψ(1) Φ(x_0) + ∑_{l=1}^{T-1} [Ψ(-x_{l-1}) Φ(-x_l) - Ψ(x_{l-1}) Φ(x_l)]`.
-(For `T = 0` it is the constant `-Φ(0)`.) -/
+/-- The hard zero chain of (4.2.6) of [cartis2022evaluation] on $\mathbb{R}^T$:
+$$\mathrm{chain}_T(x) = -\Psi(1) \Phi(x_0) + \sum_{l=1}^{T-1} \big[ \Psi(-x_{l-1}) \Phi(-x_l) -
+  \Psi(x_{l-1}) \Phi(x_l) \big].$$
+
+The first term $-\Psi(1) \Phi(x_0)$ is the one of Carmon, Duchi, Hinder and Sidford. Coordinate
+$i$ is `Optimization.CarmonChain.coord T i`. For $T = 0$ the function is the constant
+$-\Phi(0)$. -/
 noncomputable def chain (T : ℕ) (x : EuclideanSpace ℝ (Fin T)) : ℝ :=
   -(psi 1 * phi (coord T 0 x)) + ∑ l ∈ Finset.Ico 1 T, pair (pairMap T l x)
 
+/-- $\mathrm{chain}_T(x) = -\Phi(x_0) + \sum_{l=1}^{T-1} \mathrm{pair}(x_{l-1}, x_l)$. -/
 theorem chain_eq (x : EuclideanSpace ℝ (Fin T)) :
     chain T x = -phi (coord T 0 x) + ∑ l ∈ Finset.Ico 1 T, pair (pairMap T l x) := by
   rw [chain, psi_one, one_mul]
 
+/-- $\mathrm{chain}_T$ is the sum of $-\Phi \circ x_0$ and the links
+$x \mapsto \mathrm{pair}(x_{l-1}, x_l)$ for $1 \le l \le T - 1$, as an equality of functions. -/
 theorem chain_eq_add :
     chain T = -(phi ∘ coord T 0) + fun x => ∑ l ∈ Finset.Ico 1 T, (pair ∘ pairMap T l) x :=
   funext fun x => by rw [chain_eq]; rfl
 
+/-- $\mathrm{chain}_T$ is $C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_chain {n : ℕ∞} : ContDiff ℝ n (chain T) := by
   rw [chain_eq_add]
   exact (contDiff_phi.comp (coord T 0).contDiff).neg.add
     (ContDiff.sum fun l _ => contDiff_pair.comp (pairMap T l).contDiff)
 
-/-- The explicit dimension-free bound on `‖∇^{p+1} chain T‖`. -/
+/-- The explicit bound on $\|\nabla^{p+1} \mathrm{chain}_T\|$ that does not depend on $T$:
+$$L^D_p = 1 + \sup |\Phi^{(p+1)}| + 2 \, \mathrm{pairBound}(p + 1).$$
+-/
 noncomputable def lipschitzConst (p : ℕ) : ℝ := 1 + phiBound (p + 1) + 2 * pairBound (p + 1)
 
+/-- The constant $L^D_p$ is positive. -/
 theorem lipschitzConst_pos (p : ℕ) : 0 < lipschitzConst p := by
   have := phiBound_nonneg (p + 1)
   have : 0 ≤ pairBound (p + 1) := (norm_nonneg _).trans (norm_iteratedFDeriv_pair_le _ 0)
   unfold lipschitzConst; positivity
 
-/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**, uniform part: `‖∇^{p+1} chain T(x)‖` is
-bounded by `lipschitzConst p`, independently of the dimension `T` (`p ≥ 1`). -/
+/-- **Lemma 4.2.5(iv)** of [cartis2022evaluation], uniform bound. Let $p \ge 1$. Then for every $T$
+and every $x \in \mathbb{R}^T$,
+$$\|\nabla^{p+1} \mathrm{chain}_T(x)\| \le L^D_p,$$
+where $L^D_p$ is `Optimization.CarmonChain.lipschitzConst p`, which does not depend on $T$. -/
 theorem norm_iteratedFDeriv_chain_le {p : ℕ} (hp : 1 ≤ p) (x : EuclideanSpace ℝ (Fin T)) :
     ‖iteratedFDeriv ℝ (p + 1) (chain T) x‖ ≤ lipschitzConst p := by
   have h1 : ContDiff ℝ ∞ (-(phi ∘ coord T 0)) := (contDiff_phi.comp (coord T 0).contDiff).neg
@@ -647,8 +770,12 @@ theorem norm_iteratedFDeriv_chain_le {p : ℕ} (hp : 1 ≤ p) (x : EuclideanSpac
           mul_le_mul_of_nonneg_left (sum_prod_norm_pairMap_le (by simp; omega) v) hB
       _ = 2 * pairBound (p + 1) * ∏ m, ‖v m‖ := by ring
 
-/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**: `∇^p chain T` is Lipschitz continuous with the
-dimension-free constant `lipschitzConst p` (`p ≥ 1`). -/
+/-- **Lemma 4.2.5(iv)** of [cartis2022evaluation]. Let $p \ge 1$. Then for every $T$,
+$\nabla^p \mathrm{chain}_T$ is Lipschitz continuous on $\mathbb{R}^T$ with the constant $L^D_p$
+of `Optimization.CarmonChain.lipschitzConst`, which does not depend on $T$:
+$$\|\nabla^p \mathrm{chain}_T(x) - \nabla^p \mathrm{chain}_T(y)\| \le L^D_p \|x - y\| \quad
+  \text{for all } x, y \in \mathbb{R}^T.$$
+-/
 theorem lipschitzOn_iteratedFDeriv_chain {p : ℕ} (hp : 1 ≤ p) :
     IteratedFDerivLipschitzOn (chain T) p (lipschitzConst p) univ :=
   iteratedFDerivLipschitzOn_of_norm_le convex_univ
@@ -656,11 +783,13 @@ theorem lipschitzOn_iteratedFDeriv_chain {p : ℕ} (hp : 1 ≤ p) :
 
 /-! ### Lemma 4.2.5 (i): the zero-chain property -/
 
+/-- $\mathrm{pair}(a, b) = 0$ when $|a| \le 1/2$. -/
 theorem pair_eq_zero {z : ℝ × ℝ} (hz : |z.1| ≤ 1 / 2) : pair z = 0 := by
   have h1 : psi z.1 = 0 := psi_of_le (le_trans (le_abs_self _) hz)
   have h2 : psi (-z.1) = 0 := psi_of_le (le_trans (neg_le_abs _) hz)
   simp [pair, h1, h2]
 
+/-- Coordinate $k$ of the unit vector $e_i$ is $1$ if $k = i$ and $0$ otherwise. -/
 theorem coord_single (k : ℕ) (i : Fin T) :
     coord T k (EuclideanSpace.single i (1 : ℝ)) = if k = i then 1 else 0 := by
   rcases lt_or_ge k T with hk | hk
@@ -668,10 +797,11 @@ theorem coord_single (k : ℕ) (i : Fin T) :
     simp only [Fin.ext_iff]
   · rw [coord_apply_of_le hk, ite_eq_right (by have := i.2; omega)]
 
-/-- The map zeroing coordinate `i`. -/
+/-- The linear map $y \mapsto y - y_i e_i$ on $\mathbb{R}^T$, which sets coordinate $i$ to zero. -/
 noncomputable def zeroCoord (i : Fin T) : EuclideanSpace ℝ (Fin T) →L[ℝ] EuclideanSpace ℝ (Fin T) :=
   ContinuousLinearMap.id ℝ _ - (coord T i).smulRight (EuclideanSpace.single i (1 : ℝ))
 
+/-- Coordinate $k$ of $y - y_i e_i$ is $0$ if $k = i$ and $y_k$ otherwise. -/
 theorem coord_zeroCoord (i : Fin T) (k : ℕ) (y : EuclideanSpace ℝ (Fin T)) :
     coord T k (zeroCoord i y) = if k = i then 0 else coord T k y := by
   simp only [zeroCoord, sub_apply, ContinuousLinearMap.id_apply,
@@ -680,8 +810,9 @@ theorem coord_zeroCoord (i : Fin T) (k : ℕ) (y : EuclideanSpace ℝ (Fin T)) :
   · subst h; simp
   · simp
 
-/-- Near a point whose coordinates `i - 1` and `i` are small, `chain T` does not depend on the
-coordinate `i ≥ 1`. -/
+/-- Let $1 \le i < T$ and let $y \in \mathbb{R}^T$ with $|y_{i-1}| \le 1/2$ and $|y_i| \le 1/2$.
+Then setting coordinate $i$ to zero does not change the chain: $\mathrm{chain}_T(y - y_i e_i) =
+\mathrm{chain}_T(y)$. -/
 theorem chain_comp_zeroCoord {i : Fin T} (hi : 1 ≤ (i : ℕ)) {y : EuclideanSpace ℝ (Fin T)}
     (h1 : |coord T (i - 1) y| ≤ 1 / 2) (h2 : |coord T i y| ≤ 1 / 2) :
     chain T (zeroCoord i y) = chain T y := by
@@ -698,8 +829,10 @@ theorem chain_comp_zeroCoord {i : Fin T} (hi : 1 ≤ (i : ℕ)) {y : EuclideanSp
       pair_eq_zero (by rw [hl2]; exact h2)]
   · rw [ite_eq_right hl2, ite_eq_right hl1]
 
-/-- **Lemma 4.2.5 (i) of [cartis2022evaluation]**: `chain T` is a `p`-th order zero chain for
-every `p`. -/
+/-- **Lemma 4.2.5(i)** of [cartis2022evaluation]. For every $T$ and every $p$, $\mathrm{chain}_T$ is
+a $p$-th order zero chain in the sense of `Optimization.IsZeroChain`: if $x_i = 0$ for all
+$i \ge j$, then for every order $q \in \{1, \dots, p\}$ the unit vectors $e_i$ with $i > j$ are
+null directions of $\nabla^q \mathrm{chain}_T(x)$. -/
 theorem isZeroChain_chain (p : ℕ) : IsZeroChain (chain T) p := by
   intro x j hx q _ _ i hji
   have hi1 : 1 ≤ (i : ℕ) := by omega
@@ -724,14 +857,19 @@ theorem isZeroChain_chain (p : ℕ) : IsZeroChain (chain T) p := by
 
 /-! ### Lemma 4.2.5 (ii): large gradient -/
 
-/-- The directional derivative of a link `pair` along `(u, w)`. -/
+/-- The derivative of a link of the chain at $(a, b)$ in the direction $(u, w)$:
+$$-u \Psi'(-a) \Phi(-b) - w \Psi(-a) \Phi'(-b) - u \Psi'(a) \Phi(b) - w \Psi(a) \Phi'(b).$$
+-/
 noncomputable def dpair (a b u w : ℝ) : ℝ :=
   -(u * deriv psi (-a) * phi (-b)) - w * psi (-a) * deriv phi (-b) -
     u * deriv psi a * phi b - w * psi a * deriv phi b
 
+/-- $\Psi$ has the derivative $\Psi'(y)$ at every $y$. -/
 theorem hasDerivAt_psi (y : ℝ) : HasDerivAt psi (deriv psi y) y :=
   ((contDiff_psi (n := 1)).differentiable one_ne_zero y).hasDerivAt
 
+/-- The map $t \mapsto \mathrm{pair}(a + tu, b + tw)$ has the derivative
+`Optimization.CarmonChain.dpair a b u w` at $t = 0$. -/
 theorem hasDerivAt_pair_line (a b u w : ℝ) :
     HasDerivAt (fun t : ℝ => pair (a + t * u, b + t * w)) (dpair a b u w) 0 := by
   have hl : ∀ c v : ℝ, HasDerivAt (fun t : ℝ => c + t * v) v 0 := fun c v => by
@@ -748,6 +886,8 @@ theorem hasDerivAt_pair_line (a b u w : ℝ) :
   · simp only [dpair, deriv_phi, Function.comp_apply, zero_mul, add_zero]
     ring_nf
 
+/-- For $u \ge 0$ and $w \ge 0$, the derivative of a link at $(a, b)$ in the direction $(u, w)$ is
+at most $0$. -/
 theorem dpair_nonpos (a b : ℝ) {u w : ℝ} (hu : 0 ≤ u) (hw : 0 ≤ w) : dpair a b u w ≤ 0 := by
   have := deriv_psi_nonneg a; have := deriv_psi_nonneg (-a)
   have := deriv_phi_pos b; have := deriv_phi_pos (-b)
@@ -759,7 +899,10 @@ theorem dpair_nonpos (a b : ℝ) {u w : ℝ} (hu : 0 ≤ u) (hw : 0 ≤ w) : dpa
   have h4 : 0 ≤ w * psi a * deriv phi b := by positivity
   linarith
 
-/-- The directional derivative of `chain T` along `v`. -/
+/-- The derivative of $\mathrm{chain}_T$ at $x$ in the direction $v$: the map
+$t \mapsto \mathrm{chain}_T(x + tv)$ has, at $t = 0$, the derivative
+$$-v_0 \Phi'(x_0) + \sum_{l=1}^{T-1} \mathrm{dpair}(x_{l-1}, x_l, v_{l-1}, v_l),$$
+where $\mathrm{dpair}$ is `Optimization.CarmonChain.dpair`. -/
 theorem hasDerivAt_chain_line (x v : EuclideanSpace ℝ (Fin T)) :
     HasDerivAt (fun t : ℝ => chain T (x + t • v))
       (-(coord T 0 v * deriv phi (coord T 0 x)) + ∑ l ∈ Finset.Ico 1 T,
@@ -780,6 +923,8 @@ theorem hasDerivAt_chain_line (x v : EuclideanSpace ℝ (Fin T)) :
       Prod.mk_add_mk, Pi.add_apply, Pi.neg_apply]
   · ring
 
+/-- $\nabla \mathrm{chain}_T(x) v = -v_0 \Phi'(x_0) + \sum_{l=1}^{T-1} \mathrm{dpair}(x_{l-1}, x_l,
+v_{l-1}, v_l)$. -/
 theorem fderiv_chain_apply (x v : EuclideanSpace ℝ (Fin T)) :
     fderiv ℝ (chain T) x v = -(coord T 0 v * deriv phi (coord T 0 x)) + ∑ l ∈ Finset.Ico 1 T,
       dpair (coord T (l - 1) x) (coord T l x) (coord T (l - 1) v) (coord T l v) := by
@@ -792,10 +937,14 @@ theorem fderiv_chain_apply (x v : EuclideanSpace ℝ (Fin T)) :
   have h1 := hd'.comp_hasDerivAt (0 : ℝ) hline
   exact h1.unique (hasDerivAt_chain_line x v)
 
-/-- **Lemma 4.2.5 (ii) of [cartis2022evaluation]** (Carmon–Duchi–Hinder–Sidford, Lemma 2): if
-`|x_i| < 1` for some
-coordinate `i`, then there is `j ≤ i` with `|x_j| < 1` and `|∂_j chain T(x)| > 1`; in particular
-`‖∇ chain T(x)‖ > 1`. -/
+/-- **Lemma 4.2.5(ii)** of [cartis2022evaluation], which is Lemma 2 of Carmon, Duchi, Hinder and
+Sidford. Let $x \in \mathbb{R}^T$ and let $i \in \{0, \dots, T - 1\}$ with $|x_i| < 1$. Then
+there is $j \le i$ with $|x_j| < 1$ and
+$$\big| \partial_j \mathrm{chain}_T(x) \big| > 1, \quad\text{hence}\quad \|\nabla
+  \mathrm{chain}_T(x)\| > 1.$$
+
+The partial derivative $\partial_j$ is the derivative applied to the unit vector
+`EuclideanSpace.single j 1`. -/
 theorem exists_abs_partial_chain_gt_one {x : EuclideanSpace ℝ (Fin T)} {i : Fin T}
     (hi : |x i| < 1) : ∃ j : Fin T, j ≤ i ∧ |x j| < 1 ∧
       1 < |fderiv ℝ (chain T) x (EuclideanSpace.single j 1)| ∧ 1 < ‖fderiv ℝ (chain T) x‖ := by
@@ -861,6 +1010,7 @@ theorem exists_abs_partial_chain_gt_one {x : EuclideanSpace ℝ (Fin T)} {i : Fi
 
 /-! ### Lemma 4.2.5 (iii): the range of values -/
 
+/-- $e \cdot e^{1/2} \sqrt{2\pi} \le 12$. -/
 theorem exp_one_mul_phi_bound_le : exp 1 * (exp (1 / 2) * √(2 * π)) ≤ 12 := by
   have h3 : exp 1 ^ 3 < 2.7182818286 ^ 3 := by
     gcongr; exact Real.exp_one_lt_d9
@@ -875,10 +1025,12 @@ theorem exp_one_mul_phi_bound_le : exp 1 * (exp (1 / 2) * √(2 * π)) ≤ 12 :=
     rw [hsq]; nlinarith [Real.pi_pos]
   nlinarith
 
+/-- $e^{1/2} \sqrt{2\pi} \le 12$. -/
 theorem phi_bound_le : exp (1 / 2) * √(2 * π) ≤ 12 := by
   refine le_trans ?_ exp_one_mul_phi_bound_le
   exact le_mul_of_one_le_left (by positivity) (Real.one_le_exp zero_le_one)
 
+/-- $\mathrm{pair}(z) \ge -12$ for every $z$. -/
 theorem pair_ge (z : ℝ × ℝ) : -12 ≤ pair z := by
   have h1 : 0 ≤ psi (-z.1) * phi (-z.2) := mul_nonneg (psi_nonneg _) (phi_nonneg _)
   have h2 : psi z.1 * phi z.2 ≤ exp 1 * (exp (1 / 2) * √(2 * π)) :=
@@ -886,10 +1038,11 @@ theorem pair_ge (z : ℝ × ℝ) : -12 ≤ pair z := by
   have := exp_one_mul_phi_bound_le
   unfold pair; linarith
 
+/-- $\mathrm{chain}_T(0) = -\Phi(0)$. -/
 theorem chain_zero : chain T 0 = -phi 0 := by
   rw [chain_eq, map_zero, Finset.sum_eq_zero fun l _ => pair_eq_zero (by simp), add_zero]
 
-/-- `chain T 0 - 12 T ≤ chain T x` for all `x`. -/
+/-- $\mathrm{chain}_T(0) - 12T \le \mathrm{chain}_T(x)$ for every $x \in \mathbb{R}^T$. -/
 theorem chain_zero_sub_le (x : EuclideanSpace ℝ (Fin T)) : chain T 0 - 12 * T ≤ chain T x := by
   rw [chain_zero, chain_eq]
   have hs : -12 * ((Finset.Ico 1 T).card : ℝ) ≤ ∑ l ∈ Finset.Ico 1 T, pair (pairMap T l x) := by
@@ -906,9 +1059,10 @@ theorem chain_zero_sub_le (x : EuclideanSpace ℝ (Fin T)) : chain T 0 - 12 * T 
     rw [hcast] at hs
     linarith
 
-/-- **Lemma 4.2.5 (iii) of [cartis2022evaluation]** (Carmon–Duchi–Hinder–Sidford, Lemma 3 (i)):
-`chain T` is bounded
-below and `chain T 0 - inf chain T ≤ 12 T`. -/
+/-- **Lemma 4.2.5(iii)** of [cartis2022evaluation], which is Lemma 3(i) of Carmon, Duchi, Hinder and
+Sidford. For every $T$, $\mathrm{chain}_T$ is bounded below on $\mathbb{R}^T$ and
+$$\mathrm{chain}_T(0) - \inf_x \mathrm{chain}_T(x) \le 12T.$$
+-/
 theorem chain_zero_sub_iInf_le :
     BddBelow (range (chain T)) ∧ chain T 0 - ⨅ x, chain T x ≤ 12 * T := by
   refine ⟨⟨chain T 0 - 12 * T, by rintro _ ⟨x, rfl⟩; exact chain_zero_sub_le x⟩, ?_⟩
@@ -921,13 +1075,19 @@ section LowerBound
 
 variable {p : ℕ} {c μ : ℝ}
 
-/-- The scaled chain `x ↦ c chain T(μ⁻¹ x)`. -/
+/-- The scaled chain $x \mapsto c \, \mathrm{chain}_T(\mu^{-1} x)$. -/
 noncomputable def scaledChain (T : ℕ) (c μ : ℝ) (x : EuclideanSpace ℝ (Fin T)) : ℝ :=
   c * chain T (μ⁻¹ • x)
 
+/-- The scaled chain is $C^n$ for every $n \in \mathbb{N} \cup \{\infty\}$. -/
 theorem contDiff_scaledChain {n : ℕ∞} : ContDiff ℝ n (scaledChain T c μ) :=
   contDiff_const.mul (contDiff_chain.comp (contDiff_const_smul _))
 
+/-- For $c \ge 0$, $\mu > 0$, every $q$ and every $x$, the $q$-th derivative of the scaled chain
+$x \mapsto c \, \mathrm{chain}_T(\mu^{-1} x)$ satisfies
+$$\|\nabla^q (c \, \mathrm{chain}_T(\mu^{-1} \cdot))(x)\| \le c \mu^{-q} \|\nabla^q
+  \mathrm{chain}_T(\mu^{-1} x)\|.$$
+-/
 theorem norm_iteratedFDeriv_scaledChain_le (hc : 0 ≤ c) (hμ : 0 < μ) (q : ℕ)
     (x : EuclideanSpace ℝ (Fin T)) : ‖iteratedFDeriv ℝ q (scaledChain T c μ) x‖ ≤
       c * μ⁻¹ ^ q * ‖iteratedFDeriv ℝ q (chain T) (μ⁻¹ • x)‖ := by
@@ -949,6 +1109,8 @@ theorem norm_iteratedFDeriv_scaledChain_le (hc : 0 ≤ c) (hμ : 0 < μ) (q : �
   calc ∏ _ : Fin q, ‖S‖ ≤ ∏ _ : Fin q, μ⁻¹ := by gcongr
     _ = μ⁻¹ ^ q := by simp
 
+/-- For $c \ge 0$ and $\mu > 0$, the gradient of the scaled chain satisfies $\|\nabla (c \,
+\mathrm{chain}_T(\mu^{-1} \cdot))(x)\| = c \mu^{-1} \|\nabla \mathrm{chain}_T(\mu^{-1} x)\|$. -/
 theorem norm_fderiv_scaledChain (hc : 0 ≤ c) (hμ : 0 < μ) (x : EuclideanSpace ℝ (Fin T)) :
     ‖fderiv ℝ (scaledChain T c μ) x‖ = c * μ⁻¹ * ‖fderiv ℝ (chain T) (μ⁻¹ • x)‖ := by
   have hd : HasFDerivAt (chain T) (fderiv ℝ (chain T) (μ⁻¹ • x)) (μ⁻¹ • x) :=
@@ -962,14 +1124,26 @@ theorem norm_fderiv_scaledChain (hc : 0 ≤ c) (hμ : 0 < μ) (x : EuclideanSpac
     ext v; simp [mul_assoc]
   rw [this, norm_smul, Real.norm_of_nonneg (by positivity)]
 
-/-- **Theorem 4.2.6 of [cartis2022evaluation]** (lower bound, backbone form). For `p ≥ 1`,
-`Δ, L, ε > 0` and `k̄ = ⌊Δ / 12 (L / L^D_p)^{1/p} ε^{-(p+1)/p}⌋` with `L^D_p = lipschitzConst p`,
-`#_ε(𝓜_ZR(p), 𝓕(Δ, p)) ≥ k̄` and `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ k̄`. The hard function is
-`x ↦ μ^{p+1} (L / L^D_p) chain k̄ (x / μ)` with `μ = (L^D_p ε / L)^{1/p}` ((4.2.8)); for `𝓜(p)` its
-rotated copies on `ℝ^{2 k̄}` are used. The second bound holds for every class of methods `𝓜`
-(in particular `𝓜(p)`, see `le_classComplexity_smoothClass_methodClass`). Both classes are
-nonempty (`zeroRespectingClass_nonempty`, `methodClass_nonempty`), so the bounds are not
-vacuous. -/
+/-- **Theorem 4.2.6** of [cartis2022evaluation], lower bound, in a form that holds for every class
+of methods. Let $p \ge 1$ and $\Delta, L, \epsilon > 0$, let $L^D_p$ be
+`Optimization.CarmonChain.lipschitzConst p`, and let
+$$\bar{k} = \left\lfloor \frac{\Delta}{12} \Big( \frac{L}{L^D_p} \Big)^{1/p} \epsilon^{-(p+1)/p}
+  \right\rfloor.$$
+Then for every set $\mathcal{M}$ of $p$-th order methods,
+$$\#_\epsilon(\mathcal{M}_{\mathrm{ZR}}(p), \mathcal{F}(\Delta, p)) \ge \bar{k}
+  \quad\text{and}\quad \#_\epsilon(\mathcal{M}, \mathcal{F}(\Delta, p)) \ge \bar{k},$$
+where $\mathcal{F}(\Delta, p)$ is the class `Optimization.smoothClass Δ L p` of the infinitely
+differentiable functions $f \colon \mathbb{R}^n \to \mathbb{R}$, of any dimension $n$, that are
+bounded below, satisfy $f(0) - \inf f \le \Delta$ and have an $L$-Lipschitz $p$-th derivative,
+$\mathcal{M}_{\mathrm{ZR}}(p)$ is the class `Optimization.zeroRespectingClass p` of
+zero-respecting methods, and $\#_\epsilon$ is the complexity `Optimization.classComplexity`.
+
+The hard function is $x \mapsto \mu^{p+1} (L / L^D_p) \, \mathrm{chain}_{\bar{k}}(x / \mu)$ with
+$\mu = (L^D_p \epsilon / L)^{1/p}$, as in (4.2.8). For the second bound, rotated copies of it on
+$\mathbb{R}^{2\bar{k}}$ are used. The second bound applies in particular to $\mathcal{M}(p)$
+(`Optimization.CarmonChain.le_classComplexity_smoothClass_methodClass`). Both classes are
+nonempty (`Optimization.zeroRespectingClass_nonempty` and `Optimization.methodClass_nonempty`),
+so the bounds are not vacuous. The floor is `Nat.floor`, and the complexities are in `ℕ∞`. -/
 theorem le_classComplexity_smoothClass (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 < Δ) (hL : 0 < L)
     (hε : 0 < ε) (𝓜 : Set (JetMethod p)) :
     ((⌊Δ / 12 * (L / lipschitzConst p) ^ (1 / p : ℝ) * ε ^ (-((p + 1 : ℝ) / p))⌋₊ : ℕ) : ℕ∞) ≤
@@ -1056,9 +1230,16 @@ theorem le_classComplexity_smoothClass (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 <
     ((contDiff_scaledChain (n := 1)).differentiable one_ne_zero) h1
     fun U => comp_adjoint_mem_smoothClass hL.le hmem U⟩
 
-/-- **Theorem 4.2.6 of [cartis2022evaluation]** for the book's classes:
-`#_ε(𝓜_ZR(p), 𝓕(Δ, p)) ≥ k̄` and `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ k̄`
-(`le_classComplexity_smoothClass` with `𝓜 = 𝓜(p)`). -/
+/-- **Theorem 4.2.6** of [cartis2022evaluation]. Let $p \ge 1$ and $\Delta, L, \epsilon > 0$, let
+$L^D_p$ be `Optimization.CarmonChain.lipschitzConst p`, and let
+$$\bar{k} = \left\lfloor \frac{\Delta}{12} \Big( \frac{L}{L^D_p} \Big)^{1/p} \epsilon^{-(p+1)/p}
+  \right\rfloor.$$
+Then
+$$\#_\epsilon(\mathcal{M}_{\mathrm{ZR}}(p), \mathcal{F}(\Delta, p)) \ge \bar{k}
+  \quad\text{and}\quad \#_\epsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge \bar{k}.$$
+
+This is `Optimization.CarmonChain.le_classComplexity_smoothClass` for the class $\mathcal{M}(p)$
+of `Optimization.methodClass p`. -/
 theorem le_classComplexity_smoothClass_methodClass (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 < Δ)
     (hL : 0 < L) (hε : 0 < ε) :
     ((⌊Δ / 12 * (L / lipschitzConst p) ^ (1 / p : ℝ) * ε ^ (-((p + 1 : ℝ) / p))⌋₊ : ℕ) : ℕ∞) ≤
@@ -1069,22 +1250,26 @@ theorem le_classComplexity_smoothClass_methodClass (hp : 1 ≤ p) {Δ L ε : ℝ
 
 end LowerBound
 
-/-! ### Explicit growth of `lipschitzConst p` -/
+/-! ### Explicit growth of the constant $L^D_p$ -/
 
-/-- The sum `∑ₘ |aₘ|` of the absolute values of the coefficients of a real polynomial. -/
+/-- The sum $\sum_m |a_m|$ of the absolute values of the coefficients $a_m$ of a real polynomial. -/
 noncomputable def coeffAbsSum (P : ℝ[X]) : ℝ :=
   ∑ m ∈ Finset.range (P.natDegree + 1), |P.coeff m|
 
-/-- `coeffAbsSum P` may be computed over any range containing the support. -/
+/-- If $\deg P < N$, the sum of the absolute values of the coefficients of $P$ can be taken over
+$m < N$. -/
 theorem coeffAbsSum_eq_sum_range {P : ℝ[X]} {N : ℕ} (h : P.natDegree < N) :
     coeffAbsSum P = ∑ m ∈ Finset.range N, |P.coeff m| := by
   refine Finset.sum_subset (Finset.range_subset_range.2 (by omega)) fun m _ hm => ?_
   rw [Finset.mem_range, not_lt] at hm
   rw [coeff_eq_zero_of_natDegree_lt (by omega), abs_zero]
 
+/-- The sum of the absolute values of the coefficients is nonnegative. -/
 theorem coeffAbsSum_nonneg (P : ℝ[X]) : 0 ≤ coeffAbsSum P :=
   Finset.sum_nonneg fun _ _ => abs_nonneg _
 
+/-- The sum of the absolute values of the coefficients is subadditive: for $P + Q$ it is at most
+that of $P$ plus that of $Q$. -/
 theorem coeffAbsSum_add_le (P Q : ℝ[X]) :
     coeffAbsSum (P + Q) ≤ coeffAbsSum P + coeffAbsSum Q := by
   have hP : P.natDegree < max P.natDegree Q.natDegree + 1 := by omega
@@ -1095,15 +1280,19 @@ theorem coeffAbsSum_add_le (P Q : ℝ[X]) :
     ← Finset.sum_add_distrib]
   exact Finset.sum_le_sum fun m _ => by rw [coeff_add]; exact abs_add_le _ _
 
+/-- $P$ and $-P$ have the same sum of the absolute values of the coefficients. -/
 theorem coeffAbsSum_neg (P : ℝ[X]) : coeffAbsSum (-P) = coeffAbsSum P := by
   simp [coeffAbsSum, natDegree_neg]
 
+/-- For $P - Q$, the sum of the absolute values of the coefficients is at most that of $P$ plus that
+of $Q$. -/
 theorem coeffAbsSum_sub_le (P Q : ℝ[X]) :
     coeffAbsSum (P - Q) ≤ coeffAbsSum P + coeffAbsSum Q := by
   rw [sub_eq_add_neg, ← coeffAbsSum_neg Q]
   exact coeffAbsSum_add_le _ _
 
-/-- Multiplying by `X^k` shifts the coefficients. -/
+/-- Multiplication by $X^k$ shifts the coefficients, so it does not change the sum of their absolute
+values. -/
 theorem coeffAbsSum_X_pow_mul (k : ℕ) (P : ℝ[X]) :
     coeffAbsSum (X ^ k * P) = coeffAbsSum P := by
   have h : (X ^ k * P).natDegree < k + (P.natDegree + 1) :=
@@ -1117,7 +1306,9 @@ theorem coeffAbsSum_X_pow_mul (k : ℕ) (P : ℝ[X]) :
   refine Finset.sum_congr rfl fun m _ => ?_
   simp [coeff_X_pow_mul']
 
-/-- `∑ |coeff P'| ≤ deg P · ∑ |coeff P|`. -/
+/-- For the derivative of a real polynomial $P$, $\sum_m |a_m(P')| \le \deg P \cdot \sum_m
+|a_m(P)|$.
+-/
 theorem coeffAbsSum_derivative_le (P : ℝ[X]) :
     coeffAbsSum (derivative P) ≤ P.natDegree * coeffAbsSum P := by
   have h : (derivative P).natDegree < P.natDegree + 1 :=
@@ -1137,7 +1328,7 @@ theorem coeffAbsSum_derivative_le (P : ℝ[X]) :
   exact (Finset.sum_le_sum hle).trans
     (le_add_of_nonneg_right (mul_nonneg (Nat.cast_nonneg _) (abs_nonneg _)))
 
-/-- `|P(y)| ≤ (∑ₘ |aₘ|) (1 + |y|^d)` when `deg P ≤ d`. -/
+/-- If $\deg P \le d$, then $|P(y)| \le \big( \sum_m |a_m(P)| \big) (1 + |y|^d)$ for every $y$. -/
 theorem abs_eval_le_coeffAbsSum {P : ℝ[X]} {d : ℕ} (hd : P.natDegree ≤ d) (y : ℝ) :
     |P.eval y| ≤ coeffAbsSum P * (1 + |y| ^ d) := by
   rw [eval_eq_sum_range, coeffAbsSum, Finset.sum_mul]
@@ -1151,11 +1342,12 @@ theorem abs_eval_le_coeffAbsSum {P : ℝ[X]} {d : ℕ} (hd : P.natDegree ≤ d) 
   · have := pow_le_pow_right₀ h.le (show m ≤ d by simp at hm; omega)
     linarith
 
+/-- $2X^3 P - X^2 P' = X^3 P + X^3 P - X^2 P'$. -/
 theorem flatDerivPoly_eq (P : ℝ[X]) :
     flatDerivPoly P = X ^ 3 * P + X ^ 3 * P - X ^ 2 * derivative P := by
   rw [flatDerivPoly]; ring
 
-/-- `deg P_j ≤ 3j` for the polynomials of the derivatives of `flat`. -/
+/-- The polynomials of the derivatives of the flat function satisfy $\deg P_j \le 3j$. -/
 theorem natDegree_flatPoly_le (j : ℕ) : (flatPoly j).natDegree ≤ 3 * j := by
   induction j with
   | zero => simp [flatPoly]
@@ -1170,7 +1362,8 @@ theorem natDegree_flatPoly_le (j : ℕ) : (flatPoly j).natDegree ≤ 3 * j := by
       natDegree_mul_le.trans (by omega)
     exact (natDegree_sub_le _ _).trans (max_le ((natDegree_add_le _ _).trans (max_le h1 h1)) h2)
 
-/-- `∑ |coeff P_j| ≤ 3^j j!`, from `P_{j+1} = 2X³P_j - X²P_j'`. -/
+/-- The polynomials of the derivatives of the flat function satisfy $\sum_m |a_m(P_j)| \le 3^j j!$.
+The proof uses $P_{j+1} = 2X^3 P_j - X^2 P_j'$. -/
 theorem coeffAbsSum_flatPoly_le (j : ℕ) : coeffAbsSum (flatPoly j) ≤ 3 ^ j * j.factorial := by
   induction j with
   | zero => simp [flatPoly, coeffAbsSum]
@@ -1192,7 +1385,7 @@ by
       _ = 3 ^ (j + 1) * (j + 1).factorial := by
           rw [Nat.factorial_succ]; push_cast; ring
 
-/-- `deg H_k ≤ k` for the polynomials of the derivatives of the Gaussian. -/
+/-- The polynomials of the derivatives of the Gaussian satisfy $\deg H_k \le k$. -/
 theorem natDegree_gaussPoly_le (k : ℕ) : (gaussPoly k).natDegree ≤ k := by
   induction k with
   | zero => simp [gaussPoly]
@@ -1203,7 +1396,8 @@ theorem natDegree_gaussPoly_le (k : ℕ) : (gaussPoly k).natDegree ≤ k := by
       natDegree_mul_le.trans (by have := natDegree_X_le (R := ℝ); omega)
     exact (natDegree_sub_le _ _).trans (max_le (by omega) h1)
 
-/-- `∑ |coeff H_k| ≤ k!`, from `H_{k+1} = H_k' - X H_k`. -/
+/-- The polynomials of the derivatives of the Gaussian satisfy $\sum_m |a_m(H_k)| \le k!$. The proof
+uses $H_{k+1} = H_k' - X H_k$. -/
 theorem coeffAbsSum_gaussPoly_le (k : ℕ) : coeffAbsSum (gaussPoly k) ≤ k.factorial := by
   induction k with
   | zero => simp [gaussPoly, coeffAbsSum]
@@ -1220,7 +1414,7 @@ theorem coeffAbsSum_gaussPoly_le (k : ℕ) : coeffAbsSum (gaussPoly k) ≤ k.fac
       _ ≤ (k + 1) * k.factorial := by gcongr
       _ = (k + 1).factorial := by rw [Nat.factorial_succ]; push_cast; ring
 
-/-- `x^k e^{-x} ≤ k!` for `x ≥ 0`. -/
+/-- $x^k e^{-x} \le k!$ for every $x \ge 0$ and every $k$. -/
 theorem pow_mul_exp_neg_le_factorial {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
     x ^ k * exp (-x) ≤ k.factorial := by
   have := Real.pow_div_factorial_le_exp x hx k
@@ -1228,7 +1422,7 @@ theorem pow_mul_exp_neg_le_factorial {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
   rw [exp_neg, ← div_eq_mul_inv, div_le_iff₀ (exp_pos _)]
   linarith [mul_comm (exp x) (k.factorial : ℝ)]
 
-/-- `t^{3j} e^{-t²} ≤ √((3j)!)`. -/
+/-- $|t|^{3j} e^{-t^2} \le \sqrt{(3j)!}$ for every $t$ and every $j$. -/
 theorem abs_pow_mul_exp_neg_sq_le (t : ℝ) (j : ℕ) :
     |t| ^ (3 * j) * exp (-t ^ 2) ≤ √((3 * j).factorial) := by
   rw [Real.le_sqrt (by positivity) (by positivity)]
@@ -1242,7 +1436,7 @@ theorem abs_pow_mul_exp_neg_sq_le (t : ℝ) (j : ℕ) :
         gcongr; nlinarith [sq_nonneg t]
     _ ≤ _ := h
 
-/-- `|y|^k e^{-y²/2} ≤ √(k!)`. -/
+/-- $|y|^k e^{-y^2/2} \le \sqrt{k!}$ for every $y$ and every $k$. -/
 theorem abs_pow_mul_gauss_le (y : ℝ) (k : ℕ) :
     |y| ^ k * exp (-y ^ 2 / 2) ≤ √(k.factorial) := by
   rw [Real.le_sqrt (by positivity) (by positivity)]
@@ -1254,7 +1448,7 @@ theorem abs_pow_mul_gauss_le (y : ℝ) (k : ℕ) :
         · push_cast; ring_nf
     _ ≤ _ := h
 
-/-- `a! (1 + √(b!)) ≤ 2 √((a!)² b!)`. -/
+/-- For all natural numbers $a$ and $b$, $a! \, (1 + \sqrt{b!}) \le 2 \sqrt{(a!)^2 \, b!}$. -/
 theorem factorial_mul_one_add_sqrt_le (a b : ℕ) :
     (a.factorial : ℝ) * (1 + √(b.factorial)) ≤ 2 * √((a.factorial ^ 2 * b.factorial : ℕ)) := by
   have hb : (1 : ℝ) ≤ √(b.factorial) :=
@@ -1266,15 +1460,17 @@ theorem factorial_mul_one_add_sqrt_le (a b : ℕ) :
   rw [this]
   nlinarith
 
-/-- The growth scale `√(q^{5q})`. -/
+/-- The growth scale $\sqrt{q^{5q}}$. -/
 noncomputable def growthScale (q : ℕ) : ℝ := √((q : ℝ) ^ (5 * q))
 
+/-- The growth scale is at least $1$. -/
 theorem one_le_growthScale (q : ℕ) : 1 ≤ growthScale q := by
   refine Real.one_le_sqrt.2 ?_
   rcases Nat.eq_zero_or_pos q with rfl | hq
   · simp
   · exact one_le_pow₀ (by exact_mod_cast hq)
 
+/-- For $i \le q$, $\sqrt{i^{5i}} \sqrt{(q - i)^{5(q - i)}} \le \sqrt{q^{5q}}$. -/
 theorem growthScale_mul_le {i q : ℕ} (hi : i ≤ q) :
     growthScale i * growthScale (q - i) ≤ growthScale q := by
   rw [growthScale, growthScale, growthScale, ← Real.sqrt_mul (by positivity)]
@@ -1285,10 +1481,12 @@ theorem growthScale_mul_le {i q : ℕ} (hi : i ≤ q) :
         exact_mod_cast Nat.sub_le q i
     _ = (q : ℝ) ^ (5 * q) := by rw [← pow_add]; congr 1; omega
 
+/-- The square of the growth scale is $q^{5q}$. -/
 theorem growthScale_sq (q : ℕ) : growthScale q ^ 2 = (q : ℝ) ^ (5 * q) :=
   Real.sq_sqrt (by positivity)
 
-/-- `|Ψ^{(j)}(y)| ≤ e 6^j j! (1 + √((3j)!))`. -/
+/-- $\big| \Psi^{(j)}(y) \big| \le e \, 6^j \, j! \, \big( 1 + \sqrt{(3j)!} \big)$ for every $y$ and
+every $j$, with $\Psi^{(j)}$ written as `Optimization.CarmonChain.psiDeriv j`. -/
 theorem abs_psiDeriv_le (j : ℕ) (y : ℝ) :
     |psiDeriv j y| ≤ exp 1 * 6 ^ j * (j.factorial * (1 + √((3 * j).factorial))) := by
   rw [psiDeriv, abs_mul, abs_of_pos (by positivity), show (6 : ℝ) ^ j = 2 ^ j * 3 ^ j by
@@ -1316,7 +1514,7 @@ theorem abs_psiDeriv_le (j : ℕ) (y : ℝ) :
         gcongr
     _ = _ := by ring
 
-/-- `sup |Ψ^{(j)}| ≤ 6 · 36^j √(j^{5j})`. -/
+/-- $\sup |\Psi^{(j)}| \le 6 \cdot 36^j \sqrt{j^{5j}}$. -/
 theorem psiBound_le (j : ℕ) : psiBound j ≤ 6 * 36 ^ j * growthScale j := by
   have hnat : j.factorial ^ 2 * (3 * j).factorial ≤ 36 ^ j * j ^ (5 * j) :=
     calc j.factorial ^ 2 * (3 * j).factorial ≤ (j ^ j) ^ 2 * (3 * j) ^ (3 * j) :=
@@ -1344,7 +1542,8 @@ theorem psiBound_le (j : ℕ) : psiBound j ≤ 6 * 36 ^ j * growthScale j := by
     _ = 6 * 36 ^ j * growthScale j := by
         rw [show (36 : ℝ) ^ j = 6 ^ j * 6 ^ j by rw [← mul_pow]; norm_num]; ring
 
-/-- `sup |Φ^{(k)}| ≤ 12 √(k^{5k})` (a crude bound, enough for the growth estimate). -/
+/-- $\sup |\Phi^{(k)}| \le 12 \sqrt{k^{5k}}$. This is a crude bound, enough for the growth estimate.
+-/
 theorem phiBound_le (k : ℕ) : phiBound k ≤ 12 * growthScale k := by
   rcases k with _ | k
   · refine ciSup_le fun y => ?_
@@ -1379,7 +1578,7 @@ theorem phiBound_le (k : ℕ) : phiBound k ≤ 12 * growthScale k := by
         mul_le_mul_of_nonneg_left (h6.trans (by linarith)) (by norm_num)
     _ ≤ 12 * growthScale (k + 1) := by nlinarith [one_le_growthScale (k + 1)]
 
-/-- `pairBound q ≤ 144 · 72^q √(q^{5q})`. -/
+/-- $\mathrm{pairBound}(q) \le 144 \cdot 72^q \sqrt{q^{5q}}$. -/
 theorem pairBound_le (q : ℕ) : pairBound q ≤ 144 * 72 ^ q * growthScale q := by
   have hW := one_le_growthScale q
   have hterm : ∀ i ∈ Finset.range (q + 1), (q.choose i : ℝ) * psiBound i * phiBound (q - i) ≤
@@ -1410,7 +1609,7 @@ theorem pairBound_le (q : ℕ) : pairBound q ≤ 144 * 72 ^ q * growthScale q :=
           rw [← mul_pow]; norm_num]
         ring
 
-/-- `lipschitzConst p ≤ 301 · 72^{p+1} √((p+1)^{5(p+1)})`. -/
+/-- $L^D_p \le 301 \cdot 72^{p+1} \sqrt{(p + 1)^{5(p+1)}}$. -/
 theorem lipschitzConst_le_growthScale (p : ℕ) :
     lipschitzConst p ≤ 301 * 72 ^ (p + 1) * growthScale (p + 1) := by
   have h1 := phiBound_le (p + 1)
@@ -1420,7 +1619,9 @@ theorem lipschitzConst_le_growthScale (p : ℕ) :
   rw [lipschitzConst]
   nlinarith
 
-/-- The arithmetic step `301² 72^{2(p+1)} (p+1)^{5(p+1)} ≤ (301² 72⁴ 32³)^p p^{5p}`. -/
+/-- The arithmetic step: for every natural number $p \ge 1$,
+$$301^2 \cdot 72^{2(p+1)} (p + 1)^{5(p+1)} \le (301^2 \cdot 72^4 \cdot 32^3)^p \, p^{5p}.$$
+-/
 theorem lipschitzConst_nat_aux {p : ℕ} (hp : 1 ≤ p) :
     301 ^ 2 * 72 ^ (2 * (p + 1)) * (p + 1) ^ (5 * (p + 1)) ≤
       (301 ^ 2 * 72 ^ 4 * 32 ^ 3) ^ p * p ^ (5 * p) := by
@@ -1442,7 +1643,8 @@ theorem lipschitzConst_nat_aux {p : ℕ} (hp : 1 ≤ p) :
     _ = (301 ^ 2 * 72 ^ 4 * 32 ^ 3) ^ p * p ^ (5 * p) := by
         rw [mul_pow, mul_pow, ← pow_mul, ← pow_mul, ← pow_mul]; ring
 
-/-- `(lipschitzConst p)² ≤ Q^p p^{5p}` with `Q = 301² 72⁴ 32³ ≤ e^{40}`. -/
+/-- For $p \ge 1$, $(L^D_p)^2 \le Q^p p^{5p}$ with $Q = 301^2 \cdot 72^4 \cdot 32^3$. Note that
+$Q \le e^{40}$. -/
 theorem lipschitzConst_sq_le {p : ℕ} (hp : 1 ≤ p) :
     lipschitzConst p ^ 2 ≤ ((301 ^ 2 * 72 ^ 4 * 32 ^ 3 : ℕ) : ℝ) ^ p * (p : ℝ) ^ (5 * p) := by
   have h := lipschitzConst_le_growthScale p
@@ -1454,8 +1656,10 @@ theorem lipschitzConst_sq_le {p : ℕ} (hp : 1 ≤ p) :
         exact_mod_cast lipschitzConst_nat_aux hp
     _ = _ := by push_cast; ring
 
-/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**, explicit growth with `c₁ = 20`
-([Carmon–Duchi–Hinder–Sidford, Lemma 3]): `lipschitzConst p ≤ exp (5/2 p log p + 20 p)`. -/
+/-- **Lemma 4.2.5(iv)** of [cartis2022evaluation], explicit growth with $c_1 = 20$, after Lemma 3 of
+Carmon, Duchi, Hinder and Sidford. For every $p \ge 1$,
+$$L^D_p \le \exp\Big( \frac{5}{2} p \log p + 20 p \Big),$$
+where $L^D_p$ is `Optimization.CarmonChain.lipschitzConst p`. -/
 theorem lipschitzConst_le_exp_twenty {p : ℕ} (hp : 1 ≤ p) :
     lipschitzConst p ≤ exp (5 / 2 * p * log p + 20 * p) := by
   have hp0 : (0 : ℝ) < p := by exact_mod_cast hp
@@ -1473,8 +1677,12 @@ theorem lipschitzConst_le_exp_twenty {p : ℕ} (hp : 1 ≤ p) :
     gcongr
   exact (pow_le_pow_iff_left₀ (lipschitzConst_pos p).le (exp_pos _).le two_ne_zero).1 hsq
 
-/-- **Lemma 4.2.5 (iv) of [cartis2022evaluation]**, explicit growth ([77, Lemma 3 (iii)]): there
-is an absolute constant `c₁ > 0` with `lipschitzConst p ≤ exp (5/2 p log p + c₁ p)` for `p ≥ 1`. -/
+/-- **Lemma 4.2.5(iv)** of [cartis2022evaluation], explicit growth, after Lemma 3(iii) of Carmon,
+Duchi, Hinder and Sidford. There is an absolute constant $c_1 > 0$ such that for every $p \ge 1$
+$$L^D_p \le \exp\Big( \frac{5}{2} p \log p + c_1 p \Big),$$
+where $L^D_p$ is `Optimization.CarmonChain.lipschitzConst p`.
+
+The constant $c_1 = 20$ works (`Optimization.CarmonChain.lipschitzConst_le_exp_twenty`). -/
 theorem lipschitzConst_le_exp :
     ∃ c₁ > 0, ∀ p : ℕ, 1 ≤ p → lipschitzConst p ≤ exp (5 / 2 * p * log p + c₁ * p) :=
   ⟨20, by norm_num, fun _ hp => lipschitzConst_le_exp_twenty hp⟩

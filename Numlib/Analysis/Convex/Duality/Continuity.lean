@@ -8,35 +8,40 @@ import Numlib.Analysis.Convex.Duality.Exact
 /-!
 # The continuity constraint qualification
 
-If one of two proper convex functions is continuous at a point where the other is finite, they add
-exactly: `(f + g)* = f* □ g*`, with the infimal convolution attained.
+Let $E$ be a real topological vector space and $F$ a real vector space, paired by
+$\langle x, y \rangle$ so that the continuous linear functionals on $E$ are exactly the maps
+$x \mapsto \langle x, y \rangle$. If $f$ and $g$ are proper convex functions on $E$ and $f$ is
+continuous at a point where $f$ and $g$ are both finite, then $f$ and $g$ add exactly:
+$(f + g)^* = f^* \mathbin{\square} g^*$, with the infimal convolution attained.
 
-The classical qualification ([rockafellar1970convex] Theorem 16.4) asks instead that `ri (dom f)`
-and `ri (dom g)` meet, which is sharp in finite dimensions but is not available in general, `ri`
-being empty for most infinite-dimensional convex sets. Continuity is the condition that replaces it,
-and the one every application in a Banach space actually verifies — typically because one summand is
-finite and continuous everywhere.
+The classical condition, in Theorem 16.4 of [rockafellar1970convex], asks instead that
+$\operatorname{ri}(\operatorname{dom} f)$ and $\operatorname{ri}(\operatorname{dom} g)$ meet. That
+condition is sharp in finite dimensions, but it is not available in general, because the relative
+interior is empty for most convex sets in infinite dimensions. Continuity replaces it. It is also
+the condition that applications in Banach spaces verify, typically because one summand is finite and
+continuous everywhere.
 
 ## Main results
 
-* `IsExactSum.of_continuousAt` — the qualification, the third constructor of `IsExactSum` alongside
-  `IsExactSum.of_relint` (finite dimensions) and `IsExactSum.of_polyhedral`.
+* `ConvexAnalysis.IsExactSum.of_continuousAt`: the continuity constraint qualification. It is the
+  third sufficient condition for `ConvexAnalysis.IsExactSum`, together with
+  `ConvexAnalysis.IsExactSum.of_relint` (finite dimensions) and
+  `ConvexAnalysis.IsExactSum.of_polyhedral`.
+
+## Proof outline
+
+Let $a = (f + g)^*(y)$ be finite. The inequality to be contradicted is
+$f(x) + g(x) < \langle x, y \rangle - a$, so the two sets to be separated are the strict epigraph of
+$f$ and the hypograph of the concave function $x \mapsto \langle x, y \rangle - a - g(x)$.
+Continuity at $x_0$ makes $f$ bounded above near $x_0$, so the strict epigraph of $f$ has nonempty
+interior. The separating functional is not vertical, and its coefficient on $\mathbb{R}$ is negative
+rather than positive, because the strict epigraph is unbounded above.
 
 ## Implementation notes
 
-The only topological input is `geometric_hahn_banach_open`, which separates a *nonempty open*
-convex set from a disjoint convex set in any real topological vector space; local convexity, which
-is what separating two closed sets needs, is not required. Continuity at `x₀` is what supplies the
-open set: it makes `f` bounded above near `x₀`, so the strict epigraph of `f` has interior.
-
-With `a = (f + g)* y` finite, the hypothesis to be contradicted is `f x + g x < ⟨x, y⟩ - a`, so the
-two sets separated are the strict epigraph of `f` and the hypograph of the concave function
-`x ↦ ⟨x, y⟩ - a - g x`. The separating functional is non-vertical, and its `ℝ`-coefficient is
-negative rather than positive because the strict epigraph is unbounded upwards.
-
-## References
-
-* [rockafellar1970convex] §16.
+* The only topological input is `geometric_hahn_banach_open`, which separates a nonempty open convex
+  set from a disjoint convex set in every real topological vector space. Local convexity, which the
+  separation of two closed sets needs, is not required.
 -/
 
 open Set Filter
@@ -51,8 +56,9 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f g : E → EReal}
 
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
-/-- The strict epigraph of a convex function is convex: the strict form of the epigraph
-inequality (`convexFn_iff_forall_lt`) read as a statement about a set. -/
+/-- If $f : E \to [-\infty, +\infty]$ is convex, then its strict epigraph
+$\{(x, t) \in E \times \mathbb{R} : f(x) < t\}$ is convex. This is the strict form of the
+epigraph inequality (`ConvexAnalysis.convexFn_iff_forall_lt`), read as a statement about a set. -/
 theorem ConvexFn.convex_strictEpi (hf : ConvexFn f) :
     Convex ℝ {p : E × ℝ | f p.1 < ((p.2 : ℝ) : EReal)} := by
   rintro ⟨x, μ⟩ hx ⟨x', μ'⟩ hx' s t hs ht hst
@@ -61,9 +67,17 @@ theorem ConvexFn.convex_strictEpi (hf : ConvexFn f) :
   have hcombo := (convexFn_iff_forall_lt f).1 hf x x' s t hs' ht' hst μ μ' hx hx'
   simpa [smul_eq_mul] using hcombo
 
-/-- **The continuity constraint qualification.** If `f` and `g` are proper convex functions and `f`
-is continuous at some point where both are finite, then `f` and `g` add exactly. This is the
-constructor of `IsExactSum` that survives into infinite dimensions. -/
+/-- **The continuity constraint qualification.** Let $E$ be a real topological vector space whose
+continuous linear functionals are exactly the maps $x \mapsto \langle x, y \rangle$ with
+$y \in F$. Let $f, g : E \to [-\infty, +\infty]$ be proper convex functions, and let $x_0 \in
+\operatorname{dom} f \cap \operatorname{dom} g$ be a point at which $f$ is continuous. Then $f$
+and $g$ add exactly: $$(f + g)^* = f^* \mathbin{\square} g^*,$$ and the infimal convolution is
+attained at every point of $F$.
+
+This sufficient condition for `ConvexAnalysis.IsExactSum` remains available in infinite
+dimensions, and needs no local convexity. Continuity is `ContinuousAt f x₀` for the
+`EReal`-valued function $f$. The hypothesis on the pairing is
+`ConvexAnalysis.IsCompatiblePairing B`. -/
 theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ConvexFn g)
     (hpg : ProperConvex g) {x₀ : E} (hfx₀ : x₀ ∈ convexDom f) (hgx₀ : x₀ ∈ convexDom g)
     (hcont : ContinuousAt f x₀) : IsExactSum B f g := by

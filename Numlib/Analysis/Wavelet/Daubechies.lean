@@ -10,66 +10,66 @@ import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.LinearCombination
 
 /-!
-# The Daubechies `D4` scaling function
+# The Daubechies D4 scaling function
 
-Upstreaming candidate: nothing here is specific to numerical analysis.
+This file constructs the continuous function $\varphi : \mathbb{R} \to \mathbb{R}$ such that
+$\varphi(x) = 0$ outside $[0, 3]$, $\varphi(1) = (1 + \sqrt{3})/2$, $\varphi(2) = (1 - \sqrt{3})/2$,
+and
+$$\varphi(x) = \tfrac{1 + \sqrt{3}}{4} \varphi(2x) + \tfrac{3 + \sqrt{3}}{4} \varphi(2x - 1) +
+  \tfrac{3 - \sqrt{3}}{4} \varphi(2x - 2) + \tfrac{1 - \sqrt{3}}{4} \varphi(2x - 3)$$
+for all $x$. It also proves that the support of $\varphi$ is exactly $[0, 3]$. This is the first
+Daubechies scaling function after the Haar function. It is the fixed point of the **cascade
+operator** of the four-tap mask $\bigl(\frac{1 + \sqrt{3}}{4}, \frac{3 + \sqrt{3}}{4}, \frac{3 -
+\sqrt{3}}{4}, \frac{1 - \sqrt{3}}{4}\bigr)$. The mask, the normalization and the support are those
+of [han2009theoretical], §4.5, (4.5.5)–(4.5.7); the construction is due to Daubechies (1988).
 
-This module constructs the continuous, compactly supported function `φ : ℝ → ℝ` with
+## Main definitions
 
-* `φ x = 0` off `[0, 3]`,
-* `φ x = (1+√3)/4 φ(2x) + (3+√3)/4 φ(2x-1) + (3-√3)/4 φ(2x-2) + (1-√3)/4 φ(2x-3)`,
-* `φ 1 = (1+√3)/2` and `φ 2 = (1-√3)/2`,
+* `Daubechies.cascade`: the cascade operator $T$ of the D4 mask.
+* `Daubechies.IsApprox`: the invariants of the cascade iteration.
+* `Daubechies.approx0`: the piecewise-linear starting function of the iteration.
+* `Daubechies.approxSeq`, `Daubechies.delta`: the cascade iterates and their increments.
+* `Daubechies.scalingFun`: the D4 scaling function $\varphi$, the uniform limit of the iterates.
 
-and shows that its support is exactly `[0, 3]`.  This is the first Daubechies scaling function
-beyond the Haar one, the fixed point of the **cascade operator** attached to the four-tap mask
-`((1+√3)/4, (3+√3)/4, (3-√3)/4, (1-√3)/4)`.
+## Main results
 
-## The construction
+* `Daubechies.cascade_bound`: on the plane $v_0 + v_1 + v_2 = 0$, the cascade operator contracts by
+  the factor $\sqrt{3}/2$ in a suitable norm.
+* `Daubechies.scalingFun_continuous`: $\varphi$ is continuous.
+* `Daubechies.scalingFun_isApprox`: $\varphi$ vanishes outside $[0, 3]$, takes the values
+  $(1 \pm \sqrt{3})/2$ at $1$ and $2$, and satisfies the partition of unity $\varphi(x) +
+  \varphi(x + 1) + \varphi(x + 2) = 1$ on $[0, 1]$.
+* `Daubechies.scalingFun_refine`: $\varphi$ satisfies the four-term refinement equation.
+* `Daubechies.scalingFun_one_half`, `Daubechies.scalingFun_three_halves`,
+  `Daubechies.scalingFun_five_halves`: the values $(2 + \sqrt{3})/4$, $0$ and $(2 - \sqrt{3})/4$ of
+  $\varphi$ at $1/2$, $3/2$ and $5/2$.
+* `Daubechies.scalingFun_support`: the closure of the support of $\varphi$ is $[0, 3]$.
+* `Daubechies.exists_scalingFun`: the existence theorem, in the form in which the properties are
+  usually quoted.
 
-Existence is proved by iterating the cascade operator `T` from the piecewise-linear function
-`approx0` that already carries the right values at the integers, and showing that the iterates
-converge uniformly.  `T` is *not* a contraction for the supremum norm — the mask has
-`∑_k |p_k| = (3+√3)/2 > 1` — and the standard remedy is a bound on the joint spectral radius of the
-two matrices that drive the iteration.  For this mask that bound is explicit and elementary, and
-`cascade_bound` is the whole of it.
+## Proof outline
 
-Write `w(y) = (h y, h (y+1), h (y+2))` for `y ∈ [0,1]`.  A function `h` vanishing off `[0,3]`
-satisfies `w(y) = T₀ w(2y)` on `[0,1/2]` and `w(y) = T₁ w(2y-1)` on `[1/2,1]`, for two explicit
-`3 × 3` matrices whose columns each sum to `1` (`cascade_left`, `cascade_right`).  Both fix the
-direction `(1,1,1)`, so the interesting action is on the plane `E = {v : v₀ + v₁ + v₂ = 0}`, which
-is where the *difference* of two consecutive cascade iterates lives — that is what the partition of
-unity `f x + f (x+1) + f (x+2) = 1`, preserved by the iteration, is for.  On `E`, in the norm
+Existence is proved by iterating the cascade operator $T$ from a piecewise-linear function that
+already has the right values at the integers, and by showing that the iterates converge uniformly.
+The operator $T$ is not a contraction for the supremum norm, because the mask has
+$\sum_k |p_k| = (3 + \sqrt{3})/2 > 1$. The standard remedy is a bound on the joint spectral radius
+of the two matrices that drive the iteration. For this mask the bound is explicit and elementary.
+Write $w(y) = (h(y), h(y + 1), h(y + 2))$ for $y \in [0, 1]$. A function $h$ that vanishes outside
+$[0, 3]$ satisfies $w(y) = T_0\, w(2y)$ on $[0, 1/2]$ and $w(y) = T_1\, w(2y - 1)$ on $[1/2, 1]$,
+for two explicit $3 \times 3$ matrices whose columns each sum to $1$. Both matrices fix the
+direction $(1, 1, 1)$, so the relevant action is on the plane $\{v : v_0 + v_1 + v_2 = 0\}$. The
+difference of two consecutive iterates lies in this plane, because the iteration preserves the
+partition of unity. On this plane, in the norm $N(v) = \max\{|v_0|, 2|v_2|\}$, both $T_0$ and $T_1$
+have operator norm at most $\sqrt{3}/2 < 1$: the bound for $T_0$ is exactly $\sqrt{3}/2$, and the
+bound for $T_1$ is $(5 + \sqrt{3})/8$. So the increments of the iteration decay geometrically.
 
-`N v = max |v₀| (2 |v₂|)`,
-
-both `T₀` and `T₁` have operator norm at most `√3/2 < 1`, and the two bounds are attained:
-`T₀` gives exactly `√3/2` and `T₁` gives `(5+√3)/8`.  That is `cascade_bound`, and it makes the
-increments of the cascade iteration decay geometrically.
-
-## The support
-
-`scalingFun_support` is the sharp form of the support statement, and needs a second idea.
-Pairing `w(y)`
-against a covector `u` and running the two relations backwards, `⟪w(y), u⟫` on a dyadic interval
-`[m/2ⁿ, (m+1)/2ⁿ]` is `⟪w(z), u'⟫` on all of `[0,1]`, where `u'` is the image of `u` under a product
-of the two transposed matrices.  Both transposes are injective (`covector_left_eq_zero`,
-`covector_right_eq_zero`), and `w(0), w(1/2), w(1)` span `ℝ³` (`covector_eq_zero`), so `u' ≠ 0`
-forces `⟪w(z), u'⟫` to be somewhere nonzero.  Taking `u` to be a coordinate covector, `φ` cannot
-vanish identically on any nondegenerate subinterval of `[0,3]`.
-
-## Main statements
-
-* `exists_scalingFun`: the existence theorem, in the form the properties are usually quoted.
-* `scalingFun` and its properties: `scalingFun_continuous`, `scalingFun_refine`,
-  `scalingFun_support`, and `scalingFun_isApprox`, which bundles the vanishing off `[0,3]`, the
-  values `(1±√3)/2` at `1` and `2`, and the partition of unity.
-* `scalingFun_one_half`, `scalingFun_three_halves`, `scalingFun_five_halves`: the values at the
-  first half-integers, which the span argument needs.
-
-## References
-
-The mask, the normalisation and the support are Atkinson–Han [AtkinsonHan2009], §4.5, (4.5.5)–
-(4.5.7); the construction is Daubechies' [Daubechies1988].
+The equality of the support with $[0, 3]$ needs a second idea. Pair $w(y)$ with a covector $u$ and
+run the two relations backwards. Then $\langle w(y), u \rangle$ on a dyadic interval
+$[m/2^n, (m + 1)/2^n]$ equals $\langle w(z), u' \rangle$ on all of $[0, 1]$, where $u'$ is the image
+of $u$ under a product of the two transposed matrices. Both transposes are injective, and
+$w(0), w(1/2), w(1)$ span $\mathbb{R}^3$, so $u' \neq 0$ makes $\langle w(z), u' \rangle$ nonzero
+somewhere. With $u$ a coordinate covector, this shows that $\varphi$ cannot vanish identically on
+any nondegenerate subinterval of $[0, 3]$.
 -/
 
 noncomputable section
@@ -78,7 +78,7 @@ open Set
 
 namespace Daubechies
 
-/-! ### Arithmetic of `√3` -/
+/-! ### Arithmetic of $\sqrt{3}$ -/
 
 private theorem sqrt3_mul_self : √3 * √3 = 3 := Real.mul_self_sqrt (by norm_num)
 
@@ -90,26 +90,33 @@ private theorem sqrt3_lt_two : √3 < 2 := by
 
 /-! ### The cascade operator -/
 
-/-- The **cascade operator** of the Daubechies `D4` mask: `T f (x)` is
-`(1+√3)/4 f(2x) + (3+√3)/4 f(2x-1) + (3-√3)/4 f(2x-2) + (1-√3)/4 f(2x-3)`.  The scaling function
-is its fixed point. -/
+/-- The **cascade operator** of the Daubechies D4 mask: for $f : \mathbb{R} \to \mathbb{R}$,
+$$(Tf)(x) = \tfrac{1 + \sqrt{3}}{4} f(2x) + \tfrac{3 + \sqrt{3}}{4} f(2x - 1) + \tfrac{3 -
+  \sqrt{3}}{4} f(2x - 2) + \tfrac{1 - \sqrt{3}}{4} f(2x - 3).$$
+The scaling function is its fixed point. -/
 def cascade (f : ℝ → ℝ) (x : ℝ) : ℝ :=
   (1 + √3) / 4 * f (2 * x) + (3 + √3) / 4 * f (2 * x - 1) + (3 - √3) / 4 * f (2 * x - 2)
     + (1 - √3) / 4 * f (2 * x - 3)
 
+/-- The defining formula of `Daubechies.cascade`: $(Tf)(x) = \frac{1 + \sqrt{3}}{4} f(2x) +
+\frac{3 + \sqrt{3}}{4} f(2x - 1) + \frac{3 - \sqrt{3}}{4} f(2x - 2) + \frac{1 - \sqrt{3}}{4}
+f(2x - 3)$. -/
 theorem cascade_apply (f : ℝ → ℝ) (x : ℝ) :
     cascade f x = (1 + √3) / 4 * f (2 * x) + (3 + √3) / 4 * f (2 * x - 1)
       + (3 - √3) / 4 * f (2 * x - 2) + (1 - √3) / 4 * f (2 * x - 3) := rfl
 
-/-- The cascade operator is linear, and in particular commutes with subtraction. This is what makes
-the *increments* of the iteration satisfy the same recurrence as the iterates themselves. -/
+/-- The cascade operator commutes with subtraction: $T(f - g) = Tf - Tg$.
+
+This linearity makes the increments of the iteration satisfy the same recurrence as the
+iterates. -/
 theorem cascade_sub (f g : ℝ → ℝ) :
     cascade (fun x => f x - g x) = fun x => cascade f x - cascade g x := by
   funext x
   simp only [cascade_apply]
   ring
 
-/-- The cascade operator preserves continuity, being a finite linear combination of dilates. -/
+/-- If $f$ is continuous, then $Tf$ is continuous, since it is a finite linear combination of
+dilates of $f$. -/
 theorem cascade_continuous {f : ℝ → ℝ} (hf : Continuous f) : Continuous (cascade f) := by
   change Continuous fun x => cascade f x
   simp only [cascade_apply]
@@ -123,8 +130,14 @@ variable {f : ℝ → ℝ} (hle : ∀ x : ℝ, x ≤ 0 → f x = 0) (hge : ∀ x
 
 include hle hge
 
-/-- On `[0, 1/2]` the cascade of `f` at `x`, `x+1`, `x+2` is a fixed matrix applied to the values
-of `f` at `2x`, `2x+1`, `2x+2`. -/
+/-- Let $f : \mathbb{R} \to \mathbb{R}$ vanish on $(-\infty, 0]$ and on $[3, \infty)$, and let
+$0 \le x \le 1/2$. Then
+$$(Tf)(x) = \tfrac{1 + \sqrt{3}}{4} f(2x),$$
+$$(Tf)(x + 1) = \tfrac{1 + \sqrt{3}}{4} f(2x + 2) + \tfrac{3 + \sqrt{3}}{4} f(2x + 1) +
+  \tfrac{3 - \sqrt{3}}{4} f(2x),$$
+$$(Tf)(x + 2) = \tfrac{3 - \sqrt{3}}{4} f(2x + 2) + \tfrac{1 - \sqrt{3}}{4} f(2x + 1).$$
+So the values of $Tf$ at $x, x + 1, x + 2$ are a fixed matrix $T_0$ applied to the values of $f$
+at $2x, 2x + 1, 2x + 2$. -/
 theorem cascade_left {x : ℝ} (hx0 : 0 ≤ x) (hx1 : x ≤ 1 / 2) :
     cascade f x = (1 + √3) / 4 * f (2 * x) ∧
       cascade f (x + 1) = (1 + √3) / 4 * f (2 * x + 2) + (3 + √3) / 4 * f (2 * x + 1)
@@ -148,8 +161,14 @@ theorem cascade_left {x : ℝ} (hx0 : 0 ≤ x) (hx1 : x ≤ 1 / 2) :
       hge (2 * x + 3) (by linarith)]
     ring
 
-/-- On `[1/2, 1]` the cascade of `f` at `x`, `x+1`, `x+2` is a fixed matrix applied to the values
-of `f` at `2x-1`, `2x`, `2x+1`. -/
+/-- Let $f : \mathbb{R} \to \mathbb{R}$ vanish on $(-\infty, 0]$ and on $[3, \infty)$, and let
+$1/2 \le x \le 1$. Then
+$$(Tf)(x) = \tfrac{1 + \sqrt{3}}{4} f(2x) + \tfrac{3 + \sqrt{3}}{4} f(2x - 1),$$
+$$(Tf)(x + 1) = \tfrac{3 + \sqrt{3}}{4} f(2x + 1) + \tfrac{3 - \sqrt{3}}{4} f(2x) + \tfrac{1 -
+  \sqrt{3}}{4} f(2x - 1),$$
+$$(Tf)(x + 2) = \tfrac{1 - \sqrt{3}}{4} f(2x + 1).$$
+So the values of $Tf$ at $x, x + 1, x + 2$ are a fixed matrix $T_1$ applied to the values of $f$
+at $2x - 1, 2x, 2x + 1$. -/
 theorem cascade_right {x : ℝ} (hx0 : 1 / 2 ≤ x) (hx1 : x ≤ 1) :
     cascade f x = (1 + √3) / 4 * f (2 * x) + (3 + √3) / 4 * f (2 * x - 1) ∧
       cascade f (x + 1) = (3 + √3) / 4 * f (2 * x + 1) + (3 - √3) / 4 * f (2 * x)
@@ -176,14 +195,22 @@ end Relations
 
 /-! ### The invariants of the iteration -/
 
-/-- The properties the cascade iteration preserves: continuity, vanishing off `[0,3]`, the values
-`(1±√3)/2` at `1` and `2`, and the partition of unity `f x + f (x+1) + f (x+2) = 1` on `[0,1]`. -/
+/-- The invariants of the cascade iteration: a function $f : \mathbb{R} \to \mathbb{R}$ satisfies
+`Daubechies.IsApprox` if it is continuous, vanishes on $(-\infty, 0]$ and on $[3, \infty)$,
+takes the values $f(1) = (1 + \sqrt{3})/2$ and $f(2) = (1 - \sqrt{3})/2$, and satisfies the
+partition of unity $f(x) + f(x + 1) + f(x + 2) = 1$ for $x \in [0, 1]$. -/
 structure IsApprox (f : ℝ → ℝ) : Prop where
+  /-- The function $f$ is continuous. -/
   continuous : Continuous f
+  /-- The function $f$ vanishes on $(-\infty, 0]$. -/
   zero_of_le : ∀ x : ℝ, x ≤ 0 → f x = 0
+  /-- The function $f$ vanishes on $[3, \infty)$. -/
   zero_of_ge : ∀ x : ℝ, 3 ≤ x → f x = 0
+  /-- The value at $1$ is $f(1) = (1 + \sqrt{3})/2$. -/
   val_one : f 1 = (1 + √3) / 2
+  /-- The value at $2$ is $f(2) = (1 - \sqrt{3})/2$. -/
   val_two : f 2 = (1 - √3) / 2
+  /-- The partition of unity: $f(x) + f(x + 1) + f(x + 2) = 1$ for $x \in [0, 1]$. -/
   sum_eq_one : ∀ x ∈ Icc (0 : ℝ) 1, f x + f (x + 1) + f (x + 2) = 1
 
 namespace IsApprox
@@ -191,16 +218,19 @@ namespace IsApprox
 variable {f : ℝ → ℝ} (h : IsApprox f)
 include h
 
+/-- A function with the invariants satisfies $f(0) = 0$. -/
 theorem val_zero : f 0 = 0 := h.zero_of_le 0 le_rfl
 
+/-- A function with the invariants satisfies $f(3) = 0$. -/
 theorem val_three : f 3 = 0 := h.zero_of_ge 3 le_rfl
 
+/-- A function with the invariants satisfies $f(x) = 0$ for $x < 0$ and for $x > 3$. -/
 theorem eq_zero_of_lt_or_gt {x : ℝ} (hx : x < 0 ∨ 3 < x) : f x = 0 := by
   rcases hx with hx | hx
   · exact h.zero_of_le x hx.le
   · exact h.zero_of_ge x hx.le
 
-/-- The cascade operator preserves all the invariants. -/
+/-- If $f$ has the invariants of `Daubechies.IsApprox`, then so has $Tf$. -/
 theorem cascade : IsApprox (Daubechies.cascade f) := by
   refine ⟨cascade_continuous h.continuous, ?_, ?_, ?_, ?_, ?_⟩
   · intro x hx
@@ -241,11 +271,14 @@ end IsApprox
 
 /-! ### The contraction estimate -/
 
-/-- **The joint-spectral-radius bound for the `D4` mask.**  If `h` vanishes off `[0,3]`, has
-`h y + h (y+1) + h (y+2) = 0` on `[0,1]`, and satisfies `|h y| ≤ B` and `2 |h (y+2)| ≤ B` there,
-then the same bounds hold for `cascade h` with `B` replaced by `(√3/2) B`.
+/-- **The joint spectral radius bound for the D4 mask.** Let $h : \mathbb{R} \to \mathbb{R}$ vanish
+on $(-\infty, 0]$ and on $[3, \infty)$, and let $h(y) + h(y + 1) + h(y + 2) = 0$ for
+$y \in [0, 1]$. Let $B \in \mathbb{R}$ with $|h(y)| \le B$ and $2|h(y + 2)| \le B$ for
+$y \in [0, 1]$. Then for every $x \in [0, 1]$,
+$$|(Th)(x)| \le \tfrac{\sqrt{3}}{2} B \quad\text{and}\quad 2\,|(Th)(x + 2)| \le
+  \tfrac{\sqrt{3}}{2} B.$$
 
-This is the estimate that makes the cascade iteration converge; `√3/2 < 1` is what matters. -/
+This estimate makes the cascade iteration converge; the essential fact is $\sqrt{3}/2 < 1$. -/
 theorem cascade_bound {h : ℝ → ℝ} (hle : ∀ x : ℝ, x ≤ 0 → h x = 0)
     (hge : ∀ x : ℝ, 3 ≤ x → h x = 0) (hsum : ∀ x ∈ Icc (0 : ℝ) 1, h x + h (x + 1) + h (x + 2) = 0)
     {B : ℝ} (hb1 : ∀ x ∈ Icc (0 : ℝ) 1, |h x| ≤ B) (hb2 : ∀ x ∈ Icc (0 : ℝ) 1, 2 * |h (x + 2)| ≤ B)
@@ -309,27 +342,36 @@ theorem cascade_bound {h : ℝ → ℝ} (hle : ∀ x : ℝ, x ≤ 0 → h x = 0)
 
 /-! ### The starting function of the iteration -/
 
-/-- The unit hat function `max 0 (1 - |t|)`, supported on `[-1, 1]`. -/
+/-- The unit **hat function** $\operatorname{hat}(t) = \max\{0, 1 - |t|\}$, which is supported on
+$[-1, 1]$. -/
 def hat (t : ℝ) : ℝ := max 0 (1 - |t|)
 
+/-- The hat function is continuous. -/
 theorem hat_continuous : Continuous hat := by
   change Continuous fun t => max 0 (1 - |t|)
   fun_prop
 
+/-- If $|t| \ge 1$, then $\operatorname{hat}(t) = 0$. -/
 theorem hat_of_one_le {t : ℝ} (ht : 1 ≤ |t|) : hat t = 0 := max_eq_left (by linarith)
 
+/-- If $|t| \le 1$, then $\operatorname{hat}(t) = 1 - |t|$. -/
 theorem hat_of_le_one {t : ℝ} (ht : |t| ≤ 1) : hat t = 1 - |t| := max_eq_right (by linarith)
 
-/-- The starting function of the cascade iteration: the piecewise-linear function with knots at
-`0, 1, 2, 3` and values `0, (1+√3)/2, (1-√3)/2, 0` there.  It already satisfies every invariant of
-`IsApprox`, the partition of unity included. -/
+/-- The starting function of the cascade iteration:
+$$f_0(x) = \tfrac{1 + \sqrt{3}}{2} \operatorname{hat}(x - 1) + \tfrac{1 - \sqrt{3}}{2}
+  \operatorname{hat}(x - 2).$$
+It is the piecewise-linear function with knots at $0, 1, 2, 3$ and the values $0$,
+$(1 + \sqrt{3})/2$, $(1 - \sqrt{3})/2$, $0$ there. -/
 def approx0 (x : ℝ) : ℝ := (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * hat (x - 2)
 
+/-- The defining formula of `Daubechies.approx0`: $f_0(x) = \frac{1 + \sqrt{3}}{2}
+\operatorname{hat}(x - 1) + \frac{1 - \sqrt{3}}{2} \operatorname{hat}(x - 2)$. -/
 theorem approx0_apply (x : ℝ) :
     approx0 x = (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * hat (x - 2) := rfl
 
-/-- The starting function of the iteration already satisfies every invariant, which is the point of
-placing its two hat functions at `1` and `2` with the prescribed heights. -/
+/-- The starting function $f_0$ has all the invariants of `Daubechies.IsApprox`, the partition of
+unity included. This is the reason for placing its two hat functions at $1$ and $2$ with the
+prescribed heights. -/
 theorem approx0_isApprox : IsApprox approx0 := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · change Continuous fun x => (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * hat (x - 2)
@@ -386,40 +428,51 @@ theorem approx0_isApprox : IsApprox approx0 := by
 
 /-! ### The cascade iterates and their increments -/
 
-/-- The cascade iterates started from `approx0`. -/
+/-- The cascade iterates: $f_0$ is the starting function `Daubechies.approx0`, and
+$f_{n+1} = T f_n$. -/
 def approxSeq : ℕ → ℝ → ℝ
   | 0 => approx0
   | n + 1 => cascade (approxSeq n)
 
+/-- Every cascade iterate $f_n$ has the invariants of `Daubechies.IsApprox`. -/
 theorem approxSeq_isApprox : ∀ n : ℕ, IsApprox (approxSeq n)
   | 0 => approx0_isApprox
   | n + 1 => (approxSeq_isApprox n).cascade
 
-/-- The increment of the cascade iteration. -/
+/-- The increment $\delta_n = f_{n+1} - f_n$ of the cascade iteration. -/
 def delta (n : ℕ) (x : ℝ) : ℝ := approxSeq (n + 1) x - approxSeq n x
 
+/-- The defining formula of `Daubechies.delta`: $\delta_n(x) = f_{n+1}(x) - f_n(x)$. -/
 theorem delta_apply (n : ℕ) (x : ℝ) : delta n x = approxSeq (n + 1) x - approxSeq n x := rfl
 
-/-- The increments obey the cascade recurrence themselves, by linearity of `cascade`. This is what
-turns the contraction estimate `cascade_bound` into geometric decay. -/
+/-- The increments satisfy the cascade recurrence: $\delta_{n+1} = T \delta_n$.
+
+This follows from the linearity of $T$, and it turns the contraction estimate
+`Daubechies.cascade_bound` into geometric decay. -/
 theorem delta_succ (n : ℕ) : delta (n + 1) = cascade (delta n) := by
   have h : delta n = fun x => approxSeq (n + 1) x - approxSeq n x := rfl
   rw [h, cascade_sub]
   rfl
 
+/-- Every increment $\delta_n$ is continuous. -/
 theorem delta_continuous (n : ℕ) : Continuous (delta n) :=
   ((approxSeq_isApprox (n + 1)).continuous).sub ((approxSeq_isApprox n).continuous)
 
+/-- Every increment $\delta_n$ vanishes on $(-\infty, 0]$. -/
 theorem delta_zero_of_le (n : ℕ) (x : ℝ) (hx : x ≤ 0) : delta n x = 0 := by
   rw [delta_apply, (approxSeq_isApprox (n + 1)).zero_of_le x hx,
     (approxSeq_isApprox n).zero_of_le x hx, sub_zero]
 
+/-- Every increment $\delta_n$ vanishes on $[3, \infty)$. -/
 theorem delta_zero_of_ge (n : ℕ) (x : ℝ) (hx : 3 ≤ x) : delta n x = 0 := by
   rw [delta_apply, (approxSeq_isApprox (n + 1)).zero_of_ge x hx,
     (approxSeq_isApprox n).zero_of_ge x hx, sub_zero]
 
-/-- The increments lie in the plane `v₀ + v₁ + v₂ = 0`, both iterates having the same partition of
-unity. This is the subspace on which the two cascade matrices contract. -/
+/-- The increments lie in the plane $v_0 + v_1 + v_2 = 0$: for $x \in [0, 1]$,
+$$\delta_n(x) + \delta_n(x + 1) + \delta_n(x + 2) = 0.$$
+
+This holds because both iterates satisfy the partition of unity. The two cascade matrices
+contract on this plane. -/
 theorem delta_sum (n : ℕ) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
     delta n x + delta n (x + 1) + delta n (x + 2) = 0 := by
   have h1 := (approxSeq_isApprox (n + 1)).sum_eq_one x hx
@@ -427,9 +480,11 @@ theorem delta_sum (n : ℕ) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
   simp only [delta_apply]
   linarith
 
+/-- Every increment vanishes at $1$: $\delta_n(1) = 0$. -/
 theorem delta_val_one (n : ℕ) : delta n 1 = 0 := by
   rw [delta_apply, (approxSeq_isApprox (n + 1)).val_one, (approxSeq_isApprox n).val_one, sub_self]
 
+/-- Every increment vanishes at $2$: $\delta_n(2) = 0$. -/
 theorem delta_val_two (n : ℕ) : delta n 2 = 0 := by
   rw [delta_apply, (approxSeq_isApprox (n + 1)).val_two, (approxSeq_isApprox n).val_two, sub_self]
 
@@ -514,9 +569,16 @@ private theorem sqrt3_div_two_lt_one : √3 / 2 < 1 := by linarith [sqrt3_lt_two
 
 private theorem sqrt3_div_two_nonneg : (0 : ℝ) ≤ √3 / 2 := by positivity
 
-/-- The **Daubechies `D4` scaling function**: the uniform limit of the cascade iterates. -/
+/-- The **Daubechies D4 scaling function**
+$$\varphi(x) = f_0(x) + \sum_{n \ge 0} \delta_n(x),$$
+the limit of the cascade iterates $f_n$.
+
+The sum is Mathlib's `tsum`. It converges for every $x$, and uniformly in $x$, because the
+increments decay geometrically. -/
 def scalingFun (x : ℝ) : ℝ := approx0 x + ∑' n : ℕ, delta n x
 
+/-- The defining formula of `Daubechies.scalingFun`: $\varphi(x) = f_0(x) + \sum_{n \ge 0}
+\delta_n(x)$. -/
 theorem scalingFun_apply (x : ℝ) : scalingFun x = approx0 x + ∑' n : ℕ, delta n x := rfl
 
 private theorem summable_delta_bound {B : ℝ} : Summable (fun n : ℕ => (√3 / 2) ^ n * B) :=
@@ -527,8 +589,10 @@ private theorem summable_delta (x : ℝ) : Summable (fun n : ℕ => delta n x) :
   exact Summable.of_norm_bounded summable_delta_bound (fun n => by
     rw [Real.norm_eq_abs]; exact hB n x)
 
-/-- The cascade iterates converge pointwise to the scaling function, the telescoping sum of the
-increments being exactly `approxSeq N - approx0`. -/
+/-- For every $x \in \mathbb{R}$, the cascade iterates satisfy $f_N(x) \to \varphi(x)$ as
+$N \to \infty$.
+
+The partial sum $\sum_{n < N} \delta_n$ telescopes to $f_N - f_0$. -/
 theorem approxSeq_tendsto (x : ℝ) :
     Filter.Tendsto (fun N : ℕ => approxSeq N x) Filter.atTop (nhds (scalingFun x)) := by
   have hsum := (summable_delta x).hasSum.tendsto_sum_nat
@@ -547,8 +611,9 @@ theorem approxSeq_tendsto (x : ℝ) :
   rw [scalingFun_apply]
   simpa only [he] using h2
 
-/-- The scaling function is continuous: the increments are bounded by a geometric series, so the
-cascade iterates converge *uniformly*. -/
+/-- The scaling function $\varphi$ is continuous.
+
+The increments are bounded by a geometric series, so the cascade iterates converge uniformly. -/
 theorem scalingFun_continuous : Continuous scalingFun := by
   obtain ⟨B, -, hB⟩ := exists_delta_bound
   refine (approx0_isApprox.continuous).add (continuous_tsum delta_continuous
@@ -556,8 +621,9 @@ theorem scalingFun_continuous : Continuous scalingFun := by
   rw [Real.norm_eq_abs]
   exact hB n x
 
-/-- The limit inherits every invariant of the iteration: it is continuous, vanishes off `[0,3]`,
-takes the values `(1±√3)/2` at `1` and `2`, and satisfies the partition of unity. -/
+/-- The scaling function $\varphi$ has all the invariants of `Daubechies.IsApprox`: it is
+continuous, vanishes on $(-\infty, 0]$ and on $[3, \infty)$, takes the values
+$(1 \pm \sqrt{3})/2$ at $1$ and $2$, and satisfies the partition of unity on $[0, 1]$. -/
 theorem scalingFun_isApprox : IsApprox scalingFun := by
   refine ⟨scalingFun_continuous, ?_, ?_, ?_, ?_, ?_⟩
   · intro x hx
@@ -580,8 +646,11 @@ theorem scalingFun_isApprox : IsApprox scalingFun := by
     refine this.congr (fun N => ?_)
     exact (approxSeq_isApprox N).sum_eq_one x hx
 
-/-- The scaling function satisfies the four-term scaling equation (the `D4` refinement
-equation). -/
+/-- The scaling function satisfies the four-term D4 refinement equation: for every
+$x \in \mathbb{R}$,
+$$\varphi(x) = \tfrac{1 + \sqrt{3}}{4} \varphi(2x) + \tfrac{3 + \sqrt{3}}{4} \varphi(2x - 1) +
+  \tfrac{3 - \sqrt{3}}{4} \varphi(2x - 2) + \tfrac{1 - \sqrt{3}}{4} \varphi(2x - 3).$$
+-/
 theorem scalingFun_refine (x : ℝ) :
     scalingFun x = (1 + √3) / 4 * scalingFun (2 * x) + (3 + √3) / 4 * scalingFun (2 * x - 1)
       + (3 - √3) / 4 * scalingFun (2 * x - 2) + (1 - √3) / 4 * scalingFun (2 * x - 3) := by
@@ -599,11 +668,14 @@ theorem scalingFun_refine (x : ℝ) :
 
 /-! ### Values at the first dyadic points -/
 
+/-- The scaling function is a fixed point of the cascade operator: $T\varphi = \varphi$. -/
 theorem cascade_scalingFun (x : ℝ) : cascade scalingFun x = scalingFun x :=
   (scalingFun_refine x).symm
 
-/-- `φ(1/2) = (2 + √3)/4`, read off the refinement equation at `1/2`, where only the term
-`f(2x - 1) = f 0` and the term `f(2x) = f 1` survive. -/
+/-- The value at $1/2$: $\varphi(1/2) = (2 + \sqrt{3})/4$.
+
+In the refinement equation at $1/2$, the terms $\varphi(-1)$ and $\varphi(-2)$ vanish and
+$\varphi(0) = 0$, so only $\frac{1 + \sqrt{3}}{4} \varphi(1)$ remains. -/
 theorem scalingFun_one_half : scalingFun (1 / 2) = (2 + √3) / 4 := by
   have h := scalingFun_refine (1 / 2)
   rw [show (2 : ℝ) * (1 / 2) = 1 by norm_num, show (1 : ℝ) - 1 = 0 by norm_num,
@@ -614,7 +686,7 @@ theorem scalingFun_one_half : scalingFun (1 / 2) = (2 + √3) / 4 := by
   rw [h]
   linear_combination sqrt3_mul_self / 8
 
-/-- `φ(3/2) = 0`, read off the refinement equation at `3/2`. -/
+/-- The value at $3/2$: $\varphi(3/2) = 0$, from the refinement equation at $3/2$. -/
 theorem scalingFun_three_halves : scalingFun (3 / 2) = 0 := by
   have h := scalingFun_refine (3 / 2)
   rw [show (2 : ℝ) * (3 / 2) = 3 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num,
@@ -624,9 +696,10 @@ theorem scalingFun_three_halves : scalingFun (3 / 2) = 0 := by
   rw [h]
   linear_combination (-1 / 4 : ℝ) * sqrt3_mul_self
 
-/-- `φ(5/2) = (2 - √3)/4`, read off the refinement equation at `5/2`. Together with
-`scalingFun_one_half` and `scalingFun_three_halves` this gives the three half-integer values that
-the span argument behind `scalingFun_support` needs. -/
+/-- The value at $5/2$: $\varphi(5/2) = (2 - \sqrt{3})/4$, from the refinement equation at $5/2$.
+
+With `Daubechies.scalingFun_one_half` and `Daubechies.scalingFun_three_halves`, these are the
+three half-integer values that the span argument behind `Daubechies.scalingFun_support` needs. -/
 theorem scalingFun_five_halves : scalingFun (5 / 2) = (2 - √3) / 4 := by
   have h := scalingFun_refine (5 / 2)
   rw [show (2 : ℝ) * (5 / 2) = 5 by norm_num, show (5 : ℝ) - 1 = 4 by norm_num,
@@ -639,7 +712,8 @@ theorem scalingFun_five_halves : scalingFun (5 / 2) = (2 - √3) / 4 := by
 
 /-! ### Pairing against a covector -/
 
-/-- The pairing of the vector `(φ y, φ (y+1), φ (y+2))` against a covector `(u₀, u₁, u₂)`. -/
+/-- The pairing $u_0 \varphi(y) + u_1 \varphi(y + 1) + u_2 \varphi(y + 2)$ of the vector
+$(\varphi(y), \varphi(y + 1), \varphi(y + 2))$ with a covector $(u_0, u_1, u_2)$. -/
 private def pairing (u₀ u₁ u₂ y : ℝ) : ℝ :=
   u₀ * scalingFun y + u₁ * scalingFun (y + 1) + u₂ * scalingFun (y + 2)
 
@@ -686,7 +760,7 @@ private theorem pairing_right (u₀ u₁ u₂ : ℝ) {y : ℝ} (hy0 : 1 / 2 ≤ 
   rw [pairing_apply, pairing_apply, e1, e2, e3, c1, c2]
   ring
 
-/-! ### Injectivity of the transposes, and the span of `w(0), w(1/2), w(1)` -/
+/-! ### Injectivity of the transposes, and the span of $w(0), w(1/2), w(1)$ -/
 
 private theorem covector_left_eq_zero {u₀ u₁ u₂ : ℝ}
     (e1 : (1 + √3) / 4 * u₀ + (3 - √3) / 4 * u₁ = 0)
@@ -872,9 +946,11 @@ private theorem exists_ne_zero {p q : ℝ} (hpq : p < q) (hp : 0 ≤ p) (hq : q 
     rw [hp0] at hne
     exact ⟨y + 2, ⟨by linarith [hy.1], by linarith [hy.2]⟩, hne⟩
 
-/-- **The support of the Daubechies `D4` scaling function is exactly `[0, 3]`.**  The inclusion is
-by construction; the reverse needs that `φ` cannot vanish identically on a nondegenerate
-subinterval of `[0, 3]`, which is `exists_ne_zero`. -/
+/-- **The support of the Daubechies D4 scaling function is exactly $[0, 3]$**: the closure of
+$\{x : \varphi(x) \neq 0\}$ is $[0, 3]$.
+
+The inclusion in $[0, 3]$ holds by construction. The reverse inclusion needs that $\varphi$
+cannot vanish identically on a nondegenerate subinterval of $[0, 3]$. -/
 theorem scalingFun_support : closure (Function.support scalingFun) = Icc 0 3 := by
   refine Subset.antisymm (closure_minimal (fun x hx => ?_) isClosed_Icc) ?_
   · by_contra hc
@@ -909,9 +985,14 @@ theorem scalingFun_support : closure (Function.support scalingFun) = Icc 0 3 := 
 
 /-! ### The existence theorem -/
 
-/-- **Existence of the Daubechies `D4` scaling function.**  There is a continuous `φ : ℝ → ℝ`
-whose support is exactly `[0, 3]`, satisfying the four-term scaling equation, and normalised by
-`φ 1 = (1+√3)/2` and `φ 2 = (1-√3)/2`. -/
+/-- **Existence of the Daubechies D4 scaling function.** There is a continuous function
+$\varphi : \mathbb{R} \to \mathbb{R}$ such that $\varphi(x) = 0$ for $x < 0$ and for $x > 3$,
+the closure of the support of $\varphi$ is exactly $[0, 3]$, $\varphi$ satisfies the four-term
+scaling equation
+$$\varphi(x) = \tfrac{1 + \sqrt{3}}{4} \varphi(2x) + \tfrac{3 + \sqrt{3}}{4} \varphi(2x - 1) +
+  \tfrac{3 - \sqrt{3}}{4} \varphi(2x - 2) + \tfrac{1 - \sqrt{3}}{4} \varphi(2x - 3)$$
+for all $x \in \mathbb{R}$, and $\varphi$ is normalized by $\varphi(1) = (1 + \sqrt{3})/2$ and
+$\varphi(2) = (1 - \sqrt{3})/2$. -/
 theorem exists_scalingFun :
     ∃ φ : ℝ → ℝ, Continuous φ ∧ (∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0) ∧
       closure (Function.support φ) = Icc 0 3 ∧

@@ -24,60 +24,74 @@ import Numlib.LinearAlgebra.Matrix.Permutation
 /-!
 # The Kronecker product in positional layout, vectorization, and product families
 
-Mathlib has the Kronecker product on product index types, `A ⊗ₖ B : Matrix (l × n) (m × p) R`, with
-its algebra, and the column stacking `Matrix.vec A : n × m → R` with
-`Matrix.kronecker_mulVec_vec : (B ⊗ₖ A) *ᵥ vec X = vec (A * X * Bᵀ)`. Numerical texts read both
-*positionally*: `B ⊗ C` is an `m₁ m₂ × n₁ n₂` array whose `(i₁, j₁)` block is `b_{i₁ j₁} C`, and
-`vec X ∈ R^{nm}` stacks the columns of `X`. The positional layout is
-`finProdFinEquiv : Fin m × Fin n ≃ Fin (m * n)`, `(a, b) ↦ b + n a`, which is exactly the block-row
-ordering of the books, and this file transports Mathlib's statements along it:
-`Matrix.kroneckerFin`, `Matrix.vecFin`, and `Matrix.reshape` (MATLAB's `reshape`), with the typed
-inverse `Matrix.unvec` of `Matrix.vec` beside them.
+Mathlib defines the Kronecker product on product index types, $A \otimes B$ with entries
+$(A \otimes B)_{(i,k),(j,l)} = a_{ij} b_{kl}$, and the column stacking $\operatorname{vec} X$ with
+the identity $(B \otimes A) \operatorname{vec} X = \operatorname{vec}(A X B^T)$
+(`Matrix.kronecker_mulVec_vec`). Numerical texts read both positionally: $B \otimes C$ is an
+$m_1 m_2 \times n_1 n_2$ array whose block $(i_1, j_1)$ is $b_{i_1 j_1} C$, and
+$\operatorname{vec} X \in R^{nm}$ stacks the columns of $X$. This file transports the statements of
+Mathlib to this positional layout, following [golub2013matrix], §1.3, §12.3 and §12.4. It defines
+the positional Kronecker product, the positional column stacking, the reshaping of a matrix, and the
+inverse of the column stacking. It shows that the perfect shuffle $\Pi_{p,r}$ is the vec-permutation
+matrix, $\Pi_{p,r} \operatorname{vec} X = \operatorname{vec} X^T$, and that it conjugates
+$B \otimes C$ into $C \otimes B$.
 
-The perfect shuffle `Matrix.perfectShuffle p r` (`Numlib.LinearAlgebra.Matrix.Permutation`) is the
-vec-permutation (commutation) matrix, `Π_{p,r} vec X = vec Xᵀ`
-(`Matrix.perfectShuffle_mulVec_vecFin`), and conjugates `B ⊗ C` into `C ⊗ B`
-(`Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose`).
-
-The elementary tensor `Matrix.kroneckerVec v w = v ⊗ w` of two vectors, on which a Kronecker product
-acts factor by factor (`Matrix.kronecker_mulVec`), is the basic object of separation of variables
-(`Numlib.LinearAlgebra.Matrix.KroneckerSum` builds the Kronecker sum on it).
-
-Beyond two factors: the Kronecker product of a finite family `Matrix.piKronecker M`, indexed by the
-product types `∀ i, μ i` (the matrix of the multilinear product of tensors), with its flattening to
-the book's reversed-order `M_d ⊗ ⋯ ⊗ M_1` (`Matrix.piKronecker_reindex_finPiFinEquiv`); the
-column-wise Khatri–Rao product and its family version; the Tracy–Singh product of block matrices as
-a reindexed Kronecker product; and the algebraic facts of [golub2013matrix] §12.3.1 that Mathlib
-lacks (the rank of a Kronecker product, Kronecker products of permutation and stochastic matrices).
-Norms, eigenvalues, singular values and triangular factors of Kronecker products need the
-factorization layer and are in `Numlib.LinearAlgebra.Matrix.Kronecker.Spectral`; this module stays
-free of it.
+The file also treats elementary tensors $v \otimes w$ of vectors, on which a Kronecker product acts
+factor by factor, and the Kronecker product of a finite family of matrices, with its flattening to
+the reversed-order product $M_d \otimes \dots \otimes M_1$ of the books. It defines the column-wise
+Khatri–Rao product and the Tracy–Singh product of block matrices, and it proves the facts of
+[golub2013matrix], §12.3.1 that Mathlib lacks: the rank of a Kronecker product, and Kronecker
+products of permutation and stochastic matrices.
 
 ## Main definitions
 
-* `Matrix.kroneckerVec`: the elementary tensor `v ⊗ w`.
-* `Matrix.kroneckerFin`, `Matrix.vecFin`, `Matrix.reshape`: the positional Kronecker product, column
-  stacking and reshaping.
-* `Matrix.unvec`: the inverse of `Matrix.vec`.
-* `Matrix.piKronecker`, `Matrix.khatriRao`, `Matrix.piKhatriRao`, `Matrix.tracySingh`.
+* `Matrix.kroneckerVec`: the elementary tensor $v \otimes w$, $(v \otimes w)_{(i,j)} = v_i w_j$.
+* `Matrix.kroneckerFin`: the Kronecker product in positional layout.
+* `Matrix.vecFin`: the column stacking $\operatorname{vec} X$ in positional layout.
+* `Matrix.reshape`: the $m_1 \times n_1$ matrix with the same column stacking as a given matrix.
+* `Matrix.unvec`: the inverse of the column stacking `Matrix.vec`.
+* `Matrix.piKronecker`, `Matrix.piKroneckerVec`: the Kronecker product of a finite family of
+  matrices, and of vectors.
+* `Matrix.khatriRao`, `Matrix.piKhatriRao`: the column-wise Khatri–Rao product of two matrices, and
+  of a finite family.
+* `Matrix.tracySingh`: the Tracy–Singh product of block matrices.
 
-## Main statements
+## Main results
 
-* `Matrix.kronecker_mulVec`: `(A ⊗ B)(v ⊗ w) = (A v) ⊗ (B w)`.
-* `Matrix.kroneckerFin_mul_kroneckerFin`, `Matrix.inv_kroneckerFin`, `Matrix.kroneckerFin_assoc`,
-  `Matrix.kroneckerFin_mulVec_vecFin`: [golub2013matrix] (1.3.2)–(1.3.4), (1.3.6).
-* `Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose`: [golub2013matrix] (1.3.5).
-* `Matrix.perfectShuffle_submatrix_eq_kroneckerFin_mul`: the two-pass factorization
-  `Π_{p,rq} = (I_r ⊗ Π_{p,q})(Π_{p,r} ⊗ I_q)` of [golub2013matrix] §12.3.5.
+* `Matrix.kronecker_mulVec`: $(A \otimes B)(v \otimes w) = (Av) \otimes (Bw)$.
 * `finProdFinEquiv_lt_finProdFinEquiv_iff`: the positional layout is lexicographic.
-* `Matrix.piKronecker_mul_piKronecker`, `Matrix.khatriRao_transpose_mul_self`.
+* `Matrix.transpose_kroneckerFin`, `Matrix.kroneckerFin_mul_kroneckerFin`,
+  `Matrix.inv_kroneckerFin`, `Matrix.kroneckerFin_assoc`: the rules (1.3.1)–(1.3.4) of
+  [golub2013matrix] in positional layout.
+* `Matrix.kroneckerFin_mulVec_vecFin`: $(B \otimes C) \operatorname{vec} X = \operatorname{vec}(C X
+  B^T)$, (1.3.6) of [golub2013matrix].
+* `Matrix.perfectShuffle_mulVec_vecFin`: $\Pi_{p,r} \operatorname{vec} X = \operatorname{vec} X^T$.
+* `Matrix.perfectShuffle_mul_kroneckerFin_mul_transpose`: $\Pi_{m_1,m_2} (B \otimes C)
+  \Pi_{n_1,n_2}^T = C \otimes B$, (1.3.5) of [golub2013matrix].
+* `Matrix.perfectShuffle_submatrix_eq_kroneckerFin_mul`: the two-pass factorization $\Pi_{p,rq} =
+  (I_r \otimes \Pi_{p,q})(\Pi_{p,r} \otimes I_q)$ of [golub2013matrix], §12.3.5.
+* `Matrix.piKronecker_mul_piKronecker`: the mixed-product rule for families.
 * `finPiFinEquiv_snoc`, `finPiFinEquiv_apply_val_eq_add_mul`, `finPiFinEquiv_apply_val_split`: the
-  recursion and the splits of Mathlib's little-endian flattening `finPiFinEquiv`.
-* `Matrix.rank_kronecker`: `rank (B ⊗ C) = rank B · rank C` over a field.
+  recursion and the splits of the little-endian flattening `finPiFinEquiv` of Mathlib.
+* `Matrix.piKronecker_reindex_finPiFinEquiv`: the flattened family Kronecker product is the
+  positional product with the last factor outermost.
+* `Matrix.khatriRao_transpose_mul_self`: $(B \odot C)^T (B \odot C) = (B^T B) \circ (C^T C)$,
+  (12.5.20) of [golub2013matrix].
+* `Matrix.rank_kronecker`: $\operatorname{rank}(B \otimes C) = \operatorname{rank} B \cdot
+  \operatorname{rank} C$ over a field.
 
-## References
+## Implementation notes
 
-* [golub2013matrix], §1.3.6–1.3.8, §12.3, §12.4.
+* The positional layout is `finProdFinEquiv : Fin m × Fin n ≃ Fin (m * n)`,
+  $(a, b) \mapsto b + n a$. This is the block-row ordering of the books.
+* The positional column stacking places the entry $(i, j)$ of an $m \times n$ matrix at the position
+  $i + m j$.
+* Norms, eigenvalues, singular values and triangular factors of Kronecker products need the
+  factorization results of the library, and they are in
+  `Numlib.LinearAlgebra.Matrix.Kronecker.Spectral`. This module does not depend on them.
+* The perfect shuffle `Matrix.perfectShuffle` is defined in
+  `Numlib.LinearAlgebra.Matrix.Permutation`. The Kronecker sum, built on elementary tensors, is in
+  `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
 -/
 
 open scoped Kronecker Matrix
@@ -92,28 +106,30 @@ section ElementaryTensor
 
 variable {l m n p : Type*}
 
-/-- The Kronecker product of two vectors, the elementary tensor `v ⊗ w`:
-`kroneckerVec v w (i, j) = v i * w j`. -/
+/-- The **elementary tensor** $v \otimes w$ of two vectors $v \in R^m$ and $w \in R^n$: the vector
+indexed by $m \times n$ with entries $(v \otimes w)_{(i,j)} = v_i w_j$. -/
 def kroneckerVec [Mul R] (v : m → R) (w : n → R) : m × n → R := fun q => v q.1 * w q.2
 
-/-- The entries of an elementary tensor. -/
+/-- The entries of an elementary tensor: $(v \otimes w)_{(i,j)} = v_i w_j$. -/
 @[simp]
 theorem kroneckerVec_apply [Mul R] (v : m → R) (w : n → R) (i : m) (j : n) :
     kroneckerVec v w (i, j) = v i * w j := rfl
 
-/-- A scalar on the left factor of an elementary tensor scales the tensor. -/
+/-- A scalar on the left factor of an elementary tensor scales the tensor:
+$(cv) \otimes w = c (v \otimes w)$. -/
 theorem kroneckerVec_smul_left [Semigroup R] (c : R) (v : m → R) (w : n → R) :
     kroneckerVec (c • v) w = c • kroneckerVec v w := by
   funext q
   simp [kroneckerVec, mul_assoc]
 
-/-- A scalar on the right factor of an elementary tensor scales the tensor. -/
+/-- Over a commutative semigroup, a scalar on the right factor of an elementary tensor scales the
+tensor: $v \otimes (cw) = c (v \otimes w)$. -/
 theorem kroneckerVec_smul_right [CommSemigroup R] (c : R) (v : m → R) (w : n → R) :
     kroneckerVec v (c • w) = c • kroneckerVec v w := by
   funext q
   simp [kroneckerVec, mul_left_comm]
 
-/-- An elementary tensor of two nonzero vectors is nonzero. -/
+/-- If $R$ has no zero divisors, $v \ne 0$ and $w \ne 0$, then $v \otimes w \ne 0$. -/
 theorem kroneckerVec_ne_zero [MulZeroClass R] [NoZeroDivisors R] {v : m → R} {w : n → R}
     (hv : v ≠ 0) (hw : w ≠ 0) : kroneckerVec v w ≠ 0 := by
   obtain ⟨i, hi⟩ := Function.ne_iff.1 hv
@@ -123,8 +139,10 @@ theorem kroneckerVec_ne_zero [MulZeroClass R] [NoZeroDivisors R] {v : m → R} {
 
 variable [CommSemiring R] [Fintype m] [Fintype n]
 
-/-- The Kronecker product of matrices acts on an elementary tensor factor by factor:
-`(A ⊗ B)(v ⊗ w) = (A v) ⊗ (B w)`. -/
+/-- Over a commutative semiring, the Kronecker product of matrices acts on an elementary tensor
+factor by factor:
+$$(A \otimes B)(v \otimes w) = (Av) \otimes (Bw).$$
+-/
 theorem kronecker_mulVec (A : Matrix l m R) (B : Matrix p n R) (v : m → R) (w : n → R) :
     (A ⊗ₖ B) *ᵥ kroneckerVec v w = kroneckerVec (A *ᵥ v) (B *ᵥ w) := by
   funext q
@@ -132,8 +150,9 @@ theorem kronecker_mulVec (A : Matrix l m R) (B : Matrix p n R) (v : m → R) (w 
   rw [Fintype.sum_mul_sum]
   exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
 
-/-- The dot product of two elementary tensors factors:
-`(v ⊗ w) · (v' ⊗ w') = (v · v') (w · w')`. -/
+/-- Over a commutative semiring, the dot product of two elementary tensors factors:
+$$(v \otimes w) \cdot (v' \otimes w') = (v \cdot v')(w \cdot w').$$
+-/
 theorem kroneckerVec_dotProduct_kroneckerVec (v v' : m → R) (w w' : n → R) :
     kroneckerVec v w ⬝ᵥ kroneckerVec v' w' = (v ⬝ᵥ v') * (w ⬝ᵥ w') := by
   simp only [dotProduct, Fintype.sum_prod_type, kroneckerVec]
@@ -148,8 +167,8 @@ section KroneckerFin
 
 variable {m₁ m₂ m₃ n₁ n₂ n₃ p₁ p₂ : ℕ}
 
-/-- The positional layout `finProdFinEquiv` is lexicographic: `(a₁, a₂)` comes before `(b₁, b₂)`
-iff `a₁ < b₁`, or `a₁ = b₁` and `a₂ < b₂`. -/
+/-- The positional layout `finProdFinEquiv` is lexicographic: the position of $(a_1, a_2)$ is less
+than the position of $(b_1, b_2)$ if and only if $a_1 < b_1$, or $a_1 = b_1$ and $a_2 < b_2$. -/
 theorem _root_.finProdFinEquiv_lt_finProdFinEquiv_iff {a₁ b₁ : Fin m₁} {a₂ b₂ : Fin m₂} :
     finProdFinEquiv (a₁, a₂) < finProdFinEquiv (b₁, b₂) ↔ a₁ < b₁ ∨ a₁ = b₁ ∧ a₂ < b₂ := by
   rw [Fin.lt_def, finProdFinEquiv_apply_val, finProdFinEquiv_apply_val]
@@ -171,64 +190,86 @@ theorem _root_.finProdFinEquiv_lt_finProdFinEquiv_iff {a₁ b₁ : Fin m₁} {a�
     · exact absurd (h.trans h₁) (lt_irrefl _)
     · exact absurd h₁ (lt_irrefl _)
 
-/-- The Kronecker product in positional layout: `kroneckerFin A B` is the
-`m₁ m₂ × n₁ n₂` array whose `(i₁, j₁)` block is `A i₁ j₁ • B`, row `(i₁, i₂)` sitting at position
-`i₂ + m₂ i₁`. -/
+/-- The **Kronecker product in positional layout**: for $A \in R^{m_1 \times n_1}$ and
+$B \in R^{m_2 \times n_2}$, the $m_1 m_2 \times n_1 n_2$ matrix whose block $(i_1, j_1)$ is
+$a_{i_1 j_1} B$.
+
+The row $(i_1, i_2)$ is at the position $i_2 + m_2 i_1$, and the column $(j_1, j_2)$ is at the
+position $j_2 + n_2 j_1$. The definition is Mathlib's `Matrix.kronecker` reindexed by
+`finProdFinEquiv`. -/
 def kroneckerFin [Mul R] (A : Matrix (Fin m₁) (Fin n₁) R) (B : Matrix (Fin m₂) (Fin n₂) R) :
     Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) R :=
   (A ⊗ₖ B).submatrix finProdFinEquiv.symm finProdFinEquiv.symm
 
-/-- The entries of `kroneckerFin A B`: the `(i₁, j₁)` block is `A i₁ j₁ • B`. -/
+/-- The entries of the positional Kronecker product: the entry of $A \otimes B$ at the row position
+of $(i_1, i_2)$ and the column position of $(j_1, j_2)$ is $a_{i_1 j_1} b_{i_2 j_2}$. -/
 @[simp]
 theorem kroneckerFin_apply [Mul R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) (i₁ : Fin m₁) (i₂ : Fin m₂) (j₁ : Fin n₁) (j₂ : Fin n₂) :
     kroneckerFin A B (finProdFinEquiv (i₁, i₂)) (finProdFinEquiv (j₁, j₂)) = A i₁ j₁ * B i₂ j₂ := by
   simp [kroneckerFin]
 
-/-- `(A ⊗ B)ᵀ = Aᵀ ⊗ Bᵀ` ([golub2013matrix] (1.3.1)). -/
+/-- For $A \in R^{m_1 \times n_1}$ and $B \in R^{m_2 \times n_2}$, the transpose of the positional
+Kronecker product is
+$$(A \otimes B)^T = A^T \otimes B^T.$$
+
+This is (1.3.1) of [golub2013matrix]. -/
 theorem transpose_kroneckerFin [Mul R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) : (kroneckerFin A B)ᵀ = kroneckerFin Aᵀ Bᵀ :=
   rfl
 
-/-- `(A ⊗ B)ᴴ = Aᴴ ⊗ Bᴴ` in positional layout. -/
+/-- If the multiplication of $R$ is commutative and the star operation reverses products, the
+conjugate transpose of the positional Kronecker product is $(A \otimes B)^* = A^* \otimes B^*$. -/
 theorem conjTranspose_kroneckerFin [CommMagma R] [StarMul R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) : (kroneckerFin A B)ᴴ = kroneckerFin Aᴴ Bᴴ := by
   rw [kroneckerFin, kroneckerFin, conjTranspose_submatrix, conjTranspose_kronecker]
 
-/-- A scalar on the left factor of a positional Kronecker product scales the product. -/
+/-- A scalar on the left factor of a positional Kronecker product scales the product:
+$(cA) \otimes B = c (A \otimes B)$. -/
 theorem kroneckerFin_smul_left {S : Type*} [Mul R] [SMul S R] [IsScalarTower S R R] (c : S)
     (A : Matrix (Fin m₁) (Fin n₁) R) (B : Matrix (Fin m₂) (Fin n₂) R) :
     kroneckerFin (c • A) B = c • kroneckerFin A B := by
   rw [kroneckerFin, kroneckerFin, smul_kronecker]
   rfl
 
-/-- A scalar on the right factor of a positional Kronecker product scales the product. -/
+/-- A scalar on the right factor of a positional Kronecker product scales the product:
+$A \otimes (cB) = c (A \otimes B)$. -/
 theorem kroneckerFin_smul_right {S : Type*} [Mul R] [SMul S R] [SMulCommClass S R R] (c : S)
     (A : Matrix (Fin m₁) (Fin n₁) R) (B : Matrix (Fin m₂) (Fin n₂) R) :
     kroneckerFin A (c • B) = c • kroneckerFin A B := by
   rw [kroneckerFin, kroneckerFin, kronecker_smul]
   rfl
 
-/-- The mixed-product rule `(A ⊗ B)(C ⊗ D) = AC ⊗ BD` ([golub2013matrix] (1.3.2)). -/
+/-- The **mixed-product rule**. Over a commutative semiring, for $A \in R^{m_1 \times n_1}$,
+$B \in R^{m_2 \times n_2}$, $C \in R^{n_1 \times p_1}$ and $D \in R^{n_2 \times p_2}$, the
+positional Kronecker products satisfy
+$$(A \otimes B)(C \otimes D) = AC \otimes BD.$$
+
+This is (1.3.2) of [golub2013matrix]. -/
 theorem kroneckerFin_mul_kroneckerFin [CommSemiring R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) (C : Matrix (Fin n₁) (Fin p₁) R)
     (D : Matrix (Fin n₂) (Fin p₂) R) :
     kroneckerFin A B * kroneckerFin C D = kroneckerFin (A * C) (B * D) := by
   rw [kroneckerFin, kroneckerFin, kroneckerFin, submatrix_mul_equiv, mul_kronecker_mul]
 
-/-- `(A ⊗ B)⁻¹ = A⁻¹ ⊗ B⁻¹` ([golub2013matrix] (1.3.3)); with Lean's convention for the inverse of a
-singular matrix no hypothesis is needed. -/
+/-- Over a commutative ring, for square matrices $A \in R^{m_1 \times m_1}$ and
+$B \in R^{m_2 \times m_2}$, the positional Kronecker products satisfy
+$$(A \otimes B)^{-1} = A^{-1} \otimes B^{-1}.$$
+
+This is (1.3.3) of [golub2013matrix]. No invertibility hypothesis is needed, because of the Lean
+convention that the inverse of a singular matrix is $0$. -/
 theorem inv_kroneckerFin [CommRing R] (A : Matrix (Fin m₁) (Fin m₁) R)
     (B : Matrix (Fin m₂) (Fin m₂) R) : (kroneckerFin A B)⁻¹ = kroneckerFin A⁻¹ B⁻¹ := by
   rw [kroneckerFin, kroneckerFin, inv_submatrix_equiv, inv_kronecker]
 
-/-- `I_m ⊗ I_n = I_{mn}`. -/
+/-- The positional Kronecker product of two identity matrices is the identity:
+$I_{m_1} \otimes I_{m_2} = I_{m_1 m_2}$. -/
 @[simp]
 theorem kroneckerFin_one_one [MulZeroOneClass R] :
     kroneckerFin (1 : Matrix (Fin m₁) (Fin m₁) R) (1 : Matrix (Fin m₂) (Fin m₂) R) = 1 := by
   rw [kroneckerFin, one_kronecker_one, submatrix_one_equiv]
 
-/-- The positional index of `(a, (b, c))` in `Fin (m₁ * (m₂ * m₃))` is that of `((a, b), c)` in
+/-- The position of $(a, (b, c))$ in `Fin (m₁ * (m₂ * m₃))` is the position of $((a, b), c)$ in
 `Fin (m₁ * m₂ * m₃)`. -/
 private theorem finCongr_symm_finProdFinEquiv_assoc (a : Fin m₁) (b : Fin m₂) (c : Fin m₃) :
     (finCongr (Nat.mul_assoc m₁ m₂ m₃)).symm (finProdFinEquiv (a, finProdFinEquiv (b, c)))
@@ -237,8 +278,12 @@ private theorem finCongr_symm_finProdFinEquiv_assoc (a : Fin m₁) (b : Fin m₂
   simp only [finCongr_symm, finCongr_apply, Fin.val_cast, finProdFinEquiv_apply_val]
   ring
 
-/-- Associativity of the positional Kronecker product ([golub2013matrix] (1.3.4)); the two sides
-live on `Fin (m₁ * (m₂ * m₃))` and `Fin (m₁ * m₂ * m₃)`, identified by `Nat.mul_assoc`. -/
+/-- **Associativity** of the positional Kronecker product. For $A \in R^{m_1 \times n_1}$,
+$B \in R^{m_2 \times n_2}$ and $C \in R^{m_3 \times n_3}$,
+$$A \otimes (B \otimes C) = (A \otimes B) \otimes C.$$
+
+This is (1.3.4) of [golub2013matrix]. The two sides are indexed by `Fin (m₁ * (m₂ * m₃))` and
+`Fin (m₁ * m₂ * m₃)`, and these are identified by `Nat.mul_assoc`. -/
 theorem kroneckerFin_assoc [Semigroup R] (A : Matrix (Fin m₁) (Fin n₁) R)
     (B : Matrix (Fin m₂) (Fin n₂) R) (C : Matrix (Fin m₃) (Fin n₃) R) :
     kroneckerFin A (kroneckerFin B C)
@@ -260,36 +305,48 @@ section Vec
 
 variable {m n m₁ n₁ m₂ n₂ : ℕ}
 
-/-- Column stacking in positional layout, `vec X = [X(:, 1); …; X(:, n)]`: entry `(i, j)` of `X`
-sits at position `i + m j`. -/
+/-- The **column stacking** of $X \in R^{m \times n}$ in positional layout, $\operatorname{vec} X =
+[X(:, 1); \dots; X(:, n)] \in R^{nm}$: the entry $(i, j)$ of $X$ is at the position $i + m j$.
+
+The definition is Mathlib's `Matrix.vec` reindexed by `finProdFinEquiv`. -/
 def vecFin (X : Matrix (Fin m) (Fin n) R) : Fin (n * m) → R :=
   vec X ∘ finProdFinEquiv.symm
 
-/-- Entry `(i, j)` of `X` sits at position `i + m j` of `vecFin X`. -/
+/-- The entry $(i, j)$ of $X$ is at the position $i + m j$ of $\operatorname{vec} X$. -/
 @[simp]
 theorem vecFin_apply (X : Matrix (Fin m) (Fin n) R) (j : Fin n) (i : Fin m) :
     vecFin X (finProdFinEquiv (j, i)) = X i j := by
   simp [vecFin]
 
-/-- Column stacking is injective: a matrix is determined by `vec X`. -/
+/-- The column stacking $X \mapsto \operatorname{vec} X$ is injective. -/
 theorem vecFin_injective : Function.Injective (vecFin : Matrix (Fin m) (Fin n) R → _) :=
   fun X Y h => vec_inj.1 <| funext fun q => by
     simpa [vecFin] using congrFun h (finProdFinEquiv q)
 
-/-- The reshaping identity `(B ⊗ C) vec X = vec (C X Bᵀ)` ([golub2013matrix] (1.3.6)). -/
+/-- The **reshaping identity**. Over a commutative semiring, for $B \in R^{m_1 \times n_1}$,
+$C \in R^{m_2 \times n_2}$ and $X \in R^{n_2 \times n_1}$,
+$$(B \otimes C) \operatorname{vec} X = \operatorname{vec}(C X B^T).$$
+
+This is (1.3.6) of [golub2013matrix], in positional layout. -/
 theorem kroneckerFin_mulVec_vecFin [CommSemiring R] (B : Matrix (Fin m₁) (Fin n₁) R)
     (C : Matrix (Fin m₂) (Fin n₂) R) (X : Matrix (Fin n₂) (Fin n₁) R) :
     kroneckerFin B C *ᵥ vecFin X = vecFin (C * X * Bᵀ) := by
   rw [kroneckerFin, submatrix_mulVec_equiv, vecFin, vecFin, Equiv.symm_symm, Function.comp_assoc,
     Equiv.symm_comp_self, Function.comp_id, kronecker_mulVec_vec]
 
-/-- MATLAB's `reshape(A, m₁, n₁)`: the `m₁ × n₁` matrix with the same column stacking as `A`. The
-size condition is an argument, as a mismatch is an error in MATLAB. -/
+/-- The **reshaping** $\operatorname{reshape}(A, m_1, n_1)$ of MATLAB: for $A \in R^{m \times n}$
+and $n_1 m_1 = nm$, the matrix in $R^{m_1 \times n_1}$ with the same column stacking as $A$. Its
+entry $(i, j)$ is the entry of $\operatorname{vec} A$ at the position $i + m_1 j$.
+
+The size condition $n_1 m_1 = nm$ is an argument, because a mismatch is an error in MATLAB. -/
 def reshape (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n₁ * m₁ = n * m) :
     Matrix (Fin m₁) (Fin n₁) R :=
   of fun i j => vecFin A (Fin.cast h (finProdFinEquiv (j, i)))
 
-/-- `reshape` keeps the column stacking; with `vecFin_injective` this characterizes it. -/
+/-- The reshaping keeps the column stacking: $\operatorname{vec}(\operatorname{reshape}(A, m_1,
+n_1)) = \operatorname{vec} A$, with the two index types identified by the size condition.
+
+Together with `Matrix.vecFin_injective`, this characterizes the reshaping. -/
 theorem vecFin_reshape (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n₁ * m₁ = n * m) :
     vecFin (reshape A m₁ n₁ h) = vecFin A ∘ Fin.cast h := by
   funext x
@@ -299,23 +356,27 @@ theorem vecFin_reshape (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n�
 
 variable {m' n' : Type*}
 
-/-- The inverse of Mathlib's column stacking `Matrix.vec`: `unvec u i j = u (j, i)`. -/
+/-- The **inverse of the column stacking** `Matrix.vec`: for a vector $u$ indexed by $n \times m$,
+the matrix in $R^{m \times n}$ with entries $u_{(j, i)}$ at $(i, j)$. -/
 def unvec (u : n' × m' → R) : Matrix m' n' R :=
   of fun i j => u (j, i)
 
-/-- The entries of `unvec u`. -/
+/-- The entry $(i, j)$ of `Matrix.unvec u` is $u_{(j, i)}$. -/
 @[simp]
 theorem unvec_apply (u : n' × m' → R) (i : m') (j : n') : unvec u i j = u (j, i) := rfl
 
-/-- `unvec` is a left inverse of `vec`. -/
+/-- `Matrix.unvec` is a left inverse of `Matrix.vec`:
+$\operatorname{unvec}(\operatorname{vec} A) = A$. -/
 @[simp]
 theorem unvec_vec (A : Matrix m' n' R) : unvec (vec A) = A := rfl
 
-/-- `unvec` is a right inverse of `vec`. -/
+/-- `Matrix.unvec` is a right inverse of `Matrix.vec`:
+$\operatorname{vec}(\operatorname{unvec} u) = u$. -/
 @[simp]
 theorem vec_unvec (u : n' × m' → R) : vec (unvec u) = u := rfl
 
-/-- `Matrix.unvec` as a linear equivalence, with inverse `Matrix.vec`. -/
+/-- `Matrix.unvec` as a linear equivalence from the vectors indexed by $n \times m$ to the matrices
+in $R^{m \times n}$, with inverse `Matrix.vec`. -/
 def unvecLinearEquiv (S : Type*) [Semiring S] [AddCommMonoid R] [Module S R] :
     (n' × m' → R) ≃ₗ[S] Matrix m' n' R where
   toFun := unvec
@@ -325,18 +386,21 @@ def unvecLinearEquiv (S : Type*) [Semiring S] [AddCommMonoid R] [Module S R] :
   left_inv := vec_unvec
   right_inv := unvec_vec
 
-/-- `unvec` of an elementary tensor is a rank-one matrix: `reshape(v ⊗ u, m, n) = u vᵀ`. -/
+/-- If the multiplication of $R$ is commutative, the inverse column stacking of an elementary tensor
+is a rank-one matrix: for $v \in R^n$ and $u \in R^m$,
+$\operatorname{unvec}(v \otimes u) = u v^T$. -/
 theorem unvec_kroneckerVec [CommMagma R] (v : n' → R) (u : m' → R) :
     unvec (kroneckerVec v u) = vecMulVec u v := by
   ext i j
   simp [vecMulVec_apply, mul_comm]
 
-/-- The positional `reshape` is the typed inverse of `vec`, read through the positional layout. -/
+/-- The positional reshaping is the inverse column stacking `Matrix.unvec` of
+$\operatorname{vec} A$, read through the positional layout. -/
 theorem reshape_eq_unvec (A : Matrix (Fin m) (Fin n) R) (m₁ n₁ : ℕ) (h : n₁ * m₁ = n * m) :
     reshape A m₁ n₁ h = unvec ((vecFin A ∘ Fin.cast h) ∘ finProdFinEquiv) :=
   rfl
 
-/-- Every vector of length `n m` is the column stacking of an `m × n` matrix. -/
+/-- Every vector of length $nm$ is the column stacking of a matrix in $R^{m \times n}$. -/
 theorem vecFin_surjective : Function.Surjective (vecFin : Matrix (Fin m) (Fin n) R → _) :=
   fun w => ⟨unvec (w ∘ finProdFinEquiv), funext fun x => by
     simp only [vecFin, vec_unvec, Function.comp_apply, Equiv.apply_symm_apply]⟩
@@ -349,22 +413,30 @@ section PerfectShuffle
 
 variable {p q r m₁ m₂ n₁ n₂ : ℕ}
 
-/-- The perfect shuffle is the vec-permutation matrix: `Π_{p,r} vec X = vec Xᵀ` for an `r × p`
-matrix `X`, whose `p` columns are the piles. -/
+/-- The perfect shuffle is the **vec-permutation matrix**. For $X \in R^{r \times p}$,
+$$\Pi_{p,r} \operatorname{vec} X = \operatorname{vec} X^T.$$
+
+The $p$ columns of $X$ are the piles of the shuffle. -/
 theorem perfectShuffle_mulVec_vecFin [NonAssocSemiring R] (X : Matrix (Fin r) (Fin p) R) :
     perfectShuffle p r *ᵥ vecFin X = vecFin Xᵀ := by
   funext x
   obtain ⟨⟨a, b⟩, rfl⟩ := finProdFinEquiv.surjective x
   rw [perfectShuffle_mulVec_apply, vecFin_apply, vecFin_apply, transpose_apply]
 
-/-- The Kronecker product commutes up to swapping both index pairs. -/
+/-- The Kronecker product on product index types commutes up to swapping both index pairs:
+$A \otimes B$, with both row and column indices $(i, k) \mapsto (k, i)$ swapped, is
+$B \otimes A$. -/
 theorem kronecker_submatrix_swap [CommMagma R] {l m n q : Type*} (A : Matrix l m R)
     (B : Matrix n q R) : (A ⊗ₖ B).submatrix Prod.swap Prod.swap = B ⊗ₖ A := by
   ext ⟨i, i'⟩ ⟨j, j'⟩
   exact mul_comm _ _
 
-/-- The perfect shuffle conjugates `B ⊗ C` into `C ⊗ B`: `Π_{m₁,m₂} (B ⊗ C) Π_{n₁,n₂}ᵀ = C ⊗ B`
-([golub2013matrix] (1.3.5)). -/
+/-- The perfect shuffle conjugates $B \otimes C$ into $C \otimes B$. Over a commutative semiring,
+for $B \in R^{m_1 \times n_1}$ and $C \in R^{m_2 \times n_2}$, the positional Kronecker products
+satisfy
+$$\Pi_{m_1,m_2} (B \otimes C) \Pi_{n_1,n_2}^T = C \otimes B.$$
+
+This is (1.3.5) of [golub2013matrix]. -/
 theorem perfectShuffle_mul_kroneckerFin_mul_transpose [CommSemiring R]
     (B : Matrix (Fin m₁) (Fin n₁) R) (C : Matrix (Fin m₂) (Fin n₂) R) :
     perfectShuffle m₁ m₂ * kroneckerFin B C *
@@ -381,8 +453,9 @@ theorem perfectShuffle_mul_kroneckerFin_mul_transpose [CommSemiring R]
 
 variable [CommSemiring R]
 
-/-- A perfect shuffle in the left factor of a Kronecker product with an identity permutes the
-blocks of a vector: `((Π_{p,r} ⊗ I_q) w)((a, b), c) = w((b, a), c)`. -/
+/-- A perfect shuffle in the left factor of a Kronecker product with an identity permutes the blocks
+of a vector: for $w \in R^{prq}$, $a < r$, $b < p$ and $c < q$, $((\Pi_{p,r} \otimes I_q)
+w)_{((a, b), c)} = w_{((b, a), c)}$, where the indices are positions in the positional layout. -/
 theorem kroneckerFin_perfectShuffle_one_mulVec (w : Fin (p * r * q) → R) (a : Fin r) (b : Fin p)
     (c : Fin q) :
     (kroneckerFin (perfectShuffle p r : Matrix (Fin (r * p)) (Fin (p * r)) R)
@@ -393,8 +466,10 @@ theorem kroneckerFin_perfectShuffle_one_mulVec (w : Fin (p * r * q) → R) (a : 
     PEquiv.mul_toMatrix_toPEquiv, vecFin_apply, vecFin_apply, submatrix_apply, Equiv.symm_symm,
     id, finPerfectShuffle_apply]
 
-/-- A perfect shuffle in the right factor of a Kronecker product with an identity permutes within
-the blocks of a vector: `((I_k ⊗ Π_{p,r}) w)(K, (a, b)) = w(K, (b, a))`. -/
+/-- A perfect shuffle in the right factor of a Kronecker product with an identity permutes the
+entries within the blocks of a vector: for $w \in R^{k p r}$, $K < k$, $a < r$ and $b < p$,
+$((I_k \otimes \Pi_{p,r}) w)_{(K, (a, b))} = w_{(K, (b, a))}$, where the indices are positions
+in the positional layout. -/
 theorem kroneckerFin_one_perfectShuffle_mulVec {k : ℕ} (w : Fin (k * (p * r)) → R) (K : Fin k)
     (a : Fin r) (b : Fin p) :
     (kroneckerFin (1 : Matrix (Fin k) (Fin k) R)
@@ -406,13 +481,16 @@ theorem kroneckerFin_one_perfectShuffle_mulVec {k : ℕ} (w : Fin (k * (p * r)) 
     PEquiv.toMatrix_toPEquiv_mul, vecFin_apply, vecFin_apply, submatrix_apply, id,
     finPerfectShuffle_symm, finPerfectShuffle_apply]
 
-/-- **The two-pass factorization of the perfect shuffle** ([golub2013matrix] §12.3.5):
-`Π_{p, r q} = (I_r ⊗ Π_{p,q}) (Π_{p,r} ⊗ I_q)`, with `Fin (r * (q * p))` identified with
-`Fin (r * q * p)`, `Fin (r * (p * q))` with `Fin (r * p * q)` and `Fin (p * (r * q))` with
-`Fin (p * r * q)` by `finCongr`. Applied to `vec A` for a block column `A = [A₁; ⋯; A_r]` of `q × p`
-blocks, the first pass gives `vec [A₁ | ⋯ | A_r]` and the second `vec Aᵀ`
-(`Matrix.perfectShuffle_mulVec_vecFin`), each through shuffles of `p q` rather than `p q r`
-elements. -/
+/-- **The two-pass factorization of the perfect shuffle.** Over a commutative semiring, for all
+$p, q, r \in \mathbb{N}$,
+$$\Pi_{p, rq} = (I_r \otimes \Pi_{p,q}) (\Pi_{p,r} \otimes I_q).$$
+
+This is from [golub2013matrix], §12.3.5. The index types are identified by `finCongr`:
+`Fin (r * (q * p))` with `Fin (r * q * p)`, `Fin (r * (p * q))` with `Fin (r * p * q)`, and
+`Fin (p * (r * q))` with `Fin (p * r * q)`. Applied to $\operatorname{vec} A$ for a block column
+$A = [A_1; \dots; A_r]$ of $q \times p$ blocks, the first pass gives
+$\operatorname{vec}[A_1 \mid \dots \mid A_r]$ and the second gives $\operatorname{vec} A^T$
+(`Matrix.perfectShuffle_mulVec_vecFin`). Each pass shuffles $pq$ elements instead of $pqr$. -/
 theorem perfectShuffle_submatrix_eq_kroneckerFin_mul :
     (perfectShuffle p (r * q) : Matrix (Fin (r * q * p)) (Fin (p * (r * q))) R).submatrix
         (finCongr (by ring)) id
@@ -450,40 +528,50 @@ section Pi
 
 variable {ι : Type*} [Fintype ι] {μ κ ν : ι → Type*}
 
-/-- The Kronecker product of a finite family of matrices, on the product index types:
-`piKronecker M a b = ∏ i, M i (a i) (b i)`. -/
+/-- The **Kronecker product of a finite family** of matrices $M_i \in R^{\mu_i \times \kappa_i}$,
+$i \in \iota$: the matrix indexed by the families $a = (a_i)$ and $b = (b_i)$ of indices, with
+entries
+$$\Big(\bigotimes_i M_i\Big)_{ab} = \prod_{i \in \iota} (M_i)_{a_i b_i}.$$
+-/
 def piKronecker [CommMonoid R] (M : ∀ i, Matrix (μ i) (κ i) R) :
     Matrix (∀ i, μ i) (∀ i, κ i) R :=
   of fun a b => ∏ i, M i (a i) (b i)
 
-/-- The entries of a family Kronecker product. -/
+/-- The entries of a family Kronecker product: $(\bigotimes_i M_i)_{ab} = \prod_i (M_i)_{a_i b_i}$.
+-/
 @[simp]
 theorem piKronecker_apply [CommMonoid R] (M : ∀ i, Matrix (μ i) (κ i) R) (a : ∀ i, μ i)
     (b : ∀ i, κ i) : piKronecker M a b = ∏ i, M i (a i) (b i) := rfl
 
-/-- The elementary tensor of a family of vectors, the family form of `Matrix.kroneckerVec`:
-`piKroneckerVec z b = ∏ i, z i (b i)`. -/
+/-- The **elementary tensor of a finite family** of vectors $z_i \in R^{\kappa_i}$: the vector
+indexed by the families $b = (b_i)$ with entries $(\bigotimes_i z_i)_b = \prod_i (z_i)_{b_i}$.
+
+This is the family form of `Matrix.kroneckerVec`. -/
 def piKroneckerVec [CommMonoid R] (z : ∀ i, κ i → R) : (∀ i, κ i) → R :=
   fun b => ∏ i, z i (b i)
 
-/-- The entries of a family elementary tensor. -/
+/-- The entries of a family elementary tensor: $(\bigotimes_i z_i)_b = \prod_i (z_i)_{b_i}$. -/
 @[simp]
 theorem piKroneckerVec_apply [CommMonoid R] (z : ∀ i, κ i → R) (b : ∀ i, κ i) :
     piKroneckerVec z b = ∏ i, z i (b i) := rfl
 
-/-- For two factors, `piKronecker` is the Kronecker product `M 0 ⊗ₖ M 1`. -/
+/-- For a family of two matrices $M_0, M_1$, the family Kronecker product is $M_0 \otimes M_1$,
+reindexed by `piFinTwoEquiv`. -/
 theorem piKronecker_fin_two [CommMonoid R] {μ κ : Fin 2 → Type*} (M : ∀ i, Matrix (μ i) (κ i) R) :
     piKronecker M = (M 0 ⊗ₖ M 1).submatrix (piFinTwoEquiv μ) (piFinTwoEquiv κ) := by
   ext a b
   simp [Fin.prod_univ_two]
 
-/-- The transpose of a family Kronecker product is the product of the transposes. -/
+/-- The transpose of a family Kronecker product is the family Kronecker product of the transposes:
+$(\bigotimes_i M_i)^T = \bigotimes_i M_i^T$. -/
 theorem transpose_piKronecker [CommMonoid R] (M : ∀ i, Matrix (μ i) (κ i) R) :
     (piKronecker M)ᵀ = piKronecker fun i => (M i)ᵀ :=
   rfl
 
-/-- The conjugate transpose of a family Kronecker product is the product of the conjugate
-transposes. -/
+/-- If the star operation of $R$ reverses products, the conjugate transpose of a family Kronecker
+product is the family Kronecker product of the conjugate transposes:
+$$\Big(\bigotimes_i M_i\Big)^* = \bigotimes_i M_i^*.$$
+-/
 theorem conjTranspose_piKronecker [CommMonoid R] [StarMul R] (M : ∀ i, Matrix (μ i) (κ i) R) :
     (piKronecker M)ᴴ = piKronecker fun i => (M i)ᴴ := by
   ext a b
@@ -491,7 +579,7 @@ theorem conjTranspose_piKronecker [CommMonoid R] [StarMul R] (M : ∀ i, Matrix 
 
 variable [CommSemiring R]
 
-/-- The Kronecker product of identity matrices is the identity. -/
+/-- The family Kronecker product of identity matrices is the identity. -/
 @[simp]
 theorem piKronecker_one [∀ i, DecidableEq (μ i)] :
     piKronecker (fun i => (1 : Matrix (μ i) (μ i) R)) = 1 := by
@@ -500,15 +588,20 @@ theorem piKronecker_one [∀ i, DecidableEq (μ i)] :
 
 variable [DecidableEq ι]
 
-/-- The mixed-product rule for families: `(⊗ᵢ Nᵢ)(⊗ᵢ Mᵢ) = ⊗ᵢ (Nᵢ Mᵢ)`. -/
+/-- The **mixed-product rule for families**. Over a commutative semiring, for a finite family of
+matrices $N_i \in R^{\mu_i \times \kappa_i}$ and $M_i \in R^{\kappa_i \times \nu_i}$,
+$$\Big(\bigotimes_i N_i\Big)\Big(\bigotimes_i M_i\Big) = \bigotimes_i N_i M_i.$$
+-/
 theorem piKronecker_mul_piKronecker [∀ i, Fintype (κ i)] (N : ∀ i, Matrix (μ i) (κ i) R)
     (M : ∀ i, Matrix (κ i) (ν i) R) :
     piKronecker N * piKronecker M = piKronecker fun i => N i * M i := by
   ext a b
   simp only [Matrix.mul_apply, piKronecker_apply, Fintype.prod_sum, Finset.prod_mul_distrib]
 
-/-- The family Kronecker product acts on an elementary tensor factor by factor:
-`(⊗ᵢ Mᵢ)(⊗ᵢ zᵢ) = ⊗ᵢ (Mᵢ zᵢ)`. -/
+/-- Over a commutative semiring, the family Kronecker product acts on a family elementary tensor
+factor by factor: for $M_i \in R^{\mu_i \times \kappa_i}$ and $z_i \in R^{\kappa_i}$,
+$$\Big(\bigotimes_i M_i\Big)\Big(\bigotimes_i z_i\Big) = \bigotimes_i M_i z_i.$$
+-/
 theorem piKronecker_mulVec_piKroneckerVec [∀ i, Fintype (κ i)] (M : ∀ i, Matrix (μ i) (κ i) R)
     (z : ∀ i, κ i → R) :
     piKronecker M *ᵥ piKroneckerVec z = piKroneckerVec fun i => M i *ᵥ z i := by
@@ -516,7 +609,9 @@ theorem piKronecker_mulVec_piKroneckerVec [∀ i, Fintype (κ i)] (M : ∀ i, Ma
   simp only [mulVec, dotProduct, piKronecker_apply, piKroneckerVec, Fintype.prod_sum,
     Finset.prod_mul_distrib]
 
-/-- A Kronecker product of matrices with orthonormal columns has orthonormal columns. -/
+/-- Over a commutative semiring with a star operation, if $M_i^* M_i = I$ for every $i$, then
+$(\bigotimes_i M_i)^* (\bigotimes_i M_i) = I$: a Kronecker product of matrices with orthonormal
+columns has orthonormal columns. -/
 theorem conjTranspose_piKronecker_mul_piKronecker [StarRing R] [∀ i, Fintype (μ i)]
     [∀ i, DecidableEq (κ i)] {M : ∀ i, Matrix (μ i) (κ i) R} (h : ∀ i, (M i)ᴴ * M i = 1) :
     (piKronecker M)ᴴ * piKronecker M = 1 := by
@@ -529,7 +624,8 @@ section PiUnitary
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {μ : ι → Type*} [CommRing R]
 
-/-- A Kronecker product of unitary matrices is unitary. -/
+/-- Over a commutative ring with a star operation, a family Kronecker product of unitary matrices is
+unitary. -/
 theorem piKronecker_mem_unitaryGroup [StarRing R] [∀ i, Fintype (μ i)] [∀ i, DecidableEq (μ i)]
     {U : ∀ i, Matrix (μ i) (μ i) R} (hU : ∀ i, U i ∈ unitaryGroup (μ i) R) :
     piKronecker U ∈ unitaryGroup (∀ i, μ i) R := by
@@ -544,8 +640,10 @@ end PiUnitary
 
 section PiFin
 
-/-- The recursion of the little-endian flattening `finPiFinEquiv`: the last index carries the
-largest weight, `col(i, x) = col(i) + (∏_{k < d} s_k) x`. -/
+/-- The recursion of the little-endian flattening `finPiFinEquiv`, in which the last index has the
+largest weight: for $i = (i_0, \dots, i_{d-1})$ with $i_k < s_k$ and $x < s_d$,
+$$\operatorname{col}(i, x) = \operatorname{col}(i) + \Big(\prod_{k < d} s_k\Big) x,$$
+where $\operatorname{col}$ is the value of `finPiFinEquiv`. -/
 theorem _root_.finPiFinEquiv_snoc {d : ℕ} {s : Fin (d + 1) → ℕ}
     (i : ∀ k : Fin d, Fin (s k.castSucc)) (x : Fin (s (Fin.last d))) :
     (finPiFinEquiv (Fin.snoc (α := fun k => Fin (s k)) i x) : ℕ)
@@ -555,8 +653,9 @@ theorem _root_.finPiFinEquiv_snoc {d : ℕ} {s : Fin (d + 1) → ℕ}
   rw [mul_comm (x : ℕ)]
   rfl
 
-/-- The split of the flattening `finPiFinEquiv` at `k ≤ d`: the digits below `k`, flattened, plus
-`∏_{j < k} s_j` times the digits from `k` on, flattened. -/
+/-- The split of the flattening `finPiFinEquiv` at $k \le d$: for $a = (a_0, \dots, a_{d-1})$ with
+$a_j < s_j$, the value $\operatorname{col}(a)$ is the flattening of the digits $a_j$, $j < k$,
+plus $\prod_{j < k} s_j$ times the flattening of the digits $a_j$, $j \ge k$. -/
 theorem _root_.finPiFinEquiv_apply_val_eq_add_mul {d : ℕ} {s : Fin d → ℕ} (a : ∀ j, Fin (s j))
     (k : ℕ) (hk : k ≤ d) :
     (finPiFinEquiv a : ℕ)
@@ -583,8 +682,10 @@ theorem _root_.finPiFinEquiv_apply_val_eq_add_mul {d : ℕ} {s : Fin d → ℕ} 
     rw [dite_eq_left (by omega), Fin.prod_univ_add, mul_left_comm]
     rfl
 
-/-- The split of the flattening `finPiFinEquiv` at the digit `k`: the digits below `k`, the digit
-`a k` weighted by `∏_{j < k} s_j`, and the digits above `k` weighted by `∏_{j ≤ k} s_j`. -/
+/-- The split of the flattening `finPiFinEquiv` at the digit $k < d$: for
+$a = (a_0, \dots, a_{d-1})$ with $a_j < s_j$, the value $\operatorname{col}(a)$ is the
+flattening of the digits below $k$, plus $\prod_{j < k} s_j$ times $a_k + s_k c$, where $c$ is
+the flattening of the digits above $k$. -/
 theorem _root_.finPiFinEquiv_apply_val_split {d : ℕ} {s : Fin d → ℕ} (a : ∀ j, Fin (s j))
     (k : Fin d) :
     (finPiFinEquiv a : ℕ)
@@ -604,11 +705,16 @@ theorem _root_.finPiFinEquiv_apply_val_split {d : ℕ} {s : Fin d → ℕ} (a : 
   rw [finPiFinEquiv_apply_val_eq_add_mul a (k + 1) k.is_lt, hL, hP]
   ring
 
-/-- The flattening of a family Kronecker product by `finPiFinEquiv` (the book's `col`) is the
-positional Kronecker product with the *last* factor outermost; by induction the flattened
-`piKronecker M` is `M_d ⊗ ⋯ ⊗ M_1`, reversed, because `finPiFinEquiv` is little-endian while
-`finProdFinEquiv` is big-endian. The two index types agree up to `Fin.prod_univ_castSucc` and the
-commutativity of the size product. -/
+/-- The flattening of a family Kronecker product by `finPiFinEquiv` (the map $\operatorname{col}$ of
+the books) is the positional Kronecker product with the last factor outermost. For matrices
+$M_k \in R^{m_k \times n_k}$, $k \le d$,
+$$\operatorname{flat}\Big(\bigotimes_{k \le d} M_k\Big) = M_d \otimes
+  \operatorname{flat}\Big(\bigotimes_{k < d} M_k\Big).$$
+By induction, the flattened family product is $M_d \otimes \dots \otimes M_0$, in reversed
+order, because `finPiFinEquiv` is little-endian while `finProdFinEquiv` is big-endian.
+
+The two index types are identified by `finCongr`, with `Fin.prod_univ_castSucc` and the
+commutativity of the product of the sizes. -/
 theorem piKronecker_reindex_finPiFinEquiv [CommMonoid R] {d : ℕ} {m n : Fin (d + 1) → ℕ}
     (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) R) :
     (piKronecker M).reindex finPiFinEquiv finPiFinEquiv
@@ -641,27 +747,35 @@ section KhatriRao
 
 variable {m n m₁ m₂ r : Type*}
 
-/-- The column-wise Khatri–Rao product: column `j` of `khatriRao B C` is `b_j ⊗ c_j`. -/
+/-- The column-wise **Khatri–Rao product** of $B \in R^{m_1 \times r}$ and $C \in R^{m_2 \times r}$:
+the matrix $B \odot C$ indexed by $(m_1 \times m_2) \times r$ whose column $j$ is
+$b_j \otimes c_j$, that is, $(B \odot C)_{(i,k),j} = b_{ij} c_{kj}$. -/
 def khatriRao [Mul R] (B : Matrix m₁ r R) (C : Matrix m₂ r R) : Matrix (m₁ × m₂) r R :=
   of fun ik j => B ik.1 j * C ik.2 j
 
-/-- The entries of a Khatri–Rao product. -/
+/-- The entries of a Khatri–Rao product: $(B \odot C)_{(i,k),j} = b_{ij} c_{kj}$. -/
 @[simp]
 theorem khatriRao_apply [Mul R] (B : Matrix m₁ r R) (C : Matrix m₂ r R) (i : m₁) (k : m₂) (j : r) :
     khatriRao B C (i, k) j = B i j * C k j := rfl
 
-/-- The Khatri–Rao product is a column submatrix of the Kronecker product. -/
+/-- The Khatri–Rao product $B \odot C$ is the submatrix of $B \otimes C$ formed by the columns
+$(j, j)$. -/
 theorem khatriRao_eq_submatrix_kronecker [Mul R] (B : Matrix m₁ r R) (C : Matrix m₂ r R) :
     khatriRao B C = (B ⊗ₖ C).submatrix id fun j => (j, j) :=
   rfl
 
-/-- The Hadamard product is a submatrix of the Kronecker product. -/
+/-- The Hadamard (entrywise) product $A \circ B$ of two matrices of the same size is the submatrix
+of $A \otimes B$ formed by the rows $(i, i)$ and the columns $(j, j)$. -/
 theorem hadamard_eq_submatrix_kronecker [Mul R] (A B : Matrix m n R) :
     A ⊙ B = (A ⊗ₖ B).submatrix (fun i => (i, i)) fun j => (j, j) :=
   rfl
 
-/-- The Gram matrix of a Khatri–Rao product ([golub2013matrix] (12.5.20)):
-`(B ⊙ C)ᵀ (B ⊙ C) = (Bᵀ B) ∘ (Cᵀ C)`. -/
+/-- The **Gram matrix of a Khatri–Rao product**. Over a commutative semiring, for
+$B \in R^{m_1 \times r}$ and $C \in R^{m_2 \times r}$,
+$$(B \odot C)^T (B \odot C) = (B^T B) \circ (C^T C),$$
+where $\circ$ is the Hadamard product.
+
+This is (12.5.20) of [golub2013matrix]. -/
 theorem khatriRao_transpose_mul_self [CommSemiring R] [Fintype m₁] [Fintype m₂]
     (B : Matrix m₁ r R) (C : Matrix m₂ r R) :
     (khatriRao B C)ᵀ * khatriRao B C = (Bᵀ * B) ⊙ (Cᵀ * C) := by
@@ -670,7 +784,9 @@ theorem khatriRao_transpose_mul_self [CommSemiring R] [Fintype m₁] [Fintype m�
     Fintype.sum_prod_type, Fintype.sum_mul_sum]
   exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring
 
-/-- The conjugate-transpose twin of `Matrix.khatriRao_transpose_mul_self`. -/
+/-- Over a commutative semiring with a star operation, for $B \in R^{m_1 \times r}$ and
+$C \in R^{m_2 \times r}$, $(B \odot C)^* (B \odot C) = (B^* B) \circ (C^* C)$, where $\circ$ is
+the Hadamard product. -/
 theorem khatriRao_conjTranspose_mul_self [CommSemiring R] [StarRing R] [Fintype m₁] [Fintype m₂]
     (B : Matrix m₁ r R) (C : Matrix m₂ r R) :
     (khatriRao B C)ᴴ * khatriRao B C = (Bᴴ * B) ⊙ (Cᴴ * C) := by
@@ -681,16 +797,19 @@ theorem khatriRao_conjTranspose_mul_self [CommSemiring R] [StarRing R] [Fintype 
 
 variable {ι : Type*} [Fintype ι] {κ : ι → Type*}
 
-/-- The Khatri–Rao product of a family: `piKhatriRao F a j = ∏ i, F i (a i) j`. -/
+/-- The **Khatri–Rao product of a finite family** of matrices $F_i \in R^{\kappa_i \times r}$: the
+matrix indexed by the families $a = (a_i)$ and the columns $j$, with entries
+$\prod_i (F_i)_{a_i j}$. -/
 def piKhatriRao [CommMonoid R] (F : ∀ i, Matrix (κ i) r R) : Matrix (∀ i, κ i) r R :=
   of fun a j => ∏ i, F i (a i) j
 
-/-- The entries of a family Khatri–Rao product. -/
+/-- The entries of a family Khatri–Rao product: the entry $(a, j)$ is $\prod_i (F_i)_{a_i j}$. -/
 @[simp]
 theorem piKhatriRao_apply [CommMonoid R] (F : ∀ i, Matrix (κ i) r R) (a : ∀ i, κ i) (j : r) :
     piKhatriRao F a j = ∏ i, F i (a i) j := rfl
 
-/-- For two factors, `piKhatriRao` is the binary Khatri–Rao product. -/
+/-- For a family of two matrices $F_0, F_1$, the family Khatri–Rao product is $F_0 \odot F_1$, with
+the rows reindexed by `piFinTwoEquiv`. -/
 theorem piKhatriRao_fin_two [CommMonoid R] {κ : Fin 2 → Type*} (F : ∀ i, Matrix (κ i) r R) :
     piKhatriRao F = (khatriRao (F 0) (F 1)).submatrix (piFinTwoEquiv κ) id := by
   ext a j
@@ -702,13 +821,19 @@ section TracySingh
 
 variable {M₁ m₁ N₁ n₁ M₂ m₂ N₂ n₂ : Type*}
 
-/-- The Tracy–Singh product of block matrices (outer index = block): block `(I₁, J₁)` of
-`tracySingh B C` is the block matrix `[B_{I₁J₁} ⊗ C_{kl}]_{k,l}`. -/
+/-- The **Tracy–Singh product** of block matrices $B$ and $C$, where the first component of each
+index is the block index: the matrix whose block $(I_1, J_1)$ is the block matrix
+$[B_{I_1 J_1} \otimes C_{kl}]_{k,l}$. Its entry at the row $((I_1, I_2), (i_1, i_2))$ and the
+column $((J_1, J_2), (j_1, j_2))$ is $B_{(I_1, i_1),(J_1, j_1)} \, C_{(I_2, i_2),(J_2, j_2)}$. -/
 def tracySingh [Mul R] (B : Matrix (M₁ × m₁) (N₁ × n₁) R) (C : Matrix (M₂ × m₂) (N₂ × n₂) R) :
     Matrix ((M₁ × M₂) × (m₁ × m₂)) ((N₁ × N₂) × (n₁ × n₂)) R :=
   of fun I J => B (I.1.1, I.2.1) (J.1.1, J.2.1) * C (I.1.2, I.2.2) (J.1.2, J.2.2)
 
-/-- The Tracy–Singh product is a reindexed Kronecker product ([golub2013matrix] (12.3.6)). -/
+/-- The Tracy–Singh product of $B$ and $C$ is the Kronecker product $B \otimes C$ with the indices
+reordered by `Equiv.prodProdProdComm`, $((I_1, i_1), (I_2, i_2)) \mapsto ((I_1, I_2), (i_1,
+i_2))$.
+
+This is (12.3.6) of [golub2013matrix]. -/
 theorem tracySingh_eq_reindex_kronecker [Mul R] (B : Matrix (M₁ × m₁) (N₁ × n₁) R)
     (C : Matrix (M₂ × m₂) (N₂ × n₂) R) :
     tracySingh B C
@@ -723,7 +848,11 @@ section Rank
 
 variable {K : Type*} [Field K]
 
-/-- The rank of a Kronecker product is the product of the ranks ([golub2013matrix] §12.3.1). -/
+/-- Over a field $K$, for $B \in K^{m_1 \times n_1}$ and $C \in K^{m_2 \times n_2}$, the rank of the
+Kronecker product is the product of the ranks:
+$$\operatorname{rank}(B \otimes C) = \operatorname{rank} B \cdot \operatorname{rank} C.$$
+
+This is stated in [golub2013matrix], §12.3.1. -/
 theorem rank_kronecker {m₁ n₁ m₂ n₂ : Type*} [Finite m₁] [Fintype n₁] [Finite m₂] [Fintype n₂]
     (B : Matrix m₁ n₁ K) (C : Matrix m₂ n₂ K) : (B ⊗ₖ C).rank = B.rank * C.rank := by
   classical
@@ -733,7 +862,12 @@ theorem rank_kronecker {m₁ n₁ m₂ n₂ : Type*} [Finite m₁] [Fintype n₁
       ((Pi.basisFun K n₁).tensorProduct (Pi.basisFun K n₂)), toLin_kronecker]
   exact TensorProduct.finrank_range_map _ _
 
-/-- The rank of a Hadamard product is at most the product of the ranks. -/
+/-- Over a field $K$, for $A, B \in K^{m \times n}$, the rank of the Hadamard product is at most the
+product of the ranks:
+$$\operatorname{rank}(A \circ B) \le \operatorname{rank} A \cdot \operatorname{rank} B.$$
+
+The proof uses that $A \circ B$ is a submatrix of $A \otimes B$
+(`Matrix.hadamard_eq_submatrix_kronecker`) and `Matrix.rank_kronecker`. -/
 theorem rank_hadamard_le {m n : Type*} [Finite m] [Fintype n] (A B : Matrix m n K) :
     (A ⊙ B).rank ≤ A.rank * B.rank := by
   rw [hadamard_eq_submatrix_kronecker, ← rank_kronecker]
@@ -745,8 +879,12 @@ section Permutation
 
 variable {m n : Type*} [DecidableEq m] [DecidableEq n]
 
-/-- The Kronecker product of permutation matrices is the permutation matrix of the product
-permutation ([golub2013matrix] §12.3.1). -/
+/-- For permutations $\sigma$ of $m$ and $\tau$ of $n$, the Kronecker product of their permutation
+matrices is the permutation matrix of the product permutation
+$(i, j) \mapsto (\sigma(i), \tau(j))$:
+$$P_\sigma \otimes P_\tau = P_{\sigma \times \tau}.$$
+
+This is stated in [golub2013matrix], §12.3.1. -/
 theorem permMatrix_kronecker_permMatrix [MulZeroOneClass R] (σ : Equiv.Perm m)
     (τ : Equiv.Perm n) :
     σ.permMatrix R ⊗ₖ τ.permMatrix R = Equiv.Perm.permMatrix R (σ.prodCongr τ) := by
@@ -757,8 +895,10 @@ theorem permMatrix_kronecker_permMatrix [MulZeroOneClass R] (σ : Equiv.Perm m)
 
 variable [Fintype m] [Fintype n] [Semiring R] [PartialOrder R] [IsOrderedRing R]
 
-/-- The Kronecker product of two row-stochastic matrices is row-stochastic
-([golub2013matrix] §12.3.1). -/
+/-- Over an ordered semiring, if $B$ and $C$ are row-stochastic (nonnegative entries, row sums $1$),
+then $B \otimes C$ is row-stochastic.
+
+This is stated in [golub2013matrix], §12.3.1. -/
 theorem kronecker_mem_rowStochastic {B : Matrix m m R} {C : Matrix n n R}
     (hB : B ∈ rowStochastic R m) (hC : C ∈ rowStochastic R n) :
     B ⊗ₖ C ∈ rowStochastic R (m × n) := by
@@ -767,8 +907,10 @@ theorem kronecker_mem_rowStochastic {B : Matrix m m R} {C : Matrix n n R}
   simp only [Fintype.sum_prod_type, kroneckerMap_apply]
   rw [← Fintype.sum_mul_sum, hB.2, hC.2, one_mul]
 
-/-- The Kronecker product of two column-stochastic matrices is column-stochastic, the transpose of
-`Matrix.kronecker_mem_rowStochastic`. -/
+/-- Over an ordered semiring, if $B$ and $C$ are column-stochastic (nonnegative entries, column sums
+$1$), then $B \otimes C$ is column-stochastic.
+
+This is `Matrix.kronecker_mem_rowStochastic` for the transposes. -/
 theorem kronecker_mem_colStochastic {B : Matrix m m R} {C : Matrix n n R}
     (hB : B ∈ colStochastic R m) (hC : C ∈ colStochastic R n) :
     B ⊗ₖ C ∈ colStochastic R (m × n) := by

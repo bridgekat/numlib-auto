@@ -8,28 +8,39 @@ import Numlib.Analysis.Convex.Extremum.Perturbation
 /-!
 # Lagrangians of generalized convex programs
 
-The **Lagrangian** of the program associated with a bifunction `F` is
-`L(v, x) = ⨅ u (⟨u, v⟩ + F u x)`, the partial *concave* conjugate of `F` in the perturbation
-variable. Identifying it as such is the design of this file: concavity of `L(·, x)`, its closedness
-and the biconjugation `L** = cl L` are concave-conjugate lemmas applied pointwise in `x`. The one
-step with content is the exchange `⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`, which turns the
-definition of a Kuhn–Tucker vector into a statement about `L`.
+Let $U$ and $V$ be real vector spaces in duality through a pairing $\langle u, v \rangle$, and let
+$F$ be a bifunction from $U$ to a set $X$, so that $F(u, x) \in [-\infty, +\infty]$. The
+**Lagrangian** of the program associated with $F$ is
+$$L(v, x) = \inf_u \bigl\{ \langle u, v \rangle + F(u, x) \bigr\},$$
+the partial concave conjugate of $-F$ in the perturbation variable $u$. This follows
+[rockafellar1970convex], §29. The main step is the exchange of infima $\inf_x L(v, x) = \inf_u
+\{\langle u, v \rangle + \inf F u\}$, which turns the definition of a Kuhn–Tucker vector into a
+statement about $L$. Dually, the supremum of $L(\cdot, x)$ is the closure of $u \mapsto F(u, x)$ at
+the origin.
 
 ## Main definitions
 
-* `lagrangian B F` — the Lagrangian `L` of the program associated with `F`.
+* `ConvexAnalysis.lagrangian`: the Lagrangian $L$ of the program associated with $F$.
 
 ## Main results
 
-* `lagrangian_eq_concaveConj` — `L(·, x)` is the concave conjugate of `-F(·)(x)`.
-* `iInf_lagrangian` — `⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`; its mirror `iSup_lagrangian` —
-  `⨆ v L(v, x) = (cl F(·)(x))(0)`, from `convexCl_zero_eq_iSup_iInf`, Fenchel–Moreau at the origin.
-* `mem_kuhnTucker_iff_iInf_lagrangian` — `v` is a Kuhn–Tucker vector exactly when `⨅ x L(v, x)` is
-  finite and equal to the optimal value.
+* `ConvexAnalysis.lagrangian_eq_concaveConj`: $L(\cdot, x)$ is the concave conjugate of
+  $u \mapsto -F(u, x)$.
+* `ConvexAnalysis.iInf_lagrangian`: $\inf_x L(v, x) = \inf_u \{\langle u, v \rangle + \inf F u\}$.
+* `ConvexAnalysis.iSup_lagrangian`: $\sup_v L(v, x) = \operatorname{cl}(F(\cdot, x))(0)$ for convex
+  $F(\cdot, x)$, by `ConvexAnalysis.convexCl_zero_eq_iSup_iInf`, the Fenchel–Moreau theorem at the
+  origin.
+* `ConvexAnalysis.mem_kuhnTucker_iff_iInf_lagrangian`: $v$ is a Kuhn–Tucker vector if and only if
+  $\inf_x L(v, x)$ is equal to the optimal value and the optimal value is finite.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §29.
+* The Lagrangian is identified with a concave conjugate, so the concavity, closedness and
+  biconjugation of $L(\cdot, x)$ follow from lemmas about the concave conjugate
+  `ConvexAnalysis.concaveConj`, applied for each fixed $x$.
+* For the equality-constrained program with perturbed constraints $h(x) = u$ and the dot product
+  pairing, $L$ is the real-valued Lagrangian `Constrained.lagrangian` of
+  `Numlib.Optimization.Constrained`, read in `EReal`. See `Constrained.coe_lagrangian_eq`.
 -/
 
 namespace ConvexAnalysis
@@ -39,31 +50,42 @@ section Defs
 variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   {B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {F : Bifun U X} {v : V} {x : X}
 
-/-- The **Lagrangian** of the generalized convex program associated with `F`:
-`L(v, x) = ⨅ u (⟨u, v⟩ + F u x)`. For the equality-constrained program with perturbed constraints
-`h x = u` and the dot product pairing it is the real-valued `Constrained.lagrangian f h x v =
-f x + ∑ v_i h_i x` of `Numlib/Optimization/Constrained`, read in `EReal`
-(`Constrained.coe_lagrangian_eq`). -/
+/-- The **Lagrangian** of the generalized convex program associated with a bifunction $F$ from $U$
+to $X$ is the function on $V \times X$ given by
+$$L(v, x) = \inf_{u \in U} \bigl\{ \langle u, v \rangle + F(u, x) \bigr\}.$$
+
+This follows §29 of [rockafellar1970convex]. Consider the program of minimizing $f(x)$ subject
+to $h(x) = 0$, with the perturbation $F(u, x) = f(x)$ if $h(x) = u$ and $F(u, x) = +\infty$
+otherwise, and the dot product pairing. For this program, $L(v, x) = f(x) + \sum_i v_i h_i(x)$,
+which is the real-valued `Constrained.lagrangian f h x v` read in `EReal`, by
+`Constrained.coe_lagrangian_eq`. -/
 noncomputable def lagrangian (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) : V → X → EReal :=
   fun v x => ⨅ u, ((B u v : ℝ) : EReal) + F u x
 
+/-- The value of the Lagrangian is $L(v, x) = \inf_u \{\langle u, v \rangle + F(u, x)\}$. -/
 theorem lagrangian_apply (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) (x : X) :
     lagrangian B F v x = ⨅ u, ((B u v : ℝ) : EReal) + F u x := rfl
 
-/-- For each fixed `x`, `L(·, x)` is the concave conjugate of `u ↦ -(F u x)`. -/
+/-- **The Lagrangian is a concave conjugate.** For every bifunction $F$ from $U$ to $X$ and every
+$x \in X$, the function $L(\cdot, x)$ is the concave conjugate of $u \mapsto -F(u, x)$:
+$$L(v, x) = \inf_u \bigl\{ \langle u, v \rangle - (-F(u, x)) \bigr\}.$$
+
+The concave conjugate is `ConvexAnalysis.concaveConj`. -/
 theorem lagrangian_eq_concaveConj (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) (x : X) :
     lagrangian B F v x = concaveConj B (fun u => -(F u x)) v := by
   rw [lagrangian_apply, concaveConj_apply]
   exact iInf_congr fun u => by rw [sub_eq_add_neg, neg_neg]
 
-/-- The Lagrangian is never above the objective it comes from, taken at `u = 0`. -/
+/-- The Lagrangian is at most the objective: $L(v, x) \le F(0, x)$ for all $v$ and $x$. -/
 theorem lagrangian_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) (x : X) :
     lagrangian B F v x ≤ F 0 x := by
   refine le_trans (iInf_le _ 0) (le_of_eq ?_)
   rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_add]
 
-/-- Minimising the Lagrangian over `x` is the same as pricing the perturbations:
-`⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`. -/
+/-- **Minimizing the Lagrangian prices the perturbations.** For every bifunction $F$ from $U$ to $X$
+and every $v \in V$,
+$$\inf_x L(v, x) = \inf_u \bigl\{ \langle u, v \rangle + \inf_x F(u, x) \bigr\}.$$
+-/
 theorem iInf_lagrangian (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) :
     (⨅ x, lagrangian B F v x) = ⨅ u, (((B u v : ℝ) : EReal) + infBifun F u) := by
   rw [show (⨅ x, lagrangian B F v x) = ⨅ x, ⨅ u, (((B u v : ℝ) : EReal) + F u x) from rfl,
@@ -72,14 +94,18 @@ theorem iInf_lagrangian (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v
   rw [infBifun_apply, add_comm, EReal.iInf_add_coe]
   exact iInf_congr fun x => add_comm _ _
 
-/-- The Lagrangian description of Kuhn–Tucker vectors: `v` is one exactly when `⨅ x L(v, x)` is
-finite and equal to the optimal value. -/
+/-- **The Lagrangian description of Kuhn–Tucker vectors.** For every bifunction $F$ from $U$ to $X$,
+a vector $v \in V$ is a Kuhn–Tucker vector of the program associated with $F$ if and only if the
+optimal value $\inf_x F(0, x)$ is finite and
+$$\inf_x L(v, x) = \inf_x F(0, x).$$
+
+The Kuhn–Tucker vectors are `ConvexAnalysis.KuhnTucker`. -/
 theorem mem_kuhnTucker_iff_iInf_lagrangian :
     v ∈ KuhnTucker B F ↔ infBifun F 0 ≠ ⊤ ∧ infBifun F 0 ≠ ⊥ ∧
       (⨅ x, lagrangian B F v x) = infBifun F 0 := by
   rw [KuhnTucker, Set.mem_ofPred_eq, iInf_lagrangian]
 
-/-- Weak duality: `⨅ x L(v, x)` is never above the optimal value, whatever the price `v`. -/
+/-- **Weak duality.** For every $v \in V$, $\inf_x L(v, x) \le \inf_x F(0, x)$. -/
 theorem iInf_lagrangian_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) :
     (⨅ x, lagrangian B F v x) ≤ infBifun F 0 := by
   rw [iInf_lagrangian]
@@ -95,8 +121,14 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f : E → EReal}
 
-/-- **Fenchel–Moreau at the origin.** For a convex `f`, the closure at `0` is the supremum over the
-dual variable of the infimum of `x ↦ ⟨x, y⟩ + f x`. Everything below rests on this computation. -/
+/-- **The Fenchel–Moreau theorem at the origin.** Let $E$ be a locally convex real topological
+vector space in compatible duality with $F$, and let $f : E \to [-\infty, +\infty]$ be convex.
+Then the closure of $f$ at the origin is
+$$(\operatorname{cl} f)(0) = \sup_{y \in F} \inf_{x \in E} \bigl\{ \langle x, y \rangle + f(x)
+  \bigr\}.$$
+
+The closure is `ConvexAnalysis.convexCl`, and the compatibility is
+`ConvexAnalysis.IsCompatiblePairing`. -/
 theorem convexCl_zero_eq_iSup_iInf (hf : ConvexFn f) :
     convexCl f 0 = ⨆ y : F, ⨅ x : E, (((B x y : ℝ) : EReal) + f x) := by
   have hsurj : Function.Surjective (fun y : F => -y) := fun y => ⟨-y, neg_neg y⟩
@@ -119,9 +151,13 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
   [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {F : Bifun U X} {x : X}
 
-/-- The mirror of `iInf_lagrangian`: *maximising* the Lagrangian over the price variable gives
-the closure of the objective slice at the origin. This is Fenchel–Moreau at the origin, read at
-`u ↦ F u x`. -/
+/-- **Maximizing the Lagrangian gives the closure at the origin.** Let $U$ be a locally convex real
+topological vector space in compatible duality with $V$, let $F$ be a bifunction from $U$ to
+$X$, and let $x \in X$ be such that $u \mapsto F(u, x)$ is convex. Then
+$$\sup_v L(v, x) = \operatorname{cl}\bigl(F(\cdot, x)\bigr)(0).$$
+
+This is `ConvexAnalysis.convexCl_zero_eq_iSup_iInf` for the function $u \mapsto F(u, x)$. It is
+the counterpart of `ConvexAnalysis.iInf_lagrangian`. -/
 theorem iSup_lagrangian (hf : ConvexFn fun u => F u x) :
     (⨆ w, lagrangian Bu F w x) = convexCl (fun u => F u x) 0 :=
   (convexCl_zero_eq_iSup_iInf (B := Bu) hf).symm
@@ -134,7 +170,7 @@ section Concave
 variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   {B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {F : Bifun U X} {x : X}
 
-/-- The Lagrangian is concave in the price variable, with no hypothesis on `F`. -/
+/-- For every bifunction $F$ and every $x \in X$, the function $v \mapsto L(v, x)$ is concave. -/
 theorem concaveFn_lagrangian (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (x : X) :
     ConcaveFn (fun v => lagrangian B F v x) := by
   have h : (fun v => lagrangian B F v x) = concaveConj B (fun u => -(F u x)) :=

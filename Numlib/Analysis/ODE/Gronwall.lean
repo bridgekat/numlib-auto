@@ -11,35 +11,53 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # Gronwall's lemma in integral form, and linear differential inequalities
 
-Mathlib's `Mathlib/Analysis/ODE/Gronwall.lean` proves the *differential* form of Gronwall's
-inequality with a constant coefficient and a constant forcing term
-(`le_gronwallBound_of_liminf_deriv_right_le`, `norm_le_gronwallBound_of_norm_deriv_right_le`).
-The numerical-analysis books state the lemma in *integral* form with a variable weight
-([quarteroni2000numerical] Lemma 11.1, which cites Quarteroni–Valli for the proof): if
-`φ t ≤ g t + ∫_a^t p φ` on `[a, b]` with `p ≥ 0` and `g` nondecreasing, then
-`φ t ≤ g t exp (∫_a^t p)`. The energy estimates of the same books ([quarteroni2000numerical]
-(13.7), (13.67)) use differential forms with a variable coefficient and a forcing term instead.
+This file proves Gronwall's lemma in the integral form with a variable weight, as numerical analysis
+books state it: let $p \ge 0$ be integrable on $[a, b]$, let $g$ be nondecreasing and $\varphi$
+continuous on $[a, b]$. If $\varphi(t) \le g(t) + \int_a^t p \varphi$ for all $t \in [a, b]$, then
+$$\varphi(t) \le g(t) \exp\Big(\int_a^t p\Big), \qquad t \in [a, b].$$
+This is Lemma 11.1 of [quarteroni2000numerical], which refers to [quarteroni1994numerical] for the
+proof. The file also proves the differential forms with a variable coefficient and a forcing term
+that the energy estimates (13.7) and (13.67) of [quarteroni2000numerical] use. Mathlib's
+`Mathlib.Analysis.ODE.Gronwall` proves only the differential form with a constant coefficient and a
+constant forcing term (`le_gronwallBound_of_liminf_deriv_right_le`,
+`norm_le_gronwallBound_of_norm_deriv_right_le`).
 
-Everything here rests on one *variation-of-constants inequality*,
-`Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le`: a function with right derivatives
-satisfying `F' ≤ p F + q` on `[a, b)` is bounded by the solution of the equality,
-`F t ≤ e^{P t} (F a + ∫_a^t e^{-P s} q s ds)` with `P t = ∫_a^t p`. Its proof is the comparison
-`(e^{-P} F)' ≤ e^{-P} q` through Mathlib's `image_le_of_deriv_right_le_deriv_boundary`; nothing is
-integrated, and no integrability of `F'` is needed. The integral form for a continuous weight
-follows by applying it to the majorant `Ψ t = ∫_a^t p φ` shifted by `g t (e^{P} - 1)`, whose
-right derivative is `p φ` by the fundamental theorem of calculus
-(`intervalIntegral.hasDerivWithinAt_integral_Ici`); the book's version with a merely integrable
-weight follows from the continuous one by approximating the weight in `L¹` by continuous
-functions.
+All results follow from one variation-of-constants inequality: if $F' \le pF + q$ on $[a, b)$, then
+$F$ is bounded by the solution of the linear equation $F' = pF + q$ with the same initial value,
+$$F(t) \le e^{P(t)} \Big(F(a) + \int_a^t e^{-P(s)} q(s) \, ds\Big), \qquad P(t) = \int_a^t p.$$
+The discrete Gronwall lemma, in the summed form of the theory of one-step and multistep methods, is
+in `Numlib.Analysis.ODE.DiscreteGronwall`, in the same namespace `Gronwall`.
 
-Conventions. Intervals are `Icc a b` as in Mathlib's Gronwall file (the books' `[t₀, t₀ + T]` is
-`a = t₀`, `b = t₀ + T`); derivatives are right derivatives on `Ico a b` together with continuity
-on `Icc a b`, the weakest hypotheses under which the comparison argument runs, so that a consumer
-holding `HasDerivWithinAt F (F' t) (Icc a b) t` converts with `HasDerivWithinAt.continuousOn` and
-`HasDerivWithinAt.mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)`.
+## Main results
 
-The discrete Gronwall lemma, in the summed form the one-step and multistep theories use, is the
-sibling module `Numlib/Analysis/ODE/DiscreteGronwall`, in the same namespace `Gronwall`.
+* `Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le`: the variation-of-constants inequality.
+* `Gronwall.le_mul_exp_integral_of_hasDerivWithinAt_le`: if $\Phi' \le p \Phi + g$ with
+  $p, g \ge 0$, then $\Phi(t) \le (\Phi(a) + \int_a^t g) \exp(\int_a^t p)$.
+* `Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le`: if $E' \le -\gamma E + g$, then
+  $E(t) \le e^{-\gamma (t - a)} E(a) + \int_a^t e^{\gamma (s - t)} g(s) \, ds$.
+* `Gronwall.le_mul_exp_integral_of_continuousOn`: Gronwall's lemma in integral form for a continuous
+  weight.
+* `Gronwall.le_mul_exp_integral`: Gronwall's lemma in integral form for an integrable weight.
+* `Gronwall.le_mul_exp_of_le_add_integral`: Gronwall's lemma with a constant weight $L \ge 0$.
+
+## Proof outline
+
+The variation-of-constants inequality is the comparison $(e^{-P} F)' \le e^{-P} q$, closed by
+Mathlib's `image_le_of_deriv_right_le_deriv_boundary`. The proof integrates nothing and needs no
+integrability of $F'$. The integral form for a continuous weight applies this inequality to the
+majorant $\Psi(t) = \int_a^t p \varphi$, shifted by $g(t)(e^{P} - 1)$. The right derivative of
+$\Psi$ is $p \varphi$ by the fundamental theorem of calculus
+(`intervalIntegral.hasDerivWithinAt_integral_Ici`). The version with an integrable weight follows
+from the continuous one: approximate the weight in $L^1$ by continuous functions.
+
+## Implementation notes
+
+* Intervals are `Icc a b`, as in Mathlib's Gronwall file. The interval $[t_0, t_0 + T]$ of the books
+  is $a = t_0$, $b = t_0 + T$.
+* Derivatives are right derivatives on `Ico a b`, together with continuity on `Icc a b`. These are
+  the weakest hypotheses under which the comparison argument runs. A function with
+  `HasDerivWithinAt F (F' t) (Icc a b) t` satisfies them through `HasDerivWithinAt.continuousOn` and
+  `HasDerivWithinAt.mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)`.
 -/
 
 open Set Filter Topology intervalIntegral Real
@@ -49,14 +67,16 @@ namespace Gronwall
 
 variable {a b t : ℝ}
 
-/-- **Variation-of-constants inequality.** If `F` is continuous on `Icc a b` with right
-derivative `F'` on `Ico a b`, `p` and `q` are continuous on `Icc a b`, and `F' ≤ p F + q` on
-`Ico a b`, then `F` is bounded by the solution of the corresponding linear equation:
-`F t ≤ e^{P t} (F a + ∫_a^t e^{-P s} q s ds)` with `P t = ∫_a^t p`, for `t ∈ Icc a b`.
+/-- The **variation-of-constants inequality**. Let $F, F', p, q : \mathbb{R} \to \mathbb{R}$. Assume
+that $F$, $p$ and $q$ are continuous on $[a, b]$, that $F$ has the right derivative $F'(t)$ at
+every $t \in [a, b)$, and that $F'(t) \le p(t) F(t) + q(t)$ for $t \in [a, b)$. Then for every
+$t \in [a, b]$,
+$$F(t) \le e^{P(t)} \Big(F(a) + \int_a^t e^{-P(s)} q(s) \, ds\Big), \qquad P(t) = \int_a^t p.$$
 
-Every Gronwall-type inequality of this file is an instance. The proof is the comparison
-`(e^{-P} F)' ≤ e^{-P} q` on `Ico a b`, closed by `image_le_of_deriv_right_le_deriv_boundary`; it
-integrates nothing and needs no integrability of `F'`. -/
+Every Gronwall-type inequality of this file is an instance. The right derivative is
+`HasDerivWithinAt F (F' t) (Ici t) t`. The proof is the comparison $(e^{-P} F)' \le e^{-P} q$ on
+$[a, b)$, closed by `image_le_of_deriv_right_le_deriv_boundary`. It integrates nothing and needs
+no integrability of $F'$. -/
 theorem le_exp_integral_mul_of_hasDerivWithinAt_le {F F' p q : ℝ → ℝ}
     (hF : ContinuousOn F (Icc a b)) (hF' : ∀ t ∈ Ico a b, HasDerivWithinAt F (F' t) (Ici t) t)
     (hp : ContinuousOn p (Icc a b)) (hq : ContinuousOn q (Icc a b))
@@ -86,11 +106,14 @@ theorem le_exp_integral_mul_of_hasDerivWithinAt_le {F F' p q : ℝ → ℝ}
         rw [← mul_assoc, ← exp_add, add_neg_cancel, exp_zero, one_mul]
     _ ≤ exp (P t) * B t := by gcongr
 
-/-- **Differential Gronwall inequality with a variable coefficient and a forcing term**
-([quarteroni2000numerical] (13.67); the differential form of their Lemma 11.1). If `Φ` is
-continuous on `Icc a b` with right derivative `Φ'` on `Ico a b`, `p` and `g` are continuous and
-nonnegative on `Icc a b`, and `Φ' ≤ p Φ + g` on `Ico a b`, then
-`Φ t ≤ (Φ a + ∫_a^t g) exp (∫_a^t p)` for `t ∈ Icc a b`. -/
+/-- **Differential Gronwall inequality with a variable coefficient and a forcing term.** Let
+$\Phi, \Phi', p, g : \mathbb{R} \to \mathbb{R}$. Assume that $\Phi$ is continuous on $[a, b]$
+with the right derivative $\Phi'(t)$ at every $t \in [a, b)$, that $p$ and $g$ are continuous
+and nonnegative on $[a, b]$, and that $\Phi'(t) \le p(t) \Phi(t) + g(t)$ for $t \in [a, b)$.
+Then for every $t \in [a, b]$,
+$$\Phi(t) \le \Big(\Phi(a) + \int_a^t g\Big) \exp\Big(\int_a^t p\Big).$$
+This is the inequality (13.67) of [quarteroni2000numerical], the differential form of their
+Lemma 11.1. -/
 theorem le_mul_exp_integral_of_hasDerivWithinAt_le {Φ Φ' p g : ℝ → ℝ}
     (hΦ : ContinuousOn Φ (Icc a b)) (hΦ' : ∀ t ∈ Ico a b, HasDerivWithinAt Φ (Φ' t) (Ici t) t)
     (hp : ContinuousOn p (Icc a b)) (hp0 : ∀ t ∈ Icc a b, 0 ≤ p t)
@@ -113,11 +136,16 @@ theorem le_mul_exp_integral_of_hasDerivWithinAt_le {Φ Φ' p g : ℝ → ℝ}
     _ ≤ exp (∫ s in a..t, p s) * (Φ a + ∫ s in a..t, g s) := by gcongr
     _ = (Φ a + ∫ s in a..t, g s) * exp (∫ s in a..t, p s) := mul_comm _ _
 
-/-- **Linear differential inequality with a constant coefficient and a forcing term**, the form
-behind the exponential energy decay of the heat equation ([quarteroni2000numerical] (13.7)). If
-`E` is continuous on `Icc a b` with right derivative `E'` on `Ico a b`, `g` is continuous on
-`Icc a b` and `E' ≤ -γ E + g` on `Ico a b`, then for `t ∈ Icc a b`,
-`E t ≤ e^{-γ (t - a)} E a + ∫_a^t e^{γ (s - t)} g s ds`. No sign condition on `γ`, `g` or `E`. -/
+/-- **Linear differential inequality with a constant coefficient and a forcing term.** Let
+$E, E', g : \mathbb{R} \to \mathbb{R}$ and $\gamma \in \mathbb{R}$. Assume that $E$ is
+continuous on $[a, b]$ with the right derivative $E'(t)$ at every $t \in [a, b)$, that $g$ is
+continuous on $[a, b]$, and that $E'(t) \le -\gamma E(t) + g(t)$ for $t \in [a, b)$. Then for
+every $t \in [a, b]$,
+$$E(t) \le e^{-\gamma (t - a)} E(a) + \int_a^t e^{\gamma (s - t)} g(s) \, ds.$$
+This is the form behind the exponential decay of the energy of the heat equation, (13.7) of
+[quarteroni2000numerical].
+
+There is no sign condition on $\gamma$, $g$ or $E$. -/
 theorem le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le {E E' g : ℝ → ℝ} {γ : ℝ}
     (hE : ContinuousOn E (Icc a b)) (hE' : ∀ t ∈ Ico a b, HasDerivWithinAt E (E' t) (Ici t) t)
     (hg : ContinuousOn g (Icc a b)) (bound : ∀ t ∈ Ico a b, E' t ≤ -γ * E t + g t)
@@ -134,16 +162,19 @@ theorem le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le {E E' g : ℝ → ℝ
     rw [← mul_assoc, ← exp_add]
     ring_nf
 
-/-- **Gronwall's lemma, integral form, continuous weight** ([quarteroni2000numerical] Lemma 11.1
-with a continuous `p`). Let `p`, `g`, `φ` be continuous
-on `Icc a b`, `p ≥ 0` there, `g` nondecreasing there. If `φ t ≤ g t + ∫_a^t p φ` for all
-`t ∈ Icc a b`, then `φ t ≤ g t exp (∫_a^t p)` for all `t ∈ Icc a b`. The book also assumes `g`
-continuous; the proof never uses it (only the value `g t` at the point of evaluation enters).
+/-- **Gronwall's lemma, integral form, continuous weight.** Let
+$p, g, \varphi : \mathbb{R} \to \mathbb{R}$. Assume that $p$ and $\varphi$ are continuous on
+$[a, b]$, that $p \ge 0$ on $[a, b]$, and that $g$ is nondecreasing on $[a, b]$. If $\varphi(t)
+\le g(t) + \int_a^t p(s) \varphi(s) \, ds$ for all $t \in [a, b]$, then
+$$\varphi(t) \le g(t) \exp\Big(\int_a^t p\Big), \qquad t \in [a, b].$$
+This is Lemma 11.1 of [quarteroni2000numerical] for a continuous weight $p$. The book also
+assumes that $g$ is continuous. The proof does not use this, because only the value $g(t)$ at
+the point of evaluation enters.
 
-Proof: with `Ψ u = ∫_a^u p φ` and `P u = ∫_a^u p`, the function `F u = Ψ u - g t (e^{P u} - 1)`
-has right derivative `p φ - g t p e^{P}` on `Ico a t`, which the hypothesis, the monotonicity
-of `g` and `p ≥ 0` bound by `p F`; the variation-of-constants inequality with `q = 0` and
-`F a = 0` gives `F t ≤ 0`, i.e. `Ψ t ≤ g t (e^{P t} - 1)`, and `φ t ≤ g t + Ψ t`. -/
+Proof idea: with $\Psi(u) = \int_a^u p \varphi$ and $P(u) = \int_a^u p$, the function
+$F(u) = \Psi(u) - g(t)(e^{P(u)} - 1)$ satisfies $F' \le pF$ on $[a, t)$ and $F(a) = 0$. The
+variation-of-constants inequality gives $F(t) \le 0$, that is $\Psi(t) \le g(t)(e^{P(t)} - 1)$,
+and $\varphi(t) \le g(t) + \Psi(t)$. -/
 theorem le_mul_exp_integral_of_continuousOn {p g φ : ℝ → ℝ}
     (hp : ContinuousOn p (Icc a b)) (hp0 : ∀ t ∈ Icc a b, 0 ≤ p t) (hgm : MonotoneOn g (Icc a b))
     (hφ : ContinuousOn φ (Icc a b)) (hle : ∀ t ∈ Icc a b, φ t ≤ g t + ∫ s in a..t, p s * φ s)
@@ -173,16 +204,19 @@ theorem le_mul_exp_integral_of_continuousOn {p g φ : ℝ → ℝ}
   have := hle t ht
   linarith
 
-/-- **Gronwall's lemma, integral form** ([quarteroni2000numerical] Lemma 11.1 as printed).
-Let `p` be integrable on `a..b` and nonnegative on
-`Icc a b`, `φ` continuous on `Icc a b`, `g` nondecreasing on `Icc a b`. If
-`φ t ≤ g t + ∫_a^t p φ` for all `t ∈ Icc a b`, then `φ t ≤ g t exp (∫_a^t p)` for all
-`t ∈ Icc a b`. (The book also assumes `g` continuous; it is not needed.)
+/-- **Gronwall's lemma, integral form.** Let $p, g, \varphi : \mathbb{R} \to \mathbb{R}$. Assume
+that $p$ is integrable on $[a, b]$ and nonnegative on $[a, b]$, that $\varphi$ is continuous on
+$[a, b]$, and that $g$ is nondecreasing on $[a, b]$. If $\varphi(t) \le g(t) + \int_a^t p(s)
+\varphi(s) \, ds$ for all $t \in [a, b]$, then
+$$\varphi(t) \le g(t) \exp\Big(\int_a^t p\Big), \qquad t \in [a, b].$$
+This is Lemma 11.1 of [quarteroni2000numerical]. The book also assumes that $g$ is continuous.
+This assumption is not needed.
 
-Proof: approximate `p` in `L¹(a, b)` within `ε` by a continuous `q ≥ 0`
-(`exists_continuous_nonneg_integral_abs_sub_le`). With `C` a bound of `|φ|` on the interval, the
-hypothesis holds for `q` with `g` replaced by `g + C ε`, so the continuous version gives
-`φ t ≤ (g t + C ε) exp (∫_a^t q)` with `|∫_a^t q - ∫_a^t p| ≤ ε`; let `ε → 0⁺`. -/
+Proof idea: approximate $p$ in $L^1(a, b)$ within $\varepsilon$ by a continuous $q \ge 0$
+(`intervalIntegral.exists_continuous_nonneg_integral_abs_sub_le`). With $C$ a bound of
+$|\varphi|$ on $[a, b]$, the hypothesis holds for $q$ with $g$ replaced by $g + C\varepsilon$.
+The continuous version then gives $\varphi(t) \le (g(t) + C\varepsilon) \exp(\int_a^t q)$, where
+$|\int_a^t q - \int_a^t p| \le \varepsilon$. Let $\varepsilon \to 0^+$. -/
 theorem le_mul_exp_integral {p g φ : ℝ → ℝ} (hp : IntervalIntegrable p volume a b)
     (hp0 : ∀ t ∈ Icc a b, 0 ≤ p t) (hgm : MonotoneOn g (Icc a b)) (hφ : ContinuousOn φ (Icc a b))
     (hle : ∀ t ∈ Icc a b, φ t ≤ g t + ∫ s in a..t, p s * φ s) (ht : t ∈ Icc a b) :
@@ -256,10 +290,12 @@ theorem le_mul_exp_integral {p g φ : ℝ → ℝ} (hp : IntervalIntegrable p vo
     hF0 ▸ (hFc.tendsto 0).mono_left nhdsWithin_le_nhds
   exact ge_of_tendsto hlim hev
 
-/-- **Gronwall's lemma with a constant weight**, the instance behind the Liapunov stability of the
-Cauchy problem under a Lipschitz field ([quarteroni2000numerical] §11.1): if `φ` is continuous
-on `Icc a b`, `g` nondecreasing there, `0 ≤ L`, and `φ t ≤ g t + L ∫_a^t φ` on the interval, then
-`φ t ≤ g t exp (L (t - a))` there. -/
+/-- **Gronwall's lemma with a constant weight.** Let $g, \varphi : \mathbb{R} \to \mathbb{R}$ and
+$L \ge 0$. Assume that $\varphi$ is continuous on $[a, b]$ and that $g$ is nondecreasing on
+$[a, b]$. If $\varphi(t) \le g(t) + L \int_a^t \varphi$ for all $t \in [a, b]$, then
+$$\varphi(t) \le g(t) e^{L (t - a)}, \qquad t \in [a, b].$$
+This is the instance behind the Liapunov stability of the Cauchy problem with a Lipschitz
+right-hand side, §11.1 of [quarteroni2000numerical]. -/
 theorem le_mul_exp_of_le_add_integral {g φ : ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
     (hgm : MonotoneOn g (Icc a b)) (hφ : ContinuousOn φ (Icc a b))
     (hle : ∀ t ∈ Icc a b, φ t ≤ g t + L * ∫ s in a..t, φ s) (ht : t ∈ Icc a b) :

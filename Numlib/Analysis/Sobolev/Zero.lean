@@ -19,81 +19,129 @@ import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 
 /-!
-# The space `W_0^{1,p}(Ω)`
+# The Sobolev space $W_0^{1,p}(\Omega)$
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.4: the
-closure `W_0^{1,p}(Ω)` of the test functions in `W^{1,p}(Ω)` (`SobolevMultiIndexZero`,
-`SobolevEuclideanZero` of `Numlib/Analysis/Sobolev/MultiIndex.lean`) and its characterizations.
+Let $\Omega$ be an open subset of $\mathbb{R}^N$, or more generally of a finite-dimensional real
+normed space $E$ with an additive Haar measure $\mu$ and a basis $(b_i)_{i \in \iota}$, and let
+$1 \le p \le \infty$. The space $W_0^{1,p}(\Omega)$ is the closure of the test functions in
+$W^{1,p}(\Omega)$. This module proves the properties and characterizations of $W_0^{1,p}(\Omega)$ in
+§9.4 of [brezis2011functional]. The extension by zero $\bar u$ of $u \in W_0^{1,p}(\Omega)$ lies in
+$W^{1,p}$ of the whole space, with $\partial_i \bar u = \overline{\partial_i u}$, on every open set
+(Proposition 9.18, (i) ⇒ (iii)). It is an isometric extension operator, so the Sobolev inequality
+holds on $W_0^{1,p}(\Omega)$ for every open $\Omega$, and Poincaré's inequality holds when $\Omega$
+has finite measure (Remarks 20 and 21). On an open set of class $C^1$ and for $p < \infty$, a
+function of $W^{1,p}(\Omega)$ that is continuous on $\bar\Omega$ lies in $W_0^{1,p}(\Omega)$ if and
+only if it vanishes on $\partial\Omega$ (Theorem 9.17), and a function lies in $W_0^{1,p}(\Omega)$
+if and only if its extension by zero lies in $W^{1,p}(\mathbb{R}^N)$ (Proposition 9.18). Further
+results are the stability of $W_0^{1,p}(\Omega)$ under $u \mapsto G(u)$ and $u \mapsto u^+$, the
+equalities $W_0^{1,p} = W^{1,p}$ on $\mathbb{R}^N$ and on $\mathbb{R}^N \setminus \{0\}$ (Remark
+17), the representation of the dual $W^{-1,p'}(\Omega)$ (Proposition 9.20), and the dense inclusions
+$H_0^1(\Omega) \subset L^2(\Omega) \subset H^{-1}(\Omega)$.
+
+Below, $\bar u = \mathbf{1}_\Omega u$ is the extension of $u$ by zero outside $\Omega$, and
+$\partial_i$ is the weak derivative along $b_i$ (along the standard basis vector $e_i$ on
+$\mathbb{R}^N$). The norm of $W^{1,p}(\Omega)$ is the $\ell^p$ sum of the $L^p(\Omega)$ norms of $u$
+and of the $\partial_i u$, and $\|\nabla u\|_{L^p(\Omega)}$ is the $\ell^p$ sum of the $L^p(\Omega)$
+norms of the $\partial_i u$. For $N = d + 1$, $Q = \{(x', x_N) : |x'| < 1, |x_N| < 1\}$ is the unit
+cylinder, $Q_+ = Q \cap \{x_N > 0\}$ and $Q_0 = Q \cap \{x_N = 0\}$. For $1 \le p < N$, the Sobolev
+exponent $p^*$ is given by $1/p^* = 1/p - 1/N$.
+
+## Main definitions
+
+* `SobolevEuclideanZero.extendZeroL`: the extension by zero
+  $W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$, as a bounded linear map.
+* `SobolevEuclideanZero.toDualL2`: the inclusion $L^2(\Omega) \to H^{-1}(\Omega)$,
+  $f \mapsto (v \mapsto \int_\Omega f v)$.
+* `SobolevEuclideanZero.toDualOfL2`: the inclusion $L^2(\Omega) \to W^{-1,p'}(\Omega)$ along a given
+  bounded linear map $W_0^{1,p}(\Omega) \to L^2(\Omega)$.
+* `pointCutoff`: the averaged cut-off $\eta_n(x) = (n+1)^{-1} \sum_{k \le n} \eta(3^k x)$ at the
+  origin.
 
 ## Main results
 
-* `SobolevMultiIndexZero.indicator_memSobolevMultiIndex` and `SobolevEuclideanZero.extendZeroL`:
-  **the extension by zero** `ū` of `u ∈ W_0^{1,p}(Ω)` lies in `W^{1,p}` of the whole space, with
-  `∂_i ū = \overline{∂_i u}` (Proposition 9.18, (i) ⇒ (iii)), on an arbitrary open set and for
-  every `1 ≤ p ≤ ∞` — the book's route through the Riesz representation is replaced by the
-  closedness of the weak derivative under `L^p` limits, applied to the zero extensions of
-  approximating test functions, which are test functions on the whole space;
-* `SobolevEuclideanZero.hasSobolevExtensionOn`: **Remark 20**, the extension by zero is a
-  bounded (indeed isometric) extension operator on `W_0^{1,p}(Ω)`, so that the embedding and
-  compactness theorems stated under `HasSobolevExtensionOn` hold on `W_0^{1,p}(Ω)` with no
-  regularity of `Ω`; `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq` is the Sobolev
-  inequality `‖u‖_{p*} ≤ C ‖∇u‖_p` on `W_0^{1,p}(Ω)` of an arbitrary open set (Remark 20, last
-  sentence) and `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top` Poincaré's
-  inequality on an open set of finite measure (**Remark 21**, first clause, for `N ≥ 2`);
-* `SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`: **Theorem 9.17,
-  (i) ⇒ (ii)**, on any open set: a `W^{1,p}(Ω)` function with a representative continuous on
-  `closure Ω` and vanishing on `∂Ω` lies in `W_0^{1,p}(Ω)`. The book's "`u_n → u` by dominated
-  convergence" silently needs `∇u = 0` a.e. on `{u = 0}`; here the truncations `G(nu)/n` are
-  shown to be Cauchy in `W^{1,p}(Ω)` instead, their gradients converging to
-  `{u ≠ 0}.indicator ∇u`, and the limit is identified through the function alone;
-  `SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure` is **Theorem 9.17, (ii) ⇒ (i)**
-  on a `C^1` chart domain: a `W_0^{1,p}(Ω)` function with a representative continuous on
-  `closure Ω` vanishes on `∂Ω`, by local charts from the `Q_+` computation
-  `SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure` (the strip inequality
-  `∫_{x_N < ε} |u| ≤ ε ∫_{x_N < ε} |∂_N u|` on `W_0^{1,p}(Q_+)`);
-* `SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le` and
-  `SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le`: Proposition 9.18,
-  (i) ⇒ (ii) and (ii) ⇒ (iii); `SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos`
-  is the `Q_+` computation of (iii) ⇒ (i), by one-sided mollifiers, and
-  `SobolevEuclideanZero.mem_of_indicator_memSobolev` is **Proposition 9.18, (iii) ⇒ (i)** on a
-  `C^1` chart domain, by local charts and a partition of unity;
+* `SobolevMultiIndexZero.indicator_memSobolevMultiIndex`: for $u \in W_0^{1,p}(\Omega)$ on any open
+  $\Omega \subseteq E$, the extension by zero $\bar u$ lies in $W^{1,p}(E)$, with
+  $\partial_i \bar u = \overline{\partial_i u}$.
+* `SobolevEuclideanZero.norm_extendZeroL_apply`: the extension by zero is an isometry
+  $W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$.
+* `SobolevEuclideanZero.hasSobolevExtensionOn`: on every open $\Omega \subseteq \mathbb{R}^N$, the
+  subspace $W_0^{1,p}(\Omega)$ has a Sobolev extension operator.
+* `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`: the Sobolev inequality
+  $\|u\|_{L^{p^*}(\Omega)} \le C \|\nabla u\|_{L^p(\Omega)}$ on $W_0^{1,p}(\Omega)$ for
+  $1 \le p < N$ and every open $\Omega$.
+* `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top`: Poincaré's inequality on
+  $W_0^{1,p}(\Omega)$ for $N \ge 2$, $p < \infty$ and $\Omega$ of finite measure.
+* `SobolevEuclideanZero.eq_top`: $W_0^{1,p}(\mathbb{R}^N) = W^{1,p}(\mathbb{R}^N)$ for $p < \infty$.
+* `SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport`: for $p < \infty$, a $C^k$ function with
+  compact support in $\Omega$ lies in $W_0^{k,p}(\Omega)$ (Remark 18).
+* `SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le`: for $u \in W_0^{1,p}(\Omega)$,
+  $|\int_\Omega u \, \partial_i \varphi| \le \|\partial_i u\|_{L^p(\Omega)}
+  \|\varphi\|_{L^{p'}(\Omega)}$ for every $\varphi \in C_c^1(\mathbb{R}^N)$.
+* `SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le`: for $1 < p \le \infty$, if
+  $u \in L^p(\Omega)$ satisfies such a bound with some constant, then
+  $\bar u \in W^{1,p}(\mathbb{R}^N)$.
+* `SobolevEuclideanZero.mem_of_indicator_memSobolev`: on an open set of class $C^1$ and for
+  $p < \infty$, a function whose extension by zero lies in $W^{1,p}(\mathbb{R}^N)$ lies in
+  $W_0^{1,p}(\Omega)$.
+* `SobolevMultiIndexZero.contDiff_comp_mem` and `SobolevEuclideanZero.posPart_mem`:
+  $W_0^{1,p}(\Omega)$ is stable under $u \mapsto G \circ u$ for $G \in C^1$ with $G(0) = 0$ and
+  bounded $G'$, and under $u \mapsto u^+$.
+* `SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`: on any open $\Omega$, a
+  function of $W^{1,p}(\Omega)$, $p < \infty$, that is continuous on $\bar\Omega$ and vanishes on
+  $\partial\Omega$ lies in $W_0^{1,p}(\Omega)$.
+* `SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure`: on an open set of class $C^1$, a
+  function of $W_0^{1,p}(\Omega)$, $p < \infty$, that is continuous on $\bar\Omega$ vanishes on
+  $\partial\Omega$.
 * `SobolevMultiIndexZero.mem_of_mem_restrict`, `SobolevMultiIndexZero.mul_contDiff_mem` and
-  `SobolevMultiIndexZero.compDiffeoL_mem`: the transfer of membership in `W_0^{1,p}` from an open
-  subset, under a smooth compactly supported factor, and along a change of variables — the steps
-  of the chart reductions of Theorem 9.17 and Proposition 9.18;
-* `SobolevEuclideanZero.eq_top` (Remark 17) and
-  `SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport` (Remark 18);
-  `SobolevEuclideanZero.eq_top_of_compl_singleton`: **Remark 17, the punctured space**,
-  `W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})` for `N ≥ 2` and `1 ≤ p ≤ N` — a point has zero
-  capacity, by the averaged cut-offs `pointCutoff` whose gradients tend to `0` in `L^p`
-  (`tendsto_eLpNorm_fderiv_pointCutoff`), after the density of bounded functions
-  (`SobolevMultiIndex.exists_seq_tendsto_ae_abs_le`) and Lemma 9.5 without compactness at
-  infinity (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset`);
-* `SobolevMultiIndexZero.contDiff_comp_mem` and `SobolevEuclideanZero.posPart_mem`: the chain
-  rule and the positive part preserve `W_0^{1,p}(Ω)`;
-* `SobolevEuclideanZero.exists_dual_repr`: **Proposition 9.20**, every element of the dual
-  `W^{-1,p'}(Ω)` is `v ↦ ∫ f_0 v + ∑ ∫ f_i ∂_i v` with `f_α ∈ L^{p'}(Ω)`, `‖f_α‖ ≤ ‖F‖`, and
-  `SobolevEuclideanZero.exists_dual_repr_of_isBounded`, its form with `f_0 = 0` on a bounded `Ω`
-  (Poincaré's inequality);
-* `SobolevEuclideanZero.gelfandTriple`: **the inclusions `H^1_0(Ω) ⊂ L²(Ω) ⊂ H^{-1}(Ω)`** are
-  injective with dense range (`SobolevEuclideanZero.toDualL2` is the second one);
-  `SobolevEuclideanZero.gelfandTriple_of_forall_ae_eq`: the same for
-  `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{-1,p'}(Ω)`, `1 < p < ∞`, along any bounded inclusion
-  `W_0^{1,p}(Ω) → L²(Ω)` sending each element to its function (`SobolevEuclideanZero.toDualOfL2`
-  is the second one) — the inclusion itself is Remark 20's, in
-  `Numlib/Analysis/Sobolev/EmbeddingDomain.lean`, which imports this file.
+  `SobolevMultiIndexZero.compDiffeoL_mem`: membership in $W_0^{1,p}$ passes from an open subset,
+  under a smooth compactly supported factor, and along a $C^1$ change of variables.
+* `SobolevEuclideanZero.eq_top_of_compl_singleton`: $W_0^{1,p}(\mathbb{R}^N \setminus \{0\}) =
+  W^{1,p}(\mathbb{R}^N \setminus \{0\})$ for $N \ge 2$ and $1 \le p \le N$.
+* `SobolevEuclideanZero.exists_dual_repr`: for $p < \infty$, every continuous linear functional $F$
+  on $W_0^{1,p}(\Omega)$ is $v \mapsto \int_\Omega f_0 v + \sum_i \int_\Omega f_i \partial_i v$ with
+  $f_\alpha \in L^{p'}(\Omega)$ and $\|f_\alpha\|_{p'} \le \|F\|$.
+* `SobolevEuclideanZero.exists_dual_repr_of_isBounded`: on a bounded $\Omega$ one can take
+  $f_0 = 0$.
+* `SobolevEuclideanZero.gelfandTriple`: the inclusions $H_0^1(\Omega) \subset L^2(\Omega) \subset
+  H^{-1}(\Omega)$ are injective with dense range.
+* `SobolevEuclideanZero.gelfandTriple_of_forall_ae_eq`: the same for $W_0^{1,p}(\Omega) \subset
+  L^2(\Omega) \subset W^{-1,p'}(\Omega)$, $1 < p < \infty$, along any bounded inclusion
+  $W_0^{1,p}(\Omega) \to L^2(\Omega)$.
+* `SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`: for $N \ge 1$ and $p < \infty$, an element of
+  $W_0^{1,p}(\Omega)$ with vanishing gradient is zero.
+* `SobolevEuclideanZero.mem_of_nonneg_of_le`: on an open set of class $C^1$ with bounded boundary,
+  if $v \in H^1(\Omega)$ and $0 \le v \le w$ for some $w \in H_0^1(\Omega)$, then
+  $v \in H_0^1(\Omega)$.
 
-## Design
+## Proof outline
 
-Predicate-level statements are over a finite-dimensional real normed `E` with an additive Haar
-measure `μ` and an arbitrary basis `b`; typed statements are on `SobolevEuclideanZero N 1 p Ω`.
-The zero extension is built by the pattern of `Numlib/Analysis/Sobolev/Cutoff.lean`: membership
-and the identities at the predicate level, then `MemSobolevMultiIndex.exists_sobolevMultiIndex`
-and `SobolevMultiIndex.ext_of_fn_ae_eq`.
+The extension by zero does not use the Riesz representation, as the source does: the extensions by
+zero of approximating test functions are test functions on the whole space, and the weak derivative
+is closed under $L^p$ limits. For Theorem 9.17, (i) ⇒ (ii), the truncations $G(nu)/n$ are shown to
+be a Cauchy sequence in $W^{1,p}(\Omega)$ whose gradients converge to
+$\mathbf{1}_{\{u \neq 0\}} \nabla u$. The converse and Proposition 9.18, (iii) ⇒ (i), reduce by
+local charts and a partition of unity to computations on $Q_+$: the strip inequality $\int_{\{x_N <
+\varepsilon\}} |u| \le \varepsilon \int_{\{x_N < \varepsilon\}} |\partial_N u|$ on $W_0^{1,p}(Q_+)$,
+and one-sided mollifiers. On the punctured space, a point has zero capacity for $p \le N$: the
+gradients of the averaged cut-offs tend to $0$ in $L^p$.
 
-## References
+## Implementation notes
 
-[brezis2011functional], §9.4: Theorem 9.17, Proposition 9.18, Remarks 17–21, Proposition 9.20.
+* Statements about the predicate `MemSobolevMultiIndex` and about
+  `SobolevMultiIndexZero F b k p Ω μ` are over a finite-dimensional real normed space $E$ with an
+  additive Haar measure and an arbitrary basis $b$. Statements on $\mathbb{R}^N$ use
+  `SobolevEuclideanZero N 1 p Ω`, which is `SobolevMultiIndexZero` for the standard basis and
+  Lebesgue measure.
+* The extension by zero follows the pattern of `Numlib.Analysis.Sobolev.Cutoff`: membership and the
+  identities are proved for functions, and the element of the space is then obtained from
+  `MemSobolevMultiIndex.exists_sobolevMultiIndex` and identified by
+  `SobolevMultiIndex.ext_of_fn_ae_eq`.
+* The bounded inclusion $W_0^{1,p}(\Omega) \to L^2(\Omega)$ of Remark 20 is in
+  `Numlib.Analysis.Sobolev.EmbeddingDomain`, which imports this module. The Gelfand triple for
+  general $p$ therefore takes the inclusion as a parameter, with the hypothesis
+  `SobolevEuclideanZero.IsFnInclusion`.
+* Poincaré's inequality on a set of finite measure is stated for $N \ge 2$. For $N = 1$ it is false
+  on unbounded open sets of finite measure.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -101,7 +149,7 @@ open scoped ContDiff Convolution Distributions ENNReal NNReal Pointwise Topology
 
 noncomputable section
 
-/-! ### The weak derivative along a tuple is closed under `L^p` limits -/
+/-! ### The weak derivative along a tuple is closed under $L^p$ limits -/
 
 section Closed
 
@@ -109,12 +157,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {μ : Measure E}
   {p : ℝ≥0∞} {n : ℕ} {y : Fin n → E} {f w : E → F}
 
-/-- **The weak derivative along a tuple of directions is closed under `L^p(Ω)` limits**, for any
-`1 ≤ p ≤ ∞`: if `u i` is a weak derivative of `g i` along `y` on `Ω` for every `i`, `g i → f` and
-`u i → w` in `L^p(Ω)`, and `f`, `w` are locally integrable on `Ω`, then `w` is a weak derivative
-of `f` along `y`. The tuple-by-tuple form of `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`
-(the closedness clause of [brezis2011functional] Chapter 9, Remark 4 (i)), with the same proof:
-the pairings against a fixed test function are continuous on `L^p(Ω)` by Hölder's inequality. -/
+/-- Let $1 \le p \le \infty$, let $\Omega \subseteq E$ be open, and let $\mu$ be a measure on $E$
+for which the constant $1$ is locally integrable on $\Omega$. Let $y$ be a tuple of directions.
+Suppose that $u_i$ is a weak derivative of $g_i$ along $y$ on $\Omega$ for every
+$i \in \mathbb{N}$, that $f$ and $w$ are locally integrable on $\Omega$, and that $g_i \to f$
+and $u_i \to w$ in $L^p(\Omega)$. Then $w$ is a weak derivative of $f$ along $y$ on $\Omega$.
+
+This is the form along one tuple of `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`, the closedness
+clause of Remark 4 (i) in Chapter 9 of [brezis2011functional]. The proof is the same: by
+Hölder's inequality, the pairing with a fixed test function is continuous on $L^p(\Omega)$. -/
 theorem hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm
     (hμ : LocallyIntegrableOn (fun _ : E ↦ (1 : ℝ)) Ω μ) (hp : 1 ≤ p) {g u : ℕ → E → F}
     (hg : ∀ i, HasWeakIteratedLineDerivOn y (g i) (u i) Ω μ)
@@ -182,13 +233,19 @@ theorem hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm
 
 end Closed
 
-/-! ### Dominated convergence in `L^p`, and convergence in `W^{1,p}(Ω)` component by component -/
+/-!
+### Dominated convergence in $L^p$, and convergence in $W^{1,p}(\Omega)$ component by component
+-/
 
 section Dominated
 
-/-- **Dominated convergence in `L^p`**, `0 < p < ∞`: if `f n → g` almost everywhere and
-`‖f n‖ ≤ bound` almost everywhere for a fixed `bound ∈ L^p`, then `f n → g` in `L^p`. The
-dominated convergence theorem for the integrals `∫ ‖f n − g‖^p`, dominated by `(2 bound)^p`. -/
+/-- **Dominated convergence in $L^p$.** Let $0 < p < \infty$, and let $f_n$, $g$ be almost
+everywhere strongly measurable functions on a measure space with values in a normed group. If
+$f_n \to g$ almost everywhere and $\|f_n\| \le h$ almost everywhere for every $n$, for a fixed
+$h \in L^p$, then $\|f_n - g\|_{L^p} \to 0$.
+
+The proof applies the dominated convergence theorem to the integrals $\int \|f_n - g\|^p$, which
+are dominated by $(2h)^p$. -/
 theorem MeasureTheory.tendsto_eLpNorm_sub_of_tendsto_ae {X G : Type*} [MeasurableSpace X]
     {ν : Measure X} [NormedAddCommGroup G] {p : ℝ≥0∞} (hp : p ≠ 0) (hp' : p ≠ ⊤)
     {f : ℕ → X → G} {g : X → G} {bound : X → ℝ}
@@ -241,7 +298,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 
 namespace SobolevMultiIndex
 
-/-- Convergence in `W^{k,p}(Ω)` gives the `L^p(Ω)` convergence of every weak derivative. -/
+/-- Let $u_n \to u$ in $W^{k,p}(\Omega)$. Then $\partial^\alpha u_n \to \partial^\alpha u$ in
+$L^p(\Omega)$ for every multi-index $\alpha$ with $|\alpha| \le k$. -/
 theorem tendsto_eLpNorm_weakDeriv_sub {w : ℕ → SobolevMultiIndex F b k p Ω μ}
     {u : SobolevMultiIndex F b k p Ω μ} (hw : Tendsto w atTop (𝓝 u)) (α : MultiIndexLE ι k) :
     Tendsto (fun n ↦ eLpNorm ((weakDeriv (w n) α : E → F) - (weakDeriv u α : E → F)) p
@@ -250,14 +308,15 @@ theorem tendsto_eLpNorm_weakDeriv_sub {w : ℕ → SobolevMultiIndex F b k p Ω 
   rw [Lp.tendsto_Lp_iff_tendsto_eLpNorm'] at ht
   simpa only [Function.comp_def, weakDerivL_apply] using ht
 
-/-- Convergence in `W^{k,p}(Ω)` gives the `L^p(Ω)` convergence of the functions. -/
+/-- Let $u_n \to u$ in $W^{k,p}(\Omega)$. Then $u_n \to u$ in $L^p(\Omega)$. -/
 theorem tendsto_eLpNorm_fn_sub {w : ℕ → SobolevMultiIndex F b k p Ω μ}
     {u : SobolevMultiIndex F b k p Ω μ} (hw : Tendsto w atTop (𝓝 u)) :
     Tendsto (fun n ↦ eLpNorm (fn (w n) - fn u) p (μ.restrict (Ω : Set E))) atTop (𝓝 0) :=
   tendsto_eLpNorm_weakDeriv_sub hw 0
 
-/-- **Convergence in `W^{k,p}(Ω)` from the convergence of the components**: if every weak
-derivative of `w n − u` tends to `0` in `L^p(Ω)`, then `w n → u` in `W^{k,p}(Ω)`. -/
+/-- **Convergence in $W^{k,p}(\Omega)$ from the convergence of the components.** Let
+$u_n, u \in W^{k,p}(\Omega)$. If $\partial^\alpha u_n \to \partial^\alpha u$ in $L^p(\Omega)$
+for every multi-index $\alpha$ with $|\alpha| \le k$, then $u_n \to u$ in $W^{k,p}(\Omega)$. -/
 theorem tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub {w : ℕ → SobolevMultiIndex F b k p Ω μ}
     {u : SobolevMultiIndex F b k p Ω μ}
     (h : ∀ α : MultiIndexLE ι k, Tendsto (fun n ↦
@@ -283,7 +342,7 @@ end SobolevMultiIndex
 
 end Components
 
-/-! ### The extension by zero of a `W_0^{1,p}(Ω)` function -/
+/-! ### The extension by zero of a $W_0^{1,p}(\Omega)$ function -/
 
 section ZeroExtension
 
@@ -295,24 +354,25 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
 namespace SobolevMultiIndexZero
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The zero extension of the function of an element of `W^{k,p}(Ω)` lies in `L^p` of the whole
-space. -/
+/-- Let $u \in W^{k,p}(\Omega)$. Then the extension by zero $\mathbf{1}_\Omega u$ of its function
+lies in $L^p(E)$. -/
 theorem memLp_indicator_fn {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ) :
     MemLp ((Ω : Set E).indicator (SobolevMultiIndex.fn u)) p μ :=
   (memLp_indicator_iff_restrict Ω.isOpen.measurableSet.nullMeasurableSet).2
     (SobolevMultiIndex.memLp u)
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The zero extension of a weak derivative of an element of `W^{k,p}(Ω)` lies in `L^p` of the
-whole space. -/
+/-- Let $u \in W^{k,p}(\Omega)$ and let $\alpha$ be a multi-index with $|\alpha| \le k$. Then the
+extension by zero $\mathbf{1}_\Omega \partial^\alpha u$ lies in $L^p(E)$. -/
 theorem memLp_indicator_weakDeriv {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
     (α : MultiIndexLE ι k) :
     MemLp ((Ω : Set E).indicator (SobolevMultiIndex.weakDeriv u α)) p μ :=
   (memLp_indicator_iff_restrict Ω.isOpen.measurableSet.nullMeasurableSet).2 (Lp.memLp _)
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [μ.IsAddHaarMeasure] in
-/-- An element of `W_0^{k,p}(Ω)` is the limit of a sequence of elements of `W^{k,p}(Ω)` whose
-functions are test functions on `Ω`. -/
+/-- Let $u \in W_0^{k,p}(\Omega)$. Then there are elements $w_n \in W^{k,p}(\Omega)$ and test
+functions $\varphi_n$ on $\Omega$ such that the function of $w_n$ equals $\varphi_n$ almost
+everywhere on $\Omega$ and $w_n \to u$ in $W^{k,p}(\Omega)$. -/
 theorem exists_seq_testFunction_tendsto {k : ℕ} {u : SobolevMultiIndex F b k p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
     ∃ (w : ℕ → SobolevMultiIndex F b k p Ω μ) (φ : ℕ → 𝓓(Ω, F)),
@@ -326,8 +386,9 @@ theorem exists_seq_testFunction_tendsto {k : ℕ} {u : SobolevMultiIndex F b k p
   exact ⟨w, φ, hφ, hw⟩
 
 omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The zero extension of the function of an element of `W^{k,p}(Ω)` whose function is a test
-function on `Ω` is that test function, almost everywhere. -/
+/-- Let $w \in W^{k,p}(\Omega)$, and let $\varphi$ be a test function on $\Omega$ that equals the
+function of $w$ almost everywhere on $\Omega$. Then $\mathbf{1}_\Omega w = \varphi$ almost
+everywhere on $E$. -/
 theorem indicator_fn_ae_eq_testFunction {k : ℕ} {w : SobolevMultiIndex F b k p Ω μ}
     {φ : 𝓓(Ω, F)} (hφ : SobolevMultiIndex.fn w =ᵐ[μ.restrict (Ω : Set E)] φ) :
     (Ω : Set E).indicator (SobolevMultiIndex.fn w) =ᵐ[μ] φ := by
@@ -337,8 +398,9 @@ theorem indicator_fn_ae_eq_testFunction {k : ℕ} {w : SobolevMultiIndex F b k p
     φ.eq_zero_of_notMem hx)) x
 
 omit [Fact (1 ≤ p)] in
-/-- The partial derivative `∂_i w` of an element of `W^{1,p}(Ω)` whose function is a test
-function `φ` on `Ω` is the classical derivative `∂_i φ`, almost everywhere on `Ω`. -/
+/-- Let $w \in W^{1,p}(\Omega)$, and let $\varphi$ be a test function on $\Omega$ that equals the
+function of $w$ almost everywhere on $\Omega$. Then $\partial_i w = D\varphi(x)\, b_i$ for
+almost every $x \in \Omega$, for every $i$. -/
 theorem weakDeriv_single_ae_eq_testFunction {w : SobolevMultiIndex F b 1 p Ω μ}
     {φ : 𝓓(Ω, F)} (hφ : SobolevMultiIndex.fn w =ᵐ[μ.restrict (Ω : Set E)] φ) (i : ι) :
     SobolevMultiIndex.weakDeriv w (MultiIndexLE.single i) =ᵐ[μ.restrict (Ω : Set E)]
@@ -351,8 +413,9 @@ theorem weakDeriv_single_ae_eq_testFunction {w : SobolevMultiIndex F b 1 p Ω μ
     Matrix.cons_val_zero]
 
 omit [Fact (1 ≤ p)] in
-/-- The zero extension of the partial derivative `∂_i w` of an element of `W^{1,p}(Ω)` whose
-function is a test function `φ` on `Ω` is the classical derivative `∂_i φ`, almost everywhere. -/
+/-- Let $w \in W^{1,p}(\Omega)$, and let $\varphi$ be a test function on $\Omega$ that equals the
+function of $w$ almost everywhere on $\Omega$. Then $\mathbf{1}_\Omega \partial_i w =
+D\varphi(x)\, b_i$ for almost every $x \in E$, for every $i$. -/
 theorem indicator_weakDeriv_single_ae_eq_testFunction {w : SobolevMultiIndex F b 1 p Ω μ}
     {φ : 𝓓(Ω, F)} (hφ : SobolevMultiIndex.fn w =ᵐ[μ.restrict (Ω : Set E)] φ) (i : ι) :
     (Ω : Set E).indicator (SobolevMultiIndex.weakDeriv w (MultiIndexLE.single i))
@@ -363,14 +426,18 @@ theorem indicator_weakDeriv_single_ae_eq_testFunction {w : SobolevMultiIndex F b
   exact congrFun (Set.indicator_eq_self.2 (Function.support_subset_iff'.2 fun x hx ↦
     (φ.fderivApply (b i)).eq_zero_of_notMem hx)) x
 
-/-- **The zero extension of a `W_0^{1,p}(Ω)` function has the zero extension of its partial
-derivative as weak derivative on the whole space**: for `u ∈ W_0^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, the
-weak derivative of `ū = Ω.indicator u` along `b i` on `E` is `\overline{∂_i u}`. Test functions
-`φ_n → u` in `W^{1,p}(Ω)` are test functions on `E` with `∂_i φ_n` as classical derivative,
-`φ_n → ū` and `∂_i φ_n → \overline{∂_i u}` in `L^p(E)`, and the weak derivative is closed under
-`L^p` limits (`hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm`). This is the identity
-"`∂ū/∂x_i = \overline{∂u/∂x_i}`" of [brezis2011functional] Proposition 9.18 (iii), proved for
-every open `Ω` and without the Riesz representation of the book's route. -/
+/-- **The extension by zero of a $W_0^{1,p}(\Omega)$ function has the extension by zero of its
+partial derivative as weak derivative.** Let $\Omega \subseteq E$ be open, let
+$1 \le p \le \infty$ and let $u \in W_0^{1,p}(\Omega)$. Then, for every $i$, the function
+$\overline{\partial_i u} = \mathbf{1}_\Omega \partial_i u$ is a weak derivative of
+$\bar u = \mathbf{1}_\Omega u$ along $b_i$ on the whole space $E$.
+
+This is the identity $\partial \bar u / \partial x_i = \overline{\partial u / \partial x_i}$ of
+Proposition 9.18 (iii) of [brezis2011functional], here for every open $\Omega$. The proof does
+not use the Riesz representation, as the source does. Test functions $\varphi_n \to u$ in
+$W^{1,p}(\Omega)$ are test functions on $E$ with classical derivative $\partial_i \varphi_n$.
+Then $\varphi_n \to \bar u$ and $\partial_i \varphi_n \to \overline{\partial_i u}$ in $L^p(E)$,
+and `hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm` concludes. -/
 theorem hasWeakIteratedLineDerivOn_indicator {u : SobolevMultiIndex F b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero F b 1 p Ω μ) (i : ι) :
     HasWeakIteratedLineDerivOn ![b i] ((Ω : Set E).indicator (SobolevMultiIndex.fn u))
@@ -404,12 +471,14 @@ theorem hasWeakIteratedLineDerivOn_indicator {u : SobolevMultiIndex F b 1 p Ω �
     exact eLpNorm_congr_ae ((indicator_weakDeriv_single_ae_eq_testFunction (hφ n) i).sub
       (Filter.EventuallyEq.refl _ _))
 
-/-- **Proposition 9.18, (i) ⇒ (iii), predicate form**: for `u ∈ W_0^{1,p}(Ω)` on an arbitrary
-open `Ω`, `1 ≤ p ≤ ∞`, the extension by zero `ū = Ω.indicator u` lies in `W^{1,p}` of the whole
-space, with `∂_i ū = \overline{∂_i u}`
-(`SobolevMultiIndexZero.hasWeakIteratedLineDerivOn_indicator`); [brezis2011functional]
-Proposition 9.18, (i) ⇒ (iii), and Remark 20 ("the canonical extension by 0 outside `Ω`, which
-is valid for arbitrary domains"). -/
+/-- Let $\Omega \subseteq E$ be open, let $1 \le p \le \infty$ and let $u \in W_0^{1,p}(\Omega)$.
+Then the extension by zero $\bar u = \mathbf{1}_\Omega u$ lies in $W^{1,p}(E)$, with
+$\partial_i \bar u = \overline{\partial_i u}$
+(`SobolevMultiIndexZero.hasWeakIteratedLineDerivOn_indicator`). This is Proposition 9.18, (i) ⇒
+(iii), of [brezis2011functional], together with Remark 20: "the canonical extension by 0 outside
+$\Omega$, which is valid for arbitrary domains".
+
+The conclusion is the predicate `MemSobolevMultiIndex` on the whole space `⊤`. -/
 theorem indicator_memSobolevMultiIndex {u : SobolevMultiIndex F b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero F b 1 p Ω μ) :
     MemSobolevMultiIndex b ((Ω : Set E).indicator (SobolevMultiIndex.fn u)) 1 p ⊤ μ := by
@@ -430,7 +499,7 @@ end SobolevMultiIndexZero
 end ZeroExtension
 
 
-/-! ### The typed extension by zero `W_0^{1,p}(Ω) → W^{1,p}(ℝ^N)` -/
+/-! ### The extension by zero $W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ -/
 
 section Typed
 
@@ -438,13 +507,17 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 
 namespace SobolevEuclideanZero
 
-/-- The extension by zero of `u ∈ W_0^{1,p}(Ω)`, as an element of `W^{1,p}(ℝ^N)`: the element
-whose function is `Ω.indicator (fn u)`, which exists by
-`SobolevMultiIndexZero.indicator_memSobolevMultiIndex`. -/
+/-- The **extension by zero** of $u \in W_0^{1,p}(\Omega)$, for an open
+$\Omega \subseteq \mathbb{R}^N$: the element $\bar u$ of $W^{1,p}(\mathbb{R}^N)$ whose function
+is $\mathbf{1}_\Omega u$.
+
+It exists by `SobolevMultiIndexZero.indicator_memSobolevMultiIndex`, and it is chosen with
+`Exists.choose`. -/
 def extendZero (u : SobolevEuclideanZero N 1 p Ω) : SobolevEuclidean N 1 p ⊤ :=
   (SobolevMultiIndexZero.indicator_memSobolevMultiIndex u.2).exists_sobolevMultiIndex.choose
 
-/-- The function of the extension by zero is `Ω.indicator (fn u)`, almost everywhere. -/
+/-- For $u \in W_0^{1,p}(\Omega)$, the function of the extension by zero $\bar u$ equals
+$\mathbf{1}_\Omega u$ almost everywhere on $\mathbb{R}^N$. -/
 theorem fn_extendZero (u : SobolevEuclideanZero N 1 p Ω) :
     SobolevMultiIndex.fn (extendZero u) =ᵐ[volume]
       (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
@@ -456,15 +529,18 @@ theorem fn_extendZero (u : SobolevEuclideanZero N 1 p Ω) :
     (SobolevMultiIndexZero.indicator_memSobolevMultiIndex u.2).exists_sobolevMultiIndex.choose_spec
   simpa only [Measure.restrict_coe_top] using h
 
-/-- On `Ω`, the function of the extension by zero is the function of `u`. -/
+/-- For $u \in W_0^{1,p}(\Omega)$, the function of the extension by zero $\bar u$ equals the
+function of $u$ almost everywhere on $\Omega$. -/
 theorem fn_extendZero_restrict (u : SobolevEuclideanZero N 1 p Ω) :
     SobolevMultiIndex.fn (extendZero u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω) :=
   Filter.EventuallyEq.trans (ae_restrict_of_ae (fn_extendZero u))
     (indicator_ae_eq_restrict Ω.isOpen.measurableSet.nullMeasurableSet)
 
-/-- The partial derivative of the extension by zero is the extension by zero of the partial
-derivative: `∂_i ū = \overline{∂_i u}` ([brezis2011functional] Proposition 9.18 (iii)). -/
+/-- For $u \in W_0^{1,p}(\Omega)$ and every $i$, the partial derivative of the extension by zero is
+the extension by zero of the partial derivative: $\partial_i \bar u = \mathbf{1}_\Omega
+\partial_i u$ almost everywhere on $\mathbb{R}^N$. This is the identity of Proposition 9.18
+(iii) of [brezis2011functional]. -/
 theorem weakDeriv_extendZero_single (u : SobolevEuclideanZero N 1 p Ω) (i : Fin N) :
     (SobolevMultiIndex.weakDeriv (extendZero u) (MultiIndexLE.single i) :
       EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume]
@@ -478,7 +554,8 @@ theorem weakDeriv_extendZero_single (u : SobolevEuclideanZero N 1 p Ω) (i : Fin
   have h2 := SobolevMultiIndexZero.hasWeakIteratedLineDerivOn_indicator u.2 i
   filter_upwards [h1.ae_eq h2] with x hx using hx (mem_univ x)
 
-/-- The extension by zero of a sum is the sum of the extensions. -/
+/-- The extension by zero is additive: $\overline{u + v} = \bar u + \bar v$ for
+$u, v \in W_0^{1,p}(\Omega)$. -/
 theorem extendZero_add (u v : SobolevEuclideanZero N 1 p Ω) :
     extendZero (u + v) = extendZero u + extendZero v := by
   refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
@@ -499,7 +576,8 @@ theorem extendZero_add (u v : SobolevEuclideanZero N 1 p Ω) :
   rw [Set.indicator_add']
   exact (fn_extendZero u).symm.add (fn_extendZero v).symm
 
-/-- The extension by zero of a scalar multiple is the multiple of the extension. -/
+/-- The extension by zero is homogeneous: $\overline{c u} = c \bar u$ for $c \in \mathbb{R}$ and
+$u \in W_0^{1,p}(\Omega)$. -/
 theorem extendZero_smul (c : ℝ) (u : SobolevEuclideanZero N 1 p Ω) :
     extendZero (c • u) = c • extendZero u := by
   refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
@@ -524,8 +602,9 @@ theorem extendZero_smul (c : ℝ) (u : SobolevEuclideanZero N 1 p Ω) :
   rw [h3]
   exact (fn_extendZero u).symm.const_smul c
 
-/-- The `L^p` norms of the components of the extension by zero are those of `u`: the integrals
-over `ℝ^N` of the zero extensions are the integrals over `Ω`. -/
+/-- For $u \in W_0^{1,p}(\Omega)$ and every multi-index $\alpha$ with $|\alpha| \le 1$,
+$\|\partial^\alpha \bar u\|_{L^p(\mathbb{R}^N)} = \|\partial^\alpha u\|_{L^p(\Omega)}$: the
+integrals over $\mathbb{R}^N$ of the extensions by zero are the integrals over $\Omega$. -/
 theorem norm_weakDeriv_extendZero (u : SobolevEuclideanZero N 1 p Ω)
     (α : MultiIndexLE (Fin N) 1) :
     ‖SobolevMultiIndex.weakDeriv (extendZero u) α‖
@@ -542,8 +621,11 @@ theorem norm_weakDeriv_extendZero (u : SobolevEuclideanZero N 1 p Ω)
     rw [eLpNorm_congr_ae (weakDeriv_extendZero_single u i),
       eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet.nullMeasurableSet]
 
-/-- **The extension by zero is an isometry** `W_0^{1,p}(Ω) → W^{1,p}(ℝ^N)`: the norm of the
-type is the `ℓ^p` sum of the `L^p` norms of the components, each of which is unchanged. -/
+/-- **The extension by zero is an isometry**: $\|\bar u\|_{W^{1,p}(\mathbb{R}^N)} =
+\|u\|_{W^{1,p}(\Omega)}$ for $u \in W_0^{1,p}(\Omega)$.
+
+The norm is the $\ell^p$ sum of the $L^p$ norms of the components, and each of them is unchanged
+(`SobolevEuclideanZero.norm_weakDeriv_extendZero`). -/
 theorem norm_extendZero (u : SobolevEuclideanZero N 1 p Ω) :
     ‖extendZero u‖ = ‖(u : SobolevEuclidean N 1 p Ω)‖ := by
   rcases eq_or_ne p ⊤ with rfl | hp'
@@ -554,48 +636,56 @@ theorem norm_extendZero (u : SobolevEuclideanZero N 1 p Ω) :
     exact Finset.sum_congr rfl fun α _ ↦ by rw [norm_weakDeriv_extendZero]
 
 variable (N p Ω) in
-/-- The extension by zero as a linear map `W_0^{1,p}(Ω) → W^{1,p}(ℝ^N)`. -/
+/-- The extension by zero $u \mapsto \bar u$, as a linear map
+$W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$. -/
 def extendZeroₗ : SobolevEuclideanZero N 1 p Ω →ₗ[ℝ] SobolevEuclidean N 1 p ⊤ where
   toFun := extendZero
   map_add' := extendZero_add
   map_smul' := extendZero_smul
 
 variable (N p Ω) in
-/-- **Proposition 9.18, (i) ⇒ (iii): the extension by zero**, as a bounded linear map
-`W_0^{1,p}(Ω) → W^{1,p}(ℝ^N)`, for every open `Ω` and `1 ≤ p ≤ ∞`: `ū = Ω.indicator u` lies in
-`W^{1,p}(ℝ^N)` (`SobolevEuclideanZero.fn_extendZeroL`), with `∂_i ū = \overline{∂_i u}`
+/-- The **extension by zero** $u \mapsto \bar u$, as a bounded linear map
+$W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$, for every open $\Omega \subseteq \mathbb{R}^N$
+and $1 \le p \le \infty$. The function of $\bar u$ is $\mathbf{1}_\Omega u$
+(`SobolevEuclideanZero.fn_extendZeroL`), its partial derivatives are
+$\partial_i \bar u = \overline{\partial_i u}$
 (`SobolevEuclideanZero.weakDeriv_extendZeroL_single`), and the map is an isometry
-(`SobolevEuclideanZero.norm_extendZeroL_apply`). [brezis2011functional] Proposition 9.18,
-(i) ⇒ (iii), and Remark 20 ("the canonical extension by 0 outside `Ω`, which is valid for
-arbitrary domains"). -/
+(`SobolevEuclideanZero.norm_extendZeroL_apply`).
+
+This is Proposition 9.18, (i) ⇒ (iii), of [brezis2011functional], together with Remark 20: "the
+canonical extension by 0 outside $\Omega$, which is valid for arbitrary domains". -/
 def extendZeroL : SobolevEuclideanZero N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤ :=
   (extendZeroₗ N p Ω).mkContinuous 1 fun u ↦ by
     rw [one_mul, ← Submodule.norm_coe]
     exact (norm_extendZero u).le
 
-/-- `SobolevEuclideanZero.extendZeroL` is `SobolevEuclideanZero.extendZero`. -/
+/-- The bounded linear map `SobolevEuclideanZero.extendZeroL` sends $u$ to
+`SobolevEuclideanZero.extendZero u`. -/
 @[simp]
 theorem extendZeroL_apply (u : SobolevEuclideanZero N 1 p Ω) :
     extendZeroL N p Ω u = extendZero u :=
   rfl
 
-/-- The function of `extendZeroL u` is `Ω.indicator (fn u)`, almost everywhere on `ℝ^N`:
-"`ū ∈ W^{1,p}(ℝ^N)`". -/
+/-- For $u \in W_0^{1,p}(\Omega)$, the function of $\bar u$ equals $\mathbf{1}_\Omega u$ almost
+everywhere on $\mathbb{R}^N$. This is the statement $\bar u \in W^{1,p}(\mathbb{R}^N)$ of
+Proposition 9.18 (iii) of [brezis2011functional]. -/
 theorem fn_extendZeroL (u : SobolevEuclideanZero N 1 p Ω) :
     SobolevMultiIndex.fn (extendZeroL N p Ω u) =ᵐ[volume]
       (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
         (SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω)) :=
   fn_extendZero u
 
-/-- On `Ω`, the function of `extendZeroL u` is the function of `u`. -/
+/-- For $u \in W_0^{1,p}(\Omega)$, the function of $\bar u$ equals the function of $u$ almost
+everywhere on $\Omega$. -/
 theorem fn_extendZeroL_restrict (u : SobolevEuclideanZero N 1 p Ω) :
     SobolevMultiIndex.fn (extendZeroL N p Ω u)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
         SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω) :=
   fn_extendZero_restrict u
 
-/-- The partial derivatives of `extendZeroL u` are the zero extensions of those of `u`:
-"`∂ū/∂x_i = \overline{∂u/∂x_i}`". -/
+/-- For $u \in W_0^{1,p}(\Omega)$ and every $i$, $\partial_i \bar u = \mathbf{1}_\Omega \partial_i
+u$ almost everywhere on $\mathbb{R}^N$. This is the identity $\partial \bar u / \partial x_i =
+\overline{\partial u / \partial x_i}$ of Proposition 9.18 (iii) of [brezis2011functional]. -/
 theorem weakDeriv_extendZeroL_single (u : SobolevEuclideanZero N 1 p Ω) (i : Fin N) :
     (SobolevMultiIndex.weakDeriv (extendZeroL N p Ω u) (MultiIndexLE.single i) :
       EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume]
@@ -603,20 +693,25 @@ theorem weakDeriv_extendZeroL_single (u : SobolevEuclideanZero N 1 p Ω) (i : Fi
         (SobolevMultiIndex.weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)) :=
   weakDeriv_extendZero_single u i
 
-/-- The extension by zero is an isometry: `‖ū‖_{W^{1,p}(ℝ^N)} = ‖u‖_{W^{1,p}(Ω)}`. -/
+/-- The extension by zero is an isometry: $\|\bar u\|_{W^{1,p}(\mathbb{R}^N)} =
+\|u\|_{W^{1,p}(\Omega)}$ for $u \in W_0^{1,p}(\Omega)$. -/
 theorem norm_extendZeroL_apply (u : SobolevEuclideanZero N 1 p Ω) :
     ‖extendZeroL N p Ω u‖ = ‖u‖ := by
   rw [extendZeroL_apply, norm_extendZero, Submodule.norm_coe]
 
-/-- The operator norm of the extension by zero is at most one. -/
+/-- The operator norm of the extension by zero $W_0^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ is at
+most $1$. -/
 theorem norm_extendZeroL_le : ‖extendZeroL N p Ω‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
-/-- **Remark 20**: on the subspace `W_0^{1,p}(Ω)` of an arbitrary open set, the extension by
-zero is a bounded extension operator into `W^{1,p}(ℝ^N)`, `HasSobolevExtensionOn` of
-`Numlib/Analysis/Sobolev/Cutoff.lean`; hence every consequence of that predicate — the
-embeddings of Corollary 9.14 and the compactness of Theorem 9.16 — holds on `W_0^{1,p}(Ω)`
-with no regularity of `Ω` ([brezis2011functional] Chapter 9, Remark 20). -/
+/-- For every open $\Omega \subseteq \mathbb{R}^N$ and $1 \le p \le \infty$, the subspace
+$W_0^{1,p}(\Omega)$ of $W^{1,p}(\Omega)$ has a Sobolev extension operator: the extension by zero
+is a bounded linear map into $W^{1,p}(\mathbb{R}^N)$ whose values equal $u$ almost everywhere on
+$\Omega$. This is Remark 20 in Chapter 9 of [brezis2011functional].
+
+The conclusion is `HasSobolevExtensionOn`. Every consequence of that predicate, such as the
+embeddings of Corollary 9.14 and the compactness of Theorem 9.16, therefore holds on
+$W_0^{1,p}(\Omega)$ with no regularity of $\Omega$. -/
 theorem hasSobolevExtensionOn : HasSobolevExtensionOn (SobolevEuclideanZero N 1 p Ω) :=
   ⟨extendZeroL N p Ω, fun u ↦ fn_extendZeroL_restrict u⟩
 
@@ -624,7 +719,7 @@ end SobolevEuclideanZero
 
 end Typed
 
-/-! ### Remarks 20 and 21: the Sobolev and Poincaré inequalities on `W_0^{1,p}(Ω)` -/
+/-! ### Remarks 20 and 21: the Sobolev and Poincaré inequalities on $W_0^{1,p}(\Omega)$ -/
 
 section Remark20
 
@@ -634,13 +729,16 @@ open SobolevMultiIndex
 
 namespace SobolevEuclideanZero
 
-/-- **Remark 20, the Sobolev inequality on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**, in the
-form of Theorem 9.9: for `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `u ∈ W_0^{1,p}(Ω)`,
-`‖u‖_{L^{p*}(Ω)} ≤ C(p, N) ∑_i ‖∂_i u‖_{L^p(Ω)}`, with Mathlib's constant
-`SobolevEuclidean.gnsConst`. Theorem 9.9 (`SobolevEuclidean.eLpNorm_fn_le_of_eq`) applied to the
-extension by zero `SobolevEuclideanZero.extendZeroL u ∈ W^{1,p}(ℝ^N)`, whose partial derivatives
-have the `L^p` norms of those of `u` ([brezis2011functional] Chapter 9, Remark 20, "it can also
-be deduced from Theorem 9.9 that …"). -/
+/-- **The Sobolev inequality on $W_0^{1,p}(\Omega)$**, sum form. Let $\Omega \subseteq \mathbb{R}^N$
+be open, let $1 \le p < N$, and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. Then for every
+$u \in W_0^{1,p}(\Omega)$,
+$$\|u\|_{L^{p^*}(\Omega)} \le C(p, N) \sum_i \|\partial_i u\|_{L^p(\Omega)},$$
+where $C(p, N)$ is `SobolevEuclidean.gnsConst N p`. This is Remark 20 in Chapter 9 of
+[brezis2011functional]: "it can also be deduced from Theorem 9.9 that …".
+
+The proof applies Theorem 9.9 (`SobolevEuclidean.eLpNorm_fn_le_of_eq`) to the extension by zero
+`SobolevEuclideanZero.extendZeroL`, whose partial derivatives have the $L^p$ norms of those of
+$u$. The exponents $p$ and $p^*$ are `p` and `p'`, of type `ℝ≥0`. -/
 theorem eLpNorm_fn_le_sum_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclideanZero N 1 p Ω) :
     eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
@@ -654,11 +752,15 @@ theorem eLpNorm_fn_le_sum_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - 
   simp only [extendZeroL_apply, norm_weakDeriv_extendZero] at h
   exact h
 
-/-- **Remark 20, the Sobolev inequality on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**: for
-`1 ≤ p < N`, `1/p* = 1/p − 1/N` and `u ∈ W_0^{1,p}(Ω)`,
-`‖u‖_{L^{p*}(Ω)} ≤ C(p, N) ‖∇u‖_{L^p(Ω)}` with `C(p, N) = N · SobolevEuclidean.gnsConst N p`
-([brezis2011functional] Chapter 9, Remark 20): no regularity of `Ω` is needed, the extension by
-zero being an extension operator on `W_0^{1,p}(Ω)`. The sum form is
+/-- **The Sobolev inequality on $W_0^{1,p}(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be open,
+let $1 \le p < N$, and let $p^*$ satisfy $1/p^* = 1/p - 1/N$. Then for every
+$u \in W_0^{1,p}(\Omega)$,
+$$\|u\|_{L^{p^*}(\Omega)} \le N \, C(p, N) \, \|\nabla u\|_{L^p(\Omega)},$$
+where $C(p, N)$ is `SobolevEuclidean.gnsConst N p`. No regularity of $\Omega$ is needed, because
+the extension by zero is an extension operator on $W_0^{1,p}(\Omega)$. This is Remark 20 in
+Chapter 9 of [brezis2011functional].
+
+The exponent $p^*$ is `p'`, and the gradient norm is `SobolevMultiIndex.gradNorm`. The sum form is
 `SobolevEuclideanZero.eLpNorm_fn_le_sum_of_eq`. -/
 theorem eLpNorm_fn_le_gradNorm_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclideanZero N 1 p Ω) :
@@ -685,10 +787,14 @@ theorem eLpNorm_fn_le_gradNorm_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻
         rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_mul (by positivity),
           ENNReal.ofReal_natCast, ENNReal.ofReal_coe_nnreal, mul_assoc]
 
-/-- **`W_0^{1,p}(Ω) ⊆ L^{p*}(Ω)`** for `1 ≤ p < N` and an arbitrary open `Ω`
-([brezis2011functional] Chapter 9, Remark 20); the general `L^q` memberships are
-`SobolevEuclideanZero.memLp_fn_of_le` / `memLp_fn_of_lt` / `memLp_fn_of_eq` in
-`EmbeddingDomain.lean`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 \le p < N$, and let $p^*$ satisfy
+$1/p^* = 1/p - 1/N$. Then $W_0^{1,p}(\Omega) \subseteq L^{p^*}(\Omega)$: the function of every
+$u \in W_0^{1,p}(\Omega)$ lies in $L^{p^*}(\Omega)$. This is part of Remark 20 in Chapter 9 of
+[brezis2011functional].
+
+The exponent $p^*$ is `p'`. The memberships in the other spaces $L^q(\Omega)$ are
+`SobolevEuclideanZero.memLp_fn_of_le`, `SobolevEuclideanZero.memLp_fn_of_lt` and
+`SobolevEuclideanZero.memLp_fn_of_eq` in `Numlib.Analysis.Sobolev.EmbeddingDomain`. -/
 theorem memLp_fn_sobolevConj (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclideanZero N 1 p Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
@@ -707,10 +813,15 @@ open SobolevMultiIndex
 
 namespace SobolevEuclideanZero
 
-/-- The tensor weak gradient of the extension by zero of `u ∈ W_0^{1,p}(Ω)` may be taken to vanish
-outside `Ω`: it is `Ω.indicator w` for the tensor gradient `w` of `ū`, which vanishes almost
-everywhere off `Ω` because its values on the basis vectors are the zero extensions of the partial
-derivatives of `u`. -/
+/-- Let $u \in W_0^{1,p}(\Omega)$ for an open $\Omega \subseteq \mathbb{R}^N$. Then the extension by
+zero $\bar u$ has a weak derivative $w : \mathbb{R}^N \to (\mathbb{R}^N)^*$ on $\mathbb{R}^N$
+such that $w(x) = 0$ for every $x \notin \Omega$, $w \in L^p(\mathbb{R}^N)$ and
+$$\|w\|_{L^p(\mathbb{R}^N)} \le \sum_i \|\partial_i u\|_{L^p(\Omega)}.$$
+
+The weak derivative is `HasWeakFDerivOn` on the whole space. The proof takes
+$w = \mathbf{1}_\Omega w_0$ for a weak derivative $w_0$ of $\bar u$. The function $w_0$ vanishes
+almost everywhere outside $\Omega$, because its values on the basis vectors are the extensions
+by zero of the $\partial_i u$. -/
 theorem exists_hasWeakFDerivOn_indicator (u : SobolevEuclideanZero N 1 p Ω) :
     ∃ w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ,
       HasWeakFDerivOn ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
@@ -751,27 +862,31 @@ theorem exists_hasWeakFDerivOn_indicator (u : SobolevEuclideanZero N 1 p Ω) :
       (le_of_eq (Finset.sum_congr rfl fun i _ ↦ by
         rw [extendZeroL_apply, norm_weakDeriv_extendZero]))
 
-/-- The exponent bookkeeping of Remark 21: for `0 < a ≤ 1` and `0 < b < 1` there is `c` with
-`a ≤ c ≤ a + b` and `b < c ≤ 1`. -/
+/-- For real numbers $0 < a \le 1$ and $0 < b < 1$ there is $c$ with $a \le c \le a + b$ and
+$b < c \le 1$. This is the choice of exponents in the proof of
+`SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`. -/
 theorem exists_exponent_aux {a b : ℝ} (ha : 0 < a) (ha1 : a ≤ 1) (hb : 0 < b) (hb1 : b < 1) :
     ∃ c : ℝ, a ≤ c ∧ c ≤ a + b ∧ b < c ∧ c ≤ 1 :=
   ⟨min 1 (max a (b + a / 2)), le_min ha1 (le_max_left _ _),
     (min_le_right _ _).trans (max_le (by linarith) (by linarith)),
     lt_min hb1 ((lt_max_of_lt_right (by linarith))), min_le_left _ _⟩
 
-/-- **Remark 21, first clause: Poincaré's inequality on an open set of finite measure**, sum
-form: for `N ≥ 2`, `1 ≤ p < ∞` and `Ω` of finite measure there is `C < ∞` with
-`‖u‖_{L^p(Ω)} ≤ C ∑_i ‖∂_i u‖_{L^p(Ω)}` for every `u ∈ W_0^{1,p}(Ω)`.
+/-- **Poincaré's inequality on an open set of finite measure**, sum form. Let $N \ge 2$, let
+$1 \le p < \infty$, and let $\Omega \subseteq \mathbb{R}^N$ be open with finite measure. Then
+there is a constant $C < \infty$ such that for every $u \in W_0^{1,p}(\Omega)$,
+$$\|u\|_{L^p(\Omega)} \le C \sum_i \|\partial_i u\|_{L^p(\Omega)}.$$
+This is the first clause of Remark 21 in Chapter 9 of [brezis2011functional]: "Poincaré's
+inequality remains true if $\Omega$ has finite measure". For $N = 1$ the statement is false on
+unbounded open sets of finite measure.
 
-Proof: choose an exponent `1 ≤ q ≤ p` with `q < N` and `p ≤ q*` (`1/q* = 1/q − 1/N`), which is
-possible for `N ≥ 2`. On the finite-measure `Ω`, `L^p(Ω) ⊆ L^q(Ω)`, so the extension by zero `ū`
-and its (tensor) weak gradient `w`, which vanishes off `Ω`, lie in `L^q(ℝ^N)`, and Theorem 9.9
-(`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`) at the exponent `q` gives
-`‖u‖_{q*} ≤ C ‖w‖_q`; Hölder's inequality `‖u‖_p ≤ |Ω|^{1/p − 1/q*} ‖u‖_{q*}` and
-`‖w‖_q ≤ |Ω|^{1/q − 1/p} ‖w‖_p ≤ |Ω|^{1/q − 1/p} ∑_i ‖∂_i u‖_p` finish
-([brezis2011functional] Chapter 9, Remark 21, "Poincaré's inequality remains true if `Ω` has
-finite measure"). For `N = 1` the statement is false on unbounded sets of finite measure
-(`notes/book-errata.md`). -/
+The constant $C$ is in `ℝ≥0∞`. The proof chooses an exponent $1 \le q \le p$ with $q < N$ and
+$p \le q^*$, which is possible for $N \ge 2$. On $\Omega$, which has finite measure,
+$L^p(\Omega) \subseteq L^q(\Omega)$. So the extension by zero $\bar u$ and its weak gradient
+$w$, which vanishes outside $\Omega$, lie in $L^q(\mathbb{R}^N)$. Theorem 9.9 at the exponent
+$q$ (`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`) gives $\|u\|_{q^*} \le C \|w\|_q$.
+Hölder's inequalities $\|u\|_p \le |\Omega|^{1/p - 1/q^*} \|u\|_{q^*}$ and $\|w\|_q \le
+|\Omega|^{1/q - 1/p} \|w\|_p \le |\Omega|^{1/q - 1/p} \sum_i \|\partial_i u\|_p$ conclude.
+-/
 theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤ N)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     ∃ C : ℝ≥0∞, C ≠ ⊤ ∧ ∀ u : SobolevEuclideanZero N 1 p Ω,
@@ -887,13 +1002,17 @@ theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤
             (MultiIndexLE.single i)‖ := by
         rw [SobolevEuclidean.gnsConst]; ring
 
-/-- **Remark 21, first clause: Poincaré's inequality on an open set of finite measure**: for
-`N ≥ 2`, `1 ≤ p < ∞` and an open `Ω ⊆ ℝ^N` of finite measure there is `C < ∞` with
-`‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}` for every `u ∈ W_0^{1,p}(Ω)`
-([brezis2011functional] Chapter 9, Remark 21; the bounded-projection clause is
-`SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab` of `Numlib/Analysis/Sobolev/Poincare.lean`).
-The sum form is `SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`; for `N = 1`
-the statement is false on unbounded sets of finite measure. -/
+/-- **Poincaré's inequality on an open set of finite measure.** Let $N \ge 2$, let
+$1 \le p < \infty$, and let $\Omega \subseteq \mathbb{R}^N$ be open with finite measure. Then
+there is a constant $C < \infty$ such that for every $u \in W_0^{1,p}(\Omega)$,
+$$\|u\|_{L^p(\Omega)} \le C \|\nabla u\|_{L^p(\Omega)}.$$
+This is the first clause of Remark 21 in Chapter 9 of [brezis2011functional]. For $N = 1$ the
+statement is false on unbounded open sets of finite measure.
+
+The constant $C$ is in `ℝ≥0∞`, and the gradient norm is `SobolevMultiIndex.gradNorm`. The sum
+form is `SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`. The clause of Remark
+21 for an open set of bounded projection is `SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab`
+in `Numlib.Analysis.Sobolev.Poincare`. -/
 theorem eLpNorm_fn_le_gradNorm_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤ N)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
     ∃ C : ℝ≥0∞, C ≠ ⊤ ∧ ∀ u : SobolevEuclideanZero N 1 p Ω,
@@ -915,7 +1034,12 @@ end SobolevEuclideanZero
 
 end Remark21
 
-/-! ### Remarks 17 and 18: `C_c^k(Ω) ⊆ W_0^{k,p}(Ω)`, and `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` -/
+/-!
+### Remarks 17 and 18: $C_c^k(\Omega) \subseteq W_0^{k,p}(\Omega)$, and the whole space
+
+This section proves $C_c^k(\Omega) \subseteq W_0^{k,p}(\Omega)$ and $W_0^{1,p}(\mathbb{R}^N) =
+W^{1,p}(\mathbb{R}^N)$ for $1 \le p < \infty$.
+-/
 
 section Remarks
 
@@ -924,10 +1048,13 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
   {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
 
-/-- **Lemma 9.5 for a function with compact support in `Ω`**: an element of `W^{k,p}(Ω)`,
-`1 ≤ p < ∞`, whose function agrees almost everywhere on `Ω` with a function whose support is a
-compact subset of `Ω` lies in `W_0^{k,p}(Ω)`
-(`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` with `K = tsupport v`). -/
+/-- **Lemma 9.5 for a function with compact support in $\Omega$.** Let $1 \le p < \infty$ and let
+$u \in W^{k,p}(\Omega)$. Suppose that the function of $u$ equals, almost everywhere on $\Omega$,
+a function $v$ with compact support such that $\operatorname{supp} v \subseteq \Omega$. Then
+$u \in W_0^{k,p}(\Omega)$.
+
+The proof is `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` with
+$K = \operatorname{supp} v$, the closed support `tsupport v`. -/
 theorem SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset (hp' : p ≠ ⊤)
     (u : SobolevMultiIndex F b k p Ω μ) {v : E → F} (hvc : HasCompactSupport v)
     (hvΩ : tsupport v ⊆ Ω) (hu : SobolevMultiIndex.fn u =ᵐ[μ.restrict (Ω : Set E)] v) :
@@ -935,12 +1062,16 @@ theorem SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset (hp' : p ≠ �
   SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact hp' u hvc hvΩ
     (hu.mono fun x hx hxK ↦ by rw [hx]; exact image_eq_zero_of_notMem_tsupport hxK)
 
-/-- **Remark 18, and the book's definition of `W_0^{1,p}(Ω)` through `C_c^1(Ω)`**: a `C^k`
-function with compact support in `Ω` is the function of an element of `W_0^{k,p}(Ω)`,
-`1 ≤ p < ∞`. So the closure of `C_c^k(Ω)` in `W^{k,p}(Ω)` is contained in the closure
-`SobolevEuclideanZero N k p Ω` of `C_c^∞(Ω)`, and the two closures agree: "`C_c^∞(Ω)` could
-equally well have been used instead of `C_c^1(Ω)` in the definition of `W_0^{1,p}(Ω)`"
-([brezis2011functional] §9.4, Definition, Remark 18, and Remark 22 for `k ≥ 2`). Immediate from
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 \le p < \infty$, and let $v$ be a $C^k$
+function on $\mathbb{R}^N$ with compact support such that
+$\operatorname{supp} v \subseteq \Omega$. Then there is $u \in W_0^{k,p}(\Omega)$ whose function
+equals $v$ almost everywhere on $\Omega$. This is Remark 18 of [brezis2011functional], together
+with Remark 22 for $k \ge 2$.
+
+So the closure of $C_c^k(\Omega)$ in $W^{k,p}(\Omega)$, which the source uses to define
+$W_0^{k,p}(\Omega)$, is contained in the closure `SobolevEuclideanZero N k p Ω` of
+$C_c^\infty(\Omega)$, and the two closures agree: "$C_c^\infty(\Omega)$ could equally well have
+been used instead of $C_c^1(\Omega)$ in the definition of $W_0^{1,p}(\Omega)$". The proof uses
 Lemma 9.5 and Remark 2. -/
 theorem SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (hp' : p ≠ ⊤) {v : EuclideanSpace ℝ (Fin N) → ℝ}
@@ -951,11 +1082,13 @@ theorem SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport {N : ℕ}
     (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := p) (Ω := Ω) (μ := volume) hvc
   ⟨u, SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset hp' u hvc hvΩ hu, hu⟩
 
-/-- **Remark 17**: `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` for `1 ≤ p < ∞`, since `C_c^∞(ℝ^N)` is dense in
-`W^{1,p}(ℝ^N)` (Theorem 9.2 on the whole space, through the abstract density lemma
+/-- For $1 \le p < \infty$, $W_0^{1,p}(\mathbb{R}^N) = W^{1,p}(\mathbb{R}^N)$. This is the first
+sentence of Remark 17 in Chapter 9 of [brezis2011functional].
+
+The proof uses the density of $C_c^\infty(\mathbb{R}^N)$ in $W^{1,p}(\mathbb{R}^N)$ (Theorem
+9.2), in the form
 `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` with
-the identity as extension operator): the approximants are test functions on `ℝ^N`
-([brezis2011functional] Chapter 9, Remark 17, first sentence). -/
+the identity as extension operator. The approximants are test functions on $\mathbb{R}^N$. -/
 theorem SobolevEuclideanZero.eq_top {N : ℕ} (hp' : p ≠ ⊤) :
     SobolevEuclideanZero N 1 p ⊤ = ⊤ := by
   refine top_unique fun u _ ↦ ?_
@@ -975,8 +1108,11 @@ section Characterization
 
 variable {N : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Integration by parts of a test function on `Ω` against a `C^1` function on `ℝ^N`**:
-`∫_Ω φ ∂_v ψ = -∫_Ω (∂_v φ) ψ`, both integrals being over `Ω` because `φ` vanishes outside it. -/
+/-- **Integration by parts of a test function on $\Omega$ against a $C^1$ function.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $\psi \in C^1(\mathbb{R}^N)$, let $\varphi$ be a
+test function on $\Omega$, and let $v \in \mathbb{R}^N$. Then
+$$\int_\Omega \varphi \, D\psi(x) v \, dx = -\int_\Omega D\varphi(x) v \, \psi \, dx.$$
+Both integrals are over $\Omega$, because $\varphi$ vanishes outside $\Omega$. -/
 theorem TestFunction.setIntegral_mul_fderiv_eq_neg {ψ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hψ : ContDiff ℝ 1 ψ) (φ : 𝓓(Ω, ℝ)) (v : EuclideanSpace ℝ (Fin N)) :
     ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x * fderiv ℝ ψ x v
@@ -997,13 +1133,17 @@ theorem TestFunction.setIntegral_mul_fderiv_eq_neg {ψ : EuclideanSpace ℝ (Fin
 
 namespace SobolevEuclideanZero
 
-/-- **Proposition 9.18, (i) ⇒ (ii)**: for `u ∈ W_0^{1,p}(Ω)`, `p` and `q` Hölder conjugate,
-every `C^1` function `φ` with compact support in `ℝ^N` (not in `Ω`) and every `i`,
-`|∫_Ω u ∂_i φ| ≤ ‖∂_i u‖_{L^p(Ω)} ‖φ‖_{L^q(Ω)}`. For test functions `u_n → u` in `W^{1,p}(Ω)`,
-`∫_Ω u_n ∂_i φ = -∫_Ω (∂_i u_n) φ` by integration by parts of the compactly supported product
-(`TestFunction.setIntegral_mul_fderiv_eq_neg`), Hölder's inequality bounds it by
-`‖∂_i u_n‖_p ‖φ‖_q`, and both sides pass to the limit ([brezis2011functional] Proposition 9.18,
-(i) ⇒ (ii)). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 \le p \le \infty$ and let $q$ be its
+conjugate exponent. Let $u \in W_0^{1,p}(\Omega)$, and let $\varphi \in C^1(\mathbb{R}^N)$ have
+compact support in $\mathbb{R}^N$ (not necessarily in $\Omega$). Then for every $i$,
+$$\Big| \int_\Omega u \, \partial_i \varphi \Big| \le \|\partial_i u\|_{L^p(\Omega)}
+  \|\varphi\|_{L^q(\Omega)}.$$
+This is Proposition 9.18, (i) ⇒ (ii), of [brezis2011functional].
+
+The proof takes test functions $u_n \to u$ in $W^{1,p}(\Omega)$. Then $\int_\Omega u_n
+\partial_i \varphi = -\int_\Omega (\partial_i u_n) \varphi$ by integration by parts
+(`TestFunction.setIntegral_mul_fderiv_eq_neg`). Hölder's inequality bounds this by
+$\|\partial_i u_n\|_p \|\varphi\|_q$, and both sides pass to the limit. -/
 theorem abs_integral_fn_smul_fderiv_le [p.HolderConjugate q] (u : SobolevEuclideanZero N 1 p Ω)
     {φ : EuclideanSpace ℝ (Fin N) → ℝ} (hφ : ContDiff ℝ 1 φ) (hφc : HasCompactSupport φ)
     (i : Fin N) :
@@ -1072,12 +1212,17 @@ theorem abs_integral_fn_smul_fderiv_le [p.HolderConjugate q] (u : SobolevEuclide
 end SobolevEuclideanZero
 
 omit [Fact (1 ≤ p)] in
-/-- **Proposition 9.18, (ii) ⇒ (iii)**: for `1 < p < ∞` (`q` the conjugate exponent, `q ≠ ∞`),
-if `u ∈ L^p(Ω)` satisfies `|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^q(Ω)}` for every `C^1` function `φ` with
-compact support in `ℝ^N` and every `i`, then the extension by zero `ū = Ω.indicator u` lies in
-`W^{1,p}(ℝ^N)`. Since `∫_{ℝ^N} ū ∂_i φ = ∫_Ω u ∂_i φ` and `‖φ‖_{L^q(Ω)} ≤ ‖φ‖_{L^q(ℝ^N)}`, this is
-Proposition 9.3, (ii) ⇒ (i), on `ℝ^N` (`MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`)
-([brezis2011functional] Proposition 9.18, (ii) ⇒ (iii)). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $1 < p \le \infty$ and let $q < \infty$ be its
+conjugate exponent. Let $u \in L^p(\Omega)$ and $C \in \mathbb{R}$, and suppose that for every
+$\varphi \in C^1(\mathbb{R}^N)$ with compact support and every $i$,
+$$\Big| \int_\Omega u \, \partial_i \varphi \Big| \le C \|\varphi\|_{L^q(\Omega)}.$$
+Then the extension by zero $\bar u = \mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. This
+is Proposition 9.18, (ii) ⇒ (iii), of [brezis2011functional].
+
+Since $\int_{\mathbb{R}^N} \bar u \, \partial_i \varphi = \int_\Omega u \, \partial_i \varphi$
+and $\|\varphi\|_{L^q(\Omega)} \le \|\varphi\|_{L^q(\mathbb{R}^N)}$, the statement follows from
+Proposition 9.3, (ii) ⇒ (i), on $\mathbb{R}^N$
+(`MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le`). -/
 theorem SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le [p.HolderConjugate q]
     (hq : q ≠ ⊤) {u : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : MemLp u p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) {C : ℝ}
@@ -1124,7 +1269,7 @@ theorem SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le [p.Holde
 
 end Characterization
 
-/-! ### The chain rule and the positive part preserve `W_0^{1,p}(Ω)` -/
+/-! ### The chain rule and the positive part preserve $W_0^{1,p}(\Omega)$ -/
 
 section ChainRule
 
@@ -1135,9 +1280,11 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
 namespace SobolevMultiIndexZero
 
 omit [Fact (1 ≤ p)] in
-/-- The partial derivative `∂_i v` of an element `v` of `W^{1,p}(Ω)` whose function is `G ∘ u`,
-for `G ∈ C^1(ℝ)` with bounded derivative and `u ∈ W^{1,p}(Ω)`, is `G'(u) ∂_i u` almost
-everywhere on `Ω`: the chain rule `HasWeakIteratedLineDerivOn.contDiff_comp'` and the
+/-- Let $u, v \in W^{1,p}(\Omega)$ be real-valued, and let $G \in C^1(\mathbb{R})$ with
+$|G'| \le M$. If the function of $v$ equals $G \circ u$ almost everywhere on $\Omega$, then for
+every $i$, $\partial_i v = G'(u) \, \partial_i u$ almost everywhere on $\Omega$.
+
+The proof combines the chain rule `HasWeakIteratedLineDerivOn.contDiff_comp'` with the
 uniqueness of the weak derivative. -/
 theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp
     {u v : SobolevMultiIndex ℝ b 1 p Ω μ} {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) {M : ℝ}
@@ -1151,19 +1298,22 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp
     (multiIndexTuple_single_perm (b : ι → E) i)).contDiff_comp' hG hM
   exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
-/-- **The chain rule preserves `W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: for `G ∈ C^1(ℝ)` with `G 0 = 0`
-and `|G'| ≤ M`, and `u ∈ W_0^{1,p}(Ω)`, every element `v` of `W^{1,p}(Ω)` whose function is
-`G ∘ u` (one exists by Proposition 9.5, `MemSobolevMultiIndex.contDiff_comp`) lies in
-`W_0^{1,p}(Ω)`. This is the content of footnotes 35, 37 and 38 of [brezis2011functional] §9.7
-("if `u ∈ H^1_0(Ω)` the assumption `u ∈ C(Ω̄)` can be removed").
+/-- **The chain rule preserves $W_0^{1,p}(\Omega)$.** Let $1 \le p < \infty$, let
+$u \in W_0^{1,p}(\Omega)$ be real-valued, and let $G \in C^1(\mathbb{R})$ with $G(0) = 0$ and
+$|G'| \le M$. Then every $v \in W^{1,p}(\Omega)$ whose function equals $G \circ u$ almost
+everywhere on $\Omega$ lies in $W_0^{1,p}(\Omega)$. Such a $v$ exists by Proposition 9.5
+(`MemSobolevMultiIndex.contDiff_comp`). This is the content of footnotes 35, 37 and 38 of §9.7
+of [brezis2011functional]: "if $u \in H^1_0(\Omega)$ the assumption $u \in C(\bar\Omega)$ can be
+removed".
 
-Proof: for test functions `u_n → u` in `W^{1,p}(Ω)`, `G ∘ u_n` is `C^1` with compact support in
-`Ω`, hence in `W_0^{1,p}(Ω)` by Lemma 9.5; `G ∘ u_n → G ∘ u` in `L^p(Ω)` because
-`|G(a) − G(b)| ≤ M |a − b|`, and `∇(G ∘ u_n) = G'(u_n) ∇u_n → G'(u) ∇u` in `L^p(Ω)` along a
-subsequence on which `u_n → u` almost everywhere, by splitting
-`G'(u_n)(∇u_n − ∇u) + (G'(u_n) − G'(u)) ∇u` — the first term is bounded by `M ‖∇u_n − ∇u‖_p`, the
-second tends to `0` by dominated convergence. The closed subspace `W_0^{1,p}(Ω)` contains the
-limit. -/
+The proof takes test functions $u_n \to u$ in $W^{1,p}(\Omega)$. Each $G \circ u_n$ is $C^1$
+with compact support in $\Omega$, hence lies in $W_0^{1,p}(\Omega)$ by Lemma 9.5. Then
+$G \circ u_n \to G \circ u$ in $L^p(\Omega)$, because $|G(a) - G(b)| \le M |a - b|$. Along a
+subsequence on which $u_n \to u$ almost everywhere, $\nabla (G \circ u_n) = G'(u_n) \nabla u_n
+\to G'(u) \nabla u$ in $L^p(\Omega)$, by the splitting $G'(u_n)(\nabla u_n - \nabla u) +
+(G'(u_n) - G'(u)) \nabla u$: the first term is bounded by $M \|\nabla u_n - \nabla u\|_p$, and
+the second tends to $0$ by dominated convergence. The closed subspace $W_0^{1,p}(\Omega)$
+contains the limit. -/
 theorem contDiff_comp_mem (hp' : p ≠ ⊤) {u : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ) {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G)
     (hG0 : G 0 = 0) {M : ℝ} (hM : ∀ t, |deriv G t| ≤ M) {v : SobolevMultiIndex ℝ b 1 p Ω μ}
@@ -1306,9 +1456,12 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
 namespace SobolevMultiIndexZero
 
 omit [Fact (1 ≤ p)] in
-/-- The partial derivative of an element `v` of `W^{1,p}(Ω)` whose function is `u⁺ = max u 0`,
-for `u ∈ W^{1,p}(Ω)`, is `{u > 0}.indicator (∂_i u)` almost everywhere on `Ω`
-(`HasWeakIteratedLineDerivOn.posPart` and the uniqueness of the weak derivative). -/
+/-- Let $u, v \in W^{1,p}(\Omega)$ be real-valued. If the function of $v$ equals $u^+ = \max(u, 0)$
+almost everywhere on $\Omega$, then for every $i$, $\partial_i v = \mathbf{1}_{\{u > 0\}}
+\partial_i u$ almost everywhere on $\Omega$.
+
+The proof combines `HasWeakIteratedLineDerivOn.posPart` with the uniqueness of the weak
+derivative. -/
 theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart
     {u v : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hv : SobolevMultiIndex.fn v =ᵐ[μ.restrict (Ω : Set E)]
@@ -1320,15 +1473,19 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart
     (multiIndexTuple_single_perm (b : ι → E) i)).posPart
   exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
-/-- **The positive part preserves `W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: for `u ∈ W_0^{1,p}(Ω)`, every
-element `v` of `W^{1,p}(Ω)` whose function is `u⁺ = max u 0` (one exists by
-`MemSobolevMultiIndex.posPart`) lies in `W_0^{1,p}(Ω)`. The `C^1` approximations
-`G_ε(s) = √((max s 0)² + ε²) − ε` of the positive part have `G_ε(u) ∈ W_0^{1,p}(Ω)` by the
-chain rule (`SobolevMultiIndexZero.contDiff_comp_mem`), and `G_ε(u) → u⁺` in `W^{1,p}(Ω)` as
-`ε → 0` by dominated convergence, with `|G_ε(u)| ≤ |u|` and `|G_ε'(u) ∂_i u| ≤ |∂_i u|`
-(Kinderlehrer and Stampacchia, *An Introduction to Variational Inequalities and Their
-Applications*, Theorem II.A.1; the obstacle set `{v ∈ H^1_0(Ω) : v ≥ ψ}` is nonempty because of
-it). -/
+/-- **The positive part preserves $W_0^{1,p}(\Omega)$.** Let $1 \le p < \infty$ and let
+$u \in W_0^{1,p}(\Omega)$ be real-valued. Then every $v \in W^{1,p}(\Omega)$ whose function
+equals $u^+ = \max(u, 0)$ almost everywhere on $\Omega$ lies in $W_0^{1,p}(\Omega)$. Such a $v$
+exists by `MemSobolevMultiIndex.posPart`.
+
+The proof uses the $C^1$ approximations $G_\varepsilon(s) = \sqrt{(\max(s, 0))^2 +
+\varepsilon^2} - \varepsilon$ of the positive part. By the chain rule
+(`SobolevMultiIndexZero.contDiff_comp_mem`), $G_\varepsilon(u) \in W_0^{1,p}(\Omega)$. As
+$\varepsilon \to 0$, $G_\varepsilon(u) \to u^+$ in $W^{1,p}(\Omega)$ by dominated convergence,
+with $|G_\varepsilon(u)| \le |u|$ and $|G_\varepsilon'(u) \, \partial_i u| \le |\partial_i u|$.
+The argument is that of Kinderlehrer and Stampacchia, *An Introduction to Variational
+Inequalities and Their Applications*, Theorem II.A.1. The result makes the obstacle set
+$\{v \in H^1_0(\Omega) : v \ge \psi\}$ nonempty. -/
 theorem posPart_mem (hp' : p ≠ ⊤) {u : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ) {v : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hv : SobolevMultiIndex.fn v =ᵐ[μ.restrict (Ω : Set E)]
@@ -1403,13 +1560,15 @@ theorem posPart_mem (hp' : p ≠ ⊤) {u : SobolevMultiIndex ℝ b 1 p Ω μ}
 
 end SobolevMultiIndexZero
 
-/-- **The positive part preserves `W_0^{1,p}(Ω)`** on an open `Ω ⊆ ℝ^N`, `1 ≤ p < ∞`: for
-`u ∈ W_0^{1,p}(Ω)` and `v ∈ W^{1,p}(Ω)` with `v = u⁺ = max u 0`, `v ∈ W_0^{1,p}(Ω)`; the
-instance of `SobolevMultiIndexZero.posPart_mem` on `SobolevEuclideanZero`. Together with
-`MemSobolevMultiIndex.posPart` (existence of `v`), this is what makes the obstacle set
-`{v ∈ H^1_0(Ω) : v ≥ ψ a.e.}` nonempty when `ψ ∈ H^1(Ω)` has `ψ⁺ ∈ H^1_0(Ω)` (Kinderlehrer and
-Stampacchia, *An Introduction to Variational Inequalities and Their Applications*,
-Theorem II.A.1). -/
+/-- **The positive part preserves $W_0^{1,p}(\Omega)$** on an open $\Omega \subseteq \mathbb{R}^N$.
+Let $1 \le p < \infty$, let $u \in W_0^{1,p}(\Omega)$, and let $v \in W^{1,p}(\Omega)$ have the
+function $u^+ = \max(u, 0)$ almost everywhere on $\Omega$. Then $v \in W_0^{1,p}(\Omega)$.
+
+This is `SobolevMultiIndexZero.posPart_mem` on `SobolevEuclideanZero`. Together with
+`MemSobolevMultiIndex.posPart`, which gives the existence of $v$, it makes the obstacle set $\{v
+\in H^1_0(\Omega) : v \ge \psi \text{ a.e.}\}$ nonempty when $\psi \in H^1(\Omega)$ has
+$\psi^+ \in H^1_0(\Omega)$ (Kinderlehrer and Stampacchia, *An Introduction to Variational
+Inequalities and Their Applications*, Theorem II.A.1). -/
 theorem SobolevEuclideanZero.posPart_mem {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
     (hp' : p ≠ ⊤) (u : SobolevEuclideanZero N 1 p Ω) {v : SobolevEuclidean N 1 p Ω}
     (hv : SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -1419,55 +1578,62 @@ theorem SobolevEuclideanZero.posPart_mem {N : ℕ} {Ω : Opens (EuclideanSpace �
 
 end PosPart
 
-/-! ### Theorem 9.17, (i) ⇒ (ii): a continuous function vanishing on the boundary is in `W_0^{1,p}`
+/-!
+### Theorem 9.17, (i) ⇒ (ii): a continuous function vanishing on the boundary is in $W_0^{1,p}$
 
-The truncation `G(t) = t · smoothTransition(t² − 1)` of the book's proof: smooth, `G(t) = 0` for
-`|t| ≤ 1`, `G(t) = t` for `|t| ≥ 2` (in fact for `|t| ≥ √2`), with bounded derivative. -/
+The proof uses the truncation $G(t) = t \, s(t^2 - 1)$ of the proof in the source, where $s$ is
+`Real.smoothTransition`. It is smooth, has bounded derivative, and satisfies $G(t) = 0$ for
+$|t| \le 1$ and $G(t) = t$ for $|t| \ge 2$ (in fact for $|t| \ge \sqrt 2$).
+-/
 
 section StepTruncation
 
-/-- The truncation `G(t) = t · smoothTransition(t² − 1)` of the proof of
-[brezis2011functional] Theorem 9.17: smooth, `G(t) = 0` for `|t| ≤ 1`, `G(t) = t` for
-`|t| ≥ 2`, `|G(t)| ≤ |t|`, with bounded derivative. -/
+/-- The **truncation** $G(t) = t \, s(t^2 - 1)$ of the proof of Theorem 9.17 of
+[brezis2011functional], where $s$ is `Real.smoothTransition`, a smooth function equal to $0$ on
+$(-\infty, 0]$ and to $1$ on $[1, \infty)$.
+
+The function $G$ is smooth, $G(t) = 0$ for $|t| \le 1$, $G(t) = t$ for $|t| \ge 2$,
+$|G(t)| \le |t|$, and $G'$ is bounded. -/
 def stepTruncation (t : ℝ) : ℝ := t * Real.smoothTransition (t ^ 2 - 1)
 
-/-- The truncation is smooth. -/
+/-- The truncation $G$ is smooth. -/
 theorem contDiff_stepTruncation : ContDiff ℝ ∞ stepTruncation :=
   contDiff_id.mul (Real.smoothTransition.contDiff.comp ((contDiff_id.pow 2).sub contDiff_const))
 
-/-- `G(0) = 0`. -/
+/-- The truncation satisfies $G(0) = 0$. -/
 theorem stepTruncation_zero : stepTruncation 0 = 0 := by simp [stepTruncation]
 
-/-- `G(t) = 0` for `|t| ≤ 1`. -/
+/-- The truncation satisfies $G(t) = 0$ for $|t| \le 1$. -/
 theorem stepTruncation_of_abs_le {t : ℝ} (ht : |t| ≤ 1) : stepTruncation t = 0 := by
   have h : t ^ 2 - 1 ≤ 0 := by nlinarith [abs_nonneg t, sq_abs t]
   simp [stepTruncation, Real.smoothTransition.zero_of_nonpos h]
 
-/-- `G(t) = t` for `|t| ≥ 2`. -/
+/-- The truncation satisfies $G(t) = t$ for $|t| \ge 2$. -/
 theorem stepTruncation_of_two_le {t : ℝ} (ht : 2 ≤ |t|) : stepTruncation t = t := by
   have h : 1 ≤ t ^ 2 - 1 := by nlinarith [sq_abs t]
   simp [stepTruncation, Real.smoothTransition.one_of_one_le h]
 
-/-- `|G(t)| ≤ |t|`. -/
+/-- The truncation satisfies $|G(t)| \le |t|$ for every $t$. -/
 theorem abs_stepTruncation_le (t : ℝ) : |stepTruncation t| ≤ |t| := by
   rw [stepTruncation, abs_mul, abs_of_nonneg (Real.smoothTransition.nonneg _)]
   exact mul_le_of_le_one_right (abs_nonneg _) (Real.smoothTransition.le_one _)
 
-/-- `G' = 0` where `|t| < 1`. -/
+/-- The derivative of the truncation satisfies $G'(t) = 0$ for $|t| < 1$. -/
 theorem deriv_stepTruncation_of_abs_lt {t : ℝ} (ht : |t| < 1) : deriv stepTruncation t = 0 := by
   have hev : stepTruncation =ᶠ[𝓝 t] fun _ ↦ (0 : ℝ) :=
     Filter.eventually_of_mem ((isOpen_lt continuous_abs continuous_const).mem_nhds ht)
       fun s hs ↦ stepTruncation_of_abs_le hs.le
   rw [hev.deriv_eq, deriv_const]
 
-/-- `G' = 1` where `|t| > 2`. -/
+/-- The derivative of the truncation satisfies $G'(t) = 1$ for $|t| > 2$. -/
 theorem deriv_stepTruncation_of_two_lt {t : ℝ} (ht : 2 < |t|) : deriv stepTruncation t = 1 := by
   have hev : stepTruncation =ᶠ[𝓝 t] id :=
     Filter.eventually_of_mem ((isOpen_lt continuous_const continuous_abs).mem_nhds ht)
       fun s hs ↦ stepTruncation_of_two_le hs.le
   rw [hev.deriv_eq, deriv_id]
 
-/-- `G'` is bounded: it is continuous, and equal to `1` outside `[-2, 2]`. -/
+/-- The derivative of the truncation is bounded: there is $M \ge 0$ with $|G'(t)| \le M$ for every
+$t$. The derivative is continuous, and it equals $1$ outside $[-2, 2]$. -/
 theorem exists_abs_deriv_stepTruncation_le :
     ∃ M : ℝ, 0 ≤ M ∧ ∀ t, |deriv stepTruncation t| ≤ M := by
   have hc : Continuous (deriv stepTruncation) := contDiff_stepTruncation.continuous_deriv (by simp)
@@ -1484,8 +1650,10 @@ theorem exists_abs_deriv_stepTruncation_le :
     rw [deriv_stepTruncation_of_two_lt h2, abs_one]
     exact le_max_right _ _
 
-/-- The scaled truncation `G_c(t) = c⁻¹ G(c t)`, `c > 0`: it vanishes for `|t| ≤ 1/c`, is the
-identity for `|t| ≥ 2/c`, and has the derivative `G'(c t)`. -/
+/-- For $c \neq 0$, the scaled truncation $G_c(s) = c^{-1} G(sc)$ has the derivative $G'(tc)$ at
+every $t \in \mathbb{R}$.
+
+For $c > 0$, $G_c$ vanishes for $|s| \le 1/c$ and is the identity for $|s| \ge 2/c$. -/
 theorem hasDerivAt_scaled_stepTruncation {c : ℝ} (hc : c ≠ 0) (t : ℝ) :
     HasDerivAt (fun s ↦ c⁻¹ * stepTruncation (s * c)) (deriv stepTruncation (t * c)) t := by
   have h := ((contDiff_stepTruncation.differentiable (by simp)) (t * c)).hasDerivAt.comp t
@@ -1505,18 +1673,23 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
 
 namespace SobolevMultiIndex
 
-/-- **Theorem 9.17, (i) ⇒ (ii), for a function with bounded support**: on any open `Ω`,
-`1 ≤ p < ∞`, an element `u` of `W^{1,p}(Ω)` with a representative `ũ` continuous on `closure Ω`,
-vanishing on `∂Ω` and outside a ball, lies in `W_0^{1,p}(Ω)`.
+/-- **A continuous function with bounded support that vanishes on the boundary lies in
+$W_0^{1,p}(\Omega)$.** Let $\Omega \subseteq E$ be open, let $1 \le p < \infty$, and let
+$u \in W^{1,p}(\Omega)$ be real-valued. Suppose that the function of $u$ equals, almost
+everywhere on $\Omega$, a function $\tilde u$ that is continuous on $\bar\Omega$, vanishes on
+$\partial\Omega$, and vanishes for $\|x\| > R$. Then $u \in W_0^{1,p}(\Omega)$. This is Theorem
+9.17, (i) ⇒ (ii), of [brezis2011functional], for a function of bounded support.
 
-Proof ([brezis2011functional] Theorem 9.17, (i) ⇒ (ii), with one change): with the truncations
-`G_n(t) = G(nt)/n` of `stepTruncation`, `u_n = G_n ∘ u ∈ W^{1,p}(Ω)` by Proposition 9.5, and
-`supp u_n ⊆ {|ũ| ≥ 1/n}` is a compact subset of `Ω` (closed and bounded in `closure Ω`, missing
-`∂Ω` where `ũ = 0`), so `u_n ∈ W_0^{1,p}(Ω)` by Lemma 9.5. The book's "`u_n → u` in `W^{1,p}` by
-dominated convergence" silently uses `∇u = 0` a.e. on `{u = 0}`; instead, `u_n → ũ` and
-`∇u_n = G_n'(ũ) ∇u → {ũ ≠ 0}.indicator ∇u` in `L^p(Ω)` by dominated convergence (`G_n'(0) = 0`
-and `G_n'(t) = 1` for `n |t| > 2`), so `(u_n)` is Cauchy in `W^{1,p}(Ω)`; its limit lies in the
-closed subspace `W_0^{1,p}(Ω)` and has function `ũ`, so it is `u`. -/
+The proof follows the source with one change. With the truncations $G_n(t) = G(nt)/n$ of
+`stepTruncation`, $u_n = G_n \circ u$ lies in $W^{1,p}(\Omega)$ by Proposition 9.5. Its support
+lies in $\{|\tilde u| \ge 1/n\}$, which is a compact subset of $\Omega$: it is closed and
+bounded in $\bar\Omega$ and does not meet $\partial\Omega$, where $\tilde u = 0$. So
+$u_n \in W_0^{1,p}(\Omega)$ by Lemma 9.5. The source concludes "$u_n \to u$ in $W^{1,p}$ by
+dominated convergence", which needs $\nabla u = 0$ almost everywhere on $\{u = 0\}$. Here
+instead $u_n \to \tilde u$ and $\nabla u_n = G_n'(\tilde u) \nabla u \to \mathbf{1}_{\{\tilde u
+\neq 0\}} \nabla u$ in $L^p(\Omega)$ by dominated convergence, since $G_n'(0) = 0$ and
+$G_n'(t) = 1$ for $n |t| > 2$. So $(u_n)$ is a Cauchy sequence in $W^{1,p}(\Omega)$. Its limit
+lies in the closed subspace $W_0^{1,p}(\Omega)$ and has the function $\tilde u$, so it is $u$. -/
 theorem mem_zero_of_continuousOn_closure_of_eqOn_frontier_of_forall_eq_zero (hp' : p ≠ ⊤)
     (u : SobolevMultiIndex ℝ b 1 p Ω μ) {ũ : E → ℝ} (hu : fn u =ᵐ[μ.restrict (Ω : Set E)] ũ)
     (hc : ContinuousOn ũ (closure Ω)) (h0 : EqOn ũ 0 (frontier Ω)) {R : ℝ}
@@ -1703,14 +1876,18 @@ theorem mem_zero_of_continuousOn_closure_of_eqOn_frontier_of_forall_eq_zero (hp'
   rw [← hVu]
   exact hVmem
 
-/-- **Theorem 9.17, (i) ⇒ (ii), on any open set** (Remark 19: this direction needs no
-smoothness of `Ω`), `1 ≤ p < ∞`: an element `u` of `W^{1,p}(Ω)` with a representative `ũ`
-continuous on `closure Ω` and vanishing on `∂Ω` lies in `W_0^{1,p}(Ω)`. The case of bounded
-support is `SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier_of_forall_eq_zero`;
-in general, `ζ_n u → u` in `W^{1,p}(Ω)` for the cut-off sequence `ζ_n`
-(`SobolevMultiIndex.tendsto_cutoff_smul`), each `ζ_n u` has the representative `ζ_n ũ` of bounded
-support, and `W_0^{1,p}(Ω)` is closed ([brezis2011functional] Theorem 9.17, (i) ⇒ (ii), and
-Remark 19). -/
+/-- **A continuous function that vanishes on the boundary lies in $W_0^{1,p}(\Omega)$.** Let
+$\Omega \subseteq E$ be open, let $1 \le p < \infty$, and let $u \in W^{1,p}(\Omega)$ be
+real-valued. Suppose that the function of $u$ equals, almost everywhere on $\Omega$, a function
+$\tilde u$ that is continuous on $\bar\Omega$ and vanishes on $\partial\Omega$. Then
+$u \in W_0^{1,p}(\Omega)$. This is Theorem 9.17, (i) ⇒ (ii), of [brezis2011functional], on any
+open set: by Remark 19, this direction needs no smoothness of $\Omega$.
+
+The case of bounded support is
+`SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier_of_forall_eq_zero`. In
+general, $\zeta_n u \to u$ in $W^{1,p}(\Omega)$ for the cut-off sequence $\zeta_n$
+(`SobolevMultiIndex.tendsto_cutoff_smul`), each $\zeta_n u$ has the representative
+$\zeta_n \tilde u$ of bounded support, and $W_0^{1,p}(\Omega)$ is closed. -/
 theorem mem_zero_of_continuousOn_closure_of_eqOn_frontier (hp' : p ≠ ⊤)
     (u : SobolevMultiIndex ℝ b 1 p Ω μ) {ũ : E → ℝ} (hu : fn u =ᵐ[μ.restrict (Ω : Set E)] ũ)
     (hc : ContinuousOn ũ (closure Ω)) (h0 : EqOn ũ 0 (frontier Ω)) :
@@ -1736,12 +1913,15 @@ theorem mem_zero_of_continuousOn_closure_of_eqOn_frontier (hp' : p ≠ ⊤)
 
 end SobolevMultiIndex
 
-/-- **Theorem 9.17, (i) ⇒ (ii)** on an open `Ω ⊆ ℝ^N`, `1 ≤ p < ∞`: if `u ∈ W^{1,p}(Ω)` has a
-representative `ũ` continuous on `closure Ω` with `ũ = 0` on `∂Ω`, then `u ∈ W_0^{1,p}(Ω)`. No
-smoothness of `Ω` is needed ([brezis2011functional] Theorem 9.17, (i) ⇒ (ii), and Remark 19);
-the instance of `SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier`. This is
-what places a classical solution of the Dirichlet problem in `H^1_0(Ω)` (§9.5, Example 1,
-Step A). -/
+/-- **Theorem 9.17, (i) ⇒ (ii)**, on an open set $\Omega \subseteq \mathbb{R}^N$. Let
+$1 \le p < \infty$ and let $u \in W^{1,p}(\Omega)$. Suppose that the function of $u$ equals,
+almost everywhere on $\Omega$, a function $\tilde u$ that is continuous on $\bar\Omega$ with
+$\tilde u = 0$ on $\partial\Omega$. Then $u \in W_0^{1,p}(\Omega)$. No smoothness of $\Omega$ is
+needed. This is Theorem 9.17, (i) ⇒ (ii), of [brezis2011functional], together with Remark 19.
+
+This is `SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier` on
+`SobolevEuclidean`. It places a classical solution of the Dirichlet problem in $H^1_0(\Omega)$
+(§9.5, Example 1, Step A). -/
 theorem SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (hp' : p ≠ ⊤) (u : SobolevEuclidean N 1 p Ω)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
@@ -1759,7 +1939,7 @@ end ContinuousBoundary
 
 
 
-/-! ### Transfer of membership in `W_0^{1,p}`: open subsets and changes of variables -/
+/-! ### Transfer of membership in $W_0^{1,p}$: open subsets and changes of variables -/
 
 section Transfer
 
@@ -1772,8 +1952,9 @@ namespace SobolevMultiIndex
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedSpace ℝ F] [CompleteSpace F] [Fact (1 ≤ p)]
   [μ.IsAddHaarMeasure] in
-/-- The `L^p(Ω)` norm of `g − f` reduces to the `L^p(Ω')` norm, `Ω' ⊆ Ω`, when `g` vanishes off
-`Ω'` and `f` vanishes almost everywhere on `Ω ∖ Ω'`. -/
+/-- Let $\Omega' \subseteq \Omega$ be open, let $g$ vanish outside $\Omega'$, and let $f$ vanish
+almost everywhere on $\Omega \setminus \Omega'$. Then $\|g - f\|_{L^p(\Omega)} = \|g -
+f\|_{L^p(\Omega')}$. -/
 theorem _root_.MeasureTheory.eLpNorm_sub_restrict_eq_of_eq_zero_compl {g f : E → F} (h : Ω' ≤ Ω)
     (hg : ∀ x ∉ (Ω' : Set E), g x = 0)
     (hf : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ (Ω' : Set E) → f x = 0) :
@@ -1788,9 +1969,13 @@ theorem _root_.MeasureTheory.eLpNorm_sub_restrict_eq_of_eq_zero_compl {g f : E �
     Measure.restrict_restrict Ω'.isOpen.measurableSet, inter_eq_left.2 h]
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- **The weak derivatives of `u ∈ W^{k,p}(Ω)` vanish almost everywhere on an open subset of `Ω`
-where `u` does**: on such an open `V`, `0` is a weak derivative of `fn u =ᵐ 0`, and the weak
-derivative is unique. -/
+/-- **The weak derivatives of $u \in W^{k,p}(\Omega)$ vanish almost everywhere on an open subset of
+$\Omega$ where $u$ does.** Let $V \subseteq \Omega$ be open, and let the function of
+$u \in W^{k,p}(\Omega)$ vanish almost everywhere on $V$. Then $\partial^\alpha u = 0$ almost
+everywhere on $V$ for every multi-index $\alpha$ with $|\alpha| \le k$.
+
+On $V$, the function $0$ is a weak derivative of the function of $u$, and the weak derivative is
+unique. -/
 theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
     {V : Opens E} (hV : V ≤ Ω) (hu : fn u =ᵐ[μ.restrict (V : Set E)] 0) (α : MultiIndexLE ι k) :
     (weakDeriv u α : E → F) =ᵐ[μ.restrict (V : Set E)] 0 := by
@@ -1800,8 +1985,9 @@ theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero {k : ℕ} (u : SobolevMultiIndex F
   exact (ae_restrict_iff' V.isOpen.measurableSet).2 (h1.ae_eq h2)
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The weak derivatives of `u ∈ W^{k,p}(Ω)` vanish almost everywhere off a closed set `K`
-outside of which `u` vanishes almost everywhere. -/
+/-- Let $K \subseteq E$ be closed, and let the function of $u \in W^{k,p}(\Omega)$ vanish almost
+everywhere on $\Omega \setminus K$. Then $\partial^\alpha u = 0$ almost everywhere on
+$\Omega \setminus K$ for every multi-index $\alpha$ with $|\alpha| \le k$. -/
 theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
     {K : Set E} (hK : IsClosed K) (hu : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → fn u x = 0)
     (α : MultiIndexLE ι k) :
@@ -1826,15 +2012,19 @@ namespace SobolevMultiIndexZero
 
 open SobolevMultiIndex
 
-/-- **Transfer of membership in `W_0^{1,p}` from an open subset**: if `Ω' ⊆ Ω`, the restriction
-of `u ∈ W^{k,p}(Ω)` to `Ω'` lies in `W_0^{k,p}(Ω')`, and `u` vanishes almost everywhere on `Ω`
-outside a closed set `K` with `K ∩ Ω ⊆ Ω'`, then `u ∈ W_0^{k,p}(Ω)`. Test functions on `Ω'`
-converging to `u|_{Ω'}` are test functions on `Ω`, and they converge to `u` in `W^{k,p}(Ω)`
-because every component of the difference vanishes almost everywhere on `Ω ∖ Ω'` — the weak
-derivatives of `u` vanish there by uniqueness of the weak derivative on the open set `Ω ∖ K`
-(`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`). This is the step "extend by
-zero to `Ω`" of the chart reductions of [brezis2011functional] Theorem 9.17 and Proposition
-9.18. -/
+/-- **Transfer of membership in $W_0^{k,p}$ from an open subset.** Let $\Omega' \subseteq \Omega$ be
+open and let $u \in W^{k,p}(\Omega)$. Suppose that the restriction of $u$ to $\Omega'$ lies in
+$W_0^{k,p}(\Omega')$, and that the function of $u$ vanishes almost everywhere on
+$\Omega \setminus K$ for a closed set $K$ with $K \cap \Omega \subseteq \Omega'$. Then
+$u \in W_0^{k,p}(\Omega)$.
+
+This is the step "extend by zero to $\Omega$" of the reductions by local charts in the proofs of
+Theorem 9.17 and Proposition 9.18 of [brezis2011functional]. The restriction is
+`SobolevMultiIndex.restrictL`. Test functions on $\Omega'$ that converge to the restriction of
+$u$ are test functions on $\Omega$, and they converge to $u$ in $W^{k,p}(\Omega)$, because every
+component of the difference vanishes almost everywhere on $\Omega \setminus \Omega'$. The weak
+derivatives of $u$ vanish there by
+`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`. -/
 theorem mem_of_mem_restrict {k : ℕ} (h : Ω' ≤ Ω) {u : SobolevMultiIndex F b k p Ω μ}
     (hu : restrictL F b k p μ h u ∈ SobolevMultiIndexZero F b k p Ω' μ) {K : Set E}
     (hK : IsClosed K) (hKΩ : K ∩ Ω ⊆ Ω')
@@ -1878,13 +2068,17 @@ theorem mem_of_mem_restrict {k : ℕ} (h : Ω' ≤ Ω) {u : SobolevMultiIndex F 
   simp_rw [key]
   exact tendsto_eLpNorm_weakDeriv_sub hw α
 
-/-- **Change of variables preserves `W_0^{1,p}`**: for a `C^1` diffeomorphism `H : Ω' → Ω` with
-bounded Jacobians and `u ∈ W_0^{1,p}(Ω)`, `1 ≤ p < ∞`, the transfer `u ∘ H` lies in
-`W_0^{1,p}(Ω')`. The test functions `φ_n → u` transfer to `φ_n ∘ H`, which vanish on `Ω'` outside
-the compact `H⁻¹(supp φ_n)`, hence lie in `W_0^{1,p}(Ω')` by Lemma 9.5
-(`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and `compDiffeoL` is continuous.
-This is the "transfer along the chart" step of the chart reductions of [brezis2011functional]
-Theorem 9.17 and Proposition 9.18. -/
+/-- **A change of variables preserves $W_0^{1,p}$.** Let $1 \le p < \infty$, let
+$H : \Omega' \to \Omega$ be a $C^1$ diffeomorphism between open sets with bounded Jacobians, and
+let $u \in W_0^{1,p}(\Omega)$. Then the transfer $u \circ H$ lies in $W_0^{1,p}(\Omega')$.
+
+The hypothesis on $H$ is `IsDiffeoOnWithBoundedJacobian`, and the transfer is
+`SobolevMultiIndex.compDiffeoL`. This is the step "transfer along the chart" of the reductions
+by local charts in the proofs of Theorem 9.17 and Proposition 9.18 of [brezis2011functional].
+Test functions $\varphi_n \to u$ transfer to $\varphi_n \circ H$, which vanish on $\Omega'$
+outside the compact set $H^{-1}(\operatorname{supp} \varphi_n)$. So they lie in
+$W_0^{1,p}(\Omega')$ by Lemma 9.5 (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`),
+and the transfer is continuous. -/
 theorem compDiffeoL_mem (hp' : p ≠ ⊤) {H Hinv : E → E} {M : ℝ}
     (hH : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) {u : SobolevMultiIndex F b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero F b 1 p Ω μ) :
@@ -1912,14 +2106,16 @@ end SobolevMultiIndexZero
 
 end Transfer
 
-/-! ### A smooth compactly supported factor preserves `W_0^{1,p}` -/
+/-! ### A smooth compactly supported factor preserves $W_0^{1,p}$ -/
 
 section LpAux
 
 variable {X : Type*} [MeasurableSpace X] {ν : Measure X} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- `L^p` convergence to `0` is preserved by a bounded factor: `‖f_n a‖_p ≤ M ‖f_n‖_p`. -/
+/-- **$L^p$ convergence to $0$ is preserved by a bounded factor.** Let $a$ be almost everywhere
+strongly measurable with $|a| \le M$, and let $f_n$ be almost everywhere strongly measurable
+real functions with $\|f_n\|_{L^p} \to 0$. Then $\|f_n a\|_{L^p} \to 0$. -/
 theorem MeasureTheory.tendsto_eLpNorm_mul_of_tendsto {f : ℕ → X → ℝ} {a : X → ℝ}
     (ha : AEStronglyMeasurable a ν) {M : ℝ} (hM : ∀ x, |a x| ≤ M)
     (hfm : ∀ n, AEStronglyMeasurable (f n) ν)
@@ -1935,7 +2131,10 @@ theorem MeasureTheory.tendsto_eLpNorm_mul_of_tendsto {f : ℕ → X → ℝ} {a 
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_ (fun _ ↦ zero_le) hbd
   simpa using ENNReal.Tendsto.const_mul hf (Or.inr ENNReal.ofReal_ne_top)
 
-/-- `L^p` convergence to `0` of `f_n a + g_n c` for bounded factors `a`, `c`. -/
+/-- Let $1 \le p \le \infty$. Let $a$ and $c$ be almost everywhere strongly measurable with
+$|a| \le M$ and $|c| \le M$, and let $f_n$, $g_n$ be almost everywhere strongly measurable real
+functions with $\|f_n\|_{L^p} \to 0$ and $\|g_n\|_{L^p} \to 0$. Then
+$\|f_n a + g_n c\|_{L^p} \to 0$. -/
 theorem MeasureTheory.tendsto_eLpNorm_mul_add_mul_of_tendsto {f g : ℕ → X → ℝ}
     {a c : X → ℝ} (ha : AEStronglyMeasurable a ν) (hc : AEStronglyMeasurable c ν) {M : ℝ}
     (hMa : ∀ x, |a x| ≤ M) (hMc : ∀ x, |c x| ≤ M) (hfm : ∀ n, AEStronglyMeasurable (f n) ν)
@@ -1962,9 +2161,14 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
 open SobolevMultiIndex
 
 omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- **The Leibniz rule for a smooth factor on `W^{1,p}(Ω)`**: if `v ∈ W^{1,p}(Ω)` has function
-`u α` for `u ∈ W^{1,p}(Ω)` and `α` smooth, then `∂_i v = (∂_i u) α + u ∂_i α` almost everywhere
-on `Ω` — the weak derivative `HasWeakIteratedLineDerivOn.mul_contDiff` provides, by uniqueness. -/
+/-- **The Leibniz rule for a smooth factor on $W^{1,p}(\Omega)$.** Let $u, v \in W^{1,p}(\Omega)$ be
+real-valued, and let $\alpha$ be a smooth real function on $E$. If the function of $v$ equals
+$u \alpha$ almost everywhere on $\Omega$, then for every $i$,
+$$\partial_i v = (\partial_i u) \, \alpha + u \, D\alpha(x) b_i$$
+almost everywhere on $\Omega$.
+
+The proof combines `HasWeakIteratedLineDerivOn.mul_contDiff` with the uniqueness of the weak
+derivative. -/
 theorem SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff {α : E → ℝ}
     (hα : ContDiff ℝ ∞ α) {u v : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hv : fn v =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ fn u x * α x) (i : ι) :
@@ -1982,8 +2186,15 @@ theorem SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff {α : 
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h3)
 
 omit [FiniteDimensional ℝ E] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
-/-- The functions, in the proof of `SobolevMultiIndexZero.mul_contDiff_mem`:
-`z_n − v = (w_n − u) α` almost everywhere on `Ω'`. -/
+/-- Let $\Omega' \subseteq \Omega$ be open, let $u, w \in W^{1,p}(\Omega)$ and
+$v, z \in W^{1,p}(\Omega')$ be real-valued, and let $\alpha$ be a real function. Let $\varphi$
+be a test function on $\Omega$ equal to the function of $w$ almost everywhere on $\Omega$, and
+let $\psi = \varphi \alpha$ be a test function on $\Omega'$ equal to the function of $z$ almost
+everywhere on $\Omega'$. If the function of $v$ equals $u \alpha$ almost everywhere on
+$\Omega'$, then $z - v = (w - u) \alpha$ almost everywhere on $\Omega'$.
+
+This is a step of the proof of `SobolevMultiIndexZero.mul_contDiff_mem`, where $z$ is the $n$-th
+approximant. -/
 theorem SobolevMultiIndexZero.fn_sub_ae_eq_mul_aux (h : Ω' ≤ Ω) {α : E → ℝ}
     {u w : SobolevMultiIndex ℝ b 1 p Ω μ} {v z : SobolevMultiIndex ℝ b 1 p Ω' μ} {φ : 𝓓(Ω, ℝ)}
     {ψ : 𝓓(Ω', ℝ)} (hφ : fn w =ᵐ[μ.restrict (Ω : Set E)] φ)
@@ -1997,8 +2208,18 @@ theorem SobolevMultiIndexZero.fn_sub_ae_eq_mul_aux (h : Ω' ≤ Ω) {α : E → 
   simp only [Pi.sub_apply, weakDeriv_zero, h1, h2, h3]
   ring
 
-/-- The derivatives, in the proof of `SobolevMultiIndexZero.mul_contDiff_mem`:
-`∂_i z_n − ∂_i v = (∂_i w_n − ∂_i u) α + (w_n − u) ∂_i α` almost everywhere on `Ω'`. -/
+/-- Let $\Omega' \subseteq \Omega$ be open, let $u, w \in W^{1,p}(\Omega)$ and
+$v, z \in W^{1,p}(\Omega')$ be real-valued, and let $\alpha$ be a smooth real function. Let
+$\varphi$ be a test function on $\Omega$ equal to the function of $w$ almost everywhere on
+$\Omega$, and let $\psi = \varphi \alpha$ be a test function on $\Omega'$ equal to the function
+of $z$ almost everywhere on $\Omega'$. If the function of $v$ equals $u \alpha$ almost
+everywhere on $\Omega'$, then for every $i$,
+$$\partial_i z - \partial_i v = (\partial_i w - \partial_i u) \, \alpha + (w - u) \, D\alpha(x)
+  b_i$$
+almost everywhere on $\Omega'$.
+
+This is a step of the proof of `SobolevMultiIndexZero.mul_contDiff_mem`, where $z$ is the $n$-th
+approximant. -/
 theorem SobolevMultiIndexZero.weakDeriv_single_sub_ae_eq_mul_aux (h : Ω' ≤ Ω) {α : E → ℝ}
     (hα : ContDiff ℝ ∞ α) {u w : SobolevMultiIndex ℝ b 1 p Ω μ}
     {v z : SobolevMultiIndex ℝ b 1 p Ω' μ} {φ : 𝓓(Ω, ℝ)} {ψ : 𝓓(Ω', ℝ)}
@@ -2028,14 +2249,19 @@ theorem SobolevMultiIndexZero.weakDeriv_single_sub_ae_eq_mul_aux (h : Ω' ≤ Ω
   simp only [Pi.sub_apply, h1, h2, hprod x, h5, h6, ← h3, ← h4]
   ring
 
-/-- **A smooth compactly supported factor preserves `W_0^{1,p}`, with restriction to an open
-subset**: for `Ω' ≤ Ω`, `α` smooth with compact support and `tsupport α ∩ Ω ⊆ Ω'`,
-`u ∈ W_0^{1,p}(Ω)` and `v ∈ W^{1,p}(Ω')` with `v = u α` almost everywhere on `Ω'`, one has
-`v ∈ W_0^{1,p}(Ω')`. The test functions `φ_n α`, supported in `Ω'`, converge to `v` in
-`W^{1,p}(Ω')`: `(φ_n − u) α` is bounded by `M |φ_n − u|`, and
-`∂_i(φ_n α) − ∂_i v = (∂_i φ_n − ∂_i u) α + (φ_n − u) ∂_i α` by the Leibniz rule
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff`). This is the step
-"`θ u ∈ W_0^{1,p}(U ∩ Ω)`" of the chart reduction of Theorem 9.17 (ii) ⇒ (i). -/
+/-- **A smooth compactly supported factor preserves $W_0^{1,p}$**, with restriction to an open
+subset. Let $\Omega' \subseteq \Omega$ be open, and let $\alpha$ be a smooth real function with
+compact support such that $\operatorname{supp} \alpha \cap \Omega \subseteq \Omega'$. Let
+$u \in W_0^{1,p}(\Omega)$ be real-valued, and let $v \in W^{1,p}(\Omega')$ have the function
+$u \alpha$ almost everywhere on $\Omega'$. Then $v \in W_0^{1,p}(\Omega')$.
+
+This is the step "$\theta u \in W_0^{1,p}(U \cap \Omega)$" of the reduction by local charts in
+the proof of Theorem 9.17, (ii) ⇒ (i), of [brezis2011functional]. For test functions
+$\varphi_n \to u$, the test functions $\varphi_n \alpha$ are supported in $\Omega'$ and converge
+to $v$ in $W^{1,p}(\Omega')$. Indeed $|(\varphi_n - u) \alpha| \le M |\varphi_n - u|$, and
+$\partial_i(\varphi_n \alpha) - \partial_i v = (\partial_i \varphi_n - \partial_i u) \alpha +
+(\varphi_n - u) \partial_i \alpha$ by the Leibniz rule
+(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff`). -/
 theorem SobolevMultiIndexZero.mul_contDiff_mem (h : Ω' ≤ Ω) {α : E → ℝ} (hα : ContDiff ℝ ∞ α)
     (hαc : HasCompactSupport α) (hαΩ : tsupport α ∩ Ω ⊆ Ω') {u : SobolevMultiIndex ℝ b 1 p Ω μ}
     (hu : u ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ) {v : SobolevMultiIndex ℝ b 1 p Ω' μ}
@@ -2101,34 +2327,40 @@ theorem SobolevMultiIndexZero.mul_contDiff_mem (h : Ω' ≤ Ω) {α : E → ℝ}
 
 end SmulContDiff
 
-/-! ### Proposition 9.18, (iii) ⇒ (i): the `Q_+` computation -/
+/-! ### Proposition 9.18, (iii) ⇒ (i): the computation on $Q_+$ -/
 
 section CubePos
 
 variable {d : ℕ}
 
-/-- The upper half cylinder `Q₊` as an `Opens`, the shape the Sobolev spaces on it take. -/
+/-- The upper half cylinder $Q_+$, as an open set of $\mathbb{R}^{d+1}$ of type `Opens`, the type on
+which the Sobolev spaces are defined. -/
 def unitChartCubePosOpens (d : ℕ) : Opens (EuclideanSpace ℝ (Fin (d + 1))) :=
   ⟨unitChartCubePos d, isOpen_unitChartCubePos⟩
 
-/-- The underlying set of `unitChartCubePosOpens d` is `unitChartCubePos d`. -/
+/-- The underlying set of `unitChartCubePosOpens d` is $Q_+$, that is `unitChartCubePos d`. -/
 @[simp]
 theorem coe_unitChartCubePosOpens : (unitChartCubePosOpens d : Set _) = unitChartCubePos d := rfl
 
-/-- `Q₊ ≤ Q`. -/
+/-- The upper half cylinder lies in the cylinder: $Q_+ \subseteq Q$. -/
 theorem unitChartCubePosOpens_le : unitChartCubePosOpens d ≤ unitChartCubeOpens d :=
   unitChartCubePos_subset
 
-/-- The closure of `Q₊` lies in `{x_N ≥ 0}`. -/
+/-- The closure of $Q_+$ lies in the closed half space $\{x : x_N \ge 0\}$. -/
 theorem closure_unitChartCubePos_subset :
     closure (unitChartCubePos d) ⊆ {x | 0 ≤ x (Fin.last d)} :=
   closure_minimal (fun _ hx ↦ hx.2.le) (isClosed_le continuous_const continuous_apply_last)
 
-/-- **The one-sided mollifiers of the proof of Proposition 9.18**: normalized bumps `ρ_n`,
-nonnegative, smooth, of integral one, supported in the ball of radius `1/(4(n+1))` around
-`(3/(4(n+1))) e_N`, hence in `{1/(2(n+1)) ≤ x_N} ∩ closedBall 0 (1/(n+1))`
-([brezis2011functional] §9.4, proof of Proposition 9.18, (iii) ⇒ (i),
-"`supp ρ_n ⊂ {1/(2n) < x_N < 1/n}`"). -/
+/-- **One-sided mollifiers.** In $\mathbb{R}^N$, $N = d + 1$, there are functions $\rho_n$,
+$n \in \mathbb{N}$, that are smooth, nonnegative, integrable, with compact support and
+$\int \rho_n = 1$, such that
+$$\operatorname{supp} \rho_n \subseteq \bar B\big(0, 1/(n+1)\big) \quad\text{and}\quad x_N \ge
+  \frac{1}{2(n+1)} \text{ for every } x \in \operatorname{supp} \rho_n.$$
+These are the mollifiers of the proof of Proposition 9.18, (iii) ⇒ (i), in §9.4 of
+[brezis2011functional], with "$\operatorname{supp} \rho_n \subset \{1/(2n) < x_N < 1/n\}$".
+
+The functions $\rho_n$ are normalized bumps supported in the ball of radius $1/(4(n+1))$ around
+$(3/(4(n+1))) e_N$. -/
 theorem exists_oneSided_mollifiers :
     ∃ ρ : ℕ → EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
       (∀ n, ContDiff ℝ ∞ (ρ n)) ∧ (∀ n x, 0 ≤ ρ n x) ∧ (∀ n, HasCompactSupport (ρ n)) ∧
@@ -2182,22 +2414,24 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open SobolevMultiIndex
 
-/-- **Proposition 9.18, (iii) ⇒ (i), the `Q_+` computation**: let `u ∈ L^p(Q_+)`, `1 ≤ p < ∞`,
-be such that its extension by zero to `Q` lies in `W^{1,p}(Q)`; then for every smooth `α` with
-compact support in `Q`, the element `v` of `W^{1,p}(Q_+)` with function `α u` lies in
-`W_0^{1,p}(Q_+)`.
+/-- **Proposition 9.18, (iii) ⇒ (i), the computation on $Q_+$.** Let $1 \le p < \infty$, and let $u$
+be a real function such that its extension by zero $\mathbf{1}_{Q_+} u$ lies in $W^{1,p}(Q)$.
+Let $\alpha$ be a smooth function with compact support such that
+$\operatorname{supp} \alpha \subseteq Q$. Then every $v \in W^{1,p}(Q_+)$ whose function equals
+$\alpha u$ almost everywhere on $Q_+$ lies in $W_0^{1,p}(Q_+)$.
 
-Proof ([brezis2011functional] §9.4, proof of Proposition 9.18, (iii) ⇒ (i)): `g = α ū` extended
-by zero outside `Q` is in `W^{1,p}(ℝ^N)` (`MemSobolevMultiIndex.indicator_mul`); with the
-one-sided mollifiers `ρ_n` of `exists_oneSided_mollifiers`, `ρ_n ⋆ g → g` in `L^p(ℝ^N)` and
-`∂_i (ρ_n ⋆ g) = ρ_n ⋆ ∂_i g → ∂_i g` (Lemma 9.1,
-`HasWeakIteratedLineDerivOn.convolution_of_integrable`, and
-`MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support`), while
-`supp (ρ_n ⋆ g) ⊆ supp ρ_n + supp g ⊆ Q_+` for `n` large: adding a vector with
-`x_N ≥ 1/(2(n+1))` and norm at most `1/(n+1)` pushes the support of `g`, which lies in
-`supp α ∩ closure Q_+`, into `{x_N > 0}` and keeps it in `Q`. So the `ρ_n ⋆ g` are smooth with
-compact support in `Q_+`, hence lie in `W_0^{1,p}(Q_+)` (Lemma 9.5), and `v` is their limit in
-`W^{1,p}(Q_+)`, in the closed subspace `W_0^{1,p}(Q_+)`. -/
+The proof follows §9.4 of [brezis2011functional], proof of Proposition 9.18, (iii) ⇒ (i). The
+function $g = \alpha \bar u$, extended by zero outside $Q$, lies in $W^{1,p}(\mathbb{R}^N)$
+(`MemSobolevMultiIndex.indicator_mul`). With the one-sided mollifiers $\rho_n$ of
+`exists_oneSided_mollifiers`, $\rho_n \star g \to g$ in $L^p(\mathbb{R}^N)$ and $\partial_i
+(\rho_n \star g) = \rho_n \star \partial_i g \to \partial_i g$ (Lemma 9.1,
+`HasWeakIteratedLineDerivOn.convolution_of_integrable` and
+`MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support`). For $n$ large,
+$\operatorname{supp} (\rho_n \star g) \subseteq \operatorname{supp} \rho_n + \operatorname{supp}
+g \subseteq Q_+$: the support of $g$ lies in $\operatorname{supp} \alpha \cap \overline{Q_+}$,
+and adding a vector with $x_N \ge 1/(2(n+1))$ and norm at most $1/(n+1)$ moves it into
+$\{x_N > 0\}$ and keeps it in $Q$. So the $\rho_n \star g$ are smooth with compact support in
+$Q_+$ and lie in $W_0^{1,p}(Q_+)$ by Lemma 9.5, and $v$ is their limit in $W^{1,p}(Q_+)$. -/
 theorem SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos (hp' : p ≠ ⊤)
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -2333,7 +2567,7 @@ theorem SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos (hp' 
 
 end Prop918
 
-/-! ### Proposition 9.18, (iii) ⇒ (i): the chart reduction -/
+/-! ### Proposition 9.18, (iii) ⇒ (i): the reduction by local charts -/
 
 section Prop918Chart
 
@@ -2345,11 +2579,15 @@ namespace ContDiffChart
 
 variable (c : ContDiffChart 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
 
-/-- **The chart transfer of `θ ū`**: for a chart `c` of `Ω`, a smooth compactly supported `θ`
-with `tsupport θ ⊆ c.U`, and `u` whose extension by zero `ū` lies in `W^{1,p}(ℝ^N)`, the
-function `(θ u) ∘ H` on `Q_+`, extended by zero to `Q`, lies in `W^{1,p}(Q)`: it is
-`(θ ū) ∘ H`, the transfer along the chart (Proposition 9.6) of `θ ū ∈ W^{1,p}(U)`, because
-`H` sends `Q ∖ Q_+` outside `Ω`. -/
+/-- **The transfer of $\theta \bar u$ along a chart.** Let $1 \le p \le \infty$ and let $c$ be a
+local chart $H : Q \to U$ of class $C^1$ of an open set $\Omega \subseteq \mathbb{R}^N$. Let
+$\theta$ be a smooth function with compact support, and let $u$ be a real function whose
+extension by zero $\bar u = \mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then the
+function $(\theta u) \circ H$ on $Q_+$, extended by zero to $Q$, lies in $W^{1,p}(Q)$.
+
+The chart is a `ContDiffChart` and $H$ is `c.toFun`. The extended function is
+$(\theta \bar u) \circ H$, because $H$ sends $Q \setminus Q_+$ outside $\Omega$. It is the
+transfer along the chart (Proposition 9.6) of $\theta \bar u \in W^{1,p}(U)$. -/
 theorem indicator_comp_toFun_memSobolevMultiIndex {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -2376,11 +2614,17 @@ theorem indicator_comp_toFun_memSobolevMultiIndex {θ : EuclideanSpace ℝ (Fin 
       hyQ ((c.toFun_mem_iff hy).1 h)
     simp only [Set.indicator_of_notMem hyΩ, Set.indicator_of_notMem hyQ, mul_zero]
 
-/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `Q_+`**: with `c`, `θ`, `u` as in
-`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `Z` of `W^{1,p}(Q_+)`
-with function `(θ u) ∘ H` lies in `W_0^{1,p}(Q_+)`: the `Q_+` computation
-`SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos` with a smooth `α` equal to
-`1` on the compact `H⁻¹(supp θ) ⊆ Q`, where `α (θ u) ∘ H = (θ u) ∘ H`. -/
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on $Q_+$.** Let $1 \le p < \infty$ and let
+$c$ be a local chart $H : Q \to U$ of class $C^1$ of an open set
+$\Omega \subseteq \mathbb{R}^N$. Let $\theta$ be a smooth function with compact support such
+that $\operatorname{supp} \theta \subseteq U$, and let $u$ be a real function whose extension by
+zero $\mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then every $Z \in W^{1,p}(Q_+)$
+whose function equals $(\theta u) \circ H$ almost everywhere on $Q_+$ lies in $W_0^{1,p}(Q_+)$.
+
+The proof applies `SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos` with a
+smooth $\alpha$ equal to $1$ on the compact set
+$H^{-1}(\operatorname{supp} \theta) \subseteq Q$, where $\alpha \, (\theta u) \circ H = (\theta
+u) \circ H$. -/
 theorem mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ ⊤)
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2411,9 +2655,11 @@ theorem mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ ⊤)
       ⟨c.toFun y, subset_tsupport _ hθy, c.invFun_toFun (unitChartCubePos_subset hyQ)⟩
     rw [hα1 hyK, Pi.one_apply, one_mul]
 
-/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `Q_+`, existence form**: with `c`,
-`θ`, `u` as in `ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, there is an element of
-`W_0^{1,p}(Q_+)` with function `(θ u) ∘ H`. -/
+/-- Let $1 \le p < \infty$ and let $c$ be a local chart $H : Q \to U$ of class $C^1$ of an open set
+$\Omega \subseteq \mathbb{R}^N$. Let $\theta$ be a smooth function with compact support such
+that $\operatorname{supp} \theta \subseteq U$, and let $u$ be a real function whose extension by
+zero $\mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then there is an element of
+$W_0^{1,p}(Q_+)$ whose function equals $(\theta u) \circ H$ almost everywhere on $Q_+$. -/
 theorem exists_mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ ⊤)
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2429,9 +2675,10 @@ theorem exists_mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ �
   obtain ⟨Z, hZ⟩ := hmem.exists_sobolevMultiIndex
   exact ⟨Z, c.mem_zero_unitChartCubePos_of_indicator_memSobolev hp' hθ hθc hθU hu hZ, hZ⟩
 
-/-- An element `V` of `W^{1,p}(Ω'')` whose function is that of the image under a map
-`T : W^{1,p}(Ω') → W^{1,p}(Ω'')` preserving `W_0^{1,p}` of an element of `W_0^{1,p}(Ω')` lies in
-`W_0^{1,p}(Ω'')`. -/
+/-- Let $\Omega'$ and $\Omega''$ be open, and let $T : W^{1,p}(\Omega') \to W^{1,p}(\Omega'')$ be a
+bounded linear map that sends $W_0^{1,p}(\Omega')$ into $W_0^{1,p}(\Omega'')$. Let
+$Z \in W_0^{1,p}(\Omega')$, and let $V \in W^{1,p}(\Omega'')$ have the same function as $T Z$
+almost everywhere on $\Omega''$. Then $V \in W_0^{1,p}(\Omega'')$. -/
 theorem _root_.SobolevMultiIndexZero.mem_of_fn_ae_eq_map {E F : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E]
     [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] {ι : Type*} [Fintype ι]
@@ -2443,14 +2690,17 @@ theorem _root_.SobolevMultiIndexZero.mem_of_fn_ae_eq_map {E F : Type*} [NormedAd
     V ∈ SobolevMultiIndexZero F b 1 p Ω'' μ :=
   ext_of_fn_ae_eq heq ▸ hT Z hZ
 
-/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `U ∩ Ω`**: with `c`, `θ`, `u` as in
-`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
-function `θ u` restricts to an element of `W_0^{1,p}(U ∩ Ω)`: its restriction is the transfer
-back along `H⁻¹` (`SobolevMultiIndexZero.compDiffeoL_mem`) of an element `Z` of `W_0^{1,p}(Q_+)`
-with function `(θ u) ∘ H`
-(`ContDiffChart.exists_mem_zero_unitChartCubePos_of_indicator_memSobolev`). The chart's Jacobian
-bundle and `Z` are arguments, so that each of the three elaborations stays
-within its own heartbeat budget. -/
+/-- Let $1 \le p < \infty$ and let $c$ be a local chart $H : Q \to U$ of class $C^1$ of an open set
+$\Omega \subseteq \mathbb{R}^N$, such that $H$ restricted to $Q_+$ is a $C^1$ diffeomorphism
+onto $U \cap \Omega$ with Jacobians bounded by $M$. Let $\theta$ and $u$ be real functions, let
+$Z \in W_0^{1,p}(Q_+)$ have the function $(\theta u) \circ H$ almost everywhere on $Q_+$, and
+let $V \in W^{1,p}(\Omega)$ have the function $\theta u$ almost everywhere on $\Omega$. Then the
+restriction of $V$ to $U \cap \Omega$ lies in $W_0^{1,p}(U \cap \Omega)$.
+
+This is a step of the proof of `ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev`. The
+restriction of $V$ is the transfer back along $H^{-1}$ (`SobolevMultiIndexZero.compDiffeoL_mem`)
+of $Z$. The hypothesis on the Jacobians and the element $Z$ are arguments, so that each of the
+three elaborations of the proof stays within its own heartbeat budget. -/
 theorem restrictL_mem_zero_of_indicator_memSobolev_aux (hp' : p ≠ ⊤) {M : ℝ}
     (hH : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubePosOpens d : Set _)
       (c.opensInter : Set _) M)
@@ -2475,9 +2725,13 @@ theorem restrictL_mem_zero_of_indicator_memSobolev_aux (hp' : p ≠ ⊤) {M : �
   rw [c.toFun_invFun hx5.1]
   exact (hx3.trans hx4).symm
 
-/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `U ∩ Ω`**: with `c`, `θ`, `u` as in
-`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
-function `θ u` restricts to an element of `W_0^{1,p}(U ∩ Ω)`. -/
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on $U \cap \Omega$.** Let $1 \le p < \infty$
+and let $c$ be a local chart $H : Q \to U$ of class $C^1$ of an open set
+$\Omega \subseteq \mathbb{R}^N$. Let $\theta$ be a smooth function with compact support such
+that $\operatorname{supp} \theta \subseteq U$, and let $u$ be a real function whose extension by
+zero $\mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then for every
+$V \in W^{1,p}(\Omega)$ whose function equals $\theta u$ almost everywhere on $\Omega$, the
+restriction of $V$ to $U \cap \Omega$ lies in $W_0^{1,p}(U \cap \Omega)$. -/
 theorem restrictL_mem_zero_of_indicator_memSobolev (hp' : p ≠ ⊤)
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2493,12 +2747,17 @@ theorem restrictL_mem_zero_of_indicator_memSobolev (hp' : p ≠ ⊤)
     c.exists_mem_zero_unitChartCubePos_of_indicator_memSobolev hp' hθ hθc hθU hu
   exact c.restrictL_mem_zero_of_indicator_memSobolev_aux hp' hH hZ0 hZ hV
 
-/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i)**: with `c`, `θ`, `u` as in
-`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
-function `θ u` lies in `W_0^{1,p}(Ω)`: it restricts to an element of `W_0^{1,p}(U ∩ Ω)`
-(`ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev`) and vanishes on `Ω` outside the
-closed `tsupport θ`, whose trace on `Ω` lies in `U ∩ Ω`
-(`SobolevMultiIndexZero.mem_of_mem_restrict`). -/
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i).** Let $1 \le p < \infty$ and let $c$ be a
+local chart $H : Q \to U$ of class $C^1$ of an open set $\Omega \subseteq \mathbb{R}^N$. Let
+$\theta$ be a smooth function with compact support such that
+$\operatorname{supp} \theta \subseteq U$, and let $u$ be a real function whose extension by zero
+$\mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then every $V \in W^{1,p}(\Omega)$ whose
+function equals $\theta u$ almost everywhere on $\Omega$ lies in $W_0^{1,p}(\Omega)$.
+
+The restriction of $V$ to $U \cap \Omega$ lies in $W_0^{1,p}(U \cap \Omega)$
+(`ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev`), and $V$ vanishes on $\Omega$
+outside the closed set $\operatorname{supp} \theta$, whose trace on $\Omega$ lies in
+$U \cap \Omega$. So `SobolevMultiIndexZero.mem_of_mem_restrict` applies. -/
 theorem mem_zero_of_indicator_memSobolev (hp' : p ≠ ⊤)
     {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
     (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2518,18 +2777,22 @@ end ContDiffChart
 
 namespace SobolevEuclideanZero
 
-/-- **Proposition 9.18, (iii) ⇒ (i), for `u` vanishing outside a ball**: on a `C^1` chart domain
-`Ω`, `1 ≤ p < ∞`, if `u` vanishes for `‖x‖ > R` and its extension by zero lies in
-`W^{1,p}(ℝ^N)`, then the element `v` of `W^{1,p}(Ω)` with function `u` lies in `W_0^{1,p}(Ω)`.
+/-- **Proposition 9.18, (iii) ⇒ (i), for a function that vanishes outside a ball.** Let
+$1 \le p < \infty$, let $\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be an open set of class
+$C^1$, and let $u$ be a real function with $u(x) = 0$ for $\|x\| > R$ whose extension by zero
+$\mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then every $v \in W^{1,p}(\Omega)$ whose
+function equals $u$ almost everywhere on $\Omega$ lies in $W_0^{1,p}(\Omega)$.
 
-Proof ([brezis2011functional] Proposition 9.18, (iii) ⇒ (i), "by local charts and partition of
-unity"): cover the compact `∂Ω ∩ closedBall 0 R` by finitely many charts `c_i` and take Lemma
-9.3's partition `θ₀ + ∑ θ_i = 1` (`IsCompact.exists_contDiff_partitionOfUnity`) with
-`tsupport θ_i ⊆ U_i` and `θ₀` vanishing near that piece of the boundary. Each `θ_i u` is the
-function of an element of `W_0^{1,p}(Ω)` by the chart piece
-`ContDiffChart.mem_zero_of_indicator_memSobolev`, and `θ₀ u = u − ∑ θ_i u` vanishes on `Ω`
-outside the compact `tsupport θ₀ ∩ closure Ω ∩ closedBall 0 R ⊆ Ω`, hence is in `W_0^{1,p}(Ω)` by
-Lemma 9.5; `v` is the sum. -/
+The hypothesis on $\Omega$ is `IsContDiffChartDomain 1`. The proof follows Proposition 9.18,
+(iii) ⇒ (i), of [brezis2011functional], "by local charts and partition of unity". Finitely many
+charts $c_i$ cover the compact set $\partial\Omega \cap \bar B(0, R)$. Lemma 9.3 gives a
+partition $\theta_0 + \sum_i \theta_i = 1$ (`IsCompact.exists_contDiff_partitionOfUnity`) with
+$\operatorname{supp} \theta_i \subseteq U_i$ and $\theta_0$ vanishing near this part of the
+boundary. Each $\theta_i u$ is the function of an element of $W_0^{1,p}(\Omega)$ by
+`ContDiffChart.mem_zero_of_indicator_memSobolev`. The function
+$\theta_0 u = u - \sum_i \theta_i u$ vanishes on $\Omega$ outside the compact set
+$\operatorname{supp} \theta_0 \cap \bar\Omega \cap \bar B(0, R) \subseteq \Omega$, so it lies in
+$W_0^{1,p}(\Omega)$ by Lemma 9.5, and $v$ is the sum. -/
 theorem mem_of_indicator_memSobolev_of_forall_eq_zero (hp' : p ≠ ⊤)
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2596,15 +2859,20 @@ theorem mem_of_indicator_memSobolev_of_forall_eq_zero (hp' : p ≠ ⊤)
   rw [e]
   exact add_mem hV₀mem (Submodule.sum_mem _ fun i _ ↦ hVmem i)
 
-/-- **Proposition 9.18, (iii) ⇒ (i)**: on a `C^1` chart domain `Ω ⊆ ℝ^N`, `1 ≤ p < ∞`, a function
-`u` whose extension by zero `ū = Ω.indicator u` lies in `W^{1,p}(ℝ^N)` is the function of an
-element of `W_0^{1,p}(Ω)` ([brezis2011functional] Proposition 9.18, (iii) ⇒ (i); the converse
-(i) ⇒ (iii) is `SobolevMultiIndexZero.indicator_memSobolevMultiIndex`, valid on every open set).
-The case of `u` vanishing outside a ball is
-`SobolevEuclideanZero.mem_of_indicator_memSobolev_of_forall_eq_zero`; in general, with the
-cut-off sequence `ζ_n` (`SobolevMultiIndex.tendsto_cutoff_smul`), `ζ_n u` has bounded support and
-its extension by zero `ζ_n ū` lies in `W^{1,p}(ℝ^N)`, so the elements `ζ_n u` lie in
-`W_0^{1,p}(Ω)` and converge to `u` in `W^{1,p}(Ω)`, which is closed. -/
+/-- **Proposition 9.18, (iii) ⇒ (i).** Let $1 \le p < \infty$, let $\Omega \subseteq \mathbb{R}^N$,
+$N = d + 1$, be an open set of class $C^1$, and let $u$ be a real function whose extension by
+zero $\bar u = \mathbf{1}_\Omega u$ lies in $W^{1,p}(\mathbb{R}^N)$. Then there is
+$v \in W_0^{1,p}(\Omega)$ whose function equals $u$ almost everywhere on $\Omega$. This is
+Proposition 9.18, (iii) ⇒ (i), of [brezis2011functional]. The converse, (i) ⇒ (iii), is
+`SobolevMultiIndexZero.indicator_memSobolevMultiIndex` and holds on every open set.
+
+The hypothesis on $\Omega$ is `IsContDiffChartDomain 1`. The case of a function that vanishes
+outside a ball is `SobolevEuclideanZero.mem_of_indicator_memSobolev_of_forall_eq_zero`. In
+general, with the cut-off sequence $\zeta_n$ (`SobolevMultiIndex.tendsto_cutoff_smul`),
+$\zeta_n u$ has bounded support and its extension by zero $\zeta_n \bar u$ lies in
+$W^{1,p}(\mathbb{R}^N)$. So the elements with function $\zeta_n u$ lie in $W_0^{1,p}(\Omega)$,
+and they converge in $W^{1,p}(\Omega)$; the closed subspace $W_0^{1,p}(\Omega)$ contains the
+limit. -/
 theorem mem_of_indicator_memSobolev (hp' : p ≠ ⊤)
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -2658,17 +2926,18 @@ end SobolevEuclideanZero
 
 end Prop918Chart
 
-/-! ### Theorem 9.17, (ii) ⇒ (i): the `Q_+` computation -/
+/-! ### Theorem 9.17, (ii) ⇒ (i): the computation on $Q_+$ -/
 
 section Strip
 
 variable {d : ℕ}
 
-/-- The strip `{x ∈ Q_+ : x_N < ε}` at the bottom of the upper half cylinder. -/
+/-- The **strip** $\{x \in Q_+ : x_N < \varepsilon\}$ at the bottom of the upper half cylinder
+$Q_+ \subseteq \mathbb{R}^{d+1}$. -/
 def unitChartCubeStrip (d : ℕ) (ε : ℝ) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
   {x ∈ unitChartCubePos d | x (Fin.last d) < ε}
 
-/-- The strip lies in `Q_+`. -/
+/-- The strip lies in $Q_+$. -/
 theorem unitChartCubeStrip_subset {ε : ℝ} : unitChartCubeStrip d ε ⊆ unitChartCubePos d :=
   fun _ hx ↦ hx.1
 
@@ -2680,8 +2949,11 @@ theorem isOpen_unitChartCubeStrip {ε : ℝ} : IsOpen (unitChartCubeStrip d ε) 
 theorem measurableSet_unitChartCubeStrip {ε : ℝ} : MeasurableSet (unitChartCubeStrip d ε) :=
   isOpen_unitChartCubeStrip.measurableSet
 
-/-- The strip, through the last-coordinate splitting: for `0 < ε ≤ 1`,
-`(x', t) ∈ {x ∈ Q_+ : x_N < ε}` iff `‖x'‖ < 1` and `0 < t < ε`. -/
+/-- For $\varepsilon \le 1$, $x' \in \mathbb{R}^d$ and $t \in \mathbb{R}$, the point $(x', t)$ lies
+in the strip $\{x \in Q_+ : x_N < \varepsilon\}$ if and only if $\|x'\| < 1$ and
+$0 < t < \varepsilon$.
+
+The point $(x', t)$ is `EuclideanSpace.snocLast x' t`. -/
 theorem snocLast_mem_unitChartCubeStrip_iff {ε : ℝ} (hε : ε ≤ 1) {x' : EuclideanSpace ℝ (Fin d)}
     {t : ℝ} :
     EuclideanSpace.snocLast x' t ∈ unitChartCubeStrip d ε ↔ ‖x'‖ < 1 ∧ 0 < t ∧ t < ε := by
@@ -2695,8 +2967,11 @@ theorem snocLast_mem_unitChartCubeStrip_iff {ε : ℝ} (hε : ε ≤ 1) {x' : Eu
     rw [abs_of_pos h2]
     exact h3.trans_le hε
 
-/-- **Fubini on the strip**: for `0 < ε ≤ 1` and an almost everywhere measurable `F`,
-`∫⁻_{x ∈ Q_+, x_N < ε} F = ∫⁻_{‖x'‖ < 1} ∫⁻_{0 < t < ε} F (x', t)`. -/
+/-- **Fubini's theorem on the strip.** For $\varepsilon \le 1$ and an almost everywhere measurable
+function $F : \mathbb{R}^{d+1} \to [0, \infty]$,
+$$\int_{\{x \in Q_+ : x_N < \varepsilon\}} F = \int_{\{\|x'\| < 1\}} \int_0^\varepsilon F(x', t)
+  \, dt \, dx'.$$
+-/
 theorem lintegral_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1)
     {F : EuclideanSpace ℝ (Fin (d + 1)) → ℝ≥0∞} (hF : AEMeasurable F) :
     ∫⁻ x in unitChartCubeStrip d ε, F x
@@ -2721,10 +2996,15 @@ theorem lintegral_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1)
         hx' (mem_ball_zero_iff.2 ((snocLast_mem_unitChartCubeStrip_iff hε).1 h).1)) F
     simp [h0]
 
-/-- **The strip inequality for a `C¹` function supported in `Q_+`**: for `0 < ε ≤ 1`,
-`∫_{x ∈ Q_+, x_N < ε} |g| ≤ ε ∫_{x ∈ Q_+, x_N < ε} |∂_N g|`. The fundamental theorem of calculus
-along the last coordinate from `x_N = 0`, where `g` vanishes: `|g(x', t)| ≤ ∫₀^ε |∂_N g(x', s)| ds`
-for `0 < t < ε`, integrated over `t ∈ (0, ε)` and `‖x'‖ < 1` (`lintegral_unitChartCubeStrip`). -/
+/-- **The strip inequality for a $C^1$ function supported in $Q_+$.** Let $\varepsilon \le 1$, and
+let $g \in C^1(\mathbb{R}^{d+1})$ with $\operatorname{supp} g \subseteq Q_+$. Then
+$$\int_{\{x \in Q_+ : x_N < \varepsilon\}} |g| \le \varepsilon \int_{\{x \in Q_+ : x_N <
+  \varepsilon\}} |\partial_N g|.$$
+
+The integrals are lower Lebesgue integrals of `‖·‖ₑ`. The proof uses the fundamental theorem of
+calculus along the last coordinate, from $x_N = 0$, where $g$ vanishes: $|g(x', t)| \le
+\int_0^\varepsilon |\partial_N g(x', s)| \, ds$ for $0 < t < \varepsilon$. This is integrated
+over $t \in (0, \varepsilon)$ and $\|x'\| < 1$ (`lintegral_unitChartCubeStrip`). -/
 theorem lintegral_unitChartCubeStrip_le_of_contDiff {ε : ℝ} (hε : ε ≤ 1)
     {g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hg : ContDiff ℝ 1 g)
     (hgs : tsupport g ⊆ unitChartCubePos d) :
@@ -2794,8 +3074,13 @@ end Strip
 
 section Limit
 
-/-- `L^p(ν) ⊆ L^1(ν)` for a finite measure `ν ≤ μ`, quantitatively:
-`∫⁻ ‖h‖ₑ ∂ν ≤ ‖h‖_{L^p(μ)} ν(univ)^(1 − 1/p)`. -/
+/-- Let $\nu \le \mu$ be measures, let $1 \le p \le \infty$, and let $h$ be a real function, almost
+everywhere strongly measurable for $\mu$. Then
+$$\int \|h\| \, d\nu \le \|h\|_{L^p(\mu)} \, \nu(X)^{1 - 1/p}.$$
+
+The integral is a lower Lebesgue integral. In the exponent, $p$ is converted to a real number by
+`ENNReal.toReal`, which sends $\infty$ to $0$. Since $1/0 = 0$ in Lean, the exponent is $1$ for
+$p = \infty$. -/
 theorem MeasureTheory.lintegral_enorm_le_eLpNorm_mul_of_le {X : Type*} [MeasurableSpace X]
     {μ ν : Measure X} (hν : ν ≤ μ) {p : ℝ≥0∞} (hp : 1 ≤ p) {h : X → ℝ}
     (hh : AEStronglyMeasurable h μ) :
@@ -2805,7 +3090,9 @@ theorem MeasureTheory.lintegral_enorm_le_eLpNorm_mul_of_le {X : Type*} [Measurab
   rw [eLpNorm_one_eq_lintegral_enorm hh', ENNReal.toReal_one, div_one] at this
   exact this.trans (mul_le_mul' (eLpNorm_mono_measure _ hν) le_rfl)
 
-/-- The triangle inequality `∫⁻ ‖h₁‖ₑ ≤ ∫⁻ ‖h₁ − h₂‖ₑ + ∫⁻ ‖h₂‖ₑ`. -/
+/-- The triangle inequality $\int \|h_1\| \, d\nu \le \int \|h_1 - h_2\| \, d\nu + \int \|h_2\| \,
+d\nu$ for real functions $h_1$, $h_2$ with $h_1 - h_2$ almost everywhere strongly measurable.
+The integrals are lower Lebesgue integrals. -/
 theorem MeasureTheory.lintegral_enorm_le_lintegral_enorm_sub_add {X : Type*} [MeasurableSpace X]
     {ν : Measure X} {h₁ h₂ : X → ℝ} (hm : AEStronglyMeasurable (h₁ - h₂) ν) :
     ∫⁻ x, ‖h₁ x‖ₑ ∂ν ≤ ∫⁻ x, ‖(h₁ - h₂) x‖ₑ ∂ν + ∫⁻ x, ‖h₂ x‖ₑ ∂ν := by
@@ -2814,9 +3101,13 @@ theorem MeasureTheory.lintegral_enorm_le_lintegral_enorm_sub_add {X : Type*} [Me
   calc ‖h₁ x‖ₑ = ‖(h₁ x - h₂ x) + h₂ x‖ₑ := by rw [sub_add_cancel]
     _ ≤ ‖h₁ x - h₂ x‖ₑ + ‖h₂ x‖ₑ := enorm_add_le _ _
 
-/-- **Passing an integral inequality to the limit**: if `∫ |fₙ| ∂ν ≤ c ∫ |gₙ| ∂ν` for every `n`,
-`ν ≤ μ` is finite, `1 ≤ p < ∞`, and `fₙ → f`, `gₙ → g` in `L^p(μ)`, then
-`∫ |f| ∂ν ≤ c ∫ |g| ∂ν`. -/
+/-- **Passing an integral inequality to the limit.** Let $\nu \le \mu$ be measures with $\nu$
+finite, let $1 \le p < \infty$ and let $c \in [0, \infty)$. Let $f$, $g$, $f_n$, $g_n$ be real
+functions, almost everywhere strongly measurable for $\mu$, with $f_n \to f$ and $g_n \to g$ in
+$L^p(\mu)$. If $\int |f_n| \, d\nu \le c \int |g_n| \, d\nu$ for every $n$, then
+$\int |f| \, d\nu \le c \int |g| \, d\nu$.
+
+The integrals are lower Lebesgue integrals, and $c$ is in `ℝ≥0∞`. -/
 theorem MeasureTheory.lintegral_enorm_le_mul_of_tendsto {X : Type*} [MeasurableSpace X]
     {μ ν : Measure X} (hν : ν ≤ μ) [IsFiniteMeasure ν] {p : ℝ≥0∞} (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {f g : X → ℝ} {fs gs : ℕ → X → ℝ} {c : ℝ≥0∞} (hc : c ≠ ⊤)
@@ -2866,14 +3157,19 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open SobolevMultiIndex
 
-/-- The strip has finite measure. -/
+/-- The strip $\{x \in Q_+ : x_N < \varepsilon\}$ has finite measure. -/
 theorem volume_unitChartCubeStrip_ne_top {ε : ℝ} :
     volume (unitChartCubeStrip d ε) ≠ ⊤ :=
   (measure_mono (unitChartCubeStrip_subset.trans (unitChartCubePos_subset.trans
     unitChartCube_subset_ball))).trans_lt measure_ball_lt_top |>.ne
 
 omit [Fact (1 ≤ p)] in
-/-- The strip inequality for an element of `W^{1,p}(Q_+)` whose function is a test function. -/
+/-- The strip inequality for an element whose function is a test function. Let $\varepsilon \le 1$,
+and let $w \in W^{1,p}(Q_+)$ have the function $\varphi$ almost everywhere on $Q_+$ for a test
+function $\varphi$ on $Q_+$. Then
+$$\int_{\{x \in Q_+ : x_N < \varepsilon\}} |w| \le \varepsilon \int_{\{x \in Q_+ : x_N <
+  \varepsilon\}} |\partial_N w|.$$
+-/
 theorem SobolevEuclidean.lintegral_unitChartCubeStrip_le_of_fn_ae_eq_testFunction {ε : ℝ}
     (hε : ε ≤ 1) {w : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
     {φ : 𝓓(unitChartCubePosOpens d, ℝ)} (hφ : fn w =ᵐ[volume.restrict (unitChartCubePos d)] φ) :
@@ -2894,10 +3190,14 @@ theorem SobolevEuclidean.lintegral_unitChartCubeStrip_le_of_fn_ae_eq_testFunctio
   exact lintegral_unitChartCubeStrip_le_of_contDiff hε (φ.contDiff.of_le (by simp))
     φ.tsupport_subset
 
-/-- **The strip inequality on `W_0^{1,p}(Q_+)`**: for `u ∈ W_0^{1,p}(Q_+)`, `1 ≤ p < ∞`, and
-`ε ≤ 1`, `∫_{x ∈ Q_+, x_N < ε} |u| ≤ ε ∫_{x ∈ Q_+, x_N < ε} |∂_N u|`. The inequality for test
-functions (`lintegral_unitChartCubeStrip_le_of_contDiff`) passes to the limit in `W^{1,p}(Q_+)`,
-both sides being continuous for the `L^p` convergence on the strip, which has finite measure. -/
+/-- **The strip inequality on $W_0^{1,p}(Q_+)$.** Let $1 \le p < \infty$, let $\varepsilon \le 1$
+and let $u \in W_0^{1,p}(Q_+)$. Then
+$$\int_{\{x \in Q_+ : x_N < \varepsilon\}} |u| \le \varepsilon \int_{\{x \in Q_+ : x_N <
+  \varepsilon\}} |\partial_N u|.$$
+
+The inequality for test functions (`lintegral_unitChartCubeStrip_le_of_contDiff`) passes to the
+limit in $W^{1,p}(Q_+)$. Both sides are continuous for the convergence in $L^p$ on the strip,
+which has finite measure. -/
 theorem SobolevEuclideanZero.lintegral_unitChartCubeStrip_le (hp' : p ≠ ⊤) {ε : ℝ} (hε : ε ≤ 1)
     {u : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
     (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d)) :
@@ -2924,7 +3224,9 @@ variable {d : ℕ}
 
 open EuclideanSpace
 
-/-- The measure of the strip: `|{x ∈ Q_+ : x_N < ε}| = |B'(0, 1)| ε` for `ε ≤ 1`. -/
+/-- For $\varepsilon \le 1$, the measure of the strip is $|\{x \in Q_+ : x_N < \varepsilon\}| =
+|B'(0, 1)| \, \varepsilon$, where $B'(0, 1)$ is the unit ball of $\mathbb{R}^d$. For
+$\varepsilon \le 0$ both sides are $0$. -/
 theorem volume_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1) :
     volume (unitChartCubeStrip d ε)
       = volume (ball (0 : EuclideanSpace ℝ (Fin d)) 1) * ENNReal.ofReal ε := by
@@ -2932,7 +3234,9 @@ theorem volume_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1) :
   simp only [setLIntegral_const, one_mul, Real.volume_Ioo, sub_zero]
   rw [mul_comm]
 
-/-- **The strip integrals of an `L^1(Q_+)` function tend to `0`** along `ε_n → 0`. -/
+/-- **The strip integrals of an integrable function tend to $0$.** Let $g$ be a real function with
+$\int_{Q_+} |g| < \infty$, and let $\varepsilon_n \le 1$ with $\varepsilon_n \to 0$. Then
+$\int_{\{x \in Q_+ : x_N < \varepsilon_n\}} |g| \to 0$. -/
 theorem tendsto_lintegral_unitChartCubeStrip {g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
     (hg : ∫⁻ x in unitChartCubePos d, ‖g x‖ₑ ≠ ⊤) {ε : ℕ → ℝ} (hε : ∀ n, ε n ≤ 1)
     (hε0 : Tendsto ε atTop (𝓝 0)) :
@@ -2953,9 +3257,14 @@ theorem tendsto_lintegral_unitChartCubeStrip {g : EuclideanSpace ℝ (Fin (d + 1
     (a := volume (ball (0 : EuclideanSpace ℝ (Fin d)) 1)) (Or.inr measure_ball_lt_top.ne)
   simpa using this
 
-/-- **A lower bound for the strip integral** near a point of the equator: if `c ≤ |v|` on the
-cylinder `B'(x₀', r) × (0, ε)`, contained in the strip when `r + ‖x₀'‖ ≤ 1` and `ε ≤ 1`, then
-`c ε |B'(x₀', r)| ≤ ∫_{x ∈ Q_+, x_N < ε} |v|`. -/
+/-- **A lower bound for the strip integral.** Let $\varepsilon \le 1$, let $v$ be an almost
+everywhere measurable real function on $\mathbb{R}^{d+1}$, and let $x_0' \in \mathbb{R}^d$ and
+$r, c \in \mathbb{R}$ with $r + \|x_0'\| \le 1$. If $c \le |v(x', t)|$ for every
+$x' \in B'(x_0', r)$ and $t \in (0, \varepsilon)$, then
+$$c \, \varepsilon \, |B'(x_0', r)| \le \int_{\{x \in Q_+ : x_N < \varepsilon\}} |v|.$$
+
+The cylinder $B'(x_0', r) \times (0, \varepsilon)$ lies in the strip. The factors $c$ and
+$\varepsilon$ enter through `ENNReal.ofReal`, so they count as $0$ when they are negative. -/
 theorem le_lintegral_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1)
     {v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hv : AEMeasurable v)
     {x₀' : EuclideanSpace ℝ (Fin d)} {r c : ℝ} (hr1 : r + ‖x₀'‖ ≤ 1)
@@ -2987,13 +3296,18 @@ variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 open EuclideanSpace SobolevMultiIndex
 
-/-- **Theorem 9.17, (ii) ⇒ (i), the `Q_+` computation**: if `u ∈ W_0^{1,p}(Q_+)`, `1 ≤ p < ∞`,
-has a representative `ũ` continuous on `closure Q_+`, then `ũ = 0` on the equator `Q_0`
-([brezis2011functional] Theorem 9.17, (ii) ⇒ (i)). The strip inequality
-`∫_{x_N < ε} |u| ≤ ε ∫_{x_N < ε} |∂_N u|` (`SobolevEuclideanZero.lintegral_unitChartCubeStrip_le`)
-is tested against a point `x₀ ∈ Q_0` with `ũ x₀ ≠ 0`: by continuity `|ũ| ≥ |ũ x₀| / 2` on a
-cylinder `B'(x₀', r) × (0, ε)`, so the left side is at least `(|ũ x₀| / 2) ε |B'(x₀', r)|`, while
-`∫_{x_N < ε} |∂_N u| → 0` as `ε → 0` (`∂_N u ∈ L^1(Q_+)`), a contradiction. -/
+/-- **Theorem 9.17, (ii) ⇒ (i), the computation on $Q_+$.** Let $1 \le p < \infty$ and let
+$u \in W_0^{1,p}(Q_+)$. If the function of $u$ equals, almost everywhere on $Q_+$, a function
+$\tilde u$ that is continuous on $\overline{Q_+}$, then $\tilde u = 0$ on $Q_0$. This is the
+core of Theorem 9.17, (ii) ⇒ (i), of [brezis2011functional].
+
+The proof tests the strip inequality $\int_{\{x_N < \varepsilon\}} |u| \le \varepsilon
+\int_{\{x_N < \varepsilon\}} |\partial_N u|$
+(`SobolevEuclideanZero.lintegral_unitChartCubeStrip_le`) at a point $x_0 \in Q_0$ with
+$\tilde u(x_0) \neq 0$. By continuity, $|\tilde u| \ge |\tilde u(x_0)|/2$ on a cylinder
+$B'(x_0', r) \times (0, \varepsilon)$, so the left side is at least $(|\tilde u(x_0)|/2) \,
+\varepsilon \, |B'(x_0', r)|$. But $\int_{\{x_N < \varepsilon\}} |\partial_N u| \to 0$ as
+$\varepsilon \to 0$, because $\partial_N u \in L^1(Q_+)$. This is a contradiction. -/
 theorem SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure (hp' : p ≠ ⊤)
     {u : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
     (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d))
@@ -3116,7 +3430,7 @@ theorem SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure (hp'
 
 end Thm917
 
-/-! ### Theorem 9.17, (ii) ⇒ (i): the chart reduction -/
+/-! ### Theorem 9.17, (ii) ⇒ (i): the reduction by local charts -/
 
 section Thm917Chart
 
@@ -3128,7 +3442,7 @@ namespace ContDiffChart
 
 variable (c : ContDiffChart 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
 
-/-- The chart sends `closure Q_+` into `closure Ω`. -/
+/-- A local chart $H$ of $\Omega$ sends $\overline{Q_+}$ into $\bar\Omega$. -/
 theorem mapsTo_closure_unitChartCubePos :
     MapsTo c.toFun (closure (unitChartCubePos d)) (closure (Ω : Set _)) := by
   have h1 : c.toFun '' closure (unitChartCubePos d) ⊆ closure (c.toFun '' unitChartCubePos d) :=
@@ -3136,13 +3450,19 @@ theorem mapsTo_closure_unitChartCubePos :
   rw [c.image_pos] at h1
   exact fun y hy ↦ closure_mono inter_subset_right (h1 (mem_image_of_mem _ hy))
 
-/-- **The chart piece of Theorem 9.17, (ii) ⇒ (i)**: for a chart `c` of `Ω`, `θ` smooth with
-compact support in `c.U`, `u ∈ W_0^{1,p}(Ω)` with a representative `ũ` continuous on `closure Ω`,
-and `V ∈ W^{1,p}(U ∩ Ω)` with function `u θ`, the transfer `V ∘ H` lies in `W_0^{1,p}(Q_+)`
-(`SobolevMultiIndexZero.mul_contDiff_mem`, `SobolevMultiIndexZero.compDiffeoL_mem`) and has the
-representative `(ũ θ) ∘ H`, continuous on `closure Q_+`; the `Q_+` computation
-(`SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure`) gives `(ũ θ) ∘ H = 0` on
-the equator `Q_0`. -/
+/-- **The chart piece of Theorem 9.17, (ii) ⇒ (i).** Let $1 \le p < \infty$ and let $c$ be a local
+chart $H : Q \to U$ of class $C^1$ of an open set $\Omega \subseteq \mathbb{R}^N$, such that $H$
+restricted to $Q_+$ is a $C^1$ diffeomorphism onto $U \cap \Omega$ with Jacobians bounded by
+$M$. Let $\theta$ be a smooth function with compact support such that
+$\operatorname{supp} \theta \subseteq U$. Let $u \in W_0^{1,p}(\Omega)$ have a representative
+$\tilde u$ that is continuous on $\bar\Omega$, and let $V \in W^{1,p}(U \cap \Omega)$ have the
+function $u \theta$ almost everywhere on $U \cap \Omega$. Then $(\tilde u \theta) \circ H = 0$
+on $Q_0$.
+
+The transfer $V \circ H$ lies in $W_0^{1,p}(Q_+)$ (`SobolevMultiIndexZero.mul_contDiff_mem`,
+`SobolevMultiIndexZero.compDiffeoL_mem`) and has the representative $(\tilde u \theta) \circ H$,
+which is continuous on $\overline{Q_+}$. The computation on $Q_+$
+(`SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure`) concludes. -/
 theorem eqOn_unitChartCubeZero_aux (hp' : p ≠ ⊤) {M : ℝ}
     (hH : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubePosOpens d : Set _)
       (c.opensInter : Set _) M)
@@ -3180,15 +3500,20 @@ theorem eqOn_unitChartCubeZero_aux (hp' : p ≠ ⊤) {M : ℝ}
 
 end ContDiffChart
 
-/-- **Theorem 9.17, (ii) ⇒ (i)** for a `C^1` chart domain, `1 ≤ p < ∞`: if
-`IsContDiffChartDomain 1 Ω`, `u ∈ W_0^{1,p}(Ω)` and `ũ` is a representative of `u` continuous on
-`closure Ω`, then `ũ = 0` on `frontier Ω` ([brezis2011functional] Theorem 9.17, (ii) ⇒ (i):
-"using local charts this is reduced to" the `Q_+` computation). For `x₀ ∈ frontier Ω` with chart
-`c` and `θ` smooth with compact support in `c.U`, `θ = 1` near `x₀`, the function `u θ` is in
-`W_0^{1,p}(U ∩ Ω)` and transfers along the chart to `W_0^{1,p}(Q_+)` with the continuous
-representative `(ũ θ) ∘ H` (`ContDiffChart.eqOn_unitChartCubeZero_aux`), which vanishes on the
-equator; `x₀ = H(y₀)` with `y₀ ∈ Q_0`, so `ũ x₀ = ũ x₀ θ x₀ = 0`. Together with
-`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`, this is Theorem 9.17. -/
+/-- **Theorem 9.17, (ii) ⇒ (i)**, for an open set of class $C^1$. Let $1 \le p < \infty$, let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be an open set of class $C^1$, and let
+$u \in W_0^{1,p}(\Omega)$. If the function of $u$ equals, almost everywhere on $\Omega$, a
+function $\tilde u$ that is continuous on $\bar\Omega$, then $\tilde u = 0$ on $\partial\Omega$.
+This is Theorem 9.17, (ii) ⇒ (i), of [brezis2011functional], where "using local charts this is
+reduced to" the computation on $Q_+$. Together with
+`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`, this is Theorem 9.17.
+
+The hypothesis on $\Omega$ is `IsContDiffChartDomain 1`. For $x_0 \in \partial\Omega$, take a
+chart $c$ at $x_0$ and a smooth $\theta$ with compact support in $U$ and $\theta = 1$ near
+$x_0$. Then $u \theta$ lies in $W_0^{1,p}(U \cap \Omega)$ and transfers along the chart to
+$W_0^{1,p}(Q_+)$ with the continuous representative $(\tilde u \theta) \circ H$, which vanishes
+on $Q_0$ (`ContDiffChart.eqOn_unitChartCubeZero_aux`). Since $x_0 = H(y_0)$ with $y_0 \in Q_0$,
+$\tilde u(x_0) = \tilde u(x_0) \theta(x_0) = 0$. -/
 theorem SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure (hp' : p ≠ ⊤)
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p Ω)
@@ -3227,16 +3552,19 @@ theorem SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure (hp' : p ≠ 
 
 end Thm917Chart
 
-/-! ### Proposition 9.20: the dual `W^{-1,p'}(Ω)` -/
+/-! ### Proposition 9.20: the dual $W^{-1,p'}(\Omega)$ -/
 
 section Dual
 
-/-! #### Hahn–Banach along a bounded-below linear map, and the Riesz representation on `(L^p)^κ` -/
+/-! ### The Hahn–Banach theorem along a map bounded below, and duals of products of $L^p$ spaces -/
 
-/-- **Hahn–Banach along a linear map with bounded inverse**: if `g : V →ₗ W` satisfies
-`‖v‖ ≤ C ‖g v‖`, every continuous linear functional `F` on `V` is `Φ ∘ g` for a continuous
-linear functional `Φ` on `W` with `‖Φ‖ ≤ C ‖F‖`: `g` is injective, `F ∘ g⁻¹` is a functional of
-norm at most `C ‖F‖` on the range of `g`, and `exists_extension_norm_eq` extends it. -/
+/-- **The Hahn–Banach theorem along a linear map with bounded inverse.** Let $V$ and $W$ be real
+normed spaces, let $g : V \to W$ be linear, and let $C \ge 0$ with $\|v\| \le C \|g v\|$ for
+every $v \in V$. Then for every continuous linear functional $F$ on $V$ there is a continuous
+linear functional $\Phi$ on $W$ with $\Phi \circ g = F$ and $\|\Phi\| \le C \|F\|$.
+
+The map $g$ is injective, $F \circ g^{-1}$ is a functional of norm at most $C \|F\|$ on the
+range of $g$, and the Hahn–Banach theorem (`exists_extension_norm_eq`) extends it. -/
 theorem exists_strongDual_comp_eq_of_norm_le {V W : Type*} [NormedAddCommGroup V]
     [NormedSpace ℝ V] [NormedAddCommGroup W] [NormedSpace ℝ W] (g : V →ₗ[ℝ] W) {C : ℝ}
     (hC : 0 ≤ C) (hg : ∀ v, ‖v‖ ≤ C * ‖g v‖) (F : StrongDual ℝ V) :
@@ -3270,13 +3598,18 @@ theorem exists_strongDual_comp_eq_of_norm_le {V W : Type*} [NormedAddCommGroup V
     rfl
   exact (hΦ ⟨g v, LinearMap.mem_range_self _ v⟩).trans h2
 
-/-- **A functional on a finite `ℓ^p` product of copies of `L^p(ν)`, `1 ≤ p < ∞`, is a sum of
-integrals against `L^{p'}(ν)` functions of norm at most that of the functional**: restricted to
-each factor it is a functional on `L^p(ν)` of no larger norm, which the Riesz representation
-theorem (`MeasureTheory.Lp.dualEquiv`, [brezis2011functional] Theorems 4.11 and 4.14)
-represents isometrically by a function of `L^{p'}(ν)`. With
-`exists_strongDual_comp_eq_of_norm_le` this is the common core of the proofs of
-[brezis2011functional] Propositions 8.14 and 9.20. -/
+/-- Let $\nu$ be a $\sigma$-finite measure, let $1 \le p < \infty$ and let $q$ be the conjugate
+exponent. Let $\kappa$ be a finite index set, and let $\Phi$ be a continuous linear functional
+on the $\ell^p$ product of $\kappa$ copies of $L^p(\nu)$. Then there are $f_i \in L^q(\nu)$,
+$i \in \kappa$, with $\|f_i\| \le \|\Phi\|$ and
+$$\Phi(x) = \sum_{i \in \kappa} \int f_i \, x_i \, d\nu$$
+for every $x$ in the product.
+
+The restriction of $\Phi$ to each factor is a functional on $L^p(\nu)$ of norm at most
+$\|\Phi\|$, and the Riesz representation theorem (`MeasureTheory.Lp.dualEquiv`, Theorems 4.11
+and 4.14 of [brezis2011functional]) represents it isometrically by a function of $L^q(\nu)$.
+With `exists_strongDual_comp_eq_of_norm_le`, this is the common core of the proofs of
+Propositions 8.14 and 9.20 of [brezis2011functional]. -/
 theorem MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral {α : Type*}
     [MeasurableSpace α] {ν : Measure α} [SigmaFinite ν] {p q : ℝ≥0∞} [Fact (1 ≤ p)]
     [Fact (1 ≤ q)] [p.HolderConjugate q] (hp : p ≠ ⊤) {κ : Type*} [Fintype κ]
@@ -3295,24 +3628,29 @@ theorem MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral {α : Typ
   · rw [LinearIsometryEquiv.norm_map]
     exact PiLp.norm_strongDual_comp_singleL_le Φ i
 
-/-! #### The dual of `W_0^{1,p}(Ω)` -/
+/-! ### The dual of $W_0^{1,p}(\Omega)$ -/
 
 namespace SobolevEuclideanZero
 
 variable {N : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Proposition 9.20 (the dual `W^{-1,p'}(Ω)` of `W_0^{1,p}(Ω)`)**: for `1 ≤ p < ∞`, `p'` the
-conjugate exponent and `F` a continuous linear functional on `W_0^{1,p}(Ω)`, there are
-`f_0, f_1, …, f_N ∈ L^{p'}(Ω)` — indexed by the multi-indices `α` of length at most `1` — with
-`F v = ∫_Ω f_0 v + ∑ᵢ ∫_Ω f_i ∂_i v` for all `v ∈ W_0^{1,p}(Ω)` and `‖f_α‖_{p'} ≤ ‖F‖`.
+/-- **The dual $W^{-1,p'}(\Omega)$ of $W_0^{1,p}(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be
+open, let $1 \le p < \infty$ and let $p'$ be the conjugate exponent. Then for every continuous
+linear functional $F$ on $W_0^{1,p}(\Omega)$ there are $f_0, f_1, \dots, f_N \in L^{p'}(\Omega)$
+with $\|f_\alpha\|_{L^{p'}(\Omega)} \le \|F\|$ for every $\alpha$ and
+$$F(v) = \int_\Omega f_0 v + \sum_{i=1}^N \int_\Omega f_i \, \partial_i v$$
+for every $v \in W_0^{1,p}(\Omega)$. This is Proposition 9.20 of [brezis2011functional].
 
-Proof ([brezis2011functional] Proposition 9.20, "adapt the proof of Proposition 8.14"):
-`W_0^{1,p}(Ω)` is isometrically a subspace of the `ℓ^p` product of `N + 1` copies of `L^p(Ω)`,
-through `v ↦ (∂^α v)_α`, so `F` extends by Hahn–Banach to a functional of the same norm on the
-product (`exists_strongDual_comp_eq_of_norm_le`), which the Riesz representation theorem on
-each factor represents (`MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral`). The
-book's norm identity `‖F‖ = max_α ‖f_α‖_{p'}` refers to its norm `∑_α ‖h_α‖_p` on the product;
-for the `ℓ^p`-sum norm of `SobolevMultiIndexTuple` the one-sided bound is what is stated. -/
+The functions $f_\alpha$ are indexed by the multi-indices $\alpha$ with $|\alpha| \le 1$, and
+the sum is over all of them, with $\partial^0 v = v$. The source states the identity
+$\|F\| = \max_\alpha \|f_\alpha\|_{p'}$, which refers to its norm $\sum_\alpha \|h_\alpha\|_p$
+on the product. For the $\ell^p$ sum norm of `SobolevMultiIndexTuple`, the one-sided bound is
+what is stated here. The proof adapts that of Proposition 8.14, as the source says. The map
+$v \mapsto (\partial^\alpha v)_\alpha$ is an isometry of $W_0^{1,p}(\Omega)$ into the $\ell^p$
+product of $N + 1$ copies of $L^p(\Omega)$. So $F$ extends by the Hahn–Banach theorem to a
+functional of the same norm on the product (`exists_strongDual_comp_eq_of_norm_le`), which the
+Riesz representation theorem on each factor represents
+(`MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral`). -/
 theorem exists_dual_repr [p.HolderConjugate q] (hp : p ≠ ⊤)
     (F : StrongDual ℝ (SobolevEuclideanZero N 1 p Ω)) :
     ∃ f : MultiIndexLE (Fin N) 1 → Lp ℝ q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
@@ -3336,36 +3674,46 @@ theorem exists_dual_repr [p.HolderConjugate q] (hp : p ≠ ⊤)
   rfl
 
 variable (N p Ω) in
-/-- **The gradient `v ↦ ∇v` on `W_0^{1,p}(Ω)`**, as a linear map into the `ℓ^p` product of `N`
-copies of `L^p(Ω)`. -/
+/-- The **gradient** $v \mapsto \nabla v = (\partial_i v)_i$ on $W_0^{1,p}(\Omega)$, as a linear map
+into the $\ell^p$ product of $N$ copies of $L^p(\Omega)$. -/
 noncomputable def gradₗ : SobolevEuclideanZero N 1 p Ω →ₗ[ℝ]
     PiLp p fun _ : Fin N ↦ Lp ℝ p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) where
   toFun v := SobolevMultiIndex.grad (v : SobolevEuclidean N 1 p Ω)
   map_add' _ _ := SobolevMultiIndex.grad_add _ _
   map_smul' _ _ := SobolevMultiIndex.grad_smul _ _
 
-/-- `gradₗ v` is the gradient tuple of `v`. -/
+/-- The value `SobolevEuclideanZero.gradₗ N p Ω v` is the gradient tuple `SobolevMultiIndex.grad v`.
+-/
 theorem gradₗ_apply (v : SobolevEuclideanZero N 1 p Ω) :
     gradₗ N p Ω v = SobolevMultiIndex.grad (v : SobolevEuclidean N 1 p Ω) :=
   rfl
 
-/-- **Poincaré's inequality on the gradient map**: for `Ω ⊆ B(0, R)` and `1 ≤ p < ∞`,
-`‖v‖ ≤ (1 + (2R)^p)^{1/p} ‖∇v‖_p` on `W_0^{1,p}(Ω)` (`SobolevEuclideanZero.norm_le_gradNorm`). -/
+/-- **Poincaré's inequality for the gradient map.** Let $\Omega \subseteq B(0, R)$ be open in
+$\mathbb{R}^{d+1}$ with $R \ge 0$, and let $1 \le p < \infty$. Then for every
+$v \in W_0^{1,p}(\Omega)$,
+$$\|v\|_{W^{1,p}(\Omega)} \le \big(1 + (2R)^p\big)^{1/p} \|\nabla v\|_{L^p(\Omega)}.$$
+
+This is `SobolevEuclideanZero.norm_le_gradNorm` for the map `SobolevEuclideanZero.gradₗ`. -/
 theorem norm_le_mul_norm_gradₗ {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hp : p ≠ ⊤)
     {R : ℝ} (hR : 0 ≤ R) (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (v : SobolevEuclideanZero (d + 1) 1 p Ω) :
     ‖v‖ ≤ (1 + (2 * R) ^ p.toReal) ^ (1 / p.toReal) * ‖gradₗ (d + 1) p Ω v‖ :=
   norm_le_gradNorm hp hR hΩ v
 
-/-- **Proposition 9.20 on a bounded open set: `f_0 = 0`**. For `Ω ⊆ B(0, R)` in `ℝ^{d+1}`,
-`1 ≤ p < ∞`, `p'` the conjugate exponent and `F` a continuous linear functional on
-`W_0^{1,p}(Ω)`, there are `f_1, …, f_N ∈ L^{p'}(Ω)` with `F v = ∑ᵢ ∫_Ω f_i ∂_i v` for all `v` and
-`‖f_i‖_{p'} ≤ (1 + (2R)^p)^{1/p} ‖F‖`: by Poincaré's inequality
-(`SobolevEuclideanZero.norm_le_mul_norm_gradₗ`) the gradient `v ↦ ∇v` is injective on
-`W_0^{1,p}(Ω)` with bounded inverse, so `F` extends along it to a functional on the `ℓ^p` product
-of `N` copies of `L^p(Ω)` (`exists_strongDual_comp_eq_of_norm_le`), represented by
-`MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral` ([brezis2011functional]
-Proposition 9.20, last sentence, and the proof of Proposition 8.14). -/
+/-- **Proposition 9.20 on a bounded open set: $f_0 = 0$.** Let $\Omega \subseteq B(0, R)$ be open in
+$\mathbb{R}^N$, $N = d + 1$, with $R \ge 0$, let $1 \le p < \infty$ and let $p'$ be the
+conjugate exponent. Then for every continuous linear functional $F$ on $W_0^{1,p}(\Omega)$ there
+are $f_1, \dots, f_N \in L^{p'}(\Omega)$ with
+$$F(v) = \sum_{i=1}^N \int_\Omega f_i \, \partial_i v \quad\text{for every } v \in
+  W_0^{1,p}(\Omega), \qquad \|f_i\|_{L^{p'}(\Omega)} \le \big(1 + (2R)^p\big)^{1/p} \|F\|.$$
+This is the last sentence of Proposition 9.20 of [brezis2011functional].
+
+By Poincaré's inequality (`SobolevEuclideanZero.norm_le_mul_norm_gradₗ`), the gradient
+$v \mapsto \nabla v$ is injective on $W_0^{1,p}(\Omega)$ with bounded inverse. So $F$ extends
+along it to a functional on the $\ell^p$ product of $N$ copies of $L^p(\Omega)$
+(`exists_strongDual_comp_eq_of_norm_le`), which
+`MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral` represents, as in the proof of
+Proposition 8.14. -/
 theorem exists_dual_repr_of_isBounded {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     [p.HolderConjugate q] (hp : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
@@ -3389,7 +3737,7 @@ end SobolevEuclideanZero
 end Dual
 
 
-/-! ### The Gelfand triple `H^1_0(Ω) ⊂ L²(Ω) ⊂ H^{-1}(Ω)` -/
+/-! ### The Gelfand triple $H^1_0(\Omega) \subset L^2(\Omega) \subset H^{-1}(\Omega)$ -/
 
 section GelfandTriple
 
@@ -3400,9 +3748,11 @@ namespace SobolevEuclideanZero
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 variable (N Ω) in
-/-- **The inclusion `L²(Ω) ⊂ H^{-1}(Ω)`**: `f ↦ (v ↦ ∫_Ω f v)`, the transpose of the inclusion
-`H^1_0(Ω) ⊂ L²(Ω)` (`SobolevMultiIndexZero.fnL`) composed with the self-duality of `L²(Ω)`
-([brezis2011functional] §9.4, "The Dual Space of `W_0^{1,p}(Ω)`", Notation). -/
+/-- The **inclusion** $L^2(\Omega) \subset H^{-1}(\Omega)$, $f \mapsto (v \mapsto \int_\Omega f v)$,
+for an open $\Omega \subseteq \mathbb{R}^N$. It is the transpose of the inclusion
+$H^1_0(\Omega) \subset L^2(\Omega)$ (`SobolevMultiIndexZero.fnL`), composed with the
+self-duality of $L^2(\Omega)$. This is the inclusion of §9.4 of [brezis2011functional], "The
+Dual Space of $W_0^{1,p}(\Omega)$", Notation. -/
 def toDualL2 : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
     StrongDual ℝ (SobolevEuclideanZero N 1 2 Ω) :=
   ((ContinuousLinearMap.compL ℝ (SobolevEuclideanZero N 1 2 Ω)
@@ -3410,7 +3760,9 @@ def toDualL2 : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))
     (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume)).comp
     (innerSL ℝ)
 
-/-- `toDualL2 N Ω f v = ⟪f, v⟫_{L²(Ω)}`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1_0(\Omega)$, the value of
+`SobolevEuclideanZero.toDualL2 N Ω f` at $v$ is the inner product
+$\langle f, v \rangle_{L^2(\Omega)}$. -/
 theorem toDualL2_apply_inner (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclideanZero N 1 2 Ω) :
     toDualL2 N Ω f v
@@ -3418,7 +3770,8 @@ theorem toDualL2_apply_inner (f : Lp ℝ 2 (volume.restrict (Ω : Set (Euclidean
           volume v⟫_ℝ :=
   rfl
 
-/-- `toDualL2 N Ω f v = ∫_Ω f v`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1_0(\Omega)$, the value of
+`SobolevEuclideanZero.toDualL2 N Ω f` at $v$ is $\int_\Omega f v$. -/
 theorem toDualL2_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclideanZero N 1 2 Ω) :
     toDualL2 N Ω f v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
@@ -3426,10 +3779,14 @@ theorem toDualL2_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace 
   rw [toDualL2_apply_inner, L2.inner_eq_integral_mul]
   rfl
 
-/-- **A bounded linear map into the dual of a reflexive space whose range separates the points
-has dense range**: a functional on the dual vanishing on the range is, by reflexivity, evaluation
-at some `v`, which the range separates from `0` only if `v = 0`; a closed proper subspace would
-be separated from a point by a nonzero functional (`Submodule.exists_dual_eq_zero_of_notMem`). -/
+/-- **A bounded linear map into the dual of a reflexive space whose range separates points has dense
+range.** Let $X$ be a reflexive real normed space, let $L$ be a real normed space, and let
+$j : L \to X^*$ be a bounded linear map. If every $v \in X$ with $j(f)(v) = 0$ for all $f \in L$
+is $0$, then $j$ has dense range.
+
+By reflexivity, a functional on $X^*$ that vanishes on the range of $j$ is the evaluation at
+some $v$, and then $v = 0$. A closed proper subspace of $X^*$ would be separated from a point by
+a nonzero functional (`Submodule.exists_dual_eq_zero_of_notMem`). -/
 theorem _root_.denseRange_of_forall_apply_eq_zero {X L : Type*} [NormedAddCommGroup X]
     [NormedSpace ℝ X] [NormedSpace.IsReflexive ℝ X] [NormedAddCommGroup L] [NormedSpace ℝ L]
     (j : L →L[ℝ] StrongDual ℝ X) (h : ∀ v : X, (∀ f, j f v = 0) → v = 0) : DenseRange j := by
@@ -3454,16 +3811,21 @@ theorem _root_.denseRange_of_forall_apply_eq_zero {X L : Type*} [NormedAddCommGr
     rw [LinearMap.coe_range, ContinuousLinearMap.coe_coe]
   rw [DenseRange, hrange, Submodule.dense_iff_topologicalClosure_eq_top, ← hM, hMtop]
 
-/-! #### The triple `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{-1,p'}(Ω)` along a bounded inclusion into `L²` -/
+/-!
+### The triple $W_0^{1,p}(\Omega) \subset L^2(\Omega) \subset W^{-1,p'}(\Omega)$ for general $p$
+-/
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **The inclusion `L²(Ω) ⊂ W^{-1,p'}(Ω)` along a bounded inclusion `ι : W_0^{1,p}(Ω) → L²(Ω)`**:
-`f ↦ (v ↦ ⟪f, ι v⟫_{L²(Ω)})`, the transpose of `ι` composed with the self-duality of `L²(Ω)`. The
-inclusion `ι` is a parameter: it is `SobolevMultiIndexZero.fnL` at `p = 2`
-(`SobolevEuclideanZero.toDualL2_eq_toDualOfL2`) and, for `2N/(N+2) ≤ p`, the bounded inclusion of
-Remark 20 (`SobolevEuclideanZero.isContinuousEmbedding_toLp` of
-`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`, which this file does not import). -/
+/-- The **inclusion** $L^2(\Omega) \subset W^{-1,p'}(\Omega)$ along a bounded linear map
+$\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$: the map $f \mapsto (v \mapsto \langle f, \iota v
+\rangle_{L^2(\Omega)})$. It is the transpose of $\iota$, composed with the self-duality of
+$L^2(\Omega)$.
+
+The map $\iota$ is a parameter. At $p = 2$ it is `SobolevMultiIndexZero.fnL`
+(`SobolevEuclideanZero.toDualL2_eq_toDualOfL2`). For $2N/(N+2) \le p$ it is the bounded
+inclusion of Remark 20, `SobolevEuclideanZero.isContinuousEmbedding_toLp` in
+`Numlib.Analysis.Sobolev.EmbeddingDomain`, which this module does not import. -/
 def toDualOfL2 (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
@@ -3471,23 +3833,25 @@ def toDualOfL2 (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
   ((ContinuousLinearMap.compL ℝ (SobolevEuclideanZero N 1 p Ω)
     (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) ℝ).flip ι).comp (innerSL ℝ)
 
-/-- `toDualOfL2 ι f v = ⟪f, ι v⟫_{L²(Ω)}`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in W_0^{1,p}(\Omega)$, the value of
+`SobolevEuclideanZero.toDualOfL2 ι f` at $v$ is $\langle f, \iota v \rangle_{L^2(\Omega)}$. -/
 theorem toDualOfL2_apply_inner (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (v : SobolevEuclideanZero N 1 p Ω) : toDualOfL2 ι f v = ⟪f, ι v⟫_ℝ :=
   rfl
 
-/-- `SobolevEuclideanZero.toDualL2` is `toDualOfL2` along the inclusion `H^1_0(Ω) ⊂ L²(Ω)`. -/
+/-- The inclusion `SobolevEuclideanZero.toDualL2` is `SobolevEuclideanZero.toDualOfL2` along the
+inclusion $H^1_0(\Omega) \subset L^2(\Omega)$, `SobolevMultiIndexZero.fnL`. -/
 theorem toDualL2_eq_toDualOfL2 :
     toDualL2 N Ω = toDualOfL2
       (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume) :=
   rfl
 
-/-- **`ι` sends each element of `W_0^{1,p}(Ω)` to its function**: `ι v = v` almost everywhere on
-`Ω` for every `v`. This is what makes a bounded map `ι : W_0^{1,p}(Ω) → L²(Ω)` the inclusion of
-the Gelfand triple; `SobolevMultiIndexZero.fnL` is one at `p = 2`
-(`SobolevEuclideanZero.isFnInclusion_fnL`). -/
+/-- A bounded linear map $\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ **sends each element to its
+function** if $\iota v$ equals the function of $v$ almost everywhere on $\Omega$, for every
+$v \in W_0^{1,p}(\Omega)$. Such a map is the inclusion of the Gelfand triple. At $p = 2$,
+`SobolevMultiIndexZero.fnL` is one (`SobolevEuclideanZero.isFnInclusion_fnL`). -/
 def IsFnInclusion (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) : Prop :=
   ∀ v : SobolevEuclideanZero N 1 p Ω, (ι v : EuclideanSpace ℝ (Fin N) → ℝ)
@@ -3497,20 +3861,23 @@ def IsFnInclusion (ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
 variable {ι : SobolevEuclideanZero N 1 p Ω →L[ℝ]
   Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- `IsFnInclusion` unfolded. -/
+/-- The predicate `SobolevEuclideanZero.IsFnInclusion ι` holds if and only if $\iota v$ equals the
+function of $v$ almost everywhere on $\Omega$, for every $v \in W_0^{1,p}(\Omega)$. -/
 theorem isFnInclusion_iff : IsFnInclusion ι ↔ ∀ v : SobolevEuclideanZero N 1 p Ω,
     (ι v : EuclideanSpace ℝ (Fin N) → ℝ) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
       SobolevMultiIndex.fn (v : SobolevEuclidean N 1 p Ω) :=
   Iff.rfl
 
-/-- The inclusion `H^1_0(Ω) ⊂ L²(Ω)` (`SobolevMultiIndexZero.fnL`) sends each element to its
-function. -/
+/-- The inclusion $H^1_0(\Omega) \subset L^2(\Omega)$, `SobolevMultiIndexZero.fnL`, sends each
+element to its function. -/
 theorem isFnInclusion_fnL :
     IsFnInclusion (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
       volume) :=
   fun _ ↦ Filter.EventuallyEq.rfl
 
-/-- `toDualOfL2 ι f v = ∫_Ω f v` when `ι v` is the function of `v`. -/
+/-- Let $\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ send each element to its function. Then for
+$f \in L^2(\Omega)$ and $v \in W_0^{1,p}(\Omega)$, the value of
+`SobolevEuclideanZero.toDualOfL2 ι f` at $v$ is $\int_\Omega f v$. -/
 theorem toDualOfL2_apply
     (hι : IsFnInclusion ι)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -3520,8 +3887,9 @@ theorem toDualOfL2_apply
   rw [toDualOfL2_apply_inner, L2.inner_eq_integral_mul]
   exact integral_congr_ae (Filter.EventuallyEq.rfl.mul (hι v))
 
-/-- **A bounded map `W_0^{1,p}(Ω) → L²(Ω)` sending each element to its function is injective**:
-the function determines the element (`SobolevMultiIndexZero.fnL_injective`). -/
+/-- A bounded linear map $\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ that sends each element to its
+function is injective. The function determines the element
+(`SobolevMultiIndexZero.fnL_injective`). -/
 theorem injective_of_forall_ae_eq
     (hι : IsFnInclusion ι) :
     Function.Injective ι := fun u v huv ↦ by
@@ -3529,9 +3897,9 @@ theorem injective_of_forall_ae_eq
   rw [SobolevMultiIndexZero.fnL_apply, SobolevMultiIndexZero.fnL_apply]
   exact (hι u).symm.trans ((Lp.ext_iff.1 huv).trans (hι v))
 
-/-- **A bounded map `W_0^{1,p}(Ω) → L²(Ω)` sending each element to its function has dense
-range**: its range contains the test functions, which are dense in `L²(Ω)`
-(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
+/-- A bounded linear map $\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ that sends each element to its
+function has dense range. Its range contains the test functions, which are dense in
+$L^2(\Omega)$ (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
 theorem denseRange_of_forall_ae_eq
     (hι : IsFnInclusion ι) :
     DenseRange ι := by
@@ -3547,9 +3915,11 @@ theorem denseRange_of_forall_ae_eq
   rw [hφ]
   exact hfg.symm
 
-/-- **`L²(Ω) ⊂ W^{-1,p'}(Ω)` is injective**, along any bounded inclusion `ι` sending each element
-of `W_0^{1,p}(Ω)` to its function: a function of `L²(Ω)` whose integral against every test
-function vanishes is zero (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+/-- Let $\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ send each element to its function. Then the
+inclusion $L^2(\Omega) \subset W^{-1,p'}(\Omega)$ along $\iota$ is injective.
+
+A function of $L^2(\Omega)$ whose integral against every test function vanishes is zero
+(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem toDualOfL2_injective
     (hι : IsFnInclusion ι) :
     Function.Injective (toDualOfL2 ι) := by
@@ -3575,10 +3945,13 @@ theorem toDualOfL2_injective
     refine integral_congr_ae (hφu.mono fun x hx ↦ ?_)
     simp only [smul_eq_mul, mul_comm, hx]
 
-/-- **`L²(Ω) ⊂ W^{-1,p'}(Ω)` has dense range when `W_0^{1,p}(Ω)` is reflexive** (`1 < p < ∞`),
-along any bounded inclusion `ι` sending each element of `W_0^{1,p}(Ω)` to its function: the
-range separates the points, since `⟪f, ι v⟫ = 0` for all `f ∈ L²(Ω)` gives, at `f = ι v`,
-`ι v = 0`, hence `v = 0` (`denseRange_of_forall_apply_eq_zero`). -/
+/-- Let $W_0^{1,p}(\Omega)$ be reflexive, which holds for $1 < p < \infty$, and let
+$\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ send each element to its function. Then the
+inclusion $L^2(\Omega) \subset W^{-1,p'}(\Omega)$ along $\iota$ has dense range.
+
+The range separates points: if $\langle f, \iota v \rangle = 0$ for all $f \in L^2(\Omega)$,
+then $f = \iota v$ gives $\iota v = 0$, hence $v = 0$. So `denseRange_of_forall_apply_eq_zero`
+applies. -/
 theorem denseRange_toDualOfL2 [NormedSpace.IsReflexive ℝ (SobolevEuclideanZero N 1 p Ω)]
     (hι : IsFnInclusion ι) :
     DenseRange (toDualOfL2 ι) :=
@@ -3588,18 +3961,23 @@ theorem denseRange_toDualOfL2 [NormedSpace.IsReflexive ℝ (SobolevEuclideanZero
     exact injective_of_forall_ae_eq hι
       ((norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 h)).trans (map_zero _).symm)
 
-/-- **The Gelfand triple `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{-1,p'}(Ω)`, for `1 < p < ∞`, along a bounded
-inclusion `ι : W_0^{1,p}(Ω) → L²(Ω)` sending each element to its function**
-([brezis2011functional] §9.4, "The Dual Space of `W_0^{1,p}(Ω)`", Notation: "if `Ω` is bounded
-then `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{-1,p'}(Ω)` if `2N/(N+2) ≤ p < ∞`, with continuous and dense
-injections; if `Ω` is not bounded, the same holds for `2N/(N+2) ≤ p ≤ 2`"): `ι` and
-`SobolevEuclideanZero.toDualOfL2 ι`, `f ↦ (v ↦ ∫_Ω f v)`, are injective with dense range. The
-inclusion `ι` is supplied by Remark 20 (`SobolevEuclideanZero.isContinuousEmbedding_toLp` at
-`q = 2`, which is where the condition `2N/(N+2) ≤ p` enters, together with `L^p(Ω) ⊂ L²(Ω)` on
-a bounded `Ω` for `p > 2`); the density of the second inclusion uses the reflexivity of
-`W_0^{1,p}(Ω)` and **fails at `p = 1`** (allowed by the book's range for `N ≤ 2`): `W_0^{1,1}(Ω)`
-contains a complemented copy of `ℓ¹`, so its dual contains `ℓ^∞` and is not separable, while the
-range of a bounded map from the separable `L²(Ω)` is. -/
+/-- **The Gelfand triple $W_0^{1,p}(\Omega) \subset L^2(\Omega) \subset W^{-1,p'}(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $1 < p < \infty$, and let
+$\iota : W_0^{1,p}(\Omega) \to L^2(\Omega)$ be a bounded linear map that sends each element to
+its function. Then $\iota$ and the inclusion $L^2(\Omega) \subset W^{-1,p'}(\Omega)$,
+$f \mapsto (v \mapsto \int_\Omega f v)$, are both injective with dense range.
+
+This is the statement of §9.4 of [brezis2011functional], "The Dual Space of
+$W_0^{1,p}(\Omega)$", Notation: "if $\Omega$ is bounded then $W_0^{1,p}(\Omega) \subset
+L^2(\Omega) \subset W^{-1,p'}(\Omega)$ if $2N/(N+2) \le p < \infty$, with continuous and dense
+injections; if $\Omega$ is not bounded, the same holds for $2N/(N+2) \le p \le 2$". The second
+inclusion is `SobolevEuclideanZero.toDualOfL2 ι`. Remark 20 supplies $\iota$
+(`SobolevEuclideanZero.isContinuousEmbedding_toLp` at $q = 2$); this is where the condition
+$2N/(N+2) \le p$ enters, together with $L^p(\Omega) \subset L^2(\Omega)$ on a bounded $\Omega$
+for $p > 2$. The density of the second inclusion uses the reflexivity of $W_0^{1,p}(\Omega)$,
+and it fails at $p = 1$, which the range of the source allows for $N \le 2$: $W_0^{1,1}(\Omega)$
+contains a complemented copy of $\ell^1$, so its dual contains $\ell^\infty$ and is not
+separable, while the range of a bounded map from the separable space $L^2(\Omega)$ is separable. -/
 theorem gelfandTriple_of_forall_ae_eq (hp : 1 < p) (hp' : p ≠ ⊤)
     (hι : IsFnInclusion ι) :
     Function.Injective ι ∧ DenseRange ι ∧
@@ -3609,29 +3987,35 @@ theorem gelfandTriple_of_forall_ae_eq (hp : 1 < p) (hp' : p ≠ ⊤)
   exact ⟨injective_of_forall_ae_eq hι, denseRange_of_forall_ae_eq hι, toDualOfL2_injective hι,
     denseRange_toDualOfL2 hι⟩
 
-/-- **`H^1_0(Ω) ⊂ L²(Ω)` has dense range**: its range contains the test functions, which are
-dense in `L²(Ω)` (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
+/-- The inclusion $H^1_0(\Omega) \subset L^2(\Omega)$ has dense range. Its range contains the test
+functions, which are dense in $L^2(\Omega)$ (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). -/
 theorem denseRange_fnL :
     DenseRange (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
       volume) :=
   denseRange_of_forall_ae_eq isFnInclusion_fnL
 
-/-- **`L²(Ω) ⊂ H^{-1}(Ω)` is injective**: a function of `L²(Ω)` whose integral against every
-test function vanishes is zero (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+/-- The inclusion $L^2(\Omega) \subset H^{-1}(\Omega)$ is injective. A function of $L^2(\Omega)$
+whose integral against every test function vanishes is zero
+(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
 theorem toDualL2_injective : Function.Injective (toDualL2 N Ω) :=
   toDualOfL2_injective isFnInclusion_fnL
 
-/-- **`L²(Ω) ⊂ H^{-1}(Ω)` has dense range**: `H^1_0(Ω)` is a Hilbert space, hence reflexive,
-and the range separates the points, since `∫_Ω f v = 0` for all `f ∈ L²(Ω)` gives, at `f = v`,
-`‖v‖_2 = 0` (`denseRange_of_forall_apply_eq_zero`). -/
+/-- The inclusion $L^2(\Omega) \subset H^{-1}(\Omega)$ has dense range.
+
+The space $H^1_0(\Omega)$ is a Hilbert space, hence reflexive. The range separates points: if
+$\int_\Omega f v = 0$ for all $f \in L^2(\Omega)$, then $f = v$ gives $\|v\|_2 = 0$. So
+`denseRange_of_forall_apply_eq_zero` applies. -/
 theorem denseRange_toDualL2 : DenseRange (toDualL2 N Ω) :=
   denseRange_toDualOfL2 isFnInclusion_fnL
 
-/-- **The Gelfand triple `H^1_0(Ω) ⊂ L²(Ω) ⊂ H^{-1}(Ω)`** ([brezis2011functional] §9.4, "The Dual
-Space of `W_0^{1,p}(Ω)`", Notation): the inclusion `H^1_0(Ω) → L²(Ω)`
-(`SobolevMultiIndexZero.fnL`) and the inclusion `L²(Ω) → H^{-1}(Ω)`
-(`SobolevEuclideanZero.toDualL2`, `f ↦ (v ↦ ∫_Ω f v)`) are both injective with dense range —
-"these injections are continuous and dense". -/
+/-- **The Gelfand triple $H^1_0(\Omega) \subset L^2(\Omega) \subset H^{-1}(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$ be open. Then the inclusion $H^1_0(\Omega) \to L^2(\Omega)$ and
+the inclusion $L^2(\Omega) \to H^{-1}(\Omega)$, $f \mapsto (v \mapsto \int_\Omega f v)$, are
+both injective with dense range: "these injections are continuous and dense". This is the
+statement of §9.4 of [brezis2011functional], "The Dual Space of $W_0^{1,p}(\Omega)$", Notation.
+
+The first inclusion is `SobolevMultiIndexZero.fnL`, and the second is
+`SobolevEuclideanZero.toDualL2`. -/
 theorem gelfandTriple :
     Function.Injective (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
         1 2 Ω volume) ∧
@@ -3644,34 +4028,42 @@ end SobolevEuclideanZero
 
 end GelfandTriple
 
-/-! ### Remark 17, the punctured space: the capacity of a point
+/-!
+### Remark 17, the punctured space: the capacity of a point
 
-For `N ≥ 2` and `1 ≤ p ≤ N`, `W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})`. The cut-off near `0`
-is the average `η_n x = (n+1)⁻¹ ∑_{k ≤ n} η (3^k x)` of contractions of one cut-off `η`: the
-gradients of the summands live on disjoint shells, so `‖∇η_n‖_{L^N}^N ≤ C (n+1)^{1−N} → 0`, and
-Hölder's inequality gives `‖∇η_n‖_{L^p} → 0` for every `p ≤ N` — one construction for `p < N`
-and for the endpoint `p = N`, with no radial integration. -/
+For $N \ge 2$ and $1 \le p \le N$, $W_0^{1,p}(\mathbb{R}^N \setminus \{0\}) = W^{1,p}(\mathbb{R}^N
+\setminus \{0\})$. The cut-off near $0$ is the average $\eta_n(x) = (n+1)^{-1} \sum_{k \le n}
+\eta(3^k x)$ of contractions of one cut-off $\eta$. The gradients of the summands are supported in
+disjoint shells, so $\|\nabla \eta_n\|_{L^N}^N \le C (n+1)^{1-N} \to 0$, and Hölder's inequality
+gives $\|\nabla \eta_n\|_{L^p} \to 0$ for every $p \le N$. One construction covers $p < N$ and the
+endpoint $p = N$, with no radial integration.
+-/
 
 section PointCutoff
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The averaged cut-off at the origin**: for a cut-off `η` equal to `1` on `closedBall 0 1`
-and supported in `ball 0 2`, the average `η_n x = (n + 1)⁻¹ ∑_{k ≤ n} η (3^k x)` of its
-contractions. It is `1` on `closedBall 0 3^{-n}`, vanishes for `‖x‖ ≥ 2`, tends to `0` at every
-`x ≠ 0`, and — the point of the construction — the gradients `∇η (3^k x)` of the summands have
-disjoint supports (the shells `3^{-k} ≤ ‖x‖ < 2 · 3^{-k}`), so that `‖∇η_n‖_{L^d}^d ≤ C (n+1)^{1-d}`
-in dimension `d`: the capacity of a point is zero in `W^{1,p}` for `p ≤ d`. -/
+/-- The **averaged cut-off** at the origin: for a function $\eta$ on a real normed space $E$ and
+$n \in \mathbb{N}$,
+$$\eta_n(x) = \frac{1}{n+1} \sum_{k=0}^{n} \eta(3^k x).$$
+
+For a cut-off $\eta$ equal to $1$ on $\bar B(0, 1)$ and supported in $B(0, 2)$, the function
+$\eta_n$ is $1$ on $\bar B(0, 3^{-n})$, vanishes for $\|x\| \ge 2$, and tends to $0$ at every
+$x \neq 0$. The gradients $\nabla \eta(3^k x)$ of the summands have disjoint supports, the
+shells $3^{-k} \le \|x\| < 2 \cdot 3^{-k}$. Therefore
+$\|\nabla \eta_n\|_{L^d}^d \le C (n+1)^{1-d}$ in dimension $d$, and a point has zero capacity in
+$W^{1,p}$ for $p \le d$. -/
 def pointCutoff (η : E → ℝ) (n : ℕ) (x : E) : ℝ :=
   ((n : ℝ) + 1)⁻¹ * ∑ k ∈ Finset.range (n + 1), η ((3 : ℝ) ^ k • x)
 
 variable {η : E → ℝ}
 
-/-- The averaged cut-off is smooth. -/
+/-- If $\eta$ is smooth, the averaged cut-off $\eta_n$ is smooth. -/
 theorem contDiff_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) : ContDiff ℝ ∞ (pointCutoff η n) :=
   contDiff_const.mul (ContDiff.sum fun _ _ ↦ hη.comp (contDiff_id.const_smul _))
 
-/-- The averaged cut-off takes its values in `[0, 1]`. -/
+/-- If $\eta$ takes its values in $[0, 1]$, the averaged cut-off $\eta_n$ takes its values in
+$[0, 1]$. -/
 theorem pointCutoff_mem_Icc (hη01 : ∀ x, η x ∈ Icc (0 : ℝ) 1) (n : ℕ) (x : E) :
     pointCutoff η n x ∈ Icc (0 : ℝ) 1 := by
   have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
@@ -3681,7 +4073,7 @@ theorem pointCutoff_mem_Icc (hη01 : ∀ x, η x ∈ Icc (0 : ℝ) 1) (n : ℕ) 
       ≤ ∑ k ∈ Finset.range (n + 1), (1 : ℝ) := Finset.sum_le_sum fun k _ ↦ (hη01 _).2
     _ = (n : ℝ) + 1 := by simp
 
-/-- The averaged cut-off `η_n` is `1` on `closedBall 0 3^{-n}`. -/
+/-- If $\eta = 1$ on $\bar B(0, 1)$, then $\eta_n(x) = 1$ for $\|x\| \le 3^{-n}$. -/
 theorem pointCutoff_eq_one (hη1 : EqOn η 1 (closedBall 0 1)) (n : ℕ) {x : E}
     (hx : ‖x‖ ≤ ((3 : ℝ) ^ n)⁻¹) : pointCutoff η n x = 1 := by
   have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
@@ -3695,7 +4087,7 @@ theorem pointCutoff_eq_one (hη1 : EqOn η 1 (closedBall 0 1)) (n : ℕ) {x : E}
         rw [mul_inv_le_iff₀ (by positivity), one_mul]
         exact pow_le_pow_right₀ (by norm_num) hk'
 
-/-- The averaged cut-off vanishes for `‖x‖ ≥ 2`. -/
+/-- If $\operatorname{supp} \eta \subseteq B(0, 2)$, then $\eta_n(x) = 0$ for $\|x\| \ge 2$. -/
 theorem pointCutoff_eq_zero (hηs : tsupport η ⊆ ball 0 2) (n : ℕ) {x : E} (hx : 2 ≤ ‖x‖) :
     pointCutoff η n x = 0 := by
   rw [pointCutoff, Finset.sum_eq_zero fun k _ ↦ ?_, mul_zero]
@@ -3705,8 +4097,9 @@ theorem pointCutoff_eq_zero (hηs : tsupport η ⊆ ball 0 2) (n : ℕ) {x : E} 
   have : (1 : ℝ) ≤ 3 ^ k := one_le_pow₀ (by norm_num)
   nlinarith
 
-/-- The averaged cut-offs tend to `0` at every `x ≠ 0`: at most `log₃(2/‖x‖) + 1` of the
-`n + 1` summands are nonzero. -/
+/-- If $\operatorname{supp} \eta \subseteq B(0, 2)$ and $\eta$ takes its values in $[0, 1]$, then
+$\eta_n(x) \to 0$ as $n \to \infty$ for every $x \neq 0$. At most $\log_3(2/\|x\|) + 1$ of the
+$n + 1$ summands are nonzero. -/
 theorem tendsto_pointCutoff (hηs : tsupport η ⊆ ball 0 2) (hη01 : ∀ x, η x ∈ Icc (0 : ℝ) 1)
     {x : E} (hx : x ≠ 0) : Tendsto (fun n ↦ pointCutoff η n x) atTop (𝓝 0) := by
   classical
@@ -3738,7 +4131,9 @@ theorem tendsto_pointCutoff (hηs : tsupport η ⊆ ball 0 2) (hη01 : ∀ x, η
     (fun n ↦ (pointCutoff_mem_Icc hη01 n x).1) hle
   simpa [one_div] using tendsto_one_div_add_atTop_nhds_zero_nat.mul_const (K : ℝ)
 
-/-- The derivative of the averaged cut-off: `∇η_n x = (n + 1)⁻¹ ∑_{k ≤ n} 3^k ∇η (3^k x)`. -/
+/-- If $\eta$ is smooth, the averaged cut-off has the derivative
+$$D\eta_n(x) = \frac{1}{n+1} \sum_{k=0}^{n} 3^k \, D\eta(3^k x)$$
+at every $x$. -/
 theorem hasFDerivAt_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) (x : E) :
     HasFDerivAt (pointCutoff η n) (((n : ℝ) + 1)⁻¹ •
       ∑ k ∈ Finset.range (n + 1), (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x)) x := by
@@ -3747,13 +4142,15 @@ theorem hasFDerivAt_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) (x : E) :
     ((hasFDerivAt_id x).const_smul ((3 : ℝ) ^ k))
   rwa [ContinuousLinearMap.comp_smul, ContinuousLinearMap.comp_id] at h
 
-/-- The derivative of the averaged cut-off, as `fderiv`. -/
+/-- If $\eta$ is smooth, the derivative of the averaged cut-off is $D\eta_n(x) = (n+1)^{-1}
+\sum_{k=0}^{n} 3^k \, D\eta(3^k x)$. This is the form with `fderiv` of
+`hasFDerivAt_pointCutoff`. -/
 theorem fderiv_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) (x : E) :
     fderiv ℝ (pointCutoff η n) x = ((n : ℝ) + 1)⁻¹ •
       ∑ k ∈ Finset.range (n + 1), (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) :=
   (hasFDerivAt_pointCutoff hη n x).fderiv
 
-/-- The gradient of `η` vanishes on the open unit ball, where `η = 1`. -/
+/-- If $\eta = 1$ on $\bar B(0, 1)$, then $D\eta(y) = 0$ for $\|y\| < 1$. -/
 theorem fderiv_eq_zero_of_eqOn_one_closedBall_one (hη1 : EqOn η 1 (closedBall 0 1)) {y : E}
     (hy : ‖y‖ < 1) : fderiv ℝ η y = 0 := by
   have hev : η =ᶠ[𝓝 y] fun _ ↦ (1 : ℝ) :=
@@ -3767,7 +4164,9 @@ section PointCutoffNorm
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {η : E → ℝ}
 
-/-- The summand `3^k ∇η (3^k x)` of `∇η_n` vanishes off the shell `3^{-k} ≤ ‖x‖ < 2 · 3^{-k}`. -/
+/-- Let $\eta = 1$ on $\bar B(0, 1)$ with $\operatorname{supp} \eta \subseteq B(0, 2)$. If
+$3^k D\eta(3^k x) \neq 0$, then $3^{-k} \le \|x\| < 2 \cdot 3^{-k}$: the $k$-th summand of
+$D\eta_n$ vanishes outside this shell. -/
 theorem norm_mem_Ico_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 1))
     (hηs : tsupport η ⊆ ball 0 2) {k : ℕ} {x : E}
     (h : (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) ≠ 0) :
@@ -3784,7 +4183,9 @@ theorem norm_mem_Ico_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 
     exact h1
   · rwa [lt_mul_inv_iff₀ h3, mul_comm]
 
-/-- The shells of two distinct summands of `∇η_n` are disjoint. -/
+/-- Let $\eta = 1$ on $\bar B(0, 1)$ with $\operatorname{supp} \eta \subseteq B(0, 2)$. If
+$3^k D\eta(3^k x) \neq 0$ and $3^{k'} D\eta(3^{k'} x) \neq 0$, then $k = k'$: the shells of two
+distinct summands of $D\eta_n$ are disjoint. -/
 theorem eq_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 1))
     (hηs : tsupport η ⊆ ball 0 2) {k k' : ℕ} {x : E}
     (h : (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) ≠ 0)
@@ -3805,7 +4206,8 @@ theorem eq_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 1))
   · exact key hlt (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h').1
       (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h).2
 
-/-- For a finite family with at most one nonzero member, `‖∑ aᵢ‖ₑ^q ≤ ∑ ‖aᵢ‖ₑ^q`, `q > 0`. -/
+/-- Let $(a_i)_{i \in s}$ be a finite family in a normed group with at most one nonzero member, and
+let $q > 0$. Then $\|\sum_{i \in s} a_i\|^q \le \sum_{i \in s} \|a_i\|^q$, in `ℝ≥0∞`. -/
 theorem enorm_sum_rpow_le_sum_of_forall_eq {ι G : Type*} [NormedAddCommGroup G] {s : Finset ι}
     {a : ι → G} (h : ∀ i ∈ s, ∀ j ∈ s, a i ≠ 0 → a j ≠ 0 → i = j) {q : ℝ} (hq : 0 < q) :
     ‖∑ i ∈ s, a i‖ₑ ^ q ≤ ∑ i ∈ s, ‖a i‖ₑ ^ q := by
@@ -3822,10 +4224,15 @@ theorem enorm_sum_rpow_le_sum_of_forall_eq {ι G : Type*} [NormedAddCommGroup G]
 variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E}
   [μ.IsAddHaarMeasure]
 
-/-- **The `L^d` norm of the gradient of the averaged cut-off, `d = dim E`**:
-`∫ ‖∇η_n‖^d ≤ (n + 1) ((2 M)/(n + 1))^d |B(0, 1)|` when `‖∇η‖ ≤ M`, since the summands
-`3^k ∇η (3^k x)` of `(n + 1) ∇η_n` are bounded by `3^k M` and supported in the disjoint balls
-`B(0, 2 · 3^{-k})` of measure `(2 · 3^{-k})^d |B(0, 1)|`. -/
+/-- **The $L^d$ norm of the gradient of the averaged cut-off.** Let $E$ be a nontrivial
+finite-dimensional real normed space of dimension $d$ with an additive Haar measure $\mu$. Let
+$\eta$ be smooth with $\eta = 1$ on $\bar B(0, 1)$, $\operatorname{supp} \eta \subseteq B(0, 2)$
+and $\|D\eta\| \le M$. Then for every $n$,
+$$\int \|D\eta_n\|^d \, d\mu \le (n+1) \Big(\frac{2M}{n+1}\Big)^d \mu\big(B(0, 1)\big).$$
+
+The summands $3^k D\eta(3^k x)$ of $(n+1) D\eta_n$ are bounded by $3^k M$ and supported in the
+disjoint shells inside $B(0, 2 \cdot 3^{-k})$, which has measure
+$(2 \cdot 3^{-k})^d \mu(B(0, 1))$. -/
 theorem lintegral_enorm_fderiv_pointCutoff_pow_le [Nontrivial E] (hη : ContDiff ℝ ∞ η)
     (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
     (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (n : ℕ) :
@@ -3892,7 +4299,9 @@ theorem lintegral_enorm_fderiv_pointCutoff_pow_le [Nontrivial E] (hη : ContDiff
         push_cast
         ring
 
-/-- `‖∇η_n‖_{L^d} → 0` in dimension `d ≥ 2`. -/
+/-- Let $E$ have dimension $d \ge 2$, and let $\eta$ be smooth with $\eta = 1$ on $\bar B(0, 1)$,
+$\operatorname{supp} \eta \subseteq B(0, 2)$ and $\|D\eta\| \le M$. Then
+$\int \|D\eta_n\|^d \, d\mu \to 0$ as $n \to \infty$. -/
 theorem tendsto_lintegral_enorm_fderiv_pointCutoff_pow (hη : ContDiff ℝ ∞ η)
     (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
     (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (hd : 2 ≤ finrank ℝ E) :
@@ -3924,7 +4333,8 @@ theorem tendsto_lintegral_enorm_fderiv_pointCutoff_pow (hη : ContDiff ℝ ∞ �
     fun n ↦ lintegral_enorm_fderiv_pointCutoff_pow_le hη hη1 hηs hM n
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The gradient of the averaged cut-off is supported in `closedBall 0 2`. -/
+/-- If $\operatorname{supp} \eta \subseteq B(0, 2)$, then the derivative $D\eta_n$ of the averaged
+cut-off vanishes outside $\bar B(0, 2)$. -/
 theorem support_fderiv_pointCutoff_subset (hηs : tsupport η ⊆ ball 0 2) (n : ℕ) :
     Function.support (fderiv ℝ (pointCutoff η n)) ⊆ closedBall 0 2 := by
   refine (support_fderiv_subset (𝕜 := ℝ)).trans ?_
@@ -3933,10 +4343,13 @@ theorem support_fderiv_pointCutoff_subset (hηs : tsupport η ⊆ ball 0 2) (n :
   by_contra h
   exact hx (pointCutoff_eq_zero hηs n (not_lt.1 h))
 
-/-- **The `L^p` norm of the gradient of the averaged cut-off tends to `0`** for `1 ≤ p ≤ d`,
-`d = dim E ≥ 2`: the case `p = d` from `lintegral_enorm_fderiv_pointCutoff_pow_le`, the others by
-Hölder's inequality on `closedBall 0 2`, which carries the gradients. The capacity of a point is
-zero in `W^{1,p}` for `p ≤ d`. -/
+/-- **The $L^p$ norm of the gradient of the averaged cut-off tends to $0$.** Let $E$ have dimension
+$d \ge 2$, let $1 \le p \le d$, and let $\eta$ be smooth with $\eta = 1$ on $\bar B(0, 1)$,
+$\operatorname{supp} \eta \subseteq B(0, 2)$ and $\|D\eta\| \le M$. Then
+$\|D\eta_n\|_{L^p(\mu)} \to 0$. So a point has zero capacity in $W^{1,p}$ for $p \le d$.
+
+The case $p = d$ follows from `lintegral_enorm_fderiv_pointCutoff_pow_le`, and the other cases
+follow by Hölder's inequality on $\bar B(0, 2)$, which contains the supports of the gradients. -/
 theorem tendsto_eLpNorm_fderiv_pointCutoff (hη : ContDiff ℝ ∞ η)
     (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
     (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (hd : 2 ≤ finrank ℝ E) {p : ℝ≥0∞} (hp : 1 ≤ p)
@@ -3987,9 +4400,12 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
 namespace SobolevMultiIndex
 
 omit [FiniteDimensional ℝ E] [μ.IsAddHaarMeasure] in
-/-- Convergence in `W^{1,p}(Ω)` from the `L^p(Ω)` convergence of the functions and of the
-first-order weak derivatives: `SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`
-with the multi-indices of order at most one enumerated as `0` and the `e_i`. -/
+/-- Let $1 \le p \le \infty$ and let $u_n, u \in W^{1,p}(\Omega)$. If $u_n \to u$ in $L^p(\Omega)$
+and $\partial_i u_n \to \partial_i u$ in $L^p(\Omega)$ for every $i$, then $u_n \to u$ in
+$W^{1,p}(\Omega)$.
+
+This is `SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`, with the
+multi-indices of order at most one listed as $0$ and the $e_i$. -/
 theorem tendsto_of_tendsto_eLpNorm_fn_sub_of_forall_single {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {w : ℕ → SobolevMultiIndex F b 1 p Ω μ} {u : SobolevMultiIndex F b 1 p Ω μ}
     (h0 : Tendsto (fun n ↦ eLpNorm (fn (w n) - fn u) p (μ.restrict (Ω : Set E))) atTop (𝓝 0))
@@ -4001,12 +4417,16 @@ theorem tendsto_of_tendsto_eLpNorm_fn_sub_of_forall_single {F : Type*} [NormedAd
   · exact h0
   · exact hi i
 
-/-- **Lemma 9.5 without compactness at infinity**: an element `u` of `W^{1,p}(Ω)`, `1 ≤ p < ∞`,
-whose function vanishes almost everywhere on an open neighbourhood `U` of `Ωᶜ` lies in
-`W_0^{1,p}(Ω)`. The cut-offs `ζ_n u → u` (`SobolevMultiIndex.tendsto_cutoff_smul`) vanish almost
-everywhere outside the compact set `closedBall 0 (2(n+1)) ∖ U ⊆ Ω`, so lie in `W_0^{1,p}(Ω)` by
-Lemma 9.5 (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and `W_0^{1,p}(Ω)` is
-closed ([brezis2011functional] Lemma 9.5 and footnote 5 of §9.1). -/
+/-- **Lemma 9.5 without compactness at infinity.** Let $1 \le p < \infty$, let
+$u \in W^{1,p}(\Omega)$ be real-valued, and let $U$ be an open set that contains
+$E \setminus \Omega$. If the function of $u$ vanishes almost everywhere on $U \cap \Omega$, then
+$u \in W_0^{1,p}(\Omega)$. This combines Lemma 9.5 of [brezis2011functional] with footnote 5 of
+§9.1.
+
+The cut-offs $\zeta_n u \to u$ (`SobolevMultiIndex.tendsto_cutoff_smul`) vanish almost
+everywhere outside the compact set $\bar B(0, 2(n+1)) \setminus U \subseteq \Omega$. So they lie
+in $W_0^{1,p}(\Omega)$ by Lemma 9.5
+(`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and $W_0^{1,p}(\Omega)$ is closed. -/
 theorem mem_zero_of_ae_eq_zero_of_compl_subset (hp' : p ≠ ⊤) (u : SobolevMultiIndex ℝ b 1 p Ω μ)
     {U : Set E} (hU : IsOpen U) (hΩU : (Ω : Set E)ᶜ ⊆ U)
     (hu : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∈ U → fn u x = 0) :
@@ -4027,13 +4447,17 @@ theorem mem_zero_of_ae_eq_zero_of_compl_subset (hp' : p ≠ ⊤) (u : SobolevMul
       exact hxK ⟨mem_closedBall_zero_iff.2 (not_lt.1 hxb), h⟩
     rw [hx, hxU hxU', mul_zero]
 
-/-- **Bounded functions are dense in `W^{1,p}(Ω)`**, `1 ≤ p < ∞`: every `u ∈ W^{1,p}(Ω)` is the
-limit of elements with bounded functions. With the truncations
-`H_n(t) = t − (n+1) G(t/(n+1))` of `stepTruncation` — `C^1`, `H_n(t) = t` for `|t| ≤ n + 1`,
-`H_n(t) = 0` for `|t| ≥ 2(n+1)`, `|H_n'| ≤ 1 + M` — the composites `H_n ∘ u` lie in `W^{1,p}(Ω)`
-by Proposition 9.5 (`MemSobolevMultiIndex.contDiff_comp`), are bounded, and converge to `u` in
-`W^{1,p}(Ω)` by dominated convergence, their weak derivatives being `H_n'(u) ∂_i u`
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp`). -/
+/-- **Bounded functions are dense in $W^{1,p}(\Omega)$.** Let $1 \le p < \infty$ and let
+$u \in W^{1,p}(\Omega)$ be real-valued. Then there are $v_n \in W^{1,p}(\Omega)$ with
+$v_n \to u$ in $W^{1,p}(\Omega)$ such that the function of each $v_n$ is essentially bounded on
+$\Omega$.
+
+The proof uses the truncations $H_n(t) = t - (n+1) G(t/(n+1))$ built from `stepTruncation`. They
+are $C^1$, $H_n(t) = t$ for $|t| \le n + 1$, $H_n(t) = 0$ for $|t| \ge 2(n+1)$, and
+$|H_n'| \le 1 + M$. The composites $H_n \circ u$ lie in $W^{1,p}(\Omega)$ by Proposition 9.5
+(`MemSobolevMultiIndex.contDiff_comp`) and are bounded. Their weak derivatives are
+$H_n'(u) \partial_i u$ (`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp`), and they
+converge to $u$ in $W^{1,p}(\Omega)$ by dominated convergence. -/
 theorem exists_seq_tendsto_ae_abs_le (hp' : p ≠ ⊤) (u : SobolevMultiIndex ℝ b 1 p Ω μ) :
     ∃ v : ℕ → SobolevMultiIndex ℝ b 1 p Ω μ,
       (∀ n, ∃ M : ℝ, ∀ᵐ x ∂μ.restrict (Ω : Set E), |fn (v n) x| ≤ M) ∧
@@ -4125,13 +4549,18 @@ theorem exists_seq_tendsto_ae_abs_le (hp' : p ≠ ⊤) (u : SobolevMultiIndex �
       (eLpNorm_congr_ae ((hdU n).sub (Filter.EventuallyEq.refl _ _))).symm
 
 
-/-- **The capacity of a point is zero in `W^{1,p}`, `p ≤ dim E`**: a bounded element `u` of
-`W^{1,p}(Ω)`, `1 ≤ p ≤ d = dim E`, `d ≥ 2`, is the limit in `W^{1,p}(Ω)` of elements vanishing
-almost everywhere on a ball around `0`. The approximants are `(1 − η_n) u` with the averaged
-cut-offs `η_n = pointCutoff η n`, equal to `1` near `0`: `η_n u → 0` and `η_n ∂_i u → 0` in
-`L^p(Ω)` by dominated convergence (`η_n → 0` off `0`, a null set), and
-`‖u ∂_i η_n‖_p ≤ M ‖e_i‖ ‖∇η_n‖_p → 0` by `tendsto_eLpNorm_fderiv_pointCutoff` — this is where
-`p ≤ d` enters, through `‖∇η_n‖_{L^d}^d ≤ C (n+1)^{1-d}`. -/
+/-- **The capacity of a point is zero in $W^{1,p}$ for $p \le \dim E$.** Let $E$ have dimension
+$d \ge 2$, let $1 \le p \le d$, and let $u \in W^{1,p}(\Omega)$ be real-valued with $|u| \le M$
+almost everywhere on $\Omega$. Then there are $v_n \in W^{1,p}(\Omega)$ with $v_n \to u$ in
+$W^{1,p}(\Omega)$ such that, for each $n$, the function of $v_n$ vanishes almost everywhere on
+$\Omega \cap B(0, r)$ for some $r > 0$.
+
+The approximants are $(1 - \eta_n) u$, with the averaged cut-offs $\eta_n$ of `pointCutoff`,
+which equal $1$ near $0$. Then $\eta_n u \to 0$ and $\eta_n \partial_i u \to 0$ in $L^p(\Omega)$
+by dominated convergence, since $\eta_n \to 0$ outside the null set $\{0\}$. Further $\|u \,
+\partial_i \eta_n\|_p \le M \|e_i\| \|\nabla \eta_n\|_p \to 0$ by
+`tendsto_eLpNorm_fderiv_pointCutoff`. This is where $p \le d$ enters, through
+$\|\nabla \eta_n\|_{L^d}^d \le C (n+1)^{1-d}$. -/
 theorem exists_seq_tendsto_ae_eq_zero_ball (hp' : p ≠ ⊤) (hd : 2 ≤ finrank ℝ E)
     (hpd : p ≤ finrank ℝ E) (u : SobolevMultiIndex ℝ b 1 p Ω μ) {M : ℝ}
     (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), |fn u x| ≤ M) :
@@ -4268,15 +4697,19 @@ theorem exists_seq_tendsto_ae_eq_zero_ball (hp' : p ≠ ⊤) (hd : 2 ≤ finrank
 
 end SobolevMultiIndex
 
-/-- **Remark 17, the punctured space, predicate form**: on a finite-dimensional space `E` of
-dimension `d ≥ 2`, for `1 ≤ p ≤ d` and an open set `Ω` whose complement is contained in `{0}`
-(`Ω = E` or `Ω = E ∖ {0}`), `W_0^{1,p}(Ω) = W^{1,p}(Ω)`: a point has zero capacity. Bounded
-elements are dense (`SobolevMultiIndex.exists_seq_tendsto_ae_abs_le`), a bounded element is the
-limit of elements vanishing near `0` (`SobolevMultiIndex.exists_seq_tendsto_ae_eq_zero_ball`),
-those lie in `W_0^{1,p}(Ω)` by Lemma 9.5 in the form
-`SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset`, and `W_0^{1,p}(Ω)` is closed
-([brezis2011functional] Chapter 9, Remark 17: "if `Ω = ℝ^N ∖ {0}` and `N ≥ 2` one can show that
-`H_0^1(Ω) = H^1(Ω)`"). -/
+/-- **$W_0^{1,p}(\Omega) = W^{1,p}(\Omega)$ when $E \setminus \Omega \subseteq \{0\}$.** Let $E$ be
+a finite-dimensional real normed space of dimension $d \ge 2$, let $1 \le p \le d$, and let
+$\Omega \subseteq E$ be an open set whose complement is contained in $\{0\}$, that is
+$\Omega = E$ or $\Omega = E \setminus \{0\}$. Then $W_0^{1,p}(\Omega) = W^{1,p}(\Omega)$ for
+real-valued functions: a point has zero capacity. This generalizes the example of Remark 17 in
+Chapter 9 of [brezis2011functional]: "if $\Omega = \mathbb{R}^N \setminus \{0\}$ and $N \ge 2$
+one can show that $H_0^1(\Omega) = H^1(\Omega)$".
+
+Bounded elements are dense (`SobolevMultiIndex.exists_seq_tendsto_ae_abs_le`). A bounded element
+is the limit of elements that vanish near $0$
+(`SobolevMultiIndex.exists_seq_tendsto_ae_eq_zero_ball`). These lie in $W_0^{1,p}(\Omega)$ by
+Lemma 9.5 in the form `SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset`, and
+$W_0^{1,p}(\Omega)$ is closed. -/
 theorem SobolevMultiIndexZero.eq_top_of_compl_subset_singleton (hd : 2 ≤ finrank ℝ E)
     (hpd : p ≤ finrank ℝ E) (hΩ : (Ω : Set E)ᶜ ⊆ {0}) :
     SobolevMultiIndexZero ℝ b 1 p Ω μ = ⊤ := by
@@ -4291,12 +4724,14 @@ theorem SobolevMultiIndexZero.eq_top_of_compl_subset_singleton (hd : 2 ≤ finra
   exact SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset hp' (w m) isOpen_ball
     (hΩ.trans (singleton_subset_iff.2 (mem_ball_self hr))) hw
 
-/-- **Remark 17, the punctured space**: for `N ≥ 2` and `1 ≤ p ≤ N`,
-`W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})` — in the book, `H_0^1(ℝ^N ∖ {0}) = H^1(ℝ^N ∖ {0})`
-for `N ≥ 2` ([brezis2011functional] Chapter 9, Remark 17: "if `ℝ^N ∖ Ω` is sufficiently thin and
-`p < N`… one can show"; the endpoint `p = N` is included). The instance of
-`SobolevMultiIndexZero.eq_top_of_compl_subset_singleton`: a point has zero `W^{1,p}`-capacity for
-`p ≤ N`, by the averaged cut-offs `pointCutoff`. -/
+/-- **$W_0^{1,p}(\mathbb{R}^N \setminus \{0\}) = W^{1,p}(\mathbb{R}^N \setminus \{0\})$** for
+$N \ge 2$ and $1 \le p \le N$. This is the example of Remark 17 in Chapter 9 of
+[brezis2011functional], which states $H_0^1(\mathbb{R}^N \setminus \{0\}) = H^1(\mathbb{R}^N
+\setminus \{0\})$ for $N \ge 2$ ("if $\mathbb{R}^N \setminus \Omega$ is sufficiently thin and
+$p < N$ … one can show"). The endpoint $p = N$ is included.
+
+This is `SobolevMultiIndexZero.eq_top_of_compl_subset_singleton` on `SobolevEuclideanZero`. A
+point has zero $W^{1,p}$ capacity for $p \le N$, by the averaged cut-offs `pointCutoff`. -/
 theorem SobolevEuclideanZero.eq_top_of_compl_singleton {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} (hN : 2 ≤ N) (hp : p ≤ N)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin N))) = {0}ᶜ) : SobolevEuclideanZero N 1 p Ω = ⊤ :=
@@ -4306,14 +4741,19 @@ theorem SobolevEuclideanZero.eq_top_of_compl_singleton {N : ℕ}
 
 end PointCapacity
 
-/-! ### Density: identities checked on the test functions hold on `W_0^{k,p}(Ω)` -/
+/-! ### Density: identities checked on the test functions hold on $W_0^{k,p}(\Omega)$ -/
 
 section EqOn
 
-/-- **Two continuous maps on `W^{k,p}(Ω)` that agree on the test functions agree on
-`W_0^{k,p}(Ω)`**, the closure of the test functions. This is the density step of every "classical
-solution is a weak solution" argument: an identity between continuous functionals checked on
-`C_c^∞(Ω)` holds on `W_0^{1,p}(Ω)`. -/
+/-- **Two continuous maps on $W^{k,p}(\Omega)$ that agree on the test functions agree on
+$W_0^{k,p}(\Omega)$.** Let $X$ be a Hausdorff topological space, and let
+$f, g : W^{k,p}(\Omega) \to X$ be continuous. If $f = g$ on the elements whose function is a
+test function (`SobolevMultiIndex.testFunctions`), then $f = g$ on $W_0^{k,p}(\Omega)$, the
+closure of these elements.
+
+This is the density step of every argument that a classical solution is a weak solution: an
+identity between continuous functionals checked on $C_c^\infty(\Omega)$ holds on
+$W_0^{k,p}(\Omega)$. -/
 theorem SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions {E F : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
     [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι]
@@ -4327,19 +4767,22 @@ theorem SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions {E F : Type*}
 
 end EqOn
 
-/-! ### Footnote 39: a `W_0^{1,p}` function with vanishing gradient is zero -/
+/-! ### Footnote 39: a $W_0^{1,p}$ function with vanishing gradient is zero -/
 
 section Footnote39
 
 open SobolevMultiIndex
 
-/-- **Footnote 39 of [brezis2011functional] §9.7**: for `N ≥ 1`, `1 ≤ p < ∞` and any open
-`Ω ⊆ ℝ^N`, an element of `W_0^{1,p}(Ω)` whose partial derivatives all vanish is zero. The
-extension by zero `ū` lies in `W^{1,p}(ℝ^N)` with `∇ū = ext(∇u) = 0` (Proposition 9.18 (i) ⇒
-(iii), `SobolevEuclideanZero.extendZeroL`), so `ū` is almost everywhere constant on the connected
-`ℝ^N` (Remark 7, `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`), and a constant in
-`L^p(ℝ^N)`, `p < ∞`, is `0` (`MeasureTheory.memLp_const_iff`, the measure of `ℝ^N` being
-infinite for `N ≥ 1`; for `N = 0` the statement is false). -/
+/-- Let $N \ge 1$, let $1 \le p < \infty$, and let $\Omega \subseteq \mathbb{R}^N$ be open. If
+$u \in W_0^{1,p}(\Omega)$ has $\partial_i u = 0$ for every $i$, then $u = 0$. This is footnote
+39 of §9.7 of [brezis2011functional].
+
+For $N = 0$ the statement is false. The extension by zero $\bar u$ lies in
+$W^{1,p}(\mathbb{R}^N)$ with $\nabla \bar u = \overline{\nabla u} = 0$ (Proposition 9.18, (i) ⇒
+(iii), `SobolevEuclideanZero.extendZeroL`). So $\bar u$ is almost everywhere constant on the
+connected space $\mathbb{R}^N$ (Remark 7, `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`). A
+constant in $L^p(\mathbb{R}^N)$ with $p < \infty$ is $0$ (`MeasureTheory.memLp_const_iff`),
+because $\mathbb{R}^N$ has infinite measure for $N \ge 1$. -/
 theorem SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero {N : ℕ} (hN : N ≠ 0)
     {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤) {Ω : Opens (EuclideanSpace ℝ (Fin N))}
     (u : SobolevEuclideanZero N 1 p Ω)
@@ -4385,7 +4828,7 @@ theorem SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero {N : ℕ} (hN : N ≠ 
 
 end Footnote39
 
-/-! ### The positive part in the `H¹` norm, and functions squeezed between `0` and `H¹₀` -/
+/-! ### The positive part in the $H^1$ norm, and functions between $0$ and an element of $H^1_0$ -/
 
 section Sandwich
 
@@ -4393,8 +4836,13 @@ variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open SobolevMultiIndex
 
-/-- **The positive part is contractive in `H¹(Ω)`**: if `w ∈ H¹(Ω)` has function `ψ⁺` for
-`ψ ∈ H¹(Ω)`, then `‖w‖_{H¹} ≤ ‖ψ‖_{H¹}`, since `|ψ⁺| ≤ |ψ|` and `∂ᵢψ⁺ = 1_{ψ > 0} ∂ᵢψ`. -/
+/-- **The positive part is contractive in $H^1(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be
+open, and let $\psi, w \in H^1(\Omega)$ such that the function of $w$ equals
+$\psi^+ = \max(\psi, 0)$ almost everywhere on $\Omega$. Then
+$\|w\|_{H^1(\Omega)} \le \|\psi\|_{H^1(\Omega)}$.
+
+This holds because $|\psi^+| \le |\psi|$ and $\partial_i \psi^+ = \mathbf{1}_{\{\psi > 0\}}
+\partial_i \psi$. -/
 theorem SobolevEuclidean.norm_le_of_fn_ae_eq_posPart {N : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin N))} {ψ w : SobolevEuclidean N 1 2 Ω}
     (hw : fn w =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -4426,13 +4874,17 @@ theorem SobolevEuclidean.norm_le_of_fn_ae_eq_posPart {N : ℕ}
       (Finset.sum_le_sum fun i _ ↦ pow_le_pow_left₀ (norm_nonneg _) (hi i) 2)
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 hsq
 
-/-- **A function squeezed between `0` and an element of `H¹₀(Ω)` lies in `H¹₀(Ω)`**, on a `C¹`
-chart domain with bounded boundary: for `v ∈ H¹(Ω)` and `w ∈ H¹₀(Ω)` with `0 ≤ v ≤ w` almost
-everywhere on `Ω`, `v ∈ H¹₀(Ω)`. The extension by zero of `v` is `min (ṽ⁺, w̄)`, where `ṽ` is a
-Sobolev extension of `v` to `ℝ^N` (Theorem 9.7, `SobolevEuclidean.exists_extensionL`) and `w̄` the
-extension by zero of `w` (`SobolevEuclideanZero.extendZeroL`), both in `H¹(ℝ^N)`, so it lies in
-`H¹(ℝ^N)` (`MemSobolevMultiIndex.posPart`), and Proposition 9.18 (iii) ⇒ (i)
-(`SobolevEuclideanZero.mem_of_indicator_memSobolev`) concludes. -/
+/-- **A function between $0$ and an element of $H^1_0(\Omega)$ lies in $H^1_0(\Omega)$.** Let
+$\Omega \subseteq \mathbb{R}^N$, $N = d + 1$, be an open set of class $C^1$ with bounded
+boundary. Let $v \in H^1(\Omega)$ and $w \in H^1_0(\Omega)$ with $0 \le v \le w$ almost
+everywhere on $\Omega$. Then $v \in H^1_0(\Omega)$.
+
+The hypothesis on $\Omega$ is `IsContDiffChartDomain 1`. The extension by zero of $v$ is
+$\min(\tilde v^+, \bar w)$, where $\tilde v$ is a Sobolev extension of $v$ to $\mathbb{R}^N$
+(Theorem 9.7, `SobolevEuclidean.exists_extensionL`) and $\bar w$ is the extension by zero of $w$
+(`SobolevEuclideanZero.extendZeroL`). Both lie in $H^1(\mathbb{R}^N)$, so the extension by zero
+of $v$ lies in $H^1(\mathbb{R}^N)$ (`MemSobolevMultiIndex.posPart`). Proposition 9.18, (iii) ⇒
+(i) (`SobolevEuclideanZero.mem_of_indicator_memSobolev`), concludes. -/
 theorem SobolevEuclideanZero.mem_of_nonneg_of_le
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -4485,7 +4937,13 @@ theorem SobolevEuclideanZero.mem_of_nonneg_of_le
     (by norm_num) hΩ hmem
   rwa [SobolevMultiIndex.ext_of_fn_ae_eq hvv'.symm]
 
-/-- **The decomposition `Φ = Φ⁺ − Φ⁻` in `H¹₀(Ω)`**, with `‖Φ^±‖₂ ≤ ‖Φ‖₂`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open and let $\Phi \in H^1_0(\Omega)$. Then there are
+$P, Q \in H^1_0(\Omega)$ with $\Phi = P - Q$, $P \ge 0$ and $Q \ge 0$ almost everywhere on
+$\Omega$, $\|P\|_{L^2(\Omega)} \le \|\Phi\|_{L^2(\Omega)}$ and
+$\|Q\|_{L^2(\Omega)} \le \|\Phi\|_{L^2(\Omega)}$.
+
+The proof takes $P = \Phi^+$ and $Q = \Phi^- = (-\Phi)^+$, which lie in $H^1_0(\Omega)$ by
+`SobolevEuclideanZero.posPart_mem`. -/
 theorem SobolevEuclideanZero.exists_eq_sub_of_nonneg {Φ : SobolevEuclidean (d + 1) 1 2 Ω}
     (hΦ : Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
     ∃ P ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, ∃ Q ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,

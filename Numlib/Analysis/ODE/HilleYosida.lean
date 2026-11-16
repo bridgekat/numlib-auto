@@ -15,65 +15,96 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # The Hille–Yosida theorem on a real Hilbert space
 
-The evolution problem `u' + A u = 0` on `[0, ∞)`, `u(0) = u₀`, for a maximal monotone operator
-`A` on a real Hilbert space `H`: its contraction semigroup `S_A(t)`, existence and uniqueness of
-the solution for `u₀ ∈ D(A)` (the Hille–Yosida theorem, [brezis2011functional] Theorem 7.4), the
-regularity `u ∈ C^{k-j}([0, ∞); D(A^j))` for `u₀ ∈ D(A^k)` (Theorem 7.5), and the self-adjoint
-case, in which every `u₀ ∈ H` gives a solution that is smooth for `t > 0` (Theorem 7.7). Builds
-on `Numlib/Analysis/InnerProductSpace/MaximalMonotone` (`IsMaximalMonotone`, `resolvent`,
-`yosida`, `PowDomain`, `powPart`).
+Let $H$ be a real Hilbert space and $A : D(A) \subseteq H \to H$ a maximal monotone operator. This
+file studies the evolution problem
+$$u' + Au = 0 \quad \text{on } [0, \infty), \qquad u(0) = u_0,$$
+following Chapter 7, §7.2–§7.4 of [brezis2011functional]. It constructs the contraction semigroup
+$S_A(t)$, and proves existence and uniqueness of a solution $u \in C^1([0, \infty); H)$ for
+$u_0 \in D(A)$, with $\|u(t)\| \le \|u_0\|$ and $\|u'(t)\| \le \|Au_0\|$ (the **Hille–Yosida
+theorem**, Theorem 7.4). For $u_0 \in D(A^k)$ the solution is in $C^{k-j}([0, \infty); D(A^j))$ for
+$j \le k$ (Theorem 7.5). If $A$ is moreover self-adjoint, every $u_0 \in H$ gives a solution that is
+continuous on $[0, \infty)$, satisfies $\|Au(t)\| \le \|u_0\| / t$, and is in
+$C^k((0, \infty); D(A^l))$ for all $k, l$ (Theorem 7.7).
 
-## Scalars
+With the Yosida approximation $A_\lambda$ of `LinearPMap.yosida`, the approximate problem
+$u_\lambda' + A_\lambda u_\lambda = 0$ has the solution $u_\lambda(t) = e^{-tA_\lambda} u_0$, and
+the semigroup is the limit $S_A(t) u_0 = \lim_{\lambda \to 0^+} e^{-tA_\lambda} u_0$. The shift of
+Remark 6 of Chapter 7 says that $u$ solves $u' + Au + cu = 0$ if and only if $e^{ct} u$ solves
+$u' + Au = 0$. It extends to the regularity classes: $C^n(s; D((A + cI)^j))$ is $C^n(s; D(A^j))$, so
+Theorem 7.5 for a maximal monotone $A + cI$ can be read on $A$. The wave operator of §10.3 of
+[brezis2011functional], for which $A + I$ is maximal monotone, needs exactly this.
 
-The module is over `ℝ`. Time derivatives of `u : ℝ → H` need `NormedSpace ℝ H`, and the energy
-identity `d/dt ‖u‖² = 2 ⟪u', u⟫` used in every step (`HasDerivAt.norm_sq`) is stated for real
-inner product spaces; each of the graph spaces `D(A^k)` would need the real structure too. The
-proofs are generic in the real part; a complex version is a restatement, not a new proof.
+## Main definitions
 
-## The solution concept
+* `LinearPMap.IsSolutionOn`: $u$ solves $u' + Au = 0$ on a set of times $s$, with $u(0) = u_0$.
+* `LinearPMap.expYosida`: the solution operator $e^{-tA_\lambda}$ of the approximate problem.
+* `LinearPMap.semigroup`: the contraction semigroup $S_A(t) = \lim_{\lambda \to 0^+}
+  e^{-tA_\lambda}$.
+* `LinearPMap.ContDiffOnPowDomain`: the class $C^n(s; D(A^j))$.
+* `LinearPMap.semigroupLift`: the element of $D(A^\ell)$ over $S_A(t) u_0$.
 
-`LinearPMap.IsSolutionOn A u₀ s u` says `u 0 = u₀`, `u t ∈ D(A)` for `t ∈ s`, and
-`HasDerivWithinAt u (-A (u t)) s t` for `t ∈ s` (one-sided at `t = 0` when `s = Ici 0`). The
-book's `C¹([0, ∞); H)` is `ContDiffOn ℝ 1 u (Ici 0)`; `u ∈ C^n(s; D(A^j))` is
-`LinearPMap.ContDiffOnPowDomain A n j u s`, "`u` lifts on `s` to a `C^n` map into the Hilbert
-space `D(A^j)`", read componentwise by `contDiffOnPowDomain_iff`.
+## Main results
 
-## The proof route
+* `LinearPMap.IsMonotone.eqOn_of_isSolutionOn`: uniqueness of the solution for a monotone $A$.
+* `LinearPMap.IsMaximalMonotone.exists_isSolutionOn`: Theorem 7.4 (Hille–Yosida), existence for
+  $u_0 \in D(A)$ with the two estimates.
+* `LinearPMap.IsMaximalMonotone.semigroup_add`: the semigroup law $S_A(s + t) = S_A(s) S_A(t)$.
+* `LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup`: Theorem 7.5,
+  $u \in C^{k-j}([0, \infty); D(A^j))$ for $u_0 \in D(A^k)$.
+* `LinearPMap.exists_isSolutionOn_Ioi_of_isSelfAdjoint`: Theorem 7.7, the self-adjoint case.
+* `LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup`: Theorem 7.5 for a shifted
+  operator $A + cI$.
+* `LinearPMap.norm_applyL_semigroupLift_le`: the bound $\|A^j S_A(t) u_0\| \le (j/t)^j \|u_0\|$ in
+  the self-adjoint case.
+* `LinearPMap.IsSolutionOn.energy_Ioi`: the energy identity $\frac12 \|u(T)\|^2 + \int_0^T \langle
+  Au, u \rangle = \frac12 \|u_0\|^2$.
 
-The approximate problem `u_λ' + A_λ u_λ = 0` is solved in closed form by `u_λ(t) = exp(-t A_λ) u₀`
-with Mathlib's `NormedSpace.exp` (`LinearPMap.expYosida`), not by the Cauchy–Lipschitz theorem.
-Two consequences shorten the book's six steps: the derivatives `u_λ' = -exp(-t A_λ) A_λ u₀`
-converge as soon as `exp(-t A_λ) w → S(t) w` for every `w` and `A_λ u₀ → A u₀`, so the book's
-Step 4, Step 6 and Lemma 7.2 are not needed and existence holds for every `u₀ ∈ D(A)` at once;
-and the limit `S(t) u₀ = lim exp(-t A_λ) u₀` exists for every `u₀ ∈ H`, so the contraction
-semigroup `LinearPMap.semigroup A t : H →L[ℝ] H` is defined first (as a total, junk-valued
-function like `resolvent`) and the solution of the evolution problem is `t ↦ S(t) u₀`.
+## Proof outline
 
-The steps that survive: Step 1, uniqueness by monotonicity
-(`IsMonotone.norm_sub_le_of_isSolutionOn`); Step 2, Lemma 7.1 for a bounded monotone operator
-(`antitoneOn_norm_exp_neg_smul_apply`); Step 3, the Cauchy estimate
-`‖u_λ(t) - u_μ(t)‖² ≤ ‖w₀ - w₁‖² + 4 (λ + μ) t M²` (`norm_expYosida_sub_expYosida_le`) and the
-limit (`tendsto_expYosida_semigroup`, uniform on bounded intervals); Step 5, the derivative of
-the uniform limit (`hasDerivWithinAt_Icc_of_tendstoUniformlyOn`, a closed-interval version of
-Mathlib's `hasDerivAt_of_tendstoUniformlyOn`, proved through the fundamental theorem of
-calculus) and the closed graph (`hasDerivWithinAt_semigroup_apply`). Theorems 7.5 and 7.7 are
-inductions over the level `j` applying the theory to the part `A.powPart j` on the Hilbert space
-`A.PowDomain j`; every statement about `semigroup` is therefore made for an arbitrary real Hilbert
-space. Theorem 7.7's smoothing estimate `‖A S(t) u₀‖ ≤ ‖u₀‖ / t` comes from a Lyapunov function
-(`norm_exp_neg_smul_apply_le_div`), the book's integrations by parts replaced by one derivative.
+The approximate problem is solved in closed form, $u_\lambda(t) = e^{-tA_\lambda} u_0$, with
+Mathlib's `NormedSpace.exp`, not by the Cauchy–Lipschitz theorem. This shortens the six steps of the
+book in two ways. First, the derivatives $u_\lambda' = -e^{-tA_\lambda} A_\lambda u_0$ converge as
+soon as $e^{-tA_\lambda} w \to S_A(t) w$ for every $w$ and $A_\lambda u_0 \to A u_0$. So Step 4,
+Step 6 and Lemma 7.2 of the book are not needed, and existence holds for every $u_0 \in D(A)$ at
+once. Second, the limit $S_A(t) u_0 = \lim e^{-tA_\lambda} u_0$ exists for every $u_0 \in H$. So the
+semigroup is defined first, and the solution of the evolution problem is $t \mapsto S_A(t) u_0$.
 
-## The shift `A ↦ A + c I`
+The steps of the book that remain are these. Step 1 is uniqueness by monotonicity. Step 2 is Lemma
+7.1 for a bounded monotone operator. Step 3 is the Cauchy estimate $\|u_\lambda(t) - u_\mu(t)\|^2
+\le \|w_0 - w_1\|^2 + 4(\lambda + \mu) t M^2$ and the limit, uniform on bounded intervals. Step 5 is
+the derivative of the uniform limit on a closed interval, through the fundamental theorem of
+calculus, and the closed graph of $A$. Theorems 7.5 and 7.7 are inductions over the level $j$: they
+apply the theory to the part of $A$ in the Hilbert space $D(A^j)$. The smoothing estimate
+$\|A S_A(t) u_0\| \le \|u_0\| / t$ of Theorem 7.7 comes from a Lyapunov function, which replaces the
+integrations by parts of the book by one derivative.
 
-Remark 6 of chapter 7 (`isSolutionOn_smul_id_vadd_iff`: `u` solves `u' + A u + c u = 0` iff
-`e^{ct} u` solves `u' + A u = 0`) extends to the regularity classes: `C^n(s; D((A + cI)^j))`
-is `C^n(s; D(A^j))` (`IsAddSmulId.contDiffOnPowDomain`, through the transport of
-`Numlib/Analysis/InnerProductSpace/MaximalMonotone`), and Theorem 7.5 for a maximal monotone
-`A + cI` reads on `A` (`IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup`): the wave
-operator of [brezis2011functional] §10.3, whose `A + I` is maximal monotone, needs exactly this.
+## Implementation notes
 
-## References
-
-[brezis2011functional], Chapter 7, §7.2–§7.4.
+* The file is over $\mathbb{R}$. Time derivatives of $u : \mathbb{R} \to H$ need `NormedSpace ℝ H`,
+  and the energy identity $\frac{d}{dt} \|u\|^2 = 2 \langle u', u \rangle$ used in every step
+  (`HasDerivAt.norm_sq`) is stated for real inner product spaces. Each graph space $D(A^k)$ would
+  need the real structure too. The proofs use only the real part of the inner product, so a complex
+  version is a restatement, not a new proof.
+* The operator $A$ is a partial linear map `H →ₗ.[ℝ] H`. The notions `LinearPMap.IsMonotone`,
+  `LinearPMap.IsMaximalMonotone`, `LinearPMap.resolvent`, `LinearPMap.yosida`,
+  `LinearPMap.PowDomain` and `LinearPMap.powPart` come from
+  `Numlib.Analysis.InnerProductSpace.MaximalMonotone`.
+* The parameter $\lambda > 0$ of the Yosida approximation is `c` in the Lean code. The declarations
+  write $A_c$ for `A.yosida c`, $J_c$ for `A.resolvent c`, and $u_c(t) = e^{-tA_c} u_0$ for
+  `A.expYosida c t u₀`.
+* `LinearPMap.IsSolutionOn A u₀ s u` says that $u(0) = u_0$, $u(t) \in D(A)$ for $t \in s$, and the
+  derivative of $u$ within $s$ at $t \in s$ is $-Au(t)$. It is one-sided at $t = 0$ when
+  $s = [0, \infty)$. The class $C^1([0, \infty); H)$ of the book is `ContDiffOn ℝ 1 u (Ici 0)`, a
+  separate conjunct in the theorems.
+* The space $D(A^j)$ is `A.PowDomain j`, the tuples $x = (x_0, x_1, \dots, x_j)$ with
+  $x_{i+1} = A x_i$, with the graph norm. The coordinate $x_i = A^i x_0$ is
+  `LinearPMap.PowDomain.applyL A j i x`.
+* The semigroup is a total function of $(A, t)$ with a junk value, like `LinearPMap.resolvent`.
+  Every statement about `LinearPMap.semigroup` is made for an arbitrary real Hilbert space, so that
+  it applies to the part of $A$ in $D(A^j)$.
+* The self-adjoint results of Theorem 7.7 assume that $A$ is symmetric, `A.IsFormalAdjoint A`, and
+  only the final theorem `LinearPMap.exists_isSolutionOn_Ioi_of_isSelfAdjoint` uses the hypothesis
+  `IsSelfAdjoint A` of the book.
 -/
 
 open Filter Topology Set Metric WithLp
@@ -88,33 +119,38 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 /-! ### Solutions of the evolution equation -/
 
 variable (A : H →ₗ.[ℝ] H) in
-/-- `u` **solves the evolution problem** `u' + A u = 0` on the set of times `s`, with the initial
-value `u 0 = u₀` ([brezis2011functional] §7.2, problem (6)): `u t ∈ D(A)` for `t ∈ s`, and the
-derivative of `u` within `s` at `t ∈ s` is `-A (u t)` (one-sided at `t = 0` when `s = Ici 0`).
-The `C¹` requirement of the book is a separate conjunct in the theorems. -/
+/-- A curve $u : \mathbb{R} \to H$ **solves the evolution problem** $u' + Au = 0$ on the set of
+times $s \subseteq \mathbb{R}$, with the initial value $u_0$, if $u(0) = u_0$, $u(t) \in D(A)$
+for every $t \in s$, and the derivative of $u$ within $s$ at every $t \in s$ is $-Au(t)$. This
+is problem (6) of §7.2 of [brezis2011functional].
+
+For $s = [0, \infty)$ the derivative at $t = 0$ is one-sided. The condition $u(0) = u_0$ is
+asked also when $0 \notin s$. The requirement $u \in C^1$ of the book is a separate conjunct in
+the theorems. -/
 structure IsSolutionOn (u₀ : H) (s : Set ℝ) (u : ℝ → H) : Prop where
-  /-- The initial condition. -/
+  /-- The initial condition $u(0) = u_0$. -/
   apply_zero : u 0 = u₀
-  /-- The solution takes its values in `D(A)`. -/
+  /-- The solution takes its values in $D(A)$ at the times in $s$. -/
   mem_domain : ∀ t ∈ s, u t ∈ A.domain
-  /-- The equation `u' = -A u` within `s`. -/
+  /-- At every $t \in s$, the derivative of $u$ within $s$ is $-Au(t)$. -/
   hasDerivWithinAt : ∀ t (ht : t ∈ s), HasDerivWithinAt u (-A ⟨u t, mem_domain t ht⟩) s t
 
 variable {A : H →ₗ.[ℝ] H} {u₀ v₀ : H} {s : Set ℝ} {u v : ℝ → H}
 
-/-- A solution is continuous on its set of times. -/
+/-- A solution of $u' + Au = 0$ on $s$ is continuous on $s$. -/
 theorem IsSolutionOn.continuousOn (h : A.IsSolutionOn u₀ s u) : ContinuousOn u s :=
   fun t ht => (h.hasDerivWithinAt t ht).continuousWithinAt
 
-/-- A solution on `s` is a solution on every subset of `s`. -/
+/-- A solution of $u' + Au = 0$ on $s$ is a solution on every subset of $s$. -/
 theorem IsSolutionOn.mono (h : A.IsSolutionOn u₀ s u) {t : Set ℝ} (hts : t ⊆ s) :
     A.IsSolutionOn u₀ t u where
   apply_zero := h.apply_zero
   mem_domain x hx := h.mem_domain x (hts hx)
   hasDerivWithinAt x hx := (h.hasDerivWithinAt x (hts hx)).mono hts
 
-/-- **Time shift**: if `u` solves the problem on `[0, ∞)` and `a ≥ 0`, then `t ↦ u (t + a)` solves
-it with the initial value `u a` ([brezis2011functional] Chapter 7, Remark 5). -/
+/-- **Time shift.** If $u$ solves $u' + Au = 0$ on $[0, \infty)$ and $a \ge 0$, then
+$t \mapsto u(t + a)$ solves it on $[0, \infty)$ with the initial value $u(a)$. This is Remark 5
+of Chapter 7 of [brezis2011functional]. -/
 theorem IsSolutionOn.comp_add (h : A.IsSolutionOn u₀ (Ici 0) u) {a : ℝ} (ha : 0 ≤ a) :
     A.IsSolutionOn (u a) (Ici 0) fun t => u (t + a) where
   apply_zero := by simp
@@ -126,10 +162,11 @@ theorem IsSolutionOn.comp_add (h : A.IsSolutionOn u₀ (Ici 0) u) {a : ℝ} (ha 
     have := h1.scomp t h2 fun x hx => add_nonneg hx ha
     simpa [Function.comp_def] using this
 
-/-- **Remark 6, the forward direction**: if `u` solves `u' + A u + c u = 0` then
-`v(t) = e^{c t} u(t)` solves `v' + A v = 0`, with the same initial value
-([brezis2011functional] Chapter 7, Remark 6). The operator `A + c I` is
-`(c • LinearMap.id) +ᵥ A`, with domain `D(A)`. -/
+/-- **Remark 6** of Chapter 7 of [brezis2011functional], forward direction. Let $c \in \mathbb{R}$.
+If $u$ solves $u' + Au + cu = 0$ on $s$ with $u(0) = u_0$, then $v(t) = e^{ct} u(t)$ solves
+$v' + Av = 0$ on $s$ with $v(0) = u_0$.
+
+The operator $A + cI$ is `(c • LinearMap.id) +ᵥ A`, with the domain $D(A)$. -/
 theorem IsSolutionOn.exp_smul {c : ℝ}
     (h : ((c • LinearMap.id : H →ₗ[ℝ] H) +ᵥ A).IsSolutionOn u₀ s u) :
     A.IsSolutionOn u₀ s fun t => Real.exp (c * t) • u t := by
@@ -143,8 +180,9 @@ theorem IsSolutionOn.exp_smul {c : ℝ}
   rw [map_smul, vadd_apply, LinearMap.smul_apply, LinearMap.id_apply]
   module
 
-/-- **Remark 6**: `u` solves `u' + A u + c u = 0` iff `v(t) = e^{c t} u(t)` solves `v' + A v = 0`,
-with the same initial value ([brezis2011functional] Chapter 7, Remark 6). -/
+/-- **Remark 6** of Chapter 7 of [brezis2011functional]. Let $c \in \mathbb{R}$. A curve $u$ solves
+$u' + Au + cu = 0$ on $s$ with $u(0) = u_0$ if and only if $v(t) = e^{ct} u(t)$ solves
+$v' + Av = 0$ on $s$ with $v(0) = u_0$. -/
 theorem isSolutionOn_smul_id_vadd_iff {c : ℝ} :
     ((c • LinearMap.id : H →ₗ[ℝ] H) +ᵥ A).IsSolutionOn u₀ s u ↔
       A.IsSolutionOn u₀ s fun t => Real.exp (c * t) • u t := by
@@ -159,10 +197,14 @@ theorem isSolutionOn_smul_id_vadd_iff {c : ℝ} :
 
 /-! ### Step 1: uniqueness by monotonicity -/
 
-/-- **Step 1 of the proof of the Hille–Yosida theorem, in its quantitative form**, for solutions
-on `(0, ∞)` that are continuous on `[0, ∞)`: for a monotone `A`, `t ↦ ‖u t - v t‖` is antitone on
-`[0, ∞)`, since `½ d/dt ‖u - v‖² = -⟪A (u - v), u - v⟫ ≤ 0` on `(0, ∞)`
-([brezis2011functional], proof of Theorem 7.4, Step 1, and proof of Theorem 7.7, uniqueness). -/
+/-- **Step 1 of the proof of the Hille–Yosida theorem, quantitative form, on $(0, \infty)$.** Let
+$A$ be monotone, and let $u$ and $v$ solve $u' + Au = 0$ on $(0, \infty)$ with the initial
+values $u_0$ and $v_0$, and be continuous on $[0, \infty)$. Then $t \mapsto \|u(t) - v(t)\|$ is
+nonincreasing on $[0, \infty)$.
+
+The reason is $\frac12 \frac{d}{dt} \|u - v\|^2 = -\langle A(u - v), u - v \rangle \le 0$ on
+$(0, \infty)$. This is Step 1 of the proof of Theorem 7.4 and the uniqueness part of the proof
+of Theorem 7.7 of [brezis2011functional]. -/
 theorem IsMonotone.antitoneOn_norm_sub_of_isSolutionOn_Ioi (hA : A.IsMonotone)
     (hu : A.IsSolutionOn u₀ (Ioi 0) u) (hv : A.IsSolutionOn v₀ (Ioi 0) v)
     (hu' : ContinuousOn u (Ici 0)) (hv' : ContinuousOn v (Ici 0)) :
@@ -185,8 +227,9 @@ theorem IsMonotone.antitoneOn_norm_sub_of_isSolutionOn_Ioi (hA : A.IsMonotone)
   intro a ha b hb hab
   exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 (hφ ha hb hab)
 
-/-- **Step 1, the contraction estimate on `(0, ∞)`**: `‖u t - v t‖ ≤ ‖u₀ - v₀‖` for `t ≥ 0`, for
-two solutions on `(0, ∞)` continuous on `[0, ∞)` of a monotone `A`. -/
+/-- **The contraction estimate on $(0, \infty)$.** Let $A$ be monotone, and let $u$ and $v$ solve
+$u' + Au = 0$ on $(0, \infty)$ with the initial values $u_0$ and $v_0$, and be continuous on
+$[0, \infty)$. Then $\|u(t) - v(t)\| \le \|u_0 - v_0\|$ for every $t \ge 0$. -/
 theorem IsMonotone.norm_sub_le_of_isSolutionOn_Ioi (hA : A.IsMonotone)
     (hu : A.IsSolutionOn u₀ (Ioi 0) u) (hv : A.IsSolutionOn v₀ (Ioi 0) v)
     (hu' : ContinuousOn u (Ici 0)) (hv' : ContinuousOn v (Ici 0)) {t : ℝ} (ht : 0 ≤ t) :
@@ -195,25 +238,28 @@ theorem IsMonotone.norm_sub_le_of_isSolutionOn_Ioi (hA : A.IsMonotone)
   simp only [hu.apply_zero, hv.apply_zero] at this
   exact this
 
-/-- **Step 1 of the proof of the Hille–Yosida theorem**: for a monotone `A` and two solutions on
-`[0, ∞)`, `t ↦ ‖u t - v t‖` is antitone on `[0, ∞)` and `‖u t - v t‖ ≤ ‖u₀ - v₀‖`
-([brezis2011functional], proof of Theorem 7.4, Step 1). -/
+/-- **Step 1 of the proof of the Hille–Yosida theorem.** Let $A$ be monotone, and let $u$ and $v$
+solve $u' + Au = 0$ on $[0, \infty)$ with the initial values $u_0$ and $v_0$. Then
+$\|u(t) - v(t)\| \le \|u_0 - v_0\|$ for every $t \ge 0$. This is Step 1 of the proof of Theorem
+7.4 of [brezis2011functional]. -/
 theorem IsMonotone.norm_sub_le_of_isSolutionOn (hA : A.IsMonotone)
     (hu : A.IsSolutionOn u₀ (Ici 0) u) (hv : A.IsSolutionOn v₀ (Ici 0) v) {t : ℝ} (ht : 0 ≤ t) :
     ‖u t - v t‖ ≤ ‖u₀ - v₀‖ :=
   hA.norm_sub_le_of_isSolutionOn_Ioi (hu.mono Ioi_subset_Ici_self) (hv.mono Ioi_subset_Ici_self)
     hu.continuousOn hv.continuousOn ht
 
-/-- **Uniqueness in the Hille–Yosida theorem**: two solutions on `[0, ∞)` with the same initial
-value agree on `[0, ∞)`; monotonicity alone suffices ([brezis2011functional] Theorem 7.4). -/
+/-- **Uniqueness in the Hille–Yosida theorem.** Let $A$ be monotone. Two solutions of $u' + Au = 0$
+on $[0, \infty)$ with the same initial value agree on $[0, \infty)$. This is the uniqueness part
+of Theorem 7.4 of [brezis2011functional]; monotonicity alone suffices. -/
 theorem IsMonotone.eqOn_of_isSolutionOn (hA : A.IsMonotone) (hu : A.IsSolutionOn u₀ (Ici 0) u)
     (hv : A.IsSolutionOn u₀ (Ici 0) v) : EqOn u v (Ici 0) := fun t ht => by
   have := hA.norm_sub_le_of_isSolutionOn hu hv ht
   rw [sub_self, norm_zero] at this
   exact sub_eq_zero.1 (norm_le_zero_iff.1 this)
 
-/-- **Uniqueness in Theorem 7.7**: two solutions on `(0, ∞)`, continuous on `[0, ∞)`, with the
-same initial value agree on `[0, ∞)` ([brezis2011functional], proof of Theorem 7.7). -/
+/-- **Uniqueness in Theorem 7.7** of [brezis2011functional]. Let $A$ be monotone. Two solutions of
+$u' + Au = 0$ on $(0, \infty)$ with the same initial value that are continuous on $[0, \infty)$
+agree on $[0, \infty)$. -/
 theorem IsMonotone.eqOn_of_isSolutionOn_Ioi (hA : A.IsMonotone)
     (hu : A.IsSolutionOn u₀ (Ioi 0) u) (hv : A.IsSolutionOn u₀ (Ioi 0) v)
     (hu' : ContinuousOn u (Ici 0)) (hv' : ContinuousOn v (Ici 0)) : EqOn u v (Ici 0) :=
@@ -232,7 +278,8 @@ open NormedSpace
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- `t ↦ exp(-t B) w` has derivative `-B (exp(-t B) w)`: it solves `w' + B w = 0`. -/
+/-- Let $E$ be a real Banach space, $B : E \to E$ a bounded operator and $w \in E$. Then
+$t \mapsto e^{-tB} w$ has the derivative $-B e^{-tB} w$ at every $t$: it solves $w' + Bw = 0$. -/
 theorem hasDerivAt_exp_neg_smul_apply (B : E →L[ℝ] E) (w : E) (t : ℝ) :
     HasDerivAt (fun t : ℝ => exp ((-t) • B) w) (-(B (exp ((-t) • B) w))) t := by
   have h1 : HasDerivAt (fun t : ℝ => exp ((-t) • B)) ((-B) * exp ((-t) • B)) t := by
@@ -242,28 +289,34 @@ theorem hasDerivAt_exp_neg_smul_apply (B : E →L[ℝ] E) (w : E) (t : ℝ) :
   simpa using h3
 
 omit [CompleteSpace E] in
-/-- `exp(-t B)` commutes with `B`. -/
+/-- For a bounded operator $B$ on a real normed space, $e^{-tB}$ commutes with $B$:
+$B e^{-tB} w = e^{-tB} B w$. -/
 theorem exp_neg_smul_apply_comm (B : E →L[ℝ] E) (w : E) (t : ℝ) :
     B (exp ((-t) • B) w) = exp ((-t) • B) (B w) := by
   have h : Commute B (exp ((-t) • B)) := ((Commute.refl B).smul_right (-t)).exp_right
   exact DFunLike.congr_fun h w
 
 omit [CompleteSpace E] in
-/-- `exp(-0 B) = 1`. -/
+/-- For a bounded operator $B$ on a real normed space, $e^{-0 \cdot B} w = w$. -/
 theorem exp_neg_smul_zero_apply (B : E →L[ℝ] E) (w : E) : exp ((-(0 : ℝ)) • B) w = w := by
   simp [exp_zero]
 
-/-- `t ↦ exp(-t B) w` is continuous. -/
+/-- Let $E$ be a real Banach space and $B : E \to E$ a bounded operator. For every $w \in E$, the
+curve $t \mapsto e^{-tB} w$ is continuous. -/
 theorem continuous_exp_neg_smul_apply (B : E →L[ℝ] E) (w : E) :
     Continuous fun t : ℝ => exp ((-t) • B) w :=
   continuous_iff_continuousAt.2 fun t => (hasDerivAt_exp_neg_smul_apply B w t).continuousAt
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-- **Lemma 7.1** for a bounded monotone operator: if `0 ≤ ⟪B v, v⟫` for all `v`, then
-`t ↦ ‖exp(-t B) w‖` is antitone on `[0, ∞)`, because `½ d/dt ‖exp(-t B) w‖² = -⟪B u, u⟫ ≤ 0`
-([brezis2011functional] Lemma 7.1; the book's second clause, about `‖w'(t)‖`, is this lemma
-applied to `w' = exp(-t B) (-B w)`). -/
+/-- **Lemma 7.1** of [brezis2011functional] for a bounded monotone operator. Let $H$ be a real
+Hilbert space and $B : H \to H$ a bounded operator with $\langle Bv, v \rangle \ge 0$ for all
+$v$. Then for every $w \in H$, the function $t \mapsto \|e^{-tB} w\|$ is nonincreasing on
+$[0, \infty)$.
+
+The reason is $\frac12 \frac{d}{dt} \|e^{-tB} w\|^2 = -\langle Bu, u \rangle \le 0$ with
+$u = e^{-tB} w$. The second clause of the lemma in the book, about $\|w'(t)\|$, is this lemma
+applied to $w' = e^{-tB}(-Bw)$. -/
 theorem antitoneOn_norm_exp_neg_smul_apply (B : H →L[ℝ] H) (hB : ∀ v, 0 ≤ ⟪B v, v⟫_ℝ) (w : H) :
     AntitoneOn (fun t : ℝ => ‖exp ((-t) • B) w‖) (Ici 0) := by
   have key : ∀ t : ℝ, HasDerivAt (fun t : ℝ => ‖exp ((-t) • B) w‖ ^ 2)
@@ -278,14 +331,17 @@ theorem antitoneOn_norm_exp_neg_smul_apply (B : H →L[ℝ] H) (hB : ∀ v, 0 �
   intro a ha b hb hab
   exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 (hφ ha hb hab)
 
-/-- For a bounded monotone `B` and `t ≥ 0`, `‖exp(-t B) w‖ ≤ ‖w‖`. -/
+/-- Let $H$ be a real Hilbert space and $B : H \to H$ a bounded operator with
+$\langle Bv, v \rangle \ge 0$ for all $v$. Then $\|e^{-tB} w\| \le \|w\|$ for every $w \in H$
+and $t \ge 0$. -/
 theorem norm_exp_neg_smul_apply_le (B : H →L[ℝ] H) (hB : ∀ v, 0 ≤ ⟪B v, v⟫_ℝ) (w : H) {t : ℝ}
     (ht : 0 ≤ t) : ‖exp ((-t) • B) w‖ ≤ ‖w‖ := by
   have := antitoneOn_norm_exp_neg_smul_apply B hB w self_mem_Ici ht ht
   simp only [exp_neg_smul_zero_apply] at this
   exact this
 
-/-- For a bounded monotone `B` and `t ≥ 0`, `‖exp(-t B)‖ ≤ 1`. -/
+/-- Let $H$ be a real Hilbert space and $B : H \to H$ a bounded operator with
+$\langle Bv, v \rangle \ge 0$ for all $v$. Then $\|e^{-tB}\| \le 1$ for every $t \ge 0$. -/
 theorem norm_exp_neg_smul_le_one (B : H →L[ℝ] H) (hB : ∀ v, 0 ≤ ⟪B v, v⟫_ℝ) {t : ℝ}
     (ht : 0 ≤ t) : ‖exp ((-t) • B)‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun w => by
@@ -299,74 +355,92 @@ namespace LinearPMap
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 variable {A : H →ₗ.[ℝ] H}
 
-/-! ### The approximate problem: `u_λ(t) = exp(-t A_λ) u₀` -/
+/-! ### The approximate problem $u_\lambda(t) = e^{-tA_\lambda} u_0$ -/
 
 variable (A) in
-/-- The solution operator `exp(-t A_c)` of the approximate problem `u' + A_c u = 0`
-([brezis2011functional] §7.2, problem (7)): `u_c(t) = A.expYosida c t u₀`. -/
+/-- The solution operator $e^{-tA_c}$ of the approximate problem $u' + A_c u = 0$, for
+$c, t \in \mathbb{R}$, where $A_c$ is the Yosida approximation `LinearPMap.yosida A c`. The
+solution with the initial value $u_0$ is $u_c(t) = e^{-tA_c} u_0$. This is problem (7) of §7.2
+of [brezis2011functional]. -/
 def expYosida (c t : ℝ) : H →L[ℝ] H :=
   NormedSpace.exp ((-t) • A.yosida c)
 
 variable [CompleteSpace H]
 
-/-- `t ↦ u_c(t) w` solves `u' + A_c u = 0`. -/
+/-- Let $H$ be complete. For every $c \in \mathbb{R}$ and $w \in H$, the curve
+$t \mapsto e^{-tA_c} w$ has the derivative $-A_c e^{-tA_c} w$ at every $t$: it solves
+$u' + A_c u = 0$. -/
 theorem hasDerivAt_expYosida_apply (c : ℝ) (w : H) (t : ℝ) :
     HasDerivAt (fun t => A.expYosida c t w) (-(A.yosida c (A.expYosida c t w))) t :=
   hasDerivAt_exp_neg_smul_apply _ w t
 
 omit [CompleteSpace H] in
-/-- `u_c(0) = I`. -/
+/-- For every $c \in \mathbb{R}$, $e^{-0 \cdot A_c}$ is the identity. -/
 theorem expYosida_zero (c : ℝ) : A.expYosida c 0 = 1 := by
   simp [expYosida, NormedSpace.exp_zero]
 
 omit [CompleteSpace H] in
-/-- `A_c` commutes with `u_c(t)`. -/
+/-- The Yosida approximation $A_c$ commutes with $e^{-tA_c}$: $A_c e^{-tA_c} w = e^{-tA_c} A_c w$.
+-/
 theorem yosida_expYosida_comm (c t : ℝ) (w : H) :
     A.yosida c (A.expYosida c t w) = A.expYosida c t (A.yosida c w) :=
   exp_neg_smul_apply_comm _ w t
 
-/-- `t ↦ u_c(t) w` is continuous. -/
+/-- Let $H$ be complete. For every $c \in \mathbb{R}$ and $w \in H$, the curve
+$t \mapsto e^{-tA_c} w$ is continuous. -/
 theorem continuous_expYosida_apply (c : ℝ) (w : H) : Continuous fun t => A.expYosida c t w :=
   continuous_exp_neg_smul_apply _ w
 
-/-- The Yosida approximation of a maximal monotone operator is a bounded monotone operator, in
-the real form used by the exponential lemmas. -/
+/-- Let $H$ be complete and $A$ maximal monotone. For $c > 0$, the Yosida approximation is monotone:
+$\langle A_c v, v \rangle \ge 0$ for every $v \in H$. -/
 theorem IsMaximalMonotone.inner_yosida_nonneg (hA : A.IsMaximalMonotone) {c : ℝ} (hc : 0 < c)
     (v : H) : 0 ≤ ⟪A.yosida c v, v⟫_ℝ := by
   simpa using hA.re_inner_yosida_nonneg hc v
 
-/-- **Estimate (8) of Step 2**: `‖u_c(t) w‖ ≤ ‖w‖` for `t ≥ 0` — Lemma 7.1 for `B = A_c`,
-monotone by Proposition 7.2 (e) ([brezis2011functional], proof of Theorem 7.4, Step 2). -/
+/-- **Estimate (8)** of Step 2 of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be
+complete, $A$ maximal monotone and $c > 0$. Then $\|e^{-tA_c} w\| \le \|w\|$ for every $t \ge 0$
+and $w \in H$.
+
+This is Lemma 7.1 for $B = A_c$, which is monotone by Proposition 7.2 (e). -/
 theorem IsMaximalMonotone.norm_expYosida_apply_le (hA : A.IsMaximalMonotone) {c : ℝ} (hc : 0 < c)
     {t : ℝ} (ht : 0 ≤ t) (w : H) : ‖A.expYosida c t w‖ ≤ ‖w‖ :=
   norm_exp_neg_smul_apply_le _ (hA.inner_yosida_nonneg hc) w ht
 
-/-- `t ↦ ‖u_c(t) w‖` is antitone on `[0, ∞)` ([brezis2011functional] Lemma 7.1). -/
+/-- Let $H$ be complete, $A$ maximal monotone and $c > 0$. For every $w \in H$, the function
+$t \mapsto \|e^{-tA_c} w\|$ is nonincreasing on $[0, \infty)$. This is Lemma 7.1 of
+[brezis2011functional] for $A_c$. -/
 theorem IsMaximalMonotone.antitoneOn_norm_expYosida_apply (hA : A.IsMaximalMonotone) {c : ℝ}
     (hc : 0 < c) (w : H) : AntitoneOn (fun t => ‖A.expYosida c t w‖) (Ici 0) :=
   antitoneOn_norm_exp_neg_smul_apply _ (hA.inner_yosida_nonneg hc) w
 
-/-- **Estimate (9) of Step 2**: `‖A_c u_c(t) w‖ ≤ ‖A_c w‖` for `t ≥ 0`, i.e. `‖u_c'(t)‖` is bounded
-by its value at `0` ([brezis2011functional], proof of Theorem 7.4, Step 2). -/
+/-- **Estimate (9)** of Step 2 of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be
+complete, $A$ maximal monotone and $c > 0$. Then $\|A_c e^{-tA_c} w\| \le \|A_c w\|$ for every
+$t \ge 0$ and $w \in H$, that is, $\|u_c'(t)\|$ is at most its value at $0$. -/
 theorem IsMaximalMonotone.norm_yosida_expYosida_apply_le (hA : A.IsMaximalMonotone) {c : ℝ}
     (hc : 0 < c) {t : ℝ} (ht : 0 ≤ t) (w : H) :
     ‖A.yosida c (A.expYosida c t w)‖ ≤ ‖A.yosida c w‖ := by
   rw [yosida_expYosida_comm]
   exact hA.norm_expYosida_apply_le hc ht _
 
-/-- **Estimate (9) of Step 2 on the domain**: `‖u_c'(t)‖ = ‖A_c u_c(t) u₀‖ ≤ ‖A u₀‖` for
-`u₀ ∈ D(A)`, by Proposition 7.2 (b) ([brezis2011functional], proof of Theorem 7.4, (9)). -/
+/-- **Estimate (9)** of the proof of Theorem 7.4 of [brezis2011functional], on the domain. Let $H$
+be complete, $A$ maximal monotone and $c > 0$. For $u_0 \in D(A)$ and $t \ge 0$,
+$$\|u_c'(t)\| = \|A_c e^{-tA_c} u_0\| \le \|A u_0\|.$$
+
+The proof uses Proposition 7.2 (b), $\|A_c u_0\| \le \|A u_0\|$. -/
 theorem IsMaximalMonotone.norm_yosida_expYosida_apply_le_norm_apply (hA : A.IsMaximalMonotone)
     {c : ℝ} (hc : 0 < c) {t : ℝ} (ht : 0 ≤ t) (u₀ : A.domain) :
     ‖A.yosida c (A.expYosida c t u₀)‖ ≤ ‖A u₀‖ :=
   (hA.norm_yosida_expYosida_apply_le hc ht u₀).trans (hA.norm_yosida_apply_le_norm_apply hc u₀)
 
-/-- **Step 3, the Cauchy estimate (13)**, for two data so that it also serves the derivatives:
-if `‖A_c w₀‖ ≤ M` and `‖A_d w₁‖ ≤ M`, then for `t ≥ 0`
-`‖u_c(t) w₀ - u_d(t) w₁‖² ≤ ‖w₀ - w₁‖² + 4 (c + d) t M²`. The function `φ = ‖u_c - u_d‖²` has
-derivative `-2 ⟪A_c u_c - A_d u_d, u_c - u_d⟫ ≤ -2 ⟪A_c u_c - A_d u_d, c A_c u_c - d A_d u_d⟫`
-by the inequality (12), which is at most `4 (c + d) M²` by (9)
-([brezis2011functional], proof of Theorem 7.4, Step 3). -/
+/-- **The Cauchy estimate (13)** of Step 3 of the proof of Theorem 7.4 of [brezis2011functional],
+for two initial values. Let $H$ be complete, $A$ maximal monotone, $c, d > 0$, $t \ge 0$ and
+$w_0, w_1 \in H$. If $\|A_c w_0\| \le M$ and $\|A_d w_1\| \le M$, then
+$$\|e^{-tA_c} w_0 - e^{-tA_d} w_1\|^2 \le \|w_0 - w_1\|^2 + 4(c + d) t M^2.$$
+
+With two initial values the estimate also serves the derivatives. Proof idea:
+$\varphi = \|u_c - u_d\|^2$ has the derivative $-2 \langle A_c u_c - A_d u_d, u_c - u_d
+\rangle$. By the inequality (12) this is at most $-2 \langle A_c u_c - A_d u_d, c A_c u_c - d
+A_d u_d \rangle$, which is at most $4(c + d) M^2$ by (9). -/
 theorem IsMaximalMonotone.norm_expYosida_sub_expYosida_le (hA : A.IsMaximalMonotone) {c d : ℝ}
     (hc : 0 < c) (hd : 0 < d) {t : ℝ} (ht : 0 ≤ t) {w₀ w₁ : H} {M : ℝ}
     (h₀ : ‖A.yosida c w₀‖ ≤ M) (h₁ : ‖A.yosida d w₁‖ ≤ M) :
@@ -414,10 +488,11 @@ theorem IsMaximalMonotone.norm_expYosida_sub_expYosida_le (hA : A.IsMaximalMonot
   rw [hφ0] at this
   linarith
 
-/-! ### The semigroup `S_A(t) = lim exp(-t A_λ)` -/
+/-! ### The semigroup $S_A(t) = \lim_{\lambda \to 0^+} e^{-tA_\lambda}$ -/
 
-/-- **The Cauchy estimate on the domain, in `ε`–`δ` form**: for `v₀ ∈ D(A)` and `t ≥ 0`, the
-family `u_c(t) v₀` is Cauchy as `c → 0⁺`. -/
+/-- **The Cauchy estimate on the domain, in $\varepsilon$–$\delta$ form.** Let $H$ be complete and
+$A$ maximal monotone. For $v_0 \in D(A)$, $t \ge 0$ and $\varepsilon > 0$, there is $\delta > 0$
+such that $\|e^{-tA_c} v_0 - e^{-tA_d} v_0\| < \varepsilon$ for all $c, d \in (0, \delta)$. -/
 theorem IsMaximalMonotone.exists_forall_norm_expYosida_sub_lt (hA : A.IsMaximalMonotone)
     {t : ℝ} (ht : 0 ≤ t) (v₀ : A.domain) {ε : ℝ} (hε : 0 < ε) :
     ∃ δ > 0, ∀ c d : ℝ, 0 < c → c < δ → 0 < d → d < δ →
@@ -441,9 +516,11 @@ theorem IsMaximalMonotone.exists_forall_norm_expYosida_sub_lt (hA : A.IsMaximalM
   rw [this] at key
   nlinarith [key, sq_nonneg ε]
 
-/-- **The family `u_c(t) u₀` is Cauchy as `c → 0⁺`, for every `u₀ ∈ H`**: by the Cauchy
-estimate on the dense domain and `‖u_c(t)‖ ≤ 1` ([brezis2011functional], proof of Theorem 7.4,
-Step 3, and Chapter 7, Remark 4 (b)). -/
+/-- Let $H$ be complete and $A$ maximal monotone. For every $u_0 \in H$ and $t \ge 0$, the family
+$e^{-tA_c} u_0$ is Cauchy as $c \to 0^+$.
+
+The proof combines the Cauchy estimate on the dense domain with $\|e^{-tA_c}\| \le 1$. This is
+Step 3 of the proof of Theorem 7.4 and Remark 4 (b) of Chapter 7 of [brezis2011functional]. -/
 theorem IsMaximalMonotone.cauchy_map_expYosida (hA : A.IsMaximalMonotone) {t : ℝ} (ht : 0 ≤ t)
     (u₀ : H) : Cauchy (map (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0)) := by
   rw [cauchy_map_iff', Metric.uniformity_basis_dist.tendsto_right_iff]
@@ -478,19 +555,21 @@ theorem IsMaximalMonotone.cauchy_map_expYosida (hA : A.IsMaximalMonotone) {t : �
 
 variable (A) in
 open scoped Classical in
-/-- **The contraction semigroup `S_A(t)`** generated by `-A` ([brezis2011functional] Chapter 7,
-Remark 5 and Remark 4 (b)): the limit `S_A(t) u₀ = lim_{c → 0⁺} exp(-t A_c) u₀`, as a total
-function of `(A, t)` by the junk-value pattern of `resolvent` — some bounded `S` with
-`exp(-t A_c) u₀ → S u₀` for every `u₀` when one exists (it is then unique), and `0` otherwise.
-No completeness is assumed in the definition, so that `(A.powPart j).semigroup` on `D(A^j)` is
-well-formed before completeness is supplied; the properties are stated under
-`hA : A.IsMaximalMonotone` and `0 ≤ t`. -/
+/-- **The contraction semigroup** $S_A(t)$ generated by $-A$: the limit
+$$S_A(t) u_0 = \lim_{c \to 0^+} e^{-tA_c} u_0.$$
+This is Remark 5 and Remark 4 (b) of Chapter 7 of [brezis2011functional].
+
+The definition is a total function of $(A, t)$ with a junk value, like `LinearPMap.resolvent`.
+If there is a bounded operator $S$ with $e^{-tA_c} u_0 \to S u_0$ for every $u_0$, it is that
+operator (it is then unique); otherwise it is $0$. The definition assumes no completeness, so
+that the semigroup of the part `A.powPart j` on $D(A^j)$ is well formed before completeness is
+supplied. The properties are stated under `A.IsMaximalMonotone` and $t \ge 0$. -/
 def semigroup (t : ℝ) : H →L[ℝ] H :=
   if h : ∃ S : H →L[ℝ] H, ∀ u₀, Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 (S u₀))
   then h.choose else 0
 
-/-- The limit `lim_{c → 0⁺} exp(-t A_c) u₀` exists for every `u₀` and defines a bounded operator
-of norm at most `1`. -/
+/-- Let $H$ be complete, $A$ maximal monotone and $t \ge 0$. There is a bounded operator $S$ on $H$
+with $e^{-tA_c} u_0 \to S u_0$ as $c \to 0^+$ for every $u_0 \in H$. -/
 theorem IsMaximalMonotone.exists_semigroup (hA : A.IsMaximalMonotone) {t : ℝ} (ht : 0 ≤ t) :
     ∃ S : H →L[ℝ] H, ∀ u₀, Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 (S u₀)) := by
   have hlim : ∀ u₀ : H, ∃ L : H, Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 L) :=
@@ -508,8 +587,9 @@ theorem IsMaximalMonotone.exists_semigroup (hA : A.IsMaximalMonotone) {t : ℝ} 
   filter_upwards [self_mem_nhdsWithin] with c hc
   exact hA.norm_expYosida_apply_le hc ht u₀
 
-/-- **The specification of the semigroup** ([brezis2011functional] Chapter 7, Remark 4 (b)):
-for `t ≥ 0` and every `u₀ ∈ H`, `exp(-t A_c) u₀ → S_A(t) u₀` as `c → 0⁺`. -/
+/-- **The defining property of the semigroup.** Let $H$ be complete, $A$ maximal monotone and
+$t \ge 0$. For every $u_0 \in H$, $e^{-tA_c} u_0 \to S_A(t) u_0$ as $c \to 0^+$. This is Remark
+4 (b) of Chapter 7 of [brezis2011functional]. -/
 theorem IsMaximalMonotone.tendsto_expYosida_semigroup (hA : A.IsMaximalMonotone) {t : ℝ}
     (ht : 0 ≤ t) (u₀ : H) :
     Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 (A.semigroup t u₀)) := by
@@ -518,32 +598,36 @@ theorem IsMaximalMonotone.tendsto_expYosida_semigroup (hA : A.IsMaximalMonotone)
   rw [dite_eq_left h]
   exact h.choose_spec u₀
 
-/-- **Remark 5 (a), pointwise**: `‖S_A(t) u₀‖ ≤ ‖u₀‖` for `t ≥ 0`. -/
+/-- **Remark 5 (a)** of Chapter 7 of [brezis2011functional], pointwise. Let $H$ be complete and $A$
+maximal monotone. Then $\|S_A(t) u_0\| \le \|u_0\|$ for every $t \ge 0$ and $u_0 \in H$. -/
 theorem IsMaximalMonotone.norm_semigroup_apply_le (hA : A.IsMaximalMonotone) {t : ℝ}
     (ht : 0 ≤ t) (u₀ : H) : ‖A.semigroup t u₀‖ ≤ ‖u₀‖ := by
   refine le_of_tendsto (hA.tendsto_expYosida_semigroup ht u₀).norm ?_
   filter_upwards [self_mem_nhdsWithin] with c hc
   exact hA.norm_expYosida_apply_le hc ht u₀
 
-/-- **Remark 5 (a)**: `S_A(t)` is a contraction, `‖S_A(t)‖ ≤ 1` for `t ≥ 0`
-([brezis2011functional] Chapter 7, Remark 5 (a)); this is the estimate `‖u(t)‖ ≤ ‖u₀‖` of
-Theorem 7.4. -/
+/-- **Remark 5 (a)** of Chapter 7 of [brezis2011functional]. Let $H$ be complete and $A$ maximal
+monotone. Then $S_A(t)$ is a contraction, $\|S_A(t)\| \le 1$, for every $t \ge 0$. This is the
+estimate $\|u(t)\| \le \|u_0\|$ of Theorem 7.4. -/
 theorem IsMaximalMonotone.norm_semigroup_le_one (hA : A.IsMaximalMonotone) {t : ℝ} (ht : 0 ≤ t) :
     ‖A.semigroup t‖ ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun u₀ => by
     rw [one_mul]
     exact hA.norm_semigroup_apply_le ht u₀
 
-/-- **Remark 5 (b), second clause**: `S_A(0) = I` ([brezis2011functional] Chapter 7,
-Remark 5 (b)). -/
+/-- **Remark 5 (b)** of Chapter 7 of [brezis2011functional], second clause. Let $H$ be complete and
+$A$ maximal monotone. Then $S_A(0) = I$. -/
 theorem IsMaximalMonotone.semigroup_zero (hA : A.IsMaximalMonotone) : A.semigroup 0 = 1 := by
   ext u₀
   refine tendsto_nhds_unique (hA.tendsto_expYosida_semigroup le_rfl u₀) ?_
   simp only [expYosida_zero, one_apply_eq_self]
   exact tendsto_const_nhds
 
-/-- `t ↦ ‖S_A(t) w‖` is antitone on `[0, ∞)`, as a pointwise limit of the antitone functions
-`t ↦ ‖exp(-t A_c) w‖` ([brezis2011functional] Lemma 7.1, in the limit). -/
+/-- Let $H$ be complete and $A$ maximal monotone. For every $w \in H$, the function
+$t \mapsto \|S_A(t) w\|$ is nonincreasing on $[0, \infty)$.
+
+It is a pointwise limit of the nonincreasing functions $t \mapsto \|e^{-tA_c} w\|$ (Lemma 7.1 of
+[brezis2011functional] in the limit). -/
 theorem IsMaximalMonotone.antitoneOn_norm_semigroup_apply (hA : A.IsMaximalMonotone) (w : H) :
     AntitoneOn (fun t => ‖A.semigroup t w‖) (Ici 0) := by
   intro a ha b hb hab
@@ -552,9 +636,11 @@ theorem IsMaximalMonotone.antitoneOn_norm_semigroup_apply (hA : A.IsMaximalMonot
   filter_upwards [self_mem_nhdsWithin] with c hc
   exact hA.antitoneOn_norm_expYosida_apply hc w ha hb hab
 
-/-- **Estimate (13') of Step 3**: for `u₀ ∈ D(A)`, `c > 0` and `t ≥ 0`,
-`‖u_c(t) u₀ - S_A(t) u₀‖ ≤ 2 √(c t) ‖A u₀‖` — let `d → 0⁺` in the Cauchy estimate (13)
-([brezis2011functional], proof of Theorem 7.4, Step 3). -/
+/-- **Estimate (13')** of Step 3 of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be
+complete, $A$ maximal monotone and $c > 0$. For $u_0 \in D(A)$ and $t \ge 0$,
+$$\|e^{-tA_c} u_0 - S_A(t) u_0\| \le 2 \sqrt{ct} \, \|A u_0\|.$$
+
+The proof lets $d \to 0^+$ in the Cauchy estimate (13). -/
 theorem IsMaximalMonotone.norm_expYosida_sub_semigroup_le (hA : A.IsMaximalMonotone) {c : ℝ}
     (hc : 0 < c) {t : ℝ} (ht : 0 ≤ t) (u₀ : A.domain) :
     ‖A.expYosida c t u₀ - A.semigroup t u₀‖ ≤ 2 * Real.sqrt (c * t) * ‖A u₀‖ := by
@@ -576,10 +662,12 @@ theorem IsMaximalMonotone.norm_expYosida_sub_semigroup_le (hA : A.IsMaximalMonot
   rw [← sq_le_sq₀ (norm_nonneg _) (by positivity), h4]
   exact hsq
 
-/-- **Step 3, uniform convergence on bounded intervals**: for every `w ∈ H` and `T ≥ 0`,
-`exp(-t A_c) w → S_A(t) w` uniformly on `[0, T]` as `c → 0⁺`; on `D(A)` by (13'), in general
-by density and the contraction property ([brezis2011functional], proof of Theorem 7.4,
-Step 3). -/
+/-- **Uniform convergence on bounded intervals**, Step 3 of the proof of Theorem 7.4 of
+[brezis2011functional]. Let $H$ be complete and $A$ maximal monotone. For every $w \in H$ and
+$T \in \mathbb{R}$, $e^{-tA_c} w \to S_A(t) w$ uniformly in $t \in [0, T]$ as $c \to 0^+$.
+
+On $D(A)$ this follows from (13'), and in general from the density of $D(A)$ and the contraction
+property. -/
 theorem IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup (hA : A.IsMaximalMonotone)
     (w : H) {T : ℝ} :
     TendstoUniformlyOn (fun (c : ℝ) t => A.expYosida c t w) (fun t => A.semigroup t w)
@@ -618,9 +706,11 @@ theorem IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup (hA : A.IsMaxim
         gcongr
     _ = ε := by ring
 
-/-- **The semigroup is strongly continuous on `[0, ∞)`**: `t ↦ S_A(t) w` is continuous on
-`[0, ∞)`, as a locally uniform limit of the continuous `t ↦ exp(-t A_c) w`
-([brezis2011functional], proof of Theorem 7.4, Step 3, "`u ∈ C([0, ∞); H)`"). -/
+/-- **The semigroup is strongly continuous on $[0, \infty)$.** Let $H$ be complete and $A$ maximal
+monotone. For every $w \in H$, the curve $t \mapsto S_A(t) w$ is continuous on $[0, \infty)$.
+
+It is a locally uniform limit of the continuous curves $t \mapsto e^{-tA_c} w$. This is the
+claim $u \in C([0, \infty); H)$ of Step 3 of the proof of Theorem 7.4 of [brezis2011functional]. -/
 theorem IsMaximalMonotone.continuousOn_semigroup_apply (hA : A.IsMaximalMonotone) (w : H) :
     ContinuousOn (fun t => A.semigroup t w) (Ici 0) := by
   intro t ht
@@ -633,19 +723,24 @@ theorem IsMaximalMonotone.continuousOn_semigroup_apply (hA : A.IsMaximalMonotone
     exact inter_mem_nhdsWithin _ (Iic_mem_nhds (by linarith))
   exact (h1 t ⟨ht', by linarith⟩).mono_of_mem_nhdsWithin hmem
 
-/-- **Remark 5 (c)**: `S_A(t) w → w` as `t → 0⁺` ([brezis2011functional] Chapter 7,
-Remark 5 (c)). -/
+/-- **Remark 5 (c)** of Chapter 7 of [brezis2011functional]. Let $H$ be complete and $A$ maximal
+monotone. For every $w \in H$, $S_A(t) w \to w$ as $t \to 0^+$. -/
 theorem IsMaximalMonotone.tendsto_semigroup_apply_zero (hA : A.IsMaximalMonotone) (w : H) :
     Tendsto (fun t => A.semigroup t w) (𝓝[>] 0) (𝓝 w) := by
   have := (hA.continuousOn_semigroup_apply w 0 self_mem_Ici).tendsto
   rw [hA.semigroup_zero, one_apply_eq_self] at this
   exact this.mono_left (nhdsWithin_mono _ Ioi_subset_Ici_self)
 
-/-- **Step 4, collapsed**: for `u₀ ∈ D(A)` and `T ≥ 0`, the derivatives
-`u_c'(t) = -exp(-t A_c) A_c u₀` converge uniformly on `[0, T]` to `-S_A(t) (A u₀)`, because
-`‖exp(-t A_c) A_c u₀ - S_A(t) A u₀‖ ≤ ‖A_c u₀ - A u₀‖ + ‖exp(-t A_c) (A u₀) - S_A(t) (A u₀)‖`
-and Proposition 7.2 (d). The book proves this for `u₀ ∈ D(A²)` and needs its Step 6 to remove
-the assumption ([brezis2011functional], proof of Theorem 7.4, Step 4). -/
+/-- **Step 4** of the proof of Theorem 7.4 of [brezis2011functional], shortened. Let $H$ be complete
+and $A$ maximal monotone. For $u_0 \in D(A)$ and $T \in \mathbb{R}$,
+$$e^{-tA_c} A_c u_0 \to S_A(t) A u_0 \quad \text{uniformly in } t \in [0, T] \text{ as } c \to
+  0^+.$$
+So the derivatives $u_c'(t) = -e^{-tA_c} A_c u_0$ converge uniformly on $[0, T]$ to
+$-S_A(t) A u_0$.
+
+The proof uses $\|e^{-tA_c} A_c u_0 - S_A(t) A u_0\| \le \|A_c u_0 - A u_0\| + \|e^{-tA_c} A
+u_0 - S_A(t) A u_0\|$ and Proposition 7.2 (d). The book proves this for $u_0 \in D(A^2)$ and
+needs its Step 6 to remove that assumption. -/
 theorem IsMaximalMonotone.tendstoUniformlyOn_deriv_expYosida (hA : A.IsMaximalMonotone)
     (u₀ : A.domain) {T : ℝ} :
     TendstoUniformlyOn (fun (c : ℝ) t => A.expYosida c t (A.yosida c u₀))
@@ -685,13 +780,16 @@ section UniformLimit
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- **The derivative of a uniform limit, on a closed interval.** If `F i → f` pointwise on
-`[a, b]`, the `F i` have derivatives `F' i` within `[a, b]` that are continuous on `[a, b]` and
-converge uniformly to `g`, then `f` has derivative `g t` within `[a, b]` at every `t ∈ [a, b]`,
-the endpoints included. This is a closed-interval version of Mathlib's
-`hasDerivAt_of_tendstoUniformlyOn` (which needs an open set), proved through the fundamental
-theorem of calculus: `F i t = F i a + ∫_a^t F' i`, the integrals converge, so
-`f t = f a + ∫_a^t g`, which is differentiated within `[a, b]`. -/
+/-- **The derivative of a uniform limit, on a closed interval.** Let $E$ be a real Banach space,
+$a \le b$, and let $(F_i)$ be a family of curves $\mathbb{R} \to E$ indexed along a nontrivial
+filter. Assume that eventually each $F_i$ has the derivative $F_i'(t)$ within $[a, b]$ at every
+$t \in [a, b]$, with $F_i'$ continuous on $[a, b]$, that $F_i' \to g$ uniformly on $[a, b]$, and
+that $F_i(t) \to f(t)$ for every $t \in [a, b]$. Then $f$ has the derivative $g(t)$ within
+$[a, b]$ at every $t \in [a, b]$, the endpoints included.
+
+This is a closed-interval version of Mathlib's `hasDerivAt_of_tendstoUniformlyOn`, which needs
+an open set. Proof idea: $F_i(t) = F_i(a) + \int_a^t F_i'$, the integrals converge, so
+$f(t) = f(a) + \int_a^t g$, which is differentiated within $[a, b]$. -/
 theorem hasDerivWithinAt_Icc_of_tendstoUniformlyOn {ι : Type*} {l : Filter ι} [NeBot l]
     {a b : ℝ} (hab : a ≤ b) {F F' : ι → ℝ → E} {f g : ℝ → E}
     (hF : ∀ᶠ i in l, ∀ t ∈ Icc a b, HasDerivWithinAt (F i) (F' i t) (Icc a b) t)
@@ -767,10 +865,13 @@ variable {A : H →ₗ.[ℝ] H}
 
 /-! ### Step 5: the limit solves the equation -/
 
-/-- **Step 5 (iii)**: for `u₀ ∈ D(A)`, `t ↦ S_A(t) u₀` has derivative `-S_A(t) (A u₀)` within
-`[0, ∞)` at every `t ≥ 0` — the uniform-limit lemma applied to `u_c(·) u₀` on `[0, t + 1]`, the
-derivatives `-exp(-· A_c) A_c u₀` converging uniformly by Step 4
-([brezis2011functional], proof of Theorem 7.4, Step 5). -/
+/-- **Step 5 (iii)** of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be complete and
+$A$ maximal monotone. For $u_0 \in D(A)$ and $t \ge 0$, the curve $t \mapsto S_A(t) u_0$ has the
+derivative $-S_A(t) A u_0$ within $[0, \infty)$ at $t$.
+
+The proof applies `hasDerivWithinAt_Icc_of_tendstoUniformlyOn` to
+$u_c(\cdot) = e^{-\cdot A_c} u_0$ on $[0, t + 1]$; the derivatives $-e^{-\cdot A_c} A_c u_0$
+converge uniformly by Step 4. -/
 theorem IsMaximalMonotone.hasDerivWithinAt_semigroup_apply (hA : A.IsMaximalMonotone)
     (u₀ : A.domain) {t : ℝ} (ht : 0 ≤ t) :
     HasDerivWithinAt (fun t => A.semigroup t u₀) (-(A.semigroup t (A u₀))) (Ici 0) t := by
@@ -790,10 +891,12 @@ theorem IsMaximalMonotone.hasDerivWithinAt_semigroup_apply (hA : A.IsMaximalMono
   rw [← Ici_inter_Iic]
   exact inter_mem_nhdsWithin _ (Iic_mem_nhds (by linarith))
 
-/-- **Step 5 (i)–(ii)**: for `u₀ ∈ D(A)` and `t ≥ 0`, `S_A(t) u₀ ∈ D(A)` and
-`A (S_A(t) u₀) = S_A(t) (A u₀)`: the pairs `(J_c u_c(t) u₀, A_c u_c(t) u₀)` lie on the graph of `A`
-and converge to `(S_A(t) u₀, S_A(t) (A u₀))`, and the graph is closed
-([brezis2011functional], proof of Theorem 7.4, Step 5). -/
+/-- **Step 5 (i)–(ii)** of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be complete
+and $A$ maximal monotone. For $u_0 \in D(A)$ and $t \ge 0$, $S_A(t) u_0 \in D(A)$ and
+$A S_A(t) u_0 = S_A(t) A u_0$.
+
+Proof idea: the pairs $(J_c e^{-tA_c} u_0, A_c e^{-tA_c} u_0)$ lie on the graph of $A$ and
+converge to $(S_A(t) u_0, S_A(t) A u_0)$, and the graph is closed. -/
 theorem IsMaximalMonotone.exists_semigroup_apply_mem_domain (hA : A.IsMaximalMonotone)
     (u₀ : A.domain) {t : ℝ} (ht : 0 ≤ t) :
     ∃ h : A.semigroup t u₀ ∈ A.domain, A ⟨A.semigroup t u₀, h⟩ = A.semigroup t (A u₀) := by
@@ -836,12 +939,15 @@ theorem IsMaximalMonotone.exists_semigroup_apply_mem_domain (hA : A.IsMaximalMon
   rw [show (⟨A.semigroup t u₀, hy1 ▸ y.2⟩ : A.domain) = y from Subtype.ext hy1.symm]
   exact hy2
 
-/-- **Step 5 (i)**: `S_A(t) u₀ ∈ D(A)` for `u₀ ∈ D(A)` and `t ≥ 0`. -/
+/-- **Step 5 (i)** of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be complete and
+$A$ maximal monotone. Then $S_A(t) u_0 \in D(A)$ for $u_0 \in D(A)$ and $t \ge 0$. -/
 theorem IsMaximalMonotone.semigroup_apply_mem_domain (hA : A.IsMaximalMonotone) (u₀ : A.domain)
     {t : ℝ} (ht : 0 ≤ t) : A.semigroup t u₀ ∈ A.domain :=
   (hA.exists_semigroup_apply_mem_domain u₀ ht).fst
 
-/-- **Step 5 (ii)**: `S_A(t)` commutes with `A` on `D(A)`, `A (S_A(t) u₀) = S_A(t) (A u₀)`. -/
+/-- **Step 5 (ii)** of the proof of Theorem 7.4 of [brezis2011functional]. Let $H$ be complete and
+$A$ maximal monotone. Then $S_A(t)$ commutes with $A$ on $D(A)$: $A S_A(t) u_0 = S_A(t) A u_0$
+for $u_0 \in D(A)$ and $t \ge 0$. -/
 theorem IsMaximalMonotone.semigroup_apply_apply (hA : A.IsMaximalMonotone) (u₀ : A.domain)
     {t : ℝ} (ht : 0 ≤ t) :
     A ⟨A.semigroup t u₀, hA.semigroup_apply_mem_domain u₀ ht⟩ = A.semigroup t (A u₀) :=
@@ -849,8 +955,9 @@ theorem IsMaximalMonotone.semigroup_apply_apply (hA : A.IsMaximalMonotone) (u₀
 
 /-! ### Theorem 7.4 (Hille–Yosida) -/
 
-/-- **Theorem 7.4, existence**: for `u₀ ∈ D(A)`, `t ↦ S_A(t) u₀` solves `u' + A u = 0` on
-`[0, ∞)` with `u(0) = u₀` ([brezis2011functional] Theorem 7.4). -/
+/-- **Theorem 7.4** of [brezis2011functional], existence. Let $H$ be complete and $A$ maximal
+monotone. For $u_0 \in D(A)$, the curve $t \mapsto S_A(t) u_0$ solves $u' + Au = 0$ on
+$[0, \infty)$ with $u(0) = u_0$. -/
 theorem IsMaximalMonotone.isSolutionOn_semigroup (hA : A.IsMaximalMonotone) (u₀ : A.domain) :
     A.IsSolutionOn u₀ (Ici 0) fun t => A.semigroup t u₀ where
   apply_zero := by simp [hA.semigroup_zero]
@@ -859,15 +966,18 @@ theorem IsMaximalMonotone.isSolutionOn_semigroup (hA : A.IsMaximalMonotone) (u�
     have := hA.hasDerivWithinAt_semigroup_apply u₀ ht
     rwa [← hA.semigroup_apply_apply u₀ ht] at this
 
-/-- Every solution of the evolution problem on `[0, ∞)` is the semigroup applied to the datum:
-how every statement about "the solution `u` of (6)" is transported to `S_A`. -/
+/-- Let $H$ be complete and $A$ maximal monotone. If $u$ solves $u' + Au = 0$ on $[0, \infty)$ with
+$u(0) = u_0 \in D(A)$, then $u(t) = S_A(t) u_0$ for every $t \ge 0$.
+
+With this theorem, every statement about the solution $u$ of problem (6) of the book transfers
+to $S_A$. -/
 theorem IsSolutionOn.eq_semigroup (hA : A.IsMaximalMonotone) {u₀ : A.domain} {u : ℝ → H}
     (hu : A.IsSolutionOn u₀ (Ici 0) u) : EqOn u (fun t => A.semigroup t u₀) (Ici 0) :=
   hA.isMonotone.eqOn_of_isSolutionOn hu (hA.isSolutionOn_semigroup u₀)
 
-/-- **Theorem 7.4, the class `C¹([0, ∞); H)`**: for `u₀ ∈ D(A)`, `t ↦ S_A(t) u₀` is `C¹` on
-`[0, ∞)`, its derivative `-S_A(t) (A u₀)` being continuous ([brezis2011functional]
-Theorem 7.4). -/
+/-- **Theorem 7.4** of [brezis2011functional], the class $C^1([0, \infty); H)$. Let $H$ be complete
+and $A$ maximal monotone. For $u_0 \in D(A)$, the curve $t \mapsto S_A(t) u_0$ is $C^1$ on
+$[0, \infty)$; its derivative $-S_A(t) A u_0$ is continuous. -/
 theorem IsMaximalMonotone.contDiffOn_semigroup_apply (hA : A.IsMaximalMonotone) (u₀ : A.domain) :
     ContDiffOn ℝ 1 (fun t => A.semigroup t u₀) (Ici 0) := by
   rw [show (1 : WithTop ℕ∞) = 0 + 1 from rfl, contDiffOn_succ_iff_derivWithin (uniqueDiffOn_Ici 0)]
@@ -877,15 +987,18 @@ theorem IsMaximalMonotone.contDiffOn_semigroup_apply (hA : A.IsMaximalMonotone) 
   refine (hA.continuousOn_semigroup_apply (A u₀)).neg.congr fun t ht => ?_
   exact (hA.hasDerivWithinAt_semigroup_apply u₀ ht).derivWithin (uniqueDiffOn_Ici 0 t ht)
 
-/-- **Theorem 7.4, the estimate on the derivative**: `‖u'(t)‖ = ‖A u(t)‖ = ‖S_A(t) (A u₀)‖ ≤ ‖A u₀‖`
-for `t ≥ 0` ([brezis2011functional] Theorem 7.4). -/
+/-- **Theorem 7.4** of [brezis2011functional], the estimate on the derivative. Let $H$ be complete
+and $A$ maximal monotone. For $u_0 \in D(A)$ and $t \ge 0$,
+$$\|u'(t)\| = \|A S_A(t) u_0\| \le \|A u_0\|, \qquad u(t) = S_A(t) u_0.$$
+-/
 theorem IsMaximalMonotone.norm_apply_semigroup_apply_le (hA : A.IsMaximalMonotone)
     (u₀ : A.domain) {t : ℝ} (ht : 0 ≤ t) :
     ‖A ⟨A.semigroup t u₀, hA.semigroup_apply_mem_domain u₀ ht⟩‖ ≤ ‖A u₀‖ := by
   rw [hA.semigroup_apply_apply u₀ ht]
   exact hA.norm_semigroup_apply_le ht _
 
-/-- **The Lipschitz estimate in time**: `‖S_A(t) u₀ - u₀‖ ≤ t ‖A u₀‖` for `u₀ ∈ D(A)`, `t ≥ 0`. -/
+/-- **The Lipschitz estimate in time.** Let $H$ be complete and $A$ maximal monotone. For
+$u_0 \in D(A)$ and $t \ge 0$, $\|S_A(t) u_0 - u_0\| \le t \|A u_0\|$. -/
 theorem IsMaximalMonotone.norm_semigroup_apply_sub_le (hA : A.IsMaximalMonotone) (u₀ : A.domain)
     {t : ℝ} (ht : 0 ≤ t) : ‖A.semigroup t u₀ - u₀‖ ≤ t * ‖A u₀‖ := by
   have := norm_image_sub_le_of_norm_deriv_right_le_segment (f := fun t => A.semigroup t u₀)
@@ -897,10 +1010,14 @@ theorem IsMaximalMonotone.norm_semigroup_apply_sub_le (hA : A.IsMaximalMonotone)
       exact hA.norm_semigroup_apply_le hx.1 _) t (right_mem_Icc.2 ht)
   simpa [hA.semigroup_zero, mul_comm] using this
 
-/-- **Theorem 7.4 (Hille–Yosida)**, packaged: for a maximal monotone `A` and `u₀ ∈ D(A)`, the
-evolution problem `u' + A u = 0`, `u(0) = u₀` has a solution `u ∈ C¹([0, ∞); H)` with
-`‖u(t)‖ ≤ ‖u₀‖` and `‖u'(t)‖ = ‖A u(t)‖ ≤ ‖A u₀‖` for `t ≥ 0`; it is `t ↦ S_A(t) u₀`, and
-uniqueness is `IsMonotone.eqOn_of_isSolutionOn` ([brezis2011functional] Theorem 7.4). -/
+/-- **Theorem 7.4** of [brezis2011functional] (the **Hille–Yosida theorem**). Let $H$ be a real
+Hilbert space, $A$ maximal monotone and $u_0 \in D(A)$. Then the evolution problem $u' + Au = 0$
+on $[0, \infty)$, $u(0) = u_0$ has a solution $u \in C^1([0, \infty); H)$ with
+$$\|u(t)\| \le \|u_0\| \quad \text{and} \quad \|u'(t)\| = \|Au(t)\| \le \|A u_0\|, \qquad t \ge
+  0.$$
+
+The solution is $t \mapsto S_A(t) u_0$. Uniqueness is
+`LinearPMap.IsMonotone.eqOn_of_isSolutionOn`. -/
 theorem IsMaximalMonotone.exists_isSolutionOn (hA : A.IsMaximalMonotone) (u₀ : A.domain) :
     ∃ u : ℝ → H, ∃ hu : A.IsSolutionOn u₀ (Ici 0) u, ContDiffOn ℝ 1 u (Ici 0) ∧
       (∀ t, 0 ≤ t → ‖u t‖ ≤ ‖(u₀ : H)‖) ∧
@@ -909,9 +1026,11 @@ theorem IsMaximalMonotone.exists_isSolutionOn (hA : A.IsMaximalMonotone) (u₀ :
     fun _ ht => hA.norm_semigroup_apply_le ht u₀,
     fun _ ht => hA.norm_apply_semigroup_apply_le u₀ ht⟩
 
-/-- **Remark 5 (b), the semigroup law**: `S_A(s + t) = S_A(s) ∘ S_A(t)` for `s, t ≥ 0`. Both sides
-applied to `u₀ ∈ D(A)` solve the problem with the datum `S_A(t) u₀ ∈ D(A)`, so they agree on the
-dense `D(A)`, hence everywhere ([brezis2011functional] Chapter 7, Remark 5 (b)). -/
+/-- **Remark 5 (b)** of Chapter 7 of [brezis2011functional], the semigroup law. Let $H$ be complete
+and $A$ maximal monotone. Then $S_A(s + t) = S_A(s) S_A(t)$ for all $s, t \ge 0$.
+
+Proof idea: both sides applied to $u_0 \in D(A)$ solve the problem with the initial value
+$S_A(t) u_0 \in D(A)$. So they agree on the dense subspace $D(A)$, hence everywhere. -/
 theorem IsMaximalMonotone.semigroup_add (hA : A.IsMaximalMonotone) {s t : ℝ} (hs : 0 ≤ s)
     (ht : 0 ≤ t) : A.semigroup (s + t) = (A.semigroup s).comp (A.semigroup t) := by
   have h : ⇑(A.semigroup (s + t)) = ⇑((A.semigroup s).comp (A.semigroup t)) := by
@@ -925,35 +1044,38 @@ theorem IsMaximalMonotone.semigroup_add (hA : A.IsMaximalMonotone) {s t : ℝ} (
     exact hA.isMonotone.eqOn_of_isSolutionOn h1 h2 hs
   exact ContinuousLinearMap.ext fun x => congrFun h x
 
-/-! ### The classes `C^n(s; D(A^j))` -/
+/-! ### The classes $C^n(s; D(A^j))$ -/
 
 open PowDomain
 
 variable (A) in
-/-- **The class `C^n(s; D(A^j))`** ([brezis2011functional] Theorems 7.5 and 7.7): `u` lifts on
-`s` to a `C^n` map into the Hilbert space `D(A^j)`, i.e. there is `v : ℝ → A.PowDomain j`, `C^n`
-on `s`, whose `0`-th coordinate is `u` on `s`. The lift is unique on `s` (its coordinates are
-`A^i u`); `contDiffOnPowDomain_iff` reads the condition coordinatewise. Consumers compose the
-lift with bounded operators out of `A.PowDomain j`. -/
+/-- **The class $C^n(s; D(A^j))$**, used in Theorems 7.5 and 7.7 of [brezis2011functional]. A curve
+$u : \mathbb{R} \to H$ is in this class if it lifts on $s$ to a $C^n$ map into the Hilbert space
+$D(A^j)$: there is $v : \mathbb{R} \to D(A^j)$, $C^n$ on $s$, whose coordinate $v(t)_0$ is
+$u(t)$ for $t \in s$.
+
+The lift is unique on $s$, because its coordinates are $A^i u$.
+`LinearPMap.contDiffOnPowDomain_iff` reads the condition coordinatewise. Users compose the lift
+with bounded operators out of `A.PowDomain j`. -/
 def ContDiffOnPowDomain (n : WithTop ℕ∞) (j : ℕ) (u : ℝ → H) (s : Set ℝ) : Prop :=
   ∃ v : ℝ → A.PowDomain j, (∀ t ∈ s, applyL A j 0 (v t) = u t) ∧ ContDiffOn ℝ n v s
 
 omit [CompleteSpace H] in
-/-- The class is monotone in the set of times. -/
+/-- If $u$ is in $C^n(s; D(A^j))$ and $t \subseteq s$, then $u$ is in $C^n(t; D(A^j))$. -/
 theorem ContDiffOnPowDomain.mono {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s t : Set ℝ}
     (h : A.ContDiffOnPowDomain n j u s) (hts : t ⊆ s) : A.ContDiffOnPowDomain n j u t :=
   let ⟨v, hv0, hv⟩ := h
   ⟨v, fun x hx => hv0 x (hts hx), hv.mono hts⟩
 
 omit [CompleteSpace H] in
-/-- The class is antitone in the order of differentiability. -/
+/-- If $u$ is in $C^n(s; D(A^j))$ and $m \le n$, then $u$ is in $C^m(s; D(A^j))$. -/
 theorem ContDiffOnPowDomain.of_le {n m : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n j u s) (hmn : m ≤ n) : A.ContDiffOnPowDomain m j u s :=
   let ⟨v, hv0, hv⟩ := h
   ⟨v, hv0, hv.of_le hmn⟩
 
 omit [CompleteSpace H] in
-/-- The class only depends on the values of `u` on `s`. -/
+/-- If $u$ is in $C^n(s; D(A^j))$ and $v = u$ on $s$, then $v$ is in $C^n(s; D(A^j))$. -/
 theorem ContDiffOnPowDomain.congr {n : WithTop ℕ∞} {j : ℕ} {u v : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n j u s) (huv : Set.EqOn u v s) :
     A.ContDiffOnPowDomain n j v s :=
@@ -961,18 +1083,23 @@ theorem ContDiffOnPowDomain.congr {n : WithTop ℕ∞} {j : ℕ} {u v : ℝ → 
   ⟨w, fun t ht => (hw0 t ht).trans (huv ht), hw⟩
 
 omit [CompleteSpace H] in
-/-- `C^n(s; D(A^{j+1})) ⊆ C^n(s; D(A^j))`, through the inclusion `castL`. -/
+/-- $C^n(s; D(A^{j+1})) \subseteq C^n(s; D(A^j))$, through the inclusion
+`LinearPMap.PowDomain.castL`. -/
 theorem ContDiffOnPowDomain.castSucc {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n (j + 1) u s) : A.ContDiffOnPowDomain n j u s :=
   let ⟨v, hv0, hv⟩ := h
   ⟨fun t => castL A j (v t), fun t ht => by rw [applyL_castL]; exact hv0 t ht,
     (castL A j).contDiff.comp_contDiffOn hv⟩
 
-/-- **The coordinatewise reading of `C^n(s; D(A^j))`**, for a closed `A`: `u ∈ C^n(s; D(A^j))`
-iff there are functions `w_0 = u, w_1, …, w_j`, each `C^n` on `s`, with `w_{i+1} = A w_i` on `s`
-("`t ↦ A^i u(t)` is `C^n` for every `i ≤ j`"). The lift is recovered from the coordinates by the
-orthogonal projection onto the closed submodule `powGraph A j`, which is a left inverse of the
-inclusion and makes the lift `C^n`. -/
+/-- **The coordinatewise reading of $C^n(s; D(A^j))$.** Let $H$ be complete and $A$ closed. A curve
+$u$ is in $C^n(s; D(A^j))$ if and only if there are curves $w_0, w_1, \dots, w_j$, each $C^n$ on
+$s$, with $w_0 = u$ on $s$ and, at every $t \in s$, $w_i(t) \in D(A)$ and
+$A w_i(t) = w_{i+1}(t)$ for $i < j$. Informally: $t \mapsto A^i u(t)$ is $C^n$ for every
+$i \le j$.
+
+The lift is recovered from the coordinates by the orthogonal projection onto the closed
+submodule `LinearPMap.powGraph A j`. This projection is a left inverse of the inclusion, and it
+makes the lift $C^n$. -/
 theorem contDiffOnPowDomain_iff (hA : A.IsClosed) {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H}
     {s : Set ℝ} :
     A.ContDiffOnPowDomain n j u s ↔ ∃ w : Fin (j + 1) → ℝ → H, (∀ t ∈ s, w 0 t = u t) ∧
@@ -993,13 +1120,16 @@ theorem contDiffOnPowDomain_iff (hA : A.IsClosed) {n : WithTop ℕ∞} {j : ℕ}
     rw [Submodule.coe_orthogonalProjectionOnto_apply, Submodule.starProjection_eq_self_iff.2 hmem]
     exact hw0 t ht
 
-/-! ### The regularity ladder: the semigroup of the part of `A` -/
+/-! ### The regularity ladder: the semigroup of the part of $A$ -/
 
-/-- **The semigroup of the part is the restriction of the semigroup**: for `x ∈ D(A^j)`, `t ≥ 0`
-and `i ≤ j`, `A^i (S_{A_j}(t) x) = S_A(t) (A^i x)`, where `S_{A_j}` is the semigroup of the part
-`A_j = A.powPart j` on the Hilbert space `D(A^j)`. Both sides are continuous in `x` and agree on
-the dense subspace `D(A^{j+1})`, where `t ↦ A^i (S_{A_j}(t) x)` solves the problem in `H` with the
-datum `A^i x ∈ D(A)` ([brezis2011functional], proof of Theorem 7.5). -/
+/-- **The semigroup of the part is the restriction of the semigroup.** Let $H$ be complete and $A$
+maximal monotone, and let $A_j$ be the part `A.powPart j` of $A$ in the Hilbert space $D(A^j)$.
+For $x \in D(A^j)$, $t \ge 0$ and $i \le j$,
+$$A^i \big(S_{A_j}(t) x\big) = S_A(t) A^i x.$$
+
+Proof idea: both sides are continuous in $x$ and agree on the dense subspace $D(A^{j+1})$, where
+$t \mapsto A^i S_{A_j}(t) x$ solves the problem in $H$ with the initial value $A^i x \in D(A)$.
+This follows the proof of Theorem 7.5 of [brezis2011functional]. -/
 theorem IsMaximalMonotone.applyL_semigroup_powPart (hA : A.IsMaximalMonotone) (j : ℕ) {t : ℝ}
     (ht : 0 ≤ t) (x : A.PowDomain j) (i : Fin (j + 1)) :
     applyL A j i ((A.powPart j).semigroup t x) = A.semigroup t (applyL A j i x) := by
@@ -1026,26 +1156,31 @@ theorem IsMaximalMonotone.applyL_semigroup_powPart (hA : A.IsMaximalMonotone) (j
   exact congrFun hcont x
 
 omit [CompleteSpace H] in
-/-- The datum of the regularity ladder: `castLE x ∈ D(A^j)` lies in `D(A.powPart j)` when
-`x ∈ D(A^m)` with `j < m`. -/
+/-- For $j < m$ and $x \in D(A^m)$, the image of $x$ in $D(A^j)$ lies in the domain of the part
+$A_j$ of $A$ in $D(A^j)$. This gives the initial values of the regularity ladder. -/
 theorem castLE_mem_powPart_domain {j m : ℕ} (h : j < m) (x : A.PowDomain m) :
     castLE A h.le x ∈ (A.powPart j).domain := by
   rw [mem_powPart_domain_iff, applyL_castLE]
   exact applyL_mem_domain x ⟨j, h⟩
 
 omit [CompleteSpace H] in
-/-- The part of `A` on the datum `castLE x`, read one level up: `A (castLE x) = shiftL (castLE x)`
-in `D(A^j)`, for `x ∈ D(A^m)` with `j + 1 ≤ m`. -/
+/-- For $j + 1 \le m$ and $x \in D(A^m)$, the part $A_j$ of $A$ in $D(A^j)$ maps the image of $x$ in
+$D(A^j)$ to `shiftL A j` of the image of $x$ in $D(A^{j+1})$. In coordinates:
+$A_j (x_0, \dots, x_j) = (x_1, \dots, x_{j+1})$. -/
 theorem powPart_castLE {j m : ℕ} (h : j + 1 ≤ m) (x : A.PowDomain m) :
     A.powPart j ⟨castLE A (by omega) x, castLE_mem_powPart_domain (by omega) x⟩ =
       shiftL A j (castLE A h x) :=
   PowDomain.ext fun i => apply_applyL x ⟨i, by omega⟩
 
-/-- **The regularity ladder behind Theorem 7.5**: for all `n j m` with `j + n ≤ m` and every
-`x ∈ D(A^m)`, the solution `t ↦ S_{A_j}(t) (castLE x)` in `D(A^j)` is `C^n` on `[0, ∞)`. Induction
-on `n`, for all `j` at once: the derivative `-S_{A_j}(t) (A_j (castLE x))` is `-shiftL` of the
-solution one level up, `C^n` by the induction hypothesis at `j + 1`
-([brezis2011functional], proof of Theorem 7.5, "`d/dt (A u) = A (du/dt)`"). -/
+/-- **The regularity ladder behind Theorem 7.5.** Let $H$ be complete and $A$ maximal monotone. For
+all $n, j, m \in \mathbb{N}$ with $j + n \le m$ and every $x \in D(A^m)$, the curve
+$t \mapsto S_{A_j}(t) x$ in $D(A^j)$ is $C^n$ on $[0, \infty)$. Here $x$ is read in $D(A^j)$
+through `LinearPMap.PowDomain.castLE`.
+
+Proof idea: induction on $n$, for all $j$ at once. The derivative $-S_{A_j}(t) A_j x$ is the
+shift of the solution one level up, which is $C^n$ by the induction hypothesis at $j + 1$. This
+is the step "$\frac{d}{dt}(Au) = A \frac{du}{dt}$" of the proof of Theorem 7.5 of
+[brezis2011functional]. -/
 theorem IsMaximalMonotone.contDiffOn_semigroup_powPart (hA : A.IsMaximalMonotone) (n : ℕ) :
     ∀ (j m : ℕ) (h : j + n ≤ m) (x : A.PowDomain m),
       ContDiffOn ℝ n (fun t => (A.powPart j).semigroup t (castLE A (by omega) x)) (Ici 0) := by
@@ -1076,11 +1211,13 @@ theorem IsMaximalMonotone.contDiffOn_semigroup_powPart (hA : A.IsMaximalMonotone
     refine (((shiftL A j).contDiff.comp_contDiffOn hih).neg).congr fun t ht => ?_
     exact (hderiv t ht).derivWithin (uniqueDiffOn_Ici 0 t ht)
 
-/-- **Theorem 7.5 (regularity)**: for a maximal monotone `A`, `u₀ ∈ D(A^k)` and `j ≤ k`, the
-solution `u(t) = S_A(t) u₀` of the evolution problem lies in `C^{k-j}([0, ∞); D(A^j))`. The lift
-is `t ↦ S_{A_j}(t) (castLE x)`, `C^{k-j}` by the ladder, and its `0`-th coordinate is `S_A(t) u₀`
-([brezis2011functional] Theorem 7.5; the book states it for `k ≥ 2`, the cases `k = 0, 1` being
-Theorem 7.4). -/
+/-- **Theorem 7.5** of [brezis2011functional] (regularity). Let $H$ be complete, $A$ maximal
+monotone, $x \in D(A^k)$ with $u_0 = x_0$, and $j \le k$. Then the solution $u(t) = S_A(t) u_0$
+of the evolution problem is in $C^{k-j}([0, \infty); D(A^j))$.
+
+The lift is $t \mapsto S_{A_j}(t) x$, which is $C^{k-j}$ by
+`LinearPMap.IsMaximalMonotone.contDiffOn_semigroup_powPart`, and its coordinate $0$ is
+$S_A(t) u_0$. The book states the theorem for $k \ge 2$; the cases $k = 0, 1$ are Theorem 7.4. -/
 theorem IsMaximalMonotone.contDiffOnPowDomain_semigroup (hA : A.IsMaximalMonotone) {k : ℕ}
     (x : A.PowDomain k) {j : ℕ} (hj : j ≤ k) :
     A.ContDiffOnPowDomain (k - j : ℕ) j (fun t => A.semigroup t (applyL A k 0 x)) (Ici 0) := by
@@ -1099,12 +1236,16 @@ open NormedSpace
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-- **The smoothing estimate for a bounded self-adjoint monotone operator**: for `T > 0`,
-`‖B exp(-T B) w‖ ≤ ‖w‖ / T`. With `u(t) = exp(-t B) w`, the function
-`Φ(t) = ½ ‖u‖² + t ⟪B u, u⟫ + t² ‖B u‖²` has derivative `Φ' = -2 t² ⟪B (B u), B u⟫ ≤ 0`, so
-`T² ‖B u(T)‖² ≤ Φ(T) ≤ Φ(0) = ½ ‖w‖²`. This is the chain (29)–(33) of the proof of
-[brezis2011functional] Theorem 7.7, its integrations by parts replaced by one derivative; it
-gives the sharper `‖w‖ / (√2 T)`. -/
+/-- **The smoothing estimate for a bounded self-adjoint monotone operator.** Let $H$ be a real
+Hilbert space and $B : H \to H$ a bounded self-adjoint operator with
+$\langle Bv, v \rangle \ge 0$ for all $v$. For $w \in H$ and $T > 0$,
+$$\|B e^{-TB} w\| \le \frac{\|w\|}{T}.$$
+
+Proof idea: with $u(t) = e^{-tB} w$, the function $\Phi(t) = \frac12 \|u\|^2 + t \langle Bu, u
+\rangle + t^2 \|Bu\|^2$ has the derivative $\Phi' = -2t^2 \langle B(Bu), Bu \rangle \le 0$. So
+$T^2 \|Bu(T)\|^2 \le \Phi(T) \le \Phi(0) = \frac12 \|w\|^2$. This is the chain (29)–(33) of the
+proof of Theorem 7.7 of [brezis2011functional], with the integrations by parts replaced by one
+derivative. It gives the sharper bound $\|w\| / (\sqrt2 T)$. -/
 theorem norm_exp_neg_smul_apply_le_div (B : H →L[ℝ] H) (hB : IsSelfAdjoint B)
     (hB' : ∀ v, 0 ≤ ⟪B v, v⟫_ℝ) (w : H) {T : ℝ} (hT : 0 < T) :
     ‖B (exp ((-T) • B) w)‖ ≤ ‖w‖ / T := by
@@ -1158,19 +1299,24 @@ open PowDomain
 
 /-! ### The self-adjoint case: Theorem 7.7 -/
 
-/-- **Step 1 of the proof of Theorem 7.7, for the approximations**: for a symmetric maximal
-monotone `A`, `c > 0`, `T > 0` and every `u₀ ∈ H`, `‖u_c'(T)‖ = ‖A_c u_c(T) u₀‖ ≤ ‖u₀‖ / T` — the
-book's (33)/(34), from the smoothing estimate for the self-adjoint monotone `A_c`
-([brezis2011functional], proof of Theorem 7.7, Step 1). -/
+/-- **Step 1 of the proof of Theorem 7.7** of [brezis2011functional], for the approximations. Let
+$H$ be complete, $A$ maximal monotone and symmetric, $c > 0$ and $T > 0$. For every $u_0 \in H$,
+$$\|u_c'(T)\| = \|A_c e^{-TA_c} u_0\| \le \frac{\|u_0\|}{T}.$$
+This is (33)–(34) of the book.
+
+The proof applies `norm_exp_neg_smul_apply_le_div` to the self-adjoint monotone operator $A_c$. -/
 theorem norm_yosida_expYosida_apply_le_div (hA : A.IsMaximalMonotone)
     (hs : A.IsFormalAdjoint A) {c : ℝ} (hc : 0 < c) {T : ℝ} (hT : 0 < T) (u₀ : H) :
     ‖A.yosida c (A.expYosida c T u₀)‖ ≤ ‖u₀‖ / T :=
   norm_exp_neg_smul_apply_le_div _ (hA.isSelfAdjoint_yosida hs hc) (hA.inner_yosida_nonneg hc)
     u₀ hT
 
-/-- **Estimate (27) of Theorem 7.7 on the domain**: for a symmetric maximal monotone `A`,
-`u₀ ∈ D(A)` and `T > 0`, `‖A (S_A(T) u₀)‖ = ‖S_A(T) (A u₀)‖ ≤ ‖u₀‖ / T`, the limit of the estimate
-for the approximations along `c → 0⁺` ([brezis2011functional], proof of Theorem 7.7, Step 1). -/
+/-- **Estimate (27)** of the proof of Theorem 7.7 of [brezis2011functional], on the domain. Let $H$
+be complete, $A$ maximal monotone and symmetric, $u_0 \in D(A)$ and $T > 0$. Then
+$$\|S_A(T) A u_0\| \le \frac{\|u_0\|}{T}.$$
+Since $S_A(T) A u_0 = A S_A(T) u_0$, this bounds $\|A S_A(T) u_0\|$.
+
+It is the limit of the estimate for the approximations as $c \to 0^+$. -/
 theorem norm_semigroup_apply_apply_le_div (hA : A.IsMaximalMonotone)
     (hs : A.IsFormalAdjoint A) (u₀ : A.domain) {T : ℝ} (hT : 0 < T) :
     ‖A.semigroup T (A u₀)‖ ≤ ‖(u₀ : H)‖ / T := by
@@ -1181,11 +1327,14 @@ theorem norm_semigroup_apply_apply_le_div (hA : A.IsMaximalMonotone)
   rw [← yosida_expYosida_comm]
   exact norm_yosida_expYosida_apply_le_div hA hs hc hT u₀
 
-/-- **Step 2 of the proof of Theorem 7.7, the smoothing**: for a symmetric maximal monotone `A`,
-**every** `u₀ ∈ H` and `t > 0`, `S_A(t) u₀ ∈ D(A)` and `‖A (S_A(t) u₀)‖ ≤ ‖u₀‖ / t`. Approximate
-`u₀` by `v_n ∈ D(A)`; then `A (S_A(t) v_n) = S_A(t) (A v_n)` is Cauchy by (27), and the closed
-graph identifies the limit ([brezis2011functional], proof of Theorem 7.7, Step 2, with `D(A)`
-in place of `D(A²)`). -/
+/-- **Step 2 of the proof of Theorem 7.7** of [brezis2011functional], the smoothing. Let $H$ be
+complete and $A$ maximal monotone and symmetric. For every $u_0 \in H$ and $t > 0$,
+$S_A(t) u_0 \in D(A)$ and
+$$\|A S_A(t) u_0\| \le \frac{\|u_0\|}{t}.$$
+
+Proof idea: approximate $u_0$ by $v_n \in D(A)$. Then $A S_A(t) v_n = S_A(t) A v_n$ is a Cauchy
+sequence by (27), and the closed graph identifies the limit. The book uses $D(A^2)$ in place of
+$D(A)$. -/
 theorem semigroup_apply_mem_domain_of_isFormalAdjoint
     (hA : A.IsMaximalMonotone) (hs : A.IsFormalAdjoint A) (u₀ : H) {t : ℝ} (ht : 0 < t) :
     ∃ h : A.semigroup t u₀ ∈ A.domain, ‖A ⟨A.semigroup t u₀, h⟩‖ ≤ ‖u₀‖ / t := by
@@ -1218,11 +1367,13 @@ theorem semigroup_apply_mem_domain_of_isFormalAdjoint
     (Eventually.of_forall fun n => ?_)
   exact norm_semigroup_apply_apply_le_div hA hs ⟨v n, hv n⟩ ht
 
-/-- **Theorem 7.7, the equation for `t > 0` and every datum**: for a symmetric maximal monotone
-`A`, `u₀ ∈ H` and `t > 0`, `t ↦ S_A(t) u₀` has derivative `-A (S_A(t) u₀)` at `t`. On `[δ, ∞)`
-with `0 < δ < t`, `S_A(τ) u₀ = S_A(τ - δ) (S_A(δ) u₀)` with `S_A(δ) u₀ ∈ D(A)`, and the semigroup
-route gives the derivative of the latter ([brezis2011functional], proof of Theorem 7.7,
-Step 2). -/
+/-- **Theorem 7.7** of [brezis2011functional], the equation for $t > 0$ and every initial value. Let
+$H$ be complete and $A$ maximal monotone and symmetric. For $u_0 \in H$ and $t > 0$, the curve
+$t \mapsto S_A(t) u_0$ has the derivative $-A S_A(t) u_0$ at $t$.
+
+Proof idea: on $[\delta, \infty)$ with $0 < \delta < t$, $S_A(\tau) u_0 = S_A(\tau - \delta)
+S_A(\delta) u_0$ with $S_A(\delta) u_0 \in D(A)$, and Theorem 7.4 gives the derivative of the
+right side. -/
 theorem hasDerivAt_semigroup_apply_of_isFormalAdjoint (hA : A.IsMaximalMonotone)
     (hs : A.IsFormalAdjoint A) (u₀ : H) {t : ℝ} (ht : 0 < t) :
     HasDerivAt (fun t => A.semigroup t u₀)
@@ -1251,10 +1402,10 @@ theorem hasDerivAt_semigroup_apply_of_isFormalAdjoint (hA : A.IsMaximalMonotone)
   congr 1
   exact Subtype.ext (hEq t hδt.le)
 
-/-- **Theorem 7.7, existence and the classes**: for a symmetric maximal monotone `A` and every
-`u₀ ∈ H`, `u(t) = S_A(t) u₀` solves the evolution problem on `(0, ∞)`, is continuous on `[0, ∞)`
-and `C¹` on `(0, ∞)`, and satisfies `‖u(t)‖ ≤ ‖u₀‖` for `t ≥ 0`
-([brezis2011functional] Theorem 7.7). -/
+/-- **Theorem 7.7** of [brezis2011functional], existence and regularity. Let $H$ be complete and $A$
+maximal monotone and symmetric. For every $u_0 \in H$, the curve $u(t) = S_A(t) u_0$ solves
+$u' + Au = 0$ on $(0, \infty)$ with $u(0) = u_0$, is continuous on $[0, \infty)$ and $C^1$ on
+$(0, \infty)$, and satisfies $\|u(t)\| \le \|u_0\|$ for $t \ge 0$. -/
 theorem isSolutionOn_semigroup_Ioi (hA : A.IsMaximalMonotone)
     (hs : A.IsFormalAdjoint A) (u₀ : H) :
     A.IsSolutionOn u₀ (Ioi 0) (fun t => A.semigroup t u₀) ∧
@@ -1295,10 +1446,13 @@ theorem isSolutionOn_semigroup_Ioi (hA : A.IsMaximalMonotone)
     linarith
   exact ((hcont.congr hEq) t hδt).mono_of_mem_nhdsWithin (nhdsWithin_le_nhds (Ioi_mem_nhds hδt))
 
-/-- **The smoothing at every order**: for a symmetric maximal monotone `A`, `u₀ ∈ H`, `l : ℕ` and
-`ε > 0`, `S_A(ε) u₀ ∈ D(A^l)`. Induction on `l`, applying the smoothing of Step 2 to the part
-`A.powPart l` on the Hilbert space `D(A^l)` and the datum `S_A(ε/2) u₀`
-([brezis2011functional], proof of Theorem 7.7, (26)). -/
+/-- **The smoothing at every order.** Let $H$ be complete and $A$ maximal monotone and symmetric.
+For every $u_0 \in H$, $l \in \mathbb{N}$ and $\varepsilon > 0$,
+$S_A(\varepsilon) u_0 \in D(A^l)$: there is $x \in D(A^l)$ with $x_0 = S_A(\varepsilon) u_0$.
+
+Proof idea: induction on $l$, applying Step 2 of the proof of Theorem 7.7 to the part
+`A.powPart l` in the Hilbert space $D(A^l)$ and the initial value $S_A(\varepsilon / 2) u_0$.
+This is (26) of the proof of Theorem 7.7 of [brezis2011functional]. -/
 theorem exists_powDomain_semigroup_apply_of_isFormalAdjoint
     (hA : A.IsMaximalMonotone) (hs : A.IsFormalAdjoint A) (u₀ : H) (l : ℕ) {ε : ℝ} (hε : 0 < ε) :
     ∃ x : A.PowDomain l, applyL A l 0 x = A.semigroup ε u₀ := by
@@ -1315,10 +1469,12 @@ theorem exists_powDomain_semigroup_apply_of_isFormalAdjoint
       hA.applyL_semigroup_powPart l (half_pos hε).le, hy, ← ContinuousLinearMap.comp_apply,
       ← hA.semigroup_add (half_pos hε).le (half_pos hε).le, add_halves]
 
-/-- **Theorem 7.7, (26)**: for a symmetric maximal monotone `A` and every `u₀ ∈ H`,
-`u(t) = S_A(t) u₀` lies in `C^k((0, ∞); D(A^l))` for all `k, l`. The lift is the unique element of
-`D(A^l)` over `S_A(t) u₀`; near `t > 0` it is the lift of Theorem 7.5 for the datum
-`S_A(t/2) u₀ ∈ D(A^{l+k})`, shifted in time ([brezis2011functional] Theorem 7.7, (26)). -/
+/-- **Theorem 7.7 (26)** of [brezis2011functional]. Let $H$ be complete and $A$ maximal monotone and
+symmetric. For every $u_0 \in H$, the curve $u(t) = S_A(t) u_0$ is in $C^k((0, \infty); D(A^l))$
+for all $k, l \in \mathbb{N}$.
+
+The lift is the unique element of $D(A^l)$ over $S_A(t) u_0$. Near $t > 0$ it is the lift of
+Theorem 7.5 for the initial value $S_A(t/2) u_0 \in D(A^{l+k})$, shifted in time. -/
 theorem contDiffOnPowDomain_semigroup_Ioi (hA : A.IsMaximalMonotone)
     (hs : A.IsFormalAdjoint A) (u₀ : H) (k l : ℕ) :
     A.ContDiffOnPowDomain k l (fun t => A.semigroup t u₀) (Ioi 0) := by
@@ -1349,12 +1505,17 @@ theorem contDiffOnPowDomain_semigroup_Ioi (hA : A.IsMaximalMonotone)
       (eventuallyEq_of_mem (Ici_mem_nhds hεt) hagree)
   exact this.contDiffWithinAt
 
-/-- **Theorem 7.7**, packaged with the book's hypothesis: for a self-adjoint maximal monotone `A`
-and **every** `u₀ ∈ H`, the evolution problem `u' + A u = 0` on `(0, ∞)`, `u(0) = u₀`, has a
-solution `u ∈ C([0, ∞); H) ∩ C¹((0, ∞); H)` with `‖u(t)‖ ≤ ‖u₀‖`, `‖u'(t)‖ = ‖A u(t)‖ ≤ ‖u₀‖ / t`
-for `t > 0`, and `u ∈ C^k((0, ∞); D(A^l))` for all `k, l`; it is `t ↦ S_A(t) u₀`, and uniqueness
-among solutions on `(0, ∞)` continuous on `[0, ∞)` is `IsMonotone.eqOn_of_isSolutionOn_Ioi`
-([brezis2011functional] Theorem 7.7). -/
+/-- **Theorem 7.7** of [brezis2011functional]. Let $H$ be a real Hilbert space and $A$ a
+self-adjoint maximal monotone operator. For every $u_0 \in H$, the evolution problem
+$u' + Au = 0$ on $(0, \infty)$, $u(0) = u_0$ has a solution $u \in C([0, \infty); H) \cap
+C^1((0, \infty); H)$ with
+$$\|u(t)\| \le \|u_0\| \ (t \ge 0), \qquad \|u'(t)\| = \|Au(t)\| \le \frac{\|u_0\|}{t} \ (t >
+  0),$$
+and $u \in C^k((0, \infty); D(A^l))$ for all $k, l \in \mathbb{N}$.
+
+Self-adjointness is `IsSelfAdjoint A` for the partial linear map $A$. The solution is
+$t \mapsto S_A(t) u_0$. Uniqueness among the solutions on $(0, \infty)$ that are continuous on
+$[0, \infty)$ is `LinearPMap.IsMonotone.eqOn_of_isSolutionOn_Ioi`. -/
 theorem exists_isSolutionOn_Ioi_of_isSelfAdjoint (hA : A.IsMaximalMonotone)
     (hsa : IsSelfAdjoint A) (u₀ : H) :
     ∃ u : ℝ → H, ∃ hu : A.IsSolutionOn u₀ (Ioi 0) u, ContinuousOn u (Ici 0) ∧
@@ -1371,12 +1532,13 @@ section Shift
 
 variable {B : H →ₗ.[ℝ] H}
 
-/-! ### The regularity classes under the shift `A ↦ A + c I` -/
+/-! ### The regularity classes under the shift $A \mapsto A + cI$ -/
 
 omit [CompleteSpace H] in
-/-- **The class `C^n(s; D(A^j))` is unchanged by a shift of the operator**: for `B = A + c I`
-(`IsAddSmulId B A c`), a curve of class `C^n(s; D(B^j))` is of class `C^n(s; D(A^j))`, its lift
-being transported by `IsAddSmulId.transport`. -/
+/-- **The class $C^n(s; D(A^j))$ is unchanged by a shift of the operator.** Let $B = A + cI$, that
+is, `B.IsAddSmulId A c`. A curve of class $C^n(s; D(B^j))$ is of class $C^n(s; D(A^j))$.
+
+The lift is transported by `LinearPMap.IsAddSmulId.transport`. -/
 theorem IsAddSmulId.contDiffOnPowDomain {c : ℝ} (h : B.IsAddSmulId A c) {n : WithTop ℕ∞}
     {j : ℕ} {u : ℝ → H} {s : Set ℝ} (hu : B.ContDiffOnPowDomain n j u s) :
     A.ContDiffOnPowDomain n j u s :=
@@ -1385,20 +1547,23 @@ theorem IsAddSmulId.contDiffOnPowDomain {c : ℝ} (h : B.IsAddSmulId A c) {n : W
     (h.transport j).contDiff.comp_contDiffOn hv⟩
 
 omit [CompleteSpace H] in
-/-- Multiplying a curve of class `C^n(s; D(A^j))` by a scalar function of class `C^n` keeps it
-in the class. -/
+/-- Let $f : \mathbb{R} \to \mathbb{R}$ be $C^n$ on $s$. If $u$ is in $C^n(s; D(A^j))$, then
+$t \mapsto f(t) u(t)$ is in $C^n(s; D(A^j))$. -/
 theorem ContDiffOnPowDomain.smul {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s : Set ℝ} {f : ℝ → ℝ}
     (hf : ContDiffOn ℝ n f s) (hu : A.ContDiffOnPowDomain n j u s) :
     A.ContDiffOnPowDomain n j (fun t => f t • u t) s :=
   let ⟨v, hv0, hv⟩ := hu
   ⟨fun t => f t • v t, fun t ht => by rw [_root_.map_smul, hv0 t ht], hf.smul hv⟩
 
-/-- **Theorem 7.5 for the shifted semigroup** ([brezis2011functional] Theorem 7.5 with
-Remark 6 of chapter 7): if `B = A + c I` is maximal monotone and `x ∈ D(A^k)` with base point
-`u₀`, then `t ↦ e^{ct} S_B(t) u₀` — the solution of `u' + A u = 0` — lies in
-`C^{k-j}([0, ∞); D(A^j))` for `j ≤ k`. The datum is transported to `D(B^k)`, Theorem 7.5 for `B`
-gives the class `C^{k-j}([0, ∞); D(B^j))`, which is `C^{k-j}([0, ∞); D(A^j))`
-(`IsAddSmulId.contDiffOnPowDomain`), and the factor `e^{ct}` is smooth. -/
+/-- **Theorem 7.5 for the shifted semigroup**: Theorem 7.5 with Remark 6 of Chapter 7 of
+[brezis2011functional]. Let $H$ be complete, let $B = A + cI$ be maximal monotone, let
+$x \in D(A^k)$ with $u_0 = x_0$, and let $j \le k$. Then the curve
+$t \mapsto e^{ct} S_B(t) u_0$, which is the solution of $u' + Au = 0$, is in
+$C^{k-j}([0, \infty); D(A^j))$.
+
+Proof idea: the initial value is transported to $D(B^k)$. Theorem 7.5 for $B$ gives the class
+$C^{k-j}([0, \infty); D(B^j))$, which is $C^{k-j}([0, \infty); D(A^j))$ by
+`LinearPMap.IsAddSmulId.contDiffOnPowDomain`, and the factor $e^{ct}$ is smooth. -/
 theorem IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup {c : ℝ}
     (hB : B.IsMaximalMonotone) (h : B.IsAddSmulId A c) {k : ℕ} (x : A.PowDomain k) {j : ℕ}
     (hj : j ≤ k) :
@@ -1413,7 +1578,7 @@ end Shift
 
 end LinearPMap
 
-/-! ### Semigroup lifts into `D(A^ℓ)` and the derivatives `(−A)^j S_A(t) u₀` -/
+/-! ### Lifts of the semigroup into $D(A^\ell)$, and the derivatives $(-A)^j S_A(t) u_0$ -/
 
 namespace LinearPMap
 
@@ -1424,11 +1589,13 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteS
   {A : H →ₗ.[ℝ] H}
 
 variable (A) in
-/-- **The lift of `S_A(t) u₀` into `D(A^ℓ)`**: the element of `D(A^ℓ)` whose `0`-th coordinate
-is `S_A(t) u₀` when there is one (it is then unique, `LinearPMap.PowDomain.applyL_zero_injective`),
-and `0` otherwise. For a symmetric maximal monotone `A` and `t > 0` it exists for every `u₀`
+/-- **The lift of $S_A(t) u_0$ into $D(A^\ell)$**: the element $x$ of $D(A^\ell)$ with
+$x_0 = S_A(t) u_0$ if there is one, and $0$ otherwise.
+
+Such an element is unique (`LinearPMap.PowDomain.applyL_zero_injective`). For a symmetric
+maximal monotone $A$ and $t > 0$ it exists for every $u_0$
 (`LinearPMap.exists_powDomain_semigroup_apply_of_isFormalAdjoint`), and its coordinates are the
-iterates `A^j S_A(t) u₀`. -/
+iterates $A^j S_A(t) u_0$. -/
 def semigroupLift (u₀ : H) (ℓ : ℕ) (t : ℝ) : A.PowDomain ℓ :=
   open Classical in
   if h : ∃ x : A.PowDomain ℓ, applyL A ℓ 0 x = A.semigroup t u₀ then h.choose else 0
@@ -1436,7 +1603,8 @@ def semigroupLift (u₀ : H) (ℓ : ℕ) (t : ℝ) : A.PowDomain ℓ :=
 variable (hA : A.IsMaximalMonotone) (hs : A.IsFormalAdjoint A) {u₀ : H} {ℓ : ℕ}
 include hA hs
 
-/-- The `0`-th coordinate of the lift is `S_A(t) u₀`, for `t > 0`. -/
+/-- Let $H$ be complete and $A$ maximal monotone and symmetric. For $t > 0$, the coordinate $0$ of
+the lift of $S_A(t) u_0$ into $D(A^\ell)$ is $S_A(t) u_0$. -/
 theorem applyL_zero_semigroupLift {t : ℝ} (ht : 0 < t) :
     applyL A ℓ 0 (semigroupLift A u₀ ℓ t) = A.semigroup t u₀ := by
   have h := exists_powDomain_semigroup_apply_of_isFormalAdjoint hA hs u₀ ℓ ht
@@ -1444,30 +1612,38 @@ theorem applyL_zero_semigroupLift {t : ℝ} (ht : 0 < t) :
   rw [dite_eq_left h]
   exact h.choose_spec
 
-/-- **The lift is unique**: any element of `D(A^ℓ)` over `S_A(t) u₀`, `t > 0`, is the lift. -/
+/-- **The lift is unique.** Let $H$ be complete and $A$ maximal monotone and symmetric, and let
+$t > 0$. Every $x \in D(A^\ell)$ with $x_0 = S_A(t) u_0$ is the lift
+`LinearPMap.semigroupLift A u₀ ℓ t`. -/
 theorem eq_semigroupLift {t : ℝ} (ht : 0 < t) {x : A.PowDomain ℓ}
     (hx : applyL A ℓ 0 x = A.semigroup t u₀) : x = semigroupLift A u₀ ℓ t :=
   applyL_zero_injective (hx.trans (applyL_zero_semigroupLift hA hs ht).symm)
 
-/-- **The lift is the semigroup of the part**: for `0 < δ ≤ t`,
-`semigroupLift t = S_{A_ℓ}(t − δ) (semigroupLift δ)`, `A_ℓ` the part of `A` in `D(A^ℓ)`. -/
+/-- **The lift is the semigroup of the part.** Let $H$ be complete and $A$ maximal monotone and
+symmetric, and let $A_\ell$ be the part of $A$ in $D(A^\ell)$. For $0 < \delta \le t$, the lift
+of $S_A(t) u_0$ is $S_{A_\ell}(t - \delta)$ applied to the lift of $S_A(\delta) u_0$. -/
 theorem semigroupLift_eq_semigroup_powPart {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
     semigroupLift A u₀ ℓ t = (A.powPart ℓ).semigroup (t - δ) (semigroupLift A u₀ ℓ δ) := by
   refine (eq_semigroupLift hA hs (hδ.trans_le hδt) ?_).symm
   rw [hA.applyL_semigroup_powPart ℓ (by linarith) _ 0, applyL_zero_semigroupLift hA hs hδ,
     ← ContinuousLinearMap.comp_apply, ← hA.semigroup_add (by linarith) hδ.le, sub_add_cancel]
 
-/-- **The coordinates of the lift are transported by the semigroup**: for `0 < δ ≤ t` and every
-`i ≤ ℓ`, `A^i S_A(t) u₀ = S_A(t − δ) (A^i S_A(δ) u₀)`. -/
+/-- **The semigroup transports the coordinates of the lift.** Let $H$ be complete and $A$ maximal
+monotone and symmetric. For $0 < \delta \le t$ and every $i \le \ell$,
+$$A^i S_A(t) u_0 = S_A(t - \delta) A^i S_A(\delta) u_0.$$
+-/
 theorem applyL_semigroupLift_eq {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) (i : Fin (ℓ + 1)) :
     applyL A ℓ i (semigroupLift A u₀ ℓ t)
       = A.semigroup (t - δ) (applyL A ℓ i (semigroupLift A u₀ ℓ δ)) := by
   rw [semigroupLift_eq_semigroup_powPart hA hs hδ hδt, hA.applyL_semigroup_powPart ℓ (by linarith)]
 
-/-- **The equation for the iterates**: for `t > 0` and `j < ℓ`, `t ↦ A^j S_A(t) u₀` has derivative
-`−A^{j+1} S_A(t) u₀` at `t`. Near `t`, with `δ = t/2`, the function is
-`τ ↦ S_A(τ − δ) w_j` with `w_j = A^j S_A(δ) u₀ ∈ D(A)`, whose derivative is
-`−S_A(τ − δ) (A w_j) = −S_A(τ − δ) w_{j+1}` (Step 5 of the proof of Theorem 7.4). -/
+/-- **The equation for the iterates.** Let $H$ be complete and $A$ maximal monotone and symmetric.
+For $t > 0$ and $j < \ell$, the curve $\tau \mapsto A^j S_A(\tau) u_0$ has the derivative
+$-A^{j+1} S_A(t) u_0$ at $t$.
+
+Proof idea: near $t$, with $\delta = t/2$, the curve is $\tau \mapsto S_A(\tau - \delta) w_j$
+with $w_j = A^j S_A(\delta) u_0 \in D(A)$. Its derivative is $-S_A(\tau - \delta) A w_j =
+-S_A(\tau - \delta) w_{j+1}$ by Step 5 of the proof of Theorem 7.4. -/
 theorem hasDerivAt_applyL_semigroupLift {t : ℝ} (ht : 0 < t) (j : Fin ℓ) :
     HasDerivAt (fun τ ↦ applyL A ℓ j.castSucc (semigroupLift A u₀ ℓ τ))
       (-(applyL A ℓ j.succ (semigroupLift A u₀ ℓ t))) t := by
@@ -1488,8 +1664,10 @@ theorem hasDerivAt_applyL_semigroupLift {t : ℝ} (ht : 0 < t) (j : Fin ℓ) :
   rw [h3, ← applyL_semigroupLift_eq hA hs hδ0 hδt.le j.succ] at h2
   exact h2.congr_of_eventuallyEq (eventually_of_mem (Ioi_mem_nhds hδt) hEq)
 
-/-- The lift of `S_A(t) w'` in `D(A^{j+1})` for `w' = A S_A(τ) u₀`, `t = s + τ`, is the shift of
-the lift of `S_A(t) u₀` in `D(A^{j+2})`: `A^{i+1} S_A(t) u₀ = A^i S_A(s) (A S_A(τ) u₀)`. -/
+/-- Let $H$ be complete and $A$ maximal monotone and symmetric, and let $s, \tau > 0$. The shift of
+the lift of $S_A(s + \tau) u_0$ into $D(A^{j+2})$ is the lift of $S_A(s) w$ into $D(A^{j+1})$,
+where $w = A S_A(\tau) u_0$. In coordinates: $A^{i+1} S_A(s + \tau) u_0 = A^i S_A(s) A S_A(\tau)
+u_0$. -/
 theorem shiftL_semigroupLift {s τ : ℝ} (hs' : 0 < s) (hτ : 0 < τ) (j : ℕ) :
     shiftL A (j + 1) (semigroupLift A u₀ (j + 2) (s + τ))
       = semigroupLift A (A ⟨A.semigroup τ u₀,
@@ -1505,10 +1683,13 @@ theorem shiftL_semigroupLift {s τ : ℝ} (hs' : 0 < s) (hτ : 0 < τ) (j : ℕ)
   rw [← h3]
   exact congrArg (fun z : A.domain ↦ A z) (Subtype.ext h2)
 
-/-- **The parabolic bound on the top iterate**: for a symmetric maximal monotone `A`, `t > 0`
-and every `u₀`, `‖A^{j+1} S_A(t) u₀‖ ≤ ((j + 1)/t)^{j+1} ‖u₀‖`. Induction on `j` along the
-subdivision `t = s + τ`, `τ = t/(j+2)`: `A^{j+2} S_A(t) u₀ = A^{j+1} S_A(s) (A S_A(τ) u₀)` with
-`‖A S_A(τ) u₀‖ ≤ ‖u₀‖/τ` (Theorem 7.7's estimate). -/
+/-- **The parabolic bound on the top iterate.** Let $H$ be complete and $A$ maximal monotone and
+symmetric. For every $j \in \mathbb{N}$, $u_0 \in H$ and $t > 0$,
+$$\|A^{j+1} S_A(t) u_0\| \le \Big(\frac{j + 1}{t}\Big)^{j+1} \|u_0\|.$$
+
+Proof idea: induction on $j$, with the subdivision $t = s + \tau$, $\tau = t / (j + 2)$. Then
+$A^{j+2} S_A(t) u_0 = A^{j+1} S_A(s) A S_A(\tau) u_0$, with
+$\|A S_A(\tau) u_0\| \le \|u_0\| / \tau$ by Theorem 7.7. -/
 theorem norm_applyL_last_semigroupLift_le (j : ℕ) :
     ∀ (u₀ : H) {t : ℝ}, 0 < t →
       ‖applyL A (j + 1) (Fin.last (j + 1)) (semigroupLift A u₀ (j + 1) t)‖
@@ -1558,14 +1739,17 @@ theorem norm_applyL_last_semigroupLift_le (j : ℕ) :
           push_cast
           ring
 
-/-- The lift in `D(A^j)` is the cast of the lift in `D(A^ℓ)`, `j ≤ ℓ`. -/
+/-- Let $H$ be complete and $A$ maximal monotone and symmetric, $j \le \ell$ and $t > 0$. The image
+in $D(A^j)$ of the lift of $S_A(t) u_0$ into $D(A^\ell)$ is the lift into $D(A^j)$. -/
 theorem castLE_semigroupLift {j : ℕ} (h : j ≤ ℓ) {t : ℝ} (ht : 0 < t) :
     castLE A h (semigroupLift A u₀ ℓ t) = semigroupLift A u₀ j t :=
   eq_semigroupLift hA hs ht (by rw [applyL_castLE]; exact applyL_zero_semigroupLift hA hs ht)
 
-/-- **The parabolic bound at every order** ([brezis2011functional] Theorem 7.7 (27) iterated):
-for a symmetric maximal monotone `A`, `t > 0`, every `u₀ ∈ H` and every `j ≤ ℓ`,
-`‖A^j S_A(t) u₀‖ ≤ (j/t)^j ‖u₀‖`. -/
+/-- **The parabolic bound at every order**, the estimate (27) of Theorem 7.7 of
+[brezis2011functional] iterated. Let $H$ be complete and $A$ maximal monotone and symmetric. For
+$t > 0$, every $u_0 \in H$ and every $j \le \ell$,
+$$\|A^j S_A(t) u_0\| \le \Big(\frac{j}{t}\Big)^j \|u_0\|.$$
+For $j = 0$ the factor $(0/t)^0$ is $1$. -/
 theorem norm_applyL_semigroupLift_le {t : ℝ} (ht : 0 < t) (j : Fin (ℓ + 1)) :
     ‖applyL A ℓ j (semigroupLift A u₀ ℓ t)‖ ≤ ((j : ℕ) / t : ℝ) ^ (j : ℕ) * ‖u₀‖ := by
   have hcast : applyL A ℓ j (semigroupLift A u₀ ℓ t)
@@ -1582,8 +1766,12 @@ theorem norm_applyL_semigroupLift_le {t : ℝ} (ht : 0 < t) (j : Fin (ℓ + 1)) 
     push_cast at this ⊢
     exact this
 
-/-- **The lift is `C^∞` on `(0, ∞)`**: the lifts of Theorem 7.7 at every order agree with
-`semigroupLift` by uniqueness, so the latter is `C^k` on `(0, ∞)` for every `k`. -/
+/-- **The lift is $C^\infty$ on $(0, \infty)$.** Let $H$ be complete and $A$ maximal monotone and
+symmetric. For every $u_0 \in H$ and $\ell \in \mathbb{N}$, the curve $t \mapsto$ (the lift of
+$S_A(t) u_0$ into $D(A^\ell)$) is $C^\infty$ on $(0, \infty)$.
+
+The lifts of Theorem 7.7 at every order agree with `LinearPMap.semigroupLift` by uniqueness, so
+the latter is $C^k$ on $(0, \infty)$ for every $k$. -/
 theorem contDiffOn_semigroupLift (u₀ : H) (ℓ : ℕ) :
     ContDiffOn ℝ ∞ (semigroupLift A u₀ ℓ) (Ioi 0) := by
   refine contDiffOn_infty.2 fun k ↦ ?_
@@ -1591,13 +1779,15 @@ theorem contDiffOn_semigroupLift (u₀ : H) (ℓ : ℕ) :
   exact hv.congr fun t ht ↦ (eq_semigroupLift hA hs ht (hv0 t ht)).symm
 
 omit hA hs [CompleteSpace H] in
-/-- The graph norm on `D(A)`: `‖x‖² = ‖A^0 x‖² + ‖A^1 x‖²` for `x ∈ D(A)` (`PowDomain 1`). -/
+/-- The graph norm on $D(A)$: $\|x\|^2 = \|x_0\|^2 + \|x_1\|^2$ for $x \in D(A)$, that is, for
+`x : A.PowDomain 1`. -/
 theorem norm_sq_powDomain_one (x : A.PowDomain 1) :
     ‖x‖ ^ 2 = ‖applyL A 1 0 x‖ ^ 2 + ‖applyL A 1 1 x‖ ^ 2 := by
   rw [PowDomain.norm_sq_eq, Fin.sum_univ_two]
 
 omit hA hs [CompleteSpace H] in
-/-- The element `(u₀, A u₀)` of `D(A)` with the graph norm, for `u₀ ∈ D(A)`. -/
+/-- For $u_0 \in D(A)$ there is $x$ in $D(A)$ with the graph norm (`A.PowDomain 1`) with $x_0 = u_0$
+and $x_1 = A u_0$. -/
 theorem exists_powDomain_one (u₀ : A.domain) :
     ∃ x : A.PowDomain 1, applyL A 1 0 x = u₀ ∧ applyL A 1 1 x = A u₀ := by
   refine ⟨PowDomain.mk A ![(u₀ : H), A u₀] fun i ↦ ?_, rfl, rfl⟩
@@ -1605,7 +1795,7 @@ theorem exists_powDomain_one (u₀ : A.domain) :
   exact ⟨u₀.2, rfl⟩
 
 omit hA hs [CompleteSpace H] in
-/-- The zero curve solves the evolution problem with the datum `0`, on any set of times. -/
+/-- The zero curve solves $u' + Au = 0$ with the initial value $0$, on every set of times. -/
 theorem isSolutionOn_zero (s : Set ℝ) : A.IsSolutionOn 0 s (fun _ ↦ (0 : H)) where
   apply_zero := rfl
   mem_domain _ _ := Submodule.zero_mem _
@@ -1616,13 +1806,17 @@ theorem isSolutionOn_zero (s : Set ℝ) : A.IsSolutionOn 0 s (fun _ ↦ (0 : H))
     exact hasDerivWithinAt_const t s (0 : H)
 
 omit hA hs [CompleteSpace H] in
-/-- **The abstract energy identity (6)**: for a monotone `A`, a solution `u` on `(0, ∞)` with
-`u ∈ C([0, ∞); H) ∩ C¹((0, ∞); H)`, and `g t = ⟪A u(t), u(t)⟫` for `t > 0`, the function `g` is
-integrable on `(0, T]` and `½ ‖u(T)‖² + ∫₀ᵀ g = ½ ‖u₀‖²` for every `T > 0`
-([brezis2011functional], proof of Theorem 10.1, the identity (6)). The function
-`φ(t) = ½ ‖u(t)‖²` is `C¹` on `(0, ∞)` with `φ' = ⟪u, u'⟫ = −g ≤ 0`; integrability of `g` on
-`(0, T]` follows from `∫_ε^T g = φ(ε) − φ(T) ≤ ½ ‖u₀‖²`, and the identity from the fundamental
-theorem of calculus with the one-sided limits `φ(ε) → φ(0)`, `φ(t) → φ(T)`. -/
+/-- **The abstract energy identity (6)** of the proof of Theorem 10.1 of [brezis2011functional]. Let
+$A$ be monotone, and let $u$ solve $u' + Au = 0$ on $(0, \infty)$ with $u(0) = u_0$, with $u \in
+C([0, \infty); H) \cap C^1((0, \infty); H)$. Let $g(t) = \langle Au(t), u(t) \rangle$ for
+$t > 0$. Then for every $T > 0$, $g$ is integrable on $(0, T]$ and
+$$\frac12 \|u(T)\|^2 + \int_0^T g(t) \, dt = \frac12 \|u_0\|^2.$$
+
+Proof idea: $\varphi(t) = \frac12 \|u(t)\|^2$ is $C^1$ on $(0, \infty)$ with
+$\varphi' = \langle u, u' \rangle = -g \le 0$. Integrability of $g$ on $(0, T]$ follows from
+$\int_\varepsilon^T g = \varphi(\varepsilon) - \varphi(T) \le \frac12 \|u_0\|^2$, and the
+identity from the fundamental theorem of calculus with the one-sided limits
+$\varphi(\varepsilon) \to \varphi(0)$. -/
 theorem IsSolutionOn.energy_Ioi (hA : A.IsMonotone) {u : ℝ → H}
     (hu : A.IsSolutionOn u₀ (Ioi 0) u) (hc : ContinuousOn u (Ici 0))
     (hd : ContDiffOn ℝ 1 u (Ioi 0)) {g : ℝ → ℝ}

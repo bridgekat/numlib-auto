@@ -6,40 +6,45 @@ import Numlib.Analysis.Convex.Subdifferential.Differentiability
 import Numlib.Analysis.Convex.Subdifferential.EssentiallySmooth
 
 /-!
-# Condition (c) of essential smoothness, in directional-derivative form
+# Essential smoothness in terms of directional derivatives
 
-Given conditions (a) and (b) of essential smoothness, condition (c) — the norms of the gradients
-blow up at the boundary of `C = int (dom f)` — may be replaced by
+Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+closed, proper and convex, and let $C = \operatorname{int}(\operatorname{dom} f)$. Essential
+smoothness (`ConvexAnalysis.EssentiallySmooth`) asks that (a) $C$ is nonempty, (b) $f$ is
+differentiable on $C$, and (c) $\|\nabla f(x_i)\| \to \infty$ for every sequence in $C$ that
+converges to a point outside $C$. Given (a) and (b), condition (c) can be replaced by
+$$\text{(c')} \qquad f'(x + \lambda (a - x); a - x) \to -\infty \text{ as } \lambda \downarrow 0,
+  \quad \text{for every } a \in C \text{ and every } x \notin C.$$
+This is Lemma 26.2 of [rockafellar1970convex].
 
-```
-(c')  f'(x + λ(a − x); a − x) ↓ −∞ as λ ↓ 0,   for every a ∈ C and every x ∉ C.
-```
-
-Both say the same thing at a single point `x`, namely that `∂f x = ∅`: (c) because `∂f` has a
-closed graph and is recovered from limits of gradients, and (c') because along the line through `x`
-and `a` the directional derivative collapses to `−∞` exactly when `∂f x` is empty. Those two halves
-are separate theorems below, so either can be used on its own.
+At a single point $x$, both conditions say that $\partial f(x) = \emptyset$. For (c) this holds
+because $\partial f$ has a closed graph and is recovered from limits of gradients. For (c') it holds
+because, along the line through $x$ and $a$, the directional derivative tends to $-\infty$ exactly
+when $\partial f(x)$ is empty. The two halves are separate theorems, so each can be used alone. The
+proofs restrict $f$ to a line and use the theory of convex functions of one variable.
 
 ## Main results
 
-* `closedProperConvexFn_lineRestrict` — the restriction of a closed proper convex function to a
-  line is closed proper convex, based at *any* point of the line, not only a point of `dom f`.
-* `subdifferential_eq_empty_iff_tendsto_dirDeriv`,
-  `subdifferential_eq_empty_iff_tendsto_norm_fderiv` — conditions (c') and (c) at `x` each say that
-  `∂f x = ∅`.
-* `essentiallySmooth_iff_tendsto_dirDeriv` — (c) may be replaced by (c')
-  ([rockafellar1970convex] Lemma 26.2).
+* `ConvexAnalysis.closedProperConvexFn_lineRestrict`: the restriction $t \mapsto f(x + t y)$ of a
+  closed proper convex function to a line that meets $\operatorname{dom} f$ is closed, proper and
+  convex, for any base point $x$ of the line.
+* `ConvexAnalysis.subdifferential_eq_empty_iff_tendsto_dirDeriv`,
+  `ConvexAnalysis.subdifferential_eq_empty_iff_tendsto_norm_fderiv`: condition (c') at $x$ and
+  condition (c) at $x$ each say that $\partial f(x) = \emptyset$.
+* `ConvexAnalysis.essentiallySmooth_iff_tendsto_dirDeriv`: given (a) and (b), essential smoothness
+  is equivalent to (c'). This is Lemma 26.2 of [rockafellar1970convex].
 
 ## Implementation notes
 
-`f` is assumed closed, where the book says "without loss of generality" and replaces `f` by `cl f`;
-every consumer already carries `ClosedConvex f`. Condition (c') is stated as a `Tendsto` to `𝓝 ⊥`:
-the book's `↓` also records monotonicity of `λ ↦ f'(x + λ(a − x); a − x)`, but only the value of the
-limit is used.
-
-## References
-
-* [rockafellar1970convex] §26.
+* The function $f$ is assumed closed. [rockafellar1970convex] instead replaces $f$ by
+  $\operatorname{cl} f$ "without loss of generality". Every use of these results already has the
+  hypothesis `ConvexAnalysis.ClosedConvex f`.
+* Condition (c') is stated as convergence to $-\infty$ (`Filter.Tendsto` to `𝓝 ⊥`). The arrow
+  $\downarrow$ in [rockafellar1970convex] also records that
+  $\lambda \mapsto f'(x + \lambda (a - x); a - x)$ is monotone, but only the value of the limit is
+  used.
+* The gradient in condition (c) is the Fréchet derivative `fderiv ℝ (fun w => (f w).toReal)` of the
+  real values of $f$, and $\|\nabla f\|$ is its operator norm.
 -/
 
 namespace ConvexAnalysis
@@ -52,23 +57,33 @@ section LineRestrict
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal} {x y : E}
 
-/-- The restriction of a closed function to a line is closed. -/
+/-- Let $E$ be a real normed space and let $f : E \to [-\infty, +\infty]$ be proper and closed. Then
+for all $x, y \in E$ the restriction $t \mapsto f(x + t y)$ of $f$ to a line is closed. -/
 theorem closedConvex_lineRestrict (hp : ProperConvex f) (hcl : ClosedConvex f) (x y : E) :
     ClosedConvex fun t : ℝ => f (x + t • y) := by
   have hcont : Continuous fun s : ℝ => x + s • y := by fun_prop
   exact (closedConvex_iff_lowerSemicontinuous fun _ => hp.ne_bot _).2 fun t c hc =>
     (hcont.tendsto t).eventually (hcl.lowerSemicontinuous _ c hc)
 
-/-- The restriction of a proper function to a line is proper as soon as the line meets `dom f`.
-Unlike `properConvex_lineRestrict`, this does not ask the *base point* to lie in `dom f` — here the
-base point `x` is precisely the one that may fail to. -/
+/-- Let $f$ be proper. If the line $t \mapsto x + t y$ meets $\operatorname{dom} f$, then the
+restriction $t \mapsto f(x + t y)$ is proper.
+
+Unlike `ConvexAnalysis.properConvex_lineRestrict`, this does not require the base point $x$ to
+lie in $\operatorname{dom} f$. Here $x$ is exactly the point that may lie outside
+$\operatorname{dom} f$. -/
 theorem properConvex_lineRestrict_of_mem_convexDom (hp : ProperConvex f) {t₀ : ℝ}
     (ht : x + t₀ • y ∈ convexDom f) :
     ProperConvex fun t : ℝ => f (x + t • y) :=
   ⟨⟨t₀, ht⟩, fun _ => hp.ne_bot _⟩
 
-/-- The restriction of a closed proper convex function to a line meeting `dom f` is closed proper
-convex, which is what the one-dimensional theory runs on. -/
+/-- Let $E$ be a real normed space, let $f : E \to [-\infty, +\infty]$ be closed, proper and convex,
+and let $x, y \in E$ with $x + t_0 y \in \operatorname{dom} f$ for some $t_0 \in \mathbb{R}$.
+Then the restriction
+$$g(t) = f(x + t y), \qquad t \in \mathbb{R},$$
+is a closed proper convex function on $\mathbb{R}$.
+
+The base point $x$ need not lie in $\operatorname{dom} f$. The theory of closed proper convex
+functions of one variable then applies to $g$. -/
 theorem closedProperConvexFn_lineRestrict (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     {t₀ : ℝ} (ht : x + t₀ • y ∈ convexDom f) :
@@ -76,9 +91,13 @@ theorem closedProperConvexFn_lineRestrict (hf : ConvexFn f) (hp : ProperConvex f
   ⟨convexFn_lineRestrict hf x y, closedConvex_lineRestrict hp hcl x y,
     properConvex_lineRestrict_of_mem_convexDom hp ht⟩
 
-/-- The right derivative of the restriction is the directional derivative along the line. Both
-sides are `−∞` where `f (x + t y) = ⊤`, so the only hypothesis needed is that the line meets
-`dom f` somewhere to the right of `t`; without it `g'₊(t)` is `+∞` by fiat and the two differ. -/
+/-- Let $f$ be proper, let $x, y \in E$, and let $g(s) = f(x + s y)$. If $f(x + s y) < +\infty$ for
+some $s > t$, then the right derivative of $g$ at $t$ is the directional derivative of $f$ along
+the line:
+$$g'_+(t) = f'(x + t y; y).$$
+
+Both sides are $-\infty$ where $f(x + t y) = +\infty$. Without the hypothesis, $g'_+(t)$ is
+$+\infty$ by the convention of `ConvexAnalysis.rightDeriv`, and the two sides differ. -/
 theorem rightDeriv_lineRestrict_eq_dirDeriv (hp : ProperConvex f) (x y : E) {t : ℝ}
     (ht : ∃ s, t < s ∧ f (x + s • y) < ⊤) :
     rightDeriv (fun s : ℝ => f (x + s • y)) t = dirDeriv f (x + t • y) y := by
@@ -94,8 +113,10 @@ section LineSegment
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal} {a : E}
 
-/-- Along the segment from `x` to `a`, the directional derivative `f'(x + t(a − x); a − x)` tends,
-as `t` decreases to `0`, to the right derivative at `0` of the restriction of `f` to that line. -/
+/-- Let $f$ be closed, proper and convex, let $a \in \operatorname{dom} f$, and let $x \in E$. Let
+$g(s) = f(x + s(a - x))$ be the restriction of $f$ to the line through $x$ and $a$. Then
+$$f'(x + t(a - x); a - x) \to g'_+(0) \quad \text{as } t \downarrow 0.$$
+-/
 theorem tendsto_dirDeriv_lineRestrict (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (ha : a ∈ convexDom f) (x : E) :
     Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0)
@@ -118,9 +139,12 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   {f : E → EReal} {a x : E}
 
 
-/-- `g'₊(0) = −∞` exactly when `f` has no subgradient at `x`, where `g` is the restriction of `f`
-to the line from `x` towards a relative interior point `a` of `dom f`. Off `dom f` both sides hold;
-on `dom f` the right derivative is `f'(x; a − x)`, which is `−∞` exactly when `∂f x` is empty. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f$ be proper and convex, let
+$a \in \operatorname{ri}(\operatorname{dom} f)$, and let $x \in E$. Let
+$g(s) = f(x + s(a - x))$. Then $g'_+(0) = -\infty$ if and only if $\partial f(x) = \emptyset$.
+
+Off $\operatorname{dom} f$ both sides hold. On $\operatorname{dom} f$ the right derivative is
+$f'(x; a - x)$, which is $-\infty$ exactly when $\partial f(x)$ is empty. -/
 theorem rightDeriv_lineRestrict_zero_eq_bot_iff (hf : ConvexFn f) (hp : ProperConvex f)
     (ha : a ∈ ri (convexDom f)) (x : E) :
     rightDeriv (fun s : ℝ => f (x + s • (a - x))) 0 = ⊥ ↔ subdifferential (innerₗ E) f x = ∅ := by
@@ -140,7 +164,14 @@ theorem rightDeriv_lineRestrict_zero_eq_bot_iff (hf : ConvexFn f) (hp : ProperCo
         (hp.ne_bot x) hempty ha
       rwa [hy]
 
-/-- Condition (c') at `x` says exactly that `f` has no subgradient at `x`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+closed, proper and convex, let $a \in \operatorname{ri}(\operatorname{dom} f)$, and let
+$x \in E$. Then
+$$\partial f(x) = \emptyset \iff f'(x + t(a - x); a - x) \to -\infty \text{ as } t \downarrow
+  0.$$
+
+This is condition (c') at the point $x$ in the direction of $a$. The subdifferential is taken
+for the inner product `innerₗ E`. -/
 theorem subdifferential_eq_empty_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (ha : a ∈ ri (convexDom f)) (x : E) :
     subdifferential (innerₗ E) f x = ∅ ↔
@@ -151,10 +182,17 @@ theorem subdifferential_eq_empty_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : Pr
   · exact (rightDeriv_lineRestrict_zero_eq_bot_iff hf hp ha x).1
       (tendsto_nhds_unique htend hlim)
 
-/-- Condition (c) at `x` says exactly that `f` has no subgradient at `x`. Forwards, a bounded
-subsequence of gradients has a convergent sub-subsequence whose limit is a subgradient at `x`.
-Backwards, a subgradient at `x` is built from limits of gradients, and that produces a convergent
-sequence of gradients which (c) forbids. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+closed, proper and convex, let $C = \operatorname{int}(\operatorname{dom} f)$ be nonempty, and
+let $f$ be differentiable at every point of $C$. Then for every $x \in E$,
+$\partial f(x) = \emptyset$ if and only if $\|\nabla f(z_i)\| \to \infty$ for every sequence
+$(z_i)$ in $C$ with $z_i \to x$.
+
+This is condition (c) at the point $x$. For the forward implication, a bounded subsequence of
+gradients has a convergent subsequence whose limit is a subgradient at $x$. For the reverse
+implication, a subgradient at $x$ is built from limits of gradients, which gives a convergent
+sequence of gradients and contradicts condition (c). The gradient is
+`fderiv ℝ (fun w => (f w).toReal)`. -/
 theorem subdifferential_eq_empty_iff_tendsto_norm_fderiv (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (hne : (interior (convexDom f)).Nonempty)
     (hdiff : ∀ ⦃z : E⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) (x : E) :
@@ -197,8 +235,12 @@ theorem subdifferential_eq_empty_iff_tendsto_norm_fderiv (hf : ConvexFn f) (hp :
     rw [tendsto_congr hnorm] at htop
     exact not_tendsto_atTop_of_tendsto_nhds hvs.norm htop
 
-/-- At a single point: given (a) and (b), condition (c) at `x` and condition (c') at `x` in the
-direction of any `a ∈ C` say the same thing. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f$ be closed, proper and convex,
+let $C = \operatorname{int}(\operatorname{dom} f)$ be nonempty, let $f$ be differentiable on
+$C$, and let $a \in C$. Then for every $x \in E$, condition (c) at $x$ holds if and only if
+condition (c') holds at $x$ in the direction of $a$: $\|\nabla f(z_i)\| \to \infty$ for every
+sequence $(z_i)$ in $C$ with $z_i \to x$ if and only if $f'(x + t(a - x); a - x) \to -\infty$ as
+$t \downarrow 0$. -/
 theorem tendsto_norm_fderiv_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f) (hne : (interior (convexDom f)).Nonempty)
     (hdiff : ∀ ⦃z : E⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z)
@@ -210,9 +252,15 @@ theorem tendsto_norm_fderiv_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : ProperC
     (subdifferential_eq_empty_iff_tendsto_dirDeriv hf hp hcl
       (Convex.interior_subset_relint ha) x)
 
-/-- For a closed proper convex function satisfying (a) and (b), essential smoothness is condition
-(c'), the collapse of the directional derivative to `−∞` along every segment reaching a point
-outside `C = int (dom f)`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+closed, proper and convex, let $C = \operatorname{int}(\operatorname{dom} f)$ be nonempty, and
+let $f$ be differentiable at every point of $C$. Then $f$ is essentially smooth if and only if
+$$f'(x + t(a - x); a - x) \to -\infty \text{ as } t \downarrow 0 \quad \text{for every } x
+  \notin C \text{ and every } a \in C.$$
+
+This is Lemma 26.2 of [rockafellar1970convex]. Essential smoothness is
+`ConvexAnalysis.EssentiallySmooth`. The hypotheses are its conditions (a) and (b), and the
+equivalence replaces condition (c) by condition (c'). -/
 theorem essentiallySmooth_iff_tendsto_dirDeriv (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hne : (interior (convexDom f)).Nonempty)

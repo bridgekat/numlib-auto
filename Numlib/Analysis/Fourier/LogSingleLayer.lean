@@ -20,56 +20,69 @@ import Numlib.Analysis.SpecialFunctions.Integrals.Basic
 
 The single layer potential of the unit circle, written in the arclength parameter, is the
 convolution operator
+$$A\varphi(t) = -\frac{1}{\pi} \int_0^{2\pi} \varphi(s) \log \bigl|2 e^{-1/2} \sin\bigl((t -
+  s)/2\bigr)\bigr| \, ds.$$
+Its kernel is the logarithm of the chord length $|e^{it} - e^{is}| = |2 \sin((t - s)/2)|$, rescaled
+by the factor $e^{-1/2}$ so that the constant function is a fixed point of $A$. The operator is
+diagonal in the Fourier basis: $A$ multiplies the mode $e^{imt}$, $m \in \mathbb{Z}$, by
+$1/\max(1, |m|)$.
 
-`A φ t = -(1 / π) ∫_0^{2 π} φ s * log |2 e^(-1/2) sin ((t - s) / 2)| ds`,
-
-whose kernel is the logarithm of the chord length `|e^(i t) - e^(i s)| = |2 sin ((t - s) / 2)|`,
-rescaled so that the constant function is a fixed point. It is diagonal in the Fourier basis: `A`
-multiplies the mode `e^(i m t)` by `1 / max 1 |m|`.
-
-The analytic content is the value of the Fourier coefficients of `u ↦ log (sin (u / 2))` on
-`[0, 2 π]`,
-
-`∫_0^{2 π} log (sin (u / 2)) * cos (m u) du = -π / m`,  `m ≥ 1`,
-
-which is `integral_log_sin_half_mul_cos` here. The proof used is an explicit antiderivative rather
-than term-by-term integration of the classical expansion
-`-log |2 sin (u / 2)| = ∑_{m ≥ 1} cos (m u) / m`, which converges only conditionally. Two elementary
-multiple-angle identities do all the work:
-
-* `cos_half_mul_sin_nat_mul`, the division-free form of
-  `cot (u / 2) sin (m u) = 1 + 2 ∑_{k = 1}^{m - 1} cos (k u) + cos (m u)`, says that
-  `log (sin (u / 2)) * cos (m u)` is the derivative on `(0, 2 π)` of an explicit elementary
-  function;
-* `sin_nat_mul_eq`, the factorization `sin (m u) = 2 sin (u / 2) ∑_{j < m} cos ((2 j + 1) (u / 2))`,
-  together with the continuity of `x * log x` at `0`, says that this antiderivative extends
-  continuously to the closed interval, so that the fundamental theorem of calculus applies to the
-  improper endpoints.
+The analytic content is the value of the Fourier coefficients of $u \mapsto \log(\sin(u/2))$ on
+$[0, 2\pi]$:
+$$\int_0^{2\pi} \log(\sin(u/2)) \cos(mu) \, du = -\frac{\pi}{m}, \qquad m \ge 1.$$
 
 ## Main definitions
 
-* `logSingleLayerKernel t s = -(1 / π) log |2 e^(-1/2) sin ((t - s) / 2)|`;
-* `logSingleLayer φ t = ∫_0^{2 π} logSingleLayerKernel t s * φ s ds`, and its `ℂ`-valued
-  counterpart `logSingleLayerC`.
+* `logChord`: the kernel as a function of the difference $u = t - s$, $\log|2 e^{-1/2} \sin(u/2)|$.
+* `logSingleLayerKernel`: the kernel $k(t, s) = -\pi^{-1} \log|2 e^{-1/2} \sin((t - s)/2)|$.
+* `logSingleLayer`: the operator $A\varphi(t) = \int_0^{2\pi} k(t, s) \varphi(s) \, ds$ on real
+  functions.
+* `logSingleLayerC`: the same operator on complex functions.
 
-## Main statements
+## Main results
 
-* `integral_log_sin_half_mul_cos`, `integral_log_sin_half_mul_sin` and `integral_log_sin_half`, the
-  Fourier coefficients of `u ↦ log (sin (u / 2))` on `[0, 2 π]`;
-* `logSingleLayer_cos` and `logSingleLayer_sin`, that `A` multiplies `cos (m ·)` and `sin (m ·)` by
-  `1 / max 1 m`;
-* `logSingleLayerC_fourier`, the same for the complex modes `t ↦ e^(i m t)`, `m : ℤ`.
+* `integral_log_sin_half_mul_cos`, `integral_log_sin_half_mul_sin` and `integral_log_sin_half`: the
+  Fourier coefficients of $u \mapsto \log(\sin(u/2))$ on $[0, 2\pi]$.
+* `logSingleLayer_cos` and `logSingleLayer_sin`: $A$ multiplies $\cos(m \cdot)$ and $\sin(m \cdot)$
+  by $1/\max(1, m)$ for $m \in \mathbb{N}$.
+* `logSingleLayer_cos_int` and `logSingleLayer_sin_int`: the same for $m \in \mathbb{Z}$, with the
+  factor $1/\max(1, |m|)$.
+* `logSingleLayerC_fourier`: $A$ multiplies the complex mode $t \mapsto e^{imt}$,
+  $m \in \mathbb{Z}$, by $1/\max(1, |m|)$.
+
+## Proof outline
+
+The coefficients are computed with an explicit antiderivative, not by integration term by term of
+the classical expansion $-\log|2 \sin(u/2)| = \sum_{m \ge 1} \cos(mu)/m$, which converges only
+conditionally. Two elementary identities for multiple angles do all the work. The first,
+`cos_half_mul_sin_nat_mul`, is the form without division of
+$$\cot(u/2) \sin(mu) = 1 + 2 \sum_{k=1}^{m-1} \cos(ku) + \cos(mu).$$
+It shows that $\log(\sin(u/2)) \cos(mu)$ is the derivative on $(0, 2\pi)$ of an explicit elementary
+function. The second, `sin_nat_mul_eq`, is the factorization $\sin(mu) = 2 \sin(u/2) \sum_{j<m}
+\cos((2j + 1)u/2)$. Together with the continuity of $x \log x$ at $0$, it shows that this
+antiderivative extends continuously to the closed interval $[0, 2\pi]$. So the fundamental theorem
+of calculus applies up to the endpoints, where the integrand is unbounded.
+
+## Implementation notes
+
+* `Real.log` is the logarithm of the absolute value, with `Real.log 0 = 0`. So `logChord` needs no
+  absolute value, and the kernel `logSingleLayerKernel t s` is $0$ where $\sin((t - s)/2) = 0$, a
+  set of measure zero.
 -/
 
 open MeasureTheory
 
 open scoped Real
 
-/-! ### Two elementary multiple-angle identities -/
+/-! ### Two elementary identities for multiple angles -/
 
-/-- `sin (m u) = 2 sin (u / 2) ∑_{j < m} cos ((2 j + 1) (u / 2))`: the sine of an integer multiple
-of `u` factors through `sin (u / 2)` with a *continuous* cofactor. This is what makes
-`log (sin (u / 2)) * sin (m u)` extend continuously by `0` to the zeros of `sin (u / 2)`. -/
+/-- For $m \in \mathbb{N}$ and $u \in \mathbb{R}$,
+$$\sin(mu) = 2 \sin(u/2) \sum_{j=0}^{m-1} \cos\bigl((2j + 1) u/2\bigr).$$
+So the sine of an integer multiple of $u$ factors through $\sin(u/2)$, with a continuous
+cofactor.
+
+This is what makes $\log(\sin(u/2)) \sin(mu)$ extend continuously by $0$ to the zeros of
+$\sin(u/2)$. -/
 theorem sin_nat_mul_eq (m : ℕ) (u : ℝ) :
     Real.sin (m * u)
       = 2 * Real.sin (u / 2) * ∑ j ∈ Finset.range m, Real.cos ((2 * j + 1) * (u / 2)) := by
@@ -84,10 +97,12 @@ theorem sin_nat_mul_eq (m : ℕ) (u : ℝ) :
     push_cast at ih ⊢
     linear_combination ih + h
 
-/-- `cos (u / 2) sin (m u) = sin (u / 2) (1 - cos (m u) + 2 ∑_{k < m} cos ((k + 1) u))`, the
-division-free form of the classical identity
-`cot (u / 2) sin (m u) = 1 + 2 ∑_{k = 1}^{m - 1} cos (k u) + cos (m u)`. It is what produces an
-elementary antiderivative for `log (sin (u / 2)) * cos (m u)`. -/
+/-- For $m \in \mathbb{N}$ and $u \in \mathbb{R}$,
+$$\cos(u/2) \sin(mu) = \sin(u/2) \Bigl(1 - \cos(mu) + 2 \sum_{k=0}^{m-1} \cos((k + 1)u)\Bigr).$$
+This is the form without division of the classical identity $\cot(u/2) \sin(mu) = 1 + 2
+\sum_{k=1}^{m-1} \cos(ku) + \cos(mu)$.
+
+It gives an elementary antiderivative of $\log(\sin(u/2)) \cos(mu)$. -/
 theorem cos_half_mul_sin_nat_mul (m : ℕ) (u : ℝ) :
     Real.cos (u / 2) * Real.sin (m * u)
       = Real.sin (u / 2) * (1 - Real.cos (m * u)
@@ -108,15 +123,16 @@ theorem cos_half_mul_sin_nat_mul (m : ℕ) (u : ℝ) :
     push_cast at ih ⊢
     linear_combination ih + Real.cos (u / 2) * h' - Real.sin (u / 2) * h
 
-/-! ### The Fourier coefficients of `log (sin (u / 2))` on `[0, 2 π]` -/
+/-! ### The Fourier coefficients of $\log(\sin(u/2))$ on $[0, 2\pi]$ -/
 
-/-- An antiderivative of `1 - cos (m u) + 2 ∑_{k < m} cos ((k + 1) u)`. -/
+/-- An antiderivative $u - \sin(mu)/m + 2 \sum_{k<m} \sin((k + 1)u)/(k + 1)$ of
+$1 - \cos(mu) + 2 \sum_{k<m} \cos((k + 1)u)$. -/
 private noncomputable def auxS (m : ℕ) (u : ℝ) : ℝ :=
   u - Real.sin (m * u) / m + 2 * ∑ k ∈ Finset.range m, Real.sin (((k : ℝ) + 1) * u) / ((k : ℝ) + 1)
 
-/-- An antiderivative of `log (sin (u / 2)) * cos (m u)`, written so as to be continuous on all of
-`ℝ`: on `(0, 2 π)` it is `log (sin (u / 2)) * sin (m u) / m - auxS m u / (2 m)`, but the first
-summand is presented through `x * log x`, which is continuous at `0`. -/
+/-- An antiderivative of $\log(\sin(u/2)) \cos(mu)$ that is continuous on $\mathbb{R}$: on
+$(0, 2\pi)$ it is $\log(\sin(u/2)) \sin(mu)/m - S(u)/(2m)$ with $S$ the function above, written
+through $x \log x$ at $x = \sin(u/2)$, which is continuous at $0$. -/
 private noncomputable def auxPhi (m : ℕ) (u : ℝ) : ℝ :=
   2 * (Real.sin (u / 2) * Real.log (Real.sin (u / 2)))
       * (∑ j ∈ Finset.range m, Real.cos ((2 * j + 1) * (u / 2))) / m - auxS m u / (2 * m)
@@ -208,9 +224,11 @@ private theorem hasDerivAt_auxPhi {m : ℕ} (hm : m ≠ 0) {u : ℝ} (hu : Real.
   field_simp
   ring
 
-/-- The `m`-th cosine Fourier coefficient of `u ↦ log (sin (u / 2))` over `[0, 2 π]`, for
-`m ≥ 1`. Equivalently, `∫_0^{2 π} log |2 sin (u / 2)| cos (m u) du = -π / m`, since
-`∫_0^{2 π} cos (m u) du = 0`. -/
+/-- For a natural number $m \ge 1$, the $m$-th cosine Fourier coefficient of
+$u \mapsto \log(\sin(u/2))$ on $[0, 2\pi]$ is
+$$\int_0^{2\pi} \log(\sin(u/2)) \cos(mu) \, du = -\frac{\pi}{m}.$$
+Since $\int_0^{2\pi} \cos(mu) \, du = 0$, also $\int_0^{2\pi} \log|2 \sin(u/2)| \cos(mu) \, du =
+-\pi/m$. -/
 theorem integral_log_sin_half_mul_cos {m : ℕ} (hm : m ≠ 0) :
     ∫ u in (0 : ℝ)..(2 * π), Real.log (Real.sin (u / 2)) * Real.cos (m * u) = -π / m := by
   have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hm
@@ -244,8 +262,10 @@ theorem integral_log_sin_half_mul_cos {m : ℕ} (hm : m ≠ 0) :
     field_simp
   rw [h0, h2pi, sub_zero]
 
-/-- The `m`-th sine Fourier coefficient of `u ↦ log (sin (u / 2))` over `[0, 2 π]` vanishes, because
-the integrand is antisymmetric about `u = π`. -/
+/-- For every $m \in \mathbb{N}$, the $m$-th sine Fourier coefficient of $u \mapsto \log(\sin(u/2))$
+on $[0, 2\pi]$ vanishes:
+$$\int_0^{2\pi} \log(\sin(u/2)) \sin(mu) \, du = 0.$$
+The reason is that the integrand is antisymmetric about $u = \pi$. -/
 theorem integral_log_sin_half_mul_sin (m : ℕ) :
     ∫ u in (0 : ℝ)..(2 * π), Real.log (Real.sin (u / 2)) * Real.sin (m * u) = 0 := by
   have h := intervalIntegral.integral_comp_sub_left
@@ -267,7 +287,9 @@ theorem integral_log_sin_half_mul_sin (m : ℕ) :
   rw [hcongr] at h
   linarith
 
-/-- The mean of `u ↦ log (sin (u / 2))` over `[0, 2 π]`, from `∫_0^π log (sin x) dx = -π log 2`. -/
+/-- The integral of $u \mapsto \log(\sin(u/2))$ over $[0, 2\pi]$:
+$$\int_0^{2\pi} \log(\sin(u/2)) \, du = -2\pi \log 2.$$
+This follows from $\int_0^\pi \log(\sin x) \, dx = -\pi \log 2$. -/
 theorem integral_log_sin_half :
     ∫ u in (0 : ℝ)..(2 * π), Real.log (Real.sin (u / 2)) = -(2 * π * Real.log 2) := by
   have h := intervalIntegral.integral_comp_div (a := (0 : ℝ)) (b := 2 * π) (c := 2)
@@ -279,39 +301,51 @@ theorem integral_log_sin_half :
 
 /-! ### The logarithmic single layer operator -/
 
-/-- The logarithmic single layer kernel as a function of the difference of its two parameters:
-`logChord u = log |2 e^(-1/2) sin (u / 2)|`, written without the absolute value, since
-`Real.log` already ignores the sign of its argument. Here `|2 sin (u / 2)|` is the chord length
-`|e^(i t) - e^(i s)|` at `u = t - s`, and the factor `e^(-1/2)` is the normalization that makes the
-constant function a fixed point of the operator below. -/
+/-- The logarithmic single layer kernel as a function of the difference $u = t - s$ of its two
+parameters:
+$$\ell(u) = \log 2 - \frac{1}{2} + \log(\sin(u/2)),$$
+which is $\log|2 e^{-1/2} \sin(u/2)|$ where $\sin(u/2) \ne 0$.
+
+The factor $|2 \sin(u/2)|$ is the chord length $|e^{it} - e^{is}|$ at $u = t - s$, and the
+factor $e^{-1/2}$ is the normalization that makes the constant function a fixed point of the
+operator `logSingleLayer`. The formula needs no absolute value, because `Real.log` is the
+logarithm of the absolute value. Where $\sin(u/2) = 0$, the value is $\log 2 - 1/2$, because
+`Real.log 0 = 0`. -/
 noncomputable def logChord (u : ℝ) : ℝ := Real.log 2 - 1 / 2 + Real.log (Real.sin (u / 2))
 
+/-- Where $\sin(u/2) \ne 0$, `logChord u` is $\log|2 e^{-1/2} \sin(u/2)|$. -/
 theorem logChord_eq_log_abs (u : ℝ) (hu : Real.sin (u / 2) ≠ 0) :
     logChord u = Real.log |2 * Real.exp (-(1 / 2)) * Real.sin (u / 2)| := by
   rw [Real.log_abs, Real.log_mul (by positivity) hu,
     Real.log_mul two_ne_zero (Real.exp_ne_zero _), Real.log_exp, logChord]
   ring
 
-/-- `logChord` is `2 π`-periodic: `sin ((u + 2 π) / 2) = -sin (u / 2)`, and `Real.log` ignores the
-sign. -/
+/-- The function `logChord` is $2\pi$-periodic, because $\sin((u + 2\pi)/2) = -\sin(u/2)$ and the
+logarithm ignores the sign. -/
 theorem logChord_periodic : Function.Periodic logChord (2 * π) := by
   intro u
   rw [logChord, logChord, show (u + 2 * π) / 2 = u / 2 + π by ring, Real.sin_add_pi,
     Real.log_neg_eq_log]
 
+/-- The function `logChord` is integrable on $[0, 2\pi]$. -/
 theorem intervalIntegrable_logChord : IntervalIntegrable logChord volume 0 (2 * π) := by
   refine IntervalIntegrable.add intervalIntegrable_const ?_
   have h := (intervalIntegrable_log_sin (a := 0) (b := π)).comp_mul_left (c := (2 : ℝ)⁻¹)
   norm_num at h
   simpa [Function.comp_def, div_eq_inv_mul] using h
 
+/-- For a continuous $f : \mathbb{R} \to \mathbb{R}$, the product $y \mapsto \ell(y) f(y)$ of
+`logChord` and $f$ is integrable on $[0, 2\pi]$. -/
 theorem intervalIntegrable_logChord_mul {f : ℝ → ℝ} (hf : Continuous f) :
     IntervalIntegrable (fun y => logChord y * f y) volume 0 (2 * π) :=
   intervalIntegrable_logChord.mul_continuousOn hf.continuousOn
 
-/-- The `m`-th cosine Fourier coefficient of `logChord` over `[0, 2 π]` is `-π / max 1 m`. The
-normalizing factor `e^(-1/2)` inside the logarithm is exactly what makes the value at `m = 0` agree
-with the value at `m = 1`. -/
+/-- For every $m \in \mathbb{N}$, the $m$-th cosine Fourier coefficient of $\ell = $ `logChord` on
+$[0, 2\pi]$ is
+$$\int_0^{2\pi} \ell(y) \cos(my) \, dy = -\frac{\pi}{\max(1, m)}.$$
+
+The normalizing factor $e^{-1/2}$ inside the logarithm is exactly what makes the value at
+$m = 0$ agree with the value at $m = 1$. -/
 theorem integral_logChord_mul_cos (m : ℕ) :
     ∫ y in (0 : ℝ)..(2 * π), logChord y * Real.cos ((m : ℝ) * y) = -π / max 1 m := by
   have hsplit : ∀ f : ℝ → ℝ, Continuous f →
@@ -338,7 +372,8 @@ theorem integral_logChord_mul_cos (m : ℕ) :
   · rw [hsplit _ (by fun_prop), integral_cos_nat_mul_eq_zero hm, integral_log_sin_half_mul_cos hm,
       mul_zero, zero_add, max_eq_right (Nat.one_le_iff_ne_zero.2 hm)]
 
-/-- The `m`-th sine Fourier coefficient of `logChord` over `[0, 2 π]` vanishes. -/
+/-- For every $m \in \mathbb{N}$, the $m$-th sine Fourier coefficient of $\ell = $ `logChord` on
+$[0, 2\pi]$ vanishes: $\int_0^{2\pi} \ell(y) \sin(my) \, dy = 0$. -/
 theorem integral_logChord_mul_sin (m : ℕ) :
     ∫ y in (0 : ℝ)..(2 * π), logChord y * Real.sin ((m : ℝ) * y) = 0 := by
   have h1 : IntervalIntegrable
@@ -355,22 +390,30 @@ theorem integral_logChord_mul_sin (m : ℕ) :
     intervalIntegral.integral_add h1 h2, intervalIntegral.integral_const_mul,
     integral_sin_nat_mul_eq_zero, integral_log_sin_half_mul_sin, mul_zero, add_zero]
 
-/-- **The kernel of the logarithmic single layer operator** of the unit circle,
-`-(1 / π) log |2 e^(-1/2) sin ((t - s) / 2)|`, where `|2 sin ((t - s) / 2)| = |e^(i t) - e^(i s)|`
-is the chord length. -/
+/-- The **kernel of the logarithmic single layer operator** of the unit circle:
+$$k(t, s) = -\frac{1}{\pi} \log \bigl|2 e^{-1/2} \sin\bigl((t - s)/2\bigr)\bigr|.$$
+Here $|2 \sin((t - s)/2)| = |e^{it} - e^{is}|$ is the chord length.
+
+Where $\sin((t - s)/2) = 0$, the value is $0$, because `Real.log 0 = 0`. -/
 noncomputable def logSingleLayerKernel (t s : ℝ) : ℝ :=
   -(1 / π) * Real.log |2 * Real.exp (-(1 / 2)) * Real.sin ((t - s) / 2)|
 
+/-- Where $\sin((t - s)/2) \ne 0$, the kernel is $k(t, s) = -\pi^{-1} \ell(t - s)$, with $\ell$ =
+`logChord`. -/
 theorem logSingleLayerKernel_eq {t s : ℝ} (h : Real.sin ((t - s) / 2) ≠ 0) :
     logSingleLayerKernel t s = -(1 / π) * logChord (t - s) := by
   rw [logSingleLayerKernel, logChord_eq_log_abs _ h]
 
-/-- **The logarithmic single layer operator** `A φ t = ∫_0^{2 π} k (t, s) φ s ds`. -/
+/-- The **logarithmic single layer operator** on real functions
+$\varphi : \mathbb{R} \to \mathbb{R}$:
+$$A\varphi(t) = \int_0^{2\pi} k(t, s) \varphi(s) \, ds,$$
+where $k$ is the kernel `logSingleLayerKernel`. -/
 noncomputable def logSingleLayer (φ : ℝ → ℝ) (t : ℝ) : ℝ :=
   ∫ s in (0 : ℝ)..(2 * π), logSingleLayerKernel t s * φ s
 
-/-- The `ℂ`-valued logarithmic single layer operator, so that the Fourier modes `t ↦ e^(i m t)` are
-admissible arguments. -/
+/-- The logarithmic single layer operator on complex functions
+$\varphi : \mathbb{R} \to \mathbb{C}$, $A\varphi(t) = \int_0^{2\pi} k(t, s) \varphi(s) \, ds$,
+so that the Fourier modes $t \mapsto e^{imt}$ are admissible arguments. -/
 noncomputable def logSingleLayerC (φ : ℝ → ℂ) (t : ℝ) : ℂ :=
   ∫ s in (0 : ℝ)..(2 * π), (logSingleLayerKernel t s : ℂ) * φ s
 
@@ -386,8 +429,8 @@ private theorem ae_sin_sub_ne_zero (t : ℝ) : ∀ᵐ s : ℝ, Real.sin ((t - s)
   rw [MeasureTheory.ae_iff]
   simpa using hc.measure_zero volume
 
-/-- Reduction of the operator to a convolution against `logChord`: the change of variable
-`s ↦ t - s` and the `2 π`-periodicity of the integrand. -/
+/-- For a $2\pi$-periodic $\varphi$, $A\varphi(t) = -\pi^{-1} \int_0^{2\pi} \ell(y) \varphi(t - y)
+\, dy$, by the change of variable $s \mapsto t - s$ and the periodicity of the integrand. -/
 private theorem logSingleLayer_eq_of_periodic {φ : ℝ → ℝ}
     (hper : Function.Periodic φ (2 * π)) (t : ℝ) :
     logSingleLayer φ t = -(1 / π) * ∫ y in (0 : ℝ)..(2 * π), logChord y * φ (t - y) := by
@@ -420,8 +463,10 @@ private theorem logSingleLayer_eq_of_periodic {φ : ℝ → ℝ}
   rw [show t - 2 * π + 2 * π = t by ring, zero_add] at this
   exact this
 
-/-- **The logarithmic single layer operator multiplies the shifted cosine mode `cos (m · + c)` by
-`1 / max 1 m`**; the cosine and sine modes are `c = 0` and `c = -π/2`. -/
+/-- **The logarithmic single layer operator multiplies a shifted cosine mode by $1/\max(1, m)$.**
+For $m \in \mathbb{N}$ and $c, t \in \mathbb{R}$,
+$$A\bigl(\cos(m \cdot + c)\bigr)(t) = \frac{\cos(mt + c)}{\max(1, m)}.$$
+The cosine and sine modes are the cases $c = 0$ and $c = -\pi/2$. -/
 theorem logSingleLayer_cos_add (m : ℕ) (c t : ℝ) :
     logSingleLayer (fun s => Real.cos ((m : ℝ) * s + c)) t
       = Real.cos ((m : ℝ) * t + c) / max 1 m := by
@@ -445,14 +490,18 @@ theorem logSingleLayer_cos_add (m : ℕ) (c t : ℝ) :
     integral_logChord_mul_cos, integral_logChord_mul_sin, mul_zero, add_zero]
   field_simp
 
-/-- **The logarithmic single layer operator multiplies the cosine mode `cos (m ·)` by
-`1 / max 1 m`.** -/
+/-- **The logarithmic single layer operator multiplies the cosine mode by $1/\max(1, m)$.** For
+$m \in \mathbb{N}$ and $t \in \mathbb{R}$,
+$$A\bigl(\cos(m \cdot)\bigr)(t) = \frac{\cos(mt)}{\max(1, m)}.$$
+-/
 theorem logSingleLayer_cos (m : ℕ) (t : ℝ) :
     logSingleLayer (fun s => Real.cos ((m : ℝ) * s)) t = Real.cos ((m : ℝ) * t) / max 1 m := by
   simpa using logSingleLayer_cos_add m 0 t
 
-/-- **The logarithmic single layer operator multiplies the sine mode `sin (m ·)` by
-`1 / max 1 m`.** -/
+/-- **The logarithmic single layer operator multiplies the sine mode by $1/\max(1, m)$.** For
+$m \in \mathbb{N}$ and $t \in \mathbb{R}$,
+$$A\bigl(\sin(m \cdot)\bigr)(t) = \frac{\sin(mt)}{\max(1, m)}.$$
+-/
 theorem logSingleLayer_sin (m : ℕ) (t : ℝ) :
     logSingleLayer (fun s => Real.sin ((m : ℝ) * s)) t = Real.sin ((m : ℝ) * t) / max 1 m := by
   have h := logSingleLayer_cos_add m (-(π / 2)) t
@@ -461,11 +510,14 @@ theorem logSingleLayer_sin (m : ℕ) (t : ℝ) :
 
 /-! ### The integer Fourier modes -/
 
+/-- The operator $A$ commutes with multiplication by a real constant:
+$A(c\varphi)(t) = c \, A\varphi(t)$. -/
 theorem logSingleLayer_const_mul (c : ℝ) (φ : ℝ → ℝ) (t : ℝ) :
     logSingleLayer (fun s => c * φ s) t = c * logSingleLayer φ t := by
   rw [logSingleLayer, logSingleLayer, ← intervalIntegral.integral_const_mul]
   exact intervalIntegral.integral_congr fun s _ => by ring
 
+/-- The operator $A$ commutes with negation: $A(-\varphi)(t) = -A\varphi(t)$. -/
 theorem logSingleLayer_neg (φ : ℝ → ℝ) (t : ℝ) :
     logSingleLayer (fun s => -φ s) t = -logSingleLayer φ t := by
   rw [logSingleLayer, logSingleLayer, ← intervalIntegral.integral_neg]
@@ -478,8 +530,10 @@ private theorem cast_max_one_abs (n : ℕ) :
   have h2 : |(-(n : ℤ))| = ((n : ℕ) : ℤ) := by rw [abs_neg, h1]
   exact ⟨by rw [h1]; norm_cast, by rw [h2]; norm_cast⟩
 
-/-- **The logarithmic single layer operator multiplies the cosine mode `cos (m ·)` by
-`1 / max 1 |m|`**, for an integer frequency `m`. -/
+/-- **The logarithmic single layer operator multiplies the cosine mode of an integer frequency by
+$1/\max(1, |m|)$.** For $m \in \mathbb{Z}$ and $t \in \mathbb{R}$,
+$$A\bigl(\cos(m \cdot)\bigr)(t) = \frac{\cos(mt)}{\max(1, |m|)}.$$
+-/
 theorem logSingleLayer_cos_int (m : ℤ) (t : ℝ) :
     logSingleLayer (fun s => Real.cos ((m : ℝ) * s)) t
       = Real.cos ((m : ℝ) * t) / max 1 |m| := by
@@ -493,8 +547,10 @@ theorem logSingleLayer_cos_int (m : ℤ) (t : ℝ) :
     simp only [hc]
     exact logSingleLayer_cos n t
 
-/-- **The logarithmic single layer operator multiplies the sine mode `sin (m ·)` by
-`1 / max 1 |m|`**, for an integer frequency `m`. -/
+/-- **The logarithmic single layer operator multiplies the sine mode of an integer frequency by
+$1/\max(1, |m|)$.** For $m \in \mathbb{Z}$ and $t \in \mathbb{R}$,
+$$A\bigl(\sin(m \cdot)\bigr)(t) = \frac{\sin(mt)}{\max(1, |m|)}.$$
+-/
 theorem logSingleLayer_sin_int (m : ℤ) (t : ℝ) :
     logSingleLayer (fun s => Real.sin ((m : ℝ) * s)) t
       = Real.sin ((m : ℝ) * t) / max 1 |m| := by
@@ -511,6 +567,8 @@ theorem logSingleLayer_sin_int (m : ℤ) (t : ℝ) :
 
 /-! ### The complex Fourier modes -/
 
+/-- For every $t \in \mathbb{R}$, the function $s \mapsto \ell(t - s)$ of `logChord` is integrable
+on $[0, 2\pi]$. -/
 theorem intervalIntegrable_logChord_sub (t : ℝ) :
     IntervalIntegrable (fun s => logChord (t - s)) volume 0 (2 * π) := by
   have h := (logChord_periodic.intervalIntegrable₀ (by positivity) intervalIntegrable_logChord
@@ -518,6 +576,8 @@ theorem intervalIntegrable_logChord_sub (t : ℝ) :
   rw [sub_self, show t - (t - 2 * π) = 2 * π by ring] at h
   exact h.symm
 
+/-- For every $t \in \mathbb{R}$ and every continuous $\varphi : \mathbb{R} \to \mathbb{R}$, the
+function $s \mapsto k(t, s) \varphi(s)$ is integrable on $[0, 2\pi]$. -/
 theorem intervalIntegrable_logSingleLayerKernel_mul (t : ℝ) {φ : ℝ → ℝ} (hφ : Continuous φ) :
     IntervalIntegrable (fun s => logSingleLayerKernel t s * φ s) volume 0 (2 * π) := by
   refine IntervalIntegrable.congr_ae
@@ -545,8 +605,13 @@ private theorem logSingleLayerC_of_re_im {f g : ℝ → ℝ} (t : ℝ)
     intervalIntegral.integral_add hf' hg', intervalIntegral.integral_mul_const,
     intervalIntegral.integral_ofReal, intervalIntegral.integral_ofReal]
 
-/-- **(The Fourier diagonalization of the logarithmic single layer operator.)** `A` multiplies the
-mode `ψ_m t = e^(i m t)` by `1 / max 1 |m|`; in particular it fixes the constant mode `ψ_0`. -/
+/-- **The Fourier diagonalization of the logarithmic single layer operator.** For $m \in \mathbb{Z}$
+and $t \in \mathbb{R}$, the operator $A$ multiplies the mode $\psi_m(t) = e^{imt}$ by
+$1/\max(1, |m|)$:
+$$A\psi_m(t) = \frac{e^{imt}}{\max(1, |m|)}.$$
+In particular, $A$ fixes the constant mode $\psi_0$.
+
+The operator on complex functions is `logSingleLayerC`. -/
 theorem logSingleLayerC_fourier (m : ℤ) (t : ℝ) :
     logSingleLayerC (fun s => Complex.exp (m * s * Complex.I)) t
       = Complex.exp (m * t * Complex.I) / max 1 |m| := by

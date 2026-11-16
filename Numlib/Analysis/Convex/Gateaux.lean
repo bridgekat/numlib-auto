@@ -9,45 +9,58 @@ import Mathlib.Analysis.Convex.Function
 /-!
 # Convexity of a functional through its directional derivatives
 
-For `f : V → ℝ` on a convex set `K` of a real normed space, whose directional derivatives at every
-point of `K` are represented by a bounded linear functional, `f' u : V →L[ℝ] ℝ`, three conditions
-are equivalent:
+Let $V$ be a real normed space, let $K \subseteq V$ be convex, and let $f \colon V \to \mathbb{R}$.
+Suppose that at every $u \in K$ the directional derivatives of $f$ are given by a continuous linear
+functional $f'(u) \colon V \to \mathbb{R}$: for every direction $h$, the derivative of
+$s \mapsto f(u + sh)$ at $s = 0$ is $f'(u)h$. Then three conditions are equivalent: $f$ is convex on
+$K$; the tangent functional at each point is a minorant, $f(u) + f'(u)(v - u) \le f(v)$ for all
+$u, v \in K$; and the derivative is a monotone operator, $0 \le (f'(v) - f'(u))(v - u)$ for all
+$u, v \in K$. The strict forms hold as well. A minimizer of $f$ over $K$ is then characterized by a
+variational inequality. Over a subspace this inequality becomes a variational equation, and the
+inequality still holds after a second convex term, which need not be differentiable, is added to
+$f$. The last form turns a constrained convex minimization problem into an elliptic variational
+inequality.
 
-* `f` is convex on `K`;
-* the tangent functional at each point is a global minorant, `f u + f' u (v - u) ≤ f v`;
-* the gradient is a monotone operator, `0 ≤ (f' v - f' u) (v - u)`.
-
-`convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv` are those equivalences,
-`strictConvexOn_iff_forall_add_lineDeriv_lt` and `strictConvexOn_iff_forall_lineDeriv_sub_pos` their
-strict forms.  A minimizer of `f` over `K` is then characterized by a variational inequality,
-`isMinOn_iff_forall_lineDeriv_nonneg`, which collapses to a variational equation when `K` is a
-subspace (`isMinOn_iff_forall_lineDeriv_eq_zero`) and survives the addition of a second, possibly
-non-differentiable, convex term (`isMinOn_add_iff_forall_le`).  The last is what turns a constrained
-convex minimization problem into an elliptic variational inequality.
-
-The bounded linear representation `f' : V → V →L[ℝ] ℝ` is data rather than something derived:
-`HasLineDerivAt` gives one scalar per direction and does not bundle those scalars into a functional,
-and the classical Gâteaux derivative is required to be bounded and linear.  The hypothesis is
-therefore always written out as `∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h`. There is no
-separate `fderiv` version: `HasFDerivAt.hasLineDerivAt` specializes every statement below, and a
-Fréchet derivative is a stronger hypothesis than the applications have.
-
-`HasLineDerivAt.hasDerivAt_line` is the parameter translation that all of this rests on — a line
-derivative at `u + t • h` is the derivative of `s ↦ f (u + s • h)` at `s = t` — and is stated here
-for a general normed target because it belongs with the one-dimensional restriction argument and has
-no other home yet.
-
-The material is classical; it is stated as Theorems 5.3.17–5.3.19 and Theorem 11.2.1 of
+This material is classical. It appears as Theorems 5.3.17–5.3.19 and Theorem 11.2.1 of
 [han2009theoretical].
+
+## Main results
+
+* `convexOn_iff_forall_add_lineDeriv_le`: $f$ is convex on $K$ if and only if
+  $f(u) + f'(u)(v - u) \le f(v)$ for all $u, v \in K$.
+* `convexOn_iff_monotone_lineDeriv`: $f$ is convex on $K$ if and only if
+  $0 \le (f'(v) - f'(u))(v - u)$ for all $u, v \in K$.
+* `strictConvexOn_iff_forall_add_lineDeriv_lt`, `strictConvexOn_iff_forall_lineDeriv_sub_pos`: the
+  strict forms of these two equivalences.
+* `isMinOn_add_iff_forall_le`: for $f$ and $j$ convex on $K$, a point $u \in K$ minimizes $f + j$
+  over $K$ if and only if $0 \le f'(u)(v - u) + j(v) - j(u)$ for all $v \in K$.
+* `isMinOn_iff_forall_lineDeriv_nonneg`: the case $j = 0$.
+* `isMinOn_iff_forall_lineDeriv_eq_zero`: over a subspace $K$, $u$ minimizes $f$ if and only if
+  $f'(u)v = 0$ for all $v \in K$.
+
+## Implementation notes
+
+* The continuous linear functionals $f'(u)$ are given as data, `f' : V → V →L[ℝ] ℝ`, and are not
+  derived. `HasLineDerivAt` gives one number for each direction and does not combine these numbers
+  into a functional, and the classical Gâteaux derivative is required to be bounded and linear. The
+  hypothesis is therefore always written as `∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h`.
+* There is no separate version for `fderiv`. `HasFDerivAt.hasLineDerivAt` specializes every
+  statement, and a Fréchet derivative is a stronger hypothesis than the applications have.
+* `HasLineDerivAt.hasDerivAt_line` translates the parameter of a line derivative. All the results
+  rest on it. It is stated for a general normed target because it belongs with the restriction to
+  one dimension.
 -/
 
 open Filter Set Topology
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- A line derivative at the point `u + t • h` in the direction `h` is the derivative of the
-restriction `s ↦ f (u + s • h)` at `s = t`.  `HasLineDerivAt` itself only gives this at `t = 0`;
-translating the parameter is what makes a mean value theorem along a segment available. -/
+/-- Let $V$ and $W$ be real normed spaces, let $g \colon V \to W$, and let $u, h \in V$ and
+$t \in \mathbb{R}$. If $g$ has the line derivative $a$ at the point $u + th$ in the direction
+$h$, then the function $s \mapsto g(u + sh)$ has the derivative $a$ at $s = t$.
+
+`HasLineDerivAt` gives this only at $t = 0$. The translation of the parameter makes a mean value
+theorem along a segment available. -/
 theorem HasLineDerivAt.hasDerivAt_line {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W]
     {g : V → W} {a : W} {u h : V} {t : ℝ} (hg : HasLineDerivAt ℝ g a (u + t • h) h) :
     HasDerivAt (fun s : ℝ => g (u + s • h)) a t := by
@@ -70,9 +83,9 @@ section Convexity
 
 variable {K : Set V} {f j : V → ℝ} {f' : V → V →L[ℝ] ℝ}
 
-/-- Mean value theorem along the segment `[u, v]` of a convex set: for an `f` whose directional
-derivatives on `K` are the functionals `f'` there is an interior point `u + c • (v - u)` at which
-the derivative in the direction `v - u` equals the slope `f v - f u`. -/
+/-- Mean value theorem along a segment $[u, v]$ in a convex set $K$, for a function whose
+directional derivatives on $K$ are the functionals $f'$: there is $c \in (0, 1)$ with
+$u + c(v - u) \in K$ and $f'(u + c(v - u))(v - u) = f(v) - f(u)$. -/
 private theorem exists_lineDeriv_eq_sub (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) {v : V}
     (hv : v ∈ K) :
@@ -90,8 +103,12 @@ private theorem exists_lineDeriv_eq_sub (hK : Convex ℝ K)
   simp only [h1v, h0v, sub_zero, div_one] at hcslope
   exact ⟨c, hc, hK.add_smul_sub_mem hu hv ⟨hc.1.le, hc.2.le⟩, hcslope⟩
 
-/-- A convex functional lies above each of its tangent functionals: if `f` is convex on `K` and has
-the directional derivatives `A h` at `u ∈ K`, then `f u + A (v - u) ≤ f v` for every `v ∈ K`. -/
+/-- **A convex function lies above its tangent functionals.** Let $f \colon V \to \mathbb{R}$ be
+convex on $K \subseteq V$, let $u, v \in K$, and let $A \colon V \to \mathbb{R}$ be a continuous
+linear functional such that for every direction $h \in V$, the line derivative of $f$ at $u$ in
+the direction $h$ is $Ah$. Then
+$$f(u) + A(v - u) \le f(v).$$
+-/
 theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} {u v : V} (hu : u ∈ K)
     (hv : v ∈ K) (hA : ∀ h, HasLineDerivAt ℝ f (A h) u h) : f u + A (v - u) ≤ f v := by
   have hslope : Tendsto (fun t : ℝ => t⁻¹ • (f (u + t • (v - u)) - f u)) (𝓝[>] (0 : ℝ))
@@ -107,9 +124,8 @@ theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} 
   have hmain := le_of_tendsto hslope hle
   linarith
 
-/-- A linear functional balances the displacements from a convex combination: writing `w = a • x + b
-• y` with `a + b = 1`, the two displacements `x - w` and `y - w` cancel under the weights `a` and
-`b`, so `a * A (x - w) + b * A (y - w) = 0`. -/
+/-- A linear functional $A$ balances the displacements from a convex combination: if $a + b = 1$ and
+$w = ax + by$, then $a A(x - w) + b A(y - w) = 0$. -/
 private theorem weighted_apply_sub_combo_eq_zero (A : V →L[ℝ] ℝ) (x y : V) {a b : ℝ}
     (hab : a + b = 1) :
     a * A (x - (a • x + b • y)) + b * A (y - (a • x + b • y)) = 0 := by
@@ -121,9 +137,9 @@ private theorem weighted_apply_sub_combo_eq_zero (A : V →L[ℝ] ℝ) (x y : V)
   rw [map_add, map_smul, map_smul, map_zero] at hc
   simpa [smul_eq_mul] using hc
 
-/-- The tangent minorant inequality forces convexity: if `f u + f' u (v - u) ≤ f v` for all `u, v`
-in a convex set `K`, then `f` is convex on `K`.  No differentiability is used — the functionals `f'`
-are arbitrary. -/
+/-- Let $K \subseteq V$ be convex, and let $f'(u)$, $u \in V$, be any continuous linear functionals.
+If $f(u) + f'(u)(v - u) \le f(v)$ for all $u, v \in K$, then $f$ is convex on $K$. No
+differentiability is used. -/
 theorem convexOn_of_add_lineDeriv_le (hK : Convex ℝ K)
     (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) : ConvexOn ℝ K f := by
   refine ⟨hK, ?_⟩
@@ -139,16 +155,21 @@ theorem convexOn_of_add_lineDeriv_le (hK : Convex ℝ K)
   simp only [smul_eq_mul]
   linarith
 
-/-- Convexity of a functional with directional derivatives on a convex set is exactly the tangent
-minorant inequality `f u + f' u (v - u) ≤ f v`. -/
+/-- **Convexity through the tangent inequality.** Let $K \subseteq V$ be convex and let
+$f \colon V \to \mathbb{R}$. Suppose that for every $u \in K$ and every direction $h \in V$, the
+line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where $f'(u)$ is a continuous
+linear functional. Then $f$ is convex on $K$ if and only if
+$$f(u) + f'(u)(v - u) \le f(v) \quad \text{for all } u, v \in K.$$
+-/
 theorem convexOn_iff_forall_add_lineDeriv_le (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) :
     ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v :=
   ⟨fun hf u hu _v hv => ConvexOn.add_lineDeriv_le hf hu hv (hG u hu),
     convexOn_of_add_lineDeriv_le hK⟩
 
-/-- The tangent minorant inequality makes the gradient a monotone operator.  Adding the inequality
-at `u` to the inequality at `v` cancels the values of `f`. -/
+/-- If $f(u) + f'(u)(v - u) \le f(v)$ for all $u, v \in K$, then the derivative is a monotone
+operator on $K$: $0 \le (f'(v) - f'(u))(v - u)$ for all $u, v \in K$. Adding the inequality at
+$u$ to the inequality at $v$ cancels the values of $f$. -/
 theorem monotone_lineDeriv_of_add_lineDeriv_le
     (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
     0 ≤ (f' v - f' u) (v - u) := by
@@ -159,9 +180,12 @@ theorem monotone_lineDeriv_of_add_lineDeriv_le
   rw [sub_apply]
   linarith
 
-/-- A monotone gradient forces the tangent minorant inequality.  This is the one direction that
-needs the mean value theorem: apply `exists_lineDeriv_eq_sub` on the segment `[u, v]` and compare
-the derivative at the intermediate point with the derivative at `u`. -/
+/-- Let $K$ be convex, and let the line derivatives of $f$ at the points of $K$ be given by the
+continuous linear functionals $f'(u)$. If $0 \le (f'(v) - f'(u))(v - u)$ for all $u, v \in K$,
+then $f(u) + f'(u)(v - u) \le f(v)$ for all $u, v \in K$.
+
+This is the only direction that needs the mean value theorem on the segment $[u, v]$: the
+derivative at an intermediate point is compared with the derivative at $u$. -/
 theorem add_lineDeriv_le_of_monotone_lineDeriv (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h)
     (h : ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
@@ -173,8 +197,12 @@ theorem add_lineDeriv_le_of_monotone_lineDeriv (hK : Convex ℝ K)
   have hkey : f' u (v - u) ≤ f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
   linarith
 
-/-- Convexity of a functional with directional derivatives on a convex set is exactly monotonicity
-of its gradient, `0 ≤ (f' v - f' u) (v - u)`. -/
+/-- **Convexity through a monotone derivative.** Let $K \subseteq V$ be convex and let
+$f \colon V \to \mathbb{R}$. Suppose that for every $u \in K$ and every direction $h \in V$, the
+line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where $f'(u)$ is a continuous
+linear functional. Then $f$ is convex on $K$ if and only if
+$$0 \le (f'(v) - f'(u))(v - u) \quad \text{for all } u, v \in K.$$
+-/
 theorem convexOn_iff_monotone_lineDeriv (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) :
     ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u) :=
@@ -182,8 +210,11 @@ theorem convexOn_iff_monotone_lineDeriv (hK : Convex ℝ K)
     ⟨fun h _ hu _ hv => monotone_lineDeriv_of_add_lineDeriv_le h hu hv,
       fun h _ hu _ hv => add_lineDeriv_le_of_monotone_lineDeriv hK hG h hu hv⟩
 
-/-- A strictly convex functional lies strictly above each of its tangent functionals at every other
-point of `K`.  Applying the nonstrict inequality at the midpoint of `[u, v]` is what turns the
+/-- Let $f$ be strictly convex on $K$, let $u, v \in K$ with $u \neq v$, and let $A$ be a continuous
+linear functional such that the line derivative of $f$ at $u$ in every direction $h$ is $Ah$.
+Then $f(u) + A(v - u) < f(v)$.
+
+The proof applies the nonstrict inequality at the midpoint of $[u, v]$, and this makes the
 inequality strict. -/
 theorem StrictConvexOn.add_lineDeriv_lt (hf : StrictConvexOn ℝ K f) {A : V →L[ℝ] ℝ} {u v : V}
     (hu : u ∈ K) (hv : v ∈ K) (huv : u ≠ v) (hA : ∀ h, HasLineDerivAt ℝ f (A h) u h) :
@@ -198,7 +229,9 @@ theorem StrictConvexOn.add_lineDeriv_lt (hf : StrictConvexOn ℝ K f) {A : V →
   simp only [smul_eq_mul] at hlt
   linarith
 
-/-- The strict tangent minorant inequality forces strict convexity. -/
+/-- Let $K$ be convex, and let $f'(u)$ be any continuous linear functionals. If
+$f(u) + f'(u)(v - u) < f(v)$ for all $u, v \in K$ with $u \neq v$, then $f$ is strictly convex
+on $K$. -/
 theorem strictConvexOn_of_add_lineDeriv_lt (hK : Convex ℝ K)
     (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) : StrictConvexOn ℝ K f := by
   refine ⟨hK, ?_⟩
@@ -230,15 +263,20 @@ theorem strictConvexOn_of_add_lineDeriv_lt (hK : Convex ℝ K)
   simp only [smul_eq_mul]
   linarith
 
-/-- Strict convexity of a functional with directional derivatives on a convex set is exactly the
-strict tangent minorant inequality. -/
+/-- **Strict convexity through the tangent inequality.** Let $K \subseteq V$ be convex and let
+$f \colon V \to \mathbb{R}$. Suppose that for every $u \in K$ and every direction $h \in V$, the
+line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where $f'(u)$ is a continuous
+linear functional. Then $f$ is strictly convex on $K$ if and only if
+$$f(u) + f'(u)(v - u) < f(v) \quad \text{for all } u, v \in K \text{ with } u \neq v.$$
+-/
 theorem strictConvexOn_iff_forall_add_lineDeriv_lt (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) :
     StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v :=
   ⟨fun hf u hu _v hv huv => StrictConvexOn.add_lineDeriv_lt hf hu hv huv (hG u hu),
     strictConvexOn_of_add_lineDeriv_lt hK⟩
 
-/-- The strict tangent minorant inequality makes the gradient a strictly monotone operator. -/
+/-- If $f(u) + f'(u)(v - u) < f(v)$ for all $u, v \in K$ with $u \neq v$, then the derivative is
+strictly monotone on $K$: $0 < (f'(v) - f'(u))(v - u)$ for all $u, v \in K$ with $u \neq v$. -/
 theorem lineDeriv_sub_pos_of_add_lineDeriv_lt
     (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) {u : V} (hu : u ∈ K) {v : V}
     (hv : v ∈ K) (huv : u ≠ v) : 0 < (f' v - f' u) (v - u) := by
@@ -249,8 +287,10 @@ theorem lineDeriv_sub_pos_of_add_lineDeriv_lt
   rw [sub_apply]
   linarith
 
-/-- A strictly monotone gradient forces the strict tangent minorant inequality, again by the mean
-value theorem on the segment `[u, v]`. -/
+/-- Let $K$ be convex, and let the line derivatives of $f$ at the points of $K$ be given by the
+continuous linear functionals $f'(u)$. If $0 < (f'(v) - f'(u))(v - u)$ for all $u, v \in K$ with
+$u \neq v$, then $f(u) + f'(u)(v - u) < f(v)$ for all such $u, v$. The proof uses the mean value
+theorem on the segment $[u, v]$. -/
 theorem add_lineDeriv_lt_of_lineDeriv_sub_pos (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h)
     (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V}
@@ -270,8 +310,12 @@ theorem add_lineDeriv_lt_of_lineDeriv_sub_pos (hK : Convex ℝ K)
   have hkey : f' u (v - u) < f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
   linarith
 
-/-- Strict convexity of a functional with directional derivatives on a convex set is exactly strict
-monotonicity of its gradient, `0 < (f' v - f' u) (v - u)` for `u ≠ v`. -/
+/-- **Strict convexity through a strictly monotone derivative.** Let $K \subseteq V$ be convex and
+let $f \colon V \to \mathbb{R}$. Suppose that for every $u \in K$ and every direction $h \in V$,
+the line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where $f'(u)$ is a
+continuous linear functional. Then $f$ is strictly convex on $K$ if and only if
+$$0 < (f'(v) - f'(u))(v - u) \quad \text{for all } u, v \in K \text{ with } u \neq v.$$
+-/
 theorem strictConvexOn_iff_forall_lineDeriv_sub_pos (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) :
     StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u) :=
@@ -279,13 +323,15 @@ theorem strictConvexOn_iff_forall_lineDeriv_sub_pos (hK : Convex ℝ K)
     ⟨fun h _ hu _ hv huv => lineDeriv_sub_pos_of_add_lineDeriv_lt h hu hv huv,
       fun h _ hu _ hv huv => add_lineDeriv_lt_of_lineDeriv_sub_pos hK hG h hu hv huv⟩
 
-/-- The variational inequality of a constrained minimizer, with a second convex term that need not
-be differentiable: for `f` convex with directional derivatives `f'` and `j` convex on a convex set
-`K`, a point `u ∈ K` minimizes `f + j` over `K` if and only if `0 ≤ f' u (v - u) + j v - j u` for
-every `v ∈ K`.
+/-- **The variational inequality of a constrained minimizer**, with a second convex term that need
+not be differentiable. Let $f, j \colon V \to \mathbb{R}$ be convex on $K \subseteq V$. Suppose
+that for every $u \in K$ and every direction $h \in V$, the line derivative of $f$ at $u$ in the
+direction $h$ is $f'(u)h$, where $f'(u)$ is a continuous linear functional. Then a point
+$u \in K$ minimizes $f + j$ over $K$ if and only if
+$$0 \le f'(u)(v - u) + j(v) - j(u) \quad \text{for every } v \in K.$$
 
-This is the statement that turns a constrained convex minimization problem into an elliptic
-variational inequality. -/
+This statement turns a constrained convex minimization problem into an elliptic variational
+inequality. The convexity of $K$ follows from the convexity of $f$ on $K$. -/
 theorem isMinOn_add_iff_forall_le (hf : ConvexOn ℝ K f) (hj : ConvexOn ℝ K j)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) :
     IsMinOn (f + j) K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) + j v - j u := by
@@ -313,19 +359,28 @@ theorem isMinOn_add_iff_forall_le (hf : ConvexOn ℝ K f) (hj : ConvexOn ℝ K j
     have hv0 := h v hv
     linarith
 
-/-- The variational inequality of a constrained minimizer: for `f` convex with directional
-derivatives `f'` on a convex set `K`, a point `u ∈ K` minimizes `f` over `K` if and only if `0 ≤ f'
-u (v - u)` for every `v ∈ K`.  The case `j = 0` of `isMinOn_add_iff_forall_le`. -/
+/-- **The variational inequality of a constrained minimizer.** Let $f \colon V \to \mathbb{R}$ be
+convex on $K \subseteq V$. Suppose that for every $u \in K$ and every direction $h \in V$, the
+line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where $f'(u)$ is a continuous
+linear functional. Then a point $u \in K$ minimizes $f$ over $K$ if and only if
+$$0 \le f'(u)(v - u) \quad \text{for every } v \in K.$$
+
+This is the case $j = 0$ of `isMinOn_add_iff_forall_le`. -/
 theorem isMinOn_iff_forall_lineDeriv_nonneg (hf : ConvexOn ℝ K f)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) :
     IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) := by
   have hzero : ConvexOn ℝ K (0 : V → ℝ) := convexOn_const 0 hf.1
   simpa using isMinOn_add_iff_forall_le hf hzero hG hu
 
-/-- Over a subspace the variational inequality of `isMinOn_iff_forall_lineDeriv_nonneg` collapses to
-a variational equation: `u` minimizes `f` over the subspace `K` if and only if `f' u v = 0` for
-every `v ∈ K`.  Both `v` and `-v` are admissible directions, which is what removes the inequality.
--/
+/-- **The variational equation over a subspace.** Let $K$ be a linear subspace of $V$ and let
+$f \colon V \to \mathbb{R}$ be convex on $K$. Suppose that for every $u \in K$ and every
+direction $h \in V$, the line derivative of $f$ at $u$ in the direction $h$ is $f'(u)h$, where
+$f'(u)$ is a continuous linear functional. Then a point $u \in K$ minimizes $f$ over $K$ if and
+only if
+$$f'(u)v = 0 \quad \text{for every } v \in K.$$
+
+Both $v$ and $-v$ are admissible directions, and this removes the inequality of
+`isMinOn_iff_forall_lineDeriv_nonneg`. -/
 theorem isMinOn_iff_forall_lineDeriv_eq_zero {K : Submodule ℝ V}
     (hf : ConvexOn ℝ (K : Set V) f)
     (hG : ∀ u ∈ (K : Set V), ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) :

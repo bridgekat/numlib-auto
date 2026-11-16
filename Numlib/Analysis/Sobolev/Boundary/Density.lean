@@ -10,71 +10,92 @@ import Numlib.MeasureTheory.Function.ContinuousOnClosure
 /-!
 # Density of smooth functions up to the boundary
 
-The two density statements that the trace theory of `Numlib/Analysis/Sobolev/Boundary/Trace.lean`
-consumes, as predicates on an open set `Ω ⊆ ℝ^N`, and their instances.
+Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p < \infty$. This file studies two density
+properties of $W^{1,p}(\Omega)$ that the trace theory of `Numlib.Analysis.Sobolev.Boundary.Trace`
+uses. The first, `SobolevEuclidean.HasSmoothDensity`, says that every $u \in W^{1,p}(\Omega)$ is the
+limit in $W^{1,p}(\Omega)$ of restrictions to $\Omega$ of functions in $C_c^\infty(\mathbb{R}^N)$.
+This is the conclusion of Corollary 9.8 of [brezis2011functional], and it lets a trace be extended
+by continuity from the smooth functions. The second, `SobolevEuclidean.HasUniformSmoothDensity`,
+says moreover that when $u$ has a representative $\tilde u$ that is continuous on
+$\overline{\Omega}$, the approximants can be chosen to converge to $\tilde u$ also uniformly on
+$\overline{\Omega}$. This identifies the trace of $u$ with $\tilde u|_{\partial\Omega}$, as in
+Evans, *Partial Differential Equations*, §5.5, Theorem 1(ii) ("the functions constructed in §5.3.3
+converge uniformly").
 
-* `SobolevEuclidean.HasSmoothDensity N p Ω`: every `u ∈ W^{1,p}(Ω)` is the limit in `W^{1,p}(Ω)`
-  of restrictions of `C_c^∞(ℝ^N)` functions — the conclusion of [brezis2011functional]
-  Corollary 9.8 as a predicate, so that a trace can be extended from the smooth functions by
-  continuity (the dense subspace is `SobolevEuclidean.smoothRestrictions N p Ω`).
-* `SobolevEuclidean.HasUniformSmoothDensity N p Ω`: when moreover `u` has a representative `ũ`
-  continuous on `closure Ω`, the approximants can be taken to converge to `ũ` *uniformly on
-  `closure Ω`* as well. This is what identifies the trace of `u` with `ũ|_{∂Ω}` (Evans, *Partial
-  Differential Equations*, §5.5, Theorem 1 (ii): "the functions constructed in §5.3.3 converge
-  uniformly").
+Every extension domain has the first property, but the extension operator gives no control of
+continuity, so it does not give the second. Both properties are proved here for every bounded open
+set with the **segment property** of Adams and Fournier, *Sobolev Spaces*, 2nd edition, 3.21–3.22:
+each boundary point has a neighbourhood $U$ and a direction $y$ with $z + t y \in \Omega$ for all
+$z \in \overline{\Omega} \cap U$ and $0 < t < 1$. The segment property holds for every set whose
+boundary is locally the graph of a continuous function, which includes the $C^n$ and the Lipschitz
+graph domains, and for every convex open set, hence for every triangle. As a by-product,
+$C_c^\infty(\mathbb{R}^N)$ is dense in $W^{1,p}(\Omega)$ on bounded Lipschitz graph domains, which
+is the Lipschitz case of Theorem 7.3.2 of [han2009theoretical] and which the extension theorem does
+not reach, and on bounded convex open sets such as convex polygons.
 
-The extension theorem gives the first predicate on every extension domain
-(`IsSobolevExtensionDomain.hasSmoothDensity`), but not the second, whose approximants must be
-built with an eye on continuity. Both are proved here for every bounded open set with the
-**segment property** of Adams and Fournier, *Sobolev Spaces*, 2nd edition, 3.21–3.22
-(`HasSegmentProperty Ω`: each boundary point has a neighbourhood `U` and a direction `y` with
-`closure Ω ∩ U + t y ⊆ Ω` for `0 < t < 1`), by the classical translation-and-mollification
-construction (`HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto`). The segment
-property holds for every domain whose boundary is locally the graph of a *continuous* function
-(`IsBoundaryOfClass.hasSegmentProperty`: the `C^n` and the Lipschitz graph domains) and for
-every convex open set (`Convex.hasSegmentProperty`), hence for every triangle. By-products
-beyond the trace theory: the density of `C_c^∞(ℝ^N)` in `W^{1,p}(Ω)` on bounded *Lipschitz*
-graph domains (`IsLipschitzDomain.hasSmoothDensity`, the Lipschitz case of Atkinson–Han
-Theorem 7.3.2, which the extension route does not reach) and on convex polygons.
+## Main definitions
 
-## The construction
+* `SobolevEuclidean.HasSmoothDensity`: the restrictions of $C_c^\infty(\mathbb{R}^N)$ functions are
+  dense in $W^{1,p}(\Omega)$, in the form of approximating sequences.
+* `SobolevEuclidean.HasUniformSmoothDensity`: an element of $W^{1,p}(\Omega)$ with a representative
+  continuous on $\overline{\Omega}$ is the limit of restrictions of $C_c^\infty(\mathbb{R}^N)$
+  functions that also converge uniformly on $\overline{\Omega}$.
+* `SobolevEuclidean.smoothRestrictions`: the subspace of $W^{1,p}(\Omega)$ of restrictions of
+  $C_c^\infty(\mathbb{R}^N)$ functions.
+* `SobolevEuclidean.smoothRep`: a chosen $C_c^\infty(\mathbb{R}^N)$ representative of an element of
+  that subspace.
+* `HasSegmentProperty`: the segment property of a set in a real normed space.
 
-For `u ∈ W^{1,p}(Ω)`, a representative `ũ`, and `ε > 0`
-(`HasSegmentProperty.exists_contDiff_hasCompactSupport_norm_sub_lt`):
+## Main results
 
-0. `frontier Ω` is compact, so finitely many of the neighbourhoods `U_i` of the segment
-   property, with directions `y_i`, cover it; Brezis's Lemma 9.3
-   (`IsCompact.exists_contDiff_partitionOfUnity`) gives smooth `θ₀, θ_i` with `θ₀ + ∑ θ_i = 1`,
-   `tsupport θ_i ⊆ U_i` compact, `tsupport θ₀` disjoint from `frontier Ω`.
-1. **One piece** (`SobolevEuclidean.exists_translatePiece`): for a smooth `θ` and a translation
-   `h` such that `z + h ∈ Ω` whenever `z ∈ closure Ω` lies in a set `U ⊇ tsupport θ − h`, the
-   translate `F(x) = χ(x) θ(x + h) ũ(x + h)` of the zero extension of `θ u`, cut off by a smooth
-   `χ` equal to `1` on `closure Ω` and supported in the open set
-   `(Ω − h) ∪ (tsupport θ − h)ᶜ ⊇ closure Ω`, lies in `W^{1,p}(ℝ^N)` with compact support: on
-   `Ω − h` it is `α · ũ(· + h)` with
-   `α = χ θ(· + h)` smooth and supported inside `Ω − h`, and `ũ(· + h) ∈ W^{1,p}(Ω − h)`
-   (`HasWeakIteratedLineDerivOn.comp_add_right_of_preimage`, the translation of a weak
-   derivative to a translated domain), so the zero extension across `∂(Ω − h)` is
-   `HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset` of `Cutoff.lean`. On
-   `Ω` its function is `(θ u)^0(· + h)` and its gradient `(θ ∇u + u ∇θ)^0(· + h)` — the translates
-   of the zero extensions — and it is continuous when `ũ` is continuous on `closure Ω`. The
-   interior piece is the case `h = 0`, `U = (frontier Ω)ᶜ`.
-2. **Translation is continuous in `L^p`** (`MeasureTheory.Lp.continuous_translateCurve`): the
-   sum `F_t` of the interior piece and the boundary pieces at `h_i = t y_i` differs from `u` in
-   `W^{1,p}(Ω)` by at most `∑_i ‖τ_{t y_i} H_i − H_i‖_{L^p(ℝ^N)}` over the finitely many zero
-   extensions `H_i` involved (`SobolevEuclidean.norm_le_sum_norm_translateCurve_sub`), which
-   tends to `0` with `t`; and on `closure Ω`, `F_t − ũ = ∑_i [(θ_i ũ)^0(· + t y_i) − θ_i ũ]`, each
-   term small by the uniform continuity of `θ_i ũ` on the compact `closure Ω` when `z + t y_i ∈ Ω`,
-   and *zero* otherwise (the segment property forces `z ∉ U_i`, so `θ_i z = 0`).
-3. **Mollification** (`MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt`): a
-   mollification of `F_t` is smooth with compact support, within `ε/2` of `F_t` in `W^{1,p}(ℝ^N)`
-   (`MemSobolev.tendsto_sobolevNorm_convolution_sub`), and within `ε/2` uniformly when `F_t` is
-   continuous (`ContDiffBump.dist_normed_convolution_le` with uniform continuity).
+* `SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions`: under smooth density, the subspace
+  of restrictions of $C_c^\infty(\mathbb{R}^N)$ functions is dense in $W^{1,p}(\Omega)$.
+* `IsSobolevExtensionDomain.hasSmoothDensity`: every $W^{1,p}$-extension domain has smooth density
+  for $p < \infty$.
+* `Convex.hasSegmentProperty`: a nonempty convex open set has the segment property.
+* `IsBoundaryOfClass.hasSegmentProperty`: a set whose boundary is locally the graph of a continuous
+  function has the segment property.
+* `HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto`: on a bounded open set with the
+  segment property, every $u \in W^{1,p}(\Omega)$ is the limit of restrictions of
+  $C_c^\infty(\mathbb{R}^N)$ functions, which converge uniformly on $\overline{\Omega}$ to any
+  representative of $u$ that is continuous there.
+* `HasSegmentProperty.hasSmoothDensity`, `HasSegmentProperty.hasUniformSmoothDensity`: a bounded
+  open set with the segment property has both density properties.
+* `IsLipschitzDomain.hasSmoothDensity`, `IsContDiffDomain.hasUniformSmoothDensity`,
+  `Convex.hasUniformSmoothDensity`, `EuclideanSpace.hasUniformSmoothDensity_openTriangleOpens`: the
+  instances for bounded Lipschitz and $C^n$ graph domains, bounded convex open sets, and triangles.
 
-## References
+## Proof outline
 
-Adams–Fournier, *Sobolev Spaces*, 3.21–3.22; Evans, *PDE*, §5.3.3 and §5.5;
-[brezis2011functional] §9.2 (Lemma 9.3), Corollary 9.8.
+Let $u \in W^{1,p}(\Omega)$ have the representative $\tilde u$, and let $\varepsilon > 0$. The
+boundary $\partial\Omega$ is compact, so finitely many neighbourhoods $U_i$ of the segment property,
+with directions $y_i$, cover it. Lemma 9.3 of [brezis2011functional] gives smooth functions
+$\theta_0, \theta_i$ with $\theta_0 + \sum_i \theta_i = 1$,
+$\operatorname{supp} \theta_i \subseteq U_i$ compact, and $\operatorname{supp} \theta_0$ disjoint
+from $\partial\Omega$. For $t > 0$, the zero extension of $\theta_i u$ is translated by $t y_i$ and
+multiplied by a smooth cut-off equal to $1$ on $\overline{\Omega}$. By the segment property the
+result lies in $W^{1,p}(\mathbb{R}^N)$, has compact support, and is continuous when $\tilde u$ is
+continuous on $\overline{\Omega}$; the interior piece $\theta_0 u$ is the case of translation by
+$0$. The sum $F_t$ of the pieces differs from $u$ in $W^{1,p}(\Omega)$ by at most $\sum_i \|\tau_{t
+y_i} H_i - H_i\|_{L^p(\mathbb{R}^N)}$ for finitely many zero extensions $H_i$, and this bound tends
+to $0$ with $t$ because translation is continuous in $L^p$. On $\overline{\Omega}$, $F_t - \tilde
+u = \sum_i [(\theta_i \tilde u)^0(\cdot + t y_i) - \theta_i \tilde u]$. A term is small at $z$ by
+the uniform continuity of $\theta_i \tilde u$ on the compact set $\overline{\Omega}$ when
+$z + t y_i \in \Omega$, and it is zero otherwise, because the segment property then forces
+$z \notin U_i$, so $\theta_i(z) = 0$. Finally, a mollification of $F_t$ is smooth with compact
+support, within $\varepsilon/2$ of $F_t$ in $W^{1,p}(\mathbb{R}^N)$, and within $\varepsilon/2$ of
+$F_t$ uniformly when $F_t$ is continuous.
+
+## Implementation notes
+
+* The open set $\Omega$ is a term of `TopologicalSpace.Opens`, the space $W^{1,p}(\Omega)$ is
+  `SobolevEuclidean N 1 p Ω`, and the function of an element `u` is `SobolevMultiIndex.fn u`. The
+  condition $1 \le p$ is the instance `Fact (1 ≤ p)`. The hypothesis `p ≠ ⊤` says that $p$ is
+  finite.
+* The function-level construction `HasSegmentProperty.exists_translateApprox` does not mention the
+  type `SobolevEuclidean`, so that its long proof elaborates quickly.
+  `HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt` restates it in
+  $W^{1,p}(\Omega)$.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -90,11 +111,14 @@ variable (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (Ω : Opens (EuclideanSpace
 
 open SobolevMultiIndex
 
-/-- **Smooth functions are dense in `W^{1,p}(Ω)` up to the boundary**: every `u ∈ W^{1,p}(Ω)` is
-the limit in `W^{1,p}(Ω)` of elements whose functions are the restrictions to `Ω` of smooth
-compactly supported functions on `ℝ^N` — the conclusion of [brezis2011functional] Corollary 9.8
-(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto`) as a predicate on `Ω`. It is
-the hypothesis under which a trace is extended from the smooth functions by continuity. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p \le \infty$. The set $\Omega$ has
+**smooth density** if every $u \in W^{1,p}(\Omega)$ is the limit in $W^{1,p}(\Omega)$ of a
+sequence $w_n \in W^{1,p}(\Omega)$ such that each $w_n$ equals, almost everywhere on $\Omega$, a
+function $v_n \in C_c^\infty(\mathbb{R}^N)$.
+
+This is the conclusion of Corollary 9.8 of [brezis2011functional]
+(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto`) as a property of $\Omega$. It
+is the hypothesis under which a trace is extended from the smooth functions by continuity. -/
 def SobolevEuclidean.HasSmoothDensity : Prop :=
   ∀ u : SobolevEuclidean N 1 p Ω, ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ,
     (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧
@@ -102,11 +126,16 @@ def SobolevEuclidean.HasSmoothDensity : Prop :=
         (∀ n, fn (w n) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v n) ∧
           Tendsto w atTop (𝓝 u)
 
-/-- **Smooth approximation in `W^{1,p}(Ω)` and uniformly on `closure Ω`** of a Sobolev function
-continuous up to the boundary: for `u ∈ W^{1,p}(Ω)` with a representative `ũ` continuous on
-`closure Ω`, there are smooth compactly supported `v n` on `ℝ^N` whose restrictions converge to
-`u` in `W^{1,p}(Ω)` and which converge to `ũ` uniformly on `closure Ω`. It is the hypothesis
-under which the trace of `u` is the restriction `ũ|_{∂Ω}` (Evans, *PDE*, §5.5, Theorem 1 (ii)). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p \le \infty$. The set $\Omega$ has
+**uniform smooth density** if the following holds for every $u \in W^{1,p}(\Omega)$ and every
+function $\tilde u$ on $\mathbb{R}^N$ that equals $u$ almost everywhere on $\Omega$ and is
+continuous on $\overline{\Omega}$: there are $v_n \in C_c^\infty(\mathbb{R}^N)$ and
+$w_n \in W^{1,p}(\Omega)$ such that $w_n = v_n$ almost everywhere on $\Omega$, $w_n \to u$ in
+$W^{1,p}(\Omega)$, and $v_n \to \tilde u$ uniformly on $\overline{\Omega}$.
+
+It is the hypothesis under which the trace of $u$ is the restriction
+$\tilde u|_{\partial\Omega}$, as in Evans, *Partial Differential Equations*, §5.5, Theorem
+1(ii). -/
 def SobolevEuclidean.HasUniformSmoothDensity : Prop :=
   ∀ (u : SobolevEuclidean N 1 p Ω) (ũ : EuclideanSpace ℝ (Fin N) → ℝ),
     fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ →
@@ -118,10 +147,13 @@ def SobolevEuclidean.HasUniformSmoothDensity : Prop :=
             Tendsto w atTop (𝓝 u)) ∧
         TendstoUniformlyOn v ũ atTop (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))
 
-/-- **The restrictions of smooth compactly supported functions**, as a subspace of `W^{1,p}(Ω)`:
-the elements whose function is, almost everywhere on `Ω`, a `C_c^∞(ℝ^N)` function. This is the
-dense subspace (`SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions`) from which the
-trace is extended by continuity. -/
+/-- **The restrictions of smooth compactly supported functions**: the subspace of $W^{1,p}(\Omega)$
+of the elements $u$ that equal, almost everywhere on $\Omega$, some
+$v \in C_c^\infty(\mathbb{R}^N)$.
+
+Under smooth density this subspace is dense
+(`SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions`), and a trace is extended from it
+by continuity. -/
 def SobolevEuclidean.smoothRestrictions : Submodule ℝ (SobolevEuclidean N 1 p Ω) where
   carrier := {u | ∃ v : EuclideanSpace ℝ (Fin N) → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧
     fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v}
@@ -135,7 +167,8 @@ def SobolevEuclidean.smoothRestrictions : Submodule ℝ (SobolevEuclidean N 1 p 
 variable {N p Ω}
 
 omit [Fact (1 ≤ p)] in
-/-- Membership of `smoothRestrictions` unfolded. -/
+/-- An element $u \in W^{1,p}(\Omega)$ lies in `SobolevEuclidean.smoothRestrictions` if and only if
+$u = v$ almost everywhere on $\Omega$ for some $v \in C_c^\infty(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.mem_smoothRestrictions {u : SobolevEuclidean N 1 p Ω} :
     u ∈ SobolevEuclidean.smoothRestrictions N p Ω ↔
       ∃ v : EuclideanSpace ℝ (Fin N) → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧
@@ -143,15 +176,17 @@ theorem SobolevEuclidean.mem_smoothRestrictions {u : SobolevEuclidean N 1 p Ω} 
   Iff.rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The smooth compactly supported representative of an element of `smoothRestrictions`. -/
+/-- If $u$ lies in `SobolevEuclidean.smoothRestrictions`, then $u = v$ almost everywhere on $\Omega$
+for some $v \in C_c^\infty(\mathbb{R}^N)$. -/
 theorem SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions
     {u : SobolevEuclidean N 1 p Ω} (hu : u ∈ SobolevEuclidean.smoothRestrictions N p Ω) :
     ∃ v : EuclideanSpace ℝ (Fin N) → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧
       fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v :=
   hu
 
-/-- **The dense subspace**: under `HasSmoothDensity`, the restrictions of smooth compactly
-supported functions are dense in `W^{1,p}(Ω)`. -/
+/-- **The dense subspace.** If $\Omega$ has smooth density, then
+`SobolevEuclidean.smoothRestrictions`, the subspace of restrictions of
+$C_c^\infty(\mathbb{R}^N)$ functions, is dense in $W^{1,p}(\Omega)$. -/
 theorem SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions
     (h : SobolevEuclidean.HasSmoothDensity N p Ω) :
     Dense (SobolevEuclidean.smoothRestrictions N p Ω : Set (SobolevEuclidean N 1 p Ω)) := by
@@ -159,7 +194,10 @@ theorem SobolevEuclidean.HasSmoothDensity.dense_smoothRestrictions
   obtain ⟨v, hv, hvc, w, hw, hwu⟩ := h u
   exact mem_closure_iff_seq_limit.2 ⟨w, fun n ↦ ⟨v n, hv n, hvc n, hw n⟩, hwu⟩
 
-/-- `HasSmoothDensity` with `C^1` approximants in place of `C^∞` ones (a weakening). -/
+/-- If $\Omega$ has smooth density, then every $u \in W^{1,p}(\Omega)$ is the limit in
+$W^{1,p}(\Omega)$ of elements $w_n$ that equal, almost everywhere on $\Omega$, compactly
+supported $C^1$ functions $v_n$ on $\mathbb{R}^N$. This is a weaker form of
+`SobolevEuclidean.HasSmoothDensity`. -/
 theorem SobolevEuclidean.HasSmoothDensity.exists_seq_contDiff_one
     (h : SobolevEuclidean.HasSmoothDensity N p Ω) (u : SobolevEuclidean N 1 p Ω) :
     ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ,
@@ -171,9 +209,12 @@ theorem SobolevEuclidean.HasSmoothDensity.exists_seq_contDiff_one
   ⟨v, fun n ↦ (hv n).of_le (by simp), hvc, w, hw, hwu⟩
 
 omit [Fact (1 ≤ p)] in
-/-- **Uniqueness of continuous representatives up to the boundary**: two functions continuous on
-`closure Ω` and both almost everywhere equal to `fn u` on `Ω` agree on `closure Ω`:
-`ContinuousOn.eqOn_closure_of_ae_eq`. -/
+/-- **Uniqueness of continuous representatives up to the boundary.** Let $u \in W^{1,p}(\Omega)$,
+and let $v_1, v_2$ be functions on $\mathbb{R}^N$ that both equal $u$ almost everywhere on
+$\Omega$ and are both continuous on $\overline{\Omega}$. Then $v_1 = v_2$ on
+$\overline{\Omega}$.
+
+The proof is `ContinuousOn.eqOn_closure_of_ae_eq`. -/
 theorem SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn (u : SobolevEuclidean N 1 p Ω)
     {v₁ v₂ : EuclideanSpace ℝ (Fin N) → ℝ}
     (h₁ : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v₁)
@@ -183,32 +224,41 @@ theorem SobolevEuclidean.eqOn_closure_of_ae_eq_of_continuousOn (u : SobolevEucli
     EqOn v₁ v₂ (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
   hc₁.eqOn_closure_of_ae_eq Ω.isOpen hc₂ (h₁.symm.trans h₂)
 
-/-- **An extension domain has smooth density** ([brezis2011functional] Corollary 9.8 in its
-abstract form, the density
-`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` on the
-subspace `⊤`). -/
+/-- **An extension domain has smooth density.** If $\Omega \subseteq \mathbb{R}^N$ is a
+$W^{1,p}$-extension domain and $p < \infty$, then $\Omega$ has smooth density.
+
+This is Corollary 9.8 of [brezis2011functional] in its abstract form: the density result
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn` for
+the whole space $W^{1,p}(\Omega)$. -/
 theorem IsSobolevExtensionDomain.hasSmoothDensity (h : IsSobolevExtensionDomain N p Ω)
     (hp' : p ≠ ⊤) : SobolevEuclidean.HasSmoothDensity N p Ω := fun u ↦
   SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn hp' h
     ⟨u, Submodule.mem_top⟩
 
-/-- A `C^1` chart domain (with no boundedness of the boundary) has smooth density:
-[brezis2011functional] Corollary 9.8. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be an open set of class $C^1$ in the sense of local
+charts, and let $p < \infty$. Then $\Omega$ has smooth density. The boundary of $\Omega$ need
+not be bounded. This is Corollary 9.8 of [brezis2011functional]. -/
 theorem IsContDiffChartDomain.hasSmoothDensity {d : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasSmoothDensity (d + 1) p Ω := fun u ↦
   SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto hp' hΩ u
 
-/-- A `C^1` graph domain has smooth density, through `IsContDiffDomain.isContDiffChartDomain`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a $C^1$ graph domain, and let $p < \infty$. Then
+$\Omega$ has smooth density.
+
+A $C^1$ graph domain is a $C^1$ chart domain by `IsContDiffDomain.isContDiffChartDomain`. -/
 theorem IsContDiffDomain.hasSmoothDensity {d : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasSmoothDensity (d + 1) p Ω :=
   hΩ.isContDiffChartDomain.hasSmoothDensity hp'
 
-/-- Every triangle with non-collinear vertices has smooth density
-(`isSobolevExtensionDomainAll_openTriangleOpens`). -/
+/-- Let $A, B, C \in \mathbb{R}^2$ with $B - A$ and $C - A$ linearly independent, and let
+$p < \infty$. Then the open triangle with vertices $A, B, C$ has smooth density.
+
+The triangle is an extension domain for every exponent by
+`isSobolevExtensionDomainAll_openTriangleOpens`. -/
 theorem EuclideanSpace.hasSmoothDensity_openTriangleOpens (A B C : EuclideanSpace ℝ (Fin 2))
     (h : LinearIndependent ℝ ![B - A, C - A]) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasSmoothDensity 2 p (A.openTriangleOpens B C h) :=
@@ -224,33 +274,34 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 
 open SobolevMultiIndex
 
-/-- **The chosen smooth representative** of an element of `smoothRestrictions`: a `C^∞`
-compactly supported function on `ℝ^N` equal to `fn u` almost everywhere on `Ω`. -/
+/-- **The chosen smooth representative** of an element $u$ of `SobolevEuclidean.smoothRestrictions`:
+a function in $C_c^\infty(\mathbb{R}^N)$ that equals $u$ almost everywhere on $\Omega$. -/
 def SobolevEuclidean.smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     EuclideanSpace ℝ (Fin N) → ℝ :=
   Classical.choose (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)
 
 omit [Fact (1 ≤ p)] in
-/-- The smooth representative is smooth. -/
+/-- The chosen smooth representative `SobolevEuclidean.smoothRep u` is of class $C^\infty$. -/
 theorem SobolevEuclidean.contDiff_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     ContDiff ℝ ∞ (SobolevEuclidean.smoothRep u) :=
   (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).1
 
 omit [Fact (1 ≤ p)] in
-/-- The smooth representative is continuous. -/
+/-- The chosen smooth representative `SobolevEuclidean.smoothRep u` is continuous. -/
 theorem SobolevEuclidean.continuous_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     Continuous (SobolevEuclidean.smoothRep u) :=
   (SobolevEuclidean.contDiff_smoothRep u).continuous
 
 omit [Fact (1 ≤ p)] in
-/-- The smooth representative has compact support. -/
+/-- The chosen smooth representative `SobolevEuclidean.smoothRep u` has compact support. -/
 theorem SobolevEuclidean.hasCompactSupport_smoothRep
     (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     HasCompactSupport (SobolevEuclidean.smoothRep u) :=
   (Classical.choose_spec (SobolevEuclidean.exists_contDiff_of_mem_smoothRestrictions u.2)).2.1
 
 omit [Fact (1 ≤ p)] in
-/-- The smooth representative represents `u` on `Ω`. -/
+/-- The chosen smooth representative `SobolevEuclidean.smoothRep u` equals $u$ almost everywhere on
+$\Omega$. -/
 theorem SobolevEuclidean.fn_ae_eq_smoothRep (u : SobolevEuclidean.smoothRestrictions N p Ω) :
     fn (u : SobolevEuclidean N 1 p Ω)
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevEuclidean.smoothRep u :=
@@ -264,23 +315,30 @@ section Segment
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The segment property** (Adams–Fournier, *Sobolev Spaces*, 3.21): near each boundary point
-of `Ω` a fixed direction `y` pushes the closure of `Ω` into `Ω`: there is a neighbourhood `U` of
-the point with `z + t y ∈ Ω` for every `z ∈ closure Ω ∩ U` and `0 < t < 1`. It excludes sets
-lying on both sides of a piece of their boundary (a slit) and cusps pointing inwards, and it is
-what the translation construction of
-`HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto` needs. It holds for every
-domain whose boundary is locally the graph of a continuous function
-(`IsBoundaryOfClass.hasSegmentProperty`) and for every convex open set
+/-- **The segment property** of a set $\Omega$ in a real normed space $E$: for each
+$x \in \partial\Omega$ there are a neighbourhood $U$ of $x$ and a direction $y \in E$ such that
+$$z + t y \in \Omega \qquad \text{for all } z \in \overline{\Omega} \cap U \text{ and } 0 < t <
+  1.$$
+
+This is the segment property of Adams and Fournier, *Sobolev Spaces*, 3.21. It excludes sets
+that lie on both sides of a piece of their boundary, such as a slit domain, and cusps that point
+inwards. It is what the translation construction of
+`HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto` needs. It holds for every set
+whose boundary is locally the graph of a continuous function
+(`IsBoundaryOfClass.hasSegmentProperty`) and for every nonempty convex open set
 (`Convex.hasSegmentProperty`). -/
 def HasSegmentProperty (Ω : Set E) : Prop :=
   ∀ x ∈ frontier Ω, ∃ U ∈ 𝓝 x, ∃ y : E, ∀ z ∈ closure Ω ∩ U, ∀ t ∈ Ioo (0 : ℝ) 1, z + t • y ∈ Ω
 
-/-- **A convex open set has the segment property**: with `x₀ ∈ Ω`, `ball x₀ δ ⊆ Ω`, the direction
-at `x` is `x₀ − x`, on the neighbourhood `ball x (δ / 2)`: for `z ∈ closure Ω ∩ ball x (δ / 2)`
-the point `z + t (x₀ − x) = (1 − t) z + t (x₀ + (z − x))` lies on the open segment from a point of
-`closure Ω` to a point of `ball x₀ (δ / 2) ⊆ interior Ω`, hence in `interior Ω = Ω`
-(`Convex.openSegment_closure_interior_subset_interior`). Boundedness is not needed. -/
+/-- **A convex open set has the segment property.** Let $\Omega$ be a nonempty convex open subset of
+a real normed space. Then $\Omega$ has the segment property. Boundedness is not needed.
+
+Choose $x_0 \in \Omega$ and $\delta > 0$ with $B(x_0, \delta) \subseteq \Omega$. At a boundary
+point $x$ the direction is $x_0 - x$, on the neighbourhood $B(x, \delta/2)$. For
+$z \in \overline{\Omega} \cap B(x, \delta/2)$ the point
+$z + t(x_0 - x) = (1 - t) z + t(x_0 + (z - x))$ lies on the open segment from a point of
+$\overline{\Omega}$ to a point of $B(x_0, \delta/2) \subseteq \Omega$, hence in $\Omega$
+(`Convex.openSegment_closure_interior_subset_interior`). -/
 theorem Convex.hasSegmentProperty {Ω : Set E} (hΩ : IsOpen Ω) (hc : Convex ℝ Ω)
     (hne : Ω.Nonempty) : HasSegmentProperty Ω := by
   obtain ⟨x₀, hx₀⟩ := hne
@@ -305,14 +363,18 @@ section Graph
 variable {d : ℕ} {V : Set (EuclideanSpace ℝ (Fin d) → ℝ)}
   {Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **A domain whose boundary is locally the graph of a continuous function has the segment
-property**: at a boundary point `x₀` with the graph chart `(T, g)` on `ball x₀ r` the direction
-is the rotated vertical `(r / 4) T⁻¹ e_N`, on the neighbourhood `ball x₀ (r / 2)`. A point
-`z ∈ closure Ω ∩ ball x₀ (r / 2)` lies in the closed region `{g (init (T x)) ≤ (T x)_N}` (the open
-ball meets `closure Ω` inside the closure of `Ω ∩ ball x₀ r`, the region above the graph), and
-the translate `z + t y` stays in `ball x₀ r`, keeps the first `d` coordinates of `T z` and raises
-the last one by `t r / 4 > 0`, so it lies strictly above the graph, in `Ω ∩ ball x₀ r`. Neither
-openness nor boundedness of `Ω` is used. -/
+/-- **A set whose boundary is locally the graph of a continuous function has the segment property.**
+Let $V$ be a class of continuous functions on $\mathbb{R}^d$, and let
+$\Omega \subseteq \mathbb{R}^{d+1}$ have a boundary of class $V$ (`IsBoundaryOfClass`). Then
+$\Omega$ has the segment property. Neither openness nor boundedness of $\Omega$ is used.
+
+At a boundary point $x_0$ with the graph chart $(T, g)$ on $B(x_0, r)$, the direction is
+$(r/4) T^{-1} e_N$, where $T^{-1}$ is the inverse of the linear part of $T$, on the
+neighbourhood $B(x_0, r/2)$. A point $z \in \overline{\Omega} \cap B(x_0, r/2)$ satisfies
+$g((Tz)') \le (Tz)_N$, because the open ball meets $\overline{\Omega}$ inside the closure of
+$\Omega \cap B(x_0, r)$. The translate $z + t y$ stays in $B(x_0, r)$, has the same first $d$
+coordinates of $T z$, and has a last coordinate larger by $t r/4 > 0$. So it lies strictly above
+the graph, in $\Omega \cap B(x_0, r)$. -/
 theorem IsBoundaryOfClass.hasSegmentProperty (hV : V ⊆ {g | Continuous g})
     (h : IsBoundaryOfClass V Ω) : HasSegmentProperty Ω := by
   intro x₀ hx₀
@@ -377,12 +439,13 @@ theorem IsBoundaryOfClass.hasSegmentProperty (hV : V ⊆ {g | Continuous g})
     linarith
   exact hmem.1
 
-/-- A `C^n` graph domain has the segment property. -/
+/-- A $C^n$ graph domain $\Omega \subseteq \mathbb{R}^{d+1}$ has the segment property, for every
+$n$. -/
 theorem IsContDiffDomain.hasSegmentProperty {n : WithTop ℕ∞} (hΩ : IsContDiffDomain n Ω) :
     HasSegmentProperty Ω :=
   hΩ.isBoundaryOfClass.hasSegmentProperty fun _ hg ↦ ContDiff.continuous hg
 
-/-- A Lipschitz graph domain has the segment property. -/
+/-- A Lipschitz graph domain $\Omega \subseteq \mathbb{R}^{d+1}$ has the segment property. -/
 theorem IsLipschitzDomain.hasSegmentProperty (hΩ : IsLipschitzDomain Ω) :
     HasSegmentProperty Ω :=
   hΩ.isBoundaryOfClass.hasSegmentProperty fun _ (hg : _ ∈ {g | ∃ K, LipschitzWith K g}) ↦
@@ -401,14 +464,30 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 open SobolevMultiIndex
 
 omit [Fact (1 ≤ p)] in
-/-- **One piece of the translation construction.** For `ũ ∈ W^{1,p}(Ω)` with partial
-derivatives `w j` (as functions), a smooth `θ` and a translation `h` such that every
-`z ∈ closure Ω` with `z + h ∈ tsupport θ` lies in a set `U` on which `z + h ∈ Ω`, the function
-`F = 1_{Ω − h} · χ · θ(· + h) · ũ(· + h)`, with `χ` a smooth cut-off equal to `1` on `closure Ω`
-and supported in `(Ω − h) ∪ (tsupport θ − h)ᶜ`, has compact support, lies in `L^p(ℝ^N)`, has
-weak derivatives `G j ∈ L^p(ℝ^N)` along each `e_j` on the whole space, equals the translate
-`(θ ũ)^0(· + h)` of the zero extension on `closure Ω`, has `G j = (θ w_j + ∂_j θ ũ)^0(· + h)`
-on `Ω`, and is continuous when `ũ` is continuous on `closure Ω`. -/
+/-- **One piece of the translation construction.** Let $\Omega \subseteq \mathbb{R}^N$ be open and
+bounded. Let $\tilde u \in L^p(\Omega)$ have weak partial derivatives
+$w_j = \partial_j \tilde u \in L^p(\Omega)$ on $\Omega$ for $j = 1, \dots, N$. Let $\theta$ be a
+$C^\infty$ function on $\mathbb{R}^N$, let $h \in \mathbb{R}^N$, and let
+$U \subseteq \mathbb{R}^N$ be a set such that $z \in U$ whenever
+$z + h \in \operatorname{supp}\theta$, and $z + h \in \Omega$ whenever
+$z \in \overline{\Omega} \cap U$. Then there are functions $F$ and $G_1, \dots, G_N$ on
+$\mathbb{R}^N$ with the following properties:
+
+* $F$ has compact support, $F \in L^p(\mathbb{R}^N)$, and each $G_j \in L^p(\mathbb{R}^N)$ is
+  the weak derivative of $F$ along $e_j$ on $\mathbb{R}^N$;
+* $F(z) = (\theta \tilde u)^0(z + h)$ for $z \in \overline{\Omega}$, where ${}^0$ denotes the
+  extension by zero outside $\Omega$;
+* $G_j(z) = (\theta w_j + \partial_j\theta \, \tilde u)^0(z + h)$ for $z \in \Omega$;
+* $F$ is continuous if $\tilde u$ is continuous on $\overline{\Omega}$.
+
+The function is $F = 1_{\Omega - h} \, \chi \, \theta(\cdot + h) \, \tilde u(\cdot + h)$, where
+$\chi$ is a smooth cut-off equal to $1$ on $\overline{\Omega}$ and supported in the open set
+$(\Omega - h) \cup (\operatorname{supp}\theta - h)^c$, which contains $\overline{\Omega}$. On
+$\Omega - h$ it is $\alpha \, \tilde u(\cdot + h)$ with $\alpha = \chi \, \theta(\cdot + h)$
+smooth and supported inside $\Omega - h$, and $\tilde u(\cdot + h) \in W^{1,p}(\Omega - h)$
+(`HasWeakIteratedLineDerivOn.comp_add_right_of_preimage`). So its extension by zero across
+$\partial(\Omega - h)$ is covered by
+`HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset`. -/
 theorem SobolevEuclidean.exists_translatePiece (hb : Bornology.IsBounded (Ω : Set 𝔼))
     {ũ : 𝔼 → ℝ} {w : Fin N → 𝔼 → ℝ} (hũp : MemLp ũ p (volume.restrict (Ω : Set 𝔼)))
     (hw : ∀ j, HasWeakIteratedLineDerivOn ![EuclideanSpace.single j (1 : ℝ)] ũ (w j) Ω volume)
@@ -573,9 +652,18 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 open SobolevMultiIndex
 
-/-- **The translation estimate**: an element `d` of `L^p(Ω)` which is, on `Ω`, the sum over `i`
-of the differences `H_i(· + t y_i) − H_i` of translates of `L^p(ℝ^N)` functions `H_i` has norm
-at most `∑ i, ‖τ_{t y_i} H_i − H_i‖_{L^p(ℝ^N)}` (Minkowski, and `L^p(Ω) ≤ L^p(ℝ^N)`). -/
+/-- **The translation estimate.** Let $\Omega \subseteq \mathbb{R}^N$ be open, let $\iota$ be a
+finite index set, and let $H_i \in L^p(\mathbb{R}^N)$, $y_i \in \mathbb{R}^N$ for $i \in \iota$,
+and $t \in \mathbb{R}$. If $d \in L^p(\Omega)$ satisfies
+$$d(z) = \sum_{i \in \iota} \bigl(H_i(z + t y_i) - H_i(z)\bigr) \qquad \text{for almost every }
+  z \in \Omega,$$
+then
+$$\|d\|_{L^p(\Omega)} \le \sum_{i \in \iota} \|\tau_{t y_i} H_i - H_i\|_{L^p(\mathbb{R}^N)},$$
+where $\tau_{t y} H = H(\cdot + t y)$.
+
+The proof is the Minkowski inequality together with $\|f\|_{L^p(\Omega)} \le
+\|f\|_{L^p(\mathbb{R}^N)}$. The translate $\tau_{t y} H$ is
+`MeasureTheory.Lp.translateCurve ℝ p y H t`. -/
 theorem SobolevEuclidean.norm_le_sum_norm_translateCurve_sub {ι : Type*} [Fintype ι]
     (d : Lp ℝ p (volume.restrict (Ω : Set 𝔼)))
     (H : ι → Lp ℝ p (volume.restrict ((⊤ : Opens 𝔼) : Set 𝔼))) (y : ι → 𝔼) (t : ℝ)
@@ -622,18 +710,28 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 open SobolevMultiIndex
 
-/-- **The translate approximation, at the level of functions.** For a bounded `Ω` with the
-segment property, `ũ ∈ W^{1,p}(Ω)` with partial derivatives `w j`, and `ε > 0`, there is a
-compactly supported `Fs ∈ W^{1,p}(ℝ^N)` with weak derivatives `Gs j`, built from a partition of
-unity `θ₀ + ∑ θ_i = 1` subordinate to the segment-property neighbourhoods and the pieces of
-`SobolevEuclidean.exists_translatePiece` at the translations `t y_i`, such that: on `Ω`,
-`Fs − ũ` and `Gs j − w j` are the sums over `i` of the differences `H(· + t y_i) − H` of
-translates of the `L^p(ℝ^N)` functions `H = (θ_i ũ)^0`, respectively `(θ_i w_j + ∂_j θ_i ũ)^0`,
-and the total `L^p(ℝ^N)` size of these differences is less than `ε`; and, when `ũ` is
-continuous on `closure Ω`, `Fs` is continuous and within `ε` of `ũ` on `closure Ω`. The
-statement is kept free of the typed space `W^{1,p}(Ω)` so that its long proof elaborates
-cheaply (every `obtain` under a goal mentioning `W^{1,p}(Ω)` costs seconds);
-`HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt` reads it in `W^{1,p}(Ω)`. -/
+/-- **The translate approximation, for functions.** Let $\Omega \subseteq \mathbb{R}^N$ be a bounded
+open set with the segment property, and let $p < \infty$. Let $\tilde u \in L^p(\Omega)$ have
+weak partial derivatives $w_j \in L^p(\Omega)$ on $\Omega$, and let $\varepsilon > 0$. Then
+there are a compactly supported $F \in W^{1,p}(\mathbb{R}^N)$ with weak partial derivatives
+$G_j$ on $\mathbb{R}^N$, a finite index set $s$, functions
+$H^0_i, H^1_{i,j} \in L^p(\mathbb{R}^N)$, directions $y_i$ and a number $t$ such that:
+
+* almost everywhere on $\Omega$, $F - \tilde u = \sum_i \bigl(H^0_i(\cdot + t y_i) -
+  H^0_i\bigr)$ and $G_j - w_j = \sum_i \bigl(H^1_{i,j}(\cdot + t y_i) - H^1_{i,j}\bigr)$ for
+  each $j$;
+* $\sum_i \|\tau_{t y_i} H^0_i - H^0_i\|_{L^p(\mathbb{R}^N)} + \sum_j \sum_i \|\tau_{t y_i}
+  H^1_{i,j} - H^1_{i,j}\|_{L^p(\mathbb{R}^N)} < \varepsilon$;
+* if $\tilde u$ is continuous on $\overline{\Omega}$, then $F$ is continuous and
+  $|F(z) - \tilde u(z)| < \varepsilon$ for all $z \in \overline{\Omega}$.
+
+The function $F$ is the sum of the pieces of `SobolevEuclidean.exists_translatePiece` for a
+partition of unity $\theta_0 + \sum_i \theta_i = 1$ subordinate to the neighbourhoods of the
+segment property, translated by $t y_i$. The functions $H^0_i$ and $H^1_{i,j}$ are the zero
+extensions $(\theta_i \tilde u)^0$ and $(\theta_i w_j + \partial_j\theta_i \, \tilde u)^0$. The
+statement does not mention the type `SobolevEuclidean`, so that its long proof elaborates
+quickly; `HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt` restates it in
+$W^{1,p}(\Omega)$. -/
 theorem HasSegmentProperty.exists_translateApprox
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : HasSegmentProperty (Ω : Set 𝔼)) (hp' : p ≠ ⊤)
     {ũ : 𝔼 → ℝ} {w : Fin N → 𝔼 → ℝ} (hũp : MemLp ũ p (volume.restrict (Ω : Set 𝔼)))
@@ -886,13 +984,19 @@ theorem HasSegmentProperty.exists_translateApprox
       _ = (s.card : ℝ) * ε' := by simp
       _ < ε := hε'
 
-/-- **The translate approximation, in `W^{1,p}(Ω)`**: for a bounded `Ω` with the segment
-property, `u ∈ W^{1,p}(Ω)` with representative `ũ`, and `ε > 0`, there is a compactly supported
-`Fs ∈ W^{1,p}(ℝ^N)`, with typed element `Ft`, whose restriction to `Ω` is within `ε` of `u` in
-`W^{1,p}(Ω)`, and which is continuous and within `ε` of `ũ` on `closure Ω` when `ũ` is
-continuous there. This reads `HasSegmentProperty.exists_translateApprox` in `W^{1,p}(Ω)`: the
-weak derivatives of `Ft` are the `Gs j` (uniqueness), and each component of `R Ft − u` is a sum
-of translation differences, bounded by `SobolevEuclidean.norm_le_sum_norm_translateCurve_sub`. -/
+/-- **The translate approximation, in $W^{1,p}(\Omega)$.** Let $\Omega \subseteq \mathbb{R}^N$ be a
+bounded open set with the segment property, and let $p < \infty$. Let $u \in W^{1,p}(\Omega)$,
+let $\tilde u$ be a function equal to $u$ almost everywhere on $\Omega$, and let
+$\varepsilon > 0$. Then there are a compactly supported function $F \in W^{1,p}(\mathbb{R}^N)$
+and its class $F_t$ in $W^{1,p}(\mathbb{R}^N)$ such that $\|F_t|_\Omega - u\|_{W^{1,p}(\Omega)}
+< \varepsilon$. If moreover $\tilde u$ is continuous on $\overline{\Omega}$, then $F$ is
+continuous and $|F(z) - \tilde u(z)| < \varepsilon$ for all $z \in \overline{\Omega}$.
+
+The restriction $F_t|_\Omega$ is `SobolevMultiIndex.restrictL`. This restates
+`HasSegmentProperty.exists_translateApprox` in $W^{1,p}(\Omega)$: by uniqueness of weak
+derivatives the weak derivatives of $F_t$ are the $G_j$, and each component of $F_t|_\Omega - u$
+is a sum of translation differences, which
+`SobolevEuclidean.norm_le_sum_norm_translateCurve_sub` bounds. -/
 theorem HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : HasSegmentProperty (Ω : Set 𝔼)) (hp' : p ≠ ⊤)
     (u : SobolevEuclidean N 1 p Ω) {ũ : 𝔼 → ℝ} (hũ : fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
@@ -954,14 +1058,19 @@ theorem HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt
           SobolevEuclidean.norm_le_sum_norm_translateCurve_sub _ (fun i ↦ H1 i j) y t (hder j))
     _ < ε := herr
 
-/-- **Density up to the boundary, one `ε` at a time**: for a bounded `Ω` with the segment
-property, `1 ≤ p < ∞`, `u ∈ W^{1,p}(Ω)` with representative `ũ`, and `ε > 0`, there are
-`v ∈ C_c^∞(ℝ^N)` and `w ∈ W^{1,p}(Ω)` with `w = v` on `Ω`, `‖w − u‖ < ε`, and, if `ũ` is
-continuous on `closure Ω`, `|v − ũ| < ε` on `closure Ω`: the translate approximation
-`HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt` at `ε / 2`, mollified
-(`MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt`) to within `ε / 2` in
-`W^{1,p}(ℝ^N)` (`SobolevMultiIndex.ofReal_norm_le_sobolevNorm` for the typed norm) and
-uniformly. -/
+/-- **Density up to the boundary, for one $\varepsilon$.** Let $\Omega \subseteq \mathbb{R}^N$ be a
+bounded open set with the segment property, and let $1 \le p < \infty$. Let
+$u \in W^{1,p}(\Omega)$, let $\tilde u$ be a function equal to $u$ almost everywhere on
+$\Omega$, and let $\varepsilon > 0$. Then there are $v \in C_c^\infty(\mathbb{R}^N)$ and
+$w \in W^{1,p}(\Omega)$ such that $w = v$ almost everywhere on $\Omega$ and
+$\|w - u\|_{W^{1,p}(\Omega)} < \varepsilon$, and such that $|v(z) - \tilde u(z)| < \varepsilon$
+for all $z \in \overline{\Omega}$ if $\tilde u$ is continuous on $\overline{\Omega}$.
+
+The function $v$ is a mollification of the translate approximation of
+`HasSegmentProperty.exists_hasCompactSupport_norm_restrictL_sub_lt` at $\varepsilon/2$, within
+$\varepsilon/2$ of it in $W^{1,p}(\mathbb{R}^N)$
+(`MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_lt`, with
+`SobolevMultiIndex.ofReal_norm_le_sobolevNorm` for the norm of the type) and uniformly. -/
 theorem HasSegmentProperty.exists_contDiff_hasCompactSupport_norm_sub_lt
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : HasSegmentProperty (Ω : Set 𝔼)) (hp' : p ≠ ⊤)
     (u : SobolevEuclidean N 1 p Ω) {ũ : 𝔼 → ℝ} (hũ : fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
@@ -1034,16 +1143,19 @@ variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace
 
 open SobolevMultiIndex
 
-/-- **Density of `C_c^∞(ℝ^N)` up to the boundary on a bounded open set with the segment
-property, with uniform convergence for continuous functions** (Adams–Fournier, *Sobolev
-Spaces*, Theorem 3.22 at order one, with Evans's remark on uniform convergence, *PDE* §5.5):
-for `1 ≤ p < ∞`, `u ∈ W^{1,p}(Ω)` and a representative `ũ` of `u`, there are smooth compactly
-supported `v n` on `ℝ^N` and `w n ∈ W^{1,p}(Ω)` with `w n = v n` on `Ω` and `w n → u` in
-`W^{1,p}(Ω)`, such that moreover `v n → ũ` uniformly on `closure Ω` whenever `ũ` is continuous
-on `closure Ω`. The sequence is
-`HasSegmentProperty.exists_contDiff_hasCompactSupport_norm_sub_lt` at `ε = 1 / (n + 1)`;
-taking `ũ = fn u` gives `SobolevEuclidean.HasSmoothDensity`, and a continuous representative
-gives `SobolevEuclidean.HasUniformSmoothDensity`. -/
+/-- **Density of $C_c^\infty(\mathbb{R}^N)$ up to the boundary, with uniform convergence for
+continuous functions.** Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set with the
+segment property, and let $1 \le p < \infty$. Let $u \in W^{1,p}(\Omega)$, and let $\tilde u$ be
+a function equal to $u$ almost everywhere on $\Omega$. Then there are
+$v_n \in C_c^\infty(\mathbb{R}^N)$ and $w_n \in W^{1,p}(\Omega)$ such that $w_n = v_n$ almost
+everywhere on $\Omega$, $w_n \to u$ in $W^{1,p}(\Omega)$, and, if $\tilde u$ is continuous on
+$\overline{\Omega}$, $v_n \to \tilde u$ uniformly on $\overline{\Omega}$.
+
+This is Theorem 3.22 of Adams and Fournier, *Sobolev Spaces*, at order one, with the uniform
+convergence remarked in Evans, *Partial Differential Equations*, §5.5. The sequence is
+`HasSegmentProperty.exists_contDiff_hasCompactSupport_norm_sub_lt` at $\varepsilon = 1/(n + 1)$.
+The choice $\tilde u = u$ gives `SobolevEuclidean.HasSmoothDensity`, and a continuous
+representative gives `SobolevEuclidean.HasUniformSmoothDensity`. -/
 theorem HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hΩ : HasSegmentProperty (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hp' : p ≠ ⊤)
@@ -1072,7 +1184,8 @@ theorem HasSegmentProperty.exists_seq_contDiff_hasCompactSupport_tendsto
       _ ≤ 1 / ((n₀ : ℝ) + 1) := by gcongr
       _ < ε := hn₀
 
-/-- A bounded open set with the segment property has smooth density. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set with the segment property, and let
+$p < \infty$. Then $\Omega$ has smooth density. -/
 theorem HasSegmentProperty.hasSmoothDensity
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hΩ : HasSegmentProperty (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hp' : p ≠ ⊤) :
@@ -1081,7 +1194,8 @@ theorem HasSegmentProperty.hasSmoothDensity
     hΩ.exists_seq_contDiff_hasCompactSupport_tendsto hb hp' u (EventuallyEq.refl _ _)
   ⟨v, hv, hvc, w, hw, hwu⟩
 
-/-- A bounded open set with the segment property has uniform smooth density. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set with the segment property, and let
+$p < \infty$. Then $\Omega$ has uniform smooth density. -/
 theorem HasSegmentProperty.hasUniformSmoothDensity
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hΩ : HasSegmentProperty (Ω : Set (EuclideanSpace ℝ (Fin N)))) (hp' : p ≠ ⊤) :
@@ -1089,14 +1203,16 @@ theorem HasSegmentProperty.hasUniformSmoothDensity
   let ⟨v, hv, hvc, hw, hunif⟩ := hΩ.exists_seq_contDiff_hasCompactSupport_tendsto hb hp' u hũ
   ⟨v, hv, hvc, hw, hunif hũc⟩
 
-/-- A bounded convex open set has smooth density (a by-product: convex polygons). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a nonempty bounded convex open set, and let $p < \infty$.
+Then $\Omega$ has smooth density. This applies in particular to convex polygons. -/
 theorem Convex.hasSmoothDensity (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hc : Convex ℝ (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin N))).Nonempty) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasSmoothDensity N p Ω :=
   (hc.hasSegmentProperty Ω.isOpen hne).hasSmoothDensity hb hp'
 
-/-- A bounded convex open set has uniform smooth density. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be a nonempty bounded convex open set, and let $p < \infty$.
+Then $\Omega$ has uniform smooth density. -/
 theorem Convex.hasUniformSmoothDensity
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hc : Convex ℝ (Ω : Set (EuclideanSpace ℝ (Fin N))))
@@ -1104,7 +1220,8 @@ theorem Convex.hasUniformSmoothDensity
     SobolevEuclidean.HasUniformSmoothDensity N p Ω :=
   (hc.hasSegmentProperty Ω.isOpen hne).hasUniformSmoothDensity hb hp'
 
-/-- A triangle with non-collinear vertices has uniform smooth density. -/
+/-- Let $A, B, C \in \mathbb{R}^2$ with $B - A$ and $C - A$ linearly independent, and let
+$p < \infty$. Then the open triangle with vertices $A, B, C$ has uniform smooth density. -/
 theorem EuclideanSpace.hasUniformSmoothDensity_openTriangleOpens
     (A B C : EuclideanSpace ℝ (Fin 2)) (h : LinearIndependent ℝ ![B - A, C - A]) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasUniformSmoothDensity 2 p (A.openTriangleOpens B C h) :=
@@ -1117,22 +1234,27 @@ section GraphDensity
 
 variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- A bounded `C^n` graph domain has uniform smooth density. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^n$ graph domain, for any $n$, and let
+$p < \infty$. Then $\Omega$ has uniform smooth density. -/
 theorem IsContDiffDomain.hasUniformSmoothDensity {n : WithTop ℕ∞}
     (hΩ : IsContDiffDomain n (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasUniformSmoothDensity (d + 1) p Ω :=
   hΩ.hasSegmentProperty.hasUniformSmoothDensity hb hp'
 
-/-- A bounded Lipschitz graph domain has smooth density (the Lipschitz case of Atkinson–Han
-Theorem 7.3.2, which the extension route does not reach). -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded Lipschitz graph domain, and let
+$p < \infty$. Then $\Omega$ has smooth density.
+
+This is the Lipschitz case of Theorem 7.3.2 of [han2009theoretical], which the extension theorem
+does not reach. The proof is through the segment property. -/
 theorem IsLipschitzDomain.hasSmoothDensity
     (hΩ : IsLipschitzDomain (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hp' : p ≠ ⊤) :
     SobolevEuclidean.HasSmoothDensity (d + 1) p Ω :=
   hΩ.hasSegmentProperty.hasSmoothDensity hb hp'
 
-/-- A bounded Lipschitz graph domain has uniform smooth density. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded Lipschitz graph domain, and let
+$p < \infty$. Then $\Omega$ has uniform smooth density. -/
 theorem IsLipschitzDomain.hasUniformSmoothDensity
     (hΩ : IsLipschitzDomain (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hp' : p ≠ ⊤) :

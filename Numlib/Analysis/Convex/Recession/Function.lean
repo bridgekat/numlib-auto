@@ -9,48 +9,92 @@ import Numlib.Analysis.Convex.Recession.Cone
 /-!
 # Recession functions
 
-The *recession function* `f0⁺` of `f : E → EReal` has as its epigraph the recession cone of the
-epigraph of `f`: `epi (f0⁺) = 0⁺(epi f)` (`epi_recessionFn`, for every `f`). It says how fast `f`
-can grow in each direction: `(f0⁺) y ≤ ν` means `f (x + a • y) ≤ f x + a * ν` for all `x`, `a ≥ 0`.
-The directions with `(f0⁺) y ≤ 0` form the *recession cone of `f`*, those with `(f0⁺) (±y) ≤ 0`
-its *constancy space*, and those with `(f0⁺) (-y) = -(f0⁺) y` its *lineality space*.
+Let $E$ be a real vector space and $f : E \to [-\infty, +\infty]$. Write $\operatorname{epi} f =
+\{(x, \mu) \in E \times \mathbb{R} : f(x) \le \mu\}$ for the epigraph,
+$\operatorname{dom} f = \{x : f(x) < +\infty\}$ for the effective domain, $0^+C = \{y : x + a y \in
+C \text{ for all } x \in C,\ a \ge 0\}$ for the recession cone of a set $C$, and
+$\operatorname{lin} C = 0^+C \cap (-0^+C)$ for its lineality space. The **recession function**
+$f0^+$ of $f$ is the function whose epigraph is $0^+(\operatorname{epi} f)$. It measures how fast
+$f$ can grow in each direction: $(f0^+)(y) \le \nu$ means that $f(x + a y) \le f(x) + a\nu$ for all
+$x \in E$ and $a \ge 0$. The directions $y$ with $(f0^+)(y) \le 0$ form the **recession cone** of
+$f$, the directions with $(f0^+)(y) \le 0$ and $(f0^+)(-y) \le 0$ form its **constancy space**, and
+the directions with $(f0^+)(-y) = -(f0^+)(y)$ form its **lineality space**. The presentation follows
+[rockafellar1970convex], §8.
 
-Most of the theory needs only a real vector space with no topology; closedness of `epi f` enters
-exactly where the answer must not depend on the base point `x`, and is always carried as
-`IsClosed (epi f)`, never as `ClosedConvex f`, which also collapses improper functions to `⊥`.
+Most of the theory needs no topology on $E$. Closedness of $\operatorname{epi} f$ enters exactly
+where a property must not depend on a base point $x$. For a convex $f$ with closed epigraph, the
+recession condition can be tested along one half-line, and $(f0^+)(y)$ is the limit of the
+difference quotients $(f(x + a y) - f(x))/a$ as $a \to +\infty$, for any one
+$x \in \operatorname{dom} f$.
 
 ## Main definitions
 
-* `recessionFn f` — the recession function `f0⁺`, as `ofEpi (0⁺(epi f))`.
-* `recessionConeFn f`, `recessionPointedConeFn f` — the recession cone, bare and as a `PointedCone`.
-* `constancySpace f`, `constancySubmodule f` — the constancy space, bare and as a `Submodule ℝ E`.
-* `linealitySpaceFn f`, `linealitySubmoduleFn f`, `linealityFn f` — the lineality space of `f`
-  and its dimension.
+* `ConvexAnalysis.recessionFn`: the recession function $f0^+$, whose epigraph is
+  $0^+(\operatorname{epi} f)$.
+* `ConvexAnalysis.recessionConeFn` and `ConvexAnalysis.recessionPointedConeFn`: the recession cone
+  $\{y : (f0^+)(y) \le 0\}$ of $f$, as a set and as a pointed cone.
+* `ConvexAnalysis.constancySpace` and `ConvexAnalysis.constancySubmodule`: the constancy space of
+  $f$, as a set and as a subspace.
+* `ConvexAnalysis.linealitySpaceFn`, `ConvexAnalysis.linealitySubmoduleFn` and
+  `ConvexAnalysis.linealityFn`: the lineality space of $f$, as a set and as a subspace, and its
+  dimension.
 
 ## Main results
 
-* `posHomogeneous_recessionFn`, `convexFn_recessionFn`, `properConvex_recessionFn` — `f0⁺` is
-  positively homogeneous and convex, proper when `f` is proper and closed when `f` is closed; and
-  `recessionFn_apply_eq_iSup_sub`: `(f0⁺) y = sup {f (x + y) - f x | x ∈ dom f}`, reached for closed
-  `f` by the difference quotients at any one `x ∈ dom f` ([rockafellar1970convex] Theorem 8.5).
-* `recessionFn_isLeast` — `f0⁺` is the least `h` with `f z ≤ f x + h (z - x)`.
-* `tendsto_smulRight_recessionFn` — `(f0⁺) y = lim_{a ↓ 0} (fa) y`.
-* `antitone_along_of_liminf_lt_top`, `forall_antitone_iff_recessionFn_nonpos` — a convex `f` that
-  does not blow up along one half-line is nonincreasing along the whole line, and `(f0⁺) y ≤ 0`
-  says exactly that this happens from every base point; `ConvexFn.eq_of_le_on_affineSubspace` is
-  the affine-set form.
-* `recessionCone_setOf_le`, `linealitySpace_setOf_le` — all nonempty level sets of a closed convex
-  `f` share its recession cone and constancy space, and by `isBounded_setOf_le` one of them is
-  bounded only if all are.
-* `lt_recessionFn_of_isBounded_convexDom` — a nonempty bounded effective domain leaves no nonzero
-  direction of recession.
-* `forall_eq_add_iff_mk_mem_linealitySpace_epi`, `linealitySpaceFn_eq_image` —
-  `f` is affine with slope `ν` along `y` exactly when `(y, ν)` lies in the lineality space of
-  `epi f`, whose projection is the lineality space of `f`.
+* `ConvexAnalysis.epi_recessionFn`: $\operatorname{epi}(f0^+) = 0^+(\operatorname{epi} f)$ for every
+  $f$.
+* `ConvexAnalysis.posHomogeneous_recessionFn`, `ConvexAnalysis.convexFn_recessionFn`,
+  `ConvexAnalysis.properConvex_recessionFn` and `ConvexAnalysis.closedConvex_recessionFn`: $f0^+$ is
+  positively homogeneous and convex for every $f$, proper when $f$ is proper, and closed when
+  moreover $\operatorname{epi} f$ is closed.
+* `ConvexAnalysis.recessionFn_apply_eq_iSup_sub` and
+  `ConvexAnalysis.recessionFn_apply_eq_iSup_inv_mul`: for a convex $f$ that is nowhere $-\infty$,
+  $(f0^+)(y) = \sup\{f(x + y) - f(x) : x \in \operatorname{dom} f\}$; if moreover
+  $\operatorname{epi} f$ is closed, then $(f0^+)(y) = \sup_{a > 0} (f(x + a y) - f(x))/a$ for any
+  one $x \in \operatorname{dom} f$. Together with the previous item, these formulas form Theorem 8.5
+  of [rockafellar1970convex].
+* `ConvexAnalysis.recessionFn_isLeast`: for a proper convex $f$, $f0^+$ is the least function $h$
+  with $f(z) \le f(x) + h(z - x)$ for all $x, z$.
+* `ConvexAnalysis.tendsto_smulRight_recessionFn`: for a closed proper convex $f$ and
+  $y \in \operatorname{dom} f$, $(f0^+)(y) = \lim_{a \downarrow 0} (fa)(y)$.
+* `ConvexAnalysis.antitone_along_of_liminf_lt_top` and
+  `ConvexAnalysis.forall_antitone_iff_recessionFn_nonpos`: a convex $f$ whose $\liminf$ along a
+  half-line is less than $+\infty$ is nonincreasing along the whole line, and $(f0^+)(y) \le 0$
+  holds exactly when $a \mapsto f(x + a y)$ is nonincreasing for every $x$.
+* `ConvexAnalysis.ConvexFn.eq_of_le_on_affineSubspace`: a convex function that is bounded above on
+  an affine set is constant on it.
+* `ConvexAnalysis.recessionCone_setOf_le` and `ConvexAnalysis.linealitySpace_setOf_le`: for a convex
+  $f$ with closed epigraph, every nonempty level set $\{x : f(x) \le \alpha\}$ has the recession
+  cone of $f$ as its recession cone and the constancy space of $f$ as its lineality space.
+* `ConvexAnalysis.isBounded_setOf_le`: in finite dimension, if one nonempty level set of a convex
+  $f$ with closed epigraph is bounded, then every nonempty level set is bounded.
+* `ConvexAnalysis.lt_recessionFn_of_isBounded_convexDom`: if $\operatorname{dom} f$ is nonempty and
+  bounded, then $(f0^+)(w) > 0$ for every $w \neq 0$.
+* `ConvexAnalysis.forall_eq_add_iff_mk_mem_linealitySpace_epi` and
+  `ConvexAnalysis.linealitySpaceFn_eq_image`: $f(x + a y) = f(x) + a\nu$ for all $x$ and all real
+  $a$ exactly when $(y, \nu) \in \operatorname{lin}(\operatorname{epi} f)$; for proper $f$, the
+  projection of $\operatorname{lin}(\operatorname{epi} f)$ onto $E$ is the lineality space of $f$.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §8.
+* Functions take values in `EReal`, the extended real line $[-\infty, +\infty]$.
+* The recession function is defined as `ConvexAnalysis.ofEpi` of $0^+(\operatorname{epi} f)$, that
+  is, $(f0^+)(y) = \inf\{\nu : (y, \nu) \in 0^+(\operatorname{epi} f)\}$. Rockafellar defines $f0^+$
+  by its epigraph; here the identity of the epigraphs is the theorem
+  `ConvexAnalysis.epi_recessionFn`, which holds with no hypothesis on $f$.
+* `ConvexAnalysis.ProperConvex f` says only that $f$ is proper: $f(x) < +\infty$ for some $x$, and
+  $f$ never takes the value $-\infty$. Convexity is the separate hypothesis
+  `ConvexAnalysis.ConvexFn f`, which says that $\operatorname{epi} f$ is convex. Several results
+  need neither, or need only that $f$ is nowhere $-\infty$.
+* Closedness is mostly the hypothesis `IsClosed (epi f)`, not `ConvexAnalysis.ClosedConvex f`. The
+  closure `ConvexAnalysis.convexCl` replaces a function by the constant $-\infty$ when its lower
+  semicontinuous hull takes the value $-\infty$ somewhere, so `ClosedConvex f` is a different
+  condition for improper $f$. The results about a closed proper convex function take the hypothesis
+  `ConvexAnalysis.ClosedProperConvexFn f`, which contains `ClosedConvex f`.
+* The right scalar multiple $fa$ is `ConvexAnalysis.smulRight f a`. For $a > 0$ it is
+  $(fa)(x) = a f(a^{-1} x)$.
+* The lineality `ConvexAnalysis.linealityFn` is a `Module.finrank`, which is $0$ for an
+  infinite-dimensional subspace.
 -/
 
 open Filter Pointwise Set Topology
@@ -63,13 +107,20 @@ section Defs
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f g : E → EReal} {x y : E} {ν : ℝ}
 
-/-- The **recession function** `f0⁺` of `f`: the function whose epigraph is the recession cone of
-the epigraph of `f`. It is *defined* as `ofEpi` of that cone, which is all one can write down
-before knowing the cone is an epigraph; `epi_recessionFn` then proves `epi (f0⁺) = 0⁺(epi f)`. -/
+/-- Let $f : E \to [-\infty, +\infty]$. The **recession function** $f0^+$ of $f$ is the function
+whose epigraph is the recession cone $0^+(\operatorname{epi} f)$ of the epigraph of $f$:
+$$(f0^+)(y) = \inf\{\nu \in \mathbb{R} : (y, \nu) \in 0^+(\operatorname{epi} f)\},$$ with
+$\inf \emptyset = +\infty$.
+
+The definition is `ConvexAnalysis.ofEpi` of $0^+(\operatorname{epi} f)$. It can be written down
+before one knows that this cone is an epigraph. `ConvexAnalysis.epi_recessionFn` then proves
+$\operatorname{epi}(f0^+) = 0^+(\operatorname{epi} f)$, which Rockafellar takes as the
+definition. -/
 noncomputable def recessionFn (f : E → EReal) : E → EReal := ofEpi (recessionCone (epi f))
 
-/-- The recession condition on `(y, ν)`, unfolded against the epigraph: `(y, ν)` recedes from
-`epi f` exactly when `f (x + a • y) ≤ μ + a * ν` whenever `f x ≤ μ` and `a ≥ 0`. -/
+/-- Let $y \in E$ and $\nu \in \mathbb{R}$. Then $(y, \nu) \in 0^+(\operatorname{epi} f)$ if and
+only if $f(x + a y) \le \mu + a\nu$ for all $x \in E$, all real $\mu$ with $f(x) \le \mu$, and
+all $a \ge 0$. -/
 theorem mk_mem_recessionCone_epi :
     ((y, ν) : E × ℝ) ∈ recessionCone (epi f) ↔
       ∀ (x : E) (μ : ℝ), f x ≤ (μ : EReal) →
@@ -80,9 +131,12 @@ theorem mk_mem_recessionCone_epi :
   · rintro h ⟨x, μ⟩ hp a ha
     simpa [Prod.smul_mk, Prod.mk_add_mk, smul_eq_mul] using h x μ (mk_mem_epi.1 hp) a ha
 
-/-- The recession condition on `(y, ν)`, in `EReal` arithmetic: `f (x + a • y) ≤ f x + a * ν` for
-every `x` and every `a ≥ 0`. Equivalent to the epigraph form even at improper values, because
-`⊥ + (r : ℝ) = ⊥` matches "`f x ≤ μ` for every real `μ`". -/
+/-- Let $y \in E$ and $\nu \in \mathbb{R}$. Then $(y, \nu) \in 0^+(\operatorname{epi} f)$ if and
+only if $$f(x + a y) \le f(x) + a\nu \quad \text{for all } x \in E \text{ and } a \ge 0,$$ in
+the arithmetic of $[-\infty, +\infty]$.
+
+The equivalence holds also where $f$ is infinite, because $-\infty + r = -\infty$ for real $r$,
+which matches the condition that $f(x) \le \mu$ for every real $\mu$. -/
 theorem mk_mem_recessionCone_epi_iff :
     ((y, ν) : E × ℝ) ∈ recessionCone (epi f) ↔
       ∀ (x : E) (a : ℝ), 0 ≤ a → f (x + a • y) ≤ f x + ((a * ν : ℝ) : EReal) := by
@@ -103,8 +157,11 @@ theorem mk_mem_recessionCone_epi_iff :
     rw [EReal.coe_add]
     exact (h x a ha).trans (add_le_add hx le_rfl)
 
-/-- A vertical section of `0⁺(epi f)` is upward closed: this is one of the two halves of
-`IsEpiLike`. -/
+/-- If $(y, \nu) \in 0^+(\operatorname{epi} f)$ and $\nu \le \rho$, then
+$(y, \rho) \in 0^+(\operatorname{epi} f)$. Thus the vertical sections of
+$0^+(\operatorname{epi} f)$ are closed upward.
+
+This is one of the two conditions of `ConvexAnalysis.isEpiLike_iff_forall`. -/
 theorem mk_mem_recessionCone_epi_of_le (h : ((y, ν) : E × ℝ) ∈ recessionCone (epi f)) {ρ : ℝ}
     (hνρ : ν ≤ ρ) : ((y, ρ) : E × ℝ) ∈ recessionCone (epi f) := by
   rw [mk_mem_recessionCone_epi] at h ⊢
@@ -113,11 +170,13 @@ theorem mk_mem_recessionCone_epi_of_le (h : ((y, ν) : E × ℝ) ∈ recessionCo
   have hstep : μ + a * ν ≤ μ + a * ρ := by nlinarith
   exact_mod_cast hstep
 
-/-- **The recession cone of an epigraph is an epigraph**, with no hypothesis on `f` whatsoever.
+/-- For every $f : E \to [-\infty, +\infty]$, the recession cone $0^+(\operatorname{epi} f)$ is the
+epigraph of a function.
 
-Vertical sections are upward closed because `μ + a * ν` grows with `ν`, and they are closed from
-below because `f (x + a • y) ≤ μ + a * ρ` for every `ρ > ν` forces `f (x + a • y) ≤ μ + a * ν`.
-Neither half needs `epi f` to be closed or convex. -/
+The vertical sections of the cone are closed upward, because $\mu + a\nu$ increases with $\nu$.
+They are closed from below, because $f(x + a y) \le \mu + a\rho$ for every $\rho > \nu$ implies
+$f(x + a y) \le \mu + a\nu$. Neither property needs $\operatorname{epi} f$ to be closed or
+convex. -/
 theorem isEpiLike_recessionCone_epi (f : E → EReal) : IsEpiLike (recessionCone (epi f)) := by
   refine isEpiLike_of_forall (fun _ _ _ hμ hμν => mk_mem_recessionCone_epi_of_le hμ hμν)
     fun y ν h => ?_
@@ -138,32 +197,41 @@ theorem isEpiLike_recessionCone_epi (f : E → EReal) : IsEpiLike (recessionCone
     rw [heq]
     exact_mod_cast (by linarith : μ + a * ν + (q - (μ + a * ν)) / 2 < q)
 
-/-- **The defining property of the recession function**: its epigraph is the recession cone of the
-epigraph. Rockafellar takes this as the definition; here it is a theorem, and it carries no
-hypothesis on `f`. -/
+/-- For every $f : E \to [-\infty, +\infty]$, the epigraph of the recession function is the
+recession cone of the epigraph: $$\operatorname{epi}(f0^+) = 0^+(\operatorname{epi} f).$$
+
+Rockafellar takes this identity as the definition of $f0^+$. Here it is a theorem, with no
+hypothesis on $f$. -/
 @[simp]
 theorem epi_recessionFn (f : E → EReal) : epi (recessionFn f) = recessionCone (epi f) :=
   epi_ofEpi (isEpiLike_recessionCone_epi f)
 
-/-- The `≤`-characterisation of `f0⁺` against a real bound, in epigraph form. -/
+/-- For $y \in E$ and $\nu \in \mathbb{R}$, $(f0^+)(y) \le \nu$ if and only if
+$(y, \nu) \in 0^+(\operatorname{epi} f)$. -/
 theorem recessionFn_le_coe_iff :
     recessionFn f y ≤ (ν : EReal) ↔ ((y, ν) : E × ℝ) ∈ recessionCone (epi f) := by
   rw [← epi_recessionFn]
   exact mk_mem_epi.symm
 
-/-- The `≤`-characterisation of `f0⁺` against an arbitrary function: `f0⁺` is the greatest function
-whose epigraph contains `0⁺(epi f)`. -/
+/-- For $g : E \to [-\infty, +\infty]$, $g \le f0^+$ pointwise if and only if
+$0^+(\operatorname{epi} f) \subseteq \operatorname{epi} g$. Thus $f0^+$ is the greatest function
+whose epigraph contains $0^+(\operatorname{epi} f)$. -/
 theorem le_recessionFn_iff : g ≤ recessionFn f ↔ recessionCone (epi f) ⊆ epi g :=
   subset_epi_iff_le_ofEpi.symm
 
-/-- The pointwise `≤`-characterisation in `EReal` arithmetic. -/
+/-- For $y \in E$ and $\nu \in \mathbb{R}$, $(f0^+)(y) \le \nu$ if and only if
+$f(x + a y) \le f(x) + a\nu$ for all $x \in E$ and $a \ge 0$. -/
 theorem recessionFn_le_coe_iff_forall :
     recessionFn f y ≤ (ν : EReal) ↔
       ∀ (x : E) (a : ℝ), 0 ≤ a → f (x + a • y) ≤ f x + ((a * ν : ℝ) : EReal) := by
   rw [recessionFn_le_coe_iff, mk_mem_recessionCone_epi_iff]
 
-/-- For a *convex* `f` it is enough to test the recession inequality at `a = 1`: a convex set
-recedes in a direction as soon as it is stable under one step in it. -/
+/-- Let $f$ be convex, $y \in E$ and $\nu \in \mathbb{R}$. Then $(f0^+)(y) \le \nu$ if and only if
+$f(x + y) \le f(x) + \nu$ for all $x \in E$. Thus for a convex function it is enough to test the
+recession inequality at $a = 1$.
+
+The reason is that a convex set recedes in a direction as soon as it is stable under one step in
+that direction. -/
 theorem recessionFn_le_coe_iff_of_convexFn (hf : ConvexFn f) :
     recessionFn f y ≤ (ν : EReal) ↔ ∀ x : E, f (x + y) ≤ f x + (ν : EReal) := by
   rw [recessionFn_le_coe_iff, mem_recessionCone_iff_forall_add_mem hf.convex_epi]
@@ -189,11 +257,12 @@ theorem recessionFn_le_coe_iff_of_convexFn (hf : ConvexFn f) :
     rw [EReal.coe_add]
     exact (h x).trans (add_le_add (mk_mem_epi.1 hp) le_rfl)
 
-/-! ### `f0⁺` is a positively homogeneous convex function -/
+/-! ### The recession function is positively homogeneous and convex -/
 
-/-- A positive multiple of a recession cone is that recession cone: `0⁺C` is a cone. This is the
-scaling half of `recessionPointedCone`, in the `a • s = s` form that
-`posHomogeneous_iff_isCone_epi` asks for. -/
+/-- Let $C \subseteq E$ and $a > 0$. Then $a \cdot 0^+C = 0^+C$, so $0^+C$ is a cone.
+
+This is the scaling property of `ConvexAnalysis.recessionPointedCone`, in the form
+$a \cdot s = s$ that `ConvexAnalysis.posHomogeneous_iff_isCone_epi` requires. -/
 theorem smul_recessionCone {a : ℝ} (ha : 0 < a) (C : Set E) :
     a • recessionCone C = recessionCone C := by
   refine Set.Subset.antisymm ?_ fun z hz => ?_
@@ -201,39 +270,49 @@ theorem smul_recessionCone {a : ℝ} (ha : 0 < a) (C : Set E) :
     exact smul_mem_recessionCone ha.le hw
   · exact ⟨a⁻¹ • z, smul_mem_recessionCone (by positivity) hz, smul_inv_smul₀ ha.ne' z⟩
 
-/-- **The recession function is positively homogeneous.** No hypothesis on `f` is needed, because
-`0⁺(epi f)` is a cone for every `f`. -/
+/-- For every $f : E \to [-\infty, +\infty]$, the recession function is positively homogeneous:
+$$(f0^+)(a y) = a \, (f0^+)(y) \quad \text{for all } a > 0 \text{ and } y \in E.$$
+
+No hypothesis on $f$ is needed, because $0^+(\operatorname{epi} f)$ is a cone for every $f$.
+This is part of Theorem 8.5 of [rockafellar1970convex]. -/
 theorem posHomogeneous_recessionFn (f : E → EReal) : PosHomogeneous (recessionFn f) := by
   rw [posHomogeneous_iff_isCone_epi]
   intro a ha
   rw [epi_recessionFn]
   exact smul_recessionCone ha (epi f)
 
-/-- **The recession function is convex.** Again no hypothesis on `f` is needed: `0⁺C` is convex
-for every `C`, convex or not. -/
+/-- For every $f : E \to [-\infty, +\infty]$, the recession function $f0^+$ is convex, that is,
+$\operatorname{epi}(f0^+)$ is convex.
+
+No hypothesis on $f$ is needed, because $0^+C$ is convex for every set $C$, convex or not. This
+is part of Theorem 8.5 of [rockafellar1970convex]. -/
 theorem convexFn_recessionFn (f : E → EReal) : ConvexFn (recessionFn f) :=
   convexFn_iff_convex_epi.2 (by rw [epi_recessionFn]; exact convex_recessionCone (epi f))
 
-/-- `epi (f0⁺)` bundled as a cone. The two theorems above would give it as a `ConvexCone ℝ (E × ℝ)`
-via `PosHomogeneous.epiCone`, but `recessionPointedCone` already carries the same set as a
-`PointedCone ℝ (E × ℝ)`, with no hypothesis, so that is the bundling recorded here. -/
+/-- For every $f$, the carrier of the pointed cone `ConvexAnalysis.recessionPointedCone (epi f)` is
+$\operatorname{epi}(f0^+)$.
+
+The two theorems above also give $\operatorname{epi}(f0^+)$ as a `ConvexCone ℝ (E × ℝ)`, through
+`ConvexAnalysis.PosHomogeneous.epiCone`. The pointed cone `ConvexAnalysis.recessionPointedCone`
+carries the same set with no hypothesis, so this is the bundled form recorded here. -/
 @[simp]
 theorem coe_recessionPointedCone_epi (f : E → EReal) :
     (recessionPointedCone (epi f) : Set (E × ℝ)) = epi (recessionFn f) := by
   rw [coe_recessionPointedCone, epi_recessionFn]
 
-/-- `f0⁺` is nonpositive at the origin, because `0` recedes from every set. -/
+/-- For every $f$, $(f0^+)(0) \le 0$, because $0$ lies in the recession cone of every set. -/
 theorem recessionFn_apply_zero_le (f : E → EReal) : recessionFn f 0 ≤ 0 := by
   have h : ((0 : E), (0 : ℝ)) ∈ recessionCone (epi f) := by
     rw [Prod.mk_zero_zero]
     exact zero_mem_recessionCone (epi f)
   simpa using recessionFn_le_coe_iff.2 h
 
-/-- `f0⁺` never takes the value `-∞` when `f` is proper.
+/-- Let $f$ be proper. Then $(f0^+)(y) \neq -\infty$ for every $y \in E$.
 
-Properness is needed on both counts: for `f ≡ +∞` the epigraph is empty, `0⁺∅` is everything and
-`f0⁺ ≡ -∞`; and if `f` takes the value `-∞` somewhere, a vertical section of `0⁺(epi f)` can be
-all of `ℝ`. -/
+Both parts of properness are needed. For $f \equiv +\infty$ the epigraph is empty,
+$0^+\emptyset = E \times \mathbb{R}$, and $f0^+ \equiv -\infty$. If $f$ takes the value
+$-\infty$ somewhere, a vertical section of $0^+(\operatorname{epi} f)$ can be all of
+$\mathbb{R}$. -/
 theorem recessionFn_ne_bot (hp : ProperConvex f) (y : E) : recessionFn f y ≠ ⊥ := by
   intro hbot
   obtain ⟨x, hx⟩ := hp.convexDom_nonempty
@@ -244,6 +323,7 @@ theorem recessionFn_ne_bot (hp : ProperConvex f) (y : E) : recessionFn f y ≠ �
   have hle := mk_mem_recessionCone_epi.1 hmem x r hr.le 1 zero_le_one
   simpa using hle
 
+/-- If $f$ is proper, then $(f0^+)(0) = 0$. -/
 @[simp]
 theorem recessionFn_apply_zero (hp : ProperConvex f) : recessionFn f 0 = 0 := by
   refine le_antisymm (recessionFn_apply_zero_le f) (EReal.le_of_forall_coe_le fun r hr => ?_)
@@ -254,7 +334,11 @@ theorem recessionFn_apply_zero (hp : ProperConvex f) : recessionFn f 0 = 0 := by
   have hss : s ≤ s + 1 * r := by exact_mod_cast hle
   exact_mod_cast (by linarith : (0 : ℝ) ≤ r)
 
-/-- The recession function of a proper convex function is proper. -/
+/-- Let $f : E \to [-\infty, +\infty]$ be proper, that is, $f(x) < +\infty$ for some $x$ and $f$
+never takes the value $-\infty$. Then the recession function $f0^+$ is proper.
+
+The hypothesis `ConvexAnalysis.ProperConvex f` is properness alone; convexity of $f$ is not
+assumed. This is part of Theorem 8.5 of [rockafellar1970convex]. -/
 theorem properConvex_recessionFn (hp : ProperConvex f) : ProperConvex (recessionFn f) where
   convexDom_nonempty :=
       ⟨0, by rw [mem_convexDom, recessionFn_apply_zero hp]; exact EReal.zero_lt_top⟩
@@ -263,9 +347,13 @@ theorem properConvex_recessionFn (hp : ProperConvex f) : ProperConvex (recession
 /-! ### The difference formula and the least-function property -/
 
 omit [Module ℝ E] in
-/-- Rearranging `f (x + y) ≤ f x + r` as a difference quotient. The `⊥`-freeness hypothesis is
-what makes `f x` real on `dom f`, and the restriction to `dom f` is what keeps `⊤ + r = ⊤` from
-being read as a constraint. -/
+/-- Let $f$ never take the value $-\infty$, and let $y \in E$ and $r \in \mathbb{R}$. Then
+$f(x + y) \le f(x) + r$ for all $x \in E$ if and only if $f(x + y) - f(x) \le r$ for all
+$x \in \operatorname{dom} f$.
+
+The hypothesis on $f$ makes $f(x)$ real on $\operatorname{dom} f$. Off $\operatorname{dom} f$
+the first inequality holds trivially, because $+\infty + r = +\infty$, so only points of
+$\operatorname{dom} f$ carry a condition. -/
 theorem forall_le_add_coe_iff (hbot : ∀ x, f x ≠ ⊥) {r : ℝ} :
     (∀ x : E, f (x + y) ≤ f x + (r : EReal)) ↔ ∀ x ∈ convexDom f, f (x + y) - f x ≤
         (r : EReal) := by
@@ -286,19 +374,20 @@ theorem forall_le_add_coe_iff (hbot : ∀ x, f x ≠ ⊥) {r : ℝ} :
         (Or.inl (EReal.coe_ne_top s)),
         add_comm ((r : ℝ) : EReal) ((s : ℝ) : EReal)] at hstep
 
-/-- **The difference formula**
+/-- The **difference formula**. Let $f$ be convex and never $-\infty$. Then for every $y \in E$,
+$$(f0^+)(y) = \sup\{f(x + y) - f(x) : x \in \operatorname{dom} f\}.$$
 
-`(f0⁺) y = sup {f (x + y) - f x | x ∈ dom f}`.
-
-Convexity enters by letting the recession condition be tested at `a = 1` only, and
-`∀ x, f x ≠ ⊥` is what makes the difference meaningful. Properness is *not* needed: for
-`f ≡ +∞` both sides are `-∞`, the supremum because `dom f = ∅`. -/
+Convexity lets the recession condition be tested at $a = 1$ only, and the hypothesis that $f$ is
+never $-\infty$ gives the differences a meaning. Properness is not needed: for
+$f \equiv +\infty$ both sides are $-\infty$, the supremum because
+$\operatorname{dom} f = \emptyset$. This formula is part of Theorem 8.5 of
+[rockafellar1970convex]. -/
 theorem recessionFn_apply_eq_iSup_sub (hf : ConvexFn f) (hbot : ∀ x, f x ≠ ⊥) (y : E) :
     recessionFn f y = ⨆ x ∈ convexDom f, (f (x + y) - f x) := by
   refine EReal.eq_of_forall_le_coe_iff fun r => ?_
   rw [recessionFn_le_coe_iff_of_convexFn hf, forall_le_add_coe_iff hbot, iSup₂_le_iff]
 
-/-- The inequality `f (x + y) ≤ f x + (f0⁺) y`: `f0⁺` is one such bounding function. -/
+/-- Let $f$ be proper and convex. Then $f(x + y) \le f(x) + (f0^+)(y)$ for all $x, y \in E$. -/
 theorem le_add_recessionFn (hf : ConvexFn f) (hp : ProperConvex f) (x y : E) :
     f (x + y) ≤ f x + recessionFn f y := by
   rcases eq_top_or_lt_top (f x) with hx | hx
@@ -312,8 +401,9 @@ theorem le_add_recessionFn (hf : ConvexFn f) (hp : ProperConvex f) (x y : E) :
     _ ≤ recessionFn f y + f x := add_le_add hterm le_rfl
     _ = f x + recessionFn f y := add_comm _ _
 
-/-- `f0⁺` is the *least* function `h` for which `f` satisfies the global inequality
-`f z ≤ f x + h (z - x)` at every pair of points. -/
+/-- Let $f$ be proper and convex. Then $f0^+$ is the least function $h : E \to [-\infty, +\infty]$
+such that $$f(z) \le f(x) + h(z - x) \quad \text{for all } x, z \in E.$$ That is, $f0^+$ has
+this property, and $f0^+ \le h$ pointwise for every $h$ with this property. -/
 theorem recessionFn_isLeast (hf : ConvexFn f) (hp : ProperConvex f) :
     IsLeast {h : E → EReal | ∀ x z : E, f z ≤ f x + h (z - x)} (recessionFn f) := by
   refine ⟨fun x z => ?_, fun h hh y => ?_⟩
@@ -331,13 +421,14 @@ theorem recessionFn_isLeast (hf : ConvexFn f) (hp : ProperConvex f) :
 
 /-! ### Directions of recession -/
 
-/-- The recession inequality at `ν = 0`: `(f0⁺) y ≤ 0` means that moving in the direction `y`
-never increases `f`. -/
+/-- If $(f0^+)(y) \le 0$, then $f(x + a y) \le f(x)$ for all $x \in E$ and $a \ge 0$: moving in the
+direction $y$ never increases $f$. -/
 theorem add_smul_le_of_recessionFn_nonpos (h : recessionFn f y ≤ 0) (x : E) {a : ℝ} (ha : 0 ≤ a) :
     f (x + a • y) ≤ f x := by
   have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) := by rwa [EReal.coe_zero]
   simpa using recessionFn_le_coe_iff_forall.1 h0 x a ha
 
+/-- $(f0^+)(y) \le 0$ if and only if $f(x + a y) \le f(x)$ for all $x \in E$ and $a \ge 0$. -/
 theorem recessionFn_nonpos_iff :
     recessionFn f y ≤ 0 ↔ ∀ (x : E) (a : ℝ), 0 ≤ a → f (x + a • y) ≤ f x := by
   refine ⟨fun h x a ha => add_smul_le_of_recessionFn_nonpos h x ha, fun h => ?_⟩
@@ -345,11 +436,12 @@ theorem recessionFn_nonpos_iff :
     recessionFn_le_coe_iff_forall.2 fun x a ha => by simpa using h x a ha
   rwa [EReal.coe_zero] at h0
 
-/-- **`f (x + a • y)` is a nonincreasing function of `a` for *every* `x` exactly when
-`(f0⁺) y ≤ 0`.**
+/-- For every $f : E \to [-\infty, +\infty]$ and $y \in E$, the function $a \mapsto f(x + a y)$ on
+$\mathbb{R}$ is nonincreasing for every $x \in E$ if and only if $(f0^+)(y) \le 0$.
 
-This half needs no hypothesis on `f` at all, neither convexity nor properness; the usual
-statement carries "proper convex" because it is packaged with the two implications below. -/
+This equivalence needs no hypothesis on $f$, neither convexity nor properness. The usual
+statement assumes $f$ proper and convex, because it is stated together with other implications
+that need these hypotheses. -/
 theorem forall_antitone_iff_recessionFn_nonpos :
     (∀ x : E, Antitone fun a : ℝ => f (x + a • y)) ↔ recessionFn f y ≤ 0 := by
   rw [recessionFn_nonpos_iff]
@@ -362,13 +454,16 @@ theorem forall_antitone_iff_recessionFn_nonpos :
     have hstep := h (x + a₁ • y) (a₂ - a₁) (by linarith)
     rwa [add_assoc, ← add_smul, hcoef] at hstep
 
-/-- **A convex function that fails to blow up along one half-line is nonincreasing along the whole
-line**: a finite `liminf` of `f (x + a • y)` as `a → ∞` makes `a ↦ f (x + a • y)` antitone.
+/-- Let $f$ be convex and let $x, y \in E$. If $$\liminf_{a \to +\infty} f(x + a y) < +\infty,$$
+then $a \mapsto f(x + a y)$ is nonincreasing on all of $\mathbb{R}$. Thus a convex function that
+does not tend to $+\infty$ along one half-line is nonincreasing along the whole line.
 
-The proof is elementary, and in particular needs no closure, no relative interiors and no finite
-dimension: for `λ₁ < λ₂` and a real bound `μ` on `f (x + λ₁ • y)`, write `x + λ₂ • y` as a convex
-combination of `x + λ₁ • y` and `x + λ • y` for a very large `λ` with `f (x + λ • y) < α`; the
-weight on the second point tends to `0`, so convexity gives `f (x + λ₂ • y) ≤ μ` in the limit. -/
+The proof is elementary and needs no closure, no relative interior and no finite dimension. Let
+$\lambda_1 < \lambda_2$ and let $\mu$ be a real bound on $f(x + \lambda_1 y)$. For a large
+$\lambda$ with $f(x + \lambda y) < \alpha$, where $\alpha$ is a fixed real number, the point
+$x + \lambda_2 y$ is a convex combination of $x + \lambda_1 y$ and $x + \lambda y$; the weight
+on the second point tends to $0$ as $\lambda \to \infty$, so convexity gives
+$f(x + \lambda_2 y) \le \mu$. -/
 theorem antitone_along_of_liminf_lt_top (hf : ConvexFn f) (x y : E)
     (h : liminf (fun a : ℝ => f (x + a • y)) atTop < ⊤) :
     Antitone fun a : ℝ => f (x + a • y) := by
@@ -417,8 +512,8 @@ theorem antitone_along_of_liminf_lt_top (hf : ConvexFn f) (x y : E)
   rw [harg] at hcombo
   exact lt_of_le_of_lt hcombo (by exact_mod_cast hpt)
 
-/-- `f` is constant along every line in the direction `y` exactly when both `(f0⁺) y ≤ 0` and
-`(f0⁺) (-y) ≤ 0`. -/
+/-- $f(x + a y) = f(x)$ for all $x \in E$ and all real $a$ if and only if $(f0^+)(y) \le 0$ and
+$(f0^+)(-y) \le 0$. -/
 theorem forall_eq_iff_recessionFn_nonpos :
     (∀ (x : E) (a : ℝ), f (x + a • y) = f x) ↔
       recessionFn f y ≤ 0 ∧ recessionFn f (-y) ≤ 0 := by
@@ -445,7 +540,9 @@ theorem forall_eq_iff_recessionFn_nonpos :
       · have := recessionFn_nonpos_iff.1 h1 (x + a • y) (-a) hna
         rwa [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at this
 
-/-- Along a single line: a convex function bounded above on a whole line is constant on it. -/
+/-- Let $f$ be convex, $x, z \in E$ and $\alpha \in \mathbb{R}$. If $f(x + a(z - x)) \le \alpha$ for
+all real $a$, then $f(z) = f(x)$. Thus a convex function that is bounded above on a whole line
+is constant on it. -/
 theorem ConvexFn.eq_of_forall_le_along_line (hf : ConvexFn f) {x z : E} {α : ℝ}
     (h : ∀ a : ℝ, f (x + a • (z - x)) ≤ (α : EReal)) : f z = f x := by
   have key : ∀ (u v : E), (∀ a : ℝ, f (u + a • (v - u)) ≤ (α : EReal)) → f v ≤ f u := by
@@ -465,11 +562,13 @@ theorem ConvexFn.eq_of_forall_le_along_line (hf : ConvexFn f) {x z : E} {α : �
     exact h (1 - a)
   exact le_antisymm (key x z h) (key z x hzx)
 
-/-- **A convex function is constant on any affine set on which it is bounded above.**
+/-- Let $f$ be convex, let $M \subseteq E$ be an affine subspace, and let $\alpha \in \mathbb{R}$
+with $f(w) \le \alpha$ for all $w \in M$. Then $f(z) = f(x)$ for all $x, z \in M$. Thus a convex
+function that is bounded above on an affine set is constant on it.
 
-It follows from the line version above, applied along the line through any two points of `M`, so
-no closure and no relative interiors are needed. Finiteness of `f` on `M` is not needed either,
-since the two inequalities hold whatever value `f` takes. -/
+The proof applies `ConvexAnalysis.ConvexFn.eq_of_forall_le_along_line` to the line through two
+points of $M$, so it needs no closure and no relative interior. The function $f$ need not be
+finite on $M$. -/
 theorem ConvexFn.eq_of_le_on_affineSubspace (hf : ConvexFn f) {M : AffineSubspace ℝ E} {α : ℝ}
     (hM : ∀ w ∈ M, f w ≤ (α : EReal)) {x z : E} (hx : x ∈ M) (hz : z ∈ M) : f z = f x := by
   refine hf.eq_of_forall_le_along_line fun a => hM _ ?_
@@ -478,21 +577,27 @@ theorem ConvexFn.eq_of_le_on_affineSubspace (hf : ConvexFn f) {M : AffineSubspac
 
 /-! ### The recession cone, constancy space and lineality space of a function -/
 
-/-- The **recession cone of `f`** — not to be confused with the recession cone of `epi f`. It is
-the horizontal slice `{y | (y, 0) ∈ 0⁺(epi f)}` of the latter, and it collects the directions in
-which `f` recedes. -/
+/-- The **recession cone** of $f$ is the set $$\{y \in E : (f0^+)(y) \le 0\}.$$ It is the horizontal
+section $\{y : (y, 0) \in 0^+(\operatorname{epi} f)\}$ of the recession cone of the epigraph,
+and it consists of the directions in which $f$ recedes.
+
+It is not the recession cone of $\operatorname{epi} f$, which is a subset of
+$E \times \mathbb{R}$. -/
 def recessionConeFn (f : E → EReal) : Set E := {y | recessionFn f y ≤ 0}
 
+/-- $y$ lies in the recession cone of $f$ if and only if $(f0^+)(y) \le 0$. -/
 @[simp]
 theorem mem_recessionConeFn : y ∈ recessionConeFn f ↔ recessionFn f y ≤ 0 := Iff.rfl
 
-/-- The recession cone of `f` is the horizontal slice of the recession cone of `epi f`. -/
+/-- $y$ lies in the recession cone of $f$ if and only if $(y, 0) \in 0^+(\operatorname{epi} f)$. -/
 theorem mem_recessionConeFn_iff_mk :
     y ∈ recessionConeFn f ↔ ((y, (0 : ℝ)) : E × ℝ) ∈ recessionCone (epi f) := by
   rw [mem_recessionConeFn, ← recessionFn_le_coe_iff, EReal.coe_zero]
 
-/-- The recession cone of `f` is a convex cone containing the origin, bundled as a
-`PointedCone ℝ E`. No hypothesis on `f` is needed. -/
+/-- The recession cone of $f$, bundled as a `PointedCone ℝ E`: it contains $0$ and is closed under
+addition and under multiplication by nonnegative scalars.
+
+No hypothesis on $f$ is needed. -/
 def recessionPointedConeFn (f : E → EReal) : PointedCone ℝ E where
   carrier := recessionConeFn f
   zero_mem' := recessionFn_apply_zero_le f
@@ -506,45 +611,64 @@ def recessionPointedConeFn (f : E → EReal) : PointedCone ℝ E where
     rw [Prod.smul_mk, smul_eq_mul, mul_zero] at h
     exact mem_recessionConeFn_iff_mk.2 h
 
+/-- The carrier of `ConvexAnalysis.recessionPointedConeFn f` is the recession cone
+`ConvexAnalysis.recessionConeFn f`. -/
 @[simp]
 theorem coe_recessionPointedConeFn (f : E → EReal) :
     (recessionPointedConeFn f : Set E) = recessionConeFn f := rfl
 
+/-- $y$ lies in `ConvexAnalysis.recessionPointedConeFn f` if and only if $y$ lies in the recession
+cone of $f$. -/
 @[simp]
 theorem mem_recessionPointedConeFn : y ∈ recessionPointedConeFn f ↔ y ∈ recessionConeFn f :=
   Iff.rfl
 
+/-- The recession cone of $f$ is convex. -/
 theorem convex_recessionConeFn (f : E → EReal) : Convex ℝ (recessionConeFn f) :=
   ((recessionPointedConeFn f : ConvexCone ℝ E)).convex
 
-/-- The **constancy space of `f`**: the largest subspace inside the recession cone of `f`, which
-collects the directions in which `f` is constant. -/
+/-- The **constancy space** of $f$ is the set $$\{y \in E : (f0^+)(y) \le 0 \text{ and } (f0^+)(-y)
+\le 0\},$$ the intersection $K \cap (-K)$ of the recession cone $K$ of $f$ with its negative.
+
+It consists of the directions in which $f$ is constant
+(`ConvexAnalysis.mem_constancySpace_iff_forall_eq`), and it is the largest subspace inside $K$
+(`ConvexAnalysis.constancySubmodule_isGreatest`). -/
 def constancySpace (f : E → EReal) : Set E := recessionConeFn f ∩ (-recessionConeFn f)
 
+/-- $y$ lies in the constancy space of $f$ if and only if $(f0^+)(y) \le 0$ and $(f0^+)(-y) \le 0$.
+-/
 theorem mem_constancySpace :
     y ∈ constancySpace f ↔ recessionFn f y ≤ 0 ∧ recessionFn f (-y) ≤ 0 := by
   simp [constancySpace]
 
-/-- The constancy space is exactly the set of directions along which `f` is constant. -/
+/-- $y$ lies in the constancy space of $f$ if and only if $f(x + a y) = f(x)$ for all $x \in E$ and
+all real $a$. -/
 theorem mem_constancySpace_iff_forall_eq :
     y ∈ constancySpace f ↔ ∀ (x : E) (a : ℝ), f (x + a • y) = f x := by
   rw [mem_constancySpace, ← forall_eq_iff_recessionFn_nonpos]
 
-/-- The constancy space is the lineality space of the recession cone of `f`, hence a subspace,
-bundled as a `Submodule ℝ E`. -/
+/-- The constancy space of $f$ as a subspace of $E$.
+
+It is defined as `PointedCone.lineal` of the recession cone $K$ of $f$, the largest subspace
+$K \cap (-K)$ inside $K$. -/
 noncomputable def constancySubmodule (f : E → EReal) : Submodule ℝ E :=
   (recessionPointedConeFn f).lineal
 
+/-- The carrier of `ConvexAnalysis.constancySubmodule f` is the constancy space
+`ConvexAnalysis.constancySpace f`. -/
 @[simp]
 theorem coe_constancySubmodule (f : E → EReal) :
     (constancySubmodule f : Set E) = constancySpace f := by
   ext z; simp [constancySubmodule, constancySpace]
 
+/-- $y$ lies in `ConvexAnalysis.constancySubmodule f` if and only if $y$ lies in the constancy space
+of $f$. -/
 @[simp]
 theorem mem_constancySubmodule : y ∈ constancySubmodule f ↔ y ∈ constancySpace f := by
   rw [← SetLike.mem_coe, coe_constancySubmodule]
 
-/-- The constancy space is the largest subspace inside the recession cone of `f`. -/
+/-- The constancy space of $f$ is the largest subspace of $E$ that is contained in the recession
+cone of $f$. -/
 theorem constancySubmodule_isGreatest (f : E → EReal) :
     IsGreatest {L : Submodule ℝ E | (L : Set E) ⊆ recessionConeFn f} (constancySubmodule f) := by
   refine ⟨?_, fun L hL z hz => ?_⟩
@@ -555,8 +679,11 @@ theorem constancySubmodule_isGreatest (f : E → EReal) :
 
 /-! ### Directions in which `f` is affine -/
 
-/-- Two opposite directions of recession of a proper `f` have nonnegative total slope: adding the
-two recession directions gives `(0, ν + ρ) ∈ 0⁺(epi f)`, and `(f0⁺) 0 = 0`. -/
+/-- Let $f$ be proper, and let $\nu, \rho \in \mathbb{R}$ with $(f0^+)(y) \le \nu$ and
+$(f0^+)(-y) \le \rho$. Then $\nu + \rho \ge 0$.
+
+The sum of the two directions of recession gives
+$(0, \nu + \rho) \in 0^+(\operatorname{epi} f)$, and $(f0^+)(0) = 0$. -/
 theorem zero_le_add_of_recessionFn_le (hp : ProperConvex f) {ν ρ : ℝ}
     (h1 : recessionFn f y ≤ (ν : EReal)) (h2 : recessionFn f (-y) ≤ (ρ : EReal)) : 0 ≤ ν + ρ := by
   have hsum := add_mem_recessionCone (recessionFn_le_coe_iff.1 h1) (recessionFn_le_coe_iff.1 h2)
@@ -565,16 +692,19 @@ theorem zero_le_add_of_recessionFn_le (hp : ProperConvex f) {ν ρ : ℝ}
   rw [recessionFn_apply_zero hp] at hle
   exact_mod_cast hle
 
-/-- A bound on `(f0⁺) (-y)` is a *lower* bound on `(f0⁺) y`. -/
+/-- Let $f$ be proper and $\nu \in \mathbb{R}$. If $(f0^+)(-y) \le -\nu$, then $\nu \le (f0^+)(y)$.
+-/
 theorem le_recessionFn_of_neg_le (hp : ProperConvex f) {ν : ℝ}
     (h : recessionFn f (-y) ≤ ((-ν : ℝ) : EReal)) : (ν : EReal) ≤ recessionFn f y :=
   EReal.le_of_forall_coe_le fun r hr => by
     have hsum := zero_le_add_of_recessionFn_le hp hr h
     exact_mod_cast (by linarith : ν ≤ r)
 
-/-- `(y, ν)` lies in the lineality space of `epi f` exactly when `(f0⁺) y = ν` and
-`(f0⁺) (-y) = -ν`. Properness is what upgrades the inequalities `(f0⁺) y ≤ ν`,
-`(f0⁺) (-y) ≤ -ν` to equalities. -/
+/-- Let $f$ be proper and $\nu \in \mathbb{R}$. Then $(y, \nu) \in
+\operatorname{lin}(\operatorname{epi} f)$ if and only if $(f0^+)(y) = \nu$ and
+$(f0^+)(-y) = -\nu$.
+
+Properness turns the inequalities $(f0^+)(y) \le \nu$ and $(f0^+)(-y) \le -\nu$ into equalities. -/
 theorem mk_mem_linealitySpace_epi_iff (hp : ProperConvex f) {ν : ℝ} :
     ((y, ν) : E × ℝ) ∈ linealitySpace (epi f) ↔
       recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) := by
@@ -593,8 +723,8 @@ theorem mk_mem_linealitySpace_epi_iff (hp : ProperConvex f) {ν : ℝ} :
     refine ⟨recessionFn_le_coe_iff.1 h1.le, ?_⟩
     exact (recessionFn_le_coe_iff.1 h2.le : ((-y, -ν) : E × ℝ) ∈ recessionCone (epi f))
 
-/-- If `(y, ν)` lies in the lineality space of `epi f`, then `f (x + a • y) = f x + a * ν` on the
-forward half-line `a ≥ 0`. -/
+/-- If $(y, \nu) \in \operatorname{lin}(\operatorname{epi} f)$, then $f(x + a y) = f(x) + a\nu$ for
+all $x \in E$ and $a \ge 0$. -/
 theorem eq_add_of_mk_mem_linealitySpace_epi (h : ((y, ν) : E × ℝ) ∈ linealitySpace (epi f))
     (x : E) {a : ℝ} (ha : 0 ≤ a) : f (x + a • y) = f x + ((a * ν : ℝ) : EReal) := by
   rw [mem_linealitySpace] at h
@@ -610,9 +740,13 @@ theorem eq_add_of_mk_mem_linealitySpace_epi (h : ((y, ν) : E × ℝ) ∈ lineal
   rwa [← EReal.coe_add, show a * -ν + a * ν = 0 by ring, EReal.coe_zero,
     add_zero] at hstep
 
-/-- `f` is affine with slope `ν` along the whole line through every `x` in the direction `y`
-exactly when `(y, ν)` lies in the lineality space of `epi f`. No hypothesis on `f` is needed
-for this half. -/
+/-- For every $f : E \to [-\infty, +\infty]$, $y \in E$ and $\nu \in \mathbb{R}$, $$f(x + a y) =
+f(x) + a\nu \quad \text{for all } x \in E \text{ and all } a \in \mathbb{R}$$ if and only if
+$(y, \nu) \in \operatorname{lin}(\operatorname{epi} f)$. Thus $f$ is affine with slope $\nu$
+along every line in the direction $y$ exactly when $(y, \nu)$ lies in the lineality space of
+$\operatorname{epi} f$.
+
+No hypothesis on $f$ is needed. -/
 theorem forall_eq_add_iff_mk_mem_linealitySpace_epi :
     (∀ (x : E) (a : ℝ), f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) ↔
       ((y, ν) : E × ℝ) ∈ linealitySpace (epi f) := by
@@ -640,23 +774,26 @@ theorem forall_eq_add_iff_mk_mem_linealitySpace_epi :
     · have hstep := eq_add_of_mk_mem_linealitySpace_epi hmem' x (a := -a) (by linarith)
       rwa [neg_smul_neg, show -a * -ν = a * ν by ring] at hstep
 
-/-- For proper `f`, being affine along `y` with slope `ν` is `(f0⁺) y = ν` together with
-`(f0⁺) (-y) = -ν`. -/
+/-- Let $f$ be proper. Then $f(x + a y) = f(x) + a\nu$ for all $x \in E$ and all real $a$ if and
+only if $(f0^+)(y) = \nu$ and $(f0^+)(-y) = -\nu$. -/
 theorem forall_eq_add_iff_recessionFn (hp : ProperConvex f) :
     (∀ (x : E) (a : ℝ), f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) ↔
       recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) :=
   forall_eq_add_iff_mk_mem_linealitySpace_epi.trans (mk_mem_linealitySpace_epi_iff hp)
 
-/-- The **lineality space of `f`**: the directions in which `f` is affine, that is the `y` with
-`(f0⁺) (-y) = -(f0⁺) y`. -/
+/-- The **lineality space** of $f$ is the set $$\{y \in E : (f0^+)(-y) = -(f0^+)(y)\}.$$
+
+For proper $f$ it consists of the directions in which $f$ is affine; see
+`ConvexAnalysis.forall_eq_add_iff_recessionFn` and `ConvexAnalysis.linealitySpaceFn_eq_image`. -/
 def linealitySpaceFn (f : E → EReal) : Set E := {y | recessionFn f (-y) = -recessionFn f y}
 
+/-- $y$ lies in the lineality space of $f$ if and only if $(f0^+)(-y) = -(f0^+)(y)$. -/
 @[simp]
 theorem mem_linealitySpaceFn :
     y ∈ linealitySpaceFn f ↔ recessionFn f (-y) = -recessionFn f y := Iff.rfl
 
-/-- The lineality space of `f` is the image of the lineality space of `epi f` under the projection
-`(y, ν) ↦ y`. -/
+/-- Let $f$ be proper. Then the lineality space of $f$ is the image of
+$\operatorname{lin}(\operatorname{epi} f)$ under the projection $(y, \nu) \mapsto y$. -/
 theorem linealitySpaceFn_eq_image (hp : ProperConvex f) :
     linealitySpaceFn f = Prod.fst '' linealitySpace (epi f) := by
   ext z
@@ -676,27 +813,37 @@ theorem linealitySpaceFn_eq_image (hp : ProperConvex f) :
     change recessionFn f (-w) = -recessionFn f w
     rw [h1, h2, EReal.coe_neg]
 
-/-- The lineality space of `f` is a subspace, bundled as a `Submodule ℝ E`. It is defined as the
-image of `linealitySubmodule (epi f)` under the projection, so the subspace structure is free, and
-`coe_linealitySubmoduleFn` identifies its carrier with `linealitySpaceFn`. -/
+/-- The lineality space of $f$ as a subspace of $E$: the image of the subspace
+$\operatorname{lin}(\operatorname{epi} f)$ of $E \times \mathbb{R}$ under the projection
+$(y, \nu) \mapsto y$.
+
+The definition by the projection gives the subspace structure directly. For proper $f$,
+`ConvexAnalysis.coe_linealitySubmoduleFn` identifies its carrier with the lineality space
+`ConvexAnalysis.linealitySpaceFn f`. -/
 noncomputable def linealitySubmoduleFn (f : E → EReal) : Submodule ℝ E :=
   Submodule.map (LinearMap.fst ℝ E ℝ) (linealitySubmodule (epi f))
 
-/-- The carrier of `linealitySubmoduleFn` is the lineality space of `f`. -/
+/-- Let $f$ be proper. Then the carrier of `ConvexAnalysis.linealitySubmoduleFn f` is the lineality
+space of $f$. -/
 theorem coe_linealitySubmoduleFn (hp : ProperConvex f) :
     (linealitySubmoduleFn f : Set E) = linealitySpaceFn f := by
   rw [linealitySpaceFn_eq_image hp, linealitySubmoduleFn, Submodule.map_coe,
     coe_linealitySubmodule]
   rfl
 
-/-- The *lineality of `f`*: the dimension of its lineality space. -/
+/-- The **lineality** of $f$ is the dimension of its lineality space
+`ConvexAnalysis.linealitySubmoduleFn f`.
+
+The dimension is `Module.finrank`, which is $0$ when the subspace is infinite-dimensional. -/
 noncomputable def linealityFn (f : E → EReal) : ℕ := Module.finrank ℝ (linealitySubmoduleFn f)
 
-/-- **An affine direction of recession along which `f` is bounded below is a direction of
-constancy.** If `y` is a direction of recession of a proper `f` in which `f` is affine
-(`y ∈ linealitySpaceFn f`) and `f` is bounded below on the half-line `x + a • y`, `a ≥ 0`, issuing
-from some `x ∈ dom f`, then `y ∈ constancySpace f`. Affineness turns the hypotheses on `y` into
-`f (x + a • y) = f x + a * ν` with `ν = (f0⁺) y ≤ 0`, and the lower bound forces `ν = 0`. -/
+/-- Let $f$ be proper, and let $y$ lie both in the recession cone and in the lineality space of $f$.
+Suppose that there are $x \in \operatorname{dom} f$ and $\beta \in \mathbb{R}$ with
+$\beta \le f(x + a y)$ for all $a \ge 0$. Then $y$ lies in the constancy space of $f$. Thus an
+affine direction of recession along which $f$ is bounded below is a direction of constancy.
+
+Because $f$ is affine along $y$, $f(x + a y) = f(x) + a\nu$ with $\nu = (f0^+)(y) \le 0$, and
+the lower bound forces $\nu = 0$. -/
 theorem mem_constancySpace_of_mem_linealitySpaceFn (hp : ProperConvex f)
     (hy : y ∈ recessionConeFn f) (hlin : y ∈ linealitySpaceFn f) {x : E} (hx : x ∈ convexDom f)
     {β : ℝ} (hbdd : ∀ a : ℝ, 0 ≤ a → (β : EReal) ≤ f (x + a • y)) : y ∈ constancySpace f := by
@@ -734,9 +881,13 @@ section Quotient
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {x y : E}
 
-/-- The difference quotient `(f (x + a • y) - f x) / a` is below `ν` exactly when the point
-`(x, f x) + a • (y, ν)` lies in `epi f`. This is the translation that turns the difference formula
-into a statement about a single half-line. -/
+/-- Let $f$ never take the value $-\infty$, let $x \in \operatorname{dom} f$, $a > 0$ and
+$\nu \in \mathbb{R}$. Then $$\frac{f(x + a y) - f(x)}{a} \le \nu \iff f(x + a y) \le f(x) +
+a\nu.$$
+
+The right side says that $(x, f(x)) + a(y, \nu) \in \operatorname{epi} f$. This turns the
+difference-quotient formula into a statement about a single half-line. The quotient is written
+as $a^{-1}(f(x + a y) - f(x))$ in `EReal`. -/
 theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) {a ν : ℝ}
     (ha : 0 < a) :
     ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x) ≤ (ν : EReal) ↔
@@ -762,8 +913,11 @@ theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ conve
       mul_le_mul_of_nonneg_left h2 (by exact_mod_cast (inv_pos.2 ha).le)
     rwa [← EReal.coe_mul, show a⁻¹ * (a * ν) = ν by field_simp] at h3
 
-/-- **The difference quotient is nondecreasing** in `a`. Convexity is the whole content:
-`x + a₁ • y` is a convex combination of `x` and `x + a₂ • y`. -/
+/-- Let $f$ be convex and never $-\infty$, let $x \in \operatorname{dom} f$ and $y \in E$. Then the
+difference quotient $(f(x + a y) - f(x))/a$ is nondecreasing in $a > 0$: for $0 < a_1 \le a_2$,
+$$\frac{f(x + a_1 y) - f(x)}{a_1} \le \frac{f(x + a_2 y) - f(x)}{a_2}.$$
+
+The proof uses only convexity: $x + a_1 y$ is a convex combination of $x$ and $x + a_2 y$. -/
 theorem monotone_coe_inv_mul_sub (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥)
     (hx : x ∈ convexDom f) (y : E)
     {a₁ a₂ : ℝ} (h1 : 0 < a₁) (h12 : a₁ ≤ a₂) :
@@ -798,7 +952,9 @@ section Indicator
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {C : Set E}
 
-/-- The recession cone of `C ×ˢ [0, ∞)` — that is, of `epi δ(· | C)` — is `0⁺C ×ˢ [0, ∞)`. -/
+/-- Let $C \subseteq E$ be nonempty. Then $$0^+(C \times [0, \infty)) = 0^+C \times [0, \infty).$$
+
+The set $C \times [0, \infty)$ is the epigraph of the indicator function $\delta(\cdot \mid C)$. -/
 theorem recessionCone_prod_Ici (hC : C.Nonempty) :
     recessionCone (C ×ˢ Set.Ici (0 : ℝ)) = recessionCone C ×ˢ Set.Ici (0 : ℝ) := by
   obtain ⟨x₀, hx₀⟩ := hC
@@ -818,15 +974,20 @@ theorem recessionCone_prod_Ici (hC : C.Nonempty) :
     have : (0 : ℝ) ≤ μ + a * ν := by nlinarith
     simpa using this
 
-/-- The recession function of an indicator function is the indicator function of the recession
-cone. Nonemptiness of `C` is needed: for `C = ∅` the left-hand side is the constant `-∞`, since
-`epi δ(· | ∅) = ∅` and `0⁺∅` is everything, while the right-hand side is the constant `0`. -/
+/-- Let $C \subseteq E$ be nonempty. The recession function of the indicator function
+$\delta(\cdot \mid C)$, which is $0$ on $C$ and $+\infty$ off $C$, is the indicator function of
+the recession cone: $$\delta(\cdot \mid C) 0^+ = \delta(\cdot \mid 0^+C).$$
+
+Nonemptiness of $C$ is needed. For $C = \emptyset$ the epigraph of
+$\delta(\cdot \mid \emptyset)$ is empty and $0^+\emptyset = E \times \mathbb{R}$, so the left
+side is the constant $-\infty$, while the right side is the constant $0$. -/
 theorem recessionFn_indicatorFn (hC : C.Nonempty) :
     recessionFn (indicatorFn C) = indicatorFn (recessionCone C) :=
   (eq_ofEpi_of_epi_eq (by
     rw [epi_indicatorFn, epi_indicatorFn, recessionCone_prod_Ici hC])).symm
 
-/-- The recession *cone* of an indicator function is the recession cone of the set. -/
+/-- Let $C \subseteq E$ be nonempty. The recession cone of the indicator function
+$\delta(\cdot \mid C)$ is the recession cone $0^+C$ of the set. -/
 theorem recessionConeFn_indicatorFn (hC : C.Nonempty) :
     recessionConeFn (indicatorFn C) = recessionCone C := by
   ext y
@@ -846,22 +1007,27 @@ section Topological
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E] [IsTopologicalAddGroup E]
   [ContinuousSMul ℝ E] {f : E → EReal} {x y : E}
 
-/-- `f0⁺` is closed as soon as `f` is. Only closedness of `epi f` is used; neither convexity nor
-nonemptiness enters. -/
+/-- Let $E$ be a real topological vector space. If $\operatorname{epi} f$ is closed, then
+$\operatorname{epi}(f0^+)$ is closed.
+
+Only closedness of $\operatorname{epi} f$ is used; neither convexity nor nonemptiness is needed. -/
 theorem isClosed_epi_recessionFn (hc : IsClosed (epi f)) : IsClosed (epi (recessionFn f)) := by
   rw [epi_recessionFn]
   exact isClosed_recessionCone hc
 
+/-- If $\operatorname{epi} f$ is closed, then $f0^+$ is lower semicontinuous. -/
 theorem lowerSemicontinuous_recessionFn (hc : IsClosed (epi f)) :
     LowerSemicontinuous (recessionFn f) :=
   lowerSemicontinuous_iff_isClosed_epi.2 (isClosed_epi_recessionFn hc)
 
-/-- `f0⁺` is a closed function when `f` is a closed proper function. -/
+/-- Let $f$ be proper with closed epigraph. Then $f0^+$ is a closed function: it equals its closure
+`ConvexAnalysis.convexCl`. This is part of Theorem 8.5 of [rockafellar1970convex]. -/
 theorem closedConvex_recessionFn (hp : ProperConvex f)
     (hc : IsClosed (epi f)) : ClosedConvex (recessionFn f) :=
   (closedConvex_iff_lowerSemicontinuous (recessionFn_ne_bot hp)).2
       (lowerSemicontinuous_recessionFn hc)
 
+/-- If $\operatorname{epi} f$ is closed, then the recession cone of $f$ is closed. -/
 theorem isClosed_recessionConeFn (hc : IsClosed (epi f)) : IsClosed (recessionConeFn f) := by
   have hpre : recessionConeFn f = (fun z : E => (z, (0 : ℝ))) ⁻¹' recessionCone (epi f) := by
     ext z
@@ -869,8 +1035,9 @@ theorem isClosed_recessionConeFn (hc : IsClosed (epi f)) : IsClosed (recessionCo
   rw [hpre]
   exact (isClosed_recessionCone hc).preimage (by fun_prop)
 
-/-- **One half-line is enough**, on epigraphs: for a closed convex `f`, a single half-line inside
-`epi f` already witnesses a direction of recession. -/
+/-- Let $f$ be convex with closed epigraph, and let $x \in E$ and $\mu, \nu \in \mathbb{R}$. If
+$f(x + a y) \le \mu + a\nu$ for all $a \ge 0$, then $(y, \nu) \in 0^+(\operatorname{epi} f)$.
+Thus a single half-line in $\operatorname{epi} f$ already gives a direction of recession. -/
 theorem mk_mem_recessionCone_epi_of_ray (hf : ConvexFn f) (hc : IsClosed (epi f)) (x : E) (μ : ℝ)
     {ν : ℝ} (h : ∀ a : ℝ, 0 ≤ a → f (x + a • y) ≤ ((μ + a * ν : ℝ) : EReal)) :
     ((y, ν) : E × ℝ) ∈ recessionCone (epi f) := by
@@ -878,8 +1045,13 @@ theorem mk_mem_recessionCone_epi_of_ray (hf : ConvexFn f) (hc : IsClosed (epi f)
   rw [Prod.smul_mk, Prod.mk_add_mk, smul_eq_mul]
   exact mk_mem_epi.2 (h a ha)
 
-/-- For a closed convex `f` the recession condition may be tested at a *single* point of `dom f`.
-This is the sharpening that the difference-quotient formula rests on. -/
+/-- Let $f$ be convex with closed epigraph and never $-\infty$, and let $x \in \operatorname{dom} f$
+and $\nu \in \mathbb{R}$. Then $(f0^+)(y) \le \nu$ if and only if $f(x + a y) \le f(x) + a\nu$
+for all $a > 0$. Thus the recession condition can be tested at a single point of
+$\operatorname{dom} f$.
+
+The difference-quotient formula `ConvexAnalysis.recessionFn_apply_eq_iSup_inv_mul` rests on
+this. -/
 theorem recessionFn_le_coe_iff_of_isClosed (hf : ConvexFn f) (hc : IsClosed (epi f))
     (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) {ν : ℝ} :
     recessionFn f y ≤ (ν : EReal) ↔
@@ -892,10 +1064,13 @@ theorem recessionFn_le_coe_iff_of_isClosed (hf : ConvexFn f) (hc : IsClosed (epi
   · have hstep := h a ha'
     rwa [hs, ← EReal.coe_add] at hstep
 
-/-- **The difference-quotient formula**: for a closed convex `f` and any one `x ∈ dom f`,
+/-- The **difference-quotient formula**. Let $f$ be convex with closed epigraph and never $-\infty$,
+and let $x \in \operatorname{dom} f$. Then for every $y \in E$, $$(f0^+)(y) = \sup_{a > 0}
+\frac{f(x + a y) - f(x)}{a}.$$
 
-`(f0⁺) y = sup {(f (x + a • y) - f x) / a | a > 0}`. Closedness is what makes the answer
-independent of `x`. -/
+Closedness makes the right side independent of $x$. The quotient is written as
+$a^{-1}(f(x + a y) - f(x))$ in `EReal`. This formula is part of Theorem 8.5 of
+[rockafellar1970convex]. -/
 theorem recessionFn_apply_eq_iSup_inv_mul (hf : ConvexFn f) (hc : IsClosed (epi f))
     (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) (y : E) :
     recessionFn f y = ⨆ a : ℝ, ⨆ _ : 0 < a, ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x) := by
@@ -903,9 +1078,12 @@ theorem recessionFn_apply_eq_iSup_inv_mul (hf : ConvexFn f) (hc : IsClosed (epi 
   rw [recessionFn_le_coe_iff_of_isClosed hf hc hbot hx, iSup₂_le_iff]
   exact forall₂_congr fun a ha => (coe_inv_mul_sub_le_coe_iff (y := y) hbot hx ha).symm
 
-/-- **The limit formula**: the difference quotient increases to `(f0⁺) y` as `a → ∞`.
-Monotonicity of the quotient (`monotone_coe_inv_mul_sub`) is what turns the supremum into a
-limit. -/
+/-- The **limit formula**. Let $f$ be convex with closed epigraph and never $-\infty$, and let
+$x \in \operatorname{dom} f$. Then for every $y \in E$, $$(f0^+)(y) = \lim_{a \to +\infty}
+\frac{f(x + a y) - f(x)}{a}.$$
+
+The quotient is nondecreasing in $a$ (`ConvexAnalysis.monotone_coe_inv_mul_sub`), and this turns
+the supremum of `ConvexAnalysis.recessionFn_apply_eq_iSup_inv_mul` into a limit. -/
 theorem tendsto_coe_inv_mul_sub_atTop (hf : ConvexFn f) (hc : IsClosed (epi f))
     (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ convexDom f) (y : E) :
     Tendsto (fun a : ℝ => ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x)) atTop
@@ -925,8 +1103,9 @@ theorem tendsto_coe_inv_mul_sub_atTop (hf : ConvexFn f) (hc : IsClosed (epi f))
     rw [recessionFn_apply_eq_iSup_inv_mul hf hc hbot hx y]
     exact le_iSup₂ (f := fun a (_ : 0 < a) => ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x)) a ha
 
-/-- When `f` is closed, a single `x ∈ dom f` along which `f` is nonincreasing already forces
-`(f0⁺) y ≤ 0`. -/
+/-- Let $f$ be a closed proper convex function and $x \in \operatorname{dom} f$. If
+$a \mapsto f(x + a y)$ is nonincreasing on $\mathbb{R}$, then $(f0^+)(y) \le 0$. Thus for closed
+$f$ one base point in $\operatorname{dom} f$ is enough. -/
 theorem recessionFn_nonpos_of_antitone (hf : ClosedProperConvexFn f)
     (hx : x ∈ convexDom f) (h : Antitone fun a : ℝ => f (x + a • y)) : recessionFn f y ≤ 0 := by
   have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) := by
@@ -937,8 +1116,9 @@ theorem recessionFn_nonpos_of_antitone (hf : ClosedProperConvexFn f)
     simpa using hstep
   rwa [EReal.coe_zero] at h0
 
-/-- For a closed `f`, a single `x ∈ dom f` along which `f` is affine with slope `ν` already forces
-`(f0⁺) y = ν` and `(f0⁺) (-y) = -ν`. -/
+/-- Let $f$ be a closed proper convex function, $x \in \operatorname{dom} f$ and
+$\nu \in \mathbb{R}$. If $f(x + a y) = f(x) + a\nu$ for all real $a$, then $(f0^+)(y) = \nu$ and
+$(f0^+)(-y) = -\nu$. Thus for closed $f$ one base point in $\operatorname{dom} f$ is enough. -/
 theorem recessionFn_eq_of_affine_along (hf : ClosedProperConvexFn f)
     (hx : x ∈ convexDom f) {ν : ℝ} (h : ∀ a : ℝ, f (x + a • y) = f x + ((a * ν : ℝ) : EReal)) :
     recessionFn f y = (ν : EReal) ∧ recessionFn f (-y) = ((-ν : ℝ) : EReal) := by
@@ -952,8 +1132,10 @@ theorem recessionFn_eq_of_affine_along (hf : ClosedProperConvexFn f)
     rw [neg_smul, ← smul_neg, hs, ← EReal.coe_add] at hstep
     rw [hstep, show s + -a * ν = s + a * -ν by ring]
 
-/-- For a closed convex `f`, every nonempty level set `{x | f x ≤ α}` has the same recession cone,
-namely the recession cone of `f`. -/
+/-- Let $f$ be convex with closed epigraph, and let $\alpha \in \mathbb{R}$ be such that the level
+set $\{x : f(x) \le \alpha\}$ is nonempty. Then its recession cone is the recession cone of $f$:
+$$0^+\{x : f(x) \le \alpha\} = \{y : (f0^+)(y) \le 0\}.$$ Thus all nonempty level sets of $f$
+have the same recession cone. -/
 theorem recessionCone_setOf_le (hf : ConvexFn f) (hc : IsClosed (epi f)) {α : ℝ}
     (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
     recessionCone {z : E | f z ≤ (α : EReal)} = recessionConeFn f := by
@@ -967,23 +1149,32 @@ theorem recessionCone_setOf_le (hf : ConvexFn f) (hc : IsClosed (epi f)) {α : �
   · intro hz w hw a ha
     exact le_trans (add_smul_le_of_recessionFn_nonpos hz w ha) hw
 
-/-- **The lineality half**: every nonempty level set of a closed convex `f` has the constancy
-space of `f` as its lineality space. -/
+/-- Let $f$ be convex with closed epigraph, and let $\alpha \in \mathbb{R}$ be such that the level
+set $\{x : f(x) \le \alpha\}$ is nonempty. Then the lineality space of this level set is the
+constancy space of $f$: $$\operatorname{lin}\{x : f(x) \le \alpha\} = \{y : (f0^+)(y) \le 0
+\text{ and } (f0^+)(-y) \le 0\}.$$
+-/
 theorem linealitySpace_setOf_le (hf : ConvexFn f) (hc : IsClosed (epi f)) {α : ℝ}
     (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
     linealitySpace {z : E | f z ≤ (α : EReal)} = constancySpace f := by
   simp only [linealitySpace, constancySpace, recessionCone_setOf_le hf hc hne]
 
-/-! #### The limit of the right scalar multiples
+/-!
+### The limit of the right scalar multiples
 
-`(f0⁺) y = lim_{a ↓ 0} (fa) y` is proved here directly from the recession calculus, rather than
-through the homogenisation `hom f`: the latter route would need `cl (hom f)`, since
-`hom f (0, ·) = δ(· | 0)` and not `f0⁺`. The proof splits into the two halves of `tendsto_order`,
-and only the *upper* half needs a point of `dom f` on the ray through `y`. -/
+For $a > 0$ the right scalar multiple of $f$ is $(fa)(x) = a f(a^{-1} x)$. The identity
+$(f0^+)(y) = \lim_{a \downarrow 0} (fa)(y)$ is proved here directly from the properties of $f0^+$
+above, and not through the homogenization of $f$. That route would need the closure of the
+homogenization, because at height $0$ the homogenization is the indicator function
+$\delta(\cdot \mid \{0\})$ and not $f0^+$. The proof splits into a lower and an upper estimate, and
+only the upper estimate needs a point of $\operatorname{dom} f$ on the line through $y$.
+-/
 
-/-- The lower half, and the half that carries the closedness hypothesis: no `fa` can dip below
-`(f0⁺) y` in the limit. It is the sequential criterion for a direction of recession applied to
-`aₙ⁻¹ • (y, β)` in `epi f`. -/
+/-- Let $f$ be convex with closed epigraph, and let $b < (f0^+)(y)$. Then $b < (fa)(y)$ for all
+sufficiently small $a > 0$.
+
+This is the lower estimate, and the one that needs closedness. It applies the sequential
+criterion for a direction of recession to points $a_n^{-1}(y, \beta)$ of $\operatorname{epi} f$. -/
 theorem eventually_lt_smulRight (hf : ConvexFn f) (hc : IsClosed (epi f)) {b : EReal}
     (hb : b < recessionFn f y) : ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), b < smulRight f a y := by
   have hpos : ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), 0 < a := self_mem_nhdsWithin
@@ -1016,11 +1207,13 @@ theorem eventually_lt_smulRight (hf : ConvexFn f) (hc : IsClosed (epi f)) {b : E
   exact absurd (recessionFn_le_coe_iff.2 hmemrec) (not_le.2 hβL)
 
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
-/-- The upper half, from a point `θ • y ∈ dom f` on the line through `y`: `(fa) y` eventually
-stays below any bound exceeding `(f0⁺) y`. `θ = 1` is the case `y ∈ dom f` and `θ = 0` the case
-`0 ∈ dom f`; no other point of `dom f` helps, because the endpoint of the half-line must lie on
-the line through `y`. This half needs no topology on `E`: it is the one-step recession test plus
-one limit in `ℝ`. -/
+/-- Let $f$ be proper, let $\theta \in \mathbb{R}$ with $\theta y \in \operatorname{dom} f$, and let
+$(f0^+)(y) < b$. Then $(fa)(y) < b$ for all sufficiently small $a > 0$.
+
+This is the upper estimate. The case $\theta = 1$ is $y \in \operatorname{dom} f$, and the case
+$\theta = 0$ is $0 \in \operatorname{dom} f$. No other point of $\operatorname{dom} f$ helps,
+because the half-line must start on the line through $y$. This estimate needs no topology on $E$
+and no convexity of $f$. -/
 theorem eventually_smulRight_lt (hp : ProperConvex f) {θ : ℝ} (hθ : θ • y ∈ convexDom f) {b : EReal}
     (hb : recessionFn f y < b) :
     ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), smulRight f a y < b := by
@@ -1057,17 +1250,19 @@ theorem eventually_smulRight_lt (hp : ProperConvex f) {θ : ℝ} (hθ : θ • y
     show a * (r + (a⁻¹ - θ) * β) = a * r + (1 - a * θ) * β by field_simp]
   exact lt_trans (by exact_mod_cast hva) hγb
 
-/-- For a closed proper convex `f`, the recession function is the limit of the right scalar
-multiples `fa` as `a ↓ 0`, at every `y ∈ dom f` — and, by
-`tendsto_smulRight_recessionFn_of_zero_mem_convexDom`, at *every* `y` when `0 ∈ dom f`. -/
+/-- Let $f$ be a closed proper convex function and $y \in \operatorname{dom} f$. Then $$(f0^+)(y) =
+\lim_{a \downarrow 0} (fa)(y),$$ where $(fa)(y) = a f(a^{-1} y)$ is the right scalar multiple.
+
+By `ConvexAnalysis.tendsto_smulRight_recessionFn_of_zero_mem_convexDom`, the limit formula holds
+at every $y$ when $0 \in \operatorname{dom} f$. The limit is taken along `𝓝[>] 0`. -/
 theorem tendsto_smulRight_recessionFn (hf : ClosedProperConvexFn f) (hy : y ∈ convexDom f) :
     Tendsto (fun a : ℝ => smulRight f a y) (𝓝[>] (0 : ℝ)) (𝓝 (recessionFn f y)) := by
   rw [tendsto_order]
   exact ⟨fun _ hb => eventually_lt_smulRight hf.convex hf.isClosed_epi hb,
     fun _ hb => eventually_smulRight_lt hf.proper (θ := 1) (by rwa [one_smul]) hb⟩
 
-/-- **Global form**: when `0 ∈ dom f` the limit formula holds at every `y`, with no condition on
-`y` at all. -/
+/-- Let $f$ be a closed proper convex function with $0 \in \operatorname{dom} f$. Then
+$(f0^+)(y) = \lim_{a \downarrow 0} (fa)(y)$ for every $y \in E$. -/
 theorem tendsto_smulRight_recessionFn_of_zero_mem_convexDom (hf : ClosedProperConvexFn f)
     (h0 : (0 : E) ∈ convexDom f) (y : E) :
     Tendsto (fun a : ℝ => smulRight f a y) (𝓝[>] (0 : ℝ)) (𝓝 (recessionFn f y)) := by
@@ -1077,11 +1272,13 @@ theorem tendsto_smulRight_recessionFn_of_zero_mem_convexDom (hf : ClosedProperCo
 
 end Topological
 
-/-! ### Slices of a function of two variables
+/-!
+### Slices of a function of two variables
 
-A closed convex function of two variables has the **same** recession function on every slice
-`x ↦ G (u, x)` with non-empty effective domain: it is "one half-line is enough", read on the
-epigraph. -/
+Let $G : U \times X \to [-\infty, +\infty]$ be convex with closed epigraph. Then all slices
+$x \mapsto G(u, x)$ with nonempty effective domain have the same recession function. This is the
+principle that one half-line is enough, applied to $\operatorname{epi} G$.
+-/
 
 section Slice
 
@@ -1089,10 +1286,15 @@ variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [TopologicalSpace U] [IsT
   [ContinuousSMul ℝ U] [AddCommGroup X] [Module ℝ X] [TopologicalSpace X] [IsTopologicalAddGroup X]
   [ContinuousSMul ℝ X] {G : U × X → EReal} {u₀ : U} {x₀ y : X} {ν : ℝ}
 
-/-- A recession direction of *one* slice of a closed convex `G` is a recession direction of *every*
-slice, with the same bound. The slice inequality at a single point exhibits a half-line of `epi G`
-in the direction `((0, y), ν)`, and for a closed convex set one half-line is enough.
-No hypothesis is placed on `u`: when `G (u, ·) ≡ ⊤` the conclusion holds vacuously. -/
+/-- Let $U$ and $X$ be real topological vector spaces, and let
+$G : U \times X \to [-\infty, +\infty]$ be convex with closed epigraph. Let $u_0 \in U$ and
+$x_0 \in X$ with $G(u_0, x_0) < +\infty$, and let $y \in X$ and $\nu \in \mathbb{R}$. If the
+recession function of the slice $G(u_0, \cdot)$ satisfies $(G(u_0, \cdot)0^+)(y) \le \nu$, then
+$(G(u, \cdot)0^+)(y) \le \nu$ for every $u \in U$.
+
+The slice inequality at one point gives a half-line of $\operatorname{epi} G$ in the direction
+$((0, y), \nu)$, and for a closed convex set one half-line is enough. No hypothesis is placed on
+$u$: when $G(u, \cdot) \equiv +\infty$ the conclusion holds trivially. -/
 theorem recessionFn_le_coe_of_slice (hG : ConvexFn G) (hc : IsClosed (epi G))
     (hx₀ : G (u₀, x₀) ≠ ⊤) (h : recessionFn (fun x => G (u₀, x)) y ≤ (ν : EReal)) (u : U) :
     recessionFn (fun x => G (u, x)) y ≤ (ν : EReal) := by
@@ -1109,8 +1311,9 @@ theorem recessionFn_le_coe_of_slice (hG : ConvexFn G) (hc : IsClosed (epi G))
   have hmem : ((u, p.1), p.2) ∈ epi G := hp
   simpa [Prod.smul_mk, smul_zero] using hdir _ hmem a ha
 
-/-- **One recession function for all slices**: a closed convex function of two variables has the
-same recession function on any two slices with non-empty effective domain. -/
+/-- Let $G : U \times X \to [-\infty, +\infty]$ be convex with closed epigraph, and let
+$u_0, u_1 \in U$ be such that each of the slices $G(u_0, \cdot)$ and $G(u_1, \cdot)$ is less
+than $+\infty$ somewhere. Then the two slices have the same recession function. -/
 theorem recessionFn_slice_eq (hG : ConvexFn G) (hc : IsClosed (epi G)) {u₁ : U}
     (h₀ : ∃ x, G (u₀, x) ≠ ⊤) (h₁ : ∃ x, G (u₁, x) ≠ ⊤) :
     recessionFn (fun x => G (u₀, x)) = recessionFn (fun x => G (u₁, x)) := by
@@ -1130,8 +1333,14 @@ section FiniteDimensional
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- For a closed convex `f`, if one nonempty level set is bounded then every nonempty level set
-is. Finite-dimensionality enters only through the criterion for boundedness. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be convex with closed epigraph.
+Let $\alpha, \beta \in \mathbb{R}$ be such that the level sets $\{x : f(x) \le \alpha\}$ and
+$\{x : f(x) \le \beta\}$ are nonempty. If $\{x : f(x) \le \alpha\}$ is bounded, then
+$\{x : f(x) \le \beta\}$ is bounded.
+
+Finite dimension enters only through the criterion
+`ConvexAnalysis.isBounded_iff_recessionCone_eq_zero`: a nonempty closed convex set is bounded if
+and only if its recession cone is $\{0\}$. -/
 theorem isBounded_setOf_le (hf : ConvexFn f) (hc : IsClosed (epi f)) {α β : ℝ}
     (hneα : {z : E | f z ≤ (α : EReal)}.Nonempty)
     (hbd : Bornology.IsBounded {z : E | f z ≤ (α : EReal)})
@@ -1157,9 +1366,12 @@ section Bounded
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → EReal}
 
-/-- **A function with a nonempty bounded effective domain has no nonzero direction of recession**:
-`f0⁺ (w) > 0` for every `w ≠ 0`. If `f0⁺ (w) ≤ 0` then `f` is nonincreasing along `w`, so the whole
-ray stays in `dom f`, and a ray in a direction `w ≠ 0` leaves every ball. -/
+/-- Let $E$ be a real normed space, and let $\operatorname{dom} f$ be nonempty and bounded. Then
+$(f0^+)(w) > 0$ for every $w \neq 0$, so $f$ has no nonzero direction of recession.
+
+No convexity is assumed. If $(f0^+)(w) \le 0$, then $f$ is nonincreasing along $w$, so the whole
+ray from a point of $\operatorname{dom} f$ stays in $\operatorname{dom} f$; but a ray in a
+direction $w \neq 0$ leaves every ball. -/
 theorem lt_recessionFn_of_isBounded_convexDom (hne : (convexDom f).Nonempty)
     (hb : Bornology.IsBounded (convexDom f)) {w : E} (hw : w ≠ 0) : 0 < recessionFn f w := by
   rw [lt_iff_not_ge]

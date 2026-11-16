@@ -14,54 +14,72 @@ import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 /-!
 # The minimum of a convex function
 
-A point `x` minimises `f` exactly when `0 ∈ ∂f x`, the subgradient inequality read at `y = 0`; that
-is why subgradients are the engine here. Dually `inf f = -f*(0)` with no hypothesis at all, and for
-closed proper convex `f` the minimum set *is* `∂f*(0)`, so every question about minimisers becomes
-one about the conjugate near the origin. Existence comes from recession: a closed proper convex
-function with no direction of recession has compact level sets and attains its infimum; that
-relaxes to a constrained problem, with a further weakening when the constraint set is
-polyhedral.
+Let $f$ be a function on a real vector space $E$ with values in $[-\infty, +\infty]$, and let $E$ be
+paired with $F$ by $\langle x, y \rangle$. The **minimum set** of $f$ is
+$\{x \mid f(x) \le f(z) \text{ for all } z\}$. A point $x$ minimizes $f$ exactly when
+$0 \in \partial f(x)$: this is the subgradient inequality at $y = 0$, and it is why subgradients are
+the main tool here. Dually, $\inf f = -f^*(0)$ with no hypothesis on $f$. For a closed proper convex
+$f$ the minimum set is $\partial f^*(0)$, so every question about minimizers becomes a question
+about the conjugate near the origin. The presentation follows §27 of [rockafellar1970convex].
+
+Existence comes from recession. In finite dimension, a closed proper convex function with no
+direction of recession has compact level sets and attains its infimum. This extends to minimization
+over a closed convex set, with a weaker hypothesis when the set is polyhedral.
 
 ## Main definitions
 
-* `argmin f` — the *minimum set* `{x | ∀ z, f x ≤ f z}`.
+* `ConvexAnalysis.argmin`: the minimum set $\{x \mid f(x) \le f(z) \text{ for all } z\}$.
+* `ConvexAnalysis.argmax`: the maximum set $\{x \mid g(z) \le g(x) \text{ for all } z\}$.
 
 ## Main results
 
-* `mem_argmin_iff_zero_mem_subdifferential` — `x` minimises `f` exactly when `0 ∈ ∂f x`.
-* `convexConj_apply_zero` (of `Duality/Level`), `argmin_eq_subdifferential_convexConj_zero`,
-  `iInf_ne_bot_and_argmin_eq_empty_iff`,
-  `argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj`, `supportFn_setOf_le`,
-  `argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero`, `supportFn_argmin`,
-  `recessionCone_setOf_le_eq_polarCone_convexDom_convexConj`, `iInf_supportFn_setOf_le` — the
-  minimum set and the optimal value read off the conjugate at the origin ([rockafellar1970convex]
-  Theorem 27.1, clauses (a)–(h)).
-* `isCompact_setOf_le` — a level set of a closed proper convex function with no direction of
-  recession is compact; `argmin_nonempty_of_recessionConeFn_eq_zero`,
-  `isCompact_argmin_of_recessionConeFn_eq_zero`, `exists_pos_forall_exists_mem_argmin_dist_lt` —
-  existence of a minimiser, and well-posedness ([rockafellar1970convex] Theorem 27.2);
-  `tendsto_infDist_argmin` and `tendsto_of_argmin_eq_singleton` — the behaviour of minimising nets.
-* `exists_forall_le_of_recessionConeFn_inter_eq_zero`,
-  `exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace`,
-  `exists_forall_le_of_polyhedral_of_inter_subset_constancySpace` — attainment over a closed convex
-  set in its basic, general and polyhedral forms ([rockafellar1970convex] Theorem 27.3), with
-  `argmin_nonempty_of_polyhedralFn` for a polyhedral objective.
-* `le_of_mem_subdifferential_of_neg_mem_normalCone`, `exists_mem_subdifferential_neg_mem_normalCone`
-  — the optimality condition for minimising over a convex set, sufficiency and necessity.
-* `argmin_sepSum`, `convexDom_sepSum` — a **separable** objective `x ↦ ∑ᵢ hᵢ(xᵢ)` on a dependent
-  finite product is minimised coordinatewise: the *decomposition principle*.
+* `ConvexAnalysis.mem_argmin_iff_zero_mem_subdifferential`: $x$ minimizes $f$ exactly when
+  $0 \in \partial f(x)$.
+* `ConvexAnalysis.convexConj_apply_zero` (in `Numlib.Analysis.Convex.Duality.Level`),
+  `ConvexAnalysis.argmin_eq_subdifferential_convexConj_zero`,
+  `ConvexAnalysis.iInf_ne_bot_and_argmin_eq_empty_iff`,
+  `ConvexAnalysis.argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj`,
+  `ConvexAnalysis.supportFn_setOf_le`,
+  `ConvexAnalysis.argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero`,
+  `ConvexAnalysis.supportFn_argmin`,
+  `ConvexAnalysis.recessionCone_setOf_le_eq_polarCone_convexDom_convexConj`,
+  `ConvexAnalysis.iInf_supportFn_setOf_le`: the minimum set and the optimal value in terms of the
+  conjugate at the origin. These are clauses (a)–(h) of Theorem 27.1 of [rockafellar1970convex].
+* `ConvexAnalysis.isCompact_setOf_le`: a nonempty level set of a closed proper convex function with
+  no direction of recession is compact.
+* `ConvexAnalysis.argmin_nonempty_of_recessionConeFn_eq_zero`,
+  `ConvexAnalysis.isCompact_argmin_of_recessionConeFn_eq_zero`,
+  `ConvexAnalysis.exists_pos_forall_exists_mem_argmin_dist_lt`: the existence of a minimizer, and
+  well-posedness of the minimum. This is Theorem 27.2 of [rockafellar1970convex].
+* `ConvexAnalysis.tendsto_infDist_argmin`, `ConvexAnalysis.tendsto_of_argmin_eq_singleton`: the
+  behaviour of minimizing nets.
+* `ConvexAnalysis.exists_forall_le_of_recessionConeFn_inter_eq_zero`,
+  `ConvexAnalysis.exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace`,
+  `ConvexAnalysis.exists_forall_le_of_polyhedral_of_inter_subset_constancySpace`: attainment of the
+  infimum over a closed convex set, in a basic, a general and a polyhedral form. This is Theorem
+  27.3 of [rockafellar1970convex].
+* `ConvexAnalysis.argmin_nonempty_of_polyhedralFn`: a polyhedral convex function that is bounded
+  below attains its infimum.
+* `ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone`,
+  `ConvexAnalysis.exists_mem_subdifferential_neg_mem_normalCone`: the optimality condition for
+  minimization over a convex set, sufficiency and necessity.
+* `ConvexAnalysis.argmin_sepSum`, `ConvexAnalysis.convexDom_sepSum`: a **separable** objective
+  $x \mapsto \sum_i h_i(x_i)$ on a finite product is minimized coordinatewise. This is the
+  *decomposition principle*.
 
 ## Implementation notes
 
-The minimum set is `{x | ∀ z, f x ≤ f z}` rather than `IsMinOn f Set.univ`, because that unfolds to
-the subgradient inequality at `y = 0`; `mem_argmin_iff_isMinOn` bridges to Mathlib. Necessity of
-the optimality condition is stated against `IsExactSum B h (indicatorFn C)`, which both of the
-book's hypotheses instantiate. Minimising results are stated for an arbitrary filter where the book
-uses sequences, except `isBounded_range_of_tendsto_iInf`, whose conclusion is about a range.
-
-## References
-
-* [rockafellar1970convex] §27. Both level-set formulas of clause (i) are in `Duality/Level.lean`.
+* The minimum set is defined as $\{x \mid f(x) \le f(z) \text{ for all } z\}$ and not as
+  `IsMinOn f Set.univ`, because this form unfolds to the subgradient inequality at $y = 0$.
+  `ConvexAnalysis.mem_argmin_iff_isMinOn` relates it to Mathlib.
+* The necessity of the optimality condition is stated with the hypothesis
+  `ConvexAnalysis.IsExactSum B h (indicatorFn C)`. Both hypotheses of the source give this
+  exactness.
+* The results on minimizing sequences are stated for an arbitrary filter, where the source uses
+  sequences. The exception is `ConvexAnalysis.isBounded_range_of_tendsto_iInf`, whose conclusion is
+  about the range of a sequence.
+* The two level-set formulas of clause (i) of Theorem 27.1 of [rockafellar1970convex] are in
+  `Numlib.Analysis.Convex.Duality.Level`.
 -/
 
 open Set Pointwise
@@ -75,36 +93,47 @@ section Defs
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E}
 
-/-- The **minimum set** of `f`: the points where `f` attains its infimum. Rockafellar's
-`lev_{inf f} f`. -/
+/-- Let $f$ be a function on $E$ with values in $[-\infty, +\infty]$. The **minimum set** of $f$ is
+the set of points where $f$ attains its infimum:
+$$\operatorname{argmin} f = \{x \mid f(x) \le f(z) \text{ for all } z\}.$$
+
+This is the set $\operatorname{lev}_{\inf f} f$ of [rockafellar1970convex]. If the infimum is
+not attained, the set is empty. -/
 def argmin (f : E → EReal) : Set E := {x | ∀ z, f x ≤ f z}
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- A point $x$ is in the minimum set of $f$ if and only if $f(x) \le f(z)$ for all $z$. -/
 theorem mem_argmin_iff : x ∈ argmin f ↔ ∀ z, f x ≤ f z := Iff.rfl
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- A point $x$ is in the minimum set of $f$ if and only if $f$ attains its minimum over the whole
+space at $x$, in the sense of Mathlib's `IsMinOn`. -/
 theorem mem_argmin_iff_isMinOn : x ∈ argmin f ↔ IsMinOn f Set.univ x := by
   rw [isMinOn_univ_iff]
   exact Iff.rfl
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- A point $x$ is in the minimum set of $f$ if and only if $f(x) \le \inf_z f(z)$. -/
 theorem mem_argmin_iff_le_iInf : x ∈ argmin f ↔ f x ≤ ⨅ z, f z := le_iInf_iff.symm
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- The infimum of `f` is its value at any minimiser. -/
+/-- If $a$ is in the minimum set of $f$, then $\inf_z f(z) = f(a)$. -/
 theorem iInf_eq_of_mem_argmin {a : E} (ha : a ∈ argmin f) : (⨅ z, f z) = f a :=
   le_antisymm (iInf_le _ _) (mem_argmin_iff_le_iInf.1 ha)
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- A point minimises exactly when its value *is* the infimum. The equational form of
-`mem_argmin_iff_le_iInf`, which is what a statement identifying an optimal value with `inf F 0`
-wants to rewrite with. -/
+/-- A point $x$ is in the minimum set of $f$ if and only if $f(x) = \inf_z f(z)$.
+
+This is the form to use when an optimal value is identified with an infimum, such as
+$(\inf F)(0)$. -/
 theorem mem_argmin_iff_eq_iInf : x ∈ argmin f ↔ f x = ⨅ z, f z :=
   ⟨fun h => (iInf_eq_of_mem_argmin h).symm, fun h => mem_argmin_iff_le_iInf.2 h.le⟩
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- Rockafellar's `lev_{inf f} f`: once the infimum is attained and finite, the minimum set is
-literally a level set of `f`. -/
+/-- If $a$ is in the minimum set of $f$ and $f(a) = \mu$ is a real number, then the minimum set is
+the level set
+$$\operatorname{argmin} f = \{z \mid f(z) \le \mu\}.$$
+This is the notation $\operatorname{lev}_{\inf f} f$ of [rockafellar1970convex]. -/
 theorem argmin_eq_setOf_le {a : E} (ha : a ∈ argmin f) {μ : ℝ} (hμ : f a = (μ : EReal)) :
     argmin f = {z : E | f z ≤ (μ : EReal)} := by
   ext z
@@ -116,45 +145,59 @@ theorem argmin_eq_setOf_le {a : E} (ha : a ∈ argmin f) {μ : ℝ} (hμ : f a =
     rw [Set.mem_ofPred_eq, ← hμ] at hz
     exact le_trans hz (ha w)
 
-/-- The **maximum set** of `g`: the points where `g` attains its supremum. The concave mirror of
-`argmin`, and what "optimal solution" means for a concave program. -/
+/-- Let $g$ be a function on $E$ with values in $[-\infty, +\infty]$. The **maximum set** of $g$ is
+the set of points where $g$ attains its supremum:
+$$\operatorname{argmax} g = \{x \mid g(z) \le g(x) \text{ for all } z\}.$$
+
+This is the counterpart of `ConvexAnalysis.argmin` for concave functions. It is the set of
+optimal solutions of a concave program. -/
 def argmax (g : E → EReal) : Set E := {x | ∀ z, g z ≤ g x}
 
 omit [AddCommGroup E] [Module ℝ E] in
+/-- A point $x$ is in the maximum set of $g$ if and only if $g(z) \le g(x)$ for all $z$. -/
 theorem mem_argmax_iff {g : E → EReal} : x ∈ argmax g ↔ ∀ z, g z ≤ g x := Iff.rfl
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- A point maximises exactly when its value *is* the supremum. The mirror of
-`mem_argmin_iff_eq_iInf`, and the step every statement of the form "`v` is an optimal solution to
-the concave program `(P*)`" pays: `argmax` is a family of inequalities and the dual optimal value is
-a supremum. -/
+/-- A point $x$ is in the maximum set of $g$ if and only if $g(x) = \sup_z g(z)$.
+
+This is the counterpart of `ConvexAnalysis.mem_argmin_iff_eq_iInf`. It is the step from "$v$ is
+an optimal solution of the concave program $(P^*)$", a family of inequalities, to an equation
+with the dual optimal value, which is a supremum. -/
 theorem mem_argmax_iff_eq_iSup {g : E → EReal} : x ∈ argmax g ↔ g x = ⨆ z, g z :=
   ⟨fun h => le_antisymm (le_iSup g x) (iSup_le h), fun h z => by rw [h]; exact le_iSup g z⟩
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- Maximising `g` is minimising `-g`. -/
+/-- The maximum set of $g$ is the minimum set of $-g$. -/
 theorem argmax_eq_argmin_neg (g : E → EReal) : argmax g = argmin fun z => -(g z) :=
   Set.ext fun _ => forall_congr' fun _ => EReal.neg_le_neg_iff.symm
 
-/-- Minimising is `0 ∈ ∂f x`, by the definition of a subgradient. -/
+/-- Let $E$ and $F$ be real vector spaces paired by $B$, and let $f$ be a function on $E$ with
+values in $[-\infty, +\infty]$. Then $x$ is in the minimum set of $f$ if and only if
+$$0 \in \partial f(x).$$
+
+The subdifferential is taken with respect to $B$. The equivalence is the definition of a
+subgradient at $y = 0$. -/
 theorem mem_argmin_iff_zero_mem_subdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
     x ∈ argmin f ↔ (0 : F) ∈ subdifferential B f x := by
   constructor
   · intro h z; simpa using h z
   · intro h z; simpa using h z
 
-/-- The same the other way round: `inf f = -f*(0)`. -/
+/-- For every function $f$ on $E$, the infimum is minus the conjugate at the origin:
+$$\inf_x f(x) = -f^*(0).$$
+-/
 theorem iInf_eq_neg_convexConj_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     (⨅ x, f x) = -(convexConj B f 0) := by
   rw [convexConj_apply_zero, neg_neg]
 
-/-- `f` is bounded below exactly when `f*` is finite at the origin. -/
+/-- For every function $f$ on $E$, the origin is in the effective domain of $f^*$ if and only if $f$
+is bounded below, that is, $\inf_x f(x) > -\infty$. -/
 theorem zero_mem_convexDom_convexConj_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     (0 : F) ∈ convexDom (convexConj B f) ↔ (⊥ : EReal) < ⨅ x, f x := by
   rw [mem_convexDom, convexConj_apply_zero, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
     EReal.neg_eq_top_iff]
 
-/-- The minimum set is convex. -/
+/-- The minimum set of a convex function is convex. -/
 theorem convex_argmin (hf : ConvexFn f) : Convex ℝ (argmin f) := by
   rcases eq_or_ne (argmin f) ∅ with hE | hE
   · rw [hE]; exact convex_empty
@@ -165,9 +208,12 @@ theorem convex_argmin (hf : ConvexFn f) : Convex ℝ (argmin f) := by
     rw [hset]
     exact hf.convex_le _
 
-/-- **The minimum set transports along a surjection**: `x ↦ g (e x)` is minimised exactly at the
-`e`-preimages of the minimisers of `g`. Surjectivity makes the two quantifiers agree and is all the
-proof uses; composed with `argmin_sepSum` it is the decomposition principle. -/
+/-- **The minimum set under a surjection.** Let $e \colon \alpha \to \beta$ be surjective and let
+$g$ be a function on $\beta$ with values in $[-\infty, +\infty]$. Then the minimum set of
+$x \mapsto g(e(x))$ is the preimage under $e$ of the minimum set of $g$.
+
+Surjectivity is the only hypothesis that the proof uses. With `ConvexAnalysis.argmin_sepSum`,
+this gives the decomposition principle. -/
 theorem argmin_comp_of_surjective {α β : Type*} {g : β → EReal} {e : α → β}
     (he : Function.Surjective e) : argmin (fun x => g (e x)) = e ⁻¹' argmin g := by
   ext x
@@ -175,22 +221,30 @@ theorem argmin_comp_of_surjective {α β : Type*} {g : β → EReal} {e : α →
 
 end Defs
 
-/-! ### Separable sums on a finite product
+/-!
+### Separable sums on a finite product
 
-A **separable** objective `x ↦ ∑ᵢ hᵢ(xᵢ)` on a dependent finite product `∀ i, E i` has its minimum
-set and its effective domain given coordinatewise. This is the content of the *decomposition
-principle*: once a Kuhn–Tucker vector has reduced a program to minimising `h₁ + ⋯ + h_s`
-over `C¹ × ⋯ × C^s`, the problem splits into `s` independent problems. Both statements are about
-the dependent product itself; no isometry with `ℝⁿ`, no relative interior and no linear structure
-enter, since `argmin` and `convexDom` are order-theoretic. -/
+A **separable** objective $x \mapsto \sum_i h_i(x_i)$ on a finite product $\prod_i E_i$ has its
+minimum set and its effective domain given coordinatewise. This is the content of the *decomposition
+principle*: once a Kuhn–Tucker vector has reduced a program to the minimization of
+$h_1 + \dots + h_s$ over $C_1 \times \dots \times C_s$, the problem splits into $s$ independent
+problems. Both statements are about the product itself. No isometry with $\mathbb{R}^n$, no relative
+interior and no linear structure is used, since the minimum set and the effective domain depend only
+on the order.
+-/
 
 section Pi
 
 variable {ι : Type*} [Fintype ι] {E : ι → Type*} {h : ∀ i, E i → EReal}
 
-/-- **The effective domain of a separable sum is the product of the effective domains**. The only
-hypothesis is that no summand takes `⊥`, and it cannot be dropped: since `⊥ + ⊤ = ⊥`, a sum can be
-finite while a summand is `+∞`, which breaks `⊆`. The `⊇` direction is unconditional. -/
+/-- **The effective domain of a separable sum is the product of the effective domains.** Let $\iota$
+be a finite index set and let $h_i$ be a function on $E_i$ with values in $[-\infty, +\infty]$
+for each $i \in \iota$. If no $h_i$ takes the value $-\infty$, then
+$$\operatorname{dom} \Bigl(x \mapsto \sum_i h_i(x_i)\Bigr) = \prod_i \operatorname{dom} h_i.$$
+
+The hypothesis cannot be dropped: since $-\infty + (+\infty) = -\infty$ in `EReal`, a sum can be
+finite while a summand is $+\infty$, and then the inclusion $\subseteq$ fails. The inclusion
+$\supseteq$ holds without the hypothesis. -/
 theorem convexDom_sepSum (hb : ∀ i (z : E i), h i z ≠ ⊥) :
     convexDom (fun x : ∀ i, E i => ∑ i, h i (x i)) = univ.pi fun i => convexDom (h i) := by
   ext x
@@ -209,14 +263,18 @@ theorem convexDom_sepSum (hb : ∀ i (z : E i), h i z ≠ ⊥) :
     rw [hsum]
     exact EReal.coe_lt_top _
 
-/-- **A separable sum is minimised coordinatewise**: the minimum set of `x ↦ ∑ᵢ hᵢ(xᵢ)` on a finite
-product is the product of the minimum sets of the summands.
+/-- **A separable sum is minimized coordinatewise.** Let $\iota$ be a finite index set and let $h_i$
+be a proper function on $E_i$ for each $i \in \iota$. Then the minimum set of
+$x \mapsto \sum_i h_i(x_i)$ on $\prod_i E_i$ is the product of the minimum sets of the $h_i$:
+$$\operatorname{argmin} \Bigl(x \mapsto \sum_i h_i(x_i)\Bigr) = \prod_i \operatorname{argmin}
+  h_i.$$
 
-`⊇` needs no hypothesis. `⊆` needs every summand proper, and both halves of properness carry
-weight: a common domain point makes every `hⱼ(xⱼ)` finite, and finiteness is what allows the
-`j ≠ i` part of the sum to be cancelled off both sides, `EReal` not being cancellative. Without the
-domain point the statement is false — for `ι = Fin 2` with `h 0 ≡ ⊤` and `h 1 = id` on `ℝ`, the
-left side is everything and the right side is empty. -/
+The inclusion $\supseteq$ needs no hypothesis. The inclusion $\subseteq$ needs every $h_i$
+proper, and both parts of properness are used: a point of every effective domain makes every
+$h_j(x_j)$ finite, and this finiteness allows the terms with $j \neq i$ to be cancelled on both
+sides, since addition in `EReal` is not cancellative. Without such points the statement is
+false: for $\iota = \{0, 1\}$ with $h_0 \equiv +\infty$ and $h_1$ the identity on $\mathbb{R}$,
+the left side is the whole space and the right side is empty. -/
 theorem argmin_sepSum (hp : ∀ i, ProperConvex (h i)) :
     argmin (fun x : ∀ i, E i => ∑ i, h i (x i)) = univ.pi fun i => argmin (h i) := by
   classical
@@ -260,9 +318,16 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [LocallyConvexSpace ℝ E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] {f : E → EReal}
 
-/-- **The minimum set of a closed convex function is `∂f*(0)`**; in particular the infimum is
-attained exactly when `f*` is subdifferentiable at the origin. This is the subgradient inequality
-for `f*` at the origin, where Fenchel–Moreau turns `f**` back into `f`. -/
+/-- **The minimum set of a closed convex function is $\partial f^*(0)$.** Let $E$ be a real locally
+convex space paired with $F$ by $B$ such that every continuous linear functional on $E$ has the
+form $\langle \cdot, y \rangle$, and let $f$ be a closed convex function on $E$. Then
+$$\operatorname{argmin} f = \partial f^*(0),$$
+where the subdifferential of $f^*$ is taken with respect to the flipped pairing and is a subset
+of $E$. In particular, the infimum of $f$ is attained exactly when $f^*$ is subdifferentiable at
+the origin. This is part of Theorem 27.1 of [rockafellar1970convex].
+
+The equality is the subgradient inequality for $f^*$ at the origin, where the Fenchel–Moreau
+theorem turns $f^{**}$ back into $f$. -/
 theorem argmin_eq_subdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex f) :
     argmin f = subdifferential B.flip (convexConj B f) 0 := by
   ext x
@@ -273,8 +338,13 @@ theorem argmin_eq_subdifferential_convexConj_zero (hf : ConvexFn f) (hc : Closed
     hpair, ← EReal.le_sub_iff_add_le (.inr (by simp)) (.inr (by simp)), zero_sub,
     EReal.le_neg]
 
-/-- Every nonempty level set of a closed proper convex function has the same recession cone, the
-polar of `dom f*`. -/
+/-- Let $E$ be a real locally convex space paired with $F$ by $B$ such that every continuous linear
+functional on $E$ has the form $\langle \cdot, y \rangle$, and let $f$ be a closed proper convex
+function on $E$. Then every nonempty level set $\{z \mid f(z) \le \alpha\}$ with $\alpha$ real
+has the same recession cone, the polar of $\operatorname{dom} f^*$:
+$$0^+ \{z \mid f(z) \le \alpha\} = \{x \mid \langle x, y \rangle \le 0 \text{ for all } y \in
+  \operatorname{dom} f^*\}.$$
+This is part of Theorem 27.1 of [rockafellar1970convex]. -/
 theorem recessionCone_setOf_le_eq_polarCone_convexDom_convexConj (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (hp : ProperConvex f) {α : ℝ} (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
@@ -282,8 +352,10 @@ theorem recessionCone_setOf_le_eq_polarCone_convexDom_convexConj (hf : ConvexFn 
   rw [recessionCone_setOf_le hf (ClosedProperConvexFn.isClosed_epi ⟨hf, hc, hp⟩) hne,
     recessionConeFn_eq_polarCone_convexDom_convexConj (B := B) ⟨hf, hc, hp⟩]
 
-/-- The same for the minimum set: when the infimum is attained the minimum set is a level set, so
-it too has the polar of `dom f*` as its recession cone. -/
+/-- Under the hypotheses of
+`ConvexAnalysis.recessionCone_setOf_le_eq_polarCone_convexDom_convexConj`, let the infimum of
+$f$ be attained at $a$ with a real value $f(a) = \mu$. Then the recession cone of the minimum
+set is the polar of $\operatorname{dom} f^*$, because the minimum set is the level set at $\mu$. -/
 theorem recessionCone_argmin_eq_polarCone_convexDom_convexConj (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (hp : ProperConvex f) {a : E} (ha : a ∈ argmin f) {μ : ℝ} (hμ : f a = (μ : EReal)) :
@@ -300,9 +372,14 @@ section Optimality
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {h : E → EReal} {C : Set E} {x : E} {y : F}
 
-/-- **Sufficiency of the optimality condition**: if some `y ∈ ∂h x` has `-y` normal to `C` at `x`,
-then `h` attains its infimum over `C` at `x`. No hypothesis is needed — the subgradient inequality
-and the normality inequality simply add. -/
+/-- **Sufficiency of the optimality condition.** Let $E$ and $F$ be real vector spaces paired by
+$B$, let $h$ be a function on $E$ with values in $[-\infty, +\infty]$, and let $C \subseteq E$.
+If some $y \in \partial h(x)$ has $-y$ in the normal cone of $C$ at $x$, then
+$$h(x) \le h(z) \qquad \text{for all } z \in C.$$
+
+No hypothesis is needed: the subgradient inequality and the inequality that defines the normal
+cone add up. The normal cone is `ConvexAnalysis.normalCone`, which is defined also for
+$x \notin C$; the result then says that $h(x)$ is a lower bound for $h$ on $C$. -/
 theorem le_of_mem_subdifferential_of_neg_mem_normalCone (hy : y ∈ subdifferential B h x)
     (hn : -y ∈ normalCone B C x) {z : E} (hz : z ∈ C) : h x ≤ h z := by
   have h2 : B (z - x) (-y) ≤ 0 := hn z hz
@@ -312,7 +389,10 @@ theorem le_of_mem_subdifferential_of_neg_mem_normalCone (hy : y ∈ subdifferent
     _ ≤ h z := hy z
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- Minimising `h` over `C` is minimising `h + δ(· | C)` over the whole space. -/
+/-- Let $h$ be proper, let $x \in C$, and let $h(x) \le h(z)$ for all $z \in C$. Then $x$ is in the
+minimum set of $h + \delta(\cdot \mid C)$, where $\delta(\cdot \mid C)$ is the indicator
+function of $C$. So minimizing $h$ over $C$ is minimizing $h + \delta(\cdot \mid C)$ over the
+whole space. -/
 theorem mem_argmin_add_indicatorFn_of_forall (hp : ProperConvex h) (hx : x ∈ C)
     (hmin : ∀ z ∈ C, h x ≤ h z) : x ∈ argmin (h + indicatorFn C) := by
   intro z
@@ -325,17 +405,21 @@ theorem mem_argmin_add_indicatorFn_of_forall (hp : ProperConvex h) (hx : x ∈ C
     exact le_top
 
 omit [AddCommGroup E] [Module ℝ E] in
-/-- The converse of `mem_argmin_add_indicatorFn_of_forall`: a minimiser of `h + δ(· | C)` that lies
-in `C` minimises `h` over `C`. -/
+/-- If $x \in C$ is in the minimum set of $h + \delta(\cdot \mid C)$, then $h(x) \le h(z)$ for all
+$z \in C$. This is the converse of `ConvexAnalysis.mem_argmin_add_indicatorFn_of_forall`. -/
 theorem forall_le_of_mem_argmin_add_indicatorFn (hx : x ∈ argmin (h + indicatorFn C))
     (hxC : x ∈ C) {z : E} (hz : z ∈ C) : h x ≤ h z := by
   have hle := hx z
   rwa [Pi.add_apply, Pi.add_apply, indicatorFn_of_mem hxC, indicatorFn_of_mem hz, add_zero,
     add_zero] at hle
 
-/-- **Necessity**: when the sum `h + δ(· | C)` is exact, every point where `h` attains its infimum
-over `C` carries a subgradient `y ∈ ∂h x` with `-y` normal to `C`. The book's two hypotheses are
-two ways of supplying that exactness. -/
+/-- **Necessity of the optimality condition.** Let $E$ and $F$ be real vector spaces paired by $B$,
+let $h$ be a function on $E$, and let $C \subseteq E$ be such that the sum
+$h + \delta(\cdot \mid C)$ is exact (`ConvexAnalysis.IsExactSum`). If $x \in C$ and
+$h(x) \le h(z)$ for all $z \in C$, then there is a $y \in \partial h(x)$ such that $-y$ is in
+the normal cone of $C$ at $x$.
+
+The two hypotheses of the source are two ways to obtain this exactness. -/
 theorem exists_mem_subdifferential_neg_mem_normalCone (hex : IsExactSum B h (indicatorFn C))
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
     ∃ y ∈ subdifferential B h x, -y ∈ normalCone B C x := by
@@ -359,8 +443,12 @@ section Existence
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- **The level set that carries the existence argument**: nonempty, closed, convex, and — when `f`
-has no direction of recession — compact. Only the `⇒` direction is packaged here. -/
+/-- **The level set that carries the existence argument.** Let $E$ be a finite-dimensional real
+normed space and let $f$ be a closed proper convex function on $E$ with no direction of
+recession, $0^+ f = \{0\}$. Then every nonempty level set $\{z \mid f(z) \le \alpha\}$ with
+$\alpha$ real is compact.
+
+Only the forward direction is stated here. -/
 theorem isCompact_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {α : ℝ} (hne : {z : E | f z ≤ (α : EReal)}.Nonempty) :
     IsCompact {z : E | f z ≤ (α : EReal)} := by
@@ -371,9 +459,12 @@ theorem isCompact_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperC
   rw [recessionCone_setOf_le hf hepi hne]
   exact hrec
 
-/-- A closed proper convex function with no direction of recession attains its infimum. Any level
-set of `f` is nonempty, closed, convex and compact, so lower semicontinuity attains a minimum on
-it, and off that level set `f` is larger. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a closed proper convex function
+on $E$ with no direction of recession, $0^+ f = \{0\}$. Then $f$ attains its infimum: the
+minimum set of $f$ is nonempty. This is part of Theorem 27.2 of [rockafellar1970convex].
+
+A nonempty level set of $f$ is closed and compact, so the lower semicontinuous $f$ attains a
+minimum on it, and outside this level set $f$ is larger. -/
 theorem argmin_nonempty_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) : (argmin f).Nonempty := by
   have hlsc : LowerSemicontinuous f := (closedConvex_iff_lowerSemicontinuous hp.ne_bot).1 hc
@@ -388,7 +479,12 @@ theorem argmin_nonempty_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : Close
   · exact isMinOn_iff.1 hamin z hzL
   · exact le_trans haL (le_of_lt (not_le.1 hzL))
 
-/-- The minimum set is then a nonempty compact convex set. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a closed proper convex function
+on $E$ with no direction of recession, $0^+ f = \{0\}$. Then the minimum set of $f$ is compact.
+This is part of Theorem 27.2 of [rockafellar1970convex].
+
+With `ConvexAnalysis.argmin_nonempty_of_recessionConeFn_eq_zero` and
+`ConvexAnalysis.convex_argmin`, the minimum set is a nonempty compact convex set. -/
 theorem isCompact_argmin_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) : IsCompact (argmin f) := by
   obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
@@ -402,7 +498,8 @@ theorem isCompact_argmin_of_recessionConeFn_eq_zero (hf : ConvexFn f) (hc : Clos
   rw [hset]
   exact isCompact_setOf_le hf hc hp hrec ⟨a, le_of_eq hμ⟩
 
-/-- With no direction of recession, the infimum of a closed proper convex function is real. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a closed proper convex function
+on $E$ with no direction of recession. Then the infimum of $f$ is a real number. -/
 theorem exists_iInf_eq_coe (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) : ∃ μ : ℝ, (⨅ z, f z) = (μ : EReal) := by
   obtain ⟨a, ha⟩ := argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec
@@ -411,10 +508,16 @@ theorem exists_iInf_eq_coe (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperC
     (lt_of_le_of_lt (ha x₀) (mem_convexDom.1 hx₀))
   exact ⟨μ, by rw [iInf_eq_of_mem_argmin ha, hμ]⟩
 
-/-- The minimum is then *well posed*: for every `ε > 0` there is a `δ > 0` with the level set
-`{x | f x ≤ inf f + δ}` lying within `ε` of the minimum set. One application of the extreme value
-theorem to the compact `{f ≤ inf f + 1} \ (M + ε·int B)` gives `δ` directly, in place of the
-book's nested-compactness argument. -/
+/-- **Well-posedness of the minimum.** Let $E$ be a finite-dimensional real normed space and let $f$
+be a closed proper convex function on $E$ with no direction of recession, $0^+ f = \{0\}$. Then
+for every $\varepsilon > 0$ there is a $\delta > 0$ such that every $x$ with
+$$f(x) \le \inf f + \delta$$
+is at distance less than $\varepsilon$ from some point of the minimum set. This is part of
+Theorem 27.2 of [rockafellar1970convex].
+
+The proof applies the extreme value theorem once, to the compact set $\{f \le \inf f + 1\}
+\setminus (M + \varepsilon \operatorname{int} B)$, where $M$ is the minimum set and $B$ is the
+unit ball. This replaces the nested-compactness argument of the source. -/
 theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) (hrec : recessionConeFn f = {0}) {ε : ℝ} (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ x, f x ≤ (⨅ z, f z) + (δ : EReal) → ∃ z ∈ argmin f, dist x z < ε := by
@@ -473,8 +576,13 @@ theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : Clos
     have hhalf : min 1 ((r - μ) / 2) ≤ (r - μ) / 2 := min_le_right _ _
     linarith
 
-/-- **Minimising nets approach the minimum set**: along any such net the distance to it tends to
-`0`. Stated for an arbitrary filter — `atTop` on `ℕ` is the sequential case. -/
+/-- **Minimizing nets approach the minimum set.** Let $E$ be a finite-dimensional real normed space
+and let $f$ be a closed proper convex function on $E$ with no direction of recession,
+$0^+ f = \{0\}$. Let $(u_i)$ be a net along a filter $l$ with $f(u_i) \to \inf f$. Then the
+distance from $u_i$ to the minimum set tends to $0$.
+
+The filter is arbitrary. The filter `Filter.atTop` on $\mathbb{N}$ gives the result for
+sequences. -/
 theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) :
@@ -490,7 +598,8 @@ theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : Pro
   rw [Real.dist_eq, sub_zero, abs_of_nonneg Metric.infDist_nonneg]
   exact lt_of_le_of_lt (Metric.infDist_le_dist_of_mem hz) hdz
 
-/-- Every cluster point of a minimising net belongs to the minimum set. -/
+/-- Under the hypotheses of `ConvexAnalysis.tendsto_infDist_argmin`, every cluster point of a
+minimizing net $(u_i)$ is in the minimum set. -/
 theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) {x : E}
@@ -520,7 +629,9 @@ theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedConvex f) (hp :
   · exact absurd (key _ hpos) (lt_irrefl _)
   · exact le_antisymm hnonpos Metric.infDist_nonneg
 
-/-- A minimising sequence is bounded. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a closed proper convex function
+on $E$ with no direction of recession. Then every minimizing sequence $(u_n)$, with
+$f(u_n) \to \inf f$, is bounded. -/
 theorem isBounded_range_of_tendsto_iInf (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f)
     (hrec : recessionConeFn f = {0}) {u : ℕ → E}
@@ -550,9 +661,12 @@ theorem isBounded_range_of_tendsto_iInf (hf : ConvexFn f) (hc : ClosedConvex f)
   exact Bornology.IsBounded.subset
     (((Set.finite_Iio N).image u).isBounded.union Metric.isBounded_closedBall) hsplit
 
-/-- If a closed proper convex function attains its infimum at a unique point, every minimising net
-converges to that point. No recession hypothesis is needed: a one-point minimum set is a level set,
-and a bounded level set forces the recession cone to be `{0}`. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $f$ be a closed proper convex function
+on $E$ whose minimum set is a single point $\{a\}$. Then every minimizing net $(u_i)$ along a
+filter $l$, with $f(u_i) \to \inf f$, converges to $a$.
+
+No recession hypothesis is needed: a minimum set with one point is a level set, and a bounded
+nonempty level set forces the recession cone to be $\{0\}$. -/
 theorem tendsto_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     {a : E} (hM : argmin f = {a}) {ι : Type*} {l : Filter ι} {u : ι → E}
     (hu : Filter.Tendsto (fun i => f (u i)) l (nhds (⨅ z, f z))) :
@@ -581,16 +695,22 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {h : E → EReal} {C : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- The indicator of a nonempty closed convex set is a closed proper convex function. -/
+/-- The indicator function of a nonempty closed convex set is a closed proper convex function. -/
 theorem closedProperConvexFn_indicatorFn (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty) :
     ClosedProperConvexFn (indicatorFn C) :=
   ⟨convexFn_indicatorFn.2 hC, closedConvex_indicatorFn hCc,
     ⟨by rw [convexDom_indicatorFn]; exact hCne, indicatorFn_ne_bot C⟩⟩
 
 omit [FiniteDimensional ℝ E] in
-/-- The directions of recession of `h + δ(· | C)` are exactly the directions of recession common to
-`h` and to `C`. This is the recession formula for a sum read against an indicator: `δ(· | C)0⁺` is
-`δ(· | 0⁺C)`, which is `0` on `0⁺C` and `⊤` off it. -/
+/-- Let $h$ be a closed proper convex function on a real normed space $E$ and let $C$ be a nonempty
+closed convex set such that $h + \delta(\cdot \mid C)$ is finite somewhere. Then the directions
+of recession of $h + \delta(\cdot \mid C)$ are the directions of recession common to $h$ and
+$C$:
+$$0^+ (h + \delta(\cdot \mid C)) = 0^+ h \cap 0^+ C.$$
+
+This is the recession formula for a sum, applied to an indicator function. The recession
+function of $\delta(\cdot \mid C)$ is $\delta(\cdot \mid 0^+ C)$, which is $0$ on $0^+ C$ and
+$+\infty$ outside it. -/
 theorem recessionConeFn_add_indicatorFn (hh : ClosedProperConvexFn h) (hC : Convex ℝ C)
     (hCc : IsClosed C) (hCne : C.Nonempty) (hne : (convexDom (h + indicatorFn C)).Nonempty) :
     recessionConeFn (h + indicatorFn C) = recessionConeFn h ∩ recessionCone C := by
@@ -605,10 +725,16 @@ theorem recessionConeFn_add_indicatorFn (hh : ClosedProperConvexFn h) (hC : Conv
       EReal.add_top_of_ne_bot (recessionFn_ne_bot hh.proper y)]
     simp [hy]
 
-/-- **The non-polyhedral case**: a closed proper convex `h` attains its infimum over a nonempty
-closed convex `C` as soon as `h` and `C` have no direction of recession in common. The directions
-of recession of `h + δ(· | C)` are the common ones, so unconstrained existence applies; when
-`dom h ∩ C = ∅` the function is `+∞` throughout `C` and every point minimises. -/
+/-- **Attainment over a closed convex set.** Let $E$ be a finite-dimensional real normed space, let
+$h$ be a closed proper convex function on $E$, and let $C \subseteq E$ be a nonempty closed
+convex set such that $h$ and $C$ have no common direction of recession:
+$$0^+ h \cap 0^+ C = \{0\}.$$
+Then $h$ attains its infimum over $C$: there is an $x \in C$ with $h(x) \le h(z)$ for all
+$z \in C$. This is part of Theorem 27.3 of [rockafellar1970convex].
+
+The directions of recession of $h + \delta(\cdot \mid C)$ are the common ones, so the
+unconstrained existence theorem applies. When $\operatorname{dom} h \cap C = \emptyset$, the
+function $h$ is $+\infty$ on all of $C$ and every point of $C$ is a minimizer. -/
 theorem exists_forall_le_of_recessionConeFn_inter_eq_zero (hh : ClosedProperConvexFn h)
     (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C = {0}) :
@@ -635,9 +761,11 @@ theorem exists_forall_le_of_recessionConeFn_inter_eq_zero (hh : ClosedProperConv
     rw [hz']
     exact le_top
 
-/-- The same for an inequality system: a closed proper convex `h` attains its infimum subject to a
-consistent system of constraints `g i x ≤ 0` when `h` and the `g i` have no direction of recession
-in common. The index type is arbitrary. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $h$ and $g_i$ (for $i$ in an arbitrary
+index set) be closed proper convex functions on $E$, and let the system $g_i(x) \le 0$ for all
+$i$ have a solution. If $h$ and the $g_i$ have no common direction of recession,
+$$0^+ h \cap \bigcap_i 0^+ g_i = \{0\},$$
+then $h$ attains its infimum subject to the constraints $g_i(x) \le 0$. -/
 theorem exists_forall_le_of_forall_le_zero {ι : Type*} {g : ι → E → EReal}
     (hh : ClosedProperConvexFn h) (hg : ∀ i, ClosedProperConvexFn (g i))
     (hCne : {x : E | ∀ i, g i x ≤ 0}.Nonempty)
@@ -663,14 +791,16 @@ theorem exists_forall_le_of_forall_le_zero {ι : Type*} {g : ι → E → EReal}
 
 end Constrained
 
-/-! ### The polyhedral refinement
+/-!
+### The polyhedral refinement
 
-For polyhedral `C` the recession hypothesis weakens from "`h` and `C` have no direction of
-recession in common" to "every common direction of recession is one in which `h` is *constant*".
-Where the book derives this from Helly's theorem, the proof here projects `E` along the constancy
-space of `h`, which leaves `h` untouched and shrinks the common recession cone to `{0}`.
-Polyhedrality of `C` enters exactly once: a linear map commutes with `0⁺` on a polyhedral set and
-on no other kind. -/
+For a polyhedral set $C$ the recession hypothesis becomes weaker: instead of "$h$ and $C$ have no
+common direction of recession" it is "every common direction of recession is a direction in which
+$h$ is constant". The source derives this from Helly's theorem. The proof here projects $E$ along
+the constancy space of $h$. This does not change $h$, and it reduces the common recession cone to
+$\{0\}$. Polyhedrality of $C$ is used once: a linear map commutes with taking the recession cone of
+a polyhedral set, and this fails for other sets.
+-/
 
 section ConstancyReduction
 
@@ -678,19 +808,23 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {h : E → EReal} {C : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- Two points differing by a direction of constancy carry the same value. This is
-`mem_constancySpace_iff_forall_eq` read as a statement about a *pair* of points rather than about
-a direction. -/
+/-- If $x - y$ is in the constancy space of $h$, then $h(x) = h(y)$.
+
+This is `ConvexAnalysis.mem_constancySpace_iff_forall_eq` read as a statement about a pair of
+points instead of a direction. -/
 theorem eq_of_sub_mem_constancySpace {x y : E} (hxy : x - y ∈ constancySpace h) : h x = h y := by
   have hxy' : y + (1 : ℝ) • (x - y) = x := by rw [one_smul]; abel
   have hval := (mem_constancySpace_iff_forall_eq.1 hxy) y 1
   rwa [hxy'] at hval
 
 omit [FiniteDimensional ℝ E] in
-/-- **Every subspace is the kernel of a linear projection.** For a subspace `M` there is a linear
-`A : E →ₗ[ℝ] E` and a complement `N` such that `A` moves points only by directions of `M`,
-annihilates `M`, lands in `N` and fixes `N` pointwise. This is how "quotient out a subspace"
-arguments run without leaving `E`, keeping a function constant along `M` unchanged. -/
+/-- **Every subspace is the kernel of a linear projection.** Let $M$ be a subspace of a real normed
+space $E$. Then there are a linear map $A \colon E \to E$ and a subspace $N$ such that
+$x - Ax \in M$ for all $x$, $Ay = 0$ for all $y \in M$, $Ax \in N$ for all $x$, and $Ay = y$ for
+all $y \in N$.
+
+This is how an argument that passes to the quotient by a subspace stays inside $E$. A function
+that is constant along $M$ does not change under $A$. -/
 theorem exists_linearProj (M : Submodule ℝ E) :
     ∃ (A : E →ₗ[ℝ] E) (N : Submodule ℝ E), (∀ x, x - A x ∈ M) ∧ (∀ y ∈ M, A y = 0) ∧
       (∀ x, A x ∈ N) ∧ ∀ y ∈ N, A y = y := by
@@ -713,11 +847,17 @@ theorem exists_linearProj (M : Submodule ℝ E) :
         Submodule.coe_zero]
     simp [hzero]
 
-/-- **The general form**: a closed proper convex `h` attains its infimum over a nonempty closed
-convex `C` as soon as every direction of recession common to `h` and `C` is *both* one in which `h`
-is constant *and* a direction of linearity of `C`. The common recession cone may now be any such
-subspace, not only `{0}`. The proof projects along
-`constancySubmodule h ⊓ linealitySubmodule C`, where the image of `C` is `C ∩ N`. -/
+/-- **Attainment over a closed convex set, general form.** Let $E$ be a finite-dimensional real
+normed space, let $h$ be a closed proper convex function on $E$, and let $C \subseteq E$ be a
+nonempty closed convex set. Suppose that every direction of recession common to $h$ and $C$ is
+both a direction in which $h$ is constant and a direction of linearity of $C$:
+$$0^+ h \cap 0^+ C \subseteq (\text{constancy space of } h) \cap (\text{lineality space of }
+  C).$$
+Then $h$ attains its infimum over $C$. This is part of Theorem 27.3 of [rockafellar1970convex].
+
+The common recession cone can now be any such subspace, not only $\{0\}$. The proof projects
+along the intersection of `ConvexAnalysis.constancySubmodule h` and
+`ConvexAnalysis.linealitySubmodule C`, under which the image of $C$ is $C \cap N$. -/
 theorem exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace
     (hh : ClosedProperConvexFn h) (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C ⊆ constancySpace h ∩ linealitySpace C) :
@@ -766,15 +906,19 @@ theorem exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace
   rw [eq_of_sub_mem_constancySpace (hsubc x), eq_of_sub_mem_constancySpace (hsubc z)]
   exact hx'min (A z) ⟨z, hz, rfl⟩
 
-/-- **The polyhedral refinement**: a closed proper convex `h` attains its infimum over a nonempty
-**polyhedral** convex `C` as soon as every direction of recession common to `h` and `C` is one in
-which `h` is constant.
+/-- **Attainment over a polyhedral set.** Let $E$ be a finite-dimensional real normed space, let $h$
+be a closed proper convex function on $E$, and let $C \subseteq E$ be a nonempty polyhedral
+convex set. Suppose that every direction of recession common to $h$ and $C$ is a direction in
+which $h$ is constant:
+$$0^+ h \cap 0^+ C \subseteq \text{constancy space of } h.$$
+Then $h$ attains its infimum over $C$. This is part of Theorem 27.3 of [rockafellar1970convex].
 
-Polyhedrality of `C` pays for the weakened hypothesis and cannot be dropped: on `ℝ²` with
-`h(x₁, x₂) = x₂` and the closed convex `C = {x | x₁ ≥ x₂²}`, the common recession cone is
-`{(a, 0) | a ≥ 0}`, along which `h` is constant, yet `inf_C h = -∞`. The proof replaces `C` by its
-image under a projection killing the constancy space of `h`; the image is polyhedral, `h` is
-unchanged along the fibres, and the common recession cone collapses to `{0}`. -/
+Polyhedrality of $C$ is needed for the weaker hypothesis. On $\mathbb{R}^2$ take
+$h(x_1, x_2) = x_2$ and the closed convex set $C = \{x \mid x_1 \ge x_2^2\}$. The common
+recession cone is $\{(a, 0) \mid a \ge 0\}$, along which $h$ is constant, but
+$\inf_C h = -\infty$. The proof replaces $C$ by its image under a projection that annihilates
+the constancy space of $h$. The image is polyhedral, $h$ is constant on the fibres, and the
+common recession cone becomes $\{0\}$. -/
 theorem exists_forall_le_of_polyhedral_of_inter_subset_constancySpace
     (hh : ClosedProperConvexFn h) (hC : Polyhedral C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C ⊆ constancySpace h) :
@@ -806,16 +950,19 @@ theorem exists_forall_le_of_polyhedral_of_inter_subset_constancySpace
   rw [eq_of_sub_mem_constancySpace (hsub x), eq_of_sub_mem_constancySpace (hsub z)]
   exact hx'min (A z) ⟨z, hz, rfl⟩
 
-/-- A closed proper convex `h` all of whose directions of recession are directions in which `h` is
-*affine* attains its infimum relative to any nonempty polyhedral convex `C` on which it is bounded
-below.
+/-- Let $E$ be a finite-dimensional real normed space, let $h$ be a closed proper convex function on
+$E$ such that every direction of recession of $h$ is a direction in which $h$ is affine (the
+recession cone is in the lineality space of $h$), and let $C$ be a nonempty polyhedral convex
+set on which $h$ is bounded below by a real number. Then $h$ attains its infimum over $C$.
 
-The hypothesis `recessionConeFn h ⊆ linealitySpaceFn h` is weaker than the constancy hypothesis
-above, and the price is the lower bound on `C`: a direction of recession in which `h` is affine has
-slope `ν = (h0⁺) y ≤ 0`, and a lower bound along the half-lines of `C` in that direction forces
-`ν = 0`, which is constancy. The lower bound cannot be dropped — `h(x₁, x₂) = x₁` on `ℝ²` is affine
-in every direction and its infimum over `C = {x | x₂ = 0}` is `-∞`. The hypothesis holds for every
-affine or convex quadratic `h`, and whenever `dom h*` is affine. -/
+This hypothesis is weaker than the constancy hypothesis of
+`ConvexAnalysis.exists_forall_le_of_polyhedral_of_inter_subset_constancySpace`, and the lower
+bound on $C$ is the price. A direction of recession $y$ in which $h$ is affine has slope
+$\nu = (h0^+)(y) \le 0$, and a lower bound along the half-lines of $C$ in this direction forces
+$\nu = 0$, which is constancy. The lower bound cannot be dropped: $h(x_1, x_2) = x_1$ on
+$\mathbb{R}^2$ is affine in every direction, and its infimum over $C = \{x \mid x_2 = 0\}$ is
+$-\infty$. The hypothesis holds for every affine or convex quadratic $h$, and whenever
+$\operatorname{dom} h^*$ is affine. -/
 theorem exists_forall_le_of_polyhedral_of_recessionConeFn_subset_linealitySpaceFn
     (hh : ClosedProperConvexFn h) (hC : Polyhedral C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ⊆ linealitySpaceFn h) {β : ℝ}
@@ -831,9 +978,12 @@ theorem exists_forall_le_of_polyhedral_of_recessionConeFn_subset_linealitySpaceF
     exact mem_constancySpace_of_mem_linealitySpaceFn hh.proper hy1 (hrec hy1) hx₀
       fun a ha => hbdd _ (hy2 x₀ hx₀C a ha)
 
-/-- The unconstrained case of the polyhedral refinement: a closed proper convex function whose
-recession cone consists entirely of directions of constancy — equivalently, is a subspace —
-attains its infimum. Existence with no direction of recession is the case of the subspace `{0}`. -/
+/-- Let $E$ be a finite-dimensional real normed space and let $h$ be a closed proper convex function
+on $E$ whose recession cone consists of directions in which $h$ is constant (equivalently, the
+recession cone is a subspace). Then $h$ attains its infimum.
+
+This is the unconstrained case of the polyhedral refinement. The case of the subspace $\{0\}$ is
+existence with no direction of recession. -/
 theorem argmin_nonempty_of_recessionConeFn_subset_constancySpace (hh : ClosedProperConvexFn h)
     (hrec : recessionConeFn h ⊆ constancySpace h) : (argmin h).Nonempty := by
   obtain ⟨x, -, hx⟩ := exists_forall_le_of_polyhedral_of_inter_subset_constancySpace hh
@@ -850,10 +1000,14 @@ section Polyhedral
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- **A polyhedral convex function bounded below attains its infimum.** In the finitely generated
-description `epi f = conv P + cone D` a lower bound forces every generating direction to point
-upward, so the vertical coordinate is minimised at one of the finitely many generating points.
-Neither closedness nor properness is assumed. -/
+/-- **A polyhedral convex function that is bounded below attains its infimum.** Let $E$ be a
+finite-dimensional real normed space and let $f$ be a polyhedral convex function on $E$ with
+$\inf f > -\infty$. Then the minimum set of $f$ is nonempty.
+
+Neither closedness nor properness is assumed. In the finitely generated description
+$\operatorname{epi} f = \operatorname{conv} P + \operatorname{cone} D$, a lower bound forces
+every generating direction to point upward, so the vertical coordinate is minimized at one of
+the finitely many generating points. -/
 theorem argmin_nonempty_of_polyhedralFn (hf : PolyhedralFn f) (hbdd : ⊥ < ⨅ x, f x) :
     (argmin f).Nonempty := by
   classical
@@ -959,10 +1113,14 @@ theorem argmin_nonempty_of_polyhedralFn (hf : PolyhedralFn f) (hbdd : ⊥ < ⨅ 
     _ ≤ (r : EReal) := by exact_mod_cast hmr
     _ = f z := hr.symm
 
-/-- A polyhedral convex function attains its infimum relative to any non-empty polyhedral convex
-set on which it is bounded below. Restricting `f` to `C` cuts the epigraph down by the vertical
-prism over `C`, so the restriction is again polyhedral. The book derives this from the
-affine-recession form above, and hence from Helly's theorem; this argument needs neither. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f$ be a polyhedral convex function on
+$E$, and let $C$ be a nonempty polyhedral convex set with $\inf_{x \in C} f(x) > -\infty$. Then
+$f$ attains its infimum over $C$.
+
+The restriction of $f$ to $C$ cuts the epigraph by the vertical prism over $C$, so the
+restriction is again polyhedral. The source derives this from the affine-recession form
+`ConvexAnalysis.exists_forall_le_of_polyhedral_of_recessionConeFn_subset_linealitySpaceFn`, and
+hence from Helly's theorem; this argument needs neither. -/
 theorem exists_forall_le_of_polyhedralFn_of_polyhedral (hf : PolyhedralFn f) {C : Set E}
     (hC : Polyhedral C) (hCne : C.Nonempty) (hbdd : ⊥ < ⨅ x ∈ C, f x) :
     ∃ x ∈ C, ∀ z ∈ C, f x ≤ f z := by
@@ -996,11 +1154,13 @@ theorem exists_forall_le_of_polyhedralFn_of_polyhedral (hf : PolyhedralFn f) {C 
 
 end Polyhedral
 
-/-! ### The conjugate at the origin
+/-!
+### The conjugate at the origin
 
-Three readings of `f*` near the origin: the interior of `dom f*` governs boundedness of the
-minimum set, and the support functions of the level sets are read off `f*` by homogenisation and
-by a limit of directional derivatives. -/
+Three properties of $f^*$ near the origin: the interior of $\operatorname{dom} f^*$ controls the
+boundedness of the minimum set, and the support functions of the level sets are obtained from $f^*$
+by homogenization and by a limit of directional derivatives.
+-/
 
 section ConjugateAtZero
 
@@ -1009,8 +1169,13 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] [IsCompatiblePairing B.flip] {f : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- The origin is interior to `dom f*` exactly when `f` has no direction of recession: the
-recession cone is the polar of `dom f*`, which is trivial exactly then. -/
+/-- Let $E$ be a real normed space and $F$ a finite-dimensional real normed space, paired by $B$
+such that the pairing represents the continuous linear functionals on both spaces, and let $f$
+be a closed proper convex function on $E$. Then the origin is in the interior of
+$\operatorname{dom} f^*$ if and only if $f$ has no direction of recession, $0^+ f = \{0\}$.
+
+The recession cone of $f$ is the polar of $\operatorname{dom} f^*$, which is $\{0\}$ exactly in
+this case. -/
 theorem zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (hp : ProperConvex f) :
@@ -1020,9 +1185,13 @@ theorem zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero (hf :
     ← recessionConeFn_eq_polarCone_convexDom_convexConj (B := B) ⟨hf, hc, hp⟩]
 
 omit [FiniteDimensional ℝ E] in
-/-- The origin is in the *relative* interior of `dom f*` exactly when every direction of recession
-of `f` is one in which `f` is constant. The relative-interior criterion for `dom f*`, read at the
-origin, collapses to `0⁺f ⊆ constancy space`. -/
+/-- Under the hypotheses of
+`ConvexAnalysis.zero_mem_interior_convexDom_convexConj_iff_recessionConeFn_eq_zero`, the origin
+is in the relative interior of $\operatorname{dom} f^*$ if and only if every direction of
+recession of $f$ is a direction in which $f$ is constant.
+
+The relative-interior criterion for $\operatorname{dom} f^*$, at the origin, reduces to the
+inclusion of $0^+ f$ in the constancy space of $f$. -/
 theorem zero_mem_relint_convexDom_convexConj_iff_recessionConeFn_subset_constancySpace
     (hf : ConvexFn f)
     (hc : ClosedConvex f) (hp : ProperConvex f) :
@@ -1055,9 +1224,14 @@ theorem zero_mem_relint_convexDom_convexConj_iff_recessionConeFn_subset_constanc
         le_antisymm (mem_constancySpace.1 (H hyrec)).2 (h1 (-y))
       exact hy (by rw [hneg0, ← heq, neg_zero])
 
-/-- The minimum set of a closed proper convex function is non-empty and bounded exactly when the
-origin is interior to `dom f*`. Both directions pass through "no direction of recession": a bounded
-level set has trivial recession cone one way, and existence of a minimiser the other. -/
+/-- Let $E$ and $F$ be finite-dimensional real normed spaces, paired by $B$ such that the pairing
+represents the continuous linear functionals on both spaces, and let $f$ be a closed proper
+convex function on $E$. Then the minimum set of $f$ is nonempty and bounded if and only if the
+origin is in the interior of $\operatorname{dom} f^*$. This is part of Theorem 27.1 of
+[rockafellar1970convex].
+
+Both directions go through the condition that $f$ has no direction of recession: a bounded
+nonempty level set has the recession cone $\{0\}$, and this condition gives a minimizer. -/
 theorem argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (hf : ConvexFn f)
     (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ Bornology.IsBounded (argmin f))
@@ -1079,9 +1253,13 @@ theorem argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj
     exact ⟨argmin_nonempty_of_recessionConeFn_eq_zero hf hc hp hrec,
       (isCompact_argmin_of_recessionConeFn_eq_zero hf hc hp hrec).isBounded⟩
 
-/-- The same in level-set form: *some* level set of `f` is non-empty and bounded exactly when the
-origin is interior to `dom f*`. Here "some" is as good as "every", since all non-empty level sets
-share the recession cone of `f`. -/
+/-- Under the hypotheses of
+`ConvexAnalysis.argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj`, some
+level set $\{x \mid f(x) \le \alpha\}$ with $\alpha$ real is nonempty and bounded if and only if
+the origin is in the interior of $\operatorname{dom} f^*$.
+
+"Some level set" is as good as "every nonempty level set" here, since all nonempty level sets
+have the recession cone of $f$. -/
 theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj
     (hf : ConvexFn f)
     (hc : ClosedConvex f) (hp : ProperConvex f) :
@@ -1105,8 +1283,14 @@ theorem exists_setOf_le_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_c
     exact (isCompact_argmin_of_recessionConeFn_eq_zero hf hc hp hrec).isBounded
 
 include B in
-/-- For the objective function of a convex program: the minimum set is non-empty and bounded
-exactly when some level set is. Both say `0 ∈ int (dom f*)`. -/
+/-- Let $E$ be a finite-dimensional real normed space paired with a finite-dimensional real normed
+space $F$ such that the pairing represents the continuous linear functionals on both spaces, and
+let $f$ be a closed proper convex function on $E$. Then the minimum set of $f$ is nonempty and
+bounded if and only if some level set $\{x \mid f(x) \le \alpha\}$ with $\alpha$ real is
+nonempty and bounded.
+
+Both conditions say that $0 \in \operatorname{int}(\operatorname{dom} f^*)$. The result applies
+to the objective function of a convex program. -/
 theorem argmin_nonempty_and_isBounded_iff_exists_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ Bornology.IsBounded (argmin f))
@@ -1118,16 +1302,25 @@ theorem argmin_nonempty_and_isBounded_iff_exists_setOf_le (hf : ConvexFn f) (hc 
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] [IsCompatiblePairing B]
   [IsCompatiblePairing B.flip] in
-/-- Raising the conjugate by a real constant lowers the biconjugate by the same constant. This is
-`convexConj_add_const` read on the dual pair. -/
+/-- Raising the conjugate by a real constant lowers the biconjugate by the same constant: the
+conjugate of $y \mapsto f^*(y) + \alpha$ is $x \mapsto f^{**}(x) - \alpha$.
+
+This is `ConvexAnalysis.convexConj_add_const` for the flipped pairing. -/
 theorem convexConj_flip_convexConj_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) (x : E) :
     convexConj B.flip (fun y => convexConj B f y + (α : EReal)) x = convexBiconj B f x -
         (α : EReal) :=
   convexConj_add_const B.flip (convexConj B f) α x
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-/-- For each real `α` the support function of the level set `{f ≤ α}` is the closure of the
-positively homogeneous convex function generated by `f* + α`. -/
+/-- Let $E$ and $F$ be real normed spaces, paired by $B$ such that the pairing represents the
+continuous linear functionals on both spaces, and let $f$ be a closed convex function on $E$.
+Then for each real $\alpha$, the support function of the level set $\{x \mid f(x) \le \alpha\}$
+is the closure of the positively homogeneous convex function $k_\alpha$ generated by
+$f^* + \alpha$:
+$$\delta^*(\cdot \mid \{x \mid f(x) \le \alpha\}) = \operatorname{cl} k_\alpha.$$
+This is part of Theorem 27.1 of [rockafellar1970convex].
+
+The positively homogeneous function generated by a function is `ConvexAnalysis.posHomGen`. -/
 theorem supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (α : ℝ) :
     supportFn B {x : E | f x ≤ (α : EReal)}
       = convexCl (posHomGen fun y => convexConj B f y + (α : EReal)) := by
@@ -1140,8 +1333,12 @@ theorem supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (α : ℝ) :
       (.inl (EReal.coe_ne_top α)), zero_add]
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
-/-- When `f` is bounded below, the support function of its minimum set is the closure of the
-directional derivative of `f*` at the origin. -/
+/-- Under the hypotheses of `ConvexAnalysis.supportFn_setOf_le`, let $f$ be proper and bounded
+below, $f^*(0) \neq +\infty$. Then the support function of the minimum set of $f$ is the closure
+of the directional derivative of $f^*$ at the origin:
+$$\delta^*(\cdot \mid \operatorname{argmin} f) = \operatorname{cl} \bigl(f^{*\prime}(0;
+  \cdot)\bigr).$$
+This is part of Theorem 27.1 of [rockafellar1970convex]. -/
 theorem supportFn_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hbdd : convexConj B f 0 ≠ ⊤) :
     supportFn B (argmin f) = convexCl (dirDeriv (convexConj B f) 0) := by
@@ -1151,9 +1348,15 @@ theorem supportFn_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperCon
     LinearMap.flip_flip]
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
-/-- The level sets of `f` above its infimum are exactly the ε-subdifferentials of `f*` at the
-origin. Fenchel–Moreau plus `f*(0) = -inf f`: `z ∈ ∂_ε f*(0)` says `⟨z, y⟩ - f*(y) ≤ inf f + ε` for
-every `y`, whose supremum on the left is `f**(z) = f(z)`. -/
+/-- Let $E$ and $F$ be real normed spaces paired by $B$ such that every continuous linear functional
+on $E$ has the form $\langle \cdot, y \rangle$, and let $f$ be a closed proper convex function
+on $E$ whose infimum is a real number $\mu$. Then for every real $\varepsilon$, the
+$\varepsilon$-subdifferential of $f^*$ at the origin is a level set of $f$:
+$$\partial_\varepsilon f^*(0) = \{z \mid f(z) \le \mu + \varepsilon\}.$$
+
+This follows from the Fenchel–Moreau theorem and $f^*(0) = -\inf f$. The condition
+$z \in \partial_\varepsilon f^*(0)$ says that $\langle z, y \rangle - f^*(y) \le \inf f +
+\varepsilon$ for every $y$, and the supremum of the left side over $y$ is $f^{**}(z) = f(z)$. -/
 theorem epsSubdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
@@ -1176,9 +1379,19 @@ theorem epsSubdifferential_convexConj_zero (hf : ConvexFn f) (hc : ClosedConvex 
   rw [← iSup_le_iff, hbi]
 
 omit [FiniteDimensional ℝ E] in
-/-- As the level shrinks to the infimum, the support functions of the level sets of `f` converge to
-the directional derivative of `f*` at the origin. The ε-subdifferentials of `f*` at the origin are
-exactly those level sets; the limit is an infimum because `ε ↦ ∂_ε f*(0)` is monotone. -/
+/-- Let $E$ be a real normed space and $F$ a finite-dimensional real normed space, paired by $B$
+such that the pairing represents the continuous linear functionals on both spaces, and let $f$
+be a closed proper convex function on $E$ whose infimum is a real number $\mu$. Then for every
+$y \in F$,
+$$\inf_{\varepsilon > 0} \delta^*(y \mid \{z \mid f(z) \le \mu + \varepsilon\}) = f^{*\prime}(0;
+  y).$$
+So as the level decreases to the infimum, the support functions of the level sets converge to
+the directional derivative of $f^*$ at the origin. This is part of Theorem 27.1 of
+[rockafellar1970convex].
+
+The $\varepsilon$-subdifferentials of $f^*$ at the origin are these level sets
+(`ConvexAnalysis.epsSubdifferential_convexConj_zero`). The limit is an infimum because
+$\varepsilon \mapsto \partial_\varepsilon f^*(0)$ is monotone. -/
 theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (y : F) :
     (⨅ ε ∈ Set.Ioi (0 : ℝ), supportFn B {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} y)
@@ -1195,16 +1408,27 @@ theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : Pr
   rw [epsSubdifferential_convexConj_zero hf hc hp hμ ε, LinearMap.flip_flip]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- A proper function takes a value below `⊤` somewhere, so its infimum is never `⊤`. Together
-with `convexConj_ne_bot` this is why "finite" costs only one inequality on each side below. -/
+/-- The infimum of a proper function is never $+\infty$, since the function is less than $+\infty$
+at some point.
+
+With `ConvexAnalysis.convexConj_ne_bot`, this is why finiteness needs only one inequality on
+each side in `ConvexAnalysis.iInf_ne_bot_and_argmin_eq_empty_iff`. -/
 theorem iInf_ne_top (hp : ProperConvex f) : (⨅ x, f x) ≠ ⊤ := by
   obtain ⟨x₀, hx₀⟩ := hp.convexDom_nonempty
   exact (lt_of_le_of_lt (iInf_le _ x₀) (mem_convexDom.1 hx₀)).ne
 
 omit [FiniteDimensional ℝ E] in
-/-- The infimum of a closed proper convex function is finite but *unattained* exactly when `f*(0)`
-is finite and `f*'(0; ·)` takes `−∞` somewhere. Only one bound appears on each side, because
-`f*(0) ≠ ⊥` and `⨅ f ≠ ⊤` hold for every proper `f`. -/
+/-- Let $E$ be a real normed space and $F$ a finite-dimensional real normed space, paired by $B$
+such that the pairing represents the continuous linear functionals on both spaces, and let $f$
+be a closed proper convex function on $E$. Then the infimum of $f$ is finite but not attained if
+and only if $f^*(0)$ is finite and $f^{*\prime}(0; y) = -\infty$ for some $y$:
+$$\bigl(\inf f \neq -\infty \text{ and } \operatorname{argmin} f = \emptyset\bigr) \iff
+  \bigl(f^*(0) \neq +\infty \text{ and } f^{*\prime}(0; y) = -\infty \text{ for some }
+  y\bigr).$$
+This is part of Theorem 27.1 of [rockafellar1970convex].
+
+Only one bound appears on each side, because $f^*(0) \neq -\infty$ and $\inf f \neq +\infty$
+hold for every proper $f$. -/
 theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) :
     ((⨅ x, f x) ≠ ⊥ ∧ argmin f = ∅)
@@ -1220,11 +1444,13 @@ theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedConvex
 
 end ConjugateAtZero
 
-/-! ### A unique minimiser is a gradient of the conjugate
+/-!
+### A unique minimizer is a gradient of the conjugate
 
-The minimum set *is* `∂f*(0)`, and a subdifferential is a singleton exactly at a point of
-differentiability; what follows is the two composed. No reflexivity is needed: the subdifferential
-in question is `subdifferential B.flip (convexConj B f) 0`, a subset of `E`. -/
+The minimum set is $\partial f^*(0)$, and a subdifferential is a single point exactly at a point of
+differentiability. The results below combine the two. No reflexivity is needed: the subdifferential
+is that of $f^*$ with respect to the flipped pairing, a subset of $E$.
+-/
 
 section UniqueMinimiser
 
@@ -1233,9 +1459,15 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} [IsCompatiblePairing B] [IsCompatiblePairing B.flip] {f : E → EReal}
   {x : E}
 
-/-- **Necessity**: if the minimum set of `f` is the single vector `x`, then `f*` is differentiable
-at the origin with `∇f*(0) = ⟨·, x⟩`. The finite-dimensionality is `F`'s, not `E`'s — it is the
-space `f*` lives on. -/
+/-- **Necessity.** Let $E$ be a real normed space and $F$ a finite-dimensional real normed space,
+paired by $B$ such that the pairing represents the continuous linear functionals on both spaces,
+and let $f$ be a closed proper convex function on $E$. If the minimum set of $f$ is the single
+point $x$, then $f^*$ is differentiable at the origin with gradient $\langle x, \cdot \rangle$:
+$$\nabla f^*(0) = \langle x, \cdot \rangle.$$
+
+The finite dimension is that of $F$, the space on which $f^*$ is defined, not that of $E$. The
+gradient is in the sense of `ConvexAnalysis.HasGradientAtFn`, with the functional
+`ConvexAnalysis.evalCLM B.flip x`. -/
 theorem hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (hp : ProperConvex f) (h : argmin f = {x}) :
@@ -1245,14 +1477,18 @@ theorem hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton (hf : ConvexFn f)
     (by rw [← argmin_eq_subdifferential_convexConj_zero (B := B) hf hc]; exact h)
 
 omit [FiniteDimensional ℝ F] in
-/-- **Sufficiency**: if `f*` is differentiable at the origin with `∇f*(0) = ⟨·, x⟩`, then `x` is
-the unique minimiser of `f`.
+/-- **Sufficiency.** Let $E$ and $F$ be real normed spaces, paired by $B$ such that the pairing
+represents the continuous linear functionals on both spaces, and let $f$ be a closed convex
+function on $E$. If $f^*$ is differentiable at the origin with gradient
+$\nabla f^*(0) = \langle x, \cdot \rangle$, then $x$ is the unique minimizer of $f$: the minimum
+set of $f$ is $\{x\}$.
 
-Properness of `f` is not needed: differentiability of `f*` at the origin already forces `f*` proper,
-hence `f*(0)` finite, which is all the uniqueness argument consumes. The separation that argument
-needs is free from `IsCompatiblePairing B`, and it is not an artefact — if `B x = 0` for some
-`x ≠ 0` then every level set of `f = f**` is invariant under translation by `x` and no minimum set
-is ever a singleton. Finite-dimensionality of `F` is not used on this side. -/
+Properness of $f$ is not needed: differentiability of $f^*$ at the origin forces $f^*$ to be
+proper, hence $f^*(0)$ finite, and this is all that the uniqueness argument uses. The argument
+needs the pairing to separate points of $E$, which follows from the hypothesis on the pairing.
+This is necessary: if $\langle x, \cdot \rangle = 0$ for some $x \neq 0$, then every level set
+of $f = f^{**}$ is invariant under translation by $x$, and no minimum set is a single point.
+Finite dimension of $F$ is not used here. -/
 theorem argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (h : HasGradientAtFn (convexConj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
@@ -1267,8 +1503,12 @@ theorem argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero (hf : ConvexFn f)
   rw [HasGradientAtFn.dirDeriv_eq hcf h v]
   rfl
 
-/-- The minimum set of a closed proper convex `f` is the single vector `x` exactly when `f*` is
-differentiable at the origin with `∇f*(0) = ⟨·, x⟩`. -/
+/-- Let $E$ be a real normed space and $F$ a finite-dimensional real normed space, paired by $B$
+such that the pairing represents the continuous linear functionals on both spaces, and let $f$
+be a closed proper convex function on $E$. Then the minimum set of $f$ is the single point $x$
+if and only if $f^*$ is differentiable at the origin with gradient
+$$\nabla f^*(0) = \langle x, \cdot \rangle.$$
+This is part of Theorem 27.1 of [rockafellar1970convex]. -/
 theorem argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero (hf : ConvexFn f)
     (hc : ClosedConvex f)
     (hp : ProperConvex f) : argmin f = {x}
@@ -1276,9 +1516,12 @@ theorem argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero (hf : ConvexFn f
   ⟨hasGradientAtFn_convexConj_zero_of_argmin_eq_singleton hf hc hp,
     argmin_eq_singleton_of_hasGradientAtFn_convexConj_zero hf hc⟩
 
-/-- The existential form: the infimum of `f` is attained at a *unique* point exactly when `f*` is
-differentiable at the origin. Passing from the functional `∇f*(0)` to the vector `x : E`
-representing it is the surjectivity half of `IsCompatiblePairing B.flip`. -/
+/-- Under the hypotheses of
+`ConvexAnalysis.argmin_eq_singleton_iff_hasGradientAtFn_convexConj_zero`, the infimum of $f$ is
+attained at exactly one point if and only if $f^*$ is differentiable at the origin.
+
+The step from the functional $\nabla f^*(0)$ to the vector $x \in E$ that represents it uses
+that every continuous linear functional on $F$ has the form $\langle x, \cdot \rangle$. -/
 theorem exists_argmin_eq_singleton_iff_differentiableAtFn_convexConj_zero (hf : ConvexFn f)
     (hc : ClosedConvex f) (hp : ProperConvex f) :
     (∃ x : E, argmin f = {x}) ↔ DifferentiableAtFn (convexConj B f) 0 := by

@@ -17,47 +17,68 @@ import Numlib.Analysis.Matrix.SingularValues
 /-!
 # Total least squares
 
-Total least squares ([golub2013matrix] §6.3, after Golub–Van Loan 1980) perturbs both the data
-matrix and the right-hand sides: minimize `‖D [E | R] T‖_F` subject to
-`ran (B + R) ⊆ ran (A + E)`, with nonsingular diagonal row weights `D` and column weights `T`.
-With `C = D [A | B] T`, every feasible perturbation makes `C + D [E | R] T` rank-deficient, and
-the smallest singular value of `C` bounds its size from below.
+Let $A \in \mathbb{K}^{m \times n}$ and $B \in \mathbb{K}^{m \times k}$, with $\mathbb{K}$ either
+$\mathbb{R}$ or $\mathbb{C}$, and let $D = \operatorname{diag}(d_1, \dots, d_m)$ and
+$T = \operatorname{diag}(t_1, \dots, t_{n+k})$ be nonsingular real diagonal weights. **Total least
+squares** (TLS) perturbs both the data matrix and the right-hand sides: it minimizes
+$\|D [E \mid R] T\|_F$ subject to $\operatorname{ran}(B + R) \subseteq \operatorname{ran}(A + E)$,
+and a TLS solution is an $X$ with $(A + E) X = B + R$ for a minimizing pair $(E, R)$. The
+presentation follows [golub2013matrix], §6.3, whose formulation goes back to Golub and Van Loan
+(1980).
+
+With $C = D [A \mid B] T$, every feasible perturbation makes $C + D [E \mid R] T$ rank-deficient, so
+the small singular values of $C$ bound its size from below. For one right-hand side, a unit vector
+$w = [z; \alpha]$ with $\|Cw\| = \sigma_{\min}(C)$ and $\alpha \ne 0$ gives the TLS solution
+$x = -T_1 z / (t_{n+1} \alpha)$, where $T_1 = \operatorname{diag}(t_1, \dots, t_n)$; if every such
+$w$ has $\alpha = 0$, there is no TLS solution. For $k$ right-hand sides, Theorem 6.3.1 of
+[golub2013matrix] states that under the generic condition $\sigma_n(C_1) > \sigma_{n+1}(C)$, with
+$C_1$ the first $n$ columns of $C$, the TLS perturbation is unique and the TLS solution is
+$X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$. Finally, the TLS solution minimizes the
+orthogonal-regression objective $\psi$ of (6.3.6).
 
 ## Main definitions
 
-* `Matrix.tlsWeighted d t E R`: the weighted matrix `D [E | R] T`.
-* `Matrix.IsTLSPerturbation d t A B E R`, `Matrix.IsTLSSolution d t A B X`: the TLS problem
-  ([golub2013matrix] (6.3.2)–(6.3.3)); `(6.3.2)` is `d = 1`, `t = 1`, one right-hand side.
-* `Matrix.tlsObjective`: the orthogonal-regression objective `ψ` of (6.3.6).
+* `Matrix.tlsWeighted`: the weighted matrix $D [E \mid R] T$.
+* `Matrix.IsTLSPerturbation`: $(E, R)$ is a feasible perturbation of least weighted Frobenius norm,
+  (6.3.2)–(6.3.3) of [golub2013matrix].
+* `Matrix.IsTLSSolution`: $X$ solves $(A + E) X = B + R$ for a TLS perturbation $(E, R)$.
+* `Matrix.tlsObjective`: the orthogonal-regression objective $\psi$ of (6.3.6) of [golub2013matrix].
 
 ## Main results
 
-* `Matrix.isUnit_lowerRightBlock_of_lt` (first part of the proof of [golub2013matrix]
-  Theorem 6.3.1): the generic condition `σ_n(C₁) > σ_{n+1}(C)` makes `V₂₂` invertible.
-* `Matrix.existsUnique_isTLSPerturbation`, `Matrix.isTLSPerturbation_iff`,
-  `Matrix.isTLSSolution_iff_eq` ([golub2013matrix] Theorem 6.3.1): under the generic condition the
-  TLS perturbation is unique, `C + D [E₀ | R₀] T` is the rank-`n` truncation of the SVD of `C`, and
-  the unique TLS solution is `X_TLS = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`.
-* `Matrix.isTLSSolution_of_mem_smallest` ([golub2013matrix] §6.3.2): with one right-hand side,
-  a unit vector `w = [z; α]` with `‖C w‖ = σ_min(C)` and `α ≠ 0` gives the TLS solution
-  `x = −T₁ z / (t_{n+1} α)`, the perturbation being `−C w wᴴ`.
-* `Matrix.not_isTLSSolution_of_forall_last_eq_zero`: if every such `w` has `α = 0` there is no
-  TLS solution.
-* `Matrix.tls_single_rhs` ([golub2013matrix] §6.3.2, Algorithm 6.3.1): both, read off an
-  orthonormal basis `W` of the minimizers reduced by a unitary `Q` to `W Q = [W' z; 0 α]`.
-* `Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane`, `Matrix.isMinOn_tlsObjective`: the
-  geometric reading (6.3.6) — `ψ` sums weighted squared distances to a hyperplane, and the TLS
-  solution minimizes it.
+* `Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane`: the weighted squared distance from a point
+  to a hyperplane.
+* `Matrix.isTLSSolution_of_mem_smallest`: with one right-hand side, a unit minimizer
+  $w = [z; \alpha]$ of $\|Cw\|$ with $\alpha \ne 0$ gives the TLS solution
+  $x = -T_1 z / (t_{n+1} \alpha)$ and the perturbation $-C w w^H$.
+* `Matrix.not_isTLSSolution_of_forall_last_eq_zero`: if every unit minimizer has $\alpha = 0$, there
+  is no TLS solution.
+* `Matrix.tls_single_rhs`: both cases, read off an orthonormal basis of the minimizers, as in
+  Algorithm 6.3.1 of [golub2013matrix].
+* `Matrix.isUnit_lowerRightBlock_of_lt`: the generic condition $\sigma_n(C_1) > \sigma_{n+1}(C)$
+  makes $V_{22}$ invertible.
+* `Matrix.isTLSPerturbation_iff`: under the generic condition, $(E, R)$ is a TLS perturbation if and
+  only if $C + D [E \mid R] T$ is the rank-$n$ truncation of the SVD of $C$.
+* `Matrix.existsUnique_isTLSPerturbation`: under the generic condition, the TLS perturbation is
+  unique, Theorem 6.3.1 of [golub2013matrix].
+* `Matrix.isTLSSolution_iff_eq`: under the generic condition, the unique TLS solution is
+  $X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$, Theorem 6.3.1 of [golub2013matrix].
+* `Matrix.isMinOn_tlsObjective`: the TLS solution minimizes $\psi$.
 
 ## Implementation notes
 
-Only the single right-hand side needs no singular-value theory beyond the least stretch
-`σ_min(C) ‖w‖ ≤ ‖C w‖` (`Matrix.iInf_colSingularValues_mul_norm_le`, attained by
-`Matrix.exists_norm_eq_iInf_colSingularValues`): a feasible perturbation `ΔC` has a unit null vector
-`w'` of `C + ΔC` with nonzero last entry, and `‖ΔC‖_F ≥ ‖ΔC w'‖ = ‖C w'‖ ≥ σ_min`; conversely
-`ΔC = −C w wᴴ` is feasible for every unit `w` with nonzero last entry and has `‖ΔC‖_F = ‖C w‖`.
-The multiple right-hand side of Theorem 6.3.1 rests on the Frobenius Eckart–Young–Mirsky bound
-of `Numlib/Analysis/Matrix/SingularValues`.
+* The single right-hand side needs no singular-value theory beyond the least stretch
+  $\sigma_{\min}(C) \|w\| \le \|Cw\|$ (`Matrix.iInf_colSingularValues_mul_norm_le`), which is
+  attained (`Matrix.exists_norm_eq_iInf_colSingularValues`). A feasible perturbation $\Delta C$ has
+  a unit null vector $w'$ of $C + \Delta C$ with nonzero last entry, and $\|\Delta C\|_F \ge
+  \|\Delta C w'\| = \|C w'\| \ge \sigma_{\min}(C)$. Conversely, $\Delta C = -C w w^H$ is feasible
+  for every unit vector $w$ with nonzero last entry, and $\|\Delta C\|_F = \|Cw\|$.
+* The case of several right-hand sides rests on the Frobenius-norm Eckart–Young–Mirsky theorem of
+  `Numlib.Analysis.Matrix.SingularValues`.
+* Several right-hand sides are stated on `Fin` indices, with the columns `Fin n ⊕ Fin k` of $C$
+  reindexed to `Fin (n + k)` for the SVD. Singular values are indexed from $0$, so the generic
+  condition $\sigma_{n+1}(C) < \sigma_n(C_1)$ is `σ n < C₁.sortedSingularValues (n - 1)`. One
+  right-hand side is the column type `Unit`, and its entry is `Sum.inr ()`.
 -/
 
 open scoped Matrix
@@ -73,32 +94,43 @@ section Defs
 variable {m n k : Type*} [Fintype m] [Fintype n] [Fintype k] [DecidableEq m] [DecidableEq n]
   [DecidableEq k]
 
-/-- **The weighted matrix** `D [E | R] T` of the total least-squares problem, with the real
-diagonal weights `d` on the rows and `t` on the columns `n ⊕ k`. -/
+/-- Let $d \in \mathbb{R}^m$ and $t \in \mathbb{R}^{n + k}$ be weights, $D = \operatorname{diag}(d)$
+and $T = \operatorname{diag}(t)$. For $E \in \mathbb{K}^{m \times n}$ and
+$R \in \mathbb{K}^{m \times k}$, the **weighted matrix** of the total least-squares problem is
+$$D [E \mid R] T \in \mathbb{K}^{m \times (n + k)}.$$
+
+The columns are indexed by `n ⊕ k`. -/
 noncomputable def tlsWeighted (d : m → ℝ) (t : n ⊕ k → ℝ) (E : Matrix m n 𝕜)
     (R : Matrix m k 𝕜) : Matrix m (n ⊕ k) 𝕜 :=
   diagonal (fun i => (d i : 𝕜)) * fromCols E R * diagonal (fun j => (t j : 𝕜))
 
 open scoped Matrix.Norms.Frobenius in
-/-- **A total-least-squares perturbation** ([golub2013matrix] (6.3.2)–(6.3.3)): the pair
-`(E, R)` is feasible, `ran (B + R) ⊆ ran (A + E)`, and no feasible pair has a smaller weighted
-Frobenius norm `‖D [E | R] T‖_F`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{m \times k}$, and let $d$, $t$ be real
+weights. A pair $(E, R)$ with $E \in \mathbb{K}^{m \times n}$ and
+$R \in \mathbb{K}^{m \times k}$ is a **total-least-squares perturbation** if it is feasible,
+$\operatorname{ran}(B + R) \subseteq \operatorname{ran}(A + E)$, and
+$$\|D [E \mid R] T\|_F \le \|D [E' \mid R'] T\|_F$$
+for every feasible pair $(E', R')$. This is (6.3.2)–(6.3.3) of [golub2013matrix]; the problem
+(6.3.2) is the case $d = 1$, $t = 1$, $k = 1$. -/
 structure IsTLSPerturbation (d : m → ℝ) (t : n ⊕ k → ℝ) (A : Matrix m n 𝕜) (B : Matrix m k 𝕜)
     (E : Matrix m n 𝕜) (R : Matrix m k 𝕜) : Prop where
-  /-- The perturbation is feasible. -/
+  /-- The perturbation is feasible: $\operatorname{ran}(B + R) \subseteq \operatorname{ran}(A + E)$.
+  -/
   range_le : LinearMap.range (B + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin
-  /-- No feasible perturbation is smaller. -/
+  /-- No feasible perturbation has a smaller weighted Frobenius norm. -/
   norm_le : ∀ (E' : Matrix m n 𝕜) (R' : Matrix m k 𝕜),
     LinearMap.range (B + R').mulVecLin ≤ LinearMap.range (A + E').mulVecLin →
       ‖tlsWeighted d t E R‖ ≤ ‖tlsWeighted d t E' R'‖
 
-/-- **A total-least-squares solution** ([golub2013matrix] (6.3.3), "any `X` … that satisfies
-`(A + E₀) X = B + R₀` is said to be a TLS solution"). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{m \times k}$, and let $d$, $t$ be real
+weights. A matrix $X \in \mathbb{K}^{n \times k}$ is a **total-least-squares solution** if
+$(A + E) X = B + R$ for some TLS perturbation $(E, R)$. This is the definition after (6.3.3) of
+[golub2013matrix]. -/
 def IsTLSSolution (d : m → ℝ) (t : n ⊕ k → ℝ) (A : Matrix m n 𝕜) (B : Matrix m k 𝕜)
     (X : Matrix n k 𝕜) : Prop :=
   ∃ E R, IsTLSPerturbation d t A B E R ∧ (A + E) * X = B + R
 
-/-- The weighted matrix is additive. -/
+/-- The weighted matrix is additive: $D [A + E \mid B + R] T = D [A \mid B] T + D [E \mid R] T$. -/
 theorem tlsWeighted_add (d : m → ℝ) (t : n ⊕ k → ℝ) (A E : Matrix m n 𝕜) (B R : Matrix m k 𝕜) :
     tlsWeighted d t (A + E) (B + R) = tlsWeighted d t A B + tlsWeighted d t E R := by
   have : fromCols (A + E) (B + R) = fromCols A B + fromCols E R := by
@@ -106,7 +138,8 @@ theorem tlsWeighted_add (d : m → ℝ) (t : n ⊕ k → ℝ) (A E : Matrix m n 
   rw [tlsWeighted, this, Matrix.mul_add, Matrix.add_mul]
   rfl
 
-/-- The weighted matrix acts on a vector `v` as `D ([E | R] (T v))`. -/
+/-- The weighted matrix acts on a vector $v$ by $D [E \mid R] T v = D ([E \mid R] (T v))$, written
+entrywise. -/
 theorem tlsWeighted_mulVec (d : m → ℝ) (t : n ⊕ k → ℝ) (E : Matrix m n 𝕜) (R : Matrix m k 𝕜)
     (v : n ⊕ k → 𝕜) (i : m) :
     (tlsWeighted d t E R *ᵥ v) i =
@@ -119,8 +152,8 @@ theorem tlsWeighted_mulVec (d : m → ℝ) (t : n ⊕ k → ℝ) (E : Matrix m n
       fun j => (t (Sum.inr j) : 𝕜) * v (Sum.inr j) := funext fun j => mulVec_diagonal _ _ _
   rw [Pi.add_apply, e1, e2]
 
-/-- **Every weighted matrix is `D [E | R] T`** for nonzero weights:
-`E`, `R` are the column blocks of `D⁻¹ M T⁻¹`. -/
+/-- For nonzero weights, every matrix $M \in \mathbb{K}^{m \times (n + k)}$ is $D [E \mid R] T$ for
+some $E$ and $R$, namely the column blocks of $D^{-1} M T^{-1}$. -/
 theorem exists_tlsWeighted_eq {d : m → ℝ} {t : n ⊕ k → ℝ} (hd : ∀ i, d i ≠ 0)
     (ht : ∀ j, t j ≠ 0) (M : Matrix m (n ⊕ k) 𝕜) : ∃ E R, tlsWeighted d t E R = M := by
   have hd' : ∀ i, (d i : 𝕜) ≠ 0 := fun i => RCLike.ofReal_ne_zero.2 (hd i)
@@ -133,7 +166,7 @@ theorem exists_tlsWeighted_eq {d : m → ℝ} {t : n ⊕ k → ℝ} (hd : ∀ i,
   rw [Matrix.mul_assoc, diagonal_mul_diagonal]
   simp [mul_inv_cancel₀ (hd' _), inv_mul_cancel₀ (ht' _)]
 
-/-- **`D [E | R] T` determines `E` and `R`** for nonzero weights. -/
+/-- For nonzero weights, $D [E \mid R] T$ determines $E$ and $R$. -/
 theorem tlsWeighted_injective {d : m → ℝ} {t : n ⊕ k → ℝ} (hd : ∀ i, d i ≠ 0)
     (ht : ∀ j, t j ≠ 0) {E E' : Matrix m n 𝕜} {R R' : Matrix m k 𝕜}
     (h : tlsWeighted d t E R = tlsWeighted d t E' R') : E = E' ∧ R = R' := by
@@ -151,13 +184,17 @@ end Defs
 
 section Hyperplane
 
-/-- **The weighted distance to a hyperplane** ([golub2013matrix] §6.3.3, "`δ_i` is the square of
-the distance from `[a_i; b_i]` to the nearest point in `P_x` … measured by `‖z‖ = ‖Tz‖₂`"): for
-nonzero weights `t`, a normal `ν ≠ 0` and a point `q`,
-`⨅_{ν ⬝ w = 0} ‖T (q − w)‖₂² = (ν ⬝ q)² / ∑ (ν_j / t_j)²`, attained at
-`w = q − λ T⁻² ν`, `λ = (ν ⬝ q) / ∑ (ν_j / t_j)²`. The lower bound is Cauchy–Schwarz on
-`ν ⬝ q = ∑ (ν_j / t_j) (t_j (q_j − w_j))`. With `ν = [x; −1]`, `q = [a_i; b_i]` this is
-`δ_i = |a_iᵀ x − b_i|² / (xᵀ T₁⁻² x + t_{n+1}⁻²)`. -/
+/-- Let $t \in \mathbb{R}^\iota$ have nonzero entries, $T = \operatorname{diag}(t)$, let
+$\nu \in \mathbb{R}^\iota$ be nonzero, and let $q \in \mathbb{R}^\iota$. Then the weighted
+squared distance from $q$ to the hyperplane $\nu^T w = 0$ is
+$$\inf_{\nu^T w = 0} \|T (q - w)\|_2^2 = \frac{(\nu^T q)^2}{\sum_j (\nu_j / t_j)^2},$$
+and the infimum is attained. This is the distance $\delta_i$ of §6.3.3 of [golub2013matrix],
+measured in the norm $\|z\| = \|Tz\|_2$.
+
+The infimum is attained at $w = q - \lambda T^{-2} \nu$ with
+$\lambda = (\nu^T q) / \sum_j (\nu_j / t_j)^2$. The lower bound is the Cauchy–Schwarz inequality
+for $\nu^T q = \sum_j (\nu_j / t_j) (t_j (q_j - w_j))$. With $\nu = [x; -1]$ and
+$q = [a_i; b_i]$, it gives $\delta_i = |a_i^T x - b_i|^2 / (x^T T_1^{-2} x + t_{n+1}^{-2})$. -/
 theorem iInf_sq_norm_diagonal_mulVec_sub_hyperplane {ι : Type*} [Fintype ι] [DecidableEq ι]
     {t : ι → ℝ} (ht : ∀ j, t j ≠ 0) {ν : ι → ℝ} (hν : ν ≠ 0) (q : ι → ℝ) :
     (⨅ w : {w : ι → ℝ // ν ⬝ᵥ w = 0},
@@ -223,9 +260,9 @@ open scoped Matrix.Norms.Frobenius
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
   {d : m → ℝ} {t : n ⊕ Unit → ℝ} {A : Matrix m n 𝕜} {b : m → 𝕜}
 
-/-- **Every feasible perturbation leaves a null vector with nonzero last entry**: if
-`ran (b + r) ⊆ ran (A + E)`, then `C + D [E | r] T` annihilates a unit vector `w` with
-`w_last ≠ 0` — namely `T⁻¹ [x; −1]` normalized, for `(A + E) x = b + r` ((6.3.5)). -/
+/-- If $\operatorname{ran}(b + r) \subseteq \operatorname{ran}(A + E)$, then $C + D [E \mid r] T$
+annihilates a unit vector with nonzero last entry, namely $T^{-1} [x; -1]$ normalized, for
+$(A + E) x = b + r$, as in (6.3.5) of [golub2013matrix]. -/
 private theorem exists_null_of_range_le (ht : ∀ j, t j ≠ 0)
     {E : Matrix m n 𝕜} {R : Matrix m Unit 𝕜}
     (h : LinearMap.range (replicateCol Unit b + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
@@ -261,8 +298,8 @@ private theorem exists_null_of_range_le (ht : ∀ j, t j ≠ 0)
   · simp [hv0, hvn]
   · rw [mulVec_smul, hnull, smul_zero]
 
-/-- **The lower bound**: a feasible perturbation `ΔC = D [E | r] T` has a unit vector `w` with
-`w_last ≠ 0` and `‖C w‖ ≤ ‖ΔC‖_F` — `C w = −ΔC w` — so `σ_min(C) ≤ ‖ΔC‖_F`. -/
+/-- A feasible perturbation $\Delta C = D [E \mid r] T$ has a unit vector $w$ with nonzero last
+entry and $\|Cw\| \le \|\Delta C\|_F$, because $Cw = -\Delta C w$. -/
 private theorem exists_norm_mulVec_le_of_range_le (ht : ∀ j, t j ≠ 0)
     {E : Matrix m n 𝕜} {R : Matrix m Unit 𝕜}
     (h : LinearMap.range (replicateCol Unit b + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
@@ -276,7 +313,8 @@ private theorem exists_norm_mulVec_le_of_range_le (ht : ∀ j, t j ≠ 0)
   rw [hnull, WithLp.toLp_neg, norm_neg]
   exact (frobenius_norm_mulVec_le _ w).trans_eq (by rw [hw, mul_one])
 
-/-- The least singular value bounds every feasible perturbation. -/
+/-- The least singular value $\sigma_{\min}(C)$ is at most the Frobenius norm of every feasible
+perturbation. -/
 private theorem iInf_colSingularValues_le_of_range_le (ht : ∀ j, t j ≠ 0)
     {E : Matrix m n 𝕜} {R : Matrix m Unit 𝕜}
     (h : LinearMap.range (replicateCol Unit b + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
@@ -287,9 +325,8 @@ private theorem iInf_colSingularValues_le_of_range_le (ht : ∀ j, t j ≠ 0)
   rw [hw, mul_one, toEuclideanLin_toLp] at this
   exact this.trans hle
 
-/-- **The rank-one perturbation of a unit vector is feasible**: for `‖w‖ = 1` with
-`α = w_last ≠ 0`, the pair `(E, r)` with `D [E | r] T = −C w wᴴ` makes `C + D [E | r] T`
-annihilate `w`, hence `(A + E) x = b + r` for `x = −T₁ z / (t_{n+1} α)`, `w = [z; α]`. -/
+/-- For a unit vector $w = [z; \alpha]$ with $\alpha \ne 0$, the pair $(E, r)$ with
+$D [E \mid r] T = -C w w^H$ satisfies $(A + E) x = b + r$ for $x = -T_1 z / (t_{n+1} \alpha)$. -/
 private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     {w : n ⊕ Unit → 𝕜} (hw : ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1)
     (hα : w (Sum.inr ()) ≠ 0) :
@@ -327,12 +364,21 @@ private theorem exists_rankOne_perturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j,
       ← Finset.sum_neg_distrib, mul_div_assoc, mul_neg]
   rw [hA, eq_neg_of_add_eq_zero_left hi, neg_neg, mul_div_cancel_right₀ _ hc]
 
-/-- **The single right-hand side with repeated smallest singular values** ([golub2013matrix]
-§6.3.2): with `C = D [A | b] T` and nonzero weights, let `w = [z; α]` be a unit vector with
-`‖C w‖ = σ_min(C)` — e.g. the book's last column of `V(:, n+1−p : n+1) Q̃` — and `α ≠ 0`. Then
-`x = −T₁ z / (t_{n+1} α)` is a TLS solution, with the perturbation `D [E₀ | r₀] T = −C w wᴴ`:
-it is feasible (`(C − C w wᴴ) w = 0`) and has `‖C w wᴴ‖_F = σ_min`, while every feasible
-perturbation has a unit null vector `w'` of `C + ΔC` and `‖ΔC‖_F ≥ ‖ΔC w'‖ = ‖C w'‖ ≥ σ_min`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, and let the weights $d$, $t$ be
+nonzero, with $C = D [A \mid b] T$ and $T_1 = \operatorname{diag}(t_1, \dots, t_n)$. Let
+$w = [z; \alpha] \in \mathbb{K}^{n + 1}$ be a unit vector with $\|Cw\| = \sigma_{\min}(C)$ and
+$\alpha \ne 0$. Then there is a TLS perturbation $(E_0, r_0)$ with
+$$D [E_0 \mid r_0] T = -C w w^H \quad \text{and} \quad (A + E_0) x = b + r_0, \qquad x =
+  -\frac{T_1 z}{t_{n+1} \alpha}.$$
+So $x$ is a TLS solution. This is §6.3.2 of [golub2013matrix], which allows repeated smallest
+singular values.
+
+An example of $w$ is the last column of $V(:, n+1-p : n+1) \tilde Q$ in the source. The
+perturbation is feasible, because $(C - C w w^H) w = 0$, and $\|C w w^H\|_F = \sigma_{\min}(C)$.
+Every feasible perturbation $\Delta C$ has a unit null vector $w'$ of $C + \Delta C$, and
+$\|\Delta C\|_F \ge \|\Delta C w'\| = \|C w'\| \ge \sigma_{\min}(C)$. The number
+$\sigma_{\min}(C)$ is the infimum of `Matrix.colSingularValues`, and the right-hand side is the
+column `replicateCol Unit b`. -/
 theorem isTLSSolution_of_mem_smallest (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     {w : n ⊕ Unit → 𝕜} (hw : ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1)
     (hmin : ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) :
@@ -349,7 +395,8 @@ theorem isTLSSolution_of_mem_smallest (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j �
   · rw [hER, norm_neg, frobenius_norm_vecMulVec_star, hw, mul_one, hmin]
     exact iInf_colSingularValues_le_of_range_le ht h'
 
-/-- A single-right-hand-side TLS solution, in the book's vector form: `x` with `X = [x]`. -/
+/-- Under the hypotheses of `Matrix.isTLSSolution_of_mem_smallest`, the one-column matrix $X = [x]$
+with $x = -T_1 z / (t_{n+1} \alpha)$ is a TLS solution. -/
 theorem isTLSSolution_of_mem_smallest' (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     {w : n ⊕ Unit → 𝕜} (hw : ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1)
     (hmin : ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) :
@@ -360,12 +407,17 @@ theorem isTLSSolution_of_mem_smallest' (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j 
   let ⟨E, R, h₁, h₂, _⟩ := isTLSSolution_of_mem_smallest hd ht hw hmin hα
   ⟨E, R, h₁, h₂⟩
 
-/-- **The nongeneric case: no TLS solution** ([golub2013matrix] §6.3.2, "If `α = 0`, then the TLS
-problem has no solution"): if every unit `w` with `‖C w‖ = σ_min(C)` has `w_last = 0`, no TLS
-perturbation exists, so there is no TLS solution. A TLS perturbation `ΔC` would satisfy
-`‖ΔC‖_F ≤ ‖C w‖` for every unit `w` with `w_last ≠ 0` (the rank-one perturbations are feasible),
-hence `‖ΔC‖_F ≤ σ_min` by tilting a minimizer `w*` (`w*_last = 0`) towards `e_last`; and its
-null vector `w'` has `w'_last ≠ 0` and `σ_min ≤ ‖C w'‖ ≤ ‖ΔC‖_F`, forcing `‖C w'‖ = σ_min`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, let the weights $d$, $t$ be nonzero,
+and let $C = D [A \mid b] T$. If every unit vector $w$ with $\|Cw\| = \sigma_{\min}(C)$ has last
+entry $0$, then the TLS problem has no solution. This is the statement of §6.3.2 of
+[golub2013matrix] that the TLS problem has no solution if $\alpha = 0$.
+
+A TLS perturbation $\Delta C$ would satisfy $\|\Delta C\|_F \le \|Cw\|$ for every unit vector
+$w$ with nonzero last entry, because the rank-one perturbations are feasible. Tilting a
+minimizer $w^*$, whose last entry is $0$, towards the last unit vector gives
+$\|\Delta C\|_F \le \sigma_{\min}(C)$. Its null vector $w'$ has nonzero last entry and
+$\sigma_{\min}(C) \le \|C w'\| \le \|\Delta C\|_F$, which forces $\|C w'\| = \sigma_{\min}(C)$,
+a contradiction. -/
 theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (h : ∀ w : n ⊕ Unit → 𝕜, ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (n ⊕ Unit))‖ = 1 →
       ‖(WithLp.toLp 2 (tlsWeighted d t A (replicateCol Unit b) *ᵥ w) : EuclideanSpace 𝕜 m)‖ =
@@ -451,14 +503,21 @@ theorem not_isTLSSolution_of_forall_last_eq_zero (hd : ∀ i, d i ≠ 0) (ht : �
     rwa [hw', mul_one, ← hnrm] at this
   exact hα' (h w' hw' (le_antisymm (hle'.trans hup) hge))
 
-/-- **The single right-hand side, Algorithm 6.3.1** ([golub2013matrix] §6.3.2): let the columns
-of `W` be orthonormal (`Wᴴ W = 1`) and span exactly the minimizers of `‖C w‖ / ‖w‖` for
-`C = D [A | b] T` — e.g. the trailing right singular vectors `V(:, n+1−p : n+1)` of an SVD of `C`
-(`Matrix.IsSVD.norm_toEuclideanLin_eq_iff_mem_span`) — and let `Q` be unitary with the last row
-of `W Q` zero outside the column `l`, `W Q = [W' z; 0 α]` (a Householder matrix does this). Then
-(a) `|α|` is the largest last entry of a unit vector of the span; (b) if `α = 0` the TLS problem
-has no solution; (c) otherwise `x = −T₁ z / (t_{n+1} α)` is a TLS solution, with the perturbation
-`D [E₀ | r₀] T = −C w wᴴ` for the unit minimizer `w = (W Q)(:, l)`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $b \in \mathbb{K}^m$, let the weights $d$, $t$ be nonzero,
+and let $C = D [A \mid b] T$. Let $W \in \mathbb{K}^{(n + 1) \times p}$ have orthonormal
+columns, $W^H W = I$, whose span is exactly the set of $w$ with
+$\|Cw\| = \sigma_{\min}(C) \|w\|$. Let $Q \in \mathbb{K}^{p \times p}$ be unitary such that the
+last row of $WQ$ is zero outside the column $l$, so that
+$$WQ = \begin{bmatrix} W' & z \\ 0 & \alpha \end{bmatrix}.$$
+Then (a) $|\alpha|$ is the largest absolute value of the last entry of a unit vector of the
+span: $|(Wy)_{n+1}| \le |\alpha|$ for every unit vector $y \in \mathbb{K}^p$; (b) if
+$\alpha = 0$, the TLS problem has no solution; (c) if $\alpha \ne 0$, there is a TLS
+perturbation $(E_0, r_0)$ with $D [E_0 \mid r_0] T = -C w w^H$ for the unit vector
+$w = (WQ)(:, l)$, and $x = -T_1 z / (t_{n+1} \alpha)$ satisfies $(A + E_0) x = b + r_0$. This is
+Algorithm 6.3.1 of [golub2013matrix], §6.3.2.
+
+An example of $W$ is the trailing right singular vectors $V(:, n+1-p : n+1)$ of an SVD of $C$
+(`Matrix.IsSVD.norm_toEuclideanLin_eq_iff_mem_span`), and a Householder matrix gives $Q$. -/
 theorem tls_single_rhs {p : Type*} [Fintype p] [DecidableEq p] (hd : ∀ i, d i ≠ 0)
     (ht : ∀ j, t j ≠ 0) {W : Matrix (n ⊕ Unit) p 𝕜} (hW : Wᴴ * W = 1)
     (hmin : ∀ w : EuclideanSpace 𝕜 (n ⊕ Unit),
@@ -529,7 +588,8 @@ section Generic
 
 variable {m n k : ℕ}
 
-/-- On a Euclidean space of `Fin (a + b)`, the squared norm splits over the two blocks. -/
+/-- On $\mathbb{K}^{a + b}$, the squared norm of a vector is the sum of the squared norms of its two
+blocks. -/
 private theorem norm_sq_toLp_eq_add {a b : ℕ} (v : Fin (a + b) → 𝕜) :
     ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 (Fin (a + b)))‖ ^ 2 =
       ‖(WithLp.toLp 2 fun i => v (Fin.castAdd b i) : EuclideanSpace 𝕜 (Fin a))‖ ^ 2 +
@@ -538,13 +598,18 @@ private theorem norm_sq_toLp_eq_add {a b : ℕ} (v : Fin (a + b) → 𝕜) :
     Fin.sum_univ_add]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The generic condition makes `V₂₂` invertible** ([golub2013matrix] Theorem 6.3.1, first part
-of the proof): let `C = [C₁ | C₂]` (`n` and `k` columns, reindexed to `Fin (n + k)`) have the SVD
-`Uᴴ C V = Σ`, and `V₂₂` be the trailing `k × k` block of `V`. If `σ_n(C₁) > σ_{n+1}(C)`
-(`0`-based: `C₁.sortedSingularValues (n − 1) > σ n`), then `V₂₂` is invertible. If `V₂₂ x = 0`
-with `x ≠ 0`, then `v = V [0; x]` has `v = [V₁₂ x; 0]` and `‖v‖ = ‖x‖`, so
-`σ_n(C₁) ‖V₁₂ x‖ ≤ ‖C₁ V₁₂ x‖ = ‖C v‖ = ‖Σ [0; x]‖ ≤ σ_{n+1}(C) ‖x‖ = σ_{n+1}(C) ‖V₁₂ x‖`,
-by the least stretch of `C₁` and the ordering of `σ`. -/
+/-- Let $C_1 \in \mathbb{K}^{m \times n}$ and $C_2 \in \mathbb{K}^{m \times k}$, and let
+$C = [C_1 \mid C_2]$ have the SVD $U^H C V = \Sigma$ with singular values
+$\sigma_1 \ge \sigma_2 \ge \dots$. Let $V_{22}$ be the trailing $k \times k$ block of $V$. If
+$$\sigma_{n+1}(C) < \sigma_n(C_1),$$
+then $V_{22}$ is invertible. This is the first part of the proof of Theorem 6.3.1 of
+[golub2013matrix].
+
+If $V_{22} x = 0$ with $x \ne 0$, then $v = V [0; x] = [V_{12} x; 0]$ and
+$\|V_{12} x\| = \|x\|$, so $\sigma_n(C_1) \|V_{12} x\| \le \|C_1 V_{12} x\| = \|Cv\| = \|\Sigma
+[0; x]\| \le \sigma_{n+1}(C) \|x\|$, by the least stretch of $C_1$ and the ordering of the
+$\sigma_i$. The columns of $C$ are reindexed to `Fin (n + k)`. Indices start at $0$, so the
+hypothesis is `σ n < C₁.sortedSingularValues (n - 1)`. -/
 theorem isUnit_lowerRightBlock_of_lt {C₁ : Matrix (Fin m) (Fin n) 𝕜}
     {C₂ : Matrix (Fin m) (Fin k) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n + k)) (Fin (n + k)) 𝕜}
@@ -647,15 +712,15 @@ theorem isUnit_lowerRightBlock_of_lt {C₁ : Matrix (Fin m) (Fin n) 𝕜}
 
 end Generic
 
-/-! ### Theorem 6.3.1: several right-hand sides -/
+/-! ### Several right-hand sides -/
 
 section Feasible
 
 variable {m n k : Type*} [Fintype m] [Fintype n] [Fintype k] [DecidableEq m] [DecidableEq n]
   [DecidableEq k]
 
-/-- A solvable problem has a weighted matrix of rank at most the number of unknowns:
-`[M | M X] = M [1 | X]`. -/
+/-- If $MX = N$, then $D [M \mid N] T$ has rank at most $n$, because $[M \mid MX] = M [I \mid X]$.
+-/
 private theorem rank_tlsWeighted_le_of_mul_eq {d : m → ℝ} {t : n ⊕ k → ℝ} {M : Matrix m n 𝕜}
     {N : Matrix m k 𝕜} {X : Matrix n k 𝕜} (h : M * X = N) :
     (tlsWeighted d t M N).rank ≤ Fintype.card n := by
@@ -666,12 +731,12 @@ private theorem rank_tlsWeighted_le_of_mul_eq {d : m → ℝ} {t : n ⊕ k → �
     _ ≤ M.rank := rank_mul_le_left _ _
     _ ≤ Fintype.card n := rank_le_card_width M
 
-/-- The matrix `T⁻¹ [X; −1]` of [golub2013matrix] (6.3.5). -/
+/-- The matrix $T^{-1} \begin{bmatrix} X \\ -I \end{bmatrix}$ of (6.3.5) of [golub2013matrix]. -/
 private noncomputable def tlsNull (t : n ⊕ k → ℝ) (X : Matrix n k 𝕜) : Matrix (n ⊕ k) k 𝕜 :=
   fromRows (diagonal (fun j => (t (Sum.inl j) : 𝕜)⁻¹) * X)
     (-diagonal fun j => (t (Sum.inr j) : 𝕜)⁻¹)
 
-/-- `D [E | R] T T⁻¹ [X; −1] = D (E X − R)`. -/
+/-- $D [E \mid R] T \cdot T^{-1} [X; -I] = D (EX - R)$. -/
 private theorem tlsWeighted_mul_tlsNull {d : m → ℝ} {t : n ⊕ k → ℝ} (ht : ∀ j, t j ≠ 0)
     (E : Matrix m n 𝕜) (R : Matrix m k 𝕜) (X : Matrix n k 𝕜) :
     tlsWeighted d t E R * tlsNull t X = diagonal (fun i => (d i : 𝕜)) * (E * X - R) := by
@@ -686,7 +751,8 @@ private theorem tlsWeighted_mul_tlsNull {d : m → ℝ} {t : n ⊕ k → ℝ} (h
   rw [tlsWeighted, Matrix.mul_assoc, hT, Matrix.mul_assoc, fromCols_mul_fromRows, Matrix.mul_neg,
     Matrix.mul_one, ← sub_eq_add_neg]
 
-/-- **[golub2013matrix] (6.3.5)**: `E X = R` iff `D [E | R] T` annihilates `T⁻¹ [X; −1]`. -/
+/-- For nonzero weights, $EX = R$ if and only if $D [E \mid R] T$ annihilates $T^{-1} [X; -I]$; this
+is (6.3.5) of [golub2013matrix]. -/
 private theorem mul_eq_iff_tlsWeighted_mul_tlsNull_eq_zero {d : m → ℝ} {t : n ⊕ k → ℝ}
     (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0) {E : Matrix m n 𝕜} {R : Matrix m k 𝕜}
     {X : Matrix n k 𝕜} : E * X = R ↔ tlsWeighted d t E R * tlsNull t X = 0 := by
@@ -711,9 +777,9 @@ variable {m n k : ℕ} {d : Fin m → ℝ} {t : Fin n ⊕ Fin k → ℝ} {A : Ma
   {B : Matrix (Fin m) (Fin k) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin (n + k)) (Fin (n + k)) 𝕜}
 
-/-- The consequences of the generic condition `σ_n(C₁) > σ_{n+1}(C)` of [golub2013matrix]
-Theorem 6.3.1: `1 ≤ n ≤ m`, the gap `σ_{n+1}(C) < σ_n(C)` (column interlacing,
-`Matrix.sortedSingularValues_fromCols_left_le`), and the invertibility of `V₂₂`. -/
+/-- The generic condition $\sigma_{n+1}(C) < \sigma_n(C_1)$ of Theorem 6.3.1 of [golub2013matrix]
+implies $1 \le n \le m$, the gap $\sigma_{n+1}(C) < \sigma_n(C)$ (by column interlacing,
+`Matrix.sortedSingularValues_fromCols_left_le`) and the invertibility of $V_{22}$. -/
 private theorem generic_facts
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
@@ -736,10 +802,9 @@ private theorem generic_facts
   rw [fromCols_toCols] at h2
   linarith
 
-/-- **The null space of a truncated SVD** ([golub2013matrix] proof of Theorem 6.3.1, "the
-nullspace of … is the range of `[V₁₂; V₂₂]`"): if `σ_0, …, σ_{n-1}` are nonzero and `n ≤ m`,
-then `C_n Y = 0` iff the columns of `Y` lie in the span of the last `k` columns `V₂` of `V`, i.e.
-`Y = V₂ V₂ᴴ Y`. -/
+/-- If $\sigma_1, \dots, \sigma_n$ are nonzero and $n \le m$, then the rank-$n$ truncation satisfies
+$C_n Y = 0$ if and only if $Y = V_2 V_2^H Y$, where $V_2$ is the last $k$ columns of $V$; this
+is the null space of $C_n$ in the proof of Theorem 6.3.1 of [golub2013matrix]. -/
 private theorem svdTruncation_mul_eq_zero_iff {M : Matrix (Fin m) (Fin (n + k)) 𝕜}
     (hC : IsSVD M U σ V) (hnm : n ≤ m) (hpos : ∀ i < n, σ i ≠ 0) {p : Type*}
     (Y : Matrix (Fin (n + k)) p 𝕜) :
@@ -788,8 +853,8 @@ private theorem svdTruncation_mul_eq_zero_iff {M : Matrix (Fin m) (Fin (n + k)) 
   · intro h
     rw [h, ← Matrix.mul_assoc, hCV₂, Matrix.zero_mul]
 
-/-- **Reading off `X`** ([golub2013matrix] proof of Theorem 6.3.1): with `V₂₂` invertible,
-`T⁻¹ [X; −1] = V₂ S` for some `S` iff `X = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹` (and then `S = −V₂₂⁻¹ T₂⁻¹`). -/
+/-- If $V_{22}$ is invertible, then $T^{-1} [X; -I] = V_2 S$ for some $S$ if and only if
+$X = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$, and then $S = -V_{22}^{-1} T_2^{-1}$. -/
 private theorem exists_eq_mul_iff (ht : ∀ j, t j ≠ 0)
     (hV : IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n))) (X : Matrix (Fin n) (Fin k) 𝕜) :
     (∃ S, (tlsNull t X).submatrix finSumFinEquiv.symm id = V.submatrix id (Fin.natAdd n) * S) ↔
@@ -857,7 +922,7 @@ private theorem exists_eq_mul_iff (ht : ∀ j, t j ≠ 0)
       simp only [Matrix.mul_neg, ← Matrix.mul_assoc, h11', Matrix.one_mul]
     · rw [Matrix.mul_neg, ← Matrix.mul_assoc, mul_nonsing_inv _ hVd, Matrix.one_mul, h22]
 
-/-- Under the generic condition the first `n` singular values are nonzero. -/
+/-- Under the generic condition, the first $n$ singular values of $C$ are nonzero. -/
 private theorem pos_of_generic
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
@@ -865,9 +930,8 @@ private theorem pos_of_generic
   obtain ⟨-, -, hgap, -⟩ := generic_facts hC hσ
   exact (lt_of_le_of_lt (hC.nonneg n) (lt_of_lt_of_le hgap (hC.antitone (by omega)))).ne'
 
-/-- **The solutions of the truncated problem** ([golub2013matrix] proof of Theorem 6.3.1): if
-`C + D [E | R] T` is the truncation `C_n` of the SVD of `C`, then `(A + E) X = B + R` exactly for
-`X = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`. -/
+/-- If $C + D [E \mid R] T$ is the rank-$n$ truncation $C_n$, then $(A + E) X = B + R$ if and only
+if $X = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$. -/
 private theorem add_mul_eq_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
@@ -894,7 +958,7 @@ private theorem add_mul_eq_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     conv_rhs => rw [hS, ← Matrix.mul_assoc (V.submatrix id (Fin.natAdd n))ᴴ, h22, Matrix.one_mul]
     exact hS
 
-/-- The squared Frobenius norm of `C − C_n` in the notation of the SVD. -/
+/-- $\|C - C_n\|_F^2 = \sum_{i = n+1}^{\min(m, n + k)} \sigma_i^2$. -/
 private theorem frobenius_norm_sub_svdTruncation_sq
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V) :
     ‖(tlsWeighted d t A B).submatrix id finSumFinEquiv.symm - svdTruncation U σ V n‖ ^ 2 =
@@ -911,7 +975,7 @@ private theorem frobenius_norm_submatrix_finSumFinEquiv (M : Matrix (Fin m) (Fin
     ‖M.submatrix id finSumFinEquiv.symm‖ = ‖M‖ :=
   frobenius_norm_submatrix_equiv M (Equiv.refl _) finSumFinEquiv.symm
 
-/-- `C − (C + ΔC) = −ΔC`, reindexed. -/
+/-- $C - (C + \Delta C) = -\Delta C$, with the columns reindexed. -/
 private theorem submatrix_sub_tlsWeighted_add (E : Matrix (Fin m) (Fin n) 𝕜)
     (R : Matrix (Fin m) (Fin k) 𝕜) :
     (tlsWeighted d t A B).submatrix id finSumFinEquiv.symm -
@@ -921,7 +985,8 @@ private theorem submatrix_sub_tlsWeighted_add (E : Matrix (Fin m) (Fin n) 𝕜)
   ext i j
   simp
 
-/-- A solvable perturbed problem has a reindexed weighted matrix of rank at most `n`. -/
+/-- If $\operatorname{ran}(B + R) \subseteq \operatorname{ran}(A + E)$, then $C + D [E \mid R] T$
+has rank at most $n$. -/
 private theorem rank_submatrix_tlsWeighted_le {E : Matrix (Fin m) (Fin n) 𝕜}
     {R : Matrix (Fin m) (Fin k) 𝕜}
     (h : LinearMap.range (B + R).mulVecLin ≤ LinearMap.range (A + E).mulVecLin) :
@@ -932,9 +997,9 @@ private theorem rank_submatrix_tlsWeighted_le {E : Matrix (Fin m) (Fin n) 𝕜}
       rank_submatrix _ (Equiv.refl _) finSumFinEquiv.symm]
   simpa using rank_tlsWeighted_le_of_mul_eq (d := d) (t := t) hX
 
-/-- **A feasible perturbation is at least as large as the truncation residual**
-([golub2013matrix] proof of Theorem 6.3.1, by Eckart–Young–Mirsky): if `ran (B + R) ⊆ ran (A + E)`
-then `C + D [E | R] T` has rank at most `n`, so `∑_{i ≥ n} σ_i² ≤ ‖D [E | R] T‖_F²`. -/
+/-- If $\operatorname{ran}(B + R) \subseteq \operatorname{ran}(A + E)$, then $\sum_{i =
+n+1}^{\min(m, n + k)} \sigma_i^2 \le \|D [E \mid R] T\|_F^2$, by the Eckart–Young–Mirsky
+theorem. -/
 private theorem sum_sq_le_of_range_le
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
@@ -951,8 +1016,8 @@ private theorem sum_sq_le_of_range_le
   rw [hC.singularValues_eq (lt_of_lt_of_le hi (min_le_left _ _))
     (lt_of_lt_of_le hi (min_le_right _ _))]
 
-/-- The value of a perturbation that truncates: if `C + D [E | R] T = C_n`, then
-`‖D [E | R] T‖_F² = ∑_{i ≥ n} σ_i²`. -/
+/-- If $C + D [E \mid R] T = C_n$, then $\|D [E \mid R] T\|_F^2 = \sum_{i = n+1}^{\min(m, n + k)}
+\sigma_i^2$. -/
 private theorem frobenius_norm_sq_of_tlsWeighted_add_eq
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     {E : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin m) (Fin k) 𝕜}
@@ -969,17 +1034,23 @@ private theorem frobenius_norm_sq_of_tlsWeighted_add_eq
   rw [← frobenius_norm_sub_svdTruncation_sq hC, norm_sub_rev, this,
     frobenius_norm_submatrix_finSumFinEquiv]
 
-/-- **The TLS perturbations of Theorem 6.3.1** ([golub2013matrix] Theorem 6.3.1, (6.3.4)): with
-`m × (n + k)` data `C = D [A | B] T` (columns reindexed to `Fin (n + k)`), nonzero weights, an SVD
-`Uᴴ C V = Σ` and the generic condition `σ_n(C₁) > σ_{n+1}(C)` (`0`-based:
-`C₁.sortedSingularValues (n − 1) > σ n`, `C₁` the first `n` columns of `C`), `(E, R)` is a TLS
-perturbation exactly when `C + D [E | R] T` is the rank-`n` truncation `C_n = U Σ_n Vᴴ`, i.e.
-`D [E | R] T = −U₂ Σ₂ [V₁₂ᴴ | V₂₂ᴴ]`. Every feasible perturbation makes `C + D [E | R] T` of rank
-at most `n` ((6.3.5)), so it is at least `‖C − C_n‖_F` by Eckart–Young–Mirsky; the truncation is
-feasible since its null space is the range of `[V₁₂; V₂₂]` with `V₂₂` invertible
-(`Matrix.isUnit_lowerRightBlock_of_lt`); and it is the only minimizer because the generic condition
-separates `σ_n(C) ≥ σ_n(C₁) > σ_{n+1}(C)` (`Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le`).
-The book's `m ≥ n + k` is not needed. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$, $B \in \mathbb{K}^{m \times k}$, let the weights $d$, $t$
+be nonzero, and let $C = D [A \mid B] T$ have the SVD $U^H C V = \Sigma$ with singular values
+$\sigma_1 \ge \sigma_2 \ge \dots$. Let $C_1$ be the first $n$ columns of $C$, and assume the
+generic condition $\sigma_{n+1}(C) < \sigma_n(C_1)$. Then $(E, R)$ is a TLS perturbation if and
+only if
+$$C + D [E \mid R] T = C_n = U \Sigma_n V^H,$$
+the rank-$n$ truncation of the SVD of $C$; that is, $D [E \mid R] T = -U_2 \Sigma_2 [V_{12}^H
+\mid V_{22}^H]$. This is the characterization (6.3.4) in Theorem 6.3.1 of [golub2013matrix].
+
+Every feasible perturbation makes $C + D [E \mid R] T$ of rank at most $n$, by (6.3.5), so its
+size is at least $\|C - C_n\|_F$ by the Eckart–Young–Mirsky theorem. The truncation is feasible,
+because its null space is the range of $[V_{12}; V_{22}]$ with $V_{22}$ invertible
+(`Matrix.isUnit_lowerRightBlock_of_lt`). It is the only minimizer, because the generic condition
+separates $\sigma_n(C) \ge \sigma_n(C_1) > \sigma_{n+1}(C)$
+(`Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le`). The hypothesis $m \ge n + k$ of the
+source is not needed. The columns of $C$ are reindexed to `Fin (n + k)`, indices start at $0$,
+and the truncation is `Matrix.svdTruncation U σ V n`. -/
 theorem isTLSPerturbation_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
@@ -1018,10 +1089,11 @@ theorem isTLSPerturbation_iff (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     rw [← frobenius_norm_sq_of_tlsWeighted_add_eq hC h] at this
     exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 this
 
-/-- **[golub2013matrix] Theorem 6.3.1, the perturbation**: under the hypotheses of
-`Matrix.isTLSPerturbation_iff` there is exactly one TLS perturbation `(E₀, R₀)`, the one with
-`D [E₀ | R₀] T = −U₂ Σ₂ [V₁₂ᴴ | V₂₂ᴴ]` ((6.3.4)); its size is given by
-`Matrix.IsTLSPerturbation.frobenius_norm_sq_eq`. -/
+/-- Under the hypotheses of `Matrix.isTLSPerturbation_iff`, there is exactly one TLS perturbation
+$(E_0, R_0)$. It is the one with $D [E_0 \mid R_0] T = -U_2 \Sigma_2 [V_{12}^H \mid V_{22}^H]$
+of (6.3.4). This is the uniqueness of the perturbation in Theorem 6.3.1 of [golub2013matrix].
+
+The size of the perturbation is given by `Matrix.IsTLSPerturbation.frobenius_norm_sq_eq`. -/
 theorem existsUnique_isTLSPerturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1)) :
@@ -1036,9 +1108,13 @@ theorem existsUnique_isTLSPerturbation (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j 
   obtain ⟨h1, h2⟩ := tlsWeighted_injective hd ht ((eq_sub_of_add_eq' h').trans h₀.symm)
   exact Prod.ext h1 h2
 
-/-- **The size of the TLS perturbation** ([golub2013matrix] proof of Theorem 6.3.1):
-`‖D [E₀ | R₀] T‖_F² = ∑_{n ≤ i < min(m, n + k)} σ_i²` (`0`-based; the book's
-`σ_{n+1}² + ⋯ + σ_{n+k}²` when `m ≥ n + k`). -/
+/-- Under the hypotheses of `Matrix.isTLSPerturbation_iff`, the TLS perturbation $(E_0, R_0)$ has
+the size
+$$\|D [E_0 \mid R_0] T\|_F^2 = \sum_{i = n+1}^{\min(m, n + k)} \sigma_i^2.$$
+This is the value in the proof of Theorem 6.3.1 of [golub2013matrix], where it reads
+$\sigma_{n+1}^2 + \dots + \sigma_{n+k}^2$ for $m \ge n + k$.
+
+Lean indices start at $0$, so the sum is over `Finset.Ico n (min m (n + k))`. -/
 theorem IsTLSPerturbation.frobenius_norm_sq_eq (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
@@ -1047,11 +1123,15 @@ theorem IsTLSPerturbation.frobenius_norm_sq_eq (hd : ∀ i, d i ≠ 0) (ht : ∀
     ‖tlsWeighted d t E R‖ ^ 2 = ∑ i ∈ Finset.Ico n (min m (n + k)), σ i ^ 2 :=
   frobenius_norm_sq_of_tlsWeighted_add_eq hC ((isTLSPerturbation_iff hd ht hC hσ).1 h)
 
-/-- **[golub2013matrix] Theorem 6.3.1, the solution**: under the hypotheses of
-`Matrix.existsUnique_isTLSPerturbation`, with `T₁ = diag(t₁, …, t_n)`,
-`T₂ = diag(t_{n+1}, …, t_{n+k})` and `V₁₂`, `V₂₂` the blocks of the last `k` columns of `V`, the
-unique TLS solution is `X_TLS = −T₁ V₁₂ V₂₂⁻¹ T₂⁻¹`. The null space of `C + D [E₀ | R₀] T = C_n` is
-the range of `[V₁₂; V₂₂]`, so `T⁻¹ [X; −1] = [V₁₂; V₂₂] S` and `S = −V₂₂⁻¹ T₂⁻¹`. -/
+/-- Under the hypotheses of `Matrix.isTLSPerturbation_iff`, let
+$T_1 = \operatorname{diag}(t_1, \dots, t_n)$ and $T_2 = \operatorname{diag}(t_{n+1}, \dots,
+t_{n+k})$, and let $V_{12}$ and $V_{22}$ be the blocks of the last $k$ columns of $V$. Then $X$
+is a TLS solution if and only if
+$$X = X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1}.$$
+This is the solution formula of Theorem 6.3.1 of [golub2013matrix].
+
+The null space of $C + D [E_0 \mid R_0] T = C_n$ is the range of $[V_{12}; V_{22}]$, so
+$T^{-1} [X; -I] = [V_{12}; V_{22}] S$ and $S = -V_{22}^{-1} T_2^{-1}$. -/
 theorem isTLSSolution_iff_eq (hd : ∀ i, d i ≠ 0) (ht : ∀ j, t j ≠ 0)
     (hC : IsSVD ((tlsWeighted d t A B).submatrix id finSumFinEquiv.symm) U σ V)
     (hσ : σ n < (tlsWeighted d t A B).toCols₁.sortedSingularValues (n - 1))
@@ -1076,18 +1156,21 @@ section Regression
 
 variable {m n : ℕ}
 
-/-- **The orthogonal-regression objective** ([golub2013matrix] (6.3.6)): for real data
-`A : Matrix (Fin m) (Fin n) ℝ`, `b`, row weights `d` and column weights `t`,
-`ψ(x) = ∑ᵢ dᵢ² (aᵢᵀ x − bᵢ)² / (xᵀ T₁⁻² x + t_{n+1}⁻²)`, the weighted sum of the squared
-distances `δᵢ` of the points `[aᵢ; bᵢ]` to the hyperplane `{[a; b] : b = xᵀ a}`
+/-- Let $A \in \mathbb{R}^{m \times n}$ with rows $a_i^T$, $b \in \mathbb{R}^m$, row weights
+$d \in \mathbb{R}^m$ and column weights $t \in \mathbb{R}^{n + 1}$, with
+$T_1 = \operatorname{diag}(t_1, \dots, t_n)$. The **orthogonal-regression objective** is
+$$\psi(x) = \sum_{i = 1}^{m} \frac{d_i^2 (a_i^T x - b_i)^2}{x^T T_1^{-2} x + t_{n+1}^{-2}},
+  \qquad x \in \mathbb{R}^n.$$
+This is (6.3.6) of [golub2013matrix]: $\psi$ is the weighted sum of the squared distances
+$\delta_i$ of the points $[a_i; b_i]$ to the hyperplane $\{[a; \beta] : \beta = x^T a\}$
 (`Matrix.iInf_sq_norm_diagonal_mulVec_sub_hyperplane`). -/
 noncomputable def tlsObjective (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (x : Fin n → ℝ) : ℝ :=
   ∑ i, d i ^ 2 * (A i ⬝ᵥ x - b i) ^ 2 /
     (∑ j : Fin n, x j ^ 2 / t (Fin.castSucc j) ^ 2 + 1 / t (Fin.last n) ^ 2)
 
-/-- `ψ` as a Rayleigh quotient: with `C = D [A | b] T` (columns reindexed to `Fin (n + 1)`) and
-`w = T⁻¹ [x; −1]`, `ψ(x) = ‖C w‖² / ‖w‖²`. -/
+/-- $\psi(x) = \|Cw\|^2 / \|w\|^2$ for $C = D [A \mid b] T$, with the columns reindexed to
+`Fin (n + 1)`, and $w = T^{-1} [x; -1]$. -/
 private theorem tlsObjective_eq (d : Fin m → ℝ) {t : Fin (n + 1) → ℝ} (ht : ∀ j, t j ≠ 0)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x : Fin n → ℝ) :
     tlsObjective d t A b x =
@@ -1121,13 +1204,21 @@ private theorem tlsObjective_eq (d : Fin m → ℝ) {t : Fin (n + 1) → ℝ} (h
   · simp only [Fin.snoc_castSucc, Fin.snoc_last, Real.norm_eq_abs, sq_abs,
       div_pow, neg_div, neg_sq, one_pow]
 
-/-- **The TLS solution minimizes `ψ`** ([golub2013matrix] (6.3.6), "It can be shown that the TLS
-solution `x_TLS` minimizes `ψ(x)`", P6.3.5): with one right-hand side, `m > n`, an SVD
-`Uᵀ C V = Σ` of `C = D [A | b] T` and the generic condition `σ_n(C₁) > σ_{n+1}(C)`, the vector
-`x_TLS = −T₁ v₁₂ / (t_{n+1} v₂₂)` of Theorem 6.3.1 minimizes `ψ`. Indeed
-`ψ(x) = ‖C w‖²/‖w‖² ≥ σ_min(C)²` for `w = T⁻¹ [x; −1]`, and `T⁻¹ [x_TLS; −1]` is a multiple of
-the last column of `V`, on which `‖C v‖ = σ_{n+1}(C) = σ_min(C)`; `v₂₂ ≠ 0` is
-`Matrix.isUnit_lowerRightBlock_of_lt`. -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$ with $m > n$, let
+$d \in \mathbb{R}^m$, and let $t \in \mathbb{R}^{n + 1}$ have nonzero entries. Let
+$C = D [A \mid b] T$ have the SVD $U^T C V = \Sigma$, with singular values
+$\sigma_1 \ge \sigma_2 \ge \dots$, and assume the generic condition
+$\sigma_{n+1}(C) < \sigma_n(D A T_1)$. Then the vector
+$$x_{TLS} = -\frac{T_1 v_{12}}{t_{n+1} v_{22}}$$
+of Theorem 6.3.1 minimizes $\psi$, where $[v_{12}; v_{22}]$ is the last column of $V$. This is
+the statement after (6.3.6) of [golub2013matrix] that the TLS solution minimizes $\psi$, and
+Problem P6.3.5.
+
+For $w = T^{-1} [x; -1]$, $\psi(x) = \|Cw\|^2 / \|w\|^2 \ge \sigma_{\min}(C)^2$, and
+$T^{-1} [x_{TLS}; -1]$ is a multiple of the last column of $V$, on which
+$\|Cv\| = \sigma_{n+1}(C) = \sigma_{\min}(C)$. The entry $v_{22}$ is nonzero by
+`Matrix.isUnit_lowerRightBlock_of_lt`. The columns of $C$ are reindexed to `Fin (n + 1)`, and
+singular values are indexed from $0$, as in `Matrix.isUnit_lowerRightBlock_of_lt`. -/
 theorem isMinOn_tlsObjective (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) → ℝ}
     (ht : ∀ j, t j ≠ 0) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}

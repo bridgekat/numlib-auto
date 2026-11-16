@@ -8,39 +8,58 @@ import Mathlib.Analysis.Normed.Group.Basic
 /-!
 # The discrete Gronwall lemma in summed form
 
-Mathlib's `discrete_gronwall` (`Mathlib/Analysis/ODE/DiscreteGronwall.lean`) is the *recursive*
-form of the discrete Gronwall inequality: from `u (n + 1) ≤ (1 + c n) * u n + b n` it concludes
-`u n ≤ (u n₀ + ∑ b) * exp (∑ c)`. The numerical-analysis books state the lemma in *summed* form
-([quarteroni2000numerical] Lemma 11.2, which cites Quarteroni–Valli for the proof): from
-`φ n ≤ g₀ + ∑_{s < n} p s + ∑_{s < n} k s * φ s` conclude
-`φ n ≤ (g₀ + ∑_{s < n} p s) * exp (∑_{s < n} k s)`. The summed form is a corollary of the recursive
-one applied to the majorant `ψ n = g₀ + ∑_{s < n} p s + ∑_{s < n} k s * φ s`, which satisfies
-`φ n ≤ ψ n` and `ψ (n + 1) = ψ n + p n + k n * φ n ≤ (1 + k n) * ψ n + p n`; that is
-`Gronwall.discrete_sum`. The two specializations the one-step theory uses are the
-constant-coefficient case `p s = h δ`, `k s = h Λ` with the sums evaluated
-(`Gronwall.discrete_sum_const`, the shape of the estimates of [quarteroni2000numerical] Theorems
-11.1 and 11.2) and the norm form for a sequence in a normed group (`Gronwall.norm_discrete_sum`).
-The `_of_le` variants assume the summed inequality only up to a horizon `N` and conclude up to
-`N`, which is what a recursion controlled only while the grid nodes stay in the time interval
-delivers.
+The **discrete Gronwall lemma** in summed form states the following. Let $g_0 \ge 0$, and let
+$k_s \ge 0$ and $p_s \ge 0$ for all $s \in \mathbb{N}$. If a real sequence $(\varphi_n)$ satisfies
+$$\varphi_n \le g_0 + \sum_{s < n} p_s + \sum_{s < n} k_s \varphi_s \quad \text{for every } n,$$
+then
+$$\varphi_n \le \Big(g_0 + \sum_{s < n} p_s\Big) \exp\Big(\sum_{s < n} k_s\Big) \quad \text{for
+  every } n.$$
+This is Lemma 11.2 of [quarteroni2000numerical], which refers to [quarteroni1994numerical] for the
+proof. Mathlib's `discrete_gronwall` is the recursive form: from $u_{n+1} \le (1 + c_n) u_n + b_n$
+it concludes $u_n \le (u_{n_0} + \sum b) \exp(\sum c)$.
 
-The book states the hypothesis as `φ 0 ≤ g₀` together with the summed bound for `n ≥ 1`; since
-the sums are empty at `n = 0`, this is the single hypothesis `∀ n, φ n ≤ …` used here. No sign
-condition on `φ` is needed.
+The file also proves the constant-coefficient case $p_s = h \delta$, $k_s = h \Lambda$ with the sums
+evaluated, which has the shape of the estimates of Theorems 11.1 and 11.2 of
+[quarteroni2000numerical], and the form for the norms of a sequence in a normed group. The variants
+with the suffix `_of_le` assume the summed inequality only up to a horizon $N$ and conclude up to
+$N$. A recursion that is controlled only while the grid nodes stay in the time interval delivers
+exactly this.
 
-The continuous counterpart, Gronwall's lemma in integral form, is `Numlib/Analysis/ODE/Gronwall`
-(same namespace `Gronwall`). The consumers of the discrete lemma are the numerical methods of
-`Numlib/ODE`: zero-stability and convergence of one-step and multistep methods.
+## Main results
+
+* `Gronwall.discrete_sum`: the discrete Gronwall lemma in summed form.
+* `Gronwall.discrete_sum_of_le`: the same on a finite horizon $n \le N$.
+* `Gronwall.discrete_sum_const` and `Gronwall.discrete_sum_const_of_le`: the constant-coefficient
+  case, $\varphi_n \le (g_0 + n h \delta) \exp(n h \Lambda)$.
+* `Gronwall.norm_discrete_sum`: the lemma for the norms $\|w_n\|$ of a sequence in a normed group.
+
+## Proof outline
+
+The summed form follows from the recursive one, applied to the majorant $\psi_n = g_0 + \sum_{s < n}
+p_s + \sum_{s < n} k_s \varphi_s$. It satisfies $\varphi_n \le \psi_n$ and $\psi_{n+1} = \psi_n +
+p_n + k_n \varphi_n \le (1 + k_n) \psi_n + p_n$.
+
+## Implementation notes
+
+* The source states the hypothesis as $\varphi_0 \le g_0$ together with the summed bound for
+  $n \ge 1$. The sums are empty at $n = 0$, so this is the single hypothesis for all $n$ used here.
+  No sign condition on $\varphi$ is needed.
+* The continuous counterpart, Gronwall's lemma in integral form, is in
+  `Numlib.Analysis.ODE.Gronwall`, in the same namespace `Gronwall`. The discrete lemma is used for
+  the zero-stability and the convergence of one-step and multistep methods in `Numlib.ODE`.
 -/
 
 open Finset Real
 
 namespace Gronwall
 
-/-- **Discrete Gronwall lemma, summed form** ([quarteroni2000numerical] Lemma 11.2). Let
-`0 ≤ g₀`, `0 ≤ k s` and `0 ≤ p s` for all `s`, and suppose
-`φ n ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * φ s` for every `n` (at `n = 0` this is
-`φ 0 ≤ g₀`). Then `φ n ≤ (g₀ + ∑ s ∈ range n, p s) * exp (∑ s ∈ range n, k s)` for every `n`. -/
+/-- The **discrete Gronwall lemma**, summed form. Let $g_0 \ge 0$, and let $k_s \ge 0$ and
+$p_s \ge 0$ for every $s \in \mathbb{N}$. Suppose that the real sequence $(\varphi_n)$ satisfies
+$$\varphi_n \le g_0 + \sum_{s < n} p_s + \sum_{s < n} k_s \varphi_s \quad \text{for every } n
+  \in \mathbb{N},$$
+which at $n = 0$ is $\varphi_0 \le g_0$. Then for every $n \in \mathbb{N}$,
+$$\varphi_n \le \Big(g_0 + \sum_{s < n} p_s\Big) \exp\Big(\sum_{s < n} k_s\Big).$$
+This is Lemma 11.2 of [quarteroni2000numerical]. -/
 theorem discrete_sum {φ k p : ℕ → ℝ} {g₀ : ℝ} (hg₀ : 0 ≤ g₀) (hk : ∀ s, 0 ≤ k s)
     (hp : ∀ s, 0 ≤ p s)
     (h : ∀ n, φ n ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * φ s) (n : ℕ) :
@@ -59,11 +78,17 @@ theorem discrete_sum {φ k p : ℕ → ℝ} {g₀ : ℝ} (hg₀ : 0 ≤ g₀) (h
   rw [hψ0, ← range_eq_Ico] at key
   exact (h n).trans key
 
-/-- **Discrete Gronwall lemma on a finite horizon**: the summed hypothesis is only needed for
-`n ≤ N`, and the conclusion holds for `n ≤ N`. This is the form the one-step and multistep
-theories use, where the recursion is controlled only while the nodes stay in the time interval.
-Proof: the sequence `φ' n = if n ≤ N then max (φ n) 0 else 0` satisfies the hypothesis of
-`discrete_sum` for every `n` (the right-hand side is nonnegative, and `φ ≤ φ'` below `N`). -/
+/-- The **discrete Gronwall lemma on a finite horizon**. Let $N \in \mathbb{N}$, let $g_0 \ge 0$,
+and let $k_s \ge 0$ and $p_s \ge 0$ for every $s$. Suppose that
+$$\varphi_n \le g_0 + \sum_{s < n} p_s + \sum_{s < n} k_s \varphi_s \quad \text{for every } n
+  \le N.$$
+Then for every $n \le N$,
+$$\varphi_n \le \Big(g_0 + \sum_{s < n} p_s\Big) \exp\Big(\sum_{s < n} k_s\Big).$$
+
+This is the form that the one-step and multistep theories use, where the recursion is controlled
+only while the nodes stay in the time interval. The proof applies `Gronwall.discrete_sum` to the
+sequence $\varphi'_n = \max(\varphi_n, 0)$ for $n \le N$ and $\varphi'_n = 0$ for $n > N$, which
+satisfies the hypothesis for every $n$. -/
 theorem discrete_sum_of_le {φ k p : ℕ → ℝ} {g₀ : ℝ} {N : ℕ} (hg₀ : 0 ≤ g₀) (hk : ∀ s, 0 ≤ k s)
     (hp : ∀ s, 0 ≤ p s)
     (h : ∀ n ≤ N, φ n ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * φ s) {n : ℕ}
@@ -87,9 +112,13 @@ theorem discrete_sum_of_le {φ k p : ℕ → ℝ} {g₀ : ℝ} {N : ℕ} (hg₀ 
     · exact hnn
   exact (hle n hn).trans (discrete_sum hg₀ hk hp hsum n)
 
-/-- The constant-coefficient discrete Gronwall lemma on a finite horizon: if `0 ≤ g₀`, `0 ≤ h`,
-`0 ≤ δ`, `0 ≤ Λ` and `φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s` for every `n ≤ N`, then
-`φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ)` for every `n ≤ N`. -/
+/-- The **constant-coefficient discrete Gronwall lemma on a finite horizon**. Let $N \in \mathbb{N}$
+and let $g_0, h, \delta, \Lambda \ge 0$. Suppose that
+$$\varphi_n \le g_0 + n h \delta + h \Lambda \sum_{s < n} \varphi_s \quad \text{for every } n
+  \le N.$$
+Then for every $n \le N$,
+$$\varphi_n \le (g_0 + n h \delta) \exp(n h \Lambda).$$
+-/
 theorem discrete_sum_const_of_le {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} {N : ℕ} (hg₀ : 0 ≤ g₀) (hh : 0 ≤ h)
     (hδ : 0 ≤ δ) (hΛ : 0 ≤ Λ)
     (hφ : ∀ n ≤ N, φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s) {n : ℕ} (hn : n ≤ N) :
@@ -99,11 +128,15 @@ theorem discrete_sum_const_of_le {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} {N : �
       simpa [sum_const, card_range, nsmul_eq_mul, mul_sum, mul_assoc] using hφ m hm) hn
   simpa [sum_const, card_range, nsmul_eq_mul, mul_assoc, mul_comm, mul_left_comm] using key
 
-/-- The constant-coefficient discrete Gronwall lemma, in the shape of the estimates of
-[quarteroni2000numerical] Theorems 11.1 and 11.2: if `0 ≤ g₀`, `0 ≤ h`, `0 ≤ δ`, `0 ≤ Λ` and
-`φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s` for every `n`, then
-`φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ)` for every `n`. The finite-horizon form
-`discrete_sum_const_of_le` at the horizon `N = n`. -/
+/-- The **constant-coefficient discrete Gronwall lemma**. Let $g_0, h, \delta, \Lambda \ge 0$, and
+suppose that
+$$\varphi_n \le g_0 + n h \delta + h \Lambda \sum_{s < n} \varphi_s \quad \text{for every } n
+  \in \mathbb{N}.$$
+Then for every $n \in \mathbb{N}$,
+$$\varphi_n \le (g_0 + n h \delta) \exp(n h \Lambda).$$
+This has the shape of the estimates of Theorems 11.1 and 11.2 of [quarteroni2000numerical].
+
+It is `Gronwall.discrete_sum_const_of_le` with the horizon $N = n$. -/
 theorem discrete_sum_const {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} (hg₀ : 0 ≤ g₀) (hh : 0 ≤ h) (hδ : 0 ≤ δ)
     (hΛ : 0 ≤ Λ) (hφ : ∀ n, φ n ≤ g₀ + n * h * δ + h * Λ * ∑ s ∈ range n, φ s) (n : ℕ) :
     φ n ≤ (g₀ + n * h * δ) * exp (n * h * Λ) :=
@@ -111,10 +144,16 @@ theorem discrete_sum_const {φ : ℕ → ℝ} {g₀ h δ Λ : ℝ} (hg₀ : 0 �
 
 variable {E : Type*} [SeminormedAddGroup E]
 
-/-- **Discrete Gronwall lemma for a sequence in a normed group**: if `0 ≤ g₀`, `0 ≤ k s`,
-`0 ≤ p s` and `‖w n‖ ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * ‖w s‖` for every `n`, then
-`‖w n‖ ≤ (g₀ + ∑ s ∈ range n, p s) * exp (∑ s ∈ range n, k s)`. This is `discrete_sum` applied to
-`‖w ·‖`; every consumer applies it to the difference of two orbits. -/
+/-- The **discrete Gronwall lemma for a sequence in a normed group**. Let $E$ be a seminormed
+additive group, let $(w_n)$ be a sequence in $E$, let $g_0 \ge 0$, and let $k_s \ge 0$ and
+$p_s \ge 0$ for every $s$. Suppose that
+$$\|w_n\| \le g_0 + \sum_{s < n} p_s + \sum_{s < n} k_s \|w_s\| \quad \text{for every } n \in
+  \mathbb{N}.$$
+Then for every $n \in \mathbb{N}$,
+$$\|w_n\| \le \Big(g_0 + \sum_{s < n} p_s\Big) \exp\Big(\sum_{s < n} k_s\Big).$$
+
+This is `Gronwall.discrete_sum` applied to $n \mapsto \|w_n\|$. It is typically applied to the
+difference of two orbits. -/
 theorem norm_discrete_sum {w : ℕ → E} {k p : ℕ → ℝ} {g₀ : ℝ} (hg₀ : 0 ≤ g₀) (hk : ∀ s, 0 ≤ k s)
     (hp : ∀ s, 0 ≤ p s)
     (h : ∀ n, ‖w n‖ ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * ‖w s‖) (n : ℕ) :

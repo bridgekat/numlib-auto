@@ -12,76 +12,90 @@ import Numlib.RingTheory.Polynomial.SchurCohn
 /-!
 # Linear recurrences: the root condition and bounded solutions
 
-The analytic half of the theory of linear difference equations with constant coefficients, as
-[quarteroni2000numerical] §11.4 and §11.6 present it for the analysis of multistep methods: the
-root condition of a polynomial, and the characterization of the recurrences all of whose solutions
-are bounded (the book's Lemma 11.3) or decay (the criterion behind absolute stability). The
-algebra — Mathlib's `LinearRecurrence`, the Kronecker fundamental solutions `ψ_j`, the discrete
-Duhamel formula and the fundamental system of binomial sequences `n.choose s * r ^ (n - s)` —
-is `Numlib/Algebra/LinearRecurrence`; this module, its analytic counterpart, adds the norms.
+A linear recurrence of order $k$ with coefficients $\alpha_0, \dots, \alpha_{k-1}$ and source
+$(\varphi_n)$ is the equation
+$$u_{n+k} = \sum_{i=0}^{k-1} \alpha_i u_{n+i} + \varphi_{n+k} \qquad (n \ge 0),$$
+and its characteristic polynomial is $\Pi(X) = X^k - \sum_{i<k} \alpha_i X^i$. A polynomial
+satisfies the **root condition** if all its roots lie in the closed unit disc and the roots of
+modulus one are simple. This file proves the analytic part of the theory of linear recurrences with
+constant coefficients, as [quarteroni2000numerical], §11.4 and §11.6, present it for the analysis of
+multistep methods. The main result is Lemma 11.3 of [quarteroni2000numerical]: if $k > 0$, there is
+$M > 0$ with
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr) \qquad \text{for every
+  solution } u \text{ and every } n$$
+if and only if $\Pi$ satisfies the root condition. The file also shows that all solutions of the
+homogeneous recurrence ($\varphi = 0$) are bounded if and only if $\Pi$ satisfies the root
+condition, and that they all tend to zero if and only if all roots of $\Pi$ lie in the open unit
+disc.
 
-## The root conditions
+The algebraic part is in `Numlib.Algebra.LinearRecurrence`: Mathlib's `LinearRecurrence`, the
+Kronecker fundamental solutions $\psi_j$ (the homogeneous solutions with $\psi_j(i) = \delta_{ij}$
+for $i < k$), the discrete Duhamel formula, and the fundamental system of binomial sequences
+$\binom{n}{s} r^{n-s}$ for the roots $r$ of $\Pi$ and $s$ less than the multiplicity of $r$. This
+file adds the bounds.
 
-* `Polynomial.SatisfiesRootCondition P` — every root of `P` lies in the closed unit disc and the
-  roots on the unit circle are simple ([quarteroni2000numerical] Definition 11.10, (11.56));
-  `Polynomial.satisfiesRootCondition_iff_derivative` is the book's formulation of simplicity,
-  `P' (r) ≠ 0`.
-* `Polynomial.SatisfiesStrongRootCondition P` — the root condition, and `1` is the only root on
-  the unit circle (Definition 11.11, (11.57)).
-* `Polynomial.satisfiesRootCondition_of_roots` reads the condition off the multiset of roots, and
-  `Polynomial.satisfiesRootCondition_of_isSchurStable` establishes it for `c (X - 1) Q` with `Q`
-  Schur stable (`Numlib/RingTheory/Polynomial/SchurCohn`) — the shape of the first characteristic
-  polynomial of a consistent multistep method.
-* `Polynomial.satisfiesRootCondition_C_mul_iff` — the condition is invariant under multiplication
-  by a nonzero constant, which is how the absolute stability region reads it off `Π(z)`.
+## Main definitions
 
-Both are stated for a polynomial over any normed field; for a real polynomial the condition of
-interest is that of its image in `ℂ[X]`, which is how `Numlib/ODE/Multistep` reads the first
-characteristic polynomial `ρ` of a real method.
+* `Polynomial.SatisfiesRootCondition`: every root lies in the closed unit disc, and the roots of
+  modulus one are simple (Definition 11.10 of [quarteroni2000numerical]).
+* `Polynomial.SatisfiesStrongRootCondition`: the root condition holds, and $1$ is the only possible
+  root of modulus one (Definition 11.11 of [quarteroni2000numerical]).
 
-## Bounded and decaying solutions
+## Main results
 
-The results are stated over an `RCLike` field `𝕜` — the necessity directions need `‖(n : 𝕜)‖ = n`
-to see that `n * r ^ n` is unbounded — with the splitting of the characteristic polynomial as an
-explicit hypothesis wherever the fundamental system is used; the `ℂ` forms, where it is automatic,
-carry the names of the book's statements.
-
-* `LinearRecurrence.bddAbove_range_norm_of_satisfiesRootCondition_of_splits` — under the root
-  condition every solution is bounded: each fundamental solution is, since `n.choose s * r ^ (n-s)`
-  tends to zero for `‖r‖ < 1` and is `r ^ n` of norm one when `‖r‖ = 1`, `s = 0`.
-* `LinearRecurrence.norm_le_of_satisfiesRootCondition` — Lemma 11.3, sufficiency, (11.63): under
-  the root condition there is `M > 0` with
-  `‖u n‖ ≤ M * (max_{j < k} ‖u j‖ + ∑_{l = k}^{n} ‖φ l‖)` for every solution `u` of the recurrence
-  with source `φ`. The proof is the Duhamel formula with a uniform bound on the `ψ_j`
-  (`norm_kroneckerSol_le_of_satisfiesRootCondition`).
-* `LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition` — Lemma 11.3,
-  necessity: when the root condition fails there is an unbounded solution, `r ^ n` for a root with
-  `‖r‖ > 1` and `n * r ^ n` for a multiple root on the circle.
-* `LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition`,
-  `LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition` — Lemma 11.3 as an equivalence,
-  and its homogeneous form (the region `𝒜*` of the book's Remark 11.3).
-* `LinearRecurrence.forall_tendsto_zero_iff` — every solution tends to zero iff every root lies
-  in the open unit disc.
-* `LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition` — the real
-  form of the necessity: a real recurrence whose complexification violates the root condition has
-  an unbounded *real* solution, the real or imaginary part of the complex one. This is the witness
-  the necessity halves of the book's Theorems 11.4 and 11.5 need; the book's `ε (r + r̄) ^ n` is not
-  a solution.
+* `Polynomial.satisfiesRootCondition_iff_derivative`: the root condition with simplicity written as
+  $P'(r) \neq 0$, as in [quarteroni2000numerical].
+* `Polynomial.satisfiesRootCondition_of_roots`: the root condition read off the multiset of roots.
+* `Polynomial.satisfiesRootCondition_of_isSchurStable`: $c (X - 1) Q$ with $c \neq 0$ and $Q$ Schur
+  stable satisfies the root condition. This is the form of the first characteristic polynomial of a
+  consistent multistep method.
+* `Polynomial.satisfiesRootCondition_C_mul_iff`: the root condition does not change under
+  multiplication by a nonzero constant.
+* `LinearRecurrence.bddAbove_range_norm_of_satisfiesRootCondition_of_splits`: under the root
+  condition, every solution of the homogeneous recurrence is bounded.
+* `LinearRecurrence.norm_le_of_satisfiesRootCondition`: Lemma 11.3 of [quarteroni2000numerical],
+  sufficiency, the bound (11.63).
+* `LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition`: Lemma 11.3,
+  necessity: if the root condition fails, the homogeneous recurrence has an unbounded solution.
+* `LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition` and
+  `LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition`: Lemma 11.3 as an equivalence, and
+  its homogeneous form.
+* `LinearRecurrence.forall_tendsto_zero_iff`: every solution of the homogeneous recurrence tends to
+  zero if and only if every root of $\Pi$ lies in the open unit disc.
+* `LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`: a real
+  recurrence whose characteristic polynomial violates the root condition in $\mathbb{C}$ has an
+  unbounded real solution.
 * `LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le` and
-  `LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le` — the two forms of (11.63) that a
-  perturbed orbit needs: the hypothesis restricted to the steps `n + k ≤ N` (the recursion of a
-  perturbed orbit is controlled only while its nodes stay inside the horizon), and the sequence
-  with values in a real normed space (the difference of two orbits). The horizon form extends the
-  sequence by `mkSolWith` (`LinearRecurrence.eq_mkSolWith_of_le`); the vector form reduces to the
-  complex scalar form through a norming functional (Hahn–Banach, `exists_dual_vector''`).
+  `LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le`: the bound (11.63) for a sequence
+  that satisfies the recurrence only for $n + k \le N$, and for a sequence in a real normed space.
 * `LinearRecurrence.exists_isSolution_norm_ge_of_not_satisfiesRootCondition` and
-  `LinearRecurrence.exists_isSolution_real_frequently_le` — the necessity witnesses made
-  quantitative: when the root condition fails there is a complex solution with `c n ≤ ‖w n‖` for
-  every `n`, and a real solution with `c n ≤ |u n|` for infinitely many `n`. A convergence proof
-  that scales the counterexample by `h ≈ T/n` needs this, not mere unboundedness.
+  `LinearRecurrence.exists_isSolution_real_frequently_le`: if the root condition fails, there are a
+  complex solution with $|w_n| \ge cn$ for all $n$ and a real solution with $|u_n| \ge cn$ for
+  infinitely many $n$, for some $c > 0$.
 
-Consumers: `Numlib/ODE/Multistep` (zero-stability, convergence, absolute stability of linear
-multistep methods).
+## Proof outline
+
+Under the root condition every fundamental solution $\binom{n}{s} r^{n-s}$ is bounded: it tends to
+zero for $|r| < 1$, and for $|r| = 1$ the root is simple, so $s = 0$ and the sequence is $r^n$ of
+modulus one. Every homogeneous solution is a finite combination of these, and the Duhamel formula
+with a uniform bound on the $\psi_j$ gives (11.63). If the root condition fails, $r^n$ for a root
+with $|r| > 1$, or $n r^n$ for a multiple root with $|r| = 1$, is an unbounded solution.
+
+## Implementation notes
+
+* The root conditions are defined for a polynomial over any normed field. For a real polynomial the
+  condition of interest is that of its image in $\mathbb{C}[X]$. This is how `Numlib.ODE.Multistep`
+  reads the first characteristic polynomial $\rho$ of a real multistep method.
+* The results on bounded and decaying solutions are stated over $\mathbb{K} = \mathbb{R}$ or
+  $\mathbb{C}$ (`RCLike`), because the necessity directions use $|n| = n$ in $\mathbb{K}$ to see
+  that $n r^n$ is unbounded. Where the fundamental system is used, the splitting of $\Pi$ is an
+  explicit hypothesis. The forms over $\mathbb{C}$, where the splitting is automatic, carry the
+  names of the statements of [quarteroni2000numerical].
+* The term $\max_{j<k} |u_j|$ is the supremum `⨆ j : Fin E.order, ‖u j‖`.
+* The quantitative necessity results are needed by a convergence proof that scales the unbounded
+  solution by a step size $h \approx T/n$; unboundedness alone is not sufficient there.
+* `Numlib.ODE.Multistep` uses these results for the zero-stability, the convergence and the absolute
+  stability of linear multistep methods.
 -/
 
 open Filter Finset Polynomial Topology
@@ -90,13 +104,18 @@ namespace Polynomial
 
 variable {K : Type*} [NormedField K]
 
-/-- **The root condition** ([quarteroni2000numerical] Definition 11.10, (11.56)): every root of
-`P` lies in the closed unit disc, and the roots of modulus one are simple. -/
+/-- The **root condition** for a polynomial $P$ over a normed field: every root $r$ of $P$ satisfies
+$|r| \le 1$, and every root with $|r| = 1$ is simple. This is Definition 11.10, (11.56), of
+[quarteroni2000numerical].
+
+Simplicity is stated as `Polynomial.rootMultiplicity r = 1`. The zero polynomial does not
+satisfy the condition, because every element is a root of it. -/
 def SatisfiesRootCondition (P : K[X]) : Prop :=
   ∀ r : K, P.IsRoot r → ‖r‖ ≤ 1 ∧ (‖r‖ = 1 → P.rootMultiplicity r = 1)
 
-/-- The book's formulation of the root condition: a root of modulus one is simple iff it is not a
-root of the derivative. -/
+/-- Let $P \neq 0$. Then $P$ satisfies the root condition if and only if every root $r$ of $P$
+satisfies $|r| \le 1$, and every root with $|r| = 1$ is not a root of the derivative $P'$. This
+is the formulation of [quarteroni2000numerical]. -/
 theorem satisfiesRootCondition_iff_derivative {P : K[X]} (hP : P ≠ 0) :
     P.SatisfiesRootCondition ↔
       ∀ r : K, P.IsRoot r → ‖r‖ ≤ 1 ∧ (‖r‖ = 1 → ¬ (derivative P).IsRoot r) := by
@@ -112,7 +131,10 @@ theorem satisfiesRootCondition_iff_derivative {P : K[X]} (hP : P ≠ 0) :
     by_contra hne
     exact hd (h2.1 (by omega)).2
 
-/-- The root condition is invariant under a nonzero constant factor. -/
+/-- Let $c \neq 0$. Then $cP$ satisfies the root condition if and only if $P$ does.
+
+This is how the root condition is read off the polynomial $\Pi(z)$ of the absolute stability
+region. -/
 theorem satisfiesRootCondition_C_mul_iff {c : K} (hc : c ≠ 0) (P : K[X]) :
     (C c * P).SatisfiesRootCondition ↔ P.SatisfiesRootCondition := by
   rcases eq_or_ne P 0 with rfl | hP
@@ -121,8 +143,9 @@ theorem satisfiesRootCondition_C_mul_iff {c : K} (hc : c ≠ 0) (P : K[X]) :
     simp only [Polynomial.SatisfiesRootCondition, IsRoot, eval_mul, eval_C, mul_eq_zero, hc,
       false_or, rootMultiplicity_mul hne, rootMultiplicity_C, zero_add]
 
-/-- **The strong root condition** ([quarteroni2000numerical] Definition 11.11, (11.57)): the root
-condition, and `1` is the only root of modulus one. -/
+/-- The **strong root condition** for a polynomial $P$ over a normed field: $P$ satisfies the root
+condition, and every root $r \neq 1$ of $P$ satisfies $|r| < 1$. This is Definition 11.11,
+(11.57), of [quarteroni2000numerical]. -/
 def SatisfiesStrongRootCondition (P : K[X]) : Prop :=
   P.SatisfiesRootCondition ∧ ∀ r : K, P.IsRoot r → r ≠ 1 → ‖r‖ < 1
 
@@ -135,8 +158,9 @@ section Roots
 
 variable [DecidableEq K]
 
-/-- A nonzero polynomial whose roots lie in the closed unit disc, the roots of modulus one being
-simple (`count = 1` in the multiset of roots), satisfies the root condition. -/
+/-- Let $P \neq 0$. If every root $r$ in the multiset of roots of $P$ satisfies $|r| \le 1$, and
+every such root with $|r| = 1$ occurs exactly once in the multiset, then $P$ satisfies the root
+condition. -/
 theorem satisfiesRootCondition_of_roots {P : K[X]} (hP : P ≠ 0) (h1 : ∀ r ∈ P.roots, ‖r‖ ≤ 1)
     (h2 : ∀ r ∈ P.roots, ‖r‖ = 1 → P.roots.count r = 1) : P.SatisfiesRootCondition := by
   intro r hr
@@ -145,7 +169,7 @@ theorem satisfiesRootCondition_of_roots {P : K[X]} (hP : P ≠ 0) (h1 : ∀ r �
 
 end Roots
 
-/-- `(X - a)(X - b)` with distinct roots `a ≠ b` in the closed unit disc satisfies the root
+/-- Let $a \neq b$ with $|a| \le 1$ and $|b| \le 1$. Then $(X - a)(X - b)$ satisfies the root
 condition. -/
 theorem satisfiesRootCondition_X_sub_C_mul_X_sub_C {a b : K} (hab : a ≠ b) (ha : ‖a‖ ≤ 1)
     (hb : ‖b‖ ≤ 1) : ((X - C a) * (X - C b)).SatisfiesRootCondition := by
@@ -165,10 +189,14 @@ theorem satisfiesRootCondition_X_sub_C_mul_X_sub_C {a b : K} (hab : a ≠ b) (ha
       Multiset.count_singleton]
     rcases hr with rfl | rfl <;> simp [hab, hab.symm]
 
-/-- **From Schur stability to the root condition**: if `P = c (X - 1) Q` with `c ≠ 0` and every
-complex root of `Q` has modulus `< 1` (`Polynomial.IsSchurStable`), then `P`, read in `ℂ[X]`,
-satisfies the root condition — its roots lie in the closed unit disc and the only one of modulus
-one is the simple root `1`. -/
+/-- **From Schur stability to the root condition.** Let $P, Q \in \mathbb{R}[X]$ and
+$c \in \mathbb{R}$ with $c \neq 0$ and
+$$P = c (X - 1) Q,$$
+and let $Q$ be Schur stable: every complex root of $Q$ has modulus less than $1$. Then $P$, as a
+polynomial in $\mathbb{C}[X]$, satisfies the root condition.
+
+The roots of $P$ lie in the closed unit disc, and the only one of modulus one is the simple root
+$1$. Schur stability is `Polynomial.IsSchurStable`. -/
 theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c ≠ 0)
     (hQ : Q.IsSchurStable) (hP : P = C c * ((X - C 1) * Q)) :
     (P.map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
@@ -207,7 +235,8 @@ theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c
 
 /-! ### The root condition for particular polynomials, and a bound on the unit disc -/
 
-/-- `(X - 1)(X + 1)`, read in `ℂ[X]`, satisfies the root condition: the roots `±1` are simple. -/
+/-- The polynomial $X^2 - 1 = (X - 1)(X + 1)$, as a polynomial in $\mathbb{C}[X]$, satisfies the
+root condition: its roots $\pm 1$ are simple. -/
 theorem satisfiesRootCondition_X_sq_sub_one :
     ((X ^ 2 - 1 : ℝ[X]).map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
   classical
@@ -217,8 +246,8 @@ theorem satisfiesRootCondition_X_sq_sub_one :
   rw [hfac]
   exact satisfiesRootCondition_X_sub_C_mul_X_sub_C (by norm_num) (by simp) (by simp)
 
-/-- `X^p (X - 1)`, read in `ℂ[X]`, satisfies the root condition: the roots are `0`, of
-multiplicity `p`, and `1`, simple. -/
+/-- For every $p \in \mathbb{N}$, the polynomial $X^p (X - 1)$, as a polynomial in $\mathbb{C}[X]$,
+satisfies the root condition: its roots are $0$, of multiplicity $p$, and the simple root $1$. -/
 theorem satisfiesRootCondition_X_pow_mul_X_sub_one (p : ℕ) :
     ((X ^ p * (X - C 1) : ℝ[X]).map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
   classical
@@ -241,8 +270,10 @@ theorem satisfiesRootCondition_X_pow_mul_X_sub_one (p : ℕ) :
         Multiset.count_singleton]
       simp
 
-/-- A monic complex polynomial whose roots all lie in the open unit disc satisfies
-`|P(x)| ≤ 2^{deg P}` on the closed unit disc. -/
+/-- Let $P \in \mathbb{C}[X]$ be monic, with every root in the open unit disc. Then for every
+$x \in \mathbb{C}$ with $|x| \le 1$,
+$$|P(x)| \le 2^{\deg P}.$$
+-/
 theorem norm_eval_le_two_pow_natDegree {P : ℂ[X]} (hP : P.Monic)
     (hroots : ∀ r, P.IsRoot r → ‖r‖ < 1) {x : ℂ} (hx : ‖x‖ ≤ 1) :
     ‖P.eval x‖ ≤ 2 ^ P.natDegree := by
@@ -269,9 +300,12 @@ namespace LinearRecurrence
 
 /-! ### Solutions on a finite horizon -/
 
-/-- A sequence satisfying the inhomogeneous recurrence for the steps `n + k ≤ N` agrees, up to
-`N`, with the solution `mkSolWith` of the recurrence whose source is truncated after `N` and whose
-initial data are its own. -/
+/-- Let $u$ satisfy the recurrence $u_{n+k} = \sum_{i<k} \alpha_i u_{n+i} + \varphi_{n+k}$ for all
+$n$ with $n + k \le N$. Then $u_n = v_n$ for all $n \le N$, where $v$ is the solution of the
+recurrence on all of $\mathbb{N}$ with the source $\varphi_l$ for $l \le N$ and $0$ for $l > N$,
+and with the initial values $v_j = u_j$ for $j < k$.
+
+The solution $v$ is `LinearRecurrence.mkSolWith`. -/
 theorem eq_mkSolWith_of_le {R : Type*} [CommSemiring R] (E : LinearRecurrence R) {φ u : ℕ → R}
     {N : ℕ}
     (hu : ∀ n, n + E.order ≤ N →
@@ -296,7 +330,10 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### The fundamental solutions -/
 
-/-- The binomial sequence `n.choose s * r ^ (n - s)` tends to zero when `‖r‖ < 1`. -/
+/-- Let $|r| < 1$ and $s \in \mathbb{N}$. Then the binomial sequence $\binom{n}{s} r^{n-s}$ tends to
+$0$ as $n \to \infty$.
+
+The sequence is `LinearRecurrence.chooseMulPow r s`. -/
 theorem tendsto_chooseMulPow_of_norm_lt_one {r : 𝕜} (hr : ‖r‖ < 1) (s : ℕ) :
     Tendsto (chooseMulPow r s) atTop (𝓝 0) := by
   rcases eq_or_ne r 0 with rfl | hr0
@@ -315,17 +352,20 @@ theorem tendsto_chooseMulPow_of_norm_lt_one {r : 𝕜} (hr : ‖r‖ < 1) (s : �
     gcongr
     exact_mod_cast Nat.choose_le_pow n s
 
-/-- The binomial sequences are bounded when `‖r‖ < 1`. -/
+/-- Let $|r| < 1$ and $s \in \mathbb{N}$. Then the binomial sequence $\binom{n}{s} r^{n-s}$ is
+bounded. -/
 theorem bddAbove_range_norm_chooseMulPow_of_norm_lt_one {r : 𝕜} (hr : ‖r‖ < 1) (s : ℕ) :
     BddAbove (Set.range fun n => ‖chooseMulPow r s n‖) :=
   ((tendsto_chooseMulPow_of_norm_lt_one hr s).norm).bddAbove_range
 
-/-- The geometric sequence of a root of modulus one has norm one. -/
+/-- If $|r| = 1$, the binomial sequence with $s = 0$, which is $r^n$, has modulus $1$ for every $n$.
+-/
 theorem norm_chooseMulPow_zero_of_norm_eq_one {r : 𝕜} (hr : ‖r‖ = 1) (n : ℕ) :
     ‖chooseMulPow r 0 n‖ = 1 := by
   simp [hr]
 
-/-- A finite combination of bounded sequences is bounded. -/
+/-- A finite linear combination $\sum_i c_i v_i$ of bounded sequences
+$v_i : \mathbb{N} \to \mathbb{K}$ is bounded. -/
 theorem bddAbove_range_norm_sum_smul {ι : Type*} [Fintype ι] {c : ι → 𝕜} {v : ι → ℕ → 𝕜}
     (hv : ∀ i, BddAbove (Set.range fun n => ‖v i n‖)) :
     BddAbove (Set.range fun n => ‖(∑ i, c i • v i) n‖) := by
@@ -340,8 +380,13 @@ theorem bddAbove_range_norm_sum_smul {ι : Type*} [Fintype ι] {c : ι → 𝕜}
 
 variable (E : LinearRecurrence 𝕜)
 
-/-- Under the root condition every fundamental solution is bounded: for `‖r‖ < 1` it tends to
-zero, and for `‖r‖ = 1` the root is simple, so the sequence is `r ^ n`, of norm one. -/
+/-- If the characteristic polynomial of a recurrence satisfies the root condition, every fundamental
+solution $\binom{n}{s} r^{n-s}$ is bounded. Here $r$ is a root and $s$ is less than the
+multiplicity of $r$.
+
+For $|r| < 1$ the sequence tends to zero. For $|r| = 1$ the root is simple, so $s = 0$ and the
+sequence is $r^n$, of modulus one. The fundamental solutions are
+`LinearRecurrence.fundamentalSol`, indexed by `LinearRecurrence.RootIndex`. -/
 theorem bddAbove_range_norm_fundamentalSol_of_satisfiesRootCondition [DecidableEq 𝕜]
     (hE : E.charPoly.SatisfiesRootCondition) (p : E.RootIndex) :
     BddAbove (Set.range fun n => ‖E.fundamentalSol p n‖) := by
@@ -358,9 +403,11 @@ theorem bddAbove_range_norm_fundamentalSol_of_satisfiesRootCondition [DecidableE
     simp only [fundamentalSol, hs]
     exact (norm_chooseMulPow_zero_of_norm_eq_one h1 n).le
 
-/-- Under the root condition, every solution of a recurrence whose characteristic polynomial
-splits is bounded ([quarteroni2000numerical] Lemma 11.3, the homogeneous case): it is a finite
-combination of bounded fundamental solutions. -/
+/-- Let the characteristic polynomial of a recurrence split over $\mathbb{K}$ and satisfy the root
+condition. Then every solution of the homogeneous recurrence is bounded. This is the homogeneous
+case of Lemma 11.3 of [quarteroni2000numerical].
+
+Every solution is a finite combination of the fundamental solutions, which are bounded. -/
 theorem bddAbove_range_norm_of_satisfiesRootCondition_of_splits (hs : E.charPoly.Splits)
     (hE : E.charPoly.SatisfiesRootCondition) {u : ℕ → 𝕜} (hu : E.IsSolution u) :
     BddAbove (Set.range fun n => ‖u n‖) := by
@@ -369,9 +416,12 @@ theorem bddAbove_range_norm_of_satisfiesRootCondition_of_splits (hs : E.charPoly
   exact bddAbove_range_norm_sum_smul fun p =>
     E.bddAbove_range_norm_fundamentalSol_of_satisfiesRootCondition hE p
 
-/-- Under the root condition, the Kronecker fundamental solutions of a recurrence whose
-characteristic polynomial splits are uniformly bounded: there is `M` with `‖ψ_j (n)‖ ≤ M` for all
-`j` and `n`. -/
+/-- Let the characteristic polynomial of a recurrence of order $k$ split over $\mathbb{K}$ and
+satisfy the root condition. Then the Kronecker fundamental solutions are uniformly bounded:
+there is $M$ with $|\psi_j(n)| \le M$ for all $j < k$ and all $n$.
+
+The solution $\psi_j$ is `LinearRecurrence.kroneckerSol j`: the homogeneous solution with
+$\psi_j(i) = \delta_{ij}$ for $i < k$. -/
 theorem norm_kroneckerSol_le_of_satisfiesRootCondition_of_splits (hs : E.charPoly.Splits)
     (hE : E.charPoly.SatisfiesRootCondition) :
     ∃ M : ℝ, ∀ (j : Fin E.order) (n : ℕ), ‖E.kroneckerSol j n‖ ≤ M := by
@@ -385,12 +435,15 @@ theorem norm_kroneckerSol_le_of_satisfiesRootCondition_of_splits (hs : E.charPol
 
 /-! ### Lemma 11.3 -/
 
-/-- **Lemma 11.3, sufficiency** ([quarteroni2000numerical] (11.63)), for a recurrence of positive
-order whose characteristic polynomial splits and satisfies the root condition: there is `M > 0`
-such that every solution `u` of the recurrence with source `φ` satisfies
-`‖u n‖ ≤ M * (max_{j < k} ‖u j‖ + ∑_{l = k}^{n} ‖φ l‖)` for every `n`. The proof is the Duhamel
-formula `eq_sum_kroneckerSol_add_sum` with the uniform bound on the Kronecker solutions;
-`M = k * M₀ + 1` works. -/
+/-- **Lemma 11.3, sufficiency.** Let the recurrence have order $k > 0$, and let its characteristic
+polynomial split over $\mathbb{K}$ and satisfy the root condition. Then there is $M > 0$ such
+that every solution $u$ of the recurrence $u_{n+k} = \sum_{i<k} \alpha_i u_{n+i} +
+\varphi_{n+k}$ with source $\varphi$ satisfies, for every $n$,
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr).$$
+This is the bound (11.63) of [quarteroni2000numerical].
+
+The proof is the Duhamel formula `LinearRecurrence.eq_sum_kroneckerSol_add_sum` with the uniform
+bound $M_0$ on the Kronecker solutions; $M = k M_0 + 1$ works. The sum is empty for $n < k$. -/
 theorem norm_le_of_satisfiesRootCondition_of_splits (hk : 0 < E.order) (hs : E.charPoly.Splits)
     (hE : E.charPoly.SatisfiesRootCondition) :
     ∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → 𝕜, E.IsSolutionWith φ u → ∀ n,
@@ -426,9 +479,11 @@ theorem norm_le_of_satisfiesRootCondition_of_splits (hk : 0 < E.order) (hs : E.c
     _ ≤ (E.order * M₀ + 1) * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Icc E.order n, ‖φ l‖) := by
         nlinarith
 
-/-- **Lemma 11.3, necessity**: when the root condition fails, the recurrence has an unbounded
-solution — `r ^ n` for a root `r` with `‖r‖ > 1`, and `n * r ^ n` for a multiple root of modulus
-one. Over any `RCLike` field, with no splitting hypothesis. -/
+/-- **Lemma 11.3, necessity.** If the characteristic polynomial of a recurrence over $\mathbb{K}$
+does not satisfy the root condition, the homogeneous recurrence has an unbounded solution.
+
+The solution is $r^n$ for a root $r$ with $|r| > 1$, and $n r^n$ for a multiple root with
+$|r| = 1$. The characteristic polynomial need not split. -/
 theorem exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition
     (h : ¬ E.charPoly.SatisfiesRootCondition) :
     ∃ u : ℕ → 𝕜, E.IsSolution u ∧ ¬ BddAbove (Set.range fun n => ‖u n‖) := by
@@ -446,8 +501,15 @@ theorem exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition
     simp only [norm_mul, norm_pow, hle, one_pow, mul_one, RCLike.norm_natCast]
     exact not_bddAbove_of_tendsto_atTop tendsto_natCast_atTop_atTop
 
-/-- The uniform bound (11.63) forces the root condition: the direction of Lemma 11.3 that reads
-the estimate on the homogeneous equation, against the unbounded solution of the previous node. -/
+/-- If there is $M$ such that every solution $u$ of the recurrence with every source $\varphi$
+satisfies
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr) \qquad \text{for all }
+  n,$$
+then the characteristic polynomial satisfies the root condition.
+
+This is the direction of Lemma 11.3 of [quarteroni2000numerical] that applies the bound (11.63)
+to the unbounded homogeneous solution of
+`LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition`. -/
 theorem satisfiesRootCondition_of_forall_norm_le {M : ℝ}
     (hM : ∀ φ u : ℕ → 𝕜, E.IsSolutionWith φ u → ∀ n,
       ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Icc E.order n, ‖φ l‖)) :
@@ -458,9 +520,13 @@ theorem satisfiesRootCondition_of_forall_norm_le {M : ℝ}
   rintro _ ⟨n, rfl⟩
   simpa using hM 0 u ((E.isSolutionWith_zero_iff u).2 hu) n
 
-/-- **Lemma 11.3** as an equivalence, for a recurrence of positive order whose characteristic
-polynomial splits: the uniform bound (11.63) holds for some `M > 0` iff the characteristic
-polynomial satisfies the root condition. -/
+/-- **Lemma 11.3** of [quarteroni2000numerical], as an equivalence. Let the recurrence have order
+$k > 0$, and let its characteristic polynomial split over $\mathbb{K}$. Then the characteristic
+polynomial satisfies the root condition if and only if there is $M > 0$ such that every solution
+$u$ with every source $\varphi$ satisfies
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr) \qquad \text{for all }
+  n.$$
+-/
 theorem exists_forall_norm_le_iff_satisfiesRootCondition_of_splits (hk : 0 < E.order)
     (hs : E.charPoly.Splits) :
     (∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → 𝕜, E.IsSolutionWith φ u → ∀ n,
@@ -469,9 +535,11 @@ theorem exists_forall_norm_le_iff_satisfiesRootCondition_of_splits (hk : 0 < E.o
   ⟨fun ⟨_, _, hM⟩ => E.satisfiesRootCondition_of_forall_norm_le hM,
     E.norm_le_of_satisfiesRootCondition_of_splits hk hs⟩
 
-/-- The homogeneous form of Lemma 11.3 (the region `𝒜*` of [quarteroni2000numerical] Remark
-11.3), for a recurrence whose characteristic polynomial splits: every solution is bounded iff the
-characteristic polynomial satisfies the root condition. -/
+/-- The homogeneous form of Lemma 11.3 of [quarteroni2000numerical]. Let the characteristic
+polynomial of a recurrence split over $\mathbb{K}$. Then every solution of the homogeneous
+recurrence is bounded if and only if the characteristic polynomial satisfies the root condition.
+
+This describes the region $\mathcal{A}^*$ of Remark 11.3 of [quarteroni2000numerical]. -/
 theorem forall_bddAbove_iff_satisfiesRootCondition_of_splits (hs : E.charPoly.Splits) :
     (∀ u : ℕ → 𝕜, E.IsSolution u → BddAbove (Set.range fun n => ‖u n‖)) ↔
       E.charPoly.SatisfiesRootCondition := by
@@ -482,8 +550,10 @@ theorem forall_bddAbove_iff_satisfiesRootCondition_of_splits (hs : E.charPoly.Sp
 
 /-! ### Decay -/
 
-/-- When every root of the characteristic polynomial lies in the open unit disc and the
-polynomial splits, every solution tends to zero: each fundamental solution does. -/
+/-- Let the characteristic polynomial of a recurrence split over $\mathbb{K}$, with every root $r$
+satisfying $|r| < 1$. Then every solution of the homogeneous recurrence tends to $0$.
+
+Each fundamental solution tends to $0$. -/
 theorem tendsto_zero_of_forall_norm_lt_one_of_splits (hs : E.charPoly.Splits)
     (hE : ∀ r : 𝕜, E.charPoly.IsRoot r → ‖r‖ < 1) {u : ℕ → 𝕜} (hu : E.IsSolution u) :
     Tendsto u atTop (𝓝 0) := by
@@ -498,7 +568,8 @@ theorem tendsto_zero_of_forall_norm_lt_one_of_splits (hs : E.charPoly.Splits)
   refine this.congr fun n => ?_
   simp [Finset.sum_apply]
 
-/-- A root of modulus at least one gives the solution `r ^ n`, which does not tend to zero. -/
+/-- If $r$ is a root of the characteristic polynomial with $|r| \ge 1$, the homogeneous recurrence
+has a solution that does not tend to $0$, namely $r^n$. -/
 theorem exists_isSolution_not_tendsto_zero_of_one_le_norm {r : 𝕜} (hr : E.charPoly.IsRoot r)
     (h1 : 1 ≤ ‖r‖) : ∃ u : ℕ → 𝕜, E.IsSolution u ∧ ¬ Tendsto u atTop (𝓝 0) := by
   refine ⟨fun n => r ^ n, (E.geom_sol_iff_root_charPoly r).2 hr, fun h => ?_⟩
@@ -507,8 +578,9 @@ theorem exists_isSolution_not_tendsto_zero_of_one_le_norm {r : 𝕜} (hr : E.cha
   simp only [norm_pow] at hn
   exact hn.not_ge (one_le_pow₀ h1)
 
-/-- The decay criterion for a recurrence whose characteristic polynomial splits: every solution
-tends to zero iff every root lies in the open unit disc. -/
+/-- **The decay criterion.** Let the characteristic polynomial of a recurrence split over
+$\mathbb{K}$. Then every solution of the homogeneous recurrence tends to $0$ if and only if
+every root $r$ of the characteristic polynomial satisfies $|r| < 1$. -/
 theorem forall_tendsto_zero_iff_of_splits (hs : E.charPoly.Splits) :
     (∀ u : ℕ → 𝕜, E.IsSolution u → Tendsto u atTop (𝓝 0)) ↔
       ∀ r : 𝕜, E.charPoly.IsRoot r → ‖r‖ < 1 := by
@@ -525,25 +597,35 @@ section Complex
 
 variable (E : LinearRecurrence ℂ)
 
-/-- Under the root condition, the Kronecker fundamental solutions of a complex recurrence are
-uniformly bounded: there is `M` with `‖ψ_j (n)‖ ≤ M` for all `j` and `n`. -/
+/-- If the characteristic polynomial of a complex recurrence of order $k$ satisfies the root
+condition, the Kronecker fundamental solutions are uniformly bounded: there is $M$ with
+$|\psi_j(n)| \le M$ for all $j < k$ and all $n$. -/
 theorem norm_kroneckerSol_le_of_satisfiesRootCondition (hE : E.charPoly.SatisfiesRootCondition) :
     ∃ M : ℝ, ∀ (j : Fin E.order) (n : ℕ), ‖E.kroneckerSol j n‖ ≤ M :=
   E.norm_kroneckerSol_le_of_satisfiesRootCondition_of_splits (IsAlgClosed.splits _) hE
 
-/-- **Lemma 11.3, sufficiency** ([quarteroni2000numerical] (11.63)) over `ℂ`: for a recurrence of
-positive order satisfying the root condition there is `M > 0` such that every solution `u` with
-source `φ` satisfies `‖u n‖ ≤ M * (max_{j < k} ‖u j‖ + ∑_{l = k}^{n} ‖φ l‖)`. -/
+/-- **Lemma 11.3, sufficiency**, over $\mathbb{C}$. Let a complex recurrence have order $k > 0$, and
+let its characteristic polynomial satisfy the root condition. Then there is $M > 0$ such that
+every solution $u$ of the recurrence with source $\varphi$ satisfies, for every $n$,
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr).$$
+This is the bound (11.63) of [quarteroni2000numerical]. -/
 theorem norm_le_of_satisfiesRootCondition (hk : 0 < E.order)
     (hE : E.charPoly.SatisfiesRootCondition) :
     ∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → ℂ, E.IsSolutionWith φ u → ∀ n,
       ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Icc E.order n, ‖φ l‖) :=
   E.norm_le_of_satisfiesRootCondition_of_splits hk (IsAlgClosed.splits _) hE
 
-/-- **Lemma 11.3 on a finite horizon** ([quarteroni2000numerical] (11.63)), over `ℂ`: for a
-recurrence of positive order satisfying the root condition there is `M > 0` such that every
-sequence `u` satisfying the recurrence with source `φ` for the steps `n + k ≤ N` obeys
-`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. -/
+/-- **Lemma 11.3 on a finite horizon**, over $\mathbb{C}$. Let a complex recurrence have order
+$k > 0$, and let its characteristic polynomial satisfy the root condition. Then there is $M > 0$
+with the following property. Let $N \in \mathbb{N}$, and let $u$ satisfy $u_{n+k} = \sum_{i<k}
+\alpha_i u_{n+i} + \varphi_{n+k}$ for all $n$ with $n + k \le N$. Then for every $n \le N$,
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr).$$
+This is the bound (11.63) of [quarteroni2000numerical] for a sequence that satisfies the
+recurrence only up to $N$.
+
+The constant $M$ does not depend on $N$. A perturbed orbit of a multistep method satisfies its
+recurrence only while its nodes stay inside the time interval, and this form covers it. The
+proof extends $u$ by `LinearRecurrence.mkSolWith` (`LinearRecurrence.eq_mkSolWith_of_le`). -/
 theorem norm_le_of_satisfiesRootCondition_of_le (hk : 0 < E.order)
     (hE : E.charPoly.SatisfiesRootCondition) :
     ∃ M : ℝ, 0 < M ∧ ∀ (N : ℕ) (φ u : ℕ → ℂ),
@@ -560,33 +642,40 @@ theorem norm_le_of_satisfiesRootCondition_of_le (hk : 0 < E.order)
   · refine Finset.sum_congr rfl fun l hl => ?_
     simp only [φ', (Finset.mem_Icc.1 hl).2.trans hn, ite_true]
 
-/-- **Lemma 11.3** ([quarteroni2000numerical]) over `ℂ`: for a recurrence of positive order, the
-uniform bound (11.63) holds for some `M > 0` iff the characteristic polynomial satisfies the root
-condition. -/
+/-- **Lemma 11.3** of [quarteroni2000numerical], over $\mathbb{C}$. Let a complex recurrence have
+order $k > 0$. Then its characteristic polynomial satisfies the root condition if and only if
+there is $M > 0$ such that every solution $u$ with every source $\varphi$ satisfies
+$$|u_n| \le M \Bigl(\max_{j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr) \qquad \text{for all }
+  n.$$
+-/
 theorem exists_forall_norm_le_iff_satisfiesRootCondition (hk : 0 < E.order) :
     (∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → ℂ, E.IsSolutionWith φ u → ∀ n,
       ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Icc E.order n, ‖φ l‖)) ↔
       E.charPoly.SatisfiesRootCondition :=
   E.exists_forall_norm_le_iff_satisfiesRootCondition_of_splits hk (IsAlgClosed.splits _)
 
-/-- The homogeneous form of Lemma 11.3 over `ℂ` (the region `𝒜*` of [quarteroni2000numerical]
-Remark 11.3): every solution is bounded iff the characteristic polynomial satisfies the root
-condition. -/
+/-- The homogeneous form of Lemma 11.3 of [quarteroni2000numerical], over $\mathbb{C}$: every
+solution of a homogeneous complex recurrence is bounded if and only if its characteristic
+polynomial satisfies the root condition.
+
+This describes the region $\mathcal{A}^*$ of Remark 11.3 of [quarteroni2000numerical]. -/
 theorem forall_bddAbove_iff_satisfiesRootCondition :
     (∀ u : ℕ → ℂ, E.IsSolution u → BddAbove (Set.range fun n => ‖u n‖)) ↔
       E.charPoly.SatisfiesRootCondition :=
   E.forall_bddAbove_iff_satisfiesRootCondition_of_splits (IsAlgClosed.splits _)
 
-/-- The decay criterion over `ℂ` (behind the absolute root condition of [quarteroni2000numerical]
-§11.6.4): every solution tends to zero iff every root of the characteristic polynomial lies in the
-open unit disc. -/
+/-- **The decay criterion**, over $\mathbb{C}$: every solution of a homogeneous complex recurrence
+tends to $0$ if and only if every root $r$ of its characteristic polynomial satisfies $|r| < 1$.
+
+This criterion is behind the absolute root condition of [quarteroni2000numerical], §11.6.4. -/
 theorem forall_tendsto_zero_iff :
     (∀ u : ℕ → ℂ, E.IsSolution u → Tendsto u atTop (𝓝 0)) ↔
       ∀ r : ℂ, E.charPoly.IsRoot r → ‖r‖ < 1 :=
   E.forall_tendsto_zero_iff_of_splits (IsAlgClosed.splits _)
 
-/-- When the root condition fails there is a complex solution with `‖w n‖ ≥ c n` for all `n`,
-`c > 0`. -/
+/-- If the characteristic polynomial of a complex recurrence does not satisfy the root condition,
+there are a solution $w$ of the homogeneous recurrence and $c > 0$ with $|w_n| \ge cn$ for all
+$n$. -/
 theorem exists_isSolution_norm_ge_of_not_satisfiesRootCondition
     (h : ¬ E.charPoly.SatisfiesRootCondition) :
     ∃ w : ℕ → ℂ, E.IsSolution w ∧ ∃ c : ℝ, 0 < c ∧ ∀ n : ℕ, c * n ≤ ‖w n‖ := by
@@ -614,7 +703,9 @@ section Real
 
 variable (E : LinearRecurrence ℝ)
 
-/-- The real part of a solution of the complexification of a real recurrence is a solution. -/
+/-- Let $w : \mathbb{N} \to \mathbb{C}$ solve the homogeneous recurrence of a real recurrence, with
+its coefficients mapped to $\mathbb{C}$. Then the real part $(\operatorname{Re} w_n)$ is a
+solution of the real recurrence. -/
 theorem isSolution_re_of_map {w : ℕ → ℂ} (hw : (E.map (algebraMap ℝ ℂ)).IsSolution w) :
     E.IsSolution fun n => (w n).re := by
   intro n
@@ -622,8 +713,9 @@ theorem isSolution_re_of_map {w : ℕ → ℂ} (hw : (E.map (algebraMap ℝ ℂ)
   simp only [map, Complex.coe_algebraMap, Complex.re_sum, Complex.re_ofReal_mul] at this
   exact this
 
-/-- The imaginary part of a solution of the complexification of a real recurrence is a
-solution. -/
+/-- Let $w : \mathbb{N} \to \mathbb{C}$ solve the homogeneous recurrence of a real recurrence, with
+its coefficients mapped to $\mathbb{C}$. Then the imaginary part $(\operatorname{Im} w_n)$ is a
+solution of the real recurrence. -/
 theorem isSolution_im_of_map {w : ℕ → ℂ} (hw : (E.map (algebraMap ℝ ℂ)).IsSolution w) :
     E.IsSolution fun n => (w n).im := by
   intro n
@@ -631,11 +723,15 @@ theorem isSolution_im_of_map {w : ℕ → ℂ} (hw : (E.map (algebraMap ℝ ℂ)
   simp only [map, Complex.coe_algebraMap, Complex.im_sum, Complex.im_ofReal_mul] at this
   exact this
 
-/-- **Lemma 11.3, necessity, real form**: a real recurrence whose complexification violates the
-root condition has an unbounded *real* solution — the real or the imaginary part of the unbounded
-complex solution, since `‖w n‖ ≤ |Re (w n)| + |Im (w n)|`. This is the witness that the necessity
-halves of [quarteroni2000numerical] Theorems 11.4 and 11.5 need; the book's `ε (r + r̄) ^ n` for a
-complex root `r` is not a solution. -/
+/-- **Lemma 11.3, necessity, real form.** Let a real recurrence have a characteristic polynomial
+that, as a polynomial in $\mathbb{C}[X]$, does not satisfy the root condition. Then the
+homogeneous real recurrence has an unbounded real solution.
+
+The solution is the real or the imaginary part of the unbounded complex solution, because $|w_n|
+\le |\operatorname{Re} w_n| + |\operatorname{Im} w_n|$. The necessity parts of Theorems 11.4 and
+11.5 of [quarteroni2000numerical] need this real solution. The sequence
+$\varepsilon (r + \bar{r})^n$ that [quarteroni2000numerical] gives for a complex root $r$ is not
+a solution. -/
 theorem exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition
     (h : ¬ (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition) :
     ∃ u : ℕ → ℝ, E.IsSolution u ∧ ¬ BddAbove (Set.range fun n => |u n|) := by
@@ -649,9 +745,10 @@ theorem exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition
   rintro _ ⟨n, rfl⟩
   exact (Complex.norm_le_abs_re_add_abs_im _).trans (add_le_add (hA ⟨n, rfl⟩) (hB ⟨n, rfl⟩))
 
-/-- **A real solution growing at least linearly along a subsequence**: a real recurrence whose
-complexification violates the root condition has a real solution `u` with `c n ≤ |u n|` for
-infinitely many `n`, for some `c > 0`. -/
+/-- **A real solution that grows at least linearly along a subsequence.** Let a real recurrence have
+a characteristic polynomial that, as a polynomial in $\mathbb{C}[X]$, does not satisfy the root
+condition. Then there are a real solution $u$ of the homogeneous recurrence and $c > 0$ with
+$|u_n| \ge cn$ for infinitely many $n$. -/
 theorem exists_isSolution_real_frequently_le
     (h : ¬ (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition) :
     ∃ u : ℕ → ℝ, E.IsSolution u ∧ ∃ c : ℝ, 0 < c ∧ ∃ᶠ n in atTop, c * n ≤ |u n| := by
@@ -667,12 +764,18 @@ theorem exists_isSolution_real_frequently_le
   · exact ⟨_, E.isSolution_re_of_map hw, c / 2, by positivity, H⟩
   · exact ⟨_, E.isSolution_im_of_map hw, c / 2, by positivity, H⟩
 
-/-- **Lemma 11.3 on a finite horizon, for sequences in a normed space**: for a real recurrence of
-positive order whose complexification satisfies the root condition, there is `M > 0` such that
-every sequence `u` in a real normed space `V` satisfying
-`u (n + k) = ∑ α_i • u (n + i) + φ (n + k)` for the steps `n + k ≤ N` obeys
-`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. By the complex scalar case applied
-to `g ∘ u` for a norming functional `g` of `u n`. -/
+/-- **Lemma 11.3 on a finite horizon, for sequences in a normed space.** Let a real recurrence have
+order $k > 0$, and let its characteristic polynomial, as a polynomial in $\mathbb{C}[X]$,
+satisfy the root condition. Let $V$ be a real normed space. Then there is $M > 0$ with the
+following property. Let $N \in \mathbb{N}$, and let $u, \varphi : \mathbb{N} \to V$ satisfy
+$u_{n+k} = \sum_{i<k} \alpha_i u_{n+i} + \varphi_{n+k}$ for all $n$ with $n + k \le N$. Then for
+every $n \le N$,
+$$\|u_n\| \le M \Bigl(\max_{j < k} \|u_j\| + \sum_{l=k}^{n} \|\varphi_l\|\Bigr).$$
+
+The difference of two orbits of a multistep method is such a sequence. The proof applies the
+complex scalar case `LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le` to $g \circ u$,
+where $g$ is a norming functional of $u_n$ from the Hahn–Banach theorem
+(`exists_dual_vector''`). -/
 theorem norm_le_of_satisfiesRootCondition_smul_of_le (hk : 0 < E.order)
     (hE : (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition)
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] :

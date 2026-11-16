@@ -14,7 +14,53 @@ import Mathlib.Order.LiminfLimsup
 import Mathlib.Order.Filter.Prod
 import Mathlib.Tactic.Ring
 
-/-! # Clarke directional derivatives and subgradients -/
+/-!
+# Clarke directional derivatives and subgradients
+
+Let $E$ be a real inner product space and let $f : E \to \mathbb{R}$. The **Clarke directional
+derivative** of $f$ at $x$ in the direction $d$ is the upper limit
+$$f^\circ(x; d) = \limsup_{y \to x,\ t \downarrow 0} \frac{f(y + t d) - f(y)}{t},$$
+and the **Clarke subdifferential** is the set $\partial f(x) = \{g \in E \mid \langle g, d \rangle
+\le f^\circ(x; d) \text{ for all } d\}$. These are the generalized derivatives of Section 3.1.4 of
+[conn2000trust]. This file proves the basic properties of $f^\circ(x; \cdot)$ for a function $f$
+that is Lipschitz near $x$: it is bounded by the Lipschitz constant, subadditive, positively
+homogeneous and Lipschitz in $d$, it is upper semicontinuous in $x$, and it equals $f'(x) d$ at a
+point of strict differentiability. The subdifferential is closed and convex, compact in finite
+dimension, and its support function is $f^\circ(x; \cdot)$, the representation (3.1.4) of
+[conn2000trust].
+
+## Main definitions
+
+* `Optimization.clarkeDerivative`: the Clarke directional derivative $f^\circ(x; d)$.
+* `Optimization.clarkeSubgradient`: the Clarke subdifferential $\partial f(x)$.
+* `Optimization.HasClarkeSupport`: the support function of $\partial f(x)$ is $f^\circ(x; \cdot)$.
+
+## Main results
+
+* `Optimization.abs_clarkeDerivative_le`: if $f$ is $L$-Lipschitz near $x$, then
+  $|f^\circ(x; d)| \le L \|d\|$.
+* `Optimization.clarkeDerivative_add_le`, `Optimization.clarkeDerivative_pos_smul`:
+  $f^\circ(x; \cdot)$ is subadditive and positively homogeneous.
+* `Optimization.lipschitzWith_clarkeDerivative`: $f^\circ(x; \cdot)$ is $L$-Lipschitz.
+* `Optimization.eventually_clarkeDerivative_le_of_lt`: $y \mapsto f^\circ(y; d)$ is upper
+  semicontinuous at $x$.
+* `Optimization.clarkeDerivative_eq_of_hasStrictFDerivAt`: at a point of strict differentiability,
+  $f^\circ(x; d) = f'(x) d$.
+* `Optimization.clarkeSubgradient_subset_subdifferential`: for a continuous convex $f$, every Clarke
+  subgradient is a subgradient in the sense of convex analysis.
+* `Optimization.isCompact_clarkeSubgradient`: in finite dimension, $\partial f(x)$ is compact.
+* `Optimization.hasClarkeSupport_of_lipschitzOnWith`: in a Hilbert space, $\sup_{g \in \partial
+  f(x)} \langle g, d \rangle = f^\circ(x; d)$ for every $d$.
+
+## Implementation notes
+
+* The upper limit is `Filter.limsup` in $\mathbb{R}$ along the product filter of $y \to x$ and
+  $t \to 0^+$. A real upper limit has the intended value only when the quotients are eventually
+  bounded. This holds when $f$ is Lipschitz near $x$, which most results assume. The results on
+  constant functions, on strictly differentiable functions, and on the closedness and convexity of
+  $\partial f(x)$ do not need it.
+* "Lipschitz near $x$" is the pair of hypotheses `U ∈ 𝓝 x` and `LipschitzOnWith L f U`.
+-/
 
 open Filter Metric ConvexAnalysis
 open scoped Topology RealInnerProductSpace NNReal
@@ -28,9 +74,15 @@ private abbrev clarkeFilter (x : E) : Filter (E × ℝ) := 𝓝 x ×ˢ 𝓝[>] (
 private noncomputable def clarkeQuotient (f : E → ℝ) (d : E) (p : E × ℝ) : ℝ :=
   (f (p.1 + p.2 • d) - f p.1) / p.2
 
-/-- The Clarke directional derivative, given by the joint upper limit of difference
-quotients as the base tends to `x` and the step size tends to zero from above.
-The real upper limit is finite for a locally Lipschitz objective. -/
+/-- The **Clarke directional derivative** of $f : E \to \mathbb{R}$ at $x$ in the direction $d$:
+$$f^\circ(x; d) = \limsup_{y \to x,\ t \downarrow 0} \frac{f(y + t d) - f(y)}{t}.$$
+This is the generalized directional derivative of Section 3.1.4 of [conn2000trust].
+
+The upper limit is `Filter.limsup` in $\mathbb{R}$ along the product of the neighborhood filter of
+$x$ and the filter of right neighborhoods of $0$. It has the intended value when the quotients are
+eventually bounded, for example when
+$f$ is Lipschitz near $x$ (see `Optimization.abs_clarkeDerivative_le`). Otherwise the value of
+the real `limsup` is not meaningful. -/
 noncomputable def clarkeDerivative (f : E → ℝ) (x d : E) : ℝ :=
   limsup (clarkeQuotient f d) (clarkeFilter x)
 
@@ -64,7 +116,10 @@ private theorem eventually_abs_clarkeQuotient_le {f : E → ℝ} {x : E} {U : Se
   apply (div_le_iff₀ htp).2
   convert h using 1
   ring
-/-- The local Lipschitz constant bounds every Clarke directional derivative. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. Then for every
+direction $d$,
+$$|f^\circ(x; d)| \le L \|d\|.$$
+In particular $f^\circ(x; d)$ is finite. This bound is used in Section 3.1.4 of [conn2000trust]. -/
 theorem abs_clarkeDerivative_le {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (d : E) :
     |clarkeDerivative f x d| ≤ (L : ℝ) * ‖d‖ := by
@@ -81,8 +136,10 @@ theorem abs_clarkeDerivative_le {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0
   obtain ⟨p, hp, hp'⟩ := (hlow.and ha').exists
   exact hp.trans hp'
 
-/-- An eventual lower bound along any convergent path of base points is a lower
-bound for the Clarke directional derivative. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$, and let
+$y : (0, \infty) \to E$ be a path with $y(t) \to x$ as $t \to 0^+$. If
+$$a \le \frac{f(y(t) + t d) - f(y(t))}{t}$$
+for all sufficiently small $t > 0$, then $a \le f^\circ(x; d)$. -/
 theorem le_clarkeDerivative_of_eventually_path_quotient_ge
     {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {a : ℝ} {y : ℝ → E}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
@@ -96,8 +153,12 @@ theorem le_clarkeDerivative_of_eventually_path_quotient_ge
   exact le_limsup_of_frequently_le hF
     ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ hp => (abs_le.1 hp).2⟩
 
-/-- An eventual lower bound for fixed-base directional quotients is a lower bound
-for the Clarke directional derivative. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. If
+$$a \le \frac{f(x + t d) - f(x)}{t}$$
+for all sufficiently small $t > 0$, then $a \le f^\circ(x; d)$.
+
+This is the case of the constant path $y(t) = x$ in
+`Optimization.le_clarkeDerivative_of_eventually_path_quotient_ge`. -/
 theorem le_clarkeDerivative_of_eventually_base_quotient_ge
     {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {a : ℝ}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
@@ -105,8 +166,12 @@ theorem le_clarkeDerivative_of_eventually_base_quotient_ge
     a ≤ clarkeDerivative f x d :=
   le_clarkeDerivative_of_eventually_path_quotient_ge hU hL tendsto_const_nhds ha
 
-/-- A strict upper bound on the Clarke derivative bounds the fixed-base
-directional quotient for all sufficiently small positive steps. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. If
+$f^\circ(x; d) < b$, then
+$$\frac{f(x + t d) - f(x)}{t} < b$$
+for all sufficiently small $t > 0$.
+
+This step is used in the proof of Theorem 3.2.15 of [conn2000trust]. -/
 theorem eventually_base_quotient_lt_of_clarkeDerivative_lt
     {f : E → ℝ} {x d : E} {U : Set E} {L : ℝ≥0} {b : ℝ}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (hb : clarkeDerivative f x d < b) :
@@ -116,7 +181,8 @@ theorem eventually_base_quotient_lt_of_clarkeDerivative_lt
   exact hpath.eventually (eventually_lt_of_limsup_lt hb
     ⟨_, (eventually_abs_clarkeQuotient_le hU hL d).mono fun _ hp ↦ (abs_le.mp hp).2⟩)
 
-/-- The Clarke directional derivative of a constant is zero. -/
+/-- The Clarke directional derivative of a constant function is zero: $f^\circ(x; d) = 0$ for all
+$x$ and $d$. -/
 theorem clarkeDerivative_const (a : ℝ) (x d : E) :
     clarkeDerivative (fun _ => a) x d = 0 := by
   have hq : clarkeQuotient (fun _ => a) d = fun _ => 0 := by
@@ -125,7 +191,10 @@ theorem clarkeDerivative_const (a : ℝ) (x d : E) :
   rw [clarkeDerivative, hq]
   exact limsup_const (f := clarkeFilter x) 0
 
-/-- A Clarke directional derivative of a locally Lipschitz function is subadditive. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. Then
+$f^\circ(x; \cdot)$ is subadditive: for all directions $d$ and $e$,
+$$f^\circ(x; d + e) \le f^\circ(x; d) + f^\circ(x; e).$$
+-/
 theorem clarkeDerivative_add_le {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (d e : E) :
     clarkeDerivative f x (d + e) ≤ clarkeDerivative f x d + clarkeDerivative f x e := by
@@ -166,7 +235,10 @@ private theorem tendsto_clarkeScale (x : E) {a : ℝ} (ha : 0 < a) :
     exact mul_pos ha hp
   exact tendsto_fst.prodMk hm'
 
-/-- A Clarke directional derivative of a locally Lipschitz function is positively homogeneous. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. Then
+$f^\circ(x; \cdot)$ is positively homogeneous: for every $a > 0$ and every direction $d$,
+$$f^\circ(x; a d) = a \, f^\circ(x; d).$$
+-/
 theorem clarkeDerivative_pos_smul {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) {a : ℝ} (ha : 0 < a) (d : E) :
     clarkeDerivative f x (a • d) = a * clarkeDerivative f x d := by
@@ -202,8 +274,8 @@ theorem clarkeDerivative_pos_smul {f : E → ℝ} {x : E} {U : Set E} {L : ℝ�
   exact ((OrderIso.mulLeft₀ a ha).limsup_apply hb hl.isCoboundedUnder_le
     hba hla.isCoboundedUnder_le).symm
 
-/-- In its direction argument the Clarke derivative inherits the local Lipschitz
-constant of the objective. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$. Then the function
+$d \mapsto f^\circ(x; d)$ is $L$-Lipschitz on all of $E$. -/
 theorem lipschitzWith_clarkeDerivative {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) : LipschitzWith L (clarkeDerivative f x) := by
   apply LipschitzWith.of_dist_le_mul
@@ -216,8 +288,9 @@ theorem lipschitzWith_clarkeDerivative {f : E → ℝ} {x : E} {U : Set E} {L : 
     linarith
   exact ⟨h d e, by rw [norm_sub_rev d e]; exact h e d⟩
 
-/-- For a fixed direction, an upper bound strictly above the Clarke derivative
-at a locally Lipschitz point bounds the derivative throughout a neighborhood. -/
+/-- Let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood $U$ of $x$, and fix a direction
+$d$. If $f^\circ(x; d) < a$, then $f^\circ(y; d) \le a$ for all $y$ in a neighborhood of $x$.
+Thus $y \mapsto f^\circ(y; d)$ is upper semicontinuous at $x$. -/
 theorem eventually_clarkeDerivative_le_of_lt {f : E → ℝ} {x d : E} {U : Set E}
     {L : ℝ≥0} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) {a : ℝ}
     (ha : clarkeDerivative f x d < a) : ∀ᶠ y in 𝓝 x, clarkeDerivative f y d ≤ a := by
@@ -237,8 +310,12 @@ theorem eventually_clarkeDerivative_le_of_lt {f : E → ℝ} {x d : E} {U : Set 
   intro z hz t ht
   exact (hq hz ht).le
 
-/-- At a strictly differentiable point the Clarke derivative is the derivative
-applied to the direction. -/
+/-- Let $f : E \to \mathbb{R}$ have the strict Fréchet derivative $A$ at $x$. Then for every
+direction $d$,
+$$f^\circ(x; d) = A d.$$
+This is stated in Section 3.1.4 of [conn2000trust].
+
+No Lipschitz hypothesis is needed: strict differentiability makes the quotients converge. -/
 theorem clarkeDerivative_eq_of_hasStrictFDerivAt {f : E → ℝ} {x : E} {A : E →L[ℝ] ℝ}
     (h : HasStrictFDerivAt f A x) (d : E) : clarkeDerivative f x d = A d := by
   apply Filter.Tendsto.limsup_eq
@@ -271,13 +348,24 @@ theorem clarkeDerivative_eq_of_hasStrictFDerivAt {f : E → ℝ} {x : E} {A : E 
   convert hp using 1
   ring
 
-/-- The Clarke subdifferential consists of the vectors dominated by the directional
-derivative in every direction. -/
+/-- The **Clarke subdifferential** of $f : E \to \mathbb{R}$ at $x$ is the set of vectors dominated
+by the Clarke directional derivative in every direction:
+$$\partial f(x) = \{g \in E \mid \langle g, d \rangle \le f^\circ(x; d) \text{ for all } d \in
+  E\}.$$
+This is the generalized gradient of Section 3.1.4 of [conn2000trust]. -/
 def clarkeSubgradient (f : E → ℝ) (x : E) : Set E :=
   {g | ∀ d : E, ⟪g, d⟫ ≤ clarkeDerivative f x d}
 
-/-- A Clarke subgradient of a continuous convex function is a supporting
-convex subgradient. The local Lipschitz hypothesis ensures the limsup is finite. -/
+/-- Let $f : E \to \mathbb{R}$ be convex and continuous, and $L$-Lipschitz on a neighborhood $U$ of
+$x$. Then every Clarke subgradient of $f$ at $x$ is a subgradient in the sense of convex
+analysis: if $g \in \partial f(x)$, then
+$$f(x) + \langle z - x, g \rangle \le f(z) \quad \text{for all } z \in E.$$
+This step is used in the proof of Theorem 3.2.15 of [conn2000trust].
+
+The Lipschitz hypothesis makes $f^\circ(x; d)$ finite, so that the bound
+$\langle g, d \rangle \le f^\circ(x; d)$ has content. The convex subdifferential is
+`ConvexAnalysis.subdifferential` for the pairing `innerₗ E` and the function $f$ with values in
+`EReal`. -/
 theorem clarkeSubgradient_subset_subdifferential {f : E → ℝ} {x : E}
     (hconv : ConvexOn ℝ Set.univ f) (hf : Continuous f)
     {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
@@ -312,22 +400,30 @@ theorem clarkeSubgradient_subset_subdifferential {f : E → ℝ} {x : E}
   change (f x : EReal) + (⟪z - x, g⟫ : EReal) ≤ f z
   exact_mod_cast (by linarith : f x + ⟪z - x, g⟫ ≤ f z)
 
+/-- The Clarke subdifferential is the intersection, over all directions $d$, of the half-spaces $\{g
+\mid \langle g, d \rangle \le f^\circ(x; d)\}$. -/
 theorem clarkeSubgradient_eq_iInter (f : E → ℝ) (x : E) :
     clarkeSubgradient f x = ⋂ d : E, {g | ⟪g, d⟫ ≤ clarkeDerivative f x d} := by
   ext g
   simp [clarkeSubgradient]
 
+/-- The Clarke subdifferential $\partial f(x)$ is closed. -/
 theorem isClosed_clarkeSubgradient (f : E → ℝ) (x : E) : IsClosed (clarkeSubgradient f x) := by
   rw [clarkeSubgradient_eq_iInter]
   exact isClosed_iInter fun _ ↦ isClosed_le (continuous_id.inner continuous_const) continuous_const
 
+/-- The Clarke subdifferential $\partial f(x)$ is convex. -/
 theorem convex_clarkeSubgradient (f : E → ℝ) (x : E) : Convex ℝ (clarkeSubgradient f x) := by
   rw [clarkeSubgradient_eq_iInter]
   refine convex_iInter fun d ↦ ?_
   exact (convex_Iic (clarkeDerivative f x d)).linear_preimage ((innerₗ E).flip d)
 
-/-- The Clarke subdifferential of a locally Lipschitz function in finite dimension
-is compact. Its vectors have norm at most the local Lipschitz constant. -/
+/-- Let $E$ be finite-dimensional, and let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a neighborhood
+$U$ of $x$. Then the Clarke subdifferential $\partial f(x)$ is compact. This is stated in
+Section 3.1.4 of [conn2000trust].
+
+The proof shows that every $g \in \partial f(x)$ has $\|g\| \le L$, and uses that
+$\partial f(x)$ is closed. -/
 theorem isCompact_clarkeSubgradient [FiniteDimensional ℝ E]
     {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 x)
     (hL : LipschitzOnWith L f U) : IsCompact (clarkeSubgradient f x) := by
@@ -342,13 +438,28 @@ theorem isCompact_clarkeSubgradient [FiniteDimensional ℝ E]
   exact le_of_mul_le_mul_right (h.trans ((le_abs_self _).trans
     (abs_clarkeDerivative_le hU hL g))) (norm_pos_iff.mpr hzero)
 
-/-- The Clarke support representation (3.1.4). -/
+/-- The **Clarke support representation** at $x$, equation (3.1.4) of [conn2000trust]: the support
+function of the Clarke subdifferential is the Clarke directional derivative,
+$$\sup_{g \in \partial f(x)} \langle g, d \rangle = f^\circ(x; d) \quad \text{for all } d \in
+  E.$$
+
+The supremum is `ConvexAnalysis.supportFn` for the pairing `innerₗ E`, with values in `EReal`.
+The supremum over the empty set is $-\infty$, so the identity implies that $\partial f(x)$ is
+nonempty (see `Optimization.HasClarkeSupport.nonempty`). -/
 def HasClarkeSupport (f : E → ℝ) (x : E) : Prop :=
   ∀ d, supportFn (innerₗ E) (clarkeSubgradient f x) d = (clarkeDerivative f x d : EReal)
 
-/-- The Clarke support identity. The sublinear directional derivative is the support
-function of its dominated vectors. The support representation for closed homogeneous
-convex functions follows from separation. -/
+/-- Let $E$ be a real Hilbert space, and let $f : E \to \mathbb{R}$ be $L$-Lipschitz on a
+neighborhood $U$ of $x$. Then the support representation (3.1.4) of [conn2000trust] holds at
+$x$:
+$$\sup_{g \in \partial f(x)} \langle g, d \rangle = f^\circ(x; d) \quad \text{for all } d \in
+  E.$$
+
+The function $f^\circ(x; \cdot)$ is positively homogeneous, convex and continuous. A closed
+positively homogeneous convex function is the support function of the set of linear functionals
+that it dominates, by a separation argument; the proof specializes
+`ConvexAnalysis.supportFn_supportSet` with the inner product as the pairing, which uses the
+completeness of $E$. -/
 theorem hasClarkeSupport_of_lipschitzOnWith [CompleteSpace E]
     {f : E → ℝ} {x : E} {U : Set E} {L : ℝ≥0} (hU : U ∈ 𝓝 x)
     (hL : LipschitzOnWith L f U) : HasClarkeSupport f x := by
@@ -374,6 +485,8 @@ theorem hasClarkeSupport_of_lipschitzOnWith [CompleteSpace E]
   rw [hset] at hs
   exact congrFun hs
 
+/-- If the support representation (3.1.4) holds at $x$, then the Clarke subdifferential
+$\partial f(x)$ is nonempty. -/
 theorem HasClarkeSupport.nonempty {f : E → ℝ} {x : E} (h : HasClarkeSupport f x) :
     (clarkeSubgradient f x).Nonempty := by
   by_contra hn

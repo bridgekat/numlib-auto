@@ -14,40 +14,45 @@ import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Operators
 
 /-!
-# Poincaré's inequality on `W_0^{1,p}(Ω)`
+# Poincaré's inequality on $W_0^{1,p}(\Omega)$
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Corollary 9.19
-and the second clause of Remark 21: for `1 ≤ p < ∞` and a bounded open set `Ω ⊆ ℝ^N` — or merely
-one with a bounded projection on the last axis, `Ω ⊆ {a < x_N < b}` — every `u ∈ W_0^{1,p}(Ω)`
-satisfies `‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}`, so that `‖∇u‖_p` is a norm on `W_0^{1,p}(Ω)` equivalent
-to the norm of `W^{1,p}(Ω)`.
+Let $1 \le p < \infty$ and let $\Omega \subseteq \mathbb{R}^N$ be open and bounded, or more
+generally contained in a slab $\{a < x_N < b\}$, so that its projection on the last axis is bounded.
+Then every $u \in W_0^{1,p}(\Omega)$ satisfies **Poincaré's inequality**
+$$\|u\|_{L^p(\Omega)} \le C \, \|\nabla u\|_{L^p(\Omega)},$$
+so that $\|\nabla u\|_{L^p(\Omega)}$ is a norm on $W_0^{1,p}(\Omega)$ equivalent to the norm of
+$W^{1,p}(\Omega)$. This is Corollary 9.19 and the second clause of Remark 21 of
+[brezis2011functional]. Here $\partial_N u$ is the weak partial derivative along the last
+coordinate, and the constant is the width $C = b - a$ of the slab, hence $C = 2R$ for
+$\Omega \subseteq B(0, R)$. The book says only that $C$ depends on $\Omega$ and $p$.
 
-The book states the corollary without proof (in the printed text it follows Remark 20, which
-routes it through the Sobolev embedding of `W_0^{1,p}`); the proof here is the elementary one,
-which needs neither the extension operator nor compactness. For a `C^1` function `u` supported
-in the slab `{a < x_N < b}`, the fundamental theorem of calculus along the last coordinate gives
-`u(x', x_N) = ∫_a^{x_N} ∂_N u(x', t) dt`, so `|u(x)| ≤ ∫_a^b |∂_N u(x', t)| dt`, Jensen's inequality
-gives `|u(x)|^p ≤ (b − a)^{p−1} ∫_a^b |∂_N u(x', t)|^p dt`, and integrating over `x` (Fubini along
-the last coordinate, `EuclideanSpace.lintegral_lastInit`) gives `‖u‖_p ≤ (b − a) ‖∂_N u‖_p`. The
-test functions are dense in `W_0^{1,p}(Ω)` by definition and both sides are continuous on
-`W^{1,p}(Ω)`, which gives the inequality on `W_0^{1,p}(Ω)`. The constant is the width `b − a` of
-the slab, hence `2R` for `Ω ⊆ B(0, R)`; the book says only "`C` depending on `Ω` and `p`".
+The book states the corollary without proof; in the printed text it follows Remark 20, which derives
+it from the Sobolev embedding of $W_0^{1,p}(\Omega)$. The proof here is the elementary one, which
+needs neither the extension operator nor compactness.
 
 ## Main results
 
-* `eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab`: the inequality for a `C^1` function supported
-  in a slab, with constant `b − a`;
+* `eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab`: for a $C^1$ function with support in the slab
+  $\{a < x_N < b\}$, $\|u\|_{L^p} \le (b - a) \|\partial_N u\|_{L^p}$.
 * `SobolevEuclideanZero.norm_fnL_le_of_subset_slab` and
-  `SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab`: Corollary 9.19 / Remark 21 (bounded
-  projection on the last axis) on `W_0^{1,p}(Ω)`;
-* `SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded`: **Corollary 9.19**, `Ω ⊆ B(0, R)`, with
-  `C = 2R`;
-* `SobolevEuclideanZero.norm_le_gradNorm`: the gradient norm is an equivalent norm on
-  `W_0^{1,p}(Ω)` for bounded `Ω`, `‖u‖ ≤ (1 + (2R)^p)^{1/p} ‖∇u‖_p`.
+  `SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab`: the same inequality on $W_0^{1,p}(\Omega)$
+  for $\Omega$ in the slab, which is Corollary 9.19 with Remark 21 of [brezis2011functional].
+* `SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded`: Corollary 9.19 of [brezis2011functional] for
+  $\Omega \subseteq B(0, R)$, with $C = 2R$.
+* `SobolevEuclideanZero.norm_le_gradNorm`: for bounded $\Omega$, the gradient norm is an equivalent
+  norm on $W_0^{1,p}(\Omega)$, with $\|u\|_{W^{1,p}(\Omega)} \le (1 + (2R)^p)^{1/p} \|\nabla
+  u\|_{L^p(\Omega)}$.
 
-## References
+## Proof outline
 
-[brezis2011functional], Corollary 9.19 and Remark 21.
+Let $u$ be a $C^1$ function with support in the slab $\{a < x_N < b\}$, and write $x = (x', x_N)$.
+The fundamental theorem of calculus along the last coordinate gives $u(x', x_N) = \int_a^{x_N}
+\partial_N u(x', t) \, dt$, so $|u(x)| \le \int_a^b |\partial_N u(x', t)| \, dt$. Jensen's
+inequality gives $|u(x)|^p \le (b - a)^{p-1} \int_a^b |\partial_N u(x', t)|^p \, dt$, and
+integration over $x$, with Fubini's theorem along the last coordinate, gives
+$\|u\|_{L^p} \le (b - a) \|\partial_N u\|_{L^p}$. The test functions are dense in
+$W_0^{1,p}(\Omega)$ by definition, and both sides are continuous on $W^{1,p}(\Omega)$. This gives
+the inequality on $W_0^{1,p}(\Omega)$.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -61,35 +66,41 @@ section Slab
 
 variable {d : ℕ} {p : ℝ≥0∞}
 
-/-- The slab `{a < x_N < b}` of `ℝ^{d+1}`, the set of points whose last coordinate lies in
-`(a, b)`. -/
+/-- The **slab** $\{a < x_N < b\}$ of $\mathbb{R}^{d+1}$: the set of points whose last coordinate
+$x_N$, $N = d + 1$, lies in the open interval $(a, b)$. -/
 def EuclideanSpace.slab (d : ℕ) (a b : ℝ) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
   {x | a < x (Fin.last d) ∧ x (Fin.last d) < b}
 
-/-- Membership of the slab, unfolded. -/
+/-- A point $x \in \mathbb{R}^{d+1}$ lies in the slab $\{a < x_N < b\}$ if and only if
+$a < x_N < b$. -/
 theorem EuclideanSpace.mem_slab {a b : ℝ} {x : EuclideanSpace ℝ (Fin (d + 1))} :
     x ∈ EuclideanSpace.slab d a b ↔ a < x (Fin.last d) ∧ x (Fin.last d) < b :=
   Iff.rfl
 
-/-- A point of the slab, written through the last-coordinate splitting, has its last coordinate
-in `(a, b)`. -/
+/-- For $x' \in \mathbb{R}^d$ and $t \in \mathbb{R}$, the point $(x', t) \in \mathbb{R}^{d+1}$ lies
+in the slab $\{a < x_N < b\}$ if and only if $a < t < b$. -/
 theorem EuclideanSpace.snocLast_mem_slab_iff {a b t : ℝ} {x' : EuclideanSpace ℝ (Fin d)} :
     EuclideanSpace.snocLast x' t ∈ EuclideanSpace.slab d a b ↔ a < t ∧ t < b := by
   simp [EuclideanSpace.mem_slab]
 
-/-- Moving along the last coordinate from `snocLast x' 0`. -/
+/-- For $x' \in \mathbb{R}^d$ and $t \in \mathbb{R}$, $(x', t) = (x', 0) + t e_N$ in
+$\mathbb{R}^{d+1}$, where $e_N$ is the last vector of the standard basis. -/
 theorem EuclideanSpace.snocLast_eq_add_smul_single (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
     EuclideanSpace.snocLast x' t
       = EuclideanSpace.snocLast x' 0 + t • EuclideanSpace.single (Fin.last d) 1 := by
   ext i
   induction i using Fin.lastCases <;> simp [Fin.castSucc_ne_last]
 
-/-- **Poincaré's inequality for a `C^1` function supported in a slab**: for `1 ≤ p < ∞` and
-`u : ℝ^{d+1} → ℝ` of class `C^1` with `tsupport u ⊆ {a < x_N < b}`,
-`‖u‖_p ≤ (b − a) ‖∂_N u‖_p`, where `∂_N u = fderiv ℝ u · e_N`. The fundamental theorem of
-calculus along the last coordinate from `a`, where `u = 0`, Jensen's inequality on `(a, b)`, and
-Fubini along the last coordinate (`EuclideanSpace.lintegral_lastInit`). This is the argument of
-[brezis2011functional] Corollary 9.19 in its elementary form. -/
+/-- **Poincaré's inequality for a $C^1$ function with support in a slab.** Let $1 \le p < \infty$,
+let $a, b \in \mathbb{R}$, and let $u : \mathbb{R}^{d+1} \to \mathbb{R}$ be of class $C^1$ with
+topological support in the slab $\{a < x_N < b\}$. Then
+$$\|u\|_{L^p(\mathbb{R}^{d+1})} \le (b - a) \, \|\partial_N u\|_{L^p(\mathbb{R}^{d+1})}, \qquad
+  \partial_N u(x) = Du(x) e_N.$$
+This is the argument of Corollary 9.19 of [brezis2011functional] in its elementary form.
+
+The proof uses the fundamental theorem of calculus along the last coordinate from $a$, where
+$u = 0$, Jensen's inequality on $(a, b)$, and Fubini's theorem along the last coordinate
+(`EuclideanSpace.lintegral_lastInit`). If $b < a$, the slab is empty, so $u = 0$. -/
 theorem eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hu : ContDiff ℝ 1 u) {a b : ℝ}
     (hsupp : tsupport u ⊆ EuclideanSpace.slab d a b) :
@@ -227,13 +238,12 @@ theorem eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab (hp : 1 ≤ p) (hp' : p �
 
 end Slab
 
-/-! ### Poincaré's inequality on `W_0^{1,p}(Ω)` -/
-
-/-! ### Poincaré's inequality on `W_0^{1,p}(Ω)` -/
+/-! ### Poincaré's inequality on $W_0^{1,p}(\Omega)$ -/
 
 section FiniteMeasure
 
-/-- Lebesgue measure restricted to a bounded open set is finite. -/
+/-- If an open set $\Omega \subseteq \mathbb{R}^N$ lies in the ball $B(0, R)$, then Lebesgue measure
+restricted to $\Omega$ is finite. -/
 theorem isFiniteMeasure_restrict_of_subset_ball {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
     {R : ℝ} (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ ball 0 R) :
     IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
@@ -245,14 +255,15 @@ section Typed
 
 variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- The last vector of the standard basis of `ℝ^{d+1}` is `e_N`. -/
+/-- The last vector of the standard basis of $\mathbb{R}^{d+1}$ is $e_N$,
+`EuclideanSpace.single (Fin.last d) 1`. -/
 theorem EuclideanSpace.basisFun_toBasis_last :
     ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis :
         Fin (d + 1) → EuclideanSpace ℝ (Fin (d + 1))) (Fin.last d)
       = EuclideanSpace.single (Fin.last d) 1 :=
   EuclideanSpace.basisFun_toBasis_apply (Fin.last d)
 
-/-- A subset of the ball of radius `R` lies in the slab `{−R < x_N < R}`. -/
+/-- A subset of the ball $B(0, R)$ of $\mathbb{R}^{d+1}$ lies in the slab $\{-R < x_N < R\}$. -/
 theorem EuclideanSpace.subset_slab_of_subset_ball {R : ℝ} {s : Set (EuclideanSpace ℝ (Fin (d + 1)))}
     (hs : s ⊆ ball 0 R) : s ⊆ EuclideanSpace.slab d (-R) R := by
   intro x hx
@@ -265,10 +276,13 @@ theorem EuclideanSpace.subset_slab_of_subset_ball {R : ℝ} {s : Set (EuclideanS
 
 namespace SobolevEuclideanZero
 
-/-- **Poincaré's inequality for a test function in a slab, on the typed space**: for an element
-`w` of `W^{1,p}(Ω)` whose function is a test function on `Ω ⊆ {a < x_N < b}`,
-`‖w‖_{L^p(Ω)} ≤ (b − a) ‖∂_N w‖_{L^p(Ω)}`. The slab inequality applied to the test function, which
-is a `C^1` function on `ℝ^{d+1}` supported in `Ω`. -/
+/-- **Poincaré's inequality for a test function in a slab.** Let $1 \le p < \infty$, let $a \le b$,
+and let the open set $\Omega \subseteq \mathbb{R}^{d+1}$ lie in the slab $\{a < x_N < b\}$. Let
+$w \in W^{1,p}(\Omega)$ be an element whose function is a test function on $\Omega$. Then
+$$\|w\|_{L^p(\Omega)} \le (b - a) \, \|\partial_N w\|_{L^p(\Omega)}.$$
+
+The proof applies `eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab` to the test function, which
+is a $C^1$ function on $\mathbb{R}^{d+1}$ with support in $\Omega$. -/
 theorem norm_fnL_le_of_mem_testFunctions (hp' : p ≠ ⊤) {a b : ℝ} (hab : a ≤ b)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ EuclideanSpace.slab d a b)
     {w : SobolevEuclidean (d + 1) 1 p Ω}
@@ -310,11 +324,16 @@ theorem norm_fnL_le_of_mem_testFunctions (hp' : p ≠ ⊤) {a b : ℝ} (hab : a 
   rw [Lp.norm_def, Lp.norm_def, ← ENNReal.toReal_ofReal (sub_nonneg.2 hab), ← ENNReal.toReal_mul]
   exact ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top (Lp.eLpNorm_ne_top _)) key
 
-/-- **Corollary 9.19 / Remark 21 (bounded projection on the last axis), typed**: for
-`1 ≤ p < ∞`, `Ω ⊆ {a < x_N < b}` and `u ∈ W_0^{1,p}(Ω)`,
-`‖u‖_{L^p(Ω)} ≤ (b − a) ‖∂_N u‖_{L^p(Ω)}`. By density: `u` is a limit of test functions, for which
-`SobolevEuclideanZero.norm_fnL_le_of_mem_testFunctions` applies, and both sides are continuous in
-the `W^{1,p}` norm ([brezis2011functional] Corollary 9.19 and Remark 21). -/
+/-- **Poincaré's inequality on $W_0^{1,p}(\Omega)$ in a slab.** Let $1 \le p < \infty$, let
+$a \le b$, and let the open set $\Omega \subseteq \mathbb{R}^{d+1}$ lie in the slab
+$\{a < x_N < b\}$. Then every $u \in W_0^{1,p}(\Omega)$ satisfies
+$$\|u\|_{L^p(\Omega)} \le (b - a) \, \|\partial_N u\|_{L^p(\Omega)}.$$
+This is Corollary 9.19 of [brezis2011functional] with the second clause of Remark 21, for a set
+with a bounded projection on the last axis.
+
+The proof is by density: $u$ is a limit of test functions, for which
+`SobolevEuclideanZero.norm_fnL_le_of_mem_testFunctions` applies, and both sides are continuous
+in the norm of $W^{1,p}(\Omega)$. -/
 theorem norm_fnL_le_of_subset_slab (hp' : p ≠ ⊤) {a b : ℝ} (hab : a ≤ b)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ EuclideanSpace.slab d a b)
     (u : SobolevEuclideanZero (d + 1) 1 p Ω) :
@@ -338,9 +357,12 @@ theorem norm_fnL_le_of_subset_slab (hp' : p ≠ ⊤) {a b : ℝ} (hab : a ≤ b)
   exact le_of_tendsto_of_tendsto' h1 h2 fun n ↦
     norm_fnL_le_of_mem_testFunctions hp' hab hΩ (hwT n)
 
-/-- **Corollary 9.19 / Remark 21, `L^p` form**: for `1 ≤ p < ∞`, `Ω ⊆ {a < x_N < b}` and
-`u ∈ W_0^{1,p}(Ω)`,
-`eLpNorm (fn u) p (volume.restrict Ω) ≤ ofReal (b − a) * eLpNorm (∂_N u) p (volume.restrict Ω)`. -/
+/-- Let $1 \le p < \infty$, let $a \le b$, and let the open set $\Omega \subseteq \mathbb{R}^{d+1}$
+lie in the slab $\{a < x_N < b\}$. Then every $u \in W_0^{1,p}(\Omega)$ satisfies
+$$\|u\|_{L^p(\Omega)} \le (b - a) \, \|\partial_N u\|_{L^p(\Omega)},$$
+with both norms as `eLpNorm`. This is the form of
+`SobolevEuclideanZero.norm_fnL_le_of_subset_slab` in extended nonnegative reals, Corollary 9.19
+of [brezis2011functional] with the second clause of Remark 21. -/
 theorem eLpNorm_fn_le_of_subset_slab (hp' : p ≠ ⊤) {a b : ℝ} (hab : a ≤ b)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ EuclideanSpace.slab d a b)
     (u : SobolevEuclideanZero (d + 1) 1 p Ω) :
@@ -359,11 +381,15 @@ theorem eLpNorm_fn_le_of_subset_slab (hp' : p ≠ ⊤) {a b : ℝ} (hab : a ≤ 
     (SobolevMultiIndex.fnL ℝ _ 1 p Ω volume (u : SobolevEuclidean (d + 1) 1 p Ω))) hfin).1
     (by rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal (sub_nonneg.2 hab)]; exact h)
 
-/-- **Corollary 9.19 (Poincaré's inequality)**: for `1 ≤ p < ∞`, a bounded open set
-`Ω ⊆ B(0, R)` with `0 ≤ R`, and `u ∈ W_0^{1,p}(Ω)`,
-`‖u‖_{L^p(Ω)} ≤ 2R ‖∂_N u‖_{L^p(Ω)}`; in particular `‖u‖_p ≤ C ‖∇u‖_p` for any reading of the
-gradient norm dominating one partial derivative, with the constant `C = 2R` that the book leaves
-unspecified ("depending on `Ω` and `p`"). The ball lies in the slab `{−R < x_N < R}`. -/
+/-- **Poincaré's inequality**, Corollary 9.19 of [brezis2011functional]. Let $1 \le p < \infty$, let
+$R \ge 0$, and let the open set $\Omega \subseteq \mathbb{R}^{d+1}$ lie in the ball $B(0, R)$.
+Then every $u \in W_0^{1,p}(\Omega)$ satisfies
+$$\|u\|_{L^p(\Omega)} \le 2R \, \|\partial_N u\|_{L^p(\Omega)}.$$
+In particular $\|u\|_{L^p(\Omega)} \le C \|\nabla u\|_{L^p(\Omega)}$ with $C = 2R$ for every
+norm of the gradient that dominates one partial derivative. The book leaves the constant
+unspecified ("depending on $\Omega$ and $p$").
+
+The ball lies in the slab $\{-R < x_N < R\}$. -/
 theorem eLpNorm_fn_le_of_isBounded (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (u : SobolevEuclideanZero (d + 1) 1 p Ω) :
@@ -376,12 +402,18 @@ theorem eLpNorm_fn_le_of_isBounded (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     (EuclideanSpace.subset_slab_of_subset_ball hΩ) u
   rwa [show R - -R = 2 * R by ring] at this
 
-/-- **The gradient norm is an equivalent norm on `W_0^{1,p}(Ω)` for a bounded `Ω`**
-([brezis2011functional] Corollary 9.19, "the expression `‖∇u‖_{L^p(Ω)}` is a norm on
-`W_0^{1,p}(Ω)`, and it is equivalent to the norm `‖u‖_{W^{1,p}}`"): for `1 ≤ p < ∞`,
-`Ω ⊆ B(0, R)` and `u ∈ W_0^{1,p}(Ω)`, `‖u‖ ≤ (1 + (2R)^p)^{1/p} ‖∇u‖_p`; with
-`SobolevMultiIndex.gradNorm_le_norm` this is the two-sided equivalence, and at `p = 2` it is the
-coercivity `‖u‖_{H^1}^2 ≤ (1 + 4R^2) ‖∇u‖_2^2` of the Dirichlet form on `H_0^1(Ω)`. -/
+/-- **The gradient norm is an equivalent norm on $W_0^{1,p}(\Omega)$ for a bounded $\Omega$.** Let
+$1 \le p < \infty$, let $R \ge 0$, and let the open set $\Omega \subseteq \mathbb{R}^{d+1}$ lie
+in the ball $B(0, R)$. Then every $u \in W_0^{1,p}(\Omega)$ satisfies
+$$\|u\|_{W^{1,p}(\Omega)} \le \big( 1 + (2R)^p \big)^{1/p} \, \|\nabla u\|_{L^p(\Omega)}, \qquad
+  \|\nabla u\|_{L^p(\Omega)} = \Big( \sum_{j} \|\partial_j u\|_{L^p(\Omega)}^p \Big)^{1/p}.$$
+This is the statement of Corollary 9.19 of [brezis2011functional] that "the expression
+$\|\nabla u\|_{L^p(\Omega)}$ is a norm on $W_0^{1,p}(\Omega)$, and it is equivalent to the norm
+$\|u\|_{W^{1,p}}$".
+
+The gradient norm is `SobolevMultiIndex.gradNorm`. With `SobolevMultiIndex.gradNorm_le_norm`
+this gives the two-sided equivalence. At $p = 2$ it is the coercivity $\|u\|_{H^1}^2 \le (1 +
+4R^2) \|\nabla u\|_{L^2}^2$ of the Dirichlet form on $H_0^1(\Omega)$. -/
 theorem norm_le_gradNorm (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (u : SobolevEuclideanZero (d + 1) 1 p Ω) :
@@ -418,9 +450,11 @@ theorem norm_le_gradNorm (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
           mul_one_div_cancel hP.ne', Real.rpow_one]
 
 
-/-- **Poincaré's inequality on `H¹₀(Ω)` in squared form**: for `Ω ⊆ B(0, R)` and
-`u ∈ H¹₀(Ω)`, `‖u‖²_{H¹} ≤ (1 + (2R)²) ∑ⱼ ‖∂_j u‖²₂` (`SobolevEuclideanZero.norm_le_gradNorm`
-at `p = 2`). -/
+/-- **Poincaré's inequality on $H_0^1(\Omega)$ in squared form.** Let $R \ge 0$ and let the open set
+$\Omega \subseteq \mathbb{R}^{d+1}$ lie in the ball $B(0, R)$. Then every $u \in H_0^1(\Omega)$
+satisfies
+$$\|u\|_{H^1(\Omega)}^2 \le \big( 1 + (2R)^2 \big) \sum_{j} \|\partial_j u\|_{L^2(\Omega)}^2.$$
+This is `SobolevEuclideanZero.norm_le_gradNorm` at $p = 2$. -/
 theorem norm_sq_le_sum_norm_weakDeriv_single_sq {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (u : SobolevEuclideanZero (d + 1) 1 2 Ω) :

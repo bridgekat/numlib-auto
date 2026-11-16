@@ -8,46 +8,65 @@ import Numlib.Optimization.Subproblem.Secular
 /-!
 # The optimal multiplier and the secular equation
 
-Let `H` be a symmetric operator on a finite-dimensional real inner product space, `λ₁ = leftmost hH`
-its leftmost eigenvalue and `λₛ = shiftThreshold hH = max 0 (-λ₁)`. The global minimizers of the
-trust-region and regularization subproblems solve a shifted system `(H + λ*) s = -g` with
-`λ* ≥ λₛ` and `‖s‖² = τ(λ*)` for a *target* `τ` (`Δ²` for the trust region,
-`(λ/σ)^{2/(r-2)}` for the regularization; [cartis2022evaluation] (8.2.9)). This file locates `λ*`
-on the secular function `π(λ) = ‖s(λ)‖²` ([cartis2022evaluation] Lemma 8.2.1, §8.3).
+Let $E$ be a finite-dimensional real inner product space, let $H : E \to E$ be a symmetric
+continuous linear operator with leftmost eigenvalue $\lambda_1$, and let $g \in E$. Put
+$\lambda_s = \max\{0, -\lambda_1\}$. Write $s(\lambda) = -(H + \lambda I)^{-1} g$ for the step and
+$\pi(\lambda) = \|s(\lambda)\|^2$ for the secular function. A global minimizer $s$ of the
+trust-region subproblem or of the regularization subproblem solves a shifted system
+$(H + \lambda_* I) s = -g$ with $\lambda_* \ge \lambda_s$ and $\|s\|^2 = \tau(\lambda_*)$, for a
+target function $\tau$. The target is $\tau(\lambda) = \Delta^2$ for the trust region and
+$\tau(\lambda) = (\lambda / \sigma)^{2/(r-2)}$ for the regularization, as in (8.2.9) of
+[cartis2022evaluation]. This file locates the multiplier $\lambda_*$ with the secular function,
+following Lemma 8.2.1 and Section 8.3 of [cartis2022evaluation].
 
-Everything is first proved for an abstract target `τ`, monotone on `[λₛ, ∞)` and positive on
-`(λₛ, ∞)`, and an abstract shifted solution `(H + μ) s = -g`, `λₛ ≤ μ`, `‖s‖² ≤ τ μ` with equality
-when `μ > λₛ`; the two subproblems are then instances.
+The results are first proved for an abstract target $\tau$, monotone on $[\lambda_s, \infty)$ and
+positive on $(\lambda_s, \infty)$, and an abstract solution $s$ of $(H + \mu I) s = -g$ with
+$\lambda_s \le \mu$, $\|s\|^2 \le \tau(\mu)$, and equality when $\mu > \lambda_s$. The two
+subproblems are then special cases. For $\lambda > \lambda_s$ the multiplier splits
+$(\lambda_s, \infty)$ into the set $\mathcal{L} = (\lambda_s, \lambda_*]$, where
+$\tau(\lambda) \le \pi(\lambda)$, and the set $\mathcal{G} = (\lambda_*, \infty)$, where
+$\pi(\lambda) < \tau(\lambda)$.
 
-## Main statements
+## Main results
 
-* `Subproblem.existsUnique_secular_root`: Lemma 8.2.1, the secular equation `π = τ` has a unique
-  root to the right of `λₛ` when `π > τ` near `λₛ`; `Subproblem.existsUnique_secular_root_of_lt`
-  is the same under the book's hypothesis `π(λₛ) > τ(λₛ)`, with `π(λₛ) = ‖sₛ‖²` or `+∞`
-  (`Subproblem.tendsto_secular_shiftThreshold`, `Subproblem.tendsto_secular_shiftThreshold_atTop`).
-* `Subproblem.le_secular_iff_of_shifted`, `Subproblem.le_secular_iff_of_trustRegion`,
-  `Subproblem.le_secular_iff_of_regularization`: for `λ > λₛ`, `τ(λ) ≤ π(λ) ↔ λ ≤ λ*`. This is
-  the book's partition of `(λₛ, ∞)` into `𝓛 = (λₛ, λ*]` and `𝓖 = (λ*, ∞)`, including the hard case
-  (where `𝓛 = ∅`).
-* `Subproblem.shiftThreshold_le_of_isTrustRegionMultiplier`,
-  `Subproblem.shiftThreshold_le_of_isMinOn_regModel`: `λₛ ≤ λ*`, and every minimizer is the
-  minimum-norm solution `particular hH g λ*` plus a kernel vector orthogonal to `g`, the kernel
-  vector vanishing when `λ* > -λ₁` (Corollaries 8.3.1/8.3.2, (8.3.1)–(8.3.2)).
-* `Subproblem.multiplier_classification` and its instances
-  `Subproblem.multiplier_classification_of_trustRegion`,
-  `Subproblem.multiplier_classification_of_regularization`: `λ* = λₛ` exactly when `g` is
-  orthogonal to `ker (H + λₛ)` and `‖particular hH g λₛ‖² ≤ τ(λₛ)` (the interior and hard cases);
-  otherwise `λ* > λₛ` (the easy case) and the minimizer is `step g H λ*`.
-* `Subproblem.isMinOn_closedBall_of_hardCase`, `Subproblem.isMinOn_regModel_of_hardCase`,
-  `Subproblem.exists_norm_particular_add_smul_eq`: the hard-case solutions `sₛ + α v₁`.
-* `Subproblem.optimalValue_eq_of_trustRegion`, `Subproblem.optimalValue_eq_of_regularization`:
+* `Subproblem.existsUnique_secular_root`: if $\tau < \pi$ just to the right of $\lambda_s$, then the
+  secular equation $\pi(\lambda) = \tau(\lambda)$ has a unique root $\lambda_* > \lambda_s$ (Lemma
+  8.2.1).
+* `Subproblem.existsUnique_secular_root_of_lt`: the same under the hypothesis
+  $\pi(\lambda_s) > \tau(\lambda_s)$ of the source, where $\pi(\lambda_s)$ is the right limit of
+  $\pi$.
+* `Subproblem.tendsto_secular_shiftThreshold` and `Subproblem.tendsto_secular_shiftThreshold_atTop`:
+  as $\lambda \downarrow \lambda_s$, $\pi(\lambda)$ tends to the squared norm of the minimum-norm
+  solution of $(H + \lambda_s I) x = -g$ if this system is consistent, and to $+\infty$ otherwise.
+* `Subproblem.le_secular_iff_of_shifted`, `Subproblem.le_secular_iff_of_trustRegion` and
+  `Subproblem.le_secular_iff_of_regularization`: for $\lambda > \lambda_s$,
+  $\tau(\lambda) \le \pi(\lambda)$ if and only if $\lambda \le \lambda_*$. This includes the hard
+  case, where $\mathcal{L} = \emptyset$.
+* `Subproblem.shiftThreshold_le_of_isTrustRegionMultiplier` and
+  `Subproblem.shiftThreshold_le_of_isMinOn_regModel`: $\lambda_s \le \lambda_*$, and every minimizer
+  is the minimum-norm solution of $(H + \lambda_* I) x = -g$ plus a kernel vector orthogonal to $g$,
+  which vanishes when $\lambda_* > -\lambda_1$ (Corollaries 8.3.1 and 8.3.2, (8.3.1)–(8.3.2)).
+* `Subproblem.multiplier_classification`, `Subproblem.multiplier_classification_of_trustRegion` and
+  `Subproblem.multiplier_classification_of_regularization`: $\lambda_* = \lambda_s$ exactly when $g$
+  is orthogonal to $\ker(H + \lambda_s I)$ and the minimum-norm solution $s_s$ at $\lambda_s$ has
+  $\|s_s\|^2 \le \tau(\lambda_s)$ (the interior and hard cases). Otherwise $\lambda_* > \lambda_s$
+  (the easy case) and the minimizer is $s(\lambda_*)$.
+* `Subproblem.isMinOn_closedBall_of_hardCase`, `Subproblem.isMinOn_regModel_of_hardCase` and
+  `Subproblem.exists_norm_particular_add_smul_eq`: the hard-case solutions $s_s + \alpha v_1$ are
+  global minimizers.
+* `Subproblem.optimalValue_eq_of_trustRegion` and `Subproblem.optimalValue_eq_of_regularization`:
   the optimal values (8.3.5) and (8.3.3).
 
 ## Implementation notes
 
-The book describes `𝓝 = (-∞, λₛ]` also as "`H + λM` is not positive definite"; the two differ when
-`λ₁ > 0` (then `(-λ₁, 0]` is in the first set but not in the second). The interval description is
-the one used here.
+* The source describes the set $\mathcal{N} = (-\infty, \lambda_s]$ also as the set of $\lambda$ for
+  which $H + \lambda M$ is not positive definite. The two descriptions differ when $\lambda_1 > 0$:
+  then $(-\lambda_1, 0]$ lies in the first set but not in the second. This file uses the interval
+  $(-\infty, \lambda_s]$.
+* The leftmost eigenvalue is `Subproblem.leftmost`, the threshold $\lambda_s$ is
+  `Subproblem.shiftThreshold`, the step and the secular function are `Subproblem.step` and
+  `Subproblem.secular`, and the minimum-norm solution of $(H + \lambda I) x = -g$ is
+  `Subproblem.particular`.
 -/
 
 open Set Filter Topology
@@ -62,10 +81,13 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 section Shifted
 
-/-- **Structure of the solutions of a shifted system.** If `(H + μ) s = -g` then the system is
-consistent, `g ⊥ ker (H + μ)`; `s` is the minimum-norm solution `particular hH g μ` plus a vector
-`w = s - particular hH g μ` of `ker (H + μ)` with `⟪g, w⟫ = 0`; `‖particular hH g μ‖ ≤ ‖s‖`; and
-`s = step g H μ` when `μ > -λ₁`. -/
+/-- **Structure of the solutions of a shifted system.** Let $H$ be symmetric, $\mu \in \mathbb{R}$,
+and let $s \in E$ satisfy $(H + \mu I) s = -g$. Let $p$ be the minimum-norm solution
+`Subproblem.particular` of this system. Then:
+* the system is consistent: $g$ is orthogonal to $\ker(H + \mu I)$;
+* the vector $w = s - p$ lies in $\ker(H + \mu I)$ and satisfies $\langle g, w \rangle = 0$;
+* $\|p\| \le \|s\|$;
+* if $\mu > -\lambda_1$, then $s = s(\mu)$, the step `Subproblem.step`. -/
 theorem particular_add_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) :
     g ∈ (LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ ∧
       s - particular hH g μ ∈ LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E) ∧
@@ -82,28 +104,36 @@ theorem particular_add_of_shifted {μ : ℝ} {s : E} (hs : (H + μ • (1 : E �
   have hker := (hiff s).1 hs
   exact ⟨hcons, hker, horth _ hker, hmin s hs, fun hμ => (step_spec hμ).2 s hs⟩
 
-/-- The secular function is antitone on `λ > -λ₁` (for every `g`; strictly for `g ≠ 0`). -/
+/-- For symmetric $H$ and every $g \in E$, the secular function $\pi$ is antitone on
+$(-\lambda_1, \infty)$.
+
+For $g \neq 0$ it is strictly decreasing there. This declaration states only the weak form. -/
 theorem secular_antitoneOn : AntitoneOn (secular g H) (Ioi (-leftmost hH)) := by
   rcases eq_or_ne g 0 with rfl | hg
   · rw [secular_zero_left]; exact fun _ _ _ _ _ => le_rfl
   · exact ((secular_shape (hH := hH) hg 1).2.2.1).antitoneOn
 
-/-- `(a / e)² ≤ (a / d)²` for `0 < d ≤ e`. -/
+/-- For $0 < d \le e$, $(a / e)^2 \le (a / d)^2$. -/
 private theorem div_sq_le_div_sq {a d e : ℝ} (hd : 0 < d) (hde : d ≤ e) :
     (a / e) ^ 2 ≤ (a / d) ^ 2 := by
   rw [div_pow, div_pow]
   exact div_le_div_of_nonneg_left (sq_nonneg a) (by positivity) (pow_le_pow_left₀ hd.le hde 2)
 
-/-- `(a / e)² < (a / d)²` for `0 < d < e` and `a ≠ 0`. -/
+/-- For $0 < d < e$ and $a \neq 0$, $(a / e)^2 < (a / d)^2$. -/
 private theorem div_sq_lt_div_sq {a d e : ℝ} (ha : a ≠ 0) (hd : 0 < d) (hde : d < e) :
     (a / e) ^ 2 < (a / d) ^ 2 := by
   rw [div_pow, div_pow]
   exact div_lt_div_of_pos_left (by positivity) (by positivity)
     (pow_lt_pow_left₀ hde hd.le two_ne_zero)
 
-/-- **The secular function lies below the minimum-norm solution.** If `g ≠ 0` is orthogonal to
-`ker (H + μ)` with `μ ≥ -λ₁`, then `π(λ) < ‖particular hH g μ‖²` for every `λ > μ`. In the hard
-case `μ = -λ₁` this says that `π` stays below its limit `‖sₛ‖²` at the threshold. -/
+/-- **The secular function lies below the minimum-norm solution.** Let $H$ be symmetric, let
+$g \neq 0$, and let $\mu \ge -\lambda_1$ be such that $g$ is orthogonal to $\ker(H + \mu I)$.
+Let $p$ be the minimum-norm solution `Subproblem.particular` of $(H + \mu I) x = -g$. Then for
+every $\lambda > \mu$
+$$\pi(\lambda) < \|p\|^2.$$
+
+In the hard case $\mu = -\lambda_1$, this says that $\pi$ stays below its limit $\|s_s\|^2$ at
+the threshold. -/
 theorem secular_lt_norm_particular_sq (hg : g ≠ 0) {μ lam : ℝ} (hμ : -leftmost hH ≤ μ)
     (hlt : μ < lam) (hcons : g ∈ (LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ) :
     secular g H lam < ‖particular hH g μ‖ ^ 2 := by
@@ -127,7 +157,8 @@ theorem secular_lt_norm_particular_sq (hg : g ≠ 0) {μ lam : ℝ} (hμ : -left
       (hd i).lt_of_ne fun h => hi (hγ i h.symm)
     exact div_sq_lt_div_sq (neg_ne_zero.2 hi) hdi (by linarith)
 
-/-- If `(H + μ) s = -g` with `μ ≥ -λ₁`, then `π(λ) ≤ ‖s‖²` for `λ > μ`, strictly if `g ≠ 0`. -/
+/-- Let $H$ be symmetric, let $g \neq 0$, let $\mu \ge -\lambda_1$, and let $s \in E$ satisfy
+$(H + \mu I) s = -g$. Then $\pi(\lambda) < \|s\|^2$ for every $\lambda > \mu$. -/
 theorem secular_lt_norm_sq_of_shifted (hg : g ≠ 0) {μ lam : ℝ} {s : E}
     (hμ : -leftmost hH ≤ μ) (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hlt : μ < lam) :
     secular g H lam < ‖s‖ ^ 2 := by
@@ -137,15 +168,27 @@ theorem secular_lt_norm_sq_of_shifted (hg : g ≠ 0) {μ lam : ℝ} {s : E}
 
 end Shifted
 
-/-! ### Lemma 8.2.1 -/
+/-!
+### The root of the secular equation
+
+This section proves Lemma 8.2.1 of [cartis2022evaluation].
+-/
 
 section Root
 
-/-- **Lemma 8.2.1** (root of the secular equation). Let `τ` be continuous, monotone and
-nonnegative on `(λₛ, ∞)` and not identically zero there, and suppose `π > τ` near `λₛ`:
-`∀ᶠ λ in 𝓝[>] λₛ, τ λ < π λ` (the book's `π(λₛ) > τ(λₛ)`, with `π(λₛ)` read as the right limit of
-`π`, possibly `+∞`; see `tendsto_step_threshold`). Then the secular equation `π = τ` has a unique
-root `λ* > λₛ`; moreover `τ < π` on `(λₛ, λ*)` and `π < τ` on `(λ*, ∞)`. -/
+/-- **Root of the secular equation.** Let $H$ be symmetric and $g \in E$. Let
+$\tau : \mathbb{R} \to \mathbb{R}$ be continuous, monotone and nonnegative on
+$(\lambda_s, \infty)$, and not identically zero there. Suppose that
+$\tau(\lambda) < \pi(\lambda)$ for all $\lambda > \lambda_s$ close enough to $\lambda_s$. Then
+there is a unique $\lambda_* > \lambda_s$ with
+$$\pi(\lambda_*) = \tau(\lambda_*).$$
+Moreover $\tau(\lambda) < \pi(\lambda)$ for $\lambda \in (\lambda_s, \lambda_*)$, and
+$\pi(\lambda) < \tau(\lambda)$ for $\lambda > \lambda_*$.
+
+This is Lemma 8.2.1 of [cartis2022evaluation]. The hypothesis on $\tau$ near $\lambda_s$ is the
+condition $\pi(\lambda_s) > \tau(\lambda_s)$ of the source, with $\pi(\lambda_s)$ read as the
+right limit of $\pi$ at $\lambda_s$, which can be $+\infty$ (see
+`Subproblem.tendsto_step_threshold`). It is stated with the filter `𝓝[>] (shiftThreshold hH)`. -/
 theorem existsUnique_secular_root {τ : ℝ → ℝ} (hτc : ContinuousOn τ (Ioi (shiftThreshold hH)))
     (hτm : MonotoneOn τ (Ioi (shiftThreshold hH)))
     (hτ0 : ∀ lam ∈ Ioi (shiftThreshold hH), 0 ≤ τ lam)
@@ -193,9 +236,12 @@ theorem existsUnique_secular_root {τ : ℝ → ℝ} (hτc : ContinuousOn τ (Io
     · have := hΨ hlam hls hlt; simp only at this; linarith
     · have := hΨ hls hlam hlt; simp only at this; linarith
 
-/-- The secular function tends to `‖particular hH g λₛ‖²` as `λ ↓ λₛ` when the system at `λₛ` is
-consistent, `g ⊥ ker (H + λₛ)`: at `λₛ = -λ₁` this is `tendsto_step_threshold`, and for
-`λₛ > -λ₁` it is continuity of `π` at `λₛ`, where `particular hH g λₛ = s(λₛ)`. -/
+/-- Let $H$ be symmetric, and suppose that $g$ is orthogonal to $\ker(H + \lambda_s I)$. Let $p$ be
+the minimum-norm solution `Subproblem.particular` of $(H + \lambda_s I) x = -g$. Then
+$$\pi(\lambda) \to \|p\|^2 \quad \text{as } \lambda \downarrow \lambda_s.$$
+
+At $\lambda_s = -\lambda_1$ this is `Subproblem.tendsto_step_threshold`. For
+$\lambda_s > -\lambda_1$ it is the continuity of $\pi$ at $\lambda_s$, where $p = s(\lambda_s)$. -/
 theorem tendsto_secular_shiftThreshold
     (hg : g ∈ (LinearMap.ker ((H + shiftThreshold hH • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ) :
     Tendsto (secular g H) (𝓝[>] (shiftThreshold hH))
@@ -211,7 +257,11 @@ theorem tendsto_secular_shiftThreshold
     rw [(particular_spec (hH := hH) (g := g) _).2.2 h]
     exact hc'.tendsto.mono_left nhdsWithin_le_nhds
 
-/-- If `g` is not orthogonal to `ker (H + λₛ)`, then `λₛ = -λ₁` and `π(λ) → +∞` as `λ ↓ λₛ`. -/
+/-- Let $H$ be symmetric, and suppose that $g$ is not orthogonal to $\ker(H + \lambda_s I)$. Then
+$$\pi(\lambda) \to +\infty \quad \text{as } \lambda \downarrow \lambda_s.$$
+
+This case occurs only when $\lambda_s = -\lambda_1$, because for $\lambda_s > -\lambda_1$ the
+operator $H + \lambda_s I$ is invertible. -/
 theorem tendsto_secular_shiftThreshold_atTop
     (hg : g ∉ (LinearMap.ker ((H + shiftThreshold hH • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ) :
     Tendsto (secular g H) (𝓝[>] (shiftThreshold hH)) atTop := by
@@ -226,13 +276,23 @@ theorem tendsto_secular_shiftThreshold_atTop
       rw [hv, map_zero]
     rw [hv0, inner_zero_right]
 
-/-- **Lemma 8.2.1 with the book's hypothesis** `π(λₛ) > τ(λₛ)`. Here `π(λₛ)` is the right limit of
-`π` at `λₛ`: it is `‖particular hH g λₛ‖²` (`= ‖s(λₛ)‖²` when `λₛ > -λ₁`) if the system at `λₛ` is
-consistent, `g ⊥ ker (H + λₛ)`, and `+∞` otherwise (`tendsto_secular_shiftThreshold`,
-`tendsto_secular_shiftThreshold_atTop`). So the hypothesis is
-`g ⊥ ker (H + λₛ) → τ(λₛ) < ‖particular hH g λₛ‖²`. With `τ` continuous on `[λₛ, ∞)`, monotone
-and nonnegative on `(λₛ, ∞)` and not identically zero there, the secular equation `π = τ` has a
-unique root `λ* > λₛ`, with `τ < π` on `(λₛ, λ*)` and `π < τ` on `(λ*, ∞)`. -/
+/-- **Root of the secular equation, with the hypothesis of the source.** Let $H$ be symmetric and
+$g \in E$. Let $\tau : \mathbb{R} \to \mathbb{R}$ be continuous on $[\lambda_s, \infty)$,
+monotone and nonnegative on $(\lambda_s, \infty)$, and not identically zero there. Let $p$ be
+the minimum-norm solution `Subproblem.particular` of $(H + \lambda_s I) x = -g$, and suppose
+that $\tau(\lambda_s) < \|p\|^2$ if $g$ is orthogonal to $\ker(H + \lambda_s I)$. Then there is
+a unique $\lambda_* > \lambda_s$ with
+$$\pi(\lambda_*) = \tau(\lambda_*).$$
+Moreover $\tau(\lambda) < \pi(\lambda)$ for $\lambda \in (\lambda_s, \lambda_*)$, and
+$\pi(\lambda) < \tau(\lambda)$ for $\lambda > \lambda_*$.
+
+This is Lemma 8.2.1 of [cartis2022evaluation] with its hypothesis
+$\pi(\lambda_s) > \tau(\lambda_s)$. Here $\pi(\lambda_s)$ is the right limit of $\pi$ at
+$\lambda_s$. This limit is $\|p\|^2$ if the system at $\lambda_s$ is consistent, and then
+$p = s(\lambda_s)$ when $\lambda_s > -\lambda_1$; otherwise the limit is $+\infty$
+(`Subproblem.tendsto_secular_shiftThreshold`,
+`Subproblem.tendsto_secular_shiftThreshold_atTop`). So the hypothesis of the source is the
+implication above. -/
 theorem existsUnique_secular_root_of_lt {τ : ℝ → ℝ}
     (hτc : ContinuousOn τ (Ici (shiftThreshold hH)))
     (hτm : MonotoneOn τ (Ioi (shiftThreshold hH)))
@@ -262,9 +322,14 @@ section Abstract
 
 variable {τ : ℝ → ℝ} {μ : ℝ} {s : E}
 
-/-- **Location of the multiplier** (abstract target). Let `τ` be monotone on `[λₛ, ∞)` and
-positive on `(λₛ, ∞)`, and let `(H + μ) s = -g` with `λₛ ≤ μ`, `‖s‖² ≤ τ μ`, and `‖s‖² = τ μ`
-when `μ > λₛ`. Then for every `λ > λₛ`: `τ λ ≤ π(λ) ↔ λ ≤ μ`. -/
+/-- **Location of the multiplier, for an abstract target.** Let $H$ be symmetric and $g \in E$. Let
+$\tau : \mathbb{R} \to \mathbb{R}$ be monotone on $[\lambda_s, \infty)$ and positive on
+$(\lambda_s, \infty)$. Let $\mu \ge \lambda_s$ and let $s \in E$ satisfy $(H + \mu I) s = -g$
+and $\|s\|^2 \le \tau(\mu)$, with $\|s\|^2 = \tau(\mu)$ when $\mu > \lambda_s$. Then for every
+$\lambda > \lambda_s$
+$$\tau(\lambda) \le \pi(\lambda) \iff \lambda \le \mu.$$
+
+The equality case is stated as $\tau(\mu) \le \|s\|^2$ when $\mu > \lambda_s$. -/
 theorem le_secular_iff_of_shifted (hτ : MonotoneOn τ (Ici (shiftThreshold hH)))
     (hτpos : ∀ lam, shiftThreshold hH < lam → 0 < τ lam) (hμ : shiftThreshold hH ≤ μ)
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hsτ : ‖s‖ ^ 2 ≤ τ μ)
@@ -292,11 +357,15 @@ theorem le_secular_iff_of_shifted (hτ : MonotoneOn τ (Ici (shiftThreshold hH))
       _ = secular g H μ := by rw [secular, hstep]
       _ ≤ secular g H lam := secular_antitoneOn hlam1 (hlam1.trans_le hle) hle
 
-/-- **Easy/hard case classification** (abstract target). Under the hypotheses of
-`le_secular_iff_of_shifted`, the multiplier sits at the threshold, `μ = λₛ`, exactly when the
-system at `λₛ` is consistent, `g ⊥ ker (H + λₛ)`, and its minimum-norm solution
-`sₛ = particular hH g λₛ` satisfies `‖sₛ‖² ≤ τ(λₛ)` (the interior and hard cases). Otherwise
-`μ > λₛ` (the easy case) and `s = step g H μ`. -/
+/-- **Classification into the easy and hard cases, for an abstract target.** Assume the hypotheses
+of `Subproblem.le_secular_iff_of_shifted`: $H$ is symmetric, $\tau$ is monotone on
+$[\lambda_s, \infty)$ and positive on $(\lambda_s, \infty)$, $\mu \ge \lambda_s$,
+$(H + \mu I) s = -g$, $\|s\|^2 \le \tau(\mu)$, and $\|s\|^2 = \tau(\mu)$ when $\mu > \lambda_s$.
+Let $s_s$ be the minimum-norm solution `Subproblem.particular` of $(H + \lambda_s I) x = -g$.
+Then:
+* $\mu = \lambda_s$ if and only if $g$ is orthogonal to $\ker(H + \lambda_s I)$ and
+  $\|s_s\|^2 \le \tau(\lambda_s)$ (the interior and hard cases);
+* if $\mu > \lambda_s$ (the easy case), then $s = s(\mu)$. -/
 theorem multiplier_classification (hτ : MonotoneOn τ (Ici (shiftThreshold hH)))
     (hτpos : ∀ lam, shiftThreshold hH < lam → 0 < τ lam) (hμ : shiftThreshold hH ≤ μ)
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hsτ : ‖s‖ ^ 2 ≤ τ μ)
@@ -331,10 +400,16 @@ section TrustRegion
 
 variable {Δ μ : ℝ} {s : E}
 
-/-- **Trust-region multipliers lie at or to the right of the threshold**, and the minimizer is the
-minimum-norm solution plus a kernel vector (Corollary 8.3.2, (8.3.1)–(8.3.2)): if
-`IsTrustRegionMultiplier g H Δ s μ` then `λₛ ≤ μ`, `s - particular hH g μ ∈ ker (H + μ)`,
-`⟪g, s - particular hH g μ⟫ = 0`, and `s = particular hH g μ = step g H μ` when `μ > -λ₁`. -/
+/-- **Trust-region multipliers lie at or to the right of the threshold.** Let $H$ be symmetric, and
+let $\mu$ be a trust-region multiplier for the step $s$ and the radius $\Delta$
+(`Subproblem.IsTrustRegionMultiplier`). Let $p$ be the minimum-norm solution
+`Subproblem.particular` of $(H + \mu I) x = -g$. Then:
+* $\lambda_s \le \mu$;
+* $s - p$ lies in $\ker(H + \mu I)$ and $\langle g, s - p \rangle = 0$;
+* if $\mu > -\lambda_1$, then $s = p = s(\mu)$.
+
+This is Corollary 8.3.2 and (8.3.1)–(8.3.2) of [cartis2022evaluation]. The step $s$ need not be
+feasible. -/
 theorem shiftThreshold_le_of_isTrustRegionMultiplier (h : IsTrustRegionMultiplier g H Δ s μ) :
     shiftThreshold hH ≤ μ ∧
       s - particular hH g μ ∈ LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E) ∧
@@ -345,17 +420,24 @@ theorem shiftThreshold_le_of_isTrustRegionMultiplier (h : IsTrustRegionMultiplie
   rw [(particular_spec (hH := hH) (g := g) μ).2.2 hμ]
   exact ⟨hstep hμ, hstep hμ⟩
 
-/-- For a trust-region multiplier `μ` of a feasible step `s` and `Δ > 0`: `‖s‖² ≤ Δ²`, with
-equality when `μ > λₛ`. -/
+/-- Let $H$ be symmetric, and let $\mu$ be a trust-region multiplier for a feasible step $s$,
+$\|s\| \le \Delta$. Then $\|s\|^2 \le \Delta^2$, with $\|s\|^2 = \Delta^2$ when
+$\mu > \lambda_s$. -/
 theorem IsTrustRegionMultiplier.norm_sq_le (h : IsTrustRegionMultiplier g H Δ s μ)
     (hs : ‖s‖ ≤ Δ) : ‖s‖ ^ 2 ≤ Δ ^ 2 ∧ (shiftThreshold hH < μ → ‖s‖ ^ 2 = Δ ^ 2) :=
   ⟨pow_le_pow_left₀ (norm_nonneg _) hs 2, fun hμ => by
     rw [h.norm_eq_of_pos (shiftThreshold_nonneg.trans_lt hμ)]⟩
 
-/-- **The sets `𝓛` and `𝓖` of the trust-region subproblem** (§8.3.2). Let `0 < Δ` and let `s` be a
-feasible step with trust-region multiplier `μ` (i.e. a global minimizer, `isMinOn_closedBall_iff`).
-Then for every `λ > λₛ`: `Δ² ≤ π(λ) ↔ λ ≤ μ`. So `(λₛ, ∞)` splits into `𝓛 = (λₛ, μ]`, where
-`‖s(λ)‖ ≥ Δ`, and `𝓖 = (μ, ∞)`, where `‖s(λ)‖ < Δ`. -/
+/-- **The sets $\mathcal{L}$ and $\mathcal{G}$ of the trust-region subproblem.** Let $H$ be
+symmetric and $\Delta > 0$, and let $s$ be a feasible step, $\|s\| \le \Delta$, with
+trust-region multiplier $\mu$. Then for every $\lambda > \lambda_s$
+$$\Delta^2 \le \pi(\lambda) \iff \lambda \le \mu.$$
+So $(\lambda_s, \infty)$ splits into $\mathcal{L} = (\lambda_s, \mu]$, where
+$\|s(\lambda)\| \ge \Delta$, and $\mathcal{G} = (\mu, \infty)$, where $\|s(\lambda)\| < \Delta$.
+
+This is the partition of Section 8.3.2 of [cartis2022evaluation]. A feasible step with a
+trust-region multiplier is the same as a global minimizer, by
+`Subproblem.isMinOn_closedBall_iff`. -/
 theorem le_secular_iff_of_trustRegion (hΔ : 0 < Δ) (h : IsTrustRegionMultiplier g H Δ s μ)
     (hs : ‖s‖ ≤ Δ) {lam : ℝ} (hlam : shiftThreshold hH < lam) :
     Δ ^ 2 ≤ secular g H lam ↔ lam ≤ μ :=
@@ -363,20 +445,29 @@ theorem le_secular_iff_of_trustRegion (hΔ : 0 < Δ) (h : IsTrustRegionMultiplie
     (fun _ _ => by positivity) (shiftThreshold_le_of_isTrustRegionMultiplier h).1 h.shifted
     (h.norm_sq_le (hH := hH) hs).1 (fun hμ => ((h.norm_sq_le (hH := hH) hs).2 hμ).ge) hlam
 
-/-- In the easy case `μ > λₛ` of the trust-region subproblem, `μ` is a root of the secular
-equation `π(λ) = Δ²` (book §8.3.2), and by `le_secular_iff_of_trustRegion` the only root in
-`(λₛ, ∞)`. -/
+/-- Let $H$ be symmetric, and let $\mu$ be a trust-region multiplier for the step $s$ and the radius
+$\Delta$. In the easy case $\mu > \lambda_s$, $\mu$ is a root of the secular equation:
+$$\pi(\mu) = \Delta^2.$$
+
+This is in Section 8.3.2 of [cartis2022evaluation]. By
+`Subproblem.le_secular_iff_of_trustRegion`, $\mu$ is the only root in $(\lambda_s, \infty)$. -/
 theorem secular_eq_of_trustRegion (h : IsTrustRegionMultiplier g H Δ s μ)
     (hμ : shiftThreshold hH < μ) : secular g H μ = Δ ^ 2 := by
   have hstep := ((shiftThreshold_le_of_isTrustRegionMultiplier (hH := hH) h).2.2.2
     (neg_leftmost_le_shiftThreshold.trans_lt hμ)).2
   rw [secular, ← hstep, h.norm_eq_of_pos (shiftThreshold_nonneg.trans_lt hμ)]
 
-/-- **Easy/hard case classification for the trust-region subproblem** (§8.3.2, Corollary 8.3.2).
-Let `0 < Δ` and `s` a feasible step with trust-region multiplier `μ`. Then `μ = λₛ` iff
-`g ⊥ ker (H + λₛ)` and `‖particular hH g λₛ‖ ≤ Δ`: for `λ₁ ≥ 0` (`λₛ = 0`) this is the interior
-case `g ∈ range H`, `‖H⁺ g‖ ≤ Δ`; for `λ₁ < 0` it is the hard case. Otherwise `μ > λₛ` and
-`s = step g H μ`. -/
+/-- **Classification into the easy and hard cases for the trust-region subproblem.** Let $H$ be
+symmetric and $\Delta > 0$, and let $s$ be a feasible step, $\|s\| \le \Delta$, with
+trust-region multiplier $\mu$. Let $s_s$ be the minimum-norm solution `Subproblem.particular` of
+$(H + \lambda_s I) x = -g$. Then:
+* $\mu = \lambda_s$ if and only if $g$ is orthogonal to $\ker(H + \lambda_s I)$ and
+  $\|s_s\| \le \Delta$;
+* if $\mu > \lambda_s$, then $s = s(\mu)$.
+
+This is Section 8.3.2 and Corollary 8.3.2 of [cartis2022evaluation]. For $\lambda_1 \ge 0$, so
+$\lambda_s = 0$, the first case is the interior case $g \in \operatorname{range} H$ and
+$\|H^+ g\| \le \Delta$. For $\lambda_1 < 0$ it is the hard case. -/
 theorem multiplier_classification_of_trustRegion (hΔ : 0 < Δ)
     (h : IsTrustRegionMultiplier g H Δ s μ) (hs : ‖s‖ ≤ Δ) :
     (μ = shiftThreshold hH ↔
@@ -389,10 +480,14 @@ theorem multiplier_classification_of_trustRegion (hΔ : 0 < Δ)
   refine ⟨this.1.trans (and_congr_right fun _ => ?_), this.2⟩
   exact pow_le_pow_iff_left₀ (norm_nonneg _) hΔ.le two_ne_zero
 
-/-- **Hard-case solutions of the trust-region subproblem are global minimizers** (sufficiency,
-§8.3.2). Let `μ ≥ 0` with `μ ≥ -λ₁`, `g ⊥ ker (H + μ)`, `w ∈ ker (H + μ)`, and suppose the step
-`particular hH g μ + w` is feasible and active unless `μ = 0`. Then it is a global minimizer: it
-lies in the ball and minimizes the model there. -/
+/-- **Hard-case solutions of the trust-region subproblem are global minimizers.** Let $H$ be
+symmetric, let $\mu \ge 0$ with $\mu \ge -\lambda_1$, and suppose that $g$ is orthogonal to
+$\ker(H + \mu I)$. Let $p$ be the minimum-norm solution `Subproblem.particular` of
+$(H + \mu I) x = -g$, and let $w \in \ker(H + \mu I)$. If $\|p + w\| \le \Delta$, and
+$\|p + w\| = \Delta$ or $\mu = 0$, then $p + w$ lies in the ball $\{u : \|u\| \le \Delta\}$ and
+minimizes the quadratic model $m$ on this ball.
+
+This is the sufficiency part of Section 8.3.2 of [cartis2022evaluation]. -/
 theorem isMinOn_closedBall_of_hardCase {w : E} (hμ0 : 0 ≤ μ) (hμ : -leftmost hH ≤ μ)
     (hg : g ∈ (LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ)
     (hw : w ∈ LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))
@@ -408,8 +503,12 @@ theorem isMinOn_closedBall_of_hardCase {w : E} (hμ0 : 0 ≤ μ) (hμ : -leftmos
   · rw [h, zero_mul]
   · rw [h, sub_self, mul_zero]
 
-/-- **Optimal value of the trust-region subproblem** ((8.3.5)). If `s` has trust-region
-multiplier `μ` then `m(s) = ½ (⟪g, particular hH g μ⟫ - μ Δ²)`. -/
+/-- **Optimal value of the trust-region subproblem.** Let $H$ be symmetric, and let $\mu$ be a
+trust-region multiplier for the step $s$ and the radius $\Delta$. Let $p$ be the minimum-norm
+solution `Subproblem.particular` of $(H + \mu I) x = -g$. Then
+$$m(s) = \tfrac12 \left(\langle g, p \rangle - \mu \Delta^2\right).$$
+
+This is (8.3.5) of [cartis2022evaluation]. -/
 theorem optimalValue_eq_of_trustRegion (h : IsTrustRegionMultiplier g H Δ s μ) :
     quadModel g H s = (1 / 2) * (⟪g, particular hH g μ⟫ - μ * Δ ^ 2) := by
   obtain ⟨-, -, horth, -, -⟩ := particular_add_of_shifted (hH := hH) h.shifted
@@ -433,25 +532,33 @@ section Regularization
 variable {σ r : ℝ} {s : E}
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The regularization target `τ(λ) = (λ/σ)^{2/(r-2)}` ((8.2.9)) at the multiplier
-`λ = σ‖s‖^{r-2}` is `‖s‖²`. -/
+/-- Let $\sigma > 0$ and $r > 2$. For every vector $s$ of a normed space, the regularization target
+$\tau(\lambda) = (\lambda / \sigma)^{2/(r-2)}$ of (8.2.9) of [cartis2022evaluation], at the
+multiplier $\lambda = \sigma \|s\|^{r-2}$, is $\|s\|^2$:
+$$\|s\|^2 = \left(\frac{\sigma \|s\|^{r-2}}{\sigma}\right)^{2/(r-2)}.$$
+-/
 theorem norm_sq_eq_rpow (hσ : 0 < σ) (hr : 2 < r) (s : E) :
     ‖s‖ ^ 2 = (σ * ‖s‖ ^ (r - 2) / σ) ^ (2 / (r - 2)) := by
   rw [mul_div_cancel_left₀ _ hσ.ne', ← Real.rpow_mul (norm_nonneg _),
     mul_div_cancel₀ _ (by linarith : r - 2 ≠ 0)]
   norm_cast
 
-/-- The regularization target `λ ↦ (λ/σ)^{2/(r-2)}` is monotone on `λ ≥ 0`. -/
+/-- For $\sigma > 0$ and $r > 2$, the regularization target
+$\lambda \mapsto (\lambda / \sigma)^{2/(r-2)}$ is monotone on $[0, \infty)$. -/
 theorem monotoneOn_regTarget (hσ : 0 < σ) (hr : 2 < r) :
     MonotoneOn (fun lam : ℝ => (lam / σ) ^ (2 / (r - 2))) (Ici 0) := fun x hx y _ hxy =>
   Real.rpow_le_rpow (div_nonneg hx hσ.le) (div_le_div_of_nonneg_right hxy hσ.le)
     (div_nonneg zero_le_two (by linarith))
 
-/-- **Regularization multipliers lie at or to the right of the threshold**, and the minimizer is
-the minimum-norm solution plus a kernel vector (Corollary 8.3.1, (8.3.1)–(8.3.2)): if `s` globally
-minimizes `regModel g H σ r` (`σ > 0`, `r > 2`) and `μ = σ‖s‖^{r-2}`, then `λₛ ≤ μ`,
-`s - particular hH g μ ∈ ker (H + μ)`, `⟪g, s - particular hH g μ⟫ = 0`, and
-`s = particular hH g μ = step g H μ` when `μ > -λ₁`. -/
+/-- **Regularization multipliers lie at or to the right of the threshold.** Let $H$ be symmetric,
+$\sigma > 0$ and $r > 2$, and let $s$ be a global minimizer of the regularized model $m^R$ on
+$E$. Put $\mu = \sigma \|s\|^{r-2}$, and let $p$ be the minimum-norm solution
+`Subproblem.particular` of $(H + \mu I) x = -g$. Then:
+* $\lambda_s \le \mu$;
+* $s - p$ lies in $\ker(H + \mu I)$ and $\langle g, s - p \rangle = 0$;
+* if $\mu > -\lambda_1$, then $s = p = s(\mu)$.
+
+This is Corollary 8.3.1 and (8.3.1)–(8.3.2) of [cartis2022evaluation]. -/
 theorem shiftThreshold_le_of_isMinOn_regModel (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) :
     shiftThreshold hH ≤ σ * ‖s‖ ^ (r - 2) ∧
@@ -466,10 +573,14 @@ theorem shiftThreshold_le_of_isMinOn_regModel (hσ : 0 < σ) (hr : 2 < r)
   rw [(particular_spec (hH := hH) (g := g) _).2.2 hμ]
   exact ⟨hstep hμ, hstep hμ⟩
 
-/-- **The sets `𝓛` and `𝓖` of the regularization subproblem** (§8.3.1). Let `σ > 0`, `r > 2`, `s`
-a global minimizer of `regModel g H σ r` and `μ = σ‖s‖^{r-2}`. Then for every `λ > λₛ`:
-`(λ/σ)^{2/(r-2)} ≤ π(λ) ↔ λ ≤ μ`. So `(λₛ, ∞)` splits into `𝓛 = (λₛ, μ]`, where
-`‖s(λ)‖ ≥ (λ/σ)^{1/(r-2)}`, and `𝓖 = (μ, ∞)`. -/
+/-- **The sets $\mathcal{L}$ and $\mathcal{G}$ of the regularization subproblem.** Let $H$ be
+symmetric, $\sigma > 0$ and $r > 2$, let $s$ be a global minimizer of the regularized model
+$m^R$ on $E$, and put $\mu = \sigma \|s\|^{r-2}$. Then for every $\lambda > \lambda_s$
+$$\left(\frac{\lambda}{\sigma}\right)^{2/(r-2)} \le \pi(\lambda) \iff \lambda \le \mu.$$
+So $(\lambda_s, \infty)$ splits into $\mathcal{L} = (\lambda_s, \mu]$, where $\|s(\lambda)\| \ge
+(\lambda / \sigma)^{1/(r-2)}$, and $\mathcal{G} = (\mu, \infty)$.
+
+This is the partition of Section 8.3.1 of [cartis2022evaluation]. -/
 theorem le_secular_iff_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) {lam : ℝ} (hlam : shiftThreshold hH < lam) :
     (lam / σ) ^ (2 / (r - 2)) ≤ secular g H lam ↔ lam ≤ σ * ‖s‖ ^ (r - 2) :=
@@ -480,9 +591,13 @@ theorem le_secular_iff_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     ((isMinOn_regModel_iff hH hσ hr).1 hmin).1 (norm_sq_eq_rpow hσ hr s).le
     (fun _ => (norm_sq_eq_rpow hσ hr s).ge) hlam
 
-/-- In the easy case `μ > λₛ` of the regularization subproblem, `μ = σ‖s‖^{r-2}` is a root of the
-secular equation `π(λ) = (λ/σ)^{2/(r-2)}` ((8.2.42), §8.3.1), and by
-`le_secular_iff_of_regularization` the only root in `(λₛ, ∞)`. -/
+/-- Let $H$ be symmetric, $\sigma > 0$ and $r > 2$, let $s$ be a global minimizer of the regularized
+model $m^R$ on $E$, and put $\mu = \sigma \|s\|^{r-2}$. In the easy case $\mu > \lambda_s$,
+$\mu$ is a root of the secular equation:
+$$\pi(\mu) = \left(\frac{\mu}{\sigma}\right)^{2/(r-2)}.$$
+
+This is (8.2.42) and Section 8.3.1 of [cartis2022evaluation]. By
+`Subproblem.le_secular_iff_of_regularization`, $\mu$ is the only root in $(\lambda_s, \infty)$. -/
 theorem secular_eq_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) (hμ : shiftThreshold hH < σ * ‖s‖ ^ (r - 2)) :
     secular g H (σ * ‖s‖ ^ (r - 2)) = (σ * ‖s‖ ^ (r - 2) / σ) ^ (2 / (r - 2)) := by
@@ -490,11 +605,16 @@ theorem secular_eq_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     (neg_leftmost_le_shiftThreshold.trans_lt hμ)).2
   rw [secular, ← hstep, norm_sq_eq_rpow hσ hr s]
 
-/-- **Easy/hard case classification for the regularization subproblem** (§8.3.1,
-Corollary 8.3.1). Let `σ > 0`, `r > 2`, `s` a global minimizer and `μ = σ‖s‖^{r-2}`. Then
-`μ = λₛ` iff `g ⊥ ker (H + λₛ)` and `‖particular hH g λₛ‖² ≤ (λₛ/σ)^{2/(r-2)}`: for `λ₁ ≥ 0`
-(`λₛ = 0`) this says `g = 0`; for `λ₁ < 0` it is the hard case. Otherwise `μ > λₛ` and
-`s = step g H μ`. -/
+/-- **Classification into the easy and hard cases for the regularization subproblem.** Let $H$ be
+symmetric, $\sigma > 0$ and $r > 2$, let $s$ be a global minimizer of the regularized model
+$m^R$ on $E$, and put $\mu = \sigma \|s\|^{r-2}$. Let $s_s$ be the minimum-norm solution
+`Subproblem.particular` of $(H + \lambda_s I) x = -g$. Then:
+* $\mu = \lambda_s$ if and only if $g$ is orthogonal to $\ker(H + \lambda_s I)$ and
+  $\|s_s\|^2 \le (\lambda_s / \sigma)^{2/(r-2)}$;
+* if $\mu > \lambda_s$, then $s = s(\mu)$.
+
+This is Section 8.3.1 and Corollary 8.3.1 of [cartis2022evaluation]. For $\lambda_1 \ge 0$, so
+$\lambda_s = 0$, the first case says $g = 0$. For $\lambda_1 < 0$ it is the hard case. -/
 theorem multiplier_classification_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) :
     (σ * ‖s‖ ^ (r - 2) = shiftThreshold hH ↔
@@ -509,7 +629,8 @@ theorem multiplier_classification_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     fun _ => (norm_sq_eq_rpow hσ hr s).ge
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- If `‖s‖² = (μ/σ)^{2/(r-2)}` with `μ ≥ 0` then `σ‖s‖^{r-2} = μ`. -/
+/-- Let $\sigma > 0$, $r > 2$ and $\mu \ge 0$. If a vector $s$ of a normed space satisfies
+$\|s\|^2 = (\mu / \sigma)^{2/(r-2)}$, then $\sigma \|s\|^{r-2} = \mu$. -/
 theorem mul_norm_rpow_eq_of_norm_sq_eq (hσ : 0 < σ) (hr : 2 < r) {μ : ℝ} (hμ : 0 ≤ μ)
     (h : ‖s‖ ^ 2 = (μ / σ) ^ (2 / (r - 2))) : σ * ‖s‖ ^ (r - 2) = μ := by
   have hr2 : r - 2 ≠ 0 := by linarith
@@ -518,10 +639,14 @@ theorem mul_norm_rpow_eq_of_norm_sq_eq (hσ : 0 < σ) (hr : 2 < r) {μ : ℝ} (h
   have he : 2 / (r - 2) * ((r - 2) / 2) = 1 := by field_simp
   rw [h1, h, ← Real.rpow_mul (div_nonneg hμ hσ.le), he, Real.rpow_one, mul_div_cancel₀ _ hσ.ne']
 
-/-- **Hard-case solutions of the regularization subproblem are global minimizers** (sufficiency,
-§8.3.1). Let `μ ≥ 0` with `μ ≥ -λ₁`, `g ⊥ ker (H + μ)`, `w ∈ ker (H + μ)` and
-`‖particular hH g μ + w‖² = (μ/σ)^{2/(r-2)}`. Then `particular hH g μ + w` minimizes
-`regModel g H σ r`. -/
+/-- **Hard-case solutions of the regularization subproblem are global minimizers.** Let $H$ be
+symmetric, $\sigma > 0$ and $r > 2$, let $\mu \ge 0$ with $\mu \ge -\lambda_1$, and suppose that
+$g$ is orthogonal to $\ker(H + \mu I)$. Let $p$ be the minimum-norm solution
+`Subproblem.particular` of $(H + \mu I) x = -g$, and let $w \in \ker(H + \mu I)$ with
+$$\|p + w\|^2 = \left(\frac{\mu}{\sigma}\right)^{2/(r-2)}.$$
+Then $p + w$ is a global minimizer of the regularized model $m^R$ on $E$.
+
+This is the sufficiency part of Section 8.3.1 of [cartis2022evaluation]. -/
 theorem isMinOn_regModel_of_hardCase (hσ : 0 < σ) (hr : 2 < r) {μ : ℝ} {w : E} (hμ0 : 0 ≤ μ)
     (hμ : -leftmost hH ≤ μ)
     (hg : g ∈ (LinearMap.ker ((H + μ • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ)
@@ -534,9 +659,14 @@ theorem isMinOn_regModel_of_hardCase (hσ : 0 < σ) (hr : 2 < r) {μ : ℝ} {w :
   rw [isMinOn_regModel_iff hH hσ hr, mul_norm_rpow_eq_of_norm_sq_eq hσ hr hμ0 hnorm]
   exact ⟨hsol, isPositive_add_smul_of_le hμ⟩
 
-/-- **Optimal value of the regularization subproblem** ((8.3.3)). If `s` globally minimizes
-`regModel g H σ r` (`σ > 0`, `r > 2`) and `μ = σ‖s‖^{r-2}`, then
-`m^R(s) = ½ (⟪g, particular hH g μ⟫ - ((r-2)/r) μ (μ/σ)^{2/(r-2)})`. -/
+/-- **Optimal value of the regularization subproblem.** Let $H$ be symmetric, $\sigma > 0$ and
+$r > 2$, let $s$ be a global minimizer of the regularized model $m^R$ on $E$, and put
+$\mu = \sigma \|s\|^{r-2}$. Let $p$ be the minimum-norm solution `Subproblem.particular` of
+$(H + \mu I) x = -g$. Then
+$$m^R(s) = \tfrac12 \left(\langle g, p \rangle - \frac{r - 2}{r} \mu
+  \left(\frac{\mu}{\sigma}\right)^{2/(r-2)}\right).$$
+
+This is (8.3.3) of [cartis2022evaluation]. -/
 theorem optimalValue_eq_of_regularization (hσ : 0 < σ) (hr : 2 < r)
     (hmin : IsMinOn (regModel g H σ r) univ s) :
     regModel g H σ r s = (1 / 2) * (⟪g, particular hH g (σ * ‖s‖ ^ (r - 2))⟫ -
@@ -552,10 +682,15 @@ end Regularization
 /-! ### Existence of hard-case solutions -/
 
 omit [FiniteDimensional ℝ E] in
-/-- **The roots `α` of the hard case.** If `p ⊥ v`, `v ≠ 0` and `‖p‖² ≤ t`, then
-`‖p + α v‖² = t` for `α = ±√(t - ‖p‖²) / ‖v‖`; in particular some `α` works. Applied with
-`p = sₛ = particular hH g (-λ₁)` and an eigenvector `v = v₁` for `λ₁`, which is orthogonal to `sₛ`
-by `particular_spec`, this produces the hard-case solutions `sₛ + α v₁` of §8.3. -/
+/-- **The coefficients $\alpha$ of the hard case.** Let $E$ be a real inner product space, and let
+$p, v \in E$ with $\langle p, v \rangle = 0$ and $v \neq 0$. Let $t \in \mathbb{R}$ with
+$\|p\|^2 \le t$. Then there is $\alpha \in \mathbb{R}$ with
+$$\|p + \alpha v\|^2 = t \quad \text{and} \quad \|p - \alpha v\|^2 = t.$$
+
+The proof takes $\alpha = \sqrt{t - \|p\|^2} / \|v\|$. With $p = s_s$, the minimum-norm solution
+`Subproblem.particular` at $-\lambda_1$, and an eigenvector $v = v_1$ for $\lambda_1$, which is
+orthogonal to $s_s$ by `Subproblem.particular_spec`, this gives the hard-case solutions
+$s_s + \alpha v_1$ of Section 8.3 of [cartis2022evaluation]. -/
 theorem exists_norm_particular_add_smul_eq {p v : E} (hpv : ⟪p, v⟫ = 0) (hv : v ≠ 0) {t : ℝ}
     (ht : ‖p‖ ^ 2 ≤ t) :
     ∃ α : ℝ, ‖p + α • v‖ ^ 2 = t ∧ ‖p - α • v‖ ^ 2 = t := by

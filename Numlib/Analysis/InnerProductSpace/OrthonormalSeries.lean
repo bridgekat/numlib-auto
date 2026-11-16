@@ -13,30 +13,52 @@ import Mathlib.Analysis.InnerProductSpace.l2Space
 /-!
 # Series against an orthonormal family
 
-Let `v : ι → E` be an orthonormal family in a real Hilbert space. This module collects the
-arithmetic of the series `∑ i, a i • v i`: when it converges, what its coefficients and inner
-products are, and the two membership criteria for the closed span of the family.
+Let $(v_i)_{i \in \iota}$ be an orthonormal family in a real inner product space $E$, and let
+$\overline{V}$ be the closure of its span. This module studies the series $\sum_i a_i v_i$ with real
+coefficients $a_i$. The coefficients of a convergent series are recovered as
+$a_i = \langle v_i, y \rangle$, and the inner product of two convergent series is $\sum_i a_i b_i$.
+When $E$ is complete, the series converges exactly when $\sum_i a_i^2$ converges, the family is a
+Hilbert basis of $\overline{V}$, and the orthogonal projection onto $\overline{V}$ is
+$x \mapsto \sum_i \langle v_i, x \rangle v_i$. The module also gives a criterion for membership in
+$\overline{V}$: if $\sum_i \langle v_i, x \rangle^2 = \|x\|^2$, then $x \in \overline{V}$. This
+criterion is the converse of Bessel's inequality. It turns a computation with the coefficients into
+a proof that a family is complete.
 
-## Main statements
+## Main results
 
-* `Orthonormal.summable_smul_iff`: the series converges exactly when `∑ i, (a i) ^ 2` does.
-* `Orthonormal.inner_eq_of_hasSum`: the coefficients are recovered by pairing with the family.
-* `Orthonormal.hasSum_mul_of_hasSum`: Parseval's identity for two such series.
-* `Orthonormal.hilbertBasisTopologicalClosure`: an orthonormal family is a Hilbert basis of the
-  closure of its span, and `Orthonormal.hasSum_inner_smul_starProjection` expands the orthogonal
-  projection onto that closure.
-* `Orthonormal.mem_topologicalClosure_span_of_hasSum_inner_sq`: the **completeness criterion**, that
-  a vector whose coefficients against the family already carry its whole norm lies in the closed
-  span. It is the converse of Bessel's inequality, and it is what turns a computation with the
-  coefficients into a statement that a family is complete.
+* `Orthonormal.inner_eq_of_hasSum`: if $\sum_i a_i v_i = y$, then $\langle v_i, y \rangle = a_i$ for
+  every $i$.
+* `Orthonormal.hasSum_mul_of_hasSum`: Parseval's identity $\langle x, y \rangle = \sum_i a_i b_i$
+  for two series $x = \sum_i a_i v_i$ and $y = \sum_i b_i v_i$.
+* `Orthonormal.summable_smul_iff`: in a complete space, $\sum_i a_i v_i$ converges if and only if
+  $\sum_i a_i^2$ converges.
+* `Orthonormal.hilbertBasisTopologicalClosure`: in a complete space, the family is a Hilbert basis
+  of $\overline{V}$.
+* `Orthonormal.hasSum_inner_smul_starProjection`: in a complete space, the orthogonal projection of
+  $x$ onto $\overline{V}$ is $\sum_i \langle v_i, x \rangle v_i$.
+* `Orthonormal.mem_topologicalClosure_span_of_hasSum_inner_sq`: the completeness criterion, that
+  $\sum_i \langle v_i, x \rangle^2 = \|x\|^2$ implies $x \in \overline{V}$.
+* `Orthonormal.topologicalClosure_span_comp_inr`: for an orthonormal family indexed by a disjoint
+  union $\iota \sqcup \kappa$, the closed span of the second part is the orthogonal complement of
+  the closed span of the first part inside the closed span of the whole family.
+
+## Implementation notes
+
+* Convergence of a series means unconditional convergence, Mathlib's `HasSum` and `Summable`. The
+  index type $\iota$ is arbitrary.
+* The closed span $\overline{V}$ is `(Submodule.span ℝ (Set.range v)).topologicalClosure`.
 -/
 
 noncomputable section
 
 variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {v : ι → E}
 
-/-- A vector in the closure of the span of a family is the limit of finite linear combinations; in
-particular the sum of a convergent series in the family lies there. -/
+/-- Let $(v_i)_{i \in \iota}$ be any family in a real inner product space $E$, let
+$a \colon \iota \to \mathbb{R}$, and let $y \in E$. If the series $\sum_i a_i v_i$ converges
+unconditionally to $y$, then $y$ lies in the closure of the span of the family.
+
+The family need not be orthonormal: the partial sums lie in the span, and their limit lies in
+its closure. -/
 theorem mem_topologicalClosure_span_of_hasSum {a : ι → ℝ} {y : E}
     (h : HasSum (fun i => a i • v i) y) :
     y ∈ (Submodule.span ℝ (Set.range v)).topologicalClosure := by
@@ -47,7 +69,8 @@ theorem mem_topologicalClosure_span_of_hasSum {a : ι → ℝ} {y : E}
     mem_closure_of_tendsto h (Filter.Eventually.of_forall hmem)
   rwa [← Submodule.topologicalClosure_coe] at hy
 
-/-- A vector orthogonal to every member of a family is orthogonal to the span of the family. -/
+/-- Let $(v_i)_{i \in \iota}$ be any family in a real inner product space $E$, and let $x \in E$. If
+$\langle v_i, x \rangle = 0$ for every $i$, then $x$ is orthogonal to the span of the family. -/
 theorem Submodule.mem_orthogonal_span_range {x : E} (h : ∀ i, inner ℝ (v i) x = 0) :
     x ∈ (Submodule.span ℝ (Set.range v))ᗮ := by
   rw [Submodule.mem_orthogonal]
@@ -63,8 +86,11 @@ theorem Submodule.mem_orthogonal_span_range {x : E} (h : ∀ i, inner ℝ (v i) 
 
 namespace Orthonormal
 
-/-- **The coefficients of a convergent orthonormal series** are its inner products with the
-family. -/
+/-- **The coefficients of a convergent orthonormal series.** Let $(v_i)_{i \in \iota}$ be an
+orthonormal family in a real inner product space $E$, let $a \colon \iota \to \mathbb{R}$, and
+let $y \in E$. If the series $\sum_i a_i v_i$ converges unconditionally to $y$, then
+$$\langle v_i, y \rangle = a_i \quad \text{for every } i \in \iota.$$
+-/
 theorem inner_eq_of_hasSum (hv : Orthonormal ℝ v) {a : ι → ℝ} {y : E}
     (h : HasSum (fun i => a i • v i) y) (i : ι) : inner ℝ (v i) y = a i := by
   have h1 := h.mapL (innerSL ℝ (v i))
@@ -77,8 +103,13 @@ theorem inner_eq_of_hasSum (hv : Orthonormal ℝ v) {a : ι → ℝ} {y : E}
   rw [hdiag, mul_one] at h2
   exact h1.unique h2
 
-/-- **Parseval's identity for two orthonormal series**: the inner product of two convergent series
-in the same orthonormal family is the sum of the products of their coefficients. -/
+/-- **Parseval's identity for two orthonormal series.** Let $(v_i)_{i \in \iota}$ be an orthonormal
+family in a real inner product space $E$, let $a, b \colon \iota \to \mathbb{R}$, and let
+$x, y \in E$. If $\sum_i a_i v_i$ converges unconditionally to $x$ and $\sum_i b_i v_i$
+converges unconditionally to $y$, then the series $\sum_i a_i b_i$ converges unconditionally,
+and
+$$\sum_i a_i b_i = \langle x, y \rangle.$$
+-/
 theorem hasSum_mul_of_hasSum (hv : Orthonormal ℝ v) {a b : ι → ℝ} {x y : E}
     (hx : HasSum (fun i => a i • v i) x) (hy : HasSum (fun i => b i • v i) y) :
     HasSum (fun i => a i * b i) (inner ℝ x y) := by
@@ -92,14 +123,20 @@ section CompleteSpace
 
 variable [CompleteSpace E]
 
-/-- A series of scalar multiples of an orthonormal family converges exactly when the squares of the
-coefficients are summable. -/
+/-- Let $(v_i)_{i \in \iota}$ be an orthonormal family in a real Hilbert space $E$, and let
+$a \colon \iota \to \mathbb{R}$. Then the series $\sum_i a_i v_i$ converges unconditionally if
+and only if the series $\sum_i a_i^2$ converges. -/
 theorem summable_smul_iff (hv : Orthonormal ℝ v) (a : ι → ℝ) :
     (Summable fun i => a i • v i) ↔ Summable fun i => a i ^ 2 := by
   simpa [LinearIsometry.toSpanSingleton_apply, Real.norm_eq_abs, sq_abs] using
     hv.orthogonalFamily.summable_iff_norm_sq_summable a
 
-/-- An orthonormal family is a Hilbert basis of the closure of its span. -/
+/-- Let $(v_i)_{i \in \iota}$ be an orthonormal family in a real Hilbert space $E$. Then the family
+is a **Hilbert basis** of the closure $\overline{V}$ of its span: it is orthonormal in
+$\overline{V}$, and every vector of $\overline{V}$ is the sum of its expansion in the family.
+
+The definition builds the Hilbert basis with `HilbertBasis.mkOfOrthogonalEqBot`. The closure
+$\overline{V}$ is complete because $E$ is complete and $\overline{V}$ is closed. -/
 def hilbertBasisTopologicalClosure (hv : Orthonormal ℝ v) :
     HilbertBasis ι ℝ ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
   haveI : CompleteSpace ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
@@ -120,10 +157,14 @@ def hilbertBasisTopologicalClosure (hv : Orthonormal ℝ v) :
       have hzero : inner ℝ (x : E) (x : E) = 0 := (Submodule.mem_orthogonal _ _).1 hmem2 _ hmem
       exact Submodule.coe_eq_zero.mp (inner_self_eq_zero.mp hzero))
 
-/-- **The expansion of an orthogonal projection in an orthonormal family.** The projection onto
-the closed span of an orthonormal family is the sum of the family against the coefficients of the
-projected vector; for a vector already in that closed span it is the expansion of the vector
-itself. -/
+/-- **The expansion of an orthogonal projection in an orthonormal family.** Let
+$(v_i)_{i \in \iota}$ be an orthonormal family in a real Hilbert space $E$, and let $P$ be the
+orthogonal projection onto the closure $\overline{V}$ of its span. Then for every $x \in E$, the
+series $\sum_i \langle v_i, x \rangle v_i$ converges unconditionally, and
+$$\sum_i \langle v_i, x \rangle \, v_i = P x.$$
+
+The projection $P$ is `Submodule.starProjection` of $\overline{V}$. For $x \in \overline{V}$
+this gives the expansion of $x$ itself, `Orthonormal.hasSum_inner_smul_of_mem`. -/
 theorem hasSum_inner_smul_starProjection (hv : Orthonormal ℝ v) (x : E) :
     HasSum (fun i : ι => (inner ℝ (v i) x) • v i)
       ((Submodule.span ℝ (Set.range v)).topologicalClosure.starProjection x) := by
@@ -146,7 +187,10 @@ theorem hasSum_inner_smul_starProjection (hv : Orthonormal ℝ v) (x : E) :
     ← Submodule.inner_starProjection_left_eq_right,
     Submodule.starProjection_eq_self_iff.mpr (hmem i)]
 
-/-- **The expansion of a vector in the closed span of an orthonormal family.** -/
+/-- **The expansion of a vector in the closed span of an orthonormal family.** Let
+$(v_i)_{i \in \iota}$ be an orthonormal family in a real Hilbert space $E$, and let $x$ lie in
+the closure of the span of the family. Then the series $\sum_i \langle v_i, x \rangle v_i$
+converges unconditionally to $x$. -/
 theorem hasSum_inner_smul_of_mem (hv : Orthonormal ℝ v) {x : E}
     (hx : x ∈ (Submodule.span ℝ (Set.range v)).topologicalClosure) :
     HasSum (fun i : ι => (inner ℝ (v i) x) • v i) x := by
@@ -154,9 +198,13 @@ theorem hasSum_inner_smul_of_mem (hv : Orthonormal ℝ v) {x : E}
     (Submodule.isClosed_topologicalClosure _).completeSpace_coe
   simpa [Submodule.starProjection_eq_self_iff.mpr hx] using hv.hasSum_inner_smul_starProjection x
 
-/-- **The completeness criterion for an orthonormal family.** If the squares of the coefficients of
-`x` against an orthonormal family already sum to `‖x‖ ^ 2` — that is, if Bessel's inequality is an
-equality at `x` — then `x` lies in the closed span of the family. -/
+/-- **The completeness criterion for an orthonormal family.** Let $(v_i)_{i \in \iota}$ be an
+orthonormal family in a real Hilbert space $E$, and let $x \in E$. If the series
+$\sum_i \langle v_i, x \rangle^2$ converges unconditionally to $\|x\|^2$, then $x$ lies in the
+closure of the span of the family.
+
+The hypothesis says that Bessel's inequality $\sum_i \langle v_i, x \rangle^2 \le \|x\|^2$ is an
+equality at $x$, so the theorem is the converse of Bessel's inequality. -/
 theorem mem_topologicalClosure_span_of_hasSum_inner_sq (hv : Orthonormal ℝ v) {x : E}
     (h : HasSum (fun i : ι => (inner ℝ (v i) x : ℝ) ^ 2) (‖x‖ ^ 2)) :
     x ∈ (Submodule.span ℝ (Set.range v)).topologicalClosure := by
@@ -177,12 +225,15 @@ theorem mem_topologicalClosure_span_of_hasSum_inner_sq (hv : Orthonormal ℝ v) 
   rw [this]
   exact mem_topologicalClosure_span_of_hasSum hy
 
-/-- **Splitting an orthonormal family in two.** For an orthonormal family indexed by a sum type, the
-closed span of the second half is the part of the closed span of the whole family orthogonal to the
-closed span of the first half.
+/-- **Splitting an orthonormal family in two.** Let $(u_k)_{k \in \iota \sqcup \kappa}$ be an
+orthonormal family in a real Hilbert space $E$, indexed by the disjoint union of two types. Let
+$U_1$, $U_2$ and $U$ be the closures of the spans of the families $(u_i)_{i \in \iota}$,
+$(u_j)_{j \in \kappa}$ and $(u_k)_{k \in \iota \sqcup \kappa}$. Then
+$$U_2 = U_1^\perp \cap U.$$
 
-Applied to a two-channel filter bank, this is what identifies the wavelet space `W = V₁ ⊖ V₀` with
-the closed span of the high-pass channel. -/
+The two parts of the family are `u ∘ Sum.inl` and `u ∘ Sum.inr`. For a two-channel filter bank,
+this result identifies the wavelet space $W = V_1 \ominus V_0$ with the closed span of the
+high-pass channel. -/
 theorem topologicalClosure_span_comp_inr {ι κ : Type*} {u : ι ⊕ κ → E} (hu : Orthonormal ℝ u) :
     (Submodule.span ℝ (Set.range (u ∘ Sum.inr))).topologicalClosure
       = (Submodule.span ℝ (Set.range (u ∘ Sum.inl))).topologicalClosureᗮ

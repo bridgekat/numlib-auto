@@ -14,33 +14,42 @@ import Mathlib.Analysis.InnerProductSpace.Harmonic.Constructions
 /-!
 # Harmonic functions in the plane under a change of variable
 
-Mathlib knows that harmonicity is preserved by *post*-composition with a continuous linear map
-(`InnerProductSpace.HarmonicAt.comp_CLM`). This file supplies the two *pre*-composition results that
-plane potential theory needs, both for a real-valued function on `ℂ`:
+A real-valued function $u$ on $\mathbb{C}$ is harmonic at a point if it is of class $C^2$ there and
+its Laplacian vanishes in a neighbourhood of the point. Mathlib knows that harmonicity is preserved
+by post-composition with a continuous linear map (`InnerProductSpace.HarmonicAt.comp_CLM`). This
+module proves the two pre-composition results that potential theory in the plane needs: harmonicity
+of $u$ is preserved by $u \mapsto u \circ g$ for a holomorphic map $g$, and by
+$u \mapsto u \circ \overline{\,\cdot\,}$ for complex conjugation. Together they say that harmonicity
+is preserved by any conformal or anticonformal change of variable. This is the property that makes
+conformal mapping a tool for Laplace's equation.
 
-* `InnerProductSpace.HarmonicAt.comp_analyticAt`, precomposition with a holomorphic map;
-* `InnerProductSpace.HarmonicAt.comp_conj`, precomposition with complex conjugation.
+Both results rest on `InnerProductSpace.HarmonicOnNhd.exists_analyticOnNhd_ball_re_eq`: a harmonic
+function on a ball is the real part of a holomorphic function. The conjugation case also needs the
+**Schwarz reflection**: $z \mapsto \overline{F(\bar z)}$ is holomorphic wherever $F$ is. This module
+proves it from the difference quotient.
 
-Together they say that harmonicity is preserved by any conformal or anticonformal change of
-variable, which is the plane phenomenon that makes conformal mapping a tool for Laplace's equation.
+## Main results
 
-Both rest on `InnerProductSpace.HarmonicOnNhd.exists_analyticOnNhd_ball_re_eq`, that a harmonic
-function on a ball is the real part of a holomorphic one; the conjugation case needs in addition the
-**Schwarz reflection** `HasDerivAt.conj_comp_conj`, that `z ↦ conj (F (conj z))` is holomorphic
-wherever `F` is, which is proved here from the difference quotient.
+* `HasDerivAt.conj_comp_conj` and `AnalyticOnNhd.conj_comp_conj`: Schwarz reflection, for the
+  derivative at a point and for analyticity on a ball.
+* `InnerProductSpace.HarmonicAt.comp_analyticAt`: harmonicity is preserved by precomposition with a
+  holomorphic map.
+* `InnerProductSpace.HarmonicAt.comp_conj`: harmonicity is preserved by precomposition with complex
+  conjugation.
 
-## Main statements
+## Implementation notes
 
-* `HasDerivAt.conj_comp_conj` and `AnalyticOnNhd.conj_comp_conj`, Schwarz reflection;
-* `InnerProductSpace.HarmonicAt.comp_analyticAt` and `InnerProductSpace.HarmonicAt.comp_conj`.
+* Harmonicity is Mathlib's `InnerProductSpace.HarmonicAt`, for $\mathbb{C}$ as a real inner product
+  space. Complex conjugation is `starRingEnd ℂ`.
 -/
 
 open Complex Filter Metric Topology InnerProductSpace
 
 /-! ### Schwarz reflection -/
 
-/-- **Schwarz reflection**, at the level of the derivative: if `F` has complex derivative `c` at
-`w`, then `z ↦ conj (F (conj z))` has complex derivative `conj c` at `conj w`. -/
+/-- **Schwarz reflection**, for the derivative. Let $F : \mathbb{C} \to \mathbb{C}$ have the complex
+derivative $c$ at $w$. Then the function $z \mapsto \overline{F(\bar z)}$ has the complex
+derivative $\bar c$ at $\bar w$. -/
 theorem HasDerivAt.conj_comp_conj {F : ℂ → ℂ} {w c : ℂ} (h : HasDerivAt F c w) :
     HasDerivAt (fun z => (starRingEnd ℂ) (F ((starRingEnd ℂ) z))) ((starRingEnd ℂ) c)
       ((starRingEnd ℂ) w) := by
@@ -60,8 +69,9 @@ theorem HasDerivAt.conj_comp_conj {F : ℂ → ℂ} {w c : ℂ} (h : HasDerivAt 
   rw [← map_sub, show z - (starRingEnd ℂ) w = (starRingEnd ℂ) ((starRingEnd ℂ) z - w) by
       rw [map_sub, Complex.conj_conj], ← map_div₀]
 
-/-- **Schwarz reflection** on a ball: if `F` is holomorphic on `ball w R`, then
-`z ↦ conj (F (conj z))` is holomorphic on the reflected ball `ball (conj w) R`. -/
+/-- **Schwarz reflection** on a ball. Let $F : \mathbb{C} \to \mathbb{C}$ be analytic on the open
+ball $B(w, R)$. Then the function $z \mapsto \overline{F(\bar z)}$ is analytic on the reflected
+ball $B(\bar w, R)$. -/
 theorem AnalyticOnNhd.conj_comp_conj {F : ℂ → ℂ} {w : ℂ} {R : ℝ}
     (h : AnalyticOnNhd ℂ F (ball w R)) :
     AnalyticOnNhd ℂ (fun z => (starRingEnd ℂ) (F ((starRingEnd ℂ) z))) (ball ((starRingEnd ℂ) w) R)
@@ -79,7 +89,9 @@ theorem AnalyticOnNhd.conj_comp_conj {F : ℂ → ℂ} {w : ℂ} {R : ℝ}
 
 /-! ### Harmonicity under a change of variable -/
 
-/-- **Harmonicity is preserved by precomposition with a holomorphic map.** -/
+/-- **Harmonicity is preserved by precomposition with a holomorphic map.** Let
+$u : \mathbb{C} \to \mathbb{R}$, $g : \mathbb{C} \to \mathbb{C}$ and $x \in \mathbb{C}$. If $u$
+is harmonic at $g(x)$ and $g$ is analytic at $x$, then $u \circ g$ is harmonic at $x$. -/
 theorem InnerProductSpace.HarmonicAt.comp_analyticAt {u : ℂ → ℝ} {g : ℂ → ℂ} {x : ℂ}
     (hu : HarmonicAt u (g x)) (hg : AnalyticAt ℂ g x) :
     HarmonicAt (fun z => u (g z)) x := by
@@ -93,7 +105,9 @@ theorem InnerProductSpace.HarmonicAt.comp_analyticAt {u : ℂ → ℝ} {g : ℂ 
   refine (harmonicAt_congr_nhds (f₁ := fun z => (F (g z)).re) ?_).1 (AnalyticAt.harmonicAt_re hFg)
   filter_upwards [hev] with z hz using hFeq hz
 
-/-- **Harmonicity is preserved by precomposition with complex conjugation.** -/
+/-- **Harmonicity is preserved by precomposition with complex conjugation.** Let
+$u : \mathbb{C} \to \mathbb{R}$ and $x \in \mathbb{C}$. If $u$ is harmonic at $\bar x$, then
+$z \mapsto u(\bar z)$ is harmonic at $x$. -/
 theorem InnerProductSpace.HarmonicAt.comp_conj {u : ℂ → ℝ} {x : ℂ}
     (hu : HarmonicAt u ((starRingEnd ℂ) x)) :
     HarmonicAt (fun z => u ((starRingEnd ℂ) z)) x := by

@@ -10,34 +10,44 @@ import Numlib.Analysis.SpecialFunctions.Log
 /-!
 # High-order target-following runs with trust-region inner calls
 
-Phase 2 of a high-order target-following method (`Constrained.IsHighOrderTargetRun`,
-[cartis2022evaluation], Algorithm 14.3.2) whose `k`-th inner call is a call of the trust-region
-method TRq with a feasible set (`Optimization.IsTRqCallOut`) on the merit function `μ(·, t_k)`,
-with threshold `ϑ` and tolerances `β ‖r(x_k, t_k)‖ ε_j`, cut at any iteration.
+This file treats Phase 2 of a high-order target-following method (Algorithm 14.3.2 of
+[cartis2022evaluation]) whose $k$-th inner call is a call of the trust-region method TRq with a
+feasible set. The call works on the merit function $\mu(\cdot, t_k) = \tfrac12 \|r(\cdot, t_k)\|^2$,
+where $r(x, t) = (c(x), f(x) - t)$, with threshold $\vartheta$ and tolerances $\varepsilon'_j =
+\beta \|r(x_k, t_k)\| \varepsilon_j$, and it may be cut at any iteration. Write
+$\varepsilon_{\min} = \min_{j \in [1 : q]} \varepsilon_j$.
 
-Every such run satisfies the inner-test contract of the inner method
-(`Constrained.HighOrderTargetSeq.IsInnerTestContract`) with the exponents `π_j = q + 1` of the
-decrease of TRq (Lemma 12.2.4), the `t`-independent constants of the call analysis
-(`Optimization.trqCallKappaDecr`, `Optimization.trqKappaUns`), a count constant
-`κ_unc⁰ + |log(ε₀ ε_min)|/|log γ₂|` (every call restarts from the radius `Δ₀` while its radii may
-shrink to `κ_ρ ε'_min ≥ κ_ρ βθ ε₀ ε_min`) and radii `κ_ρ βθ ε₀ ε_min`. Runs with such calls exist
-from every admissible starting point, and the cost of a terminating call of TRq on the
-constraint violation `ν = ½ ‖c‖²` is bounded in terms of `|log(ε₀ ε_min)|`.
+Every such run satisfies the inner-test contract of the inner method. The exponents are
+$\pi_j = q + 1$, from the decrease of TRq in Lemma 12.2.4. The constants of the decrease and of the
+unsuccessful iterations do not depend on the target. The count constant is
+$\kappa_{\mathrm{unc}}^0 + |\log(\varepsilon_0 \varepsilon_{\min})| / |\log \gamma_2|$, because
+every call restarts from the radius $\Delta_0$ while its radii may shrink to $\kappa_\rho
+\varepsilon'_{\min} \ge \kappa_\rho \beta\theta \varepsilon_0 \varepsilon_{\min}$. The radii are
+$\kappa_\rho \beta\theta \varepsilon_0 \varepsilon_{\min}$. Runs with such calls exist from every
+admissible starting point. The cost of a terminating call of TRq on the constraint violation
+$\nu = \tfrac12 \|c\|^2$ is bounded in terms of $|\log(\varepsilon_0 \varepsilon_{\min})|$.
 
 ## Main definitions
 
-* `Constrained.HighOrderTargetSeq.IsTRqCalls`: the inner calls are TRq calls;
-* `Constrained.trqCallKappaUnc0`: the `ε`-independent part of the count constant;
-* `Constrained.tolLogTerm q ε = |log(ε₀ ε_min)|`.
+* `Constrained.HighOrderTargetSeq.IsTRqCalls`: the inner calls of Phase 2 are calls of TRq on
+  $\mu(\cdot, t_k)$.
+* `Constrained.trqCallKappaUnc0`: the part of the count constant that does not depend on the
+  tolerances.
+* `Constrained.tolLogTerm`: the term $|\log(\varepsilon_0 \varepsilon_{\min})|$.
 
 ## Main results
 
-* `Constrained.IsHighOrderTargetRun.call_tol`: the tolerances of the calls;
-* `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isTRqCalls`: the inner-test contract;
-* `Constrained.exists_innerCall_isTRqCallOut`: one call from every admissible point;
-* `Constrained.exists_isHighOrderTargetRun_isTRqCalls`: runs with TRq calls exist;
-* `Constrained.IsTRqOutputCost.cost_le_halfSqNorm`: the cost of a call on `ν` with tolerances
-  `β₁ ‖c(y)‖ ε_j`.
+* `Constrained.IsHighOrderTargetRun.le_targetResidual`: $\|r(x_k, t_k)\| \ge \theta \varepsilon_0$
+  at every reached outer iteration.
+* `Constrained.IsHighOrderTargetRun.call_tol`: the tolerances of the calls lie in $(0, 1]$, and
+  their minimum lies between $\beta\theta \varepsilon_0 \varepsilon_{\min}$ and $\vartheta$.
+* `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isTRqCalls`: runs with TRq calls satisfy
+  the inner-test contract.
+* `Constrained.exists_innerCall_isTRqCallOut`: one TRq call of Phase 2 exists from every admissible
+  point.
+* `Constrained.exists_isHighOrderTargetRun_isTRqCalls`: runs of Phase 2 with TRq calls exist.
+* `Constrained.IsTRqOutputCost.cost_le_halfSqNorm`: the cost of a terminating TRq call on $\nu$ with
+  tolerances $\beta_1 \|c(y)\| \varepsilon_j$.
 -/
 
 open Set
@@ -47,31 +57,40 @@ namespace Constrained
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
 
-/-- `a b ≤ 1` for `a ≤ 1` and `b ∈ [0, 1]`. -/
+/-- For real numbers $a \le 1$ and $b \in [0, 1]$, $ab \le 1$. -/
 private theorem mul_le_one_of_le_one {a b : ℝ} (ha : a ≤ 1) (hb0 : 0 ≤ b) (hb : b ≤ 1) :
     a * b ≤ 1 :=
   (mul_le_of_le_one_left hb0 ha).trans hb
 
 /-! ### The count constants -/
 
-/-- The `ε`-independent part `κ_uns + (|log Δ₀| + |log κ_ρ| + |log(βθ)|)/|log γ₂|` of the count of
-the iterations of one TRq call of Phase 2 (`Optimization.IsTRqCallOut.le_count`); the full count
-adds `|log(ε₀ ε_min)|/|log γ₂|` (`tolLogTerm`). -/
+/-- The part of the count of the iterations of one TRq call of Phase 2 that does not depend on the
+tolerances:
+$$\kappa_{\mathrm{unc}}^0 = \kappa_{\mathrm{uns}} + \frac{|\log \Delta_0| + |\log \kappa_\rho| +
+  |\log(\beta\theta)|}{|\log \gamma_2|}.$$
+Here $\kappa_{\mathrm{uns}}$ is `Optimization.trqKappaUns` and $\kappa_\rho$ is
+`Optimization.trqCallKappaRad`. The full count, from `Optimization.IsTRqCallOut.le_count`, adds
+$|\log(\varepsilon_0 \varepsilon_{\min})| / |\log \gamma_2|$, see `Constrained.tolLogTerm`. -/
 noncomputable def trqCallKappaUnc0 (P : Optimization.TRqParams) (L : ℕ → ℝ) (ϑ M : ℝ) (q : ℕ)
     (β θ : ℝ) : ℝ :=
   Optimization.trqKappaUns P + (|Real.log P.Δ₀| +
     |Real.log (Optimization.trqCallKappaRad P L ϑ M q)| + |Real.log (β * θ)|) / |Real.log P.γ₂|
 
-/-- The logarithmic term `|log(ε₀ ε_min)|`, `ε_min = min_{j ∈ [1 : q]} ε_j`. -/
+/-- The logarithmic term of the tolerances, $|\log(\varepsilon_0 \varepsilon_{\min})|$ with
+$\varepsilon_{\min} = \min\{1, \min_{j \in [1 : q]} \varepsilon_j\}$.
+
+The minimum is `Optimization.finMin 1 ε q`, which includes the value $1$. -/
 noncomputable def tolLogTerm (q : ℕ) (ε : ℕ → ℝ) : ℝ :=
   |Real.log (ε 0 * Optimization.finMin 1 ε q)|
 
+/-- Unfolding of `Constrained.tolLogTerm`: it is $|\log(\varepsilon_0 \varepsilon_{\min})|$. -/
 theorem tolLogTerm_def (q : ℕ) (ε : ℕ → ℝ) :
     tolLogTerm q ε = |Real.log (ε 0 * Optimization.finMin 1 ε q)| := rfl
 
+/-- The logarithmic term $|\log(\varepsilon_0 \varepsilon_{\min})|$ is nonnegative. -/
 theorem tolLogTerm_nonneg (q : ℕ) (ε : ℕ → ℝ) : 0 ≤ tolLogTerm q ε := abs_nonneg _
 
-/-- The `ε`-independent part of the count constant is nonnegative. -/
+/-- The part $\kappa_{\mathrm{unc}}^0$ of the count constant is nonnegative. -/
 theorem trqCallKappaUnc0_nonneg {P : Optimization.TRqParams} {L : ℕ → ℝ} {ϑ M : ℝ} {q : ℕ}
     (β θ : ℝ) : 0 ≤ trqCallKappaUnc0 P L ϑ M q β θ := by
   unfold trqCallKappaUnc0
@@ -82,11 +101,12 @@ theorem trqCallKappaUnc0_nonneg {P : Optimization.TRqParams} {L : ℕ → ℝ} {
 
 /-! ### Runs whose inner calls are TRq calls -/
 
-/-- **The inner calls of Phase 2 are TRq calls** ([cartis2022evaluation], Algorithm 14.3.2,
-Step 1, with an inner method of trust-region type): for every outer iteration `k ≥ 1` reached,
-the iterates, successful iterations and output radii `δ_{k+1}` of the `k`-th call are those of a
-call of TRq on `μ(·, t_k)` with threshold `ϑ` and tolerances `β ‖r(x_k, t_k)‖ ε_j`
-(`Optimization.IsTRqCallOut`), cut at any iteration. -/
+/-- **The inner calls of Phase 2 are TRq calls** ([cartis2022evaluation], Algorithm 14.3.2, Step 1,
+with an inner method of trust-region type). For every outer iteration $k \ge 1$ that is reached,
+the iterates, the successful iterations and the output radii $\delta_{k+1}$ of the $k$-th call
+are those of a call of TRq on $\mu(\cdot, t_k)$ with feasible set $X$, threshold $\vartheta$ and
+tolerances $\beta \|r(x_k, t_k)\| \varepsilon_j$, cut at some iteration
+(`Optimization.IsTRqCallOut`). -/
 def HighOrderTargetSeq.IsTRqCalls (f : E → ℝ) (c : E → F) (X : Set E) (q : ℕ)
     (P : Optimization.TRqParams) (ϑ θ β : ℝ) (ε : ℕ → ℝ) (D : HighOrderTargetSeq E) : Prop :=
   ∀ k, 1 ≤ k → D.Before f c X q θ ε k →
@@ -99,10 +119,12 @@ namespace IsHighOrderTargetRun
 variable {f : E → ℝ} {c : E → F} {X : Set E} {q : ℕ} {P : Optimization.TRqParams}
   {ϑ θ β : ℝ} {ε : ℕ → ℝ} {x₁ : E} {D : HighOrderTargetSeq E}
 
-/-- **The residual at the outer iterates is at least `θε₀`**: `‖r(x_k, t_k)‖ ≥ θε₀` for every
-outer iteration `k ≥ 1` reached (`‖r(x_1, t_1)‖ = ε₀`, `‖r(x_{k+1}, t_{k+1})‖ = ε₀` after a
-case-(a) iteration and `‖r(x_{k+1}, t_{k+1})‖ = ‖r(x_{k+1}, t_k)‖ ≥ θε₀` after a case-(b)
-iteration). -/
+/-- **The residual at the outer iterates is at least $\theta \varepsilon_0$.** On a run of Phase 2,
+$\|r(x_k, t_k)\| \ge \theta \varepsilon_0$ for every outer iteration $k \ge 1$ that is reached.
+
+Indeed $\|r(x_1, t_1)\| = \varepsilon_0$, $\|r(x_{k+1}, t_{k+1})\| = \varepsilon_0$ after a
+case-(a) iteration, and $\|r(x_{k+1}, t_{k+1})\| = \|r(x_{k+1}, t_k)\| \ge \theta \varepsilon_0$
+after a case-(b) iteration. -/
 theorem le_targetResidual (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) :
     ∀ k, 1 ≤ k → D.Before f c X q θ ε k → θ * ε 0 ≤ targetResidual f c (D.t k) (D.x k) := by
   have hθε : θ * ε 0 ≤ ε 0 := mul_le_of_le_one_left h.ε₀_pos.le h.θ_lt_one.le
@@ -123,8 +145,9 @@ theorem le_targetResidual (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) :
       rw [T.residual_succ_of_not_Ka hk1 (Nat.lt_succ_self k) hna]
       exact hb.1
 
-/-- The sublevel set of `μ(·, t_k)` at the start of the `k`-th call lies in
-`{x ∈ X | ‖r(x, t_k)‖ ≤ 1}`, since `‖r(x_k, t_k)‖ ≤ ε₀ ≤ 1`. -/
+/-- On a run of Phase 2, the sublevel set of $\mu(\cdot, t_k)$ in $X$ at the start of the $k$-th
+call lies in $\{x \in X : \|r(x, t_k)\| \le 1\}$, because
+$\|r(x_k, t_k)\| \le \varepsilon_0 \le 1$. -/
 private theorem call_mem_sublevel (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) {k : ℕ}
     (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
     ∀ y ∈ X, targetMerit f c (D.t k) y ≤ targetMerit f c (D.t k) (D.xi k 0) →
@@ -135,8 +158,12 @@ private theorem call_mem_sublevel (h : IsHighOrderTargetRun f c X q θ β ε x�
     (((h.isTargetSequence hk).residual_le h.θ_lt_one.le h.ε₀_pos.le hk1 le_rfl).trans
       (h.ε_le_one 0 (by simp)))⟩
 
-/-- **The tolerances of the calls**: the tolerances `ε'_j = β ‖r(x_k, t_k)‖ ε_j` of the `k`-th
-call lie in `(0, 1]`, their minimum is at most `ϑ` when `β ≤ ϑ`, and at least `βθ ε₀ ε_min`. -/
+/-- **The tolerances of the calls.** On a run of Phase 2 with $q \ge 1$ and $\beta \le \vartheta$,
+let $k \ge 1$ be a reached outer iteration, and let $\varepsilon'_j = \beta \|r(x_k, t_k)\|
+\varepsilon_j$. Then $\varepsilon'_j \in (0, 1]$ for every $j \in [1 : q]$, and
+$$\beta\theta\, \varepsilon_0 \varepsilon_{\min} \le \varepsilon'_{\min} \le \vartheta.$$
+
+The minima are `Optimization.finMin 1`, which include the value $1$. -/
 theorem call_tol (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hq : 1 ≤ q)
     (hβϑ : β ≤ ϑ) {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c X q θ ε k) :
     (∀ j ∈ Finset.Icc 1 q, β * targetResidual f c (D.t k) (D.x k) * ε j ∈ Ioc 0 1) ∧
@@ -170,14 +197,22 @@ theorem call_tol (h : IsHighOrderTargetRun f c X q θ β ε x₁ D) (hq : 1 ≤ 
         mul_le_mul hlo (Optimization.finMin_le hj) hεm0.le hr0.le
       nlinarith
 
-/-- **Runs with TRq calls satisfy the inner-test contract** ([cartis2022evaluation],
-Lemmas 14.2.2–14.2.3, trust-region rows, applied to `μ(·, t_k)`), with the exponents
-`π_l = q + 1` (the decrease of Lemma 12.2.4 is `κ_decr ε'_min^{q+1}`), the `t`-independent
-constants `κ_decr = Optimization.trqCallKappaDecr P L ϑ M q`, `κ_uns = Optimization.trqKappaUns P`,
-the count constant `κ_unc = κ_unc⁰ + |log(ε₀ ε_min)|/|log γ₂|` and radii
-`ρ_j = κ_ρ βθ ε₀ ε_min`, when every `μ(·, t)` satisfies `LipschitzDerivsAnchored` with constants
-`L` on `{x ∈ X | ‖r(x, t)‖ ≤ 1}` (inside `X₀ ⊇ X`) with derivatives of orders `0, …, q` bounded
-by `M > 0` there, `1 ≤ q` and `β ≤ ϑ ≤ 1`. -/
+/-- **Runs with TRq calls satisfy the inner-test contract** ([cartis2022evaluation], Lemmas
+14.2.2–14.2.3, trust-region case, applied to $\mu(\cdot, t_k)$). Let $q \ge 1$, $M > 0$,
+$X \subseteq X_0$ and $\beta \le \vartheta \le 1$. Assume that for every target $t$, the merit
+function $\mu(\cdot, t)$ satisfies `LipschitzDerivsAnchored` with the open convex set $X_0$, the
+anchors $\{x \in X : \|r(x, t)\| \le 1\}$, the orders $1, \dots, q$ and the constants $L$, and
+that its derivatives of orders $0, \dots, q$ are bounded by $M$ on the anchors. Then every run
+of Phase 2 whose inner calls are TRq calls satisfies
+`Constrained.HighOrderTargetSeq.IsInnerTestContract` with
+
+* the exponents $\pi_l = q + 1$, because the decrease of Lemma 12.2.4 is $\kappa_{\mathrm{decr}}
+  (\varepsilon'_{\min})^{q+1}$;
+* $\kappa_{\mathrm{decr}}$ = `Optimization.trqCallKappaDecr P L ϑ M q` and
+  $\kappa_{\mathrm{uns}}$ = `Optimization.trqKappaUns P`, which do not depend on the target;
+* the count constant $\kappa_{\mathrm{unc}} = \kappa_{\mathrm{unc}}^0 + |\log(\varepsilon_0
+  \varepsilon_{\min})| / |\log \gamma_2|$;
+* the radii $\rho_j = \kappa_\rho \beta\theta\, \varepsilon_0 \varepsilon_{\min}$. -/
 theorem isInnerTestContract_of_isTRqCalls (h : IsHighOrderTargetRun f c X q θ β ε x₁ D)
     (hcalls : D.IsTRqCalls f c X q P ϑ θ β ε) (hq : 1 ≤ q) {X₀ : Set E} {L : ℕ → ℝ} {M : ℝ}
     (hμ : ∀ t, LipschitzDerivsAnchored (targetMerit f c t) X₀
@@ -265,11 +300,26 @@ variable [FiniteDimensional ℝ E] {f : E → ℝ} {c : E → F} {X : Set E} {q 
   {ε : ℕ → ℝ}
 
 open Classical in
-/-- **One TRq call of Phase 2 exists** from every `(x, t)` with `x ∈ X` and
-`θε₀ ≤ ‖r(x, t)‖ ≤ ε₀`: TRq on `μ(·, t)` with threshold `ϑ` and tolerances `β ‖r(x, t)‖ ε`
-(which terminates, `Optimization.IsTRqRun.complexity`), stopped at its termination or as soon as
-`‖r(·, t)‖ < θε₀` (`Optimization.exists_isTRqCallOut_of_stop`), returning the radii
-`min(Δ_e, ϑ)`; its output satisfies the first or the criticality test of (14.3.32). -/
+/-- **One TRq call of Phase 2 exists.** Let $E$ be finite-dimensional, let $X$ be closed with
+$X \subseteq X_0$, and let $\mu(\cdot, t)$ satisfy `LipschitzDerivsAnchored` with the open
+convex set $X_0$, the anchors $\{x \in X : \|r(x, t)\| \le 1\}$, the orders $1, \dots, q$ and
+the constants $L$. Let $q \ge 1$, $\theta > 0$, $0 < \beta \le \theta$,
+$\beta \le \vartheta \le 1$, and $\varepsilon_j \in (0, 1]$ for $j \in [0 : q]$. Then for every
+$x \in X$ with $\theta \varepsilon_0 \le \|r(x, t)\| \le \varepsilon_0$ there is an inner call
+from $x$ with the following properties:
+
+* it ends at a point of $X$ and returns radii $\delta_j \in (0, 1]$;
+* its output satisfies $\|r(\cdot, t)\| < \theta \varepsilon_0$ or the criticality test
+  (14.3.34) for $t$ with the radii $\delta$;
+* it does not increase $\mu(\cdot, t)$, and $\|r(\cdot, t)\| \ge \theta \varepsilon_0$ at every
+  iterate before the last one;
+* the residual at its output is at most $\|r(x, t)\|$;
+* it is a call of TRq on $\mu(\cdot, t)$ with threshold $\vartheta$ and tolerances
+  $\beta \|r(x, t)\| \varepsilon_j$.
+
+The call runs TRq, which terminates by `Optimization.IsTRqRun.complexity`, and stops it at
+termination or as soon as $\|r(\cdot, t)\| < \theta \varepsilon_0$, by
+`Optimization.exists_isTRqCallOut_of_stop`. It returns the radii $\min(\Delta_e, \vartheta)$. -/
 theorem exists_innerCall_isTRqCallOut {t : ℝ} {L : ℕ → ℝ} {X₀ : Set E}
     (hμ : LipschitzDerivsAnchored (targetMerit f c t) X₀
       {x | x ∈ X ∧ targetResidual f c t x ≤ 1} 1 q L) (hXX₀ : X ⊆ X₀)
@@ -324,10 +374,16 @@ theorem exists_innerCall_isTRqCallOut {t : ℝ} {L : ℕ → ℝ} {X₀ : Set E}
   · rw [hρ]
     exact targetMerit_le_targetMerit_iff.1 hdec
 
-/-- **Runs of Phase 2 with TRq calls exist** from every `x₁ ∈ X` with `‖c(x₁)‖ ≤ θε₀`, for a
-closed `X`, `θ ∈ (0, 1)`, `0 < β ≤ θ`, `β ≤ ϑ ≤ 1` and `ε ∈ (0, 1]^{q+1}`, when every `μ(·, t)`
-satisfies `LipschitzDerivsAnchored` on `{x ∈ X | ‖r(x, t)‖ ≤ 1}` inside `X₀ ⊇ X`: the calls of
-`exists_innerCall_isTRqCallOut` in the construction `HighOrderTargetSeq.exists_run_of_oracle`. -/
+/-- **Runs of Phase 2 with TRq calls exist.** Let $E$ be finite-dimensional, let $X$ be closed with
+$X \subseteq X_0$, and let every $\mu(\cdot, t)$ satisfy `LipschitzDerivsAnchored` with the open
+convex set $X_0$, the anchors $\{x \in X : \|r(x, t)\| \le 1\}$, the orders $1, \dots, q$ and
+the constants $L$. Let $q \ge 1$, $\theta \in (0, 1)$, $0 < \beta \le \theta$,
+$\beta \le \vartheta \le 1$, and $\varepsilon_j \in (0, 1]$ for $j \in [0 : q]$. Then for every
+$x_1 \in X$ with $\|c(x_1)\| \le \theta \varepsilon_0$ there is a run of Phase 2 from $x_1$
+whose inner calls are TRq calls.
+
+The run is the construction `Constrained.HighOrderTargetSeq.exists_run_of_oracle` with the calls
+of `Constrained.exists_innerCall_isTRqCallOut`. -/
 theorem exists_isHighOrderTargetRun_isTRqCalls {L : ℕ → ℝ} {X₀ : Set E}
     (hμ : ∀ t, LipschitzDerivsAnchored (targetMerit f c t) X₀
       {x | x ∈ X ∧ targetResidual f c t x ≤ 1} 1 q L) (hXX₀ : X ⊆ X₀)
@@ -349,14 +405,24 @@ end Existence
 
 /-! ### The cost of a TRq call on the constraint violation -/
 
-/-- **The cost of a terminating TRq call on `ν = ½ ‖c‖²`** with tolerances `ε'_j = β₁ ‖c(y)‖ ε_j`
-(`j ∈ [1 : q]`) from a point `y ∈ X` with `θε₀ < ‖c(y)‖ ≤ ‖c(x₀)‖` ([cartis2022evaluation],
-(14.3.20)–(14.3.21) for TRq with the exponents `q + 1`, in additive form): under
-`LipschitzDerivsAnchored` for `ν` on `{z ∈ X | ‖c(z)‖ ≤ ‖c(x₀)‖}` (constants `L_ν`, derivatives
-bounded by `M_ν > 0`), `ϑ ≤ 1`, `β₁ ‖c(x₀)‖ ≤ ϑ`, `θ, β₁ ∈ (0, 1)` and `ε ∈ (0, 1]^{q+1}`, the call
-uses at most `κ^A ν(y)/ε'_min^{q+1} + κ^B (|log(β₁θ)| + |log(ε₀ ε_min)|) + κ^C` evaluations of `c`
-and `κ^S ν(y)/ε'_min^{q+1} + 1` derivative evaluations
-(`Optimization.IsTRqOutputCost.cost_le`). -/
+/-- **The cost of a terminating TRq call on $\nu = \tfrac12 \|c\|^2$** ([cartis2022evaluation],
+(14.3.20)–(14.3.21) for TRq with the exponents $q + 1$, in additive form). Let $q \ge 1$,
+$X \subseteq X_0$, $M_\nu > 0$, $\vartheta \le 1$, $\beta_1 \|c(x_0)\| \le \vartheta$,
+$\theta, \beta_1 \in (0, 1)$, and $\varepsilon_j \in (0, 1]$ for $j \in [0 : q]$. Assume that
+$\nu$ satisfies `LipschitzDerivsAnchored` with the open convex set $X_0$, the anchors
+$\{z \in X : \|c(z)\| \le \|c(x_0)\|\}$, the orders $1, \dots, q$ and the constants $L_\nu$, and
+that its derivatives of orders $0, \dots, q$ are bounded by $M_\nu$ on the anchors. Let
+$y \in X$ with $\theta \varepsilon_0 < \|c(y)\| \le \|c(x_0)\|$, and let $\varepsilon'_j =
+\beta_1 \|c(y)\| \varepsilon_j$ for $j \in [1 : q]$. If a terminating call of TRq on $\nu$ from
+$y$ with tolerances $\varepsilon'$ and threshold $\vartheta$ uses $n_F$ evaluations of $c$ and
+$n_D$ evaluations of its derivatives, then
+$$n_F \le \kappa^A \frac{\nu(y)}{(\varepsilon'_{\min})^{q+1}} + \kappa^B \bigl(|\log(\beta_1
+  \theta)| + |\log(\varepsilon_0 \varepsilon_{\min})|\bigr) + \kappa^C, \qquad n_D \le \kappa^S
+  \frac{\nu(y)}{(\varepsilon'_{\min})^{q+1}} + 1.$$
+
+The constants are `Optimization.trqCallKappaA`, `Optimization.kappaBTRq`,
+`Optimization.trqCallKappaC` and `Optimization.trqCallKappaS`. The proof specializes
+`Optimization.IsTRqOutputCost.cost_le`. -/
 theorem IsTRqOutputCost.cost_le_halfSqNorm {c : E → F} {X : Set E} {q : ℕ}
     {P : Optimization.TRqParams} {ϑ θ β₁ : ℝ} {ε ε' : ℕ → ℝ} {x₀ y y' : E} {δ : ℕ → ℝ}
     {nF nD : ℕ} {X₀ : Set E} {Lν : ℕ → ℝ} {Mν : ℝ}

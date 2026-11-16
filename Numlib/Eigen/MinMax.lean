@@ -20,99 +20,131 @@ import Numlib.LinearAlgebra.Dimension.Finrank
 /-!
 # Courant–Fischer: the variational characterization of eigenvalues
 
-The eigenvalues of a symmetric operator `T` on a finite-dimensional inner product space, sorted in
-decreasing order as `hT.eigenvalues hn : Fin n → ℝ`, are the max–min and min–max values of the
-Rayleigh quotient `T.rayleighQuotient x = re ⟪T x, x⟫ / ‖x‖ ^ 2` over subspaces: `λ i` is the
-largest number that bounds the Rayleigh quotient from below on some subspace of dimension `i + 1`,
-and the smallest number that bounds it from above on some subspace of dimension `n - i`. This is the
-min–max theorem of Courant, Fischer, Poincaré and Weyl, stated as the two formulas of
-[saad2011numerical], Thm 1.9, and as [kress1998numerical], Thm 7.4.  Mathlib has only the two
-extreme eigenvalues, through `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and its
-`iInf` twin.
+Let $E$ be an inner product space of dimension $n$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$,
+and let $T \colon E \to E$ be symmetric. Let $\lambda_0 \ge \lambda_1 \ge \dots \ge \lambda_{n-1}$
+be the eigenvalues of $T$, sorted in decreasing order and indexed from $0$, with an orthonormal
+basis $v_0, \dots, v_{n-1}$ of eigenvectors. The **Rayleigh quotient** of $T$ at $x \neq 0$ is
+$r_T(x) = \operatorname{Re} \langle Tx, x \rangle / \|x\|^2$. The **min–max theorem** of Courant,
+Fischer, Poincaré and Weyl characterizes each eigenvalue through the Rayleigh quotient on subspaces:
+$$\lambda_i = \max_{\dim S = i + 1} \ \min_{0 \neq x \in S} r_T(x)
+  = \min_{\dim S = n - i} \ \max_{0 \neq x \in S} r_T(x).$$
+These are the two formulas of [saad2011numerical], Theorem 1.9, and the second one is
+[kress1998numerical], Theorem 7.4. Mathlib has only the two extreme eigenvalues, through
+`LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and its `iInf` twin.
 
-Both books index the eigenvalues from `1` in decreasing order, so their `λ_k` is `hT.eigenvalues hn
-i` for `i = k - 1`, and their subspace dimensions `k` and `n + 1 - k` read here as `i + 1` and `n -
-i`.
+The file derives from this the standard consequences: Rayleigh's recursive characterization, Weyl's
+inequality $|\lambda_i(A) - \lambda_i(B)| \le \|A - B\|$, Cauchy interlacing for compressions and
+principal submatrices, low-rank interlacing, Ky Fan's maximum and minimum principles, the trace
+inequality and the Hoffman–Wielandt inequality. It also computes the gradient of the Rayleigh
+quotient and shows that its stationary points are the eigenvectors. Here $\lambda_i(A)$ is the
+$i$-th eigenvalue of $A$ in decreasing order.
+
+## Main definitions
+
+* `LinearMap.rayleighQuotient`: the Rayleigh quotient $r_T(x) = \operatorname{Re} \langle Tx, x
+  \rangle / \|x\|^2$ of a linear map.
+* `LinearMap.IsSymmetric.eigenvectorSpan`: the span $V_s$ of the eigenvectors $v_i$ with $i \in s$.
+* `Matrix.IsHermitian.sortedEigenvalues`: the eigenvalues of a Hermitian $n \times n$ matrix, in
+  decreasing order and indexed by $\{0, \dots, n - 1\}$.
 
 ## Main results
 
 * `LinearMap.IsSymmetric.exists_mem_ne_zero_rayleighQuotient_le` and
-  `LinearMap.IsSymmetric.le_rayleighQuotient_of_mem_eigenvectorSpan_Iic`: the two directions. Every
-  subspace of dimension at least `i + 1` carries a nonzero vector whose Rayleigh quotient is at most
-  `λ i`, by the dimension count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the
-  eigenvalues from the `i`-th on; and `λ i` is a lower bound for the Rayleigh quotient on the span
-  of the eigenvectors for the `i + 1` largest eigenvalues, which has dimension `i + 1`.  These two
-  statements are what a consumer usually wants.
+  `LinearMap.IsSymmetric.le_rayleighQuotient_of_mem_eigenvectorSpan_Iic`: the two directions of
+  Courant–Fischer. Every subspace of dimension at least $i + 1$ contains an $x \neq 0$ with
+  $r_T(x) \le \lambda_i$, and $r_T \ge \lambda_i$ on the span of $v_0, \dots, v_i$. These two
+  statements are usually the most convenient ones to use.
 * `LinearMap.IsSymmetric.isGreatest_eigenvalues` and `LinearMap.IsSymmetric.isLeast_eigenvalues`:
-  the same, as an `IsGreatest`/`IsLeast` over an explicit set of reals, with no junk values.
+  the max–min and min–max characterizations, as the greatest or least element of an explicit set of
+  reals.
 * `LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf` and
-  `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`: the classical `max min` and `min max` formulas.
-* `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form, the
-  maximum over the vectors orthogonal to the `i` leading eigenvectors.
-* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a time,
-  and its two-sided form `LinearMap.IsSymmetric.eigenvalues_add_mem_Icc`,
-  `λ_i(A) + λ_min(E) ≤ λ_i(A + E) ≤ λ_i(A) + λ_max(E)` ([golub2013matrix] Theorem 8.1.5).
-* `LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry` and its two faces
-  `LinearMap.IsSymmetric.eigenvalues_restrict_interlace` (a subspace) and
-  `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` (a principal submatrix): Cauchy interlacing,
-  `λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)` whenever the quadratic form of `S` on an `m`-dimensional
-  space is that of `T` pulled back along a linear isometry.
-* `LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`: low-rank interlacing, a
-  perturbation of rank at most `r` moves every eigenvalue by at most `r` places,
-  `λ_{i+r}(B) ≤ λ_i(A)`; with a positive perturbation this is
-  `LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`
-  ([golub2013matrix] Theorem 8.1.8 at `r = 1`).
+  `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`: the same as $\sup\inf$ and $\inf\sup$ formulas.
+* `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form,
+  $\lambda_i$ is the maximum of $r_T$ over the nonzero vectors orthogonal to $v_0, \dots, v_{i-1}$.
+* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality,
+  $|\lambda_i(A) - \lambda_i(B)| \le C$ if $\|(A - B) x\| \le C \|x\|$ for all $x$.
+* `LinearMap.IsSymmetric.eigenvalues_add_mem_Icc`: the two-sided Weyl inequality $\lambda_i(A) +
+  \lambda_{\min}(B) \le \lambda_i(A + B) \le \lambda_i(A) + \lambda_{\max}(B)$ ([golub2013matrix],
+  Theorem 8.1.5).
+* `LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry`: Cauchy interlacing, $\lambda_{i +
+  n - m}(T) \le \lambda_i(S) \le \lambda_i(T)$ when the quadratic form of $S$ on an $m$-dimensional
+  space is that of $T$ pulled back along a linear isometry. Its special cases are
+  `LinearMap.IsSymmetric.eigenvalues_restrict_interlace` for a subspace and
+  `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` for a principal submatrix.
+* `LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`: low-rank interlacing, if
+  $\operatorname{rank}(B - A) \le r$ then $\lambda_{i + r}(B) \le \lambda_i(A)$. With $B - A$
+  positive this is `LinearMap.IsSymmetric.eigenvalues_le_of_isPositive_sub_of_finrank_range_le`
+  ([golub2013matrix], Theorem 8.1.8, for $r = 1$).
 * `LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues` and
   `LinearMap.IsSymmetric.sum_eigenvalues_le_sum_re_inner`: Ky Fan's maximum and minimum principles,
-  `∑_{i<k} λ_{n-k+i} ≤ ∑_{i<k} re ⟪T x_i, x_i⟫ ≤ ∑_{i<k} λ_i` for an orthonormal family `x`. The sum
-  is the trace of the compression of `T` to the span of the family, and each eigenvalue of the
-  compression is bounded by Cauchy interlacing. They are the one source of the trace-maximization
-  results: the trace inequality `LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`
-  (`re tr(A B) ≤ ∑ λ_i(A) λ_i(B)`, by Abel summation over the eigenvectors of `B`) and the
-  **Hoffman–Wielandt inequality** `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le`, with its
-  matrix form `Matrix.IsHermitian.hoffman_wielandt`, `∑ (λ_k(A) - λ_k(B))² ≤ ‖A - B‖_F²`
-  ([golub2013matrix] Theorem 8.1.4).
-* `Matrix.IsHermitian.sortedEigenvalues`: the eigenvalues of a Hermitian matrix of order `n`, sorted
-  decreasingly and indexed by `Fin n` (Mathlib's `eigenvalues₀` reindexed), with Cauchy interlacing
-  for the leading principal submatrix,
-  `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`, and the sorted spectral
-  decomposition `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_sortedEigenvalues`
-  (`Uᴴ A U = diag(λ_1 ≥ ⋯ ≥ λ_n)`, [golub2013matrix] Theorem 8.1.1).
-* `ContinuousLinearMap.hasGradientAt_rayleighQuotient`: the gradient of the Rayleigh quotient,
-  `∇r(x) = 2 (T x - r(x) x) / ‖x‖²` ([golub2013matrix] (10.1.1)); hence
-  `LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`, the stationary points of the
-  Rayleigh quotient are exactly the eigenvectors ([golub2013matrix] (12.5.23)). Mathlib has only
+  $\sum_{i < k} \lambda_{n - k + i} \le \sum_{i < k} \operatorname{Re} \langle T x_i, x_i \rangle
+  \le \sum_{i < k} \lambda_i$ for an orthonormal family $(x_i)_{i < k}$.
+* `LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`: the trace inequality
+  $\operatorname{Re} \operatorname{tr}(AB) \le \sum_i \lambda_i(A) \lambda_i(B)$.
+* `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le` and its matrix form
+  `Matrix.IsHermitian.hoffman_wielandt`: the **Hoffman–Wielandt inequality** $\sum_k (\lambda_k(A) -
+  \lambda_k(B))^2 \le \|A - B\|_F^2$ ([golub2013matrix], Theorem 8.1.4).
+* `Matrix.IsHermitian.sortedEigenvalues_submatrix_castSucc_interlace`: Cauchy interlacing for the
+  leading principal submatrix of order $n$ of a Hermitian matrix of order $n + 1$.
+* `Matrix.IsHermitian.exists_unitary_conj_eq_diagonal_sortedEigenvalues`: the spectral decomposition
+  with sorted eigenvalues, $U^H A U = \operatorname{diag}(\lambda_0, \dots, \lambda_{n-1})$
+  ([golub2013matrix], Theorem 8.1.1).
+* `ContinuousLinearMap.hasGradientAt_rayleighQuotient`: the gradient of the Rayleigh quotient is
+  $\nabla r(x) = 2 (Tx - r(x) x) / \|x\|^2$ ([golub2013matrix], (10.1.1)).
+* `LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff`: the stationary points of the
+  Rayleigh quotient are exactly the eigenvectors ([golub2013matrix], (12.5.23)). Mathlib has only
   the extremal case, `IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`.
 * `LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`: the sorted eigenvalues are those
-  of *any* orthonormal eigenbasis with decreasing eigenvalues, so statements about an arbitrary
-  Schur decomposition reduce to `hT.eigenvalues`; the coordinate identities in such a basis are the
-  `OrthonormalBasis.…_of_apply_eq_smul` lemmas.
-* `LinearMap.IsSymmetric.eigenvalues_neg`: the eigenvalues of `-T` are the negatives of those of
-  `T` in reversed order, which is the reduction that turns any statement about a largest eigenvalue
-  into the matching statement about a smallest one; `exists_smul_eigenvectorBasis_neg` transports
-  the eigenvector as well, at a simple eigenvalue.
+  of any orthonormal eigenbasis with decreasing eigenvalues. So a statement about an arbitrary Schur
+  decomposition reduces to the sorted eigenvalues, and the coordinate identities in such a basis are
+  `OrthonormalBasis.repr_apply_of_apply_eq_smul` and the lemmas after it.
+* `LinearMap.IsSymmetric.eigenvalues_neg`: $\lambda_i(-T) = -\lambda_{n-1-i}(T)$. This reduction
+  turns a statement about a largest eigenvalue into the matching statement about a smallest one.
+  `LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg` transports the eigenvector at a simple
+  eigenvalue.
+
+## Proof outline
+
+The first direction of Courant–Fischer is a dimension count: a subspace of dimension $i + 1$ and the
+span of $v_i, \dots, v_{n-1}$, of dimension $n - i$, have dimensions with sum greater than $n$, so
+they meet in a nonzero vector, and there $r_T \le \lambda_i$. The second direction is the bound
+$r_T \ge \lambda_i$ on the span of $v_0, \dots, v_i$, read off the coordinates in the eigenbasis.
+Cauchy interlacing follows because, through the isometry, the subspaces of the smaller space are
+among the subspaces of $E$ of the same dimension. Ky Fan's principles follow from interlacing: the
+sum $\sum_i \operatorname{Re} \langle T x_i, x_i \rangle$ is the trace of the compression of $T$ to
+the span of the family, that is, the sum of the eigenvalues of the compression. The trace inequality
+follows from Ky Fan by summation by parts, and the Hoffman–Wielandt inequality follows from the
+trace inequality by expanding the square.
 
 ## Implementation notes
 
-The `⨆`/`⨅` forms quantify over *subtypes*, `{S : Submodule 𝕜 E // finrank 𝕜 S = i + 1}` and `{x : E
-// x ∈ S ∧ x ≠ 0}`, rather than over all subspaces and all vectors with a nested `⨆ _ : P, ·`.  The
-latter is junk: an `iSup` over a false proposition is `sSup ∅ = 0` in `ℝ`, so it would silently
-truncate the statement at `0`.  The `IsGreatest` and `IsLeast` forms carry no `iSup` at all and are
-the recommended interface.
-
-Weyl's inequality is stated with a hypothesised bound `∀ x, ‖(A - B) x‖ ≤ C * ‖x‖` rather than with
-an operator norm, because `E →ₗ[𝕜] E` carries no norm and the hypothesised form does not force a
-topology on the consumer.  `LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` is the corollary
-for continuous linear maps.  Its workhorse `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`
-is weaker still: it asks only for the quadratic-form bound `re ⟪A x, x⟫ ≤ re ⟪B x, x⟫ + C ‖x‖ ^ 2`
-that [kress1998numerical] proof actually uses, which is the form this library prefers for spectral
-hypotheses.
+* The books index the eigenvalues from $1$ in decreasing order. So their $\lambda_k$ is
+  `hT.eigenvalues hn i` for $i = k - 1$, and their subspace dimensions $k$ and $n + 1 - k$ are
+  $i + 1$ and $n - i$ here.
+* The $\sup$/$\inf$ forms quantify over subtypes, `{S : Submodule 𝕜 E // finrank 𝕜 S = i + 1}` and
+  `{x : E // x ∈ S ∧ x ≠ 0}`, and not over all subspaces and all vectors with a nested `⨆ _ : P, ·`.
+  The nested form gives wrong values: an `iSup` over a false proposition is `sSup ∅ = 0` in `ℝ`, so
+  the statement would be silently cut off at $0$. The forms with `IsGreatest` and `IsLeast` contain
+  no `iSup` at all and are the recommended interface.
+* Weyl's inequality assumes a bound $\|(A - B) x\| \le C \|x\|$ for all $x$ and not a bound on an
+  operator norm, because `E →ₗ[𝕜] E` has no norm and the assumed form does not force a topology on
+  the user. `LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` is the corollary for continuous
+  linear maps. The underlying lemma `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`
+  assumes even less: only the bound $\operatorname{Re} \langle Ax, x \rangle \le \operatorname{Re}
+  \langle Bx, x \rangle + C \|x\|^2$ on the quadratic forms, which is what the proof in
+  [kress1998numerical] uses. This library prefers that form for spectral hypotheses.
+* The Rayleigh quotient is $0$ at $x = 0$, because $0 / 0 = 0$ in Lean. Every statement excludes
+  $x = 0$ explicitly.
+* The inner product $\langle x, y \rangle$ is conjugate-linear in $x$, and
+  $\operatorname{Re} \langle Tx, x \rangle$ is `RCLike.re (inner 𝕜 (T x) x)`.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- Two subspaces whose dimensions add up to more than the dimension of the ambient space meet in a
-nonzero vector.  This is the dimension count behind Courant–Fischer. -/
+/-- Let $V$ be a finite-dimensional vector space over a division ring, and let $S$ and $W$ be
+subspaces with $\dim V < \dim S + \dim W$. Then $S \cap W$ contains a nonzero vector.
+
+This is the dimension count behind Courant–Fischer. -/
 theorem Submodule.exists_mem_inf_ne_zero {K V : Type*} [DivisionRing K] [AddCommGroup V]
     [Module K V] [FiniteDimensional K V] {S W : Submodule K V}
     (h : Module.finrank K V < Module.finrank K S + Module.finrank K W) :
@@ -127,26 +159,33 @@ theorem Submodule.exists_mem_inf_ne_zero {K V : Type*} [DivisionRing K] [AddComm
 
 namespace LinearMap
 
-/-- The *Rayleigh quotient* of a linear map `T` (over `ℝ` or `ℂ`) at a vector `x` is the real number
-`re ⟪T x, x⟫ / ‖x‖ ^ 2`.  This is the `LinearMap` twin of `ContinuousLinearMap.rayleighQuotient`;
-the two agree by `ContinuousLinearMap.rayleighQuotient_eq_toLinearMap`. -/
+/-- The **Rayleigh quotient** of a linear map $T \colon E \to E$ at a vector $x$ is the real number
+$$r_T(x) = \frac{\operatorname{Re} \langle Tx, x \rangle}{\|x\|^2}.$$
+
+At $x = 0$ its value is $0$. This is the `LinearMap` counterpart of
+`ContinuousLinearMap.rayleighQuotient`; the two agree by
+`ContinuousLinearMap.rayleighQuotient_eq_toLinearMap`. -/
 noncomputable abbrev rayleighQuotient (T : E →ₗ[𝕜] E) (x : E) : ℝ :=
   RCLike.re (inner 𝕜 (T x) x) / ‖x‖ ^ 2
 
-/-- The Rayleigh quotient is a junk `0` at the zero vector, where the quotient `0 / 0` is not
-meaningful; every statement below excludes `x = 0` explicitly. -/
+/-- The Rayleigh quotient at the zero vector has the value $0$, since $0 / 0 = 0$ in Lean. This
+value has no meaning, and every statement below excludes $x = 0$ explicitly. -/
 @[simp]
 theorem rayleighQuotient_apply_zero (T : E →ₗ[𝕜] E) : T.rayleighQuotient 0 = 0 := by
   simp [rayleighQuotient]
 
-/-- At a unit vector the Rayleigh quotient is just the quadratic form, which is how the approximate
-eigenpairs of `Numlib.Eigen.Perturbation` are stated. -/
+/-- Let $T \colon E \to E$ be linear and let $\|x\| = 1$. Then the Rayleigh quotient is the
+quadratic form: $r_T(x) = \operatorname{Re} \langle Tx, x \rangle$.
+
+The approximate eigenpairs of `Numlib.Eigen.Perturbation` are stated in this form. -/
 theorem rayleighQuotient_of_norm_eq_one (T : E →ₗ[𝕜] E) {x : E} (hx : ‖x‖ = 1) :
     T.rayleighQuotient x = RCLike.re (inner 𝕜 (T x) x) := by
   rw [rayleighQuotient, hx, one_pow, div_one]
 
-/-- The Rayleigh quotient is invariant under rescaling, so a bound at a nonzero vector transfers to
-its normalization. -/
+/-- The Rayleigh quotient is invariant under scaling. Let $T \colon E \to E$ be linear, let
+$x \in E$, and let $c \in \mathbb{K}$ with $c \neq 0$. Then $r_T(cx) = r_T(x)$.
+
+So a bound at a nonzero vector carries over to its normalization. -/
 theorem rayleighQuotient_smul (T : E →ₗ[𝕜] E) (x : E) {c : 𝕜} (hc : c ≠ 0) :
     T.rayleighQuotient (c • x) = T.rayleighQuotient x := by
   have hc2 : ‖c‖ ^ 2 ≠ 0 := pow_ne_zero 2 (norm_ne_zero_iff.mpr hc)
@@ -154,25 +193,30 @@ theorem rayleighQuotient_smul (T : E →ₗ[𝕜] E) (x : E) {c : 𝕜} (hc : c 
     RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.re_ofReal_mul, norm_smul, mul_pow,
     mul_div_mul_left _ _ hc2]
 
-/-- The Rayleigh quotient is additive in the operator. -/
+/-- The Rayleigh quotient is additive in the operator: $r_{A - B}(x) = r_A(x) - r_B(x)$ for all
+linear maps $A, B$ and all $x$. -/
 theorem rayleighQuotient_sub (A B : E →ₗ[𝕜] E) (x : E) :
     (A - B).rayleighQuotient x = A.rayleighQuotient x - B.rayleighQuotient x := by
   rw [rayleighQuotient, rayleighQuotient, rayleighQuotient, sub_apply, inner_sub_left, map_sub,
     sub_div]
 
-/-- The Rayleigh quotient of `-T` is the negative of that of `T`.  This is what exchanges the
-max–min and min–max characterizations of the eigenvalues (`IsSymmetric.eigenvalues_neg`). -/
+/-- Let $T \colon E \to E$ be linear. Then $r_{-T}(x) = -r_T(x)$ for every $x \in E$.
+
+This identity exchanges the max–min and the min–max characterizations of the eigenvalues
+(`LinearMap.IsSymmetric.eigenvalues_neg`). -/
 theorem rayleighQuotient_neg (T : E →ₗ[𝕜] E) (x : E) :
     (-T).rayleighQuotient x = -T.rayleighQuotient x := by
   simp [LinearMap.rayleighQuotient, inner_neg_left, neg_div]
 
-/-- The negative of a symmetric operator is symmetric.  The companion of Mathlib's
-`LinearMap.IsSymmetric.add`, `sub` and `smul`. -/
+/-- If $T \colon E \to E$ is symmetric, then $-T$ is symmetric.
+
+This completes the Mathlib lemmas `LinearMap.IsSymmetric.add`, `LinearMap.IsSymmetric.sub` and
+`LinearMap.IsSymmetric.smul`. -/
 theorem IsSymmetric.neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) : (-T).IsSymmetric := fun x y => by
   simp only [LinearMap.neg_apply, inner_neg_left, inner_neg_right, hT x y]
 
-/-- An eigenvalue bound through the Rayleigh quotient: if `c ‖x‖² - re ⟪T x, x⟫ ≤ C D` for some
-`0 < D ≤ ‖x‖²` and `0 ≤ C`, then `c - T.rayleighQuotient x ≤ C`. -/
+/-- Let $T$ be linear, let $c, C, D \in \mathbb{R}$ with $C \ge 0$ and $0 < D \le \|x\|^2$, and
+assume $c \|x\|^2 - \operatorname{Re} \langle Tx, x \rangle \le C D$. Then $c - r_T(x) \le C$. -/
 theorem sub_rayleighQuotient_le_of_le (T : E →ₗ[𝕜] E) {x : E} {c C D : ℝ} (hC : 0 ≤ C)
     (hD : 0 < D) (hDx : D ≤ ‖x‖ ^ 2)
     (h : c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) ≤ C * D) :
@@ -186,18 +230,22 @@ theorem sub_rayleighQuotient_le_of_le (T : E →ₗ[𝕜] E) {x : E} {c C D : �
 
 end LinearMap
 
-/-- The Rayleigh quotient of a continuous linear map is the Rayleigh quotient of the underlying
-linear map. -/
+/-- Let $T \colon E \to E$ be a continuous linear map. Then the Rayleigh quotient of $T$
+(`ContinuousLinearMap.rayleighQuotient`) equals the Rayleigh quotient of the underlying linear
+map (`LinearMap.rayleighQuotient`) at every $x \in E$. -/
 theorem ContinuousLinearMap.rayleighQuotient_eq_toLinearMap (T : E →L[𝕜] E) (x : E) :
     T.rayleighQuotient x = (T : E →ₗ[𝕜] E).rayleighQuotient x :=
   rfl
 
-/-! ### An orthonormal eigenbasis
+/-!
+### An orthonormal eigenbasis
 
-Statements about an arbitrary orthonormal basis `b` of eigenvectors of `T`, `T (b i) = μ i • b i`.
-Mathlib's `LinearMap.IsSymmetric.eigenvectorBasis` is one such basis, and the lemmas about it below
-are these ones specialized; a textbook statement over an arbitrary Schur decomposition uses these
-directly. -/
+The statements in this section are about an arbitrary orthonormal basis $(b_i)$ of eigenvectors of
+$T$, with $T b_i = \mu_i b_i$. The coordinates of $x$ in this basis are
+$x_i = \langle b_i, x \rangle$. Mathlib's `LinearMap.IsSymmetric.eigenvectorBasis` is one such
+basis, and the lemmas about it below are special cases of these. A textbook statement about an
+arbitrary Schur decomposition uses these lemmas directly.
+-/
 
 namespace OrthonormalBasis
 
@@ -208,14 +256,15 @@ section Eigenbasis
 variable {μ : ι → 𝕜} (hb : ∀ i, T (b i) = μ i • b i)
 include hb
 
-/-- In an orthonormal eigenbasis, `T` acts on coordinates by its eigenvalues. -/
+/-- In an orthonormal eigenbasis, $T$ acts on coordinates by its eigenvalues: $(Tx)_i = \mu_i x_i$.
+-/
 theorem repr_apply_of_apply_eq_smul (x : E) (i : ι) : b.repr (T x) i = μ i * b.repr x i := by
   classical
   conv_lhs => rw [← b.sum_repr x]
   simp [map_sum, hb, smul_smul, Pi.single_apply, mul_comm]
 
-/-- In an orthonormal eigenbasis, `T ^ k` acts on coordinates by the `k`-th powers of the
-eigenvalues. -/
+/-- In an orthonormal eigenbasis, $T^k$ acts on coordinates by the $k$-th powers of the eigenvalues:
+$(T^k x)_i = \mu_i^k x_i$. -/
 theorem repr_pow_apply_of_apply_eq_smul (k : ℕ) (x : E) (i : ι) :
     b.repr ((T ^ k) x) i = μ i ^ k * b.repr x i := by
   induction k generalizing x with
@@ -224,14 +273,13 @@ theorem repr_pow_apply_of_apply_eq_smul (k : ℕ) (x : E) (i : ι) :
       rw [pow_succ, Module.End.mul_apply, ih, b.repr_apply_of_apply_eq_smul hb]
       ring
 
-/-- The inner-product form of `OrthonormalBasis.repr_pow_apply_of_apply_eq_smul`:
-`⟪b i, T^k x⟫ = μ i ^ k ⟪b i, x⟫`. -/
+/-- In an orthonormal eigenbasis, $\langle b_i, T^k x \rangle = \mu_i^k \langle b_i, x \rangle$. -/
 theorem inner_pow_apply_of_apply_eq_smul (k : ℕ) (x : E) (i : ι) :
     (inner 𝕜 (b i) ((T ^ k) x) : 𝕜) = μ i ^ k * inner 𝕜 (b i) x := by
   simpa only [OrthonormalBasis.repr_apply_apply] using b.repr_pow_apply_of_apply_eq_smul hb k x i
 
-/-- In an orthonormal eigenbasis, `p(T)` acts on coordinates by the values of `p` at the
-eigenvalues. -/
+/-- In an orthonormal eigenbasis, $p(T)$ acts on coordinates by the values of the polynomial $p$ at
+the eigenvalues: $(p(T) x)_i = p(\mu_i) x_i$. -/
 theorem repr_aeval_apply_of_apply_eq_smul (p : Polynomial 𝕜) (x : E) (i : ι) :
     b.repr (Polynomial.aeval T p x) i = p.eval (μ i) * b.repr x i := by
   induction p using Polynomial.induction_on' with
@@ -250,7 +298,7 @@ section RealEigenbasis
 variable {lam : ι → ℝ} (hb : ∀ i, T (b i) = (lam i : 𝕜) • b i)
 include hb
 
-/-- An operator with an orthonormal eigenbasis and real eigenvalues is symmetric. -/
+/-- An operator that has an orthonormal eigenbasis with real eigenvalues is symmetric. -/
 theorem isSymmetric_of_apply_eq_ofReal_smul : T.IsSymmetric := by
   intro x y
   rw [← b.sum_inner_mul_inner (T x) y, ← b.sum_inner_mul_inner x (T y)]
@@ -260,7 +308,8 @@ theorem isSymmetric_of_apply_eq_ofReal_smul : T.IsSymmetric := by
   rw [h1, ← inner_conj_symm (T x), h1, map_mul, RCLike.conj_ofReal, inner_conj_symm]
   ring
 
-/-- The quadratic form of `T` in the coordinates of an orthonormal eigenbasis. -/
+/-- If $T b_i = \lambda_i b_i$ with real $\lambda_i$ in an orthonormal basis $(b_i)$, then
+$\operatorname{Re} \langle Tx, x \rangle = \sum_i \lambda_i |x_i|^2$. -/
 theorem re_inner_apply_self_eq_sum (x : E) :
     RCLike.re (inner 𝕜 (T x) x) = ∑ i, lam i * ‖b.repr x i‖ ^ 2 := by
   rw [← b.sum_inner_mul_inner (T x) x, map_sum]
@@ -269,8 +318,10 @@ theorem re_inner_apply_self_eq_sum (x : E) :
     ← inner_conj_symm x (b i), mul_assoc, RCLike.conj_mul, OrthonormalBasis.repr_apply_apply]
   simp
 
-/-- The quadratic form of the shift `c - T` in the coordinates of an orthonormal eigenbasis:
-`c ‖x‖² - re ⟪T x, x⟫ = ∑ i, (c - λ i) ‖⟪b i, x⟫‖²`. -/
+/-- If $T b_i = \lambda_i b_i$ with real $\lambda_i$ in an orthonormal basis $(b_i)$, then for every
+$c \in \mathbb{R}$
+$$c \|x\|^2 - \operatorname{Re} \langle Tx, x \rangle = \sum_i (c - \lambda_i) |x_i|^2.$$
+-/
 theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
     c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) = ∑ i, (c - lam i) * ‖b.repr x i‖ ^ 2 := by
   have hx : ‖x‖ ^ 2 = ∑ i, ‖b.repr x i‖ ^ 2 := by
@@ -279,9 +330,13 @@ theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
     ← Finset.sum_sub_distrib]
   exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- The estimate behind every eigenvalue-minus-Rayleigh-quotient bound: the coordinates at the
-eigenvalues `≥ c`, and the vanishing ones, contribute nonpositively to `c ‖x‖² - re ⟪T x, x⟫`, so
-only those in a set `s` containing all the others remain. -/
+/-- Let $T b_i = \lambda_i b_i$ with real $\lambda_i$ in an orthonormal basis $(b_i)$, let
+$c \in \mathbb{R}$, and let $s$ be a finite set of indices such that $c \le \lambda_i$ or
+$x_i = 0$ for each $i \notin s$. Then
+$$c \|x\|^2 - \operatorname{Re} \langle Tx, x \rangle \le \sum_{i \in s} (c - \lambda_i)
+  |x_i|^2.$$
+
+This is the estimate behind every bound on an eigenvalue minus a Rayleigh quotient. -/
 theorem mul_norm_sq_sub_re_inner_le_sum (c : ℝ) (x : E) {s : Finset ι}
     (hs : ∀ i ∉ s, c ≤ lam i ∨ b.repr x i = 0) :
     c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) ≤ ∑ i ∈ s, (c - lam i) * ‖b.repr x i‖ ^ 2 := by
@@ -304,36 +359,42 @@ variable [FiniteDimensional 𝕜 E] {n : ℕ} {T : E →ₗ[𝕜] E} (hT : T.IsS
     (hn : Module.finrank 𝕜 E = n)
 include hT
 
-/-! ### The eigenbasis expansion
+/-!
+### The eigenbasis expansion
 
-Every statement below is read off the coordinates of a vector in the orthonormal eigenvector basis
-`hT.eigenvectorBasis hn`, in which the norm and the quadratic form are the two sums here. -/
+Every statement below is read off the coordinates $x_i = \langle v_i, x \rangle$ of a vector in the
+orthonormal eigenvector basis `hT.eigenvectorBasis hn`. In these coordinates the norm and the
+quadratic form are the two sums of this section.
+-/
 
-/-- Parseval's identity in the eigenvector basis. -/
+/-- Parseval's identity in the eigenvector basis: $\|x\|^2 = \sum_i |x_i|^2$. -/
 theorem norm_sq_eq_sum_norm_repr_sq (x : E) :
     ‖x‖ ^ 2 = ∑ i, ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 := by
   simpa only [OrthonormalBasis.repr_apply_apply] using
     ((hT.eigenvectorBasis hn).sum_sq_norm_inner_right x).symm
 
-/-- The quadratic form of a symmetric operator, in the coordinates of its eigenvector basis. -/
+/-- The quadratic form of a symmetric operator in the coordinates of its eigenvector basis:
+$\operatorname{Re} \langle Tx, x \rangle = \sum_i \lambda_i |x_i|^2$. -/
 theorem re_inner_apply_self_eq_sum (x : E) :
     RCLike.re (inner 𝕜 (T x) x) =
       ∑ i, hT.eigenvalues hn i * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 :=
   (hT.eigenvectorBasis hn).re_inner_apply_self_eq_sum (hT.apply_eigenvectorBasis hn) x
 
-/-- The quadratic form of the shift `c - T` in the eigenvector basis: `c ‖x‖² - re ⟪T x, x⟫ = ∑ i,
-(c - λ i) ‖⟪v i, x⟫‖²`.  This is the form in which an eigenvalue minus a Rayleigh quotient is
-estimated, one eigenbasis coordinate at a time. -/
+/-- For a symmetric $T$ and every $c \in \mathbb{R}$, $c \|x\|^2 - \operatorname{Re} \langle Tx, x
+\rangle = \sum_i (c - \lambda_i) |x_i|^2$ in the eigenvector basis.
+
+This is the form in which an eigenvalue minus a Rayleigh quotient is estimated, one coordinate
+at a time. -/
 theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
     c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) =
       ∑ i, (c - hT.eigenvalues hn i) * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 :=
   (hT.eigenvectorBasis hn).mul_norm_sq_sub_re_inner_eq_sum (hT.apply_eigenvectorBasis hn) c x
 
-/-- The vectors of an eigenvector basis are nonzero, being unit vectors. -/
+/-- The vectors $v_i$ of the eigenvector basis are nonzero. -/
 theorem eigenvectorBasis_ne_zero (i : Fin n) : hT.eigenvectorBasis hn i ≠ 0 :=
   norm_ne_zero_iff.mp (by rw [(hT.eigenvectorBasis hn).norm_eq_one i]; norm_num)
 
-/-- The Rayleigh quotient at an eigenvector of the eigenvector basis is its eigenvalue. -/
+/-- The Rayleigh quotient at the eigenvector $v_i$ is its eigenvalue: $r_T(v_i) = \lambda_i$. -/
 @[simp]
 theorem rayleighQuotient_eigenvectorBasis (i : Fin n) :
     T.rayleighQuotient (hT.eigenvectorBasis hn i) = hT.eigenvalues hn i := by
@@ -344,35 +405,42 @@ theorem rayleighQuotient_eigenvectorBasis (i : Fin n) :
 
 /-! ### Spans of eigenvectors -/
 
-/-- The span of the eigenvectors of `T` indexed by `s`, taken in the orthonormal eigenvector basis
-`hT.eigenvectorBasis hn` whose eigenvalues `hT.eigenvalues hn` decrease.  The two cases used by
-Courant–Fischer are `s = Finset.Iic i`, the eigenvectors for the `i + 1` largest eigenvalues, and `s
-= Finset.Ici i`, the eigenvectors for the `n - i` smallest ones. -/
+/-- Let $T$ be a symmetric operator on an inner product space $E$ of dimension $n$, and let
+$s \subseteq \{0, \dots, n - 1\}$. The **eigenvector span** $V_s$ is the span of the
+eigenvectors $v_i$ with $i \in s$, in the orthonormal eigenvector basis `hT.eigenvectorBasis hn`
+whose eigenvalues decrease.
+
+Courant–Fischer uses two cases: $s = \{0, \dots, i\}$ (`Finset.Iic i`), the eigenvectors for the
+$i + 1$ largest eigenvalues, and $s = \{i, \dots, n - 1\}$ (`Finset.Ici i`), the eigenvectors
+for the $n - i$ smallest ones. -/
 noncomputable def eigenvectorSpan (s : Finset (Fin n)) : Submodule 𝕜 E :=
   Submodule.span 𝕜 (hT.eigenvectorBasis hn '' s)
 
-/-- Each of the spanning eigenvectors lies in the span. -/
+/-- If $i \in s$, then $v_i \in V_s$. -/
 theorem eigenvectorBasis_mem_eigenvectorSpan {s : Finset (Fin n)} {i : Fin n} (hi : i ∈ s) :
     hT.eigenvectorBasis hn i ∈ hT.eigenvectorSpan hn s :=
   Submodule.subset_span ⟨i, hi, rfl⟩
 
-/-- A vector lies in `hT.eigenvectorSpan hn s` exactly when its eigenbasis coordinates vanish
-outside `s`. -/
+/-- Let $T$ be a symmetric operator on an inner product space of dimension $n$, and let
+$s \subseteq \{0, \dots, n - 1\}$. A vector $x$ lies in $V_s$ if and only if its eigenbasis
+coordinates $x_i$ vanish for all $i \notin s$. -/
 theorem mem_eigenvectorSpan_iff {s : Finset (Fin n)} {x : E} :
     x ∈ hT.eigenvectorSpan hn s ↔ ∀ i ∉ s, (hT.eigenvectorBasis hn).repr x i = 0 := by
   rw [eigenvectorSpan, ← (hT.eigenvectorBasis hn).coe_toBasis,
     (hT.eigenvectorBasis hn).toBasis.mem_span_image, Finsupp.support_subset_iff]
   simp only [Finset.mem_coe, OrthonormalBasis.coe_toBasis_repr_apply]
 
-/-- The eigenvectors span the whole space. -/
+/-- The eigenvectors span the whole space: $V_{\{0, \dots, n - 1\}} = E$. -/
 @[simp]
 theorem eigenvectorSpan_univ : hT.eigenvectorSpan hn Finset.univ = ⊤ :=
   eq_top_iff.mpr fun _x _ => (hT.mem_eigenvectorSpan_iff hn).mpr fun i hi =>
     absurd (Finset.mem_univ i) hi
 
-/-- The span of `s.card` eigenvectors has dimension `s.card`, the eigenvector basis being
-orthonormal and hence linearly independent.  This is the dimension bookkeeping of Courant–Fischer.
--/
+/-- Let $T$ be a symmetric operator on an inner product space of dimension $n$, and let
+$s \subseteq \{0, \dots, n - 1\}$. Then $\dim V_s = |s|$.
+
+The eigenvector basis is orthonormal and hence linearly independent. This is the dimension count
+of Courant–Fischer. -/
 theorem finrank_eigenvectorSpan (s : Finset (Fin n)) :
     Module.finrank 𝕜 (hT.eigenvectorSpan hn s) = s.card := by
   have hli : LinearIndependent 𝕜 fun j : (s : Set (Fin n)) => hT.eigenvectorBasis hn j :=
@@ -382,8 +450,8 @@ theorem finrank_eigenvectorSpan (s : Finset (Fin n)) :
 
 /-! ### Bounds on the Rayleigh quotient over a span of eigenvectors -/
 
-/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded above by any upper
-bound for the eigenvalues indexed by `s`. -/
+/-- If $\lambda_i \le c$ for all $i \in s$ and $x \in V_s$, then $\operatorname{Re} \langle Tx, x
+\rangle \le c \|x\|^2$. -/
 theorem re_inner_apply_self_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, hT.eigenvalues hn i ≤ c) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s) :
     RCLike.re (inner 𝕜 (T x) x) ≤ c * ‖x‖ ^ 2 := by
@@ -394,8 +462,8 @@ theorem re_inner_apply_self_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : 
   · rw [(hT.mem_eigenvectorSpan_iff hn).mp hx i hi]
     simp
 
-/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded below by any lower
-bound for the eigenvalues indexed by `s`. -/
+/-- If $c \le \lambda_i$ for all $i \in s$ and $x \in V_s$, then $c \|x\|^2 \le \operatorname{Re}
+\langle Tx, x \rangle$. -/
 theorem le_re_inner_apply_self_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, c ≤ hT.eigenvalues hn i) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x) x) := by
@@ -406,7 +474,7 @@ theorem le_re_inner_apply_self_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : 
   · rw [(hT.mem_eigenvectorSpan_iff hn).mp hx i hi]
     simp
 
-/-- The Rayleigh quotient form of `re_inner_apply_self_le_of_mem_eigenvectorSpan`. -/
+/-- If $\lambda_i \le c$ for all $i \in s$ and $0 \neq x \in V_s$, then $r_T(x) \le c$. -/
 theorem rayleighQuotient_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, hT.eigenvalues hn i ≤ c) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s)
     (hx0 : x ≠ 0) : T.rayleighQuotient x ≤ c := by
@@ -414,7 +482,7 @@ theorem rayleighQuotient_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ
   rw [LinearMap.rayleighQuotient, div_le_iff₀ hpos]
   exact hT.re_inner_apply_self_le_of_mem_eigenvectorSpan hn hc hx
 
-/-- The Rayleigh quotient form of `le_re_inner_apply_self_of_mem_eigenvectorSpan`. -/
+/-- If $c \le \lambda_i$ for all $i \in s$ and $0 \neq x \in V_s$, then $c \le r_T(x)$. -/
 theorem le_rayleighQuotient_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, c ≤ hT.eigenvalues hn i) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s)
     (hx0 : x ≠ 0) : c ≤ T.rayleighQuotient x := by
@@ -422,19 +490,22 @@ theorem le_rayleighQuotient_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ
   rw [LinearMap.rayleighQuotient, le_div_iff₀ hpos]
   exact hT.le_re_inner_apply_self_of_mem_eigenvectorSpan hn hc hx
 
-/-- Any upper bound for the eigenvalues bounds every Rayleigh quotient. -/
+/-- If $\lambda_i \le c$ for all $i$, then $r_T(x) \le c$ for every $x \neq 0$. -/
 theorem rayleighQuotient_le_of_forall {c : ℝ} (hc : ∀ i, hT.eigenvalues hn i ≤ c) {x : E}
     (hx0 : x ≠ 0) : T.rayleighQuotient x ≤ c :=
   hT.rayleighQuotient_le_of_mem_eigenvectorSpan hn (fun i _ => hc i)
     (by rw [hT.eigenvectorSpan_univ hn]; trivial) hx0
 
-/-- Any lower bound for the eigenvalues bounds every Rayleigh quotient. -/
+/-- If $c \le \lambda_i$ for all $i$, then $c \le r_T(x)$ for every $x \neq 0$. -/
 theorem le_rayleighQuotient_of_forall {c : ℝ} (hc : ∀ i, c ≤ hT.eigenvalues hn i) {x : E}
     (hx0 : x ≠ 0) : c ≤ T.rayleighQuotient x :=
   hT.le_rayleighQuotient_of_mem_eigenvectorSpan hn (fun i _ => hc i)
     (by rw [hT.eigenvectorSpan_univ hn]; trivial) hx0
 
-/-- The Rayleigh quotient of a nonzero vector lies between the extreme eigenvalues. -/
+/-- Let $T$ be a symmetric operator on an inner product space of dimension $m + 1$, with eigenvalues
+$\lambda_0 \ge \dots \ge \lambda_m$. Then every $x \neq 0$ satisfies
+$$\lambda_m \le r_T(x) \le \lambda_0.$$
+-/
 theorem rayleighQuotient_mem_Icc {m : ℕ} (hn : Module.finrank 𝕜 E = m + 1) {x : E} (hx0 : x ≠ 0) :
     T.rayleighQuotient x ∈
       Set.Icc (hT.eigenvalues hn (Fin.last m)) (hT.eigenvalues hn 0) :=
@@ -444,10 +515,12 @@ theorem rayleighQuotient_mem_Icc {m : ℕ} (hn : Module.finrank 𝕜 E = m + 1) 
 
 /-! ### The two directions of Courant–Fischer -/
 
-/-- **Courant–Fischer, first direction.** Every subspace of dimension at least `i + 1` carries a
-nonzero vector whose Rayleigh quotient is at most the `i`-th eigenvalue.  The proof is the dimension
-count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the eigenvalues from the
-`i`-th on. -/
+/-- **Courant–Fischer, first direction.** Let $T$ be a symmetric operator on an inner product space
+$E$ of dimension $n$, let $i < n$, and let $S$ be a subspace with $\dim S \ge i + 1$. Then there
+is an $x \in S$ with $x \neq 0$ and $r_T(x) \le \lambda_i$.
+
+The proof is the dimension count $(i + 1) + (n - i) > n$ against the span of
+$v_i, \dots, v_{n-1}$. -/
 theorem exists_mem_ne_zero_rayleighQuotient_le (i : Fin n) {S : Submodule 𝕜 E}
     (hS : (i : ℕ) + 1 ≤ Module.finrank 𝕜 S) :
     ∃ x ∈ S, x ≠ 0 ∧ T.rayleighQuotient x ≤ hT.eigenvalues hn i := by
@@ -460,8 +533,9 @@ theorem exists_mem_ne_zero_rayleighQuotient_le (i : Fin n) {S : Submodule 𝕜 E
   exact ⟨x, hx.1, hx0, hT.rayleighQuotient_le_of_mem_eigenvectorSpan hn
     (fun _j hj => hT.eigenvalues_antitone hn (Finset.mem_Ici.mp hj)) hx.2 hx0⟩
 
-/-- **Courant–Fischer, first direction, dual form.** Every subspace of dimension at least `n - i`
-carries a nonzero vector whose Rayleigh quotient is at least the `i`-th eigenvalue. -/
+/-- **Courant–Fischer, first direction, dual form.** Let $T$ be a symmetric operator on an inner
+product space $E$ of dimension $n$, let $i < n$, and let $S$ be a subspace with
+$\dim S \ge n - i$. Then there is an $x \in S$ with $x \neq 0$ and $\lambda_i \le r_T(x)$. -/
 theorem exists_mem_ne_zero_le_rayleighQuotient (i : Fin n) {S : Submodule 𝕜 E}
     (hS : n - (i : ℕ) ≤ Module.finrank 𝕜 S) :
     ∃ x ∈ S, x ≠ 0 ∧ hT.eigenvalues hn i ≤ T.rayleighQuotient x := by
@@ -475,27 +549,34 @@ theorem exists_mem_ne_zero_le_rayleighQuotient (i : Fin n) {S : Submodule 𝕜 E
   exact ⟨x, hx.1, hx0, hT.le_rayleighQuotient_of_mem_eigenvectorSpan hn
     (fun _j hj => hT.eigenvalues_antitone hn (Finset.mem_Iic.mp hj)) hx.2 hx0⟩
 
-/-- **Courant–Fischer, second direction.** The `i`-th eigenvalue bounds the Rayleigh quotient from
-below throughout the span of the eigenvectors for the `i + 1` largest eigenvalues, a subspace of
-dimension `i + 1`; this is where the max–min is attained. -/
+/-- **Courant–Fischer, second direction.** Let $T$ be a symmetric operator on an inner product space
+of dimension $n$, and let $i < n$. Then every nonzero $x$ in the span of $v_0, \dots, v_i$
+satisfies $\lambda_i \le r_T(x)$.
+
+This span has dimension $i + 1$, and the max–min is attained on it. -/
 theorem le_rayleighQuotient_of_mem_eigenvectorSpan_Iic (i : Fin n) {x : E}
     (hx : x ∈ hT.eigenvectorSpan hn (Finset.Iic i)) (hx0 : x ≠ 0) :
     hT.eigenvalues hn i ≤ T.rayleighQuotient x :=
   hT.le_rayleighQuotient_of_mem_eigenvectorSpan hn
     (fun _j hj => hT.eigenvalues_antitone hn (Finset.mem_Iic.mp hj)) hx hx0
 
-/-- **Courant–Fischer, second direction, dual form.** The `i`-th eigenvalue bounds the Rayleigh
-quotient from above throughout the span of the eigenvectors for the `n - i` smallest eigenvalues, a
-subspace of dimension `n - i`; this is where the min–max is attained. -/
+/-- **Courant–Fischer, second direction, dual form.** Let $T$ be a symmetric operator on an inner
+product space of dimension $n$, and let $i < n$. Then every nonzero $x$ in the span of
+$v_i, \dots, v_{n-1}$ satisfies $r_T(x) \le \lambda_i$.
+
+This span has dimension $n - i$, and the min–max is attained on it. -/
 theorem rayleighQuotient_le_of_mem_eigenvectorSpan_Ici (i : Fin n) {x : E}
     (hx : x ∈ hT.eigenvectorSpan hn (Finset.Ici i)) (hx0 : x ≠ 0) :
     T.rayleighQuotient x ≤ hT.eigenvalues hn i :=
   hT.rayleighQuotient_le_of_mem_eigenvectorSpan hn
     (fun _j hj => hT.eigenvalues_antitone hn (Finset.mem_Ici.mp hj)) hx hx0
 
-/-- A vector is orthogonal to the eigenvectors for the `i` eigenvalues before the `i`-th exactly
-when it lies in the span of the eigenvectors from the `i`-th on.  This identifies the subspace of
-Rayleigh's recursive characterization with a span of eigenvectors. -/
+/-- Let $T$ be a symmetric operator on an inner product space of dimension $n$, and let $i < n$. A
+vector $x$ lies in the span of $v_i, \dots, v_{n-1}$ if and only if $\langle v_j, x \rangle = 0$
+for all $j < i$.
+
+This identifies the subspace in Rayleigh's recursive characterization with a span of
+eigenvectors. -/
 theorem mem_eigenvectorSpan_Ici_iff {i : Fin n} {x : E} :
     x ∈ hT.eigenvectorSpan hn (Finset.Ici i) ↔
       ∀ j < i, inner 𝕜 (hT.eigenvectorBasis hn j) x = 0 := by
@@ -504,10 +585,13 @@ theorem mem_eigenvectorSpan_Ici_iff {i : Fin n} {x : E} :
 
 /-! ### Courant–Fischer -/
 
-/-- **Courant–Fischer, max–min form**, as an `IsGreatest` over an explicit set of reals: the `i`-th
-eigenvalue in decreasing order is the largest number that bounds the Rayleigh quotient from below on
-some subspace of dimension `i + 1`.  This is the second formula of [saad2011numerical], Thm 1.9.
-The form carries no `iSup`, hence no junk value. -/
+/-- **Courant–Fischer, max–min form.** Let $T$ be a symmetric operator on an inner product space $E$
+of dimension $n$, and let $i < n$. Then $\lambda_i$ is the greatest element of the set of real
+numbers $c$ for which there is a subspace $S$ of dimension $i + 1$ with $c \le r_T(x)$ for all
+nonzero $x \in S$.
+
+This is the second formula of [saad2011numerical], Theorem 1.9. The statement contains no `iSup`
+and hence no junk value. -/
 theorem isGreatest_eigenvalues (i : Fin n) :
     IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = (i : ℕ) + 1 ∧
       ∀ x ∈ S, x ≠ 0 → c ≤ T.rayleighQuotient x} (hT.eigenvalues hn i) := by
@@ -518,10 +602,13 @@ theorem isGreatest_eigenvalues (i : Fin n) :
     obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_rayleighQuotient_le hn i hS.ge
     exact (hc x hxS hx0).trans hxle
 
-/-- **Courant–Fischer, min–max form**, as an `IsLeast` over an explicit set of reals: the `i`-th
-eigenvalue in decreasing order is the smallest number that bounds the Rayleigh quotient from above
-on some subspace of dimension `n - i`.  This is the first formula of [saad2011numerical], Thm 1.9,
-and [kress1998numerical], Thm 7.4.  The form carries no `iInf`, hence no junk value. -/
+/-- **Courant–Fischer, min–max form.** Let $T$ be a symmetric operator on an inner product space $E$
+of dimension $n$, and let $i < n$. Then $\lambda_i$ is the least element of the set of real
+numbers $c$ for which there is a subspace $S$ of dimension $n - i$ with $r_T(x) \le c$ for all
+nonzero $x \in S$.
+
+This is the first formula of [saad2011numerical], Theorem 1.9, and [kress1998numerical], Theorem
+7.4. The statement contains no `iInf` and hence no junk value. -/
 theorem isLeast_eigenvalues (i : Fin n) :
     IsLeast {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = n - (i : ℕ) ∧
       ∀ x ∈ S, x ≠ 0 → T.rayleighQuotient x ≤ c} (hT.eigenvalues hn i) := by
@@ -532,10 +619,14 @@ theorem isLeast_eigenvalues (i : Fin n) :
     obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_le_rayleighQuotient hn i hS.ge
     exact hxle.trans (hc x hxS hx0)
 
-/-- **Courant–Fischer, max–min form** ([saad2011numerical], Thm 1.9, second formula).  The `i`-th
-eigenvalue in decreasing order is the maximum over subspaces of dimension `i + 1` of the minimum of
-the Rayleigh quotient on the subspace. `LinearMap.IsSymmetric.isGreatest_eigenvalues` is the same
-statement without an `iSup`. -/
+/-- **Courant–Fischer, max–min form.** Let $T$ be a symmetric operator on an inner product space $E$
+of dimension $n$, and let $i < n$. Then
+$$\lambda_i = \sup_{\dim S = i + 1} \ \inf_{0 \neq x \in S} r_T(x),$$
+where $S$ runs over the subspaces of $E$ of dimension $i + 1$.
+
+This is the second formula of [saad2011numerical], Theorem 1.9. The supremum and the infimum are
+attained. `LinearMap.IsSymmetric.isGreatest_eigenvalues` is the same statement without an
+`iSup`. -/
 theorem eigenvalues_eq_iSup_iInf (i : Fin n) :
     hT.eigenvalues hn i =
       ⨆ S : {S : Submodule 𝕜 E // Module.finrank 𝕜 S = (i : ℕ) + 1},
@@ -566,11 +657,14 @@ theorem eigenvalues_eq_iSup_iInf (i : Fin n) :
   obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_rayleighQuotient_le hn i S.2.ge
   exact (ciInf_le (hbdd _) ⟨x, hxS, hx0⟩).trans hxle
 
-/-- **Courant–Fischer, min–max form** ([saad2011numerical], Thm 1.9, first formula;
-[kress1998numerical], Thm 7.4).  The `i`-th eigenvalue in decreasing order is the minimum over
-subspaces of dimension `n - i` (that is, of codimension `i`) of the maximum of the Rayleigh quotient
-on the subspace. `LinearMap.IsSymmetric.isLeast_eigenvalues` is the same statement without an
-`iInf`. -/
+/-- **Courant–Fischer, min–max form.** Let $T$ be a symmetric operator on an inner product space $E$
+of dimension $n$, and let $i < n$. Then
+$$\lambda_i = \inf_{\dim S = n - i} \ \sup_{0 \neq x \in S} r_T(x),$$
+where $S$ runs over the subspaces of $E$ of dimension $n - i$, that is, of codimension $i$.
+
+This is the first formula of [saad2011numerical], Theorem 1.9, and [kress1998numerical], Theorem
+7.4. The infimum and the supremum are attained. `LinearMap.IsSymmetric.isLeast_eigenvalues` is
+the same statement without an `iInf`. -/
 theorem eigenvalues_eq_iInf_iSup (i : Fin n) :
     hT.eigenvalues hn i =
       ⨅ S : {S : Submodule 𝕜 E // Module.finrank 𝕜 S = n - (i : ℕ)},
@@ -602,14 +696,14 @@ theorem eigenvalues_eq_iInf_iSup (i : Fin n) :
   obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_le_rayleighQuotient hn i S.2.ge
   exact hxle.trans (le_ciSup (hbdd _) ⟨x, hxS, hx0⟩)
 
-/-- **Rayleigh's recursive characterization** ([saad2011numerical], Thm 1.10; [kress1998numerical],
-Thm 7.3): the `i`-th eigenvalue is the greatest Rayleigh quotient among the nonzero vectors
-orthogonal to the eigenvectors for the `i` preceding eigenvalues, and it is attained at the `i`-th
-eigenvector.  For `i = 0` the orthogonality condition is vacuous and this is the largest eigenvalue
-as a global maximum.
+/-- **Rayleigh's recursive characterization.** Let $T$ be a symmetric operator on an inner product
+space of dimension $n$, and let $i < n$. Then $\lambda_i$ is the greatest element of the set
+$$\{ r_T(x) : x \neq 0,\ \langle v_j, x \rangle = 0 \text{ for all } j < i \}.$$
 
-Unlike the min–max form it needs the eigenvectors for the larger eigenvalues, which is why the
-min–max form is the one used for a priori bounds. -/
+This is [saad2011numerical], Theorem 1.10, and [kress1998numerical], Theorem 7.3. The maximum is
+attained at $v_i$. For $i = 0$ the orthogonality condition is empty, and $\lambda_0$ is the
+global maximum of $r_T$. Unlike the min–max form, this form needs the eigenvectors for the
+larger eigenvalues, so the min–max form is the one used for a priori bounds. -/
 theorem isGreatest_rayleighQuotient_orthogonal (i : Fin n) :
     IsGreatest {c : ℝ | ∃ x : E, x ≠ 0 ∧
       (∀ j < i, inner 𝕜 (hT.eigenvectorBasis hn j) x = 0) ∧ T.rayleighQuotient x = c}
@@ -622,8 +716,8 @@ theorem isGreatest_rayleighQuotient_orthogonal (i : Fin n) :
     exact hT.rayleighQuotient_le_of_mem_eigenvectorSpan_Ici hn i
       ((hT.mem_eigenvectorSpan_Ici_iff hn).mpr hxorth) hx0
 
-/-- The eigenvalues do not depend on the proof of the dimension count, up to the cast of the
-index. -/
+/-- The sorted eigenvalues do not depend on the proof of $\dim E = n$, up to the cast of the index.
+-/
 theorem eigenvalues_eq_cast (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
     hT.eigenvalues hn i = hT.eigenvalues rfl (Fin.cast hn.symm i) := by
   subst hn; rfl
@@ -634,10 +728,14 @@ namespace LinearMap.IsSymmetric
 
 variable [FiniteDimensional 𝕜 E] {n : ℕ} {A B : E →ₗ[𝕜] E}
 
-/-- Monotonicity of the eigenvalues in the operator, with slack: if the quadratic form of `A`
-exceeds that of `B` by at most `C ‖x‖ ^ 2`, then every eigenvalue of `A` exceeds the corresponding
-eigenvalue of `B` by at most `C`.  This is the quadratic-form hypothesis that [kress1998numerical]
-proof of Weyl's inequality ([kress1998numerical], Cor 7.5) actually uses. -/
+/-- **Monotonicity of the eigenvalues, with slack.** Let $A$ and $B$ be symmetric operators on an
+inner product space of dimension $n$, and let $C \in \mathbb{R}$. If
+$$\operatorname{Re} \langle Ax, x \rangle \le \operatorname{Re} \langle Bx, x \rangle + C
+  \|x\|^2 \quad \text{for all } x,$$
+then $\lambda_i(A) \le \lambda_i(B) + C$ for every $i < n$.
+
+This hypothesis on the quadratic forms is what the proof of Weyl's inequality in
+[kress1998numerical], Corollary 7.5, uses. -/
 theorem eigenvalues_le_add_of_re_inner_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {C : ℝ}
     (h : ∀ x : E, RCLike.re (inner 𝕜 (A x) x) ≤ RCLike.re (inner 𝕜 (B x) x) + C * ‖x‖ ^ 2)
@@ -653,15 +751,20 @@ theorem eigenvalues_le_add_of_re_inner_le (hA : A.IsSymmetric) (hB : B.IsSymmetr
     exact h x
   linarith
 
-/-- Monotonicity of the eigenvalues in the operator: if the quadratic form of `A` is everywhere at
-most that of `B`, then every eigenvalue of `A` is at most the corresponding eigenvalue of `B`. -/
+/-- **Monotonicity of the eigenvalues.** Let $A$ and $B$ be symmetric operators on an inner product
+space of dimension $n$. If $\operatorname{Re} \langle Ax, x \rangle \le \operatorname{Re}
+\langle Bx, x \rangle$ for all $x$, then $\lambda_i(A) \le \lambda_i(B)$ for every $i < n$. -/
 theorem eigenvalues_le_of_re_inner_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n)
     (h : ∀ x : E, RCLike.re (inner 𝕜 (A x) x) ≤ RCLike.re (inner 𝕜 (B x) x)) (i : Fin n) :
     hA.eigenvalues hn i ≤ hB.eigenvalues hn i := by
   simpa using hA.eigenvalues_le_add_of_re_inner_le hB hn (C := 0) (by simpa using h) i
 
-/-- One half of Weyl's inequality, from a bound on the perturbation through Cauchy–Schwarz. -/
+/-- Let $A$ and $B$ be symmetric and assume $\|(A - B) x\| \le C \|x\|$ for all $x$. Then
+$\lambda_i(A) - \lambda_i(B) \le C$ for every $i$.
+
+This is one half of Weyl's inequality; the proof bounds the quadratic form of $A - B$ by the
+Cauchy–Schwarz inequality. -/
 theorem eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {C : ℝ} (hC : ∀ x : E, ‖(A - B) x‖ ≤ C * ‖x‖) (i : Fin n) :
     hA.eigenvalues hn i - hB.eigenvalues hn i ≤ C := by
@@ -673,8 +776,12 @@ theorem eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
   rw [LinearMap.sub_apply] at h2
   linarith
 
-/-- **Weyl's inequality** ([kress1998numerical], Cor 7.5): the `i`-th eigenvalues of two symmetric
-operators differ by at most any bound `C` on the perturbation `A - B`. -/
+/-- **Weyl's inequality.** Let $A$ and $B$ be symmetric operators on an inner product space of
+dimension $n$, and let $C \in \mathbb{R}$ with $\|(A - B) x\| \le C \|x\|$ for all $x$. Then for
+every $i < n$
+$$|\lambda_i(A) - \lambda_i(B)| \le C.$$
+
+This is [kress1998numerical], Corollary 7.5. -/
 theorem abs_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {C : ℝ} (hC : ∀ x : E, ‖(A - B) x‖ ≤ C * ‖x‖) (i : Fin n) :
     |hA.eigenvalues hn i - hB.eigenvalues hn i| ≤ C := by
@@ -683,8 +790,10 @@ theorem abs_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
   have hx := hC x
   rwa [show (B - A) x = -((A - B) x) by simp, norm_neg]
 
-/-- **Weyl's inequality**, operator-norm form: the `i`-th eigenvalues of two symmetric continuous
-linear operators differ by at most `‖A - B‖`. -/
+/-- **Weyl's inequality, operator-norm form.** Let $A$ and $B$ be continuous linear operators on an
+inner product space of dimension $n$ that are symmetric. Then for every $i < n$
+$$|\lambda_i(A) - \lambda_i(B)| \le \|A - B\|,$$
+with the operator norm on the right. -/
 theorem abs_eigenvalues_sub_le_opNorm {A B : E →L[𝕜] E} (hA : (A : E →ₗ[𝕜] E).IsSymmetric)
     (hB : (B : E →ₗ[𝕜] E).IsSymmetric) (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
     |hA.eigenvalues hn i - hB.eigenvalues hn i| ≤ ‖A - B‖ := by
@@ -692,11 +801,17 @@ theorem abs_eigenvalues_sub_le_opNorm {A B : E →L[𝕜] E} (hA : (A : E →ₗ
   rw [← ContinuousLinearMap.toLinearMap_sub]
   exact (A - B).le_opNorm x
 
-/-- **Weyl's inequality, two-sided form** ([golub2013matrix] Theorem 8.1.5): adding a symmetric `E`
-to a symmetric `A` moves every eigenvalue by an amount between the extreme eigenvalues of `E`,
-`λ_i(A) + λ_min(E) ≤ λ_i(A + E) ≤ λ_i(A) + λ_max(E)`. Both bounds are
-`LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`, with the quadratic-form bounds
-`λ_min(E) ‖x‖² ≤ re ⟪E x, x⟫ ≤ λ_max(E) ‖x‖²` as the slack. -/
+/-- **Weyl's inequality, two-sided form.** Let $A$ and $B$ be symmetric operators on an inner
+product space of dimension $m + 1$, and assume that $A + B$ is symmetric. Then for every
+$i \le m$
+$$\lambda_i(A) + \lambda_m(B) \le \lambda_i(A + B) \le \lambda_i(A) + \lambda_0(B).$$
+
+This is [golub2013matrix], Theorem 8.1.5, where the perturbation is called $E$ and the bounds
+are $\lambda_i(A) + \lambda_{\min}(E) \le \lambda_i(A + E) \le \lambda_i(A) +
+\lambda_{\max}(E)$. Both bounds are `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`,
+with the bounds $\lambda_m(B) \|x\|^2 \le \operatorname{Re} \langle Bx, x \rangle \le
+\lambda_0(B) \|x\|^2$ as the slack. The hypothesis that $A + B$ is symmetric follows from the
+other two, and is there to name the eigenvalues of $A + B$. -/
 theorem eigenvalues_add_mem_Icc {m : ℕ} (hA : A.IsSymmetric) (hE : B.IsSymmetric)
     (hAE : (A + B).IsSymmetric) (hn : Module.finrank 𝕜 E = m + 1) (i : Fin (m + 1)) :
     hAE.eigenvalues hn i ∈ Set.Icc (hA.eigenvalues hn i + hE.eigenvalues hn (Fin.last m))
@@ -728,12 +843,17 @@ include hT
 
 /-! ### Cauchy interlacing -/
 
-/-- **Cauchy interlacing** along a linear isometry: if `S` is symmetric on an `m`-dimensional `F`,
-`ι : F →ₗᵢ[𝕜] E` is a linear isometry and the quadratic form of `S` is that of `T` pulled back along
-`ι`, `re ⟪S y, y⟫ = re ⟪T (ι y), ι y⟫`, then the sorted eigenvalues interlace:
-`λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)`. Both inequalities are Courant–Fischer: the subspaces of `F`
-are, through `ι`, among the subspaces of `E` of the same dimension, so every max–min or min–max
-competitor for `S` is one for `T`. -/
+/-- **Cauchy interlacing along a linear isometry.** Let $T$ be a symmetric operator on an inner
+product space $E$ of dimension $n$, and let $S$ be a symmetric operator on an inner product
+space $F$ of dimension $m \le n$. Let $\iota \colon F \to E$ be a linear isometry with
+$$\operatorname{Re} \langle Sy, y \rangle = \operatorname{Re} \langle T \iota y, \iota y \rangle
+  \quad \text{for all } y \in F.$$
+Then for every $i < m$
+$$\lambda_{i + (n - m)}(T) \le \lambda_i(S) \le \lambda_i(T).$$
+
+Both inequalities are Courant–Fischer. Through $\iota$, the subspaces of $F$ are among the
+subspaces of $E$ of the same dimension, so every candidate subspace in the max–min or the
+min–max formula for $S$ is one for $T$. -/
 theorem eigenvalues_interlace_of_linearIsometry {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F] {S : F →ₗ[𝕜] F} (hS : S.IsSymmetric)
     {m : ℕ} (hm : Module.finrank 𝕜 F = m) (hmn : m ≤ n) (ι : F →ₗᵢ[𝕜] E)
@@ -762,15 +882,18 @@ theorem eigenvalues_interlace_of_linearIsometry {F : Type*} [NormedAddCommGroup 
       rw [LinearIsometry.coe_toLinearMap, ← hRQ]
       exact hb y hy fun h => hx0 (by simp [h])
 
-/-- **Cauchy interlacing** for the restriction of the quadratic form to a subspace: for a symmetric
-`S : K →ₗ[𝕜] K` on an `m`-dimensional subspace `K` of `E` whose quadratic form is that of `T`,
-`re ⟪S y, y⟫ = re ⟪T y, y⟫` for `y : K`, the sorted eigenvalues satisfy
-`λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)`. The upper inequality is
-`LinearMap.IsSymmetric.eigenvalues_compression_le` of `Numlib/Eigen/RayleighRitz` when `S` is the
-compression; stated with the quadratic-form hypothesis, it applies to the compression
-(`Krylov.rayleighQuotient_compression`) and to a principal submatrix alike
-([saad2011numerical] Theorem 1.10; [golub1989matrix] Theorem 8.1.7; the weak half of
-[quarteroni2000numerical] Property 5.11). -/
+/-- **Cauchy interlacing for a subspace.** Let $T$ be a symmetric operator on an inner product space
+$E$ of dimension $n$, let $K$ be a subspace of dimension $m \le n$, and let $S \colon K \to K$
+be symmetric with $\operatorname{Re} \langle Sy, y \rangle = \operatorname{Re} \langle Ty, y
+\rangle$ for all $y \in K$. Then for every $i < m$
+$$\lambda_{i + (n - m)}(T) \le \lambda_i(S) \le \lambda_i(T).$$
+
+This is [saad2011numerical], Theorem 1.10, Theorem 8.1.7 of the 1989 edition of Golub and Van
+Loan, *Matrix Computations*, and the weak half of [quarteroni2000numerical], Property 5.11. When
+$S$ is the compression of $T$ to $K$, the upper inequality is
+`LinearMap.IsSymmetric.eigenvalues_compression_le` of `Numlib.Eigen.RayleighRitz`. With the
+hypothesis on the quadratic forms, the result applies both to the compression
+(`Krylov.rayleighQuotient_compression`) and to a principal submatrix. -/
 theorem eigenvalues_restrict_interlace {K : Submodule 𝕜 E} {S : K →ₗ[𝕜] K} (hS : S.IsSymmetric)
     {m : ℕ} (hm : Module.finrank 𝕜 K = m) (hmn : m ≤ n)
     (hSK : ∀ y : K, RCLike.re (inner 𝕜 (S y) y) = RCLike.re (inner 𝕜 (T y) (y : E))) (i : Fin m) :
@@ -786,12 +909,16 @@ namespace LinearMap.IsSymmetric
 
 variable [FiniteDimensional 𝕜 E] {n : ℕ} {A B : E →ₗ[𝕜] E}
 
-/-- **Low-rank interlacing**: a perturbation of rank at most `r` moves every eigenvalue by at most
-`r` places. For symmetric `A`, `B` with `finrank (range (B - A)) ≤ r`, `λ_{i+r}(B) ≤ λ_i(A)`
-(and, exchanging the two, `λ_{i+r}(A) ≤ λ_i(B)`). Courant–Fischer: on the `(i + r + 1)`-dimensional
-span of the leading eigenvectors of `B` the Rayleigh quotient of `B` is at least `λ_{i+r}(B)`; its
-intersection with `ker (B - A)`, of dimension at least `i + 1`, carries a nonzero vector whose
-Rayleigh quotient for `A`, the same as for `B` there, is at most `λ_i(A)`. -/
+/-- **Low-rank interlacing.** Let $A$ and $B$ be symmetric operators on an inner product space of
+dimension $n$ with $\dim \operatorname{range}(B - A) \le r$. Then for every $i$ with $i + r < n$
+$$\lambda_{i + r}(B) \le \lambda_i(A).$$
+
+So a perturbation of rank at most $r$ moves every eigenvalue by at most $r$ places. Since
+$B - A$ and $A - B$ have the same range, the same holds with $A$ and $B$ exchanged. The proof is
+Courant–Fischer. On the span of $v_0(B), \dots, v_{i+r}(B)$, of dimension $i + r + 1$, the
+Rayleigh quotient of $B$ is at least $\lambda_{i+r}(B)$. Its intersection with $\ker(B - A)$ has
+dimension at least $i + 1$, so it contains a nonzero vector whose Rayleigh quotient for $A$,
+which equals the one for $B$ there, is at most $\lambda_i(A)$. -/
 theorem eigenvalues_le_of_finrank_range_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {r : ℕ} (hr : Module.finrank 𝕜 (LinearMap.range (B - A)) ≤ r)
     (i : Fin n) (hir : (i : ℕ) + r < n) :
@@ -815,11 +942,15 @@ theorem eigenvalues_le_of_finrank_range_sub_le (hA : A.IsSymmetric) (hB : B.IsSy
   rw [LinearMap.rayleighQuotient, hBx] at hlb
   exact hlb.trans hxle
 
-/-- **Interlacing for a positive low-rank perturbation** ([golub2013matrix] Theorem 8.1.8 is
-`r = 1`, `B - A = τ c cᵀ` with `τ ≥ 0`): if `B - A` is positive and of rank at most `r`, then
-`λ_{i+r}(B) ≤ λ_i(A) ≤ λ_i(B)`. The first inequality is
-`LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`, which needs no positivity; the
-second is the monotonicity `LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le`. -/
+/-- **Interlacing for a positive low-rank perturbation.** Let $A$ and $B$ be symmetric operators on
+an inner product space of dimension $n$ such that $B - A$ is positive and
+$\dim \operatorname{range}(B - A) \le r$. Then for every $i$ with $i + r < n$
+$$\lambda_{i + r}(B) \le \lambda_i(A) \le \lambda_i(B).$$
+
+[golub2013matrix], Theorem 8.1.8, is the case $r = 1$, $B - A = \tau c c^T$ with $\tau \ge 0$.
+The first inequality is `LinearMap.IsSymmetric.eigenvalues_le_of_finrank_range_sub_le`, which
+needs no positivity. The second is the monotonicity
+`LinearMap.IsSymmetric.eigenvalues_le_of_re_inner_le`. -/
 theorem eigenvalues_le_of_isPositive_sub_of_finrank_range_le (hA : A.IsSymmetric)
     (hB : B.IsSymmetric) (hn : Module.finrank 𝕜 E = n) (hBA : (B - A).IsPositive) {r : ℕ}
     (hr : Module.finrank 𝕜 (LinearMap.range (B - A)) ≤ r) (i : Fin n) (hir : (i : ℕ) + r < n) :
@@ -835,9 +966,12 @@ end LinearMap.IsSymmetric
 
 /-! ### Ky Fan's principles and the Hoffman–Wielandt inequality -/
 
-/-- The quadratic form summed over an orthonormal family is the real trace of the compression of
-the operator to the span of the family: the family is an orthonormal basis of its span, in which
-the diagonal entries of the compression are `⟪x i, T (x i)⟫`. -/
+/-- Let $E$ be finite-dimensional, let $T \colon E \to E$ be linear, and let $(x_i)_{i < k}$ be
+orthonormal. Then $\sum_i \operatorname{Re} \langle T x_i, x_i \rangle$ is the real part of the
+trace of the compression of $T$ to the span of the $x_i$.
+
+The family is an orthonormal basis of its span, and in this basis the diagonal entries of the
+compression are $\langle x_i, T x_i \rangle$. -/
 theorem LinearMap.sum_re_inner_eq_re_trace_compression [FiniteDimensional 𝕜 E] (T : E →ₗ[𝕜] E)
     {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x) :
     ∑ i, RCLike.re (inner 𝕜 (T (x i)) (x i)) =
@@ -851,8 +985,8 @@ theorem LinearMap.sum_re_inner_eq_re_trace_compression [FiniteDimensional 𝕜 E
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [compression.inner_apply', hb, ← inner_conj_symm, RCLike.conj_re]
 
-/-- Summation by parts, in the form used for the trace inequality: if every partial sum of `d` is
-nonnegative and `f` decreases, then `∑ f i d i ≥ f_last ∑ d i`. -/
+/-- Summation by parts: if every partial sum of $d$ is nonnegative and $f$ decreases, then
+$f_{\text{last}} \sum_i d_i \le \sum_i f_i d_i$. -/
 private theorem mul_sum_le_sum_mul_of_antitone {n : ℕ} {f d : Fin (n + 1) → ℝ} (hf : Antitone f)
     (hd : ∀ (k : ℕ) (hk : k ≤ n + 1), 0 ≤ ∑ i : Fin k, d (Fin.castLE hk i)) :
     f (Fin.last n) * ∑ i, d i ≤ ∑ i, f i * d i := by
@@ -877,12 +1011,17 @@ section KyFan
 variable {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
 include hT
 
-/-- **Ky Fan's maximum principle**: for an orthonormal family `x : Fin k → E`, the quadratic forms
-`re ⟪T x_i, x_i⟫` sum to at most the sum of the `k` largest eigenvalues, with equality at the
-leading eigenvectors (`LinearMap.IsSymmetric.sum_re_inner_eigenvectorBasis`). The sum is the real
-trace of the compression of `T` to the span of the family
-(`LinearMap.sum_re_inner_eq_re_trace_compression`), that is the sum of the compression's
-eigenvalues, each of which is at most the corresponding eigenvalue of `T` by Cauchy interlacing. -/
+/-- **Ky Fan's maximum principle.** Let $T$ be a symmetric operator on an inner product space of
+dimension $n$, let $k \le n$, and let $(x_i)_{i < k}$ be an orthonormal family. Then
+$$\sum_{i < k} \operatorname{Re} \langle T x_i, x_i \rangle \le \sum_{i < k} \lambda_i,$$
+the sum of the $k$ largest eigenvalues.
+
+Equality holds at the leading eigenvectors
+(`LinearMap.IsSymmetric.sum_re_inner_eigenvectorBasis`). The sum on the left is the real trace
+of the compression of $T$ to the span of the family
+(`LinearMap.sum_re_inner_eq_re_trace_compression`), that is, the sum of the eigenvalues of the
+compression. By Cauchy interlacing, each of these is at most the corresponding eigenvalue of
+$T$. -/
 theorem sum_re_inner_le_sum_eigenvalues {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x)
     (hkn : k ≤ n) :
     ∑ i, RCLike.re (inner 𝕜 (T (x i)) (x i)) ≤
@@ -895,11 +1034,15 @@ theorem sum_re_inner_le_sum_eigenvalues {k : ℕ} {x : Fin k → E} (hx : Orthon
     (hT.eigenvalues_restrict_interlace hn hS hK hkn
       (fun y => by rw [compression.inner_apply]) i).2
 
-/-- **Ky Fan's minimum principle**, the dual of
-`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`: for an orthonormal family
-`x : Fin k → E`, the quadratic forms `re ⟪T x_i, x_i⟫` sum to at least the sum of the `k` smallest
-eigenvalues (the trace-minimization principle of [golub2013matrix] §10.6.5 for `B = I`). The same
-compression argument, with the other half of Cauchy interlacing. -/
+/-- **Ky Fan's minimum principle.** Let $T$ be a symmetric operator on an inner product space of
+dimension $n$, let $k \le n$, and let $(x_i)_{i < k}$ be an orthonormal family. Then
+$$\sum_{i < k} \lambda_{i + (n - k)}
+  \le \sum_{i < k} \operatorname{Re} \langle T x_i, x_i \rangle,$$
+where the left side is the sum of the $k$ smallest eigenvalues.
+
+This is the trace-minimization principle of [golub2013matrix], §10.6.5, for $B = I$. The proof
+is the compression argument of `LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`, with the
+other half of Cauchy interlacing. -/
 theorem sum_eigenvalues_le_sum_re_inner {k : ℕ} {x : Fin k → E} (hx : Orthonormal 𝕜 x)
     (hkn : k ≤ n) :
     ∑ i : Fin k, hT.eigenvalues hn ⟨(i : ℕ) + (n - k), by omega⟩ ≤
@@ -912,8 +1055,8 @@ theorem sum_eigenvalues_le_sum_re_inner {k : ℕ} {x : Fin k → E} (hx : Orthon
     (hT.eigenvalues_restrict_interlace hn hS hK hkn
       (fun y => by rw [compression.inner_apply]) i).1
 
-/-- The equality case of Ky Fan's maximum principle: at the `k` leading eigenvectors the quadratic
-forms sum to the sum of the `k` largest eigenvalues. -/
+/-- The equality case of Ky Fan's maximum principle: for $k \le n$, $\sum_{i < k} \operatorname{Re}
+\langle T v_i, v_i \rangle = \sum_{i < k} \lambda_i$. -/
 theorem sum_re_inner_eigenvectorBasis {k : ℕ} (hkn : k ≤ n) :
     ∑ i : Fin k, RCLike.re (inner 𝕜 (T (hT.eigenvectorBasis hn (Fin.castLE hkn i)))
         (hT.eigenvectorBasis hn (Fin.castLE hkn i))) =
@@ -922,7 +1065,8 @@ theorem sum_re_inner_eigenvectorBasis {k : ℕ} (hkn : k ≤ n) :
   rw [← T.rayleighQuotient_of_norm_eq_one ((hT.eigenvectorBasis hn).norm_eq_one _),
     hT.rayleighQuotient_eigenvectorBasis]
 
-/-- The trace of the square of a symmetric operator is the sum of the squared eigenvalues. -/
+/-- The trace of the square of a symmetric operator is the sum of the squares of its eigenvalues:
+$\operatorname{tr}(T^2) = \sum_i \lambda_i^2$. -/
 theorem trace_comp_self_eq_sum_sq :
     LinearMap.trace 𝕜 E (T ∘ₗ T) = ∑ i, ((hT.eigenvalues hn i : 𝕜)) ^ 2 := by
   rw [LinearMap.trace_eq_sum_inner _ (hT.eigenvectorBasis hn)]
@@ -936,12 +1080,17 @@ end KyFan
 
 variable {A B : E →ₗ[𝕜] E}
 
-/-- **The trace inequality for two symmetric operators**: `re tr(A B) ≤ ∑ λ_i(A) λ_i(B)`, both
-eigenvalue lists sorted decreasingly (the symmetric case of von Neumann's trace inequality). In the
-eigenbasis `v` of `B`, `re tr(A B) = ∑ μ_i a_i` with `a_i = re ⟪A v_i, v_i⟫`; the partial sums of
-`a` are bounded by those of `λ(A)` (Ky Fan,
-`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`), with equality for the full sum (the
-trace), and summation by parts against the decreasing `μ` gives the claim. -/
+/-- **The trace inequality for two symmetric operators.** Let $A$ and $B$ be symmetric operators on
+an inner product space of dimension $n$. Then
+$$\operatorname{Re} \operatorname{tr}(AB) \le \sum_{i < n} \lambda_i(A) \lambda_i(B),$$
+with both lists of eigenvalues in decreasing order.
+
+This is the symmetric case of von Neumann's trace inequality. In the eigenbasis $(v_i)$ of $B$
+with eigenvalues $\mu_i$, $\operatorname{Re} \operatorname{tr}(AB) = \sum_i \mu_i a_i$ with
+$a_i = \operatorname{Re} \langle A v_i, v_i \rangle$. The partial sums of $a$ are bounded by
+those of $\lambda(A)$ by Ky Fan's principle
+(`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`), with equality for the full sum, which
+is the trace. Summation by parts against the decreasing $\mu$ gives the claim. -/
 theorem re_trace_comp_le_sum_eigenvalues_mul (hA : A.IsSymmetric) (hB : B.IsSymmetric) :
     RCLike.re (LinearMap.trace 𝕜 E (A ∘ₗ B)) ≤
       ∑ i, hA.eigenvalues hn i * hB.eigenvalues hn i := by
@@ -971,11 +1120,15 @@ theorem re_trace_comp_le_sum_eigenvalues_mul (hA : A.IsSymmetric) (hB : B.IsSymm
     exact Finset.sum_congr rfl fun i _ => by ring
   linarith
 
-/-- **The Hoffman–Wielandt inequality**, operator form: for symmetric `A`, `B` with eigenvalues
-sorted decreasingly, `∑ (λ_i(A) - λ_i(B))² ≤ re tr((A - B)²)`, the right side being the squared
-Hilbert–Schmidt norm of `A - B`. Expand the square: `tr A² = ∑ λ_i(A)²`, `tr B² = ∑ λ_i(B)²`, and
-the cross term is the trace inequality
-`LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`. -/
+/-- **The Hoffman–Wielandt inequality, operator form.** Let $A$ and $B$ be symmetric operators on an
+inner product space of dimension $n$. Then, with both lists of eigenvalues in decreasing order,
+$$\sum_{i < n} (\lambda_i(A) - \lambda_i(B))^2
+  \le \operatorname{Re} \operatorname{tr}\bigl((A - B)^2\bigr).$$
+
+The right side is the square of the Hilbert–Schmidt norm of $A - B$. The proof expands the
+square: $\operatorname{tr} A^2 = \sum_i \lambda_i(A)^2$,
+$\operatorname{tr} B^2 = \sum_i \lambda_i(B)^2$, and the cross term is bounded by the trace
+inequality `LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`. -/
 theorem sum_sq_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric) :
     ∑ i, (hA.eigenvalues hn i - hB.eigenvalues hn i) ^ 2 ≤
       RCLike.re (LinearMap.trace 𝕜 E ((A - B) ∘ₗ (A - B))) := by
@@ -997,27 +1150,37 @@ theorem sum_sq_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric) :
 
 end LinearMap.IsSymmetric
 
-/-! ### Negation
+/-!
+### Negation
 
-Every statement about a largest eigenvalue is a statement about a smallest one for `-T`, and this
-section is the dictionary: `eigenvalues_neg` for the values, `exists_smul_eigenvectorBasis_neg` for
-the vectors at a simple eigenvalue, and the two congruences that let a `rw` happen inside the
-dependent types `hT.eigenvalues hn` and `(compression.isSymmetric T K hT).eigenvalues hK`. -/
+Every statement about a largest eigenvalue is a statement about a smallest eigenvalue of $-T$, and
+this section gives the translation: `LinearMap.IsSymmetric.eigenvalues_neg` for the eigenvalues,
+`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg` for the eigenvectors at a simple
+eigenvalue, and two congruence lemmas that let a rewrite happen inside the dependent types
+`hT.eigenvalues hn` and `(compression.isSymmetric T K hT).eigenvalues hK`.
+-/
 
 namespace LinearMap.IsSymmetric
 
 variable [FiniteDimensional 𝕜 E] {n : ℕ}
 
-/-- The sorted eigenvalues depend on the operator only, not on the proof that it is symmetric. The
-operators are variables, so that `subst` can do the transport that a `rw` inside a dependent type
-cannot. -/
+/-- The sorted eigenvalues depend only on the operator, and not on the proof that it is symmetric.
+Let $T$ and $T'$ be symmetric operators on an inner product space of dimension $n$ with
+$T = T'$. Then $\lambda_i(T) = \lambda_i(T')$ for every $i < n$.
+
+The operators are variables, so that `subst` can do the transport that a `rw` inside a dependent
+type cannot do. -/
 theorem eigenvalues_congr {T T' : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hT' : T'.IsSymmetric)
     (h : T = T') (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
     hT.eigenvalues hn i = hT'.eigenvalues hn i := by
   subst h; rfl
 
-/-- The eigenvalues of the compressions to two equal subspaces agree. The subspaces are variables,
-so that `subst` can do the transport that a `rw` inside a dependent type cannot. -/
+/-- The eigenvalues of the compressions to two equal subspaces agree. Let $T$ be symmetric, and let
+$K = L$ be subspaces of dimension $m$ with orthogonal projections. Then the $i$-th eigenvalues
+of the compressions of $T$ to $K$ and to $L$ are equal, for every $i < m$.
+
+The subspaces are variables, so that `subst` can do the transport that a `rw` inside a dependent
+type cannot do. -/
 theorem eigenvalues_compression_congr {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {K L : Submodule 𝕜 E}
     [K.HasOrthogonalProjection] [L.HasOrthogonalProjection] (hKL : K = L) {m : ℕ}
     (hK : Module.finrank 𝕜 K = m) (hL : Module.finrank 𝕜 L = m) (i : Fin m) :
@@ -1025,12 +1188,16 @@ theorem eigenvalues_compression_congr {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric
       = (compression.isSymmetric T L hT).eigenvalues hL i := by
   subst hKL; rfl
 
-/-- **The eigenvalues of `-T` are the negatives of those of `T`, in reversed order**: with both
-lists sorted decreasingly, the `i`-th eigenvalue of `-T` is minus the `(n - 1 - i)`-th of `T`. The
-proof is Courant–Fischer: negating the Rayleigh quotient exchanges the max–min characterization of
-`hT.eigenvalues hn i` (`isGreatest_eigenvalues`, over subspaces of dimension `i + 1`) with the
-min–max characterization of `hT.eigenvalues hn i.rev` (`isLeast_eigenvalues`, over subspaces of
-dimension `n - i.rev = i + 1`), so the two sets of bounds coincide. -/
+/-- **The eigenvalues of $-T$ are the negatives of those of $T$, in reverse order.** Let $T$ be a
+symmetric operator on an inner product space of dimension $n$. With both lists in decreasing
+order, for every $i < n$
+$$\lambda_i(-T) = -\lambda_{n - 1 - i}(T).$$
+
+The index $n - 1 - i$ is `i.rev`. The proof is Courant–Fischer: negation of the Rayleigh
+quotient exchanges the max–min characterization of $\lambda_i(-T)$
+(`LinearMap.IsSymmetric.isGreatest_eigenvalues`, over subspaces of dimension $i + 1$) with the
+min–max characterization of $\lambda_{n-1-i}(T)$ (`LinearMap.IsSymmetric.isLeast_eigenvalues`,
+over subspaces of dimension $n - (n - 1 - i) = i + 1$), so the two sets of bounds are the same. -/
 theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
     (i : Fin n) : hT.neg.eigenvalues hn i = -hT.eigenvalues hn i.rev := by
   have hrev : n - ((i.rev : Fin n) : ℕ) = (i : ℕ) + 1 := by
@@ -1052,11 +1219,15 @@ theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module
     have := (hT.isLeast_eigenvalues hn i.rev).2 hmem
     linarith
 
-/-- **The sorted eigenvalues are those of any orthonormal eigenbasis**: if `b` is an orthonormal
-basis with `T (b i) = λ i • b i` and `λ` is antitone, then `hT.eigenvalues hn = λ`
-(`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` on the diagonal matrix of `T` in `b`). Mathlib's
-`eigenvectorBasis` is one choice of `b`; the textbook statements over an arbitrary Schur
-decomposition go through this. -/
+/-- **The sorted eigenvalues are those of any orthonormal eigenbasis.** Let $T$ be a symmetric
+operator on an inner product space of dimension $n$, let $(b_i)_{i < n}$ be an orthonormal
+basis, and let $\lambda'_0 \ge \dots \ge \lambda'_{n-1}$ be real numbers with
+$T b_i = \lambda'_i b_i$ for all $i$. Then $\lambda_i(T) = \lambda'_i$ for all $i$.
+
+The proof applies `LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` to the diagonal matrix of
+$T$ in the basis $(b_i)$. Mathlib's `LinearMap.IsSymmetric.eigenvectorBasis` is one choice of
+$(b_i)$. The textbook statements about an arbitrary Schur decomposition are reduced to the
+sorted eigenvalues through this lemma. -/
 theorem eigenvalues_eq_of_apply_eq_ofReal_smul {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (b : OrthonormalBasis (Fin n) 𝕜 E) {lam : Fin n → ℝ}
     (hb : ∀ i, T (b i) = (lam i : 𝕜) • b i) (hlam : Antitone lam) : hT.eigenvalues hn = lam := by
@@ -1073,10 +1244,15 @@ theorem eigenvalues_eq_of_apply_eq_ofReal_smul {T : E →ₗ[𝕜] E} (hT : T.Is
     simp
   exact hT.eigenvalues_eq_of_antitone hn hlam hroots
 
-/-- **A simple extreme eigenvalue of `-T` has the same eigenvector line as its partner for `T`**:
-if the `i.rev`-th eigenvalue of `T` is simple, the `i`-th eigenvector of `-T` is a nonzero multiple
-of the `i.rev`-th eigenvector of `T`. Expanding the eigenvector of `-T` in the eigenbasis of `T`,
-the coefficients at the other indices carry the factor `λ_j - λ_{i.rev} ≠ 0` and vanish. -/
+/-- **At a simple eigenvalue, $-T$ and $T$ have the same eigenvector line.** Let $T$ be a symmetric
+operator on an inner product space of dimension $n$, and let $i < n$. Assume that the eigenvalue
+$\lambda_{n-1-i}(T)$ is simple, that is, $\lambda_j(T) \neq \lambda_{n-1-i}(T)$ for all
+$j \neq n - 1 - i$. Then the $i$-th eigenvector of $-T$ is $c \, v_{n-1-i}$ for some scalar
+$c \neq 0$, where $v_{n-1-i}$ is the $(n - 1 - i)$-th eigenvector of $T$.
+
+The eigenvectors are those of `LinearMap.IsSymmetric.eigenvectorBasis`. In the expansion of the
+eigenvector of $-T$ in the eigenbasis of $T$, the coefficients at the other indices have the
+factor $\lambda_j - \lambda_{n-1-i} \neq 0$ and vanish. -/
 theorem exists_smul_eigenvectorBasis_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) (i : Fin n)
     (hsimple : ∀ j : Fin n, j ≠ i.rev → hT.eigenvalues hn j ≠ hT.eigenvalues hn i.rev) :
@@ -1115,10 +1291,16 @@ namespace Matrix
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- **Cauchy interlacing for a compression `Vᴴ A V`** with `Vᴴ V = 1` ([saad2011numerical]
-Theorem 1.10; [golub1989matrix] Theorem 8.1.7): the sorted eigenvalues
-(`Matrix.IsHermitian.eigenvalues₀`, decreasing) of the `m × m` Hermitian matrix `Vᴴ A V` interlace
-those of the `n × n` Hermitian `A`, `λ_{k + (n - m)}(A) ≤ λ_k(Vᴴ A V) ≤ λ_k(A)`. -/
+/-- **Cauchy interlacing for a compression $V^H A V$.** Let $A$ be a Hermitian $N \times N$ matrix,
+and let $V$ be an $N \times M$ matrix with $V^H V = I$ and $M \le N$. Then the Hermitian
+$M \times M$ matrix $V^H A V$ satisfies, for every $k < M$,
+$$\lambda_{k + (N - M)}(A) \le \lambda_k(V^H A V) \le \lambda_k(A),$$
+with the eigenvalues in decreasing order.
+
+This is [saad2011numerical], Theorem 1.10, and Theorem 8.1.7 of the 1989 edition of Golub and
+Van Loan, *Matrix Computations*. The eigenvalues are `Matrix.IsHermitian.eigenvalues₀`. The
+hypothesis that $V^H A V$ is Hermitian names its eigenvalues; it follows from the Hermitian
+property of $A$. -/
 theorem IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) (hB : (Vᴴ * A * V).IsHermitian)
     (hmn : Fintype.card m ≤ Fintype.card n) (k : Fin (Fintype.card m)) :
@@ -1130,12 +1312,18 @@ theorem IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace {A : Matrix n
       rw [toEuclideanLinearIsometry_apply, Matrix.toEuclideanLin_mul_apply,
         Matrix.toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left]) k
 
-/-- **Cauchy interlacing for a principal submatrix** ([quarteroni2000numerical] Property 5.11, the
-weak inequalities; [golub1989matrix] Theorem 8.1.7): for a Hermitian `A` and an injective
-`f : m → n`, the sorted eigenvalues of `A.submatrix f f` interlace those of `A`,
-`λ_{k + (n - m)}(A) ≤ λ_k(A.submatrix f f) ≤ λ_k(A)`. It is the compression by the matrix
-`V = (1 : Matrix n n 𝕜).submatrix id f` of the selected columns of the identity, for which
-`Vᴴ A V = A.submatrix f f`. -/
+/-- **Cauchy interlacing for a principal submatrix.** Let $A$ be a Hermitian $N \times N$ matrix,
+and let $f$ be an injective map from an index set of size $M$ to the indices of $A$. Then the
+principal submatrix $A_f = (a_{f(i) f(j)})_{i, j}$, which is Hermitian, satisfies, for every
+$k < M$,
+$$\lambda_{k + (N - M)}(A) \le \lambda_k(A_f) \le \lambda_k(A),$$
+with the eigenvalues in decreasing order.
+
+This is the weak inequalities of [quarteroni2000numerical], Property 5.11, and Theorem 8.1.7 of
+the 1989 edition of Golub and Van Loan, *Matrix Computations*. The matrix $A_f$ is
+`A.submatrix f f`, and its Hermitian property is a hypothesis that names its eigenvalues. It is
+the compression by the matrix $V$ = `(1 : Matrix n n 𝕜).submatrix id f` of the selected columns
+of the identity, for which $V^H A V = A_f$. -/
 theorem IsHermitian.eigenvalues₀_submatrix_interlace {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {f : m → n} (hf : Function.Injective f) (hB : (A.submatrix f f).IsHermitian)
     (k : Fin (Fintype.card m)) :
@@ -1164,9 +1352,12 @@ namespace Matrix.IsHermitian
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The trace of a Hermitian matrix is the sum of its sorted eigenvalues `eigenvalues₀`
-([golub2013matrix] P8.1.8). Mathlib's `Matrix.IsHermitian.trace_eq_sum_eigenvalues` is the same
-statement for the `n`-indexed `eigenvalues`. -/
+/-- The trace of a Hermitian matrix is the sum of its sorted eigenvalues:
+$\operatorname{tr} A = \sum_k \lambda_k$.
+
+This is [golub2013matrix], P8.1.8. Mathlib's `Matrix.IsHermitian.trace_eq_sum_eigenvalues` is
+the same statement for the eigenvalues indexed by the rows of $A$; here they are
+`Matrix.IsHermitian.eigenvalues₀`. -/
 theorem trace_eq_sum_eigenvalues₀ {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A.trace = ∑ k, (hA.eigenvalues₀ k : 𝕜) := by
   rw [← A.trace_toLin_eq (EuclideanSpace.basisFun n 𝕜).toBasis,
@@ -1175,8 +1366,9 @@ theorem trace_eq_sum_eigenvalues₀ {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     finrank_euclideanSpace
 
 open scoped Matrix.Norms.Frobenius in
-/-- For a Hermitian `M`, the squared Frobenius norm is the real trace of the square of the operator
-`toEuclideanLin M`: `‖M‖_F² = ∑ i j |M i j|² = re tr(M M)`, as `M j i = conj (M i j)`. -/
+/-- For a Hermitian matrix $M$, the square of the Frobenius norm is the real part of the trace of
+the square of the operator `Matrix.toEuclideanLin M`: $\|M\|_F^2 = \sum_{i, j} |m_{ij}|^2 =
+\operatorname{Re} \operatorname{tr}(M M)$, since $m_{ji} = \overline{m_{ij}}$. -/
 theorem re_trace_toEuclideanLin_comp_self {M : Matrix n n 𝕜} (hM : M.IsHermitian) :
     RCLike.re (LinearMap.trace 𝕜 _ (toEuclideanLin M ∘ₗ toEuclideanLin M)) = ‖M‖ ^ 2 := by
   rw [← toLpLin_mul_same, toLpLin_eq_toLin,
@@ -1191,10 +1383,15 @@ theorem re_trace_toEuclideanLin_comp_self {M : Matrix n n 𝕜} (hM : M.IsHermit
     RCLike.ofReal_re]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The Hoffman–Wielandt inequality** ([golub2013matrix] Theorem 8.1.4, "Wielandt–Hoffman"): for
-Hermitian `A`, `B` with eigenvalues sorted decreasingly, `∑ k (λ_k(A) - λ_k(B))² ≤ ‖A - B‖_F²`.
-The operator form `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le` for `toEuclideanLin`, with
-`Matrix.IsHermitian.re_trace_toEuclideanLin_comp_self` for the right side. -/
+/-- **The Hoffman–Wielandt inequality.** Let $A$ and $B$ be Hermitian matrices of the same order.
+With both lists of eigenvalues in decreasing order,
+$$\sum_k (\lambda_k(A) - \lambda_k(B))^2 \le \|A - B\|_F^2.$$
+
+This is [golub2013matrix], Theorem 8.1.4, where it is called the Wielandt–Hoffman theorem. The
+eigenvalues are `Matrix.IsHermitian.eigenvalues₀`, and $\|\cdot\|_F$ is the Frobenius norm. The
+proof is the operator form `LinearMap.IsSymmetric.sum_sq_eigenvalues_sub_le` for
+`Matrix.toEuclideanLin`, with `Matrix.IsHermitian.re_trace_toEuclideanLin_comp_self` for the
+right side. -/
 theorem hoffman_wielandt {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian) :
     ∑ k, (hA.eigenvalues₀ k - hB.eigenvalues₀ k) ^ 2 ≤ ‖A - B‖ ^ 2 := by
   rw [← (hA.sub hB).re_trace_toEuclideanLin_comp_self, map_sub]
@@ -1209,34 +1406,39 @@ namespace Matrix.IsHermitian
 
 variable {n : ℕ}
 
-/-- The eigenvalues of a Hermitian `n × n` matrix, **sorted decreasingly and indexed by `Fin n`**:
-`hA.sortedEigenvalues k` is the `(k + 1)`-st largest eigenvalue, the `λ_{k+1}(A)` of
-[golub2013matrix] §8.1.1. It is Mathlib's `Matrix.IsHermitian.eigenvalues₀`, whose index type
-`Fin (Fintype.card (Fin n))` is not `Fin n` by definition, reindexed along `Fintype.card_fin`, so
-that statements about the `k`-th eigenvalue of a matrix and of its leading principal submatrices
-read on `Fin n` with `Fin.succ` and `Fin.castSucc`. -/
+/-- The eigenvalues of a Hermitian $n \times n$ matrix $A$, **sorted in decreasing order and indexed
+by $\{0, \dots, n - 1\}$**. The value at $k$ is the $(k + 1)$-th largest eigenvalue, the
+$\lambda_{k+1}(A)$ of [golub2013matrix], §8.1.1.
+
+This is Mathlib's `Matrix.IsHermitian.eigenvalues₀` reindexed along `Fintype.card_fin`, because
+the index type `Fin (Fintype.card (Fin n))` of `eigenvalues₀` is not `Fin n` by definition. With
+this reindexing, statements about the $k$-th eigenvalue of a matrix and of its leading principal
+submatrices can use `Fin.succ` and `Fin.castSucc`. -/
 noncomputable def sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
     Fin n → ℝ :=
   hA.eigenvalues₀ ∘ Fin.cast (Fintype.card_fin n).symm
 
-/-- `Matrix.IsHermitian.sortedEigenvalues` in terms of Mathlib's `eigenvalues₀`. -/
+/-- The sorted eigenvalues `Matrix.IsHermitian.sortedEigenvalues` at $k$ are Mathlib's
+`Matrix.IsHermitian.eigenvalues₀` at the index $k$ cast to `Fin (Fintype.card (Fin n))`. -/
 theorem sortedEigenvalues_apply {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) (k : Fin n) :
     hA.sortedEigenvalues k = hA.eigenvalues₀ (Fin.cast (Fintype.card_fin n).symm k) :=
   rfl
 
-/-- The sorted eigenvalues depend on the matrix only, not on the proof that it is Hermitian nor on
-the way it is written. -/
+/-- The sorted eigenvalues depend only on the matrix, and not on the proof that it is Hermitian or
+on the way it is written: if $A = B$, then the sorted eigenvalues of $A$ and $B$ are equal. -/
 theorem sortedEigenvalues_congr {A B : Matrix (Fin n) (Fin n) 𝕜} (h : A = B) (hA : A.IsHermitian)
     (hB : B.IsHermitian) : hA.sortedEigenvalues = hB.sortedEigenvalues := by
   subst h
   rfl
 
-/-- The sorted eigenvalues decrease. -/
+/-- The sorted eigenvalues of a Hermitian matrix decrease: $\lambda_0 \ge \lambda_1 \ge \dots \ge
+\lambda_{n-1}$. -/
 theorem sortedEigenvalues_antitone {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
     Antitone hA.sortedEigenvalues := fun i j hij =>
   hA.eigenvalues₀_antitone (show Fin.cast _ i ≤ Fin.cast _ j from hij)
 
-/-- The roots of the characteristic polynomial, with multiplicity, are the sorted eigenvalues. -/
+/-- The roots of the characteristic polynomial of a Hermitian $n \times n$ matrix, counted with
+multiplicity, are its sorted eigenvalues $\lambda_0, \dots, \lambda_{n-1}$, as a multiset. -/
 theorem roots_charpoly_eq_sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
     A.charpoly.roots = Multiset.map (RCLike.ofReal ∘ hA.sortedEigenvalues) Finset.univ.val := by
   rw [hA.roots_charpoly_eq_eigenvalues₀,
@@ -1244,11 +1446,16 @@ theorem roots_charpoly_eq_sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} (h
     Multiset.map_map]
   rfl
 
-/-- **Cauchy interlacing for the leading principal submatrix** ([golub2013matrix] Theorem 8.1.7;
-[quarteroni2000numerical] Property 5.11, the weak inequalities): the eigenvalues of the leading
-`n × n` block of a Hermitian `(n + 1) × (n + 1)` matrix `A` separate those of `A`,
-`λ_{k+1}(A) ≤ λ_k(A.submatrix castSucc castSucc) ≤ λ_k(A)`. The `Fin`-indexed reading of
-`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`. -/
+/-- **Cauchy interlacing for the leading principal submatrix.** Let $A$ be a Hermitian
+$(n + 1) \times (n + 1)$ matrix, and let $A_n$ be its leading principal $n \times n$ submatrix,
+which is Hermitian. With the sorted eigenvalues indexed from $0$, for every $k < n$
+$$\lambda_{k+1}(A) \le \lambda_k(A_n) \le \lambda_k(A).$$
+
+This is [golub2013matrix], Theorem 8.1.7, and the weak inequalities of
+[quarteroni2000numerical], Property 5.11. The submatrix $A_n$ is
+`A.submatrix Fin.castSucc Fin.castSucc`, and its Hermitian property is a hypothesis that names
+its eigenvalues. This is `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` with the indices
+in `Fin n`. -/
 theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
     (hA : A.IsHermitian) (hB : (A.submatrix Fin.castSucc Fin.castSucc).IsHermitian) (k : Fin n) :
     hA.sortedEigenvalues k.succ ≤ hB.sortedEigenvalues k ∧
@@ -1266,12 +1473,16 @@ theorem sortedEigenvalues_submatrix_castSucc_interlace {A : Matrix (Fin (n + 1))
   rw [e1, e2] at h
   exact h
 
-/-- **The spectral decomposition with sorted eigenvalues** ([golub2013matrix] Theorem 8.1.1, with
-`λ_1 ≥ ⋯ ≥ λ_n`): a Hermitian `A` of order `N` is unitarily similar to the diagonal matrix of its
-decreasingly sorted eigenvalues, `Uᴴ A U = diag(λ_1, …, λ_n)`, the `k`-th column of `U` being an
-eigenvector for `λ_k`. The columns are the eigenvector basis of `toEuclideanLin A`, which Mathlib
-sorts; Mathlib's `Matrix.IsHermitian.spectral_theorem` is the unsorted form. At `𝕜 = ℝ`,
-`unitaryGroup = orthogonalGroup`. -/
+/-- **The spectral decomposition with sorted eigenvalues.** Let $A$ be a Hermitian $n \times n$
+matrix with sorted eigenvalues $\lambda_0 \ge \dots \ge \lambda_{n-1}$. Then there is a unitary
+matrix $U$ with columns $u_0, \dots, u_{n-1}$ such that
+$$U^H A U = \operatorname{diag}(\lambda_0, \dots, \lambda_{n-1}), \qquad A u_k = \lambda_k u_k
+  \text{ for all } k.$$
+
+This is [golub2013matrix], Theorem 8.1.1, with $\lambda_1 \ge \dots \ge \lambda_n$ in the
+indexing from $1$. The columns of $U$ are the eigenvector basis of `Matrix.toEuclideanLin A`,
+which Mathlib sorts. Mathlib's `Matrix.IsHermitian.spectral_theorem` is the unsorted form. For
+$\mathbb{K} = \mathbb{R}$ the unitary group is the orthogonal group. -/
 theorem exists_unitary_conj_eq_diagonal_sortedEigenvalues {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.IsHermitian) :
     ∃ U ∈ Matrix.unitaryGroup (Fin n) 𝕜,
@@ -1309,11 +1520,16 @@ section Gradient
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- **The gradient of the Rayleigh quotient** ([golub2013matrix] (10.1.1)): on a real Hilbert
-space, for a symmetric `T` and `x ≠ 0`, `∇ r(x) = (2 / ‖x‖²) (T x - r(x) x)` with
-`r(x) = ⟪T x, x⟫ / ‖x‖²`. The quotient rule on `⟪T x, x⟫` (derivative `2 ⟪T x, ·⟫`, Mathlib's
-`LinearMap.IsSymmetric.hasStrictFDerivAt_reApplyInnerSelf`) over `‖x‖²` (derivative
-`2 ⟪x, ·⟫`). In particular the gradient lies in `span {x, T x}`. -/
+/-- **The gradient of the Rayleigh quotient.** Let $F$ be a real Hilbert space, let
+$T \colon F \to F$ be a continuous linear map that is symmetric, and let $x \neq 0$. Then the
+Rayleigh quotient $r(y) = \langle Ty, y \rangle / \|y\|^2$ has at $x$ the gradient
+$$\nabla r(x) = \frac{2}{\|x\|^2} \bigl(Tx - r(x) x\bigr).$$
+
+This is [golub2013matrix], (10.1.1). In particular the gradient lies in the span of $x$ and
+$Tx$. The proof is the quotient rule for $\langle Ty, y \rangle$, with derivative
+$2 \langle Tx, \cdot \rangle$ (Mathlib's
+`LinearMap.IsSymmetric.hasStrictFDerivAt_reApplyInnerSelf`), over $\|y\|^2$, with derivative
+$2 \langle x, \cdot \rangle$. The Rayleigh quotient is `ContinuousLinearMap.rayleighQuotient`. -/
 theorem ContinuousLinearMap.hasGradientAt_rayleighQuotient [CompleteSpace F] {T : F →L[ℝ] F}
     (hT : (T : F →ₗ[ℝ] F).IsSymmetric) {x : F} (hx : x ≠ 0) :
     HasGradientAt T.rayleighQuotient
@@ -1334,12 +1550,15 @@ theorem ContinuousLinearMap.hasGradientAt_rayleighQuotient [CompleteSpace F] {T 
     field_simp
     ring
 
-/-- **The stationary points of the Rayleigh quotient are the eigenvectors** ([golub2013matrix]
-(12.5.23)): for a symmetric `T` on a finite-dimensional real inner product space and `x ≠ 0`, the
-Fréchet derivative of `r(y) = ⟪T y, y⟫ / ‖y‖²` at `x` vanishes iff `T x = r(x) x`. The derivative
-is the gradient `ContinuousLinearMap.hasGradientAt_rayleighQuotient`, a nonzero multiple of
-`T x - r(x) x`. Mathlib has only the extremal case,
-`IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`. -/
+/-- **The stationary points of the Rayleigh quotient are the eigenvectors.** Let $F$ be a
+finite-dimensional real inner product space, let $T \colon F \to F$ be symmetric, and let
+$x \neq 0$. If $f'$ is the Fréchet derivative at $x$ of the Rayleigh quotient
+$r(y) = \langle Ty, y \rangle / \|y\|^2$, then
+$$f' = 0 \iff Tx = r(x) \, x.$$
+
+This is [golub2013matrix], (12.5.23). The derivative is the gradient of
+`ContinuousLinearMap.hasGradientAt_rayleighQuotient`, a nonzero multiple of $Tx - r(x) x$.
+Mathlib has only the extremal case, `IsSelfAdjoint.hasEigenvector_of_isLocalExtrOn`. -/
 theorem LinearMap.IsSymmetric.hasFDerivAt_rayleighQuotient_eq_zero_iff
     [FiniteDimensional ℝ F] {T : F →ₗ[ℝ] F} (hT : T.IsSymmetric) {x : F} (hx : x ≠ 0)
     {f' : F →L[ℝ] ℝ} (hf : HasFDerivAt T.rayleighQuotient f' x) :

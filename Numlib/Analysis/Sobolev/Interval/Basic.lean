@@ -24,77 +24,88 @@ import Numlib.MeasureTheory.Integral.IntervalIntegral
 /-!
 # Sobolev spaces on an open subset of the line
 
-The weak derivative on an open set `I ⊆ ℝ` and the Sobolev space `W^{m,p}(I)` for an arbitrary
-open `I` and every exponent `1 ≤ p ≤ ∞`, with the one-dimensional facts that hold on any open
-interval, bounded or not: du Bois-Reymond's lemma, the primitive of a locally integrable
-function as a weak antiderivative, and the absolutely continuous representative. This is the
-general layer under `Numlib/Analysis/Sobolev/Interval.lean`, which keeps the bounded `p = 2`
-theory `H^m(a, b)` under its existing names; it follows [brezis2011functional] §8.2 (the
-definition of `W^{1,p}(I)`, Remarks 2, 4–8, Lemmas 8.1 and 8.2, Theorem 8.2, Propositions 8.1
-and 8.4, the Examples, and the paragraph on `W^{m,p}`) for `I` "an open interval, possibly
-unbounded".
+This module defines the weak derivative on an open set $I \subseteq \mathbb{R}$ and the Sobolev
+space $W^{m,p}(I)$ for an arbitrary open $I$ and every exponent $1 \le p \le \infty$. A function $w$
+is the $k$-th weak derivative of $f$ on $I$ if $f$ and $w$ are locally integrable on $I$ and $\int_I
+\varphi^{(k)} f = (-1)^k \int_I \varphi\, w$ for every test function $\varphi$ on $I$. An element
+$u \in W^{m,p}(I)$ has weak derivatives $u = u^{(0)}, u', \dots, u^{(m)}$ in $L^p(I)$. The
+presentation follows §8.2 of [brezis2011functional], where $I$ is "an open interval, possibly
+unbounded": the definition of $W^{1,p}(I)$, Remarks 2 and 4–8, Lemmas 8.1 and 8.2, Theorem 8.2,
+Propositions 8.1 and 8.4, the Examples, and the paragraph on $W^{m,p}$.
+
+The main one-dimensional facts hold on every open interval, bounded or not. By du Bois-Reymond's
+lemma, a function with weak derivative $0$ is almost everywhere constant. The primitive
+$c + \int_{y_0}^x w$ of a locally integrable function $w$ has the weak derivative $w$. Together,
+these give the continuous representative: every $u \in W^{1,p}(I)$ agrees almost everywhere with a
+function $\tilde u$ that is continuous on the closure $\bar I$ and satisfies
+$\tilde u(y) - \tilde u(x) = \int_x^y u'$ for $x, y \in \bar I$. The module
+`Numlib.Analysis.Sobolev.Interval` builds the bounded theory $H^m(a, b)$ for $p = 2$ on this layer.
 
 ## Main definitions
 
-* `TopologicalSpace.Opens.Ioo a b`, the open interval as an element of `Opens ℝ`;
-* `HasWeakDerivOn f w I` and `HasWeakIteratedDerivOn k f w I`, the first-order and the `k`-th
-  weak derivative on the open set `I`, as `HasWeakIteratedLineDerivOn` along the constant tuple
-  of directions `1`;
-* `SobolevIntervalLp m p I`, the space `W^{m,p}(I)`, with `MemSobolevIntervalLp f m p I` the
-  corresponding predicate on functions, `SobolevIntervalLp.deriv u j` the `j`-th weak derivative
-  in `L^p(I)`, and `SobolevIntervalLpZero m p I` the closure `W_0^{m,p}(I)` of the test
-  functions;
-* `TestFunction.primitiveIic`, the antiderivative of a test function of zero mean on an open
-  interval, which is again a test function;
-* `SobolevIntervalLp.rep u`, the canonical continuous representative of `u ∈ W^{1,p}(I)`, with
-  `SobolevIntervalLp.repConst`, `Opens.basePoint` and `Opens.testFunctionOne` the data it is built
-  from.
+* `TopologicalSpace.Opens.Ioo`: the open interval $(a, b)$ as an open set of $\mathbb{R}$.
+* `HasWeakDerivOn`, `HasWeakIteratedDerivOn`: the first-order and the $k$-th weak derivative on an
+  open set $I$.
+* `SobolevIntervalLp`: the space $W^{m,p}(I)$.
+* `MemSobolevIntervalLp`: the predicate that a function belongs to $W^{m,p}(I)$.
+* `SobolevIntervalLp.deriv`: the $j$-th weak derivative $u^{(j)} \in L^p(I)$ of $u \in W^{m,p}(I)$.
+* `SobolevIntervalLpZero`: the closure $W_0^{m,p}(I)$ of the test functions in $W^{m,p}(I)$.
+* `TestFunction.primitiveIic`: the primitive of a test function of zero mean on an open interval,
+  which is again a test function.
+* `SobolevIntervalLp.rep`: the canonical continuous representative $\tilde u$ of $u \in W^{1,p}(I)$,
+  built from `SobolevIntervalLp.repConst`, `TopologicalSpace.Opens.basePoint` and
+  `TopologicalSpace.Opens.testFunctionOne`.
 
-## Main statements
+## Main results
 
-* `HasWeakDerivOn.exists_ae_eq_const`, **du Bois-Reymond's lemma** ([brezis2011functional]
-  Lemma 8.1): a function with weak derivative `0` on an open interval is almost everywhere
-  constant; `MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral` (Lemma 8.2): the primitive
-  of a locally integrable function is weakly differentiable; together
-  `HasWeakDerivOn.exists_ae_eq_integral_of_mem` and
-  `SobolevIntervalLp.exists_continuousOn_closure_ae_eq`, **the continuous representative**
-  (Theorem 8.2), with `SobolevIntervalLp.rep_sub_rep` the
-  fundamental theorem of calculus in `W^{1,p}(I)` and `SobolevIntervalLp.rep_eq_of_continuousOn`
-  its uniqueness (Remark 5).
-* `hasWeakDerivOn_of_tendsto_eLpNorm` (Remark 4): the weak derivative is closed under `L^p`
-  limits; `memSobolevIntervalLp_of_contDiffOn` (Remark 2),
-  `memSobolevIntervalLp_of_piecewise_contDiffOn`, `memSobolevIntervalLp_abs` and
-  `not_memSobolevIntervalLp_sign` (the §8.2 Examples).
-* `SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv` (Remark 6) and
-  `SobolevIntervalLp.exists_contDiff_ae_eq`, the `C^k` representative of `W^{k+1,p}(I)`.
-* `memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval` (Remark 8): `W^{1,1}(a, b)`
-  is the space of absolutely continuous functions; `memSobolevIntervalLp_top_iff_lipschitz`
-  (Proposition 8.4): `W^{1,∞}(I)` is the space of Lipschitz functions;
-  `SobolevIntervalLp.eLpNorm_translate_sub_le` (Proposition 8.5, (i) ⇒ (ii)):
-  `‖τ_h u - u‖_p ≤ |h| ‖u'‖_p` on the line.
-* `TopologicalSpace.Opens.eq_intervals_of_ordConnected`: an open interval of `ℝ` is `∅`, `ℝ`, a
-  half-line or a bounded `(a, b)`, the case split every unbounded-interval argument starts with.
+* `HasWeakDerivOn.exists_ae_eq_const`: du Bois-Reymond's lemma, Lemma 8.1 of [brezis2011functional];
+  a function with weak derivative $0$ on an open interval is almost everywhere constant.
+* `MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral`: Lemma 8.2; the primitive of a locally
+  integrable function $w$ has the weak derivative $w$.
+* `HasWeakDerivOn.exists_ae_eq_integral_of_mem` and
+  `SobolevIntervalLp.exists_continuousOn_closure_ae_eq`: Theorem 8.2; the continuous representative.
+* `SobolevIntervalLp.rep_sub_rep`: the fundamental theorem of calculus
+  $\tilde u(y) - \tilde u(x) = \int_x^y u'$ in $W^{1,p}(I)$.
+* `SobolevIntervalLp.rep_eq_of_continuousOn`: Remark 5; the continuous representative is unique.
+* `hasWeakDerivOn_of_tendsto_eLpNorm`: Remark 4; the weak derivative is preserved under limits in
+  $L^p$.
+* `memSobolevIntervalLp_of_contDiffOn`, `memSobolevIntervalLp_of_piecewise_contDiffOn`,
+  `memSobolevIntervalLp_abs`, `not_memSobolevIntervalLp_sign`: Remark 2 and the Examples of §8.2;
+  $C^1$ and continuous piecewise $C^1$ functions lie in $W^{1,p}$, $|x| \in W^{1,p}(-1, 1)$, and the
+  sign function does not.
+* `SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`: Remark 6; the representative is $C^1$
+  when the weak derivative is continuous.
+* `SobolevIntervalLp.exists_contDiff_ae_eq`: an element of $W^{k+1,p}(I)$ has a $C^k$
+  representative.
+* `memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval`: Remark 8; $W^{1,1}(a, b)$ is
+  the space of absolutely continuous functions.
+* `memSobolevIntervalLp_top_iff_lipschitz`: Proposition 8.4; $W^{1,\infty}(I)$ is the space of
+  Lipschitz functions.
+* `SobolevIntervalLp.eLpNorm_translate_sub_le`: Proposition 8.5, (i) ⇒ (ii);
+  $\|\tau_h u - u\|_p \le |h|\, \|u'\|_p$ on the line.
+* `TopologicalSpace.Opens.eq_intervals_of_ordConnected`: an open interval of $\mathbb{R}$ is
+  $\emptyset$, $\mathbb{R}$, a half-line or a bounded interval $(a, b)$.
 
-## Design
+## Implementation notes
 
-* `SobolevIntervalLp m p I` is *not* a new space: it is the multi-index Sobolev space
-  `SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m p I volume` of
-  `Numlib/Analysis/Sobolev/MultiIndex.lean`, read on `E = ℝ` with the one-element basis, so
-  that its components are the weak derivatives `u, u', …, u^{(m)}` in `L^p(I)`. Being an
-  `abbrev`, it inherits the `NormedSpace ℝ` and `CompleteSpace` instances of that space for every
-  `p` with `[Fact (1 ≤ p)]` (`Fact (1 ≤ ⊤)` is Mathlib's `fact_one_le_top_ennreal`) and the
-  `InnerProductSpace ℝ` instance at `p = 2`. Its norm is the `ℓ^p` sum
-  `(∑_{j ≤ m} ‖u^{(j)}‖_p^p)^{1/p}` (`max_j ‖u^{(j)}‖_∞` at `p = ∞`), which is the "equivalent
-  norm" of [brezis2011functional] §8.2; the sum `∑_j ‖u^{(j)}‖_p` used there as the primary norm
-  is compared with it in `SobolevIntervalLp.norm_le_sum_norm_deriv` and
+* `SobolevIntervalLp m p I` is not a new type. It is the multi-index Sobolev space
+  `SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m p I volume` on $E = \mathbb{R}$ with the
+  one-element basis, so that its components are the weak derivatives $u, u', \dots, u^{(m)}$ in
+  $L^p(I)$. As an `abbrev`, it inherits the `NormedSpace ℝ` and `CompleteSpace` instances of that
+  space for every $p$ with `[Fact (1 ≤ p)]`, and the `InnerProductSpace ℝ` instance at $p = 2$. The
+  instance `Fact (1 ≤ ⊤)` is Mathlib's `fact_one_le_top_ennreal`.
+* The norm is the $\ell^p$ sum $\|u\| = (\sum_{j \le m} \|u^{(j)}\|_p^p)^{1/p}$, and
+  $\max_j \|u^{(j)}\|_\infty$ at $p = \infty$. This is the "equivalent norm" of
+  [brezis2011functional] §8.2. The sum $\sum_j \|u^{(j)}\|_p$, which the source uses as the primary
+  norm, is compared with it in `SobolevIntervalLp.norm_le_sum_norm_deriv` and
   `SobolevIntervalLp.sum_norm_deriv_le_mul_norm`.
-* `SobolevInterval m a b` of `Numlib/Analysis/Sobolev/Interval.lean` is the abbreviation
-  `SobolevIntervalLp m 2 (Opens.Ioo a b)`, and `SobolevIntervalZero a b` is
-  `SobolevIntervalLpZero 1 2 (Opens.Ioo a b)`.
-* The hypothesis "`I` is an interval" is `(hI : (I : Set ℝ).OrdConnected)`, written explicitly
-  on every theorem that needs it (du Bois-Reymond's lemma, the representative, and everything
-  downstream); `Set.ordConnected_Ioo` and `Set.ordConnected_univ` discharge it for `Opens.Ioo a b`
-  and for the whole line `(⊤ : Opens ℝ)`.
+* `SobolevInterval m a b` of `Numlib.Analysis.Sobolev.Interval` is the abbreviation
+  `SobolevIntervalLp m 2 (TopologicalSpace.Opens.Ioo a b)`, and `SobolevIntervalZero a b` is
+  `SobolevIntervalLpZero 1 2 (TopologicalSpace.Opens.Ioo a b)`.
+* The hypothesis "$I$ is an interval" is `(hI : (I : Set ℝ).OrdConnected)`. It is written explicitly
+  on every theorem that needs it: du Bois-Reymond's lemma, the representative, and every result that
+  uses them. `Set.ordConnected_Ioo` and `Set.ordConnected_univ` give it for
+  `TopologicalSpace.Opens.Ioo a b` and for the whole line `(⊤ : Opens ℝ)`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -106,10 +117,11 @@ noncomputable section
 
 namespace TopologicalSpace.Opens
 
-/-- The open interval `(a, b)` as an open set of `ℝ`. -/
+/-- The open interval $(a, b)$ as an open set of $\mathbb{R}$. -/
 def Ioo (a b : ℝ) : Opens ℝ := ⟨Set.Ioo a b, isOpen_Ioo⟩
 
-/-- The underlying set of `Opens.Ioo a b` is `Set.Ioo a b`. -/
+/-- The underlying set of `TopologicalSpace.Opens.Ioo a b` is the interval $(a, b)$, that is,
+`Set.Ioo a b`. -/
 @[simp]
 theorem coe_Ioo (a b : ℝ) : (Opens.Ioo a b : Set ℝ) = Set.Ioo a b := rfl
 
@@ -117,16 +129,22 @@ end TopologicalSpace.Opens
 
 /-! ### Weak derivatives on an open subset of the line -/
 
-/-- The `k`-th weak derivative on the open set `I ⊆ ℝ`: `HasWeakIteratedDerivOn k f w I` says
-that `w` is the weak derivative of order `k` of `f` on `I`, that is, `f` and `w` are locally
-integrable on `I` and `∫_I φ^{(k)} f = (-1)^k ∫_I φ w` for every test function `φ` on `I`. It is
-`HasWeakIteratedLineDerivOn` along the constant tuple of directions `1`. -/
+/-- **The $k$-th weak derivative** on an open set $I \subseteq \mathbb{R}$. The function $w$ is the
+$k$-th weak derivative of $f$ on $I$ if $f$ and $w$ are locally integrable on $I$ and
+$$\int_I \varphi^{(k)} f = (-1)^k \int_I \varphi\, w$$
+for every test function $\varphi$ on $I$.
+
+It is `HasWeakIteratedLineDerivOn` along the constant tuple of $k$ directions equal to $1$. -/
 abbrev HasWeakIteratedDerivOn (k : ℕ) (f w : ℝ → ℝ) (I : Opens ℝ) : Prop :=
   HasWeakIteratedLineDerivOn (fun _ : Fin k ↦ (1 : ℝ)) f w I volume
 
-/-- The first-order weak derivative on the open set `I ⊆ ℝ`: `HasWeakDerivOn f w I` says that
-`f` and `w` are locally integrable on `I` and `∫_I φ' f = -∫_I φ w` for every test function `φ`
-on `I`. This is `HasWeakIteratedDerivOn 1`. -/
+/-- **The weak derivative** on an open set $I \subseteq \mathbb{R}$. The function $w$ is the weak
+derivative of $f$ on $I$ if $f$ and $w$ are locally integrable on $I$ and
+$$\int_I \varphi' f = -\int_I \varphi\, w$$
+for every test function $\varphi$ on $I$.
+
+It is `HasWeakIteratedDerivOn 1`, that is, `HasWeakIteratedLineDerivOn` along the single
+direction $1$. -/
 abbrev HasWeakDerivOn (f w : ℝ → ℝ) (I : Opens ℝ) : Prop :=
   HasWeakIteratedLineDerivOn (fun _ : Fin 1 ↦ (1 : ℝ)) f w I volume
 
@@ -134,13 +152,14 @@ section Chain
 
 variable {I : Opens ℝ} {f v w : ℝ → ℝ} {k : ℕ}
 
-/-- The weak derivative of order one is `HasWeakDerivOn`. -/
+/-- The function $w$ is the weak derivative of order $1$ of $f$ on $I$ (`HasWeakIteratedDerivOn 1`)
+if and only if it is the weak derivative of $f$ on $I$ (`HasWeakDerivOn`). -/
 theorem hasWeakIteratedDerivOn_one : HasWeakIteratedDerivOn 1 f w I ↔ HasWeakDerivOn f w I :=
   Iff.rfl
 
-/-- The `k`-th weak derivative on an open set unfolded: local integrability of both functions,
-and the integration by parts formula `∫_I φ^{(k)} f = (-1)^k ∫_I φ w` against every test
-function `φ` on `I`. -/
+/-- The function $w$ is the $k$-th weak derivative of $f$ on the open set $I$ if and only if $f$ and
+$w$ are locally integrable on $I$ and $\int_I \varphi^{(k)} f = (-1)^k \int_I \varphi\, w$ for
+every test function $\varphi$ on $I$. -/
 theorem hasWeakIteratedDerivOn_iff :
     HasWeakIteratedDerivOn k f w I ↔ LocallyIntegrableOn f I ∧ LocallyIntegrableOn w I ∧
       ∀ φ : 𝓓(I, ℝ), ∫ x in (I : Set ℝ), iteratedDeriv k φ x * f x
@@ -153,38 +172,42 @@ theorem hasWeakIteratedDerivOn_iff :
     exact ⟨h1, h2, fun φ ↦ by
       simpa only [smul_eq_mul, iteratedDeriv_eq_iteratedFDeriv] using h3 φ⟩
 
-/-- The first-order weak derivative on an open set unfolded: local integrability of both
-functions, and the integration by parts formula `∫_I φ' f = -∫_I φ w` against every test
-function `φ` on `I`. -/
+/-- The function $w$ is the weak derivative of $f$ on the open set $I$ if and only if $f$ and $w$
+are locally integrable on $I$ and $\int_I \varphi' f = -\int_I \varphi\, w$ for every test
+function $\varphi$ on $I$. -/
 theorem hasWeakDerivOn_iff :
     HasWeakDerivOn f w I ↔ LocallyIntegrableOn f I ∧ LocallyIntegrableOn w I ∧
       ∀ φ : 𝓓(I, ℝ), ∫ x in (I : Set ℝ), deriv φ x * f x = -∫ x in (I : Set ℝ), φ x * w x := by
   rw [← hasWeakIteratedDerivOn_one, hasWeakIteratedDerivOn_iff]
   simp only [iteratedDeriv_one, pow_one, neg_one_mul]
 
-/-- The integration by parts formula of the `k`-th weak derivative on an open set. -/
+/-- If $w$ is the $k$-th weak derivative of $f$ on $I$, then $\int_I \varphi^{(k)} f = (-1)^k \int_I
+\varphi\, w$ for every test function $\varphi$ on $I$. -/
 theorem HasWeakIteratedDerivOn.integral_iteratedDeriv_mul (h : HasWeakIteratedDerivOn k f w I)
     (φ : 𝓓(I, ℝ)) :
     ∫ x in (I : Set ℝ), iteratedDeriv k φ x * f x = (-1) ^ k * ∫ x in (I : Set ℝ), φ x * w x :=
   (hasWeakIteratedDerivOn_iff.1 h).2.2 φ
 
-/-- The integration by parts formula of the first-order weak derivative on an open set. -/
+/-- If $w$ is the weak derivative of $f$ on $I$, then $\int_I \varphi' f = -\int_I \varphi\, w$ for
+every test function $\varphi$ on $I$. -/
 theorem HasWeakDerivOn.integral_deriv_mul (h : HasWeakDerivOn f w I) (φ : 𝓓(I, ℝ)) :
     ∫ x in (I : Set ℝ), deriv φ x * f x = -∫ x in (I : Set ℝ), φ x * w x :=
   (hasWeakDerivOn_iff.1 h).2.2 φ
 
-/-- The `k`-th derivative of a test function on an open subset of the line is the test function
-`TestFunction.iteratedFDerivApply` along the constant tuple `1`. -/
+/-- For a test function $\varphi$ on an open set $I \subseteq \mathbb{R}$, the test function
+`TestFunction.iteratedFDerivApply` of order $k$ along the constant tuple $1$ is the $k$-th
+derivative $\varphi^{(k)}$. -/
 theorem TestFunction.iteratedDerivApply_coe (φ : 𝓓(I, ℝ)) (k : ℕ) :
     (φ.iteratedFDerivApply k (fun _ ↦ (1 : ℝ)) : ℝ → ℝ) = iteratedDeriv k φ := rfl
 
-/-- The derivative of a test function on an open subset of the line is the test function
-`TestFunction.fderivApply` in the direction `1`. -/
+/-- For a test function $\varphi$ on an open set $I \subseteq \mathbb{R}$, the test function
+`TestFunction.fderivApply` in the direction $1$ is the derivative $\varphi'$. -/
 theorem TestFunction.derivApply_coe (φ : 𝓓(I, ℝ)) : (φ.fderivApply 1 : ℝ → ℝ) = deriv φ := rfl
 
-/-- Chaining weak derivatives: if `v` is the weak derivative of `f` and `w` the `k`-th weak
-derivative of `v`, then `w` is the `(k + 1)`-th weak derivative of `f`. The proof tests the
-first identity against `φ^{(k)}`, which is again a test function. -/
+/-- **Chaining weak derivatives.** If $v$ is the weak derivative of $f$ on $I$ and $w$ is the $k$-th
+weak derivative of $v$ on $I$, then $w$ is the $(k + 1)$-th weak derivative of $f$ on $I$.
+
+The proof tests the first identity against $\varphi^{(k)}$, which is again a test function. -/
 theorem HasWeakDerivOn.hasWeakIteratedDerivOn_succ (h : HasWeakDerivOn f v I)
     (h' : HasWeakIteratedDerivOn k v w I) : HasWeakIteratedDerivOn (k + 1) f w I := by
   refine hasWeakIteratedDerivOn_iff.2 ⟨h.locallyIntegrableOn, h'.locallyIntegrableOn_weakDeriv,
@@ -194,8 +217,8 @@ theorem HasWeakDerivOn.hasWeakIteratedDerivOn_succ (h : HasWeakDerivOn f v I)
   rw [iteratedDeriv_succ, e1, h'.integral_iteratedDeriv_mul, pow_succ]
   ring
 
-/-- Peeling the first weak derivative: if `v` is the weak derivative of `f` and `w` the
-`(k + 1)`-th weak derivative of `f`, then `w` is the `k`-th weak derivative of `v`. -/
+/-- If $v$ is the weak derivative of $f$ on $I$ and $w$ is the $(k + 1)$-th weak derivative of $f$
+on $I$, then $w$ is the $k$-th weak derivative of $v$ on $I$. -/
 theorem HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ (h : HasWeakDerivOn f v I)
     (h' : HasWeakIteratedDerivOn (k + 1) f w I) : HasWeakIteratedDerivOn k v w I := by
   refine hasWeakIteratedDerivOn_iff.2 ⟨h.locallyIntegrableOn_weakDeriv,
@@ -206,9 +229,11 @@ theorem HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ (h : HasWeakDerivOn f v I)
   rw [neg_eq_iff_eq_neg.1 e1.symm, pow_succ]
   ring
 
-/-- Peeling the last weak derivative: if `v` is the `k`-th and `w` the `(k + 1)`-th weak
-derivative of `f`, then `w` is the weak derivative of `v`. This is what makes the weak
-derivatives of a function of `W^{m,p}(I)` a chain, each the weak derivative of the one before. -/
+/-- If $v$ is the $k$-th weak derivative and $w$ the $(k + 1)$-th weak derivative of $f$ on $I$,
+then $w$ is the weak derivative of $v$ on $I$.
+
+This makes the weak derivatives of a function of $W^{m,p}(I)$ a chain, in which each is the weak
+derivative of the one before. -/
 theorem HasWeakIteratedDerivOn.hasWeakDerivOn_of_succ (h : HasWeakIteratedDerivOn k f v I)
     (h' : HasWeakIteratedDerivOn (k + 1) f w I) : HasWeakDerivOn v w I := by
   refine hasWeakDerivOn_iff.2 ⟨h.locallyIntegrableOn_weakDeriv,
@@ -220,9 +245,12 @@ theorem HasWeakIteratedDerivOn.hasWeakDerivOn_of_succ (h : HasWeakIteratedDerivO
   rw [← e1, pow_succ]
   ring
 
-/-- The weak derivative along any tuple of `k` directions all equal to `1` is the `k`-th weak
-derivative on the open set; stated for a tuple whose length is only propositionally `k`, as the
-tuples `multiIndexTuple` naming a multi-index are. -/
+/-- Let $y \in \mathbb{R}^n$ have all entries equal to $1$, and let $n = k$. Then $w$ is the weak
+derivative of $f$ on $I$ along the tuple of directions $y$ (`HasWeakIteratedLineDerivOn`) if and
+only if $w$ is the $k$-th weak derivative of $f$ on $I$.
+
+The length $n$ is only propositionally equal to $k$, as for the tuples `multiIndexTuple` that
+name a multi-index. -/
 theorem hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn {n : ℕ} {y : Fin n → ℝ}
     (hy : ∀ j, y j = 1) (hn : n = k) :
     HasWeakIteratedLineDerivOn y f w I volume ↔ HasWeakIteratedDerivOn k f w I := by
@@ -237,63 +265,74 @@ section Classical
 
 variable {I : Opens ℝ} {f : ℝ → ℝ}
 
-/-- **A classical derivative is a weak derivative**, iterated form: for `f` of class `C^N` on the
-open set `I` and `k ≤ N`, the `k`-th derivative `iteratedDeriv k f` is the `k`-th weak derivative
-of `f` on `I`. This is `ContDiffOn.hasWeakIteratedFDerivOn` read in the direction `1`. -/
+/-- **A classical derivative is a weak derivative**, iterated form. Let $f$ be of class $C^N$ on the
+open set $I$, with $N \in \mathbb{N} \cup \{\infty, \omega\}$, and let $k \le N$. Then the
+$k$-th derivative $f^{(k)}$ (`iteratedDeriv k f`) is the $k$-th weak derivative of $f$ on $I$.
+
+This is `ContDiffOn.hasWeakIteratedFDerivOn` read in the direction $1$. -/
 theorem hasWeakIteratedDerivOn_of_contDiffOn {N : ℕ∞ω} {k : ℕ} (hf : ContDiffOn ℝ N f I)
     (hk : (k : ℕ∞ω) ≤ N) : HasWeakIteratedDerivOn k f (iteratedDeriv k f) I :=
   (ContDiffOn.hasWeakIteratedFDerivOn (Ω := I) (μ := volume) hf hk).lineDeriv _
 
-/-- **A classical derivative is a weak derivative**: for `f` of class `C¹` on the open set `I`,
-`deriv f` is the weak derivative of `f` on `I`. -/
+/-- **A classical derivative is a weak derivative.** If $f$ is of class $C^1$ on the open set $I$,
+then its derivative $f'$ is the weak derivative of $f$ on $I$. -/
 theorem hasWeakDerivOn_of_contDiffOn (hf : ContDiffOn ℝ 1 f I) : HasWeakDerivOn f (deriv f) I := by
   have := hasWeakIteratedDerivOn_of_contDiffOn (k := 1) hf le_rfl
   rwa [iteratedDeriv_one] at this
 
 end Classical
 
-/-! ### The space `W^{m,p}(I)` -/
+/-! ### The space $W^{m,p}(I)$ -/
 
-/-- The tuple of directions naming a multi-index of the one-element basis of `ℝ` is constantly
-`1`. -/
+/-- The tuple of directions `multiIndexTuple` that names a multi-index for the one-element basis of
+$\mathbb{R}$ is constantly $1$. -/
 theorem multiIndexTuple_singleton (α : Unit → ℕ) (j : Fin (∑ i, α i)) :
     multiIndexTuple (Module.Basis.singleton Unit ℝ) α j = 1 := by
   simp [multiIndexTuple, multiIndexDirections, List.getElem_replicate]
 
-/-- **The Sobolev space `W^{m,p}(I)`** of [brezis2011functional] §8.2 (`m = 1`, and the paragraph
-on `W^{m,p}`), on an arbitrary open `I ⊆ ℝ` and for every `1 ≤ p ≤ ∞`: the multi-index Sobolev
-space `SobolevMultiIndex` of `Numlib/Analysis/Sobolev/MultiIndex.lean` on `E = ℝ` with the
-one-element basis, whose multi-indices of order at most `m` are the derivative orders `0, …, m`,
-so that its components are the weak derivatives `u, u', …, u^{(m)}` in `L^p(I)`. Being an
-`abbrev`, it inherits the `NormedSpace ℝ` and `CompleteSpace` instances of the multi-index space
-(under `[Fact (1 ≤ p)]`) and, at `p = 2`, its `InnerProductSpace ℝ` instance: `H^m(I)` is a
-Hilbert space for the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²(I)}`
-(`SobolevIntervalLp.inner_eq`). -/
+/-- **The Sobolev space** $W^{m,p}(I)$ on an open set $I \subseteq \mathbb{R}$, for
+$p \in [0, \infty]$. An element consists of functions $u^{(0)}, \dots, u^{(m)} \in L^p(I)$ such
+that $u^{(j)}$ is the $j$-th weak derivative of $u^{(0)}$ on $I$ for every $j \le m$. For
+$1 \le p \le \infty$ it is a Banach space, and for $p = 2$ it is a Hilbert space $H^m(I)$ for
+the inner product
+$$(u, v)_{H^m} = \sum_{j=0}^m (u^{(j)}, v^{(j)})_{L^2(I)}.$$
+This is the space of [brezis2011functional] §8.2 for $m = 1$, and of the paragraph on $W^{m,p}$
+there for general $m$.
+
+The type is the multi-index Sobolev space `SobolevMultiIndex` on $E = \mathbb{R}$ with the
+one-element basis, whose multi-indices of order at most $m$ are the derivative orders
+$0, \dots, m$. As an `abbrev`, it inherits the `NormedSpace ℝ` and `CompleteSpace` instances of
+the multi-index space under `[Fact (1 ≤ p)]`, and its `InnerProductSpace ℝ` instance at $p = 2$.
+The inner product formula is `SobolevIntervalLp.inner_eq`. -/
 abbrev SobolevIntervalLp (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Type :=
   SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m p I volume
 
-/-- `MemSobolevIntervalLp f m p I` says that the function `f` belongs to `W^{m,p}(I)`: it lies in
-`L^p(I)` together with its weak derivatives of orders `1, …, m` on `I`. -/
+/-- A function $f : \mathbb{R} \to \mathbb{R}$ **belongs to $W^{m,p}(I)$** if $f \in L^p(I)$ and,
+for every $j \le m$, $f$ has a $j$-th weak derivative on $I$ that lies in $L^p(I)$.
+
+The definition is `MemSobolevMultiIndex` for the one-element basis of $\mathbb{R}$. The unfolded
+form is `memSobolevIntervalLp_iff`. -/
 def MemSobolevIntervalLp (f : ℝ → ℝ) (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Prop :=
   MemSobolevMultiIndex (Module.Basis.singleton Unit ℝ) f m p I volume
 
-/-- **The Sobolev space `W_0^{m,p}(I)`**, the closure of the test functions `C_0^∞(I)` in
-`W^{m,p}(I)` ([brezis2011functional] §8.3 for `m = 1`, Remark 18 for general `m`):
-`SobolevMultiIndexZero` of `Numlib/Analysis/Sobolev/MultiIndex.lean` on the open set `I`. A
-closed subspace of the Banach space `W^{m,p}(I)`, hence a Banach space, and at `p = 2` a Hilbert
-space. -/
+/-- **The Sobolev space** $W_0^{m,p}(I)$, for $1 \le p \le \infty$: the closure in $W^{m,p}(I)$ of
+the test functions $C_0^\infty(I)$. It is a closed subspace of the Banach space $W^{m,p}(I)$,
+hence a Banach space, and for $p = 2$ a Hilbert space. This is the space of
+[brezis2011functional] §8.3 for $m = 1$, and of Remark 18 there for general $m$.
+
+The definition is `SobolevMultiIndexZero` on the open set $I$. -/
 abbrev SobolevIntervalLpZero (m : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) :
     Submodule ℝ (SobolevIntervalLp m p I) :=
   SobolevMultiIndexZero ℝ (Module.Basis.singleton Unit ℝ) m p I volume
 
 namespace SobolevIntervalLp
 
-/-- The multi-index of the `j`-th derivative in one variable. -/
+/-- The multi-index of the $j$-th derivative in one variable, for $j \le m$. -/
 def derivIndex (m : ℕ) (j : Fin (m + 1)) : MultiIndexLE Unit m :=
   ⟨fun _ ↦ j, by simpa using Fin.is_le j⟩
 
-/-- The derivative orders `0, …, m` are the multi-indices of order at most `m` in one
-variable. -/
+/-- The bijection between the derivative orders $0, \dots, m$ and the multi-indices of order at most
+$m$ in one variable. -/
 def derivIndexEquiv (m : ℕ) : Fin (m + 1) ≃ MultiIndexLE Unit m where
   toFun := derivIndex m
   invFun α := ⟨α.1 (), by have := α.2; simpa using Nat.lt_succ_of_le this⟩
@@ -302,14 +341,14 @@ def derivIndexEquiv (m : ℕ) : Fin (m + 1) ≃ MultiIndexLE Unit m where
 
 end SobolevIntervalLp
 
-/-! ### Membership of `W^{m,p}(I)` -/
+/-! ### Membership of $W^{m,p}(I)$ -/
 
 section Space
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} {f : ℝ → ℝ}
 
-/-- Membership of `W^{m,p}(I)` unfolded: `f ∈ L^p(I)`, and for every `j ≤ m` the `j`-th weak
-derivative of `f` on `I` exists and lies in `L^p(I)`. -/
+/-- A function $f$ lies in $W^{m,p}(I)$ if and only if $f \in L^p(I)$ and, for every $j \le m$,
+there is a function $w \in L^p(I)$ that is the $j$-th weak derivative of $f$ on $I$. -/
 theorem memSobolevIntervalLp_iff :
     MemSobolevIntervalLp f m p I ↔ MemLp f p (volume.restrict I) ∧ ∀ j ≤ m,
       ∃ w : ℝ → ℝ, HasWeakIteratedDerivOn j f w I ∧ MemLp w p (volume.restrict I) := by
@@ -325,13 +364,13 @@ theorem memSobolevIntervalLp_iff :
     exact ⟨w, (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn
       (multiIndexTuple_singleton _) (by simp)).2 hw, hwp⟩
 
-/-- Membership of `W^{m,p}(I)` only sees the function up to a null set of `I`
-([brezis2011functional] Remark 5, first sentence). -/
+/-- If $f \in W^{m,p}(I)$ and $g = f$ almost everywhere on $I$, then $g \in W^{m,p}(I)$. This is the
+first sentence of Remark 5 of [brezis2011functional] §8.2. -/
 theorem MemSobolevIntervalLp.congr_ae {g : ℝ → ℝ} (h : MemSobolevIntervalLp f m p I)
     (hfg : f =ᵐ[volume.restrict I] g) : MemSobolevIntervalLp g m p I :=
   MemSobolevMultiIndex.congr_ae h hfg
 
-/-- `W^{0,p}(I)` is `L^p(I)`. -/
+/-- For $1 \le p \le \infty$, a function lies in $W^{0,p}(I)$ if and only if it lies in $L^p(I)$. -/
 theorem memSobolevIntervalLp_zero_iff [Fact (1 ≤ p)] :
     MemSobolevIntervalLp f 0 p I ↔ MemLp f p (volume.restrict I) := by
   rw [memSobolevIntervalLp_iff]
@@ -340,11 +379,13 @@ theorem memSobolevIntervalLp_zero_iff [Fact (1 ≤ p)] :
   exact ⟨f, HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _
     (h.locallyIntegrableOn Fact.out), h⟩
 
-/-- **The recursive description of `W^{m+1,p}(I)`**, the inductive definition of
-[brezis2011functional] §8.2 (the paragraph on `W^{m,p}`): a function lies in `W^{m+1,p}(I)`
-exactly when it lies in `L^p(I)` and has a weak derivative lying in `W^{m,p}(I)`. Forwards, the
-weak derivatives of `f'` of orders `≤ m` are those of `f` of orders `≤ m + 1`; backwards, the
-chain rule `HasWeakDerivOn.hasWeakIteratedDerivOn_succ`. -/
+/-- **The recursive description of $W^{m+1,p}(I)$.** A function $f$ lies in $W^{m+1,p}(I)$ if and
+only if $f \in L^p(I)$ and $f$ has a weak derivative $w$ on $I$ with $w \in W^{m,p}(I)$. This is
+the inductive definition of $W^{m,p}$ in [brezis2011functional] §8.2.
+
+In the forward direction, the weak derivatives of $f'$ of orders at most $m$ are those of $f$ of
+orders at most $m + 1$. The backward direction is the chain rule
+`HasWeakDerivOn.hasWeakIteratedDerivOn_succ`. -/
 theorem memSobolevIntervalLp_succ_iff :
     MemSobolevIntervalLp f (m + 1) p I ↔ MemLp f p (volume.restrict I) ∧
       ∃ w : ℝ → ℝ, HasWeakDerivOn f w I ∧ MemSobolevIntervalLp w m p I := by
@@ -364,8 +405,9 @@ theorem memSobolevIntervalLp_succ_iff :
       obtain ⟨w', hw', hwp'⟩ := h2 j (by omega)
       exact ⟨w', HasWeakDerivOn.hasWeakIteratedDerivOn_succ hw hw', hwp'⟩
 
-/-- **The definition of `W^{1,p}(I)`** of [brezis2011functional] §8.2: the functions of `L^p(I)`
-with a weak derivative in `L^p(I)`. -/
+/-- **The definition of $W^{1,p}(I)$** in [brezis2011functional] §8.2. For $1 \le p \le \infty$, a
+function $f$ lies in $W^{1,p}(I)$ if and only if $f \in L^p(I)$ and $f$ has a weak derivative
+$w$ on $I$ with $w \in L^p(I)$. -/
 theorem memSobolevIntervalLp_one_iff [Fact (1 ≤ p)] :
     MemSobolevIntervalLp f 1 p I ↔ MemLp f p (volume.restrict I) ∧
       ∃ w : ℝ → ℝ, HasWeakDerivOn f w I ∧ MemLp w p (volume.restrict I) := by
@@ -373,79 +415,82 @@ theorem memSobolevIntervalLp_one_iff [Fact (1 ≤ p)] :
 
 end Space
 
-/-! ### The weak derivatives of an element of `W^{m,p}(I)` -/
+/-! ### The weak derivatives of an element of $W^{m,p}(I)$ -/
 
 namespace SobolevIntervalLp
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ}
 
-/-- The function of an element of `W^{m,p}(I)`. -/
+/-- The function $u^{(0)} : \mathbb{R} \to \mathbb{R}$ of an element $u \in W^{m,p}(I)$. -/
 abbrev fn (u : SobolevIntervalLp m p I) : ℝ → ℝ := SobolevMultiIndex.fn u
 
-/-- The `j`-th weak derivative `u^{(j)}` of `u ∈ W^{m,p}(I)`, as an element of `L^p(I)`; `j = 0`
-is the function itself. -/
+/-- The $j$-th weak derivative $u^{(j)}$ of $u \in W^{m,p}(I)$, for $0 \le j \le m$, as an element
+of $L^p(I)$. For $j = 0$ it is the function of $u$. -/
 def deriv (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     Lp ℝ p (volume.restrict (I : Set ℝ)) :=
   SobolevMultiIndex.weakDeriv u (derivIndex m j)
 
-/-- The derivative of order `0` is the function itself. -/
+/-- For $u \in W^{m,p}(I)$, the derivative $u^{(0)}$ of order $0$ is the function of $u$. -/
 theorem deriv_zero (u : SobolevIntervalLp m p I) : ⇑(deriv u 0) = fn u := rfl
 
-/-- The weak derivatives of a sum. -/
+/-- For $u, v \in W^{m,p}(I)$ and $j \le m$, $(u + v)^{(j)} = u^{(j)} + v^{(j)}$. -/
 theorem deriv_add (u v : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     deriv (u + v) j = deriv u j + deriv v j := rfl
 
-/-- The weak derivatives of a scalar multiple. -/
+/-- For $c \in \mathbb{R}$, $u \in W^{m,p}(I)$ and $j \le m$, $(c u)^{(j)} = c\, u^{(j)}$. -/
 theorem deriv_smul (c : ℝ) (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     deriv (c • u) j = c • deriv u j := rfl
 
-/-- The weak derivatives of a difference. -/
+/-- For $u, v \in W^{m,p}(I)$ and $j \le m$, $(u - v)^{(j)} = u^{(j)} - v^{(j)}$. -/
 theorem deriv_sub (u v : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     deriv (u - v) j = deriv u j - deriv v j := rfl
 
-/-- The weak derivatives of the zero element vanish. -/
+/-- For $j \le m$, the $j$-th weak derivative of $0 \in W^{m,p}(I)$ is $0$. -/
 theorem deriv_zero_elem (j : Fin (m + 1)) : deriv (0 : SobolevIntervalLp m p I) j = 0 := rfl
 
-/-- An element of `W^{m,p}(I)` is determined by its weak derivatives of orders `0, …, m`. -/
+/-- Let $u, v \in W^{m,p}(I)$. If $u^{(j)} = v^{(j)}$ in $L^p(I)$ for every $j \le m$, then $u = v$.
+-/
 theorem ext {u v : SobolevIntervalLp m p I} (h : ∀ j, deriv u j = deriv v j) : u = v :=
   Subtype.ext (PiLp.ext fun α ↦ h ((derivIndexEquiv m).symm α))
 
-/-- The `j`-th component of an element of `W^{m,p}(I)` is the `j`-th weak derivative of its
-function. -/
+/-- For $u \in W^{m,p}(I)$ and $j \le m$, the element $u^{(j)}$ is the $j$-th weak derivative of the
+function of $u$ on $I$. -/
 theorem hasWeakIteratedDerivOn_deriv (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     HasWeakIteratedDerivOn j (fn u) (deriv u j) I :=
   (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (multiIndexTuple_singleton _)
     (by simp [derivIndex])).1 (SobolevMultiIndex.hasWeakIteratedLineDerivOn u (derivIndex m j))
 
-/-- The weak derivatives of an element of `W^{m,p}(I)` form a chain: `u^{(j+1)}` is the weak
-derivative of `u^{(j)}`. -/
+/-- For $u \in W^{m,p}(I)$ and $j < m$, the element $u^{(j+1)}$ is the weak derivative of $u^{(j)}$
+on $I$. -/
 theorem hasWeakDerivOn_deriv_succ (u : SobolevIntervalLp m p I) (j : Fin m) :
     HasWeakDerivOn (deriv u j.castSucc) (deriv u j.succ) I :=
   (hasWeakIteratedDerivOn_deriv u j.castSucc).hasWeakDerivOn_of_succ
     (hasWeakIteratedDerivOn_deriv u j.succ)
 
-/-- The function of `u ∈ W^{1,p}(I)` has the weak derivative `u'`. -/
+/-- For $u \in W^{1,p}(I)$, the function of $u$ has the weak derivative $u'$ on $I$. -/
 theorem hasWeakDerivOn_fn (u : SobolevIntervalLp 1 p I) : HasWeakDerivOn (fn u) (deriv u 1) I := by
   have := hasWeakDerivOn_deriv_succ u 0
   rwa [Fin.castSucc_zero, Fin.succ_zero_eq_one, deriv_zero] at this
 
-/-- The function of an element of `W^{m,p}(I)` lies in `W^{m,p}(I)`. -/
+/-- For $u \in W^{m,p}(I)$, the function of $u$ belongs to $W^{m,p}(I)$ in the sense of
+`MemSobolevIntervalLp`. -/
 theorem memSobolevIntervalLp_fn (u : SobolevIntervalLp m p I) :
     MemSobolevIntervalLp (fn u) m p I :=
   SobolevMultiIndex.memSobolevMultiIndex u
 
-/-- The weak derivatives of an element of `W^{m,p}(I)` lie in `L^p(I)`. -/
+/-- For $u \in W^{m,p}(I)$ and $j \le m$, the function $u^{(j)}$ lies in $L^p(I)$. -/
 theorem memLp_deriv (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) :
     MemLp (deriv u j) p (volume.restrict I) :=
   Lp.memLp _
 
-/-- The weak derivatives of an element of `W^{m,p}(I)` are locally integrable on `I`. -/
+/-- For $1 \le p \le \infty$, $u \in W^{m,p}(I)$ and $j \le m$, the function $u^{(j)}$ is locally
+integrable on $I$. -/
 theorem locallyIntegrableOn_deriv [Fact (1 ≤ p)] (u : SobolevIntervalLp m p I)
     (j : Fin (m + 1)) : LocallyIntegrableOn (deriv u j) I :=
   (memLp_deriv u j).locallyIntegrableOn Fact.out
 
-/-- Building an element of `W^{m,p}(I)` from `L^p(I)` functions `v 0, …, v m` of which `v j` is
-the `j`-th weak derivative of `v 0`. -/
+/-- The element of $W^{m,p}(I)$ built from $v_0, \dots, v_m \in L^p(I)$ such that $v_j$ is the
+$j$-th weak derivative of $v_0$ on $I$ for every $j \le m$. -/
 def mk (v : Fin (m + 1) → Lp ℝ p (volume.restrict (I : Set ℝ)))
     (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) I) :
     SobolevIntervalLp m p I :=
@@ -453,41 +498,49 @@ def mk (v : Fin (m + 1) → Lp ℝ p (volume.restrict (I : Set ℝ)))
     (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (multiIndexTuple_singleton _)
       (Fintype.sum_unique _)).2 (hv ((derivIndexEquiv m).symm α))⟩
 
-/-- The weak derivatives of `SobolevIntervalLp.mk v hv` are the `v j`. -/
+/-- The weak derivatives of `SobolevIntervalLp.mk v hv` are the given functions: its $j$-th weak
+derivative is $v_j$. -/
 @[simp]
 theorem deriv_mk (v : Fin (m + 1) → Lp ℝ p (volume.restrict (I : Set ℝ)))
     (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) I) (j : Fin (m + 1)) :
     deriv (mk v hv) j = v j := rfl
 
-/-- The function of `SobolevIntervalLp.mk v hv` is `v 0`. -/
+/-- The function of `SobolevIntervalLp.mk v hv` is $v_0$. -/
 theorem fn_mk (v : Fin (m + 1) → Lp ℝ p (volume.restrict (I : Set ℝ)))
     (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) I) :
     fn (mk v hv) = v 0 := rfl
 
-/-! #### The norm -/
+/-! ### The norm -/
 
 variable [Fact (1 ≤ p)]
 
-/-- **The norm of `W^{m,p}(I)` for `p < ∞`**: `‖u‖ = (∑_{j ≤ m} ‖u^{(j)}‖_p^p)^{1/p}`, the
-"equivalent norm" of [brezis2011functional] §8.2 (Notation). -/
+/-- **The norm of $W^{m,p}(I)$ for $p < \infty$.** Let $1 \le p < \infty$ and $u \in W^{m,p}(I)$.
+Then
+$$\|u\| = \Bigl(\sum_{j=0}^m \|u^{(j)}\|_{L^p(I)}^p\Bigr)^{1/p}.$$
+This is the "equivalent norm" in the Notation of [brezis2011functional] §8.2. -/
 theorem norm_eq_sum (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
     ‖u‖ = (∑ j : Fin (m + 1), ‖deriv u j‖ ^ p.toReal) ^ (1 / p.toReal) := by
   rw [SobolevMultiIndex.norm_eq_sum hp, ← (derivIndexEquiv m).sum_comp]
   rfl
 
 omit [Fact (1 ≤ p)] in
-/-- **The norm of `W^{m,∞}(I)`**: `‖u‖ = max_{j ≤ m} ‖u^{(j)}‖_∞`. -/
+/-- **The norm of $W^{m,\infty}(I)$.** For $u \in W^{m,\infty}(I)$, $\|u\| = \max_{0 \le j \le m}
+\|u^{(j)}\|_{L^\infty(I)}$. -/
 theorem norm_eq_ciSup (u : SobolevIntervalLp m ⊤ I) : ‖u‖ = ⨆ j : Fin (m + 1), ‖deriv u j‖ := by
   rw [SobolevMultiIndex.norm_eq_ciSup, ← (derivIndexEquiv m).iSup_comp]
   rfl
 
-/-- Each weak derivative is bounded in `L^p(I)` by the `W^{m,p}` norm. -/
+/-- Let $1 \le p \le \infty$, $u \in W^{m,p}(I)$ and $j \le m$. Then
+$\|u^{(j)}\|_{L^p(I)} \le \|u\|_{W^{m,p}}$. -/
 theorem norm_deriv_le (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) : ‖deriv u j‖ ≤ ‖u‖ := by
   rw [← Submodule.norm_coe]
   exact PiLp.norm_apply_le _ _
 
-/-- The book's norm dominates the norm of the type: `‖u‖ ≤ ∑_{j ≤ m} ‖u^{(j)}‖_p`, the `ℓ^p`
-norm of a tuple being at most its `ℓ^1` norm. -/
+/-- Let $1 \le p \le \infty$ and $u \in W^{m,p}(I)$. Then
+$\|u\| \le \sum_{j=0}^m \|u^{(j)}\|_{L^p(I)}$, so the norm of the source dominates the norm of
+the type.
+
+The $\ell^p$ norm of a tuple is at most its $\ell^1$ norm. -/
 theorem norm_le_sum_norm_deriv (u : SobolevIntervalLp m p I) :
     ‖u‖ ≤ ∑ j : Fin (m + 1), ‖deriv u j‖ := by
   classical
@@ -509,10 +562,12 @@ theorem norm_le_sum_norm_deriv (u : SobolevIntervalLp m p I) :
   refine (norm_sum_le _ _).trans ?_
   simp only [PiLp.norm_single, le_refl]
 
-/-- The norm of the type dominates the book's norm up to the number of derivatives:
-`∑_{j ≤ m} ‖u^{(j)}‖_p ≤ (m + 1) ‖u‖`. With `norm_le_sum_norm_deriv` this makes the norm
-`‖u‖_{W^{m,p}} = ∑_{j ≤ m} ‖D^j u‖_p` of [brezis2011functional] §8.2 equivalent to the norm of the
-type, for every `1 ≤ p ≤ ∞`. -/
+/-- Let $1 \le p \le \infty$ and $u \in W^{m,p}(I)$. Then
+$$\sum_{j=0}^m \|u^{(j)}\|_{L^p(I)} \le (m + 1)\, \|u\|.$$
+
+With `SobolevIntervalLp.norm_le_sum_norm_deriv`, this makes the norm
+$\|u\|_{W^{m,p}} = \sum_{j \le m} \|D^j u\|_p$ of [brezis2011functional] §8.2 equivalent to the
+norm of the type, for every $1 \le p \le \infty$. -/
 theorem sum_norm_deriv_le_mul_norm (u : SobolevIntervalLp m p I) :
     ∑ j : Fin (m + 1), ‖deriv u j‖ ≤ (m + 1) * ‖u‖ := by
   calc ∑ j : Fin (m + 1), ‖deriv u j‖ ≤ ∑ _j : Fin (m + 1), ‖u‖ :=
@@ -520,16 +575,19 @@ theorem sum_norm_deriv_le_mul_norm (u : SobolevIntervalLp m p I) :
     _ = (m + 1) * ‖u‖ := by simp
 
 omit [Fact (1 ≤ p)] in
-/-- **The inner product of `H^m(I)`**: `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²(I)}`,
-[brezis2011functional] §8.2 (Notation, and the paragraph on `W^{m,p}`). -/
+/-- **The inner product of $H^m(I)$.** For $u, v \in W^{m,2}(I)$,
+$$(u, v)_{H^m} = \sum_{j=0}^m (u^{(j)}, v^{(j)})_{L^2(I)}.$$
+This is the inner product in the Notation and the paragraph on $W^{m,p}$ of
+[brezis2011functional] §8.2. -/
 theorem inner_eq (u v : SobolevIntervalLp m 2 I) :
     ⟪u, v⟫_ℝ = ∑ j : Fin (m + 1), ⟪deriv u j, deriv v j⟫_ℝ := by
   rw [Submodule.coe_inner, PiLp.inner_apply, ← (derivIndexEquiv m).sum_comp]
   rfl
 
 omit [Fact (1 ≤ p)] in
-/-- **The inner product of `H^1(I)` as an integral**: `(u, v)_{H¹} = ∫_I (u v + u' v')`,
-[brezis2011functional] §8.2 (Notation). -/
+/-- **The inner product of $H^1(I)$ as an integral.** For $u, v \in W^{1,2}(I)$,
+$$(u, v)_{H^1} = \int_I (u v + u' v').$$
+This is the inner product in the Notation of [brezis2011functional] §8.2. -/
 theorem inner_eq_integral (u v : SobolevIntervalLp 1 2 I) :
     ⟪u, v⟫_ℝ = ∫ x in (I : Set ℝ), (fn u x * fn v x + deriv u 1 x * deriv v 1 x) := by
   rw [inner_eq, Fin.sum_univ_two, L2.inner_def, L2.inner_def,
@@ -537,11 +595,11 @@ theorem inner_eq_integral (u v : SobolevIntervalLp 1 2 I) :
   refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
   simp [RCLike.inner_apply, deriv_zero, mul_comm]
 
-/-! #### Weak differentiation and the inclusions as bounded maps -/
+/-! ### Weak differentiation and the inclusions as bounded maps -/
 
 variable (m p I) in
-/-- The `j`-th weak derivative as a continuous linear map `W^{m,p}(I) → L^p(I)`, of norm at most
-one. -/
+/-- For $1 \le p \le \infty$ and $j \le m$, the map $u \mapsto u^{(j)}$ as a continuous linear map
+$W^{m,p}(I) \to L^p(I)$ of norm at most $1$. -/
 def derivL (j : Fin (m + 1)) : SobolevIntervalLp m p I →L[ℝ] Lp ℝ p (volume.restrict (I : Set ℝ)) :=
   LinearMap.mkContinuous
     { toFun := fun u ↦ deriv u j
@@ -549,34 +607,38 @@ def derivL (j : Fin (m + 1)) : SobolevIntervalLp m p I →L[ℝ] Lp ℝ p (volum
       map_smul' := fun c u ↦ deriv_smul c u j } 1 fun u ↦ by
     rw [one_mul]; exact norm_deriv_le u j
 
-/-- `SobolevIntervalLp.derivL` is the weak derivative. -/
+/-- The map `SobolevIntervalLp.derivL m p I j` sends $u$ to $u^{(j)}$. -/
 @[simp]
 theorem derivL_apply (j : Fin (m + 1)) (u : SobolevIntervalLp m p I) :
     derivL m p I j u = deriv u j :=
   rfl
 
-/-- The operator norm of `SobolevIntervalLp.derivL` is at most one. -/
+/-- For $1 \le p \le \infty$ and $j \le m$, the operator norm of $u \mapsto u^{(j)}$,
+$W^{m,p}(I) \to L^p(I)$, is at most $1$. -/
 theorem norm_derivL_le (j : Fin (m + 1)) : ‖derivL m p I j‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
 variable (m p I) in
-/-- **The Sobolev seminorm** `|u|_{W^{m,p}(I)} = ‖u^{(m)}‖_{L^p(I)}`, bundled as a `Seminorm`. -/
+/-- **The Sobolev seminorm** $|u|_{W^{m,p}(I)} = \|u^{(m)}\|_{L^p(I)}$ on $W^{m,p}(I)$, for
+$1 \le p \le \infty$, bundled as a `Seminorm`. -/
 def seminorm : Seminorm ℝ (SobolevIntervalLp m p I) :=
   (normSeminorm ℝ (Lp ℝ p (volume.restrict (I : Set ℝ)))).comp
     (derivL m p I (Fin.last m) : SobolevIntervalLp m p I →ₗ[ℝ] _)
 
-/-- The seminorm is the `L^p` norm of the top derivative. -/
+/-- For $u \in W^{m,p}(I)$, $|u|_{W^{m,p}} = \|u^{(m)}\|_{L^p(I)}$. -/
 theorem seminorm_apply (u : SobolevIntervalLp m p I) :
     seminorm m p I u = ‖deriv u (Fin.last m)‖ :=
   rfl
 
-/-- The seminorm is bounded by the norm. -/
+/-- For $u \in W^{m,p}(I)$, $|u|_{W^{m,p}} \le \|u\|_{W^{m,p}}$. -/
 theorem seminorm_le_norm (u : SobolevIntervalLp m p I) : seminorm m p I u ≤ ‖u‖ :=
   norm_deriv_le u _
 
-/-- An element of `W^{m,p}(I)` whose derivatives are a subfamily of the derivatives of
-`u ∈ W^{m',p}(I)`, indexed by an injection `e : Fin (m + 1) → Fin (m' + 1)`, has norm at most
-`‖u‖`: the norm is the `ℓ^p` norm of the tuple of `L^p` norms of the derivatives, and dropping
+/-- Let $1 \le p \le \infty$, $u \in W^{m',p}(I)$ and $v \in W^{m,p}(I)$, and let
+$e : \{0, \dots, m\} \to \{0, \dots, m'\}$ be injective. If $v^{(j)} = u^{(e(j))}$ for every
+$j \le m$, then $\|v\| \le \|u\|$.
+
+The norm is the $\ell^p$ norm of the tuple of the $L^p$ norms of the derivatives, and dropping
 entries does not increase it. -/
 theorem norm_le_of_deriv_eq {m' : ℕ} (u : SobolevIntervalLp m' p I) (v : SobolevIntervalLp m p I)
     {e : Fin (m + 1) → Fin (m' + 1)} (he : Function.Injective e)
@@ -598,7 +660,7 @@ theorem norm_le_of_deriv_eq {m' : ℕ} (u : SobolevIntervalLp m' p I) (v : Sobol
             fun i _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
 
 variable (m p I) in
-/-- Weak differentiation `W^{m+1,p}(I) → W^{m,p}(I)` as a linear map. -/
+/-- Weak differentiation $W^{m+1,p}(I) \to W^{m,p}(I)$, $u \mapsto u'$, as a linear map. -/
 def derivₗ : SobolevIntervalLp (m + 1) p I →ₗ[ℝ] SobolevIntervalLp m p I where
   toFun u := mk (fun j ↦ deriv u j.succ) fun j ↦ by
     have h0 := hasWeakDerivOn_deriv_succ u 0
@@ -610,32 +672,36 @@ def derivₗ : SobolevIntervalLp (m + 1) p I →ₗ[ℝ] SobolevIntervalLp m p I
   map_smul' c u := ext fun j ↦ by simp only [deriv_mk, deriv_smul, RingHom.id_apply]
 
 omit [Fact (1 ≤ p)] in
-/-- The weak derivatives of `u'` are those of `u`, shifted by one. -/
+/-- For $u \in W^{m+1,p}(I)$ and $j \le m$, the $j$-th weak derivative of $u'$
+(`SobolevIntervalLp.derivₗ`) is $u^{(j+1)}$. -/
 @[simp]
 theorem deriv_derivₗ (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (derivₗ m p I u) j = deriv u j.succ := rfl
 
-/-- Weak differentiation does not increase the norm. -/
+/-- For $1 \le p \le \infty$ and $u \in W^{m+1,p}(I)$, $\|u'\|_{W^{m,p}} \le \|u\|_{W^{m+1,p}}$. -/
 theorem norm_derivₗ_le (u : SobolevIntervalLp (m + 1) p I) : ‖derivₗ m p I u‖ ≤ ‖u‖ :=
   norm_le_of_deriv_eq u _ (Fin.succ_injective _) (deriv_derivₗ u)
 
 variable (m p I) in
-/-- **Weak differentiation `d/dx : W^{m+1,p}(I) → W^{m,p}(I)`** as a continuous linear map, of
-norm at most one. -/
+/-- **Weak differentiation** $d/dx : W^{m+1,p}(I) \to W^{m,p}(I)$, $u \mapsto u'$, as a continuous
+linear map of norm at most $1$, for $1 \le p \le \infty$. -/
 def derivCLM : SobolevIntervalLp (m + 1) p I →L[ℝ] SobolevIntervalLp m p I :=
   (derivₗ m p I).mkContinuous 1 fun u ↦ by rw [one_mul]; exact norm_derivₗ_le u
 
-/-- The weak derivatives of `u'` are those of `u`, shifted by one. -/
+/-- For $u \in W^{m+1,p}(I)$ and $j \le m$, the $j$-th weak derivative of $u'$
+(`SobolevIntervalLp.derivCLM`) is $u^{(j+1)}$. -/
 @[simp]
 theorem deriv_derivCLM (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (derivCLM m p I u) j = deriv u j.succ := rfl
 
-/-- Weak differentiation has norm at most one. -/
+/-- For $1 \le p \le \infty$, the operator norm of $d/dx : W^{m+1,p}(I) \to W^{m,p}(I)$ is at most
+$1$. -/
 theorem norm_derivCLM_le : ‖derivCLM m p I‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
 variable (m p I) in
-/-- Forgetting the top derivative: the inclusion `W^{m+1,p}(I) → W^{m,p}(I)` as a linear map. -/
+/-- The inclusion $W^{m+1,p}(I) \to W^{m,p}(I)$, which forgets the top derivative, as a linear map.
+-/
 def inclusionₗ : SobolevIntervalLp (m + 1) p I →ₗ[ℝ] SobolevIntervalLp m p I where
   toFun u := mk (fun j ↦ deriv u j.castSucc) fun j ↦ by
     have h1 := hasWeakIteratedDerivOn_deriv u j.castSucc
@@ -646,31 +712,35 @@ def inclusionₗ : SobolevIntervalLp (m + 1) p I →ₗ[ℝ] SobolevIntervalLp m
   map_smul' c u := ext fun j ↦ by simp only [deriv_mk, deriv_smul, RingHom.id_apply]
 
 omit [Fact (1 ≤ p)] in
-/-- The weak derivatives of the inclusion of `u` are those of `u`. -/
+/-- For $u \in W^{m+1,p}(I)$ and $j \le m$, the $j$-th weak derivative of the image of $u$ under
+`SobolevIntervalLp.inclusionₗ` is $u^{(j)}$. -/
 @[simp]
 theorem deriv_inclusionₗ (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (inclusionₗ m p I u) j = deriv u j.castSucc := rfl
 
-/-- The inclusion does not increase the norm. -/
+/-- For $1 \le p \le \infty$ and $u \in W^{m+1,p}(I)$, the image of $u$ in $W^{m,p}(I)$ has norm at
+most $\|u\|_{W^{m+1,p}}$. -/
 theorem norm_inclusionₗ_le (u : SobolevIntervalLp (m + 1) p I) : ‖inclusionₗ m p I u‖ ≤ ‖u‖ :=
   norm_le_of_deriv_eq u _ (Fin.castSucc_injective _) (deriv_inclusionₗ u)
 
 variable (m p I) in
-/-- **The inclusion `W^{m+1,p}(I) → W^{m,p}(I)`**, forgetting the top derivative, as a continuous
-linear map of norm at most one. -/
+/-- **The inclusion** $W^{m+1,p}(I) \to W^{m,p}(I)$, which forgets the top derivative, as a
+continuous linear map of norm at most $1$, for $1 \le p \le \infty$. -/
 def inclusionCLM : SobolevIntervalLp (m + 1) p I →L[ℝ] SobolevIntervalLp m p I :=
   (inclusionₗ m p I).mkContinuous 1 fun u ↦ by rw [one_mul]; exact norm_inclusionₗ_le u
 
-/-- The weak derivatives of the inclusion of `u` are those of `u`. -/
+/-- For $u \in W^{m+1,p}(I)$ and $j \le m$, the $j$-th weak derivative of the image of $u$ under
+`SobolevIntervalLp.inclusionCLM` is $u^{(j)}$. -/
 @[simp]
 theorem deriv_inclusionCLM (u : SobolevIntervalLp (m + 1) p I) (j : Fin (m + 1)) :
     deriv (inclusionCLM m p I u) j = deriv u j.castSucc := rfl
 
-/-- The inclusion does not change the function. -/
+/-- For $u \in W^{m+1,p}(I)$, the image of $u$ in $W^{m,p}(I)$ has the same function as $u$. -/
 theorem fn_inclusionCLM (u : SobolevIntervalLp (m + 1) p I) : fn (inclusionCLM m p I u) = fn u :=
   rfl
 
-/-- The inclusion has norm at most one. -/
+/-- For $1 \le p \le \infty$, the operator norm of the inclusion $W^{m+1,p}(I) \to W^{m,p}(I)$ is at
+most $1$. -/
 theorem norm_inclusionCLM_le : ‖inclusionCLM m p I‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
@@ -682,19 +752,20 @@ namespace TestFunction
 
 variable {I : Opens ℝ}
 
-/-- A test function on an open subset of the line is integrable for Lebesgue measure. -/
+/-- A test function on an open set $I \subseteq \mathbb{R}$ is integrable on $\mathbb{R}$ for
+Lebesgue measure. -/
 theorem integrable_volume (φ : 𝓓(I, ℝ)) : Integrable φ :=
   φ.continuous.integrable_of_hasCompactSupport φ.hasCompactSupport
 
-/-- Integrating a test function on `I` against a function over `I` is integrating it over the
-whole line. -/
+/-- For a test function $\psi$ on $I$ and any function $g$,
+$\int_I \psi g = \int_{\mathbb{R}} \psi g$. -/
 theorem integral_eq_setIntegral (ψ : 𝓓(I, ℝ)) (g : ℝ → ℝ) :
     ∫ x in (I : Set ℝ), ψ x * g x = ∫ x, ψ x * g x :=
   setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
     rw [ψ.eq_zero_of_notMem hx, zero_mul]
 
-/-- The support of a test function on `I`, when nonempty, lies in a compact subinterval
-`[lo, hi]` whose endpoints lie in `I`. -/
+/-- Let $\psi$ be a test function on $I$ with nonempty support. There are $l, h \in I$ with
+$l \le h$ such that the support of $\psi$ lies in $[l, h]$. -/
 theorem exists_mem_tsupport_subset_Icc (ψ : 𝓓(I, ℝ)) (hne : (tsupport ψ).Nonempty) :
     ∃ lo hi : ℝ, lo ∈ I ∧ hi ∈ I ∧ lo ≤ hi ∧ tsupport ψ ⊆ Icc lo hi := by
   obtain ⟨lo, hlo⟩ := ψ.hasCompactSupport.exists_isLeast hne
@@ -702,8 +773,10 @@ theorem exists_mem_tsupport_subset_Icc (ψ : 𝓓(I, ℝ)) (hne : (tsupport ψ).
   exact ⟨lo, hi, ψ.tsupport_subset hlo.1, ψ.tsupport_subset hhi.1, hlo.2 hhi.1,
     fun t ht ↦ ⟨hlo.2 ht, hhi.2 ht⟩⟩
 
-/-- The support of a test function on `I` lies in an open subinterval `(lo, hi)` whose endpoints
-lie in `I`, so that `ψ lo = ψ hi = 0`; a point `y₀ ∈ I` serves when the support is empty. -/
+/-- Let $\psi$ be a test function on $I$ and let $y_0 \in I$. There are $l, h \in I$ with $l \le h$
+such that the support of $\psi$ lies in $(l, h)$, so that $\psi(l) = \psi(h) = 0$.
+
+The point $y_0$ serves when the support is empty. -/
 theorem exists_mem_tsupport_subset_Ioo (ψ : 𝓓(I, ℝ)) {y₀ : ℝ} (hy₀ : y₀ ∈ I) :
     ∃ lo hi : ℝ, lo ∈ I ∧ hi ∈ I ∧ lo ≤ hi ∧ tsupport ψ ⊆ Ioo lo hi := by
   obtain ⟨lo, hi, hlo, hhi, hlohi, hsupp⟩ : ∃ lo hi : ℝ, lo ∈ I ∧ hi ∈ I ∧ lo ≤ hi ∧
@@ -719,9 +792,11 @@ theorem exists_mem_tsupport_subset_Ioo (ψ : 𝓓(I, ℝ)) {y₀ : ℝ} (hy₀ :
   · rw [Metric.mem_ball, Real.dist_eq, abs_lt]; constructor <;> linarith
   · exact Icc_subset_Ioo (by linarith) (by linarith)
 
-/-- The antiderivative `x ↦ ∫_{-∞}^x ψ` of a test function `ψ` with zero mean vanishes outside
-any interval `[lo, hi]` containing the support of `ψ`: to the left because the integrand
-vanishes, to the right because the total integral does. -/
+/-- Let $\psi$ be a test function on $I$ with $\int_{\mathbb{R}} \psi = 0$, and let the support of
+$\psi$ lie in $[l, h]$. Then the primitive $x \mapsto \int_{-\infty}^x \psi$ vanishes outside
+$[l, h]$.
+
+To the left of $l$ the integrand vanishes, and to the right of $h$ the total integral vanishes. -/
 theorem support_integral_Iic_subset (ψ : 𝓓(I, ℝ)) (hψ : ∫ x, ψ x = 0) {lo hi : ℝ}
     (hsupp : tsupport ψ ⊆ Icc lo hi) :
     Function.support (fun x ↦ ∫ t in Iic x, ψ t) ⊆ Icc lo hi := by
@@ -738,8 +813,8 @@ theorem support_integral_Iic_subset (ψ : 𝓓(I, ℝ)) (hψ : ∫ x, ψ x = 0) 
       hzero t fun htI ↦ hxhi ((not_le.1 ht).le.trans htI.2)]
     exact hψ
 
-/-- The antiderivative `x ↦ ∫_{-∞}^x ψ` of a test function is differentiable with derivative
-`ψ`. -/
+/-- For a test function $\psi$ on $I$, the primitive $x \mapsto \int_{-\infty}^x \psi$ is
+differentiable at every $x$ with derivative $\psi(x)$. -/
 theorem hasDerivAt_integral_Iic (ψ : 𝓓(I, ℝ)) (x : ℝ) :
     HasDerivAt (fun x ↦ ∫ t in Iic x, ψ t) (ψ x) x := by
   have e : (fun x ↦ ∫ t in Iic x, ψ t)
@@ -751,13 +826,16 @@ theorem hasDerivAt_integral_Iic (ψ : 𝓓(I, ℝ)) (x : ℝ) :
   rw [e]
   exact (ψ.continuous.integral_hasStrictDerivAt 0 x).hasDerivAt.const_add _
 
-/-- **The antiderivative of a test function with zero mean is a test function, on any open
-interval**: for `I` an open interval (`OrdConnected`), `ψ` a test function on `I` with `∫ ψ = 0`,
-the function `x ↦ ∫_{-∞}^x ψ` is smooth with derivative `ψ`, it vanishes to the left of the
-support of `ψ`, and to the right of it as well because the total integral vanishes; its support
-lies in the convex hull of the support of `ψ`, which is inside `I` because `I` is an interval.
-This is what makes the derivatives of the test functions exactly the test functions of zero
-mean, the fact behind du Bois-Reymond's lemma ([brezis2011functional] Lemma 8.1, proof). -/
+/-- **The primitive of a test function with zero mean is a test function, on any open interval.**
+Let $I$ be an open interval and let $\psi$ be a test function on $I$ with
+$\int_{\mathbb{R}} \psi = 0$. Then $x \mapsto \int_{-\infty}^x \psi$ is a test function on $I$.
+
+The primitive is smooth with derivative $\psi$. It vanishes to the left of the support of
+$\psi$, and to the right of it because the total integral vanishes. So its support lies in the
+convex hull of the support of $\psi$, which lies in $I$ because $I$ is an interval. As a
+consequence, the derivatives of the test functions are exactly the test functions of zero mean,
+which is the fact behind du Bois-Reymond's lemma (the proof of Lemma 8.1 of
+[brezis2011functional]). "Open interval" is the hypothesis `(I : Set ℝ).OrdConnected`. -/
 def primitiveIic (hI : (I : Set ℝ).OrdConnected) (ψ : 𝓓(I, ℝ)) (hψ : ∫ x, ψ x = 0) :
     𝓓(I, ℝ) where
   toFun x := ∫ t in Iic x, ψ t
@@ -785,12 +863,13 @@ def primitiveIic (hI : (I : Set ℝ).OrdConnected) (ψ : 𝓓(I, ℝ)) (hψ : �
       rw [this, tsupport_zero]
       exact empty_subset _
 
-/-- `TestFunction.primitiveIic` as a function. -/
+/-- The test function `TestFunction.primitiveIic hI ψ hψ` is the function
+$x \mapsto \int_{-\infty}^x \psi$. -/
 @[simp]
 theorem primitiveIic_coe (hI : (I : Set ℝ).OrdConnected) (ψ : 𝓓(I, ℝ)) (hψ : ∫ x, ψ x = 0) :
     (primitiveIic hI ψ hψ : ℝ → ℝ) = fun x ↦ ∫ t in Iic x, ψ t := rfl
 
-/-- The derivative of `TestFunction.primitiveIic ψ` is `ψ`. -/
+/-- The derivative of `TestFunction.primitiveIic hI ψ hψ` is $\psi$. -/
 theorem deriv_primitiveIic (hI : (I : Set ℝ).OrdConnected) (ψ : 𝓓(I, ℝ)) (hψ : ∫ x, ψ x = 0) :
     deriv (primitiveIic hI ψ hψ) = ψ :=
   funext fun x ↦ (ψ.hasDerivAt_integral_Iic x).deriv
@@ -801,8 +880,8 @@ namespace TopologicalSpace.Opens
 
 variable {I : Opens ℝ}
 
-/-- A test function on a nonempty open set `I ⊆ ℝ` with integral one: a normalized bump around
-a point of `I`. -/
+/-- If the open set $I \subseteq \mathbb{R}$ is nonempty, there is a test function $\psi$ on $I$
+with $\int_{\mathbb{R}} \psi = 1$. -/
 theorem exists_testFunction_integral_eq_one (hI : (I : Set ℝ).Nonempty) :
     ∃ ψ : 𝓓(I, ℝ), ∫ x, ψ x = 1 := by
   obtain ⟨x₀, hx₀⟩ := hI
@@ -816,27 +895,31 @@ theorem exists_testFunction_integral_eq_one (hI : (I : Set ℝ).Nonempty) :
   linarith
 
 variable (I) in
-/-- A chosen test function on `I` of integral one (`0` if `I` is empty), the weight defining the
-constant of the canonical continuous representative `SobolevIntervalLp.rep`. -/
+/-- A chosen test function on $I$ with integral $1$ if $I$ is nonempty, and $0$ if $I$ is empty.
+
+It is the weight that defines the constant of the canonical continuous representative
+`SobolevIntervalLp.rep`. -/
 def testFunctionOne : 𝓓(I, ℝ) := by
   classical
   exact if h : (I : Set ℝ).Nonempty then Classical.choose (exists_testFunction_integral_eq_one h)
     else 0
 
-/-- `Opens.testFunctionOne I` has integral one when `I` is nonempty. -/
+/-- If $I$ is nonempty, the test function `TopologicalSpace.Opens.testFunctionOne I` has integral
+$1$. -/
 theorem integral_testFunctionOne (hI : (I : Set ℝ).Nonempty) :
     ∫ x, testFunctionOne I x = 1 := by
   simp only [testFunctionOne, hI, ↓reduceDIte]
   exact Classical.choose_spec (exists_testFunction_integral_eq_one hI)
 
 variable (I) in
-/-- A chosen point of `I` (`0` if `I` is empty), the base point of the canonical continuous
-representative `SobolevIntervalLp.rep`. -/
+/-- A chosen point of $I$ if $I$ is nonempty, and $0$ if $I$ is empty.
+
+It is the base point of the canonical continuous representative `SobolevIntervalLp.rep`. -/
 def basePoint : ℝ := by
   classical
   exact if h : (I : Set ℝ).Nonempty then h.some else 0
 
-/-- `Opens.basePoint I` lies in `I` when `I` is nonempty. -/
+/-- If $I$ is nonempty, the point `TopologicalSpace.Opens.basePoint I` lies in $I$. -/
 theorem basePoint_mem (hI : (I : Set ℝ).Nonempty) : basePoint I ∈ I := by
   simp only [basePoint, hI, ↓reduceDIte]
   exact hI.some_mem
@@ -845,13 +928,15 @@ end TopologicalSpace.Opens
 
 /-! ### du Bois-Reymond's lemma -/
 
-/-- **du Bois-Reymond's lemma on an open interval** ([brezis2011functional] Lemma 8.1): a
-function whose weak derivative on the open interval `I` vanishes is almost everywhere constant
-on `I`. The constant is `∫ ψ₀ f` for a fixed test function `ψ₀` of integral one: for any test
-function `φ`, the function `φ - (∫ φ) ψ₀` has zero mean, so its antiderivative is a test function
-(`TestFunction.primitiveIic`) whose derivative it is, and testing the hypothesis against that
-antiderivative gives `∫ φ (f - c) = 0`; the generalized variational lemma
-`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` finishes. -/
+/-- **du Bois-Reymond's lemma on an open interval.** Let $I$ be an open interval and let $f$ have
+the weak derivative $0$ on $I$. Then there is a constant $c$ with $f = c$ almost everywhere on
+$I$. This is Lemma 8.1 of [brezis2011functional].
+
+The constant is $c = \int \psi_0 f$ for a fixed test function $\psi_0$ of integral $1$. For any
+test function $\varphi$, the function $\varphi - (\int \varphi) \psi_0$ has zero mean, so its
+primitive is a test function (`TestFunction.primitiveIic`) whose derivative it is. Testing the
+hypothesis against that primitive gives $\int \varphi (f - c) = 0$, and the generalized
+variational lemma `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` finishes the proof. -/
 theorem HasWeakDerivOn.exists_ae_eq_const {I : Opens ℝ} (hI : (I : Set ℝ).OrdConnected)
     {f : ℝ → ℝ} (h : HasWeakDerivOn f 0 I) : ∃ c : ℝ, f =ᵐ[volume.restrict I] fun _ ↦ c := by
   rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
@@ -894,8 +979,8 @@ section Primitive
 
 variable {w : ℝ → ℝ} {y₀ : ℝ}
 
-/-- Every point `x₀` of a set `s ⊆ ℝ` has a neighbourhood within `s` of the form `[b₁, b₂]` with
-`b₁, b₂ ∈ s`. -/
+/-- Let $s \subseteq \mathbb{R}$ and $x_0 \in s$. There are $b_1, b_2 \in s$ with
+$b_1 \le x_0 \le b_2$ such that $[b_1, b_2]$ is a neighbourhood of $x_0$ within $s$. -/
 theorem exists_Icc_mem_nhdsWithin {s : Set ℝ} {x₀ : ℝ} (hx₀ : x₀ ∈ s) :
     ∃ b₁ ∈ s, ∃ b₂ ∈ s, b₁ ≤ x₀ ∧ x₀ ≤ b₂ ∧ Icc b₁ b₂ ∈ 𝓝[s] x₀ := by
   have left : ∃ b₁ ∈ s, b₁ ≤ x₀ ∧ ∃ l < x₀, ∀ y ∈ s, l < y → b₁ ≤ y := by
@@ -916,8 +1001,8 @@ theorem exists_Icc_mem_nhdsWithin {s : Set ℝ} {x₀ : ℝ} (hx₀ : x₀ ∈ s
   rintro y ⟨hyU, hys⟩
   exact ⟨hl' y hys hyU.1, hr' y hys hyU.2⟩
 
-/-- A function integrable between any two points of a set `s` is integrable between the minimum
-and the maximum of three points of `s`. -/
+/-- Let $w$ be integrable between any two points of a set $s \subseteq \mathbb{R}$, and let
+$x, y, z \in s$. Then $w$ is integrable between $\min\{x, y, z\}$ and $\max\{x, y, z\}$. -/
 theorem intervalIntegrable_min_max_of_forall {s : Set ℝ}
     (hw : ∀ x ∈ s, ∀ y ∈ s, IntervalIntegrable w volume x y) {x y z : ℝ} (hx : x ∈ s)
     (hy : y ∈ s) (hz : z ∈ s) :
@@ -930,8 +1015,9 @@ theorem intervalIntegrable_min_max_of_forall {s : Set ℝ}
     · rw [h]; exact hx
     · rw [h]; rcases max_choice y z with h' | h' <;> rw [h'] <;> assumption
 
-/-- The primitive `x ↦ c + ∫_{y₀}^x w` is continuous on any set `s ∋ y₀` between any two points
-of which `w` is integrable. -/
+/-- Let $w$ be integrable between any two points of a set $s \subseteq \mathbb{R}$, and let
+$y_0 \in s$. For every constant $c$, the primitive $x \mapsto c + \int_{y_0}^x w$ is continuous
+on $s$. -/
 theorem continuousOn_integral_of_intervalIntegrable {s : Set ℝ} (hy₀ : y₀ ∈ s)
     (hw : ∀ x ∈ s, ∀ y ∈ s, IntervalIntegrable w volume x y) (c : ℝ) :
     ContinuousOn (fun x ↦ c + ∫ t in y₀..x, w t) s := by
@@ -944,8 +1030,9 @@ theorem continuousOn_integral_of_intervalIntegrable {s : Set ℝ} (hy₀ : y₀ 
   · rcases min_choice y₀ b₁ with h | h <;> rw [h] <;> assumption
   · rcases max_choice y₀ b₂ with h | h <;> rw [h] <;> assumption
 
-/-- The primitive `x ↦ c + ∫_{y₀}^x w` is absolutely continuous between any two points of a set
-`s ∋ y₀` between any two points of which `w` is integrable. -/
+/-- Let $w$ be integrable between any two points of a set $s \subseteq \mathbb{R}$, and let
+$y_0 \in s$. For every constant $c$ and all $x, y \in s$, the primitive
+$t \mapsto c + \int_{y_0}^t w$ is absolutely continuous on the interval between $x$ and $y$. -/
 theorem absolutelyContinuousOnInterval_integral_of_intervalIntegrable {s : Set ℝ} (hy₀ : y₀ ∈ s)
     (hw : ∀ x ∈ s, ∀ y ∈ s, IntervalIntegrable w volume x y) (c : ℝ) {x y : ℝ} (hx : x ∈ s)
     (hy : y ∈ s) : AbsolutelyContinuousOnInterval (fun t ↦ c + ∫ r in y₀..t, w r) x y := by
@@ -962,8 +1049,8 @@ theorem absolutelyContinuousOnInterval_integral_of_intervalIntegrable {s : Set �
     ((h.absolutelyContinuousOnInterval_intervalIntegral (hmem y₀ (Or.inl rfl))).mono
       (uIcc_subset_uIcc (hmem x (Or.inr (Or.inl rfl))) (hmem y (Or.inr (Or.inr rfl)))))
 
-/-- A property that holds almost everywhere on every compact subinterval of an open set `I`
-with rational endpoints in `I` holds almost everywhere on `I`. -/
+/-- Let $I \subseteq \mathbb{R}$ be open and let $P$ be a property of points. If, for all rationals
+$q, r \in I$, $P$ holds almost everywhere on $[q, r]$, then $P$ holds almost everywhere on $I$. -/
 theorem ae_of_forall_ae_Icc_rat {I : Set ℝ} (hI : IsOpen I) {P : ℝ → Prop}
     (h : ∀ q r : ℚ, (q : ℝ) ∈ I → (r : ℝ) ∈ I → ∀ᵐ x, x ∈ Icc (q : ℝ) r → P x) :
     ∀ᵐ x, x ∈ I → P x := by
@@ -987,9 +1074,11 @@ theorem ae_of_forall_ae_Icc_rat {I : Set ℝ} (hI : IsOpen I) {P : ℝ → Prop}
     rw [Metric.mem_ball, Real.dist_eq, abs_lt]; constructor <;> linarith)
   exact hx q r hq hr ⟨hq2.le, hr1.le⟩
 
-/-- The classical derivative of the primitive `x ↦ c + ∫_{y₀}^x w` is `w` almost everywhere on
-an open set `I ∋ y₀` between any two points of which `w` is integrable: the Lebesgue
-differentiation theorem. -/
+/-- Let $I$ be an open set, let $y_0 \in I$, and let $w$ be integrable between any two points of
+$I$. For every constant $c$, the classical derivative of $x \mapsto c + \int_{y_0}^x w$ equals
+$w(x)$ for almost every $x \in I$.
+
+This is the Lebesgue differentiation theorem. -/
 theorem ae_deriv_integral_eq_of_intervalIntegrable {I : Opens ℝ} (hy₀ : y₀ ∈ I)
     (hw : ∀ x ∈ (I : Set ℝ), ∀ y ∈ (I : Set ℝ), IntervalIntegrable w volume x y) (c : ℝ) :
     ∀ᵐ x, x ∈ (I : Set ℝ) → deriv (fun x ↦ c + ∫ t in y₀..x, w t) x = w x := by
@@ -1004,23 +1093,25 @@ theorem ae_deriv_integral_eq_of_intervalIntegrable {I : Opens ℝ} (hy₀ : y₀
       hxqr.2.trans ((le_max_right _ _).trans (le_max_right _ _))⟩
   exact ((hx hx' y₀ ⟨min_le_left _ _, le_max_left _ _⟩).const_add c).deriv
 
-/-- A locally integrable function on an open interval is integrable between any two of its
-points. -/
+/-- Let $I \subseteq \mathbb{R}$ be an interval and let $w$ be locally integrable on $I$. Then $w$
+is integrable between any two points of $I$. -/
 theorem MeasureTheory.LocallyIntegrableOn.intervalIntegrable_of_ordConnected {I : Set ℝ}
     (hI : I.OrdConnected) (hw : LocallyIntegrableOn w I) {x y : ℝ} (hx : x ∈ I) (hy : y ∈ I) :
     IntervalIntegrable w volume x y :=
   (hw.integrableOn_compact_subset (hI.uIcc_subset hx hy) isCompact_uIcc).intervalIntegrable
 
-/-- The primitive of a locally integrable function on an open interval is continuous there
-([brezis2011functional] Lemma 8.2, `v ∈ C(I)`). -/
+/-- Let $I$ be an open interval, let $w$ be locally integrable on $I$, and let $y_0 \in I$. For
+every constant $c$, the primitive $x \mapsto c + \int_{y_0}^x w$ is continuous on $I$. This is
+the statement $v \in C(I)$ of Lemma 8.2 of [brezis2011functional]. -/
 theorem MeasureTheory.LocallyIntegrableOn.continuousOn_integral {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) (hw : LocallyIntegrableOn w I) (hy₀ : y₀ ∈ I) (c : ℝ) :
     ContinuousOn (fun x ↦ c + ∫ t in y₀..x, w t) I :=
   continuousOn_integral_of_intervalIntegrable hy₀
     (fun _ hx _ hy ↦ hw.intervalIntegrable_of_ordConnected hI hx hy) c
 
-/-- The primitive of a locally integrable function on an open interval is absolutely continuous
-between any two points of the interval. -/
+/-- Let $I$ be an open interval, let $w$ be locally integrable on $I$, and let $y_0 \in I$. For
+every constant $c$ and all $x, y \in I$, the primitive $t \mapsto c + \int_{y_0}^t w$ is
+absolutely continuous on the interval between $x$ and $y$. -/
 theorem MeasureTheory.LocallyIntegrableOn.absolutelyContinuousOnInterval_integral {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) (hw : LocallyIntegrableOn w I) (hy₀ : y₀ ∈ I) (c : ℝ)
     {x y : ℝ} (hx : x ∈ I) (hy : y ∈ I) :
@@ -1028,21 +1119,25 @@ theorem MeasureTheory.LocallyIntegrableOn.absolutelyContinuousOnInterval_integra
   absolutelyContinuousOnInterval_integral_of_intervalIntegrable hy₀
     (fun _ hx _ hy ↦ hw.intervalIntegrable_of_ordConnected hI hx hy) c hx hy
 
-/-- The classical derivative of the primitive of a locally integrable function on an open
-interval is that function almost everywhere on the interval: the Lebesgue differentiation
-theorem. -/
+/-- Let $I$ be an open interval, let $w$ be locally integrable on $I$, and let $y_0 \in I$. For
+every constant $c$, the classical derivative of $x \mapsto c + \int_{y_0}^x w$ equals $w(x)$ for
+almost every $x \in I$.
+
+This is the Lebesgue differentiation theorem. -/
 theorem MeasureTheory.LocallyIntegrableOn.ae_deriv_integral_eq {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) (hw : LocallyIntegrableOn w I) (hy₀ : y₀ ∈ I) (c : ℝ) :
     ∀ᵐ x, x ∈ (I : Set ℝ) → deriv (fun x ↦ c + ∫ t in y₀..x, w t) x = w x :=
   ae_deriv_integral_eq_of_intervalIntegrable hy₀
     (fun _ hx _ hy ↦ hw.intervalIntegrable_of_ordConnected hI hx hy) c
 
-/-- **The primitive of a locally integrable function is weakly differentiable**
-([brezis2011functional] Lemma 8.2): for `w` locally integrable on the open interval `I`, a point
-`y₀ ∈ I` and any constant `c`, `w` is the weak derivative of `c + ∫_{y₀}^x w` on `I`. The proof
-is integration by parts for absolutely continuous functions against a test function, on a
-compact subinterval of `I` containing its support, together with the Lebesgue differentiation
-theorem; the book's Fubini argument is not needed. -/
+/-- **The primitive of a locally integrable function is weakly differentiable.** Let $I$ be an open
+interval, let $w$ be locally integrable on $I$, and let $y_0 \in I$. For every constant $c$, the
+function $w$ is the weak derivative of $x \mapsto c + \int_{y_0}^x w$ on $I$. This is Lemma 8.2
+of [brezis2011functional].
+
+The proof is integration by parts for absolutely continuous functions against a test function,
+on a compact subinterval of $I$ that contains its support, together with the Lebesgue
+differentiation theorem. The Fubini argument of the source is not needed. -/
 theorem MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral {I : Opens ℝ}
     (hI : (I : Set ℝ).OrdConnected) (hw : LocallyIntegrableOn w I) (hy₀ : y₀ ∈ I) (c : ℝ) :
     HasWeakDerivOn (fun x ↦ c + ∫ t in y₀..x, w t) w I := by
@@ -1093,11 +1188,14 @@ section Representative
 
 variable {I : Opens ℝ} {p : ℝ≥0∞} {f w : ℝ → ℝ} {y₀ : ℝ}
 
-/-- **The representation of a weakly differentiable function by a primitive**
-([brezis2011functional] Theorem 8.2, the core): a function with a weak derivative `w` on the
-open interval `I` agrees almost everywhere on `I` with `c + ∫_{y₀}^x w` for some constant `c`,
-`y₀ ∈ I` being any base point. The difference of `f` and the antiderivative has weak derivative
-`0` (Lemma 8.2), so it is almost everywhere constant by du Bois-Reymond's lemma (Lemma 8.1). -/
+/-- **The representation of a weakly differentiable function by a primitive.** Let $I$ be an open
+interval, let $f$ have the weak derivative $w$ on $I$, and let $y_0 \in I$. Then there is a
+constant $c$ such that
+$$f(x) = c + \int_{y_0}^x w(t)\, dt \quad \text{for almost every } x \in I.$$
+This is the core of Theorem 8.2 of [brezis2011functional].
+
+The difference of $f$ and the primitive has weak derivative $0$ by Lemma 8.2, so it is almost
+everywhere constant by du Bois-Reymond's lemma (Lemma 8.1). -/
 theorem HasWeakDerivOn.exists_ae_eq_integral_of_mem (hI : (I : Set ℝ).OrdConnected)
     (h : HasWeakDerivOn f w I) (hy₀ : y₀ ∈ I) :
     ∃ c : ℝ, f =ᵐ[volume.restrict I] fun x ↦ c + ∫ t in y₀..x, w t := by
@@ -1110,9 +1208,10 @@ theorem HasWeakDerivOn.exists_ae_eq_integral_of_mem (hI : (I : Set ℝ).OrdConne
   simp only [zero_add] at hx ⊢
   linarith
 
-/-- **Remark 7 of [brezis2011functional] §8.2**: the primitive `v = c + ∫_{y₀}^x w` of a function
-`w ∈ L^p(I)` lies in `W^{1,p}(I)`, with weak derivative `w`, as soon as `v` itself lies in
-`L^p(I)`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, let $w \in L^p(I)$, let $y_0 \in I$ and
+$c \in \mathbb{R}$, and put $v(x) = c + \int_{y_0}^x w$. If $v \in L^p(I)$, then
+$v \in W^{1,p}(I)$ and $w$ is the weak derivative of $v$ on $I$. This is Remark 7 of
+[brezis2011functional] §8.2. -/
 theorem memSobolevIntervalLp_integral [Fact (1 ≤ p)] (hI : (I : Set ℝ).OrdConnected)
     (hw : MemLp w p (volume.restrict I)) (hy₀ : y₀ ∈ I) {c : ℝ}
     (hv : MemLp (fun x ↦ c + ∫ t in y₀..x, w t) p (volume.restrict I)) :
@@ -1129,11 +1228,13 @@ namespace TopologicalSpace.Opens
 
 variable {I : Opens ℝ}
 
-/-- **An open `OrdConnected` subset of `ℝ` is an open interval**: empty, the whole line, a
-half-line `(a, ∞)` or `(-∞, b)`, or a bounded interval `(a, b)` with `a < b`. Mathlib's
-`IsPreconnected.mem_intervals` lists the ten interval shapes of a preconnected set; openness
-rules out the five that contain a finite endpoint. This is the case split every
-unbounded-interval argument starts with. -/
+/-- **An open interval of $\mathbb{R}$ is one of five kinds.** Let $I \subseteq \mathbb{R}$ be open
+and order connected. Then $I$ is empty, or $I = \mathbb{R}$, or $I = (a, \infty)$ for some $a$,
+or $I = (-\infty, b)$ for some $b$, or $I = (a, b)$ for some $a < b$.
+
+Mathlib's `IsPreconnected.mem_intervals` lists the ten shapes of a preconnected set, and
+openness excludes the five that contain a finite endpoint. Every argument about unbounded
+intervals starts with this case split. -/
 theorem eq_intervals_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :
     (I : Set ℝ) = ∅ ∨ (I : Set ℝ) = univ ∨ (∃ a, (I : Set ℝ) = Ioi a) ∨
       (∃ b, (I : Set ℝ) = Iio b) ∨ ∃ a b, a < b ∧ (I : Set ℝ) = Set.Ioo a b := by
@@ -1177,8 +1278,8 @@ theorem eq_intervals_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :
   · exact Or.inr (Or.inl h)
   · exact Or.inl h
 
-/-- An open interval meets a bounded open interval in the empty set or in a bounded open
-interval `(a, b)`, `a < b`. -/
+/-- Let $I$ be an open interval and $c, d \in \mathbb{R}$. Then $I \cap (c, d)$ is empty or equal to
+$(a, b)$ for some $a < b$. -/
 theorem inf_Ioo_eq_empty_or_exists_eq_Ioo (hI : (I : Set ℝ).OrdConnected) (c d : ℝ) :
     ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = ∅ ∨
       ∃ a b, a < b ∧ ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = Set.Ioo a b := by
@@ -1203,8 +1304,9 @@ theorem inf_Ioo_eq_empty_or_exists_eq_Ioo (hI : (I : Set ℝ).OrdConnected) (c d
     linarith [this.2.1, min_le_right b c]
   · exact Or.inr ⟨a, b, hab, h⟩
 
-/-- The frontier of an open interval is the set of its finite endpoints, a finite set: `{a, b}`
-for `(a, b)`, `{a}` for `(a, ∞)`, `{b}` for `(-∞, b)`, empty for `ℝ` and for `∅`. -/
+/-- The frontier of an open interval $I$ is finite. It is the set of the finite endpoints of $I$:
+$\{a, b\}$ for $(a, b)$, $\{a\}$ for $(a, \infty)$, $\{b\}$ for $(-\infty, b)$, and empty for
+$\mathbb{R}$ and for $\emptyset$. -/
 theorem finite_frontier_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :
     (frontier (I : Set ℝ)).Finite := by
   rcases eq_intervals_of_ordConnected hI with h | h | ⟨a, h⟩ | ⟨b, h⟩ | ⟨a, b, hab, h⟩ <;> rw [h]
@@ -1214,7 +1316,7 @@ theorem finite_frontier_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :
   · rw [frontier_Iio]; exact finite_singleton b
   · rw [_root_.frontier_Ioo hab]; exact (finite_singleton b).insert a
 
-/-- The closure of an open interval differs from it by a null set (its finite endpoints). -/
+/-- For an open interval $I$, the set $\bar I \setminus I$ has Lebesgue measure $0$. -/
 theorem volume_closure_diff_eq_zero (hI : (I : Set ℝ).OrdConnected) :
     volume (closure (I : Set ℝ) \ I) = 0 := by
   have e : closure (I : Set ℝ) \ I = frontier (I : Set ℝ) := by
@@ -1229,8 +1331,11 @@ theorem ordConnected_closure (hI : (I : Set ℝ).OrdConnected) :
 
 end TopologicalSpace.Opens
 
-/-- A function of `L^p(I)`, `1 ≤ p`, is integrable between any two points of the closure of the
-open interval `I`: on the bounded piece `[x, y] ∩ I`, `L^p ⊆ L^1`, and `[x, y] \ I` is null. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, and let $w \in L^p(I)$. Then $w$ is
+integrable between any two points of the closure $\bar I$.
+
+On the bounded piece $[x, y] \cap I$, $L^p \subseteq L^1$, and $[x, y] \setminus I$ is a null
+set. -/
 theorem MeasureTheory.MemLp.intervalIntegrable_of_mem_closure {I : Opens ℝ} {p : ℝ≥0∞}
     [Fact (1 ≤ p)] (hI : (I : Set ℝ).OrdConnected) {w : ℝ → ℝ} (hw : MemLp w p (volume.restrict I))
     {x y : ℝ} (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) :
@@ -1256,20 +1361,22 @@ namespace SobolevIntervalLp
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
-/-- The weak derivatives of an element of `W^{m,p}(I)` are integrable between any two points of
-the closure of `I`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, let $u \in W^{m,p}(I)$ and $j \le m$.
+Then $u^{(j)}$ is integrable between any two points of the closure $\bar I$. -/
 theorem intervalIntegrable_deriv (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp m p I)
     (j : Fin (m + 1)) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) :
     IntervalIntegrable (deriv u j) volume x y :=
   (memLp_deriv u j).intervalIntegrable_of_mem_closure hI hx hy
 
-/-- **The continuous representative** ([brezis2011functional] Theorem 8.2): every
-`u ∈ W^{1,p}(I)`, `1 ≤ p ≤ ∞`, on an open interval `I`, bounded or not, agrees almost everywhere
-on `I` with a function `g` continuous on the closure of `I` and satisfying
-`g y - g x = ∫_x^y u'` for all `x, y` in that closure. The core is
-`HasWeakDerivOn.exists_ae_eq_integral_of_mem`; continuity up to a finite endpoint holds because
-`u' ∈ L^p(I)` is integrable on every bounded piece of `I`. The canonical linear choice of `g` is
-`SobolevIntervalLp.rep`. -/
+/-- **The continuous representative.** Let $1 \le p \le \infty$, let $I$ be an open interval,
+bounded or not, and let $u \in W^{1,p}(I)$. There is a function $g$, continuous on the closure
+$\bar I$, that agrees with $u$ almost everywhere on $I$ and satisfies
+$$g(y) - g(x) = \int_x^y u'(t)\, dt \quad \text{for all } x, y \in \bar I.$$
+This is Theorem 8.2 of [brezis2011functional].
+
+The core is `HasWeakDerivOn.exists_ae_eq_integral_of_mem`. Continuity up to a finite endpoint
+holds because $u' \in L^p(I)$ is integrable on every bounded piece of $I$. The canonical choice
+of $g$, linear in $u$, is `SobolevIntervalLp.rep`. -/
 theorem exists_continuousOn_closure_ae_eq (hI : (I : Set ℝ).OrdConnected)
     (u : SobolevIntervalLp 1 p I) :
     ∃ g : ℝ → ℝ, ContinuousOn g (closure (I : Set ℝ)) ∧ fn u =ᵐ[volume.restrict I] g ∧
@@ -1290,29 +1397,37 @@ theorem exists_continuousOn_closure_ae_eq (hI : (I : Set ℝ).OrdConnected)
   rw [add_sub_add_left_eq_sub,
     intervalIntegral.integral_interval_sub_left (hwi _ hy₀ _ hy) (hwi _ hy₀ _ hx)]
 
-/-- The constant of the canonical continuous representative of `u ∈ W^{1,p}(I)`: the integral of
-`u - ∫_{y₀}^x u'` against the fixed test function `Opens.testFunctionOne I` of integral one,
-`y₀ = Opens.basePoint I`, chosen so as to depend linearly on `u`. -/
+/-- The constant of the canonical continuous representative of $u \in W^{1,p}(I)$:
+$$\int_{\mathbb{R}} \psi_0(x) \Bigl(u(x) - \int_{y_0}^x u'\Bigr)\, dx,$$
+where $\psi_0$ is the test function `TopologicalSpace.Opens.testFunctionOne I` of integral $1$
+and $y_0$ is `TopologicalSpace.Opens.basePoint I`.
+
+This choice makes the constant depend linearly on $u$. -/
 def repConst (u : SobolevIntervalLp 1 p I) : ℝ :=
   ∫ x, I.testFunctionOne x * (fn u x - ∫ t in I.basePoint..x, deriv u 1 t)
 
-/-- **The canonical continuous representative** of `u ∈ W^{1,p}(I)`, as a function on all of
-`ℝ`: `repConst u + ∫_{y₀}^x u'` with `y₀ = Opens.basePoint I`. It agrees with `u` almost
-everywhere on `I` (`SobolevIntervalLp.fn_ae_eq_rep`), is continuous on the closure of `I` and
-absolutely continuous between any two of its points, and is the integral of `u'` between any two
-points of the closure (`SobolevIntervalLp.rep_sub_rep`): the function `ũ` of
-[brezis2011functional] Theorem 8.2, which by Remark 5 there is unique
+/-- **The canonical continuous representative** $\tilde u$ of $u \in W^{1,p}(I)$, as a function on
+all of $\mathbb{R}$: $\tilde u(x) = c_u + \int_{y_0}^x u'$, where $c_u$ is
+`SobolevIntervalLp.repConst u` and $y_0$ is `TopologicalSpace.Opens.basePoint I`.
+
+On an open interval $I$, the function $\tilde u$ agrees with $u$ almost everywhere on $I$
+(`SobolevIntervalLp.fn_ae_eq_rep`), is continuous on the closure $\bar I$, is absolutely
+continuous between any two points of $\bar I$, and satisfies
+$\tilde u(y) - \tilde u(x) = \int_x^y u'$ for $x, y \in \bar I$
+(`SobolevIntervalLp.rep_sub_rep`). It is the function $\tilde u$ of Theorem 8.2 of
+[brezis2011functional], which is unique by Remark 5 there
 (`SobolevIntervalLp.rep_eq_of_continuousOn`). -/
 def rep (u : SobolevIntervalLp 1 p I) (x : ℝ) : ℝ :=
   repConst u + ∫ t in I.basePoint..x, deriv u 1 t
 
 omit [Fact (1 ≤ p)] in
-/-- The continuous representative is `repConst u + ∫_{y₀}^x u'`. -/
+/-- For $u \in W^{1,p}(I)$, the continuous representative is $\tilde u(x) = c_u + \int_{y_0}^x u'$,
+with $c_u$ = `SobolevIntervalLp.repConst u` and $y_0$ = `TopologicalSpace.Opens.basePoint I`. -/
 theorem rep_apply (u : SobolevIntervalLp 1 p I) (x : ℝ) :
     rep u x = repConst u + ∫ t in I.basePoint..x, deriv u 1 t := rfl
 
 omit [Fact (1 ≤ p)] in
-/-- A point of the closure of `I` witnesses that `I` is nonempty. -/
+/-- If a point lies in the closure of an open set $I \subseteq \mathbb{R}$, then $I$ is nonempty. -/
 theorem _root_.TopologicalSpace.Opens.nonempty_of_mem_closure {x : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) : (I : Set ℝ).Nonempty := by
   by_contra h
@@ -1320,7 +1435,8 @@ theorem _root_.TopologicalSpace.Opens.nonempty_of_mem_closure {x : ℝ}
   rw [h, closure_empty] at hx
   exact hx
 
-/-- The continuous representative is continuous on the closure of `I`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval and $u \in W^{1,p}(I)$. The continuous
+representative $\tilde u$ is continuous on the closure $\bar I$. -/
 theorem continuousOn_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     ContinuousOn (rep u) (closure (I : Set ℝ)) := by
   rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
@@ -1329,8 +1445,9 @@ theorem continuousOn_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalL
   exact continuousOn_integral_of_intervalIntegrable (subset_closure (I.basePoint_mem hne))
     (fun _ hx _ hy ↦ intervalIntegrable_deriv hI u 1 hx hy) _
 
-/-- The continuous representative is absolutely continuous between any two points of the
-closure of `I`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval and $u \in W^{1,p}(I)$. For all
+$x, y \in \bar I$, the continuous representative $\tilde u$ is absolutely continuous on the
+interval between $x$ and $y$. -/
 theorem absolutelyContinuousOnInterval_rep (hI : (I : Set ℝ).OrdConnected)
     (u : SobolevIntervalLp 1 p I) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (hy : y ∈ closure (I : Set ℝ)) : AbsolutelyContinuousOnInterval (rep u) x y :=
@@ -1338,9 +1455,10 @@ theorem absolutelyContinuousOnInterval_rep (hI : (I : Set ℝ).OrdConnected)
     (subset_closure (I.basePoint_mem (I.nonempty_of_mem_closure hx)))
     (fun _ hx _ hy ↦ intervalIntegrable_deriv hI u 1 hx hy) _ hx hy
 
-/-- **The fundamental theorem of calculus in `W^{1,p}(I)`**: the continuous representative is
-the integral of `u'` between any two points of the closure of `I`, the identity
-`ũ(y) - ũ(x) = ∫_x^y u'` of [brezis2011functional] Theorem 8.2. -/
+/-- **The fundamental theorem of calculus in $W^{1,p}(I)$.** Let $1 \le p \le \infty$, let $I$ be an
+open interval and $u \in W^{1,p}(I)$. For all $x, y$ in the closure $\bar I$,
+$$\tilde u(y) - \tilde u(x) = \int_x^y u'(t)\, dt.$$
+This is the identity of Theorem 8.2 of [brezis2011functional]. -/
 theorem rep_sub_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {x y : ℝ}
     (hx : x ∈ closure (I : Set ℝ)) (hy : y ∈ closure (I : Set ℝ)) :
     rep u y - rep u x = ∫ t in x..y, deriv u 1 t := by
@@ -1351,9 +1469,11 @@ theorem rep_sub_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p
     (intervalIntegrable_deriv hI u 1 hy₀ hy) (intervalIntegrable_deriv hI u 1 hy₀ hx)]
 
 omit [Fact (1 ≤ p)] in
-/-- The function of `u ∈ W^{1,p}(I)` agrees almost everywhere on `I` with its continuous
-representative: the constant of `HasWeakDerivOn.exists_ae_eq_integral_of_mem` is `repConst u`,
-by integrating the almost everywhere identity against the test function of integral one. -/
+/-- Let $I$ be an open interval and $u \in W^{1,p}(I)$. The function of $u$ agrees with its
+continuous representative $\tilde u$ almost everywhere on $I$.
+
+The constant of `HasWeakDerivOn.exists_ae_eq_integral_of_mem` is `SobolevIntervalLp.repConst u`,
+as one sees by integrating the identity against the test function of integral $1$. -/
 theorem fn_ae_eq_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     fn u =ᵐ[volume.restrict I] rep u := by
   rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
@@ -1371,9 +1491,10 @@ theorem fn_ae_eq_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 
     rw [repConst, e, integral_mul_const, I.integral_testFunctionOne hne, one_mul]
   exact hc.trans (Eventually.of_forall fun x ↦ by rw [rep_apply, hcc])
 
-/-- **The continuous representative is unique** ([brezis2011functional] Remark 5): any function
-continuous on the closure of `I` that agrees almost everywhere with `u` on `I` is the
-representative on all of that closure. -/
+/-- **The continuous representative is unique.** Let $1 \le p \le \infty$, let $I$ be an open
+interval and $u \in W^{1,p}(I)$. If $g$ is continuous on the closure $\bar I$ and agrees with
+$u$ almost everywhere on $I$, then $\tilde u = g$ on $\bar I$. This is Remark 5 of
+[brezis2011functional] §8.2. -/
 theorem rep_eq_of_continuousOn (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I)
     {g : ℝ → ℝ} (hg : ContinuousOn g (closure (I : Set ℝ)))
     (hu : fn u =ᵐ[volume.restrict I] g) : EqOn (rep u) g (closure (I : Set ℝ)) :=
@@ -1382,13 +1503,15 @@ theorem rep_eq_of_continuousOn (hI : (I : Set ℝ).OrdConnected) (u : SobolevInt
     (continuousOn_rep hI u) hg subset_closure subset_rfl
 
 omit [Fact (1 ≤ p)] in
-/-- The continuous representative has the weak derivative `u'`. -/
+/-- Let $I$ be an open interval and $u \in W^{1,p}(I)$. The continuous representative $\tilde u$ has
+the weak derivative $u'$ on $I$. -/
 theorem hasWeakDerivOn_rep (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     HasWeakDerivOn (rep u) (deriv u 1) I :=
   (hasWeakDerivOn_fn u).congr_ae (fn_ae_eq_rep hI u) (EventuallyEq.refl _ _)
 
-/-- The classical derivative of the continuous representative is `u'` almost everywhere on
-`I`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval and $u \in W^{1,p}(I)$. The classical
+derivative of the continuous representative $\tilde u$ equals $u'(x)$ for almost every
+$x \in I$. -/
 theorem ae_deriv_rep_eq (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) :
     ∀ᵐ x, x ∈ (I : Set ℝ) → _root_.deriv (rep u) x = deriv u 1 x := by
   rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
@@ -1396,19 +1519,22 @@ theorem ae_deriv_rep_eq (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp
   exact ae_deriv_integral_eq_of_intervalIntegrable (I.basePoint_mem hne)
     (fun _ hx _ hy ↦ intervalIntegrable_deriv hI u 1 (subset_closure hx) (subset_closure hy)) _
 
-/-- The continuous representative of a sum. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval and $u, v \in W^{1,p}(I)$. Then
+$\widetilde{u + v} = \tilde u + \tilde v$ on the closure $\bar I$. -/
 theorem rep_add (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     EqOn (rep (u + v)) (rep u + rep v) (closure (I : Set ℝ)) :=
   rep_eq_of_continuousOn hI (u + v) ((continuousOn_rep hI u).add (continuousOn_rep hI v))
     ((SobolevMultiIndex.fn_add u v).trans ((fn_ae_eq_rep hI u).add (fn_ae_eq_rep hI v)))
 
-/-- The continuous representative of a scalar multiple. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, $c \in \mathbb{R}$ and
+$u \in W^{1,p}(I)$. Then $\widetilde{c u} = c\, \tilde u$ on the closure $\bar I$. -/
 theorem rep_smul (hI : (I : Set ℝ).OrdConnected) (c : ℝ) (u : SobolevIntervalLp 1 p I) :
     EqOn (rep (c • u)) (c • rep u) (closure (I : Set ℝ)) :=
   rep_eq_of_continuousOn hI (c • u) ((continuousOn_rep hI u).const_smul c)
     ((SobolevMultiIndex.fn_smul c u).trans ((fn_ae_eq_rep hI u).const_smul c))
 
-/-- The continuous representative of a difference. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval and $u, v \in W^{1,p}(I)$. Then
+$\widetilde{u - v} = \tilde u - \tilde v$ on the closure $\bar I$. -/
 theorem rep_sub (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I) :
     EqOn (rep (u - v)) (rep u - rep v) (closure (I : Set ℝ)) := by
   intro x hx
@@ -1418,7 +1544,10 @@ theorem rep_sub (hI : (I : Set ℝ).OrdConnected) (u v : SobolevIntervalLp 1 p I
   simp only [Pi.sub_apply]
   linarith
 
-/-- The continuous representative of a finite linear combination in `W^{1,p}(I)`. -/
+/-- Let $1 \le p \le \infty$, let $I$ be an open interval, let $s$ be a finite index set, and let
+$c_j \in \mathbb{R}$ and $\varphi_j \in W^{1,p}(I)$ for $j \in s$. For every $x \in \bar I$, the
+continuous representative of $\sum_{j \in s} c_j \varphi_j$ takes the value
+$\sum_{j \in s} c_j \tilde\varphi_j(x)$ at $x$. -/
 theorem rep_finset_sum (hI : (I : Set ℝ).OrdConnected) {ι : Type*} (s : Finset ι) (c : ι → ℝ)
     (φ : ι → SobolevIntervalLp 1 p I) {x : ℝ} (hx : x ∈ closure (I : Set ℝ)) :
     rep (∑ j ∈ s, c j • φ j) x = ∑ j ∈ s, c j * rep (φ j) x := by
@@ -1433,17 +1562,21 @@ theorem rep_finset_sum (hI : (I : Set ℝ).OrdConnected) {ι : Type*} (s : Finse
 
 end SobolevIntervalLp
 
-/-! ### Piecewise `C¹` functions -/
+/-! ### Piecewise $C^1$ functions -/
 
 section Piecewise
 
 variable {a : ℝ}
 
-/-- **The fundamental theorem of calculus for a continuous piecewise-`C¹` function** on a
-partition `x 0 = a < x 1 < ⋯ < x (N + 1)`: for every node index `j`, `g' = deriv g` is bounded by
-`C` almost everywhere on `(a, x j)` and `g t = g a + ∫_a^t g'` on `[a, x j]`. By induction on
-`j`, the step being the fundamental theorem of calculus on one panel, where `g` is continuous up
-to the ends and differentiable inside; continuity of `g` at the nodes glues the panels. -/
+/-- **The fundamental theorem of calculus for a continuous piecewise $C^1$ function.** Let
+$a = x_0 < x_1 < \dots < x_{N+1}$, let $g$ be continuous on $[a, x_{N+1}]$ and of class $C^1$ on
+each open panel $(x_i, x_{i+1})$, and let $|g'(t)| \le C$ for every $t$ in every open panel.
+Then for every node index $j \le N + 1$, $|g'| \le C$ almost everywhere on $(a, x_j)$, and
+$$g(t) = g(a) + \int_a^t g'(s)\, ds \quad \text{for all } t \in [a, x_j].$$
+
+Here $g'$ is the classical derivative `deriv g`. The proof is by induction on $j$. The step is
+the fundamental theorem of calculus on one panel, where $g$ is continuous up to the ends and
+differentiable inside, and continuity of $g$ at the nodes glues the panels. -/
 theorem eq_add_integral_deriv_of_piecewise {N : ℕ} {x : Fin (N + 2) → ℝ} (hx : StrictMono x)
     (hxa : x 0 = a) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a (x (Fin.last (N + 1)))))
     (hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 g (Ioo (x j.castSucc) (x j.succ)))
@@ -1502,8 +1635,8 @@ section Api
 
 variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} {f : ℝ → ℝ}
 
-/-- Every function of `W^{m,p}(I)` is, up to a null set of `I`, the function of an element of
-`SobolevIntervalLp m p I`. -/
+/-- If $f \in W^{m,p}(I)$, then there is an element $u$ of the type `SobolevIntervalLp m p I` whose
+function agrees with $f$ almost everywhere on $I$. -/
 theorem MemSobolevIntervalLp.exists_sobolevIntervalLp
     (h : MemSobolevIntervalLp f m p I) :
     ∃ u : SobolevIntervalLp m p I, SobolevIntervalLp.fn u =ᵐ[volume.restrict I] f :=
@@ -1511,31 +1644,34 @@ theorem MemSobolevIntervalLp.exists_sobolevIntervalLp
 
 end Api
 
-/-! ### Closedness of the weak derivative under `L^p` limits -/
+/-! ### Closedness of the weak derivative under limits in $L^p$ -/
 
 section Limits
 
 variable {I : Opens ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The derivative of a test function lies in every `L^q(I)`. -/
+/-- The derivative of a test function on $I$ lies in $L^q(I)$ for every $q \in [0, \infty]$. -/
 theorem TestFunction.memLp_deriv (φ : 𝓓(I, ℝ)) (q : ℝ≥0∞) :
     MemLp (deriv φ) q (volume.restrict I) :=
   (φ.contDiff.continuous_deriv (by simp)).memLp_of_hasCompactSupport φ.hasCompactSupport.deriv
 
-/-- A test function lies in every `L^q(I)`. -/
+/-- A test function on $I$ lies in $L^q(I)$ for every $q \in [0, \infty]$. -/
 theorem TestFunction.memLp' (φ : 𝓓(I, ℝ)) (q : ℝ≥0∞) : MemLp φ q (volume.restrict I) :=
   φ.memLp q _
 
-/-- Every exponent `1 ≤ p ≤ ∞` has the Hölder conjugate `(1 - p⁻¹)⁻¹` (`∞` for `p = 1`, `1` for
-`p = ∞`). -/
+/-- Every exponent $1 \le p \le \infty$ has the Hölder conjugate exponent $(1 - p^{-1})^{-1}$, which
+is $\infty$ for $p = 1$ and $1$ for $p = \infty$. -/
 theorem ENNReal.holderConjugate_sub_inv_inv : ENNReal.HolderConjugate p (1 - p⁻¹)⁻¹ := by
   rw [ENNReal.holderConjugate_iff, inv_inv, add_tsub_cancel_of_le (ENNReal.inv_le_one.2 Fact.out)]
 
-/-- **The weak derivative is closed under `L^p` limits** ([brezis2011functional] §8.2, Remark 4,
-first clause): if `u n` has the weak derivative `w n` on `I`, `u n → u₀` and `w n → w₀` in
-`L^p(I)`, with `u₀, w₀ ∈ L^p(I)`, then `w₀` is the weak derivative of `u₀` on `I`. Each side of
-`∫ u_n φ' = -∫ w_n φ` is paired against the fixed test function by Hölder's inequality in the
-limit (`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`), which covers `p = ∞` as well. -/
+/-- **The weak derivative is preserved under limits in $L^p$.** Let $1 \le p \le \infty$, let $w_n$
+be the weak derivative of $u_n$ on $I$ for every $n$, and let $u_0, w_0 \in L^p(I)$. If
+$u_n \to u_0$ and $w_n \to w_0$ in $L^p(I)$, then $w_0$ is the weak derivative of $u_0$ on $I$.
+This is the first clause of Remark 4 of [brezis2011functional] §8.2.
+
+Each side of $\int u_n \varphi' = -\int w_n \varphi$ converges for the fixed test function
+$\varphi$ by Hölder's inequality (`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`),
+which also covers $p = \infty$. -/
 theorem hasWeakDerivOn_of_tendsto_eLpNorm {u w : ℕ → ℝ → ℝ} {u₀ w₀ : ℝ → ℝ}
     (hu : ∀ n, HasWeakDerivOn (u n) (w n) I) (hu₀ : MemLp u₀ p (volume.restrict I))
     (hw₀ : MemLp w₀ p (volume.restrict I))
@@ -1574,10 +1710,12 @@ theorem hasWeakDerivOn_of_tendsto_eLpNorm {u w : ℕ → ℝ → ℝ} {u₀ w₀
   rw [e] at h1
   exact tendsto_nhds_unique h1 h2.neg
 
-/-- Convergence in `W^{m,p}(I)` follows from convergence of every derivative in `L^p(I)`: the
-norm is dominated by the sum of the norms of the derivatives
-(`SobolevIntervalLp.norm_le_sum_norm_deriv`). With `hasWeakDerivOn_of_tendsto_eLpNorm` this is
-the second clause of [brezis2011functional] §8.2, Remark 4: `‖u_n - u‖_{W^{1,p}} → 0`. -/
+/-- Let $1 \le p \le \infty$, and let $u_n, u_0 \in W^{m,p}(I)$. If $u_n^{(j)} \to u_0^{(j)}$ in
+$L^p(I)$ for every $j \le m$, then $u_n \to u_0$ in $W^{m,p}(I)$.
+
+The norm is dominated by the sum of the norms of the derivatives
+(`SobolevIntervalLp.norm_le_sum_norm_deriv`). With `hasWeakDerivOn_of_tendsto_eLpNorm`, this is
+the second clause of Remark 4 of [brezis2011functional] §8.2, $\|u_n - u\|_{W^{1,p}} \to 0$. -/
 theorem SobolevIntervalLp.tendsto_of_tendsto_deriv {m : ℕ} {u : ℕ → SobolevIntervalLp m p I}
     {u₀ : SobolevIntervalLp m p I}
     (h : ∀ j, Tendsto (fun n ↦ SobolevIntervalLp.deriv (u n) j) atTop
@@ -1601,18 +1739,20 @@ section ClassicalMem
 
 variable {I : Opens ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **`C¹` functions with `L^p` function and derivative lie in `W^{1,p}(I)`**
-([brezis2011functional] §8.2, Remark 2): if `u` is `C¹` on the open set `I` with `u ∈ L^p(I)` and
-`u' ∈ L^p(I)`, then `u ∈ W^{1,p}(I)` and its weak derivative is the classical one. -/
+/-- **$C^1$ functions with $L^p$ function and derivative lie in $W^{1,p}(I)$.** Let
+$1 \le p \le \infty$, and let $u$ be of class $C^1$ on the open set $I$ with $u \in L^p(I)$ and
+$u' \in L^p(I)$. Then $u \in W^{1,p}(I)$, and its classical derivative $u'$ is its weak
+derivative on $I$. This is Remark 2 of [brezis2011functional] §8.2. -/
 theorem memSobolevIntervalLp_of_contDiffOn {u : ℝ → ℝ} (hu : ContDiffOn ℝ 1 u I)
     (hup : MemLp u p (volume.restrict I)) (hup' : MemLp (deriv u) p (volume.restrict I)) :
     MemSobolevIntervalLp u 1 p I ∧ HasWeakDerivOn u (deriv u) I :=
   ⟨memSobolevIntervalLp_one_iff.2 ⟨hup, _, hasWeakDerivOn_of_contDiffOn hu, hup'⟩,
     hasWeakDerivOn_of_contDiffOn hu⟩
 
-/-- **`C¹(Ī) ⊆ W^{1,p}(I)` for a bounded interval** ([brezis2011functional] §8.2, Remark 2): a
-function of class `C¹` on `[a, b]` lies in `W^{1,p}(a, b)` for every `1 ≤ p ≤ ∞`, with weak
-derivative its classical derivative. -/
+/-- **$C^1(\bar I) \subseteq W^{1,p}(I)$ for a bounded interval.** Let $a < b$,
+$1 \le p \le \infty$, and let $u$ be of class $C^1$ on $[a, b]$. Then $u \in W^{1,p}(a, b)$, and
+its classical derivative $u'$ is its weak derivative on $(a, b)$. This is Remark 2 of
+[brezis2011functional] §8.2. -/
 theorem memSobolevIntervalLp_of_contDiffOn_Icc {a b : ℝ} (hab : a < b) {u : ℝ → ℝ}
     (hu : ContDiffOn ℝ 1 u (Icc a b)) :
     MemSobolevIntervalLp u 1 p (Opens.Ioo a b) ∧ HasWeakDerivOn u (deriv u) (Opens.Ioo a b) := by
@@ -1625,11 +1765,14 @@ theorem memSobolevIntervalLp_of_contDiffOn_Icc {a b : ℝ} (hab : a < b) {u : �
     (hu.continuousOn.memLp_top_restrict_Ioo.mono_exponent le_top)
     ((hcont.memLp_top_restrict_Ioo.mono_exponent le_top).ae_eq hae.symm)
 
-/-- **Continuous piecewise-`C¹` functions lie in `W^{1,p}(a, b)`** for every `1 ≤ p ≤ ∞`
-([brezis2011functional] §8.2, Examples, "more generally"): for a partition
-`x 0 = a < x 1 < ⋯ < x (N + 1) = b` and `g` continuous on `[a, b]`, `C¹` on each open panel
-with the panel derivatives bounded by a common constant, `g ∈ W^{1,p}(a, b)` with weak
-derivative `deriv g` (whose values at the nodes are irrelevant). -/
+/-- **Continuous piecewise $C^1$ functions lie in $W^{1,p}(a, b)$.** Let $1 \le p \le \infty$ and
+let $a = x_0 < x_1 < \dots < x_{N+1} = b$ be a partition. Let $g$ be continuous on $[a, b]$ and
+of class $C^1$ on each open panel $(x_j, x_{j+1})$, and assume that there is a constant $C$ with
+$|g'(t)| \le C$ for every $t$ in every open panel. Then $g \in W^{1,p}(a, b)$, and the classical
+derivative $g'$ is the weak derivative of $g$ on $(a, b)$. This is the sentence "more generally"
+of the Examples of [brezis2011functional] §8.2.
+
+The values of $g'$ at the nodes do not matter. -/
 theorem memSobolevIntervalLp_of_piecewise_contDiffOn {a b : ℝ} {N : ℕ} {x : Fin (N + 2) → ℝ}
     (hx : StrictMono x) (hxa : x 0 = a) (hxb : x (Fin.last (N + 1)) = b) {g : ℝ → ℝ}
     (hg : ContinuousOn g (Icc a b))
@@ -1663,9 +1806,11 @@ theorem memSobolevIntervalLp_of_piecewise_contDiffOn {a b : ℝ} {N : ℕ} {x : 
   exact ⟨memSobolevIntervalLp_one_iff.2 ⟨hg.memLp_top_restrict_Ioo.mono_exponent le_top, _, hweak',
     hmem⟩, hweak'⟩
 
-/-- **`|x| ∈ W^{1,p}(-1, 1)` for every `1 ≤ p ≤ ∞`** ([brezis2011functional] §8.2, Example (i)),
-with weak derivative the sign function `g x = 1` for `0 < x`, `-1` otherwise: the function `|x|`
-is continuous and piecewise `C¹` on the partition `-1 < 0 < 1`. -/
+/-- **$|x| \in W^{1,p}(-1, 1)$ for every $1 \le p \le \infty$.** The function $x \mapsto |x|$ lies
+in $W^{1,p}(-1, 1)$, and its weak derivative on $(-1, 1)$ is the sign function $g(x) = 1$ for
+$x > 0$, $g(x) = -1$ for $x \le 0$. This is Example (i) of [brezis2011functional] §8.2.
+
+The function $|x|$ is continuous and piecewise $C^1$ on the partition $-1 < 0 < 1$. -/
 theorem memSobolevIntervalLp_abs :
     MemSobolevIntervalLp (fun x : ℝ ↦ |x|) 1 p (Opens.Ioo (-1) 1) ∧
       HasWeakDerivOn (fun x : ℝ ↦ |x|) (fun x ↦ if 0 < x then 1 else -1) (Opens.Ioo (-1) 1) := by
@@ -1698,9 +1843,12 @@ theorem memSobolevIntervalLp_abs :
   have h0 : ∀ᵐ t : ℝ, t ≠ 0 := by simp [ae_iff, measure_singleton]
   exact ae_restrict_of_ae (h0.mono fun t ht ↦ hder t ht)
 
-/-- **The sign function is not in `W^{1,p}(-1, 1)` for any `1 ≤ p ≤ ∞`** ([brezis2011functional]
-§8.2, Example (ii)): if it were, it would agree almost everywhere with a function continuous on
-`[-1, 1]`, whose value at `0` would have to be both `1` and `-1`. -/
+/-- **The sign function is not in $W^{1,p}(-1, 1)$ for any $1 \le p \le \infty$.** The function
+$g(x) = 1$ for $x > 0$, $g(x) = -1$ for $x \le 0$, does not lie in $W^{1,p}(-1, 1)$. This is
+Example (ii) of [brezis2011functional] §8.2.
+
+If it did, it would agree almost everywhere with a function continuous on $[-1, 1]$, whose value
+at $0$ would have to be both $1$ and $-1$. -/
 theorem not_memSobolevIntervalLp_sign :
     ¬ MemSobolevIntervalLp (fun x : ℝ ↦ if 0 < x then (1 : ℝ) else -1) 1 p (Opens.Ioo (-1) 1) := by
   intro hmem
@@ -1737,15 +1885,16 @@ section Helpers
 
 variable {I : Opens ℝ} {p : ℝ≥0∞}
 
-/-- Every property holds almost everywhere for the restriction of a measure to the empty set. -/
+/-- If $s = \emptyset$, every property holds almost everywhere for the restriction of a measure
+$\mu$ to $s$. -/
 theorem MeasureTheory.ae_restrict_of_eq_empty {α : Type*} [MeasurableSpace α] {μ : Measure α}
     {s : Set α} (hs : s = ∅) {P : α → Prop} : ∀ᵐ x ∂(μ.restrict s), P x := by
   subst hs
   rw [Measure.restrict_empty, ae_zero]
   exact Filter.eventually_bot
 
-/-- A property holding almost everywhere on the open interval `I` holds almost everywhere on the
-segment between two points of the closure of `I`. -/
+/-- Let $I$ be an open interval and let $P$ hold almost everywhere on $I$. For all $x, y$ in the
+closure $\bar I$, $P$ holds almost everywhere on the interval between $x$ and $y$. -/
 theorem ae_uIoc_of_ae_restrict (hI : (I : Set ℝ).OrdConnected) {P : ℝ → Prop}
     (h : ∀ᵐ t ∂(volume.restrict I), P t) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (hy : y ∈ closure (I : Set ℝ)) : ∀ᵐ t, t ∈ Ι x y → P t := by
@@ -1757,14 +1906,15 @@ theorem ae_uIoc_of_ae_restrict (hI : (I : Set ℝ).OrdConnected) {P : ℝ → Pr
   · exact ht hmem
   · exact absurd ⟨hsub (uIoc_subset_uIcc htI), hmem⟩ htn
 
-/-- An interval integral between two points of the closure of an open interval `I` only sees the
-integrand almost everywhere on `I`. -/
+/-- Let $I$ be an open interval, let $f = g$ almost everywhere on $I$, and let $x, y$ lie in the
+closure $\bar I$. Then $\int_x^y f = \int_x^y g$. -/
 theorem intervalIntegral_congr_ae_of_mem_closure (hI : (I : Set ℝ).OrdConnected) {f g : ℝ → ℝ}
     (h : f =ᵐ[volume.restrict I] g) {x y : ℝ} (hx : x ∈ closure (I : Set ℝ))
     (hy : y ∈ closure (I : Set ℝ)) : ∫ t in x..y, f t = ∫ t in x..y, g t :=
   intervalIntegral.integral_congr_ae (ae_uIoc_of_ae_restrict hI h hx hy)
 
-/-- A function of `L^p(I)`, `1 ≤ p`, is integrable on the bounded piece `[x, y] ∩ I` of `I`. -/
+/-- Let $1 \le p \le \infty$ and $w \in L^p(I)$. For all $x, y \in \mathbb{R}$, $w$ is integrable on
+$[x, y] \cap I$, where $[x, y]$ is the closed interval between $x$ and $y$. -/
 theorem MeasureTheory.MemLp.integrableOn_uIcc_inter [Fact (1 ≤ p)] {w : ℝ → ℝ}
     (hw : MemLp w p (volume.restrict I)) (x y : ℝ) : IntegrableOn w (uIcc x y ∩ I) := by
   have := hw.restrict (uIcc x y)
@@ -1773,8 +1923,8 @@ theorem MeasureTheory.MemLp.integrableOn_uIcc_inter [Fact (1 ≤ p)] {w : ℝ �
     ⟨(measure_mono inter_subset_left).trans_lt measure_Icc_lt_top⟩
   exact this.integrable Fact.out
 
-/-- The extension by zero off `I` of a function of `L^p(I)`, `1 ≤ p`, is interval integrable on
-every bounded interval of `ℝ`. -/
+/-- Let $1 \le p \le \infty$ and $w \in L^p(I)$. The extension of $w$ by zero off $I$ is integrable
+on every bounded interval of $\mathbb{R}$. -/
 theorem MeasureTheory.MemLp.intervalIntegrable_indicator [Fact (1 ≤ p)] {w : ℝ → ℝ}
     (hw : MemLp w p (volume.restrict I)) (x y : ℝ) :
     IntervalIntegrable ((I : Set ℝ).indicator w) volume x y := by
@@ -1785,18 +1935,21 @@ theorem MeasureTheory.MemLp.intervalIntegrable_indicator [Fact (1 ≤ p)] {w : �
 
 end Helpers
 
-/-! ### The `C¹` and `C^k` representatives -/
+/-! ### The $C^1$ and $C^k$ representatives -/
 
 namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- **The representative is `C¹` when the derivative is continuous** ([brezis2011functional]
-§8.2, Remark 6): if `u ∈ W^{1,p}(I)` and `u'` has a representative `g` continuous on the closure
-of `I`, then the continuous representative of `u` is `C¹` on the closure of `I`, with derivative
-`g` there. The proof extends `g` continuously to `ℝ` (Tietze) and compares `rep u` with the
-`C¹` primitive of the extension. -/
+/-- **The representative is $C^1$ when the derivative is continuous.** Let $I$ be an open interval
+and $u \in W^{1,p}(I)$, and let $u' = g$ almost everywhere on $I$ for a function $g$ continuous
+on the closure $\bar I$. Then the continuous representative $\tilde u$ is of class $C^1$ on
+$\bar I$, and its derivative within $\bar I$ at every $x \in \bar I$ is $g(x)$. This is Remark 6
+of [brezis2011functional] §8.2.
+
+The proof extends $g$ continuously to $\mathbb{R}$ by the Tietze extension theorem and compares
+$\tilde u$ with the $C^1$ primitive of the extension. -/
 theorem contDiffOn_rep_of_continuousOn_deriv (hI : (I : Set ℝ).OrdConnected)
     (u : SobolevIntervalLp 1 p I) {g : ℝ → ℝ} (hg : ContinuousOn g (closure (I : Set ℝ)))
     (hu : deriv u 1 =ᵐ[volume.restrict I] g) :
@@ -1830,13 +1983,15 @@ theorem contDiffOn_rep_of_continuousOn_deriv (hI : (I : Set ℝ).OrdConnected)
   rw [← hGg x hx]
   exact (hFd x).hasDerivWithinAt.congr hFrep (hFrep x hx)
 
-/-- **The `C^k` representative of an element of `W^{k+1,p}(I)`**: a function `f` of class `C^k`
-on all of `ℝ` that agrees almost everywhere on `I` with `u`, whose derivatives `f^{(j)}` for
-`j ≤ k` agree almost everywhere on `I` with the weak derivatives `u^{(j)}`, and whose `k`-th
-derivative is the integral of the top weak derivative `u^{(k+1)}` between any two points of the
-closure of `I`. By induction on `k`, integrating the representative of the weak derivative
-`u' ∈ W^{k,p}(I)`; the base case is the primitive of the extension by zero of `u'`. This is what
-[brezis2011functional] §8.2 (the paragraph on `W^{m,p}`) means by `W^{m,p}(I) ⊆ C^{m-1}(Ī)`. -/
+/-- **The $C^k$ representative of an element of $W^{k+1,p}(I)$.** Let $1 \le p \le \infty$, let $I$
+be an open interval and $u \in W^{k+1,p}(I)$. There is a function $f \in C^k(\mathbb{R})$ such
+that $f^{(j)} = u^{(j)}$ almost everywhere on $I$ for every $j \le k$, and
+$$f^{(k)}(t) - f^{(k)}(s) = \int_s^t u^{(k+1)}(r)\, dr \quad \text{for all } s, t \in \bar I.$$
+This is what the paragraph on $W^{m,p}$ of [brezis2011functional] §8.2 means by
+$W^{m,p}(I) \subseteq C^{m-1}(\bar I)$.
+
+The proof is by induction on $k$ and integrates the representative of the weak derivative
+$u' \in W^{k,p}(I)$. The base case is the primitive of the extension of $u'$ by zero. -/
 theorem exists_contDiff_ae_eq (hI : (I : Set ℝ).OrdConnected) {k : ℕ}
     (u : SobolevIntervalLp (k + 1) p I) :
     ∃ f : ℝ → ℝ, ContDiff ℝ k f ∧
@@ -1909,7 +2064,7 @@ section Helpers2
 
 variable {I : Opens ℝ}
 
-/-- On an empty open set every function has every weak derivative. -/
+/-- On an empty open set $I$, every function $w$ is the weak derivative of every function $f$. -/
 theorem hasWeakDerivOn_of_eq_empty (hI : (I : Set ℝ) = ∅) (f w : ℝ → ℝ) :
     HasWeakDerivOn f w I := by
   refine ⟨fun x hx ↦ ?_, fun x hx ↦ ?_, fun φ ↦ ?_⟩
@@ -1925,12 +2080,15 @@ section ACLip
 
 variable {I : Opens ℝ}
 
-/-- **`W^{1,1}(a, b)` is the space of absolutely continuous functions** ([brezis2011functional]
-§8.2, Remark 8, the absolutely continuous half): a function lies in `W^{1,1}(a, b)` exactly when
-it agrees almost everywhere on `(a, b)` with a function absolutely continuous on `[a, b]`.
-Forwards, the continuous representative is absolutely continuous; backwards, an absolutely
-continuous `g` is differentiable almost everywhere with integrable derivative and
-`g x = g y₀ + ∫_{y₀}^x g'`, so Lemma 8.2 gives its weak derivative. -/
+/-- **$W^{1,1}(a, b)$ is the space of absolutely continuous functions.** Let $a < b$. A function $u$
+lies in $W^{1,1}(a, b)$ if and only if it agrees almost everywhere on $(a, b)$ with a function
+that is absolutely continuous on $[a, b]$. This is the absolutely continuous half of Remark 8 of
+[brezis2011functional] §8.2.
+
+In the forward direction, the continuous representative is absolutely continuous. In the
+backward direction, an absolutely continuous $g$ is differentiable almost everywhere with
+integrable derivative and $g(x) = g(y_0) + \int_{y_0}^x g'$, so Lemma 8.2 gives its weak
+derivative. -/
 theorem memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval {a b : ℝ} (hab : a < b)
     {u : ℝ → ℝ} :
     MemSobolevIntervalLp u 1 1 (Opens.Ioo a b) ↔
@@ -1967,15 +2125,20 @@ theorem memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval {a b : �
     exact memSobolevIntervalLp_one_iff.2 ⟨hgc.memLp_top_restrict_Ioo.mono_exponent le_top, _,
       hweak', hmem'⟩
 
-/-- **`W^{1,∞}(I)` is the space of Lipschitz functions** ([brezis2011functional] Proposition
-8.4): a function `u ∈ L^∞(I)` lies in `W^{1,∞}(I)` exactly when
-`|u x - u y| ≤ C |x - y|` for almost every `x, y ∈ I`, and then `C = ‖u'‖_∞` works. Forwards,
-the continuous representative satisfies `|ũ x - ũ y| = |∫_y^x u'| ≤ ‖u'‖_∞ |x - y|`. Backwards,
-`u` is Lipschitz on the full-measure set of points `x` with `|u x - u y| ≤ C |x - y|` for
-almost every `y`, hence extends to a Lipschitz function `g` on `ℝ` (McShane) agreeing with `u`
-almost everywhere; `g` is absolutely continuous with `|g'| ≤ C` and `g x = g y₀ + ∫_{y₀}^x g'`,
-so Lemma 8.2 gives `g ∈ W^{1,∞}(I)`. The book's route through Proposition 8.3 and the duality
-`(L¹)^* = L^∞` is not needed in one dimension. -/
+/-- **$W^{1,\infty}(I)$ is the space of Lipschitz functions.** Let $I$ be an open interval and
+$u \in L^\infty(I)$. Then $u \in W^{1,\infty}(I)$ if and only if there is a constant $C$ such
+that, for almost every $x \in I$ and almost every $y \in I$,
+$$|u(x) - u(y)| \le C\, |x - y|.$$
+This is Proposition 8.4 of [brezis2011functional].
+
+In the forward direction the proof takes $C = \|u'\|_\infty$, since the continuous
+representative satisfies $|\tilde u(x) - \tilde u(y)| = |\int_y^x u'| \le \|u'\|_\infty |x -
+y|$. In the backward direction, $u$ is Lipschitz on the set of full measure of the points $x$
+with $|u(x) - u(y)| \le C |x - y|$ for almost every $y$. So it extends to a Lipschitz function
+$g$ on $\mathbb{R}$ (McShane) that agrees with $u$ almost everywhere. Then $g$ is absolutely
+continuous with $|g'| \le C$ and $g(x) = g(y_0) + \int_{y_0}^x g'$, and Lemma 8.2 gives
+$g \in W^{1,\infty}(I)$. In one dimension the route of the source through Proposition 8.3 and
+the duality $(L^1)^* = L^\infty$ is not needed. -/
 theorem memSobolevIntervalLp_top_iff_lipschitz (hI : (I : Set ℝ).OrdConnected) {u : ℝ → ℝ}
     (hu : MemLp u ⊤ (volume.restrict I)) :
     MemSobolevIntervalLp u 1 ⊤ I ↔ ∃ C : ℝ, ∀ᵐ x ∂(volume.restrict I),
@@ -2074,7 +2237,9 @@ end ACLip
 
 section Translate
 
-/-- Membership of a translate in a translated segment. -/
+/-- For $x, h, s \in \mathbb{R}$, $x + s$ lies in the interval
+$(\min\{x, x + h\}, \max\{x, x + h\}]$ if and only if $s$ lies in
+$(\min\{0, h\}, \max\{0, h\}]$. -/
 theorem mem_uIoc_add_left_iff {x h s : ℝ} : x + s ∈ Ι x (x + h) ↔ s ∈ Ι 0 h := by
   simp only [mem_uIoc]
   constructor
@@ -2085,8 +2250,9 @@ theorem mem_uIoc_add_left_iff {x h s : ℝ} : x + s ∈ Ι x (x + h) ↔ s ∈ �
     · exact Or.inl ⟨by linarith, by linarith⟩
     · exact Or.inr ⟨by linarith, by linarith⟩
 
-/-- The integral of a nonnegative function over the segment `Ι x (x + h)`, as an integral over
-`Ι 0 h` of the translate. -/
+/-- For a function $g : \mathbb{R} \to [0, \infty]$ and $x, h \in \mathbb{R}$, the integral of $g$
+over the interval $(\min\{x, x + h\}, \max\{x, x + h\}]$ equals $\int_{\mathbb{R}}
+\mathbf{1}_{J}(s)\, g(x + s)\, ds$, where $J = (\min\{0, h\}, \max\{0, h\}]$. -/
 theorem lintegral_uIoc_add_left (g : ℝ → ℝ≥0∞) (x h : ℝ) :
     ∫⁻ t in Ι x (x + h), g t = ∫⁻ s, (Ι 0 h).indicator (fun s ↦ g (x + s)) s := by
   rw [← lintegral_indicator measurableSet_uIoc, ← lintegral_add_left_eq_self _ x]
@@ -2101,13 +2267,17 @@ namespace SobolevIntervalLp
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- **Translations of a function of `W^{1,p}(ℝ)`** ([brezis2011functional] Proposition 8.5,
-(i) ⇒ (ii), valid for every `1 ≤ p ≤ ∞`): for `u ∈ W^{1,p}(ℝ)` and `h : ℝ`,
-`‖τ_h u − u‖_p ≤ |h| ‖u'‖_p`, stated for the continuous representative. Since
-`ũ(x + h) − ũ(x) = ∫_x^{x+h} u'`, the left side is bounded by the `L^p` norm in `x` of
-`∫_0^h |u'(x + s)| ds`, which Minkowski's integral inequality
-(`ENNReal.lintegral_rpow_lintegral_le`) and translation invariance bound by `|h| ‖u'‖_p`; at
-`p = ∞` it is the Lipschitz bound of Proposition 8.4. -/
+/-- **Translations of a function of $W^{1,p}(\mathbb{R})$.** Let $1 \le p \le \infty$,
+$u \in W^{1,p}(\mathbb{R})$ and $h \in \mathbb{R}$. Then
+$$\|\tau_h u - u\|_{L^p(\mathbb{R})} \le |h|\, \|u'\|_{L^p(\mathbb{R})},$$
+where $(\tau_h u)(x) = \tilde u(x + h)$ and $u$ is read as its continuous representative
+$\tilde u$. This is the implication (i) ⇒ (ii) of Proposition 8.5 of [brezis2011functional].
+
+Since $\tilde u(x + h) - \tilde u(x) = \int_x^{x+h} u'$, the left side is at most the $L^p$ norm
+in $x$ of $\int_0^h |u'(x + s)|\, ds$. Minkowski's integral inequality
+(`ENNReal.lintegral_rpow_lintegral_le`) and translation invariance bound this by
+$|h|\, \|u'\|_p$. For $p = \infty$ it is the Lipschitz bound of Proposition 8.4. The norms are
+the extended norms `eLpNorm`, and the line is the open set `⊤`. -/
 theorem eLpNorm_translate_sub_le (u : SobolevIntervalLp 1 p ⊤) (h : ℝ) :
     eLpNorm (fun x ↦ rep u (x + h) - rep u x) p volume
       ≤ ENNReal.ofReal |h| * eLpNorm (deriv u 1) p volume := by

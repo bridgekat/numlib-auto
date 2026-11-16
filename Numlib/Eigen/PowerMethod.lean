@@ -16,165 +16,202 @@ import Numlib.LinearAlgebra.Span.Basic
 /-!
 # The power method and subspace iteration
 
-The power iteration `x_{k+1} = A x_k / ‖A x_k‖`, written in closed form `Krylov.powerIterate A x₀ k
-= ‖A^k x₀‖⁻¹ • A^k x₀` as a function of the step index, and its convergence to the dominant
-eigendirection ([saad2011numerical], Thm 4.1; [kress1998numerical] §7.2); then its block form,
-subspace iteration ([saad2011numerical], Thm 5.2; [kress1998numerical] Lemma 7.18), which carries a
-whole subspace along and captures as many dominant eigenvectors as that subspace has dimensions.
+Let $A$ be an endomorphism of a normed space $E$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and
+let $x_0 \in E$. The power iteration $q_{k+1} = A q_k / \|A q_k\|$ has the closed form
+$q_k = \|A^k x_0\|^{-1} A^k x_0$ (`Krylov.powerIterate`). This module proves that the power
+iteration converges to the dominant eigendirection ([saad2011numerical], Theorem 4.1;
+[kress1998numerical], §7.2). It also proves the convergence of inverse iteration, which is the power
+iteration of $(A - \sigma I)^{-1}$, and of subspace iteration, the block form that carries a whole
+subspace along and captures as many dominant eigenvectors as the subspace has dimensions
+([saad2011numerical], Theorem 5.2; [kress1998numerical], Lemma 7.18).
 
-## The convergence theorem
+For a scalar $\mu$, let $G_\mu(A) = \{w : (A - \mu I)^N w = 0 \text{ for some } N\}$ be the maximal
+generalized eigenspace. For a predicate $p$ on scalars, the spectral subspace
+$G_p(A) = \sum_{p(\mu)} G_\mu(A)$ is the sum of the generalized eigenspaces of the selected scalars,
+and $G_{\neq\lambda}(A)$ is the sum over the scalars $\mu \neq \lambda$. The main theorem is the
+following. Write $x_0 = u + w$ with $Au = \lambda u$ and $w \in G_{\neq\lambda}(A)$. If
+$\lambda \neq 0$ and every eigenvalue $\mu \neq \lambda$ satisfies $|\mu| < |\lambda|$, then
+$\lambda^{-k} A^k x_0 \to u$, and the error is $O((r/|\lambda|)^k)$ for every $r$ above the moduli
+of the other eigenvalues. This is the classical rate $|\lambda_2/\lambda_1|^k$, weakened to a strict
+bound because a subdominant Jordan block contributes a polynomial factor. The normalized iterates
+converge up to factors of modulus one, and their Rayleigh quotients $\langle q_k, A q_k \rangle$
+converge to $\lambda$ ([quarteroni2000numerical], Theorem 5.6 and (5.28)). With an eigenbasis the
+rate is exactly $(\rho/|\lambda|)^k$, where $\rho$ bounds the other eigenvalues, and for a symmetric
+operator the Rayleigh quotient converges at the square of this rate.
 
-Write the starting vector as `x₀ = u + w` with `A u = λ u` and `w` in the invariant subspace `W =
-⨆_{μ ≠ λ} maxGenEigenspace A μ` spanned by the *other* generalized eigenspaces. If every eigenvalue
-`μ ≠ λ` has `‖μ‖ < ‖λ‖`, then
+## Main definitions
 
-* `Krylov.powerIterate_tendsto`: `λ^{-k} A^k x₀ → u`, and
-* `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le`: the error is `O((r/‖λ‖)^k)` for every `r`
-  above the moduli of the other eigenvalues — the classical rate `|λ₂/λ₁|^k`, weakened to a strict
-  bound because a subdominant Jordan block contributes a polynomial factor.
+* `Krylov.powerIterate`: the power iterate $q_k = \|A^k x_0\|^{-1} A^k x_0$.
+* `Module.End.IsStrictlyDominant`: $\lambda$ is strictly dominant for $A$ if every eigenvalue
+  $\mu \neq \lambda$ of $A$ has $|\mu| < |\lambda|$.
+* `Krylov.inverseIterate`: inverse iteration with shift $\sigma$, the power iteration of
+  $(A - \sigma I)^{-1}$.
+* `Krylov.subspaceIterate`: the $k$-th iterate $A^k S$ of subspace iteration from a subspace $S$.
 
-Three features of the formulation are deliberate.
+## Main results
 
-*No finite dimension and no algebraically closed field.* Those enter only through
-`Krylov.exists_eq_add_mem_maxGenEigenspace`, which splits every `x₀` as `u + w`, and are packaged in
-`Krylov.exists_eq_add_tendsto`.
+* `Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace`: a generalized eigenvector $w$ for $\mu$
+  has $\|A^k w\| \le C r^k$ for every $r > |\mu|$.
+* `Krylov.powerIterate_tendsto`: if $\lambda \neq 0$ is strictly dominant, $x_0 = u + w$,
+  $Au = \lambda u$ and $w \in G_{\neq\lambda}(A)$, then $\lambda^{-k} A^k x_0 \to u$.
+* `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le`: the error of $\lambda^{-k} A^k x_0$ is
+  $O((r/|\lambda|)^k)$ for every $r$ above the moduli of the other eigenvalues.
+* `Krylov.tendsto_smul_powerIterate`: for $u \neq 0$, $(|\lambda|/\lambda)^k q_k \to u/\|u\|$.
+* `Krylov.exists_norm_eq_one_tendsto_smul_powerIterate`: the power iterates converge essentially to
+  $u/\|u\|$.
+* `Krylov.tendsto_norm_sub_smul_powerIterate`: the residual $\|A q_k - \lambda q_k\|$ tends to $0$.
+* `Krylov.exists_eq_add_tendsto`: in finite dimension over $\mathbb{C}$, if $\lambda \neq 0$ is
+  semi-simple and strictly dominant, then every $x_0$ splits as $u + w$ with
+  $\lambda^{-k} A^k x_0 \to u$.
+* `Krylov.tendsto_smul_inverseIterate`: inverse iteration converges essentially to an eigenvector of
+  the eigenvalue that is strictly closest to the shift.
+* `Krylov.tendsto_inner_powerIterate` and `Krylov.tendsto_inner_inverseIterate`: the Rayleigh
+  quotients of the power iterates and of the inverse iterates converge to the eigenvalue.
+* `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`: with an eigenbasis, the error of the
+  scaled iterate is at most $(\sum_{i \neq i_0} |\alpha_i/\alpha_{i_0}|) (\rho/|\lambda_{i_0}|)^k$
+  ([quarteroni2000numerical], Theorem 5.6).
+* `Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis` and
+  `Krylov.exists_norm_inner_powerIterate_sub_le_of_eigenbasis`: with an eigenbasis, the
+  eigendirection and the Rayleigh quotient converge at the rate $(\rho/|\lambda_{i_0}|)^k$
+  ([golub2013matrix], (7.3.5) and the display before it).
+* `Krylov.sinAngle_powerIterate_le_of_eigenbasis`: with an orthonormal eigenbasis, $\sin\theta_k \le
+  \tan\theta_0 \, (\rho/|\lambda_{i_0}|)^k$ ([golub2013matrix], Theorem 8.2.1, (8.2.4)).
+* `Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis`: with an orthonormal eigenbasis and real
+  eigenvalues, the Rayleigh quotient has error at most $\max_{i \neq i_0} |\lambda_{i_0} -
+  \lambda_i| \tan^2\theta_0 \, (\rho/|\lambda_{i_0}|)^{2k}$ ([golub2013matrix], Theorem 8.2.1,
+  (8.2.5)).
+* `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`: for a symmetric operator with
+  eigenvalues in $[a, b]$, the Rayleigh quotient has error at most $(b - a) \tan^2\theta_0 \,
+  (\rho/|\lambda_{i_0}|)^{2k}$ ([quarteroni2000numerical], (5.23)).
+* `Krylov.powerIterate_conj_linearIsometryEquiv` and
+  `Krylov.inverseIterate_conj_linearIsometryEquiv`: both iterations commute with a change of
+  orthonormal coordinates, so they may be run on a Hessenberg or tridiagonal form
+  ([quarteroni2000numerical], §5.8.1).
+* `Krylov.norm_sub_starProjection_subspaceIterate_le`: if $Au = \lambda u$, $s \in S$ and
+  $\|A^k (s - u)\| \le C r^k$, then $\|u - P_{A^k S} u\| \le C (r/|\lambda|)^k$.
+* `Krylov.exists_norm_sub_starProjection_subspaceIterate_le` and
+  `Krylov.tendsto_starProjection_subspaceIterate`: the convergence of subspace iteration to each
+  dominant eigenvector ([saad2011numerical], Theorem 5.2).
+* `Krylov.gap_subspaceIterate_le`, `Krylov.exists_gap_subspaceIterate_le` and
+  `Krylov.exists_gap_subspaceIterate_span_image_le`: the gap between the dominant invariant subspace
+  and $A^k S$ is $O((r/\rho)^k)$ ([kress1998numerical], Lemma 7.18).
 
-*Semi-simplicity is local to `x₀`.* The cited sources assume the dominant eigenvalue `λ` is
-semi-simple, that is, that its generalized eigenspace is its eigenspace. What the proof uses is only
-that *the `λ`-component of this particular `x₀`* is an honest eigenvector — the hypothesis `A u = λ
-u`. Semi-simplicity delivers that for every `x₀`, and is the hypothesis of
-`Krylov.exists_eq_add_tendsto`; a simple eigenvalue is semi-simple by
-`Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one`.
+## Proof outline
 
-*No Jordan form and no Gelfand formula.* The decay of the subdominant part is
-`Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace`: if `(A - μ)^N w = 0` and `‖μ‖ < r` then
-`‖A^k w‖ ≤ C r^k`, by induction on `N` from the scalar recursion `a_{k+1} ≤ ‖μ‖ a_k + C r^k`. The
-spectrum of a restriction is never computed, `E` need not be complete and `A` need not be
-continuous.
+The decay of the subdominant part is `Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace`: if
+$(A - \mu I)^N w = 0$ and $|\mu| < r$, then $\|A^k w\| \le C r^k$, by induction on $N$ from the
+scalar recursion $a_{k+1} \le |\mu| a_k + C r^k$. Since
+$\lambda^{-k} A^k x_0 - u = \lambda^{-k} A^k w$, this gives the convergence of the power method. For
+subspace iteration, the single candidate $\lambda^{-k} A^k s \in A^k S$ proves the bound: the
+orthogonal projection is the best approximation from $A^k S$, and the error of the candidate is
+$\lambda^{-k} A^k (s - u)$. The gap form follows from `Submodule.gap_le_of_forall_norm_sub_le`: the
+scaled iterates $\lambda_j^{-k} A^k s_j$ span $A^k S$ and converge to the eigenvectors $x_j$ one at
+a time, and the gap is small because the whole family converges at once.
 
-## Normalization and phase
+## Implementation notes
 
-`powerIterate` normalizes by a *norm*, so it is unchanged by a positive rescaling of `x₀`
-(`Krylov.powerIterate_ofReal_smul`) and satisfies the normalize-at-every-step recurrence exactly,
-with no scalar left over to correct for (`Krylov.powerIterate_succ`, and
-`Krylov.eq_powerIterate_of_recurrence` for the converse). The convention `(0 : ℝ)⁻¹ = 0` makes it
-total: the degenerate case `A^k x₀ = 0` returns `0`, and no statement below has to exclude it.
-
-A norm-normalized iterate cannot converge on the nose, because each step multiplies the
-eigendirection by the unimodular scalar `λ/‖λ‖`. [saad2011numerical] own algorithm sidesteps this by
-dividing instead by the entry of largest modulus, which is a *complex* scalar; the notion he
-introduces for the general case is that `x_k` **converges essentially** to `x` when `c_k x_k → x`
-for some sequence `c_k` of scalars of modulus one. That is what holds here, with the sequence
-explicit: `Krylov.tendsto_smul_powerIterate` divides out `(λ/‖λ‖)^k` and
-`Krylov.exists_norm_eq_one_tendsto_smul_powerIterate` is the existential form. The phase-free
-alternative is `Krylov.tendsto_norm_sub_smul_powerIterate`: the eigenvalue residual `‖A x_k - λ
-x_k‖` tends to `0`, so the iterates are approximate eigenvectors for `λ`.
-
-## Rayleigh quotients, the diagonalizable rate, and changes of coordinates
-
-`Krylov.tendsto_inner_powerIterate` and `Krylov.tendsto_inner_inverseIterate` are the convergence
-of the Rayleigh quotients `⟪q_k, A q_k⟫` to the eigenvalue, which a unimodular factor does not see
-([quarteroni2000numerical] Theorem 5.6 and (5.28)).
-`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` is the exact rate `(ρ/‖λ‖)^k` when an
-eigenbasis is available ([quarteroni2000numerical] Theorem 5.6), with the triangle-inequality
-constant `∑ ‖α_i/α_{i₀}‖` — the book's `(∑ (α_i/α_1)²)^{1/2}` needs the eigenbasis orthonormal.
-For a symmetric operator the Rayleigh quotient converges at the *square* of that rate,
-`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le` ([quarteroni2000numerical] (5.23);
-[golub1989matrix] Theorem 8.2.1). For a nonsymmetric operator with an eigenbasis the eigendirection
-and the Rayleigh quotient converge at the unsquared rate `(ρ/‖λ‖)^k`
-(`Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis`,
-`Krylov.exists_norm_inner_powerIterate_sub_le_of_eigenbasis`; [golub2013matrix] (7.3.5) and the
-display before it). The two bounds of [golub2013matrix] Theorem 8.2.1 are stated for an *arbitrary*
-orthonormal eigenbasis, so that a given Schur decomposition applies without matching it to
-`eigenvectorBasis`: the angle bound `Krylov.sinAngle_powerIterate_le_of_eigenbasis`
-(`sin θ_k ≤ tan θ₀ (ρ/|λ|)^k`, (8.2.4)) and the Rayleigh-quotient bound
-`Krylov.abs_sub_rayleigh_powerIterate_le_of_eigenbasis` with the book's constant
-`max_{i ≠ i₀} |λ_{i₀} - λ_i|` ((8.2.5)); the spread form above is its corollary. Finally
-`Krylov.powerIterate_conj_linearIsometryEquiv` and
-`Krylov.inverseIterate_conj_linearIsometryEquiv` say that both iterations commute with a change of
-orthonormal coordinates, which is why they may be run on a Hessenberg or tridiagonal form
-([quarteroni2000numerical] §5.8.1).
-
-## Inverse iteration
-
-`Krylov.inverseIterate A σ x₀ k` is the power method run on `(A - σ)⁻¹`, the shift-and-invert
-iteration of [saad2011numerical], §4.1.2–4.1.3. Its point is that the map `μ ↦ (μ - σ)⁻¹` makes the
-eigenvalue of `A` *nearest the shift* the dominant one, so `Krylov.tendsto_smul_inverseIterate`
-converges under a hypothesis about distances to `σ` rather than about moduli, at the rate `(‖λ -
-σ‖/‖μ₂ - σ‖)^k` — which a shift close to `λ` makes as fast as one likes.
-
-The inverse is `Ring.inverse`, so `inverseIterate` is total, and `IsUnit (A - σ)` — in finite
-dimension, `σ ∉ spectrum 𝕜 A` — is a hypothesis of the theorems rather than of the definition. The
-spectral correspondence is proved by hand and needs no spectral mapping theorem: an eigenvector of
-`A` for `μ ≠ σ` is an eigenvector of the shifted inverse for `(μ - σ)⁻¹`
-(`Krylov.inverse_apply_eq_smul`), a *generalized* eigenvector likewise and with the same index
-(`Krylov.maxGenEigenspace_le_maxGenEigenspace_inverse`, from the factorization `(A - σ)⁻¹ - (μ -
-σ)⁻¹ = -(μ - σ)⁻¹ (A - σ)⁻¹ (A - μ)` and the commutation of the two factors), and every eigenvalue
-of the shifted inverse arises this way (`Krylov.hasEigenvalue_of_hasEigenvalue_inverse`). Rayleigh
-quotient iteration, which updates the shift at every step to the Rayleigh quotient of the current
-vector, is described by the book without a theorem; it is `Krylov.rayleighQuotientIterate` of
-`Numlib/Eigen/RayleighQuotientIteration`, with its local quadratic convergence at a simple
-eigenvalue of a nonsymmetric operator (`Krylov.norm_rayleighQuotientIterate_sub_le`).
-
-## Subspace iteration
-
-`Krylov.subspaceIterate A S₀ k = A^k S₀` is the block form of the same iteration. Bauer's
-Treppeniteration reorthonormalizes its block of vectors at every step, which replaces the basis but
-not the subspace it spans, so in closed form the `k`-th iterate is again a power of `A` applied to
-the starting data — this time to a whole subspace. What converges is the subspace, and the theorem
-of [saad2011numerical], Thm 5.2 measures its distance to a dominant eigenvector `u`, namely `‖u -
-P_{S_k} u‖` for `P_{S_k}` the orthogonal projector onto `S_k`. It is *not* a statement about a gap
-between subspaces.
-
-* `Krylov.norm_sub_starProjection_subspaceIterate_le` is the analytic core, and it is spectrum-free:
-  if `A u = λ u`, if `s ∈ S₀`, and if the orbit of `s - u` obeys `‖A^k (s - u)‖ ≤ C r^k`, then `‖u -
-  P_{S_k} u‖ ≤ C (r/‖λ‖)^k`. The single candidate `λ^{-k} A^k s ∈ S_k` proves it, because the
-  orthogonal projection is the best approximation from `S_k` and the candidate's error is `λ^{-k}
-  A^k (s - u)`.
-* `Krylov.exists_norm_sub_starProjection_subspaceIterate_le` is the packaged form, where a predicate
-  `p` selects the dominant eigenvalues, `s` comes from the spectral projector below and the decay
-  hypothesis from `Krylov.exists_norm_pow_apply_le_of_mem_iSup`. The book's rate `(|λ_{m+1}/λ_i| +
-  ε_k)^k` becomes `C (r/‖λ‖)^k` for any `r` above the moduli of the *unselected* eigenvalues, which
-  is the same trade as in the power method above: a constant in place of a vanishing perturbation of
-  the exponent's base.
-* `Krylov.tendsto_starProjection_subspaceIterate` is the convergence it states, under the dominance
-  `r < ‖λ‖` that makes the rate a contraction.
-
-The gap of `Numlib.Analysis.InnerProductSpace.Projection.Gap` says more than any of these:
-`Submodule.sinAngle_le_gap` turns a bound on `gap M S_k` into the same distance bound for *every*
-vector of the dominant invariant subspace `M`, whereas the theorems above give it only for the
-eigenvectors of `M`. That stronger statement is [kress1998numerical], Lemma 7.18, and it is
-`Krylov.gap_subspaceIterate_le`, with `Krylov.exists_gap_subspaceIterate_le` its spectral
-packaging. Its extra ingredient over the per-eigenvector bound is the quantitative continuity
-`Submodule.gap_le_of_forall_norm_sub_le` of a projector in a spanning family of its subspace: the
-`m` scaled iterates `l_j^{-k} A^k s_j` span `S_k` and converge to the eigenvectors `x_j` one at a
-time, which is the per-eigenvector estimate again, and the gap follows from the whole family
-converging at once. `M` has to be spanned by *eigen*vectors there, which is
-[kress1998numerical]'s diagonalizability; a Jordan block among the selected eigenvalues costs a
-polynomial factor and breaks the clean rate. For a symmetric operator the constant is explicit,
-`gap D (A^k S) ≤ (r/ρ)^k d₀/√(1 - d₀²)` ([golub2013matrix] Theorem 8.2.2): that is
-`LinearMap.IsSymmetric.gap_subspaceIterate_le` in `Numlib/Eigen/InvariantSubspace`, beside the
-graph transport it shares with the nonsymmetric Theorem 7.3.1.
-
-## The spectral projector of a set of eigenvalues
-
-The projector `P` onto the invariant subspace of the selected eigenvalues is what turns the starting
-subspace `S₀` into the data the bound needs. `Module.End.isCompl_spectralSubspace` splits `V` as `M
-⊕ W`, the supremum of the generalized eigenspaces whose eigenvalue satisfies `p` against the
-supremum of the rest, and `Module.End.spectralProjector` is the resulting *oblique* projector,
-`Submodule.projection` of that decomposition; `Submodule.starProjection` is the wrong object here,
-the splitting being non-orthogonal unless `A` is normal. Its kernel is `W`, so the book's hypothesis
-that the vectors `P x_i` are linearly independent is `Disjoint S₀ W`
-(`Module.End.injOn_spectralProjector_iff`), and with `finrank S₀ = finrank M` every `u ∈ M` is
-`P s` for exactly one `s ∈ S₀` (`Module.End.existsUnique_mem_spectralProjector_eq`).
+* The main theorems need no finite dimension and no algebraically closed field. These enter only
+  through `Krylov.exists_eq_add_mem_maxGenEigenspace`, which splits every $x_0$ as $u + w$, and are
+  packaged in `Krylov.exists_eq_add_tendsto`.
+* Semi-simplicity is local to $x_0$. The cited sources assume that the dominant eigenvalue $\lambda$
+  is semi-simple, that is, that its generalized eigenspace is its eigenspace. The proof uses only
+  that the $\lambda$-component of this particular $x_0$ is an eigenvector, the hypothesis
+  $Au = \lambda u$. Semi-simplicity gives this for every $x_0$, and it is the hypothesis of
+  `Krylov.exists_eq_add_tendsto`. A simple eigenvalue is semi-simple by
+  `Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one`.
+* No Jordan form and no Gelfand formula is used. The proofs never compute the spectrum of a
+  restriction of $A$, $E$ need not be complete, and $A$ need not be continuous, except in the
+  statements about residuals and Rayleigh quotients.
+* `Krylov.powerIterate` normalizes by a norm. So it is unchanged by a positive rescaling of $x_0$
+  (`Krylov.powerIterate_ofReal_smul`), and it satisfies the normalize-at-every-step recurrence
+  exactly, with no scalar left over (`Krylov.powerIterate_succ`;
+  `Krylov.eq_powerIterate_of_recurrence` is the converse). With the Lean convention $0^{-1} = 0$ the
+  definition is total: the degenerate case $A^k x_0 = 0$ gives $q_k = 0$, and no statement has to
+  exclude it.
+* A norm-normalized iterate does not converge in general, because each step multiplies the
+  eigendirection by the scalar $\lambda/|\lambda|$ of modulus one. The algorithm of
+  [saad2011numerical] avoids this by dividing by the entry of largest modulus, which is a complex
+  scalar. For the general case the source says that $x_k$ **converges essentially** to $x$ if
+  $c_k x_k \to x$ for some scalars $c_k$ of modulus one. This is what holds here, with an explicit
+  sequence: `Krylov.tendsto_smul_powerIterate` divides out $(\lambda/|\lambda|)^k$, and
+  `Krylov.exists_norm_eq_one_tendsto_smul_powerIterate` is the existential form. The alternative
+  without phases is `Krylov.tendsto_norm_sub_smul_powerIterate`: the residual
+  $\|A q_k - \lambda q_k\|$ tends to $0$, so the iterates are approximate eigenvectors for
+  $\lambda$. A factor of modulus one does not change a Rayleigh quotient
+  $\langle q_k, A q_k \rangle$.
+* The constant $\sum_{i \neq i_0} |\alpha_i/\alpha_{i_0}|$ of
+  `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` is the one that the triangle inequality
+  gives. The constant $(\sum_i (\alpha_i/\alpha_1)^2)^{1/2}$ of [quarteroni2000numerical], Theorem
+  5.6, needs an orthonormal eigenbasis. The two bounds of [golub2013matrix], Theorem 8.2.1, are
+  stated for an arbitrary orthonormal eigenbasis, so that a given Schur decomposition applies
+  without matching it to `LinearMap.IsSymmetric.eigenvectorBasis`. The form with the spread $b - a$
+  of the spectrum, `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`, is a corollary of the
+  bound with the constant $\max_{i \neq i_0} |\lambda_{i_0} - \lambda_i|$.
+* `Krylov.inverseIterate A σ x₀ k` is the power method for $(A - \sigma I)^{-1}$, the
+  shift-and-invert iteration of [saad2011numerical], §4.1.2–4.1.3. The map
+  $\mu \mapsto (\mu - \sigma)^{-1}$ makes the eigenvalue of $A$ nearest the shift the dominant one.
+  So `Krylov.tendsto_smul_inverseIterate` has a hypothesis about distances to $\sigma$ instead of
+  moduli, and its rate $(|\lambda - \sigma|/|\mu_2 - \sigma|)^k$ is fast for a shift close to
+  $\lambda$. The inverse is `Ring.inverse`, so `Krylov.inverseIterate` is total, and the
+  invertibility of $A - \sigma I$ (in finite dimension: $\sigma$ is not an eigenvalue) is a
+  hypothesis of the theorems, not of the definition.
+* The spectral correspondence for inverse iteration is proved directly, without a spectral mapping
+  theorem. An eigenvector of $A$ for $\mu \neq \sigma$ is an eigenvector of the shifted inverse for
+  $(\mu - \sigma)^{-1}$ (`Krylov.inverse_apply_eq_smul`). A generalized eigenvector is one too, of
+  the same index (`Krylov.maxGenEigenspace_le_maxGenEigenspace_inverse`), by the factorization $(A -
+  \sigma I)^{-1} - (\mu - \sigma)^{-1} I = -(\mu - \sigma)^{-1} (A - \sigma I)^{-1} (A - \mu I)$
+  into commuting factors. Every eigenvalue of the shifted inverse arises in this way
+  (`Krylov.hasEigenvalue_of_hasEigenvalue_inverse`).
+* Rayleigh quotient iteration updates the shift at every step to the Rayleigh quotient of the
+  current vector. [saad2011numerical] describes it without a theorem. It is
+  `Krylov.rayleighQuotientIterate` in `Numlib.Eigen.RayleighQuotientIteration`, with its local
+  quadratic convergence at a simple eigenvalue of a nonsymmetric operator
+  (`Krylov.norm_rayleighQuotientIterate_sub_le`).
+* `Krylov.subspaceIterate A S k` is $A^k S$. Bauer's Treppeniteration reorthonormalizes its block of
+  vectors at every step. This replaces the basis but not the subspace that it spans, so in closed
+  form the $k$-th iterate is again a power of $A$ applied to the starting data. What converges is
+  the subspace. The theorem of [saad2011numerical], Theorem 5.2, measures the distance
+  $\|u - P_{S_k} u\|$ from a dominant eigenvector $u$ to the iterate $S_k$, where $P_{S_k}$ is the
+  orthogonal projection onto $S_k$. It is not a statement about a gap between subspaces. Its rate
+  $(|\lambda_{m+1}/\lambda_i| + \varepsilon_k)^k$ becomes $C (r/|\lambda|)^k$ for every $r$ above
+  the moduli of the unselected eigenvalues. This is the same trade as for the power method: a
+  constant in place of a vanishing perturbation of the base of the power.
+* The gap of `Numlib.Analysis.InnerProductSpace.Projection.Gap` gives more than the bounds for
+  single eigenvectors: `Submodule.sinAngle_le_gap` turns a bound on $\operatorname{gap}(M, S_k)$
+  into the same distance bound for every vector of the dominant invariant subspace $M$. That
+  stronger statement is [kress1998numerical], Lemma 7.18, and it is `Krylov.gap_subspaceIterate_le`,
+  with `Krylov.exists_gap_subspaceIterate_le` as its spectral form. There $M$ must be spanned by
+  eigenvectors, which is the diagonalizability of [kress1998numerical]. A Jordan block among the
+  selected eigenvalues costs a polynomial factor and breaks the rate $(r/\rho)^k$. For a symmetric
+  operator the constant is explicit, $\operatorname{gap}(D, A^k S) \le (r/\rho)^k d_0/\sqrt{1 -
+  d_0^2}$ ([golub2013matrix], Theorem 8.2.2). That is `LinearMap.IsSymmetric.gap_subspaceIterate_le`
+  in `Numlib.Eigen.InvariantSubspace`, next to the nonsymmetric Theorem 7.3.1 of [golub2013matrix],
+  with which it shares the graph transport.
+* The projector onto the invariant subspace of the selected eigenvalues turns the starting subspace
+  $S$ into the data that the bound needs. `Module.End.isCompl_spectralSubspace` splits $E$ as
+  $M \oplus W$, with $M = G_p(A)$ and $W = G_{\neg p}(A)$, and `Module.End.spectralProjector` is the
+  resulting oblique projection, `Submodule.projection` of that decomposition.
+  `Submodule.starProjection` is the wrong object here, because the splitting is not orthogonal
+  unless $A$ is normal. The kernel of the projector is $W$. So the hypothesis of the source that the
+  projections of a basis of $S$ are linearly independent is `Disjoint S W`
+  (`Module.End.injOn_spectralProjector_iff`), and if moreover $\dim S = \dim M$, every $u \in M$ is
+  the projection of exactly one $s \in S$ (`Module.End.existsUnique_mem_spectralProjector_eq`).
+* In Lean the eigenvalue $\lambda$ is `l`, and the modulus $|\mu|$ of a scalar is its norm. The
+  Rayleigh quotient $\langle q, A q \rangle$ is `inner 𝕜 q (A q)`; the inner product is
+  conjugate-linear in its first argument.
 -/
 
 open Filter Topology
 
-/-- Conjugation of an endomorphism by a linear equivalence commutes with `Ring.inverse`: `e.conj`
-is a ring isomorphism (`LinearEquiv.conjRingEquiv`), so it carries units to units and the inverse of
-a unit to the inverse of its image, and both sides vanish on non-units. (A general fact about
-`Ring.inverse` and ring isomorphisms; natural home `Mathlib.Algebra.Module.Equiv.Basic`.) -/
+/-- Let $R$ be a commutative semiring, let $M$ and $M_2$ be $R$-modules, let $e : M \to M_2$ be a
+linear equivalence and let $A$ be an endomorphism of $M$. Conjugation by $e$ commutes with the
+ring inverse: $$e \, A^{-1} e^{-1} = (e A e^{-1})^{-1},$$ where $A^{-1}$ is `Ring.inverse A`,
+the inverse of $A$ if $A$ is invertible and $0$ otherwise.
+
+Conjugation by $e$ is the ring isomorphism `LinearEquiv.conjRingEquiv`. So it carries invertible
+elements to invertible elements and the inverse of an element to the inverse of its image, and
+both sides are $0$ for an element that is not invertible. The fact holds for `Ring.inverse` and
+every ring isomorphism, and it would belong in `Mathlib.Algebra.Module.Equiv.Basic`. -/
 theorem LinearEquiv.conj_ringInverse {R M M₂ : Type*} [CommSemiring R] [AddCommMonoid M]
     [Module R M] [AddCommMonoid M₂] [Module R M₂] (e : M ≃ₗ[R] M₂) (A : Module.End R M) :
     e.conj (Ring.inverse A) = Ring.inverse (e.conj A) := by
@@ -200,46 +237,52 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜
 
 /-! ### The power iteration -/
 
-/-- The power iteration `x_{k+1} = A x_k / ‖A x_k‖` in closed form: the `k`-th iterate is the
-normalization of `A^k x₀`.
+/-- The **power iteration** in closed form. Let $A$ be an endomorphism of a normed space $E$ over
+$\mathbb{K}$, let $x_0 \in E$ and $k \in \mathbb{N}$. The $k$-th power iterate is $$q_k = \|A^k
+x_0\|^{-1} A^k x_0.$$ This is the iteration $q_{k+1} = A q_k / \|A q_k\|$, started at
+$\|x_0\|^{-1} x_0$ (`Krylov.powerIterate_succ`).
 
-The scalar is `(‖A^k x₀‖ : 𝕜)⁻¹`, so with the convention `(0 : ℝ)⁻¹ = 0` the definition is total and
-returns `0` once `A^k x₀ = 0`; every statement below therefore needs no hypothesis excluding that
-case. -/
+The scalar is $\|A^k x_0\|^{-1}$ with the Lean convention $0^{-1} = 0$. So the definition is
+total and gives $q_k = 0$ when $A^k x_0 = 0$, and no statement about the iterates needs a
+hypothesis that excludes this case. -/
 noncomputable def powerIterate (A : Module.End 𝕜 E) (x₀ : E) (k : ℕ) : E :=
   (‖(A ^ k) x₀‖ : 𝕜)⁻¹ • (A ^ k) x₀
 
 variable (A : Module.End 𝕜 E) (x₀ : E) (k : ℕ)
 
-/-- The iteration starts at the normalization of the starting vector. -/
+/-- The power iteration starts at the normalized starting vector: $q_0 = \|x_0\|^{-1} x_0$. -/
 @[simp]
 theorem powerIterate_zero : powerIterate A x₀ 0 = (‖x₀‖ : 𝕜)⁻¹ • x₀ := by
   simp [powerIterate]
 
-/-- The iterate is a scalar multiple of `A^k x₀`, so it spans the same line and lies in the Krylov
-subspace `𝒦[A, x₀] (k + 1)`. -/
+/-- The $k$-th power iterate is the scalar multiple $q_k = \|A^k x_0\|^{-1} A^k x_0$ of $A^k x_0$.
+
+Hence $q_k$ spans the same line as $A^k x_0$ (or is $0$), and it lies in the Krylov subspace
+$\mathcal{K}_{k+1}(A, x_0)$. -/
 theorem powerIterate_eq_smul :
     powerIterate A x₀ k = (‖(A ^ k) x₀‖ : 𝕜)⁻¹ • (A ^ k) x₀ := rfl
 
-/-- The iterate vanishes exactly in the degenerate case `A^k x₀ = 0`. -/
+/-- The power iterate vanishes exactly in the degenerate case: $q_k = 0$ if and only if
+$A^k x_0 = 0$. -/
 theorem powerIterate_eq_zero_iff : powerIterate A x₀ k = 0 ↔ (A ^ k) x₀ = 0 := by
   refine ⟨fun h => ?_, fun h => by simp [powerIterate, h]⟩
   by_contra hne
   rw [powerIterate, smul_eq_zero, inv_eq_zero, RCLike.ofReal_eq_zero, norm_eq_zero] at h
   exact h.elim hne hne
 
-/-- Away from the degenerate case the iterate is a unit vector. -/
+/-- If $A^k x_0 \neq 0$, then the power iterate $q_k$ is a unit vector: $\|q_k\| = 1$. -/
 theorem norm_powerIterate_of_ne_zero (h : (A ^ k) x₀ ≠ 0) : ‖powerIterate A x₀ k‖ = 1 := by
   rw [powerIterate, norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
     inv_mul_cancel₀ (norm_ne_zero_iff.mpr h)]
 
-/-- The iterates are bounded by `1`, with equality away from the degenerate case. -/
+/-- Every power iterate satisfies $\|q_k\| \le 1$, with equality unless $A^k x_0 = 0$. -/
 theorem norm_powerIterate_le_one : ‖powerIterate A x₀ k‖ ≤ 1 := by
   rcases eq_or_ne ((A ^ k) x₀) 0 with h | h
   · simp [(powerIterate_eq_zero_iff A x₀ k).mpr h]
   · exact (norm_powerIterate_of_ne_zero A x₀ k h).le
 
-/-- Rescaling `x₀` by a scalar multiplies every iterate by that scalar's phase. -/
+/-- Rescaling the starting vector by a scalar $c$ multiplies every power iterate by the phase of
+$c$: $$q_k(c x_0) = \frac{c}{|c|} \, q_k(x_0),$$ where $c/|c|$ means $0$ for $c = 0$. -/
 theorem powerIterate_smul (c : 𝕜) :
     powerIterate A (c • x₀) k = ((‖c‖ : 𝕜)⁻¹ * c) • powerIterate A x₀ k := by
   rw [powerIterate, powerIterate, map_smul, norm_smul, smul_smul, smul_smul]
@@ -248,14 +291,18 @@ theorem powerIterate_smul (c : 𝕜) :
   congr 1
   ring
 
-/-- The power iteration is unchanged by a positive rescaling of the starting vector. -/
+/-- Let $c > 0$ be real. The power iterates from $c x_0$ are the power iterates from $x_0$:
+$q_k(c x_0) = q_k(x_0)$ for every $k$. -/
 theorem powerIterate_ofReal_smul {c : ℝ} (hc : 0 < c) :
     powerIterate A ((c : 𝕜) • x₀) k = powerIterate A x₀ k := by
   rw [powerIterate_smul, RCLike.norm_ofReal, abs_of_pos hc,
     inv_mul_cancel₀ (RCLike.ofReal_ne_zero.mpr hc.ne'), one_smul]
 
-/-- `powerIterate` satisfies the normalize-at-every-step recurrence on the nose: no positive scalar
-is left over, because the normalization divides by a norm rather than by a coordinate. -/
+/-- The power iterates satisfy the normalize-at-every-step recurrence exactly: $$q_{k+1} = \|A
+q_k\|^{-1} A q_k,$$ with $0^{-1} = 0$.
+
+No positive scalar is left over, because the normalization divides by a norm and not by a
+coordinate. -/
 theorem powerIterate_succ :
     powerIterate A x₀ (k + 1) =
       (‖A (powerIterate A x₀ k)‖ : 𝕜)⁻¹ • A (powerIterate A x₀ k) := by
@@ -272,8 +319,12 @@ theorem powerIterate_succ :
     push_cast
     field_simp
 
-/-- A sequence that starts at the normalization of `x₀` and normalizes after every application of
-`A` *is* the power iteration: the closed form is the specification of the algorithm. -/
+/-- The power iteration is determined by its recurrence. Let $(y_j)$ be a sequence in $E$ with
+$y_0 = \|x_0\|^{-1} x_0$ and $y_{j+1} = \|A y_j\|^{-1} A y_j$ for every $j$, with $0^{-1} = 0$.
+Then $y_j = q_j$ for every $j$.
+
+Together with `Krylov.powerIterate_succ`, this shows that the closed form `Krylov.powerIterate`
+specifies the algorithm. -/
 theorem eq_powerIterate_of_recurrence {y : ℕ → E} (h0 : y 0 = (‖x₀‖ : 𝕜)⁻¹ • x₀)
     (hs : ∀ j, y (j + 1) = (‖A (y j)‖ : 𝕜)⁻¹ • A (y j)) (j : ℕ) :
     y j = powerIterate A x₀ j := by
@@ -281,14 +332,16 @@ theorem eq_powerIterate_of_recurrence {y : ℕ → E} (h0 : y 0 = (‖x₀‖ : 
   | zero => simpa using h0
   | succ j ih => rw [hs j, ih, ← powerIterate_succ]
 
-/-! ### Geometric decay off the dominant eigenvector
+/-!
+### Geometric decay off the dominant eigenvector
 
-The subspace of vectors whose `A`-orbit is `O(r^k)` contains every generalized eigenspace with
-eigenvalue of modulus below `r`, hence their supremum. -/
+The vectors $w$ with $\|A^k w\| = O(r^k)$ form a subspace. It contains every generalized eigenspace
+whose eigenvalue has modulus less than $r$, and hence the sum of these generalized eigenspaces.
+-/
 
 variable {A x₀}
 
-/-- The vectors whose `A`-orbit grows no faster than `r^k`. -/
+/-- The subspace of the vectors $w$ such that $\|A^k w\| \le C r^k$ for some $C$ and all $k$. -/
 private def geomBounded (A : Module.End 𝕜 E) (r : ℝ) : Submodule 𝕜 E where
   carrier := {w | ∃ C : ℝ, ∀ k, ‖(A ^ k) w‖ ≤ C * r ^ k}
   add_mem' := by
@@ -305,7 +358,8 @@ private def geomBounded (A : Module.End 𝕜 E) (r : ℝ) : Submodule 𝕜 E whe
       _ ≤ ‖c‖ * (C * r ^ k) := by gcongr; exact hC k
       _ = ‖c‖ * C * r ^ k := by ring
 
-/-- The decay estimate in the form the induction on `N` needs. -/
+/-- If $|\mu| < r$ and $(A - \mu I)^N w = 0$, then $\|A^k w\| \le C r^k$ for some $C$ and all $k$.
+-/
 private theorem exists_norm_pow_apply_le_of_pow_sub_smul_eq_zero {μ : 𝕜} {r : ℝ} (hr : ‖μ‖ < r)
     (N : ℕ) (w : E) (hw : ((A - μ • (1 : Module.End 𝕜 E)) ^ N) w = 0) :
     ∃ C : ℝ, ∀ k, ‖(A ^ k) w‖ ≤ C * r ^ k := by
@@ -342,21 +396,29 @@ private theorem exists_norm_pow_apply_le_of_pow_sub_smul_eq_zero {μ : 𝕜} {r 
       refine hstep.trans (le_trans ?_ hmul)
       gcongr
 
-/-- **The decay estimate.** A generalized eigenvector of `A` for `μ` has `‖A^k w‖ = O(r^k)` for
-every `r > ‖μ‖`; the excess `r - ‖μ‖` is what pays for the polynomial factor a Jordan block of `μ`
-would contribute.
+/-- The **decay estimate**. Let $A$ be an endomorphism of a normed space $E$ over $\mathbb{K}$, let
+$\mu \in \mathbb{K}$, and let $w \in G_\mu(A)$ be a generalized eigenvector of $A$ for $\mu$,
+that is, $(A - \mu I)^N w = 0$ for some $N$. Then for every real $r > |\mu|$ there is a constant
+$C$ with $$\|A^k w\| \le C r^k \quad \text{for all } k \in \mathbb{N}.$$
 
-The proof is an induction on the index `N` with `(A - μ)^N w = 0`: writing `v = (A - μ) w`, the
-orbit obeys `A^{k+1} w = μ A^k w + A^k v`, so a bound `‖A^k v‖ ≤ C r^k` propagates to `‖A^k w‖ ≤
-(‖w‖ + C/(r - ‖μ‖)) r^k`. Neither continuity of `A` nor completeness of `E` is used, and the
-spectrum of a restriction of `A` is never computed. -/
+The excess $r - |\mu|$ pays for the polynomial factor that a Jordan block of $\mu$ contributes.
+The proof is an induction on $N$. With $v = (A - \mu I) w$, the orbit satisfies
+$A^{k+1} w = \mu A^k w + A^k v$, so a bound $\|A^k v\| \le C r^k$ gives
+$\|A^k w\| \le (\|w\| + C/(r - |\mu|)) r^k$. The proof uses neither continuity of $A$ nor
+completeness of $E$, and it computes no spectrum of a restriction of $A$. -/
 theorem exists_norm_pow_apply_le_of_mem_maxGenEigenspace {μ : 𝕜} {w : E} {r : ℝ}
     (hw : w ∈ A.maxGenEigenspace μ) (hr : ‖μ‖ < r) : ∃ C : ℝ, ∀ k, ‖(A ^ k) w‖ ≤ C * r ^ k := by
   obtain ⟨N, hN⟩ := (Module.End.mem_maxGenEigenspace A μ w).mp hw
   exact exists_norm_pow_apply_le_of_pow_sub_smul_eq_zero hr N w hN
 
-/-- Geometric decay on a supremum of maximal generalized eigenspaces: the rate `r` only has to beat
-the eigenvalues that actually occur. -/
+/-- Geometric decay on a spectral subspace. Let $p$ be a predicate on scalars, and let
+$w \in G_p(A)$, the sum of the maximal generalized eigenspaces of $A$ for the scalars $\mu$ with
+$p(\mu)$. Let $r$ be real with $|\mu| < r$ for every eigenvalue $\mu$ of $A$ with $p(\mu)$. Then
+there is a constant $C$ with $$\|A^k w\| \le C r^k \quad \text{for all } k \in \mathbb{N}.$$
+
+The rate $r$ only has to exceed the moduli of the eigenvalues that occur: a scalar that is not
+an eigenvalue has the generalized eigenspace $0$. The spectral subspace $G_p(A)$ is
+`Module.End.spectralSubspace A p`. -/
 theorem exists_norm_pow_apply_le_of_mem_iSup {p : 𝕜 → Prop} {w : E} {r : ℝ}
     (hw : w ∈ A.spectralSubspace p)
     (hr : ∀ μ, p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
@@ -369,7 +431,7 @@ theorem exists_norm_pow_apply_le_of_mem_iSup {p : 𝕜 → Prop} {w : E} {r : �
         (hr μ hμ (Module.End.HasUnifEigenvalue.lt zero_lt_one h))
   exact key hw
 
-/-- The vectors whose `A`-orbit is negligible after scaling by `l^k`. -/
+/-- The subspace of the vectors $v$ with $\lambda^{-k} A^k v \to 0$. -/
 private def tendstoZero (A : Module.End 𝕜 E) (l : 𝕜) : Submodule 𝕜 E where
   carrier := {v | Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) v) atTop (𝓝 0)}
   add_mem' := by
@@ -389,7 +451,8 @@ private def tendstoZero (A : Module.End 𝕜 E) (l : 𝕜) : Submodule 𝕜 E wh
 private theorem mem_tendstoZero {l : 𝕜} {v : E} :
     v ∈ tendstoZero A l ↔ Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) v) atTop (𝓝 0) := Iff.rfl
 
-/-- A geometric bound on the orbit becomes a geometric bound at rate `r/‖l‖` after scaling. -/
+/-- If $\lambda \neq 0$ and $\|A^k x\| \le C r^k$ for all $k$, then
+$\|\lambda^{-k} A^k x\| \le C (r/|\lambda|)^k$ for all $k$. -/
 private theorem norm_inv_pow_smul_pow_apply_le {l : 𝕜} {x : E} {C r : ℝ} (hl : l ≠ 0)
     (hC : ∀ k, ‖(A ^ k) x‖ ≤ C * r ^ k) (k : ℕ) :
     ‖(l ^ k)⁻¹ • (A ^ k) x‖ ≤ C * (r / ‖l‖) ^ k := by
@@ -408,7 +471,8 @@ private theorem tendsto_inv_pow_smul_pow_apply_of_norm_le {l : 𝕜} {x : E} {C 
     simpa using h1.const_mul C
   exact squeeze_zero_norm (norm_inv_pow_smul_pow_apply_le hl hC) hbound
 
-/-- Geometric decay after scaling by `l^k`, at a rate chosen for the single eigenvalue `μ`. -/
+/-- If $x \in G_\mu(A)$, $\lambda \neq 0$ and $|\mu| < |\lambda|$, then $\lambda^{-k} A^k x \to 0$.
+-/
 private theorem mem_tendstoZero_of_mem_maxGenEigenspace {l μ : 𝕜} {x : E}
     (hx : x ∈ A.maxGenEigenspace μ) (hl : l ≠ 0) (hμl : ‖μ‖ < ‖l‖) : x ∈ tendstoZero A l := by
   have hμr : ‖μ‖ < (‖μ‖ + ‖l‖) / 2 := by linarith
@@ -416,25 +480,33 @@ private theorem mem_tendstoZero_of_mem_maxGenEigenspace {l μ : 𝕜} {x : E}
   exact mem_tendstoZero.mpr (tendsto_inv_pow_smul_pow_apply_of_norm_le hl
     (le_trans (norm_nonneg μ) hμr.le) (by linarith) hC)
 
-/-- `l` is **strictly dominant** for `A`: every eigenvalue of `A` other than `l` has strictly
-smaller modulus. This is the hypothesis of the convergence theorems of the power method; it asks
-neither that `l` itself be an eigenvalue nor for a uniform gap below `‖l‖`. -/
+/-- A scalar $\lambda$ is **strictly dominant** for $A$ if every eigenvalue $\mu \neq \lambda$ of
+$A$ satisfies $|\mu| < |\lambda|$.
+
+This is the hypothesis of the convergence theorems for the power method. It does not require
+that $\lambda$ is an eigenvalue, and it does not require a uniform gap between $|\lambda|$ and
+the moduli of the other eigenvalues. -/
 def _root_.Module.End.IsStrictlyDominant (A : Module.End 𝕜 E) (l : 𝕜) : Prop :=
   ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖
 
-/-- Unfolding `Module.End.IsStrictlyDominant`. -/
+/-- A scalar $\lambda$ is strictly dominant for $A$ if and only if $|\mu| < |\lambda|$ for every
+eigenvalue $\mu \neq \lambda$ of $A$. -/
 theorem _root_.Module.End.isStrictlyDominant_iff {A : Module.End 𝕜 E} {l : 𝕜} :
     A.IsStrictlyDominant l ↔ ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖ :=
   Iff.rfl
 
-/-- Every other eigenvalue of `A` is smaller in modulus than a strictly dominant `l`. -/
+/-- If $\lambda$ is strictly dominant for $A$ and $\mu \neq \lambda$ is an eigenvalue of $A$, then
+$|\mu| < |\lambda|$. -/
 theorem _root_.Module.End.IsStrictlyDominant.norm_lt {A : Module.End 𝕜 E} {l μ : 𝕜}
     (h : A.IsStrictlyDominant l) (hμ : μ ≠ l) (hev : A.HasEigenvalue μ) : ‖μ‖ < ‖l‖ :=
   h μ hμ hev
 
-/-- The subdominant part of the orbit is negligible after scaling by `λ^k`: this is the only
-analytic input to the convergence theorem, and it holds under the strict dominance `‖μ‖ < ‖λ‖` with
-no uniform gap. -/
+/-- Let $\lambda \neq 0$ be strictly dominant for $A$, and let $w \in G_{\neq\lambda}(A)$, the sum
+of the generalized eigenspaces of $A$ for the scalars other than $\lambda$. Then
+$\lambda^{-k} A^k w \to 0$ as $k \to \infty$.
+
+This is the only analytic input to the convergence theorem `Krylov.powerIterate_tendsto`. It
+holds under the strict dominance $|\mu| < |\lambda|$ without a uniform gap. -/
 theorem tendsto_inv_pow_smul_pow_apply_of_mem_iSup {l : 𝕜} {w : E} (hl : l ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : A.IsStrictlyDominant l) :
@@ -463,21 +535,25 @@ private theorem inv_pow_smul_pow_apply_add (hl : l ≠ 0) (hu : A u = l • u) (
   rw [map_add, pow_apply_of_apply_eq_smul hu, smul_add, smul_smul,
     inv_mul_cancel₀ (pow_ne_zero k hl), one_smul]
 
-/-- The error of the scaled power iterate is `O((r/‖λ‖)^k)` whenever the subdominant part `w` obeys
-`‖A^k w‖ ≤ C r^k`. -/
+/-- Let $\lambda \neq 0$, let $Au = \lambda u$, and let $\|A^k w\| \le C r^k$ for all $k$. Then for
+every $k$, $$\|\lambda^{-k} A^k (u + w) - u\| \le C \left(\frac{r}{|\lambda|}\right)^k.$$
+-/
 theorem norm_inv_pow_smul_pow_apply_sub_le (hl : l ≠ 0) (hu : A u = l • u)
     (hw : ∀ k, ‖(A ^ k) w‖ ≤ C * r ^ k) (k : ℕ) :
     ‖(l ^ k)⁻¹ • (A ^ k) (u + w) - u‖ ≤ C * (r / ‖l‖) ^ k := by
   rw [inv_pow_smul_pow_apply_add hl hu, add_sub_cancel_left]
   exact norm_inv_pow_smul_pow_apply_le hl hw k
 
-/-- **Convergence of the power method.** If the starting vector splits as `x₀ = u + w` with `u` an
-eigenvector for `λ` and `w` in the span of the other generalized eigenspaces, and every other
-eigenvalue has strictly smaller modulus, then `λ^{-k} A^k x₀ → u`.
+/-- **Convergence of the power method.** Let $A$ be an endomorphism of a normed space $E$ over
+$\mathbb{K}$, and let $\lambda \neq 0$ be strictly dominant for $A$. Let $x_0 = u + w$, where
+$Au = \lambda u$ and $w \in G_{\neq\lambda}(A)$ lies in the sum of the generalized eigenspaces
+for the scalars other than $\lambda$. Then $$\lambda^{-k} A^k x_0 \to u \quad (k \to \infty).$$
+This is Theorem 4.1 of [saad2011numerical], with the semi-simplicity of $\lambda$ replaced by
+the hypothesis $Au = \lambda u$ on this particular $x_0$.
 
-The limit `u` is the component of `x₀` in the `λ`-generalized eigenspace, so this is the statement
-that `λ^{-k} A^k x₀` converges to the spectral projection of `x₀`; the splitting is unique by
-`Krylov.eq_of_add_eq_add_mem_maxGenEigenspace`. -/
+The limit $u$ is the component of $x_0$ in the generalized eigenspace $G_\lambda(A)$, so
+$\lambda^{-k} A^k x_0$ converges to the spectral projection of $x_0$. The splitting
+$x_0 = u + w$ is unique by `Krylov.eq_of_add_eq_add_mem_maxGenEigenspace`. -/
 theorem powerIterate_tendsto {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
@@ -488,8 +564,14 @@ theorem powerIterate_tendsto {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     tendsto_const_nhds.add h
   simpa only [inv_pow_smul_pow_apply_add hl hu, add_zero] using this
 
-/-- The geometric rate: for every `r` above the moduli of the subdominant eigenvalues, the error of
-`λ^{-k} A^k x₀` is `O((r/‖λ‖)^k)`. -/
+/-- The **rate of convergence of the power method**. Let $\lambda \neq 0$, let $x_0 = u + w$ with
+$Au = \lambda u$ and $w \in G_{\neq\lambda}(A)$, and let $r$ be real with $|\mu| < r$ for every
+eigenvalue $\mu \neq \lambda$ of $A$. Then there is a constant $C$ with $$\|\lambda^{-k} A^k
+x_0 - u\| \le C \left(\frac{r}{|\lambda|}\right)^k \quad \text{for all } k.$$
+
+The classical rate is $|\lambda_2/\lambda_1|^k$. Here it is weakened to every $r$ strictly above
+the moduli of the other eigenvalues, because a Jordan block of a subdominant eigenvalue
+contributes a polynomial factor. The bound is informative when $r < |\lambda|$. -/
 theorem exists_norm_inv_pow_smul_pow_apply_sub_le {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hr : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < r) (hx₀ : x₀ = u + w) :
@@ -497,19 +579,21 @@ theorem exists_norm_inv_pow_smul_pow_apply_sub_le {x₀ : E} (hl : l ≠ 0) (hu 
   obtain ⟨C, hC⟩ := exists_norm_pow_apply_le_of_mem_iSup hw hr
   exact ⟨C, fun k => hx₀ ▸ norm_inv_pow_smul_pow_apply_sub_le hl hu hC k⟩
 
-/-! ### The normalized iterate
+/-!
+### The normalized iterate
 
-`powerIterate` itself converges only up to the unimodular factor `(λ/‖λ‖)^k`, which the two
-statements below handle in the two available ways: divide it out, or measure the eigenvalue
-residual, which does not see it. -/
+The power iterate $q_k$ itself converges only up to the factor $(\lambda/|\lambda|)^k$ of modulus
+one. The statements below handle this factor in two ways: they divide it out, or they measure the
+eigenvalue residual, which does not see it.
+-/
 
 private theorem norm_ofReal_norm_div_pow (hl : l ≠ 0) (k : ℕ) :
     ‖(((‖l‖ : 𝕜) / l) ^ k)‖ = 1 := by
   have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
   rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_of_pos hl0, div_self hl0.ne', one_pow]
 
-/-- Normalizing turns convergence of the scaled iterates `λ^{-k} A^k x₀ → u ≠ 0` into convergence
-of the normalized iterates, after dividing out the unimodular factor `(λ/‖λ‖)^k`. -/
+/-- If $\lambda \neq 0$, $u \neq 0$ and $\lambda^{-k} A^k x_0 \to u$, then
+$(|\lambda|/\lambda)^k q_k \to u/\|u\|$. -/
 private theorem tendsto_smul_powerIterate_of_tendsto {x₀ : E} (hl : l ≠ 0) (hu0 : u ≠ 0)
     (hzt : Tendsto (fun k => (l ^ k)⁻¹ • (A ^ k) x₀) atTop (𝓝 u)) :
     Tendsto (fun k => (((‖l‖ : 𝕜) / l) ^ k) • powerIterate A x₀ k) atTop
@@ -532,8 +616,12 @@ private theorem tendsto_smul_powerIterate_of_tendsto {x₀ : E} (hl : l ≠ 0) (
     exact (RCLike.continuous_ofReal.tendsto _).comp hzt.norm
   simpa only [heq] using hnorm.smul hzt
 
-/-- Convergence of the normalized power iterate, after dividing out the unimodular factor
-`(λ/‖λ‖)^k`: the limit is the normalized eigenvector `‖u‖⁻¹ • u`. -/
+/-- **Convergence of the normalized power iterates.** Let $\lambda \neq 0$ be strictly dominant for
+$A$, and let $x_0 = u + w$ with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$.
+Then the power iterates $q_k$, multiplied by the factors $(|\lambda|/\lambda)^k$ of modulus one,
+converge to the normalized eigenvector: $$\left(\frac{|\lambda|}{\lambda}\right)^k q_k \to
+\frac{u}{\|u\|}.$$
+-/
 theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
@@ -541,10 +629,13 @@ theorem tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
       (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) :=
   tendsto_smul_powerIterate_of_tendsto hl hu0 (powerIterate_tendsto hl hu hw hdom hx₀)
 
-/-- **Essential convergence** of the normalized power iterates, in the sense of [saad2011numerical],
-§5.1: there is a sequence of scalars of modulus one whose products with the iterates converge to the
-normalized eigenvector. `Krylov.tendsto_smul_powerIterate` is the same statement with the sequence
-named. -/
+/-- **Essential convergence** of the power iterates. Let $\lambda \neq 0$ be strictly dominant for
+$A$, and let $x_0 = u + w$ with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$.
+Then there are scalars $c_k$ with $|c_k| = 1$ and $$c_k q_k \to \frac{u}{\|u\|}.$$ In the terms
+of [saad2011numerical], §5.1, the iterates $q_k$ converge essentially to $u/\|u\|$.
+
+`Krylov.tendsto_smul_powerIterate` is the same statement with the explicit sequence
+$c_k = (|\lambda|/\lambda)^k$. -/
 theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (hu : A u = l • u)
     (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
@@ -553,8 +644,12 @@ theorem exists_norm_eq_one_tendsto_smul_powerIterate {x₀ : E} (hl : l ≠ 0) (
   ⟨fun k => ((‖l‖ : 𝕜) / l) ^ k, norm_ofReal_norm_div_pow hl,
     tendsto_smul_powerIterate hl hu hu0 hw hdom hx₀⟩
 
-/-- The phase-free statement: the eigenvalue residual of the normalized power iterate tends to zero,
-so `x_k` becomes an approximate eigenvector for `λ`. -/
+/-- Let $A$ be continuous, let $\lambda \neq 0$ be strictly dominant for $A$, and let $x_0 = u + w$
+with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$. Then the eigenvalue residual
+of the power iterates tends to zero: $$\|A q_k - \lambda q_k\| \to 0.$$
+
+This form does not see the factors of modulus one. It says that the iterates $q_k$ become
+approximate eigenvectors for $\lambda$. -/
 theorem tendsto_norm_sub_smul_powerIterate {x₀ : E} (hA : Continuous A) (hl : l ≠ 0)
     (hu : A u = l • u) (hu0 : u ≠ 0) (hw : w ∈ A.spectralSubspace (· ≠ l))
     (hdom : A.IsStrictlyDominant l) (hx₀ : x₀ = u + w) :
@@ -571,25 +666,33 @@ theorem tendsto_norm_sub_smul_powerIterate {x₀ : E} (hA : Continuous A) (hl : 
     rw [map_smul, smul_comm l, ← smul_sub, norm_smul, norm_ofReal_norm_div_pow hl, one_mul]
   simpa only [heq, norm_zero] using hlim.norm
 
-/-! ### The splitting of the starting vector
+/-!
+### The splitting of the starting vector
 
-Over an algebraically closed field and in finite dimension the generalized eigenspaces span, so
-every `x₀` splits as required, uniquely. -/
+Over an algebraically closed field and in finite dimension the generalized eigenspaces span the
+space. So every starting vector splits as $x_0 = u + w$ with $u \in G_\lambda(A)$ and
+$w \in G_{\neq\lambda}(A)$, and the splitting is unique.
+-/
 
 section Splitting
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-/-- The `l`-generalized eigenspace and the span of the other generalized eigenspaces are
-complementary: the one-eigenvalue case of `Module.End.isCompl_spectralSubspace`, which is what the
-power method's splitting `x₀ = u + w` uses. -/
+/-- Let $K$ be an algebraically closed field, let $V$ be a finite-dimensional vector space over $K$,
+let $B$ be an endomorphism of $V$ and let $\lambda \in K$. Then the generalized eigenspace
+$G_\lambda(B)$ and the sum $G_{\neq\lambda}(B)$ of the other generalized eigenspaces are
+complementary subspaces: $$V = G_\lambda(B) \oplus G_{\neq\lambda}(B).$$
+
+This is the case of one eigenvalue of `Module.End.isCompl_spectralSubspace`. The power method
+uses it for the splitting $x_0 = u + w$. -/
 theorem isCompl_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V] (B : Module.End K V)
     (l : K) : IsCompl (B.maxGenEigenspace l) (B.spectralSubspace (· ≠ l)) := by
   have h := B.isCompl_spectralSubspace (· = l)
   rwa [Module.End.spectralSubspace_eq] at h
 
-/-- The generalized-eigenspace splitting `x = u + w` with `u` in the `l`-generalized eigenspace and
-`w` in the span of the others. -/
+/-- Let $K$ be an algebraically closed field, let $V$ be a finite-dimensional vector space over $K$,
+let $B$ be an endomorphism of $V$ and let $\lambda \in K$. Then every $x \in V$ can be written
+as $x = u + w$ with $u \in G_\lambda(B)$ and $w \in G_{\neq\lambda}(B)$. -/
 theorem exists_eq_add_mem_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K V]
     (B : Module.End K V) (l : K) (x : V) :
     ∃ u ∈ B.maxGenEigenspace l, ∃ w ∈ B.spectralSubspace (· ≠ l), x = u + w := by
@@ -597,8 +700,13 @@ theorem exists_eq_add_mem_maxGenEigenspace [IsAlgClosed K] [FiniteDimensional K 
   obtain ⟨u, hu, w, hw, huw⟩ := Submodule.mem_sup.mp (htop.ge (Submodule.mem_top (x := x)))
   exact ⟨u, hu, w, hw, huw.symm⟩
 
-/-- The splitting is unique, which is what makes the limit in `Krylov.powerIterate_tendsto` a
-function of `x₀` alone — the spectral projection of `x₀` onto the `l`-generalized eigenspace. -/
+/-- The splitting along a generalized eigenspace is unique. Let $K$ be a field, let $V$ be a vector
+space over $K$, let $B$ be an endomorphism of $V$ and let $\lambda \in K$. If
+$u, u' \in G_\lambda(B)$, $w, w' \in G_{\neq\lambda}(B)$ and $u + w = u' + w'$, then $u = u'$
+and $w = w'$.
+
+The uniqueness makes the limit in `Krylov.powerIterate_tendsto` a function of $x_0$ alone: it is
+the spectral projection of $x_0$ onto $G_\lambda(A)$. -/
 theorem eq_of_add_eq_add_mem_maxGenEigenspace {B : Module.End K V} {l : K} {u u' w w' : V}
     (hu : u ∈ B.maxGenEigenspace l) (hu' : u' ∈ B.maxGenEigenspace l)
     (hw : w ∈ B.spectralSubspace (· ≠ l))
@@ -615,8 +723,10 @@ theorem eq_of_add_eq_add_mem_maxGenEigenspace {B : Module.End K V} {l : K} {u u'
   have h1 : u = u' := sub_eq_zero.mp (Submodule.mem_bot K |>.mp hmem)
   exact ⟨h1, by rw [h1] at h; exact add_left_cancel h⟩
 
-/-- A simple eigenvalue is semi-simple: if the maximal generalized eigenspace of `l` is a line, it
-is the eigenspace, so every generalized eigenvector for `l` is an eigenvector. -/
+/-- A simple eigenvalue is semi-simple. Let $K$ be a field, let $V$ be a vector space over $K$, let
+$B$ be an endomorphism of $V$ and let $\lambda \in K$. If the maximal generalized eigenspace
+$G_\lambda(B)$ has dimension $1$, then it equals the eigenspace $\ker(B - \lambda I)$. So every
+generalized eigenvector for $\lambda$ is an eigenvector. -/
 theorem maxGenEigenspace_eq_eigenspace_of_finrank_eq_one {B : Module.End K V} {l : K}
     (h : Module.finrank K (B.maxGenEigenspace l) = 1) :
     B.maxGenEigenspace l = B.eigenspace l := by
@@ -631,15 +741,18 @@ theorem maxGenEigenspace_eq_eigenspace_of_finrank_eq_one {B : Module.End K V} {l
   rw [h]
   exact Submodule.one_le_finrank_iff.mpr (Module.End.hasEigenvalue_iff.mp hev)
 
-/-! The spectral projector moved to `Numlib/LinearAlgebra/Eigenspace/Spectral`. -/
-
 end Splitting
 
-/-- The packaged form of the convergence theorem, at the hypotheses under which it is usually
-stated: over an algebraically closed field, in finite dimension, with `l` a nonzero **semi-simple**
-eigenvalue of strictly largest modulus, *every* starting vector splits as `x₀ = u + w` with `u` an
-eigenvector for `l`, and `l^{-k} A^k x₀ → u`. The power method converges from every `x₀` whose
-component `u` is nonzero, and the exceptional set is the hyperplane `u = 0`. -/
+/-- **Convergence of the power method** at its usual hypotheses. Let $\mathbb{K}$ be algebraically
+closed (that is, $\mathbb{K} = \mathbb{C}$), let $E$ be finite-dimensional, and let
+$\lambda \neq 0$ be strictly dominant for $A$ and semi-simple, in the sense that
+$G_\lambda(A) = \ker(A - \lambda I)$. Then every $x_0 \in E$ can be written as $x_0 = u + w$
+with $Au = \lambda u$ and $w \in G_{\neq\lambda}(A)$, and $$\lambda^{-k} A^k x_0 \to u.$$
+
+So the power method converges from every $x_0$ whose component $u$ is nonzero. The starting
+vectors with $u = 0$ form the subspace $G_{\neq\lambda}(A)$, which is a hyperplane when
+$\lambda$ is a simple eigenvalue. A simple eigenvalue is semi-simple by
+`Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one`. -/
 theorem exists_eq_add_tendsto [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (hl : l ≠ 0)
     (hss : A.maxGenEigenspace l = A.eigenspace l)
     (hdom : A.IsStrictlyDominant l) (x₀ : E) :
@@ -649,26 +762,32 @@ theorem exists_eq_add_tendsto [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (hl 
   rw [hss, Module.End.mem_eigenspace_iff] at hu
   exact ⟨u, w, hu, hw, huw, powerIterate_tendsto hl hu hw hdom huw⟩
 
-/-! ### Inverse iteration
+/-!
+### Inverse iteration
 
-Shift and invert: the power method run on `(A - σ)⁻¹`, whose eigenvalues are the `(μ - σ)⁻¹`, so
-that the eigenvalue of `A` *closest to the shift* is the dominant one. -/
+Inverse iteration with shift $\sigma$ is the power method for $(A - \sigma I)^{-1}$. The eigenvalues
+of this operator are the numbers $(\mu - \sigma)^{-1}$, so the eigenvalue of $A$ closest to the
+shift becomes the dominant one.
+-/
 
 section InverseIteration
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **Inverse iteration** (shift-and-invert power method) with shift `σ`: the power iteration of the
-inverse of the shifted operator `A - σ`.
+/-- **Inverse iteration** with shift $\sigma$, also called the shift-and-invert power method: the
+power iteration `Krylov.powerIterate` for the operator $(A - \sigma I)^{-1}$, $$q_k = \|(A -
+\sigma I)^{-k} x_0\|^{-1} (A - \sigma I)^{-k} x_0.$$ This is the shift-and-invert iteration of
+[saad2011numerical], §4.1.2–4.1.3.
 
-The inverse is `Ring.inverse`, so the definition is total: at a shift belonging to the spectrum the
-shifted operator is not invertible, `Ring.inverse` returns `0`, and the iteration is the power
-iteration of `0`. Every statement about convergence assumes `IsUnit (A - σ)`, which in finite
-dimension is exactly `σ ∉ spectrum 𝕜 A`. -/
+The inverse is `Ring.inverse`, so the definition is total. If $A - \sigma I$ is not invertible,
+`Ring.inverse` gives $0$, and the iterates are the power iterates of the zero operator. Every
+convergence theorem assumes that $A - \sigma I$ is invertible (`IsUnit (A - σ • 1)`), which in
+finite dimension means that $\sigma$ is not an eigenvalue of $A$. -/
 noncomputable def inverseIterate (A : Module.End 𝕜 E) (σ : 𝕜) (x₀ : E) (k : ℕ) : E :=
   powerIterate (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))) x₀ k
 
-/-- Inverse iteration is the power method applied to the inverse of the shifted operator. -/
+/-- Inverse iteration with shift $\sigma$ is the power iteration of $(A - \sigma I)^{-1}$:
+`Krylov.inverseIterate A σ x₀ k` equals `Krylov.powerIterate (Ring.inverse (A - σ • 1)) x₀ k`. -/
 @[simp]
 theorem inverseIterate_eq_powerIterate (A : Module.End 𝕜 E) (σ : 𝕜) (x₀ : E) (k : ℕ) :
     inverseIterate A σ x₀ k
@@ -692,8 +811,10 @@ private theorem commute_inverse_sub_smul_one
       = A - μ • (1 : Module.End 𝕜 E) := by module
   rwa [heq] at this
 
-/-- **The eigenvectors are unchanged and the eigenvalues are inverted.** An eigenvector of `A` for
-an eigenvalue `μ` other than the shift is an eigenvector of the shifted inverse for `(μ - σ)⁻¹`. -/
+/-- The shifted inverse has the same eigenvectors, with inverted shifted eigenvalues. Let
+$A - \sigma I$ be invertible, let $\mu \neq \sigma$, and let $Ax = \mu x$. Then $$(A - \sigma
+I)^{-1} x = (\mu - \sigma)^{-1} x.$$
+-/
 theorem inverse_apply_eq_smul {μ : 𝕜} {x : E} (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E)))
     (hμ : μ ≠ σ) (hx : A x = μ • x) :
     Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) x = (μ - σ)⁻¹ • x := by
@@ -704,7 +825,8 @@ theorem inverse_apply_eq_smul {μ : 𝕜} {x : E} (hσ : IsUnit (A - σ • (1 :
   conv_rhs => rw [← h]
   rw [smul_smul, inv_mul_cancel₀ (sub_ne_zero.2 hμ), one_smul]
 
-/-- Nothing generalized survives at the shift: the shifted operator is invertible there. -/
+/-- If $A - \sigma I$ is invertible, then the maximal generalized eigenspace $G_\sigma(A)$ of $A$
+for the shift is $0$. -/
 theorem maxGenEigenspace_eq_bot_of_isUnit (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) :
     A.maxGenEigenspace σ = ⊥ := by
   refine le_bot_iff.1 fun x hx => ?_
@@ -712,8 +834,14 @@ theorem maxGenEigenspace_eq_bot_of_isUnit (hσ : IsUnit (A - σ • (1 : Module.
   exact Submodule.mem_bot _ |>.2
     (((Module.End.isUnit_iff _).1 (hσ.pow N)).injective (hN.trans (map_zero _).symm))
 
-/-- The generalized eigenspaces are carried along too: a generalized eigenvector of `A` for `μ ≠ σ`
-is a generalized eigenvector of the shifted inverse for `(μ - σ)⁻¹`, of the same index. -/
+/-- The shifted inverse keeps the generalized eigenspaces. Let $A - \sigma I$ be invertible and let
+$\mu \neq \sigma$. Then the maximal generalized eigenspace of $A$ for $\mu$ is contained in the
+maximal generalized eigenspace of $(A - \sigma I)^{-1}$ for $(\mu - \sigma)^{-1}$: $$G_\mu(A)
+\subseteq G_{(\mu - \sigma)^{-1}}\bigl((A - \sigma I)^{-1}\bigr).$$
+
+The proof gives a generalized eigenvector of the same index. It uses the factorization $(A -
+\sigma I)^{-1} - (\mu - \sigma)^{-1} I = -(\mu - \sigma)^{-1} (A - \sigma I)^{-1} (A - \mu I)$
+and the fact that the two factors commute. -/
 theorem maxGenEigenspace_le_maxGenEigenspace_inverse {μ : 𝕜}
     (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hμ : μ ≠ σ) :
     A.maxGenEigenspace μ ≤
@@ -733,8 +861,9 @@ theorem maxGenEigenspace_le_maxGenEigenspace_inverse {μ : 𝕜}
   rw [hkey, smul_pow, (commute_inverse_sub_smul_one hσ μ).mul_pow]
   simp [Module.End.mul_apply, hN]
 
-/-- An eigenvalue of the shifted inverse comes from an eigenvalue of `A`: it is nonzero, and `σ +
-ν⁻¹` is an eigenvalue of `A`. -/
+/-- Every eigenvalue of the shifted inverse comes from an eigenvalue of $A$. Let $A - \sigma I$ be
+invertible, and let $\nu$ be an eigenvalue of $(A - \sigma I)^{-1}$. Then $\nu \neq 0$, and
+$\sigma + \nu^{-1}$ is an eigenvalue of $A$. -/
 theorem hasEigenvalue_of_hasEigenvalue_inverse {ν : 𝕜}
     (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E)))
     (hν : (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))).HasEigenvalue ν) :
@@ -756,17 +885,19 @@ theorem hasEigenvalue_of_hasEigenvalue_inverse {ν : 𝕜}
   rw [add_smul, ← hT]
   abel
 
-/-- **Convergence of inverse iteration.** If `l` is an eigenvalue of `A` strictly closer to the
-shift `σ` than every other eigenvalue, and the starting vector splits as `x₀ = u + w` with `u` an
-eigenvector for `l` and `w` in the span of the other generalized eigenspaces, then the iterates
-converge essentially — up to the unimodular factor `((l - σ)/‖l - σ‖)^k` — to the normalized
-eigenvector `‖u‖⁻¹ u`.
+/-- **Convergence of inverse iteration.** Let $A - \sigma I$ be invertible, and let $\lambda$ be
+strictly closer to the shift than every other eigenvalue of $A$:
+$|\lambda - \sigma| < |\mu - \sigma|$ for every eigenvalue $\mu \neq \lambda$. Let $x_0 = u + w$
+with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$. Then the inverse iterates
+$q_k$ converge essentially to the normalized eigenvector: $$\left(\frac{\lambda -
+\sigma}{|\lambda - \sigma|}\right)^k q_k \to \frac{u}{\|u\|}.$$
 
-The eigenvalue of the shifted inverse that this exhibits as dominant is `(l - σ)⁻¹`; the rate of
-`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` reads `(‖l - σ‖/‖μ₂ - σ‖)^k`, so the closer the
-shift is to `l` relative to the rest of the spectrum, the faster the convergence. That is what makes
-shifting worth its cost, since the dominance hypothesis here is about *distances to the shift* and
-not about moduli. -/
+The proof shows that $(\lambda - \sigma)^{-1}$ is strictly dominant for $(A - \sigma I)^{-1}$.
+The rate of `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` then reads
+$(|\lambda - \sigma|/|\mu_2 - \sigma|)^k$, where $\mu_2$ is the next eigenvalue in distance from
+$\sigma$. So the closer the shift is to $\lambda$, relative to the rest of the spectrum, the
+faster the convergence. This is why shifting is worth its cost: the dominance hypothesis is
+about distances to the shift, not about moduli. -/
 theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
     (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
@@ -809,65 +940,67 @@ theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
 
 end InverseIteration
 
-/-! ### Subspace iteration
+/-!
+### Subspace iteration
 
-The block form of the power method: a whole subspace is carried along by `A`, and the dominant
-eigenvectors come to lie close to it. The distance is measured with `Submodule.starProjection`, so
-this is the one part of the module that needs an inner product. -/
+Subspace iteration is the block form of the power method: $A$ carries a whole subspace along, and
+the dominant eigenvectors come close to it. The distance is measured with the orthogonal projection
+`Submodule.starProjection`, so this part of the module needs an inner product.
+-/
 
 section SubspaceIteration
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable (A : Module.End 𝕜 E) (S : Submodule 𝕜 E)
 
-/-- **Simple subspace iteration** in closed form: the subspace spanned by the `k`-th block of
-iterates is `A^k S₀`.
+/-- **Simple subspace iteration** in closed form. For a subspace $S$ of $E$, the $k$-th iterate is
+the subspace $$A^k S = \{A^k y : y \in S\}.$$
 
-The algorithm of [saad2011numerical], Alg. 5.1 (Bauer's Treppeniteration) reorthonormalizes its
-block of vectors after every multiplication by `A`, which replaces the basis but not the subspace it
-spans; so, exactly as `Krylov.powerIterate` is a normalization of `A^k x₀`, the subspace produced
-after `k` steps is this one, whatever normalization is used. -/
+The algorithm of [saad2011numerical], Algorithm 5.1 (Bauer's Treppeniteration),
+reorthonormalizes its block of vectors after every multiplication by $A$. This changes the basis
+but not the subspace that it spans. So the subspace after $k$ steps is $A^k S$, whatever
+normalization the algorithm uses, just as `Krylov.powerIterate` is a normalization of $A^k x_0$. -/
 def subspaceIterate (k : ℕ) : Submodule 𝕜 E := S.map (A ^ k)
 
-/-- A block of `m` starting vectors spans a finite-dimensional subspace, and so does every iterate.
-This is what supplies the orthogonal projection onto `A^k S₀`, with no completeness assumption on
-the ambient space. -/
+/-- If the starting subspace $S$ is finite-dimensional, then so is every iterate $A^k S$. This gives
+the orthogonal projection onto $A^k S$ without a completeness assumption on $E$. -/
 instance [FiniteDimensional 𝕜 S] (k : ℕ) : FiniteDimensional 𝕜 (subspaceIterate A S k) :=
   inferInstanceAs (FiniteDimensional 𝕜 (S.map (A ^ k)))
 
 variable {A S}
 
-/-- Membership in an iterate: the `k`-th subspace is the image of the starting one. -/
+/-- A vector $x$ lies in $A^k S$ if and only if $x = A^k y$ for some $y \in S$. -/
 theorem mem_subspaceIterate {k : ℕ} {x : E} :
     x ∈ subspaceIterate A S k ↔ ∃ y ∈ S, (A ^ k) y = x := Submodule.mem_map
 
-/-- The candidate vectors the convergence bound is proved with. -/
+/-- If $y \in S$, then $A^k y \in A^k S$ for every $k$. These vectors are the candidates in the
+proof of the convergence bound. -/
 theorem apply_pow_mem_subspaceIterate {y : E} (hy : y ∈ S) (k : ℕ) :
     (A ^ k) y ∈ subspaceIterate A S k := Submodule.mem_map_of_mem hy
 
-/-- The iteration starts at the given subspace. -/
+/-- Subspace iteration starts at the given subspace: $A^0 S = S$. -/
 @[simp]
 theorem subspaceIterate_zero : subspaceIterate A S 0 = S := by
   rw [subspaceIterate, pow_zero, Module.End.one_eq_id, Submodule.map_id]
 
-/-- One step of the iteration is one application of `A` to the subspace, which is the recurrence the
-algorithm runs. -/
+/-- One step of subspace iteration applies $A$ to the subspace: $A^{k+1} S = A(A^k S)$. This is the
+recurrence that the algorithm runs. -/
 theorem subspaceIterate_succ (k : ℕ) :
     subspaceIterate A S (k + 1) = (subspaceIterate A S k).map A := by
   rw [subspaceIterate, subspaceIterate, pow_succ', Module.End.mul_eq_comp, Submodule.map_comp]
 
-/-- **The subspace-iteration bound**, in the form the proof actually consumes: no spectrum, no
-projector and no finite dimension of the ambient space.
+/-- The **subspace-iteration bound** in its basic form, with no spectral hypothesis and no finite
+dimension of $E$. Let $E$ be an inner product space, let $S$ be a finite-dimensional subspace,
+and let $Au = \lambda u$ with $\lambda \neq 0$. Let $s \in S$, and suppose that
+$\|A^k (s - u)\| \le C r^k$ for all $k$. Then for every $k$, $$\|u - P_{A^k S} u\| \le C
+\left(\frac{r}{|\lambda|}\right)^k,$$ where $P_{A^k S}$ is the orthogonal projection onto
+$A^k S$.
 
-If `u` is an eigenvector of `A` for `λ ≠ 0`, if `s` lies in the starting subspace `S`, and if the
-orbit of the discrepancy `s - u` obeys `‖A^k (s - u)‖ ≤ C r^k`, then the distance from `u` to `A^k
-S` is at most `C (r/‖λ‖)^k`. The proof exhibits one candidate, `λ^{-k} A^k s`, which lies in `A^k S`
-and whose error is exactly `λ^{-k} A^k (s - u)`; the orthogonal projection does at least as well,
-being the best approximation from the subspace.
-
-Compare `Krylov.norm_inv_pow_smul_pow_apply_sub_le`, the same estimate for the power method: there
-the approximant is the scaled iterate itself, here it is the best approximant from the subspace that
-contains it, so the block statement is the sharper of the two. -/
+The proof uses one candidate, $\lambda^{-k} A^k s \in A^k S$, whose error is
+$\lambda^{-k} A^k (s - u)$. The orthogonal projection is the best approximation from $A^k S$, so
+it does at least as well. Compare `Krylov.norm_inv_pow_smul_pow_apply_sub_le`, the same estimate
+for the power method: there the approximant is the scaled iterate itself, and here it is the
+best approximant from a subspace that contains it, so the block bound is the sharper one. -/
 theorem norm_sub_starProjection_subspaceIterate_le [FiniteDimensional 𝕜 S] {u s : E} {l : 𝕜}
     {C r : ℝ} (hl : l ≠ 0) (hu : A u = l • u) (hs : s ∈ S)
     (hC : ∀ k, ‖(A ^ k) (s - u)‖ ≤ C * r ^ k) (k : ℕ) :
@@ -883,19 +1016,23 @@ theorem norm_sub_starProjection_subspaceIterate_le [FiniteDimensional 𝕜 S] {u
   rw [heq]
   exact norm_inv_pow_smul_pow_apply_le hl hC k
 
-/-- **Convergence of subspace iteration** ([saad2011numerical], Thm 5.2).
+/-- **Convergence of subspace iteration.** Let $E$ be a finite-dimensional inner product space over
+$\mathbb{K}$, with $\mathbb{K}$ algebraically closed. Let a predicate $p$ select a set of
+eigenvalues, let $M = G_p(A)$ be the sum of their generalized eigenspaces, and let
+$W = G_{\neg p}(A)$ be the sum of the other ones. Let the starting subspace $S$ satisfy
+$S \cap W = 0$ and $\dim S = \dim M$. Let $u \in M$ with $Au = \lambda u$ and $\lambda \neq 0$,
+and let $r$ be real with $|\mu| < r$ for every eigenvalue $\mu$ of $A$ with $\neg p(\mu)$. Then
+there is a constant $C$ with $$\|u - P_{A^k S} u\| \le C \left(\frac{r}{|\lambda|}\right)^k
+\quad \text{for all } k.$$ This is Theorem 5.2 of [saad2011numerical].
 
-Let a predicate `p` select a set of eigenvalues, let `M` be the span of their generalized
-eigenspaces and `W` the span of the rest. If the spectral projector is injective on the starting
-subspace `S` — equivalently, `Disjoint S W`, which is the book's requirement that the projections of
-a spanning family of `S` be linearly independent — and `S` has the dimension of `M`, then every
-eigenvector `u ∈ M` with eigenvalue `λ ≠ 0` satisfies `‖u - P_{A^k S} u‖ ≤ C (r/‖λ‖)^k`, for every
-`r` exceeding the moduli of the unselected eigenvalues.
-
-The bound is informative exactly when `r < ‖λ‖`, that is when the selected eigenvalues dominate;
-`Krylov.tendsto_starProjection_subspaceIterate` is that reading. The book states the constant as `‖u
-- s‖` and the rate as `(|λ_{m+1}/λ_i| + ε_k)^k` with `ε_k → 0`; the trade made here is the same one
-the power method makes, a constant `C` in exchange for an exponent whose base does not move. -/
+The source requires that the projections of a spanning family of $S$ onto $M$ along $W$ are
+linearly independent. This is the condition $S \cap W = 0$, because $W$ is the kernel of the
+spectral projector (`Module.End.injOn_spectralProjector_iff`). The source states the constant as
+$\|u - s\|$ and the rate as $(|\lambda_{m+1}/\lambda_i| + \varepsilon_k)^k$ with
+$\varepsilon_k \to 0$. Here the constant is $C$ and the base of the power does not move, the
+same trade as for the power method. The bound is informative when $r < |\lambda|$, that is, when
+the selected eigenvalues dominate; `Krylov.tendsto_starProjection_subspaceIterate` is the
+convergence statement. -/
 theorem exists_norm_sub_starProjection_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
     {p : 𝕜 → Prop} {u : E} {l : 𝕜} {r : ℝ}
     (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
@@ -909,8 +1046,14 @@ theorem exists_norm_sub_starProjection_subspaceIterate_le [IsAlgClosed 𝕜] [Fi
   obtain ⟨C, hC⟩ := exists_norm_pow_apply_le_of_mem_iSup hw hr
   exact ⟨C, fun k => norm_sub_starProjection_subspaceIterate_le hl hu hs hC k⟩
 
-/-- The iterated subspaces capture the dominant eigenvectors in the limit: under the dominance `r <
-‖λ‖` the orthogonal projections of `u` onto `A^k S` converge to `u`. -/
+/-- The iterated subspaces capture the dominant eigenvectors in the limit. Let $E$ be a
+finite-dimensional inner product space over $\mathbb{K}$, with $\mathbb{K}$ algebraically
+closed. Let $p$ select a set of eigenvalues, let $M = G_p(A)$ and $W = G_{\neg p}(A)$, and let
+$S \cap W = 0$ and $\dim S = \dim M$. Let $u \in M$ with $Au = \lambda u$ and $\lambda \neq 0$,
+and let $0 \le r < |\lambda|$ with $|\mu| < r$ for every eigenvalue $\mu$ of $A$ with
+$\neg p(\mu)$. Then the orthogonal projections of $u$ onto the iterates converge to $u$:
+$$P_{A^k S} u \to u.$$
+-/
 theorem tendsto_starProjection_subspaceIterate [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
     {p : 𝕜 → Prop} {u : E} {l : 𝕜} {r : ℝ}
     (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
@@ -929,32 +1072,36 @@ theorem tendsto_starProjection_subspaceIterate [IsAlgClosed 𝕜] [FiniteDimensi
   rw [norm_norm, norm_sub_rev]
   exact hC k
 
-/-! ### The gap form of the subspace-iteration bound
+/-!
+### The gap form of the subspace-iteration bound
 
 `Krylov.norm_sub_starProjection_subspaceIterate_le` measures the convergence one eigenvector at a
-time. What the QR algorithm and orthogonal iteration need instead is the *gap*
-`‖P_M - P_{A^k S}‖`, which bounds the distance to `A^k S` of **every** vector of `M` at once
-(`Submodule.sinAngle_le_gap`) and is therefore strictly stronger. -/
+time. The QR algorithm and orthogonal iteration need the gap $\|P_M - P_{A^k S}\|$ instead. The gap
+bounds the distance to $A^k S$ of every vector of $M$ at once (`Submodule.sinAngle_le_gap`), so it
+is the stronger statement.
+-/
 
-/-- **The gap form of the subspace-iteration bound**, in the form the proof consumes: no spectrum,
-no algebraically closed field and no finite dimension of the ambient space.
+/-- The **gap form of the subspace-iteration bound**, with no spectral hypothesis, no algebraically
+closed field and no finite dimension of $E$. Let $E$ be an inner product space, and let $\iota$
+be a finite index set. Let $(x_j)_{j \in \iota}$ be linearly independent eigenvectors,
+$Ax_j = \lambda_j x_j$, with $\lambda_j \neq 0$ and $|\lambda_j| \ge \rho > 0$, and let $M$ be
+their span. Let $S$ be the span of a family $(s_j)_{j \in \iota}$, and suppose that
+$\|A^k (s_j - x_j)\| \le C r^k$ for all $j$ and $k$, where $0 \le r < \rho$. Then there is a
+constant $D$ with $$\operatorname{gap}(M, A^k S) \le D \left(\frac{r}{\rho}\right)^k \quad
+\text{for all } k,$$ where $\operatorname{gap}(M, L) = \|P_M - P_L\|$ is `Submodule.gap`. This
+is Lemma 7.18 of [kress1998numerical].
 
-Let `M` be spanned by eigenvectors `x j` with eigenvalues `l j` of modulus at least `ρ`, let the
-starting subspace `S` be spanned by a family `s j`, and suppose each discrepancy `s j - x j` has an
-orbit bounded by `C r^k`. Then the gap between `M` and the `k`-th iterate `A^k S` is `O((r/ρ)^k)`.
-
-This is [kress1998numerical], Lemma 7.18, at his hypotheses read off the proof rather than off the
-statement: he assumes `A` diagonalizable with `S ∩ U = {0}` for the invariant complement `U`, which
-delivers exactly the family `s` (through the spectral projector) and the decay `C r^k`. The
-spectral packaging is `Krylov.exists_gap_subspaceIterate_le`.
-
-The proof is `Submodule.gap_le_of_forall_norm_sub_le` applied to the two spanning families `x` and
-`w j = l j^{-k} A^k (s j)`: the second spans `A^k S` because scaling by nonzero scalars does not
-change a span, and it converges to the first at the stated rate by
-`Krylov.norm_inv_pow_smul_pow_apply_sub_le`. The smallness hypothesis of that lemma holds only from
-some step on, so the constant absorbs the finitely many earlier steps, where the gap is at most `1`
-(`Submodule.gap_le_one`); the case `r = 0` is separate because `(r/ρ)^k` then vanishes and leaves no
-room to absorb anything — there the iterates are *equal* to `M` from step `1` on. -/
+The hypotheses are those that the proof of [kress1998numerical] uses, not those of its
+statement. The source assumes that $A$ is diagonalizable and that $S \cap U = 0$ for the
+invariant complement $U$ of $M$; these give the family $(s_j)$, through the spectral projector,
+and the decay $C r^k$. The spectral form is `Krylov.exists_gap_subspaceIterate_le`. The proof
+applies `Submodule.gap_le_of_forall_norm_sub_le` to the spanning families $(x_j)$ and
+$(\lambda_j^{-k} A^k s_j)$. The second family spans $A^k S$, and it converges to the first at
+the stated rate by `Krylov.norm_inv_pow_smul_pow_apply_sub_le`. The smallness hypothesis of
+`Submodule.gap_le_of_forall_norm_sub_le` holds only from some step on, and the constant $D$
+absorbs the earlier steps, where the gap is at most $1$ (`Submodule.gap_le_one`). The case
+$r = 0$ is separate, because then $(r/\rho)^k$ vanishes and leaves nothing to absorb; in that
+case $A^k S = M$ for $k \ge 1$. -/
 theorem gap_subspaceIterate_le {ι : Type*} [Finite ι] {M : Submodule 𝕜 E}
     [FiniteDimensional 𝕜 M] [FiniteDimensional 𝕜 S] {x s : ι → E} {l : ι → 𝕜} {C r ρ : ℝ}
     (hxli : LinearIndependent 𝕜 x) (hM : M = Submodule.span 𝕜 (Set.range x))
@@ -1017,24 +1164,26 @@ theorem gap_subspaceIterate_le {ι : Type*} [Finite ι] {M : Submodule 𝕜 E}
       have hgap := htriv k
       nlinarith [mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) ≤ 3) hκ.le) hC'0]
 
-/-- **The gap form of the subspace-iteration bound**, at the spectral hypotheses of
-[saad2011numerical], Thm 5.2 and [kress1998numerical], Lemma 7.18: the dominant invariant subspace
-`M = ⨆_{p μ} maxGenEigenspace A μ` is at gap `O((r/ρ)^k)` from the `k`-th iterate `A^k S`, where `ρ`
-bounds the selected eigenvalues from below and `r` the discarded ones from above.
+/-- The **gap form of the subspace-iteration bound** at the spectral hypotheses of
+[saad2011numerical], Theorem 5.2, and [kress1998numerical], Lemma 7.18. Let $E$ be a
+finite-dimensional inner product space over $\mathbb{K}$, with $\mathbb{K}$ algebraically
+closed. Let $p$ select a set of eigenvalues, let $M = G_p(A)$ and $W = G_{\neg p}(A)$, and let
+the starting subspace $S$ satisfy $S \cap W = 0$ and $\dim S = \dim M$. Suppose that $M$ is
+spanned by linearly independent eigenvectors $(x_j)_{j \in \iota}$, $\iota$ finite, with
+$Ax_j = \lambda_j x_j$ and $|\lambda_j| \ge \rho > 0$. Let $0 \le r < \rho$ with $|\mu| < r$ for
+every eigenvalue $\mu$ of $A$ with $\neg p(\mu)$. Then there is a constant $D$ with
+$$\operatorname{gap}(M, A^k S) \le D \left(\frac{r}{\rho}\right)^k \quad \text{for all } k.$$
 
-`M` is required to be spanned by *eigen*vectors `x` — that is, the selected eigenvalues are
-semi-simple, which is [kress1998numerical]'s diagonalizability read locally. A nontrivial Jordan
-block among them would contribute a polynomial factor `k^{N-1}` and make the clean rate `(r/ρ)^k`
-false at `r` exactly the subdominant modulus, the same phenomenon that
-`Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace` handles with a strict `r`. The family `x`
-is data rather than a conclusion because nothing else in this file constructs a basis of a
-supremum of eigenspaces.
-
-Everything else is supplied by the spectral projector:
-`Module.End.existsUnique_mem_spectralProjector_eq` produces the preimages `s j ∈ S` of the `x j`, a
-dimension count promotes them to a spanning family
-of `S`, and `Krylov.exists_norm_pow_apply_le_of_mem_iSup` bounds the orbit of each discrepancy
-`s j - x j`, which lies in the discarded invariant subspace. -/
+The hypothesis that eigenvectors span $M$ says that the selected eigenvalues are semi-simple;
+this is the diagonalizability of [kress1998numerical], required only on $M$. A nontrivial Jordan
+block among the selected eigenvalues would contribute a polynomial factor $k^{N-1}$ and make the
+rate $(r/\rho)^k$ false when $r$ is exactly the subdominant modulus;
+`Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace` handles the same effect with a strict
+$r$. The family $(x_j)$ is data and not a conclusion, because nothing in this module constructs
+a basis of a sum of eigenspaces. The proof takes the preimages $s_j \in S$ of the $x_j$ under
+the spectral projector (`Module.End.existsUnique_mem_spectralProjector_eq`), shows by a
+dimension count that they span $S$, and bounds the orbit of each $s_j - x_j \in W$ by
+`Krylov.exists_norm_pow_apply_le_of_mem_iSup`. -/
 theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {p : 𝕜 → Prop}
     {ι : Type*} [Finite ι] {x : ι → E} {l : ι → 𝕜} {r ρ : ℝ}
     (hdisj : Disjoint S (A.spectralSubspace fun μ => ¬ p μ))
@@ -1075,8 +1224,10 @@ theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜
     exact (le_max_left _ _).trans
       (Finset.single_le_sum (fun i _ => le_max_right (Cf i) 0) (Finset.mem_univ j))
 
-/-- **A basis splits the space along any set of indices**: the span of the vectors indexed by `J`
-and the span of the rest are complementary. -/
+/-- A basis splits the space along every set of indices. Let $(x_i)_{i \in \iota}$ be a linearly
+independent family that spans $E$, and let $J \subseteq \iota$. Then
+$\operatorname{span}\{x_j : j \in J\}$ and $\operatorname{span}\{x_j : j \notin J\}$ are
+complementary subspaces of $E$. -/
 theorem isCompl_span_image {ι : Type*} {x : ι → E}
     (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤) (J : Set ι) :
     IsCompl (Submodule.span 𝕜 (x '' J)) (Submodule.span 𝕜 (x '' Jᶜ)) where
@@ -1085,9 +1236,9 @@ theorem isCompl_span_image {ι : Type*} {x : ι → E}
     rw [codisjoint_iff, ← Submodule.span_union, ← Set.image_union, Set.union_compl_self,
       Set.image_univ, hxtop]
 
-/-- The starting subspace maps *onto* the span of the selected basis vectors under the projection
-along the complementary span: the projection is injective on it by general position, so its image
-has the same dimension. -/
+/-- If $S$ meets $\operatorname{span}\{x_j : j \notin J\}$ only in $0$ and has the dimension of
+$\operatorname{span}\{x_j : j \in J\}$, then the projection onto the second span along the first
+maps $S$ onto $\operatorname{span}\{x_j : j \in J\}$. -/
 private theorem map_projection_eq [FiniteDimensional 𝕜 E] {ι : Type*} {x : ι → E}
     (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤) {J : Set ι}
     {S : Submodule 𝕜 E} (hdisj : Disjoint S (Submodule.span 𝕜 (x '' Jᶜ)))
@@ -1114,19 +1265,22 @@ private theorem map_projection_eq [FiniteDimensional 𝕜 E] {ι : Type*} {x : �
     exact LinearMap.map_le_range
   exact Submodule.eq_of_le_of_finrank_le hle (by rw [hfin, hrank])
 
-/-- **The subspace-iteration bound in its book form** ([kress1998numerical], Lemma 7.18): for a
-diagonalizable `A` with eigenbasis `x` and eigenvalues `l`, and a starting subspace `S` of the right
-dimension meeting the complementary invariant subspace `span (x '' Jᶜ)` only in `0`, the gap between
-`span (x '' J)` and the `k`-th iterate `A^k S` is `O((r/ρ)^k)`, where `ρ` bounds the selected
-eigenvalues from below and `r` the discarded ones from above.
+/-- The **subspace-iteration bound** in the form of [kress1998numerical], Lemma 7.18. Let $E$ be a
+finite-dimensional inner product space, and let $A$ have an eigenbasis $(x_i)_{i \in \iota}$,
+$\iota$ finite, with $Ax_i = \lambda_i x_i$. Let $J \subseteq \iota$ and $0 \le r < \rho$ with
+$\rho > 0$, and suppose that $|\lambda_j| \ge \rho$ for $j \in J$ and $|\lambda_j| \le r$ for
+$j \notin J$. Let $M = \operatorname{span}\{x_j : j \in J\}$ and
+$U = \operatorname{span}\{x_j : j \notin J\}$, and let the starting subspace $S$ satisfy
+$S \cap U = 0$ and $\dim S = \dim M$. Then there is a constant $D$ with $$\operatorname{gap}(M,
+A^k S) \le D \left(\frac{r}{\rho}\right)^k \quad \text{for all } k.$$
 
-This is `Krylov.gap_subspaceIterate_le` supplied with the data [kress1998numerical]'s hypotheses
-determine: the projection along `span (x '' Jᶜ)` carries `S` bijectively onto `span (x '' J)`
-(`Krylov.isCompl_span_image` and a dimension count), so each `x j` has a unique preimage `s j ∈ S`,
-the family `s` spans `S`, and each discrepancy `s j - x j` lies in `span (x '' Jᶜ)`, where the orbit
-of `A` decays like `r^k` because the family is an eigenbasis.  Unlike
-`Krylov.exists_gap_subspaceIterate_le` it needs no spectral projector and no algebraically closed
-field: diagonalizability is the eigenbasis `x`, which is given. -/
+This is `Krylov.gap_subspaceIterate_le` with the data that the hypotheses of
+[kress1998numerical] determine. The projection along $U$ carries $S$ bijectively onto $M$
+(`Krylov.isCompl_span_image` and a dimension count). So each $x_j$ with $j \in J$ has a unique
+preimage $s_j \in S$, the family $(s_j)$ spans $S$, and each $s_j - x_j$ lies in $U$, where the
+orbit of $A$ decays like $r^k$ because $U$ is spanned by eigenvectors. Unlike
+`Krylov.exists_gap_subspaceIterate_le`, this form needs no spectral projector and no
+algebraically closed field: diagonalizability is the given eigenbasis. -/
 theorem exists_gap_subspaceIterate_span_image_le [FiniteDimensional 𝕜 E]
     {ι : Type*} [Finite ι] {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜}
     {J : Set ι} {S : Submodule 𝕜 E} {r ρ : ℝ}
@@ -1201,11 +1355,16 @@ section Conjugation
 variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- The power method commutes with a change of orthonormal coordinates: for a linear isometry
-equivalence `U : F ≃ₗᵢ[𝕜] E`, the power iteration of `U⁻¹ A U` from `U⁻¹ x₀` is `U⁻¹` of the power
-iteration of `A` from `x₀`, because `(U⁻¹ A U)^k = U⁻¹ A^k U` and `U` preserves norms. This is what
-lets [quarteroni2000numerical] §5.8.1 run the iteration on the Hessenberg form `H = Qᴴ A Q` and
-recover the eigenvector of `A` as `x = Q q`. -/
+/-- The power method commutes with a change of orthonormal coordinates. Let $U : F \to E$ be a
+linear isometric equivalence of normed spaces, let $A$ be an endomorphism of $E$ and let
+$x_0 \in E$. Then the power iterates of $U^{-1} A U$ from $U^{-1} x_0$ are the images under
+$U^{-1}$ of the power iterates of $A$ from $x_0$: $$q_k(U^{-1} A U, U^{-1} x_0) = U^{-1} q_k(A,
+x_0).$$
+
+The reason is that $(U^{-1} A U)^k = U^{-1} A^k U$ and that $U$ preserves norms. This is what
+lets [quarteroni2000numerical], §5.8.1, run the iteration on the Hessenberg form $H = Q^H A Q$
+and recover the eigenvector of $A$ as $x = Qq$. The operator $U^{-1} A U$ is
+`U.symm.toLinearEquiv.conj A`. -/
 theorem powerIterate_conj_linearIsometryEquiv (U : F ≃ₗᵢ[𝕜] E) (A : Module.End 𝕜 E) (x₀ : E)
     (k : ℕ) :
     powerIterate (U.symm.toLinearEquiv.conj A) (U.symm x₀) k = U.symm (powerIterate A x₀ k) := by
@@ -1219,8 +1378,14 @@ theorem powerIterate_conj_linearIsometryEquiv (U : F ≃ₗᵢ[𝕜] E) (A : Mod
       simp
   rw [powerIterate, powerIterate, hpow, map_smul, LinearIsometryEquiv.norm_map]
 
-/-- Inverse iteration commutes with a change of orthonormal coordinates, the shifted inverse
-conjugating along (`LinearEquiv.conj_ringInverse`): [quarteroni2000numerical] §5.8.1. -/
+/-- Inverse iteration commutes with a change of orthonormal coordinates. Let $U : F \to E$ be a
+linear isometric equivalence of normed spaces, let $A$ be an endomorphism of $E$, let $\sigma$
+be a scalar and let $x_0 \in E$. Then the inverse iterates of $U^{-1} A U$ with shift $\sigma$
+from $U^{-1} x_0$ are the images under $U^{-1}$ of the inverse iterates of $A$ with shift
+$\sigma$ from $x_0$.
+
+The shifted inverse is conjugated along by `LinearEquiv.conj_ringInverse`. This justifies
+inverse iteration on a Hessenberg or tridiagonal form, as in [quarteroni2000numerical], §5.8.1. -/
 theorem inverseIterate_conj_linearIsometryEquiv (U : F ≃ₗᵢ[𝕜] E) (A : Module.End 𝕜 E) (σ : 𝕜)
     (x₀ : E) (k : ℕ) :
     inverseIterate (U.symm.toLinearEquiv.conj A) σ (U.symm x₀) k
@@ -1235,16 +1400,19 @@ section Eigenbasis
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **The power method's exact rate for a diagonalizable operator**
-([quarteroni2000numerical] Theorem 5.6): for eigenpairs `A (x i) = l i • x i` with unit `x i`, a
-distinguished index `i₀` with `l i₀ ≠ 0` and `‖l i‖ ≤ ρ` for `i ≠ i₀`, and a starting vector
-`x₀ = ∑ α i • x i` with `α i₀ ≠ 0`, the rescaled iterate `(α i₀ l i₀ ^ k)⁻¹ A^k x₀` is within
-`(∑_{i ≠ i₀} ‖α i / α i₀‖) (ρ / ‖l i₀‖)^k` of `x i₀`, for every `k`.
+/-- The **rate of the power method for a diagonalizable operator**. Let $E$ be a normed space, and
+let $(x_i)_{i \in \iota}$ be a finite family of unit vectors with $Ax_i = \lambda_i x_i$. Let
+$i_0 \in \iota$ with $\lambda_{i_0} \neq 0$, and let $|\lambda_i| \le \rho$ for $i \neq i_0$.
+Let $x_0 = \sum_i \alpha_i x_i$ with $\alpha_{i_0} \neq 0$. Then for every $k$, $$\left\|
+(\alpha_{i_0} \lambda_{i_0}^k)^{-1} A^k x_0 - x_{i_0} \right\| \le \Bigl(\sum_{i \neq i_0}
+\Bigl|\frac{\alpha_i}{\alpha_{i_0}}\Bigr|\Bigr) \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k.$$
+This is Theorem 5.6 of [quarteroni2000numerical].
 
-The constant is the one the triangle inequality gives; the book's `(∑ (α_i/α_1)²)^{1/2}` needs the
-`x i` orthonormal, that is, a normal `A`. The general
-`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` gives the same rate with any `r > ρ` in place of
-`ρ` and no eigenbasis. -/
+The constant is the one that the triangle inequality gives. The constant
+$(\sum_i (\alpha_i/\alpha_1)^2)^{1/2}$ of the source needs the $x_i$ orthonormal, that is, a
+normal $A$. The family $(x_i)$ need not be linearly independent.
+`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` gives the same rate with any $r > \rho$ in
+place of $\rho$ and without an eigenbasis. -/
 theorem norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜} (hx : ∀ i, A (x i) = l i • x i)
     (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ)
@@ -1279,9 +1447,13 @@ section RayleighQuotient
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The Rayleigh quotients `⟪q k, A (q k)⟫` of a sequence that converges essentially to a unit
-eigenvector `u` for `l` converge to `l`: a unimodular factor does not change `⟪q, A q⟫`, and
-`⟪u, A u⟫ = l` for a unit eigenvector. -/
+/-- Let $E$ be an inner product space, let $A$ be continuous, and let $u$ be a unit eigenvector:
+$Au = \lambda u$ and $\|u\| = 1$. Let $(q_k)$ be vectors and $(c_k)$ scalars with $|c_k| = 1$
+and $c_k q_k \to u$. Then the Rayleigh quotients converge to the eigenvalue: $$\langle q_k, A
+q_k \rangle \to \lambda.$$
+
+A factor of modulus one does not change $\langle q, A q \rangle$, and
+$\langle u, A u \rangle = \lambda$ for a unit eigenvector. -/
 theorem tendsto_inner_apply_of_tendsto_smul {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜}
     {u : E} (hu : A u = l • u) (hu1 : ‖u‖ = 1) {q : ℕ → E} {c : ℕ → 𝕜} (hc : ∀ k, ‖c k‖ = 1)
     (hq : Tendsto (fun k => c k • q k) atTop (𝓝 u)) :
@@ -1297,9 +1469,11 @@ theorem tendsto_inner_apply_of_tendsto_smul {A : Module.End 𝕜 E} (hA : Contin
     simp
   simpa only [Function.comp_def, heq, hval] using hlim
 
-/-- **The Rayleigh quotients of the power method converge to the dominant eigenvalue**
-([quarteroni2000numerical] Theorem 5.6, the remark after it): under the hypotheses of
-`Krylov.tendsto_smul_powerIterate`, `⟪q k, A (q k)⟫ → l` for the normalized iterates `q k`. -/
+/-- **Convergence of the Rayleigh quotients of the power method.** Let $E$ be an inner product
+space, let $A$ be continuous, let $\lambda \neq 0$ be strictly dominant for $A$, and let
+$x_0 = u + w$ with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$. Then the
+Rayleigh quotients of the power iterates converge to $\lambda$: $$\langle q_k, A q_k \rangle \to
+\lambda.$$ This is Theorem 5.6 of [quarteroni2000numerical] and the remark after it. -/
 theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜} {u w x₀ : E}
     (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
@@ -1313,14 +1487,17 @@ theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {
   · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
       inv_mul_cancel₀ hun]
 
-/-- **Essential convergence of the power method, dominance restricted to the components present.**
-Let `x₀ = u + w` with `A u = l • u`, `u ≠ 0`, `l ≠ 0`, and `w` in the span of the generalized
-eigenspaces of the eigenvalues `μ` with `p μ`, all of which have `‖μ‖ < r` for some `r < ‖l‖`.
-Then the normalized power iterates converge essentially to `u/‖u‖`,
-`(‖l‖/l)^k • powerIterate A x₀ k → u/‖u‖`, and their Rayleigh quotients converge to `l`. Unlike
-`Krylov.tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`, the domination
-hypothesis quantifies only over the eigenvalues whose generalized eigenvectors occur in `w`, which
-is the form for a starting vector with no component along the dominant eigenvectors. -/
+/-- **Essential convergence of the power method, with dominance only over the components present.**
+Let $E$ be an inner product space, let $A$ be continuous, and let $p$ be a predicate on scalars.
+Let $x_0 = u + w$ with $Au = \lambda u$, $u \neq 0$, $\lambda \neq 0$ and $w \in G_p(A)$. Let
+$0 \le r < |\lambda|$ with $|\mu| < r$ for every eigenvalue $\mu$ of $A$ with $p(\mu)$. Then
+$$\left(\frac{|\lambda|}{\lambda}\right)^k q_k \to \frac{u}{\|u\|} \quad \text{and} \quad
+\langle q_k, A q_k \rangle \to \lambda.$$
+
+Unlike `Krylov.tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`, the dominance
+hypothesis quantifies only over the eigenvalues whose generalized eigenvectors occur in $w$.
+This is the form for a starting vector with no component along the eigenvectors of the dominant
+eigenvalues of $A$. -/
 theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜}
     {u w x₀ : E} {p : 𝕜 → Prop} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace p) {r : ℝ} (hr0 : 0 ≤ r) (hrl : r < ‖l‖)
@@ -1354,10 +1531,15 @@ theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Cont
   · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
       inv_mul_cancel₀ hun]
 
-/-- **The Rayleigh quotients of inverse iteration converge to the eigenvalue nearest the shift**
-([quarteroni2000numerical] (5.28), `σ^(k) → λ_m`): under the hypotheses of
-`Krylov.tendsto_smul_inverseIterate`, the Rayleigh quotients computed on `A` itself at the
-normalized inverse iterates converge to `l`. -/
+/-- **Convergence of the Rayleigh quotients of inverse iteration** to the eigenvalue nearest the
+shift. Let $E$ be an inner product space, let $A$ be continuous, and let $A - \sigma I$ be
+invertible. Let $|\lambda - \sigma| < |\mu - \sigma|$ for every eigenvalue $\mu \neq \lambda$ of
+$A$, and let $x_0 = u + w$ with $Au = \lambda u$, $u \neq 0$ and $w \in G_{\neq\lambda}(A)$.
+Then the Rayleigh quotients of $A$ at the inverse iterates $q_k$ converge to $\lambda$:
+$$\langle q_k, A q_k \rangle \to \lambda.$$ This is (5.28) of [quarteroni2000numerical],
+$\sigma^{(k)} \to \lambda_m$.
+
+The Rayleigh quotients are computed with $A$ itself, not with the shifted inverse. -/
 theorem tendsto_inner_inverseIterate {A : Module.End 𝕜 E} (hA : Continuous A) {σ l : 𝕜}
     {u w x₀ : E} (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
     (hw : w ∈ A.spectralSubspace (· ≠ l))
@@ -1393,8 +1575,12 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
   [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- The eigenbasis coordinates of `A ^ k x` are those of `x` scaled by the `k`-th powers of the
-eigenvalues. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$ of finite dimension $n$, with the
+orthonormal eigenvector basis $(u_i)$ and the eigenvalues $\lambda_i$ of
+`LinearMap.IsSymmetric.eigenvectorBasis` and `LinearMap.IsSymmetric.eigenvalues`. Then the
+coordinates of $A^k x$ in this basis are those of $x$ multiplied by $\lambda_i^k$: $$[A^k x]_i =
+\lambda_i^k \, [x]_i.$$
+-/
 theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) (k : ℕ) (i : Fin n) :
     (hA.eigenvectorBasis hn).repr ((A ^ k) x) i
       = (hA.eigenvalues hn i : 𝕜) ^ k * (hA.eigenvectorBasis hn).repr x i := by
@@ -1405,7 +1591,10 @@ theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) (k : �
     ring
 
 omit [FiniteDimensional 𝕜 E] in
-/-- The Rayleigh quotient of the normalized power iterate is the Rayleigh quotient of `A ^ k x₀`. -/
+/-- Let $A$ be a symmetric operator on an inner product space $E$. The Rayleigh quotient of the
+power iterate $q_k$ is the Rayleigh quotient of $A^k x_0$: $$\operatorname{Re} \langle q_k, A
+q_k \rangle = \frac{\operatorname{Re} \langle A^{k+1} x_0, A^k x_0 \rangle}{\|A^k x_0\|^2}.$$
+Both sides are $0$ when $A^k x_0 = 0$, and $E$ need not be finite-dimensional. -/
 theorem re_inner_powerIterate_eq_div (x₀ : E) (k : ℕ) :
     RCLike.re (inner 𝕜 (Krylov.powerIterate A x₀ k) (A (Krylov.powerIterate A x₀ k)))
       = RCLike.re (inner 𝕜 (A ((A ^ k) x₀)) ((A ^ k) x₀)) / ‖(A ^ k) x₀‖ ^ 2 := by
@@ -1427,8 +1616,9 @@ section EigenbasisRate
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- Normalizing a vector at most doubles its distance to a unit vector:
-`‖‖v‖⁻¹ v - u‖ ≤ 2 ‖v - u‖` for `‖u‖ = 1` (with `‖0‖⁻¹ 0 = 0`). -/
+/-- Normalizing a vector at most doubles its distance to a unit vector. If $\|u\| = 1$, then for
+every $v$, $$\bigl\| \|v\|^{-1} v - u \bigr\| \le 2 \|v - u\|,$$ where $\|v\|^{-1} v = 0$ for
+$v = 0$. -/
 theorem _root_.norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
     ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - u‖ ≤ 2 * ‖v - u‖ := by
   have h1 : ‖((‖v‖⁻¹ : ℝ) : 𝕜) • v - v‖ ≤ ‖v - u‖ := by
@@ -1445,8 +1635,9 @@ theorem _root_.norm_inv_norm_smul_sub_le {u v : E} (hu : ‖u‖ = 1) :
         norm_sub_le_norm_sub_add_norm_sub _ _ _
     _ ≤ 2 * ‖v - u‖ := by linarith
 
-/-- The unimodular rephasing of the power iterate: with `a = α i₀ l i₀^k ≠ 0` and
-`A^k x₀ = a v`, the iterate times `‖a‖ / a` is the normalization `‖v‖⁻¹ v` of `v`. -/
+/-- Let $a \neq 0$ and $A^k x_0 = a v$. Then the power iterate multiplied by $|a|/a$ is the
+normalization of $v$: $$\frac{|a|}{a} q_k = \|v\|^{-1} v.$$ It is used with
+$a = \alpha_{i_0} \lambda_{i_0}^k$. -/
 theorem smul_powerIterate_eq_of_eq_smul {A : Module.End 𝕜 E} {x₀ v : E} {a : 𝕜} {k : ℕ}
     (ha : a ≠ 0) (h : (A ^ k) x₀ = a • v) :
     ((‖a‖ : 𝕜) / a) • powerIterate A x₀ k = ((‖v‖⁻¹ : ℝ) : 𝕜) • v := by
@@ -1459,11 +1650,12 @@ theorem smul_powerIterate_eq_of_eq_smul {A : Module.End 𝕜 E} {x₀ v : E} {a 
   push_cast
   field_simp
 
-/-- The eigendirection rate of the power method with an eigenbasis, explicit constant: under the
-hypotheses of `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, the power iterate
-rephased by the unimodular `c_k = ‖α i₀ l i₀^k‖ / (α i₀ l i₀^k)` is within
-`2 (∑_{i ≠ i₀} ‖α i / α i₀‖) (ρ / ‖l i₀‖)^k` of the unit eigenvector `x i₀`. Normalizing costs
-the factor `2` (`norm_inv_norm_smul_sub_le`). -/
+/-- Let $(x_i)$, $i_0$, $\rho$ and $x_0 = \sum_i \alpha_i x_i$ satisfy the hypotheses of
+`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, and let $c_k = |\alpha_{i_0}
+\lambda_{i_0}^k| / (\alpha_{i_0} \lambda_{i_0}^k)$, a scalar of modulus one. Then for every $k$,
+$$\|c_k q_k - x_{i_0}\| \le 2 \Bigl(\sum_{i \neq i_0}
+\Bigl|\frac{\alpha_i}{\alpha_{i_0}}\Bigr|\Bigr) \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k.$$
+The factor $2$ is the cost of the normalization (`norm_inv_norm_smul_sub_le`). -/
 theorem norm_smul_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜} (hx : ∀ i, A (x i) = l i • x i)
     (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ)
@@ -1485,9 +1677,10 @@ section EigenbasisInner
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The angle between the line through a unit vector `u` and a unit vector `q` is at most the
-distance from `u` to any unimodular multiple of `q`: `P_{𝕜u}` is the best approximation from the
-line, and `c⁻¹ u` lies on it. -/
+/-- Let $q$ be a unit vector, let $u$ be a vector, and let $c$ be a scalar with $|c| = 1$. Then the
+sine of the angle between $q$ and the line $\mathbb{K} u$ is at most $\|c q - u\|$. The reason
+is that $P_{\mathbb{K} u} q$ is the best approximation of $q$ from the line, and $c^{-1} u$ lies
+on the line. -/
 theorem _root_.Submodule.sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq : ‖q‖ = 1) {c : 𝕜}
     (hc : ‖c‖ = 1) : (𝕜 ∙ u).sinAngle q ≤ ‖c • q - u‖ := by
   have hc0 : c ≠ 0 := norm_ne_zero_iff.1 (by rw [hc]; exact one_ne_zero)
@@ -1501,14 +1694,20 @@ theorem _root_.Submodule.sinAngle_span_singleton_le_norm_smul_sub {u q : E} (hq 
   rw [hs]
   exact h.trans heq.le
 
-/-- The eigendirection rate of the power method with an eigenbasis ([golub2013matrix] §7.3.1,
-`dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`): under the hypotheses of
-`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` (eigenbasis `x`, dominant index `i₀`,
-`‖l i‖ ≤ ρ` for `i ≠ i₀`, `α i₀ ≠ 0`), there is `C` with
-`‖c_k • powerIterate A x₀ k - x i₀‖ ≤ C (ρ / ‖l i₀‖)^k` for the unimodular
-`c_k = ‖α i₀ l i₀^k‖ / (α i₀ l i₀^k)` and all `k`, and hence
-`(𝕜 ∙ x i₀).sinAngle (powerIterate A x₀ k) ≤ C (ρ / ‖l i₀‖)^k`. The constant is
-`2 ∑_{i ≠ i₀} ‖α i / α i₀‖` (`Krylov.norm_smul_powerIterate_sub_le_of_eigenbasis`). -/
+/-- The **rate of convergence of the eigendirection** in the power method with an eigenbasis. Let
+$E$ be an inner product space, and let $(x_i)_{i \in \iota}$ be a finite family of unit vectors
+with $Ax_i = \lambda_i x_i$. Let $i_0 \in \iota$ with $\lambda_{i_0} \neq 0$, and let
+$|\lambda_i| \le \rho$ for $i \neq i_0$. Let $x_0 = \sum_i \alpha_i x_i$ with
+$\alpha_{i_0} \neq 0$, and let $c_k = |\alpha_{i_0} \lambda_{i_0}^k| / (\alpha_{i_0}
+\lambda_{i_0}^k)$. Then there is a constant $C$ such that for every $k$, $$\|c_k q_k - x_{i_0}\|
+\le C \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k \quad \text{and} \quad \sin\theta(q_k,
+\mathbb{K} x_{i_0}) \le C \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k.$$ This is the bound
+$\operatorname{dist}(\operatorname{span}\{q^{(k)}\}, \operatorname{span}\{x_1\}) =
+O(|\lambda_2/\lambda_1|^k)$ of [golub2013matrix], §7.3.1.
+
+The sine of the angle between a vector and a subspace is `Submodule.sinAngle`. The constant is
+$C = 2 \sum_{i \neq i_0} |\alpha_i/\alpha_{i_0}|$
+(`Krylov.norm_smul_powerIterate_sub_le_of_eigenbasis`). -/
 theorem exists_norm_sub_smul_powerIterate_le_of_eigenbasis {ι : Type*} [Fintype ι]
     {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜}
     (hx : ∀ i, A (x i) = l i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ}
@@ -1532,12 +1731,18 @@ theorem exists_norm_sub_smul_powerIterate_le_of_eigenbasis {ι : Type*} [Fintype
   exact (Submodule.sinAngle_span_singleton_le_norm_smul_sub (norm_powerIterate_of_ne_zero A x₀ k h0)
     hc).trans h
 
-/-- [golub2013matrix] (7.3.5), rigorous: with the hypotheses of
-`Krylov.exists_norm_sub_smul_powerIterate_le_of_eigenbasis` and `A` continuous, there is `C` with
-`‖⟪q_k, A q_k⟫ - l i₀‖ ≤ C (ρ / ‖l i₀‖)^k` for `q_k = powerIterate A x₀ k`: the Rayleigh
-quotient is invariant under the unimodular factor and Lipschitz in `q` near the unit eigenvector
-`x i₀` (`⟪q, A q⟫ - ⟪x, A x⟫ = ⟪q - x, A q⟫ + ⟪x, A (q - x)⟫`). The book's `O(|λ₂/λ₁|^k)` is
-`ρ = |λ₂|`. -/
+/-- The **rate of convergence of the Rayleigh quotient** in the power method with an eigenbasis. Let
+$E$ be an inner product space, let $A$ be continuous, and let $(x_i)_{i \in \iota}$ be a finite
+family of unit vectors with $Ax_i = \lambda_i x_i$. Let $i_0 \in \iota$ with
+$\lambda_{i_0} \neq 0$, let $|\lambda_i| \le \rho$ for $i \neq i_0$, and let
+$x_0 = \sum_i \alpha_i x_i$ with $\alpha_{i_0} \neq 0$. Then there is a constant $C$ with
+$$|\langle q_k, A q_k \rangle - \lambda_{i_0}| \le C \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k
+\quad \text{for all } k.$$ This is a rigorous form of (7.3.5) of [golub2013matrix]; the bound
+$O(|\lambda_2/\lambda_1|^k)$ of the source is the case $\rho = |\lambda_2|$.
+
+The Rayleigh quotient does not change under a factor of modulus one, and it is Lipschitz in $q$
+near the unit eigenvector $x_{i_0}$, by $\langle q, A q \rangle - \langle x, A x \rangle =
+\langle q - x, A q \rangle + \langle x, A (q - x) \rangle$. -/
 theorem exists_norm_inner_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintype ι]
     {A : Module.End 𝕜 E} (hA : Continuous A) {x : ι → E} {l : ι → 𝕜}
     (hx : ∀ i, A (x i) = l i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ}
@@ -1592,14 +1797,21 @@ theorem exists_norm_inner_powerIterate_sub_le_of_eigenbasis {ι : Type*} [Fintyp
 
 variable {ι : Type*} [Fintype ι] {A : Module.End 𝕜 E}
 
-/-- The angle bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.4)): let `v` be
-an orthonormal basis of `E` with `A (v i) = l i • v i`, a distinguished `i₀` with `l i₀ ≠ 0` and
-`‖l i‖ ≤ ρ` for `i ≠ i₀`, and a unit `x₀` with `c := ‖⟪v i₀, x₀⟫‖ ≠ 0` (`cos θ₀`). Then for
-all `k`, `(𝕜 ∙ v i₀).sinAngle (powerIterate A x₀ k) ≤ (√(1 - c²) / c) (ρ / ‖l i₀‖)^k`
-(`tan θ₀ |λ₂/λ₁|^k`). The eigenvalues may be complex (a normal operator); the book's symmetric
-case has them real. Proof as in the book: `A^k x₀ = ∑ a_i l_i^k v_i`, and its distance to the
-line is at most that of `a_{i₀} l_{i₀}^k v_{i₀}`, which is `(∑_{i≠i₀} |a_i|² |l_i|^{2k})^{1/2} ≤
-ρ^k √(1 - c²)`, while `‖A^k x₀‖ ≥ |l_{i₀}|^k c`. -/
+/-- The **angle bound of the power method**. Let $E$ be an inner product space, let
+$(v_i)_{i \in \iota}$ be an orthonormal basis of $E$ with $Av_i = \lambda_i v_i$, let
+$i_0 \in \iota$ with $\lambda_{i_0} \neq 0$, and let $|\lambda_i| \le \rho$ for $i \neq i_0$.
+Let $x_0$ be a unit vector with $c = |\langle v_{i_0}, x_0 \rangle| \neq 0$, so that
+$c = \cos\theta_0$. Then for every $k$, $$\sin\theta(q_k, \mathbb{K} v_{i_0}) \le
+\frac{\sqrt{1 - c^2}}{c} \left(\frac{\rho}{|\lambda_{i_0}|}\right)^k,$$ which is
+$\tan\theta_0 \, |\lambda_2/\lambda_1|^k$ in the notation of the source. This is (8.2.4) in
+Theorem 8.2.1 of [golub2013matrix].
+
+The eigenvalues may be complex, so $A$ may be any normal operator with an orthonormal
+eigenbasis; the source treats the symmetric case, where they are real. The proof follows the
+source: $A^k x_0 = \sum_i a_i \lambda_i^k v_i$, and its distance to the line is at most its
+distance to $a_{i_0} \lambda_{i_0}^k v_{i_0}$, which is $(\sum_{i \neq i_0} |a_i|^2
+|\lambda_i|^{2k})^{1/2} \le \rho^k \sqrt{1 - c^2}$, while $\|A^k x_0\| \ge |\lambda_{i_0}|^k c$.
+-/
 theorem sinAngle_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) {l : ι → 𝕜}
     (hv : ∀ i, A (v i) = l i • v i) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ}
     (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ) {x₀ : E} (hx₀ : ‖x₀‖ = 1)
@@ -1692,16 +1904,23 @@ theorem sinAngle_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) 
         field_simp
     _ ≤ Real.sqrt (1 - c ^ 2) / c * (ρ / ‖l i₀‖) ^ k * ‖y‖ := by gcongr
 
-/-- The Rayleigh-quotient bound of the power method ([golub2013matrix] Theorem 8.2.1, (8.2.5))
-with the book's constant: let `v` be an orthonormal basis of `E` with `A (v i) = l i • v i` and
-`l i` real (so `A` is symmetric, `OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`),
-`l i₀ ≠ 0`, `|l i| ≤ ρ` and `|l i₀ - l i| ≤ δ` for `i ≠ i₀`, and a unit `x₀` with
-`c := ‖⟪v i₀, x₀⟫‖ ≠ 0`. Then `|l i₀ - re ⟪q_k, A q_k⟫| ≤ δ ((1 - c²)/c²) (ρ / |l i₀|)^(2k)`
-for `q_k = powerIterate A x₀ k`.
-The book's `max_{i ≠ i₀} |λ_{i₀} - λ_i|` is the least admissible `δ`; the spread of the spectrum
-(`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`) is another. In eigencoordinates
-`ν_k = ∑ l_i^{2k+1} |a_i|² / ∑ l_i^{2k} |a_i|²`, so `l_{i₀} - ν_k = ∑_{i ≠ i₀} (l_{i₀} - l_i)
-l_i^{2k} |a_i|² / ∑ l_i^{2k} |a_i|²`. -/
+/-- The **Rayleigh-quotient bound of the power method**, with the constant of the source. Let $E$ be
+an inner product space, and let $(v_i)_{i \in \iota}$ be an orthonormal basis of $E$ with
+$Av_i = \lambda_i v_i$ and real $\lambda_i$, so that $A$ is symmetric
+(`OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`). Let $i_0 \in \iota$ with
+$\lambda_{i_0} \neq 0$, and let $|\lambda_i| \le \rho$ and
+$|\lambda_{i_0} - \lambda_i| \le \delta$ for $i \neq i_0$. Let $x_0$ be a unit vector with
+$c = |\langle v_{i_0}, x_0 \rangle| \neq 0$. Then for every $k$, $$|\lambda_{i_0} -
+\operatorname{Re} \langle q_k, A q_k \rangle| \le \delta \, \frac{1 - c^2}{c^2}
+\left(\frac{\rho}{|\lambda_{i_0}|}\right)^{2k}.$$ This is (8.2.5) in Theorem 8.2.1 of
+[golub2013matrix].
+
+The constant $\max_{i \neq i_0} |\lambda_{i_0} - \lambda_i|$ of the source is the least
+admissible $\delta$. The spread of the spectrum is another, which gives
+`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`. In eigencoordinates, $\nu_k =
+\operatorname{Re} \langle q_k, A q_k \rangle = \sum_i \lambda_i^{2k+1} |a_i|^2 / \sum_i
+\lambda_i^{2k} |a_i|^2$, so $\lambda_{i_0} - \nu_k = \sum_{i \neq i_0} (\lambda_{i_0} -
+\lambda_i) \lambda_i^{2k} |a_i|^2 / \sum_i \lambda_i^{2k} |a_i|^2$. -/
 theorem abs_sub_rayleigh_powerIterate_le_of_eigenbasis (v : OrthonormalBasis ι 𝕜 E) {l : ι → ℝ}
     (hv : ∀ i, A (v i) = (l i : 𝕜) • v i) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ}
     (hρ : ∀ i, i ≠ i₀ → |l i| ≤ ρ) {δ : ℝ} (hδ : ∀ i, i ≠ i₀ → |l i₀ - l i| ≤ δ) {x₀ : E}
@@ -1789,21 +2008,25 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
   [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- **Quadratic convergence of the Rayleigh quotient in the symmetric power method**
-([quarteroni2000numerical] (5.23); [golub1989matrix] Theorem 8.2.1): for a symmetric `A` with
-eigenpairs `(hA.eigenvalues hn i, hA.eigenvectorBasis hn i)`, an index `i₀` with
-`hA.eigenvalues hn i₀ ≠ 0` and `|λ i| ≤ ρ` for `i ≠ i₀`, bounds `a ≤ λ i ≤ b` on all the
-eigenvalues, and a unit starting vector `x₀` with `c = ‖⟪u i₀, x₀⟫‖ ≠ 0` (`cos θ₀` in the book),
-the Rayleigh quotients `ν_k = re ⟪q_k, A q_k⟫` of the power iterates satisfy
+/-- **Quadratic convergence of the Rayleigh quotient in the symmetric power method.** Let $A$ be a
+symmetric operator on an inner product space $E$ of finite dimension $n$, with eigenvalues
+$\lambda_i$ and orthonormal eigenvectors $u_i$ given by `LinearMap.IsSymmetric.eigenvalues` and
+`LinearMap.IsSymmetric.eigenvectorBasis`. Let $i_0$ be an index with $\lambda_{i_0} \neq 0$, let
+$|\lambda_i| \le \rho$ for $i \neq i_0$, and let $a \le \lambda_i \le b$ for all $i$. Let $x_0$
+be a unit vector with $c = |\langle u_{i_0}, x_0 \rangle| \neq 0$. Then the Rayleigh quotients
+$\nu_k = \operatorname{Re} \langle q_k, A q_k \rangle$ of the power iterates satisfy, for every
+$k$, $$|\lambda_{i_0} - \nu_k| \le (b - a) \, \frac{1 - c^2}{c^2}
+\left(\frac{\rho}{|\lambda_{i_0}|}\right)^{2k}.$$ This is (5.23) of [quarteroni2000numerical]
+and Theorem 8.2.1 of the 1989 edition of Golub and Van Loan, *Matrix Computations*.
 
-`|λ i₀ - ν_k| ≤ (b - a) · ((1 - c²)/c²) · (ρ / |λ i₀|)^(2k)`,
-
-with `(1 - c²)/c² = tan² θ₀`. The book states it for the dominant `i₀` with `a, b` the extreme
-eigenvalues (`LinearMap.IsSymmetric.eigenvalues_antitone`); the bound does not need `ρ < |λ i₀|`,
-which only makes the rate a contraction. In the eigenbasis, `ν_k = ∑ λ_i^{2k+1} |c_i|² / ∑ λ_i^{2k}
-|c_i|²`, so `λ_{i₀} - ν_k = ∑_{i ≠ i₀} (λ_{i₀} - λ_i) λ_i^{2k} |c_i|² / ∑ λ_i^{2k} |c_i|²`, whose
-numerator is at most `(b - a) ρ^{2k} (1 - c²)` and whose denominator is at least
-`λ_{i₀}^{2k} c²`. -/
+Here $c = \cos\theta_0$ in the source, so $(1 - c^2)/c^2 = \tan^2\theta_0$. The source states
+the bound for the dominant index $i_0$, with $a$ and $b$ the extreme eigenvalues
+(`LinearMap.IsSymmetric.eigenvalues_antitone`). The bound does not need
+$\rho < |\lambda_{i_0}|$, which only makes the rate a contraction. In the eigenbasis, with
+$\beta_i = \langle u_i, x_0 \rangle$, $\nu_k = \sum_i \lambda_i^{2k+1} |\beta_i|^2 / \sum_i
+\lambda_i^{2k} |\beta_i|^2$, so $\lambda_{i_0} - \nu_k = \sum_{i \neq i_0} (\lambda_{i_0} -
+\lambda_i) \lambda_i^{2k} |\beta_i|^2 / \sum_i \lambda_i^{2k} |\beta_i|^2$. The numerator is at
+most $(b - a) \rho^{2k} (1 - c^2)$ and the denominator is at least $\lambda_{i_0}^{2k} c^2$. -/
 theorem abs_sub_rayleigh_powerIterate_le {n : ℕ} (hn : Module.finrank 𝕜 E = n) {i₀ : Fin n}
     (hl₀ : hA.eigenvalues hn i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → |hA.eigenvalues hn i| ≤ ρ)
     {a b : ℝ} (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) {x₀ : E} (hx₀ : ‖x₀‖ = 1)

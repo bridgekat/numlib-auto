@@ -12,39 +12,63 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 /-!
 # Descent methods and optimality conditions for unconstrained minimization
 
-Descent methods for the minimization of `f : E → ℝ` on a real normed space
-([quarteroni2000numerical] §7.2, §7.2.2, §7.2.6 and Properties 7.9–7.10 of §7.3): descent
-directions (`Descent.IsDescentDirection`, `f' x d < 0`), the descent iteration
-`x_{k+1} = x_k + α_k d_k` as a relational specification `Descent.IsDescentSequence` on the three
-sequences of iterates, directions and step sizes, the decrease of `f` along a descent direction for
-every small enough positive step (`Descent.exists_forall_lt_of_isDescentDirection`), the two
-standard descent directions on an inner product space — the negative gradient
-(`Descent.isDescentDirection_neg_gradient`) and the Newton-like direction `-B⁻¹ ∇f` for a coercive
-`B` (`Descent.isDescentDirection_neg_inverse_of_isCoercive`) — the exact-line-search orthogonality
-`∇f(x_{k+1})ᵀ d_k = 0` (`Descent.fderiv_apply_eq_zero_of_isLocalMin_line`), the second-order
-optimality conditions (`Descent.nonneg_apply_apply_of_isLocalMin`,
-`Descent.isLocalMin_of_coercive_second`; the first-order one is Mathlib's
-`IsLocalMin.hasFDerivAt_eq_zero`), the variational inequality `0 ≤ f' x* (y - x*)` at a local
-minimizer on a convex set (`Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`, whose convex converse
-is `isMinOn_iff_forall_lineDeriv_nonneg` in `Numlib/Analysis/Convex/Gateaux`), and the compactness
-fact behind "every cluster point is critical ⇒ `∇f(x_k) → 0`"
-(`Descent.tendsto_fderiv_zero_of_forall_clusterPt`).
+This file treats descent methods for the minimization of a function $f : E \to \mathbb{R}$ on a real
+normed space $E$, following [quarteroni2000numerical], §7.2, §7.2.2, §7.2.6, and Properties 7.9–7.10
+of §7.3. A direction $d$ is a descent direction at $x$ if $f'(x)\,d < 0$. A descent method produces
+iterates $x_{k+1} = x_k + \alpha_k d_k$ with positive steps $\alpha_k$ and descent directions $d_k$.
+Along a descent direction, $f$ decreases for every small enough positive step. On an inner product
+space, the negative gradient $-\nabla f(x)$ and the Newton-like direction $-B^{-1} \nabla f(x)$ for
+a coercive operator $B$ are descent directions.
 
-## Design
+The file also proves the optimality conditions that the convergence theory uses: the orthogonality
+$\nabla f(x_{k+1})^T d_k = 0$ after an exact line search, the second-order necessary and sufficient
+conditions, the variational inequality $0 \le f'(x^*)(y - x^*)$ at a local minimizer on a convex
+set, and the compactness fact that $\nabla f(x_k) \to 0$ when $(x_k)$ is bounded and every cluster
+point is critical. The first-order necessary condition is Mathlib's
+`IsLocalMin.hasFDerivAt_eq_zero`.
 
-Derivatives are data, `f' : E → E →L[ℝ] ℝ`, with `HasFDerivAt f (f' x) x` hypotheses where they
-are needed, as in `Numlib/Analysis/Convex/Gateaux`; gradients enter only through the Riesz map,
-as the hypothesis `f' x = innerSL ℝ (g x)` (`f' x v = ⟪g x, v⟫`), which unlike Mathlib's
-`HasGradientAt` needs no completeness of `E`. Hessians are the
-derivative of `f'`, `f'' : E → E →L[ℝ] E →L[ℝ] ℝ` with `HasFDerivAt f' (f'' x) x`, and "positive
-definite" is coercivity `c ‖v‖² ≤ f'' x v v`, which in finite dimension is `Matrix.PosDef` of the
-Hessian matrix (`Matrix.posDef_iff_isSymmetricCoercive`). No symmetry of `f''` is assumed
-anywhere: the second-order conditions are proved along lines `t ↦ f (x + t v)`, where only the
-diagonal values `f'' v v` enter.
+## Main definitions
 
-The book's Property 7.4 (c) reads "if `H(x*)` is positive definite then `x*` is a local
-minimizer", omitting the hypothesis `∇f(x*) = 0` without which it is false (`f x = x + x²` at `0`);
-`Descent.isLocalMin_of_coercive_second` carries it and concludes with a *strict* local minimum.
+* `Descent.IsDescentDirection`: $d$ is a descent direction for $f$ at $x$ if $f'(x)\,d < 0$.
+* `Descent.IsDescentSequence`: the sequences $(x_k)$, $(d_k)$, $(\alpha_k)$ satisfy
+  $x_{k+1} = x_k + \alpha_k d_k$ with $\alpha_k > 0$ and $d_k$ a descent direction at $x_k$.
+
+## Main results
+
+* `Descent.exists_forall_lt_of_isDescentDirection`: along a descent direction $d$,
+  $f(x + \alpha d) < f(x)$ for every small enough $\alpha > 0$.
+* `Descent.fderiv_apply_eq_zero_of_isLocalMin_line`: at a local minimizer $\alpha$ of
+  $t \mapsto f(x + td)$, $f'(x + \alpha d)\,d = 0$.
+* `Descent.nonneg_apply_apply_of_isLocalMin`: at a local minimizer, $f''(x)(v, v) \ge 0$ for every
+  $v$.
+* `Descent.isLocalMin_of_coercive_second`: a critical point at which $f''$ is continuous and
+  coercive is a strict local minimizer.
+* `Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`: a local minimizer $x$ on a convex set $\Omega$
+  satisfies $0 \le f'(x)(y - x)$ for all $y \in \Omega$.
+* `Descent.tendsto_fderiv_zero_of_forall_clusterPt`: in a proper space, if $(x_k)$ is bounded and
+  every cluster point is critical, then $f'(x_k) \to 0$.
+* `Descent.isDescentDirection_neg_gradient`: $-\nabla f(x)$ is a descent direction if
+  $\nabla f(x) \neq 0$.
+* `Descent.isDescentDirection_neg_inverse_of_isCoercive`: $-B^{-1} \nabla f(x)$ is a descent
+  direction if $\nabla f(x) \neq 0$ and $B$ is coercive.
+
+## Implementation notes
+
+* Derivatives are data, `f' : E → E →L[ℝ] ℝ`, with hypotheses `HasFDerivAt f (f' x) x` where they
+  are needed, as in `Numlib.Analysis.Convex.Gateaux`.
+* A gradient enters only through the Riesz map, as the hypothesis `f' x = innerSL ℝ (g x)`, that is,
+  $f'(x)\,v = \langle g(x), v\rangle$. Unlike Mathlib's `HasGradientAt`, this needs no completeness
+  of $E$.
+* The Hessian is the derivative of `f'`, `f'' : E → E →L[ℝ] E →L[ℝ] ℝ` with
+  `HasFDerivAt f' (f'' x) x`. "Positive definite" is coercivity $c \|v\|^2 \le f''(x)(v, v)$ with
+  $c > 0$. In finite dimension this is `Matrix.PosDef` of the Hessian matrix, by
+  `Matrix.posDef_iff_isSymmetricCoercive`.
+* No symmetry of $f''$ is assumed. The second-order conditions are proved along lines
+  $t \mapsto f(x + tv)$, where only the diagonal values $f''(x)(v, v)$ enter.
+* Property 7.4(c) of [quarteroni2000numerical] states that $x^*$ is a local minimizer if $H(x^*)$ is
+  positive definite. This is false without the hypothesis $\nabla f(x^*) = 0$: take $f(x) = x + x^2$
+  at $0$. `Descent.isLocalMin_of_coercive_second` has this hypothesis and concludes that $x^*$ is a
+  strict local minimizer.
 -/
 
 open Filter Topology Metric Set
@@ -53,27 +77,36 @@ namespace Descent
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- `d` is a **descent direction** for `f` at `x` when `f' x d < 0`
-([quarteroni2000numerical] (7.26), the nondegenerate clause; the book's second clause, `d = 0`
-when `∇f x = 0`, is the termination case and is not a direction). -/
+/-- A vector $d \in E$ is a **descent direction** for $f$ at $x$ if $f'(x)\,d < 0$. This is the
+nondegenerate clause of (7.26) in [quarteroni2000numerical].
+
+The second clause of (7.26), $d = 0$ when $\nabla f(x) = 0$, is the termination case of a method
+and is not a direction, so it is left out. -/
 def IsDescentDirection (f' : E → E →L[ℝ] ℝ) (x d : E) : Prop := f' x d < 0
 
-/-- The **descent method** `x_{k+1} = x_k + α_k d_k` ([quarteroni2000numerical] (7.25)–(7.26)) as
-a relational specification on the sequences of iterates `x`, directions `d` and step sizes `α`:
-every step is positive and every direction is a descent direction. Any concrete method
-(gradient, Newton, quasi-Newton, nonlinear conjugate gradient) satisfies it until it reaches a
-critical point, which is why the convergence theorems quantify over it. -/
+/-- The **descent method** $x_{k+1} = x_k + \alpha_k d_k$ of [quarteroni2000numerical],
+(7.25)–(7.26), as a condition on the sequences of iterates $(x_k)$, directions $(d_k)$ and step
+sizes $(\alpha_k)$: for every $k$, the update rule holds, $\alpha_k > 0$, and $d_k$ is a descent
+direction at $x_k$.
+
+Every concrete method (gradient, Newton, quasi-Newton, nonlinear conjugate gradient) satisfies
+this condition until it reaches a critical point. The convergence theorems therefore quantify
+over it. -/
 structure IsDescentSequence (f' : E → E →L[ℝ] ℝ) (x d : ℕ → E) (α : ℕ → ℝ) : Prop where
-  /-- The update rule `x_{k+1} = x_k + α_k d_k`. -/
+  /-- The update rule $x_{k+1} = x_k + \alpha_k d_k$. -/
   step : ∀ k, x (k + 1) = x k + α k • d k
-  /-- The step sizes are positive. -/
+  /-- The step sizes are positive: $\alpha_k > 0$. -/
   pos : ∀ k, 0 < α k
-  /-- Every direction is a descent direction at the current iterate. -/
+  /-- Each direction $d_k$ is a descent direction at the current iterate $x_k$. -/
   descent : ∀ k, IsDescentDirection f' (x k) (d k)
 
-/-- If `g'(0) < c` then `g t < g 0 + c t` for every small enough `t > 0`: the one-sided form of
-the derivative as a limit of difference quotients. This is the elementary fact behind the decrease
-along a descent direction and the termination of backtracking line searches. -/
+/-- Let $g : \mathbb{R} \to \mathbb{R}$ have derivative $g'(0)$ at $0$, and let $c > g'(0)$. Then
+$$g(t) < g(0) + ct$$
+for every small enough $t > 0$.
+
+This is the one-sided form of the derivative as a limit of difference quotients. It is the
+elementary fact behind the decrease along a descent direction and the termination of
+backtracking line searches. -/
 theorem eventually_lt_add_mul_of_hasDerivAt_lt {g : ℝ → ℝ} {g' c : ℝ} (hg : HasDerivAt g g' 0)
     (hc : g' < c) : ∀ᶠ t in 𝓝[>] (0 : ℝ), g t < g 0 + c * t := by
   filter_upwards [hg.tendsto_slope_zero_right.eventually (gt_mem_nhds hc),
@@ -83,9 +116,11 @@ theorem eventually_lt_add_mul_of_hasDerivAt_lt {g : ℝ → ℝ} {g' c : ℝ} (h
   rw [inv_mul_lt_iff₀ ht0] at ht
   linarith
 
-/-- **Decrease along a descent direction** ([quarteroni2000numerical] (7.27)–(7.28)): if `f` is
-differentiable at `x` and `d` is a descent direction there, then `f (x + α d) < f x` for every
-small enough positive step `α`. -/
+/-- **Decrease along a descent direction**, (7.27)–(7.28) of [quarteroni2000numerical]. Let
+$f : E \to \mathbb{R}$ be differentiable at $x$ with derivative $f'(x)$, and let $d$ be a
+descent direction for $f$ at $x$. Then there is $\varepsilon > 0$ such that
+$$f(x + \alpha d) < f(x) \quad \text{for all } \alpha \in (0, \varepsilon).$$
+-/
 theorem exists_forall_lt_of_isDescentDirection {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : E}
     (hf : HasFDerivAt f (f' x) x) (hd : IsDescentDirection f' x d) :
     ∃ ε > 0, ∀ α ∈ Set.Ioo (0 : ℝ) ε, f (x + α • d) < f x := by
@@ -95,20 +130,25 @@ theorem exists_forall_lt_of_isDescentDirection {f : E → ℝ} {f' : E → E →
   refine ⟨ε, hε, fun α hα => ?_⟩
   simpa using hsub hα
 
-/-- **Exact line search orthogonality** ([quarteroni2000numerical] Theorem 7.3): if `α` is a local
-minimizer of `t ↦ f (x + t d)`, then the derivative of `f` at the new point `x + α d` vanishes in
-the direction `d`; with `x_{k+1} = x_k + α_k d_k` this is `∇f(x_{k+1})ᵀ d_k = 0`. -/
+/-- **Exact line search orthogonality**, Theorem 7.3 of [quarteroni2000numerical]. Let
+$f : E \to \mathbb{R}$ be differentiable at $x + \alpha d$ with derivative $f'(x + \alpha d)$.
+If $\alpha$ is a local minimizer of $t \mapsto f(x + td)$, then
+$$f'(x + \alpha d)\,d = 0.$$
+With $x_{k+1} = x_k + \alpha_k d_k$, this is $\nabla f(x_{k+1})^T d_k = 0$. -/
 theorem fderiv_apply_eq_zero_of_isLocalMin_line {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {x d : E}
     {α : ℝ} (hf : HasFDerivAt f (f' (x + α • d)) (x + α • d))
     (hα : IsLocalMin (fun t : ℝ => f (x + t • d)) α) : f' (x + α • d) d = 0 :=
   hα.hasDerivAt_eq_zero (hf.hasLineDerivAt d).hasDerivAt_line
 
-/-- **Second-order necessary condition** ([quarteroni2000numerical] Property 7.4 (b)): at a local
-minimizer `x` of `f`, if `f` is differentiable near `x` and `f'` is differentiable at `x` with
-derivative `f''`, then `0 ≤ f'' v v` for every `v`. Only differentiability of `f'` *at* `x` is
-needed, no continuity of `f''`: along the line `g t = f (x + t v)` one has `g'(0) = 0` and
-`g'` has derivative `f'' v v` at `0`; if that were negative, `g' < 0` just to the right of `0` and
-the mean value theorem would give `g t < g 0` there. -/
+/-- **Second-order necessary condition**, Property 7.4(b) of [quarteroni2000numerical]. Let $x$ be a
+local minimizer of $f : E \to \mathbb{R}$. Assume that $f$ has derivative $f'(y)$ at every $y$
+near $x$, and that $f'$ has derivative $f''$ at $x$. Then
+$$0 \le f''(v, v) \quad \text{for every } v \in E.$$
+
+Only differentiability of $f'$ at $x$ is needed, not continuity of $f''$. The proof works along
+the line $g(t) = f(x + tv)$: $g'(0) = 0$ and $g'$ has derivative $f''(v, v)$ at $0$. If this
+value were negative, then $g' < 0$ just to the right of $0$, and the mean value theorem would
+give $g(t) < g(0)$ there. -/
 theorem nonneg_apply_apply_of_isLocalMin {f : E → ℝ} {f' : E → E →L[ℝ] ℝ}
     {f'' : E →L[ℝ] E →L[ℝ] ℝ} {x : E} (hmin : IsLocalMin f x)
     (hf : ∀ᶠ y in 𝓝 x, HasFDerivAt f (f' y) y) (hf'' : HasFDerivAt f' f'' x) (v : E) :
@@ -155,15 +195,22 @@ theorem nonneg_apply_apply_of_isLocalMin {f : E → ℝ} {f' : E → E →L[ℝ]
   have h3 : 0 ≤ (f (x + (ε / 2) • v) - f x) / (ε / 2) := div_nonneg (by linarith) (by positivity)
   linarith
 
-/-- **Second-order sufficient condition** ([quarteroni2000numerical] Property 7.4 (c), with the
-missing hypothesis `∇f(x*) = 0` restored and the conclusion made strict): if `f' x = 0`, `f` and
-`f'` are differentiable on a ball around `x`, `f''` is continuous at `x`, and `f'' x` is coercive,
-`c ‖v‖² ≤ f'' x v v` with `c > 0`, then `x` is a strict local minimizer of `f`.
+/-- **Second-order sufficient condition**, Property 7.4(c) of [quarteroni2000numerical], with a
+missing hypothesis restored and a strict conclusion. Let $f : E \to \mathbb{R}$, let $r > 0$ and
+$c > 0$, and let $x \in E$. Assume that $f$ has derivative $f'(y)$ and $f'$ has derivative
+$f''(y)$ at every $y$ in the open ball $B(x, r)$, that $f''$ is continuous at $x$, that
+$f'(x) = 0$, and that
+$$c \|v\|^2 \le f''(x)(v, v) \quad \text{for every } v \in E.$$
+Then $x$ is a strict local minimizer of $f$: there is $\delta > 0$ such that $f(x) < f(y)$ for
+every $y \in B(x, \delta)$ with $y \neq x$.
 
-The proof is along lines: with `w = y - x` and `g t = f (x + t w)` one has `g'(0) = 0` and
-`g''(t) = f'' (x + t w) w w ≥ (c / 2) ‖w‖²` for `y` close to `x`, so `g'(t) ≥ (c / 2) ‖w‖² t` and
-`f y - f x = g 1 - g 0 ≥ (c / 4) ‖w‖² > 0`, by two applications of
-`Convex.mul_sub_le_image_sub_of_le_deriv`. No symmetry of `f''` is used. -/
+The source omits the hypothesis $\nabla f(x^*) = 0$, without which the statement is false:
+$f(x) = x + x^2$ at $0$ has a positive second derivative but is not minimal at $0$.
+
+The proof works along lines. With $w = y - x$ and $g(t) = f(x + tw)$, one has $g'(0) = 0$ and
+$g''(t) = f''(x + tw)(w, w) \ge (c/2)\|w\|^2$ for $y$ close to $x$. Then
+$g'(t) \ge (c/2)\|w\|^2 t$ and $f(y) - f(x) = g(1) - g(0) \ge (c/4)\|w\|^2 > 0$, by two
+applications of `Convex.mul_sub_le_image_sub_of_le_deriv`. No symmetry of $f''$ is used. -/
 theorem isLocalMin_of_coercive_second {f : E → ℝ} {f' : E → E →L[ℝ] ℝ}
     {f'' : E → E →L[ℝ] E →L[ℝ] ℝ} {x : E} {r c : ℝ} (hr : 0 < r) (hc : 0 < c)
     (hf : ∀ y ∈ ball x r, HasFDerivAt f (f' y) y)
@@ -258,10 +305,12 @@ theorem isLocalMin_of_coercive_second {f : E → ℝ} {f' : E → E →L[ℝ] �
   rw [hw, add_sub_cancel] at step2
   linarith
 
-/-- **First-order condition on a convex set** ([quarteroni2000numerical] Property 7.9 (1)): a local
-minimizer `x` of `f` on a convex set `Ω`, at which `f` is differentiable, satisfies the variational
-inequality `0 ≤ f' x (y - x)` for every `y ∈ Ω`. The convex converse, Property 7.9 (2), is
-`isMinOn_iff_forall_lineDeriv_nonneg` in `Numlib/Analysis/Convex/Gateaux`. -/
+/-- **First-order condition on a convex set**, Property 7.9(1) of [quarteroni2000numerical]. Let
+$\Omega \subseteq E$ be convex, let $x \in \Omega$ be a local minimizer of $f$ on $\Omega$, and
+let $f$ be differentiable at $x$ with derivative $f'(x)$. Then
+$$0 \le f'(x)(y - x) \quad \text{for every } y \in \Omega.$$
+
+The converse for convex $f$, Property 7.9(2), is `isMinOn_iff_forall_lineDeriv_nonneg`. -/
 theorem fderiv_apply_sub_nonneg_of_isLocalMinOn {f : E → ℝ} {f' : E → E →L[ℝ] ℝ} {Ω : Set E}
     (hΩ : Convex ℝ Ω) {x : E} (hx : x ∈ Ω) (hmin : IsLocalMinOn f Ω x)
     (hf : HasFDerivAt f (f' x) x) : ∀ y ∈ Ω, 0 ≤ f' x (y - x) := by
@@ -270,12 +319,15 @@ theorem fderiv_apply_sub_nonneg_of_isLocalMinOn {f : E → ℝ} {f' : E → E �
     sub_mem_posTangentConeAt_of_segment_subset (hΩ.segment_subset hx hy)
   exact hmin.hasFDerivWithinAt_nonneg hf.hasFDerivWithinAt hcone
 
-/-- **Cluster points and the gradient** (the compactness statement behind
-[quarteroni2000numerical] Property 7.8): in a proper space, if `f'` is continuous, the sequence
-`x` is bounded and every cluster point of `x` is a critical point of `f`, then `f' (x k) → 0`.
-Otherwise `f' (x k)` stays outside a neighbourhood `s` of `0` frequently; along that subsequence
-`x` has a cluster point `y` (bounded sets in a proper space are relatively compact), which is
-critical, so `f' (x k) ∈ s` frequently along the same subsequence — a contradiction. -/
+/-- **Cluster points and the gradient**, the compactness statement behind Property 7.8 of
+[quarteroni2000numerical]. Let $E$ be a proper space, and let $f' : E \to E^*$ be continuous. If
+the sequence $(x_k)$ is bounded and $f'(y) = 0$ at every cluster point $y$ of $(x_k)$, then
+$f'(x_k) \to 0$.
+
+Otherwise $f'(x_k)$ lies outside a neighbourhood $s$ of $0$ for infinitely many $k$. Along that
+subsequence, $(x_k)$ has a cluster point $y$, because bounded sets in a proper space are
+relatively compact. The point $y$ is critical, so $f'(x_k) \in s$ infinitely often along the
+same subsequence, a contradiction. -/
 theorem tendsto_fderiv_zero_of_forall_clusterPt [ProperSpace E] {f' : E → E →L[ℝ] ℝ}
     (hcont : Continuous f') {x : ℕ → E} (hb : Bornology.IsBounded (Set.range x))
     (hcl : ∀ y, MapClusterPt y atTop x → f' y = 0) :
@@ -294,20 +346,28 @@ theorem tendsto_fderiv_zero_of_forall_clusterPt [ProperSpace E] {f' : E → E �
   obtain ⟨k, hk1, hk2⟩ := (hfreq'.and_eventually hmem).exists
   exact hk2 hk1
 
+/-! ### Descent directions on an inner product space -/
+
 section InnerProduct
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The directional derivative along the negative gradient is `-‖∇f‖²`: if
-`f' x = innerSL ℝ (g x)`, then `f' x (-g x) = -‖g x‖ ^ 2`. -/
+/-- The directional derivative along the negative gradient is $-\|\nabla f\|^2$: if
+$f'(x)\,v = \langle g(x), v\rangle$ for all $v$, then
+$$f'(x)(-g(x)) = -\|g(x)\|^2.$$
+
+The hypothesis is `f' x = innerSL ℝ (g x)`. -/
 theorem fderiv_apply_neg_gradient {f' : E → E →L[ℝ] ℝ} {g : E → E} {x : E}
     (hg : f' x = innerSL ℝ (g x)) : f' x (-g x) = -‖g x‖ ^ 2 := by
   rw [hg, map_neg, innerSL_apply_apply, real_inner_self_eq_norm_sq]
 
-/-- **The steepest-descent direction is a descent direction** ([quarteroni2000numerical] §7.2.2):
-on an inner product space, if `g x` is the gradient of `f` at `x` (`f' x = innerSL ℝ (g x)`, i.e.
-`f' x v = ⟪g x, v⟫`; in a complete space this is `HasGradientAt f (g x) x`) and `g x ≠ 0`, then
-`-g x` is a descent direction, since `f' x (-g x) = -‖g x‖² < 0`. -/
+/-- **The steepest-descent direction is a descent direction**, §7.2.2 of [quarteroni2000numerical].
+Let $E$ be a real inner product space, and let $g(x)$ be the gradient of $f$ at $x$, that is,
+$f'(x)\,v = \langle g(x), v\rangle$ for all $v$. If $g(x) \neq 0$, then $-g(x)$ is a descent
+direction for $f$ at $x$, because $f'(x)(-g(x)) = -\|g(x)\|^2 < 0$.
+
+The gradient hypothesis is `f' x = innerSL ℝ (g x)`. In a complete space it is
+`HasGradientAt f (g x) x`. -/
 theorem isDescentDirection_neg_gradient {f' : E → E →L[ℝ] ℝ} {g : E → E} {x : E}
     (hg : f' x = innerSL ℝ (g x)) (hx : g x ≠ 0) :
     IsDescentDirection f' x (-g x) := by
@@ -315,11 +375,16 @@ theorem isDescentDirection_neg_gradient {f' : E → E →L[ℝ] ℝ} {g : E → 
   rw [fderiv_apply_neg_gradient hg]
   exact neg_neg_of_pos (pow_pos (norm_pos_iff.2 hx) 2)
 
-/-- **Newton-like directions with a coercive operator are descent directions**
-([quarteroni2000numerical] §7.2.2, §7.2.6): if `g x` is the gradient of `f` at `x`, `g x ≠ 0`, and
-`B` is an invertible operator that is coercive (positive definite), then `-B⁻¹ (g x)` is a descent
-direction, since `⟪g x, -B⁻¹ g x⟫ = -⟪B u, u⟫ < 0` for `u = B⁻¹ g x ≠ 0`. Newton's method with a
-positive definite Hessian and the quasi-Newton directions are instances. -/
+/-- **Newton-like directions with a coercive operator are descent directions**, §7.2.2 and §7.2.6 of
+[quarteroni2000numerical]. Let $E$ be a real inner product space, and let $g(x)$ be the gradient
+of $f$ at $x$, that is, $f'(x)\,v = \langle g(x), v\rangle$ for all $v$, with $g(x) \neq 0$. Let
+$B : E \to E$ be a continuous linear isomorphism that is coercive:
+$\langle Bu, u\rangle \ge c\|u\|^2$ for some $c > 0$ and all $u$. Then $-B^{-1} g(x)$ is a
+descent direction for $f$ at $x$.
+
+The reason is $\langle g(x), -B^{-1} g(x)\rangle = -\langle Bu, u\rangle < 0$ for
+$u = B^{-1} g(x) \neq 0$. Newton's method with a positive definite Hessian and the quasi-Newton
+directions are instances. Coercivity is `LinearMap.IsCoercive`. -/
 theorem isDescentDirection_neg_inverse_of_isCoercive {f' : E → E →L[ℝ] ℝ} {g : E → E} {x : E}
     (hg : f' x = innerSL ℝ (g x)) (hx : g x ≠ 0) (B : E ≃L[ℝ] E)
     (hB : (B : E →ₗ[ℝ] E).IsCoercive) : IsDescentDirection f' x (-(B.symm (g x))) := by

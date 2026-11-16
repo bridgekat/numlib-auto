@@ -14,16 +14,26 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 /-!
 # The derivatives of a periodic function are periodic
 
-`Function.Periodic.deriv` and `Function.Periodic.iteratedDeriv`: for `f : ℝ → F` periodic with
-period `T`, so are `deriv f` and every `iteratedDeriv n f`, by `deriv_comp_add_const`. Mathlib has
-no periodicity lemma for `deriv`.
+Let $F$ be a real normed space, and let $f \colon \mathbb{R} \to F$ be periodic with period $T$,
+that is $f(x + T) = f(x)$ for all $x$. Then the derivative $f'$ and every iterated derivative
+$f^{(n)}$ are periodic with period $T$. The proof uses `deriv_comp_add_const`. Mathlib has no
+periodicity lemma for `deriv`.
+
+## Main results
+
+* `Function.Periodic.deriv`: the derivative of a periodic function is periodic.
+* `Function.Periodic.iteratedDeriv`: every iterated derivative of a periodic function is periodic.
 -/
 
 namespace Function.Periodic
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The derivative of a periodic function is periodic. -/
+/-- Let $f \colon \mathbb{R} \to F$ be periodic with period $T$. Then its derivative $f'$ is
+periodic with period $T$.
+
+The derivative is Mathlib's `deriv`, which is $0$ at points where $f$ is not differentiable, so
+no differentiability is assumed. -/
 theorem deriv {f : ℝ → F} {T : ℝ} (h : Function.Periodic f T) :
     Function.Periodic (_root_.deriv f) T := by
   intro x
@@ -32,7 +42,8 @@ theorem deriv {f : ℝ → F} {T : ℝ} (h : Function.Periodic f T) :
   rw [hfun] at this
   exact this.symm
 
-/-- Every iterated derivative of a periodic function is periodic. -/
+/-- Let $f \colon \mathbb{R} \to F$ be periodic with period $T$. Then for every $n \in \mathbb{N}$
+the iterated derivative $f^{(n)}$ is periodic with period $T$. -/
 theorem iteratedDeriv {f : ℝ → F} {T : ℝ} (h : Function.Periodic f T) (n : ℕ) :
     Function.Periodic (_root_.iteratedDeriv n f) T := by
   induction n with

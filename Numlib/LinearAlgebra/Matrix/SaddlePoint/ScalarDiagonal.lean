@@ -9,10 +9,35 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.SVD
 
 /-!
-# Saddle point matrices with a scalar diagonal block
+# Saddle-point matrices with a scalar diagonal block
 
-A scalar top diagonal block and a zero bottom diagonal block allow an exact
-characteristic polynomial via a Schur determinant.
+This file computes the characteristic polynomial of a block matrix
+$$\begin{bmatrix} \eta I_n & D \\ B & 0 \end{bmatrix}$$
+whose top diagonal block is a scalar matrix and whose bottom diagonal block is zero. A Schur
+determinant gives $\chi(X) = (X - \eta)^{n - m} \, \chi_{BD}(X (X - \eta))$ for $m \le n$. For a
+real $B \in \mathbb{R}^{m \times n}$ of rank $r$ and $D = B^T$, with the bottom-left block
+$\varepsilon B$, the polynomial is a product of one quadratic $X(X - \eta) - \varepsilon \sigma_i^2$
+for each positive singular value $\sigma_i$ of $B$, times $X^{m - r} (X - \eta)^{n - r}$. The roots
+are therefore $0$, $\eta$ and $(\eta \pm \delta_i)/2$ with
+$\delta_i^2 = \eta^2 + 4 \varepsilon \sigma_i^2$. With $\varepsilon = \pm 1$ this gives Theorem 3.8
+of [benzi2005numerical].
+
+## Main results
+
+* `Matrix.charpoly_fromBlocks_smul_one_zero`: over an infinite field and for $m \le n$, the
+  characteristic polynomial of the block matrix above is
+  $(X - \eta)^{n - m} \chi_{BD}(X (X - \eta))$.
+* `Matrix.charpoly_fromBlocks_smul_one_transpose_zero`: the factorization into
+  $X^{m - r} (X - \eta)^{n - r}$ and one quadratic for each positive singular value.
+* `Matrix.roots_charpoly_complexify_fromBlocks_smul_one_transpose_zero`: the complex eigenvalues,
+  with algebraic multiplicity.
+
+## Implementation notes
+
+* The singular values are `Matrix.sortedSingularValues`, in nonincreasing order and indexed from
+  $0$, so that $\sigma_0, \dots, \sigma_{r-1}$ are the positive ones.
+* The last two results take $B$ indexed by `Fin m` and `Fin n`. The roots are those of the
+  characteristic polynomial of the complex matrix `Matrix.complexify`, as a multiset.
 -/
 
 open Polynomial
@@ -24,8 +49,15 @@ section Charpoly
 variable {K n m : Type*} [Field K] [Infinite K] [Fintype n] [Fintype m]
   [DecidableEq n] [DecidableEq m]
 
-/-- With scalar top block and zero bottom block, the characteristic polynomial is
-`(X - η)^(n - m) χ(BD)(X(X - η))`, where `D` and `B` are the off-diagonal blocks. -/
+/-- Let $K$ be an infinite field, let $m \le n$, let $\eta \in K$, $D \in K^{n \times m}$ and
+$B \in K^{m \times n}$. Then the characteristic polynomial of the block matrix with scalar top
+block and zero bottom block is
+$$\chi\left(\begin{bmatrix} \eta I_n & D \\ B & 0 \end{bmatrix}\right)(X)
+  = (X - \eta)^{n - m} \, \chi_{BD}\bigl(X (X - \eta)\bigr),$$
+where $\chi_{BD}$ is the characteristic polynomial of $BD \in K^{m \times m}$.
+
+The composition with $X (X - \eta)$ is `Polynomial.comp`. The proof evaluates both sides at the
+infinitely many points where $X - \eta \neq 0$ and uses a Schur complement determinant. -/
 theorem charpoly_fromBlocks_smul_one_zero (hsize : Fintype.card m ≤ Fintype.card n)
     (η : K) (D : Matrix n m K) (B : Matrix m n K) :
     (fromBlocks (η • (1 : Matrix n n K)) D B 0).charpoly =
@@ -111,9 +143,14 @@ private theorem prod_tail_constant {R : Type*} [CommMonoid R] {n m r : ℕ}
   rw [htail, mul_pow, show n - r = n - m + (m - r) by omega, pow_add]
   ac_rfl
 
-/-- For transpose-related off-diagonal blocks, the characteristic polynomial consists of one
-quadratic for each nonzero singular value, with the remaining powers of `X` and `X - η`
-recording the left and right nullities. -/
+/-- Let $m \le n$, let $B \in \mathbb{R}^{m \times n}$ have rank $r$ and singular values
+$\sigma_0 \ge \sigma_1 \ge \dots$, and let $\eta, \varepsilon \in \mathbb{R}$. Then
+$$\chi\left(\begin{bmatrix} \eta I_n & B^T \\ \varepsilon B & 0 \end{bmatrix}\right)(X)
+  = X^{m - r} (X - \eta)^{n - r} \prod_{i = 0}^{r - 1}
+  \bigl(X (X - \eta) - \varepsilon \sigma_i^2\bigr).$$
+
+The factor $X^{m - r}$ comes from the left nullity of $B$ and the factor $(X - \eta)^{n - r}$
+from its right nullity. The singular values are `Matrix.sortedSingularValues`, indexed from $0$. -/
 theorem charpoly_fromBlocks_smul_one_transpose_zero {n m : ℕ} (hmn : m ≤ n)
     (B : Matrix (Fin m) (Fin n) ℝ) (η ε : ℝ) :
     (fromBlocks (η • (1 : Matrix (Fin n) (Fin n) ℝ)) Bᵀ (ε • B) 0).charpoly =
@@ -139,8 +176,19 @@ private theorem quadratic_factor {η d δ : ℂ} (hδ : δ ^ 2 = η ^ 2 + 4 * d)
   simp
   linear_combination hδ / 4
 
-/-- The roots of the scalar-block saddle point matrix, counted with algebraic multiplicity.
-A choice of square root of each discriminant gives the two roots of its quadratic factor. -/
+/-- Let $m \le n$, let $B \in \mathbb{R}^{m \times n}$ have rank $r$ and singular values
+$\sigma_0 \ge \sigma_1 \ge \dots$, and let $\eta, \varepsilon \in \mathbb{R}$. For each $i < r$
+let $\delta_i \in \mathbb{C}$ satisfy $\delta_i^2 = \eta^2 + 4 \varepsilon \sigma_i^2$. Then the
+eigenvalues of
+$$\begin{bmatrix} \eta I_n & B^T \\ \varepsilon B & 0 \end{bmatrix},$$
+counted with algebraic multiplicity, are $0$ with multiplicity $m - r$, $\eta$ with multiplicity
+$n - r$, and the two numbers
+$$\frac{\eta + \delta_i}{2}, \qquad \frac{\eta - \delta_i}{2}$$
+for each $i < r$.
+
+The statement is an equality of multisets: the roots of the characteristic polynomial of the
+complex matrix `Matrix.complexify` of the block matrix equal the sum of the multisets above. The
+singular values are `Matrix.sortedSingularValues`, indexed from $0$. -/
 theorem roots_charpoly_complexify_fromBlocks_smul_one_transpose_zero
     {n m : ℕ} (hmn : m ≤ n) (B : Matrix (Fin m) (Fin n) ℝ) (η ε : ℝ)
     (δ : Fin B.rank → ℂ)

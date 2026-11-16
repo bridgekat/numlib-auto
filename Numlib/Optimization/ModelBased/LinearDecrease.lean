@@ -6,7 +6,49 @@ import Numlib.Optimization.ModelBased.ProjectedPath
 import Numlib.Optimization.Optimality.ConstrainedMeasure
 import Mathlib.Topology.MetricSpace.Pseudo.Lemmas
 
-/-! # Largest feasible linear decrease -/
+/-!
+# Largest feasible linear decrease
+
+Let $E$ be a real inner product space, $C \subseteq E$, $x \in C$, $v \in E$ and $r \ge 0$. This
+file studies the **largest feasible linear decrease**
+$$\chi(x, v, r) = \sup\{\langle v, d\rangle : \|d\| \le r,\ x + d \in C\},$$
+the largest value of the linear decrement $d \mapsto \langle v, d\rangle$ over the feasible
+displacements of length at most $r$. When $v$ is minus a gradient, $\langle v, d\rangle$ is the
+decrease of the first-order model along $d$, and $\chi$ measures first-order criticality on $C$.
+
+The value $\chi(x, v, r)$ is nonnegative and nondecreasing in $r$. For convex $C$, the quotient
+$\chi(x, v, r)/r$ is nonincreasing in $r > 0$, the map $r \mapsto \chi(x, v, r)$ is
+$\|v\|$-Lipschitz on $[0, \infty)$, $\chi(x, v, 1) = 0$ exactly when $v$ lies in the normal cone of
+$C$ at $x$, and $\chi(x, g(x), 1)$ is continuous in $x \in C$ for continuous $g$. Finally, $\chi$ is
+bounded through the projection of $v$ onto a tangent cone.
+
+## Main definitions
+
+* `Optimization.linearDecrease`: the largest feasible linear decrease $\chi(x, v, r)$.
+
+## Main results
+
+* `Optimization.linearDecrease_antitoneOn_ratio`: for convex $C$, $r \mapsto \chi(x, v, r)/r$ is
+  nonincreasing on $(0, \infty)$.
+* `Optimization.linearDecrease_lipschitzOnWith_radius`: for convex $C$, $r \mapsto \chi(x, v, r)$ is
+  $\|v\|$-Lipschitz on $[0, \infty)$.
+* `Optimization.linearDecrease_eq_zero_iff`: for convex $C$, $\chi(x, v, 1) = 0$ if and only if $v$
+  is in the normal cone of $C$ at $x$.
+* `Optimization.continuousOn_linearDecrease_one`: for convex $C$ and $g$ continuous on $C$,
+  $x \mapsto \chi(x, g(x), 1)$ is continuous on $C$.
+* `Optimization.linearDecrease_le_tangent`: $\chi(x, v, r) \le \langle v, d\rangle + (r +
+  \|d\|)\|p\|$, where $p$ is the projection of $v$ onto the tangent cone of $C$ at $x + d$.
+
+## Implementation notes
+
+* `Optimization.linearDecrease C x v r` is `Optimization.decrementMeasure` for the decrement
+  $d \mapsto \langle v, d\rangle$ over `Optimization.feasibleSteps C x`. It is the `sSup` of a set
+  of reals. The results assume $x \in C$ and $r \ge 0$, which make the set nonempty; it is bounded
+  above by $r\|v\|$.
+* The normal cone `Optimization.normalDirections C x` is $\{w : \langle w, y - x\rangle \le 0 \text{
+  for all } y \in C\}$, and the tangent cone `Optimization.tangentDirections C x` is its polar cone.
+  The projection onto a set is `bestApprox`.
+-/
 
 open Metric Filter ConvexAnalysis
 open scoped RealInnerProductSpace Topology
@@ -16,7 +58,11 @@ namespace Optimization
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 variable {C : Set E} {x y v w d : E} {r s t : ℝ}
 
-/-- The greatest value of a linear decrement over the feasible ball at `x`. -/
+/-- The **largest feasible linear decrease** $\chi(x, v, r) = \sup\{\langle v, d\rangle : \|d\| \le
+r,\ x + d \in C\}$, for $C \subseteq E$, $x, v \in E$ and $r \in \mathbb{R}$.
+
+The supremum is `sSup` of a set of reals. If no $d$ with $\|d\| \le r$ has $x + d \in C$ (for
+example if $r < 0$), the set is empty and the value is $0$. -/
 noncomputable def linearDecrease (C : Set E) (x v : E) (r : ℝ) : ℝ :=
   decrementMeasure (fun d ↦ ⟪v, d⟫) r (feasibleSteps C x)
 
@@ -32,19 +78,24 @@ private theorem bddAbove_inner :
     exact (real_inner_le_norm v d).trans
       (mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.mp hd.1) (norm_nonneg v))⟩
 
+/-- If $x + d \in C$ and $\|d\| \le r$, then $\langle v, d\rangle \le \chi(x, v, r)$. -/
 theorem inner_le_linearDecrease (hd : x + d ∈ C) (hn : ‖d‖ ≤ r) :
     ⟪v, d⟫ ≤ linearDecrease C x v r :=
   le_decrementMeasure bddAbove_inner ⟨mem_closedBall_zero_iff.mpr hn, hd⟩
 
+/-- Let $x \in C$ and $r \ge 0$. If $\langle v, d\rangle \le b$ for every $d$ with $x + d \in C$ and
+$\|d\| \le r$, then $\chi(x, v, r) \le b$. -/
 theorem linearDecrease_le (hx : x ∈ C) (hr : 0 ≤ r) {b : ℝ}
     (h : ∀ d, x + d ∈ C → ‖d‖ ≤ r → ⟪v, d⟫ ≤ b) :
     linearDecrease C x v r ≤ b :=
   decrementMeasure_le (admissible_nonempty hx hr) fun d hd ↦
     h d hd.2 (mem_closedBall_zero_iff.mp hd.1)
 
+/-- For $x \in C$ and $r \ge 0$, $\chi(x, v, r) \ge 0$. -/
 theorem linearDecrease_nonneg (hx : x ∈ C) (hr : 0 ≤ r) : 0 ≤ linearDecrease C x v r :=
   decrementMeasure_nonneg bddAbove_inner (zero_mem_feasibleSteps.mpr hx) hr (inner_zero_right _)
 
+/-- For $x \in C$ and $0 \le s \le t$, $\chi(x, v, s) \le \chi(x, v, t)$. -/
 theorem linearDecrease_mono_radius (hx : x ∈ C) (hs : 0 ≤ s) (hst : s ≤ t) :
     linearDecrease C x v s ≤ linearDecrease C x v t :=
   decrementMeasure_mono_radius (admissible_nonempty hx hs) bddAbove_inner hst
@@ -63,7 +114,11 @@ private theorem scale_linearDecrease_le (hc : Convex ℝ C) (hx : x ∈ C)
       (div_mul_cancel₀ s ht.ne')
   simpa only [real_inner_smul_right] using inner_le_linearDecrease (v := v) hfeas hnorm
 
-/-- The largest feasible decrease divided by the positive radius is nonincreasing. -/
+/-- Let $C \subseteq E$ be convex and $x \in C$. Then the map $r \mapsto \chi(x, v, r)/r$ is
+nonincreasing on $(0, \infty)$.
+
+The proof scales a feasible displacement of length at most $t$ by $s/t$, which by convexity
+gives a feasible displacement of length at most $s$. -/
 theorem linearDecrease_antitoneOn_ratio (hc : Convex ℝ C) (hx : x ∈ C) :
     AntitoneOn (fun r ↦ linearDecrease C x v r / r) (Set.Ioi 0) := by
   intro s hs t ht hst
@@ -91,8 +146,10 @@ private theorem linearDecrease_sub_le_radius (hc : Convex ℝ C) (hx : x ∈ C)
   rw [heq] at hmul
   linarith
 
-/-- Variation of the trust-region radius changes the measure by at most the radius
-change times the norm of the linear direction. -/
+/-- Let $C \subseteq E$ be convex and $x \in C$. Then $r \mapsto \chi(x, v, r)$ is Lipschitz
+continuous on $[0, \infty)$ with constant $\|v\|$:
+$$|\chi(x, v, t) - \chi(x, v, s)| \le \|v\|\,|t - s| \quad \text{for } s, t \ge 0.$$
+-/
 theorem linearDecrease_lipschitzOnWith_radius (hc : Convex ℝ C) (hx : x ∈ C) :
     LipschitzOnWith ‖v‖₊ (linearDecrease C x v) (Set.Ici 0) := by
   apply LipschitzOnWith.of_dist_le_mul
@@ -108,7 +165,10 @@ theorem linearDecrease_lipschitzOnWith_radius (hc : Convex ℝ C) (hx : x ∈ C)
       abs_of_nonneg (sub_nonneg.mpr h), mul_comm]
     exact linearDecrease_sub_le_radius hc hx ht h
 
-/-- The radius-one measure vanishes precisely when the linear direction is normal. -/
+/-- Let $C \subseteq E$ be convex and $x \in C$. Then $\chi(x, v, 1) = 0$ if and only if $v$ lies in
+the normal cone of $C$ at $x$, that is, $\langle v, y - x\rangle \le 0$ for every $y \in C$.
+
+The normal cone is `Optimization.normalDirections C x`. -/
 theorem linearDecrease_eq_zero_iff (hc : Convex ℝ C) (hx : x ∈ C) :
     linearDecrease C x v 1 = 0 ↔ v ∈ normalDirections C x := by
   rw [mem_normalDirections]
@@ -173,8 +233,11 @@ private theorem abs_linearDecrease_sub_le_direction (hx : x ∈ C) :
     _ ≤ ‖v - w‖ := by simpa using
       mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.mp hd.1) (norm_nonneg (v - w))
 
-/-- The radius-one linear decrease varies continuously with the feasible base point
-and a continuous linear direction. -/
+/-- Let $C \subseteq E$ be convex and let $g : E \to E$ be continuous on $C$. Then the map
+$x \mapsto \chi(x, g(x), 1)$ is continuous on $C$.
+
+The proof combines the bounds $|\chi(x, v, 1) - \chi(y, v, 1)| \le 2\|v\|\|x - y\|$ for
+$x, y \in C$ and $|\chi(x, v, 1) - \chi(x, w, 1)| \le \|v - w\|$. -/
 theorem continuousOn_linearDecrease_one (hc : Convex ℝ C) {g : E → E}
     (hg : ContinuousOn g C) : ContinuousOn (fun x ↦ linearDecrease C x (g x) 1) C := by
   intro x hx
@@ -199,8 +262,15 @@ section Tangent
 
 variable [CompleteSpace E]
 
-/-- The tangent projection controls the improvement in the linear objective relative to
-any feasible comparison step, with a signed directional term. -/
+/-- Let $E$ be complete, $x \in C$, $r \ge 0$ and $d \in E$. Let $p$ be the projection of $v$ onto
+the tangent cone of $C$ at $x + d$. Then
+$$\chi(x, v, r) \le \langle v, d\rangle + (r + \|d\|)\,\|p\|.$$
+
+The displacement $d$ need not be feasible, and $C$ need not be convex. The tangent cone is
+`Optimization.tangentDirections C (x + d)`, the polar of the normal cone
+`Optimization.normalDirections C (x + d)`, and $p$ is `bestApprox
+(Optimization.tangentDirections C (x + d)) v`. The tangent cone is closed, convex and contains
+$0$, so the projection exists because $E$ is complete. -/
 theorem linearDecrease_le_tangent (hx : x ∈ C) (hr : 0 ≤ r) :
     linearDecrease C x v r ≤ ⟪v, d⟫ +
       (r + ‖d‖) * ‖bestApprox (tangentDirections C (x + d)) v‖ := by

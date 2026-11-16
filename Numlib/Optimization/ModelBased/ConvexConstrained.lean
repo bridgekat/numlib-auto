@@ -8,34 +8,60 @@ import Numlib.Optimization.Optimality.ConstrainedMeasure
 /-!
 # Adaptive regularization over a convex set: one-iteration estimates
 
-One-iteration estimates for adaptive regularization with `p`-th order models
-`m(s) = regularizedModel (ftaylorSeries ℝ f x) p σ s` over a convex feasible set `C`
-([cartis2022evaluation], §6.2; used again in §6.3 and §7.2, and with `C = univ` by the
-unconstrained ARp of Chapter 4). The standing hypotheses are those of the core estimate
-`Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel` (f.DpL.C): `C` convex, `f` `C^p`
-at the points of `C`, `∇^p f` `L`-Lipschitz on `C`, `x, x + s ∈ C`, `σ ≥ 0`.
+Let $E$ be a real inner product space, $C \subseteq E$ convex, and $f : E \to \mathbb{R}$ of class
+$C^p$ at the points of $C$, with $\nabla^p f$ Lipschitz continuous on $C$ with constant $L \ge 0$
+(assumption f.DpL.C of [cartis2022evaluation]). At a point $x \in C$ with weight $\sigma \ge 0$,
+adaptive regularization uses the model
+$$m(s) = T_{f,p}(x, s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1},$$
+where $T_{f,p}(x, \cdot)$ is the Taylor polynomial of degree $p$ of $f$ at $x$. This file gives the
+one-iteration estimates for this model over the convex feasible set $C$, as in §6.2 of
+[cartis2022evaluation]. The same estimates serve §6.3 and §7.2, and with $C = E$ the unconstrained
+method ARp of Chapter 4.
 
-## Main statements
+The feasible displacements at $y$ are $\mathcal{C}(y) = \{d \mid y + d \in C\}$. For a $j$-linear
+form $A$ and a set $T$ of displacements, the criticality measure is
+$$\omega(A, T) = \sup \{-A[d]^j \mid d \in T, \ \|d\| \le 1\},$$
+and the first-order measure of $f$ at $y$ is $\omega_{f,\mathcal{C},1}(y) = \omega(\nabla f(y),
+\mathcal{C}(y))$. The main estimate (6.2.23) compares the derivatives of $f$ at $x + s$ with those
+of $m$ at $s$:
+$$\bigl|\nabla^j f(x+s)[d]^j - \nabla^j m(s)[d]^j\bigr| \le \frac{L + \sigma}{(p-j+1)!}
+  \|s\|^{p-j+1} \qquad (j \le p, \ \|d\| \le 1).$$
+From it follow the step-length bound and the decrease of Lemma 6.2.4 for the first-order method
+ARp1-CC (Algorithm 6.2.2).
 
-* `Optimization.abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall`: (6.2.23) on the
-  unit ball, `|∇^j f(x+s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1}`;
-* `Optimization.formCriticality_le_regularizedModel`,
-  `Optimization.inter_closedBall_restrictedSteps_subset_regularizedModel`: its measure form and
-  the transfer of restricted sets (the core of Lemma 6.2.1, (6.2.18)–(6.2.19));
-* `Optimization.IsFirstOrderCCStep`: the Step-2 conditions of ARp1-CC (Algorithm 6.2.2,
-  (6.2.29)); with `C = univ` these are ARp's first-order conditions
-  (`Optimization.isFirstOrderCCStep_univ_iff`);
-* `Optimization.IsFirstOrderCCStep.measure_le_mul_pow`, `Optimization.IsFirstOrderCCStep.sub_ge`:
-  the step length bound and the decrease of Lemma 6.2.4;
-* `Optimization.exists_isMinOn_regularizedModel_of_isClosed`,
-  `Optimization.exists_isFirstOrderCCStep`: existence of model minimizers over closed sets and of
-  admissible ARp1-CC steps.
+## Main definitions
 
-## The unit ball
+* `Optimization.IsFirstOrderCCStep`: the Step-2 conditions (6.2.29) of ARp1-CC.
 
-(6.2.18)–(6.2.19) transfer the restricted sets `𝒞^1(x_{k+1}, ε₁)`, `𝒞^2(…)` from `f` to the
-model. The estimate (6.2.23) holds for `‖d‖ ≤ 1` (the error grows like `‖d‖^j`), so the transfer
-is stated on the unit ball, which is all that the measures use.
+## Main results
+
+* `Optimization.abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall`: the estimate (6.2.23)
+  for $\|d\| \le 1$.
+* `Optimization.formCriticality_le_regularizedModel`: the measure of $f$ at $x + s$ exceeds the
+  measure of the model at $s$ by at most $(L + \sigma) \|s\|^{p-j+1} / (p-j+1)!$.
+* `Optimization.inter_closedBall_restrictedSteps_subset_regularizedModel`: the transfer
+  (6.2.18)–(6.2.19) of restricted sets from $f$ to the model, the core of Lemma 6.2.1.
+* `Optimization.isFirstOrderCCStep_univ_iff`: for $C = E$ the ARp1-CC conditions are the first-order
+  ARp conditions (4.1.10)–(4.1.11).
+* `Optimization.IsFirstOrderCCStep.measure_le_mul_pow`: the step-length bound
+  $\omega_{f,\mathcal{C},1}(x+s) \le (L + \sigma + \theta p!) \|s\|^p / p!$.
+* `Optimization.IsFirstOrderCCStep.sub_ge`: Lemma 6.2.4, the decrease of $f$ on a successful
+  iteration.
+* `Optimization.exists_isMinOn_regularizedModel_of_isClosed`: in finite dimension the model attains
+  its minimum on every closed set that contains $0$.
+* `Optimization.exists_isFirstOrderCCStep`: in finite dimension, ARp1-CC steps exist at every point
+  that is not first-order critical.
+
+## Implementation notes
+
+* The model $m$ is `Optimization.regularizedModel (ftaylorSeries ℝ f x) p σ`.
+* The measure $\omega(A, T)$ is `Optimization.formCriticality A T`.
+* The set $\mathcal{C}(y)$ is `Optimization.feasibleSteps C y`. The model's set $\mathcal{M}^0(s)$
+  of (6.2.1) is $\mathcal{C}(x + s)$.
+* The estimate (6.2.23) holds only for $\|d\| \le 1$, because the error grows like $\|d\|^j$. The
+  transfer (6.2.18)–(6.2.19) of the restricted sets $\mathcal{C}^1(x_{k+1}, \varepsilon_1)$ and
+  $\mathcal{C}^2(\ldots)$ is therefore stated on the unit ball. The measures use only displacements
+  in the unit ball.
 -/
 
 open Set Metric
@@ -49,8 +75,17 @@ section Estimates
 
 variable {f : E → ℝ} {p : ℕ} {L σ : ℝ} {C : Set E} {x s : E}
 
-/-- **(6.2.23)** ([cartis2022evaluation], proof of Lemma 6.2.1) on the unit ball: for `j ≤ p`
-and `‖d‖ ≤ 1`, `|∇^j f(x+s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p-j+1)! ‖s‖^{p-j+1}`. -/
+/-- **Equation (6.2.23)** of [cartis2022evaluation], from the proof of Lemma 6.2.1, on the unit
+ball. Let $C \subseteq E$ be convex, let $f$ be $C^p$ at every point of $C$, and let
+$\nabla^p f$ be Lipschitz continuous on $C$ with constant $L \ge 0$. Let $x, x + s \in C$,
+$\sigma \ge 0$, $j \le p$ and $\|d\| \le 1$. With $m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1} /
+(p+1)!$,
+$$\bigl|\nabla^j f(x+s)[d]^j - \nabla^j m(s)[d]^j\bigr| \le \frac{L + \sigma}{(p-j+1)!}
+  \|s\|^{p-j+1}.$$
+
+The model is `Optimization.regularizedModel (ftaylorSeries ℝ f x) p σ`, and $\nabla^j$ is
+`iteratedFDeriv ℝ j`. The proof specializes
+`Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`. -/
 theorem abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) {d : E}
@@ -66,9 +101,16 @@ theorem abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall (hC : Conve
         mul_le_mul_of_nonneg_left h1 h0
     _ = _ := mul_one _
 
-/-- **Measure form of (6.2.23)** ([cartis2022evaluation], proof of Lemma 6.2.1): for `j ≤ p` and
-any admissible set `T ∋ 0`, the `j`-th order measure of `f` at `x + s` exceeds that of the model at
-`s` by at most `(L + σ)/(p-j+1)! ‖s‖^{p-j+1}`. -/
+/-- **Measure form of (6.2.23)**, from the proof of Lemma 6.2.1 of [cartis2022evaluation]. Under the
+hypotheses of `Optimization.abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall` ($C$
+convex, $f$ of class $C^p$ on $C$ with $L$-Lipschitz $\nabla^p f$, $L \ge 0$, $x, x + s \in C$,
+$\sigma \ge 0$, $j \le p$), let $T$ be a set of displacements with $0 \in T$. Then
+$$\omega(\nabla^j f(x+s), T) \le \omega(\nabla^j m(s), T) + \frac{L + \sigma}{(p-j+1)!}
+  \|s\|^{p-j+1},$$
+where $\omega(A, T) = \sup \{-A[d]^j \mid d \in T, \|d\| \le 1\}$.
+
+The measure $\omega$ is `Optimization.formCriticality`, and $m$ is
+`Optimization.regularizedModel (ftaylorSeries ℝ f x) p σ`. -/
 theorem formCriticality_le_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) {T : Set E}
@@ -79,9 +121,15 @@ theorem formCriticality_le_regularizedModel (hC : Convex ℝ C)
   formCriticality_le_add_of_abs_sub_le _ _ ⟨0, zero_mem_closedBall_inter hT⟩ fun _ hd =>
     abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall hC hf hL hL0 hx hxs hσ hj hd.1
 
-/-- **(6.2.18)–(6.2.19)** ([cartis2022evaluation], Lemma 6.2.1): unit-ball
-displacements on which `|∇^j f(x+s)[d]^j| ≤ a` satisfy `|∇^j m(s)[d]^j| ≤ b` whenever
-`(L + σ)/(p-j+1)! ‖s‖^{p-j+1} + a ≤ b`. -/
+/-- **Equations (6.2.18)–(6.2.19)** of [cartis2022evaluation], Lemma 6.2.1. Under the hypotheses of
+`Optimization.abs_iteratedFDeriv_sub_regularizedModel_le_of_mem_closedBall`, let $T$ be a set of
+displacements and $a, b \in \mathbb{R}$ with
+$$\frac{L + \sigma}{(p-j+1)!} \|s\|^{p-j+1} + a \le b.$$
+Then every $d \in T$ with $\|d\| \le 1$ and $|\nabla^j f(x+s)[d]^j| \le a$ satisfies
+$|\nabla^j m(s)[d]^j| \le b$.
+
+The sets are `Optimization.restrictedSteps`: the conclusion is `closedBall 0 1 ∩ restrictedSteps
+(∇^j f(x+s)) a T ⊆ restrictedSteps (∇^j m(s)) b T`. -/
 theorem inter_closedBall_restrictedSteps_subset_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) {T : Set E} {a b : ℝ}
@@ -96,26 +144,39 @@ end Estimates
 
 section Step
 
-/-- **The ARp1-CC step conditions** ([cartis2022evaluation], Algorithm 6.2.2, Step 2) at `x` with
-weight `σ`, for the model `m = regularizedModel (ftaylorSeries ℝ f x) p σ`: the trial point is
-feasible, the model decreases, and the model's first-order measure over `𝓜⁰(s) = 𝒞(x + s)` is
-at most `θ ‖s‖^p` (6.2.29). With `C = univ` the last condition is ARp's (4.1.11),
-`‖∇m(s)‖ ≤ θ ‖s‖^p` (`Optimization.isFirstOrderCCStep_univ_iff`). -/
+/-- **The step conditions of ARp1-CC**, Step 2 of Algorithm 6.2.2 of [cartis2022evaluation]. Let
+$C \subseteq E$, $x \in E$, $\sigma \in \mathbb{R}$, $\theta \in \mathbb{R}$, and let $m(s) =
+T_{f,p}(x, s) + \sigma \|s\|^{p+1} / (p+1)!$. A step $s$ satisfies the conditions if
+
+* the trial point is feasible: $x + s \in C$;
+* the model decreases: $m(s) < m(0)$;
+* the first-order measure of the model over $\mathcal{M}^0(s) = \mathcal{C}(x + s)$ is small
+  (6.2.29): $\omega(\nabla m(s), \mathcal{C}(x + s)) \le \theta \|s\|^p$.
+
+For $C = E$ the last condition is the condition (4.1.11) $\|\nabla m(s)\| \le \theta \|s\|^p$ of
+ARp; see `Optimization.isFirstOrderCCStep_univ_iff`. The measure is
+`Optimization.formCriticality` applied to `iteratedFDeriv ℝ 1 m s`, and $\mathcal{C}(y)$ is
+`Optimization.feasibleSteps C y`. -/
 structure IsFirstOrderCCStep (f : E → ℝ) (C : Set E) (p : ℕ) (θ : ℝ) (x : E) (σ : ℝ) (s : E) :
     Prop where
-  /-- The trial point is feasible. -/
+  /-- The trial point $x + s$ lies in $C$. -/
   mem : x + s ∈ C
-  /-- The step decreases the model. -/
+  /-- The step decreases the model: $m(s) < m(0)$. -/
   decrease : regularizedModel (ftaylorSeries ℝ f x) p σ s <
     regularizedModel (ftaylorSeries ℝ f x) p σ 0
-  /-- (6.2.29): the model's first-order measure at the step is small. -/
+  /-- Condition (6.2.29): the first-order measure of the model at $s$ over $\mathcal{C}(x + s)$ is
+  at most $\theta \|s\|^p$. -/
   measure : formCriticality (iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
     (feasibleSteps C (x + s)) ≤ θ * ‖s‖ ^ p
 
 variable {f : E → ℝ} {C : Set E} {p : ℕ} {θ σ L : ℝ} {x s : E}
 
-/-- Without constraints, the ARp1-CC step conditions are the first-order ARp step conditions
-(4.1.10)–(4.1.11). -/
+/-- For $C = E$, a step $s$ satisfies the ARp1-CC conditions if and only if it satisfies the
+first-order ARp conditions (4.1.10)–(4.1.11) of [cartis2022evaluation]:
+$$m(s) < m(0) \quad \text{and} \quad \|\nabla m(s)\| \le \theta \|s\|^p,$$
+where $m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1} / (p+1)!$.
+
+The derivative $\nabla m(s)$ is `fderiv ℝ m s`, and the norm is its operator norm. -/
 theorem isFirstOrderCCStep_univ_iff :
     IsFirstOrderCCStep f univ p θ x σ s ↔
       regularizedModel (ftaylorSeries ℝ f x) p σ s <
@@ -130,15 +191,24 @@ theorem isFirstOrderCCStep_univ_iff :
     refine ⟨mem_univ _, h1, ?_⟩
     rwa [hU, formCriticality_iteratedFDeriv_one_univ]
 
-/-- An ARp step for `q = 1` is an ARp1-CC step for `C = univ` and `θ = θ₁`. -/
+/-- Let $s$ satisfy the ARp step conditions `Optimization.IsARpStep` at $x$ with weight $\sigma$,
+for constants $P$ and any order $q$. Then $s$ satisfies the ARp1-CC conditions for $C = E$ and
+$\theta = \theta_1$, the first-order constant of $P$. -/
 theorem IsARpStep.isFirstOrderCCStep {P : ARpParams} {q : ℕ}
     (h : IsARpStep f p P q x σ s) : IsFirstOrderCCStep f univ p P.θ₁ x σ s :=
   isFirstOrderCCStep_univ_iff.2 ⟨h.decrease, h.gradient⟩
 
-/-- **Step-length bound for ARp1-CC** ([cartis2022evaluation], proof of Lemma 6.2.4): for
-`p ≥ 1`, with `ω = ω_{f,𝒞,1}(x + s)`, `ω ≤ (L + σ + θ p!)/p! ‖s‖^p`, i.e.
-`‖s‖^p ≥ p!/(L + σ + θ p!) ω` (the admissible sets of the two measures coincide since
-`𝓜⁰(s) = 𝒞(x + s)`). -/
+/-- **Step-length bound for ARp1-CC**, from the proof of Lemma 6.2.4 of [cartis2022evaluation]. Let
+$C$ be convex, let $f$ be $C^p$ at every point of $C$ with $\nabla^p f$ Lipschitz continuous on
+$C$ with constant $L \ge 0$, and let $x \in C$, $\sigma \ge 0$ and $p \ge 1$. If $s$ satisfies
+the ARp1-CC conditions with constant $\theta$, then
+$$\omega_{f,\mathcal{C},1}(x + s) \le \frac{L + \sigma + \theta \, p!}{p!} \|s\|^p.$$
+Equivalently, $\|s\|^p \ge p! \, \omega_{f,\mathcal{C},1}(x+s) / (L + \sigma + \theta \, p!)$
+when the denominator is positive.
+
+Here $\omega_{f,\mathcal{C},1}(y)$ is `Optimization.formCriticality (iteratedFDeriv ℝ 1 f y)
+(Optimization.feasibleSteps C y)`. The measures of $f$ and of the model use the same set of
+displacements, because $\mathcal{M}^0(s) = \mathcal{C}(x + s)$. -/
 theorem IsFirstOrderCCStep.measure_le_mul_pow (h : IsFirstOrderCCStep f C p θ x σ s)
     (hC : Convex ℝ C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L) (hx : x ∈ C) (hσ : 0 ≤ σ) (hp : 1 ≤ p) :
@@ -153,11 +223,20 @@ theorem IsFirstOrderCCStep.measure_le_mul_pow (h : IsFirstOrderCCStep f C p θ x
   rw [this]
   linarith
 
-/-- **Lemma 6.2.4** ([cartis2022evaluation]; with `C = univ` the first part of Lemma 4.1.4,
-(4.1.31)): on a successful ARp1-CC iteration (`η₁ ≤ ρ`, `η₁ > 0`) with
-`0 ≤ σ_min ≤ σ ≤ σ_max`, `p ≥ 1`, `θ ≥ 0`,
-`f(x) - f(x + s) ≥ κ₁ ω_{f,𝒞,1}(x + s)^{(p+1)/p}` with
-`κ₁ = η₁ σ_min/(p+1)! (p!/(L + σ_max + θ p!))^{(p+1)/p}` (4.1.32). -/
+/-- **Lemma 6.2.4** of [cartis2022evaluation]; for $C = E$ it is the first part (4.1.31) of Lemma
+4.1.4. Let $C$ be convex, let $f$ be $C^p$ at every point of $C$ with $\nabla^p f$ Lipschitz
+continuous on $C$ with constant $L \ge 0$, and let $x \in C$, $p \ge 1$ and $\theta \ge 0$. Let
+$0 \le \sigma_{\min} \le \sigma \le \sigma_{\max}$ and $\eta_1 > 0$. Let $s$ satisfy the ARp1-CC
+conditions with constant $\theta$, and let the iteration be successful:
+$$\eta_1 \le \rho = \frac{f(x) - f(x+s)}{T_{f,p}(x, 0) - T_{f,p}(x, s)}.$$
+Then
+$$f(x) - f(x + s) \ge \kappa_1 \, \omega_{f,\mathcal{C},1}(x + s)^{(p+1)/p}, \qquad \kappa_1 =
+  \frac{\eta_1 \sigma_{\min}}{(p+1)!} \Bigl(\frac{p!}{L + \sigma_{\max} + \theta \,
+  p!}\Bigr)^{(p+1)/p},$$
+which is the constant (4.1.32).
+
+The ratio is `Optimization.reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s)`.
+The powers with exponent $(p+1)/p$ are real powers `Real.rpow`. -/
 theorem IsFirstOrderCCStep.sub_ge (h : IsFirstOrderCCStep f C p θ x σ s) (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hL0 : 0 ≤ L)
     (hx : x ∈ C) (hp : 1 ≤ p) (hθ : 0 ≤ θ) {σmin σmax η₁ : ℝ} (hσmin : 0 ≤ σmin)
@@ -208,9 +287,13 @@ section Existence
 
 variable {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ : ℝ}
 
-/-- **Model minimizers over a closed set** ([cartis2022evaluation], §6.2.1): in finite
-dimension, for `σ > 0` and a closed `S ∋ 0`, the model attains its minimum on `S`
-(coercivity). -/
+/-- **Model minimizers over a closed set**, §6.2.1 of [cartis2022evaluation]. Let $E$ be
+finite-dimensional, let $D$ be any derivative data, $p \in \mathbb{N}$ and $\sigma > 0$, and let
+$S \subseteq E$ be closed with $0 \in S$. Then the model
+$m(s) = T_p(s) + \sigma \|s\|^{p+1} / (p+1)!$ attains its minimum on $S$.
+
+The model is `Optimization.regularizedModel D p σ`, with $T_p$ = `D.taylorSum p`. It is coercive
+because the regularization term dominates the polynomial $T_p$. -/
 theorem exists_isMinOn_regularizedModel_of_isClosed [FiniteDimensional ℝ E] {S : Set E}
     (hS : IsClosed S) (h0 : (0 : E) ∈ S) (hσ : 0 < σ) :
     ∃ s ∈ S, IsMinOn (regularizedModel D p σ) S s := by
@@ -223,12 +306,19 @@ theorem exists_isMinOn_regularizedModel_of_isClosed [FiniteDimensional ℝ E] {S
 
 variable {f : E → ℝ} {C : Set E} {θ : ℝ} {x : E}
 
-/-- **Well-posedness of ARp1-CC** (and of the first-order ARp-CC Step 2,
-[cartis2022evaluation], Algorithms 6.2.1–6.2.2): in finite dimension, for `C` closed convex,
-`x ∈ C`, `f` `C^p` at `x` (`p ≥ 1`), `σ > 0`, `θ ≥ 0` and `x` not first-order critical
-(`ω_{f,𝒞,1}(x) > 0`), there is a global minimizer `s*` of the model over the feasible steps
-`𝒞(x)`; it is an ARp1-CC step and its model measure vanishes (so it also satisfies ARp-CC's
-(6.2.10)). -/
+/-- **Existence of ARp1-CC steps**, Algorithms 6.2.1–6.2.2 of [cartis2022evaluation]. Let $E$ be
+finite-dimensional, $C \subseteq E$ closed and convex, $x \in C$, and let $f$ be $C^p$ at $x$
+with $p \ge 1$. Let $\sigma > 0$ and $\theta \ge 0$, and let $x$ not be first-order critical:
+$\omega_{f,\mathcal{C},1}(x) > 0$. Then there is a step $s$ such that
+
+* $s$ minimizes the model $m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1} / (p+1)!$ over the feasible
+  steps $\mathcal{C}(x)$;
+* $s$ satisfies the ARp1-CC conditions with constant $\theta$;
+* the first-order measure of the model at $s$ vanishes:
+  $\omega(\nabla m(s), \mathcal{C}(x + s)) = 0$.
+
+The last property means that $s$ also satisfies the condition (6.2.10) of the first-order ARp-CC
+Step 2, so Step 2 of both methods is well defined. -/
 theorem exists_isFirstOrderCCStep [FiniteDimensional ℝ E] (hCc : IsClosed C) (hC : Convex ℝ C)
     (hx : x ∈ C) (hf : ContDiffAt ℝ p f x) (hp : 1 ≤ p) (hσ : 0 < σ) (hθ : 0 ≤ θ)
     (hcrit : 0 < formCriticality (iteratedFDeriv ℝ 1 f x) (feasibleSteps C x)) :

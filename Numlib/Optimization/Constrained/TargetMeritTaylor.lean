@@ -7,24 +7,39 @@ import Numlib.Optimization.Constrained.TargetResidual
 /-!
 # Taylor decrements of the target merit function on the target
 
-For the target merit function `μ(x, t) = ½ (‖c(x)‖² + (f(x) - t)²)` (`Constrained.targetMerit`)
-and the feasibility merit `ν(x) = ½ ‖c(x)‖²` (`Constrained.halfSqNorm`, the case `f = 0`,
-`t = 0`), this file compares the Taylor decrements and measures of `μ(·, t)` and `ν` at a point
-where `f(x) = t` ([cartis2022evaluation], §14.3.2.2, the case `f(x_ε) = t_ε` of Lemma 14.3.5):
-they agree at first order, while at orders `2` and `3` they differ by terms in `∇f(x)[d]`, so the
-measures agree on `ker ∇f(x)` and differ by explicit amounts on the whole set.
+Let $f : E \to \mathbb{R}$ and $c : E \to F$, with $F$ a real inner product space. This file
+compares the target merit function $\mu(x, t) = \frac12 (\|c(x)\|^2 + (f(x) - t)^2)$
+(`Constrained.targetMerit`) with the feasibility merit function $\nu(x) = \frac12 \|c(x)\|^2$
+(`Constrained.halfSqNorm`), which is the case $f = 0$, $t = 0$. At a point $x$ with $f(x) = t$ it
+compares their Taylor decrements $\Delta T_j(d)$ and their Taylor measures $\varphi^\delta_j = \sup
+\{\Delta T_j(d) : \|d\| \le \delta, d \in S\}$. This is the case $f(x_\varepsilon) = t_\varepsilon$
+of Lemma 14.3.5 in §14.3.2.2 of [cartis2022evaluation].
+
+The first-order measures agree. At orders $2$ and $3$ the decrements differ by terms in
+$\nabla f(x)[d]$. So the measures agree on $S \cap \ker \nabla f(x)$, and on $S$ they differ by
+explicit amounts.
 
 ## Main definitions
 
-* `Constrained.halfSqNorm`: `ν(x) = ½ ‖c(x)‖²`.
+* `Constrained.halfSqNorm`: the feasibility merit function $\nu(x) = \frac12 \|c(x)\|^2$.
 
 ## Main results
 
-* `Constrained.taylorMeasure_one_targetMerit_of_eq`: the first-order measures agree;
+* `Constrained.taylorMeasure_one_targetMerit_of_eq`: the first-order Taylor measures of
+  $\mu(\cdot, t)$ and $\nu$ agree.
 * `Constrained.taylorDecrement_two_targetMerit_of_eq`,
-  `Constrained.taylorDecrement_three_targetMerit_of_eq`: the decrements of orders `2` and `3`;
+  `Constrained.taylorDecrement_three_targetMerit_of_eq`: the Taylor decrements of orders $2$ and $3$
+  of $\mu(\cdot, t)$ in terms of those of $\nu$.
 * `Constrained.taylorMeasure_halfSqNorm_two_le_of_eq`,
-  `Constrained.taylorMeasure_halfSqNorm_three_le_of_eq`: the measures of `ν` from those of `μ`.
+  `Constrained.taylorMeasure_halfSqNorm_three_le_of_eq`: bounds on the Taylor measures of $\nu$ of
+  orders $2$ and $3$ from those of $\mu(\cdot, t)$.
+
+## Notation
+
+* $\Delta T_{\phi, j}(d)$: the Taylor decrement $T_{\phi,j}(x, 0) - T_{\phi,j}(x, d)$ of order $j$
+  of $\phi$ at $x$, which is `FormalMultilinearSeries.taylorDecrement` of `ftaylorSeries ℝ φ x`.
+* $\varphi^\delta_{\phi, j}(S)$: the Taylor measure `Optimization.taylorMeasure` of order $j$ of
+  $\phi$ at $x$, the supremum of $\Delta T_{\phi, j}(d)$ over $\|d\| \le \delta$, $d \in S$.
 -/
 
 open Set Metric
@@ -35,22 +50,25 @@ section HalfSqNorm
 
 variable {E F : Type*} [NormedAddCommGroup F]
 
-/-- The feasibility merit function `ν(x) = ½ ‖c(x)‖²` (`Φ₂` of [cartis2022evaluation],
-(14.3.16)). -/
+/-- The **feasibility merit function** $\nu(x) = \frac12 \|c(x)\|^2$. This is $\Phi_2$ of (14.3.16)
+of [cartis2022evaluation]. -/
 noncomputable def halfSqNorm (c : E → F) (x : E) : ℝ := ‖c x‖ ^ 2 / 2
 
+/-- The feasibility merit function at $x$ is $\|c(x)\|^2 / 2$. -/
 theorem halfSqNorm_apply (c : E → F) (x : E) : halfSqNorm c x = ‖c x‖ ^ 2 / 2 := rfl
 
-/-- `ν` is the merit function of the zero objective with target `0`. -/
+/-- The feasibility merit function $\nu$ is the target merit function of the zero objective with
+target $t = 0$. -/
 theorem halfSqNorm_eq_targetMerit (c : E → F) :
     halfSqNorm c = targetMerit (fun _ => (0 : ℝ)) c 0 := by
   funext z
   simp [halfSqNorm]
 
+/-- The feasibility merit function is nonnegative. -/
 theorem halfSqNorm_nonneg (c : E → F) (x : E) : 0 ≤ halfSqNorm c x := by
   rw [halfSqNorm_apply]; positivity
 
-/-- `ν(y) ≤ ν(x)` iff `‖c(y)‖ ≤ ‖c(x)‖`. -/
+/-- For all $x$ and $y$: $\nu(y) \le \nu(x)$ if and only if $\|c(y)\| \le \|c(x)\|$. -/
 theorem halfSqNorm_le_halfSqNorm_iff {c : E → F} {x y : E} :
     halfSqNorm c y ≤ halfSqNorm c x ↔ ‖c y‖ ≤ ‖c x‖ := by
   rw [halfSqNorm_apply, halfSqNorm_apply, div_le_div_iff_of_pos_right two_pos]
@@ -63,7 +81,11 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 variable {f : E → ℝ} {c : E → F} {t : ℝ} {x : E}
 
-/-- The first-order Taylor measures of `μ(·, t)` and `ν` agree at a point where `f(x) = t`. -/
+/-- Let $f$ and $c$ be differentiable at $x$, and let $f(x) = t$. Then for every $\delta$ and every
+set $S$ of directions, the first-order Taylor measures of $\mu(\cdot, t)$ and $\nu$ at $x$
+agree:
+$$\varphi^\delta_{\mu, 1}(S) = \varphi^\delta_{\nu, 1}(S).$$
+-/
 theorem taylorMeasure_one_targetMerit_of_eq (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (ht : f x = t) (δ : ℝ) (S : Set E) :
     Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c t) x) 1 δ S =
@@ -77,7 +99,10 @@ theorem taylorMeasure_one_targetMerit_of_eq (hf : DifferentiableAt ℝ f x)
   rw [fderiv_targetMerit_of_eq hf hc ht, halfSqNorm_eq_targetMerit,
     fderiv_targetMerit_of_eq (differentiableAt_const _) hc rfl]
 
-/-- At a point where `f(x) = t`: `ΔT_{μ,2}(d) = ΔT_{ν,2}(d) - ½ (∇f(x)[d])²`. -/
+/-- Let $f$ and $c$ be $C^2$ at $x$, and let $f(x) = t$. Then for every direction $d$, the
+second-order Taylor decrements of $\mu(\cdot, t)$ and $\nu$ at $x$ satisfy
+$$\Delta T_{\mu, 2}(d) = \Delta T_{\nu, 2}(d) - \tfrac12 (\nabla f(x)[d])^2.$$
+-/
 theorem taylorDecrement_two_targetMerit_of_eq (hf : ContDiffAt ℝ 2 f x)
     (hc : ContDiffAt ℝ 2 c x) (ht : f x = t) (d : E) :
     (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 2 d =
@@ -92,8 +117,11 @@ theorem taylorDecrement_two_targetMerit_of_eq (hf : ContDiffAt ℝ 2 f x)
   simp
   ring
 
-/-- At a point where `f(x) = t`: `ΔT_{μ,3}(d) = ΔT_{ν,3}(d) - ½ (∇f(x)[d])² -
-½ ∇f(x)[d] ∇²f(x)[d]²`. -/
+/-- Let $f$ and $c$ be $C^3$ at $x$, and let $f(x) = t$. Then for every direction $d$, the
+third-order Taylor decrements of $\mu(\cdot, t)$ and $\nu$ at $x$ satisfy
+$$\Delta T_{\mu, 3}(d) = \Delta T_{\nu, 3}(d) - \tfrac12 (\nabla f(x)[d])^2 - \tfrac12 \nabla
+  f(x)[d] \, \nabla^2 f(x)[d]^2.$$
+-/
 theorem taylorDecrement_three_targetMerit_of_eq (hf : ContDiffAt ℝ 3 f x)
     (hc : ContDiffAt ℝ 3 c x) (ht : f x = t) (d : E) :
     (ftaylorSeries ℝ (targetMerit f c t) x).taylorDecrement 3 d =
@@ -131,8 +159,13 @@ private theorem abs_iteratedFDeriv_two_le {d : E} {δ : ℝ} (hd : d ∈ closedB
   exact mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _)
     (mem_closedBall_zero_iff.1 hd) 2) (norm_nonneg _)
 
-/-- Second-order measures of `ν` from those of `μ` at a point where `f(x) = t`: on
-`S ∩ ker ∇f(x)` they agree, and on `S` they differ by at most `(‖∇f(x)‖ δ)²/2`. -/
+/-- Let $f$ and $c$ be $C^2$ at $x$, let $f(x) = t$, let $\delta \ge 0$, and let $S$ be a set of
+directions with $0 \in S$. Suppose that the second-order Taylor measure of $\mu(\cdot, t)$ at
+$x$ satisfies $\varphi^\delta_{\mu, 2}(S) \le B$. Then the second-order Taylor measure of $\nu$
+at $x$ satisfies
+$$\varphi^\delta_{\nu, 2}(S \cap \ker \nabla f(x)) \le B \quad\text{and}\quad
+  \varphi^\delta_{\nu, 2}(S) \le B + \tfrac12 (\|\nabla f(x)\| \delta)^2.$$
+-/
 theorem taylorMeasure_halfSqNorm_two_le_of_eq {δ B : ℝ} (hf : ContDiffAt ℝ 2 f x)
     (hc : ContDiffAt ℝ 2 c x) (ht : f x = t) (hδ : 0 ≤ δ) {S : Set E} (hS : (0 : E) ∈ S)
     (hμ : Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c t) x) 2 δ S ≤ B) :
@@ -159,9 +192,13 @@ theorem taylorMeasure_halfSqNorm_two_le_of_eq {δ B : ℝ} (hf : ContDiffAt ℝ 
       rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) (abs_fderiv_le hd.1) 2
     linarith
 
-/-- Third-order measures of `ν` from those of `μ` at a point where `f(x) = t`: on
-`S ∩ ker ∇f(x)` they agree, and on `S` they differ by at most
-`(‖∇f(x)‖ δ)²/2 + ‖∇f(x)‖ δ ‖∇²f(x)‖ δ²/2`. -/
+/-- Let $f$ and $c$ be $C^3$ at $x$, let $f(x) = t$, let $\delta \ge 0$, and let $S$ be a set of
+directions with $0 \in S$. Suppose that the third-order Taylor measure of $\mu(\cdot, t)$ at $x$
+satisfies $\varphi^\delta_{\mu, 3}(S) \le B$. Then the third-order Taylor measure of $\nu$ at
+$x$ satisfies $\varphi^\delta_{\nu, 3}(S \cap \ker \nabla f(x)) \le B$ and
+$$\varphi^\delta_{\nu, 3}(S) \le B + \tfrac12 (\|\nabla f(x)\| \delta)^2 + \tfrac12 \|\nabla
+  f(x)\| \delta \, \|\nabla^2 f(x)\| \delta^2.$$
+-/
 theorem taylorMeasure_halfSqNorm_three_le_of_eq {δ B : ℝ} (hf : ContDiffAt ℝ 3 f x)
     (hc : ContDiffAt ℝ 3 c x) (ht : f x = t) (hδ : 0 ≤ δ) {S : Set E} (hS : (0 : E) ∈ S)
     (hμ : Optimization.taylorMeasure (ftaylorSeries ℝ (targetMerit f c t) x) 3 δ S ≤ B) :

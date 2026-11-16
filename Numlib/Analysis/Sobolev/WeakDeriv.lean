@@ -18,114 +18,111 @@ import Numlib.Analysis.Calculus.IteratedFDeriv
 /-!
 # Weak derivatives on an open set
 
-A function `w : E → E [×n]→L[ℝ] F` is an *`n`-th weak derivative* of `f : E → F` on an open set
-`Ω ⊆ E` when the integration by parts formula
-
-`∫_Ω (∂^n φ x) y • f x dx = (-1)^n ∫_Ω φ x • (w x) y dx`
-
-holds for every test function `φ ∈ C_0^∞(Ω)` and every tuple `y` of `n` directions, both `f` and
-`w` being locally integrable on `Ω`. This is `HasWeakIteratedFDerivOn`, the definition of
-Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
-Definition 7.1.3, read for all multi-indices of a fixed length at once: a tuple `y : Fin n → E` of
-directions plays the role of a multi-index `α` with `|α| = n`, and quantifying over all tuples is
-quantifying over all multi-indices of that length.
+Let $\Omega$ be an open subset of a real normed space $E$, and let $f : E \to F$. A function $w$
+with values in the continuous $n$-linear maps $E^n \to F$ is an **$n$-th weak derivative** of $f$ on
+$\Omega$ if $f$ and $w$ are locally integrable on $\Omega$ and the integration by parts formula
+$$\int_\Omega D^n \varphi(x)(y) \, f(x) \, dx = (-1)^n \int_\Omega \varphi(x) \, w(x)(y) \, dx$$
+holds for every test function $\varphi \in C_0^\infty(\Omega)$ and every tuple
+$y = (y_1, \dots, y_n)$ of directions in $E$. This is Definition 7.1.3 of [han2009theoretical], read
+for all multi-indices of length $n$ at once: a tuple of $n$ directions plays the role of a
+multi-index $\alpha$ with $|\alpha| = n$. The module proves that a weak derivative is unique almost
+everywhere, that a classical derivative is a weak derivative, that weak differentiation is linear,
+and the Leibniz rule for a smooth factor.
 
 ## Main definitions
 
-* `MeasureTheory.LocallyMemLpOn f p s μ`, the space `L^p_loc(s)` of functions that are
-  `p`-integrable near every point of `s` (Atkinson–Han, Definition 7.1.1); for `p = 1` this is
-  Mathlib's `MeasureTheory.LocallyIntegrableOn`, by `MeasureTheory.locallyMemLpOn_one_iff`.
-* `HasWeakIteratedFDerivOn n f w Ω μ`, the weak derivative of order `n` (Atkinson–Han,
-  Definition 7.1.3), and `HasWeakFDerivOn f w Ω μ`, its first-order form with `w` valued in
-  `E →L[ℝ] F`.
-* `HasWeakIteratedLineDerivOn y f w Ω μ`, the same definition read for the *single* tuple `y` of
-  directions, so with `w` valued in `F`: this is Atkinson–Han, Definition 7.1.3, for one
-  multi-index `α`, where `HasWeakIteratedFDerivOn` is it for all `α` of a given length at once
-  (`HasWeakIteratedFDerivOn.lineDeriv`).
+* `MeasureTheory.LocallyMemLpOn`: the space $L^p_{\mathrm{loc}}(s)$ of functions that are
+  $p$-integrable near every point of $s$, Definition 7.1.1 of [han2009theoretical].
+* `HasWeakIteratedFDerivOn`: the weak derivative of order $n$, Definition 7.1.3 of
+  [han2009theoretical].
+* `HasWeakFDerivOn`: the first-order weak derivative, with values in $E \to_L F$.
+* `HasWeakIteratedLineDerivOn`: the weak derivative along one fixed tuple $y$ of directions, with
+  values in $F$. This is Definition 7.1.3 of [han2009theoretical] for a single multi-index.
 
-## Main statements
+## Main results
 
 * `HasWeakIteratedFDerivOn.ae_eq` and `HasWeakIteratedLineDerivOn.ae_eq`: a weak derivative is
-  unique almost everywhere on `Ω`
-  (Atkinson–Han, Lemma 7.1.4). The proof is Mathlib's generalized variational lemma
-  `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (Atkinson–Han, Lemma 7.1.2) applied to the
-  difference of two weak derivatives.
-* `ContDiffOn.hasWeakIteratedFDerivOn`: a classical derivative of a `C^N` function on `Ω` is also
-  its weak derivative, for every order `n ≤ N` (Atkinson–Han, Lemma 7.1.5); so the weak derivative
-  extends the classical one.
-* `HasWeakIteratedFDerivOn.add`, `.const_smul`, `.neg`, `.sub`, `.zero`: weak differentiation is
-  linear (Atkinson–Han, Proposition 7.1.10).
-* `HasWeakIteratedLineDerivOn.mul_contDiff`: the Leibniz rule for a *smooth* factor, at first
-  order (the smooth-factor case of Atkinson–Han, Proposition 7.1.11). Nothing is mollified: the
-  product of a test function with a smooth function is again a test function
-  (`TestFunction.mulContDiff`), so the identity is a direct integration by parts. The general
-  Leibniz rule, with both factors merely locally integrable, is not here.
-* `HasWeakIteratedFDerivOn.mono` and `HasWeakIteratedLineDerivOn.mono`: a weak derivative on `Ω`
-  is a weak derivative on every smaller open set.
-* `HasWeakIteratedLineDerivOn.comp_continuousLinearMap`: a continuous linear map passes through
-  the weak derivative, and `HasWeakIteratedLineDerivOn.ofReal_iff`, its consequence that a real
-  function has a real weak derivative exactly when its complexification has the complexified one.
-* `MeasureTheory.LocallyMemLpOn.memLp_restrict_of_isCompact`: a function locally in `L^p` on `s`
-  is in `L^p` of every compact subset of `s`, for `p < ∞`; the `L^p` analogue of Mathlib's
-  `MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`.
+  unique almost everywhere on $\Omega$, Lemma 7.1.4 of [han2009theoretical].
+* `ContDiffOn.hasWeakIteratedFDerivOn`: the classical derivative of order $n$ of a $C^N$ function on
+  $\Omega$ is its weak derivative for every $n \le N$, Lemma 7.1.5 of [han2009theoretical].
+* `HasWeakIteratedFDerivOn.add`, `HasWeakIteratedFDerivOn.const_smul`,
+  `HasWeakIteratedFDerivOn.neg`, `HasWeakIteratedFDerivOn.sub`, `HasWeakIteratedFDerivOn.zero`: weak
+  differentiation is linear, Proposition 7.1.10 of [han2009theoretical].
+* `HasWeakIteratedLineDerivOn.mul_contDiff`: the Leibniz rule at first order when one factor is
+  smooth, a special case of Proposition 7.1.11 of [han2009theoretical].
+* `HasWeakIteratedLineDerivOn.cons` and `HasWeakIteratedLineDerivOn.of_cons`: a weak derivative
+  along $(z, y_1, \dots, y_n)$ is the weak derivative in the direction $z$ of the weak derivative
+  along $(y_1, \dots, y_n)$.
+* `HasWeakIteratedFDerivOn.mono` and `HasWeakIteratedLineDerivOn.mono`: a weak derivative on
+  $\Omega$ is a weak derivative on every smaller open set.
+* `HasWeakIteratedLineDerivOn.comp_continuousLinearMap`: a continuous linear map passes through the
+  weak derivative.
+* `HasWeakIteratedLineDerivOn.ofReal_iff`: a real function has a real weak derivative if and only if
+  its complexification has the complexified weak derivative.
+* `MeasureTheory.LocallyMemLpOn.memLp_restrict_of_compact_subset`: for $p < \infty$, a function in
+  $L^p_{\mathrm{loc}}(s)$ is in $L^p$ of every compact subset of $s$.
+
+## Proof outline
+
+Uniqueness applies the generalized variational lemma
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` of Mathlib, which is Lemma 7.1.2 of
+[han2009theoretical], to the difference of two weak derivatives. The Leibniz rule for a smooth
+factor needs no mollification: the product of a test function with a smooth function is again a test
+function (`TestFunction.mulContDiff`), so the identity is a direct integration by parts.
 
 ## Implementation notes
 
-Mathlib's `Mathlib/Analysis/Distribution/Sobolev.lean` is about the Bessel potential spaces
-`H^{s,p}` of tempered distributions on the *whole* space, which is a different subject: nothing
-there concerns a domain, and in particular there is no weak derivative on an open set.
-
-This file is a stand-in for work that is on its way into Mathlib: Mathlib PR 32305 and its
-continuation `grunweg/SobolevSlobodeckij` (Michael Rothgang, Filippo Nuccio and Floris van Doorn)
-develop weak derivatives, `W^{k,p}(Ω)` and the Sobolev–Slobodeckij spaces in far greater depth.
-That development pins an older Lean toolchain and cannot be imported here, so the names and the
-argument order below follow it where possible — `Ω : TopologicalSpace.Opens E` and a trailing
-measure argument, `MemSobolev f k p Ω μ` in the companion file — in order that a later migration
-be a rename rather than a rewrite. Two deliberate differences:
-
-* there the weak derivative is a *distribution*, an element of `𝓓'(Ω, E →L[ℝ] F)`, obtained from a
-  weak Taylor series through `FormalMultilinearSeries`; here it is a predicate relating two
-  functions, which is lighter and is all that the integration by parts formula needs;
-* the order is carried by an explicit `n` and the derivative is `ContinuousMultilinearMap`-valued,
-  so that all derivatives of order `n` are described by a single object without iterating the
-  construction.
-
-`HasWeakIteratedLineDerivOn` moves back the other way, towards the classical indexing by
-multi-indices: it fixes the tuple of directions and so is `F`-valued. It is what
-`Numlib/Analysis/Sobolev/MultiIndex.lean` needs, because the norm of Atkinson–Han's
-Definition 7.2.2 sums over the multi-indices `α` separately and not over the orders `|α|`, and
-that norm is the one an inner product induces when `p = 2`. Nothing is lost by keeping both: the
-tuple-by-tuple form is one field of the tensor form, `HasWeakIteratedFDerivOn.lineDeriv`.
-
-The `n`-th derivative of the *test* function is what is differentiated in the definition, and
-`ContDiff.fderiv_iteratedFDeriv_apply` of `Numlib/Analysis/Calculus/IteratedFDeriv.lean` — the
-statement that for a smooth function an extra directional derivative may be taken either inside or
-outside the `n` iterated ones — is what makes the two sides of the integration by parts formula
-carry the *same* tuple `y`. Without it the formula would relate `∂^n φ (y)` to
-`∂^n f (y ∘ Fin.rev)`, since integrating by parts `n` times moves the derivatives onto `f` in the
-opposite order. That file also holds the symmetry of the iterated derivative of a `C^∞` function,
-`ContDiff.iteratedFDeriv_congr_perm`, which the multi-index reading of
-`Numlib/Analysis/Sobolev/MultiIndex.lean` rests on.
+* The Mathlib module `Mathlib.Analysis.Distribution.Sobolev` is about the Bessel potential spaces
+  $H^{s,p}$ of tempered distributions on the whole space. It has no weak derivative on an open set.
+* Mathlib PR 32305 and its continuation `grunweg/SobolevSlobodeckij` (Michael Rothgang, Filippo
+  Nuccio and Floris van Doorn) develop weak derivatives, $W^{k,p}(\Omega)$ and the
+  Sobolev–Slobodeckij spaces in far greater depth. That development uses an older Lean toolchain and
+  cannot be imported here. The names and the argument order of this module follow it where possible,
+  with `Ω : TopologicalSpace.Opens E` and a trailing measure argument, and `MemSobolev f k p Ω μ` in
+  `Numlib.Analysis.Sobolev.Domain`, so that a later migration to it is a renaming and not a rewrite.
+* There are two differences from that development. There the weak derivative is a distribution, an
+  element of $\mathcal{D}'(\Omega, E \to_L F)$, obtained from a weak Taylor series through
+  `FormalMultilinearSeries`. Here it is a predicate that relates two functions, which is lighter and
+  is all that the integration by parts formula needs. Also, the order here is an explicit $n$ and
+  the derivative has values in `ContinuousMultilinearMap`, so that one object describes all
+  derivatives of order $n$ without an iteration of the construction.
+* `HasWeakIteratedLineDerivOn` returns to the classical indexing by multi-indices: it fixes the
+  tuple of directions and so has values in $F$. `Numlib.Analysis.Sobolev.MultiIndex` needs it,
+  because the norm of Definition 7.2.2 of [han2009theoretical] sums over the multi-indices $\alpha$
+  separately and not over the orders $|\alpha|$, and that norm is the one that an inner product
+  induces when $p = 2$. The tuple-by-tuple form is one component of the tensor form, by
+  `HasWeakIteratedFDerivOn.lineDeriv`.
+* The definition differentiates the test function $n$ times. The lemma
+  `ContDiff.fderiv_iteratedFDeriv_apply` of `Numlib.Analysis.Calculus.IteratedFDeriv` states that,
+  for a smooth function, an extra directional derivative can be taken either inside or outside the
+  $n$ iterated ones. This lemma makes the two sides of the integration by parts formula carry the
+  same tuple $y$. Without it the formula would relate $D^n \varphi(y)$ to
+  $D^n f(y \circ \mathrm{rev})$, because $n$ integrations by parts move the derivatives onto $f$ in
+  the opposite order. The same module proves the symmetry `ContDiff.iteratedFDeriv_congr_perm` of
+  the iterated derivative of a $C^\infty$ function, on which the multi-index reading of
+  `Numlib.Analysis.Sobolev.MultiIndex` rests.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
 
 open scoped ContDiff Distributions ENNReal Topology
 
-/-! ### Locally `p`-integrable functions -/
+/-! ### Locally $p$-integrable functions -/
 
 namespace MeasureTheory
 
 variable {X G : Type*} [TopologicalSpace X] [MeasurableSpace X] [NormedAddCommGroup G]
   {f : X → G} {s t : Set X} {μ : Measure X} {p : ℝ≥0∞}
 
-/-- A function is *locally `p`-integrable on `s`*, written `f ∈ L^p_loc(s)`, when every point of
-`s` has a neighbourhood within `s` on which `f` is `p`-integrable. For `p = 1` this is
+/-- A function $f$ is **locally $p$-integrable on $s$**, written $f \in L^p_{\mathrm{loc}}(s)$, if
+every point $x \in s$ has a neighbourhood $u$ relative to $s$ such that $f \in L^p(u)$.
+
+This is Definition 7.1.1 of [han2009theoretical]. For $p = 1$ it is
 `MeasureTheory.LocallyIntegrableOn`, by `MeasureTheory.locallyMemLpOn_one_iff`. -/
 def LocallyMemLpOn (f : X → G) (p : ℝ≥0∞) (s : Set X) (μ : Measure X := by volume_tac) : Prop :=
   ∀ x ∈ s, ∃ u ∈ 𝓝[s] x, MemLp f p (μ.restrict u)
 
-/-- Local `1`-integrability is local integrability. -/
+/-- A function is locally $1$-integrable on $s$ if and only if it is locally integrable on $s$. -/
 theorem locallyMemLpOn_one_iff : LocallyMemLpOn f 1 s μ ↔ LocallyIntegrableOn f s μ := by
   simp only [LocallyMemLpOn, LocallyIntegrableOn, IntegrableAtFilter, IntegrableOn,
     memLp_one_iff_integrable]
@@ -136,7 +133,8 @@ alias ⟨LocallyMemLpOn.locallyIntegrableOn, LocallyIntegrableOn.locallyMemLpOn�
 section LocalLp
 
 omit [TopologicalSpace X] in
-/-- A bound `|f x| ≤ c |g x|` almost everywhere, with `g ∈ L^p`, puts `f` in `L^p`. -/
+/-- Let $f, g$ be real functions, with $g \in L^q(\nu)$ and $f$ almost everywhere strongly
+measurable. If $|f(x)| \le c |g(x)|$ for almost every $x$, then $f \in L^q(\nu)$. -/
 theorem MemLp.of_ae_norm_le_mul {ν : Measure X} {f g : X → ℝ} {q : ℝ≥0∞} (hg : MemLp g q ν)
     (hf : AEStronglyMeasurable f ν) {c : ℝ}
     (h : ∀ᵐ x ∂ν, |f x| ≤ c * |g x|) : MemLp f q ν :=
@@ -148,13 +146,15 @@ variable {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E] [
   {μ : Measure E} [IsLocallyFiniteMeasure μ] {Ω : Opens E} {p : ℝ≥0∞}
 
 omit [BorelSpace E] [ProperSpace E] [IsLocallyFiniteMeasure μ] in
-/-- A function in `L^p(Ω)` is locally in `L^p` on `Ω`. -/
+/-- A real function in $L^p(\Omega)$ is locally $p$-integrable on $\Omega$. -/
 theorem MemLp.locallyMemLpOn {f : E → ℝ}
     (hf : MemLp f p (μ.restrict (Ω : Set E))) : LocallyMemLpOn f p Ω μ :=
   fun _ _ ↦ ⟨Ω, self_mem_nhdsWithin, hf⟩
 
 open Metric in
-/-- A function continuous on an open set is locally in every `L^p` there. -/
+/-- Let $E$ be a proper space with a Borel measure $\mu$ that is locally finite, and let
+$\Omega \subseteq E$ be open. A real function that is continuous on $\Omega$ is locally
+$p$-integrable on $\Omega$ for every exponent $p$. -/
 theorem _root_.ContinuousOn.locallyMemLpOn {f : E → ℝ} (hf : ContinuousOn f Ω) (p : ℝ≥0∞) :
     LocallyMemLpOn f p Ω μ := by
   intro x hx
@@ -172,9 +172,10 @@ theorem _root_.ContinuousOn.locallyMemLpOn {f : E → ℝ} (hf : ContinuousOn f 
 end LocalLp
 
 omit [TopologicalSpace X] in
-/-- `L^p` membership is stable under a union of two sets, for `p < ∞`. The exponent `p = ∞` is
-excluded only because the proof compares `p`-th powers of the `L^p` norms; the statement is true
-there too. -/
+/-- Let $p < \infty$. If $f \in L^p(s)$ and $f \in L^p(t)$, then $f \in L^p(s \cup t)$.
+
+The statement is also true for $p = \infty$. The proof excludes $p = \infty$ only because it
+compares the $p$-th powers of the $L^p$ norms. -/
 theorem MemLp.union_of_ne_top (hp : p ≠ ⊤) (hs : MemLp f p (μ.restrict s))
     (ht : MemLp f p (μ.restrict t)) : MemLp f p (μ.restrict (s ∪ t)) := by
   have hmeas : AEStronglyMeasurable f (μ.restrict (s ∪ t)) :=
@@ -198,31 +199,37 @@ theorem MemLp.union_of_ne_top (hp : p ≠ ⊤) (hs : MemLp f p (μ.restrict s))
   rw [hcon, ENNReal.top_rpow_of_pos hr] at hfin
   exact hfin rfl
 
-/-- Local `L^p` membership passes to subsets. -/
+/-- If $f$ is locally $p$-integrable on $s$ and $t \subseteq s$, then $f$ is locally $p$-integrable
+on $t$. -/
 theorem LocallyMemLpOn.mono_set (hf : LocallyMemLpOn f p s μ) (hts : t ⊆ s) :
     LocallyMemLpOn f p t μ := fun x hx ↦
   let ⟨u, hu, h⟩ := hf x (hts hx); ⟨u, nhdsWithin_mono x hts hu, h⟩
 
-/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
-`p < ∞`. This is the `L^p` analogue of
-`MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`, and is proved the same way, by
-`IsCompact.induction_on`. -/
+/-- Let $p < \infty$ and let $s$ be compact. If $f$ is locally $p$-integrable on $s$, then
+$f \in L^p(s)$.
+
+This is the $L^p$ analogue of `MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`,
+and the proof is the same, by `IsCompact.induction_on`. -/
 theorem LocallyMemLpOn.memLp_restrict_of_isCompact (hf : LocallyMemLpOn f p s μ) (hp : p ≠ ⊤)
     (hs : IsCompact s) : MemLp f p (μ.restrict s) :=
   IsCompact.induction_on hs (by simp)
     (fun _ _ hst ht ↦ ht.mono_measure (Measure.restrict_mono hst le_rfl))
     (fun _ _ h₁ h₂ ↦ MemLp.union_of_ne_top hp h₁ h₂) hf
 
-/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
-`p < ∞`. -/
+/-- **A function in $L^p_{\mathrm{loc}}(s)$ is in $L^p$ of every compact subset of $s$.** Let
+$p < \infty$, let $f$ be locally $p$-integrable on $s$, and let $t \subseteq s$ be compact. Then
+$f \in L^p(t)$. -/
 theorem LocallyMemLpOn.memLp_restrict_of_compact_subset (hf : LocallyMemLpOn f p s μ)
     (hp : p ≠ ⊤)
     (hts : t ⊆ s) (ht : IsCompact t) : MemLp f p (μ.restrict t) :=
   (hf.mono_set hts).memLp_restrict_of_isCompact hp ht
 
-/-- If `f` is locally integrable on `s` and `g` is continuous with compact support inside `s`,
-then `g • f` is integrable on the whole space. This is the version on a set of Mathlib's
-`MeasureTheory.LocallyIntegrable.integrable_smul_left_of_hasCompactSupport`. -/
+/-- Let $X$ be a Hausdorff space in which open sets are measurable. If $f$ is locally integrable on
+$s$ and $g$ is a continuous real function with compact support and
+$\operatorname{tsupport} g \subseteq s$, then $g f$ is integrable on $X$.
+
+This is the version on a set of
+`MeasureTheory.LocallyIntegrable.integrable_smul_left_of_hasCompactSupport` of Mathlib. -/
 theorem LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset [OpensMeasurableSpace X]
     [T2Space X] [NormedSpace ℝ G] (hf : LocallyIntegrableOn f s μ) {g : X → ℝ}
     (hg : Continuous g) (h'g : HasCompactSupport g) (hgs : tsupport g ⊆ s) :
@@ -236,8 +243,8 @@ theorem LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset [OpensMeasur
     ((integrable_indicator_iff hK.measurableSet).2 (hf.integrableOn_compact_subset hgs hK))
     (hg.memLp_top_of_hasCompactSupport h'g μ)
 
-/-- The product of a locally integrable real function with a continuous one is locally
-integrable: near each point the continuous factor is bounded. -/
+/-- If a real function $f$ is locally integrable on $s$ and $g$ is continuous, then $f g$ is locally
+integrable on $s$. Near each point, the continuous factor is bounded. -/
 theorem LocallyIntegrableOn.mul_continuous [OpensMeasurableSpace X] {f g : X → ℝ}
     (hf : LocallyIntegrableOn f s μ)
     (hg : Continuous g) : LocallyIntegrableOn (fun x ↦ f x * g x) s μ := by
@@ -252,8 +259,8 @@ theorem LocallyIntegrableOn.mul_continuous [OpensMeasurableSpace X] {f g : X →
   exact ((ae_restrict_mem hSopen.measurableSet).mono fun y hy ↦ hy.le).filter_mono
     (ae_mono (Measure.restrict_mono inter_subset_right le_rfl))
 
-/-- Composing a locally integrable function with a continuous linear map keeps it locally
-integrable. -/
+/-- If $f$ is locally integrable on $s$ and $L$ is a continuous linear map, then $x \mapsto L(f(x))$
+is locally integrable on $s$. -/
 theorem LocallyIntegrableOn.comp_continuousLinearMap {G' : Type*} [NormedAddCommGroup G']
     [NormedSpace ℝ G] [NormedSpace ℝ G'] (hf : LocallyIntegrableOn f s μ) (L : G →L[ℝ] G') :
     LocallyIntegrableOn (fun x ↦ L (f x)) s μ := fun x hx ↦
@@ -269,12 +276,13 @@ namespace TestFunction
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E}
 
-/-- A test function on `Ω` vanishes outside `Ω`. -/
+/-- A test function on $\Omega$ vanishes at every point outside $\Omega$. -/
 theorem eq_zero_of_notMem (φ : 𝓓(Ω, F)) {x : E} (hx : x ∉ (Ω : Set E)) : φ x = 0 :=
   image_eq_zero_of_notMem_tsupport fun h ↦ hx (φ.tsupport_subset h)
 
-/-- The `n`-th derivative of a test function, evaluated at a fixed tuple of directions, is again
-a test function. -/
+/-- For a test function $\varphi$ on $\Omega$ and a tuple $y \in E^n$, the function
+$x \mapsto D^n \varphi(x)(y)$, the $n$-th derivative of $\varphi$ evaluated at $y$, is a test
+function on $\Omega$. -/
 noncomputable def iteratedFDerivApply (φ : 𝓓(Ω, F)) (n : ℕ) (y : Fin n → E) : 𝓓(Ω, F) where
   toFun x := iteratedFDeriv ℝ n φ x y
   contDiff' := (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ E) F y).contDiff.comp
@@ -284,58 +292,64 @@ noncomputable def iteratedFDerivApply (φ : 𝓓(Ω, F)) (n : ℕ) (y : Fin n �
   tsupport_subset' := (tsupport_comp_subset (g := fun L : E [×n]→L[ℝ] F ↦ L y) rfl _).trans
     ((tsupport_iteratedFDeriv_subset n).trans φ.tsupport_subset)
 
-/-- `TestFunction.iteratedFDerivApply` as a function. -/
+/-- The function of `TestFunction.iteratedFDerivApply φ n y` is $x \mapsto D^n \varphi(x)(y)$. -/
 @[simp]
 theorem iteratedFDerivApply_coe (φ : 𝓓(Ω, F)) (n : ℕ) (y : Fin n → E) :
     (φ.iteratedFDerivApply n y : E → F) = fun x ↦ iteratedFDeriv ℝ n φ x y :=
   rfl
 
-/-- The value of `TestFunction.iteratedFDerivApply` at a point. -/
+/-- The value of `TestFunction.iteratedFDerivApply φ n y` at $x$ is $D^n \varphi(x)(y)$. -/
 theorem iteratedFDerivApply_apply (φ : 𝓓(Ω, F)) (n : ℕ) (y : Fin n → E) (x : E) :
     φ.iteratedFDerivApply n y x = iteratedFDeriv ℝ n φ x y :=
   rfl
 
-/-- A directional derivative of a test function is again a test function. -/
+/-- For a test function $\varphi$ on $\Omega$ and a direction $v$, the directional derivative
+$x \mapsto D\varphi(x) v$ is a test function on $\Omega$. -/
 noncomputable def fderivApply (φ : 𝓓(Ω, F)) (v : E) : 𝓓(Ω, F) where
   toFun x := fderiv ℝ φ x v
   contDiff' := (φ.contDiff.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
   hasCompactSupport' := φ.hasCompactSupport.fderiv_apply ℝ v
   tsupport_subset' := (tsupport_fderiv_apply_subset ℝ v).trans φ.tsupport_subset
 
-/-- `TestFunction.fderivApply` as a function. -/
+/-- The function of `TestFunction.fderivApply φ v` is $x \mapsto D\varphi(x) v$. -/
 @[simp]
 theorem fderivApply_coe (φ : 𝓓(Ω, F)) (v : E) :
     (φ.fderivApply v : E → F) = fun x ↦ fderiv ℝ φ x v :=
   rfl
 
-/-- The value of `TestFunction.fderivApply` at a point. -/
+/-- The value of `TestFunction.fderivApply φ v` at $x$ is $D\varphi(x) v$. -/
 theorem fderivApply_apply (φ : 𝓓(Ω, F)) (v x : E) : φ.fderivApply v x = fderiv ℝ φ x v :=
   rfl
 
-/-- The product of a test function with a smooth function is again a test function: it is smooth,
-and its support is contained in that of the test function. -/
+/-- The product $\varphi g$ of a real test function $\varphi$ on $\Omega$ with a smooth real
+function $g$ is a test function on $\Omega$. It is smooth, and its support lies in the support
+of $\varphi$. -/
 noncomputable def mulContDiff (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) : 𝓓(Ω, ℝ) where
   toFun x := φ x * g x
   contDiff' := φ.contDiff.mul hg
   hasCompactSupport' := φ.hasCompactSupport.mul_right
   tsupport_subset' := tsupport_mul_subset_left.trans φ.tsupport_subset
 
-/-- `TestFunction.mulContDiff` as a function. -/
+/-- The function of `TestFunction.mulContDiff φ hg` is $x \mapsto \varphi(x) g(x)$. -/
 @[simp]
 theorem mulContDiff_coe (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) :
     (φ.mulContDiff hg : E → ℝ) = fun x ↦ φ x * g x :=
   rfl
 
-/-- `φ c` is `C^1` on the whole space for a test function `φ` on `Ω` and a `c` of class `C^1`
-on `Ω`: it is `C^1` on `Ω` and vanishes on the open complement of the support of `φ`. -/
+/-- Let $\varphi$ be a real test function on $\Omega$, and let $c$ be a real function of class $C^1$
+on $\Omega$. Then $x \mapsto \varphi(x) c(x)$ is of class $C^1$ on all of $E$.
+
+The product is $C^1$ on $\Omega$, and it vanishes on the open complement of the support of
+$\varphi$. -/
 theorem contDiff_mul_of_contDiffOn (φ : 𝓓(Ω, ℝ)) {c : E → ℝ}
     (hc : ContDiffOn ℝ 1 c Ω) : ContDiff ℝ 1 fun x ↦ φ x * c x :=
   (φ.contDiff.of_le (by simp)).mul_contDiffOn_of_tsupport_subset Ω.isOpen hc φ.tsupport_subset
 
 end TestFunction
 
-/-- A function continuous on `Ω` times a test function is integrable on `Ω`, for a locally
-finite measure. -/
+/-- Let $\mu$ be a locally finite Borel measure, let $g$ be a real function continuous on $\Omega$,
+and let $\varphi$ be a real test function on $\Omega$. Then $g \varphi$ is integrable on
+$\Omega$. -/
 theorem integrable_mul_testFunction {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [MeasurableSpace E] [OpensMeasurableSpace E] {Ω : Opens E} {μ : Measure E}
     [IsLocallyFiniteMeasure μ] {g : E → ℝ} (hg : ContinuousOn g Ω) (φ : 𝓓(Ω, ℝ)) :
@@ -352,28 +366,31 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [NormedAddCommGroup F] [NormedSpace ℝ F]
   {Ω : Opens E} {μ : Measure E} {n : ℕ} {f : E → F} {w : E → E [×n]→L[ℝ] F}
 
-/-- `HasWeakIteratedFDerivOn n f w Ω μ` says that `w` is an `n`-th *weak derivative* of `f` on the
-open set `Ω`: both are locally integrable there, and the classical integration by parts formula
+/-- **The weak derivative of order $n$.** A function $w$ with values in the continuous $n$-linear
+maps $E^n \to F$ is an $n$-th **weak derivative** of $f : E \to F$ on the open set $\Omega$ if
+$f$ and $w$ are locally integrable on $\Omega$ and
+$$\int_\Omega D^n \varphi(x)(y) \, f(x) \, d\mu(x) = (-1)^n \int_\Omega \varphi(x) \, w(x)(y) \,
+  d\mu(x)$$
+for every real test function $\varphi$ on $\Omega$ and every tuple $y \in E^n$.
 
-`∫_Ω (∂^n φ x) y • f x dx = (-1)^n ∫_Ω φ x • (w x) y dx`
-
-holds for every test function `φ ∈ C_0^∞(Ω)` and every tuple `y` of `n` directions. A tuple of
-directions plays the role of a multi-index of length `n`, so this is the definition of Atkinson and
-Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
-Definition 7.1.3, taken for all multi-indices of length `n` at once. -/
+A tuple of directions plays the role of a multi-index of length $n$, so this is Definition 7.1.3
+of [han2009theoretical] for all multi-indices of length $n$ at once. -/
 structure HasWeakIteratedFDerivOn (n : ℕ) (f : E → F) (w : E → E [×n]→L[ℝ] F) (Ω : Opens E)
     (μ : Measure E) : Prop where
-  /-- A function with a weak derivative is locally integrable. -/
+  /-- The function $f$ is locally integrable on $\Omega$. -/
   locallyIntegrableOn : LocallyIntegrableOn f Ω μ
-  /-- A weak derivative is locally integrable. -/
+  /-- The weak derivative $w$ is locally integrable on $\Omega$. -/
   locallyIntegrableOn_weakDeriv : LocallyIntegrableOn w Ω μ
-  /-- The integration by parts formula defining the weak derivative. -/
+  /-- The integration by parts formula: for every test function $\varphi$ and every tuple
+  $y \in E^n$, $\int_\Omega D^n \varphi(x)(y) f(x) \, d\mu = (-1)^n \int_\Omega \varphi(x)
+  w(x)(y) \, d\mu$. -/
   integral_smul_eq (φ : 𝓓(Ω, ℝ)) (y : Fin n → E) :
     ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
       = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • w x y ∂μ
 
-/-- `HasWeakFDerivOn f w Ω μ` says that `w : E → E →L[ℝ] F` is a first-order weak derivative of
-`f` on the open set `Ω`. -/
+/-- **The first-order weak derivative.** A function $w : E \to (E \to_L F)$ is a first-order weak
+derivative of $f$ on the open set $\Omega$ if it is a weak derivative of order $1$, with $w(x)$
+read as a $1$-linear map. -/
 def HasWeakFDerivOn (f : E → F) (w : E → E →L[ℝ] F) (Ω : Opens E) (μ : Measure E) : Prop :=
   HasWeakIteratedFDerivOn 1 f (fun x ↦ (continuousMultilinearCurryFin1 ℝ E F).symm (w x)) Ω μ
 
@@ -383,21 +400,23 @@ section Integrals
 
 variable [OpensMeasurableSpace E]
 
-/-- The product of a test function on `Ω` with a function having a weak derivative there is
-integrable. -/
+/-- Let $w$ be an $n$-th weak derivative of $f$ on $\Omega$. For every test function $\varphi$ on
+$\Omega$, the product $\varphi f$ is integrable on $E$. -/
 theorem integrable_smul (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
     Integrable (fun x ↦ φ x • f x) μ :=
   LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn
     φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
 
-/-- The product of a test function on `Ω` with a weak derivative is integrable. -/
+/-- Let $w$ be an $n$-th weak derivative of $f$ on $\Omega$. For every test function $\varphi$ on
+$\Omega$, the product $\varphi w$ is integrable on $E$. -/
 theorem integrable_smul_weakDeriv (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
     Integrable (fun x ↦ φ x • w x) μ :=
   LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn_weakDeriv
     φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
 
-/-- The product of a test function on `Ω` with a weak derivative evaluated at a fixed tuple of
-directions is integrable. -/
+/-- Let $w$ be an $n$-th weak derivative of $f$ on $\Omega$. For every test function $\varphi$ on
+$\Omega$ and every tuple $y \in E^n$, the function $x \mapsto \varphi(x) w(x)(y)$ is integrable
+on $E$. -/
 theorem integrable_smul_weakDeriv_apply (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(Ω, ℝ))
     (y : Fin n → E) : Integrable (fun x ↦ φ x • w x y) μ :=
   (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ E) F y).integrable_comp
@@ -405,8 +424,9 @@ theorem integrable_smul_weakDeriv_apply (h : HasWeakIteratedFDerivOn n f w Ω μ
 
 omit [OpensMeasurableSpace E] in
 omit [OpensMeasurableSpace E] in
-/-- The integration by parts formula defining the weak derivative, with the integrals taken over
-the whole space: the test function vanishes outside `Ω`, so nothing changes. -/
+/-- The integration by parts formula of an $n$-th weak derivative, with the integrals over all of
+$E$: $\int_E D^n \varphi(x)(y) f(x) \, d\mu = (-1)^n \int_E \varphi(x) w(x)(y) \, d\mu$. This
+holds because the test function vanishes outside $\Omega$. -/
 theorem integral_smul_eq' (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(Ω, ℝ))
     (y : Fin n → E) :
     ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ = (-1 : ℝ) ^ n • ∫ x, φ x • w x y ∂μ := by
@@ -422,8 +442,8 @@ theorem integral_smul_eq' (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(�
   exact h.integral_smul_eq φ y
 
 omit [OpensMeasurableSpace E] in
-/-- The weak derivative relation only sees the functions up to a null set of `Ω`: changing either
-`f` or `w` on a `μ.restrict Ω`-null set preserves it. -/
+/-- If $w$ is an $n$-th weak derivative of $f$ on $\Omega$, and $f'$ and $w'$ agree with $f$ and $w$
+almost everywhere on $\Omega$, then $w'$ is an $n$-th weak derivative of $f'$ on $\Omega$. -/
 theorem congr_ae {f' : E → F} {w' : E → E [×n]→L[ℝ] F} (h : HasWeakIteratedFDerivOn n f w Ω μ)
     (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') (hw : w =ᵐ[μ.restrict (Ω : Set E)] w') :
     HasWeakIteratedFDerivOn n f' w' Ω μ where
@@ -439,7 +459,8 @@ theorem congr_ae {f' : E → F} {w' : E → E [×n]→L[ℝ] F} (h : HasWeakIter
     exact h.integral_smul_eq φ y
 
 omit [OpensMeasurableSpace E] in
-/-- A weak derivative on `Ω` is a weak derivative on every smaller open set. -/
+/-- If $w$ is an $n$-th weak derivative of $f$ on $\Omega$ and $\Omega' \subseteq \Omega$ is open,
+then $w$ is an $n$-th weak derivative of $f$ on $\Omega'$. -/
 theorem mono {Ω' : Opens E} (h : HasWeakIteratedFDerivOn n f w Ω μ) (hΩ : Ω' ≤ Ω) :
     HasWeakIteratedFDerivOn n f w Ω' μ where
   locallyIntegrableOn := h.locallyIntegrableOn.mono_set hΩ
@@ -461,10 +482,14 @@ end Integrals
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
-/-- **A weak derivative is unique up to a null set**: Atkinson and Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Lemma 7.1.4. This is Mathlib's
-generalized variational lemma `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (Atkinson–Han,
-Lemma 7.1.2) applied to the difference of the two weak derivatives. -/
+/-- **Uniqueness of the weak derivative**, Lemma 7.1.4 of [han2009theoretical]. Let $E$ be
+finite-dimensional with its Borel $\sigma$-algebra and let $F$ be complete. If $w_1$ and $w_2$
+are $n$-th weak derivatives of $f$ on $\Omega$, then $w_1(x) = w_2(x)$ for almost every
+$x \in \Omega$.
+
+The proof applies the generalized variational lemma
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` of Mathlib, which is Lemma 7.1.2 of
+[han2009theoretical], to $w_1 - w_2$. -/
 theorem ae_eq {w₁ w₂ : E → E [×n]→L[ℝ] F} (h₁ : HasWeakIteratedFDerivOn n f w₁ Ω μ)
     (h₂ : HasWeakIteratedFDerivOn n f w₂ Ω μ) : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x = w₂ x := by
   have key : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x - w₂ x = 0 := by
@@ -493,14 +518,15 @@ namespace HasWeakIteratedFDerivOn
 variable [OpensMeasurableSpace E]
 
 omit [OpensMeasurableSpace E] in
-/-- The zero function has zero weak derivative of every order. -/
+/-- The zero function has the weak derivative $0$ of every order. -/
 protected theorem zero : HasWeakIteratedFDerivOn n (0 : E → F) 0 Ω μ where
   locallyIntegrableOn := locallyIntegrable_zero.locallyIntegrableOn _
   locallyIntegrableOn_weakDeriv := locallyIntegrable_zero.locallyIntegrableOn _
   integral_smul_eq φ y := by simp
 
-/-- Weak differentiation is additive; half of Atkinson and Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Proposition 7.1.10. -/
+/-- **Additivity of weak differentiation**, half of Proposition 7.1.10 of [han2009theoretical]. If
+$w_1$ and $w_2$ are $n$-th weak derivatives of $f_1$ and $f_2$ on $\Omega$, then $w_1 + w_2$ is
+an $n$-th weak derivative of $f_1 + f_2$. -/
 protected theorem add {f₁ f₂ : E → F} {w₁ w₂ : E → E [×n]→L[ℝ] F}
     (h₁ : HasWeakIteratedFDerivOn n f₁ w₁ Ω μ) (h₂ : HasWeakIteratedFDerivOn n f₂ w₂ Ω μ) :
     HasWeakIteratedFDerivOn n (f₁ + f₂) (w₁ + w₂) Ω μ where
@@ -517,9 +543,9 @@ protected theorem add {f₁ f₂ : E → F} {w₁ w₂ : E → E [×n]→L[ℝ] 
     rw [integral_add i₁ i₂, integral_add j₁ j₂, h₁.integral_smul_eq, h₂.integral_smul_eq, smul_add]
 
 omit [OpensMeasurableSpace E] in
-/-- Weak differentiation commutes with scalar multiplication; half of Atkinson and Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
-Proposition 7.1.10. -/
+/-- **Homogeneity of weak differentiation**, half of Proposition 7.1.10 of [han2009theoretical]. If
+$w$ is an $n$-th weak derivative of $f$ on $\Omega$ and $c \in \mathbb{R}$, then $c w$ is an
+$n$-th weak derivative of $c f$. -/
 protected theorem const_smul (h : HasWeakIteratedFDerivOn n f w Ω μ) (c : ℝ) :
     HasWeakIteratedFDerivOn n (c • f) (c • w) Ω μ where
   locallyIntegrableOn := h.locallyIntegrableOn.smul c
@@ -528,7 +554,8 @@ protected theorem const_smul (h : HasWeakIteratedFDerivOn n f w Ω μ) (c : ℝ)
     simp only [Pi.smul_apply, smul_apply, smul_comm _ c, integral_smul, h.integral_smul_eq]
 
 omit [OpensMeasurableSpace E] in
-/-- Weak differentiation commutes with negation. -/
+/-- If $w$ is an $n$-th weak derivative of $f$ on $\Omega$, then $-w$ is an $n$-th weak derivative
+of $-f$. -/
 protected theorem neg (h : HasWeakIteratedFDerivOn n f w Ω μ) :
     HasWeakIteratedFDerivOn n (-f) (-w) Ω μ where
   locallyIntegrableOn := h.locallyIntegrableOn.neg
@@ -536,14 +563,16 @@ protected theorem neg (h : HasWeakIteratedFDerivOn n f w Ω μ) :
   integral_smul_eq φ y := by
     simp only [Pi.neg_apply, neg_apply, smul_neg, integral_neg, h.integral_smul_eq, smul_neg]
 
-/-- Weak differentiation commutes with subtraction. -/
+/-- If $w_1$ and $w_2$ are $n$-th weak derivatives of $f_1$ and $f_2$ on $\Omega$, then $w_1 - w_2$
+is an $n$-th weak derivative of $f_1 - f_2$. -/
 protected theorem sub {f₁ f₂ : E → F} {w₁ w₂ : E → E [×n]→L[ℝ] F}
     (h₁ : HasWeakIteratedFDerivOn n f₁ w₁ Ω μ) (h₂ : HasWeakIteratedFDerivOn n f₂ w₂ Ω μ) :
     HasWeakIteratedFDerivOn n (f₁ - f₂) (w₁ - w₂) Ω μ := by
   simpa only [sub_eq_add_neg] using h₁.add h₂.neg
 
-/-- **Weak differentiation is linear**: Atkinson and Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Proposition 7.1.10. -/
+/-- **Linearity of weak differentiation**, Proposition 7.1.10 of [han2009theoretical]. If $w_1$ and
+$w_2$ are $n$-th weak derivatives of $f_1$ and $f_2$ on $\Omega$, and $c_1, c_2 \in \mathbb{R}$,
+then $c_1 w_1 + c_2 w_2$ is an $n$-th weak derivative of $c_1 f_1 + c_2 f_2$. -/
 theorem const_smul_add_const_smul {f₁ f₂ : E → F} {w₁ w₂ : E → E [×n]→L[ℝ] F}
     (h₁ : HasWeakIteratedFDerivOn n f₁ w₁ Ω μ) (h₂ : HasWeakIteratedFDerivOn n f₂ w₂ Ω μ)
     (c₁ c₂ : ℝ) :
@@ -558,31 +587,30 @@ section Line
 
 variable {y : Fin n → E} {w : E → F}
 
-/-- `HasWeakIteratedLineDerivOn y f w Ω μ` says that `w : E → F` is a *weak derivative of `f` along
-the tuple `y` of directions* on the open set `Ω`: both are locally integrable there, and the
-integration by parts formula
+/-- **The weak derivative along a tuple of directions.** Let $y \in E^n$. A function $w : E \to F$
+is a **weak derivative of $f$ along $y$** on the open set $\Omega$ if $f$ and $w$ are locally
+integrable on $\Omega$ and
+$$\int_\Omega D^n \varphi(x)(y) \, f(x) \, d\mu(x) = (-1)^n \int_\Omega \varphi(x) \, w(x) \,
+  d\mu(x)$$
+for every real test function $\varphi$ on $\Omega$.
 
-`∫_Ω (∂^n φ x) y • f x dx = (-1)^n ∫_Ω φ x • w x dx`
-
-holds for every test function `φ ∈ C_0^∞(Ω)`, where `n` is the length of `y`. Where
-`HasWeakIteratedFDerivOn` takes all the tuples of a given length at once, and so is valued in the
-continuous `n`-linear maps, this takes one tuple at a time: it is the definition of Atkinson and
-Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
-Definition 7.1.3, for the single multi-index that the tuple names. -/
+`HasWeakIteratedFDerivOn` takes all tuples of length $n$ at once and has values in the
+continuous $n$-linear maps. This predicate takes one tuple and has values in $F$: it is
+Definition 7.1.3 of [han2009theoretical] for the single multi-index that the tuple names. -/
 structure HasWeakIteratedLineDerivOn {n : ℕ} (y : Fin n → E) (f : E → F) (w : E → F)
     (Ω : Opens E) (μ : Measure E) : Prop where
-  /-- A function with a weak derivative along a tuple of directions is locally integrable. -/
+  /-- The function $f$ is locally integrable on $\Omega$. -/
   locallyIntegrableOn : LocallyIntegrableOn f Ω μ
-  /-- A weak derivative along a tuple of directions is locally integrable. -/
+  /-- The weak derivative $w$ is locally integrable on $\Omega$. -/
   locallyIntegrableOn_weakDeriv : LocallyIntegrableOn w Ω μ
-  /-- The integration by parts formula defining the weak derivative along a tuple of directions. -/
+  /-- The integration by parts formula: for every test function $\varphi$, $\int_\Omega D^n
+  \varphi(x)(y) f(x) \, d\mu = (-1)^n \int_\Omega \varphi(x) w(x) \, d\mu$. -/
   integral_smul_eq (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
       = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • w x ∂μ
 
-/-- Evaluating a weak derivative of order `n` at a fixed tuple `y` of directions gives a weak
-derivative along `y`; so `HasWeakIteratedFDerivOn` asserts the tuple-by-tuple notion for every
-tuple of that length at once. -/
+/-- If $w$ is an $n$-th weak derivative of $f$ on $\Omega$ and $y \in E^n$, then $x \mapsto w(x)(y)$
+is a weak derivative of $f$ along $y$ on $\Omega$. -/
 theorem HasWeakIteratedFDerivOn.lineDeriv {w : E → E [×n]→L[ℝ] F}
     (h : HasWeakIteratedFDerivOn n f w Ω μ) (y : Fin n → E) :
     HasWeakIteratedLineDerivOn y f (fun x ↦ w x y) Ω μ where
@@ -596,18 +624,20 @@ namespace HasWeakIteratedLineDerivOn
 variable [OpensMeasurableSpace E]
 
 omit [OpensMeasurableSpace E] in
-/-- Along a tuple of length `0` the function is its own weak derivative. The hypothesis is written
-`n = 0` rather than fixing the tuple to be empty, so that it applies to a tuple whose length is
-only propositionally zero. -/
+/-- Let $y$ be a tuple of length $n = 0$. If $f$ is locally integrable on $\Omega$, then $f$ is a
+weak derivative of itself along $y$ on $\Omega$.
+
+The hypothesis is $n = 0$ and not a fixed empty tuple, so that the lemma applies to a tuple
+whose length is only propositionally zero. -/
 theorem of_length_eq_zero (hn : n = 0) (y : Fin n → E) (hf : LocallyIntegrableOn f Ω μ) :
     HasWeakIteratedLineDerivOn y f f Ω μ := by
   subst hn
   exact ⟨hf, hf, fun φ ↦ by simp⟩
 
 omit [OpensMeasurableSpace E] in
-/-- The integration by parts formula defining the weak derivative along a tuple of directions, with
-the integrals taken over the whole space: the test function vanishes outside `Ω`, so nothing
-changes. -/
+/-- The integration by parts formula of a weak derivative along $y$, with the integrals over all of
+$E$: $\int_E D^n \varphi(x)(y) f(x) \, d\mu = (-1)^n \int_E \varphi(x) w(x) \, d\mu$. This holds
+because the test function vanishes outside $\Omega$. -/
 theorem integral_smul_eq' (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
     ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ = (-1 : ℝ) ^ n • ∫ x, φ x • w x ∂μ := by
   have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
@@ -622,7 +652,8 @@ theorem integral_smul_eq' (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : �
   exact h.integral_smul_eq φ
 
 omit [OpensMeasurableSpace E] in
-/-- The weak derivative along a tuple only sees the functions up to a null set of `Ω`. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$, and $f'$ and $w'$ agree with $f$ and
+$w$ almost everywhere on $\Omega$, then $w'$ is a weak derivative of $f'$ along $y$ on $\Omega$. -/
 theorem congr_ae {f' w' : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') (hw : w =ᵐ[μ.restrict (Ω : Set E)] w') :
     HasWeakIteratedLineDerivOn y f' w' Ω μ where
@@ -638,8 +669,8 @@ theorem congr_ae {f' w' : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     exact h.integral_smul_eq φ
 
 omit [OpensMeasurableSpace E] in
-/-- A weak derivative along a tuple of directions on `Ω` is a weak derivative along the same tuple
-on every smaller open set. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$ and $\Omega' \subseteq \Omega$ is open,
+then $w$ is a weak derivative of $f$ along $y$ on $\Omega'$. -/
 theorem mono {Ω' : Opens E} (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hΩ : Ω' ≤ Ω) :
     HasWeakIteratedLineDerivOn y f w Ω' μ where
   locallyIntegrableOn := h.locallyIntegrableOn.mono_set hΩ
@@ -658,26 +689,28 @@ theorem mono {Ω' : Opens E} (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hΩ :
       φ.tsupport_subset.trans hΩ⟩
 
 omit [OpensMeasurableSpace E] in
-/-- The zero function has zero weak derivative along every tuple of directions. -/
+/-- The zero function has the weak derivative $0$ along every tuple of directions. -/
 protected theorem zero : HasWeakIteratedLineDerivOn y (0 : E → F) 0 Ω μ where
   locallyIntegrableOn := locallyIntegrable_zero.locallyIntegrableOn _
   locallyIntegrableOn_weakDeriv := locallyIntegrable_zero.locallyIntegrableOn _
   integral_smul_eq φ := by simp
 
-/-- The product of a test function on `Ω` with a function having a weak derivative along a tuple is
-integrable. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$, then $\varphi f$ is integrable on $E$
+for every test function $\varphi$ on $\Omega$. -/
 theorem integrable_smul (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
     Integrable (fun x ↦ φ x • f x) μ :=
   LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn
     φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
 
-/-- The product of a test function on `Ω` with a weak derivative along a tuple is integrable. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$, then $\varphi w$ is integrable on $E$
+for every test function $\varphi$ on $\Omega$. -/
 theorem integrable_smul_weakDeriv (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
     Integrable (fun x ↦ φ x • w x) μ :=
   LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn_weakDeriv
     φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
 
-/-- Weak differentiation along a tuple of directions is additive. -/
+/-- If $w_1$ and $w_2$ are weak derivatives of $f_1$ and $f_2$ along $y$ on $\Omega$, then
+$w_1 + w_2$ is a weak derivative of $f_1 + f_2$ along $y$. -/
 protected theorem add {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f₁ w₁ Ω μ)
     (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
     HasWeakIteratedLineDerivOn y (f₁ + f₂) (w₁ + w₂) Ω μ where
@@ -693,8 +726,9 @@ protected theorem add {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLin
     simp only [Pi.add_apply, smul_add]
     rw [integral_add i₁ i₂, integral_add j₁ j₂, h₁.integral_smul_eq, h₂.integral_smul_eq, smul_add]
 
-/-- A finite sum of weakly differentiable functions is weakly differentiable, with the sum of
-the weak derivatives. -/
+/-- Let $s$ be a finite index set. If $w_i$ is a weak derivative of $f_i$ along $y$ on $\Omega$ for
+every $i \in s$, then $\sum_{i \in s} w_i$ is a weak derivative of $\sum_{i \in s} f_i$ along
+$y$. -/
 protected theorem finset_sum {ι : Type*} {s : Finset ι}
     {f w : ι → E → F} (h : ∀ i ∈ s, HasWeakIteratedLineDerivOn y (f i) (w i) Ω μ) :
     HasWeakIteratedLineDerivOn y (fun x ↦ ∑ i ∈ s, f i x) (fun x ↦ ∑ i ∈ s, w i x) Ω μ := by
@@ -708,7 +742,8 @@ protected theorem finset_sum {ι : Type*} {s : Finset ι}
     exact (h a (Finset.mem_insert_self a s)).add (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
 
 omit [OpensMeasurableSpace E] in
-/-- Weak differentiation along a tuple of directions commutes with scalar multiplication. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$ and $c \in \mathbb{R}$, then $c w$ is a
+weak derivative of $c f$ along $y$. -/
 protected theorem const_smul (h : HasWeakIteratedLineDerivOn y f w Ω μ) (c : ℝ) :
     HasWeakIteratedLineDerivOn y (c • f) (c • w) Ω μ where
   locallyIntegrableOn := h.locallyIntegrableOn.smul c
@@ -717,7 +752,8 @@ protected theorem const_smul (h : HasWeakIteratedLineDerivOn y f w Ω μ) (c : �
     simp only [Pi.smul_apply, smul_comm _ c, integral_smul, h.integral_smul_eq]
 
 omit [OpensMeasurableSpace E] in
-/-- Weak differentiation along a tuple of directions commutes with negation. -/
+/-- If $w$ is a weak derivative of $f$ along $y$ on $\Omega$, then $-w$ is a weak derivative of $-f$
+along $y$. -/
 protected theorem neg (h : HasWeakIteratedLineDerivOn y f w Ω μ) :
     HasWeakIteratedLineDerivOn y (-f) (-w) Ω μ where
   locallyIntegrableOn := h.locallyIntegrableOn.neg
@@ -725,33 +761,37 @@ protected theorem neg (h : HasWeakIteratedLineDerivOn y f w Ω μ) :
   integral_smul_eq φ := by
     simp only [Pi.neg_apply, smul_neg, integral_neg, h.integral_smul_eq, smul_neg]
 
-/-- Weak differentiation along a tuple of directions commutes with subtraction. -/
+/-- If $w_1$ and $w_2$ are weak derivatives of $f_1$ and $f_2$ along $y$ on $\Omega$, then
+$w_1 - w_2$ is a weak derivative of $f_1 - f_2$ along $y$. -/
 protected theorem sub {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f₁ w₁ Ω μ)
     (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
     HasWeakIteratedLineDerivOn y (f₁ - f₂) (w₁ - w₂) Ω μ := by
   simpa only [sub_eq_add_neg] using h₁.add h₂.neg
 
 omit [MeasurableSpace E] [OpensMeasurableSpace E] in
-/-- The defining identity of the weak derivative along a tuple `z :: y`, read through
-`ContDiff.iteratedFDeriv_cons`: testing against `∂^{n+1} φ` along `z :: y` is testing against
-`∂^n (∂_z φ)` along `y`, and `∂_z φ` is again a test function. -/
+/-- For a real test function $\varphi$ on $\Omega$, a direction $z$ and a tuple $y \in E^n$, the
+derivative of order $n + 1$ along the tuple $(z, y_1, \dots, y_n)$ is the derivative of order
+$n$ of $\partial_z \varphi$ along $y$:
+$$D^{n+1} \varphi(x)(z, y_1, \dots, y_n) = D^n (\partial_z \varphi)(x)(y_1, \dots, y_n).$$
+
+The proof is `ContDiff.iteratedFDeriv_cons`. The function $\partial_z \varphi$ is the test
+function `TestFunction.fderivApply φ z`. -/
 theorem _root_.TestFunction.iteratedFDeriv_cons (φ : 𝓓(Ω, ℝ)) (z : E) (y : Fin n → E) (x : E) :
     iteratedFDeriv ℝ (n + 1) (φ : E → ℝ) x (Fin.cons z y)
       = iteratedFDeriv ℝ n (φ.fderivApply z : E → ℝ) x y :=
   φ.contDiff.iteratedFDeriv_cons z y x
 
 omit [OpensMeasurableSpace E] in
-/-- **The composition rule for weak derivatives along tuples of directions**: if `w` is a weak
-derivative of `f` along the tuple `y` of length `n`, and `u` is a weak derivative of `w` along the
-single direction `z`, then `u` is a weak derivative of `f` along the tuple `z :: y` of length
-`n + 1`.
+/-- **The composition rule for weak derivatives along tuples.** Let $y \in E^n$ and $z \in E$. If
+$w$ is a weak derivative of $f$ along $y$ on $\Omega$, and $u$ is a weak derivative of $w$ along
+the one-element tuple $(z)$, then $u$ is a weak derivative of $f$ along the tuple
+$(z, y_1, \dots, y_n)$ of length $n + 1$.
 
-Together with its converse `HasWeakIteratedLineDerivOn.of_cons` this is the bridge between a weak
-derivative of order `n` and `n` iterated weak derivatives of order one, which is what lets an
-induction on the order build weak derivatives one direction at a time — as in the Leibniz rule for
-a product with a smooth factor. The proof is the defining identity applied twice, to the test
-function `∂_z φ` and to `φ`; the signs `(-1)^n` and `(-1)^1` multiply to the `(-1)^{n+1}` that the
-definition asks for at length `n + 1`. -/
+With its converse `HasWeakIteratedLineDerivOn.of_cons`, this lemma connects a weak derivative of
+order $n$ with $n$ iterated weak derivatives of order one. An induction on the order can so
+build weak derivatives one direction at a time, as in the Leibniz rule for a smooth factor. The
+proof applies the defining identity twice, to the test functions $\partial_z \varphi$ and
+$\varphi$, and the signs $(-1)^n$ and $(-1)^1$ multiply to $(-1)^{n+1}$. -/
 theorem cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     (h' : HasWeakIteratedLineDerivOn ![z] w u Ω μ) :
     HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ where
@@ -769,13 +809,13 @@ theorem cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     ring
 
 omit [OpensMeasurableSpace E] in
-/-- **The converse of the composition rule**: if `w` is a weak derivative of `f` along the tuple
-`y` and `u` is a weak derivative of `f` along the longer tuple `z :: y`, then `u` is a weak
-derivative of `w` along the single direction `z`.
+/-- **The converse of the composition rule.** Let $y \in E^n$ and $z \in E$. If $w$ is a weak
+derivative of $f$ along $y$ on $\Omega$, and $u$ is a weak derivative of $f$ along the tuple
+$(z, y_1, \dots, y_n)$, then $u$ is a weak derivative of $w$ along the one-element tuple $(z)$.
 
-This is what makes the weak derivatives of a Sobolev function a *chain*: the derivative of order
-`n + 1` along `z :: y` is the first-order derivative, in the direction `z`, of the derivative of
-order `n` along `y`. -/
+So the weak derivatives of a Sobolev function form a chain: the derivative of order $n + 1$
+along $(z, y_1, \dots, y_n)$ is the first-order derivative in the direction $z$ of the
+derivative of order $n$ along $y$. -/
 theorem of_cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     (h' : HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ) :
     HasWeakIteratedLineDerivOn ![z] w u Ω μ where
@@ -796,12 +836,15 @@ theorem of_cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω �
       ring
     exact smul_right_injective F (pow_ne_zero n (by norm_num : (-1 : ℝ) ≠ 0)) key
 
-/-- **The Leibniz rule for a smooth factor**: if `w` is a weak derivative of `f` along a tuple of
-one direction on `Ω` and `g` is smooth, then `f g` has the weak derivative `w g + f ∂g` along the
-same direction, `∂g` being the classical derivative of `g` in that direction. Only one factor is
-smooth here; Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-3rd edition, Proposition 7.1.11 allows both factors to be merely locally integrable with locally
-integrable weak derivatives, which needs mollification in `L^p` and is not proved here. -/
+/-- **The Leibniz rule for a smooth factor.** Let $y$ be a tuple of length $m = 1$, let $f$ be a
+real function with the weak derivative $w$ along $y$ on $\Omega$, and let $g$ be a smooth real
+function. Then $f g$ has the weak derivative
+$$x \mapsto w(x) g(x) + f(x) \, D^m g(x)(y)$$
+along $y$ on $\Omega$.
+
+Proposition 7.1.11 of [han2009theoretical] allows both factors to be merely locally integrable
+with locally integrable weak derivatives. That case needs mollification in $L^p$ and is not
+proved here. -/
 theorem mul_contDiff {m : ℕ} {f' w' : E → ℝ} {y' : Fin m → E} {Ω : Opens E} {μ : Measure E}
     (h : HasWeakIteratedLineDerivOn y' f' w' Ω μ) (hm : m = 1) {g : E → ℝ}
     (hg : ContDiff ℝ ∞ g) :
@@ -852,9 +895,10 @@ theorem mul_contDiff {m : ℕ} {f' w' : E → ℝ} {y' : Fin m → E} {Ω : Open
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
-/-- **A weak derivative along a tuple of directions is unique up to a null set**: the
-tuple-by-tuple form of Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Lemma 7.1.4. -/
+/-- **Uniqueness of the weak derivative along a tuple**, the tuple-by-tuple form of Lemma 7.1.4 of
+[han2009theoretical]. Let $E$ be finite-dimensional with its Borel $\sigma$-algebra and let $F$
+be complete. If $w_1$ and $w_2$ are weak derivatives of $f$ along $y$ on $\Omega$, then
+$w_1(x) = w_2(x)$ for almost every $x \in \Omega$. -/
 theorem ae_eq {w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f w₁ Ω μ)
     (h₂ : HasWeakIteratedLineDerivOn y f w₂ Ω μ) : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x = w₂ x := by
   have key : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x - w₂ x = 0 := by
@@ -872,8 +916,9 @@ theorem ae_eq {w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f w₁ 
     rw [hsub, integral_sub e1 e2, key, sub_self]
   filter_upwards [key] with x hx hxΩ using sub_eq_zero.mp (hx hxΩ)
 
-/-- Along a tuple of length `0` the weak derivative agrees almost everywhere on `Ω` with the
-function itself. -/
+/-- Let $E$ be finite-dimensional with its Borel $\sigma$-algebra, let $F$ be complete, and let $y$
+have length $n = 0$. If $w$ is a weak derivative of $f$ along $y$ on $\Omega$, then
+$w(x) = f(x)$ for almost every $x \in \Omega$. -/
 theorem ae_eq_of_length_eq_zero (hn : n = 0) (h : HasWeakIteratedLineDerivOn y f w Ω μ) :
     ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w x = f x :=
   h.ae_eq (of_length_eq_zero hn y h.locallyIntegrableOn)
@@ -884,13 +929,16 @@ end Line
 
 /-! ### Weak derivatives under a continuous linear map -/
 
-/-- **A continuous linear map passes through the weak derivative**: if `w` is a weak derivative of
-`f` along the tuple `y` of directions on `Ω`, then `L ∘ w` is one of `L ∘ f`. Both sides of the
-integration by parts formula integrate integrable functions, so `L` commutes with the integrals,
-and `L` is `ℝ`-linear, so it commutes with the scalars `∂^n φ x` and `(-1)^n` as well. Completeness
-of `F` is what makes `MeasureTheory.integral` on `F` the Bochner integral rather than the junk
-value `0`, so without it the hypothesis carries no information; no completeness is needed of `G`,
-where the junk value makes the conclusion trivial. -/
+/-- **A continuous linear map passes through the weak derivative.** Let $F$ be complete and let
+$L : F \to G$ be a continuous linear map. If $w$ is a weak derivative of $f$ along $y$ on
+$\Omega$, then $L \circ w$ is a weak derivative of $L \circ f$ along $y$.
+
+Both sides of the integration by parts formula integrate integrable functions, so $L$ commutes
+with the integrals, and $L$ is $\mathbb{R}$-linear, so it commutes with the scalars
+$D^n \varphi(x)(y)$ and $(-1)^n$. The completeness of $F$ makes `MeasureTheory.integral` on $F$
+the Bochner integral and not the default value $0$; without it the hypothesis carries no
+information. The space $G$ need not be complete, because there the default value makes the
+conclusion trivial. -/
 theorem HasWeakIteratedLineDerivOn.comp_continuousLinearMap {E F G : Type*}
     [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
     [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
@@ -923,9 +971,12 @@ theorem HasWeakIteratedLineDerivOn.comp_continuousLinearMap {E F G : Type*}
 
 /-! ### The real and the complex form of one weak derivative -/
 
-/-- **A real function has a real weak derivative exactly when its complexification has the
-complexified one**: composing with the embedding `ℝ → ℂ` and with the real part, both continuous
-`ℝ`-linear maps, takes each statement to the other. -/
+/-- **Real and complex weak derivatives.** Let $f, w$ be real functions and $y \in E^n$. Then $w$ is
+a weak derivative of $f$ along $y$ on $\Omega$ if and only if $x \mapsto w(x) \in \mathbb{C}$ is
+a weak derivative of $x \mapsto f(x) \in \mathbb{C}$ along $y$ on $\Omega$.
+
+The embedding $\mathbb{R} \to \mathbb{C}$ and the real part are continuous $\mathbb{R}$-linear
+maps, so `HasWeakIteratedLineDerivOn.comp_continuousLinearMap` gives both directions. -/
 theorem HasWeakIteratedLineDerivOn.ofReal_iff {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [MeasurableSpace E] [OpensMeasurableSpace E] {n : ℕ} {y : Fin n → E} {f w : E → ℝ}
     {Ω : Opens E} {μ : Measure E} :
@@ -942,15 +993,16 @@ section Classical
 variable [FiniteDimensional ℝ E] [BorelSpace E] {N : ℕ∞ω} {m : ℕ}
 
 omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The derivatives of order at most `N` of a `C^N` function on an open set are continuous
-there. -/
+/-- If $f$ is of class $C^N$ on the open set $\Omega$ and $m \le N$, then the derivative $D^m f$ is
+continuous on $\Omega$. -/
 theorem ContDiffOn.continuousOn_iteratedFDeriv (hf : ContDiffOn ℝ N f Ω)
     (hm : (m : ℕ∞ω) ≤ N) : ContinuousOn (iteratedFDeriv ℝ m f) (Ω : Set E) := fun x hx ↦
   ((hf.contDiffAt (Ω.isOpen.mem_nhds hx)).iteratedFDeriv_right (m := 0)
     (by simpa using hm)).continuousAt.continuousWithinAt
 
-/-- The derivatives of order at most `N` of a `C^N` function on an open set, evaluated at a fixed
-tuple of directions, are locally integrable there. -/
+/-- Let $E$ be finite-dimensional with its Borel $\sigma$-algebra and $\mu$ locally finite. If $f$
+is of class $C^N$ on the open set $\Omega$, $m \le N$ and $y \in E^m$, then
+$x \mapsto D^m f(x)(y)$ is locally integrable on $\Omega$. -/
 theorem ContDiffOn.locallyIntegrableOn_iteratedFDeriv_apply [IsLocallyFiniteMeasure μ]
     (hf : ContDiffOn ℝ N f Ω) (hm : (m : ℕ∞ω) ≤ N) (y : Fin m → E) :
     LocallyIntegrableOn (fun x ↦ iteratedFDeriv ℝ m f x y) (Ω : Set E) μ :=
@@ -959,10 +1011,13 @@ theorem ContDiffOn.locallyIntegrableOn_iteratedFDeriv_apply [IsLocallyFiniteMeas
 
 variable [μ.IsAddHaarMeasure]
 
-/-- **Iterated integration by parts on an open set**: if `f` is of class `C^N` on the open set `Ω`
-and `φ` is a test function on `Ω`, then for every `n ≤ N` and every tuple `y` of `n` directions,
-`∫_Ω (∂^n φ) y • f = (-1)^n ∫_Ω φ • (∂^n f) y`. This is formula (7.1.1) of Atkinson and Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, §7.1. -/
+/-- **Iterated integration by parts on an open set**, formula (7.1.1) of [han2009theoretical]. Let
+$E$ be finite-dimensional with an additive Haar measure $\mu$, and let $f$ be of class $C^N$ on
+the open set $\Omega$. Then for every $n \le N$, every real test function $\varphi$ on $\Omega$
+and every tuple $y \in E^n$,
+$$\int_\Omega D^n \varphi(x)(y) \, f(x) \, d\mu = (-1)^n \int_\Omega \varphi(x) \, D^n f(x)(y)
+  \, d\mu.$$
+-/
 theorem ContDiffOn.integral_iteratedFDeriv_smul (hf : ContDiffOn ℝ N f Ω) :
     ∀ (n : ℕ), (n : ℕ∞ω) ≤ N → ∀ (φ : 𝓓(Ω, ℝ)) (y : Fin n → E),
       ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
@@ -1038,9 +1093,12 @@ theorem ContDiffOn.integral_iteratedFDeriv_smul (hf : ContDiffOn ℝ N f Ω) :
       _ = (-1 : ℝ) ^ (n + 1) • ∫ x in (Ω : Set E), φ x • iteratedFDeriv ℝ (n + 1) f x y ∂μ := by
           rw [pow_succ, mul_smul, neg_one_smul]
 
-/-- **A classical derivative is a weak derivative**: Atkinson and Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Lemma 7.1.5. So the weak derivative
-extends the classical one, and it is natural to write both `∂^n`. -/
+/-- **A classical derivative is a weak derivative**, Lemma 7.1.5 of [han2009theoretical]. Let $E$ be
+finite-dimensional with an additive Haar measure $\mu$, let $f$ be of class $C^N$ on the open
+set $\Omega$, and let $m \le N$. Then the classical derivative $D^m f$ is an $m$-th weak
+derivative of $f$ on $\Omega$.
+
+So the weak derivative extends the classical one, and both can be written $\partial^n$. -/
 theorem ContDiffOn.hasWeakIteratedFDerivOn (hf : ContDiffOn ℝ N f Ω) (hm : (m : ℕ∞ω) ≤ N) :
     HasWeakIteratedFDerivOn m f (iteratedFDeriv ℝ m f) Ω μ where
   locallyIntegrableOn := hf.continuousOn.locallyIntegrableOn Ω.isOpen.measurableSet
@@ -1056,8 +1114,11 @@ section FirstOrder
 
 variable {w : E → E →L[ℝ] F}
 
-/-- Unfolding of `HasWeakFDerivOn`: local integrability of the function and of its weak
-derivative, and the first-order integration by parts formula. -/
+/-- A function $w : E \to (E \to_L F)$ is a first-order weak derivative of $f$ on $\Omega$ if and
+only if $f$ and $w$ are locally integrable on $\Omega$ and, for every real test function
+$\varphi$ on $\Omega$ and every direction $v$,
+$$\int_\Omega D\varphi(x) v \, f(x) \, d\mu = -\int_\Omega \varphi(x) \, w(x) v \, d\mu.$$
+-/
 theorem hasWeakFDerivOn_iff :
     HasWeakFDerivOn f w Ω μ ↔ LocallyIntegrableOn f Ω μ ∧ LocallyIntegrableOn w Ω μ ∧
       ∀ (φ : 𝓓(Ω, ℝ)) (v : E), ∫ x in (Ω : Set E), fderiv ℝ φ x v • f x ∂μ
@@ -1076,17 +1137,19 @@ theorem hasWeakFDerivOn_iff :
         (continuousMultilinearCurryFin1 ℝ E F).symm.toContinuousLinearEquiv.toContinuousLinearMap
     · simpa [iteratedFDeriv_one_apply] using h₃ φ (y 0)
 
-/-- The integration by parts formula defining a first-order weak derivative. -/
+/-- If $w$ is a first-order weak derivative of $f$ on $\Omega$, then for every test function
+$\varphi$ on $\Omega$ and every direction $v$, $\int_\Omega D\varphi(x) v \, f(x) \, d\mu =
+-\int_\Omega \varphi(x) \, w(x) v \, d\mu$. -/
 theorem HasWeakFDerivOn.integral_smul_eq (h : HasWeakFDerivOn f w Ω μ) (φ : 𝓓(Ω, ℝ)) (v : E) :
     ∫ x in (Ω : Set E), fderiv ℝ φ x v • f x ∂μ = -∫ x in (Ω : Set E), φ x • w x v ∂μ :=
   (hasWeakFDerivOn_iff.1 h).2.2 φ v
 
-/-- A function with a first-order weak derivative is locally integrable. -/
+/-- A function with a first-order weak derivative on $\Omega$ is locally integrable on $\Omega$. -/
 theorem HasWeakFDerivOn.locallyIntegrableOn (h : HasWeakFDerivOn f w Ω μ) :
     LocallyIntegrableOn f Ω μ :=
   (hasWeakFDerivOn_iff.1 h).1
 
-/-- A first-order weak derivative is locally integrable. -/
+/-- A first-order weak derivative on $\Omega$ is locally integrable on $\Omega$. -/
 theorem HasWeakFDerivOn.locallyIntegrableOn_weakDeriv (h : HasWeakFDerivOn f w Ω μ) :
     LocallyIntegrableOn w Ω μ :=
   (hasWeakFDerivOn_iff.1 h).2.1

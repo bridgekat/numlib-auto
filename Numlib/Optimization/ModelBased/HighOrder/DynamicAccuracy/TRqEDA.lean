@@ -5,34 +5,46 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqIDA
 
 /-!
-# TRqEDA: a trust-region method with explicit dynamic accuracy
+# The trust-region method TRqEDA with explicit dynamic accuracy
 
-The trust-region method TRqEDA ([cartis2022evaluation], Algorithm 13.3.1): derivatives within
-the requested accuracies (normalized error constants, (13.3.3)–(13.3.4)), inexact function
-values with accuracy `h_{k,0} ≤ κ_s \overline{ΔT}_k` (Step 3, `EDAStep3`) and a certified
-termination test (`edaStopTR`). The iterations before termination are `TRqDAStep`s with the
-inexact ratio `edaRatio`.
+The trust-region method TRqEDA of [cartis2022evaluation], Algorithm 13.3.1, uses inexact derivatives
+and inexact function values. The derivatives satisfy $\|\overline{\nabla}^i f(x_k) - \nabla^i
+f(x_k)\| \le h_{k,i}$ for the requested accuracies $h_{k,i}$, with the error constants normalized to
+$1$, (13.3.3)–(13.3.4). At a trial iteration, Step 3 computes values $\overline{f}(x_k)$ and
+$\overline{f}(x_k + s_k)$ with the accuracy $h_{k,0} \le \kappa_s \overline{\Delta T}_{f,j_k}(x_k,
+s_k)$ (`Optimization.EDAStep3`). The method stops when a certified termination test holds
+(`Optimization.edaStopTR`). The iterations before termination are TRqIDA iterations
+(`Optimization.TRqDAStep`) with the ratio `Optimization.edaRatio` of inexact function values.
 
-The analysis is stated for runs on a feasible set `X` (Step-1 displacements and trial points
-in `{e | x_k + e ∈ X}`, [cartis2022evaluation] §14.2) under the smoothness hypothesis
-`LipschitzDerivsAnchored f C A 0 q L` with normalized constants `L_j ≥ 1`, `X ⊆ C` and an anchor
-set `A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`: the objective does not increase along the runs, so the iterates
-are anchors, derivative estimates are made at iterates, and trial points are related to them by
-Taylor's theorem anchored at the iterate. The unconstrained methods of Chapter 13 are the case
-`X = C = A = univ`. (With inexact values a successful iteration still decreases `f`, since
-`κ_s ≤ η₁/4`.)
+The analysis holds for runs on a feasible set $X$, as in §14.2 of the source: the displacements of
+Step 1 and the trial points lie in $\{e : x_k + e \in X\}$. The smoothness hypothesis is
+`LipschitzDerivsAnchored f C A 0 q L` with normalized constants $L_j \ge 1$, $X \subseteq C$, and a
+set of anchors $A \supseteq \{y \in X : f(y) \le f(x_0)\}$. The objective does not increase along a
+run, so the iterates are anchors. The derivatives are estimated at the iterates, and Taylor's
+theorem anchored at the iterate relates the trial points to them. The unconstrained methods of
+Chapter 13 are the case $X = C = A = E$. With inexact values a successful iteration still decreases
+$f$, because $\kappa_s \le \eta_1 / 4$.
 
 ## Main definitions
 
-* `edaRatio`, `EDAStep3`, `edaFunEvalCount`: Step 3 and the function-evaluation count (shared
-  with ARqpEDA);
-* `edaStopTR`, `IsTRqEDARun`.
+* `Optimization.edaRatio`: the ratio of Step 3 with inexact function values, shared with ARqpEDA.
+* `Optimization.EDAStep3`: Step 3 of the methods with explicit dynamic accuracy, shared with
+  ARqpEDA.
+* `Optimization.edaFunEvalCount`: the number of inexact function evaluations, shared with ARqpEDA.
+* `Optimization.edaStopTR`: the termination test of TRqEDA.
+* `Optimization.IsTRqEDARun`: a run of TRqEDA on a feasible set.
 
 ## Main results
 
-* `IsTRqEDARun.ratio_ge`, `.delta_ge`, `.decrease_ge` (Lemmas 13.3.1–13.3.2),
-  `.isEpsDeltaApprox_of_stop`, `.stop_of_pass` (Lemma 13.3.3), `.card_acc_le`,
-  `.complexity` (Theorem 13.3.4), `.le_card_succ` (Lemma 14.2.3, TRqEDA row).
+* `Optimization.IsTRqEDARun.ratio_ge`: Lemma 13.3.1, very successful iterations.
+* `Optimization.IsTRqEDARun.delta_ge`: the radius stays bounded below.
+* `Optimization.IsTRqEDARun.decrease_ge`: Lemma 13.3.2, sufficient decrease.
+* `Optimization.IsTRqEDARun.isEpsDeltaApprox_of_stop`: Lemma 13.3.3(i), termination certifies
+  approximate optimality.
+* `Optimization.IsTRqEDARun.stop_of_pass`: Lemma 13.3.3(ii), accurate data give termination.
+* `Optimization.IsTRqEDARun.card_acc_le`: the number of accuracy-improving iterations.
+* `Optimization.IsTRqEDARun.complexity`: Theorem 13.3.4, the evaluation complexity of TRqEDA.
+* `Optimization.IsTRqEDARun.le_card_succ`: Lemma 14.2.3 for TRqEDA, the number of iterations.
 -/
 
 open Set Metric Finset
@@ -45,36 +57,48 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 /-! ### Step 3 with inexact function values -/
 
 /-- The ratio (13.3.10), (13.3.19) with inexact function values:
-`ρ_k = (f̄(x_k) - f̄(x_k + s_k)) / \overline{ΔT}_k`. -/
+$$\rho_k = \frac{\overline{f}(x_k) - \overline{f}(x_k + s_k)}{\overline{\Delta T}_k},$$
+where $\overline{\Delta T}_k$ is the predicted decrease. -/
 noncomputable def edaRatio (fx fxs pred : ℕ → ℝ) (k : ℕ) : ℝ := (fx k - fxs k) / pred k
 
-/-- **Step 3 of TRqEDA and ARqpEDA** ([cartis2022evaluation], (13.3.1)–(13.3.2), (13.3.9),
-(13.3.18)) at a trial iteration `k`, for the predicted decrease `ΔTb = \overline{ΔT}`: the
-requested value accuracy satisfies `0 < h_{k,0} ≤ κ_s ΔTb`, the values `f̄(x_k)` and
-`f̄(x_k + s_k)` are within `h_{k,0}` of `f`, and if `f̄(x_k)` is not recomputed (`¬ R k`) it is the
-trial value of an earlier trial iteration at the same point. -/
+/-- **Step 3 of TRqEDA and ARqpEDA**, (13.3.1)–(13.3.2), (13.3.9) and (13.3.18) of
+[cartis2022evaluation], at a trial iteration $k$ with the predicted decrease
+$\overline{\Delta T}$. The requested value accuracy satisfies
+$0 < h_{k,0} \le \kappa_s \overline{\Delta T}$, and the values satisfy
+$$|\overline{f}(x_k) - f(x_k)| \le h_{k,0}, \qquad |\overline{f}(x_k + s_k) - f(x_k + s_k)| \le
+  h_{k,0}.$$
+If $\overline{f}(x_k)$ is not recomputed, then it is the trial value $\overline{f}(x_i + s_i)$
+of an earlier trial iteration $i < k$ with $x_i + s_i = x_k$.
+
+The flag `R k` states that $\overline{f}(x_k)$ is recomputed at iteration $k$. -/
 structure EDAStep3 (f : E → ℝ) (κs ΔTb : ℝ) (x s : ℕ → E) (acc : ℕ → Prop)
     (fx fxs h₀ : ℕ → ℝ) (R : ℕ → Prop) (k : ℕ) : Prop where
-  /-- `h_{k,0} > 0`. -/
+  /-- The value accuracy is positive: $h_{k,0} > 0$. -/
   h₀_pos : 0 < h₀ k
-  /-- (13.3.9), (13.3.18). -/
+  /-- The bound (13.3.9), (13.3.18) on the value accuracy:
+  $h_{k,0} \le \kappa_s \overline{\Delta T}$. -/
   h₀_le : h₀ k ≤ κs * ΔTb
-  /-- (13.3.2). -/
+  /-- The bound (13.3.2): $|\overline{f}(x_k + s_k) - f(x_k + s_k)| \le h_{k,0}$. -/
   fxs_err : |fxs k - f (x k + s k)| ≤ h₀ k
-  /-- (13.3.1). -/
+  /-- The bound (13.3.1): $|\overline{f}(x_k) - f(x_k)| \le h_{k,0}$. -/
   fx_err : |fx k - f (x k)| ≤ h₀ k
-  /-- Reuse of `f̄(x_{k-1} + s_{k-1})`. -/
+  /-- If $\overline{f}(x_k)$ is not recomputed, it is the value $\overline{f}(x_i + s_i)$ of an
+  earlier trial iteration $i < k$ with $x_i + s_i = x_k$. -/
   reuse : ¬ R k → ∃ i < k, ¬ acc i ∧ x i + s i = x k ∧ fx k = fxs i
 
 open Classical in
-/-- The number of inexact function evaluations of an EDA method up to iteration `k`: one per trial
-iteration `i < k`, plus one when `f̄(x_i)` is recomputed (`R i`). -/
+/-- The number of inexact function evaluations of a method with explicit dynamic accuracy before
+iteration $k$: one for each trial iteration $i < k$, and one more for each trial iteration
+$i < k$ at which $\overline{f}(x_i)$ is recomputed. -/
 noncomputable def edaFunEvalCount (acc R : ℕ → Prop) (k : ℕ) : ℕ :=
   ((Finset.range k).filter fun i => ¬ acc i).card +
     ((Finset.range k).filter fun i => ¬ acc i ∧ R i).card
 
-/-- At most two function evaluations per trial iteration:
-`edaFunEvalCount acc R k ≤ 2 (derivEvalCount (¬ acc) k - 1)`. -/
+/-- There are at most two function evaluations per trial iteration: the number of evaluations before
+iteration $k$ is at most $2 |\{i < k : i \text{ is a trial iteration}\}|$.
+
+The right side is written as $2 (n - 1)$ with $n$ = `Optimization.derivEvalCount (fun i => ¬ acc
+i) k`. -/
 theorem edaFunEvalCount_le (acc R : ℕ → Prop) (k : ℕ) :
     (edaFunEvalCount acc R k : ℝ) ≤ 2 * ((derivEvalCount (fun i => ¬ acc i) k : ℝ) - 1) := by
   classical
@@ -93,47 +117,66 @@ theorem edaFunEvalCount_le (acc R : ℕ → Prop) (k : ℕ) :
 
 /-! ### TRqEDA -/
 
-/-- The termination test of TRqEDA ([cartis2022evaluation], Algorithm 13.3.1, Steps 1.4–1.4.1):
-(13.3.7) fails at every order and (13.3.8) `∑_{i=1}^q h_{k,i} δ_k^i/i! ≤ ½ ς ε_min δ_k^q/q!`. -/
+/-- The **termination test** of TRqEDA, [cartis2022evaluation], Algorithm 13.3.1, Steps 1.4–1.4.1.
+The test holds at iteration $k$ if the inequality (13.3.7) holds at no order, that is,
+$\overline{\Delta T}_{f,j}(x_k, d_{k,j}) \le \varsigma \varepsilon_j \delta_k^j / (2 \, j!)$ for
+$1 \le j \le q$, and
+$$\sum_{i=1}^{q} \frac{h_{k,i} \delta_k^i}{i!} \le \frac{\varsigma \varepsilon_{\min}
+  \delta_k^q}{2 \, q!}. \qquad (13.3.8)$$
+-/
 def edaStopTR (P : TRqIDAParams) (ε : ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ) (dd : ℕ → ℕ → E) (k : ℕ) : Prop :=
   (∀ j ∈ Finset.Icc 1 P.q, ¬ trqDAFail P ε D Δ dd k j) ∧
     ∑ i ∈ Finset.Icc 1 P.q, h k i * trqDARadius P Δ k ^ i / i ! ≤
       P.ς * epsMin P.q ε * trqDARadius P Δ k ^ P.q / P.q ! / 2
 
-/-- **TRqEDA with a feasible set** ([cartis2022evaluation], Algorithm 13.3.1; TRqEDA-SC of §14.2) as
-a run predicate, with the TRqIDA constants `P` satisfying (13.3.5) `κ_s ≤ min(η₁, 1 - η₂)/4`,
-tolerances `ε ∈ (0, 1]^q` with `ε_min ≤ ϑ`, a feasible starting point `x₀ ∈ X`, the sequences of
-TRqIDA, inexact values `fx`, `fxs` with accuracies `h₀` and recomputation flags `R`: at every
-iteration reached the derivatives satisfy (13.3.4) and the feasible Step-1 displacements (13.3.6);
-until termination (`edaStopTR`) every iteration satisfies `TRqDAStep` on `X` with the inexact ratio
-(13.3.10) and, on trial iterations, Step 3 (`EDAStep3`). The method returns `x_ε = x_k` and
-`δ_ε = min(Δ_k, ϑ)` at termination; the unconstrained method is the case `X = univ`. -/
+/-- **TRqEDA with a feasible set**, [cartis2022evaluation], Algorithm 13.3.1, and TRqEDA-SC of
+§14.2, as a run predicate. The data are the objective $f$, the feasible set $X$, TRqIDA
+constants $P$, tolerances $\varepsilon_j$, a starting point $x_0$, the sequences of TRqIDA,
+inexact values $\overline{f}(x_k)$ and $\overline{f}(x_k + s_k)$ with accuracies $h_{k,0}$, and
+recomputation flags. These data form a run if:
+* $\kappa_s \le \min(\eta_1, 1 - \eta_2) / 4$, (13.3.5);
+* $\varepsilon_j \in (0, 1]$ for $1 \le j \le q$, and $\varepsilon_{\min} \le \vartheta$;
+* $x_0 \in X$, and the sequences start at $x_0$, $\Delta_0$ and $h_0$;
+* at every iteration up to and including termination, the derivatives satisfy (13.3.4),
+  $\|\overline{\nabla}^i f(x_k) - \nabla^i f(x_k)\| \le h_{k,i}$ for $1 \le i \le q$, and the
+  displacements of Step 1 are feasible approximate optimality displacements, (13.3.6);
+* at every iteration before termination (`Optimization.edaStopTR`), the step
+  `Optimization.TRqDAStep` on $X$ holds with the ratio (13.3.10) of inexact values, and on a
+  trial iteration Step 3 (`Optimization.EDAStep3`) holds.
+
+At termination the method returns $x_\varepsilon = x_k$ and
+$\delta_\varepsilon = \min(\Delta_k, \vartheta)$. The unconstrained method is the case $X = E$. -/
 structure IsTRqEDARun (f : E → ℝ) (X : Set E) (P : TRqIDAParams) (ε : ℕ → ℝ)
     (x₀ : E) (x : ℕ → E) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ E ℝ)
     (dd : ℕ → ℕ → E) (jk : ℕ → ℕ) (s : ℕ → E) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
     (R : ℕ → Prop) : Prop where
-  /-- (13.3.5). -/
+  /-- The condition (13.3.5): $\kappa_s \le \min(\eta_1, 1 - \eta_2) / 4$. -/
   κs_le : P.κs ≤ min P.η₁ (1 - P.η₂) / 4
-  /-- `ε ∈ (0, 1]^q`. -/
+  /-- The tolerances satisfy $\varepsilon_j \in (0, 1]$ for $1 \le j \le q$. -/
   eps_mem : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1
-  /-- `ϑ ≥ ε_min`. -/
+  /-- The threshold satisfies $\vartheta \ge \varepsilon_{\min}$. -/
   epsMin_le_ϑ : epsMin P.q ε ≤ P.ϑ
-  /-- The starting point. -/
+  /-- The first iterate is the starting point $x_0$. -/
   x_zero : x 0 = x₀
-  /-- The starting point is feasible. -/
+  /-- The starting point is feasible: $x_0 \in X$. -/
   x₀_mem : x₀ ∈ X
-  /-- The initial radius. -/
+  /-- The first radius is the initial radius $\Delta_0$ of the constants. -/
   Δ_zero : Δ 0 = P.Δ₀
-  /-- The initial accuracies. -/
+  /-- The first accuracies are the initial accuracies $h_{0,i}$ of the constants. -/
   h_zero : h 0 = P.h₀
-  /-- (13.3.4) at every iteration reached. -/
+  /-- The bound (13.3.4) at every iteration up to and including termination:
+  $\|D_{k,i} - \nabla^i f(x_k)\| \le h_{k,i}$ for $1 \le i \le q$. -/
   oracle : ∀ k, (∀ j < k, ¬ edaStopTR P ε D Δ h dd j) →
     JetApprox (ftaylorSeries ℝ f (x k)) (D k) P.q (fun i => h k i)
-  /-- (13.3.6) at every iteration reached. -/
+  /-- The condition (13.3.6) at every iteration up to and including termination: for
+  $1 \le j \le q$, $d_{k,j}$ is an approximate optimality displacement with the fraction
+  $\varsigma$ for $\overline{\Delta T}_{f,j}(x_k, \cdot)$, the radius $\delta_k$ and the
+  feasible displacements $\{e : x_k + e \in X\}$. -/
   witness : ∀ k, (∀ j < k, ¬ edaStopTR P ε D Δ h dd j) → ∀ j ∈ Finset.Icc 1 P.q,
     IsApproxMeasureStep ((D k).taylorDecrement j) (trqDARadius P Δ k) {e | x k + e ∈ X} P.ς (dd k j)
-  /-- Steps 1–5 until termination. -/
+  /-- Steps 1–5 at every iteration before termination: the step `Optimization.TRqDAStep` with the
+  ratio of inexact values, and Step 3 on a trial iteration. -/
   run : UntilHit (edaStopTR P ε D Δ h dd) fun k =>
     TRqDAStep X P ε x Δ h D dd jk s acc
         (edaRatio fx fxs fun i => (D i).taylorDecrement (jk i) (s i)) k ∧
@@ -147,44 +190,58 @@ variable {f : E → ℝ} {X : Set E} {P : TRqIDAParams} {ε : ℕ → ℝ} {x₀
   (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
 include hrun
 
+/-- At an iteration $k$ before termination, the step `Optimization.TRqDAStep` holds with the ratio
+of inexact values. -/
 theorem step {k : ℕ} (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) :
     TRqDAStep X P ε x Δ h D dd jk s acc
       (edaRatio fx fxs fun i => (D i).taylorDecrement (jk i) (s i)) k :=
   (hrun.run k hk).1
 
+/-- At a trial iteration $k$ before termination, Step 3 holds with the predicted decrease
+$\overline{\Delta T}_{f,j_k}(x_k, s_k)$. -/
 theorem step3 {k : ℕ} (hk : ∀ j ≤ k, ¬ edaStopTR P ε D Δ h dd j) (ha : ¬ acc k) :
     EDAStep3 f P.κs ((D k).taylorDecrement (jk k) (s k)) x s acc fx fxs h₀ R k :=
   (hrun.run k hk).2 ha
 
+/-- If the method has not terminated before iteration $k$, then the step `Optimization.TRqDAStep`
+holds at every iteration $i < k$. -/
 theorem steps_lt {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
     ∀ i < k, TRqDAStep X P ε x Δ h D dd jk s acc
       (edaRatio fx fxs fun i => (D i).taylorDecrement (jk i) (s i)) i :=
   fun _ hi => hrun.step fun j hj => hk j (hj.trans_lt hi)
 
+/-- At every iteration $k$ up to and including termination, $0 < \Delta_k \le \Delta_{\max}$ and
+$0 < h_{k,i} \le \kappa_h$ for $1 \le i \le q$. -/
 theorem invariants {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
     (0 < Δ k ∧ Δ k ≤ P.Δmax) ∧ ∀ i ∈ Finset.Icc 1 P.q, 0 < h k i ∧ h k i ≤ P.κh :=
   trqDA_invariants (hrun.steps_lt hk) hrun.Δ_zero hrun.h_zero
 
+/-- The smallest tolerance of a TRqEDA run is positive: $\varepsilon_{\min} > 0$. -/
 theorem epsMin_pos : 0 < epsMin P.q ε :=
   Optimization.epsMin_pos P.one_le_q fun j hj => (hrun.eps_mem j hj).1
 
+/-- The smallest tolerance of a TRqEDA run is at most one: $\varepsilon_{\min} \le 1$. -/
 theorem epsMin_le_one : epsMin P.q ε ≤ 1 :=
   Optimization.epsMin_le_one P.one_le_q fun j hj => (hrun.eps_mem j hj).2
 
+/-- In a TRqEDA run, $\kappa_s \le \eta_1 / 4$. -/
 theorem kappaS_le_eta₁ : P.κs ≤ P.η₁ / 4 :=
   hrun.κs_le.trans (div_le_div_of_nonneg_right (min_le_left _ _) (by norm_num))
 
+/-- In a TRqEDA run, $\kappa_s \le (1 - \eta_2) / 4$. -/
 theorem kappaS_le_eta₂ : P.κs ≤ (1 - P.η₂) / 4 :=
   hrun.κs_le.trans (div_le_div_of_nonneg_right (min_le_right _ _) (by norm_num))
 
-/-- The iterates reached are feasible. -/
+/-- The iterates of a TRqEDA run up to and including termination are feasible: $x_k \in X$. -/
 theorem mem {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : x k ∈ X :=
   trqDA_mem (hrun.steps_lt hk) (hrun.x_zero ▸ hrun.x₀_mem)
 
-/-- The objective does not increase along a TRqEDA run with a feasible set before termination:
-`f(x_k) ≤ f(x₀)`. On a successful iteration the inexact values are within `h_{k,0} ≤ κ_s
-\overline{ΔT}_k ≤ η₁/4 \overline{ΔT}_k` of `f` ((13.3.5), (13.3.9)), so `f(x_k) - f(x_{k+1}) ≥
-η₁/2 \overline{ΔT}_k > 0`. -/
+/-- The objective does not increase along a TRqEDA run with a feasible set: $f(x_k) \le f(x_0)$ at
+every iteration $k$ up to and including termination.
+
+On a successful iteration the inexact values are within $h_{k,0} \le \kappa_s \overline{\Delta
+T}_k \le \frac{\eta_1}{4} \overline{\Delta T}_k$ of $f$, by (13.3.5) and (13.3.9), so $f(x_k) -
+f(x_{k+1}) \ge \frac{\eta_1}{2} \overline{\Delta T}_k > 0$. -/
 theorem objective_le {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : f (x k) ≤ f x₀ := by
   rw [← hrun.x_zero]
   refine le_zero_of_forall_succ_le (u := fun i => f (x i)) fun i hi => ?_
@@ -202,14 +259,17 @@ theorem objective_le {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) :
     linarith
   · rw [hs.iterate_succ_eq hc]
 
-/-- The iterates reached lie in every set `A` containing the sublevel set
-`{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The iterates of a TRqEDA run up to and including termination lie in every set $A$ that contains
+the sublevel set $\{y \in X : f(y) \le f(x_0)\}$. -/
 theorem mem_anchor {A : Set E} (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ}
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) : x k ∈ A :=
   hAX _ (hrun.mem hk) (hrun.objective_le hk)
 
-/-- (13.1.24) with `κ_{∇,max} = 1`: `‖∇̄^i f(x_k)‖ ≤ L_f + κ_h`, under the smoothness hypothesis
-anchored on a set `A` containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`. -/
+/-- The bound (13.1.24) with $\kappa_{\nabla,\max} = 1$. Under the smoothness hypothesis
+`LipschitzDerivsAnchored f C A 0 q L` with $L_j \ge 1$ for $j \le q$, and with $A$ containing
+the sublevel set $\{y \in X : f(y) \le f(x_0)\}$, the iterates of a TRqEDA run up to and
+including termination satisfy $\|\overline{\nabla}^i f(x_k)\| \le L_f + \kappa_h$ for
+$1 \le i \le q$. -/
 theorem norm_D_le {C A : Set E} {L : ℕ → ℝ} (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {k : ℕ} (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j)
@@ -229,10 +289,16 @@ variable {X C A : Set E} {f : E → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ} {
   {h : ℕ → ℕ → ℝ} {D : ℕ → FormalMultilinearSeries ℝ E ℝ} {dd : ℕ → ℕ → E} {jk : ℕ → ℕ}
   {s : ℕ → E} {acc : ℕ → Prop} {fx fxs h₀ : ℕ → ℝ} {R : ℕ → Prop} {L : ℕ → ℝ} {k : ℕ}
 
-/-- **Very successful iterations** (Lemma 13.3.1 of [cartis2022evaluation]): under the smoothness
-hypothesis, at a trial iteration `k ∈ 𝒯` of TRqEDA before termination with (13.1.28) for
-`κ_{∇,max} = 1`, `Δ_k ≤ min(ϑ, (1 - η₂)/(L_f + 4 (q+1)! κ_s) φ̂_{f,k})`, the iteration is very
-successful (`ρ_k ≥ η₂`) and `Δ_{k+1} ≥ Δ_k`. -/
+/-- **Lemma 13.3.1** of [cartis2022evaluation], very successful iterations. Assume the smoothness
+hypothesis `LipschitzDerivsAnchored f C A 0 q L` with $L_j \ge 1$ for $j \le q$,
+$X \subseteq C$, and $A \supseteq \{y \in X : f(y) \le f(x_0)\}$. Let $k$ be a trial iteration
+of a TRqEDA run before termination with
+$$\Delta_k \le \min\Big(\vartheta, \frac{1 - \eta_2}{L_f + 4 (q+1)! \, \kappa_s}
+  \hat\phi_{f,k}\Big),$$
+which is (13.1.28) with $\kappa_{\nabla,\max} = 1$. Then the iteration is very successful,
+$\rho_k \ge \eta_2$, and $\Delta_{k+1} \ge \Delta_k$.
+
+The ratio $\rho_k$ is `Optimization.edaRatio` of the inexact values. -/
 theorem IsTRqEDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -324,9 +390,13 @@ theorem IsTRqEDARun.ratio_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     exact le_div_of_inexact_error_le hΔTb0 herr
   exact ⟨hρ, (hs.update ha).le_of_very_successful hρ⟩
 
-/-- **The radius stays bounded below**: under the smoothness hypothesis, for an admissible `κ_Δ`
-with `κ_{∇,max} = 1`, at every iteration `k` reached by TRqEDA, `δ_k ≥ ς κ_δ ε_min` with
-`κ_δ = κ_Δ/2` (13.1.32). -/
+/-- **The radius stays bounded below**. Assume the smoothness hypothesis of
+`Optimization.IsTRqEDARun.ratio_ge`, and let $\kappa_\Delta$ be admissible
+(`Optimization.IsTRKappaDelta`) with $\kappa_{\nabla,\max} = 1$. Then at every iteration $k$ of
+a TRqEDA run up to and including termination,
+$$\delta_k \ge \varsigma \kappa_\delta \varepsilon_{\min}, \qquad \kappa_\delta = \kappa_\Delta
+  / 2. \qquad (13.1.32)$$
+-/
 theorem IsTRqEDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -364,11 +434,16 @@ theorem IsTRqEDARun.delta_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
         exact mul_le_mul_of_nonneg_right this hεmin.le
     _ ≤ P.γ₁ * P.ϑ := mul_le_mul_of_nonneg_left hrun.epsMin_le_ϑ P.γ₁_pos.le
 
-/-- **Sufficient decrease** (Lemma 13.3.2 of [cartis2022evaluation]): under the smoothness
-hypothesis, for an admissible `κ_Δ` (`κ_{∇,max} = 1`) and `κ_δ = κ_Δ/2`, every trial iteration
-`k ∈ 𝒯` of TRqEDA before termination satisfies (13.1.34)
-`\overline{ΔT}_{f,j_k}(x_k, s_k) ≥ (ς κ_δ)^{q+1}/q! ε_min^{q+1}`, and if moreover `k ∈ 𝒮` then
-(13.1.35) `f(x_k) - f(x_{k+1}) ≥ η₁ (ς κ_δ)^{q+1}/(2 q!) ε_min^{q+1}`. -/
+/-- **Lemma 13.3.2** of [cartis2022evaluation], sufficient decrease. Assume the smoothness
+hypothesis of `Optimization.IsTRqEDARun.ratio_ge`, let $\kappa_\Delta$ be admissible with
+$\kappa_{\nabla,\max} = 1$, and let $\kappa_\delta = \kappa_\Delta / 2$. Then every trial
+iteration $k$ of a TRqEDA run before termination satisfies
+$$\overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\delta)^{q+1}}{q!}
+  \varepsilon_{\min}^{q+1}, \qquad (13.1.34)$$
+and if moreover $k$ is successful, $\rho_k \ge \eta_1$, then
+$$f(x_k) - f(x_{k+1}) \ge \eta_1 \frac{(\varsigma \kappa_\delta)^{q+1}}{2 \, q!}
+  \varepsilon_{\min}^{q+1}. \qquad (13.1.35)$$
+-/
 theorem IsTRqEDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -399,10 +474,15 @@ theorem IsTRqEDARun.decrease_ge (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     _ ≤ P.η₁ / 2 * (D k).taylorDecrement (jk k) (s k) := by gcongr
     _ ≤ f (x k) - f (x k + s k) := h2
 
-/-- **Termination certifies approximate optimality** (Lemma 13.3.3 (i) of [cartis2022evaluation]):
-if TRqEDA terminates at iteration `k` (Step 1.4.1: (13.3.7) fails at every order and (13.3.8)
-holds), then `x_k` is an `(ε, δ_k)`-approximate `q`-th order minimizer,
-`δ_k = min(Δ_k, ϑ) ∈ (0, 1]`. -/
+/-- **Lemma 13.3.3(i)** of [cartis2022evaluation], termination certifies approximate optimality. If
+TRqEDA terminates at iteration $k$ (Step 1.4.1: the inequality (13.3.7) holds at no order and
+(13.3.8) holds), then $x_k$ is an $(\varepsilon, \delta_k)$-approximate $q$-th order minimizer
+of $f$ on $X$, with $\delta_k = \min(\Delta_k, \vartheta)$ at all orders: for $1 \le j \le q$,
+the criticality measure of the exact Taylor polynomial of order $j$ at $x_k$ over
+$\{e : x_k + e \in X\}$ is at most $\varepsilon_j \delta_k^j / j!$.
+
+No smoothness hypothesis is needed. The radius $\delta_k$ lies in $(0, 1]$, by
+`Optimization.trqDARadius_mem`. -/
 theorem IsTRqEDARun.isEpsDeltaApprox_of_stop
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j < k, ¬ edaStopTR P ε D Δ h dd j) (hstop : edaStopTR P ε D Δ h dd k) :
@@ -435,11 +515,14 @@ theorem IsTRqEDARun.isEpsDeltaApprox_of_stop
   exact taylorMeasure_le_of_inexact_certificate hor hjq (by simpa using hrun.mem hk) hδ0.le hς
     (hrun.witness k hk j hj).2 (not_lt.1 (hstop.1 j hj)) hs
 
-/-- **Accurate data give termination** (Lemma 13.3.3 (ii) of [cartis2022evaluation]): under the
-smoothness hypothesis and for an admissible `κ_Δ` (`κ_{∇,max} = 1`), `κ_δ = κ_Δ/2`: if (13.3.7)
-fails at every order at an iteration `k` reached by TRqEDA and (13.1.37)
-`h_{k,i} ≤ ς^{q+1} κ_δ^q/(4 q!) ε_min^{q+1}` for `i ∈ [1, q]`, then (13.3.8) holds: the method
-terminates at `k` (Step 1.4.1) rather than branching to Step 5. -/
+/-- **Lemma 13.3.3(ii)** of [cartis2022evaluation], accurate data give termination. Assume the
+smoothness hypothesis of `Optimization.IsTRqEDARun.ratio_ge`, let $\kappa_\Delta$ be admissible
+with $\kappa_{\nabla,\max} = 1$, and let $\kappa_\delta = \kappa_\Delta / 2$. Let $k$ be an
+iteration of a TRqEDA run up to and including termination at which (13.3.7) holds at no order.
+If
+$$h_{k,i} \le \frac{\varsigma^{q+1} \kappa_\delta^q}{4 \, q!} \varepsilon_{\min}^{q+1} \qquad (1
+  \le i \le q), \qquad (13.1.37)$$
+then (13.3.8) holds, so the method terminates at $k$ (Step 1.4.1) and does not branch to Step 5. -/
 theorem IsTRqEDARun.stop_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -477,10 +560,15 @@ theorem IsTRqEDARun.stop_of_pass (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     _ ≤ P.ς * em * δ ^ P.q / (2 * P.q !) := by gcongr
     _ = P.ς * em * δ ^ P.q / P.q ! / 2 := by ring
 
-/-- **The accuracy-improving iterations of TRqEDA with a feasible set** (proof of Theorem 13.3.4,
-[cartis2022evaluation]): under `LipschitzDerivsAnchored f C A 0 q L` (`L_j ≥ 1`, `A ⊇ {y ∈ X |
-f(y) ≤ f(x₀)}`) and for an admissible `κ_Δ` (`κ_{∇,max} = 1`), if the run has not terminated at
-any `j ≤ k`, then `|𝒜_k| ≤ q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+/-- **The number of accuracy-improving iterations of TRqEDA with a feasible set**, from the proof of
+Theorem 13.3.4 of [cartis2022evaluation]. Assume the smoothness hypothesis of
+`Optimization.IsTRqEDARun.ratio_ge` and let $\kappa_\Delta$ be admissible with
+$\kappa_{\nabla,\max} = 1$. If the run has not terminated at any iteration $j \le k$, then
+$$|\mathcal{A}_k| \le \frac{q(q+1)}{|\log \gamma_h|} |\log \varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}} / \kappa_h)|}{|\log \gamma_h|} + 1,$$
+where $\mathcal{A}_k$ is the set of accuracy-improving iterations among $0, \dots, k$ and
+$\kappa_{\mathrm{acc}}$ is `Optimization.trKappaAcc` with $\bar L_f = L_f + \kappa_h$ and
+$\kappa_{\nabla,\max} = 1$. -/
 theorem IsTRqEDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)
@@ -546,13 +634,27 @@ theorem IsTRqEDARun.card_acc_le (hf : LipschitzDerivsAnchored f C A 0 P.q L)
           |Real.log P.γh| + 1 := h
     _ = NA := by rw [hNA_def]; push_cast; ring
 
-/-- **Evaluation complexity of TRqEDA** (Theorem 13.3.4 of [cartis2022evaluation]): complexity of
-TRqEDA. Let the smoothness hypothesis and f.Bb hold, `ε ∈ (0, 1]^q`, and `κ_Δ` be admissible with
-`κ_{∇,max} = 1`, `κ_δ = κ_Δ/2`. Every TRqEDA run terminates at some iteration `k_ε` with `x_{k_ε}`
-an `(ε, δ_ε)`-approximate `q`-th order minimizer, `δ_ε = min(Δ_{k_ε}, ϑ) ∈ (0, 1]`, after at most
-`2 κ^A (f(x₀) - f_low)/ε_min^{q+1} + 2 κ^B |log ε_min| + 2 κ^C` inexact function evaluations and
-`κ^A (f(x₀) - f_low)/ε_min^{q+1} + κ^E |log ε_min| + κ^F + 2` derivative estimates, with the
-constants of Theorem 13.1.8 for `κ_{∇,max} = 1` (`κ_acc = trKappaAcc P κ_Δ (L_f + κ_h) 1`). -/
+/-- **Theorem 13.3.4** of [cartis2022evaluation], the evaluation complexity of TRqEDA. Assume the
+smoothness hypothesis of `Optimization.IsTRqEDARun.ratio_ge` and assumption f.Bb,
+$f(y) \ge f_{\mathrm{low}}$ for $y \in X$. Let $\kappa_\Delta$ be admissible with
+$\kappa_{\nabla,\max} = 1$, and $\kappa_\delta = \kappa_\Delta / 2$. Then every TRqEDA run
+terminates at some first iteration $k_\varepsilon$, and $x_{k_\varepsilon}$ is an
+$(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer on $X$ with
+$\delta_\varepsilon = \min(\Delta_{k_\varepsilon}, \vartheta) \in (0, 1]$. Up to $k_\varepsilon$
+the method makes at most
+$$2 \kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + 2 \kappa^B |\log
+  \varepsilon_{\min}| + 2 \kappa^C$$
+inexact function evaluations and at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + \kappa^E |\log
+  \varepsilon_{\min}| + \kappa^F + 2$$
+derivative estimates, with the constants of Theorem 13.1.8
+(`Optimization.IsTRqIDARun.complexity`) for $\kappa_{\nabla,\max} = 1$, and
+$\kappa_{\mathrm{acc}}$ is `Optimization.trKappaAcc` with $\bar L_f = L_f + \kappa_h$ and
+$\kappa_{\nabla,\max} = 1$.
+
+The function evaluations are counted by `Optimization.edaFunEvalCount`, and the derivative
+estimates by `Optimization.derivEvalCount` of the successful and the accuracy-improving
+iterations. -/
 theorem IsTRqEDARun.complexity (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A) {flow : ℝ}
@@ -679,12 +781,18 @@ variable {f : E → ℝ} {X C A X₀ : Set E} {P : TRqIDAParams} {ε : ℕ → �
   {jk : ℕ → ℕ} {s : ℕ → E} {acc : ℕ → Prop} {fx fxs h₀ : ℕ → ℝ} {R : ℕ → Prop}
   {L B : ℕ → ℝ} {κΔ : ℝ}
 
-/-- **Counting the trial iterations of a run** (Lemma 14.2.3 of [cartis2022evaluation]): for a
-TRqEDA run with a feasible set under `LipschitzDerivsAnchored f C A 0 q L` (`L_j ≥ 1`,
-`A ⊇ {y ∈ X | f(y) ≤ f(x₀)}`) and an admissible `κ_Δ` (`κ_{∇,max} = 1`), every iteration `k` reached
-(up to and including termination) satisfies `k ≤ κ_uns |𝒮_k| + κ_unc` (14.2.13) with
-`κ_uns = 1 + log γ₃/|log γ₂|` and `κ_unc = |log(ς κ_δ ε_min/Δ₀)|/|log γ₂| + N_𝒜`,
-`N_𝒜 = q(q+1)/|log γ_h| |log ε_min| + |log(κ_acc/κ_h)|/|log γ_h| + 1`. -/
+/-- **Lemma 14.2.3** of [cartis2022evaluation] for TRqEDA, counting the iterations of a run. Assume
+the smoothness hypothesis of `Optimization.IsTRqEDARun.ratio_ge` and let $\kappa_\Delta$ be
+admissible with $\kappa_{\nabla,\max} = 1$. Then every iteration $k$ of a TRqEDA run up to and
+including termination satisfies
+$$k \le \kappa_{\mathrm{uns}} |\mathcal{S}_k| + \kappa_{\mathrm{unc}}, \qquad (14.2.13)$$
+where $\mathcal{S}_k$ is the set of successful iterations among $0, \dots, k$,
+$\kappa_{\mathrm{uns}} = 1 + \log \gamma_3 / |\log \gamma_2|$, and $\kappa_{\mathrm{unc}} =
+|\log(\varsigma \kappa_\delta \varepsilon_{\min} / \Delta_0)| / |\log \gamma_2| +
+N_{\mathcal{A}}$ with
+$$N_{\mathcal{A}} = \frac{q(q+1)}{|\log \gamma_h|} |\log \varepsilon_{\min}| +
+  \frac{|\log(\kappa_{\mathrm{acc}} / \kappa_h)|}{|\log \gamma_h|} + 1.$$
+-/
 theorem IsTRqEDARun.le_card_succ (hf : LipschitzDerivsAnchored f C A 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j)
     (hXC : X ⊆ C) (hAX : ∀ y ∈ X, f y ≤ f x₀ → y ∈ A)

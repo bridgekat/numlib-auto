@@ -10,55 +10,75 @@ import Numlib.Variational.LaxMilgram
 /-!
 # Elliptic variational inequalities
 
-For a real Hilbert space `V`, a nonempty closed convex `K ⊆ V`, an operator `A : V → V`, a
-functional `j : V → ℝ` and a datum `f : V`, the *elliptic variational inequality* asks for
+Let $V$ be a real Hilbert space, $K \subseteq V$ a nonempty closed convex set, $A : V \to V$ an
+operator, $j : V \to \mathbb{R}$ a functional and $f \in V$. The **elliptic variational inequality**
+asks for
+$$u \in K, \qquad \langle f, v - u \rangle \le \langle Au, v - u \rangle + j(v) - j(u)
+  \quad \text{for all } v \in K.$$
+The inequality of the first kind is the case $j = 0$, the inequality of the second kind is the case
+$K = V$, and the problems given by a bilinear form $a$ are the case where $A$ is the operator with
+$\langle Au, v \rangle = a(u, v)$. The presentation follows Chapter 11 of [han2009theoretical].
 
-  `u ∈ K`,  `⟪f, v - u⟫ ≤ ⟪A u, v - u⟫ + j v - j u`  for every `v ∈ K`.
+The module proves that a solution is unique and depends Lipschitz continuously on $f$ when $A$ is
+strongly monotone, and that it exists when $A$ is also Lipschitz continuous and $j$ is convex and
+lower semicontinuous. For a symmetric elliptic bilinear form $a$ and $\ell \in V'$, the solution is
+the minimizer over $K$ of the energy $E(v) = \tfrac12 a(v, v) + j(v) - \ell(v)$. The module also
+proves Minty's lemma and the special forms of the inequality on a cone and for a positively
+homogeneous $j$.
 
-`IsVariationalInequalitySolution A j f K u` is that specification. One predicate covers all the
-forms the literature distinguishes: the inequality *of the first kind* is `j = 0`, the inequality
-*of the second kind* is `K = Set.univ`, and the bilinear-form problems are `A = a.toOperator`. The
-datum is a vector rather than a functional, the two being interchangeable by the Riesz
-representation.
+## Main definitions
 
-* `IsVariationalInequalitySolution.norm_sub_le` and `.unique`: strong monotonicity alone gives `‖u₁
-  - u₂‖ ≤ ‖f₁ - f₂‖ / c`, hence uniqueness.
-* `existsUnique_isMinOn_energy_add`: the minimizer of `E v = ½ a v v + j v - ℓ v` over a nonempty
-  closed convex set exists and is unique.  This is the existence engine, proved in the Hilbert space
-  itself: `j` has a continuous affine minorant, so `E` is bounded below, and the parallelogram
-  identity `E x + E y - 2 E ((x + y)/2) ≥ (c/4) ‖x - y‖²` makes every minimizing sequence Cauchy.
-* `isMinOn_energy_add_iff`: that minimizer is characterized by the variational inequality — the
-  specialization of `isMinOn_add_iff_forall_le` to the quadratic functional.
-* `existsUnique_isVariationalInequalitySolution`: unique solvability for a strongly monotone
-  Lipschitz `A` and a convex lower semicontinuous `j`, by a fixed point of the map sending `u` to
-  the solution of the auxiliary inequality with operator the identity and datum `u - θ (A u - f)`;
-  that map is nonexpansive in its datum, and the damping step is a contraction with factor `√(1 - 2
-  c θ + L² θ²)`.  `stampacchia` is the case `j = 0` and
-  `existsUnique_isVariationalInequalitySolution_of_isCoercive` the bilinear-form case.
-* `existsUnique_isVariationalInequalitySolution_on` is the same theorem with the two hypotheses on
-  `A` — `IsStronglyMonotoneOnWith` and a Lipschitz bound — required **on `K` only**, which is all
-  the fixed point argument ever uses, since the iterates stay in `K`.  It is what a locally
-  Lipschitz operator satisfies on a bounded piece of `K`, and the global form is its corollary.
-* `IsVariationalInequalitySolution.iff_minty`: Minty's lemma, the equivalent form with `A` evaluated
-  at the test point.  It needs no Lipschitz continuity, only continuity of `A` along the segments of
-  `K` issuing from `u`.
-* `IsVariationalInequalitySolution.isBestApprox_energy`, `.iff_of_isCone` and
-  `.iff_of_isPositiveHomogeneous`: the energy-projection reading, the cone form and the positively
-  homogeneous form.
+* `IsVariationalInequalitySolution`: $u$ solves the elliptic variational inequality with operator
+  $A$, functional $j$, datum $f$ and set $K$.
 
-`IsVariationalInequalitySolution` unfolds to `And` and `IsStronglyMonotoneWith` to a `∀`, so dot
-notation on a hypothesis of either type can resolve in the wrong namespace; write the lemma names
-out in full.
+## Main results
 
-Strong monotonicity is the bundle `IsStronglyMonotoneWith` of `Numlib/Nonlinear/FixedPoint.lean`,
-the hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no
-translation lemma; `LinearMap.IsCoerciveWith.isStronglyMonotoneWith` below is the bridge from the
-linear theory.
+* `IsVariationalInequalitySolution.norm_sub_le`, `IsVariationalInequalitySolution.unique`: for a
+  $c$-strongly monotone $A$, solutions with data $f_1$ and $f_2$ satisfy
+  $\|u_1 - u_2\| \le \|f_1 - f_2\| / c$, so the solution is unique.
+* `existsUnique_isMinOn_energy_add`: for a symmetric elliptic form $a$ and a convex lower
+  semicontinuous $j$, the energy $E$ has exactly one minimizer over a nonempty closed convex set
+  $K$.
+* `isMinOn_energy_add_iff`: a point minimizes $E$ over $K$ if and only if it solves the variational
+  inequality with the operator of $a$ and the Riesz representative of $\ell$.
+* `existsUnique_isVariationalInequalitySolution_on`: if $A$ is strongly monotone and Lipschitz
+  continuous on $K$ and $j$ is convex and lower semicontinuous on $K$, the variational inequality
+  has exactly one solution.
+* `existsUnique_isVariationalInequalitySolution`: the same theorem with the hypotheses on $A$ on all
+  of $V$.
+* `stampacchia`: Stampacchia's theorem, the case $j = 0$.
+* `existsUnique_isVariationalInequalitySolution_of_isCoercive`: unique solvability for a bounded
+  elliptic bilinear form that need not be symmetric.
+* `IsVariationalInequalitySolution.iff_minty`: Minty's lemma, the equivalent form with $A$ evaluated
+  at the test point.
+* `IsVariationalInequalitySolution.isBestApprox_energy`: for a symmetric coercive linear $A$ and
+  $j = 0$, the solution is the best approximation from $K$, in the energy norm of $A$, to the
+  solution of $Aw = f$.
+* `IsVariationalInequalitySolution.iff_of_isCone`,
+  `IsVariationalInequalitySolution.iff_of_isPositiveHomogeneous`: the equivalent forms on a convex
+  cone and for a positively homogeneous $j$.
 
-The material is Chapter 11 of [han2009theoretical]: (11.3.3), (11.3.8), (11.3.9) and
-(11.3.12)–(11.3.14) for the problem, Theorem 11.2.2 for the equivalence with minimization, Theorem
-11.3.1 for unique solvability, Theorem 11.3.6 (Stampacchia) and Theorem 11.3.9 for its
-specializations, Lemma 11.3.8 for Minty's lemma, and Exercises 11.3.3 and 11.3.10 for the last two.
+## Proof outline
+
+The minimizer of $E$ is found in the Hilbert space directly, without the direct method in a
+reflexive space. The functional $j$ has a continuous affine minorant, so $E$ is bounded below.
+Ellipticity and convexity of $j$ give $E(x) + E(y) - 2E(\tfrac12(x + y)) \ge \tfrac{c}{4}\|x -
+y\|^2$, so every minimizing sequence is a Cauchy sequence. For a general $A$, the map that sends $u$
+to the solution of the inequality with the identity operator and datum $u - \theta(Au - f)$ is a
+contraction with factor $\sqrt{1 - 2c\theta + L^2\theta^2}$ for $0 < \theta < 2c/L^2$, and its fixed
+point is the solution. All iterates stay in $K$, so the hypotheses on $A$ are needed on $K$ only.
+
+## Implementation notes
+
+* The datum is a vector $f \in V$ and not a functional. The two are interchangeable by the Riesz
+  representation `SesqForm.rieszRep`.
+* Strong monotonicity is `IsStronglyMonotoneWith` of `Numlib.Nonlinear.FixedPoint`, which is also
+  the hypothesis of `zarantonello` and `contractingWith_damped`, so these results compose with no
+  translation lemma. `LinearMap.IsCoerciveWith.isStronglyMonotoneWith` connects it to the coercivity
+  of a linear operator.
+* `IsVariationalInequalitySolution` unfolds to `And` and `IsStronglyMonotoneWith` unfolds to a
+  universal statement, so dot notation on a hypothesis of either type can resolve in the wrong
+  namespace. Write the lemma names in full.
 -/
 
 open Filter Set Topology
@@ -67,7 +87,9 @@ section StronglyMonotone
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- A coercive operator is strongly monotone with the same constant. -/
+/-- A coercive linear operator is strongly monotone with the same constant: if $A : E \to E$ is
+linear and $\operatorname{Re} \langle Ax, x \rangle \ge c \|x\|^2$ for all $x$, then
+$\operatorname{Re} \langle Ax - Ay, x - y \rangle \ge c \|x - y\|^2$ for all $x, y \in E$. -/
 theorem LinearMap.IsCoerciveWith.isStronglyMonotoneWith {A : E →ₗ[𝕜] E} {c : ℝ}
     (h : A.IsCoerciveWith c) : IsStronglyMonotoneWith 𝕜 (A : E → E) c := fun x y => by
   simpa only [map_sub] using h (x - y)
@@ -76,16 +98,18 @@ end StronglyMonotone
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- **The elliptic variational inequality.**  `IsVariationalInequalitySolution A j f K u` says that
-`u` lies in `K` and
+/-- The **elliptic variational inequality**. Let $V$ be a real inner product space, $A : V \to V$,
+$j : V \to \mathbb{R}$, $f \in V$ and $K \subseteq V$. A point $u$ **solves the variational
+inequality** if $u \in K$ and
+$$\langle f, v - u \rangle \le \langle Au, v - u \rangle + j(v) - j(u) \quad \text{for all } v
+  \in K.$$
+This is the problem of (11.3.3), (11.3.8), (11.3.9) and (11.3.12)–(11.3.14) of
+[han2009theoretical].
 
-  `⟪f, v - u⟫ ≤ ⟪A u, v - u⟫ + j v - j u`  for every `v ∈ K`.
-
-The inequality of the first kind is `j = 0`, the inequality of the second kind is `K = Set.univ`,
-and the bilinear-form problems are `A = a.toOperator`; the datum is a vector `f`, which the Riesz
-representation makes interchangeable with a functional.
-
-[han2009theoretical], (11.3.3), (11.3.8), (11.3.9) and (11.3.12)–(11.3.14). -/
+The inequality of the first kind is the case $j = 0$, and the inequality of the second kind is
+the case `K = Set.univ`. The problems with a bilinear form $a$ are the case
+`A = SesqForm.toOperator a`. The datum is a vector $f$, which the Riesz representation makes
+interchangeable with a functional. The definition puts no hypothesis on $A$, $j$ or $K$. -/
 def IsVariationalInequalitySolution (A : V → V) (j : V → ℝ) (f : V) (K : Set V) (u : V) : Prop :=
   u ∈ K ∧ ∀ v ∈ K, inner ℝ f (v - u) ≤ inner ℝ (A u) (v - u) + j v - j u
 
@@ -93,13 +117,13 @@ section Uniqueness
 
 variable {A : V → V} {j : V → ℝ} {K : Set V} {c : ℝ}
 
-/-- **Lipschitz dependence on the datum.**  Two solutions of the same variational inequality with
-data `f₁` and `f₂` and an operator `c`-strongly monotone on `K` satisfy
-`‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c`.  Both solutions lie in `K`, which is why monotonicity there is enough.
+/-- Let $V$ be a real inner product space, $K \subseteq V$ and $j : V \to \mathbb{R}$, and let
+$A : V \to V$ be strongly monotone on $K$ with constant $c > 0$. If $u_1$ and $u_2$ solve the
+variational inequality with data $f_1$ and $f_2$, then $\|u_1 - u_2\| \le \|f_1 - f_2\| / c$.
 
-Neither Lipschitz continuity of `A`, nor convexity of `j`, nor closedness of `K` is used.
-[han2009theoretical], Theorem 11.3.1, last clause; the linear case is
-`norm_sub_le_of_strongly_monotone`. -/
+Both solutions lie in $K$, so strong monotonicity on $K$ is enough. Lipschitz continuity of $A$,
+convexity of $j$ and closedness of $K$ are not used. This is the last clause of Theorem 11.3.1
+of [han2009theoretical]. The case of an equation $Au = f$ is `norm_sub_le_of_strongly_monotone`. -/
 theorem IsVariationalInequalitySolution.norm_sub_le_on (hc : 0 < c)
     (hmono : IsStronglyMonotoneOnWith ℝ A K c) {f₁ f₂ u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f₁ K u₁)
@@ -125,14 +149,23 @@ theorem IsVariationalInequalitySolution.norm_sub_le_on (hc : 0 < c)
     calc ‖u₁ - u₂‖ * c * ‖u₁ - u₂‖ = c * ‖u₁ - u₂‖ ^ 2 := by ring
       _ ≤ ‖f₁ - f₂‖ * ‖u₁ - u₂‖ := hmono'.trans hcs
 
-/-- **Lipschitz dependence on the datum**, for a globally strongly monotone operator. -/
+/-- **Lipschitz dependence on the datum.** Let $V$ be a real inner product space, $K \subseteq V$
+and $j : V \to \mathbb{R}$, and let $A : V \to V$ be strongly monotone with constant $c > 0$,
+that is, $\langle Ax - Ay, x - y \rangle \ge c \|x - y\|^2$ for all $x, y \in V$. If $u_1$ and
+$u_2$ solve the variational inequality with data $f_1$ and $f_2$, then
+$$\|u_1 - u_2\| \le \frac{\|f_1 - f_2\|}{c}.$$
+This is the last clause of Theorem 11.3.1 of [han2009theoretical].
+
+This is the case of `IsVariationalInequalitySolution.norm_sub_le_on` in which $A$ is strongly
+monotone on all of $V$. -/
 theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) {f₁ f₂ u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f₁ K u₁)
     (h₂ : IsVariationalInequalitySolution A j f₂ K u₂) : ‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c :=
   norm_sub_le_on hc (hmono.isStronglyMonotoneOnWith K) h₁ h₂
 
-/-- **Uniqueness**, from strong monotonicity on `K` alone. -/
+/-- Let $A$ be strongly monotone on $K$ with constant $c > 0$. Then two solutions of the same
+variational inequality, with the same $j$, $f$ and $K$, are equal. -/
 theorem IsVariationalInequalitySolution.unique_on (hc : 0 < c)
     (hmono : IsStronglyMonotoneOnWith ℝ A K c) {f u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f K u₁)
@@ -141,8 +174,10 @@ theorem IsVariationalInequalitySolution.unique_on (hc : 0 < c)
   simp only [sub_self, norm_zero, zero_div] at h
   exact sub_eq_zero.mp (norm_le_zero_iff.mp h)
 
-/-- **Uniqueness.**  Two solutions of the same variational inequality with a strongly monotone
-operator coincide. [han2009theoretical], Theorem 11.3.1, uniqueness clause. -/
+/-- **Uniqueness.** Let $V$ be a real inner product space, $K \subseteq V$, $j : V \to \mathbb{R}$
+and $f \in V$, and let $A : V \to V$ be strongly monotone with constant $c > 0$. Then two
+solutions $u_1$ and $u_2$ of the variational inequality are equal. This is the uniqueness clause
+of Theorem 11.3.1 of [han2009theoretical]. -/
 theorem IsVariationalInequalitySolution.unique (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) {f u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f K u₁)
@@ -155,15 +190,17 @@ end Uniqueness
 
 section Energy
 
-/-- Expansion of the energy around a point: `E (u + w) = E u + (a u w - ℓ w) + ½ a w w`.  This is
-`SesqForm.energy_add_sub_energy` with the real scalars written without `re`. -/
+/-- For a symmetric real form $a$, the energy $E(v) = \tfrac12 a(v, v) - \ell(v)$ satisfies $E(u +
+w) = E(u) + (a(u, w) - \ell(w)) + \tfrac12 a(w, w)$; this is `SesqForm.energy_add_sub_energy`
+with the real scalars written without real parts. -/
 private theorem energy_add (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) (u w : V) :
     a.energy ℓ (u + w) = a.energy ℓ u + (a u w - ℓ w) + 1 / 2 * a w w := by
   have h := a.energy_add_sub_energy ℓ ha u w
   simp only [RCLike.re_to_real] at h
   linarith
 
-/-- The Gâteaux derivative of the energy of a symmetric form at `u` is `v ↦ a u v - ℓ v`. -/
+/-- For a symmetric real form $a$, the energy $E(v) = \tfrac12 a(v, v) - \ell(v)$ has at $u$ the
+directional derivative $a(u, h) - \ell(h)$ in every direction $h$. -/
 private theorem hasLineDerivAt_energy (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ)
     (u h : V) : HasLineDerivAt ℝ (a.energy ℓ) ((a u - ℓ) h) u h := by
   have hfun : (fun t : ℝ => a.energy ℓ (u + t • h))
@@ -185,7 +222,8 @@ private theorem hasLineDerivAt_energy (a : SesqForm ℝ V) (ha : a.IsHermitian) 
     exact h3
   exact hd
 
-/-- The energy of a positive semidefinite symmetric form is convex on every convex set. -/
+/-- For a symmetric real form $a$ with $a(w, w) \ge 0$ for all $w$, the energy
+$E(v) = \tfrac12 a(v, v) - \ell(v)$ is convex on every convex set. -/
 private theorem convexOn_energy (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ)
     (hpos : ∀ w : V, 0 ≤ a w w) {K : Set V} (hK : Convex ℝ K) : ConvexOn ℝ K (a.energy ℓ) := by
   refine convexOn_of_add_lineDeriv_le (f' := fun w => a w - ℓ) hK fun u _ v _ => ?_
@@ -203,16 +241,21 @@ section Minimization
 
 variable [CompleteSpace V]
 
-/-- **Existence and uniqueness of the constrained minimizer.**  For a bounded symmetric `V`-elliptic
-form `a`, a functional `ℓ`, and a `j` convex and lower semicontinuous on a nonempty closed convex
-`K`, the functional `E v = ½ a v v + j v - ℓ v` has exactly one minimizer on `K`.
+/-- **Existence and uniqueness of the constrained minimizer.** Let $V$ be a real Hilbert space, and
+let $a$ be a bounded symmetric bilinear form on $V$ that is elliptic with constant $c > 0$, that
+is, $a(v, v) \ge c \|v\|^2$ for all $v$. Let $\ell \in V'$, let $K \subseteq V$ be nonempty,
+closed and convex, and let $j : V \to \mathbb{R}$ be convex and lower semicontinuous on $K$.
+Then the functional
+$$E(v) = \tfrac12 a(v, v) + j(v) - \ell(v)$$
+has exactly one minimizer over $K$. This is the existence clause of Theorem 11.2.2 of
+[han2009theoretical].
 
-[han2009theoretical], Theorem 11.2.2, existence clause.  The proof stays in the Hilbert space
-instead of invoking the direct method in a reflexive space: `j` has a continuous affine minorant
-(`ConvexOn.exists_affine_le_of_lt`, the book's Lemma 11.3.5), so `E` is bounded below, and
-ellipticity together with convexity of `j` gives `E v + E w - 2 E ((v + w)/2) ≥ (c/4) ‖v - w‖²`,
-which makes every minimizing sequence Cauchy. Mathlib's `exists_norm_eq_iInf_of_complete_convex` is
-the case `a = inner`, `j = 0`. -/
+The form $a$ is a `SesqForm ℝ V`, which is bounded by its type, and $E$ is `a.energy ℓ + j`. The
+proof does not use the direct method in a reflexive space. The functional $j$ has a continuous
+affine minorant (`ConvexOn.exists_affine_le_of_lt`, Lemma 11.3.5 of [han2009theoretical]), so
+$E$ is bounded below. Ellipticity and convexity of $j$ give $E(v) + E(w) - 2E(\tfrac12(v + w))
+\ge \tfrac{c}{4}\|v - w\|^2$, so every minimizing sequence is a Cauchy sequence. Mathlib's
+`exists_norm_eq_iInf_of_complete_convex` is the case where $a$ is the inner product and $j = 0$. -/
 theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ}
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) {j : V → ℝ} {K : Set V}
     (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)
@@ -336,17 +379,18 @@ theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian
     exact sub_eq_zero.mp (norm_eq_zero.mp hz)
   exact ⟨u, ⟨huK, hminon⟩, fun z hz => huniq z hz.1 hz.2 u huK hminon⟩
 
-/-- **The constrained minimizer is characterized by a variational inequality.**  For a symmetric
-positive semidefinite form `a`, a functional `ℓ` and a `j` convex on a convex `K`, a point `u ∈ K`
-minimizes `E v = ½ a v v + j v - ℓ v` over `K` if and only if
+/-- **Characterization of the constrained minimizer.** Let $V$ be a real Hilbert space, and let $a$
+be a bounded symmetric bilinear form on $V$ with $a(v, v) \ge c \|v\|^2$ for all $v$, for some
+$c \ge 0$. Let $\ell \in V'$, let $K \subseteq V$ be convex, and let $j : V \to \mathbb{R}$ be
+convex on $K$. Then a point $u \in K$ minimizes $E(v) = \tfrac12 a(v, v) + j(v) - \ell(v)$ over
+$K$ if and only if
+$$\ell(v - u) \le a(u, v - u) + j(v) - j(u) \quad \text{for all } v \in K.$$
+This is the characterization clause of Theorem 11.2.2 of [han2009theoretical].
 
-  `ℓ (v - u) ≤ a u (v - u) + j v - j u`  for every `v ∈ K`,
-
-which is the variational inequality with operator `a.toOperator` and datum `rieszRep ℓ`.
-
-This is the specialization of `isMinOn_add_iff_forall_le` to the quadratic functional, whose Gâteaux
-derivative at `u` is `v ↦ a u v - ℓ v`. [han2009theoretical], Theorem 11.2.2, characterization
-clause; the case `j = 0` with `K` a subspace is `SesqForm.isMinOn_energy_iff`. -/
+The right-hand side is the variational inequality with operator `SesqForm.toOperator a` and
+datum `SesqForm.rieszRep ℓ`. The proof specializes `isMinOn_add_iff_forall_le` to the quadratic
+functional, whose directional derivative at $u$ is $v \mapsto a(u, v) - \ell(v)$. The case
+$j = 0$ with $K$ a subspace is `SesqForm.isMinOn_energy_iff`. -/
 theorem isMinOn_energy_add_iff {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ} (hc : 0 ≤ c)
     (hcoer : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) {j : V → ℝ} {K : Set V} (hKcv : Convex ℝ K)
     (hj : ConvexOn ℝ K j) {u : V} (hu : u ∈ K) :
@@ -374,8 +418,9 @@ end Minimization
 
 section Existence
 
-/-- The fixed-point reformulation: `u` solves the variational inequality exactly when it solves the
-auxiliary inequality with operator the identity and datum `u - θ (A u - f)`. -/
+/-- For $\theta > 0$, a point $u$ solves the variational inequality with operator $A$, functional
+$j$ and datum $f$ if and only if it solves the one with the identity operator, functional
+$\theta j$ and datum $u - \theta(Au - f)$. -/
 private theorem isVarIneq_aux_iff {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {θ : ℝ}
     (hθ : 0 < θ) {u : V} :
     IsVariationalInequalitySolution (fun w => w) (fun v => θ * j v) (u - θ • (A u - f)) K u ↔
@@ -400,7 +445,7 @@ private theorem isVarIneq_aux_iff {A : V → V} {j : V → ℝ} {f : V} {K : Set
 
 variable [CompleteSpace V]
 
-/-- The operator of the inner product form is the identity. -/
+/-- The operator of the inner product form $(u, v) \mapsto \langle u, v \rangle$ is the identity. -/
 private theorem coe_toOperator_innerSL :
     ⇑(SesqForm.toOperator (innerSL ℝ : SesqForm ℝ V)) = fun w : V => w := by
   funext y
@@ -408,14 +453,15 @@ private theorem coe_toOperator_innerSL :
   rw [SesqForm.inner_toOperator]
   rfl
 
-/-- The Riesz representative of `⟪y, ·⟫` is `y`. -/
+/-- The Riesz representative of the functional $\langle y, \cdot \rangle$ is $y$. -/
 private theorem rieszRep_innerSL (y : V) : SesqForm.rieszRep (innerSL ℝ y : V →L[ℝ] ℝ) = y := by
   refine ext_inner_right ℝ fun v => ?_
   rw [SesqForm.inner_rieszRep]
   rfl
 
-/-- **The auxiliary problem.**  The variational inequality with the identity operator is uniquely
-solvable, being the minimization of `½ ‖w‖² + j w - ⟪y, w⟫` over `K`. -/
+/-- For $K$ nonempty, closed and convex and $j$ convex and lower semicontinuous on $K$, the
+variational inequality with the identity operator has exactly one solution for every datum $y$,
+namely the minimizer of $\tfrac12 \|w\|^2 + j(w) - \langle y, w \rangle$ over $K$. -/
 private theorem existsUnique_id {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
     (hKcv : Convex ℝ K) {j : V → ℝ} (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K)
     (y : V) : ∃! z, IsVariationalInequalitySolution (fun w => w) j y K z := by
@@ -432,19 +478,23 @@ private theorem existsUnique_id {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed
     SesqForm.innerSL_isCoerciveWith (innerSL ℝ y) hKne hKcl hKcv hj hjlsc
   exact ⟨z, (hiff z hzK).mp hzmin, fun x hx => huniq x ⟨hx.1, (hiff x hx.1).mpr hx⟩⟩
 
-/-- **Unique solvability of the elliptic variational inequality, with the hypotheses on `K`
-only.** For a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone on `K`
-with constant `c > 0` and Lipschitz on `K` with constant `L`, and a `j` convex and lower
-semicontinuous on `K`, the variational inequality has exactly one solution for every datum `f`.
+/-- **Unique solvability with the hypotheses on $K$ only.** Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Let $A : V \to V$ be strongly monotone on $K$
+with constant $c > 0$ and Lipschitz continuous on $K$ with constant $L$:
+$$\langle Ax - Ay, x - y \rangle \ge c \|x - y\|^2, \qquad \|Ax - Ay\| \le L \|x - y\|
+  \qquad (x, y \in K).$$
+Let $j : V \to \mathbb{R}$ be convex and lower semicontinuous on $K$. Then for every $f \in V$
+the variational inequality has exactly one solution.
 
-The map sending `u` to the solution of the auxiliary inequality with operator the identity and datum
-`u - θ (A u - f)` is nonexpansive in its datum, and the damping step `u ↦ u - θ (A u - f)` contracts
-with factor `√(1 - 2 c θ + L² θ²)` for `0 < θ < 2c/L²` (`norm_sub_damped_le`); the Banach fixed
-point theorem on the closed set `K` then produces the solution, and
-`IsVariationalInequalitySolution.unique_on` its uniqueness. **Every step of that argument stays
-inside `K`**, which is why the hypotheses are needed nowhere else — the content of
-[han2009theoretical], Remark 11.3.2, and what makes the locally Lipschitz Exercise 11.3.1 a
-corollary: on a bounded piece of `K` a locally Lipschitz operator is Lipschitz. -/
+The map that sends $u$ to the solution of the inequality with the identity operator and datum
+$u - \theta(Au - f)$ is nonexpansive in the datum, and the step $u \mapsto u - \theta(Au - f)$
+contracts on $K$ with factor $\sqrt{1 - 2c\theta + L^2\theta^2}$ for $0 < \theta < 2c/L^2$
+(`norm_sub_damped_le`). The Banach fixed-point theorem on the closed set $K$ gives the solution,
+and `IsVariationalInequalitySolution.unique_on` gives uniqueness. Every step of this argument
+stays in $K$, which is why the hypotheses are needed on $K$ only. This is the content of Remark
+11.3.2 of [han2009theoretical], and it makes the locally Lipschitz case of Exercise 11.3.1 of
+[han2009theoretical] a corollary, because a locally Lipschitz operator is Lipschitz on a bounded
+part of $K$. -/
 theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) {A : V → V} {c L : ℝ} (hc : 0 < c)
     (hmono : IsStronglyMonotoneOnWith ℝ A K c)
@@ -501,13 +551,15 @@ theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.No
     rwa [hxfix] at h
   exact ⟨x, hsol, fun y hy => IsVariationalInequalitySolution.unique_on hc hmono hy hsol⟩
 
-/-- **Unique solvability of the elliptic variational inequality.** [han2009theoretical], Theorem
-11.3.1: for a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone with
-constant `c > 0` and Lipschitz with constant `L`, and a `j` convex and lower semicontinuous on `K`,
-the variational inequality has exactly one solution for every datum `f`.
+/-- **Unique solvability of the elliptic variational inequality.** Let $V$ be a real Hilbert space
+and let $K \subseteq V$ be nonempty, closed and convex. Let $A : V \to V$ be strongly monotone
+with constant $c > 0$ and Lipschitz continuous with constant $L$, and let $j : V \to \mathbb{R}$
+be convex and lower semicontinuous on $K$. Then for every $f \in V$ the variational inequality
+has exactly one solution. This is Theorem 11.3.1 of [han2009theoretical].
 
-The case of `existsUnique_isVariationalInequalitySolution_on` in which the two hypotheses on `A`
-hold on the whole space. -/
+The Lipschitz constant is `Real.toNNReal L`, so a negative $L$ stands for $0$. This is the case
+of `existsUnique_isVariationalInequalitySolution_on` in which the two hypotheses on $A$ hold on
+all of $V$. -/
 theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) {A : V → V} {c L : ℝ} (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith (Real.toNNReal L) A)
@@ -520,14 +572,18 @@ theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonem
       rwa [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal'] at h)
     hj hjlsc f
 
-/-- **Stampacchia's theorem.** [han2009theoretical], Theorem 11.3.6: a variational inequality of the
-first kind — `j = 0` — over a nonempty closed convex set with a strongly monotone Lipschitz operator
-has exactly one solution; it depends Lipschitz continuously on the datum by
-`IsVariationalInequalitySolution.norm_sub_le`.
+/-- **Stampacchia's theorem.** Let $V$ be a real Hilbert space, let $K \subseteq V$ be nonempty,
+closed and convex, and let $A : V \to V$ be strongly monotone with constant $c > 0$ and
+Lipschitz continuous with constant $L$. Then for every $f \in V$ the variational inequality of
+the first kind
+$$u \in K, \qquad \langle f, v - u \rangle \le \langle Au, v - u \rangle \quad \text{for all } v
+  \in K$$
+has exactly one solution. This is Theorem 11.3.6 of [han2009theoretical].
 
-Kept under its classical name because that is what a reader looks for.  It generalizes the
-Lax–Milgram lemma `SesqForm.laxMilgram`, which is the case where `K` is the whole space and `A` is
-linear. -/
+The solution depends Lipschitz continuously on $f$ by
+`IsVariationalInequalitySolution.norm_sub_le`. The theorem generalizes the Lax–Milgram lemma
+`SesqForm.laxMilgram`, which is the case where $K = V$ and $A$ is linear. The declaration keeps
+the classical name of the theorem. -/
 theorem stampacchia {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K)
     {A : V → V} {c L : ℝ} (hc : 0 < c) (hmono : IsStronglyMonotoneWith ℝ A c)
     (hlip : LipschitzWith (Real.toNNReal L) A) (f : V) :
@@ -535,18 +591,20 @@ theorem stampacchia {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : 
   existsUnique_isVariationalInequalitySolution hKne hKcl hKcv hc hmono hlip
     (convexOn_const 0 hKcv) lowerSemicontinuousOn_const f
 
-/-- **The bilinear-form version.** [han2009theoretical], Theorem 11.3.9: for a bounded `V`-elliptic
-form `a` — not assumed symmetric — a functional `ℓ`, and a `j` convex and lower semicontinuous on a
-nonempty closed convex `K`, the variational inequality
+/-- **Unique solvability for a bilinear form.** Let $V$ be a real Hilbert space, and let $a$ be a
+bounded bilinear form on $V$, not necessarily symmetric, that is elliptic with constant $c > 0$.
+Let $\ell \in V'$, let $K \subseteq V$ be nonempty, closed and convex, and let
+$j : V \to \mathbb{R}$ be convex and lower semicontinuous on $K$. Then there is exactly one $u$
+with
+$$u \in K, \qquad \ell(v - u) \le a(u, v - u) + j(v) - j(u) \quad \text{for all } v \in K.$$
+This is Theorem 11.3.9 of [han2009theoretical].
 
-  `u ∈ K`,  `ℓ (v - u) ≤ a u (v - u) + j v - j u`  for all `v ∈ K`
-
-has exactly one solution.  Taking `j = 0` gives the inequality of the first kind and `K = Set.univ`
-that of the second kind, and the solution depends Lipschitz continuously on `ℓ` by
-`IsVariationalInequalitySolution.norm_sub_le`.
-
-Immediate from `existsUnique_isVariationalInequalitySolution` applied to `A = a.toOperator`, whose
-strong monotonicity is `SesqForm.isCoerciveWith_iff_toOperator` and whose Lipschitz constant is
+The problem is the variational inequality with operator `SesqForm.toOperator a` and datum
+`SesqForm.rieszRep ℓ`. The case $j = 0$ is the inequality of the first kind and the case $K = V$
+the inequality of the second kind. The solution depends Lipschitz continuously on $\ell$ by
+`IsVariationalInequalitySolution.norm_sub_le`. The proof applies
+`existsUnique_isVariationalInequalitySolution` to the operator of $a$, whose strong monotonicity
+is `SesqForm.isCoerciveWith_iff_toOperator` and whose Lipschitz constant is
 `SesqForm.norm_toOperator`. -/
 theorem existsUnique_isVariationalInequalitySolution_of_isCoercive {a : SesqForm ℝ V} {c : ℝ}
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
@@ -565,17 +623,19 @@ end Existence
 
 /-! ### Minty's lemma and the special forms -/
 
-/-- **Minty's lemma.** [han2009theoretical], Lemma 11.3.8: for a monotone `A` and a `j` convex on a
-convex `K`, a point `u ∈ K` solves the variational inequality if and only if the *test* inequality
+/-- **Minty's lemma.** Let $V$ be a real inner product space, let $K \subseteq V$ be convex, let
+$j : V \to \mathbb{R}$ be convex on $K$, and let $A : V \to V$ be monotone, that is,
+$\langle Ax - Ay, x - y \rangle \ge 0$ for all $x, y$. Let $u \in K$, and assume that for every
+$v \in K$ the map $t \mapsto A(u + t(v - u))$ is continuous from the right at $t = 0$. Then $u$
+solves the variational inequality if and only if
+$$\langle f, v - u \rangle \le \langle Av, v - u \rangle + j(v) - j(u) \quad \text{for all } v
+  \in K,$$
+that is, the inequality with $A$ evaluated at the test point $v$ instead of at $u$. This is
+Lemma 11.3.8 of [han2009theoretical].
 
-  `⟪f, v - u⟫ ≤ ⟪A v, v - u⟫ + j v - j u`  for every `v ∈ K`
-
-holds, that is, with `A` evaluated at the test point rather than at the solution.
-
-One direction is monotonicity; the other substitutes `u + t (v - u)`, uses convexity of `j` and lets
-`t` tend to `0`, so that only continuity of `A` along the segments of `K` issuing from `u` is needed
-— no Lipschitz continuity anywhere.  The value of the lemma is that the Minty form is stable under
-weak limits. -/
+Monotonicity is `IsStronglyMonotoneWith ℝ A 0`, and no Lipschitz continuity of $A$ is used. One
+direction follows from monotonicity. For the other, substitute $u + t(v - u)$, use the convexity
+of $j$ and let $t$ tend to $0$. The Minty form is useful because it is stable under weak limits. -/
 theorem IsVariationalInequalitySolution.iff_minty {A : V → V} {j : V → ℝ} {f : V} {K : Set V}
     (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j) (hmono : IsStronglyMonotoneWith ℝ A 0) {u : V}
     (hu : u ∈ K)
@@ -618,12 +678,17 @@ theorem IsVariationalInequalitySolution.iff_minty {A : V → V} {j : V → ℝ} 
     refine ge_of_tendsto hlim ?_
     filter_upwards [Ioo_mem_nhdsGT (zero_lt_one' ℝ)] with t ht using hseg t ht
 
-/-- **The variational inequality as an energy projection.**  For a symmetric coercive `A` and `j =
-0`, the solution `u` of the variational inequality over a convex `K` is the best approximation, in
-the energy inner product of `A`, to the solution `w` of the unconstrained equation `A w = f`.
+/-- **The variational inequality as an energy projection.** Let $V$ be a real inner product space,
+let $A : V \to V$ be linear, symmetric and coercive, let $K \subseteq V$ be convex, and let
+$f, w \in V$ with $Aw = f$. If $u$ solves the variational inequality with $j = 0$, then $u$ is
+the best approximation to $w$ from $K$ in the energy norm
+$\|v\|_A = \langle Av, v \rangle^{1/2}$:
+$$u \in K, \qquad \|w - u\|_A \le \|w - v\|_A \quad \text{for all } v \in K.$$
+So the inequality is solved by solving the equation $Aw = f$ and projecting onto $K$ in the
+energy inner product. This is the remark after Example 11.3.11 of [han2009theoretical].
 
-So the inequality is solved by solving the variational equation and projecting onto `K` in the
-energy inner product. [han2009theoretical], the remark following Example 11.3.11. -/
+The energy norm is the norm of `WithEnergy A hA`, and the conclusion is `IsBestApprox` for the
+images of $K$, $w$ and $u$ under `WithEnergy.equiv A hA`. -/
 theorem IsVariationalInequalitySolution.isBestApprox_energy {A : V →ₗ[ℝ] V}
     (hA : A.IsSymmetricCoercive) {K : Set V} (hKcv : Convex ℝ K) {f w u : V} (hw : A w = f)
     (hsol : IsVariationalInequalitySolution A 0 f K u) :
@@ -639,12 +704,15 @@ theorem IsVariationalInequalitySolution.isBestApprox_energy {A : V →ₗ[ℝ] V
   rw [← map_sub, ← map_sub, WithEnergy.inner_equiv, energyInner, map_sub, hw, inner_sub_left]
   linarith
 
-/-- **The cone form.** [han2009theoretical], Exercise 11.3.3: when `K` is a convex cone and `j = 0`,
-the variational inequality is equivalent to the pair of relations `⟪f, v⟫ ≤ ⟪A u, v⟫` for all `v ∈
-K` and `⟪A u, u⟫ = ⟪f, u⟫`.
+/-- **The cone form.** Let $V$ be a real inner product space, let $A : V \to V$ and $f \in V$, and
+let $K \subseteq V$ be a convex cone: $K$ is convex and $tx \in K$ for all $t \ge 0$ and
+$x \in K$. Then $u \in K$ solves the variational inequality with $j = 0$ if and only if
+$$\langle f, v \rangle \le \langle Au, v \rangle \text{ for all } v \in K
+  \qquad \text{and} \qquad \langle Au, u \rangle = \langle f, u \rangle.$$
+This is Exercise 11.3.3 of [han2009theoretical].
 
-Testing at `2u` and at `0` gives the equality, and testing at `u + v` the inequality; conversely
-subtracting the equality from the inequality at `v` returns the variational inequality. -/
+Testing at $2u$ and at $0$ gives the equality, and testing at $u + v$ gives the inequality.
+Conversely, the inequality at $v$ minus the equality is the variational inequality. -/
 theorem IsVariationalInequalitySolution.iff_of_isCone {A : V → V} {f : V} {K : Set V}
     (hKcv : Convex ℝ K) (hKcone : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ K, t • x ∈ K) {u : V} (hu : u ∈ K) :
     IsVariationalInequalitySolution A 0 f K u ↔
@@ -675,12 +743,16 @@ theorem IsVariationalInequalitySolution.iff_of_isCone {A : V → V} {f : V} {K :
     simp only [Pi.zero_apply, sub_zero, add_zero]
     linarith
 
-/-- **The positively homogeneous form.** [han2009theoretical], Exercise 11.3.10: for an inequality
-of the second kind — `K = Set.univ` — whose `j` is convex and positively homogeneous, the inequality
-is equivalent to `⟪f, v⟫ ≤ ⟪A u, v⟫ + j v` for every `v` together with `⟪A u, u⟫ + j u = ⟪f, u⟫`.
+/-- **The positively homogeneous form.** Let $V$ be a real inner product space, let $A : V \to V$
+and $f \in V$, and let $j : V \to \mathbb{R}$ be convex and positively homogeneous:
+$j(tv) = t\,j(v)$ for all $t > 0$ and $v \in V$. Then $u$ solves the variational inequality of
+the second kind, with $K = V$, if and only if
+$$\langle f, v \rangle \le \langle Au, v \rangle + j(v) \text{ for all } v \in V
+  \qquad \text{and} \qquad \langle Au, u \rangle + j(u) = \langle f, u \rangle.$$
+This is Exercise 11.3.10 of [han2009theoretical].
 
-Convexity and positive homogeneity make `j` subadditive, which is what turns the test at `u + v`
-into the inequality at `v`; this identity is behind the Lagrange multiplier reformulation of a
+Convexity and positive homogeneity make $j$ subadditive, and this turns the test at $u + v$ into
+the inequality at $v$. The equivalence is the basis of the Lagrange multiplier form of a
 friction problem. -/
 theorem IsVariationalInequalitySolution.iff_of_isPositiveHomogeneous {A : V → V} {j : V → ℝ}
     {f : V} (hj : ConvexOn ℝ univ j) (hhom : ∀ t : ℝ, 0 < t → ∀ v, j (t • v) = t * j v) {u : V} :

@@ -19,46 +19,64 @@ import Numlib.Analysis.MeanInequalities
 import Numlib.Variational.Minimization
 
 /-!
-# The energy of the regularized `p`-Laplacian
+# The energy of the regularized $p$-Laplacian
 
-For `1 < p < ∞` the boundary value problem
-`−div [(1 + |∇u|²)^{p/2 − 1} ∇u] = f` in `Ω`, `u = 0` on `∂Ω` (Atkinson and Han, *Theoretical
-Numerical Analysis*, §8.8, (8.8.1)–(8.8.2)) is the Euler equation of the energy
+For $1 < p < \infty$, the boundary value problem
+$$-\operatorname{div}\bigl[(1 + |\nabla u|^2)^{p/2 - 1} \nabla u\bigr] = f \text{ in } \Omega,
+  \qquad u = 0 \text{ on } \partial\Omega,$$
+of (8.8.1)–(8.8.2) of [han2009theoretical] is the Euler equation of the energy
+$$E(v) = \frac1p \int_\Omega (1 + |\nabla v|^2)^{p/2} \, dx - \langle f, v \rangle \qquad (8.8.10)$$
+on $W_0^{1,p}(\Omega)$. This module studies the integral term with the gradient replaced by a
+general function. The **kernel** is $\rho_p(\xi) = (1 + \|\xi\|^2)^{p/2}$ on a real inner product
+space $F$, and the **energy** is $\Phi_p(G) = \int \rho_p(G(x)) \, d\mu(x)$ for $G \in L^p(\mu; F)$
+on a finite measure space. The properties of $E$ that §8.8 of [han2009theoretical] needs are
+properties of $\Phi_p$ composed with the bounded linear injective map $v \mapsto \nabla v$.
 
-  `E(v) = (1/p) ∫_Ω (1 + |∇v|²)^{p/2} − ⟨f, v⟩`   (8.8.10)
+The bounds $\|\xi\|^p \le \rho_p(\xi) \le 2^p(1 + \|\xi\|^p)$ give the integrability of
+$\rho_p \circ G$, the lower bound $\int \|G\|^p \, d\mu \le \Phi_p(G)$ behind the coercivity of
+Lemma 8.8.1, and the upper bound $\Phi_p(G) \le 2^p(\mu(X) + \int \|G\|^p \, d\mu)$ behind the
+continuity of Lemma 8.8.2. The kernel is strictly convex for $p > 1$, which gives the strict
+convexity of $\Phi_p$ of Lemma 8.8.3. The Gâteaux derivative of Lemma 8.8.4 is
+$$\frac{d}{dt} \Phi_p(G + tH) \Big|_{t = 0} = p \int (1 + \|G\|^2)^{p/2 - 1} \langle G, H \rangle \,
+  d\mu.$$
 
-on `W_0^{1,p}(Ω)`.  This file carries the analysis of the integral term with the gradient
-abstracted away: the **kernel** `ρ_p(ξ) = (1 + ‖ξ‖²)^{p/2}` on a real inner product space `F`,
-and the **energy** `Φ_p(G) = ∫ ρ_p(G x) dμ` of an `L^p` function `G : X → F` on a finite measure
-space.  Everything the section needs of `E` is a property of `Φ_p` composed with the (linear,
-bounded, injective) map `v ↦ ∇v`:
+## Main definitions
 
-* `PLaplacian.norm_rpow_le_kernel`, `PLaplacian.kernel_le`: `‖ξ‖^p ≤ ρ_p(ξ) ≤ 2^p (1 + ‖ξ‖^p)`,
-  which give the integrability of `ρ_p ∘ G` (`PLaplacian.integrable_kernel_comp`), the lower
-  bound `∫ ‖G‖^p ≤ Φ_p(G)` behind the coercivity of Lemma 8.8.1
-  (`PLaplacian.integral_norm_rpow_le_energy`) and the upper bound `Φ_p(G) ≤ 2^p (μ(X) + ∫ ‖G‖^p)`
-  (`PLaplacian.energy_le`) behind the continuity of Lemma 8.8.2 (a convex function bounded above
-  near every point is continuous, `ConvexOn.continuousOn_tfae`);
-* `PLaplacian.strictConvexOn_kernel`: `ρ_p` is strictly convex for `p > 1` (Exercise 5.3.13 of
-  the book), since `ρ_p(ξ) = ‖(1, ξ)‖^p` for the `ℓ²` norm on `ℝ × F`, and `‖·‖^p` is strictly
-  convex on a strictly convex space (`strictConvexOn_norm_rpow` of
-  `Numlib/Analysis/Convex/StrictConvexSpace.lean`); hence
-  `PLaplacian.energy_convexOn` and the strict inequality `PLaplacian.energy_combo_lt` when the
-  two functions differ on a set of positive measure — Lemma 8.8.3;
-* `PLaplacian.hasDerivAt_energy_line`: the Gâteaux derivative of Lemma 8.8.4,
-  `d/dt Φ_p(G + t H)|_{t=0} = p ∫ (1 + ‖G‖²)^{p/2 − 1} ⟪G, H⟫`, by dominated convergence with the
-  dominating function `p (1 + (‖G‖ + ‖H‖)²)^{(p−1)/2} ‖H‖`, integrable by Young's inequality
-  (`PLaplacian.integrable_kernelBound_mul`); `PLaplacian.memLp_kernelDerivWeight_smul`: the
-  weight `(1 + ‖G‖²)^{p/2 − 1} G` lies in `L^{p'}`, which makes that derivative a bounded
-  functional of `H ∈ L^p`.
+* `PLaplacian.kernel`: the kernel $\rho_p(\xi) = (1 + \|\xi\|^2)^{p/2}$.
+* `PLaplacian.derivWeight`: the weight $(1 + \|\xi\|^2)^{p/2 - 1}$ of the derivative of the kernel.
+* `PLaplacian.kernelBound`: the bound $(1 + s^2)^{(p - 1)/2}$ on the derivative of the kernel.
+* `PLaplacian.energy`: the energy $\Phi_p(G) = \int \rho_p(G(x)) \, d\mu(x)$.
 
-The exponent is a real `p` in the pointwise statements and `p : ℝ≥0∞` with `p.toReal` in the
-integral ones, as `MeasureTheory.MemLp` wants it.
+## Main results
 
-## References
+* `PLaplacian.norm_rpow_le_kernel`, `PLaplacian.kernel_le`: $\|\xi\|^p \le \rho_p(\xi) \le 2^p(1 +
+  \|\xi\|^p)$ for $p \ge 0$.
+* `PLaplacian.strictConvexOn_kernel`: $\rho_p$ is strictly convex for $p > 1$.
+* `PLaplacian.integrable_kernel_comp`: $\rho_p \circ G$ is integrable for $G \in L^p$.
+* `PLaplacian.integral_norm_rpow_le_energy`, `PLaplacian.energy_le`: the lower and upper bounds of
+  $\Phi_p$.
+* `PLaplacian.energy_combo_le`, `PLaplacian.energy_combo_lt`: $\Phi_p$ is convex, and strictly
+  convex along two functions that differ on a set of positive measure.
+* `PLaplacian.hasDerivAt_energy_line`: the Gâteaux derivative of $\Phi_p$.
+* `PLaplacian.memLp_derivWeight_mul`: for a real function $g$ with $|g| \le \|G\|$, the function
+  $(1 + \|G\|^2)^{p/2 - 1} g$ lies in $L^{p'}$, so the derivative is a bounded functional of
+  $H \in L^p$.
 
-Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
-edition, §8.8, Lemmas 8.8.1–8.8.4 and Exercises 5.3.13, 8.8.2.
+## Proof outline
+
+The kernel is $\rho_p(\xi) = \|(1, \xi)\|^p$ for the $\ell^2$ norm on $\mathbb{R} \times F$, and
+$\|\cdot\|^p$ is strictly convex on a strictly convex space for $p > 1$; this gives the strict
+convexity. The continuity of Lemma 8.8.2 follows from the upper bound, because a convex function
+that is bounded above near every point is continuous (`ConvexOn.continuousOn_tfae`). The derivative
+is computed by dominated convergence, with the dominating function
+$p (1 + (\|G\| + \|H\|)^2)^{(p - 1)/2} \|H\|$, which is integrable by Young's inequality.
+
+## Implementation notes
+
+* The exponent is a real number $p$ in the pointwise statements, and `p : ℝ≥0∞` with `p.toReal` in
+  the statements about integrals, as `MeasureTheory.MemLp` requires.
+* The strict convexity of $\|\cdot\|^p$ is `strictConvexOn_norm_rpow` of
+  `Numlib.Analysis.Convex.StrictConvexSpace`.
 -/
 
 open Filter MeasureTheory Metric Set
@@ -68,29 +86,32 @@ noncomputable section
 
 namespace PLaplacian
 
-/-! ### The kernel `ρ_p(ξ) = (1 + ‖ξ‖²)^{p/2}` -/
+/-! ### The kernel $\rho_p(\xi) = (1 + \|\xi\|^2)^{p/2}$ -/
 
 section Kernel
 
 variable {F : Type*} [NormedAddCommGroup F]
 
-/-- **The kernel** `ρ_p(ξ) = (1 + ‖ξ‖²)^{p/2}` of the regularized `p`-Laplacian energy
-(8.8.10); `p` is a real exponent. -/
+/-- **The kernel** of the energy (8.8.10) of the regularized $p$-Laplacian: for a real exponent $p$
+and $\xi$ in a normed space $F$,
+$$\rho_p(\xi) = (1 + \|\xi\|^2)^{p/2}.$$
+-/
 def kernel (p : ℝ) (ξ : F) : ℝ := (1 + ‖ξ‖ ^ 2) ^ (p / 2)
 
-/-- The kernel is positive. -/
+/-- The kernel is positive: $\rho_p(\xi) > 0$ for every real $p$ and every $\xi$. -/
 theorem kernel_pos (p : ℝ) (ξ : F) : 0 < kernel p ξ :=
   Real.rpow_pos_of_pos (by positivity) _
 
-/-- The kernel is nonnegative. -/
+/-- The kernel is nonnegative: $\rho_p(\xi) \ge 0$ for every real $p$ and every $\xi$. -/
 theorem kernel_nonneg (p : ℝ) (ξ : F) : 0 ≤ kernel p ξ := (kernel_pos p ξ).le
 
-/-- The kernel is continuous. -/
+/-- For every real $p$, the kernel $\rho_p$ is continuous. -/
 theorem continuous_kernel (p : ℝ) : Continuous (kernel p : F → ℝ) :=
   (continuous_const.add (continuous_norm.pow 2)).rpow_const fun ξ ↦
     Or.inl (show (1 + ‖ξ‖ ^ 2 : ℝ) ≠ 0 by positivity)
 
-/-- `‖ξ‖^p ≤ ρ_p(ξ)` for `p ≥ 0`: the term `1` only increases the base. -/
+/-- For $p \ge 0$ and every $\xi$, $\|\xi\|^p \le \rho_p(\xi)$, because the term $1$ only increases
+the base. -/
 theorem norm_rpow_le_kernel {p : ℝ} (hp : 0 ≤ p) (ξ : F) : ‖ξ‖ ^ p ≤ kernel p ξ := by
   have h : ‖ξ‖ ^ p = (‖ξ‖ ^ 2) ^ (p / 2) := by
     rw [← Real.rpow_natCast, ← Real.rpow_mul (norm_nonneg _)]
@@ -100,7 +121,8 @@ theorem norm_rpow_le_kernel {p : ℝ} (hp : 0 ≤ p) (ξ : F) : ‖ξ‖ ^ p ≤
   rw [h, kernel]
   exact Real.rpow_le_rpow (by positivity) (by linarith [sq_nonneg ‖ξ‖]) (by positivity)
 
-/-- `ρ_p(ξ) ≤ 2^p (1 + ‖ξ‖^p)` for `p ≥ 0`: `1 + ‖ξ‖² ≤ (1 + ‖ξ‖)²`. -/
+/-- For $p \ge 0$ and every $\xi$, $\rho_p(\xi) \le 2^p (1 + \|\xi\|^p)$, because
+$1 + \|\xi\|^2 \le (1 + \|\xi\|)^2$. -/
 theorem kernel_le {p : ℝ} (hp : 0 ≤ p) (ξ : F) : kernel p ξ ≤ 2 ^ p * (1 + ‖ξ‖ ^ p) := by
   have h1 : kernel p ξ ≤ (1 + ‖ξ‖) ^ p := by
     have e : (1 + ‖ξ‖) ^ p = ((1 + ‖ξ‖) ^ 2) ^ (p / 2) := by
@@ -112,7 +134,8 @@ theorem kernel_le {p : ℝ} (hp : 0 ≤ p) (ξ : F) : kernel p ξ ≤ 2 ^ p * (1
     exact Real.rpow_le_rpow (by positivity) (by nlinarith [norm_nonneg ξ]) (by positivity)
   exact h1.trans (Real.one_add_rpow_le (norm_nonneg ξ) hp)
 
-/-- The kernel is `‖(1, ξ)‖^p` for the `ℓ²` norm on `ℝ × F`. -/
+/-- For every real $p$, the kernel is $\rho_p(\xi) = \|(1, \xi)\|^p$, with the $\ell^2$ norm on
+$\mathbb{R} \times F$. -/
 theorem kernel_eq_norm_rpow (p : ℝ) (ξ : F) :
     kernel p ξ = ‖WithLp.toLp 2 ((1 : ℝ), ξ)‖ ^ p := by
   have h : ‖WithLp.toLp 2 ((1 : ℝ), ξ)‖ ^ 2 = 1 + ‖ξ‖ ^ 2 := by
@@ -125,9 +148,12 @@ theorem kernel_eq_norm_rpow (p : ℝ) (ξ : F) :
 
 variable [InnerProductSpace ℝ F]
 
-/-- **The kernel is strictly convex for `p > 1`** (the finite-dimensional ingredient of Lemma
-8.8.3, the book's Exercise 5.3.13): `ρ_p(ξ) = ‖(1, ξ)‖^p` on the strictly convex space
-`ℝ × F` with the `ℓ²` norm, and `ξ ↦ (1, ξ)` is injective and affine. -/
+/-- **The kernel is strictly convex.** Let $F$ be a real inner product space and $p > 1$. Then
+$\rho_p$ is strictly convex on $F$. This is Exercise 5.3.13 of [han2009theoretical], the
+pointwise part of Lemma 8.8.3.
+
+The kernel is $\rho_p(\xi) = \|(1, \xi)\|^p$ on the strictly convex space $\mathbb{R} \times F$
+with the $\ell^2$ norm, and $\xi \mapsto (1, \xi)$ is injective and affine. -/
 theorem strictConvexOn_kernel {p : ℝ} (hp : 1 < p) :
     StrictConvexOn ℝ univ (kernel p : F → ℝ) := by
   refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab ↦ ?_⟩
@@ -145,7 +171,7 @@ theorem strictConvexOn_kernel {p : ℝ} (hp : 1 < p) :
   rw [e] at h
   simpa only [kernel_eq_norm_rpow, smul_eq_mul] using h
 
-/-- The kernel is convex for `p ≥ 1`. -/
+/-- Let $F$ be a real inner product space and $p \ge 1$. Then $\rho_p$ is convex on $F$. -/
 theorem convexOn_kernel {p : ℝ} (hp : 1 ≤ p) : ConvexOn ℝ univ (kernel p : F → ℝ) := by
   rcases hp.lt_or_eq with h | h
   · exact (strictConvexOn_kernel h).convexOn
@@ -167,40 +193,43 @@ theorem convexOn_kernel {p : ℝ} (hp : 1 ≤ p) : ConvexOn ℝ univ (kernel p :
 
 /-! ### The derivative of the kernel along a line, and its bound -/
 
-/-- The weight `(1 + ‖ξ‖²)^{p/2 − 1}` of the derivative of the kernel, the coefficient of the
-regularized `p`-Laplacian `−div [(1 + |∇u|²)^{p/2 − 1} ∇u]`. -/
+/-- The weight $w_p(\xi) = (1 + \|\xi\|^2)^{p/2 - 1}$ of the derivative of the kernel. It is the
+coefficient of the regularized $p$-Laplacian $-\operatorname{div}\bigl[(1 + |\nabla u|^2)^{p/2 -
+1} \nabla u\bigr]$. -/
 def derivWeight (p : ℝ) (ξ : F) : ℝ := (1 + ‖ξ‖ ^ 2) ^ (p / 2 - 1)
 
 omit [InnerProductSpace ℝ F] in
-/-- The weight is positive. -/
+/-- The weight is positive: $(1 + \|\xi\|^2)^{p/2 - 1} > 0$ for every real $p$ and every $\xi$. -/
 theorem derivWeight_pos (p : ℝ) (ξ : F) : 0 < derivWeight p ξ :=
   Real.rpow_pos_of_pos (by positivity) _
 
 omit [InnerProductSpace ℝ F] in
-/-- The weight is continuous. -/
+/-- For every real $p$, the weight $\xi \mapsto (1 + \|\xi\|^2)^{p/2 - 1}$ is continuous. -/
 theorem continuous_derivWeight (p : ℝ) : Continuous (derivWeight p : F → ℝ) :=
   (continuous_const.add (continuous_norm.pow 2)).rpow_const fun ξ ↦
     Or.inl (show (1 + ‖ξ‖ ^ 2 : ℝ) ≠ 0 by positivity)
 
-/-- The bound `(1 + s²)^{(p−1)/2}` on the derivative of the kernel at a point of norm `s`. -/
+/-- The bound $(1 + s^2)^{(p - 1)/2}$ on the derivative of the kernel at a point of norm $s$. -/
 def kernelBound (p s : ℝ) : ℝ := (1 + s ^ 2) ^ ((p - 1) / 2)
 
-/-- The bound is positive. -/
+/-- The bound is positive: $(1 + s^2)^{(p - 1)/2} > 0$ for all real $p$ and $s$. -/
 theorem kernelBound_pos (p s : ℝ) : 0 < kernelBound p s :=
   Real.rpow_pos_of_pos (by positivity) _
 
-/-- The bound is continuous in `s`. -/
+/-- For every real $p$, the bound $s \mapsto (1 + s^2)^{(p - 1)/2}$ is continuous. -/
 theorem continuous_kernelBound (p : ℝ) : Continuous (kernelBound p) :=
   (continuous_const.add (continuous_id.pow 2)).rpow_const fun s ↦
     Or.inl (show (1 + s ^ 2 : ℝ) ≠ 0 by positivity)
 
-/-- The bound is monotone in `s ≥ 0` for `p ≥ 1`. -/
+/-- For $p \ge 1$ and $0 \le s \le t$, $(1 + s^2)^{(p - 1)/2} \le (1 + t^2)^{(p - 1)/2}$. -/
 theorem kernelBound_le_kernelBound {p s t : ℝ} (hp : 1 ≤ p) (hs : 0 ≤ s) (hst : s ≤ t) :
     kernelBound p s ≤ kernelBound p t :=
   Real.rpow_le_rpow (by positivity) (by nlinarith) (by linarith)
 
-/-- The `q`-th power of the bound, `q = p/(p−1)` the conjugate exponent, is the kernel of the
-real number `s`: `((1 + s²)^{(p−1)/2})^{p/(p−1)} = (1 + s²)^{p/2}`. -/
+/-- Let $p$ and $q$ be Hölder conjugate exponents: $p, q > 0$ and $1/p + 1/q = 1$. Then for every
+real $s$, the $q$-th power of the bound is the kernel of $s$:
+$$\bigl((1 + s^2)^{(p - 1)/2}\bigr)^q = (1 + s^2)^{p/2}.$$
+-/
 theorem kernelBound_rpow_conj {p q s : ℝ} (hpq : p.HolderConjugate q) :
     kernelBound p s ^ q = kernel p (s : ℝ) := by
   rw [kernelBound, kernel, ← Real.rpow_mul (by positivity), Real.norm_eq_abs, sq_abs]
@@ -209,8 +238,11 @@ theorem kernelBound_rpow_conj {p q s : ℝ} (hpq : p.HolderConjugate q) :
   field_simp
   linarith
 
-/-- **The derivative of `ρ_p` along a line**: `d/dt ρ_p(ξ + t η) = p (1 + ‖ξ + tη‖²)^{p/2 − 1}
-⟪ξ + t η, η⟫`. -/
+/-- **The derivative of the kernel along a line.** Let $F$ be a real inner product space,
+$p \in \mathbb{R}$ and $\xi, \eta \in F$. Then for every $t \in \mathbb{R}$
+$$\frac{d}{dt} \rho_p(\xi + t\eta) = p \, (1 + \|\xi + t\eta\|^2)^{p/2 - 1} \langle \xi + t\eta,
+  \eta \rangle.$$
+-/
 theorem hasDerivAt_kernel_line (p : ℝ) (ξ η : F) (t : ℝ) :
     HasDerivAt (fun s ↦ kernel p (ξ + s • η))
       (p * derivWeight p (ξ + t • η) * ⟪ξ + t • η, η⟫_ℝ) t := by
@@ -224,7 +256,8 @@ theorem hasDerivAt_kernel_line (p : ℝ) (ξ η : F) (t : ℝ) :
   ring
 
 omit [InnerProductSpace ℝ F] in
-/-- `(1 + ‖ζ‖²)^{p/2 − 1} ‖ζ‖ ≤ (1 + ‖ζ‖²)^{(p−1)/2}`. -/
+/-- For every real $p$ and every $\zeta$, $(1 + \|\zeta\|^2)^{p/2 - 1} \|\zeta\| \le (1 +
+\|\zeta\|^2)^{(p - 1)/2}$. -/
 theorem derivWeight_mul_norm_le (p : ℝ) (ζ : F) :
     derivWeight p ζ * ‖ζ‖ ≤ kernelBound p ‖ζ‖ := by
   have hw := derivWeight_pos p ζ
@@ -239,8 +272,10 @@ theorem derivWeight_mul_norm_le (p : ℝ) (ζ : F) :
       congr 1
       ring
 
-/-- The bound on the derivative of the kernel:
-`|p (1 + ‖ζ‖²)^{p/2 − 1} ⟪ζ, η⟫| ≤ p (1 + ‖ζ‖²)^{(p−1)/2} ‖η‖`, since `‖ζ‖ ≤ (1 + ‖ζ‖²)^{1/2}`. -/
+/-- Let $F$ be a real inner product space and $p \ge 0$. Then for all $\zeta, \eta \in F$
+$$\bigl|p \, (1 + \|\zeta\|^2)^{p/2 - 1} \langle \zeta, \eta \rangle\bigr| \le p \, (1 +
+  \|\zeta\|^2)^{(p - 1)/2} \|\eta\|,$$
+because $\|\zeta\| \le (1 + \|\zeta\|^2)^{1/2}$. This bounds the derivative of the kernel. -/
 theorem abs_derivWeight_mul_inner_le {p : ℝ} (hp : 0 ≤ p) (ζ η : F) :
     |p * derivWeight p ζ * ⟪ζ, η⟫_ℝ| ≤ p * kernelBound p ‖ζ‖ * ‖η‖ := by
   have hw := derivWeight_pos p ζ
@@ -254,24 +289,33 @@ theorem abs_derivWeight_mul_inner_le {p : ℝ} (hp : 0 ≤ p) (ζ η : F) :
 
 end Kernel
 
-/-! ### The energy `Φ_p(G) = ∫ ρ_p(G x) dμ` -/
+/-! ### The energy $\Phi_p(G) = \int \rho_p(G(x)) \, d\mu(x)$ -/
 
 section Energy
 
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X} {F : Type*} [NormedAddCommGroup F]
   {p : ℝ≥0∞} {G H : X → F}
 
-/-- **The energy** `Φ_p(G) = ∫ (1 + ‖G x‖²)^{p/2} dμ` of a function `G : X → F`, the integral
-term of (8.8.10) with `G = ∇v`. -/
+/-- **The energy** of a function $G : X \to F$ on a measure space $(X, \mu)$, for
+$p \in [0, \infty]$:
+$$\Phi_p(G) = \int (1 + \|G(x)\|^2)^{p/2} \, d\mu(x).$$
+With $G = \nabla v$ this is the integral term of (8.8.10) of [han2009theoretical].
+
+The exponent is `p.toReal`, so $p = \infty$ gives the exponent $0$. The integral is the Bochner
+integral, which is $0$ when the integrand is not integrable. -/
 def energy (p : ℝ≥0∞) (μ : Measure X) (G : X → F) : ℝ := ∫ x, kernel p.toReal (G x) ∂μ
 
-/-- `ρ_p ∘ G` is measurable when `G` is. -/
+/-- For every real $r$, if $G$ is almost everywhere strongly measurable, then so is
+$x \mapsto \rho_r(G(x))$. -/
 theorem aestronglyMeasurable_kernel_comp (r : ℝ) (hG : AEStronglyMeasurable G μ) :
     AEStronglyMeasurable (fun x ↦ kernel r (G x)) μ :=
   (continuous_kernel r).comp_aestronglyMeasurable hG
 
-/-- **`ρ_p ∘ G` is integrable** for `G ∈ L^p` on a finite measure space, `1 ≤ p < ∞`
-(the book's Exercise 8.8.2): `ρ_p(ξ) ≤ 2^p (1 + ‖ξ‖^p)`. -/
+/-- **The kernel of an $L^p$ function is integrable.** Let $\mu$ be a finite measure,
+$1 \le p < \infty$, and $G \in L^p(\mu; F)$. Then $x \mapsto \rho_p(G(x))$ is integrable. This
+is Exercise 8.8.2 of [han2009theoretical].
+
+It follows from $\rho_p(\xi) \le 2^p (1 + \|\xi\|^p)$. -/
 theorem integrable_kernel_comp [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hG : MemLp G p μ) :
     Integrable (fun x ↦ kernel p.toReal (G x)) μ := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
@@ -282,17 +326,24 @@ theorem integrable_kernel_comp [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ 
   rw [Real.norm_of_nonneg (kernel_nonneg _ _)]
   exact kernel_le ENNReal.toReal_nonneg _
 
-/-- The energy of an `L^p` function is nonnegative. -/
+/-- The energy is nonnegative: $\Phi_p(G) \ge 0$ for every $p$, every measure $\mu$ and every
+function $G$. -/
 theorem energy_nonneg (p : ℝ≥0∞) (μ : Measure X) (G : X → F) : 0 ≤ energy p μ G :=
   integral_nonneg fun _ ↦ kernel_nonneg _ _
 
-/-- **The lower bound behind coercivity** (Lemma 8.8.1): `∫ ‖G‖^p ≤ Φ_p(G)`. -/
+/-- **The lower bound behind coercivity.** Let $\mu$ be a finite measure, $1 \le p < \infty$, and
+$G \in L^p(\mu; F)$. Then
+$$\int \|G\|^p \, d\mu \le \Phi_p(G).$$
+This is the estimate behind the coercivity of Lemma 8.8.1 of [han2009theoretical]. -/
 theorem integral_norm_rpow_le_energy [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤)
     (hG : MemLp G p μ) : ∫ x, ‖G x‖ ^ p.toReal ∂μ ≤ energy p μ G :=
   integral_mono (hG.integrable_norm_rpow (zero_lt_one.trans_le hp).ne' hp')
     (integrable_kernel_comp hp hp' hG) fun _ ↦ norm_rpow_le_kernel ENNReal.toReal_nonneg _
 
-/-- **The upper bound behind continuity** (Lemma 8.8.2): `Φ_p(G) ≤ 2^p (μ(X) + ∫ ‖G‖^p)`. -/
+/-- **The upper bound behind continuity.** Let $\mu$ be a finite measure on $X$, $1 \le p < \infty$,
+and $G \in L^p(\mu; F)$. Then
+$$\Phi_p(G) \le 2^p \Bigl(\mu(X) + \int \|G\|^p \, d\mu\Bigr).$$
+This is the estimate behind the continuity of Lemma 8.8.2 of [han2009theoretical]. -/
 theorem energy_le [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hG : MemLp G p μ) :
     energy p μ G ≤ 2 ^ p.toReal * (μ.real univ + ∫ x, ‖G x‖ ^ p.toReal ∂μ) := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
@@ -307,8 +358,10 @@ theorem energy_le [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hG : Me
 
 variable [InnerProductSpace ℝ F]
 
-/-- **Convexity of the energy** on `L^p` (Lemma 8.8.3, the non-strict half):
-`Φ_p(a G + b H) ≤ a Φ_p(G) + b Φ_p(H)`. -/
+/-- **Convexity of the energy.** Let $F$ be a real inner product space, $\mu$ a finite measure,
+$1 \le p < \infty$, and $G, H \in L^p(\mu; F)$. Then for $a, b \ge 0$ with $a + b = 1$
+$$\Phi_p(aG + bH) \le a \, \Phi_p(G) + b \, \Phi_p(H).$$
+This is the convexity half of Lemma 8.8.3 of [han2009theoretical]. -/
 theorem energy_combo_le [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤) (hG : MemLp G p μ)
     (hH : MemLp H p μ) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a + b = 1) :
     energy p μ (a • G + b • H) ≤ a * energy p μ G + b * energy p μ H := by
@@ -328,10 +381,15 @@ theorem energy_combo_le [IsFiniteMeasure μ] (hp : 1 ≤ p) (hp' : p ≠ ⊤) (h
           ((integrable_kernel_comp hp hp' hH).const_mul b), integral_const_mul, integral_const_mul]
         rfl
 
-/-- **Strict convexity of the energy** (Lemma 8.8.3): for `1 < p < ∞` and `G ≠ H` on a set of
-positive measure, `Φ_p(a G + b H) < a Φ_p(G) + b Φ_p(H)` for `a, b > 0`, `a + b = 1`.  The
-pointwise gap `a ρ_p(G x) + b ρ_p(H x) − ρ_p(a G x + b H x)` is nonnegative and positive
-where `G x ≠ H x`, so its integral is positive (`integral_pos_iff_support_of_nonneg`). -/
+/-- **Strict convexity of the energy.** Let $F$ be a real inner product space, $\mu$ a finite
+measure, $1 < p < \infty$, and $G, H \in L^p(\mu; F)$ such that $G \neq H$ on a set of positive
+measure. Then for $a, b > 0$ with $a + b = 1$
+$$\Phi_p(aG + bH) < a \, \Phi_p(G) + b \, \Phi_p(H).$$
+This is Lemma 8.8.3 of [han2009theoretical].
+
+The pointwise gap $a \rho_p(G(x)) + b \rho_p(H(x)) - \rho_p(aG(x) + bH(x))$ is nonnegative, and
+it is positive where $G(x) \neq H(x)$, so its integral is positive
+(`integral_pos_iff_support_of_nonneg`). -/
 theorem energy_combo_lt [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤) (hG : MemLp G p μ)
     (hH : MemLp H p μ) (hne : ¬ G =ᵐ[μ] H) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1) :
     energy p μ (a • G + b • H) < a * energy p μ G + b * energy p μ H := by
@@ -381,17 +439,20 @@ section Derivative
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X} {F : Type*} [NormedAddCommGroup F]
   [InnerProductSpace ℝ F] {p : ℝ≥0∞} {G H : X → F}
 
-/-- The real exponent of `1 < p < ∞` exceeds `1`. -/
+/-- If $1 < p < \infty$ in $[0, \infty]$, then the real number `p.toReal` is greater than $1$. -/
 theorem one_lt_toReal (hp : 1 < p) (hp' : p ≠ ⊤) : 1 < p.toReal := by
   rw [← ENNReal.toReal_one]
   exact (ENNReal.toReal_lt_toReal ENNReal.one_ne_top hp').2 hp
 
 omit [InnerProductSpace ℝ F] in
-/-- **The dominating function of Lemma 8.8.4 is integrable**:
-`(1 + (‖G‖ + ‖H‖)²)^{(p−1)/2} ‖H‖ ∈ L¹` for `G, H ∈ L^p` on a finite measure space, by Young's
-inequality `a b ≤ a^{p'}/p' + b^p/p` with
-`a^{p'} = (1 + (‖G‖ + ‖H‖)²)^{p/2} ≤ 2^p (1 + (‖G‖ + ‖H‖)^p)`
-(the book's "the right hand side is in `L¹(Ω)` by the Hölder inequality"). -/
+/-- **The dominating function of Lemma 8.8.4 is integrable.** Let $F$ be a normed space, $\mu$ a
+finite measure, $1 < p < \infty$, and $G, H \in L^p(\mu; F)$. Then
+$$x \mapsto (1 + (\|G(x)\| + \|H(x)\|)^2)^{(p - 1)/2} \, \|H(x)\|$$
+is integrable.
+
+The proof uses Young's inequality $ab \le a^{p'}/p' + b^p/p$ with $a^{p'} = (1 + (\|G\| +
+\|H\|)^2)^{p/2} \le 2^p(1 + (\|G\| + \|H\|)^p)$. The source states that the right-hand side is
+in $L^1(\Omega)$ by the Hölder inequality. -/
 theorem integrable_kernelBound_mul [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤)
     (hG : MemLp G p μ) (hH : MemLp H p μ) :
     Integrable (fun x ↦ kernelBound p.toReal (‖G x‖ + ‖H x‖) * ‖H x‖) μ := by
@@ -424,13 +485,15 @@ theorem integrable_kernelBound_mul [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p �
         have := kernel_le (F := ℝ) (zero_le_one.trans hr.le) (‖G x‖ + ‖H x‖)
         rwa [Real.norm_of_nonneg (add_nonneg (norm_nonneg _) (norm_nonneg _))] at this
 
-/-- **The Gâteaux derivative of the energy** (Lemma 8.8.4, the integral term of (8.8.11)):
-for `1 < p < ∞` and `G, H ∈ L^p` on a finite measure space,
+/-- **The Gâteaux derivative of the energy.** Let $F$ be a real inner product space, $\mu$ a finite
+measure, $1 < p < \infty$, and $G, H \in L^p(\mu; F)$. Then $t \mapsto \Phi_p(G + tH)$ is
+differentiable at $t = 0$, with
+$$\frac{d}{dt} \Phi_p(G + tH) \Big|_{t = 0} = p \int (1 + \|G\|^2)^{p/2 - 1} \langle G, H
+  \rangle \, d\mu.$$
+This is Lemma 8.8.4 of [han2009theoretical], the integral term of (8.8.11).
 
-  `d/dt Φ_p(G + t H) |_{t = 0} = p ∫ (1 + ‖G‖²)^{p/2 − 1} ⟪G, H⟫ dμ`.
-
-Dominated convergence (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`) on `|t| < 1` with
-the dominating function `p (1 + (‖G‖ + ‖H‖)²)^{(p−1)/2} ‖H‖` of
+The proof is dominated convergence (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`) on
+$|t| < 1$, with the dominating function $p (1 + (\|G\| + \|H\|)^2)^{(p - 1)/2} \|H\|$ of
 `PLaplacian.integrable_kernelBound_mul`. -/
 theorem hasDerivAt_energy_line [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤) (hG : MemLp G p μ)
     (hH : MemLp H p μ) :
@@ -471,8 +534,12 @@ theorem hasDerivAt_energy_line [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ �
       _ = ‖G x‖ + ‖H x‖ := by rw [one_mul]
 
 omit [InnerProductSpace ℝ F] in
-/-- **The bound `(1 + ‖G‖²)^{(p−1)/2}` lies in `L^{p'}`** for `G ∈ L^p`, `p'` the conjugate
-exponent: its `p'`-th power is `(1 + ‖G‖²)^{p/2}`, which is integrable. -/
+/-- **The bound lies in $L^{p'}$.** Let $\mu$ be a finite measure, $1 < p < \infty$, $p'$ the
+conjugate exponent, and $G \in L^p(\mu; F)$. Then $x \mapsto (1 + \|G(x)\|^2)^{(p - 1)/2}$ lies
+in $L^{p'}(\mu)$.
+
+Its $p'$-th power is $(1 + \|G\|^2)^{p/2}$, which is integrable. The exponent $p'$ is
+`ENNReal.conjExponent p`. -/
 theorem memLp_kernelBound [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤) (hG : MemLp G p μ) :
     MemLp (fun x ↦ kernelBound p.toReal ‖G x‖) (ENNReal.conjExponent p) μ := by
   have hr : 1 < p.toReal := one_lt_toReal hp hp'
@@ -493,10 +560,14 @@ theorem memLp_kernelBound [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤) (h
   simp [kernel]
 
 omit [InnerProductSpace ℝ F] in
-/-- **The weight of the `p`-Laplacian lies in `L^{p'}`**: for `G ∈ L^p` and a measurable `g`
-with `|g| ≤ ‖G‖`, the function `(1 + ‖G‖²)^{p/2 − 1} g` lies in `L^{p'}`.  This is what makes
-`H ↦ ∫ (1 + ‖G‖²)^{p/2 − 1} ⟪G, H⟫` a bounded functional of `H ∈ L^p`, the Gâteaux derivative
-of Lemma 8.8.4 as an element of the dual. -/
+/-- **The weight of the $p$-Laplacian lies in $L^{p'}$.** Let $\mu$ be a finite measure,
+$1 < p < \infty$, $p'$ the conjugate exponent, $G \in L^p(\mu; F)$, and let
+$g : X \to \mathbb{R}$ be almost everywhere strongly measurable with $|g(x)| \le \|G(x)\|$ for
+all $x$. Then $x \mapsto (1 + \|G(x)\|^2)^{p/2 - 1} g(x)$ lies in $L^{p'}(\mu)$.
+
+This makes $H \mapsto \int (1 + \|G\|^2)^{p/2 - 1} \langle G, H \rangle \, d\mu$ a bounded
+functional of $H \in L^p$, which is the Gâteaux derivative of Lemma 8.8.4 of
+[han2009theoretical] as an element of the dual space. -/
 theorem memLp_derivWeight_mul [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤) (hG : MemLp G p μ)
     {g : X → ℝ} (hg : AEStronglyMeasurable g μ) (hle : ∀ x, |g x| ≤ ‖G x‖) :
     MemLp (fun x ↦ derivWeight p.toReal (G x) * g x) (ENNReal.conjExponent p) μ := by
@@ -511,14 +582,15 @@ theorem memLp_derivWeight_mul [IsFiniteMeasure μ] (hp : 1 < p) (hp' : p ≠ ⊤
 
 end Derivative
 
-/-! ### Auxiliary facts: a.e. congruence, sums under a power, coercivity from a power bound -/
+/-! ### Almost everywhere congruence -/
 
 section Auxiliary
 
 variable {X : Type*} [MeasurableSpace X] {μ : Measure X} {F : Type*} [NormedAddCommGroup F]
   {p : ℝ≥0∞} {G H : X → F}
 
-/-- The energy only sees the function up to a null set. -/
+/-- The energy depends only on the almost everywhere class of the function: if $G = H$ almost
+everywhere, then $\Phi_p(G) = \Phi_p(H)$. -/
 theorem energy_congr_ae (p : ℝ≥0∞) (h : G =ᵐ[μ] H) : energy p μ G = energy p μ H :=
   integral_congr_ae (h.mono fun _ hx ↦ by simp only [hx])
 

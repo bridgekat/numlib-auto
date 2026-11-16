@@ -21,57 +21,100 @@ import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
 import Numlib.MeasureTheory.Function.LpSpace.Clarkson
 
 /-!
-# The classical sequence spaces `ℓ^p`, `c` and `c₀`
+# The sequence spaces $\ell^p$, $c$ and $c_0$
 
-The sequence spaces of [brezis2011functional] §11.3 beyond what Mathlib's
-`Mathlib.Analysis.Normed.Lp.lpSpace` and `lpHolder` provide. Mathlib's `lp (fun _ : α ↦ E) p`
-(`Memℓp`, `lp.completeSpace`, `lp.instNormedSpace`, Hölder's inequality `lp.tsum_mul_le_mul_norm`,
-the pairing `lp.dualPairing`, `lp.norm_apply_le_norm`, `lp.hasSum_single`) is the space `ℓ^p`;
-this module adds:
+Mathlib's `lp` is the space $\ell^p(\alpha, E)$ of families $x = (x_i)_{i \in \alpha}$ in a normed
+space $E$ with $\sum_i \|x_i\|^p < \infty$, or with $\sup_i \|x_i\| < \infty$ when $p = \infty$.
+Mathlib proves that it is a Banach space and gives Hölder's inequality and a duality pairing. This
+module adds the facts about sequence spaces of [brezis2011functional], §11.3. It defines the space
+$c$ of convergent sequences and the space $c_0$ of null sequences as closed subspaces of
+$\ell^\infty(\mathbb{N}, E)$, and proves the inclusions $\ell^p \subseteq c_0$ for $p < \infty$ and
+$\ell^p \subseteq \ell^q$ with $\|x\|_q \le \|x\|_p$ for $p \le q$. Over a field $\mathbb{K}$ (the
+Lean `𝕜`) that is $\mathbb{R}$ or $\mathbb{C}$, it proves the dualities $(\ell^p)^* = \ell^{p'}$ for
+$1 \le p < \infty$, $(c_0)^* = \ell^1$ and $c^* = \ell^1 \times \mathbb{K}$ (Propositions
+11.18–11.20), the reflexivity and the uniform convexity of $\ell^p$ for $1 < p < \infty$
+(Proposition 11.15), and the non-reflexivity of $c_0$, $\ell^\infty$, $c$ and $\ell^1$ (Proposition
+11.21). It also proves that $\ell^p$ for $p < \infty$, $c_0$ and $c$ are separable when $E$ is
+separable, and that $\ell^\infty$ over an infinite index set is not separable (Propositions 11.16
+and 11.17).
 
-* **The subspaces `c` and `c₀` of `ℓ^∞(ℕ, E)`**: `lp.convergent 𝕜 E` (the sequences with a limit)
-  and `lp.zeroAtInfty 𝕜 E` (the null sequences), as closed submodules of `lp (fun _ : ℕ ↦ E) ∞`,
-  with `c₀ ≤ c`, the limit functional `lp.convergent.limCLM`, and the bridge
-  `lp.zeroAtInftyLIE : c₀ ≃ₗᵢ[𝕜] C₀(ℕ, E)` to Mathlib's `ZeroAtInftyContinuousMap`. The book's
-  statements compare `c₀`, `c` and `ℓ^p` *inside* `ℓ^∞`, which is why they are submodules and not
-  standalone types.
-* **The elementary inclusions**: `ℓ^p ⊆ c₀` (`lp.tendsto_cofinite_zero`,
-  `lp.linearMapOfLE_mem_zeroAtInfty`) and `‖x‖_q ≤ ‖x‖_p` for `p ≤ q`
-  (`lp.norm_linearMapOfLE_le`, with the bundled inclusion `lp.inclusionCLM`).
-* **The right shift** `lp.shiftRightL 𝕜 : ℓ²(ℕ; 𝕜) →L[𝕜] ℓ²(ℕ; 𝕜)`, `u ↦ (0, u₀, u₁, …)`, an
-  isometry (`lp.norm_shiftRightL_apply`): the operator of [brezis2011functional] chapter 6,
-  Remark 6 and §11.4 (`0` in the spectrum but not an eigenvalue; over `ℂ`, no eigenvalue).
-* **The diagonal operators** `lp.diagonalL E p α hα : lp E p →L[𝕜] lp E p`, `x ↦ (αᵢ • xᵢ)ᵢ` for a
-  bounded scalar family `α` (`‖T‖ ≤ |C|`, the unit vectors as eigenvectors `lp.diagonalL_single`,
-  finite rank for a finitely supported `α`), the multiplication operators of
-  [brezis2011functional] chapter 6, Remark 7; and `lp.not_finiteDimensional_of_infinite`.
-* **Duality**, Propositions 11.18–11.20 of [brezis2011functional], as isometric isomorphisms for
-  scalar sequences over `RCLike 𝕜`: `(ℓ^p)* = ℓ^{p'}` for `1 ≤ p < ∞` (`lp.toDual`,
-  `lp.dualEquiv`, any index type), `(c₀)* = ℓ¹` (`lp.zeroAtInfty.dualEquiv`) and
-  `c* = ℓ¹ × 𝕜` with the norm `‖u‖₁ + ‖λ‖` (`lp.convergent.dualEquiv`, the product carrying the
-  `ℓ¹` norm as `WithLp 1 (_ × 𝕜)`). The isometry `‖u‖_{p'} ≤ ‖φ_u‖` is the book's finite-section
-  estimate with the test sequences `x_k = |u_k|^{p'-2} u_k`, packaged once as
-  `lp.sum_norm_rpow_apply_single_le` and used for the isometry and for the surjectivity alike.
-* **Reflexivity** of `ℓ^p` for `1 < p < ∞` (`lp.isReflexive`, `lp.instIsReflexive`), proved
-  directly from the two duality isometries `(ℓ^p)** ≅ (ℓ^{p'})* ≅ ℓ^p`, and **non-reflexivity**
-  of `c₀`, `ℓ^∞`, `c` and `ℓ¹` (Proposition 11.21): `c₀` by the book's bidual functional
-  corresponding to `(1, 1, 1, …)`, `ℓ^∞` and `c` as spaces containing `c₀` as a closed subspace,
-  `ℓ¹` because its dual `ℓ^∞` would be reflexive.
-* **Uniform convexity** of `ℓ^p(α, ℝ)`, `1 < p < ∞`, countable `α` (`lp.uniformConvexSpace`),
-  transported from `MeasureTheory.Lp.instUniformConvexSpace` along the isometry
-  `lp.lpLIELpCount : lp (fun _ : α ↦ E) p ≃ₗᵢ[𝕜] Lp E p Measure.count` — the book's own route
-  ("Theorem 4.10 and Exercise 4.12 with `Ω = ℕ`"), which also gives every `L^p` theorem an `ℓ^p`
-  version for free.
-* **Separability** of `ℓ^p` (`p < ∞`), `c₀` and `c` for a separable `E` (`lp.separableSpace`,
-  `lp.zeroAtInfty.instSeparableSpace`, `lp.convergent.instSeparableSpace`: the finitely supported
-  sequences, resp. those plus the constants, span a dense separable subspace) and
-  **non-separability** of `ℓ^∞` over an infinite index type (`lp.not_separableSpace_top`: the
-  indicator sequences are an uncountable `1`-separated family).
+The module also defines two standard operators: the right shift $S_r u = (0, u_0, u_1, \dots)$ on
+$\ell^2(\mathbb{N}, \mathbb{K})$, and the diagonal operator $x \mapsto (\alpha_i x_i)_i$ on $\ell^p$
+of a bounded family of scalars $\alpha$. Finally, it identifies $\ell^p(\alpha, E)$ with $L^p$ of
+the counting measure on a countable set $\alpha$. Below, $p'$ is the conjugate exponent of $p$,
+$e_k$ is the scalar sequence that is $1$ at index $k$ and $0$ elsewhere, and
+$\varphi_u(x) = \sum_k u_k x_k$ is the functional of a sequence $u$.
 
-## References
+## Main definitions
 
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], §11.3.
+* `lp.convergent`: the space $c$ of sequences that have a limit, as a submodule of
+  $\ell^\infty(\mathbb{N}, E)$.
+* `lp.zeroAtInfty`: the space $c_0$ of sequences that tend to $0$, as a submodule of
+  $\ell^\infty(\mathbb{N}, E)$.
+* `lp.convergent.limCLM`: the limit $x \mapsto \lim_k x_k$, as a bounded linear map $c \to E$ of
+  norm at most $1$.
+* `lp.zeroAtInftyLIE`: the isometric isomorphism of $c_0$ with Mathlib's space $C_0(\mathbb{N}, E)$.
+* `lp.inclusionCLM`: the inclusion $\ell^p \to \ell^q$ for $1 \le p \le q \le \infty$, a bounded
+  linear map of norm at most $1$.
+* `lp.shiftRightL`: the right shift on $\ell^2(\mathbb{N}, \mathbb{K})$.
+* `lp.diagonalL`: the diagonal operator $x \mapsto (\alpha_i x_i)_i$ on $\ell^p$ of a bounded family
+  of scalars.
+* `lp.dualEquiv`: the isometric isomorphism $\ell^{p'} \cong (\ell^p)^*$, $u \mapsto \varphi_u$, for
+  $1 \le p < \infty$.
+* `lp.zeroAtInfty.dualEquiv`: the isometric isomorphism $\ell^1 \cong (c_0)^*$.
+* `lp.convergent.dualEquiv`: the isometric isomorphism $\ell^1 \times \mathbb{K} \cong c^*$, $(u,
+  \lambda) \mapsto (x \mapsto \sum_k u_k x_k + \lambda \lim x)$, for the norm $\|u\|_1 + |\lambda|$.
+* `lp.lpLIELpCount`: the isometric isomorphism of $\ell^p(\alpha, E)$ with $L^p$ of the counting
+  measure.
+
+## Main results
+
+* `lp.isClosed_zeroAtInfty`, `lp.isClosed_convergent`: $c_0$ is closed in $\ell^\infty$, and $c$ is
+  closed when $E$ is complete.
+* `lp.tendsto_cofinite_zero`: for $p < \infty$, the terms of a sequence in $\ell^p$ tend to $0$.
+* `lp.norm_linearMapOfLE_le`: $\|x\|_q \le \|x\|_p$ for $0 < p \le q \le \infty$.
+* `lp.norm_shiftRightL_apply`: the right shift is an isometry.
+* `lp.diagonalL_single`: the unit vectors are eigenvectors of a diagonal operator.
+* `lp.not_finiteDimensional_of_infinite`: $\ell^p$ over an infinite index set is
+  infinite-dimensional.
+* `lp.toDual_surjective`, `lp.zeroAtInfty.toDual_surjective`, `lp.convergent.toDual_surjective`:
+  every bounded linear functional on $\ell^p$ ($p < \infty$), $c_0$ or $c$ comes from a sequence.
+* `lp.isReflexive`: $\ell^p$ is reflexive for $1 < p < \infty$.
+* `lp.zeroAtInfty.not_isReflexive`, `lp.not_isReflexive_top`, `lp.convergent.not_isReflexive`,
+  `lp.not_isReflexive_one`: $c_0$, $\ell^\infty$, $c$ and $\ell^1$ are not reflexive.
+* `lp.uniformConvexSpace`: $\ell^p(\alpha, \mathbb{R})$ is uniformly convex for $1 < p < \infty$ and
+  countable $\alpha$.
+* `lp.separableSpace`, `lp.zeroAtInfty.instSeparableSpace`, `lp.convergent.instSeparableSpace`:
+  $\ell^p$ for $p < \infty$, $c_0$ and $c$ are separable when $E$ is separable.
+* `lp.not_separableSpace_top`: $\ell^\infty$ over an infinite index set is not separable.
+
+## Proof outline
+
+The isometry property of each duality comes from the finite-section estimate of
+[brezis2011functional]: for a functional $\varphi$ on $\ell^p$ and $u_k = \varphi(e_k)$, testing
+$\varphi$ on the finitely supported sequence $x_k = |u_k|^{p'-2} \overline{u_k}$ gives
+$\sum_{k \in s} |u_k|^{p'} \le \|\varphi\|^{p'}$ for every finite set $s$. The same estimate gives
+the surjectivity: $u$ lies in $\ell^{p'}$, and $\varphi$ agrees with $\varphi_u$ on the unit
+vectors, whose finite linear combinations are dense. Reflexivity of $\ell^p$ follows from the two
+isometries $(\ell^p)^{**} \cong (\ell^{p'})^* \cong \ell^p$. The space $c_0$ is not reflexive
+because the element $(1, 1, 1, \dots)$ of $(c_0)^{**} = (\ell^1)^* = \ell^\infty$ is not in $c_0$.
+The spaces $\ell^\infty$ and $c$ contain $c_0$ as a closed subspace, and if $\ell^1$ were reflexive,
+then its dual $\ell^\infty$ would be reflexive.
+
+## Implementation notes
+
+* The spaces $c$ and $c_0$ are submodules of `lp (fun _ : ℕ ↦ E) ∞`, not separate types, because the
+  statements of [brezis2011functional] compare $c_0$, $c$ and $\ell^p$ inside $\ell^\infty$. The
+  name `lp.zeroAtInfty` follows Mathlib's `ZeroAtInftyContinuousMap`.
+* The dualities are stated for scalar sequences over `RCLike 𝕜`. The duality
+  $(\ell^p)^* = \ell^{p'}$ holds for any index type. The product $\ell^1 \times \mathbb{K}$ is
+  `WithLp 1 (lp (fun _ : ℕ ↦ 𝕜) 1 × 𝕜)`, whose norm is $\|u\|_1 + |\lambda|$.
+* Reflexivity of $\ell^p$ is proved from the dualities directly. [brezis2011functional] applies
+  Theorem 4.10 to the counting measure instead. Uniform convexity follows the route of the source,
+  "Theorem 4.10 and Exercise 4.12 with $\Omega = \mathbb{N}$": it is transported from
+  `MeasureTheory.Lp.instUniformConvexSpace` along `lp.lpLIELpCount`. This isometry also gives an
+  $\ell^p$ version of every $L^p$ theorem.
+* Uniform convexity is a property of real normed spaces, so it is stated for `lp (fun _ : α ↦ ℝ) p`.
 -/
 
 open Filter Topology
@@ -81,14 +124,16 @@ noncomputable section
 
 namespace lp
 
-/-! ### The subspaces `c` and `c₀` of `ℓ^∞` -/
+/-! ### The subspaces $c$ and $c_0$ of $\ell^\infty$ -/
 
 section Subspaces
 
 variable (𝕜 E : Type*) [NormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- The space `c` of [brezis2011functional] §11.3: the sequences in `E` that have a limit, as a
-subspace of `ℓ^∞(ℕ, E)`. A convergent sequence is bounded, so the carrier lives in `ℓ^∞`. -/
+/-- The space $c$ of [brezis2011functional], §11.3: the submodule of $\ell^\infty(\mathbb{N}, E)$ of
+the sequences $x$ that converge to some $l \in E$.
+
+A convergent sequence is bounded, so every convergent sequence lies in $\ell^\infty$. -/
 def convergent : Submodule 𝕜 (lp (fun _ : ℕ => E) ∞) where
   carrier := {x | ∃ l : E, Tendsto (⇑x) atTop (𝓝 l)}
   add_mem' := by
@@ -99,9 +144,11 @@ def convergent : Submodule 𝕜 (lp (fun _ : ℕ => E) ∞) where
     rintro c x ⟨a, ha⟩
     exact ⟨c • a, by rw [lp.coeFn_smul]; exact ha.const_smul c⟩
 
-/-- The space `c₀` of [brezis2011functional] §11.3: the null sequences in `E`, as a subspace of
-`ℓ^∞(ℕ, E)`. Named after Mathlib's `ZeroAtInftyContinuousMap` (`C₀(ℕ, E)`), to which it is
-isometric (`lp.zeroAtInftyLIE`). -/
+/-- The space $c_0$ of [brezis2011functional], §11.3: the submodule of $\ell^\infty(\mathbb{N}, E)$
+of the sequences $x$ with $x_k \to 0$.
+
+The name follows Mathlib's `ZeroAtInftyContinuousMap`, the space $C_0(\mathbb{N}, E)$, to which
+$c_0$ is isometric by `lp.zeroAtInftyLIE`. -/
 def zeroAtInfty : Submodule 𝕜 (lp (fun _ : ℕ => E) ∞) where
   carrier := {x | Tendsto (⇑x) atTop (𝓝 0)}
   add_mem' := by
@@ -120,13 +167,14 @@ def zeroAtInfty : Submodule 𝕜 (lp (fun _ : ℕ => E) ∞) where
 
 variable {𝕜 E}
 
-/-- Membership in `c`: the sequence has a limit. -/
+/-- An element $x$ of $\ell^\infty(\mathbb{N}, E)$ lies in $c$ if and only if $x_k \to l$ for some
+$l \in E$. -/
 @[simp]
 theorem mem_convergent {x : lp (fun _ : ℕ => E) ∞} :
     x ∈ convergent 𝕜 E ↔ ∃ l : E, Tendsto (⇑x) atTop (𝓝 l) :=
   Iff.rfl
 
-/-- Membership in `c₀`: the sequence tends to `0`. -/
+/-- An element $x$ of $\ell^\infty(\mathbb{N}, E)$ lies in $c_0$ if and only if $x_k \to 0$. -/
 @[simp]
 theorem mem_zeroAtInfty {x : lp (fun _ : ℕ => E) ∞} :
     x ∈ zeroAtInfty 𝕜 E ↔ Tendsto (⇑x) atTop (𝓝 0) :=
@@ -134,11 +182,11 @@ theorem mem_zeroAtInfty {x : lp (fun _ : ℕ => E) ∞} :
 
 variable (𝕜 E)
 
-/-- `c₀ ⊆ c`: a null sequence has a limit. -/
+/-- Every null sequence converges: $c_0 \subseteq c$. -/
 theorem zeroAtInfty_le_convergent : zeroAtInfty 𝕜 E ≤ convergent 𝕜 E := fun _ hx => ⟨0, hx⟩
 
-/-- `c₀` is closed in `ℓ^∞`: a uniform limit of null sequences is null. No completeness of `E`
-is needed, the limit `0` being given. -/
+/-- The space $c_0$ is closed in $\ell^\infty(\mathbb{N}, E)$: a uniform limit of null sequences is
+a null sequence. This needs no completeness of $E$, because the limit $0$ is given. -/
 theorem isClosed_zeroAtInfty : IsClosed (zeroAtInfty 𝕜 E : Set (lp (fun _ : ℕ => E) ∞)) := by
   refine isClosed_of_closure_subset fun x hx => ?_
   rw [SetLike.mem_coe, mem_zeroAtInfty, Metric.tendsto_atTop]
@@ -157,8 +205,10 @@ theorem isClosed_zeroAtInfty : IsClosed (zeroAtInfty 𝕜 E : Set (lp (fun _ : �
     _ < ε / 2 + ε / 2 := add_lt_add h1 h2
     _ = ε := add_halves ε
 
-/-- `c` is closed in `ℓ^∞` when `E` is complete: a uniform limit of convergent sequences is
-Cauchy, hence convergent. -/
+/-- If $E$ is complete, then $c$ is closed in $\ell^\infty(\mathbb{N}, E)$.
+
+A uniform limit of convergent sequences is a Cauchy sequence, and it converges because $E$ is
+complete. -/
 theorem isClosed_convergent [CompleteSpace E] :
     IsClosed (convergent 𝕜 E : Set (lp (fun _ : ℕ => E) ∞)) := by
   refine isClosed_of_closure_subset fun x hx => ?_
@@ -182,15 +232,16 @@ theorem isClosed_convergent [CompleteSpace E] :
         · rw [dist_comm]; exact hxy' n
     _ = ε := by ring
 
-/-- `c` is a Banach space when `E` is. -/
+/-- If $E$ is a Banach space, then $c$ is a Banach space. -/
 instance convergent.instCompleteSpace [CompleteSpace E] : CompleteSpace (convergent 𝕜 E) :=
   (isClosed_convergent 𝕜 E).completeSpace_coe
 
-/-- `c₀` is a Banach space when `E` is. -/
+/-- If $E$ is a Banach space, then $c_0$ is a Banach space. -/
 instance zeroAtInfty.instCompleteSpace [CompleteSpace E] : CompleteSpace (zeroAtInfty 𝕜 E) :=
   (isClosed_zeroAtInfty 𝕜 E).completeSpace_coe
 
-/-- The sequences `(0, …, 0, a, 0, …)` are null sequences. -/
+/-- For $k \in \mathbb{N}$ and $a \in E$, the sequence $(0, \dots, 0, a, 0, \dots)$ with $a$ at
+index $k$ lies in $c_0$. -/
 theorem single_mem_zeroAtInfty (k : ℕ) (a : E) : lp.single ∞ k a ∈ zeroAtInfty 𝕜 E := by
   rw [mem_zeroAtInfty, lp.coeFn_single]
   refine tendsto_const_nhds.congr' (eventually_atTop.2 ⟨k + 1, fun n hn => ?_⟩)
@@ -202,7 +253,8 @@ section Limit
 
 variable (𝕜 E : Type*) [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- The constant sequences, as elements of `ℓ^∞`. -/
+/-- The map that sends $a \in E$ to the constant sequence $(a, a, a, \dots)$, as a bounded linear
+map $E \to \ell^\infty(\mathbb{N}, E)$ of norm at most $1$. -/
 def constL : E →L[𝕜] lp (fun _ : ℕ => E) ∞ :=
   LinearMap.mkContinuous
     { toFun := fun a => ⟨fun _ => a, memℓp_infty ⟨‖a‖, by rintro _ ⟨i, rfl⟩; exact le_rfl⟩⟩
@@ -212,18 +264,19 @@ def constL : E →L[𝕜] lp (fun _ : ℕ => E) ∞ :=
       rw [one_mul]
       exact lp.norm_le_of_forall_le (norm_nonneg a) fun _ => le_rfl
 
-/-- The terms of the constant sequence. -/
+/-- Every term of the constant sequence of $a$ is $a$. -/
 @[simp]
 theorem constL_apply (a : E) (n : ℕ) : constL 𝕜 E a n = a := rfl
 
-/-- The constant sequences have a limit. -/
+/-- A constant sequence lies in $c$. -/
 theorem constL_mem_convergent (a : E) : constL 𝕜 E a ∈ convergent 𝕜 E :=
   ⟨a, tendsto_const_nhds⟩
 
-/-! ### The limit functional on `c` -/
+/-! ### The limit functional on $c$ -/
 
-/-- The limit, as a bounded linear functional on `c` ([brezis2011functional] Proposition 11.20,
-the `λ lim x_k` term): `x ↦ lim x`, of norm at most `1`. -/
+/-- The limit functional on $c$: the bounded linear map $c \to E$,
+$x \mapsto \lim_{k \to \infty} x_k$, of norm at most $1$. It gives the term $\lambda \lim x_k$
+in Proposition 11.20 of [brezis2011functional]. -/
 def convergent.limCLM : convergent 𝕜 E →L[𝕜] E :=
   LinearMap.mkContinuous
     { toFun := fun x => limUnder atTop (⇑(x : lp (fun _ : ℕ => E) ∞))
@@ -249,7 +302,8 @@ def convergent.limCLM : convergent 𝕜 E →L[𝕜] E :=
 
 variable {𝕜 E}
 
-/-- The limit functional evaluates to the limit. -/
+/-- For $x \in c$, the sequence $x$ converges to the value of the limit functional
+`lp.convergent.limCLM` at $x$. -/
 theorem convergent.tendsto_limCLM (x : convergent 𝕜 E) :
     Tendsto (⇑(x : lp (fun _ : ℕ => E) ∞)) atTop (𝓝 (convergent.limCLM 𝕜 E x)) := by
   obtain ⟨a, ha⟩ := x.2
@@ -257,35 +311,36 @@ theorem convergent.tendsto_limCLM (x : convergent 𝕜 E) :
   rw [this]
   exact ha
 
-/-- The limit functional is determined by the limit. -/
+/-- If $x \in c$ converges to $a$, then the limit functional takes the value $a$ at $x$. -/
 theorem convergent.limCLM_eq_of_tendsto {x : convergent 𝕜 E} {a : E}
     (hx : Tendsto (⇑(x : lp (fun _ : ℕ => E) ∞)) atTop (𝓝 a)) : convergent.limCLM 𝕜 E x = a :=
   tendsto_nhds_unique (convergent.tendsto_limCLM x) hx
 
-/-- `‖lim x‖ ≤ ‖x‖_∞`. -/
+/-- For $x \in c$, the limit satisfies $\|\lim x\| \le \|x\|_\infty$. -/
 theorem convergent.norm_limCLM_apply_le (x : convergent 𝕜 E) :
     ‖convergent.limCLM 𝕜 E x‖ ≤ ‖x‖ :=
   le_of_tendsto' (convergent.tendsto_limCLM x).norm fun n =>
     lp.norm_apply_le_norm ENNReal.top_ne_zero _ n
 
 variable (𝕜 E) in
-/-- The limit functional has norm at most `1`. -/
+/-- The limit functional on $c$ has operator norm at most $1$. -/
 theorem convergent.norm_limCLM_le : ‖convergent.limCLM 𝕜 E‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
-/-- On a null sequence the limit functional vanishes. -/
+/-- The limit functional vanishes on $c_0$: if $x \in c$ is a null sequence, then $\lim x = 0$. -/
 theorem convergent.limCLM_eq_zero_of_mem_zeroAtInfty {x : convergent 𝕜 E}
     (hx : (x : lp (fun _ : ℕ => E) ∞) ∈ zeroAtInfty 𝕜 E) : convergent.limCLM 𝕜 E x = 0 :=
   convergent.limCLM_eq_of_tendsto hx
 
-/-- The limit of a constant sequence. -/
+/-- The limit of the constant sequence of $a$ is $a$. -/
 @[simp]
 theorem convergent.limCLM_constL (a : E) :
     convergent.limCLM 𝕜 E ⟨constL 𝕜 E a, constL_mem_convergent 𝕜 E a⟩ = a :=
   convergent.limCLM_eq_of_tendsto tendsto_const_nhds
 
-/-- `x - (lim x) • (1, 1, …)` is a null sequence: the decomposition `c = c₀ ⊕ (constants)` of
-[brezis2011functional] Proposition 11.20. -/
+/-- For $x \in c$, the sequence $x - (\lim x) (1, 1, 1, \dots)$ lies in $c_0$. This gives the
+decomposition of $c$ into $c_0$ and the constant sequences, which the proof of Proposition 11.20
+of [brezis2011functional] uses. -/
 theorem convergent.sub_constL_limCLM_mem_zeroAtInfty (x : convergent 𝕜 E) :
     (x : lp (fun _ : ℕ => E) ∞) - constL 𝕜 E (convergent.limCLM 𝕜 E x) ∈ zeroAtInfty 𝕜 E := by
   rw [mem_zeroAtInfty, lp.coeFn_sub]
@@ -295,14 +350,16 @@ theorem convergent.sub_constL_limCLM_mem_zeroAtInfty (x : convergent 𝕜 E) :
 
 end Limit
 
-/-! ### The inclusions `ℓ^p ⊆ c₀` and `ℓ^p ⊆ ℓ^q` -/
+/-! ### The inclusions $\ell^p \subseteq c_0$ and $\ell^p \subseteq \ell^q$ -/
 
 section Inclusions
 
 variable {α : Type*} {E : α → Type*} [∀ i, NormedAddCommGroup (E i)] {p q : ℝ≥0∞}
 
-/-- For `p ≠ ∞`, the norms of the terms of `f ∈ ℓ^p` tend to `0` along the cofinite filter:
-`‖f i‖ ^ p` is summable. -/
+/-- Let $p < \infty$ and let $f \in \ell^p(\alpha, E)$, where the space $E_i$ may depend on the
+index $i$. Then $\|f_i\| \to 0$ along the cofinite filter on $\alpha$.
+
+For $0 < p < \infty$, this follows from the summability of $\|f_i\|^p$. -/
 theorem tendsto_norm_cofinite_zero (hp : p ≠ ∞) (f : lp E p) :
     Tendsto (fun i => ‖f i‖) cofinite (𝓝 0) := by
   rcases eq_or_ne p 0 with rfl | hp0
@@ -319,23 +376,32 @@ theorem tendsto_norm_cofinite_zero (hp : p ≠ ∞) (f : lp E p) :
     simp only [Function.comp_apply]
     rw [← Real.rpow_mul (norm_nonneg _), mul_one_div_cancel hP.ne', Real.rpow_one]
 
-/-- "`ℓ^p ⊆ c₀`", [brezis2011functional] §11.3: for `p ≠ ∞` the terms of `f ∈ ℓ^p` tend to `0`
-along the cofinite filter (on `ℕ`, along `atTop`). -/
+/-- Let $p < \infty$ and let $f \in \ell^p(\alpha, E)$. Then $f_i \to 0$ along the cofinite filter
+on $\alpha$. This is the inclusion $\ell^p \subseteq c_0$ of [brezis2011functional], §11.3.
+
+For $\alpha = \mathbb{N}$, the cofinite filter is the filter `atTop`, so the statement is
+$f_k \to 0$ as $k \to \infty$. -/
 theorem tendsto_cofinite_zero {E : Type*} [NormedAddCommGroup E] (hp : p ≠ ∞)
     (f : lp (fun _ : α => E) p) : Tendsto (fun i => f i) cofinite (𝓝 0) :=
   tendsto_zero_iff_norm_tendsto_zero.2 (tendsto_norm_cofinite_zero hp f)
 
-/-- "`ℓ^p ⊆ c₀`" as an inclusion of subspaces of `ℓ^∞`: the image of `ℓ^p`, `p ≠ ∞`, under
-Mathlib's inclusion `lp.linearMapOfLE` lies in `c₀`. -/
+/-- Let $p < \infty$. For $f \in \ell^p(\mathbb{N}, E)$, the image of $f$ under Mathlib's inclusion
+`lp.linearMapOfLE` into $\ell^\infty(\mathbb{N}, E)$ lies in $c_0$. This is the inclusion
+$\ell^p \subseteq c_0$ of [brezis2011functional], §11.3, as an inclusion of subspaces of
+$\ell^\infty$. -/
 theorem linearMapOfLE_mem_zeroAtInfty (𝕜 : Type*) [NormedField 𝕜] {E : Type*}
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] (hp : p ≠ ∞) (f : lp (fun _ : ℕ => E) p) :
     lp.linearMapOfLE 𝕜 (fun _ : ℕ => E) le_top f ∈ zeroAtInfty 𝕜 E := by
   rw [mem_zeroAtInfty, lp.coe_linearMapOfLE_apply, ← Nat.cofinite_eq_atTop]
   exact tendsto_cofinite_zero hp f
 
-/-- "`ℓ^p ⊆ ℓ^q` for `p ≤ q` with `‖x‖_q ≤ ‖x‖_p`", [brezis2011functional] §11.3: Mathlib's
-inclusion `lp.linearMapOfLE` does not increase the norm (for any `0 < p ≤ q ≤ ∞`). The proof
-bounds `‖f i‖ ^ q = ‖f i‖ ^ p ‖f i‖ ^ (q - p) ≤ ‖f i‖ ^ p ‖f‖ ^ (q - p)` and sums. -/
+/-- Let $0 < p \le q \le \infty$ and let $f \in \ell^p(\alpha, E)$. Then $\|f\|_q \le \|f\|_p$,
+where $f$ is regarded as an element of $\ell^q$ by Mathlib's inclusion `lp.linearMapOfLE`. This
+is the inclusion $\ell^p \subseteq \ell^q$ with $\|x\|_q \le \|x\|_p$ of [brezis2011functional],
+§11.3.
+
+The proof bounds $\|f_i\|^q = \|f_i\|^p \|f_i\|^{q-p} \le \|f_i\|^p \|f\|_p^{q-p}$ and sums over
+$i$. -/
 theorem norm_linearMapOfLE_le (𝕜 : Type*) [NormedRing 𝕜] [∀ i, Module 𝕜 (E i)]
     [∀ i, IsBoundedSMul 𝕜 (E i)] (hp : p ≠ 0) (h : p ≤ q) (f : lp E p) :
     ‖lp.linearMapOfLE 𝕜 E h f‖ ≤ ‖f‖ := by
@@ -370,8 +436,8 @@ section InclusionCLM
 variable {α : Type*} (𝕜 : Type*) [NontriviallyNormedField 𝕜] (E : α → Type*)
   [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace 𝕜 (E i)] {p q : ℝ≥0∞}
 
-/-- The inclusion `ℓ^p → ℓ^q`, `1 ≤ p ≤ q ≤ ∞`, as a bounded linear map (of norm at most `1`,
-`lp.norm_inclusionCLM_le`). -/
+/-- For $1 \le p \le q \le \infty$, the inclusion $\ell^p(\alpha, E) \to \ell^q(\alpha, E)$, as a
+bounded linear map of norm at most $1$ (`lp.norm_inclusionCLM_le`). -/
 def inclusionCLM [Fact (1 ≤ p)] [Fact (1 ≤ q)] (h : p ≤ q) : lp E p →L[𝕜] lp E q :=
   (lp.linearMapOfLE 𝕜 E h).mkContinuous 1 fun f => by
     rw [one_mul]
@@ -379,26 +445,27 @@ def inclusionCLM [Fact (1 ≤ p)] [Fact (1 ≤ q)] (h : p ≤ q) : lp E p →L[�
 
 variable {E}
 
-/-- The inclusion `ℓ^p → ℓ^q` does not change the underlying sequence. -/
+/-- The inclusion $\ell^p \to \ell^q$ does not change the underlying family. -/
 @[simp]
 theorem coe_inclusionCLM_apply [Fact (1 ≤ p)] [Fact (1 ≤ q)] (h : p ≤ q) (f : lp E p) :
     ⇑(inclusionCLM 𝕜 E h f) = f :=
   lp.coe_linearMapOfLE_apply h f
 
-/-- The inclusion `ℓ^p → ℓ^q`, `p ≤ q`, has norm at most `1`. -/
+/-- For $1 \le p \le q \le \infty$, the inclusion $\ell^p \to \ell^q$ has operator norm at most $1$.
+-/
 theorem norm_inclusionCLM_le [Fact (1 ≤ p)] [Fact (1 ≤ q)] (h : p ≤ q) :
     ‖inclusionCLM 𝕜 E h‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
 end InclusionCLM
 
-/-! ### The right shift on `ℓ²` -/
+/-! ### The right shift on $\ell^2$ -/
 
 section Shift
 
 variable (𝕜 : Type*) [NormedField 𝕜]
 
-/-- The right-shifted sequence `(0, u₀, u₁, …)`. -/
+/-- The right-shifted sequence $(0, u_0, u_1, \dots)$ of a sequence $u$. -/
 private def shiftFun (u : ℕ → 𝕜) : ℕ → 𝕜
   | 0 => 0
   | n + 1 => u n
@@ -420,12 +487,14 @@ private theorem norm_shiftFun (u : lp (fun _ : ℕ => 𝕜) 2) :
   rw [hs.tsum_eq_zero_add]
   simp [shiftFun_zero, shiftFun_succ]
 
-/-- **The right shift** `S_r u = (0, u₀, u₁, …)` on `ℓ²(ℕ; 𝕜)`: `(S_r u) 0 = 0` and
-`(S_r u) (n + 1) = u n` (`shiftRightL_apply_zero`, `shiftRightL_apply_succ`). It is an isometry
-(`norm_shiftRightL_apply`), hence injective, and not surjective — the standard example of an
-operator with `0` in the spectrum but not an eigenvalue ([brezis2011functional] chapter 6,
-Remark 6), and over `ℂ` of an operator without eigenvalues at all ([brezis2011functional]
-§11.4). -/
+/-- The **right shift** on $\ell^2(\mathbb{N}, \mathbb{K})$, for a normed field $\mathbb{K}$: the
+bounded linear operator $S_r u = (0, u_0, u_1, \dots)$, that is, $(S_r u)_0 = 0$ and
+$(S_r u)_{n+1} = u_n$.
+
+The right shift is an isometry (`lp.norm_shiftRightL_apply`), so it is injective, and it is not
+surjective. It is the standard example of an operator for which $0$ is in the spectrum but is
+not an eigenvalue ([brezis2011functional], chapter 6, Remark 6). Over $\mathbb{C}$ it is an
+example of an operator without eigenvalues ([brezis2011functional], §11.4). -/
 def shiftRightL : lp (fun _ : ℕ => 𝕜) 2 →L[𝕜] lp (fun _ : ℕ => 𝕜) 2 :=
   LinearMap.mkContinuous
     { toFun := fun u => ⟨shiftFun 𝕜 u, memℓp_shiftFun 𝕜 u⟩
@@ -441,22 +510,22 @@ def shiftRightL : lp (fun _ : ℕ => 𝕜) 2 →L[𝕜] lp (fun _ : ℕ => 𝕜)
       rw [one_mul]
       exact (norm_shiftFun 𝕜 u).le
 
-/-- `(S_r u) 0 = 0`. -/
+/-- The first term of a right-shifted sequence is $(S_r u)_0 = 0$. -/
 @[simp]
 theorem shiftRightL_apply_zero (u : lp (fun _ : ℕ => 𝕜) 2) : shiftRightL 𝕜 u 0 = 0 := rfl
 
-/-- `(S_r u) (n + 1) = u n`. -/
+/-- The right shift satisfies $(S_r u)_{n+1} = u_n$ for every $n$. -/
 @[simp]
 theorem shiftRightL_apply_succ (u : lp (fun _ : ℕ => 𝕜) 2) (n : ℕ) :
     shiftRightL 𝕜 u (n + 1) = u n := rfl
 
-/-- The right shift is an isometry: `‖S_r u‖ = ‖u‖`. -/
+/-- The right shift is an isometry: $\|S_r u\| = \|u\|$ for every $u \in \ell^2$. -/
 theorem norm_shiftRightL_apply (u : lp (fun _ : ℕ => 𝕜) 2) : ‖shiftRightL 𝕜 u‖ = ‖u‖ :=
   norm_shiftFun 𝕜 u
 
 end Shift
 
-/-! ### Diagonal operators on `ℓ^p` -/
+/-! ### Diagonal operators on $\ell^p$ -/
 
 section Diagonal
 
@@ -464,8 +533,9 @@ variable {ι 𝕜 : Type*} [NontriviallyNormedField 𝕜] {E : ι → Type*}
   [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace 𝕜 (E i)] {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 omit [Fact (1 ≤ p)] in
-/-- The coordinatewise product `(αᵢ • xᵢ)ᵢ` of a bounded scalar family and an `ℓ^p` family lies
-in `ℓ^p`. -/
+/-- Let $\alpha = (\alpha_i)_{i \in \iota}$ be a family of scalars with $\|\alpha_i\| \le C$ for all
+$i$, and let $x \in \ell^p$, for any exponent $0 \le p \le \infty$. Then the family
+$(\alpha_i x_i)_i$ lies in $\ell^p$. -/
 theorem memℓp_smul_of_forall_norm_le {α : ι → 𝕜} {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) :
     Memℓp (fun i ↦ α i • x i) p :=
   ((lp.memℓp x).norm.const_mul C).mono fun i ↦
@@ -490,11 +560,15 @@ private theorem norm_smul_le_abs_mul_norm {α : ι → 𝕜} {C : ℝ} (hα : �
         exact (norm_norm _).le
 
 variable (E p) in
-/-- **The diagonal operator** `x ↦ (αᵢ • xᵢ)ᵢ` on `ℓ^p` of a bounded scalar family `α`
-(`‖αᵢ‖ ≤ C` for all `i`): a bounded operator of norm at most `|C|` (`norm_diagonalL_le`), with
-the unit vectors as eigenvectors, `T (single i a) = αᵢ • single i a` (`diagonalL_single`) — the
-multiplication operator on `ℓ²` of [brezis2011functional] chapter 6, Remark 7 (and of its
-Exercises 6.1, 6.17). -/
+/-- The **diagonal operator** of a bounded family of scalars. Let $1 \le p \le \infty$ and let
+$\alpha = (\alpha_i)_{i \in \iota}$ be scalars with $\|\alpha_i\| \le C$ for all $i$. The
+diagonal operator is the bounded linear operator $T$ on $\ell^p$ with $(Tx)_i = \alpha_i x_i$.
+It has norm at most $|C|$ (`lp.norm_diagonalL_le`), and the unit vectors are eigenvectors:
+$T(\delta_i a) = \alpha_i \, \delta_i a$, where $\delta_i a$ is the family that is $a$ at index
+$i$ and $0$ elsewhere (`lp.diagonalL_single`).
+
+On $\ell^2$ this is the multiplication operator of [brezis2011functional], chapter 6, Remark 7,
+and of Exercises 6.1 and 6.17 there. -/
 def diagonalL (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) : lp E p →L[𝕜] lp E p :=
   LinearMap.mkContinuous
     { toFun := fun x ↦ ⟨fun i ↦ α i • x i, memℓp_smul_of_forall_norm_le hα x⟩
@@ -506,23 +580,25 @@ def diagonalL (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) : lp 
         rw [lp.coeFn_smul, Pi.smul_apply, smul_comm]) }
     |C| fun x ↦ norm_smul_le_abs_mul_norm hα x
 
-/-- The diagonal operator acts by `(T x)ᵢ = αᵢ • xᵢ`. -/
+/-- The diagonal operator acts by $(Tx)_i = \alpha_i x_i$. -/
 @[simp]
 theorem diagonalL_apply (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) (i : ι) :
     diagonalL E p α hα x i = α i • x i :=
   rfl
 
-/-- `‖T x‖ ≤ |C| ‖x‖`. -/
+/-- The diagonal operator satisfies $\|Tx\| \le |C| \, \|x\|$ for every $x \in \ell^p$. -/
 theorem norm_diagonalL_apply_le (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) :
     ‖diagonalL E p α hα x‖ ≤ |C| * ‖x‖ :=
   norm_smul_le_abs_mul_norm hα x
 
-/-- `‖T‖ ≤ |C|`. -/
+/-- The diagonal operator has operator norm at most $|C|$. -/
 theorem norm_diagonalL_le (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) :
     ‖diagonalL E p α hα‖ ≤ |C| :=
   LinearMap.mkContinuous_norm_le _ (abs_nonneg C) _
 
-/-- The difference of two diagonal operators is the diagonal operator of the difference. -/
+/-- Let $\alpha$ and $\beta$ be bounded families of scalars, and let $\|\alpha_i - \beta_i\| \le G$
+for all $i$. Then the difference of the diagonal operators of $\alpha$ and $\beta$ is the
+diagonal operator of $\alpha - \beta$. -/
 theorem diagonalL_sub (α β : ι → 𝕜) {C D : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (hβ : ∀ i, ‖β i‖ ≤ D)
     {G : ℝ} (hαβ : ∀ i, ‖α i - β i‖ ≤ G) :
     diagonalL E p α hα - diagonalL E p β hβ = diagonalL E p (α - β) hαβ := by
@@ -530,8 +606,8 @@ theorem diagonalL_sub (α β : ι → 𝕜) {C D : ℝ} (hα : ∀ i, ‖α i‖
   rw [sub_apply, lp.coeFn_sub, Pi.sub_apply, diagonalL_apply, diagonalL_apply, diagonalL_apply,
     Pi.sub_apply, sub_smul]
 
-/-- **The unit vectors are eigenvectors of the diagonal operator**:
-`T (single i a) = αᵢ • single i a`. -/
+/-- The unit vectors are eigenvectors of the diagonal operator: if $\delta_i a$ is the family that
+is $a \in E_i$ at index $i$ and $0$ elsewhere, then $T(\delta_i a) = \alpha_i \, \delta_i a$. -/
 theorem diagonalL_single [DecidableEq ι] (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (i : ι)
     (a : E i) : diagonalL E p α hα (lp.single p i a) = α i • lp.single p i a := by
   ext j
@@ -541,8 +617,11 @@ theorem diagonalL_single [DecidableEq ι] (α : ι → 𝕜) {C : ℝ} (hα : �
     rfl
   · rw [Pi.single_eq_of_ne h, smul_zero, smul_zero]
 
-/-- **A diagonal operator with finitely many nonzero entries has finite rank** when the fibres
-are finite-dimensional: its range lies in the span of the unit vectors of the support. -/
+/-- Let the spaces $E_i$ be finite-dimensional, and let $\alpha_i = 0$ for every $i$ outside a
+finite set $s$. Then the diagonal operator of $\alpha$ has finite rank: its range is
+finite-dimensional.
+
+The range lies in the subspace of the families that vanish outside $s$. -/
 theorem finiteDimensional_range_diagonalL [∀ i, FiniteDimensional 𝕜 (E i)]
     (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (s : Finset ι) (hs : ∀ i ∉ s, α i = 0) :
     FiniteDimensional 𝕜 (LinearMap.range (diagonalL E p α hα : lp E p →ₗ[𝕜] lp E p)) := by
@@ -565,8 +644,9 @@ theorem finiteDimensional_range_diagonalL [∀ i, FiniteDimensional 𝕜 (E i)]
       (LinearMap.mem_range_self _ _)
 
 omit [Fact (1 ≤ p)] in
-/-- **`ℓ^p(ι; 𝕜)` is infinite-dimensional** for an infinite index set: the unit vectors are
-linearly independent. -/
+/-- Let $\mathbb{K}$ be a nontrivially normed field. If the index set $\iota$ is infinite, then
+$\ell^p(\iota, \mathbb{K})$ is infinite-dimensional over $\mathbb{K}$, for every exponent
+$0 \le p \le \infty$. The proof uses that the unit vectors are linearly independent. -/
 theorem not_finiteDimensional_of_infinite [Infinite ι] :
     ¬ FiniteDimensional 𝕜 (lp (fun _ : ι ↦ 𝕜) p) := by
   classical
@@ -583,14 +663,18 @@ theorem not_finiteDimensional_of_infinite [Infinite ι] :
 
 end Diagonal
 
-/-! ### Finitely supported sequences in `c₀`, and the bridge to `C₀(ℕ, E)` -/
+/-! ### Finitely supported sequences in $c_0$, and the isometry with $C_0(\mathbb{N}, E)$ -/
 
 section ZeroAtInfty
 
 variable {𝕜 E : Type*} [NormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- A null sequence is the sum of its coordinates `(0, …, 0, x k, 0, …)` in `ℓ^∞`: the analogue
-of `lp.hasSum_single` at `p = ∞`, which holds exactly on `c₀`. -/
+/-- Every null sequence is the sum of its terms in $\ell^\infty$: if $x \in c_0$, then the series
+$\sum_k \delta_k x_k$ converges unconditionally to $x$ in $\ell^\infty(\mathbb{N}, E)$, where
+$\delta_k x_k$ is the sequence that is $x_k$ at index $k$ and $0$ elsewhere.
+
+This is the analogue of Mathlib's `lp.hasSum_single` for $p = \infty$. For $p = \infty$ it holds
+exactly on $c_0$. -/
 theorem zeroAtInfty.hasSum_single {x : lp (fun _ : ℕ => E) ∞} (hx : x ∈ zeroAtInfty 𝕜 E) :
     HasSum (fun k => lp.single ∞ k (x k)) x := by
   rw [HasSum, Metric.tendsto_nhds]
@@ -611,7 +695,9 @@ theorem zeroAtInfty.hasSum_single {x : lp (fun _ : ℕ => E) ∞} (hx : x ∈ ze
     rw [zero_sub, _root_.norm_neg]
     simpa [dist_zero_right] using (hN j hNj).le
 
-/-- `lp.zeroAtInfty.hasSum_single` read inside the subtype `c₀`. -/
+/-- Every $x \in c_0$ is the unconditional sum in $c_0$ of the sequences $\delta_k x_k$, where
+$\delta_k x_k$ is $x_k$ at index $k$ and $0$ elsewhere. This is `lp.zeroAtInfty.hasSum_single`
+with the sum taken in the subspace $c_0$. -/
 theorem zeroAtInfty.hasSum_single' (x : zeroAtInfty 𝕜 E) :
     HasSum (fun k => (⟨lp.single ∞ k ((x : lp (fun _ : ℕ => E) ∞) k),
       single_mem_zeroAtInfty 𝕜 E k _⟩ : zeroAtInfty 𝕜 E)) x := by
@@ -621,10 +707,12 @@ theorem zeroAtInfty.hasSum_single' (x : zeroAtInfty 𝕜 E) :
 variable (𝕜 E)
 
 open scoped ZeroAtInfty in
-/-- **The bridge to Mathlib**: `c₀` is isometrically isomorphic to `C₀(ℕ, E)`
-(`ZeroAtInftyContinuousMap`), the identity on the underlying functions — on the discrete space
-`ℕ` every function is continuous and `cocompact ℕ = atTop`, and both norms are the supremum
-norm. -/
+/-- The space $c_0$ is isometrically isomorphic to Mathlib's space $C_0(\mathbb{N}, E)$ of
+continuous functions on $\mathbb{N}$ that vanish at infinity (`ZeroAtInftyContinuousMap`). The
+isomorphism is the identity on the underlying functions.
+
+On the discrete space $\mathbb{N}$ every function is continuous, the cocompact filter is the
+filter `atTop`, and both norms are the supremum norm. -/
 def zeroAtInftyLIE : zeroAtInfty 𝕜 E ≃ₗᵢ[𝕜] C₀(ℕ, E) where
   toFun x :=
     { toFun := ⇑(x : lp (fun _ : ℕ => E) ∞)
@@ -645,7 +733,8 @@ def zeroAtInftyLIE : zeroAtInfty 𝕜 E ≃ₗᵢ[𝕜] C₀(ℕ, E) where
     rw [BoundedContinuousFunction.norm_eq_iSup_norm, lp.norm_eq_ciSup]
     rfl
 
-/-- The bridge `c₀ ≃ C₀(ℕ, E)` is the identity on the terms. -/
+/-- The isometric isomorphism of $c_0$ with $C_0(\mathbb{N}, E)$ does not change the terms of a
+sequence. -/
 @[simp]
 theorem zeroAtInftyLIE_apply (x : zeroAtInfty 𝕜 E) (n : ℕ) :
     zeroAtInftyLIE 𝕜 E x n = (x : lp (fun _ : ℕ => E) ∞) n :=
@@ -653,17 +742,23 @@ theorem zeroAtInftyLIE_apply (x : zeroAtInfty 𝕜 E) (n : ℕ) :
 
 end ZeroAtInfty
 
-/-! ### The duality `(ℓ^p)* = ℓ^{p'}` -/
+/-! ### The duality $(\ell^p)^* = \ell^{p'}$ -/
 
 section Duality
 
 variable {𝕜 : Type*} [RCLike 𝕜] {α : Type*} {p q : ℝ≥0∞}
 
-/-- **The finite-section estimate** of [brezis2011functional] Proposition 11.18: for a
-functional `φ` on `ℓ^p`, `1 ≤ p < ∞` with conjugate exponent `q < ∞`, and `u_k := φ (e_k)`,
-`∑_{k ∈ s} ‖u_k‖ ^ q ≤ ‖φ‖ ^ q` for every finite set `s` of indices. This is the book's
-display (6) before letting `N → ∞`, tested against `x_k = ‖u_k‖ ^ (q - 2) conj (u_k)` on `s`
-(so that `u_k x_k = ‖u_k‖ ^ q`), and it serves both the isometry and the surjectivity. -/
+/-- The **finite-section estimate**. Let $p$ and $q$ be conjugate exponents with
+$1 \le p \le \infty$ and $1 \le q < \infty$, let $\varphi$ be a bounded linear functional on
+$\ell^p(\alpha, \mathbb{K})$, and let $u_k = \varphi(e_k)$. Then for every finite set $s$ of
+indices,
+$$\sum_{k \in s} |u_k|^q \le \|\varphi\|^q.$$
+This is display (6) in the proof of Proposition 11.18 of [brezis2011functional], before the
+limit $N \to \infty$.
+
+The proof tests $\varphi$ on the sequence with $x_k = |u_k|^{q-2} \overline{u_k}$ for $k \in s$
+and $x_k = 0$ otherwise, so that $u_k x_k = |u_k|^q$. The estimate gives both the isometry
+property and the surjectivity of `lp.toDual`. -/
 theorem sum_norm_rpow_apply_single_le [DecidableEq α] [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [p.HolderConjugate q] (hq : q ≠ ∞) (φ : StrongDual 𝕜 (lp (fun _ : α => 𝕜) p))
     (s : Finset α) :
@@ -747,37 +842,45 @@ theorem sum_norm_rpow_apply_single_le [DecidableEq α] [Fact (1 ≤ p)] [Fact (1
 
 variable (𝕜 α p q) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
 
-/-- The map `u ↦ (x ↦ ∑' k, u k * x k)` from `ℓ^{p'}` to `(ℓ^p)*`, as a bounded linear map:
-Mathlib's `lp.dualPairing` for the multiplication of `𝕜`. Its isometry property is
-`lp.norm_toDualCLM_apply`, and `lp.toDual` is the bundled linear isometry. -/
+/-- Let $p$ and $q$ be conjugate exponents with $1 \le p, q \le \infty$. The map that sends
+$u \in \ell^q(\alpha, \mathbb{K})$ to the functional $\varphi_u(x) = \sum_k u_k x_k$ on
+$\ell^p(\alpha, \mathbb{K})$, as a bounded linear map $\ell^q \to (\ell^p)^*$.
+
+It is Mathlib's `lp.dualPairing` for the multiplication of $\mathbb{K}$. Its isometry property
+is `lp.norm_toDualCLM_apply`, and `lp.toDual` is the bundled linear isometry. -/
 def toDualCLM : lp (fun _ : α => 𝕜) q →L[𝕜] StrongDual 𝕜 (lp (fun _ : α => 𝕜) p) :=
   lp.dualPairing q p (fun _ => ContinuousLinearMap.mul 𝕜 𝕜) (K := 1) fun _ =>
     (ContinuousLinearMap.opNorm_mul_le 𝕜 𝕜).trans_eq NNReal.coe_one.symm
 
 variable {𝕜 α p q}
 
-/-- The pairing: `φ_u x = ∑' k, u k * x k`. -/
+/-- The functional of $u$ is $\varphi_u(x) = \sum_k u_k x_k$. -/
 theorem toDualCLM_apply (u : lp (fun _ : α => 𝕜) q) (x : lp (fun _ : α => 𝕜) p) :
     toDualCLM 𝕜 α p q u x = ∑' k, u k * x k :=
   rfl
 
 variable (𝕜 α p q) in
-/-- Hölder's inequality: the pairing has norm at most `1`. -/
+/-- By Hölder's inequality, the map $u \mapsto \varphi_u$ from $\ell^q$ to $(\ell^p)^*$ has operator
+norm at most $1$. -/
 theorem norm_toDualCLM_le : ‖toDualCLM 𝕜 α p q‖ ≤ 1 :=
   (lp.norm_dualPairing (p := q) (q := p) (fun _ : α => ContinuousLinearMap.mul 𝕜 𝕜) (K := 1)
     fun _ => (ContinuousLinearMap.opNorm_mul_le 𝕜 𝕜).trans_eq NNReal.coe_one.symm).trans_eq
     NNReal.coe_one
 
-/-- The pairing evaluated on a basis vector: `φ_u (e_k a) = u k * a`. -/
+/-- The functional of $u$ on a multiple of a unit vector is $\varphi_u(a e_k) = u_k a$. -/
 theorem toDualCLM_single [DecidableEq α] (u : lp (fun _ : α => 𝕜) q) (k : α) (a : 𝕜) :
     toDualCLM 𝕜 α p q u (lp.single p k a) = u k * a := by
   rw [toDualCLM_apply, tsum_eq_single k fun j hj => by
     rw [lp.single_apply, Pi.single_eq_of_ne hj, mul_zero]]
   rw [lp.single_apply, Pi.single_eq_same]
 
-/-- **[brezis2011functional] Proposition 11.18, the norm identity** `‖φ_u‖ = ‖u‖_{p'}`: Hölder
-gives `≤`, and the finite-section estimate `lp.sum_norm_rpow_apply_single_le` (for `p' = ∞`,
-the test on the basis vectors) gives `≥`. -/
+/-- Let $p$ and $q$ be conjugate exponents with $1 \le p, q \le \infty$. For every
+$u \in \ell^q(\alpha, \mathbb{K})$, the functional $\varphi_u$ on $\ell^p$ has the norm
+$\|\varphi_u\| = \|u\|_q$. This is the norm identity of Proposition 11.18 of
+[brezis2011functional].
+
+Hölder's inequality gives $\le$. The finite-section estimate `lp.sum_norm_rpow_apply_single_le`
+gives $\ge$ when $q < \infty$, and the test on the unit vectors gives it when $q = \infty$. -/
 theorem norm_toDualCLM_apply (u : lp (fun _ : α => 𝕜) q) : ‖toDualCLM 𝕜 α p q u‖ = ‖u‖ := by
   classical
   refine le_antisymm ?_ ?_
@@ -795,33 +898,42 @@ theorem norm_toDualCLM_apply (u : lp (fun _ : α => 𝕜) q) : ‖toDualCLM 𝕜
 
 variable (𝕜 α p q)
 
-/-- **[brezis2011functional] Proposition 11.18, the isometry**: for Hölder conjugate exponents
-`p, p'` (including `(1, ∞)`), `u ↦ (x ↦ ∑' k, u k * x k)` is a linear isometry
-`ℓ^{p'} → (ℓ^p)*`, for scalar sequences over `RCLike 𝕜` and any index type. -/
+/-- Let $p$ and $q$ be conjugate exponents with $1 \le p, q \le \infty$. The map
+$u \mapsto \varphi_u$, with $\varphi_u(x) = \sum_k u_k x_k$, is a linear isometry
+$\ell^q(\alpha, \mathbb{K}) \to (\ell^p)^*$, for any index type $\alpha$. This is the isometry
+of Proposition 11.18 of [brezis2011functional]. The pairs $(p, q) = (1, \infty)$ and
+$(\infty, 1)$ are included. -/
 def toDual : lp (fun _ : α => 𝕜) q →ₗᵢ[𝕜] StrongDual 𝕜 (lp (fun _ : α => 𝕜) p) :=
   ⟨(toDualCLM 𝕜 α p q).toLinearMap, norm_toDualCLM_apply⟩
 
 variable {𝕜 α p q}
 
-/-- `lp.toDual` is `lp.toDualCLM` as a map. -/
+/-- The linear isometry `lp.toDual` and the bounded linear map `lp.toDualCLM` send $u$ to the same
+functional. -/
 @[simp]
 theorem coe_toDual (u : lp (fun _ : α => 𝕜) q) : toDual 𝕜 α p q u = toDualCLM 𝕜 α p q u :=
   rfl
 
-/-- The display of [brezis2011functional] Proposition 11.18: `⟨φ_u, x⟩ = ∑' k, u k * x k`. -/
+/-- The functional `lp.toDual` of $u$ is $x \mapsto \sum_k u_k x_k$, the formula of Proposition
+11.18 of [brezis2011functional]. -/
 theorem toDual_apply (u : lp (fun _ : α => 𝕜) q) (x : lp (fun _ : α => 𝕜) p) :
     toDual 𝕜 α p q u x = ∑' k, u k * x k :=
   rfl
 
-/-- `φ_u (e_k a) = u k * a`. -/
+/-- The functional `lp.toDual` of $u$ on a multiple of a unit vector is $\varphi_u(a e_k) = u_k a$.
+-/
 theorem toDual_single [DecidableEq α] (u : lp (fun _ : α => 𝕜) q) (k : α) (a : 𝕜) :
     toDual 𝕜 α p q u (lp.single p k a) = u k * a :=
   toDualCLM_single u k a
 
-/-- **[brezis2011functional] Proposition 11.18, existence**: for `p ≠ ∞`, every functional on
-`ℓ^p` is `x ↦ ∑' k, u k * x k` for the sequence `u k := φ (e_k)`, which lies in `ℓ^{p'}` by the
-finite-section estimate; `φ = φ_u` because both are continuous and agree on the basis vectors,
-whose finite sums are dense (`lp.hasSum_single`). -/
+/-- Let $p$ and $q$ be conjugate exponents with $1 \le p < \infty$. Every bounded linear functional
+$\varphi$ on $\ell^p(\alpha, \mathbb{K})$ is $\varphi_u$ for some
+$u \in \ell^q(\alpha, \mathbb{K})$. This is the existence part of Proposition 11.18 of
+[brezis2011functional].
+
+The sequence is $u_k = \varphi(e_k)$, and it lies in $\ell^q$ by the finite-section estimate.
+The functionals $\varphi$ and $\varphi_u$ are continuous and agree on the unit vectors, whose
+finite linear combinations are dense (`lp.hasSum_single`). -/
 theorem toDual_surjective (hp : p ≠ ∞) : Function.Surjective (toDual 𝕜 α p q) := by
   intro φ
   classical
@@ -846,20 +958,23 @@ theorem toDual_surjective (hp : p ≠ ∞) : Function.Surjective (toDual 𝕜 α
 
 variable (𝕜 α p q)
 
-/-- **[brezis2011functional] Proposition 11.18 packaged**: for `1 ≤ p < ∞` with conjugate
-`p'`, `ℓ^{p'} ≃ₗᵢ[𝕜] (ℓ^p)*` along `u ↦ (x ↦ ∑' k, u k * x k)` — "`(ℓ^p)* = ℓ^{p'}`" of the
-book's table; at `p = 1` it reads `(ℓ¹)* = ℓ^∞`. -/
+/-- Let $p$ and $q$ be conjugate exponents with $1 \le p < \infty$. The map $u \mapsto \varphi_u$ is
+an isometric isomorphism $\ell^q(\alpha, \mathbb{K}) \cong (\ell^p)^*$. This is Proposition
+11.18 of [brezis2011functional], $(\ell^p)^* = \ell^{p'}$. For $p = 1$ it reads
+$(\ell^1)^* = \ell^\infty$. -/
 def dualEquiv (hp : p ≠ ∞) : lp (fun _ : α => 𝕜) q ≃ₗᵢ[𝕜] StrongDual 𝕜 (lp (fun _ : α => 𝕜) p) :=
   LinearIsometryEquiv.ofSurjective (toDual 𝕜 α p q) (toDual_surjective hp)
 
 variable {𝕜 α p q}
 
-/-- `dualEquiv` is the pairing `u ↦ (x ↦ ∑' k, u k * x k)`. -/
+/-- The isometric isomorphism `lp.dualEquiv` sends $u$ to the functional $x \mapsto \sum_k u_k x_k$.
+-/
 theorem dualEquiv_apply (hp : p ≠ ∞) (u : lp (fun _ : α => 𝕜) q) (x : lp (fun _ : α => 𝕜) p) :
     dualEquiv 𝕜 α p q hp u x = ∑' k, u k * x k :=
   rfl
 
-/-- `lp.dualEquiv` is `lp.toDual` as a map. -/
+/-- The isometric isomorphism `lp.dualEquiv` and the linear isometry `lp.toDual` send $u$ to the
+same functional. -/
 @[simp]
 theorem coe_dualEquiv (hp : p ≠ ∞) (u : lp (fun _ : α => 𝕜) q) :
     dualEquiv 𝕜 α p q hp u = toDual 𝕜 α p q u :=
@@ -867,18 +982,20 @@ theorem coe_dualEquiv (hp : p ≠ ∞) (u : lp (fun _ : α => 𝕜) q) :
 
 end Duality
 
-/-! ### Reflexivity of `ℓ^p`, `1 < p < ∞` -/
+/-! ### Reflexivity of $\ell^p$ for $1 < p < \infty$ -/
 
 section Reflexive
 
 variable (𝕜 : Type*) [RCLike 𝕜] (α : Type*) {p : ℝ≥0∞}
 
-/-- **[brezis2011functional] Proposition 11.15, reflexivity**: `ℓ^p` is reflexive for
-`1 < p < ∞`, over `RCLike 𝕜` and any index type. Proved directly from the duality: with `p'`
-the conjugate exponent and `e_p : ℓ^{p'} ≃ (ℓ^p)*`, `e_{p'} : ℓ^p ≃ (ℓ^{p'})*` the isometries of
-Proposition 11.18, a functional `Φ` on `(ℓ^p)*` gives `Φ ∘ e_p = e_{p'} x` for some `x ∈ ℓ^p`,
-and then `Φ (e_p u) = ∑' u k * x k = (e_p u) x`, so `Φ` is the evaluation at `x`. (The book
-applies Theorem 4.10 to the counting measure instead.) -/
+/-- For $1 < p < \infty$ and any index type $\alpha$, the space $\ell^p(\alpha, \mathbb{K})$ is
+reflexive. This is the reflexivity part of Proposition 11.15 of [brezis2011functional].
+
+The proof uses the duality directly. Let $q$ be the conjugate exponent, and let
+$e_p \colon \ell^q \cong (\ell^p)^*$ and $e_q \colon \ell^p \cong (\ell^q)^*$ be the isometries
+of Proposition 11.18. A functional $\Phi$ on $(\ell^p)^*$ gives $\Phi \circ e_p = e_q(x)$ for
+some $x \in \ell^p$. Then $\Phi(e_p u) = \sum_k u_k x_k = (e_p u)(x)$, so $\Phi$ is the
+evaluation at $x$. The source applies Theorem 4.10 to the counting measure instead. -/
 theorem isReflexive [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     NormedSpace.IsReflexive 𝕜 (lp (fun _ : α => 𝕜) p) := by
   set q := ENNReal.conjExponent p with hq
@@ -899,22 +1016,23 @@ theorem isReflexive [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
   rw [NormedSpace.dual_def, ← h1, heq, hep, dualEquiv_apply, dualEquiv_apply]
   exact tsum_congr fun k => mul_comm _ _
 
-/-- `ℓ^p` is reflexive for `1 < p < ∞`, as an instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]`
-(the spelling of `MeasureTheory.Lp.instIsReflexive`). -/
+/-- The space $\ell^p(\alpha, \mathbb{K})$ is reflexive for $1 < p < \infty$, as an instance under
+the hypotheses `Fact (1 < p)` and `Fact (p ≠ ∞)`. These are the hypotheses of
+`MeasureTheory.Lp.instIsReflexive`. -/
 instance instIsReflexive [Fact (1 < p)] [Fact (p ≠ ∞)] :
     NormedSpace.IsReflexive 𝕜 (lp (fun _ : α => 𝕜) p) :=
   isReflexive 𝕜 α Fact.out Fact.out
 
 end Reflexive
 
-/-! ### The dual of `c₀` -/
+/-! ### The dual of $c_0$ -/
 
 section ZeroAtInftyDual
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- `conj z / ‖z‖`: a scalar of norm at most `1` with `z * sgn z = ‖z‖` (and `sgn 0 = 0`), the
-book's `sign (u_k)`. -/
+/-- The scalar $\operatorname{sign}(z) = \overline{z} / |z|$, with $\operatorname{sign}(0) = 0$. It
+has norm at most $1$ and satisfies $z \operatorname{sign}(z) = |z|$. -/
 private def sgn (z : 𝕜) : 𝕜 := (starRingEnd 𝕜) z / (‖z‖ : 𝕜)
 
 private theorem mul_sgn (z : 𝕜) : z * sgn z = (‖z‖ : 𝕜) := by
@@ -929,26 +1047,30 @@ private theorem norm_sgn_le (z : 𝕜) : ‖sgn z‖ ≤ 1 := by
 
 variable (𝕜)
 
-/-- The basis vector `e_k` of `c₀`. -/
+/-- The unit sequence $e_k$, as an element of $c_0$. -/
 private def e₀ (k : ℕ) : zeroAtInfty 𝕜 𝕜 := ⟨lp.single ∞ k 1, single_mem_zeroAtInfty 𝕜 𝕜 k 1⟩
 
-/-- The functional `x ↦ ∑' k, u k * x k` on `c₀` defined by `u ∈ ℓ¹`, as a bounded linear map
-in `u`: the `(∞, 1)` case of `lp.toDualCLM` restricted to `c₀`. -/
+/-- The map that sends $u \in \ell^1(\mathbb{N}, \mathbb{K})$ to the functional
+$x \mapsto \sum_k u_k x_k$ on $c_0$, as a bounded linear map $\ell^1 \to (c_0)^*$. It is the
+case $(p, q) = (\infty, 1)$ of `lp.toDualCLM`, restricted to $c_0$. -/
 def zeroAtInfty.toDualCLM : lp (fun _ : ℕ => 𝕜) 1 →L[𝕜] StrongDual 𝕜 (zeroAtInfty 𝕜 𝕜) :=
   ((ContinuousLinearMap.compL 𝕜 (zeroAtInfty 𝕜 𝕜) (lp (fun _ : ℕ => 𝕜) ∞) 𝕜).flip
     (zeroAtInfty 𝕜 𝕜).subtypeL).comp (lp.toDualCLM 𝕜 ℕ ∞ 1)
 
 variable {𝕜}
 
-/-- The pairing on `c₀`: `φ_u x = ∑' k, u k * x k`. -/
+/-- The functional of $u \in \ell^1$ on $c_0$ is $x \mapsto \sum_k u_k x_k$. -/
 theorem zeroAtInfty.toDualCLM_apply (u : lp (fun _ : ℕ => 𝕜) 1) (x : zeroAtInfty 𝕜 𝕜) :
     zeroAtInfty.toDualCLM 𝕜 u x = ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k :=
   rfl
 
-/-- **The finite-section estimate for `c₀`** ([brezis2011functional] Proposition 11.19): for a
-functional `φ` on `c₀` and `u_k := φ (e_k)`, `∑_{k ∈ s} ‖u_k‖ ≤ ‖φ‖` for every finite `s`,
-tested against the finitely supported sequence `x_k = sign (u_k)` on `s`, of norm at most
-`1`. -/
+/-- The **finite-section estimate for $c_0$**. Let $\varphi$ be a bounded linear functional on
+$c_0$, and let $u_k = \varphi(e_k)$. Then $\sum_{k \in s} |u_k| \le \|\varphi\|$ for every
+finite set $s \subseteq \mathbb{N}$. This is the estimate in the proof of Proposition 11.19 of
+[brezis2011functional].
+
+The proof tests $\varphi$ on the finitely supported sequence with
+$x_k = \operatorname{sign}(u_k)$ for $k \in s$, which has norm at most $1$. -/
 theorem zeroAtInfty.sum_norm_apply_single_le (φ : StrongDual 𝕜 (zeroAtInfty 𝕜 𝕜))
     (s : Finset ℕ) :
     ∑ k ∈ s, ‖φ ⟨lp.single ∞ k 1, single_mem_zeroAtInfty 𝕜 𝕜 k 1⟩‖ ≤ ‖φ‖ := by
@@ -985,12 +1107,15 @@ theorem zeroAtInfty.sum_norm_apply_single_le (φ : StrongDual 𝕜 (zeroAtInfty 
     _ ≤ ‖φ‖ * 1 := by gcongr
     _ = ‖φ‖ := mul_one _
 
-/-- `φ_u (e_k a) = u k * a` on `c₀`. -/
+/-- The functional of $u \in \ell^1$ on a multiple of a unit vector of $c_0$ is
+$\varphi_u(a e_k) = u_k a$. -/
 theorem zeroAtInfty.toDualCLM_single (u : lp (fun _ : ℕ => 𝕜) 1) (k : ℕ) (a : 𝕜) :
     zeroAtInfty.toDualCLM 𝕜 u ⟨lp.single ∞ k a, single_mem_zeroAtInfty 𝕜 𝕜 k a⟩ = u k * a :=
   lp.toDualCLM_single u k a
 
-/-- **[brezis2011functional] Proposition 11.19, the norm identity** `‖φ_u‖_{(c₀)*} = ‖u‖₁`. -/
+/-- For every $u \in \ell^1(\mathbb{N}, \mathbb{K})$, the functional $\varphi_u$ on $c_0$ has the
+norm $\|\varphi_u\| = \|u\|_1$. This is the norm identity of Proposition 11.19 of
+[brezis2011functional]. -/
 theorem zeroAtInfty.norm_toDualCLM_apply (u : lp (fun _ : ℕ => 𝕜) 1) :
     ‖zeroAtInfty.toDualCLM 𝕜 u‖ = ‖u‖ := by
   refine le_antisymm ?_ ?_
@@ -1011,28 +1136,35 @@ theorem zeroAtInfty.norm_toDualCLM_apply (u : lp (fun _ : ℕ => 𝕜) 1) :
 
 variable (𝕜)
 
-/-- **[brezis2011functional] Proposition 11.19, the isometry**: `u ↦ (x ↦ ∑' k, u k * x k)` is a
-linear isometry `ℓ¹ → (c₀)*`. -/
+/-- The map $u \mapsto \varphi_u$, with $\varphi_u(x) = \sum_k u_k x_k$, is a linear isometry
+$\ell^1(\mathbb{N}, \mathbb{K}) \to (c_0)^*$. This is the isometry of Proposition 11.19 of
+[brezis2011functional]. -/
 def zeroAtInfty.toDual : lp (fun _ : ℕ => 𝕜) 1 →ₗᵢ[𝕜] StrongDual 𝕜 (zeroAtInfty 𝕜 𝕜) :=
   ⟨(zeroAtInfty.toDualCLM 𝕜).toLinearMap, zeroAtInfty.norm_toDualCLM_apply⟩
 
 variable {𝕜}
 
-/-- `lp.zeroAtInfty.toDual` is `lp.zeroAtInfty.toDualCLM` as a map. -/
+/-- The linear isometry `lp.zeroAtInfty.toDual` and the bounded linear map
+`lp.zeroAtInfty.toDualCLM` send $u$ to the same functional. -/
 @[simp]
 theorem zeroAtInfty.coe_toDual (u : lp (fun _ : ℕ => 𝕜) 1) :
     zeroAtInfty.toDual 𝕜 u = zeroAtInfty.toDualCLM 𝕜 u :=
   rfl
 
-/-- The display of [brezis2011functional] Proposition 11.19. -/
+/-- The functional `lp.zeroAtInfty.toDual` of $u \in \ell^1$ is $x \mapsto \sum_k u_k x_k$ on $c_0$,
+the formula of Proposition 11.19 of [brezis2011functional]. -/
 theorem zeroAtInfty.toDual_apply (u : lp (fun _ : ℕ => 𝕜) 1) (x : zeroAtInfty 𝕜 𝕜) :
     zeroAtInfty.toDual 𝕜 u x = ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k :=
   rfl
 
-/-- **[brezis2011functional] Proposition 11.19, existence**: every functional on `c₀` is
-`x ↦ ∑' k, u k * x k` for the sequence `u k := φ (e_k)`, in `ℓ¹` by the finite-section estimate;
-the two functionals agree because every `x ∈ c₀` is the sum of its coordinates
-(`lp.zeroAtInfty.hasSum_single'`, the density of the finitely supported sequences). -/
+/-- Every bounded linear functional $\varphi$ on $c_0$ is $\varphi_u$ for some
+$u \in \ell^1(\mathbb{N}, \mathbb{K})$. This is the existence part of Proposition 11.19 of
+[brezis2011functional].
+
+The sequence is $u_k = \varphi(e_k)$, and it lies in $\ell^1$ by the finite-section estimate.
+The two functionals agree because every $x \in c_0$ is the sum of the sequences $x_k e_k$
+(`lp.zeroAtInfty.hasSum_single'`), that is, because the finitely supported sequences are dense
+in $c_0$. -/
 theorem zeroAtInfty.toDual_surjective : Function.Surjective (zeroAtInfty.toDual 𝕜) := by
   intro φ
   obtain ⟨v, hv⟩ : ∃ v : ℕ → 𝕜, ∀ k, v k = φ (e₀ 𝕜 k) := ⟨_, fun _ => rfl⟩
@@ -1053,19 +1185,22 @@ theorem zeroAtInfty.toDual_surjective : Function.Surjective (zeroAtInfty.toDual 
 
 variable (𝕜)
 
-/-- **[brezis2011functional] Proposition 11.19**: `(c₀)* = ℓ¹`, the isometric isomorphism
-`ℓ¹ ≃ₗᵢ[𝕜] (c₀)*` along `u ↦ (x ↦ ∑' k, u k * x k)`. -/
+/-- The map $u \mapsto \varphi_u$, with $\varphi_u(x) = \sum_k u_k x_k$, is an isometric isomorphism
+$\ell^1(\mathbb{N}, \mathbb{K}) \cong (c_0)^*$. This is Proposition 11.19 of
+[brezis2011functional], $(c_0)^* = \ell^1$. -/
 def zeroAtInfty.dualEquiv : lp (fun _ : ℕ => 𝕜) 1 ≃ₗᵢ[𝕜] StrongDual 𝕜 (zeroAtInfty 𝕜 𝕜) :=
   LinearIsometryEquiv.ofSurjective (zeroAtInfty.toDual 𝕜) zeroAtInfty.toDual_surjective
 
 variable {𝕜}
 
-/-- `zeroAtInfty.dualEquiv` is the pairing `u ↦ (x ↦ ∑' k, u k * x k)`. -/
+/-- The isometric isomorphism `lp.zeroAtInfty.dualEquiv` sends $u$ to the functional
+$x \mapsto \sum_k u_k x_k$ on $c_0$. -/
 theorem zeroAtInfty.dualEquiv_apply (u : lp (fun _ : ℕ => 𝕜) 1) (x : zeroAtInfty 𝕜 𝕜) :
     zeroAtInfty.dualEquiv 𝕜 u x = ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k :=
   rfl
 
-/-- `lp.zeroAtInfty.dualEquiv` is `lp.zeroAtInfty.toDual` as a map. -/
+/-- The isometric isomorphism `lp.zeroAtInfty.dualEquiv` and the linear isometry
+`lp.zeroAtInfty.toDual` send $u$ to the same functional. -/
 @[simp]
 theorem zeroAtInfty.coe_dualEquiv (u : lp (fun _ : ℕ => 𝕜) 1) :
     zeroAtInfty.dualEquiv 𝕜 u = zeroAtInfty.toDual 𝕜 u :=
@@ -1073,14 +1208,16 @@ theorem zeroAtInfty.coe_dualEquiv (u : lp (fun _ : ℕ => 𝕜) 1) :
 
 end ZeroAtInftyDual
 
-/-! ### The dual of `c` -/
+/-! ### The dual of $c$ -/
 
 section ConvergentDual
 
 variable (𝕜 : Type*) [RCLike 𝕜]
 
-/-- The functional `x ↦ ∑' k, u k * x k + λ * lim x` on `c` defined by `(u, λ) ∈ ℓ¹ × 𝕜`, as a
-bounded linear map in `(u, λ)`; the product carries the `ℓ¹` norm `‖u‖ + ‖λ‖` (`WithLp 1`). -/
+/-- The map that sends $(u, \lambda) \in \ell^1(\mathbb{N}, \mathbb{K}) \times \mathbb{K}$ to the
+functional $\varphi_{u,\lambda}(x) = \sum_k u_k x_k + \lambda \lim x$ on $c$, as a bounded
+linear map $\ell^1 \times \mathbb{K} \to c^*$. The product carries the norm
+$\|u\|_1 + |\lambda|$: it is `WithLp 1 (lp (fun _ : ℕ ↦ 𝕜) 1 × 𝕜)`. -/
 def convergent.toDualCLM :
     WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜) →L[𝕜] StrongDual 𝕜 (convergent 𝕜 𝕜) :=
   (((ContinuousLinearMap.compL 𝕜 (convergent 𝕜 𝕜) (lp (fun _ : ℕ => 𝕜) ∞) 𝕜).flip
@@ -1090,19 +1227,22 @@ def convergent.toDualCLM :
 
 variable {𝕜}
 
-/-- The functional on `c` defined by `(u, λ)`: `x ↦ ∑' k, u k * x k + λ * lim x`. -/
+/-- The functional of $(u, \lambda)$ on $c$ is $\varphi_{u,\lambda}(x) = \sum_k u_k x_k + \lambda
+\lim x$. -/
 theorem convergent.toDualCLM_apply (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (x : convergent 𝕜 𝕜) :
     convergent.toDualCLM 𝕜 (WithLp.toLp 1 (u, l)) x =
       ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k + l * convergent.limCLM 𝕜 𝕜 x :=
   rfl
 
-/-- The norm of `WithLp 1 (ℓ¹ × 𝕜)` is `‖u‖ + ‖λ‖`. -/
+/-- In the product $\ell^1 \times \mathbb{K}$ with the $\ell^1$ product norm (`WithLp 1`), the pair
+$(u, \lambda)$ has the norm $\|u\|_1 + |\lambda|$. -/
 theorem norm_toLp_one_prod (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) :
     ‖(WithLp.toLp 1 (u, l) : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜))‖ = ‖u‖ + ‖l‖ := by
   rw [WithLp.prod_norm_eq_add (by simp)]
   simp
 
-/-- The terms `u k * x k`, `u ∈ ℓ¹`, `x ∈ ℓ^∞`, are summable. -/
+/-- For $u \in \ell^1(\mathbb{N}, \mathbb{K})$ and $x \in \ell^\infty(\mathbb{N}, \mathbb{K})$, the
+family $(u_k x_k)_k$ is summable. -/
 theorem summable_mul_apply_of_one_of_top (u : lp (fun _ : ℕ => 𝕜) 1)
     (x : lp (fun _ : ℕ => 𝕜) ∞) : Summable fun k => u k * x k := by
   have hsum : Summable fun k => ‖u k‖ := by
@@ -1112,7 +1252,9 @@ theorem summable_mul_apply_of_one_of_top (u : lp (fun _ : ℕ => 𝕜) 1)
   gcongr
   exact lp.norm_apply_le_norm ENNReal.top_ne_zero x k
 
-/-- `‖φ_{u,λ}‖ ≤ ‖u‖₁ + ‖λ‖`, the easy half of [brezis2011functional] Proposition 11.20. -/
+/-- The functional $\varphi_{u,\lambda}$ on $c$ has the norm $\|\varphi_{u,\lambda}\| \le \|u\|_1 +
+|\lambda|$. This is the easy half of the norm identity of Proposition 11.20 of
+[brezis2011functional]. -/
 theorem convergent.norm_toDualCLM_apply_le (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) :
     ‖convergent.toDualCLM 𝕜 (WithLp.toLp 1 (u, l))‖ ≤ ‖u‖ + ‖l‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun x => ?_
@@ -1127,8 +1269,9 @@ theorem convergent.norm_toDualCLM_apply_le (u : lp (fun _ : ℕ => 𝕜) 1) (l :
     gcongr
     exact convergent.norm_limCLM_apply_le x
 
-/-- The test sequence of [brezis2011functional] Proposition 11.20: `sign (u_k)` for `k < N` and
-`sign λ` beyond, as an element of `ℓ^∞`. -/
+/-- The test sequence of the proof of Proposition 11.20 of [brezis2011functional], as an element of
+$\ell^\infty$: its term $k$ is $\operatorname{sign}(u_k)$ for $k < N$ and
+$\operatorname{sign}(\lambda)$ for $k \ge N$. -/
 private def testFun (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (N : ℕ) : lp (fun _ : ℕ => 𝕜) ∞ :=
   ⟨fun k => if k < N then sgn (u k) else sgn l, memℓp_infty ⟨1, by
     rintro _ ⟨k, rfl⟩
@@ -1141,7 +1284,8 @@ private theorem tendsto_testFun (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (N :
   change sgn l = if k < N then sgn (u k) else sgn l
   rw [ite_eq_right (not_lt.2 hk)]
 
-/-- The test sequence of [brezis2011functional] Proposition 11.20 as an element of `c`. -/
+/-- The test sequence of the proof of Proposition 11.20 of [brezis2011functional], as an element of
+$c$. -/
 private def testSeq (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (N : ℕ) : convergent 𝕜 𝕜 :=
   ⟨testFun u l N, sgn l, tendsto_testFun u l N⟩
 
@@ -1161,9 +1305,14 @@ private theorem limCLM_testSeq (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (N : 
     convergent.limCLM 𝕜 𝕜 (testSeq u l N) = sgn l :=
   convergent.limCLM_eq_of_tendsto (tendsto_testFun u l N)
 
-/-- **`‖u‖₁ + ‖λ‖ ≤ ‖φ_{u,λ}‖`**, the hard half of [brezis2011functional] Proposition 11.20:
-testing on `x_N = (sign u_1, …, sign u_N, sign λ, sign λ, …)` gives
-`∑_{k < N} ‖u_k‖ + ‖λ‖ - ∑_{k ≥ N} ‖u_k‖ ≤ ‖φ_{u,λ}‖`, and `N → ∞`. -/
+/-- The functional $\varphi_{u,\lambda}$ on $c$ has the norm $\|\varphi_{u,\lambda}\| \ge \|u\|_1 +
+|\lambda|$. This is the hard half of the norm identity of Proposition 11.20 of
+[brezis2011functional].
+
+The proof tests $\varphi_{u,\lambda}$ on $x_N = (\operatorname{sign} u_0, \dots,
+\operatorname{sign} u_{N-1}, \operatorname{sign} \lambda, \operatorname{sign} \lambda, \dots)$.
+This gives $\sum_{k < N} |u_k| + |\lambda| - \sum_{k \ge N} |u_k| \le \|\varphi_{u,\lambda}\|$,
+and then $N \to \infty$. -/
 theorem convergent.norm_add_norm_le_norm_toDualCLM_apply (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) :
     ‖u‖ + ‖l‖ ≤ ‖convergent.toDualCLM 𝕜 (WithLp.toLp 1 (u, l))‖ := by
   set φ := convergent.toDualCLM 𝕜 (WithLp.toLp 1 (u, l)) with hφ
@@ -1225,7 +1374,9 @@ theorem convergent.norm_add_norm_le_norm_toDualCLM_apply (u : lp (fun _ : ℕ =>
   rw [sub_zero] at h3
   exact le_of_tendsto' h3 key
 
-/-- **[brezis2011functional] Proposition 11.20, the norm identity** `‖φ_{u,λ}‖ = ‖u‖₁ + ‖λ‖`. -/
+/-- For every $w = (u, \lambda)$ in $\ell^1(\mathbb{N}, \mathbb{K}) \times \mathbb{K}$ with the norm
+$\|u\|_1 + |\lambda|$, the functional $\varphi_w$ on $c$ has the norm $\|\varphi_w\| = \|w\|$.
+This is the norm identity of Proposition 11.20 of [brezis2011functional]. -/
 theorem convergent.norm_toDualCLM_apply (w : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜)) :
     ‖convergent.toDualCLM 𝕜 w‖ = ‖w‖ := by
   obtain ⟨⟨u, l⟩⟩ := w
@@ -1235,35 +1386,44 @@ theorem convergent.norm_toDualCLM_apply (w : WithLp 1 (lp (fun _ : ℕ => 𝕜) 
 
 variable (𝕜)
 
-/-- **[brezis2011functional] Proposition 11.20, the isometry**: `(u, λ) ↦ (x ↦ ∑' u k * x k +
-λ lim x)` is a linear isometry `WithLp 1 (ℓ¹ × 𝕜) → c*`. -/
+/-- The map $(u, \lambda) \mapsto \varphi_{u,\lambda}$, with $\varphi_{u,\lambda}(x) = \sum_k u_k
+x_k + \lambda \lim x$, is a linear isometry from $\ell^1(\mathbb{N}, \mathbb{K}) \times
+\mathbb{K}$, with the norm $\|u\|_1 + |\lambda|$, to $c^*$. This is the isometry of Proposition
+11.20 of [brezis2011functional]. -/
 def convergent.toDual : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜) →ₗᵢ[𝕜] StrongDual 𝕜 (convergent 𝕜 𝕜) :=
   ⟨(convergent.toDualCLM 𝕜).toLinearMap, convergent.norm_toDualCLM_apply⟩
 
 variable {𝕜}
 
-/-- `lp.convergent.toDual` is `lp.convergent.toDualCLM` as a map. -/
+/-- The linear isometry `lp.convergent.toDual` and the bounded linear map `lp.convergent.toDualCLM`
+send $(u, \lambda)$ to the same functional. -/
 @[simp]
 theorem convergent.coe_toDual (w : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜)) :
     convergent.toDual 𝕜 w = convergent.toDualCLM 𝕜 w :=
   rfl
 
-/-- The display of [brezis2011functional] Proposition 11.20. -/
+/-- The functional `lp.convergent.toDual` of $(u, \lambda)$ is
+$x \mapsto \sum_k u_k x_k + \lambda \lim x$, the formula of Proposition 11.20 of
+[brezis2011functional]. -/
 theorem convergent.toDual_apply (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (x : convergent 𝕜 𝕜) :
     convergent.toDual 𝕜 (WithLp.toLp 1 (u, l)) x =
       ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k + l * convergent.limCLM 𝕜 𝕜 x :=
   rfl
 
-/-- The inclusion `c₀ → c`, as a bounded linear map. -/
+/-- The inclusion $c_0 \to c$, as a bounded linear map. -/
 private def incl : zeroAtInfty 𝕜 𝕜 →L[𝕜] convergent 𝕜 𝕜 :=
   (Submodule.inclusion (zeroAtInfty_le_convergent 𝕜 𝕜)).mkContinuous 1 fun x => by
     rw [one_mul, ← Submodule.norm_coe, ← Submodule.norm_coe (s := zeroAtInfty 𝕜 𝕜)]
     rfl
 
-/-- **[brezis2011functional] Proposition 11.20, existence**: restricting `φ ∈ c*` to `c₀`
-gives `u ∈ ℓ¹` with `φ y = ∑' u k * y k` on `c₀`; with `e = (1, 1, …)` and
-`λ := φ e - ∑' u k`, every `x ∈ c` is `y + (lim x) e` with `y ∈ c₀`, so
-`φ x = ∑' u k * x k + λ lim x`. -/
+/-- Every bounded linear functional $\varphi$ on $c$ is $\varphi_{u,\lambda}$ for some
+$u \in \ell^1(\mathbb{N}, \mathbb{K})$ and $\lambda \in \mathbb{K}$. This is the existence part
+of Proposition 11.20 of [brezis2011functional].
+
+The restriction of $\varphi$ to $c_0$ gives $u \in \ell^1$ with $\varphi(y) = \sum_k u_k y_k$
+for $y \in c_0$. Let $e = (1, 1, 1, \dots)$ and $\lambda = \varphi(e) - \sum_k u_k$. Every
+$x \in c$ is $y + (\lim x) e$ with $y \in c_0$, so
+$\varphi(x) = \sum_k u_k x_k + \lambda \lim x$. -/
 theorem convergent.toDual_surjective : Function.Surjective (convergent.toDual 𝕜) := by
   intro φ
   set u := (zeroAtInfty.dualEquiv 𝕜).symm (φ.comp incl) with hu
@@ -1303,22 +1463,25 @@ theorem convergent.toDual_surjective : Function.Surjective (convergent.toDual �
 
 variable (𝕜)
 
-/-- **[brezis2011functional] Proposition 11.20**: `c* = ℓ¹ × 𝕜` with the norm `‖u‖₁ + ‖λ‖`,
-the isometric isomorphism `WithLp 1 (ℓ¹ × 𝕜) ≃ₗᵢ[𝕜] c*` along
-`(u, λ) ↦ (x ↦ ∑' k, u k * x k + λ lim x)`. -/
+/-- The map $(u, \lambda) \mapsto \varphi_{u,\lambda}$, with $\varphi_{u,\lambda}(x) = \sum_k u_k
+x_k + \lambda \lim x$, is an isometric isomorphism from $\ell^1(\mathbb{N}, \mathbb{K}) \times
+\mathbb{K}$, with the norm $\|u\|_1 + |\lambda|$, onto $c^*$. This is Proposition 11.20 of
+[brezis2011functional], $c^* = \ell^1 \times \mathbb{K}$. -/
 def convergent.dualEquiv :
     WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜) ≃ₗᵢ[𝕜] StrongDual 𝕜 (convergent 𝕜 𝕜) :=
   LinearIsometryEquiv.ofSurjective (convergent.toDual 𝕜) convergent.toDual_surjective
 
 variable {𝕜}
 
-/-- `convergent.dualEquiv` is the pairing `(u, λ) ↦ (x ↦ ∑' k, u k * x k + λ lim x)`. -/
+/-- The isometric isomorphism `lp.convergent.dualEquiv` sends $(u, \lambda)$ to the functional
+$x \mapsto \sum_k u_k x_k + \lambda \lim x$ on $c$. -/
 theorem convergent.dualEquiv_apply (u : lp (fun _ : ℕ => 𝕜) 1) (l : 𝕜) (x : convergent 𝕜 𝕜) :
     convergent.dualEquiv 𝕜 (WithLp.toLp 1 (u, l)) x =
       ∑' k, u k * (x : lp (fun _ : ℕ => 𝕜) ∞) k + l * convergent.limCLM 𝕜 𝕜 x :=
   rfl
 
-/-- `lp.convergent.dualEquiv` is `lp.convergent.toDual` as a map. -/
+/-- The isometric isomorphism `lp.convergent.dualEquiv` and the linear isometry
+`lp.convergent.toDual` send $w$ to the same functional. -/
 @[simp]
 theorem convergent.coe_dualEquiv (w : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × 𝕜)) :
     convergent.dualEquiv 𝕜 w = convergent.toDual 𝕜 w :=
@@ -1326,25 +1489,29 @@ theorem convergent.coe_dualEquiv (w : WithLp 1 (lp (fun _ : ℕ => 𝕜) 1 × �
 
 end ConvergentDual
 
-/-! ### Non-reflexivity of `c₀`, `ℓ^∞`, `c` and `ℓ¹` -/
+/-! ### Non-reflexivity of $c_0$, $\ell^\infty$, $c$ and $\ell^1$ -/
 
 section NotReflexive
 
 variable (𝕜 : Type*) [RCLike 𝕜]
 
 variable {𝕜} in
-/-- The functional of `(c₀)*` corresponding to `e_k ∈ ℓ¹` is the evaluation at `k`. -/
+/-- Under the isomorphism $\ell^1 \cong (c_0)^*$, the unit sequence $e_k \in \ell^1$ corresponds to
+the evaluation $x \mapsto x_k$ at the index $k$. -/
 theorem zeroAtInfty.dualEquiv_single_apply (k : ℕ) (x : zeroAtInfty 𝕜 𝕜) :
     zeroAtInfty.dualEquiv 𝕜 (lp.single 1 k 1) x = (x : lp (fun _ : ℕ => 𝕜) ∞) k := by
   rw [zeroAtInfty.dualEquiv_apply, tsum_eq_single k fun j hj => by
     rw [lp.single_apply, Pi.single_eq_of_ne hj, zero_mul]]
   rw [lp.single_apply, Pi.single_eq_same, one_mul]
 
-/-- **[brezis2011functional] Proposition 11.21, `c₀`**: `c₀` is not reflexive. Under
-`(c₀)* = ℓ¹` and `(ℓ¹)* = ℓ^∞`, the canonical injection `c₀ → (c₀)**` is the inclusion
-`c₀ → ℓ^∞`, which misses `(1, 1, 1, …)`: the functional `Φ := (u ↦ ∑' u k) ∘ ((c₀)* ≅ ℓ¹)` on
-`(c₀)*` would be the evaluation at some `x ∈ c₀`, and testing on the functionals `e_k` gives
-`x k = 1` for every `k`, contradicting `x k → 0`. -/
+/-- The space $c_0$ of scalar null sequences is not reflexive. This is the case of $c_0$ in
+Proposition 11.21 of [brezis2011functional].
+
+Under $(c_0)^* = \ell^1$ and $(\ell^1)^* = \ell^\infty$, the canonical injection
+$c_0 \to (c_0)^{**}$ is the inclusion $c_0 \to \ell^\infty$, which misses $(1, 1, 1, \dots)$. In
+the proof, the functional $\Phi$ on $(c_0)^*$ that sends $\varphi_u$ to $\sum_k u_k$ would be
+the evaluation at some $x \in c_0$. Testing $\Phi$ on the functionals $\varphi_{e_k}$ gives
+$x_k = 1$ for every $k$, which contradicts $x_k \to 0$. -/
 theorem zeroAtInfty.not_isReflexive : ¬ NormedSpace.IsReflexive 𝕜 (zeroAtInfty 𝕜 𝕜) := by
   intro h
   set e := zeroAtInfty.dualEquiv 𝕜 with he
@@ -1366,14 +1533,16 @@ theorem zeroAtInfty.not_isReflexive : ¬ NormedSpace.IsReflexive 𝕜 (zeroAtInf
   rw [show ⇑(x : lp (fun _ : ℕ => 𝕜) ∞) = fun _ => (1 : 𝕜) from funext hk] at h0
   exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds h0)
 
-/-- **[brezis2011functional] Proposition 11.21, `ℓ^∞`**: `ℓ^∞` is not reflexive, since its closed
-subspace `c₀` is not (Proposition 3.20). -/
+/-- The space $\ell^\infty(\mathbb{N}, \mathbb{K})$ is not reflexive, because its closed subspace
+$c_0$ is not reflexive (Proposition 3.20 of [brezis2011functional]). This is the case of
+$\ell^\infty$ in Proposition 11.21 of [brezis2011functional]. -/
 theorem not_isReflexive_top : ¬ NormedSpace.IsReflexive 𝕜 (lp (fun _ : ℕ => 𝕜) ∞) := fun _ =>
   zeroAtInfty.not_isReflexive 𝕜
     (NormedSpace.isReflexive_of_isClosed (zeroAtInfty 𝕜 𝕜) (isClosed_zeroAtInfty 𝕜 𝕜))
 
-/-- **[brezis2011functional] Proposition 11.21, `c`**: `c` is not reflexive, since its closed
-subspace `c₀` is not (Proposition 3.20). -/
+/-- The space $c$ of convergent scalar sequences is not reflexive, because its closed subspace $c_0$
+is not reflexive (Proposition 3.20 of [brezis2011functional]). This is the case of $c$ in
+Proposition 11.21 of [brezis2011functional]. -/
 theorem convergent.not_isReflexive : ¬ NormedSpace.IsReflexive 𝕜 (convergent 𝕜 𝕜) := by
   intro h
   -- `c₀`, seen inside `c`
@@ -1387,8 +1556,9 @@ theorem convergent.not_isReflexive : ¬ NormedSpace.IsReflexive 𝕜 (convergent
   exact zeroAtInfty.not_isReflexive 𝕜
     ((NormedSpace.isReflexive_congr e.toContinuousLinearEquiv).1 hMr)
 
-/-- **[brezis2011functional] Proposition 11.21, `ℓ¹`**: `ℓ¹` is not reflexive: its dual
-`ℓ^∞` (Proposition 11.18) would be reflexive too (Corollary 3.21). -/
+/-- The space $\ell^1(\mathbb{N}, \mathbb{K})$ is not reflexive: otherwise its dual $\ell^\infty$
+(Proposition 11.18) would be reflexive too (Corollary 3.21 of [brezis2011functional]). This is
+the case of $\ell^1$ in Proposition 11.21 of [brezis2011functional]. -/
 theorem not_isReflexive_one : ¬ NormedSpace.IsReflexive 𝕜 (lp (fun _ : ℕ => 𝕜) 1) := by
   intro h
   have h1 : NormedSpace.IsReflexive 𝕜 (StrongDual 𝕜 (lp (fun _ : ℕ => 𝕜) 1)) := inferInstance
@@ -1406,17 +1576,21 @@ open TopologicalSpace
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [SeparableSpace 𝕜]
 
-/-- A normed space with a separable subset whose span is dense is separable. -/
+/-- Let $V$ be a normed space over a separable nontrivially normed field. If a separable subset $s$
+of $V$ spans a dense subspace, then $V$ is separable. -/
 theorem _root_.TopologicalSpace.separableSpace_of_isSeparable_of_dense_span {V : Type*}
     [NormedAddCommGroup V] [NormedSpace 𝕜 V] {s : Set V} (hs : IsSeparable s)
     (hd : Dense (Submodule.span 𝕜 s : Set V)) : SeparableSpace V := by
   rw [← isSeparable_univ_iff, ← hd.closure_eq]
   exact hs.span.closure
 
-/-- **[brezis2011functional] Proposition 11.16, `ℓ^p`**: for a countable index type, a separable
-`E` (over a separable field) and `p < ∞`, `ℓ^p(α, E)` is separable: the finitely supported
-sequences are dense (`lp.hasSum_single`) and are spanned by the separable set
-`⋃ i, range (lp.single p i)`. -/
+/-- Let $\alpha$ be a countable index type, let $E$ be a separable normed space over a separable
+field, and let $1 \le p < \infty$. Then $\ell^p(\alpha, E)$ is separable. This is the case of
+$\ell^p$ in Proposition 11.16 of [brezis2011functional].
+
+The finitely supported sequences are dense (`lp.hasSum_single`), and they are spanned by the
+separable set of the families $\delta_i a$, for $i \in \alpha$ and $a \in E$, where $\delta_i a$
+is $a$ at index $i$ and $0$ elsewhere. -/
 theorem separableSpace {α : Type*} [Countable α] {E : Type*} [NormedAddCommGroup E]
     [NormedSpace 𝕜 E] [SeparableSpace E] {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     SeparableSpace (lp (fun _ : α => E) p) := by
@@ -1433,8 +1607,10 @@ theorem separableSpace {α : Type*} [Countable α] {E : Type*} [NormedAddCommGro
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
-/-- **[brezis2011functional] Proposition 11.16, `c₀`**: for a separable `E`, `c₀` is separable —
-the finitely supported sequences are dense in `c₀` (`lp.zeroAtInfty.hasSum_single'`). -/
+/-- If $E$ is a separable normed space over a separable field, then $c_0$ is separable. This is the
+case of $c_0$ in Proposition 11.16 of [brezis2011functional].
+
+The finitely supported sequences are dense in $c_0$ (`lp.zeroAtInfty.hasSum_single'`). -/
 instance zeroAtInfty.instSeparableSpace [SeparableSpace E] : SeparableSpace (zeroAtInfty 𝕜 E) := by
   refine separableSpace_of_isSeparable_of_dense_span (𝕜 := 𝕜) (s := ⋃ k, Set.range fun a : E =>
     (⟨lp.single ∞ k a, single_mem_zeroAtInfty 𝕜 E k a⟩ : zeroAtInfty 𝕜 E)) ?_ ?_
@@ -1447,10 +1623,12 @@ instance zeroAtInfty.instSeparableSpace [SeparableSpace E] : SeparableSpace (zer
     exact Submodule.sum_mem _ fun k _ =>
       Submodule.subset_span (Set.mem_iUnion.2 ⟨k, Set.mem_range_self _⟩)
 
-/-- **[brezis2011functional] Proposition 11.16, `c`**: for a separable `E`, `c` is separable —
-every `x ∈ c` is `(x - (lim x) e) + (lim x) e` with `x - (lim x) e ∈ c₀` and `e = (1, 1, …)`,
-so `c` is spanned by the finitely supported sequences and the constant sequences (the book's
-`D + λ (1, 1, 1, …)`). -/
+/-- If $E$ is a separable normed space over a separable field, then $c$ is separable. This is the
+case of $c$ in Proposition 11.16 of [brezis2011functional].
+
+Let $e = (1, 1, 1, \dots)$. Every $x \in c$ is $(x - (\lim x) e) + (\lim x) e$ with
+$x - (\lim x) e \in c_0$. So the finitely supported sequences and the constant sequences span a
+dense subspace of $c$. This is the set $D + \lambda (1, 1, 1, \dots)$ of the source. -/
 instance convergent.instSeparableSpace [SeparableSpace E] : SeparableSpace (convergent 𝕜 E) := by
   refine separableSpace_of_isSeparable_of_dense_span (𝕜 := 𝕜) (s := (⋃ k, Set.range fun a : E =>
     (⟨lp.single ∞ k a, zeroAtInfty_le_convergent 𝕜 E (single_mem_zeroAtInfty 𝕜 E k a)⟩ :
@@ -1480,11 +1658,14 @@ instance convergent.instSeparableSpace [SeparableSpace E] : SeparableSpace (conv
         (Set.mem_union_left _ (Set.mem_iUnion.2 ⟨k, Set.mem_range_self _⟩))) ?_
       exact Submodule.subset_span (Set.mem_union_right _ (Set.mem_range_self _))
 
-/-- **[brezis2011functional] Proposition 11.17**: `ℓ^∞` over an infinite index type is not
-separable (for any nontrivial `E`): the indicator sequences `e · 1_A`, `A ⊆ α`, are pairwise at
-distance `‖e‖`, so the balls of radius `‖e‖ / 2` around them are pairwise disjoint, nonempty and
-open, and a separable space has only countably many such
-(`Pairwise.countable_of_isOpen_disjoint`); but `Set α` is uncountable (Cantor). -/
+/-- Let $\alpha$ be an infinite index type and let $E$ be a normed group with $E \ne \{0\}$. Then
+$\ell^\infty(\alpha, E)$ is not separable. This is Proposition 11.17 of [brezis2011functional].
+
+Fix $e \ne 0$ in $E$. The sequences $e \mathbf{1}_A$, for $A \subseteq \alpha$, are pairwise at
+distance $\|e\|$. So the open balls of radius $\|e\| / 2$ around them are pairwise disjoint and
+nonempty, and a separable space has only countably many such balls
+(`Pairwise.countable_of_isOpen_disjoint`). But the set of subsets of $\alpha$ is uncountable, by
+Cantor's theorem. -/
 theorem not_separableSpace_top {α : Type*} [Infinite α] {E : Type*} [NormedAddCommGroup E]
     [Nontrivial E] : ¬ SeparableSpace (lp (fun _ : α => E) ∞) := by
   intro h
@@ -1518,7 +1699,7 @@ theorem not_separableSpace_top {α : Type*} [Infinite α] {E : Type*} [NormedAdd
 
 end Separable
 
-/-! ### `ℓ^p` is `L^p` of the counting measure; uniform convexity -/
+/-! ### $\ell^p$ as $L^p$ of the counting measure, and uniform convexity -/
 
 section Count
 
@@ -1526,8 +1707,9 @@ open MeasureTheory
 
 variable {α : Type*} {E : Type*} [NormedAddCommGroup E] {p : ℝ≥0∞}
 
-/-- The `tsum` of `‖f a‖ₑ ^ P` is the `ENNReal.ofReal` of the real `tsum` when the latter is
-summable. -/
+/-- Let $P \ge 0$ and let $(f_a)_a$ be a family in $E$ such that the real family $(\|f_a\|^P)_a$ is
+summable. Then the sum $\sum_a \|f_a\|^P$ computed in $[0, \infty]$ equals the real sum,
+embedded in $[0, \infty]$. -/
 theorem tsum_enorm_rpow_eq_ofReal {P : ℝ} (hP : 0 ≤ P) {f : α → E}
     (hf : Summable fun a => ‖f a‖ ^ P) :
     ∑' a, ‖f a‖ₑ ^ P = ENNReal.ofReal (∑' a, ‖f a‖ ^ P) := by
@@ -1535,15 +1717,17 @@ theorem tsum_enorm_rpow_eq_ofReal {P : ℝ} (hP : 0 ≤ P) {f : α → E}
   refine tsum_congr fun a => ?_
   rw [← ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) hP, ofReal_norm]
 
-/-- Conversely, a finite `tsum` of `‖f a‖ₑ ^ P` gives a summable real family. -/
+/-- Conversely, if the sum $\sum_a \|f_a\|^P$ computed in $[0, \infty]$ is finite, then the real
+family $(\|f_a\|^P)_a$ is summable. -/
 theorem summable_norm_rpow_of_tsum_enorm_rpow_ne_top {P : ℝ} {f : α → E}
     (hf : ∑' a, ‖f a‖ₑ ^ P ≠ ∞) : Summable fun a => ‖f a‖ ^ P := by
   have := ENNReal.summable_toReal hf
   refine this.congr fun a => ?_
   rw [← ENNReal.toReal_rpow, toReal_enorm]
 
-/-- The supremum of `‖f a‖ₑ` is the `ENNReal.ofReal` of the supremum of `‖f a‖` when the latter
-is bounded (and the index type is nonempty or the supremum is read as `0`). -/
+/-- If the family $(\|f_a\|)_a$ is bounded above, then the supremum $\sup_a \|f_a\|$ computed in
+$[0, \infty]$ equals the real supremum, embedded in $[0, \infty]$. For an empty index type, both
+sides are $0$. -/
 theorem iSup_enorm_eq_ofReal_iSup {f : α → E} (hf : BddAbove (Set.range fun a => ‖f a‖)) :
     ⨆ a, ‖f a‖ₑ = ENNReal.ofReal (⨆ a, ‖f a‖) := by
   have hbdd : BddAbove (Set.range fun a => ‖f a‖₊) := by
@@ -1559,14 +1743,18 @@ theorem iSup_enorm_eq_ofReal_iSup {f : α → E} (hf : BddAbove (Set.range fun a
 
 variable [MeasurableSpace α] [MeasurableSingletonClass α] [Countable α]
 
-/-- The `L^p` seminorm for the counting measure, `p ≠ 0, ∞`, as a `tsum`. -/
+/-- Let $\alpha$ be a countable measurable space in which every singleton is measurable, and let
+$0 < p < \infty$. For the counting measure, the $L^p$ seminorm of $f \colon \alpha \to E$ is
+$(\sum_a \|f_a\|^p)^{1/p}$, computed in $[0, \infty]$. -/
 theorem eLpNorm_count_eq_tsum (hp0 : p ≠ 0) (hp : p ≠ ∞) (f : α → E) :
     eLpNorm f p (Measure.count : Measure α) = (∑' a, ‖f a‖ₑ ^ p.toReal) ^ (1 / p.toReal) := by
   rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp .of_discrete,
     lintegral_count]
 
-/-- `Memℓp f p ↔ MemLp f p count` for `1 ≤ p`: the finiteness of `∑ ‖f a‖ ^ p`, resp. of
-`sup ‖f a‖`, read on either side. -/
+/-- Let $\alpha$ be a countable measurable space in which every singleton is measurable, and let
+$1 \le p \le \infty$. A function $f \colon \alpha \to E$ lies in $\ell^p$ if and only if it lies
+in $L^p$ of the counting measure. Both conditions say that $\sum_a \|f_a\|^p$ is finite, or that
+$\sup_a \|f_a\|$ is finite when $p = \infty$. -/
 theorem memℓp_iff_memLp_count [Fact (1 ≤ p)] (f : α → E) :
     Memℓp f p ↔ MemLp f p (Measure.count : Measure α) := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
@@ -1592,7 +1780,9 @@ theorem memℓp_iff_memLp_count [Fact (1 ≤ p)] (f : α → E) :
       exact ENNReal.ofReal_lt_top
     · exact fun hf => summable_norm_rpow_of_tsum_enorm_rpow_ne_top hf.ne
 
-/-- The `L^p` norm for the counting measure of an `ℓ^p` sequence is its `ℓ^p` norm. -/
+/-- Let $\alpha$ be a countable measurable space in which every singleton is measurable, and let
+$1 \le p \le \infty$. For $f \in \ell^p(\alpha, E)$, the $L^p$ norm of $f$ for the counting
+measure is $\|f\|_p$. -/
 theorem toReal_eLpNorm_count [Fact (1 ≤ p)] (f : lp (fun _ : α => E) p) :
     (eLpNorm f p (Measure.count : Measure α)).toReal = ‖f‖ := by
   have hp0 : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
@@ -1617,7 +1807,9 @@ variable (𝕜 : Type*) [NontriviallyNormedField 𝕜] (α : Type*) [MeasurableS
   [MeasurableSingletonClass α] [Countable α] (E : Type*) [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- The isometric embedding `ℓ^p(α, E) → L^p(count)`, `f ↦ [f]`. -/
+/-- The linear isometry $\ell^p(\alpha, E) \to L^p(\alpha, \text{counting measure})$,
+$f \mapsto [f]$, for a countable measurable space $\alpha$ in which every singleton is
+measurable and for $1 \le p \le \infty$. -/
 def lpToLpCount : lp (fun _ : α => E) p →ₗᵢ[𝕜] Lp E p (Measure.count : Measure α) where
   toFun f := ((memℓp_iff_memLp_count f).1 (lp.memℓp f)).toLp f
   map_add' f g := by
@@ -1631,34 +1823,40 @@ def lpToLpCount : lp (fun _ : α => E) p →ₗᵢ[𝕜] Lp E p (Measure.count :
     rw [Lp.norm_toLp]
     exact toReal_eLpNorm_count f
 
-/-- On the counting measure the class `[f]` has `f` itself as its function. -/
+/-- For the counting measure, the class $[f]$ has $f$ itself as its representative function. -/
 @[simp]
 theorem coeFn_lpToLpCount (f : lp (fun _ : α => E) p) : ⇑(lpToLpCount 𝕜 α E p f) = ⇑f := by
   funext a
   exact Measure.ae_count_iff.1
     (MemLp.coeFn_toLp ((memℓp_iff_memLp_count f).1 (lp.memℓp f))) a
 
-/-- **`ℓ^p` is `L^p` of the counting measure** — the identification [brezis2011functional]
-§11.3 uses to import chapter 4 ("Theorem 4.8 applied to `Ω = ℕ` equipped with the counting
-measure"): for a countable index type with measurable singletons and `1 ≤ p`,
-`ℓ^p(α, E) ≃ₗᵢ[𝕜] L^p(count)`, `f ↦ [f]`. On the counting measure a.e. equality is equality,
-so the inverse is the representative itself. -/
+/-- Let $\alpha$ be a countable measurable space in which every singleton is measurable, and let
+$1 \le p \le \infty$. Then $f \mapsto [f]$ is an isometric isomorphism $\ell^p(\alpha, E) \cong
+L^p(\alpha, \text{counting measure})$. This is the identification that §11.3 of
+[brezis2011functional] uses to apply chapter 4 to $\ell^p$: "Theorem 4.8 applied to
+$\Omega = \mathbb{N}$ equipped with the counting measure".
+
+For the counting measure, equality almost everywhere is equality, so the inverse sends a class
+to its representative function. -/
 def lpLIELpCount : lp (fun _ : α => E) p ≃ₗᵢ[𝕜] Lp E p (Measure.count : Measure α) :=
   LinearIsometryEquiv.ofSurjective (lpToLpCount 𝕜 α E p) fun g =>
     ⟨⟨(g : α → E), (memℓp_iff_memLp_count _).2 (Lp.memLp g)⟩, Lp.toLp_coeFn g (Lp.memLp g)⟩
 
-/-- `lp.lpLIELpCount` is `lp.lpToLpCount` as a map. -/
+/-- The isometric isomorphism `lp.lpLIELpCount` and the linear isometry `lp.lpToLpCount` send $f$ to
+the same class. -/
 @[simp]
 theorem lpLIELpCount_apply (f : lp (fun _ : α => E) p) :
     lpLIELpCount 𝕜 α E p f = lpToLpCount 𝕜 α E p f :=
   rfl
 
-/-- The class of `f ∈ ℓ^p` in `L^p(count)` has `f` itself as its function. -/
+/-- The class of $f \in \ell^p$ in $L^p$ of the counting measure has $f$ itself as its
+representative function. -/
 @[simp]
 theorem coeFn_lpLIELpCount (f : lp (fun _ : α => E) p) : ⇑(lpLIELpCount 𝕜 α E p f) = ⇑f := by
   rw [lpLIELpCount_apply, coeFn_lpToLpCount]
 
-/-- The `ℓ^p` sequence of a class in `L^p(count)` is its (unique) representative. -/
+/-- The $\ell^p$ sequence of a class $g$ in $L^p$ of the counting measure is the representative
+function of $g$. -/
 @[simp]
 theorem coeFn_lpLIELpCount_symm (g : Lp E p (Measure.count : Measure α)) :
     ⇑((lpLIELpCount 𝕜 α E p).symm g) = ⇑g := by
@@ -1670,17 +1868,22 @@ end CountEquiv
 
 section UniformConvex
 
-/-- **[brezis2011functional] Proposition 11.15, uniform convexity**: `ℓ^p(α, ℝ)` is uniformly
-convex for `1 < p < ∞` and a countable index type, transported from `L^p` of the counting measure
-(`MeasureTheory.Lp.instUniformConvexSpace`, Clarkson's inequalities) along `lp.lpLIELpCount` —
-the book's route, "Theorem 4.10 and Exercise 4.12 with `Ω = ℕ`". -/
+/-- For a countable index type $\alpha$ and $1 < p < \infty$, the real space
+$\ell^p(\alpha, \mathbb{R})$ is uniformly convex. This is the uniform convexity part of
+Proposition 11.15 of [brezis2011functional].
+
+The proof follows the source, "Theorem 4.10 and Exercise 4.12 with $\Omega = \mathbb{N}$":
+uniform convexity is transported from $L^p$ of the counting measure
+(`MeasureTheory.Lp.instUniformConvexSpace`, which uses Clarkson's inequalities) along
+`lp.lpLIELpCount`. -/
 theorem uniformConvexSpace {α : Type*} [Countable α] {p : ℝ≥0∞} [Fact (1 < p)] [Fact (p ≠ ∞)] :
     UniformConvexSpace (lp (fun _ : α => ℝ) p) := by
   let _ : MeasurableSpace α := ⊤
   have : MeasurableSingletonClass α := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
   exact uniformConvexSpace_of_linearIsometryEquiv (lpLIELpCount ℝ α ℝ p)
 
-/-- `ℓ^p(α, ℝ)` is uniformly convex for `1 < p < ∞`, as an instance. -/
+/-- The real space $\ell^p(\alpha, \mathbb{R})$ is uniformly convex for countable $\alpha$ and
+$1 < p < \infty$, as an instance. -/
 instance instUniformConvexSpace {α : Type*} [Countable α] {p : ℝ≥0∞} [Fact (1 < p)]
     [Fact (p ≠ ∞)] : UniformConvexSpace (lp (fun _ : α => ℝ) p) :=
   uniformConvexSpace

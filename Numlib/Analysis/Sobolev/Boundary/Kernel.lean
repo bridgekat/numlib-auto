@@ -8,63 +8,79 @@ import Numlib.MeasureTheory.Integral.Bochner.Basic
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
-# The kernel of the trace is `W_0^{1,p}(Ω)`
+# The kernel of the trace on a bounded $C^1$ domain
 
-On a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}` and for `1 ≤ p < ∞`, the kernel of the trace operator
-`T : W^{1,p}(Ω) →L L^p(∂Ω)` of `Boundary/ContDiffDomain.lean` is `W_0^{1,p}(Ω)`
-([brezis2011functional] Comments on chapter 9, 7 (ii); Evans, *PDE*, §5.5, Theorem 2; the
-identification `H^1_0(Ω) = {v ∈ H¹(Ω) : γ v = 0}` behind Atkinson–Han's Definition 7.2.9 and the
-mixed problems of their §8.5 and §11.4). The inclusion `W_0^{1,p} ⊆ ker T` is
-`BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero` (`Data.lean`, for any trace family); this
-module proves the converse and, with it, Evans's strip estimate.
+Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set with boundary of class $C^1$, and let
+$1 \le p < \infty$. This module proves that the kernel of the trace operator $\gamma :
+W^{1,p}(\Omega) \to L^p(\partial\Omega)$ of `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain` is
+$W^{1,p}_0(\Omega)$: $$\gamma u = 0 \iff u \in W^{1,p}_0(\Omega).$$ This is [brezis2011functional],
+Comments on Chapter 9, 7(ii), and Evans, *Partial Differential Equations*, §5.5, Theorem 2. It is
+also the identification $H^1_0(\Omega) = \{v \in H^1(\Omega) : \gamma v = 0\}$ behind Definition
+7.2.9 of [han2009theoretical] and the mixed boundary value problems of its §8.5 and §11.4; see also
+Theorem 7.3.11 of [han2009theoretical]. The inclusion $W^{1,p}_0(\Omega) \subseteq \ker \gamma$
+holds for every trace family (`BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero`); this module
+proves the converse.
 
-**The route to `ker T ⊆ W_0^{1,p}(Ω)`** is Brezis's, through Proposition 9.18 rather than
-Evans's cut-offs: for `u ∈ W^{1,p}(Ω)` with `T u = 0`, Green's formula against a compactly
-supported `C¹` test function `φ` on `ℝ^{d+1}` (`IsContDiffDomain.green_contDiff`)
-reads `∫_Ω ∂ᵢu φ + ∫_Ω u ∂ᵢφ = ∫ (Tu) φ νᵢ dσ = 0`, i.e. the extension by zero `ū` of `u` has
-the extension by zero of `∂ᵢu` as weak derivative on the whole space
-(`IsContDiffDomain.hasWeakIteratedLineDerivOn_indicator_of_traceL_eq_zero`), so
-`ū ∈ W^{1,p}(ℝ^{d+1})` and Proposition 9.18, (iii) ⇒ (i)
-(`SobolevEuclideanZero.mem_of_indicator_memSobolev`, `Numlib/Analysis/Sobolev/Zero.lean`, proved
-there on `C¹` chart domains by local charts and one-sided mollification) gives
-`u ∈ W_0^{1,p}(Ω)` (`IsContDiffDomain.mem_zero_of_traceL_eq_zero`). No strip estimate, no
-partition of unity and no cut-off sequence enter.
+The module also proves the strip estimate of Evans (§5.5, Theorem 2, estimate (17)), with the
+constant $1$. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open, and suppose that after a rigid motion
+$T$, the set $\Omega$ is the region above the graph of a continuous function
+$g : \mathbb{R}^d \to \mathbb{R}$ inside the ball $B(x_0, r)$. For $y \in \mathbb{R}^{d+1}$ write
+$y = (y', y_{d+1})$ with $y' \in \mathbb{R}^d$, and let $$S_\rho(t) = \Omega \cap B(x_0, \rho) \cap
+\{x : (Tx)_{d+1} < g((Tx)') + t\}$$ be the strip of height $t$ above the boundary inside
+$B(x_0, \rho)$. Then for every $u \in W^{1,p}_0(\Omega)$, every $t > 0$ and every $\rho$ with
+$\rho + t \le r$, $$\int_{S_\rho(t)} |u|^p \le t^p \int_{S_r(t)} |\nabla u|^p.$$ On a bounded $C^1$
+domain, the kernel theorem extends the estimate to every $u$ with $\gamma u = 0$. The module ends
+with three consequences for the boundary seminorm $v \mapsto \int_U |\gamma v| \, d\sigma$.
 
-**The strip estimate** (Evans §5.5 Theorem 2, (17)) is then proved *for every* `u ∈ W_0^{1,p}(Ω)`
-on an arbitrary open set with a graph chart `(T, g)` at `(x₀, r)` — `g` merely continuous — with
-the sharp constant `1`: with `S_ρ(t) := Ω ∩ B(x₀, ρ) ∩ {(Tx)_N < g((Tx)') + t}` the strip of
-height `t` inside `B(x₀, ρ)`, for `0 < t` and `ρ + t ≤ r`,
+## Main results
 
-  `∫_{S_ρ(t)} |u|^p ≤ t^p ∫_{S_r(t)} |∇u|^p`
+* `IsContDiffDomain.mem_zero_of_traceL_eq_zero`: on a bounded $C^1$ domain, a function in
+  $W^{1,p}(\Omega)$ with zero trace lies in $W^{1,p}_0(\Omega)$.
+* `IsContDiffDomain.traceL_eq_zero_iff_mem_zero`: on a bounded $C^1$ domain, $\gamma u = 0$ if and
+  only if $u \in W^{1,p}_0(\Omega)$.
+* `SobolevEuclideanZero.integral_strip_rpow_le`: the strip estimate for $u \in W^{1,p}_0(\Omega)$ on
+  an open set with a continuous graph chart.
+* `IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero`: the strip estimate for
+  $u \in W^{1,p}(\Omega)$ with $\gamma u = 0$ on a bounded $C^1$ domain.
+* `IsContDiffDomain.eq_zero_of_gradNorm_eq_zero_of_traceL_eq_zero`: on a bounded $C^1$ domain, a
+  function in $W^{1,p}(\Omega)$ with zero gradient and zero trace is zero.
 
-(`SobolevEuclideanZero.integral_strip_rpow_le`; the planned
-`IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero` is its corollary through the kernel
-theorem). For a test function `φ` on `Ω`, in the frame of the chart the function `ψ = φ ∘ T⁻¹`
-vanishes on the graph inside `B(T x₀, r)`, so on each vertical line
-`ψ(x', g x' + s) = ∫_0^s ∂_N ψ(x', g x' + τ) dτ`; Hölder in `τ` on an interval of length `≤ t`
-(`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`) and integration in `s` over an interval of length
-`≤ t` give `t^p` (`lintegral_enorm_rpow_le_of_hasDerivAt`, the one-variable core); Fubini in
-the last coordinate (`EuclideanSpace.lintegral_lastInit`) and the rigid motion assemble the
-estimate in `ℝ≥0∞` form (`EuclideanSpace.lintegral_graphStrip_le`,
-`TestFunction.lintegral_strip_le`), where no integrability enters. Both sides are continuous in
-`u` (the restricted function through `Lp.monoMeasureL ∘ fnL`, the restricted pointwise gradient
-through the bounded map `SobolevEuclidean.gradFnL`), and the test functions are dense in
-`W_0^{1,p}(Ω)`.
+## Proof outline
 
-## Main statements
+The proof of $\ker \gamma \subseteq W^{1,p}_0(\Omega)$ follows Brezis, through Proposition 9.18 of
+[brezis2011functional], and not the cut-off argument of Evans. Let $u \in W^{1,p}(\Omega)$ with
+$\gamma u = 0$, and let $\bar u$ be the extension of $u$ by zero. Green's formula against a
+compactly supported $C^1$ function $\varphi$ on $\mathbb{R}^{d+1}$ gives $\int_\Omega \partial_i u
+\, \varphi + \int_\Omega u \, \partial_i \varphi = \int_{\partial\Omega} (\gamma u) \varphi \nu_i \,
+d\sigma = 0$. Hence $\bar u$ has the extension by zero of $\partial_i u$ as weak derivative on
+$\mathbb{R}^{d+1}$, and $\bar u \in W^{1,p}(\mathbb{R}^{d+1})$. The implication (iii) $\Rightarrow$
+(i) of Proposition 9.18 then gives $u \in W^{1,p}_0(\Omega)$. No strip estimate, partition of unity
+or cut-off sequence is used.
 
-* `IsContDiffDomain.mem_zero_of_traceL_eq_zero`, `IsContDiffDomain.traceL_eq_zero_iff_mem_zero`:
-  `ker T = W_0^{1,p}(Ω)` on a bounded `C¹` domain;
-* `SobolevEuclideanZero.integral_strip_rpow_le`,
-  `IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero`: the strip estimate;
-* `SobolevEuclidean.gradFnL`: the restricted pointwise gradient as a bounded linear map
-  `W^{1,p}(Ω) → L^p(S; ℝ^N)`.
+The strip estimate is first proved for a test function $\varphi$ on $\Omega$. In the frame of the
+chart, $\psi = \varphi \circ T^{-1}$ vanishes on the graph of $g$ inside $B(Tx_0, r)$. On each
+vertical line, $\psi(x', g(x') + s) = \int_0^s \partial_{d+1} \psi(x', g(x') + \tau) \, d\tau$.
+Hölder's inequality in $\tau$ on an interval of length at most $t$, followed by integration in $s$
+over an interval of length at most $t$, gives the factor $t^p$. Fubini's theorem in the last
+coordinate and the rigid motion give the estimate for $\varphi$. Both sides of the estimate are
+continuous in $u \in W^{1,p}(\Omega)$, and the test functions are dense in $W^{1,p}_0(\Omega)$; this
+gives the estimate on $W^{1,p}_0(\Omega)$.
 
-## References
+## Implementation notes
 
-[brezis2011functional] Comments on chapter 9, 7 (ii), Proposition 9.18; Evans, *Partial
-Differential Equations*, §5.5, Theorem 2; Atkinson–Han, *Theoretical Numerical Analysis*,
-Definition 7.2.9 and Theorem 7.3.11.
+* The trace is `IsContDiffDomain.traceL`, with values in $L^p$ of the surface measure
+  `IsContDiffDomain.boundaryMeasure`. A function $u \in W^{1,p}(\Omega)$ is
+  `u : SobolevEuclidean (d + 1) 1 p Ω`, its function is `SobolevMultiIndex.fn u`, and
+  $W^{1,p}_0(\Omega)$ is the submodule `SobolevEuclideanZero (d + 1) 1 p Ω`.
+* The pointwise gradient is `SobolevMultiIndex.gradFn`, and $|\nabla u(x)|$ is its Euclidean norm.
+* The rigid motion $T$ is an affine isometric equivalence `T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼`.
+* For $y \in \mathbb{R}^{d+1}$, the last coordinate $y_{d+1}$ is `y (Fin.last d)`, and the vector
+  $y'$ of the first $d$ coordinates is `EuclideanSpace.init y`.
+* The estimate for test functions is stated with lower Lebesgue integrals in $[0, \infty]$, so that
+  it needs no integrability hypothesis. The estimate on $W^{1,p}_0(\Omega)$ is stated with Bochner
+  integrals; its continuity in $u$ uses `MeasureTheory.Lp.monoMeasureL` composed with
+  `SobolevMultiIndex.fnL`, and the restricted gradient `SobolevEuclidean.gradFnL` of
+  `Numlib.Analysis.Sobolev.Operators`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -72,11 +88,6 @@ open scoped ContDiff Distributions ENNReal InnerProductSpace NNReal Topology
 open SobolevMultiIndex
 
 noncomputable section
-
-/-! ### General lemmas
-
-The lemmas of this section are general (Mathlib-facing or belonging to earlier modules); they are
-listed for relocation in the report. -/
 
 section General
 
@@ -95,11 +106,19 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
 
-/-- **The extension by zero of a function with zero trace has the extension by zero of its
-partial derivative as weak derivative on the whole space**: for `u ∈ W^{1,p}(Ω)` on a bounded
-`C¹` domain with `T u = 0`, `1 ≤ p < ∞`, and every `i`,
-`∂ᵢ(Ω.indicator u) = Ω.indicator (∂ᵢu)` weakly on `ℝ^{d+1}`. Green's formula against a test
-function `φ` (`IsContDiffDomain.green_contDiff`) has a vanishing boundary term. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$, let
+$1 \le p < \infty$, and let $u \in W^{1,p}(\Omega)$ have trace $\gamma u = 0$. Then for every
+coordinate $i$, the extension by zero $\bar u$ of $u$ has the extension by zero
+$\overline{\partial_i u}$ of $\partial_i u$ as weak partial derivative in the direction $e_i$ on
+all of $\mathbb{R}^{d+1}$: both functions are locally integrable, and $$\int_{\mathbb{R}^{d+1}}
+\bar u \, \partial_i \varphi \, dx = -\int_{\mathbb{R}^{d+1}} \overline{\partial_i u} \, \varphi
+\, dx$$ for every test function $\varphi \in C_c^\infty(\mathbb{R}^{d+1})$.
+
+The partial derivative $\partial_i u$ is
+`SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)`. The weak derivative is
+`HasWeakIteratedLineDerivOn` along the one-element tuple $(e_i)$ on the whole space `⊤`. The
+coordinate index $i$ runs over `Fin (d + 1)`. The proof applies Green's formula
+`IsContDiffDomain.green_contDiff`, whose boundary term vanishes because $\gamma u = 0$. -/
 theorem hasWeakIteratedLineDerivOn_indicator_of_traceL_eq_zero (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : hΩ.traceL hb p hp u = 0)
     (i : Fin (d + 1)) :
@@ -141,10 +160,15 @@ theorem hasWeakIteratedLineDerivOn_indicator_of_traceL_eq_zero (p : ℝ≥0∞) 
     rw [e3, e4]
     linarith
 
-/-- **The extension by zero of a function with zero trace lies in `W^{1,p}(ℝ^{d+1})`**
-([brezis2011functional] Proposition 9.18 (iii) for `u ∈ ker T`): from
-`hasWeakIteratedLineDerivOn_indicator_of_traceL_eq_zero` and the `L^p` memberships of the
-extensions by zero. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$, let
+$1 \le p < \infty$, and let $u \in W^{1,p}(\Omega)$ have trace $\gamma u = 0$. Then the
+extension of $u$ by zero lies in $W^{1,p}(\mathbb{R}^{d+1})$.
+
+This says that $u$ satisfies condition (iii) of Proposition 9.18 of [brezis2011functional]. The
+membership is `MemSobolevMultiIndex` for the standard basis of $\mathbb{R}^{d+1}$, on the whole
+space `⊤`, with respect to Lebesgue measure. It follows from
+`IsContDiffDomain.hasWeakIteratedLineDerivOn_indicator_of_traceL_eq_zero` and from the $L^p$
+membership of the extensions by zero of $u$ and of its partial derivatives. -/
 theorem indicator_memSobolevMultiIndex_of_traceL_eq_zero (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : hΩ.traceL hb p hp u = 0) :
     MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
@@ -157,13 +181,18 @@ theorem indicator_memSobolevMultiIndex_of_traceL_eq_zero (p : ℝ≥0∞) [Fact 
   · simpa only [Opens.coe_top, Measure.restrict_univ] using
       SobolevMultiIndexZero.memLp_indicator_weakDeriv u (MultiIndexLE.single i)
 
-/-- **`ker T ⊆ W_0^{1,p}(Ω)`** on a bounded `C¹` domain, `1 ≤ p < ∞` ([brezis2011functional]
-Comments on chapter 9, 7 (ii); Evans §5.5 Theorem 2): a `W^{1,p}(Ω)` function with zero trace
-lies in `W_0^{1,p}(Ω)`. Its extension by zero lies in `W^{1,p}(ℝ^{d+1})`
-(`indicator_memSobolevMultiIndex_of_traceL_eq_zero`), so Proposition 9.18, (iii) ⇒ (i)
-(`SobolevEuclideanZero.mem_of_indicator_memSobolev`, on the `C¹` chart domain
-`hΩ.isContDiffChartDomain`) produces an element of `W_0^{1,p}(Ω)` with the same function, which
-is `u` (`SobolevMultiIndex.ext_of_fn_ae_eq`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$ and let
+$1 \le p < \infty$. If $u \in W^{1,p}(\Omega)$ has trace $\gamma u = 0$, then
+$u \in W^{1,p}_0(\Omega)$.
+
+This is the inclusion $\ker \gamma \subseteq W^{1,p}_0(\Omega)$ of [brezis2011functional],
+Comments on Chapter 9, 7(ii), and of Evans, *Partial Differential Equations*, §5.5, Theorem 2.
+The extension of $u$ by zero lies in $W^{1,p}(\mathbb{R}^{d+1})$
+(`IsContDiffDomain.indicator_memSobolevMultiIndex_of_traceL_eq_zero`). The implication (iii)
+$\Rightarrow$ (i) of Proposition 9.18 of [brezis2011functional], which is
+`SobolevEuclideanZero.mem_of_indicator_memSobolev` applied on the $C^1$ chart domain
+`IsContDiffDomain.isContDiffChartDomain`, then gives an element of $W^{1,p}_0(\Omega)$ with the
+same function as $u$. By `SobolevMultiIndex.ext_of_fn_ae_eq` this element is $u$. -/
 theorem mem_zero_of_traceL_eq_zero (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : hΩ.traceL hb p hp u = 0) :
     u ∈ SobolevEuclideanZero (d + 1) 1 p Ω := by
@@ -171,10 +200,14 @@ theorem mem_zero_of_traceL_eq_zero (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠
     hΩ.isContDiffChartDomain (hΩ.indicator_memSobolevMultiIndex_of_traceL_eq_zero hb p hp hu)
   rwa [SobolevMultiIndex.ext_of_fn_ae_eq hvu] at hv
 
-/-- **`ker T = W_0^{1,p}(Ω)`** on a bounded `C¹` domain, `1 ≤ p < ∞` ([brezis2011functional]
-Comments on chapter 9, 7 (ii); Atkinson–Han's `H^1_0(Ω) = {v : γ v = 0}`):
-`T u = 0 ↔ u ∈ W_0^{1,p}(Ω)`, from `mem_zero_of_traceL_eq_zero` and
-`traceL_eq_zero_of_mem_zero`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$ and let
+$1 \le p < \infty$. For $u \in W^{1,p}(\Omega)$, $$\gamma u = 0 \iff u \in W^{1,p}_0(\Omega).$$
+That is, the kernel of the trace operator is $W^{1,p}_0(\Omega)$.
+
+This is [brezis2011functional], Comments on Chapter 9, 7(ii). For $p = 2$ it is the
+identification $H^1_0(\Omega) = \{v \in H^1(\Omega) : \gamma v = 0\}$ that [han2009theoretical]
+uses. The two directions are `IsContDiffDomain.mem_zero_of_traceL_eq_zero` and
+`IsContDiffDomain.traceL_eq_zero_of_mem_zero`. -/
 theorem traceL_eq_zero_iff_mem_zero (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (u : SobolevEuclidean (d + 1) 1 p Ω) :
     hΩ.traceL hb p hp u = 0 ↔ u ∈ SobolevEuclideanZero (d + 1) 1 p Ω :=
@@ -186,13 +219,22 @@ end IsContDiffDomain
 
 namespace EuclideanSpace
 
-/-- **The strip estimate in the frame of the graph**, for a `C¹` function `ψ` vanishing on the
-graph of the continuous `g` inside `B(c, r)`: for `0 < t` and `ρ + t ≤ r`,
-`∫_{B(c,ρ) ∩ strip_t} |ψ|^P ≤ t^P ∫_{B(c,r) ∩ strip_t} |∂_N ψ|^P` (`1 ≤ P`). Fubini in the last
-coordinate (`lintegral_lastInit`); on the vertical line through `x'`, if it meets the small
-strip then its foot `(x', g x')` lies in `B(c, r)`, so `ψ(x', g x') = 0`, and the segments from
-the foot to the points of the small strip lie in the large one, which is what the one-variable
-core `lintegral_enorm_rpow_le_of_hasDerivAt` needs. -/
+/-- Let $\psi : \mathbb{R}^{d+1} \to \mathbb{R}$ be of class $C^1$, let
+$g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let $c \in \mathbb{R}^{d+1}$. Let $t > 0$
+and $\rho + t \le r$, and suppose that $\psi(y) = 0$ for every $y \in B(c, r)$ with
+$y_{d+1} = g(y')$. Let $G_t = \{y : g(y') < y_{d+1} < g(y') + t\}$ be the strip of height $t$
+above the graph of $g$. Then for every real $P \ge 1$, $$\int_{B(c, \rho) \cap G_t} |\psi|^P \le
+t^P \int_{B(c, r) \cap G_t} |\partial_{d+1} \psi|^P.$$
+
+The integrals are lower Lebesgue integrals in $[0, \infty]$. The derivative
+$\partial_{d+1} \psi(y)$ is the derivative of $\psi$ at $y$ in the direction of the last basis
+vector. The last coordinate $y_{d+1}$ is `y (Fin.last d)`, the vector $y'$ is
+`EuclideanSpace.init y`, and the strip $G_t$ is `EuclideanSpace.graphStrip g t`. The proof uses
+Fubini's theorem in the last coordinate (`EuclideanSpace.lintegral_lastInit`). If the vertical
+line through $x'$ meets the small strip, then its foot $(x', g(x'))$ lies in $B(c, r)$, so
+$\psi(x', g(x')) = 0$. The segments from the foot to the points of the small strip lie in the
+large strip, and the one-variable estimate `lintegral_enorm_rpow_le_of_hasDerivAt` applies on
+each line. -/
 theorem lintegral_graphStrip_le {ψ : 𝔼 → ℝ} (hψ : ContDiff ℝ 1 ψ) {g : 𝔼' → ℝ}
     (hg : Continuous g) {c : 𝔼} {r ρ t : ℝ} (ht : 0 < t) (hρt : ρ + t ≤ r)
     (h0 : ∀ y ∈ Metric.ball c r, y (Fin.last d) = g (init y) → ψ y = 0) {P : ℝ} (hP : 1 ≤ P) :
@@ -273,17 +315,23 @@ theorem lintegral_graphStrip_le {ψ : 𝔼 → ℝ} (hψ : ContDiff ℝ 1 ψ) {g
 
 end EuclideanSpace
 
-/-! ### The strip estimate on `W_0^{1,p}(Ω)` -/
+/-! ### The strip estimate on $W^{1,p}_0(\Omega)$ -/
 
-/-- **The strip estimate for a test function on `Ω`**, in the original frame: for an open `Ω`
-with a graph chart `(T, g)` at `(x₀, r)` (`Ω ∩ B(x₀, r) = B(x₀, r) ∩ T ⁻¹' epigraph g`, `g`
-continuous), `φ ∈ C_c^∞(Ω)`, `0 < t`, `ρ + t ≤ r` and `1 ≤ P`,
-`∫_{S_ρ(t)} |φ|^P ≤ t^P ∫_{S_r(t)} |∂_e φ|^P`, with
-`S_ρ(t) := Ω ∩ B(x₀, ρ) ∩ {(Tx)_N < g((Tx)') + t}` and `e = T.linear⁻¹ e_N` the upward direction
-of the chart. The function `φ ∘ T⁻¹` vanishes
-on the graph inside `B(T x₀, r)` (`IsBoundaryGraphAt.frontier_inter_ball`), the small strip
-maps into `B(T x₀, ρ) ∩ strip_t` and `B(T x₀, r) ∩ strip_t` maps into the large strip
-(`EuclideanSpace.lintegral_graphStrip_le`, the rigid motion preserving Lebesgue measure). -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open, let $T$ be a rigid motion of
+$\mathbb{R}^{d+1}$, let $g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let
+$x_0 \in \mathbb{R}^{d+1}$ and $r \in \mathbb{R}$ satisfy $$\Omega \cap B(x_0, r) = B(x_0, r)
+\cap T^{-1}\{y : g(y') < y_{d+1}\}.$$ Let $\varphi \in C_c^\infty(\Omega)$, $t > 0$,
+$\rho + t \le r$ and $P \ge 1$. With $S_\rho(t) = \Omega \cap B(x_0, \rho) \cap \{x : (Tx)_{d+1}
+< g((Tx)') + t\}$, $$\int_{S_\rho(t)} |\varphi|^P \le t^P \int_{S_r(t)} |\partial_e
+\varphi|^P,$$ where $e = L^{-1} e_{d+1}$ is the upward direction of the chart, $L$ is the linear
+part of $T$, and $\partial_e$ is the derivative in the direction $e$.
+
+The integrals are lower Lebesgue integrals in $[0, \infty]$. The set $\{y : g(y') < y_{d+1}\}$
+is `EuclideanSpace.epigraph g`, and $L$ is `T.linearIsometryEquiv`. The function
+$\varphi \circ T^{-1}$ vanishes on the graph of $g$ inside $B(Tx_0, r)$
+(`IsBoundaryGraphAt.frontier_inter_ball`). The rigid motion maps the small strip into
+$B(Tx_0, \rho) \cap G_t$ and maps $B(Tx_0, r) \cap G_t$ into the large strip, and it preserves
+Lebesgue measure; then `EuclideanSpace.lintegral_graphStrip_le` applies. -/
 theorem TestFunction.lintegral_strip_le {Ω : Opens 𝔼} (φ : 𝓓(Ω, ℝ)) (T : 𝔼 ≃ᵃⁱ[ℝ] 𝔼)
     {g : 𝔼' → ℝ} (hg : Continuous g) {x₀ : 𝔼} {r ρ t : ℝ}
     (h : (Ω : Set 𝔼) ∩ Metric.ball x₀ r = Metric.ball x₀ r ∩ T ⁻¹' EuclideanSpace.epigraph g)
@@ -372,13 +420,21 @@ theorem TestFunction.lintegral_strip_le {Ω : Opens 𝔼} (φ : 𝓓(Ω, ℝ)) (
         simp_rw [hderiv]
         exact lintegral_mono_set hsub2
 
-/-- **The strip estimate on `W_0^{1,p}(Ω)`** (Evans §5.5 Theorem 2, (17), with constant `1`):
-for an open `Ω ⊆ ℝ^{d+1}` with a graph chart `(T, g)` at `(x₀, r)` (`g` continuous),
-`u ∈ W_0^{1,p}(Ω)`, `1 ≤ p < ∞`, `0 < t` and `ρ + t ≤ r`,
-`∫_{S_ρ(t)} |u|^p ≤ t^p ∫_{S_r(t)} |∇u|^p` with `S_ρ(t) := Ω ∩ B(x₀, ρ) ∩ {(Tx)_N < g((Tx)') + t}`.
-For the test functions `TestFunction.lintegral_strip_le` bounds the vertical derivative
-`|∂_e φ| ≤ |∇φ|`; both sides are continuous in `u` (`Lp.monoMeasureL ∘ fnL`,
-`SobolevEuclidean.gradFnL`) and the test functions are dense in `W_0^{1,p}(Ω)`
+/-- The **strip estimate** on $W^{1,p}_0(\Omega)$. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open,
+let $1 \le p < \infty$, and let $u \in W^{1,p}_0(\Omega)$. Let $T$ be a rigid motion of
+$\mathbb{R}^{d+1}$, let $g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let
+$x_0 \in \mathbb{R}^{d+1}$ and $r \in \mathbb{R}$ satisfy $\Omega \cap B(x_0, r) = B(x_0, r)
+\cap T^{-1}\{y : g(y') < y_{d+1}\}$. Let $t > 0$ and $\rho + t \le r$. With $S_\rho(t) = \Omega
+\cap B(x_0, \rho) \cap \{x : (Tx)_{d+1} < g((Tx)') + t\}$, $$\int_{S_\rho(t)} |u|^p \le t^p
+\int_{S_r(t)} |\nabla u|^p.$$ This is estimate (17) in the proof of Evans, *Partial Differential
+Equations*, §5.5, Theorem 2, with the constant $1$.
+
+The integrals are Bochner integrals of `SobolevMultiIndex.fn u` and of the Euclidean norm of the
+pointwise gradient `SobolevMultiIndex.gradFn u`. For a test function,
+`TestFunction.lintegral_strip_le` applies, together with
+$|\partial_e \varphi| \le |\nabla \varphi|$. Both sides are continuous in $u$ (through
+`MeasureTheory.Lp.monoMeasureL` composed with `SobolevMultiIndex.fnL`, and through
+`SobolevEuclidean.gradFnL`), and the test functions are dense in $W^{1,p}_0(\Omega)$
 (`SobolevMultiIndexZero.exists_seq_testFunction_tendsto`). -/
 theorem SobolevEuclideanZero.integral_strip_rpow_le {Ω : Opens 𝔼} {p : ℝ≥0∞} [Fact (1 ≤ p)]
     (hp : p ≠ ⊤) {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p Ω)
@@ -487,12 +543,18 @@ theorem SobolevEuclideanZero.integral_strip_rpow_le {Ω : Opens 𝔼} {p : ℝ�
       (SobolevEuclidean.gradFnL p Ω hSr).continuous).rpow_const fun _ ↦ Or.inr hP0.le)).tendsto
         u).comp hw
 
-/-- **The strip estimate for a function with zero trace** (Evans §5.5 Theorem 2, (17)): on a
-bounded `C¹` domain `Ω ⊆ ℝ^{d+1}`, for `u ∈ W^{1,p}(Ω)` with `T u = 0`, `1 ≤ p < ∞`, a graph
-chart `(T, g)` at `(x₀, r)` (`g` continuous), `0 < t` and `ρ + t ≤ r`,
-`∫_{S_ρ(t)} |u|^p ≤ t^p ∫_{S_r(t)} |∇u|^p` with `S_ρ(t) := Ω ∩ B(x₀, ρ) ∩ {(Tx)_N < g((Tx)') + t}`
-— the estimate of `SobolevEuclideanZero.integral_strip_rpow_le`, since `u ∈ W_0^{1,p}(Ω)`
-(`IsContDiffDomain.mem_zero_of_traceL_eq_zero`). With `ρ = r/2` this is Evans's form. -/
+/-- The strip estimate for a function with zero trace. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a
+bounded open set of class $C^1$, let $1 \le p < \infty$, and let $u \in W^{1,p}(\Omega)$ have
+trace $\gamma u = 0$. Let $T$ be a rigid motion of $\mathbb{R}^{d+1}$, let
+$g : \mathbb{R}^d \to \mathbb{R}$ be continuous, and let $x_0 \in \mathbb{R}^{d+1}$ and
+$r \in \mathbb{R}$ satisfy $\Omega \cap B(x_0, r) = B(x_0, r) \cap T^{-1}\{y : g(y') <
+y_{d+1}\}$. Let $t > 0$ and $\rho + t \le r$. With $S_\rho(t) = \Omega \cap B(x_0, \rho) \cap
+\{x : (Tx)_{d+1} < g((Tx)') + t\}$, $$\int_{S_\rho(t)} |u|^p \le t^p \int_{S_r(t)} |\nabla
+u|^p.$$ With $\rho = r/2$, this is the form of Evans, *Partial Differential Equations*, §5.5,
+Theorem 2, estimate (17).
+
+The function $u$ lies in $W^{1,p}_0(\Omega)$ by `IsContDiffDomain.mem_zero_of_traceL_eq_zero`,
+so the estimate is `SobolevEuclideanZero.integral_strip_rpow_le`. -/
 theorem IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -510,7 +572,7 @@ theorem IsContDiffDomain.integral_strip_rpow_le_of_traceL_eq_zero
   SobolevEuclideanZero.integral_strip_rpow_le hp (hΩ.mem_zero_of_traceL_eq_zero hb p hp hu) T hg
     h ht hρt
 
-/-! ### Consequences for the boundary seminorm `v ↦ ∫_U |γ v| dσ` -/
+/-! ### Consequences for the boundary seminorm $v \mapsto \int_U |\gamma v| \, d\sigma$ -/
 
 namespace IsContDiffDomain
 
@@ -519,10 +581,14 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (p : ℝ≥0∞) [Fact (1 ≤ p)] (hp : p ≠ ⊤)
 
-/-- **An element of `W^{1,p}(Ω)` almost everywhere equal to a constant `c` whose trace has
-vanishing `∫_U |γ v| dσ` on a boundary piece `U` of positive surface measure is zero**: the trace
-of the constant is the constant (`traceL_ae_eq_of_continuousOn`), so `∫_U |γ v| dσ = |c| σ(U)`
-forces `c = 0`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$ with surface
+measure $\sigma$, let $1 \le p < \infty$, and let $U \subseteq \mathbb{R}^{d+1}$ satisfy
+$\sigma(U) > 0$. Let $v \in W^{1,p}(\Omega)$ be equal almost everywhere on $\Omega$ to a
+constant $c \in \mathbb{R}$. If $\int_U |\gamma v| \, d\sigma = 0$, then $v = 0$.
+
+The trace of the constant function is the constant
+(`IsContDiffDomain.traceL_ae_eq_of_continuousOn`), so $\int_U |\gamma v| \, d\sigma = |c| \,
+\sigma(U)$, and this forces $c = 0$. -/
 theorem eq_zero_of_traceL_integral_abs_eq_zero
     {U : Set (EuclideanSpace ℝ (Fin (d + 1)))} (hU : 0 < hΩ.boundaryMeasure hb U)
     {v : SobolevEuclidean (d + 1) 1 p Ω} {c : ℝ}
@@ -543,7 +609,13 @@ theorem eq_zero_of_traceL_integral_abs_eq_zero
   rw [hc0]
   exact SobolevMultiIndex.fn_zero.symm
 
-/-- The trace vanishes when the integral of its absolute value does. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$ with surface
+measure $\sigma$, let $1 \le p < \infty$, and let $v \in W^{1,p}(\Omega)$. If
+$\int_{\partial\Omega} |\gamma v| \, d\sigma = 0$, then $\gamma v = 0$ almost everywhere for
+$\sigma$.
+
+The integral is over the whole space, against the measure `IsContDiffDomain.boundaryMeasure`,
+which is carried by $\partial\Omega$. -/
 theorem traceL_ae_eq_zero_of_integral_abs_eq_zero {v : SobolevEuclidean (d + 1) 1 p Ω}
     (h0 : ∫ x, |(hΩ.traceL hb p hp v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x|
       ∂(hΩ.boundaryMeasure hb) = 0) :
@@ -557,12 +629,15 @@ theorem traceL_ae_eq_zero_of_integral_abs_eq_zero {v : SobolevEuclidean (d + 1) 
   rw [Pi.zero_apply] at hx ⊢
   exact abs_eq_zero.1 hx
 
-/-- **An element of `W^{1,p}(Ω)` with vanishing gradient and vanishing trace is zero**, on a
-bounded `C¹` domain and without any connectedness: its trace vanishes, so it lies in
-`W_0^{1,p}(Ω)` by `mem_zero_of_traceL_eq_zero`, where Poincaré's inequality
-`SobolevEuclideanZero.norm_le_gradNorm` bounds its norm by its vanishing gradient norm. This is
-the hypothesis (H2)′ of the Deny–Lions theorem for the boundary seminorm
-([han2009theoretical] Example 7.3.15). -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set of class $C^1$, let
+$1 \le p < \infty$, and let $v \in W^{1,p}(\Omega)$. If $\|\nabla v\|_{L^p(\Omega)} = 0$ and
+$\gamma v = 0$, then $v = 0$. No connectedness of $\Omega$ is assumed.
+
+This is hypothesis (H2)′ of the Deny–Lions theorem for the boundary seminorm in Example 7.3.15
+of [han2009theoretical]. The gradient norm is `SobolevMultiIndex.gradNorm`. Since
+$\gamma v = 0$, the function $v$ lies in $W^{1,p}_0(\Omega)$ by
+`IsContDiffDomain.mem_zero_of_traceL_eq_zero`, and there Poincaré's inequality
+`SobolevEuclideanZero.norm_le_gradNorm` bounds the norm of $v$ by its gradient norm. -/
 theorem eq_zero_of_gradNorm_eq_zero_of_traceL_eq_zero {v : SobolevEuclidean (d + 1) 1 p Ω}
     (hv : gradNorm v = 0) (hγ : hΩ.traceL hb p hp v = 0) : v = 0 := by
   have hmem := hΩ.mem_zero_of_traceL_eq_zero hb p hp hγ

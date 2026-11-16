@@ -6,41 +6,52 @@ import Numlib.Nonlinear.ScalarNewton
 import Numlib.Nonlinear.Secant
 
 /-!
-# Monotone convergence of Newton's and the secant method for convex monotone functions
+# Monotone convergence of Newton's method and the secant method for convex monotone functions
 
-Let `θ` be convex and strictly decreasing on a convex set `S ⊆ ℝ`, differentiable within `S`, with
-a root `r ∈ S` at which `θ' r ≠ 0`. Started from a point `x₀ ∈ S` with `θ x₀ > 0` (hence
-`x₀ < r`), Newton's method and the secant method (from `x₀ < x₁` with `θ x₀, θ x₁ > 0`) produce
-iterates that increase monotonically to `r`, with the global `Q`-linear bound
-`r - x_{k+1} ≤ γ (r - x_k)`, `γ = 1 - θ'(r)/θ'(x₀) ∈ [0, 1)`, and converge `Q`-superlinearly when
-`θ'` is continuous at `r`; Newton's method converges quadratically when `θ'` is Lipschitz near
-`r` (Cartis–Gould–Toint Lemma B.8.1; [ortega2000iterative] Theorem 10.2.2). The concave strictly
-increasing case is the image under `θ ↦ -θ`, which leaves both iterations unchanged.
+Let $\theta$ be convex and strictly decreasing on a convex set $S \subseteq \mathbb{R}$, with
+derivative $\theta'$ within $S$, and let $r \in S$ be a root with $\theta'(r) \neq 0$. Start
+Newton's method from a point $x_0 \in S$ with $\theta(x_0) > 0$, so that $x_0 < r$. Start the secant
+method from points $x_0 < x_1$ of $S$ with $\theta(x_0) > 0$ and $\theta(x_1) > 0$. Then both
+methods produce iterates that increase monotonically to $r$, with the global $Q$-linear bound
+$$r - x_{k+1} \le \gamma (r - x_k), \qquad \gamma = 1 - \frac{\theta'(r)}{\theta'(x_0)} \in [0,
+  1).$$
+Both methods converge $Q$-superlinearly when $\theta'$ is continuous at $r$, and Newton's method
+converges $Q$-quadratically when $\theta'$ is Lipschitz near $r$. This is Lemma B.8.1 of
+[cartis2022evaluation] and Theorem 10.2.2 of [ortega2000iterative]. The concave strictly increasing
+case is the image under $\theta \mapsto -\theta$, which leaves both iterations unchanged.
 
-Superlinear convergence is `ConvergesSuperlinearly` of `Numlib/Nonlinear/Order`.
+The condition $\theta'(r) \neq 0$ is necessary. The function $\theta(x) = (1 - x)^2$ on $[0, 1]$ is
+convex, strictly decreasing and continuously differentiable, but Newton's method from $0$ converges
+only linearly with factor $1/2$, and the factor $1 - \theta'(r)/\theta'(x_0)$ is $1$.
 
 ## Main definitions
 
-* `Newton.IsConvexAntiRoot θ θ' S r`: the standing hypotheses of the convex decreasing case.
+* `Newton.IsConvexAntiRoot`: the standing hypotheses of the convex decreasing case.
 
-## Main statements
+## Main results
 
 * `Newton.scalarStep_le_of_convexOn`: a Newton step on a convex function with negative slope never
   passes the root, from either side.
-* `Newton.monotone_scalarStep_iterate_of_convexOn`: Lemma B.8.1(i), and its concave mirror
-  `Newton.monotone_scalarStep_iterate_of_concaveOn`.
-* `Newton.monotone_secant_iterate_of_convexOn`: Lemma B.8.1(ii), and its concave mirror
-  `Newton.monotone_secant_iterate_of_concaveOn`.
+* `Newton.monotone_scalarStep_iterate_of_convexOn`: Lemma B.8.1(i) of [cartis2022evaluation], with
+  its concave mirror `Newton.monotone_scalarStep_iterate_of_concaveOn`.
+* `Newton.monotone_secant_iterate_of_convexOn`: Lemma B.8.1(ii) of [cartis2022evaluation], with its
+  concave mirror `Newton.monotone_secant_iterate_of_concaveOn`.
 
-## Hypotheses
+## Proof outline
 
-* The root must satisfy `θ'(r) ≠ 0`: `θ(x) = (1 - x)²` on `[0, 1]` is convex, strictly decreasing
-  and `C¹`, but Newton from `0` converges only linearly with factor `1/2`, and the factor
-  `1 - θ'(r)/θ'(x₀)` is `1`.
-* In the concave increasing case the start must satisfy `θ x₀ < 0`.
-* The convex case rests on the tangent inequality at the root, `θ(x) ≥ θ'(r) (x - r)`.
-* Iterates that reach the root stay there, so they increase monotonically, not necessarily
-  strictly.
+The convex case rests on the tangent inequality at the root, $\theta(x) \ge \theta'(r)(x - r)$ for
+$x \in S$ with $x < r$. A step $y \mapsto y - \theta(y)/d$ with a negative slope $d$ then satisfies
+$r - (y - \theta(y)/d) \le (1 - \theta'(r)/d)(r - y)$. Newton's method takes $d = \theta'(y)$, and
+the secant method takes a secant slope.
+
+## Implementation notes
+
+* Superlinear convergence is `ConvergesSuperlinearly` and convergence of order $2$ is
+  `ConvergesWithOrder` of `Numlib.Nonlinear.Order`.
+* In the concave increasing case, the starting points must satisfy $\theta(x_0) < 0$ (and
+  $\theta(x_1) < 0$ for the secant method).
+* Iterates that reach the root stay there. So the iterates increase monotonically, but not
+  necessarily strictly.
 -/
 
 open Filter Topology Set
@@ -53,7 +64,7 @@ section Ratio
 
 variable {d d₀ t : ℝ}
 
-/-- For `d₀ ≤ d ≤ t < 0`, the factor `1 - t/d` is at most `1 - t/d₀`. -/
+/-- If $d_0 \le d \le t < 0$, then $1 - t/d \le 1 - t/d_0$. -/
 theorem one_sub_div_le_one_sub_div (hd₀ : d₀ ≤ d) (hdt : d ≤ t) (ht : t < 0) :
     1 - t / d ≤ 1 - t / d₀ := by
   have hd : d < 0 := hdt.trans_lt ht
@@ -62,18 +73,22 @@ theorem one_sub_div_le_one_sub_div (hd₀ : d₀ ≤ d) (hdt : d ≤ t) (ht : t 
   have := div_le_div_of_nonneg_left (neg_nonneg.2 ht.le) (neg_pos.2 hd) (neg_le_neg hd₀)
   simpa [neg_div_neg_eq] using this
 
-/-- For `d ≤ t < 0`, the factor `1 - t/d` lies in `[0, 1)`. -/
+/-- If $d \le t < 0$, then $1 - t/d \in [0, 1)$. -/
 theorem one_sub_div_mem_Ico (hdt : d ≤ t) (ht : t < 0) : 1 - t / d ∈ Ico 0 1 := by
   have hd : d < 0 := hdt.trans_lt ht
   refine ⟨sub_nonneg.2 ((div_le_one_of_neg hd).2 hdt), sub_lt_self _ (div_pos_of_neg_of_neg ht hd)⟩
 
 end Ratio
 
-/-- A Newton step on a convex function with negative slope does not pass a root: if `θ` is convex
-on `S`, `r ∈ S` is a root, `x ∈ S` and `θ'(x) < 0` is the derivative of `θ` within `S` at `x`,
-then `scalarStep θ θ' x ≤ r`. From the left of the root this is the tangent line lying below the
-graph; from the right, Newton's step overshoots the root (possibly leaving `S`). Strict
-monotonicity of `θ` is not needed. -/
+/-- **A Newton step on a convex function with negative slope does not pass a root.** Let
+$\theta : \mathbb{R} \to \mathbb{R}$ be convex on $S$, let $r \in S$ with $\theta(r) = 0$, and
+let $x \in S$, where $\theta$ has the derivative $\theta'(x) < 0$ within $S$. Then the Newton
+step satisfies
+$$x - \frac{\theta(x)}{\theta'(x)} \le r.$$
+
+From the left of the root, this says that the tangent line lies below the graph. From the right
+of the root, the Newton step overshoots the root, and it can leave $S$. Strict monotonicity of
+$\theta$ is not necessary. -/
 theorem scalarStep_le_of_convexOn {θ θ' : ℝ → ℝ} {S : Set ℝ} {r x : ℝ} (hc : ConvexOn ℝ S θ)
     (hr : r ∈ S) (hθr : θ r = 0) (hx : x ∈ S) (hd : HasDerivWithinAt θ (θ' x) S x)
     (hneg : θ' x < 0) : scalarStep θ θ' x ≤ r := by
@@ -91,8 +106,9 @@ theorem scalarStep_le_of_convexOn {θ θ' : ℝ → ℝ} {S : Set ℝ} {r x : �
     rw [le_div_iff_of_neg hneg]
     linarith
 
-/-- The concave mirror of `Newton.scalarStep_le_of_convexOn`: a Newton step on a concave function
-with positive slope does not pass a root. -/
+/-- The concave mirror of `Newton.scalarStep_le_of_convexOn`. Let $\theta$ be concave on $S$, let
+$r \in S$ with $\theta(r) = 0$, and let $x \in S$, where $\theta$ has the derivative
+$\theta'(x) > 0$ within $S$. Then $x - \theta(x)/\theta'(x) \le r$. -/
 theorem scalarStep_le_of_concaveOn {θ θ' : ℝ → ℝ} {S : Set ℝ} {r x : ℝ} (hc : ConcaveOn ℝ S θ)
     (hr : r ∈ S) (hθr : θ r = 0) (hx : x ∈ S) (hd : HasDerivWithinAt θ (θ' x) S x)
     (hpos : 0 < θ' x) : scalarStep θ θ' x ≤ r := by
@@ -100,7 +116,8 @@ theorem scalarStep_le_of_concaveOn {θ θ' : ℝ → ℝ} {S : Set ℝ} {r x : �
     (neg_neg_of_pos hpos)
   simpa [scalarStep, neg_div_neg_eq] using h
 
-/-- A Newton step from a point where `θ ≥ 0` and `θ' < 0` does not decrease. -/
+/-- If $\theta(x) \ge 0$ and $\theta'(x) < 0$, then $x \le x - \theta(x)/\theta'(x)$: the Newton
+step does not decrease. -/
 theorem le_scalarStep {θ θ' : ℝ → ℝ} {x : ℝ} (hθ : 0 ≤ θ x) (hneg : θ' x < 0) :
     x ≤ scalarStep θ θ' x := by
   rw [scalarStep]
@@ -108,15 +125,23 @@ theorem le_scalarStep {θ θ' : ℝ → ℝ} {x : ℝ} (hθ : 0 ≤ θ x) (hneg 
 
 /-! ### Standing hypotheses -/
 
-/-- The standing hypotheses of the convex decreasing case of Cartis–Gould–Toint Lemma B.8.1:
-`θ` is convex and strictly decreasing on `S`, has derivative `θ' x` within `S` at every `x ∈ S`,
-and has a root `r ∈ S` with `θ'(r) ≠ 0`. -/
+/-- The standing hypotheses of the convex decreasing case of Lemma B.8.1 of [cartis2022evaluation]:
+$\theta$ is convex and strictly decreasing on $S$, has the derivative $\theta'(x)$ within $S$ at
+every $x \in S$, and has a root $r \in S$ with $\theta'(r) \neq 0$.
+
+Convexity of $\theta$ on $S$ in the sense of `ConvexOn` includes convexity of $S$. -/
 structure IsConvexAntiRoot (θ θ' : ℝ → ℝ) (S : Set ℝ) (r : ℝ) : Prop where
+  /-- The function $\theta$ is convex on $S$. -/
   convexOn : ConvexOn ℝ S θ
+  /-- The function $\theta$ is strictly decreasing on $S$. -/
   strictAntiOn : StrictAntiOn θ S
+  /-- The function $\theta$ has the derivative $\theta'(x)$ within $S$ at every $x \in S$. -/
   hasDerivWithinAt : ∀ x ∈ S, HasDerivWithinAt θ (θ' x) S x
+  /-- The root $r$ lies in $S$. -/
   mem : r ∈ S
+  /-- The point $r$ is a root: $\theta(r) = 0$. -/
   apply_eq_zero : θ r = 0
+  /-- The derivative at the root is nonzero: $\theta'(r) \neq 0$. -/
   deriv_ne_zero : θ' r ≠ 0
 
 namespace IsConvexAntiRoot
@@ -124,12 +149,12 @@ namespace IsConvexAntiRoot
 variable {θ θ' : ℝ → ℝ} {S : Set ℝ} {r : ℝ} (h : IsConvexAntiRoot θ θ' S r)
 include h
 
-/-- `θ` is positive on `S` exactly to the left of the root. -/
+/-- For $x \in S$, $\theta(x) > 0$ if and only if $x < r$. -/
 theorem pos_iff {x : ℝ} (hx : x ∈ S) : 0 < θ x ↔ x < r := by
   rw [← h.apply_eq_zero]
   exact h.strictAntiOn.lt_iff_gt h.mem hx
 
-/-- The derivative is monotone on `S` (convexity). -/
+/-- The derivative $\theta'$ is monotone on $S$, by convexity. -/
 theorem monotoneOn_deriv : MonotoneOn θ' S := by
   intro x hx y hy hxy
   rcases hxy.eq_or_lt with rfl | hlt
@@ -137,14 +162,14 @@ theorem monotoneOn_deriv : MonotoneOn θ' S := by
   exact (h.convexOn.le_slope_of_hasDerivWithinAt hx hy hlt (h.hasDerivWithinAt x hx)).trans
     (h.convexOn.slope_le_of_hasDerivWithinAt hx hy hlt (h.hasDerivWithinAt y hy))
 
-/-- The derivative is negative at points of `S` to the left of the root. -/
+/-- If $x \in S$ and $x < r$, then $\theta'(x) < 0$. -/
 theorem deriv_neg_of_lt {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' x < 0 := by
   have hs := h.convexOn.le_slope_of_hasDerivWithinAt hx h.mem hxr (h.hasDerivWithinAt x hx)
   rw [slope_def_field, h.apply_eq_zero, zero_sub] at hs
   exact hs.trans_lt (div_neg_of_neg_of_pos (neg_neg_of_pos ((h.pos_iff hx).2 hxr))
     (sub_pos.2 hxr))
 
-/-- The derivative at the root is negative as soon as `S` has a point left of the root. -/
+/-- If $S$ has a point $x < r$, then $\theta'(r) < 0$. -/
 theorem deriv_root_neg {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' r < 0 := by
   refine lt_of_le_of_ne ?_ h.deriv_ne_zero
   have hsub : Icc x r ⊆ S := h.convexOn.1.ordConnected.out hx h.mem
@@ -154,16 +179,17 @@ theorem deriv_root_neg {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' r < 0 := by
   exact ((h.hasDerivWithinAt r h.mem).mono hsub).nonpos_of_antitoneOn hacc
     (h.strictAntiOn.antitoneOn.mono hsub)
 
-/-- The tangent inequality at the root, `θ'(r) (x - r) ≤ θ x` for `x ∈ S`, `x < r`
-((B.8.3)). -/
+/-- **The tangent inequality at the root**, (B.8.3) of [cartis2022evaluation]: for $x \in S$ with
+$x < r$, $\theta'(r)(x - r) \le \theta(x)$. -/
 theorem deriv_root_mul_le {x : ℝ} (hx : x ∈ S) (hxr : x < r) : θ' r * (x - r) ≤ θ x := by
   have hs := h.convexOn.slope_le_of_hasDerivWithinAt hx h.mem hxr (h.hasDerivWithinAt r h.mem)
   rw [slope_def_field, h.apply_eq_zero, zero_sub, div_le_iff₀ (sub_pos.2 hxr)] at hs
   linarith
 
-/-- The error after a step `y ↦ y - θ y / d` from `y ∈ S`, `y < r`, with any negative slope `d`:
-`r - (y - θ y / d) ≤ (1 - θ'(r)/d) (r - y)`. Newton's method takes `d = θ'(y)`, the secant method
-a secant slope. -/
+/-- The error after a step $y \mapsto y - \theta(y)/d$ from $y \in S$ with $y < r$, with any slope
+$d < 0$:
+$$r - \Bigl(y - \frac{\theta(y)}{d}\Bigr) \le \Bigl(1 - \frac{\theta'(r)}{d}\Bigr)(r - y).$$
+Newton's method takes $d = \theta'(y)$, and the secant method takes a secant slope. -/
 theorem sub_step_le {y d : ℝ} (hy : y ∈ S) (hyr : y < r) (hd : d < 0) :
     r - (y - θ y / d) ≤ (1 - θ' r / d) * (r - y) := by
   have ht := h.deriv_root_mul_le hy hyr
@@ -176,8 +202,10 @@ theorem sub_step_le {y d : ℝ} (hy : y ∈ S) (hyr : y < r) (hd : d < 0) :
 
 /-! ### Newton's method -/
 
-/-- **One Newton step** from `y ∈ S`, `y ≤ r`: the step stays in `[y, r]` and
-`r - N(y) ≤ (1 - θ'(r)/θ'(y)) (r - y)` ((B.8.4)). -/
+/-- **One Newton step.** Let $N(y) = y - \theta(y)/\theta'(y)$. For $y \in S$ with $y \le r$, the
+step $N(y)$ lies in $[y, r]$ and
+$$r - N(y) \le \Bigl(1 - \frac{\theta'(r)}{\theta'(y)}\Bigr)(r - y).$$
+This is (B.8.4) of [cartis2022evaluation]. -/
 theorem scalarStep_mem_Icc_and_sub_le {y : ℝ} (hy : y ∈ S) (hyr : y ≤ r) :
     scalarStep θ θ' y ∈ Icc y r ∧
       r - scalarStep θ θ' y ≤ (1 - θ' r / θ' y) * (r - y) := by
@@ -191,8 +219,10 @@ theorem scalarStep_mem_Icc_and_sub_le {y : ℝ} (hy : y ∈ S) (hyr : y ≤ r) :
 
 end IsConvexAntiRoot
 
-/-- From sandwiched slopes `g k ≤ d k ≤ t` with `g k → t ≠ 0` and the error bound
-`|x (k+1) - r| ≤ (1 - t / d k) |x k - r|`, the sequence converges `Q`-superlinearly. -/
+/-- Let $(x_k)$, $(g_k)$ and $(d_k)$ be real sequences, and let $r \in \mathbb{R}$ and $t \neq 0$.
+Assume that $g_k \le d_k \le t$ for every $k$, that $g_k \to t$, and that
+$$|x_{k+1} - r| \le \Bigl(1 - \frac{t}{d_k}\Bigr) |x_k - r|$$
+for every $k$. Then $x_k$ converges $Q$-superlinearly to $r$. -/
 theorem convergesSuperlinearly_of_le_one_sub_div {x g d : ℕ → ℝ} {r t : ℝ} (ht : t ≠ 0)
     (hg : Tendsto g atTop (𝓝 t)) (hgd : ∀ k, g k ≤ d k) (hdt : ∀ k, d k ≤ t)
     (hle : ∀ k, |x (k + 1) - r| ≤ (1 - t / d k) * |x k - r|) : ConvergesSuperlinearly x r := by
@@ -208,7 +238,8 @@ namespace IsConvexAntiRoot
 variable (h : IsConvexAntiRoot θ θ' S r)
 include h
 
-/-- The Newton iterates from `x₀ ∈ S` with `θ x₀ ≥ 0` stay in `[x₀, r] ⊆ S` and increase. -/
+/-- The Newton iterates $x_k$ from $x_0 \in S$ with $\theta(x_0) \ge 0$ stay in $[x_0, r]$, and
+$x_k \le x_{k+1}$ for every $k$. -/
 theorem scalarStep_iterate_mem_Icc (hx₀ : x₀ ∈ S) (hθx₀ : 0 ≤ θ x₀) (k : ℕ) :
     (scalarStep θ θ')^[k] x₀ ∈ Icc x₀ r ∧
       (scalarStep θ θ')^[k] x₀ ≤ (scalarStep θ θ')^[k + 1] x₀ := by
@@ -230,8 +261,11 @@ theorem scalarStep_iterate_mem_Icc (hx₀ : x₀ ∈ S) (hθx₀ : 0 ≤ θ x₀
   rw [Function.iterate_succ_apply']
   exact (h.scalarStep_mem_Icc_and_sub_le (hsub (hmem k)) (hmem k).2).1.1
 
-/-- **Global `Q`-linear bound for Newton's method** ((B.8.4)): from `x₀ ∈ S` with `θ x₀ > 0`,
-`r - x_{k+1} ≤ (1 - θ'(r)/θ'(x_k)) (r - x_k) ≤ (1 - θ'(r)/θ'(x₀)) (r - x_k)`. -/
+/-- **Global $Q$-linear bound for Newton's method**, (B.8.4) of [cartis2022evaluation]. Let
+$x_0 \in S$ with $\theta(x_0) > 0$. Then the Newton iterates $x_k$ satisfy, for every $k$,
+$$r - x_{k+1} \le \Bigl(1 - \frac{\theta'(r)}{\theta'(x_k)}\Bigr)(r - x_k) \quad \text{and}
+  \quad 1 - \frac{\theta'(r)}{\theta'(x_k)} \le 1 - \frac{\theta'(r)}{\theta'(x_0)}.$$
+-/
 theorem sub_scalarStep_iterate_succ_le (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x₀) (k : ℕ) :
     r - (scalarStep θ θ')^[k + 1] x₀ ≤
         (1 - θ' r / θ' ((scalarStep θ θ')^[k] x₀)) * (r - (scalarStep θ θ')^[k] x₀) ∧
@@ -246,7 +280,7 @@ theorem sub_scalarStep_iterate_succ_le (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x�
   · exact one_sub_div_le_one_sub_div (h.monotoneOn_deriv hx₀ (hsub hm) hm.1)
       (h.monotoneOn_deriv (hsub hm) h.mem hm.2) htr
 
-/-- The Newton iterates converge to the root. -/
+/-- The Newton iterates from $x_0 \in S$ with $\theta(x_0) > 0$ converge to the root $r$. -/
 theorem tendsto_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x₀) :
     Tendsto (fun k => (scalarStep θ θ')^[k] x₀) atTop (𝓝 r) := by
   have hx₀r : x₀ < r := (h.pos_iff hx₀).1 hθx₀
@@ -260,7 +294,8 @@ theorem tendsto_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x₀) 
     abs_sub_comm, abs_of_nonneg (sub_nonneg.2 hm.2)]
   exact h1.trans (mul_le_mul_of_nonneg_right h2 (sub_nonneg.2 hm.2))
 
-/-- Newton's method converges `Q`-superlinearly when `θ'` is continuous at the root. -/
+/-- If $x_0 \in S$, $\theta(x_0) > 0$ and $\theta'$ is continuous at $r$ within $S$, then the Newton
+iterates from $x_0$ converge $Q$-superlinearly to $r$. -/
 theorem convergesSuperlinearly_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x₀)
     (hcont : ContinuousWithinAt θ' S r) :
     ConvergesSuperlinearly (fun k => (scalarStep θ θ')^[k] x₀) r := by
@@ -280,8 +315,8 @@ theorem convergesSuperlinearly_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ 
     abs_of_nonneg (sub_nonneg.2 (hm k).2)]
   exact h1
 
-/-- Newton's method converges `Q`-quadratically when `θ'` is Lipschitz near the root
-(within `S`). -/
+/-- If $x_0 \in S$, $\theta(x_0) > 0$ and $\theta'$ is Lipschitz on a neighbourhood of $r$ within
+$S$, then the Newton iterates from $x_0$ converge $Q$-quadratically to $r$. -/
 theorem convergesWithOrder_two_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ : 0 < θ x₀)
     (hL : ∃ K, ∃ U ∈ 𝓝[S] r, LipschitzOnWith K θ' U) :
     ConvergesWithOrder (fun k => (scalarStep θ θ')^[k] x₀) r 2 := by
@@ -328,13 +363,24 @@ theorem convergesWithOrder_two_scalarStep_iterate (hx₀ : x₀ ∈ S) (hθx₀ 
 
 end IsConvexAntiRoot
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, convex decreasing case (with `θ'(r) ≠ 0`).
-Let `θ` be convex and strictly decreasing on a convex set `S ⊆ ℝ` (an interval), with derivative
-`θ' x` within `S` at every `x ∈ S`, and let `r ∈ S` be a root with `θ'(r) ≠ 0`. From `x₀ ∈ S`
-with `θ x₀ > 0`, the Newton iterates `x_k = (scalarStep θ θ')^[k] x₀` (B.8.1) lie in `[x₀, r]`,
-increase monotonically and converge to `r`, globally `Q`-linearly with factor
-`γ = 1 - θ'(r)/θ'(x₀) ∈ [0, 1)`; the convergence is `Q`-superlinear if `θ'` is continuous at `r`
-(within `S`) and `Q`-quadratic if `θ'` is Lipschitz near `r` (within `S`). -/
+/-- **Lemma B.8.1(i)** of [cartis2022evaluation], convex decreasing case. Let $\theta$ be convex and
+strictly decreasing on a convex set $S \subseteq \mathbb{R}$, with the derivative $\theta'(x)$
+within $S$ at every $x \in S$, and let $r \in S$ be a root with $\theta'(r) \neq 0$. Let
+$x_0 \in S$ with $\theta(x_0) > 0$, and let $x_k$ be the Newton iterates (B.8.1),
+$x_{k+1} = x_k - \theta(x_k)/\theta'(x_k)$. Then:
+* $x_k \in [x_0, r]$ for every $k$, and $(x_k)$ is monotonically increasing;
+* $x_k \to r$;
+* $\gamma = 1 - \theta'(r)/\theta'(x_0)$ lies in $[0, 1)$, and
+  $r - x_{k+1} \le \gamma (r - x_k)$ for every $k$;
+* if $\theta'$ is continuous at $r$ within $S$, the convergence is $Q$-superlinear;
+* if $\theta'$ is Lipschitz on a neighbourhood of $r$ within $S$, the convergence is
+  $Q$-quadratic.
+
+The hypothesis $\theta'(r) \neq 0$ is necessary: for $\theta(x) = (1 - x)^2$ on $[0, 1]$,
+Newton's method from $0$ converges only linearly with factor $1/2$, and $\gamma = 1$.
+
+The Newton iterates are `(Newton.scalarStep θ θ')^[k] x₀`. The hypotheses on $\theta$ are
+`Newton.IsConvexAntiRoot`. -/
 theorem monotone_scalarStep_iterate_of_convexOn (h : IsConvexAntiRoot θ θ' S r) (hx₀ : x₀ ∈ S)
     (hθx₀ : 0 < θ x₀) :
     (∀ k, (scalarStep θ θ')^[k] x₀ ∈ Icc x₀ r) ∧ Monotone (fun k => (scalarStep θ θ')^[k] x₀) ∧
@@ -356,13 +402,17 @@ theorem monotone_scalarStep_iterate_of_convexOn (h : IsConvexAntiRoot θ θ' S r
   exact h1.trans (mul_le_mul_of_nonneg_right h2
     (sub_nonneg.2 (h.scalarStep_iterate_mem_Icc hx₀ hθx₀.le k).1.2))
 
-/-- Negating the function and its derivative leaves the Newton step unchanged. -/
+/-- Replacing $\theta$ and $\theta'$ by $-\theta$ and $-\theta'$ leaves the Newton step
+$x \mapsto x - \theta(x)/\theta'(x)$ unchanged. -/
 theorem scalarStep_neg (θ θ' : ℝ → ℝ) :
     scalarStep (fun x => -θ x) (fun x => -θ' x) = scalarStep θ θ' := by
   funext x
   simp [scalarStep, neg_div_neg_eq]
 
-/-- The concave increasing case of the standing hypotheses, transported to `-θ`. -/
+/-- If $\theta$ is concave and strictly increasing on $S$, with the derivative $\theta'(x)$ within
+$S$ at every $x \in S$, and $r \in S$ is a root with $\theta'(r) \neq 0$, then $-\theta$ and
+$-\theta'$ satisfy the standing hypotheses `Newton.IsConvexAntiRoot` of the convex decreasing
+case. -/
 theorem isConvexAntiRoot_neg (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
     (hd : ∀ x ∈ S, HasDerivWithinAt θ (θ' x) S x) (hr : r ∈ S) (hθr : θ r = 0)
     (hθ'r : θ' r ≠ 0) : IsConvexAntiRoot (fun x => -θ x) (fun x => -θ' x) S r where
@@ -373,9 +423,17 @@ theorem isConvexAntiRoot_neg (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
   apply_eq_zero := by simp [hθr]
   deriv_ne_zero := neg_ne_zero.2 hθ'r
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(i)**, concave increasing case (with `θ'(r) ≠ 0` and
-the start has `θ x₀ < 0`): the conclusions of `Newton.monotone_scalarStep_iterate_of_convexOn`
-for a concave strictly increasing `θ`, by applying it to `-θ`. -/
+/-- **Lemma B.8.1(i)** of [cartis2022evaluation], concave increasing case. Let $\theta$ be concave
+and strictly increasing on $S$, with the derivative $\theta'(x)$ within $S$ at every $x \in S$,
+and let $r \in S$ be a root with $\theta'(r) \neq 0$. Let $x_0 \in S$ with $\theta(x_0) < 0$.
+Then the Newton iterates from $x_0$ have all the properties of
+`Newton.monotone_scalarStep_iterate_of_convexOn`: they lie in $[x_0, r]$, increase
+monotonically, converge to $r$ with $r - x_{k+1} \le \gamma (r - x_k)$ for $\gamma = 1 -
+\theta'(r)/\theta'(x_0) \in [0, 1)$, converge $Q$-superlinearly if $\theta'$ is continuous at
+$r$ within $S$, and converge $Q$-quadratically if $\theta'$ is Lipschitz on a neighbourhood of
+$r$ within $S$.
+
+The proof applies `Newton.monotone_scalarStep_iterate_of_convexOn` to $-\theta$. -/
 theorem monotone_scalarStep_iterate_of_concaveOn (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
     (hd : ∀ x ∈ S, HasDerivWithinAt θ (θ' x) S x) (hr : r ∈ S) (hθr : θ r = 0)
     (hθ'r : θ' r ≠ 0) (hx₀ : x₀ ∈ S) (hθx₀ : θ x₀ < 0) :
@@ -402,9 +460,13 @@ namespace IsConvexAntiRoot
 variable (h : IsConvexAntiRoot θ θ' S r)
 include h
 
-/-- **One secant step** ((B.8.5)–(B.8.6)): for `u, v ∈ S` with `u < v ≤ r`, the secant point
-`z = v - (v - u)/(θ v - θ u) θ v` lies in `[v, r]`, `v < z` unless `v = r`, and there is a slope
-`d ∈ [θ'(u), θ'(r)]` with `r - z ≤ (1 - θ'(r)/d) (r - v)`. -/
+/-- **One secant step**, (B.8.5)–(B.8.6) of [cartis2022evaluation]. Let $u, v \in S$ with
+$u < v \le r$, and let
+$$z = v - \frac{v - u}{\theta(v) - \theta(u)}\, \theta(v)$$
+be the secant point. Then $z \in [v, r]$, either $v < z$ or $v = r$, and there is a slope $d$
+with $\theta'(u) \le d \le \theta'(r)$ and
+$$r - z \le \Bigl(1 - \frac{\theta'(r)}{d}\Bigr)(r - v).$$
+-/
 theorem secant_step {u v : ℝ} (hu : u ∈ S) (hv : v ∈ S) (huv : u < v) (hvr : v ≤ r) :
     (Secant.step θ (u, v)).2 ∈ Icc v r ∧ (v < (Secant.step θ (u, v)).2 ∨ v = r) ∧
       ∃ d, θ' u ≤ d ∧ d ≤ θ' r ∧ r - (Secant.step θ (u, v)).2 ≤ (1 - θ' r / d) * (r - v) := by
@@ -439,8 +501,9 @@ theorem secant_step {u v : ℝ} (hu : u ∈ S) (hv : v ∈ S) (huv : u < v) (hvr
     exact ⟨⟨le_rfl, le_rfl⟩, Or.inr rfl, θ' v, h.monotoneOn_deriv hu h.mem huv.le, le_rfl,
       by simp⟩
 
-/-- The pair invariant of the secant iteration from `x₀ < x₁` in `S` with `θ x₁ ≥ 0`: the `k`-th
-pair `(u, v)` satisfies `x₀ ≤ u ≤ v ≤ r` and `u < v ∨ u = v = r`. -/
+/-- The pair invariant of the secant iteration. Let $x_0 < x_1$ be points of $S$ with
+$\theta(x_1) \ge 0$. Then the $k$-th pair $(u, v)$ of the secant iteration from $(x_0, x_1)$
+satisfies $x_0 \le u \le v \le r$, and either $u < v$ or $u = r$. -/
 theorem secant_pair_invariant {x₁ : ℝ} (hx₀ : x₀ ∈ S) (hx₁ : x₁ ∈ S) (h01 : x₀ < x₁)
     (hθx₁ : 0 ≤ θ x₁) (k : ℕ) :
     x₀ ≤ ((Secant.step θ)^[k] (x₀, x₁)).1 ∧
@@ -477,12 +540,18 @@ theorem secant_pair_invariant {x₁ : ℝ} (hx₀ : x₀ ∈ S) (hx₁ : x₁ �
 
 end IsConvexAntiRoot
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, convex decreasing case (with `θ'(r) ≠ 0`).
-Under the hypotheses of `Newton.monotone_scalarStep_iterate_of_convexOn`, let `x₀ < x₁` be points
-of `S` with `θ x₀ > 0` and `θ x₁ > 0`. The secant iterates `x_{k+1}`, `k ≥ 0`, of (B.8.2)
-(`Secant.iterate θ x₀ x₁ k`, with `Secant.iterate θ x₀ x₁ 0 = x₁`) lie in `[x₀, r]`, increase
-monotonically, and converge to `r`, globally `Q`-linearly with factor
-`γ = 1 - θ'(r)/θ'(x₀) ∈ [0, 1)`, and `Q`-superlinearly if `θ'` is continuous at `r` (within `S`). -/
+/-- **Lemma B.8.1(ii)** of [cartis2022evaluation], convex decreasing case. Let $\theta$, $\theta'$,
+$S$ and $r$ satisfy the hypotheses of `Newton.monotone_scalarStep_iterate_of_convexOn`. Let
+$x_0 < x_1$ be points of $S$ with $\theta(x_0) > 0$ and $\theta(x_1) > 0$, and let $x_{k+1}$,
+$k \ge 0$, be the secant iterates (B.8.2). Then:
+* $x_{k+1} \in [x_0, r]$ for every $k \ge 0$, and the sequence is monotonically increasing;
+* $x_k \to r$;
+* $\gamma = 1 - \theta'(r)/\theta'(x_0)$ lies in $[0, 1)$, and
+  $r - x_{k+2} \le \gamma (r - x_{k+1})$ for every $k \ge 0$;
+* if $\theta'$ is continuous at $r$ within $S$, the convergence is $Q$-superlinear.
+
+The secant iterate $x_{k+1}$ is `Secant.iterate θ x₀ x₁ k`, so `Secant.iterate θ x₀ x₁ 0` is
+$x_1$. -/
 theorem monotone_secant_iterate_of_convexOn (h : IsConvexAntiRoot θ θ' S r) {x₁ : ℝ}
     (hx₀ : x₀ ∈ S) (hx₁ : x₁ ∈ S) (h01 : x₀ < x₁) (hθx₀ : 0 < θ x₀) (hθx₁ : 0 < θ x₁) :
     (∀ k, Secant.iterate θ x₀ x₁ k ∈ Icc x₀ r) ∧ Monotone (Secant.iterate θ x₀ x₁) ∧
@@ -543,17 +612,22 @@ theorem monotone_secant_iterate_of_convexOn (h : IsConvexAntiRoot θ θ' S r) {x
     abs_of_nonneg (sub_nonneg.2 (hmem k).2)]
   exact hd_le k
 
-/-- Negating the function leaves the secant step unchanged. -/
+/-- Replacing $\theta$ by $-\theta$ leaves the secant step unchanged. -/
 theorem secant_step_neg (θ : ℝ → ℝ) : Secant.step (fun x => -θ x) = Secant.step θ := by
   funext s
   simp only [Secant.step]
   congr 1
   rw [← neg_sub', div_neg, neg_mul_neg]
 
-/-- **Cartis–Gould–Toint Lemma B.8.1(ii)**, concave increasing case (with `θ'(r) ≠ 0`
-and the starts have `θ x₀ < 0`, `θ x₁ < 0`): the conclusions of
-`Newton.monotone_secant_iterate_of_convexOn` for a concave strictly increasing `θ`, by applying it
-to `-θ`. -/
+/-- **Lemma B.8.1(ii)** of [cartis2022evaluation], concave increasing case. Let $\theta$ be concave
+and strictly increasing on $S$, with the derivative $\theta'(x)$ within $S$ at every $x \in S$,
+and let $r \in S$ be a root with $\theta'(r) \neq 0$. Let $x_0 < x_1$ be points of $S$ with
+$\theta(x_0) < 0$ and $\theta(x_1) < 0$. Then the secant iterates have all the properties of
+`Newton.monotone_secant_iterate_of_convexOn`: they lie in $[x_0, r]$, increase monotonically,
+converge to $r$ with the factor $\gamma = 1 - \theta'(r)/\theta'(x_0) \in [0, 1)$, and converge
+$Q$-superlinearly if $\theta'$ is continuous at $r$ within $S$.
+
+The proof applies `Newton.monotone_secant_iterate_of_convexOn` to $-\theta$. -/
 theorem monotone_secant_iterate_of_concaveOn (hc : ConcaveOn ℝ S θ) (hm : StrictMonoOn θ S)
     (hd : ∀ x ∈ S, HasDerivWithinAt θ (θ' x) S x) (hr : r ∈ S) (hθr : θ r = 0)
     (hθ'r : θ' r ≠ 0) {x₁ : ℝ} (hx₀ : x₀ ∈ S) (hx₁ : x₁ ∈ S) (h01 : x₀ < x₁) (hθx₀ : θ x₀ < 0)

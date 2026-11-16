@@ -7,27 +7,40 @@ import Numlib.Analysis.Convex.Process.Basic
 /-!
 # Linear transformations inside the convex algebra
 
-A linear transformation is a single-valued convex process, and `ConvexProcess.ofLinearMap` is that
-embedding. Every operation of the convex algebra restricts along it to the corresponding operation
-on linear maps: the image of a set is the linear image, composition is composition, the image of a
-function under the associated bifunction is `mapLin`, and the adjoint of the process is a transpose
-of the linear map.
+A linear transformation $T : U \to X$ is a single-valued convex process, and
+`ConvexAnalysis.ConvexProcess.ofLinearMap` is this embedding. Every operation on convex processes
+restricts along it to the corresponding operation on linear maps. The image of a set is the linear
+image $TC$, the product of processes is the composition of maps, the image of a function under the
+indicator bifunction is the image $(Tf)(x) = \inf \{f(u) \mid Tu = x\}$, and the adjoint of the
+process is a transpose $T'$ of the linear map, with $\langle Tu, y \rangle = \langle u, T' y
+\rangle$. The presentation follows [rockafellar1970convex], §39.
+
+## Main results
+
+* `ConvexAnalysis.ConvexProcess.image_ofLinearMap`: the image of a set $C$ under the process of $T$
+  is $TC$.
+* `ConvexAnalysis.ConvexProcess.comp_ofLinearMap`: the product of the processes of $S$ and $T$ is
+  the process of $S \circ T$.
+* `ConvexAnalysis.ConvexProcess.imageBifun_indicatorBifun_ofLinearMap`: the image of $f$ under the
+  indicator bifunction of $T$ is the linear image $Tf$, if $f$ never takes the value $-\infty$.
+* `ConvexAnalysis.ConvexProcess.adjointProcess_ofLinearMap`,
+  `ConvexAnalysis.ConvexProcess.coadjointProcess_ofLinearMap`: both adjoints of the process of $T$
+  are the process of a transpose $T'$, if the pairing of $U$ with $V$ separates the points of $V$.
 
 ## Implementation notes
 
-The adjoints of a convex process, bifunction and function are defined outright from a pair of
-pairings; none mentions a linear map. A transpose enters only here, as the hypothesis
-`IsAdjointPair Bu Bx T T'` — between arbitrarily paired spaces a linear map need not have a
-transpose at all, and when it does it is unique only if `Bu` is right-separating.
-
-`adjointProcess` and `coadjointProcess` must be kept apart on a general process, but on a linear one
-the graph is a *subspace*, so the defining inequality at `-u` reverses the one at `u` and both
-collapse to `⟨T u, y⟩ = ⟨u, v⟩`. It is right-separation of `Bu`, not of `Bx`, that pins the answer:
-without it the adjoint process is single-valued only up to the annihilator of `U` in `V`.
-
-## References
-
-* [rockafellar1970convex] §39.
+* The adjoints of a convex process, of a bifunction and of a function are defined directly from a
+  pair of pairings, and none of them mentions a linear map. A transpose enters only in this module,
+  as the hypothesis `ConvexAnalysis.IsAdjointPair Bu Bx T T'`. Between arbitrarily paired spaces a
+  linear map need not have a transpose, and when it has one, the transpose is unique only if `Bu` is
+  separating on the right (`LinearMap.SeparatingRight`): $\langle u, v \rangle = 0$ for all $u$
+  implies $v = 0$.
+* The two adjoints `ConvexAnalysis.ConvexProcess.adjointProcess` and
+  `ConvexAnalysis.ConvexProcess.coadjointProcess` must be kept apart for a general process. For a
+  linear process the graph is a subspace, so the defining inequality at $-u$ reverses the inequality
+  at $u$, and both reduce to $\langle Tu, y \rangle = \langle u, v \rangle$. Separation by `Bu`, not
+  by `Bx`, determines the answer: without it, the adjoint process is single-valued only up to the
+  annihilator of $U$ in $V$.
 -/
 
 open Set
@@ -43,6 +56,8 @@ section Sets
 variable {U X Z : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   [AddCommGroup Z] [Module ℝ Z]
 
+/-- The image of a set $C \subseteq U$ under the process of a linear map $T : U \to X$ is the linear
+image $TC = \{Tu \mid u \in C\}$. -/
 theorem image_ofLinearMap (T : U →ₗ[ℝ] X) (C : Set U) : (ofLinearMap T).image C = T '' C := by
   ext x
   constructor
@@ -51,9 +66,12 @@ theorem image_ofLinearMap (T : U →ₗ[ℝ] X) (C : Set U) : (ofLinearMap T).im
   · rintro ⟨u, hu, hx⟩
     exact ⟨u, hu, mem_graph_ofLinearMap.2 hx.symm⟩
 
+/-- The range of the process of a linear map $T$ is the range of $T$. -/
 theorem range_ofLinearMap (T : U →ₗ[ℝ] X) : (ofLinearMap T).range = Set.range T := by
   rw [← image_univ, image_ofLinearMap, Set.image_univ]
 
+/-- For linear maps $T : U \to X$ and $S : X \to Z$, the product of the processes of $S$ and $T$ is
+the process of the composition $S \circ T$. -/
 theorem comp_ofLinearMap (S : X →ₗ[ℝ] Z) (T : U →ₗ[ℝ] X) :
     (ofLinearMap S).comp (ofLinearMap T) = ofLinearMap (S ∘ₗ T) := by
   ext p
@@ -63,6 +81,7 @@ theorem comp_ofLinearMap (S : X →ₗ[ℝ] Z) (T : U →ₗ[ℝ] X) :
   · intro h
     exact ⟨T p.1, rfl, mem_graph_ofLinearMap.2 (mem_graph_ofLinearMap.1 h)⟩
 
+/-- Two linear maps $T_1, T_2 : U \to X$ whose convex processes are equal are themselves equal. -/
 theorem ofLinearMap_injective :
     Function.Injective (ofLinearMap : (U →ₗ[ℝ] X) → ConvexProcess U X) := fun T S h => by
   ext u
@@ -77,9 +96,15 @@ section Image
 
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
 
-/-- **`Ff` at the indicator bifunction of a linear `T` is the image `mapLin T f`.** The hypothesis
-that `f` is nowhere `⊥` is not a convenience: off the fibre of `T` the summand is `⊤`, and
-`⊥ + ⊤ = ⊥` would drag the infimum to `⊥` at every point of `X`. -/
+/-- Let $T : U \to X$ be linear and let $f : U \to [-\infty, +\infty]$ never take the value
+$-\infty$. Then the image of $f$ under the indicator bifunction of the process of $T$ is the
+linear image of $f$:
+$$\inf_u \bigl(f(u) + \delta(x \mid \{Tu\})\bigr) = \inf \{f(u) \mid Tu = x\} \quad \text{for
+  all } x \in X.$$
+
+The hypothesis $f(u) \neq -\infty$ is needed. Off the fibre of $T$ the summand is $+\infty$, and
+in `EReal` the sum $-\infty + \infty$ is $-\infty$, which would make the infimum $-\infty$ at
+every point of $X$. -/
 theorem imageBifun_indicatorBifun_ofLinearMap (T : U →ₗ[ℝ] X) {f : U → EReal}
     (hbf : ∀ u, f u ≠ ⊥) :
     imageBifun (ofLinearMap T).indicatorBifun f = mapLin T f := by
@@ -109,7 +134,7 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {T : U →ₗ[ℝ] X} {T' : Y →ₗ[ℝ] V}
   {y : Y} {v : V}
 
-/-- On a linear process the adjoint condition is an *equation*, the graph being a subspace. -/
+/-- For a linear process the adjoint condition is an equation, because the graph is a subspace. -/
 private theorem pairing_eq_of_forall_le (h : ∀ u : U, Bx (T u) y ≤ Bu u v) (u : U) :
     Bx (T u) y = Bu u v := by
   refine le_antisymm (h u) ?_
@@ -122,8 +147,12 @@ private theorem eq_of_forall_pairing_eq (hB : Bu.SeparatingRight)
   refine sub_eq_zero.1 (hB _ fun u => ?_)
   rw [map_sub (Bu u) v (T' y), sub_eq_zero, ← hA u y, h u]
 
-/-- **The adjoint of a linear process is a transpose of the linear map.** `Bu.SeparatingRight` is
-what makes the answer unique, as it is for the transpose itself. -/
+/-- **The adjoint of a linear process is the process of a transpose.** Let $T : U \to X$ and
+$T' : Y \to V$ be linear with $\langle Tu, y \rangle = \langle u, T' y \rangle$ for all
+$u \in U$ and $y \in Y$, and suppose that $\langle u, v \rangle = 0$ for all $u \in U$ implies
+$v = 0$. Then the adjoint of the process of $T$ is the process of $T'$.
+
+The separation hypothesis on `Bu` makes the answer unique, as it does for the transpose itself. -/
 theorem adjointProcess_ofLinearMap (hB : Bu.SeparatingRight) (hA : IsAdjointPair Bu Bx T T') :
     adjointProcess Bu Bx (ofLinearMap T) = ofLinearMap T' := by
   ext q
@@ -136,8 +165,12 @@ theorem adjointProcess_ofLinearMap (hB : Bu.SeparatingRight) (hA : IsAdjointPair
     have hq : q.2 = T' q.1 := mem_graph_ofLinearMap.1 h
     rw [hp', hq, hA p.1 q.1]
 
-/-- **The infimum-oriented adjoint of a linear process is the same transpose**: it is
-`adjointProcess_ofLinearMap` at the negated pairings, for which `T'` is still a transpose. -/
+/-- **The infimum-oriented adjoint of a linear process is the process of the same transpose.** Under
+the hypotheses of `ConvexAnalysis.ConvexProcess.adjointProcess_ofLinearMap`, the
+infimum-oriented adjoint of the process of $T$ is the process of $T'$.
+
+This is `ConvexAnalysis.ConvexProcess.adjointProcess_ofLinearMap` for the negated pairings, for
+which $T'$ is still a transpose. -/
 theorem coadjointProcess_ofLinearMap (hB : Bu.SeparatingRight) (hA : IsAdjointPair Bu Bx T T') :
     coadjointProcess Bu Bx (ofLinearMap T) = ofLinearMap T' := by
   rw [coadjointProcess_eq_adjointProcess_neg]

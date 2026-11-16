@@ -8,68 +8,87 @@ import Numlib.Analysis.InnerProductSpace.SingularValues
 /-!
 # The gap between two subspaces
 
-For two subspaces `K`, `L` of an inner product space admitting orthogonal projections `P_K`, `P_L`,
-the *gap* `K.gap L = ‖P_K - P_L‖` is the distance between them in the metric the subspace-iteration
-bounds are measured in, and the subspace distance `dist(S₁, S₂) = ‖P₁ - P₂‖₂` of
-[golub2013matrix] §2.5.3. Mathlib has no such notion. Everything is stated over `RCLike` and needs
-neither completeness nor finite dimension of the ambient space, only
-`Submodule.HasOrthogonalProjection` (and finite dimension of the two subspaces where singular values
-enter).
+Let $E$ be an inner product space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $K$ and
+$L$ be subspaces of $E$ with orthogonal projections $P_K$ and $P_L$. The **gap** between $K$ and $L$
+is the operator norm
+$$\operatorname{gap}(K, L) = \|P_K - P_L\|.$$
+It is the distance between subspaces in which the bounds for subspace iteration are measured, and it
+is the subspace distance $\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2$ of [golub2013matrix],
+§2.5.3. The definition follows [saad2011numerical], §3.1, the source of the bounds that use it. That
+source writes $\omega(K, L) = \max\{\|(1 - P_K) P_L\|, \|(1 - P_L) P_K\|\}$ and states that it
+equals $\|P_K - P_L\|$. This module takes the second expression, the symmetric gap, as the
+definition, and proves that the two agree. The quantities $\|P_{L^\perp} P_K\|$ and
+$\|P_{K^\perp} P_L\|$ are the two **one-sided gaps**.
 
-The definition follows [saad2011numerical], §3.1, the source of the bounds that use it, which
-writes `ω(K, L) = max {‖(1 - P_K) P_L‖, ‖(1 - P_L) P_K‖}` and states that it equals `‖P_K - P_L‖`;
-the latter is the definition taken here, and it is the *symmetric* gap. That the two agree is
-`gap_eq_max_norm_orthogonal_mul`; each one-sided gap `‖P_{L⊥} P_K‖` is also
-`sup {sin θ(x, L) | x ∈ K, ‖x‖ = 1}`, and `sinAngle_le_gap` is the bridge to the angles of
-`Numlib.Analysis.InnerProductSpace.Projection.Angle` that the subspace-iteration bounds consume.
+The gap is a metric on the subspaces with an orthogonal projection, and it is at most $1$. Two
+finite-dimensional subspaces at gap less than $1$ have the same dimension. For subspaces of equal
+finite dimension, the gap equals either one-sided gap, and it is $1$ exactly when one subspace meets
+the orthogonal complement of the other. The one-sided gap is $\sqrt{1 - \sigma_{\min}^2}$, where
+$\sigma_{\min}$ is the least singular value of the restricted projection $P_L|_K \colon K \to L$.
+Finally, the gap between $K$ and the graph $\{x + Xx : x \in K\}$ of a map $X \colon K \to K^\perp$
+is $\|X\| / \sqrt{1 + \|X\|^2}$.
+
+## Main definitions
+
+* `Submodule.gap`: the gap $\|P_K - P_L\|$.
+* `Submodule.orthogonalProjectionRestrict`: the restricted projection $P_F|_G \colon G \to F$.
+* `Submodule.graph`: the graph $\{x + Xx : x \in K\}$ of a map $X \colon K \to K^\perp$.
 
 ## Main results
 
-* `Submodule.gap_comm`, `Submodule.gap_eq_zero_iff`, `Submodule.gap_le_one`: the gap is a metric on
-  the subspaces admitting an orthogonal projection, bounded by `1`. `gap_le_one` comes from the
-  pointwise bound `norm_starProjection_sub_apply_le`, `‖(P_K - P_L) x‖ ≤ ‖x‖`, proved by splitting
-  `P_K - P_L = P_K (1 - P_L) - P_Kᗮ P_L` into two orthogonal pieces.
-* `Submodule.finrank_eq_of_gap_lt_one`: the rank-constancy fact behind subspace iteration
-  ([saad2011numerical], Thm 3.2): a gap below `1` makes `P_K` injective on `L`, and symmetry does
-  the rest.
-* `Submodule.gap_le_max` and `Submodule.gap_le_of_forall_norm_sub_le`: the gap is bounded from
-  above in two steps. `gap_le_max` bounds it by the larger of the two one-sided relative distances,
-  and `gap_le_of_forall_norm_sub_le` bounds those when the two subspaces are given by spanning
-  families that are close vector by vector: `gap K L ≤ 2 κ δ` when `‖w j - x j‖ ≤ δ` and `κ` is
-  the ℓ¹ conditioning constant of the family `x`, which is
-  `LinearIndependent.exists_forall_sum_norm_le`.
-  That is the quantitative continuity of a projector in a spanning family, and it is what turns the
-  per-vector estimates of subspace iteration into a gap bound (`Krylov.gap_subspaceIterate_le`).
+* `Submodule.gap_comm`, `Submodule.gap_eq_zero_iff`, `Submodule.gap_le_one`: the gap is symmetric,
+  vanishes exactly when $K = L$, and is at most $1$.
+* `Submodule.norm_starProjection_sub_apply_le`: $\|(P_K - P_L) x\| \le \|x\|$ for every $x$.
+* `Submodule.sinAngle_le_gap`: every $x \in L$ satisfies
+  $\sin \theta(x, K) \le \operatorname{gap}(K, L)$.
+* `Submodule.finrank_eq_of_gap_lt_one`: finite-dimensional subspaces at gap less than $1$ have the
+  same dimension.
 * `Submodule.gap_eq_max_norm_orthogonal_mul`: the gap is the larger of the two one-sided gaps.
-* `Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`: the one-sided gap is
-  `√(1 - σ_min(P_L|_K)²)`, through the restricted projection
-  `Submodule.orthogonalProjectionRestrict L K : K →ₗ[𝕜] L` and the stacked-isometry identity of
-  `Numlib.Analysis.InnerProductSpace.SingularValues`.
-* `Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq` and `Submodule.gap_eq_one_iff_of_finrank_eq`:
-  for subspaces of equal finite dimension the gap is either one-sided gap (the restricted projection
-  and its adjoint `P_K|_L` have the same singular values), and it is `1` exactly when `K` meets `Lᗮ`
-  ([golub2013matrix] §2.5.3); for two lines it is the sine of their angle
-  (`Submodule.gap_span_singleton_eq_sinAngle`).
-* `Submodule.graph` and `Submodule.gap_graph`: the gap between `K` and the graph
-  `{x + X x | x ∈ K}` of `X : K →L[𝕜] Kᗮ` is `‖X‖ / √(1 + ‖X‖²)`, the computation behind the
-  invariant-subspace and subspace-iteration theorems of [golub2013matrix] §7.3 and §8.2.
+* `Submodule.gap_le_max`: if every vector of $K$ is within relative distance $a$ of $L$ and every
+  vector of $L$ is within relative distance $b$ of $K$, then
+  $\operatorname{gap}(K, L) \le \max\{a, b\}$.
+* `Submodule.gap_le_of_forall_norm_sub_le`: if $K$ and $L$ are spanned by families $x$ and $w$ with
+  $\|w_j - x_j\| \le \delta$, then $\operatorname{gap}(K, L) \le 2 \kappa \delta$, where $\kappa$ is
+  a conditioning constant of $x$.
+* `Submodule.norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues`: $\|P_{L^\perp} P_K\|^2 = 1 -
+  \sigma_{\min}(P_L|_K)^2$.
+* `Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`: for $\dim K = \dim L$, the gap is the
+  one-sided gap $\|P_{L^\perp} P_K\|$.
+* `Submodule.gap_eq_one_iff_of_finrank_eq`: for $\dim K = \dim L$, the gap is $1$ if and only if
+  $K \cap L^\perp \neq 0$ ([golub2013matrix], §2.5.3).
+* `Submodule.gap_span_singleton_eq_sinAngle`: the gap between two lines is the sine of their angle.
+* `Submodule.gap_graph`: $\operatorname{gap}(K, \operatorname{graph} X) = \|X\| / \sqrt{1 +
+  \|X\|^2}$.
 
 ## Implementation notes
 
-The equal-dimension theory is proved without coordinates, orthonormal bases or a CS decomposition:
-the engine is the restricted projection `P_L|_K`, whose least singular value measures how far `K`
-is from `L`. The matrix forms ([golub2013matrix] Theorem 2.5.1 and (7.3.19)) are corollaries in
-`Numlib/Analysis/Matrix/SingularValues`, and the principal angles of
-`Numlib/Analysis/InnerProductSpace/PrincipalAngles` are the singular values of the same map.
+* All results hold over `RCLike`. They need neither completeness nor finite dimension of $E$, only
+  `Submodule.HasOrthogonalProjection` for the subspaces, and finite dimension of the two subspaces
+  where singular values appear.
+* The projection $P_K$ is `K.starProjection`, a continuous linear map on $E$, and the one-sided gap
+  $\|P_{L^\perp} P_K\|$ is `‖Lᗮ.starProjection * K.starProjection‖`.
+* The theory for equal dimensions uses no coordinates, no orthonormal bases and no CS decomposition.
+  Its main tool is the restricted projection $P_L|_K$, whose least singular value measures how far
+  $K$ is from $L$, together with the identity for stacked isometries of
+  `Numlib.Analysis.InnerProductSpace.SingularValues`.
+* The matrix forms, Theorem 2.5.1 and (7.3.19) of [golub2013matrix], are corollaries in
+  `Numlib.Analysis.Matrix.SingularValues`. The principal angles of
+  `Numlib.Analysis.InnerProductSpace.PrincipalAngles` are the singular values of the same restricted
+  projection.
+* Mathlib has no notion of a gap between subspaces. Mathlib's `LinearMap.graph` is a subspace of a
+  product $E \times F$ and differs from `Submodule.graph`.
 -/
 
 namespace Submodule
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The gap between two subspaces, `‖P_K - P_L‖`: the distance between them in the metric the
-subspace-iteration bounds are measured in. It is symmetric (`gap_comm`), vanishes exactly on equal
-subspaces (`gap_eq_zero_iff`) and never exceeds `1` (`gap_le_one`). -/
+/-- Let $K$ and $L$ be subspaces of an inner product space $E$ with orthogonal projections $P_K$ and
+$P_L$. The **gap** between $K$ and $L$ is the operator norm
+$$\operatorname{gap}(K, L) = \|P_K - P_L\|.$$
+It is the distance between subspaces in which the bounds for subspace iteration are measured. It
+is symmetric (`Submodule.gap_comm`), vanishes exactly when $K = L$
+(`Submodule.gap_eq_zero_iff`), and is at most $1$ (`Submodule.gap_le_one`). -/
 noncomputable def gap (K L : Submodule 𝕜 E) [K.HasOrthogonalProjection]
     [L.HasOrthogonalProjection] : ℝ :=
   ‖K.starProjection - L.starProjection‖
@@ -78,23 +97,31 @@ section Gap
 
 variable (K L : Submodule 𝕜 E) [K.HasOrthogonalProjection] [L.HasOrthogonalProjection]
 
-/-- The gap is a norm, hence nonnegative. -/
+/-- The gap is nonnegative: $\operatorname{gap}(K, L) \ge 0$, because it is a norm. -/
 theorem gap_nonneg : 0 ≤ K.gap L := norm_nonneg _
 
-/-- The gap is symmetric. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. Then the gap
+is symmetric:
+$$\operatorname{gap}(K, L) = \operatorname{gap}(L, K).$$
+-/
 theorem gap_comm : K.gap L = L.gap K := norm_sub_rev _ _
 
-/-- A subspace is at gap zero from itself. -/
+/-- Let $K$ be a subspace of an inner product space with an orthogonal projection. Then
+$\operatorname{gap}(K, K) = 0$. -/
 @[simp]
 theorem gap_self : K.gap K = 0 := by rw [gap, sub_self, norm_zero]
 
-/-- The defining bound of the gap, in the pointwise form its consumers use. -/
+/-- The gap bounds the difference of the projections pointwise: $\|P_K x - P_L x\| \le
+\operatorname{gap}(K, L) \, \|x\|$ for every $x \in E$. -/
 theorem norm_starProjection_sub_le_gap_mul (x : E) :
     ‖K.starProjection x - L.starProjection x‖ ≤ K.gap L * ‖x‖ := by
   simpa [gap] using (K.starProjection - L.starProjection).le_opNorm x
 
-/-- The two orthogonal pieces of `P_K x - P_L x = P_K (x - P_L x) - P_{Kᗮ} (P_L x)`, a vector of `K`
-and a vector of `Kᗮ`. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space $E$ with orthogonal projections $P_K$ and
+$P_L$. Then for every $x \in E$,
+$$\|P_K x - P_L x\|^2 = \|P_K (x - P_L x)\|^2 + \|P_{K^\perp} (P_L x)\|^2.$$
+The identity comes from the splitting $P_K x - P_L x = P_K (x - P_L x) - P_{K^\perp} (P_L x)$
+into a vector of $K$ and a vector of $K^\perp$. -/
 theorem norm_starProjection_sub_apply_sq_eq_add (x : E) :
     ‖K.starProjection x - L.starProjection x‖ ^ 2 =
       ‖K.starProjection (x - L.starProjection x)‖ ^ 2
@@ -111,10 +138,13 @@ theorem norm_starProjection_sub_apply_sq_eq_add (x : E) :
     (by rw [inner_neg_right, hinner, neg_zero])
   rw [hsplit, pow_two, pow_two, pow_two, h, norm_neg]
 
-/-- Two orthogonal projections never move a vector by more than its own length. Split `P_K x - P_L x
-= P_K (x - P_L x) - P_{Kᗮ} (P_L x)` into a piece of `K` and a piece of `Kᗮ`: the two are orthogonal,
-each is shorter than the corresponding piece of the splitting of `x` along `L`, and Pythagoras over
-`L` closes the estimate. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space $E$ with orthogonal projections $P_K$ and
+$P_L$. Then for every $x \in E$,
+$$\|P_K x - P_L x\| \le \|x\|.$$
+
+The proof splits $P_K x - P_L x = P_K (x - P_L x) - P_{K^\perp} (P_L x)$ into a vector of $K$
+and a vector of $K^\perp$. Each piece is no longer than the corresponding piece of the splitting
+of $x$ along $L$, and the theorem of Pythagoras for this splitting gives the bound. -/
 theorem norm_starProjection_sub_apply_le (x : E) :
     ‖K.starProjection x - L.starProjection x‖ ≤ ‖x‖ := by
   have hpyth := K.norm_starProjection_sub_apply_sq_eq_add L x
@@ -131,15 +161,22 @@ theorem norm_starProjection_sub_apply_le (x : E) :
     norm_nonneg (Kᗮ.starProjection (L.starProjection x)),
     norm_nonneg (Lᗮ.starProjection x), norm_nonneg (L.starProjection x)]
 
-/-- The gap between two subspaces is at most `1`. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. Then
+$$\operatorname{gap}(K, L) \le 1.$$
+-/
 theorem gap_le_one : K.gap L ≤ 1 :=
   ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun x => by
     simpa using K.norm_starProjection_sub_apply_le L x
 
-/-- The bridge between the gap and the angles of `Submodule.sinAngle`, and the one-sided reading of
-the gap: every vector of `L` is at relative distance at most `gap K L` from `K`. The one-sided
-quantity `sup {sin θ(x, K) | x ∈ L, ‖x‖ = 1}` this bounds equals the gap when the dimensions are
-equal (`gap_eq_norm_orthogonal_mul_of_finrank_eq`), but can be strictly smaller when they
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. Then every
+$x \in L$ satisfies
+$$\sin \theta(x, K) \le \operatorname{gap}(K, L).$$
+So every vector of $L$ is within relative distance $\operatorname{gap}(K, L)$ of $K$. This
+connects the gap with the angles of `Submodule.sinAngle`.
+
+The bounded quantity $\sup \{\sin \theta(x, K) : x \in L, \|x\| = 1\}$ is a one-sided reading of
+the gap. It equals the gap when the dimensions are equal
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), but it can be strictly smaller when they
 differ. -/
 theorem sinAngle_le_gap {x : E} (hx : x ∈ L) : K.sinAngle x ≤ K.gap L := by
   rcases eq_or_ne x 0 with rfl | hne
@@ -150,16 +187,21 @@ theorem sinAngle_le_gap {x : E} (hx : x ∈ L) : K.sinAngle x ≤ K.gap L := by
     rw [h]
     exact K.norm_starProjection_sub_le_gap_mul L x
 
-/-- The gap from the zero subspace is the norm of the projector. -/
+/-- The gap from the zero subspace is the norm of the projection:
+$\operatorname{gap}(\{0\}, K) = \|P_K\|$. -/
 theorem gap_bot : (⊥ : Submodule 𝕜 E).gap K = ‖K.starProjection‖ := by
   rw [gap, starProjection_bot, zero_sub, norm_neg]
 
-/-- The zero subspace is at the largest possible gap from every other subspace. -/
+/-- Let $K$ be a subspace of an inner product space with an orthogonal projection, with
+$K \neq \{0\}$. Then
+$$\operatorname{gap}(\{0\}, K) = 1,$$
+the largest possible value of the gap. -/
 theorem gap_bot_eq_one (hK : K ≠ ⊥) : (⊥ : Submodule 𝕜 E).gap K = 1 := by
   rw [gap_bot, K.norm_starProjection hK]
 
-/-- The gap separates points: it is a metric on the subspaces admitting an orthogonal projection,
-not a pseudometric. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. Then
+$$\operatorname{gap}(K, L) = 0 \iff K = L.$$
+So the gap is a metric on the subspaces with an orthogonal projection, not only a pseudometric. -/
 theorem gap_eq_zero_iff : K.gap L = 0 ↔ K = L := by
   rw [gap, norm_eq_zero, sub_eq_zero]
   refine ⟨fun h => ?_, ?_⟩
@@ -168,8 +210,9 @@ theorem gap_eq_zero_iff : K.gap L = 0 ↔ K = L := by
   · rintro rfl
     rfl
 
-/-- Below gap `1` the projection onto `K` is injective on `L`: a nonzero `x ∈ L` killed by `P_K`
-would be moved by its full length, `‖(P_L - P_K) x‖ = ‖x‖`. -/
+/-- If $\operatorname{gap}(K, L) < 1$, then $P_K$ is injective on $L$: every $x \in L$ with
+$P_K x = 0$ is $0$. A nonzero $x \in L$ with $P_K x = 0$ would satisfy
+$\|(P_L - P_K) x\| = \|x\|$. -/
 theorem eq_zero_of_starProjection_eq_zero_of_gap_lt_one (h : K.gap L < 1) {x : E} (hx : x ∈ L)
     (hx0 : K.starProjection x = 0) : x = 0 := by
   have h1 : ‖K.starProjection x - L.starProjection x‖ = ‖x‖ := by
@@ -180,7 +223,8 @@ theorem eq_zero_of_starProjection_eq_zero_of_gap_lt_one (h : K.gap L < 1) {x : E
   have hpos : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hne
   nlinarith
 
-/-- One half of `finrank_eq_of_gap_lt_one`. -/
+/-- If $K$ is finite-dimensional and $\operatorname{gap}(K, L) < 1$, then $\dim L \le \dim K$. This
+is one half of `Submodule.finrank_eq_of_gap_lt_one`. -/
 theorem finrank_le_of_gap_lt_one [FiniteDimensional 𝕜 K] (h : K.gap L < 1) :
     Module.finrank 𝕜 L ≤ Module.finrank 𝕜 K := by
   refine LinearMap.finrank_le_finrank_of_injective
@@ -190,33 +234,42 @@ theorem finrank_le_of_gap_lt_one [FiniteDimensional 𝕜 K] (h : K.gap L < 1) :
   rw [starProjection_apply]
   simpa using congrArg Subtype.val hx
 
-/-- Two subspaces at gap less than `1` have the same dimension, so a continuously varying family of
-orthogonal projectors has constant rank ([saad2011numerical], Thm 3.2). -/
+/-- Let $K$ and $L$ be finite-dimensional subspaces of an inner product space. If
+$\operatorname{gap}(K, L) < 1$, then
+$$\dim K = \dim L.$$
+So a continuous family of orthogonal projections has constant rank. This is Theorem 3.2 of
+[saad2011numerical]. -/
 theorem finrank_eq_of_gap_lt_one [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (h : K.gap L < 1) : Module.finrank 𝕜 K = Module.finrank 𝕜 L :=
   le_antisymm (L.finrank_le_of_gap_lt_one K (by rwa [gap_comm]))
     (K.finrank_le_of_gap_lt_one L h)
 
-/-- Two names for the same subspace give the same gap.  The instance argument of `gap` depends on
-the subspace, so `rw` on the second argument needs this. -/
+/-- Let $K$, $L$ and $L'$ be subspaces of an inner product space with orthogonal projections. If
+$L = L'$, then $\operatorname{gap}(K, L) = \operatorname{gap}(K, L')$.
+
+The instance argument of `Submodule.gap` depends on the subspace, so a rewrite in the second
+argument needs this lemma. -/
 theorem gap_congr {L' : Submodule 𝕜 E} [L'.HasOrthogonalProjection] (h : L = L') :
     K.gap L = K.gap L' := by subst h; rfl
 
 variable {K L} in
-/-- `Submodule.gap_congr` in both arguments: two names for each of the subspaces give the same gap,
-across the orthogonal-projection instances. -/
+/-- Let $K$, $K'$, $L$ and $L'$ be subspaces of an inner product space with orthogonal projections.
+If $K = K'$ and $L = L'$, then $\operatorname{gap}(K, L) = \operatorname{gap}(K', L')$. This is
+`Submodule.gap_congr` in both arguments, across the instances of
+`Submodule.HasOrthogonalProjection`. -/
 theorem gap_congr₂ {K' L' : Submodule 𝕜 E} [K'.HasOrthogonalProjection]
     [L'.HasOrthogonalProjection] (hK : K = K') (hL : L = L') : K.gap L = K'.gap L' := by
   subst hK hL; rfl
 
-/-- **The projection onto `K` is small on `Lᗮ` as soon as `K` is close to `L`.** If every vector of
-`K` is within a relative distance `a` of `L`, then `P_K` shrinks every vector orthogonal to `L` by
-the same factor.
+/-- **The projection onto $K$ is small on $L^\perp$ when $K$ is close to $L$.** Let $K$ and $L$ be
+subspaces of an inner product space with orthogonal projections $P_K$ and $P_L$, and let
+$a \ge 0$. If $\|u - P_L u\| \le a \|u\|$ for every $u \in K$, then
+$$\|P_K w\| \le a \|w\| \quad \text{for every } w \in L^\perp.$$
 
-This is the step of `gap_eq_max_norm_orthogonal_mul` that is not immediate: the hypothesis is
-about vectors *of* `K` while the conclusion is about vectors of `Lᗮ`, and the passage is the
-quadratic step `‖P_K w‖ ^ 2 = ⟪P_K w - P_L (P_K w), w⟫`, in which the `P_L` term is free because
-`w ⊥ L`. -/
+The hypothesis is about vectors of $K$ and the conclusion is about vectors of $L^\perp$. The
+passage between them is the identity $\|P_K w\|^2 = \langle P_K w - P_L (P_K w), w \rangle$, in
+which the term with $P_L$ costs nothing because $w \perp L$. This is the step of
+`Submodule.gap_eq_max_norm_orthogonal_mul` that is not immediate. -/
 theorem norm_starProjection_le_of_mem_orthogonal {a : ℝ} (ha : 0 ≤ a)
     (h : ∀ u ∈ K, ‖u - L.starProjection u‖ ≤ a * ‖u‖) {w : E} (hw : w ∈ Lᗮ) :
     ‖K.starProjection w‖ ≤ a * ‖w‖ := by
@@ -250,8 +303,12 @@ section OneSided
 
 variable (K L : Submodule 𝕜 E) [K.HasOrthogonalProjection] [L.HasOrthogonalProjection]
 
-/-- ([golub2013matrix] §2.5.1, the display behind the uniqueness of the orthogonal projection) For
-any `z`, `‖P_K z - P_L z‖² = re ⟪P_K z, z - P_L z⟫ + re ⟪P_L z, z - P_K z⟫`. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space $E$ with orthogonal projections $P_K$ and
+$P_L$. Then for every $z \in E$,
+$$\|P_K z - P_L z\|^2 = \operatorname{Re} \langle P_K z, z - P_L z \rangle + \operatorname{Re}
+  \langle P_L z, z - P_K z \rangle.$$
+This is the display in §2.5.1 of [golub2013matrix] behind the uniqueness of the orthogonal
+projection. -/
 theorem norm_starProjection_sub_apply_sq (z : E) :
     ‖K.starProjection z - L.starProjection z‖ ^ 2 =
       RCLike.re (inner 𝕜 (K.starProjection z) (z - L.starProjection z)) +
@@ -268,7 +325,10 @@ theorem norm_starProjection_sub_apply_sq (z : E) :
     linear_combination -h1 - h2
   rw [← inner_self_eq_norm_sq (𝕜 := 𝕜), h, map_add]
 
-/-- Each one-sided gap `‖P_{L⊥} P_K‖` is at most the gap: `(P_K - P_L) P_K = P_{L⊥} P_K`. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. Then the
+one-sided gap is at most the gap:
+$$\|P_{L^\perp} P_K\| \le \operatorname{gap}(K, L).$$
+The reason is that $(P_K - P_L) P_K = P_{L^\perp} P_K$. -/
 theorem norm_orthogonal_mul_le_gap : ‖Lᗮ.starProjection * K.starProjection‖ ≤ K.gap L := by
   refine ContinuousLinearMap.opNorm_le_bound _ (K.gap_nonneg L) fun x => ?_
   have h : (Lᗮ.starProjection * K.starProjection) x =
@@ -279,11 +339,14 @@ theorem norm_orthogonal_mul_le_gap : ‖Lᗮ.starProjection * K.starProjection�
   exact (K.norm_starProjection_sub_le_gap_mul L _).trans
     (mul_le_mul_of_nonneg_left (K.norm_starProjection_apply_le x) (K.gap_nonneg L))
 
-/-- **The gap is the larger of the two one-sided gaps**, in any inner product space:
-`gap K L = max ‖P_{L⊥} P_K‖ ‖P_{K⊥} P_L‖`. The bound `≥` is `norm_orthogonal_mul_le_gap` twice;
-for `≤`, the two orthogonal pieces of `P_K x - P_L x = P_K (x - P_L x) - P_{K⊥} (P_L x)` are
-bounded by the one-sided gaps times the two orthogonal pieces of `x` along `L`. This is the
-equality that [saad2011numerical] (3.8) states. -/
+/-- **The gap is the larger of the two one-sided gaps.** Let $K$ and $L$ be subspaces of an inner
+product space with orthogonal projections. Then
+$$\operatorname{gap}(K, L) = \max\{\|P_{L^\perp} P_K\|, \|P_{K^\perp} P_L\|\}.$$
+This is the equality that (3.8) of [saad2011numerical] states.
+
+The bound $\ge$ is `Submodule.norm_orthogonal_mul_le_gap`, applied twice. For $\le$, the two
+orthogonal pieces of $P_K x - P_L x = P_K (x - P_L x) - P_{K^\perp} (P_L x)$ are bounded by the
+one-sided gaps times the two orthogonal pieces of $x$ along $L$. -/
 theorem gap_eq_max_norm_orthogonal_mul :
     K.gap L =
       max ‖Lᗮ.starProjection * K.starProjection‖ ‖Kᗮ.starProjection * L.starProjection‖ := by
@@ -320,8 +383,9 @@ theorem gap_eq_max_norm_orthogonal_mul :
       mul_le_mul (hB.trans hB') (hB.trans hB') (norm_nonneg _) (by positivity)]
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h1
 
-/-- A one-sided gap is bounded by a relative distance: if every vector of `K` is within relative
-distance `a` of `L`, then `‖P_{L⊥} P_K‖ ≤ a`, since `P_{L⊥} P_K x = P_K x - P_L (P_K x)`. -/
+/-- Let $a \ge 0$. If $\|u - P_L u\| \le a \|u\|$ for every $u \in K$, then the one-sided gap
+satisfies $\|P_{L^\perp} P_K\| \le a$. The reason is that
+$P_{L^\perp} P_K x = P_K x - P_L (P_K x)$. -/
 theorem norm_orthogonal_mul_le {a : ℝ} (ha : 0 ≤ a)
     (h : ∀ u ∈ K, ‖u - L.starProjection u‖ ≤ a * ‖u‖) :
     ‖Lᗮ.starProjection * K.starProjection‖ ≤ a := by
@@ -330,10 +394,15 @@ theorem norm_orthogonal_mul_le {a : ℝ} (ha : 0 ≤ a)
   exact (h _ (K.starProjection_apply_mem x)).trans
     (mul_le_mul_of_nonneg_left (K.norm_starProjection_apply_le x) ha)
 
-/-- **The gap is bounded by the two one-sided distances.** If every vector of `K` is within relative
-distance `a` of `L` and every vector of `L` within relative distance `b` of `K`, then
-`‖P_K - P_L‖ ≤ max a b`: the gap is the larger one-sided gap (`gap_eq_max_norm_orthogonal_mul`,
-[saad2011numerical] (3.8)), and each is bounded by its distance (`norm_orthogonal_mul_le`). -/
+/-- **The gap is bounded by the two one-sided distances.** Let $K$ and $L$ be subspaces of an inner
+product space with orthogonal projections $P_K$ and $P_L$, and let $a, b \ge 0$. Assume that
+$\|u - P_L u\| \le a \|u\|$ for every $u \in K$, and that $\|y - P_K y\| \le b \|y\|$ for every
+$y \in L$. Then
+$$\operatorname{gap}(K, L) \le \max\{a, b\}.$$
+
+The gap is the larger one-sided gap (`Submodule.gap_eq_max_norm_orthogonal_mul`, (3.8) of
+[saad2011numerical]), and each one-sided gap is bounded by its distance
+(`Submodule.norm_orthogonal_mul_le`). -/
 theorem gap_le_max {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
     (hKL : ∀ u ∈ K, ‖u - L.starProjection u‖ ≤ a * ‖u‖)
     (hLK : ∀ y ∈ L, ‖y - K.starProjection y‖ ≤ b * ‖y‖) :
@@ -341,20 +410,28 @@ theorem gap_le_max {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
   rw [gap_eq_max_norm_orthogonal_mul]
   exact max_le_max (K.norm_orthogonal_mul_le L ha hKL) (L.norm_orthogonal_mul_le K hb hLK)
 
-/-- **The gap is Lipschitz in a spanning family.** If `K` is spanned by `x` and `L` by a family `w`
-with `‖w j - x j‖ ≤ δ` for every `j`, then `gap K L ≤ 2 κ δ`, where `κ` is the ℓ¹ conditioning
-of the family `x` — the constant of `LinearIndependent.exists_forall_sum_norm_le`.
+/-- **The gap is Lipschitz in a spanning family.** Let $K$ and $L$ be subspaces of an inner product
+space $E$ over $\mathbb{K}$ with orthogonal projections. Let $(x_j)_{j \in \iota}$ and
+$(w_j)_{j \in \iota}$ be families in $E$ indexed by a finite type, with
+$K = \operatorname{span}\{x_j\}$ and $L = \operatorname{span}\{w_j\}$. Let $\kappa \ge 0$ and
+$\delta \ge 0$ satisfy
+$$\sum_j |c_j| \le \kappa \Big\| \sum_j c_j x_j \Big\| \quad \text{for every } c \colon \iota
+  \to \mathbb{K},$$
+$\|w_j - x_j\| \le \delta$ for every $j$, and $\kappa \delta \le 1/2$. Then
+$$\operatorname{gap}(K, L) \le 2 \kappa \delta.$$
 
-The smallness hypothesis `κ δ ≤ 1 / 2` is needed and cannot be dropped: without it the perturbed
-family may be degenerate, `L` may have a smaller dimension than `K`, and the gap is then `1`
-however small the individual `‖w j - x j‖` are relative to a *badly conditioned* `x`. It is used
-only for the direction from `L` to `K`; the direction from `K` to `L` holds unconditionally, since
-`∑ c j • w j` is a competitor for the projection of `∑ c j • x j` whatever `w` is. The two
-directions give the relative distances `κ δ` and `2 κ δ`, and the gap is the larger
-(`Submodule.gap_le_max`).
+The constant $\kappa$ is the $\ell^1$ conditioning constant of the family $x$, which
+`LinearIndependent.exists_forall_sum_norm_le` provides. The smallness hypothesis
+$\kappa \delta \le 1/2$ cannot be dropped. Without it the perturbed family can be degenerate,
+$L$ can have a smaller dimension than $K$, and then the gap is $1$, however small the
+differences $\|w_j - x_j\|$ are relative to a badly conditioned $x$. The hypothesis is used only
+for the direction from $L$ to $K$. The direction from $K$ to $L$ holds without it, because
+$\sum_j c_j w_j$ is a competitor for the projection of $\sum_j c_j x_j$ for any $w$. The two
+directions give the relative distances $\kappa \delta$ and $2 \kappa \delta$, and the gap is the
+larger one (`Submodule.gap_le_max`).
 
-This is the quantitative continuity of `family ↦ starProjection (span family)` that turns the
-per-vector decay estimates of subspace iteration into the gap bound
+This is the quantitative continuity of the map from a spanning family to the projection onto its
+span. It turns the estimates for each vector in subspace iteration into the gap bound
 `Krylov.gap_subspaceIterate_le`. -/
 theorem gap_le_of_forall_norm_sub_le {ι : Type*} [Fintype ι] {x w : ι → E} {κ δ : ℝ}
     (hK : K = span 𝕜 (Set.range x)) (hL : L = span 𝕜 (Set.range w)) (hκ0 : 0 ≤ κ) (hδ0 : 0 ≤ δ)
@@ -403,8 +480,11 @@ theorem gap_le_of_forall_norm_sub_le {ι : Type*} [Fintype ι] {x w : ι → E} 
   have hκδ0 : 0 ≤ κ * δ := mul_nonneg hκ0 hδ0
   exact (gap_le_max K L hκδ0 (by positivity) ha hb).trans (max_le (by linarith) le_rfl)
 
-/-- If `K` meets `Lᗮ`, the gap is `1`: a unit vector of `K ⊓ Lᗮ` is moved by its full length. No
-dimension hypothesis. -/
+/-- Let $K$ and $L$ be subspaces of an inner product space with orthogonal projections. If
+$K \cap L^\perp \neq \{0\}$, then
+$$\operatorname{gap}(K, L) = 1.$$
+A unit vector of $K \cap L^\perp$ is moved by its full length. The result needs no hypothesis on
+the dimensions. -/
 theorem gap_eq_one_of_inf_orthogonal_ne_bot (h : K ⊓ Lᗮ ≠ ⊥) : K.gap L = 1 := by
   obtain ⟨x, hx, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot h
   refine le_antisymm (K.gap_le_one L) ?_
@@ -415,24 +495,32 @@ theorem gap_eq_one_of_inf_orthogonal_ne_bot (h : K ⊓ Lᗮ ≠ ⊥) : K.gap L =
 
 end OneSided
 
-/-! ### The restricted projection and the equal-dimension theory -/
+/-! ### The restricted projection and the theory for equal dimensions -/
 
 section Restrict
 
-/-- **The orthogonal projection onto `F` restricted to `G`**, `P_F|_G : G →ₗ[𝕜] F`. Its matrix in
-orthonormal bases of `G` and `F` is `Q_Fᴴ Q_G`; its singular values are the cosines of the
-principal angles between `F` and `G` (`Submodule.cosPrincipalAngle`), and its adjoint is `P_G|_F`
-(`Submodule.orthogonalProjectionRestrict_adjoint`). -/
+/-- Let $F$ and $G$ be subspaces of an inner product space $E$, where $F$ has an orthogonal
+projection $P_F$. The **restricted projection** is the linear map
+$$P_F|_G \colon G \to F, \qquad x \mapsto P_F x.$$
+In orthonormal bases of $G$ and $F$ its matrix is $Q_F^H Q_G$. Its singular values are the
+cosines of the principal angles between $F$ and $G$ (`Submodule.cosPrincipalAngle`), and its
+adjoint is $P_G|_F$ (`Submodule.orthogonalProjectionRestrict_adjoint`). -/
 noncomputable def orthogonalProjectionRestrict (F G : Submodule 𝕜 E) [F.HasOrthogonalProjection] :
     G →ₗ[𝕜] F :=
   (F.orthogonalProjectionOnto : E →ₗ[𝕜] F) ∘ₗ G.subtype
 
+/-- The restricted projection acts as the projection: $P_F|_G \, x = P_F x$ in $E$ for every
+$x \in G$. -/
 @[simp]
 theorem coe_orthogonalProjectionRestrict_apply (F G : Submodule 𝕜 E) [F.HasOrthogonalProjection]
     (x : G) : (F.orthogonalProjectionRestrict G x : E) = F.starProjection x :=
   rfl
 
-/-- The adjoint of `P_F|_G` is `P_G|_F`: `⟪P_G f, g⟫ = ⟪f, g⟫ = ⟪f, P_F g⟫` for `f ∈ F`, `g ∈ G`. -/
+/-- Let $F$ and $G$ be finite-dimensional subspaces of an inner product space. Then the adjoint of
+the restricted projection $P_F|_G$ is $P_G|_F$:
+$$(P_F|_G)^* = P_G|_F.$$
+The reason is that $\langle P_G f, g \rangle = \langle f, g \rangle = \langle f, P_F g \rangle$
+for $f \in F$ and $g \in G$. -/
 theorem orthogonalProjectionRestrict_adjoint (F G : Submodule 𝕜 E) [FiniteDimensional 𝕜 F]
     [FiniteDimensional 𝕜 G] :
     LinearMap.adjoint (F.orthogonalProjectionRestrict G) = G.orthogonalProjectionRestrict F := by
@@ -446,11 +534,16 @@ theorem orthogonalProjectionRestrict_adjoint (F G : Submodule 𝕜 E) [FiniteDim
 
 variable (K L : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
 
-/-- **The one-sided gap through the restricted projection**: for finite-dimensional `K ≠ ⊥` and
-`L`, `‖P_{L⊥} P_K‖² = 1 - σ_min(P_L|_K)²`, the least singular value being
-`σ_{finrank K - 1}`. For `x ∈ K`, `‖P_L x‖² + ‖P_{L⊥} x‖² = ‖x‖²`, so this is the stacked-isometry
-identity `LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`. If
-`finrank K > finrank L` both sides are `1`. -/
+/-- **The one-sided gap through the restricted projection.** Let $K$ and $L$ be finite-dimensional
+subspaces of an inner product space, with $k = \dim K \ge 1$. Then
+$$\|P_{L^\perp} P_K\|^2 = 1 - \sigma_{k-1}(P_L|_K)^2,$$
+where $\sigma_0 \ge \sigma_1 \ge \dots$ are the singular values of $P_L|_K$, so that
+$\sigma_{k-1}$ is the least one.
+
+For $x \in K$, $\|P_L x\|^2 + \|P_{L^\perp} x\|^2 = \|x\|^2$, so this is the identity for
+stacked isometries `LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`. If
+$\dim K > \dim L$, both sides are $1$. The singular values are Mathlib's
+`LinearMap.singularValues`, indexed from $0$. -/
 theorem norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues (hK : 0 < Module.finrank 𝕜 K) :
     ‖Lᗮ.starProjection * K.starProjection‖ ^ 2 =
       1 - (L.orthogonalProjectionRestrict K).singularValues (Module.finrank 𝕜 K - 1) ^ 2 := by
@@ -477,16 +570,20 @@ theorem norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues (hK : 0 < Module.fin
       starProjection_eq_self_iff.2 x.2]
     exact (Lᗮ.starProjection * K.starProjection).le_opNorm _
 
-/-- The zero subspace is the only one of dimension zero, as far as its projection goes. -/
+/-- A finite-dimensional subspace of dimension $0$ has the projection $0$. -/
 private theorem starProjection_eq_zero_of_finrank_eq_zero (h : Module.finrank 𝕜 K = 0) :
     K.starProjection = 0 := by
   ext x
   exact (Submodule.eq_bot_iff K).1 (Submodule.finrank_eq_zero.1 h) _ (K.starProjection_apply_mem x)
 
-/-- **For subspaces of equal dimension the gap is the one-sided gap**: if `finrank K = finrank L`,
-then `gap K L = ‖P_{L⊥} P_K‖` (and, by `gap_comm`, `= ‖P_{K⊥} P_L‖`). The two one-sided gaps are
-`√(1 - σ_min(P_L|_K)²)` and `√(1 - σ_min(P_K|_L)²)`, and `P_K|_L` is the adjoint of `P_L|_K`, with
-the same singular values. No finite dimension of the ambient space is needed. -/
+/-- **For subspaces of equal dimension, the gap is the one-sided gap.** Let $K$ and $L$ be
+finite-dimensional subspaces of an inner product space with $\dim K = \dim L$. Then
+$$\operatorname{gap}(K, L) = \|P_{L^\perp} P_K\|,$$
+and by `Submodule.gap_comm` it is also $\|P_{K^\perp} P_L\|$.
+
+The two one-sided gaps are $\sqrt{1 - \sigma_{\min}(P_L|_K)^2}$ and
+$\sqrt{1 - \sigma_{\min}(P_K|_L)^2}$, and $P_K|_L$ is the adjoint of $P_L|_K$, with the same
+singular values. The ambient space need not be finite-dimensional. -/
 theorem gap_eq_norm_orthogonal_mul_of_finrank_eq
     (h : Module.finrank 𝕜 K = Module.finrank 𝕜 L) :
     K.gap L = ‖Lᗮ.starProjection * K.starProjection‖ := by
@@ -501,10 +598,14 @@ theorem gap_eq_norm_orthogonal_mul_of_finrank_eq
       norm_orthogonal_mul_sq_eq_one_sub_sq_singularValues K L hpos,
       ← orthogonalProjectionRestrict_adjoint L K, LinearMap.singularValues_adjoint, h]
 
-/-- **Equal-dimensional subspaces are at gap `1` exactly when one meets the orthogonal complement
-of the other** ([golub2013matrix] §2.5.3): `gap K L = 1 ↔ K ⊓ Lᗮ ≠ ⊥` when
-`finrank K = finrank L`. Gap `1` forces `σ_min(P_L|_K) = 0`, so `P_L|_K` has a kernel. Without
-equal dimensions `→` fails (a line inside a plane). -/
+/-- **Subspaces of equal dimension are at gap $1$ exactly when one meets the orthogonal complement
+of the other.** Let $K$ and $L$ be finite-dimensional subspaces of an inner product space with
+$\dim K = \dim L$. Then
+$$\operatorname{gap}(K, L) = 1 \iff K \cap L^\perp \neq \{0\}.$$
+This is stated in §2.5.3 of [golub2013matrix].
+
+Gap $1$ forces $\sigma_{\min}(P_L|_K) = 0$, so $P_L|_K$ has a nonzero kernel. Without equal
+dimensions the implication from left to right fails, for example for a line inside a plane. -/
 theorem gap_eq_one_iff_of_finrank_eq (h : Module.finrank 𝕜 K = Module.finrank 𝕜 L) :
     K.gap L = 1 ↔ K ⊓ Lᗮ ≠ ⊥ := by
   refine ⟨fun h1 hbot => ?_, K.gap_eq_one_of_inf_orthogonal_ne_bot L⟩
@@ -532,10 +633,14 @@ theorem gap_eq_one_iff_of_finrank_eq (h : Module.finrank 𝕜 K = Module.finrank
   rw [hbot, Submodule.mem_bot] at this
   exact this
 
-/-- **The gap between two lines is the sine of their angle**: for unit vectors `q`, `u`,
-`gap(span{q}, span{u}) = sin θ(q, span{u}) = ‖q - ⟪u, q⟫ u‖`. The two lines have the same
-dimension, so the gap is the one-sided `‖P_{u⊥} P_q‖`
-(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and `P_{u⊥} P_q w = ⟪q, w⟫ P_{u⊥} q`. -/
+/-- **The gap between two lines is the sine of their angle.** Let $q$ and $u$ be unit vectors of an
+inner product space $E$ over $\mathbb{K}$. Then
+$$\operatorname{gap}(\mathbb{K} q, \mathbb{K} u) = \sin \theta(q, \mathbb{K} u),$$
+which is $\|q - \langle u, q \rangle u\|$.
+
+The two lines have the same dimension, so the gap is the one-sided gap $\|P_{u^\perp} P_q\|$
+(`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and $P_{u^\perp} P_q w = \langle q, w
+\rangle P_{u^\perp} q$. -/
 theorem gap_span_singleton_eq_sinAngle {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
     (𝕜 ∙ q).gap (𝕜 ∙ u) = (𝕜 ∙ u).sinAngle q := by
   have hq0 : q ≠ 0 := norm_ne_zero_iff.1 (by rw [hq]; exact one_ne_zero)
@@ -564,23 +669,34 @@ section Graph
 
 variable (K : Submodule 𝕜 E)
 
-/-- **The graph of a map over a subspace**: for `X : K →L[𝕜] Kᗮ`, the subspace
-`{x + X x | x ∈ K}` of `E` — in coordinates adapted to `K ⊕ Kᗮ`, the range of `[I; X]`
-([golub2013matrix] §7.2.4, §7.3.1, §8.2.2: the subspaces `ran [I; X]` of the invariant-subspace and
-subspace-iteration theorems). Mathlib's `LinearMap.graph` lives in `E × F` and is a different
-object. -/
+/-- Let $K$ be a subspace of an inner product space $E$, and let $X \colon K \to K^\perp$ be a
+continuous linear map. The **graph** of $X$ over $K$ is the subspace
+$$\operatorname{graph} X = \{x + Xx : x \in K\}$$
+of $E$. In coordinates adapted to the splitting $E = K \oplus K^\perp$, it is the range of
+$\begin{bmatrix} I \\ X \end{bmatrix}$. These are the subspaces $\operatorname{ran}
+\begin{bmatrix} I \\ X \end{bmatrix}$ of the theorems on invariant subspaces and subspace
+iteration in §7.2.4, §7.3.1 and §8.2.2 of [golub2013matrix].
+
+Mathlib's `LinearMap.graph` is a subspace of a product $E \times F$ and is a different object. -/
 def graph (X : K →L[𝕜] Kᗮ) : Submodule 𝕜 E :=
   LinearMap.range (K.subtype + Kᗮ.subtype ∘ₗ (X : K →ₗ[𝕜] Kᗮ))
 
 variable {K} in
+/-- A vector $y$ lies in the graph of $X$ over $K$ if and only if $y = x + Xx$ for some $x \in K$.
+-/
 theorem mem_graph_iff {X : K →L[𝕜] Kᗮ} {y : E} : y ∈ K.graph X ↔ ∃ x : K, (x : E) + X x = y :=
   Iff.rfl
 
 instance [FiniteDimensional 𝕜 K] (X : K →L[𝕜] Kᗮ) : FiniteDimensional 𝕜 (K.graph X) :=
   LinearMap.finiteDimensional_range _
 
-/-- A graph over `K` has the dimension of `K`: `x ↦ x + X x` is injective, `K` meeting `Kᗮ` only
-in `0`. -/
+/-- Let $K$ be a subspace of an inner product space, and let $X \colon K \to K^\perp$ be a
+continuous linear map. Then the graph of $X$ has the dimension of $K$:
+$$\dim(\operatorname{graph} X) = \dim K.$$
+The map $x \mapsto x + Xx$ is injective, because $K$ meets $K^\perp$ only in $0$.
+
+The dimension is `Module.finrank`, which is $0$ for an infinite-dimensional space; the equality
+holds in that case too. -/
 theorem finrank_graph (X : K →L[𝕜] Kᗮ) :
     Module.finrank 𝕜 (K.graph X) = Module.finrank 𝕜 K := by
   refine LinearMap.finrank_range_of_inj fun x y hxy => ?_
@@ -594,11 +710,15 @@ theorem finrank_graph (X : K →L[𝕜] Kᗮ) :
   rw [K.inf_orthogonal_eq_bot, Submodule.mem_bot, sub_eq_zero] at this
   exact Subtype.ext this
 
-/-- **The gap between a subspace and a graph over it** (Stewart–Sun Theorem I.5.5; the computation
-behind [golub2013matrix] Theorems 7.3.1 and 8.2.2): for finite-dimensional `K` and
-`X : K →L[𝕜] Kᗮ`, `gap K (graph X) = ‖X‖ / √(1 + ‖X‖²)`. The two subspaces have equal dimension, so
-the gap is the one-sided `‖P_{K⊥} P_G‖`; on `g = x + X x ∈ G`, `P_{K⊥} g = X x` and
-`‖g‖² = ‖x‖² + ‖X x‖²`, and `t ↦ t / √(1 + t²)` is increasing. -/
+/-- **The gap between a subspace and a graph over it.** Let $K$ be a finite-dimensional subspace of
+an inner product space, and let $X \colon K \to K^\perp$ be a continuous linear map. Then
+$$\operatorname{gap}(K, \operatorname{graph} X) = \frac{\|X\|}{\sqrt{1 + \|X\|^2}}.$$
+This is Theorem I.5.5 of Stewart and Sun, and it is the computation behind Theorems 7.3.1 and
+8.2.2 of [golub2013matrix].
+
+The two subspaces have the same dimension, so the gap is the one-sided gap $\|P_{K^\perp} P_G\|$
+with $G = \operatorname{graph} X$. For $g = x + Xx \in G$, $P_{K^\perp} g = Xx$ and
+$\|g\|^2 = \|x\|^2 + \|Xx\|^2$, and the function $t \mapsto t / \sqrt{1 + t^2}$ is increasing. -/
 theorem gap_graph [FiniteDimensional 𝕜 K] (X : K →L[𝕜] Kᗮ) :
     K.gap (K.graph X) = ‖X‖ / Real.sqrt (1 + ‖X‖ ^ 2) := by
   set G := K.graph X

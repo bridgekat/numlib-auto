@@ -26,7 +26,6 @@ id = 'ConvexFn.slice_left'
 
 [[node]]
 id = 'ConvexFn.slice_right'
-desc = 'Fixing the second argument of a jointly convex function of a pair leaves a convex function.'
 
 [[node]]
 id = 'convexFn_iInf_right'

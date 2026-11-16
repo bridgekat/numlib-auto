@@ -9,46 +9,60 @@ import Numlib.Analysis.Convex.Extremum.Minimum
 /-!
 # Ordinary convex programs and Lagrange multipliers
 
-An *ordinary convex program* minimises `f₀` over `C = dom f₀` subject to finitely many convex
-inequalities `fᵢ x ≤ 0` and finitely many affine constraints. The main result is the **existence of
-Kuhn–Tucker vectors under Slater's condition**: if the optimal value is not `-∞` and some point of
-`ri C` satisfies every non-affine constraint strictly, then non-negative multipliers exist for
-which the infimum of the Lagrangian equals the optimal value.
+An **ordinary convex program** minimizes a proper convex function
+$f_0 \colon E \to (-\infty, +\infty]$ over $C = \operatorname{dom} f_0$, subject to finitely many
+convex inequality constraints $f_i(x) \le 0$, $i \in \iota$, and finitely many affine constraints
+$b_j(x) \le 0$, $j \in \kappa$. The **Lagrangian** at multipliers $(\lambda, \mu)$ is
+$$L(x) = f_0(x) + \sum_i \lambda_i f_i(x) + \sum_j \mu_j b_j(x),$$
+and $(\lambda, \mu)$ is a **Kuhn–Tucker vector** if $\lambda, \mu \ge 0$ and $\inf_x L(x)$ is finite
+and equal to the optimal value of the program. The main result is the existence of Kuhn–Tucker
+vectors under **Slater's condition** ([rockafellar1970convex], Theorem 28.2): if the optimal value
+is not $-\infty$ and some feasible point of $\operatorname{ri} C$ satisfies every constraint
+$f_i(x) \le 0$ strictly, then a Kuhn–Tucker vector exists. The module also proves the sufficiency
+half of the Kuhn–Tucker conditions ([rockafellar1970convex], Theorem 28.3). The presentation follows
+[rockafellar1970convex], §28.
 
-The two families of constraints are kept apart by role. Those indexed by `ι` are the ones Slater's
-condition asks a *strict* inequality of — the indices where `fᵢ` is not affine — and are
-`EReal`-valued convex functions; those indexed by `κ` are affine maps `E →ᵃ[ℝ] ℝ` asked only for a
-weak inequality. That is the split the theorem of the alternative is stated against, so the
-existence theorem applies it directly and the affine-only case is `ι = Empty`.
+The two families of constraints are separated by their role. The constraints indexed by $\iota$ are
+those of which Slater's condition asks a strict inequality, that is, the constraints with $f_i$ not
+affine. They are convex functions with values in $[-\infty, +\infty]$. The constraints indexed by
+$\kappa$ are affine maps $E \to \mathbb{R}$, of which only a weak inequality is asked. The theorem
+of the alternative is stated for this split, so the existence theorem applies it directly, and the
+case with only affine constraints is $\iota = \emptyset$.
 
 ## Main definitions
 
-* `feasibleSet`, `programLagrangian`, `optimalValue`, `IsKuhnTuckerVector` — the vocabulary.
+* `ConvexAnalysis.feasibleSet`: the set of points that satisfy all constraints.
+* `ConvexAnalysis.programLagrangian`: the Lagrangian
+  $f_0 + \sum_i \lambda_i f_i + \sum_j \mu_j b_j$.
+* `ConvexAnalysis.optimalValue`: the infimum of $f_0$ over the feasible set.
+* `ConvexAnalysis.IsKuhnTuckerVector`: nonnegative multipliers for which the infimum of the
+  Lagrangian is finite and equal to the optimal value.
+* `ConvexAnalysis.IsLagrangeSummand`: a summand $\lambda g$ of a Lagrange function that is either
+  convex with $\lambda \ge 0$ or affine with $\lambda$ arbitrary.
 
 ## Main results
 
-* `exists_isKuhnTuckerVector_of_slater` — the existence theorem
-  ([rockafellar1970convex] Theorem 28.2).
-* `exists_isKuhnTuckerVector_of_mem_convexDom` — when every constraint holds strictly somewhere in
-  `C`, the Slater point need not lie in `ri C`.
-* `exists_isKuhnTuckerVector_of_affine` — with only affine constraints, a feasible point in `ri C`
-  suffices.
-* `exists_multipliers_of_slater_eq` — the same for affine *equality* constraints, whose
-  multipliers are then of unrestricted sign.
-* `subdifferential_add_sum_coe_mul`, `mem_argmin_add_sum_coe_mul_of_zero_mem`,
-  `isKuhnTuckerVector_of_kuhnTucker` — the Kuhn–Tucker conditions
-  ([rockafellar1970convex] Theorem 28.3): the subdifferential of `f₀ + λ₁f₁ + ⋯ + λₘfₘ` decomposes
-  as `∂f₀ + ∑ λᵢ ∂fᵢ`, and the conditions make `x̄` optimal and `λ` a Kuhn–Tucker vector.
+* `ConvexAnalysis.exists_isKuhnTuckerVector_of_slater`: under Slater's condition, a Kuhn–Tucker
+  vector exists.
+* `ConvexAnalysis.exists_isKuhnTuckerVector_of_affine`: with only affine constraints, a feasible
+  point in $\operatorname{ri} C$ suffices.
+* `ConvexAnalysis.exists_isKuhnTuckerVector_of_mem_convexDom`: if every constraint holds strictly at
+  some point of $C$, this point need not lie in $\operatorname{ri} C$.
+* `ConvexAnalysis.exists_multipliers_of_slater_eq`: the same existence for affine equality
+  constraints, whose multipliers have arbitrary sign.
+* `ConvexAnalysis.subdifferential_add_sum_coe_mul`: the subdifferential of $h = f_0 + \lambda_1
+  f_1 + \dots + \lambda_m f_m$ is $\partial f_0 + \sum_{\lambda_i \neq 0} \lambda_i \partial f_i$.
+* `ConvexAnalysis.mem_argmin_add_sum_coe_mul_of_zero_mem`: if $0 \in \partial f_0(x) +
+  \sum_{\lambda_i \neq 0} \lambda_i \partial f_i(x)$, then $x$ minimizes $h$.
+* `ConvexAnalysis.isKuhnTuckerVector_of_kuhnTucker`: the Kuhn–Tucker conditions at $x$ make
+  $(\lambda, \mu)$ a Kuhn–Tucker vector and $x$ an optimal solution.
 
 ## Implementation notes
 
-The standing hypothesis `hsub : dom f₀ ⊆ dom (f i)` makes every `fᵢ` finite on `C`; that is what
-turns the multiplier inequality into one between real numbers, which may be divided by the
-multiplier of the objective.
-
-## References
-
-* [rockafellar1970convex] §28.
+* The existence theorems assume $\operatorname{dom} f_0 \subseteq \operatorname{dom} f_i$ for every
+  $i$. This makes every $f_i$ finite on $C$, so the inequality for the multipliers is an inequality
+  between real numbers, which can be divided by the multiplier of the objective.
+* Products in $[-\infty, +\infty]$ follow Mathlib's convention $0 \cdot (\pm\infty) = 0$.
 -/
 
 namespace ConvexAnalysis
@@ -60,48 +74,66 @@ section Defs
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
-/-- The set of **feasible solutions** of the constraint system `fᵢ x ≤ 0`, `bⱼ x ≤ 0`. -/
+/-- The **feasible set** of the constraint system $f_i(x) \le 0$ for all $i \in \iota$ and
+$b_j(x) \le 0$ for all $j \in \kappa$, where each $f_i \colon E \to [-\infty, +\infty]$ and each
+$b_j \colon E \to \mathbb{R}$ is affine. -/
 def feasibleSet (f : ι → E → EReal) (b : κ → E →ᵃ[ℝ] ℝ) : Set E :=
   {x | (∀ i, f i x ≤ 0) ∧ ∀ j, b j x ≤ 0}
 
 omit [Fintype ι] [Fintype κ] in
+/-- A point $x$ is feasible if and only if $f_i(x) \le 0$ for all $i$ and $b_j(x) \le 0$ for all
+$j$. -/
 @[simp] theorem mem_feasibleSet {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ} {x : E} :
     x ∈ feasibleSet f b ↔ (∀ i, f i x ≤ 0) ∧ ∀ j, b j x ≤ 0 := Iff.rfl
 
-/-- The **Lagrangian** of an ordinary convex program at the multipliers `(l, μ)`, namely
-`f₀ + λ₁f₁ + ⋯ + λ_m f_m`. The perturbational Lagrangian of a bifunction is `lagrangian`. -/
+/-- The **Lagrangian** of an ordinary convex program at the multipliers
+$\lambda \in \mathbb{R}^\iota$ and $\mu \in \mathbb{R}^\kappa$:
+$$L(x) = f_0(x) + \sum_{i \in \iota} \lambda_i f_i(x) + \sum_{j \in \kappa} \mu_j b_j(x).$$
+
+The sum over $i$ is taken in $[-\infty, +\infty]$, and the affine sum is a real number. The
+Lagrangian of a bifunction, defined through perturbations, is `ConvexAnalysis.lagrangian`. -/
 noncomputable def programLagrangian (f₀ : E → EReal) (f : ι → E → EReal) (b : κ → E →ᵃ[ℝ] ℝ)
     (l : ι → ℝ) (μ : κ → ℝ) : E → EReal :=
   fun x => f₀ x + (∑ i, (l i : EReal) * f i x) + ((∑ j, μ j * b j x : ℝ) : EReal)
 
+/-- The value of the Lagrangian at $x$ is $f_0(x) + \sum_i \lambda_i f_i(x) + \sum_j \mu_j b_j(x)$.
+-/
 theorem programLagrangian_apply (f₀ : E → EReal) (f : ι → E → EReal) (b : κ → E →ᵃ[ℝ] ℝ)
     (l : ι → ℝ) (μ : κ → ℝ) (x : E) :
     programLagrangian f₀ f b l μ x
       = f₀ x + (∑ i, (l i : EReal) * f i x) + ((∑ j, μ j * b j x : ℝ) : EReal) := rfl
 
-/-- The **optimal value** of the program: the infimum of the objective over the feasible set. -/
+/-- The **optimal value** of the program: the infimum of $f_0$ over the feasible set,
+$$\inf \{ f_0(x) \mid f_i(x) \le 0 \text{ for all } i,\ b_j(x) \le 0 \text{ for all } j \}.$$
+It is $+\infty$ when the feasible set is empty. -/
 noncomputable def optimalValue (f₀ : E → EReal) (f : ι → E → EReal) (b : κ → E →ᵃ[ℝ] ℝ) : EReal :=
   ⨅ x ∈ feasibleSet f b, f₀ x
 
 omit [Fintype ι] [Fintype κ] in
+/-- The optimal value is at most $f_0(x)$ for every feasible point $x$. -/
 theorem optimalValue_le {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ} {x : E}
     (hx : x ∈ feasibleSet f b) : optimalValue f₀ f b ≤ f₀ x :=
   iInf₂_le x hx
 
-/-- `(l, μ)` is a vector of **Kuhn–Tucker coefficients**: the multipliers are non-negative, and the
-infimum of the Lagrangian is finite and equal to the optimal value. This is the direct definition,
-not the equivalent perturbational inequality `p u + ⟨λ, u⟩ ≥ p 0`. -/
+/-- A pair of multipliers $(\lambda, \mu)$ is a **Kuhn–Tucker vector** of the program if
+$\lambda_i \ge 0$ for all $i$, $\mu_j \ge 0$ for all $j$, and the infimum of the Lagrangian over
+$E$ is finite and equal to the optimal value:
+$$\inf_{x \in E} \Bigl(f_0(x) + \sum_i \lambda_i f_i(x) + \sum_j \mu_j b_j(x)\Bigr) = \inf \{
+  f_0(x) \mid x \text{ feasible} \} \in \mathbb{R}.$$
+
+This is the direct definition. It is not the equivalent inequality
+$p(u) + \langle \lambda, u \rangle \ge p(0)$ for the perturbation function $p$. -/
 structure IsKuhnTuckerVector (f₀ : E → EReal) (f : ι → E → EReal) (b : κ → E →ᵃ[ℝ] ℝ)
     (l : ι → ℝ) (μ : κ → ℝ) : Prop where
-  /-- The multipliers of the convex constraints are non-negative. -/
+  /-- The multipliers of the convex constraints are nonnegative. -/
   nonneg : ∀ i, 0 ≤ l i
-  /-- The multipliers of the affine inequality constraints are non-negative. -/
+  /-- The multipliers of the affine inequality constraints are nonnegative. -/
   nonneg_affine : ∀ j, 0 ≤ μ j
-  /-- The infimum of the Lagrangian is not `-∞`. -/
+  /-- The infimum of the Lagrangian is not $-\infty$. -/
   ne_bot : (⨅ x, programLagrangian f₀ f b l μ x) ≠ ⊥
-  /-- The infimum of the Lagrangian is not `+∞`. -/
+  /-- The infimum of the Lagrangian is not $+\infty$. -/
   ne_top : (⨅ x, programLagrangian f₀ f b l μ x) ≠ ⊤
-  /-- The infimum of the Lagrangian is the optimal value in the program. -/
+  /-- The infimum of the Lagrangian is the optimal value of the program. -/
   iInf_eq : (⨅ x, programLagrangian f₀ f b l μ x) = optimalValue f₀ f b
 
 end Defs
@@ -112,8 +144,8 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 variable {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ} {l : ι → ℝ} {μ : κ → ℝ}
 
-/-- A non-negative real multiple of a non-positive `EReal` is non-positive; the coefficient `0` is
-harmless under the convention `0 · ∞ = 0`. -/
+/-- If $c \ge 0$ is real and $z \le 0$ in $[-\infty, +\infty]$, then $cz \le 0$. The coefficient
+$c = 0$ is allowed because of the convention $0 \cdot (\pm\infty) = 0$. -/
 theorem coe_mul_nonpos {c : ℝ} (hc : 0 ≤ c) {z : EReal} (hz : z ≤ 0) : (c : EReal) * z ≤ 0 := by
   rcases eq_or_lt_of_le hc with h | h
   · rw [← h]; simp
@@ -122,8 +154,9 @@ theorem coe_mul_nonpos {c : ℝ} (hc : 0 ≤ c) {z : EReal} (hz : z ≤ 0) : (c 
           exact_mod_cast hc
       _ = 0 := by simp
 
-/-- A non-negatively weighted sum of strictly negative values with one non-zero weight is strictly
-negative; this rules out a vanishing multiplier on the objective. -/
+/-- Let $\lambda_i \ge 0$ for all $i$ in a finite index set, let $v_i < 0$ in $[-\infty, +\infty]$
+for all $i$, and let $\lambda_{i_0} \neq 0$ for some $i_0$. Then $\sum_i \lambda_i v_i < 0$.
+This excludes a vanishing multiplier of the objective. -/
 theorem sum_coe_mul_neg (hl : ∀ i, 0 ≤ l i) {v : ι → EReal} (hv : ∀ i, v i < 0) {i₀ : ι}
     (hi₀ : l i₀ ≠ 0) : (∑ i, (l i : EReal) * v i) < 0 := by
   classical
@@ -141,7 +174,8 @@ theorem sum_coe_mul_neg (hl : ∀ i, 0 ≤ l i) {v : ι → EReal} (hv : ∀ i, 
     _ = (l i₀ : EReal) * v i₀ := add_zero _
     _ < 0 := hterm
 
-/-- On the feasible set every constraint term is non-positive, so `L ≤ f₀`. -/
+/-- If $\lambda, \mu \ge 0$ and $x$ is feasible, then $L(x) \le f_0(x)$, because every constraint
+term is nonpositive. -/
 theorem programLagrangian_le_of_mem_feasibleSet (hl : ∀ i, 0 ≤ l i) (hμ : ∀ j, 0 ≤ μ j)
     {x : E} (hx : x ∈ feasibleSet f b) : programLagrangian f₀ f b l μ x ≤ f₀ x := by
   have hsum : (∑ i, (l i : EReal) * f i x) ≤ 0 :=
@@ -156,8 +190,8 @@ theorem programLagrangian_le_of_mem_feasibleSet (hl : ∀ i, 0 ≤ l i) (hμ : �
     _ ≤ f₀ x + 0 := add_le_add (le_refl _) hsum
     _ = f₀ x := add_zero _
 
-/-- Off `dom f₀` the Lagrangian is `+∞`: no constraint term can be `-∞`, since the `fᵢ` never take
-`-∞` and the multipliers are non-negative. -/
+/-- If $\lambda \ge 0$, no $f_i$ takes the value $-\infty$, and $f_0(x) = +\infty$, then
+$L(x) = +\infty$. Thus the Lagrangian is $+\infty$ off $\operatorname{dom} f_0$. -/
 theorem programLagrangian_eq_top (hl : ∀ i, 0 ≤ l i) (hbot : ∀ i x, f i x ≠ ⊥) {x : E}
     (hx : f₀ x = ⊤) : programLagrangian f₀ f b l μ x = ⊤ := by
   have hsum : (∑ i, (l i : EReal) * f i x) ≠ ⊥ :=
@@ -165,7 +199,8 @@ theorem programLagrangian_eq_top (hl : ∀ i, 0 ≤ l i) (hbot : ∀ i x, f i x 
   rw [programLagrangian_apply, hx, EReal.top_add_of_ne_bot hsum,
     EReal.top_add_of_ne_bot (EReal.coe_ne_bot _)]
 
-/-- The Lagrangian where objective and constraints are all finite, as a single real number. -/
+/-- If $f_0(x) = r_0$ and $f_i(x) = r_i$ are real, then $L(x)$ is the real number $r_0 + \sum_i
+\lambda_i r_i + \sum_j \mu_j b_j(x)$. -/
 theorem programLagrangian_eq_coe {x : E} {r₀ : ℝ} (h₀ : f₀ x = (r₀ : EReal)) {r : ι → ℝ}
     (hr : ∀ i, f i x = (r i : EReal)) :
     programLagrangian f₀ f b l μ x
@@ -183,9 +218,18 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 variable {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ}
 
-/-- **Existence of Kuhn–Tucker coefficients under Slater's condition.** If the optimal value is
-not `-∞` and the program has a feasible solution in `ri C`, `C = dom f₀`, satisfying *strictly*
-every constraint of the first family, then a vector of Kuhn–Tucker coefficients exists. -/
+/-- **Existence of Kuhn–Tucker vectors under Slater's condition.** Let $E$ be a finite-dimensional
+real normed space, let $f_0$ and $f_i$, $i \in \iota$, be proper convex functions from $E$ to
+$[-\infty, +\infty]$, and let $b_j \colon E \to \mathbb{R}$, $j \in \kappa$, be affine, with
+$\iota$ and $\kappa$ finite. Let $C = \operatorname{dom} f_0$, and assume that
+$C \subseteq \operatorname{dom} f_i$ for every $i$. Suppose that the optimal value is not
+$-\infty$, and that there is $x \in \operatorname{ri} C$ with
+$$f_i(x) < 0 \text{ for all } i \quad \text{and} \quad b_j(x) \le 0 \text{ for all } j.$$
+Then there is a Kuhn–Tucker vector $(\lambda, \mu)$.
+
+This is Theorem 28.2 of [rockafellar1970convex]. The proof applies the theorem of the
+alternative of `Numlib.Analysis.Convex.Helly` to the system $f_0(x) - \alpha < 0$, $f_i(x) < 0$,
+$b_j(x) \le 0$, where $\alpha$ is the optimal value. -/
 theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
     (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
         (hsub : ∀ i, convexDom f₀ ⊆ convexDom (f i))
@@ -318,8 +362,13 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
   exact ⟨l, ν, hlnonneg, hνnonneg, by rw [hiInf]; exact EReal.coe_ne_bot _,
     by rw [hiInf]; exact EReal.coe_ne_top _, by rw [hiInf, hα]⟩
 
-/-- With only affine constraints a feasible solution in `ri C` suffices: the existence theorem
-with an empty family of strict constraints. -/
+/-- **Only affine constraints.** Let $E$ be finite-dimensional, let $f_0$ be proper convex, and let
+there be no convex constraints ($\iota$ empty). If the optimal value is not $-\infty$ and some
+$x \in \operatorname{ri}(\operatorname{dom} f_0)$ satisfies $b_j(x) \le 0$ for all $j$, then
+there is a Kuhn–Tucker vector.
+
+This is `ConvexAnalysis.exists_isKuhnTuckerVector_of_slater` with an empty family of strict
+constraints. -/
 theorem exists_isKuhnTuckerVector_of_affine [IsEmpty ι] (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
     (hbot : optimalValue f₀ f b ≠ ⊥) (hfeas : ∃ x ∈ ri (convexDom f₀), ∀ j, b j x ≤ 0) :
     ∃ (l : ι → ℝ) (μ : κ → ℝ), IsKuhnTuckerVector f₀ f b l μ := by
@@ -328,8 +377,8 @@ theorem exists_isKuhnTuckerVector_of_affine [IsEmpty ι] (hf₀ : ConvexFn f₀)
     (fun i => isEmptyElim i) (fun i => isEmptyElim i) hbot ⟨x, hx, fun i => isEmptyElim i, hxb⟩
 
 omit [FiniteDimensional ℝ E] [Fintype ι] [Fintype κ] in
-/-- An affine map along the segment from `y` to `z`, as used in the prolongation of a Slater
-point. -/
+/-- An affine map $g \colon E \to \mathbb{R}$ along the segment from $y$ to $z$:
+$g((1 - a)y + az) = (1 - a)g(y) + a g(z)$ for every real $a$. -/
 theorem affineMap_segment (g : E →ᵃ[ℝ] ℝ) (y z : E) (a : ℝ) :
     g ((1 - a) • y + a • z) = (1 - a) * g y + a * g z := by
   have hseg : (1 - a) • y + a • z = AffineMap.lineMap y z a := by
@@ -340,12 +389,20 @@ theorem affineMap_segment (g : E →ᵃ[ℝ] ℝ) (y z : E) (a : ℝ) :
   simp only [vsub_eq_sub, vadd_eq_add, smul_eq_mul]
   ring
 
-/-- When every constraint holds *strictly* at some point of `C`, that point need not lie in
-`ri C`: prolonging it towards a relative interior point produces a Slater point.
+/-- **Slater's condition at a point of the domain.** Let $E$ be finite-dimensional, let $f_0$ and
+the $f_i$ be proper convex, and let $C = \operatorname{dom} f_0$, with
+$C \subseteq \operatorname{dom} f_i$ and $\operatorname{ri} C \subseteq
+\operatorname{ri}(\operatorname{dom} f_i)$ for every $i$. Suppose that the optimal value is not
+$-\infty$ and that there is $x \in C$ with
+$$f_i(x) < 0 \text{ for all } i \quad \text{and} \quad b_j(x) < 0 \text{ for all } j.$$
+Then there is a Kuhn–Tucker vector.
 
-The book states this for a program with no affine constraints; affine constraints are allowed here,
-at the price of asking strict inequality of them too, which is what survives the prolongation. The
-hypothesis `hri` is what following `fᵢ` along the segment needs. -/
+The point $x$ need not lie in $\operatorname{ri} C$: moving it a little towards a relative
+interior point gives a point that satisfies Slater's condition. Rockafellar states this for a
+program without affine constraints. Affine constraints are allowed here, but they too must hold
+strictly, because only the strict inequalities survive the move. The hypothesis
+$\operatorname{ri} C \subseteq \operatorname{ri}(\operatorname{dom} f_i)$ is needed to follow
+$f_i$ along the segment. -/
 theorem exists_isKuhnTuckerVector_of_mem_convexDom (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
     (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i))
         (hsub : ∀ i, convexDom f₀ ⊆ convexDom (f i))
@@ -380,8 +437,18 @@ theorem exists_isKuhnTuckerVector_of_mem_convexDom (hf₀ : ConvexFn f₀) (hp�
   exact exists_isKuhnTuckerVector_of_slater hf₀ hp₀ hf hp hsub hbot
     ⟨_, hamem.1, hamem.2, fun j => (hafeas j).le⟩
 
-/-- The same for a program whose affine constraints are *equations*. Their multipliers are then of
-unrestricted sign, obtained as `μ' - μ''` from the two inequalities each equation splits into. -/
+/-- **Affine equality constraints.** Let $E$ be finite-dimensional, let $f_0$ and the $f_i$ be
+proper convex with $\operatorname{dom} f_0 \subseteq \operatorname{dom} f_i$, and let
+$a_k \colon E \to \mathbb{R}$, $k \in \sigma$, be finitely many affine maps. Suppose that the
+infimum of $f_0$ subject to $f_i(x) \le 0$ and $a_k(x) = 0$ is not $-\infty$, and that some $x
+\in \operatorname{ri}(\operatorname{dom} f_0)$ satisfies $f_i(x) < 0$ for all $i$ and
+$a_k(x) = 0$ for all $k$. Then there are $\lambda \ge 0$ and $\rho \in \mathbb{R}^\sigma$ with
+$$\inf_{x \in E} \Bigl(f_0(x) + \sum_i \lambda_i f_i(x) + \sum_k \rho_k a_k(x)\Bigr) = \inf \{
+  f_0(x) \mid f_i(x) \le 0 \text{ for all } i,\ a_k(x) = 0 \text{ for all } k \}.$$
+
+The multipliers $\rho_k$ have arbitrary sign. They are $\rho = \mu' - \mu''$, where $\mu'$ and
+$\mu''$ are the multipliers of the two inequalities $a_k(x) \le 0$ and $-a_k(x) \le 0$ into
+which each equation splits. -/
 theorem exists_multipliers_of_slater_eq {σ : Type*} [Fintype σ] {a : σ → E →ᵃ[ℝ] ℝ}
     (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀) (hf : ∀ i, ConvexFn (f i))
         (hp : ∀ i, ProperConvex (f i))
@@ -429,29 +496,33 @@ theorem exists_multipliers_of_slater_eq {σ : Type*} [Fintype σ] {a : σ → E 
 
 end Slater
 
-/-! ### The Kuhn–Tucker conditions
+/-!
+### The Kuhn–Tucker conditions
 
-Rockafellar's Theorem 28.3 (*Convex Analysis*, §28) characterises the pairs (Kuhn–Tucker vector,
-optimal solution) of an ordinary convex program by three conditions on the point `x̄` and the
-multipliers `λᵢ`: (a) `λᵢ ≥ 0`, `fᵢ(x̄) ≤ 0` and `λᵢ fᵢ(x̄) = 0` for the inequality constraints;
-(b) `fᵢ(x̄) = 0` for the (affine) equality constraints;
-(c) `0 ∈ ∂f₀(x̄) + λ₁∂f₁(x̄) + ⋯ + λₘ∂fₘ(x̄)`, the terms with `λᵢ = 0` omitted. Its general content
-is two statements about Rockafellar's `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`, the objective plus the weighted
-constraints at fixed multipliers:
+Theorem 28.3 of [rockafellar1970convex] characterizes the pairs of a Kuhn–Tucker vector and an
+optimal solution of an ordinary convex program by three conditions on the point $\bar x$ and the
+multipliers $\lambda_i$: (a) $\lambda_i \ge 0$, $f_i(\bar x) \le 0$ and $\lambda_i f_i(\bar x) = 0$
+for the inequality constraints; (b) $f_i(\bar x) = 0$ for the affine equality constraints; (c) $0
+\in \partial f_0(\bar x) + \lambda_1 \partial f_1(\bar x) + \dots + \lambda_m \partial f_m(\bar x)$,
+where the terms with $\lambda_i = 0$ are omitted. Its general content is two statements about the
+function $h = f_0 + \lambda_1 f_1 + \dots + \lambda_m f_m$, the objective plus the weighted
+constraints at fixed multipliers.
 
-* `subdifferential_add_sum_coe_mul` — the subdifferential of `h` decomposes as in (c), by the sum
-  rule for subgradients ([rockafellar1970convex] Theorem 23.8) under the constraint qualification
-  that the effective domains share a relative interior point;
-* `mem_argmin_add_sum_coe_mul_of_zero_mem` and `add_sum_coe_mul_eq_of_forall_mul_eq_zero` —
-  condition (c) makes `x̄` a minimiser of `h`, and complementary slackness makes `h(x̄) = f₀(x̄)`;
-  together these are the sufficiency half of Theorem 28.3, for any program whose Lagrange
-  function has this shape.
+* `ConvexAnalysis.subdifferential_add_sum_coe_mul`: the subdifferential of $h$ decomposes as in (c).
+  This is the sum rule for subgradients ([rockafellar1970convex], Theorem 23.8), under the
+  constraint qualification that the effective domains have a common relative interior point.
+* `ConvexAnalysis.mem_argmin_add_sum_coe_mul_of_zero_mem` and
+  `ConvexAnalysis.add_sum_coe_mul_eq_of_forall_mul_eq_zero`: condition (c) makes $\bar x$ a
+  minimizer of $h$, and complementary slackness gives $h(\bar x) = f_0(\bar x)$. Together these are
+  the sufficiency half of Theorem 28.3, for every program whose Lagrange function has this form.
 
-Both are stated for one finite family of summands `λᵢ fᵢ`, each **admissible** in the sense of
-`IsLagrangeSummand`: either `fᵢ` is convex and proper and `λᵢ ≥ 0`, or `fᵢ` is affine and `λᵢ` has
-any sign — the two kinds of constraint of an ordinary convex program — and for any dual pair.
-`isKuhnTuckerVector_of_kuhnTucker` is the same sufficiency read in the vocabulary of this file,
-where the affine constraints form the separate family `b`. -/
+Both are stated for one finite family of summands $\lambda_i f_i$, each **admissible** in the sense
+of `ConvexAnalysis.IsLagrangeSummand`: either $f_i$ is proper convex and $\lambda_i \ge 0$, or $f_i$
+is affine and $\lambda_i$ has any sign. These are the two kinds of constraint of an ordinary convex
+program. The statements hold for any dual pair of spaces.
+`ConvexAnalysis.isKuhnTuckerVector_of_kuhnTucker` is the same sufficiency in the terms of this
+module, where the affine constraints form the separate family $b$.
+-/
 
 section LagrangeSummand
 
@@ -460,16 +531,23 @@ open scoped Pointwise
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [AddCommGroup F] [Module ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {x₀ : E}
 
-/-- The summand `λ g` of a Lagrange function is **admissible** at the reference point `x₀` when it
-is a proper convex function with `x₀` in the relative interior of its effective domain: either
-`g` is convex and proper, `λ ≥ 0` and `x₀ ∈ ri (dom g)`, or `g` is affine — its linear part
-represented through the pairing by some `v` with `⟨w, v⟩ = a.linear w` — and `λ` is arbitrary.
-These are the inequality and the equality constraints of an ordinary convex program. -/
+/-- The summand $\lambda g$ of a Lagrange function is **admissible** at the reference point $x_0$ if
+one of two conditions holds:
+
+* $\lambda \ge 0$, $g$ is proper convex, and $x_0 \in \operatorname{ri}(\operatorname{dom} g)$;
+* $g$ is an affine function $a \colon E \to \mathbb{R}$ whose linear part is represented through
+  the pairing by some $v \in F$, that is, $\langle w, v \rangle = a_{\mathrm{lin}}(w)$ for all
+  $w$, and $\lambda$ is arbitrary.
+
+These are the inequality and the equality constraints of an ordinary convex program. In both
+cases $\lambda g$ is a proper convex function with $x_0$ in the relative interior of its
+effective domain. -/
 def IsLagrangeSummand (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x₀ : E) (l : ℝ) (g : E → EReal) : Prop :=
   (0 ≤ l ∧ ConvexFn g ∧ ProperConvex g ∧ x₀ ∈ ri (convexDom g)) ∨
     ∃ (a : E →ᵃ[ℝ] ℝ) (v : F), (∀ y, g y = a y) ∧ ∀ w, B w v = a.linear w
 
-/-- A real multiple of an affine function is a convex, proper, everywhere finite function. -/
+/-- For every real $c$ and every affine $a \colon E \to \mathbb{R}$, the function
+$y \mapsto c\, a(y)$ is convex, proper, and finite everywhere. -/
 theorem convexFn_properConvex_coe_mul_affineMap (c : ℝ) (a : E →ᵃ[ℝ] ℝ) :
     ConvexFn (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
       ProperConvex (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
@@ -483,8 +561,9 @@ theorem convexFn_properConvex_coe_mul_affineMap (c : ℝ) (a : E →ᵃ[ℝ] ℝ
   refine ConvexOn.convexFn_coe ⟨convex_univ, fun x _ y _ p q hp hq hpq => ?_⟩
   rw [Convex.combo_affine_apply hpq]
 
-/-- An admissible summand is a proper convex function whose effective domain has `x₀` in its
-relative interior — the hypotheses of the sum rule for subgradients. -/
+/-- If the summand $cg$ is admissible at $x_0$, then $y \mapsto c\, g(y)$ is proper convex and $x_0
+\in \operatorname{ri}(\operatorname{dom}(cg))$. These are the hypotheses of the sum rule for
+subgradients. -/
 theorem IsLagrangeSummand.convexFn_properConvex_mem_relint {c : ℝ} {g : E → EReal}
     (h : IsLagrangeSummand B x₀ c g) :
     ConvexFn (fun y => (c : EReal) * g y) ∧ ProperConvex (fun y => (c : EReal) * g y) ∧
@@ -504,8 +583,10 @@ theorem IsLagrangeSummand.convexFn_properConvex_mem_relint {c : ℝ} {g : E → 
     rw [h₃, intrinsicInterior_univ]
     exact mem_univ _
 
-/-- The subdifferential of an admissible summand with a non-zero multiplier is the multiple of the
-subdifferential: `∂(λg) = λ ∂g` for `λ > 0`, and for every `λ` when `g` is affine. -/
+/-- Let the pairing $\langle \cdot, \cdot \rangle \colon E \times F \to \mathbb{R}$ separate the
+points of $F$. If the summand $cg$ is admissible and $c \neq 0$, then for every $x$
+$$\partial(cg)(x) = c\, \partial g(x).$$
+For a convex $g$ this means $c > 0$, and for an affine $g$ the sign of $c$ is arbitrary. -/
 theorem IsLagrangeSummand.subdifferential_coe_mul (hsep : Function.Injective B.flip) {c : ℝ}
     {g : E → EReal} (h : IsLagrangeSummand B x₀ c g) (hc : c ≠ 0) (x : E) :
     subdifferential B (fun y => (c : EReal) * g y) x = c • subdifferential B g x := by
@@ -526,11 +607,19 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι : Type*} {s : Finset ι} {f₀ : E → EReal} {f : ι → E → EReal}
   {l : ι → ℝ} {x₀ : E}
 
-/-- **The subdifferential of `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`**, Theorem 23.8 applied to the summands of
-the Lagrange function: when the effective domains share a relative interior point `x₀`,
-`∂h(x) = ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the indices with `λᵢ ≠ 0`. The omission is not
-cosmetic — `∂fᵢ(x)` can be empty at a boundary point of `dom fᵢ`, and then `0 · ∂fᵢ(x)` would be
-empty rather than `{0}`. -/
+/-- **The subdifferential of $h = f_0 + \lambda_1 f_1 + \dots + \lambda_m f_m$.** Let $E$ and $F$ be
+finite-dimensional real normed spaces with a pairing $\langle \cdot, \cdot \rangle \colon E
+\times F \to \mathbb{R}$ that is compatible in both directions and separates the points of $F$.
+Let $f_0$ be proper convex with $x_0 \in \operatorname{ri}(\operatorname{dom} f_0)$, and let
+each summand $\lambda_i f_i$, $i \in s$, be admissible at $x_0$. Then for every $x \in E$,
+$$\partial h(x) = \partial f_0(x) + \sum_{i \in s,\ \lambda_i \neq 0} \lambda_i\, \partial
+  f_i(x).$$
+
+This is Theorem 23.8 of [rockafellar1970convex] applied to the summands of the Lagrange
+function. The omission of the terms with $\lambda_i = 0$ matters: $\partial f_i(x)$ can be empty
+at a boundary point of $\operatorname{dom} f_i$, and then $0 \cdot \partial f_i(x)$ would be
+empty and not $\{0\}$. Compatibility of the pairing is `ConvexAnalysis.IsCompatiblePairing` for
+`B` and `B.flip`, and separation is the injectivity of `B.flip`. -/
 theorem subdifferential_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
     (hx₀ : x₀ ∈ ri (convexDom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i)) (x : E) :
@@ -562,14 +651,18 @@ theorem subdifferential_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePai
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
-/-- **Complementary slackness**: when every product `λᵢ fᵢ(x)` vanishes, `h(x) = f₀(x)`. -/
+/-- **Complementary slackness.** If $\lambda_i f_i(x) = 0$ for every $i \in s$, then $f_0(x) +
+\sum_{i \in s} \lambda_i f_i(x) = f_0(x)$. -/
 theorem add_sum_coe_mul_eq_of_forall_mul_eq_zero {x : E}
     (h : ∀ i ∈ s, (l i : EReal) * f i x = 0) :
     f₀ x + ∑ i ∈ s, (l i : EReal) * f i x = f₀ x := by
   rw [Finset.sum_eq_zero h, add_zero]
 
-/-- **Condition (c) of the Kuhn–Tucker conditions makes `x` a minimiser of `h`**: if
-`0 ∈ ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the `λᵢ ≠ 0`, then `x ∈ argmin h`. -/
+/-- **Condition (c) of the Kuhn–Tucker conditions makes $x$ a minimizer of $h$.** Let $E$, $F$, the
+pairing, $f_0$, $x_0$ and the admissible summands $\lambda_i f_i$, $i \in s$, be as in
+`ConvexAnalysis.subdifferential_add_sum_coe_mul`. If
+$$0 \in \partial f_0(x) + \sum_{i \in s,\ \lambda_i \neq 0} \lambda_i\, \partial f_i(x),$$
+then $x$ minimizes $h = f_0 + \sum_{i \in s} \lambda_i f_i$ over $E$. -/
 theorem mem_argmin_add_sum_coe_mul_of_zero_mem [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀)
     (hp₀ : ProperConvex f₀) (hx₀ : x₀ ∈ ri (convexDom f₀))
@@ -592,7 +685,8 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι κ : Type*} [Fintype ι] [Fintype κ]
   {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ} {l : ι → ℝ} {μ : κ → ℝ}
 
-/-- The affine part `x ↦ ∑ⱼ μⱼ bⱼ(x)` of the Lagrangian, as one affine map. -/
+/-- The affine part $x \mapsto \sum_j \mu_j b_j(x)$ of the Lagrangian, as one affine map, with
+linear part $\sum_j \mu_j (b_j)_{\mathrm{lin}}$. -/
 def affineSum (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) : E →ᵃ[ℝ] ℝ where
   toFun y := ∑ j, μ j * b j y
   linear := ∑ j, μ j • (b j).linear
@@ -602,17 +696,19 @@ def affineSum (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) : E →ᵃ[ℝ] �
     exact Finset.sum_congr rfl fun j _ => by rw [← vadd_eq_add, AffineMap.map_vadd, vadd_eq_add]
 
 omit [FiniteDimensional ℝ E] in
+/-- The value of `ConvexAnalysis.affineSum b μ` at $y$ is $\sum_j \mu_j b_j(y)$. -/
 @[simp] theorem affineSum_apply (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) (y : E) :
     affineSum b μ y = ∑ j, μ j * b j y := rfl
 
 omit [FiniteDimensional ℝ E] in
+/-- The linear part of `ConvexAnalysis.affineSum b μ` is $\sum_j \mu_j (b_j)_{\mathrm{lin}}$. -/
 @[simp] theorem affineSum_linear (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) :
     (affineSum b μ).linear = ∑ j, μ j • (b j).linear := rfl
 
 omit [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
-/-- The Lagrangian of this file is `h` for the family `f` together with the single affine summand
-`affineSum b μ`, indexed by `Option ι` with the affine part in the `none` slot and multiplier
-`1`. -/
+/-- The Lagrangian `ConvexAnalysis.programLagrangian` is the function $h$ for the family $f$
+together with the single affine summand `ConvexAnalysis.affineSum b μ` with multiplier $1$. The
+family is indexed by `Option ι`, and the affine summand is at `none`. -/
 theorem programLagrangian_eq_add_sum_option (f₀ : E → EReal) (f : ι → E → EReal)
     (b : κ → E →ᵃ[ℝ] ℝ) (l : ι → ℝ) (μ : κ → ℝ) :
     programLagrangian f₀ f b l μ = fun x => f₀ x + ∑ o : Option ι,
@@ -623,13 +719,24 @@ theorem programLagrangian_eq_add_sum_option (f₀ : E → EReal) (f : ι → E �
   simp only [Option.elim, EReal.coe_one, one_mul]
   rw [affineSum_apply, add_assoc, add_comm (∑ i, (l i : EReal) * f i x)]
 
-/-- **Sufficiency of the Kuhn–Tucker conditions** for the programs of this file: if `x` is
-feasible, the multipliers are non-negative with `λᵢ fᵢ(x) = 0` and `μⱼ bⱼ(x) = 0`, and
-`0 ∈ ∂f₀(x) + ∑ λᵢ ∂fᵢ(x) + {∑ μⱼ aⱼ}` — the sum over the `λᵢ ≠ 0`, the vector `aⱼ` representing
-the linear part of `bⱼ` through the pairing — then `(l, μ)` is a Kuhn–Tucker vector and `x` is an
-optimal solution: `f₀ x` is the optimal value. This is the "if" half of Rockafellar's
-Theorem 28.3, which needs no constraint qualification beyond a relative interior point `x₀` of
-`dom f₀` lying in `ri (dom fᵢ)` for every `i`. -/
+/-- **Sufficiency of the Kuhn–Tucker conditions.** Let $E$ and $F$ be finite-dimensional real normed
+spaces with a pairing $\langle \cdot, \cdot \rangle \colon E \times F \to \mathbb{R}$ that is
+compatible in both directions and separates the points of $F$. Let $f_0$ and the $f_i$ be proper
+convex, and let $x_0 \in \operatorname{ri}(\operatorname{dom} f_0)$ with $x_0 \in
+\operatorname{ri}(\operatorname{dom} f_i)$ for every $i$. For each $j$, let $a_j \in F$
+represent the linear part of $b_j$: $\langle w, a_j \rangle = (b_j)_{\mathrm{lin}}(w)$ for all
+$w$. Let $x \in E$ satisfy
+
+* $\lambda_i \ge 0$, $f_i(x) \le 0$ and $\lambda_i f_i(x) = 0$ for every $i$;
+* $\mu_j \ge 0$, $b_j(x) \le 0$ and $\mu_j b_j(x) = 0$ for every $j$;
+* $0 \in \partial f_0(x) + \sum_{\lambda_i \neq 0} \lambda_i\, \partial f_i(x) + \bigl\{\sum_j
+  \mu_j a_j\bigr\}$.
+
+Then $(\lambda, \mu)$ is a Kuhn–Tucker vector, $x$ is feasible, and $f_0(x)$ is the optimal
+value, so $x$ is an optimal solution.
+
+This is the "if" half of Theorem 28.3 of [rockafellar1970convex]. It needs no constraint
+qualification beyond the common relative interior point $x_0$. -/
 theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : ProperConvex f₀)
     (hf : ∀ i, ConvexFn (f i)) (hpf : ∀ i, ProperConvex (f i)) {x₀ : E}

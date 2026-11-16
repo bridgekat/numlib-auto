@@ -13,30 +13,50 @@ import Numlib.Analysis.Calculus.DerivativeTest.Laplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
 
 /-!
-# Calculus on `E × ℝ`: the time derivative and the spatial Laplacian
+# Calculus on a space-time product: the time derivative and the spatial Laplacian
 
-The two partial operators on a function `w : E × ℝ → ℝ` of space and time, for `E` a
-finite-dimensional real inner product space: the time derivative `∂ₜ w` (`Heat.timeDeriv`) and
-the spatial Laplacian `Δ_x w` (`Heat.spaceLaplacian`, Mathlib's `InnerProductSpace.laplacian` of
-the slice `y ↦ w (y, t)`), with their smoothness, their locality on open sets, their commutation
-`∂ₜ Δ_x = Δ_x ∂ₜ` on smooth functions (`Heat.timeDeriv_spaceLaplacian`, from the symmetry of the
-iterated derivative, `Numlib/Analysis/Calculus/IteratedFDeriv`) and the iterates of both.
-The names carry the `Heat` namespace of the modules that first used them
-(`Numlib/Analysis/PDE/Heat/Classical`, the classical heat equation; `Numlib/Analysis/PDE/Wave`,
-Remark 10 of [brezis2011functional] chapter 10); nothing here is about the heat equation.
+Let $E$ be a finite-dimensional real inner product space, and let
+$w \colon E \times \mathbb{R} \to \mathbb{R}$ be a function of space and time. This module defines
+the two partial operators on $w$: the time derivative $\partial_t w$ (`Heat.timeDeriv`) and the
+spatial Laplacian $\Delta_x w$ (`Heat.spaceLaplacian`), which is the Laplacian of the slice
+$y \mapsto w(y, t)$. It proves their smoothness, their locality on open sets, the commutation
+$\partial_t \Delta_x w = \Delta_x \partial_t w$ for smooth $w$, and the same facts for their
+iterates. The commutation follows from the symmetry of the iterated derivative
+(`Numlib.Analysis.Calculus.IteratedFDeriv`). The module supports [brezis2011functional], chapter 10,
+Remark 4 and Remark 10.
 
-The last sections are the elementary facts that a bounded linear map commutes with the
-derivative of a curve (`Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le`), stated for an
-additive homogeneous map with a norm bound, the form in which the evaluation at a point of a
-canonical `C^k(Ω̄)` representative enters the space–time bridge of
-`Numlib/Analysis/PDE/Bochner/SpaceTime`, and the second iterated derivative within a set as a
-twice-iterated `derivWithin` (`iteratedDerivWithin_two`), and a curve with values in a submodule
-whose ambient derivative lies in the submodule is differentiable as a curve in the submodule
-(`HasDerivWithinAt.codRestrict_submodule`).
+The last sections contain three elementary facts. First, a bounded linear map commutes with the
+derivative of a curve. It is stated for an additive, homogeneous map with a norm bound, which is the
+form in which the evaluation at a point of a canonical $C^k(\bar\Omega)$ representative enters
+`Numlib.Analysis.PDE.Bochner.SpaceTime`. Second, the second iterated derivative within a set is a
+twice iterated derivative within the set. Third, a curve with values in a submodule whose derivative
+lies in the submodule is differentiable as a curve in the submodule.
 
-## References
+## Main definitions
 
-[brezis2011functional], chapter 10, Remark 4 and Remark 10.
+* `Heat.timeDeriv`: the time derivative $\partial_t w(x, t) = \frac{d}{dt} w(x, t)$.
+* `Heat.spaceLaplacian`: the spatial Laplacian $\Delta_x w(x, t) = \Delta(w(\cdot, t))(x)$.
+
+## Main results
+
+* `Heat.timeDeriv_spaceLaplacian`: $\partial_t \Delta_x w = \Delta_x \partial_t w$ for smooth $w$.
+* `Heat.contDiff_timeDeriv`, `Heat.contDiff_spaceLaplacian`: both operators preserve smoothness.
+* `Heat.timeDeriv_eqOn`, `Heat.spaceLaplacian_eqOn`: both operators are local on open sets.
+* `Heat.timeDeriv_iterate_apply_zero_eq_zero`: the iterated time derivatives of a smooth function
+  that vanishes on $\{x\} \times (0, T)$ vanish at $(x, 0)$.
+* `Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le`: a bounded linear map commutes with the
+  derivative of a curve.
+* `iteratedDerivWithin_two`: the second iterated derivative within a set.
+* `HasDerivWithinAt.codRestrict_submodule`: a curve in a submodule with a derivative in the
+  submodule.
+
+## Implementation notes
+
+* The operators are in the namespace `Heat`, which they share with
+  `Numlib.Analysis.PDE.Heat.Classical` (the classical heat equation) and `Numlib.Analysis.PDE.Wave`
+  (Remark 10 of [brezis2011functional], chapter 10). Nothing in this module is specific to the heat
+  equation.
+* The Laplacian of a function on $E$ is Mathlib's `Laplacian.laplacian`, written $\Delta$.
 -/
 
 open Filter Set Topology InnerProductSpace Laplacian
@@ -46,36 +66,46 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 
 namespace Heat
 
-/-! ### The time derivative and the spatial Laplacian of a function of `(x, t)` -/
+/-! ### The time derivative and the spatial Laplacian of a function of $(x, t)$ -/
 
 section SpaceTimeCalculus
 
 variable {w w₁ w₂ : E × ℝ → ℝ}
 
-/-- **The time derivative** `∂ₜ w` of a function of `(x, t)`, as a function of `(x, t)`:
-`timeDeriv w (x, t) = d/dt w (x, t)`. -/
+/-- **The time derivative.** For $w \colon E \times \mathbb{R} \to \mathbb{R}$, the time derivative
+$\partial_t w \colon E \times \mathbb{R} \to \mathbb{R}$ is
+$$\partial_t w(x, t) = \frac{d}{ds} w(x, s) \Big|_{s = t}.$$
+
+The derivative is Mathlib's `deriv`, which is $0$ where $s \mapsto w(x, s)$ is not
+differentiable. -/
 noncomputable def timeDeriv (w : E × ℝ → ℝ) : E × ℝ → ℝ :=
   fun p ↦ deriv (fun s ↦ w (p.1, s)) p.2
 
-/-- **The spatial Laplacian** `Δ_x w` of a function of `(x, t)`, as a function of `(x, t)`:
-`spaceLaplacian w (x, t) = Δ (w (·, t)) x`. -/
+/-- **The spatial Laplacian.** For $w \colon E \times \mathbb{R} \to \mathbb{R}$, the spatial
+Laplacian $\Delta_x w \colon E \times \mathbb{R} \to \mathbb{R}$ is
+$$\Delta_x w(x, t) = \Delta \big( y \mapsto w(y, t) \big)(x),$$
+the Laplacian of the slice $y \mapsto w(y, t)$ at $x$. -/
 noncomputable def spaceLaplacian (w : E × ℝ → ℝ) : E × ℝ → ℝ :=
   fun p ↦ Δ (fun y ↦ w (y, p.2)) p.1
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- `timeDeriv w (x, t)` is the derivative of `s ↦ w (x, s)` at `t`. -/
+/-- The value $\partial_t w(x, t)$ is the derivative of $s \mapsto w(x, s)$ at $t$. -/
 @[simp]
 theorem timeDeriv_apply (w : E × ℝ → ℝ) (x : E) (t : ℝ) :
     timeDeriv w (x, t) = deriv (fun s ↦ w (x, s)) t := rfl
 
-/-- `spaceLaplacian w (x, t)` is the Laplacian of `y ↦ w (y, t)` at `x`. -/
+/-- The value $\Delta_x w(x, t)$ is the Laplacian of $y \mapsto w(y, t)$ at $x$. -/
 @[simp]
 theorem spaceLaplacian_apply (w : E × ℝ → ℝ) (x : E) (t : ℝ) :
     spaceLaplacian w (x, t) = Δ (fun y ↦ w (y, t)) x := rfl
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The derivatives of a spatial slice `y ↦ w (y, t)` are the derivatives of `w` along the
-directions `(m k, 0)`: the slice is `w` composed with the affine map `y ↦ (y, 0) + (0, t)`. -/
+/-- Let $E$ be a real normed space, and let $w \colon E \times \mathbb{R} \to \mathbb{R}$ be of
+class $C^n$, with $i \le n$. Then for $t \in \mathbb{R}$, $x \in E$ and $m_1, \dots, m_i \in E$,
+$$\nabla^i \big( y \mapsto w(y, t) \big)(x)[m_1, \dots, m_i] = \nabla^i w(x, t)[(m_1, 0), \dots,
+  (m_i, 0)].$$
+
+The slice is $w$ composed with the affine map $y \mapsto (y, 0) + (0, t)$. -/
 theorem iteratedFDeriv_slice_fst [NormedSpace ℝ E] {n : WithTop ℕ∞} (hw : ContDiff ℝ n w)
     {i : ℕ} (hi : (i : WithTop ℕ∞) ≤ n) (t : ℝ) (x : E) (m : Fin i → E) :
     iteratedFDeriv ℝ i (fun y ↦ w (y, t)) x m = iteratedFDeriv ℝ i w (x, t) fun k ↦ (m k, 0) := by
@@ -87,8 +117,10 @@ theorem iteratedFDeriv_slice_fst [NormedSpace ℝ E] {n : WithTop ℕ∞} (hw : 
     ContinuousMultilinearMap.compContinuousLinearMap_apply, iteratedFDeriv_comp_add_right]
   simp
 
-/-- The spatial Laplacian through the standard orthonormal basis `b` of `E`:
-`Δ_x w (x, t) = ∑ i, D² w (x, t) [(b i, 0), (b i, 0)]`. -/
+/-- Let $w$ be of class $C^2$, and let $(b_i)$ be the standard orthonormal basis of $E$
+(`stdOrthonormalBasis`). Then at every $p \in E \times \mathbb{R}$,
+$$\Delta_x w(p) = \sum_i \nabla^2 w(p)[(b_i, 0), (b_i, 0)].$$
+-/
 theorem spaceLaplacian_eq_sum_iteratedFDeriv (hw : ContDiff ℝ 2 w) (p : E × ℝ) :
     spaceLaplacian w p = ∑ i, iteratedFDeriv ℝ 2 w p
       ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] := by
@@ -102,7 +134,9 @@ theorem spaceLaplacian_eq_sum_iteratedFDeriv (hw : ContDiff ℝ 2 w) (p : E × �
   fin_cases k <;> rfl
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The time derivative is the derivative of `w` in the direction `(0, 1)`. -/
+/-- Let $E$ be a real normed space, and let $w$ be of class $C^1$. Then at every
+$p \in E \times \mathbb{R}$, the time derivative is the derivative of $w$ in the direction
+$(0, 1)$: $\partial_t w(p) = Dw(p)(0, 1)$. -/
 theorem timeDeriv_eq_fderiv [NormedSpace ℝ E] (hw : ContDiff ℝ 1 w) (p : E × ℝ) :
     timeDeriv w p = fderiv ℝ w p (0, 1) := by
   obtain ⟨x, t⟩ := p
@@ -111,7 +145,7 @@ theorem timeDeriv_eq_fderiv [NormedSpace ℝ E] (hw : ContDiff ℝ 1 w) (p : E �
   exact ((hw.differentiable one_ne_zero (x, t)).hasFDerivAt.comp_hasDerivAt t h).deriv
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The time derivative of a smooth function is smooth. -/
+/-- Let $E$ be a real normed space. If $w$ is smooth ($C^\infty$), then $\partial_t w$ is smooth. -/
 theorem contDiff_timeDeriv [NormedSpace ℝ E] (hw : ContDiff ℝ ∞ w) :
     ContDiff ℝ ∞ (timeDeriv w) := by
   have : timeDeriv w = fun p ↦ fderiv ℝ w p (0, 1) :=
@@ -119,7 +153,7 @@ theorem contDiff_timeDeriv [NormedSpace ℝ E] (hw : ContDiff ℝ ∞ w) :
   rw [this]
   exact hw.fderiv_apply_right (0, 1)
 
-/-- The spatial Laplacian of a smooth function is smooth. -/
+/-- If $w$ is smooth ($C^\infty$), then $\Delta_x w$ is smooth. -/
 theorem contDiff_spaceLaplacian (hw : ContDiff ℝ ∞ w) : ContDiff ℝ ∞ (spaceLaplacian w) := by
   have : spaceLaplacian w = fun p ↦ ∑ i, iteratedFDeriv ℝ 2 w p
       ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] :=
@@ -129,12 +163,13 @@ theorem contDiff_spaceLaplacian (hw : ContDiff ℝ ∞ w) : ContDiff ℝ ∞ (sp
   exact (ContinuousMultilinearMap.apply ℝ (fun _ : Fin 2 ↦ E × ℝ) ℝ _).contDiff.comp
     (hw.iteratedFDeriv_right (m := ∞) (i := 2) (by simp))
 
-/-- **The time derivative commutes with the spatial Laplacian** on a smooth function:
-`∂ₜ (Δ_x w) = Δ_x (∂ₜ w)`. Both sides are `∑ i, D³ w [(0, 1), (b i, 0), (b i, 0)]`: the left
-side by differentiating the second derivative along `(0, 1)` outermost
-(`iteratedFDeriv_succ_apply_left_of_differentiableAt`), the right side by taking the derivative
-along `(0, 1)` innermost (`ContDiff.iteratedFDeriv_succ_apply_left'`, the symmetry of the
-iterated derivative). -/
+/-- **The time derivative commutes with the spatial Laplacian.** If
+$w \colon E \times \mathbb{R} \to \mathbb{R}$ is smooth ($C^\infty$), then
+$$\partial_t (\Delta_x w) = \Delta_x (\partial_t w).$$
+
+Both sides equal $\sum_i \nabla^3 w[(0, 1), (b_i, 0), (b_i, 0)]$ for the standard orthonormal
+basis $(b_i)$ of $E$. The proof differentiates along $(0, 1)$ last on the left side and first on
+the right side, and uses the symmetry of the iterated derivative. -/
 theorem timeDeriv_spaceLaplacian (hw : ContDiff ℝ ∞ w) :
     timeDeriv (spaceLaplacian w) = spaceLaplacian (timeDeriv w) := by
   funext p
@@ -165,8 +200,8 @@ theorem timeDeriv_spaceLaplacian (hw : ContDiff ℝ ∞ w) :
   rw [hT, ← h3, h4]
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The time derivative is local: functions agreeing on an open set have the same time
-derivative there. -/
+/-- Let $E$ be a real normed space, and let $V \subseteq E \times \mathbb{R}$ be open. If
+$w_1 = w_2$ on $V$, then $\partial_t w_1 = \partial_t w_2$ on $V$. -/
 theorem timeDeriv_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
     EqOn (timeDeriv w₁) (timeDeriv w₂) V := by
   rintro ⟨x, t⟩ hp
@@ -174,8 +209,8 @@ theorem timeDeriv_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ 
     (hV.preimage (continuous_const.prodMk continuous_id)).mem_nhds hp
   exact Filter.EventuallyEq.deriv_eq (eventually_of_mem hmem fun s hs ↦ h hs)
 
-/-- The spatial Laplacian is local: functions agreeing on an open set have the same spatial
-Laplacian there. -/
+/-- Let $V \subseteq E \times \mathbb{R}$ be open. If $w_1 = w_2$ on $V$, then
+$\Delta_x w_1 = \Delta_x w_2$ on $V$. -/
 theorem spaceLaplacian_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
     EqOn (spaceLaplacian w₁) (spaceLaplacian w₂) V := by
   rintro ⟨x, t⟩ hp
@@ -184,14 +219,15 @@ theorem spaceLaplacian_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ 
   exact (laplacian_congr_nhds (eventually_of_mem hmem fun y hy ↦ h hy)).eq_of_nhds
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The time derivative of a scalar multiple. -/
+/-- For every $c \in \mathbb{R}$ and every $w$, $\partial_t (c w) = c \, \partial_t w$. -/
 theorem timeDeriv_const_smul (c : ℝ) (w : E × ℝ → ℝ) :
     timeDeriv (c • w) = c • timeDeriv w := by
   funext ⟨x, t⟩
   simp only [timeDeriv_apply, Pi.smul_apply, smul_eq_mul]
   exact congrFun (deriv_const_mul_field' c) t
 
-/-- The spatial Laplacian of a scalar multiple of a smooth function. -/
+/-- For every $c \in \mathbb{R}$ and every smooth ($C^\infty$) $w$,
+$\Delta_x (c w) = c \, \Delta_x w$. -/
 theorem spaceLaplacian_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) :
     spaceLaplacian (c • w) = c • spaceLaplacian w := by
   funext ⟨x, t⟩
@@ -201,7 +237,8 @@ theorem spaceLaplacian_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) :
   change Δ (fun y ↦ (c • w) (y, t)) x = c • Δ (fun y ↦ w (y, t)) x
   rw [this, laplacian_smul c hslice]
 
-/-- Iterating the spatial Laplacian preserves smoothness. -/
+/-- If $w$ is smooth ($C^\infty$), then the iterate $\Delta_x^j w$ is smooth for every
+$j \in \mathbb{N}$. -/
 theorem contDiff_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
     ContDiff ℝ ∞ (spaceLaplacian^[j] w) := by
   induction j with
@@ -209,14 +246,16 @@ theorem contDiff_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
   | succ j ih => rw [Function.iterate_succ_apply']; exact contDiff_spaceLaplacian ih
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- Iterating the time derivative preserves smoothness. -/
+/-- Let $E$ be a real normed space. If $w$ is smooth ($C^\infty$), then the iterate $\partial_t^j w$
+is smooth for every $j \in \mathbb{N}$. -/
 theorem contDiff_timeDeriv_iterate [NormedSpace ℝ E] (hw : ContDiff ℝ ∞ w) (j : ℕ) :
     ContDiff ℝ ∞ (timeDeriv^[j] w) := by
   induction j with
   | zero => exact hw
   | succ j ih => rw [Function.iterate_succ_apply']; exact contDiff_timeDeriv ih
 
-/-- The time derivative commutes with the iterated spatial Laplacian on a smooth function. -/
+/-- If $w$ is smooth ($C^\infty$), then $\partial_t (\Delta_x^j w) = \Delta_x^j (\partial_t w)$ for
+every $j \in \mathbb{N}$. -/
 theorem timeDeriv_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
     timeDeriv (spaceLaplacian^[j] w) = spaceLaplacian^[j] (timeDeriv w) := by
   induction j with
@@ -225,7 +264,8 @@ theorem timeDeriv_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply',
       timeDeriv_spaceLaplacian (contDiff_spaceLaplacian_iterate hw j), ih]
 
-/-- The iterated spatial Laplacian is local. -/
+/-- Let $V \subseteq E \times \mathbb{R}$ be open. If $w_1 = w_2$ on $V$, then
+$\Delta_x^j w_1 = \Delta_x^j w_2$ on $V$ for every $j \in \mathbb{N}$. -/
 theorem spaceLaplacian_iterate_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V)
     (j : ℕ) : EqOn (spaceLaplacian^[j] w₁) (spaceLaplacian^[j] w₂) V := by
   induction j with
@@ -234,7 +274,8 @@ theorem spaceLaplacian_iterate_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : Eq
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
     exact spaceLaplacian_eqOn hV ih
 
-/-- The iterated spatial Laplacian of a scalar multiple of a smooth function. -/
+/-- For every $c \in \mathbb{R}$, every smooth ($C^\infty$) $w$ and every $j \in \mathbb{N}$,
+$\Delta_x^j (c w) = c \, \Delta_x^j w$. -/
 theorem spaceLaplacian_iterate_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) (j : ℕ) :
     spaceLaplacian^[j] (c • w) = c • spaceLaplacian^[j] w := by
   induction j with
@@ -243,7 +284,9 @@ theorem spaceLaplacian_iterate_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) (j
     rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ih,
       spaceLaplacian_const_smul c (contDiff_spaceLaplacian_iterate hw j)]
 
-/-- The iterated spatial Laplacian, on a slice, is the iterated Laplacian of the slice. -/
+/-- For every $w$, $j \in \mathbb{N}$ and $t \in \mathbb{R}$, the slice
+$y \mapsto \Delta_x^j w(y, t)$ is the iterated Laplacian $\Delta^j$ of the slice
+$y \mapsto w(y, t)$. -/
 theorem spaceLaplacian_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (t : ℝ) :
     (fun y ↦ spaceLaplacian^[j] w (y, t)) = Laplacian.laplacian^[j] fun y ↦ w (y, t) := by
   induction j with
@@ -253,7 +296,8 @@ theorem spaceLaplacian_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (t : ℝ) 
     rfl
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- The iterated time derivative, on a slice, is the iterated derivative of the slice. -/
+/-- For every $w$, $j \in \mathbb{N}$ and $x \in E$, the slice $s \mapsto \partial_t^j w(x, s)$ is
+the $j$-fold iterated derivative of the slice $s \mapsto w(x, s)$. -/
 theorem timeDeriv_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (x : E) :
     (fun s ↦ timeDeriv^[j] w (x, s)) = deriv^[j] fun s ↦ w (x, s) := by
   induction j with
@@ -264,7 +308,8 @@ theorem timeDeriv_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (x : E) :
 
 end SpaceTimeCalculus
 
-/-- The iterated derivatives of a function vanishing on an open set vanish there. -/
+/-- Let $s \subseteq \mathbb{R}$ be open, and let $f \colon \mathbb{R} \to \mathbb{R}$ vanish on
+$s$. Then the $j$-fold iterated derivative of $f$ vanishes on $s$, for every $j \in \mathbb{N}$. -/
 theorem iterate_deriv_eq_zero_of_eqOn {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s)
     (h : EqOn f 0 s) (j : ℕ) : EqOn (deriv^[j] f) 0 s := by
   induction j with
@@ -276,9 +321,13 @@ theorem iterate_deriv_eq_zero_of_eqOn {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOp
       Pi.zero_apply]
 
 omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **The iterated time derivatives of a smooth function vanishing on `{x} × (0, T)` vanish at
-`(x, 0)`**: they vanish on `{x} × (0, T)` (`iterate_deriv_eq_zero_of_eqOn`) and are
-continuous. -/
+/-- **Iterated time derivatives at the initial time.** Let $E$ be a real normed space, let $T > 0$,
+let $u \colon E \times \mathbb{R} \to \mathbb{R}$ be smooth ($C^\infty$), and let $x \in E$ with
+$u(x, t) = 0$ for all $t \in (0, T)$. Then $\partial_t^n u(x, 0) = 0$ for every
+$n \in \mathbb{N}$.
+
+The iterated time derivatives vanish on $\{x\} \times (0, T)$ by
+`Heat.iterate_deriv_eq_zero_of_eqOn`, and they are continuous. -/
 theorem timeDeriv_iterate_apply_zero_eq_zero [NormedSpace ℝ E] {T : ℝ} {u : E × ℝ → ℝ}
     (hT : 0 < T) (hsmooth : ContDiff ℝ ∞ u) {x : E} (hx : ∀ t ∈ Ioo 0 T, u (x, t) = 0) (n : ℕ) :
     timeDeriv^[n] u (x, 0) = 0 := by
@@ -294,7 +343,7 @@ theorem timeDeriv_iterate_apply_zero_eq_zero [NormedSpace ℝ E] {T : ℝ} {u : 
 
 end Heat
 
-/-! ### Evaluation of a bounded linear family commutes with `d/dt` -/
+/-! ### Evaluation of a bounded linear family commutes with the time derivative -/
 
 namespace Bochner
 
@@ -303,7 +352,9 @@ section Linear
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
   [NormedSpace ℝ W] {Φ : V → W}
 
-/-- An additive, homogeneous map bounded by `C ‖w‖` is Lipschitz with constant `C`. -/
+/-- Let $V$ and $W$ be real normed spaces, and let $\Phi \colon V \to W$ be additive and
+homogeneous, with $\|\Phi(w)\| \le C \|w\|$ for all $w$. Then
+$\|\Phi(w_1) - \Phi(w_2)\| \le C \|w_1 - w_2\|$ for all $w_1, w_2 \in V$. -/
 theorem norm_sub_le_of_forall_add_smul_norm_le (hadd : ∀ w₁ w₂, Φ (w₁ + w₂) = Φ w₁ + Φ w₂)
     (hsmul : ∀ (c : ℝ) w, Φ (c • w) = c • Φ w) {C : ℝ} (hb : ∀ w, ‖Φ w‖ ≤ C * ‖w‖) (w₁ w₂ : V) :
     ‖Φ w₁ - Φ w₂‖ ≤ C * ‖w₁ - w₂‖ := by
@@ -312,10 +363,13 @@ theorem norm_sub_le_of_forall_add_smul_norm_le (hadd : ∀ w₁ w₂, Φ (w₁ +
   rw [this]
   exact hb _
 
-/-- **A bounded linear map commutes with the derivative of a curve**: if `Φ` is additive,
-homogeneous and bounded by `C ‖w‖`, then `Φ ∘ v` has derivative `Φ v'` within `s` wherever `v`
-has derivative `v'`. This is how the evaluation at a point of the canonical `C^k(Ω̄)`
-representative — a bounded linear functional of `w ∈ H^m(Ω)` — commutes with `d/dt`. -/
+/-- **A bounded linear map commutes with the derivative of a curve.** Let $\Phi \colon V \to W$ be
+additive and homogeneous, with $\|\Phi(w)\| \le C \|w\|$ for all $w$. If a curve
+$v \colon \mathbb{R} \to V$ has the derivative $v'$ at $t$ within $s \subseteq \mathbb{R}$, then
+$r \mapsto \Phi(v(r))$ has the derivative $\Phi(v')$ at $t$ within $s$.
+
+This is how the evaluation at a point of the canonical $C^k(\bar\Omega)$ representative, a
+bounded linear functional of $w \in H^m(\Omega)$, commutes with $d/dt$. -/
 theorem hasDerivWithinAt_of_forall_add_smul_norm_le (hadd : ∀ w₁ w₂, Φ (w₁ + w₂) = Φ w₁ + Φ w₂)
     (hsmul : ∀ (c : ℝ) w, Φ (c • w) = c • Φ w) {C : ℝ} (hb : ∀ w, ‖Φ w‖ ≤ C * ‖w‖)
     {v : ℝ → V} {v' : V} {s : Set ℝ} {t : ℝ} (hv : HasDerivWithinAt v v' s t) :
@@ -329,15 +383,19 @@ end Bochner
 
 /-! ### The second iterated derivative within a set -/
 
-/-- `iteratedDerivWithin 2 f s = derivWithin (derivWithin f s) s`. -/
+/-- Let $F$ be a real normed space, let $f \colon \mathbb{R} \to F$, and let
+$s \subseteq \mathbb{R}$. The second iterated derivative of $f$ within $s$ is the derivative
+within $s$ of the derivative of $f$ within $s$. -/
 theorem iteratedDerivWithin_two {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     (f : ℝ → F) (s : Set ℝ) : iteratedDerivWithin 2 f s = derivWithin (derivWithin f s) s :=
   iteratedDerivWithin_succ.trans (congrArg (fun g ↦ derivWithin g s) iteratedDerivWithin_one)
 
 /-! ### A curve in a submodule -/
 
-/-- A curve with values in a submodule that is differentiable in the ambient space, with a
-derivative in the submodule, is differentiable as a curve in the submodule. -/
+/-- Let $K$ be a real normed space and $V \subseteq K$ a submodule. Let $W \colon \mathbb{R} \to K$
+take values in $V$, and let $W$ have the derivative $W' \in V$ at $t$ within
+$s \subseteq \mathbb{R}$. Then $W$, as a curve in $V$, has the derivative $W'$ at $t$ within
+$s$. -/
 theorem HasDerivWithinAt.codRestrict_submodule {K : Type*} [NormedAddCommGroup K]
     [NormedSpace ℝ K] (V : Submodule ℝ K) {W : ℝ → K} {W' : K} {s : Set ℝ} {t : ℝ}
     (h : HasDerivWithinAt W W' s t) (hW : ∀ t, W t ∈ V) (hW' : W' ∈ V) :

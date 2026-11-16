@@ -21,45 +21,60 @@ import Numlib.LinearAlgebra.Matrix.Similar
 /-!
 # Unreduced upper Hessenberg matrices and Krylov matrices
 
-An upper Hessenberg matrix is *unreduced* when none of its subdiagonal entries vanishes
-([golub2013matrix] §7.4.5). Unreducedness is what makes the Hessenberg form of a matrix
-essentially unique (the implicit Q theorem, `Matrix.IsArnoldiDecomposition.implicitQ` of
-`Numlib/LinearAlgebra/Matrix/KrylovDecomposition`), what gives every eigenvalue geometric
-multiplicity one, and what lets a QR step be computed implicitly.
+An upper Hessenberg matrix $H$ is *unreduced* when none of its subdiagonal entries $h_{i+1,i}$ is
+zero ([golub2013matrix], §7.4.5). Unreducedness makes the Hessenberg form of a matrix essentially
+unique (the implicit Q theorem, `Matrix.IsArnoldiDecomposition.implicitQ` in
+`Numlib.LinearAlgebra.Matrix.KrylovDecomposition`), gives every eigenvalue geometric multiplicity
+one, and lets a QR step be computed implicitly.
+
+The module proves these facts through the **Krylov matrix** $K(A, v, j) = [v \mid A v \mid \cdots
+\mid A^{j-1} v]$. For an upper Hessenberg $(N+1) \times (N+1)$ matrix $H$ and the first unit vector
+$e_0$, the Krylov matrix $K(H, e_0, N + 1)$ is upper triangular, and its diagonal entries are the
+partial products of the subdiagonal of $H$. Thus $H$ is unreduced exactly when this Krylov matrix is
+also nonsingular, and conjugation by a unitary $Q$ gives Theorem 7.4.3 of [golub2013matrix].
 
 ## Main definitions
 
-* `Matrix.IsUnreducedUpperHessenberg`: upper Hessenberg, and `H i j ≠ 0` whenever `j ⋖ i`. As
-  `Matrix.IsUpperHessenberg`, it is stated over a bare `LinearOrder` on the index type; on `Fin N`
-  the covering relation is `i = j + 1` (`Matrix.isUnreducedUpperHessenberg_iff_fin`).
-* `Matrix.krylovMatrix A v j`: the Krylov matrix `[v | A v | ⋯ | A^{j-1} v]`.
+* `Matrix.IsUnreducedUpperHessenberg`: $H$ is upper Hessenberg and every subdiagonal entry is
+  nonzero.
+* `Matrix.krylovMatrix`: the Krylov matrix $K(A, v, j) = [v \mid A v \mid \cdots \mid A^{j-1} v]$.
 
 ## Main results
 
-* `Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols` and
-  `Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one` ([golub2013matrix] Theorem 7.4.4):
-  the first `N` columns of an unreduced `(N + 1) × (N + 1)` Hessenberg matrix are independent, so
-  every eigenvalue has geometric multiplicity one.
-* `Matrix.IsUpperHessenberg.isUpperTriangular_krylovMatrix`: the Krylov matrix of a Hessenberg
-  matrix on the first unit vector is upper triangular, its diagonal being the partial products of
-  the subdiagonal (`Matrix.IsUpperHessenberg.krylovMatrix_succ_succ`).
-* `Matrix.isUnreducedUpperHessenberg_conj_iff_krylovMatrix` ([golub2013matrix] Theorem 7.4.3):
-  `Qᴴ A Q` is unreduced upper Hessenberg iff `Qᴴ K(A, Q e₀, n)` is upper triangular and nonsingular.
-* `Matrix.IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular`: conjugating by a
-  nonsingular upper triangular matrix keeps unreducedness.
-* `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`: the implicit-shift
-  principle behind the Francis and QZ steps. If `H` is unreduced, `Z` is unitary with `Zᴴ H Z`
-  Hessenberg and `Z e₀` a multiple of `p(H) e₀`, then `Zᴴ p(H)` is upper triangular — so `Z` is the
-  orthogonal factor of a QR factorization of `p(H)`, computed without forming `p(H)`.
+* `Matrix.IsUnreducedUpperHessenberg.linearIndependent_init_cols`,
+  `Matrix.IsUnreducedUpperHessenberg.finrank_eigenspace_le_one`: the first $N$ columns of an
+  unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix are linearly independent, so every
+  eigenvalue has geometric multiplicity one (Theorem 7.4.4 of [golub2013matrix]).
+* `Matrix.IsUpperHessenberg.isUpperTriangular_krylovMatrix`,
+  `Matrix.IsUpperHessenberg.krylovMatrix_succ_succ`: the Krylov matrix of an upper Hessenberg matrix
+  on $e_0$ is upper triangular, and its diagonal is the sequence of partial products of the
+  subdiagonal.
+* `Matrix.isUnreducedUpperHessenberg_conj_iff_krylovMatrix`: for unitary $Q$, the matrix $Q^H A Q$
+  is unreduced upper Hessenberg if and only if $Q^H K(A, Q e_0, N + 1)$ is upper triangular and
+  nonsingular (Theorem 7.4.3 of [golub2013matrix]).
+* `Matrix.IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular`: conjugation by a nonsingular
+  upper triangular matrix keeps unreducedness.
+* `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`: the implicit-shift principle
+  behind the Francis and QZ steps. If $H$ is unreduced, $Z$ is unitary, $Z^H H Z$ is upper
+  Hessenberg and $Z e_0$ is a multiple of $p(H) e_0$, then $Z^H p(H)$ is upper triangular. Thus $Z$
+  is the unitary factor of a QR factorization of $p(H)$, computed without forming $p(H)$.
+
+## Proof outline
+
+The implicit-shift principle is proved through Krylov matrices, not through the implicit Q theorem.
+Let $K = K(H, e_0, N + 1)$, which is upper triangular and nonsingular. Then $Z^H p(H) K$ is a
+multiple of $K(Z^H H Z, e_0, N + 1)$, which is upper triangular because $Z^H H Z$ is Hessenberg; and
+$K^{-1}$ is upper triangular. No nonsingularity of $p(H)$ is needed.
 
 ## Implementation notes
 
-The Krylov statements are about `(N + 1) × (N + 1)` matrices, so that the first unit vector
-`Pi.single 0 1` is well typed; the subdiagonal entries are `H i.succ i.castSucc` for `i : Fin N`.
-The implicit-shift principle is proved through Krylov matrices rather than through the implicit Q
-theorem: with `K = K(H, e₀)` upper triangular and nonsingular, `Zᴴ p(H) K` is a multiple of
-`K(Zᴴ H Z, e₀)`, which is upper triangular because `Zᴴ H Z` is Hessenberg. No nonsingularity of
-`p(H)` is needed.
+* Like `Matrix.IsUpperHessenberg`, `Matrix.IsUnreducedUpperHessenberg` is stated for any linearly
+  ordered index type. The subdiagonal consists of the entries $h_{ij}$ where $i$ covers $j$
+  ($j \lessdot i$); on $\{0, \dots, N - 1\}$ this means $i = j + 1$
+  (`Matrix.isUnreducedUpperHessenberg_iff_fin`).
+* Indices start at $0$. The statements about Krylov matrices are about $(N+1) \times (N+1)$
+  matrices, so that the first unit vector $e_0$, `Pi.single 0 1`, is well typed. The subdiagonal
+  entries are then `H i.succ i.castSucc` for `i : Fin N`.
 -/
 
 open Polynomial
@@ -70,9 +85,10 @@ section Basic
 
 variable {n R : Type*} [LinearOrder n]
 
-/-- Unreduced upper Hessenberg ([golub2013matrix] §7.4.5: "Hessenberg matrices with no zero
-subdiagonal entries are said to be unreduced"): upper Hessenberg, and every entry `H i j` with `j`
-covered by `i` (the subdiagonal) is nonzero. -/
+/-- An **unreduced upper Hessenberg** matrix ([golub2013matrix], §7.4.5: "Hessenberg matrices with
+no zero subdiagonal entries are said to be unreduced"). Let $H$ be a square matrix with a
+linearly ordered index set. Then $H$ is unreduced upper Hessenberg if $H$ is upper Hessenberg
+and $h_{ij} \neq 0$ whenever $i$ covers $j$, that is, whenever $h_{ij}$ is on the subdiagonal. -/
 def IsUnreducedUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
   H.IsUpperHessenberg ∧ ∀ i j : n, j ⋖ i → H i j ≠ 0
 
@@ -83,13 +99,15 @@ theorem IsUnreducedUpperHessenberg.isUpperHessenberg (h : H.IsUnreducedUpperHess
     H.IsUpperHessenberg :=
   h.1
 
-/-- The subdiagonal entries of an unreduced upper Hessenberg matrix are nonzero. -/
+/-- If $H$ is unreduced upper Hessenberg and $i$ covers $j$, then $h_{ij} \neq 0$: the subdiagonal
+entries are nonzero. -/
 theorem IsUnreducedUpperHessenberg.apply_ne_zero (h : H.IsUnreducedUpperHessenberg) {i j : n}
     (hij : j ⋖ i) : H i j ≠ 0 :=
   h.2 i j hij
 
-/-- On `Fin N` the subdiagonal is `i = j + 1`: `H` is unreduced upper Hessenberg iff it is upper
-Hessenberg and `H (k + 1) k ≠ 0` for every `k + 1 < N`. -/
+/-- Let $H$ be an $N \times N$ matrix with indices $0, \dots, N - 1$. Then $H$ is unreduced upper
+Hessenberg if and only if $H$ is upper Hessenberg and $h_{k+1,k} \neq 0$ for every $k$ with
+$k + 1 < N$. -/
 theorem isUnreducedUpperHessenberg_iff_fin {N : ℕ} {H : Matrix (Fin N) (Fin N) R} :
     H.IsUnreducedUpperHessenberg ↔
       H.IsUpperHessenberg ∧ ∀ (k : ℕ) (hk : k + 1 < N), H ⟨k + 1, hk⟩ ⟨k, by omega⟩ ≠ 0 := by
@@ -102,23 +120,25 @@ theorem isUnreducedUpperHessenberg_iff_fin {N : ℕ} {H : Matrix (Fin N) (Fin N)
     subst hij
     exact h j hi
 
-/-- On `Fin (N + 1)`: unreduced upper Hessenberg iff upper Hessenberg with
-`H i.succ i.castSucc ≠ 0` for every `i : Fin N`. -/
+/-- Let $H$ be an $(N+1) \times (N+1)$ matrix with indices $0, \dots, N$. Then $H$ is unreduced
+upper Hessenberg if and only if $H$ is upper Hessenberg and $h_{i+1,i} \neq 0$ for every
+$i < N$. -/
 theorem isUnreducedUpperHessenberg_iff_succ {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) R} :
     H.IsUnreducedUpperHessenberg ↔
       H.IsUpperHessenberg ∧ ∀ i : Fin N, H i.succ i.castSucc ≠ 0 := by
   rw [isUnreducedUpperHessenberg_iff_fin]
   exact and_congr Iff.rfl ⟨fun h i => h i (by omega), fun h k hk => h ⟨k, by omega⟩⟩
 
-/-- The subdiagonal entries `H i.succ i.castSucc` of an unreduced upper Hessenberg matrix on
-`Fin (N + 1)` are nonzero. -/
+/-- If $H$ is an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix, then $h_{i+1,i} \neq 0$ for
+every $i < N$. -/
 theorem IsUnreducedUpperHessenberg.apply_succ_castSucc_ne_zero {N : ℕ}
     {H : Matrix (Fin (N + 1)) (Fin (N + 1)) R} (h : H.IsUnreducedUpperHessenberg) (i : Fin N) :
     H i.succ i.castSucc ≠ 0 :=
   (isUnreducedUpperHessenberg_iff_succ.1 h).2 i
 
-/-- An injective map fixing `0` (for example `Complex.ofReal`, or the complexification of a real
-matrix) keeps unreducedness. -/
+/-- Let $f$ be an injective map with $f(0) = 0$ (for example `Complex.ofReal`, or the
+complexification of a real matrix). If $H$ is unreduced upper Hessenberg, then so is the matrix
+$(f(h_{ij}))$. -/
 theorem IsUnreducedUpperHessenberg.map {S F : Type*} [Zero S] [FunLike F R S]
     [ZeroHomClass F R S] {f : F} (hf : Function.Injective f) (h : H.IsUnreducedUpperHessenberg) :
     (H.map f).IsUnreducedUpperHessenberg :=
@@ -131,14 +151,15 @@ section Shift
 
 variable {n R : Type*} [LinearOrder n] [DecidableEq n] [NonAssocRing R] {H : Matrix n n R}
 
-/-- Shifts keep unreducedness: the subdiagonal of `H - μ I` is that of `H`. -/
+/-- A shift keeps unreducedness: if $H$ is unreduced upper Hessenberg, then so is $H - \mu I$ for
+every scalar $\mu$. The subdiagonal of $H - \mu I$ is that of $H$. -/
 theorem IsUnreducedUpperHessenberg.sub_smul_one (h : H.IsUnreducedUpperHessenberg) (μ : R) :
     (H - μ • 1).IsUnreducedUpperHessenberg := by
   refine ⟨h.1.sub_smul_one μ, fun i j hij => ?_⟩
   rw [Matrix.sub_apply, Matrix.smul_apply, one_apply_ne hij.lt.ne', smul_zero, sub_zero]
   exact h.2 i j hij
 
-/-- Adding a multiple of the identity keeps unreducedness. -/
+/-- If $H$ is unreduced upper Hessenberg, then so is $H + \mu I$ for every scalar $\mu$. -/
 theorem IsUnreducedUpperHessenberg.add_smul_one (h : H.IsUnreducedUpperHessenberg) (μ : R) :
     (H + μ • 1).IsUnreducedUpperHessenberg := by
   refine ⟨h.1.add_smul_one μ, fun i j hij => ?_⟩
@@ -153,8 +174,9 @@ section Columns
 
 variable {K : Type*} [Field K] {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
 
-/-- Deleting the first row and the last column of an unreduced upper Hessenberg matrix leaves an
-upper triangular matrix whose diagonal is the (nonzero) subdiagonal of `H`; it is nonsingular. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. The
+$N \times N$ matrix obtained from $H$ by deleting the first row and the last column is upper
+triangular, and its diagonal is the subdiagonal of $H$. Hence its determinant is nonzero. -/
 theorem IsUnreducedUpperHessenberg.det_submatrix_succ_castSucc_ne_zero
     (h : H.IsUnreducedUpperHessenberg) : (H.submatrix Fin.succ Fin.castSucc).det ≠ 0 := by
   have hSt : (H.submatrix Fin.succ Fin.castSucc).IsUpperTriangular := by
@@ -167,17 +189,19 @@ theorem IsUnreducedUpperHessenberg.det_submatrix_succ_castSucc_ne_zero
   rw [det_of_isUpperTriangular hSt, Finset.prod_ne_zero_iff]
   exact fun i _ => h.apply_succ_castSucc_ne_zero i
 
-/-- The first `N` columns of an unreduced upper Hessenberg `(N + 1) × (N + 1)` matrix are linearly
-independent: deleting the first row leaves them as the columns of an upper triangular matrix whose
-diagonal is the (nonzero) subdiagonal of `H`. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. Then the
+first $N$ columns of $H$ are linearly independent.
+
+After deletion of the first row, these columns form an upper triangular matrix whose diagonal is
+the subdiagonal of $H$, which has no zero entry. -/
 theorem IsUnreducedUpperHessenberg.linearIndependent_init_cols
     (h : H.IsUnreducedUpperHessenberg) :
     LinearIndependent K fun j : Fin N => H.col j.castSucc :=
   LinearIndependent.of_comp (LinearMap.funLeft K K Fin.succ)
     (linearIndependent_cols_of_det_ne_zero h.det_submatrix_succ_castSucc_ne_zero)
 
-/-- The rank of an unreduced upper Hessenberg `(N + 1) × (N + 1)` matrix is at least `N`, in the
-form `N ≤ finrank (range H)`. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. Then
+$\operatorname{rank} H \ge N$, stated as $N \le \dim \operatorname{range} H$. -/
 theorem IsUnreducedUpperHessenberg.le_finrank_range (h : H.IsUnreducedUpperHessenberg) :
     N ≤ Module.finrank K (LinearMap.range (toLin' H)) := by
   have hli := h.linearIndependent_init_cols
@@ -191,9 +215,13 @@ theorem IsUnreducedUpperHessenberg.le_finrank_range (h : H.IsUnreducedUpperHesse
       (finrank_span_eq_card hli).symm
     _ ≤ _ := Submodule.finrank_mono hle
 
-/-- [golub2013matrix] Theorem 7.4.4: every eigenvalue of an unreduced upper Hessenberg matrix has
-geometric multiplicity (at most, and for an eigenvalue exactly) one. `H - μ I` is again unreduced,
-so its rank is at least `N`, and rank–nullity leaves at most one dimension for the kernel. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field $K$. Then for
+every $\mu \in K$ the eigenspace $\ker (H - \mu I)$ has dimension at most $1$. Thus every
+eigenvalue of $H$ has geometric multiplicity one. This is Theorem 7.4.4 of [golub2013matrix].
+
+The matrix $H - \mu I$ is again unreduced, so its rank is at least $N$, and the rank–nullity
+theorem leaves at most one dimension for the kernel. The eigenspace is that of
+`Matrix.toLin' H`. -/
 theorem IsUnreducedUpperHessenberg.finrank_eigenspace_le_one (h : H.IsUnreducedUpperHessenberg)
     (μ : K) : Module.finrank K (Module.End.eigenspace (toLin' H) μ) ≤ 1 := by
   have hμ : toLin' H - μ • (1 : Module.End K (Fin (N + 1) → K)) = toLin' (H - μ • 1) := by
@@ -204,7 +232,8 @@ theorem IsUnreducedUpperHessenberg.finrank_eigenspace_le_one (h : H.IsUnreducedU
   rw [Module.End.eigenspace_def, hμ]
   omega
 
-/-- For an eigenvalue `μ` of an unreduced upper Hessenberg matrix the eigenspace is a line. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. If $\mu$ is
+an eigenvalue of $H$, then the eigenspace of $\mu$ has dimension exactly $1$. -/
 theorem IsUnreducedUpperHessenberg.finrank_eigenspace_eq_one (h : H.IsUnreducedUpperHessenberg)
     {μ : K} (hμ : Module.End.HasEigenvalue (toLin' H) μ) :
     Module.finrank K (Module.End.eigenspace (toLin' H) μ) = 1 := by
@@ -224,22 +253,26 @@ section Semiring
 
 variable [Semiring R]
 
-/-- The Krylov matrix ([golub2013matrix] §7.4.5): `krylovMatrix A v j = [v | A v | ⋯ | A^{j-1} v]`,
-the `n × j` matrix whose column `k` is `A^k v`. -/
+/-- The **Krylov matrix** ([golub2013matrix], §7.4.5). Let $A$ be an $n \times n$ matrix over a
+semiring, $v$ a vector and $j \in \mathbb{N}$. The Krylov matrix
+$$K(A, v, j) = [v \mid A v \mid \cdots \mid A^{j-1} v]$$
+is the $n \times j$ matrix whose column $k$ is $A^k v$, for $k = 0, \dots, j - 1$. -/
 def krylovMatrix (A : Matrix n n R) (v : n → R) (j : ℕ) : Matrix n (Fin j) R :=
   Matrix.of fun i k => (A ^ (k : ℕ) *ᵥ v) i
 
+/-- The entry $(i, k)$ of $K(A, v, j)$ is the entry $i$ of $A^k v$. -/
 @[simp]
 theorem krylovMatrix_apply (A : Matrix n n R) (v : n → R) (j : ℕ) (i : n) (k : Fin j) :
     krylovMatrix A v j i k = (A ^ (k : ℕ) *ᵥ v) i :=
   rfl
 
-/-- The columns of the Krylov matrix are the Krylov vectors `A^k v`. -/
+/-- The column $k$ of $K(A, v, j)$ is the Krylov vector $A^k v$. -/
 theorem col_krylovMatrix (A : Matrix n n R) (v : n → R) (j : ℕ) (k : Fin j) :
     (krylovMatrix A v j).col k = A ^ (k : ℕ) *ᵥ v :=
   rfl
 
-/-- `A K(A, v) = [A v | ⋯ | A^j v]`: column `k` of `A * krylovMatrix A v j` is `A^(k+1) v`. -/
+/-- The column $k$ of $A \, K(A, v, j)$ is $A^{k+1} v$, that is,
+$A \, K(A, v, j) = [A v \mid \cdots \mid A^j v]$. -/
 theorem col_mul_krylovMatrix (A : Matrix n n R) (v : n → R) (j : ℕ) (k : Fin j) :
     (A * krylovMatrix A v j).col k = A ^ ((k : ℕ) + 1) *ᵥ v := by
   rw [col_mul_eq_mulVec_col, col_krylovMatrix, mulVec_mulVec, pow_succ']
@@ -250,14 +283,16 @@ section CommRing
 
 variable [CommRing R]
 
-/-- The Krylov matrix is linear in the starting vector. -/
+/-- The Krylov matrix is linear in the starting vector: $K(A, c v, j) = c \, K(A, v, j)$ for every
+scalar $c$. -/
 theorem krylovMatrix_smul (A : Matrix n n R) (c : R) (v : n → R) (j : ℕ) :
     krylovMatrix A (c • v) j = c • krylovMatrix A v j := by
   ext i k
   simp [mulVec_smul]
 
-/-- A polynomial in `A` commutes past the Krylov matrix: `p(A) K(A, v) = K(A, p(A) v)`, since
-`p(A)` commutes with every power of `A`. -/
+/-- Let $A$ be a square matrix over a commutative ring and $p$ a polynomial. Then
+$$p(A) \, K(A, v, j) = K(A, p(A) v, j),$$
+since $p(A)$ commutes with every power of $A$. -/
 theorem aeval_mul_krylovMatrix (A : Matrix n n R) (p : R[X]) (v : n → R) (j : ℕ) :
     aeval A p * krylovMatrix A v j = krylovMatrix A (aeval A p *ᵥ v) j := by
   ext i k
@@ -267,9 +302,12 @@ theorem aeval_mul_krylovMatrix (A : Matrix n n R) (p : R[X]) (v : n → R) (j : 
     rw [← aeval_X_pow (R := R) A, ← map_mul, ← map_mul, mul_comm]
   rw [hcomm]
 
-/-- For unitary `Q`: `Qᴴ K(A, Q w) = K(Qᴴ A Q, w)`. With `w = e₀` this is the identity
-`Qᴴ K(A, Q e₀, n) = [e₀ | H e₀ | ⋯ | H^{n-1} e₀]`, `H = Qᴴ A Q`, of the proof of
-[golub2013matrix] Theorem 7.4.3. -/
+/-- Let $Q$ be a unitary $n \times n$ matrix over a commutative ring with involution, $A$ an
+$n \times n$ matrix and $w$ a vector. Then
+$$Q^H K(A, Q w, j) = K(Q^H A Q, w, j).$$
+With $w = e_0$ and $j = n$ this is the identity $Q^H K(A, Q e_0, n) = [e_0 \mid H e_0 \mid
+\cdots \mid H^{n-1} e_0]$ with $H = Q^H A Q$, from the proof of Theorem 7.4.3 of
+[golub2013matrix]. -/
 theorem conjTranspose_mul_krylovMatrix [StarRing R] {Q : Matrix n n R}
     (hQ : Q ∈ unitaryGroup n R) (A : Matrix n n R) (w : n → R) (j : ℕ) :
     star Q * krylovMatrix A (Q *ᵥ w) j = krylovMatrix (star Q * A * Q) w j := by
@@ -292,7 +330,8 @@ section Semiring
 
 variable [Semiring R] {H : Matrix (Fin (N + 1)) (Fin (N + 1)) R}
 
-/-- For upper Hessenberg `H`, the vector `H^k e₀` vanishes below position `k`. -/
+/-- Let $H$ be an upper Hessenberg $(N+1) \times (N+1)$ matrix over a semiring. Then the entry $i$
+of $H^k e_0$ is zero for every $i > k$. -/
 theorem IsUpperHessenberg.pow_mulVec_single_zero_apply_of_lt (hH : H.IsUpperHessenberg)
     {k : ℕ} {i : Fin (N + 1)} (hki : k < i) : (H ^ k *ᵥ Pi.single 0 1) i = 0 := by
   induction k generalizing i with
@@ -308,18 +347,22 @@ theorem IsUpperHessenberg.pow_mulVec_single_zero_apply_of_lt (hH : H.IsUpperHess
     · rw [ih hl, mul_zero]
     · rw [isUpperHessenberg_iff_fin.1 hH i l (by omega), zero_mul]
 
-/-- The Krylov matrix of a Hessenberg matrix on the first unit vector is upper triangular. -/
+/-- Let $H$ be an upper Hessenberg $(N+1) \times (N+1)$ matrix over a semiring. Then the Krylov
+matrix $K(H, e_0, N + 1)$ is upper triangular. -/
 theorem IsUpperHessenberg.isUpperTriangular_krylovMatrix (hH : H.IsUpperHessenberg) :
     (krylovMatrix H (Pi.single 0 1) (N + 1)).IsUpperTriangular :=
   fun _ _ hji => hH.pow_mulVec_single_zero_apply_of_lt hji
 
-/-- The diagonal of `K(H, e₀)` starts at `1`. -/
+/-- For every $(N+1) \times (N+1)$ matrix $H$, the entry $(0, 0)$ of $K(H, e_0, N + 1)$ is $1$. -/
 theorem krylovMatrix_single_zero_zero (H : Matrix (Fin (N + 1)) (Fin (N + 1)) R) :
     krylovMatrix H (Pi.single 0 1) (N + 1) 0 0 = 1 := by
   simp
 
-/-- The diagonal of `K(H, e₀)` for upper Hessenberg `H` is the sequence of partial products of the
-subdiagonal: `K (i + 1) (i + 1) = H (i + 1) i * K i i`. -/
+/-- Let $H$ be an upper Hessenberg $(N+1) \times (N+1)$ matrix over a semiring, and let
+$K = K(H, e_0, N + 1)$. Then for every $i < N$
+$$K_{i+1,i+1} = h_{i+1,i} \, K_{ii}.$$
+Since $K_{00} = 1$, the diagonal of $K$ is the sequence of partial products of the subdiagonal
+of $H$. -/
 theorem IsUpperHessenberg.krylovMatrix_succ_succ (hH : H.IsUpperHessenberg) (i : Fin N) :
     krylovMatrix H (Pi.single 0 1) (N + 1) i.succ i.succ =
       H i.succ i.castSucc * krylovMatrix H (Pi.single 0 1) (N + 1) i.castSucc i.castSucc := by
@@ -337,7 +380,8 @@ end Semiring
 
 variable {K : Type*} [Field K] {H : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
 
-/-- For unreduced `H` the diagonal of `K(H, e₀)` has no zero. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. Then every
+diagonal entry of $K(H, e_0, N + 1)$ is nonzero. -/
 theorem IsUnreducedUpperHessenberg.krylovMatrix_apply_self_ne_zero
     (h : H.IsUnreducedUpperHessenberg) (i : Fin (N + 1)) :
     krylovMatrix H (Pi.single 0 1) (N + 1) i i ≠ 0 := by
@@ -347,17 +391,23 @@ theorem IsUnreducedUpperHessenberg.krylovMatrix_apply_self_ne_zero
     rw [h.1.krylovMatrix_succ_succ]
     exact mul_ne_zero (h.apply_succ_castSucc_ne_zero i) ih
 
-/-- For unreduced `H` the Krylov matrix `K(H, e₀)` is nonsingular. -/
+/-- Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field. Then the
+Krylov matrix $K(H, e_0, N + 1)$ is nonsingular. -/
 theorem IsUnreducedUpperHessenberg.isUnit_krylovMatrix (h : H.IsUnreducedUpperHessenberg) :
     IsUnit (krylovMatrix H (Pi.single 0 1) (N + 1)) :=
   (IsUpperTriangular.isUnit_iff
     h.1.isUpperTriangular_krylovMatrix).2 h.krylovMatrix_apply_self_ne_zero
 
-/-- [golub2013matrix] Theorem 7.4.3 at `Q = I`: `H` is unreduced upper Hessenberg iff
-`K(H, e₀) = [e₀ | H e₀ | ⋯ | H^N e₀]` is upper triangular and nonsingular. Backwards:
-`H = (H K) K⁻¹`, where column `l` of `H K` is `H^{l+1} e₀`, supported on the first `l + 2`
-coordinates, and `K⁻¹` is upper triangular; so `H` is Hessenberg, and then the diagonal recursion
-`K (i+1) (i+1) = H (i+1) i * K i i` forbids a zero on the subdiagonal. -/
+/-- Let $H$ be an $(N+1) \times (N+1)$ matrix over a field. Then $H$ is unreduced upper Hessenberg
+if and only if
+$$K(H, e_0, N + 1) = [e_0 \mid H e_0 \mid \cdots \mid H^N e_0]$$
+is upper triangular and has a nonzero determinant. This is Theorem 7.4.3 of [golub2013matrix]
+for $Q = I$.
+
+For the converse direction, write $H = (H K) K^{-1}$ with $K = K(H, e_0, N + 1)$. Column $l$ of
+$H K$ is $H^{l+1} e_0$, which is zero below entry $l + 1$, and $K^{-1}$ is upper triangular; so
+$H$ is upper Hessenberg. Then the recursion $K_{i+1,i+1} = h_{i+1,i} K_{ii}$ excludes a zero on
+the subdiagonal. -/
 theorem isUnreducedUpperHessenberg_iff_krylovMatrix :
     H.IsUnreducedUpperHessenberg ↔
       (krylovMatrix H (Pi.single 0 1) (N + 1)).IsUpperTriangular ∧
@@ -387,8 +437,11 @@ theorem isUnreducedUpperHessenberg_iff_krylovMatrix :
   rw [det_of_isUpperTriangular ht, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff] at hu
   exact hu i.succ (Finset.mem_univ _) hdiag
 
-/-- [golub2013matrix] Theorem 7.4.3: for unitary `Q`, `Qᴴ A Q` is unreduced upper Hessenberg iff
-`R = Qᴴ K(A, Q e₀, N + 1)` is upper triangular and nonsingular. -/
+/-- Let $A$ be an $(N+1) \times (N+1)$ matrix over a field with involution, and let $Q$ be a unitary
+$(N+1) \times (N+1)$ matrix with first column $Q e_0$. Then $Q^H A Q$ is unreduced upper
+Hessenberg if and only if
+$$R = Q^H K(A, Q e_0, N + 1)$$
+is upper triangular and has a nonzero determinant. This is Theorem 7.4.3 of [golub2013matrix]. -/
 theorem isUnreducedUpperHessenberg_conj_iff_krylovMatrix [StarRing K]
     {Q : Matrix (Fin (N + 1)) (Fin (N + 1)) K} (hQ : Q ∈ unitaryGroup (Fin (N + 1)) K)
     (A : Matrix (Fin (N + 1)) (Fin (N + 1)) K) :
@@ -398,9 +451,12 @@ theorem isUnreducedUpperHessenberg_conj_iff_krylovMatrix [StarRing K]
   rw [← mulVec_single_one, conjTranspose_mul_krylovMatrix hQ,
     isUnreducedUpperHessenberg_iff_krylovMatrix]
 
-/-- Conjugating an unreduced upper Hessenberg matrix by a nonsingular upper triangular matrix gives
-an unreduced upper Hessenberg matrix: the product is Hessenberg by the band rules, and its
-subdiagonal entry is `r_{i i} h_{i j} r_{j j}⁻¹`. -/
+/-- Let $H$ be an unreduced upper Hessenberg matrix over a field, with a finite linearly ordered
+index set, and let $R$ be an upper triangular matrix with no zero on its diagonal. Then
+$R H R^{-1}$ is unreduced upper Hessenberg.
+
+The product is upper Hessenberg by the rules for products of band matrices, and its subdiagonal
+entry at $(i, j)$ is $r_{ii} h_{ij} r_{jj}^{-1}$. -/
 theorem IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular {n : Type*} [Fintype n]
     [LinearOrder n] {H R : Matrix n n K} (h : H.IsUnreducedUpperHessenberg)
     (hR : R.IsUpperTriangular) (hdiag : ∀ i, R i i ≠ 0) :
@@ -431,11 +487,16 @@ theorem IsUnreducedUpperHessenberg.mul_mul_inv_of_isUpperTriangular {n : Type*} 
   refine mul_ne_zero (mul_ne_zero (hdiag i) (h.2 i j hij)) ?_
   exact left_ne_zero_of_mul_eq_one hinv
 
-/-- **The implicit-shift principle** behind the Francis and QZ steps ([golub2013matrix] §7.5.5,
-§7.7.6): let `H` be unreduced upper Hessenberg, `p` a polynomial and `Z` unitary with `Zᴴ H Z`
-upper Hessenberg and first column `Z e₀` a multiple of `p(H) e₀`. Then `Zᴴ p(H)` is upper
-triangular. With `K = K(H, e₀)` (upper triangular, nonsingular) and `p(H) e₀ = c Z e₀`,
-`Zᴴ p(H) K = Zᴴ K(H, p(H) e₀) = c K(Zᴴ H Z, e₀)` is upper triangular, and so is `K⁻¹`. -/
+/-- **The implicit-shift principle** behind the Francis and QZ steps ([golub2013matrix], §7.5.5 and
+§7.7.6). Let $H$ be an unreduced upper Hessenberg $(N+1) \times (N+1)$ matrix over a field with
+involution, let $p$ be a polynomial, and let $Z$ be a unitary $(N+1) \times (N+1)$ matrix such
+that $Z^H H Z$ is upper Hessenberg and the first column $Z e_0$ is a multiple of $p(H) e_0$.
+Then $Z^H p(H)$ is upper triangular.
+
+Let $K = K(H, e_0, N + 1)$, which is upper triangular and nonsingular, and let
+$p(H) e_0 = c Z e_0$. Then $Z^H p(H) K = Z^H K(H, p(H) e_0, N + 1) = c K(Z^H H Z, e_0, N + 1)$
+is upper triangular, and so is $K^{-1}$. In the Lean statement the condition on $Z e_0$ is the
+membership of `Z.col 0` in the span of $p(H) e_0$. -/
 theorem IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval [StarRing K]
     (h : H.IsUnreducedUpperHessenberg) (p : K[X]) {Z : Matrix (Fin (N + 1)) (Fin (N + 1)) K}
     (hZ : Z ∈ unitaryGroup (Fin (N + 1)) K) (hG : (star Z * H * Z).IsUpperHessenberg)

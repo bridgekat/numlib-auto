@@ -13,35 +13,42 @@ import Numlib.Analysis.Fourier.TrigonometricBasis
 /-!
 # Products of trigonometric polynomials, and the sine products on a circle
 
-The trigonometric polynomials of degree at most `n` on the circle of circumference `T`
-(`trigPolyLE`) are closed under multiplication in the graded sense: a product of one of degree at
-most `a` with one of degree at most `b` has degree at most `a + b`. That is the content of
-`mul_mem_trigPolyLE`, and it is the trigonometric counterpart of `Polynomial.degree_mul_le`.
+Let $\mathbb{T}_T$ be the circle of circumference $T$, let $e_m(x) = e^{2 \pi i m x / T}$, let $t_m$
+be the members of the real trigonometric system of `Numlib.Analysis.Fourier.TrigonometricBasis`, and
+let $V_n$ be the space of trigonometric polynomials of degree at most $n$ (`trigPolyLE`). These
+spaces are closed under multiplication in the graded sense: the product of a function in $V_a$ and a
+function in $V_b$ lies in $V_{a + b}$ (`mul_mem_trigPolyLE`). This is the trigonometric counterpart
+of `Polynomial.degree_mul_le`.
 
-Its main use is to build a trigonometric polynomial with prescribed zeros. The factor `x ↦ sin (π (x
-- y) / T)` is not a function on the circle — it is *anti*-periodic with period `T` — but a product
-of an even number of such factors is, and `sinProd T y s` is the product of the `2 s` factors with
-nodes `y 0, …, y (2 s - 1)`. It lies in `trigPolyLE T s` (`sinProd_mem_trigPolyLE`), so it is the
-circle analogue of the monic polynomial `∏ (X - y j)` of degree `2 s`, which the alternation
-arguments of best uniform approximation need in order to change sign at prescribed points.
+The main use of this fact is to build a trigonometric polynomial with prescribed zeros. The factor
+$x \mapsto \sin(\pi (x - y) / T)$ is not a function on the circle, because it is antiperiodic with
+period $T$. A product of an even number of such factors is a function on the circle. The sine
+product $x \mapsto \prod_{j < 2s} \sin(\pi (x - y_j) / T)$ with the nodes $y_0, \dots, y_{2s - 1}$
+lies in $V_s$ (`sinProd_mem_trigPolyLE`). It is the circle analogue of the monic polynomial
+$\prod_j (X - y_j)$ of degree $2s$, which the alternation arguments of best uniform approximation
+need in order to change sign at prescribed points.
 
 ## Main definitions
 
-* `reFourier T c m : C(AddCircle T, ℝ)` is `x ↦ (c * fourier m x).re`, the general real member of
-  the two-dimensional space of frequency `m`. It is the shape a product of two members of the real
-  trigonometric system takes, and it lies in `trigPolyLE T n` as soon as `|m| ≤ n`.
-* `sinPair T u v : C(AddCircle T, ℝ)` is `x ↦ sin (π (x - u) / T) * sin (π (x - v) / T)`, written
-  out in the real trigonometric system so that its membership in `trigPolyLE T 1` is immediate.
-* `sinProd T y s : C(AddCircle T, ℝ)` is the product of `sinPair T (y (2 i)) (y (2 i + 1))` over `i
-  < s`, that is, `x ↦ ∏_{j < 2 s} sin (π (x - y j) / T)`.
+* `reFourier`: the function $x \mapsto \operatorname{Re}(c \, e_m(x))$, the general real function of
+  frequency $m$. A product of two members of the real trigonometric system is a sum of such
+  functions.
+* `sinPair`: the function $x \mapsto \sin(\pi (x - u) / T) \sin(\pi (x - v) / T)$, written as a
+  combination of $t_0$, $t_1$ and $t_{-1}$, so that it lies in $V_1$ by definition.
+* `sinProd`: the sine product $x \mapsto \prod_{j < 2s} \sin(\pi (x - y_j) / T)$, as the product of
+  $s$ functions `sinPair`.
 
 ## Main results
 
-* `mul_mem_trigPolyLE`: degrees add under multiplication.
-* `sinProd_mem_trigPolyLE` and `sinProd_coe`: the sine product is a trigonometric polynomial of
-  degree at most `s`, and it evaluates to `∏_{j < 2 s} sin (π (x - y j) / T)`.
-* `sin_pi_div_mul_pos`: on a period the factor `sin (π s / T)` has the sign of `s`, which is what
-  makes the sine product change sign exactly at its nodes.
+* `reFourier_mem_trigPolyLE`: for $|m| \le n$, the function $\operatorname{Re}(c \, e_m)$ lies in
+  $V_n$.
+* `trigFun_mul_trigFun`: $t_i t_j$ is a combination of real functions of frequencies $i + j$ and
+  $i - j$.
+* `mul_mem_trigPolyLE`: if $f \in V_a$ and $g \in V_b$, then $f g \in V_{a + b}$.
+* `sinProd_mem_trigPolyLE`: the sine product with $2s$ nodes lies in $V_s$.
+* `sinProd_coe`: the value of the sine product at $x$ is $\prod_{j < 2s} \sin(\pi (x - y_j) / T)$.
+* `sin_pi_div_mul_pos`: for $0 < |s| < T$, the factor $\sin(\pi s / T)$ has the sign of $s$, so the
+  sine product changes sign exactly at its nodes.
 -/
 
 open Complex MeasureTheory Set Submodule
@@ -52,24 +59,33 @@ variable {T : ℝ}
 
 /-! ### The real functions of a single frequency -/
 
-/-- The general real function of frequency `m` on the circle of circumference `T`: the real part of
-`c * fourier m`. For `c = trigWeight m` it is the `m`-th member `trigFun T m` of the real
-trigonometric system, and every real linear combination of `trigFun T m` and `trigFun T (-m)` is of
-this form. -/
+/-- The **real function of frequency $m$** with coefficient $c \in \mathbb{C}$ on the circle of
+circumference $T$: the continuous function
+$$x \mapsto \operatorname{Re}\bigl(c \, e_m(x)\bigr), \qquad e_m(x) = e^{2 \pi i m x / T}.$$
+
+For $c = w_m$ (`trigWeight m`) it is the member $t_m$ of the real trigonometric system. Every
+real linear combination of $t_m$ and $t_{-m}$ has this form. The exponential $e_m$ is Mathlib's
+`fourier m`. -/
 noncomputable def reFourier (T : ℝ) (c : ℂ) (m : ℤ) : C(AddCircle T, ℝ) where
   toFun x := (c * fourier m x).re
   continuous_toFun :=
     Complex.continuous_re.comp (continuous_const.mul (fourier m).continuous)
 
+/-- The value of the real function of frequency $m$ with coefficient $c$ at $x$ is
+$\operatorname{Re}(c \, e_m(x))$. -/
 @[simp]
 theorem reFourier_apply (T : ℝ) (c : ℂ) (m : ℤ) (x : AddCircle T) :
     reFourier T c m x = (c * fourier m x).re :=
   rfl
 
+/-- The member $t_m$ of the real trigonometric system is the real function of frequency $m$ with the
+coefficient $w_m$. -/
 theorem trigFun_eq_reFourier (T : ℝ) (m : ℤ) : trigFun T m = reFourier T (trigWeight m) m := rfl
 
-/-- The real part of `c * fourier m` is a trigonometric polynomial of degree `|m|`: it is a linear
-combination of `trigFun T m` and `trigFun T (-m)`. -/
+/-- Let $c \in \mathbb{C}$, $m \in \mathbb{Z}$ and $n \in \mathbb{N}$ with $|m| \le n$. Then the
+function $x \mapsto \operatorname{Re}(c \, e_m(x))$ lies in $V_n$.
+
+The function is a linear combination of $t_m$ and $t_{-m}$. -/
 theorem reFourier_mem_trigPolyLE (c : ℂ) {m : ℤ} {n : ℕ} (hm : m.natAbs ≤ n) :
     reFourier T c m ∈ trigPolyLE T n := by
   rcases lt_trichotomy m 0 with hneg | rfl | hpos
@@ -110,10 +126,14 @@ theorem reFourier_mem_trigPolyLE (c : ℂ) {m : ℤ} {n : ℕ} (hm : m.natAbs �
 
 /-! ### Degrees add under multiplication -/
 
-/-- The product of two members of the real trigonometric system, resolved into the frequencies `i +
-j` and `i - j`. It is the identity `2 (Re u) (Re v) = Re (u v) + Re (u conj v)` applied to `u =
-trigWeight i * fourier i x` and `v = trigWeight j * fourier j x`, together with the multiplicativity
-of the exponentials. -/
+/-- **The product of two members of the real trigonometric system**, resolved into the frequencies
+$i + j$ and $i - j$: for $i, j \in \mathbb{Z}$,
+$$t_i t_j = \frac{1}{2} \operatorname{Re}\bigl(w_i w_j \, e_{i + j}\bigr) + \frac{1}{2}
+  \operatorname{Re}\bigl(w_i \overline{w_j} \, e_{i - j}\bigr).$$
+
+The proof applies the identity $2 \operatorname{Re} u \operatorname{Re} v = \operatorname{Re}(u
+v) + \operatorname{Re}(u \bar{v})$ to $u = w_i e_i(x)$ and $v = w_j e_j(x)$, together with
+$e_i e_j = e_{i + j}$ and $e_i \overline{e_j} = e_{i - j}$. -/
 theorem trigFun_mul_trigFun (T : ℝ) (i j : ℤ) :
     trigFun T i * trigFun T j
       = (1 / 2 : ℝ) • reFourier T (trigWeight i * trigWeight j) (i + j)
@@ -127,8 +147,8 @@ theorem trigFun_mul_trigFun (T : ℝ) (i j : ℤ) :
   simp only [Complex.mul_re, Complex.mul_im, Complex.conj_re, Complex.conj_im]
   ring
 
-/-- **Degrees add under multiplication of trigonometric polynomials**: the product of one of degree
-at most `a` with one of degree at most `b` has degree at most `a + b`. -/
+/-- **Degrees add under multiplication of trigonometric polynomials**: let $a, b \in \mathbb{N}$,
+let $f \in V_a$ and let $g \in V_b$. Then $f g \in V_{a + b}$. -/
 theorem mul_mem_trigPolyLE {a b : ℕ} {f g : C(AddCircle T, ℝ)} (hf : f ∈ trigPolyLE T a)
     (hg : g ∈ trigPolyLE T b) : f * g ∈ trigPolyLE T (a + b) := by
   have hbase : ∀ i j : ℤ, i.natAbs ≤ a → j.natAbs ≤ b →
@@ -150,21 +170,30 @@ theorem mul_mem_trigPolyLE {a b : ℕ} {f g : C(AddCircle T, ℝ)} (hf : f ∈ t
 
 /-! ### Sine products -/
 
-/-- The product `x ↦ sin (π (x - u) / T) * sin (π (x - v) / T)` as a function on the circle of
-circumference `T`. Each factor alone is anti-periodic, but the product is periodic; it is written
-here in the real trigonometric system, through `sin A sin B = (cos (A - B) - cos (A + B)) / 2`, so
-that `sinPair_mem_trigPolyLE` is immediate. -/
+/-- For $u, v \in \mathbb{R}$, the function $x \mapsto \sin(\pi (x - u) / T) \sin(\pi (x - v) / T)$
+on the circle of circumference $T$. It is defined as the combination
+$$\frac{\cos(\pi (u - v) / T)}{2} t_0 - \frac{\cos(\pi (u + v) / T)}{2 \sqrt{2}} t_1 -
+  \frac{\sin(\pi (u + v) / T)}{2 \sqrt{2}} t_{-1},$$
+which equals the product of the two sines by $\sin A \sin B = (\cos(A - B) - \cos(A + B)) / 2$
+(`sinPair_coe`).
+
+Each factor alone is antiperiodic with period $T$, but the product is $T$-periodic. The
+definition in the real trigonometric system makes `sinPair_mem_trigPolyLE` immediate. -/
 noncomputable def sinPair (T u v : ℝ) : C(AddCircle T, ℝ) :=
   (Real.cos (π * (u - v) / T) / 2) • trigFun T 0
     - (Real.cos (π * (u + v) / T) / (2 * √2)) • trigFun T 1
     - (Real.sin (π * (u + v) / T) / (2 * √2)) • trigFun T (-1)
 
+/-- For $u, v \in \mathbb{R}$, the function $x \mapsto \sin(\pi (x - u) / T) \sin(\pi (x - v) / T)$
+lies in $V_1$. -/
 theorem sinPair_mem_trigPolyLE (T u v : ℝ) : sinPair T u v ∈ trigPolyLE T 1 :=
   sub_mem (sub_mem (Submodule.smul_mem _ _ (trigFun_mem_trigPolyLE (by norm_num)))
       (Submodule.smul_mem _ _ (trigFun_mem_trigPolyLE (by norm_num))))
     (Submodule.smul_mem _ _ (trigFun_mem_trigPolyLE (by norm_num)))
 
-/-- The value of `sinPair` at a real representative is the product of the two sines. -/
+/-- For $u, v, x \in \mathbb{R}$, the value of `sinPair T u v` at the class of $x$ on the circle is
+$$\sin\Bigl(\frac{\pi (x - u)}{T}\Bigr) \sin\Bigl(\frac{\pi (x - v)}{T}\Bigr).$$
+-/
 theorem sinPair_coe (u v x : ℝ) :
     sinPair T u v (x : AddCircle T) = Real.sin (π * (x - u) / T) * Real.sin (π * (x - v) / T) := by
   have hprod : Real.sin (π * (x - u) / T) * Real.sin (π * (x - v) / T)
@@ -197,13 +226,21 @@ theorem sinPair_coe (u v x : ℝ) :
   field_simp
   ring
 
-/-- The product `x ↦ ∏_{j < 2 s} sin (π (x - y j) / T)` as a function on the circle of circumference
-`T`, grouped into the `s` pairs of consecutive nodes so that each factor is periodic. It is the
-circle analogue of the monic polynomial with prescribed zeros. -/
+/-- The **sine product** with the nodes $y_0, \dots, y_{2s - 1}$ on the circle of circumference $T$:
+the function
+$$x \mapsto \prod_{j < 2s} \sin\Bigl(\frac{\pi (x - y_j)}{T}\Bigr).$$
+It is defined as the product over $i < s$ of `sinPair T (y (2 * i)) (y (2 * i + 1))`, so that
+each factor is periodic.
+
+It is the circle analogue of the monic polynomial $\prod_j (X - y_j)$ with prescribed zeros.
+Only the nodes $y_0, \dots, y_{2s - 1}$ of the sequence $y \colon \mathbb{N} \to \mathbb{R}$ are
+used. -/
 noncomputable def sinProd (T : ℝ) (y : ℕ → ℝ) (s : ℕ) : C(AddCircle T, ℝ) :=
   ∏ i ∈ Finset.range s, sinPair T (y (2 * i)) (y (2 * i + 1))
 
-/-- **The sine product with `2 s` nodes is a trigonometric polynomial of degree at most `s`.** -/
+/-- **The sine product with $2s$ nodes is a trigonometric polynomial of degree at most $s$**: for
+every $T \in \mathbb{R}$, every $y \colon \mathbb{N} \to \mathbb{R}$ and every
+$s \in \mathbb{N}$, the sine product lies in $V_s$. -/
 theorem sinProd_mem_trigPolyLE (T : ℝ) (y : ℕ → ℝ) (s : ℕ) :
     sinProd T y s ∈ trigPolyLE T s := by
   induction s with
@@ -215,7 +252,9 @@ theorem sinProd_mem_trigPolyLE (T : ℝ) (y : ℕ → ℝ) (s : ℕ) :
     rw [sinProd, Finset.prod_range_succ]
     exact mul_mem_trigPolyLE ih (sinPair_mem_trigPolyLE T _ _)
 
-/-- The value of the sine product at a real representative. -/
+/-- For $x \in \mathbb{R}$, the value of the sine product at the class of $x$ on the circle is
+$$\prod_{j < 2s} \sin\Bigl(\frac{\pi (x - y_j)}{T}\Bigr).$$
+-/
 theorem sinProd_coe (y : ℕ → ℝ) (s : ℕ) (x : ℝ) :
     sinProd T y s (x : AddCircle T)
       = ∏ j ∈ Finset.range (2 * s), Real.sin (π * (x - y j) / T) := by
@@ -226,8 +265,11 @@ theorem sinProd_coe (y : ℕ → ℝ) (s : ℕ) (x : ℝ) :
       sinPair_coe, show 2 * (s + 1) = 2 * s + 1 + 1 from by ring, Finset.prod_range_succ,
       Finset.prod_range_succ, mul_assoc]
 
-/-- On one period the factor `sin (π s / T)` has the sign of `s`: this is what makes the sine
-product change sign exactly at each of its nodes. -/
+/-- Let $T > 0$ and let $s \in \mathbb{R}$ with $-T < s < T$ and $s \neq 0$. Then
+$$\sin\Bigl(\frac{\pi s}{T}\Bigr) \cdot s > 0,$$
+that is, on one period the factor $\sin(\pi s / T)$ has the sign of $s$.
+
+This is what makes the sine product change sign exactly at each of its nodes. -/
 theorem sin_pi_div_mul_pos (hT : 0 < T) {s : ℝ} (h1 : -T < s) (h2 : s < T) (hs : s ≠ 0) :
     0 < Real.sin (π * s / T) * s := by
   rcases lt_or_gt_of_ne hs with hneg | hpos

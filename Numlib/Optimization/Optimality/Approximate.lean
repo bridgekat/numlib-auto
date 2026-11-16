@@ -10,43 +10,74 @@ import Mathlib.Basic.Real.Pointwise
 /-!
 # Approximate optimality and criticality measures
 
-Approximate optimality notions and criticality measures shared by the evaluation-complexity
-results of [cartis2022evaluation] ((1.1.5), (2.1.2), (3.2.6), (12.1.10), (12.1.25), (13.1.5)).
+This file defines the notions of approximate optimality and the criticality measures that the
+evaluation-complexity results of [cartis2022evaluation] share, from (1.1.5), (2.1.2), (3.2.6),
+(12.1.10), (12.1.25) and (13.1.5). A point $x$ is an $\varepsilon$-approximate first-order minimizer
+of $f$ if $\|\nabla f(x)\| \le \varepsilon$, and an $(\varepsilon_1, \varepsilon_2)$-approximate
+second-order minimizer if moreover $\lambda_{\min}[\nabla^2 f(x)] \ge -\varepsilon_2$. For higher
+orders, the measure is the largest decrease of the Taylor polynomial of order $j$ over the
+displacements of length at most $\delta$,
+$$\phi^\delta_{f,j}(x) = \sup_{\|d\| \le \delta} \big( T_{f,j}(x, 0) - T_{f,j}(x, d) \big),$$
+and $x$ is an $(\varepsilon, \delta)$-approximate minimizer of order $q$ if
+$\phi^{\delta_j}_{f,j}(x) \le \varepsilon_j \delta_j^j / j!$ for $1 \le j \le q$.
+
+The file proves the basic properties of these measures: bounds, monotonicity, perturbation by
+inexact derivatives, and attainment in finite dimension. It also relates the Hessian $\nabla^2 f(x)$
+as a bilinear form to the Hessian operator and, on $\mathbb{R}^n$, to the Hessian matrix, so that
+$\lambda_{\min}[\nabla^2 f(x)]$ is the least eigenvalue.
 
 ## Main definitions
 
-* `Optimization.IsApproxFirstOrder f x ε`: `‖∇f(x)‖ ≤ ε` ((2.1.2));
-* `Optimization.IsApproxSecondOrder f x ε₁ ε₂`: `‖∇f(x)‖ ≤ ε₁` and `λ_min[∇²f(x)] ≥ -ε₂`
-  ((3.2.6));
-* `Optimization.criticality₂ f x = max(0, -λ_min[∇²f(x)])`, the second-order criticality measure
-  `ω₂` of Section 1.1.2.6 (the first-order one is `‖fderiv ℝ f x‖`);
-* `Optimization.decrementMeasure Δ δ S = sup {Δ d | ‖d‖ ≤ δ, d ∈ S}`: the largest decrease of a
-  model decrement `Δ` over feasible displacements of length at most `δ`;
-* `Optimization.taylorMeasure D j δ S`: the decrement measure of the Taylor decrement of order `j`
-  of derivative data `D`, the book's `φ^δ_{f,j}(x)` ((12.1.10)) for `D = ftaylorSeries ℝ f x`,
-  `S = univ`;
-* `Optimization.IsEpsDeltaApprox D S q ε δ`, `Optimization.IsEpsApprox D S q ε`: condition
-  (12.1.25) for given radii `δ`, and the `(ε, δ)`-approximate `q`-th order minimizer;
-* `Optimization.hessianMatrix f x`: on `EuclideanSpace ℝ ι`, the Hessian matrix
-  `[∇²f(x)]ᵢⱼ = ∇²f(x)[eᵢ, eⱼ]`, which represents `hessianOperator f x` for `f` `C²` at `x`;
-* `Optimization.hessianOperator f x`: the Hessian `∇²f(x)` as an operator, the derivative of the
+* `Optimization.IsApproxFirstOrder`: $\|\nabla f(x)\| \le \varepsilon$, as in (2.1.2).
+* `Optimization.IsApproxSecondOrder`: $\|\nabla f(x)\| \le \varepsilon_1$ and
+  $\lambda_{\min}[\nabla^2 f(x)] \ge -\varepsilon_2$, as in (3.2.6).
+* `Optimization.criticality₂`: the second-order criticality measure $\omega_2(x) = \max(0,
+  -\lambda_{\min}[\nabla^2 f(x)])$ of Section 1.1.2.6. The first-order measure is $\|\nabla f(x)\|$.
+* `Optimization.decrementMeasure`: $\sup \{ \Delta(d) : \|d\| \le \delta, d \in S \}$, the largest
+  decrease of a model decrement $\Delta$ over the feasible displacements of length at most $\delta$.
+* `Optimization.taylorMeasure`: the decrement measure of the Taylor decrement of order $j$ of
+  derivative data $D$. For the exact jet of $f$ at $x$ and $S = E$, it is the measure
+  $\phi^\delta_{f,j}(x)$ of (12.1.10).
+* `Optimization.IsEpsDeltaApprox` and `Optimization.IsEpsApprox`: the condition (12.1.25) for given
+  radii $\delta$, and the $(\varepsilon, \delta)$-approximate minimizer of order $q$.
+* `Optimization.hessianOperator`: the Hessian $\nabla^2 f(x)$ as an operator, the derivative of the
   gradient.
+* `Optimization.hessianMatrix`: on `EuclideanSpace ℝ ι`, the Hessian matrix
+  $[\nabla^2 f(x)]_{ij} = \nabla^2 f(x)[e_i, e_j]$.
 
-## Design
+## Main results
 
-The first- and second-order notions are stated with `fderiv` and `minCurvature`, so they make
-sense on any real normed space; on a complete inner product space `‖fderiv ℝ f x‖ = ‖∇f(x)‖`
-(`Optimization.isApproxFirstOrder_iff_norm_gradient`). The book's tolerance `ε₂ = +∞` (second-order
-test switched off) is not a real number; algorithm statements represent it separately.
+* `Optimization.exists_decrementMeasure_eq`: in finite dimension, the decrement measure of a
+  continuous decrement on a closed feasible set is attained.
+* `Optimization.taylorMeasure_one_eq`: the first-order measure is $\phi^\delta_1 = \delta \|D_1\|$,
+  as in (12.1.12).
+* `Optimization.abs_taylorMeasure_sub_le`: the perturbation bound (13.1.6) for inexact derivative
+  data.
+* `Optimization.pow_div_mul_taylorMeasure_le`: for $j \le 2$, the function
+  $\delta \mapsto \phi^\delta_j / \delta^j$ is nonincreasing.
+* `Optimization.inner_hessianOperator_apply`: $\langle u, \nabla^2 f(x) v \rangle = \nabla^2 f(x)[u,
+  v]$.
+* `Optimization.exists_eigenvector_hessianOperator`: a unit eigenvector for
+  $\lambda_{\min}[\nabla^2 f(x)] < 0$ with $\langle u, \nabla f(x) \rangle \le 0$, as in (3.2.3).
 
-The Taylor-decrement measure is defined from derivative *data*
-`D : FormalMultilinearSeries ℝ E ℝ` and a set `S` of feasible displacements, so that the same
-definition serves exact derivatives (`D = ftaylorSeries ℝ f x`), inexact ones (the `φ̄` of
-(13.1.5)) and constraints (`S = {d | x + d ∈ C}`). All the measures of the book are instances of
-`decrementMeasure`, whose API (`le_decrementMeasure`, `decrementMeasure_le`, monotonicity,
-`abs_decrementMeasure_sub_le`, attainment `exists_decrementMeasure_eq`) is stated for an
-arbitrary decrement function. The Taylor measure is finite without any compactness, since the
-Taylor decrement is bounded on balls (`bddAbove_taylorDecrement`).
+## Implementation notes
+
+* The first-order and second-order notions use `fderiv` and `minCurvature`, so they make sense on
+  every real normed space. On a real Hilbert space, $\|\nabla f(x)\|$ equals the norm of
+  `fderiv ℝ f x`, see `Optimization.isApproxFirstOrder_iff_norm_gradient`.
+* The source also allows the tolerance $\varepsilon_2 = +\infty$, which switches the second-order
+  test off. This value is not a real number, and the statements of the algorithms represent it
+  separately.
+* The Taylor measure is defined from derivative data `D : FormalMultilinearSeries ℝ E ℝ` and a set
+  $S$ of feasible displacements. Thus one definition serves exact derivatives
+  (`D = ftaylorSeries ℝ f x`), inexact derivatives (the measure $\bar\phi$ of (13.1.5)) and
+  constraints ($S = \{ d : x + d \in C \}$).
+* All the measures of the source are instances of `Optimization.decrementMeasure`. Its properties
+  (upper and lower bounds, monotonicity, perturbation, attainment) are stated for an arbitrary
+  decrement function.
+* The decrement measure is the supremum `sSup` of a set of real numbers, which is $0$ if the set is
+  empty or not bounded above. The Taylor measure is finite without any compactness, because the
+  Taylor decrement is bounded on balls, see `Optimization.bddAbove_taylorDecrement`.
 -/
 
 open Filter Set Topology Metric Finset
@@ -61,54 +92,74 @@ section Decrement
 variable {E : Type*} [NormedAddCommGroup E]
 
 
-/-- The decrement measure `sup {Δ d | ‖d‖ ≤ δ, d ∈ S}`: the largest decrease `Δ d` of a model
-over feasible displacements of length at most `δ` ([cartis2022evaluation], (12.1.10), (13.1.5),
-(14.1.6), (14.1.14), (14.2.2), (14.2.4) for the respective decrements `Δ`). -/
+/-- The **decrement measure** of a decrement function $\Delta : E \to \mathbb{R}$ with radius
+$\delta$ and feasible set $S$:
+$$\sup \{ \Delta(d) : \|d\| \le \delta, \ d \in S \},$$
+the largest decrease $\Delta(d)$ of a model over the feasible displacements of length at most
+$\delta$. With the appropriate decrements, it is the measure of (12.1.10), (13.1.5), (14.1.6),
+(14.1.14), (14.2.2) and (14.2.4) of [cartis2022evaluation].
+
+The supremum is `sSup`, so the measure is $0$ if the set of feasible displacements is empty or
+the decreases are not bounded above. -/
 noncomputable def decrementMeasure (Δ : E → ℝ) (δ : ℝ) (S : Set E) : ℝ :=
   sSup (Δ '' (closedBall 0 δ ∩ S))
 
 variable {Δ Δ' : E → ℝ} {δ δ' : ℝ} {S S' : Set E} {d : E}
 
-/-- Unfolding lemma for `decrementMeasure`. -/
+/-- The decrement measure is the supremum of $\Delta$ over the feasible displacements $d$ with
+$\|d\| \le \delta$ and $d \in S$. -/
 theorem decrementMeasure_def :
     decrementMeasure Δ δ S = sSup (Δ '' (closedBall 0 δ ∩ S)) := rfl
 
-/-- Every feasible decrease is at most the measure (when the decreases are bounded above). -/
+/-- If the feasible decreases are bounded above, then every feasible decrease is at most the
+measure: for $\|d\| \le \delta$ and $d \in S$,
+$$\Delta(d) \le \sup \{ \Delta(d') : \|d'\| \le \delta, \ d' \in S \}.$$
+-/
 theorem le_decrementMeasure (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S)))
     (hd : d ∈ closedBall 0 δ ∩ S) : Δ d ≤ decrementMeasure Δ δ S :=
   le_csSup hbdd (mem_image_of_mem Δ hd)
 
-/-- If `0` is feasible and `Δ 0 = 0`, the measure is nonnegative. -/
+/-- If the feasible decreases are bounded above, $0 \in S$, $\delta \ge 0$ and $\Delta(0) = 0$, then
+the decrement measure is nonnegative. -/
 theorem decrementMeasure_nonneg (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S))) (h0 : (0 : E) ∈ S)
     (hδ : 0 ≤ δ) (hΔ0 : Δ 0 = 0) : 0 ≤ decrementMeasure Δ δ S :=
   hΔ0 ▸ le_decrementMeasure hbdd ⟨mem_closedBall_self hδ, h0⟩
 
-/-- An upper bound on all feasible decreases bounds the measure. -/
+/-- If some displacement is feasible and $\Delta(d) \le B$ for every feasible $d$, then the
+decrement measure is at most $B$. -/
 theorem decrementMeasure_le {B : ℝ} (hne : (closedBall 0 δ ∩ S).Nonempty)
     (h : ∀ d ∈ closedBall 0 δ ∩ S, Δ d ≤ B) : decrementMeasure Δ δ S ≤ B :=
   csSup_le (hne.image Δ) (forall_mem_image.2 h)
 
-/-- The measure is monotone in the radius. -/
+/-- The decrement measure is monotone in the radius: if some displacement of length at most $\delta$
+is feasible, the decreases are bounded above on the larger ball, and $\delta \le \delta'$, then
+the measure with radius $\delta$ is at most the measure with radius $\delta'$. -/
 theorem decrementMeasure_mono_radius (hne : (closedBall 0 δ ∩ S).Nonempty)
     (hbdd : BddAbove (Δ '' (closedBall 0 δ' ∩ S))) (hδ : δ ≤ δ') :
     decrementMeasure Δ δ S ≤ decrementMeasure Δ δ' S :=
   csSup_le_csSup hbdd (hne.image Δ)
     (image_mono (inter_subset_inter_left _ (closedBall_subset_closedBall hδ)))
 
-/-- The measure is monotone in the feasible set. -/
+/-- The decrement measure is monotone in the feasible set: if some displacement of length at most
+$\delta$ is in $S$, the decreases are bounded above on the larger set, and $S \subseteq S'$,
+then the measure with $S$ is at most the measure with $S'$. -/
 theorem decrementMeasure_mono_set (hne : (closedBall 0 δ ∩ S).Nonempty)
     (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S'))) (hS : S ⊆ S') :
     decrementMeasure Δ δ S ≤ decrementMeasure Δ δ S' :=
   csSup_le_csSup hbdd (hne.image Δ) (image_mono (inter_subset_inter_right _ hS))
 
-/-- The measure is monotone in the decrement. -/
+/-- The decrement measure is monotone in the decrement: if some displacement is feasible, $\Delta'$
+is bounded above on the feasible displacements, and $\Delta(d) \le \Delta'(d)$ for every
+feasible $d$, then the measure of $\Delta$ is at most the measure of $\Delta'$. -/
 theorem decrementMeasure_mono_fun (hne : (closedBall 0 δ ∩ S).Nonempty)
     (hbdd : BddAbove (Δ' '' (closedBall 0 δ ∩ S))) (h : ∀ d ∈ closedBall 0 δ ∩ S, Δ d ≤ Δ' d) :
     decrementMeasure Δ δ S ≤ decrementMeasure Δ' δ S :=
   decrementMeasure_le hne fun d hd => (h d hd).trans (le_decrementMeasure hbdd hd)
 
-/-- Perturbation of the decrement: if `|Δ d - Δ' d| ≤ e` on the feasible ball, the measures
-differ by at most `e`. -/
+/-- Perturbation of the decrement. Suppose that some displacement is feasible and that both $\Delta$
+and $\Delta'$ are bounded above on the feasible displacements. If
+$|\Delta(d) - \Delta'(d)| \le e$ for every feasible $d$, then the two decrement measures differ
+by at most $e$. -/
 theorem abs_decrementMeasure_sub_le {e : ℝ} (hne : (closedBall 0 δ ∩ S).Nonempty)
     (hbdd : BddAbove (Δ '' (closedBall 0 δ ∩ S))) (hbdd' : BddAbove (Δ' '' (closedBall 0 δ ∩ S)))
     (h : ∀ d ∈ closedBall 0 δ ∩ S, |Δ d - Δ' d| ≤ e) :
@@ -124,8 +175,8 @@ theorem abs_decrementMeasure_sub_le {e : ℝ} (hne : (closedBall 0 δ ∩ S).Non
     have := le_decrementMeasure hbdd hd
     linarith [(abs_sub_le_iff.1 (h d hd)).2]
 
-/-- The decrement measure is positively homogeneous in the decrement:
-`sup (a Δ) = a sup Δ` for `a ≥ 0`. -/
+/-- The decrement measure is positively homogeneous in the decrement: for $a \ge 0$, the measure of
+$d \mapsto a \Delta(d)$ is $a$ times the measure of $\Delta$. -/
 theorem decrementMeasure_const_mul {Δ : E → ℝ} {δ a : ℝ} {S : Set E} (ha : 0 ≤ a) :
     decrementMeasure (fun d => a * Δ d) δ S = a * decrementMeasure Δ δ S := by
   rw [decrementMeasure_def, decrementMeasure_def, ← smul_eq_mul (a := a),
@@ -134,8 +185,12 @@ theorem decrementMeasure_const_mul {Δ : E → ℝ} {δ a : ℝ} {S : Set E} (ha
 
 variable [NormedSpace ℝ E]
 
-/-- In finite dimension, with `S` closed and `Δ` continuous on the feasible ball, the measure is
-attained. -/
+/-- Let $E$ be a finite-dimensional real normed space, $S \subseteq E$ closed with $0 \in S$, and
+$\delta \ge 0$. If $\Delta$ is continuous on the feasible displacements
+$\{ d \in S : \|d\| \le \delta \}$, then the decrement measure is attained: there is a feasible
+$d$ with $\|d\| \le \delta$ and
+$$\Delta(d) = \sup \{ \Delta(d') : \|d'\| \le \delta, \ d' \in S \}.$$
+-/
 theorem exists_decrementMeasure_eq [FiniteDimensional ℝ E] (hS : IsClosed S) (h0 : (0 : E) ∈ S)
     (hδ : 0 ≤ δ) (hΔ : ContinuousOn Δ (closedBall 0 δ ∩ S)) :
     ∃ d ∈ closedBall 0 δ ∩ S, Δ d = decrementMeasure Δ δ S := by
@@ -145,9 +200,13 @@ theorem exists_decrementMeasure_eq [FiniteDimensional ℝ E] (hS : IsClosed S) (
   refine ⟨d, hd, ?_⟩
   exact (IsGreatest.csSup_eq ⟨mem_image_of_mem Δ hd, forall_mem_image.2 hmax⟩).symm
 
-/-- A continuous decrement on a closed feasible set that is star-shaped about `0` takes every
-fraction `ς ∈ [0, 1]` of its measure (intermediate value theorem along the segment to a
-maximizer). -/
+/-- Let $E$ be a finite-dimensional real normed space, $S \subseteq E$ closed and star-shaped about
+$0$ with $0 \in S$, and $\delta \ge 0$. Let $\Delta$ be continuous on the feasible displacements
+of length at most $\delta$, with $\Delta(0) = 0$. Then for every $\varsigma \in [0, 1]$ there is
+a feasible $d$ with $\|d\| \le \delta$ and
+$$\Delta(d) = \varsigma \sup \{ \Delta(d') : \|d'\| \le \delta, \ d' \in S \}.$$
+
+The proof applies the intermediate value theorem along the segment from $0$ to a maximizer. -/
 theorem exists_decrementMeasure_mul_eq [FiniteDimensional ℝ E] (hS : IsClosed S)
     (h0 : (0 : E) ∈ S) (hstar : StarConvex ℝ 0 S) (hδ : 0 ≤ δ)
     (hΔ : ContinuousOn Δ (closedBall 0 δ ∩ S)) (hΔ0 : Δ 0 = 0) {ς : ℝ} (hς : ς ∈ Icc (0 : ℝ) 1) :
@@ -174,56 +233,76 @@ end Decrement
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-! ### First- and second-order approximate minimizers -/
+/-! ### First-order and second-order approximate minimizers -/
 
-/-- `x` is an `ε`-approximate first-order minimizer of `f`: `‖∇f(x)‖ ≤ ε`
-([cartis2022evaluation], (2.1.2)). -/
+/-- A point $x$ is an **$\varepsilon$-approximate first-order minimizer** of $f$ if
+$$\|\nabla f(x)\| \le \varepsilon,$$
+as in (2.1.2) of [cartis2022evaluation].
+
+The norm is the norm of the Fréchet derivative `fderiv ℝ f x`, so the definition makes sense on
+every real normed space. -/
 def IsApproxFirstOrder (f : E → ℝ) (x : E) (ε : ℝ) : Prop := ‖fderiv ℝ f x‖ ≤ ε
 
-/-- Unfolding lemma for `IsApproxFirstOrder`. -/
+/-- A point $x$ is an $\varepsilon$-approximate first-order minimizer of $f$ if and only if the
+derivative of $f$ at $x$ has norm at most $\varepsilon$. -/
 theorem isApproxFirstOrder_iff {f : E → ℝ} {x : E} {ε : ℝ} :
     IsApproxFirstOrder f x ε ↔ ‖fderiv ℝ f x‖ ≤ ε := Iff.rfl
 
-/-- `x` is an `(ε₁, ε₂)`-approximate second-order minimizer of `f`: `‖∇f(x)‖ ≤ ε₁` and
-`λ_min[∇²f(x)] ≥ -ε₂` ([cartis2022evaluation], (3.2.6)). -/
+/-- A point $x$ is an **$(\varepsilon_1, \varepsilon_2)$-approximate second-order minimizer** of $f$
+if
+$$\|\nabla f(x)\| \le \varepsilon_1 \quad \text{and} \quad \lambda_{\min}[\nabla^2 f(x)] \ge
+  -\varepsilon_2,$$
+as in (3.2.6) of [cartis2022evaluation].
+
+Here $\lambda_{\min}[\nabla^2 f(x)] = \inf_{\|d\| = 1} \nabla^2 f(x)[d, d]$ is
+`minCurvature (iteratedFDeriv ℝ 2 f x)`. -/
 def IsApproxSecondOrder (f : E → ℝ) (x : E) (ε₁ ε₂ : ℝ) : Prop :=
   ‖fderiv ℝ f x‖ ≤ ε₁ ∧ -ε₂ ≤ minCurvature (iteratedFDeriv ℝ 2 f x)
 
-/-- Unfolding lemma for `IsApproxSecondOrder`. -/
+/-- A point $x$ is an $(\varepsilon_1, \varepsilon_2)$-approximate second-order minimizer of $f$ if
+and only if $\|\nabla f(x)\| \le \varepsilon_1$ and $\lambda_{\min}[\nabla^2 f(x)] \ge
+-\varepsilon_2$. -/
 theorem isApproxSecondOrder_iff {f : E → ℝ} {x : E} {ε₁ ε₂ : ℝ} :
     IsApproxSecondOrder f x ε₁ ε₂ ↔
       ‖fderiv ℝ f x‖ ≤ ε₁ ∧ -ε₂ ≤ minCurvature (iteratedFDeriv ℝ 2 f x) := Iff.rfl
 
-/-- An approximate second-order minimizer is an approximate first-order minimizer. -/
+/-- An $(\varepsilon_1, \varepsilon_2)$-approximate second-order minimizer is an
+$\varepsilon_1$-approximate first-order minimizer. -/
 theorem IsApproxSecondOrder.isApproxFirstOrder {f : E → ℝ} {x : E} {ε₁ ε₂ : ℝ}
     (h : IsApproxSecondOrder f x ε₁ ε₂) : IsApproxFirstOrder f x ε₁ := h.1
 
-/-- The second-order criticality measure `ω₂(x) = max(0, -λ_min[∇²f(x)])`
-([cartis2022evaluation], (1.1.5) and Section 1.1.2.6). -/
+/-- The **second-order criticality measure**, (1.1.5) and Section 1.1.2.6 of [cartis2022evaluation]:
+$$\omega_2(x) = \max\big(0, -\lambda_{\min}[\nabla^2 f(x)]\big).$$
+-/
 noncomputable def criticality₂ (f : E → ℝ) (x : E) : ℝ :=
   max 0 (-minCurvature (iteratedFDeriv ℝ 2 f x))
 
 /-- The second-order criticality measure is nonnegative. -/
 theorem criticality₂_nonneg (f : E → ℝ) (x : E) : 0 ≤ criticality₂ f x := le_max_left _ _
 
-/-- `ω₂(x) ≤ ε ↔ λ_min[∇²f(x)] ≥ -ε` for `ε ≥ 0`. -/
+/-- For $\varepsilon \ge 0$, $\omega_2(x) \le \varepsilon$ if and only if
+$\lambda_{\min}[\nabla^2 f(x)] \ge -\varepsilon$. -/
 theorem criticality₂_le_iff {f : E → ℝ} {x : E} {ε : ℝ} (hε : 0 ≤ ε) :
     criticality₂ f x ≤ ε ↔ -ε ≤ minCurvature (iteratedFDeriv ℝ 2 f x) := by
   rw [criticality₂, max_le_iff, neg_le]
   exact and_iff_right hε
 
-/-- `ω₂(x) = 0 ↔ λ_min[∇²f(x)] ≥ 0`. -/
+/-- The second-order criticality measure vanishes, $\omega_2(x) = 0$, if and only if
+$\lambda_{\min}[\nabla^2 f(x)] \ge 0$. -/
 theorem criticality₂_eq_zero_iff {f : E → ℝ} {x : E} :
     criticality₂ f x = 0 ↔ 0 ≤ minCurvature (iteratedFDeriv ℝ 2 f x) := by
   rw [← (criticality₂_nonneg f x).ge_iff_eq', criticality₂_le_iff le_rfl, neg_zero]
 
-/-- The approximate second-order condition in terms of the two criticality measures. -/
+/-- For $\varepsilon_2 \ge 0$, a point $x$ is an $(\varepsilon_1, \varepsilon_2)$-approximate
+second-order minimizer of $f$ if and only if $\|\nabla f(x)\| \le \varepsilon_1$ and
+$\omega_2(x) \le \varepsilon_2$. -/
 theorem isApproxSecondOrder_iff_criticality₂_le {f : E → ℝ} {x : E} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂) :
     IsApproxSecondOrder f x ε₁ ε₂ ↔ ‖fderiv ℝ f x‖ ≤ ε₁ ∧ criticality₂ f x ≤ ε₂ := by
   rw [isApproxSecondOrder_iff, criticality₂_le_iff hε₂]
 
-/-- At a local minimizer of a function `C²` at `x` both criticality measures vanish
-((1.1.5)). -/
+/-- At a local minimizer $x$ of a function $f$ that is twice continuously differentiable at $x$,
+both criticality measures vanish: $\|\nabla f(x)\| = 0$ and $\omega_2(x) = 0$, as in (1.1.5) of
+[cartis2022evaluation]. -/
 theorem IsLocalMin.criticality_eq_zero {f : E → ℝ} {x : E} (hmin : IsLocalMin f x)
     (hf : ContDiffAt ℝ 2 f x) : ‖fderiv ℝ f x‖ = 0 ∧ criticality₂ f x = 0 :=
   ⟨by rw [hmin.fderiv_eq_zero, norm_zero],
@@ -233,38 +312,48 @@ variable {δ : ℝ} {S : Set E} {d : E}
 
 /-! ### The Taylor-decrement measure -/
 
-/-- The Taylor decreases over a feasible ball are bounded above, so the Taylor measure is a
-supremum of a bounded set. -/
+/-- For all derivative data $D$, orders $j$, radii $\delta$ and sets $S$, the Taylor decreases
+$T_j(0) - T_j(d)$ over the feasible displacements of length at most $\delta$ are bounded above.
+Thus the Taylor measure is the supremum of a bounded set. -/
 theorem bddAbove_taylorDecrement (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ) (S : Set E) :
     BddAbove (D.taylorDecrement j '' (closedBall 0 δ ∩ S)) := by
   refine ⟨∑ i ∈ Icc 1 j, ‖D i‖ * δ ^ i / i !, forall_mem_image.2 fun d hd => ?_⟩
   exact (le_abs_self _).trans
     (D.abs_taylorDecrement_le_of_norm_le j (mem_closedBall_zero_iff.1 hd.1))
 
-/-- The Taylor-decrement measure `φ^δ_j = sup {ΔT_j(d) | ‖d‖ ≤ δ, d ∈ S}`
-([cartis2022evaluation], (12.1.10)): for `D = ftaylorSeries ℝ f x` and `S = univ` it is
-`f(x) - min_{‖d‖ ≤ δ} T_{f,j}(x, d)`; with `S = {d | x + d ∈ C}` it is the constrained measure of
-Chapters 6 and 14; with inexact data `D` it is the `φ̄` of (13.1.5). -/
+/-- The **Taylor-decrement measure**, (12.1.10) of [cartis2022evaluation]:
+$$\phi^\delta_j = \sup \{ T_j(0) - T_j(d) : \|d\| \le \delta, \ d \in S \},$$
+where $T_j$ is the Taylor sum of order $j$ of the derivative data $D$.
+
+For the exact jet `D = ftaylorSeries ℝ f x` and $S = E$, it is
+$f(x) - \min_{\|d\| \le \delta} T_{f,j}(x, d)$. With $S = \{ d : x + d \in C \}$, it is the
+measure for constraints of Chapters 6 and 14. With inexact data $D$, it is the measure
+$\bar\phi$ of (13.1.5). -/
 noncomputable def taylorMeasure (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ)
     (S : Set E) : ℝ :=
   decrementMeasure (D.taylorDecrement j) δ S
 
-/-- Unfolding lemma for `taylorMeasure`. -/
+/-- The Taylor measure is the supremum of the Taylor decreases $T_j(0) - T_j(d)$ over the feasible
+displacements of length at most $\delta$. -/
 theorem taylorMeasure_eq_sSup (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (δ : ℝ) (S : Set E) :
     taylorMeasure D j δ S = sSup (D.taylorDecrement j '' (closedBall 0 δ ∩ S)) := rfl
 
-/-- Every feasible Taylor decrease is at most the measure. -/
+/-- Every feasible Taylor decrease is at most the Taylor measure: if $\|d\| \le \delta$ and
+$d \in S$, then $T_j(0) - T_j(d) \le \phi^\delta_j$. -/
 theorem taylorDecrement_le_taylorMeasure (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ)
     (hd : d ∈ closedBall 0 δ ∩ S) : D.taylorDecrement j d ≤ taylorMeasure D j δ S :=
   le_decrementMeasure (bddAbove_taylorDecrement D j δ S) hd
 
-/-- The Taylor measure is nonnegative when `0` is feasible. -/
+/-- If $0 \in S$ and $\delta \ge 0$, then the Taylor measure is nonnegative: $\phi^\delta_j \ge 0$.
+-/
 theorem taylorMeasure_nonneg (D : FormalMultilinearSeries ℝ E ℝ) (j : ℕ) (h0 : (0 : E) ∈ S)
     (hδ : 0 ≤ δ) : 0 ≤ taylorMeasure D j δ S :=
   decrementMeasure_nonneg (bddAbove_taylorDecrement D j δ S) h0 hδ
     (D.taylorDecrement_zero_right j)
 
-/-- The supremum of `-ℓ` over the closed ball of radius `δ ≥ 0` is `δ ‖ℓ‖`. -/
+/-- For a continuous linear functional $\ell$ on a real normed space and $\delta \ge 0$,
+$$\sup_{\|s\| \le \delta} \big(-\ell(s)\big) = \delta \|\ell\|.$$
+-/
 theorem sSup_neg_apply_closedBall (ℓ : E →L[ℝ] ℝ) (hδ : 0 ≤ δ) :
     sSup ((fun s => -ℓ s) '' closedBall 0 δ) = δ * ‖ℓ‖ := by
   rcases hδ.eq_or_lt with rfl | hδ
@@ -292,8 +381,10 @@ theorem sSup_neg_apply_closedBall (ℓ : E →L[ℝ] ℝ) (hδ : 0 ≤ δ) :
       rw [abs_of_nonpos h] at hbu
       linarith
 
-/-- **The first-order measure** ([cartis2022evaluation], (12.1.12)): for `δ ≥ 0`,
-`φ^δ_1 = δ ‖D₁‖`, the supremum of the linear functional `-D₁` over the ball. -/
+/-- **The first-order measure**, (12.1.12) of [cartis2022evaluation]. Let $D$ be derivative data on
+a real normed space $E$ and $\delta \ge 0$. Without constraints ($S = E$),
+$$\phi^\delta_1 = \delta \|D_1\|.$$
+It is the supremum of the linear functional $-D_1$ over the ball of radius $\delta$. -/
 theorem taylorMeasure_one_eq (D : FormalMultilinearSeries ℝ E ℝ) (hδ : 0 ≤ δ) :
     taylorMeasure D 1 δ univ = δ * ‖D 1‖ := by
   set ℓ : E →L[ℝ] ℝ := continuousMultilinearCurryFin1 ℝ E ℝ (D 1)
@@ -306,8 +397,12 @@ theorem taylorMeasure_one_eq (D : FormalMultilinearSeries ℝ E ℝ) (hδ : 0 �
   refine image_congr fun s _ => ?_
   rw [D.taylorDecrement_one_apply, hℓ]
 
-/-- Perturbation of the Taylor measure by inexact data ([cartis2022evaluation], (13.1.6)):
-`|φ^δ_j(D) - φ^δ_j(D')| ≤ ∑_{i=1}^j ‖D_i - D'_i‖ δ^i / i!`. -/
+/-- **Perturbation of the Taylor measure** by inexact data, (13.1.6) of [cartis2022evaluation]. Let
+$D$ and $D'$ be derivative data on a real normed space, $j \in \mathbb{N}$, $0 \in S$ and
+$\delta \ge 0$. Then
+$$\big|\phi^\delta_j(D) - \phi^\delta_j(D')\big| \le \sum_{i = 1}^{j} \frac{\|D_i - D'_i\| \,
+  \delta^i}{i!}.$$
+-/
 theorem abs_taylorMeasure_sub_le (D D' : FormalMultilinearSeries ℝ E ℝ) (j : ℕ)
     (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) :
     |taylorMeasure D j δ S - taylorMeasure D' j δ S| ≤
@@ -318,53 +413,71 @@ theorem abs_taylorMeasure_sub_le (D D' : FormalMultilinearSeries ℝ E ℝ) (j :
   gcongr
   exact mem_closedBall_zero_iff.1 hd.1
 
-/-- In finite dimension, with `S` closed and `0 ∈ S`, the Taylor measure is attained (at an
-"optimality displacement" of the book). -/
+/-- **Attainment of the Taylor measure.** Let $E$ be a finite-dimensional real normed space, $D$
+derivative data on $E$, $j \in \mathbb{N}$, $S \subseteq E$ closed with $0 \in S$, and
+$\delta \ge 0$. Then there is $d \in S$ with $\|d\| \le \delta$ and
+$$T_j(0) - T_j(d) = \phi^\delta_j.$$
+Such a $d$ is an optimality displacement in the terms of [cartis2022evaluation]. -/
 theorem exists_taylorMeasure_eq [FiniteDimensional ℝ E] (D : FormalMultilinearSeries ℝ E ℝ)
     (j : ℕ) (hS : IsClosed S) (h0 : (0 : E) ∈ S) (hδ : 0 ≤ δ) :
     ∃ d ∈ closedBall 0 δ ∩ S, D.taylorDecrement j d = taylorMeasure D j δ S :=
   exists_decrementMeasure_eq hS h0 hδ (D.continuous_taylorDecrement j).continuousOn
 
-/-- Condition (12.1.25) of [cartis2022evaluation] for given optimality radii `δ`:
-`φ^{δ_j}_j ≤ ε_j δ_j^j / j!` for `1 ≤ j ≤ q`, for the data `D` and the feasible displacements
-`S`. Here `δ` is a fixed parameter; the book's `(ε, δ)`-approximate `q`-th order minimizer asks
-for *some* radii `δ ∈ (0, 1]^q`, which is `IsEpsApprox`. For `D = ftaylorSeries ℝ f x` and
-`S = univ` this is the unconstrained notion; constrained variants use `S = {d | x + d ∈ C}`. -/
+/-- The condition (12.1.25) of [cartis2022evaluation] for given optimality radii
+$\delta = (\delta_j)$: for the data $D$ and the feasible displacements $S$,
+$$\phi^{\delta_j}_j \le \frac{\varepsilon_j \, \delta_j^j}{j!} \quad \text{for } 1 \le j \le
+  q.$$
+
+Here the radii $\delta$ are fixed. The $(\varepsilon, \delta)$-approximate minimizer of order
+$q$ of the source asks for some radii $\delta \in (0, 1]^q$, which is
+`Optimization.IsEpsApprox`. For `D = ftaylorSeries ℝ f x` and $S = E$, this is the notion
+without constraints; the variants for constraints use $S = \{ d : x + d \in C \}$. The
+tolerances and the radii are sequences `ε δ : ℕ → ℝ`, and only the indices $1 \le j \le q$
+matter. -/
 def IsEpsDeltaApprox (D : FormalMultilinearSeries ℝ E ℝ) (S : Set E) (q : ℕ) (ε δ : ℕ → ℝ) :
     Prop :=
   ∀ j ∈ Finset.Icc 1 q, taylorMeasure D j (δ j) S ≤ ε j * δ j ^ j / j !
 
-/-- Unfolding lemma for `IsEpsDeltaApprox`. -/
+/-- The condition (12.1.25) holds for the radii $\delta$ if and only if $\phi^{\delta_j}_j \le
+\varepsilon_j \delta_j^j / j!$ for $1 \le j \le q$. -/
 theorem isEpsDeltaApprox_iff {D : FormalMultilinearSeries ℝ E ℝ} {q : ℕ} {ε δ : ℕ → ℝ} :
     IsEpsDeltaApprox D S q ε δ ↔
       ∀ j ∈ Finset.Icc 1 q, taylorMeasure D j (δ j) S ≤ ε j * δ j ^ j / j ! :=
   Iff.rfl
 
-/-- The `(ε, δ)`-approximate `q`-th order minimizer of [cartis2022evaluation], Key Definition
-with (12.1.25): condition (12.1.25) holds for some optimality radii `δ ∈ (0, 1]^q`. -/
+/-- The **$(\varepsilon, \delta)$-approximate minimizer of order $q$**, the key definition of
+[cartis2022evaluation] with (12.1.25): there are optimality radii $\delta_j \in (0, 1]$ for
+$1 \le j \le q$ such that
+$$\phi^{\delta_j}_j \le \frac{\varepsilon_j \, \delta_j^j}{j!} \quad \text{for } 1 \le j \le
+  q.$$
+-/
 def IsEpsApprox (D : FormalMultilinearSeries ℝ E ℝ) (S : Set E) (q : ℕ) (ε : ℕ → ℝ) : Prop :=
   ∃ δ : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δ j ∈ Ioc (0 : ℝ) 1) ∧ IsEpsDeltaApprox D S q ε δ
 
-/-- Unfolding lemma for `IsEpsApprox`. -/
+/-- The data $D$ give an $(\varepsilon, \delta)$-approximate minimizer of order $q$ if and only if
+there are radii $\delta_j \in (0, 1]$ for $1 \le j \le q$ for which the condition (12.1.25)
+holds. -/
 theorem isEpsApprox_iff {D : FormalMultilinearSeries ℝ E ℝ} {q : ℕ} {ε : ℕ → ℝ} :
     IsEpsApprox D S q ε ↔
       ∃ δ : ℕ → ℝ, (∀ j ∈ Finset.Icc 1 q, δ j ∈ Ioc (0 : ℝ) 1) ∧ IsEpsDeltaApprox D S q ε δ :=
   Iff.rfl
 
-/-! ### Gradient and Hessian on inner product spaces -/
-
 /-! ### Monotonicity of the low-order measures in the radius -/
 
 section Scale
 
-/-- Scaling a step scales the `i`-th term of a jet by `c^i`. -/
+/-- Scaling a step scales the term of order $i$ of derivative data by $c^i$:
+$D_i[c d]^i = c^i D_i[d]^i$. -/
 theorem formalMultilinearSeries_apply_smul (D : FormalMultilinearSeries ℝ E ℝ) (i : ℕ) (c : ℝ)
     (d : E) : D i (fun _ => c • d) = c ^ i * D i (fun _ => d) := by
   have := (D i).map_smul_univ (fun _ => c) (fun _ => d)
   simpa [Finset.prod_const] using this
 
-/-- **Scaling of decrements of order `≤ 2`**: for `t ∈ [0, 1]` and any `d` there is `d'` with
-`‖d'‖ ≤ t ‖d‖` and `t^j ΔT_j(d) ≤ ΔT_j(d')` (`d' ∈ {0, t d, -t d}`). -/
+/-- **Scaling of decrements of order at most 2.** Let $D$ be derivative data, $j \le 2$,
+$t \in [0, 1]$ and $d \in E$. Then there is $d'$ with $\|d'\| \le t \|d\|$ and
+$$t^j \big(T_j(0) - T_j(d)\big) \le T_j(0) - T_j(d').$$
+
+The displacement $d'$ is one of $0$, $t d$ and $-t d$. -/
 theorem exists_taylorDecrement_scale_ge (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ}
     (hj : j ≤ 2) {t : ℝ} (ht0 : 0 ≤ t) (ht1 : t ≤ 1) (d : E) :
     ∃ d', ‖d'‖ ≤ t * ‖d‖ ∧ t ^ j * D.taylorDecrement j d ≤ D.taylorDecrement j d' := by
@@ -390,8 +503,10 @@ theorem exists_taylorDecrement_scale_ge (D : FormalMultilinearSeries ℝ E ℝ) 
       rw [hT, h1]; nlinarith [mul_nonneg ht0 (le_of_lt (neg_pos.2 ha)),
         mul_nonneg (mul_nonneg ht0 ht0) (le_of_lt (neg_pos.2 ha))]
 
-/-- **The measures of orders `≤ 2` decrease slowly in the radius** (unconstrained case): for
-`0 < δ' ≤ δ` and `j ≤ 2`, `(δ'/δ)^j φ^δ_j ≤ φ^{δ'}_j`, i.e. `δ ↦ φ^δ_j/δ^j` is non-increasing. -/
+/-- **The measures of order at most 2 decrease slowly with the radius**, without constraints. Let
+$D$ be derivative data, $j \le 2$ and $0 < \delta' \le \delta$. Then
+$$\left(\frac{\delta'}{\delta}\right)^j \phi^\delta_j \le \phi^{\delta'}_j.$$
+Equivalently, $\delta \mapsto \phi^\delta_j / \delta^j$ is nonincreasing on $(0, \infty)$. -/
 theorem pow_div_mul_taylorMeasure_le (D : FormalMultilinearSeries ℝ E ℝ) {j : ℕ} (hj : j ≤ 2)
     {δ δ' : ℝ} (hδ' : 0 < δ') (hδδ' : δ' ≤ δ) :
     (δ' / δ) ^ j * taylorMeasure D j δ univ ≤ taylorMeasure D j δ' univ := by
@@ -412,28 +527,36 @@ theorem pow_div_mul_taylorMeasure_le (D : FormalMultilinearSeries ℝ E ℝ) {j 
 
 end Scale
 
+/-! ### Gradient and Hessian on inner product spaces -/
+
 section Inner
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
   {f : F → ℝ} {x : F}
 
-/-- On a complete real inner product space `‖∇f(x)‖ = ‖fderiv ℝ f x‖`. -/
+/-- On a real Hilbert space, the gradient has the norm of the derivative: $\|\nabla f(x)\|$ equals
+the norm of `fderiv ℝ f x`. -/
 theorem norm_gradient_eq (f : F → ℝ) (x : F) : ‖gradient f x‖ = ‖fderiv ℝ f x‖ :=
   (InnerProductSpace.toDual ℝ F).symm.norm_map _
 
-/-- On a complete inner product space the first-order test reads `‖∇f(x)‖ ≤ ε`. -/
+/-- On a real Hilbert space, $x$ is an $\varepsilon$-approximate first-order minimizer of $f$ if and
+only if $\|\nabla f(x)\| \le \varepsilon$ for the gradient $\nabla f(x)$. -/
 theorem isApproxFirstOrder_iff_norm_gradient {ε : ℝ} :
     IsApproxFirstOrder f x ε ↔ ‖gradient f x‖ ≤ ε := by
   rw [isApproxFirstOrder_iff, norm_gradient_eq]
 
-/-- The first-order measure of a function ([cartis2022evaluation], (12.1.12)):
-`φ^δ_{f,1}(x) = δ ‖∇f(x)‖` for `δ ≥ 0`. -/
+/-- The first-order measure of a function, (12.1.12) of [cartis2022evaluation]: on a real Hilbert
+space, for every $f$, $x$ and $\delta \ge 0$,
+$$\phi^\delta_{f,1}(x) = \delta \|\nabla f(x)\|.$$
+
+No differentiability is needed: where $f$ is not differentiable, both the gradient and the first
+derivative of the jet are $0$ in Lean. -/
 theorem taylorMeasure_one_ftaylorSeries (f : F → ℝ) (x : F) {δ : ℝ} (hδ : 0 ≤ δ) :
     taylorMeasure (ftaylorSeries ℝ f x) 1 δ univ = δ * ‖gradient f x‖ := by
   rw [taylorMeasure_one_eq _ hδ, norm_gradient_eq, ← norm_iteratedFDeriv_one]
   rfl
 
-/-- The Riesz map `F* → F` as a real continuous linear map. -/
+/-- The Riesz map from the dual $F^*$ to $F$, as a real continuous linear map. -/
 private noncomputable def rieszL : StrongDual ℝ F →L[ℝ] F :=
   ((InnerProductSpace.toDual ℝ F).symm.toContinuousLinearEquiv :
     StrongDual ℝ F →SL[starRingEnd ℝ] F)
@@ -441,24 +564,29 @@ private noncomputable def rieszL : StrongDual ℝ F →L[ℝ] F :=
 private theorem rieszL_apply (ℓ : StrongDual ℝ F) :
     (rieszL ℓ : F) = (InnerProductSpace.toDual ℝ F).symm ℓ := rfl
 
-/-- The Hessian `∇²f(x)` as an operator on `F`: the derivative of the gradient. -/
+/-- The **Hessian operator** $\nabla^2 f(x)$ on a real Hilbert space $F$: the derivative at $x$ of
+the gradient $\nabla f$, a bounded linear operator on $F$. -/
 noncomputable def hessianOperator (f : F → ℝ) (x : F) : F →L[ℝ] F := fderiv ℝ (gradient f) x
 
-/-- For `f` twice differentiable at `x`, the gradient has derivative
-`v ↦ (∇²f(x)[v, ·])^♯`. -/
+/-- If $f$ is twice continuously differentiable at $x$, then the gradient has at $x$ the derivative
+$v \mapsto (\nabla^2 f(x)[v, \cdot])^\sharp$, where $\sharp$ is the Riesz map. -/
 private theorem hasFDerivAt_gradient_riesz (hf : ContDiffAt ℝ 2 f x) :
     HasFDerivAt (gradient f) (rieszL.comp (fderiv ℝ (fderiv ℝ f) x)) x := by
   have hd : DifferentiableAt ℝ (fderiv ℝ f) x :=
     (hf.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero
   exact rieszL.hasFDerivAt.comp x hd.hasFDerivAt
 
-/-- For `f` `C²` at `x`, the gradient is differentiable at `x` with derivative the Hessian
-operator. -/
+/-- If $f$ is twice continuously differentiable at $x$, then the gradient is differentiable at $x$,
+and its derivative is the Hessian operator $\nabla^2 f(x)$. -/
 theorem hasFDerivAt_gradient_hessianOperator (hf : ContDiffAt ℝ 2 f x) :
     HasFDerivAt (gradient f) (hessianOperator f x) x :=
   (hasFDerivAt_gradient_riesz hf).differentiableAt.hasFDerivAt
 
-/-- `⟪u, ∇²f(x) v⟫ = ∇²f(x)[u, v]` for `f` `C²` at `x`. -/
+/-- The Hessian operator represents the Hessian form. Let $F$ be a real Hilbert space and let
+$f : F \to \mathbb{R}$ be twice continuously differentiable at $x$. Then for all $u, v \in F$,
+$$\langle u, \nabla^2 f(x) v \rangle = \nabla^2 f(x)[u, v],$$
+where on the left $\nabla^2 f(x)$ is `Optimization.hessianOperator f x` and on the right it is
+the second derivative `iteratedFDeriv ℝ 2 f x`. -/
 theorem inner_hessianOperator_apply (hf : ContDiffAt ℝ 2 f x) (u v : F) :
     ⟪u, hessianOperator f x v⟫ = iteratedFDeriv ℝ 2 f x ![u, v] := by
   rw [hessianOperator, (hasFDerivAt_gradient_riesz hf).fderiv,
@@ -466,7 +594,8 @@ theorem inner_hessianOperator_apply (hf : ContDiffAt ℝ 2 f x) (u v : F) :
     InnerProductSpace.toDual_symm_apply, iteratedFDeriv_two_apply]
   exact hf.isSymmSndFDerivAt (by simp) v u
 
-/-- The Hessian operator of a `C²` function is symmetric. -/
+/-- If $f$ is twice continuously differentiable at $x$, then the Hessian operator $\nabla^2 f(x)$ is
+symmetric. -/
 theorem hessianOperator_isSymmetric (hf : ContDiffAt ℝ 2 f x) :
     (hessianOperator f x : F →ₗ[ℝ] F).IsSymmetric := by
   intro u v
@@ -475,21 +604,29 @@ theorem hessianOperator_isSymmetric (hf : ContDiffAt ℝ 2 f x) :
     iteratedFDeriv_two_apply, iteratedFDeriv_two_apply]
   exact hf.isSymmSndFDerivAt (by simp) _ _
 
-/-- `λ_min[∇²f(x)]` is the leftmost eigenvalue of the Hessian operator ([cartis2022evaluation],
-Section A.5). -/
+/-- On a finite-dimensional real inner product space, if $f$ is twice continuously differentiable at
+$x$, then $\lambda_{\min}[\nabla^2 f(x)]$ is the leftmost eigenvalue of the Hessian operator, as
+in Section A.5 of [cartis2022evaluation]. -/
 theorem minCurvature_iteratedFDeriv_two_eq_leftmost [FiniteDimensional ℝ F]
     (hf : ContDiffAt ℝ 2 f x) :
     minCurvature (iteratedFDeriv ℝ 2 f x) =
       Subproblem.leftmost (hessianOperator_isSymmetric hf) :=
   minCurvature_eq_leftmost _ fun v w => (inner_hessianOperator_apply hf v w).symm
 
-/-- The Hessian form of a function `C²` at `x` is symmetric. -/
+/-- The Hessian form is symmetric. Let $F$ be a real Hilbert space and let $f : F \to \mathbb{R}$ be
+twice continuously differentiable at $x$. Then for all $v, w \in F$,
+$$\nabla^2 f(x)[v, w] = \nabla^2 f(x)[w, v].$$
+-/
 theorem iteratedFDeriv_two_symm (hf : ContDiffAt ℝ 2 f x) (v w : F) :
     iteratedFDeriv ℝ 2 f x ![v, w] = iteratedFDeriv ℝ 2 f x ![w, v] := by
   rw [← inner_hessianOperator_apply hf, ← inner_hessianOperator_apply hf, real_inner_comm]
   exact (hessianOperator_isSymmetric hf w v)
 
-/-- The Hessian operator is bounded by the Hessian form: `‖∇²f(x)‖_op ≤ ‖∇²f(x)‖`. -/
+/-- The Hessian operator is bounded by the Hessian form. Let $F$ be a real Hilbert space and let
+$f : F \to \mathbb{R}$ be twice continuously differentiable at $x$. Then the operator norm of
+the Hessian operator is at most the norm of the bilinear form $\nabla^2 f(x)$:
+$$\|\nabla^2 f(x)\|_{\mathrm{op}} \le \|\nabla^2 f(x)\|.$$
+-/
 theorem norm_hessianOperator_le (hf : ContDiffAt ℝ 2 f x) :
     ‖hessianOperator f x‖ ≤ ‖iteratedFDeriv ℝ 2 f x‖ := by
   refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => ?_
@@ -506,9 +643,13 @@ theorem norm_hessianOperator_le (hf : ContDiffAt ℝ 2 f x) :
   · rw [← h0]; positivity
   · nlinarith
 
-/-- **Eigenvectors of the leftmost eigenvalue** ([cartis2022evaluation], (3.2.3)): in finite
-dimension, for `f` `C²` at `x` with `λ_min[∇²f(x)] < 0` there is a unit `u` with
-`∇²f(x) u = λ_min u` and `⟪u, ∇f(x)⟫ ≤ 0`. -/
+/-- **Eigenvectors of the leftmost eigenvalue**, (3.2.3) of [cartis2022evaluation]. Let $F$ be a
+finite-dimensional real inner product space and let $f : F \to \mathbb{R}$ be twice continuously
+differentiable at $x$, with $\lambda_{\min}[\nabla^2 f(x)] < 0$. Then there is $u \in F$ with
+$\|u\| = 1$,
+$$\nabla^2 f(x) u = \lambda_{\min}[\nabla^2 f(x)] \, u \quad \text{and} \quad \langle u, \nabla
+  f(x) \rangle \le 0.$$
+-/
 theorem exists_eigenvector_hessianOperator [FiniteDimensional ℝ F] (hf : ContDiffAt ℝ 2 f x)
     (hlam : minCurvature (iteratedFDeriv ℝ 2 f x) < 0) :
     ∃ u, ‖u‖ = 1 ∧ hessianOperator f x u = minCurvature (iteratedFDeriv ℝ 2 f x) • u ∧
@@ -528,16 +669,23 @@ section InnerMonomial
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- **Cauchy–Schwarz for the decrement measure**: the measure of the linear decrement
-`d ↦ ⟪v, d⟫` over the feasible displacements of length at most `δ` is at most `δ ‖v‖`. -/
+/-- **Cauchy–Schwarz for the decrement measure.** Let $F$ be a real inner product space, $v \in F$,
+$\delta \in \mathbb{R}$ and $S \subseteq F$, and suppose that some $d \in S$ has
+$\|d\| \le \delta$. Then the measure of the linear decrement $d \mapsto \langle v, d \rangle$ is
+at most $\delta \|v\|$:
+$$\sup \{ \langle v, d \rangle : \|d\| \le \delta, \ d \in S \} \le \delta \|v\|.$$
+-/
 theorem decrementMeasure_inner_le {v : F} {δ : ℝ} {S : Set F}
     (hne : (closedBall 0 δ ∩ S).Nonempty) : decrementMeasure (fun d => ⟪v, d⟫) δ S ≤ δ * ‖v‖ :=
   decrementMeasure_le hne fun d hd => (real_inner_le_norm v d).trans (by
     rw [mul_comm]
     exact mul_le_mul_of_nonneg_right (mem_closedBall_zero_iff.1 hd.1) (norm_nonneg v))
 
-/-- The measure of the decrement `d ↦ a ⟪e, d⟫^m` (`a ≥ 0`, `‖e‖ = 1`) over the ball of radius
-`δ ≥ 0` is `a δ^m` (attained at `d = δ e`). -/
+/-- Let $F$ be a real inner product space, $e \in F$ a unit vector, $a \ge 0$, $\delta \ge 0$ and
+$m \in \mathbb{N}$. Without constraints, the measure of the decrement
+$d \mapsto a \langle e, d \rangle^m$ with radius $\delta$ is
+$$\sup_{\|d\| \le \delta} a \langle e, d \rangle^m = a \delta^m.$$
+It is attained at $d = \delta e$. -/
 theorem decrementMeasure_mul_inner_pow {e : F} (he : ‖e‖ = 1) {a δ : ℝ} {m : ℕ}
     (ha : 0 ≤ a) (hδ : 0 ≤ δ) :
     decrementMeasure (fun d => a * ⟪e, d⟫ ^ m) δ univ = a * δ ^ m := by
@@ -561,17 +709,22 @@ section Matrix
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {f : EuclideanSpace ℝ ι → ℝ}
   {x : EuclideanSpace ℝ ι}
 
-/-- The Hessian matrix `[∇²f(x)]ᵢⱼ = ∇²f(x)[eᵢ, eⱼ]` (`= ∂²f(x)/∂xᵢ∂xⱼ`) of a function on
-`EuclideanSpace ℝ ι`, in the standard basis `eᵢ`. -/
+/-- The **Hessian matrix** of a function $f$ on `EuclideanSpace ℝ ι` at $x$, in the standard basis
+$(e_i)$:
+$$[\nabla^2 f(x)]_{ij} = \nabla^2 f(x)[e_i, e_j] = \frac{\partial^2 f}{\partial x_i \partial
+  x_j}(x).$$
+-/
 noncomputable def hessianMatrix (f : EuclideanSpace ℝ ι → ℝ) (x : EuclideanSpace ℝ ι) :
     Matrix ι ι ℝ :=
   fun i j => iteratedFDeriv ℝ 2 f x ![EuclideanSpace.single i 1, EuclideanSpace.single j 1]
 
+/-- The entry $(i, j)$ of the Hessian matrix is $\nabla^2 f(x)[e_i, e_j]$. -/
 theorem hessianMatrix_apply (i j : ι) :
     hessianMatrix f x i j =
       iteratedFDeriv ℝ 2 f x ![EuclideanSpace.single i 1, EuclideanSpace.single j 1] := rfl
 
-/-- For `f` `C²` at `x`, the Hessian matrix represents the Hessian operator. -/
+/-- If $f$ is twice continuously differentiable at $x$, then the Hessian matrix represents the
+Hessian operator: the linear map of the matrix is `Optimization.hessianOperator f x`. -/
 theorem toEuclideanLin_hessianMatrix (hf : ContDiffAt ℝ 2 f x) :
     Matrix.toEuclideanLin (hessianMatrix f x) =
       (hessianOperator f x : EuclideanSpace ℝ ι →ₗ[ℝ] _) := by
@@ -586,20 +739,22 @@ theorem toEuclideanLin_hessianMatrix (hf : ContDiffAt ℝ 2 f x) :
     simp [hessianMatrix, ← h, inner_hessianOperator_apply hf]
   rw [Matrix.toEuclideanLin_eq_toLin_orthonormal, e, Matrix.toLin_toMatrix]
 
-/-- For `f` `C²` at `x`, `∇²f(x)[v, w] = ⟪v, H w⟫` with the Hessian matrix `H`. -/
+/-- If $f$ is twice continuously differentiable at $x$, then
+$\nabla^2 f(x)[v, w] = \langle v, H w \rangle$ for all $v, w$, where $H$ is the Hessian matrix. -/
 theorem iteratedFDeriv_two_eq_inner_hessianMatrix (hf : ContDiffAt ℝ 2 f x)
     (v w : EuclideanSpace ℝ ι) :
     iteratedFDeriv ℝ 2 f x ![v, w] = ⟪v, Matrix.toEuclideanLin (hessianMatrix f x) w⟫ := by
   rw [toEuclideanLin_hessianMatrix hf, ContinuousLinearMap.coe_coe,
     inner_hessianOperator_apply hf]
 
-/-- The Hessian matrix of a function `C²` at `x` is symmetric. -/
+/-- If $f$ is twice continuously differentiable at $x$, then the Hessian matrix is symmetric. -/
 theorem hessianMatrix_isHermitian (hf : ContDiffAt ℝ 2 f x) : (hessianMatrix f x).IsHermitian :=
   Matrix.isSymmetric_toEuclideanLin_iff.mp
     (toEuclideanLin_hessianMatrix hf ▸ hessianOperator_isSymmetric hf)
 
-/-- `λ_min[∇²f(x)]` is the least eigenvalue of the Hessian matrix ([cartis2022evaluation],
-(1.1.5) and Section A.5); both sides are `0` when `ι` is empty. -/
+/-- If $f$ is twice continuously differentiable at $x$, then $\lambda_{\min}[\nabla^2 f(x)]$ is the
+least eigenvalue of the Hessian matrix, as in (1.1.5) and Section A.5 of [cartis2022evaluation].
+Both sides are $0$ when the index type $\iota$ is empty. -/
 theorem minCurvature_iteratedFDeriv_two_eq_iInf_eigenvalues (hf : ContDiffAt ℝ 2 f x) :
     minCurvature (iteratedFDeriv ℝ 2 f x) = ⨅ i, (hessianMatrix_isHermitian hf).eigenvalues i :=
   minCurvature_eq_iInf_isHermitian_eigenvalues _ (iteratedFDeriv_two_eq_inner_hessianMatrix hf)

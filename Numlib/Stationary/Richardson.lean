@@ -11,36 +11,66 @@ import Numlib.Stationary.SPD
 /-!
 # Richardson's iteration
 
-Richardson's iteration with a preconditioner, `x_{k+1} = x_k + α P⁻¹ (b - A x_k)`, stationary (`α`
-fixed) and nonstationary (`α_k`), [quarteroni2000numerical] §4.3.1, (4.23)–(4.30);
-[saad2003iterative] Example 4.1 is `P = 1`, [kress1998numerical] §4.4 and [han2009theoretical]
-Exercise 5.2.3 are the unpreconditioned case.
+**Richardson's iteration** with a preconditioner $P$ for the system $A x = b$ is
+$$x_{k+1} = x_k + \alpha_k P^{-1} (b - A x_k).$$
+It is stationary when $\alpha_k = \alpha$ is fixed and nonstationary otherwise. The presentation
+follows [quarteroni2000numerical], §4.3.1, (4.23)–(4.30). The case $P = I$ is Example 4.1 of
+[saad2003iterative], and the unpreconditioned case is also in [kress1998numerical], §4.4, and
+[han2009theoretical], Exercise 5.2.3.
 
-* The stationary method is the splitting `M = α⁻¹ P`
-  (`Stationary.Splitting.preconditionedRichardson`), which specializes to
-  `Stationary.Splitting.richardson` (`P = 1`) and to `Matrix.jorSplitting` (`P = D`); its
-  iteration matrix is `R_α = 1 - α P⁻¹ A`
-  (`Stationary.Splitting.preconditionedRichardson_iterationOperator`).
-* **Theorem 4.8 of [quarteroni2000numerical]**: for any real `α` and any real matrix `M`
-  (`= P⁻¹ A`), `ρ(1 - α M) < 1` iff `2 Re λ / (α |λ|²) > 1` for every complex eigenvalue `λ` of `M`
-  (`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall`).  Theorem 4.9 —
-  real positive spectrum in `[lmin, lmax]`, convergence iff `0 < α < 2/lmax`, optimal parameter
-  `2/(lmin + lmax)` — is `Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff` and
-  `Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul` of `Numlib/Stationary/SPD`.
-* **Corollary 4.1** in the generality of the book's closing remark: for positive definite `P` and
-  `A` and every `α`, `‖e_{k+1}‖_A ≤ ρ(R_α) ‖e_k‖_A`
-  (`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le`); no hypothesis on `P⁻¹ A`.
-* **(4.29)**: for a symmetric positive definite `M`, the optimal radius is `(κ₂(M) - 1)/(κ₂(M) + 1)`
-  and the optimal parameter `2 ‖M⁻¹‖₂ / (κ₂(M) + 1)`
-  (`Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber`,
-  `Stationary.Splitting.two_div_add_eq_mul_norm_inv_div_condNumber`).
-* The nonstationary iteration `Richardson.iterate`, on a module over a field, with its residual
-  update (4.25) (`Richardson.residual_iterate_succ`), the polynomial form of its residuals
-  `r_k = p_k(A) r_0` with `p_k = ∏_{j<k} (1 - α_j X)` ((4.51),
-  `Richardson.residual_iterate_eq_prod`), its iterates in `x_0 + 𝒦_k(A, r_0)` ((4.53),
-  `Richardson.iterate_sub_mem_subspace`), and the gradient method of §4.3.3 as its instance with
-  `α_k = ⟪r_k, r_k⟫ / ⟪r_k, A r_k⟫` (`Richardson.iterate_gradient_eq_steepestDescentStep`), whose
-  step is `Projection.steepestDescentStep`.
+The stationary method is the splitting with $m = \alpha^{-1} P$, and its iteration matrix is
+$R_\alpha = I - \alpha P^{-1} A$. For a real matrix $M$, standing for $P^{-1} A$, the iteration
+converges if and only if $2 \operatorname{Re} \lambda / (\alpha |\lambda|^2) > 1$ for every complex
+eigenvalue $\lambda$ of $M$. For positive definite $P$ and $A$, the error contracts in the energy
+norm of $A$ by the factor $\rho(R_\alpha)$. For a symmetric positive definite $M$, the optimal
+spectral radius is $(\kappa_2(M) - 1)/(\kappa_2(M) + 1)$. The nonstationary iteration is defined on
+any vector space; its residuals are $r_k = p_k(A) r_0$ for a polynomial $p_k$ of degree at most $k$
+with $p_k(0) = 1$, its iterates lie in $x_0 + \mathcal{K}_k(A, r_0)$, and the gradient method is its
+instance with $\alpha_k = \langle r_k, r_k \rangle / \langle r_k, A r_k \rangle$.
+
+## Main definitions
+
+* `Stationary.Splitting.preconditionedRichardson`: the splitting $m = \alpha^{-1} P$.
+* `Richardson.iterate`: the nonstationary preconditioned Richardson iteration.
+* `Richardson.residualPoly`: the residual polynomial $p_k = \prod_{j < k} (1 - \alpha_j X)$.
+
+## Main results
+
+* `Stationary.Splitting.preconditionedRichardson_iterationOperator`: the iteration matrix is
+  $I - \alpha P^{-1} A$.
+* `Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall`: Theorem 4.8 of
+  [quarteroni2000numerical], $\rho(I - \alpha M) < 1$ if and only if $2 \operatorname{Re} \lambda /
+  (\alpha |\lambda|^2) > 1$ for every eigenvalue $\lambda$ of $M$.
+* `Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le`: Corollary 4.1 of
+  [quarteroni2000numerical], $\|R_\alpha e\|_A \le \rho(R_\alpha) \|e\|_A$ for positive definite $P$
+  and $A$.
+* `Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber`: (4.29) of
+  [quarteroni2000numerical], the optimal spectral radius is $(\kappa_2(M) - 1)/(\kappa_2(M) + 1)$.
+* `Stationary.Splitting.two_div_add_eq_mul_norm_inv_div_condNumber`: (4.29) of
+  [quarteroni2000numerical], the optimal parameter is $2 \|M^{-1}\|_2 / (\kappa_2(M) + 1)$.
+* `Richardson.residual_iterate_succ`: the residual update (4.25).
+* `Richardson.residual_iterate_eq_prod`: the residuals are $r_k = p_k(A) r_0$, which is (4.51).
+* `Richardson.iterate_sub_mem_subspace`: the iterates lie in $x_0 + \mathcal{K}_k(A, r_0)$, which is
+  (4.53).
+* `Richardson.iterate_gradient_eq_steepestDescentStep`: the gradient method of §4.3.3 is the
+  nonstationary iteration with $\alpha_k = \langle r_k, r_k \rangle / \langle r_k, A r_k \rangle$.
+
+## Implementation notes
+
+* The splitting `Stationary.Splitting.preconditionedRichardson` specializes to
+  `Stationary.Splitting.richardson` at $P = I$ and to `Matrix.jorSplitting` at $P = D$, the diagonal
+  part of $A$.
+* Theorem 4.9 of [quarteroni2000numerical] is in `Numlib.Stationary.SPD`: for a real positive
+  spectrum in $[\lambda_{\min}, \lambda_{\max}]$, convergence holds if and only if
+  $0 < \alpha < 2/\lambda_{\max}$
+  (`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`), and the optimal parameter
+  is $2/(\lambda_{\min} + \lambda_{\max})$
+  (`Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul`).
+* The spectral results are stated for a real matrix $M$, which stands for $P^{-1} A$, and the
+  spectral radius is `Matrix.complexSpectralRadius`.
+* The nonstationary iteration takes the inverse of the preconditioner as a linear map `Pinv`, so no
+  invertibility hypothesis is needed. The step of the gradient method is
+  `Projection.steepestDescentStep`.
 -/
 
 open Filter Topology
@@ -54,21 +84,27 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {𝕜 : Type*} [Field 𝕜]
 
-/-- **The preconditioned Richardson splitting** `M = α⁻¹ P` of `A`, for an invertible preconditioner
-`P` and a nonzero parameter `α` ([quarteroni2000numerical] (4.23)); `n = α⁻¹ P - A`. -/
+/-- The **preconditioned Richardson splitting** of a square matrix $A$ over a field, for an
+invertible preconditioner $P$ and a parameter $\alpha \neq 0$: the splitting $A = m - n$ with
+$$m = \alpha^{-1} P, \qquad n = \alpha^{-1} P - A.$$
+This is (4.23) of [quarteroni2000numerical]. -/
 noncomputable def preconditionedRichardson (A : Matrix n n 𝕜) {P : Matrix n n 𝕜} (hP : IsUnit P)
     {α : 𝕜} (hα : α ≠ 0) : Splitting A :=
   ⟨α⁻¹ • P, by
     rw [Algebra.smul_def]
     exact ((isUnit_iff_ne_zero.mpr (inv_ne_zero hα)).map (algebraMap 𝕜 (Matrix n n 𝕜))).mul hP⟩
 
-/-- The `m` of the preconditioned Richardson splitting. -/
+/-- The part $m$ of the preconditioned Richardson splitting is $\alpha^{-1} P$. -/
 @[simp]
 theorem preconditionedRichardson_m (A : Matrix n n 𝕜) {P : Matrix n n 𝕜} (hP : IsUnit P) {α : 𝕜}
     (hα : α ≠ 0) : (preconditionedRichardson A hP hα).m = α⁻¹ • P := rfl
 
-/-- **The Richardson iteration matrix** `R_α = 1 - α P⁻¹ A` ([quarteroni2000numerical] §4.3;
-`R_P = 1 - P⁻¹ A` at `α = 1`). -/
+/-- **The Richardson iteration matrix.** The iteration matrix of the preconditioned Richardson
+splitting of $A$, with an invertible preconditioner $P$ and $\alpha \neq 0$, is
+$$R_\alpha = I - \alpha P^{-1} A.$$
+
+This is the matrix of [quarteroni2000numerical], §4.3. At $\alpha = 1$ it is
+$R_P = I - P^{-1} A$. -/
 theorem preconditionedRichardson_iterationOperator (A : Matrix n n 𝕜) {P : Matrix n n 𝕜}
     (hP : IsUnit P) {α : 𝕜} (hα : α ≠ 0) :
     (preconditionedRichardson A hP hα).iterationOperator = 1 - α • (P⁻¹ * A) := by
@@ -76,18 +112,21 @@ theorem preconditionedRichardson_iterationOperator (A : Matrix n n 𝕜) {P : Ma
     Matrix.ringInverse_smul (inv_ne_zero hα) hP, inv_inv, smul_mul_assoc,
     nonsing_inv_eq_ringInverse]
 
-/-- The unpreconditioned method is `P = 1`: `preconditionedRichardson A isUnit_one hα` is
-`Stationary.Splitting.richardson A hα`. -/
+/-- The preconditioned Richardson splitting with $P = I$ is the unpreconditioned Richardson
+splitting `Stationary.Splitting.richardson`, for every $\alpha \neq 0$. -/
 theorem preconditionedRichardson_one (A : Matrix n n 𝕜) {α : 𝕜} (hα : α ≠ 0) :
     preconditionedRichardson A isUnit_one hα = richardson A hα := rfl
 
-/-- JOR is Richardson with `P = D` and `α = ω` ([quarteroni2000numerical], the sentence after
-(4.24)): `preconditionedRichardson A h hω = jorSplitting A h hω`. -/
+/-- JOR is Richardson with $P = D$ and $\alpha = \omega$. For a square matrix $A$ with invertible
+diagonal part $D$ and $\omega \neq 0$, the preconditioned Richardson splitting with
+preconditioner $D$ and parameter $\omega$ is the JOR splitting `Matrix.jorSplitting`
+([quarteroni2000numerical], the sentence after (4.24)). -/
 theorem preconditionedRichardson_diagPart (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜}
     (hω : ω ≠ 0) : preconditionedRichardson A h hω = jorSplitting A h hω := rfl
 
-/-- The scalar inequality of Theorem 4.8: `|1 - α μ|² < 1 ↔ 1 < 2 Re μ / (α |μ|²)` for `α ≠ 0`,
-with Lean's `x / 0 = 0` making both sides false at `μ = 0`. -/
+/-- For real $\alpha \neq 0$, $r$ and $i$, $(1 - \alpha r)^2 + (\alpha i)^2 < 1$ if and only if
+$1 < 2 r / (\alpha (r^2 + i^2))$, where the right side is false at $r = i = 0$ because division
+by zero gives $0$. -/
 private theorem sq_lt_one_iff_one_lt_div {α r i : ℝ} (hα : α ≠ 0) :
     (1 - α * r) ^ 2 + (α * i) ^ 2 < 1 ↔ 1 < 2 * r / (α * (r ^ 2 + i ^ 2)) := by
   rcases eq_or_ne (r ^ 2 + i ^ 2) 0 with h0 | h0
@@ -110,12 +149,17 @@ private theorem sq_lt_one_iff_one_lt_div {α r i : ℝ} (hα : α ≠ 0) :
       · intro h
         nlinarith [mul_pos hposα hpos]
 
-/-- **Theorem 4.8 of [quarteroni2000numerical]**: for a real matrix `M` on a nonempty index type
-and every real `α`, the stationary Richardson iteration `1 - α M` converges iff
-`2 Re λ / (α |λ|²) > 1` for every complex eigenvalue `λ` of `M`.  Applied to `M = P⁻¹ A` and
-`Stationary.Splitting.preconditionedRichardson_iterationOperator` this is the book's statement for
-any nonsingular `P`.  Lean's `x / 0 = 0` makes the right side false at `α = 0` and at `λ = 0`,
-exactly when the left side is. -/
+/-- **Theorem 4.8** of [quarteroni2000numerical]. Let $M$ be a real $n \times n$ matrix with
+$n \ge 1$, and let $\alpha$ be real. Then the stationary Richardson iteration with iteration
+matrix $I - \alpha M$ converges, that is $\rho(I - \alpha M) < 1$, if and only if
+$$\frac{2 \operatorname{Re} \lambda}{\alpha |\lambda|^2} > 1$$
+for every complex eigenvalue $\lambda$ of $M$.
+
+With $M = P^{-1} A$ and `Stationary.Splitting.preconditionedRichardson_iterationOperator`, this
+is the statement of the source for any nonsingular $P$. In Lean, division by zero gives $0$, so
+the condition on the right is false at $\alpha = 0$ and at $\lambda = 0$; in both cases the left
+side is also false. The spectral radius is `Matrix.complexSpectralRadius`, and the eigenvalues
+are the spectrum of the complexification of $M$. -/
 theorem complexSpectralRadius_one_sub_smul_lt_one_iff_forall [Nonempty n] (M : Matrix n n ℝ)
     (α : ℝ) :
     complexSpectralRadius (1 - α • M) < 1 ↔
@@ -157,12 +201,16 @@ theorem complexSpectralRadius_one_sub_smul_lt_one_iff_forall [Nonempty n] (M : M
       Complex.normSq_apply, ← sq, ← sq]
     exact sq_lt_one_iff_one_lt_div hα
 
-/-- **Corollary 4.1 of [quarteroni2000numerical]**, in the generality of its closing remark: for
-positive definite `P` and `A` and every `α ≠ 0`, the error of the preconditioned Richardson
-iteration contracts in the `A`-norm by the spectral radius of `R_α = 1 - α P⁻¹ A`:
-`‖R_α e‖_A² ≤ ρ(R_α)² ‖e‖_A²`.  No hypothesis on `P⁻¹ A` is needed; the convergence clause of the
-corollary additionally needs `0 < α < 2/λmax` (`complexSpectralRadius_one_sub_smul_lt_one_iff`),
-which the book omits. -/
+/-- **Corollary 4.1** of [quarteroni2000numerical], in the generality of its closing remark. Let $A$
+and $P$ be real symmetric positive definite matrices, and let $\alpha \neq 0$ be real. Let
+$R_\alpha = I - \alpha P^{-1} A$ be the iteration matrix of the preconditioned Richardson
+iteration. Then for every vector $e$,
+$$\|R_\alpha e\|_A^2 \le \rho(R_\alpha)^2 \, \|e\|_A^2,$$
+where $\|e\|_A^2 = (A e) \cdot e$. No hypothesis on $P^{-1} A$ is needed.
+
+The convergence clause of the corollary needs in addition $0 < \alpha < 2/\lambda_{\max}$
+(`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`), which the source omits.
+The spectral radius is the real number `(Matrix.complexSpectralRadius _).toReal`. -/
 theorem energyNorm_preconditionedRichardson_mulVec_le {A P : Matrix n n ℝ} (hA : A.PosDef)
     (hP : P.PosDef) {α : ℝ} (hα : α ≠ 0) (e : n → ℝ) :
     (A *ᵥ ((1 - α • (P⁻¹ * A)) *ᵥ e)) ⬝ᵥ ((1 - α • (P⁻¹ * A)) *ᵥ e) ≤
@@ -178,8 +226,9 @@ section CondNumber
 
 open scoped Matrix.Norms.L2Operator NormedRing
 
-/-- The `ℓ²` operator norm of a real symmetric `M` whose eigenvalues lie in `[lmin, lmax]` with
-`0 < lmin` and `lmax` attained is `lmax`. -/
+/-- For a real symmetric matrix $M$ with eigenvalues in $[\lambda_{\min}, \lambda_{\max}]$,
+$0 < \lambda_{\min}$ and $\lambda_{\max}$ an eigenvalue, the $\ell^2$ operator norm of $M$ is
+$\lambda_{\max}$. -/
 private theorem l2_opNorm_eq_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHermitian) {lmin lmax : ℝ}
     (hsub : spectrum ℝ M ⊆ Set.Icc lmin lmax) (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) :
     ‖M‖ = lmax := by
@@ -191,8 +240,9 @@ private theorem l2_opNorm_eq_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHermitia
   · exact (hasEigenvalue_toEuclideanLin_iff M lmax).mpr hmax
   · rw [RCLike.re_to_real, abs_of_pos (by linarith [(hsub hmax).1])]
 
-/-- The `ℓ²` operator norm of the inverse of a real symmetric `M` whose eigenvalues lie in
-`[lmin, lmax]` with `0 < lmin` attained is `lmin⁻¹`. -/
+/-- For a real symmetric matrix $M$ with eigenvalues in $[\lambda_{\min}, \lambda_{\max}]$ and
+$0 < \lambda_{\min}$ an eigenvalue, the $\ell^2$ operator norm of $M^{-1}$ is
+$\lambda_{\min}^{-1}$. -/
 private theorem l2_opNorm_inv_eq_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ M ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ M)
     (hpos : 0 < lmin) : ‖M⁻¹‖ = lmin⁻¹ := by
@@ -204,7 +254,13 @@ private theorem l2_opNorm_inv_eq_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHerm
   · exact (hasEigenvalue_toEuclideanLin_iff M lmin).mpr hmin
   · rw [RCLike.re_to_real, abs_of_pos hpos]
 
-/-- The `ℓ²` condition number of a real symmetric positive definite `M` is `lmax / lmin`. -/
+/-- Let $M$ be a real symmetric matrix whose eigenvalues lie in $[\lambda_{\min}, \lambda_{\max}]$,
+where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues and $0 < \lambda_{\min}$. Then the
+$\ell^2$ condition number of $M$ is
+$$\kappa_2(M) = \frac{\lambda_{\max}}{\lambda_{\min}}.$$
+
+The condition number is `NormedRing.condNumber` for the $\ell^2$ operator norm of
+`Matrix.Norms.L2Operator`. -/
 theorem condNumber_eq_div_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHermitian) {lmin lmax : ℝ}
     (hsub : spectrum ℝ M ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ M)
     (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) : κ M = lmax / lmin := by
@@ -212,9 +268,16 @@ theorem condNumber_eq_div_of_spectrum {M : Matrix n n ℝ} (hM : M.IsHermitian) 
     l2_opNorm_eq_of_spectrum hM hsub hmax hpos, l2_opNorm_inv_eq_of_spectrum hM hsub hmin hpos,
     div_eq_mul_inv]
 
-/-- **(4.29) of [quarteroni2000numerical], the optimal radius**: for a real symmetric positive
-definite `M` (the book's `P⁻¹ A` when it is symmetric) with `ℓ²` condition number `κ`,
-`ρ(1 - (2/(lmin + lmax)) M) = (κ - 1)/(κ + 1)`. -/
+/-- **Equation (4.29)** of [quarteroni2000numerical], the optimal spectral radius. Let $M$ be a real
+symmetric matrix whose eigenvalues lie in $[\lambda_{\min}, \lambda_{\max}]$, where
+$\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues and $0 < \lambda_{\min}$. Then
+$$\rho\Bigl(I - \frac{2}{\lambda_{\min} + \lambda_{\max}} M\Bigr) = \frac{\kappa_2(M) -
+  1}{\kappa_2(M) + 1},$$
+where $\kappa_2(M)$ is the $\ell^2$ condition number of $M$.
+
+In the source, $M$ is $P^{-1} A$ when this matrix is symmetric. The spectral radius is
+`Matrix.complexSpectralRadius`, and the condition number is `NormedRing.condNumber` for the
+$\ell^2$ operator norm. -/
 theorem complexSpectralRadius_one_sub_smul_optimal_eq_condNumber {M : Matrix n n ℝ}
     (hM : M.IsHermitian) {lmin lmax : ℝ} (hsub : spectrum ℝ M ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ M) (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) :
@@ -225,9 +288,13 @@ theorem complexSpectralRadius_one_sub_smul_optimal_eq_condNumber {M : Matrix n n
   congr 1
   field_simp
 
-/-- **(4.29) of [quarteroni2000numerical], the optimal parameter**: `2/(lmin + lmax) = 2 ‖M⁻¹‖₂ /
-(κ₂(M) + 1)` for a real symmetric positive definite `M` (the book writes `‖A⁻¹ P‖₂` for
-`‖(P⁻¹ A)⁻¹‖₂`). -/
+/-- **Equation (4.29)** of [quarteroni2000numerical], the optimal parameter. Let $M$ be a real
+symmetric matrix whose eigenvalues lie in $[\lambda_{\min}, \lambda_{\max}]$, where
+$\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues and $0 < \lambda_{\min}$. Then
+$$\frac{2}{\lambda_{\min} + \lambda_{\max}} = \frac{2 \|M^{-1}\|_2}{\kappa_2(M) + 1}.$$
+
+The source writes $\|A^{-1} P\|_2$ for $\|(P^{-1} A)^{-1}\|_2$. The norm is the $\ell^2$
+operator norm, and the condition number is `NormedRing.condNumber` for this norm. -/
 theorem two_div_add_eq_mul_norm_inv_div_condNumber {M : Matrix n n ℝ} (hM : M.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ M ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ M)
     (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) :
@@ -253,53 +320,61 @@ section Module
 
 variable {𝕜 E : Type*} [Field 𝕜] [AddCommGroup E] [Module 𝕜 E]
 
-/-- **The nonstationary preconditioned Richardson iteration** ([quarteroni2000numerical] (4.24)):
-`x_0 = x₀` and `x_{k+1} = x_k + α_k Pinv (b - A x_k)`, for a linear map `A`, a preconditioner
-inverse `Pinv`, parameters `α : ℕ → 𝕜`, right-hand side `b` and start `x₀`.  `Pinv = LinearMap.id`
-is the unpreconditioned method; the stationary case `α = const` is `Stationary.step` for
-`1 - α Pinv A`. -/
+/-- **The nonstationary preconditioned Richardson iteration** ([quarteroni2000numerical], (4.24)).
+Let $E$ be a vector space over a field $\mathbb{K}$, let $A$ and $P^{-1}$ be linear maps on $E$,
+let $(\alpha_k)$ be a sequence of scalars, and let $b, x_0 \in E$. The iterates are defined by
+$$x_{k+1} = x_k + \alpha_k P^{-1} (b - A x_k).$$
+
+The linear map $P^{-1}$ is the argument `Pinv`; it need not be the inverse of anything. The
+choice `Pinv = LinearMap.id` gives the unpreconditioned method. The stationary case, with
+constant $\alpha_k$, is `Stationary.step` for the operator $1 - \alpha P^{-1} A$. -/
 noncomputable def iterate (A Pinv : E →ₗ[𝕜] E) (α : ℕ → 𝕜) (b x₀ : E) : ℕ → E
   | 0 => x₀
   | k + 1 => iterate A Pinv α b x₀ k + α k • Pinv (b - A (iterate A Pinv α b x₀ k))
 
 variable (A Pinv : E →ₗ[𝕜] E) (α : ℕ → 𝕜) (b x₀ : E)
 
-/-- The iteration starts at `x₀`. -/
+/-- The nonstationary Richardson iteration starts at $x_0$. -/
 @[simp]
 theorem iterate_zero : iterate A Pinv α b x₀ 0 = x₀ := rfl
 
-/-- One step of the iteration: `x_{k+1} = x_k + α_k z_k` with the preconditioned residual
-`z_k = Pinv (b - A x_k)`. -/
+/-- One step of the nonstationary Richardson iteration: $x_{k+1} = x_k + \alpha_k z_k$, where
+$z_k = P^{-1} (b - A x_k)$ is the preconditioned residual. -/
 theorem iterate_succ (k : ℕ) :
     iterate A Pinv α b x₀ (k + 1)
       = iterate A Pinv α b x₀ k + α k • Pinv (b - A (iterate A Pinv α b x₀ k)) := rfl
 
-/-- **The residual update** ([quarteroni2000numerical] (4.25)): `r_{k+1} = r_k - α_k A z_k`, with
-`r_k = b - A x_k` and `z_k = Pinv r_k`. -/
+/-- **The residual update** ([quarteroni2000numerical], (4.25)). For the nonstationary Richardson
+iteration, the residuals $r_k = b - A x_k$ satisfy
+$$r_{k+1} = r_k - \alpha_k A z_k, \qquad z_k = P^{-1} r_k.$$
+-/
 theorem residual_iterate_succ (k : ℕ) :
     b - A (iterate A Pinv α b x₀ (k + 1)) =
       (b - A (iterate A Pinv α b x₀ k)) - α k • A (Pinv (b - A (iterate A Pinv α b x₀ k))) := by
   rw [iterate_succ, map_add, map_smul]
   abel
 
-/-- The residual polynomial `p_k = ∏_{j<k} (1 - α_j X)` of the unpreconditioned iteration. -/
+/-- The **residual polynomial** of the unpreconditioned nonstationary Richardson iteration with
+parameters $(\alpha_j)$:
+$$p_k = \prod_{j < k} (1 - \alpha_j X) \in \mathbb{K}[X].$$
+-/
 noncomputable def residualPoly (k : ℕ) : 𝕜[X] := ∏ j ∈ Finset.range k, (1 - C (α j) * X)
 
-/-- `p_0 = 1`. -/
+/-- The residual polynomial $p_0$ is $1$. -/
 @[simp]
 theorem residualPoly_zero : residualPoly α 0 = 1 := by simp [residualPoly]
 
-/-- `p_{k+1} = p_k (1 - α_k X)`. -/
+/-- The residual polynomials satisfy $p_{k+1} = p_k \, (1 - \alpha_k X)$. -/
 theorem residualPoly_succ (k : ℕ) :
     residualPoly α (k + 1) = residualPoly α k * (1 - C (α k) * X) := by
   rw [residualPoly, residualPoly, Finset.prod_range_succ]
 
-/-- The residual polynomial takes the value `1` at `0`. -/
+/-- Every residual polynomial takes the value $1$ at $0$: $p_k(0) = 1$. -/
 @[simp]
 theorem residualPoly_eval_zero (k : ℕ) : (residualPoly α k).eval 0 = 1 := by
   simp [residualPoly, eval_prod]
 
-/-- The residual polynomial has degree at most `k`. -/
+/-- The residual polynomial $p_k$ has degree at most $k$. -/
 theorem natDegree_residualPoly_le (k : ℕ) : (residualPoly α k).natDegree ≤ k := by
   refine (natDegree_prod_le _ _).trans ?_
   calc ∑ j ∈ Finset.range k, (1 - C (α j) * X : 𝕜[X]).natDegree
@@ -309,10 +384,14 @@ theorem natDegree_residualPoly_le (k : ℕ) : (residualPoly α k).natDegree ≤ 
         exact (natDegree_C_mul_le _ _).trans natDegree_X_le
     _ = k := by simp
 
-/-- **The residuals of the unpreconditioned Richardson iteration** are polynomials in `A` applied
-to the initial residual ([quarteroni2000numerical] (4.51)): `r_k = p_k(A) r_0` with
-`p_k = ∏_{j<k} (1 - α_j X)`, a polynomial of degree at most `k` with `p_k(0) = 1`.  This is the
-observation that opens the Krylov chapter of the book. -/
+/-- **The residuals of the unpreconditioned Richardson iteration are polynomials in $A$**
+([quarteroni2000numerical], (4.51)). Let $x_k$ be the nonstationary Richardson iteration with
+$P^{-1} = I$. Then
+$$b - A x_k = p_k(A) (b - A x_0), \qquad p_k = \prod_{j < k} (1 - \alpha_j X).$$
+The polynomial $p_k$ has degree at most $k$ and satisfies $p_k(0) = 1$.
+
+This observation opens the chapter of the source on Krylov methods. The polynomial is evaluated
+at the linear map $A$ by `Polynomial.aeval`. -/
 theorem residual_iterate_eq_prod (k : ℕ) :
     b - A (iterate A LinearMap.id α b x₀ k) = aeval A (residualPoly α k) (b - A x₀) := by
   induction k with
@@ -324,8 +403,13 @@ theorem residual_iterate_eq_prod (k : ℕ) :
     rw [residual_iterate_succ, residualPoly_succ, mul_comm, map_mul, Module.End.mul_apply, hp, ih,
       LinearMap.id_apply, LinearMap.sub_apply, Module.End.one_apply, LinearMap.smul_apply]
 
-/-- **The Richardson iterates lie in the affine Krylov space** `x_0 + 𝒦_k(A, r_0)`
-([quarteroni2000numerical] (4.53)): `x_k - x_0 = ∑_{j<k} α_j r_j` and `r_j ∈ 𝒦_{j+1}(A, r_0)`. -/
+/-- **The Richardson iterates lie in the affine Krylov space** ([quarteroni2000numerical], (4.53)).
+Let $x_k$ be the nonstationary Richardson iteration with $P^{-1} = I$, and let
+$r_0 = b - A x_0$. Then
+$$x_k - x_0 \in \mathcal{K}_k(A, r_0) = \operatorname{span}\{r_0, A r_0, \dots, A^{k-1} r_0\}.$$
+
+The reason is that $x_k - x_0 = \sum_{j < k} \alpha_j r_j$ and
+$r_j \in \mathcal{K}_{j+1}(A, r_0)$. The Krylov space is `Krylov.subspace`. -/
 theorem iterate_sub_mem_subspace (k : ℕ) :
     iterate A LinearMap.id α b x₀ k - x₀ ∈ Krylov.subspace A (b - A x₀) k := by
   induction k with
@@ -346,10 +430,18 @@ section Gradient
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- **The gradient method is nonstationary Richardson** with `α_k = ⟪r_k, r_k⟫ / ⟪r_k, A r_k⟫`
-([quarteroni2000numerical] (4.36)–(4.37)): a sequence `x` with `x 0 = x₀` and
-`x (k+1) = Projection.steepestDescentStep A b (x k)` is `Richardson.iterate A id α b x₀` for the
-parameters `α k = ⟪r_k, r_k⟫ / ⟪r_k, A r_k⟫` read off along it, `r_k = b - A (x k)`. -/
+/-- **The gradient method is nonstationary Richardson** ([quarteroni2000numerical], (4.36)–(4.37)).
+Let $E$ be an inner product space over $\mathbb{R}$ or $\mathbb{C}$, let $A$ be a linear map on
+$E$, and let $b \in E$. Let $(x_k)$ be a sequence with $x_{k+1} = \mathrm{SD}(x_k)$ for every
+$k$, where $\mathrm{SD}$ is the steepest descent step `Projection.steepestDescentStep` for
+$A x = b$. Then $(x_k)$ is the unpreconditioned nonstationary Richardson iteration from $x_0$
+with the parameters
+$$\alpha_k = \frac{\langle r_k, r_k \rangle}{\langle r_k, A r_k \rangle}, \qquad r_k = b - A
+  x_k,$$
+read off along the sequence.
+
+No hypothesis on $A$ is needed, because the steepest descent step is $x_k + \alpha_k r_k$ with
+the same quotient $\alpha_k$, including the value $0$ of a division by zero. -/
 theorem iterate_gradient_eq_steepestDescentStep (A : E →ₗ[𝕜] E) (b : E) (x : ℕ → E)
     (hsucc : ∀ k, x (k + 1) = Projection.steepestDescentStep A b (x k)) (k : ℕ) :
     x k = iterate A LinearMap.id

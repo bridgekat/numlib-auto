@@ -10,43 +10,76 @@ import Numlib.Analysis.Normed.Ring.CondNumber
 /-!
 # Well-posedness and condition numbers of a problem
 
-The conditioning vocabulary of [quarteroni2000numerical] §2.1. A *problem* is `F x d = 0` with
-datum `d : D` and unknown `x : X`; its *resolvent* on a set `S` of admissible data is the map
-`G : D → X` giving the unique solution (`Conditioning.IsResolvent`), and the problem is
-*well posed* when a continuous resolvent exists (`Conditioning.IsWellPosed`, Hadamard).
+A *problem* is an equation $F(x, d) = 0$ with a datum $d \in D$ and an unknown $x \in X$. A
+*resolvent* of the problem on a set $S$ of admissible data is a map $G : D \to X$ such that, for
+every $d \in S$, the solutions of $F(x, d) = 0$ are exactly $x = G(d)$. The problem is *well posed*
+(in the sense of Hadamard) when it has a continuous resolvent. The *condition numbers* measure how
+much a perturbation $\delta d$ of the datum is amplified in the solution. The absolute condition
+number over a set $N$ of perturbations is $$K_{\mathrm{abs}}^N(d) = \sup_{\delta d \in N,\ \delta d
+\neq 0} \frac{\|G(d + \delta d) - G(d)\|}{\|\delta d\|} \in [0, \infty],$$ the relative one divides
+by $\|G(d)\| / \|d\|$ inside the supremum, and the first-order condition numbers are the limits of
+these numbers as the size $\eta$ of the admissible perturbations tends to $0^+$. The presentation
+follows [quarteroni2000numerical], §2.1.
 
-The *condition numbers* measure how a perturbation `δd` of the datum is amplified in the
-solution. The primitive is `Conditioning.absCondNumberOn G N d : ℝ≥0∞`, the supremum of
-`‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ` over the nonzero perturbations `δd` of a set `N` (the
-neighbourhood of admissible perturbations of [quarteroni2000numerical] Definition 2.1);
-`Conditioning.absCondNumberWithin G S d η` restricts to the admissible perturbations of size
-`< η` (`Conditioning.perturbations S d η`), and `Conditioning.absCondNumber G S d` is the limit as
-`η → 0⁺`, which by monotonicity is an infimum. The relative numbers `relCondNumberOn`,
-`relCondNumberWithin`, `relCondNumber` divide by `‖G d‖ₑ / ‖d‖ₑ` inside the supremum, as the book's
-(2.4) does; they are the absolute ones times `‖d‖ₑ / ‖G d‖ₑ`.
+The main theorem is the first-order formula (2.7) of [quarteroni2000numerical]: if the resolvent has
+the Fréchet derivative $G'$ at an interior point $d$ of $S$, then the first-order absolute condition
+number is $\|G'\|$. Its instances are a bounded linear resolvent, a linear system perturbed in its
+right-hand side (Example 2.3 of the source, with the bound $K(b) \le \kappa(A)$), and the root of
+$\varphi(x) = d$, whose absolute condition number is $\|\varphi'\|^{-1}$ (Example 2.4 of the
+source); a multiple root has condition number $\infty$. The module also defines the scaled relative
+condition number of [golub2013matrix], §9.1.6, and shows that it equals the first-order relative
+condition number wherever the resolvent is differentiable.
 
-Everything is valued in `ℝ≥0∞`: "the condition number is infinite" ([quarteroni2000numerical]
-Remark 2.1) is the value `⊤`, the suprema and infima are total, and the Lipschitz condition
-(2.3) of the book is exactly finiteness (`Conditioning.absCondNumberWithin_ne_top_iff`).
+## Main definitions
 
-The main theorem is the first-order formula (2.7): for a resolvent differentiable at `d`,
-`Conditioning.absCondNumber G S d = ‖G'‖ₑ` (`absCondNumber_eq_enorm_fderiv`), whose lower bound
-`‖G'‖ₑ ≤ absCondNumberWithin G S d η` holds for every radius. Instances: a bounded linear
-resolvent has condition number `‖L‖ₑ` over every neighbourhood, which gives the book's Example
-2.3 `K(b) ≤ κ(A)` for `A x = b` through `NormedRing.condNumber`; the root of `φ x = d` has
-absolute condition number `‖φ'‖ₑ⁻¹` (Example 2.4, the source of §6.1), and a multiple root has
-condition number `⊤` (`absCondNumber_eq_top_of_fderiv_eq_zero`, stated within an admissible set so
-that one-sided roots are covered).
+* `Conditioning.IsResolvent`: $G$ gives the unique solution of $F(x, d) = 0$ for every $d \in S$.
+* `Conditioning.IsWellPosed`: the problem has a resolvent on $S$ that is continuous on $S$.
+* `Conditioning.absCondNumberOn`: the supremum of $\|G(d + \delta d) - G(d)\| / \|\delta d\|$ over
+  the nonzero $\delta d \in N$.
+* `Conditioning.perturbations`: the perturbations $\delta d$ with $\|\delta d\| < \eta$ and
+  $d + \delta d \in S$.
+* `Conditioning.absCondNumberWithin`, `Conditioning.absCondNumber`: the absolute condition number
+  over the admissible perturbations of size less than $\eta$, and its limit as $\eta \to 0^+$.
+* `Conditioning.relCondNumberOn`, `Conditioning.relCondNumberWithin`, `Conditioning.relCondNumber`:
+  the relative counterparts.
+* `Conditioning.scaledRelCondNumber`: the relative condition number of [golub2013matrix], §9.1.6,
+  normalized by the radius of the ball of relative perturbations.
 
-The book [golub2013matrix] §9.1.6 normalizes differently, by the radius `ε` of the ball
-`‖δd‖ ≤ ε ‖d‖` rather than by each perturbation: `Conditioning.scaledRelCondNumber`. It is again
-the normalized Fréchet derivative `‖G'‖ ‖d‖ / ‖G d‖`
-(`Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`), hence equal to `relCondNumber` wherever
-the resolvent is differentiable (`Conditioning.scaledRelCondNumber_eq_relCondNumber`).
+## Main results
 
-The finite-dimensional evolution-scheme form of the same vocabulary is
-`Numlib/FiniteDifference/LaxEquivalence`; the two are different notions and neither is stated
-through the other.
+* `Conditioning.absCondNumberWithin_ne_top_iff`: the Lipschitz condition (2.3) of
+  [quarteroni2000numerical] holds if and only if the condition number is finite.
+* `Conditioning.continuousWithinAt_of_absCondNumberWithin_ne_top`: a finite condition number makes
+  the resolvent continuous at the datum.
+* `Conditioning.absCondNumber_eq_enorm_fderiv`, `Conditioning.relCondNumber_eq_enorm_fderiv`: the
+  first-order formula (2.7), $K_{\mathrm{abs}}(d) = \|G'\|$ and $K(d) = \|G'\| \|d\| / \|G(d)\|$.
+* `Conditioning.relCondNumber_symm_le_condNumber`: for $Ax = b$ perturbed in $b$, the relative
+  condition number is at most $\kappa(A)$.
+* `Conditioning.scaledRelCondNumber_eq_relCondNumber`: the two relative condition numbers agree at a
+  point of differentiability.
+* `Conditioning.absCondNumber_of_local_left_inverse`, `Conditioning.absCondNumber_localInverse`: a
+  simple root has absolute condition number $\|\varphi'^{-1}\|$.
+* `Conditioning.absCondNumber_eq_top_of_fderiv_eq_zero`: a multiple root has condition number
+  $\infty$.
+
+## Implementation notes
+
+* All condition numbers take values in $[0, \infty]$ (`ℝ≥0∞`), and the norms in their definitions
+  are the extended norms `‖·‖ₑ`. So "the condition number is infinite" (Remark 2.1 of
+  [quarteroni2000numerical]) is the value $\infty$, every supremum and infimum is defined, and the
+  Lipschitz condition (2.3) of the source is the finiteness of the condition number.
+* The neighbourhood of admissible perturbations in Definition 2.1 of [quarteroni2000numerical] is
+  the parameter $N$ of `Conditioning.absCondNumberOn`. `Conditioning.absCondNumberWithin` takes for
+  $N$ the set `Conditioning.perturbations S d η`. `Conditioning.absCondNumber` is the infimum over
+  $\eta > 0$, which is the limit as $\eta \to 0^+$ because the condition number is monotone in
+  $\eta$.
+* The relative condition numbers divide by $\|G(d)\| / \|d\|$ inside the supremum, as (2.4) of the
+  source does. They equal the absolute ones times $\|d\| / \|G(d)\|$, and they are meaningful only
+  for $d \neq 0$ and $G(d) \neq 0$.
+* The infinite conditioning of a multiple root is stated within the admissible set $S$, so that it
+  covers roots that exist only on one side of the datum.
+* The finite-difference stability and convergence of `Numlib.FiniteDifference.LaxEquivalence` are
+  different notions from the ones here, and neither is stated through the other.
 -/
 
 open Asymptotics Filter Topology Set
@@ -62,30 +95,38 @@ section Resolvent
 
 variable [Zero Y]
 
-/-- `G` is the **resolvent** of the problem `F x d = 0` on the admissible data `S`: for every
-`d ∈ S`, the solutions of `F x d = 0` are exactly `x = G d` ([quarteroni2000numerical] (2.6)). -/
+/-- Let $F : X \times D \to Y$ and $S \subseteq D$. The map $G : D \to X$ is a **resolvent** of the
+problem $F(x, d) = 0$ on the admissible data $S$ if, for every $d \in S$ and every $x \in X$,
+$$F(x, d) = 0 \iff x = G(d).$$
+
+This is the map $d \mapsto x$ of (2.6) of [quarteroni2000numerical]. -/
 def IsResolvent (F : X → D → Y) (S : Set D) (G : D → X) : Prop :=
   ∀ d ∈ S, ∀ x, F x d = 0 ↔ x = G d
 
-/-- **Well-posedness** (Hadamard, [quarteroni2000numerical] §2.1): the problem `F x d = 0` has a
-unique solution for every admissible datum, depending continuously on it. Continuity, not the
-Lipschitz condition (2.3) of the book: a well-posed problem may have infinite condition number
-(Remark 2.1 there), and (2.3) is `absCondNumberWithin_ne_top_iff`. -/
+/-- The problem $F(x, d) = 0$ is **well posed** on the admissible data $S$ if it has a resolvent $G$
+on $S$ (a unique solution for every $d \in S$) that is continuous on $S$. This is well-posedness
+in the sense of Hadamard, as in §2.1 of [quarteroni2000numerical].
+
+The definition asks for continuity, not for the Lipschitz condition (2.3) of the source. A
+well-posed problem can have an infinite condition number (Remark 2.1 of the source), and the
+condition (2.3) is `Conditioning.absCondNumberWithin_ne_top_iff`. -/
 def IsWellPosed [TopologicalSpace D] [TopologicalSpace X] (F : X → D → Y) (S : Set D) : Prop :=
   ∃ G, IsResolvent F S G ∧ ContinuousOn G S
 
 variable {F : X → D → Y} {S : Set D} {G : D → X}
 
-/-- A solution of an admissible problem is the value of the resolvent. -/
+/-- Let $G$ be a resolvent of $F(x, d) = 0$ on $S$. If $d \in S$ and $F(x, d) = 0$, then $x = G(d)$.
+-/
 theorem IsResolvent.eq_of (h : IsResolvent F S G) {d : D} (hd : d ∈ S) {x : X} (hx : F x d = 0) :
     x = G d :=
   (h d hd x).1 hx
 
-/-- The resolvent solves the problem: `F (G d) d = 0` for admissible `d`. -/
+/-- Let $G$ be a resolvent of $F(x, d) = 0$ on $S$. Then $F(G(d), d) = 0$ for every $d \in S$. -/
 theorem IsResolvent.apply (h : IsResolvent F S G) {d : D} (hd : d ∈ S) : F (G d) d = 0 :=
   (h d hd (G d)).2 rfl
 
-/-- A continuous resolvent witnesses well-posedness. -/
+/-- If $G$ is a resolvent of $F(x, d) = 0$ on $S$ and $G$ is continuous on $S$, then the problem is
+well posed on $S$. -/
 theorem IsResolvent.isWellPosed [TopologicalSpace D] [TopologicalSpace X] (h : IsResolvent F S G)
     (hG : ContinuousOn G S) : IsWellPosed F S :=
   ⟨G, h, hG⟩
@@ -96,70 +137,92 @@ end Resolvent
 
 variable [NormedAddCommGroup D] [NormedAddCommGroup X]
 
-/-- **The absolute condition number over a set of perturbations** `N`: the supremum of the
-amplification `‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ` over the nonzero perturbations `δd ∈ N` of the datum
-`d` ([quarteroni2000numerical] Definition 2.1, (2.5), with the book's neighbourhood of admissible
-perturbations as the parameter `N`). -/
+/-- The **absolute condition number** of $G : D \to X$ at the datum $d$ over a set $N \subseteq D$
+of perturbations is $$K_{\mathrm{abs}}^N(d) = \sup_{\delta d \in N,\ \delta d \neq 0}
+\frac{\|G(d + \delta d) - G(d)\|}{\|\delta d\|} \in [0, \infty].$$ It is $0$ if $N$ contains no
+nonzero perturbation.
+
+This is (2.5) of Definition 2.1 of [quarteroni2000numerical], with the neighbourhood of
+admissible perturbations of the source as the parameter $N$. The norms are the extended norms
+`‖·‖ₑ`. -/
 noncomputable def absCondNumberOn (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), ‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ
 
-/-- The admissible perturbations of size `< η` of the datum `d` inside the admissible set `S`. -/
+/-- The **admissible perturbations of size less than $\eta$** of the datum $d$ in the admissible set
+$S$: the set of $\delta d \in D$ with $\|\delta d\| < \eta$ and $d + \delta d \in S$. -/
 def perturbations (S : Set D) (d : D) (η : ℝ) : Set D :=
   {δd | ‖δd‖ < η ∧ d + δd ∈ S}
 
-/-- The absolute condition number over the admissible perturbations of size `< η`: the book's
-`K_abs(d)` with the neighbourhood `D` of (2.5) the ball of radius `η` intersected with the
-admissible data. -/
+/-- The absolute condition number of $G$ at $d$ over the admissible perturbations of size less than
+$\eta$: $$K_{\mathrm{abs}}(d, \eta) = \sup \left\{ \frac{\|G(d + \delta d) - G(d)\|}{\|\delta
+d\|} : 0 < \|\delta d\| < \eta,\ d + \delta d \in S \right\} \in [0, \infty].$$
+
+This is $K_{\mathrm{abs}}(d)$ of (2.5) of [quarteroni2000numerical], with the neighbourhood of
+the source taken to be the ball of radius $\eta$ intersected with the admissible data. It is
+`Conditioning.absCondNumberOn` for `Conditioning.perturbations S d η`. -/
 noncomputable def absCondNumberWithin (G : D → X) (S : Set D) (d : D) (η : ℝ) : ℝ≥0∞ :=
   absCondNumberOn G (perturbations S d η) d
 
-/-- **The first-order absolute condition number**: the limit of `absCondNumberWithin G S d η` as
-the size `η` of the admissible perturbations tends to `0⁺` — an infimum, since that quantity is
-monotone in `η` (`tendsto_absCondNumberWithin`). This is what the first-order formula (2.7) of
-[quarteroni2000numerical] computes, "the limit of the Lipschitz constant of `G` as the
-perturbation on the data tends to zero". -/
+/-- The **first-order absolute condition number** of $G$ at $d$ on the admissible data $S$:
+$$K_{\mathrm{abs}}(d) = \inf_{\eta > 0} K_{\mathrm{abs}}(d, \eta),$$ where
+$K_{\mathrm{abs}}(d, \eta)$ is `Conditioning.absCondNumberWithin G S d η`.
+
+Because $K_{\mathrm{abs}}(d, \eta)$ is monotone in $\eta$, the infimum is the limit as
+$\eta \to 0^+$ (`Conditioning.tendsto_absCondNumberWithin`): the source describes this number as
+"the limit of the Lipschitz constant of $G$ as the perturbation on the data tends to zero". The
+first-order formula (2.7) of [quarteroni2000numerical] computes it. -/
 noncomputable def absCondNumber (G : D → X) (S : Set D) (d : D) : ℝ≥0∞ :=
   ⨅ (η : ℝ) (_ : 0 < η), absCondNumberWithin G S d η
 
-/-- **The relative condition number over a set of perturbations** `N`: the supremum of
-`(‖δx‖ / ‖x‖) / (‖δd‖ / ‖d‖)` over the nonzero perturbations `δd ∈ N`, exactly (2.4) of
-[quarteroni2000numerical] Definition 2.1. Meaningful for `d ≠ 0` and `G d ≠ 0`; otherwise the
-absolute number is the one to use, as the book says. -/
+/-- The **relative condition number** of $G : D \to X$ at the datum $d$ over a set $N \subseteq D$
+of perturbations is $$K^N(d) = \sup_{\delta d \in N,\ \delta d \neq 0} \frac{\|G(d + \delta d) -
+G(d)\| / \|G(d)\|}{\|\delta d\| / \|d\|} \in [0, \infty].$$
+
+This is (2.4) of Definition 2.1 of [quarteroni2000numerical]. The quotients are those of
+$[0, \infty]$, with the extended norms `‖·‖ₑ`. The number is meaningful only for $d \neq 0$ and
+$G(d) \neq 0$; otherwise the absolute condition number is the one to use, as the source says. -/
 noncomputable def relCondNumberOn (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), (‖G (d + δd) - G d‖ₑ / ‖G d‖ₑ) / (‖δd‖ₑ / ‖d‖ₑ)
 
-/-- The relative condition number over the admissible perturbations of size `< η`. -/
+/-- The relative condition number of $G$ at $d$ over the admissible perturbations of size less than
+$\eta$: `Conditioning.relCondNumberOn` for the set `Conditioning.perturbations S d η` of the
+$\delta d$ with $\|\delta d\| < \eta$ and $d + \delta d \in S$. -/
 noncomputable def relCondNumberWithin (G : D → X) (S : Set D) (d : D) (η : ℝ) : ℝ≥0∞ :=
   relCondNumberOn G (perturbations S d η) d
 
-/-- **The first-order relative condition number**, the limit of `relCondNumberWithin G S d η` as
-`η → 0⁺`. -/
+/-- The **first-order relative condition number** of $G$ at $d$ on the admissible data $S$: the
+infimum over $\eta > 0$ of `Conditioning.relCondNumberWithin G S d η`, which is its limit as
+$\eta \to 0^+$. -/
 noncomputable def relCondNumber (G : D → X) (S : Set D) (d : D) : ℝ≥0∞ :=
   ⨅ (η : ℝ) (_ : 0 < η), relCondNumberWithin G S d η
 
 variable {G : D → X} {N S : Set D} {d δd : D}
 
-/-- Every nonzero admissible perturbation's amplification ratio is at most the condition
-number. -/
+/-- If $\delta d \in N$ and $\delta d \neq 0$, then $$\frac{\|G(d + \delta d) - G(d)\|}{\|\delta
+d\|} \le K_{\mathrm{abs}}^N(d).$$
+-/
 theorem le_absCondNumberOn (hN : δd ∈ N) (h0 : δd ≠ 0) :
     ‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ ≤ absCondNumberOn G N d :=
   le_iSup₂_of_le δd hN (le_iSup_of_le h0 le_rfl)
 
-/-- A bound on every amplification ratio bounds the condition number. -/
+/-- Let $M \in [0, \infty]$. If $\|G(d + \delta d) - G(d)\| / \|\delta d\| \le M$ for every nonzero
+$\delta d \in N$, then $K_{\mathrm{abs}}^N(d) \le M$. -/
 theorem absCondNumberOn_le {M : ℝ≥0∞}
     (h : ∀ δd ∈ N, δd ≠ 0 → ‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ ≤ M) : absCondNumberOn G N d ≤ M :=
   iSup₂_le fun δd hN => iSup_le fun h0 => h δd hN h0
 
-/-- The defining inequality of the condition number, in product form:
-`‖G (d + δd) - G d‖ₑ ≤ absCondNumberOn G N d * ‖δd‖ₑ` for every admissible perturbation. -/
+/-- For every $\delta d \in N$, $$\|G(d + \delta d) - G(d)\| \le K_{\mathrm{abs}}^N(d) \, \|\delta
+d\|$$ in $[0, \infty]$. This is the defining inequality of the condition number in product form;
+the case $\delta d = 0$ is included. -/
 theorem enorm_sub_le_absCondNumberOn_mul (hN : δd ∈ N) :
     ‖G (d + δd) - G d‖ₑ ≤ absCondNumberOn G N d * ‖δd‖ₑ := by
   by_cases h0 : δd = 0
   · simp [h0]
   · exact (ENNReal.div_le_iff (enorm_ne_zero.2 h0) enorm_ne_top).1 (le_absCondNumberOn hN h0)
 
-/-- A finite bound on the condition number is a Lipschitz bound on the resolvent, in real
-numbers. -/
+/-- Let $K \ge 0$ be real. If $K_{\mathrm{abs}}^N(d) \le K$, then
+$\|G(d + \delta d) - G(d)\| \le K \|\delta d\|$ for every $\delta d \in N$. So a finite bound on
+the condition number is a Lipschitz bound on $G$ along the perturbations $N$ of $d$. -/
 theorem norm_sub_le_of_absCondNumberOn_le {K : ℝ≥0} (hK : absCondNumberOn G N d ≤ K)
     (hN : δd ∈ N) : ‖G (d + δd) - G d‖ ≤ K * ‖δd‖ := by
   have h := (enorm_sub_le_absCondNumberOn_mul hN).trans (mul_le_mul_left hK _)
@@ -167,8 +230,8 @@ theorem norm_sub_le_of_absCondNumberOn_le {K : ℝ≥0} (hK : absCondNumberOn G 
     ← ENNReal.ofReal_mul K.coe_nonneg] at h
   exact (ENNReal.ofReal_le_ofReal_iff (by positivity)).1 h
 
-/-- If `‖G (d + δd) - G d‖ ≤ K * ‖δd‖` for every nonzero `δd ∈ N`, with `0 ≤ K`, then the
-condition number over `N` is at most `K`. -/
+/-- Let $K \ge 0$ be real. If $\|G(d + \delta d) - G(d)\| \le K \|\delta d\|$ for every nonzero
+$\delta d \in N$, then $K_{\mathrm{abs}}^N(d) \le K$. -/
 theorem absCondNumberOn_le_of_forall_norm_sub_le {K : ℝ} (hK : 0 ≤ K)
     (h : ∀ δd ∈ N, δd ≠ 0 → ‖G (d + δd) - G d‖ ≤ K * ‖δd‖) :
     absCondNumberOn G N d ≤ ENNReal.ofReal K := by
@@ -177,41 +240,46 @@ theorem absCondNumberOn_le_of_forall_norm_sub_le {K : ℝ} (hK : 0 ≤ K)
     ← ENNReal.ofReal_mul hK]
   exact ENNReal.ofReal_le_ofReal (h δd hN h0)
 
-/-- The condition number over `N` is at most `K : ℝ≥0` iff `G` is `K`-Lipschitz along the
-perturbations `N` of `d`. -/
+/-- Let $K \ge 0$ be real. Then $K_{\mathrm{abs}}^N(d) \le K$ if and only if
+$\|G(d + \delta d) - G(d)\| \le K \|\delta d\|$ for every $\delta d \in N$. -/
 theorem absCondNumberOn_le_coe_iff {K : ℝ≥0} :
     absCondNumberOn G N d ≤ K ↔ ∀ δd ∈ N, ‖G (d + δd) - G d‖ ≤ K * ‖δd‖ :=
   ⟨fun hK _ hN => norm_sub_le_of_absCondNumberOn_le hK hN, fun h =>
     ENNReal.ofReal_coe_nnreal ▸
       absCondNumberOn_le_of_forall_norm_sub_le K.coe_nonneg fun δd hN _ => h δd hN⟩
 
-/-- The condition number is monotone in the set of perturbations. -/
+/-- The absolute condition number is monotone in the set of perturbations: if $N \subseteq N'$, then
+$K_{\mathrm{abs}}^N(d) \le K_{\mathrm{abs}}^{N'}(d)$. -/
 theorem absCondNumberOn_mono (G : D → X) (d : D) {N N' : Set D} (h : N ⊆ N') :
     absCondNumberOn G N d ≤ absCondNumberOn G N' d :=
   absCondNumberOn_le fun _ hN h0 => le_absCondNumberOn (h hN) h0
 
-/-- The condition number over the perturbations of size `< η` is monotone in the radius `η`. -/
+/-- The absolute condition number $K_{\mathrm{abs}}(d, \eta)$ over the admissible perturbations of
+size less than $\eta$ is a monotone function of $\eta$. -/
 theorem monotone_absCondNumberWithin (G : D → X) (S : Set D) (d : D) :
     Monotone (absCondNumberWithin G S d) := fun _ _ hη =>
   absCondNumberOn_mono G d fun _ ⟨h1, h2⟩ => ⟨h1.trans_le hη, h2⟩
 
-/-- The first-order condition number is at most the condition number over any positive
-radius. -/
+/-- For every $\eta > 0$, the first-order absolute condition number is at most the condition number
+over the perturbations of size less than $\eta$: $K_{\mathrm{abs}}(d) \le K_{\mathrm{abs}}(d,
+\eta)$. -/
 theorem absCondNumber_le_absCondNumberWithin (G : D → X) (S : Set D) (d : D) {η : ℝ} (hη : 0 < η) :
     absCondNumber G S d ≤ absCondNumberWithin G S d η :=
   iInf₂_le η hη
 
-/-- The infimum defining `absCondNumber` is the limit of `absCondNumberWithin G S d η` as the
-perturbation size `η` tends to `0` from above. -/
+/-- The first-order absolute condition number is the limit of the condition numbers over shrinking
+radii: $$K_{\mathrm{abs}}(d, \eta) \to K_{\mathrm{abs}}(d) \quad \text{as } \eta \to 0^+.$$
+-/
 theorem tendsto_absCondNumberWithin (G : D → X) (S : Set D) (d : D) :
     Tendsto (absCondNumberWithin G S d) (𝓝[>] 0) (𝓝 (absCondNumber G S d)) := by
   have h := (monotone_absCondNumberWithin G S d).tendsto_nhdsGT 0
   rw [sInf_image] at h
   exact h
 
-/-- **The Lipschitz condition (2.3) of [quarteroni2000numerical] is finiteness of the condition
-number**: `G` satisfies `‖δx‖ ≤ K ‖δd‖` for the admissible perturbations of size `< η` iff
-`absCondNumberWithin G S d η ≠ ⊤`. -/
+/-- The **Lipschitz condition (2.3) of [quarteroni2000numerical] is the finiteness of the condition
+number**. For every real $\eta$, $K_{\mathrm{abs}}(d, \eta) \neq \infty$ if and only if there is
+a real $K$ such that $$\|G(d + \delta d) - G(d)\| \le K \|\delta d\|$$ for every $\delta d$ with
+$\|\delta d\| < \eta$ and $d + \delta d \in S$. -/
 theorem absCondNumberWithin_ne_top_iff (G : D → X) (S : Set D) (d : D) (η : ℝ) :
     absCondNumberWithin G S d η ≠ ⊤ ↔
       ∃ K : ℝ, ∀ δd, ‖δd‖ < η → d + δd ∈ S → ‖G (d + δd) - G d‖ ≤ K * ‖δd‖ := by
@@ -225,8 +293,8 @@ theorem absCondNumberWithin_ne_top_iff (G : D → X) (S : Set D) (d : D) (η : �
     exact (hK δd hδd.1 hδd.2).trans
       (mul_le_mul_of_nonneg_right (Real.le_coe_toNNReal K) (norm_nonneg _))
 
-/-- A finite condition number over some radius makes the resolvent continuous at `d` within the
-admissible data. -/
+/-- Let $\eta > 0$. If $K_{\mathrm{abs}}(d, \eta) \neq \infty$, then $G$ is continuous at $d$ within
+the admissible data $S$. -/
 theorem continuousWithinAt_of_absCondNumberWithin_ne_top {η : ℝ} (hη : 0 < η)
     (h : absCondNumberWithin G S d η ≠ ⊤) : ContinuousWithinAt G S d := by
   obtain ⟨K, hK⟩ := (absCondNumberWithin_ne_top_iff G S d η).1 h
@@ -244,7 +312,9 @@ theorem continuousWithinAt_of_absCondNumberWithin_ne_top {η : ℝ} (hη : 0 < �
         rw [mul_div_assoc', div_lt_iff₀ (by positivity)]
         nlinarith [le_max_right K 0]
 
-/-- The relative condition number is the absolute one rescaled by `‖d‖ₑ / ‖G d‖ₑ`. -/
+/-- For every set $N$ of perturbations, the relative condition number is the absolute one rescaled:
+$$K^N(d) = K_{\mathrm{abs}}^N(d) \cdot \frac{\|d\|}{\|G(d)\|},$$ with the arithmetic of
+$[0, \infty]$. No hypothesis on $d$ or $G(d)$ is needed. -/
 theorem relCondNumberOn_eq (G : D → X) (N : Set D) (d : D) :
     relCondNumberOn G N d = absCondNumberOn G N d * (‖d‖ₑ / ‖G d‖ₑ) := by
   simp only [relCondNumberOn, absCondNumberOn, ENNReal.iSup_mul]
@@ -253,8 +323,9 @@ theorem relCondNumberOn_eq (G : D → X) (N : Set D) (d : D) :
   rw [ENNReal.mul_inv (Or.inl (enorm_ne_zero.2 h0)) (Or.inl enorm_ne_top), inv_inv]
   ring
 
-/-- For `d ≠ 0` and `G d ≠ 0`, the first-order relative condition number is the absolute one
-rescaled by `‖d‖ₑ / ‖G d‖ₑ`. -/
+/-- Let $d \neq 0$ and $G(d) \neq 0$. Then the first-order relative condition number is the
+first-order absolute one rescaled: $$K(d) = K_{\mathrm{abs}}(d) \cdot \frac{\|d\|}{\|G(d)\|}.$$
+-/
 theorem relCondNumber_eq (G : D → X) (S : Set D) {d : D} (hd : d ≠ 0) (hx : G d ≠ 0) :
     relCondNumber G S d = absCondNumber G S d * (‖d‖ₑ / ‖G d‖ₑ) := by
   have h0 : ‖d‖ₑ / ‖G d‖ₑ ≠ 0 := (ENNReal.div_pos (enorm_ne_zero.2 hd) enorm_ne_top).ne'
@@ -268,10 +339,12 @@ section FirstOrder
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [NormedSpace 𝕜 D] [NormedSpace 𝕜 X]
 
-/-- The derivative never exceeds the condition number over any neighbourhood:
-`‖G' d‖ₑ ≤ absCondNumberWithin G S d η` whenever `G` is differentiable at the interior point `d`
-of `S`. So the first-order number of (2.7) in [quarteroni2000numerical] can underestimate the
-true one, as the book's example `G d = cos d - 1` shows. -/
+/-- Let $D$ and $X$ be normed spaces over a nontrivially normed field. If $G$ has the Fréchet
+derivative $G'$ at $d$, $S$ is a neighbourhood of $d$ and $\eta > 0$, then $$\|G'\| \le
+K_{\mathrm{abs}}(d, \eta).$$
+
+So the first-order number of (2.7) in [quarteroni2000numerical] can underestimate the condition
+number over a fixed radius, as the example $G(d) = \cos d - 1$ of the source shows. -/
 theorem enorm_fderiv_le_absCondNumberWithin {G' : D →L[𝕜] X} (hG : HasFDerivAt G G' d)
     (hS : S ∈ 𝓝 d) {η : ℝ} (hη : 0 < η) : ‖G'‖ₑ ≤ absCondNumberWithin G S d η := by
   by_cases hA : absCondNumberWithin G S d η = ⊤
@@ -289,9 +362,12 @@ theorem enorm_fderiv_le_absCondNumberWithin {G' : D →L[𝕜] X} (hG : HasFDeri
         ENNReal.ofReal_le_ofReal (hG.le_of_lip' (NNReal.coe_nonneg _) hlip)
     _ = absCondNumberWithin G S d η := by rw [ENNReal.ofReal_coe_nnreal, ENNReal.coe_toNNReal hA]
 
-/-- **The first-order formula (2.7) of [quarteroni2000numerical], absolute form**: the
-first-order absolute condition number of a resolvent differentiable at the interior point `d` of
-the admissible data is the norm of its derivative, `absCondNumber G S d = ‖G'‖ₑ`. -/
+/-- The **first-order formula** (2.7) of [quarteroni2000numerical], absolute form. Let $D$ and $X$
+be normed spaces over a nontrivially normed field. If the resolvent $G$ has the Fréchet
+derivative $G'$ at $d$ and the admissible set $S$ is a neighbourhood of $d$, then the
+first-order absolute condition number is the operator norm of the derivative:
+$$K_{\mathrm{abs}}(d) = \|G'\|.$$
+-/
 theorem absCondNumber_eq_enorm_fderiv {G' : D →L[𝕜] X} (hG : HasFDerivAt G G' d)
     (hS : S ∈ 𝓝 d) : absCondNumber G S d = ‖G'‖ₑ := by
   refine le_antisymm ?_ (le_iInf₂ fun η hη => enorm_fderiv_le_absCondNumberWithin hG hS hη)
@@ -311,8 +387,11 @@ theorem absCondNumber_eq_enorm_fderiv {G' : D →L[𝕜] X} (hG : HasFDerivAt G 
         rw [ENNReal.ofReal_add (norm_nonneg _) ε.coe_nonneg, ofReal_norm,
           ENNReal.ofReal_coe_nnreal]
 
-/-- **The first-order formula (2.7) of [quarteroni2000numerical], relative form**: for `d ≠ 0`
-and `G d ≠ 0`, `relCondNumber G S d = ‖G'‖ₑ * (‖d‖ₑ / ‖G d‖ₑ)`. -/
+/-- The **first-order formula** (2.7) of [quarteroni2000numerical], relative form. Let $D$ and $X$
+be normed spaces over a nontrivially normed field. If $G$ has the Fréchet derivative $G'$ at
+$d$, $S$ is a neighbourhood of $d$, $d \neq 0$ and $G(d) \neq 0$, then $$K(d) = \|G'\| \,
+\frac{\|d\|}{\|G(d)\|}.$$
+-/
 theorem relCondNumber_eq_enorm_fderiv {G' : D →L[𝕜] X} (hG : HasFDerivAt G G' d)
     (hS : S ∈ 𝓝 d) (hd : d ≠ 0) (hx : G d ≠ 0) :
     relCondNumber G S d = ‖G'‖ₑ * (‖d‖ₑ / ‖G d‖ₑ) := by
@@ -320,9 +399,11 @@ theorem relCondNumber_eq_enorm_fderiv {G' : D →L[𝕜] X} (hG : HasFDerivAt G 
 
 /-! ### Instance: linear problems -/
 
-/-- A bounded linear resolvent has condition number `‖L‖ₑ` over every neighbourhood of the
-datum: the amplification ratio `‖L δd‖ / ‖δd‖` is scale invariant, so its supremum over any ball
-is the operator norm. -/
+/-- Let $L : D \to X$ be a bounded linear map. If $S$ is a neighbourhood of $d$ and $\eta > 0$, then
+$K_{\mathrm{abs}}(d, \eta) = \|L\|$ for the resolvent $L$.
+
+The quotient $\|L \delta d\| / \|\delta d\|$ does not change when $\delta d$ is scaled, so its
+supremum over any ball is the operator norm. -/
 theorem absCondNumberWithin_continuousLinearMap (L : D →L[𝕜] X) (hS : S ∈ 𝓝 d) {η : ℝ}
     (hη : 0 < η) : absCondNumberWithin L S d η = ‖L‖ₑ := by
   refine le_antisymm ?_ (enorm_fderiv_le_absCondNumberWithin L.hasFDerivAt hS hη)
@@ -330,22 +411,29 @@ theorem absCondNumberWithin_continuousLinearMap (L : D →L[𝕜] X) (hS : S ∈
   exact absCondNumberOn_le_of_forall_norm_sub_le (norm_nonneg L) fun δd _ _ => by
     simpa using L.le_opNorm δd
 
-/-- A bounded linear resolvent has first-order condition number `‖L‖ₑ`. -/
+/-- Let $L : D \to X$ be a bounded linear map. If $S$ is a neighbourhood of $d$, then the
+first-order absolute condition number of the resolvent $L$ at $d$ is $\|L\|$. -/
 theorem absCondNumber_continuousLinearMap (L : D →L[𝕜] X) (hS : S ∈ 𝓝 d) :
     absCondNumber L S d = ‖L‖ₑ :=
   absCondNumber_eq_enorm_fderiv L.hasFDerivAt hS
 
-/-- The relative condition number of a bounded linear resolvent over any neighbourhood of `d` is
-`‖L‖ₑ * (‖d‖ₑ / ‖L d‖ₑ)`. -/
+/-- Let $L : D \to X$ be a bounded linear map. If $S$ is a neighbourhood of $d$ and $\eta > 0$, then
+the relative condition number of the resolvent $L$ over the perturbations of size less than
+$\eta$ is $$K(d, \eta) = \|L\| \, \frac{\|d\|}{\|L d\|}.$$
+-/
 theorem relCondNumberWithin_continuousLinearMap (L : D →L[𝕜] X) (hS : S ∈ 𝓝 d) {η : ℝ}
     (hη : 0 < η) : relCondNumberWithin L S d η = ‖L‖ₑ * (‖d‖ₑ / ‖L d‖ₑ) := by
   rw [relCondNumberWithin, relCondNumberOn_eq, ← absCondNumberWithin,
     absCondNumberWithin_continuousLinearMap L hS hη]
 
-/-- **Conditioning of a linear system with respect to its right-hand side**
-([quarteroni2000numerical] Example 2.3, (2.9)): for an isomorphism `A : E ≃L[𝕜] F` of normed
-spaces and `b ≠ 0`, the problem `A x = b` perturbed in `b` only has resolvent `A.symm` and
-relative condition number `‖A⁻¹‖ ‖b‖ / ‖A⁻¹ b‖ ≤ ‖A‖ ‖A⁻¹‖ = κ(A)`, the condition number
+/-- **Conditioning of a linear system with respect to its right-hand side.** Let $A : E \to F$ be an
+isomorphism of normed spaces over a nontrivially normed field, and let $b \in F$ with
+$b \neq 0$. The problem $Ax = b$, perturbed in $b$ only, has the resolvent $A^{-1}$, and its
+first-order relative condition number on the admissible data $F$ satisfies $$K(b) = \|A^{-1}\|
+\, \frac{\|b\|}{\|A^{-1} b\|} \le \|A\| \|A^{-1}\| = \kappa(A).$$ This is (2.9) of Example 2.3
+of [quarteroni2000numerical].
+
+The Lean statement is the inequality $K(b) \le \kappa(A)$. The condition number $\kappa(A)$ is
 `ContinuousLinearEquiv.condNumber`. -/
 theorem relCondNumber_symm_le_condNumber {E F : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
     [NormedAddCommGroup F] [NormedSpace 𝕜 F] (A : E ≃L[𝕜] F) {b : F} (hb : b ≠ 0) :
@@ -368,18 +456,25 @@ end FirstOrder
 
 section Scaled
 
-/-- **The scaled relative condition number** ([golub2013matrix] §9.1.6, `cond_rel(f, A)`):
-`lim_{ε → 0⁺} sup_{‖δd‖ ≤ ε ‖d‖} ‖G (d + δd) - G d‖ / (ε ‖G d‖)`, the book's `lim` made total as a
-`limsup` in `ℝ≥0∞`. It normalizes by the radius `ε` of the ball of relative perturbations rather
-than by the size of each perturbation, as `Conditioning.relCondNumber` does; for a resolvent
-differentiable at `d` the two agree (`Conditioning.scaledRelCondNumber_eq_relCondNumber`). -/
+/-- The **scaled relative condition number** of $G$ at $d$, after
+$\operatorname{cond}_{\mathrm{rel}}$ of [golub2013matrix], §9.1.6: $$\limsup_{\varepsilon \to
+0^+} \ \sup_{\|\delta d\| \le \varepsilon \|d\|} \frac{\|G(d + \delta d) - G(d)\|}{\varepsilon
+\|G(d)\|} \in [0, \infty].$$
+
+The source writes a limit; the definition uses the upper limit in $[0, \infty]$, which always
+exists. The number is normalized by the radius $\varepsilon$ of the ball of relative
+perturbations, not by the size of each perturbation as in `Conditioning.relCondNumber`. For a
+resolvent that is differentiable at $d$ the two agree
+(`Conditioning.scaledRelCondNumber_eq_relCondNumber`). -/
 noncomputable def scaledRelCondNumber (G : D → X) (d : D) : ℝ≥0∞ :=
   limsup (fun ε : ℝ => ⨆ (δd : D) (_ : ‖δd‖ ≤ ε * ‖d‖),
     ‖G (d + δd) - G d‖ₑ / (ENNReal.ofReal ε * ‖G d‖ₑ)) (𝓝[>] 0)
 
 variable {𝕜 : Type*} [RCLike 𝕜] [NormedSpace 𝕜 D] [NormedSpace 𝕜 X] {G' : D →L[𝕜] X}
 
-/-- The remainder of a Fréchet derivative is eventually small on the balls `‖δd‖ ≤ ε ‖d‖`. -/
+/-- If $G$ has the Fréchet derivative $G'$ at $d$ and $c > 0$, then for all small $\varepsilon > 0$
+every $\delta d$ with $\|\delta d\| \le \varepsilon \|d\|$ satisfies $\|G(d + \delta d) - G(d) -
+G' \delta d\| \le c \|\delta d\|$. -/
 private theorem eventually_norm_remainder_le (hG : HasFDerivAt G G' d) {c : ℝ} (hc : 0 < c) :
     ∀ᶠ ε in 𝓝[>] (0 : ℝ), ∀ δd : D, ‖δd‖ ≤ ε * ‖d‖ →
       ‖G (d + δd) - G d - G' δd‖ ≤ c * ‖δd‖ := by
@@ -393,7 +488,9 @@ private theorem eventually_norm_remainder_le (hG : HasFDerivAt G G' d) {c : ℝ}
     _ ≤ ε * (‖d‖ + 1) := mul_le_mul_of_nonneg_left (by linarith) hε.1.le
     _ < ρ := (lt_div_iff₀ hd').mp hε.2
 
-/-- The upper half of `Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`. -/
+/-- If $G$ has the Fréchet derivative $G'$ at $d$, $G(d) \neq 0$ and $c > 0$, then for all small
+$\varepsilon > 0$ the supremum in `Conditioning.scaledRelCondNumber` is at most
+$(\|G'\| + c) \|d\| / \|G(d)\|$. -/
 private theorem eventually_scaledRelCondNumber_le (hG : HasFDerivAt G G' d) (hGd : G d ≠ 0)
     {c : ℝ} (hc : 0 < c) :
     ∀ᶠ ε in 𝓝[>] (0 : ℝ), (⨆ (δd : D) (_ : ‖δd‖ ≤ ε * ‖d‖),
@@ -412,8 +509,10 @@ private theorem eventually_scaledRelCondNumber_le (hG : HasFDerivAt G G' d) (hGd
     _ ≤ (‖G'‖ + c) * (ε * ‖d‖) := by gcongr
     _ = (‖G'‖ + c) * ‖d‖ / ‖G d‖ * (ε * ‖G d‖) := by field_simp
 
-/-- The lower half of `Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`: a direction `x` of
-norm at most one nearly attaining `‖G'‖`, scaled to the radius `ε ‖d‖`. -/
+/-- If $G$ has the Fréchet derivative $G'$ at $d$, $G(d) \neq 0$ and $c > 0$, then for all small
+$\varepsilon > 0$ the supremum in `Conditioning.scaledRelCondNumber` is at least
+$(\|G'\| - c) \|d\| / \|G(d)\|$; the proof scales a direction that nearly attains $\|G'\|$ to
+the radius $\varepsilon \|d\|$. -/
 private theorem eventually_le_scaledRelCondNumber (hG : HasFDerivAt G G' d) (hGd : G d ≠ 0)
     {c : ℝ} (hc : 0 < c) :
     ∀ᶠ ε in 𝓝[>] (0 : ℝ), ENNReal.ofReal ((‖G'‖ - c) * ‖d‖ / ‖G d‖) ≤
@@ -457,9 +556,14 @@ private theorem eventually_le_scaledRelCondNumber (hG : HasFDerivAt G G' d) (hGd
     ← ENNReal.ofReal_mul (div_nonneg (mul_nonneg (by linarith) (norm_nonneg _)) hφ.le)]
   exact ENNReal.ofReal_le_ofReal hmain
 
-/-- **The scaled relative condition number is a normalized Fréchet derivative**
-([golub2013matrix] §9.1.6, "essentially a normalized Fréchet derivative"): if `G` has Fréchet
-derivative `G'` at `d ≠ 0` and `G d ≠ 0`, then `scaledRelCondNumber G d = ‖G'‖ ‖d‖ / ‖G d‖`. -/
+/-- **The scaled relative condition number is a normalized Fréchet derivative.** Let $D$ and $X$ be
+normed spaces over $\mathbb{R}$ or $\mathbb{C}$. If $G$ has the Fréchet derivative $G'$ at $d$,
+$d \neq 0$ and $G(d) \neq 0$, then $$\operatorname{cond}_{\mathrm{rel}}(G, d) = \frac{\|G'\|
+\|d\|}{\|G(d)\|}.$$ Here $\operatorname{cond}_{\mathrm{rel}}$ is
+`Conditioning.scaledRelCondNumber`.
+
+This makes precise the remark of [golub2013matrix], §9.1.6, that the relative condition number
+is "essentially a normalized Fréchet derivative". -/
 theorem scaledRelCondNumber_eq_of_hasFDerivAt (hG : HasFDerivAt G G' d) (hd : d ≠ 0)
     (hGd : G d ≠ 0) : scaledRelCondNumber G d = ‖G'‖ₑ * ‖d‖ₑ / ‖G d‖ₑ := by
   have hφ : 0 < ‖G d‖ := norm_pos_iff.mpr hGd
@@ -496,10 +600,15 @@ theorem scaledRelCondNumber_eq_of_hasFDerivAt (hG : HasFDerivAt G G' d) (hd : d 
       rw [this]
       linarith
 
-/-- **The two relative condition numbers agree at a point of differentiability**: for a resolvent
-with Fréchet derivative at the interior point `d ≠ 0` of the admissible data and `G d ≠ 0`, the
-book's scaled number `cond_rel` of [golub2013matrix] §9.1.6 is the first-order relative condition
-number (2.7) of [quarteroni2000numerical]; both are `‖G'‖ ‖d‖ / ‖G d‖`. -/
+/-- **The two relative condition numbers agree at a point of differentiability.** Let $D$ and $X$ be
+normed spaces over $\mathbb{R}$ or $\mathbb{C}$. If $G$ has the Fréchet derivative $G'$ at $d$,
+the admissible set $S$ is a neighbourhood of $d$, $d \neq 0$ and $G(d) \neq 0$, then the scaled
+relative condition number $\operatorname{cond}_{\mathrm{rel}}$ of [golub2013matrix], §9.1.6,
+equals the first-order relative condition number $K(d)$ of (2.7) of [quarteroni2000numerical].
+
+Both are equal to $\|G'\| \|d\| / \|G(d)\|$, by
+`Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt` and
+`Conditioning.relCondNumber_eq_enorm_fderiv`. -/
 theorem scaledRelCondNumber_eq_relCondNumber (hG : HasFDerivAt G G' d) (hS : S ∈ 𝓝 d)
     (hd : d ≠ 0) (hGd : G d ≠ 0) : scaledRelCondNumber G d = relCondNumber G S d := by
   rw [scaledRelCondNumber_eq_of_hasFDerivAt hG hd hGd, relCondNumber_eq_enorm_fderiv hG hS hd hGd,
@@ -513,10 +622,15 @@ section Roots
 
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
 
-/-- **Conditioning of a simple root** ([quarteroni2000numerical] Example 2.4, (2.11); the
-instance behind its §6.1): if `G` is a continuous local inverse of `φ` at `d`, so that `G y` is
-the root of `φ x = y`, and `φ' ≠ 0` is the strict derivative of `φ` at that root, then the root
-depends on the datum with absolute condition number `‖φ'‖ₑ⁻¹`. -/
+/-- **Conditioning of a simple root.** Let $\varphi, G : \mathbb{K} \to \mathbb{K}$ for a
+nontrivially normed field $\mathbb{K}$, and let $d \in \mathbb{K}$. Suppose that $G$ is
+continuous at $d$, that $\varphi(G(y)) = y$ for all $y$ near $d$ (so $G(y)$ is a root of
+$\varphi(x) = y$), and that $\varphi$ has the strict derivative $\varphi' \neq 0$ at $G(d)$.
+Then the root depends on the datum with first-order absolute condition number
+$$K_{\mathrm{abs}}(d) = \|\varphi'\|^{-1},$$ on the admissible data $\mathbb{K}$.
+
+This is (2.11) of Example 2.4 of [quarteroni2000numerical], the example behind §6.1 of the
+source. -/
 theorem absCondNumber_of_local_left_inverse {φ G : 𝕜 → 𝕜} {φ' d : 𝕜} (hG : ContinuousAt G d)
     (hφ : HasStrictDerivAt φ φ' (G d)) (hφ' : φ' ≠ 0) (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) :
     absCondNumber G univ d = ‖φ'‖ₑ⁻¹ := by
@@ -525,9 +639,11 @@ theorem absCondNumber_of_local_left_inverse {φ G : 𝕜 → 𝕜} {φ' d : 𝕜
     ← enorm_inv hφ', ← ofReal_norm, ← ofReal_norm]
   simp
 
-/-- **Relative conditioning of a simple root** ([quarteroni2000numerical] Example 2.4, (2.10)):
-under the hypotheses of `absCondNumber_of_local_left_inverse`, for `d ≠ 0` and a nonzero root,
-`relCondNumber G univ d = ‖φ'‖ₑ⁻¹ * (‖d‖ₑ / ‖G d‖ₑ)`. -/
+/-- **Relative conditioning of a simple root.** Under the hypotheses of
+`Conditioning.absCondNumber_of_local_left_inverse`, if moreover $d \neq 0$ and $G(d) \neq 0$,
+then the first-order relative condition number on the admissible data $\mathbb{K}$ is $$K(d) =
+\|\varphi'\|^{-1} \, \frac{\|d\|}{\|G(d)\|}.$$ This is (2.10) of Example 2.4 of
+[quarteroni2000numerical]. -/
 theorem relCondNumber_of_local_left_inverse {φ G : 𝕜 → 𝕜} {φ' d : 𝕜} (hG : ContinuousAt G d)
     (hφ : HasStrictDerivAt φ φ' (G d)) (hφ' : φ' ≠ 0) (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y)
     (hd : d ≠ 0) (hx : G d ≠ 0) :
@@ -536,15 +652,19 @@ theorem relCondNumber_of_local_left_inverse {φ G : 𝕜 → 𝕜} {φ' d : 𝕜
 
 variable [NormedSpace 𝕜 D] [NormedSpace 𝕜 X]
 
-/-- **A multiple root is infinitely ill conditioned**, Fréchet form: if `G` is a right inverse
-of `φ` on the admissible data `S` near `d` (`φ (G y) = y`), `G` is continuous at `d` within `S`,
-`d` is an accumulation point of `S`, and the derivative of `φ` at the root `G d` vanishes, then
-`absCondNumber G S d = ⊤`. Indeed `‖y - d‖ = ‖φ (G y) - φ (G d)‖ = o(‖G y - G d‖)`, so the
-amplification ratio is unbounded on every ball. Stated within `S`, not on the whole space, so
-that one-sided roots are covered — the double root at `p = 1` of `x² - 2px + 1`, whose
-resolvent exists only for `p ≥ 1` ([quarteroni2000numerical] Remark 2.1). The book calls such a
-root "ill posed"; the problem may well be well posed (continuous), so the honest statement is
-infinite conditioning. -/
+/-- **A multiple root is infinitely ill conditioned**, Fréchet form. Let $D$ and $X$ be normed
+spaces over a nontrivially normed field, let $\varphi : X \to D$, $S \subseteq D$ and $d \in D$,
+and suppose that $d$ is an accumulation point of $S$. Suppose that $G$ is continuous at $d$
+within $S$, that $\varphi(G(y)) = y$ for all $y \in S$ near $d$, and that $\varphi$ has the
+Fréchet derivative $0$ at $G(d)$. Then $K_{\mathrm{abs}}(d) = \infty$ on the admissible data
+$S$.
+
+The reason is that $\|y - d\| = \|\varphi(G(y)) - \varphi(G(d))\| = o(\|G(y) - G(d)\|)$, so the
+amplification quotient is unbounded on every ball. The theorem is stated within $S$, not on the
+whole space, so that it covers one-sided roots, such as the double root at $p = 1$ of
+$x^2 - 2px + 1$, whose resolvent exists only for $p \ge 1$ (Remark 2.1 of
+[quarteroni2000numerical]). The source calls such a root "ill posed"; the problem can still be
+well posed (have a continuous resolvent), and the statement here is infinite conditioning. -/
 theorem absCondNumber_eq_top_of_fderiv_eq_zero {φ : X → D} [NeBot (𝓝[S \ {d}] d)]
     (hG : ContinuousWithinAt G S d) (hφ : HasFDerivAt φ (0 : X →L[𝕜] D) (G d))
     (hinv : ∀ᶠ y in 𝓝[S] d, φ (G y) = y) : absCondNumber G S d = ⊤ := by
@@ -578,10 +698,15 @@ theorem absCondNumber_eq_top_of_fderiv_eq_zero {φ : X → D} [NeBot (𝓝[S \ {
   rw [inv_mul_eq_div, le_div_iff₀ (by positivity)] at hy1
   nlinarith [norm_nonneg (y - d)]
 
-/-- **A multiple root is infinitely ill conditioned** ([quarteroni2000numerical] Example 2.4,
-"ill posed if `x` is a multiple root", and §6.1): for `φ G : 𝕜 → 𝕜` with `G` a continuous right
-inverse of `φ` on the admissible data `S` near the accumulation point `d` of `S`, and
-`φ' (G d) = 0`, the root has `absCondNumber G S d = ⊤`. -/
+/-- **A multiple root is infinitely ill conditioned.** Let $\varphi, G : \mathbb{K} \to \mathbb{K}$
+for a nontrivially normed field $\mathbb{K}$, let $S \subseteq \mathbb{K}$, and let $d$ be an
+accumulation point of $S$. Suppose that $G$ is continuous at $d$ within $S$, that
+$\varphi(G(y)) = y$ for all $y \in S$ near $d$, and that $\varphi'(G(d)) = 0$. Then
+$K_{\mathrm{abs}}(d) = \infty$ on the admissible data $S$.
+
+This is the statement of Example 2.4 of [quarteroni2000numerical] that the root problem is "ill
+posed if $x$ is a multiple root", which §6.1 of the source uses. It is the scalar case of
+`Conditioning.absCondNumber_eq_top_of_fderiv_eq_zero`. -/
 theorem absCondNumber_eq_top_of_deriv_eq_zero {φ G : 𝕜 → 𝕜} {S : Set 𝕜} {d : 𝕜}
     [NeBot (𝓝[S \ {d}] d)] (hG : ContinuousWithinAt G S d) (hφ : HasDerivAt φ 0 (G d))
     (hinv : ∀ᶠ y in 𝓝[S] d, φ (G y) = y) : absCondNumber G S d = ⊤ :=
@@ -590,9 +715,14 @@ theorem absCondNumber_eq_top_of_deriv_eq_zero {φ G : 𝕜 → 𝕜} {S : Set �
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E] [CompleteSpace E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **Conditioning of a root in Banach spaces**: the local inverse of `φ` given by the inverse
-function theorem at a point where the strict derivative `φ'` is an isomorphism has absolute
-condition number `‖φ'⁻¹‖ₑ`. -/
+/-- **Conditioning of a root in Banach spaces.** Let $E$ be a Banach space and $F$ a normed space
+over a nontrivially normed field, and let $\varphi : E \to F$ have at $x$ a strict Fréchet
+derivative $\varphi'$ that is an isomorphism $E \to F$. Then the local inverse of $\varphi$ at
+$x$ given by the inverse function theorem has, at the datum $\varphi(x)$ and on the admissible
+data $F$, the first-order absolute condition number $$K_{\mathrm{abs}}(\varphi(x)) =
+\|\varphi'^{-1}\|.$$
+
+The local inverse is `HasStrictFDerivAt.localInverse`. -/
 theorem absCondNumber_localInverse {φ : E → F} {φ' : E ≃L[𝕜] F} {x : E}
     (hφ : HasStrictFDerivAt φ (φ' : E →L[𝕜] F) x) :
     absCondNumber (hφ.localInverse φ φ' x) univ (φ x) = ‖(φ'.symm : F →L[𝕜] E)‖ₑ :=

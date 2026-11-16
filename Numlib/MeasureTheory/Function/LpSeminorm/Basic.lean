@@ -13,16 +13,25 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.MeasureTheory.Function.LpSeminorm.Basic
 
 /-!
-# `L^p` for a finite sum of measures
+# $L^p$ for a finite sum of measures
 
-Mathlib treats the sum of two measures (`MemLp.left_of_add_measure`,
-`AEStronglyMeasurable.add_measure`); these are the `Finset` forms, which the boundary measure of
-a polygon — a sum of arclength measures, one per boundary edge — needs:
+Let $(\mu_i)_{i \in s}$ be finitely many measures on a measurable space. This file proves that a
+function that is almost everywhere strongly measurable, or in $L^p$, for each $\mu_i$ has the same
+property for the sum $\sum_{i \in s} \mu_i$. It also computes the $L^p$ seminorm for the sum when
+the function vanishes almost everywhere for all summands but one. Mathlib has these facts for the
+sum of two measures (`MeasureTheory.MemLp.left_of_add_measure`,
+`MeasureTheory.AEStronglyMeasurable.add_measure`). The finite sums are needed for the boundary
+measure of a polygon, which is the sum of the arclength measures of its edges.
 
-* `MeasureTheory.aestronglyMeasurable_finsetSum_measure`;
-* `MeasureTheory.memLp_finsetSum_measure`;
-* `MeasureTheory.eLpNorm_finsetSum_measure_of_ae_eq_zero`: the seminorm of a function that
-  vanishes almost everywhere for all but one summand is the seminorm for that summand.
+## Main results
+
+* `MeasureTheory.aestronglyMeasurable_finsetSum_measure`: a function that is almost everywhere
+  strongly measurable for each $\mu_i$ is almost everywhere strongly measurable for $\sum_i \mu_i$.
+* `MeasureTheory.memLp_finsetSum_measure`: for $0 < p < \infty$, a function in $L^p(\mu_i)$ for each
+  $i$ is in $L^p(\sum_i \mu_i)$.
+* `MeasureTheory.eLpNorm_finsetSum_measure_of_ae_eq_zero`: for $0 < p < \infty$, if $f = 0$ almost
+  everywhere for every $\mu_i$ with $i \neq e$, then
+  $\|f\|_{L^p(\sum_i \mu_i)} = \|f\|_{L^p(\mu_e)}$.
 -/
 
 open scoped ENNReal
@@ -32,8 +41,10 @@ namespace MeasureTheory
 variable {α : Type*} [MeasurableSpace α] {ι : Type*} {s : Finset ι} {μ : ι → Measure α}
   {p : ℝ≥0∞} {f : α → ℝ}
 
-/-- A function strongly measurable for each of finitely many measures is strongly measurable for
-their sum. -/
+/-- Let $(\mu_i)_{i \in s}$ be a finite family of measures on a measurable space $\alpha$, and let
+$\beta$ be a pseudometrizable topological space. If $f \colon \alpha \to \beta$ is almost
+everywhere strongly measurable for each $\mu_i$, then $f$ is almost everywhere strongly
+measurable for $\sum_{i \in s} \mu_i$. -/
 theorem aestronglyMeasurable_finsetSum_measure {β : Type*} [TopologicalSpace β]
     [TopologicalSpace.PseudoMetrizableSpace β] {f : α → β} {s : Finset ι} {μ : ι → Measure α}
     (h : ∀ i ∈ s, AEStronglyMeasurable f (μ i)) : AEStronglyMeasurable f (∑ i ∈ s, μ i) := by
@@ -45,8 +56,9 @@ theorem aestronglyMeasurable_finsetSum_measure {β : Type*} [TopologicalSpace β
     exact (h a (Finset.mem_insert_self a s)).add_measure
       (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
 
-/-- A function in `L^p` of each of finitely many measures is in `L^p` of their sum,
-`0 < p < ∞`. -/
+/-- Let $(\mu_i)_{i \in s}$ be a finite family of measures on a measurable space $\alpha$, and let
+$0 < p < \infty$. If $f \colon \alpha \to \mathbb{R}$ is in $L^p(\mu_i)$ for each $i \in s$,
+then $f$ is in $L^p(\sum_{i \in s} \mu_i)$. -/
 theorem memLp_finsetSum_measure (hp0 : p ≠ 0) (hp : p ≠ ⊤) (h : ∀ i ∈ s, MemLp f p (μ i)) :
     MemLp f p (∑ i ∈ s, μ i) := by
   have hm : AEStronglyMeasurable f (∑ i ∈ s, μ i) :=
@@ -56,8 +68,13 @@ theorem memLp_finsetSum_measure (hp0 : p ≠ 0) (hp : p ≠ ⊤) (h : ∀ i ∈ 
   refine ENNReal.rpow_lt_top_of_nonneg (by positivity) (ENNReal.sum_lt_top.2 fun i hi ↦ ?_).ne
   exact lintegral_rpow_enorm_lt_top_of_eLpNorm_lt_top hp0 hp (h i hi).eLpNorm_lt_top
 
-/-- The `L^p` seminorm for a finite sum of measures of a function vanishing almost everywhere
-for all but one of them is the seminorm for that one, `0 < p < ∞`. -/
+/-- Let $(\mu_i)_{i \in s}$ be a finite family of measures on a measurable space $\alpha$, let
+$0 < p < \infty$, let $e \in s$, and let $f \colon \alpha \to \mathbb{R}$ be almost everywhere
+strongly measurable for $\mu_e$. If $f = 0$ $\mu_i$-almost everywhere for every $i \in s$ with
+$i \neq e$, then
+$$\|f\|_{L^p(\sum_{i \in s} \mu_i)} = \|f\|_{L^p(\mu_e)}.$$
+
+The seminorms are the `ℝ≥0∞`-valued seminorms `MeasureTheory.eLpNorm`. -/
 theorem eLpNorm_finsetSum_measure_of_ae_eq_zero (hp0 : p ≠ 0) (hp : p ≠ ⊤) {e : ι} (he : e ∈ s)
     (hm : AEStronglyMeasurable f (μ e)) (h : ∀ i ∈ s, i ≠ e → f =ᵐ[μ i] 0) :
     eLpNorm f p (∑ i ∈ s, μ i) = eLpNorm f p (μ e) := by

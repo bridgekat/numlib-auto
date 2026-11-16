@@ -8,42 +8,68 @@ import Numlib.Optimization.Optimality.CurveConditions
 import Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv
 
 /-!
-# Runs of a high-order target-following method with ARqp inner calls on the square
+# A Phase-2 run with ARqp inner calls on the square
 
-On the problem of `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.Box` with the
-objective `f(x) = x₁ - x₂/16`, the constraint `c(x) = x₁²/2` and `X = [-1, 1]²`, the merit
-function `μ(·, t) = ½ ‖r(·, t)‖² = x₁⁴/8 + (f(x) - t)²/2` is a quartic polynomial, so its Taylor
-models of degree `p ≥ 4` are exact and every ratio of an adaptive-regularization step is `1`.
+This module gives runs of Phase 2 of the two-phase method TPqp-GC of [cartis2022evaluation],
+Algorithm 14.3.2 (`Constrained.IsHighOrderTargetRun`), whose inner calls are calls of the
+adaptive-regularization method ARqp, and which take about $(\varepsilon_0 \varepsilon_1)^{-1}$
+evaluations. The problem is that of
+`Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.Box` with the objective
+$f(x) = x_1 - x_2/16$, the constraint $c(x) = x_1^2/2$ and the set $X = [-1, 1]^2$. The merit
+function $\mu(x, t) = \tfrac12 \|r(x, t)\|^2 = x_1^4/8 + (f(x) - t)^2/2$ is a quartic polynomial, so
+its Taylor models of degree $p \ge 4$ are exact, and every ratio of an adaptive-regularization step
+is $1$. The run shows that Theorem 14.3.9 of [cartis2022evaluation] fails for runs of ARqp-SC that
+re-initialise, at every Step 2, the parameter of Step 2.1 of Algorithm 14.1.2, when $q \in \{1, 2\}$
+and $p \ge q + 3$ (`CartisGouldToint.Chapter14.theorem_14_3_9_arqp_counterexample`).
 
-For a small parameter `u > 0` and `M` with `u³ M ≤ 1/64`, the tolerances `ε₀ = u²/2 + u³/2`,
-`ε₁ = 3u/2`, `ε_j = 1` (`j ≥ 2`) and the constants `θ = β = 1/2`, Phase 2 from `x₁ = (0, 0)` has
-`M + 1` outer iterations, each made of a single successful iteration of ARqp (ARqpC with
-`c = 0`, `h = 0`, `Optimization.IsARqpCallOut`) whose step is an approximate critical point of
-the regularized model with a small model decrease: the first call moves to `(u, ·)`, the next
-`M - 1` calls move along `x₂` to points where `f(x_{k+1}) = t_k - E_k` with
-`E_k ≈ u³/2 ≈ 2 ε₀ ε₁/3` (case (b) of Step 2, where the criticality test fails after the target
-update), and the last call reaches `(-3u/4, ·)`, where the criticality test holds with `f > t`.
-The number of evaluations, `M + 2`, is of order `(ε₀ ε₁)^{-1}`; with `u = 1/(4N⁵)` and
-`M = N¹⁵` it exceeds `C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]` for the exponents
-`π_j = j(p+1)/p`, `q ∈ {1, 2}`, `p ≥ q + 3`, when `N` is large compared with `C`.
+Let $u > 0$ be small and let $M \ge 1$ satisfy $u^3 M \le 1/64$. The tolerances are
+$\varepsilon_0 = u^2/2 + u^3/2$, $\varepsilon_1 = 3u/2$ and $\varepsilon_j = 1$ for $j \ge 2$, and
+the constants are $\theta = \beta = 1/2$. Phase 2 starts at $x_1 = (0, 0)$ and has $M + 1$ outer
+iterations. Each outer iteration is a single successful iteration of ARqp (ARqpC with $c = 0$ and
+$h = 0$, `Optimization.IsARqpCallOut`), whose step is an approximate critical point of the
+regularized model with a small model decrease. The first call moves to a point $(u, \cdot)$. The
+next $M - 1$ calls move along $x_2$ to points with $f(x_{k+1}) = t_k - E_k$, where $E_k \approx
+u^3/2 \approx 2 \varepsilon_0 \varepsilon_1 / 3$; these are case-(b) iterations, and the criticality
+test (14.3.34) fails after the target update. The last call reaches a point $(-3u/4, \cdot)$, where
+the criticality test holds with $f > t$. The number of evaluations, $M + 2$, is of order
+$(\varepsilon_0 \varepsilon_1)^{-1}$. With $u = 1/(4N^5)$ and $M = N^{15}$ it exceeds $C
+\max[\varepsilon_0^{-1}, \max_j \varepsilon_0^{1-\pi_j} \varepsilon_j^{-\pi_j}]$ for the exponents
+$\pi_j = j(p+1)/p$, $q \in \{1, 2\}$ and $p \ge q + 3$, when $N$ is large compared with $C$.
 
 ## Main definitions
 
-* `Constrained.TwoPhaseExample.stepIter x s`: the iterates of a call making one step;
-* `Constrained.TwoPhaseExample.BoxARqp.params`: the adaptive-regularization constants;
-* `Constrained.TwoPhaseExample.BoxARqp.tol`, `target`, `iter`, `seq`: the tolerances, targets,
-  iterates and Phase-2 data of the run.
+* `Constrained.TwoPhaseExample.stepIter`: the iterates $x, x + s, x + s, \dots$ of a call that makes
+  one step.
+* `Constrained.TwoPhaseExample.BoxARqp.params`: the adaptive-regularization constants.
+* `Constrained.TwoPhaseExample.BoxARqp.tol`, `Constrained.TwoPhaseExample.BoxARqp.target`,
+  `Constrained.TwoPhaseExample.BoxARqp.iter`, `Constrained.TwoPhaseExample.BoxARqp.seq`: the
+  tolerances, the targets, the outer iterates and the Phase-2 data of the run.
 
 ## Main results
 
-* `Constrained.TwoPhaseExample.isARqpCallOut_one_step`: sufficient conditions for a one-step
-  call of ARqp;
-* `Constrained.TwoPhaseExample.BoxARqp.isHighOrderTargetRun`: the data form a run of Phase 2;
-* `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_calls`: its inner calls are ARqp calls;
-* `Constrained.TwoPhaseExample.BoxARqp.isEnd_iff`: it terminates exactly at `M + 1`;
-* `Constrained.TwoPhaseExample.BoxARqp.order_le_pow`,
-  `Constrained.TwoPhaseExample.BoxARqp.exists_params`: the orders along the tolerances and the
-  choice of the parameters.
+* `Constrained.TwoPhaseExample.isARqpCallOut_one_step`: sufficient conditions for a one-step call of
+  ARqp.
+* `Constrained.TwoPhaseExample.BoxARqp.taylorSum_targetMerit`: the Taylor models of $\mu(\cdot, t)$
+  of degree $p \ge 4$ are exact.
+* `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_step`: sufficient conditions for a one-step
+  ARqp call on the square.
+* `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_run`: every inner call of the run is a one-step
+  ARqp call.
+* `Constrained.TwoPhaseExample.BoxARqp.isEnd_iff`: Phase 2 terminates exactly at the outer iteration
+  $M + 1$.
+* `Constrained.TwoPhaseExample.BoxARqp.isHighOrderTargetRun`: the data form a run of Phase 2.
+* `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_calls`: the inner calls of the run are ARqp
+  calls, in the form that the run classes of Phase 2 use.
+* `Constrained.TwoPhaseExample.BoxARqp.order_le_pow`: the orders along the tolerances for
+  $u = 1/(4N^5)$ are at most $128 N^{14}$.
+* `Constrained.TwoPhaseExample.BoxARqp.exists_params`: the choice of $N$ for a given constant $C$.
+
+## Implementation notes
+
+* The coordinates $x_1$ and $x_2$ of $x \in \mathbb{R}^2$ are `x 0` and `x 1`. The objective is
+  `Constrained.TwoPhaseExample.Box.obj (1 / 16)`, written `objG` in this module.
+* ARqp is realized as ARqpC with the zero constraint $c = 0 : E \to G$ into a normed space $G$,
+  which is a parameter of the results on calls.
 -/
 
 open Set Metric
@@ -58,15 +84,36 @@ section OneStepCall
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] (G : Type*)
   [NormedAddCommGroup G] [NormedSpace ℝ G]
 
-/-- The iterates `x, x + s, x + s, …` of a call making one step `s` from `x`. -/
+/-- The iterates $x, x + s, x + s, \dots$ of a call that makes one step $s$ from $x$: the iterate
+$0$ is $x$, and every later iterate is $x + s$. -/
 noncomputable def stepIter (x s : E) : ℕ → E := fun i => if i = 0 then x else x + s
 
-/-- **A one-step call of ARqp** (ARqpC with `c = 0`, `h = 0`, `1 ≤ q ≤ p`, all radii `1`,
-`Optimization.IsARqpCallOut`) on an objective `F` bounded below on `X` whose Taylor model of degree
-`p` at `x` is exact: the Step-1 test fails at `x` (the witnesses `d₀ j`), the detailed Step 2
-returns the step `s` (model decrease, the model witnesses `dm j` at `s`), the iteration is very
-successful (ratio `1`), and the Step-1 test holds at `x + s` (the witnesses `d₁ j`), where the run
-terminates. Its iterates are `x, x + s`, with one successful iteration and output radius `1`. -/
+/-- **A one-step call of ARqp.** Let $E$ be a real inner product space, $F : E \to \mathbb{R}$
+bounded below on $X \subseteq E$, $1 \le q \le p$, $P$ the constants of ARqp with initial
+regularization $\sigma_0$, model-optimality factor $\theta$ and measure fraction $\varsigma$,
+and $\varepsilon_j \in (0, 1]$ for $j \in [1, q]$. Let $x \in X$ and $s \in E$ with
+$x + s \in X$ and $\|s\| < 1$, and assume:
+
+* the Taylor model of degree $p$ of $F$ at $x$ is exact: $T_p(x, v) = F(x + v)$ for all $v$;
+* the regularized model $m(s) = T_p(x, s) + \sigma_0 \|s\|^{p+1}/(p+1)!$ satisfies
+  $m(s) < F(x)$;
+* for $j \in [1, q]$, $d_0(j)$ is a $\varsigma$-approximate measure step with radius $1$ of
+  $\Delta T_j(x, \cdot)$ on $\{e : x + e \in X\}$, and for some $j \in [1, q]$, $\varsigma
+  \varepsilon_j / j! < \Delta T_j(x, d_0(j))$, so the Step-1 test fails at $x$;
+* for $j \in [1, q]$, $d_m(j)$ is a $\varsigma$-approximate measure step with radius $1$ of the
+  $j$-th Taylor decrement of $m$ at $s$ on $\{e : x + s + e \in X\}$, and this decrement at
+  $d_m(j)$ is at most $\varsigma \theta \varepsilon_j / j!$;
+* for $j \in [1, q]$, $d_1(j)$ is a $\varsigma$-approximate measure step with radius $1$ of
+  $\Delta T_j(x + s, \cdot)$ on $\{e : x + s + e \in X\}$, and $\Delta T_j(x + s, d_1(j)) \le
+  \varsigma \varepsilon_j / j!$, so the Step-1 test holds at $x + s$.
+
+Then the iterates $x, x + s$ form a call of ARqp on $F$ over $X$ with the tolerances
+$\varepsilon$ (`Optimization.IsARqpCallOut`), of length $1$, whose only iteration is successful
+and whose returned radii are $1$.
+
+ARqp is ARqpC with $c = 0 : E \to G$ and $h = 0$, all initial radii $1$. The detailed Step 2
+returns the step $s$, the iteration is very successful because the ratio is $1$, and the run
+terminates at $x + s$. -/
 theorem isARqpCallOut_one_step {F : E → ℝ} {X : Set E} {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p)
     {P : Optimization.ARqpParams} {ε : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1)
     {x s : E} {d₀ d₁ dm : ℕ → E} (hx : x ∈ X)
@@ -200,42 +247,49 @@ namespace BoxARqp
 
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
-/-- The objective `f(x) = x₁ - x₂/16` of the example. -/
+/-- The objective $f(x) = x_1 - x_2/16$ of the example,
+`Constrained.TwoPhaseExample.Box.obj (1 / 16)`. -/
 local notation "objG" => Box.obj (1 / 16)
 
 variable {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
 
 /-! ### The data -/
 
-/-- `f(a, b) = a - b/16`. -/
+/-- $f(a, b) = a - b/16$. -/
 theorem obj_pt (a b : ℝ) : objG (pt a b) = a - b / 16 := by rw [Box.obj_pt]; ring
 
-/-- The first-order Taylor decrement of `μ(·, t)` at `y`:
-`-∇μ(y, t)[d] = -(y₁³/2 + (f(y) - t)) d₁ + (f(y) - t)/16 d₂`. -/
+/-- The first-order Taylor decrement of $\mu(\cdot, t)$ at $y$ along $d$ is
+$$-\nabla \mu(y, t)[d] = -\bigl(y_1^3/2 + (f(y) - t)\bigr) d_1 + \frac{f(y) - t}{16}\, d_2.$$
+-/
 theorem taylorDecrement_one_eq (y : ℝ²) (t : ℝ) (d : ℝ²) :
     (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y).taylorDecrement 1 d =
       -(y 0 ^ 3 / 2 + (objG y - t)) * d 0 + (objG y - t) / 16 * d 1 := by
   rw [Box.taylorDecrement_one]; ring
 
-/-- `μ(y, t) = y₁⁴/8 + (f(y) - t)²/2`. -/
+/-- $\mu(y, t) = y_1^4/8 + (f(y) - t)^2/2$. -/
 theorem targetMerit_eq (y : ℝ²) (t : ℝ) :
     Constrained.targetMerit objG Box.con t y = y 0 ^ 4 / 8 + (objG y - t) ^ 2 / 2 := by
   rw [Constrained.targetMerit_def, Box.norm_con]
   ring
 
-/-- `μ(·, t)` is smooth. -/
+/-- For every target $t$, $\mu(\cdot, t)$ is of class $C^\omega$ (analytic), which is
+`ContDiff ℝ ⊤`. -/
 theorem contDiff_targetMerit (t : ℝ) : ContDiff ℝ ⊤ (Constrained.targetMerit objG Box.con t) :=
   contDiff_iff_contDiffAt.2 fun _ =>
     Constrained.contDiffAt_targetMerit (Box.contDiff_obj _).contDiffAt Box.contDiff_con.contDiffAt
 
-/-- The coefficients of `τ ↦ μ(y + τ s, t)`, a quartic polynomial. -/
+/-- The coefficients $a_i$ of the quartic polynomial $\tau \mapsto \mu(y + \tau s, t)$:
+$a_1 = y_1^3 s_1 / 2 + (f(y) - t)(s_1 - s_2/16)$,
+$a_2 = 3 y_1^2 s_1^2 / 4 + (s_1 - s_2/16)^2/2$, $a_3 = y_1 s_1^3 / 2$, $a_4 = s_1^4/8$, and
+$a_i = 0$ for every other $i$. -/
 noncomputable def meritCoeff (y s : ℝ²) (t : ℝ) (i : ℕ) : ℝ :=
   if i = 1 then y 0 ^ 3 * s 0 / 2 + (objG y - t) * (s 0 - s 1 / 16)
   else if i = 2 then 3 * y 0 ^ 2 * s 0 ^ 2 / 4 + (s 0 - s 1 / 16) ^ 2 / 2
   else if i = 3 then y 0 * s 0 ^ 3 / 2
   else if i = 4 then s 0 ^ 4 / 8 else 0
 
-/-- `μ(y + τ s, t) = μ(y, t) + ∑_{i=1}^p τ^i a_i` for `p ≥ 4`. -/
+/-- For $p \ge 4$, $\mu(y + \tau s, t) = \mu(y, t) + \sum_{i=1}^p \tau^i a_i$, with the coefficients
+$a_i$ of `Constrained.TwoPhaseExample.BoxARqp.meritCoeff`. -/
 theorem targetMerit_add_smul {p : ℕ} (hp : 4 ≤ p) (y s : ℝ²) (t τ : ℝ) :
     Constrained.targetMerit objG Box.con t (y + τ • s) =
       Constrained.targetMerit objG Box.con t y + ∑ i ∈ Finset.Icc 1 p, τ ^ i * meritCoeff y s t i
@@ -252,7 +306,13 @@ theorem targetMerit_add_smul {p : ℕ} (hp : 4 ≤ p) (y s : ℝ²) (t τ : ℝ)
   simp [Finset.sum_insert, Finset.mem_insert, Finset.mem_singleton]
   ring
 
-/-- **The Taylor model of `μ(·, t)` of degree `p ≥ 4` is exact**: `T_p(y, s) = μ(y + s, t)`. -/
+/-- **The Taylor model of $\mu(\cdot, t)$ of degree $p \ge 4$ is exact.** For $p \ge 4$,
+$y, s \in \mathbb{R}^2$ and $t \in \mathbb{R}$,
+$$T_p(y, s) = \mu(y + s, t),$$
+where $T_p(y, \cdot)$ is the Taylor polynomial of degree $p$ of $\mu(\cdot, t)$ at $y$.
+
+The Taylor polynomial is `FormalMultilinearSeries.taylorSum` of `ftaylorSeries ℝ
+(Constrained.targetMerit objG Box.con t) y`. -/
 theorem taylorSum_targetMerit {p : ℕ} (hp : 4 ≤ p) (y : ℝ²) (t : ℝ) (s : ℝ²) :
     (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y).taylorSum p s =
       Constrained.targetMerit objG Box.con t (y + s) := by
@@ -261,14 +321,18 @@ theorem taylorSum_targetMerit {p : ℕ} (hp : 4 ≤ p) (y : ℝ²) (t : ℝ) (s 
     ((contDiff_targetMerit t).contDiffAt.of_le (by exact_mod_cast le_top))
     (targetMerit_add_smul hp y s t)
 
-/-- The coefficient `σ/p! ‖s‖^{p-1}` of the gradient `σ/p! ‖s‖^{p-1} s` of the regularization term
-`σ/(p+1)! ‖s‖^{p+1}`. -/
+/-- The coefficient $\sigma \|s\|^{p-1} / p!$ for which the gradient of the regularization term
+$\sigma \|s\|^{p+1}/(p+1)!$ at $s$ is this coefficient times $s$.
+
+It is computed with the real factorial `Optimization.realFactorial` and a real exponent. -/
 noncomputable def regCoeff (p : ℕ) (σ : ℝ) (s : ℝ²) : ℝ :=
   σ / Optimization.realFactorial ((p : ℝ) + 1 - 1) * ‖s‖ ^ ((p : ℝ) + 1 - 2)
 
-/-- **The first-order decrement of the model** `m(s) = μ(y + s, t) + σ/(p+1)! ‖s‖^{p+1}` (`p ≥ 4`)
-at the trial step `s` along `d`: the decrement of `μ(·, t)` at `y + s` minus `c ⟨s, d⟩`,
-`c = regCoeff p σ s`. -/
+/-- Let $p \ge 4$ and let $m(s) = \mu(y + s, t) + \sigma \|s\|^{p+1}/(p+1)!$ be the regularized
+model of $\mu(\cdot, t)$ at $y$. The first-order Taylor decrement of $m$ at $s$ along $d$ is the
+first-order Taylor decrement of $\mu(\cdot, t)$ at $y + s$ along $d$ minus
+$c \langle s, d \rangle$, where $c = \sigma \|s\|^{p-1}/p!$ is
+`Constrained.TwoPhaseExample.BoxARqp.regCoeff p σ s`. -/
 theorem taylorDecrement_one_model {p : ℕ} (hp : 4 ≤ p) (y s d : ℝ²) (t σ : ℝ) :
     (ftaylorSeries ℝ (Optimization.regularizedModel
         (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y) p σ) s).taylorDecrement 1 d =
@@ -293,7 +357,9 @@ theorem taylorDecrement_one_model {p : ℕ} (hp : 4 ≤ p) (y s d : ℝ²) (t σ
   unfold regCoeff
   ring
 
-/-- The Taylor decrements of order `j ≤ 4` of `μ(·, t)` at `y`: `ΔT_j(y, d) = -∑_{i=1}^j a_i`. -/
+/-- For $j \le 4$, the Taylor decrement of order $j$ of $\mu(\cdot, t)$ at $y$ along $d$ is
+$\Delta T_j(y, d) = -\sum_{i=1}^j a_i$, with the coefficients $a_i$ of
+`Constrained.TwoPhaseExample.BoxARqp.meritCoeff y d t`. -/
 theorem taylorDecrement_eq_meritCoeff {j : ℕ} (hj : j ≤ 4) (y d : ℝ²) (t : ℝ) :
     (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y).taylorDecrement j d =
       -∑ i ∈ Finset.Icc 1 j, meritCoeff y d t i := by
@@ -305,8 +371,9 @@ theorem taylorDecrement_eq_meritCoeff {j : ℕ} (hj : j ≤ 4) (y d : ℝ²) (t 
         simpa [one_mul] using targetMerit_add_smul le_rfl y d t τ) hj]
   ring
 
-/-- **The second-order decrement of `μ(·, t)` is at most the first-order one** (`μ` is convex):
-`ΔT_2(y, d) = ΔT_1(y, d) - a_2` with `a_2 = 3 y₁² d₁²/4 + (d₁ - d₂/16)²/2 ≥ 0`. -/
+/-- **The second-order decrement of $\mu(\cdot, t)$ is at most the first-order one**, since
+$\mu(\cdot, t)$ is convex along every line: $\Delta T_2(y, d) = \Delta T_1(y, d) - a_2$ with
+$a_2 = 3 y_1^2 d_1^2/4 + (d_1 - d_2/16)^2/2 \ge 0$. -/
 theorem taylorDecrement_two_le (y d : ℝ²) (t : ℝ) :
     (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y).taylorDecrement 2 d ≤
       (ftaylorSeries ℝ (Constrained.targetMerit objG Box.con t) y).taylorDecrement 1 d := by
@@ -315,7 +382,8 @@ theorem taylorDecrement_two_le (y d : ℝ²) (t : ℝ) :
   simp [meritCoeff]
   nlinarith [sq_nonneg (d 0 - d 1 / 16), sq_nonneg (y 0 * d 0)]
 
-/-- `∇²μ(y, t)[d]² ≥ 0`. -/
+/-- The second derivative of $\mu(\cdot, t)$ is positive semidefinite:
+$\nabla^2 \mu(y, t)[d, d] \ge 0$ for all $y$ and $d$. -/
 theorem iteratedFDeriv_two_targetMerit_nonneg (y d : ℝ²) (t : ℝ) :
     0 ≤ iteratedFDeriv ℝ 2 (Constrained.targetMerit objG Box.con t) y (fun _ => d) := by
   have h := taylorDecrement_two_le y d t
@@ -326,9 +394,14 @@ theorem iteratedFDeriv_two_targetMerit_nonneg (y d : ℝ²) (t : ℝ) :
   norm_num at h
   linarith
 
-/-- **The second-order decrement of the model is at most the first-order one plus `σ ‖s‖³/2`**
-(`p ≥ 4`, `σ ≥ 0`, `‖s‖, ‖d‖ ≤ 1`): the Hessian of `μ` is positive semidefinite and that of the
-regularization term is at most `σ ‖s‖^{p-1}/(p-1)!` in norm. -/
+/-- **The second-order decrement of the model is at most the first-order one plus
+$\sigma \|s\|^3/2$.** Let $p \ge 4$, $\sigma \ge 0$, and $s, d \in \mathbb{R}^2$ with
+$\|s\| \le 1$ and $\|d\| \le 1$. For the regularized model $m$ of $\mu(\cdot, t)$ at $y$ of
+degree $p$ with the parameter $\sigma$, the second-order Taylor decrement of $m$ at $s$ along
+$d$ is at most its first-order Taylor decrement plus $\sigma \|s\|^3/2$.
+
+The Hessian of $\mu$ is positive semidefinite, and the Hessian of the regularization term has
+norm at most $\sigma \|s\|^{p-1}/(p-1)!$. -/
 theorem taylorDecrement_two_model_le {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 0 ≤ σ) (y : ℝ²) (t : ℝ) {s
     d : ℝ²}
     (hs : ‖s‖ ≤ 1) (hd : ‖d‖ ≤ 1) :
@@ -381,9 +454,11 @@ theorem taylorDecrement_two_model_le {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 
     exact mul_le_mul_of_nonneg_left (by linarith) (by positivity)
   linarith
 
-/-- **A witness from a maximizer**: a Taylor decrement attains its supremum over the unit ball
-intersected with a closed set containing `0`, and a maximizer is a `ς`-approximate optimality
-displacement for every `ς ≤ 1`. -/
+/-- **A witness from a maximizer.** Let $D$ be derivative data on $\mathbb{R}^2$,
+$j \in \mathbb{N}$, $S \subseteq \mathbb{R}^2$ closed with $0 \in S$, and $\varsigma \le 1$.
+Then the Taylor decrement $\Delta T_j$ of $D$ attains its supremum over
+$\{d : \|d\| \le 1\} \cap S$ at some $d$, and this $d$ is a $\varsigma$-approximate measure step
+of $\Delta T_j$ on $S$ with radius $1$. -/
 theorem exists_isApproxMeasureStep_eq (D : FormalMultilinearSeries ℝ ℝ² ℝ) (j : ℕ) {S : Set ℝ²}
     (hS : IsClosed S) (h0 : (0 : ℝ²) ∈ S) {ς : ℝ} (hς : ς ≤ 1) :
     ∃ d, Optimization.IsApproxMeasureStep (D.taylorDecrement j) 1 S ς d ∧
@@ -395,8 +470,9 @@ theorem exists_isApproxMeasureStep_eq (D : FormalMultilinearSeries ℝ ℝ² ℝ
 
 /-! ### The constants -/
 
-/-- The adaptive-regularization constants of the example: `σ₀ = σ_min = 10⁻⁶`, `η₁ = 1/4`,
-`η₂ = 3/4`, `γ₁ = 1/2`, `γ₂ = 2 < γ₃ = 3`, `θ = 1/4`, `ς = 1/2` (so `θ < ς`). -/
+/-- The adaptive-regularization constants of the example: $\sigma_0 = \sigma_{\min} = 10^{-6}$,
+$\eta_1 = 1/4$, $\eta_2 = 3/4$, $\gamma_1 = 1/2$, $\gamma_2 = 2$, $\gamma_3 = 3$, $\theta = 1/4$
+and $\varsigma = 1/2$, so that $\theta < \varsigma$. -/
 noncomputable def params : Optimization.ARqpParams where
   σ₀ := 1 / 10 ^ 6
   σmin := 1 / 10 ^ 6
@@ -422,14 +498,17 @@ noncomputable def params : Optimization.ARqpParams where
   ς_pos := by norm_num
   ς_le_one := by norm_num
 
+/-- The constants satisfy $\sigma_{\min} = 10^{-6}$. -/
 theorem params_σmin : params.σmin = 1 / 10 ^ 6 := rfl
 
+/-- The constants satisfy $\theta < \varsigma$. -/
 theorem params_θ_lt_ς : params.θ < params.ς := by norm_num [params]
 
 
 /-! ### One-step calls on the square -/
 
-/-- `0 ≤ regCoeff p σ s ≤ σ ‖s‖³/24` for `σ ≥ 0`, `‖s‖ ≤ 1`, `p ≥ 4`. -/
+/-- For $p \ge 4$, $\sigma \ge 0$ and $\|s\| \le 1$, the coefficient $c = \sigma \|s\|^{p-1}/p!$ of
+`Constrained.TwoPhaseExample.BoxARqp.regCoeff` satisfies $0 \le c \le \sigma \|s\|^3/24$. -/
 theorem regCoeff_mem {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 0 ≤ σ) {s : ℝ²} (hs : ‖s‖ ≤ 1) :
     0 ≤ regCoeff p σ s ∧ regCoeff p σ s ≤ σ * ‖s‖ ^ 3 / 24 := by
   have e1 : (p : ℝ) + 1 - 1 = (p : ℝ) := by ring
@@ -447,7 +526,8 @@ theorem regCoeff_mem {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 0 ≤ σ) {s : �
         gcongr
     _ = σ * ‖s‖ ^ 3 / 24 := by ring
 
-/-- `σ/(p+1)! ‖s‖^{p+1} ≤ σ ‖s‖⁵/120` for `σ ≥ 0`, `‖s‖ ≤ 1`, `p ≥ 4`. -/
+/-- For $p \ge 4$, $\sigma \ge 0$ and $\|s\| \le 1$, $\sigma \|s\|^{p+1}/(p+1)! \le \sigma
+\|s\|^5/120$. -/
 theorem reg_le {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 0 ≤ σ) {s : ℝ²} (hs : ‖s‖ ≤ 1) :
     σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) ≤ σ * ‖s‖ ^ 5 / 120 := by
   have hf : (120 : ℝ) ≤ ((p + 1)! : ℝ) := by
@@ -458,15 +538,31 @@ theorem reg_le {p : ℕ} (hp : 4 ≤ p) {σ : ℝ} (hσ : 0 ≤ σ) {s : ℝ²} 
         gcongr
     _ = σ * ‖s‖ ^ 5 / 120 := by ring
 
-/-- **A one-step ARqp call on the square.** For the target `t`, the start `x = (xa, xb)` and the
-landing point `x' = (ya, yb)` in `[-1/2, 1/2]²` with `F = f(x) - t`, `F' = f(x') - t`,
-`L = |ya - xa| + |yb - xb| ≤ 1/2`, an order `q ∈ {1, 2}`, tolerances `T₁ ∈ (0, 1]` (order `1`) and
-`T₂ ∈ (0, 1]` (order `2`, used when `q = 2`, with `T₁/4 + σ₀ L³/2 ≤ T₂/16`), and a sign `g = ±1`: if
-the linear decrease at `x` exceeds `T₁` (Step 1 fails), `μ` decreases by more than the
-regularization bound `σ₀ L⁵/120`, and at `x'` the gradient has the signs of `g` and `ℓ¹`-norm plus
-`σ₀ L⁴/24` at most `T₁/4` (model criticality, and Step 1 holds; at order `2` the decrements are
-bounded through `taylorDecrement_two_le` and `taylorDecrement_two_model_le`, and the witnesses are
-maximizers), then the call from `x` to `x'` is a one-step ARqp call with the constants `params`. -/
+/-- **A one-step ARqp call on the square.** Let $p \ge 4$ and $q \in \{1, 2\}$, let
+$t \in \mathbb{R}$, and let $x = (x_a, x_b)$ and $x' = (y_a, y_b)$ be points of $[-1/2, 1/2]^2$
+with $L = |y_a - x_a| + |y_b - x_b| \le 1/2$. Write $F = x_a - x_b/16 - t = f(x) - t$ and
+$F' = y_a - y_b/16 - t = f(x') - t$, and assume $F \ge 0$ and $x_a \ge 0$. Let $\varepsilon$ be
+tolerances with $\varepsilon_1 = T_1 \in (0, 1]$, and with $\varepsilon_2 = T_2$ if $q \ge 2$,
+where $T_2 \in (0, 1]$ and $T_1/4 + 10^{-6} L^3/2 \le T_2/16$. Let $g \in \{1, -1\}$. Assume:
+
+* (Step 1 fails at $x$) $T_1 < x_a^3/2 + F + F/16$;
+* (model decrease) $y_a^4/8 + F'^2/2 + 10^{-6} L^5/120 < x_a^4/8 + F^2/2$, that is, $\mu(x', t)$
+  plus the bound $\sigma_0 L^5/120$ on the regularization term is smaller than $\mu(x, t)$;
+* (signs) $g (y_a^3/2 + F') \ge 0$, $g F' \le 0$, $g (y_a - x_a) \ge 0$ and
+  $g (y_b - x_b) \ge 0$;
+* (criticality at $x'$) $g (y_a^3/2 + F') - g F'/16 + 10^{-6} L^4/24 \le T_1/4$.
+
+Then the iterates $x, x', x', \dots$ form a call of ARqp on $\mu(\cdot, t)$ over $X$ with the
+constants `Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances $\varepsilon$
+(`Optimization.IsARqpCallOut`), of length $1$, whose only iteration is successful and whose
+returned radii are $1$.
+
+The gradient of $\mu(\cdot, t)$ at $x'$ is $(y_a^3/2 + F', -F'/16)$. The last two conditions say
+that it has the signs of $g$ and that its $\ell^1$-norm plus $\sigma_0 L^4/24$ is at most
+$T_1/4$, which gives the model criticality and the Step-1 test at $x'$. At order $2$ the
+decrements are bounded through `Constrained.TwoPhaseExample.BoxARqp.taylorDecrement_two_le` and
+`Constrained.TwoPhaseExample.BoxARqp.taylorDecrement_two_model_le`, and the witnesses are
+maximizers. The proof applies `Constrained.TwoPhaseExample.isARqpCallOut_one_step`. -/
 theorem isARqpCallOut_step {p q : ℕ} (hp : 4 ≤ p) (hq1 : 1 ≤ q) (hq2 : q ≤ 2)
     {t xa xb ya yb T₁ T₂ g : ℝ} {ε : ℕ → ℝ} (hT : ε 1 = T₁) (hT2 : 2 ≤ q → ε 2 = T₂)
     (hT20 : 0 < T₂) (hT21 : T₂ ≤ 1)
@@ -716,19 +812,25 @@ theorem isARqpCallOut_step {p q : ℕ} (hp : 4 ≤ p) (hq1 : 1 ≤ q) (hq2 : q �
 
 /-! ### The run -/
 
-/-- The tolerances `ε₀ = u²/2 + u³/2`, `ε₁ = 3u/2`, `ε_j = 1` for `j ≥ 2`. -/
+/-- The **tolerances** $\varepsilon_0 = u^2/2 + u^3/2$, $\varepsilon_1 = 3u/2$ and
+$\varepsilon_j = 1$ for $j \ge 2$, for a parameter $u \in \mathbb{R}$. -/
 noncomputable def tol (u : ℝ) (j : ℕ) : ℝ :=
   if j = 0 then u ^ 2 / 2 + u ^ 3 / 2 else if j = 1 then 3 * u / 2 else 1
 
+/-- $\varepsilon_0 = u^2/2 + u^3/2$. -/
 theorem tol_zero {u : ℝ} : tol u 0 = u ^ 2 / 2 + u ^ 3 / 2 := by simp [tol]
 
+/-- $\varepsilon_1 = 3u/2$. -/
 theorem tol_one {u : ℝ} : tol u 1 = 3 * u / 2 := by simp [tol]
 
+/-- $\varepsilon_2 = 1$. -/
 theorem tol_two {u : ℝ} : tol u 2 = 1 := by simp [tol]
 
+/-- For $u > 0$, the tolerances are positive: $\varepsilon_j > 0$ for every $j$. -/
 theorem tol_pos {u : ℝ} (hu : 0 < u) (j : ℕ) : 0 < tol u j := by
   unfold tol; split_ifs <;> positivity
 
+/-- For $0 < u \le 1/7$, the tolerances are at most $1$: $\varepsilon_j \le 1$ for every $j$. -/
 theorem tol_le_one {u : ℝ} (hu : 0 < u) (hu7 : u ≤ 1 / 7) (j : ℕ) : tol u j ≤ 1 := by
   unfold tol; split_ifs <;> nlinarith [pow_pos hu 2, pow_pos hu 3]
 
@@ -737,35 +839,48 @@ section Run
 
 variable (u : ℝ) (M : ℕ)
 
-/-- The overshoot `E_k = (u³/2)(1 - k/(64(M + 1)))` of the `k`-th call below its target. -/
+/-- The overshoot $E_k = \tfrac{u^3}{2} \bigl(1 - k/(64 (M + 1))\bigr)$: the $k$-th call ends this
+far below its target, for $k \le M$. -/
 noncomputable def overshoot (k : ℕ) : ℝ := u ^ 3 / 2 * (1 - k / (64 * (M + 1)))
 
-/-- The targets `t_k = -ε₀ - u³ (k - 1) + u³ k (k - 1)/(128 (M + 1))`, so that
-`t_{k+1} = t_k - 2 E_k`. -/
+/-- The **targets**
+$$t_k = -\varepsilon_0 - u^3 (k - 1) + \frac{u^3 k (k - 1)}{128 (M + 1)}, \qquad \varepsilon_0 =
+  u^2/2 + u^3/2.$$
+
+They satisfy $t_{k+1} = t_k - 2 E_k$ (`Constrained.TwoPhaseExample.BoxARqp.target_succ`). -/
 noncomputable def target (k : ℕ) : ℝ :=
   -(u ^ 2 / 2 + u ^ 3 / 2) - u ^ 3 * ((k : ℝ) - 1) + u ^ 3 * ((k : ℝ) * (k - 1)) / (128 * (M + 1))
 
-/-- The amount `f(x_{M+2}) - t_{M+1} = (3u/4)³/2` of the last call above its target. -/
+/-- The amount $f(x_{M+2}) - t_{M+1} = 27 u^3/128 = (3u/4)^3/2$ by which the last call ends above
+its target. -/
 noncomputable def finalGap : ℝ := 27 * u ^ 3 / 128
 
 open Classical in
-/-- The first coordinate of the point reached by the `k`-th call: `u` for `k ≤ M`, `-3u/4` for the
-last call. -/
+/-- The first coordinate $a_k$ of the point reached by the $k$-th call: $u$ for $k \le M$, and
+$-3u/4$ for $k > M$. -/
 noncomputable def landFst (k : ℕ) : ℝ := if k ≤ M then u else -3 * u / 4
 
 open Classical in
-/-- The value `f(x_{k+1}) - t_k`: `-E_k` for `k ≤ M`, `(3u/4)³/2` for the last call. -/
+/-- The value $F_k = f(x_{k+1}) - t_k$ at the end of the $k$-th call: $-E_k$ for $k \le M$, and
+$27 u^3/128$ for $k > M$. -/
 noncomputable def landGap (k : ℕ) : ℝ := if k ≤ M then -overshoot u M k else finalGap u
 
-/-- The outer iterates: `x₁ = (0, 0)` and `x_{k+1} = (a_k, 16 (a_k - t_k - F_k))` for `k ≥ 1`, so
-that `f(x_{k+1}) = t_k + F_k`. -/
+/-- The **outer iterates**: $x_1 = (0, 0)$, and $x_{k+1} = (a_k, 16 (a_k - t_k - F_k))$ for
+$k \ge 1$, with $a_k$ of `Constrained.TwoPhaseExample.BoxARqp.landFst` and $F_k$ of
+`Constrained.TwoPhaseExample.BoxARqp.landGap`. Then $f(x_{k+1}) = t_k + F_k$.
+
+The unused value at $k = 0$ is also $(0, 0)$. -/
 noncomputable def iter : ℕ → ℝ²
   | 0 => pt 0 0
   | k + 1 => if k = 0 then pt 0 0 else
       pt (landFst u M k) (16 * (landFst u M k - target u M k - landGap u M k))
 
-/-- The Phase-2 data: iterates `iter`, targets `target`, radii `1`, and the `k`-th inner call makes
-one successful iteration from `x_k` to `x_{k+1}`. -/
+/-- The **Phase-2 data** of the run: the outer iterates of
+`Constrained.TwoPhaseExample.BoxARqp.iter`, the targets of
+`Constrained.TwoPhaseExample.BoxARqp.target`, all optimality radii equal to $1$, and for each
+$k$ an inner call that makes one successful iteration, from $x_k$ to $x_{k+1}$.
+
+It is `Constrained.HighOrderTargetSeq.oneStep`. -/
 noncomputable def seq : HighOrderTargetSeq ℝ² := HighOrderTargetSeq.oneStep (iter u M) (target u M)
 
 end Run
@@ -774,9 +889,10 @@ section Facts
 
 variable {u : ℝ} {M : ℕ}
 
+/-- $t_1 = -\varepsilon_0$. -/
 theorem target_one : target u M 1 = -(u ^ 2 / 2 + u ^ 3 / 2) := by simp [target]
 
-/-- `t_{k+1} = t_k - 2 E_k`. -/
+/-- The target update of case (b): $t_{k+1} = t_k - 2 E_k$ for every $k$. -/
 theorem target_succ (k : ℕ) : target u M (k + 1) = target u M k - 2 * overshoot u M k := by
   unfold target overshoot
   have : (64 * ((M : ℝ) + 1)) ≠ 0 := by positivity
@@ -784,37 +900,48 @@ theorem target_succ (k : ℕ) : target u M (k + 1) = target u M k - 2 * overshoo
   field_simp
   ring
 
+/-- $x_1 = (0, 0)$. -/
 theorem iter_one : iter u M 1 = pt 0 0 := by simp [iter]
 
+/-- $x_{k+1} = (a_k, 16 (a_k - t_k - F_k))$ for $k \ge 1$, with $a_k$ of
+`Constrained.TwoPhaseExample.BoxARqp.landFst` and $F_k$ of
+`Constrained.TwoPhaseExample.BoxARqp.landGap`. -/
 theorem iter_succ {k : ℕ} (hk : 1 ≤ k) :
     iter u M (k + 1) = pt (landFst u M k) (16 * (landFst u M k - target u M k - landGap u M k)) :=
         by
   simp [iter, show k ≠ 0 by omega]
 
+/-- $f(x_{k+1}) = t_k + F_k$ for $k \ge 1$, with $F_k$ of
+`Constrained.TwoPhaseExample.BoxARqp.landGap`. -/
 theorem obj_iter_succ {k : ℕ} (hk : 1 ≤ k) :
     objG (iter u M (k + 1)) = target u M k + landGap u M k := by
   rw [iter_succ hk, obj_pt]; ring
 
+/-- $a_k = u$ for $k \le M$. -/
 theorem landFst_of_le {k : ℕ} (hk : k ≤ M) : landFst u M k = u := by simp [landFst, hk]
 
+/-- $F_k = -E_k$ for $k \le M$. -/
 theorem landGap_of_le {k : ℕ} (hk : k ≤ M) : landGap u M k = -overshoot u M k := by simp [landGap,
     hk]
 
+/-- $a_{M+1} = -3u/4$. -/
 theorem landFst_last : landFst u M (M + 1) = -3 * u / 4 := by simp [landFst]
 
+/-- $F_{M+1} = 27 u^3/128$. -/
 theorem landGap_last : landGap u M (M + 1) = finalGap u := by simp [landGap]
 
-/-- The iterates `x_{k+1}`, `1 ≤ k ≤ M`. -/
+/-- For $k \in [1, M]$, $x_{k+1} = (u, 16 (u - t_k + E_k))$. -/
 theorem iter_mid {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
     iter u M (k + 1) = pt u (16 * (u - target u M k + overshoot u M k)) := by
   rw [iter_succ hk1, landFst_of_le hkM, landGap_of_le hkM]; ring_nf
 
-/-- The last iterate `x_{M+2}`. -/
+/-- The last iterate is $x_{M+2} = (-3u/4, 16 (-3u/4 - t_{M+1} - 27u^3/128))$. -/
 theorem iter_last : iter u M (M + 1 + 1) =
     pt (-3 * u / 4) (16 * (-3 * u / 4 - target u M (M + 1) - finalGap u)) := by
   rw [iter_succ (by omega), landFst_last, landGap_last]
 
-/-- `f(x_k) - t_k = E_{k-1}` at the start of the call `k ∈ [2, M + 1]`. -/
+/-- For $k \in [1, M]$, $f(x_{k+1}) - t_{k+1} = E_k$: the call $k + 1$ starts this far above its
+target. -/
 theorem obj_iter_sub_target {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
     objG (iter u M (k + 1)) - target u M (k + 1) = overshoot u M k := by
   rw [obj_iter_succ hk1, landGap_of_le hkM, target_succ]; ring
@@ -822,14 +949,14 @@ theorem obj_iter_sub_target {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
 variable (hu : 0 < u)
 include hu
 
-/-- `E_k ≤ u³/2`. -/
+/-- For $u > 0$, $E_k \le u^3/2$ for every $k$. -/
 theorem overshoot_le (k : ℕ) : overshoot u M k ≤ u ^ 3 / 2 := by
   unfold overshoot
   have : 0 ≤ (k : ℝ) / (64 * (M + 1)) := by positivity
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `E_k ≥ (63/64) u³/2` for `k ≤ M + 1`. -/
+/-- For $u > 0$, $E_k \ge \tfrac{63}{64} \cdot \tfrac{u^3}{2}$ for $k \le M + 1$. -/
 theorem le_overshoot {k : ℕ} (hk : k ≤ M + 1) : 63 / 64 * (u ^ 3 / 2) ≤ overshoot u M k := by
   unfold overshoot
   have hN : (0 : ℝ) < 64 * (M + 1) := by positivity
@@ -840,7 +967,7 @@ theorem le_overshoot {k : ℕ} (hk : k ≤ M + 1) : 63 / 64 * (u ^ 3 / 2) ≤ ov
   have : 0 < u ^ 3 / 2 := by positivity
   nlinarith
 
-/-- `E_{k-1} - E_k = u³/(128 (M + 1))`. -/
+/-- For $u > 0$, $E_k - E_{k+1} = u^3 / (128 (M + 1))$ for every $k$. -/
 theorem overshoot_sub (k : ℕ) : overshoot u M k - overshoot u M (k + 1) = u ^ 3 / (128 * (M + 1))
     := by
   unfold overshoot
@@ -849,7 +976,8 @@ theorem overshoot_sub (k : ℕ) : overshoot u M k - overshoot u M (k + 1) = u ^ 
   field_simp
   ring
 
-/-- `-ε₀ - u³ (k - 1) ≤ t_k ≤ -ε₀` for `k ∈ [1, M + 1]`. -/
+/-- For $u > 0$ and $k \in [1, M + 1]$, $-\varepsilon_0 - u^3 (k - 1) \le t_k \le -\varepsilon_0$.
+-/
 theorem target_mem {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 1) :
     -(u ^ 2 / 2 + u ^ 3 / 2) - u ^ 3 * ((k : ℝ) - 1) ≤ target u M k ∧
       target u M k ≤ -(u ^ 2 / 2 + u ^ 3 / 2) := by
@@ -872,13 +1000,14 @@ end Facts
 
 /-! ### The inner calls of the run are ARqp calls -/
 
-/-- `‖r((a, b), t)‖² = (a²/2)² + (a - b/16 - t)²`. -/
+/-- $\|r((a, b), t)\|^2 = (a^2/2)^2 + (a - b/16 - t)^2$. -/
 theorem targetResidual_sq_pt (a b t : ℝ) :
     Constrained.targetResidual objG Box.con t (pt a b) ^ 2 =
       (a ^ 2 / 2) ^ 2 + (a - b / 16 - t) ^ 2 := by
   rw [Constrained.targetResidual_sq, Box.norm_con, obj_pt, pt_zero]
 
-/-- Step 1 fails at the start of the calls `k ≥ 2`. -/
+/-- The numerical inequality that shows that the Step-1 test fails at the start of the calls
+$k \ge 2$. -/
 private theorem num_fail {u E R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hE0 : 0 ≤ E)
     (hE2 : E ≤ u ^ 3 / 2) (hRhi : R ≤ u ^ 2 / 2 + E) :
     1 / 2 * R * (3 * u / 2) < u ^ 3 / 2 + E + E / 16 := by
@@ -886,7 +1015,8 @@ private theorem num_fail {u E R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hE0 :
   have : R * u ≤ (u ^ 2 / 2 + u ^ 3 / 2) * u := mul_le_mul_of_nonneg_right (by linarith) hu.le
   nlinarith [pow_pos hu 3]
 
-/-- The arithmetic of the middle calls. -/
+/-- The numerical inequalities that `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_step` needs
+for the middle calls. -/
 private theorem num_mid {u E E' R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200)
     (hE1 : 63 / 64 * (u ^ 3 / 2) ≤ E) (hE2 : E ≤ u ^ 3 / 2) (hE1' : 63 / 64 * (u ^ 3 / 2) ≤ E')
     (hE2' : E' ≤ u ^ 3 / 2) (hEE : u ^ 6 / 4 ≤ E - E') (hRlo : u ^ 2 / 2 ≤ R)
@@ -926,7 +1056,8 @@ private theorem num_mid {u E E' R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200)
     rw [e4]
     nlinarith
 
-/-- The arithmetic of the last call. -/
+/-- The numerical inequalities that `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_step` needs
+for the last call. -/
 private theorem num_last {u E R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200)
     (hE1 : 63 / 64 * (u ^ 3 / 2) ≤ E) (hE2 : E ≤ u ^ 3 / 2) (hRlo : u ^ 2 / 2 ≤ R) :
     (-3 * u / 4) ^ 4 / 8 + (27 * u ^ 3 / 128) ^ 2 / 2 +
@@ -959,7 +1090,7 @@ private theorem num_last {u E R : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200)
     have : u ^ 2 / 2 * u ≤ R * u := mul_le_mul_of_nonneg_right hRlo hu.le
     nlinarith
 
-/-- The order-`2` tolerance `T₂ = ‖r‖/2` dominates (`T₁/4 + σ₀ L³/2 ≤ T₂/16`). -/
+/-- The order-$2$ tolerance $T_2 = \|r\|/2$ is large enough: $T_1/4 + \sigma_0 L^3/2 \le T_2/16$. -/
 private theorem num_T2 {u R L : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hR : u ^ 2 / 2 ≤ R)
     (hL0 : 0 ≤ L) (hL : L ≤ 30 * u) :
     1 / 2 * R * (3 * u / 2) / 4 + 1 / 10 ^ 6 * L ^ 3 / 2 ≤ 1 / 2 * R * 1 / 16 := by
@@ -970,7 +1101,8 @@ private theorem num_T2 {u R L : ℝ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hR : u 
   have hu3 : u ^ 3 ≤ u ^ 2 / 200 := by nlinarith [pow_pos hu 2]
   nlinarith
 
-/-- The tolerances `(1/2) ‖r(x_k, t_k)‖ ε` of the `k`-th call (`β = 1/2`). -/
+/-- The tolerances $\tfrac12 \|r(x_k, t_k)\| \varepsilon_j$ of the $k$-th inner call, which
+correspond to $\beta = 1/2$. -/
 noncomputable abbrev callTol (u : ℝ) (M k : ℕ) : ℕ → ℝ := fun j =>
   1 / 2 * Constrained.targetResidual objG Box.con (target u M k) (iter u M k) * tol u j
 
@@ -981,8 +1113,12 @@ variable {u : ℝ} {M : ℕ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hM : u ^ 3 * M 
 include hu hu' hM hM1 hq1 hq2
 
 omit hM in
-/-- **The first call** (from `(0, 0)` with `f - t₁ = ε₀` to `(u, ·)` with `f - t₁ = -E₁`) is a
-one-step ARqp call. -/
+/-- **The first call is a one-step ARqp call.** Let $0 < u \le 1/200$, $M \ge 1$, $q \in \{1, 2\}$
+and $p \ge 4$. The first call, from $x_1 = (0, 0)$, where $f - t_1 = \varepsilon_0$, to
+$x_2 = (u, \cdot)$, where $f - t_1 = -E_1$, is a call of ARqp on $\mu(\cdot, t_1)$ over $X$ with
+the constants `Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances
+$\tfrac12 \|r(x_1, t_1)\| \varepsilon_j$, of length $1$, whose only iteration is successful and
+whose returned radii are $1$. -/
 theorem isARqpCallOut_first {p : ℕ} (hp : 4 ≤ p) :
     Optimization.IsARqpCallOut G (Constrained.targetMerit objG Box.con (target u M 1)) Box.square
         p q params
@@ -1045,7 +1181,8 @@ theorem isARqpCallOut_first {p : ℕ} (hp : 4 ≤ p) :
     nlinarith
 
 omit hq1 hq2 in
-/-- `u³ (M + 1) ≤ 1/32`, so `E_k - E_{k+1} = u³/(128 (M + 1)) ≥ u⁶/4`. -/
+/-- Let $0 < u \le 1/200$, $M \ge 1$ and $u^3 M \le 1/64$. Then $u^3 (M + 1) \le 1/32$, so
+$E_k - E_{k+1} = u^3/(128 (M + 1)) \ge u^6/4$. -/
 theorem overshoot_sub_ge : u ^ 6 / 4 ≤ u ^ 3 / (128 * (M + 1)) := by
   have hN : (0 : ℝ) < 128 * (M + 1) := by positivity
   rw [le_div_iff₀ hN]
@@ -1054,8 +1191,13 @@ theorem overshoot_sub_ge : u ^ 6 / 4 ≤ u ^ 3 / (128 * (M + 1)) := by
   nlinarith [pow_pos hu 3]
 
 
-/-- **The middle calls** `k = j + 1 ∈ [2, M]` (from `(u, ·)` with `f - t_k = E_j` to `(u, ·)` with
-`f - t_k = -E_{j+1}`) are one-step ARqp calls. -/
+/-- **The middle calls are one-step ARqp calls.** Let $0 < u \le 1/200$, $M \ge 1$,
+$u^3 M \le 1/64$, $q \in \{1, 2\}$ and $p \ge 4$, and let $j \ge 1$ with $j + 1 \le M$. The call
+$k = j + 1$, from $x_k = (u, \cdot)$, where $f - t_k = E_j$, to $x_{k+1} = (u, \cdot)$, where
+$f - t_k = -E_{j+1}$, is a call of ARqp on $\mu(\cdot, t_k)$ over $X$ with the constants
+`Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances
+$\tfrac12 \|r(x_k, t_k)\| \varepsilon_i$, of length $1$, whose only iteration is successful and
+whose returned radii are $1$. -/
 theorem isARqpCallOut_mid {p : ℕ} (hp : 4 ≤ p) {j : ℕ} (hj1 : 1 ≤ j) (hjM : j + 1 ≤ M) :
     Optimization.IsARqpCallOut G (Constrained.targetMerit objG Box.con (target u M (j + 1)))
         Box.square p q params
@@ -1120,9 +1262,13 @@ theorem isARqpCallOut_mid {p : ℕ} (hp : 4 ≤ p) {j : ℕ} (hj1 : 1 ≤ j) (hj
     (by rw [hFy, hFx, hL]; exact n2) (Or.inl rfl) (by rw [hFy]; linarith) (by rw [hFy]; linarith)
     (by rw [sub_self]; linarith) (by linarith) (by rw [hFy, hL]; exact n3)
 
-/-- **The last call** `k = M + 1` (from `(u, ·)` with `f - t_k = E_M` to `(-3u/4, ·)` with
-`f - t_k = (3u/4)³/2`, a point where `∇μ(·, t_k)` vanishes in its first coordinate) is a one-step
-ARqp call. -/
+/-- **The last call is a one-step ARqp call.** Let $0 < u \le 1/200$, $M \ge 1$, $u^3 M \le 1/64$,
+$q \in \{1, 2\}$ and $p \ge 4$. The call $k = M + 1$, from $x_k = (u, \cdot)$, where
+$f - t_k = E_M$, to $x_{k+1} = (-3u/4, \cdot)$, where $f - t_k = (3u/4)^3/2$ and the first
+coordinate of $\nabla \mu(\cdot, t_k)$ vanishes, is a call of ARqp on $\mu(\cdot, t_k)$ over $X$
+with the constants `Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances
+$\tfrac12 \|r(x_k, t_k)\| \varepsilon_j$, of length $1$, whose only iteration is successful and
+whose returned radii are $1$. -/
 theorem isARqpCallOut_last {p : ℕ} (hp : 4 ≤ p) :
     Optimization.IsARqpCallOut G (Constrained.targetMerit objG Box.con (target u M (M + 1)))
         Box.square p q params
@@ -1183,7 +1329,17 @@ theorem isARqpCallOut_last {p : ℕ} (hp : 4 ≤ p) :
     (by rw [hFy, hFx, hL]; exact n2) (Or.inr rfl) (by rw [hFy]; ring_nf; exact le_rfl)
     (by rw [hFy]; linarith) (by linarith) (by linarith) (by rw [hFy, hL]; exact n3)
 
-/-- **Every inner call `k ∈ [1, M + 1]` of the run is a one-step ARqp call.** -/
+/-- **Every inner call of the run is a one-step ARqp call.** Let $0 < u \le 1/200$, $M \ge 1$ and
+$u^3 M \le 1/64$, let $q \in \{1, 2\}$ and $p \ge 4$, and let $k \in [1, M + 1]$. The iterates
+$x_k, x_{k+1}, x_{k+1}, \dots$ form a call of ARqp (`Optimization.IsARqpCallOut`) on
+$\mu(\cdot, t_k)$ over $X = [-1, 1]^2$, of degree $p$ and order $q$, with the constants
+`Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances
+$\tfrac12 \|r(x_k, t_k)\| \varepsilon_j$; the call has length $1$, its only iteration is
+successful, and its returned radii are $1$.
+
+It combines `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_first`,
+`Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_mid` and
+`Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_last`. -/
 theorem isARqpCallOut_run {p : ℕ} (hp : 4 ≤ p) {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 1) :
     Optimization.IsARqpCallOut G (Constrained.targetMerit objG Box.con (target u M k)) Box.square
         p q params
@@ -1207,7 +1363,8 @@ variable {u : ℝ} {M : ℕ} (hu : 0 < u) (hu' : u ≤ 1 / 200) (hM : u ^ 3 * M 
   (hM1 : 1 ≤ M) {q : ℕ} (hq1 : 1 ≤ q) (hq2 : q ≤ 2)
 
 include hu hu' hM in
-/-- The iterates `x_k`, `k ∈ [1, M + 2]`, lie in `[-1/2, 1/2]²`, hence in `X`. -/
+/-- Let $0 < u \le 1/200$ and $u^3 M \le 1/64$. The iterates $x_k$ with $k \in [1, M + 2]$ lie in
+$[-1/2, 1/2]^2$, hence in $X$. -/
 theorem iter_mem {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 2) : iter u M k ∈ Box.square := by
   have hu2 : u ^ 2 ≤ u / 200 := by nlinarith
   have hu3p : 0 < u ^ 3 := by positivity
@@ -1235,12 +1392,14 @@ theorem iter_mem {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 2) : iter u M k ∈ 
 
 omit hM hM1 in
 include hu hu' in
-/-- `θ ε₀ ≤ u²/4 + u³/4 ≤ 9u²/32` for `θ = 1/2`. -/
+/-- For $0 < u \le 1/200$, $\theta \varepsilon_0 \le u^2/4 + u^3/4 \le 9u^2/32$ with $\theta = 1/2$.
+-/
 theorem half_tol_zero_le : 1 / 2 * tol u 0 ≤ 9 * u ^ 2 / 32 := by
   rw [tol_zero]; nlinarith [pow_pos hu 2]
 
 include hu hu' in
-/-- `‖r(x_{k+1}, t_k)‖ ≥ θ ε₀` for every call `k ∈ [1, M + 1]`: no call is in `𝒦_a`. -/
+/-- For $0 < u \le 1/200$ and $k \ge 1$, $\|r(x_{k+1}, t_k)\| \ge \theta \varepsilon_0$ with
+$\theta = 1/2$. -/
 theorem half_tol_le_targetResidual_succ {k : ℕ} (hk1 : 1 ≤ k) :
     1 / 2 * tol u 0 ≤ Constrained.targetResidual objG Box.con (target u M k) (iter u M (k + 1)) :=
         by
@@ -1256,7 +1415,8 @@ theorem half_tol_le_targetResidual_succ {k : ℕ} (hk1 : 1 ≤ k) :
   linarith
 
 include hu hu' in
-/-- `‖r(x_k, t_k)‖ ≥ θ ε₀` at the start of every call `k ∈ [1, M + 1]`. -/
+/-- For $0 < u \le 1/200$ and $k \in [1, M + 1]$, $\|r(x_k, t_k)\| \ge \theta \varepsilon_0$ with
+$\theta = 1/2$, at the start of every call. -/
 theorem half_tol_le_targetResidual {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 1) :
     1 / 2 * tol u 0 ≤ Constrained.targetResidual objG Box.con (target u M k) (iter u M k) := by
   have hθ := half_tol_zero_le hu hu'
@@ -1278,12 +1438,13 @@ theorem half_tol_le_targetResidual {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M + 1)
     nlinarith [pow_pos hu 2]
 
 include hu hu' in
-/-- No outer iteration is in `𝒦_a`. -/
+/-- For $0 < u \le 1/200$, no outer iteration $k \ge 1$ is in $\mathcal{K}_a$ for $\theta = 1/2$. -/
 theorem not_isKa {k : ℕ} (hk1 : 1 ≤ k) : ¬ (seq u M).IsKa objG Box.con (1 / 2) (tol u) k :=
   not_lt.2 (half_tol_le_targetResidual_succ hu hu' hk1)
 
 include hu hu' in
-/-- The outer iterations `k ∈ [1, M]` are in `𝒦_b`. -/
+/-- For $0 < u \le 1/200$, the outer iterations $k \in [1, M]$ are in $\mathcal{K}_b$ for
+$\theta = 1/2$. -/
 theorem isKb {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
     (seq u M).IsKb objG Box.con (1 / 2) (tol u) k := by
   refine ⟨half_tol_le_targetResidual_succ hu hu' hk1, ?_⟩
@@ -1294,7 +1455,8 @@ theorem isKb {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
   linarith
 
 include hu in
-/-- The outer iteration `M + 1` is not in `𝒦_b`: `f(x_{M+2}) > t_{M+1}`. -/
+/-- For $u > 0$, the outer iteration $M + 1$ is not in $\mathcal{K}_b$ for $\theta = 1/2$, since
+$f(x_{M+2}) > t_{M+1}$. -/
 theorem not_isKb_last : ¬ (seq u M).IsKb objG Box.con (1 / 2) (tol u) (M + 1) := by
   intro h
   have h2 := h.2
@@ -1304,8 +1466,9 @@ theorem not_isKb_last : ¬ (seq u M).IsKb objG Box.con (1 / 2) (tol u) (M + 1) :
   linarith
 
 include hu hu' hM hq1 in
-/-- **The criticality test (14.3.34) fails at `(x_{k+1}, t_{k+1})`** for `k ∈ [1, M]`: along `-e₁`
-the decrease is `u³/2 + E_k > ε₁ ‖r(x_{k+1}, t_{k+1})‖`. -/
+/-- Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and $q \ge 1$. For $k \in [1, M]$, the criticality test
+(14.3.34) of order $q$ fails at $(x_{k+1}, t_{k+1})$ with the radii $1$: along $-e_1$ the
+decrease is $u^3/2 + E_k > \varepsilon_1 \|r(x_{k+1}, t_{k+1})\|$. -/
 theorem not_targetCrit_succ {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
     ¬ targetCrit objG Box.con Box.square q (tol u) (target u M (k + 1)) (iter u M (k + 1)) (fun _
         => 1) := by
@@ -1353,8 +1516,9 @@ theorem not_targetCrit_succ {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
   nlinarith [pow_pos hu 3, pow_pos hu 4]
 
 include hu hu' hM hq2 in
-/-- The criticality test holds at `(x_{M+2}, t_{M+1})`: the gradient of `μ(·, t_{M+1})` there is
-`(0, -(3u/4)³/32)`. -/
+/-- Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and $q \le 2$. The criticality test (14.3.34) of order
+$q$ holds at $(x_{M+2}, t_{M+1})$ with the radii $1$: the gradient of $\mu(\cdot, t_{M+1})$
+there is $(0, -(3u/4)^3/32)$. -/
 theorem targetCrit_last :
     targetCrit objG Box.con Box.square q (tol u) (target u M (M + 1)) (iter u M (M + 1 + 1)) (fun
         _ => 1) := by
@@ -1401,12 +1565,14 @@ theorem targetCrit_last :
     nlinarith [pow_pos hu 3]
 
 include hu hu' in
-/-- Phase 2 stops at `M + 1` (case (c)). -/
+/-- For $0 < u \le 1/200$ and every $q$, Phase 2 stops at the outer iteration $M + 1$, in case (c),
+for $\theta = 1/2$. -/
 theorem stop_last : (seq u M).Stop objG Box.con Box.square q (1 / 2) (tol u) (M + 1) :=
   Or.inl ⟨not_isKa hu hu' (by omega), not_isKb_last hu⟩
 
 include hu hu' hM hq1 in
-/-- Phase 2 does not stop at `k ∈ [1, M]`. -/
+/-- Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and $q \ge 1$. Phase 2 does not stop at the outer
+iterations $k \in [1, M]$, for $\theta = 1/2$. -/
 theorem not_stop {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
     ¬ (seq u M).Stop objG Box.con Box.square q (1 / 2) (tol u) k := by
   rintro (⟨-, hb⟩ | ⟨-, hm⟩)
@@ -1414,24 +1580,30 @@ theorem not_stop {k : ℕ} (hk1 : 1 ≤ k) (hkM : k ≤ M) :
   · exact not_targetCrit_succ hu hu' hM hq1 hk1 hkM hm
 
 include hu hu' hM hq1 in
-/-- Phase 2 does not stop before `M + 1`. -/
+/-- Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and $q \ge 1$. No outer iteration $j \in [1, M + 1)$
+terminates Phase 2, for $\theta = 1/2$. -/
 theorem before_last : (seq u M).Before objG Box.con Box.square q (1 / 2) (tol u) (M + 1) :=
   fun _ hj1 hjM => not_stop hu hu' hM hq1 hj1 (by omega)
 
 include hu hu' in
-/-- Every outer iteration reached is at most `M + 1`. -/
+/-- For $0 < u \le 1/200$ and every $q$, every outer iteration $k$ that is reached, for
+$\theta = 1/2$, satisfies $k \le M + 1$. -/
 theorem le_of_before {k : ℕ} (h : (seq u M).Before objG Box.con Box.square q (1 / 2) (tol u) k) :
     k ≤ M + 1 := by
   by_contra hk
   exact h (M + 1) (by omega) (by omega) (stop_last hu hu')
 
 include hu hu' hM hq1 in
-/-- Phase 2 terminates at the outer iteration `M + 1`. -/
+/-- Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and $q \ge 1$. Phase 2 terminates at the outer iteration
+$M + 1$, for $\theta = 1/2$. -/
 theorem isEnd : (seq u M).IsEnd objG Box.con Box.square q (1 / 2) (tol u) (M + 1) :=
   ⟨by omega, stop_last hu hu', before_last hu hu' hM hq1⟩
 
 include hu hu' hM hq1 in
-/-- `M + 1` is the only termination index. -/
+/-- **Phase 2 terminates exactly at $M + 1$.** Let $0 < u \le 1/200$, $u^3 M \le 1/64$ and
+$q \ge 1$. For the data `Constrained.TwoPhaseExample.BoxARqp.seq u M` with $\theta = 1/2$ and
+the tolerances `Constrained.TwoPhaseExample.BoxARqp.tol u`, Phase 2 terminates at the outer
+iteration $k$ (`Constrained.HighOrderTargetSeq.IsEnd`) if and only if $k = M + 1$. -/
 theorem isEnd_iff {k : ℕ} : (seq u M).IsEnd objG Box.con Box.square q (1 / 2) (tol u) k ↔ k = M +
     1 := by
   refine ⟨fun h => ?_, fun h => h ▸ isEnd hu hu' hM hq1⟩
@@ -1441,7 +1613,11 @@ theorem isEnd_iff {k : ℕ} : (seq u M).IsEnd objG Box.con Box.square q (1 / 2) 
   · omega
 
 include hu hu' hM hM1 hq1 hq2 in
-/-- **The data form a run of Phase 2** (`θ = β = 1/2`). -/
+/-- **The data form a run of Phase 2.** Let $0 < u \le 1/200$, $M \ge 1$ and $u^3 M \le 1/64$, and
+let $q \in \{1, 2\}$. The data `Constrained.TwoPhaseExample.BoxARqp.seq u M` form a run of Phase
+2 (`Constrained.IsHighOrderTargetRun`) for the objective $f(x) = x_1 - x_2/16$, the constraint
+$c$ and the set $X$, from $x_1 = (0, 0)$, with $\theta = \beta = 1/2$ and the tolerances
+`Constrained.TwoPhaseExample.BoxARqp.tol u`. -/
 theorem isHighOrderTargetRun :
     IsHighOrderTargetRun objG Box.con Box.square q (1 / 2) (1 / 2) (tol u) (pt 0 0) (seq u M) := by
   have hu7 : u ≤ 1 / 7 := by linarith
@@ -1472,10 +1648,17 @@ theorem isHighOrderTargetRun :
     ring
 
 include hu hu' hM hM1 hq1 hq2 in
-/-- **Every inner call of the run is a one-step ARqp call** with the tolerances
-`(1/2) ‖r(x_k, t_k)‖ ε_j` (`β = 1/2`): for every outer iteration `k ≥ 1` reached, the iterates,
-successful iterations and output radii of the `k`-th call are those of an ARqp run on `μ(·, t_k)`
-(`Optimization.IsARqpCallOut`). -/
+/-- **Every inner call of the run is a one-step ARqp call.** Let $0 < u \le 1/200$, $M \ge 1$ and
+$u^3 M \le 1/64$, let $q \in \{1, 2\}$ and $p \ge 4$. For every outer iteration $k \ge 1$ that
+is reached, with $\theta = 1/2$, the iterates, the successful iterations and the returned radii
+of the $k$-th inner call of `Constrained.TwoPhaseExample.BoxARqp.seq u M` are those of a call of
+ARqp (`Optimization.IsARqpCallOut`) on $\mu(\cdot, t_k)$ over $X$ with the constants
+`Constrained.TwoPhaseExample.BoxARqp.params` and the tolerances
+$\tfrac12 \|r(x_k, t_k)\| \varepsilon_j$, which correspond to $\beta = 1/2$.
+
+This is the form in which the run classes of Phase 2 with ARqp calls state their hypothesis on
+the calls. It follows from `Constrained.TwoPhaseExample.BoxARqp.isARqpCallOut_run`, since every
+outer iteration that is reached is at most $M + 1$. -/
 theorem isARqpCallOut_calls {p : ℕ} (hp : 4 ≤ p) :
     ∀ k, 1 ≤ k → (seq u M).Before objG Box.con Box.square q (1 / 2) (tol u) k →
       Optimization.IsARqpCallOut G (Constrained.targetMerit objG Box.con ((seq u M).t k))
@@ -1486,9 +1669,10 @@ theorem isARqpCallOut_calls {p : ℕ} (hp : 4 ≤ p) :
 
 end Outer
 
-/-! ### The order -/
+/-! ### The order of the number of evaluations -/
 
-/-- `ε^{-c} ≤ B^{a c}` when `ε ≥ B^{-a}` (`ε, B > 0`, `c ≥ 0`). -/
+/-- Let $\varepsilon, B > 0$, $a \in \mathbb{R}$ and $c \ge 0$. If $\varepsilon \ge B^{-a}$, then
+$\varepsilon^{-c} \le B^{a c}$. -/
 theorem rpow_neg_le {ε B a c : ℝ} (hε : 0 < ε) (hB : 0 < B) (h : (B ^ a)⁻¹ ≤ ε) (hc : 0 ≤ c) :
     ε ^ (-c) ≤ B ^ (a * c) := by
   have hBa : 0 < B ^ a := Real.rpow_pos_of_pos hB a
@@ -1498,8 +1682,9 @@ theorem rpow_neg_le {ε B a c : ℝ} (hε : 0 < ε) (hB : 0 < B) (h : (B ^ a)⁻
   rw [Real.rpow_neg hε.le, ← Real.inv_rpow hε.le, Real.rpow_mul hB.le]
   exact Real.rpow_le_rpow (inv_pos.2 hε).le hi hc
 
-/-- **One term of the order**: if `ε₀ ≥ B^{-5}`, `ε_j ≥ B^{-a}` (`B ≥ 1`) and `π ≥ 1` with
-`5(π - 1) + a π ≤ 7`, then `ε₀^{1-π} ε_j^{-π} ≤ B^7`. -/
+/-- **One term of the order.** Let $\varepsilon_0, \varepsilon_j > 0$, $B \ge 1$, $a \in \mathbb{R}$
+and $\pi \ge 1$. If $\varepsilon_0 \ge B^{-5}$, $\varepsilon_j \ge B^{-a}$ and
+$5 (\pi - 1) + a \pi \le 7$, then $\varepsilon_0^{1-\pi} \varepsilon_j^{-\pi} \le B^7$. -/
 theorem term_le_pow {ε₀ εj B a π : ℝ} (h0 : 0 < ε₀) (hj : 0 < εj) (hB : 1 ≤ B)
     (h0B : (B ^ (5 : ℝ))⁻¹ ≤ ε₀) (hjB : (B ^ a)⁻¹ ≤ εj) (hπ : 1 ≤ π)
     (hπ7 : 5 * (π - 1) + a * π ≤ 7) : ε₀ ^ (1 - π) * εj ^ (-π) ≤ B ^ (7 : ℝ) := by
@@ -1512,10 +1697,16 @@ theorem term_le_pow {ε₀ εj B a π : ℝ} (h0 : 0 < ε₀) (hj : 0 < εj) (hB
     _ = B ^ (5 * (π - 1) + a * π) := (Real.rpow_add hB0 _ _).symm
     _ ≤ B ^ (7 : ℝ) := Real.rpow_le_rpow_of_exponent_le hB hπ7
 
-/-- **The orders along the run's tolerances**: for `u = 1/(4N⁵)` (`N ≥ 1`), `q ∈ {1, 2}` and
-`p ≥ q + 3`, both `max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]` and `max_j ε₀^{1-π_j} ε_j^{-π_j}` with
-the exponents `π_j = j(p+1)/p` (`Optimization.arqpPiOf False p`) are at most `128 N¹⁴` (`B = 2N²`,
-`ε₀ ≥ B^{-5}`, `ε₁ ≥ B^{-3}`, `ε₂ = 1`). -/
+/-- **The orders along the tolerances of the run.** Let $q \in \{1, 2\}$, $p \ge q + 3$ and
+$N \ge 1$, and let $\varepsilon_j$ be the tolerances `Constrained.TwoPhaseExample.BoxARqp.tol u`
+for $u = 1/(4N^5)$. With the exponents $\pi_j = j(p+1)/p$,
+$$\max\Bigl[\varepsilon_0^{-1}, \max_{j \in [1, q]} \varepsilon_0^{1-\pi_j}
+  \varepsilon_j^{-\pi_j}\Bigr] \le 128 N^{14} \quad \text{and} \quad \max\Bigl[0, \max_{j \in
+  [1, q]} \varepsilon_0^{1-\pi_j} \varepsilon_j^{-\pi_j}\Bigr] \le 128 N^{14}.$$
+
+The maxima are `Optimization.finMax`, and the exponents are `Optimization.arqpPiOf False p j`.
+The proof applies `Constrained.TwoPhaseExample.BoxARqp.term_le_pow` with $B = 2N^2$, using
+$\varepsilon_0 \ge B^{-5}$, $\varepsilon_1 \ge B^{-3}$ and $\varepsilon_2 = 1$. -/
 theorem order_le_pow {p q N : ℕ} (hq1 : 1 ≤ q) (hq2 : q ≤ 2) (hpq : q + 3 ≤ p) (hN : 1 ≤ N) :
     Optimization.finMax (tol (1 / (4 * N ^ 5)) 0)⁻¹ (fun j => tol (1 / (4 * N ^ 5)) 0 ^
         (1 - Optimization.arqpPiOf False p j) *
@@ -1582,8 +1773,13 @@ theorem order_le_pow {p q N : ℕ} (hq1 : 1 ≤ q) (hq2 : q ≤ 2) (hpq : q + 3 
   exact ⟨Optimization.finMax_le h0 hterm,
     Optimization.finMax_le (Real.rpow_nonneg hB0.le _) hterm⟩
 
-/-- **The parameters for a constant `C`**: `N = ⌈128 |C|⌉ + 3`, so that `C · 128 N¹⁴ < N¹⁵` and the
-tolerances `ε₀, ε₁ ≤ C⁻¹` vanish as `C` grows. -/
+/-- **The parameters for a constant $C$.** For every $C \in \mathbb{R}$ there is $N \in \mathbb{N}$
+with $N \ge 3$ and $C \cdot 128 N^{14} < N^{15}$ such that, if $C \ge 1$, the tolerances
+`Constrained.TwoPhaseExample.BoxARqp.tol u` for $u = 1/(4N^5)$ satisfy
+$\varepsilon_0 \le C^{-1}$ and $\varepsilon_1 \le C^{-1}$.
+
+The proof takes $N = \lceil 128 |C| \rceil + 3$. With $M = N^{15}$, the condition
+$u^3 M \le 1/64$ of the run holds with equality. -/
 theorem exists_params (C : ℝ) : ∃ N : ℕ, 3 ≤ N ∧ C * (128 * (N : ℝ) ^ 14) < (N : ℝ) ^ 15 ∧
     (1 ≤ C → tol (1 / (4 * N ^ 5)) 0 ≤ C⁻¹ ∧ tol (1 / (4 * N ^ 5)) 1 ≤ C⁻¹) := by
   refine ⟨⌈128 * |C|⌉₊ + 3, by omega, ?_, fun hC => ?_⟩

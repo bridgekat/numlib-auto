@@ -13,62 +13,120 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares
 /-!
 # Singular-value inequalities for matrices
 
-The matrix corollaries of the coordinate-free singular-value theory of
-`Numlib/Analysis/InnerProductSpace/SingularValues` (Weyl's inequality, interlacing, the
-stacked-isometry identity, the spectrum of the Hermitian dilation) and of the eigenvalue
-inequalities of `Numlib/Eigen/MinMax` (Ky Fan, Hoffman–Wielandt, the trace inequality), in the
-vocabulary of `Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.sortedSingularValues`, `Matrix.IsSVD`,
-`Matrix.svdTruncation`) and with the norms of `Numlib/Analysis/Matrix/OperatorNorm`.
+Let $A \in \mathbb{K}^{m \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$\sigma_0(A) \ge \sigma_1(A) \ge \cdots \ge 0$ be its singular values, indexed from $0$ and extended
+by zeros, so that $\sigma_i(A) = 0$ for $i \ge \operatorname{rank} A$. This file proves the
+classical inequalities for singular values of matrices, mostly as in [golub2013matrix], §2.4, §2.5,
+§5.3, §5.5, §6.4, §7.3, §7.9, §8.1, §8.6 and §12.5. They include Weyl's inequality $\sigma_{i+j}(A +
+B) \le \sigma_i(A) + \sigma_j(B)$, Mirsky's inequality $\sum_k (\sigma_k(A + E) - \sigma_k(A))^2 \le
+\|E\|_F^2$, the Eckart–Young theorem on the best approximation of rank at most $k$ in the spectral
+and the Frobenius norm, Ky Fan's maximum principle, von Neumann's trace inequality, Wedin's bound on
+the perturbation of the pseudoinverse, and the perturbation theorem for a pair of singular
+subspaces.
+
+The results are matrix forms of the singular-value theory of operators in
+`Numlib.Analysis.InnerProductSpace.SingularValues` and of the eigenvalue inequalities in
+`Numlib.Eigen.MinMax`. They use the singular values and singular value decompositions of
+`Numlib.LinearAlgebra.Matrix.SVD` and the matrix norms of `Numlib.Analysis.Matrix.OperatorNorm`. The
+main tool is the Hermitian dilation $\mathcal{H}(A) = \begin{bmatrix} 0 & A^H \\ A & 0
+\end{bmatrix}$, whose eigenvalues are the singular values of $A$, their negatives and zeros.
+
+## Main definitions
+
+* `Matrix.hermitianDilation`: the Hermitian dilation $\mathcal{H}(A)$, also called the
+  Jordan–Wielandt matrix.
+* `Matrix.pinvCondNumberLp`: the condition number $\|A\|_p \|A^+\|_p$ of a rectangular matrix.
 
 ## Main results
 
-* `Matrix.hermitianDilation`: the Jordan–Wielandt matrix `[0 Aᴴ; A 0]`, with its operator
-  (`Matrix.toEuclideanLin_hermitianDilation`) and its spectrum
-  `Matrix.IsHermitian.eigenvalues₀_hermitianDilation`:
-  `σ_0, …, σ_{p-1}, 0, …, 0, -σ_{p-1}, …, -σ_0`.
-* `Matrix.abs_sortedSingularValues_add_sub_le`: **Weyl's perturbation bound**
-  `|σ_i(A + B) − σ_i(A)| ≤ ‖B‖₂`, and its Frobenius form.
-* `Matrix.sum_sq_sortedSingularValues_sub_le`: **Mirsky's inequality**
-  `∑ (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`, Hoffman–Wielandt for the dilations.
-* **Eckart–Young**: `Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le` and
-  `Matrix.isLeast_l2_opNorm_sub_of_rank_le` in the `2`-norm,
-  `Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le` and
-  `Matrix.isLeast_frobenius_norm_sub_of_rank_le` in the Frobenius norm, with the norms of the
-  truncation residual `Matrix.l2_opNorm_sub_svdTruncation` and
-  `Matrix.frobenius_norm_sub_svdTruncation`.
-* `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`: **Ky Fan's maximum principle** in the
-  form `max_{Qᴴ Q = 1} ‖Qᴴ A‖_F² = σ_0² + ⋯ + σ_{r-1}²`.
-* `Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul`: **von Neumann's trace inequality**.
 * `Matrix.sortedSingularValues_submatrix_le`: deleting rows or columns does not increase any
-  singular value, with the block forms `Matrix.sortedSingularValues_fromCols_left_le` (and
-  `_right_le`, `Matrix.sortedSingularValues_fromRows_left_le`, `_right_le`).
-* `Matrix.isStarProjection_mul_pinv`, `Matrix.isStarProjection_pinv_mul`: `A A⁺` and `A⁺ A` are
-  orthogonal projectors, so they and their complements have spectral norm at most one.
-* `Matrix.frobenius_norm_pinv_sub_le`: **Wedin's bound**
-  `‖B⁺ - A⁺‖_F ≤ 2 ‖B - A‖_F max(‖A⁺‖₂², ‖B⁺‖₂²)` with no rank hypothesis, from the three-term
-  decomposition `Matrix.pinv_sub_pinv_eq` ([golub2013matrix] §5.5.3).
-* `Matrix.exists_singularSubspacePair_perturbation`: **the perturbation of a singular subspace
-  pair** (Stewart, Wedin), with Wedin's condition for non-square trailing blocks, by Stewart's
-  quadratic-equation lemma for the coupled Sylvester operator of the pair.
+  singular value, with the block forms `Matrix.sortedSingularValues_fromCols_left_le` and
+  `Matrix.sortedSingularValues_fromRows_left_le`.
+* `Matrix.sortedSingularValues_add_le`: Weyl's inequality $\sigma_{i+j}(A + B) \le \sigma_i(A) +
+  \sigma_j(B)$.
+* `Matrix.abs_sortedSingularValues_add_sub_le`: Weyl's perturbation bound
+  $|\sigma_i(A + B) - \sigma_i(A)| \le \|B\|_2$.
+* `Matrix.IsHermitian.eigenvalues₀_hermitianDilation`: the eigenvalues of $\mathcal{H}(A)$ are
+  $\sigma_0, \dots, \sigma_{p-1}$, zeros, and $-\sigma_{p-1}, \dots, -\sigma_0$, where
+  $p = \min(m, n)$.
+* `Matrix.sum_sq_sortedSingularValues_sub_le`: Mirsky's inequality $\sum_{k < p} (\sigma_k(A + E) -
+  \sigma_k(A))^2 \le \|E\|_F^2$.
+* `Matrix.l2_opNorm_sub_svdTruncation` and `Matrix.frobenius_norm_sub_svdTruncation`: the residual
+  of a truncated SVD has $\|A - A_k\|_2 = \sigma_k(A)$ and $\|A - A_k\|_F = (\sigma_k^2 + \dots +
+  \sigma_{p-1}^2)^{1/2}$.
+* `Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le` and
+  `Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`: the lower bounds of the
+  two Eckart–Young theorems, $\sigma_k(A) \le \|A - B\|_2$ and $\sum_{k \le i < p} \sigma_i(A)^2 \le
+  \|A - B\|_F^2$ for $\operatorname{rank} B \le k$.
+* `Matrix.isLeast_l2_opNorm_sub_of_rank_le`: the Eckart–Young theorem: the distance in the spectral
+  norm from $A$ to the matrices of rank at most $k$ is $\sigma_k(A)$.
+* `Matrix.isLeast_frobenius_norm_sub_of_rank_le`: the Eckart–Young–Mirsky theorem: the distance in
+  the Frobenius norm is $(\sigma_k^2 + \dots + \sigma_{p-1}^2)^{1/2}$.
+* `Matrix.eq_svdTruncation_of_frobenius_norm_sub_sq_le`: if $\sigma_{r-1} > \sigma_r$, the truncated
+  SVD is the unique best approximation of rank at most $r$ in the Frobenius norm.
+* `Matrix.isGreatest_frobenius_norm_sq_conjTranspose_mul`: Ky Fan's maximum principle $\max_{Q^H Q =
+  I} \|Q^H A\|_F^2 = \sigma_0^2 + \dots + \sigma_{r-1}^2$.
+* `Matrix.norm_trace_mul_le_sum_sortedSingularValues_mul`: von Neumann's trace inequality
+  $|\operatorname{tr}(A B)| \le \sum_i \sigma_i(A) \sigma_i(B)$.
+* `Matrix.sortedSingularValues_le_l2_opNorm_trailing`: the trailing block of a block upper
+  triangular matrix bounds a singular value.
+* `Matrix.linearIndependent_transpose_add_of_l2_opNorm_lt`: a perturbation of spectral norm less
+  than $\sigma_{\min}(A)$ keeps the columns of $A$ linearly independent.
+* `Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues`: if $[Q_1; Q_2]$ has orthonormal columns,
+  then $\|Q_2\|_2^2 = 1 - \sigma_{\min}(Q_1)^2$.
+* `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`: the distance between two subspaces in terms of
+  orthonormal bases.
+* `Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`: $\|A^+\|_2 = 1/\sigma_{\min}(A)$ for
+  linearly independent columns.
+* `Matrix.isStarProjection_mul_pinv` and `Matrix.isStarProjection_pinv_mul`: $A A^+$ and $A^+ A$ are
+  orthogonal projectors, so they and their complements have spectral norm at most $1$.
+* `Matrix.pinv_sub_pinv_eq` and `Matrix.frobenius_norm_pinv_sub_le`: Wedin's decomposition of
+  $B^+ - A^+$ and Wedin's bound $\|(A + E)^+ - A^+\|_F \le 2 \|E\|_F \max(\|A^+\|_2^2, \|(A +
+  E)^+\|_2^2)$.
+* `Matrix.l2_opNorm_mul_inv_sqrt_one_add_gram_le`: $\|P (I + P^H P)^{-1/2}\|_2 \le \|P\|_2 \le
+  \|P\|_F$.
+* `Matrix.IsSVD.sortedSingularValues_le_mul_submatrix`: the lower bound of subset selection based on
+  the SVD.
+* `Matrix.exists_singularSubspacePair_perturbation`: the perturbation of a pair of singular
+  subspaces, with Wedin's condition for a trailing block that is not square.
+
+## Proof outline
+
+Many results reduce to eigenvalue inequalities for the Hermitian dilation. The sorted eigenvalues of
+$\mathcal{H}(A)$ are the singular values of $A$ followed by zeros and by their negatives, and in a
+sum over the eigenvalues of two dilations, paired in this order, every product of singular values
+appears twice. Mirsky's inequality is then the Hoffman–Wielandt inequality for the dilations of
+$A + E$ and $A$, and von Neumann's inequality is the trace inequality for two symmetric operators
+applied to dilations.
+
+## Notation
+
+* $\sigma_i(A)$: the $i$-th singular value `A.sortedSingularValues i`, in nonincreasing order and
+  indexed from $0$. The singular value $\sigma_{i+1}$ of [golub2013matrix] is $\sigma_i$ here.
+* $\sigma_{\min}(A)$: the least singular value $\inf_j$ `A.colSingularValues j`, an infimum over the
+  columns of $A$. It is $0$ if $A$ has no columns.
+* $\|A\|_2$: the spectral norm, given by the scoped instance `Matrix.Norms.L2Operator` or written
+  `Matrix.lpOpNorm 2 A`. $\|A\|_F$: the Frobenius norm, given by the scoped instance
+  `Matrix.Norms.Frobenius`.
+* $A^+$: the pseudoinverse `Matrix.pinv A`.
+* $p = \min(m, n)$ for $A \in \mathbb{K}^{m \times n}$. In formulas, a finite index type stands for
+  its number of elements.
+* $A_k = U \Sigma_k V^H$: the truncation `Matrix.svdTruncation U σ V k` of an SVD
+  $A = U \Sigma V^H$, where $\Sigma_k$ keeps the diagonal entries $\sigma_0, \dots, \sigma_{k-1}$ of
+  $\Sigma$ and replaces the others by $0$.
 
 ## Implementation notes
 
-Matrices are indexed by arbitrary `Fintype`s wherever the statement allows it; only the statements
-that mention an SVD (`Matrix.IsSVD` and `Matrix.svdTruncation` are `Fin`-indexed) are stated for
-`Fin` shapes, and the others reach an SVD by reindexing
-(`Matrix.sortedSingularValues_submatrix_equiv`).
-The dilation `Matrix.hermitianDilation A` puts the domain factor first, as its operator
-`LinearMap.hermitianDilation` does, so that its matrix is the operator conjugated by the isometry
-`PiLp.sumPiLpEquivProdLpPiLp` and the two have the same characteristic polynomial. Mirsky's
-inequality and von Neumann's inequality are then the Hoffman–Wielandt inequality and the trace
-inequality for two symmetric operators, applied to dilations: the sorted spectrum of a dilation
-is the singular values followed by their negatives, and the reflected pairing of such spectra
-counts every product of singular values twice (`sum_range_sub_reflect_mul_sub_reflect`).
-
-## References
-
-* [golub2013matrix] G. H. Golub and C. F. Van Loan, *Matrix Computations*, 4th ed., §2.4, §2.5,
-  §5.3, §5.5, §6.4, §7.3, §7.9, §8.1, §8.6, §12.5.
+* Matrices are indexed by arbitrary finite types wherever the statement allows it. Only the
+  statements that mention an SVD are stated for `Fin` indices, because `Matrix.IsSVD` and
+  `Matrix.svdTruncation` are; the other statements reach an SVD by reindexing
+  (`Matrix.sortedSingularValues_submatrix_equiv`).
+* The dilation `Matrix.hermitianDilation A` puts the domain block first, as the operator
+  `LinearMap.hermitianDilation` does. Then its matrix is the operator conjugated by the isometry
+  `PiLp.sumPiLpEquivProdLpPiLp`, and the two have the same characteristic polynomial.
+* Some results state $\sigma_{\min}$ as an infimum of `Matrix.colSingularValues` over the columns,
+  because this is the least singular value for every shape and the results that use them state it in
+  that form. The sorted form is `Matrix.sortedSingularValues_eq_iInf_colSingularValues`.
 -/
 
 open Module
@@ -84,16 +142,17 @@ section Submatrix
 variable {m n k l : Type*} [Fintype m] [Fintype n] [Fintype k] [Fintype l] [DecidableEq n]
   [DecidableEq k]
 
-/-- Extension by zero along an injection, as a linear isometry of Euclidean spaces. -/
+/-- The extension by zero along an injection $e : k \to n$, as a linear isometry from $\mathbb{K}^k$
+to $\mathbb{K}^n$. -/
 private noncomputable def extendByZeroIsometry (e : k ↪ n) :
     EuclideanSpace 𝕜 k →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
   toLinearMap := (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).symm.toLinearMap ∘ₗ
     Function.ExtendByZero.linearMap 𝕜 𝕜 e ∘ₗ (WithLp.linearEquiv 2 𝕜 (k → 𝕜)).toLinearMap
   norm_map' x := PiLp.norm_toLp_extend 2 e.injective (WithLp.ofLp x)
 
-/-- Deleting columns: the selected columns act as `A` composed with the isometric extension by
-zero, and restricting the domain along an isometry can only decrease singular values
-(`LinearMap.singularValues_comp_linearIsometry_le`). -/
+/-- For an injective $g : k \to n$, the matrix of the columns $g(j)$ of $A$ has
+$\sigma_i(A(:, g)) \le \sigma_i(A)$, because restricting the domain along an isometry does not
+increase singular values (`LinearMap.singularValues_comp_linearIsometry_le`). -/
 private theorem sortedSingularValues_submatrix_id_le (A : Matrix m n 𝕜) {g : k → n}
     (hg : Function.Injective g) (i : ℕ) :
     (A.submatrix id g).sortedSingularValues i ≤ A.sortedSingularValues i := by
@@ -107,7 +166,9 @@ private theorem sortedSingularValues_submatrix_id_le (A : Matrix m n 𝕜) {g : 
   rw [h]
   exact (toEuclideanLin A).singularValues_comp_linearIsometry_le _ i
 
-/-- Deleting rows: dropping coordinates of `A x` does not increase its norm. -/
+/-- For an injective $f : l \to m$, the matrix of the rows $f(i)$ of $A$ has
+$\sigma_i(A(f, :)) \le \sigma_i(A)$, because deleting coordinates of $A x$ does not increase its
+norm. -/
 private theorem sortedSingularValues_submatrix_id_right_le (A : Matrix m n 𝕜) {f : l → m}
     (hf : Function.Injective f) (i : ℕ) :
     (A.submatrix f id).sortedSingularValues i ≤ A.sortedSingularValues i :=
@@ -115,9 +176,13 @@ private theorem sortedSingularValues_submatrix_id_right_le (A : Matrix m n 𝕜)
     rw [toEuclideanLin_apply, toEuclideanLin_apply]
     exact PiLp.norm_toLp_comp_le 2 hf (A *ᵥ WithLp.ofLp x)) i
 
-/-- **Deleting rows and columns does not increase any singular value** ([golub2013matrix]
-Corollary 2.4.5 iterated, and Corollary 8.6.3): for injective row and column selections `f`, `g`,
-`σ_i(A.submatrix f g) ≤ σ_i(A)`, the singular-value form of `Matrix.l2_opNorm_submatrix_le` and
+/-- Deleting rows and columns does not increase any singular value. Let
+$A \in \mathbb{K}^{m \times n}$, let $f : l \to m$ and $g : k \to n$ be injective, and let
+$A[f, g]$ be the submatrix with entries $A_{f(i), g(j)}$. Then for every $i$,
+$$\sigma_i(A[f, g]) \le \sigma_i(A).$$
+
+This is [golub2013matrix], Corollary 2.4.5 iterated, and Corollary 8.6.3. The submatrix is
+`A.submatrix f g`. The result is the singular-value form of `Matrix.l2_opNorm_submatrix_le` and
 `Matrix.frobenius_norm_submatrix_le`. -/
 theorem sortedSingularValues_submatrix_le (A : Matrix m n 𝕜) {f : l → m}
     (hf : Function.Injective f) {g : k → n} (hg : Function.Injective g) (i : ℕ) :
@@ -127,9 +192,12 @@ theorem sortedSingularValues_submatrix_le (A : Matrix m n 𝕜) {f : l → m}
     _ ≤ (A.submatrix f id).sortedSingularValues i := sortedSingularValues_submatrix_id_le _ hg i
     _ ≤ A.sortedSingularValues i := sortedSingularValues_submatrix_id_right_le _ hf i
 
-/-- **Reindexing does not change the singular values**: for equivalences `e : l ≃ m`,
-`f : k ≃ n`, `σ(A.submatrix e f) = σ(A)`. Both directions are deletions of no rows and
-columns. -/
+/-- Reindexing does not change the singular values. Let $A \in \mathbb{K}^{m \times n}$, and let
+$e : l \to m$ and $f : k \to n$ be bijections. Then the matrix with entries $A_{e(i), f(j)}$ has
+the same singular values as $A$: $\sigma_i(A[e, f]) = \sigma_i(A)$ for all $i$.
+
+Both inequalities are deletions of no rows and no columns
+(`Matrix.sortedSingularValues_submatrix_le`). -/
 theorem sortedSingularValues_submatrix_equiv (A : Matrix m n 𝕜) (e : l ≃ m) (f : k ≃ n) :
     (A.submatrix e f).sortedSingularValues = A.sortedSingularValues := by
   funext i
@@ -146,15 +214,18 @@ section Basic
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
-/-- Sorted singular values vanish from `min (card m) (card n)` on: there are at most that many
-nonzero ones (`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ and $k \ge \min(m, n)$. Then $\sigma_k(A) = 0$: a matrix has
+at most $\min(m, n)$ nonzero singular values
+(`Matrix.sortedSingularValues_eq_zero_iff_rank_le`). -/
 theorem sortedSingularValues_eq_zero_of_min_le (A : Matrix m n 𝕜) {k : ℕ}
     (hk : min (Fintype.card m) (Fintype.card n) ≤ k) : A.sortedSingularValues k = 0 :=
   (A.sortedSingularValues_eq_zero_iff_rank_le k).2
     ((le_min A.rank_le_card_height A.rank_le_card_width).trans hk)
 
-/-- **A matrix and its conjugate transpose have the same singular values**
-(`LinearMap.singularValues_adjoint`). -/
+/-- A matrix and its conjugate transpose have the same singular values. Let
+$A \in \mathbb{K}^{m \times n}$. Then $\sigma_i(A^H) = \sigma_i(A)$ for all $i$.
+
+This is the matrix form of `LinearMap.singularValues_adjoint`. -/
 @[simp]
 theorem sortedSingularValues_conjTranspose [DecidableEq m] (A : Matrix m n 𝕜) :
     Aᴴ.sortedSingularValues = A.sortedSingularValues := by
@@ -162,7 +233,8 @@ theorem sortedSingularValues_conjTranspose [DecidableEq m] (A : Matrix m n 𝕜)
   change (toEuclideanLin Aᴴ).singularValues i = (toEuclideanLin A).singularValues i
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.singularValues_adjoint]
 
-/-- Scaling by `c` scales the stretch on a max–min subspace by `‖c‖`. -/
+/-- For $c \in \mathbb{K}$ and $A \in \mathbb{K}^{m \times n}$, $|c| \sigma_i(A) \le \sigma_i(c A)$.
+-/
 private theorem mul_sortedSingularValues_le_smul (c : 𝕜) (A : Matrix m n 𝕜) (i : ℕ) :
     ‖c‖ * A.sortedSingularValues i ≤ (c • A).sortedSingularValues i := by
   rcases (A.sortedSingularValues_nonneg i).eq_or_lt with h0 | hpos
@@ -174,7 +246,8 @@ private theorem mul_sortedSingularValues_le_smul (c : 𝕜) (A : Matrix m n 𝕜
   rw [map_smul, LinearMap.smul_apply, norm_smul, mul_assoc]
   exact mul_le_mul_of_nonneg_left (h x hx) (norm_nonneg c)
 
-/-- Singular values are absolutely homogeneous: `σ_i(c A) = ‖c‖ σ_i(A)`. -/
+/-- Singular values are absolutely homogeneous: for $c \in \mathbb{K}$ and
+$A \in \mathbb{K}^{m \times n}$, $\sigma_i(c A) = |c| \sigma_i(A)$ for all $i$. -/
 theorem sortedSingularValues_smul (c : 𝕜) (A : Matrix m n 𝕜) (i : ℕ) :
     (c • A).sortedSingularValues i = ‖c‖ * A.sortedSingularValues i := by
   rcases eq_or_ne c 0 with rfl | hc
@@ -190,9 +263,12 @@ theorem sortedSingularValues_smul (c : 𝕜) (A : Matrix m n 𝕜) (i : ℕ) :
       = ‖c‖ * (‖c‖⁻¹ * (c • A).sortedSingularValues i) := by field_simp
     _ ≤ ‖c‖ * A.sortedSingularValues i := mul_le_mul_of_nonneg_left h hc'.le
 
-/-- **Weyl's inequality for sorted singular values** ([golub2013matrix] Corollary 2.4.4 and
-Theorem 8.6.2's `σ_{i+j}(A + B) ≤ σ_i(A) + σ_j(B)`), the matrix form of
-`LinearMap.singularValues_add_le`. -/
+/-- **Weyl's inequality** for singular values. Let $A, B \in \mathbb{K}^{m \times n}$ and let $i, j$
+be natural numbers. Then
+$$\sigma_{i+j}(A + B) \le \sigma_i(A) + \sigma_j(B).$$
+
+This is [golub2013matrix], Corollary 2.4.4, and the inequality of Theorem 8.6.2. It is the
+matrix form of `LinearMap.singularValues_add_le`. -/
 theorem sortedSingularValues_add_le (A B : Matrix m n 𝕜) (i j : ℕ) :
     (A + B).sortedSingularValues (i + j) ≤ A.sortedSingularValues i + B.sortedSingularValues j := by
   change (toEuclideanLin (A + B)).singularValues (i + j) ≤ _
@@ -200,9 +276,12 @@ theorem sortedSingularValues_add_le (A B : Matrix m n 𝕜) (i j : ℕ) :
   exact LinearMap.singularValues_add_le _ _ i j
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The squared Frobenius norm is the sum of the squared sorted singular values**
-([golub2013matrix] (2.4.7)): `‖A‖_F² = ∑_{i < card n} σ_i(A)²`, the column-indexed
-`Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues` read through the relabelling
+/-- The squared Frobenius norm is the sum of the squared singular values. Let
+$A \in \mathbb{K}^{m \times n}$. Then
+$$\|A\|_F^2 = \sum_{i < n} \sigma_i(A)^2.$$
+
+This is [golub2013matrix], (2.4.7). The proof reads the column-indexed form
+`Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues` through the relabelling
 `Matrix.exists_equiv_colSingularValues_eq_sortedSingularValues`. -/
 theorem frobenius_norm_sq_eq_sum_sq_sortedSingularValues (A : Matrix m n 𝕜) :
     ‖A‖ ^ 2 = ∑ i ∈ Finset.range (Fintype.card n), A.sortedSingularValues i ^ 2 := by
@@ -211,9 +290,12 @@ theorem frobenius_norm_sq_eq_sum_sq_sortedSingularValues (A : Matrix m n 𝕜) :
     ← Fin.sum_univ_eq_sum_range (fun i => A.sortedSingularValues i ^ 2)]
   exact Finset.sum_congr rfl fun k _ => by rw [he]
 
-/-- **Weyl's perturbation bound** ([golub2013matrix] Corollary 8.6.2):
-`|σ_i(A + B) − σ_i(A)| ≤ σ_0(B) = ‖B‖₂`, from `Matrix.sortedSingularValues_add_le` in both
-directions. -/
+/-- **Weyl's perturbation bound**. Let $A, B \in \mathbb{K}^{m \times n}$. Then for every $i$,
+$$|\sigma_i(A + B) - \sigma_i(A)| \le \sigma_0(B) = \|B\|_2.$$
+
+This is [golub2013matrix], Corollary 8.6.2. The bound is stated as $\sigma_0(B)$, which is
+$\|B\|_2$ by `Matrix.sortedSingularValues_zero_eq_l2_opNorm`. The proof applies
+`Matrix.sortedSingularValues_add_le` in both directions. -/
 theorem abs_sortedSingularValues_add_sub_le (A B : Matrix m n 𝕜) (i : ℕ) :
     |(A + B).sortedSingularValues i - A.sortedSingularValues i| ≤ B.sortedSingularValues 0 := by
   have h1 := sortedSingularValues_add_le A B i 0
@@ -227,7 +309,8 @@ theorem abs_sortedSingularValues_add_sub_le (A B : Matrix m n 𝕜) (i : ℕ) :
   constructor <;> linarith
 
 open scoped Matrix.Norms.Frobenius in
-/-- The largest singular value is at most the Frobenius norm, `σ_0(A) = ‖A‖₂ ≤ ‖A‖_F`. -/
+/-- The largest singular value is at most the Frobenius norm: for $A \in \mathbb{K}^{m \times n}$,
+$\sigma_0(A) \le \|A\|_F$. -/
 theorem sortedSingularValues_zero_le_frobenius_norm (A : Matrix m n 𝕜) :
     A.sortedSingularValues 0 ≤ ‖A‖ := by
   rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | hpos
@@ -240,7 +323,8 @@ theorem sortedSingularValues_zero_le_frobenius_norm (A : Matrix m n 𝕜) :
       (fun i _ => sq_nonneg _) (Finset.mem_range.2 hpos)
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Weyl's perturbation bound in the Frobenius norm**: `|σ_i(A + B) − σ_i(A)| ≤ ‖B‖_F`. -/
+/-- **Weyl's perturbation bound** in the Frobenius norm: for $A, B \in \mathbb{K}^{m \times n}$ and
+every $i$, $|\sigma_i(A + B) - \sigma_i(A)| \le \|B\|_F$. -/
 theorem abs_sortedSingularValues_add_sub_le_frobenius_norm (A B : Matrix m n 𝕜) (i : ℕ) :
     |(A + B).sortedSingularValues i - A.sortedSingularValues i| ≤ ‖B‖ :=
   (abs_sortedSingularValues_add_sub_le A B i).trans (sortedSingularValues_zero_le_frobenius_norm B)
@@ -253,28 +337,33 @@ section Dilation
 
 variable {m n : Type*}
 
-/-- **The Hermitian dilation** (Jordan–Wielandt matrix) of `A : Matrix m n α`: the square block
-matrix `[0 Aᴴ; A 0]` on `n ⊕ m`, domain block first. It is the matrix `S₃ = [0 Aᵀ; A 0]` of
-[golub2013matrix] §8.6.1 and `Ã` of (8.6.4); the book's `[0 A; Aᴴ 0]` of (10.4.16) and §9.4.3 is
-`hermitianDilation Aᴴ`. Its operator is `LinearMap.hermitianDilation`
-(`Matrix.toEuclideanLin_hermitianDilation`), and its spectrum is `±` the singular values of `A`
-padded by zeros (`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). -/
+/-- The **Hermitian dilation**, or Jordan–Wielandt matrix, of $A \in \alpha^{m \times n}$ is the
+square block matrix
+$$\mathcal{H}(A) = \begin{bmatrix} 0 & A^H \\ A & 0 \end{bmatrix},$$
+indexed by $n \sqcup m$, with the domain block first.
+
+It is the matrix $S_3 = \begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix}$ of [golub2013matrix],
+§8.6.1, and $\tilde{A}$ of (8.6.4). The matrix $\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$
+of (10.4.16) and §9.4.3 is $\mathcal{H}(A^H)$. Its operator is `LinearMap.hermitianDilation`
+(`Matrix.toEuclideanLin_hermitianDilation`), and its eigenvalues are the singular values of $A$
+and their negatives, padded by zeros (`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). -/
 def hermitianDilation {α : Type*} [Zero α] [Star α] (A : Matrix m n α) :
     Matrix (n ⊕ m) (n ⊕ m) α :=
   fromBlocks 0 Aᴴ A 0
 
-/-- The Hermitian dilation is Hermitian. -/
+/-- The Hermitian dilation $\mathcal{H}(A)$ is Hermitian. -/
 theorem isHermitian_hermitianDilation {α : Type*} [AddMonoid α] [StarAddMonoid α]
     (A : Matrix m n α) : (hermitianDilation A).IsHermitian :=
   isHermitian_zero.fromBlocks (conjTranspose_conjTranspose A) isHermitian_zero
 
-/-- The Hermitian dilation is additive. -/
+/-- The Hermitian dilation is additive: $\mathcal{H}(A + B) = \mathcal{H}(A) + \mathcal{H}(B)$. -/
 theorem hermitianDilation_add {α : Type*} [AddMonoid α] [StarAddMonoid α] (A B : Matrix m n α) :
     hermitianDilation (A + B) = hermitianDilation A + hermitianDilation B := by
   simp only [hermitianDilation, fromBlocks_add, conjTranspose_add, add_zero]
 
 open scoped Matrix.Norms.Frobenius in
-/-- The dilation carries each entry of `A` twice: `‖hermitianDilation A‖_F² = 2 ‖A‖_F²`. -/
+/-- The dilation contains each entry of $A$ twice: for $A \in \mathbb{K}^{m \times n}$,
+$\|\mathcal{H}(A)\|_F^2 = 2 \|A\|_F^2$. -/
 theorem frobenius_norm_hermitianDilation_sq [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     ‖hermitianDilation A‖ ^ 2 = 2 * ‖A‖ ^ 2 := by
   rw [frobenius_norm_sq_eq_sum_sq, frobenius_norm_sq_eq_sum_sq]
@@ -287,10 +376,13 @@ theorem frobenius_norm_hermitianDilation_sq [Fintype m] [Fintype n] (A : Matrix 
 
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- **The matrix of the Jordan–Wielandt operator**: `toEuclideanLin (hermitianDilation A)` is the
-operator `LinearMap.hermitianDilation (toEuclideanLin A) (toEuclideanLin Aᴴ)` on
-`WithLp 2 (EuclideanSpace 𝕜 n × EuclideanSpace 𝕜 m)`, conjugated by the isometry
-`PiLp.sumPiLpEquivProdLpPiLp` that splits a vector on `n ⊕ m` into its two blocks. -/
+/-- The operator of the Hermitian dilation. Let $A \in \mathbb{K}^{m \times n}$. Then the operator
+of $\mathcal{H}(A)$ on $\mathbb{K}^{n \sqcup m}$ is the operator $(x, y) \mapsto (A^H y, A x)$
+on $\mathbb{K}^n \times \mathbb{K}^m$, conjugated by the isometry that splits a vector on
+$n \sqcup m$ into its two blocks.
+
+The operator on the product is `LinearMap.hermitianDilation` of the operators of $A$ and $A^H$,
+and the isometry is `PiLp.sumPiLpEquivProdLpPiLp`. -/
 theorem toEuclideanLin_hermitianDilation (A : Matrix m n 𝕜) :
     toEuclideanLin (hermitianDilation A) =
       (PiLp.sumPiLpEquivProdLpPiLp (𝕜 := 𝕜) 2 fun _ : n ⊕ m => 𝕜).symm.toLinearEquiv.toLinearMap
@@ -303,11 +395,16 @@ theorem toEuclideanLin_hermitianDilation (A : Matrix m n 𝕜) :
     simp [toEuclideanLin_apply, hermitianDilation, mulVec, dotProduct, Fintype.sum_sum_type] <;>
     rfl
 
-/-- **The spectrum of the Hermitian dilation** ([golub2013matrix] (8.6.3)): the sorted eigenvalues
-of `hermitianDilation A` (of size `N = card n + card m`) are `λ_i = σ_i - σ_{N-1-i}`, that is
-`σ_0, …, σ_{p-1}`, then `N - 2p` zeros, then `-σ_{p-1}, …, -σ_0`, where `p = min (card m) (card n)`
-(at most one of the two terms is nonzero). The operator statement
-`LinearMap.eigenvalues_hermitianDilation`, transported along the isometry of
+/-- The eigenvalues of the Hermitian dilation. Let $A \in \mathbb{K}^{m \times n}$, let $N = n + m$
+and $p = \min(m, n)$, and let $\lambda_0 \ge \dots \ge \lambda_{N-1}$ be the eigenvalues of
+$\mathcal{H}(A)$. Then for every $i < N$,
+$$\lambda_i = \sigma_i(A) - \sigma_{N-1-i}(A),$$
+and at most one of the two terms is nonzero. So the eigenvalues are
+$\sigma_0, \dots, \sigma_{p-1}$, then $N - 2p$ zeros, then $-\sigma_{p-1}, \dots, -\sigma_0$.
+
+This is [golub2013matrix], (8.6.3). The eigenvalues are Mathlib's sorted eigenvalues
+`Matrix.IsHermitian.eigenvalues₀`, for the proof `hA` that $\mathcal{H}(A)$ is Hermitian. The
+proof transports `LinearMap.eigenvalues_hermitianDilation` along the isometry of
 `Matrix.toEuclideanLin_hermitianDilation`, which preserves the characteristic polynomial. -/
 theorem IsHermitian.eigenvalues₀_hermitianDilation {A : Matrix m n 𝕜}
     (hA : (hermitianDilation A).IsHermitian) (i : Fin (Fintype.card (n ⊕ m))) :
@@ -331,9 +428,9 @@ theorem IsHermitian.eigenvalues₀_hermitianDilation {A : Matrix m n 𝕜}
 
 end Dilation
 
-/-- **The reflected pairing**: if `a` and `b` vanish from `p` on and `2 p ≤ N`, then
-`∑_{k < N} (a_k - a_{N-1-k}) (b_k - b_{N-1-k}) = 2 ∑_{k < p} a_k b_k`, the two halves of each
-factor never being nonzero together. This is how the spectra of two dilations pair up. -/
+/-- If $2p \le N$ and the real sequences $a$ and $b$ vanish from index $p$ on, then $\sum_{k < N}
+(a_k - a_{N-1-k})(b_k - b_{N-1-k}) = 2 \sum_{k < p} a_k b_k$; this is how the eigenvalues of two
+dilations pair up. -/
 private theorem sum_range_sub_reflect_mul_sub_reflect {N p : ℕ} (hp : 2 * p ≤ N) {a b : ℕ → ℝ}
     (ha : ∀ k, p ≤ k → a k = 0) (hb : ∀ k, p ≤ k → b k = 0) :
     ∑ k ∈ Finset.range N, (a k - a (N - 1 - k)) * (b k - b (N - 1 - k)) =
@@ -356,7 +453,7 @@ private theorem sum_range_sub_reflect_mul_sub_reflect {N p : ℕ} (hp : 2 * p �
   rw [hsplit]
   ring
 
-/-- The size of a dilation is at least twice the number of singular values. -/
+/-- The size $n + m$ of a dilation is at least $2 \min(m, n)$. -/
 private theorem two_mul_min_le_card_sum {m n : Type*} [Fintype m] [Fintype n] :
     2 * min (Fintype.card m) (Fintype.card n) ≤ Fintype.card (n ⊕ m) := by
   rw [Fintype.card_sum]
@@ -369,12 +466,15 @@ section Mirsky
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Mirsky's inequality**, the Wielandt–Hoffman theorem for singular values ([golub2013matrix]
-Theorem 8.6.4): `∑_{k < min(m, n)} (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`. The Hoffman–Wielandt
-inequality `Matrix.IsHermitian.hoffman_wielandt` for the dilations of `A + E` and `A`, whose sorted
-eigenvalue differences are `±(σ_k(A + E) - σ_k(A))` and zeros
-(`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`), counts the left side twice and the right
-side as `‖hermitianDilation E‖_F² = 2 ‖E‖_F²`. -/
+/-- **Mirsky's inequality**, the Wielandt–Hoffman theorem for singular values. Let
+$A, E \in \mathbb{K}^{m \times n}$. Then
+$$\sum_{k < \min(m, n)} \bigl(\sigma_k(A + E) - \sigma_k(A)\bigr)^2 \le \|E\|_F^2.$$
+
+This is [golub2013matrix], Theorem 8.6.4. The proof applies the Hoffman–Wielandt inequality
+`Matrix.IsHermitian.hoffman_wielandt` to the dilations of $A + E$ and $A$. Their sorted
+eigenvalue differences are $\pm(\sigma_k(A + E) - \sigma_k(A))$ and zeros
+(`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`), so the left side is counted twice, and
+the right side is $\|\mathcal{H}(E)\|_F^2 = 2 \|E\|_F^2$. -/
 theorem sum_sq_sortedSingularValues_sub_le (A E : Matrix m n 𝕜) :
     ∑ k ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
       ((A + E).sortedSingularValues k - A.sortedSingularValues k) ^ 2 ≤ ‖E‖ ^ 2 := by
@@ -406,10 +506,14 @@ theorem sum_sq_sortedSingularValues_sub_le (A E : Matrix m n 𝕜) :
 /-! ### The Eckart–Young theorem -/
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The lower half of the Eckart–Young theorem in the `2`-norm** ([golub2013matrix] proof of
-Theorem 2.4.8): if `rank B ≤ k` then `σ_k(A) ≤ ‖A - B‖₂`. Weyl's inequality for `A = (A - B) + B`
-gives `σ_k(A) ≤ σ_0(A - B) + σ_k(B)`, with `σ_0(A - B) = ‖A - B‖₂` and `σ_k(B) = 0`; the book's
-kernel-intersection argument is the proof of Weyl's inequality. -/
+/-- The lower bound of the **Eckart–Young theorem** in the spectral norm. Let
+$A, B \in \mathbb{K}^{m \times n}$ with $\operatorname{rank} B \le k$. Then
+$$\sigma_k(A) \le \|A - B\|_2.$$
+
+This is the bound in the proof of [golub2013matrix], Theorem 2.4.8. Weyl's inequality for
+$A = (A - B) + B$ gives $\sigma_k(A) \le \sigma_0(A - B) + \sigma_k(B)$, with
+$\sigma_0(A - B) = \|A - B\|_2$ and $\sigma_k(B) = 0$. The kernel-intersection argument of the
+source is the proof of Weyl's inequality. -/
 theorem sortedSingularValues_le_l2_opNorm_sub_of_rank_le {A B : Matrix m n 𝕜} {k : ℕ}
     (hB : B.rank ≤ k) : A.sortedSingularValues k ≤ ‖A - B‖ := by
   have h := sortedSingularValues_add_le (A - B) B 0 k
@@ -418,10 +522,13 @@ theorem sortedSingularValues_le_l2_opNorm_sub_of_rank_le {A B : Matrix m n 𝕜}
   exact h
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The lower half of the Eckart–Young–Mirsky theorem in the Frobenius norm** ([golub2013matrix]
-§2.4, the remark after Theorem 2.4.8, used in Theorem 6.3.1): if `rank Ĉ ≤ r` then
-`∑_{r ≤ i < min(m, n)} σ_i(C)² ≤ ‖C - Ĉ‖_F²`. Mirsky's inequality for `Ĉ` and `C - Ĉ`, whose
-terms `σ_i(Ĉ)` vanish for `i ≥ r`, the terms `i < r` being dropped. -/
+/-- The lower bound of the **Eckart–Young–Mirsky theorem** in the Frobenius norm. Let
+$C, \hat{C} \in \mathbb{K}^{m \times n}$ with $\operatorname{rank} \hat{C} \le r$. Then
+$$\sum_{r \le i < \min(m, n)} \sigma_i(C)^2 \le \|C - \hat{C}\|_F^2.$$
+
+This is the bound of [golub2013matrix], §2.4, in the remark after Theorem 2.4.8, and it is used
+in Theorem 6.3.1. The proof is Mirsky's inequality for $\hat{C}$ and $C - \hat{C}$: the terms
+$\sigma_i(\hat{C})$ vanish for $i \ge r$, and the terms $i < r$ are dropped. -/
 theorem sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le {C Ĉ : Matrix m n 𝕜}
     {r : ℕ} (h : Ĉ.rank ≤ r) :
     ∑ i ∈ Finset.Ico r (min (Fintype.card m) (Fintype.card n)), C.sortedSingularValues i ^ 2 ≤
@@ -448,9 +555,14 @@ section Truncation
 variable {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- **A truncated SVD has rank at most `k`**, whatever the factors: `U Σ_k Vᴴ` has at most `k`
-nonzero diagonal entries in its middle factor (`Matrix.rank_svdTruncation` is the equality for
-`k ≤ rank A`). -/
+/-- A truncated SVD has rank at most $k$, whatever the factors. Let $U \in \mathbb{K}^{m \times m}$,
+$V \in \mathbb{K}^{n \times n}$ and $\sigma : \mathbb{N} \to \mathbb{R}$, and let $\Sigma_k$ be
+the $m \times n$ rectangular diagonal matrix with diagonal entries $\sigma_i$ for $i < k$ and
+$0$ for $i \ge k$. Then
+$$\operatorname{rank}(U \Sigma_k V^H) \le k.$$
+
+The matrix $U \Sigma_k V^H$ is `Matrix.svdTruncation U σ V k`. For an SVD of $A$ and
+$k \le \operatorname{rank} A$ the rank is exactly $k$ (`Matrix.rank_svdTruncation`). -/
 theorem rank_svdTruncation_le (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) : (svdTruncation U σ V k).rank ≤ k := by
   classical
@@ -464,8 +576,10 @@ theorem rank_svdTruncation_le (U : Matrix (Fin m) (Fin m) 𝕜) (σ : ℕ → �
     (Fintype.card_fin k)
   exact Subtype.ext (Fin.ext (Fin.mk.inj_iff.1 hab))
 
-/-- **The residual of a truncated SVD**: `A - A_k = U Σ' Vᴴ` with `Σ'` the diagonal of the
-trailing singular values `σ_i`, `i ≥ k`. -/
+/-- The residual of a truncated SVD. Let $A = U \Sigma V^H$ be an SVD of
+$A \in \mathbb{K}^{m \times n}$ with singular values $\sigma_i$. Then $A - A_k = U \Sigma' V^H$,
+where $\Sigma'$ is the $m \times n$ rectangular diagonal matrix with diagonal entries $0$ for
+$i < k$ and $\sigma_i$ for $i \ge k$. -/
 theorem IsSVD.sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
     A - svdTruncation U σ V k =
       U * (rectDiagonal (fun i => if i < k then 0 else ((σ i : ℝ) : 𝕜)) :
@@ -478,9 +592,13 @@ theorem IsSVD.sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
   split_ifs <;> simp
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The `2`-norm of a truncation residual** ([golub2013matrix] proof of Theorem 2.4.8, first
-paragraph): `‖A - A_k‖₂ = σ_k(A)`, by unitary invariance and `Matrix.l2_opNorm_rectDiagonal`, the
-largest trailing singular value being `σ_k` (or `0 = σ_k` when `k ≥ min m n`). -/
+/-- The spectral norm of the residual of a truncated SVD. Let $A = U \Sigma V^H$ be an SVD of
+$A \in \mathbb{K}^{m \times n}$. Then for every $k$,
+$$\|A - A_k\|_2 = \sigma_k(A).$$
+
+This is the first paragraph of the proof of [golub2013matrix], Theorem 2.4.8. The proof uses
+unitary invariance and `Matrix.l2_opNorm_rectDiagonal`: the largest remaining singular value is
+$\sigma_k$, or $0 = \sigma_k$ when $k \ge \min(m, n)$. -/
 theorem l2_opNorm_sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
     ‖A - svdTruncation U σ V k‖ = A.sortedSingularValues k := by
   rw [h.sub_svdTruncation, l2_opNorm_unitary_mul_mul_unitary h.mem_unitaryGroup_left _
@@ -503,8 +621,8 @@ theorem l2_opNorm_sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
       exact Real.iSup_nonneg fun i => norm_nonneg _
 
 open scoped Matrix.Norms.Frobenius in
-/-- The squared Frobenius norm of a rectangular diagonal matrix is the sum of the squared moduli of
-its visible diagonal entries. -/
+/-- Let $d : \mathbb{N} \to \mathbb{K}$ and let $D$ be the $m \times n$ rectangular diagonal matrix
+with diagonal entries $d_i$. Then $\|D\|_F^2 = \sum_{i < \min(m, n)} |d_i|^2$. -/
 theorem frobenius_norm_rectDiagonal_sq (d : ℕ → 𝕜) :
     ‖(rectDiagonal d : Matrix (Fin m) (Fin n) 𝕜)‖ ^ 2 =
       ∑ i ∈ Finset.range (min m n), ‖d i‖ ^ 2 := by
@@ -529,8 +647,11 @@ theorem frobenius_norm_rectDiagonal_sq (d : ℕ → 𝕜) :
   simp [lt_min_iff]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The Frobenius norm of a truncation residual** ([golub2013matrix] §2.4.2):
-`‖A - A_k‖_F = √(σ_k² + ⋯ + σ_{p-1}²)`, `p = min m n`, by unitary invariance and
+/-- The Frobenius norm of the residual of a truncated SVD. Let $A = U \Sigma V^H$ be an SVD of
+$A \in \mathbb{K}^{m \times n}$. Then for every $k$,
+$$\|A - A_k\|_F = \Bigl(\sum_{k \le i < \min(m, n)} \sigma_i(A)^2\Bigr)^{1/2}.$$
+
+This is in [golub2013matrix], §2.4.2. The proof uses unitary invariance and
 `Matrix.frobenius_norm_rectDiagonal_sq`. -/
 theorem frobenius_norm_sub_svdTruncation (h : IsSVD A U σ V) (k : ℕ) :
     ‖A - svdTruncation U σ V k‖ =
@@ -562,7 +683,8 @@ section EckartYoungIsLeast
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 omit [DecidableEq n] in
-/-- Subtracting a matrix read back from `Fin` indices. -/
+/-- Subtraction commutes with reindexing along `Fintype.equivFin`: $A - B[e, f]$ is
+$A[e^{-1}, f^{-1}] - B$ reindexed by $(e, f)$. -/
 private theorem sub_submatrix_equivFin (A : Matrix m n 𝕜)
     (B : Matrix (Fin (Fintype.card m)) (Fin (Fintype.card n)) 𝕜) :
     A - B.submatrix (Fintype.equivFin m) (Fintype.equivFin n) =
@@ -572,8 +694,9 @@ private theorem sub_submatrix_equivFin (A : Matrix m n 𝕜)
   simp
 
 omit [DecidableEq n] in
-/-- The attainment step of both Eckart–Young theorems: an SVD of `A` read on `Fin` indices, and the
-truncation `B` of rank at most `k` read back, with `A - B` the reindexed truncation residual. -/
+/-- For $A \in \mathbb{K}^{m \times n}$ and $k$, there are an SVD $U \Sigma V^H$ of $A$ reindexed to
+`Fin` indices and a matrix $B$ of rank at most $k$ such that $A - B$ is the reindexed residual
+$A - A_k$; this is the attainment step of both Eckart–Young theorems. -/
 private theorem exists_rank_le_eq_svdTruncation_submatrix (A : Matrix m n 𝕜) (k : ℕ) :
     ∃ (U : Matrix (Fin (Fintype.card m)) (Fin (Fintype.card m)) 𝕜) (σ : ℕ → ℝ)
       (V : Matrix (Fin (Fintype.card n)) (Fin (Fintype.card n)) 𝕜),
@@ -589,11 +712,16 @@ private theorem exists_rank_le_eq_svdTruncation_submatrix (A : Matrix m n 𝕜) 
   exact rank_svdTruncation_le U σ V k
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The Eckart–Young theorem in the `2`-norm** ([golub2013matrix] Theorem 2.4.8): the distance
-from `A` to the matrices of rank at most `k` is `σ_k(A)`, attained at the truncation of any SVD
-(for the book's `rank B = k` form, the truncation of an SVD at `k ≤ rank A` has rank exactly `k`,
-`Matrix.rank_svdTruncation`). At `k = min m n - 1` it says that `σ_min` is the distance to the
-rank-deficient matrices. -/
+/-- The **Eckart–Young theorem** in the spectral norm. Let $A \in \mathbb{K}^{m \times n}$ and let
+$k$ be a natural number. Then $\sigma_k(A)$ is the least value of $\|A - B\|_2$ over the
+matrices $B \in \mathbb{K}^{m \times n}$ with $\operatorname{rank} B \le k$:
+$$\min_{\operatorname{rank} B \le k} \|A - B\|_2 = \sigma_k(A).$$
+The minimum is attained at the truncation $A_k$ of any SVD of $A$.
+
+This is [golub2013matrix], Theorem 2.4.8, which minimizes over $\operatorname{rank} B = k$. For
+$k \le \operatorname{rank} A$ the truncation has rank exactly $k$ (`Matrix.rank_svdTruncation`),
+which gives the form of the source. At $k = \min(m, n) - 1$ the theorem says that the least
+singular value is the distance to the matrices that do not have full rank. -/
 theorem isLeast_l2_opNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
     IsLeast ((fun B => ‖A - B‖) '' {B | B.rank ≤ k}) (A.sortedSingularValues k) := by
   refine ⟨?_, ?_⟩
@@ -606,10 +734,15 @@ theorem isLeast_l2_opNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
     exact sortedSingularValues_le_l2_opNorm_sub_of_rank_le hB
 
 open scoped Matrix.Norms.Frobenius in
-/-- **The Eckart–Young–Mirsky theorem in the Frobenius norm** ([golub2013matrix] §2.4.2, the
-remark after Theorem 2.4.8, stated there without proof): the distance from `A` to the matrices of
-rank at most `k` is `√(σ_k² + ⋯ + σ_{p-1}²)`, `p = min(m, n)`, attained at the truncation of any
-SVD. Lower bound `Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`. -/
+/-- The **Eckart–Young–Mirsky theorem** in the Frobenius norm. Let $A \in \mathbb{K}^{m \times n}$
+and let $k$ be a natural number. Then the least value of $\|A - B\|_F$ over the matrices
+$B \in \mathbb{K}^{m \times n}$ with $\operatorname{rank} B \le k$ is
+$$\min_{\operatorname{rank} B \le k} \|A - B\|_F = \Bigl(\sum_{k \le i < \min(m, n)}
+  \sigma_i(A)^2\Bigr)^{1/2}.$$
+The minimum is attained at the truncation $A_k$ of any SVD of $A$.
+
+[golub2013matrix], §2.4.2, states this without proof in the remark after Theorem 2.4.8. The
+lower bound is `Matrix.sum_sq_sortedSingularValues_le_frobenius_norm_sub_sq_of_rank_le`. -/
 theorem isLeast_frobenius_norm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
     IsLeast ((fun B => ‖A - B‖) '' {B | B.rank ≤ k})
       √(∑ i ∈ Finset.Ico k (min (Fintype.card m) (Fintype.card n)),
@@ -634,13 +767,17 @@ section KyFan
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Ky Fan's maximum principle, SVD form** ([golub2013matrix] (12.5.3) and the sentence after
-it): over the matrices `Q` with `r ≤ card m` orthonormal columns, the largest value of
-`‖Qᴴ A‖_F²` is `σ_0² + ⋯ + σ_{r-1}²`, attained at the leading left singular vectors. With
-`T = toEuclideanLin Aᴴ`, `‖Qᴴ A‖_F² = ‖Aᴴ Q‖_F² = ∑_j re ⟪T† T q_j, q_j⟫` over the columns `q_j` of
-`Q`, and Ky Fan's principle for the symmetric `T† T`
-(`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`), whose eigenvalues are the `σ_i²`,
-bounds the sum, with equality at its leading eigenvectors. -/
+/-- **Ky Fan's maximum principle**, in the form of the SVD. Let $A \in \mathbb{K}^{m \times n}$ and
+$r \le m$. Then the largest value of $\|Q^H A\|_F^2$ over the matrices
+$Q \in \mathbb{K}^{m \times r}$ with orthonormal columns, $Q^H Q = I$, is
+$$\max_{Q^H Q = I} \|Q^H A\|_F^2 = \sum_{i < r} \sigma_i(A)^2.$$
+The maximum is attained when the columns of $Q$ are leading left singular vectors.
+
+This is [golub2013matrix], (12.5.3) and the sentence after it. With $T$ the operator of $A^H$,
+$\|Q^H A\|_F^2 = \|A^H Q\|_F^2 = \sum_j \operatorname{Re} \langle T^* T q_j, q_j \rangle$ over
+the columns $q_j$ of $Q$. Ky Fan's principle for the symmetric operator $T^* T$
+(`LinearMap.IsSymmetric.sum_re_inner_le_sum_eigenvalues`), whose eigenvalues are the
+$\sigma_i^2$, bounds the sum, with equality at its leading eigenvectors. -/
 theorem isGreatest_frobenius_norm_sq_conjTranspose_mul (A : Matrix m n 𝕜) {r : ℕ}
     (hr : r ≤ Fintype.card m) :
     IsGreatest ((fun Q : Matrix m (Fin r) 𝕜 => ‖Qᴴ * A‖ ^ 2) '' {Q | Qᴴ * Q = 1})
@@ -686,11 +823,15 @@ theorem isGreatest_frobenius_norm_sq_conjTranspose_mul (A : Matrix m n 𝕜) {r 
     exact hS.sum_re_inner_le_sum_eigenvalues hn
       (orthonormal_toLp_transpose_of_conjTranspose_mul_self_eq_one hQ) hr
 
-/-- **Von Neumann's trace inequality, real part**: `re tr(A B) ≤ ∑_i σ_i(A) σ_i(B)`. The trace
-inequality for two symmetric operators
-(`LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`) applied to the dilations of `A` and
-`Bᴴ`: `re tr(H(A) H(Bᴴ)) = 2 re tr(A B)`, and the sorted spectra `±σ(A)`, `±σ(B)` of the
-dilations pair up to `2 ∑ σ_i(A) σ_i(B)`. -/
+/-- **Von Neumann's trace inequality**, for the real part. Let $A \in \mathbb{K}^{m \times n}$ and
+$B \in \mathbb{K}^{n \times m}$. Then
+$$\operatorname{Re} \operatorname{tr}(A B) \le \sum_{i < \min(m, n)} \sigma_i(A) \sigma_i(B).$$
+
+The proof applies the trace inequality for two symmetric operators
+(`LinearMap.IsSymmetric.re_trace_comp_le_sum_eigenvalues_mul`) to the dilations of $A$ and
+$B^H$. Then $\operatorname{Re} \operatorname{tr}(\mathcal{H}(A) \mathcal{H}(B^H)) = 2
+\operatorname{Re} \operatorname{tr}(A B)$, and the sorted eigenvalues $\pm \sigma(A)$ and
+$\pm \sigma(B)$ of the dilations pair up to $2 \sum_i \sigma_i(A) \sigma_i(B)$. -/
 theorem re_trace_mul_le_sum_sortedSingularValues_mul [DecidableEq m] (A : Matrix m n 𝕜)
     (B : Matrix n m 𝕜) :
     RCLike.re (trace (A * B)) ≤ ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
@@ -728,11 +869,14 @@ theorem re_trace_mul_le_sum_sortedSingularValues_mul [DecidableEq m] (A : Matrix
       sortedSingularValues_conjTranspose]
   linarith
 
-/-- **Von Neumann's trace inequality** (von Neumann 1937): for `A : Matrix m n 𝕜` and
-`B : Matrix n m 𝕜`, `|tr(A B)| ≤ ∑_{i < min(m, n)} σ_i(A) σ_i(B)`. The real-part form
-`Matrix.re_trace_mul_le_sum_sortedSingularValues_mul` applied to `c A` with the phase
-`c = conj(tr(A B)) / |tr(A B)|`, which does not change the singular values. The one-sided
-Procrustes bound is the case of a unitary factor, all of whose singular values are `1`. -/
+/-- **Von Neumann's trace inequality** (von Neumann, 1937). Let $A \in \mathbb{K}^{m \times n}$ and
+$B \in \mathbb{K}^{n \times m}$. Then
+$$|\operatorname{tr}(A B)| \le \sum_{i < \min(m, n)} \sigma_i(A) \sigma_i(B).$$
+
+The proof applies `Matrix.re_trace_mul_le_sum_sortedSingularValues_mul` to $c A$ with the phase
+$c = \overline{\operatorname{tr}(A B)} / |\operatorname{tr}(A B)|$, which does not change the
+singular values. The bound of the one-sided Procrustes problem is the case of a unitary factor,
+all of whose singular values are $1$. -/
 theorem norm_trace_mul_le_sum_sortedSingularValues_mul [DecidableEq m] (A : Matrix m n 𝕜)
     (B : Matrix n m 𝕜) :
     ‖trace (A * B)‖ ≤ ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
@@ -761,9 +905,13 @@ section Blocks
 
 variable {m n k l : Type*} [Fintype m] [Fintype n] [Fintype k] [Fintype l]
 
-/-- **Deleting a trailing column block does not increase any singular value** ([golub2013matrix]
-Corollary 8.6.3 iterated, and the step `σ_n(C) ≥ σ_n(C₁)` of Theorem 6.3.1):
-`σ_i(C₁) ≤ σ_i([C₁ C₂])`, `Matrix.sortedSingularValues_submatrix_le` along `Sum.inl`. -/
+/-- Deleting a trailing block of columns does not increase any singular value. Let
+$C_1 \in \mathbb{K}^{m \times n}$ and $C_2 \in \mathbb{K}^{m \times k}$. Then for every $i$,
+$$\sigma_i(C_1) \le \sigma_i([C_1 \; C_2]).$$
+
+This is [golub2013matrix], Corollary 8.6.3 iterated, and the step
+$\sigma_n(C) \ge \sigma_n(C_1)$ of Theorem 6.3.1. The proof is
+`Matrix.sortedSingularValues_submatrix_le` along `Sum.inl`. -/
 theorem sortedSingularValues_fromCols_left_le [DecidableEq n] [DecidableEq k] (C₁ : Matrix m n 𝕜)
     (C₂ : Matrix m k 𝕜) (i : ℕ) :
     C₁.sortedSingularValues i ≤ (fromCols C₁ C₂).sortedSingularValues i := by
@@ -773,8 +921,9 @@ theorem sortedSingularValues_fromCols_left_le [DecidableEq n] [DecidableEq k] (C
   conv_lhs => rw [h]
   exact sortedSingularValues_submatrix_le _ Function.injective_id Sum.inl_injective i
 
-/-- **Deleting a leading column block does not increase any singular value**:
-`σ_i(C₂) ≤ σ_i([C₁ C₂])`, the twin of `Matrix.sortedSingularValues_fromCols_left_le`. -/
+/-- Deleting a leading block of columns does not increase any singular value: for
+$C_1 \in \mathbb{K}^{m \times n}$, $C_2 \in \mathbb{K}^{m \times k}$ and every $i$,
+$\sigma_i(C_2) \le \sigma_i([C_1 \; C_2])$. -/
 theorem sortedSingularValues_fromCols_right_le [DecidableEq n] [DecidableEq k]
     (C₁ : Matrix m n 𝕜) (C₂ : Matrix m k 𝕜) (i : ℕ) :
     C₂.sortedSingularValues i ≤ (fromCols C₁ C₂).sortedSingularValues i := by
@@ -784,8 +933,9 @@ theorem sortedSingularValues_fromCols_right_le [DecidableEq n] [DecidableEq k]
   conv_lhs => rw [h]
   exact sortedSingularValues_submatrix_le _ Function.injective_id Sum.inr_injective i
 
-/-- **Deleting the bottom row block does not increase any singular value**:
-`σ_i(R₁) ≤ σ_i([R₁; R₂])`, the row form of `Matrix.sortedSingularValues_fromCols_left_le`. -/
+/-- Deleting the bottom block of rows does not increase any singular value: for
+$R_1 \in \mathbb{K}^{m \times n}$, $R_2 \in \mathbb{K}^{l \times n}$ and every $i$,
+$\sigma_i(R_1) \le \sigma_i\Bigl(\begin{bmatrix} R_1 \\ R_2 \end{bmatrix}\Bigr)$. -/
 theorem sortedSingularValues_fromRows_left_le [DecidableEq n] (R₁ : Matrix m n 𝕜)
     (R₂ : Matrix l n 𝕜) (i : ℕ) :
     R₁.sortedSingularValues i ≤ (fromRows R₁ R₂).sortedSingularValues i := by
@@ -795,8 +945,9 @@ theorem sortedSingularValues_fromRows_left_le [DecidableEq n] (R₁ : Matrix m n
   conv_lhs => rw [h]
   exact sortedSingularValues_submatrix_le _ Sum.inl_injective Function.injective_id i
 
-/-- **Deleting the top row block does not increase any singular value**:
-`σ_i(R₂) ≤ σ_i([R₁; R₂])`. -/
+/-- Deleting the top block of rows does not increase any singular value: for
+$R_1 \in \mathbb{K}^{m \times n}$, $R_2 \in \mathbb{K}^{l \times n}$ and every $i$,
+$\sigma_i(R_2) \le \sigma_i\Bigl(\begin{bmatrix} R_1 \\ R_2 \end{bmatrix}\Bigr)$. -/
 theorem sortedSingularValues_fromRows_right_le [DecidableEq n] (R₁ : Matrix m n 𝕜)
     (R₂ : Matrix l n 𝕜) (i : ℕ) :
     R₂.sortedSingularValues i ≤ (fromRows R₁ R₂).sortedSingularValues i := by
@@ -807,11 +958,16 @@ theorem sortedSingularValues_fromRows_right_le [DecidableEq n] (R₁ : Matrix m 
   exact sortedSingularValues_submatrix_le _ Sum.inr_injective Function.injective_id i
 
 open scoped Matrix.Norms.L2Operator in
-/-- **A trailing block bounds a singular value** ([golub2013matrix] §5.4.3, and the `ρ` of
-(5.4.10)): for a block upper triangular `R = [R₁₁ R₁₂; 0 R₂₂]` whose leading block row has
-`card m` rows, `σ_{card m}(R) ≤ ‖R₂₂‖₂`. The leading block row has rank at most `card m`, and
-`R` differs from it by `[0 0; 0 R₂₂]`, of norm at most `‖R₂₂‖₂`
-(`Matrix.l2_opNorm_fromBlocks_le`); the lower half of Eckart–Young concludes. -/
+/-- A trailing block bounds a singular value. Let $R_{11} \in \mathbb{K}^{m \times n}$,
+$R_{12} \in \mathbb{K}^{m \times l}$ and $R_{22} \in \mathbb{K}^{k \times l}$, and let
+$$R = \begin{bmatrix} R_{11} & R_{12} \\ 0 & R_{22} \end{bmatrix},$$
+whose leading block row has $m$ rows. Then
+$$\sigma_m(R) \le \|R_{22}\|_2.$$
+
+This is [golub2013matrix], §5.4.3, and the $\rho$ of (5.4.10). The leading block row has rank at
+most $m$, and $R$ differs from it by $\begin{bmatrix} 0 & 0 \\ 0 & R_{22} \end{bmatrix}$, of
+norm at most $\|R_{22}\|_2$ (`Matrix.l2_opNorm_fromBlocks_le`). The lower bound of the
+Eckart–Young theorem gives the result. -/
 theorem sortedSingularValues_le_l2_opNorm_trailing [DecidableEq n] [DecidableEq l]
     (R₁₁ : Matrix m n 𝕜) (R₁₂ : Matrix m l 𝕜) (R₂₂ : Matrix k l 𝕜) :
     (fromBlocks R₁₁ R₁₂ 0 R₂₂).sortedSingularValues (Fintype.card m) ≤ ‖R₂₂‖ := by
@@ -835,9 +991,13 @@ theorem sortedSingularValues_le_l2_opNorm_trailing [DecidableEq n] [DecidableEq 
   ring
 
 open scoped Matrix.Norms.L2Operator in
-/-- The lower triangular (ULV) form of `Matrix.sortedSingularValues_le_l2_opNorm_trailing`
-([golub2013matrix] (5.4.11)): for `L = [L₁₁ 0; L₂₁ L₂₂]` whose leading block column has `card n`
-columns, `σ_{card n}(L) ≤ ‖L₂₂‖₂`. The upper form for `Lᴴ`. -/
+/-- The block lower triangular form of `Matrix.sortedSingularValues_le_l2_opNorm_trailing`, for the
+ULV decomposition. Let $L_{11} \in \mathbb{K}^{m \times n}$,
+$L_{21} \in \mathbb{K}^{k \times n}$ and $L_{22} \in \mathbb{K}^{k \times l}$, and let $L =
+\begin{bmatrix} L_{11} & 0 \\ L_{21} & L_{22} \end{bmatrix}$, whose leading block column has $n$
+columns. Then $\sigma_n(L) \le \|L_{22}\|_2$.
+
+This is [golub2013matrix], (5.4.11). The proof applies the upper triangular form to $L^H$. -/
 theorem sortedSingularValues_le_l2_opNorm_trailing_lower [DecidableEq n] [DecidableEq l]
     (L₁₁ : Matrix m n 𝕜) (L₂₁ : Matrix k n 𝕜) (L₂₂ : Matrix k l 𝕜) :
     (fromBlocks L₁₁ 0 L₂₁ L₂₂).sortedSingularValues (Fintype.card n) ≤ ‖L₂₂‖ := by
@@ -848,11 +1008,14 @@ theorem sortedSingularValues_le_l2_opNorm_trailing_lower [DecidableEq n] [Decida
   rwa [e, sortedSingularValues_conjTranspose, l2_opNorm_conjTranspose] at h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The least stretch is `1`-Lipschitz in the `2`-norm** ([golub2013matrix] Corollary 2.4.4 at the
-last index): `|σ_min(A) - σ_min(B)| ≤ ‖A - B‖₂`, with `σ_min = ⨅ i, σ_i` over the columns (the least
-stretch for every shape, `Matrix.iInf_colSingularValues_eq_iInf_norm`). Weyl's bound
-`LinearMap.abs_singularValues_sub_le` at the last sorted index. (Column-indexed on purpose: the
-consumers state `σ_min` as `⨅ i` over the columns.) -/
+/-- The least singular value is $1$-Lipschitz in the spectral norm. Let
+$A, B \in \mathbb{K}^{m \times n}$ with $n \ge 1$. Then
+$$|\sigma_{\min}(A) - \sigma_{\min}(B)| \le \|A - B\|_2.$$
+
+This is [golub2013matrix], Corollary 2.4.4, at the last index. Here $\sigma_{\min}$ is the
+infimum of `Matrix.colSingularValues` over the columns, the least singular value for every shape
+(`Matrix.iInf_colSingularValues_eq_iInf_norm`). The proof is Weyl's bound
+`LinearMap.abs_singularValues_sub_le` at the last sorted index. -/
 theorem abs_iInf_colSingularValues_sub_le [DecidableEq n] [Nonempty n] (A B : Matrix m n 𝕜) :
     |(⨅ i, A.colSingularValues i) - ⨅ i, B.colSingularValues i| ≤ ‖A - B‖ := by
   rw [← A.sortedSingularValues_eq_iInf_colSingularValues,
@@ -864,11 +1027,13 @@ theorem abs_iInf_colSingularValues_sub_le [DecidableEq n] [Nonempty n] (A B : Ma
 
 end Blocks
 
-/-! ### Stability of full rank
+/-!
+### Stability of full rank
 
-A positive least stretch `σ_min(A) = ⨅ i, A.colSingularValues i` is the same as linearly
-independent columns, and by Weyl's bound it survives a perturbation smaller than itself; the row
-statements are those for `Aᴴ`. -/
+The least singular value $\sigma_{\min}(A)$ is positive if and only if the columns of $A$ are
+linearly independent. By Weyl's bound, a perturbation of spectral norm less than $\sigma_{\min}(A)$
+keeps it positive. The statements for rows are the statements for columns applied to $A^H$.
+-/
 
 section Stability
 
@@ -876,16 +1041,19 @@ variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Weyl stability of the least stretch** ([golub2013matrix] Corollary 2.4.4):
-`σ_min(A) - ‖δA‖₂ ≤ σ_min(A + δA)`. -/
+/-- Weyl's bound for the least singular value. Let $A, \delta A \in \mathbb{K}^{m \times n}$ with
+$n \ge 1$. Then
+$$\sigma_{\min}(A) - \|\delta A\|_2 \le \sigma_{\min}(A + \delta A).$$
+
+This is [golub2013matrix], Corollary 2.4.4. -/
 theorem sub_l2_opNorm_le_iInf_colSingularValues_add [Nonempty n] (A δA : Matrix m n 𝕜) :
     (⨅ i, A.colSingularValues i) - ‖δA‖ ≤ ⨅ i, (A + δA).colSingularValues i := by
   have h := abs_iInf_colSingularValues_sub_le (A + δA) A
   rw [add_sub_cancel_left] at h
   linarith [neg_abs_le ((⨅ i, (A + δA).colSingularValues i) - ⨅ i, A.colSingularValues i)]
 
-/-- A perturbation smaller than the least stretch cannot happen without columns: `‖δA‖ < σ_min(A)`
-forces `n` to be nonempty, since `σ_min` of a matrix without columns is `0`. -/
+/-- Let $A, \delta A \in \mathbb{K}^{m \times n}$ with $\|\delta A\|_2 < \sigma_{\min}(A)$. Then
+$n \ge 1$, because $\sigma_{\min}$ of a matrix without columns is $0$. -/
 theorem nonempty_of_l2_opNorm_lt_iInf_colSingularValues {A δA : Matrix m n 𝕜}
     (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : Nonempty n := by
   by_contra hn
@@ -893,17 +1061,20 @@ theorem nonempty_of_l2_opNorm_lt_iInf_colSingularValues {A δA : Matrix m n 𝕜
   rw [Real.iInf_of_isEmpty] at h
   exact absurd h (not_lt.2 (norm_nonneg _))
 
-/-- **A small perturbation keeps the columns independent**: `‖δA‖₂ < σ_min(A)` implies that
-`A + δA` has linearly independent columns ([golub2013matrix] Theorem 2.5.2's use in the proof of
-Theorem 5.3.1). -/
+/-- A small perturbation keeps the columns linearly independent. Let
+$A, \delta A \in \mathbb{K}^{m \times n}$ with $\|\delta A\|_2 < \sigma_{\min}(A)$. Then the
+columns of $A + \delta A$ are linearly independent.
+
+This is the use of [golub2013matrix], Theorem 2.5.2, in the proof of Theorem 5.3.1. -/
 theorem linearIndependent_transpose_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
     (h : ‖δA‖ < ⨅ i, A.colSingularValues i) : LinearIndependent 𝕜 (A + δA)ᵀ := by
   have := nonempty_of_l2_opNorm_lt_iInf_colSingularValues h
   exact linearIndependent_transpose_of_iInf_colSingularValues_pos
     ((sub_pos.2 h).trans_le (sub_l2_opNorm_le_iInf_colSingularValues_add A δA))
 
-/-- **Independent columns survive along a line**: if `A` has linearly independent columns, so has
-`A + t E` for every `t` near `0`. -/
+/-- Linearly independent columns stay independent along a line. Let
+$A, E \in \mathbb{K}^{m \times n}$ and suppose that the columns of $A$ are linearly independent.
+Then the columns of $A + t E$ are linearly independent for all $t \in \mathbb{K}$ near $0$. -/
 theorem eventually_linearIndependent_transpose_add_smul {m n : Type*} [Finite m] [Finite n]
     {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) (E : Matrix m n 𝕜) :
     ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E)ᵀ := by
@@ -921,8 +1092,12 @@ theorem eventually_linearIndependent_transpose_add_smul {m n : Type*} [Finite m]
 
 variable [DecidableEq m]
 
-/-- A small perturbation keeps the rows independent: `‖δA‖₂ < σ_min(Aᴴ)` implies that `A + δA` has
-linearly independent rows. The column statement for `Aᴴ`, through `star (y ᵥ* M) = Mᴴ *ᵥ star y`. -/
+/-- A small perturbation keeps the rows linearly independent. Let
+$A, \delta A \in \mathbb{K}^{m \times n}$ with $\|\delta A\|_2 < \sigma_{\min}(A^H)$. Then the
+rows of $A + \delta A$ are linearly independent.
+
+The proof applies `Matrix.linearIndependent_transpose_add_of_l2_opNorm_lt` to $A^H$, through
+$\overline{y^T M} = M^H \bar{y}$. -/
 theorem linearIndependent_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
     (h : ‖δA‖ < ⨅ i, Aᴴ.colSingularValues i) : LinearIndependent 𝕜 (A + δA) := by
   have h' : ‖δAᴴ‖ < ⨅ i, Aᴴ.colSingularValues i := by rwa [l2_opNorm_conjTranspose]
@@ -933,9 +1108,11 @@ theorem linearIndependent_add_of_l2_opNorm_lt {A δA : Matrix m n 𝕜}
   rw [star_vecMul, star_vecMul] at h1
   exact star_injective (mulVec_injective_iff.2 hc h1)
 
-/-- **Independent rows survive along a line**: if `A` has linearly independent rows, so has
-`A + t E` for every `t` near `0`; the dual of
-`Matrix.eventually_linearIndependent_transpose_add_smul`. -/
+/-- Linearly independent rows stay independent along a line. Let $A, E \in \mathbb{K}^{m \times n}$
+and suppose that the rows of $A$ are linearly independent. Then the rows of $A + t E$ are
+linearly independent for all $t \in \mathbb{K}$ near $0$.
+
+This is the form for rows of `Matrix.eventually_linearIndependent_transpose_add_smul`. -/
 theorem eventually_linearIndependent_add_smul {m n : Type*} [Finite m] [Finite n]
     {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 A) (E : Matrix m n 𝕜) :
     ∀ᶠ t in nhds (0 : 𝕜), LinearIndependent 𝕜 (A + t • E) :=
@@ -949,7 +1126,7 @@ section Stacked
 
 variable {n k l : Type*} [Fintype n] [Fintype k] [Fintype l]
 
-/-- The columns of `[Q₁; Q₂]` are orthonormal: `‖Q₁ x‖² + ‖Q₂ x‖² = ‖x‖²`. -/
+/-- If $Q_1^H Q_1 + Q_2^H Q_2 = I$, then $\|Q_1 x\|^2 + \|Q_2 x\|^2 = \|x\|^2$ for all $x$. -/
 private theorem norm_sq_add_norm_sq_of_stacked [DecidableEq n] {Q₁ : Matrix k n 𝕜}
     {Q₂ : Matrix l n 𝕜}
     (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) (x : EuclideanSpace 𝕜 n) :
@@ -964,10 +1141,15 @@ private theorem norm_sq_add_norm_sq_of_stacked [DecidableEq n] {Q₁ : Matrix k 
   exact_mod_cast h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The stacked-isometry identity for matrices** ([golub2013matrix] proof of Theorem 2.5.1): if
-the columns of `[Q₁; Q₂]` are orthonormal, `Q₁ᴴ Q₁ + Q₂ᴴ Q₂ = 1`, then
-`‖Q₂‖₂² = 1 - σ_min(Q₁)²`, `σ_min` the last sorted singular value `σ_{card n - 1}`. The matrix
-instance of `LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`. -/
+/-- The stacked-isometry identity for matrices. Let $Q_1 \in \mathbb{K}^{k \times n}$ and
+$Q_2 \in \mathbb{K}^{l \times n}$ with $n \ge 1$, and suppose that
+$\begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$ has orthonormal columns, $Q_1^H Q_1 + Q_2^H Q_2 = I$.
+Then
+$$\|Q_2\|_2^2 = 1 - \sigma_{n-1}(Q_1)^2,$$
+where $\sigma_{n-1}(Q_1)$ is the least of the $n$ singular values of $Q_1$.
+
+This is in the proof of [golub2013matrix], Theorem 2.5.1. It is the matrix form of
+`LinearMap.norm_toContinuousLinearMap_sq_eq_one_sub_sq_singularValues`. -/
 theorem l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues [DecidableEq n] [Nonempty n]
     {Q₁ : Matrix k n 𝕜}
     {Q₂ : Matrix l n 𝕜} (hQ : Q₁ᴴ * Q₁ + Q₂ᴴ * Q₂ = 1) :
@@ -981,11 +1163,16 @@ theorem l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues [DecidableEq n] [Nonempt
   exact h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The tan form of the stacked-isometry identity** ([golub2013matrix] §6.3.1,
-`‖V₁₂ V₂₂⁻¹‖₂² = (1 - σ_k(V₂₂)²)/σ_k(V₂₂)²`): if `V₁₂ᴴ V₁₂ + V₂₂ᴴ V₂₂ = 1` and `V₂₂` is invertible,
-with least singular value `s = σ_{card k - 1}(V₂₂)`, then `‖V₁₂ V₂₂⁻¹‖₂² = (1 - s²)/s²`. With
-`y = V₂₂ w`, `‖V₁₂ V₂₂⁻¹ y‖² = ‖w‖² - ‖y‖²`, and `‖w‖ ≤ ‖y‖/s` with equality at a least right
-singular vector. -/
+/-- The stacked-isometry identity in the form of a tangent. Let $V_{12} \in \mathbb{K}^{l \times k}$
+and $V_{22} \in \mathbb{K}^{k \times k}$ with $k \ge 1$, suppose that
+$V_{12}^H V_{12} + V_{22}^H V_{22} = I$ and that $V_{22}$ is invertible, and let
+$s = \sigma_{k-1}(V_{22})$ be its least singular value. Then
+$$\|V_{12} V_{22}^{-1}\|_2^2 = \frac{1 - s^2}{s^2}.$$
+
+This is the identity $\|V_{12} V_{22}^{-1}\|_2^2 = (1 - \sigma_k(V_{22})^2) /
+\sigma_k(V_{22})^2$ of [golub2013matrix], §6.3.1. With $y = V_{22} w$,
+$\|V_{12} V_{22}^{-1} y\|^2 = \|w\|^2 - \|y\|^2$, and $\|w\| \le \|y\| / s$, with equality at a
+least right singular vector. -/
 theorem l2_opNorm_mul_inv_sq_eq [DecidableEq k] [Nonempty k] {V₁₂ : Matrix l k 𝕜}
     {V₂₂ : Matrix k k 𝕜}
     (hV₂₂ : IsUnit V₂₂) (hV : V₁₂ᴴ * V₁₂ + V₂₂ᴴ * V₂₂ = 1) :
@@ -1034,8 +1221,8 @@ theorem l2_opNorm_mul_inv_sq_eq [DecidableEq k] [Nonempty k] {V₁₂ : Matrix l
     rw [div_le_iff₀ (by positivity)]
     nlinarith
 
-/-- Two names for one subspace give the same orthogonal projection (the instance argument of
-`Submodule.starProjection` depends on the subspace, so `rw` cannot do this). -/
+/-- Equal subspaces have equal orthogonal projections; the instance argument of
+`Submodule.starProjection` depends on the subspace, so `rw` cannot prove this. -/
 private theorem starProjection_apply_congr {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] {S S' : Submodule 𝕜 E} [S.HasOrthogonalProjection]
     [S'.HasOrthogonalProjection] (h : S = S') (y : E) :
@@ -1044,11 +1231,16 @@ private theorem starProjection_apply_congr {E : Type*} [NormedAddCommGroup E]
   rfl
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The distance between subspaces in matrix form** ([golub2013matrix] Theorem 2.5.1): if `W₁`,
-`Z₁`, `Z₂` have orthonormal columns and `range Z₂ = (range Z₁)ᗮ`, then the gap between the ranges
-of `W₁` and `Z₁` is `‖W₁ᴴ Z₂‖₂`. The two ranges have the same dimension, so the gap is the one-sided
-`‖P_{L⊥} P_K‖` (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and
-`P_{L⊥} P_K = Z₂ (Z₂ᴴ W₁) W₁ᴴ`, whose outer factors are isometries. -/
+/-- The distance between subspaces in terms of orthonormal bases. Let
+$W_1, Z_1 \in \mathbb{K}^{n \times k}$ and $Z_2 \in \mathbb{K}^{n \times l}$ have orthonormal
+columns, and suppose that $\operatorname{ran} Z_2 = (\operatorname{ran} Z_1)^\perp$. Then the
+gap between $\operatorname{ran} W_1$ and $\operatorname{ran} Z_1$ is
+$$\operatorname{gap}(\operatorname{ran} W_1, \operatorname{ran} Z_1) = \|W_1^H Z_2\|_2.$$
+
+This is [golub2013matrix], Theorem 2.5.1. The gap is `Submodule.gap`, the norm of the difference
+of the two orthogonal projections. The two ranges have the same dimension, so the gap is the
+one-sided $\|P_{L^\perp} P_K\|$ (`Submodule.gap_eq_norm_orthogonal_mul_of_finrank_eq`), and
+$P_{L^\perp} P_K = Z_2 (Z_2^H W_1) W_1^H$, whose outer factors are isometries. -/
 theorem gap_range_eq_l2_opNorm_conjTranspose_mul [DecidableEq k] [DecidableEq l]
     {W₁ Z₁ : Matrix n k 𝕜} {Z₂ : Matrix n l 𝕜}
     (hW₁ : W₁ᴴ * W₁ = 1) (hZ₁ : Z₁ᴴ * Z₁ = 1) (hZ₂ : Z₂ᴴ * Z₂ = 1)
@@ -1078,10 +1270,14 @@ theorem gap_range_eq_l2_opNorm_conjTranspose_mul [DecidableEq k] [DecidableEq l]
     l2_opNorm_mul_of_conjTranspose_mul_self_eq_one hZ₂, ← l2_opNorm_conjTranspose,
     conjTranspose_mul, conjTranspose_conjTranspose]
 
-/-- **Distance and least cosine** ([golub2013matrix] (7.3.19), the thin CS decomposition read for
-two subspaces): for `W₁`, `Z₁` with `card k ≥ 1` orthonormal columns,
-`gap(range W₁, range Z₁)² + σ_min(W₁ᴴ Z₁)² = 1`. The gap is the sine of the largest principal
-angle (`Submodule.gap_eq_sin_principalAngle`), whose cosine is `σ_min(W₁ᴴ Z₁)`
+/-- Distance and least cosine. Let $W_1, Z_1 \in \mathbb{K}^{n \times k}$ have orthonormal columns,
+with $k \ge 1$. Then
+$$\operatorname{gap}(\operatorname{ran} W_1, \operatorname{ran} Z_1)^2 + \sigma_{k-1}(W_1^H
+  Z_1)^2 = 1.$$
+
+This is [golub2013matrix], (7.3.19), the thin CS decomposition read for two subspaces. The gap
+is the sine of the largest principal angle (`Submodule.gap_eq_sin_principalAngle`), whose cosine
+is the least singular value $\sigma_{k-1}(W_1^H Z_1)$
 (`Submodule.cosPrincipalAngle_eq_singularValues`). -/
 theorem gap_range_sq_add_sortedSingularValues_sq [DecidableEq k] [Nonempty k] {W₁ Z₁ : Matrix n k 𝕜}
     (hW₁ : W₁ᴴ * W₁ = 1) (hZ₁ : Z₁ᴴ * Z₁ = 1) :
@@ -1107,23 +1303,29 @@ section Pinv
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- **The condition number of a rectangular matrix** through its pseudoinverse, in the operator
-`p`-norm: `pinvCondNumberLp p A = ‖A‖_p ‖A⁺‖_p`, beside the square `Matrix.condNumberLp`. The
-book's rectangular `κ₂(A) = ‖A‖₂ ‖A⁺‖₂` ([golub2013matrix] (5.2.4)) is `pinvCondNumberLp 2 A`: for
-full column rank it is `σ_max/σ_min` (`Matrix.pinvCondNumberLp_two_eq_div_colSingularValues`), and
-for an invertible square matrix it is `condNumberLp p A`
+/-- The **condition number of a rectangular matrix** in the operator $p$-norm, for
+$1 \le p \le \infty$: for $A \in \mathbb{K}^{m \times n}$,
+$$\kappa_p(A) = \|A\|_p \|A^+\|_p.$$
+
+The rectangular $\kappa_2(A) = \|A\|_2 \|A^+\|_2$ of [golub2013matrix], (5.2.4), is
+`Matrix.pinvCondNumberLp 2 A`. For linearly independent columns it is
+$\sigma_{\max} / \sigma_{\min}$ (`Matrix.pinvCondNumberLp_two_eq_div_colSingularValues`), and
+for an invertible square matrix it is the square condition number `Matrix.condNumberLp p A`
 (`Matrix.pinvCondNumberLp_eq_condNumberLp`). -/
 noncomputable def pinvCondNumberLp (p : ENNReal) [Fact (1 ≤ p)] (A : Matrix m n 𝕜) : ℝ :=
   lpOpNorm p A * lpOpNorm p A.pinv
 
-/-- For an invertible square matrix the rectangular condition number is the square one. -/
+/-- For an invertible $A \in \mathbb{K}^{n \times n}$ and $1 \le p \le \infty$, the rectangular
+condition number $\|A\|_p \|A^+\|_p$ equals the square condition number $\|A\|_p \|A^{-1}\|_p$
+(`Matrix.condNumberLp`). -/
 theorem pinvCondNumberLp_eq_condNumberLp (p : ENNReal) [Fact (1 ≤ p)] {A : Matrix n n 𝕜}
     (hA : IsUnit A) : pinvCondNumberLp p A = condNumberLp p A := by
   rw [pinvCondNumberLp, condNumberLp, pinv_eq_inv hA]
 
 omit [DecidableEq m] in
 open scoped ComplexOrder in
-/-- For linearly independent columns the pseudoinverse is a left inverse, `A⁺ A = 1`. -/
+/-- Let $A \in \mathbb{K}^{m \times n}$ have linearly independent columns. Then the pseudoinverse is
+a left inverse: $A^+ A = I$. -/
 theorem pinv_mul_self_of_linearIndependent {A : Matrix m n 𝕜} (hA : LinearIndependent 𝕜 Aᵀ) :
     A.pinv * A = 1 := by
   rw [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA, Matrix.mul_assoc,
@@ -1131,11 +1333,15 @@ theorem pinv_mul_self_of_linearIndependent {A : Matrix m n 𝕜} (hA : LinearInd
       (posDef_conjTranspose_mul_self_of_linearIndependent hA).isUnit)]
 
 open scoped Matrix.Norms.L2Operator ComplexOrder in
-/-- **The norm of the pseudoinverse** ([golub2013matrix] (5.3.9), `‖(AᵀA)⁻¹Aᵀ‖₂ = 1/σ_n(A)`): for
-linearly independent columns, `‖A⁺‖₂ = (⨅ i, σ_i(A))⁻¹`. `A A⁺` is the orthogonal projection onto
-the range, so `σ_min ‖A⁺ y‖ ≤ ‖A A⁺ y‖ ≤ ‖y‖`, with equality at `y = A x` for a least right singular
-vector `x`, where `A⁺ y = x`. (Column-indexed on purpose: `⨅ i` over the columns is `σ_min` for
-every shape; the sorted reading is `Matrix.sortedSingularValues_eq_iInf_colSingularValues`.) -/
+/-- The norm of the pseudoinverse. Let $A \in \mathbb{K}^{m \times n}$ have linearly independent
+columns, with $n \ge 1$. Then
+$$\|A^+\|_2 = \sigma_{\min}(A)^{-1}.$$
+
+This is the identity $\|(A^T A)^{-1} A^T\|_2 = 1 / \sigma_n(A)$ of [golub2013matrix], (5.3.9).
+The matrix $A A^+$ is the orthogonal projection onto the range of $A$, so $\sigma_{\min} \|A^+
+y\| \le \|A A^+ y\| \le \|y\|$, with equality at $y = A x$ for a least right singular vector
+$x$, where $A^+ y = x$. The least singular value is the infimum of `Matrix.colSingularValues`
+over the columns; the sorted form is `Matrix.sortedSingularValues_eq_iInf_colSingularValues`. -/
 theorem l2_opNorm_pinv_eq_inv_iInf_colSingularValues [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) : ‖A.pinv‖ = (⨅ i, A.colSingularValues i)⁻¹ := by
   obtain ⟨x, hx1, hx⟩ := A.exists_norm_eq_iInf_colSingularValues
@@ -1163,9 +1369,13 @@ theorem l2_opNorm_pinv_eq_inv_iInf_colSingularValues [Nonempty n] {A : Matrix m 
     linarith
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The rectangular condition number from the singular values** ([golub2013matrix] (5.2.4)): for
-linearly independent columns, `pinvCondNumberLp 2 A = σ_max / σ_min`. (Column-indexed on purpose,
-as `Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`.) -/
+/-- The rectangular condition number from the singular values. Let $A \in \mathbb{K}^{m \times n}$
+have linearly independent columns, with $n \ge 1$. Then
+$$\|A\|_2 \|A^+\|_2 = \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)}.$$
+
+This is [golub2013matrix], (5.2.4). The singular values $\sigma_{\max}$ and $\sigma_{\min}$ are
+the supremum and the infimum of `Matrix.colSingularValues` over the columns, as in
+`Matrix.l2_opNorm_pinv_eq_inv_iInf_colSingularValues`. -/
 theorem pinvCondNumberLp_two_eq_div_colSingularValues [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) :
     pinvCondNumberLp 2 A = (⨆ i, A.colSingularValues i) / (⨅ i, A.colSingularValues i) := by
@@ -1173,15 +1383,20 @@ theorem pinvCondNumberLp_two_eq_div_colSingularValues [Nonempty n] {A : Matrix m
     l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, div_eq_mul_inv]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The projection onto the range has norm one** ([golub2013matrix] (5.3.9)): `‖A A⁺‖₂ = 1` for
-`A ≠ 0`, `A A⁺` being the orthogonal projection onto the (nonzero) range of `A`. -/
+/-- The projection onto the range has norm one. Let $A \in \mathbb{K}^{m \times n}$ with $A \ne 0$.
+Then
+$$\|A A^+\|_2 = 1.$$
+
+This is in [golub2013matrix], (5.3.9). The matrix $A A^+$ is the orthogonal projection onto the
+range of $A$, which is not zero. -/
 theorem l2_opNorm_mul_pinv_eq_one {A : Matrix m n 𝕜} (hA : A ≠ 0) : ‖A * A.pinv‖ = 1 := by
   rw [l2_opNorm_def, LinearEquiv.trans_apply, mul_pinv_eq_starProjection]
   refine (congrArg norm (ContinuousLinearMap.ext fun _ => rfl)).trans
     (Submodule.norm_starProjection _ fun h => hA ?_)
   exact (LinearEquiv.map_eq_zero_iff _).1 (LinearMap.range_eq_bot.1 h)
 
-/-- `1 - A A⁺` acts as the orthogonal projection onto the orthogonal complement of the range. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the matrix $I - A A^+$ acts as the orthogonal projection
+onto $(\operatorname{ran} A)^\perp$. -/
 theorem toEuclideanLin_one_sub_mul_pinv (A : Matrix m n 𝕜) :
     toEuclideanLin (1 - A * A.pinv) = ((LinearMap.range (toEuclideanLin A))ᗮ.starProjection :
       EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 m) := by
@@ -1191,25 +1406,28 @@ theorem toEuclideanLin_one_sub_mul_pinv (A : Matrix m n 𝕜) :
     ContinuousLinearMap.coe_coe, Submodule.starProjection_orthogonal_val]
 
 omit [DecidableEq m] in
-/-- `A A⁺` is an orthogonal projector (a Hermitian idempotent), onto the range of `A`. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the matrix $A A^+$ is an orthogonal projector: it is
+Hermitian and idempotent. Its range is the range of $A$. -/
 theorem isStarProjection_mul_pinv (A : Matrix m n 𝕜) : IsStarProjection (A * A.pinv) :=
   ⟨by rw [IsIdempotentElem, ← Matrix.mul_assoc, A.mul_pinv_mul_self], A.isHermitian_mul_pinv⟩
 
 omit [DecidableEq m] in
-/-- `A⁺ A` is an orthogonal projector (a Hermitian idempotent), onto the row space of `A`. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the matrix $A^+ A$ is an orthogonal projector: it is
+Hermitian and idempotent. Its range is the row space of $A$. -/
 theorem isStarProjection_pinv_mul (A : Matrix m n 𝕜) : IsStarProjection (A.pinv * A) :=
   ⟨by rw [IsIdempotentElem, ← Matrix.mul_assoc, A.pinv_mul_self_mul_pinv],
     A.isHermitian_pinv_mul⟩
 
 open scoped Matrix.Norms.L2Operator in
-/-- The projection `1 - A A⁺` onto the orthogonal complement of the range has norm at most one. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the projection $I - A A^+$ onto
+$(\operatorname{ran} A)^\perp$ satisfies $\|I - A A^+\|_2 \le 1$. -/
 theorem l2_opNorm_one_sub_mul_pinv_le_one (A : Matrix m n 𝕜) : ‖1 - A * A.pinv‖ ≤ 1 :=
   IsStarProjection.norm_le _ (isStarProjection_mul_pinv A).one_sub
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator in
-/-- The projection `A⁺ A` onto the row space has norm one when `A ≠ 0`, the dual of
-`Matrix.l2_opNorm_mul_pinv_eq_one`. -/
+/-- For $A \in \mathbb{K}^{m \times n}$ with $A \ne 0$, the projection $A^+ A$ onto the row space
+satisfies $\|A^+ A\|_2 = 1$. This is the dual of `Matrix.l2_opNorm_mul_pinv_eq_one`. -/
 theorem l2_opNorm_pinv_mul_eq_one {A : Matrix m n 𝕜} (hA : A ≠ 0) : ‖A.pinv * A‖ = 1 := by
   classical
   have h := l2_opNorm_mul_pinv_eq_one (A := Aᴴ) fun h => hA (conjTranspose_eq_zero.1 h)
@@ -1217,21 +1435,25 @@ theorem l2_opNorm_pinv_mul_eq_one {A : Matrix m n 𝕜} (hA : A ≠ 0) : ‖A.pi
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator in
-/-- The projection `A⁺ A` onto the row space has norm at most one. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the projection $A^+ A$ onto the row space satisfies
+$\|A^+ A\|_2 \le 1$. -/
 theorem l2_opNorm_pinv_mul_le_one (A : Matrix m n 𝕜) : ‖A.pinv * A‖ ≤ 1 :=
   IsStarProjection.norm_le _ (isStarProjection_pinv_mul A)
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator in
-/-- The projection `1 - A⁺ A` onto the null space has norm at most one, the dual of
-`Matrix.l2_opNorm_one_sub_mul_pinv_le_one`. -/
+/-- For $A \in \mathbb{K}^{m \times n}$, the projection $I - A^+ A$ onto the null space satisfies
+$\|I - A^+ A\|_2 \le 1$. This is the dual of `Matrix.l2_opNorm_one_sub_mul_pinv_le_one`. -/
 theorem l2_opNorm_one_sub_pinv_mul_le_one (A : Matrix m n 𝕜) : ‖1 - A.pinv * A‖ ≤ 1 :=
   IsStarProjection.norm_le _ (isStarProjection_pinv_mul A).one_sub
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The projection onto the orthogonal complement of the range has norm one**
-([golub2013matrix] (5.3.9), `m > n`): `‖1 - A A⁺‖₂ = 1` when `A` has fewer columns than rows, so
-that its range is a proper subspace. -/
+/-- The projection onto the orthogonal complement of the range has norm one. Let
+$A \in \mathbb{K}^{m \times n}$ with $n < m$, so that the range of $A$ is a proper subspace.
+Then
+$$\|I - A A^+\|_2 = 1.$$
+
+This is in [golub2013matrix], (5.3.9), for $m > n$. -/
 theorem l2_opNorm_one_sub_mul_pinv_eq_one {A : Matrix m n 𝕜}
     (h : Fintype.card n < Fintype.card m) : ‖1 - A * A.pinv‖ = 1 := by
   rw [l2_opNorm_def, LinearEquiv.trans_apply, toEuclideanLin_one_sub_mul_pinv]
@@ -1245,8 +1467,12 @@ theorem l2_opNorm_one_sub_mul_pinv_eq_one {A : Matrix m n 𝕜}
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator ComplexOrder in
-/-- **The norm of the inverse Gram matrix** ([golub2013matrix] (5.3.9)): for linearly independent
-columns, `‖(Aᴴ A)⁻¹‖₂ = σ_min(A)⁻²`. `(Aᴴ A)⁻¹ = A⁺ A⁺ᴴ`, whose norm is `‖A⁺‖₂²`. -/
+/-- The norm of the inverse Gram matrix. Let $A \in \mathbb{K}^{m \times n}$ have linearly
+independent columns, with $n \ge 1$. Then
+$$\|(A^H A)^{-1}\|_2 = \sigma_{\min}(A)^{-2}.$$
+
+This is in [golub2013matrix], (5.3.9). The proof uses $(A^H A)^{-1} = A^+ (A^+)^H$, whose norm
+is $\|A^+\|_2^2$. -/
 theorem l2_opNorm_inv_conjTranspose_mul_self [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) : ‖(Aᴴ * A)⁻¹‖ = (⨅ i, A.colSingularValues i)⁻¹ ^ 2 := by
   classical
@@ -1262,9 +1488,13 @@ theorem l2_opNorm_inv_conjTranspose_mul_self [Nonempty n] {A : Matrix m n 𝕜}
     l2_opNorm_pinv_eq_inv_iInf_colSingularValues hA, sq]
 
 open scoped Matrix.Norms.L2Operator ComplexOrder in
-/-- **The normal equations square the condition number** ([golub2013matrix] (5.3.4),
-`κ₂(AᵀA) = κ₂(A)²`): for linearly independent columns,
-`pinvCondNumberLp 2 (Aᴴ A) = pinvCondNumberLp 2 A ^ 2`. -/
+/-- The normal equations square the condition number. Let $A \in \mathbb{K}^{m \times n}$ have
+linearly independent columns, with $n \ge 1$. Then
+$$\kappa_2(A^H A) = \kappa_2(A)^2,$$
+where $\kappa_2(B) = \|B\|_2 \|B^+\|_2$.
+
+This is the identity $\kappa_2(A^T A) = \kappa_2(A)^2$ of [golub2013matrix], (5.3.4). The
+condition number is `Matrix.pinvCondNumberLp 2`. -/
 theorem pinvCondNumberLp_two_conjTranspose_mul_self [Nonempty n] {A : Matrix m n 𝕜}
     (hA : LinearIndependent 𝕜 Aᵀ) : pinvCondNumberLp 2 (Aᴴ * A) = pinvCondNumberLp 2 A ^ 2 := by
   have hU := (posDef_conjTranspose_mul_self_of_linearIndependent hA).isUnit
@@ -1284,10 +1514,13 @@ variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Wedin's decomposition** of the difference of two pseudoinverses ([golub2013matrix] §5.5.3):
-`B⁺ - A⁺ = -B⁺ (B - A) A⁺ + B⁺ B⁺ᴴ (B - A)ᴴ (1 - A A⁺) + (1 - B⁺ B) (B - A)ᴴ A⁺ᴴ A⁺`. Only the four
-Penrose conditions of `A⁺` and `B⁺` enter the proof, and they characterize the pseudoinverse
-(`Matrix.pinv_unique`). -/
+/-- **Wedin's decomposition** of the difference of two pseudoinverses. Let
+$A, B \in \mathbb{K}^{m \times n}$. Then
+$$B^+ - A^+ = -B^+ (B - A) A^+ + B^+ (B^+)^H (B - A)^H (I - A A^+) + (I - B^+ B) (B - A)^H
+  (A^+)^H A^+.$$
+
+This is in [golub2013matrix], §5.5.3. Only the four Penrose conditions of $A^+$ and $B^+$ enter
+the proof, and they characterize the pseudoinverse (`Matrix.pinv_unique`). -/
 theorem pinv_sub_pinv_eq (A B : Matrix m n 𝕜) :
     B.pinv - A.pinv = -(B.pinv * ((B - A) * A.pinv))
       + B.pinv * (B.pinvᴴ * ((B - A)ᴴ * (1 - A * A.pinv)))
@@ -1316,8 +1549,8 @@ theorem pinv_sub_pinv_eq (A B : Matrix m n 𝕜) :
   simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
   abel
 
-/-- The scalar end of Wedin's bound: three terms, each at most `e max(p², q²)`, whose squares add
-to `d²`, give `d ≤ 2 e max(p², q²)` (as `√3 ≤ 2`). -/
+/-- If $d^2 = t_1^2 + t_2^2 + t_3^2$ with $d, t_1, t_2, t_3, e \ge 0$, $t_1 \le q e p$,
+$t_2 \le q^2 e$ and $t_3 \le e p^2$, then $d \le 2 e \max(p^2, q^2)$, because $\sqrt{3} \le 2$. -/
 private theorem wedin_real_bound {d t₁ t₂ t₃ p q e : ℝ}
     (hsq : d ^ 2 = t₁ ^ 2 + t₂ ^ 2 + t₃ ^ 2)
     (hd : 0 ≤ d) (h₁ : 0 ≤ t₁) (h₂ : 0 ≤ t₂) (h₃ : 0 ≤ t₃) (he : 0 ≤ e)
@@ -1337,14 +1570,17 @@ private theorem wedin_real_bound {d t₁ t₂ t₃ p q e : ℝ}
       sq_nonneg (e * M)]
   exact (pow_le_pow_iff_left₀ hd (by positivity) two_ne_zero).1 hfin
 
-/-- **Wedin's bound** ([golub2013matrix] §5.5.3, after Wedin (1973) and Stewart (1977)): for
-`A, E : Matrix m n 𝕜`, `‖(A + E)⁺ - A⁺‖_F ≤ 2 ‖E‖_F max(‖A⁺‖₂², ‖(A + E)⁺‖₂²)`, with no rank
-hypothesis. The three terms of Wedin's decomposition `Matrix.pinv_sub_pinv_eq` are mutually
-orthogonal for the Frobenius inner product and bounded by `‖B⁺‖₂ ‖E‖_F ‖A⁺‖₂`, `‖B⁺‖₂² ‖E‖_F`
-and `‖E‖_F ‖A⁺‖₂²`; the constant is `√3 ≤ 2`.
+/-- **Wedin's bound** on the perturbation of the pseudoinverse. Let
+$A, E \in \mathbb{K}^{m \times n}$. Then
+$$\|(A + E)^+ - A^+\|_F \le 2 \|E\|_F \max\bigl(\|A^+\|_2^2, \|(A + E)^+\|_2^2\bigr),$$
+with no hypothesis on the ranks.
 
-The Frobenius norm is the scoped instance `Matrix.Norms.Frobenius`, and the spectral norms are
-written `lpOpNorm 2`. -/
+This is in [golub2013matrix], §5.5.3, after Wedin (1973) and Stewart (1977). The three terms of
+Wedin's decomposition `Matrix.pinv_sub_pinv_eq` are mutually orthogonal for the Frobenius inner
+product, and they are bounded by $\|B^+\|_2 \|E\|_F \|A^+\|_2$, $\|B^+\|_2^2 \|E\|_F$ and
+$\|E\|_F \|A^+\|_2^2$ for $B = A + E$. This gives the constant $\sqrt{3} \le 2$. The Frobenius
+norm is the scoped instance `Matrix.Norms.Frobenius`, and the spectral norms are written
+`Matrix.lpOpNorm 2`. -/
 theorem frobenius_norm_pinv_sub_le (A E : Matrix m n 𝕜) :
     ‖(A + E).pinv - A.pinv‖ ≤ 2 * ‖E‖ *
       max (lpOpNorm 2 A.pinv ^ 2) (lpOpNorm 2 (A + E).pinv ^ 2) := by
@@ -1413,7 +1649,7 @@ theorem frobenius_norm_pinv_sub_le (A E : Matrix m n 𝕜) :
 
 end Wedin
 
-/-! ### The norm of `P (I + Pᴴ P)^{-1/2}` -/
+/-! ### The norm of $P (I + P^H P)^{-1/2}$ -/
 
 section GramSqrt
 
@@ -1421,10 +1657,13 @@ variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.Frobenius ComplexOrder MatrixOrder in
-/-- [golub2013matrix] (8.1.3) (and (7.2.6)): for `P : Matrix m n 𝕜`,
-`‖P (I + Pᴴ P)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F`, the square root being `CFC.sqrt`. With
-`S = (I + Pᴴ P)^{1/2}` Hermitian and `x = S y`, `‖x‖² = ‖y‖² + ‖P y‖² ≥ ‖y‖²`, so
-`‖P S⁻¹ x‖ = ‖P y‖ ≤ ‖P‖₂ ‖y‖ ≤ ‖P‖₂ ‖x‖`; no diagonalization is needed. The second inequality is
+/-- Let $P \in \mathbb{K}^{m \times n}$. Then
+$$\|P (I + P^H P)^{-1/2}\|_2 \le \|P\|_2 \le \|P\|_F.$$
+
+This is [golub2013matrix], (8.1.3), and (7.2.6). The square root is `CFC.sqrt` and the inverse
+is the matrix inverse. With $S = (I + P^H P)^{1/2}$, which is Hermitian, and $x = S y$, one has
+$\|x\|^2 = \|y\|^2 + \|P y\|^2 \ge \|y\|^2$, so $\|P S^{-1} x\| = \|P y\| \le \|P\|_2 \|y\| \le
+\|P\|_2 \|x\|$; no diagonalization is needed. The second inequality is
 `Matrix.l2_opNorm_le_frobenius_norm`. -/
 theorem l2_opNorm_mul_inv_sqrt_one_add_gram_le (P : Matrix m n 𝕜) :
     lpOpNorm 2 (P * (CFC.sqrt (1 + Pᴴ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖ := by
@@ -1466,9 +1705,10 @@ end GramSqrt
 
 section EckartYoungEquality
 
-/-- **The equality case of a weighted count**: if `0 ≤ aᵢ ≤ 1`, `∑ aᵢ ≤ |J|`, `sᵢ ≥ t₁` on `J` and
-`sᵢ ≤ t₂` off `J` with `t₂ ≥ 0`, then `∑ sᵢ aᵢ + (t₁ - t₂) ∑_{i ∈ J} (1 - aᵢ) ≤ ∑_{i ∈ J} sᵢ`. The
-maximum of `∑ sᵢ aᵢ` under the constraints is `∑_J sᵢ`, with a defect proportional to the gap. -/
+/-- If $0 \le a_i \le 1$, $\sum_i a_i \le |J|$, $s_i \ge t_1$ for $i \in J$, and $s_i \le t_2$ for
+$i \notin J$ with $t_2 \ge 0$, then $\sum_i s_i a_i + (t_1 - t_2) \sum_{i \in J} (1 - a_i) \le
+\sum_{i \in J} s_i$: the maximum of $\sum_i s_i a_i$ under these constraints is
+$\sum_{i \in J} s_i$, with a defect proportional to the gap $t_1 - t_2$. -/
 private theorem sum_mul_add_gap_le {ι : Type*} [Fintype ι] (J : Finset ι) {s a : ι → ℝ}
     {t₁ t₂ : ℝ} (ha0 : ∀ i, 0 ≤ a i) (ha1 : ∀ i, a i ≤ 1) (hsum : ∑ i, a i ≤ J.card)
     (hJ : ∀ i ∈ J, t₁ ≤ s i) (hJc : ∀ i ∉ J, s i ≤ t₂) (ht₂ : 0 ≤ t₂) :
@@ -1498,7 +1738,8 @@ variable {m n : ℕ} {C : Matrix (Fin m) (Fin n) 𝕜}
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The column `j` of `M V Σᴴ`: `σ_j M v_j` below the width of `Σ`, and `0` beyond. -/
+/-- For an $n \times n$ matrix $M$, the column $j$ of $M V \Sigma^H$ has squared norm
+$\sigma_j^2 \|M v_j\|^2$ if $j < n$ and $0$ otherwise, where $v_j$ is the column $j$ of $V$. -/
 private theorem norm_col_mul_mul_rectDiagonal_sq (M : Matrix (Fin n) (Fin n) 𝕜) (j : Fin m) :
     ‖(WithLp.toLp 2 fun k => (M * V *
         (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin n) (Fin m) 𝕜)) k j :
@@ -1529,8 +1770,8 @@ private theorem norm_col_mul_mul_rectDiagonal_sq (M : Matrix (Fin n) (Fin n) �
     rw [hv]
     simp
 
-/-- **The Frobenius norm against `Cᴴ` in singular coordinates**: for an SVD `C = U Σ Vᴴ` and any
-`M`, `‖M Cᴴ‖_F² = ∑_{i < min(m, n)} σᵢ² ‖M vᵢ‖²`, `vᵢ` the columns of `V`. -/
+/-- For an SVD $C = U \Sigma V^H$ and an $n \times n$ matrix $M$, $\|M C^H\|_F^2 = \sum_{i < \min(m,
+n)} \sigma_i^2 \|M v_i\|^2$, where $v_i$ are the columns of $V$. -/
 private theorem frobenius_norm_mul_conjTranspose_sq (h : IsSVD C U σ V)
     (M : Matrix (Fin n) (Fin n) 𝕜) :
     ‖M * Cᴴ‖ ^ 2 = ∑ i : Fin (min m n), σ i ^ 2 *
@@ -1559,13 +1800,13 @@ private theorem frobenius_norm_mul_conjTranspose_sq (h : IsSVD C U σ V)
   · rw [ite_eq_right fun h' => hj (lt_of_lt_of_le h' (min_le_right m n)), hg]
     exact dite_eq_right hj
 
-/-- The columns of `P V` are the images of the columns of `V`. -/
+/-- The column $i$ of $P V$ is $P$ applied to the column $i$ of $V$. -/
 private theorem toEuclideanLin_toLp_transpose (P V : Matrix (Fin n) (Fin n) 𝕜) (i : Fin n) :
     toEuclideanLin P (WithLp.toLp 2 (Vᵀ i)) = WithLp.toLp 2 fun k => (P * V) k i := by
   simp only [toEuclideanLin_toLp]
   congr 1
 
-/-- An orthogonal projector of rank at most `r` has Frobenius norm at most `√r`. -/
+/-- An orthogonal projector $P$ of rank at most $r$ satisfies $\|P\|_F^2 \le r$. -/
 private theorem frobenius_norm_sq_le_of_isStarProjection {P : Matrix (Fin n) (Fin n) 𝕜}
     (hP : IsStarProjection P) {r : ℕ} (hr : P.rank ≤ r) : ‖P‖ ^ 2 ≤ r := by
   have h3 : ‖P‖ ≤ √(r : ℝ) :=
@@ -1576,8 +1817,8 @@ private theorem frobenius_norm_sq_le_of_isStarProjection {P : Matrix (Fin n) (Fi
   calc ‖P‖ ^ 2 ≤ √(r : ℝ) ^ 2 := pow_le_pow_left₀ (norm_nonneg _) h3 2
     _ = r := Real.sq_sqrt (Nat.cast_nonneg _)
 
-/-- **Pythagoras for a projector fixing `Ĉ`**: if `P` is an orthogonal projector with `Ĉ P = Ĉ`,
-then `‖C - Ĉ‖_F² = ‖(C - Ĉ) P‖_F² + ‖C (1 - P)‖_F²`. -/
+/-- If $P$ is an orthogonal projector with $\hat{C} P = \hat{C}$, then $\|C - \hat{C}\|_F^2 = \|(C -
+\hat{C}) P\|_F^2 + \|C (I - P)\|_F^2$. -/
 private theorem frobenius_norm_sub_sq_eq_of_isStarProjection {C Ĉ : Matrix (Fin m) (Fin n) 𝕜}
     {P : Matrix (Fin n) (Fin n) 𝕜} (hP : IsStarProjection P) (hĈP : Ĉ * P = Ĉ) :
     ‖C - Ĉ‖ ^ 2 = ‖(C - Ĉ) * P‖ ^ 2 + ‖C * (1 - P)‖ ^ 2 := by
@@ -1593,8 +1834,9 @@ private theorem frobenius_norm_sub_sq_eq_of_isStarProjection {C Ĉ : Matrix (Fin
       trace_zero]
   rw [← frobenius_norm_add_sq_of_trace_eq_zero htr, hXY]
 
-/-- If `P` fixes the leading `r` right singular vectors of `C` and kills the others, then
-`C P = U Σ_r Vᴴ`: `P = V D Vᴴ` with `D` the leading-`r` indicator. -/
+/-- If $P$ fixes the leading $r$ right singular vectors of $C = U \Sigma V^H$ and sends the others
+to $0$, then $C P = U \Sigma_r V^H$, because $P = V D V^H$ with $D$ the diagonal indicator of
+the first $r$ indices. -/
 private theorem mul_eq_svdTruncation_of_toEuclideanLin (h : IsSVD C U σ V) {r : ℕ}
     {P : Matrix (Fin n) (Fin n) 𝕜} (hPv : ∀ i : Fin n, toEuclideanLin P (WithLp.toLp 2 (Vᵀ i)) =
       if (i : ℕ) < r then WithLp.toLp 2 (Vᵀ i) else 0) :
@@ -1627,15 +1869,23 @@ private theorem mul_eq_svdTruncation_of_toEuclideanLin (h : IsSVD C U σ V) {r :
           (star V * V) * D) * star V := by simp only [Matrix.mul_assoc]
     _ = _ := by rw [hsV, Matrix.mul_one, hSD]
 
-/-- **The Frobenius-optimal rank-`r` approximation is unique under a gap** (the equality case of
-Eckart–Young–Mirsky; [golub2013matrix] Theorem 6.3.1, "`[E₀ | R₀]` is the unique minimizer"): if
-`IsSVD C U σ V`, `σ_{r-1} > σ_r` (which forces `0 < r`), `rank Ĉ ≤ r` and
-`‖C - Ĉ‖_F² ≤ ∑_{r ≤ i < min(m, n)} σᵢ²`, then `Ĉ` is the truncation `U Σ_r Vᴴ`. With `P = Ĉ⁺ Ĉ`
-the projection onto the row space of `Ĉ` (rank `≤ r`),
-`‖C - Ĉ‖_F² = ‖(C - Ĉ) P‖_F² + ‖C (1 - P)‖_F²` and
-`‖C (1 - P)‖_F² = ∑ σᵢ² (1 - ‖P vᵢ‖²)` with `∑ ‖P vᵢ‖² = ‖P‖_F² ≤ r`; the gap then forces
-`(C - Ĉ) P = 0` and `P vᵢ = vᵢ` for `i < r` (`P vᵢ = 0` for `i ≥ r` by the count), so `P` is the
-projection onto the leading right singular vectors and `Ĉ = C P = U Σ_r Vᴴ`. -/
+/-- The best approximation of rank at most $r$ in the Frobenius norm is unique under a gap. Let
+$C = U \Sigma V^H$ be an SVD of $C \in \mathbb{K}^{m \times n}$ with singular values $\sigma_i$,
+and suppose that $\sigma_r < \sigma_{r-1}$, which forces $r > 0$. Let
+$\hat{C} \in \mathbb{K}^{m \times n}$ satisfy $\operatorname{rank} \hat{C} \le r$ and
+$$\|C - \hat{C}\|_F^2 \le \sum_{r \le i < \min(m, n)} \sigma_i^2.$$
+Then $\hat{C} = U \Sigma_r V^H$ is the truncation of the SVD.
+
+This is the equality case of the Eckart–Young–Mirsky theorem, and the statement
+"$[E_0 \mid R_0]$ is the unique minimizer" in [golub2013matrix], Theorem 6.3.1. By
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le`, the hypothesis says that $\hat{C}$ is a best
+approximation. The singular values $\sigma_i$ are those of the given SVD. Let
+$P = \hat{C}^+ \hat{C}$ be the projection onto the row space of $\hat{C}$, of rank at most $r$.
+Then $\|C - \hat{C}\|_F^2 = \|(C - \hat{C}) P\|_F^2 + \|C (I - P)\|_F^2$, and $\|C (I -
+P)\|_F^2 = \sum_i \sigma_i^2 (1 - \|P v_i\|^2)$ with $\sum_i \|P v_i\|^2 = \|P\|_F^2 \le r$. The
+gap forces $(C - \hat{C}) P = 0$ and $P v_i = v_i$ for $i < r$, and the count gives $P v_i = 0$
+for $i \ge r$. So $P$ is the projection onto the leading right singular vectors, and
+$\hat{C} = C P = U \Sigma_r V^H$. -/
 theorem eq_svdTruncation_of_frobenius_norm_sub_sq_le (h : IsSVD C U σ V) {r : ℕ}
     (hgap : σ r < σ (r - 1)) {Ĉ : Matrix (Fin m) (Fin n) 𝕜} (hĈ : Ĉ.rank ≤ r)
     (hle : ‖C - Ĉ‖ ^ 2 ≤ ∑ i ∈ Finset.Ico r (min m n), σ i ^ 2) :
@@ -1800,7 +2050,7 @@ section SubsetSelection
 variable {M N : ℕ} {A : Matrix (Fin M) (Fin N) 𝕜} {U : Matrix (Fin M) (Fin M) 𝕜} {σ : ℕ → ℝ}
   {V : Matrix (Fin N) (Fin N) 𝕜}
 
-/-- Scaling the coordinates by numbers of modulus at least `c ≥ 0` stretches by at least `c`. -/
+/-- If $0 \le c \le s_i$ for all $i$, then $c \|d\| \le \|(s_i d_i)_i\|$ for every vector $d$. -/
 private theorem mul_norm_le_norm_toLp_mul {r : ℕ} {s : Fin r → ℝ} {c : ℝ} (hc : 0 ≤ c)
     (hs : ∀ i, c ≤ s i) (d : Fin r → 𝕜) :
     c * ‖(WithLp.toLp 2 d : EuclideanSpace 𝕜 (Fin r))‖ ≤
@@ -1813,13 +2063,19 @@ private theorem mul_norm_le_norm_toLp_mul {r : ℕ} {s : Fin r → ℝ} {c : ℝ
   rwa [one_mul, WithLp.toLp_smul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hc] at h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The lower bound of SVD-based subset selection** ([golub2013matrix] Theorem 5.5.2, lower
-bound):
-let `IsSVD A U σ V`, `π` a permutation of the columns, `B₁` the first `r` columns of `A P`
-(`(A P) i j = A i (π j)`) and `Ṽ₁₁` the leading `r × r` block of `Pᵀ V`, assumed invertible. Then
-`σ_{r-1}(A) ≤ ‖Ṽ₁₁⁻¹‖₂ σ_{r-1}(B₁)` (the book's `σ_r(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r(B₁)`, 1-based). For
-`w ∈ 𝕜^r`, `‖B₁ w‖ = ‖Σ Vᴴ P [w; 0]‖ ≥ σ_{r-1} ‖Ṽ₁₁ᴴ w‖ ≥ σ_{r-1} ‖w‖ / ‖Ṽ₁₁⁻¹‖₂`, and the least
-stretch of `B₁` is `σ_{r-1}(B₁)`. The upper bound `σ_{r-1}(B₁) ≤ σ_{r-1}(A)` is
+/-- The lower bound of subset selection based on the SVD. Let $A = U \Sigma V^H$ be an SVD of
+$A \in \mathbb{K}^{M \times N}$, let $\pi$ be a permutation of the columns, and let $P$ be its
+permutation matrix, so that $(A P)_{ij} = A_{i, \pi(j)}$. Let $0 < r \le \min(M, N)$, let $B_1$
+be the first $r$ columns of $A P$, and let $\tilde{V}_{11}$ be the leading $r \times r$ block of
+$P^T V$, and suppose that $\tilde{V}_{11}$ is invertible. Then
+$$\sigma_{r-1}(A) \le \|\tilde{V}_{11}^{-1}\|_2 \, \sigma_{r-1}(B_1).$$
+
+This is the lower bound of [golub2013matrix], Theorem 5.5.2, which reads $\sigma_r(A) /
+\|\tilde{V}_{11}^{-1}\|_2 \le \sigma_r(B_1)$ with indices from $1$. The matrix $P^T V$ is
+`V.submatrix π id`, with entries $V_{\pi(i), j}$. For $w \in \mathbb{K}^r$, $\|B_1 w\| =
+\|\Sigma V^H P [w; 0]\| \ge \sigma_{r-1} \|\tilde{V}_{11}^H w\| \ge \sigma_{r-1} \|w\| /
+\|\tilde{V}_{11}^{-1}\|_2$, and the least singular value of $B_1$ is $\sigma_{r-1}(B_1)$. The
+upper bound $\sigma_{r-1}(B_1) \le \sigma_{r-1}(A)$ is
 `Matrix.sortedSingularValues_submatrix_le`. -/
 theorem IsSVD.sortedSingularValues_le_mul_submatrix (h : IsSVD A U σ V) (π : Equiv.Perm (Fin N))
     {r : ℕ} (hr0 : 0 < r) (hrM : r ≤ M) (hrN : r ≤ N)
@@ -1904,8 +2160,8 @@ section SingularSubspacePair
 
 open scoped Matrix.Norms.Frobenius
 
-/-- A separation survives perturbations of both sides: if `δ ≤ |a − b|`, `|a' − a| ≤ ε₁` and
-`|b' − b| ≤ ε₂`, then `δ − (ε₁ + ε₂) ≤ |a' − b'|`. -/
+/-- If $\delta \le |a - b|$, $|a' - a| \le \varepsilon_1$ and $|b' - b| \le \varepsilon_2$, then
+$\delta - (\varepsilon_1 + \varepsilon_2) \le |a' - b'|$. -/
 private theorem le_abs_sub_of_abs_sub_le {a b a' b' δ ε₁ ε₂ : ℝ} (h : δ ≤ |a - b|)
     (ha : |a' - a| ≤ ε₁) (hb : |b' - b| ≤ ε₂) : δ - (ε₁ + ε₂) ≤ |a' - b'| := by
   have h1 := abs_sub_abs_le_abs_sub (a - b) (a' - b')
@@ -1914,13 +2170,14 @@ private theorem le_abs_sub_of_abs_sub_le {a b a' b' δ ε₁ ε₂ : ℝ} (h : �
     constructor <;> linarith [ha.1, ha.2, hb.1, hb.2]
   linarith
 
-/-- `|s − t| ≤ |s + t|` for nonnegative `s`, `t`. -/
+/-- For $s, t \ge 0$, $|s - t| \le |s + t|$. -/
 private theorem abs_sub_le_abs_add_of_nonneg {s t : ℝ} (hs : 0 ≤ s) (ht : 0 ≤ t) :
     |s - t| ≤ |s + t| := by
   rw [abs_of_nonneg (add_nonneg hs ht)]
   exact abs_sub_le_iff.2 ⟨by linarith, by linarith⟩
 
-/-- The eigenvalues of the Hermitian dilation of a square matrix are `±` its singular values. -/
+/-- For a square matrix $B \in \mathbb{K}^{k \times k}$, each eigenvalue of $\mathcal{H}(B)$ is
+$\sigma_i(B)$ or $-\sigma_i(B)$ for some $i < k$. -/
 private theorem exists_eigenvalues₀_hermitianDilation_eq {k : Type*} [Fintype k]
     [DecidableEq k] (B : Matrix k k 𝕜) (h : (hermitianDilation B).IsHermitian)
     (b : Fin (Fintype.card (k ⊕ k))) : ∃ i < Fintype.card k,
@@ -1937,8 +2194,8 @@ private theorem exists_eigenvalues₀_hermitianDilation_eq {k : Type*} [Fintype 
     rw [B.sortedSingularValues_eq_zero_of_min_le (k := (b : ℕ)) (by rw [min_self]; omega),
       zero_sub]
 
-/-- The eigenvalues of the Hermitian dilation of a rectangular matrix are `±` its singular values,
-or `0` when the matrix is not square. -/
+/-- For $B \in \mathbb{K}^{q \times p}$, each eigenvalue of $\mathcal{H}(B)$ is $\sigma_j(B)$ or
+$-\sigma_j(B)$ for some $j < \min(p, q)$, or it is $0$ and $p \ne q$. -/
 private theorem eigenvalues₀_hermitianDilation_cases {p q : Type*} [Fintype p] [Fintype q]
     [DecidableEq p] [DecidableEq q] (B : Matrix q p 𝕜) (h : (hermitianDilation B).IsHermitian)
     (a : Fin (Fintype.card (p ⊕ q))) :
@@ -1961,14 +2218,16 @@ private theorem eigenvalues₀_hermitianDilation_cases {p q : Type*} [Fintype p]
         B.sortedSingularValues_eq_zero_of_min_le (k := Fintype.card (p ⊕ q) - 1 - a)
           (by omega), sub_self]
 
-/-- **The coupled Sylvester operator of a singular subspace pair is bounded below by the
-separation of the singular values**: if the singular values of the square `B₁` and of `B₂` are
-`c`-separated, and those of `B₁` are at least `c` when `B₂` is not square, then
-`c² (‖P‖² + ‖Q‖²) ≤ ‖B₂ᴴ Q − P B₁ᴴ‖² + ‖B₂ P − Q B₁‖²`. The operator is the Sylvester operator of
-the Hermitian dilations of `B₂` and `B₁` on `fromBlocks P 0 0 Q`, whose separation is the least
-distance between their spectra (`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`), and those
-spectra are `±` the singular values, padded by zeros
-(`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). -/
+/-- The coupled Sylvester operator of a pair of singular subspaces is bounded below by the
+separation of the singular values: let $c \ge 0$, let $B_1 \in \mathbb{K}^{k \times k}$ and
+$B_2 \in \mathbb{K}^{q \times p}$ satisfy $c \le |\sigma_i(B_1) - \sigma_j(B_2)|$ for $i < k$
+and $j < \min(p, q)$, and, if $p \ne q$, also $c \le \sigma_i(B_1)$ for $i < k$; then $c^2
+(\|P\|_F^2 + \|Q\|_F^2) \le \|B_2^H Q - P B_1^H\|_F^2 + \|B_2 P - Q B_1\|_F^2$ for all
+$P \in \mathbb{K}^{p \times k}$ and $Q \in \mathbb{K}^{q \times k}$. The operator is the
+Sylvester operator of the dilations of $B_2$ and $B_1$ applied to $\operatorname{diag}(P, Q)$,
+whose separation is the least distance between their spectra
+(`Matrix.IsHermitian.sep_eq_iInf_abs_eigenvalues_sub`), and those spectra are the singular
+values with signs, padded by zeros (`Matrix.IsHermitian.eigenvalues₀_hermitianDilation`). -/
 private theorem sq_mul_le_of_sortedSingularValues_sep {k p q : Type*} [Fintype k] [Fintype p]
     [Fintype q] [DecidableEq k] [DecidableEq p] {B₁ : Matrix k k 𝕜}
     {B₂ : Matrix q p 𝕜} {c : ℝ} (hc : 0 ≤ c)
@@ -2034,8 +2293,8 @@ private theorem sq_mul_le_of_sortedSingularValues_sep {k p q : Type*} [Fintype k
           (mul_le_mul_of_nonneg_right hsepc (norm_nonneg _)) 2
     _ ≤ _ := pow_le_pow_left₀ (mul_nonneg (sep_nonneg _ _) (norm_nonneg _)) hmul 2
 
-/-- The scalar estimate behind the Lipschitz bound of the quadratic part:
-`(η (a X + b Y))² + (η (b X + a Y))² ≤ (η (X + Y))² (a² + b²)`. -/
+/-- If $0 \le d_1 \le \eta (a X + b Y)$ and $0 \le d_2 \le \eta (b X + a Y)$ with $X, Y \ge 0$, then
+$d_1^2 + d_2^2 \le (\eta (X + Y))^2 (a^2 + b^2)$. -/
 private theorem sq_add_sq_le_of_le_mul {d₁ d₂ a b X Y η : ℝ} (hX : 0 ≤ X) (hY : 0 ≤ Y)
     (hd₁0 : 0 ≤ d₁) (hd₂0 : 0 ≤ d₂)
     (hd₁ : d₁ ≤ η * (a * X + b * Y)) (hd₂ : d₂ ≤ η * (b * X + a * Y)) :
@@ -2051,14 +2310,16 @@ private theorem sq_add_sq_le_of_le_mul {d₁ d₂ a b X Y η : ℝ} (hX : 0 ≤ 
     _ ≤ η ^ 2 * ((a ^ 2 + b ^ 2) * (X + Y) ^ 2) := mul_le_mul_of_nonneg_left h3 (sq_nonneg η)
     _ = _ := by ring
 
-/-- The Frobenius norm of a triple product. -/
+/-- The Frobenius norm is submultiplicative for a product of three matrices:
+$\|X Y Z\|_F \le \|X\|_F \|Y\|_F \|Z\|_F$. -/
 private theorem frobenius_norm_mul_mul_le {a b c d : Type*} [Fintype a] [Fintype b] [Fintype c]
     [Fintype d] (X : Matrix a b 𝕜) (Y : Matrix b c 𝕜) (Z : Matrix c d 𝕜) :
     ‖X * Y * Z‖ ≤ ‖X‖ * ‖Y‖ * ‖Z‖ :=
   (frobenius_norm_mul _ _).trans
     (mul_le_mul_of_nonneg_right (frobenius_norm_mul _ _) (norm_nonneg _))
 
-/-- `‖X C Y − X' C Y'‖ ≤ η (‖X − X'‖ ‖Y‖ + ‖X'‖ ‖Y − Y'‖)` for `‖C‖ ≤ η`. -/
+/-- If $\|C\|_F \le \eta$, then $\|X C Y - X' C Y'\|_F \le \eta (\|X - X'\|_F \|Y\|_F + \|X'\|_F
+\|Y - Y'\|_F)$. -/
 private theorem frobenius_norm_mul_mul_sub_le {a b c d : Type*} [Fintype a] [Fintype b]
     [Fintype c] [Fintype d] {C : Matrix b c 𝕜} {η : ℝ} (hC : ‖C‖ ≤ η) (X X' : Matrix a b 𝕜)
     (Y Y' : Matrix c d 𝕜) :
@@ -2075,9 +2336,9 @@ private theorem frobenius_norm_mul_mul_sub_le {a b c d : Type*} [Fintype a] [Fin
   linarith [show η * (‖X - X'‖ * ‖Y‖ + ‖X'‖ * ‖Y - Y'‖) =
     ‖X - X'‖ * η * ‖Y‖ + ‖X'‖ * η * ‖Y - Y'‖ by ring]
 
-/-- **The quadratic part of the coupled equations is Lipschitz on balls**:
-`[P; Q] ↦ [P C Q; Q D P]` with `‖C‖, ‖D‖ ≤ η` satisfies
-`‖φ x − φ y‖ ≤ η (‖x‖ + ‖y‖) ‖x − y‖` in the Frobenius norm. -/
+/-- The quadratic part of the coupled equations is Lipschitz on balls: if
+$\|C\|_F, \|D\|_F \le \eta$, then the map $\varphi : [P; Q] \mapsto [P C Q; Q D P]$ satisfies
+$\|\varphi(x) - \varphi(y)\|_F \le \eta (\|x\|_F + \|y\|_F) \|x - y\|_F$. -/
 private theorem frobenius_norm_fromRows_quadratic_sub_le {k p q : Type*} [Fintype k] [Fintype p]
     [Fintype q] {C : Matrix k q 𝕜} {D : Matrix k p 𝕜} {η : ℝ} (hC : ‖C‖ ≤ η) (hD : ‖D‖ ≤ η)
     (P P' : Matrix p k 𝕜) (Q Q' : Matrix q k 𝕜) :
@@ -2109,8 +2370,8 @@ private theorem frobenius_norm_fromRows_quadratic_sub_le {k p q : Type*} [Fintyp
 
 variable {k p q : Type*} [Fintype k] [Fintype p] [Fintype q]
 
-/-- The coupled Sylvester operator `[P; Q] ↦ [B₂ᴴ Q − P B₁ᴴ; B₂ P − Q B₁]` of a singular subspace
-pair, on stacked matrices. -/
+/-- The coupled Sylvester operator $[P; Q] \mapsto [B_2^H Q - P B_1^H; B_2 P - Q B_1]$ of a pair of
+singular subspaces, on stacked matrices. -/
 private def pairSylvester (B₁ : Matrix k k 𝕜) (B₂ : Matrix q p 𝕜) :
     Matrix (p ⊕ q) k 𝕜 →ₗ[𝕜] Matrix (p ⊕ q) k 𝕜 where
   toFun x := fromRows (B₂ᴴ * x.toRows₂ - x.toRows₁ * B₁ᴴ) (B₂ * x.toRows₁ - x.toRows₂ * B₁)
@@ -2136,10 +2397,12 @@ private theorem pairSylvester_fromRows (B₁ : Matrix k k 𝕜) (B₂ : Matrix q
     (B₂ * (fromRows P Q).toRows₁ - (fromRows P Q).toRows₂ * B₁) = _
   rw [toRows₁_fromRows, toRows₂_fromRows]
 
-/-- **The coupled quadratic equations of a singular subspace pair**: if the singular values of
-`B₁₁` and `B₂₂` are `δ`-separated (and those of `B₁₁` are at least `δ` when `B₂₂` is not square),
-and `‖B₁₂‖² + ‖B₂₁‖² ≤ ε²` with `4 ε² < δ²`, there are `P`, `Q` with `‖[P; Q]‖ ≤ 2 ε / δ` solving
-`B₂₂ᴴ Q − P B₁₁ᴴ − P B₂₁ᴴ Q = −B₁₂ᴴ` and `B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁`. -/
+/-- The coupled quadratic equations of a pair of singular subspaces: if the singular values of
+$B_{11}$ and $B_{22}$ are $\delta$-separated with $\delta > 0$ (and those of $B_{11}$ are at
+least $\delta$ when $B_{22}$ is not square), $\|B_{12}\|_F^2 + \|B_{21}\|_F^2 \le \varepsilon^2$
+with $\varepsilon \ge 0$ and $4 \varepsilon^2 < \delta^2$, then there are $P$ and $Q$ with
+$\|[P; Q]\|_F \le 2 \varepsilon / \delta$ that solve $B_{22}^H Q - P B_{11}^H - P B_{21}^H Q =
+-B_{12}^H$ and $B_{22} P - Q B_{11} - Q B_{12} P = -B_{21}$. -/
 private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ : Matrix k k 𝕜}
     {B₁₂ : Matrix k p 𝕜} {B₂₁ : Matrix q k 𝕜} {B₂₂ : Matrix q p 𝕜} {δ ε : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i < Fintype.card k, ∀ j < min (Fintype.card q) (Fintype.card p),
@@ -2187,8 +2450,8 @@ private theorem exists_pair_quadratic [DecidableEq k] [DecidableEq p] {B₁₁ :
   obtain ⟨e₁, e₂⟩ := fromRows_inj hx
   exact ⟨x.toRows₁, x.toRows₂, hxn, by rw [← e₁, sub_eq_add_neg], by rw [← e₂, sub_eq_add_neg]⟩
 
-/-- A solution of the coupled equation makes `[1; P]` map into `[1; Q]`:
-`[B₁₁ B₁₂; B₂₁ B₂₂] [1; P] = [1; Q] (B₁₁ + B₁₂ P)` when `B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁`. -/
+/-- If $B_{22} P - Q B_{11} - Q B_{12} P = -B_{21}$, then $\begin{bmatrix} B_{11} & B_{12} \\ B_{21}
+& B_{22} \end{bmatrix} [I; P] = [I; Q] (B_{11} + B_{12} P)$. -/
 private theorem fromBlocks_mul_fromRows_one_eq {a b c : Type*} [Fintype a] [Fintype c]
     [DecidableEq a] {B₁₁ : Matrix a a 𝕜} {B₁₂ : Matrix a c 𝕜} {B₂₁ : Matrix b a 𝕜}
     {B₂₂ : Matrix b c 𝕜} {P : Matrix c a 𝕜} {Q : Matrix b a 𝕜}
@@ -2203,27 +2466,40 @@ private theorem fromBlocks_mul_fromRows_one_eq {a b c : Type*} [Fintype a] [Fint
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [DecidableEq k]
   [DecidableEq p] [DecidableEq q]
 
-/-- **The perturbation of a singular subspace pair** ([golub2013matrix] Theorem 8.6.5, corrected;
-G. W. Stewart, SIAM Rev. 15 (1973), Theorem 6.4; P.-Å. Wedin, BIT 12 (1972)), in the coordinates
-of the pair: let `U : Matrix m (k ⊕ q) 𝕜` and `V : Matrix n (k ⊕ p) 𝕜` be unitary (`Uᴴ U = 1`,
-`U Uᴴ = 1`, and likewise for `V`) with `Uᴴ A V = [A₁₁ 0; 0 A₂₂]`, i.e. the first columns `V₁`,
-`U₁` span a singular subspace pair of `A`. Let the singular values of `A₁₁` and `A₂₂` be
-`δ`-separated, `δ ≤ |σ_i(A₁₁) − σ_j(A₂₂)|`, and, when `A₂₂` is not square, let
-`δ ≤ σ_i(A₁₁)` (**Wedin's condition**: the `|card p − card q|` further zero singular values of
-`A₂₂` count too; without it the book's statement fails for `m > n`: for `A = [0 0; 0 1; 0 0]`,
-`U = V = 1` with one leading column and `E = ε e₃e₁ᵀ`, `0 < ε ≤ 1/5`, the only one-dimensional
-singular subspace pairs of `A + E` are `(span e₁, span e₃)` and `(span e₂, span e₂)`, neither of
-the form below). If `‖E‖_F ≤ δ / 5`, there are
-`P : Matrix p k 𝕜` and `Q : Matrix q k 𝕜` with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that
-`V₁ + V₂ P = V [1; P]` and `U₁ + U₂ Q = U [1; Q]` span a singular subspace pair of `A + E`:
-`(A + E) V [1; P] = U [1; Q] M` and `(A + E)ᴴ U [1; Q] = V [1; P] N`. No `m ≥ n` is needed.
+/-- The perturbation of a pair of singular subspaces. Let $A, E \in \mathbb{K}^{m \times n}$. Let
+$U \in \mathbb{K}^{m \times (k + q)}$ and $V \in \mathbb{K}^{n \times (k + p)}$ be unitary,
+$U^H U = I$, $U U^H = I$, $V^H V = I$ and $V V^H = I$, with
+$$U^H A V = \begin{bmatrix} A_{11} & 0 \\ 0 & A_{22} \end{bmatrix}, \qquad A_{11} \in
+  \mathbb{K}^{k \times k}, \quad A_{22} \in \mathbb{K}^{q \times p},$$
+so that the first $k$ columns $V_1$ of $V$ and $U_1$ of $U$ span a pair of singular subspaces of
+$A$. Let $\delta > 0$ satisfy $\delta \le |\sigma_i(A_{11}) - \sigma_j(A_{22})|$ for all $i < k$
+and $j < \min(p, q)$, and, if $p \ne q$, also **Wedin's condition**
+$\delta \le \sigma_i(A_{11})$ for all $i < k$. If $\|E\|_F \le \delta / 5$, then there are
+$P \in \mathbb{K}^{p \times k}$ and $Q \in \mathbb{K}^{q \times k}$ with
+$$\left\| \begin{bmatrix} Q \\ P \end{bmatrix} \right\|_F \le \frac{4 \|E\|_F}{\delta}$$
+and matrices $M$ and $N$ such that
+$$(A + E) V \begin{bmatrix} I \\ P \end{bmatrix} = U \begin{bmatrix} I \\ Q \end{bmatrix} M,
+  \qquad (A + E)^H U \begin{bmatrix} I \\ Q \end{bmatrix} = V \begin{bmatrix} I \\ P
+  \end{bmatrix} N.$$
+That is, the columns of $V_1 + V_2 P$ and $U_1 + U_2 Q$ span a pair of singular subspaces of
+$A + E$. The theorem does not need $m \ge n$.
 
-With `B = Uᴴ (A + E) V`, the two inclusions are the coupled quadratic equations
-`B₂₂ P − Q B₁₁ − Q B₁₂ P = −B₂₁` and `B₂₂ᴴ Q − P B₁₁ᴴ − P B₂₁ᴴ Q = −B₁₂ᴴ` in `x = [P; Q]`, solved
-by Stewart's quadratic-equation lemma (`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`):
-the linear part is bounded below by `δ − 2 ‖E‖_F ≥ 3δ/5` (Weyl's inequality moves each singular
-value of `B₁₁`, `B₂₂` by at most `‖E‖_F`), the quadratic part is `‖E‖_F`-Lipschitz on balls, and
-the right side has norm at most `‖E‖_F`. -/
+This is [golub2013matrix], Theorem 8.6.5, corrected; see also G. W. Stewart, SIAM Rev. 15
+(1973), Theorem 6.4, and P.-Å. Wedin, BIT 12 (1972). The source does not have Wedin's condition,
+which says that the $|p - q|$ further zero singular values of $A_{22}$ count too. Without it the
+statement fails for $m > n$: for $A = \begin{bmatrix} 0 & 0 \\ 0 & 1 \\ 0 & 0 \end{bmatrix}$,
+$U = V = I$ with one leading column, and $E = \varepsilon e_3 e_1^T$ with
+$0 < \varepsilon \le 1/5$, the only one-dimensional pairs of singular subspaces of $A + E$ are
+$(\operatorname{span} e_1, \operatorname{span} e_3)$ and $(\operatorname{span} e_2,
+\operatorname{span} e_2)$, and neither has the form above.
+
+With $B = U^H (A + E) V$, the two inclusions are the coupled quadratic equations
+$B_{22} P - Q B_{11} - Q B_{12} P = -B_{21}$ and $B_{22}^H Q - P B_{11}^H - P B_{21}^H Q =
+-B_{12}^H$ in $x = [P; Q]$. Stewart's lemma on quadratic equations
+(`ContinuousLinearEquiv.exists_apply_add_eq_of_quadratic`) solves them. The linear part is
+bounded below by $\delta - 2 \|E\|_F \ge 3 \delta / 5$, because Weyl's inequality moves each
+singular value of $B_{11}$ and $B_{22}$ by at most $\|E\|_F$. The quadratic part is
+$\|E\|_F$-Lipschitz on balls, and the right side has norm at most $\|E\|_F$. -/
 theorem exists_singularSubspacePair_perturbation {A E : Matrix m n 𝕜}
     {U : Matrix m (k ⊕ q) 𝕜} {V : Matrix n (k ⊕ p) 𝕜} (hU : Uᴴ * U = 1) (hU' : U * Uᴴ = 1)
     (hV : Vᴴ * V = 1) (hV' : V * Vᴴ = 1) (h₁₂ : (Uᴴ * A * V).toBlocks₁₂ = 0)

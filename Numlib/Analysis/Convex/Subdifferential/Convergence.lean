@@ -9,48 +9,53 @@ import Numlib.Analysis.Convex.Subdifferential.Bounded
 /-!
 # Convergence of directional derivatives and of subgradients
 
-Convex functions `f i`, finite on an open convex set `U` and converging pointwise there to `g`,
-converge uniformly on compact subsets, hence *continuously*: `f i (x i) → g x` along any `x i → x`
-in `U`. Differentiation does **not** pass to the limit; only the one-sided `limsup` inequality
-survives. For `x i → x` in `U` and `y i → y`,
-
-```
-limsup_i (f i)'(x i; y i)  ≤  g'(x; y),        ∂(f i)(x i)  ⊆  ∂g(x) + ε B  eventually.
-```
-
-Equality can fail: for `f i x = |x|^{p i}` with `p i ↓ 1` on `U = ℝ`, every `(f i)'(0; 1)` is `0`
-while `g'(0; 1) = 1`. Taking the family constant turns the two statements into upper semicontinuity
-of `f'(x; y)` in `(x, y)` and of `∂f` in `x`.
+Let $E$ be a finite-dimensional real normed space, let $U \subseteq E$ be open and convex, and let
+convex functions $f_i$, finite on $U$, converge pointwise on $U$ to a convex function $g$. Then the
+convergence is uniform on compact subsets of $U$, hence continuous: $f_i(x_i) \to g(x)$ for every
+sequence $x_i \to x \in U$. Derivatives do not pass to the limit; only an inequality for the upper
+limit holds. For $x_i \to x \in U$ and $y_i \to y$,
+$$\limsup_{i \to \infty} f_i'(x_i; y_i) \le g'(x; y), \qquad \partial f_i(x_i) \subseteq \partial
+  g(x) + \varepsilon B \text{ for all large } i,$$
+for every $\varepsilon > 0$, where $B$ is the closed unit ball. Equality can fail: for
+$f_i(x) = |x|^{p_i}$ with $p_i \downarrow 1$ on $U = \mathbb{R}$, every $f_i'(0; 1)$ is $0$, while
+$g'(0; 1) = 1$. For a constant sequence $f_i = f$, the two statements give upper semicontinuity of
+$(x, y) \mapsto f'(x; y)$ and of $x \mapsto \partial f(x)$. The module also treats an approach
+$x_i \to x$ to a point of $\operatorname{dom} f$ that need not be interior, along a limiting
+direction $y$. The presentation follows [rockafellar1970convex], §24.
 
 ## Main results
 
-* `tendsto_eval_of_tendsto` — continuous convergence: `f i (x i) → g x`.
-* `eventually_dirDeriv_lt`, `eventually_subdifferential_subset_add_closedBall` — the two displayed
-  statements ([rockafellar1970convex] Theorem 24.5). The first is spelled without junk values: every
-  real `μ` above `g'(x; y)` eventually bounds `(f i)'(x i; y i)`.
-* `upperSemicontinuousAt_dirDeriv`, `eventually_nhds_subdifferential_subset_add_closedBall` — the
-  constant-family case: upper semicontinuity of `f'(x; y)` and of `∂f`.
-* `eventually_dirDeriv_lt_of_tendsto_dir`,
-  `eventually_subdifferential_subset_exposed_add_closedBall` — the same two statements
-  ([rockafellar1970convex] Theorem 24.6) for an approach to a point of `dom f` that need not be
-  interior, along a fixed limiting direction `y`, with the face of `∂f x` exposed by `y` in place of
-  `∂f x`.
-* `subdifferential_dirDeriv` — the identification `∂(f'(x; ·))(y) = ∂f(x)_y`.
+* `ConvexAnalysis.tendsto_eval_of_tendsto`: continuous convergence, $f_i(x_i) \to g(x)$.
+* `ConvexAnalysis.eventually_dirDeriv_lt`,
+  `ConvexAnalysis.eventually_subdifferential_subset_add_closedBall`: the two displayed statements.
+  This is Theorem 24.5 of [rockafellar1970convex].
+* `ConvexAnalysis.upperSemicontinuousAt_dirDeriv`,
+  `ConvexAnalysis.eventually_nhds_subdifferential_subset_add_closedBall`: for one function $f$,
+  upper semicontinuity of $f'(x; y)$ in $(x, y)$ and of $\partial f$ at interior points of
+  $\operatorname{dom} f$.
+* `ConvexAnalysis.eventually_dirDeriv_lt_of_tendsto_dir`,
+  `ConvexAnalysis.eventually_subdifferential_subset_exposed_add_closedBall`: the same two statements
+  for an approach to a point $x \in \operatorname{dom} f$ that need not be interior, along a
+  limiting direction $y$. The bound is the directional derivative of $f'(x; \cdot)$ at $y$, and the
+  face of $\partial f(x)$ exposed by $y$ replaces $\partial f(x)$. This is Theorem 24.6 of
+  [rockafellar1970convex].
+* `ConvexAnalysis.subdifferential_dirDeriv`: $\partial (f'(x; \cdot))(y)$ is the face of
+  $\partial f(x)$ on which $\langle y, \cdot \rangle$ attains its maximum.
 
 ## Implementation notes
 
-The convergence theory is stated for real-valued `ConvexOn ℝ U (f i)` while subgradients are
-`EReal`-valued; the bridge is `ConvexFn.convexOn_toReal_convexDom`. `ε B` needs a norm on the dual
-side, so the subgradient statements are for a real inner-product space paired with itself.
-
-Two classical hypotheses are absent: the sequence need not lie in `U`, only converge to a point of
-it, and the approach to a boundary point needs neither closedness of `f` nor the usual simplex
-construction — monotonicity of the difference quotient in its step replaces the vanishing step
-`‖x i - x‖` by a fixed larger one, after which only continuity at *interior* points is used.
-
-## References
-
-* [rockafellar1970convex] §24.
+* The upper limit is stated without values at infinity: every real $\mu$ above $g'(x; y)$ is
+  eventually an upper bound of $f_i'(x_i; y_i)$.
+* The convergence theory of `Numlib.Analysis.Convex.Convergence` is for real-valued functions that
+  are convex on $U$ (`ConvexOn ℝ U`), while subgradients are for functions with values in
+  $[-\infty, +\infty]$. The link is `ConvexAnalysis.ConvexFn.convexOn_toReal_convexDom`.
+* The ball $\varepsilon B$ needs a norm on the dual space, so the statements about subgradients are
+  for a real inner product space paired with itself by `innerₗ E`.
+* Two classical hypotheses are not needed. The sequence $(x_i)$ need not lie in $U$; it only has to
+  converge to a point of $U$. The approach to a boundary point needs neither closedness of $f$ nor
+  the usual construction with a simplex: monotonicity of the difference quotient in its step
+  replaces the vanishing step $\|x_i - x\|$ by a fixed larger step, and after that only continuity
+  at interior points is used.
 -/
 
 open Set Filter Topology
@@ -58,13 +63,17 @@ open scoped NNReal Pointwise RealInnerProductSpace
 
 namespace ConvexAnalysis
 
-/-! ### Support function of a ball -/
+/-! ### The support function of a ball -/
 
 section Ball
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The support function of the ball of radius `ε` about the origin is `ε ‖·‖`. -/
+/-- Let $E$ be a real inner product space and $\varepsilon \ge 0$. The support function of the
+closed ball of radius $\varepsilon$ about the origin is $\varepsilon \| \cdot \|$:
+$$\sup_{\|x\| \le \varepsilon} \langle x, y \rangle = \varepsilon \|y\| \quad \text{for all } y
+  \in E.$$
+-/
 theorem supportFn_closedBall {ε : ℝ} (hε : 0 ≤ ε) (y : E) :
     supportFn (innerₗ E) (Metric.closedBall (0 : E) ε) y = ((ε * ‖y‖ : ℝ) : EReal) := by
   refine le_antisymm (supportFn_le_coe_iff.2 fun z hz => ?_) ?_
@@ -97,8 +106,9 @@ section Interior
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {g : E → EReal} {x : E}
 
-/-- At an interior point of `dom f` the directional derivative is finite in every direction, so it
-is the coercion of its own real value. -/
+/-- Let $E$ be finite-dimensional, let $g$ be proper and convex, and let
+$x \in \operatorname{int}(\operatorname{dom} g)$. Then $g'(x; z)$ is finite for every $z$, so it
+is equal to the real number `(dirDeriv g x z).toReal`, viewed in $[-\infty, +\infty]$. -/
 theorem dirDeriv_eq_coe_toReal_of_mem_interior_convexDom (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ interior (convexDom g)) (z : E) :
     dirDeriv g x z = (((dirDeriv g x z).toReal : ℝ) : EReal) := by
@@ -109,8 +119,9 @@ theorem dirDeriv_eq_coe_toReal_of_mem_interior_convexDom (hg : ConvexFn g) (hgp 
   have htop : dirDeriv g x z ≠ ⊤ := (mem_convexDom.1 (hdom ▸ Set.mem_univ z)).ne
   exact (EReal.coe_toReal htop hbot).symm
 
-/-- At an interior point of `dom f` the directional derivative is a *finite* convex function on the
-whole space. -/
+/-- Let $E$ be finite-dimensional, let $g$ be proper and convex, and let
+$x \in \operatorname{int}(\operatorname{dom} g)$. Then the real-valued function
+$z \mapsto g'(x; z)$ is convex on all of $E$. -/
 theorem convexOn_toReal_dirDeriv (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ interior (convexDom g)) :
     ConvexOn ℝ (univ : Set E) fun z => (dirDeriv g x z).toReal := by
@@ -122,7 +133,9 @@ theorem convexOn_toReal_dirDeriv (hg : ConvexFn g) (hgp : ProperConvex g)
     (properConvex_dirDeriv_of_mem_relint_convexDom hg hgp hri)
   rwa [hdom] at h
 
-/-- Positive homogeneity of the directional derivative, read on real values. -/
+/-- Let $E$ be finite-dimensional, let $g$ be proper and convex, let
+$x \in \operatorname{int}(\operatorname{dom} g)$, and let $c > 0$. Then
+$g'(x; cz) = c \, g'(x; z)$ for every $z$, as an equation of real numbers. -/
 theorem toReal_dirDeriv_smul (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ interior (convexDom g))
     {c : ℝ} (hc : 0 < c) (z : E) :
@@ -140,9 +153,14 @@ section Eval
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {U : Set E} {f : ℕ → E → ℝ} {g : E → ℝ}
 
-/-- Convex functions converging pointwise on an open convex set converge *continuously* there:
-the values `f i (x i)` along any sequence `x i → x` converge to `g x`. This is the practical form of
-the fact that pointwise convergence of convex functions is uniform on compact subsets. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $U \subseteq E$ be open and convex, and
+let $f_i : E \to \mathbb{R}$ and $g : E \to \mathbb{R}$ be convex on $U$, with $f_i(z) \to g(z)$
+for every $z \in U$. Then the convergence is continuous on $U$: for every $x \in U$ and every
+sequence $x_i \to x$,
+$$f_i(x_i) \to g(x).$$
+
+The sequence $(x_i)$ need not lie in $U$. This is the practical form of the fact that pointwise
+convergence of convex functions on an open convex set is uniform on compact subsets. -/
 theorem tendsto_eval_of_tendsto (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexOn ℝ U (f i)) (hg : ConvexOn ℝ U g)
     (hconv : ∀ z ∈ U, Tendsto (fun i => f i z) atTop (𝓝 (g z)))
@@ -171,16 +189,16 @@ section DirDeriv
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {U : Set E} {f : ℕ → E → EReal} {g : E → EReal}
 
-/-- **Directional derivatives are upper semicontinuous under pointwise convergence.** If convex
-functions `f i`, finite on an open convex `U`, converge pointwise there to `g`, and if
-`x i → x ∈ U` and `y i → y`, then
+/-- **Upper semicontinuity of directional derivatives under pointwise convergence.** Let $E$ be a
+finite-dimensional real normed space, and let $U \subseteq E$ be open and convex. Let
+$f_i : E \to [-\infty, +\infty]$ and $g : E \to [-\infty, +\infty]$ be proper and convex, with
+$U \subseteq \operatorname{dom} f_i$ for every $i$ and $U \subseteq \operatorname{dom} g$, and
+let $f_i(z) \to g(z)$ for every $z \in U$. Let $x_i \to x \in U$ and $y_i \to y$. Then
+$$\limsup_{i \to \infty} f_i'(x_i; y_i) \le g'(x; y),$$
+in the form: for every real $\mu > g'(x; y)$, $f_i'(x_i; y_i) < \mu$ for all large $i$.
 
-```
-limsup_i (f i)'(x i; y i) ≤ g'(x; y).
-```
-
-The `limsup` is spelled without junk values: every real `μ` above `g'(x; y)` eventually bounds
-`(f i)'(x i; y i)`. -/
+This is the first assertion of Theorem 24.5 of [rockafellar1970convex]. The form with a real
+$\mu$ avoids values at infinity of the upper limit. The sequence $(x_i)$ need not lie in $U$. -/
 theorem eventually_dirDeriv_lt (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexFn (f i)) (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i))
     (hg : ConvexFn g) (hgp : ProperConvex g) (hgU : U ⊆ convexDom g)
@@ -244,16 +262,19 @@ theorem eventually_dirDeriv_lt (hU : IsOpen U) (hUc : Convex ℝ U)
 
 end DirDeriv
 
-/-! ### The local form, for a single function -/
+/-! ### The local form for a single function -/
 
 section LocalDirDeriv
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x : E}
 
-/-- `f'(x; y)` is upper semicontinuous in `(x, y)` on `int (dom f) × E`. This
-is the previous theorem for the constant sequence `f, f, f, …`, transported from sequences to the
-neighbourhood filter. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $f : E \to [-\infty, +\infty]$ be proper
+and convex, let $x \in \operatorname{int}(\operatorname{dom} f)$, and let $y \in E$. Then the
+function $(z, v) \mapsto f'(z; v)$ on $E \times E$ is upper semicontinuous at $(x, y)$.
+
+This is `ConvexAnalysis.eventually_dirDeriv_lt` for the constant sequence $f, f, f, \dots$,
+transferred from sequences to the neighbourhood filter. -/
 theorem upperSemicontinuousAt_dirDeriv (hf : ConvexFn f) (hfp : ProperConvex f)
     (hx : x ∈ interior (convexDom f)) (y : E) :
     UpperSemicontinuousAt (fun p : E × E => dirDeriv f p.1 p.2) (x, y) := by
@@ -277,17 +298,28 @@ section Subdifferential
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {U : Set E} {f : ℕ → E → EReal} {g : E → EReal} {x : E}
 
-/-- The support function of `∂f x` is `f'(x; ·)`, for a real inner-product space paired with
-itself, a special case of the same identity for an arbitrary pairing. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $g$ be proper and convex, and let
+$x \in \operatorname{ri}(\operatorname{dom} g)$. Then the support function of $\partial g(x)$ is
+$g'(x; \cdot)$:
+$$\sup_{y \in \partial g(x)} \langle z, y \rangle = g'(x; z) \quad \text{for all } z \in E.$$
+This is the case of the inner product of
+`ConvexAnalysis.dirDeriv_eq_supportFn_of_mem_relint_convexDom`. -/
 theorem supportFn_subdifferential (hg : ConvexFn g) (hgp : ProperConvex g)
     (hx : x ∈ ri (convexDom g)) :
     supportFn (innerₗ E) (subdifferential (innerₗ E) g x) = dirDeriv g x := by
   rw [dirDeriv_eq_supportFn_of_mem_relint_convexDom (B := innerₗ E) hg hgp hx, flip_innerₗ]
 
-/-- The support-function endgame shared by the two subgradient statements below. If the directional
-derivative of `p` at an interior point `u` of `dom p` is dominated on the unit ball by that of `q`
-at an interior point `v` of `dom q`, up to `ε`, then `∂p u ⊆ ∂q v + ε B`. Positive homogeneity
-spreads the bound to every direction, and support functions order closed convex sets. -/
+/-- Let $p, q : E \to [-\infty, +\infty]$ be proper and convex, let
+$u \in \operatorname{int}(\operatorname{dom} p)$ and
+$v \in \operatorname{int}(\operatorname{dom} q)$, and let $\varepsilon > 0$. If
+$p'(u; z) \le q'(v; z) + \varepsilon$ for every $z$ in the closed unit ball, then
+$$\partial p(u) \subseteq \partial q(v) + \varepsilon B,$$
+where $B$ is the closed unit ball.
+
+This is the common last step of
+`ConvexAnalysis.eventually_subdifferential_subset_add_closedBall` and
+`ConvexAnalysis.eventually_subdifferential_subset_exposed_add_closedBall`. Positive homogeneity
+extends the bound to every direction, and support functions order closed convex sets. -/
 theorem subdifferential_subset_add_closedBall_of_forall_dirDeriv_le {p q : E → EReal} {u v : E}
     (hp : ConvexFn p) (hpp : ProperConvex p) (hu : u ∈ interior (convexDom p))
     (hq : ConvexFn q) (hqp : ProperConvex q) (hv : v ∈ interior (convexDom q)) {ε : ℝ} (hε : 0 < ε)
@@ -340,17 +372,18 @@ theorem subdifferential_subset_add_closedBall_of_forall_dirDeriv_le {p q : E →
   rw [hcvx.convexHull_eq, hcptsum.isClosed.closure_eq] at hincl
   exact fun w hw => hincl (subset_closure (subset_convexHull ℝ _ hw))
 
-/-- **Subdifferentials are upper semicontinuous under pointwise convergence.** If convex functions
-`f i`, finite on an open convex `U`, converge pointwise there to `g`, and `x i → x` inside `U`,
-then for every `ε > 0`
+/-- **Upper semicontinuity of subdifferentials under pointwise convergence.** Let $E$ be a
+finite-dimensional real inner product space, and let $U \subseteq E$ be open and convex. Let
+$f_i : E \to [-\infty, +\infty]$ and $g : E \to [-\infty, +\infty]$ be proper and convex, with
+$U \subseteq \operatorname{dom} f_i$ for every $i$ and $U \subseteq \operatorname{dom} g$, and
+let $f_i(z) \to g(z)$ for every $z \in U$. Let $x_i \to x \in U$ and $\varepsilon > 0$. Then
+$$\partial f_i(x_i) \subseteq \partial g(x) + \varepsilon B \quad \text{for all large } i,$$
+where $B$ is the closed unit ball.
 
-```
-∂(f i)(x i) ⊆ ∂g(x) + ε B
-```
-
-for all large `i`, where `B` is the closed unit ball. The subdifferentials are the support sets of
-the directional derivatives, and the previous theorem bounds those pointwise; the bound is made
-uniform on the compact unit ball and then spread by positive homogeneity. -/
+This is the second assertion of Theorem 24.5 of [rockafellar1970convex]. The subdifferentials
+are the sets that have the directional derivatives as support functions, and
+`ConvexAnalysis.eventually_dirDeriv_lt` bounds the directional derivatives pointwise. The bound
+is made uniform on the compact unit ball and then extended by positive homogeneity. -/
 theorem eventually_subdifferential_subset_add_closedBall (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexFn (f i)) (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i))
     (hg : ConvexFn g) (hgp : ProperConvex g) (hgU : U ⊆ convexDom g)
@@ -408,8 +441,12 @@ section LocalSubdifferential
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x : E}
 
-/-- `∂f` is upper semicontinuous at every interior point of `dom f`, so that
-`∂f z ⊆ ∂f x + ε B` for all `z` in a neighbourhood of `x`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let $f : E \to [-\infty, +\infty]$ be
+proper and convex, let $x \in \operatorname{int}(\operatorname{dom} f)$, and let
+$\varepsilon > 0$. Then for all $z$ in a neighbourhood of $x$,
+$$\partial f(z) \subseteq \partial f(x) + \varepsilon B,$$
+where $B$ is the closed unit ball. So $\partial f$ is upper semicontinuous at every interior
+point of $\operatorname{dom} f$. -/
 theorem eventually_nhds_subdifferential_subset_add_closedBall (hf : ConvexFn f)
     (hfp : ProperConvex f)
     (hx : x ∈ interior (convexDom f)) {ε : ℝ} (hε : 0 < ε) :
@@ -432,8 +469,10 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f : E → EReal} {x y : E}
 
 omit [FiniteDimensional ℝ E] in
-/-- **The segment principle for effective domains**: if `x ∈ dom f` and `x + α • u` is interior to
-`dom f`, then so is `x + t • u` for every `t` in `(0, α]`. -/
+/-- **The segment principle for effective domains.** Let $f$ be convex, let
+$x \in \operatorname{dom} f$, and let $\alpha > 0$ with $x + \alpha u \in
+\operatorname{int}(\operatorname{dom} f)$. Then $x + t u \in
+\operatorname{int}(\operatorname{dom} f)$ for every $t \in (0, \alpha]$. -/
 theorem mem_interior_convexDom_smul (hf : ConvexFn f) (hx : x ∈ convexDom f) {u : E} {α t : ℝ}
     (hα : 0 < α)
     (hu : x + α • u ∈ interior (convexDom f)) (ht : 0 < t) (htα : t ≤ α) :
@@ -448,11 +487,14 @@ theorem mem_interior_convexDom_smul (hf : ConvexFn f) (hx : x ∈ convexDom f) {
   rwa [heq] at h
 
 omit [FiniteDimensional ℝ E] in
-/-- An approach with a limiting direction that points into the interior is eventually interior: if
-`x i → x ∈ dom f` with `x i ≠ x`, the unit vectors `‖x i - x‖⁻¹ (x i - x)` converge to `y`, and
-`x + α y` is interior to `dom f` for some `α > 0`, then `x i ∈ int (dom f)` for all large `i`. This
-is what makes the subgradient half of the boundary statement reachable: the sublinear functions
-`f'(x i; ·)` are then finite everywhere, so the uniform-convergence theory applies to them. -/
+/-- Let $f$ be convex, let $x \in \operatorname{dom} f$, and let $x_i \to x$ with $x_i \ne x$ and
+$$\frac{x_i - x}{\|x_i - x\|} \to y.$$
+If $x + \alpha y \in \operatorname{int}(\operatorname{dom} f)$ for some $\alpha > 0$, then $x_i
+\in \operatorname{int}(\operatorname{dom} f)$ for all large $i$.
+
+This makes the subgradient half of the boundary statement accessible: the functions
+$f'(x_i; \cdot)$ are then finite everywhere, so the theory of uniform convergence applies to
+them. -/
 theorem eventually_mem_interior_convexDom_of_tendsto_dir (hf : ConvexFn f) (hx : x ∈ convexDom f)
     {xs : ℕ → E} (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
     (hdir : Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y))
@@ -471,9 +513,11 @@ theorem eventually_mem_interior_convexDom_of_tendsto_dir (hf : ConvexFn f) (hx :
     show x + (xs i - x) = xs i from by abel] at h
 
 omit [FiniteDimensional ℝ E] in
-/-- **A ray into the interior makes the direction interior to the domain of `f'(x; ·)`**: if
-`x + α • y` is interior to `dom f` for some `α > 0`, then `y` is interior to `dom f'(x; ·)`,
-because a single difference quotient bounds `f'(x; ·)` above near `y`. -/
+/-- Let $f$ be proper, let $x \in \operatorname{dom} f$, and let $\alpha > 0$ with $x + \alpha y \in
+\operatorname{int}(\operatorname{dom} f)$. Then $y$ is an interior point of the effective domain
+of $f'(x; \cdot)$.
+
+A single difference quotient bounds $f'(x; \cdot)$ from above near $y$. -/
 theorem mem_interior_convexDom_dirDeriv (hfp : ProperConvex f) (hx : x ∈ convexDom f) {α : ℝ}
     (hα : 0 < α) (hαy : x + α • y ∈ interior (convexDom f)) :
     y ∈ interior (convexDom (dirDeriv f x)) := by
@@ -488,9 +532,12 @@ theorem mem_interior_convexDom_dirDeriv (hfp : ProperConvex f) (hx : x ∈ conve
   exact EReal.coe_lt_top _
 
 omit [FiniteDimensional ℝ E] in
-/-- **`f'(x; ·)` is proper once it is finite at one interior point of its effective domain.** A
-convex function that takes the value `-∞` takes it throughout the relative interior of its domain,
-so a single finite interior value rules `-∞` out everywhere. -/
+/-- Let $f$ be proper and convex, let $x \in \operatorname{dom} f$, let $y$ be an interior point of
+the effective domain of $f'(x; \cdot)$, and let $f'(x; y) \ne -\infty$. Then $f'(x; \cdot)$ is
+proper.
+
+A convex function that takes the value $-\infty$ takes it on the whole relative interior of its
+effective domain, so one finite value at an interior point excludes $-\infty$ everywhere. -/
 theorem properConvex_dirDeriv_of_ne_bot (hf : ConvexFn f) (hfp : ProperConvex f)
     (hx : x ∈ convexDom f)
     (hy : y ∈ interior (convexDom (dirDeriv f x))) (hne : dirDeriv f x y ≠ ⊥) :
@@ -501,20 +548,20 @@ theorem properConvex_dirDeriv_of_ne_bot (hf : ConvexFn f) (hfp : ProperConvex f)
   exact hne (ConvexFn.eq_bot_of_mem_relint_convexDom hconv h
     (Convex.interior_subset_relint hy))
 
-/-- **The directional-derivative half**: directional derivatives are upper
-semicontinuous along an approach to a point of `dom f` that need not be interior, provided the
-approach has a limiting direction `y` and the second-order derivative in that direction is the
-bound.
+/-- **Upper semicontinuity of directional derivatives at a point that need not be interior.** Let
+$E$ be a finite-dimensional real normed space, and let $f : E \to [-\infty, +\infty]$ be proper
+and convex. Let $x \in \operatorname{dom} f$, and let $(x_i)$ be a sequence in
+$\operatorname{dom} f$ with $x_i \ne x$, $x_i \to x$ and
+$$\frac{x_i - x}{\|x_i - x\|} \to y.$$
+Let $f'(x; y) > -\infty$, and let $x + \alpha y \in \operatorname{int}(\operatorname{dom} f)$
+for some $\alpha > 0$. Write $f'(x; y; z)$ for the directional derivative of $f'(x; \cdot)$ at
+$y$ in the direction $z$. Then for every $z \in E$
+$$\limsup_{i \to \infty} f'(x_i; z) \le f'(x; y; z),$$
+in the form: for every real $\mu > f'(x; y; z)$, $f'(x_i; z) < \mu$ for all large $i$.
 
-If `x i → x` inside `dom f` with `x i ≠ x` and the unit vectors `|x i - x|⁻¹ (x i - x)` converge to
-`y`, and if `f'(x; y) > -∞` while the ray `x + ℝ₊ y` meets `int (dom f)`, then
-
-```
-limsup_i f'(x i; z) ≤ f'(x; y; z) := (f'(x; ·))'(y; z),        ∀ z.
-```
-
-As in `eventually_dirDeriv_lt` the `limsup` is spelled without junk values: every real `μ` above
-`f'(x; y; z)` eventually bounds `f'(x i; z)`. -/
+This is the first assertion of Theorem 24.6 of [rockafellar1970convex]. As in
+`ConvexAnalysis.eventually_dirDeriv_lt`, the form with a real $\mu$ avoids values at infinity.
+The derivative $f'(x; y; z)$ is `dirDeriv (dirDeriv f x) y z`. -/
 theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : ProperConvex f)
     (hx : x ∈ convexDom f)
     {xs : ℕ → E} (hxsdom : ∀ i, xs i ∈ convexDom f) (hxsne : ∀ i, xs i ≠ x)
@@ -667,7 +714,7 @@ theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : ProperCon
 
 end Boundary
 
-/-! ### The face of `∂f x` exposed by a direction -/
+/-! ### The face of $\partial f(x)$ exposed by a direction -/
 
 section ExposedFace
 
@@ -676,11 +723,20 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   [ContinuousSMul ℝ F] [LocallyConvexSpace ℝ F]
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x y : E}
 
-/-- The subdifferential of `f'(x; ·)` at `y` is the face `∂f(x)_y` of `∂f x` exposed by `y` — the
-set of subgradients at which `⟨y, ·⟩` attains its maximum over `∂f x`. This is the set appearing in
-the subgradient half of the boundary statement below, and it composes the support-function
-description of `f'(x; ·)` with the conjugacy characterisation of `∂`. Properness of `f'(x; ·)` is
-what makes `∂f x` non-empty, so it is not a separate hypothesis. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $F$ be a locally convex topological
+vector space, and let the pairing be compatible with the topologies of $E$ and of $F$. Let
+$f : E \to [-\infty, +\infty]$ be convex with $f(x)$ finite, let $f'(x; \cdot)$ be proper, and
+let $y$ lie in the relative interior of the effective domain of $f'(x; \cdot)$. Then the
+subdifferential of $f'(x; \cdot)$ at $y$ is the face $\partial f(x)_y$ of $\partial f(x)$
+exposed by $y$:
+$$\partial (f'(x; \cdot))(y) = \{v \in \partial f(x) \mid \langle y, w \rangle \le \langle y, v
+  \rangle \text{ for all } w \in \partial f(x)\}.$$
+
+This set appears in `ConvexAnalysis.eventually_subdifferential_subset_exposed_add_closedBall`.
+The proof combines the description of $f'(x; \cdot)$ as a support function with the conjugate
+characterization of the subdifferential. Properness of $f'(x; \cdot)$ makes $\partial f(x)$
+nonempty, so nonemptiness is not a separate hypothesis. Compatibility of $B$ and of `B.flip` is
+`ConvexAnalysis.IsCompatiblePairing`. -/
 theorem subdifferential_dirDeriv [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hgp : ProperConvex (dirDeriv f x))
     (hy : y ∈ ri (convexDom (dirDeriv f x))) :
@@ -699,8 +755,10 @@ theorem subdifferential_dirDeriv [IsCompatiblePairing B] [IsCompatiblePairing B.
   rw [← subdifferential_convexCl (B := B) hgc hv₀, convexCl_dirDeriv (B := B) hf ht hb, hsupp]
   simp only [LinearMap.flip_apply]
 
-/-- **`∂f(x)_y` as a normal-cone condition**: the subgradients at which `y` is *normal* to
-`∂f x`. This is `subdifferential_dirDeriv` read through the definition of the normal cone. -/
+/-- Under the hypotheses of `ConvexAnalysis.subdifferential_dirDeriv`, the face $\partial f(x)_y$ is
+the set of subgradients at which $y$ is normal to $\partial f(x)$:
+$$\partial (f'(x; \cdot))(y) = \{v \in \partial f(x) \mid y \in N_{\partial f(x)}(v)\}.$$
+The normal cone is taken for the flipped pairing `B.flip`. -/
 theorem subdifferential_dirDeriv_eq_sep_normalCone [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
     (hgp : ProperConvex (dirDeriv f x)) (hy : y ∈ ri (convexDom (dirDeriv f x))) :
@@ -711,9 +769,12 @@ theorem subdifferential_dirDeriv_eq_sep_normalCone [IsCompatiblePairing B]
   simp only [Set.mem_sep_iff, mem_normalCone, map_sub, LinearMap.sub_apply, LinearMap.flip_apply,
     sub_nonpos]
 
-/-- **`∂(f'(x; ·))(y)` is an exposed face of `∂f x`**, in Mathlib's sense: it is cut out of `∂f x`
-by maximising the continuous linear functional `⟨y, ·⟩`. Composing with `IsExposed.isFace` makes it
-a face of `∂f x` in the convex-geometry sense. -/
+/-- Under the hypotheses of `ConvexAnalysis.subdifferential_dirDeriv`, the set
+$\partial (f'(x; \cdot))(y)$ is an exposed face of $\partial f(x)$ in the sense of Mathlib
+(`IsExposed`): it is the set of points of $\partial f(x)$ at which the continuous linear
+functional $\langle y, \cdot \rangle$ attains its maximum. With
+`ConvexAnalysis.IsExposed.isFace` it is a face of $\partial f(x)$ in the sense of
+`ConvexAnalysis.IsFace`. -/
 theorem isExposed_subdifferential_dirDeriv [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hgp : ProperConvex (dirDeriv f x))
     (hy : y ∈ ri (convexDom (dirDeriv f x))) :
@@ -731,19 +792,24 @@ section BoundarySubdifferential
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal} {x y : E}
 
-/-- **The subgradient half**: along an approach to a point of `dom f` with a limiting
-direction `y` pointing into `int (dom f)`, the subdifferentials collapse onto the face of `∂f x`
-exposed by `y`,
+/-- **Upper semicontinuity of subdifferentials at a point that need not be interior.** Let $E$ be a
+finite-dimensional real inner product space, and let $f : E \to [-\infty, +\infty]$ be proper
+and convex. Let $x \in \operatorname{dom} f$, and let $(x_i)$ be a sequence in
+$\operatorname{dom} f$ with $x_i \ne x$, $x_i \to x$ and
+$$\frac{x_i - x}{\|x_i - x\|} \to y.$$
+Let $f'(x; y) > -\infty$, let $x + \alpha y \in \operatorname{int}(\operatorname{dom} f)$ for
+some $\alpha > 0$, and let $\varepsilon > 0$. Then for all large $i$
+$$\partial f(x_i) \subseteq \partial f(x)_y + \varepsilon B, \qquad \partial f(x)_y = \{v \in
+  \partial f(x) \mid \langle y, w \rangle \le \langle y, v \rangle \text{ for all } w \in
+  \partial f(x)\},$$
+where $B$ is the closed unit ball.
 
-```
-∂f(x i) ⊆ ∂f(x)_y + ε B        eventually,
-```
-
-where `∂f(x)_y = {v ∈ ∂f x | ⟨y, ·⟩ is maximised over ∂f x at v}`, identified with `∂(f'(x; ·))(y)`
-by `subdifferential_dirDeriv`. The argument is that of the interior subgradient statement with
-`f'(x; ·)` replaced by `f'(x; y; ·)`; the step usually left implicit is
-`eventually_mem_interior_convexDom_of_tendsto_dir`, which makes the `f'(x i; ·)` finite
-everywhere. -/
+This is the second assertion of Theorem 24.6 of [rockafellar1970convex]. The set
+$\partial f(x)_y$ is $\partial (f'(x; \cdot))(y)$ by `ConvexAnalysis.subdifferential_dirDeriv`.
+The proof is that of `ConvexAnalysis.eventually_subdifferential_subset_add_closedBall`, with
+$f'(x; \cdot)$ replaced by $f'(x; y; \cdot)$. The step that is usually left implicit is
+`ConvexAnalysis.eventually_mem_interior_convexDom_of_tendsto_dir`, which makes the functions
+$f'(x_i; \cdot)$ finite everywhere. -/
 theorem eventually_subdifferential_subset_exposed_add_closedBall (hf : ConvexFn f)
     (hfp : ProperConvex f)
     (hx : x ∈ convexDom f) {xs : ℕ → E} (hxsdom : ∀ i, xs i ∈ convexDom f) (hxsne : ∀ i, xs i ≠ x)

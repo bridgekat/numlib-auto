@@ -10,24 +10,38 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 /-!
 # Strict convexity of a normed space from strict convexity of a power of the norm
 
-A real normed space is a `StrictConvexSpace ℝ V` as soon as some power `‖·‖ ^ p`, `p ≥ 1`, is a
-strictly convex function on `V`: `StrictConvexSpace.of_strictConvexOn_norm_rpow`. This is the form
-in which the hypothesis appears in the uniqueness theorem for best approximations from a convex set
-of [han2009theoretical], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
+A real normed space $V$ is strictly convex (`StrictConvexSpace ℝ V`) as soon as some power
+$\|\cdot\|^p$ with $p \ge 1$ is a strictly convex function on $V$. Conversely, on a strictly convex
+space $\|\cdot\|^p$ is strictly convex for every $p > 1$. The hypothesis has this form in the
+uniqueness theorem for best approximations from a convex set, Theorem 3.3.18 of
+[han2009theoretical], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
 
-On an inner product space the hypothesis holds with `p = 2`: `strictConvexOn_norm_sq`, in the
-natural-power form, and `strictConvexOn_norm_rpow_two` in the real-power form the criterion above
-consumes. The proof is the identity `a ‖x‖² + b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` for `a + b = 1`,
+On a real inner product space the hypothesis holds with $p = 2$, by Exercise 3.3.8 of
+[han2009theoretical]. The proof is the identity
+$$a \|x\|^2 + b \|y\|^2 - \|a x + b y\|^2 = a b \|x - y\|^2 \qquad (a + b = 1),$$
 a form of the parallelogram law.
+
+## Main results
+
+* `strictConvexOn_norm_rpow`: on a strictly convex space, $\|\cdot\|^p$ is strictly convex for
+  $p > 1$.
+* `StrictConvexSpace.of_strictConvexOn_norm_rpow`: if $\|\cdot\|^p$ is strictly convex for some
+  $p \ge 1$, the space is strictly convex.
+* `strictConvexOn_norm_sq`, `strictConvexOn_norm_rpow_two`: on a real inner product space,
+  $\|\cdot\|^2$ is strictly convex, with the exponent a natural number and a real number
+  respectively.
 -/
 
 section Rpow
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- **`‖·‖^p` is strictly convex on a strictly convex space** for `p > 1`: for `x ≠ y` either
-`‖x‖ ≠ ‖y‖` and the strict convexity of `t ↦ t^p` on `[0, ∞)` applies after the triangle
-inequality, or `‖x‖ = ‖y‖ = r` and `‖a x + b y‖ < r` by strict convexity of the space. -/
+/-- Let $V$ be a strictly convex real normed space and let $p > 1$ be real. Then $x \mapsto \|x\|^p$
+is strictly convex on $V$.
+
+For $x \neq y$, either $\|x\| \neq \|y\|$, and the strict convexity of $t \mapsto t^p$ on
+$[0, \infty)$ applies after the triangle inequality; or $\|x\| = \|y\| = r$, and
+$\|a x + b y\| < r$ by the strict convexity of the space. -/
 theorem strictConvexOn_norm_rpow [StrictConvexSpace ℝ V] {p : ℝ} (hp : 1 < p) :
     StrictConvexOn ℝ Set.univ fun x : V ↦ ‖x‖ ^ p := by
   refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab ↦ ?_⟩
@@ -57,9 +71,12 @@ theorem strictConvexOn_norm_rpow [StrictConvexSpace ℝ V] {p : ℝ} (hp : 1 < p
           Real.rpow_le_rpow (norm_nonneg _) htri hp0.le
       _ < a * ‖x‖ ^ p + b * ‖y‖ ^ p := hstrict
 
-/-- If `fun v => ‖v‖ ^ p` is strictly convex on all of `V` for some real `p ≥ 1`, then `V` is a
-strictly convex space.  Indeed for distinct unit vectors `x`, `y` strict convexity at the midpoint
-gives `‖(x + y) / 2‖ ^ p < 1`, whence `‖(x + y) / 2‖ < 1` because `t ↦ t ^ p` is monotone. -/
+/-- Let $V$ be a real normed space. If $v \mapsto \|v\|^p$ is strictly convex on $V$ for some real
+$p \ge 1$, then $V$ is strictly convex. The hypothesis has this form in Theorem 3.3.18 of
+[han2009theoretical].
+
+For distinct unit vectors $x$ and $y$, strict convexity at the midpoint gives
+$\|(x + y)/2\|^p < 1$, so $\|(x + y)/2\| < 1$ because $t \mapsto t^p$ is monotone. -/
 theorem StrictConvexSpace.of_strictConvexOn_norm_rpow {p : ℝ} (hp : 1 ≤ p)
     (hconv : StrictConvexOn ℝ (Set.univ : Set V) fun v : V => ‖v‖ ^ p) :
     StrictConvexSpace ℝ V := by
@@ -81,8 +98,11 @@ section InnerProduct
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 
-/-- On a real inner product space the squared norm is a strictly convex function, because `a ‖x‖² +
-b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` whenever `a + b = 1`. -/
+/-- On a real inner product space $H$, the function $v \mapsto \|v\|^2$ is strictly convex. This is
+Exercise 3.3.8 of [han2009theoretical].
+
+The proof uses the identity $a \|x\|^2 + b \|y\|^2 - \|a x + b y\|^2 = a b \|x - y\|^2$ for
+$a + b = 1$. -/
 theorem strictConvexOn_norm_sq : StrictConvexOn ℝ (Set.univ : Set H) fun v : H => ‖v‖ ^ 2 := by
   refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab => ?_⟩
   have hexp : ‖a • x + b • y‖ ^ 2
@@ -101,15 +121,16 @@ theorem strictConvexOn_norm_sq : StrictConvexOn ℝ (Set.univ : Set H) fun v : H
   simp only [smul_eq_mul]
   linarith
 
-/-- `strictConvexOn_norm_sq` in the real-power form, the shape
-`StrictConvexSpace.of_strictConvexOn_norm_rpow` consumes. -/
+/-- On a real inner product space $H$, the function $v \mapsto \|v\|^2$ is strictly convex, with the
+exponent $2$ read as a real number. This is `strictConvexOn_norm_sq` in the form that
+`StrictConvexSpace.of_strictConvexOn_norm_rpow` takes. -/
 theorem strictConvexOn_norm_rpow_two :
     StrictConvexOn ℝ (Set.univ : Set H) fun v : H => ‖v‖ ^ (2 : ℝ) := by
   simpa only [Real.rpow_two] using (strictConvexOn_norm_sq (H := H))
 
-/-- A real inner product space is a strictly convex space.  Mathlib reaches this by another route
-(uniform convexity); it is recorded here only as the first instance of the criterion
-`StrictConvexSpace.of_strictConvexOn_norm_rpow`. -/
+/-- A real inner product space is a strictly convex space, by
+`StrictConvexSpace.of_strictConvexOn_norm_rpow` with $p = 2$. Mathlib proves this by another
+route, through uniform convexity; the example records the first instance of the criterion. -/
 example : StrictConvexSpace ℝ H :=
   StrictConvexSpace.of_strictConvexOn_norm_rpow one_le_two strictConvexOn_norm_rpow_two
 

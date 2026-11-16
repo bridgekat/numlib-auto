@@ -16,75 +16,113 @@ import Numlib.Stationary.Splitting
 /-!
 # Stationary iterations for symmetric positive definite systems
 
-The convergence theory of the classical splittings when the matrix is symmetric positive definite,
-stated at the operator level wherever the proof allows.
+This module gives the convergence theory of the classical splittings $A = M - N$ when $A$ is
+symmetric positive definite. The central result is the **Householder–John theorem**, also called the
+Ostrowski–Reich theorem ([saad2003iterative], Theorem 4.10; [kress1998numerical], Theorem 4.12;
+[quarteroni2000numerical], Property 4.2): if $A$ is symmetric positive definite and
+$Q = M + M^H - A$ is positive definite, then the iteration operator $G = M^{-1} N$ has spectral
+radius $\rho(G) < 1$. Its converse also holds: if $Q$ is positive definite and $\rho(G) < 1$, then
+the symmetric matrix $A$ is positive definite. The proofs rest on the **energy identity** $\|G
+e\|_A^2 = \|e\|_A^2 - \langle Q y, y \rangle$ with $y = M^{-1} A e$, where
+$\|e\|_A^2 = \langle A e, e \rangle$. The identity gives a strict decrease of the energy norm of the
+error in each step, and a uniform contraction factor $q < 1$. When $M$ is also symmetric, $G$ is
+self-adjoint for the inner products of $A$ and of $M$, so that $\|G e\|_A \le \rho(G) \|e\|_A$ with
+equality at an eigenvector ([quarteroni2000numerical], Property 4.1). The results are stated for
+operators on a finite-dimensional complex inner product space and then for real matrices.
 
-* `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` is the **Householder–John /
-  Ostrowski–Reich theorem** ([saad2003iterative] Thm 4.10; [kress1998numerical] Thm 4.12;
-  [quarteroni2000numerical] Property 4.2): for a symmetric coercive `A` on a finite-dimensional
-  complex inner product space and a splitting `A = M - N` whose `Q = M + Mᴴ - A` is coercive, the
-  iteration operator `M⁻¹ N` has spectral radius `< 1`.
-  `Stationary.Splitting.isCoercive_of_spectralRadius_lt_one` is its converse: with `Q` coercive,
-  convergence forces `A` to be positive definite.  For a real matrix the two directions are
-  `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` and
-  `Stationary.Splitting.posDef_of_complexSpectralRadius_lt_one`, with `Q = M + Mᵀ - A`; the Jacobi
-  (`2D - A` positive definite, [quarteroni2000numerical] Theorem 4.3), Gauss–Seidel (Theorem 4.5),
-  SOR (Property 4.3, as the equivalence `Matrix.sorSplitting_complexSpectralRadius_lt_one_iff`) and
-  SSOR (`Matrix.ssorSplitting_complexSpectralRadius_lt_one`, §4.2.6) criteria are its instances.
-* **The energy-norm theory.**  The energy identity `‖G e‖_A² = ‖e‖_A² - ⟪Q y, y⟫`, `y = M⁻¹ A e`
-  (`Stationary.Splitting.energyNorm_sq_iterationOperator_apply`) gives the strict decrease of the
-  `A`-norm of the error in one step (`Stationary.Splitting.energyNorm_iterationOperator_apply_lt`)
-  and, by compactness, a uniform contraction factor `q < 1`
-  (`Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le`).  When `M` is symmetric the
-  iteration operator is self-adjoint in the `A`- and in the `M`-inner product
-  (`Stationary.Splitting.energyInner_iterationOperator_comm`,
-  `Stationary.Splitting.inner_m_iterationOperator_comm`), and then its `A`- and `M`-operator norms
-  are the spectral radius: `‖G e‖_A ≤ ρ(G) ‖e‖_A`, attained at an eigenvector
-  (`Stationary.Splitting.energyNorm_iterationOperator_apply_le_spectralRadius`,
+The criteria for the classical methods are instances. Jacobi converges if $A$ and $2D - A$ are
+positive definite; Gauss–Seidel converges for positive definite $A$; SOR converges for positive
+definite $A$ if and only if $0 < \omega < 2$; and SSOR converges for positive definite $A$ and
+$0 < \omega < 2$. For Richardson's iteration $I - \alpha M$ with a real spectrum in
+$[\lambda_{\min}, \lambda_{\max}]$, $0 < \lambda_{\min}$, the spectral radius is $\max\{|1 - \alpha
+\lambda_{\min}|, |1 - \alpha \lambda_{\max}|\}$, convergence holds exactly for
+$0 < \alpha < 2/\lambda_{\max}$, and $\alpha = 2/(\lambda_{\min} + \lambda_{\max})$ is optimal with
+spectral radius $(\lambda_{\max} - \lambda_{\min})/(\lambda_{\max} + \lambda_{\min})$
+([quarteroni2000numerical], Theorem 4.9). The determinant of the SOR iteration matrix is
+$(1 - \omega)^n$, which gives **Kahan's bound** $|1 - \omega| \le \rho(G_\omega)$. The SSOR
+preconditioner is symmetric, positive definite and larger than $A$ in the order of positive
+semidefinite matrices.
+
+## Main definitions
+
+* `Stationary.Splitting.energyIterationOperator`: the iteration operator on the space with the
+  energy inner product of a symmetric coercive operator.
+* `Stationary.Splitting.euclidean`: the splitting of the complex Euclidean operator that a splitting
+  of a real matrix induces.
+
+## Main results
+
+* `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive`: the Householder–John theorem
+  for operators.
+* `Stationary.Splitting.isCoercive_of_spectralRadius_lt_one`: its converse.
+* `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`,
+  `Stationary.Splitting.posDef_of_complexSpectralRadius_lt_one`: the two directions for real
+  matrices, with $Q = M + M^T - A$.
+* `Stationary.Splitting.energyNorm_sq_iterationOperator_apply`: the energy identity.
+* `Stationary.Splitting.energyNorm_iterationOperator_apply_lt`: one step strictly decreases the
+  energy norm of a nonzero error.
+* `Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le`: a uniform contraction factor
+  $q < 1$ in the energy norm.
+* `Stationary.Splitting.energyNorm_iterationOperator_apply_le_spectralRadius`,
   `Stationary.Splitting.norm_m_iterationOperator_apply_le_spectralRadius`,
-  `Stationary.Splitting.exists_energyNorm_iterationOperator_apply_eq_spectralRadius`), which is
-  [quarteroni2000numerical] Property 4.1 and the engine of its Corollary 4.1.  The real-matrix forms
-  are `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`,
-  `Stationary.Splitting.exists_energyNorm_mulVec_iterationOperator_le` and
-  `Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`.
-* **Richardson's iteration** `G_α = 1 - α M` for a real matrix `M` with real spectrum in
-  `[lmin, lmax]`: `ρ(G_α) = max |1 - α lmin| |1 - α lmax|`
-  (`Stationary.Splitting.complexSpectralRadius_one_sub_smul_eq`), convergence exactly for
-  `0 < α < 2/lmax` (`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`), and the
-  optimal parameter `α = 2/(lmin + lmax)` with radius `(lmax - lmin)/(lmax + lmin)`
-  (`Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul`,
-  `Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`), [quarteroni2000numerical]
-  Theorem 4.9; the Hermitian case `M = A` is
-  `Stationary.Splitting.richardson_complexSpectralRadius_eq` and its companions
-  ([saad2003iterative] Example 4.1; [han2009theoretical] Exercise 5.2.3).
-* `Matrix.jorSplitting` is Jacobi over-relaxation, `M = ω⁻¹ D`, whose optimal parameter is
-  `2/(2 - λmax - λmin)` for a Jacobi matrix with real eigenvalues ([kress1998numerical] Thm 4.9);
-  it converges for `0 < ω ≤ 1` whenever Jacobi does ([quarteroni2000numerical] Theorem 4.6) and,
-  for a positive
-  definite `A`, exactly for `0 < ω < 2/ρ(D⁻¹ A)` (Theorem 4.4,
-  `Matrix.jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef`, through the real positive
-  spectrum of the pencil `D⁻¹ A`, `Matrix.spectrum_inv_mul_subset_of_posDef`).
-* `Matrix.det_sorSplitting_iterationOperator` computes `det G_ω = (1 - ω)ⁿ`, from which
-  **Kahan's bound** `|1 - ω| ≤ ρ(G_ω)` ([quarteroni2000numerical] Theorem 4.7,
-  `Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius`) and the necessary condition
-  `0 < ω < 2` for SOR to converge ([kress1998numerical] Thm 4.11,
-  `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`) follow.
-* **SSOR.**  The SSOR preconditioner is symmetric (`Matrix.ssorSplitting_m_isSymm`), positive
-  definite for `0 < ω < 2` as soon as `A` is symmetric with positive diagonal
-  (`Matrix.ssorSplitting_m_posDef_of_diag_pos`, [golub2013matrix] (11.2.24); for positive definite
-  `A`, `Matrix.ssorSplitting_m_posDef`) and dominates `A`
-  (`Matrix.ssorSplitting_m_sub_posSemidef`, the factorization `P - A = c ((1-ω)D - ωL) D⁻¹ ((1-ω)D -
-  ωU)`); hence SSOR converges for a positive definite `A` and `0 < ω < 2`, and its iteration matrix
-  is `A`-self-adjoint and `A`-positive semidefinite
-  (`Matrix.ssorSplitting_iterationOperator_posSemidef_energy`), which is the correct reading of
-  [quarteroni2000numerical] Property 4.5 ("`B_SGS` is symmetric positive definite" is false as
-  printed: for a diagonal `A`, `B_SGS = 0`).
+  `Stationary.Splitting.exists_energyNorm_iterationOperator_apply_eq_spectralRadius`: for symmetric
+  $M$, the operator norms of $G$ for $A$ and for $M$ are $\rho(G)$.
+* `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`,
+  `Stationary.Splitting.exists_energyNorm_mulVec_iterationOperator_le`,
+  `Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`: the same
+  three results for real matrices.
+* `Stationary.Splitting.complexSpectralRadius_one_sub_smul_eq`,
+  `Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`,
+  `Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul`,
+  `Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`: Theorem 4.9 of
+  [quarteroni2000numerical] for Richardson's iteration.
+* `Stationary.Splitting.richardson_complexSpectralRadius_eq`: the case $M = A$ symmetric
+  ([saad2003iterative], Example 4.1; [han2009theoretical], Exercise 5.2.3).
+* `Matrix.jorSplitting_isMinOn_complexSpectralRadius`: the optimal JOR parameter
+  $2/(2 - \lambda_{\max} - \lambda_{\min})$ for a Jacobi matrix with real eigenvalues
+  ([kress1998numerical], Theorem 4.9).
+* `Matrix.jorSplitting_complexSpectralRadius_lt_one_of_le_one`: JOR converges for $0 < \omega \le 1$
+  whenever Jacobi converges ([quarteroni2000numerical], Theorem 4.6).
+* `Matrix.jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef`: for positive definite $A$, JOR
+  converges exactly for $0 < \omega < 2/\rho(D^{-1} A)$ ([quarteroni2000numerical], Theorem 4.4).
+* `Matrix.det_sorSplitting_iterationOperator`: $\det G_\omega = (1 - \omega)^n$.
+* `Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius`: Kahan's bound
+  $|1 - \omega| \le \rho(G_\omega)$ ([quarteroni2000numerical], Theorem 4.7).
+* `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`: SOR can converge only for
+  $0 < \omega < 2$ ([kress1998numerical], Theorem 4.11).
+* `Matrix.sorSplitting_complexSpectralRadius_lt_one_iff`: for positive definite $A$, SOR converges
+  if and only if $0 < \omega < 2$ ([quarteroni2000numerical], Property 4.3).
+* `Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef`: Gauss–Seidel converges for
+  positive definite $A$ ([quarteroni2000numerical], Theorem 4.5).
+* `Matrix.jacobiSplitting_complexSpectralRadius_lt_one_of_posDef`: Jacobi converges if $A$ and
+  $2D - A$ are positive definite ([quarteroni2000numerical], Theorem 4.3).
+* `Matrix.ssorSplitting_m_isSymm`, `Matrix.ssorSplitting_m_posDef_of_diag_pos`,
+  `Matrix.ssorSplitting_m_sub_posSemidef`: the SSOR preconditioner $P$ is symmetric, positive
+  definite for a symmetric $A$ with positive diagonal and $0 < \omega < 2$ ([golub2013matrix],
+  (11.2.24)), and $P - A$ is positive semidefinite.
+* `Matrix.ssorSplitting_complexSpectralRadius_lt_one`: SSOR converges for positive definite $A$ and
+  $0 < \omega < 2$ ([quarteroni2000numerical], §4.2.6).
+* `Matrix.ssorSplitting_iterationOperator_posSemidef_energy`: the SSOR iteration matrix is
+  self-adjoint and positive semidefinite for the inner product of $A$.
 
-Everything spectral is stated over `ℂ`, because the real spectrum of a real matrix is the wrong
-object: `Matrix.complexSpectralRadius` is the spectral radius of the complexification, and the
-operator statements are for a complex inner product space, which a real matrix reaches through
-`Stationary.Splitting.euclidean`, the splitting of `Matrix.toEuclideanCLM (Matrix.complexify A)`
-induced by a real splitting.
+## Implementation notes
+
+* All spectral statements are over $\mathbb{C}$, because the real spectrum of a real matrix does not
+  control convergence. The spectral radius of a real matrix is `Matrix.complexSpectralRadius`, the
+  spectral radius of its complexification.
+* The operator statements are for a finite-dimensional complex inner product space. "Positive
+  definite" is `LinearMap.IsCoercive`, that is $\operatorname{Re} \langle A x, x \rangle \ge c
+  \|x\|^2$ for some $c > 0$, and "symmetric positive definite" is `LinearMap.IsSymmetricCoercive`.
+  The energy norm is `energyNorm`, $\|x\|_A = \sqrt{\operatorname{Re} \langle A x, x \rangle}$.
+* A real splitting reaches the operator statements through `Stationary.Splitting.euclidean`, the
+  splitting of `Matrix.toEuclideanCLM (Matrix.complexify A)` on `EuclideanSpace ℂ n`. For real
+  matrices the energy norm is written as $\|e\|_A^2 = (A e) \cdot e$.
+* The parts $D$, $L$, $U$ of $A$ are `Matrix.diagPart A`, `Matrix.strictLower A` and
+  `Matrix.strictUpper A`.
+* Property 4.5 of [quarteroni2000numerical] says that $B_{SGS}$ is symmetric positive definite. This
+  is false as printed: for a diagonal $A$, $B_{SGS} = 0$, and $B_{SGS}$ is in general not symmetric
+  for the Euclidean inner product. The correct statement is
+  `Matrix.ssorSplitting_iterationOperator_posSemidef_energy`.
 -/
 
 open Filter Topology
@@ -99,30 +137,37 @@ section Comm
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] {A : E →L[ℂ] E}
   (s : Splitting A)
 
-/-- One step of the iteration operator subtracts the preconditioned residual:
-`G x = x - M⁻¹ A x`. -/
+/-- For a splitting $A = M - N$ of a continuous linear operator on a complex inner product space,
+the iteration operator satisfies
+$$G x = x - M^{-1} A x.$$
+-/
 theorem iterationOperator_apply (x : E) :
     s.iterationOperator x = x - Ring.inverse s.m (A x) := by
   rw [iterationOperator, sub_apply, one_apply_eq_self, mul_apply_eq_comp]
 
-/-- `M (M⁻¹ w) = w`. -/
+/-- For a splitting $A = M - N$ of an operator and every vector $w$, $M (M^{-1} w) = w$. -/
 theorem m_ringInverse_apply (w : E) : s.m (Ring.inverse s.m w) = w := by
   rw [← mul_apply_eq_comp, Ring.mul_inverse_cancel _ s.isUnit, one_apply_eq_self]
 
-/-- `M⁻¹ (M w) = w`. -/
+/-- For a splitting $A = M - N$ of an operator and every vector $w$, $M^{-1} (M w) = w$. -/
 theorem ringInverse_m_apply (w : E) : Ring.inverse s.m (s.m w) = w := by
   rw [← mul_apply_eq_comp, Ring.inverse_mul_cancel _ s.isUnit, one_apply_eq_self]
 
-/-- `⟪M⁻¹ u, v⟫ = ⟪u, M⁻¹ v⟫` for a symmetric unit `M`. -/
+/-- For a splitting with symmetric $M$, $\langle M^{-1} u, v \rangle = \langle u, M^{-1} v \rangle$.
+-/
 private theorem inner_ringInverse_m_comm (hM : (s.m : E →ₗ[ℂ] E).IsSymmetric) (u v : E) :
     inner ℂ (Ring.inverse s.m u) v = inner ℂ u (Ring.inverse s.m v) := by
   have hM' : ∀ x y, inner ℂ (s.m x) y = inner ℂ x (s.m y) := fun x y => hM x y
   conv_lhs => rw [← m_ringInverse_apply s v]
   rw [← hM', m_ringInverse_apply]
 
-/-- **The iteration operator is self-adjoint in the `A`-inner product** when `A` and `M` are
-symmetric: `⟪A (G x), y⟫ = ⟪A x, G y⟫`, because `A G = A - A M⁻¹ A` is symmetric.  This is what
-makes the `A`-operator norm of `G` its spectral radius ([quarteroni2000numerical] Property 4.1). -/
+/-- **The iteration operator is self-adjoint for the inner product of $A$.** Let $A = M - N$ be a
+splitting of a continuous linear operator on a complex inner product space, with $A$ and $M$
+symmetric. Then for all $x$, $y$,
+$$\langle A G x, y \rangle = \langle A x, G y \rangle.$$
+
+The reason is that $A G = A - A M^{-1} A$ is symmetric. This property makes the operator norm of
+$G$ for $A$ equal to its spectral radius ([quarteroni2000numerical], Property 4.1). -/
 theorem energyInner_iterationOperator_comm (hA : (A : E →ₗ[ℂ] E).IsSymmetric)
     (hM : (s.m : E →ₗ[ℂ] E).IsSymmetric) (x y : E) :
     inner ℂ (A (s.iterationOperator x)) y = inner ℂ (A x) (s.iterationOperator y) := by
@@ -130,8 +175,12 @@ theorem energyInner_iterationOperator_comm (hA : (A : E →ₗ[ℂ] E).IsSymmetr
   rw [iterationOperator_apply, iterationOperator_apply, map_sub, inner_sub_left, inner_sub_right,
     hA' (Ring.inverse s.m (A x)) y, inner_ringInverse_m_comm s hM, hA']
 
-/-- **The iteration operator is self-adjoint in the `M`-inner product** when `A` and `M` are
-symmetric: `⟪M (G x), y⟫ = ⟪M x, G y⟫`, because `M G = M - A` is symmetric. -/
+/-- **The iteration operator is self-adjoint for the inner product of $M$.** Let $A = M - N$ be a
+splitting of a continuous linear operator on a complex inner product space, with $A$ and $M$
+symmetric. Then for all $x$, $y$,
+$$\langle M G x, y \rangle = \langle M x, G y \rangle.$$
+
+The reason is that $M G = M - A$ is symmetric. -/
 theorem inner_m_iterationOperator_comm (hA : (A : E →ₗ[ℂ] E).IsSymmetric)
     (hM : (s.m : E →ₗ[ℂ] E).IsSymmetric) (x y : E) :
     inner ℂ (s.m (s.iterationOperator x)) y = inner ℂ (s.m x) (s.iterationOperator y) := by
@@ -141,7 +190,9 @@ theorem inner_m_iterationOperator_comm (hA : (A : E →ₗ[ℂ] E).IsSymmetric)
     inner_sub_left, inner_sub_right, hM' x y, hA' x y, ← inner_ringInverse_m_comm s hM,
     ringInverse_m_apply]
 
-/-- The increment `e - G e = M⁻¹ A e` of a step is nonzero for `e ≠ 0` when `A` is coercive. -/
+/-- Let $A = M - N$ be a splitting of a continuous linear operator on a complex inner product space,
+with $A$ coercive. Then for every $e \neq 0$, the increment $e - G e = M^{-1} A e$ of one step
+is nonzero. -/
 theorem sub_iterationOperator_apply_ne_zero (hA : (A : E →ₗ[ℂ] E).IsCoercive) {e : E}
     (he : e ≠ 0) : e - s.iterationOperator e ≠ 0 := by
   rw [iterationOperator_apply, sub_sub_cancel]
@@ -157,8 +208,9 @@ section Operator
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] [FiniteDimensional ℂ E]
 
-/-- The quadratic form of `Q = M + Mᴴ - A` is `2 re ⟪M x, x⟫ - re ⟪A x, x⟫`: the adjoint contributes
-the conjugate of the form of `M`. -/
+/-- For operators $M$, $A$ on a finite-dimensional complex inner product space, $\operatorname{Re}
+\langle (M + M^H - A) x, x \rangle = 2 \operatorname{Re} \langle M x, x \rangle -
+\operatorname{Re} \langle A x, x \rangle$. -/
 private theorem re_inner_hermitianSum (M A : E →L[ℂ] E) (x : E) :
     (inner ℂ ((M + ContinuousLinearMap.adjoint M - A) x) x : ℂ).re
       = 2 * (inner ℂ (M x) x : ℂ).re - (inner ℂ (A x) x : ℂ).re := by
@@ -170,8 +222,7 @@ private theorem re_inner_hermitianSum (M A : E →L[ℂ] E) (x : E) :
   ring
 
 omit [FiniteDimensional ℂ E] in
-/-- `M (x - G x) = A x` for the iteration operator `G = 1 - M⁻¹ A`: the increment of one step is the
-preconditioned residual. -/
+/-- For a splitting $A = M - N$ of an operator, $M (e - G e) = A e$. -/
 private theorem apply_sub_iterationOperator {A : E →L[ℂ] E} (s : Splitting A) (e : E) :
     s.m (e - s.iterationOperator e) = A e := by
   have hop : s.iterationOperator e = e - (Ring.inverse s.m) (A e) := by
@@ -179,9 +230,9 @@ private theorem apply_sub_iterationOperator {A : E →L[ℂ] E} (s : Splitting A
   have hd : e - s.iterationOperator e = (Ring.inverse s.m) (A e) := by rw [hop]; abel
   rw [hd, ← mul_apply_eq_comp, Ring.mul_inverse_cancel _ s.isUnit, one_apply_eq_self]
 
-/-- **The energy identity of a splitting.**  For symmetric `A` the `A`-form drops in one step of the
-iteration by exactly the `Q`-form of the increment, `Q = M + Mᴴ - A`: `⟪A e, e⟫ - ⟪A G e, G e⟫ = ⟪Q
-(e - G e), e - G e⟫`.  Both halves of the Householder–John theorem are read off this identity. -/
+/-- **The energy identity of a splitting.** For a splitting $A = M - N$ with $A$ symmetric and
+$Q = M + M^H - A$, $\langle A e, e \rangle - \langle A G e, G e \rangle = \langle Q (e - G e),
+e - G e \rangle$; both halves of the Householder–John theorem follow from it. -/
 private theorem energy_identity {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetric) (e : E) :
     (inner ℂ (A e) e : ℂ) - (inner ℂ (A (s.iterationOperator e)) (s.iterationOperator e) : ℂ)
@@ -202,15 +253,19 @@ private theorem energy_identity {A : E →L[ℂ] E} (s : Splitting A)
   rw [h1, h2, h3, sub_apply, add_apply, inner_sub_left, inner_add_left]
   ring
 
-/-- **The Householder–John / Ostrowski–Reich theorem**, in operator form.  If `A` is symmetric
-coercive on a finite-dimensional complex inner product space and `A = M - N` is a splitting whose `Q
-= M + Mᴴ - A` is coercive, then the iteration operator `M⁻¹ N` has spectral radius `< 1`, so the
-stationary iteration converges ([saad2003iterative], Thm 4.10; [kress1998numerical], Thm 4.12 is the
-case `M = ω⁻¹ D - E`).
+/-- The **Householder–John theorem**, also called the **Ostrowski–Reich theorem**, for operators.
+Let $E$ be a finite-dimensional complex inner product space, and let $A = M - N$ be a splitting
+of a continuous linear operator $A$ on $E$. Suppose that $A$ is symmetric and coercive, and that
+$$Q = M + M^H - A$$
+is coercive. Then the iteration operator $G = M^{-1} N$ satisfies $\rho(G) < 1$, so the
+stationary iteration converges.
 
-The proof is the Rayleigh-quotient identity at an eigenpair `M⁻¹ N x = μ x`: it gives `A x = (1 - μ)
-M x`, and comparing the `A`- and `Q`-forms at `x` yields `(1 - |μ|²) ⟪A x, x⟫ = |1 - μ|² ⟪Q x, x⟫`,
-where both forms are positive. -/
+This is Theorem 4.10 of [saad2003iterative]. Theorem 4.12 of [kress1998numerical] is the case
+$M = \omega^{-1} D - E$. Coercive means $\operatorname{Re} \langle A x, x \rangle \ge c \|x\|^2$
+for some $c > 0$, and $M^H$ is the adjoint `ContinuousLinearMap.adjoint`. The proof uses an
+eigenpair $G x = \mu x$: it gives $A x = (1 - \mu) M x$, and the comparison of the forms of $A$
+and $Q$ at $x$ gives $(1 - |\mu|^2) \langle A x, x \rangle = |1 - \mu|^2 \langle Q x, x
+\rangle$, where both forms are positive. -/
 theorem spectralRadius_lt_one_of_isSymmetricCoercive {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetricCoercive)
     (hQ : ((s.m + ContinuousLinearMap.adjoint s.m - A : E →L[ℂ] E) : E →ₗ[ℂ] E).IsCoercive) :
@@ -296,13 +351,16 @@ theorem spectralRadius_lt_one_of_isSymmetricCoercive {A : E →L[ℂ] E} (s : Sp
       nlinarith [norm_nonneg μ]
     exact_mod_cast hmu
 
-/-- **The converse of the Householder–John theorem** ([saad2003iterative], Thm 4.10, "only if").
-For symmetric `A` and a splitting with coercive `Q = M + Mᴴ - A`, convergence of the iteration
-forces `A` to be coercive, i.e. positive definite.
+/-- **The converse of the Householder–John theorem** ([saad2003iterative], Theorem 4.10, the "only
+if" part). Let $E$ be a finite-dimensional complex inner product space, and let $A = M - N$ be a
+splitting of a continuous linear operator $A$ on $E$. Suppose that $A$ is symmetric, that
+$Q = M + M^H - A$ is coercive, and that $\rho(G) < 1$. Then $A$ is coercive, that is, positive
+definite.
 
-Along the error sequence `e_{k+1} = M⁻¹ N e_k` the energy identity makes `k ↦ ⟪A e_k, e_k⟫`
-nonincreasing, and it tends to `0` because `e_k → 0`; so `⟪A e₀, e₀⟫ ≥ ⟪A e₁, e₁⟫ ≥ 0`, with the
-first inequality strict unless `e₁ = e₀`, which would contradict `e_k → 0`. -/
+Along the error sequence $e_{k+1} = G e_k$, the energy identity makes
+$k \mapsto \langle A e_k, e_k \rangle$ nonincreasing, and this sequence tends to $0$ because
+$e_k \to 0$. So $\langle A e_0, e_0 \rangle \ge \langle A e_1, e_1 \rangle \ge 0$, and the first
+inequality is strict unless $e_1 = e_0$, which would contradict $e_k \to 0$. -/
 theorem isCoercive_of_spectralRadius_lt_one {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetric)
     (hQ : ((s.m + ContinuousLinearMap.adjoint s.m - A : E →L[ℂ] E) : E →ₗ[ℂ] E).IsCoercive)
@@ -375,10 +433,15 @@ theorem isCoercive_of_spectralRadius_lt_one {A : E →L[ℂ] E} (s : Splitting A
     linarith
 
 
-/-- **The energy identity of a splitting**, made public: for symmetric `A` and `G = M⁻¹ N`,
-`re ⟪A (G e), G e⟫ = re ⟪A e, e⟫ - re ⟪Q (e - G e), e - G e⟫` with `Q = M + Mᴴ - A`; since
-`e - G e = M⁻¹ A e`, this is `‖G e‖_A² = ‖e‖_A² - ⟪Q y, y⟫` with `y = M⁻¹ A e`.  Both halves of the
-Householder–John theorem and the monotonicity of the energy norm are read off it. -/
+/-- **The energy identity of a splitting.** Let $E$ be a finite-dimensional complex inner product
+space, and let $A = M - N$ be a splitting of a continuous linear operator $A$ on $E$ with $A$
+symmetric. Let $Q = M + M^H - A$. Then for every $e \in E$,
+$$\operatorname{Re} \langle A G e, G e \rangle = \operatorname{Re} \langle A e, e \rangle -
+  \operatorname{Re} \langle Q (e - G e), e - G e \rangle.$$
+
+Since $e - G e = M^{-1} A e$, this is $\|G e\|_A^2 = \|e\|_A^2 - \langle Q y, y \rangle$ with
+$y = M^{-1} A e$. Both halves of the Householder–John theorem and the monotonicity of the energy
+norm follow from it. -/
 theorem energyNorm_sq_iterationOperator_apply {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetric) (e : E) :
     (inner ℂ (A (s.iterationOperator e)) (s.iterationOperator e)).re =
@@ -389,10 +452,16 @@ theorem energyNorm_sq_iterationOperator_apply {A : E →L[ℂ] E} (s : Splitting
   rw [Complex.sub_re] at h
   linarith
 
-/-- **Monotone convergence in the energy norm** ([quarteroni2000numerical] Property 4.2 and Theorem
-4.5, monotonicity clause): if `A` is symmetric coercive and `Q = M + Mᴴ - A` is coercive, one step
-strictly decreases the `A`-norm of a nonzero error.  From the energy identity, since `⟪Q y, y⟫ > 0`
-for `y = M⁻¹ A e ≠ 0`. -/
+/-- **Monotone convergence in the energy norm** ([quarteroni2000numerical], Property 4.2 and the
+monotonicity clause of Theorem 4.5). Let $E$ be a finite-dimensional complex inner product
+space, and let $A = M - N$ be a splitting of a continuous linear operator $A$ on $E$. Suppose
+that $A$ is symmetric and coercive and that $Q = M + M^H - A$ is coercive. Then for every
+$e \neq 0$,
+$$\|G e\|_A < \|e\|_A.$$
+
+This follows from the energy identity, since $\langle Q y, y \rangle > 0$ for
+$y = M^{-1} A e \neq 0$. The norm is `energyNorm`, $\|x\|_A = \sqrt{\operatorname{Re} \langle A
+x, x \rangle}$. -/
 theorem energyNorm_iterationOperator_apply_lt {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetricCoercive)
     (hQ : ((s.m + ContinuousLinearMap.adjoint s.m - A : E →L[ℂ] E) : E →ₗ[ℂ] E).IsCoercive)
@@ -413,43 +482,55 @@ section EnergySpace
 
 variable {A : E →L[ℂ] E} (s : Splitting A) {B : E →ₗ[ℂ] E} (hB : B.IsSymmetricCoercive)
 
-/-- The iteration operator transported to the energy space `WithEnergy B hB` of a symmetric
-coercive `B`, along `WithEnergy.equiv`; it is continuous by finite dimension. -/
+/-- For a splitting of $A$ and a symmetric coercive operator $B$ on a finite-dimensional complex
+inner product space, the iteration operator $G$ viewed as an operator on the space
+`WithEnergy B hB`, which carries the inner product $\langle B x, y \rangle$.
+
+The operator is transported along `WithEnergy.equiv`; it is continuous because the space is
+finite-dimensional. -/
 noncomputable def energyIterationOperator :
     WithEnergy B hB →L[ℂ] WithEnergy B hB :=
   LinearMap.toContinuousLinearMap
     ((WithEnergy.equiv B hB).conjAlgEquiv (R := ℂ) (s.iterationOperator : E →ₗ[ℂ] E))
 
-/-- The transported operator acts on a transported vector as `G` does. -/
+/-- The iteration operator on the energy space of $B$ acts on a transported vector as $G$ acts on
+the vector. -/
 theorem energyIterationOperator_apply (x : E) :
     energyIterationOperator s hB (WithEnergy.equiv B hB x)
       = WithEnergy.equiv B hB (s.iterationOperator x) := by
   simp [energyIterationOperator]
 
-/-- Transport does not change the spectrum. -/
+/-- The iteration operator on the energy space of $B$ has the same spectrum as $G$. -/
 theorem spectrum_energyIterationOperator :
     spectrum ℂ (energyIterationOperator s hB) = spectrum ℂ s.iterationOperator := by
   have : CompleteSpace E := FiniteDimensional.complete ℂ _
   rw [ContinuousLinearMap.spectrum_eq, ContinuousLinearMap.spectrum_eq, energyIterationOperator,
     LinearMap.coe_toContinuousLinearMap, AlgEquiv.spectrum_eq]
 
-/-- Transport does not change the spectral radius. -/
+/-- The iteration operator on the energy space of $B$ has the same spectral radius as $G$. -/
 theorem spectralRadius_energyIterationOperator :
     spectralRadius ℂ (energyIterationOperator s hB) = spectralRadius ℂ s.iterationOperator := by
   simp only [spectralRadius_eq_of_unital, spectrum_energyIterationOperator]
 
-/-- The transported operator is self-adjoint on the energy space as soon as `G` is symmetric in the
-`B`-inner product. -/
+/-- Let $B$ be a symmetric coercive operator. If $\langle B G x, y \rangle = \langle B x, G y
+\rangle$ for all $x$, $y$, then the iteration operator on the energy space of $B$ is
+self-adjoint. -/
 theorem isSelfAdjoint_energyIterationOperator
     (hcomm : ∀ x y, inner ℂ (B (s.iterationOperator x)) y = inner ℂ (B x) (s.iterationOperator y)) :
     IsSelfAdjoint (energyIterationOperator s hB) :=
   LinearMap.IsSymmetric.isSelfAdjoint hcomm
 
 include hB in
-/-- **The `B`-operator norm of a `B`-symmetric iteration operator is its spectral radius**: for
-every `e`, `‖G e‖_B ≤ ρ(G) ‖e‖_B`.  On the energy space `G` is self-adjoint, and a self-adjoint
-operator on a Hilbert space has norm equal to its spectral radius
-(`IsSelfAdjoint.spectralRadius_eq_nnnorm`). -/
+/-- **The operator norm of a $B$-symmetric iteration operator for $B$ is its spectral radius.** Let
+$E$ be a finite-dimensional complex inner product space, let $A = M - N$ be a splitting of a
+continuous linear operator on $E$, and let $B$ be a symmetric coercive operator on $E$. If
+$\langle B G x, y \rangle = \langle B x, G y \rangle$ for all $x$, $y$, then for every
+$e \in E$,
+$$\|G e\|_B \le \rho(G) \, \|e\|_B.$$
+
+On the energy space of $B$ the operator $G$ is self-adjoint, and a self-adjoint operator on a
+Hilbert space has norm equal to its spectral radius (`IsSelfAdjoint.spectralRadius_eq_nnnorm`).
+The spectral radius is the real number `(spectralRadius ℂ _).toReal`. -/
 theorem energyNorm_iterationOperator_apply_le_spectralRadius_of_comm
     (hcomm : ∀ x y, inner ℂ (B (s.iterationOperator x)) y = inner ℂ (B x) (s.iterationOperator y))
     (e : E) :
@@ -463,9 +544,14 @@ theorem energyNorm_iterationOperator_apply_le_spectralRadius_of_comm
   exact (energyIterationOperator s hB).le_opNorm _
 
 include hB in
-/-- **The spectral radius is attained in every energy norm**: on a nontrivial space there is `e ≠ 0`
-with `‖G e‖_B = ρ(G) ‖e‖_B`, namely an eigenvector for an eigenvalue of maximal modulus.  No
-symmetry is needed. -/
+/-- **The spectral radius is attained in every energy norm.** Let $E$ be a nontrivial
+finite-dimensional complex inner product space, let $A = M - N$ be a splitting of a continuous
+linear operator on $E$, and let $B$ be a symmetric coercive operator on $E$. Then there is
+$e \neq 0$ with
+$$\|G e\|_B = \rho(G) \, \|e\|_B.$$
+
+Such an $e$ is an eigenvector for an eigenvalue of maximal modulus. No symmetry of $G$ is
+needed. -/
 theorem exists_energyNorm_iterationOperator_apply_eq_spectralRadius [Nontrivial E] :
     ∃ e : E, e ≠ 0 ∧ energyNorm B (s.iterationOperator e) =
       (spectralRadius ℂ s.iterationOperator).toReal * energyNorm B e := by
@@ -482,10 +568,15 @@ theorem exists_energyNorm_iterationOperator_apply_eq_spectralRadius [Nontrivial 
 
 end EnergySpace
 
-/-- **The uniform energy contraction** `‖G‖_A < 1` ([quarteroni2000numerical] Property 4.2,
-`ρ(B) ≤ ‖B‖_A < 1`): under the hypotheses of `energyNorm_iterationOperator_apply_lt` there is
-`q < 1` with `‖G e‖_A ≤ q ‖e‖_A` for every `e`.  The pointwise strict decrease becomes uniform on
-the compact unit sphere of the energy space, where the `A`-norm of `G e` attains its maximum. -/
+/-- **The uniform contraction in the energy norm** ([quarteroni2000numerical], Property 4.2,
+$\rho(B) \le \|B\|_A < 1$). Let $E$ be a finite-dimensional complex inner product space, and let
+$A = M - N$ be a splitting of a continuous linear operator $A$ on $E$. Suppose that $A$ is
+symmetric and coercive and that $Q = M + M^H - A$ is coercive. Then there is $q < 1$ such that
+for every $e \in E$,
+$$\|G e\|_A \le q \, \|e\|_A.$$
+
+The strict decrease of `Stationary.Splitting.energyNorm_iterationOperator_apply_lt` becomes
+uniform on the compact unit sphere of the energy space, where $\|G e\|_A$ attains its maximum. -/
 theorem exists_energyNorm_iterationOperator_apply_le {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetricCoercive)
     (hQ : ((s.m + ContinuousLinearMap.adjoint s.m - A : E →L[ℂ] E) : E →ₗ[ℂ] E).IsCoercive) :
@@ -529,11 +620,14 @@ theorem exists_energyNorm_iterationOperator_apply_le {A : E →L[ℂ] E} (s : Sp
         rwa [← mul_assoc, mul_inv_cancel₀ hu0, one_mul, mul_comm] at this
       rwa [hu, energyIterationOperator_apply, WithEnergy.norm_equiv, WithEnergy.norm_equiv] at h2
 
-/-- **`ρ(G) = ‖G‖_A`** ([quarteroni2000numerical] Property 4.1, the `A`-norm clause, as the
-inequality `‖G e‖_A ≤ ρ(G) ‖e‖_A` for every `e`;
-`exists_energyNorm_iterationOperator_apply_eq_spectralRadius` is the attainment): for a symmetric
-coercive `A` and a splitting with symmetric `M`, the `A`-operator norm of `G` is its spectral
-radius. -/
+/-- **The operator norm of $G$ for $A$ is $\rho(G)$** ([quarteroni2000numerical], Property 4.1, the
+clause for the norm of $A$). Let $E$ be a finite-dimensional complex inner product space, and
+let $A = M - N$ be a splitting of a continuous linear operator $A$ on $E$, with $A$ symmetric
+and coercive and $M$ symmetric. Then for every $e \in E$,
+$$\|G e\|_A \le \rho(G) \, \|e\|_A.$$
+
+This is the inequality half of $\rho(G) = \|G\|_A$. The equality is attained by
+`Stationary.Splitting.exists_energyNorm_iterationOperator_apply_eq_spectralRadius`. -/
 theorem energyNorm_iterationOperator_apply_le_spectralRadius {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetricCoercive) (hM : (s.m : E →ₗ[ℂ] E).IsSymmetric) (e : E) :
     energyNorm (A : E →ₗ[ℂ] E) (s.iterationOperator e) ≤
@@ -541,8 +635,12 @@ theorem energyNorm_iterationOperator_apply_le_spectralRadius {A : E →L[ℂ] E}
   energyNorm_iterationOperator_apply_le_spectralRadius_of_comm s hA
     (energyInner_iterationOperator_comm s hA.isSymmetric hM) e
 
-/-- **`ρ(G) = ‖G‖_M`** ([quarteroni2000numerical] Property 4.1, the `P`-norm clause): for a
-symmetric `A` and a splitting with symmetric coercive `M`, `‖G e‖_M ≤ ρ(G) ‖e‖_M` for every `e`. -/
+/-- **The operator norm of $G$ for $M$ is $\rho(G)$** ([quarteroni2000numerical], Property 4.1, the
+clause for the norm of the preconditioner). Let $E$ be a finite-dimensional complex inner
+product space, and let $A = M - N$ be a splitting of a continuous linear operator $A$ on $E$,
+with $A$ symmetric and $M$ symmetric and coercive. Then for every $e \in E$,
+$$\|G e\|_M \le \rho(G) \, \|e\|_M.$$
+-/
 theorem norm_m_iterationOperator_apply_le_spectralRadius {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetric) (hM : (s.m : E →ₗ[ℂ] E).IsSymmetricCoercive) (e : E) :
     energyNorm (s.m : E →ₗ[ℂ] E) (s.iterationOperator e) ≤
@@ -554,41 +652,45 @@ end Operator
 
 section Euclidean
 
-/-! ### Real matrices
+/-!
+### Real matrices
 
-A real splitting reaches the operator statements through `Stationary.Splitting.euclidean`, the
-splitting of `Matrix.toEuclideanCLM (Matrix.complexify A)` on `EuclideanSpace ℂ n` obtained by
-complexifying and transporting along the star algebra equivalence `Matrix.toEuclideanCLM`. -/
+A splitting of a real matrix $A$ reaches the operator statements through
+`Stationary.Splitting.euclidean`. This is the splitting of the operator
+`Matrix.toEuclideanCLM (Matrix.complexify A)` on `EuclideanSpace ℂ n`, obtained by complexification
+and transport along the star algebra equivalence `Matrix.toEuclideanCLM`.
+-/
 
 open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n ℝ} (s : Splitting A)
 
-/-- The splitting of the operator `toEuclideanCLM (complexify A)` on `EuclideanSpace ℂ n` induced
-by a real splitting of `A`. -/
+/-- The splitting of the operator of the complex matrix $A$ on `EuclideanSpace ℂ n` that a splitting
+of a real square matrix $A$ induces: its part $m$ is the operator of the complex matrix $m$. -/
 noncomputable def euclidean : Splitting (toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify A)) :=
   s.complexify.map (toEuclideanCLM (n := n) (𝕜 := ℂ))
 
-/-- The `m` of the induced Euclidean splitting. -/
+/-- The part $m$ of the induced Euclidean splitting is the operator `Matrix.toEuclideanCLM` of the
+complexification of $m$. -/
 theorem euclidean_m :
     s.euclidean.m = toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify s.m) := rfl
 
-/-- The iteration operator of the induced Euclidean splitting is the operator of the complexified
-iteration matrix. -/
+/-- The iteration operator of the induced Euclidean splitting is the operator
+`Matrix.toEuclideanCLM` of the complexification of the real iteration matrix. -/
 theorem euclidean_iterationOperator :
     s.euclidean.iterationOperator
       = toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify s.iterationOperator) := by
   rw [euclidean, map_iterationOperator, Splitting.complexify_iterationOperator]
 
-/-- The spectral radius of the induced Euclidean splitting's iteration operator is the complex
-spectral radius of the real iteration matrix. -/
+/-- The spectral radius of the iteration operator of the induced Euclidean splitting is the spectral
+radius $\rho(G)$ of the real iteration matrix $G$, computed over $\mathbb{C}$. -/
 theorem spectralRadius_euclidean_iterationOperator :
     spectralRadius ℂ s.euclidean.iterationOperator = complexSpectralRadius s.iterationOperator := by
   rw [euclidean_iterationOperator, complexSpectralRadius_eq_iSup, spectralRadius_eq_of_unital,
     AlgEquiv.spectrum_eq (Matrix.toEuclideanCLM (n := n) (𝕜 := ℂ))]
 
-/-- The Householder–John operator `M + Mᴴ - A` of the induced Euclidean splitting is the operator
-of the real matrix `M + Mᵀ - A`. -/
+/-- For the induced Euclidean splitting of a splitting $A = M - N$ of a real matrix, the operator
+$M + M^H - A$ is the operator of the complexification of the real matrix $M + M^T - A$. -/
 theorem euclidean_m_add_adjoint_sub :
     s.euclidean.m + ContinuousLinearMap.adjoint s.euclidean.m
       - toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify A)
@@ -597,10 +699,14 @@ theorem euclidean_m_add_adjoint_sub :
     Matrix.complexify_sub, Matrix.complexify_add, ← conjTranspose_eq_transpose_of_trivial s.m,
     Matrix.complexify_conjTranspose, Matrix.star_eq_conjTranspose]
 
-/-- **Householder–John for real matrices** ([saad2003iterative] Thm 4.10; [quarteroni2000numerical]
-Properties 4.1–4.2): for a positive definite `A` and a splitting with `M + Mᵀ - A` positive
-definite, `ρ(M⁻¹ N) < 1`.  It is `spectralRadius_lt_one_of_isSymmetricCoercive` for the induced
-Euclidean splitting. -/
+/-- **The Householder–John theorem for real matrices** ([saad2003iterative], Theorem 4.10;
+[quarteroni2000numerical], Properties 4.1–4.2). Let $A = M - N$ be a splitting of a real
+symmetric positive definite matrix $A$, and suppose that $M + M^T - A$ is symmetric positive
+definite. Then
+$$\rho(M^{-1} N) < 1.$$
+
+This is `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` for the induced
+Euclidean splitting. The spectral radius is `Matrix.complexSpectralRadius`. -/
 theorem complexSpectralRadius_lt_one_of_posDef (hA : A.PosDef) (hQ : (s.m + s.mᵀ - A).PosDef) :
     complexSpectralRadius s.iterationOperator < 1 := by
   rw [← spectralRadius_euclidean_iterationOperator]
@@ -609,9 +715,10 @@ theorem complexSpectralRadius_lt_one_of_posDef (hA : A.PosDef) (hQ : (s.m + s.m�
   rw [euclidean_m_add_adjoint_sub]
   exact hQ.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
 
-/-- **The converse of Householder–John for real matrices** ([saad2003iterative] Thm 4.10, "only
-if"): for a symmetric `A` and a splitting with `M + Mᵀ - A` positive definite, convergence forces
-`A` to be positive definite. -/
+/-- **The converse of the Householder–John theorem for real matrices** ([saad2003iterative], Theorem
+4.10, the "only if" part). Let $A = M - N$ be a splitting of a real symmetric matrix $A$, and
+suppose that $M + M^T - A$ is symmetric positive definite. If $\rho(M^{-1} N) < 1$, then $A$ is
+positive definite. -/
 theorem posDef_of_complexSpectralRadius_lt_one (hA : A.IsHermitian) (hQ : (s.m + s.mᵀ - A).PosDef)
     (hρ : complexSpectralRadius s.iterationOperator < 1) : A.PosDef := by
   rw [← spectralRadius_euclidean_iterationOperator] at hρ
@@ -636,8 +743,8 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The spectral radius of a real matrix is `K` as soon as every complex eigenvalue has modulus at
-most `K` and one of them attains it. -/
+/-- If every complex eigenvalue of a real matrix $X$ has modulus at most $K$ and one of them has
+modulus $K$, then $\rho(X) = K$. -/
 private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : ℝ}
     (hle : ∀ μ ∈ spectrum ℂ (complexify X), ‖μ‖ ≤ K)
     (hmem : ∃ μ ∈ spectrum ℂ (complexify X), ‖μ‖ = K) :
@@ -650,7 +757,8 @@ private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : 
   · calc ENNReal.ofReal K = (‖μ₀‖₊ : ℝ≥0∞) := by rw [← hμ₀K, ofReal_norm]; rfl
       _ ≤ _ := le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ₀ hμ₀
 
-/-- The complex spectrum of `c • 1 + d • X` for a real matrix `X`. -/
+/-- For a real matrix $X$ and real $c$, $d$ with $d \neq 0$, the complex eigenvalues of $c I + d X$
+are the numbers $c + d \nu$ for the complex eigenvalues $\nu$ of $X$. -/
 private theorem mem_spectrum_complexify_affine_iff (X : Matrix n n ℝ) {c d : ℝ} (hd : d ≠ 0)
     (μ : ℂ) :
     μ ∈ spectrum ℂ (complexify (c • 1 + d • X)) ↔
@@ -665,10 +773,16 @@ private theorem mem_spectrum_complexify_affine_iff (X : Matrix n n ℝ) {c d : �
     ring
   rwa [hcancel]
 
-/-- **The spectral radius of an affine function of a real matrix** whose spectrum is real and fills
-`[lmin, lmax]`: `ρ(c 1 + d X) = max |c + d lmin| |c + d lmax|`.  The absolute value is convex, so
-the largest `|c + d t|` sits at an endpoint.  This is the tool behind every relaxation-parameter
-computation (Richardson, JOR). -/
+/-- **The spectral radius of an affine function of a real matrix.** Let $X$ be a real square matrix
+whose complex eigenvalues are real and lie in $[\lambda_{\min}, \lambda_{\max}]$, where
+$\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues of $X$. Then for all real $c$ and
+$d \neq 0$,
+$$\rho(c I + d X) = \max\{|c + d \lambda_{\min}|, |c + d \lambda_{\max}|\}.$$
+
+The absolute value is convex, so the largest $|c + d t|$ for
+$t \in [\lambda_{\min}, \lambda_{\max}]$ is at an endpoint. This result is used for the choice
+of the relaxation parameter of Richardson's iteration and of JOR. The spectral radius is
+`Matrix.complexSpectralRadius`. -/
 theorem complexSpectralRadius_affine {X : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify X) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ X) (hmax : lmax ∈ spectrum ℝ X) {c d : ℝ} (hd : d ≠ 0) :
@@ -697,7 +811,7 @@ theorem complexSpectralRadius_affine {X : Matrix n n ℝ} {lmin lmax : ℝ}
     · exact ⟨_, hmem lmin hminC, by rw [he, Complex.norm_real, Real.norm_eq_abs]⟩
     · exact ⟨_, hmem lmax hmaxC, by rw [he, Complex.norm_real, Real.norm_eq_abs]⟩
 
-/-- A real symmetric matrix has real spectrum: its complex eigenvalues are the real ones. -/
+/-- The complex eigenvalues of a real symmetric matrix are its real eigenvalues. -/
 private theorem IsHermitian.spectrum_complexify_eq {X : Matrix n n ℝ} (hX : X.IsHermitian) :
     spectrum ℂ (complexify X) = Complex.ofReal '' spectrum ℝ X := by
   have hC : (complexify X).IsHermitian := (isHermitian_complexify_iff X).mpr hX
@@ -710,7 +824,8 @@ private theorem IsHermitian.spectrum_complexify_eq {X : Matrix n n ℝ} (hX : X.
     exact ⟨r, (ofReal_mem_spectrum_complexify_iff X r).mp hμ, rfl⟩
   · rintro _ ⟨r, hr, rfl⟩
     exact (ofReal_mem_spectrum_complexify_iff X r).mpr hr
-/-- An attained lower endpoint of an enclosing interval is below the upper one. -/
+/-- If the complex spectrum of a real matrix lies in $[\lambda_{\min}, \lambda_{\max}]$ and
+$\lambda_{\min}$ is an eigenvalue, then $\lambda_{\min} \le \lambda_{\max}$. -/
 private theorem le_of_spectrum_subset {X : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify X) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ X) : lmin ≤ lmax := by
@@ -718,9 +833,11 @@ private theorem le_of_spectrum_subset {X : Matrix n n ℝ} {lmin lmax : ℝ}
   rw [Complex.ofReal_inj] at hre
   exact hre ▸ hr.2
 
-/-- `t ↦ max |1 - t a| |1 - t b|` is bounded below by `(b - a)/(b + a)` for `0 < a ≤ b`: the convex
-combination with weights `b/(a+b)`, `a/(a+b)` of `1 - t a` and `-(1 - t b)` is that constant,
-whatever `t` is. -/
+/-- For real numbers $0 < a \le b$ and every real $t$,
+$$\frac{b - a}{b + a} \le \max\{|1 - t a|, |1 - t b|\}.$$
+
+The combination of $1 - t a$ and $-(1 - t b)$ with the weights $b/(a + b)$ and $a/(a + b)$ is
+this constant, whatever $t$ is. -/
 theorem le_max_abs_one_sub_mul {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (t : ℝ) :
     (b - a) / (b + a) ≤ max |1 - t * a| |1 - t * b| := by
   have hb : 0 < b := ha.trans_le hab
@@ -729,8 +846,12 @@ theorem le_max_abs_one_sub_mul {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (t : ℝ
   rw [div_le_iff₀ (by linarith : (0 : ℝ) < b + a)]
   nlinarith [mul_le_mul_of_nonneg_left hA hb.le, mul_le_mul_of_nonneg_left hB ha.le]
 
-/-- At `t = 2/(a + b)` the two branches of `max |1 - t a| |1 - t b|` are equal, and the common value
-`(b - a)/(b + a)` is the lower bound of `le_max_abs_one_sub_mul`: the minimum is attained there. -/
+/-- For real numbers $0 < a \le b$, at $t = 2/(a + b)$ the two terms of
+$\max\{|1 - t a|, |1 - t b|\}$ are equal, and
+$$\max\Bigl\{\Bigl|1 - \frac{2a}{a + b}\Bigr|, \Bigl|1 - \frac{2b}{a + b}\Bigr|\Bigr\} =
+  \frac{b - a}{b + a}.$$
+
+By `Matrix.le_max_abs_one_sub_mul`, this is the minimum over $t$. -/
 theorem max_abs_one_sub_mul_optimal {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     max |1 - 2 / (a + b) * a| |1 - 2 / (a + b) * b| = (b - a) / (b + a) := by
   have hb : 0 < b := ha.trans_le hab
@@ -750,10 +871,15 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The spectral radius of Richardson's iteration matrix** `1 - α M` for a real matrix `M` whose
-complex spectrum is real and fills `[lmin, lmax]`: `ρ(1 - α M) = max |1 - α lmin| |1 - α lmax|`
-([quarteroni2000numerical] Theorem 4.9, first step, for `M = P⁻¹ A`).  The spectrum of `1 - α M` is
-the image of that of `M` under `t ↦ 1 - α t`, and `|·|` is convex. -/
+/-- **The spectral radius of Richardson's iteration matrix.** Let $M$ be a real square matrix whose
+complex eigenvalues are real and lie in $[\lambda_{\min}, \lambda_{\max}]$, where
+$\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues of $M$. Then for every real
+$\alpha \neq 0$,
+$$\rho(I - \alpha M) = \max\{|1 - \alpha \lambda_{\min}|, |1 - \alpha \lambda_{\max}|\}.$$
+
+This is the first step of Theorem 4.9 of [quarteroni2000numerical], for $M = P^{-1} A$. The
+eigenvalues of $I - \alpha M$ are the images of those of $M$ under $t \mapsto 1 - \alpha t$, and
+the absolute value is convex. -/
 theorem complexSpectralRadius_one_sub_smul_eq {M : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (Matrix.complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ M) (hmax : lmax ∈ spectrum ℝ M) {α : ℝ} (hα : α ≠ 0) :
@@ -762,9 +888,14 @@ theorem complexSpectralRadius_one_sub_smul_eq {M : Matrix n n ℝ} {lmin lmax : 
   rw [hrw, complexSpectralRadius_affine hsub hmin hmax (neg_ne_zero.mpr hα)]
   ring_nf
 
-/-- **Richardson's iteration converges exactly for `0 < α < 2/lmax`** ([quarteroni2000numerical]
-Theorem 4.9, convergence clause), for a real matrix `M` with real positive spectrum filling
-`[lmin, lmax]`; with `M = P⁻¹ A` this is the preconditioned statement of the book. -/
+/-- **Richardson's iteration converges exactly for $0 < \alpha < 2/\lambda_{\max}$**
+([quarteroni2000numerical], Theorem 4.9, the convergence clause). Let $M$ be a real square
+matrix whose complex eigenvalues are real and lie in $[\lambda_{\min}, \lambda_{\max}]$, where
+$\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues of $M$ and $0 < \lambda_{\min}$. Then for
+every real $\alpha$,
+$$\rho(I - \alpha M) < 1 \iff 0 < \alpha < \frac{2}{\lambda_{\max}}.$$
+
+With $M = P^{-1} A$ this is the preconditioned statement of the source. -/
 theorem complexSpectralRadius_one_sub_smul_lt_one_iff {M : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (Matrix.complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ M) (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) (α : ℝ) :
@@ -795,10 +926,14 @@ theorem complexSpectralRadius_one_sub_smul_lt_one_iff {M : Matrix n n ℝ} {lmin
   · rintro ⟨h1, h2⟩
     refine ⟨⟨?_, ?_⟩, ?_, ?_⟩ <;> nlinarith
 
-/-- **The optimal Richardson parameter** `α = 2/(lmin + lmax)` minimizes `ρ(1 - α M)` over `α > 0`
-([quarteroni2000numerical] (4.27); [saad2003iterative] Example 4.1), for a real matrix `M` with real
-positive spectrum filling `[lmin, lmax]`.  The minimum value is
-`Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`. -/
+/-- **The optimal Richardson parameter** ([quarteroni2000numerical], (4.27); [saad2003iterative],
+Example 4.1). Let $M$ be a real square matrix whose complex eigenvalues are real and lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $M$ and $0 < \lambda_{\min}$. Then the parameter
+$$\alpha_{\mathrm{opt}} = \frac{2}{\lambda_{\min} + \lambda_{\max}}$$
+minimizes $\rho(I - \alpha M)$ over $\alpha > 0$.
+
+The minimum value is `Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`. -/
 theorem isMinOn_complexSpectralRadius_one_sub_smul {M : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (Matrix.complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ M) (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) :
@@ -812,8 +947,13 @@ theorem isMinOn_complexSpectralRadius_one_sub_smul {M : Matrix n n ℝ} {lmin lm
     max_abs_one_sub_mul_optimal hpos hle]
   exact ENNReal.ofReal_le_ofReal (le_max_abs_one_sub_mul hpos hle α)
 
-/-- **The optimal Richardson spectral radius** is `(lmax - lmin)/(lmax + lmin)`
-([quarteroni2000numerical] (4.28)). -/
+/-- **The optimal Richardson spectral radius** ([quarteroni2000numerical], (4.28)). Let $M$ be a
+real square matrix whose complex eigenvalues are real and lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $M$ and $0 < \lambda_{\min}$. Then
+$$\rho\Bigl(I - \frac{2}{\lambda_{\min} + \lambda_{\max}} M\Bigr) = \frac{\lambda_{\max} -
+  \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}}.$$
+-/
 theorem complexSpectralRadius_one_sub_smul_optimal_eq {M : Matrix n n ℝ} {lmin lmax : ℝ}
     (hsub : spectrum ℂ (Matrix.complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ M) (hmax : lmax ∈ spectrum ℝ M) (hpos : 0 < lmin) :
@@ -824,18 +964,23 @@ theorem complexSpectralRadius_one_sub_smul_optimal_eq {M : Matrix n n ℝ} {lmin
   rw [complexSpectralRadius_one_sub_smul_eq hsub hmin hmax (ne_of_gt (div_pos two_pos hsum)),
     max_abs_one_sub_mul_optimal hpos hle]
 
-/-- A real symmetric matrix whose real spectrum lies in `[lmin, lmax]` has its complex spectrum in
-the image of `[lmin, lmax]`. -/
+/-- If the real eigenvalues of a real symmetric matrix $A$ lie in
+$[\lambda_{\min}, \lambda_{\max}]$, then its complex eigenvalues are real and lie in
+$[\lambda_{\min}, \lambda_{\max}]$. -/
 theorem _root_.Matrix.IsHermitian.spectrum_complexify_subset {A : Matrix n n ℝ}
     (hA : A.IsHermitian) {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) :
     spectrum ℂ (Matrix.complexify A) ⊆ Complex.ofReal '' Set.Icc lmin lmax := by
   rw [hA.spectrum_complexify_eq]
   exact Set.image_mono hsub
 
-/-- **Richardson's iteration** `G_α = 1 - α A` for a real symmetric `A` whose eigenvalues fill
-`[lmin, lmax]`: `ρ(G_α) = max |1 - α lmin| |1 - α lmax|`
-([saad2003iterative], Example 4.1); the Hermitian case of
-`Stationary.Splitting.complexSpectralRadius_one_sub_smul_eq`. -/
+/-- **The spectral radius of Richardson's iteration for a symmetric matrix** ([saad2003iterative],
+Example 4.1). Let $A$ be a real symmetric matrix whose eigenvalues lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $A$. Then for every real $\alpha \neq 0$, the iteration matrix $G_\alpha = I - \alpha A$ of
+Richardson's splitting satisfies
+$$\rho(G_\alpha) = \max\{|1 - \alpha \lambda_{\min}|, |1 - \alpha \lambda_{\max}|\}.$$
+
+This is the symmetric case of `Stationary.Splitting.complexSpectralRadius_one_sub_smul_eq`. -/
 theorem richardson_complexSpectralRadius_eq {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
@@ -844,8 +989,11 @@ theorem richardson_complexSpectralRadius_eq {A : Matrix n n ℝ} (hA : A.IsHermi
   rw [richardson_iterationOperator,
     complexSpectralRadius_one_sub_smul_eq (hA.spectrum_complexify_subset hsub) hmin hmax hα]
 
-/-- Richardson's iteration for a symmetric positive definite `A` converges exactly for `0 < α <
-2/λmax` ([saad2003iterative], Example 4.1; [han2009theoretical], Exercise 5.2.3). -/
+/-- Let $A$ be a real symmetric matrix whose eigenvalues lie in $[\lambda_{\min}, \lambda_{\max}]$,
+where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues of $A$ and $0 < \lambda_{\min}$.
+Then for every real $\alpha \neq 0$, Richardson's iteration with parameter $\alpha$ converges if
+and only if $0 < \alpha < 2/\lambda_{\max}$ ([saad2003iterative], Example 4.1;
+[han2009theoretical], Exercise 5.2.3). -/
 theorem richardson_complexSpectralRadius_lt_one_iff {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) {α : ℝ} (hα : α ≠ 0) :
@@ -854,10 +1002,15 @@ theorem richardson_complexSpectralRadius_lt_one_iff {A : Matrix n n ℝ} (hA : A
   exact complexSpectralRadius_one_sub_smul_lt_one_iff (hA.spectrum_complexify_subset hsub) hmin
     hmax hpos α
 
-/-- **The optimal Richardson parameter** is `α = 2/(λmin + λmax)`: it minimizes the spectral radius
-of `G_α = 1 - α A` over `α > 0` ([saad2003iterative], Example 4.1).  The iteration operator is
-`Stationary.Splitting.richardson_iterationOperator`; the minimum value is
-`richardson_complexSpectralRadius_optimal_eq`. -/
+/-- **The optimal Richardson parameter for a symmetric positive definite matrix**
+([saad2003iterative], Example 4.1). Let $A$ be a real symmetric matrix whose eigenvalues lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $A$ and $0 < \lambda_{\min}$. Then $\alpha = 2/(\lambda_{\min} + \lambda_{\max})$ minimizes
+$\rho(I - \alpha A)$ over $\alpha > 0$.
+
+The iteration matrix of Richardson's splitting is $I - \alpha A$ by
+`Stationary.Splitting.richardson_iterationOperator`. The minimum value is
+`Stationary.Splitting.richardson_complexSpectralRadius_optimal_eq`. -/
 theorem isMinOn_richardson_complexSpectralRadius {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
@@ -865,8 +1018,15 @@ theorem isMinOn_richardson_complexSpectralRadius {A : Matrix n n ℝ} (hA : A.Is
       (2 / (lmin + lmax)) :=
   isMinOn_complexSpectralRadius_one_sub_smul (hA.spectrum_complexify_subset hsub) hmin hmax hpos
 
-/-- The value of the optimal Richardson spectral radius, `(λmax - λmin)/(λmax + λmin)`
-([saad2003iterative], Example 4.1): one less two over the condition number plus one. -/
+/-- The optimal Richardson spectral radius for a symmetric positive definite matrix
+([saad2003iterative], Example 4.1). Let $A$ be a real symmetric matrix whose eigenvalues lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $A$ and $0 < \lambda_{\min}$. Then
+$$\rho\Bigl(I - \frac{2}{\lambda_{\min} + \lambda_{\max}} A\Bigr) = \frac{\lambda_{\max} -
+  \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}}.$$
+
+The right side is $1 - 2/(\kappa + 1)$, where $\kappa = \lambda_{\max}/\lambda_{\min}$ is the
+condition number of $A$. -/
 theorem richardson_complexSpectralRadius_optimal_eq {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
@@ -878,7 +1038,7 @@ end Splitting
 
 end Stationary
 
-/-! ### Jacobi over-relaxation, SOR determinant, Kahan -/
+/-! ### Jacobi over-relaxation, the SOR determinant, and Kahan's bound -/
 
 namespace Matrix
 
@@ -886,10 +1046,17 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The optimal relaxation parameter of JOR** is `ω = 2/(2 - λmax - λmin)`, where `λmin` and
-`λmax` are the extreme eigenvalues of the Jacobi matrix `B`, assumed real ([kress1998numerical], Thm
-4.9).  Only `λmax < 1` is used, which is half of the convergence of the Jacobi iteration; the JOR
-iteration operator is `Matrix.jorSplitting_iterationOperator`. -/
+/-- **The optimal relaxation parameter of JOR** ([kress1998numerical], Theorem 4.9). Let $A$ be a
+real square matrix with invertible diagonal, and let $G_J$ be its Jacobi iteration matrix.
+Suppose that the complex eigenvalues of $G_J$ are real and lie in
+$[\lambda_{\min}, \lambda_{\max}]$, where $\lambda_{\min}$ and $\lambda_{\max}$ are eigenvalues
+of $G_J$, and that $\lambda_{\max} < 1$. Then the parameter
+$$\omega_{\mathrm{opt}} = \frac{2}{2 - \lambda_{\max} - \lambda_{\min}}$$
+minimizes $\rho((1 - \omega) I + \omega G_J)$ over $\omega > 0$.
+
+Only $\lambda_{\max} < 1$ is used, which is half of the convergence of the Jacobi iteration. The
+matrix $(1 - \omega) I + \omega G_J$ is the JOR iteration matrix by
+`Matrix.jorSplitting_iterationOperator`. -/
 theorem jorSplitting_isMinOn_complexSpectralRadius {A : Matrix n n ℝ} (h : IsUnit (diagPart A))
     {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (jacobiSplitting A h).iterationOperator) ⊆
@@ -918,9 +1085,14 @@ theorem jorSplitting_isMinOn_complexSpectralRadius {A : Matrix n n ℝ} (h : IsU
 
 variable [LinearOrder n]
 
-/-- **The determinant of the SOR iteration matrix** is `(1 - ω)ⁿ`: it is the inverse of the lower
-triangular `D - ωE`, whose diagonal is that of `A`, times the upper triangular `(1 - ω) D + ωF`,
-whose diagonal is `(1 - ω)` times that of `A` ([kress1998numerical], proof of Thm 4.11). -/
+/-- **The determinant of the SOR iteration matrix.** Let $A$ be an $n \times n$ matrix over a field
+with invertible diagonal part $D$, and let $\omega \neq 0$. Then the SOR iteration matrix
+$G_\omega$ satisfies
+$$\det G_\omega = (1 - \omega)^n.$$
+
+The matrix $G_\omega$ is the inverse of the lower triangular matrix $D + \omega L$, whose
+diagonal is that of $A$, times the upper triangular matrix $(1 - \omega) D - \omega U$, whose
+diagonal is $1 - \omega$ times that of $A$ ([kress1998numerical], proof of Theorem 4.11). -/
 theorem det_sorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0) :
     (A.sorSplitting h hω).iterationOperator.det = (1 - ω) ^ Fintype.card n := by
@@ -942,9 +1114,13 @@ theorem det_sorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matr
   simp only [hLd, hUd, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ]
   field_simp
 
-/-- **Kahan's necessary condition**: the SOR iteration can converge only for `0 < ω < 2`
-([kress1998numerical], Thm 4.11).  The powers of the iteration matrix tend to `0`, so its
-determinant `(1 - ω)ⁿ` has modulus `< 1`, which for a nonempty index type forces `|1 - ω| < 1`. -/
+/-- **Kahan's necessary condition** ([kress1998numerical], Theorem 4.11). Let $A$ be a real
+$n \times n$ matrix with $n \ge 1$ and invertible diagonal, and let $\omega \neq 0$. If the SOR
+iteration matrix $G_\omega$ satisfies $\rho(G_\omega) < 1$, then
+$$0 < \omega < 2.$$
+
+The powers of $G_\omega$ tend to $0$, so its determinant $(1 - \omega)^n$ has modulus less than
+$1$, and this forces $|1 - \omega| < 1$ when $n \ge 1$. -/
 theorem lt_two_of_sorSplitting_complexSpectralRadius_lt_one [Nonempty n] {A : Matrix n n ℝ}
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0)
     (hρ : complexSpectralRadius (A.sorSplitting h hω).iterationOperator < 1) :
@@ -959,10 +1135,14 @@ theorem lt_two_of_sorSplitting_complexSpectralRadius_lt_one [Nonempty n] {A : Ma
   rw [pow_lt_one_iff_of_nonneg (abs_nonneg _) Fintype.card_ne_zero, abs_lt] at hdet
   exact ⟨by linarith [hdet.2], by linarith [hdet.1]⟩
 
-/-- **The SOR matrix of a lower triangular matrix has the single eigenvalue `1 - ω`**, so
-`ρ(B(ω)) = |1 - ω|` for every `ω ≠ 0`, the equality case of Kahan's bound: with `F = 0`,
-`B(ω) = (D - ωE)⁻¹ (1 - ω) D` is lower triangular with diagonal `1 - ω`, and its characteristic
-polynomial is `(λ - (1 - ω))ⁿ`. -/
+/-- **The SOR matrix of a lower triangular matrix has the single eigenvalue $1 - \omega$.** Let $A$
+be a real lower triangular $n \times n$ matrix with $n \ge 1$ and invertible diagonal, and let
+$\omega \neq 0$. Then
+$$\rho(G_\omega) = |1 - \omega|,$$
+which is the case of equality in Kahan's bound.
+
+Here $U = 0$, so $G_\omega = (D + \omega L)^{-1} (1 - \omega) D$ is lower triangular with
+diagonal $1 - \omega$, and its characteristic polynomial is $(\lambda - (1 - \omega))^n$. -/
 theorem complexSpectralRadius_sorSplitting_of_isLowerTriangular [Nonempty n] {A : Matrix n n ℝ}
     (hA : A.IsLowerTriangular) (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     complexSpectralRadius (sorSplitting A h hω).iterationOperator = ENNReal.ofReal |1 - ω| := by
@@ -1009,8 +1189,11 @@ theorem complexSpectralRadius_sorSplitting_of_isLowerTriangular [Nonempty n] {A 
   push_cast
   rfl
 
-/-- The Householder–John matrix `Q = M + Mᵀ - A` of the SOR splitting of a symmetric `A` is `(2/ω -
-1) D`: the strictly lower part of `M` and the strictly upper part of `Mᵀ` reassemble `A - D`. -/
+/-- Let $A$ be a real symmetric matrix with invertible diagonal part $D$, and let $\omega \neq 0$.
+The SOR splitting $A = M - N$ satisfies
+$$M + M^T - A = \Bigl(\frac{2}{\omega} - 1\Bigr) D.$$
+
+The strictly lower part of $M$ and the strictly upper part of $M^T$ together give $A - D$. -/
 theorem sorSplitting_m_add_transpose_sub {A : Matrix n n ℝ} (hA : A.IsHermitian)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     (A.sorSplitting h hω).m + ((A.sorSplitting h hω).m)ᵀ - A = (2 / ω - 1) • diagPart A := by
@@ -1030,8 +1213,8 @@ theorem sorSplitting_m_add_transpose_sub {A : Matrix n n ℝ} (hA : A.IsHermitia
     ring
   · simp [hm, hij, hij.ne, hij.ne', asymm hij, hsymm j i]
 
-/-- The Householder–John matrix of the SOR splitting of a symmetric matrix with positive diagonal
-is positive definite exactly because `0 < ω < 2`. -/
+/-- Let $A$ be a real symmetric matrix with positive diagonal entries, and let $0 < \omega < 2$.
+Then the matrix $M + M^T - A = (2/\omega - 1) D$ of the SOR splitting is positive definite. -/
 theorem sorSplitting_m_add_transpose_sub_posDef {A : Matrix n n ℝ} (hA : A.IsHermitian)
     (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     ((A.sorSplitting h hω0.ne').m + ((A.sorSplitting h hω0.ne').m)ᵀ - A).PosDef := by
@@ -1045,13 +1228,14 @@ theorem sorSplitting_m_add_transpose_sub_posDef {A : Matrix n n ℝ} (hA : A.IsH
   rw [hdiag, posDef_diagonal_iff]
   exact fun i => mul_pos hcpos (hd i)
 
-/-- **The Ostrowski–Reich theorem for SOR** ([saad2003iterative], Thm 4.10; [kress1998numerical],
-Thm 4.12).  For a real symmetric `A` with positive diagonal and a relaxation parameter `0 < ω < 2`,
-the SOR iteration converges exactly when `A` is positive definite.
+/-- **The Ostrowski–Reich theorem for SOR** ([saad2003iterative], Theorem 4.10;
+[kress1998numerical], Theorem 4.12). Let $A$ be a real symmetric matrix with positive diagonal
+entries, and let $0 < \omega < 2$. Then the SOR iteration converges, $\rho(G_\omega) < 1$, if
+and only if $A$ is positive definite.
 
-Both directions are `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` and
-`Stationary.Splitting.posDef_of_complexSpectralRadius_lt_one`, whose Householder–John matrix is
-`M + Mᵀ - A = (2/ω - 1) D`, positive definite precisely because `0 < ω < 2`. -/
+The two directions are `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` and
+`Stationary.Splitting.posDef_of_complexSpectralRadius_lt_one`, with
+$M + M^T - A = (2/\omega - 1) D$, which is positive definite because $0 < \omega < 2$. -/
 theorem sorSplitting_complexSpectralRadius_lt_one_iff_posDef {A : Matrix n n ℝ}
     (hA : A.IsHermitian) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ}
     (hω0 : 0 < ω) (hω2 : ω < 2) :
@@ -1061,10 +1245,15 @@ theorem sorSplitting_complexSpectralRadius_lt_one_iff_posDef {A : Matrix n n ℝ
     fun hP => Splitting.complexSpectralRadius_lt_one_of_posDef _ hP
       (sorSplitting_m_add_transpose_sub_posDef hA hd h hω0 hω2)⟩
 
-/-- **Ostrowski's theorem as the book states it** ([quarteroni2000numerical] Property 4.3): for a
-positive definite `A`, SOR converges exactly for `0 < ω < 2`.  `←` is
-`Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef`, `→` is Kahan's condition
-`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`, which needs a nonempty index type. -/
+/-- **Ostrowski's theorem as the source states it** ([quarteroni2000numerical], Property 4.3). Let
+$A$ be a real symmetric positive definite $n \times n$ matrix with $n \ge 1$, and let
+$\omega \neq 0$. Then the SOR iteration converges if and only if
+$$0 < \omega < 2.$$
+
+The direction "if" is `Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef`. The
+direction "only if" is Kahan's condition
+`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`, which needs $n \ge 1$. The
+invertibility of the diagonal is a hypothesis, although it follows from positive definiteness. -/
 theorem sorSplitting_complexSpectralRadius_lt_one_iff [Nonempty n] {A : Matrix n n ℝ}
     (hA : A.PosDef) (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1 ↔ 0 < ω ∧ ω < 2 := by
@@ -1072,9 +1261,12 @@ theorem sorSplitting_complexSpectralRadius_lt_one_iff [Nonempty n] {A : Matrix n
   exact (sorSplitting_complexSpectralRadius_lt_one_iff_posDef hA.1 (fun i => hA.diag_pos) h h0
     h2).mpr hA
 
-/-- **Gauss–Seidel converges for a positive definite matrix** ([quarteroni2000numerical] Theorem
-4.5, convergence clause; the monotonicity clause is
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`): SOR at `ω = 1`. -/
+/-- **Gauss–Seidel converges for a positive definite matrix** ([quarteroni2000numerical], Theorem
+4.5, the convergence clause). Let $A$ be a real symmetric positive definite matrix with
+invertible diagonal. Then the Gauss–Seidel iteration matrix $G$ satisfies $\rho(G) < 1$.
+
+This is SOR at $\omega = 1$. The monotonicity clause of the theorem is
+`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. -/
 theorem gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef {A : Matrix n n ℝ}
     (hA : A.PosDef) (h : IsUnit (diagPart A)) :
     complexSpectralRadius (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -1083,8 +1275,12 @@ theorem gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef {A : Matrix 
     one_pos one_lt_two).mpr hA
 
 omit [LinearOrder n] in
-/-- **Jacobi converges when `A` and `2D - A` are positive definite** ([quarteroni2000numerical]
-Theorem 4.3): Householder–John with `M = D`, whose `M + Mᵀ - A` is `2D - A`. -/
+/-- **Jacobi converges when $A$ and $2D - A$ are positive definite** ([quarteroni2000numerical],
+Theorem 4.3). Let $A$ be a real symmetric positive definite matrix with invertible diagonal part
+$D$, and suppose that $2D - A$ is symmetric positive definite. Then the Jacobi iteration matrix
+$G_J$ satisfies $\rho(G_J) < 1$.
+
+This is the Householder–John theorem with $M = D$, for which $M + M^T - A = 2D - A$. -/
 theorem jacobiSplitting_complexSpectralRadius_lt_one_of_posDef {A : Matrix n n ℝ} (hA : A.PosDef)
     (h2 : (2 • diagPart A - A).PosDef) (h : IsUnit (diagPart A)) :
     complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1 := by
@@ -1094,9 +1290,13 @@ theorem jacobiSplitting_complexSpectralRadius_lt_one_of_posDef {A : Matrix n n �
   exact h2
 
 omit [LinearOrder n] in
-/-- **JOR converges for `0 < ω ≤ 1` whenever Jacobi does** ([quarteroni2000numerical] Theorem 4.6),
-for any real matrix with invertible diagonal: the JOR matrix `(1 - ω) 1 + ω B_J` has spectral
-radius at most `(1 - ω) + ω ρ(B_J) < 1` (`Matrix.complexSpectralRadius_affine_lt_one`). -/
+/-- **JOR converges for $0 < \omega \le 1$ whenever Jacobi converges** ([quarteroni2000numerical],
+Theorem 4.6). Let $A$ be a real square matrix with invertible diagonal whose Jacobi iteration
+matrix $G_J$ satisfies $\rho(G_J) < 1$, and let $0 < \omega \le 1$. Then the JOR iteration
+matrix with parameter $\omega$ has spectral radius less than $1$.
+
+The JOR matrix $(1 - \omega) I + \omega G_J$ has spectral radius at most
+$(1 - \omega) + \omega \rho(G_J) < 1$ (`Matrix.complexSpectralRadius_affine_lt_one`). -/
 theorem jorSplitting_complexSpectralRadius_lt_one_of_le_one {A : Matrix n n ℝ}
     (h : IsUnit (diagPart A))
     (hJ : complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1) {ω : ℝ}
@@ -1106,10 +1306,15 @@ theorem jorSplitting_complexSpectralRadius_lt_one_of_le_one {A : Matrix n n ℝ}
   exact complexSpectralRadius_affine_lt_one _ hω0 hω1 hJ
 
 
-/-- **Kahan's bound** `|1 - ω| ≤ ρ(G_ω)` ([quarteroni2000numerical] Theorem 4.7): the determinant
-of the SOR iteration matrix is `(1 - ω)ⁿ` (`Matrix.det_sorSplitting_iterationOperator`) and the
-product of the `n` complex eigenvalues, each of modulus at most `ρ(G_ω)`.  The corollary
-`0 < ω < 2` for a convergent SOR is `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`. -/
+/-- **Kahan's bound** ([quarteroni2000numerical], Theorem 4.7). Let $A$ be a real $n \times n$
+matrix with $n \ge 1$ and invertible diagonal, and let $\omega \neq 0$. Then the SOR iteration
+matrix $G_\omega$ satisfies
+$$|1 - \omega| \le \rho(G_\omega).$$
+
+The determinant of $G_\omega$ is $(1 - \omega)^n$ (`Matrix.det_sorSplitting_iterationOperator`),
+and it is the product of the $n$ complex eigenvalues, each of modulus at most $\rho(G_\omega)$.
+The consequence $0 < \omega < 2$ for a convergent SOR iteration is
+`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`. -/
 theorem abs_one_sub_le_sorSplitting_complexSpectralRadius [Nonempty n] {A : Matrix n n ℝ}
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     ENNReal.ofReal |1 - ω| ≤ complexSpectralRadius (sorSplitting A h hω).iterationOperator := by
@@ -1151,8 +1356,9 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The energy norm of a real vector in the Euclidean energy space of a positive definite `A` is
-the real energy norm: `‖e‖_A² = (A e) ⬝ e`. -/
+/-- For a real symmetric positive definite matrix $A$ and a real vector $e$, the energy norm of $e$,
+viewed in `EuclideanSpace ℂ n`, for the operator of the complexification of $A$ satisfies
+$\|e\|_A^2 = (A e) \cdot e$. -/
 theorem energyNorm_toEuclideanCLM_complexify_sq {A : Matrix n n ℝ} (hA : A.PosDef) (e : n → ℝ) :
     energyNorm ((toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) :
       EuclideanSpace ℂ n →L[ℂ] EuclideanSpace ℂ n) : EuclideanSpace ℂ n →ₗ[ℂ] EuclideanSpace ℂ n)
@@ -1168,10 +1374,12 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n ℝ} (s : Splitting A)
 
-/-- **Monotone convergence in the energy norm, for real matrices** ([quarteroni2000numerical]
-Properties 4.1–4.2, Theorem 4.5 and Property 4.3, monotonicity clauses): for a positive definite `A`
-and a splitting with `M + Mᵀ - A` positive definite, `‖G e‖_A < ‖e‖_A` for every real `e ≠ 0`,
-written with the real energy form `‖e‖_A² = (A e) ⬝ e`. -/
+/-- **Monotone convergence in the energy norm, for real matrices** ([quarteroni2000numerical],
+Properties 4.1–4.2, and the monotonicity clauses of Theorem 4.5 and Property 4.3). Let
+$A = M - N$ be a splitting of a real symmetric positive definite matrix $A$ such that
+$M + M^T - A$ is symmetric positive definite. Then for every real vector $e \neq 0$,
+$$(A G e) \cdot (G e) < (A e) \cdot e,$$
+that is, $\|G e\|_A < \|e\|_A$. -/
 theorem energyNorm_mulVec_iterationOperator_lt (hA : A.PosDef) (hQ : (s.m + s.mᵀ - A).PosDef)
     {e : n → ℝ} (he : e ≠ 0) :
     (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) < (A *ᵥ e) ⬝ᵥ e := by
@@ -1184,11 +1392,15 @@ theorem energyNorm_mulVec_iterationOperator_lt (hA : A.PosDef) (hQ : (s.m + s.m�
   have h2 := pow_lt_pow_left₀ h (energyNorm_nonneg _ _) two_ne_zero
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, energyNorm_toEuclideanCLM_complexify_sq hA] at h2
 
-/-- **The uniform energy contraction dominates the spectral radius**: under the hypotheses of
-`energyNorm_mulVec_iterationOperator_lt` there is `q < 1` with both `ρ(G) ≤ q` and
-`‖G e‖_A² ≤ q² ‖e‖_A²` for every real `e`. The operator-norm bound `‖G‖_A ≤ q` on the complex energy
-space (`exists_energyNorm_iterationOperator_apply_le`) gives `ρ(G) ≤ ‖G‖_A ≤ q`, and the bound on
-real vectors is read off it. -/
+/-- **The uniform contraction in the energy norm bounds the spectral radius.** Let $A = M - N$ be a
+splitting of a real symmetric positive definite matrix $A$ such that $M + M^T - A$ is symmetric
+positive definite. Then there is $q < 1$ with $\rho(G) \le q$ and
+$$(A G e) \cdot (G e) \le q^2 \, (A e) \cdot e$$
+for every real vector $e$.
+
+The bound $\|G\|_A \le q$ for the operator norm on the complex energy space
+(`Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le`) gives
+$\rho(G) \le \|G\|_A \le q$, and the bound on real vectors follows. -/
 theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
     (hQ : (s.m + s.mᵀ - A).PosDef) :
     ∃ q : ℝ, q < 1 ∧ (complexSpectralRadius s.iterationOperator).toReal ≤ q ∧
@@ -1224,9 +1436,14 @@ theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hA] at h2
 
-/-- **The uniform energy contraction, for real matrices**: under the hypotheses of
-`energyNorm_mulVec_iterationOperator_lt` there is `q < 1` with `‖G e‖_A² ≤ q² ‖e‖_A²` for every
-real `e` (the second half of `exists_complexSpectralRadius_le_and_energyNorm_mulVec_le`). -/
+/-- **The uniform contraction in the energy norm, for real matrices.** Let $A = M - N$ be a
+splitting of a real symmetric positive definite matrix $A$ such that $M + M^T - A$ is symmetric
+positive definite. Then there is $q < 1$ with
+$$(A G e) \cdot (G e) \le q^2 \, (A e) \cdot e$$
+for every real vector $e$.
+
+This is the second half of
+`Stationary.Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le`. -/
 theorem exists_energyNorm_mulVec_iterationOperator_le (hA : A.PosDef)
     (hQ : (s.m + s.mᵀ - A).PosDef) :
     ∃ q : ℝ, q < 1 ∧ ∀ e : n → ℝ, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
@@ -1234,9 +1451,13 @@ theorem exists_energyNorm_mulVec_iterationOperator_le (hA : A.PosDef)
   obtain ⟨q, hq1, -, hq⟩ := exists_complexSpectralRadius_le_and_energyNorm_mulVec_le s hA hQ
   exact ⟨q, hq1, hq⟩
 
-/-- **`‖G e‖_A ≤ ρ(G) ‖e‖_A` for real matrices** ([quarteroni2000numerical] Property 4.1 and
-Corollary 4.1 in the generality of its closing remark: `A` positive definite and `M` symmetric,
-no hypothesis on `M⁻¹ A`), in the squared form `(A (G e)) ⬝ (G e) ≤ ρ(G)² ((A e) ⬝ e)`. -/
+/-- **The bound $\|G e\|_A \le \rho(G) \|e\|_A$ for real matrices** ([quarteroni2000numerical],
+Property 4.1, and Corollary 4.1 in the generality of its closing remark). Let $A = M - N$ be a
+splitting of a real symmetric positive definite matrix $A$ with $M$ symmetric. Then for every
+real vector $e$,
+$$(A G e) \cdot (G e) \le \rho(G)^2 \, (A e) \cdot e.$$
+
+No hypothesis on $M^{-1} A$ is needed. -/
 theorem energyNorm_mulVec_iterationOperator_le_complexSpectralRadius (hA : A.PosDef)
     (hM : s.m.IsHermitian) (e : n → ℝ) :
     (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
@@ -1253,9 +1474,12 @@ theorem energyNorm_mulVec_iterationOperator_le_complexSpectralRadius (hA : A.Pos
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hA] at h2
 
-/-- **`‖G e‖_M ≤ ρ(G) ‖e‖_M` for real matrices** ([quarteroni2000numerical] Property 4.1, the
-`P`-norm clause): for a symmetric `A` and a positive definite `M`,
-`(M (G e)) ⬝ (G e) ≤ ρ(G)² ((M e) ⬝ e)`. -/
+/-- **The bound $\|G e\|_M \le \rho(G) \|e\|_M$ for real matrices** ([quarteroni2000numerical],
+Property 4.1, the clause for the norm of the preconditioner). Let $A = M - N$ be a splitting of
+a real symmetric matrix $A$ with $M$ symmetric positive definite. Then for every real vector
+$e$,
+$$(M G e) \cdot (G e) \le \rho(G)^2 \, (M e) \cdot e.$$
+-/
 theorem energyNorm_m_mulVec_iterationOperator_le_complexSpectralRadius (hA : A.IsHermitian)
     (hM : s.m.PosDef) (e : n → ℝ) :
     (s.m *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
@@ -1272,10 +1496,12 @@ theorem energyNorm_m_mulVec_iterationOperator_le_complexSpectralRadius (hA : A.I
   rwa [energyNorm_toEuclideanCLM_complexify_sq hM, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hM] at h2
 
-/-- For `A` positive definite and `M` symmetric, the iteration matrix `G = M⁻¹ N` has a real
-eigenvector `e ≠ 0` for a real eigenvalue of modulus `ρ(G)`: `G` is self-adjoint in the
-`A`-inner product, so an eigenvalue of maximal modulus is real, and a real eigenvalue of a real
-matrix has a real eigenvector. -/
+/-- Let $A = M - N$ be a splitting of a real symmetric positive definite $n \times n$ matrix $A$
+with $n \ge 1$ and $M$ symmetric. Then the iteration matrix $G$ has a real eigenvector
+$e \neq 0$ for a real eigenvalue $\mu$ with $|\mu| = \rho(G)$.
+
+The matrix $G$ is self-adjoint for the inner product of $A$, so an eigenvalue of maximal modulus
+is real, and a real eigenvalue of a real matrix has a real eigenvector. -/
 theorem exists_mulVec_iterationOperator_eq_smul [Nonempty n] (hA : A.PosDef)
     (hM : s.m.IsHermitian) :
     ∃ e : n → ℝ, e ≠ 0 ∧ ∃ μ : ℝ, |μ| = (complexSpectralRadius s.iterationOperator).toReal ∧
@@ -1305,10 +1531,14 @@ theorem exists_mulVec_iterationOperator_eq_smul [Nonempty n] (hA : A.PosDef)
   refine ⟨e, he, μ.re, ?_, hGe.symm⟩
   rw [← hμρ, hreal, Complex.norm_real, Real.norm_eq_abs, Complex.ofReal_re]
 
-/-- **The spectral radius is attained in the real energy norm** ([quarteroni2000numerical] Property
-4.1, the equality `ρ(B) = ‖B‖_A` read on real vectors): for a positive definite `A` and a splitting
-with symmetric `M`, some real `e ≠ 0` has `(A (G e)) ⬝ (G e) = ρ(G)² ((A e) ⬝ e)`, namely the
-real eigenvector of `Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`. -/
+/-- **The spectral radius is attained in the real energy norm** ([quarteroni2000numerical], Property
+4.1, the equality $\rho(B) = \|B\|_A$ on real vectors). Let $A = M - N$ be a splitting of a real
+symmetric positive definite $n \times n$ matrix $A$ with $n \ge 1$ and $M$ symmetric. Then some
+real vector $e \neq 0$ satisfies
+$$(A G e) \cdot (G e) = \rho(G)^2 \, (A e) \cdot e.$$
+
+Such an $e$ is the real eigenvector of
+`Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`. -/
 theorem exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius [Nonempty n]
     (hA : A.PosDef) (hM : s.m.IsHermitian) :
     ∃ e : n → ℝ, e ≠ 0 ∧ (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
@@ -1321,7 +1551,7 @@ theorem exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius [Non
 end Stationary.Splitting
 
 
-/-! ### The pencil `P⁻¹ A` and Jacobi over-relaxation for a positive definite matrix -/
+/-! ### The matrix $P^{-1} A$ and Jacobi over-relaxation for a positive definite matrix -/
 
 namespace Matrix
 
@@ -1330,7 +1560,7 @@ open Stationary
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
 omit [Fintype n] [DecidableEq n] in
-/-- A complex vector with zero real and imaginary parts is zero. -/
+/-- A complex vector $z \neq 0$ has a nonzero real part or a nonzero imaginary part. -/
 private theorem re_ne_zero_or_im_ne_zero {z : n → ℂ} (hz : z ≠ 0) :
     (fun i => (z i).re) ≠ 0 ∨ (fun i => (z i).im) ≠ 0 := by
   by_contra h
@@ -1338,10 +1568,9 @@ private theorem re_ne_zero_or_im_ne_zero {z : n → ℂ} (hz : z ≠ 0) :
   exact hz (funext fun i => Complex.ext (by simpa using congrFun h.1 i)
     (by simpa using congrFun h.2 i))
 
-/-- The generalized Rayleigh quotient of an eigenvalue of `P⁻¹ A`: every eigenvalue `μ` of
-`P⁻¹ A`, for `A` real symmetric and `P` positive definite, is the real number
-`(x ⬝ A x + y ⬝ A y) / (x ⬝ P x + y ⬝ P y)` for the real and imaginary parts `x`, `y` of an
-eigenvector. -/
+/-- For a real symmetric $A$ and a real symmetric positive definite $P$, every eigenvalue $\mu$ of
+$P^{-1} A$ is the real number $(x \cdot A x + y \cdot A y)/(x \cdot P x + y \cdot P y)$ for the
+real part $x$ and the imaginary part $y$ of an eigenvector. -/
 private theorem exists_eq_div_of_mem_spectrum_inv_mul {A P : Matrix n n ℝ} (hA : A.IsHermitian)
     (hP : P.PosDef) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (complexify (P⁻¹ * A))) :
     ∃ x y : n → ℝ, (x ≠ 0 ∨ y ≠ 0) ∧ 0 < x ⬝ᵥ (P *ᵥ x) + y ⬝ᵥ (P *ᵥ y) ∧
@@ -1367,7 +1596,8 @@ private theorem exists_eq_div_of_mem_spectrum_inv_mul {A P : Matrix n n ℝ} (hA
   refine ⟨x, y, hxy, hp, ?_⟩
   rw [Complex.ofReal_div, eq_div_iff (by exact_mod_cast hp.ne'), hform, smul_eq_mul, mul_comm]
 
-/-- The eigenvalues of `P⁻¹ A` are real and positive when `A` and `P` are both positive definite. -/
+/-- Let $A$ and $P$ be real symmetric positive definite matrices. Then every complex eigenvalue of
+$P^{-1} A$ is a positive real number. -/
 theorem exists_pos_ofReal_eq_of_mem_spectrum_inv_mul {A P : Matrix n n ℝ} (hA : A.PosDef)
     (hP : P.PosDef) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (complexify (P⁻¹ * A))) :
     ∃ t : ℝ, 0 < t ∧ μ = t := by
@@ -1383,15 +1613,16 @@ theorem exists_pos_ofReal_eq_of_mem_spectrum_inv_mul {A P : Matrix n n ℝ} (hA 
     simp only [star_trivial] at this
     linarith
 
-/-- **The iteration matrix of a splitting that dominates `A` has its eigenvalues in `[0, 1)`**: for
-a real splitting `A = M - N` with `A` positive definite and `M - A` positive semidefinite (so `M` is
-symmetric positive definite), every eigenvalue of `G = M⁻¹ N` is real, nonnegative and below `1`
-([golub2013matrix] Theorem 11.2.4 for the SSOR splitting, where `M - A` is
-`Matrix.ssorSplitting_m_sub_posSemidef`).
+/-- **The iteration matrix of a splitting that dominates $A$ has its eigenvalues in $[0, 1)$.** Let
+$A = M - N$ be a splitting of a real symmetric positive definite matrix $A$ such that $M - A$ is
+symmetric positive semidefinite, so that $M$ is symmetric positive definite. Then every complex
+eigenvalue of $G = M^{-1} N$ is real and lies in $[0, 1)$.
 
-`G = 1 - M⁻¹ A`, and every eigenvalue of `M⁻¹ A` is the generalized Rayleigh quotient
-`(x ⬝ A x + y ⬝ A y) / (x ⬝ M x + y ⬝ M y)` of the real and imaginary parts of an eigenvector, which
-lies in `(0, 1]` because `0 < x ⬝ A x ≤ x ⬝ M x`. -/
+This is Theorem 11.2.4 of [golub2013matrix] for the SSOR splitting, for which $M - A$ is
+positive semidefinite by `Matrix.ssorSplitting_m_sub_posSemidef`. The proof writes
+$G = I - M^{-1} A$. Every eigenvalue of $M^{-1} A$ is the quotient $(x \cdot A x + y \cdot A
+y)/(x \cdot M x + y \cdot M y)$ for the real part $x$ and the imaginary part $y$ of an
+eigenvector, and it lies in $(0, 1]$ because $0 < x \cdot A x \le x \cdot M x$. -/
 theorem _root_.Stationary.Splitting.spectrum_complexify_iterationOperator_subset {A : Matrix n n ℝ}
     (s : Splitting A) (hA : A.PosDef) (hmA : (s.m - A).PosSemidef) :
     spectrum ℂ (complexify s.iterationOperator) ⊆ Complex.ofReal '' Set.Ico 0 1 := by
@@ -1427,18 +1658,24 @@ theorem _root_.Stationary.Splitting.spectrum_complexify_iterationOperator_subset
     ring
 
 omit [Fintype n] in
-/-- The diagonal part of a positive definite matrix is positive definite. -/
+/-- The diagonal part of a real symmetric positive definite matrix is positive definite. -/
 theorem _root_.Matrix.PosDef.diagPart {A : Matrix n n ℝ} (hA : A.PosDef) :
     (diagPart A).PosDef := by
   rw [Matrix.diagPart, posDef_diagonal_iff]
   exact fun i => hA.diag_pos
 
-/-- **JOR converges for a positive definite matrix exactly for `0 < ω < 2/ρ(D⁻¹ A)`**
-([quarteroni2000numerical] Theorem 4.4).  The JOR matrix is Richardson's `1 - ω D⁻¹ A`
-(`Matrix.jorSplitting_iterationOperator_eq_one_sub`), the eigenvalues of `D⁻¹ A` are real and
+/-- **JOR converges for a positive definite matrix exactly for $0 < \omega < 2/\rho(D^{-1} A)$**
+([quarteroni2000numerical], Theorem 4.4). Let $A$ be a real symmetric positive definite
+$n \times n$ matrix with $n \ge 1$ and diagonal part $D$, and let $\omega \neq 0$. Then the JOR
+iteration with parameter $\omega$ converges if and only if
+$$0 < \omega < \frac{2}{\rho(D^{-1} A)}.$$
+
+The JOR matrix is Richardson's $I - \omega D^{-1} A$
+(`Matrix.jorSplitting_iterationOperator_eq_one_sub`). The eigenvalues of $D^{-1} A$ are real and
 positive (`Matrix.exists_pos_ofReal_eq_of_mem_spectrum_inv_mul`), the largest of them is
-`ρ(D⁻¹ A)`, and `|1 - ω t| < 1` for every eigenvalue `t` exactly when `0 < ω t < 2`.  The index type
-must be nonempty: for an empty one the left side holds and the right side does not. -/
+$\rho(D^{-1} A)$, and $|1 - \omega t| < 1$ for an eigenvalue $t$ exactly when
+$0 < \omega t < 2$. The hypothesis $n \ge 1$ is necessary: for $n = 0$ the left side holds and
+the right side does not. -/
 theorem jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef [Nonempty n] {A : Matrix n n ℝ}
     (hA : A.PosDef) (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     complexSpectralRadius (jorSplitting A h hω).iterationOperator < 1 ↔
@@ -1502,13 +1739,19 @@ section Parts
 variable {𝕜 : Type*} [Field 𝕜]
 
 omit [Fintype n] in
-/-- For a symmetric `A`, `(D + ω L)ᵀ = D + ω U`. -/
+/-- For a symmetric square matrix $A$ over a field and every scalar $\omega$,
+$(D + \omega L)^T = D + \omega U$, where $D$, $L$ and $U$ are the diagonal, the strictly lower
+triangular and the strictly upper triangular parts of $A$. -/
 theorem diagPart_add_smul_strictLower_transpose {A : Matrix n n 𝕜} (hA : A.IsSymm) (ω : 𝕜) :
     (diagPart A + ω • strictLower A)ᵀ = diagPart A + ω • strictUpper A := by
   rw [transpose_add, transpose_smul, diagPart_transpose, strictLower_transpose, hA.eq]
 
-/-- **The SSOR preconditioner is symmetric** for a symmetric `A` ([quarteroni2000numerical] (4.22)
-and (4.21) at `ω = 1`): `(D + ωL)ᵀ = D + ωU`, so `(D + ωL) D⁻¹ (D + ωU)` is symmetric. -/
+/-- **The SSOR preconditioner is symmetric** ([quarteroni2000numerical], (4.22), and (4.21) at
+$\omega = 1$). Let $A$ be a symmetric square matrix over a field with invertible diagonal, and
+let $\omega \notin \{0, 2\}$. Then the part $M = \frac{1}{\omega(2 - \omega)} (D + \omega L)
+D^{-1} (D + \omega U)$ of the SSOR splitting is symmetric.
+
+The reason is that $(D + \omega L)^T = D + \omega U$. -/
 theorem ssorSplitting_m_isSymm {A : Matrix n n 𝕜} (hA : A.IsSymm) (h : IsUnit (diagPart A))
     {ω : 𝕜} (hω : ω ≠ 0) (hω2 : ω ≠ 2) : (ssorSplitting A h hω hω2).m.IsSymm := by
   have hU : (diagPart A + ω • strictUpper A)ᵀ = diagPart A + ω • strictLower A := by
@@ -1523,10 +1766,13 @@ end Parts
 
 variable {A : Matrix n n ℝ}
 
-/-- **The SSOR preconditioner is positive definite** for a symmetric `A` with positive diagonal
-(not necessarily positive definite) and `0 < ω < 2` ([golub2013matrix] §11.2.7, after (11.2.24)):
-it is the positive multiple `(ω (2 - ω))⁻¹` of the congruence `X D⁻¹ Xᵀ` of the positive definite
-`D⁻¹` by the invertible `X = D + ωL`. -/
+/-- **The SSOR preconditioner is positive definite** ([golub2013matrix], §11.2.7, after (11.2.24)).
+Let $A$ be a real symmetric matrix with positive diagonal entries, not necessarily positive
+definite, and let $0 < \omega < 2$. Then the part $M$ of the SSOR splitting is positive
+definite.
+
+The matrix $M$ is the positive multiple $(\omega (2 - \omega))^{-1}$ of $X D^{-1} X^T$, where
+$D^{-1}$ is positive definite and $X = D + \omega L$ is invertible. -/
 theorem ssorSplitting_m_posDef_of_diag_pos (hA : A.IsHermitian) (hd : ∀ i, 0 < A i i)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     (ssorSplitting A h hω0.ne' hω2.ne).m.PosDef := by
@@ -1543,14 +1789,16 @@ theorem ssorSplitting_m_posDef_of_diag_pos (hA : A.IsHermitian) (hd : ∀ i, 0 <
   · exact (vecMul_injective_iff_isUnit).mpr hX
   · exact inv_pos.mpr (mul_pos hω0 (by linarith))
 
-/-- **The SSOR preconditioner is positive definite** for a positive definite `A` and `0 < ω < 2`,
-the case of `Matrix.ssorSplitting_m_posDef_of_diag_pos` where the diagonal is positive because `A`
-is positive definite. -/
+/-- **The SSOR preconditioner is positive definite** for a real symmetric positive definite matrix
+$A$ and $0 < \omega < 2$.
+
+This is the case of `Matrix.ssorSplitting_m_posDef_of_diag_pos` in which the diagonal is
+positive because $A$ is positive definite. -/
 theorem ssorSplitting_m_posDef (hA : A.PosDef) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω)
     (hω2 : ω < 2) : (ssorSplitting A h hω0.ne' hω2.ne).m.PosDef :=
   ssorSplitting_m_posDef_of_diag_pos hA.1 (fun _ => hA.diag_pos) h hω0 hω2
 
-/-- The two triangular factors of the SSOR preconditioner, expanded. -/
+/-- For real $a$, $b$, $(a D + b L) D^{-1} (a D + b U) = a^2 D + a b L + a b U + b^2 L D^{-1} U$. -/
 private theorem expand_mul_inv_mul (h : IsUnit (diagPart A)) (a b : ℝ) :
     (a • diagPart A + b • strictLower A) * (diagPart A)⁻¹ * (a • diagPart A + b • strictUpper A)
       = (a * a) • diagPart A + (a * b) • strictLower A + (a * b) • strictUpper A
@@ -1560,11 +1808,15 @@ private theorem expand_mul_inv_mul (h : IsUnit (diagPart A)) (a b : ℝ) :
     Matrix.mul_assoc, mul_nonsing_inv_cancel_left _ _ hdet, nonsing_inv_mul _ hdet, Matrix.mul_one]
   module
 
-/-- **The SSOR preconditioner dominates `A`**: for a symmetric `A` with positive diagonal and
-`0 < ω < 2`, `P_SSOR - A` is positive semidefinite, by the factorization
-`P_SSOR - A = (ω (2 - ω))⁻¹ ((1 - ω) D - ωL) D⁻¹ ((1 - ω) D - ωU)`; at `ω = 1` it reads
-`P_SGS - A = L D⁻¹ U`.  This is the "`P ≥ A`" that makes the SSOR iteration matrix positive
-semidefinite in the `A`-inner product. -/
+/-- **The SSOR preconditioner dominates $A$.** Let $A$ be a real symmetric matrix with positive
+diagonal entries, and let $0 < \omega < 2$. Then $P - A$ is positive semidefinite, where $P$ is
+the part $m$ of the SSOR splitting.
+
+The proof is the factorization
+$$P - A = \frac{1}{\omega(2 - \omega)} \bigl((1 - \omega) D - \omega L\bigr) D^{-1} \bigl((1 -
+  \omega) D - \omega U\bigr).$$
+At $\omega = 1$ it reads $P_{SGS} - A = L D^{-1} U$. The inequality $P \ge A$ makes the SSOR
+iteration matrix positive semidefinite for the inner product of $A$. -/
 theorem ssorSplitting_m_sub_posSemidef (hA : A.IsHermitian) (hd : ∀ i, 0 < A i i)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     ((ssorSplitting A h hω0.ne' hω2.ne).m - A).PosSemidef := by
@@ -1605,10 +1857,14 @@ theorem ssorSplitting_m_sub_posSemidef (hA : A.IsHermitian) (hd : ∀ i, 0 < A i
   rw [← hYt]
   exact (hDi.posSemidef.mul_mul_conjTranspose_same _).smul (inv_pos.mpr hc).le
 
-/-- **SSOR converges for a positive definite matrix and `0 < ω < 2`** ([quarteroni2000numerical]
-§4.2.6, and Property 4.5 at `ω = 1`): Householder–John with `M = P_SSOR`, whose
-`M + Mᵀ - A = M + (M - A)` is positive definite as the sum of `Matrix.ssorSplitting_m_posDef` and
-`Matrix.ssorSplitting_m_sub_posSemidef`. -/
+/-- **SSOR converges for a positive definite matrix and $0 < \omega < 2$**
+([quarteroni2000numerical], §4.2.6, and Property 4.5 at $\omega = 1$). Let $A$ be a real
+symmetric positive definite matrix with invertible diagonal, and let $0 < \omega < 2$. Then the
+SSOR iteration matrix $G$ satisfies $\rho(G) < 1$.
+
+This is the Householder–John theorem with $M = P_{SSOR}$, for which $M + M^T - A = M + (M - A)$
+is positive definite as the sum of a positive definite matrix (`Matrix.ssorSplitting_m_posDef`)
+and a positive semidefinite one (`Matrix.ssorSplitting_m_sub_posSemidef`). -/
 theorem ssorSplitting_complexSpectralRadius_lt_one (hA : A.PosDef) (h : IsUnit (diagPart A))
     {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     complexSpectralRadius (ssorSplitting A h hω0.ne' hω2.ne).iterationOperator < 1 := by
@@ -1626,21 +1882,28 @@ open Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n] {A : Matrix n n ℝ} (s : Splitting A)
 
-/-- `A G = A - A M⁻¹ A` for the iteration matrix `G = 1 - M⁻¹ A` of a splitting. -/
+/-- For a splitting $A = M - N$ of a real square matrix with iteration matrix $G = I - M^{-1} A$,
+$$A G = A - A M^{-1} A.$$
+-/
 theorem mul_iterationOperator_eq : A * s.iterationOperator = A - A * s.m⁻¹ * A := by
   rw [iterationOperator, Matrix.mul_sub, Matrix.mul_one, nonsing_inv_eq_ringInverse,
     Matrix.mul_assoc]
 
-/-- **The iteration matrix is `A`-self-adjoint** when `A` and `M` are symmetric: `A G = A - A M⁻¹ A`
-is symmetric. -/
+/-- **The iteration matrix is self-adjoint for the inner product of $A$.** Let $A = M - N$ be a
+splitting of a real square matrix, with $A$ and $M$ symmetric. Then $A G$ is symmetric.
+
+The reason is that $A G = A - A M^{-1} A$. -/
 theorem mul_iterationOperator_isSymm (hA : A.IsSymm) (hm : s.m.IsSymm) :
     (A * s.iterationOperator).IsSymm := by
   rw [mul_iterationOperator_eq, IsSymm, transpose_sub, transpose_mul, transpose_mul,
     transpose_nonsing_inv, hA.eq, hm.eq, Matrix.mul_assoc]
 
-/-- **The iteration matrix is `A`-positive semidefinite** when `A` is positive definite, `M` is
-symmetric and `M - A` is positive semidefinite: with `y = M⁻¹ A x`, `x ⬝ A G x = x ⬝ A x - y ⬝ M y ≥
-(x - y) ⬝ A (x - y) ≥ 0`, because `y ⬝ A y ≤ y ⬝ M y` and `x ⬝ A y = y ⬝ M y`. -/
+/-- **The iteration matrix is positive semidefinite for the inner product of $A$.** Let $A = M - N$
+be a splitting of a real symmetric positive definite matrix $A$, with $M$ symmetric and $M - A$
+positive semidefinite. Then $A G$ is positive semidefinite.
+
+With $y = M^{-1} A x$, one has $x \cdot A G x = x \cdot A x - y \cdot M y \ge (x - y) \cdot A
+(x - y) \ge 0$, because $y \cdot A y \le y \cdot M y$ and $x \cdot A y = y \cdot M y$. -/
 theorem mul_iterationOperator_posSemidef (hA : A.PosDef) (hm : s.m.IsSymm)
     (hsub : (s.m - A).PosSemidef) : (A * s.iterationOperator).PosSemidef := by
   have hsymm : A.IsSymm := isHermitian_iff_isSymm.mp hA.1
@@ -1669,11 +1932,15 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n] {A : Matrix n n ℝ}
 
-/-- **Property 4.5 of [quarteroni2000numerical], read correctly**: for a positive definite `A` and
-`0 < ω < 2`, the SSOR iteration matrix `B_s(ω)` (at `ω = 1`, `B_SGS`) satisfies `(A B).PosSemidef`,
-i.e. it is self-adjoint and positive semidefinite in the `A`-inner product, so its eigenvalues are
-real and lie in `[0, 1)`.  The book prints "`B_SGS` is symmetric positive definite", which is false
-as printed (for a diagonal `A`, `B_SGS = 0`, and `B_SGS` is not Euclidean-symmetric in general). -/
+/-- **Property 4.5 of [quarteroni2000numerical], in its correct form.** Let $A$ be a real symmetric
+positive definite matrix with invertible diagonal, and let $0 < \omega < 2$. Then the SSOR
+iteration matrix $B_s(\omega)$ satisfies: $A B_s(\omega)$ is positive semidefinite. That is,
+$B_s(\omega)$ is self-adjoint and positive semidefinite for the inner product of $A$, so its
+eigenvalues are real and lie in $[0, 1)$. At $\omega = 1$ the matrix is $B_{SGS}$.
+
+The source states that $B_{SGS}$ is symmetric positive definite. This is false as printed: for a
+diagonal $A$, $B_{SGS} = 0$, and $B_{SGS}$ is in general not symmetric for the Euclidean inner
+product. -/
 theorem ssorSplitting_iterationOperator_posSemidef_energy (hA : A.PosDef) (h : IsUnit (diagPart A))
     {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     (A * (ssorSplitting A h hω0.ne' hω2.ne).iterationOperator).PosSemidef := by

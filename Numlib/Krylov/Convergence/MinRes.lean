@@ -9,31 +9,40 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 /-!
 # Chebyshev convergence bound for MINRES on an indefinite system
 
-The single-interval Chebyshev argument of `Numlib/Krylov/Convergence/CG.lean` needs a spectrum
-bounded away from the origin on one side of it, so it says nothing about a symmetric *indefinite*
-system.  The classical replacement encloses the spectrum in two intervals `[a₁, b₁] ∪ [a₂, b₂]` with
-`a₁ < b₁ < 0 < a₂ < b₂` of equal length, and composes the Chebyshev polynomial of one interval with
-the quadratic that folds the two onto it; that is
-`Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc` of
-`Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`, and the only work left here is to feed it to
-the optimality of a minimal-residual iterate.  The resulting bound
-(`Krylov.IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`) is on the *even*
-steps, because the competitor polynomial has degree `2k`, and its rate is governed by the two
-products of endpoints across the origin: the outer one `|a₁ b₂|` and the inner one `|b₁ a₂|`.
+Let $A$ be a symmetric operator on a finite-dimensional inner product space, and let $x_m$ be a
+minimal-residual iterate for $Ax = b$ from $x_0$: $x_m - x_0$ lies in the Krylov subspace
+$\mathcal{K}_m(A, r_0)$ with $r_0 = b - A x_0$, and $\|b - A x_m\|$ is minimal over
+$x_0 + \mathcal{K}_m(A, r_0)$. The single-interval Chebyshev bound of `Numlib.Krylov.Convergence.CG`
+needs a spectrum on one side of the origin, so it says nothing about a symmetric *indefinite*
+system. The classical replacement encloses the spectrum in two intervals
+$[a_1, b_1] \cup [a_2, b_2]$ of equal length with $a_1 < b_1 < 0 < a_2 < b_2$. The competitor
+polynomial is the Chebyshev polynomial of one interval composed with a quadratic that folds the two
+intervals onto it (`Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc`), and this
+module combines it with the optimality of a minimal-residual iterate.
 
-This is [greenbaum1997iterative] Thm 3.1.1, the estimate [choi2006iterative] §2.4 and [fong2012cg]
-§1 quote for MINRES.
+The resulting bound is on the even steps, because the competitor polynomial has degree $2k$. Its
+rate depends on two products of endpoints across the origin: the outer one $|a_1 b_2|$ and the inner
+one $|b_1 a_2|$. This is Theorem 3.1.1 of [greenbaum1997iterative], the estimate that
+[choi2006iterative], §2.4, and [fong2012cg], §1, quote for MINRES.
+
+## Main results
+
+* `Krylov.IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`: if the eigenvalues of
+  $A$ lie in $[a_1, b_1] \cup [a_2, b_2]$, then the residual of a minimal-residual iterate at step
+  $2k$ is at most $2 \rho^k$ times the initial residual, where $\rho = (\sqrt{|a_1 b_2|} -
+  \sqrt{|b_1 a_2|}) / (\sqrt{|a_1 b_2|} + \sqrt{|b_1 a_2|})$.
 
 ## Implementation notes
 
-The hypothesis is a two-interval enclosure of the spectrum, not a quadratic-form bound, so the
-compression trick of `Numlib/Krylov/Convergence/Polynomial.lean` — which transports a
-`LinearMap.IsSymmetricBoundedBy` hypothesis to the compression of `A` to a Krylov subspace — does
-not apply: an eigenvalue of a compression need not be an eigenvalue of `A`, and the two intervals
-say nothing about the values of the quadratic form between them.  The statement is therefore at the
-finite-dimensional rung, where `LinearMap.IsSymmetric.norm_aeval_apply_le` reads the norm of `p(A)`
-off the eigenvalues directly.  A Hilbert-space version would go through the continuous functional
-calculus.
+* The hypothesis is a two-interval enclosure of the spectrum, not a bound on the quadratic form.
+  Therefore the compression argument of `Numlib.Krylov.Convergence.Polynomial`, which transports a
+  `LinearMap.IsSymmetricBoundedBy` hypothesis to the compression of $A$ to a Krylov subspace, does
+  not apply: an eigenvalue of a compression need not be an eigenvalue of $A$, and the two intervals
+  say nothing about the values of the quadratic form between them.
+* For this reason the statement is in finite dimension, where
+  `LinearMap.IsSymmetric.norm_aeval_apply_le` bounds the norm of $p(A)$ by the values of $p$ at the
+  eigenvalues of $A$. A version for Hilbert spaces would go through the continuous functional
+  calculus.
 -/
 
 open Polynomial Polynomial.Chebyshev
@@ -42,16 +51,21 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 namespace Krylov
 
-/-- **The Chebyshev bound for MINRES on a symmetric indefinite system**
-([greenbaum1997iterative], Thm 3.1.1; [choi2006iterative], §2.4).  If every eigenvalue of the
-symmetric `A` lies in `[a₁, b₁] ∪ [a₂, b₂]` with `a₁ < b₁ < 0 < a₂ < b₂` and the two intervals of
-equal length, then a minimal-residual iterate over `𝒦_{2k}` satisfies
+/-- The **Chebyshev bound for MINRES on a symmetric indefinite system**. Let $E$ be a
+finite-dimensional inner product space over $\mathbb{R}$ or $\mathbb{C}$, and let $A : E \to E$
+be symmetric. Let $a_1 < b_1 < 0 < a_2 < b_2$ with $b_1 - a_1 = b_2 - a_2$, and suppose that
+every eigenvalue of $A$ (which is real) lies in $[a_1, b_1] \cup [a_2, b_2]$. If $x$ is a
+minimal-residual iterate for $Ax = b$ from $x_0$ over $\mathcal{K}_{2k}(A, b - A x_0)$, then
+$$\|b - Ax\| \le 2 \left( \frac{\sqrt{|a_1 b_2|} - \sqrt{|b_1 a_2|}}{\sqrt{|a_1 b_2|} +
+  \sqrt{|b_1 a_2|}} \right)^k \|b - A x_0\|.$$
+This is Theorem 3.1.1 of [greenbaum1997iterative], quoted for MINRES in [choi2006iterative],
+§2.4.
 
-`‖b - A x‖ ≤ 2 ((√|a₁ b₂| - √|b₁ a₂|) / (√|a₁ b₂| + √|b₁ a₂|))^k ‖b - A x₀‖`.
-
-Only the even steps are bounded: the competitor polynomial is a degree-`k` Chebyshev polynomial
-composed with a quadratic, hence of degree `2k`, and the residual norms are nonincreasing
-(`Krylov.IsMinResidualIterate.norm_residual_antitone`) so nothing is lost. -/
+Only the even steps are bounded, because the competitor polynomial is a Chebyshev polynomial of
+degree $k$ composed with a quadratic, so it has degree $2k$. Nothing is lost, since the residual
+norms of minimal-residual iterates are nonincreasing
+(`Krylov.IsMinResidualIterate.norm_residual_antitone`). The Lean hypothesis on the eigenvalues
+is stated for the real part `RCLike.re μ` of each eigenvalue $\mu$. -/
 theorem IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc [FiniteDimensional 𝕜 E]
     {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {a₁ b₁ a₂ b₂ : ℝ} (h₁ : a₁ < b₁) (hb₁ : b₁ < 0)
     (ha₂ : 0 < a₂) (h₂ : a₂ < b₂) (hlen : b₁ - a₁ = b₂ - a₂)

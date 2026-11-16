@@ -11,23 +11,35 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
-# Limits of logarithms of `m`-th roots
+# Limits and bounds for logarithms
 
-`tendsto_one_div_mul_log_of_tendsto_rpow_one_div`: if `a m ^ (1 / m) → ρ > 0` for a nonnegative
-sequence, then `(1 / m) log (a m) → log ρ`. This is the step from a root-test limit such as
-Gelfand's formula `‖Gᵐ‖ ^ (1 / m) → ρ(G)` to the corresponding logarithmic convergence rate
-`-(1 / m) log ‖Gᵐ‖ → -log ρ(G)`.
+This file collects three facts about the real logarithm. First, if a nonnegative sequence satisfies
+$a_m^{1/m} \to \rho > 0$, then $\frac{1}{m} \log a_m \to \log \rho$. This is the step from a
+root-test limit, such as Gelfand's formula $\|G^m\|^{1/m} \to \rho(G)$, to the corresponding
+logarithmic convergence rate $-\frac{1}{m} \log \|G^m\| \to -\log \rho(G)$. Second,
+$|\log b| \le |\log u| + |\log v|$ when $0 < u, v \le 1$ and $uv \le b \le 1$. Third, for
+$0 < \beta < 1$, the iteration count $\lceil \log(a/r) / \log \beta \rceil$ is at most
+$1 + r/(a\,|\log \beta|)$.
 
-`Real.abs_log_le_of_mul_le`: `|log b| ≤ |log u| + |log v|` for `u v ≤ b ≤ 1`, `u, v ∈ (0, 1]`.
+## Main results
 
-`Real.natCeil_log_div_log_le`: `⌈log(a/r)/log β⌉₊ ≤ 1 + r/(a |log β|)` for `β ∈ (0, 1)`.
+* `tendsto_one_div_mul_log_of_tendsto_rpow_one_div`: if $a_m \ge 0$ and $a_m^{1/m} \to \rho > 0$,
+  then $\frac{1}{m} \log a_m \to \log \rho$.
+* `Real.abs_log_le_of_mul_le`: $|\log b| \le |\log u| + |\log v|$ for $u, v \in (0, 1]$ and
+  $uv \le b \le 1$.
+* `Real.natCeil_log_div_log_le`: $\lceil \log(a/r) / \log \beta \rceil \le 1 + r/(a\,|\log \beta|)$
+  for $a > 0$, $r \ge 0$ and $\beta \in (0, 1)$.
 -/
 
 open Filter Topology
 
-/-- If `a m ^ (1 / m) → ρ > 0` for a nonnegative sequence, then `(1 / m) log (a m) → log ρ`: the
-continuity of `log` at a positive point, with `log (a ^ (1 / m)) = (1 / m) log a` also at
-`a = 0`. -/
+/-- Let $(a_m)_{m \ge 0}$ be a sequence of nonnegative real numbers, and let $\rho > 0$. If
+$a_m^{1/m} \to \rho$ as $m \to \infty$, then
+$$\frac{1}{m} \log a_m \to \log \rho \qquad (m \to \infty).$$
+
+The proof uses the continuity of $\log$ at the positive point $\rho$ and the identity
+$\log(a^{1/m}) = \frac{1}{m} \log a$. With the Lean convention $\log 0 = 0$, this identity holds
+also at $a = 0$. -/
 theorem tendsto_one_div_mul_log_of_tendsto_rpow_one_div {a : ℕ → ℝ} (ha : ∀ m, 0 ≤ a m)
     {ρ : ℝ} (hρ : 0 < ρ) (h : Tendsto (fun m : ℕ => a m ^ (1 / m : ℝ)) atTop (𝓝 ρ)) :
     Tendsto (fun m : ℕ => (1 / m : ℝ) * Real.log (a m)) atTop (𝓝 (Real.log ρ)) := by
@@ -39,7 +51,9 @@ theorem tendsto_one_div_mul_log_of_tendsto_rpow_one_div {a : ℕ → ℝ} (ha : 
       mul_zero]
   · rw [Real.log_rpow h0]
 
-/-- `|log b| ≤ |log u| + |log v|` for `0 < u v ≤ b ≤ 1` with `u, v ∈ (0, 1]`. -/
+/-- Let $u, v, b$ be real numbers with $0 < u \le 1$, $0 < v \le 1$ and $uv \le b \le 1$. Then
+$$|\log b| \le |\log u| + |\log v|.$$
+-/
 theorem Real.abs_log_le_of_mul_le {b u v : ℝ} (hu : 0 < u) (hv : 0 < v) (hu1 : u ≤ 1)
     (hv1 : v ≤ 1) (hb : u * v ≤ b) (hb1 : b ≤ 1) : |Real.log b| ≤ |Real.log u| + |Real.log v| := by
   have hb0 : 0 < b := lt_of_lt_of_le (mul_pos hu hv) hb
@@ -49,8 +63,13 @@ theorem Real.abs_log_le_of_mul_le {b u v : ℝ} (hu : 0 < u) (hv : 0 < v) (hu1 :
   rw [Real.log_mul hu.ne' hv.ne'] at this
   linarith
 
-/-- `⌈log(a/r)/log β₁⌉₊ ≤ 1 + r/(a |log β₁|)` for `a > 0`, `r ≥ 0`, `β₁ ∈ (0, 1)`: an iteration
-count `⌈log(a/r)/log β₁⌉₊` is `O(r/a)`. -/
+/-- Let $a > 0$, $r \ge 0$ and $0 < \beta < 1$. Then
+$$\left\lceil \frac{\log(a/r)}{\log \beta} \right\rceil \le 1 + \frac{r}{a\,|\log \beta|}.$$
+Thus an iteration count of the form $\lceil \log(a/r) / \log \beta \rceil$ is $O(r/a)$.
+
+The ceiling is the natural-number ceiling `Nat.ceil`, which is $0$ for a nonpositive argument.
+With the Lean conventions $a/0 = 0$ and $\log 0 = 0$, the case $r = 0$ is included, and the left
+side is then $0$. -/
 theorem Real.natCeil_log_div_log_le {a r β₁ : ℝ} (ha : 0 < a) (hr : 0 ≤ r) (hβ₁0 : 0 < β₁)
     (hβ₁1 : β₁ < 1) :
     (⌈Real.log (a / r) / Real.log β₁⌉₊ : ℝ) ≤ 1 + r / (a * |Real.log β₁|) := by

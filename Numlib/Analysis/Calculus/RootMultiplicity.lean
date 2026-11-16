@@ -12,33 +12,64 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.Analysis.Calculus.SegmentAverage
 
 /-!
-# Roots of multiplicity `m` of a real function
+# Roots of multiplicity $m$ of a real function
 
-`IsRootOfMultiplicity f α m` says that the first `m` derivatives `f, f', …, f^{(m-1)}` vanish at `α`
-and `f^{(m)}(α) ≠ 0`. Mathlib has the notion for polynomials (`Polynomial.rootMultiplicity`) and for
-analytic functions (`analyticOrderAt`) but not for merely `C^m` functions, which is what the
-rootfinding chapters of [quarteroni2000numerical] work with.
+Let $f \colon \mathbb{R} \to \mathbb{R}$. A point $\alpha$ is a **root of multiplicity** $m$ of $f$
+if $f(\alpha) = f'(\alpha) = \dots = f^{(m-1)}(\alpha) = 0$ and $f^{(m)}(\alpha) \neq 0$. The
+central result is the **Taylor factorization** at such a root: if $f$ is $C^{m+n}$ at $\alpha$, then
+$f(x) = (x - \alpha)^m h(x)$ for all $x$, where $h$ is $C^n$ at $\alpha$ and
+$h(\alpha) = f^{(m)}(\alpha) / m!$. The rootfinding chapters of [quarteroni2000numerical] work with
+this notion for functions that are only $C^m$.
 
-The one theorem is the **Taylor factorization** `f x = (x - α)^m h x` with `h` continuous — `C^n`
-when `f` is `C^{m+n}` — and `h α = f^{(m)}(α) / m!` (`IsRootOfMultiplicity.exists_eq_pow_mul`).
-Everything about multiple roots follows from it: the error-versus-residual asymptotics
-`|x - α| / |f x|^{1/m} → (m! / |f^{(m)}(α)|)^{1/m}` behind the conditioning estimates (6.4)–(6.7)
-of [quarteroni2000numerical] §6.1 and the residual stopping test of §6.5
-(`IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`, `eventually_abs_sub_le_mul_abs_rpow`), the
-linear convergence of Newton's method with factor `1 - 1/m` (`Numlib/Nonlinear/ScalarNewton`), and
-the identification with `Polynomial.rootMultiplicity` (`Polynomial.isRootOfMultiplicity_eval_iff`).
+The facts about multiple roots follow from this factorization. As $x \to \alpha$, the error and the
+residual satisfy
+$$\frac{|x - \alpha|}{|f(x)|^{1/m}} \to \left( \frac{m!}{|f^{(m)}(\alpha)|} \right)^{1/m}.$$
+This limit is behind the conditioning estimates (6.4)–(6.7) of [quarteroni2000numerical], §6.1, and
+the residual stopping test of §6.5. The factorization also gives the linear convergence of Newton's
+method with factor $1 - 1/m$ in `Numlib.Nonlinear.ScalarNewton`, and the agreement with the
+multiplicity of a polynomial root.
 
-The factor `h` is the `m`-fold iterate of Mathlib's `dslope`, so the factorization identity holds
-everywhere (`pow_sub_smul_iterate_dslope_of_zero`) and its regularity reduces to **Hadamard's
-lemma** in one variable, `ContDiffAt.dslope_same`: if `f : 𝕜 → 𝕜` (`𝕜 = ℝ` or `ℂ`) is `C^{n+1}` at
-`a` then `dslope f a` is `C^n` at `a`, with
-`iteratedDeriv n (dslope f a) a = f^{(n+1)}(a) / (n + 1)`. On a ball about `a`, `dslope f a` is
-the segment average `b ↦ ∫₀¹ f'(a + t (b - a)) dt` of
-`Numlib/Analysis/Calculus/SegmentAverage`, whose `k`-th derivative is
-`∫₀¹ tᵏ f^{(k+1)}(a + t (b - a)) dt`. Hadamard's lemma and the pointwise `C¹` facts
-`ContDiffAt.eventually_hasDerivAt` and `ContDiffAt.continuousAt_deriv` (a function `C¹` at a point
-has `deriv` as its derivative on a whole neighbourhood, on which `deriv` is continuous) are
-upstreaming candidates (natural home: `Mathlib.Analysis.Calculus.DSlope`).
+The factor $h$ is the $m$-fold iterate of the difference quotient $\operatorname{dslope}$, so the
+factorization holds everywhere. Its regularity reduces to **Hadamard's lemma** in one variable: if
+$f \colon \mathbb{K} \to \mathbb{K}$, with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, is $C^{n+1}$
+at $a$, then the difference quotient $\operatorname{dslope} f a$ is $C^n$ at $a$, and its $n$-th
+derivative at $a$ is $f^{(n+1)}(a) / (n + 1)$. On a ball about $a$, the difference quotient is the
+segment average $b \mapsto \int_0^1 f'(a + t(b - a)) \, dt$ of
+`Numlib.Analysis.Calculus.SegmentAverage`, whose $k$-th derivative is
+$\int_0^1 t^k f^{(k+1)}(a + t(b - a)) \, dt$.
+
+## Main definitions
+
+* `IsRootOfMultiplicity`: $\alpha$ is a root of multiplicity $m$ of $f$.
+
+## Main results
+
+* `ContDiffAt.dslope_same`: Hadamard's lemma, the difference quotient of a $C^{n+1}$ function is
+  $C^n$.
+* `IsRootOfMultiplicity.exists_eq_pow_mul`: the Taylor factorization $f(x) = (x - \alpha)^m h(x)$.
+* `IsRootOfMultiplicity.exists_eq_pow_mul_deriv`: the factorization with a $C^1$ factor and its
+  derivative at $\alpha$.
+* `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`: the limit of $|x - \alpha| / |f(x)|^{1/m}$.
+* `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`: the residual bound
+  $|x - \alpha| \le c |f(x)|^{1/m}$ near $\alpha$.
+* `Polynomial.isRootOfMultiplicity_eval_iff`: for a nonzero polynomial, the multiplicity agrees with
+  `Polynomial.rootMultiplicity`.
+
+## Implementation notes
+
+* Mathlib has the multiplicity of a root for polynomials (`Polynomial.rootMultiplicity`) and the
+  order of a zero for analytic functions (`analyticOrderAt`), but not for functions that are only
+  $C^m$.
+* Derivatives are Mathlib's `iteratedDeriv`. The predicate `IsRootOfMultiplicity` does not include
+  smoothness. The theorems that need the derivatives to be meaningful, such as the factorization,
+  the limit and the residual bound, assume `ContDiffAt ℝ n f α` with $n \ge m$. The elementary
+  consequences of the definition, such as `IsRootOfMultiplicity.eq_zero` and
+  `IsRootOfMultiplicity.deriv`, do not.
+* The factor $h$ is `(Function.swap dslope α)^[m] f`. The factorization identity is Mathlib's
+  `pow_sub_smul_iterate_dslope_of_zero`.
+* Hadamard's lemma and the pointwise $C^1$ facts `ContDiffAt.eventually_hasDerivAt` and
+  `ContDiffAt.continuousAt_deriv` are general results with no numerical content. Their natural place
+  is beside `Mathlib.Analysis.Calculus.DSlope`.
 -/
 
 open Filter Topology Set Nat
@@ -46,9 +77,10 @@ open scoped Interval
 
 section Pointwise
 
-/-- **A `C^N` function is `N` times differentiable on a ball**: around a point where `f` is `C^N`
-there is a ball on which each iterated derivative up to order `N - 1` has the next one as its
-derivative, and the `N`-th is continuous. -/
+/-- **A $C^N$ function is $N$ times differentiable on a ball.** Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^N$ at $a$. Then there is $\delta > 0$ such
+that on the ball $B(a, \delta)$, for every $j < N$, the iterated derivative $f^{(j)}$ has the
+derivative $f^{(j+1)}(x)$ at every $x$, and $f^{(N)}$ is continuous. -/
 theorem ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv {f : ℝ → ℝ} {a : ℝ} {N : ℕ}
     (hf : ContDiffAt ℝ N f a) :
     ∃ δ > 0, (∀ j < N, ∀ x ∈ Metric.ball a δ,
@@ -60,7 +92,8 @@ theorem ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv {f : ℝ → ℝ} {a : �
     (hfu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball hj hx,
     (hfu.mono hru).continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball le_rfl⟩
 
-/-- On a neighbourhood of a point where `h` is `C¹`, `h` has derivative `deriv h`. -/
+/-- Let $h \colon \mathbb{R} \to \mathbb{R}$ be of class $C^1$ at $a$. Then $h$ has the derivative
+$h'(x)$ at every $x$ in a neighbourhood of $a$, where $h'$ is `deriv h`. -/
 theorem ContDiffAt.eventually_hasDerivAt {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
     ∀ᶠ x in 𝓝 a, HasDerivAt h (deriv h x) x := by
   obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
@@ -70,7 +103,8 @@ theorem ContDiffAt.eventually_hasDerivAt {h : ℝ → ℝ} {a : ℝ} (hh : ContD
     (j := 0) one_pos hx
   simpa using this
 
-/-- The derivative of a `C¹` function is continuous at the point. -/
+/-- Let $h \colon \mathbb{R} \to \mathbb{R}$ be of class $C^1$ at $a$. Then the derivative $h'$ is
+continuous at $a$. -/
 theorem ContDiffAt.continuousAt_deriv {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
     ContinuousAt (deriv h) a := by
   obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
@@ -79,8 +113,8 @@ theorem ContDiffAt.continuousAt_deriv {h : ℝ → ℝ} {a : ℝ} (hh : ContDiff
     (j := 1) le_rfl).continuousAt (Metric.ball_mem_nhds a hr)
   simpa using this
 
-/-- The derivative of a `C²` function is differentiable at the point, with derivative the second
-derivative. -/
+/-- Let $f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^2$ at $\alpha$. Then $f'$ has the
+derivative $f''(\alpha)$ at $\alpha$. -/
 theorem hasDerivAt_deriv_of_contDiffAt_two {f : ℝ → ℝ} {α : ℝ} (hf : ContDiffAt ℝ 2 f α) :
     HasDerivAt (deriv f) (iteratedDeriv 2 f α) α := by
   obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
@@ -96,8 +130,11 @@ section Hadamard
 
 variable {𝕜 : Type*} [RCLike 𝕜] {f : 𝕜 → 𝕜} {a : 𝕜}
 
-/-- On an open convex set where `f` is `C¹`, the difference quotient `dslope f a` is the segment
-average `b ↦ ∫₀¹ f'(a + t (b - a)) dt`. -/
+/-- Let $U \subseteq \mathbb{K}$ be open and convex, let $N \ge 1$, let
+$f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^N$ on $U$, and let $a \in U$. Then on $U$
+the difference quotient $\operatorname{dslope} f a$ is the segment average
+$$b \mapsto \int_0^1 f'(a + t(b - a)) \, dt.$$
+-/
 theorem eqOn_dslope_integral_deriv_comp_segment {U : Set 𝕜} (hU : IsOpen U)
     (hUc : Convex ℝ U) {N : ℕ} (hN : 1 ≤ N) (hf : ContDiffOn 𝕜 N f U) (ha : a ∈ U) :
     EqOn (dslope f a) (fun b => ∫ t in (0 : ℝ)..1, deriv f (a + t • (b - a))) U := by
@@ -112,7 +149,8 @@ theorem eqOn_dslope_integral_deriv_comp_segment {U : Set 𝕜} (hU : IsOpen U)
   · rw [dslope_of_ne _ hba, slope_def_field, eq_add_mul_integral_comp_segment hUc hf' hf'c ha hb,
       add_sub_cancel_left, mul_div_cancel_left₀ _ (sub_ne_zero.2 hba)]
 
-/-- The two conclusions of Hadamard's lemma on a ball where `f` is `C^{n+1}`. -/
+/-- On a ball about $a$ where $f$ is $C^{n+1}$, the difference quotient $\operatorname{dslope} f a$
+is $C^n$ at $a$ and its $n$-th derivative at $a$ is $f^{(n+1)}(a) / (n + 1)$. -/
 private theorem contDiffOn_dslope_ball {r : ℝ} (hr : 0 < r) {n : ℕ}
     (hf : ContDiffOn 𝕜 (n + 1 : ℕ) f (Metric.ball a r)) :
     ContDiffAt 𝕜 n (dslope f a) a ∧
@@ -134,22 +172,29 @@ private theorem contDiffOn_dslope_ball {r : ℝ} (hr : 0 < r) {n : ℕ}
     push_cast
     ring
 
-/-- **Hadamard's lemma** in one variable: if `f` is `C^{n+1}` at `a`, the difference quotient
-`dslope f a` (which is `(f x - f a) / (x - a)` off `a` and `f'(a)` at `a`) is `C^n` at `a`. -/
+/-- **Hadamard's lemma** in one variable. Let $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^{n+1}$ at $a$. Then the difference quotient
+$\operatorname{dslope} f a$ is of class $C^n$ at $a$.
+
+The difference quotient $\operatorname{dslope} f a$ is Mathlib's `dslope f a`. Its value at
+$x \neq a$ is $(f(x) - f(a)) / (x - a)$, and its value at $a$ is $f'(a)$. -/
 theorem ContDiffAt.dslope_same {n : ℕ} (hf : ContDiffAt 𝕜 (n + 1 : ℕ) f a) :
     ContDiffAt 𝕜 n (dslope f a) a := by
   obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
   obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
   exact (contDiffOn_dslope_ball hr (hfu.mono hru)).1
 
-/-- The `n`-th derivative of `dslope f a` at the base point is `f^{(n+1)}(a) / (n + 1)`. -/
+/-- Let $f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^{n+1}$ at $a$. Then the $n$-th
+derivative of $\operatorname{dslope} f a$ at $a$ is $f^{(n+1)}(a) / (n + 1)$. -/
 theorem iteratedDeriv_dslope_same {n : ℕ} (hf : ContDiffAt 𝕜 (n + 1 : ℕ) f a) :
     iteratedDeriv n (dslope f a) a = iteratedDeriv (n + 1) f a / (n + 1) := by
   obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
   obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
   exact (contDiffOn_dslope_ball hr (hfu.mono hru)).2
 
-/-- The `m`-fold iterate of `dslope` at `a` is `C^n` at `a` when `f` is `C^{m+n}` there. -/
+/-- Let $f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^{m+n}$ at $a$. Then the $m$-fold iterate
+of the difference quotient at $a$, $h = \operatorname{dslope}(\cdots \operatorname{dslope}(f, a)
+\cdots, a)$, is of class $C^n$ at $a$. -/
 theorem ContDiffAt.iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m + n : ℕ) f a) :
     ContDiffAt 𝕜 n ((Function.swap dslope a)^[m] f) a := by
   induction m generalizing f with
@@ -159,8 +204,10 @@ theorem ContDiffAt.iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m + n 
     exact ih (f := dslope f a)
       (ContDiffAt.dslope_same (n := m + n) (by rwa [show m + n + 1 = m + 1 + n by omega]))
 
-/-- The `n`-th derivative of the `m`-fold iterate of `dslope` at `a`:
-`n! / (m + n)! · f^{(m+n)}(a)`. -/
+/-- Let $f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^{m+n}$ at $a$, and let $h$ be the
+$m$-fold iterate of the difference quotient at $a$. Then
+$$h^{(n)}(a) = \frac{n!}{(m + n)!} f^{(m+n)}(a).$$
+-/
 theorem iteratedDeriv_iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m + n : ℕ) f a) :
     iteratedDeriv n ((Function.swap dslope a)^[m] f) a =
       (n ! : 𝕜) / (m + n)! * iteratedDeriv (m + n) f a := by
@@ -175,14 +222,19 @@ theorem iteratedDeriv_iterate_dslope_same {m n : ℕ} (hf : ContDiffAt 𝕜 (m +
     push_cast
     field_simp
 
-/-- The value of the `m`-fold iterate of `dslope` at the base point: `f^{(m)}(a) / m!`. -/
+/-- Let $f \colon \mathbb{K} \to \mathbb{K}$ be of class $C^m$ at $a$, and let $h$ be the $m$-fold
+iterate of the difference quotient at $a$. Then $h(a) = f^{(m)}(a) / m!$. -/
 theorem iterate_dslope_same_apply {m : ℕ} (hf : ContDiffAt 𝕜 m f a) :
     (Function.swap dslope a)^[m] f a = iteratedDeriv m f a / m ! := by
   have := iteratedDeriv_iterate_dslope_same (m := m) (n := 0) (by simpa using hf)
   simpa [div_eq_inv_mul] using this
 
-/-- **Hadamard's lemma, globally**: if `g` is `C^{m+1}` then `dslope g c` is `C^m`. At `c` this is
-`ContDiffAt.dslope_same`; elsewhere `dslope g c` is the quotient `(g y - g c)/(y - c)`. -/
+/-- **Hadamard's lemma, global form.** Let $g \colon \mathbb{K} \to \mathbb{K}$ be of class
+$C^{m+1}$, and let $c \in \mathbb{K}$. Then the difference quotient $\operatorname{dslope} g c$
+is of class $C^m$.
+
+At $c$ this is `ContDiffAt.dslope_same`. At other points $\operatorname{dslope} g c$ is the
+quotient $(g(y) - g(c)) / (y - c)$. -/
 theorem _root_.ContDiff.dslope {g : 𝕜 → 𝕜} {m : ℕ}
     (hg : ContDiff 𝕜 ((m + 1 : ℕ) : WithTop ℕ∞) g) (c : 𝕜) : ContDiff 𝕜 m (dslope g c) := by
   refine contDiff_iff_contDiffAt.2 fun x => ?_
@@ -200,26 +252,32 @@ section Multiplicity
 
 variable {f : ℝ → ℝ} {α : ℝ} {m : ℕ}
 
-/-- `α` is a root of `f` of multiplicity `m`: the derivatives `f^{(i)}(α)`, `i < m`, vanish and
-`f^{(m)}(α) ≠ 0` ([quarteroni2000numerical] §6.1; [isaacson1994analysis] §3.2). `m = 1` is a
-simple root (`f α = 0`, `f'(α) ≠ 0`); `m = 0` says `f α ≠ 0`. The smoothness `ContDiffAt ℝ n f α`,
-`n ≥ m`, that makes the derivatives meaningful accompanies the predicate in every theorem, as
-Mathlib does with `iteratedDeriv`. -/
+/-- Let $f \colon \mathbb{R} \to \mathbb{R}$, $\alpha \in \mathbb{R}$ and $m \in \mathbb{N}$. The
+point $\alpha$ is a **root of multiplicity** $m$ of $f$ if
+$$f^{(i)}(\alpha) = 0 \text{ for all } i < m \quad \text{and} \quad f^{(m)}(\alpha) \neq 0.$$
+
+This is the notion of [quarteroni2000numerical], §6.1, and of [isaacson1994analysis], §3.2.
+Multiplicity $1$ is a simple root: $f(\alpha) = 0$ and $f'(\alpha) \neq 0$. Multiplicity $0$
+means $f(\alpha) \neq 0$. The derivatives are `iteratedDeriv`, which are $0$ where $f$ is not
+differentiable. Therefore the theorems that need the derivatives to be meaningful also assume
+that $f$ is $C^n$ at $\alpha$ for some $n \ge m$ (`ContDiffAt ℝ n f α`), as Mathlib does with
+`iteratedDeriv`. -/
 def IsRootOfMultiplicity (f : ℝ → ℝ) (α : ℝ) (m : ℕ) : Prop :=
   (∀ i < m, iteratedDeriv i f α = 0) ∧ iteratedDeriv m f α ≠ 0
 
-/-- A root of positive multiplicity is a root. -/
+/-- A root of multiplicity $m \ge 1$ of $f$ is a root: $f(\alpha) = 0$. -/
 theorem IsRootOfMultiplicity.eq_zero (hα : IsRootOfMultiplicity f α m) (hm : 1 ≤ m) :
     f α = 0 := by
   simpa using hα.1 0 hm
 
-/-- Multiplicity `1` is a simple root: `f α = 0` and `f'(α) ≠ 0`. -/
+/-- The point $\alpha$ is a root of multiplicity $1$ of $f$ if and only if $f(\alpha) = 0$ and
+$f'(\alpha) \neq 0$. -/
 theorem isRootOfMultiplicity_one_iff :
     IsRootOfMultiplicity f α 1 ↔ f α = 0 ∧ deriv f α ≠ 0 := by
   simp [IsRootOfMultiplicity]
 
-/-- The derivative of a function with a root of multiplicity `m + 1` at `α` has a root of
-multiplicity `m` there. -/
+/-- If $\alpha$ is a root of multiplicity $m + 1$ of $f$, then $\alpha$ is a root of multiplicity
+$m$ of $f'$. -/
 theorem IsRootOfMultiplicity.deriv (hα : IsRootOfMultiplicity f α (m + 1)) :
     IsRootOfMultiplicity (deriv f) α m := by
   refine ⟨fun i hi => ?_, ?_⟩
@@ -228,12 +286,16 @@ theorem IsRootOfMultiplicity.deriv (hα : IsRootOfMultiplicity f α (m + 1)) :
   · rw [← iteratedDeriv_succ']
     exact hα.2
 
-/-- **Taylor factorization at a multiple root.** If `f` is `C^{m+n}` at `α` and `α` is a root of
-multiplicity `m`, then `f x = (x - α)^m h x` for *all* `x`, where `h` is `C^n` at `α` with
-`h α = f^{(m)}(α) / m!` (so `h α ≠ 0`). The factor is the `m`-fold iterate of `dslope` at `α`, i.e.
-`f x / (x - α)^m` away from `α`; its regularity is Hadamard's lemma `ContDiffAt.dslope_same`
-applied `m` times. The book's Exercise 6.2 ([quarteroni2000numerical]) takes this factorization as
-its hint. -/
+/-- **Taylor factorization at a multiple root.** Let $f \colon \mathbb{R} \to \mathbb{R}$ be of
+class $C^{m+n}$ at $\alpha$, and let $\alpha$ be a root of multiplicity $m$ of $f$. Then there
+is $h \colon \mathbb{R} \to \mathbb{R}$, of class $C^n$ at $\alpha$, with
+$h(\alpha) = f^{(m)}(\alpha) / m!$, such that
+$$f(x) = (x - \alpha)^m h(x) \quad \text{for all } x \in \mathbb{R}.$$
+
+In particular $h(\alpha) \neq 0$. The factor $h$ is the $m$-fold iterate of the difference
+quotient at $\alpha$, which is $f(x) / (x - \alpha)^m$ for $x \neq \alpha$. Its regularity is
+Hadamard's lemma `ContDiffAt.dslope_same`, applied $m$ times. Exercise 6.2 of
+[quarteroni2000numerical] gives this factorization as its hint. -/
 theorem IsRootOfMultiplicity.exists_eq_pow_mul {n : ℕ} (hf : ContDiffAt ℝ (m + n : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
     ∃ h : ℝ → ℝ, ContDiffAt ℝ n h α ∧ h α = iteratedDeriv m f α / m ! ∧
@@ -244,10 +306,16 @@ theorem IsRootOfMultiplicity.exists_eq_pow_mul {n : ℕ} (hf : ContDiffAt ℝ (m
   rw [iterate_dslope_same_apply (hf.of_le (by exact_mod_cast (by omega : k ≤ m + n))),
     hα.1 k hk, zero_div]
 
-/-- **The `C¹` Taylor factorization with the derivative of the factor**: if `f` is `C^{m+1}` at
-`α` and `α` is a root of multiplicity `m`, then `f x = (x - α)^m h x` for all `x` with `h` `C¹` at
-`α`, `h α = f^{(m)}(α) / m!` and `h'(α) = f^{(m+1)}(α) / (m + 1)!`. This is what the multiple-root
-analysis of Newton's method consumes (`Numlib/Nonlinear/ScalarNewton`). -/
+/-- **Taylor factorization with the derivative of the factor.** Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^{m+1}$ at $\alpha$, and let $\alpha$ be a
+root of multiplicity $m$ of $f$. Then there is $h \colon \mathbb{R} \to \mathbb{R}$, of class
+$C^1$ at $\alpha$, with
+$$h(\alpha) = \frac{f^{(m)}(\alpha)}{m!}, \qquad h'(\alpha) = \frac{f^{(m+1)}(\alpha)}{(m +
+  1)!},$$
+such that $f(x) = (x - \alpha)^m h(x)$ for all $x \in \mathbb{R}$.
+
+The analysis of Newton's method at a multiple root in `Numlib.Nonlinear.ScalarNewton` uses this
+form. -/
 theorem IsRootOfMultiplicity.exists_eq_pow_mul_deriv (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
     ∃ h : ℝ → ℝ, ContDiffAt ℝ 1 h α ∧ h α = iteratedDeriv m f α / m ! ∧
@@ -260,12 +328,14 @@ theorem IsRootOfMultiplicity.exists_eq_pow_mul_deriv (hf : ContDiffAt ℝ (m + 1
     rw [iterate_dslope_same_apply (hf.of_le (by exact_mod_cast (by omega : k ≤ m + 1))),
       hα.1 k hk, zero_div]
 
-/-- The value `h α = f^{(m)}(α) / m!` of the factor is nonzero. -/
+/-- If $\alpha$ is a root of multiplicity $m$ of $f$, then $f^{(m)}(\alpha) / m! \neq 0$. -/
 theorem IsRootOfMultiplicity.iteratedDeriv_div_factorial_ne_zero
     (hα : IsRootOfMultiplicity f α m) : iteratedDeriv m f α / m ! ≠ 0 :=
   div_ne_zero hα.2 (by exact_mod_cast Nat.factorial_ne_zero m)
 
-/-- Near a root of multiplicity `m` (any `m`, including `0`), `f` does not vanish away from `α`. -/
+/-- Let $f$ be of class $C^m$ at $\alpha$, and let $\alpha$ be a root of multiplicity $m$ of $f$,
+for any $m$, including $m = 0$. Then $f(x) \neq 0$ for all $x \neq \alpha$ in a neighbourhood of
+$\alpha$. -/
 theorem IsRootOfMultiplicity.eventually_ne_zero (hf : ContDiffAt ℝ m f α)
     (hα : IsRootOfMultiplicity f α m) : ∀ᶠ x in 𝓝[≠] α, f x ≠ 0 := by
   obtain ⟨h, hh, hhα, hfh⟩ := hα.exists_eq_pow_mul (n := 0) (by simpa using hf)
@@ -275,11 +345,15 @@ theorem IsRootOfMultiplicity.eventually_ne_zero (hf : ContDiffAt ℝ m f α)
   rw [hfh x]
   exact mul_ne_zero (pow_ne_zero _ (sub_ne_zero.2 hxα)) hx
 
-/-- **Error versus residual at a root of multiplicity `m`**, the rigorous content of
-[quarteroni2000numerical] (6.4) and (6.6): as `x → α`,
-`|x - α| / |f x|^{1/m} → (m! / |f^{(m)}(α)|)^{1/m}`. For `m = 1` this is
-`|x - α| / |f x| → 1 / |f'(α)|`, the statement behind `K_abs ≃ 1 / |f'(α)|` in (6.3) and the
-residual stopping test of §6.5. -/
+/-- **Error versus residual at a root of multiplicity $m$.** Let $m \ge 1$, let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^m$ at $\alpha$, and let $\alpha$ be a root
+of multiplicity $m$ of $f$. Then as $x \to \alpha$ with $x \neq \alpha$,
+$$\frac{|x - \alpha|}{|f(x)|^{1/m}} \to \left( \frac{m!}{|f^{(m)}(\alpha)|} \right)^{1/m}.$$
+
+This is the rigorous content of (6.4) and (6.6) of [quarteroni2000numerical]. For $m = 1$ it is
+$|x - \alpha| / |f(x)| \to 1 / |f'(\alpha)|$, the statement behind
+$K_{abs} \simeq 1 / |f'(\alpha)|$ in (6.3) and the residual stopping test of §6.5. The power
+$1/m$ is a real power. -/
 theorem IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α)
     (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => |x - α| / |f x| ^ (1 / (m : ℝ))) (𝓝[≠] α)
@@ -300,9 +374,14 @@ theorem IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow (hm : 1 ≤ m) (hf : C
     one_div (m : ℝ), Real.pow_rpow_inv_natCast (abs_nonneg _) (by omega),
     div_mul_cancel_left₀ hxα, one_div, Real.inv_rpow (abs_nonneg _)]
 
-/-- **The residual bound** [quarteroni2000numerical] (6.5)/(6.6) as an inequality: for every
-constant `c` above the asymptotic one, `|x - α| ≤ c |f x|^{1/m}` for all `x` near `α`. The book's
-`≲` is exactly this reading. For `m = 1`: `∀ c > 1 / |f'(α)|, |x - α| ≤ c |f x|` near `α`. -/
+/-- **The residual bound.** Let $m \ge 1$, let $f \colon \mathbb{R} \to \mathbb{R}$ be of class
+$C^m$ at $\alpha$, and let $\alpha$ be a root of multiplicity $m$ of $f$. Let
+$c > (m! / |f^{(m)}(\alpha)|)^{1/m}$. Then for all $x$ in a neighbourhood of $\alpha$,
+$$|x - \alpha| \le c \, |f(x)|^{1/m}.$$
+
+This is (6.5) and (6.6) of [quarteroni2000numerical] as an inequality: the source's $\lesssim$
+is read in exactly this way. For $m = 1$: for every $c > 1 / |f'(\alpha)|$,
+$|x - \alpha| \le c |f(x)|$ near $\alpha$. -/
 theorem IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow (hm : 1 ≤ m)
     (hf : ContDiffAt ℝ m f α) (hα : IsRootOfMultiplicity f α m) {c : ℝ}
     (hc : (m ! / |iteratedDeriv m f α|) ^ (1 / (m : ℝ)) < c) :
@@ -326,20 +405,25 @@ end Multiplicity
 
 namespace Polynomial
 
-/-- Real polynomial functions are smooth. -/
+/-- For every real polynomial $P$ and every $N \in \mathbb{N} \cup \{\infty, \omega\}$, the function
+$t \mapsto P(t)$ is of class $C^N$ on $\mathbb{R}$. -/
 theorem contDiff_eval (P : ℝ[X]) (N : WithTop ℕ∞) :
     ContDiff ℝ N fun t : ℝ => P.eval t := by
   simpa only [coe_aeval_eq_eval] using P.contDiff_aeval (𝕜 := ℝ) N
 
-/-- A real polynomial function is `C^k` on any set. -/
+/-- For every real polynomial $p$, every $k \in \mathbb{N} \cup \{\infty, \omega\}$ and every set
+$s \subseteq \mathbb{R}$, the function $x \mapsto p(x)$ is of class $C^k$ on $s$. -/
 theorem contDiffOn_eval (p : ℝ[X]) (k : WithTop ℕ∞) (s : Set ℝ) :
     ContDiffOn ℝ k (fun x => p.eval x) s :=
   (by simpa [Polynomial.coe_aeval_eq_eval] using p.contDiff_aeval (𝕜 := ℝ) k :
     ContDiff ℝ k fun x => p.eval x).contDiffOn
 
-/-- For a nonzero real polynomial, `IsRootOfMultiplicity` of its evaluation map is Mathlib's
-`Polynomial.rootMultiplicity`. This lets [quarteroni2000numerical] (6.7) speak of the multiplicity
-of a polynomial root in Mathlib's vocabulary. -/
+/-- Let $p$ be a nonzero real polynomial, let $\alpha \in \mathbb{R}$ and let $m \in \mathbb{N}$.
+Then $\alpha$ is a root of multiplicity $m$ of the function $x \mapsto p(x)$ if and only if
+`Polynomial.rootMultiplicity` of $p$ at $\alpha$ is $m$.
+
+This lets (6.7) of [quarteroni2000numerical] speak of the multiplicity of a polynomial root in
+the vocabulary of Mathlib. -/
 theorem isRootOfMultiplicity_eval_iff {p : ℝ[X]} (hp : p ≠ 0) {α : ℝ} {m : ℕ} :
     IsRootOfMultiplicity (fun x => p.eval x) α m ↔ p.rootMultiplicity α = m := by
   simp only [IsRootOfMultiplicity, iteratedDeriv_eval]

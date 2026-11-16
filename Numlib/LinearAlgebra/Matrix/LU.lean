@@ -17,85 +17,101 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 /-!
 # The LU factorization
 
-The LU factorization as a *specification*: the predicate `Matrix.IsLU A L U` (`L` unit lower
-triangular, `U` upper triangular, `L * U = A`) and everything that is true of the factorization
-independently of how it is computed. The algorithms — the elimination stages of Gaussian
-elimination, the Doolittle recurrence, pivoting and the growth factor — belong to
-`Numlib/LinearAlgebra/Matrix/LU/Elimination` and `…/LU/Pivoting`; the substitution solves to
-`Numlib/Direct/Substitution`; the rounding-error analysis to `Numlib/FloatingPoint/LU`;
-Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
+This file treats the LU factorization as a specification. Let $n$ be a finite linearly ordered index
+set. An **LU factorization** of a square matrix $A$ indexed by $n$ is a pair $(L, U)$ with $L$ unit
+lower triangular, $U$ upper triangular and $LU = A$. The file proves what holds for every such pair,
+independently of how it is computed. The presentation follows [quarteroni2000numerical], §3.3–3.4
+and §3.7–3.8, and [higham2002accuracy], §9.1, §9.5–9.6 and Theorem 13.8. The algorithms are
+elsewhere: Gaussian elimination, the Doolittle recurrence, pivoting and the growth factor in
+`Numlib.LinearAlgebra.Matrix.LU.Elimination` and `Numlib.LinearAlgebra.Matrix.LU.Pivoting`, the
+substitution solves in `Numlib.Direct.Substitution`, the rounding-error analysis in
+`Numlib.FloatingPoint.LU`, and the Cholesky factorization in `Numlib.LinearAlgebra.Matrix.Cholesky`.
+
+For $k \in n$, $A_{\le k}$ and $A_{< k}$ denote the leading principal submatrices with the indices
+$i \le k$ and $i < k$. For sets $P$ and $Q$ of indices, $A_{PQ}$ is the submatrix with rows in $P$
+and columns in $Q$, and $P^c$ is the complement of $P$. The central result is that $A$ has a unique
+LU factorization if and only if every $A_{< k}$ is nonsingular. It is proved for block LU
+factorizations along a labelling $b$ of the indices, and the scalar case is $b = \mathrm{id}$.
+Further results relate the pivots $u_{kk}$ to the leading principal minors, give existence under
+diagonal dominance, show that the factors keep the band and the envelope of $A$, and treat the
+$LDM^T$, $LDL^T$ and rectangular factorizations and the Thomas algorithm for tridiagonal matrices.
 
 ## Main definitions
 
-* `Matrix.leadingPrincipalSubmatrix A k = A.toBlock (· ≤ k) (· ≤ k)`,
-  `Matrix.strictLeadingPrincipalSubmatrix A k = A.toBlock (· < k) (· < k)` and
-  `Matrix.leadingPrincipalMinor`: the leading principal submatrices, indexed by the subtypes
-  `{i // i ≤ k}` and `{i // i < k}` of a finite linear order, with no arithmetic on indices.
-* `Matrix.HasUnitStrictLeadingPrincipalSubmatrices A`: every `A(< k, < k)` is nonsingular, the
-  hypothesis of the LU existence and uniqueness theorem.
-* `Matrix.IsLU A L U`; `Matrix.IsLDM A L D M`, the `L D Mᵀ` factorization (and `L D Lᵀ` when
-  `M = L`).
-* `Matrix.IsBlockUnitLowerTriangular b L`, `Matrix.IsBlockLU b A L U`: block unit lower
-  triangularity and block LU along a labelling `b : n → α` of the indices by a linear order, built
-  on Mathlib's `Matrix.BlockTriangular`; `b = id` is `Matrix.IsLU` (`Matrix.isBlockLU_id_iff`).
-* `Matrix.IsRectLU A L U`: the rectangular (trapezoidal) LU factorization of an `M × N` matrix
-  on `Fin` indices ([golub2013matrix] §3.2.10), which is `Matrix.IsLU` on a square matrix
-  (`Matrix.isRectLU_iff_isLU`).
-* `Matrix.envelope A`, the lower envelope of a matrix; `Matrix.tridiagonalOfNat a b c N`, the
-  tridiagonal matrix with diagonals `a`, `b`, `c`; `Matrix.thomasAlpha`, `Matrix.thomasBeta`,
-  `Matrix.thomasGamma`, the recurrences of the Thomas algorithm, and its factors
-  `Matrix.thomasLower`, `Matrix.thomasUpper`, which are the bidiagonal matrices
-  `Matrix.lowerBidiagonalOf`, `Matrix.upperBidiagonalOf` of the multipliers and the pivots.
+* `Matrix.leadingPrincipalSubmatrix`, `Matrix.strictLeadingPrincipalSubmatrix`,
+  `Matrix.leadingPrincipalMinor`: the submatrices $A_{\le k}$ and $A_{< k}$, and the minor
+  $\det A_{\le k}$.
+* `Matrix.HasUnitStrictLeadingPrincipalSubmatrices`: every $A_{< k}$ is nonsingular, the hypothesis
+  of the existence and uniqueness theorem.
+* `Matrix.IsLU`: $L$ is unit lower triangular, $U$ is upper triangular and $LU = A$.
+* `Matrix.IsLDM`: the factorization $A = L D M^T$ with $L$ and $M$ unit lower triangular and $D$
+  diagonal; $M = L$ gives $A = L D L^T$.
+* `Matrix.IsBlockUnitLowerTriangular`, `Matrix.IsBlockLU`: block unit lower triangular matrices and
+  the block LU factorization along a labelling $b$ of the indices by a linear order.
+* `Matrix.IsRectLU`: the rectangular LU factorization of an $M \times N$ matrix ([golub2013matrix]
+  §3.2.10).
+* `Matrix.envelope`: the lower envelope of a matrix.
+* `Matrix.tridiagonalOfNat`: the tridiagonal matrix with the diagonals $a$, $b$ and $c$.
+* `Matrix.thomasAlpha`, `Matrix.thomasBeta`, `Matrix.thomasGamma`: the pivots, the multipliers and
+  the reciprocal pivots of the Thomas algorithm.
+* `Matrix.thomasLower`, `Matrix.thomasUpper`, `Matrix.lowerBidiagonalOf`,
+  `Matrix.upperBidiagonalOf`: the bidiagonal factors of the Thomas algorithm.
 
 ## Main results
 
-* `Matrix.existsUnique_isBlockLU_iff`: a matrix has a unique block LU factorization along `b` iff
-  its leading principal block submatrices `A(b < a)`, `a` a label, are nonsingular
-  ([quarteroni2000numerical] Theorem 3.7). Existence (`Matrix.exists_isBlockLU_of_forall_isUnit`)
-  is by strong induction on the number of indices, bordering the last block onto the factorization
-  of the leading block (`Matrix.isBlockLU_fromBlocks`, the induction step of the book's proof of
-  Theorem 3.4); uniqueness (`Matrix.IsBlockLU.unique`) is the same induction with the bordering
-  equations `Matrix.IsBlockLU.toBlock_not_left`, `…_not_right`, `…_not_not`; necessity
-  (`Matrix.IsBlockLU.exists_ne_of_not_isUnit`) perturbs a factorization along the left kernel of
-  a singular leading block, as in Example 3.3.
+* `Matrix.existsUnique_isBlockLU_iff`: a matrix has a unique block LU factorization along $b$ if and
+  only if its leading block submatrices $A_{\{b < a\}}$, for the labels $a$ of $b$, are nonsingular
+  ([quarteroni2000numerical] Theorem 3.7).
 * `Matrix.existsUnique_isLU_iff`,
-  `Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix`, `Matrix.IsLU.unique`:
-  [quarteroni2000numerical] Theorem 3.4, [higham2002accuracy] Theorem 9.1, as the case `b = id`.
+  `Matrix.exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix`, `Matrix.IsLU.unique`: the
+  case $b = \mathrm{id}$, [quarteroni2000numerical] Theorem 3.4 and [higham2002accuracy] Theorem
+  9.1.
 * `Matrix.IsLU.det_leadingPrincipalSubmatrix`, `Matrix.IsLU.det_eq_prod_diag`,
   `Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`: the leading principal minors are the
-  products of the pivots, and the pivots are ratios of consecutive minors ((3.39)).
+  products of the pivots, and the pivots are ratios of consecutive minors ([quarteroni2000numerical]
+  (3.39)).
 * `Matrix.exists_isRectLU_of_forall_det_ne_zero`: a rectangular matrix whose leading blocks of order
-  at most `min M N` are nonsingular has a rectangular LU factorization, by bordering with zeros to
-  a square matrix and the block LU factorization along the labelling `i ↦ min i (min M N)`.
-* `Matrix.existsUnique_isLDM` (Theorem 3.5, [golub2013matrix] Theorem 4.1.3, with the *strict*
-  leading principal minors, the last pivot free to vanish), `Matrix.IsLDM.eq_of_isSymm`
-  (`L D Lᵀ`), `Matrix.IsLDM.diag_pos_of_posDef`.
-* `Matrix.exists_isLU_of_isDiagDominant`, `Matrix.exists_isLU_of_isColDiagDominant`: Property 3.2,
-  [higham2002accuracy] Theorem 9.9, for *nonsingular* weakly dominant matrices (the book omits
-  the nonsingularity, which `!![0, 0; 1, 1]` shows is needed), by induction through the Schur
-  complement at the first index (`Matrix.isLU_luLowerOfSchur_luUpperOfSchur`).
-* `Matrix.IsLU.hasUpperBandwidth`, `Matrix.IsLU.hasLowerBandwidth`: Property 3.4, band
-  preservation; `Matrix.IsLU.envelope_eq`: (3.60), the envelope is preserved.
-* `Matrix.isLU_tridiagonal_thomas`: the Thomas identities (3.53) as an LU factorization of a
-  tridiagonal matrix by bidiagonal factors; `Matrix.isBlockLU_fromBlocks_schurComplement`: the
-  two-block case is the Schur complement factorization of §3.8.1.
+  at most $\min(M, N)$ are nonsingular has a rectangular LU factorization.
+* `Matrix.existsUnique_isLDM`, `Matrix.IsLDM.eq_of_isSymm`, `Matrix.IsLDM.diag_pos_of_posDef`:
+  existence and uniqueness of the $LDM^T$ factorization ([quarteroni2000numerical] Theorem 3.5,
+  [golub2013matrix] Theorem 4.1.3), the $LDL^T$ factorization of a symmetric matrix, and positivity
+  of $D$ for a positive definite matrix.
+* `Matrix.exists_isLU_of_isDiagDominant`, `Matrix.exists_isLU_of_isColDiagDominant`: a nonsingular
+  matrix that is weakly diagonally dominant by rows or by columns has an LU factorization
+  ([quarteroni2000numerical] Property 3.2, [higham2002accuracy] Theorem 9.9).
+* `Matrix.IsLU.hasUpperBandwidth`, `Matrix.IsLU.hasLowerBandwidth`, `Matrix.IsLU.envelope_eq`: the
+  factors keep the bandwidths of $A$ ([quarteroni2000numerical] Property 3.4), and $L$ has the
+  envelope of $A$ ([quarteroni2000numerical] (3.60)).
+* `Matrix.isLU_tridiagonal_thomas`: the Thomas recurrences (3.53) of [quarteroni2000numerical] give
+  an LU factorization of a tridiagonal matrix with bidiagonal factors.
+* `Matrix.isBlockLU_fromBlocks_schurComplement`: the block LU factorization with two blocks is the
+  Schur complement factorization of [quarteroni2000numerical] §3.8.1.
+
+## Proof outline
+
+Existence of the block LU factorization is proved by strong induction on the number of indices. The
+last block of labels is bordered onto the factorization of the leading block
+(`Matrix.isBlockLU_fromBlocks`), which is the induction step of the proof of Theorem 3.4 of
+[quarteroni2000numerical]. Uniqueness is the same induction with the bordering equations
+$A_{P^c P} = L_{P^c P} U_{PP}$, $A_{P P^c} = L_{PP} U_{P P^c}$ and $A_{P^c P^c} = L_{P^c P} U_{P
+P^c} + U_{P^c P^c}$. For necessity, a singular leading block gives a vector in the left kernel of
+the corresponding block of $U$, and a perturbation along this vector gives a second factorization,
+as in Example 3.3 of [quarteroni2000numerical]. Existence under diagonal dominance is proved by
+induction through the Schur complement at the first index
+(`Matrix.isLU_luLowerOfSchur_luUpperOfSchur`).
 
 ## Implementation notes
 
-The index type is any `[Fintype n] [LinearOrder n]`, never `Fin N`: the order is all a
-triangular factorization uses, and `Matrix.toBlock` gives the leading blocks without reindexing.
-Lower triangular is Mathlib's `Matrix.IsLowerTriangular = BlockTriangular toDual`, upper triangular
-is `Matrix.IsUpperTriangular = BlockTriangular id`, so that block LU along a labelling `b` is the
-same structure with `id` replaced by `b`, and the scalar theory is derived from the block theory.
-The block theory itself needs only `[DecidableEq n]` on the indices. Where a leading block is
-reindexed (`Equiv.sumCompl` in the bordering step, `Equiv.subtypeSubtypeEquivSubtype` when the
-strict-block hypothesis passes to a leading block), nonsingularity is transported through
-`Matrix.det_submatrix_equiv_self`.
-
-## References
-
-* [quarteroni2000numerical] §3.3–3.4, §3.7–3.8.
-* [higham2002accuracy] §9.1, §9.5–9.6, Theorem 13.8.
+* The index type is any `[Fintype n] [LinearOrder n]`, not `Fin N`. A triangular factorization uses
+  only the order, and `Matrix.toBlock` gives the leading blocks without reindexing.
+* Lower triangular is Mathlib's `Matrix.IsLowerTriangular`, which is `Matrix.BlockTriangular` for
+  `OrderDual.toDual`, and upper triangular is `Matrix.IsUpperTriangular`, which is
+  `Matrix.BlockTriangular` for `id`. A block LU factorization along a labelling $b$ is the same
+  structure with `id` replaced by $b$, and the scalar theory is derived from the block theory. The
+  block theory needs only `[DecidableEq n]` on the indices.
+* Where a leading block is reindexed (`Equiv.sumCompl` in the bordering step, and
+  `Equiv.subtypeSubtypeEquivSubtype` when the hypothesis on the strict leading blocks passes to a
+  leading block), nonsingularity is transported through `Matrix.det_submatrix_equiv_self`.
 -/
 
 open Finset
@@ -112,42 +128,52 @@ section LeadingPrincipal
 
 variable [LinearOrder n]
 
-/-- The leading principal submatrix `A(≤ k, ≤ k)`, indexed by `{i // i ≤ k}`. On `Fin N` with
-`k = ⟨i, _⟩` this is the submatrix `A_{i+1}` of order `i + 1` of [quarteroni2000numerical] §3.3. -/
+/-- The **leading principal submatrix** $A_{\le k}$ of a square matrix $A$ indexed by a linear order
+$n$: the submatrix of the entries $a_{ij}$ with $i \le k$ and $j \le k$.
+
+It is indexed by the subtype `{i // i ≤ k}`. On `Fin N` with $k = i$, it is the submatrix
+$A_{i+1}$ of order $i + 1$ of [quarteroni2000numerical] §3.3. -/
 def leadingPrincipalSubmatrix (A : Matrix n n R) (k : n) :
     Matrix {i // i ≤ k} {i // i ≤ k} R :=
   A.toBlock (· ≤ k) (· ≤ k)
 
-/-- The strict leading principal submatrix `A(< k, < k)`, indexed by `{i // i < k}`. As `k` ranges
-over `n` these are exactly the leading principal submatrices of orders `0, …, N - 1`, which is the
-hypothesis of the existence theorem for the LU factorization ([quarteroni2000numerical] Theorem
-3.4, "`A_i` nonsingular for `i = 1, …, n - 1`"; the order `0` is the empty matrix, a unit). -/
+/-- The **strict leading principal submatrix** $A_{< k}$ of a square matrix $A$ indexed by a linear
+order $n$: the submatrix of the entries $a_{ij}$ with $i < k$ and $j < k$.
+
+It is indexed by the subtype `{i // i < k}`. As $k$ ranges over $n$, these are exactly the
+leading principal submatrices of the orders $0, \dots, N - 1$, where $N$ is the number of
+indices. Their nonsingularity is the hypothesis of the existence theorem for the LU
+factorization, Theorem 3.4 of [quarteroni2000numerical]: "$A_i$ nonsingular for
+$i = 1, \dots, n - 1$". The submatrix of order $0$ is the empty matrix, which is a unit. -/
 def strictLeadingPrincipalSubmatrix (A : Matrix n n R) (k : n) :
     Matrix {i // i < k} {i // i < k} R :=
   A.toBlock (· < k) (· < k)
 
-/-- The strict leading principal submatrices of the transpose are the transposes. -/
+/-- The strict leading principal submatrices of the transpose are the transposes:
+$(A^T)_{< k} = (A_{< k})^T$. -/
 theorem strictLeadingPrincipalSubmatrix_transpose (A : Matrix n n R) (k : n) :
     Aᵀ.strictLeadingPrincipalSubmatrix k = (A.strictLeadingPrincipalSubmatrix k)ᵀ := rfl
 
-/-- The leading principal minor `d_k = det A(≤ k, ≤ k)`. -/
+/-- The **leading principal minor** $d_k = \det A_{\le k}$ of a square matrix $A$ over a commutative
+ring. -/
 noncomputable def leadingPrincipalMinor [Fintype n] [CommRing R] (A : Matrix n n R) (k : n) :
     R :=
   (A.leadingPrincipalSubmatrix k).det
 
-/-- The entries of a leading principal submatrix. -/
+/-- The entries of $A_{\le k}$ are the entries of $A$. -/
 @[simp]
 theorem leadingPrincipalSubmatrix_apply (A : Matrix n n R) (k : n) (i j : {i // i ≤ k}) :
     A.leadingPrincipalSubmatrix k i j = A i j := rfl
 
-/-- The entries of a strict leading principal submatrix. -/
+/-- The entries of $A_{< k}$ are the entries of $A$. -/
 @[simp]
 theorem strictLeadingPrincipalSubmatrix_apply (A : Matrix n n R) (k : n) (i j : {i // i < k}) :
     A.strictLeadingPrincipalSubmatrix k i j = A i j := rfl
 
 omit [LinearOrder n] in
-/-- Reindexing a block along an equivalence of index subtypes: `A.toBlock q q` is the
-`submatrix` of `A.toBlock p p` along `Equiv.subtypeEquivRight`. -/
+/-- Let $P$ and $Q$ be predicates on the indices with $Q(i) \iff P(i)$ for all $i$. Then the
+submatrix of $A$ on $Q$ is the submatrix of $A$ on $P$, reindexed along
+`Equiv.subtypeEquivRight`. -/
 theorem toBlock_eq_submatrix_subtypeEquivRight (A : Matrix n n R) {p q : n → Prop}
     (h : ∀ i, q i ↔ p i) :
     A.toBlock q q = (A.toBlock p p).submatrix (Equiv.subtypeEquivRight h)
@@ -157,15 +183,21 @@ theorem toBlock_eq_submatrix_subtypeEquivRight (A : Matrix n n R) {p q : n → P
 variable [Fintype n]
 
 omit [LinearOrder n] in
-/-- Nonsingularity of a block is invariant under equivalent index predicates. -/
+/-- Let $P$ and $Q$ be predicates on the indices with $Q(i) \iff P(i)$ for all $i$. Then the
+submatrix of $A$ on $Q$ is nonsingular if and only if the submatrix of $A$ on $P$ is
+nonsingular. -/
 theorem isUnit_toBlock_congr [DecidableEq n] [CommRing R] (A : Matrix n n R) {p q : n → Prop}
     [DecidablePred p] [DecidablePred q] (h : ∀ i, q i ↔ p i) :
     IsUnit (A.toBlock q q) ↔ IsUnit (A.toBlock p p) := by
   rw [toBlock_eq_submatrix_subtypeEquivRight A h, isUnit_iff_isUnit_det,
     det_submatrix_equiv_self, ← isUnit_iff_isUnit_det]
 
-/-- If every leading principal submatrix is nonsingular, so is every strict one: `A(< k)` is
-either empty or `A(≤ k')` for the predecessor `k'` of `k`. -/
+/-- Let $A$ be a square matrix over a commutative ring, indexed by a finite linear order. If every
+leading principal submatrix $A_{\le k}$ is nonsingular, then every strict leading principal
+submatrix $A_{< k}$ is nonsingular.
+
+The submatrix $A_{< k}$ is either empty or equal to $A_{\le k'}$ for the predecessor $k'$ of
+$k$. -/
 theorem isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit [CommRing R] {A : Matrix n n R}
     (h : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) (k : n) :
     IsUnit (A.strictLeadingPrincipalSubmatrix k) := by
@@ -180,34 +212,38 @@ theorem isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit [CommRing R] {A 
     rw [isUnit_iff_isUnit_det, det_isEmpty]
     exact isUnit_one
 
-/-- `A.HasUnitStrictLeadingPrincipalSubmatrices`: every strict leading principal submatrix
-`A(< k, < k)` is nonsingular. As `k` ranges over `n` these are the leading principal submatrices
-of orders `0, …, N - 1`, so this is the hypothesis of the existence and uniqueness theorem for the
-LU factorization ([quarteroni2000numerical] Theorem 3.4, "`A_i` nonsingular for
-`i = 1, …, n - 1`"; `Matrix.existsUnique_isLU_iff`). -/
+/-- A square matrix $A$ indexed by a finite linear order **has nonsingular strict leading principal
+submatrices** if $A_{< k}$ is a unit for every index $k$.
+
+As $k$ ranges over the indices, the submatrices $A_{< k}$ are the leading principal submatrices
+of the orders $0, \dots, N - 1$. So this is the hypothesis of the existence and uniqueness
+theorem for the LU factorization, Theorem 3.4 of [quarteroni2000numerical] ("$A_i$ nonsingular
+for $i = 1, \dots, n - 1$"), which is `Matrix.existsUnique_isLU_iff`. -/
 def HasUnitStrictLeadingPrincipalSubmatrices [Semiring R] (A : Matrix n n R) : Prop :=
   ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)
 
-/-- Unfolding `Matrix.HasUnitStrictLeadingPrincipalSubmatrices`. -/
+/-- $A$ has nonsingular strict leading principal submatrices if and only if $A_{< k}$ is a unit for
+every $k$. -/
 theorem hasUnitStrictLeadingPrincipalSubmatrices_iff [Semiring R] {A : Matrix n n R} :
     A.HasUnitStrictLeadingPrincipalSubmatrices ↔
       ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
   Iff.rfl
 
-/-- The strict leading principal submatrix `A(< k, < k)` is nonsingular. -/
+/-- If $A$ has nonsingular strict leading principal submatrices, then $A_{< k}$ is a unit for every
+$k$. -/
 theorem HasUnitStrictLeadingPrincipalSubmatrices.isUnit [Semiring R] {A : Matrix n n R}
     (h : A.HasUnitStrictLeadingPrincipalSubmatrices) (k : n) :
     IsUnit (A.strictLeadingPrincipalSubmatrix k) :=
   h k
 
-/-- Nonsingular leading principal submatrices give nonsingular strict ones
-(`Matrix.isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit`). -/
+/-- If every leading principal submatrix $A_{\le k}$ is nonsingular, then $A$ has nonsingular strict
+leading principal submatrices. -/
 theorem HasUnitStrictLeadingPrincipalSubmatrices.of_forall_isUnit [CommRing R]
     {A : Matrix n n R} (h : ∀ k, IsUnit (A.leadingPrincipalSubmatrix k)) :
     A.HasUnitStrictLeadingPrincipalSubmatrices :=
   isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit h
 
-/-- The strict leading principal submatrices of `Aᵀ` are the transposes of those of `A`. -/
+/-- If $A$ has nonsingular strict leading principal submatrices, then so has $A^T$. -/
 theorem HasUnitStrictLeadingPrincipalSubmatrices.transpose [CommRing R] {A : Matrix n n R}
     (h : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     Aᵀ.HasUnitStrictLeadingPrincipalSubmatrices := fun k => by
@@ -216,8 +252,8 @@ theorem HasUnitStrictLeadingPrincipalSubmatrices.transpose [CommRing R] {A : Mat
 
 end LeadingPrincipal
 
-/-- On `Fin N`, the strict leading principal submatrix `A(< k)` is, up to the reindexing of
-`{i // i < k}` by `Fin k`, the submatrix along `Fin.castLE`: their determinants agree. -/
+/-- On `Fin N`, the determinant of $A_{< k}$ equals the determinant of the submatrix of the first
+$k$ rows and columns of $A$, taken along `Fin.castLE`. -/
 theorem det_strictLeadingPrincipalSubmatrix_castLE [CommRing R] {N : ℕ}
     (A : Matrix (Fin N) (Fin N) R) (k : Fin N) :
     (A.strictLeadingPrincipalSubmatrix k).det =
@@ -236,21 +272,27 @@ section IsLU
 
 variable [LinearOrder n] [Fintype n]
 
-/-- `IsLU A L U`: `L` is unit lower triangular, `U` is upper triangular and `L * U = A`. This is
-the specification every LU algorithm satisfies; theorems about "the LU factorization" are
-theorems about any pair satisfying it ([quarteroni2000numerical] §3.3.1). -/
+/-- An **LU factorization** of a square matrix $A$ indexed by a finite linear order is a pair
+$(L, U)$ such that $L$ is unit lower triangular, $U$ is upper triangular, and
+$$LU = A.$$
+
+Every LU algorithm satisfies this specification, and theorems about "the LU factorization" are
+theorems about every pair that satisfies it ([quarteroni2000numerical] §3.3.1). -/
 structure IsLU [Semiring R] (A L U : Matrix n n R) : Prop where
-  /-- The lower factor is unit lower triangular. -/
+  /-- The lower factor $L$ is unit lower triangular. -/
   isUnitLowerTriangular : L.IsUnitLowerTriangular
-  /-- The upper factor is upper triangular. -/
+  /-- The upper factor $U$ is upper triangular. -/
   isUpperTriangular : U.IsUpperTriangular
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $LU = A$. -/
   mul_eq : L * U = A
 
 variable [Semiring R] {A L U : Matrix n n R}
 
-/-- [quarteroni2000numerical] (3.42): the entry `a_ij` of `A = L U` is `∑_{r ≤ min i j} l_ir u_rj`,
-because `L` vanishes to the right of the diagonal and `U` below it. -/
+/-- Let $A = LU$ be an LU factorization. Then for all indices $i$ and $j$,
+$$a_{ij} = \sum_{r \le \min(i, j)} l_{ir} u_{rj}.$$
+
+This is (3.42) of [quarteroni2000numerical]. The other terms vanish because $L$ is zero to the
+right of the diagonal and $U$ is zero below it. -/
 theorem IsLU.apply_eq_sum (h : IsLU A L U) (i j : n) :
     A i j = ∑ r ∈ univ.filter (· ≤ min i j), L i r * U r j := by
   rw [← h.mul_eq, Matrix.mul_apply]
@@ -263,7 +305,8 @@ theorem IsLU.apply_eq_sum (h : IsLU A L U) (i j : n) :
       (OrderDual.toDual_lt_toDual.2 hir), zero_mul])
   · exact hr (by rw [h.isUpperTriangular hjr, mul_zero])
 
-/-- Splitting a product over `{r ≤ i}` into the product over `{r < i}` and the factor at `i`. -/
+/-- For a function $f$ on the indices with values in a commutative monoid, $\prod_{r \le i} f(r) =
+\left(\prod_{r < i} f(r)\right) f(i)$. -/
 @[to_additive /-- Splitting a sum over `{r ≤ i}` into the sum over `{r < i}` and the term at
 `i`. -/]
 theorem prod_filter_le_eq_mul {M : Type*} [CommMonoid M] (f : n → M) (i : n) :
@@ -273,16 +316,22 @@ theorem prod_filter_le_eq_mul {M : Type*} [CommMonoid M] (f : n → M) (i : n) :
   ext r
   simp [lt_iff_le_and_ne, and_comm]
 
-/-- The upper factor, entry by entry: for `i ≤ j`, `u_ij = a_ij - ∑_{r < i} l_ir u_rj`
-([quarteroni2000numerical] (3.43), first line). -/
+/-- The upper factor, entry by entry. Let $A = LU$ be an LU factorization over a ring. Then for
+$i \le j$,
+$$u_{ij} = a_{ij} - \sum_{r < i} l_{ir} u_{rj}.$$
+
+This is the first line of (3.43) of [quarteroni2000numerical]. -/
 theorem IsLU.upper_apply_eq {R : Type*} [Ring R] {A L U : Matrix n n R} (h : IsLU A L U)
     {i j : n} (hij : i ≤ j) :
     U i j = A i j - ∑ r ∈ univ.filter (· < i), L i r * U r j := by
   rw [h.apply_eq_sum, min_eq_left hij, sum_filter_le_eq_add, h.isUnitLowerTriangular.diag_eq_one,
     one_mul, add_sub_cancel_left]
 
-/-- The lower factor, entry by entry: for `j < i`, `l_ij u_jj = a_ij - ∑_{r < j} l_ir u_rj`
-([quarteroni2000numerical] (3.43), second line). -/
+/-- The lower factor, entry by entry. Let $A = LU$ be an LU factorization over a ring. Then for
+$j < i$,
+$$l_{ij} u_{jj} = a_{ij} - \sum_{r < j} l_{ir} u_{rj}.$$
+
+This is the second line of (3.43) of [quarteroni2000numerical]. -/
 theorem IsLU.lower_apply_mul_diag_eq {R : Type*} [Ring R] {A L U : Matrix n n R} (h : IsLU A L U)
     {i j : n} (hij : j < i) :
     L i j * U j j = A i j - ∑ r ∈ univ.filter (· < j), L i r * U r j := by
@@ -296,32 +345,41 @@ section Block
 
 variable [DecidableEq n] {α : Type*} [LinearOrder α] (b : n → α)
 
-/-- Block unit lower triangular along the labelling `b`: block lower triangular in Mathlib's sense
-(`Matrix.BlockTriangular (OrderDual.toDual ∘ b)`, entries with `b i < b j` vanish) with identity
-diagonal blocks. For `b = id` this is `Matrix.IsUnitLowerTriangular`
-(`Matrix.isBlockUnitLowerTriangular_id_iff`). -/
+/-- Let $b$ be a labelling of the indices by a linear order. A square matrix $L$ is **block unit
+lower triangular** along $b$ if $l_{ij} = 0$ whenever $b_i < b_j$, and $l_{ij} = \delta_{ij}$
+whenever $b_i = b_j$.
+
+The first condition is Mathlib's `Matrix.BlockTriangular (OrderDual.toDual ∘ b)`. For
+$b = \mathrm{id}$ the notion is `Matrix.IsUnitLowerTriangular`, by
+`Matrix.isBlockUnitLowerTriangular_id_iff`. -/
 structure IsBlockUnitLowerTriangular [Zero R] [One R] (L : Matrix n n R) : Prop where
-  /-- The matrix is block lower triangular. -/
+  /-- The matrix is block lower triangular along $b$: $l_{ij} = 0$ whenever $b_i < b_j$. -/
   blockTriangular : L.BlockTriangular (OrderDual.toDual ∘ b)
-  /-- Within a diagonal block the matrix is the identity. -/
+  /-- Within a diagonal block the matrix is the identity: $l_{ij} = \delta_{ij}$ whenever
+  $b_i = b_j$. -/
   apply_eq_one_of_eq : ∀ i j, b i = b j → L i j = (1 : Matrix n n R) i j
 
-/-- `IsBlockLU b A L U`: the block LU factorization of [quarteroni2000numerical] Theorem 3.7
-along the block labelling `b : n → α`, with `L` block unit lower triangular and `U` block upper
-triangular; `b = id` is `Matrix.IsLU` (`Matrix.isBlockLU_id_iff`). The book's `m × m` blocks of
-sizes `n₁, …, n_m` are a monotone `b : Fin N → Fin m`; a general labelling costs nothing and
-covers the substructuring orderings of [quarteroni2000numerical] §3.9.2. -/
+/-- A **block LU factorization** of a square matrix $A$ along a labelling $b$ of the indices by a
+linear order is a pair $(L, U)$ such that $L$ is block unit lower triangular along $b$, $U$ is
+block upper triangular along $b$ ($u_{ij} = 0$ whenever $b_j < b_i$), and $LU = A$.
+
+This is the factorization of Theorem 3.7 of [quarteroni2000numerical]. For $b = \mathrm{id}$ it
+is `Matrix.IsLU`, by `Matrix.isBlockLU_id_iff`. The $m \times m$ blocks of the sizes
+$n_1, \dots, n_m$ in the source are a monotone labelling $b : \{0, \dots, N - 1\} \to \{0,
+\dots, m - 1\}$. A general labelling costs nothing and also covers the substructuring orderings
+of [quarteroni2000numerical] §3.9.2. -/
 structure IsBlockLU [Fintype n] [Semiring R] (A L U : Matrix n n R) : Prop where
-  /-- The lower factor is block unit lower triangular. -/
+  /-- The lower factor is block unit lower triangular along $b$. -/
   isBlockUnitLowerTriangular : IsBlockUnitLowerTriangular b L
-  /-- The upper factor is block upper triangular. -/
+  /-- The upper factor is block upper triangular along $b$: $u_{ij} = 0$ whenever $b_j < b_i$. -/
   blockTriangular : U.BlockTriangular b
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $LU = A$. -/
   mul_eq : L * U = A
 
 variable {b}
 
-/-- Relabelling along a strictly monotone map does not change block unit lower triangularity. -/
+/-- Let $f$ be a strictly monotone map between linear orders. A matrix is block unit lower
+triangular along $f \circ b$ if and only if it is block unit lower triangular along $b$. -/
 theorem isBlockUnitLowerTriangular_comp_iff [Zero R] [One R] {β : Type*} [LinearOrder β]
     {f : β → α} (hf : StrictMono f) {b : n → β} {L : Matrix n n R} :
     IsBlockUnitLowerTriangular (f ∘ b) L ↔ IsBlockUnitLowerTriangular b L := by
@@ -335,7 +393,9 @@ theorem isBlockUnitLowerTriangular_comp_iff [Zero R] [One R] {β : Type*} [Linea
         (hf.lt_iff_lt.1 (OrderDual.toDual_lt_toDual.1 hij))),
       fun i j hij => hd i j (hf.injective hij)⟩
 
-/-- Relabelling along a strictly monotone map does not change block LU. -/
+/-- Let $f$ be a strictly monotone map between linear orders. Then $(L, U)$ is a block LU
+factorization of $A$ along $f \circ b$ if and only if it is a block LU factorization of $A$
+along $b$. -/
 theorem isBlockLU_comp_iff [Fintype n] [Semiring R] {β : Type*} [LinearOrder β]
     {f : β → α} (hf : StrictMono f) {b : n → β} {A L U : Matrix n n R} :
     IsBlockLU (f ∘ b) A L U ↔ IsBlockLU b A L U := by
@@ -350,9 +410,9 @@ theorem isBlockLU_comp_iff [Fintype n] [Semiring R] {β : Type*} [LinearOrder β
 variable [Fintype n]
 
 omit [DecidableEq n] in
-/-- Within a diagonal block, the product of two block lower triangular matrices is the product
-of the diagonal blocks: in `∑ r, M i r * N r j` with `b i = b j`, a nonzero term needs
-`b i ≤ b r ≤ b j`. -/
+/-- Let $M$ and $N$ be block lower triangular along $b$, and let $b_i = b_j$. Then
+$$(MN)_{ij} = \sum_{r : b_r = b_i} m_{ir} n_{rj},$$
+because a nonzero term needs $b_i \le b_r \le b_j$. -/
 theorem BlockTriangular.mul_apply_of_eq [NonUnitalNonAssocSemiring R] {M N : Matrix n n R}
     (hM : M.BlockTriangular (OrderDual.toDual ∘ b)) (hN : N.BlockTriangular (OrderDual.toDual ∘ b))
     {i j : n} (hij : b i = b j) :
@@ -366,7 +426,8 @@ theorem BlockTriangular.mul_apply_of_eq [NonUnitalNonAssocSemiring R] {M N : Mat
   · exact hr (by rw [hM (show (OrderDual.toDual ∘ b) r < (OrderDual.toDual ∘ b) i from
       OrderDual.toDual_lt_toDual.2 hlt), zero_mul])
 
-/-- The product of two block unit lower triangular matrices is block unit lower triangular. -/
+/-- The product of two matrices that are block unit lower triangular along $b$ is block unit lower
+triangular along $b$. -/
 theorem IsBlockUnitLowerTriangular.mul [NonAssocSemiring R] {L₁ L₂ : Matrix n n R}
     (h₁ : IsBlockUnitLowerTriangular b L₁) (h₂ : IsBlockUnitLowerTriangular b L₂) :
     IsBlockUnitLowerTriangular b (L₁ * L₂) where
@@ -380,13 +441,15 @@ theorem IsBlockUnitLowerTriangular.mul [NonAssocSemiring R] {L₁ L₂ : Matrix 
       h₁.apply_eq_one_of_eq i i rfl, one_apply_eq, one_mul, h₂.apply_eq_one_of_eq i j hij]
 
 omit [Fintype n] in
-/-- The identity is block unit lower triangular. -/
+/-- The identity matrix is block unit lower triangular along every labelling. -/
 theorem isBlockUnitLowerTriangular_one [Zero R] [One R] :
     IsBlockUnitLowerTriangular b (1 : Matrix n n R) :=
   ⟨blockTriangular_one, fun _ _ _ => rfl⟩
 
-/-- A block unit lower triangular matrix has determinant `1`: its determinant is the product of
-the determinants of its diagonal blocks, which are identity matrices. -/
+/-- A block unit lower triangular matrix $L$ over a commutative ring has $\det L = 1$.
+
+The determinant is the product of the determinants of the diagonal blocks, which are identity
+matrices. -/
 theorem IsBlockUnitLowerTriangular.det_eq_one [CommRing R] {L : Matrix n n R}
     (hL : IsBlockUnitLowerTriangular b L) : L.det = 1 := by
   rw [hL.blockTriangular.det]
@@ -398,16 +461,19 @@ theorem IsBlockUnitLowerTriangular.det_eq_one [CommRing R] {L : Matrix n n R}
     exact congrFun (congrFun (toBlock_one_self (fun i => (OrderDual.toDual ∘ b) i = a)) i) j
   rw [this, det_one]
 
-/-- A block unit lower triangular matrix is a unit. -/
+/-- A block unit lower triangular matrix over a commutative ring is a unit. -/
 theorem IsBlockUnitLowerTriangular.isUnit [CommRing R] {L : Matrix n n R}
     (hL : IsBlockUnitLowerTriangular b L) : IsUnit L :=
   (isUnit_iff_isUnit_det L).2 (by rw [hL.det_eq_one]; exact isUnit_one)
 
-/-! #### Restriction to a leading block of labels -/
+/-! ### Restriction to a leading block of labels -/
 
 omit [DecidableEq n] in
-/-- The product of two matrices, restricted to a pair of blocks, is the sum over the two
-complementary middle blocks (`Matrix.toBlock_mul_eq_add` without commutativity). -/
+/-- For sets $P$, $Q$ and $S$ of indices and square matrices $A$ and $B$, the block of the product
+on $P \times S$ is
+$$(AB)_{PS} = A_{PQ} B_{QS} + A_{P Q^c} B_{Q^c S}.$$
+
+This is `Matrix.toBlock_mul_eq_add` without commutativity. -/
 theorem toBlock_mul_eq_add' [NonUnitalNonAssocSemiring R] (p : n → Prop) (q : n → Prop)
     [DecidablePred q] (r : n → Prop) (A B : Matrix n n R) :
     (A * B).toBlock p r =
@@ -420,8 +486,8 @@ theorem toBlock_mul_eq_add' [NonUnitalNonAssocSemiring R] (p : n → Prop) (q : 
 variable {p : n → Prop} [DecidablePred p]
 
 omit [DecidableEq n] [Fintype n] [DecidablePred p] in
-/-- A block lower triangular matrix vanishes on the block `(p, ¬p)` when `p` is closed under
-decreasing the label. -/
+/-- Let $L$ be block lower triangular along $b$, and let $P$ be a set of indices that is closed
+under decreasing the label: $i \in P$ and $b_j \le b_i$ imply $j \in P$. Then $L_{P P^c} = 0$. -/
 theorem BlockTriangular.toBlock_not_eq_zero [Zero R] {L : Matrix n n R}
     (hL : L.BlockTriangular (OrderDual.toDual ∘ b)) (hp : ∀ i j, p i → b j ≤ b i → p j) :
     L.toBlock p (fun i => ¬p i) = 0 := by
@@ -431,8 +497,8 @@ theorem BlockTriangular.toBlock_not_eq_zero [Zero R] {L : Matrix n n R}
   exact j.2 (hp i.1 j.1 i.2 h)
 
 omit [DecidableEq n] [Fintype n] [DecidablePred p] in
-/-- A block upper triangular matrix vanishes on the block `(¬p, p)` when `p` is closed under
-decreasing the label. -/
+/-- Let $U$ be block upper triangular along $b$, and let $P$ be a set of indices that is closed
+under decreasing the label: $i \in P$ and $b_j \le b_i$ imply $j \in P$. Then $U_{P^c P} = 0$. -/
 theorem BlockTriangular.not_toBlock_eq_zero [Zero R] {U : Matrix n n R} (hU : U.BlockTriangular b)
     (hp : ∀ i j, p i → b j ≤ b i → p j) : U.toBlock (fun i => ¬p i) p = 0 := by
   ext i j
@@ -441,7 +507,8 @@ theorem BlockTriangular.not_toBlock_eq_zero [Zero R] {U : Matrix n n R} (hU : U.
   exact i.2 (hp j.1 i.1 j.2 h)
 
 omit [Fintype n] [DecidablePred p] in
-/-- The identity restricted to a diagonal block is the identity. -/
+/-- Let $L$ be block unit lower triangular along $b$, and let $P$ be a set of indices whose
+complement lies in a single block: $b_i = b_j$ for all $i, j \notin P$. Then $L_{P^c P^c} = I$. -/
 theorem IsBlockUnitLowerTriangular.toBlock_eq_one [Zero R] [One R] {L : Matrix n n R}
     (hL : IsBlockUnitLowerTriangular b L) (hq : ∀ i j, ¬p i → ¬p j → b i = b j) :
     L.toBlock (fun i => ¬p i) (fun i => ¬p i) = 1 := by
@@ -451,9 +518,13 @@ theorem IsBlockUnitLowerTriangular.toBlock_eq_one [Zero R] [One R] {L : Matrix n
 
 variable [Semiring R] {A L U : Matrix n n R}
 
-/-- A block LU factorization restricts to every leading block of labels: for `p` closed under
-decreasing the label, `A.toBlock p p = L.toBlock p p * U.toBlock p p` and the restricted factors
-keep their shapes. This is [quarteroni2000numerical] (3.38) read downwards. -/
+/-- A block LU factorization restricts to every leading block of labels. Let $(L, U)$ be a block LU
+factorization of $A$ along $b$, and let $P$ be a set of indices that is closed under decreasing
+the label: $i \in P$ and $b_j \le b_i$ imply $j \in P$. Then $(L_{PP}, U_{PP})$ is a block LU
+factorization of $A_{PP}$ along the restriction of $b$ to $P$.
+
+In particular $A_{PP} = L_{PP} U_{PP}$. This is (3.38) of [quarteroni2000numerical], read
+downwards. -/
 theorem IsBlockLU.toBlock (h : IsBlockLU b A L U) (hp : ∀ i j, p i → b j ≤ b i → p j) :
     IsBlockLU (b ∘ Subtype.val) (A.toBlock p p) (L.toBlock p p) (U.toBlock p p) where
   isBlockUnitLowerTriangular :=
@@ -467,16 +538,20 @@ theorem IsBlockLU.toBlock (h : IsBlockLU b A L U) (hp : ∀ i j, p i → b j ≤
       h.isBlockUnitLowerTriangular.blockTriangular.toBlock_not_eq_zero hp, Matrix.zero_mul,
       add_zero]
 
-/-- The block `(¬p, p)` of `A = L U`, for `p` closed under decreasing the label: the bordering
-equation `A₂₁ = L₂₁ U₁₁`. -/
+/-- A bordering equation of the block LU factorization. Let $(L, U)$ be a block LU factorization of
+$A$ along $b$, and let $P$ be a set of indices that is closed under decreasing the label. Then
+$$A_{P^c P} = L_{P^c P} U_{PP}.$$
+-/
 theorem IsBlockLU.toBlock_not_left (h : IsBlockLU b A L U)
     (hp : ∀ i j, p i → b j ≤ b i → p j) :
     A.toBlock (fun i => ¬p i) p = L.toBlock (fun i => ¬p i) p * U.toBlock p p := by
   rw [← h.mul_eq, toBlock_mul_eq_add' _ p, h.blockTriangular.not_toBlock_eq_zero hp,
     Matrix.mul_zero, add_zero]
 
-/-- The block `(p, ¬p)` of `A = L U`, for `p` closed under decreasing the label: the bordering
-equation `A₁₂ = L₁₁ U₁₂`. -/
+/-- A bordering equation of the block LU factorization. Let $(L, U)$ be a block LU factorization of
+$A$ along $b$, and let $P$ be a set of indices that is closed under decreasing the label. Then
+$$A_{P P^c} = L_{PP} U_{P P^c}.$$
+-/
 theorem IsBlockLU.toBlock_not_right (h : IsBlockLU b A L U)
     (hp : ∀ i j, p i → b j ≤ b i → p j) :
     A.toBlock p (fun i => ¬p i) = L.toBlock p p * U.toBlock p (fun i => ¬p i) := by
@@ -484,8 +559,11 @@ theorem IsBlockLU.toBlock_not_right (h : IsBlockLU b A L U)
     h.isBlockUnitLowerTriangular.blockTriangular.toBlock_not_eq_zero hp, Matrix.zero_mul,
     add_zero]
 
-/-- The block `(¬p, ¬p)` of `A = L U` when `¬p` is a single block: the bordering equation
-`A₂₂ = L₂₁ U₁₂ + U₂₂`. -/
+/-- A bordering equation of the block LU factorization. Let $(L, U)$ be a block LU factorization of
+$A$ along $b$, and let $P$ be a set of indices whose complement lies in a single block:
+$b_i = b_j$ for all $i, j \notin P$. Then
+$$A_{P^c P^c} = L_{P^c P} U_{P P^c} + U_{P^c P^c}.$$
+-/
 theorem IsBlockLU.toBlock_not_not (h : IsBlockLU b A L U)
     (hq : ∀ i j, ¬p i → ¬p j → b i = b j) :
     A.toBlock (fun i => ¬p i) (fun i => ¬p i) =
@@ -500,7 +578,8 @@ section BlockId
 
 variable [LinearOrder n] [DecidableEq n]
 
-/-- Along `b = id`, block unit lower triangular is unit lower triangular. -/
+/-- Along the labelling $b = \mathrm{id}$, a matrix is block unit lower triangular if and only if it
+is unit lower triangular. -/
 theorem isBlockUnitLowerTriangular_id_iff [Zero R] [One R] {L : Matrix n n R} :
     IsBlockUnitLowerTriangular id L ↔ L.IsUnitLowerTriangular := by
   constructor
@@ -511,7 +590,8 @@ theorem isBlockUnitLowerTriangular_id_iff [Zero R] [One R] {L : Matrix n n R} :
     obtain rfl : i = j := hij
     simp [hd]
 
-/-- Along `b = id`, block LU is LU. -/
+/-- Along the labelling $b = \mathrm{id}$, $(L, U)$ is a block LU factorization of $A$ if and only
+if it is an LU factorization of $A$. -/
 theorem isBlockLU_id_iff [Fintype n] [Semiring R] {A L U : Matrix n n R} :
     IsBlockLU id A L U ↔ IsLU A L U :=
   ⟨fun h => ⟨isBlockUnitLowerTriangular_id_iff.1 h.isBlockUnitLowerTriangular,
@@ -527,29 +607,37 @@ section Det
 
 variable [LinearOrder n] [Fintype n] [CommRing R] {A L U : Matrix n n R}
 
-/-- An LU factorization restricts to every leading principal block
-([quarteroni2000numerical] (3.38)). -/
+/-- An LU factorization restricts to every leading principal submatrix. If $A = LU$ is an LU
+factorization, then $A_{\le k} = L_{\le k} U_{\le k}$ is an LU factorization for every $k$.
+
+This is (3.38) of [quarteroni2000numerical]. -/
 theorem IsLU.toBlock_le (h : IsLU A L U) (k : n) :
     IsLU (A.leadingPrincipalSubmatrix k) (L.leadingPrincipalSubmatrix k)
       (U.leadingPrincipalSubmatrix k) :=
   isBlockLU_id_iff.1 ((isBlockLU_comp_iff (b := id) (Subtype.strictMono_coe (· ≤ k))).1
     ((isBlockLU_id_iff.2 h).toBlock (p := (· ≤ k)) fun _ _ hi hji => hji.trans hi))
 
-/-- An LU factorization restricts to every strict leading principal block. -/
+/-- An LU factorization restricts to every strict leading principal submatrix. If $A = LU$ is an LU
+factorization, then $A_{< k} = L_{< k} U_{< k}$ is an LU factorization for every $k$. -/
 theorem IsLU.toBlock_lt (h : IsLU A L U) (k : n) :
     IsLU (A.strictLeadingPrincipalSubmatrix k) (L.strictLeadingPrincipalSubmatrix k)
       (U.strictLeadingPrincipalSubmatrix k) :=
   isBlockLU_id_iff.1 ((isBlockLU_comp_iff (b := id) (Subtype.strictMono_coe (· < k))).1
     ((isBlockLU_id_iff.2 h).toBlock (p := (· < k)) fun _ _ hi hji => hji.trans_lt hi))
 
-/-- The determinant of `A = L U` is the product of the diagonal of `U`
-([quarteroni2000numerical], after Example 3.3). -/
+/-- Let $A = LU$ be an LU factorization over a commutative ring. Then
+$$\det A = \prod_i u_{ii}.$$
+
+This is stated after Example 3.3 of [quarteroni2000numerical]. -/
 theorem IsLU.det_eq_prod_diag (h : IsLU A L U) : A.det = ∏ i, U i i := by
   rw [← h.mul_eq, det_mul, h.isUnitLowerTriangular.det_eq_one, one_mul,
     det_of_isUpperTriangular h.isUpperTriangular]
 
-/-- [quarteroni2000numerical] (3.39): the leading principal minors of `A = L U` are the products
-of the leading pivots, `det A(≤ k) = ∏_{i ≤ k} u_ii`. -/
+/-- **Equation (3.39)** of [quarteroni2000numerical]. Let $A = LU$ be an LU factorization over a
+commutative ring. Then the leading principal minors are the products of the leading pivots: for
+every $k$,
+$$\det A_{\le k} = \prod_{i \le k} u_{ii}.$$
+-/
 theorem IsLU.det_leadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
     (A.leadingPrincipalSubmatrix k).det = ∏ i ∈ univ.filter (· ≤ k), U i i := by
   -- the two `DecidableEq {i // i ≤ k}` instances in play are propositionally equal
@@ -558,8 +646,10 @@ theorem IsLU.det_leadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
     rfl
   rw [h1, Finset.prod_subtype (p := (· ≤ k)) (univ.filter (· ≤ k)) (by simp) fun i => U i i]
 
-/-- The strict leading principal minors of `A = L U` are the products of the strict leading
-pivots, `det A(< k) = ∏_{i < k} u_ii`. -/
+/-- Let $A = LU$ be an LU factorization over a commutative ring. Then the strict leading principal
+minors are the products of the pivots before $k$: for every $k$,
+$$\det A_{< k} = \prod_{i < k} u_{ii}.$$
+-/
 theorem IsLU.det_strictLeadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
     (A.strictLeadingPrincipalSubmatrix k).det = ∏ i ∈ univ.filter (· < k), U i i := by
   have h1 : (A.strictLeadingPrincipalSubmatrix k).det = ∏ i : {i // i < k}, U i i := by
@@ -569,16 +659,19 @@ theorem IsLU.det_strictLeadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
 
 variable {K : Type*} [Field K] {A L U : Matrix n n K}
 
-/-- If the strict leading principal submatrix `A(< k)` of `A = L U` is nonsingular, the pivots
-before `k` are nonzero. -/
+/-- Let $A = LU$ be an LU factorization over a field. If $A_{< k}$ is nonsingular, then
+$u_{jj} \neq 0$ for every $j < k$. -/
 theorem IsLU.diag_upper_ne_zero_of_lt (h : IsLU A L U) {k : n}
     (hk : IsUnit (A.strictLeadingPrincipalSubmatrix k)) {j : n} (hj : j < k) : U j j ≠ 0 := by
   have hdet := (isUnit_iff_ne_zero.1 ((isUnit_iff_isUnit_det _).1 hk))
   rw [h.det_strictLeadingPrincipalSubmatrix, Finset.prod_ne_zero_iff] at hdet
   exact hdet j (mem_filter.2 ⟨mem_univ _, hj⟩)
 
-/-- The pivots are ratios of consecutive leading principal minors,
-`u_kk = det A(≤ k) / det A(< k)` ([quarteroni2000numerical] §3.3.1, after (3.39)). -/
+/-- The pivots are ratios of consecutive leading principal minors. Let $A = LU$ be an LU
+factorization over a field, and suppose that $\det A_{< k} \neq 0$. Then
+$$u_{kk} = \frac{\det A_{\le k}}{\det A_{< k}}.$$
+
+This is stated after (3.39) in §3.3.1 of [quarteroni2000numerical]. -/
 theorem IsLU.diag_upper_eq_div_leadingPrincipalMinor (h : IsLU A L U) {k : n}
     (hk : (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) :
     U k k = (A.leadingPrincipalSubmatrix k).det / (A.strictLeadingPrincipalSubmatrix k).det := by
@@ -587,14 +680,15 @@ theorem IsLU.diag_upper_eq_div_leadingPrincipalMinor (h : IsLU A L U) {k : n}
 
 end Det
 
-/-! ### Existence and uniqueness of the block LU factorization -/
-
 /-! ### Leading principal submatrices on `Fin N` -/
 
 section Fin
 
-/-- On `Fin N`, the leading principal submatrix `A(≤ k)` is, up to the reindexing of `{i // i ≤ k}`
-by `Fin (k + 1)`, the submatrix along `Fin.castLE`, so the two have the same determinant. -/
+/-- On `Fin N`, the determinant of the leading principal submatrix $A_{\le k}$ equals the
+determinant of the submatrix of the first $k + 1$ rows and columns of $A$, taken along
+`Fin.castLE`.
+
+The two matrices agree up to the reindexing of `{i // i ≤ k}` by `Fin (k + 1)`. -/
 theorem det_leadingPrincipalSubmatrix_fin {R : Type*} [CommRing R] {N : ℕ}
     (A : Matrix (Fin N) (Fin N) R) (k : Fin N) :
     (A.leadingPrincipalSubmatrix k).det =
@@ -614,14 +708,19 @@ end Fin
 
 section BlockTridiagonal
 
-/-- **The block bandwidth of the block LU factors** ([quarteroni2000numerical] §3.8.3). For a
-block tridiagonal `A` on `Fin N` with blocks labelled by a map `b : Fin N → Fin m` — the blocks
-`A_{ij}` with `|i - j| ≥ 2` vanish — whose leading principal block submatrices are nonsingular,
-the block LU factors are block bidiagonal: `L` has only its diagonal and first subdiagonal
-blocks, `U` only its diagonal and first superdiagonal blocks. This is the block form of
-`Matrix.IsLU.hasLowerBandwidth`; as there, the clause for `U` needs no hypothesis on the leading
-blocks, while the clause for `L` does (`Matrix.IsBlockLU.toBlock`,
-`Matrix.IsBlockLU.toBlock_not_left`, `Matrix.IsBlockLU.toBlock_not_right`). -/
+/-- **The block LU factors of a block tridiagonal matrix are block bidiagonal.** Let $A$ be a square
+matrix of order $N$ over a field, and let $b : \{0, \dots, N - 1\} \to \{0, \dots, m - 1\}$ be a
+labelling of the indices. Suppose that $A$ is block tridiagonal along $b$, that is, $a_{ij} = 0$
+whenever $b_j + 1 < b_i$ or $b_i + 1 < b_j$. Suppose also that the leading block
+$A_{\{b \le k\}}$ of the indices $i$ with $b_i \le k$ is nonsingular for every $k < m$. If
+$(L, U)$ is a block LU factorization of $A$ along $b$, then $l_{ij} = 0$ whenever
+$b_j + 1 < b_i$, and $u_{ij} = 0$ whenever $b_i + 1 < b_j$.
+
+This follows §3.8.3 of [quarteroni2000numerical]. Thus $L$ has only its diagonal and first
+subdiagonal blocks, and $U$ only its diagonal and first superdiagonal blocks. It is the block
+form of `Matrix.IsLU.hasLowerBandwidth`. As there, the clause for $U$ needs no hypothesis on the
+leading blocks, and the clause for $L$ needs it. The proof uses `Matrix.IsBlockLU.toBlock`,
+`Matrix.IsBlockLU.toBlock_not_left` and `Matrix.IsBlockLU.toBlock_not_right`. -/
 theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N → Fin m} {K : Type*}
     [Field K] {A L U : Matrix (Fin N) (Fin N) K} (h : IsBlockLU b A L U)
     (htriL : ∀ i j, (b j : ℕ) + 1 < b i → A i j = 0)
@@ -666,18 +765,23 @@ theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N →
 
 end BlockTridiagonal
 
+/-! ### Existence and uniqueness of the block LU factorization -/
+
 section BlockExistence
 
 variable {α : Type*} [LinearOrder α]
 
-/-- Reindexed along `Equiv.sumCompl p`, a square matrix is the `fromBlocks` of its four blocks. -/
+/-- For a set $P$ of indices, the square matrix $A$ reindexed along `Equiv.sumCompl P` is the block
+matrix
+$$\begin{bmatrix} A_{PP} & A_{P P^c} \\ A_{P^c P} & A_{P^c P^c} \end{bmatrix}.$$
+-/
 theorem submatrix_sumCompl_eq_fromBlocks (A : Matrix n n R) (p : n → Prop) [DecidablePred p] :
     A.submatrix (Equiv.sumCompl p) (Equiv.sumCompl p) =
       fromBlocks (A.toBlock p p) (A.toBlock p fun i => ¬p i)
         (A.toBlock (fun i => ¬p i) p) (A.toBlock (fun i => ¬p i) fun i => ¬p i) := by
   ext (i | i) (j | j) <;> rfl
 
-/-- Two matrices agree when their four blocks along a predicate agree. -/
+/-- Two square matrices are equal if their four blocks along a set $P$ of indices are equal. -/
 theorem ext_of_toBlock {M N : Matrix n n R} (p : n → Prop)
     (h₁₁ : M.toBlock p p = N.toBlock p p)
     (h₁₂ : M.toBlock p (fun i => ¬p i) = N.toBlock p (fun i => ¬p i))
@@ -694,7 +798,8 @@ theorem ext_of_toBlock {M N : Matrix n n R} (p : n → Prop)
 
 variable {m : Type*} [DecidableEq m] [DecidableEq n]
 
-/-- Reindexing along an equivalence relabels a block unit lower triangular matrix. -/
+/-- Let $e$ be an equivalence of index types. The matrix $L$ reindexed along $e$ is block unit lower
+triangular along $b$ if and only if $L$ is block unit lower triangular along $b \circ e$. -/
 theorem isBlockUnitLowerTriangular_reindex_iff [Zero R] [One R] {e : m ≃ n} {L : Matrix m m R}
     {b : n → α} :
     IsBlockUnitLowerTriangular b (reindex e e L) ↔ IsBlockUnitLowerTriangular (b ∘ e) L := by
@@ -712,7 +817,9 @@ theorem isBlockUnitLowerTriangular_reindex_iff [Zero R] [One R] {e : m ≃ n} {L
 
 variable [Fintype m] [Fintype n]
 
-/-- Reindexing along an equivalence relabels a block LU factorization. -/
+/-- Let $e$ be an equivalence of index types. The matrices $A$, $L$, $U$ reindexed along $e$ form a
+block LU factorization along $b$ if and only if $A$, $L$, $U$ form a block LU factorization
+along $b \circ e$. -/
 theorem isBlockLU_reindex_iff [Semiring R] {e : m ≃ n} {A L U : Matrix m m R} {b : n → α} :
     IsBlockLU b (reindex e e A) (reindex e e L) (reindex e e U) ↔ IsBlockLU (b ∘ e) A L U := by
   constructor
@@ -726,11 +833,18 @@ theorem isBlockLU_reindex_iff [Semiring R] {e : m ≃ n} {A L U : Matrix m m R} 
 
 variable {K : Type*} [Field K]
 
-/-- **The bordering step.** If the leading block `A₁₁` has a block LU factorization `L' U'` with
-both factors nonsingular, and the trailing labels form a single block above all the leading
-ones, then the whole matrix has the block LU factorization
-`[[L', 0], [A₂₁ U'⁻¹, 1]] · [[U', L'⁻¹ A₁₂], [0, A₂₂ - A₂₁ U'⁻¹ L'⁻¹ A₁₂]]`
-([quarteroni2000numerical] §3.8.1, and the induction step of Theorem 3.4). -/
+/-- **The bordering step.** Let $c$ be a labelling of the indices of $m \sqcup n$ such that every
+label of $m$ is smaller than every label of $n$, and all indices of $n$ have the same label. Let
+$A_{11}$, $A_{12}$, $A_{21}$ and $A_{22}$ be the blocks of a matrix over a field, and suppose
+that $A_{11} = L' U'$ is a block LU factorization along the restriction of $c$ to $m$ with $L'$
+and $U'$ nonsingular. Then
+$$\begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix} = \begin{bmatrix} L' & 0 \\
+  A_{21} U'^{-1} & I \end{bmatrix} \begin{bmatrix} U' & L'^{-1} A_{12} \\ 0 & A_{22} - A_{21}
+  U'^{-1} L'^{-1} A_{12} \end{bmatrix}$$
+is a block LU factorization along $c$.
+
+This is §3.8.1 of [quarteroni2000numerical], and the induction step of the proof of Theorem 3.4
+there. -/
 theorem isBlockLU_fromBlocks {c : m ⊕ n → α} (hc : ∀ x y, c (Sum.inl x) < c (Sum.inr y))
     (hc' : ∀ y y', c (Sum.inr y) = c (Sum.inr y'))
     {A₁₁ L' U' : Matrix m m K} {A₁₂ : Matrix m n K} {A₂₁ : Matrix n m K} {A₂₂ : Matrix n n K}
@@ -766,8 +880,9 @@ theorem isBlockLU_fromBlocks {c : m ⊕ n → α} (hc : ∀ x y, c (Sum.inl x) <
     rw [h.mul_eq, mul_nonsing_inv_cancel_left _ _ hLd, nonsing_inv_mul_cancel_right _ _ hUd,
       add_sub_cancel]
 
-/-- The strict leading block hypothesis of the block LU theorem passes to the leading block
-`{i | b i < k}`, relabelled by `b`. -/
+/-- Suppose that the strict leading blocks $A_{\{b < a\}}$ are nonsingular for all labels $a$ of
+$b$. Then, for every $k$, the leading block $A_{\{b < k\}}$, labelled by the restriction of $b$,
+satisfies the same hypothesis. -/
 theorem forall_isUnit_toBlock_comp_val {b : n → α} {A : Matrix n n K}
     (hA : ∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a))) (k : α) :
     ∀ a ∈ Set.range (b ∘ (Subtype.val : {i // b i < k} → n)),
@@ -786,9 +901,13 @@ theorem forall_isUnit_toBlock_comp_val {b : n → α} {A : Matrix n n K}
   exact hA _ ⟨i.1, rfl⟩
 
 omit [Fintype n] [DecidableEq n] in
-/-- Existence of the block LU factorization, by strong induction on the number of indices: the
-last block of labels is bordered onto the factorization of the leading block
-(`Matrix.isBlockLU_fromBlocks`). -/
+/-- Existence of the block LU factorization for matrices with $N$ indices. Let $n$ have $N$
+elements, let $b$ label the indices by a linear order, and let $A$ be a square matrix over a
+field indexed by $n$. If the strict leading block $A_{\{b < a\}}$ is nonsingular for every label
+$a$ of $b$, then $A$ has a block LU factorization along $b$.
+
+The proof is by strong induction on $N$. The last block of labels is bordered onto the
+factorization of the leading block by `Matrix.isBlockLU_fromBlocks`. -/
 theorem exists_isBlockLU_of_card (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [DecidableEq n] (b : n → α) (A : Matrix n n K),
       Fintype.card n = N → (∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a))) →
@@ -825,19 +944,26 @@ theorem exists_isBlockLU_of_card (N : ℕ) :
   · exact x.2.trans_eq (hbk y.1 y.2).symm
   · exact (hbk y.1 y.2).trans (hbk y'.1 y'.2).symm
 
-/-- **Existence of the block LU factorization** ([quarteroni2000numerical] Theorem 3.7, the
-existence half): if every strict leading block `A(b < a)`, `a` a label, is nonsingular, then `A`
-has a block LU factorization along `b`. -/
+/-- **Theorem 3.7** of [quarteroni2000numerical], existence. Let $A$ be a square matrix over a
+field, indexed by a finite set with a labelling $b$ by a linear order. If the strict leading
+block $A_{\{b < a\}}$, made of the indices $i$ with $b_i < a$, is nonsingular for every label
+$a$ of $b$, then $A$ has a block LU factorization along $b$. -/
 theorem exists_isBlockLU_of_forall_isUnit {b : n → α} {A : Matrix n n K}
     (hA : ∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a))) :
     ∃ L U, IsBlockLU b A L U :=
   exists_isBlockLU_of_card _ b A rfl hA
 
 omit [DecidableEq m] [Fintype m] in
-/-- **Uniqueness of the block LU factorization** ([quarteroni2000numerical] Theorem 3.7, the
-uniqueness half), by the same induction as the existence: on the leading block the two
-factorizations agree by induction, and the bordering equations
-(`Matrix.IsBlockLU.toBlock_not_left`, `…_right`, `…_not_not`) determine the last block. -/
+/-- Uniqueness of the block LU factorization for matrices with $N$ indices. Let $n$ have $N$
+elements, let $b$ label the indices by a linear order, and let $A$ be a square matrix over a
+field indexed by $n$ whose strict leading blocks $A_{\{b < a\}}$ are nonsingular for all labels
+$a$ of $b$. If $(L_1, U_1)$ and $(L_2, U_2)$ are block LU factorizations of $A$ along $b$, then
+$L_1 = L_2$ and $U_1 = U_2$.
+
+The proof is the induction of the existence proof. On the leading block the two factorizations
+agree by induction, and the bordering equations `Matrix.IsBlockLU.toBlock_not_left`,
+`Matrix.IsBlockLU.toBlock_not_right` and `Matrix.IsBlockLU.toBlock_not_not` determine the last
+block. -/
 theorem isBlockLU_unique_of_card (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [DecidableEq n] (b : n → α) (A L₁ U₁ L₂ U₂ : Matrix n n K),
       Fintype.card n = N → (∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a))) →
@@ -890,17 +1016,24 @@ theorem isBlockLU_unique_of_card (N : ℕ) :
       h₂.isBlockUnitLowerTriangular.toBlock_eq_one hq]
   · rw [h₁.blockTriangular.not_toBlock_eq_zero hpd, h₂.blockTriangular.not_toBlock_eq_zero hpd]
 
-/-- **Uniqueness of the block LU factorization** ([quarteroni2000numerical] Theorem 3.7): two
-block LU factorizations of a matrix whose strict leading blocks are nonsingular coincide. -/
+/-- **Theorem 3.7** of [quarteroni2000numerical], uniqueness. Let $A$ be a square matrix over a
+field, indexed by a finite set with a labelling $b$ by a linear order, and suppose that the
+strict leading block $A_{\{b < a\}}$ is nonsingular for every label $a$ of $b$. If $(L_1, U_1)$
+and $(L_2, U_2)$ are block LU factorizations of $A$ along $b$, then $L_1 = L_2$ and $U_1 = U_2$. -/
 theorem IsBlockLU.unique {b : n → α} {A L₁ U₁ L₂ U₂ : Matrix n n K}
     (hA : ∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a)))
     (h₁ : IsBlockLU b A L₁ U₁) (h₂ : IsBlockLU b A L₂ U₂) : L₁ = L₂ ∧ U₁ = U₂ :=
   isBlockLU_unique_of_card _ b A L₁ U₁ L₂ U₂ rfl hA h₁ h₂
 
-/-- If some strict leading block `A(b < a)` of `A = L U` is singular, the factorization is not
-unique: with `y ≠ 0` in the left kernel of `U(b < a)` and `E` the matrix with the single nonzero
-row `y` (padded) at an index of label `a`, `(L (1 + E), (1 - E) U)` is a second factorization
-([quarteroni2000numerical] Theorem 3.4, the necessity half, and Example 3.3). -/
+/-- Without nonsingular leading blocks, the block LU factorization is not unique. Let $(L, U)$ be a
+block LU factorization of $A$ along $b$ over a field, and let $a$ be a label of $b$ such that
+the strict leading block $A_{\{b < a\}}$ is singular. Then there is a second block LU
+factorization $(L', U')$ of $A$ along $b$ with $L' \neq L$.
+
+This is the necessity half of Theorem 3.4 of [quarteroni2000numerical], and Example 3.3 there.
+Take $y \neq 0$ in the left kernel of the block $U_{\{b < a\}}$, and let $E$ be the matrix whose
+only nonzero row is $y$, padded with zeros, at an index with the label $a$. Then
+$(L(I + E), (I - E)U)$ is a second factorization. -/
 theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
     (h : IsBlockLU b A L U) {a : α} (ha : a ∈ Set.range b)
     (hA : ¬ IsUnit (A.toBlock (b · < a) (b · < a))) :
@@ -970,12 +1103,16 @@ theorem IsBlockLU.exists_ne_of_not_isUnit {b : n → α} {A L U : Matrix n n K}
       h.isBlockUnitLowerTriangular.apply_eq_one_of_eq i₀ i₀ rfl, one_apply_eq, one_mul] at this
     exact hj (by simpa [hE, j.2] using this)
 
-/-- **[quarteroni2000numerical] Theorem 3.7** (and Theorem 3.4 as the case `b = id`): a matrix has
-a unique block LU factorization along the labelling `b` if and only if the leading principal
-block submatrices `A(b < a)`, one for each label `a` attained by `b`, are nonsingular. The book
-says "the `m - 1` dominant principal block minors": the block for the smallest label is empty
-and the block for the largest is `A` without its last block row and column, so the range
-condition is exactly the book's `m - 1` blocks. -/
+/-- **Theorem 3.7** of [quarteroni2000numerical]. Let $A$ be a square matrix over a field, indexed
+by a finite set with a labelling $b$ by a linear order. Then $A$ has a unique block LU
+factorization along $b$ if and only if the strict leading block $A_{\{b < a\}}$, made of the
+indices $i$ with $b_i < a$, is nonsingular for every label $a$ attained by $b$.
+
+Theorem 3.4 of [quarteroni2000numerical] is the case $b = \mathrm{id}$. The source states the
+condition for "the $m - 1$ dominant principal block minors". The block for the smallest label is
+empty, and the block for the largest label is $A$ without its last block row and column, so the
+condition on the labels in the range of $b$ is exactly the condition on the $m - 1$ blocks of
+the source. -/
 theorem existsUnique_isBlockLU_iff (b : n → α) (A : Matrix n n K) :
     (∃! LU : Matrix n n K × Matrix n n K, IsBlockLU b A LU.1 LU.2) ↔
       ∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a)) := by
@@ -998,34 +1135,42 @@ section Theorem34
 
 variable [LinearOrder n] [Fintype n] {K : Type*} [Field K]
 
-/-- The strict leading block hypothesis along `b = id` is the nonsingularity of the strict
-leading principal submatrices. -/
+/-- Along the labelling $b = \mathrm{id}$, the strict leading blocks of $A$ are nonsingular if and
+only if $A$ has nonsingular strict leading principal submatrices. -/
 theorem forall_isUnit_toBlock_id_iff {A : Matrix n n K} :
     (∀ a ∈ Set.range (id : n → n), IsUnit (A.toBlock (id · < a) (id · < a))) ↔
       A.HasUnitStrictLeadingPrincipalSubmatrices := by
   simp only [Set.range_id, Set.mem_univ, true_implies, id]
   exact Iff.rfl
 
-/-- **Existence of the LU factorization** ([quarteroni2000numerical] Theorem 3.4, the existence
-half; [higham2002accuracy] Theorem 9.1): if the strict leading principal submatrices are
-nonsingular, `A` has a unit lower LU factorization. -/
+/-- **Theorem 3.4** of [quarteroni2000numerical], existence. Let $A$ be a square matrix over a
+field, indexed by a finite linear order. If every strict leading principal submatrix $A_{< k}$
+is nonsingular, then $A$ has an LU factorization $A = LU$ with $L$ unit lower triangular and $U$
+upper triangular.
+
+This is also Theorem 9.1 of [higham2002accuracy]. -/
 theorem exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix {A : Matrix n n K}
     (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : ∃ L U, IsLU A L U := by
   obtain ⟨L, U, h⟩ :=
     exists_isBlockLU_of_forall_isUnit (b := id) (forall_isUnit_toBlock_id_iff.2 hA)
   exact ⟨L, U, isBlockLU_id_iff.1 h⟩
 
-/-- **Uniqueness of the LU factorization** ([quarteroni2000numerical] Theorem 3.4, the uniqueness
-half): two unit lower LU factorizations of a matrix with nonsingular strict leading principal
-submatrices coincide. -/
+/-- **Theorem 3.4** of [quarteroni2000numerical], uniqueness. Let $A$ be a square matrix over a
+field, indexed by a finite linear order, such that every strict leading principal submatrix
+$A_{< k}$ is nonsingular. If $A = L_1 U_1$ and $A = L_2 U_2$ are LU factorizations, then
+$L_1 = L_2$ and $U_1 = U_2$. -/
 theorem IsLU.unique {A L₁ U₁ L₂ U₂ : Matrix n n K} (h₁ : IsLU A L₁ U₁) (h₂ : IsLU A L₂ U₂)
     (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : L₁ = L₂ ∧ U₁ = U₂ :=
   IsBlockLU.unique (b := id) (forall_isUnit_toBlock_id_iff.2 hA) (isBlockLU_id_iff.2 h₁)
     (isBlockLU_id_iff.2 h₂)
 
-/-- **[quarteroni2000numerical] Theorem 3.4** ([higham2002accuracy] Theorem 9.1): the unit lower
-LU factorization of `A` exists and is unique if and only if the strict leading principal
-submatrices of `A` (the book's `A_i`, `i = 1, …, n - 1`) are nonsingular. -/
+/-- **Theorem 3.4** of [quarteroni2000numerical]. Let $A$ be a square matrix over a field, indexed
+by a finite linear order. Then $A$ has a unique LU factorization $A = LU$, with $L$ unit lower
+triangular and $U$ upper triangular, if and only if every strict leading principal submatrix
+$A_{< k}$ is nonsingular.
+
+This is also Theorem 9.1 of [higham2002accuracy]. The submatrices $A_{< k}$ are the matrices
+$A_i$, $i = 1, \dots, n - 1$, of the source, together with the empty matrix. -/
 theorem existsUnique_isLU_iff (A : Matrix n n K) :
     (∃! LU : Matrix n n K × Matrix n n K, IsLU A LU.1 LU.2) ↔
       A.HasUnitStrictLeadingPrincipalSubmatrices := by
@@ -1040,24 +1185,28 @@ section RectLU
 
 variable {M N P : ℕ}
 
-/-- **The rectangular LU factorization** ([golub2013matrix] §3.2.10): `A = L U` with
-`A : Matrix (Fin M) (Fin N) R`, `L : Matrix (Fin M) (Fin P) R` unit lower trapezoidal and
-`U : Matrix (Fin P) (Fin N) R` upper trapezoidal. The index comparisons are on the `ℕ` values,
-since the index types differ (the rectangular band vocabulary of
-`Numlib/LinearAlgebra/Matrix/Band`); on a square `Fin N` it is `Matrix.IsLU`
-(`Matrix.isRectLU_iff_isLU`). -/
+/-- A **rectangular LU factorization** of $A \in R^{M \times N}$ is a pair $(L, U)$ with
+$L \in R^{M \times P}$ and $U \in R^{P \times N}$ such that $L$ is unit lower trapezoidal
+($l_{ij} = 0$ for $i < j$ and $l_{ii} = 1$), $U$ is upper trapezoidal ($u_{ij} = 0$ for
+$j < i$), and $LU = A$.
+
+This is the factorization of [golub2013matrix] §3.2.10. The index comparisons are on the
+natural-number values, because the index types differ. They use the rectangular band predicates
+of `Numlib.LinearAlgebra.Matrix.Band`. On a square `Fin N` it is `Matrix.IsLU`, by
+`Matrix.isRectLU_iff_isLU`. -/
 structure IsRectLU [Semiring R] (A : Matrix (Fin M) (Fin N) R) (L : Matrix (Fin M) (Fin P) R)
     (U : Matrix (Fin P) (Fin N) R) : Prop where
-  /-- The lower factor is lower trapezoidal: `L i j = 0` for `i < j`. -/
+  /-- The lower factor is lower trapezoidal: $l_{ij} = 0$ for $i < j$. -/
   hasUpperBandwidthRect : L.HasUpperBandwidthRect 0
-  /-- The lower factor has ones on its diagonal. -/
+  /-- The lower factor has ones on its diagonal: $l_{ij} = 1$ for $i = j$. -/
   apply_eq_one : ∀ (i : Fin M) (j : Fin P), (i : ℕ) = j → L i j = 1
-  /-- The upper factor is upper trapezoidal: `U i j = 0` for `j < i`. -/
+  /-- The upper factor is upper trapezoidal: $u_{ij} = 0$ for $j < i$. -/
   hasLowerBandwidthRect : U.HasLowerBandwidthRect 0
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $LU = A$. -/
   mul_eq : L * U = A
 
-/-- On a square `Fin N` the rectangular LU factorization is the LU factorization. -/
+/-- For square matrices of order $N$ and $P = N$, $(L, U)$ is a rectangular LU factorization of $A$
+if and only if it is an LU factorization of $A$. -/
 theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
     IsRectLU A L U ↔ IsLU A L U := by
   constructor
@@ -1073,11 +1222,14 @@ theorem isRectLU_iff_isLU [Semiring R] {A L U : Matrix (Fin N) (Fin N) R} :
     · rw [Fin.ext hij, h.isUnitLowerTriangular.diag_eq_one]
     · rw [add_zero] at hij; exact hij
 
-/-- **Cutting a square factorization to a rectangular one**: if `L U = S` on `Fin K`, the leading
-`M × N` block of `S` is `A`, the leading `M × P` block of `L` is unit lower trapezoidal, the
-leading `P × N` block of `U` is upper trapezoidal, and the inner indices from `P` on contribute
-nothing to the leading block, then the cut factors are a rectangular LU factorization of `A`. The
-common last step of the existence proofs that pad `A` to a square. -/
+/-- **Cutting a square factorization to a rectangular one.** Let $L U = S$ for square matrices of
+order $K$, and let $M, N, P \le K$. Suppose that the leading $M \times N$ block of $S$ is $A$,
+that the leading $M \times P$ block of $L$ is unit lower trapezoidal, that the leading
+$P \times N$ block of $U$ is upper trapezoidal, and that $l_{ir} u_{rj} = 0$ for all $i < M$,
+$j < N$ and $r \ge P$. Then the leading $M \times P$ block of $L$ and the leading $P \times N$
+block of $U$ form a rectangular LU factorization of $A$.
+
+This is the last step of the existence proofs that border $A$ to a square matrix. -/
 theorem isRectLU_submatrix_of_mul_eq [Semiring R] {K : ℕ} {A : Matrix (Fin M) (Fin N) R}
     {S L U : Matrix (Fin K) (Fin K) R} (hLU : L * U = S) (hM : M ≤ K) (hN : N ≤ K) (hP : P ≤ K)
     (hA : ∀ i j, S (Fin.castLE hM i) (Fin.castLE hN j) = A i j)
@@ -1099,21 +1251,25 @@ theorem isRectLU_submatrix_of_mul_eq [Semiring R] {K : ℕ} {A : Matrix (Fin M) 
     by_contra hcon
     exact hr ⟨⟨r, by omega⟩, rfl⟩
 
-/-- The bordered square matrix of the rectangular existence proof: `A` in the leading `M × N`
-corner of a `max M N` square, zero elsewhere. -/
+/-- The square matrix of order $\max(M, N)$ that has $A$ in its leading $M \times N$ block and zeros
+elsewhere. -/
 private def rectBorder [Zero R] (A : Matrix (Fin M) (Fin N) R) :
     Matrix (Fin (max M N)) (Fin (max M N)) R :=
   fun i j => if h : (i : ℕ) < M ∧ (j : ℕ) < N then A ⟨i, h.1⟩ ⟨j, h.2⟩ else 0
 
 variable {K : Type*} [Field K]
 
-/-- **Existence of the rectangular LU factorization** ([golub2013matrix] §3.2.10, "guaranteed to
-exist if `A(1:k, 1:k)` is nonsingular for `k = 1:min{m, n}`"): if every leading block of `A` of
-order at most `min M N` is nonsingular, `A` has a rectangular LU factorization with
-`P = min M N`. Proof: the matrix bordered by zeros to a `max M N` square has a block LU
-factorization along the labelling `i ↦ min i (min M N)` (singletons, then one trailing block),
-whose strict leading blocks are the leading blocks of `A`; the leading `M × P` part of the lower
-factor and `P × N` part of the upper factor are the rectangular factors. -/
+/-- **Existence of the rectangular LU factorization.** Let $A \in K^{M \times N}$ over a field $K$.
+If the leading $(k+1) \times (k+1)$ block of $A$ is nonsingular for every $k$ with
+$k + 1 \le \min(M, N)$, then $A$ has a rectangular LU factorization with $P = \min(M, N)$.
+
+This is the existence statement of [golub2013matrix] §3.2.10: the factorization is "guaranteed
+to exist if $A(1{:}k, 1{:}k)$ is nonsingular for $k = 1{:}\min\{m, n\}$". The proof borders $A$
+with zeros to a square matrix of order $\max(M, N)$. This matrix has a block LU factorization
+along the labelling $i \mapsto \min(i, \min(M, N))$, which has singletons followed by one
+trailing block, and whose strict leading blocks are the leading blocks of $A$. The leading
+$M \times P$ block of the lower factor and the leading $P \times N$ block of the upper factor
+are the rectangular factors. -/
 theorem exists_isRectLU_of_forall_det_ne_zero {A : Matrix (Fin M) (Fin N) K}
     (hA : ∀ k (hk : k + 1 ≤ min M N),
       (A.submatrix (Fin.castLE (hk.trans (min_le_left _ _)))
@@ -1163,23 +1319,26 @@ theorem exists_isRectLU_of_forall_det_ne_zero {A : Matrix (Fin M) (Fin N) K}
 
 end RectLU
 
-/-! ### The `L D Mᵀ` and `L D Lᵀ` factorizations -/
+/-! ### The $LDM^T$ and $LDL^T$ factorizations -/
 
 section LDM
 
 variable [LinearOrder n] [Fintype n]
 
-/-- `IsLDM A L D M`: `L` and `M` unit lower triangular, `D` diagonal and `L * D * Mᵀ = A`, the
-`L D Mᵀ` factorization of [quarteroni2000numerical] §3.4.1; `M = L` is the `L D Lᵀ`
+/-- An **$LDM^T$ factorization** of a square matrix $A$ indexed by a finite linear order is a triple
+$(L, D, M)$ such that $L$ and $M$ are unit lower triangular, $D$ is diagonal, and
+$$L D M^T = A.$$
+
+This is the factorization of [quarteroni2000numerical] §3.4.1. The case $M = L$ is the $LDL^T$
 factorization of §3.4.2. -/
 structure IsLDM [Semiring R] (A L D M : Matrix n n R) : Prop where
-  /-- The left factor is unit lower triangular. -/
+  /-- The left factor $L$ is unit lower triangular. -/
   isUnitLowerTriangular_left : L.IsUnitLowerTriangular
-  /-- The middle factor is diagonal. -/
+  /-- The middle factor $D$ is diagonal. -/
   isDiag : D.IsDiag
-  /-- The right factor (before transposition) is unit lower triangular. -/
+  /-- The right factor $M$, before transposition, is unit lower triangular. -/
   isUnitLowerTriangular_right : M.IsUnitLowerTriangular
-  /-- The factors multiply to `A`. -/
+  /-- The factors multiply to $A$: $L D M^T = A$. -/
   mul_eq : L * D * Mᵀ = A
 
 omit [Fintype n] in
@@ -1193,7 +1352,7 @@ omit [Fintype n] in
 theorem IsDiag.isUpperTriangular [Zero R] {D : Matrix n n R} (hD : D.IsDiag) :
     D.IsUpperTriangular := fun _ _ hij => hD (ne_of_gt hij)
 
-/-- An `L D Mᵀ` factorization is the LU factorization with `U = D Mᵀ`. -/
+/-- An $LDM^T$ factorization $A = L D M^T$ gives the LU factorization $A = L (D M^T)$. -/
 theorem IsLDM.isLU [Semiring R] {A L D M : Matrix n n R} (h : IsLDM A L D M) :
     IsLU A L (D * Mᵀ) :=
   ⟨h.isUnitLowerTriangular_left,
@@ -1203,13 +1362,17 @@ theorem IsLDM.isLU [Semiring R] {A L D M : Matrix n n R} (h : IsLDM A L D M) :
 
 variable {K : Type*} [Field K]
 
-/-- **[quarteroni2000numerical] Theorem 3.5**, at the generality of [golub2013matrix]
-Theorem 4.1.3: if every *strict* leading principal submatrix of `A` is nonsingular, then `A` has a
-unique `L D Mᵀ` factorization (`A` itself may be singular, and then the last pivot vanishes). From
-the LU factorization `A = L U` take `D = diag U` and `Mᵀ = D⁻¹ U` off the diagonal: every pivot but
-the last is nonzero (`Matrix.IsLU.diag_upper_ne_zero_of_lt`), and a vanishing last pivot comes
-with a zero last row. Uniqueness follows from the uniqueness of the LU factorization, since
-`L (D Mᵀ)` is one. The book says "all the principal minors"; its proof uses the leading ones. -/
+/-- **Theorem 3.5** of [quarteroni2000numerical], in the generality of [golub2013matrix] Theorem
+4.1.3. Let $A$ be a square matrix over a field, indexed by a finite linear order. If every
+strict leading principal submatrix $A_{< k}$ is nonsingular, then $A$ has a unique $LDM^T$
+factorization.
+
+The matrix $A$ itself may be singular, and then the last pivot vanishes. The source says "all
+the principal minors", but its proof uses only the leading ones. The proof takes the LU
+factorization $A = LU$, $D = \operatorname{diag}(u_{ii})$ and $M^T = D^{-1} U$ off the diagonal.
+Every pivot except the last is nonzero by `Matrix.IsLU.diag_upper_ne_zero_of_lt`, and a
+vanishing last pivot comes with a zero last row of $U$. Uniqueness follows from the uniqueness
+of the LU factorization, since $L (D M^T)$ is an LU factorization. -/
 theorem existsUnique_isLDM {A : Matrix n n K}
     (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) :
     ∃! LDM : Matrix n n K × Matrix n n K × Matrix n n K, IsLDM A LDM.1 LDM.2.1 LDM.2.2 := by
@@ -1263,10 +1426,12 @@ theorem existsUnique_isLDM {A : Matrix n n K}
       · rw [ite_eq_right hij.ne', hLU.isUpperTriangular hij, mul_zero,
           h'.isUnitLowerTriangular_right.isLowerTriangular (OrderDual.toDual_lt_toDual.2 hij)]
 
-/-- The `L D Lᵀ` factorization ([quarteroni2000numerical] §3.4.2): for a symmetric matrix with
-nonsingular strict leading principal submatrices, the two unit triangular factors of the `L D Mᵀ`
-factorization coincide, since transposing `A = L D Mᵀ` gives the second factorization
-`A = M D Lᵀ`. -/
+/-- **The $LDL^T$ factorization.** Let $A$ be a symmetric square matrix over a field, indexed by a
+finite linear order, such that every strict leading principal submatrix $A_{< k}$ is
+nonsingular. If $A = L D M^T$ is an $LDM^T$ factorization, then $M = L$.
+
+This is §3.4.2 of [quarteroni2000numerical]. Transposition of $A = L D M^T$ gives a second
+$LDM^T$ factorization $A = M D L^T$, and the factorization is unique. -/
 theorem IsLDM.eq_of_isSymm {A L D M : Matrix n n K} (h : IsLDM A L D M) (hs : A.IsSymm)
     (hA : A.HasUnitStrictLeadingPrincipalSubmatrices) : M = L := by
   have h' : IsLDM A M D L := ⟨h.isUnitLowerTriangular_right, h.isDiag,
@@ -1278,10 +1443,13 @@ theorem IsLDM.eq_of_isSymm {A L D M : Matrix n n K} (h : IsLDM A L D M) (hs : A.
   have h₂ := huniq (M, D, L) h'
   exact (congrArg Prod.fst h₂).trans (congrArg Prod.fst h₁).symm
 
-/-- In the `L D Lᵀ` factorization of a positive definite matrix the diagonal entries of `D` are
-positive ([quarteroni2000numerical] §3.4.2): `D = L⁻¹ A L⁻ᵀ` is congruent to `A`, hence positive
-definite, and the diagonal of a positive definite matrix is positive. Stated for a field with a
-trivial star, where `ᵀ` is `ᴴ`. -/
+/-- Let $K$ be a partially ordered field with the trivial star operation, and let $A$ be a square
+matrix over $K$ indexed by a finite linear order. If $A = L D L^T$ is an $LDL^T$ factorization
+and $A$ is positive definite, then $d_{ii} > 0$ for every $i$.
+
+This follows §3.4.2 of [quarteroni2000numerical]. The matrix $D = L^{-1} A L^{-T}$ is congruent
+to $A$, hence positive definite, and the diagonal of a positive definite matrix is positive.
+With the trivial star, the transpose $L^T$ is the conjugate transpose $L^H$. -/
 theorem IsLDM.diag_pos_of_posDef {K : Type*} [Field K] [PartialOrder K] [StarRing K]
     [TrivialStar K] {A L D : Matrix n n K} (h : IsLDM A L D L) (hA : A.PosDef) (i : n) :
     0 < D i i := by
@@ -1303,32 +1471,42 @@ section DiagDominant
 
 variable [LinearOrder n] [Fintype n] {K : Type*} [Field K]
 
-/-- Splitting a sum over `n` into the term at `p` and the sum over the other indices. -/
+/-- For an index $p$ and a function $f$ on the indices with values in a commutative monoid,
+$\sum_j f(j) = f(p) + \sum_{j \neq p} f(j)$. -/
 theorem sum_eq_add_sum_subtype_ne {M : Type*} [AddCommMonoid M] (p : n) (f : n → M) :
     ∑ j, f j = f p + ∑ j : {j // j ≠ p}, f j :=
   Fintype.sum_eq_add_sum_subtype_ne f p
 
-/-- The unit lower factor of `A` bordered from the lower factor `L'` of the Schur complement of
-`A` at the pivot `p`: the identity row at `p`, the multipliers `a_ip / a_pp` in column `p`, and
-`L'` elsewhere. -/
+/-- The unit lower factor of $A$ bordered from the lower factor $L'$ of the Schur complement of $A$
+at the pivot $p$. Its row $p$ is the unit row $e_p^T$, its entry in column $p$ and row
+$i \neq p$ is the multiplier $a_{ip} / a_{pp}$, and its other entries are those of $L'$.
+
+When $a_{pp} = 0$, the multipliers are $0$, by the Lean convention $x / 0 = 0$. -/
 noncomputable def luLowerOfSchur (A : Matrix n n K) (p : n)
     (L' : Matrix {i // i ≠ p} {i // i ≠ p} K) : Matrix n n K :=
   of fun i j =>
     if hi : i = p then (if j = p then 1 else 0)
     else if hj : j = p then A i p / A p p else L' ⟨i, hi⟩ ⟨j, hj⟩
 
-/-- The upper factor of `A` bordered from the upper factor `U'` of the Schur complement of `A` at
-the pivot `p`: the pivot row of `A` at `p`, zeros below it in column `p`, and `U'` elsewhere. -/
+/-- The upper factor of $A$ bordered from the upper factor $U'$ of the Schur complement of $A$ at
+the pivot $p$. Its row $p$ is row $p$ of $A$, its other entries in column $p$ are zero, and its
+other entries are those of $U'$. -/
 noncomputable def luUpperOfSchur (A : Matrix n n K) (p : n)
     (U' : Matrix {i // i ≠ p} {i // i ≠ p} K) : Matrix n n K :=
   of fun i j => if hi : i = p then A p j else if hj : j = p then 0 else U' ⟨i, hi⟩ ⟨j, hj⟩
 
-/-- **One step of Gaussian elimination as a factorization step**, with a zero pivot allowed when its
-whole column vanishes: if `p` is the first index, `a_pp ≠ 0` or column `p` is zero, and the Schur
-complement of `A` at `p` has the LU factorization `L' U'`, then `A` has the LU factorization
-`Matrix.luLowerOfSchur A p L' * Matrix.luUpperOfSchur A p U'`. For a zero column the multipliers
-`a_ip / a_pp` are `0` (junk division), which is what lets pivoting skip a zero column; the case
-`a_pp ≠ 0` is `Matrix.isLU_luLowerOfSchur_luUpperOfSchur`. -/
+/-- **One step of Gaussian elimination as a factorization step, with a zero pivot column allowed.**
+Let $A$ be a square matrix over a field, indexed by a finite linear order with first index $p$.
+Suppose that $a_{pp} \neq 0$ or the whole column $p$ of $A$ is zero. Let $S$ be the Schur
+complement of $A$ at $p$, with the entries $a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$ for
+$i, j \neq p$, and let $S = L' U'$ be an LU factorization. Then $A = L U$ is an LU
+factorization, with $L$ = `Matrix.luLowerOfSchur A p L'` and $U$ =
+`Matrix.luUpperOfSchur A p U'`.
+
+For a zero column the multipliers $a_{ip} / a_{pp}$ are $0$, by the Lean convention $x / 0 = 0$,
+and this lets pivoting skip a zero column. The case $a_{pp} \neq 0$ is
+`Matrix.isLU_luLowerOfSchur_luUpperOfSchur`. The Schur complement is
+`Matrix.schurComplementSingle`. -/
 theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
     (hpp : A p p = 0 → ∀ i, A i p = 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
     (h : IsLU (A.schurComplementSingle p) L' U') :
@@ -1384,20 +1562,28 @@ theorem isLU_luLowerOfSchur_luUpperOfSchur' {A : Matrix n n K} {p : n} (hp : ∀
     rw [hS, div_eq_mul_inv]
     ring
 
-/-- **One step of Gaussian elimination as a factorization step**: if `p` is the first index,
-`a_pp ≠ 0` and the Schur complement of `A` at `p` has the LU factorization `L' U'`, then `A` has
-the LU factorization `Matrix.luLowerOfSchur A p L' * Matrix.luUpperOfSchur A p U'`
-([quarteroni2000numerical] §3.8.1, "if `A₁₁` were a scalar"). -/
+/-- **One step of Gaussian elimination as a factorization step.** Let $A$ be a square matrix over a
+field, indexed by a finite linear order with first index $p$, and suppose that $a_{pp} \neq 0$.
+Let $S$ be the Schur complement of $A$ at $p$, with the entries
+$a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$ for $i, j \neq p$, and let $S = L' U'$ be an LU
+factorization. Then $A = L U$ is an LU factorization, with $L$ = `Matrix.luLowerOfSchur A p L'`
+and $U$ = `Matrix.luUpperOfSchur A p U'`.
+
+This is the case "if $A_{11}$ were a scalar" of [quarteroni2000numerical] §3.8.1. -/
 theorem isLU_luLowerOfSchur_luUpperOfSchur {A : Matrix n n K} {p : n} (hp : ∀ i, p ≤ i)
     (hpp : A p p ≠ 0) {L' U' : Matrix {i // i ≠ p} {i // i ≠ p} K}
     (h : IsLU (A.schurComplementSingle p) L' U') :
     IsLU A (luLowerOfSchur A p L') (luUpperOfSchur A p U') :=
   isLU_luLowerOfSchur_luUpperOfSchur' hp (fun h0 => absurd h0 hpp) h
 
-/-- The existence half of [quarteroni2000numerical] Property 3.2 for rows, by induction on the
-number of indices: the Schur complement at the first index of a nonsingular weakly row dominant
-matrix is again nonsingular and weakly row dominant, so it factors, and the factorization extends
-by `Matrix.isLU_luLowerOfSchur_luUpperOfSchur`. -/
+/-- Existence of the LU factorization under row diagonal dominance, for matrices with $N$ indices.
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be a square matrix over
+$\mathbb{K}$ indexed by a linear order with $N$ elements. If $A$ is nonsingular and weakly
+diagonally dominant by rows, then $A$ has an LU factorization.
+
+The proof is by induction on $N$. The Schur complement of $A$ at the first index is again
+nonsingular and weakly diagonally dominant by rows, so it has an LU factorization, and
+`Matrix.isLU_luLowerOfSchur_luUpperOfSchur` extends it to $A$. -/
 theorem exists_isLU_of_isDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [LinearOrder n] (A : Matrix n n 𝕜), Fintype.card n = N →
       IsUnit A → A.IsDiagDominant → ∃ L U, IsLU A L U := by
@@ -1417,17 +1603,29 @@ theorem exists_isLU_of_isDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N : 
     (by convert hA.schurComplementSingle hpp)
   exact ⟨_, _, isLU_luLowerOfSchur_luUpperOfSchur hp hpp h⟩
 
-/-- **[quarteroni2000numerical] Property 3.2** (rows), [higham2002accuracy] Theorem 9.9: a
-nonsingular matrix that is weakly diagonally dominant by rows has an LU factorization.
-Nonsingularity is not in the book's statement and is needed: `!![0, 0; 1, 1]` is weakly row
-dominant and has no unit lower LU factorization (`u₁₁ = 0` forces `l₂₁ · 0 = 1`). -/
+/-- **Property 3.2** of [quarteroni2000numerical], for rows. Let $\mathbb{K}$ be $\mathbb{R}$ or
+$\mathbb{C}$, and let $A$ be a square matrix over $\mathbb{K}$ indexed by a finite linear order.
+If $A$ is nonsingular and weakly diagonally dominant by rows, that is,
+$\sum_{j \neq i} |a_{ij}| \le |a_{ii}|$ for every $i$, then $A$ has an LU factorization.
+
+This is also Theorem 9.9 of [higham2002accuracy]. The statement of the source does not assume
+that $A$ is nonsingular, and the assumption is needed: the matrix
+$\begin{bmatrix} 0 & 0 \\ 1 & 1 \end{bmatrix}$ is weakly diagonally dominant by rows and has no
+LU factorization with unit lower triangular $L$, because $u_{11} = 0$ forces
+$l_{21} \cdot 0 = 1$. -/
 theorem exists_isLU_of_isDiagDominant {𝕜 : Type*} [RCLike 𝕜] {A : Matrix n n 𝕜} (hu : IsUnit A)
     (hA : A.IsDiagDominant) : ∃ L U, IsLU A L U :=
   exists_isLU_of_isDiagDominant_of_card _ A rfl hu hA
 
-/-- The existence half of [quarteroni2000numerical] Property 3.2 for columns, with the bound
-`|l_ij| ≤ 1` carried through the induction: the multipliers `a_ip / a_pp` are bounded by `1` by
-column dominance of the pivot column. -/
+/-- Existence of the LU factorization under column diagonal dominance, for matrices with $N$
+indices. Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A$ be a square matrix over
+$\mathbb{K}$ indexed by a linear order with $N$ elements. If $A$ is nonsingular and weakly
+diagonally dominant by columns, then $A$ has an LU factorization $A = LU$ with $|l_{ij}| \le 1$
+for all $i$ and $j$.
+
+The proof is by induction on $N$, and carries the bound on $L$ through the induction. The
+multipliers $a_{ip} / a_{pp}$ have modulus at most $1$ because the pivot column is diagonally
+dominant. -/
 theorem exists_isLU_of_isColDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N : ℕ) :
     ∀ {n : Type u} [Fintype n] [LinearOrder n] (A : Matrix n n 𝕜), Fintype.card n = N →
       IsUnit A → A.IsColDiagDominant → ∃ L U, IsLU A L U ∧ ∀ i j, ‖L i j‖ ≤ 1 := by
@@ -1456,9 +1654,13 @@ theorem exists_isLU_of_isColDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N
       (mem_erase.2 ⟨hi, mem_univ i⟩)
   · exact hL' _ _
 
-/-- **[quarteroni2000numerical] Property 3.2** (columns), [higham2002accuracy] Theorem 9.9: a
-nonsingular matrix that is weakly diagonally dominant by columns has an LU factorization whose
-lower factor has all entries of modulus at most `1`. -/
+/-- **Property 3.2** of [quarteroni2000numerical], for columns. Let $\mathbb{K}$ be $\mathbb{R}$ or
+$\mathbb{C}$, and let $A$ be a square matrix over $\mathbb{K}$ indexed by a finite linear order.
+If $A$ is nonsingular and weakly diagonally dominant by columns, that is,
+$\sum_{i \neq j} |a_{ij}| \le |a_{jj}|$ for every $j$, then $A$ has an LU factorization $A = LU$
+with $|l_{ij}| \le 1$ for all $i$ and $j$.
+
+This is also Theorem 9.9 of [higham2002accuracy]. -/
 theorem exists_isLU_of_isColDiagDominant {𝕜 : Type*} [RCLike 𝕜] {A : Matrix n n 𝕜}
     (hu : IsUnit A) (hA : A.IsColDiagDominant) : ∃ L U, IsLU A L U ∧ ∀ i j, ‖L i j‖ ≤ 1 :=
   exists_isLU_of_isColDiagDominant_of_card _ A rfl hu hA
@@ -1471,9 +1673,13 @@ section Band
 
 variable [LinearOrder n] [Fintype n]
 
-/-- **[quarteroni2000numerical] Property 3.4**, the upper half: if `A = L U` has upper bandwidth
-`q`, so does `U`. No hypothesis beyond the factorization is needed: `u_ij = a_ij - ∑_{r<i} l_ir
-u_rj` vanishes by induction on `i` whenever `a_ij` does. -/
+/-- **Property 3.4** of [quarteroni2000numerical], upper bandwidth. Let $A = LU$ be an LU
+factorization over a ring. If $A$ has upper bandwidth $q$, then $U$ has upper bandwidth $q$. On
+`Fin N` this means: if $a_{ij} = 0$ for $j > i + q$, then $u_{ij} = 0$ for $j > i + q$.
+
+No hypothesis beyond the factorization is needed. The entry
+$u_{ij} = a_{ij} - \sum_{r < i} l_{ir} u_{rj}$ vanishes by induction on $i$ whenever $a_{ij}$
+vanishes. The bandwidth is `Matrix.HasUpperBandwidth`. -/
 theorem IsLU.hasUpperBandwidth [Ring R] {A L U : Matrix n n R} (h : IsLU A L U) {q : ℕ}
     (hA : A.HasUpperBandwidth q) : U.HasUpperBandwidth q := by
   intro i
@@ -1488,10 +1694,15 @@ theorem IsLU.hasUpperBandwidth [Ring R] {A L U : Matrix n n R} (h : IsLU A L U) 
 
 variable {K : Type*} [Field K]
 
-/-- **[quarteroni2000numerical] Property 3.4**, the lower half: if `A = L U` has lower bandwidth
-`p` and the strict leading principal submatrices of `A` are nonsingular, then `L` has lower
-bandwidth `p`. Without the nonsingularity the claim fails: Example 3.3's `D = !![0, 1; 0, 2]` is
-upper triangular and factors as `L_β U_β` with `L_β = !![1, 0; β, 1]` for every `β`. -/
+/-- **Property 3.4** of [quarteroni2000numerical], lower bandwidth. Let $A = LU$ be an LU
+factorization over a field, and suppose that every strict leading principal submatrix $A_{< k}$
+is nonsingular. If $A$ has lower bandwidth $p$, then $L$ has lower bandwidth $p$. On `Fin N`
+this means: if $a_{ij} = 0$ for $i > j + p$, then $l_{ij} = 0$ for $i > j + p$.
+
+The claim fails without the nonsingularity. The matrix $D = \begin{bmatrix} 0 & 1 \\ 0 & 2
+\end{bmatrix}$ of Example 3.3 of [quarteroni2000numerical] is upper triangular, and it factors
+as $D = L_\beta U_\beta$ with $L_\beta = \begin{bmatrix} 1 & 0 \\ \beta & 1 \end{bmatrix}$ for
+every $\beta$. The bandwidth is `Matrix.HasLowerBandwidth`. -/
 theorem IsLU.hasLowerBandwidth {A L U : Matrix n n K} (h : IsLU A L U)
     (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) {p : ℕ}
     (hA : A.HasLowerBandwidth p) : L.HasLowerBandwidth p := by
@@ -1507,15 +1718,22 @@ theorem IsLU.hasLowerBandwidth {A L U : Matrix n n K} (h : IsLU A L U)
   · have hr' := (mem_filter.1 hr).2
     rw [ih r hr' i (hij.trans_le (card_filter_le_lt_mono hr'.le le_rfl)), zero_mul]
 
-/-- The (lower) envelope of a matrix, [quarteroni2000numerical] (3.59): the strictly lower
-positions `(i, j)` from the first nonzero of row `i` to the diagonal. On `Fin N` this is
-`{(i, j) | 0 < i - j ≤ m_i(A)}` with `m_i(A) = i - min {j < i | a_ij ≠ 0}`, and it is empty for a
-row whose strict lower part vanishes. -/
+/-- The **lower envelope** of a square matrix $A$ indexed by a linear order is the set of the
+positions $(i, j)$ with $j < i$ such that $a_{i j_0} \neq 0$ for some $j_0 \le j$. These are the
+strictly lower positions of row $i$ from its first nonzero entry to the diagonal.
+
+This is (3.59) of [quarteroni2000numerical]. On `Fin N` it is the set
+$\{(i, j) : 0 < i - j \le m_i(A)\}$ with $m_i(A) = i - \min\{j < i : a_{ij} \neq 0\}$. A row
+whose strictly lower part vanishes contributes no position. -/
 def envelope [Zero R] (A : Matrix n n R) : Set (n × n) :=
   {ij | ij.2 < ij.1 ∧ ∃ j₀ ≤ ij.2, A ij.1 j₀ ≠ 0}
 
-/-- Below the diagonal, `L` vanishes wherever the row of `A` vanishes up to that column: by
-induction on the column, `l_ij u_jj = a_ij - ∑_{r<j} l_ir u_rj = 0`, and `u_jj ≠ 0`. -/
+/-- Let $A = LU$ be an LU factorization over a field such that every strict leading principal
+submatrix $A_{< k}$ is nonsingular. Let $j < i$, and suppose that $a_{ir} = 0$ for every
+$r \le j$. Then $l_{ij} = 0$.
+
+The proof is by induction on the column: $l_{ij} u_{jj} = a_{ij} - \sum_{r < j} l_{ir} u_{rj} =
+0$, and $u_{jj} \neq 0$. -/
 theorem IsLU.lower_apply_eq_zero_of_forall_le {A L U : Matrix n n K} (h : IsLU A L U)
     (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) {i j : n} (hij : j < i)
     (hz : ∀ r ≤ j, A i r = 0) : L i j = 0 := by
@@ -1528,12 +1746,16 @@ theorem IsLU.lower_apply_eq_zero_of_forall_le {A L U : Matrix n n K} (h : IsLU A
   · have hr' := (mem_filter.1 hr).2
     rw [ih r hr' (hr'.trans hij) fun r' hr'' => hz r' (hr''.trans hr'.le), zero_mul]
 
-/-- **[quarteroni2000numerical] (3.60)**, no fill-in outside the envelope and none missing on its
-boundary: if `A = L U` with nonsingular strict leading principal submatrices, then `L` and `A`
-have the same envelope. Below the first nonzero `a_{i j₀}` of a row every `l_ir` vanishes
-(`Matrix.IsLU.lower_apply_eq_zero_of_forall_le`), and at `j₀` itself `l_{i j₀} u_{j₀ j₀} =
-a_{i j₀} ≠ 0`. For a symmetric positive definite `A` with Cholesky factor `H`, `Hᵀ = L D^{1/2}`
-has the pattern of `L`, which is the book's `E(A) = E(H + Hᵀ)`. -/
+/-- **Equation (3.60)** of [quarteroni2000numerical]. Let $A = LU$ be an LU factorization over a
+field such that every strict leading principal submatrix $A_{< k}$ is nonsingular. Then $L$ and
+$A$ have the same lower envelope.
+
+So the factorization creates no fill-in outside the envelope, and no position on the boundary of
+the envelope is lost. Before the first nonzero entry $a_{i j_0}$ of a row, every $l_{ir}$
+vanishes by `Matrix.IsLU.lower_apply_eq_zero_of_forall_le`, and at $j_0$ itself
+$l_{i j_0} u_{j_0 j_0} = a_{i j_0} \neq 0$. For a symmetric positive definite $A$ with Cholesky
+factor $H$, the matrix $H^T = L D^{1/2}$ has the pattern of $L$, and this gives the statement
+$E(A) = E(H + H^T)$ of the source. -/
 theorem IsLU.envelope_eq {A L U : Matrix n n K} (h : IsLU A L U)
     (hA' : A.HasUnitStrictLeadingPrincipalSubmatrices) : L.envelope = A.envelope := by
   ext ⟨i, j⟩
@@ -1571,11 +1793,17 @@ section TwoBlocks
 variable {m o : Type*} [Fintype m] [Fintype o] [DecidableEq m] [DecidableEq o]
 variable {K : Type*} [Field K]
 
-/-- The two-block case of the block LU factorization is the Schur complement factorization
-`Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`: for `A = [[B, E], [F, C]]` with `B`
-nonsingular, `A = [[1, 0], [F B⁻¹, 1]] · [[B, E], [0, S]]` with `S = C - F B⁻¹ E`, along the
-labelling `0` on the first block and `1` on the second. [quarteroni2000numerical] §3.8.1's
-display with `A₁₁ = L₁₁ D₁ R₁₁` is this identity with `B` refactored. -/
+/-- The block LU factorization with two blocks is the Schur complement factorization. Let $A =
+\begin{bmatrix} B & E \\ F & C \end{bmatrix}$ over a field, with $B$ nonsingular, and let
+$S = C - F B^{-1} E$. Then
+$$A = \begin{bmatrix} I & 0 \\ F B^{-1} & I \end{bmatrix} \begin{bmatrix} B & E \\ 0 & S
+  \end{bmatrix}$$
+is a block LU factorization along the labelling with the label $0$ on the first block and $1$ on
+the second.
+
+The identity is `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`. The display of
+[quarteroni2000numerical] §3.8.1 with $A_{11} = L_{11} D_1 R_{11}$ is this identity with $B$
+factored again. -/
 theorem isBlockLU_fromBlocks_schurComplement {B : Matrix m m K} {E : Matrix m o K}
     {F : Matrix o m K} {C : Matrix o o K} (hB : IsUnit B) :
     IsBlockLU (Sum.elim (fun _ => (0 : ℕ)) fun _ => 1) (fromBlocks B E F C)
@@ -1598,16 +1826,21 @@ section Thomas
 
 variable {K : Type*} [Field K]
 
-/-- The tridiagonal matrix of [quarteroni2000numerical] §3.7.1 from three sequences: `a i` on the
-diagonal, `b i` on the subdiagonal (at `(i, i - 1)`) and `c i` on the superdiagonal (at
-`(i, i + 1)`), on `Fin N`; `b 0` and `c (N - 1)` are unused. It is `Matrix.tridiagonalOf` of the
-shifted sequences (`Matrix.tridiagonalOfNat_eq_tridiagonalOf`). -/
+/-- The **tridiagonal matrix** of order $N$ with the diagonals $a$, $b$ and $c$, given by sequences
+indexed by $\mathbb{N}$: it has $a_i$ at $(i, i)$, $b_i$ at $(i, i - 1)$ on the subdiagonal,
+$c_i$ at $(i, i + 1)$ on the superdiagonal, and zeros elsewhere. The values $b_0$ and $c_{N-1}$
+are not used.
+
+This is the matrix of [quarteroni2000numerical] §3.7.1, indexed from $0$. It is
+`Matrix.tridiagonalOf` of the shifted sequences, by `Matrix.tridiagonalOfNat_eq_tridiagonalOf`. -/
 def tridiagonalOfNat [Zero R] (a b c : ℕ → R) (N : ℕ) : Matrix (Fin N) (Fin N) R :=
   of fun i j =>
     if (i : ℕ) = j then a i else if (j : ℕ) + 1 = i then b i else if (i : ℕ) + 1 = j then c i
     else 0
 
-/-- `Matrix.tridiagonalOfNat` is `Matrix.tridiagonalOf` of the shifted sequences. -/
+/-- The tridiagonal matrix of order $N + 1$ with the diagonals $a$, $b$ and $c$ is
+`Matrix.tridiagonalOf` with the subdiagonal $(b_1, \dots, b_N)$, the diagonal
+$(a_0, \dots, a_N)$ and the superdiagonal $(c_0, \dots, c_{N-1})$. -/
 theorem tridiagonalOfNat_eq_tridiagonalOf [Zero R] (a b c : ℕ → R) (N : ℕ) :
     tridiagonalOfNat a b c (N + 1) =
       tridiagonalOf (fun i : Fin N => b (i + 1)) (fun i => a i) fun i : Fin N => c i := by
@@ -1615,8 +1848,9 @@ theorem tridiagonalOfNat_eq_tridiagonalOf [Zero R] (a b c : ℕ → R) (N : ℕ)
   simp only [tridiagonalOfNat, tridiagonalOf, of_apply]
   split_ifs <;> first | rfl | omega | congr 1
 
-/-- Each term of `(tridiagonalOfNat a b c N * x) i`, split into its three possible
-contributions. -/
+/-- Let $T$ be the tridiagonal matrix with the diagonals $a$, $b$ and $c$. Then $t_{ij} x_j$ is
+$a_i x_i$ if $j = i$, $b_i x_{i-1}$ if $j = i - 1$, $c_i x_{i+1}$ if $j = i + 1$, and $0$
+otherwise, written as a sum of the three cases. -/
 theorem tridiagonalOfNat_apply_mul_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
     (x : Fin N → R) (i j : Fin N) :
     tridiagonalOfNat a b c N i j * x j =
@@ -1631,8 +1865,9 @@ theorem tridiagonalOfNat_apply_mul_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ
     split_ifs <;> (try simp only [zero_add, add_zero]) <;>
       first | omega | (congr 2; exact Fin.ext (by simp; omega)) | simp
 
-/-- Each term of `(x * tridiagonalOfNat a b c N) j`, split into its three possible
-contributions. -/
+/-- Let $T$ be the tridiagonal matrix with the diagonals $a$, $b$ and $c$. Then $x_i t_{ij}$ is
+$x_j a_j$ if $i = j$, $x_{j+1} b_{j+1}$ if $i = j + 1$, $x_{j-1} c_{j-1}$ if $i = j - 1$, and
+$0$ otherwise, written as a sum of the three cases. -/
 theorem mul_tridiagonalOfNat_apply_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
     (x : Fin N → R) (i j : Fin N) :
     x i * tridiagonalOfNat a b c N i j =
@@ -1647,8 +1882,11 @@ theorem mul_tridiagonalOfNat_apply_eq [NonUnitalNonAssocSemiring R] (a b c : ℕ
     split_ifs <;> (try simp only [zero_add, add_zero]) <;>
       first | omega | (congr 2 <;> first | omega | exact Fin.ext (by simp; omega)) | simp
 
-/-- **The three-term formula for `Matrix.tridiagonalOfNat`**:
-`(T x)ᵢ = bᵢ xᵢ₋₁ + aᵢ xᵢ + cᵢ xᵢ₊₁`, the boundary terms absent at `i = 0` and `i = N - 1`. -/
+/-- **The three-term formula.** Let $T$ be the tridiagonal matrix of order $N$ with the diagonals
+$a$, $b$ and $c$. Then for every $i < N$,
+$$(T x)_i = b_i x_{i-1} + a_i x_i + c_i x_{i+1},$$
+where the term $b_i x_{i-1}$ is absent for $i = 0$ and the term $c_i x_{i+1}$ is absent for
+$i = N - 1$. -/
 theorem tridiagonalOfNat_mulVec [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
     (x : Fin N → R) (i : Fin N) :
     (tridiagonalOfNat a b c N *ᵥ x) i =
@@ -1659,8 +1897,10 @@ theorem tridiagonalOfNat_mulVec [NonUnitalNonAssocSemiring R] (a b c : ℕ → R
     sum_dite_val_eq_add_one]
   abel
 
-/-- **The three-term formula for `Matrix.tridiagonalOfNat` acting on the left**:
-`(xᵀ T)ⱼ = xⱼ₋₁ cⱼ₋₁ + xⱼ aⱼ + xⱼ₊₁ bⱼ₊₁`, the boundary terms absent at `j = 0` and `j = N - 1`. -/
+/-- **The three-term formula for the action on the left.** Let $T$ be the tridiagonal matrix of
+order $N$ with the diagonals $a$, $b$ and $c$. Then for every $j < N$,
+$$(x^T T)_j = x_{j-1} c_{j-1} + x_j a_j + x_{j+1} b_{j+1},$$
+where the first term is absent for $j = 0$ and the last term is absent for $j = N - 1$. -/
 theorem tridiagonalOfNat_vecMul [NonUnitalNonAssocSemiring R] (a b c : ℕ → R) {N : ℕ}
     (x : Fin N → R) (j : Fin N) :
     (x ᵥ* tridiagonalOfNat a b c N) j =
@@ -1671,67 +1911,91 @@ theorem tridiagonalOfNat_vecMul [NonUnitalNonAssocSemiring R] (a b c : ℕ → R
     sum_dite_val_eq_add_one]
   abel
 
-/-- The pivots `α_i` of the Thomas algorithm, [quarteroni2000numerical] (3.53):
-`α_0 = a_0`, `α_{i+1} = a_{i+1} - β_{i+1} c_i` with `β_{i+1} = b_{i+1} / α_i`. -/
+/-- The **pivots** $\alpha_i$ of the Thomas algorithm for the tridiagonal matrix with the diagonals
+$a$, $b$ and $c$:
+$$\alpha_0 = a_0, \qquad \alpha_{i+1} = a_{i+1} - \beta_{i+1} c_i, \qquad \beta_{i+1} =
+  \frac{b_{i+1}}{\alpha_i}.$$
+
+These are the recurrences (3.53) of [quarteroni2000numerical], indexed from $0$. If
+$\alpha_i = 0$, then $\beta_{i+1} = 0$ and $\alpha_{i+1} = a_{i+1}$, by the Lean convention
+$x / 0 = 0$. -/
 noncomputable def thomasAlpha (a b c : ℕ → K) : ℕ → K
   | 0 => a 0
   | i + 1 => a (i + 1) - b (i + 1) / thomasAlpha a b c i * c i
 
-/-- The multipliers `β_i` of the Thomas algorithm, [quarteroni2000numerical] (3.53):
-`β_{i+1} = b_{i+1} / α_i`, and `β_0 = 0` by convention. -/
+/-- The **multipliers** $\beta_i$ of the Thomas algorithm: $\beta_0 = 0$ and
+$\beta_{i+1} = b_{i+1} / \alpha_i$, where $\alpha_i$ are the pivots of `Matrix.thomasAlpha`.
+
+These are the recurrences (3.53) of [quarteroni2000numerical]. The value $\beta_0 = 0$ is a
+convention. If $\alpha_i = 0$, then $\beta_{i+1} = 0$, by the Lean convention $x / 0 = 0$. -/
 noncomputable def thomasBeta (a b c : ℕ → K) : ℕ → K
   | 0 => 0
   | i + 1 => b (i + 1) / thomasAlpha a b c i
 
 variable (a b c : ℕ → K)
 
-/-- The first Thomas pivot is `a₀`. -/
+/-- The first pivot of the Thomas algorithm is $\alpha_0 = a_0$. -/
 @[simp]
 theorem thomasAlpha_zero : thomasAlpha a b c 0 = a 0 := rfl
 
-/-- The Thomas recurrence for the pivots, `α_{i+1} = a_{i+1} - β_{i+1} c_i`. -/
+/-- The recurrence for the pivots of the Thomas algorithm:
+$\alpha_{i+1} = a_{i+1} - \beta_{i+1} c_i$. -/
 theorem thomasAlpha_succ (i : ℕ) :
     thomasAlpha a b c (i + 1) = a (i + 1) - thomasBeta a b c (i + 1) * c i := rfl
 
-/-- The multiplier `β₀` is `0` by convention. -/
+/-- The first multiplier of the Thomas algorithm is $\beta_0 = 0$, by convention. -/
 @[simp]
 theorem thomasBeta_zero : thomasBeta a b c 0 = 0 := rfl
 
-/-- The Thomas recurrence for the multipliers, `β_{i+1} = b_{i+1} / α_i`. -/
+/-- The recurrence for the multipliers of the Thomas algorithm: $\beta_{i+1} = b_{i+1} / \alpha_i$.
+-/
 theorem thomasBeta_succ (i : ℕ) : thomasBeta a b c (i + 1) = b (i + 1) / thomasAlpha a b c i := rfl
 
-/-- The unit lower bidiagonal factor of the Thomas algorithm, with the multipliers `β_i` on the
-subdiagonal. -/
+/-- The **lower factor** of the Thomas algorithm: the unit lower bidiagonal matrix of order $N$ with
+the multipliers $\beta_i$ at the positions $(i, i - 1)$ of the subdiagonal. -/
 noncomputable def thomasLower (N : ℕ) : Matrix (Fin N) (Fin N) K :=
   of fun i j => if i = j then 1 else if (j : ℕ) + 1 = i then thomasBeta a b c i else 0
 
-/-- The upper bidiagonal factor of the Thomas algorithm, with the pivots `α_i` on the diagonal
-and the superdiagonal `c` of the matrix. -/
+/-- The **upper factor** of the Thomas algorithm: the upper bidiagonal matrix of order $N$ with the
+pivots $\alpha_i$ on the diagonal and the entries $c_i$ of the tridiagonal matrix at the
+positions $(i, i + 1)$ of the superdiagonal. -/
 noncomputable def thomasUpper (N : ℕ) : Matrix (Fin N) (Fin N) K :=
   of fun i j => if i = j then thomasAlpha a b c i else if (i : ℕ) + 1 = j then c i else 0
 
-/-- The unit lower bidiagonal matrix with subdiagonal `β` (`β i` at `(i, i - 1)`), the shape of
-the lower Thomas factor: `Matrix.thomasLower a b c N` is `lowerBidiagonalOf (thomasBeta a b c) N`
-(`Matrix.thomasLower_eq`), and the computed factor of the floating-point Thomas algorithm is
-`lowerBidiagonalOf β̂ N`. -/
+/-- The **unit lower bidiagonal matrix** of order $N$ with the subdiagonal $\beta$: it has ones on
+the diagonal, $\beta_i$ at $(i, i - 1)$, and zeros elsewhere.
+
+This is the shape of the lower factor of the Thomas algorithm. The exact factor
+`Matrix.thomasLower a b c N` is `Matrix.lowerBidiagonalOf (Matrix.thomasBeta a b c) N`, by
+`Matrix.thomasLower_eq`. The factor computed by the Thomas algorithm in floating point is the
+same matrix for the computed multipliers $\hat\beta$. -/
 def lowerBidiagonalOf [Zero R] [One R] (β : ℕ → R) (N : ℕ) : Matrix (Fin N) (Fin N) R :=
   of fun i j => if i = j then 1 else if (j : ℕ) + 1 = i then β i else 0
 
-/-- The upper bidiagonal matrix with diagonal `α` and superdiagonal `c`, the shape of the upper
-Thomas factor: `Matrix.thomasUpper a b c N` is `upperBidiagonalOf (thomasAlpha a b c) c N`
-(`Matrix.thomasUpper_eq`). -/
+/-- The **upper bidiagonal matrix** of order $N$ with the diagonal $\alpha$ and the superdiagonal
+$c$: it has $\alpha_i$ at $(i, i)$, $c_i$ at $(i, i + 1)$, and zeros elsewhere.
+
+This is the shape of the upper factor of the Thomas algorithm. The exact factor
+`Matrix.thomasUpper a b c N` is `Matrix.upperBidiagonalOf (Matrix.thomasAlpha a b c) c N`, by
+`Matrix.thomasUpper_eq`. -/
 def upperBidiagonalOf [Zero R] (α c : ℕ → R) (N : ℕ) : Matrix (Fin N) (Fin N) R :=
   of fun i j => if i = j then α i else if (i : ℕ) + 1 = j then c i else 0
 
-/-- The exact Thomas lower factor is the bidiagonal matrix of the exact multipliers. -/
+/-- The lower factor of the Thomas algorithm is the unit lower bidiagonal matrix of the multipliers
+$\beta_i$. -/
 theorem thomasLower_eq (N : ℕ) :
     thomasLower a b c N = lowerBidiagonalOf (thomasBeta a b c) N := rfl
 
-/-- The exact Thomas upper factor is the bidiagonal matrix of the exact pivots. -/
+/-- The upper factor of the Thomas algorithm is the upper bidiagonal matrix with the pivots
+$\alpha_i$ on the diagonal and $c$ on the superdiagonal. -/
 theorem thomasUpper_eq (N : ℕ) :
     thomasUpper a b c N = upperBidiagonalOf (thomasAlpha a b c) c N := rfl
 
-/-- Left multiplication by the lower bidiagonal matrix adds `β_i` times the previous row. -/
+/-- Left multiplication by the unit lower bidiagonal matrix $L_\beta$ adds $\beta_i$ times the
+previous row: for a square matrix $M$ of order $N$,
+$$(L_\beta M)_{ij} = m_{ij} + \beta_i m_{i-1,j} \quad \text{for } i > 0, \qquad (L_\beta
+  M)_{0j} = m_{0j}.$$
+-/
 theorem lowerBidiagonalOf_mul_apply [NonAssocSemiring R] {N : ℕ} (β : ℕ → R)
     (M : Matrix (Fin N) (Fin N) R) (i j : Fin N) :
     (lowerBidiagonalOf β N * M) i j =
@@ -1749,24 +2013,26 @@ theorem lowerBidiagonalOf_mul_apply [NonAssocSemiring R] {N : ℕ} (β : ℕ →
   simp only [hterm, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true,
     sum_dite_val_add_one_eq]
 
-/-- An entry of the upper bidiagonal matrix off its two diagonals vanishes. -/
+/-- An entry $(i, j)$ of the upper bidiagonal matrix with $j \neq i$ and $j \neq i + 1$ is zero. -/
 theorem upperBidiagonalOf_apply_eq_zero [Zero R] {N : ℕ} {α c : ℕ → R} {i j : Fin N}
     (h1 : (i : ℕ) ≠ j) (h2 : (i : ℕ) + 1 ≠ j) : upperBidiagonalOf α c N i j = 0 := by
   simp [upperBidiagonalOf, Fin.ext_iff, h1, h2]
 
-/-- The lower Thomas factor is lower bidiagonal. -/
+/-- The lower factor of the Thomas algorithm is lower bidiagonal. -/
 theorem isLowerBidiagonal_thomasLower (N : ℕ) : (thomasLower a b c N).IsLowerBidiagonal := by
   intro i j h
   simp only [thomasLower, of_apply, Fin.ext_iff]
   rcases h with h | ⟨k, hk⟩ <;> simp only [Fin.lt_def] at * <;> split_ifs <;> first | rfl | omega
 
-/-- The upper Thomas factor is upper bidiagonal. -/
+/-- The upper factor of the Thomas algorithm is upper bidiagonal. -/
 theorem isUpperBidiagonal_thomasUpper (N : ℕ) : (thomasUpper a b c N).IsUpperBidiagonal := by
   intro i j h
   simp only [thomasUpper, of_apply, Fin.ext_iff]
   rcases h with h | ⟨k, hk⟩ <;> simp only [Fin.lt_def] at * <;> split_ifs <;> first | rfl | omega
 
-/-- Each term of `(thomasLower * thomasUpper) i j`, split into the two possible contributions. -/
+/-- Let $L$ and $U$ be the lower and the upper factors of the Thomas algorithm. Then $l_{ir} u_{rj}$
+is $u_{ij}$ if $r = i$, $\beta_i u_{rj}$ if $r = i - 1$, and $0$ otherwise, written as a sum of
+the two cases. -/
 theorem thomasLower_apply_mul_eq {N : ℕ} (i j r : Fin N) :
     thomasLower a b c N i r * thomasUpper a b c N r j =
       (if r = i then thomasUpper a b c N i j else 0) +
@@ -1778,11 +2044,15 @@ theorem thomasLower_apply_mul_eq {N : ℕ} (i j r : Fin N) :
   · simp only [Ne.symm hri, hri, ite_false, zero_add]
     split_ifs <;> simp
 
-/-- **The Thomas algorithm** ([quarteroni2000numerical] §3.7.1, (3.53)): when no pivot `α_i`,
-`i < N - 1`, vanishes, the tridiagonal matrix with diagonals `a`, `b`, `c` factors as the unit
-lower bidiagonal matrix of the multipliers `β_i` times the upper bidiagonal matrix of the pivots
-`α_i` and the superdiagonal `c`. The pivot condition is equivalent to the nonsingularity of the
-strict leading principal submatrices, by `Matrix.IsLU.det_strictLeadingPrincipalSubmatrix`. -/
+/-- **The Thomas algorithm.** Let $T$ be the tridiagonal matrix of order $N$ over a field with the
+diagonals $a$, $b$ and $c$, and suppose that the pivot $\alpha_i$ is nonzero for every $i$ with
+$i + 1 < N$. Then $T = LU$ is an LU factorization, where $L$ is the unit lower bidiagonal matrix
+of the multipliers $\beta_i$, and $U$ is the upper bidiagonal matrix with the pivots $\alpha_i$
+on the diagonal and $c$ on the superdiagonal.
+
+This is §3.7.1 and (3.53) of [quarteroni2000numerical]. The condition on the pivots is
+equivalent to the nonsingularity of the strict leading principal submatrices of $T$, by
+`Matrix.IsLU.det_strictLeadingPrincipalSubmatrix`. The last pivot $\alpha_{N-1}$ may vanish. -/
 theorem isLU_tridiagonal_thomas {N : ℕ} (hα : ∀ i, i + 1 < N → thomasAlpha a b c i ≠ 0) :
     IsLU (tridiagonalOfNat a b c N) (thomasLower a b c N) (thomasUpper a b c N) where
   isUnitLowerTriangular :=
@@ -1808,14 +2078,20 @@ theorem isLU_tridiagonal_thomas {N : ℕ} (hα : ∀ i, i + 1 < N → thomasAlph
       all_goals try rw [zero_add, thomasBeta_succ, div_mul_cancel₀ _ (hα m hmN)]
       all_goals simp
 
-/-- The reciprocal pivots `γ_i = (a_i - b_i γ_{i-1} c_{i-1})⁻¹` of the division-free Thomas
-algorithm, [quarteroni2000numerical] §3.7.2, with `γ_0 = a_0⁻¹`; they are the reciprocals of the
-pivots `α_i` (`Matrix.thomasGamma_eq_inv_thomasAlpha`). -/
+/-- The **reciprocal pivots** $\gamma_i$ of the division-free Thomas algorithm:
+$$\gamma_0 = a_0^{-1}, \qquad \gamma_{i+1} = (a_{i+1} - b_{i+1} \gamma_i c_i)^{-1}.$$
+
+This is the algorithm of [quarteroni2000numerical] §3.7.2, indexed from $0$. The inverse follows
+the Lean convention $0^{-1} = 0$. The $\gamma_i$ are the reciprocals of the pivots $\alpha_i$,
+by `Matrix.thomasGamma_eq_inv_thomasAlpha`. -/
 noncomputable def thomasGamma (a b c : ℕ → K) : ℕ → K
   | 0 => (a 0)⁻¹
   | i + 1 => (a (i + 1) - b (i + 1) * thomasGamma a b c i * c i)⁻¹
 
-/-- The reciprocal pivots are the reciprocals of the pivots. -/
+/-- The reciprocal pivots are the reciprocals of the pivots: $\gamma_i = \alpha_i^{-1}$ for every
+$i$.
+
+No pivot needs to be nonzero, because both sides follow the Lean convention $0^{-1} = 0$. -/
 theorem thomasGamma_eq_inv_thomasAlpha (i : ℕ) : thomasGamma a b c i = (thomasAlpha a b c i)⁻¹ := by
   induction i with
   | zero => rfl

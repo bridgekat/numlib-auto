@@ -7,58 +7,92 @@ import Numlib.Analysis.Convex.Extremum.Adjoint
 /-!
 # Saddle-functions and partial conjugacy
 
-A **concave-convex** function on `U × X` is concave in its first argument for each value of the
-second and convex in the second for each value of the first; **convex-concave** functions are the
-mirror image, and both are called **saddle-functions**.
+Let $U$ and $X$ be real vector spaces. A function $K : U \times X \to [-\infty, +\infty]$ is
+**concave-convex** if $K(\cdot, x)$ is concave for every $x$ and $K(u, \cdot)$ is convex for every
+$u$. It is **convex-concave** if the two roles are exchanged, and a **saddle-function** if it is one
+of the two. Its effective domains are $\operatorname{dom}_1 K = \{u \mid K(u, x) > -\infty \text{
+for all } x\}$ and $\operatorname{dom}_2 K = \{x \mid K(u, x) < +\infty \text{ for all } u\}$. The
+partial closure $\operatorname{cl}_2 K$ is the convex closure of $K(u, \cdot)$ for each $u$, and
+$\operatorname{cl}_1 K$ is the concave closure of $K(\cdot, x)$ for each $x$. The presentation
+follows [rockafellar1970convex], §33–§34.
 
-Concave-convex functions are the same data as convex bifunctions. A convex bifunction `F` from `U`
-to `X` gives the **bracket** `⟨Fu, y⟩ = (F u)*(y)`, concave-convex in `(u, y)` and closed convex in
-`y`; conversely every such function arises this way, from `F u = K (u, ·)*`. The bracket is the
-conjugate of the graph function of `F` in its second variable only — one-variable conjugacy applied
-uniformly in a parameter.
-
-The two partial closures are not mirror images. `partialCl₂ K` closes `K (u, ·)` as a *convex*
-function of the second argument; `partialCl₁ K` closes `K (·, x)` as a *concave* function of the
-first.
+Concave-convex functions carry the same information as convex bifunctions. Let
+$\langle x, y \rangle$ be a pairing of $X$ with a second space $Y$. A convex bifunction $F$ from $U$
+to $X$ gives the **bracket** $$\langle Fu, y \rangle = (Fu)^*(y) = \sup_x \{\langle x, y \rangle -
+(Fu)(x)\},$$ which is concave-convex in $(u, y)$ and closed convex in $y$. Conversely, a
+concave-convex $K$ on $U \times Y$ gives the convex bifunction $(Fu)(x) = \sup_y \{\langle x, y
+\rangle - K(u, y)\}$, and the bracket of this bifunction is $\operatorname{cl}_2 K$. With a pairing
+$\langle u, v \rangle$ of $U$ with $V$ and the adjoint $F^*$ of $F$, the module also proves the two
+equations $\langle u, F^* y \rangle = \operatorname{cl}_1 \langle Fu, y \rangle$ and
+$\operatorname{cl}_2 \langle u, F^* y \rangle = \langle (\operatorname{cl} F) u, y \rangle$ of
+Theorem 33.2 of [rockafellar1970convex].
 
 ## Main definitions
 
-* `ConcaveConvexFn`, `ConvexConcaveFn`, `SaddleFn` — the three predicates.
-* `dom₁ K = {u | ∀ x, K (u, x) > -∞}` and `dom₂ K = {x | ∀ u, K (u, x) < +∞}` — the effective
-  domains: *intersections* of one-variable domains, not unions.
-* `partialCl₁`, `partialCl₂` — Rockafellar's `cl₁` and `cl₂`, with fixed points `PartialClosed₁`
-  and `PartialClosed₂`.
-* `bracket Bx F`, `concaveBracket Bu G` — `⟨Fu, y⟩` and its concave counterpart `⟨u, G y⟩`;
-  `partialConj₂ Bx f` is the uncurried reading of the first.
-* `bifunOfSaddle Bx K` — the convex bifunction `F u = K (u, ·)*` attached to a saddle-function.
-* `ConcaveConvexOn C D K` — the finite, set-relative form: `K : U × X → ℝ` concave in its first
-  argument on `C` and convex in its second on `D`.
-* `saddleSwap K = fun (x, u) => -K (u, x)` — the involution exchanging the two variables and the
-  roles of `cl₁` and `cl₂`, bundled as the order isomorphism `saddleSwapOrderIso` onto the order
-  dual.
+* `ConvexAnalysis.ConcaveConvexFn`, `ConvexAnalysis.ConvexConcaveFn`, `ConvexAnalysis.SaddleFn`:
+  concave-convex functions, convex-concave functions and saddle-functions with values in
+  $[-\infty, +\infty]$.
+* `ConvexAnalysis.dom₁`, `ConvexAnalysis.dom₂`: the two effective domains, which are intersections
+  (not unions) of the effective domains of the slices.
+* `ConvexAnalysis.partialCl₂`, `ConvexAnalysis.partialCl₁`: the partial closures
+  $\operatorname{cl}_2$ and $\operatorname{cl}_1$. Their fixed points are
+  `ConvexAnalysis.PartialClosed₂` and `ConvexAnalysis.PartialClosed₁`.
+* `ConvexAnalysis.bracket`, `ConvexAnalysis.concaveBracket`: the bracket $\langle Fu, y \rangle$ of
+  a convex bifunction and the bracket $\langle u, Gy \rangle = \inf_v \{\langle u, v \rangle -
+  (Gy)(v)\}$ of a concave bifunction. `ConvexAnalysis.partialConj₂` is the conjugate in the second
+  variable of a function on a product.
+* `ConvexAnalysis.bifunOfSaddle`: the convex bifunction $(Fu)(x) = \sup_y \{\langle x, y \rangle -
+  K(u, y)\}$ attached to a saddle-function $K$.
+* `ConvexAnalysis.ConcaveConvexOn`: a real-valued $K$ that is concave in $u$ on $C$ and convex in
+  $x$ on $D$.
+* `ConvexAnalysis.saddleSwap`: the involution that sends $K$ to $(x, u) \mapsto -K(u, x)$, also as
+  the order isomorphism `ConvexAnalysis.saddleSwapOrderIso` onto the order dual.
 
 ## Main results
 
-* `concaveConvexFn_bracket`, `closedConvex_bracket`, `convexCl_eq_convexConj_bracket` — the bracket
-  of a convex bifunction is concave-convex and closed in `y`, and inverts as `cl (F u) = ⟨F u, ·⟩*`.
-* `convexBifun_bifunOfSaddle`, `bracket_bifunOfSaddle` — conversely, the bifunction attached to a
-  concave-convex `K` is convex and its bracket is `cl₂ K`.
-* `convexFn_partialCl₂`, `concaveFn_partialCl₁`, `concaveConvexFn_partialCl₂`,
-  `concaveConvexFn_partialCl₁` — the partial closures preserve concave-convexity; the first-variable
-  statement is the second-variable one read at `saddleSwap`.
-* `concaveBracket_convexAdjointBifun_eq_partialCl₁`, `partialCl₂_concaveBracket_convexAdjointBifun`
-  — the two equations `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` and `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`
-  ([rockafellar1970convex] Theorem 33.2). One theorem in opposite variables, so the pairing
-  hypotheses differ: `U` for the first, `Y` for the second.
+* `ConvexAnalysis.concaveConvexFn_bracket`, `ConvexAnalysis.closedConvex_bracket`,
+  `ConvexAnalysis.convexCl_eq_convexConj_bracket`: the bracket of a convex bifunction $F$ is
+  concave-convex and closed in $y$, and $\operatorname{cl}(Fu)$ is the conjugate of
+  $\langle Fu, \cdot \rangle$.
+* `ConvexAnalysis.convexBifun_bifunOfSaddle`, `ConvexAnalysis.bracket_bifunOfSaddle`: the bifunction
+  attached to a concave-convex $K$ is convex, and its bracket is $\operatorname{cl}_2 K$.
+* `ConvexAnalysis.convexFn_partialCl₂`, `ConvexAnalysis.concaveFn_partialCl₁`,
+  `ConvexAnalysis.concaveConvexFn_partialCl₂`, `ConvexAnalysis.concaveConvexFn_partialCl₁`: the
+  partial closures of a concave-convex function are again concave-convex.
+* `ConvexAnalysis.concaveBracket_convexAdjointBifun_eq_partialCl₁`,
+  `ConvexAnalysis.partialCl₂_concaveBracket_convexAdjointBifun`: the equations $\langle u, F^* y
+  \rangle = \operatorname{cl}_1 \langle Fu, y \rangle$ and $\operatorname{cl}_2 \langle u, F^* y
+  \rangle = \langle (\operatorname{cl} F) u, y \rangle$.
 
-## References
+## Proof outline
 
-* [rockafellar1970convex] §33–§34.
+The bracket inherits its properties from one-variable conjugacy, applied uniformly in the parameter
+$u$. Convexity and closedness in $y$ hold because $\langle Fu, \cdot \rangle$ is a conjugate, and
+the inversion formula for $\operatorname{cl}(Fu)$ is the Fenchel–Moreau theorem. Concavity in $u$
+holds because $-\langle Fu, y \rangle$ is the infimal projection of a jointly convex function. The
+adjoint satisfies $(F^* y)(v) = \inf_u \{\langle u, v \rangle - \langle Fu, y \rangle\}$, so the
+first equation of Theorem 33.2 is the concave Fenchel–Moreau theorem in $u$. The second equation is
+the same argument for the concave bifunction $F^*$, followed by $F^{**} = \operatorname{cl} F$. The
+closure $\operatorname{cl}_2 K$ is concave-convex because it is a bracket.
+
+## Implementation notes
+
+* The two partial closures are not mirror images. $\operatorname{cl}_2 K$ closes $K(u, \cdot)$ as a
+  convex function with `ConvexAnalysis.convexCl`, and $\operatorname{cl}_1 K$ closes $K(\cdot, x)$
+  as a concave function with `ConvexAnalysis.concaveCl`.
+* `ConvexAnalysis.saddleSwap` exchanges the two variables and the two partial closures. Each
+  statement about the first variable is therefore the statement about the second variable, read at
+  `ConvexAnalysis.saddleSwap K`. `ConvexAnalysis.swapReal` is the same operation for real-valued
+  functions.
+* A pairing is a bilinear map such as `Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ`. The two equations of Theorem 33.2
+  are one theorem in opposite variables, so their pairing hypotheses differ: the first needs a
+  compatible pairing (`ConvexAnalysis.IsCompatiblePairing`) on $U$, and the second needs one on $Y$,
+  together with compatible pairings on $U$ and $X$ for the closure of $F$.
 -/
 
 namespace ConvexAnalysis
 
-/-! ### Three rearrangements over `EReal` -/
+/-! ### Rearrangements in the extended reals -/
 
 section ERealAux
 
@@ -80,22 +114,33 @@ section SaddleDom
 
 variable {U X : Type*} {K : U × X → EReal}
 
-/-- The **first effective domain** `dom₁ K`: the `u` at which `K (u, ·)` is nowhere `-∞`, an
-*intersection* of concave effective domains. -/
+/-- The **first effective domain** $\operatorname{dom}_1 K$ of
+$K : U \times X \to [-\infty, +\infty]$ is the set of $u$ with $K(u, x) > -\infty$ for every
+$x$. It is an intersection of the effective domains of the concave slices $K(\cdot, x)$. -/
 def dom₁ (K : U × X → EReal) : Set U := {u | ∀ x, ⊥ < K (u, x)}
 
-/-- The **second effective domain**: the `x` at which `K (·, x)` is nowhere `+∞`. -/
+/-- The **second effective domain** $\operatorname{dom}_2 K$ of
+$K : U \times X \to [-\infty, +\infty]$ is the set of $x$ with $K(u, x) < +\infty$ for every
+$u$. -/
 def dom₂ (K : U × X → EReal) : Set X := {x | ∀ u, K (u, x) < ⊤}
 
+/-- A point $u$ lies in $\operatorname{dom}_1 K$ if and only if $K(u, x) > -\infty$ for every $x$.
+-/
 @[simp] theorem mem_dom₁ {u : U} : u ∈ dom₁ K ↔ ∀ x, ⊥ < K (u, x) := Iff.rfl
 
+/-- A point $x$ lies in $\operatorname{dom}_2 K$ if and only if $K(u, x) < +\infty$ for every $u$.
+-/
 @[simp] theorem mem_dom₂ {x : X} : x ∈ dom₂ K ↔ ∀ u, K (u, x) < ⊤ := Iff.rfl
 
+/-- $\operatorname{dom}_1 K = \bigcap_x \operatorname{dom} K(\cdot, x)$, where $\operatorname{dom}$
+of a concave function is the set where it is greater than $-\infty$. -/
 theorem dom₁_eq_iInter (K : U × X → EReal) :
     dom₁ K = ⋂ x, concaveDom fun u => K (u, x) := by
   ext u
   simp [dom₁, concaveDom]
 
+/-- $\operatorname{dom}_2 K = \bigcap_u \operatorname{dom} K(u, \cdot)$, where $\operatorname{dom}$
+of a convex function is the set where it is less than $+\infty$. -/
 theorem dom₂_eq_iInter (K : U × X → EReal) : dom₂ K = ⋂ u, convexDom fun x => K (u, x) := by
   ext x
   simp [dom₂, convexDom]
@@ -109,41 +154,49 @@ section SaddleDefs
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {K : U × X → EReal}
 
-/-- `K` is **concave-convex**: concave in the first argument, convex in the second. -/
+/-- A function $K : U \times X \to [-\infty, +\infty]$ is **concave-convex** if $K(\cdot, x)$ is
+concave for every $x \in X$ and $K(u, \cdot)$ is convex for every $u \in U$. -/
 structure ConcaveConvexFn (K : U × X → EReal) : Prop where
-  /-- `K (·, x)` is concave for every `x`. -/
+  /-- The slice $K(\cdot, x)$ is concave for every $x$. -/
   concave_fst : ∀ x, ConcaveFn fun u => K (u, x)
-  /-- `K (u, ·)` is convex for every `u`. -/
+  /-- The slice $K(u, \cdot)$ is convex for every $u$. -/
   convex_snd : ∀ u, ConvexFn fun x => K (u, x)
 
-/-- `K` is **convex-concave**: convex in the first argument, concave in the second. -/
+/-- A function $K : U \times X \to [-\infty, +\infty]$ is **convex-concave** if $K(\cdot, x)$ is
+convex for every $x \in X$ and $K(u, \cdot)$ is concave for every $u \in U$. -/
 structure ConvexConcaveFn (K : U × X → EReal) : Prop where
-  /-- `K (·, x)` is convex for every `x`. -/
+  /-- The slice $K(\cdot, x)$ is convex for every $x$. -/
   convex_fst : ∀ x, ConvexFn fun u => K (u, x)
-  /-- `K (u, ·)` is concave for every `u`. -/
+  /-- The slice $K(u, \cdot)$ is concave for every $u$. -/
   concave_snd : ∀ u, ConcaveFn fun x => K (u, x)
 
-/-- A **saddle-function** is one of the two. -/
+/-- A **saddle-function** is a function $K : U \times X \to [-\infty, +\infty]$ that is
+concave-convex or convex-concave. -/
 def SaddleFn (K : U × X → EReal) : Prop := ConcaveConvexFn K ∨ ConvexConcaveFn K
 
+/-- If $K$ is concave-convex, then $-K$ is convex-concave. -/
 theorem ConcaveConvexFn.convexConcaveFn_neg (h : ConcaveConvexFn K) :
     ConvexConcaveFn fun p => -(K p) :=
   ⟨fun x => (h.concave_fst x).convexFn_neg, fun u => (h.convex_snd u).concaveFn_neg⟩
 
+/-- If $K$ is convex-concave, then $-K$ is concave-convex. -/
 theorem ConvexConcaveFn.concaveConvexFn_neg (h : ConvexConcaveFn K) :
     ConcaveConvexFn fun p => -(K p) :=
   ⟨fun x => (h.convex_fst x).concaveFn_neg, fun u => (h.concave_snd u).convexFn_neg⟩
 
+/-- A concave-convex function is a saddle-function. -/
 theorem ConcaveConvexFn.saddleFn (h : ConcaveConvexFn K) : SaddleFn K := Or.inl h
 
+/-- A convex-concave function is a saddle-function. -/
 theorem ConvexConcaveFn.saddleFn (h : ConvexConcaveFn K) : SaddleFn K := Or.inr h
 
-/-- `dom₁` of a concave-convex function is convex: it is an intersection of concave domains. -/
+/-- If $K$ is concave-convex, then $\operatorname{dom}_1 K$ is convex, because it is an intersection
+of effective domains of concave functions. -/
 theorem ConcaveConvexFn.convex_dom₁ (h : ConcaveConvexFn K) : Convex ℝ (dom₁ K) := by
   rw [dom₁_eq_iInter]
   exact convex_iInter fun x => (h.concave_fst x).convex_concaveDom
 
-/-- `dom₂` of a concave-convex function is convex. -/
+/-- If $K$ is concave-convex, then $\operatorname{dom}_2 K$ is convex. -/
 theorem ConcaveConvexFn.convex_dom₂ (h : ConcaveConvexFn K) : Convex ℝ (dom₂ K) := by
   rw [dom₂_eq_iInter]
   exact convex_iInter fun u => (h.convex_snd u).convex_convexDom
@@ -156,11 +209,17 @@ section PartialConj
 
 variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- The conjugate of `f` **in the second variable only**: the uncurried reading of `bracket`,
-which is what `partialConj₂_graphFn` makes precise. Downstream code uses the curried form. -/
+/-- The **conjugate in the second variable** of $f : U \times X \to [-\infty, +\infty]$, with
+respect to a pairing $\langle x, y \rangle$ of $X$ with $Y$, is the function on $U \times Y$
+$$(u, y) \mapsto \sup_x \{\langle x, y \rangle - f(u, x)\},$$ the conjugate of $f(u, \cdot)$
+evaluated at $y$.
+
+This is the uncurried form of `ConvexAnalysis.bracket`, as `ConvexAnalysis.partialConj₂_graphFn`
+states. Other modules use the curried form. -/
 noncomputable def partialConj₂ (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (f : U × X → EReal) : U × Y → EReal :=
   fun p => convexConj Bx (fun x => f (p.1, x)) p.2
 
+/-- The conjugate in the second variable is $(u, y) \mapsto f(u, \cdot)^*(y)$. -/
 theorem partialConj₂_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (f : U × X → EReal) (p : U × Y) :
     partialConj₂ Bx f p = convexConj Bx (fun x => f (p.1, x)) p.2 := rfl
 
@@ -172,46 +231,62 @@ section PartialCl
 
 variable {U X : Type*}
 
-/-- Rockafellar's `cl₂`: close in the second variable, **convexly**. -/
+/-- The **partial closure** $\operatorname{cl}_2 K$ of $K : U \times X \to [-\infty, +\infty]$ in
+the second variable: $\operatorname{cl}_2 K(u, x) = (\operatorname{cl} K(u, \cdot))(x)$, where
+$\operatorname{cl}$ is the convex closure `ConvexAnalysis.convexCl`. -/
 noncomputable def partialCl₂ [TopologicalSpace X] (K : U × X → EReal) : U × X → EReal :=
   fun p => convexCl (fun x => K (p.1, x)) p.2
 
-/-- Rockafellar's `cl₁`: close in the first variable, **concavely**. -/
+/-- The **partial closure** $\operatorname{cl}_1 K$ of $K : U \times X \to [-\infty, +\infty]$ in
+the first variable: $\operatorname{cl}_1 K(u, x) = (\operatorname{cl} K(\cdot, x))(u)$, where
+$\operatorname{cl}$ is the concave closure `ConvexAnalysis.concaveCl`. -/
 noncomputable def partialCl₁ [TopologicalSpace U] (K : U × X → EReal) : U × X → EReal :=
   fun p => concaveCl (fun u => K (u, p.2)) p.1
 
+/-- $\operatorname{cl}_2 K(u, x)$ is the convex closure of $K(u, \cdot)$ evaluated at $x$. -/
 theorem partialCl₂_apply [TopologicalSpace X] (K : U × X → EReal) (p : U × X) :
     partialCl₂ K p = convexCl (fun x => K (p.1, x)) p.2 := rfl
 
+/-- $\operatorname{cl}_1 K(u, x)$ is the concave closure of $K(\cdot, x)$ evaluated at $u$. -/
 theorem partialCl₁_apply [TopologicalSpace U] (K : U × X → EReal) (p : U × X) :
     partialCl₁ K p = concaveCl (fun u => K (u, p.2)) p.1 := rfl
 
+/-- For each $u$, the slice $\operatorname{cl}_2 K(u, \cdot)$ is the convex closure of
+$K(u, \cdot)$. -/
 theorem partialCl₂_slice [TopologicalSpace X] (K : U × X → EReal) (u : U) :
     (fun x => partialCl₂ K (u, x)) = convexCl fun x => K (u, x) := rfl
 
+/-- For each $x$, the slice $\operatorname{cl}_1 K(\cdot, x)$ is the concave closure of
+$K(\cdot, x)$. -/
 theorem partialCl₁_slice [TopologicalSpace U] (K : U × X → EReal) (x : X) :
     (fun u => partialCl₁ K (u, x)) = concaveCl fun u => K (u, x) := rfl
 
+/-- $\operatorname{cl}_2 K \le K$. -/
 theorem partialCl₂_le [TopologicalSpace X] (K : U × X → EReal) : partialCl₂ K ≤ K :=
   fun p => convexCl_le (fun x => K (p.1, x)) p.2
 
+/-- If $K \le L$, then $\operatorname{cl}_2 K \le \operatorname{cl}_2 L$. -/
 theorem partialCl₂_mono [TopologicalSpace X] {K L : U × X → EReal} (h : K ≤ L) :
     partialCl₂ K ≤ partialCl₂ L :=
   fun p => convexCl_mono (fun x => h (p.1, x)) p.2
 
+/-- $K \le \operatorname{cl}_1 K$. -/
 theorem le_partialCl₁ [TopologicalSpace U] (K : U × X → EReal) : K ≤ partialCl₁ K :=
   fun p => le_concaveCl (fun u => K (u, p.2)) p.1
 
+/-- If $K \le L$, then $\operatorname{cl}_1 K \le \operatorname{cl}_1 L$. -/
 theorem partialCl₁_mono [TopologicalSpace U] {K L : U × X → EReal} (h : K ≤ L) :
     partialCl₁ K ≤ partialCl₁ L :=
   fun p => concaveCl_mono (fun u => h (u, p.2)) p.1
 
-/-- `K` is **convex-closed** when it is unchanged by `cl₂`. -/
+/-- A function $K$ on $U \times X$ is **convex-closed** if $\operatorname{cl}_2 K = K$. -/
 def PartialClosed₂ [TopologicalSpace X] (K : U × X → EReal) : Prop := partialCl₂ K = K
 
-/-- `K` is **concave-closed** when it is unchanged by `cl₁`. -/
+/-- A function $K$ on $U \times X$ is **concave-closed** if $\operatorname{cl}_1 K = K$. -/
 def PartialClosed₁ [TopologicalSpace U] (K : U × X → EReal) : Prop := partialCl₁ K = K
 
+/-- $K$ is convex-closed if and only if $K(u, \cdot)$ is a closed convex function for every $u$,
+that is, it equals its convex closure. -/
 theorem partialClosed₂_iff [TopologicalSpace X] {K : U × X → EReal} :
     PartialClosed₂ K ↔ ∀ u, ClosedConvex fun x => K (u, x) := by
   constructor
@@ -222,6 +297,8 @@ theorem partialClosed₂_iff [TopologicalSpace X] {K : U × X → EReal} :
     funext p
     exact congrFun (h p.1) p.2
 
+/-- $K$ is concave-closed if and only if $K(\cdot, x)$ is a closed concave function for every $x$,
+that is, it equals its concave closure. -/
 theorem partialClosed₁_iff [TopologicalSpace U] {K : U × X → EReal} :
     PartialClosed₁ K ↔ ∀ x, ClosedConcave fun u => K (u, x) := by
   constructor
@@ -234,31 +311,41 @@ theorem partialClosed₁_iff [TopologicalSpace U] {K : U × X → EReal} :
 
 end PartialCl
 
-/-! ### The swap involution
+/-!
+### The swap involution
 
-`saddleSwap K (x, u) = -K (u, x)` exchanges the two variables and the two partial closures, so
-every statement about the first variable is a statement about the second read at `saddleSwap K`. -/
+The map that sends $K$ to $(x, u) \mapsto -K(u, x)$ exchanges the two variables and the two partial
+closures. So every statement about the first variable is a statement about the second variable, read
+at the swapped function.
+-/
 
 section Swap
 
 variable {U X : Type*} {K : U × X → EReal}
 
-/-- Negate a saddle-function and exchange its arguments: an involution of saddle-functions that
-exchanges `cl₁` with `cl₂`. -/
+/-- The **swap** of $K : U \times X \to [-\infty, +\infty]$ is the function on $X \times U$ given by
+$(x, u) \mapsto -K(u, x)$. It is an involution, and it exchanges $\operatorname{cl}_1$ with
+$\operatorname{cl}_2$. -/
 noncomputable def saddleSwap (K : U × X → EReal) : X × U → EReal := fun q => -(K (q.2, q.1))
 
+/-- The swap of $K$ takes the value $-K(u, x)$ at $(x, u)$. -/
 theorem saddleSwap_apply (K : U × X → EReal) (q : X × U) :
     saddleSwap K q = -(K (q.2, q.1)) := rfl
 
+/-- The swap is an involution: swapping $K$ twice gives $K$. -/
 @[simp] theorem saddleSwap_saddleSwap (K : U × X → EReal) : saddleSwap (saddleSwap K) = K :=
   funext fun p => neg_neg (K p)
 
+/-- The swap reverses order: if $K \le L$, then the swap of $L$ is at most the swap of $K$. -/
 theorem saddleSwap_le_saddleSwap {K L : U × X → EReal} (h : K ≤ L) :
     saddleSwap L ≤ saddleSwap K :=
   fun q => EReal.neg_le_neg_iff.2 (h (q.2, q.1))
 
-/-- `saddleSwap` bundled as an order isomorphism onto the order dual. It is not an endomorphism —
-the two factors are exchanged — so its two-sided inverse has to be recorded as an `Equiv`. -/
+/-- The swap as an order isomorphism from the functions on $U \times X$ onto the order dual of the
+functions on $X \times U$: $K \le L$ if and only if the swap of $L$ is at most the swap of $K$.
+
+The swap is not an endomorphism, because it exchanges the two factors, so its two-sided inverse
+is recorded as an `Equiv`. -/
 noncomputable def saddleSwapOrderIso : (U × X → EReal) ≃o (X × U → EReal)ᵒᵈ where
   toFun K := OrderDual.toDual (saddleSwap K)
   invFun K := saddleSwap (OrderDual.ofDual K)
@@ -268,29 +355,38 @@ noncomputable def saddleSwapOrderIso : (U × X → EReal) ≃o (X × U → EReal
     change saddleSwap L ≤ saddleSwap K ↔ K ≤ L
     exact ⟨fun h => by simpa using saddleSwap_le_saddleSwap h, saddleSwap_le_saddleSwap⟩
 
+/-- The order isomorphism `ConvexAnalysis.saddleSwapOrderIso` sends $K$ to its swap. -/
 @[simp] theorem saddleSwapOrderIso_apply (K : U × X → EReal) :
     saddleSwapOrderIso K = saddleSwap K := rfl
 
+/-- The swap is injective. -/
 theorem saddleSwap_injective :
     Function.Injective (saddleSwap : (U × X → EReal) → X × U → EReal) :=
   (saddleSwapOrderIso (U := U) (X := X)).injective
 
-/-- The real-valued companion of `saddleSwap`: negate and exchange the two arguments. Note that
-`swapReal (swapReal K) = K` is **not** `rfl`, because the negation is on `ℝ` values. -/
+/-- The **real swap** of $K : U \times X \to \mathbb{R}$ is the function on $X \times U$ given by
+$(x, u) \mapsto -K(u, x)$.
+
+The identity `ConvexAnalysis.swapReal_swapReal` is not definitional, because the negation acts
+on real values. -/
 def swapReal (K : U × X → ℝ) : X × U → ℝ := fun q => -K (q.2, q.1)
 
+/-- The real swap is an involution: swapping $K$ twice gives $K$. -/
 @[simp] theorem swapReal_swapReal (K : U × X → ℝ) : swapReal (swapReal K) = K := by
   funext q
   simp [swapReal]
 
+/-- The real swap of $K$ takes the value $-K(u, x)$ at $(x, u)$. -/
 theorem swapReal_apply (K : U × X → ℝ) (q : X × U) : swapReal K q = -K (q.2, q.1) := rfl
 
+/-- The first effective domain of the swap of $K$ is $\operatorname{dom}_2 K$. -/
 @[simp] theorem dom₁_saddleSwap (K : U × X → EReal) : dom₁ (saddleSwap K) = dom₂ K := by
   ext x
   refine forall_congr' fun u => ?_
   change ⊥ < -(K (u, x)) ↔ K (u, x) < ⊤
   rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
 
+/-- The second effective domain of the swap of $K$ is $\operatorname{dom}_1 K$. -/
 @[simp] theorem dom₂_saddleSwap (K : U × X → EReal) : dom₂ (saddleSwap K) = dom₁ K := by
   ext u
   refine forall_congr' fun x => ?_
@@ -305,27 +401,32 @@ section ConcaveConvexOn
 
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
 
-/-- `K` is **concave-convex on `C × D`**: concave in its first argument on `C` for each point of
-`D`, convex in its second on `D` for each point of `C`. The finite, set-relative form of
-`ConcaveConvexFn`, the hypothesis the continuity theory runs on, and that of the simple-extension
-theorems of `Kernel.lean` and `Existence.lean`. -/
+/-- Let $C \subseteq U$ and $D \subseteq X$. A function $K : U \times X \to \mathbb{R}$ is
+**concave-convex on $C \times D$** if $K(\cdot, x)$ is concave on $C$ for every $x \in D$ and
+$K(u, \cdot)$ is convex on $D$ for every $u \in C$.
+
+This is the finite form, relative to sets, of `ConvexAnalysis.ConcaveConvexFn`. The continuity
+theory and the simple-extension theorems of `Numlib.Analysis.Convex.Saddle.Kernel` and
+`Numlib.Analysis.Convex.Saddle.Existence` use this hypothesis. -/
 structure ConcaveConvexOn (C : Set U) (D : Set X) (K : U × X → ℝ) : Prop where
-  /-- `K (·, x)` is concave on `C` for every `x ∈ D`. -/
+  /-- The slice $K(\cdot, x)$ is concave on $C$ for every $x \in D$. -/
   concave_fst : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)
-  /-- `K (u, ·)` is convex on `D` for every `u ∈ C`. -/
+  /-- The slice $K(u, \cdot)$ is convex on $D$ for every $u \in C$. -/
   convex_snd : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x)
 
 variable {C : Set U} {D : Set X} {K : U × X → ℝ}
 
-/-- The concave slice, as a family of *convex* functions: the form the convex lemmas consume. -/
+/-- If $K$ is concave-convex on $C \times D$ and $x \in D$, then $u \mapsto -K(u, x)$ is convex on
+$C$. -/
 theorem ConcaveConvexOn.convexOn_neg_fst (hK : ConcaveConvexOn C D K) {x : X} (hx : x ∈ D) :
     ConvexOn ℝ C fun u => -K (u, x) :=
   (hK.concave_fst x hx).neg
 
-/-- Negating a concave-convex function and swapping its arguments gives a concave-convex function
-of the swapped pair: `swapReal K = fun (x, w) => -K (w, x)` is concave-convex on `D × C`. Every
-statement about the concave variable is the corresponding statement about the convex variable,
-read at `swapReal K`. -/
+/-- If $K$ is concave-convex on $C \times D$, then its real swap $(x, u) \mapsto -K(u, x)$ is
+concave-convex on $D \times C$.
+
+So every statement about the concave variable is the corresponding statement about the convex
+variable, read at the real swap of $K$. -/
 theorem ConcaveConvexOn.swapReal (hK : ConcaveConvexOn C D K) :
     ConcaveConvexOn D C (ConvexAnalysis.swapReal K) :=
   ⟨fun w hw => (hK.convex_snd w hw).neg, fun y hy => (hK.concave_fst y hy).neg⟩
@@ -337,8 +438,8 @@ section SwapConvex
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {K : U × X → EReal}
 
-/-- `saddleSwap` preserves concave-convexity: negation exchanges concave and convex, and the swap
-exchanges the two variables. -/
+/-- If $K$ is concave-convex, then its swap $(x, u) \mapsto -K(u, x)$ is concave-convex: negation
+exchanges concave and convex, and the swap exchanges the two variables. -/
 theorem ConcaveConvexFn.saddleSwap (hK : ConcaveConvexFn K) :
     ConcaveConvexFn (ConvexAnalysis.saddleSwap K) :=
   ⟨fun u => (hK.convex_snd u).concaveFn_neg, fun x => (hK.concave_fst x).convexFn_neg⟩
@@ -350,11 +451,13 @@ section SwapClosure
 variable {U X : Type*} [TopologicalSpace U] [TopologicalSpace X] {K : U × X → EReal}
 
 omit [TopologicalSpace U] in
+/-- $\operatorname{cl}_1$ of the swap of $K$ is the swap of $\operatorname{cl}_2 K$. -/
 theorem partialCl₁_saddleSwap (K : U × X → EReal) :
     partialCl₁ (saddleSwap K) = saddleSwap (partialCl₂ K) :=
   funext fun q => concaveCl_neg (fun x => K (q.2, x)) q.1
 
 omit [TopologicalSpace X] in
+/-- $\operatorname{cl}_2$ of the swap of $K$ is the swap of $\operatorname{cl}_1 K$. -/
 theorem partialCl₂_saddleSwap (K : U × X → EReal) :
     partialCl₂ (saddleSwap K) = saddleSwap (partialCl₁ K) :=
   funext fun q => (neg_concaveCl (fun u => K (u, q.1)) q.2).symm
@@ -367,21 +470,26 @@ section Bracket
 
 variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- Rockafellar's **bracket** `⟨Fu, y⟩ = (F u)*(y)`, read as a function of `(u, y)`. -/
+/-- The **bracket** of a bifunction $F$ from $U$ to $X$, with respect to a pairing
+$\langle x, y \rangle$ of $X$ with $Y$, is the function $$\langle Fu, y \rangle = (Fu)^*(y) =
+\sup_x \{\langle x, y \rangle - (Fu)(x)\}$$ of $(u, y) \in U \times Y$. -/
 noncomputable def bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) : U → Y → EReal :=
   fun u y => convexConj Bx (F u) y
 
+/-- $\langle Fu, y \rangle = \sup_x \{\langle x, y \rangle - (Fu)(x)\}$. -/
 theorem bracket_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) (y : Y) :
     bracket Bx F u y = ⨆ x, ((Bx x y : ℝ) : EReal) - F u x := rfl
 
+/-- For each $u$, the function $\langle Fu, \cdot \rangle$ is the conjugate $(Fu)^*$. -/
 theorem bracket_eq_convexConj (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) :
     bracket Bx F u = convexConj Bx (F u) := rfl
 
-/-- The bracket **is** the partial conjugate of the graph function. -/
+/-- The bracket of $F$ is the conjugate in the second variable of the graph function
+$(u, x) \mapsto (Fu)(x)$ of $F$. -/
 theorem partialConj₂_graphFn (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (p : U × Y) :
     partialConj₂ Bx (graphFn F) p = bracket Bx F p.1 p.2 := rfl
 
-/-- `⟨Fu, ·⟩` is convex, with no hypothesis on `F`. -/
+/-- For every bifunction $F$ and every $u$, the function $\langle Fu, \cdot \rangle$ is convex. -/
 theorem convexFn_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (u : U) :
     ConvexFn (bracket Bx F u) :=
   convexFn_convexConj Bx (F u)
@@ -394,7 +502,10 @@ variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Modul
   [TopologicalSpace Y] [IsTopologicalAddGroup Y] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
   [IsContinuousPairing Bx.flip] {F : Bifun U X}
 
-/-- `⟨Fu, ·⟩` is closed as well as convex. -/
+/-- Let $Y$ carry a topology in which it is a topological group, and let the pairing
+$\langle x, y \rangle$ of $X$ with $Y$ be such that every $\langle x, \cdot \rangle$ is
+continuous on $Y$. For every bifunction $F$ and every $u$, the function
+$\langle Fu, \cdot \rangle$ is a closed convex function. -/
 theorem closedConvex_bracket (u : U) : ClosedConvex (bracket Bx F u) := closedConvex_convexConj
 
 end BracketClosed
@@ -406,8 +517,10 @@ section BracketConvex
 variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   [AddCommGroup Y] [Module ℝ Y] {F : Bifun U X}
 
-/-- The clause with content: `⟨F·, y⟩` is *concave* in `u` whenever `F` is a convex bifunction.
-Its negative is the infimal projection of a jointly convex function along `(u, x) ↦ u`. -/
+/-- If $F$ is a convex bifunction, then $u \mapsto \langle Fu, y \rangle$ is concave for every $y$.
+
+The negative $-\langle Fu, y \rangle = \inf_x \{(Fu)(x) - \langle x, y \rangle\}$ is the infimal
+projection of a jointly convex function along $(u, x) \mapsto u$. -/
 theorem concaveFn_bracket (hF : ConvexBifun F) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (y : Y) :
     ConcaveFn fun u => bracket Bx F u y := by
   rw [concaveFn_iff_convexFn_neg]
@@ -427,7 +540,8 @@ theorem concaveFn_bracket (hF : ConvexBifun F) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ]
   rw [hrw]
   exact convexFn_iInf_right hconv
 
-/-- The bracket of a convex bifunction is concave-convex. -/
+/-- If $F$ is a convex bifunction, then its bracket $(u, y) \mapsto \langle Fu, y \rangle$ is
+concave-convex. This is part of Theorem 33.1 of [rockafellar1970convex]. -/
 theorem concaveConvexFn_bracket (hF : ConvexBifun F) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) :
     ConcaveConvexFn fun p : U × Y => bracket Bx F p.1 p.2 :=
   ⟨fun y => concaveFn_bracket hF Bx y, fun u => convexFn_bracket Bx F u⟩
@@ -441,8 +555,13 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
   [ContinuousSMul ℝ X] [LocallyConvexSpace ℝ X] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
   [IsCompatiblePairing Bx] {F : Bifun U X}
 
-/-- The inversion formula: `cl (F u)` is recovered from the bracket by conjugating back. This is
-the Fenchel–Moreau theorem, uniformly in `u`. -/
+/-- The **inversion formula** for the bracket. Let $X$ be a locally convex topological vector space
+with a compatible pairing $\langle x, y \rangle$ with $Y$: every $\langle \cdot, y \rangle$ is
+continuous on $X$, and every continuous linear functional on $X$ has this form. If $F$ is a
+convex bifunction, then for every $u$ $$\operatorname{cl}(Fu)(x) = \sup_y \{\langle x, y
+\rangle - \langle Fu, y \rangle\}.$$ This is part of Theorem 33.1 of [rockafellar1970convex].
+
+The proof is the Fenchel–Moreau theorem, applied uniformly in $u$. -/
 theorem convexCl_eq_convexConj_bracket (hF : ConvexBifun F) (u : U) :
     convexCl (F u) = convexConj Bx.flip (bracket Bx F u) :=
   (convexBiconj_eq_convexCl (B := Bx) (hF.convexFn_apply u)).symm
@@ -455,11 +574,14 @@ section OfSaddleDefs
 
 variable {U X Y : Type*} [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- The convex bifunction attached to a saddle-function: `F u = K (u, ·)*`, the conjugate taken
-over the flipped pairing. -/
+/-- The bifunction attached to $K : U \times Y \to [-\infty, +\infty]$, with respect to a pairing
+$\langle x, y \rangle$ of $X$ with $Y$, is the bifunction $F$ from $U$ to $X$ with $$(Fu)(x) =
+\sup_y \{\langle x, y \rangle - K(u, y)\},$$ the conjugate of $K(u, \cdot)$ with respect to the
+flipped pairing. -/
 noncomputable def bifunOfSaddle (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) : Bifun U X :=
   fun u x => convexConj Bx.flip (fun y => K (u, y)) x
 
+/-- $(Fu)(x) = \sup_y \{\langle x, y \rangle - K(u, y)\}$ for the bifunction $F$ attached to $K$. -/
 theorem bifunOfSaddle_apply (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) (u : U) (x : X) :
     bifunOfSaddle Bx K u x = ⨆ y, ((Bx x y : ℝ) : EReal) - K (u, y) := rfl
 
@@ -470,8 +592,10 @@ section OfSaddle
 variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   [AddCommGroup Y] [Module ℝ Y] {K : U × Y → EReal}
 
-/-- The bifunction attached to a concave-convex `K` is convex: its graph function is a pointwise
-supremum of jointly convex functions. -/
+/-- If $K$ is concave-convex, then the bifunction attached to $K$ is convex. This is part of Theorem
+33.1 of [rockafellar1970convex].
+
+The graph function of the bifunction is a pointwise supremum of jointly convex functions. -/
 theorem convexBifun_bifunOfSaddle (hK : ConcaveConvexFn K) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) :
     ConvexBifun (bifunOfSaddle Bx K) := by
   have hconv : ∀ y : Y,
@@ -502,7 +626,11 @@ variable {U X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Modul
   [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
   [IsCompatiblePairing Bx.flip] {K : U × Y → EReal}
 
-/-- The bracket of that bifunction is `cl₂ K`. -/
+/-- Let $Y$ be a locally convex topological vector space, and let the pairing $\langle x, y \rangle$
+of $X$ with $Y$ be compatible on $Y$: every $\langle x, \cdot \rangle$ is continuous, and every
+continuous linear functional on $Y$ has this form. If $K$ is concave-convex on $U \times Y$ and
+$F$ is the bifunction attached to $K$, then $\langle Fu, y \rangle = \operatorname{cl}_2 K(u,
+y)$ for all $(u, y)$. This is part of Theorem 33.1 of [rockafellar1970convex]. -/
 theorem bracket_bifunOfSaddle (hK : ConcaveConvexFn K) (p : U × Y) :
     bracket Bx (bifunOfSaddle Bx K) p.1 p.2 = partialCl₂ K p :=
   congrFun (convexBiconj_eq_convexCl (B := Bx.flip) (hK.convex_snd p.1)) p.2
@@ -515,12 +643,16 @@ section CorClosed
 
 variable {U X : Type*}
 
-/-- `cl₂ K` is convex-closed. -/
+/-- Let $X$ be a commutative topological group. For every $K$ on $U \times X$, the partial closure
+$\operatorname{cl}_2 K$ is convex-closed: $\operatorname{cl}_2 \operatorname{cl}_2 K =
+\operatorname{cl}_2 K$. -/
 theorem partialClosed₂_partialCl₂ [TopologicalSpace X] [AddCommGroup X]
     [IsTopologicalAddGroup X] (K : U × X → EReal) : PartialClosed₂ (partialCl₂ K) :=
   partialClosed₂_iff.2 fun u => closedConvex_convexCl fun x => K (u, x)
 
-/-- `cl₁ K` is concave-closed. -/
+/-- Let $U$ be a commutative topological group. For every $K$ on $U \times X$, the partial closure
+$\operatorname{cl}_1 K$ is concave-closed: $\operatorname{cl}_1 \operatorname{cl}_1 K =
+\operatorname{cl}_1 K$. -/
 theorem partialClosed₁_partialCl₁ [TopologicalSpace U] [AddCommGroup U]
     [IsTopologicalAddGroup U] (K : U × X → EReal) : PartialClosed₁ (partialCl₁ K) :=
   partialClosed₁_iff.2 fun x => closedConcave_concaveCl fun u => K (u, x)
@@ -532,13 +664,15 @@ section Cor
 variable {U X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup X] [Module ℝ X]
   {K : U × X → EReal}
 
-/-- `cl₂` preserves convexity in the second variable. -/
+/-- Let $X$ be a topological vector space. If $K$ is concave-convex on $U \times X$, then
+$\operatorname{cl}_2 K(u, \cdot)$ is convex for every $u$. -/
 theorem convexFn_partialCl₂ [TopologicalSpace X] [IsTopologicalAddGroup X] [ContinuousSMul ℝ X]
     (hK : ConcaveConvexFn K) (u : U) : ConvexFn fun x => partialCl₂ K (u, x) := by
   rw [partialCl₂_slice]
   exact convexFn_convexCl (hK.convex_snd u)
 
-/-- `cl₁` preserves concavity in the first variable. -/
+/-- Let $U$ be a topological vector space. If $K$ is concave-convex on $U \times X$, then
+$\operatorname{cl}_1 K(\cdot, x)$ is concave for every $x$. -/
 theorem concaveFn_partialCl₁ [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
     (hK : ConcaveConvexFn K) (x : X) : ConcaveFn fun u => partialCl₁ K (u, x) := by
   rw [partialCl₁_slice]
@@ -552,14 +686,20 @@ section ConcaveBracket
 
 variable {U V Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
 
-/-- Rockafellar's bracket for a *concave* bifunction. Where `bracket` conjugates convexly in the
-second variable, this one conjugates concavely in the first. -/
+/-- The **bracket** of a bifunction $G$ from $Y$ to $V$, with respect to a pairing
+$\langle u, v \rangle$ of $U$ with $V$, is the function $$\langle u, Gy \rangle = \inf_v
+\{\langle u, v \rangle - (Gy)(v)\}$$ of $(u, y) \in U \times Y$. It is meant for a concave
+bifunction $G$: where `ConvexAnalysis.bracket` takes a convex conjugate in the second variable,
+this bracket takes a concave conjugate in the first. -/
 noncomputable def concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (G : Bifun Y V) : U → Y → EReal :=
   fun u y => concaveConj Bu.flip (G y) u
 
+/-- $\langle u, Gy \rangle = \inf_v \{\langle u, v \rangle - (Gy)(v)\}$. -/
 theorem concaveBracket_apply (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (G : Bifun Y V) (u : U) (y : Y) :
     concaveBracket Bu G u y = ⨅ v, ((Bu u v : ℝ) : EReal) - G y v := rfl
 
+/-- For each $y$, the function $u \mapsto \langle u, Gy \rangle$ is the concave conjugate of $Gy$
+with respect to the flipped pairing. -/
 theorem concaveBracket_eq_concaveConj (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (G : Bifun Y V) (y : Y) :
     (fun u => concaveBracket Bu G u y) = concaveConj Bu.flip (G y) := rfl
 
@@ -570,8 +710,13 @@ section ConcaveBracketAdjoint
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- The concave adjoint is the conjugate of the concave bracket — the mirror of
-`convexAdjointBifun_eq_concaveConj_bracket`, with the two conjugations in the opposite order. -/
+/-- Let $G$ be a bifunction from $Y$ to $V$, and let $G^*$ be its adjoint as a concave bifunction,
+$(G^* u)(x) = \sup_{(y, v)} \{(Gy)(v) + \langle x, y \rangle - \langle u, v \rangle\}$. Then
+$G^*$ is the conjugate in $y$ of the bracket of $G$: $$(G^* u)(x) = \sup_y \{\langle x, y
+\rangle - \langle u, Gy \rangle\}.$$
+
+This is the mirror of `ConvexAnalysis.convexAdjointBifun_eq_concaveConj_bracket`, with the two
+conjugations in the opposite order. -/
 theorem concaveAdjointBifun_eq_convexConj_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (G : Bifun Y V) (u : U) (x : X) :
     concaveAdjointBifun Bu Bx G u x = convexConj Bx.flip (fun y => concaveBracket Bu G u y) x := by
@@ -594,13 +739,17 @@ variable {U V Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
   [AddCommGroup Y] [Module ℝ Y] {G : Bifun Y V}
 
 omit [AddCommGroup Y] [Module ℝ Y] in
-/-- For a concave bifunction, `⟨·, G y⟩` is concave, being a concave conjugate. -/
+/-- For every bifunction $G$ from $Y$ to $V$ and every $y$, the function
+$u \mapsto \langle u, Gy \rangle$ is concave, because it is a concave conjugate. -/
 theorem concaveFn_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (G : Bifun Y V) (y : Y) :
     ConcaveFn fun u => concaveBracket Bu G u y :=
   concaveFn_concaveConj Bu.flip (G y)
 
-/-- For a concave bifunction, `⟨u, G ·⟩` is convex. The mirror of `concaveFn_bracket`, and again
-an infimal projection of a jointly convex function. -/
+/-- If $G$ is a concave bifunction from $Y$ to $V$, then $y \mapsto \langle u, Gy \rangle$ is convex
+for every $u$.
+
+This is the mirror of `ConvexAnalysis.concaveFn_bracket`. Again the function is an infimal
+projection of a jointly convex function. -/
 theorem convexFn_concaveBracket (hG : ConcaveBifun G) (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (u : U) :
     ConvexFn fun y => concaveBracket Bu G u y := by
   have hconv : ConvexFn (fun q : Y × V => -(graphFn G q) + ((Bu u q.2 : ℝ) : EReal)) := by
@@ -615,7 +764,8 @@ theorem convexFn_concaveBracket (hG : ConcaveBifun G) (Bu : U →ₗ[ℝ] V →�
   rw [hrw]
   exact convexFn_iInf_right hconv
 
-/-- The concave bracket of a concave bifunction is concave-convex. -/
+/-- If $G$ is a concave bifunction from $Y$ to $V$, then its bracket
+$(u, y) \mapsto \langle u, Gy \rangle$ is concave-convex. -/
 theorem concaveConvexFn_concaveBracket (hG : ConcaveBifun G) (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) :
     ConcaveConvexFn fun p : U × Y => concaveBracket Bu G p.1 p.2 :=
   ⟨fun y => concaveFn_concaveBracket Bu G y, fun u => convexFn_concaveBracket hG Bu u⟩
@@ -627,9 +777,13 @@ section Adjoint
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
 
-/-- **The adjoint is the concave conjugate of the bracket.** `⟨Fu, y⟩` and `F*` are the two halves
-of one conjugation of the graph function: first convexly in `x`, then concavely in `u`. This is
-what makes `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` a case of concave Fenchel–Moreau. -/
+/-- The **adjoint is the concave conjugate of the bracket**. For every bifunction $F$ from $U$ to
+$X$, with pairings of $U$ with $V$ and of $X$ with $Y$, $$(F^* y)(v) = \inf_u \{\langle u, v
+\rangle - \langle Fu, y \rangle\}.$$
+
+The bracket and the adjoint are the two halves of one conjugation of the graph function: first
+convexly in $x$, then concavely in $u$. So the equation $\langle u, F^* y \rangle =
+\operatorname{cl}_1 \langle Fu, y \rangle$ is a case of the concave Fenchel–Moreau theorem. -/
 theorem convexAdjointBifun_eq_concaveConj_bracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (y : Y) (v : V) :
     convexAdjointBifun Bu Bx F y v = concaveConj Bu (fun u => bracket Bx F u y) v := by
@@ -656,9 +810,15 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [IsTopologicalAddGroup U] [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U]
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} {F : Bifun U X}
 
-/-- `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩`. Once `convexAdjointBifun_eq_concaveConj_bracket` identifies `F* y`
-with `concaveConj Bu ⟨F·, y⟩`, this is concave Fenchel–Moreau applied to the concavity of
-`⟨F·, y⟩`. -/
+/-- Let $U$ be a locally convex topological vector space with a compatible pairing
+$\langle u, v \rangle$ with $V$. If $F$ is a convex bifunction from $U$ to $X$, then for every
+$y$ the concave conjugate of $F^* y$ is the partial closure of the bracket: $$\inf_v \{\langle
+u, v \rangle - (F^* y)(v)\} = \operatorname{cl}_1 \langle Fu, y \rangle \quad \text{for all }
+u.$$
+
+The proof identifies $F^* y$ with the concave conjugate of $u \mapsto \langle Fu, y \rangle$
+(`ConvexAnalysis.convexAdjointBifun_eq_concaveConj_bracket`) and applies the concave
+Fenchel–Moreau theorem to this concave function. -/
 theorem concaveConj_convexAdjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
     concaveConj Bu.flip (fun v => convexAdjointBifun Bu Bx F y v)
       = fun u => partialCl₁ (fun p : U × Y => bracket Bx F p.1 p.2) (u, y) := by
@@ -668,7 +828,11 @@ theorem concaveConj_convexAdjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y :
   rw [hbr]
   exact concaveBiconj_eq_concaveCl (concaveFn_bracket hF Bx y)
 
-/-- `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩`, in bracket notation. -/
+/-- Let $U$ be a locally convex topological vector space with a compatible pairing
+$\langle u, v \rangle$ with $V$. If $F$ is a convex bifunction from $U$ to $X$, then for every
+$y$ $$\langle u, F^* y \rangle = \operatorname{cl}_1 \langle Fu, y \rangle \quad \text{for all }
+u,$$ where $\operatorname{cl}_1$ acts on the bracket $(u, y) \mapsto \langle Fu, y \rangle$.
+This is the first equation of Theorem 33.2 of [rockafellar1970convex]. -/
 theorem concaveBracket_convexAdjointBifun_eq_partialCl₁ (hF : ConvexBifun F) (y : Y) :
     (fun u => concaveBracket Bu (convexAdjointBifun Bu Bx F) u y)
       = fun u => partialCl₁ (fun p : U × Y => bracket Bx F p.1 p.2) (u, y) :=
@@ -684,9 +848,13 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ} [IsCompatiblePairing Bx.flip]
   {G : Bifun Y V}
 
-/-- The general form in which the second equation is proved: for a concave bifunction `G`, the
-bracket of `G*` is the convex closure in `y` of the concave bracket of `G`. Fenchel–Moreau on `Y`,
-uniformly in `u`. -/
+/-- Let $Y$ be a locally convex topological vector space, and let the pairing $\langle x, y \rangle$
+of $X$ with $Y$ be compatible on $Y$. If $G$ is a concave bifunction from $Y$ to $V$, then for
+every $u$ $$\langle G^* u, y \rangle = \operatorname{cl}_2 \langle u, G \cdot \rangle (u, y)
+\quad \text{for all } y,$$ where $G^*$ is the adjoint of the concave bifunction $G$.
+
+This is the general form in which the second equation of Theorem 33.2 of [rockafellar1970convex]
+is proved: the Fenchel–Moreau theorem on $Y$, applied uniformly in $u$. -/
 theorem bracket_concaveAdjointBifun_eq_partialCl₂ (hG : ConcaveBifun G) (u : U) :
     bracket Bx (concaveAdjointBifun Bu Bx G) u
       = fun y => partialCl₂ (fun p : U × Y => concaveBracket Bu G p.1 p.2) (u, y) := by
@@ -708,8 +876,17 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} [IsCompatiblePairing Bu] {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
   [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] {F : Bifun U X}
 
-/-- `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`. The adjoint of `F` is concave with no hypothesis on `F`, so
-this is the concave form at `F*` followed by the biconjugation identity `F** = cl F`. -/
+/-- Let $U$, $X$ and $Y$ be locally convex topological vector spaces. Let the pairing
+$\langle u, v \rangle$ of $U$ with $V$ be compatible on $U$, and let the pairing
+$\langle x, y \rangle$ of $X$ with $Y$ be compatible on both $X$ and $Y$. If $F$ is a convex
+bifunction from $U$ to $X$, then for every $u$ $$\operatorname{cl}_2 \langle u, F^* \cdot
+\rangle (u, y) = \langle (\operatorname{cl} F) u, y \rangle \quad \text{for all } y,$$ where
+$\operatorname{cl} F$ is the bifunction whose graph function is the closure of the graph
+function of $F$. This is the second equation of Theorem 33.2 of [rockafellar1970convex].
+
+The adjoint $F^*$ is concave with no hypothesis on $F$. So the statement is
+`ConvexAnalysis.bracket_concaveAdjointBifun_eq_partialCl₂` at $G = F^*$, followed by the
+biconjugation identity $F^{**} = \operatorname{cl} F$. -/
 theorem partialCl₂_concaveBracket_convexAdjointBifun (hF : ConvexBifun F) (u : U) :
     (fun y => partialCl₂
         (fun p : U × Y => concaveBracket Bu (convexAdjointBifun Bu Bx F) p.1 p.2) (u, y))
@@ -728,8 +905,14 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
   [IsTopologicalAddGroup Y] [ContinuousSMul ℝ Y] [LocallyConvexSpace ℝ Y] {K : U × Y → EReal}
 
 omit [AddCommGroup V] [Module ℝ V] in
-/-- The clause that is not pointwise: `cl₂ K` is again concave-convex. It is a bracket, and
-brackets are concave-convex. -/
+/-- Let $Y$ be a locally convex topological vector space, and suppose that a pairing
+$\langle x, y \rangle$ of some space $X$ with $Y$ is compatible on $Y$. If $K$ is concave-convex
+on $U \times Y$, then $\operatorname{cl}_2 K$ is concave-convex. This is part of Corollary
+33.1.1 of [rockafellar1970convex].
+
+Concavity in $u$ is not a pointwise property of the closure. The proof writes
+$\operatorname{cl}_2 K$ as the bracket of the bifunction attached to $K$, and brackets are
+concave-convex. -/
 theorem concaveConvexFn_partialCl₂ (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx.flip]
     (hK : ConcaveConvexFn K) : ConcaveConvexFn (partialCl₂ K) := by
   have h : (fun p : U × Y => bracket Bx (bifunOfSaddle Bx K) p.1 p.2) = partialCl₂ K :=
@@ -745,8 +928,13 @@ variable {U V X : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Modul
   [AddCommGroup X] [Module ℝ X] [TopologicalSpace U] [IsTopologicalAddGroup U]
   [ContinuousSMul ℝ U] [LocallyConvexSpace ℝ U] {K : U × X → EReal}
 
-/-- Mirroring `concaveConvexFn_partialCl₂`: `cl₁ K` is again concave-convex. The pairing needed
-is the one on the concave variable. -/
+/-- Let $U$ be a locally convex topological vector space with a compatible pairing
+$\langle u, v \rangle$ with some space $V$. If $K$ is concave-convex on $U \times X$, then
+$\operatorname{cl}_1 K$ is concave-convex. This is part of Corollary 33.1.1 of
+[rockafellar1970convex].
+
+This is the mirror of `ConvexAnalysis.concaveConvexFn_partialCl₂`. The pairing that it needs is
+the one on the concave variable. -/
 theorem concaveConvexFn_partialCl₁ (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     (hK : ConcaveConvexFn K) : ConcaveConvexFn (partialCl₁ K) := by
   have h : partialCl₁ K = saddleSwap (partialCl₂ (saddleSwap K)) := by

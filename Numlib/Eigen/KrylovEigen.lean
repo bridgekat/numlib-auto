@@ -15,95 +15,125 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 /-!
 # Convergence of the Krylov subspace towards an eigenvector
 
-For a symmetric operator `A` with eigenvalues `λ_1 ≥ … ≥ λ_n` and orthonormal eigenvectors `u_1, …,
-u_n`, this file bounds the angle between `u_i` and the Krylov subspace `𝒦_m(A, v)`, and through it
-the error of the Ritz values computed on that subspace.  These are the convergence estimates of the
-symmetric Lanczos process due to Kaniel, Paige and [saad2011numerical], stated in the angle
-vocabulary of `Numlib.Analysis.InnerProductSpace.Projection.Angle` and following
-[saad2011numerical], §6.6.  The three ingredients are the ones that also prove the conjugate
-gradient error bound of `Numlib.Krylov.Convergence.CG`: a variational characterization, a polynomial
-norm bound and a Chebyshev min–max.
+Let $A$ be a symmetric operator on an inner product space $E$ over $\mathbb{R}$ or $\mathbb{C}$,
+with eigenvalues $\lambda_0 \ge \lambda_1 \ge \dots \ge \lambda_{n-1}$ and orthonormal eigenvectors
+$u_0, \dots, u_{n-1}$. For a starting vector $v$, let $\mathcal{K}_m(A, v) = \operatorname{span}\{v,
+A v, \dots, A^{m-1} v\}$ be the Krylov subspace. This module bounds the angle
+$\theta(u_i, \mathcal{K}_m)$ between $u_i$ and the Krylov subspace, and through it the error of the
+Ritz values, the eigenvalues of the compression of $A$ to $\mathcal{K}_m$. These are the convergence
+estimates of the symmetric Lanczos process due to Kaniel, Paige and Saad. The presentation follows
+[saad2011numerical], §6.6, and uses the angles of
+`Numlib.Analysis.InnerProductSpace.Projection.Angle`. With $T_k$ the Chebyshev polynomial of the
+first kind,
+$$\gamma_i = \frac{\lambda_i - \lambda_{i+1}}{\lambda_{i+1} - \lambda_{n-1}}, \qquad \kappa_i =
+  \prod_{j < i} \frac{\lambda_j - \lambda_{n-1}}{\lambda_j - \lambda_i},$$
+the main bound is $\tan\theta(u_i, \mathcal{K}_m) \le \kappa_i \tan\theta(u_i, v) / T_k(1 + 2
+\gamma_i)$ for $i + k < m$. The Kaniel–Paige–Saad theorem bounds the Ritz values $\theta_i$ by $0
+\le \lambda_i - \theta_i \le (\lambda_0 - \lambda_{n-1}) (\kappa_i \tan\theta(u_i, v) / T_k(1 + 2
+\gamma_i))^2$, with the constant $\kappa_i$ built from the Ritz values. A block version holds for
+block Krylov subspaces.
+
+Without symmetry, the same variational idea bounds the distance from an eigenvector $u_i$ of a
+diagonalizable operator to $\mathcal{K}_m(A, v)$, for $v = \sum_k \alpha_k u_k$. The bounds then
+have the factor $\xi_i = \sum_{k \neq i} |\alpha_k| / |\alpha_i|$, and an explicit geometric or
+Chebyshev rate follows when a disc or an ellipse encloses the rest of the spectrum. The module also
+identifies the subdiagonal Arnoldi coefficient as the norm of $(1 - P_m) A$ on $\mathcal{K}_m$, and
+the eigenvalues of the Lanczos tridiagonal matrix as the Ritz values.
+
+## Main definitions
+
+* `Polynomial.deflator`: the polynomial $\prod_{j \in s} (r_j - X) / (r_j - c)$, which vanishes at
+  each $r_j$ and has the value $1$ at $c$.
+* `Lanczos.ritzValues`: the eigenvalues of the Lanczos tridiagonal matrix $T_m$, sorted in
+  decreasing order.
 
 ## Main results
 
-* `Lanczos.tan_angle_eq_iInf`: the tangent of the angle between an eigenvector `u` and `𝒦_m(A, v)`
-  is a minimum over polynomials, `min { ‖p(A) w‖ / ‖⟪u, v⟫‖ : deg p < m, p μ = 1 }`, where `w = v -
-  ⟪u, v⟫ u` is the part of `v` orthogonal to `u`.  This is what turns the geometry into a polynomial
-  approximation problem. It needs one eigenpair rather than a full eigenbasis, and no finite
-  dimension. `Lanczos.tan_angle_eq_iInf_mul` is the same statement with `w` normalized, which is how
-  the source writes it, and `Lanczos.exists_norm_aeval_div_eq_tan_angle` says the minimum is
-  attained.
-* `Lanczos.tan_angle_le_of_forall_abs_eval_le`: every real polynomial that takes the value `1` at
-  `λ_i` and is bounded by `M` at the other eigenvalues gives `tan θ(u_i, 𝒦_m) ≤ M tan θ(u_i, v)`.
-  Everything below is this lemma together with a choice of polynomial.
-* `Polynomial.exists_deflated_chebyshev`: the choice.  The polynomial with prescribed roots
-  `Polynomial.deflator` removes finitely many points from the min–max problem at the cost of a
-  factor, and the Chebyshev polynomial of an interval, normalized at a point outside it, is optimal
-  for what remains.
-* `Lanczos.tan_angle_le`: `tan θ(u_i, 𝒦_m) ≤ κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i)`, where `T_k` is the
-  Chebyshev polynomial of the first kind, `γ_i = (λ_i - λ_{i+1}) / (λ_{i+1} - λ_n)` and `κ_i = ∏_{j
-  < i} (λ_j - λ_n) / (λ_j - λ_i)`.
-* `Lanczos.kaniel_paige_saad`: the Kaniel–Paige–[saad2011numerical] bound on the error of the Ritz
-  values `θ_i`, the eigenvalues of the compression of `A` to `𝒦_m(A, v)`: `0 ≤ λ_i - θ_i ≤ (λ_1 -
-  λ_n) (κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i))²`, where the deflation constant is now built from the
-  Ritz values, `κ_i = ∏_{j < i} (θ_j - λ_n) / (θ_j - λ_i)`.  The lower bound is Cauchy interlacing;
-  the upper bound is Courant–Fischer for the compression, the competitor vector being orthogonal to
-  the first `i` Ritz vectors because the competitor polynomial vanishes at the corresponding Ritz
-  values.  `Lanczos.ritzValues` are the sorted eigenvalues of the Lanczos tridiagonal `T_m`, equal
-  to those Ritz values below the grade (`Lanczos.ritzValues_eq_eigenvalues_compression`).
-* `BlockLanczos.kaniel_paige_saad`: the block version (Underwood; [golub2013matrix] Theorem
-  10.3.2) for the compression to a block Krylov subspace, with `tan φ_p` the tangent of the
-  largest principal angle between the starting block and the leading `p` eigenvectors.
+* `Lanczos.tan_angle_eq_iInf`: for an eigenpair $(\mu, u)$ of a symmetric $A$ with $\|u\| = 1$ and
+  $\langle u, v \rangle \neq 0$, $\tan\theta(u, \mathcal{K}_m) = \min \{ \|p(A) w\| / |\langle u, v
+  \rangle| : \deg p < m, \ p(\mu) = 1 \}$, where $w = v - \langle u, v \rangle u$;
+  `Lanczos.tan_angle_eq_iInf_mul` is the form with $w$ normalized, and
+  `Lanczos.exists_norm_aeval_div_eq_tan_angle` says that the minimum is attained.
+* `Lanczos.tan_angle_le_of_forall_abs_eval_le`: a real polynomial with $p(\lambda_i) = 1$ and
+  $|p| \le M$ at the other eigenvalues gives $\tan\theta(u_i, \mathcal{K}_m) \le M \tan\theta(u_i,
+  v)$.
+* `Polynomial.exists_deflated_chebyshev`: the competitor polynomial, the product of a polynomial
+  with prescribed roots and a normalized Chebyshev polynomial of an interval.
+* `Lanczos.tan_angle_le`: $\tan\theta(u_i, \mathcal{K}_m) \le \kappa_i \tan\theta(u_i, v) / T_k(1 +
+  2 \gamma_i)$.
+* `Lanczos.kaniel_paige_saad`: the Kaniel–Paige–Saad bound on the Ritz values.
+* `Lanczos.ritzValues_eq_eigenvalues_compression`: before a breakdown, the eigenvalues of the
+  Lanczos tridiagonal matrix are the Ritz values.
+* `BlockLanczos.kaniel_paige_saad`: the block version, due to Underwood (Theorem 10.3.2 of
+  [golub2013matrix]).
+* `Arnoldi.norm_starProjection_comp_orthogonal_eq_coeff`: the norm of $(1 - P_m) A$ on
+  $\mathcal{K}_m$ is the subdiagonal Arnoldi coefficient ([saad2011numerical], Proposition 6.6).
+* `Arnoldi.norm_sub_starProjection_le_iInf`: the distance from an eigenvector of a diagonalizable
+  operator to $\mathcal{K}_m$ is bounded by a minimum over polynomials ([saad2011numerical], Lemma
+  6.2).
+* `Arnoldi.norm_sub_starProjection_le_of_mem_closedBall`: the geometric bound
+  $\xi_i (\rho / |\lambda_i - c|)^{m-1}$ when a disc of centre $c$ and radius $\rho$ encloses the
+  rest of the spectrum ([saad2011numerical], Proposition 6.10).
+* `Arnoldi.norm_sub_starProjection_le_of_mem_ellipse`: the Chebyshev bound when an ellipse encloses
+  the rest of the spectrum ([saad2011numerical], Theorem 6.8).
 
-The eigenvector estimates hold for *any* orthonormal eigenbasis `b` with sorted eigenvalues `λ`
-(`A (b j) = λ j • b j`, `Antitone λ`), as in the textbooks' "any Schur decomposition"; the
-`…_eigenvectorBasis` corollaries specialize to Mathlib's
-`LinearMap.IsSymmetric.eigenvectorBasis`.
+## Proof outline
 
-* `Arnoldi.norm_sub_starProjection_le_iInf`: the same variational idea without symmetry.  For a
-  diagonalizable `A` with unit eigenvectors `u_k` and `v = ∑ α_k u_k`, the distance from `u_i` to
-  `𝒦_m(A, v)` is bounded by a minimum over the same polynomials, now weighted by the expansion
-  coefficients; `Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` is the geometric decay
-  `ξ_i (ρ/‖λ_i - c‖)^(m-1)` that a disc enclosing the rest of the spectrum gives, with `ξ_i = ∑_{k ≠
-  i} ‖α_k‖/‖α_i‖`.  The triangle inequality replaces Pythagoras, which is why the factor `ξ_i`
-  appears where the symmetric bounds have none.
-* `Arnoldi.norm_sub_starProjection_le_of_mem_ellipse` is the same estimate for an *ellipse*
-  enclosing the rest of the spectrum, with the Chebyshev ratio `C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`
-  in place of the geometric factor.  Its competitor is the shifted, normalized Chebyshev polynomial
-  of `Numlib/RingTheory/Polynomial/ChebyshevEllipse`, whose maximum on the boundary ellipse is known
-  and travels into the region the ellipse encloses by the maximum modulus principle there.
-
-The angle bound and the Ritz value bound each come in two forms: one taking as data an interval
-`[lo, hi]` enclosing the eigenvalues after the `i`-th (`…_of_mem_Icc`), which is the general
-statement and carries the sharper constant `λ_i - lo` in place of `λ_1 - λ_n`, and one specializing
-it to `[λ_n, λ_{i+1}]`, which is the form the literature states.
+The proofs use the three ingredients of the conjugate gradient error bound of
+`Numlib.Krylov.Convergence.CG`: a variational characterization, a bound on the norm of a polynomial
+in $A$, and a Chebyshev min–max problem. The first lemma turns the angle into a polynomial
+approximation problem, because $\langle u, p(A) x \rangle = p(\mu) \langle u, x \rangle$ for an
+eigenpair $(\mu, u)$. A polynomial with roots at the eigenvalues before $\lambda_i$ removes them
+from the min–max problem at the cost of the factor $\kappa_i$, and the Chebyshev polynomial of the
+interval that contains the remaining eigenvalues, normalized at $\lambda_i$, is optimal for what
+remains. For the Ritz values, the lower bound $\theta_i \le \lambda_i$ is Cauchy interlacing. The
+upper bound is the Courant–Fischer theorem for the compression: the competitor vector is orthogonal
+to the first $i$ Ritz vectors, because the competitor polynomial vanishes at the corresponding Ritz
+values. Without symmetry, the triangle inequality replaces the theorem of Pythagoras, which is why
+the factor $\xi_i$ appears. For an ellipse, the competitor is the shifted and normalized Chebyshev
+polynomial of `Numlib.RingTheory.Polynomial.ChebyshevEllipse`; its maximum on the ellipse is known,
+and the maximum modulus principle carries the bound into the region that the ellipse encloses.
 
 ## Implementation notes
 
-The source states the first lemma with the spectral projector onto the whole eigenspace of `λ_i`.
-Here the projector is onto the line through the single eigenvector `u_i`, which is what keeps the
-statement true at a multiple eigenvalue: the components of `v` along the other eigenvectors for
-`λ_i` then belong to `w`, as they must, no Krylov subspace being able to separate them from `u_i`.
-What the proof uses is that for symmetric `A` both `𝕜 ∙ u_i` and its orthogonal complement are
-invariant.
-
-Neighbouring and extreme indices are passed as data with their defining properties — `iS` with `i +
-1 = iS`, and `first`, `last` characterized by `first ≤ j` and `j ≤ last` for all `j` — rather than
-computed.  This keeps `Fin` arithmetic out of the statements, and lets a consumer that knows only
-part of the spectrum still apply them.
+* Indices start at $0$: $\lambda_0$ is the largest eigenvalue and $\lambda_{n-1}$ the smallest, and
+  the Ritz values $\theta_0 \ge \theta_1 \ge \dots$ are indexed by `Fin m`.
+* The eigenvector estimates hold for every orthonormal eigenbasis $b$ with real eigenvalues
+  $\lambda$ ($A b_j = \lambda_j b_j$, and `Antitone lam` where the order matters), as in the "any
+  Schur decomposition" of the textbooks. The corollaries named `…_eigenvectorBasis` specialize them
+  to `LinearMap.IsSymmetric.eigenvectorBasis`.
+* [saad2011numerical] states the first lemma with the spectral projector onto the whole eigenspace
+  of $\lambda_i$. Here the projector is onto the line through the single eigenvector $u_i$. This
+  keeps the statement true at a multiple eigenvalue: the components of $v$ along the other
+  eigenvectors for $\lambda_i$ then belong to $w$, and no Krylov subspace can separate them from
+  $u_i$. The proof uses only that, for symmetric $A$, the line through $u_i$ and its orthogonal
+  complement are both invariant.
+* The angle bound and the Ritz value bound each have two forms. The form `…_of_mem_Icc` takes as
+  data an interval $[lo, hi]$ that contains the eigenvalues after the $i$-th; it is the general
+  statement, with the sharper constant $\lambda_i - lo$ in place of $\lambda_0 - \lambda_{n-1}$. The
+  other form specializes it to the interval $[\lambda_{n-1}, \lambda_{i+1}]$, which is the form of
+  the literature.
+* Neighbouring and extreme indices are given as data with their defining properties, not computed:
+  `iS` with `i + 1 = iS`, and `first` and `last` with `IsBot first` and `IsTop last`. This keeps
+  `Fin` arithmetic out of the statements, and a user who knows only part of the spectrum can still
+  apply them.
+* The tangent of the angle `Submodule.tanAngle` has the value $0$ when the projection of the vector
+  onto the subspace is $0$.
 -/
 
 open Polynomial Polynomial.Chebyshev Krylov
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-! ### The angle to a line -/
+/-! ### The angle between a vector and a line -/
 
 namespace Submodule
 
-/-- The tangent of the angle between a unit vector `u` and the line through `x`, computed from the
-component of `x` along `u`.  Both sides are the junk value `0` when `x` is orthogonal to `u`, so no
-hypothesis is needed. -/
+/-- Let $u \in E$ be a unit vector and $x \in E$. Then the tangent of the angle between $u$ and the
+line through $x$ is
+$$\tan\theta(u, \mathbb{K} x) = \frac{\|x - \langle u, x \rangle u\|}{|\langle u, x \rangle|}.$$
+
+No hypothesis is needed: if $x$ is orthogonal to $u$, both sides have the Lean value $0$. -/
 theorem tanAngle_span_singleton {u : E} (hu : ‖u‖ = 1) (x : E) :
     (𝕜 ∙ x).tanAngle u = ‖x - (inner 𝕜 u x : 𝕜) • u‖ / ‖(inner 𝕜 u x : 𝕜)‖ := by
   have hconj : (inner 𝕜 x u : 𝕜) = starRingEnd 𝕜 (inner 𝕜 u x) := (inner_conj_symm x u).symm
@@ -136,17 +166,19 @@ theorem tanAngle_span_singleton {u : E} (hu : ‖u‖ = 1) (x : E) :
       (pow_left_inj₀ (norm_nonneg _) (by positivity) two_ne_zero).1 hsq
     rw [tanAngle, hnum, hproj, div_div_div_cancel_right₀ hxn.ne']
 
-/-- The tangent of the angle depends only on the subspace, so two spellings of the same subspace
-give the same value even when their `HasOrthogonalProjection` instances are found by different
-routes.  Rewriting a subspace under `tanAngle` directly fails, the instance argument depending on
-it. -/
+/-- The tangent of the angle between a vector $u$ and a subspace depends only on the subspace: if
+$K = L$, then $\tan\theta(u, K) = \tan\theta(u, L)$.
+
+This holds even when the two `HasOrthogonalProjection` instances are found in different ways. A
+direct rewrite of the subspace under `Submodule.tanAngle` fails, because the instance argument
+depends on the subspace. -/
 theorem tanAngle_congr {K L : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     [L.HasOrthogonalProjection] (h : K = L) (u : E) : K.tanAngle u = L.tanAngle u := by
   subst h
   rfl
 
-/-- The line through the orthogonal projection of `u` onto `K` makes the same angle with `u` as `K`
-does: the projection of `u` onto that line is again `K.starProjection u`. -/
+/-- Let $K$ be a subspace with an orthogonal projection $P_K$, and let $u \in E$. Then the
+orthogonal projection of $u$ onto the line through $P_K u$ is $P_K u$. -/
 theorem starProjection_span_singleton_starProjection (K : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] (u : E) :
     (𝕜 ∙ K.starProjection u).starProjection u = K.starProjection u := by
@@ -155,13 +187,18 @@ theorem starProjection_span_singleton_starProjection (K : Submodule 𝕜 E)
   rw [inner_sub_left, sub_eq_zero] at h0
   rw [← inner_conj_symm (K.starProjection u) u, h0, inner_conj_symm]
 
-/-- The tangent of the angle between `u` and `K` is the tangent of the angle between `u` and the
-line through its projection: the projection realizes the angle. -/
+/-- Let $K$ be a subspace with an orthogonal projection $P_K$, and let $u \in E$. Then the tangent
+of the angle between $u$ and the line through $P_K u$ equals the tangent of the angle between
+$u$ and $K$:
+$$\tan\theta(u, \mathbb{K} P_K u) = \tan\theta(u, K).$$
+
+So the projection realizes the angle. -/
 theorem tanAngle_span_singleton_starProjection (K : Submodule 𝕜 E) [K.HasOrthogonalProjection]
     (u : E) : (𝕜 ∙ K.starProjection u).tanAngle u = K.tanAngle u := by
   rw [tanAngle, tanAngle, starProjection_span_singleton_starProjection]
 
-/-- A vector whose inner product with `u` does not vanish spans a line that captures part of `u`. -/
+/-- If $\langle u, x \rangle \neq 0$, then the orthogonal projection of $u$ onto the line through
+$x$ is not $0$. -/
 theorem starProjection_span_singleton_ne_zero {u x : E} (h : (inner 𝕜 u x : 𝕜) ≠ 0) :
     (𝕜 ∙ x).starProjection u ≠ 0 := by
   intro h0
@@ -175,15 +212,20 @@ end Submodule
 
 /-! ### Polynomials in a symmetric operator, tested against an eigenvector -/
 
-/-- A polynomial in `A` acts on an eigenvector by the value of the polynomial at the eigenvalue. -/
+/-- Let $A$ be a linear operator on $E$ and let $A u = c u$. Then for every polynomial $p$ over
+$\mathbb{K}$, $p(A) u = p(c) u$. -/
 theorem Polynomial.aeval_apply_of_apply_eq_smul {A : E →ₗ[𝕜] E} {u : E} {c : 𝕜} (h : A u = c • u)
     (p : 𝕜[X]) : aeval A p u = p.eval c • u :=
   Module.End.aeval_apply_of_mem_apply_eq_smul h
 
-/-- A polynomial in `A` is bounded by the values of the polynomial at those eigenvalues of an
-orthonormal eigenbasis whose eigenvector actually occurs in `x`: if `‖p(μ j)‖ ≤ M` whenever
-`⟪b j, x⟫ ≠ 0`, then `‖p(A) x‖ ≤ M ‖x‖`. This refinement of the spectral bound is what lets a
-competitor polynomial be chosen with roots at the eigenvalues that the vector misses. -/
+/-- Let $b$ be an orthonormal basis of $E$ with $A b_j = \mu_j b_j$ for all $j$, let $p$ be a
+polynomial over $\mathbb{K}$, let $M \ge 0$, and let $x \in E$. If $|p(\mu_j)| \le M$ for every
+$j$ with $\langle b_j, x \rangle \neq 0$, then
+$$\|p(A) x\| \le M \|x\|.$$
+
+Only the eigenvalues whose eigenvectors occur in $x$ matter. This lets a competitor polynomial
+have its roots at the eigenvalues that the vector does not contain. The coordinate
+$\langle b_j, x \rangle$ is `b.repr x j`. -/
 theorem OrthonormalBasis.norm_aeval_apply_le_of_forall_repr {ι : Type*} [Fintype ι]
     (b : OrthonormalBasis ι 𝕜 E) {A : E →ₗ[𝕜] E} {μ : ι → 𝕜} (hb : ∀ i, A (b i) = μ i • b i)
     (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M) {x : E} (hp : ∀ j, b.repr x j ≠ 0 → ‖p.eval (μ j)‖ ≤ M) :
@@ -205,9 +247,11 @@ namespace LinearMap.IsSymmetric
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 include hA
 
-/-- Testing a polynomial in a symmetric `A` against an eigenvector of `A` with real eigenvalue `μ`
-scales the inner product by `p μ`.  This is the identity that turns the geometry of the Krylov
-subspace into a polynomial approximation problem. -/
+/-- Let $A$ be symmetric and let $A u = \mu u$ with $\mu$ real. Then for every polynomial $p$ over
+$\mathbb{K}$ and every $x \in E$
+$$\langle u, p(A) x \rangle = p(\mu) \langle u, x \rangle.$$
+
+This identity turns the geometry of the Krylov subspace into a polynomial approximation problem. -/
 theorem inner_aeval_apply_of_apply_eq_smul {u : E} {μ : ℝ} (hu : A u = (μ : 𝕜) • u) (p : 𝕜[X])
     (x : E) : (inner 𝕜 u (aeval A p x) : 𝕜) = p.eval (μ : 𝕜) * inner 𝕜 u x := by
   have hpow : ∀ k : ℕ, (inner 𝕜 u ((A ^ k) x) : 𝕜) = (μ : 𝕜) ^ k * inner 𝕜 u x := by
@@ -227,9 +271,13 @@ theorem inner_aeval_apply_of_apply_eq_smul {u : E} {μ : ℝ} (hu : A u = (μ : 
 variable {n : ℕ} [FiniteDimensional 𝕜 E] (hn : Module.finrank 𝕜 E = n)
 include hn
 
-/-- A polynomial in a symmetric operator is bounded by the values of the polynomial at those
-eigenvalues whose eigenvector actually occurs in `x`:
-`OrthonormalBasis.norm_aeval_apply_le_of_forall_repr` for Mathlib's eigenbasis. -/
+/-- Let $A$ be symmetric on a space of finite dimension $n$, with the eigenvalues $\lambda_j$ and
+the orthonormal eigenbasis $b_j$ of `LinearMap.IsSymmetric.eigenvalues` and
+`LinearMap.IsSymmetric.eigenvectorBasis`. Let $p$ be a polynomial over $\mathbb{K}$, $M \ge 0$
+and $x \in E$. If $|p(\lambda_j)| \le M$ for every $j$ with $\langle b_j, x \rangle \neq 0$,
+then $\|p(A) x\| \le M \|x\|$.
+
+This is `OrthonormalBasis.norm_aeval_apply_le_of_forall_repr` for this eigenbasis. -/
 theorem norm_aeval_apply_le_of_forall_repr (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M) {x : E}
     (hp : ∀ j : Fin n, (hA.eigenvectorBasis hn).repr x j ≠ 0 →
       ‖p.eval (hA.eigenvalues hn j : 𝕜)‖ ≤ M) :
@@ -239,19 +287,27 @@ theorem norm_aeval_apply_le_of_forall_repr (p : 𝕜[X]) {M : ℝ} (hM : 0 ≤ M
 
 end LinearMap.IsSymmetric
 
-/-! ### The deflating polynomial
+/-!
+### The deflating polynomial
 
-`deflator s r c` is `∏_{j ∈ s} (r j - X) / (r j - c)`: it vanishes at each `r j` and takes the value
-`1` at `c`.  Multiplying a competitor polynomial by it removes the eigenvalues indexed by `s` from a
-min–max problem, at the price of the factor `∏_{j ∈ s} (r j - lo) / (r j - c)` on the interval `[lo,
-hi]` to the left of `c`. -/
+For a finite set $s$ of indices, real numbers $r_j$ and a real number $c$, the deflating polynomial
+is $\prod_{j \in s} (r_j - X) / (r_j - c)$. It vanishes at each $r_j$ and has the value $1$ at $c$.
+The product of a competitor polynomial with it removes the eigenvalues indexed by $s$ from a min–max
+problem. On an interval $[lo, hi]$ to the left of $c$, the cost is the factor
+$\prod_{j \in s} (r_j - lo) / (r_j - c)$.
+-/
 
 section Deflator
 
 variable {ι : Type*}
 
-/-- `∏_{j ∈ s} (r j - X) / (r j - c)`, the polynomial of degree `s.card` vanishing at every `r j`
-and normalized to `1` at `c`. -/
+/-- The **deflating polynomial** of a finite set $s$ of indices, real numbers $r_j$ and a real
+number $c$:
+$$\prod_{j \in s} \frac{r_j - X}{r_j - c}.$$
+
+It has degree at most $|s|$, vanishes at every $r_j$, and has the value $1$ at $c$ if no $r_j$
+equals $c$. Each factor is $(r_j - c)^{-1} (r_j - X)$ with the Lean inverse, so the polynomial
+is $0$ if some $r_j$ equals $c$. -/
 noncomputable def Polynomial.deflator (s : Finset ι) (r : ι → ℝ) (c : ℝ) : ℝ[X] :=
   ∏ j ∈ s, C (r j - c)⁻¹ * (C (r j) - X)
 
@@ -259,34 +315,36 @@ namespace Polynomial
 
 variable (s : Finset ι) (r : ι → ℝ) (c : ℝ)
 
-/-- The value of the deflating polynomial, as the product it is defined by. -/
+/-- The value of the deflating polynomial at $t$ is $\prod_{j \in s} (r_j - t) / (r_j - c)$. -/
 theorem deflator_eval (t : ℝ) :
     (deflator s r c).eval t = ∏ j ∈ s, (r j - t) / (r j - c) := by
   rw [deflator, eval_prod]
   exact Finset.prod_congr rfl fun j _ => by rw [eval_mul, eval_C, eval_sub, eval_C, eval_X,
     div_eq_inv_mul]
 
-/-- The deflating polynomial has degree at most the number of roots it prescribes: this is what it
-costs in the degree budget of the min–max problem. -/
+/-- The deflating polynomial has degree at most $|s|$, the number of its prescribed roots. This is
+its cost in the degree of the min–max problem. -/
 theorem deflator_degree_le : (deflator s r c).degree ≤ s.card := by
   rw [deflator]
   refine degree_le_of_natDegree_le (le_trans (natDegree_prod_le s _) ?_)
   refine le_trans (Finset.sum_le_sum (g := fun _ => 1) fun j _ => ?_) (by simp)
   compute_degree
 
-/-- The deflating polynomial is normalized to `1` at `c`, as the min–max problem requires. -/
+/-- If $r_j \neq c$ for all $j \in s$, the deflating polynomial has the value $1$ at $c$. -/
 theorem deflator_eval_self (h : ∀ j ∈ s, r j ≠ c) : (deflator s r c).eval c = 1 := by
   rw [deflator_eval]
   exact Finset.prod_eq_one fun j hj => div_self (sub_ne_zero.2 (h j hj))
 
-/-- The deflating polynomial vanishes at each prescribed root, which is what removes that point from
-the min–max problem. -/
+/-- The deflating polynomial vanishes at $r_j$ for every $j \in s$. -/
 theorem deflator_eval_eq_zero {j : ι} (hj : j ∈ s) : (deflator s r c).eval (r j) = 0 := by
   rw [deflator_eval]
   exact Finset.prod_eq_zero hj (by rw [sub_self, zero_div])
 
-/-- On an interval `[lo, hi]` lying to the left of `c`, which in turn lies to the left of every `r
-j`, the deflating polynomial is bounded by its value at `lo`. -/
+/-- Let $c < r_j$ for all $j \in s$, and let $lo \le t \le hi < c$. Then the deflating polynomial
+satisfies
+$$\Bigl| \prod_{j \in s} \frac{r_j - t}{r_j - c} \Bigr| \le \prod_{j \in s} \frac{r_j -
+  lo}{r_j - c}.$$
+-/
 theorem abs_deflator_eval_le (h : ∀ j ∈ s, c < r j) {lo hi t : ℝ} (hhi : hi < c) (hlo : lo ≤ t)
     (ht : t ≤ hi) : |(deflator s r c).eval t| ≤ ∏ j ∈ s, (r j - lo) / (r j - c) := by
   have hfac : ∀ j ∈ s, 0 ≤ (r j - t) / (r j - c) := fun j hj =>
@@ -295,15 +353,18 @@ theorem abs_deflator_eval_le (h : ∀ j ∈ s, c < r j) {lo hi t : ℝ} (hhi : h
   refine Finset.prod_le_prod₀ hfac fun j hj => ?_
   exact div_le_div_of_nonneg_right (by linarith) (by linarith [h j hj])
 
-/-- **The competitor polynomial of the Krylov eigenvalue bounds.**  For an interval `[lo, hi]` lying
-to the left of `c`, which in turn lies to the left of every `r j`, there is a polynomial of degree
-at most `s.card + k` that takes the value `1` at `c`, vanishes at every `r j`, and on `[lo, hi]` is
-bounded by `(∏_{j ∈ s} (r j - lo) / (r j - c)) / T_k((2 c - hi - lo) / (hi - lo))`, where `T_k` is
-the Chebyshev polynomial of the first kind.
+/-- **The competitor polynomial of the Krylov eigenvalue bounds.** Let $s$ be a finite set of
+indices, $r_j$ real numbers, and $lo < hi < c$ real numbers with $c < r_j$ for all $j \in s$.
+Let $k \in \mathbb{N}$. Then there is a real polynomial $q$ of degree at most $|s| + k$ with
+$q(c) = 1$ and $q(r_j) = 0$ for all $j \in s$, such that for all $t \in [lo, hi]$
+$$|q(t)| \le \frac{\prod_{j \in s} (r_j - lo) / (r_j - c)}{T_k\bigl( (2 c - hi - lo) / (hi - lo)
+  \bigr)},$$
+where $T_k$ is the Chebyshev polynomial of the first kind.
 
-It is the deflating polynomial for `s` times the Chebyshev polynomial of `[lo, hi]` normalized to
-`1` at `c`, and the bound is the product of the two bounds: `∏ (r j - lo) / (r j - c)` is what the
-deflation costs and `1 / T_k` is the Chebyshev min–max value. -/
+The polynomial $q$ is the deflating polynomial `Polynomial.deflator` for $s$, multiplied by the
+Chebyshev polynomial of $[lo, hi]$ normalized to $1$ at $c$. The bound is the product of the two
+bounds: the numerator is the cost of the deflation, and $1 / T_k$ is the Chebyshev min–max
+value. -/
 theorem exists_deflated_chebyshev (hr : ∀ j ∈ s, c < r j) {lo hi : ℝ} (hlohi : lo < hi)
     (hhi : hi < c) (k : ℕ) :
     ∃ q : ℝ[X], q.degree ≤ ((s.card + k : ℕ) : WithBot ℕ) ∧ q.eval c = 1 ∧
@@ -360,8 +421,9 @@ variable {A : E →ₗ[𝕜] E} {u v : E} {μ : ℝ} (hA : A.IsSymmetric) (hu : 
   (hAu : A u = (μ : 𝕜) • u)
 include hA hu hAu
 
-/-- The line through `p(A) v` makes with the eigenvector `u` the angle whose tangent is `‖p(A) w‖ /
-‖⟪u, v⟫‖`, where `w = v - ⟪u, v⟫ u` is the part of `v` orthogonal to `u`. -/
+/-- For a polynomial $p$ with $p(\mu) = 1$, the tangent of the angle between the eigenvector $u$ and
+the line through $p(A) v$ is $\|p(A) w\| / |\langle u, v \rangle|$, where
+$w = v - \langle u, v \rangle u$. -/
 private theorem tanAngle_span_singleton_aeval (p : 𝕜[X]) (hp : p.eval (μ : 𝕜) = 1) :
     (𝕜 ∙ aeval A p v).tanAngle u =
       ‖aeval A p (v - (inner 𝕜 u v : 𝕜) • u)‖ / ‖(inner 𝕜 u v : 𝕜)‖ := by
@@ -374,10 +436,14 @@ private theorem tanAngle_span_singleton_aeval (p : 𝕜[X]) (hp : p.eval (μ : �
 variable (hv : (inner 𝕜 u v : 𝕜) ≠ 0)
 include hv
 
-/-- Every polynomial of degree below `m` normalized to `1` at the eigenvalue gives an upper bound
-for the tangent of the angle between the eigenvector and the Krylov subspace: the vector `p(A) v`
-lies in the subspace and the angle to a line of the subspace is at least the angle to the subspace.
--/
+/-- Let $A$ be symmetric, let $u$ be a unit vector with $A u = \mu u$ for a real $\mu$, and let
+$\langle u, v \rangle \neq 0$. Let $w = v - \langle u, v \rangle u$ be the part of $v$
+orthogonal to $u$. Then for every polynomial $p$ over $\mathbb{K}$ of degree less than $m$ with
+$p(\mu) = 1$
+$$\tan\theta(u, \mathcal{K}_m(A, v)) \le \frac{\|p(A) w\|}{|\langle u, v \rangle|}.$$
+
+The vector $p(A) v$ lies in the Krylov subspace, and the angle to a line in a subspace is at
+least the angle to the subspace. -/
 theorem tan_angle_le_norm_aeval_div {m : ℕ} (p : 𝕜[X]) (hdeg : p.degree < m)
     (hp : p.eval (μ : 𝕜) = 1) :
     (Krylov.subspace A v m).tanAngle u ≤
@@ -390,9 +456,14 @@ theorem tan_angle_le_norm_aeval_div {m : ℕ} (p : 𝕜[X]) (hdeg : p.degree < m
     ((Submodule.span_singleton_le_iff_mem _ _).2 (Krylov.aeval_apply_mem_subspace A v hdeg))
     (Submodule.starProjection_span_singleton_ne_zero hinner)
 
-/-- The bound of `Lanczos.tan_angle_le_norm_aeval_div` is attained: the polynomial that carries `v`
-to the orthogonal projection of `u` onto the Krylov subspace realizes the angle.  This is what makes
-the infimum of `Lanczos.tan_angle_eq_iInf` a minimum. -/
+/-- Let $A$ be symmetric, let $u$ be a unit vector with $A u = \mu u$ for a real $\mu$, let
+$\langle u, v \rangle \neq 0$, and let $m > 0$. Then there is a polynomial $p$ of degree less
+than $m$ with $p(\mu) = 1$ that attains the bound of `Lanczos.tan_angle_le_norm_aeval_div`:
+$$\frac{\|p(A) w\|}{|\langle u, v \rangle|} = \tan\theta(u, \mathcal{K}_m(A, v)), \qquad w = v -
+  \langle u, v \rangle u.$$
+
+The polynomial $p$ is the one that carries $v$ to the orthogonal projection of $u$ onto the
+Krylov subspace. So the infimum of `Lanczos.tan_angle_eq_iInf` is a minimum. -/
 theorem exists_norm_aeval_div_eq_tan_angle {m : ℕ} (hm : 0 < m) :
     ∃ p : 𝕜[X], p.degree < m ∧ p.eval (μ : 𝕜) = 1 ∧
       ‖aeval A p (v - (inner 𝕜 u v : 𝕜) • u)‖ / ‖(inner 𝕜 u v : 𝕜)‖ =
@@ -426,21 +497,23 @@ theorem exists_norm_aeval_div_eq_tan_angle {m : ℕ} (hm : 0 < m) :
     Submodule.tanAngle_congr (Submodule.span_singleton_smul_eq (IsUnit.mk0 _ (inv_ne_zero hd)) _) u,
     Submodule.tanAngle_span_singleton_starProjection]
 
-/-- **The tangent of the angle between an eigenvector and the Krylov subspace as a polynomial
-minimum.**  For a symmetric `A` with eigenpair `(μ, u)`, `u` a unit vector, and a starting vector
-`v` not orthogonal to `u`,
+/-- **The angle between an eigenvector and the Krylov subspace as a polynomial minimum.** Let $A$ be
+symmetric, let $u$ be a unit vector with $A u = \mu u$ for a real $\mu$, and let $v$ be a
+starting vector with $\langle u, v \rangle \neq 0$. Let $w = v - \langle u, v \rangle u$ be the
+part of $v$ orthogonal to $u$. Then for every $m$
+$$\tan\theta(u, \mathcal{K}_m(A, v)) = \inf \Bigl\{ \frac{\|p(A) w\|}{|\langle u, v \rangle|} :
+  \deg p < m, \ p(\mu) = 1 \Bigr\}.$$
 
-`tan θ(u, 𝒦_m(A, v)) = min { ‖p(A) w‖ / ‖⟪u, v⟫‖ : deg p < m, p μ = 1 }`,
+For $m > 0$ the infimum is attained (`Lanczos.exists_norm_aeval_div_eq_tan_angle`). For $m = 0$
+both sides are $0$: the set of polynomials is empty, its Lean infimum is $0$, and
+$\mathcal{K}_0 = \{0\}$.
 
-where `w = v - ⟪u, v⟫ u` is the part of `v` orthogonal to `u`.  The infimum is attained
-(`Lanczos.exists_norm_aeval_div_eq_tan_angle`), and at `m = 0` both sides are `0`: the index type is
-empty there and `𝒦_0 = ⊥`.
-
-Only the eigenpair is needed, not a full eigenbasis: for symmetric `A` the line `𝕜 ∙ u` and its
-orthogonal complement are both invariant, which is what splits `p(A) v` into its component along `u`
-and the rest.  In particular `u` is a *single* eigenvector, not the whole eigenspace of `μ`; with a
-multiple eigenvalue the components of `v` along the other eigenvectors for `μ` are counted in `w`,
-as they must be — no Krylov subspace can separate them from `u`. -/
+Only the eigenpair is needed, not a full eigenbasis, and the space need not have finite
+dimension. For symmetric $A$, the line through $u$ and its orthogonal complement are both
+invariant, and this splits $p(A) v$ into its component along $u$ and the rest. Here $u$ is a
+single eigenvector, not the whole eigenspace of $\mu$. At a multiple eigenvalue, the components
+of $v$ along the other eigenvectors for $\mu$ are part of $w$, because no Krylov subspace can
+separate them from $u$. -/
 theorem tan_angle_eq_iInf (m : ℕ) :
     (Krylov.subspace A v m).tanAngle u =
       ⨅ p : {p : 𝕜[X] // p.degree < m ∧ p.eval (μ : 𝕜) = 1},
@@ -470,13 +543,16 @@ theorem tan_angle_eq_iInf (m : ℕ) :
     rw [← hval]
     exact ciInf_le hbdd ⟨p, hdeg, hp⟩
 
-/-- `Lanczos.tan_angle_eq_iInf` in the normalized form the source states it in: with `y = w / ‖w‖`
-the normalized part of `v` orthogonal to the eigenvector `u`,
+/-- Let $A$ be symmetric, let $u$ be a unit vector with $A u = \mu u$ for a real $\mu$, and let
+$\langle u, v \rangle \neq 0$. Let $w = v - \langle u, v \rangle u$ and $y = w / \|w\|$. Then
+for every $m$
+$$\tan\theta(u, \mathcal{K}_m(A, v)) = \inf \{ \|p(A) y\| : \deg p < m, \ p(\mu) = 1 \} \cdot
+  \tan\theta(u, v).$$
 
-`tan θ(u, 𝒦_m(A, v)) = min { ‖p(A) y‖ : deg p < m, p μ = 1 } · tan θ(u, v)`.
-
-At `w = 0` — that is, when `v` is already a multiple of `u` — the normalization has the junk value
-`y = 0` and both sides are `0`, which is the convention the source adopts explicitly. -/
+This is `Lanczos.tan_angle_eq_iInf` in the normalized form of [saad2011numerical]. If $w = 0$,
+that is, if $v$ is a multiple of $u$, then the Lean value of $y$ is $0$ and both sides are $0$;
+the source adopts this convention explicitly. Here $\tan\theta(u, v)$ is the tangent of the
+angle between $u$ and the line through $v$. -/
 theorem tan_angle_eq_iInf_mul (m : ℕ) :
     (Krylov.subspace A v m).tanAngle u =
       ⨅ p : {p : 𝕜[X] // p.degree < m ∧ p.eval (μ : 𝕜) = 1},
@@ -493,14 +569,17 @@ theorem tan_angle_eq_iInf_mul (m : ℕ) :
 
 end Lemma
 
-/-! ### From a polynomial estimate to an angle bound
+/-!
+### From a polynomial estimate to an angle bound
 
-The statements below take any orthonormal eigenbasis `b` of `A`, `A (b j) = λ j • b j`, with real
-eigenvalues `λ` (sorted decreasingly where the statement needs it), rather than Mathlib's choice
-`LinearMap.IsSymmetric.eigenvectorBasis`: at a multiple eigenvalue the eigenvector `u_i = b i` is
-not unique, and the textbook statements quantify over every Schur decomposition. Such an `A` is
-symmetric (`OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`), and its sorted eigenvalues are
-`λ` (`LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`). -/
+The statements below take any orthonormal eigenbasis $b$ of $A$, with $A b_j = \lambda_j b_j$ for
+real eigenvalues $\lambda_j$, sorted in decreasing order where the statement needs it. They do not
+use the eigenbasis `LinearMap.IsSymmetric.eigenvectorBasis` of Mathlib, because at a multiple
+eigenvalue the eigenvector $u_i = b_i$ is not unique, and the statements of the textbooks quantify
+over every Schur decomposition. Such an operator $A$ is symmetric
+(`OrthonormalBasis.isSymmetric_of_apply_eq_ofReal_smul`), and its sorted eigenvalues are $\lambda$
+(`LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`).
+-/
 
 section Eigenbasis
 
@@ -508,18 +587,23 @@ variable {A : E →ₗ[𝕜] E} {n : ℕ} (b : OrthonormalBasis (Fin n) 𝕜 E)
   {lam : Fin n → ℝ} (hb : ∀ j, A (b j) = (lam j : 𝕜) • b j)
 include hb
 
-/-- In the eigenbasis, a real polynomial `q` in `A` acts on coordinates by `q(λ)`. -/
+/-- Let $b$ be an orthonormal basis with $A b_j = \lambda_j b_j$ for real $\lambda_j$. Then for
+every real polynomial $q$ and every $x \in E$, the coordinates of $q(A) x$ are $\langle b_j,
+q(A) x \rangle = q(\lambda_j) \langle b_j, x \rangle$. -/
 theorem repr_aeval_map_apply (q : ℝ[X]) (x : E) (j : Fin n) :
     b.repr (aeval A (q.map (algebraMap ℝ 𝕜)) x) j = ((q.eval (lam j) : ℝ) : 𝕜) * b.repr x j := by
   rw [b.repr_aeval_apply_of_apply_eq_smul hb, eval_map_apply, RCLike.algebraMap_eq_ofReal]
 
-/-- **Every competitor polynomial gives an angle bound.**  If a real polynomial `p` of degree below
-`m` takes the value `1` at the `i`-th eigenvalue and is bounded by `M` at all the others, then `tan
-θ(u_i, 𝒦_m(A, v)) ≤ M tan θ(u_i, v)`.
+/-- **Every competitor polynomial gives an angle bound.** Let $b$ be an orthonormal basis of $E$
+with $A b_j = \lambda_j b_j$ for real $\lambda_j$, let $i$ be an index, and let
+$\langle b_i, v \rangle \neq 0$. Let $p$ be a real polynomial of degree less than $m$ with
+$p(\lambda_i) = 1$, and let $M \ge 0$ with $|p(\lambda_j)| \le M$ for all $j \neq i$. Then
+$$\tan\theta(b_i, \mathcal{K}_m(A, v)) \le M \tan\theta(b_i, v).$$
 
-This is the half of the Krylov eigenvector estimate that does not depend on which polynomial is
-chosen: the whole content of Chebyshev bounds such as `Lanczos.tan_angle_le` is the choice of `p`
-and the estimate of `M`. -/
+This is the part of the Krylov eigenvector estimate that does not depend on the choice of the
+polynomial. The content of a Chebyshev bound such as `Lanczos.tan_angle_le` is the choice of $p$
+and the estimate of $M$. Here $\tan\theta(b_i, v)$ is the tangent of the angle between $b_i$ and
+the line through $v$. -/
 theorem tan_angle_le_of_forall_abs_eval_le (i : Fin n) {v : E}
     (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0) {m : ℕ} (p : ℝ[X])
     (hdeg : p.degree < m) (hp : p.eval (lam i) = 1) {M : ℝ} (hM : 0 ≤ M)
@@ -548,20 +632,20 @@ theorem tan_angle_le_of_forall_abs_eval_le (i : Fin n) {v : E}
 
 /-! ### The Chebyshev bound on the angle -/
 
-/-- **The Chebyshev bound on the angle between an eigenvector and the Krylov subspace**, in the form
-that takes the enclosing interval as data.  Let `λ` be the eigenvalues of a symmetric `A` in
-decreasing order, `u_i` the `i`-th eigenvector and `v` a starting vector not orthogonal to it.
-Suppose the eigenvalues after the `i`-th all lie in an interval `[lo, hi]` that stays to the left of
-`λ_i`, and that the eigenvalues before the `i`-th are all strictly larger than `λ_i`.  Then
+/-- **The Chebyshev bound on the angle between an eigenvector and the Krylov subspace**, with the
+enclosing interval as data. Let $b$ be an orthonormal basis of $E$ with $A b_j = \lambda_j b_j$
+for real $\lambda_j$, let $i$ be an index, and let $\langle b_i, v \rangle \neq 0$. Let
+$lo < hi < \lambda_i$, let $\lambda_j \in [lo, hi]$ for all $j > i$, and let
+$\lambda_i < \lambda_j$ for all $j < i$. Then for all $m$ and $k$ with $i + k < m$
+$$\tan\theta(b_i, \mathcal{K}_m(A, v)) \le \frac{\kappa}{T_k\bigl( (2 \lambda_i - hi - lo) /
+  (hi - lo) \bigr)} \tan\theta(b_i, v), \qquad \kappa = \prod_{j < i} \frac{\lambda_j -
+  lo}{\lambda_j - \lambda_i},$$
+where $T_k$ is the Chebyshev polynomial of the first kind.
 
-`tan θ(u_i, 𝒦_m(A, v)) ≤ (κ / T_{m-1-i}((2 λ_i - hi - lo) / (hi - lo))) tan θ(u_i, v)`,
-
-where `T_k` is the Chebyshev polynomial of the first kind and `κ = ∏_{j < i} (λ_j - lo) / (λ_j -
-λ_i)`.
-
-The competitor is the product of the polynomial with roots at the `i` eigenvalues before `λ_i`,
-which removes them from the problem at the cost of the factor `κ`, with the Chebyshev polynomial of
-`[lo, hi]` normalized to `1` at `λ_i`, which is the minimax choice for what remains. -/
+The competitor is the product of the polynomial with roots at the $i$ eigenvalues before
+$\lambda_i$, which removes them from the problem at the cost of the factor $\kappa$, and the
+Chebyshev polynomial of $[lo, hi]$ normalized to $1$ at $\lambda_i$, which is the min–max choice
+for what remains. The best bound is at $k = m - 1 - i$. -/
 theorem tan_angle_le_of_mem_Icc (i : Fin n) {v : E}
     (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi) (hhi : hi < lam i)
     (hmem : ∀ j : Fin n, i < j → lam j ∈ Set.Icc lo hi)
@@ -589,12 +673,16 @@ theorem tan_angle_le_of_mem_Icc (i : Fin n) {v : E}
       exact hM
     · exact hqb _ (hmem j hji)
 
-/-! ### The Kaniel–Paige–[saad2011numerical] bound on the Ritz values -/
+/-! ### The Kaniel–Paige–Saad bound on the Ritz values -/
 
-/-- The numerator estimate shared by the single-vector and block Kaniel–Paige–Saad bounds: for a
-real polynomial `q` bounded by `M` at the eigenvalues `λ_j`, `j ∈ s`, where `λ_j ≥ lo`, and a
-threshold `c` such that outside `s` either `λ_j ≥ c` or `y` has no `j`-th component,
-`c ‖q(A) y‖² - re ⟪A q(A) y, q(A) y⟫ ≤ (c - lo) M² ∑_{j ∈ s} ‖⟪b j, y⟫‖²`. -/
+/-- Let $b$ be an orthonormal basis of $E$ with $A b_j = \lambda_j b_j$ for real $\lambda_j$. Let
+$q$ be a real polynomial, $y \in E$, $s$ a set of indices, and $lo \le c$ and $M$ real numbers.
+Suppose that $lo \le \lambda_j$ and $|q(\lambda_j)| \le M$ for all $j \in s$, and that for every
+$j \notin s$ either $c \le \lambda_j$ or $\langle b_j, y \rangle = 0$. Then, with $z = q(A) y$,
+$$c \|z\|^2 - \operatorname{Re} \langle A z, z \rangle \le (c - lo) M^2 \sum_{j \in s} |\langle
+  b_j, y \rangle|^2.$$
+
+This estimate is shared by the single-vector and the block Kaniel–Paige–Saad bounds. -/
 theorem mul_norm_sq_aeval_sub_re_inner_le (q : ℝ[X]) (y : E) {c lo M : ℝ} (hclo : lo ≤ c)
     (s : Finset (Fin n)) (hs : ∀ j ∉ s, c ≤ lam j ∨ b.repr y j = 0) (hlo : ∀ j ∈ s, lo ≤ lam j)
     (hqM : ∀ j ∈ s, |q.eval (lam j)| ≤ M) :
@@ -623,25 +711,28 @@ theorem mul_norm_sq_aeval_sub_re_inner_le (q : ℝ[X]) (y : E) {c lo M : ℝ} (h
 variable (hlam : Antitone lam)
 include hlam
 
-/-- **The Kaniel–Paige–[saad2011numerical] bound**, upper half, in the form that takes the enclosing
-interval as data.  Write `λ` for the eigenvalues of a symmetric `A` in decreasing order and `θ` for
-the eigenvalues of its compression to `𝒦_m(A, v)` — the Ritz values — again in decreasing order.
-Suppose the eigenvalues after the `i'`-th all lie in an interval `[lo, hi]` to the left of `λ_{i'}`,
-and that the `i` Ritz values before the `i`-th are all larger than `λ_{i'}`.  Then
+/-- **The Kaniel–Paige–Saad bound**, upper half, with the enclosing interval as data. Let $A$ be
+symmetric, and let $b$ be an orthonormal basis of $E$ with $A b_j = \lambda_j b_j$, where
+$\lambda_0 \ge \lambda_1 \ge \dots$ are real. Let $\mathcal{K}_m = \mathcal{K}_m(A, v)$ have
+dimension $m$, and let $\theta_0 \ge \theta_1 \ge \dots \ge \theta_{m-1}$ be the eigenvalues of
+the compression of $A$ to $\mathcal{K}_m$, the Ritz values. Let $i$ be an index of the Ritz
+values and $i'$ an index of the eigenvalues, with $\langle b_{i'}, v \rangle \neq 0$. Suppose
+that $lo < hi < \lambda_{i'}$, that $\lambda_j \in [lo, hi]$ for all $j > i'$, and that
+$\lambda_{i'} < \theta_j$ for all $j < i$. Then for every $k$ with $i + k < m$
+$$\lambda_{i'} - \theta_i \le (\lambda_{i'} - lo) \Bigl( \frac{\kappa}{T_k\bigl( (2
+  \lambda_{i'} - hi - lo) / (hi - lo) \bigr)} \tan\theta(b_{i'}, v) \Bigr)^2, \qquad \kappa =
+  \prod_{j < i} \frac{\theta_j - lo}{\theta_j - \lambda_{i'}}.$$
 
-`λ_{i'} - θ_i ≤ (λ_{i'} - lo) (κ tan θ(u_{i'}, v) / T_k((2 λ_{i'} - hi - lo) / (hi - lo)))²`
+No hypothesis relates the two indices, but the intended application has $i' = i$, and then this
+is the Kaniel–Paige–Saad estimate. The proof is the Courant–Fischer theorem for the compression.
+The competitor $q(A) v$, with $q$ from `Polynomial.exists_deflated_chebyshev`, is orthogonal to
+the first $i$ Ritz vectors because $q$ vanishes at the corresponding Ritz values. So its
+Rayleigh quotient is at most $\theta_i$, and the deflation cost $\kappa$ is in terms of the Ritz
+values, not the eigenvalues. The spread $\lambda_{i'} - lo$ is sharper than the spread
+$\lambda_0 - \lambda_{n-1}$ of the usual statement.
 
-with `κ = ∏_{j < i} (θ_j - lo) / (θ_j - λ_{i'})`, provided `i + k < m`.
-
-The two indices are unrelated by any hypothesis, but the intended reading pairs them: with `i' = i`
-this is the Kaniel–Paige–[saad2011numerical] estimate.  The proof is Courant–Fischer for the
-compression: the competitor `q(A) v` of `Lanczos.exists_deflated_chebyshev` is orthogonal to the
-first `i` Ritz vectors because `q` vanishes at the corresponding Ritz values, so its Rayleigh
-quotient is at most `θ_i`, and the deflation cost `κ` is paid in the Ritz values rather than in the
-eigenvalues.
-
-Both `λ_{i'} - lo` and, in the intended application, `λ_1 - λ_n` bound the spread that turns the
-angle into an eigenvalue error; the form here is the sharper one. -/
+The Ritz values are `LinearMap.IsSymmetric.eigenvalues` of the compression, through
+`compression.isSymmetric`. -/
 theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetric) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' : Fin n)
     (hv : (inner 𝕜 (b i') v : 𝕜) ≠ 0) {lo hi : ℝ} (hlohi : lo < hi) (hhi : hi < lam i')
@@ -737,25 +828,33 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc (hA : A.IsSymmetri
   rw [Submodule.tanAngle_span_singleton hu v]
   linarith
 
-/-! ### The bounds in the form the numerical analysis literature states them
+/-!
+### The bounds in the form of the literature
 
-Here `iS` is the successor of `i`, and `first` and `last` are the extreme indices, so that `[λ_last,
-λ_iS]` is the smallest interval enclosing the eigenvalues after the `i`-th and `λ_first - λ_last` is
-the spread of the spectrum.  Passing the indices as data with their defining properties avoids `Fin`
-arithmetic and keeps the statements usable when only part of the spectrum is known. -/
+Here `iS` is the successor of `i`, and `first` and `last` are the extreme indices. So
+$[\lambda_{last}, \lambda_{iS}]$ is the smallest interval that contains the eigenvalues after the
+$i$-th, and $\lambda_{first} - \lambda_{last}$ is the spread of the spectrum. The indices are given
+as data with their defining properties. This avoids `Fin` arithmetic, and the statements remain
+usable when only part of the spectrum is known.
+-/
 
-/-- **The Chebyshev bound on the angle between an eigenvector and the Krylov subspace.**  With the
-eigenvalues `λ` of a symmetric `A` in decreasing order and `u_i` the `i`-th eigenvector,
+/-- **The Chebyshev bound on the angle between an eigenvector and the Krylov subspace.** Let $b$ be
+an orthonormal basis of $E$ with $A b_j = \lambda_j b_j$, where $\lambda_0 \ge \lambda_1 \ge
+\dots \ge \lambda_{n-1}$ are real, let $i$ be an index with $i + 1 < n$, and let
+$\langle b_i, v \rangle \neq 0$. Suppose that $\lambda_{i+1} < \lambda_i$, that
+$\lambda_{n-1} < \lambda_{i+1}$, and that $\lambda_i < \lambda_j$ for all $j < i$. Then for all
+$m$ and $k$ with $i + k < m$
+$$\tan\theta(b_i, \mathcal{K}_m(A, v)) \le \frac{\kappa_i \tan\theta(b_i, v)}{T_k(1 + 2
+  \gamma_i)},$$
+where $T_k$ is the Chebyshev polynomial of the first kind and
+$$\gamma_i = \frac{\lambda_i - \lambda_{i+1}}{\lambda_{i+1} - \lambda_{n-1}}, \qquad \kappa_i =
+  \prod_{j < i} \frac{\lambda_j - \lambda_{n-1}}{\lambda_j - \lambda_i}.$$
 
-`tan θ(u_i, 𝒦_m(A, v)) ≤ κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i)`,
-
-where `γ_i = (λ_i - λ_{i+1}) / (λ_{i+1} - λ_n)`, `κ_i = ∏_{j < i} (λ_j - λ_n) / (λ_j - λ_i)` and
-`T_k` is the Chebyshev polynomial of the first kind, valid whenever `i + k < m`.
-
-The hypotheses are the ones that make the constants finite: the `i`-th eigenvalue is separated from
-the ones before it and from the one after it, and the spectrum below it is not a single point.  This
-is `Lanczos.tan_angle_le_of_mem_Icc` with the interval `[λ_n, λ_{i+1}]`, which is the smallest one
-containing the eigenvalues after the `i`-th. -/
+The hypotheses make the constants finite: $\lambda_i$ is separated from the eigenvalues before
+it and from the one after it, and the spectrum below $\lambda_i$ is not a single point. The
+indices $i + 1$ and $n - 1$ are given as `iS` with `i + 1 = iS` and `last` with `IsTop last`.
+This is `Lanczos.tan_angle_le_of_mem_Icc` with the interval $[\lambda_{n-1}, \lambda_{i+1}]$,
+the smallest one that contains the eigenvalues after the $i$-th. -/
 theorem tan_angle_le (i iS last : Fin n) (hiS : (i : ℕ) + 1 = (iS : ℕ))
     (hlast : IsTop last) {v : E}
     (hv : (inner 𝕜 (b i) v : 𝕜) ≠ 0)
@@ -777,21 +876,29 @@ theorem tan_angle_le (i iS last : Fin n) (hiS : (i : ℕ) + 1 = (iS : ℕ))
     rw [Fin.le_def, ← hiS]
     omega
 
-/-- **The Kaniel–Paige–[saad2011numerical] bound**, upper half, in [saad2011numerical] form: with
-`λ` the eigenvalues of a symmetric `A` in decreasing order and `θ` the eigenvalues of its
-compression to `𝒦_m(A, v)` — the Ritz values — again in decreasing order,
+/-- **The Kaniel–Paige–Saad bound**, upper half, in the form of [saad2011numerical]. Let $A$ be
+symmetric, and let $b$ be an orthonormal basis of $E$ with $A b_j = \lambda_j b_j$, where
+$\lambda_0 \ge \lambda_1 \ge \dots \ge \lambda_{n-1}$ are real. Let
+$\mathcal{K}_m = \mathcal{K}_m(A, v)$ have dimension $m$, and let
+$\theta_0 \ge \dots \ge \theta_{m-1}$ be the Ritz values, the eigenvalues of the compression of
+$A$ to $\mathcal{K}_m$. Let $i$ be an index of the Ritz values and $i'$ an index of the
+eigenvalues with $i' + 1 < n$ and $\langle b_{i'}, v \rangle \neq 0$. Suppose that
+$\lambda_{i'+1} < \lambda_{i'}$, that $\lambda_{n-1} < \lambda_{i'+1}$, and that
+$\lambda_{i'} < \theta_j$ for all $j < i$. Then for every $k$ with $i + k < m$
+$$\lambda_{i'} - \theta_i \le (\lambda_0 - \lambda_{n-1}) \Bigl( \frac{\kappa \tan\theta(b_{i'},
+  v)}{T_k(1 + 2 \gamma)} \Bigr)^2,$$
+where
+$$\gamma = \frac{\lambda_{i'} - \lambda_{i'+1}}{\lambda_{i'+1} - \lambda_{n-1}}, \qquad \kappa =
+  \prod_{j < i} \frac{\theta_j - \lambda_{n-1}}{\theta_j - \lambda_{i'}}.$$
 
-`λ_i - θ_i ≤ (λ_1 - λ_n) (κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i))²`
-
-with `γ_i = (λ_i - λ_{i+1}) / (λ_{i+1} - λ_n)` and `κ_i = ∏_{j < i} (θ_j - λ_n) / (θ_j - λ_i)`,
-valid whenever `i + k < m`.  Note that the deflation constant `κ_i` here is built from the *Ritz*
-values, unlike the one in `Lanczos.tan_angle_le`.
-
-The matching lower bound `0 ≤ λ_i - θ_i` is Cauchy interlacing, a statement about the compression
-alone that has nothing to do with the Krylov structure.
-
-This is `Lanczos.eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc` with the interval `[λ_n,
-λ_{i+1}]`, weakened from the sharper spread `λ_i - λ_n` to `λ_1 - λ_n`. -/
+The deflation constant $\kappa$ is built from the Ritz values, unlike the one in
+`Lanczos.tan_angle_le`. The intended application has $i' = i$. The matching lower bound
+$0 \le \lambda_i - \theta_i$ is Cauchy interlacing, a statement about the compression alone,
+independent of the Krylov structure. This is
+`Lanczos.eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc` with the interval
+$[\lambda_{n-1}, \lambda_{i'+1}]$, weakened from the sharper spread
+$\lambda_{i'} - \lambda_{n-1}$ to $\lambda_0 - \lambda_{n-1}$. The indices $0$, $i' + 1$ and
+$n - 1$ are given as `first`, `iS` and `last`. -/
 theorem eigenvalues_sub_eigenvalues_compression_le (hA : A.IsSymmetric)
     {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
@@ -824,23 +931,31 @@ theorem eigenvalues_sub_eigenvalues_compression_le (hA : A.IsSymmetric)
     have h1 := hlam (hfirst i')
     linarith
 
-/-- **The Kaniel–Paige–[saad2011numerical] theorem.**  Let `A` be symmetric with an orthonormal
-eigenbasis `u_1, …, u_n` whose eigenvalues `λ_1 ≥ ⋯ ≥ λ_n` decrease — any such basis, as in a Schur
-decomposition `Zᵀ A Z = diag(λ)` — and `θ` the eigenvalues of its compression to the Krylov subspace
-`𝒦_m(A, v)` — the Ritz values — in decreasing order. Then
+/-- **The Kaniel–Paige–Saad theorem.** Let $E$ have finite dimension, let $A$ be symmetric, and let
+$b$ be an orthonormal eigenbasis $u_0, \dots, u_{n-1}$ with $A u_j = \lambda_j u_j$, where
+$\lambda_0 \ge \dots \ge \lambda_{n-1}$ are real; any such basis is allowed, as in a Schur
+decomposition $Z^T A Z = \operatorname{diag}(\lambda)$. Let
+$\mathcal{K}_m = \mathcal{K}_m(A, v)$ have dimension $m$, and let
+$\theta_0 \ge \dots \ge \theta_{m-1}$ be the Ritz values, the eigenvalues of the compression of
+$A$ to $\mathcal{K}_m$. Let $i + 1 < n$, $\langle u_i, v \rangle \neq 0$,
+$\lambda_{i+1} < \lambda_i$, $\lambda_{n-1} < \lambda_{i+1}$, and $\lambda_i < \theta_j$ for all
+$j < i$. Then for every $k$ with $i + k < m$
+$$0 \le \lambda_i - \theta_i \le (\lambda_0 - \lambda_{n-1}) \Bigl( \frac{\kappa_i
+  \tan\theta(u_i, v)}{T_k(1 + 2 \gamma_i)} \Bigr)^2,$$
+where $T_k$ is the Chebyshev polynomial of the first kind and
+$$\gamma_i = \frac{\lambda_i - \lambda_{i+1}}{\lambda_{i+1} - \lambda_{n-1}}, \qquad \kappa_i =
+  \prod_{j < i} \frac{\theta_j - \lambda_{n-1}}{\theta_j - \lambda_i}.$$
+So the Ritz values of the symmetric Lanczos process approach the extreme eigenvalues of $A$ from
+below, at a rate that the Chebyshev polynomial of the part of the spectrum below the sought
+eigenvalue controls.
 
-`0 ≤ λ_i - θ_i ≤ (λ_1 - λ_n) (κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i))²`
-
-with `γ_i = (λ_i - λ_{i+1}) / (λ_{i+1} - λ_n)` and `κ_i = ∏_{j < i} (θ_j - λ_n) / (θ_j - λ_i)`,
-valid whenever `i + k < m`.  So the Ritz values of the symmetric Lanczos process approach the
-extreme eigenvalues of `A` from below, at a rate governed by the Chebyshev polynomial of the part of
-the spectrum below the sought eigenvalue.
-
-The lower bound is Cauchy interlacing, `LinearMap.IsSymmetric.eigenvalues_compression_le`, which has
-nothing to do with the Krylov structure; the upper bound is
-`Lanczos.eigenvalues_sub_eigenvalues_compression_le`.  The hypothesis `hm` is that `𝒦_m(A, v)`
-really has dimension `m`, that is, that the Lanczos process has not yet broken down.
-`Lanczos.kaniel_paige_saad_eigenvectorBasis` is the special case of Mathlib's eigenbasis. -/
+The hypothesis that $\mathcal{K}_m$ has dimension $m$ means that the Lanczos process has not
+broken down. The index $i$ is given twice, as `i : Fin m` and `i' : Fin n` with equal values,
+and the indices $0$, $i + 1$ and $n - 1$ are given as `first`, `iS` and `last`. The lower bound
+is Cauchy interlacing, `LinearMap.IsSymmetric.eigenvalues_compression_le`, which is independent
+of the Krylov structure. The upper bound is
+`Lanczos.eigenvalues_sub_eigenvalues_compression_le`. The special case for the eigenbasis of
+Mathlib is `Lanczos.kaniel_paige_saad_eigenvectorBasis`. -/
 theorem kaniel_paige_saad [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
     (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : IsBot first)
@@ -870,8 +985,10 @@ theorem kaniel_paige_saad [FiniteDimensional 𝕜 E] (hA : A.IsSymmetric) {v : E
 
 end Eigenbasis
 
-/-- **The Kaniel–Paige–[saad2011numerical] theorem for Mathlib's eigenbasis**:
-`Lanczos.kaniel_paige_saad` with `u_i = hA.eigenvectorBasis hn i` and `λ = hA.eigenvalues hn`. -/
+/-- **The Kaniel–Paige–Saad theorem for the eigenbasis of Mathlib.** This is
+`Lanczos.kaniel_paige_saad` for the eigenbasis `hA.eigenvectorBasis hn` and the eigenvalues
+`hA.eigenvalues hn`. Under the same hypotheses, $0 \le \lambda_i - \theta_i \le (\lambda_0 -
+\lambda_{n-1}) (\kappa_i \tan\theta(u_i, v) / T_k(1 + 2 \gamma_i))^2$. -/
 theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ}
     (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {v : E} {m : ℕ}
     (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
@@ -899,29 +1016,40 @@ theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensi
 
 end Lanczos
 
-/-! ### The Arnoldi residual operator on a Krylov subspace -/
+/-!
+### The Arnoldi residual operator on a Krylov subspace
+
+Let $v_0, v_1, \dots$ be the Arnoldi vectors of $A$ and $b$ (`Arnoldi.vec`), the Gram–Schmidt
+orthonormalization of the Krylov sequence, with the value $0$ after a breakdown, and let
+$h_{ij} = \langle v_i, A v_j \rangle$ be the Arnoldi coefficients (`Arnoldi.coeff`). Let $P_m$ be
+the orthogonal projection onto $\mathcal{K}_m(A, b)$. The subdiagonal coefficient $h_{m, m-1}$,
+which [saad2011numerical] writes $h_{m+1,m}$ in its numbering from $1$, is the $\beta_m$ of the
+Lanczos process.
+-/
 
 namespace Arnoldi
 
 variable (A : E →ₗ[𝕜] E) (b : E)
 
-/-- The part of `A y` outside `𝒦_m`, as a linear map: `(1 - P_m) A`. -/
+/-- The linear map $(1 - P_m) A$, which sends $x$ to the part of $A x$ outside $\mathcal{K}_m$. -/
 private noncomputable def outside (m : ℕ) : E →ₗ[𝕜] E :=
   (LinearMap.id - ((subspace A b m).starProjection : E →ₗ[𝕜] E)) ∘ₗ A
 
-/-- `outside` unfolded: the residual of `A x` against `𝒦_m`. -/
+/-- The value of $(1 - P_m) A$ at $x$ is $A x - P_m A x$. -/
 private theorem outside_apply (m : ℕ) (x : E) :
     outside A b m x = A x - (subspace A b m).starProjection (A x) := rfl
 
-/-- Below the last Arnoldi vector of `𝒦_m` the image stays inside `𝒦_m`. -/
+/-- If $j + 2 \le m$, then $(1 - P_m) A v_j = 0$. -/
 private theorem outside_vec_eq_zero {m j : ℕ} (h : j + 2 ≤ m) : outside A b m (vec A b j) = 0 := by
   have hmem : A (vec A b j) ∈ subspace A b m :=
     subspace_mono A b h (map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩)
   rw [outside_apply, Submodule.starProjection_eq_self_iff.2 hmem, sub_self]
 
-/-- At the last Arnoldi vector of `𝒦_m` the image leaves `𝒦_m` along `v_m`, with the subdiagonal
-Hessenberg coefficient as its size: `(1 - P_m) A v_{m-1} = h_{m+1,m} v_m` ([saad2011numerical],
-Proposition 6.6). -/
+/-- Let $m > 0$. At the last Arnoldi vector of $\mathcal{K}_m$, the image leaves $\mathcal{K}_m$
+along $v_m$, with the subdiagonal coefficient as its size:
+$$A v_{m-1} - P_m A v_{m-1} = h_{m, m-1} v_m.$$
+
+This is part of Proposition 6.6 of [saad2011numerical]. -/
 theorem sub_starProjection_apply_vec_last {m : ℕ} (hm : 0 < m) :
     A (vec A b (m - 1)) - (subspace A b m).starProjection (A (vec A b (m - 1)))
       = coeff A b m (m - 1) • vec A b m := by
@@ -929,17 +1057,18 @@ theorem sub_starProjection_apply_vec_last {m : ℕ} (hm : 0 < m) :
   rw [show m - 1 + 1 = m from by omega] at h
   exact h
 
-/-- The Arnoldi vectors have norm at most one: `1` before breakdown and `0` after. -/
+/-- Each Arnoldi vector has norm at most one: $1$ before a breakdown and $0$ after it. -/
 private theorem norm_vec_le_one (j : ℕ) : ‖vec A b j‖ ≤ 1 := by
   rcases eq_or_ne (vec A b j) 0 with h | h
   · rw [h, norm_zero]; norm_num
   · rw [norm_vec_eq_one_of_ne_zero A b h]
 
-/-- **[saad2011numerical], Proposition 6.6**: on `𝒦_m` the operator `(1 - P_m) A` is bounded by the
-subdiagonal Hessenberg coefficient `h_{m+1,m}`.
+/-- **The residual operator on the Krylov subspace.** Let $m > 0$ and $y \in \mathcal{K}_m(A, b)$.
+Then
+$$\|A y - P_m A y\| \le |h_{m, m-1}| \, \|y\|.$$
 
-Only the last Arnoldi vector contributes, `(1 - P_m) A v_j` vanishing for `j + 2 ≤ m`, and there `(1
-- P_m) A v_{m-1} = h_{m+1,m} v_m`. -/
+This is Proposition 6.6 of [saad2011numerical]. Only the last Arnoldi vector contributes,
+because $(1 - P_m) A v_j = 0$ for $j + 2 \le m$ and $(1 - P_m) A v_{m-1} = h_{m, m-1} v_m$. -/
 theorem norm_sub_starProjection_apply_le {m : ℕ} (hm : 0 < m) {y : E} (hy : y ∈ subspace A b m) :
     ‖A y - (subspace A b m).starProjection (A y)‖ ≤ ‖coeff A b m (m - 1)‖ * ‖y‖ := by
   have hval : outside A b m y
@@ -962,12 +1091,13 @@ theorem norm_sub_starProjection_apply_le {m : ℕ} (hm : 0 < m) {y : E} (hy : y 
       ≤ ‖y‖ * ‖coeff A b m (m - 1)‖ := mul_le_mul h1 h2 (by positivity) (norm_nonneg y)
     _ = ‖coeff A b m (m - 1)‖ * ‖y‖ := mul_comm _ _
 
-/-- **The dual half of [saad2011numerical], Proposition 6.6**: for a symmetric operator the norm of
-`P_m A (1 - P_m)` is bounded by the same subdiagonal coefficient, because `P_m A (1 - P_m)` is the
-adjoint of `(1 - P_m) A P_m`.
+/-- **The dual half of Proposition 6.6** of [saad2011numerical]. Let $A$ be symmetric, let $m > 0$,
+and let $x$ be orthogonal to $\mathcal{K}_m(A, b)$. Then
+$$\|P_m A x\| \le |h_{m, m-1}| \, \|x\|.$$
 
-This is the hypothesis `γ` of `LinearMap.IsSymmetric.sin_angle_ritzVector_le`, so it is the form in
-which Proposition 6.6 enters the Ritz bounds of `Numlib/Eigen/RayleighRitz`. -/
+The operator $P_m A (1 - P_m)$ is the adjoint of $(1 - P_m) A P_m$. This bound is the hypothesis
+on the coupling constant $\gamma$ of `LinearMap.IsSymmetric.sin_angle_ritzVector_le`, so it is
+the form in which Proposition 6.6 enters the Ritz vector bounds of `Numlib.Eigen.RayleighRitz`. -/
 theorem norm_starProjection_apply_le_of_mem_orthogonal (hA : A.IsSymmetric) {m : ℕ} (hm : 0 < m)
     {x : E} (hx : x ∈ (subspace A b m)ᗮ) :
     ‖(subspace A b m).starProjection (A x)‖ ≤ ‖coeff A b m (m - 1)‖ * ‖x‖ := by
@@ -998,14 +1128,16 @@ theorem norm_starProjection_apply_le_of_mem_orthogonal (hA : A.IsSymmetric) {m :
   have h4 : ‖p‖ * ‖p‖ ≤ ‖coeff A b m (m - 1)‖ * ‖x‖ * ‖p‖ := by nlinarith [h3]
   exact le_of_mul_le_mul_right h4 hpos
 
-/-- **[saad2011numerical], Proposition 6.6**, in the form the Ritz bounds of
-`Numlib/Eigen/RayleighRitz` consume: for `0 < m ≤ grade A b` the norm of `(1 - P_m) A` on the unit
-sphere of `𝒦_m` is exactly the subdiagonal Hessenberg coefficient `h_{m+1,m} = Arnoldi.coeff A b m
-(m - 1)`, the `β_m` of the Lanczos process.
+/-- **The norm of the residual operator is the subdiagonal coefficient.** Let the full Krylov
+subspace of $A$ and $b$ have finite dimension, and let $0 < m \le g$, where $g$ is the grade of
+$b$ with respect to $A$. Then $|h_{m, m-1}|$ is the greatest element of the set
+$$\{ \|A y - P_m A y\| : y \in \mathcal{K}_m(A, b), \ \|y\| = 1 \}.$$
 
-The bound is `Arnoldi.norm_sub_starProjection_apply_le` and it is attained at the last Arnoldi
-vector `v_{m-1}`, where `(1 - P_m) A v_{m-1} = h_{m+1,m} v_m` and `v_m` is a unit vector unless the
-process has terminated, in which case `h_{m+1,m}` vanishes too. -/
+This is Proposition 6.6 of [saad2011numerical], in the form that the Ritz bounds of
+`Numlib.Eigen.RayleighRitz` use. The bound is `Arnoldi.norm_sub_starProjection_apply_le`, and
+the last Arnoldi vector $v_{m-1}$ attains it: $(1 - P_m) A v_{m-1} = h_{m, m-1} v_m$, and $v_m$
+is a unit vector unless the process has terminated, in which case $h_{m, m-1} = 0$ too. The
+coefficient $h_{m, m-1}$ is `Arnoldi.coeff A b m (m - 1)`, and the grade is `Krylov.grade`. -/
 theorem norm_starProjection_comp_orthogonal_eq_coeff [FiniteDimensional 𝕜 (fullSubspace A b)]
     {m : ℕ} (hm : 0 < m) (hgr : m ≤ grade A b) :
     IsGreatest {r : ℝ | ∃ y ∈ subspace A b m, ‖y‖ = 1 ∧
@@ -1037,14 +1169,19 @@ end Arnoldi
 
 namespace Lanczos
 
-/-- **The Ritz-vector bound of the Lanczos process** ([saad2011numerical], §6.6.3): on a Krylov
-subspace the constant `γ` of the Ritz-vector bound `LinearMap.IsSymmetric.sin_angle_ritzVector_le`
-is the subdiagonal Hessenberg coefficient `β_m = h_{m+1,m}`, so a Ritz pair at a well-separated Ritz
-value `θ` has
+/-- **The Ritz vector bound of the Lanczos process** ([saad2011numerical], §6.6.3). Let $A$ be
+symmetric, let $m > 0$, and let $\theta$ be a real eigenvalue of the compression $A_m$ of $A$ to
+$\mathcal{K}_m = \mathcal{K}_m(A, v)$. Let $A u = \lambda u$ with $u \neq 0$ and $\lambda$ real,
+and let $\delta > 0$ satisfy $\delta \|z\| \le \|A_m z - \lambda z\|$ for every
+$z \in \mathcal{K}_m$ orthogonal to the $\theta$-eigenspace of $A_m$. Then there is a Ritz pair
+$(\theta, w)$ of $A$ on $\mathcal{K}_m$ with
+$$\sin\theta(u, \mathbb{K} w) \le \sqrt{1 + \beta_m^2 / \delta^2} \, \sin\theta(u,
+  \mathcal{K}_m),$$
+where $\beta_m = |h_{m, m-1}|$ is the modulus of the subdiagonal Arnoldi coefficient.
 
-`sin ∠(u, ũ) ≤ √(1 + β_m² / δ²) sin ∠(u, 𝒦_m)`,
-
-and `Krylov.Lanczos.tan_angle_le` bounds the right-hand side by a Chebyshev quotient. -/
+This is `LinearMap.IsSymmetric.sin_angle_ritzVector_le` with the coupling constant
+$\gamma = \beta_m$ of `Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal`. The Ritz pair is
+`Krylov.IsRitzPair`, and `Lanczos.tan_angle_le` bounds the right side by a Chebyshev quotient. -/
 theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) {m : ℕ} (hm : 0 < m)
     {δ θ lam : ℝ} (hδ0 : 0 < δ)
     (hθ : Module.End.HasEigenvalue (compression A (subspace A v m)) (θ : 𝕜))
@@ -1058,14 +1195,19 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v :
   hA.sin_angle_ritzVector_le hδ0
     (fun _x hx => Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal A v hA hm hx) hθ hδ hu hu0
 
-/-- **The Lanczos matrix is the compression in the Lanczos basis** ([saad2003iterative], Thm 6.19,
-read through `Arnoldi.hessenbergSq_eq_toMatrix_compression`): for symmetric `A` and no breakdown
-before step `m` (`finrank 𝒦_m = m`), the sorted eigenvalues of the real symmetric tridiagonal
-`Lanczos.tridiag A b m` are the sorted eigenvalues of `compression A 𝒦_m`, the Ritz values. The two
-matrices `T_m` and `H_m = V_mᴴ A V_m` are the same, so the two characteristic polynomials agree
-and so do their sorted real root lists. This is what turns `Lanczos.kaniel_paige_saad`, a
-statement about Ritz values, into [quarteroni2000numerical] Property 5.12, a statement about the
-eigenvalues of `H_m`. -/
+/-- **The Lanczos matrix is the compression in the Lanczos basis.** Let the full Krylov subspace of
+$A$ and $b$ have finite dimension, let $A$ be symmetric, and let $\mathcal{K}_m(A, b)$ have
+dimension $m$, so that the Lanczos process has not broken down before step $m$. Then the
+eigenvalues of the real symmetric tridiagonal matrix $T_m$ = `Lanczos.tridiag A b m`, sorted in
+decreasing order, are the eigenvalues of the compression of $A$ to $\mathcal{K}_m$, sorted in
+decreasing order: the Ritz values.
+
+This is Theorem 6.19 of [saad2003iterative], through
+`Arnoldi.hessenbergSq_eq_toMatrix_compression`. The two matrices $T_m$ and $H_m = V_m^H A V_m$
+are equal, so their characteristic polynomials agree, and so do their sorted lists of real
+roots. This turns `Lanczos.kaniel_paige_saad`, a statement about Ritz values, into Property 5.12
+of [quarteroni2000numerical], a statement about the eigenvalues of $H_m$. The left side is
+`Matrix.IsHermitian.eigenvalues₀`; the index cast `Fin.cast` matches the two index types. -/
 theorem eigenvalues_tridiag_eq_eigenvalues_compression {A : E →ₗ[𝕜] E} (b : E)
     [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric) {m : ℕ}
     (hm : Module.finrank 𝕜 (subspace A b m) = m) :
@@ -1093,15 +1235,22 @@ theorem eigenvalues_tridiag_eq_eigenvalues_compression {A : E →ₗ[𝕜] E} (b
   ext x
   simp
 
-/-- The **Ritz values** `θ_1 ≥ ⋯ ≥ θ_m` of the Lanczos process ([golub2013matrix] (10.1.7)): the
-eigenvalues of the Lanczos tridiagonal `T_m = Lanczos.tridiag A b m`, sorted decreasingly and
-indexed by `Fin m`. Below the grade they are the eigenvalues of the compression of `A` to the
-Krylov subspace (`Lanczos.ritzValues_eq_eigenvalues_compression`). -/
+/-- The **Ritz values** $\theta_0 \ge \theta_1 \ge \dots \ge \theta_{m-1}$ of the Lanczos process:
+the eigenvalues of the Lanczos tridiagonal matrix $T_m$ = `Lanczos.tridiag A b m`, sorted in
+decreasing order and indexed by `Fin m`.
+
+These are the Ritz values of (10.1.7) of [golub2013matrix]. If $\mathcal{K}_m(A, b)$ has
+dimension $m$, they are the eigenvalues of the compression of $A$ to the Krylov subspace
+(`Lanczos.ritzValues_eq_eigenvalues_compression`). The definition uses
+`Matrix.IsHermitian.sortedEigenvalues`. -/
 noncomputable def ritzValues (A : E →ₗ[𝕜] E) (b : E) (m : ℕ) : Fin m → ℝ :=
   (Matrix.isHermitian_iff_isSymm.mpr (tridiag_isSymm A b m)).sortedEigenvalues
 
-/-- Below the grade, the Ritz values are the sorted eigenvalues of the compression of `A` to
-`𝒦_m(A, b)`: `Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression` reindexed to `Fin m`. -/
+/-- Let the full Krylov subspace of $A$ and $b$ have finite dimension, let $A$ be symmetric, and let
+$\mathcal{K}_m(A, b)$ have dimension $m$. Then the Ritz values `Lanczos.ritzValues A b m` are
+the eigenvalues of the compression of $A$ to $\mathcal{K}_m(A, b)$, sorted in decreasing order.
+
+This is `Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression`, with the index type `Fin m`. -/
 theorem ritzValues_eq_eigenvalues_compression {A : E →ₗ[𝕜] E} (b : E)
     [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric) {m : ℕ}
     (hm : Module.finrank 𝕜 (subspace A b m) = m) :
@@ -1124,11 +1273,12 @@ variable {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ} (b : Orthon
   (hA : A.IsSymmetric)
 include hb hlam hA
 
-/-- The block Kaniel–Paige–Saad bound for one competitor polynomial `q` of degree below `k`: if
-`|q| ≥ 1` at the eigenvalues `λ_0, …, λ_{i'}` and `|q| ≤ M` at the eigenvalues from `λ_p` on, then
-`λ_{i'} - (λ_first - λ_last) (M t)² ≤ μ_i`. The competitor is `q(A) y` for a nonzero `y` in the
-span of the starting block chosen, by a dimension count, orthogonal to the first `i` Ritz vectors
-and with no eigencomponent between `i'` and `p`. -/
+/-- For a real polynomial $q$ of degree less than $k$ with $|q| \ge 1$ at
+$\lambda_0, \dots, \lambda_{i'}$ and $|q| \le M$ at $\lambda_j$ for $j \ge p$, the $i$-th Ritz
+value $\mu_i$ on the block Krylov subspace satisfies $\lambda_{i'} - (\lambda_{first} -
+\lambda_{last}) (M t)^2 \le \mu_i$; the competitor is $q(A) y$ for a nonzero $y$ in the span of
+the starting block, orthogonal to the first $i$ Ritz vectors and with no eigencomponents between
+$i'$ and $p$. -/
 private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → E)
     (hv : LinearIndependent 𝕜 v) {t : ℝ}
     (ht : ∀ x ∈ Submodule.span 𝕜 (Set.range v),
@@ -1269,27 +1419,34 @@ private theorem sub_le_eigenvalues_compression_of_poly {p : ℕ} (v : Fin p → 
     (mul_nonneg (by linarith [hlam (hfirst last)]) (sq_nonneg (M * t))) hPpos hden hN
   linarith
 
-/-- **The block Kaniel–Paige–Saad theorem** (Underwood; [golub2013matrix] Theorem 10.3.2): let `A`
-be symmetric with an orthonormal eigenbasis `z_0, …, z_{n-1}` whose eigenvalues
-`λ_0 ≥ ⋯ ≥ λ_{n-1}` decrease — any such basis, as in a Schur decomposition `Zᵀ A Z = diag(λ)` — `v`
-a linearly independent starting block of `p` vectors, and `μ_0 ≥ ⋯` the eigenvalues of the
-compression of `A` to the block Krylov subspace `𝒦_{k+1}(A, v) = span {A^j v_l : j ≤ k}`. If every
-`x` in the span of the block satisfies `‖x - P x‖ ≤ t ‖P x‖` for the projection `P` onto
-`span {z_0, …, z_{p-1}}` — `t` is `tan φ_p`, the tangent of the largest principal angle between the
-two spaces — then for `i < p`
+/-- **The block Kaniel–Paige–Saad theorem.** Let $E$ have finite dimension, let $A$ be symmetric,
+and let $z_0, \dots, z_{n-1}$ be an orthonormal eigenbasis with $A z_j = \lambda_j z_j$, where
+$\lambda_0 \ge \dots \ge \lambda_{n-1}$ are real; any such basis is allowed, as in a Schur
+decomposition $Z^T A Z = \operatorname{diag}(\lambda)$. Let $v_0, \dots, v_{p-1}$ be a linearly
+independent starting block, and let $\mu_0 \ge \mu_1 \ge \dots$ be the eigenvalues of the
+compression of $A$ to the block Krylov subspace
+$$\mathcal{K}_{k+1}(A, v) = \operatorname{span}\{ A^j v_l : j \le k, \ l < p \}.$$
+Let $P$ be the orthogonal projection onto $\operatorname{span}\{z_0, \dots, z_{p-1}\}$, and
+suppose that $\|x - P x\| \le t \|P x\|$ for every $x$ in the span of the block. Then for every
+index $i < p$ of the Ritz values with $p < n$
+$$\lambda_i - (\lambda_0 - \lambda_{n-1}) \Bigl( \frac{t}{T_k(1 + 2 \rho_i)} \Bigr)^2 \le \mu_i
+  \le \lambda_i, \qquad \rho_i = \frac{\lambda_i - \lambda_p}{\lambda_p - \lambda_{n-1}},$$
+where $T_k$ is the Chebyshev polynomial of the first kind.
 
-`λ_i - (λ_0 - λ_{n-1}) (t / T_k(1 + 2 ρ_i))² ≤ μ_i ≤ λ_i`, `ρ_i = (λ_i - λ_p)/(λ_p - λ_{n-1})`,
+This theorem is due to Underwood; it is Theorem 10.3.2 of [golub2013matrix]. The best constant
+$t$ is $\tan\varphi_p$, the tangent of the largest principal angle between the span of the block
+and the span of $z_0, \dots, z_{p-1}$.
 
-with `T_k` the Chebyshev polynomial of the first kind. The indices are passed as data: `i' = i` in
-the eigenvalue numbering, `iP = p`, and `first`, `last` the extreme indices. No gap hypothesis is
-needed: when `λ_p = λ_{n-1}` or `λ_i = λ_p`, `ρ_i` is `0` (Lean's division by zero or a genuine
-zero), `T_k(1) = 1`, and the bound still holds with the constant competitor.
-
-The upper bound is Cauchy interlacing. The lower bound is Courant–Fischer for the compression with
-the competitor `c(A) y`, `c` the Chebyshev polynomial of `[λ_{n-1}, λ_p]` normalized at `λ_i` and
-`y` in the span of the block, chosen by a dimension count orthogonal to the first `i` Ritz vectors
-and without eigencomponents strictly between `i` and `p`.
-`BlockLanczos.kaniel_paige_saad_eigenvectorBasis` is the special case of Mathlib's eigenbasis. -/
+The indices are given as data: `i'` with the value of `i` in the numbering of the eigenvalues,
+`iP` with the value $p$, and `first` and `last` with `IsBot first` and `IsTop last`. No gap
+hypothesis is needed. When $\lambda_p = \lambda_{n-1}$ or $\lambda_i = \lambda_p$, the quantity
+$\rho_i$ is $0$ (by the Lean convention $x / 0 = 0$, or as a true zero), $T_k(1) = 1$, and the
+bound holds with the constant competitor. The upper bound is Cauchy interlacing. The lower bound
+is the Courant–Fischer theorem for the compression, with the competitor $c(A) y$: here $c$ is
+the Chebyshev polynomial of $[\lambda_{n-1}, \lambda_p]$ normalized at $\lambda_i$, and $y$ is a
+vector in the span of the block that a dimension count makes orthogonal to the first $i$ Ritz
+vectors and free of eigencomponents strictly between $i$ and $p$. The special case for the
+eigenbasis of Mathlib is `BlockLanczos.kaniel_paige_saad_eigenvectorBasis`. -/
 theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent 𝕜 v) {t : ℝ}
     (ht : ∀ x ∈ Submodule.span 𝕜 (Set.range v),
       ‖x - (Submodule.span 𝕜 (b '' {j | (j : ℕ) < p})).starProjection x‖ ≤
@@ -1390,9 +1547,10 @@ theorem kaniel_paige_saad {p : ℕ} (v : Fin p → E) (hv : LinearIndependent �
 
 end Eigenbasis
 
-/-- **The block Kaniel–Paige–Saad theorem for Mathlib's eigenbasis**:
-`BlockLanczos.kaniel_paige_saad` with `z_j = hA.eigenvectorBasis hn j` and
-`λ = hA.eigenvalues hn`. -/
+/-- **The block Kaniel–Paige–Saad theorem for the eigenbasis of Mathlib.** This is
+`BlockLanczos.kaniel_paige_saad` for the eigenbasis `hA.eigenvectorBasis hn` and the eigenvalues
+`hA.eigenvalues hn`. Under the same hypotheses, $\lambda_i - (\lambda_0 - \lambda_{n-1}) (t /
+T_k(1 + 2 \rho_i))^2 \le \mu_i \le \lambda_i$. -/
 theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensional 𝕜 E] {n : ℕ}
     (hA : A.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {p : ℕ} (v : Fin p → E)
     (hv : LinearIndependent 𝕜 v) {t : ℝ}
@@ -1413,12 +1571,15 @@ theorem kaniel_paige_saad_eigenvectorBasis {A : E →ₗ[𝕜] E} [FiniteDimensi
 
 end BlockLanczos
 
-/-! ### The distance to a Krylov subspace without symmetry
+/-!
+### The distance to a Krylov subspace without symmetry
 
-For a diagonalizable operator the variational argument still gives a one-sided bound, with the
-triangle inequality in place of the Pythagoras of the symmetric case.  The price is the factor
-`ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`, which measures how much of the starting vector lies away from the
-eigenvector being approximated. -/
+For a diagonalizable operator, the variational argument still gives a one-sided bound, with the
+triangle inequality in place of the theorem of Pythagoras of the symmetric case. The cost is the
+factor $\xi_i = \sum_{k \neq i} |\alpha_k| / |\alpha_i|$, which measures how much of the starting
+vector lies away from the eigenvector that is approximated. Here $P_m$ is the orthogonal projection
+onto $\mathcal{K}_m(A, v)$.
+-/
 
 namespace Arnoldi
 
@@ -1427,19 +1588,18 @@ section Diagonalizable
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {A : E →ₗ[𝕜] E} {u : ι → E} {lam α : ι → 𝕜}
   {v : E} {i : ι} {m : ℕ}
 
-/-- **The distance from an eigenvector to a Krylov subspace, for one competitor polynomial.**  If
-`A u_k = λ_k u_k` for a family of vectors `u_k` and the starting vector expands as `v = ∑ α_k u_k`,
-then every polynomial `p` of degree less than `m` normalized by `p λ_i = 1` gives
+/-- **The distance from an eigenvector to a Krylov subspace, for one competitor polynomial.** Let
+$u_k$ be a finite family of vectors with $A u_k = \lambda_k u_k$, let $v = \sum_k \alpha_k u_k$,
+and let $\alpha_i \neq 0$. Then for every polynomial $p$ of degree less than $m$ with
+$p(\lambda_i) = 1$
+$$\|u_i - P_m u_i\| \le \frac{\sum_{k \neq i} |\alpha_k| \, |p(\lambda_k)| \,
+  \|u_k\|}{|\alpha_i|}.$$
 
-`‖u_i - P_m u_i‖ ≤ (∑_{k ≠ i} ‖α_k‖ ‖p λ_k‖ ‖u_k‖) / ‖α_i‖`,
-
-`P_m` being the orthogonal projection onto `𝒦_m(A, v)`.
-
-The competitor vector is `α_i⁻¹ p(A) v`, whose `u_i`-component is exactly `u_i`; what is left over
-is the combination of the other `u_k` weighted by `p` at their eigenvalues.  Neither linear
-independence of the family, nor invertibility of `A`, nor any symmetry is used: only that `v` is the
-stated combination of eigenvectors, so the family may repeat an eigenvalue or omit part of the
-spectrum. -/
+The competitor vector is $\alpha_i^{-1} p(A) v$, whose $u_i$-component is exactly $u_i$; the
+rest is the combination of the other $u_k$ weighted by the values of $p$ at their eigenvalues.
+The proof uses neither the linear independence of the family, nor the invertibility of $A$, nor
+any symmetry, only that $v$ is the given combination of eigenvectors. So the family may repeat
+an eigenvalue or omit part of the spectrum. -/
 theorem norm_sub_starProjection_le_of_eval_eq_one (hu : ∀ k, A (u k) = lam k • u k)
     (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) {p : 𝕜[X]} (hdeg : p.degree < m)
     (hp : p.eval (lam i) = 1) :
@@ -1464,15 +1624,16 @@ theorem norm_sub_starProjection_le_of_eval_eq_one (hu : ∀ k, A (u k) = lam k �
   rw [norm_smul, norm_mul, norm_mul, norm_inv]
   ring
 
-/-- **[saad2011numerical], Lemma 6.2**: for a diagonalizable `A` with unit eigenvectors `u_k` and a
-starting vector `v = ∑ α_k u_k` with `α_i ≠ 0`, the distance from `u_i` to the Krylov subspace
-`𝒦_m(A, v)` is at most `ξ_i M`, where `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖` and `M` bounds a competitor
-polynomial `p` of degree less than `m` with `p λ_i = 1` at the other eigenvalues.
+/-- **The distance from an eigenvector to a Krylov subspace, with a bound on the polynomial.** Let
+$u_k$ be a finite family of unit vectors with $A u_k = \lambda_k u_k$, let
+$v = \sum_k \alpha_k u_k$, and let $\alpha_i \neq 0$. Let $p$ be a polynomial of degree less
+than $m$ with $p(\lambda_i) = 1$, and let $|p(\lambda_k)| \le M$ for all $k \neq i$. Then
+$$\|u_i - P_m u_i\| \le \xi_i M, \qquad \xi_i = \sum_{k \neq i} \frac{|\alpha_k|}{|\alpha_i|}.$$
 
-The bound `M` is supplied rather than computed, in the manner of this library's other polynomial
-estimates; `Arnoldi.norm_sub_starProjection_le_iInf` is the form that takes the best `p`, and
-`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` is the explicit estimate that follows from a
-disc enclosing the rest of the spectrum. -/
+This is Lemma 6.2 of [saad2011numerical]. The bound $M$ is given as data, as in the other
+polynomial estimates of this library. `Arnoldi.norm_sub_starProjection_le_iInf` is the form with
+the best polynomial, and `Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` is the explicit
+estimate for a disc that encloses the rest of the spectrum. -/
 theorem norm_sub_starProjection_le_mul (hu : ∀ k, A (u k) = lam k • u k) (hu1 : ∀ k, ‖u k‖ = 1)
     (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) {p : 𝕜[X]} (hdeg : p.degree < m)
     (hp : p.eval (lam i) = 1) {M : ℝ} (hM : ∀ k ≠ i, ‖p.eval (lam k)‖ ≤ M) :
@@ -1487,16 +1648,19 @@ theorem norm_sub_starProjection_le_mul (hu : ∀ k, A (u k) = lam k • u k) (hu
     _ ≤ ‖α k‖ / ‖α i‖ * M :=
         mul_le_mul_of_nonneg_left (hM k (Finset.ne_of_mem_erase hk)) (by positivity)
 
-/-- **[saad2011numerical], Lemma 6.2 with the optimal polynomial.**  The distance from `u_i` to
-`𝒦_m(A, v)` is at most the minimum, over the polynomials `p` of degree less than `m` normalized by
-`p λ_i = 1`, of `(∑_{k ≠ i} ‖α_k‖ ‖p λ_k‖ ‖u_k‖) / ‖α_i‖`.
+/-- **The distance from an eigenvector to a Krylov subspace, with the optimal polynomial.** Let
+$u_k$ be a finite family of vectors with $A u_k = \lambda_k u_k$, let $v = \sum_k \alpha_k u_k$,
+let $\alpha_i \neq 0$, and let $m > 0$. Then
+$$\|u_i - P_m u_i\| \le \inf_{\deg p < m, \ p(\lambda_i) = 1} \frac{\sum_{k \neq i} |\alpha_k|
+  \, |p(\lambda_k)| \, \|u_k\|}{|\alpha_i|}.$$
 
-The source bounds each `‖p λ_k‖` by their maximum `ε_i^{(m)}` and states the result as
-`ξ_i ε_i^{(m)}` with `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`; keeping the weights inside the sum is sharper
-and is what `Arnoldi.norm_sub_starProjection_le_mul` coarsens to the printed form.
-
-Some step must be taken: at `m = 0` the Krylov subspace is trivial, the left-hand side is `‖u_i‖`,
-and the index type is empty, so the infimum has the junk value `0`. -/
+This is Lemma 6.2 of [saad2011numerical] with the optimal polynomial. The source bounds each
+$|p(\lambda_k)|$ by their maximum $\varepsilon_i^{(m)}$ and states the result as
+$\xi_i \varepsilon_i^{(m)}$ with $\xi_i = \sum_{k \neq i} |\alpha_k| / |\alpha_i|$. The bound
+with the weights inside the sum is sharper, and `Arnoldi.norm_sub_starProjection_le_mul` weakens
+it to the printed form. The hypothesis $m > 0$ is necessary: for $m = 0$ the Krylov subspace is
+$\{0\}$, the left side is $\|u_i\|$, and the set of polynomials is empty, so the Lean infimum is
+$0$. -/
 theorem norm_sub_starProjection_le_iInf (hu : ∀ k, A (u k) = lam k • u k)
     (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) :
     ‖u i - (subspace A v m).starProjection (u i)‖ ≤
@@ -1508,17 +1672,18 @@ theorem norm_sub_starProjection_le_iInf (hu : ∀ k, A (u k) = lam k • u k)
   have : Nonempty {p : 𝕜[X] // p.degree < m ∧ p.eval (lam i) = 1} := ⟨⟨1, hone, by simp⟩⟩
   exact le_ciInf fun p => norm_sub_starProjection_le_of_eval_eq_one hu hv hα p.2.1 p.2.2
 
-/-- **[saad2011numerical], Proposition 6.10**: if every eigenvalue other than `λ_i` lies in the
-closed disc of centre `c` and radius `ρ`, then the distance from `u_i` to `𝒦_m(A, v)` decays
-geometrically,
+/-- **Geometric decay of the distance for a disc.** Let $u_k$ be a finite family of unit vectors
+with $A u_k = \lambda_k u_k$, let $v = \sum_k \alpha_k u_k$, let $\alpha_i \neq 0$, and let
+$m > 0$. Let $c$ be a scalar with $\lambda_i \neq c$, and let $|\lambda_k - c| \le \rho$ for all
+$k \neq i$. Then
+$$\|u_i - P_m u_i\| \le \xi_i \Bigl( \frac{\rho}{|\lambda_i - c|} \Bigr)^{m-1}, \qquad \xi_i =
+  \sum_{k \neq i} \frac{|\alpha_k|}{|\alpha_i|}.$$
 
-`‖u_i - P_m u_i‖ ≤ ξ_i (ρ / ‖λ_i - c‖)^(m-1)`,
-
-with `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`.  The competitor is `p(z) = ((z - c)/(λ_i - c))^(m-1)`, which
-`Polynomial.zarantonello` shows to be optimal on a circle.
-
-The bound is informative exactly when `ρ < ‖λ_i - c‖`, that is when the disc separates `λ_i` from
-the rest of the spectrum; no hypothesis enforces that, since the inequality holds regardless. -/
+This is Proposition 6.10 of [saad2011numerical]. The competitor is
+$p(z) = ((z - c) / (\lambda_i - c))^{m-1}$, which `Polynomial.zarantonello` shows to be optimal
+on a circle. The bound is informative exactly when $\rho < |\lambda_i - c|$, that is, when the
+disc separates $\lambda_i$ from the rest of the spectrum. No hypothesis requires this, because
+the inequality holds in all cases. -/
 theorem norm_sub_starProjection_le_of_mem_closedBall (hu : ∀ k, A (u k) = lam k • u k)
     (hu1 : ∀ k, ‖u k‖ = 1) (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) {c : 𝕜} {ρ : ℝ}
     (hc : lam i ≠ c) (hρ : ∀ k ≠ i, ‖lam k - c‖ ≤ ρ) :
@@ -1552,24 +1717,30 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {A : E →ₗ[ℂ] E} {u : ι → E} {lam α : ι → ℂ}
   {v : E} {i : ι} {m : ℕ}
 
-/-- **[saad2011numerical], Theorem 6.8**, the ellipse counterpart of
-`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall`: if every eigenvalue other than `λ_i` lies in
-the region bounded by the ellipse with centre `c`, focal semi-distance `d` and parameter `ρ`, and
-`λ_i` lies outside it, then
+/-- **The Chebyshev bound on the distance for an ellipse.** Let $E$ be a complex inner product
+space, let $u_k$ be a finite family of unit vectors with $A u_k = \lambda_k u_k$, let
+$v = \sum_k \alpha_k u_k$, let $\alpha_i \neq 0$, and let $m > 0$. Let $c, d \in \mathbb{C}$
+with $d \neq 0$ and $\rho \ge 1$, and let $\mathcal{E}$ be the closed region bounded by the
+ellipse $\{ c + d (w + w^{-1})/2 : |w| = \rho \}$, which has the foci $c \pm d$. Suppose that
+$\lambda_k \in \mathcal{E}$ for all $k \neq i$ and $\lambda_i \notin \mathcal{E}$. Then
+$$\|u_i - P_m u_i\| \le \xi_i \frac{T_{m-1}\bigl( (\rho + \rho^{-1})/2 \bigr)}{\bigl|
+  T_{m-1}\bigl( (c - \lambda_i)/d \bigr) \bigr|}, \qquad \xi_i = \sum_{k \neq i}
+  \frac{|\alpha_k|}{|\alpha_i|},$$
+where $T_{m-1}$ is the Chebyshev polynomial of the first kind, real in the numerator and complex
+in the denominator.
 
-`‖u_i - P_m u_i‖ ≤ ξ_i C_{m-1}(a/d) / |C_{m-1}((λ_i - c)/d)|`,
-
-with `ξ_i = ∑_{k ≠ i} ‖α_k‖/‖α_i‖` and `a/d = (ρ + ρ⁻¹)/2` the ratio of the semi-major axis to the
-focal semi-distance.  The competitor is the shifted, normalized Chebyshev polynomial
-`Polynomial.Chebyshev.shiftedComplex (m - 1) c d λ_i`, whose maximum on the ellipse is computed by
-`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse` and carried into the enclosed region by
-the maximum modulus principle
-`Polynomial.Chebyshev.norm_eval_shiftedComplex_le_of_mem_filledEllipse`.
-
-The source writes `T_k` for the real Chebyshev polynomial in the numerator and for the complex one
-in the denominator; both appear here, over `ℝ` and over `ℂ`.  Being outside the region is what makes
-the denominator nonzero, by
-`Polynomial.Chebyshev.eval_T_sub_div_ne_zero_of_notMem_filledEllipse`. -/
+This is Theorem 6.8 of [saad2011numerical], the ellipse counterpart of
+`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall`. The number $(\rho + \rho^{-1})/2$ is the
+ratio $a / |d|$ of the semi-major axis to the focal semi-distance. Since $T_{m-1}$ is even or
+odd, $|T_{m-1}((c - \lambda_i)/d)| = |T_{m-1}((\lambda_i - c)/d)|$. The source writes $T_k$ both
+for the real Chebyshev polynomial in the numerator and for the complex one in the denominator.
+The region $\mathcal{E}$ is `Set.filledEllipse c d ρ`. The competitor is the shifted and
+normalized Chebyshev polynomial `Polynomial.Chebyshev.shiftedComplex (m - 1) c d (lam i)`. Its
+maximum on the ellipse is `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`, and the
+maximum modulus principle
+`Polynomial.Chebyshev.norm_eval_shiftedComplex_le_of_mem_filledEllipse` carries the bound into
+the enclosed region. Since $\lambda_i$ is outside the region, the denominator is not $0$
+(`Polynomial.Chebyshev.eval_T_sub_div_ne_zero_of_notMem_filledEllipse`). -/
 theorem norm_sub_starProjection_le_of_mem_ellipse (hu : ∀ k, A (u k) = lam k • u k)
     (hu1 : ∀ k, ‖u k‖ = 1) (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) {c d : ℂ}
     {ρ : ℝ} (hρ : 1 ≤ ρ) (hd : d ≠ 0) (hi : lam i ∉ Set.filledEllipse c d ρ)

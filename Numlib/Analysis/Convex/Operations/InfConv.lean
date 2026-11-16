@@ -8,41 +8,66 @@ import Numlib.Analysis.Convex.Operations.Epi
 /-!
 # Infimal convolution
 
-The functional operation `f □ g` corresponding to addition of epigraphs: the function determined by
-`epi f + epi g`. It is convex whenever `f` and `g` are, and it is dual to pointwise addition of
-convex functions under conjugacy.
+Let $E$ be an additive group and let $f, g \colon E \to [-\infty, +\infty]$. The **infimal
+convolute** $f \mathbin{\square} g$ is the operation on functions that corresponds to the addition
+of epigraphs: it is the function determined by $\operatorname{epi} f + \operatorname{epi} g$. When
+neither function takes the value $-\infty$, it is given by the classical formula $$(f
+\mathbin{\square} g)(x) = \inf_{y \in E} \big( f(x - y) + g(y) \big),$$ which is analogous to the
+formula for integral convolution ([rockafellar1970convex], §5). The infimal convolute of two convex
+functions is convex, and infimal convolution is dual to pointwise addition under conjugacy. Infimal
+convolution is commutative and associative, and the indicator function $\delta(\cdot \mid 0)$ of the
+origin is its identity element.
 
-`f □ g` is *defined* as `ofEpi (epi f + epi g)`, not by the classical formula
-`(f □ g) x = ⨅ y, f (x - y) + g y`, which is ill-formed as soon as one function reaches `⊤` where
-the other reaches `⊥`: for `f ≡ ⊤` and `g 0 = ⊥`, `epi f + epi g = ∅` so the left side is `⊤` and
-the right side `⊤ + ⊥ = ⊥`. `infConv_apply` recovers the formula under `f, g ≠ ⊥`; since that
-example uses only one `⊤` value and one `⊥` value, a single such hypothesis will not do.
+The **supremal convolute** of two concave functions $g$ and $h$ is $-((-g) \mathbin{\square} (-h))$.
+When neither function takes the value $+\infty$, its value at $x$ is
+$\sup \{ g(x_1) + h(x_2) \mid x_1 + x_2 = x \}$. Each property of infimal convolution gives a
+property of supremal convolution by one negation.
 
 ## Main definitions
 
-* `infConv f g` — the infimal convolute `f □ g`; `supConv g h`, its concave twin
-  `-((-g) □ (-h))`, the supremal convolute.
-* `InfConvFn E` — the type synonym `E → EReal` carrying `□` as its addition, so that
-  `f₁ □ ⋯ □ fₘ` is a `Finset.sum`. A synonym is forced, since `E → EReal` already carries the
-  pointwise `+` that `□` is dual to; additive notation is right, `□` being addition of epigraphs.
+* `ConvexAnalysis.infConv`: the infimal convolute $f \mathbin{\square} g$.
+* `ConvexAnalysis.supConv`: the supremal convolute $-((-g) \mathbin{\square} (-h))$ of $g$ and $h$.
+* `ConvexAnalysis.InfConvFn`: a copy of the type of functions $E \to [-\infty, +\infty]$ whose
+  addition is infimal convolution, so that $f_1 \mathbin{\square} \cdots \mathbin{\square} f_m$ is a
+  finite sum.
 
 ## Main results
 
-* `convexFn_infConv` — `□` preserves convexity; `convexFn_sum_toInfConvFn` is the m-ary form.
-* `infConv_apply`, `infConv_le_add` — the classical infimum formula and its inequality half;
-  `sum_toInfConvFn_apply_le`, `sum_toInfConvFn_le_sum` are the m-ary versions.
-* `convexDom_infConv` — `dom (f □ g) = dom f + dom g`, with no hypothesis at all.
-* `supConv_apply`, `concaveDom_supConv`, `concaveFn_supConv` — the concave mirrors, by one
-  negation.
-* `infConv_comp_neg` — infimal convolution commutes with negating the argument.
-* `InfConvFn.instAddCommMonoid` — `□` is commutative and associative with identity `δ(· | 0)`;
-  `infConv_indicatorFn_singleton` translates the graph of `f` by `a`.
-* `subset_epi_infConv`, `epi_infConv` — `epi f + epi g ⊆ epi (f □ g)` always; equality needs
-  `IsEpiLike (epi f + epi g)`.
+* `ConvexAnalysis.convexFn_infConv`: the infimal convolute of two convex functions is convex.
+  `ConvexAnalysis.convexFn_sum_toInfConvFn` is the form with $m$ functions.
+* `ConvexAnalysis.infConv_apply`: if $f$ and $g$ never take the value $-\infty$, then $(f
+  \mathbin{\square} g)(x) = \inf_y ( f(x - y) + g(y) )$.
+* `ConvexAnalysis.infConv_le_add`: under the same hypotheses,
+  $(f \mathbin{\square} g)(x) \le f(x - y) + g(y)$. `ConvexAnalysis.sum_toInfConvFn_apply_le` and
+  `ConvexAnalysis.sum_toInfConvFn_le_sum` are the forms with $m$ functions.
+* `ConvexAnalysis.convexDom_infConv`: $\operatorname{dom}(f \mathbin{\square} g) =
+  \operatorname{dom} f + \operatorname{dom} g$, with no hypothesis.
+* `ConvexAnalysis.supConv_apply`, `ConvexAnalysis.concaveDom_supConv`,
+  `ConvexAnalysis.concaveFn_supConv`: the formula, the effective domain and the concavity of the
+  supremal convolute.
+* `ConvexAnalysis.infConv_comp_neg`: infimal convolution commutes with the reflection $x \mapsto -x$
+  of the argument.
+* `ConvexAnalysis.InfConvFn.instAddCommMonoid`: infimal convolution is commutative and associative,
+  with identity element $\delta(\cdot \mid 0)$.
+* `ConvexAnalysis.infConv_indicatorFn_singleton`: $f \mathbin{\square} \delta(\cdot \mid a)$ is the
+  translate $x \mapsto f(x - a)$.
+* `ConvexAnalysis.subset_epi_infConv`, `ConvexAnalysis.epi_infConv`: $\operatorname{epi} f +
+  \operatorname{epi} g \subseteq \operatorname{epi}(f \mathbin{\square} g)$, with equality when
+  $\operatorname{epi} f + \operatorname{epi} g$ is an epigraph.
 
-## References
+## Implementation notes
 
-* [rockafellar1970convex] §5.
+* `ConvexAnalysis.infConv f g` is defined as `ConvexAnalysis.ofEpi (epi f + epi g)`, not by the
+  classical formula. The formula is wrong when one function takes the value $+\infty$ where the
+  other takes $-\infty$. For example, if $f \equiv +\infty$ and $g(0) = -\infty$, then
+  $\operatorname{epi} f + \operatorname{epi} g = \emptyset$, so
+  $(f \mathbin{\square} g)(0) = +\infty$, but the formula gives $+\infty + (-\infty) = -\infty$ in
+  `EReal`. `ConvexAnalysis.infConv_apply` recovers the formula when $f \ne -\infty$ and
+  $g \ne -\infty$ everywhere. This example uses only one value $+\infty$ and one value $-\infty$, so
+  a hypothesis on only one of the two functions is not sufficient.
+* `ConvexAnalysis.InfConvFn E` is a type synonym of `E → EReal`. A synonym is necessary because
+  `E → EReal` already has the pointwise addition, to which infimal convolution is dual. Additive
+  notation is natural, because infimal convolution is the addition of epigraphs.
 -/
 
 open Pointwise Set
@@ -55,41 +80,64 @@ section Basic
 
 variable {E : Type*} [AddCommGroup E] {f g f₁ f₂ g₁ g₂ : E → EReal} {y z : E} {ν ρ : ℝ}
 
-/-- **Infimal convolution** `f □ g`, defined by addition of epigraphs rather than by the infimum
-formula `(f □ g) x = ⨅ y, f (x - y) + g y`, which is ill-formed when `f` or `g` takes the value
-`⊥`. The formula is `infConv_apply`. -/
+/-- The **infimal convolute** $f \mathbin{\square} g$ of $f, g \colon E \to [-\infty, +\infty]$ is
+the function determined by the sum of the epigraphs: $$(f \mathbin{\square} g)(x) = \inf \{ \mu
+\in \mathbb{R} \mid (x, \mu) \in \operatorname{epi} f + \operatorname{epi} g \}.$$
+
+This definition does not use the formula $(f \mathbin{\square} g)(x) = \inf_y ( f(x - y) + g(y)
+)$, which is wrong when $f$ or $g$ takes the value $-\infty$. The formula is
+`ConvexAnalysis.infConv_apply`. -/
 noncomputable def infConv (f g : E → EReal) : E → EReal := ofEpi (epi f + epi g)
 
+/-- The infimal convolute $f \mathbin{\square} g$ is the function determined by
+$\operatorname{epi} f + \operatorname{epi} g$. -/
 theorem infConv_def (f g : E → EReal) : infConv f g = ofEpi (epi f + epi g) := rfl
 
-/-- **Supremal convolution** of two concave functions, Rockafellar's `□` in its concave
-orientation: `(g □ h)(x) = sup {g x₁ + h x₂ | x₁ + x₂ = x}`. Defined as `-((-g) □ (-h))`, so that
-every property of `infConv` transfers by one negation; the supremum formula is `supConv_apply`. -/
+/-- The **supremal convolute** of $g, h \colon E \to [-\infty, +\infty]$ is the function $$x \mapsto
+-\big( (-g) \mathbin{\square} (-h) \big)(x).$$ It is the concave form of $\square$ in
+[rockafellar1970convex], with the value $\sup \{ g(x_1) + h(x_2) \mid x_1 + x_2 = x \}$ at $x$
+under the hypotheses of `ConvexAnalysis.supConv_apply`.
+
+With this definition, every property of `ConvexAnalysis.infConv` gives a property of the
+supremal convolute by one negation. -/
 noncomputable def supConv (g h : E → EReal) : E → EReal :=
   fun x => -(infConv (fun w => -(g w)) (fun w => -(h w)) x)
 
+/-- The supremal convolute of $g$ and $h$ is $x \mapsto -((-g) \mathbin{\square} (-h))(x)$. -/
 theorem supConv_def (g h : E → EReal) :
     supConv g h = fun x => -(infConv (fun w => -(g w)) (fun w => -(h w)) x) := rfl
 
-/-- The sign dictionary for `□`: `-(g □ h) = (-g) □ (-h)`. The two convolutions negate *values*,
-not arguments. -/
+/-- The negative of the supremal convolute of $g$ and $h$ is the infimal convolute
+$(-g) \mathbin{\square} (-h)$. Both convolutions negate values, not arguments. -/
 @[simp] theorem neg_supConv (g h : E → EReal) (x : E) :
     -(supConv g h x) = infConv (fun w => -(g w)) (fun w => -(h w)) x := neg_neg _
 
+/-- The sum of the epigraphs is contained in the epigraph of the infimal convolute:
+$\operatorname{epi} f + \operatorname{epi} g \subseteq \operatorname{epi}(f \mathbin{\square}
+g)$. -/
 theorem subset_epi_infConv (f g : E → EReal) : epi f + epi g ⊆ epi (infConv f g) :=
   subset_epi_ofEpi _
 
-/-- Rockafellar's description of `epi (f □ g)`, under the hypothesis that makes it true.
+/-- If $\operatorname{epi} f + \operatorname{epi} g$ is the epigraph of some function, then it is
+the epigraph of the infimal convolute: $$\operatorname{epi}(f \mathbin{\square} g) =
+\operatorname{epi} f + \operatorname{epi} g.$$ [rockafellar1970convex] describes
+$\operatorname{epi}(f \mathbin{\square} g)$ in this way.
 
-The hypothesis is not removable: a sum of epigraphs need not be an epigraph. On `ℝ` take
-`f x = 1/x` for `x > 0` and `⊤` otherwise, and `g ≡ 0`; both are convex, every vertical section of
-`epi f + epi g` is `Ioi 0`, so the sum is `ℝ ×ˢ Ioi 0`, whereas `f □ g ≡ 0` has epigraph
-`ℝ ×ˢ Ici 0`. -/
+The hypothesis cannot be removed, because a sum of epigraphs need not be an epigraph. On
+$\mathbb{R}$, let $f(x) = 1/x$ for $x > 0$ and $f(x) = +\infty$ otherwise, and let $g \equiv 0$.
+Both functions are convex. Every vertical section of
+$\operatorname{epi} f + \operatorname{epi} g$ is $(0, \infty)$, so the sum is
+$\mathbb{R} \times (0, \infty)$. But $f \mathbin{\square} g \equiv 0$ has the epigraph
+$\mathbb{R} \times [0, \infty)$. -/
 theorem epi_infConv (h : IsEpiLike (epi f + epi g)) : epi (infConv f g) = epi f + epi g :=
   epi_ofEpi h
 
-/-- Vertical sections of a sum of epigraphs are upward closed: the half of `IsEpiLike` that holds
-unconditionally, closedness having to supply the other. -/
+/-- The vertical sections of a sum of epigraphs are closed upwards: if $(x, \mu) \in
+\operatorname{epi} f + \operatorname{epi} g$ and $\mu \le \nu$, then $(x, \nu) \in
+\operatorname{epi} f + \operatorname{epi} g$.
+
+This is the half of `ConvexAnalysis.IsEpiLike` that always holds. The other half, attainment of
+the infimum, can fail. -/
 theorem mem_epi_add_epi_of_le {x : E} {μ ν : ℝ} (h : ((x, μ) : E × ℝ) ∈ epi f + epi g)
     (hμν : μ ≤ ν) : ((x, ν) : E × ℝ) ∈ epi f + epi g := by
   obtain ⟨⟨y', a⟩, h₁, ⟨z', b⟩, h₂, heq⟩ := h
@@ -100,7 +148,11 @@ theorem mem_epi_add_epi_of_le {x : E} {μ ν : ℝ} (h : ((x, μ) : E × ℝ) �
   · change ((y', a) : E × ℝ) + (z', b + (ν - μ)) = (x, ν)
     rw [Prod.mk_add_mk, hy, show a + (b + (ν - μ)) = ν by linarith]
 
-/-- The basic upper bound, phrased inside the epigraphs so that no `∞ - ∞` can arise. -/
+/-- If $f(y) \le \nu$ and $g(z) \le \rho$ for real numbers $\nu$ and $\rho$, then
+$(f \mathbin{\square} g)(y + z) \le \nu + \rho$.
+
+The bound is stated with real upper bounds, inside the epigraphs, so that no sum
+$+\infty + (-\infty)$ occurs. -/
 theorem infConv_apply_le (hy : f y ≤ (ν : EReal)) (hz : g z ≤ (ρ : EReal)) :
     infConv f g (y + z) ≤ ((ν + ρ : ℝ) : EReal) := by
   refine ofEpi_apply_le ?_
@@ -110,14 +162,21 @@ theorem infConv_apply_le (hy : f y ≤ (ν : EReal)) (hz : g z ≤ (ρ : EReal))
 
 /-! ### The effective domain -/
 
-/-- `dom (f □ g) = dom f + dom g`, with no hypothesis, unlike `convexDom_add` for pointwise
-addition: `convexDom` is the projection of the epigraph, and projection is an additive hom. -/
+/-- For all $f, g \colon E \to [-\infty, +\infty]$, the effective domain of the infimal convolute is
+the sum of the effective domains: $$\operatorname{dom}(f \mathbin{\square} g) =
+\operatorname{dom} f + \operatorname{dom} g.$$
+
+No hypothesis is needed, unlike for pointwise addition (`ConvexAnalysis.convexDom_add`). The
+reason is that the effective domain is the projection of the epigraph on $E$, and this
+projection is additive. -/
 theorem convexDom_infConv
     (f g : E → EReal) : convexDom (infConv f g) = convexDom f + convexDom g := by
   rw [infConv_def, convexDom_ofEpi, convexDom_eq_fst_image_epi f, convexDom_eq_fst_image_epi g]
   exact Set.image_add (AddMonoidHom.fst E ℝ)
 
-/-- `concaveDom (g □ h) = concaveDom g + concaveDom h`, with no hypothesis. -/
+/-- For all $g, h \colon E \to [-\infty, +\infty]$, the effective domain (the set where the function
+is greater than $-\infty$) of the supremal convolute of $g$ and $h$ is the sum of the effective
+domains of $g$ and $h$. No hypothesis is needed. -/
 theorem concaveDom_supConv (g h : E → EReal) :
     concaveDom (supConv g h) = concaveDom g + concaveDom h := by
   rw [concaveDom_eq_convexDom_neg, concaveDom_eq_convexDom_neg, concaveDom_eq_convexDom_neg]
@@ -126,8 +185,11 @@ theorem concaveDom_supConv (g h : E → EReal) :
 
 /-! ### The infimum formula -/
 
-/-- `(f □ g) x ≤ f (x - y) + g y`. Both `≠ ⊥` hypotheses are needed: without them the right side
-can be `⊤ + ⊥ = ⊥` while the left is `⊤`. -/
+/-- Let $f, g \colon E \to [-\infty, +\infty]$ never take the value $-\infty$. Then for all
+$x, y \in E$, $$(f \mathbin{\square} g)(x) \le f(x - y) + g(y).$$
+
+Both hypotheses are needed. Without them the right side can be $+\infty + (-\infty) = -\infty$
+while the left side is $+\infty$. -/
 theorem infConv_le_add (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x y : E) :
     infConv f g x ≤ f (x - y) + g y := by
   rcases eq_top_or_lt_top (f (x - y)) with h1 | h1
@@ -141,8 +203,12 @@ theorem infConv_le_add (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x y 
   rw [hp, hq, ← EReal.coe_add]
   simpa using infConv_apply_le (f := f) (g := g) hp.le hq.le
 
-/-- **Rockafellar's formula for `□`**: `(f □ g) x = ⨅ y, f (x - y) + g y`, "analogous to the
-classical formula for integral convolution". The `≠ ⊥` hypotheses make the right side meaningful. -/
+/-- **The formula for the infimal convolute.** Let $f, g \colon E \to [-\infty, +\infty]$ never take
+the value $-\infty$. Then for every $x \in E$, $$(f \mathbin{\square} g)(x) = \inf_{y \in E}
+\big( f(x - y) + g(y) \big).$$
+
+[rockafellar1970convex] notes that this formula is analogous to the classical formula for
+integral convolution. The hypotheses make the sum on the right side meaningful. -/
 theorem infConv_apply (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E) :
     infConv f g x = ⨅ y, f (x - y) + g y := by
   refine le_antisymm (le_iInf fun y => infConv_le_add hf hg x y) (le_ofEpi fun μ hμ => ?_)
@@ -152,9 +218,13 @@ theorem infConv_apply (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E
   rw [← hab.1, add_sub_cancel_right, ← hab.2, EReal.coe_add]
   exact add_le_add (mk_mem_epi.1 ha) (mk_mem_epi.1 hb)
 
-/-- **The formula for the concave `□`**: `(g □ h)(x) = sup {g (x - y) + h y | y}`. The hypotheses
-mirror those of `infConv_apply`: without them the summand is `∞ - ∞` where one function is `+∞` and
-the other `-∞`, and `EReal` resolves it on the wrong side. -/
+/-- **The formula for the supremal convolute.** Let $g, h \colon E \to [-\infty, +\infty]$ never
+take the value $+\infty$. Then for every $x \in E$, the supremal convolute of $g$ and $h$ has
+the value $$\sup_{y \in E} \big( g(x - y) + h(y) \big).$$
+
+The hypotheses mirror those of `ConvexAnalysis.infConv_apply`. Without them, a summand is
+$+\infty + (-\infty)$ at a point where one function is $+\infty$ and the other is $-\infty$, and
+`EReal` gives this sum the value $-\infty$, which is wrong here. -/
 theorem supConv_apply {g h : E → EReal} (hg : ∀ x, g x ≠ ⊤) (hh : ∀ x, h x ≠ ⊤) (x : E) :
     supConv g h x = ⨆ y, g (x - y) + h y := by
   change -(infConv (fun w => -(g w)) (fun w => -(h w)) x) = _
@@ -164,15 +234,20 @@ theorem supConv_apply {g h : E → EReal} (hg : ∀ x, g x ≠ ⊤) (hh : ∀ x,
 
 /-! ### Commutativity, associativity, monotonicity -/
 
+/-- Infimal convolution is commutative: $f \mathbin{\square} g = g \mathbin{\square} f$. -/
 theorem infConv_comm (f g : E → EReal) : infConv f g = infConv g f := by
   rw [infConv_def, infConv_def, add_comm]
 
+/-- Supremal convolution is commutative. -/
 theorem supConv_comm (g h : E → EReal) : supConv g h = supConv h g :=
   funext fun x => congrArg Neg.neg (congrFun (infConv_comm _ _) x)
 
-/-- **Infimal convolution commutes with negating the argument**: `(f ∘ -) □ (g ∘ -) = (f □ g) ∘ -`.
-Negation in the first coordinate is an additive bijection of `E × ℝ`, so it carries the sum of the
-epigraphs to the sum of their images. -/
+/-- **Infimal convolution commutes with the reflection of the argument.** For all
+$f, g \colon E \to [-\infty, +\infty]$ and $x \in E$, $$\big( f(-\,\cdot) \mathbin{\square}
+g(-\,\cdot) \big)(x) = (f \mathbin{\square} g)(-x).$$
+
+The map $(x, \mu) \mapsto (-x, \mu)$ is an additive bijection of $E \times \mathbb{R}$, so it
+carries the sum of the epigraphs to the sum of their images. -/
 theorem infConv_comp_neg (f g : E → EReal) (x : E) :
     infConv (fun w => f (-w)) (fun w => g (-w)) x = infConv f g (-x) := by
   have key : ∀ μ : ℝ, ((x, μ) : E × ℝ) ∈ epi (fun w => f (-w)) + epi (fun w => g (-w))
@@ -197,9 +272,13 @@ theorem infConv_comp_neg (f g : E → EReal) (x : E) :
   exact le_antisymm (le_ofEpi fun μ hμ => ofEpi_apply_le ((key μ).2 hμ))
     (le_ofEpi fun μ hμ => ofEpi_apply_le ((key μ).1 hμ))
 
-/-- Enlarging a summand from `F` to the epigraph it determines does not move the lower boundary of
-the sum: the points `epi (ofEpi F)` adds are limits from above of points of `F`. This is what makes
-`□` associative. -/
+/-- For sets $F, G \subseteq E \times \mathbb{R}$, $$\operatorname{epi}(\operatorname{ofEpi} F) + G
+\subseteq \operatorname{epi}(\operatorname{ofEpi}(F + G)),$$ where $\operatorname{ofEpi} F$ is
+the function determined by $F$.
+
+Replacing $F$ by the epigraph of the function it determines does not move the lower boundary of
+the sum, because the added points are limits from above of points of $F$. This is the key step
+of the associativity of $\square$. -/
 theorem epi_ofEpi_add_subset (F G : Set (E × ℝ)) :
     epi (ofEpi F) + G ⊆ epi (ofEpi (F + G)) := by
   rintro p hp
@@ -217,29 +296,42 @@ theorem epi_ofEpi_add_subset (F G : Set (E × ℝ)) :
   have hτ' : τ < μ + (q - (μ + σ)) := by exact_mod_cast hτ
   exact_mod_cast (by linarith : τ + σ < q)
 
+/-- For a set $F \subseteq E \times \mathbb{R}$, the infimal convolute of the function determined by
+$F$ with $g$ is the function determined by $F + \operatorname{epi} g$. -/
 theorem infConv_ofEpi_left (F : Set (E × ℝ)) (g : E → EReal) :
     infConv (ofEpi F) g = ofEpi (F + epi g) := by
   refine le_antisymm (ofEpi_mono (Set.add_subset_add_right (subset_epi_ofEpi F))) ?_
   exact subset_epi_iff_le_ofEpi.1 (epi_ofEpi_add_subset F (epi g))
 
+/-- For a set $G \subseteq E \times \mathbb{R}$, the infimal convolute of $f$ with the function
+determined by $G$ is the function determined by $\operatorname{epi} f + G$. -/
 theorem infConv_ofEpi_right (f : E → EReal) (G : Set (E × ℝ)) :
     infConv f (ofEpi G) = ofEpi (epi f + G) := by
   rw [infConv_comm, infConv_ofEpi_left, add_comm]
 
-/-- `□` is associative. Not a direct consequence of associativity of set addition: `epi (f □ g)` is
-larger than `epi f + epi g` in general, and `epi_ofEpi_add_subset` closes the gap. -/
+/-- Infimal convolution is associative: $(f \mathbin{\square} g) \mathbin{\square} h = f
+\mathbin{\square} (g \mathbin{\square} h)$.
+
+This does not follow directly from the associativity of the addition of sets, because
+$\operatorname{epi}(f \mathbin{\square} g)$ is in general larger than
+$\operatorname{epi} f + \operatorname{epi} g$. `ConvexAnalysis.epi_ofEpi_add_subset` closes the
+gap. -/
 theorem infConv_assoc (f g h : E → EReal) :
     infConv (infConv f g) h = infConv f (infConv g h) := by
   rw [infConv_def f g, infConv_def g h, infConv_ofEpi_left, infConv_ofEpi_right, add_assoc]
 
+/-- Supremal convolution is associative. -/
 theorem supConv_assoc (g h k : E → EReal) :
     supConv (supConv g h) k = supConv g (supConv h k) := by
   simp only [supConv_def, neg_neg]
   exact congrArg (fun F : E → EReal => fun x => -(F x)) (infConv_assoc _ _ _)
 
+/-- Infimal convolution is monotone in both arguments: if $f_1 \le f_2$ and $g_1 \le g_2$, then $f_1
+\mathbin{\square} g_1 \le f_2 \mathbin{\square} g_2$. -/
 theorem infConv_mono (hf : f₁ ≤ f₂) (hg : g₁ ≤ g₂) : infConv f₁ g₁ ≤ infConv f₂ g₂ :=
   ofEpi_mono (Set.add_subset_add (epi_anti hf) (epi_anti hg))
 
+/-- Supremal convolution is monotone in both arguments. -/
 theorem supConv_mono {h₁ h₂ : E → EReal} (hg : g₁ ≤ g₂) (hh : h₁ ≤ h₂) :
     supConv g₁ h₁ ≤ supConv g₂ h₂ := fun x =>
   EReal.neg_le_neg_iff.2 (infConv_mono (fun w => EReal.neg_le_neg_iff.2 (hg w))
@@ -247,8 +339,10 @@ theorem supConv_mono {h₁ h₂ : E → EReal} (hg : g₁ ≤ g₂) (hh : h₁ �
 
 /-! ### Indicator functions: the identity element and translation -/
 
-/-- Adding the epigraph of `δ(· | a)` — the half-cylinder `{a} ×ˢ Ici 0` — translates an epigraph
-horizontally by `a`. Unlike a general sum of epigraphs, this one *is* an epigraph. -/
+/-- Adding the epigraph of $\delta(\cdot \mid a)$, which is the half-line
+$\{a\} \times [0, \infty)$, translates an epigraph horizontally by $a$: $$\operatorname{epi} f +
+\operatorname{epi} \delta(\cdot \mid a) = \operatorname{epi}\big( x \mapsto f(x - a) \big).$$
+Unlike a general sum of epigraphs, this sum is an epigraph. -/
 theorem epi_add_epi_indicatorFn_singleton (f : E → EReal) (a : E) :
     epi f + epi (indicatorFn ({a} : Set E)) = epi fun x => f (x - a) := by
   rw [epi_indicatorFn]
@@ -269,22 +363,26 @@ theorem epi_add_epi_indicatorFn_singleton (f : E → EReal) (a : E) :
       Set.add_mem_add (mk_mem_epi.2 (mk_mem_epi.1 hp)) ⟨rfl, le_refl (0 : ℝ)⟩
     simpa using hmem
 
-/-- `f □ δ(· | a)` translates the graph of `f` horizontally by `a`. -/
+/-- The infimal convolute $f \mathbin{\square} \delta(\cdot \mid a)$ is the translate
+$x \mapsto f(x - a)$ of $f$. -/
 theorem infConv_indicatorFn_singleton (f : E → EReal) (a : E) :
     infConv f (indicatorFn ({a} : Set E)) = fun x => f (x - a) := by
   rw [infConv_def, epi_add_epi_indicatorFn_singleton, ofEpi_epi]
 
-/-- **`δ(· | 0)` is the identity element for `□`.** -/
+/-- The indicator function $\delta(\cdot \mid 0)$ is a right identity for infimal convolution:
+$f \mathbin{\square} \delta(\cdot \mid 0) = f$. -/
 @[simp] theorem infConv_indicatorFn_zero (f : E → EReal) :
     infConv f (indicatorFn ({0} : Set E)) = f := by
   simpa using infConv_indicatorFn_singleton f 0
 
+/-- The indicator function $\delta(\cdot \mid 0)$ is a left identity for infimal convolution:
+$\delta(\cdot \mid 0) \mathbin{\square} f = f$. -/
 @[simp] theorem indicatorFn_zero_infConv (f : E → EReal) :
     infConv (indicatorFn ({0} : Set E)) f = f := by
   rw [infConv_comm, infConv_indicatorFn_zero]
 
 /-- The infimal convolute of two indicator functions is the indicator function of the sum of the
-sets. -/
+sets: $\delta(\cdot \mid S) \mathbin{\square} \delta(\cdot \mid T) = \delta(\cdot \mid S + T)$. -/
 theorem infConv_indicatorFn (S T : Set E) :
     infConv (indicatorFn S) (indicatorFn T) = indicatorFn (S + T) := by
   have hepi : epi (indicatorFn S) + epi (indicatorFn T) = epi (indicatorFn (S + T)) := by
@@ -302,8 +400,8 @@ theorem infConv_indicatorFn (S T : Set E) :
       rw [Prod.mk_add_mk, hab2, add_zero]
   rw [infConv_def, hepi, ofEpi_epi]
 
-/-- The concave mirror of `infConv_indicatorFn`: the supremal convolute of two *negated* indicator
-functions is the negated indicator function of the sum of the sets. -/
+/-- The supremal convolute of $-\delta(\cdot \mid S)$ and $-\delta(\cdot \mid T)$ is
+$-\delta(\cdot \mid S + T)$. This is the concave form of `ConvexAnalysis.infConv_indicatorFn`. -/
 theorem supConv_neg_indicatorFn (S T : Set E) :
     supConv (fun x => -(indicatorFn S x)) (fun x => -(indicatorFn T x))
       = fun x => -(indicatorFn (S + T) x) := by
@@ -311,7 +409,7 @@ theorem supConv_neg_indicatorFn (S T : Set E) :
   simp only [supConv_def, neg_neg]
   rw [infConv_indicatorFn]
 
-/-- If `g` is nonpositive at the origin then `f □ g ≤ f`, since `δ(· | 0)` dominates such a `g`. -/
+/-- If $g(0) \le 0$, then $f \mathbin{\square} g \le f$, because $g \le \delta(\cdot \mid 0)$. -/
 theorem infConv_le_left (f : E → EReal) (hg : g 0 ≤ 0) : infConv f g ≤ f := by
   refine le_of_le_of_eq (infConv_mono (le_refl f) ?_) (infConv_indicatorFn_zero f)
   intro w
@@ -321,6 +419,7 @@ theorem infConv_le_left (f : E → EReal) (hg : g 0 ≤ 0) : infConv f g ≤ f :
   · have hw' : w ∉ ({0} : Set E) := fun hmem => hw hmem
     simp [hw']
 
+/-- If $f(0) \le 0$, then $f \mathbin{\square} g \le g$. -/
 theorem infConv_le_right (hf : f 0 ≤ 0) (g : E → EReal) : infConv f g ≤ g := by
   rw [infConv_comm]
   exact infConv_le_left g hf
@@ -333,13 +432,16 @@ section Module
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f g : E → EReal}
 
-/-- The infimal convolute of two convex functions is convex. No properness is needed: the
-classical hypothesis only makes the infimum formula meaningful, and the epigraph definition
-does not use it. -/
+/-- Let $E$ be a real vector space. If $f, g \colon E \to [-\infty, +\infty]$ are convex, then
+$f \mathbin{\square} g$ is convex.
+
+No properness is needed. The classical hypothesis of properness only makes the infimum formula
+meaningful, and the definition by epigraphs does not use that formula. -/
 theorem convexFn_infConv (hf : ConvexFn f) (hg : ConvexFn g) : ConvexFn (infConv f g) :=
   convexFn_ofEpi (hf.convex_epi.add hg.convex_epi)
 
-/-- The supremal convolute of two concave functions is concave. -/
+/-- Let $E$ be a real vector space. If $g, h \colon E \to [-\infty, +\infty]$ are concave, then
+their supremal convolute is concave. -/
 theorem concaveFn_supConv {h : E → EReal} (hg : ConcaveFn g) (hh : ConcaveFn h) :
     ConcaveFn (supConv g h) := by
   rw [concaveFn_iff_convexFn_neg]
@@ -348,21 +450,27 @@ theorem concaveFn_supConv {h : E → EReal} (hg : ConcaveFn g) (hh : ConcaveFn h
 
 end Module
 
-/-! ### `□` as a commutative monoid -/
+/-! ### Infimal convolution as a commutative monoid -/
 
-/-- `E → EReal`, carrying infimal convolution as its addition and `δ(· | 0)` as its zero;
-`∑ i ∈ s, toInfConvFn (f i)` is Rockafellar's `f₁ □ ⋯ □ fₘ`. -/
+/-- A copy of the type `E → EReal` of functions $E \to [-\infty, +\infty]$, whose addition is
+infimal convolution and whose zero is $\delta(\cdot \mid 0)$.
+
+The sum `∑ i ∈ s, ConvexAnalysis.toInfConvFn (f i)` is the infimal convolute $f_1
+\mathbin{\square} \cdots \mathbin{\square} f_m$ of [rockafellar1970convex]. -/
 def InfConvFn (E : Type*) : Type _ := E → EReal
 
-/-- A function `E → EReal`, regarded as an element of the infimal-convolution monoid. -/
+/-- A function $E \to [-\infty, +\infty]$, as an element of `ConvexAnalysis.InfConvFn E`. -/
 def toInfConvFn {E : Type*} (f : E → EReal) : InfConvFn E := f
 
-/-- An element of the infimal-convolution monoid, regarded as a function `E → EReal`. -/
+/-- An element of `ConvexAnalysis.InfConvFn E`, as a function $E \to [-\infty, +\infty]$. -/
 def ofInfConvFn {E : Type*} (F : InfConvFn E) : E → EReal := F
 
+/-- Converting a function to `ConvexAnalysis.InfConvFn E` and back gives the same function. -/
 @[simp] theorem ofInfConvFn_toInfConvFn {E : Type*} (f : E → EReal) :
     ofInfConvFn (toInfConvFn f) = f := rfl
 
+/-- Converting an element of `ConvexAnalysis.InfConvFn E` to a function and back gives the same
+element. -/
 @[simp] theorem toInfConvFn_ofInfConvFn {E : Type*} (F : InfConvFn E) :
     toInfConvFn (ofInfConvFn F) = F := rfl
 
@@ -370,25 +478,33 @@ section Monoid
 
 variable {E : Type*} [AddCommGroup E]
 
-/-- Infimal convolution is the addition of `InfConvFn E`. -/
+/-- The addition of `ConvexAnalysis.InfConvFn E` is infimal convolution. -/
 noncomputable instance InfConvFn.instAdd : Add (InfConvFn E) := ⟨infConv⟩
 
-/-- `δ(· | 0)` is the zero of `InfConvFn E`. -/
+/-- The zero of `ConvexAnalysis.InfConvFn E` is the indicator function $\delta(\cdot \mid 0)$. -/
 noncomputable instance InfConvFn.instZero : Zero (InfConvFn E) := ⟨indicatorFn {0}⟩
 
+/-- The sum of two functions in `ConvexAnalysis.InfConvFn E` is their infimal convolute. -/
 @[simp] theorem toInfConvFn_add (f g : E → EReal) :
     toInfConvFn f + toInfConvFn g = toInfConvFn (infConv f g) := rfl
 
+/-- The indicator function $\delta(\cdot \mid 0)$ is the zero of `ConvexAnalysis.InfConvFn E`. -/
 @[simp] theorem toInfConvFn_indicatorFn_zero :
     toInfConvFn (indicatorFn ({0} : Set E)) = 0 := rfl
 
+/-- As a function, the sum of $F$ and $G$ in `ConvexAnalysis.InfConvFn E` is the infimal convolute
+of $F$ and $G$. -/
 @[simp] theorem ofInfConvFn_add (F G : InfConvFn E) :
     ofInfConvFn (F + G) = infConv (ofInfConvFn F) (ofInfConvFn G) := rfl
 
+/-- As a function, the zero of `ConvexAnalysis.InfConvFn E` is $\delta(\cdot \mid 0)$. -/
 @[simp] theorem ofInfConvFn_zero :
     ofInfConvFn (0 : InfConvFn E) = indicatorFn ({0} : Set E) := rfl
 
-/-- `E → EReal` is a commutative monoid under `□`, with identity `δ(· | 0)`. -/
+/-- The functions $E \to [-\infty, +\infty]$ on an additive commutative group $E$ form a commutative
+monoid under infimal convolution, with identity element $\delta(\cdot \mid 0)$. That is,
+$\square$ is associative and commutative, and $f \mathbin{\square} \delta(\cdot \mid 0) =
+\delta(\cdot \mid 0) \mathbin{\square} f = f$. -/
 noncomputable instance InfConvFn.instAddCommMonoid : AddCommMonoid (InfConvFn E) where
   add := (· + ·)
   zero := 0
@@ -406,8 +522,11 @@ section MonoidConvex
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- Convexity in m-ary form: `f₁ □ ⋯ □ fₘ` is convex whenever `f₁, …, fₘ` are. The empty case is
-`δ(· | 0)`, which is convex because `{0}` is. -/
+/-- Let $E$ be a real vector space and let $f_i \colon E \to [-\infty, +\infty]$ be convex for every
+$i$ in a finite set $s$. Then the infimal convolute of the $f_i$, $i \in s$, is convex.
+
+For $s = \emptyset$ the infimal convolute is $\delta(\cdot \mid 0)$, which is convex because
+$\{0\}$ is convex. -/
 theorem convexFn_sum_toInfConvFn {ι : Type*} {s : Finset ι} {f : ι → E → EReal}
     (hf : ∀ i ∈ s, ConvexFn (f i)) :
     ConvexFn (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i))) := by
@@ -424,7 +543,12 @@ section MonoidSum
 
 variable {ι E : Type*} [AddCommGroup E] {s : Finset ι} {g : ι → E → EReal}
 
-/-- **The `m`-ary basic upper bound**, `infConv_apply_le` iterated; no hypothesis is needed. -/
+/-- Let $s$ be a finite set, let $g_i \colon E \to [-\infty, +\infty]$, $y_i \in E$ and
+$c_i \in \mathbb{R}$ for $i \in s$, and let $g_i(y_i) \le c_i$ for every $i \in s$. Then $$\Big(
+\mathop{\square}_{i \in s} g_i \Big) \Big( \sum_{i \in s} y_i \Big) \le \sum_{i \in s} c_i.$$
+
+This is `ConvexAnalysis.infConv_apply_le` applied repeatedly. No hypothesis on the values of the
+$g_i$ is needed. -/
 theorem sum_toInfConvFn_apply_le {y : ι → E} {c : ι → ℝ}
     (h : ∀ i ∈ s, g i (y i) ≤ (c i : EReal)) :
     ofInfConvFn (∑ i ∈ s, toInfConvFn (g i)) (∑ i ∈ s, y i) ≤ ((∑ i ∈ s, c i : ℝ) : EReal) := by
@@ -438,9 +562,13 @@ theorem sum_toInfConvFn_apply_le {y : ι → E} {c : ι → ℝ}
       ofInfConvFn_toInfConvFn]
     exact infConv_apply_le (h i (by simp)) (ih fun j hj => h j (by simp [hj]))
 
-/-- **The `m`-ary infimum bound**: `(g₁ □ ⋯ □ gₘ) (y₁ + ⋯ + yₘ) ≤ g₁ y₁ + ⋯ + gₘ yₘ`. The `≠ ⊥`
-hypothesis sits on each `gᵢ` separately, never on a partial convolute: `□` does not preserve
-`≠ ⊥`, since `g₁ x = -x` and `g₂ x = x` are everywhere finite with `g₁ □ g₂ ≡ -∞`. -/
+/-- Let $s$ be a finite set, let $g_i \colon E \to [-\infty, +\infty]$ never take the value
+$-\infty$ for $i \in s$, and let $y_i \in E$. Then $$\Big( \mathop{\square}_{i \in s} g_i \Big)
+\Big( \sum_{i \in s} y_i \Big) \le \sum_{i \in s} g_i(y_i).$$
+
+The hypothesis is on each $g_i$ separately, not on a partial convolute. Infimal convolution does
+not preserve the property of never taking the value $-\infty$: on $\mathbb{R}$, $g_1(x) = -x$
+and $g_2(x) = x$ are finite everywhere, but $g_1 \mathbin{\square} g_2 \equiv -\infty$. -/
 theorem sum_toInfConvFn_le_sum (hg : ∀ i ∈ s, ∀ x, g i x ≠ ⊥) (y : ι → E) :
     ofInfConvFn (∑ i ∈ s, toInfConvFn (g i)) (∑ i ∈ s, y i) ≤ ∑ i ∈ s, g i (y i) := by
   rcases eq_or_ne (∑ i ∈ s, g i (y i)) ⊤ with htop | htop
@@ -455,8 +583,10 @@ theorem sum_toInfConvFn_le_sum (hg : ∀ i ∈ s, ∀ x, g i x ≠ ⊥) (y : ι 
   rw [hsum]
   exact sum_toInfConvFn_apply_le fun i hi => (hci i hi).le
 
-/-- `dom (g₁ □ ⋯ □ gₘ) = dom g₁ + ⋯ + dom gₘ`, with no hypothesis; the empty convolute is
-`δ(· | 0)`, whose domain `{0}` is the empty sum of sets. -/
+/-- For a finite set $s$ and functions $g_i \colon E \to [-\infty, +\infty]$, the effective domain
+of the infimal convolute of the $g_i$, $i \in s$, is $\sum_{i \in s} \operatorname{dom} g_i$. No
+hypothesis is needed. For $s = \emptyset$ the infimal convolute is $\delta(\cdot \mid 0)$, whose
+effective domain $\{0\}$ is the empty sum of sets. -/
 theorem convexDom_sum_toInfConvFn (s : Finset ι) (g : ι → E → EReal) :
     convexDom (ofInfConvFn (∑ i ∈ s, toInfConvFn (g i))) = ∑ i ∈ s, convexDom (g i) := by
   induction s using Finset.cons_induction with

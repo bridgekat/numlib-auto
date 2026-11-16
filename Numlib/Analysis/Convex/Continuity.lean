@@ -12,79 +12,73 @@ import Numlib.Analysis.Convex.Recession.Function
 /-!
 # Continuity of a convex function on the relative interior of its domain
 
-A proper convex function on a finite-dimensional space is continuous, relative to the affine hull
-of its effective domain, at every relative interior point of that domain. Mathlib proves this for
-a real-valued `ConvexOn ℝ C f` as `ConvexOn.continuousOn_intrinsicInterior` (and its local
-Lipschitz form `ConvexOn.locallyLipschitzOn_intrinsicInterior`); this file transports it to the
-`EReal`-valued `ConvexFn` through the real trace `(f x).toReal`, and supplies the quantitative
-refinements: Lipschitz continuity on compact subsets of `ri (dom f)` with an explicit constant, and
-uniform continuity on the whole space. The Lipschitz constants are carried from the interior case
-to the relative one by an explicit linear *chart* of the affine hull, which is also what
-`Convergence.lean` uses to pass its equi-Lipschitz and convergence theorems from open convex sets
-to relative interiors.
+Let $E$ be a finite-dimensional real normed space and let $f : E \to [-\infty, +\infty]$ be a proper
+convex function. Then $f$ is continuous, relative to the affine hull of its effective domain
+$\operatorname{dom} f$, at every point of the relative interior
+$\operatorname{ri}(\operatorname{dom} f)$. Mathlib proves this for a real-valued convex function as
+`ConvexOn.continuousOn_intrinsicInterior`, with the local Lipschitz form
+`ConvexOn.locallyLipschitzOn_intrinsicInterior`. This file transfers it to `ConvexAnalysis.ConvexFn`
+through the real-valued function $\tilde f$, which is $f$ where $f$ is finite and $0$ elsewhere
+(`fun x => (f x).toReal`). It also proves two quantitative results: $f$ is Lipschitz on every
+compact subset of $\operatorname{ri}(\operatorname{dom} f)$, with an explicit constant, and a convex
+function that is finite on all of $E$ is uniformly continuous if and only if its recession function
+is finite. The presentation follows §10 of [rockafellar1970convex].
+
+The Lipschitz constants pass from the interior to the relative interior through an explicit linear
+chart of the affine hull. `Numlib.Analysis.Convex.Convergence` uses the same chart to pass its
+equi-Lipschitz and convergence theorems from open convex sets to relative interiors. At the end, the
+file proves that a real-valued convex lower semicontinuous function on a Banach space is continuous.
+
+## Main definitions
+
+* `ConvexAnalysis.chart`: for a set $C$, a point $x_0$ and a subspace $V$, the set of $z \in V$ with
+  $x_0 + z \in C$.
 
 ## Main results
 
-* `relint_eq_vadd_image_interior` — the *chart*: `ri C = x₀ + ι (int D)`, where `D` is the trace of
-  `C` on a subspace `V` spanned by `C - x₀`. This is the reduction "relative interior = interior in
-  the affine hull", carried out in a linear chart rather than in the affine hull itself, so that
-  `Convex` and `ConvexOn` — which need a module, not a torsor — still apply.
-* `exists_chart_retraction` — the chart packaged with a *continuous linear* retraction, which is
-  what carries Lipschitz constants back from the chart to `E`.
-* `ConvexFn.continuousOn_toReal_relint_convexDom`, `ConvexFn.continuousOn_relint_convexDom` —
-  continuity on `ri (dom f)`, in the real-valued and the `EReal`-valued form, from Mathlib's
-  `ConvexOn.continuousOn_intrinsicInterior`; `ConvexFn.continuous_of_convexDom_eq_univ` is the
-  everywhere-finite case.
+* `ConvexAnalysis.relint_eq_vadd_image_interior`: the chart computes the relative interior:
+  $\operatorname{ri} C = x_0 + \iota(\operatorname{int} D)$, where $D$ is the chart of $C$ in the
+  subspace $V$ spanned by $C - x_0$ and $\iota : V \to E$ is the inclusion. This is "the relative
+  interior is the interior in the affine hull", carried out in a linear subspace and not in the
+  affine hull, so that `Convex` and `ConvexOn`, which need a module and not an affine space, apply.
+* `ConvexAnalysis.exists_chart_retraction`: the chart together with a continuous linear retraction,
+  which carries Lipschitz constants back from the chart to $E$.
+* `ConvexAnalysis.ConvexFn.continuousOn_toReal_relint_convexDom`,
+  `ConvexAnalysis.ConvexFn.continuousOn_relint_convexDom`: a proper convex function is continuous on
+  $\operatorname{ri}(\operatorname{dom} f)$, in the real-valued and the extended-real-valued form;
+  `ConvexAnalysis.ConvexFn.continuous_of_convexDom_eq_univ` is the case of a function that is finite
+  everywhere.
 * `ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset`,
-  `ConvexOn.exists_lipschitzOnWith_of_isCompact`, `ConvexFn.exists_lipschitzOnWith_of_isCompact` —
-  Lipschitz continuity on compact subsets: the quantitative form with the constant `2M/ε`
-  exhibited (which is what equi-Lipschitz statements need, and which needs no
-  finite-dimensionality), then the `interior` and the `ri` form.
-* `ConvexFn.uniformContinuous_toReal_iff` — uniform continuity on the whole space, with
-  `ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top` as its quantitative half and
-  `ConvexFn.exists_lipschitzWith_of_frequently_le`, `ConvexFn.exists_lipschitzWith_of_le_lipschitz`
-  as two easily checked sufficient conditions.
-* `intrinsicInterior_vadd` — translation invariance of `ri`, which the chart needs and which
-  Mathlib does not state.
-* `ConvexOn.continuous_of_lowerSemicontinuous` — outside the finite-dimensional theory: a
-  real-valued convex lower semicontinuous function on a Banach space is continuous, by Baire's
-  theorem. It lives at the end of this file, outside the `ConvexAnalysis` namespace.
+  `ConvexOn.exists_lipschitzOnWith_of_isCompact`,
+  `ConvexAnalysis.ConvexFn.exists_lipschitzOnWith_of_isCompact`: Lipschitz continuity on compact
+  sets. The first gives the constant $2M/\varepsilon$ explicitly, which equi-Lipschitz statements
+  need, and needs no finite dimension; the other two are the forms for the interior and for the
+  relative interior.
+* `ConvexAnalysis.ConvexFn.uniformContinuous_toReal_iff`: a convex function that is finite on all of
+  $E$ is uniformly continuous if and only if its recession function is finite everywhere.
+  `ConvexAnalysis.ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top` is the quantitative half, and
+  `ConvexAnalysis.ConvexFn.exists_lipschitzWith_of_frequently_le` and
+  `ConvexAnalysis.ConvexFn.exists_lipschitzWith_of_le_lipschitz` are two sufficient conditions that
+  are easy to check.
+* `ConvexAnalysis.intrinsicInterior_vadd`: the relative interior commutes with translation. The
+  chart needs this, and Mathlib does not state it.
+* `ConvexOn.continuous_of_lowerSemicontinuous`: a real-valued convex lower semicontinuous function
+  on a Banach space is continuous. It is outside the finite-dimensional theory and outside the
+  namespace `ConvexAnalysis`.
 
 ## Implementation notes
 
-The chart is a linear subspace, not the affine hull. `intrinsicInterior ℝ C` is defined as the
-interior taken inside `↥(affineSpan ℝ C)`, but that subtype is an `AddTorsor`, while `Convex`,
-`ConvexOn` and every Mathlib continuity theorem need a *module*; fixing `x₀ ∈ C` and moving to a
-subspace `V` spanned by `C - x₀` costs one translation and buys the whole module API. The subspace
-is a parameter rather than a definition — every lemma takes `V` with `hV : V = span ℝ (C - x₀)` —
-so that instance synthesis for `↥V` never has to unfold a `Submodule.span`; callers obtain an
-opaque `V` from `⟨_, rfl⟩`. Transporting continuity back to `E` uses a continuous left inverse
-rather than the embedding, which finite-dimensionality supplies through
-`LinearMap.linearProjOfIsCompl`.
-
-## A real-valued convex lower semicontinuous function on a Banach space is continuous
-
-`ConvexOn.continuous_of_lowerSemicontinuous`: a function `f : E → ℝ` on a complete real normed
-space that is convex and lower semicontinuous *and finite everywhere* is continuous, hence locally
-Lipschitz.
-
-The point is that finiteness does the work of a local upper bound.  The sublevel sets `{f ≤ n}` are
-closed, by lower semicontinuity, and cover `E`, because `f` is real-valued; Baire's theorem gives
-one of them a nonempty interior, so `f` is bounded above near some point, and a convex function
-bounded above near one point is continuous everywhere — that last implication is Mathlib's
-`ConvexOn.continuousOn_tfae`.
-
-Completeness is what makes the space a Baire space and is the only role it plays; the statement
-holds verbatim over any barrelled space.  Without finiteness the conclusion fails at once: an
-extended-real convex lower semicontinuous function jumps to `+∞` off its domain.
-
-This is why the hypothesis "`j : V → ℝ` is convex and lower semicontinuous", standard in the theory
-of elliptic variational inequalities, silently provides the continuity of `j` that convergence
-proofs for their numerical approximation need; see [han2009theoretical], Chapter 11.
-
-## References
-
-* [rockafellar1970convex] §10.
+* The chart is a linear subspace, not the affine hull. `intrinsicInterior ℝ C` is the interior taken
+  in the affine span of $C$, but that type is an affine space (`AddTorsor`), while `Convex`,
+  `ConvexOn` and every continuity theorem of Mathlib need a module. To fix $x_0 \in C$ and pass to a
+  subspace $V$ spanned by $C - x_0$ costs one translation and gives the whole interface for modules.
+* The subspace is a parameter and not a definition: every lemma takes $V$ with the hypothesis
+  `hV : V = span ℝ (C - x₀)`. Then instance synthesis for the type of $V$ never has to unfold
+  `Submodule.span`. A caller gets an opaque $V$ from `⟨_, rfl⟩`.
+* Continuity is transferred back to $E$ with a continuous left inverse of the inclusion, not with
+  the inclusion itself. Finite dimension gives the left inverse through
+  `LinearMap.linearProjOfIsCompl`.
+* The notation $\operatorname{ri}$ is `intrinsicInterior ℝ`.
 -/
 
 open Pointwise Set
@@ -98,20 +92,26 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {C : Set E} {x₀ : E} {V : Submodule ℝ E}
 
 omit [FiniteDimensional ℝ E] in
-/-- The relative interior is translation invariant. -/
+/-- **The relative interior commutes with translation.** Let $E$ be a real normed space, $v \in E$
+and $s \subseteq E$. Then $$\operatorname{ri}(v + s) = v + \operatorname{ri} s.$$
+-/
 theorem intrinsicInterior_vadd (v : E) (s : Set E) : ri (v +ᵥ s) = v +ᵥ ri s := by
   have h : ∀ t : Set E, v +ᵥ t = (AffineIsometryEquiv.constVAdd ℝ E v).toAffineIsometry '' t :=
     fun t => by rw [← Set.image_vadd]; rfl
   rw [h, h, AffineIsometry.intrinsicInterior_image]
 
-/-- The **chart** of `C` at `x₀` in a subspace `V`: the directions `z ∈ V` with `x₀ + z ∈ C`. -/
+/-- The **chart** of a set $C \subseteq E$ at a point $x_0 \in E$ in a subspace $V \subseteq E$ is
+the set $$\{z \in V \mid x_0 + z \in C\}.$$
+-/
 def chart (C : Set E) (x₀ : E) (V : Submodule ℝ E) : Set V := {z | x₀ + (z : E) ∈ C}
 
 omit [FiniteDimensional ℝ E] in
+/-- A vector $z \in V$ is in the chart of $C$ at $x_0$ if and only if $x_0 + z \in C$. -/
 @[simp] theorem mem_chart {z : V} : z ∈ chart C x₀ V ↔ x₀ + (z : E) ∈ C := Iff.rfl
 
 omit [FiniteDimensional ℝ E] in
-/-- The chart maps onto the translate `C - x₀`. -/
+/-- If $V$ is the span of $C - x_0$, then the image of the chart of $C$ at $x_0$ in $E$ is
+$C - x_0 = \{x - x_0 \mid x \in C\}$. -/
 theorem image_chart (hV : V = Submodule.span ℝ ((fun x => x - x₀) '' C)) :
     V.subtype '' chart C x₀ V = (fun x => x - x₀) '' C := by
   ext w
@@ -124,11 +124,13 @@ theorem image_chart (hV : V = Submodule.span ℝ ((fun x => x - x₀) '' C)) :
     rwa [add_sub_cancel]
 
 omit [FiniteDimensional ℝ E] in
+/-- If $x_0 \in C$, then $0$ is in the chart of $C$ at $x_0$. -/
 theorem zero_mem_chart (hx₀ : x₀ ∈ C) : (0 : V) ∈ chart C x₀ V := by
   change x₀ + ((0 : V) : E) ∈ C
   simpa using hx₀
 
 omit [FiniteDimensional ℝ E] in
+/-- The chart of a convex set is convex. -/
 theorem convex_chart (hC : Convex ℝ C) : Convex ℝ (chart C x₀ V) := by
   intro z hz w hw a b ha hb hab
   change x₀ + ((a • z + b • w : V) : E) ∈ C
@@ -140,8 +142,8 @@ theorem convex_chart (hC : Convex ℝ C) : Convex ℝ (chart C x₀ V) := by
   exact hC hz hw ha hb hab
 
 omit [FiniteDimensional ℝ E] in
-/-- The chart affinely spans the chart space: that is what makes `ri` collapse to `interior`
-there. -/
+/-- If $x_0 \in C$ and $V$ is the span of $C - x_0$, then the affine span of the chart of $C$ at
+$x_0$ is all of $V$. For this reason the relative interior of the chart is its interior. -/
 theorem affineSpan_chart (hx₀ : x₀ ∈ C)
     (hV : V = Submodule.span ℝ ((fun x => x - x₀) '' C)) :
     affineSpan ℝ (chart C x₀ V) = ⊤ := by
@@ -156,8 +158,10 @@ theorem affineSpan_chart (hx₀ : x₀ ∈ C)
     simpa using hmem
   exact (AffineSubspace.affineSpan_eq_top_iff_vectorSpan_eq_top_of_nonempty ℝ V V ⟨0, h0⟩).2 hvs
 
-/-- **The relative interior, computed in the chart.** `ri C` is the translate by `x₀` of the image
-of the ordinary interior of `chart C x₀ V`. -/
+/-- **The relative interior, computed in the chart.** Let $E$ be a finite-dimensional real normed
+space, let $C \subseteq E$ be convex, let $x_0 \in C$, and let $V$ be the span of $C - x_0$.
+Then $$\operatorname{ri} C = x_0 + \iota(\operatorname{int} D),$$ where $D$ is the chart of $C$
+at $x_0$ in $V$, the interior is taken in $V$, and $\iota : V \to E$ is the inclusion. -/
 theorem relint_eq_vadd_image_interior (hC : Convex ℝ C) (hx₀ : x₀ ∈ C)
     (hV : V = Submodule.span ℝ ((fun x => x - x₀) '' C)) :
     ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V)) := by
@@ -173,11 +177,17 @@ theorem relint_eq_vadd_image_interior (hC : Convex ℝ C) (hx₀ : x₀ ∈ C)
     exact h1
   rw [← hstep, intrinsicInterior_vadd, vadd_vadd, add_neg_cancel, zero_vadd]
 
-/-- **The chart, packaged for reuse.** For a convex `C` and a point `x₀ ∈ C` there is a subspace `V`
-and a *continuous linear retraction* `r : E →L[ℝ] V` such that `x ↦ r (x - x₀)` carries `ri C` into
-`interior (chart C x₀ V)` and `x₀ + r (x - x₀) = x` there, together with the chart identity
-`relint_eq_vadd_image_interior` for that `V`. Continuity transports along `r` because `r` is
-continuous, and Lipschitz constants because `r` is *bounded*. -/
+/-- **The chart with a continuous linear retraction.** Let $E$ be a finite-dimensional real normed
+space, let $C \subseteq E$ be convex, and let $x_0 \in C$. Then there are a subspace $V$ and a
+continuous linear map $r : E \to V$ such that, with $D$ the chart of $C$ at $x_0$ in $V$:
+
+* $\operatorname{ri} C = x_0 + \iota(\operatorname{int} D)$, where $\iota : V \to E$ is the
+  inclusion;
+* $r(x - x_0) \in \operatorname{int} D$ for every $x \in \operatorname{ri} C$;
+* $x_0 + r(x - x_0) = x$ for every $x \in \operatorname{ri} C$.
+
+Continuity transfers along $r$ because $r$ is continuous, and Lipschitz constants transfer
+because $r$ is bounded. -/
 theorem exists_chart_retraction (hC : Convex ℝ C) (hx₀ : x₀ ∈ C) :
     ∃ (V : Submodule ℝ E) (r : E →L[ℝ] V),
       ri C = x₀ +ᵥ (V.subtype '' interior (chart C x₀ V)) ∧
@@ -209,7 +219,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f : E → EReal}
 
 omit [FiniteDimensional ℝ E] in
-/-- The real-valued restriction of `f` is convex on `dom f`, in Mathlib's sense. -/
+/-- If $f$ is convex and proper, then the real-valued function $\tilde f$, which is $f$ where $f$ is
+finite (`fun x => (f x).toReal`), is convex on $\operatorname{dom} f$ in the sense of Mathlib
+(`ConvexOn`). -/
 theorem ConvexFn.convexOn_toReal_convexDom (hf : ConvexFn f) (hp : ProperConvex f) :
     ConvexOn ℝ (convexDom f) fun x => (f x).toReal := by
   rw [convexOn_iff_convexFn]
@@ -222,14 +234,21 @@ theorem ConvexFn.convexOn_toReal_convexDom (hf : ConvexFn f) (hp : ProperConvex 
       exact (top_le_iff.1 (not_lt.1 hx)).symm
   rwa [hrestrict]
 
-/-- **A proper convex function is continuous, relative to the affine hull of its domain, at every
-relative interior point** — real-valued form: Mathlib's `ConvexOn.continuousOn_intrinsicInterior`
-applied to the real trace of `f` on `dom f`. -/
+/-- **A proper convex function is continuous at every relative interior point of its domain**,
+real-valued form. Let $E$ be a finite-dimensional real normed space and let
+$f : E \to [-\infty, +\infty]$ be proper and convex. Then the real-valued function $\tilde f$,
+which is $f$ where $f$ is finite (`fun x => (f x).toReal`), is continuous on
+$\operatorname{ri}(\operatorname{dom} f)$.
+
+The proof applies `ConvexOn.continuousOn_intrinsicInterior` of Mathlib to the real values of $f$
+on $\operatorname{dom} f$. -/
 theorem ConvexFn.continuousOn_toReal_relint_convexDom (hf : ConvexFn f) (hp : ProperConvex f) :
     ContinuousOn (fun x => (f x).toReal) (ri (convexDom f)) :=
   (hf.convexOn_toReal_convexDom hp).continuousOn_intrinsicInterior
 
-/-- **A proper convex function on a finite-dimensional space is continuous on `ri (dom f)`**,
+/-- **A proper convex function is continuous at every relative interior point of its domain.** Let
+$E$ be a finite-dimensional real normed space and let $f : E \to [-\infty, +\infty]$ be proper
+and convex. Then $f$ is continuous on $\operatorname{ri}(\operatorname{dom} f)$, that is,
 relative to the affine hull of its effective domain. -/
 theorem ConvexFn.continuousOn_relint_convexDom (hf : ConvexFn f) (hp : ProperConvex f) :
     ContinuousOn f (ri (convexDom f)) := by
@@ -249,15 +268,21 @@ section FiniteEverywhere
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- **A convex function that is finite everywhere is continuous.** `dom f = univ` is "finite on
-all of `Rⁿ`", properness supplying the other half. -/
+/-- **A convex function that is finite everywhere is continuous.** Let $E$ be a finite-dimensional
+real normed space and let $f : E \to [-\infty, +\infty]$ be proper and convex with
+$\operatorname{dom} f = E$. Then $f$ is continuous.
+
+The condition $\operatorname{dom} f = E$ says $f < +\infty$ everywhere, and properness gives
+$f > -\infty$, so $f$ is finite on all of $E$. -/
 theorem ConvexFn.continuous_of_convexDom_eq_univ (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) : Continuous f := by
   have hri : ri (convexDom f) = Set.univ := by rw [hdom, intrinsicInterior_univ]
   rw [← continuousOn_univ, ← hri]
   exact hf.continuousOn_relint_convexDom hp
 
-/-- A convex function finite everywhere is continuous, real-valued form. -/
+/-- **A convex function that is finite everywhere is continuous**, real-valued form. If $f$ is
+proper and convex with $\operatorname{dom} f = E$, then the real-valued function $\tilde f$,
+which is $f$ where $f$ is finite (`fun x => (f x).toReal`), is continuous. -/
 theorem ConvexFn.continuous_toReal_of_convexDom_eq_univ (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) : Continuous fun x => (f x).toReal := by
   have hri : ri (convexDom f) = Set.univ := by rw [hdom, intrinsicInterior_univ]
@@ -274,16 +299,19 @@ variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] [FiniteDimension
   {D : Set W} {ψ : W → ℝ}
 
 omit [FiniteDimensional ℝ W] in
-/-- **The quantitative core.** If `ψ` is convex on `D` and bounded by `M` in absolute value on the
-closed `ε`-collar of `S`, and that collar lies inside `D`, then `ψ` is Lipschitz on `S` with
-constant `2M/ε`. For `x ≠ y` in `S` the point
-`z = y + (ε / ‖y - x‖) • (y - x)` sits in the collar and expresses `y` as a convex combination of
-`x` and `z`, so convexity bounds the increment by the oscillation of `ψ` over the collar.
+/-- **Lipschitz bound with an explicit constant.** Let $W$ be a real normed space, let
+$\psi : W \to \mathbb{R}$ be convex on $D \subseteq W$, let $S \subseteq W$, and let
+$\varepsilon > 0$ and $M \ge 0$. Suppose that the closed $\varepsilon$-neighbourhood
+$S_\varepsilon$ of $S$ is contained in $D$ and $|\psi(w)| \le M$ for all $w \in S_\varepsilon$.
+Then $\psi$ is Lipschitz on $S$ with constant $2M/\varepsilon$.
 
-The constant is *exhibited* rather than existentially quantified: a family of convex functions
-sharing one collar and one bound is therefore equi-Lipschitzian with a single constant. Mathlib's
-`ConvexOn.lipschitzOnWith_of_abs_le` is the two-sided ball version, and
-the collar argument does not follow from it. -/
+For $x \neq y$ in $S$, the point $z = y + (\varepsilon / \|y - x\|)(y - x)$ is in
+$S_\varepsilon$, and $y$ is a convex combination of $x$ and $z$. So convexity bounds the
+increment by the oscillation of $\psi$ over $S_\varepsilon$. The constant is explicit and not
+only asserted to exist, so a family of convex functions with one neighbourhood and one bound is
+equi-Lipschitz with a single constant. The closed neighbourhood is `Metric.cthickening ε S`.
+`ConvexOn.lipschitzOnWith_of_abs_le` of Mathlib is the version with two balls, and the
+neighbourhood argument does not follow from it. -/
 theorem _root_.ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset (hψ : ConvexOn ℝ D ψ)
     {S : Set W} {ε M : ℝ} (hε : 0 < ε) (hM : 0 ≤ M) (hsub : Metric.cthickening ε S ⊆ D)
     (hMabs : ∀ w ∈ Metric.cthickening ε S, |ψ w| ≤ M) :
@@ -340,9 +368,13 @@ theorem _root_.ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset (hψ : C
   · rw [h, norm_sub_rev]
     linarith [key x hx y hy]
 
-/-- **The interior form**: a function convex on `D` is Lipschitz on every compact subset of
-`interior D`. Compactness supplies an `ε`-collar of `S` still inside
-`interior D`, on which continuity bounds `ψ`. -/
+/-- **A convex function is Lipschitz on compact subsets of the interior.** Let $W$ be a
+finite-dimensional real normed space, let $\psi : W \to \mathbb{R}$ be convex on
+$D \subseteq W$, and let $S$ be a compact subset of $\operatorname{int} D$. Then $\psi$ is
+Lipschitz on $S$ with some constant $K \ge 0$.
+
+Compactness gives a closed $\varepsilon$-neighbourhood of $S$ inside $\operatorname{int} D$, and
+on it continuity bounds $\psi$. -/
 theorem _root_.ConvexOn.exists_lipschitzOnWith_of_isCompact (hψ : ConvexOn ℝ D ψ) {S : Set W}
     (hS : IsCompact S) (hSD : S ⊆ interior D) : ∃ K : ℝ≥0, LipschitzOnWith K ψ S := by
   obtain ⟨ε, hε, hsub⟩ := hS.exists_cthickening_subset_open isOpen_interior hSD
@@ -357,10 +389,16 @@ theorem _root_.ConvexOn.exists_lipschitzOnWith_of_isCompact (hψ : ConvexOn ℝ 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {f : E → EReal}
 
-/-- **A proper convex function is Lipschitz on every compact subset of `ri (dom f)`.** The usual
-statement is for closed bounded subsets, which in finite dimensions is the same thing. The
-retraction of the chart is a continuous linear map, hence Lipschitz,
-so it carries Lipschitz constants back as well as continuity. -/
+/-- **A proper convex function is Lipschitz on every compact subset of the relative interior of its
+domain.** Let $E$ be a finite-dimensional real normed space, let $f : E \to [-\infty, +\infty]$
+be proper and convex, and let $S$ be a compact subset of
+$\operatorname{ri}(\operatorname{dom} f)$. Then the real-valued function $\tilde f$, which is
+$f$ where $f$ is finite (`fun x => (f x).toReal`), is Lipschitz on $S$ with some constant
+$K \ge 0$.
+
+The usual statement is for closed bounded subsets, which in finite dimension are the compact
+subsets. The retraction of the chart is a continuous linear map, hence Lipschitz, so it carries
+Lipschitz constants back as well as continuity. -/
 theorem ConvexFn.exists_lipschitzOnWith_of_isCompact (hf : ConvexFn f) (hp : ProperConvex f)
     {S : Set E}
     (hS : IsCompact S) (hSD : S ⊆ ri (convexDom f)) :
@@ -404,7 +442,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {f : E → EReal}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- A proper function whose effective domain is everything is the coercion of its real form. -/
+/-- If $f$ is proper and $\operatorname{dom} f$ is the whole space, then $f$ is finite everywhere
+and equals the real-valued function `fun x => (f x).toReal`, viewed in $[-\infty, +\infty]$. -/
 theorem coe_toReal_of_convexDom_eq_univ (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (x : E) :
     (((f x).toReal : ℝ) : EReal) = f x := by
@@ -412,17 +451,21 @@ theorem coe_toReal_of_convexDom_eq_univ (hp : ProperConvex f) (hdom : convexDom 
   have hx : x ∈ convexDom f := by rw [hdom]; exact Set.mem_univ x
   exact (mem_convexDom.1 hx).ne
 
-/-- A finite convex function on the whole space is closed: it is continuous, hence lower
-semicontinuous, hence has a closed epigraph. -/
+/-- Let $f$ be proper and convex with $\operatorname{dom} f = E$. Then $\operatorname{epi} f$ is
+closed: $f$ is continuous, hence lower semicontinuous. -/
 theorem ConvexFn.isClosed_epi_of_convexDom_eq_univ (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) : IsClosed (epi f) :=
   lowerSemicontinuous_iff_isClosed_epi.1
     (hf.continuous_of_convexDom_eq_univ hp hdom).lowerSemicontinuous
 
-/-- **When `f0⁺` is finite everywhere it is bounded by a linear function of the norm.** The
-constant is `α = sup {(f0⁺) z | ‖z‖ = 1}`, finite because `f0⁺` is a finite convex function, hence
-continuous, and the unit ball is compact; positive homogeneity spreads the bound over the whole
-space. -/
+/-- **A finite recession function is bounded by a multiple of the norm.** Let $E$ be a
+finite-dimensional real normed space, let $f$ be proper, and let the recession function $f0^+$
+satisfy $(f0^+)(y) \neq +\infty$ for all $y$. Then there is $M \ge 0$ with $$(f0^+)(y) \le M
+\|y\| \quad \text{for all } y \in E.$$
+
+One can take $M = \sup \{(f0^+)(z) \mid \|z\| = 1\}$. This is finite because $f0^+$ is a finite
+convex function, hence continuous, and the unit sphere is compact. Positive homogeneity extends
+the bound to the whole space. The recession function is `ConvexAnalysis.recessionFn`. -/
 theorem exists_recessionFn_le_of_forall_ne_top (hp : ProperConvex f)
     (hrec : ∀ y, recessionFn f y ≠ ⊤) :
     ∃ M : ℝ, 0 ≤ M ∧ ∀ y, recessionFn f y ≤ ((M * ‖y‖ : ℝ) : EReal) := by
@@ -455,8 +498,14 @@ theorem exists_recessionFn_le_of_forall_ne_top (hp : ProperConvex f)
           refine EReal.coe_le_coe_iff.2 ?_
           nlinarith [hyn.le]
 
-/-- **Sufficiency**: if the recession function of a finite convex function on the whole space is
-finite everywhere, the function is Lipschitz, with `α` as constant. -/
+/-- **A finite recession function makes a convex function Lipschitz.** Let $E$ be a
+finite-dimensional real normed space, let $f$ be proper and convex with
+$\operatorname{dom} f = E$, and let $(f0^+)(y) \neq +\infty$ for all $y$. Then the real-valued
+function $\tilde f$, which is $f$ where $f$ is finite (`fun x => (f x).toReal`), is Lipschitz
+with some constant $K \ge 0$.
+
+The constant $\sup \{(f0^+)(z) \mid \|z\| = 1\}$ of
+`ConvexAnalysis.exists_recessionFn_le_of_forall_ne_top` serves. -/
 theorem ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) (hrec : ∀ y, recessionFn f y ≠ ⊤) :
     ∃ K : ℝ≥0, LipschitzWith K fun x => (f x).toReal := by
@@ -481,9 +530,13 @@ theorem ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top (hf : ConvexFn f) (h
     linarith [key x z]
 
 omit [FiniteDimensional ℝ E] in
-/-- **Necessity**: a uniformly continuous finite convex function has a finite recession function.
-Uniform continuity at `ε = 1` bounds `f (x + z) - f x` by `1` uniformly in `x` for short `z`, which
-says `(f0⁺) z ≤ 1`. -/
+/-- **A uniformly continuous convex function has a finite recession function.** Let $E$ be a real
+normed space, let $f$ be proper and convex with $\operatorname{dom} f = E$, and let the
+real-valued function $\tilde f$, which is $f$ where $f$ is finite (`fun x => (f x).toReal`), be
+uniformly continuous. Then $(f0^+)(y) \neq +\infty$ for every $y$.
+
+Uniform continuity with $\varepsilon = 1$ bounds $f(x + z) - f(x)$ by $1$ uniformly in $x$ for
+short $z$, and this says $(f0^+)(z) \le 1$. -/
 theorem ConvexFn.recessionFn_ne_top_of_uniformContinuous (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) (hu : UniformContinuous fun x => (f x).toReal) (y : E) :
     recessionFn f y ≠ ⊤ := by
@@ -514,9 +567,14 @@ theorem ConvexFn.recessionFn_ne_top_of_uniformContinuous (hf : ConvexFn f) (hp :
     rw [htop, EReal.coe_mul_top_of_pos hcpos, top_le_iff] at hcy
     exact EReal.coe_ne_top 1 hcy
 
-/-- **A finite convex function on the whole space is uniformly continuous exactly when its
-recession function is finite everywhere**, and then it is in fact Lipschitz
-(`ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top`). -/
+/-- **Uniform continuity of a finite convex function.** Let $E$ be a finite-dimensional real normed
+space and let $f : E \to [-\infty, +\infty]$ be proper and convex with
+$\operatorname{dom} f = E$. Then the real-valued function $\tilde f$, which is $f$ where $f$ is
+finite (`fun x => (f x).toReal`), is uniformly continuous if and only if the recession function
+satisfies $(f0^+)(y) \neq +\infty$ for all $y \in E$.
+
+In that case $f$ is even Lipschitz
+(`ConvexAnalysis.ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top`). -/
 theorem ConvexFn.uniformContinuous_toReal_iff (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) :
     (UniformContinuous fun x => (f x).toReal) ↔ ∀ y, recessionFn f y ≠ ⊤ := by
@@ -524,9 +582,15 @@ theorem ConvexFn.uniformContinuous_toReal_iff (hf : ConvexFn f) (hp : ProperConv
   obtain ⟨K, hK⟩ := hf.exists_lipschitzWith_of_recessionFn_ne_top hp hdom hrec
   exact hK.uniformContinuous
 
-/-- For Lipschitz continuity it is enough that `f (a • y) / a` stay bounded above along *some*
-sequence `a → ∞`, in every direction `y`. The quotient is nondecreasing in `a`, so a bound reached
-infinitely often is a bound everywhere. -/
+/-- **A sufficient condition for Lipschitz continuity.** Let $E$ be a finite-dimensional real normed
+space and let $f$ be proper and convex with $\operatorname{dom} f = E$. Suppose that for every
+$y \in E$ there is $c \in \mathbb{R}$ such that $f(a y) \le c a$ for arbitrarily large $a$. Then
+the real-valued function $\tilde f$, which is $f$ where $f$ is finite (`fun x => (f x).toReal`),
+is Lipschitz with some constant $K \ge 0$.
+
+The condition says that $f(a y)/a$ stays bounded above along some sequence $a \to \infty$, in
+every direction $y$. The difference quotient $(f(a y) - f(0))/a$ is nondecreasing in $a$, so a
+bound that holds for arbitrarily large $a$ bounds the recession function everywhere. -/
 theorem ConvexFn.exists_lipschitzWith_of_frequently_le (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ)
     (h : ∀ y : E, ∃ c : ℝ, ∃ᶠ a : ℝ in Filter.atTop, f (a • y) ≤ ((c * a : ℝ) : EReal)) :
@@ -554,9 +618,14 @@ theorem ConvexFn.exists_lipschitzWith_of_frequently_le (hf : ConvexFn f) (hp : P
       (le_trans (le_max_left a 1) ha'ge)).trans hq'
   exact ne_top_of_le_ne_top (EReal.coe_ne_top _) hbound
 
-/-- **A finite convex function dominated by a Lipschitz function is itself Lipschitz.** The usual
-statement assumes the dominating `g` convex; the proof does not use it, so `g` here is an arbitrary
-Lipschitz function. -/
+/-- **A finite convex function below a Lipschitz function is Lipschitz.** Let $E$ be a
+finite-dimensional real normed space, let $f$ be proper and convex with
+$\operatorname{dom} f = E$, and let $g : E \to \mathbb{R}$ be Lipschitz with constant $K$ and
+$f \le g$. Then the real-valued function $\tilde f$, which is $f$ where $f$ is finite
+(`fun x => (f x).toReal`), is Lipschitz with some constant $K' \ge 0$.
+
+The usual statement assumes that $g$ is convex. The proof does not use this, so here $g$ is an
+arbitrary Lipschitz function. -/
 theorem ConvexFn.exists_lipschitzWith_of_le_lipschitz (hf : ConvexFn f) (hp : ProperConvex f)
     (hdom : convexDom f = Set.univ) {g : E → ℝ} {K : ℝ≥0} (hg : LipschitzWith K g)
     (hle : ∀ x, f x ≤ ((g x : ℝ) : EReal)) :
@@ -575,14 +644,35 @@ end UniformContinuity
 
 end ConvexAnalysis
 
+/-!
+### A real-valued convex lower semicontinuous function on a Banach space is continuous
+
+Here $f$ is finite everywhere, and this finiteness does the work of a local upper bound. The
+sublevel sets $\{f \le n\}$ are closed, by lower semicontinuity, and they cover $E$, because $f$ is
+real-valued. Baire's theorem gives one of them a nonempty interior, so $f$ is bounded above near
+some point, and a convex function that is bounded above near one point is continuous everywhere
+(`ConvexOn.continuousOn_tfae` of Mathlib).
+
+Completeness makes the space a Baire space, and this is its only role; the statement holds without
+change over every barrelled space. Without finiteness the conclusion fails: a convex lower
+semicontinuous function into $[-\infty, +\infty]$ jumps to $+\infty$ off its domain. For this reason
+the hypothesis "$j : V \to \mathbb{R}$ is convex and lower semicontinuous", standard in the theory
+of elliptic variational inequalities, silently gives the continuity of $j$ that convergence proofs
+for their numerical approximation need; see [han2009theoretical], Chapter 11.
+-/
+
 section BanachSpace
 
 open Filter Topology
 
-/-- **A convex, lower semicontinuous, real-valued function on a Banach space is continuous.**
-Lower semicontinuity makes the sublevel sets `{f ≤ n}` closed and finiteness makes them cover the
-space, so Baire's theorem bounds `f` above on a ball; a convex function bounded above on some ball
-is continuous. -/
+/-- **A convex lower semicontinuous real-valued function on a Banach space is continuous.** Let $E$
+be a complete real normed space and let $f : E \to \mathbb{R}$ be convex on $E$ and lower
+semicontinuous. Then $f$ is continuous.
+
+Lower semicontinuity makes the sublevel sets $\{f \le n\}$ closed and finiteness makes them
+cover the space, so Baire's theorem bounds $f$ above on a ball. A convex function that is
+bounded above on some ball is continuous. A continuous convex function is then also locally
+Lipschitz. -/
 theorem ConvexOn.continuous_of_lowerSemicontinuous {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [CompleteSpace E] {f : E → ℝ} (hcv : ConvexOn ℝ univ f)
     (hlsc : LowerSemicontinuous f) : Continuous f := by

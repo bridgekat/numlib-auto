@@ -13,22 +13,33 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 /-!
 # The ascent of a self-adjoint operator is one
 
-For a self-adjoint bounded operator `A` on a Hilbert space, `A² v = 0` forces
-`‖A v‖² = ⟪A² v, v⟫ = 0`, so `ker (A²) = ker A` (`IsSelfAdjoint.ker_sq_eq_ker`), and by induction
-`ker (Aᵏ) = ker A` for every `k ≥ 1` (`IsSelfAdjoint.ker_pow_eq_ker`): the ascent of `A` is one.
-Applied to `A = T - λ` for a self-adjoint `T` and a real `λ` (`starRingEnd 𝕜 λ = λ`), the
-algebraic and geometric multiplicities of an eigenvalue of a self-adjoint operator coincide,
-`ker ((T - λ)ᵏ) = ker (T - λ)` (`IsSelfAdjoint.ker_pow_sub_smul_eq_ker`,
-`IsSelfAdjoint.ker_sq_sub_smul_eq_ker`); the operator `λ - T` is covered as well
-(`IsSelfAdjoint.ker_sq_smul_sub_eq_ker`, `IsSelfAdjoint.ker_pow_smul_sub_eq_ker`).
+Let $A$ be a self-adjoint bounded operator on a Hilbert space $H$ over $\mathbb{K} = \mathbb{R}$ or
+$\mathbb{C}$. If $A^2 v = 0$, then $\|Av\|^2 = \langle A^2 v, v \rangle = 0$. Hence
+$\ker A^2 = \ker A$, and by induction $\ker A^k = \ker A$ for every $k \ge 1$: the ascent of $A$ is
+one. Applied to $A = T - \lambda I$ for a self-adjoint $T$ and a real $\lambda$, this says that the
+algebraic and the geometric multiplicities of an eigenvalue of a self-adjoint operator coincide:
+$\ker (T - \lambda I)^k = \ker (T - \lambda I)$. The same holds for $\lambda I - T$. This is item 3
+of the Comments on Chapter 6 (last sentence) and Problem 36 of [brezis2011functional], and the index
+clause of Theorem 2.8.15 of [han2009theoretical].
 
-The induction step is the general `ContinuousLinearMap.ker_pow_eq_ker_of_ker_sq_eq`: an operator
-whose kernel stabilizes at the second power has `ker (Aᵏ) = ker A` for every `k ≥ 1`.
+## Main results
 
-## References
+* `ContinuousLinearMap.ker_pow_eq_ker_of_ker_sq_eq`: if $\ker A^2 = \ker A$, then
+  $\ker A^k = \ker A$ for every $k \ge 1$.
+* `IsSelfAdjoint.ker_sq_eq_ker` and `IsSelfAdjoint.ker_pow_eq_ker`: for self-adjoint $A$,
+  $\ker A^k = \ker A$ for every $k \ge 1$.
+* `IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`: for
+  self-adjoint $T$ and real $\lambda$, $\ker (T - \lambda I)^k = \ker (T - \lambda I)$ for every
+  $k \ge 1$.
+* `IsSelfAdjoint.ker_sq_smul_sub_eq_ker` and `IsSelfAdjoint.ker_pow_smul_sub_eq_ker`: the same for
+  $\lambda I - T$.
 
-* [brezis2011functional] Comments on Chapter 6, 3 (last sentence) and Problem 36.
-* [han2009theoretical] Theorem 2.8.15, the index clause.
+## Implementation notes
+
+* A real scalar $\lambda \in \mathbb{K}$ is expressed by the hypothesis `starRingEnd 𝕜 l = l`, that
+  is, $\bar{\lambda} = \lambda$.
+* The induction step is the general statement `ContinuousLinearMap.ker_pow_eq_ker_of_ker_sq_eq`,
+  which holds for a continuous linear operator on any topological module over a semiring.
 -/
 
 open ContinuousLinearMap
@@ -38,9 +49,12 @@ section General
 
 variable {R M : Type*} [Semiring R] [TopologicalSpace M] [AddCommMonoid M] [Module R M]
 
-/-- **An operator whose kernel stabilizes at the second power has `ker (Aᵏ) = ker A` for every
-`k ≥ 1`**: from `ker (A²) = ker A`, `Aᵏ⁺¹ x = 0` means `A x ∈ ker (Aᵏ) = ker A`, so
-`x ∈ ker (A²) = ker A`. -/
+/-- **An operator whose kernel stabilizes at the second power has the ascent one.** Let $M$ be a
+topological module over a semiring $R$, and let $A$ be a continuous linear operator on $M$ with
+$\ker A^2 = \ker A$. Then
+$$\ker A^k = \ker A \qquad \text{for every } k \ge 1.$$
+
+If $A^{k + 1} x = 0$, then $Ax \in \ker A^k = \ker A$, so $x \in \ker A^2 = \ker A$. -/
 theorem ContinuousLinearMap.ker_pow_eq_ker_of_ker_sq_eq (A : M →L[R] M)
     (h : LinearMap.ker ((A ^ 2 : M →L[R] M) : M →ₗ[R] M) = LinearMap.ker (A : M →ₗ[R] M))
     {k : ℕ} (hk : 1 ≤ k) :
@@ -70,8 +84,11 @@ namespace IsSelfAdjoint
 variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpace 𝕜 H]
   [CompleteSpace H]
 
-/-- **The ascent of a self-adjoint operator is one**: `ker (A²) = ker A`, since `A² v = 0` gives
-`‖A v‖² = ⟪A v, A v⟫ = ⟪A² v, v⟫ = 0`. -/
+/-- **The ascent of a self-adjoint operator is one**: let $H$ be a Hilbert space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $A$ be a self-adjoint bounded operator on
+$H$. Then $\ker A^2 = \ker A$.
+
+If $A^2 v = 0$, then $\|Av\|^2 = \langle Av, Av \rangle = \langle A^2 v, v \rangle = 0$. -/
 theorem ker_sq_eq_ker {A : H →L[𝕜] H} (hA : IsSelfAdjoint A) :
     LinearMap.ker ((A ^ 2 : H →L[𝕜] H) : H →ₗ[𝕜] H) = LinearMap.ker (A : H →ₗ[𝕜] H) := by
   refine le_antisymm (fun v hv ↦ ?_) (fun v hv ↦ ?_)
@@ -83,47 +100,58 @@ theorem ker_sq_eq_ker {A : H →L[𝕜] H} (hA : IsSelfAdjoint A) :
   · rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
     rw [pow_two, mul_apply_eq_comp, hv, map_zero]
 
-/-- `ker (Aᵏ) = ker A` for every `k ≥ 1` and self-adjoint `A`. -/
+/-- Let $A$ be a self-adjoint bounded operator on a Hilbert space $H$, and let $k \ge 1$. Then
+$\ker A^k = \ker A$. -/
 theorem ker_pow_eq_ker {A : H →L[𝕜] H} (hA : IsSelfAdjoint A) {k : ℕ} (hk : 1 ≤ k) :
     LinearMap.ker ((A ^ k : H →L[𝕜] H) : H →ₗ[𝕜] H) = LinearMap.ker (A : H →ₗ[𝕜] H) :=
   A.ker_pow_eq_ker_of_ker_sq_eq hA.ker_sq_eq_ker hk
 
-/-- `T - λ` is self-adjoint when `T` is and `λ` is real. -/
+/-- Let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, and let
+$\lambda \in \mathbb{K}$ be real, that is, $\bar{\lambda} = \lambda$. Then $T - \lambda I$ is
+self-adjoint. -/
 theorem sub_smul_one {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜} (hl : starRingEnd 𝕜 l = l) :
     IsSelfAdjoint (T - l • (1 : H →L[𝕜] H)) :=
   have hl' : IsSelfAdjoint l := hl
   hT.sub (hl'.smul (IsSelfAdjoint.one (H →L[𝕜] H)))
 
-/-- `λ - T` is self-adjoint when `T` is and `λ` is real. -/
+/-- Let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, and let
+$\lambda \in \mathbb{K}$ be real, that is, $\bar{\lambda} = \lambda$. Then $\lambda I - T$ is
+self-adjoint. -/
 theorem smul_one_sub {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜} (hl : starRingEnd 𝕜 l = l) :
     IsSelfAdjoint (l • (1 : H →L[𝕜] H) - T) :=
   have hl' : IsSelfAdjoint l := hl
   (hl'.smul (IsSelfAdjoint.one (H →L[𝕜] H))).sub hT
 
-/-- **The algebraic and geometric multiplicities of an eigenvalue of a self-adjoint operator
-coincide**: `ker ((T - λ)²) = ker (T - λ)` for a self-adjoint `T` and a real `λ`
-([brezis2011functional] Comments on Chapter 6, 3; [han2009theoretical] Theorem 2.8.15). -/
+/-- **The algebraic and the geometric multiplicities of an eigenvalue of a self-adjoint operator
+coincide**: let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, and let
+$\lambda \in \mathbb{K}$ be real. Then
+$$\ker (T - \lambda I)^2 = \ker (T - \lambda I).$$
+See item 3 of the Comments on Chapter 6 of [brezis2011functional], and Theorem 2.8.15 of
+[han2009theoretical]. -/
 theorem ker_sq_sub_smul_eq_ker {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜}
     (hl : starRingEnd 𝕜 l = l) :
     LinearMap.ker (((T - l • (1 : H →L[𝕜] H)) ^ 2 : H →L[𝕜] H) : H →ₗ[𝕜] H)
       = LinearMap.ker ((T - l • (1 : H →L[𝕜] H) : H →L[𝕜] H) : H →ₗ[𝕜] H) :=
   (hT.sub_smul_one hl).ker_sq_eq_ker
 
-/-- `ker ((T - λ)ᵏ) = ker (T - λ)` for every `k ≥ 1`, a self-adjoint `T` and a real `λ`. -/
+/-- Let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, let $\lambda \in \mathbb{K}$
+be real, and let $k \ge 1$. Then $\ker (T - \lambda I)^k = \ker (T - \lambda I)$. -/
 theorem ker_pow_sub_smul_eq_ker {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜}
     (hl : starRingEnd 𝕜 l = l) {k : ℕ} (hk : 1 ≤ k) :
     LinearMap.ker (((T - l • (1 : H →L[𝕜] H)) ^ k : H →L[𝕜] H) : H →ₗ[𝕜] H)
       = LinearMap.ker ((T - l • (1 : H →L[𝕜] H) : H →L[𝕜] H) : H →ₗ[𝕜] H) :=
   (hT.sub_smul_one hl).ker_pow_eq_ker hk
 
-/-- `ker ((λ - T)²) = ker (λ - T)` for a self-adjoint `T` and a real `λ`. -/
+/-- Let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, and let
+$\lambda \in \mathbb{K}$ be real. Then $\ker (\lambda I - T)^2 = \ker (\lambda I - T)$. -/
 theorem ker_sq_smul_sub_eq_ker {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜}
     (hl : starRingEnd 𝕜 l = l) :
     LinearMap.ker (((l • (1 : H →L[𝕜] H) - T) ^ 2 : H →L[𝕜] H) : H →ₗ[𝕜] H)
       = LinearMap.ker ((l • (1 : H →L[𝕜] H) - T : H →L[𝕜] H) : H →ₗ[𝕜] H) :=
   (hT.smul_one_sub hl).ker_sq_eq_ker
 
-/-- `ker ((λ - T)ᵏ) = ker (λ - T)` for every `k ≥ 1`, a self-adjoint `T` and a real `λ`. -/
+/-- Let $T$ be a self-adjoint bounded operator on a Hilbert space $H$, let $\lambda \in \mathbb{K}$
+be real, and let $k \ge 1$. Then $\ker (\lambda I - T)^k = \ker (\lambda I - T)$. -/
 theorem ker_pow_smul_sub_eq_ker {T : H →L[𝕜] H} (hT : IsSelfAdjoint T) {l : 𝕜}
     (hl : starRingEnd 𝕜 l = l) {k : ℕ} (hk : 1 ≤ k) :
     LinearMap.ker (((l • (1 : H →L[𝕜] H) - T) ^ k : H →L[𝕜] H) : H →ₗ[𝕜] H)

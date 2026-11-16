@@ -13,19 +13,27 @@ import Mathlib.Analysis.Normed.Operator.LinearIsometry
 /-!
 # The inclusion of nested subspaces as a linear isometry
 
-`Submodule.inclusionₗᵢ h : K →ₗᵢ[R] L` for `h : K ≤ L`, the isometric form of
-`Submodule.inclusion`, as `Submodule.subtypeₗᵢ` is that of `Submodule.subtype`.
+For submodules $K \le L$ of a seminormed module $E$ over a ring $R$, the inclusion $K \to L$
+preserves the norm. This file bundles it as the linear isometry `Submodule.inclusionₗᵢ`, the
+isometric form of `Submodule.inclusion`, in the same way as `Submodule.subtypeₗᵢ` is the isometric
+form of `Submodule.subtype`.
+
+## Main definitions
+
+* `Submodule.inclusionₗᵢ`: the inclusion $K \to L$ for $K \le L$, as a linear isometry.
 -/
 
 namespace Submodule
 
 variable {R E : Type*} [Ring R] [SeminormedAddCommGroup E] [Module R E]
 
-/-- The subspace inclusion `K ≤ L` as a linear isometry. -/
+/-- The inclusion $K \to L$ of submodules $K \le L$ of a seminormed module, as a linear isometry.
+Its underlying linear map is `Submodule.inclusion`. -/
 def inclusionₗᵢ {K L : Submodule R E} (h : K ≤ L) : K →ₗᵢ[R] L where
   toLinearMap := Submodule.inclusion h
   norm_map' _ := rfl
 
+/-- The underlying function of `Submodule.inclusionₗᵢ h` is `Submodule.inclusion h`. -/
 @[simp]
 theorem coe_inclusionₗᵢ {K L : Submodule R E} (h : K ≤ L) :
     ⇑(inclusionₗᵢ h) = Submodule.inclusion h :=

@@ -9,26 +9,39 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 /-!
 # Decay of the entries of the inverse of a banded positive definite matrix
 
-If `G` is a real symmetric positive definite matrix with lower and upper bandwidth `β` and
-spectrum in `[a, b]`, `0 < a`, then its inverse decays exponentially away from the diagonal:
-`|(G⁻¹)ᵢⱼ| ≤ (2/a) q^⌈|i - j|/β⌉` with `q = (√κ - 1)/(√κ + 1)`, `κ = b/a` (Demko–Moss–Smith 1984,
-Theorem 2.4, here with the constant `2` and the integer exponent `⌈|i - j|/β⌉`; for `β = 0` the
-exponent is `0` by Lean's `x / 0 = 0`). For a tridiagonal matrix (`β = 1`) and the extreme
-eigenvalues this is Cartis–Gould–Toint Lemma B.10.1.
+Let $G$ be a real symmetric positive definite matrix with lower and upper bandwidth $\beta$, and let
+all eigenvalues of $G$ lie in $[a, b]$ with $0 < a$. Put $\kappa = b / a$ and
+$q = (\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$. This file proves that the entries of $G^{-1}$ decay
+exponentially away from the diagonal:
+$$|(G^{-1})_{ij}| \le \frac{2}{a} \, q^{\lceil |i - j| / \beta \rceil}.$$
+This is Theorem 2.4 of Demko, Moss and Smith (1984), here with the constant $2$ and the integer
+exponent $\lceil |i - j| / \beta \rceil$. For a tridiagonal matrix ($\beta = 1$) and the extreme
+eigenvalues it is Lemma B.10.1 of [cartis2022evaluation].
 
-The proof is by polynomial approximation. A polynomial `p(G)` of degree `d - 1` has bandwidth
-`β (d - 1)`, so `(G⁻¹)ᵢⱼ = (G⁻¹ - p(G))ᵢⱼ` as soon as `|i - j| > β (d - 1)`. Diagonalizing `G`
-by an orthogonal matrix, every entry of `G⁻¹ - p(G)` is bounded by the largest value of
-`|1/λ - p(λ)| = |1 - λ p(λ)| / λ` on the spectrum. Choosing `1 - X p` to be the shifted Chebyshev
-polynomial of degree `d` normalized at the origin (`Polynomial.Chebyshev.shifted`) makes this at
-most `2 q^d / a`.
+## Main results
 
-## Main statements
+* `Matrix.exists_degree_lt_abs_one_sub_mul_eval_le`: for every $d$ there is a polynomial $p$ of
+  degree less than $d$ with $|1 - t\,p(t)| \le 2 q^d$ on $[a, b]$.
+* `Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`: the decay bound for any interval $[a, b]$
+  that contains the spectrum.
+* `Matrix.abs_inv_apply_le_of_hasBandwidth`: the decay bound with $a = \lambda_{\min}(G)$ and
+  $b = \lambda_{\max}(G)$.
+* `Matrix.abs_inv_apply_le_of_isTridiagonal`: Lemma B.10.1 of [cartis2022evaluation], the bound for
+  a tridiagonal matrix.
 
-* `Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`: the bound for any spectral enclosure
-  `[a, b]`.
-* `Matrix.abs_inv_apply_le_of_hasBandwidth`: the bound with the extreme eigenvalues.
-* `Matrix.abs_inv_apply_le_of_isTridiagonal`: Cartis–Gould–Toint Lemma B.10.1.
+## Proof outline
+
+The proof is by polynomial approximation. A polynomial $p(G)$ of degree $d - 1$ has bandwidth
+$\beta (d - 1)$, so $(G^{-1})_{ij} = (G^{-1} - p(G))_{ij}$ as soon as $|i - j| > \beta (d - 1)$. If
+$G$ is diagonalized by an orthogonal matrix, every entry of $G^{-1} - p(G)$ is bounded by the
+largest value of $|1/\lambda - p(\lambda)| = |1 - \lambda p(\lambda)| / \lambda$ on the spectrum. If
+$1 - X p$ is the shifted Chebyshev polynomial of degree $d$ normalized at the origin
+(`Polynomial.Chebyshev.shifted`), this value is at most $2 q^d / a$.
+
+## Implementation notes
+
+* The exponent is the natural-number ceiling `⌈|i - j| / β⌉₊`. For $\beta = 0$ the quotient is $0$
+  by the Lean convention $x / 0 = 0$, so the exponent is $0$ and the bound is $2/a$.
 -/
 
 open Finset Polynomial Polynomial.Chebyshev
@@ -37,17 +50,19 @@ namespace Matrix
 
 /-! ### The approximating polynomial -/
 
-/-- The decay ratio `(√κ - 1)/(√κ + 1)` of a spectral interval `[a, b]`, `κ = b/a`, is
+/-- For $0 < a \le b$ and $\kappa = b/a$, the ratio $(\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$ is
 nonnegative. -/
 private theorem decay_ratio_nonneg {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     0 ≤ (√(b / a) - 1) / (√(b / a) + 1) := by
   have : 1 ≤ √(b / a) := Real.one_le_sqrt.2 ((one_le_div ha).2 hab)
   positivity
 
-/-- **The residual polynomial**: for `0 < a ≤ b` and every `d`, there is a real polynomial of
-degree at most `d` taking the value `1` at the origin and bounded by `2 q^d` on `[a, b]`,
-`q = (√κ - 1)/(√κ + 1)`, `κ = b/a`: the shifted Chebyshev polynomial if `a < b`, and
-`(1 - X/a)^d` if `a = b`. -/
+/-- **The residual polynomial.** Let $0 < a \le b$, $\kappa = b/a$,
+$q = (\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$, and $d \in \mathbb{N}$. There is a real
+polynomial $r$ of degree at most $d$ with $r(0) = 1$ and
+$$|r(t)| \le 2 q^d \quad \text{for all } t \in [a, b].$$
+
+The polynomial is the shifted Chebyshev polynomial if $a < b$, and $(1 - X/a)^d$ if $a = b$. -/
 theorem exists_eval_zero_eq_one_abs_le {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (d : ℕ) :
     ∃ r : ℝ[X], r.natDegree ≤ d ∧ r.eval 0 = 1 ∧
       ∀ t ∈ Set.Icc a b, |r.eval t| ≤ 2 * ((√(b / a) - 1) / (√(b / a) + 1)) ^ d := by
@@ -80,8 +95,12 @@ theorem exists_eval_zero_eq_one_abs_le {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) 
       · norm_num
       · simp [zero_pow hd.ne']
 
-/-- **The approximate inverse**: for `0 < a ≤ b` and every `d`, there is a real polynomial `p` of
-degree `< d` with `|1 - t p(t)| ≤ 2 q^d` on `[a, b]`, `q = (√κ - 1)/(√κ + 1)`, `κ = b/a`. -/
+/-- **The approximate inverse.** Let $0 < a \le b$, $\kappa = b/a$,
+$q = (\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$, and $d \in \mathbb{N}$. There is a real
+polynomial $p$ of degree less than $d$ with
+$$|1 - t\,p(t)| \le 2 q^d \quad \text{for all } t \in [a, b].$$
+
+For $d = 0$ the polynomial is $p = 0$, whose degree is $-\infty$ in the Lean convention. -/
 theorem exists_degree_lt_abs_one_sub_mul_eval_le {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (d : ℕ) :
     ∃ p : ℝ[X], p.degree < d ∧
       ∀ t ∈ Set.Icc a b, |1 - t * p.eval t| ≤ 2 * ((√(b / a) - 1) / (√(b / a) + 1)) ^ d := by
@@ -109,8 +128,8 @@ section Band
 
 variable {m β : ℕ} {G : Matrix (Fin m) (Fin m) ℝ}
 
-/-- An entry `(i, j)` of a polynomial in a matrix of lower and upper bandwidth `β` vanishes when
-`|i - j| > β deg p`. -/
+/-- Let $G$ be a real square matrix of order $m$ with lower and upper bandwidth $\beta$, and let $p$
+be a real polynomial. Then $p(G)_{ij} = 0$ for all $i, j$ with $|i - j| > \beta \deg p$. -/
 theorem aeval_apply_eq_zero_of_hasBandwidth (hl : G.HasLowerBandwidth β)
     (hu : G.HasUpperBandwidth β) {p : ℝ[X]} {i j : Fin m}
     (h : β * p.natDegree < ((i : ℤ) - j).natAbs) : aeval G p i j = 0 := by
@@ -142,8 +161,13 @@ section Spectral
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open Unitary in
-/-- An entry of `U diag(d) Uᵀ`, `U` orthogonal, is bounded by `max |d k|`: rows of `U` are unit
-vectors, and `|∑ₖ Uᵢₖ dₖ Uⱼₖ| ≤ M ∑ₖ (Uᵢₖ² + Uⱼₖ²)/2 = M`. -/
+/-- Let $U$ be a real orthogonal matrix, $d$ a real vector, and $M$ a real number with $|d_k| \le M$
+for all $k$. Then every entry of $U \operatorname{diag}(d) U^T$ satisfies
+$$|(U \operatorname{diag}(d) U^T)_{ij}| \le M.$$
+
+The rows of $U$ are unit vectors, so $|\sum_k u_{ik} d_k u_{jk}| \le M \sum_k (u_{ik}^2 +
+u_{jk}^2)/2 = M$. The matrix $U \operatorname{diag}(d) U^T$ is `Unitary.conjStarAlgAut ℝ _ U
+(Matrix.diagonal d)`. -/
 theorem abs_conjStarAlgAut_diagonal_apply_le (U : unitary (Matrix n n ℝ)) (d : n → ℝ) {M : ℝ}
     (hd : ∀ k, |d k| ≤ M) (i j : n) : |conjStarAlgAut ℝ _ U (diagonal d) i j| ≤ M := by
   have hM : 0 ≤ M := (abs_nonneg _).trans (hd i)
@@ -176,7 +200,10 @@ theorem abs_conjStarAlgAut_diagonal_apply_le (U : unitary (Matrix n n ℝ)) (d :
 variable {G : Matrix n n ℝ} (hG : G.IsHermitian)
 
 open Unitary in
-/-- A polynomial in a real symmetric matrix, in its eigenbasis. -/
+/-- Let $G$ be a real symmetric matrix with eigenvalues $\lambda_k$ and orthogonal eigenvector
+matrix $U$ (`Matrix.IsHermitian.eigenvectorUnitary`). Then for every real polynomial $p$,
+$$p(G) = U \operatorname{diag}(p(\lambda_k)) U^T.$$
+-/
 theorem IsHermitian.aeval_eq_conj (p : ℝ[X]) :
     aeval G p = conjStarAlgAut ℝ _ hG.eigenvectorUnitary
       (diagonal fun k => p.eval (hG.eigenvalues k)) := by
@@ -190,7 +217,10 @@ theorem IsHermitian.aeval_eq_conj (p : ℝ[X]) :
   simp [coe_aeval_eq_eval]
 
 open Unitary in
-/-- The inverse of a real symmetric matrix with nonzero eigenvalues, in its eigenbasis. -/
+/-- Let $G$ be a real symmetric matrix with eigenvalues $\lambda_k \ne 0$ and orthogonal eigenvector
+matrix $U$ (`Matrix.IsHermitian.eigenvectorUnitary`). Then
+$$G^{-1} = U \operatorname{diag}(\lambda_k^{-1}) U^T.$$
+-/
 theorem IsHermitian.inv_eq_conj (h0 : ∀ k, hG.eigenvalues k ≠ 0) :
     G⁻¹ = conjStarAlgAut ℝ _ hG.eigenvectorUnitary (diagonal fun k => (hG.eigenvalues k)⁻¹) := by
   refine inv_eq_right_inv ?_
@@ -208,10 +238,14 @@ end Spectral
 variable {m β : ℕ} {G : Matrix (Fin m) (Fin m) ℝ}
 
 open Unitary in
-/-- **Decay of the inverse of a banded positive definite matrix**, for any spectral enclosure:
-if `G` is positive definite with lower and upper bandwidth `β` and all its eigenvalues lie in
-`[a, b]`, `0 < a`, then `|(G⁻¹)ᵢⱼ| ≤ (2/a) q^⌈|i - j|/β⌉` with `q = (√κ - 1)/(√κ + 1)`,
-`κ = b/a`. -/
+/-- **Decay of the inverse of a banded positive definite matrix**, for any spectral enclosure. Let
+$G$ be a real symmetric positive definite matrix of order $m$ with lower and upper bandwidth
+$\beta$. Let $0 < a$, and assume that every eigenvalue of $G$ lies in $[a, b]$. Put
+$\kappa = b/a$ and $q = (\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$. Then for all $i, j$,
+$$|(G^{-1})_{ij}| \le \frac{2}{a} \, q^{\lceil |i - j| / \beta \rceil}.$$
+
+The exponent is the natural-number ceiling, and for $\beta = 0$ it is $0$ because $x / 0 = 0$ in
+Lean. -/
 theorem abs_inv_apply_le_of_hasBandwidth_of_mem_Icc (hG : G.PosDef) (hl : G.HasLowerBandwidth β)
     (hu : G.HasUpperBandwidth β) {a b : ℝ} (ha : 0 < a)
     (hspec : ∀ k, hG.1.eigenvalues k ∈ Set.Icc a b) (i j : Fin m) :
@@ -264,11 +298,19 @@ theorem abs_inv_apply_le_of_hasBandwidth_of_mem_Icc (hG : G.PosDef) (hl : G.HasL
     _ ≤ 2 / a * ((√(b / a) - 1) / (√(b / a) + 1)) ^ d * hG.1.eigenvalues k :=
         mul_le_mul_of_nonneg_left hk.1 (by positivity)
 
-/-- **Decay of the inverse of a banded positive definite matrix** (Demko–Moss–Smith 1984,
-Theorem 2.4, with the constant `2` and the integer exponent `⌈|i - j|/β⌉`): if `G` is positive
-definite with lower and upper bandwidth `β`, `a = λ_min(G)`, `κ = λ_max(G)/λ_min(G)` and
-`q = (√κ - 1)/(√κ + 1)`, then `|(G⁻¹)ᵢⱼ| ≤ (2/a) q^⌈|i - j|/β⌉` (in particular
-`≤ (2/a) q^{|i - j|/β}` for `β ≥ 1`, as `q ≤ 1`). -/
+/-- **Decay of the inverse of a banded positive definite matrix.** Let $G$ be a real symmetric
+positive definite matrix of order $m$ with lower and upper bandwidth $\beta$. Let
+$a = \lambda_{\min}(G)$, $\kappa = \lambda_{\max}(G) / \lambda_{\min}(G)$ and
+$q = (\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)$. Then for all $i, j$,
+$$|(G^{-1})_{ij}| \le \frac{2}{a} \, q^{\lceil |i - j| / \beta \rceil}.$$
+Since $0 \le q \le 1$, this gives $|(G^{-1})_{ij}| \le (2/a) \, q^{|i - j| / \beta}$ for
+$\beta \ge 1$.
+
+This is Theorem 2.4 of Demko, Moss and Smith (1984), with the constant $2$ and the integer
+exponent $\lceil |i - j| / \beta \rceil$. The exponent is the natural-number ceiling, and for
+$\beta = 0$ it is $0$ because $x / 0 = 0$ in Lean. The extreme eigenvalues $\lambda_{\min}(G)$
+and $\lambda_{\max}(G)$ are the infimum and the supremum of `Matrix.IsHermitian.eigenvalues`.
+The proof specializes `Matrix.abs_inv_apply_le_of_hasBandwidth_of_mem_Icc`. -/
 theorem abs_inv_apply_le_of_hasBandwidth (hG : G.PosDef) (hl : G.HasLowerBandwidth β)
     (hu : G.HasUpperBandwidth β) (i j : Fin m) :
     |G⁻¹ i j| ≤ 2 / (⨅ k, hG.1.eigenvalues k) *
@@ -283,9 +325,15 @@ theorem abs_inv_apply_le_of_hasBandwidth (hG : G.PosDef) (hl : G.HasLowerBandwid
   · exact ciInf_le (Set.finite_range _).bddBelow k
   · exact le_ciSup (Set.finite_range _).bddAbove k
 
-/-- **Cartis–Gould–Toint Lemma B.10.1**: if `T` is a real symmetric positive definite tridiagonal
-matrix with `a = λ_min(T)`, `κ = λ_max(T)/λ_min(T)`, then for all `i, j`,
-`|(T⁻¹)ᵢⱼ| ≤ (2/a) ((√κ - 1)/(√κ + 1))^|i - j|`. -/
+/-- Let $T$ be a real symmetric positive definite tridiagonal matrix of order $m$. Let
+$a = \lambda_{\min}(T)$ and $\kappa = \lambda_{\max}(T) / \lambda_{\min}(T)$. Then for all
+$i, j$,
+$$|(T^{-1})_{ij}| \le \frac{2}{a} \left( \frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}
+  \right)^{|i - j|}.$$
+This is Lemma B.10.1 of [cartis2022evaluation].
+
+The extreme eigenvalues are the infimum and the supremum of `Matrix.IsHermitian.eigenvalues`.
+The proof is `Matrix.abs_inv_apply_le_of_hasBandwidth` with $\beta = 1$. -/
 theorem abs_inv_apply_le_of_isTridiagonal {T : Matrix (Fin m) (Fin m) ℝ} (hT : T.PosDef)
     (htri : T.IsTridiagonal) (i j : Fin m) :
     |T⁻¹ i j| ≤ 2 / (⨅ k, hT.1.eigenvalues k) *

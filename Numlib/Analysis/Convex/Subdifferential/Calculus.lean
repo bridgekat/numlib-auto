@@ -8,38 +8,50 @@ import Numlib.Analysis.Convex.Subdifferential.Defs
 /-!
 # Subdifferential calculus
 
-How `∂` interacts with sums and with linear maps. Both rules have the same shape: one inclusion is
-unconditional — a subgradient of each piece assembles into a subgradient of the whole — and the
-reverse inclusion, the useful one, needs exactly the constraint qualification that makes the
-corresponding conjugacy rule exact. Both are therefore stated against the `IsExactSum` and
-`IsExactImage` interfaces; the classical `ri` versions of the two rules are these composed with the
-`of_relint` constructors.
+Let $E$ and $F$ be real vector spaces paired by a bilinear form $\langle x, y \rangle$. This module
+computes the subdifferential of a sum $f_1 + \dots + f_m$, of an inverse image
+$gA : x \mapsto g(Ax)$ under a linear map $A$, of a positive multiple $cf$, of an affine function,
+and of the indicator function of an intersection. Each rule has one inclusion that holds for all
+functions: subgradients of the pieces assemble into a subgradient of the whole, for example
+$\partial f(x) + \partial g(x) \subseteq \partial (f + g)(x)$. The reverse inclusion, the useful
+one, needs the constraint qualification that makes the corresponding rule for conjugates exact, for
+example $(f + g)^* = f^* \mathbin{\square} g^*$ with attainment. The rules are therefore stated for
+the interfaces `ConvexAnalysis.IsExactSum`, `ConvexAnalysis.IsExactFinsetSum` and
+`ConvexAnalysis.IsExactImage`. The classical versions with relative interiors follow with the
+constructors `ConvexAnalysis.IsExactSum.of_relint`, `ConvexAnalysis.IsExactFinsetSum.of_relint` and
+`ConvexAnalysis.IsExactImage.of_relint`. The presentation follows [rockafellar1970convex], §23.
 
 ## Main results
 
-* `IsExactSum.subdifferential_add`, `IsExactFinsetSum.subdifferential_finsetSum` —
-  `∂(∑ fᵢ) = ∑ ∂fᵢ`, for two summands and for `m` of them ([rockafellar1970convex] Theorem 23.8).
-* `IsExactImage.subdifferential_compLin` — `∂(g A) x = A' (∂g (A x))`
-  ([rockafellar1970convex] Theorem 23.9).
-* `subdifferential_coe_mul`, `subdifferential_coe_affineMap` — `∂(cf) = c ∂f` for `c > 0`, and for
-  *arbitrary* `c` when `f` is affine.
-* `IsExactSum.normalCone_inter` — the normal cone to an intersection, as a sum of normal cones.
-* `subdifferential_add_normalCone_convexDom_subset`,
-  `normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton` — the normal cone to `dom f`, and
-  what a *unique* subgradient does to it.
+* `ConvexAnalysis.IsExactSum.subdifferential_add`,
+  `ConvexAnalysis.IsExactFinsetSum.subdifferential_finsetSum`: $\partial (f_1 + \dots + f_m)(x) =
+  \partial f_1(x) + \dots + \partial f_m(x)$ when the sum is exact, for two summands and for $m$
+  summands. This is Theorem 23.8 of [rockafellar1970convex].
+* `ConvexAnalysis.IsExactImage.subdifferential_compLin`: $\partial (gA)(x) = A^* \partial g(Ax)$
+  when the inverse image is exact. This is Theorem 23.9 of [rockafellar1970convex].
+* `ConvexAnalysis.subdifferential_coe_mul`, `ConvexAnalysis.subdifferential_coe_affineMap`:
+  $\partial (cf)(x) = c \, \partial f(x)$ for $c > 0$, and the subdifferential of an affine function
+  is the single vector that represents its linear part.
+* `ConvexAnalysis.IsExactSum.normalCone_inter`: the normal cone to an intersection is the sum of the
+  normal cones.
+* `ConvexAnalysis.subdifferential_add_normalCone_convexDom_subset`,
+  `ConvexAnalysis.normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton`: a normal vector to
+  $\operatorname{dom} f$ can be added to a subgradient, so a unique subgradient forces the normal
+  cone to $\operatorname{dom} f$ to be $\{0\}$.
 
 ## Implementation notes
 
-Everything reduces to the conjugate characterisation `y ∈ ∂f x ↔ f x + f* y ≤ ⟨x, y⟩`,
-written so that no `∞ - ∞` can arise; no epigraph, directional derivative or separating hyperplane
-appears in any proof here. The sum rule additionally needs the `EReal` fact that two slack
-inequalities whose sum is tight must each be tight, and that is where the properness carried by
-`IsExactSum` is spent. Its `m`-ary form is proved for the whole family in one pass, because the
-binary rule does not iterate: `EReal` has no subtraction to peel a summand off with.
-
-## References
-
-* [rockafellar1970convex] §23.
+* Every proof reduces to the conjugate characterization $y \in \partial f(x) \iff f(x) + f^*(y) \le
+  \langle x, y \rangle$, which never meets $\infty - \infty$. No epigraph, directional derivative or
+  separating hyperplane appears in the proofs.
+* The sum rule also needs the fact that two inequalities in `EReal` whose sum holds with equality
+  each hold with equality. This is where the properness carried by `ConvexAnalysis.IsExactSum` is
+  used.
+* The rule for $m$ summands is proved for the whole family at once, not by iteration of the rule for
+  two summands: `EReal` has no subtraction that would remove one summand.
+* The adjoint $A^* : H \to F$ of $A : E \to G$, for pairings of $E$ with $F$ and of $G$ with $H$, is
+  data: `ConvexAnalysis.IsAdjointPair B B' A A'` states $\langle Ax, z \rangle' = \langle x, A^* z
+  \rangle$.
 -/
 
 open Pointwise
@@ -53,8 +65,10 @@ section Add
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f g : E → EReal}
 
-/-- **The unconditional inclusion**: a subgradient of `f` plus a subgradient of `g` is a
-subgradient of `f + g`. The two subgradient inequalities simply add. -/
+/-- **The inclusion that always holds** for sums: for all $f, g : E \to [-\infty, +\infty]$ and
+$x \in E$,
+$$\partial f(x) + \partial g(x) \subseteq \partial (f + g)(x).$$
+The two subgradient inequalities add. -/
 theorem subdifferential_add_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → EReal) (x : E) :
     subdifferential B f x + subdifferential B g x ⊆ subdifferential B (f + g) x := by
   rintro _ ⟨y₁, hy₁, y₂, hy₂, rfl⟩ z
@@ -63,9 +77,17 @@ theorem subdifferential_add_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : 
   rw [Pi.add_apply, Pi.add_apply, map_add, EReal.coe_add, add_add_add_comm]
   exact add_le_add h₁ h₂
 
-/-- `∂(f + g) x = ∂f x + ∂g x` whenever the sum is exact. Exactness splits
-`y = y₁ + y₂` with `f* y₁ + g* y₂ ≤ (f+g)* y`, and tightness of Fenchel's inequality for `f + g`
-then leaves the two inequalities for `f` at `y₁` and `g` at `y₂` no room to be strict. -/
+/-- **Subdifferential of a sum.** Let $f, g : E \to [-\infty, +\infty]$ add exactly: both are
+proper, and for every $y \in F$ the infimal convolution that defines
+$(f^* \mathbin{\square} g^*)(y)$ is attained, so that $(f + g)^*(y) = f^*(y_1) + g^*(y_2)$ for
+some $y_1 + y_2 = y$. Then for every $x \in E$
+$$\partial (f + g)(x) = \partial f(x) + \partial g(x).$$
+
+This is Theorem 23.8 of [rockafellar1970convex], with the hypothesis on relative interiors
+replaced by its consequence `ConvexAnalysis.IsExactSum`. The classical hypothesis gives this
+interface through `ConvexAnalysis.IsExactSum.of_relint`. For $y \in \partial (f + g)(x)$,
+exactness gives a splitting $y = y_1 + y_2$, and equality in Fenchel's inequality for $f + g$
+forces equality in the inequalities for $f$ at $y_1$ and for $g$ at $y_2$. -/
 theorem IsExactSum.subdifferential_add (h : IsExactSum B f g) (x : E) :
     subdifferential B (f + g) x = subdifferential B f x + subdifferential B g x := by
   refine Set.Subset.antisymm (fun y hy => ?_) (subdifferential_add_subset B f g x)
@@ -92,16 +114,18 @@ theorem IsExactSum.subdifferential_add (h : IsExactSum B f g) (x : E) :
 
 end Add
 
-/-! ### Sums of `m` functions -/
+/-! ### Sums of $m$ functions -/
 
 section FinsetAdd
 
 variable {ι E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {s : Finset ι} {f : ι → E → EReal}
 
-/-- **The unconditional inclusion** for `m` summands:
-`∂f₁ x + ⋯ + ∂fₘ x ⊆ ∂(f₁ + ⋯ + fₘ) x`. Over the empty `Finset` the left side is `{0}` and the
-right side is `∂(0) x`, which contains `0`. -/
+/-- **The inclusion that always holds** for $m$ summands: for every finite family $(f_i)_{i \in s}$
+and every $x$,
+$$\partial f_1(x) + \dots + \partial f_m(x) \subseteq \partial (f_1 + \dots + f_m)(x).$$
+For the empty family the left side is $\{0\}$ and the right side is $\partial 0(x)$, which
+contains $0$. -/
 theorem subdifferential_finsetSum_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Finset ι)
     (f : ι → E → EReal) (x : E) :
     ∑ i ∈ s, subdifferential B (f i) x ⊆ subdifferential B (∑ i ∈ s, f i) x := by
@@ -115,10 +139,18 @@ theorem subdifferential_finsetSum_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (
     rw [Finset.sum_cons, Finset.sum_cons]
     exact (Set.add_subset_add_left ih).trans (subdifferential_add_subset B (f i) _ x)
 
-/-- `∂(f₁ + ⋯ + fₘ) x = ∂f₁ x + ⋯ + ∂fₘ x` whenever the family adds exactly.
-Exactness hands back a splitting `y = y₁ + ⋯ + yₘ` whose conjugate values already sum to
-`(∑ fᵢ)* y`, and `y ∈ ∂(∑ fᵢ) x` makes the sum of the `m` Fenchel inequalities tight, hence each
-of them. This is not the binary rule iterated. -/
+/-- **Subdifferential of a finite sum.** Let $(f_i)_{i \in s}$ be a finite family of functions
+$E \to [-\infty, +\infty]$ that adds exactly: every $f_i$ is proper, and for every $y \in F$ the
+$m$-fold infimal convolution that defines $(f_1^* \mathbin{\square} \dots \mathbin{\square}
+f_m^*)(y)$ is attained. Then for every $x \in E$
+$$\partial \Big(\sum_{i \in s} f_i\Big)(x) = \sum_{i \in s} \partial f_i(x).$$
+
+This is Theorem 23.8 of [rockafellar1970convex], with the hypothesis on relative interiors
+replaced by `ConvexAnalysis.IsExactFinsetSum`, which `ConvexAnalysis.IsExactFinsetSum.of_relint`
+supplies. Exactness gives a splitting $y = y_1 + \dots + y_m$ whose conjugate values add up to
+$(\sum_i f_i)^*(y)$, and $y \in \partial (\sum_i f_i)(x)$ makes the sum of the $m$ Fenchel
+inequalities an equality, hence each of them. The proof does not iterate the rule for two
+summands. -/
 theorem IsExactFinsetSum.subdifferential_finsetSum (h : IsExactFinsetSum B s f) (x : E) :
     subdifferential B (∑ i ∈ s, f i) x = ∑ i ∈ s, subdifferential B (f i) x := by
   refine Set.Subset.antisymm (fun y hy => ?_) (subdifferential_finsetSum_subset B s f x)
@@ -152,18 +184,29 @@ variable {E F G H : Type*}
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
   {A : E →ₗ[ℝ] G} {A' : H →ₗ[ℝ] F} {g : G → EReal}
 
-/-- **The unconditional inclusion**: the transpose carries subgradients of `g` at
-`A x` to subgradients of `g A` at `x`. Only the adjointness datum is used; `g` is arbitrary. -/
+/-- **The inclusion that always holds** for inverse images. Let $A : E \to G$ be linear with adjoint
+$A^* : H \to F$. For every $g : G \to [-\infty, +\infty]$ and $x \in E$, $A^*$ maps subgradients
+of $g$ at $Ax$ to subgradients of $gA$ at $x$:
+$$A^* \partial g(Ax) \subseteq \partial (gA)(x).$$
+-/
 theorem image_subdifferential_subset (hA : IsAdjointPair B B' A A') (g : G → EReal) (x : E) :
     A' '' subdifferential B' g (A x) ⊆ subdifferential B (compLin g A) x := by
   rintro _ ⟨z, hz, rfl⟩ w
   have hw := hz (A w)
   rwa [compLin_apply, compLin_apply, ← hA (w - x) z, map_sub]
 
-/-- `∂(g A) x = A' (∂g (A x))` whenever the pullback is exact. Unlike the sum
-rule this needs no splitting: exactness hands back a single `z` in the fibre with
-`g* z ≤ (g A)* (A' z)`, which slots straight into Fenchel's inequality once a subgradient at `x` is
-seen to force `(g A)* y` finite. -/
+/-- **Subdifferential of an inverse image.** Let $E$ be paired with $F$ and $G$ with $H$, let
+$A : E \to G$ be linear with adjoint $A^* : H \to F$, and let $g : G \to [-\infty, +\infty]$
+pull back exactly along $A$: $g$ is proper, and wherever $(gA)^*(y)$ is finite, the infimum of
+$g^*$ over $\{z \mid A^* z = y\}$ is attained at a point $z$ with $g^*(z) \le (gA)^*(y)$. Then
+for every $x \in E$
+$$\partial (gA)(x) = A^* \partial g(Ax).$$
+
+This is Theorem 23.9 of [rockafellar1970convex], with the hypothesis on relative interiors
+replaced by `ConvexAnalysis.IsExactImage`, which `ConvexAnalysis.IsExactImage.of_relint`
+supplies. The inverse image $gA$ is `ConvexAnalysis.compLin g A`. A subgradient at $x$ makes
+$(gA)^*(y)$ finite, and the point $z$ given by exactness then satisfies Fenchel's inequality for
+$g$ with equality. -/
 theorem IsExactImage.subdifferential_compLin {hA : IsAdjointPair B B' A A'}
     (h : IsExactImage B B' A A' hA g) (x : E) :
     subdifferential B (compLin g A) x = A' '' subdifferential B' g (A x) := by
@@ -192,12 +235,14 @@ section Smul
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ}
 
-/-- `∂(cf) x = c ∂f x` for `c > 0`, with no hypothesis on `f`: multiplying the subgradient
-inequality through by `c > 0` is reversible even on `EReal`.
+/-- Let $c > 0$. For every $f : E \to [-\infty, +\infty]$ and $x \in E$,
+$$\partial (cf)(x) = c \, \partial f(x).$$
+Multiplication of the subgradient inequality by $c > 0$ can be undone, also in `EReal`.
 
-Positivity is essential in both directions. At `c = 0` the left side is `{y | ∀ w, B w y = 0}`,
-which has nothing to do with `∂f x`; for `c < 0` the scaled inequality reverses and `cf` is
-*concave* where `f` is convex. The negative case survives only when `f` is affine. -/
+Positivity is needed for both inclusions. At $c = 0$ the left side is $\{y \mid \langle w, y
+\rangle = 0 \text{ for all } w\}$, which has no relation to $\partial f(x)$. For $c < 0$ the
+inequality reverses, and $cf$ is concave where $f$ is convex. The case $c < 0$ holds only for
+affine $f$ (`ConvexAnalysis.subdifferential_coe_mul_affineMap`). -/
 theorem subdifferential_coe_mul {c : ℝ} (hc : 0 < c) (f : E → EReal) (x : E) :
     subdifferential B (fun y => (c : EReal) * f y) x = c • subdifferential B f x := by
   ext v
@@ -219,11 +264,15 @@ theorem subdifferential_coe_mul {c : ℝ} (hc : 0 < c) (f : E → EReal) (x : E)
     rw [hp]
     exact (EReal.coe_mul_add_coe_le_coe_mul_iff hc (f x) (f z) _).2 (hw z)
 
-/-- `∂(0 · f) x = {0}`: the zero function has the origin as its only subgradient.
+/-- Let the pairing separate the points of $F$: $\langle w, y \rangle = 0$ for all $w$ implies
+$y = 0$. Then for every $f : E \to [-\infty, +\infty]$ and $x$, the subdifferential of
+$0 \cdot f$ at $x$ is $\{0\}$. Here $0 \cdot f$ is computed in `EReal`, where
+$0 \cdot (\pm\infty) = 0$.
 
-This is what the parenthesis "(Omit terms with `λᵢ = 0`.)" in the Kuhn–Tucker conditions means, and
-why it is not cosmetic: `∂fᵢ x` may be *empty* at a boundary point of `dom fᵢ`, so the term
-`0 · ∂fᵢ x` that the parenthesis drops would be `∅` rather than `{0}`, emptying the whole sum. -/
+This explains the remark "Omit terms with $\lambda_i = 0$" in the Kuhn–Tucker conditions, and
+why it matters. The set $\partial f_i(x)$ can be empty at a boundary point of
+$\operatorname{dom} f_i$, and then the term $0 \cdot \partial f_i(x)$ would be $\emptyset$, not
+$\{0\}$, and would make the whole sum empty. -/
 theorem subdifferential_zero_mul (hB : Function.Injective B.flip) (f : E → EReal) (x : E) :
     subdifferential B (fun y => ((0 : ℝ) : EReal) * f y) x = {(0 : F)} := by
   have hz : (fun y => ((0 : ℝ) : EReal) * f y) = fun _ : E => (0 : EReal) := by
@@ -251,9 +300,14 @@ theorem subdifferential_zero_mul (hB : Function.Injective B.flip) (f : E → ERe
     rw [zero_add, map_zero]
     exact le_of_eq (by norm_num)
 
-/-- The subdifferential of an affine function is one point, namely the vector `b` representing its
-linear part through the pairing. No differentiation is needed: `b` is handed in, together with the
-identity `⟨w, b⟩ = a.linear w` naming it, and nothing in the statement mentions a topology. -/
+/-- Let the pairing separate the points of $F$, let $a : E \to \mathbb{R}$ be affine, and let
+$b \in F$ represent its linear part: $\langle w, b \rangle = a(w) - a(0)$ for all $w$. Then for
+every $x \in E$
+$$\partial a(x) = \{b\}.$$
+
+No differentiation and no topology are needed: the vector $b$ is given, together with the
+identity $\langle w, b \rangle = $ `a.linear w`. Separation of points is
+`Function.Injective B.flip`. -/
 theorem subdifferential_coe_affineMap (hB : Function.Injective B.flip) (a : E →ᵃ[ℝ] ℝ) {b : F}
     (hb : ∀ w : E, B w b = a.linear w) (x : E) :
     subdifferential B (fun y => ((a y : ℝ) : EReal)) x = {b} := by
@@ -285,9 +339,13 @@ theorem subdifferential_coe_affineMap (hB : Function.Injective B.flip) (a : E �
     rw [← EReal.coe_add, EReal.coe_le_coe_iff, hb (z - x)]
     linarith [hdec z]
 
-/-- `∂(ca) x = c ∂a x` for an *arbitrary* real `c`, when `a` is affine. An affine function satisfies
-the subgradient inequality with *equality*, so scaling by a negative `c` reverses nothing; this is
-what covers equality-constraint multipliers, which may be negative. -/
+/-- Let the pairing separate the points of $F$, let $a : E \to \mathbb{R}$ be affine with linear
+part represented by $b \in F$, and let $c$ be any real number. Then
+$\partial (ca)(x) = c \, \partial a(x)$ for every $x$.
+
+An affine function satisfies the subgradient inequality with equality, so a negative $c$
+reverses nothing. This case covers the multipliers of equality constraints, which can be
+negative. -/
 theorem subdifferential_coe_mul_affineMap (hB : Function.Injective B.flip) (c : ℝ) (a : E →ᵃ[ℝ] ℝ)
     {b : F} (hb : ∀ w : E, B w b = a.linear w) (x : E) :
     subdifferential B (fun y => (c : EReal) * ((a y : ℝ) : EReal)) x
@@ -313,16 +371,23 @@ section NormalCone
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {C D : Set E} {x : E}
 
-/-- **The unconditional inclusion**. Proved directly rather than through indicators, so that it
-needs neither `x ∈ C` nor `x ∈ D`. -/
+/-- **The inclusion that always holds** for normal cones: for all sets $C, D \subseteq E$ and every
+$x \in E$,
+$$N_C(x) + N_D(x) \subseteq N_{C \cap D}(x).$$
+The proof is direct, not through indicator functions, so it needs neither $x \in C$ nor
+$x \in D$. -/
 theorem normalCone_add_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C D : Set E) (x : E) :
     normalCone B C x + normalCone B D x ⊆ normalCone B (C ∩ D) x := by
   rintro _ ⟨y₁, hy₁, y₂, hy₂, rfl⟩ z hz
   rw [map_add]
   exact add_nonpos (hy₁ z hz.1) (hy₂ z hz.2)
 
-/-- The normal cone to an intersection is the sum of the normal cones, under the exact-sum
-hypothesis for the two indicators. -/
+/-- Let the indicator functions $\delta(\cdot \mid C)$ and $\delta(\cdot \mid D)$ add exactly
+(`ConvexAnalysis.IsExactSum`), and let $x \in C \cap D$. Then
+$$N_{C \cap D}(x) = N_C(x) + N_D(x).$$
+
+The proof applies `ConvexAnalysis.IsExactSum.subdifferential_add` to the two indicator
+functions. -/
 theorem IsExactSum.normalCone_inter (h : IsExactSum B (indicatorFn C) (indicatorFn D))
     (hC : x ∈ C) (hD : x ∈ D) :
     normalCone B (C ∩ D) x = normalCone B C x + normalCone B D x := by
@@ -340,8 +405,12 @@ section NormalConeDom
 variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {f : E → EReal} {x : E}
 
-/-- A normal to the effective domain may be added to a subgradient — the elementary inclusion
-behind `∂f x + N_{dom f}(x) = ∂f x`. Neither convexity nor a topology is needed. -/
+/-- For every $f : E \to [-\infty, +\infty]$ and $x \in E$, a normal vector to
+$\operatorname{dom} f$ at $x$ can be added to a subgradient at $x$:
+$$\partial f(x) + N_{\operatorname{dom} f}(x) \subseteq \partial f(x).$$
+
+This is the elementary inclusion behind the equation $\partial f(x) + N_{\operatorname{dom}
+f}(x) = \partial f(x)$. Neither convexity nor a topology is needed. -/
 theorem subdifferential_add_normalCone_convexDom_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal)
     (x : E) :
     subdifferential B f x + normalCone B (convexDom f) x ⊆ subdifferential B f x := by
@@ -354,9 +423,14 @@ theorem subdifferential_add_normalCone_convexDom_subset (B : E →ₗ[ℝ] F →
   · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_convexDom.2 h))]
     exact le_top
 
-/-- A lone subgradient leaves no room for a normal direction: if `∂f x = {y₀}` then `y₀ + n` is
-again a subgradient for every `n` normal to `dom f` at `x`, so `n = 0`. With
-`mem_interior_of_normalCone_eq_zero` this turns uniqueness into an interiority statement. -/
+/-- Let $f : E \to [-\infty, +\infty]$ and $x \in E$. If $\partial f(x) = \{y_0\}$ is a single
+point, then
+$$N_{\operatorname{dom} f}(x) = \{0\}.$$
+
+For every normal vector $n$ to $\operatorname{dom} f$ at $x$, the vector $y_0 + n$ is again a
+subgradient, so $n = 0$. With `ConvexAnalysis.mem_interior_of_normalCone_eq_zero` this turns
+uniqueness of the subgradient into the statement that $x$ is an interior point of
+$\operatorname{dom} f$. -/
 theorem normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton {y₀ : F}
     (h : subdifferential B f x = {y₀}) : normalCone B (convexDom f) x = {0} := by
   refine Set.eq_singleton_iff_unique_mem.2 ⟨fun z _ => by simp, fun n hn => ?_⟩
@@ -367,11 +441,12 @@ theorem normalCone_convexDom_eq_zero_of_subdifferential_eq_singleton {y₀ : F}
 
 end NormalConeDom
 
-/-! ### Transport along a linear isomorphism
+/-!
+### Transport along a linear isomorphism
 
-`convexConj_comp_linearEquiv` of `Duality/Conjugate` is the substitution rule for the conjugate. The
-subdifferential obeys the same rule, in the generality of an arbitrary adjoint pair of
-isomorphisms. -/
+`ConvexAnalysis.convexConj_comp_linearEquiv` is the substitution rule for the conjugate. The
+subdifferential obeys the same rule, for every adjoint pair of linear isomorphisms.
+-/
 
 section LinearEquivTransport
 
@@ -379,9 +454,13 @@ variable {E F G H : Type*}
 variable [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
 variable [AddCommGroup G] [Module ℝ G] [AddCommGroup H] [Module ℝ H]
 
-/-- **Precomposing with a linear isomorphism moves the subdifferential along the transpose.**
-The companion of `convexConj_comp_linearEquiv` for `∂f`: if `A` and `A'` are adjoint isomorphisms,
-then `∂(g ∘ A)(x) = A' (∂g (A x))`. -/
+/-- **Composition with a linear isomorphism.** Let $E$ be paired with $F$ and $G$ with $H$, and let
+$A : E \to G$ and $A^* : H \to F$ be linear isomorphisms that are adjoint: $\langle Ax, z
+\rangle' = \langle x, A^* z \rangle$. Then for every $g : G \to [-\infty, +\infty]$ and
+$x \in E$,
+$$\partial (g \circ A)(x) = A^* \partial g(Ax).$$
+This is the counterpart for subdifferentials of `ConvexAnalysis.convexConj_comp_linearEquiv`. No
+exactness hypothesis is needed. -/
 theorem subdifferential_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
     (A : E ≃ₗ[ℝ] G) (A' : H ≃ₗ[ℝ] F)
     (hA : IsAdjointPair B B' (A : E →ₗ[ℝ] G) (A' : H →ₗ[ℝ] F)) (g : G → EReal) (x : E) :

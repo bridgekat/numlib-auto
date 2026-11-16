@@ -15,51 +15,61 @@ import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Numlib.Analysis.Calculus.AddTorsor.AffineMap
 
 /-!
-# Functions of class `C^n` up to the boundary
+# Functions of class $C^n$ up to the boundary
 
-`ContDiffOnClosure 𝕜 n f s` is the class `C^n(s̄)` of the partial differential equations
-literature — Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-chapter 9, footnote 16: `f` is `C^n` on the open set `s` and each of its derivatives of order
-`m ≤ n` extends continuously to the closure of `s`.
+Let $X$ and $F$ be normed spaces over a nontrivially normed field $\mathbb{K}$, and let
+$s \subseteq X$. A function $f : X \to F$ is of **class $C^n(\bar s)$** if $f$ is $C^n$ on $s$ and
+each derivative $D^m f$ of order $m \le n$ has a continuous extension from $s$ to the closure
+$\bar s$. This is the class $C^n(\bar\Omega)$ of the literature on partial differential equations,
+as in [brezis2011functional], Chapter 9, footnote 16, where $s$ is open.
 
-This is weaker than Mathlib's `ContDiffOn 𝕜 n f (closure s)`, which asks at every boundary point
-for a Taylor expansion *within* the closure; the two agree on regular domains but the Mathlib
-notion is the wrong hypothesis to write when a book says `u ∈ C^k(Ω̄)`. The implication from the
-Mathlib notion, `ContDiffOn.contDiffOnClosure`, holds for every open `s`, without any unique
-differentiability of the closure: the continuous extension of `D^m f` is assembled from the local
-Taylor data of `ContDiffWithinAt` by taking limits along `s`.
+The class is weaker than Mathlib's `ContDiffOn 𝕜 n f (closure s)`, which asks at every boundary
+point for a Taylor expansion within the closure. The two agree on regular domains, but the Mathlib
+notion is the wrong hypothesis to write when a text says $u \in C^k(\bar\Omega)$. The implication
+from the Mathlib notion holds for every open $s$, with no unique differentiability of the closure:
+the continuous extension of $D^m f$ is built from the local Taylor data by limits along $s$. The
+extension of each derivative is unique on $\bar s$, since $s$ is dense in $\bar s$
+(`Set.EqOn.of_subset_closure`).
 
-Two readers: `s = Ω` a spatial domain, for the conclusions `u ∈ C^k(Ω̄)` of the Sobolev
-embeddings and of elliptic regularity; and `s = Ω ×ˢ I` for a time interval `I`, for the
-space–time classes `C^∞(Ω̄ × [ε, ∞))` of the evolution equations.
+The class has two uses. With $s = \Omega$ a spatial domain, it states the conclusions
+$u \in C^k(\bar\Omega)$ of the Sobolev embeddings and of elliptic regularity. With
+$s = \Omega \times I$ for a time interval $I$, it states space–time classes such as
+$C^\infty(\bar\Omega \times [\varepsilon, \infty))$ for evolution equations.
 
 ## Main definitions
 
-* `ContDiffOnClosure 𝕜 n f s`: `f ∈ C^n(s̄)`.
+* `ContDiffOnClosure`: the class $C^n(\bar s)$.
 
-## Main statements
+## Main results
 
-* `ContDiffOnClosure.of_le`, `ContDiffOnClosure.mono`: monotone in the order and in the set;
-* `ContDiffOnClosure.continuousOn_closure`: `f` itself extends continuously to `closure s`;
-* `ContDiffOn.contDiffOnClosure`: `ContDiffOn 𝕜 n f (closure s)` implies `f ∈ C^n(s̄)` for
-  open `s`;
-* `contDiffOnClosure_one_iff`: `f ∈ C¹(s̄)` iff `f` is `C¹` on `s` and both `f` and `fderiv 𝕜 f`
-  extend continuously to `closure s` — the working form of the class at order one, through which
-  the stability properties below are proved;
-* the algebra of `C¹(s̄)` on an open `s`: `ContDiffOnClosure.smul`, `mul`, `const`, `smul_const`,
-  `continuousLinearMap_comp`, `clm_comp_comp_affine`, `comp_affineIsometryEquiv`, and the
-  locality on the support `ContDiffOnClosure.congr_set_of_tsupport_subset`;
-* bounds on the derivative: `ContDiffOnClosure.exists_norm_fderiv_le` (on a bounded set) and
-  `exists_norm_fderiv_le_of_hasCompactSupport`;
-* `ContDiffOnClosure.exists_continuousOn_fderiv_fderiv`: the second derivative of a `C²(s̄)`
-  function extends continuously.
+* `ContDiffOnClosure.of_le`, `ContDiffOnClosure.mono`: the class is monotone in the order and in the
+  set.
+* `ContDiffOnClosure.continuousOn_closure`: a function of class $C^n(\bar s)$ extends continuously
+  to $\bar s$.
+* `ContDiffOn.contDiffOnClosure`: for open $s$, a function that is $C^n$ on $\bar s$ in Mathlib's
+  sense is of class $C^n(\bar s)$.
+* `contDiffOnClosure_one_iff`: $f \in C^1(\bar s)$ if and only if $f$ is $C^1$ on $s$ and both $f$
+  and $Df$ extend continuously to $\bar s$. This is the working form of the class at order one, and
+  the stability results below are proved through it.
+* `ContDiffOnClosure.smul`, `ContDiffOnClosure.mul`, `ContDiffOnClosure.const`,
+  `ContDiffOnClosure.smul_const`, `ContDiffOnClosure.continuousLinearMap_comp`,
+  `ContDiffOnClosure.clm_comp_comp_affine`, `ContDiffOnClosure.comp_affineIsometryEquiv`: on an open
+  set $s$, the class $C^1(\bar s)$ is stable under products, constants, continuous linear maps and
+  affine changes of variables.
+* `ContDiffOnClosure.congr_set_of_tsupport_subset`: the class $C^1(\bar s)$ is local on the support
+  of the function.
+* `ContDiffOnClosure.exists_norm_fderiv_le`,
+  `ContDiffOnClosure.exists_norm_fderiv_le_of_hasCompactSupport`: the derivative of a function of
+  class $C^1(\bar s)$ is bounded on $s$ if $s$ is bounded or if the function has compact support.
+* `ContDiffOnClosure.exists_continuousOn_fderiv_fderiv`: the second derivative of a function of
+  class $C^2(\bar s)$ extends continuously to $\bar s$.
 
-The extension of each derivative is unique on `closure s`, `s` being dense there:
-`Set.EqOn.of_subset_closure` is the statement.
+## Implementation notes
 
-## References
-
-[brezis2011functional], chapter 9, footnote 16.
+* The field $\mathbb{K}$ is `𝕜`. The order $n$ is a term of `WithTop ℕ∞`. The derivative of order
+  $m$ is `iteratedFDeriv 𝕜 m f`, a continuous $m$-linear map, and its extension is a function
+  `X → X [×m]→L[𝕜] F` that is continuous on `closure s` and equal to `iteratedFDeriv 𝕜 m f` on `s`.
+* The definition does not require $s$ to be open, but most results assume it.
 -/
 
 open Filter Set Topology
@@ -67,9 +77,14 @@ open Filter Set Topology
 variable (𝕜 : Type*) [NontriviallyNormedField 𝕜] {X F : Type*} [NormedAddCommGroup X]
   [NormedSpace 𝕜 X] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The class `C^n(s̄)`**: `f` is `C^n` on `s` and each derivative `D^m f`, `m ≤ n`, has a
-continuous extension to `closure s`. This is the class of [brezis2011functional], chapter 9,
-footnote 16, meant for an open `s`. -/
+/-- Let $X$ and $F$ be normed spaces over $\mathbb{K}$, let
+$n \in \mathbb{N} \cup \{\infty, \omega\}$, and let $s \subseteq X$. A function $f : X \to F$ is
+of **class $C^n(\bar s)$** if $f$ is $C^n$ on $s$ and, for every natural number $m \le n$, there
+is a function $g$ that is continuous on the closure $\bar s$ and equal to $D^m f$ on $s$.
+
+This is the class of [brezis2011functional], Chapter 9, footnote 16, which is meant for an open
+set $s$. The derivative $D^m f$ is `iteratedFDeriv 𝕜 m f`, and "$C^n$ on $s$" is
+`ContDiffOn 𝕜 n f s`. -/
 def ContDiffOnClosure (n : WithTop ℕ∞) (f : X → F) (s : Set X) : Prop :=
   ContDiffOn 𝕜 n f s ∧ ∀ m : ℕ, (m : WithTop ℕ∞) ≤ n →
     ∃ g : X → X [×m]→L[𝕜] F, ContinuousOn g (closure s) ∧ EqOn g (iteratedFDeriv 𝕜 m f) s
@@ -78,29 +93,34 @@ variable {𝕜} {n : WithTop ℕ∞} {f : X → F} {s : Set X}
 
 namespace ContDiffOnClosure
 
+/-- A function of class $C^n(\bar s)$ is $C^n$ on $s$. -/
 theorem contDiffOn (h : ContDiffOnClosure 𝕜 n f s) : ContDiffOn 𝕜 n f s := h.1
 
-/-- The derivative of order `m ≤ n` of a function of class `C^n(s̄)` extends continuously to
-`closure s`. -/
+/-- Let $f$ be of class $C^n(\bar s)$, and let $m \le n$ be a natural number. Then there is a
+function $g$ that is continuous on $\bar s$ and equal to $D^m f$ on $s$. -/
 theorem exists_continuousOn_closure_iteratedFDeriv (h : ContDiffOnClosure 𝕜 n f s) {m : ℕ}
     (hm : (m : WithTop ℕ∞) ≤ n) :
     ∃ g : X → X [×m]→L[𝕜] F, ContinuousOn g (closure s) ∧ EqOn g (iteratedFDeriv 𝕜 m f) s :=
   h.2 m hm
 
-/-- `C^n(s̄) ⊆ C^m(s̄)` for `m ≤ n`. -/
+/-- Let $m \le n$. A function of class $C^n(\bar s)$ is of class $C^m(\bar s)$. -/
 theorem of_le {m : WithTop ℕ∞} (h : ContDiffOnClosure 𝕜 n f s) (hmn : m ≤ n) :
     ContDiffOnClosure 𝕜 m f s :=
   ⟨h.1.of_le hmn, fun k hk ↦ h.2 k (hk.trans hmn)⟩
 
-/-- `C^n(s̄)` restricts to subsets: the extensions restrict along `closure s' ⊆ closure s`. This
-is how `C^∞(Ω̄ × (0, ∞))` yields `C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`. -/
+/-- Let $s' \subseteq s$. A function of class $C^n(\bar s)$ is of class $C^n(\bar s')$: the
+extensions restrict, since $\bar s' \subseteq \bar s$.
+
+This is how $C^\infty(\bar\Omega \times (0, \infty))$ gives $C^\infty(\bar\Omega \times
+[\varepsilon, \infty))$ for every $\varepsilon > 0$. -/
 theorem mono {s' : Set X} (h : ContDiffOnClosure 𝕜 n f s) (hs : s' ⊆ s) :
     ContDiffOnClosure 𝕜 n f s' :=
   ⟨h.1.mono hs, fun m hm ↦
     let ⟨g, hgc, hge⟩ := h.2 m hm
     ⟨g, hgc.mono (closure_mono hs), hge.mono hs⟩⟩
 
-/-- A function of class `C^n(s̄)` extends continuously to `closure s`. -/
+/-- A function $f$ of class $C^n(\bar s)$ extends continuously to $\bar s$: there is a function $g$
+that is continuous on $\bar s$ and equal to $f$ on $s$. -/
 theorem continuousOn_closure (h : ContDiffOnClosure 𝕜 n f s) :
     ∃ g : X → F, ContinuousOn g (closure s) ∧ EqOn g f s := by
   obtain ⟨g₀, hgc, hge⟩ := h.2 0 (by simp)
@@ -112,11 +132,13 @@ theorem continuousOn_closure (h : ContDiffOnClosure 𝕜 n f s) :
 
 end ContDiffOnClosure
 
-/-- **`ContDiffOn` on the closure implies `C^n(s̄)`**, for every open `s`, with no unique
-differentiability of `closure s` assumed. The extension of `D^m f` is
-`y ↦ lim_{z → y, z ∈ s} D^m f z`: near each point of `closure s` the Taylor data of
-`ContDiffWithinAt` supply a continuous function agreeing with `D^m f` on `s`, so the limit exists
-and is continuous. -/
+/-- Let $s \subseteq X$ be open, and let $f$ be $C^n$ on the closure $\bar s$ in the sense of
+`ContDiffOn`. Then $f$ is of class $C^n(\bar s)$. No unique differentiability of $\bar s$ is
+assumed.
+
+The extension of $D^m f$ is $y \mapsto \lim_{z \to y,\, z \in s} D^m f(z)$. Near each point of
+$\bar s$, the Taylor data of `ContDiffWithinAt` give a continuous function that agrees with
+$D^m f$ on $s$, so the limit exists and is continuous. -/
 theorem ContDiffOn.contDiffOnClosure (hs : IsOpen s) (h : ContDiffOn 𝕜 n f (closure s)) :
     ContDiffOnClosure 𝕜 n f s := by
   refine ⟨h.mono subset_closure, fun m hm ↦ ?_⟩
@@ -157,21 +179,26 @@ theorem ContDiffOn.contDiffOnClosure (hs : IsOpen s) (h : ContDiffOn 𝕜 n f (c
   · have hy' : y ∈ closure s := subset_closure hy
     rw [hG y hy' ⟨hy', hxV y hy'⟩, hge y hy' ⟨hy, hxV y hy'⟩]
 
-/-! ### The class `C¹(s̄)` through the derivative -/
+/-! ### The class $C^1(\bar s)$ through the derivative -/
 
 section One
 
 variable {G : Type*} [NormedAddCommGroup G] [NormedSpace 𝕜 G]
 
-/-- The first derivative tensor is the derivative, read through `continuousMultilinearCurryFin1`
-(the real case is `iteratedFDeriv_one_eq_symm_fderiv` of
-`Numlib/Analysis/Sobolev/Friedrichs.lean`). -/
+/-- For $f : X \to F$ and $x \in X$, the first derivative tensor $D^1 f(x)$ is the derivative
+$Df(x)$, read through the identification of $1$-linear maps with linear maps.
+
+The identification is `continuousMultilinearCurryFin1`. The real case is
+`iteratedFDeriv_one_eq_symm_fderiv` of `Numlib.Analysis.Sobolev.Friedrichs`. -/
 theorem iteratedFDeriv_one_eq_symm_fderiv' (f : X → F) (x : X) :
     iteratedFDeriv 𝕜 1 f x = (continuousMultilinearCurryFin1 𝕜 X F).symm (fderiv 𝕜 f x) :=
   ContinuousMultilinearMap.ext fun m ↦ by simp
 
-/-- **The class `C¹(s̄)` through the derivative**: `f ∈ C¹(s̄)` iff `f` is `C¹` on `s` and both `f`
-and `fderiv 𝕜 f` extend continuously to `closure s`. -/
+/-- A function $f$ is of class $C^1(\bar s)$ if and only if $f$ is $C^1$ on $s$, there is a function
+that is continuous on $\bar s$ and equal to $f$ on $s$, and there is a function that is
+continuous on $\bar s$ and equal to the derivative $Df$ on $s$.
+
+The derivative is `fderiv 𝕜 f`. -/
 theorem contDiffOnClosure_one_iff :
     ContDiffOnClosure 𝕜 1 f s ↔ ContDiffOn 𝕜 1 f s ∧
       (∃ g : X → F, ContinuousOn g (closure s) ∧ EqOn g f s) ∧
@@ -199,7 +226,10 @@ theorem contDiffOnClosure_one_iff :
       change (continuousMultilinearCurryFin1 𝕜 X F).symm (g' x) = iteratedFDeriv 𝕜 1 f x
       rw [hge' hx, iteratedFDeriv_one_eq_symm_fderiv']
 
-/-- The second derivative of a function of class `C²(s̄)` extends continuously to `closure s`. -/
+/-- Let $f$ be of class $C^2(\bar s)$. Then the second derivative $D(Df)$ has a continuous extension
+from $s$ to $\bar s$.
+
+The second derivative is `fderiv 𝕜 (fderiv 𝕜 f)`, with values in `X →L[𝕜] X →L[𝕜] F`. -/
 theorem ContDiffOnClosure.exists_continuousOn_fderiv_fderiv (h : ContDiffOnClosure 𝕜 2 f s) :
     ∃ G : X → X →L[𝕜] X →L[𝕜] F, ContinuousOn G (closure s) ∧
       EqOn G (fderiv 𝕜 (fderiv 𝕜 f)) s := by
@@ -224,9 +254,11 @@ theorem ContDiffOnClosure.exists_continuousOn_fderiv_fderiv (h : ContDiffOnClosu
 
 namespace ContDiffOnClosure
 
-/-- **`C¹(s̄)` is closed under the product of a scalar function with a vector function**, on an
-open set `s`: `D(u v) = u Dv + (Du) v` on `s`, and the continuous extensions of `u, v, Du, Dv`
-to `closure s` combine into one of `D(u v)`. -/
+/-- Let $s$ be open, let $u : X \to \mathbb{K}$ and $v : X \to F$ be of class $C^1(\bar s)$. Then
+$x \mapsto u(x) v(x)$ is of class $C^1(\bar s)$.
+
+On $s$, $D(uv) = u\, Dv + (Du)\, v$, and the continuous extensions of $u$, $v$, $Du$ and $Dv$ to
+$\bar s$ combine to an extension of $D(uv)$. -/
 theorem smul (hs : IsOpen s) {u : X → 𝕜} {v : X → F} (hu : ContDiffOnClosure 𝕜 1 u s)
     (hv : ContDiffOnClosure 𝕜 1 v s) : ContDiffOnClosure 𝕜 1 (fun x ↦ u x • v x) s := by
   rw [contDiffOnClosure_one_iff] at hu hv ⊢
@@ -245,35 +277,42 @@ theorem smul (hs : IsOpen s) {u : X → 𝕜} {v : X → F} (hu : ContDiffOnClos
     simp only [hu₁e hx, hv₁e hx, hu₁e' hx, hv₁e' hx]
     exact (fderiv_fun_smul hux hvx).symm
 
-/-- **`C¹(s̄)` is closed under products of scalar functions**, on an open set `s`. -/
+/-- Let $s$ be open, and let $u, v : X \to \mathbb{K}$ be of class $C^1(\bar s)$. Then $uv$ is of
+class $C^1(\bar s)$. -/
 theorem mul (hs : IsOpen s) {u v : X → 𝕜} (hu : ContDiffOnClosure 𝕜 1 u s)
     (hv : ContDiffOnClosure 𝕜 1 v s) : ContDiffOnClosure 𝕜 1 (fun x ↦ u x * v x) s :=
   hu.smul hs hv
 
-/-- A constant function is of class `C¹(s̄)`. -/
+/-- For every $c \in F$, the constant function $c$ is of class $C^1(\bar s)$, for every set $s$. -/
 theorem const (c : F) : ContDiffOnClosure 𝕜 1 (fun _ : X ↦ c) s := by
   rw [contDiffOnClosure_one_iff]
   exact ⟨contDiffOn_const, ⟨fun _ ↦ c, continuousOn_const, fun _ _ ↦ rfl⟩,
     ⟨fun _ ↦ 0, continuousOn_const, fun x _ ↦ (fderiv_const_apply c).symm⟩⟩
 
-/-- **`C¹(s̄)` is closed under multiplication by a fixed vector**, on an open set `s`. -/
+/-- Let $s$ be open, let $u : X \to \mathbb{K}$ be of class $C^1(\bar s)$, and let $c \in F$. Then
+$x \mapsto u(x) c$ is of class $C^1(\bar s)$. -/
 theorem smul_const (hs : IsOpen s) {u : X → 𝕜} (hu : ContDiffOnClosure 𝕜 1 u s) (c : F) :
     ContDiffOnClosure 𝕜 1 (fun x ↦ u x • c) s :=
   hu.smul hs (const c)
 
-/-- **The derivative of a function of class `C¹(s̄)` is bounded on a bounded set `s`**: it extends
-continuously to the compact closure. -/
+/-- Let $X$ be a proper space, let $s$ be bounded, and let $f$ be of class $C^1(\bar s)$. Then the
+derivative of $f$ is bounded on $s$: there is $C$ with $\|Df(x)\| \le C$ for all $x \in s$.
+
+The continuous extension of $Df$ is bounded on the compact set $\bar s$. -/
 theorem exists_norm_fderiv_le [ProperSpace X] (hf : ContDiffOnClosure 𝕜 1 f s)
     (hs : Bornology.IsBounded s) : ∃ C, ∀ x ∈ s, ‖fderiv 𝕜 f x‖ ≤ C := by
   obtain ⟨-, -, g', hg'c, hg'e⟩ := contDiffOnClosure_one_iff.1 hf
   obtain ⟨C, hC⟩ := hs.isCompact_closure.exists_bound_of_continuousOn hg'c
   exact ⟨C, fun x hx ↦ by rw [← hg'e hx]; exact hC x (subset_closure hx)⟩
 
-/-- **A function of class `C¹(s̄)` with compact support has a bounded derivative on `s`**: the
-continuous extension of `fderiv 𝕜 f` is bounded on the compact `closure s ∩ tsupport f`, and
-`fderiv 𝕜 f = 0` off `tsupport f`. Compare `ContDiffOn.exists_norm_fderiv_le_of_isCompact` of
-`Numlib/Analysis/Sobolev/Chart.lean`, which bounds the derivative on the interior of a compact
-set, and `exists_norm_fderiv_le`, which asks for `s` bounded instead. -/
+/-- Let $f$ be of class $C^1(\bar s)$ with compact support. Then the derivative of $f$ is bounded on
+$s$: there is $M$ with $\|Df(x)\| \le M$ for all $x \in s$.
+
+The continuous extension of $Df$ is bounded on the compact set
+$\bar s \cap \operatorname{tsupport} f$, and $Df = 0$ off the closed support
+$\operatorname{tsupport} f$. Compare `ContDiffOn.exists_norm_fderiv_le_of_isCompact` of
+`Numlib.Analysis.Sobolev.Chart`, which bounds the derivative on the interior of a compact set,
+and `ContDiffOnClosure.exists_norm_fderiv_le`, which assumes instead that $s$ is bounded. -/
 theorem exists_norm_fderiv_le_of_hasCompactSupport (hf : ContDiffOnClosure 𝕜 1 f s)
     (hfc : HasCompactSupport f) : ∃ M, ∀ x ∈ s, ‖fderiv 𝕜 f x‖ ≤ M := by
   obtain ⟨-, -, G, hGc, hGe⟩ := contDiffOnClosure_one_iff.1 hf
@@ -286,8 +325,9 @@ theorem exists_norm_fderiv_le_of_hasCompactSupport (hf : ContDiffOnClosure 𝕜 
   · rw [fderiv_of_notMem_tsupport 𝕜 hxs, norm_zero]
     exact le_max_right _ _
 
-/-- **`C¹(s̄)` is stable under a continuous linear map on the left**, on an open set `s`: the
-extensions of `f` and `Df` compose with `L`. -/
+/-- Let $s$ be open, let $f : X \to F$ be of class $C^1(\bar s)$, and let $L : F \to G$ be a
+continuous linear map. Then $x \mapsto L(f(x))$ is of class $C^1(\bar s)$: the extensions of $f$
+and $Df$ compose with $L$. -/
 theorem continuousLinearMap_comp (hs : IsOpen s) (hf : ContDiffOnClosure 𝕜 1 f s) (L : F →L[𝕜] G) :
     ContDiffOnClosure 𝕜 1 (fun x ↦ L (f x)) s := by
   rw [contDiffOnClosure_one_iff] at hf ⊢
@@ -302,8 +342,10 @@ theorem continuousLinearMap_comp (hs : IsOpen s) (hf : ContDiffOnClosure 𝕜 1 
 
 end ContDiffOnClosure
 
-/-- A function continuous on `closure s` and vanishing on `s` outside a closed set `K` vanishes
-on `closure s` outside `K`: `closure s \ K` lies in the closure of `s \ K`. -/
+/-- Let $Y$ be a topological space, let $s, K \subseteq Y$ with $K$ closed, and let $\varphi$ be
+continuous on $\bar s$ with $\varphi(y) = 0$ for every $y \in s \setminus K$. Then
+$\varphi(y) = 0$ for every $y \in \bar s \setminus K$, because $\bar s \setminus K$ lies in the
+closure of $s \setminus K$. -/
 theorem ContinuousOn.eq_zero_of_notMem_of_forall {Y : Type*} [TopologicalSpace Y] {φ : Y → G}
     {s K : Set Y} (hφ : ContinuousOn φ (closure s)) (hK : IsClosed K)
     (h : ∀ y ∈ s, y ∉ K → φ y = 0) {y : Y} (hy : y ∈ closure s) (hyK : y ∉ K) : φ y = 0 := by
@@ -314,10 +356,14 @@ theorem ContinuousOn.eq_zero_of_notMem_of_forall {Y : Type*} [TopologicalSpace Y
     (fun z hz ↦ h z hz.1 hz.2) (hφ.mono inter_subset_left) continuousOn_const
     (inter_subset_inter_left _ subset_closure) hsub ⟨hy, hyK⟩
 
-/-- The indicator on `tsupport f` of a function `φ` continuous on `closure s` and vanishing on
-`s \ tsupport f` is continuous on `closure s'`, when `s ∩ V = s' ∩ V` for an open `V ⊇ tsupport f`:
-near a point of `V`, `closure s' ∩ V ⊆ closure s` and `φ` serves; away from `V` the indicator
-vanishes on a neighbourhood. The continuity clauses of
+/-- Let $Y$ be a topological space, let $V \subseteq Y$ be open, let $s, s' \subseteq Y$ with
+$s \cap V = s' \cap V$, and let $f : Y \to F$ have its closed support
+$\operatorname{tsupport} f$ in $V$. Let $\varphi$ be continuous on $\bar s$ with $\varphi = 0$
+on $s \setminus \operatorname{tsupport} f$. Then the function equal to $\varphi$ on
+$\operatorname{tsupport} f$ and to $0$ elsewhere is continuous on $\bar s'$.
+
+Near a point of $V$, $\bar s' \cap V \subseteq \bar s$, and $\varphi$ serves. Away from $V$ the
+function vanishes on a neighbourhood. This gives the continuity clauses of
 `ContDiffOnClosure.congr_set_of_tsupport_subset`. -/
 theorem ContinuousOn.indicator_tsupport_of_inter_eq {Y : Type*} [TopologicalSpace Y]
     {f : Y → F} {s s' V : Set Y} (hV : IsOpen V) (hsV : s ∩ V = s' ∩ V) (hsupp : tsupport f ⊆ V)
@@ -349,13 +395,17 @@ theorem ContinuousOn.indicator_tsupport_of_inter_eq {Y : Type*} [TopologicalSpac
       exact indicator_of_notMem hz _
     exact (continuousAt_const.congr hev.symm).continuousWithinAt
 
-/-- **The class `C¹(Ω̄)` is local on the support**: for open sets `s`, `V` and a set `s'` with
-`s ∩ V = s' ∩ V`, a function `f ∈ C¹(s̄)` with `tsupport f ⊆ V` is in `C¹(s̄')`. Near a point of
-`V`, `closure s' ∩ V ⊆ closure (s ∩ V)` and the data of `f` on `closure s` serve; away from `V`
-the function vanishes on a neighbourhood. The extension of `Df` to `closure s'` is
-`(tsupport f).indicator` of the given extension, which vanishes on `closure s \ tsupport f`
-(`ContinuousOn.eq_zero_of_notMem_of_forall`, `ContinuousOn.indicator_tsupport_of_inter_eq`).
-Used to move a field supported in a chart ball from `Ω` to the global rotated epigraph. -/
+/-- The class $C^1(\bar s)$ is **local on the support**. Let $s$ and $V$ be open, let $s'$ be a set
+with $s \cap V = s' \cap V$, and let $f$ have its closed support $\operatorname{tsupport} f$ in
+$V$. If $f$ is continuous on $\bar s$ and of class $C^1(\bar s)$, then $f$ is continuous on
+$\bar s'$ and of class $C^1(\bar s')$.
+
+Near a point of $V$, $\bar s' \cap V \subseteq \overline{s \cap V}$, and the data of $f$ on
+$\bar s$ serve. Away from $V$ the function vanishes on a neighbourhood. The extension of $Df$ to
+$\bar s'$ is the given extension times the indicator of $\operatorname{tsupport} f$; it vanishes
+on $\bar s \setminus \operatorname{tsupport} f$ by `ContinuousOn.eq_zero_of_notMem_of_forall`
+and `ContinuousOn.indicator_tsupport_of_inter_eq`. This result moves a field supported in a
+chart ball from $\Omega$ to the global rotated epigraph. -/
 theorem ContDiffOnClosure.congr_set_of_tsupport_subset {s' V : Set X} (hs : IsOpen s)
     (hV : IsOpen V) (hsV : s ∩ V = s' ∩ V) (hsupp : tsupport f ⊆ V)
     (hf₀ : ContinuousOn f (closure s)) (hf₁ : ContDiffOnClosure 𝕜 1 f s) :
@@ -384,9 +434,10 @@ theorem ContDiffOnClosure.congr_set_of_tsupport_subset {s' V : Set X} (hs : IsOp
     · rw [indicator_of_mem hxK, hg₁e (hmem x hx (hsupp hxK))]
     · rw [indicator_of_notMem hxK, fderiv_of_notMem_tsupport 𝕜 hxK]
 
-/-- **`C¹(s̄)` is stable under conjugation by an affine bijection and a linear map**: for `s` open
-and `f ∈ C¹(s̄)`, the field `x ↦ L (f (M x + b))` is of class `C¹` up to the boundary on the
-preimage of `s` under `x ↦ M x + b`. -/
+/-- Let $s \subseteq X$ be open, let $f : X \to F$ be of class $C^1(\bar s)$, let $L : F \to G$ be a
+continuous linear map, let $M : Y \to X$ be a continuous linear equivalence, and let $b \in X$.
+Then $y \mapsto L(f(My + b))$ is of class $C^1$ up to the boundary on the preimage of $s$ under
+$y \mapsto My + b$. -/
 theorem ContDiffOnClosure.clm_comp_comp_affine {Y : Type*} [NormedAddCommGroup Y]
     [NormedSpace 𝕜 Y] (hs : IsOpen s) (hf : ContDiffOnClosure 𝕜 1 f s) (L : F →L[𝕜] G)
     (M : Y ≃L[𝕜] X) (b : X) :
@@ -419,15 +470,20 @@ section Real
 variable {E E' F' : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup E']
   [NormedSpace ℝ E'] [NormedAddCommGroup F'] [NormedSpace ℝ F']
 
-/-- **A function of class `C¹(s̄)` on a bounded set has a bounded derivative on `s`**: the real
-case of `ContDiffOnClosure.exists_norm_fderiv_le`. -/
+/-- Let $E$ be a proper real normed space, let $s \subseteq E$ be bounded, and let $f : E \to F'$ be
+of class $C^1(\bar s)$. Then there is $M$ with $\|Df(x)\| \le M$ for all $x \in s$. This is the
+real case of `ContDiffOnClosure.exists_norm_fderiv_le`. -/
 theorem ContDiffOnClosure.exists_norm_fderiv_le_of_isBounded [ProperSpace E] {f : E → F'}
     {s : Set E} (hf : ContDiffOnClosure ℝ 1 f s) (hs : Bornology.IsBounded s) :
     ∃ M, ∀ x ∈ s, ‖fderiv ℝ f x‖ ≤ M :=
   hf.exists_norm_fderiv_le hs
 
-/-- **`C¹(s̄)` is stable under a rigid motion on the right**: `f ∘ T ∈ C¹(T⁻¹(s)‾)` for
-`f ∈ C¹(s̄)`, `s` open. The extensions compose with `T`, the derivative with `T`'s linear part. -/
+/-- Let $s \subseteq E$ be open, let $f : E \to F'$ be of class $C^1(\bar s)$, and let
+$T : E' \to E$ be an affine isometry equivalence of real normed spaces. Then $f \circ T$ is of
+class $C^1$ up to the boundary on $T^{-1}(s)$.
+
+The extensions compose with $T$, and the derivative with the linear part of $T$
+(`AffineIsometryEquiv.hasFDerivAt`). -/
 theorem ContDiffOnClosure.comp_affineIsometryEquiv {f : E → F'} {s : Set E} (hs : IsOpen s)
     (hf : ContDiffOnClosure ℝ 1 f s) (T : E' ≃ᵃⁱ[ℝ] E) :
     ContDiffOnClosure ℝ 1 (fun z ↦ f (T z)) (T ⁻¹' s) := by

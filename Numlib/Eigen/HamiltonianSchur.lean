@@ -14,62 +14,87 @@ import Numlib.LinearAlgebra.Matrix.Sylvester
 /-!
 # Hamiltonian eigenvalue problems
 
-Hamiltonian and symplectic eigenvalue problems ([golub2013matrix] §7.8.1): the eigenvalue
-pairings, orthogonal symplectic transformations, the stable invariant subspace and the algebraic
-Riccati equation.
+This file develops the eigenvalue theory of Hamiltonian and skew-Hamiltonian matrices, following
+§7.8.1 of [golub2013matrix] and Paige and Van Loan (1981). Matrices are real and act on
+$\mathbb{R}^{2n}$, and $J = \begin{bmatrix} 0 & -I \\ I & 0 \end{bmatrix}$. A matrix $M$ is
+**Hamiltonian** if $J M J^T = -M^T$, **skew-Hamiltonian** if $J N J^T = N^T$, and **orthogonal
+symplectic** if it is orthogonal and $S^T J S = J$. The file proves the eigenvalue pairings
+$\lambda \leftrightarrow -\lambda$ of a Hamiltonian matrix and
+$\lambda \leftrightarrow \lambda^{-1}$ of a symplectic matrix, builds orthogonal symplectic
+transformations, and proves that the stable invariant subspace of a Hamiltonian matrix is isotropic.
 
-Matrices are real, indexed by `l ⊕ l`, and `J` is Mathlib's `Matrix.J l ℝ = fromBlocks 0 (-1) 1 0`,
-which is **minus** the book's `J = [0 I; -I 0]`; every notion used here is invariant under
-`J ↦ -J`. The structures themselves live in `Numlib/LinearAlgebra/Matrix/Hamiltonian`
-(`Matrix.IsHamiltonian`, `Matrix.IsSkewHamiltonian`, the block characterization of orthogonal
-symplectic matrices); this module is the eigenvalue theory on top.
+From these facts it obtains the real Hamiltonian–Schur form (7.8.1): a Hamiltonian $M$ without
+eigenvalues on the imaginary axis has an orthogonal symplectic $Q$ with
+$$Q^T M Q = \begin{bmatrix} T & R \\ 0 & -T^T \end{bmatrix},$$
+where $T$ is upper quasi-triangular with eigenvalues of negative real part. It derives the solution
+of the algebraic Riccati equation (7.8.2) from this form, and the condensed forms (7.8.3) and
+(7.8.4) of Paige and Van Loan (1981) and Van Loan (1984).
 
 ## Main results
 
-* The eigenvalue pairings of [golub2013matrix] §7.8.1 (3)–(4): the characteristic polynomial of a
-  Hamiltonian matrix is even, `χ_M(-X) = χ_M` (`Matrix.IsHamiltonian.charpoly_comp_neg`, over any
-  commutative ring, so the pairing `λ ↔ -λ` holds with multiplicities), hence
-  `Matrix.IsHamiltonian.neg_mem_spectrum`; the eigenvalues of a symplectic matrix pair as
-  `λ ↔ λ⁻¹` (`Matrix.inv_mem_spectrum_of_mem_symplecticGroup`). Spectra of real matrices are those
-  of the complexifications.
-* Orthogonal symplectic transformations (`Matrix.orthoSymplecticGroup`): `diag(P, P)` for
-  orthogonal `P` (`Matrix.fromBlocks_diagonal_mem_orthoSymplecticGroup`), plane rotations in the
-  coordinates `inl i`, `inr i` (`Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`), and the
-  Householder–Givens–Householder reduction of a vector to a multiple of the first coordinate vector
-  (`Matrix.exists_orthogonalSymplectic_mulVec_eq`).
-* **The stable invariant subspace is isotropic**
-  (`Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable`):
-  if `M X₀ = X₀ T₁` with `T₁` stable, then `X₀ᵀ J X₀ = 0`, because `W = X₀ᵀ J X₀` solves a
-  Sylvester equation `T₁ᵀ W + W T₁ = 0` whose coefficients have spectra in opposite half-planes.
-  This is the key lemma of the real Hamiltonian–Schur form (7.8.1), proved in the invariant-subspace
-  form of Paige–Van Loan (1981) rather than the book's deflation sketch.
-* **The algebraic Riccati equation** (`Matrix.riccati_of_hamiltonianSchur`, (7.8.2)): from a
-  Hamiltonian–Schur decomposition with nonsingular `Q₁`, `X = Q₂ Q₁⁻¹` is symmetric, solves
-  `G + X A + Aᵀ X - X F X = 0`, and `A - F X = Q₁ T Q₁⁻¹`. The symmetry of `X` comes from the
-  orthogonality condition `(Q₁ᵀ Q₂)ᵀ = Q₁ᵀ Q₂`, not from `Q₁ᵀ Q₁ + Q₂ᵀ Q₂ = I` as the book says.
+* `Matrix.IsHamiltonian.charpoly_comp_neg`: the characteristic polynomial of a Hamiltonian matrix is
+  even, $\chi_M(-X) = \chi_M(X)$, so the pairing $\lambda \leftrightarrow -\lambda$ holds with
+  multiplicities.
+* `Matrix.IsHamiltonian.neg_mem_spectrum`: if $\lambda$ is an eigenvalue of a real Hamiltonian
+  matrix, so is $-\lambda$.
+* `Matrix.inv_mem_spectrum_of_mem_symplecticGroup`: the eigenvalues of a real symplectic matrix are
+  nonzero, and if $\lambda$ is one, so is $\lambda^{-1}$.
+* `Matrix.fromBlocks_diagonal_mem_orthoSymplecticGroup`: $\operatorname{diag}(P, P)$ is orthogonal
+  symplectic for an orthogonal $P$.
+* `Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`: a plane rotation in the coordinates $i$
+  and $n + i$ is orthogonal symplectic.
+* `Matrix.exists_orthogonalSymplectic_mulVec_eq`: an orthogonal symplectic $Q$ maps any $x$ to
+  $\|x\|_2 e_{i_0}$.
+* `Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable`: if $M X_0 = X_0 T_1$ with $T_1$ stable,
+  then $X_0^T J X_0 = 0$.
+* `Matrix.riccati_of_hamiltonianSchur`: from a Hamiltonian–Schur decomposition with nonsingular
+  $Q_1$, the matrix $X = Q_2 Q_1^{-1}$ is symmetric and solves the algebraic Riccati equation
+  (7.8.2).
+* `Matrix.exists_orthogonalSymplectic_hamiltonianSchur`: the real Hamiltonian–Schur form (7.8.1).
+* `Matrix.exists_orthogonalSymplectic_condensed`: a Hamiltonian or skew-Hamiltonian $M$ has an
+  orthogonal symplectic $U$ such that the $(1,1)$ block of $U^T M U$ is upper Hessenberg and the
+  $(2,1)$ block is diagonal.
+* `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`: the Paige–Van Loan form (7.8.3).
+* `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`: the skew-Hamiltonian Hessenberg
+  form (7.8.4).
+* `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`: the real skew-Hamiltonian Schur
+  form.
 
-* **The real Hamiltonian–Schur form** (`Matrix.exists_orthogonalSymplectic_hamiltonianSchur`,
-  (7.8.1)): without eigenvalues on the imaginary axis, `Qᵀ M Q = [[T, R], [0, -Tᵀ]]` with `Q`
-  orthogonal symplectic and `T` quasi upper triangular with stable eigenvalues. The real stable
-  invariant subspace has dimension `n`: the complexified stable and unstable spectral subspaces are
-  complementary (`Module.End.isCompl_spectralSubspace`) and conjugation-closed
-  (`Matrix.star_mem_spectralSubspace_complexify`), so their real
-  points span `ℝ^{2n}`, and each is isotropic (the Lagrangian lemma, applied to `M` and to `-M`), so
-  neither exceeds `n`. An orthonormal basis `[Q₁; -Q₂]` completes to `[[Q₁, Q₂], [-Q₂, Q₁]]`, and
-  the real Schur form of the stable block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`),
-  applied as `diag(U, U)`, finishes.
+## Proof outline
 
-* **The condensed forms** (`Matrix.exists_orthogonalSymplectic_condensed`): a Hamiltonian or
-  skew-Hamiltonian `M` has an orthogonal symplectic `U` with `(Uᵀ M U)₁₁` upper Hessenberg and
-  `(Uᵀ M U)₂₁` diagonal, by the column sweep of the one-vector reduction on the trailing
-  coordinates (an induction on the number of trailing coordinates; the transformations fix the
-  leading pair). Hence the Paige–Van Loan form (7.8.3)
-  (`Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`), the skew-Hamiltonian
-  Hessenberg form (7.8.4) (`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`) and
-  the real skew-Hamiltonian Schur form
-  (`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`).
+The isotropy lemma is the key step of the Hamiltonian–Schur form. It is proved in the
+invariant-subspace form of Paige and Van Loan (1981), not by the deflation sketch of
+[golub2013matrix]: $W = X_0^T J X_0$ solves the Sylvester equation $T_1^T W + W T_1 = 0$, whose
+coefficients have spectra in opposite open half-planes, so $W = 0$.
 
-Nothing here is in Mathlib beyond `Matrix.J` and `Matrix.symplecticGroup`.
+For the Hamiltonian–Schur form, the complexified stable and unstable spectral subspaces of $M$ are
+complementary (`Module.End.isCompl_spectralSubspace`) and closed under complex conjugation
+(`Matrix.star_mem_spectralSubspace_complexify`). So their real points span $\mathbb{R}^{2n}$. Each
+is isotropic, by the isotropy lemma applied to $M$ and to $-M$, so neither has dimension greater
+than $n$. Hence the real stable invariant subspace has dimension $n$. An orthonormal basis
+$\begin{bmatrix} Q_1 \\ -Q_2 \end{bmatrix}$ of it completes to the orthogonal symplectic matrix
+$\begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1 \end{bmatrix}$, and the real Schur form $U$ of the stable
+block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`), applied as
+$\operatorname{diag}(U, U)$, completes the proof.
+
+The condensed form comes from a sweep over the columns. Each column is reduced by the
+Householder–Givens–Householder transformation of a vector on the trailing coordinates. The proof is
+an induction on the number of trailing coordinates, and the transformations fix the leading pair of
+coordinates.
+
+## Implementation notes
+
+* Matrices on $\mathbb{R}^{2n}$ are indexed by `l ⊕ l`, or by `Fin n ⊕ Fin n` where the proof needs
+  an order. The coordinate $n + i$ is `Sum.inr i`, and the block $(i, j)$ of a block matrix is
+  `Matrix.toBlocks₁₁` and so on.
+* $J$ is Mathlib's `Matrix.J l ℝ = fromBlocks 0 (-1) 1 0`, which is **minus** the matrix $J =
+  \begin{bmatrix} 0 & I \\ -I & 0 \end{bmatrix}$ of [golub2013matrix]. Every notion used here is
+  invariant under $J \mapsto -J$.
+* The structures are defined in `Numlib.LinearAlgebra.Matrix.Hamiltonian`: `Matrix.IsHamiltonian`,
+  `Matrix.IsSkewHamiltonian`, `Matrix.orthoSymplecticGroup`, and the block form of orthogonal
+  symplectic matrices. This file is the eigenvalue theory on top of them. Mathlib supplies only
+  `Matrix.J` and `Matrix.symplecticGroup`.
+* The spectrum of a real matrix $M$ is the spectrum of its complexification `Matrix.complexify M`.
 -/
 
 open Polynomial
@@ -80,7 +105,9 @@ section Charpoly
 
 variable {n R : Type*} [Fintype n] [DecidableEq n] [CommRing R]
 
-/-- The characteristic polynomial of `-N` is `(-1)^n χ_N(-X)`. -/
+/-- Let $R$ be a commutative ring and $N \in R^{n \times n}$. Then
+$$\chi_{-N}(X) = (-1)^n\, \chi_N(-X).$$
+-/
 theorem charpoly_neg (N : Matrix n n R) :
     (-N).charpoly = (-1) ^ Fintype.card n * N.charpoly.comp (-X) := by
   have h1 : (charmatrix N).map (fun p => p.comp (-X)) = -charmatrix (-N) := by
@@ -101,16 +128,20 @@ end Charpoly
 
 variable {l : Type*} [Fintype l] [DecidableEq l]
 
-/-- `J` as a unit, with inverse `-J`. -/
+/-- The matrix $J$ as a unit of the matrix ring, with inverse $-J$. -/
 private def unitJ (R : Type*) [CommRing R] : (Matrix (l ⊕ l) (l ⊕ l) R)ˣ where
   val := J l R
   inv := -J l R
   val_inv := by rw [Matrix.mul_neg, J_squared, neg_neg]
   inv_val := by rw [Matrix.neg_mul, J_squared, neg_neg]
 
-/-- **The eigenvalues of a Hamiltonian matrix pair as `λ, -λ`, with multiplicities**
-([golub2013matrix] §7.8.1 (3)): `χ_M(-X) = χ_M`. From `Mᵀ = J M J = -(J M J⁻¹)`
-(`Matrix.IsHamiltonian.transpose_mul_J_eq`), `χ_M = χ_{Mᵀ} = (-1)^{2n} χ_M(-X)`. -/
+/-- **The eigenvalues of a Hamiltonian matrix pair as $\lambda, -\lambda$, with multiplicities**
+(§7.8.1 (3) of [golub2013matrix]). Let $R$ be a commutative ring and let
+$M \in R^{2n \times 2n}$ be Hamiltonian. Then
+$$\chi_M(-X) = \chi_M(X).$$
+
+The proof uses $M^T = J M J = -(J M J^{-1})$ (`Matrix.IsHamiltonian.transpose_mul_J_eq`), so
+$\chi_M = \chi_{M^T} = (-1)^{2n} \chi_M(-X)$. -/
 theorem IsHamiltonian.charpoly_comp_neg {R : Type*} [CommRing R]
     {M : Matrix (l ⊕ l) (l ⊕ l) R} (hM : M.IsHamiltonian) : M.charpoly.comp (-X) = M.charpoly := by
   have hT := hM.transpose_mul_J_eq
@@ -124,8 +155,11 @@ theorem IsHamiltonian.charpoly_comp_neg {R : Type*} [CommRing R]
   rw [h2, one_mul] at h
   exact h
 
-/-- [golub2013matrix] §7.8.1 (3): the spectrum of a real Hamiltonian matrix is symmetric about the
-imaginary axis, `λ ∈ σ(M) → -λ ∈ σ(M)` (spectra of the complexification). -/
+/-- **§7.8.1 (3)** of [golub2013matrix]. Let $M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian. If
+$\mu \in \mathbb{C}$ is an eigenvalue of $M$, then $-\mu$ is an eigenvalue of $M$. So the
+spectrum of $M$ is symmetric about the imaginary axis.
+
+The spectrum is the one of the complexification `Matrix.complexify M`. -/
 theorem IsHamiltonian.neg_mem_spectrum {M : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hM : M.IsHamiltonian)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ M.complexify) : -μ ∈ spectrum ℂ M.complexify := by
   rw [mem_spectrum_complexify_iff] at hμ ⊢
@@ -137,13 +171,17 @@ theorem IsHamiltonian.neg_mem_spectrum {M : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hM 
   simpa using hμ
 
 omit [Fintype l] in
-/-- `J` complexified is `J` over `ℂ`. -/
+/-- The complexification of the real matrix $J$ is the matrix $J$ over $\mathbb{C}$. -/
 private theorem complexify_J : (J l ℝ).complexify = J l ℂ := by
   exact map_J l Complex.ofRealHom
 
-/-- [golub2013matrix] §7.8.1 (4): the eigenvalues of a real symplectic matrix are nonzero and pair
-as `λ, λ⁻¹` (spectra of the complexification): `S⁻¹ = J⁻¹ Sᵀ J` is similar to `Sᵀ`, so
-`σ(S⁻¹) = σ(S)`, and `S x = λ x` gives `S⁻¹ x = λ⁻¹ x`. -/
+/-- **§7.8.1 (4)** of [golub2013matrix]. Let $S \in \mathbb{R}^{2n \times 2n}$ be symplectic,
+$S^T J S = J$. If $\mu \in \mathbb{C}$ is an eigenvalue of $S$, then $\mu \neq 0$ and $\mu^{-1}$
+is an eigenvalue of $S$.
+
+The matrix $S^{-1} = J^{-1} S^T J$ is similar to $S^T$, so $S^{-1}$ and $S$ have the same
+spectrum, and $S x = \mu x$ gives $S^{-1} x = \mu^{-1} x$. The spectrum is the one of the
+complexification `Matrix.complexify S`, and $S$ is a member of `Matrix.symplecticGroup`. -/
 theorem inv_mem_spectrum_of_mem_symplecticGroup {S : Matrix (l ⊕ l) (l ⊕ l) ℝ}
     (hS : S ∈ symplecticGroup l ℝ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ S.complexify) :
     μ ≠ 0 ∧ μ⁻¹ ∈ spectrum ℂ S.complexify := by
@@ -179,8 +217,9 @@ theorem inv_mem_spectrum_of_mem_symplecticGroup {S : Matrix (l ⊕ l) (l ⊕ l) 
     mulVec_smul, smul_smul, inv_mul_cancel₀ hμ0, one_smul] at this
   rw [← this]
 
-/-- [golub2013matrix] §7.8.1: `diag(P, P)` for an orthogonal `P` is orthogonal symplectic (in
-particular for a Householder reflector). -/
+/-- **§7.8.1** of [golub2013matrix]. If $P \in \mathbb{R}^{n \times n}$ is orthogonal, then
+$\operatorname{diag}(P, P)$ is orthogonal symplectic. This applies in particular to a
+Householder reflector $P$. -/
 theorem fromBlocks_diagonal_mem_orthoSymplecticGroup {P : Matrix l l ℝ}
     (hP : P ∈ orthogonalGroup l ℝ) : fromBlocks P 0 0 P ∈ orthoSymplecticGroup l ℝ := by
   have hP' := (mem_orthogonalGroup_iff' l ℝ).1 hP
@@ -190,9 +229,14 @@ theorem fromBlocks_diagonal_mem_orthoSymplecticGroup {P : Matrix l l ℝ}
   refine ⟨hO, (mem_symplecticGroup_iff_commute_J_of_mem_orthogonalGroup hO).2 ?_⟩
   exact (commute_J_iff).2 ⟨P, 0, by simp⟩
 
-/-- [golub2013matrix] §7.8.1: a plane rotation in the coordinates `inl i`, `inr i` ("a Givens
-rotation that involves planes `i` and `i + n`") is orthogonal symplectic: it has the block form
-`fromBlocks Q₁ Q₂ (-Q₂) Q₁`, hence commutes with `J`. -/
+/-- **§7.8.1** of [golub2013matrix]. Let $c, s \in \mathbb{R}$ with $c^2 + s^2 = 1$, and let $i$ be
+an index. Then the plane rotation with $c$ and $s$ in the coordinates $i$ and $n + i$ is
+orthogonal symplectic. This is "a Givens rotation that involves planes $i$ and $i + n$" of the
+source.
+
+The rotation has the block form $\begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1 \end{bmatrix}$, so it
+commutes with $J$. The coordinates are `Sum.inl i` and `Sum.inr i`, and the rotation is
+`Matrix.planeRotation`. -/
 theorem planeRotation_inl_inr_mem_orthoSymplecticGroup (i : l) {c s : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) :
     planeRotation (Sum.inl i) (Sum.inr i) c s ∈ orthoSymplecticGroup l ℝ := by
@@ -203,14 +247,19 @@ theorem planeRotation_inl_inr_mem_orthoSymplecticGroup (i : l) {c s : ℝ}
   ext (a | a) (b | b) <;> by_cases ha : a = i <;> by_cases hb : b = i <;>
     simp [planeRotation_apply hne, Matrix.one_apply, ha, hb, @eq_comm _ i]
 
-/-- **The stable invariant subspace of a Hamiltonian matrix is isotropic** (the key lemma of the
-real Hamiltonian–Schur form, [golub2013matrix] §7.8.1; Paige–Van Loan 1981): if `M` is
-Hamiltonian, `M X₀ = X₀ T₁` and every eigenvalue of `T₁` has negative real part, then
-`X₀ᵀ J X₀ = 0`. With `n` independent columns this makes the column space Lagrangian, which is
-how `Matrix.exists_orthogonalSymplectic_hamiltonianSchur` uses it. `W = X₀ᵀ J X₀` satisfies
-`T₁ᵀ W + W T₁ = 0` (`J M = -Mᵀ J`), and the Sylvester operator of `T₁ᵀ` and `-T₁` is injective
-because their spectra lie in opposite open half-planes. (No independence of the columns of `X₀` is
-needed.) -/
+/-- **The stable invariant subspace of a Hamiltonian matrix is isotropic.** Let
+$M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian, let $X_0 \in \mathbb{R}^{2n \times k}$ and
+$T_1 \in \mathbb{R}^{k \times k}$ with $M X_0 = X_0 T_1$, and let every eigenvalue of $T_1$ have
+negative real part. Then
+$$X_0^T J X_0 = 0.$$
+This is the key lemma of the real Hamiltonian–Schur form (§7.8.1 of [golub2013matrix]; Paige and
+Van Loan, 1981).
+
+The columns of $X_0$ need not be independent. With $n$ independent columns, the column space is
+Lagrangian, and `Matrix.exists_orthogonalSymplectic_hamiltonianSchur` uses the lemma in this
+way. The matrix $W = X_0^T J X_0$ satisfies $T_1^T W + W T_1 = 0$, since $J M = -M^T J$, and the
+Sylvester operator of $T_1^T$ and $-T_1$ is injective because their spectra lie in opposite open
+half-planes. -/
 theorem IsHamiltonian.isotropic_of_mul_eq_mul_of_stable {k : Type*} [Fintype k] [DecidableEq k]
     {M : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hM : M.IsHamiltonian) {X₀ : Matrix (l ⊕ l) k ℝ}
     {T₁ : Matrix k k ℝ} (hMX : M * X₀ = X₀ * T₁)
@@ -234,14 +283,21 @@ theorem IsHamiltonian.isotropic_of_mul_eq_mul_of_stable {k : Type*} [Fintype k] 
     linarith
   exact sylvesterMap_injective_of_isCoprime hcop (hsyl.trans (map_zero _).symm)
 
-/-- **The algebraic Riccati equation from the Hamiltonian–Schur form** ([golub2013matrix]
-(7.8.2)): let `M = fromBlocks A F G (-Aᵀ)` and `Q = fromBlocks Q₁ Q₂ (-Q₂) Q₁` orthogonal with
-`Qᵀ M Q = fromBlocks T R 0 (-Tᵀ)`. If `Q₁` is nonsingular then `X = Q₂ Q₁⁻¹` is symmetric, solves
-`G + X A + Aᵀ X - X F X = 0`, and `A - F X = Q₁ T Q₁⁻¹`. The first block column of
-`M Q = Q (Qᵀ M Q)`
-reads `M [Q₁; -Q₂] = [Q₁; -Q₂] T`, that is `M [1; -X] = [1; -X] (Q₁ T Q₁⁻¹)`; the symmetry of `X`
-is that of `Q₁ᵀ Q₂ = Q₁ᵀ X Q₁` (which [golub2013matrix] attributes to `Q₁ᵀ Q₁ + Q₂ᵀ Q₂ = I`; it is
-the other orthogonality condition, `Matrix.fromBlocks_mem_orthogonalGroup_iff`). -/
+/-- **The algebraic Riccati equation from the Hamiltonian–Schur form** ((7.8.2) of
+[golub2013matrix]). Let $A, F, G, T, R, Q_1, Q_2 \in \mathbb{R}^{n \times n}$, let $M =
+\begin{bmatrix} A & F \\ G & -A^T \end{bmatrix}$, and let $Q = \begin{bmatrix} Q_1 & Q_2 \\ -Q_2
+& Q_1 \end{bmatrix}$ be orthogonal with
+$$Q^T M Q = \begin{bmatrix} T & R \\ 0 & -T^T \end{bmatrix}.$$
+If $Q_1$ is nonsingular, then $X = Q_2 Q_1^{-1}$ is symmetric,
+$$G + X A + A^T X - X F X = 0, \qquad A - F X = Q_1 T Q_1^{-1}.$$
+
+The first block column of $M Q = Q (Q^T M Q)$ reads $M \begin{bmatrix} Q_1 \\ -Q_2
+\end{bmatrix} = \begin{bmatrix} Q_1 \\ -Q_2 \end{bmatrix} T$, that is, $M \begin{bmatrix} I \\
+-X \end{bmatrix} = \begin{bmatrix} I \\ -X \end{bmatrix} (Q_1 T Q_1^{-1})$. The symmetry of $X$
+is the symmetry of $Q_1^T Q_2 = Q_1^T X Q_1$. The source attributes it to
+$Q_1^T Q_1 + Q_2^T Q_2 = I$, but it comes from the other orthogonality condition
+$(Q_1^T Q_2)^T = Q_1^T Q_2$ (`Matrix.fromBlocks_mem_orthogonalGroup_iff`). The theorem assumes
+neither that $F$ and $G$ are symmetric nor that $Q$ is symplectic beyond its block form. -/
 theorem riccati_of_hamiltonianSchur {A F G T R Q₁ Q₂ : Matrix l l ℝ}
     (hQ : fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∈ orthogonalGroup (l ⊕ l) ℝ)
     (hS : (fromBlocks Q₁ Q₂ (-Q₂) Q₁)ᵀ * fromBlocks A F G (-Aᵀ) * fromBlocks Q₁ Q₂ (-Q₂) Q₁ =
@@ -295,13 +351,17 @@ theorem riccati_of_hamiltonianSchur {A F G T R Q₁ Q₂ : Matrix l l ℝ}
     simp only [Matrix.mul_assoc]
     abel
 
-/-- **Any vector is carried to a multiple of a coordinate vector by an orthogonal symplectic
-matrix** ([golub2013matrix] §7.8.1, the Householder–Givens–Householder reduction): for
-`x : l ⊕ l → ℝ` and any `i₀ : l` there is an orthogonal symplectic `Q` with
-`Qᵀ x = ‖x‖₂ e_{inl i₀}`. `diag(P₁, P₁)` reduces the bottom half to a multiple of `e_{i₀}`, a plane
-rotation in the coordinates `inl i₀`, `inr i₀`
-(`Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`) moves it to the top, `diag(P₂, P₂)`
-reduces the top half, and `diag(±1, ±1)` fixes the sign; the norm is preserved. -/
+/-- **An orthogonal symplectic matrix maps any vector to a multiple of a coordinate vector** (§7.8.1
+of [golub2013matrix], the Householder–Givens–Householder reduction). For every
+$x \in \mathbb{R}^{2n}$ and every index $i_0$, there is an orthogonal symplectic $Q$ with
+$$Q^T x = \|x\|_2\, e_{i_0},$$
+where $e_{i_0}$ is the coordinate vector of `Sum.inl i₀`.
+
+First $\operatorname{diag}(P_1, P_1)$ reduces the bottom half to a multiple of $e_{i_0}$. A
+plane rotation in the coordinates $i_0$ and $n + i_0$
+(`Matrix.planeRotation_inl_inr_mem_orthoSymplecticGroup`) moves it to the top. Then
+$\operatorname{diag}(P_2, P_2)$ reduces the top half, and $\operatorname{diag}(\pm 1, \pm 1)$
+fixes the sign. The norm does not change. -/
 theorem exists_orthogonalSymplectic_mulVec_eq (x : l ⊕ l → ℝ) (i₀ : l) :
     ∃ Q ∈ orthoSymplecticGroup l ℝ, Qᵀ *ᵥ x = ‖WithLp.toLp 2 x‖ • Pi.single (Sum.inl i₀) 1 := by
   -- step 1: the bottom half
@@ -378,12 +438,18 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 /-- The complexification of a real vector. -/
 private def cplx (x : ι → ℝ) : ι → ℂ := fun i => (x i : ℂ)
 
-/-- The spectral subspace of a real matrix acting on `ℂ^ι`, for the eigenvalues satisfying `P`. -/
+/-- The spectral subspace in $\mathbb{C}^\iota$ of a real matrix for the eigenvalues that satisfy a
+predicate $P$. -/
 private noncomputable abbrev specSub (M : Matrix ι ι ℝ) (P : ℂ → Prop) : Submodule ℂ (ι → ℂ) :=
   Module.End.spectralSubspace (toLin' M.complexify) P
 
-/-- **Complex conjugation of the generalized eigenspaces of a real matrix**: `v` is a generalized
-eigenvector of `M` for `μ` iff `v̄` is one for `μ̄`. -/
+/-- **Complex conjugation of the generalized eigenspaces of a real matrix.** Let
+$M \in \mathbb{R}^{\iota \times \iota}$ and $\mu \in \mathbb{C}$. If $v \in \mathbb{C}^\iota$ is
+a generalized eigenvector of $M$ for $\mu$, then $\bar{v}$ is a generalized eigenvector of $M$
+for $\bar{\mu}$.
+
+The generalized eigenspace is `Module.End.maxGenEigenspace` of `Matrix.toLin'` of the
+complexification of $M$. -/
 theorem star_mem_maxGenEigenspace_complexify {M : Matrix ι ι ℝ} {μ : ℂ} {v : ι → ℂ}
     (hv : v ∈ Module.End.maxGenEigenspace (toLin' M.complexify) μ) :
     star v ∈ Module.End.maxGenEigenspace (toLin' M.complexify) (star μ) := by
@@ -405,7 +471,10 @@ theorem star_mem_maxGenEigenspace_complexify {M : Matrix ι ι ℝ} {μ : ℂ} {
   rw [hpow, hk, star_zero]
 
 /-- **The spectral subspace of a real matrix for a conjugation-closed set of eigenvalues is
-conjugation-closed.** -/
+conjugation-closed.** Let $M \in \mathbb{R}^{\iota \times \iota}$, and let $P$ be a predicate on
+$\mathbb{C}$ with $P(\mu) \Rightarrow P(\bar{\mu})$. If $v \in \mathbb{C}^\iota$ lies in the
+spectral subspace of $M$ for $P$, the sum of the generalized eigenspaces for the eigenvalues
+that satisfy $P$, then $\bar{v}$ lies in it too. -/
 theorem star_mem_spectralSubspace_complexify {M : Matrix ι ι ℝ} {P : ℂ → Prop}
     (hP : ∀ μ, P μ → P (star μ)) {v : ι → ℂ}
     (hv : v ∈ Module.End.spectralSubspace (toLin' M.complexify) P) :
@@ -422,13 +491,13 @@ theorem star_mem_spectralSubspace_complexify {M : Matrix ι ι ℝ} {P : ℂ →
       (star_mem_maxGenEigenspace_complexify hw)
   exact hle hv
 
-/-- The spectral subspaces are invariant. -/
+/-- The spectral subspaces of a real matrix $M$ are invariant under $M$. -/
 private theorem mulVec_mem_specSub {M : Matrix ι ι ℝ} {P : ℂ → Prop} {v : ι → ℂ}
     (hv : v ∈ specSub M P) : M.complexify *ᵥ v ∈ specSub M P := by
   simpa using Module.End.apply_mem_spectralSubspace hv
 
-/-- A real vector splits into real parts of the two complementary spectral subspaces, when both
-predicates are conjugation-closed. -/
+/-- If $P$ is closed under complex conjugation, every real vector is a sum of two real vectors whose
+complexifications lie in the spectral subspaces for $P$ and for not $P$. -/
 private theorem exists_real_split (M : Matrix ι ι ℝ) {P : ℂ → Prop}
     (hP : ∀ μ, P μ ↔ P (star μ)) (x : ι → ℝ) :
     ∃ u w : ι → ℝ, x = u + w ∧ cplx u ∈ specSub M P ∧ cplx w ∈ specSub M fun μ => ¬ P μ := by
@@ -458,12 +527,12 @@ private theorem exists_real_split (M : Matrix ι ι ℝ) {P : ℂ → Prop}
       ext i; rw [hb']; simp [cplx, ← hreal i]
     rw [this]; exact hb
 
-/-- Complexification commutes with products of rectangular matrices. -/
+/-- Complexification commutes with products of rectangular real matrices. -/
 private theorem map_ofReal_mul {a b c : Type*} [Fintype b] (A : Matrix a b ℝ) (B : Matrix b c ℝ) :
     (A * B).map Complex.ofReal = A.map Complex.ofReal * B.map Complex.ofReal :=
   Matrix.map_mul (f := Complex.ofRealHom)
 
-/-- `cplx` as a real linear map. -/
+/-- The complexification of real vectors, as a real-linear map. -/
 private def cplxLin : (ι → ℝ) →ₗ[ℝ] (ι → ℂ) where
   toFun := cplx
   map_add' x y := by ext i; simp [cplx]
@@ -474,8 +543,8 @@ private theorem cplx_mulVec (M : Matrix ι ι ℝ) (x : ι → ℝ) :
     cplx (M *ᵥ x) = M.complexify *ᵥ cplx x :=
   (complexify_mulVec_ofReal M x).symm
 
-/-- The compression of a real matrix to orthonormal columns whose complexifications lie in the
-stable spectral subspace has only stable eigenvalues. -/
+/-- If $X_0$ has orthonormal columns, $M X_0 = X_0 T$, and the complexified columns of $X_0$ lie in
+the stable spectral subspace of $M$, then every eigenvalue of $T$ has negative real part. -/
 private theorem re_neg_of_cols {M : Matrix ι ι ℝ} {d : ℕ} {X₀ : Matrix ι (Fin d) ℝ}
     {T : Matrix (Fin d) (Fin d) ℝ} (h1 : X₀ᵀ * X₀ = 1) (hMX : M * X₀ = X₀ * T)
     (hcol : ∀ j, cplx (fun r => X₀ r j) ∈ specSub M fun μ => μ.re < 0) :
@@ -518,8 +587,8 @@ section HamiltonianSchur
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- Without eigenvalues on the imaginary axis, the unstable spectral subspace of `M` lies in the
-stable one of `-M`. -/
+/-- If $M$ has no eigenvalue on the imaginary axis, the spectral subspace of $M$ for the eigenvalues
+with nonnegative real part lies in the stable spectral subspace of $-M$. -/
 private theorem specSub_unstable_le (M : Matrix ι ι ℝ)
     (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
     specSub M (fun μ => ¬ μ.re < 0) ≤ specSub (-M) fun μ => μ.re < 0 := by
@@ -546,7 +615,7 @@ private theorem specSub_unstable_le (M : Matrix ι ι ℝ)
     abel
   rw [hneg, neg_pow, Module.End.mul_apply, hk, map_zero]
 
-/-- The real points of a spectral subspace. -/
+/-- The real points of a spectral subspace of a real matrix. -/
 private noncomputable def realSub (M : Matrix ι ι ℝ) (P : ℂ → Prop) : Submodule ℝ (ι → ℝ) :=
   ((specSub M P).restrictScalars ℝ).comap cplxLin
 
@@ -561,8 +630,9 @@ end HamiltonianSchur
 
 variable {n : ℕ}
 
-/-- The stable invariant subspace of a Hamiltonian matrix without eigenvalues on the imaginary axis
-has dimension `n` and an orthonormal, isotropic basis `X₀` with `M X₀ = X₀ T₁`, `T₁` stable. -/
+/-- A Hamiltonian $M \in \mathbb{R}^{2n \times 2n}$ without eigenvalues on the imaginary axis has a
+matrix $X_0 \in \mathbb{R}^{2n \times n}$ with orthonormal, isotropic columns, $M X_0 = X_0 T_1$
+and $T_1 = X_0^T M X_0$ stable. -/
 private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian) (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
     ∃ X₀ : Matrix (Fin n ⊕ Fin n) (Fin n) ℝ, X₀ᵀ * X₀ = 1 ∧ X₀ᵀ * J (Fin n) ℝ * X₀ = 0 ∧
@@ -599,16 +669,22 @@ private theorem exists_stable_lagrangian {M : Matrix (Fin n ⊕ Fin n) (Fin n �
   have hst := re_neg_of_cols h1 hMX fun j => hcol j
   exact ⟨X₀, h1, hM.isotropic_of_mul_eq_mul_of_stable hMX hst, hMX, hst⟩
 
-/-- **The real Hamiltonian–Schur decomposition** ([golub2013matrix] (7.8.1); Paige and Van Loan
-1981): a real Hamiltonian `M` with no eigenvalue on the imaginary axis has an orthogonal symplectic
-`Q` with `Qᵀ M Q = fromBlocks T R 0 (-Tᵀ)`, `T` upper quasi-triangular, and the eigenvalues of `T`
-are stable (negative real part). Route: the real stable invariant subspace has dimension `n`
-(its complexification and that of the unstable one are complementary, and both are isotropic —
-`Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable` — so neither exceeds `n`); an orthonormal
-basis `[Q₁; -Q₂]` of it completes to the orthogonal symplectic `fromBlocks Q₁ Q₂ (-Q₂) Q₁`, which
-makes `M` block upper triangular with Hamiltonian structure; the real Schur form `U` of the leading
-block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`), applied as `diag(U, U)`,
-finishes. -/
+/-- **The real Hamiltonian–Schur decomposition** ((7.8.1) of [golub2013matrix]; Paige and Van Loan,
+1981). Let $M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian, and let no eigenvalue of $M$ have
+real part $0$. Then there are an orthogonal symplectic $Q$ and matrices
+$T, R \in \mathbb{R}^{n \times n}$ with
+$$Q^T M Q = \begin{bmatrix} T & R \\ 0 & -T^T \end{bmatrix},$$
+where $T$ is upper quasi-triangular and every eigenvalue of $T$ has negative real part.
+
+The real stable invariant subspace has dimension $n$: its complexification and that of the
+unstable one are complementary, and both are isotropic by
+`Matrix.IsHamiltonian.isotropic_of_mul_eq_mul_of_stable`, so neither has dimension greater than
+$n$. An orthonormal basis $\begin{bmatrix} Q_1 \\ -Q_2 \end{bmatrix}$ of it completes to the
+orthogonal symplectic matrix $\begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1 \end{bmatrix}$, which
+makes $M$ block upper triangular with Hamiltonian structure. The real Schur form $U$ of the
+leading block (`Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`), applied as
+$\operatorname{diag}(U, U)$, completes the proof. Upper quasi-triangular is
+`Matrix.IsQuasiUpperTriangular`. -/
 theorem exists_orthogonalSymplectic_hamiltonianSchur
     {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian)
     (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
@@ -686,8 +762,8 @@ section Condensed
 
 variable {m : ℕ}
 
-/-- The coordinates of `ℝ^{2(m+1)}` split into the leading pair `inl 0`, `inr 0` and the trailing
-pairs `inl (j + 1)`, `inr (j + 1)`. -/
+/-- The splitting of the coordinates of $\mathbb{R}^{2(m+1)}$ into the leading pair `Sum.inl 0`,
+`Sum.inr 0` and the trailing pairs `Sum.inl (j + 1)`, `Sum.inr (j + 1)`. -/
 private def headTail (m : ℕ) : Fin (m + 1) ⊕ Fin (m + 1) ≃ (Fin 1 ⊕ Fin 1) ⊕ (Fin m ⊕ Fin m) where
   toFun a := match a with
     | .inl i => Fin.cases (.inl (.inl 0)) (fun j => .inr (.inl j)) i
@@ -705,7 +781,7 @@ private def headTail (m : ℕ) : Fin (m + 1) ⊕ Fin (m + 1) ≃ (Fin 1 ⊕ Fin 
     · rfl
     · rfl
 
-/-- The trailing coordinates. -/
+/-- The embedding of the trailing coordinates of $\mathbb{R}^{2(m+1)}$. -/
 private def trail (m : ℕ) : Fin m ⊕ Fin m → Fin (m + 1) ⊕ Fin (m + 1) :=
   Sum.map Fin.succ Fin.succ
 
@@ -728,8 +804,8 @@ private theorem toBlocks₂₁_submatrix_headTail
       = K (trail m b) (Sum.inl 0) := by
   rcases b with j | j <;> rfl
 
-/-- An orthogonal symplectic transformation of the trailing coordinates, extended by the identity
-on the leading pair. -/
+/-- An orthogonal symplectic transformation of the trailing coordinates, extended by the identity on
+the leading pair. -/
 private def liftOS (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) :
     Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ :=
   (fromBlocks 1 0 0 V).submatrix (headTail m) (headTail m)
@@ -747,7 +823,7 @@ private theorem liftOS_transpose (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m)
 private theorem liftOS_one : liftOS (1 : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) = 1 := by
   rw [liftOS, fromBlocks_one, submatrix_one_equiv]
 
-/-- `J` in the leading/trailing splitting of the coordinates. -/
+/-- The matrix $J$ in the splitting into the leading pair and the trailing coordinates. -/
 private theorem J_eq_submatrix_headTail :
     J (Fin (m + 1)) ℝ
       = (fromBlocks (J (Fin 1) ℝ) 0 0 (J (Fin m) ℝ)).submatrix (headTail m) (headTail m) := by
@@ -764,7 +840,8 @@ private theorem liftOS_mem {V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ}
       submatrix_mul_equiv, fromBlocks_multiply, fromBlocks_multiply]
     simp [hVJ]
 
-/-- Conjugation by `liftOS V` in the leading/trailing splitting. -/
+/-- Conjugation by the extension of $V$, written in the splitting into the leading pair and the
+trailing coordinates. -/
 private theorem liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
     (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) :
     (liftOS V)ᵀ * K * liftOS V = (fromBlocks 1 0 0 Vᵀ * fromBlocks
@@ -780,7 +857,8 @@ private theorem liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
   conv_lhs => rw [hK]
   rw [submatrix_mul_equiv, submatrix_mul_equiv]
 
-/-- The trailing block of a conjugate by `liftOS V`. -/
+/-- The trailing block of the conjugate of $K$ by the extension of $V$ is $V^T K' V$, where $K'$ is
+the trailing block of $K$. -/
 private theorem submatrix_trail_liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
     (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ) :
     ((liftOS V)ᵀ * K * liftOS V).submatrix (trail m) (trail m)
@@ -790,7 +868,8 @@ private theorem submatrix_trail_liftOS_conj (V : Matrix (Fin m ⊕ Fin m) (Fin m
     fromBlocks_multiply, fromBlocks_multiply, fromBlocks_apply₂₂, toBlocks₂₂_submatrix_headTail]
   simp
 
-/-- The trailing part of the first column of a conjugate by `liftOS V`. -/
+/-- The trailing part of the first column of the conjugate of $K$ by the extension of $V$ is $V^T$
+times the trailing part of the first column of $K$. -/
 private theorem liftOS_conj_trail_inl_zero (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ)
     (K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ)
     (a : Fin m ⊕ Fin m) :
@@ -802,7 +881,7 @@ private theorem liftOS_conj_trail_inl_zero (V : Matrix (Fin m ⊕ Fin m) (Fin m 
   simp only [Matrix.zero_mul, zero_add, Matrix.mul_one, Matrix.mul_zero, add_zero]
   simp only [Matrix.mul_apply, mulVec, dotProduct, transpose_apply, toBlocks₂₁_submatrix_headTail]
 
-/-- `liftOS V` fixes the first coordinate vector. -/
+/-- The extension of $V$ fixes every multiple of the first coordinate vector. -/
 private theorem liftOS_mulVec_single (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) (c : ℝ) :
     liftOS V *ᵥ Pi.single (Sum.inl 0) c = Pi.single (Sum.inl 0) c := by
   funext a
@@ -811,7 +890,8 @@ private theorem liftOS_mulVec_single (V : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fi
   rcases b with (b | b) | (b | b) <;>
     simp [liftOS, headTail, Fin.succ_ne_zero]
 
-/-- The trailing block of a Hamiltonian or skew-Hamiltonian matrix is again one. -/
+/-- The trailing block of a Hamiltonian or skew-Hamiltonian matrix is again Hamiltonian or
+skew-Hamiltonian. -/
 private theorem isHam_submatrix_trail
     {K : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ}
     (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) :
@@ -834,14 +914,15 @@ private theorem isHam_submatrix_trail
     rw [h1]
     rfl
 
-/-- Orthogonal symplectic similarity preserves the two structures. -/
+/-- Orthogonal symplectic similarity preserves the Hamiltonian and the skew-Hamiltonian structure.
+-/
 private theorem isHam_conj {P K : Matrix (l ⊕ l) (l ⊕ l) ℝ} (hP : P ∈ orthoSymplecticGroup l ℝ)
     (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) :
     (Pᵀ * K * P).IsHamiltonian ∨ (Pᵀ * K * P).IsSkewHamiltonian :=
   hK.imp (·.transpose_mul_mul_of_mem_orthoSymplecticGroup hP)
     (·.transpose_mul_mul_of_mem_orthoSymplecticGroup hP)
 
-/-- The `(2,1)` block of a Hamiltonian or skew-Hamiltonian matrix is symmetric or skew-symmetric,
+/-- In a Hamiltonian or skew-Hamiltonian matrix, the $(2,1)$ block is symmetric or skew-symmetric,
 so its zero pattern is symmetric. -/
 private theorem apply_inr_inl_eq_zero {K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
     (hK : K.IsHamiltonian ∨ K.IsSkewHamiltonian) {i j : l} (h : K (Sum.inr j) (Sum.inl i) = 0) :
@@ -856,14 +937,13 @@ private theorem apply_inr_inl_eq_zero {K : Matrix (l ⊕ l) (l ⊕ l) ℝ}
     simp only [transpose_apply, toBlocks₂₁, of_apply, Matrix.neg_apply] at this
     rw [this, h, neg_zero]
 
-/-- The condensed shape, entrywise: the `(1,1)` block upper Hessenberg and the `(2,1)` block
-diagonal. -/
+/-- The condensed shape: the $(1,1)$ block is upper Hessenberg and the $(2,1)$ block is diagonal. -/
 private def IsCondensed {k : ℕ} (N : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ) : Prop :=
   (∀ i j : Fin k, (j : ℕ) + 1 < i → N (Sum.inl i) (Sum.inl j) = 0) ∧
     ∀ i j : Fin k, i ≠ j → N (Sum.inr i) (Sum.inl j) = 0
 
-/-- The column sweep, by induction on the number of trailing coordinates: the transformation
-fixes the leading pair. -/
+/-- The column sweep: a Hamiltonian or skew-Hamiltonian matrix becomes condensed under the extension
+of an orthogonal symplectic transformation of the trailing coordinates. -/
 private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
     (M : Matrix (Fin (m + 1) ⊕ Fin (m + 1)) (Fin (m + 1) ⊕ Fin (m + 1)) ℝ),
     M.IsHamiltonian ∨ M.IsSkewHamiltonian →
@@ -940,12 +1020,15 @@ private theorem exists_liftOS_isCondensed : ∀ (m : ℕ)
           rw [h]
           exact hcond.2 i j fun h' => hij (by rw [h'])
 
-/-- **The condensed form behind (7.8.3) and (7.8.4)** ([golub2013matrix] §7.8.1; Paige–Van Loan
-1981, Van Loan 1984): a real Hamiltonian or skew-Hamiltonian `M` has an orthogonal symplectic `U`
-with `(Uᵀ M U)₁₁` upper Hessenberg and `(Uᵀ M U)₂₁` diagonal. Column `k` is reduced by the
-Householder–Givens–Householder transformation (`Matrix.exists_orthogonalSymplectic_mulVec_eq`) of
-the trailing coordinates `inl j`, `inr j`, `j > k`, which fixes the earlier columns; the zeros of
-the `(2,1)` block above its diagonal come from its (skew-)symmetry. -/
+/-- **The condensed form behind (7.8.3) and (7.8.4)** (§7.8.1 of [golub2013matrix]; Paige and Van
+Loan, 1981; Van Loan, 1984). Let $M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian or
+skew-Hamiltonian. Then there is an orthogonal symplectic $U$ such that the $(1,1)$ block of
+$U^T M U$ is upper Hessenberg and the $(2,1)$ block of $U^T M U$ is diagonal.
+
+Column $k$ is reduced by the Householder–Givens–Householder transformation
+(`Matrix.exists_orthogonalSymplectic_mulVec_eq`) of the trailing coordinates $j$ and $n + j$
+with $j > k$, which fixes the earlier columns. The zeros of the $(2,1)$ block above its diagonal
+come from its symmetry or skew-symmetry. Upper Hessenberg is `Matrix.IsUpperHessenberg`. -/
 theorem exists_orthogonalSymplectic_condensed {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian ∨ M.IsSkewHamiltonian) :
     ∃ U ∈ orthoSymplecticGroup (Fin n) ℝ, (Uᵀ * M * U).toBlocks₁₁.IsUpperHessenberg ∧
@@ -958,9 +1041,11 @@ theorem exists_orthogonalSymplectic_condensed {M : Matrix (Fin n ⊕ Fin n) (Fin
     refine ⟨liftOS V, liftOS_mem hV, fun i j ⟨k, hjk, hki⟩ => ?_, fun i j hij => h2 i j hij⟩
     exact h1 i j (by rw [Fin.lt_def] at hjk hki; omega)
 
-/-- **The Paige–Van Loan form** ([golub2013matrix] (7.8.3)): a real Hamiltonian `M` has an
-orthogonal symplectic `U₀` with `U₀ᵀ M U₀ = [H R; D -Hᵀ]`, `H` upper Hessenberg and `D`
-diagonal. -/
+/-- **The Paige–Van Loan form** ((7.8.3) of [golub2013matrix]). Let
+$M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian. Then there are an orthogonal symplectic $U_0$
+and matrices $H, R, D \in \mathbb{R}^{n \times n}$ with
+$$U_0^T M U_0 = \begin{bmatrix} H & R \\ D & -H^T \end{bmatrix},$$
+where $H$ is upper Hessenberg and $D$ is diagonal. -/
 theorem IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan
     {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
     ∃ U₀ ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
@@ -972,10 +1057,14 @@ theorem IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan
     (Uᵀ * M * U).toBlocks₂₁, ?_, hH, hD⟩
   conv_lhs => rw [← fromBlocks_toBlocks (Uᵀ * M * U), hN.1]
 
-/-- **The skew-Hamiltonian Hessenberg form** ([golub2013matrix] (7.8.4); Van Loan 1984): a real
-skew-Hamiltonian `N` (for instance the square of a Hamiltonian matrix) has an orthogonal symplectic
-`V₀` with `V₀ᵀ N V₀ = [H R; 0 Hᵀ]`, `H` upper Hessenberg: the diagonal `(2,1)` block of the
-condensed form is skew-symmetric, hence zero. -/
+/-- **The skew-Hamiltonian Hessenberg form** ((7.8.4) of [golub2013matrix]; Van Loan, 1984). Let
+$N \in \mathbb{R}^{2n \times 2n}$ be skew-Hamiltonian, for instance the square of a Hamiltonian
+matrix. Then there are an orthogonal symplectic $V_0$ and matrices
+$H, R \in \mathbb{R}^{n \times n}$ with
+$$V_0^T N V_0 = \begin{bmatrix} H & R \\ 0 & H^T \end{bmatrix},$$
+where $H$ is upper Hessenberg.
+
+The $(2,1)$ block of the condensed form is diagonal and skew-symmetric, hence zero. -/
 theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
     {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
     ∃ V₀ ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ H R : Matrix (Fin n) (Fin n) ℝ,
@@ -995,11 +1084,15 @@ theorem IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg
   refine ⟨V, hV, (Vᵀ * N * V).toBlocks₁₁, (Vᵀ * N * V).toBlocks₁₂, ?_, hH⟩
   conv_lhs => rw [← fromBlocks_toBlocks (Vᵀ * N * V), hS.1, h0]
 
-/-- **The real skew-Hamiltonian Schur form** ([golub2013matrix] §7.8.1, after (7.8.4)): a real
-skew-Hamiltonian `N` has an orthogonal symplectic `Q` with `Qᵀ N Q = [T R; 0 Tᵀ]`, `T` upper
-quasi-triangular: `Q = V₀ diag(U, U)` with `V₀` from
-`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` and `U` the real Schur factor of
-`H`. -/
+/-- **The real skew-Hamiltonian Schur form** (§7.8.1 of [golub2013matrix], after (7.8.4)). Let
+$N \in \mathbb{R}^{2n \times 2n}$ be skew-Hamiltonian. Then there are an orthogonal symplectic
+$Q$ and matrices $T, R \in \mathbb{R}^{n \times n}$ with
+$$Q^T N Q = \begin{bmatrix} T & R \\ 0 & T^T \end{bmatrix},$$
+where $T$ is upper quasi-triangular.
+
+The matrix is $Q = V_0 \operatorname{diag}(U, U)$, with $V_0$ from
+`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg` and $U$ the real Schur factor
+of $H$. -/
 theorem IsSkewHamiltonian.exists_orthogonalSymplectic_schur
     {N : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hN : N.IsSkewHamiltonian) :
     ∃ Q ∈ orthoSymplecticGroup (Fin n) ℝ, ∃ T R : Matrix (Fin n) (Fin n) ℝ,

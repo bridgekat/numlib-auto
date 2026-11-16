@@ -13,23 +13,38 @@ import Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.ARqpEDA
 /-!
 # High-order methods with dynamic accuracy
 
-Umbrella module for the high-order methods with inexact derivatives (and, for explicit dynamic
-accuracy, inexact function values) whose accuracy the algorithm controls: TRqIDA, ARqpIDA, TRqEDA
-and ARqpEDA ([cartis2022evaluation], Chapter 13, and the corresponding rows of §14.2). Its
-modules, under `Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy`, are:
+This module imports the high-order methods of Chapter 13 of [cartis2022evaluation] and the
+corresponding rows of §14.2, and adds no declaration. These methods use inexact derivatives, and the
+methods with explicit dynamic accuracy also use inexact function values; the algorithm itself
+controls the accuracy. The methods are the trust-region methods TRqIDA and TRqEDA and the
+adaptive-regularization methods ARqpIDA and ARqpEDA, where IDA stands for implicit and EDA for
+explicit dynamic accuracy. The modules define the runs of each method, bound the number of
+evaluations that the run needs, and prove that runs exist.
 
-* `Basic`: order-`0` consequences of `LipschitzDerivsAnchored` (Taylor's theorem, derivative bounds
-  at anchors, bounds on inexact jets);
-* `TRqIDA`: the TRqIDA step predicate (shared with TRqEDA), runs on a feasible set
-  `Optimization.IsTRqIDARun`, their analysis (Lemmas 13.1.1–13.1.7, Theorem 13.1.8) and the
-  existence of runs;
-* `ARqpDAStep`: the ARqpIDA step predicates (shared with ARqpEDA), the radii control, the
-  one-iteration lemmas (Lemmas 13.1.9–13.1.13) and the step-length algebra;
-* `ARqpIDA`, `ARqpIDAExistence`: runs `Optimization.IsARqpIDARun`, their analysis (Lemmas
-  13.1.14–13.1.18, Theorem 13.1.19) and the existence of runs;
-* `TRqEDA`, `ARqpEDA`: the explicit-dynamic-accuracy runs with inexact function values and their
-  analyses (Lemmas 13.3.1–13.3.7, Theorems 13.3.4 and 13.3.8).
+## Contents
 
-All analyses are stated on a feasible set `X ⊆ C` under `LipschitzDerivsAnchored f C A 0 p L` with
-an anchor set `A` containing the sublevel set of the starting point; the unconstrained methods are
-the case `X = C = A = univ`. -/
+| Module | Subject |
+|---|---|
+| `Basic` | Taylor's theorem and derivative bounds at anchors, inexact jets |
+| `TRqIDA` | TRqIDA: Lemmas 13.1.1–13.1.7, Theorem 13.1.8, existence of runs |
+| `ARqpDAStep` | one iteration of ARqpIDA and ARqpEDA: Lemmas 13.1.9–13.1.13 |
+| `ARqpIDA` | ARqpIDA: Lemmas 13.1.14–13.1.18, Theorem 13.1.19 |
+| `ARqpIDAExistence` | existence of ARqpIDA runs |
+| `TRqEDA` | TRqEDA, with inexact function values |
+| `ARqpEDA` | ARqpEDA, with inexact function values |
+
+The module names are relative to `Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy`.
+
+## Implementation notes
+
+* `Basic` proves the consequences of `LipschitzDerivsAnchored` of order $0$: Taylor's theorem,
+  bounds on the derivatives at the anchors, and bounds on inexact jets.
+* `TRqIDA` defines the step predicate of TRqIDA, which TRqEDA shares, and the runs
+  `Optimization.IsTRqIDARun` on a feasible set. `ARqpDAStep` defines the step predicates of ARqpIDA,
+  which ARqpEDA shares, the control of the radii and the step-length algebra. `ARqpIDA` defines the
+  runs `Optimization.IsARqpIDARun`.
+* `TRqEDA` and `ARqpEDA` together contain Lemmas 13.3.1–13.3.7 and Theorems 13.3.4 and 13.3.8.
+* All analyses are stated on a feasible set $X \subseteq C$ under
+  `LipschitzDerivsAnchored f C A 0 p L`, with an anchor set $A$ that contains the sublevel set of
+  the starting point. The unconstrained methods are the case $X = C = A = E$, the whole space.
+-/

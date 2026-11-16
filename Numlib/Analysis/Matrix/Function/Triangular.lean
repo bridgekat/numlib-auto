@@ -9,29 +9,60 @@ import Numlib.LinearAlgebra.Matrix.Triangular
 /-!
 # Functions of triangular matrices
 
-Functions of (block) upper triangular matrices ([golub2013matrix] §9.1.4–9.1.5): `f(T)` is block
-triangular with diagonal blocks `f(T_kk)` (`Matrix.BlockTriangular.pfc`,
-`Matrix.BlockTriangular.toBlock_pfc`); the commutation `f(T) T = T f(T)` gives the Parlett
-recurrence (9.1.11) and its block form (9.1.12), a Sylvester equation for the off-diagonal blocks;
-and the explicit divided-difference formula of [golub2013matrix] Theorem 9.1.4,
+Let $T$ be a block upper triangular matrix, and let $f(T)$ be given by the primary functional
+calculus. Then $f(T)$ is block upper triangular, and when the minimal polynomial of $T$ splits, the
+diagonal blocks of $f(T)$ are $f(T_{kk})$. The commutation $f(T) T = T f(T)$ gives the Parlett
+recurrence (9.1.11) of [golub2013matrix] for the entries of $f(T)$ when $T$ is upper triangular, and
+its block form (9.1.12), a Sylvester equation for the off-diagonal blocks. The module also proves
+the divided-difference formula of Theorem 9.1.4 of [golub2013matrix]: for upper triangular $T$ and
+$i < j$,
+$$f(T)_{ij} = \sum_{s \in S_{ij}} t_{s_0 s_1} t_{s_1 s_2} \cdots t_{s_{k-1} s_k}\,
+  f[\lambda_{s_0}, \dots, \lambda_{s_k}],$$
+where $S_{ij}$ is the set of strictly increasing index sequences $i = s_0 < s_1 < \dots < s_k = j$,
+$\lambda_r = t_{rr}$, and the divided differences are confluent at repeated eigenvalues. The
+presentation follows [golub2013matrix], §9.1.4–9.1.5, which cites Descloux, Davis and Van Loan for
+the divided-difference formula.
 
-  `f(T)_ij = ∑_{s ∈ S_ij} t_{s₀s₁} t_{s₁s₂} ⋯ t_{s_{k-1}s_k} f[λ_{s₀}, …, λ_{s_k}]`,
+## Main definitions
 
-summed over the strictly increasing index sequences `i = s₀ < s₁ < ⋯ < s_k = j`, with confluent
-divided differences at repeated eigenvalues. The book cites Descloux, Davis and Van Loan for it;
-here it is proved by expanding the powers of `T` along paths (`Matrix.pow_apply_eq_sum_pathProd`),
-grouping each path's walk by its first step, and summing the loops at the diagonal into the
-divided difference of `z ↦ z^m` (`Hermite.divDiff_X_pow`); linearity extends it to the Hermite
-interpolant that computes `f(T)`.
+* `Matrix.path`: the index sequence $i, s, j$ for a set $s$ of interior indices.
+* `Matrix.pathProd`: the product of the entries of $T$ along consecutive pairs of a list of indices.
 
-## Conventions
+## Main results
 
-Triangularity is Mathlib's `Matrix.BlockTriangular T b` (upper triangular: `b = id`,
-`Matrix.IsUpperTriangular`). A strictly increasing sequence `i = s₀ < ⋯ < s_k = j` is encoded by the
-finset `s ⊆ Finset.Ioo i j` of its interior indices; `Matrix.path i s j` is the ordered list and
-`Matrix.pathProd T l` the product of the entries of `T` along consecutive pairs of `l`. The
-diagonal entries along a path, `(path i s j).map fun k => T k k`, are the nodes of the divided
-difference.
+* `Matrix.BlockTriangular.pfc`: $f(T)$ is block triangular with $T$.
+* `Matrix.BlockTriangular.toBlock_pfc`: if the minimal polynomial of $T$ splits, then the diagonal
+  blocks of $f(T)$ are $f(T_{kk})$.
+* `Matrix.pfc_apply_eq_parlett`: the Parlett recurrence (9.1.11).
+* `Matrix.BlockTriangular.pfc_sylvester`: the block Parlett equations (9.1.12).
+* `Matrix.pow_succ_apply_eq_sum_pathProd`: the entries of the powers of a strictly upper triangular
+  matrix are sums of products along paths.
+* `Matrix.pow_apply_eq_sum_pathProd`, `Matrix.aeval_apply_eq_sum_pathProd`: the divided-difference
+  formula for $T^m$ and for $p(T)$ with a polynomial $p$.
+* `Matrix.pfc_apply_self_of_isUpperTriangular`: $f(T)_{ii} = f(t_{ii})$ for upper triangular $T$.
+* `Matrix.pfc_apply_eq_sum_divDiff`: the divided-difference formula of Theorem 9.1.4 of
+  [golub2013matrix].
+
+## Proof outline
+
+The divided-difference formula is proved by expanding the powers of $T$ along paths
+(`Matrix.pow_apply_eq_sum_pathProd`). The walks are grouped by their first step, and the loops at
+the diagonal sum to the divided difference of $z \mapsto z^m$ (`Hermite.divDiff_X_pow`). By
+linearity the formula extends to polynomials, and so to the Hermite interpolant that computes
+$f(T)$.
+
+## Implementation notes
+
+* Triangularity is Mathlib's `Matrix.BlockTriangular T b`: $T_{ij} = 0$ when $b(j) < b(i)$, so $T$
+  is block upper triangular. Upper triangularity is `Matrix.IsUpperTriangular`, the case
+  $b = \mathrm{id}$.
+* A strictly increasing sequence $i = s_0 < \dots < s_k = j$ is encoded by the finset
+  `s ⊆ Finset.Ioo i j` of its interior indices. `Matrix.path i s j` is the ordered list, and
+  `Matrix.pathProd T l` is the product of the entries of $T$ along consecutive pairs of `l`. The
+  diagonal entries along a path, `(path i s j).map fun k => T k k`, are the nodes of the divided
+  difference.
+* The divided difference is `Hermite.divDiff`, defined through the jets of $f$. So the formula needs
+  no smoothness hypothesis on $f$.
 -/
 
 open Polynomial Hermite Finset
@@ -43,22 +74,28 @@ section BlockTriangular
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
   {α : Type*} [LinearOrder α] {b : n → α}
 
-/-- Polynomials in a block triangular matrix are block triangular. -/
+/-- Let $T$ be block triangular for the block map $b$. Then every polynomial $p(T)$ in $T$ is block
+triangular for $b$. -/
 theorem BlockTriangular.aeval {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (p : 𝕜[X]) :
     (aeval T p).BlockTriangular b := by
   have h := aeval_subalgebra_coe p (blockTriangularSubalgebra 𝕜 𝕜 b) ⟨T, hT⟩
   rw [← h]
   exact (Polynomial.aeval (⟨T, hT⟩ : blockTriangularSubalgebra 𝕜 𝕜 b) p).2
 
-/-- **`f(T)` is block triangular** with `T` ([golub2013matrix] §9.1.5): it is a polynomial in
-`T`. -/
+/-- **$f(T)$ is block triangular with $T$.** Let $\mathbb{K}$ be a nontrivially normed field, let
+$T \in \mathbb{K}^{n \times n}$ be block triangular for a block map $b$ into a linearly ordered
+set, and let $f \colon \mathbb{K} \to \mathbb{K}$. Then $f(T)$ is block triangular for $b$. This
+is in [golub2013matrix], §9.1.5.
+
+The proof uses that $f(T)$ is a polynomial in $T$. -/
 theorem BlockTriangular.pfc {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (f : 𝕜 → 𝕜) :
     (_root_.pfc f T).BlockTriangular b := by
   classical
   rw [pfc_def]
   exact hT.aeval _
 
-/-- The diagonal blocks of a polynomial in a block triangular matrix. -/
+/-- Let $T$ be block triangular for the block map $b$, and let $p$ be a polynomial. Then for every
+block index $k$, the diagonal block of $p(T)$ with index $k$ is $p(T_{kk})$. -/
 theorem BlockTriangular.toBlock_aeval {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (k : α)
     (p : 𝕜[X]) :
     (Polynomial.aeval T p).toBlock (b · = k) (b · = k) =
@@ -79,8 +116,14 @@ theorem BlockTriangular.toBlock_aeval {T : Matrix n n 𝕜} (hT : T.BlockTriangu
     · have h' : i ≠ j := fun e => h (congrArg Subtype.val e)
       simp [algebraMap_eq_diagonal, diagonal_apply_ne _ h, diagonal_apply_ne _ h']
 
-/-- **The diagonal blocks of `f(T)` are `f` of the diagonal blocks** ([golub2013matrix] §9.1.5,
-`F_kk = f(T_kk)`): when the minimal polynomial of `T` splits. -/
+/-- **The diagonal blocks of $f(T)$ are $f$ of the diagonal blocks.** Let $\mathbb{K}$ be a
+nontrivially normed field, let $T \in \mathbb{K}^{n \times n}$ be block triangular for a block
+map $b$ into a linearly ordered set, and suppose that the minimal polynomial of $T$ splits over
+$\mathbb{K}$. Then for every block index $k$ and every $f \colon \mathbb{K} \to \mathbb{K}$,
+$$f(T)_{kk} = f(T_{kk}).$$
+This is $F_{kk} = f(T_{kk})$ in [golub2013matrix], §9.1.5.
+
+The block $T_{kk}$ is `T.toBlock (b · = k) (b · = k)`. -/
 theorem BlockTriangular.toBlock_pfc {T : Matrix n n 𝕜} (hT : T.BlockTriangular b)
     (hs : (minpoly 𝕜 T).Splits) (k : α) (f : 𝕜 → 𝕜) :
     (_root_.pfc f T).toBlock (b · = k) (b · = k) =
@@ -103,7 +146,8 @@ section Upper
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- The diagonal of a polynomial in an upper triangular matrix. -/
+/-- Let $M$ be an upper triangular matrix over a field, and let $p$ be a polynomial. Then the
+diagonal entries of $p(M)$ are $p(M)_{ii} = p(M_{ii})$. -/
 theorem IsUpperTriangular.aeval_apply_self {𝕜 : Type*} [Field 𝕜]
     {M : Matrix n n 𝕜} (hM : M.IsUpperTriangular) (p : 𝕜[X]) (i : n) :
     (aeval M p) i i = p.eval (M i i) := by
@@ -123,9 +167,14 @@ section Parlett
 variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {n : Type*} [Fintype n]
   [LinearOrder n] [LocallyFiniteOrder n]
 
-/-- **The Parlett recurrence** ([golub2013matrix] (9.1.11)): for upper triangular `T`, `F = f(T)`
-and `i < j` with `t_ii ≠ t_jj`,
-`f_ij = t_ij (f_jj - f_ii)/(t_jj - t_ii) + ∑_{i<k<j} (t_ik f_kj - f_ik t_kj)/(t_jj - t_ii)`. -/
+/-- **The Parlett recurrence.** Let $\mathbb{K}$ be a nontrivially normed field, let
+$T \in \mathbb{K}^{n \times n}$ be upper triangular, let $f \colon \mathbb{K} \to \mathbb{K}$,
+and let $F = f(T)$. If $i < j$ and $t_{ii} \neq t_{jj}$, then
+$$f_{ij} = t_{ij} \frac{f_{jj} - f_{ii}}{t_{jj} - t_{ii}}
+  + \sum_{i < k < j} \frac{t_{ik} f_{kj} - f_{ik} t_{kj}}{t_{jj} - t_{ii}}.$$
+This is (9.1.11) of [golub2013matrix].
+
+The proof compares the $(i, j)$ entries of $FT = TF$. -/
 theorem pfc_apply_eq_parlett {T : Matrix n n 𝕜} (hT : T.IsUpperTriangular) (f : 𝕜 → 𝕜) {i j : n}
     (hij : i < j) (hne : T i i ≠ T j j) :
     pfc f T i j = T i j * (pfc f T j j - pfc f T i i) / (T j j - T i i) +
@@ -144,10 +193,16 @@ variable {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n]
   {α : Type*} [Fintype α] [LinearOrder α] {b : n → α}
 
 omit [Fintype α] in
-/-- **The block Parlett equations** ([golub2013matrix] (9.1.12)): for `T` block triangular with
-blocks `T_kl`, `F = f(T)` and block indices `k < l`,
-`F_kl T_ll - T_kk F_kl = T_kl F_ll - F_kk T_kl + ∑_{k<r<l} (T_kr F_rl - F_kr T_rl)`, a Sylvester
-equation for `F_kl` given the blocks nearer the diagonal. -/
+/-- **The block Parlett equations.** Let $\mathbb{K}$ be a nontrivially normed field, let
+$T \in \mathbb{K}^{n \times n}$ be block triangular for a block map $b$ into a finite linearly
+ordered set, with blocks $T_{kl}$, let $f \colon \mathbb{K} \to \mathbb{K}$, and let $F = f(T)$
+have the blocks $F_{kl}$. Then for block indices $k < l$,
+$$F_{kl} T_{ll} - T_{kk} F_{kl} = T_{kl} F_{ll} - F_{kk} T_{kl}
+  + \sum_{k < r < l} (T_{kr} F_{rl} - F_{kr} T_{rl}).$$
+This is (9.1.12) of [golub2013matrix]. It is a Sylvester equation for $F_{kl}$ when the blocks
+nearer the diagonal are known.
+
+The block $T_{kl}$ is `T.toBlock (b · = k) (b · = l)`. -/
 theorem BlockTriangular.pfc_sylvester [Finite α] [LocallyFiniteOrder α] {𝕜 : Type*}
     [NontriviallyNormedField 𝕜] {T : Matrix n n 𝕜} (hT : T.BlockTriangular b) (f : 𝕜 → 𝕜)
     {k l : α} (hkl : k < l) :
@@ -172,50 +227,64 @@ section Path
 
 variable {n : Type*} [LinearOrder n]
 
-/-- The strictly increasing index sequence `i = s₀ < s₁ < ⋯ < s_k = j` with interior indices `s`
-([golub2013matrix] Theorem 9.1.4's `S_ij` is `{path i s j | s ⊆ Finset.Ioo i j}`). -/
+/-- The index sequence from $i$ to $j$ with the set $s$ of interior indices: the list of $i$, then
+the elements of $s$ in increasing order, then $j$. For $s \subseteq (i, j)$ it is a strictly
+increasing sequence $i = s_0 < s_1 < \dots < s_k = j$, and the set $S_{ij}$ of Theorem 9.1.4 of
+[golub2013matrix] is the set of the lists `Matrix.path i s j` for $s \subseteq (i, j)$. -/
 def path (i : n) (s : Finset n) (j : n) : List n :=
   i :: (s.sort ++ [j])
 
-/-- The product `t_{s₀s₁} t_{s₁s₂} ⋯ t_{s_{k-1}s_k}` of the entries of `T` along consecutive pairs
-of a list of indices. -/
+/-- The product $t_{s_0 s_1} t_{s_1 s_2} \cdots t_{s_{k-1} s_k}$ of the entries of $T$ along the
+consecutive pairs of a list $s_0, \dots, s_k$ of indices. It is $1$ for a list with at most one
+element. -/
 def pathProd {R : Type*} [CommMonoid R] (T : Matrix n n R) (l : List n) : R :=
   (List.zipWith (fun p q => T p q) l l.tail).prod
 
 variable {R : Type*} [CommMonoid R]
 
 omit [LinearOrder n] in
+/-- The path product of the empty list is $1$. -/
 @[simp]
 theorem pathProd_nil (T : Matrix n n R) : pathProd T [] = 1 := rfl
 
 omit [LinearOrder n] in
+/-- The path product of a list with one element is $1$. -/
 @[simp]
 theorem pathProd_singleton (T : Matrix n n R) (i : n) : pathProd T [i] = 1 := rfl
 
 omit [LinearOrder n] in
+/-- The path product of the list $i, j, l_1, \dots$ is $t_{ij}$ times the path product of the list
+$j, l_1, \dots$. -/
 @[simp]
 theorem pathProd_cons_cons (T : Matrix n n R) (i j : n) (l : List n) :
     pathProd T (i :: j :: l) = T i j * pathProd T (j :: l) := rfl
 
+/-- With no interior indices, the path from $i$ to $j$ is the list $i, j$. -/
 theorem path_empty (i j : n) : path i ∅ j = [i, j] := by
   simp [path]
 
-/-- Prepending a first interior index. -/
+/-- If $s \subseteq (k, j)$, then the path from $i$ to $j$ with the interior indices $\{k\} \cup s$
+is $i$ followed by the path from $k$ to $j$ with the interior indices $s$. -/
 theorem path_insert [LocallyFiniteOrder n] {i j k : n} {s : Finset n} (hs : s ⊆ Ioo k j) :
     path i (insert k s) j = i :: path k s j := by
   have hk : k ∉ s := fun h => by simpa using (Finset.mem_Ioo.mp (hs h)).1
   rw [path, Finset.sort_insert _ (fun x hx => (Finset.mem_Ioo.mp (hs hx)).1.le) hk]
   rfl
 
+/-- The path product along the path from $i$ to $j$ with no interior indices is $t_{ij}$. -/
 theorem pathProd_path_empty (T : Matrix n n R) (i j : n) : pathProd T (path i ∅ j) = T i j := by
   simp [path_empty]
 
+/-- If $s \subseteq (k, j)$, then the path product along the path from $i$ to $j$ with the interior
+indices $\{k\} \cup s$ is $t_{ik}$ times the path product along the path from $k$ to $j$ with
+the interior indices $s$. -/
 theorem pathProd_path_insert [LocallyFiniteOrder n] (T : Matrix n n R) {i j k : n}
     {s : Finset n} (hs : s ⊆ Ioo k j) :
     pathProd T (path i (insert k s) j) = T i k * pathProd T (path k s j) := by
   rw [path_insert hs, path, pathProd_cons_cons]
 
-/-- A path from `i` to `j` through `s ⊆ (i, j)` has no repeated index. -/
+/-- If $i < j$ and $s \subseteq (i, j)$, then the path from $i$ to $j$ through $s$ has no repeated
+index. -/
 theorem nodup_path [LocallyFiniteOrder n] {i j : n} (hij : i < j) {s : Finset n}
     (hs : s ⊆ Ioo i j) : (path i s j).Nodup := by
   rw [path, List.nodup_cons, List.nodup_append]
@@ -228,8 +297,11 @@ theorem nodup_path [LocallyFiniteOrder n] {i j : n} (hij : i < j) {s : Finset n}
     subst hc
     exact (Finset.mem_Ioo.mp (hs ha)).2.ne
 
-/-- **Grouping the index sets by their least element**: a sum over the subsets of `(i, j)` is the
-empty term plus, for each `k ∈ (i, j)`, a sum over the subsets of `(k, j)` with `k` prepended. -/
+/-- **Grouping the index sets by their least element.** For a function $g$ on the finite sets of
+indices, with values in an additive commutative monoid,
+$$\sum_{s \subseteq (i, j)} g(s)
+  = g(\emptyset) + \sum_{k \in (i, j)} \sum_{s \subseteq (k, j)} g(\{k\} \cup s),$$
+where $(i, j)$ is the open interval of indices. -/
 theorem sum_powerset_Ioo [LocallyFiniteOrder n] {M : Type*} [AddCommMonoid M]
     (g : Finset n → M) (i j : n) :
     ∑ s ∈ (Ioo i j).powerset, g s =
@@ -272,8 +344,13 @@ theorem sum_powerset_Ioo [LocallyFiniteOrder n] {M : Type*} [AddCommMonoid M]
 
 variable {R : Type*} [CommRing R] [Fintype n] [LocallyFiniteOrder n]
 
-/-- **Path expansion of the powers of a strictly upper triangular matrix** ([golub2013matrix]
-(9.2.2)): `(N^{r+1})_ij = ∑_{s ⊆ (i, j), |s| = r} n_{s₀s₁} ⋯ n_{s_r s_{r+1}}` for `i < j`. -/
+/-- **Path expansion of the powers of a strictly upper triangular matrix.** Let $R$ be a commutative
+ring, and let $N \in R^{n \times n}$ be strictly upper triangular: $n_{ij} = 0$ for $j \le i$.
+Then for $r \in \mathbb{N}$ and $i < j$,
+$$(N^{r+1})_{ij}
+  = \sum_{s \subseteq (i, j),\ |s| = r} n_{s_0 s_1} n_{s_1 s_2} \cdots n_{s_r s_{r+1}},$$
+where $i = s_0 < s_1 < \dots < s_{r+1} = j$ is the path through $s$. This is (9.2.2) of
+[golub2013matrix]. -/
 theorem pow_succ_apply_eq_sum_pathProd {N : Matrix n n R} (hN : ∀ i j, j ≤ i → N i j = 0)
     (r : ℕ) {i j : n} (hij : i < j) :
     (N ^ (r + 1)) i j = ∑ s ∈ (Ioo i j).powersetCard r, pathProd N (path i s j) := by
@@ -308,20 +385,29 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {n : Type*} [Fintype n]
   [LinearOrder n] [LocallyFiniteOrder n]
 
 omit [Fintype n] [NontriviallyNormedField 𝕜] [LocallyFiniteOrder n] in
-/-- The diagonal entries of `T` along the path `i, s, j`: the nodes of the divided difference. -/
+/-- The diagonal entries of $T$ along the path $i, s, j$, as a multiset, are $t_{ii}$ together with
+the diagonal entries along the tail of the path. -/
 theorem coe_map_path (T : Matrix n n 𝕜) (i j : n) (s : Finset n) :
     (((path i s j).map fun k => T k k : List 𝕜) : Multiset 𝕜) =
       T i i ::ₘ (((path i s j).tail.map fun k => T k k : List 𝕜) : Multiset 𝕜) := by
   simp [path]
 
 omit [Fintype n] in
+/-- If $s \subseteq (k, j)$, then the tail of the path from $i$ to $j$ with the interior indices
+$\{k\} \cup s$ is the path from $k$ to $j$ with the interior indices $s$. -/
 theorem tail_path_insert {i j k : n} {s : Finset n} (hs : s ⊆ Ioo k j) :
     (path i (insert k s) j).tail = path k s j := by
   rw [path_insert hs, List.tail_cons]
 
-/-- **Path expansion of the powers of an upper triangular matrix**: for `i < j`,
-`(T^m)_ij = ∑_{s ⊆ (i, j)} t_{s₀s₁} ⋯ t_{s_{k-1}s_k} · z^m[t_{s₀s₀}, …, t_{s_ks_k}]`, the divided
-difference of `z ↦ z^m` summing the loops at the diagonal entries along each path. -/
+/-- **Path expansion of the powers of an upper triangular matrix.** Let $\mathbb{K}$ be a
+nontrivially normed field of characteristic zero, let $T \in \mathbb{K}^{n \times n}$ be upper
+triangular, and let $m \in \mathbb{N}$. Then for $i < j$,
+$$(T^m)_{ij} = \sum_{s \subseteq (i, j)} t_{s_0 s_1} \cdots t_{s_{k-1} s_k}\;
+  z^m[t_{s_0 s_0}, \dots, t_{s_k s_k}],$$
+where $i = s_0 < \dots < s_k = j$ is the path through $s$, and $z^m[\dots]$ is the divided
+difference of $z \mapsto z^m$ at the diagonal entries along the path.
+
+The divided difference sums the loops at the diagonal entries along each path. -/
 theorem pow_apply_eq_sum_pathProd [CharZero 𝕜] [DecidableEq 𝕜] {T : Matrix n n 𝕜}
     (hT : T.IsUpperTriangular)
     (m : ℕ) {i j : n} (hij : i < j) :
@@ -357,15 +443,20 @@ theorem pow_apply_eq_sum_pathProd [CharZero 𝕜] [DecidableEq 𝕜] {T : Matrix
     rw [pathProd_path_insert _ hs', tail_path_insert hs', mul_assoc]
 
 omit [Fintype n] [LinearOrder n] [LocallyFiniteOrder n] in
-/-- The divided difference is additive on polynomial functions. -/
+/-- The divided difference is additive on polynomial functions: $(p + q)[s] = p[s] + q[s]$. -/
 private theorem divDiff_eval_add [CharZero 𝕜] [DecidableEq 𝕜] (p q : 𝕜[X]) (s : Multiset 𝕜) :
     divDiff (fun z => (p + q).eval z) s =
       divDiff (fun z => p.eval z) s + divDiff (fun z => q.eval z) s := by
   rw [divDiff_polynomial, divDiff_polynomial, divDiff_polynomial,
     add_modByMonic, coeff_add]
 
-/-- **Path expansion of a polynomial in an upper triangular matrix**: for `i < j`,
-`p(T)_ij = ∑_{s ⊆ (i, j)} t_{s₀s₁} ⋯ t_{s_{k-1}s_k} · p[t_{s₀s₀}, …, t_{s_ks_k}]`. -/
+/-- **Path expansion of a polynomial in an upper triangular matrix.** Let $\mathbb{K}$ be a
+nontrivially normed field of characteristic zero, let $T \in \mathbb{K}^{n \times n}$ be upper
+triangular, and let $p$ be a polynomial over $\mathbb{K}$. Then for $i < j$,
+$$p(T)_{ij} = \sum_{s \subseteq (i, j)} t_{s_0 s_1} \cdots t_{s_{k-1} s_k}\;
+  p[t_{s_0 s_0}, \dots, t_{s_k s_k}],$$
+where $i = s_0 < \dots < s_k = j$ is the path through $s$, and $p[\dots]$ is the divided
+difference of $p$ at the diagonal entries along the path. -/
 theorem aeval_apply_eq_sum_pathProd [CharZero 𝕜] [DecidableEq 𝕜] {T : Matrix n n 𝕜}
     (hT : T.IsUpperTriangular)
     (p : 𝕜[X]) {i j : n} (hij : i < j) :
@@ -385,8 +476,8 @@ theorem aeval_apply_eq_sum_pathProd [CharZero 𝕜] [DecidableEq 𝕜] {T : Matr
     ring
 
 omit [LocallyFiniteOrder n] in
-/-- The diagonal entries of an upper triangular matrix, with their multiplicities: the roots of its
-characteristic polynomial. -/
+/-- The minimal polynomial of an upper triangular matrix divides $\prod_k (z - t_{kk})$, whose roots
+are the diagonal entries with their multiplicities. -/
 private theorem minpoly_dvd_nodalMultiset_diag {T : Matrix n n 𝕜} (hT : T.IsUpperTriangular) :
     minpoly 𝕜 T ∣ nodalMultiset (Finset.univ.val.map fun k => T k k) := by
   have h : nodalMultiset (Finset.univ.val.map fun k => T k k) = T.charpoly := by
@@ -397,8 +488,10 @@ private theorem minpoly_dvd_nodalMultiset_diag {T : Matrix n n 𝕜} (hT : T.IsU
   exact minpoly_dvd_charpoly T
 
 omit [LocallyFiniteOrder n] in
-/-- **The diagonal of `f(T)`** ([golub2013matrix] Theorem 9.1.4, `f_ii = f(t_ii)`): for upper
-triangular `T`, with no hypothesis on `f`. -/
+/-- **The diagonal of $f(T)$.** Let $\mathbb{K}$ be a nontrivially normed field, let
+$T \in \mathbb{K}^{n \times n}$ be upper triangular, and let
+$f \colon \mathbb{K} \to \mathbb{K}$ be any function. Then $f(T)_{ii} = f(t_{ii})$ for every
+$i$. This is the diagonal part of Theorem 9.1.4 of [golub2013matrix]. -/
 theorem pfc_apply_self_of_isUpperTriangular {T : Matrix n n 𝕜} (hT : T.IsUpperTriangular)
     (f : 𝕜 → 𝕜) (i : n) : pfc f T i i = f (T i i) := by
   classical
@@ -408,14 +501,20 @@ theorem pfc_apply_self_of_isUpperTriangular {T : Matrix n n 𝕜} (hT : T.IsUppe
     (isJetInterpolant_interpolateJet _ _), hT.aeval_apply_self,
     eval_interpolateJet_taylorJet hmem]
 
-/-- **[golub2013matrix] Theorem 9.1.4**: for `T` upper triangular and `i < j`,
-`f(T)_ij = ∑_{s ∈ S_ij} t_{s₀s₁} t_{s₁s₂} ⋯ t_{s_{k-1}s_k} f[λ_{s₀}, …, λ_{s_k}]`, the sum over the
-strictly increasing index sequences `i = s₀ < ⋯ < s_k = j` (`Matrix.path i s j`, `s ⊆ (i, j)`) of
-the path products times the divided differences of `f` at the diagonal entries along the path —
-confluent where they repeat, so that no distinctness of the eigenvalues is needed. No smoothness
-hypothesis on `f` either: both sides are read through the jets of `f`. With
-`Matrix.pfc_apply_self_of_isUpperTriangular` (`f_ii = f(t_ii)`) and `Matrix.BlockTriangular.pfc`
-(`f_ij = 0` for `i > j`) this determines `f(T)`. -/
+/-- The **divided-difference formula** for a function of a triangular matrix. Let $\mathbb{K}$ be a
+nontrivially normed field of characteristic zero, let $T \in \mathbb{K}^{n \times n}$ be upper
+triangular, and let $f \colon \mathbb{K} \to \mathbb{K}$. Then for $i < j$,
+$$f(T)_{ij} = \sum_{s \in S_{ij}} t_{s_0 s_1} t_{s_1 s_2} \cdots t_{s_{k-1} s_k}\,
+  f[\lambda_{s_0}, \dots, \lambda_{s_k}],$$
+where $S_{ij}$ is the set of strictly increasing index sequences $i = s_0 < \dots < s_k = j$,
+and $\lambda_r = t_{rr}$. This is Theorem 9.1.4 of [golub2013matrix].
+
+The divided differences are confluent where the diagonal entries repeat, so the eigenvalues need
+not be distinct. There is no smoothness hypothesis on $f$: both sides are defined through the
+jets of $f$. A sequence in $S_{ij}$ is `Matrix.path i s j` for $s \subseteq (i, j)$, and
+$f[\dots]$ is `Hermite.divDiff`. Together with `Matrix.pfc_apply_self_of_isUpperTriangular`
+($f_{ii} = f(t_{ii})$) and `Matrix.BlockTriangular.pfc` ($f_{ij} = 0$ for $i > j$), this formula
+determines $f(T)$. -/
 theorem pfc_apply_eq_sum_divDiff [CharZero 𝕜] [DecidableEq 𝕜] {T : Matrix n n 𝕜}
     (hT : T.IsUpperTriangular)
     (f : 𝕜 → 𝕜) {i j : n} (hij : i < j) :

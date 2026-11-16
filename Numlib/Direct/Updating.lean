@@ -12,63 +12,94 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 /-!
 # Updating the QR and Cholesky factorizations
 
-Updating matrix factorizations ([golub2013matrix] §6.5, after Gill–Golub–Murray–Saunders 1974):
-the full QR factorization after a rank-one change, after deleting or inserting a column, after
-inserting or deleting a row; the Cholesky factorization after adding (`A + z zᵀ`, plane rotations)
-or removing (`A − z zᵀ`, hyperbolic rotations) a rank-one term. Real matrices, as the book and as
-`Matrix.planeRotation`, except where the argument works over any ring.
+This module proves that the QR factorization and the Cholesky factorization of a real matrix can be
+updated by rotations in a few prescribed planes after a small change of the matrix, as in
+[golub2013matrix] §6.5, which follows Gill, Golub, Murray and Saunders (1974). For the full QR
+factorization $A = QR$ the changes are a rank-one change $A + uv^T$, the deletion or insertion of a
+column, and the insertion or deletion of a row. For a Cholesky factorization $A = H^T H$, with $H$
+upper triangular with positive diagonal, the changes are the update $A + zz^T$, done by plane
+rotations, and the downdate $A - zz^T$, done by hyperbolic rotations. The matrices are real, as in
+the book and as for `Matrix.planeRotation`, except where the argument works over any ring.
 
-The backbone states *what* the updates compute, not how: each update is an existence theorem
-saying that there are rotations in prescribed planes — the structural content that makes the
-update cost `O(n²)` — whose product carries the old factorization to the new one. The step-by-step
-procedures of §6.5 are surface definitions, proved correct against the two general sweep lemmas
-of `Numlib/LinearAlgebra/Matrix/QR`: `Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero` ((6.5.2),
-bottom-up embeddings keep an upper trapezoidal matrix Hessenberg) and
-`Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations` (a top-down zeroing sweep triangularizes a
-Hessenberg matrix). The adjacent embeddings `Matrix.adjacentEmbed` are in
-`Numlib/LinearAlgebra/Matrix/PlaneRotation` and the block diagonal `Matrix.consDiag a Q` of §6.5.3
-in `Numlib/LinearAlgebra/Matrix/Block`.
+Each update is an existence theorem: there are rotations in prescribed planes whose product carries
+the old factorization to the new one. The restriction to these planes is the structural fact that
+makes an update cost $O(n^2)$. Below, $G_a G_{a+1} \cdots G_{a+n-1}$ is a sweep of rotations $G_j$
+in the adjacent planes $(j, j+1)$; $[H; z^T]$ is the matrix $H$ with the row $z^T$ appended at the
+bottom; $[w^T; R]$ is the matrix $R$ with the row $w^T$ added at the top; and
+$S = \operatorname{diag}(I, -1)$ is the signature matrix of (6.5.9).
 
 ## Main definitions
 
-* `Matrix.adjacentRotationProd a n c s`: the sweep `G_a ⋯ G_{a+n−1}` of rotations in adjacent
-  planes; applied on the left it acts bottom-up, its transpose top-down.
+* `Matrix.adjacentRotationProd`: the sweep $G_a \cdots G_{a+n-1}$ of rotations in adjacent planes;
+  applied on the left it acts bottom-up, and its transpose acts top-down.
 
 ## Main results
 
-* `Matrix.exists_rotations_triangularize_of_hessenberg` and
-  `Matrix.exists_adjacentRotationProd_mulVec_eq_zero` are the Givens existence statements.
-* The QR updates: `Matrix.exists_isQR_rankOne_update` (§6.5.1), `Matrix.IsQR.exists_deleteColumn`,
-  `Matrix.IsQR.exists_insertColumn` (§6.5.2), `Matrix.IsQR.exists_insertRow`,
-  `Matrix.IsQR.exists_deleteFirstRow`, `Matrix.IsQR.exists_deleteRow` (§6.5.3), with the shape
-  lemmas `IsQR.conjTranspose_mul_deleteColumn`, `…_insertColumn`, `…_insertRow`.
-* The stacked matrix `[H; zᵀ]` (`Matrix.fromRows H (replicateRow Unit z)`):
-  `Matrix.transpose_mul_self_fromRows` ((6.5.6)), `transpose_mul_indefiniteDiagonal_mul_fromRows`
-  ((6.5.10)), `transpose_mul_self_eq_of_mem_orthogonalGroup` ((6.5.7)),
-  `transpose_mul_self_sub_eq_of_isJOrthogonal` ((6.5.11)–(6.5.12)), and the one-step shape lemma
-  `Matrix.fromRows_rotate_step` shared by both Cholesky sweeps.
-* `Matrix.exists_choleskyUpdate`, `Matrix.exists_choleskyDowndate` (§6.5.4), the step
-  `Matrix.hyperbolicDowndate_step` ([golub2013matrix] Theorem 6.5.1), the existence of each
-  hyperbolic pair `Matrix.sq_lt_sq_of_posDef_transpose_mul_self_sub` (with the quadratic form
-  `Matrix.dotProduct_transpose_mul_self_sub_mulVec`), and the sign normalization
-  `Matrix.isCholesky_diagonal_sign_mul`.
+* `Matrix.exists_adjacentRotationProd_mulVec_eq_zero`: a bottom-up sweep of Givens rotations can
+  zero a block of consecutive entries of a vector.
+* `Matrix.exists_rotations_triangularize_of_hessenberg`: a top-down sweep of Givens rotations makes
+  an upper Hessenberg matrix upper trapezoidal.
+* `Matrix.exists_isQR_rankOne_update`: the QR factorization after a rank-one change (§6.5.1).
+* `Matrix.IsQR.exists_deleteColumn` and `Matrix.IsQR.exists_insertColumn`: the QR factorization
+  after deleting or inserting a column (§6.5.2), with the shape lemmas
+  `Matrix.IsQR.conjTranspose_mul_deleteColumn` and `Matrix.IsQR.conjTranspose_mul_insertColumn`.
+* `Matrix.IsQR.exists_insertRow`, `Matrix.IsQR.exists_deleteFirstRow` and
+  `Matrix.IsQR.exists_deleteRow`: the QR factorization after inserting or deleting a row (§6.5.3),
+  with the shape lemma `Matrix.IsQR.conjTranspose_mul_insertRow`.
+* `Matrix.transpose_mul_self_fromRows` and `Matrix.transpose_mul_indefiniteDiagonal_mul_fromRows`:
+  $[H; z^T]^T [H; z^T] = H^T H + zz^T$ (6.5.6) and $[H; z^T]^T S [H; z^T] = H^T H - zz^T$ (6.5.10).
+* `Matrix.transpose_mul_self_eq_of_mem_orthogonalGroup` and
+  `Matrix.transpose_mul_self_sub_eq_of_isJOrthogonal`: an orthogonal or $S$-orthogonal reduction of
+  a stacked matrix to $[R; 0]$ gives the new Gram matrix $R^T R$ ((6.5.7), (6.5.11)–(6.5.12)).
+* `Matrix.transpose_mul_self_sub_eq_of_isJOrthogonal_of_fromRows`: an $S$-orthogonal map from
+  $[H; z^T]$ to $[R; z'^T]$ keeps $H^T H - zz^T = R^T R - z' z'^T$.
+* `Matrix.fromRows_rotate_step`: one step of either Cholesky sweep keeps the stacked matrix
+  triangular.
+* `Matrix.exists_choleskyUpdate` and `Matrix.exists_choleskyDowndate`: the Cholesky factor of
+  $A + zz^T$ and of a positive definite $A - zz^T$ (§6.5.4).
+* `Matrix.hyperbolicDowndate_step`: one hyperbolic downdating step (Theorem 6.5.1 of
+  [golub2013matrix]).
+* `Matrix.sq_lt_sq_of_posDef_transpose_mul_self_sub`: the hyperbolic rotation of each downdating
+  step exists; its proof uses the quadratic form `Matrix.dotProduct_transpose_mul_self_sub_mulVec`.
+* `Matrix.isCholesky_diagonal_sign_mul`: multiplying a triangular factor by the signs of its
+  diagonal gives the Cholesky factor.
+
+## Proof outline
+
+The QR updates rest on two sweep lemmas of `Numlib.LinearAlgebra.Matrix.QR`. By
+`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero` (6.5.2), rotations in adjacent planes applied
+bottom-up keep an upper trapezoidal matrix upper Hessenberg. By
+`Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations`, a top-down sweep that zeroes the
+subdiagonal makes an upper Hessenberg matrix upper trapezoidal. The Cholesky downdate sweeps the
+planes $(k, \mathrm{last})$ in order. The invariant is that the current stacked matrix $[R'; z'^T]$
+has $R'^T R' - z' z'^T = A - zz^T$. Positive definiteness tested on $R'^{-1} e_k$ gives
+$|z'_k| < r'_{kk}$, so the hyperbolic rotation of step $k$ exists.
 
 ## Implementation notes
 
-Rectangular shapes use `Matrix.HasLowerBandwidthRect`: upper Hessenberg is bandwidth `1`, upper
-trapezoidal (the `R` of `Matrix.IsQR`) bandwidth `0`. The signature `S = diag(I_n, −1)` of (6.5.9)
-is Mathlib's `LieAlgebra.Orthogonal.indefiniteDiagonal n Unit`, and the Cholesky factor is the
-backbone's upper triangular `H = Gᵀ` (`Matrix.IsCholesky A H`: `Hᴴ H = A`).
-
-The downdate does not follow the book's induction on the order through Theorem 6.5.1 and a
-reindexing `Fin (n + 1) ≃ Unit ⊕ Fin n`: it sweeps the planes `(k, last)` in order with the
-invariant that the current `[R'; z'ᵀ]` has `R'ᵀ R' − z' z'ᵀ = A − z zᵀ`; positive definiteness
-tested on `R'⁻¹ e_k` gives `|z'_k| < r'_kk`, so the hyperbolic pair of step `k` exists.
-
-A Givens sweep can leave negative diagonal entries in a triangular factor (the book's routine
-Algorithm 5.1.3 may return a negative `r`); the book's "the updated Cholesky factor is `G̃ = Rᵀ`"
-holds up to the signs that `Matrix.isCholesky_diagonal_sign_mul` normalizes. The sweeps here use
-the backbone's `Matrix.givensPair` and `Matrix.hyperbolicPair`, whose diagonal stays positive.
+* The theorems state what the updates compute, not how. The step-by-step procedures of §6.5 are not
+  defined here; the surface library defines them and proves them correct with the two sweep lemmas.
+* The adjacent embeddings `Matrix.adjacentEmbed` are in `Numlib.LinearAlgebra.Matrix.PlaneRotation`,
+  and the block diagonal matrix `Matrix.consDiag a Q` of §6.5.3 is in
+  `Numlib.LinearAlgebra.Matrix.Block`.
+* Rectangular shapes use `Matrix.HasLowerBandwidthRect`: upper Hessenberg is lower bandwidth $1$,
+  and upper trapezoidal (the factor $R$ of `Matrix.IsQR`) is lower bandwidth $0$.
+* The signature $S = \operatorname{diag}(I_n, -1)$ of (6.5.9) is Mathlib's
+  `LieAlgebra.Orthogonal.indefiniteDiagonal n Unit`. The stacked matrix $[H; z^T]$ is
+  `Matrix.fromRows H (Matrix.replicateRow Unit z)`, so its last row is indexed by `Sum.inr ()`.
+* The Cholesky factor is the upper triangular $H = G^T$ of `Matrix.IsCholesky A H`, which states
+  $H^H H = A$; the book works with the lower triangular $G$.
+* The downdate does not follow the induction of the book on the order through Theorem 6.5.1 and a
+  reindexing `Fin (n + 1) ≃ Unit ⊕ Fin n`. It sweeps the planes $(k, \mathrm{last})$ in order, as in
+  the proof outline.
+* A Givens sweep can leave negative diagonal entries in a triangular factor; the routine of
+  Algorithm 5.1.3 of the book can return a negative $r$. The statement of the book "the updated
+  Cholesky factor is $\tilde G = R^T$" holds up to the signs that
+  `Matrix.isCholesky_diagonal_sign_mul` normalizes. The sweeps here use `Matrix.givensPair` and
+  `Matrix.hyperbolicPair`, which keep the diagonal positive.
+* Two slips of the book are recorded at the declarations: the typo $\tilde A = RR^T$ after (6.5.7),
+  at `Matrix.transpose_mul_self_eq_of_mem_orthogonalGroup`, and the Schur complement in Theorem
+  6.5.1, at `Matrix.hyperbolicDowndate_step`.
 -/
 
 open scoped Matrix
@@ -81,43 +112,55 @@ section AdjacentRotationProd
 
 variable {M : ℕ}
 
-/-- **A sweep of rotations in adjacent planes**: the product `G_a G_{a+1} ⋯ G_{a+n-1}`, in
-increasing order, of the rotations `G_j = !![c j, -s j; s j, c j]` of the planes `(j, j + 1)`
-(`Matrix.planeRotation`, embedded by `Matrix.adjacentEmbed`). Applied on the left to a matrix, the
-last factor acts first: `adjacentRotationProd a n c s * X` sweeps the planes bottom-up, and its
-transpose `(adjacentRotationProd a n c s)ᵀ * X`, the product of the transposed rotations in
-decreasing order, sweeps them top-down. -/
+/-- A **sweep of rotations in adjacent planes**. Let $a, n \in \mathbb{N}$ and
+$c, s : \mathbb{N} \to \mathbb{R}$. For each $j$, let $G_j$ be the rotation $\begin{bmatrix} c_j
+& -s_j \\ s_j & c_j \end{bmatrix}$ placed in the coordinate plane $(j, j+1)$ of $\mathbb{R}^M$,
+and the identity when $j + 1 \ge M$. The sweep is the product in increasing order $$G_a G_{a+1}
+\cdots G_{a+n-1}.$$
+
+Applied on the left of a matrix, the last factor acts first:
+`Matrix.adjacentRotationProd a n c s * X` sweeps the planes bottom-up. Its transpose
+`(Matrix.adjacentRotationProd a n c s)ᵀ * X`, the product of the transposed rotations in
+decreasing order, sweeps them top-down.
+
+The factor $G_j$ is `Matrix.adjacentEmbed j !![c j, -s j; s j, c j]`. The definition does not
+require $c_j^2 + s_j^2 = 1$; the theorems assume it where they need it. -/
 noncomputable def adjacentRotationProd (a n : ℕ) (c s : ℕ → ℝ) : Matrix (Fin M) (Fin M) ℝ :=
   ((List.range' a n).map fun j => adjacentEmbed j !![c j, -s j; s j, c j]).prod
 
 variable {a n : ℕ} {c s : ℕ → ℝ}
 
-/-- A sweep is the forward product `Matrix.prodFwd` of its embedded rotations. -/
+/-- A sweep is a forward product: $G_a G_{a+1} \cdots G_{a+n-1}$ is `prodFwd` of the sequence
+$k \mapsto G_{a+k}$, taken to $n$ factors. -/
 theorem adjacentRotationProd_eq_prodFwd :
     (adjacentRotationProd a n c s : Matrix (Fin M) (Fin M) ℝ) =
       prodFwd (fun k => adjacentEmbed (a + k) !![c (a + k), -s (a + k); s (a + k), c (a + k)]) n :=
   prod_map_range'_eq_prodFwd _ a n
 
-/-- The empty sweep is the identity. -/
+/-- The empty sweep, with $n = 0$, is the identity matrix. -/
 @[simp]
 theorem adjacentRotationProd_zero :
     (adjacentRotationProd a 0 c s : Matrix (Fin M) (Fin M) ℝ) = 1 := by
   simp [adjacentRotationProd]
 
-/-- Peeling off the first rotation of a sweep. -/
+/-- Splitting off the first rotation of a sweep: $G_a G_{a+1} \cdots G_{a+n} = G_a \, (G_{a+1}
+\cdots G_{a+n})$. -/
 theorem adjacentRotationProd_succ :
     (adjacentRotationProd a (n + 1) c s : Matrix (Fin M) (Fin M) ℝ) =
       adjacentEmbed a !![c a, -s a; s a, c a] * adjacentRotationProd (a + 1) n c s := by
   simp [adjacentRotationProd, List.range'_succ]
 
-/-- Peeling off the last rotation of a sweep. -/
+/-- Splitting off the last rotation of a sweep: $G_a \cdots G_{a+n} = (G_a \cdots G_{a+n-1}) \,
+G_{a+n}$. -/
 theorem adjacentRotationProd_succ' :
     (adjacentRotationProd a (n + 1) c s : Matrix (Fin M) (Fin M) ℝ) =
       adjacentRotationProd a n c s * adjacentEmbed (a + n) !![c (a + n), -s (a + n);
         s (a + n), c (a + n)] := by
   simp [adjacentRotationProd, List.range'_concat]
 
-/-- A sweep depends only on the angles of its own planes. -/
+/-- A sweep depends only on the angles of its own planes: if $c_j = c'_j$ and $s_j = s'_j$ for
+$a \le j < a + n$, then the sweeps $G_a \cdots G_{a+n-1}$ for $(c, s)$ and for $(c', s')$ are
+equal. -/
 theorem adjacentRotationProd_congr {c' s' : ℕ → ℝ}
     (h : ∀ j, a ≤ j → j < a + n → c j = c' j ∧ s j = s' j) :
     (adjacentRotationProd a n c s : Matrix (Fin M) (Fin M) ℝ) = adjacentRotationProd a n c' s' := by
@@ -128,7 +171,8 @@ theorem adjacentRotationProd_congr {c' s' : ℕ → ℝ}
   obtain ⟨hc, hs⟩ := h j h₁ h₂
   rw [hc, hs]
 
-/-- A sweep of rotations is orthogonal. -/
+/-- If $c_j^2 + s_j^2 = 1$ for all $j$, then the sweep $G_a \cdots G_{a+n-1}$ is an orthogonal
+matrix. -/
 theorem adjacentRotationProd_mem_orthogonalGroup (h : ∀ j, c j ^ 2 + s j ^ 2 = 1) :
     (adjacentRotationProd a n c s : Matrix (Fin M) (Fin M) ℝ) ∈ orthogonalGroup (Fin M) ℝ := by
   refine Submonoid.list_prod_mem _ fun G hG => ?_
@@ -146,11 +190,16 @@ section Givens
 
 variable {M N : ℕ}
 
-/-- **Bottom-up zeroing of a vector by a sweep of Givens rotations** ([golub2013matrix] §6.5.1,
-"rotations `J_{n−1}, …, J_1` … such that `J_1ᵀ ⋯ J_{n−1}ᵀ w = ± ‖w‖₂ e₁`"): for every
-`x : Fin M → ℝ` there are angles making the sweep `adjacentRotationProd b n c s` — whose last
-plane `(b + n − 1, b + n)` acts first — annihilate the entries `b < i ≤ b + n` of `x`, leaving
-the entries before `b` alone. Each rotation is the Givens pair of the two entries it mixes. -/
+/-- Bottom-up zeroing of a vector by a sweep of Givens rotations. Let $x \in \mathbb{R}^M$ and
+$b, n \in \mathbb{N}$. Then there are $c, s : \mathbb{N} \to \mathbb{R}$ with
+$c_j^2 + s_j^2 = 1$ for all $j$ such that the sweep $P = G_b G_{b+1} \cdots G_{b+n-1}$ satisfies
+$$(Px)_i = 0 \quad \text{for } b < i \le b + n, \qquad (Px)_i = x_i \quad \text{for } i < b.$$
+The last plane $(b + n - 1, b + n)$ acts first. This is the step of [golub2013matrix] §6.5.1
+that computes "rotations $J_{n-1}, \dots, J_1$ … such that
+$J_1^T \cdots J_{n-1}^T w = \pm \|w\|_2 e_1$".
+
+The sweep $P$ is `Matrix.adjacentRotationProd b n c s`. In the proof, each rotation is
+`Matrix.givensPair` of the two entries that it mixes. -/
 theorem exists_adjacentRotationProd_mulVec_eq_zero (x : Fin M → ℝ) (b n : ℕ) :
     ∃ c s : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧
       (∀ i : Fin M, b < (i : ℕ) → (i : ℕ) ≤ b + n →
@@ -198,9 +247,8 @@ theorem exists_adjacentRotationProd_mulVec_eq_zero (x : Fin M → ℝ) (b n : �
       rw [adjacentRotationProd_succ, adjacentEmbed_of_le _ (by omega), Matrix.one_mul]
       exact hx i (by omega)
 
-/-- One step of a top-down sweep, on the left of a matrix: the transpose of the sweep through the
-plane `(a + t, a + t + 1)` is that plane's transposed rotation times the transpose of the sweep
-before it. -/
+/-- One step of a top-down sweep, on the left of a matrix: $(G_a \cdots G_{a+t})^T X = G_{a+t}^T \,
+\bigl((G_a \cdots G_{a+t-1})^T X\bigr)$. -/
 private theorem transpose_adjacentRotationProd_succ_mul (a t : ℕ) (c s : ℕ → ℝ)
     (X : Matrix (Fin M) (Fin N) ℝ) :
     (adjacentRotationProd a (t + 1) c s : Matrix (Fin M) (Fin M) ℝ)ᵀ * X =
@@ -209,12 +257,20 @@ private theorem transpose_adjacentRotationProd_succ_mul (a t : ℕ) (c s : ℕ �
   rw [adjacentRotationProd_succ', transpose_mul, Matrix.mul_assoc, adjacentEmbed_transpose,
     rotationBlock_transpose]
 
-/-- **Givens triangularization of a rectangular Hessenberg matrix exists** ([golub2013matrix]
-§6.5.1–6.5.3, after Algorithm 5.2.5): if `H : Matrix (Fin M) (Fin N) ℝ` is upper Hessenberg and
-already triangular in its first `a` columns, there are angles `c j ^ 2 + s j ^ 2 = 1` such that
-the sweep `J = G_a ⋯ G_{L−1}` of rotations in the planes `(j, j + 1)`, `L = min N (M − 1)`, makes
-`Jᵀ H` upper trapezoidal (`J` is orthogonal, `Matrix.adjacentRotationProd_mem_orthogonalGroup`).
-Each `G_j` is the Givens pair of the current entries `(j, j)`, `(j + 1, j)`; the rest is
+/-- Givens triangularization of a rectangular upper Hessenberg matrix. Let
+$H \in \mathbb{R}^{M \times N}$ be upper Hessenberg, that is, $h_{il} = 0$ for $i > l + 1$. Let
+$a \in \mathbb{N}$ be such that the first $a$ columns of $H$ are already triangular:
+$h_{il} = 0$ for $l < i$ and $l < a$. Let $L = \min(N, M - 1)$. Then there are
+$c, s : \mathbb{N} \to \mathbb{R}$ with $c_j^2 + s_j^2 = 1$ for all $j$ such that, for the sweep
+$J = G_a \cdots G_{L-1}$ of rotations in the planes $(j, j + 1)$, the matrix $J^T H$ is upper
+trapezoidal. This is the triangularization step of [golub2013matrix] §6.5.1–6.5.3, after
+Algorithm 5.2.5.
+
+The sweep $J$ is `Matrix.adjacentRotationProd a (L - a) c s`, with the subtractions in
+$\mathbb{N}$; for $a \ge L$ the sweep is empty. $J$ is orthogonal by
+`Matrix.adjacentRotationProd_mem_orthogonalGroup`. Upper Hessenberg and upper trapezoidal are
+`Matrix.HasLowerBandwidthRect` with bandwidth $1$ and $0$. In the proof, each $G_j$ is the
+Givens pair of the current entries $(j, j)$ and $(j + 1, j)$, and the rest is
 `Matrix.hasLowerBandwidthRect_zero_of_adjacentRotations`. -/
 theorem exists_rotations_triangularize_of_hessenberg {H : Matrix (Fin M) (Fin N) ℝ}
     (hH : H.HasLowerBandwidthRect 1) {a : ℕ}
@@ -276,16 +332,21 @@ section QR
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- **QR after a rank-one change** ([golub2013matrix] §6.5.1, (6.5.1)–(6.5.3)): if `A = Q R`
-(`A` real and square) and `u v : Fin n → ℝ`, there are two sweeps of rotations in the adjacent
-planes `(k, k + 1)`: `J = J_{n−2} ⋯ J_0` (the transpose of
-`P = adjacentRotationProd 0 (n − 1) c s`),
-with `Jᵀ (Qᵀ u)` a multiple of `e₀`, and `G = G_0 ⋯ G_{n−2}`, such that
-`A + u vᵀ = (Q J G) (Gᵀ Jᵀ (R + (Qᵀ u) vᵀ))` is a full QR factorization. By (6.5.1)
-`A + u vᵀ = Q (R + w vᵀ)`, `w = Qᵀ u`; `Jᵀ R` is upper Hessenberg
-(`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`) and `Jᵀ w vᵀ` lives in row `0`, so
-`H₁ = Jᵀ (R + w vᵀ)` is upper Hessenberg (6.5.3), and `G` triangularizes it
-(`Matrix.exists_rotations_triangularize_of_hessenberg`). -/
+/-- QR factorization after a rank-one change. Let $A, Q, R \in \mathbb{R}^{n \times n}$, let
+$A = QR$ be a full QR factorization, and let $u, v \in \mathbb{R}^n$. Write $w = Q^T u$. Then
+there are two sweeps $P = G_0 \cdots G_{n-2}$ and $P' = G'_0 \cdots G'_{n-2}$ of rotations in
+the planes $(k, k + 1)$, with $c_j^2 + s_j^2 = 1$ and $c_j'^2 + s_j'^2 = 1$ for all $j$, such
+that $Pw$ is a multiple of $e_0$, that is, $(Pw)_i = 0$ for $i \ne 0$, and $$A + uv^T = (Q P^T
+P') \, \bigl(P'^T P \, (R + w v^T)\bigr)$$ is a full QR factorization. This is §6.5.1 of
+[golub2013matrix], (6.5.1)–(6.5.3).
+
+In the notation of the book, $J = J_{n-2} \cdots J_0$ is $P^T$ and $G = G_0 \cdots G_{n-2}$ is
+$P'$. By (6.5.1), $A + uv^T = Q (R + w v^T)$. The matrix $J^T R$ is upper Hessenberg by
+`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`, and $J^T w v^T$ is nonzero only in row $0$.
+Thus $H_1 = J^T (R + w v^T)$ is upper Hessenberg (6.5.3), and $G$ triangularizes it by
+`Matrix.exists_rotations_triangularize_of_hessenberg`. The two sweeps are
+`Matrix.adjacentRotationProd 0 (n - 1) c s` and `Matrix.adjacentRotationProd 0 (n - 1) c' s'`,
+and $u v^T$ is `Matrix.vecMulVec u v`. -/
 theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQR A Q R)
     (u v : Fin n → ℝ) :
     ∃ c s c' s' : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧ (∀ j, c' j ^ 2 + s' j ^ 2 = 1) ∧
@@ -328,10 +389,14 @@ theorem exists_isQR_rankOne_update {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQ
       (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hP, Matrix.mul_one, Matrix.mul_add, h.mul_eq,
       mul_vecMulVec, mulVec_mulVec, (mem_orthogonalGroup_iff (Fin n) ℝ).1 hQ, one_mulVec]
 
-/-- **Deleting a column leaves a Hessenberg matrix** ([golub2013matrix] §6.5.2): if `A = Q R` and
-`Ã = A.submatrix id k.succAbove` is `A` with its `k`-th column deleted, then `Qᴴ Ã` is `R` with
-its `k`-th column deleted, which is upper Hessenberg and still triangular in its first `k`
-columns. -/
+/-- Deleting a column of a QR factorization leaves an upper Hessenberg matrix. Let $\mathbb{K}$ be
+$\mathbb{R}$ or $\mathbb{C}$, let $A \in \mathbb{K}^{m \times (n+1)}$ have the full QR
+factorization $A = QR$, and let $0 \le k \le n$. Let $\tilde A$ and $\tilde R$ be $A$ and $R$
+with column $k$ deleted. Then $Q^H \tilde A = \tilde R$, the matrix $\tilde R$ is upper
+Hessenberg, and its first $k$ columns are still triangular: $\tilde r_{ij} = 0$ for $j < i$ and
+$j < k$. This is §6.5.2 of [golub2013matrix].
+
+The deletion of column $k$ is `A.submatrix id k.succAbove`. -/
 theorem IsQR.conjTranspose_mul_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) 𝕜} {Q R}
     (h : IsQR A Q R) (k : Fin (n + 1)) :
     Qᴴ * A.submatrix id k.succAbove = R.submatrix id k.succAbove ∧
@@ -348,10 +413,16 @@ theorem IsQR.conjTranspose_mul_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) �
   · rw [Fin.val_succAbove_of_lt hjk]
     exact hij
 
-/-- **QR after deleting a column** ([golub2013matrix] §6.5.2, `Q₁ = Q G_k ⋯ G_{n−1}`): if `A = Q R`
-and `Ã` is `A` with its `k`-th column deleted, there is a sweep `G = G_k ⋯ G_{L−1}` of rotations
-in the planes `(j, j + 1)`, `k ≤ j < L = min n (m − 1)`, with `Ã = (Q G) (Gᵀ Qᵀ Ã)` a full QR
-factorization; `Qᵀ Ã` is `IsQR.conjTranspose_mul_deleteColumn`. -/
+/-- QR factorization after deleting a column. Let $A \in \mathbb{R}^{m \times (n+1)}$ have the full
+QR factorization $A = QR$, let $0 \le k \le n$, and let $\tilde A$ and $\tilde R$ be $A$ and $R$
+with column $k$ deleted. Let $L = \min(n, m - 1)$. Then there is a sweep
+$G = G_k \cdots G_{L-1}$ of rotations in the planes $(j, j + 1)$, $k \le j < L$, with
+$c_j^2 + s_j^2 = 1$ for all $j$, such that $$\tilde A = (QG) \, (G^T \tilde R)$$ is a full QR
+factorization. This is §6.5.2 of [golub2013matrix], where $Q_1 = Q G_k \cdots G_{n-1}$.
+
+The sweep $G$ is `Matrix.adjacentRotationProd k (L - k) c s`, with the subtractions in
+$\mathbb{N}$. The matrix $\tilde R$ equals $Q^T \tilde A$ by
+`Matrix.IsQR.conjTranspose_mul_deleteColumn`. -/
 theorem IsQR.exists_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) ℝ} {Q R} (h : IsQR A Q R)
     (k : Fin (n + 1)) :
     ∃ c s : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧
@@ -368,9 +439,14 @@ theorem IsQR.exists_deleteColumn {A : Matrix (Fin m) (Fin (n + 1)) ℝ} {Q R} (h
   have := isQR_conjTranspose_mul (mul_mem h.mem_unitaryGroup hG) (by rw [e]; exact hT)
   rwa [e] at this
 
-/-- **Inserting a column leaves a spike** ([golub2013matrix] §6.5.2): if `A = Q R` and `Ã` is `A`
-with `z` inserted as column `k`, then `Qᴴ Ã` is `R` with `Qᴴ z` inserted as column `k`: upper
-trapezoidal except in column `k`, below the diagonal. -/
+/-- Inserting a column into a QR factorization leaves a spike. Let $\mathbb{K}$ be $\mathbb{R}$ or
+$\mathbb{C}$, let $A \in \mathbb{K}^{m \times n}$ have the full QR factorization $A = QR$, let
+$z \in \mathbb{K}^m$, and let $0 \le k \le n$. Let $\tilde A$ be $A$ with $z$ inserted as column
+$k$. Then $Q^H \tilde A$ is $R$ with $Q^H z$ inserted as column $k$, and
+$(Q^H \tilde A)_{ij} = 0$ for $j < i$ and $j \ne k$: the matrix is upper trapezoidal except
+below the diagonal in column $k$. This is §6.5.2 of [golub2013matrix].
+
+The matrix $\tilde A$ is `Matrix.of fun i => Fin.insertNth k (z i) (A i)`. -/
 theorem IsQR.conjTranspose_mul_insertColumn {A : Matrix (Fin m) (Fin n) 𝕜} {Q R}
     (h : IsQR A Q R) (z : Fin m → 𝕜) (k : Fin (n + 1)) :
     Qᴴ * of (fun i => Fin.insertNth k (z i) (A i)) =
@@ -385,13 +461,17 @@ theorem IsQR.conjTranspose_mul_insertColumn {A : Matrix (Fin m) (Fin n) 𝕜} {Q
   rw [e, of_apply, Fin.insertNth_apply_succAbove]
   exact h.apply_eq_zero i j (by have := Fin.le_val_succAbove k j; omega)
 
-/-- **QR after inserting a column** ([golub2013matrix] §6.5.2, the rotations `J_{m−1}, …, J_{k+1}`):
-if `A = Q R` and `Ã` is `A` with `z` inserted as column `k`, there is a sweep of rotations in the
-planes `(j, j + 1)`, `k ≤ j < m − 1`, applied bottom-up
-(`P = adjacentRotationProd k (m − 1 − k) c s`, the book's `Jᵀ`), zeroing the spike of `Qᵀ Ã`
-below row `k`, with `Ã = (Q Pᵀ) (P Qᵀ Ã)` a full QR factorization. The rotations mix rows `≥ k`
-only, where the other columns of `Qᵀ Ã` vanish or are upper Hessenberg, so no fill-in occurs
-(`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`). -/
+/-- QR factorization after inserting a column. Let $A \in \mathbb{R}^{m \times n}$ have the full QR
+factorization $A = QR$, let $z \in \mathbb{R}^m$, let $0 \le k \le n$, and let $\tilde A$ be $A$
+with $z$ inserted as column $k$. Then there is a sweep $P = G_k \cdots G_{m-2}$ of rotations in
+the planes $(j, j + 1)$, $k \le j < m - 1$, with $c_j^2 + s_j^2 = 1$ for all $j$, such that
+$$\tilde A = (Q P^T) \, (P Q^T \tilde A)$$ is a full QR factorization. The sweep acts bottom-up
+and zeroes the spike of $Q^T \tilde A$ below row $k$. This is §6.5.2 of [golub2013matrix], with
+the rotations $J_{m-1}, \dots, J_{k+1}$; the sweep $P$ is the matrix $J^T$ of the book.
+
+The sweep $P$ is `Matrix.adjacentRotationProd k (m - 1 - k) c s`. The rotations mix only rows
+$\ge k$, where the other columns of $Q^T \tilde A$ vanish or are upper Hessenberg, so no fill-in
+occurs (`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`). -/
 theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQR A Q R)
     (z : Fin m → ℝ) (k : Fin (n + 1)) :
     ∃ c s : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧
@@ -432,15 +512,17 @@ theorem IsQR.exists_insertColumn {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQ
 
 end QR
 
-/-! ### Rows: `diag(a, Q)` and the cyclic row permutation -/
+/-! ### Rows: the matrix $\operatorname{diag}(a, Q)$ and the cyclic row permutation -/
 
 section ConsDiag
 
 variable {α : Type*} {m n p : ℕ}
 
-/-- **Moving an inserted row to the top**: with `σ = (Fin.cycleRange k)⁻¹` (`σ 0 = k`,
-`σ (j + 1) = k.succAbove j`), the rows of `Fin.insertNth k w A` permuted by `σ` are `[wᵀ; A]`
-([golub2013matrix] §6.5.3, the permutation `P`). -/
+/-- Moving an inserted row to the top. Let $A$ be an $m \times n$ matrix, $w$ a row of length $n$,
+$0 \le k \le m$, and $\tilde A$ the matrix $A$ with $w$ inserted as row $k$. Let $\sigma$ be the
+inverse of the cycle `Fin.cycleRange k`, so that $\sigma(0) = k$ and $\sigma(j + 1)$ is
+`k.succAbove j`. Then the matrix whose row $i$ is row $\sigma(i)$ of $\tilde A$ is $[w^T; A]$.
+This is the permutation $P$ of [golub2013matrix] §6.5.3. -/
 theorem submatrix_insertNth_cycleRange (w : Fin n → α) (A : Matrix (Fin m) (Fin n) α)
     (k : Fin (m + 1)) :
     (of (Fin.insertNth k w A) : Matrix (Fin (m + 1)) (Fin n) α).submatrix
@@ -454,10 +536,16 @@ section QRRows
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
 
-/-- **Inserting a row leaves a Hessenberg matrix** ([golub2013matrix] §6.5.3): if `A = Q R` and
-`Ã = Fin.insertNth k w A` is `A` with the row `wᵀ` inserted at position `k`, and `P` moves row `k`
-to the top (`Matrix.submatrix_insertNth_cycleRange`), then `diag(1, Qᴴ) P Ã = [wᵀ; R]`, which is
-upper Hessenberg. -/
+/-- Inserting a row into a QR factorization leaves an upper Hessenberg matrix. Let $\mathbb{K}$ be
+$\mathbb{R}$ or $\mathbb{C}$, let $A \in \mathbb{K}^{m \times n}$ have the full QR factorization
+$A = QR$, let $w \in \mathbb{K}^n$, and let $0 \le k \le m$. Let $\tilde A$ be $A$ with the row
+$w^T$ inserted at position $k$, and let $P$ be the row permutation that moves row $k$ to the top
+(`Matrix.submatrix_insertNth_cycleRange`). Then $$\operatorname{diag}(1, Q^H) \, P \tilde A =
+[w^T; R],$$ and $[w^T; R]$ is upper Hessenberg. This is §6.5.3 of [golub2013matrix].
+
+The matrix $\operatorname{diag}(1, Q^H)$ is `Matrix.consDiag 1 Qᴴ`. The row insertion is
+`Fin.insertNth k w A`, and the row permutation $P$ is `Matrix.submatrix` with
+`(Fin.cycleRange k).symm` on the rows. -/
 theorem IsQR.conjTranspose_mul_insertRow {A : Matrix (Fin m) (Fin n) 𝕜} {Q R} (h : IsQR A Q R)
     (w : Fin n → 𝕜) (k : Fin (m + 1)) :
     consDiag 1 Qᴴ * (of (Fin.insertNth k w A)).submatrix (Fin.cycleRange k).symm id =
@@ -471,11 +559,17 @@ theorem IsQR.conjTranspose_mul_insertRow {A : Matrix (Fin m) (Fin n) 𝕜} {Q R}
     simp only [of_apply, cons_rows_succ]
     exact h.apply_eq_zero i j (by simp at hij; omega)
 
-/-- **QR after inserting a row** ([golub2013matrix] §6.5.3, `Q₁ = diag(1, Q) J₁ ⋯ J_n`): if
-`A = Q R` and `Ã` is `A` with the row `wᵀ` inserted at position `k`, there is a sweep
-`J = J_0 ⋯ J_{L−1}` of rotations in the planes `(j, j + 1)`, `L = min n m`, with
-`Ã = (Pᵀ diag(1, Q) J) (Jᵀ [wᵀ; R])` a full QR factorization, `Pᵀ` the row permutation
-`Fin.cycleRange k` putting the top row back at position `k`. -/
+/-- QR factorization after inserting a row. Let $A \in \mathbb{R}^{m \times n}$ have the full QR
+factorization $A = QR$, let $w \in \mathbb{R}^n$, let $0 \le k \le m$, and let $\tilde A$ be $A$
+with the row $w^T$ inserted at position $k$. Let $L = \min(n, m)$. Then there is a sweep
+$J = J_0 \cdots J_{L-1}$ of rotations in the planes $(j, j + 1)$ of $\mathbb{R}^{m+1}$, with
+$c_j^2 + s_j^2 = 1$ for all $j$, such that $$\tilde A = \bigl(P^T \operatorname{diag}(1, Q) \,
+J\bigr) \, \bigl(J^T [w^T; R]\bigr)$$ is a full QR factorization. Here $P^T$ is the row
+permutation `Fin.cycleRange k`, which puts the top row back at position $k$. This is §6.5.3 of
+[golub2013matrix], where $Q_1 = \operatorname{diag}(1, Q) J_1 \cdots J_n$.
+
+The sweep $J$ is `Matrix.adjacentRotationProd 0 (min n m) c s`, and $P^T X$ is
+`X.submatrix (Fin.cycleRange k) id`. -/
 theorem IsQR.exists_insertRow {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQR A Q R)
     (w : Fin n → ℝ) (k : Fin (m + 1)) :
     ∃ c s : ℕ → ℝ, (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧
@@ -494,13 +588,20 @@ theorem IsQR.exists_insertRow {A : Matrix (Fin m) (Fin n) ℝ} {Q R} (h : IsQR A
     ← submatrix_insertNth_cycleRange w A k, submatrix_submatrix, Equiv.symm_comp_self,
     Function.id_comp, submatrix_id_id]
 
-/-- **QR after deleting the first row** ([golub2013matrix] §6.5.3): if `A = Q R` with
-`A : Matrix (Fin (m + 1)) (Fin n) ℝ`, there are rotations `G = G_{m−1} ⋯ G_0` in the planes
-`(j, j + 1)` (`Gᵀ = adjacentRotationProd 0 m c s`, zeroing the first row `q` of `Q` bottom-up,
-`Gᵀ q = a e₀`) such that `Q G = diag(a, Q₁)` with `a = ±1`, `Gᵀ R = [vᵀ; R₁]`, and
-`A₁ = Q₁ R₁` is a full QR factorization of `A` with its first row deleted. `Gᵀ R` is upper
-Hessenberg (`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`), so `R₁` is upper trapezoidal; the
-first row of the orthogonal `Q G` is `a e₀ᵀ`, which forces its first column to be `a e₀`. -/
+/-- QR factorization after deleting the first row. Let $A \in \mathbb{R}^{(m+1) \times n}$ have the
+full QR factorization $A = QR$. Then there are $c, s : \mathbb{N} \to \mathbb{R}$ with
+$c_j^2 + s_j^2 = 1$ for all $j$, a sign $a$ with $a^2 = 1$, and matrices
+$Q_1 \in \mathbb{R}^{m \times m}$, $R_1 \in \mathbb{R}^{m \times n}$ and a vector
+$v \in \mathbb{R}^n$ such that the sweep $P = G_0 \cdots G_{m-1}$ of rotations in the planes
+$(j, j + 1)$ satisfies $$Q P^T = \operatorname{diag}(a, Q_1), \qquad P R = [v^T; R_1],$$ and
+$A_1 = Q_1 R_1$ is a full QR factorization of the matrix $A_1$ obtained from $A$ by deleting its
+first row. This is §6.5.3 of [golub2013matrix].
+
+The sweep $P$ is `Matrix.adjacentRotationProd 0 m c s`, and the matrix $G = G_{m-1} \cdots G_0$
+of the book is $P^T$. The sweep acts bottom-up and zeroes the first row $q$ of $Q$:
+$P q = a e_0$. The matrix $P R$ is upper Hessenberg by
+`Matrix.prodFwd_adjacentEmbed_mul_apply_eq_zero`, so $R_1$ is upper trapezoidal. The first row
+of the orthogonal matrix $Q P^T$ is $a e_0^T$, and this forces its first column to be $a e_0$. -/
 theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} (h : IsQR A Q R) :
     ∃ (c s : ℕ → ℝ) (a : ℝ) (Q₁ : Matrix (Fin m) (Fin m) ℝ) (v : Fin n → ℝ)
       (R₁ : Matrix (Fin m) (Fin n) ℝ), (∀ j, c j ^ 2 + s j ^ 2 = 1) ∧ a ^ 2 = 1 ∧
@@ -558,11 +659,21 @@ theorem IsQR.exists_deleteFirstRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} 
   ext i j
   simp [Matrix.mul_apply, Fin.sum_univ_succ, hcol]
 
-/-- **QR after deleting any row** ([golub2013matrix] §6.5.3, "the procedure is similar when an
-arbitrary row is deleted"): if `A = Q R` with `A : Matrix (Fin (m + 1)) (Fin n) ℝ`, `k` a row, and
-`P` the cyclic permutation moving row `k` to the top, the update of
-`IsQR.exists_deleteFirstRow` applied to `P A = (P Q) R` gives a full QR factorization
-`A₁ = Q₁ R₁` of `A` with its `k`-th row deleted. -/
+/-- QR factorization after deleting any row. Let $A \in \mathbb{R}^{(m+1) \times n}$ have the full
+QR factorization $A = QR$, and let $0 \le k \le m$. Let $\sigma$ be the inverse of the cycle
+`Fin.cycleRange k`, and let $Q_\sigma$ be the matrix whose row $i$ is row $\sigma(i)$ of $Q$;
+this permutation moves row $k$ to the top. Then there are $c, s : \mathbb{N} \to \mathbb{R}$
+with $c_j^2 + s_j^2 = 1$ for all $j$, a sign $a$ with $a^2 = 1$, and
+$Q_1 \in \mathbb{R}^{m \times m}$, $v \in \mathbb{R}^n$ and $R_1 \in \mathbb{R}^{m \times n}$
+such that the sweep $P = G_0 \cdots G_{m-1}$ satisfies $$Q_\sigma P^T = \operatorname{diag}(a,
+Q_1), \qquad P R = [v^T; R_1],$$ and $A_1 = Q_1 R_1$ is a full QR factorization of the matrix
+$A_1$ obtained from $A$ by deleting row $k$. This is §6.5.3 of [golub2013matrix]: "the procedure
+is similar when an arbitrary row is deleted".
+
+The proof applies `Matrix.IsQR.exists_deleteFirstRow` to the factorization
+$\sigma A = (\sigma Q) R$ of the permuted matrix. The matrix $Q_\sigma$ is
+`Q.submatrix (Fin.cycleRange k).symm id`, and the deletion of row $k$ is
+`A.submatrix k.succAbove id`. -/
 theorem IsQR.exists_deleteRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} (h : IsQR A Q R)
     (k : Fin (m + 1)) :
     ∃ (c s : ℕ → ℝ) (a : ℝ) (Q₁ : Matrix (Fin m) (Fin m) ℝ) (v : Fin n → ℝ)
@@ -581,28 +692,36 @@ theorem IsQR.exists_deleteRow {A : Matrix (Fin (m + 1)) (Fin n) ℝ} {Q R} (h : 
 
 end QRRows
 
-/-! ### The stacked matrix `[H; zᵀ]` and its Gram matrices -/
+/-! ### The stacked matrix $[H; z^T]$ and its Gram matrices -/
 
 section Stacked
 
 variable {α : Type*} [CommRing α] {m n p : Type*} [Fintype m]
 
-/-- The Gram matrix of a single row is `z zᵀ`. -/
+/-- The Gram matrix of a single row $z^T$ is $z z^T$. -/
 private theorem transpose_replicateRow_mul_self (z : n → α) :
     (replicateRow Unit z)ᵀ * replicateRow Unit z = vecMulVec z z := by
   ext i j
   simp [Matrix.mul_apply, vecMulVec_apply]
 
-/-- **The stacked Gram matrix** ([golub2013matrix] (6.5.6)): appending the row `zᵀ` to `H` adds
-`z zᵀ` to its Gram matrix, `[H; zᵀ]ᵀ [H; zᵀ] = Hᵀ H + z zᵀ`. -/
+/-- The stacked Gram matrix. Let $\alpha$ be a commutative ring, let $H$ be a matrix over $\alpha$
+with $n$ columns and finitely many rows, and let $z \in \alpha^n$. Appending the row $z^T$ to
+$H$ adds $z z^T$ to the Gram matrix: $$[H; z^T]^T [H; z^T] = H^T H + z z^T.$$ This is (6.5.6) of
+[golub2013matrix].
+
+The stacked matrix $[H; z^T]$ is `Matrix.fromRows H (Matrix.replicateRow Unit z)`, and $z z^T$
+is `Matrix.vecMulVec z z`. -/
 theorem transpose_mul_self_fromRows (H : Matrix m n α) (z : n → α) :
     (fromRows H (replicateRow Unit z))ᵀ * fromRows H (replicateRow Unit z) =
       Hᵀ * H + vecMulVec z z := by
   rw [transpose_fromRows, fromCols_mul_fromRows, transpose_replicateRow_mul_self]
 
-/-- **The signed stacked Gram matrix** ([golub2013matrix] (6.5.10)): with the signature
-`S = diag(I, −1)` (`LieAlgebra.Orthogonal.indefiniteDiagonal m Unit`),
-`[H; zᵀ]ᵀ S [H; zᵀ] = Hᵀ H − z zᵀ`. -/
+/-- The signed stacked Gram matrix. Let $\alpha$ be a commutative ring, let $H$ be a matrix over
+$\alpha$ with $n$ columns and finitely many rows, let $z \in \alpha^n$, and let
+$S = \operatorname{diag}(I, -1)$. Then $$[H; z^T]^T S \, [H; z^T] = H^T H - z z^T.$$ This is
+(6.5.10) of [golub2013matrix].
+
+The signature $S$ is `LieAlgebra.Orthogonal.indefiniteDiagonal m Unit α`. -/
 theorem transpose_mul_indefiniteDiagonal_mul_fromRows [DecidableEq m] (H : Matrix m n α)
     (z : n → α) :
     (fromRows H (replicateRow Unit z))ᵀ * LieAlgebra.Orthogonal.indefiniteDiagonal m Unit α *
@@ -615,9 +734,15 @@ theorem transpose_mul_indefiniteDiagonal_mul_fromRows [DecidableEq m] (H : Matri
 
 variable [DecidableEq m] [Fintype p] [DecidableEq p]
 
-/-- **An orthogonal reduction preserves the Gram matrix** ([golub2013matrix] (6.5.7) ⇒
-`Ã = RᵀR`): if `Q` is orthogonal and `Qᵀ M = [R; 0]`, then `Mᵀ M = Rᵀ R`. (The book prints
-`Ã = RRᵀ`, a typo for `RᵀR`; it concludes `G̃ = Rᵀ` correctly.) -/
+/-- An orthogonal reduction preserves the Gram matrix. Let $\alpha$ be a commutative ring, let $Q$
+be an orthogonal matrix with rows and columns indexed by $m \oplus p$, let $M$ be a matrix with
+rows indexed by $m \oplus p$, and let $R$ be a matrix with rows indexed by $m$. If
+$Q^T M = [R; 0]$, then $$M^T M = R^T R.$$ This is the step from (6.5.7) to $\tilde A = R^T R$ in
+[golub2013matrix] §6.5.4.
+
+The book prints $\tilde A = R R^T$, a typo for $R^T R$; it concludes correctly that
+$\tilde G = R^T$. The matrix $[R; 0]$ is `Matrix.fromRows R 0`, with the zero block indexed by
+$p$. -/
 theorem transpose_mul_self_eq_of_mem_orthogonalGroup {Q : Matrix (m ⊕ p) (m ⊕ p) α}
     (hQ : Q ∈ orthogonalGroup (m ⊕ p) α) {M : Matrix (m ⊕ p) n α} {R : Matrix m n α}
     (h : Qᵀ * M = fromRows R 0) : Mᵀ * M = Rᵀ * R := by
@@ -627,8 +752,14 @@ theorem transpose_mul_self_eq_of_mem_orthogonalGroup {Q : Matrix (m ⊕ p) (m �
   rw [e, h, transpose_fromRows, fromCols_mul_fromRows, transpose_zero, Matrix.zero_mul,
     add_zero]
 
-/-- A `J`-orthogonal reduction of a stacked matrix preserves its signed Gram matrix: if
-`Hyᵀ [H; zᵀ] = [R; z'ᵀ]` with `Hy` `S`-orthogonal, then `Hᵀ H − z zᵀ = Rᵀ R − z' z'ᵀ`. -/
+/-- A $J$-orthogonal reduction of a stacked matrix preserves its signed Gram matrix. Let $\alpha$ be
+a commutative ring, let $H, R$ be matrices over $\alpha$ with rows indexed by a finite type $m$
+and $n$ columns, let $z, z' \in \alpha^n$, and let $S = \operatorname{diag}(I, -1)$. Let $Y$ be
+$S$-orthogonal, that is, $Y S Y^T = S$. If $Y^T [H; z^T] = [R; z'^T]$, then $$H^T H - z z^T =
+R^T R - z' z'^T.$$
+
+The matrix $Y$ is `Hy`, and $S$-orthogonality is `Matrix.IsJOrthogonal` for
+`LieAlgebra.Orthogonal.indefiniteDiagonal m Unit α`. -/
 theorem transpose_mul_self_sub_eq_of_isJOrthogonal_of_fromRows
     {Hy : Matrix (m ⊕ Unit) (m ⊕ Unit) α}
     (hHy : IsJOrthogonal (LieAlgebra.Orthogonal.indefiniteDiagonal m Unit α) Hy)
@@ -640,9 +771,13 @@ theorem transpose_mul_self_sub_eq_of_isJOrthogonal_of_fromRows
   conv_lhs => rw [← hHy]
   simp only [Matrix.mul_assoc]
 
-/-- **A `J`-orthogonal reduction downdates the Gram matrix** ([golub2013matrix]
-(6.5.10)–(6.5.12)): with `S = diag(I, −1)`, if `Hy` is `S`-orthogonal and `Hyᵀ [H; zᵀ] = [R; 0]`,
-then `Hᵀ H − z zᵀ = Rᵀ R`. -/
+/-- A $J$-orthogonal reduction downdates the Gram matrix. Let $\alpha$ be a commutative ring, let
+$H, R$ be matrices over $\alpha$ with rows indexed by a finite type $m$ and $n$ columns, let
+$z \in \alpha^n$, and let $S = \operatorname{diag}(I, -1)$. If $Y$ is $S$-orthogonal, that is,
+$Y S Y^T = S$, and $Y^T [H; z^T] = [R; 0]$, then $$H^T H - z z^T = R^T R.$$ This is
+(6.5.10)–(6.5.12) of [golub2013matrix].
+
+The matrix $Y$ is `Hy`, and $S$-orthogonality is `Matrix.IsJOrthogonal`. -/
 theorem transpose_mul_self_sub_eq_of_isJOrthogonal {Hy : Matrix (m ⊕ Unit) (m ⊕ Unit) α}
     (hHy : IsJOrthogonal (LieAlgebra.Orthogonal.indefiniteDiagonal m Unit α) Hy)
     {H R : Matrix m n α} {z : n → α}
@@ -657,13 +792,19 @@ section RotateStep
 
 variable {α : Type*} [CommRing α] {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- **One step of a Cholesky update or downdate keeps the triangular shape** ([golub2013matrix]
-§6.5.4, the zeroing sequence `Q₁, Q₂, Q₃` and Theorem 6.5.1's first rotation): for `R` upper
-triangular, `z` vanishing before `k`, and *any* `2 × 2` block `G`, embedding `G` in the plane of
-the row `k` and the appended row gives again a stacked matrix `[R'; z'ᵀ]`, with `R'` upper
-triangular, equal to `R` outside row `k`, and `z'` vanishing before `k`; row `k` of `R'` and the
-new last row are the combinations `G [R_k; zᵀ]`. Rows `k` and last are both zero before column
-`k`. Serves both the Givens (update) and the hyperbolic (downdate) sweeps. -/
+/-- One step of a Cholesky update or downdate keeps the triangular shape. Let $\alpha$ be a
+commutative ring, let the index set $n$ be finite and linearly ordered, let $R$ be an upper
+triangular $n \times n$ matrix over $\alpha$, let $k \in n$, and let $z \in \alpha^n$ with
+$z_j = 0$ for $j < k$. Let $G = (g_{pq})$ be any $2 \times 2$ matrix, embedded in the plane of
+row $k$ and the appended last row of $[R; z^T]$. Then the product of this embedding with
+$[R; z^T]$ is a stacked matrix $[R'; z'^T]$, where $R'$ is upper triangular, $R'$ equals $R$
+outside row $k$, $z'_j = 0$ for $j < k$, and $$r'_{kj} = g_{00} r_{kj} + g_{01} z_j, \qquad
+z'_j = g_{10} r_{kj} + g_{11} z_j.$$ This is one step of the zeroing sequence $Q_1, Q_2, Q_3$ in
+[golub2013matrix] §6.5.4, and also the first rotation in Theorem 6.5.1.
+
+The embedding is `Matrix.planeEmbed (Sum.inl k) (Sum.inr ()) G`. The shape is kept because row
+$k$ and the last row are both zero before column $k$. The lemma serves both the Givens sweep of
+the update and the hyperbolic sweep of the downdate. -/
 theorem fromRows_rotate_step {R : Matrix n n α} (hR : R.IsUpperTriangular) {z : n → α} {k : n}
     (hz : ∀ j < k, z j = 0) (G : Matrix (Fin 2) (Fin 2) α) :
     ∃ (R' : Matrix n n α) (z' : n → α),
@@ -705,10 +846,15 @@ end RotateStep
 
 section CholeskyUpdate
 
-/-- **Sign normalization of a triangular factor** ([golub2013matrix] §6.5.4, "the updated
-Cholesky factor is given by `G̃ = Rᵀ`", up to signs): if `R` is upper triangular with nonzero
-diagonal and `Rᵀ R = A`, then `D R` with `D = diag(sign r_ii)` is the Cholesky factor of `A`:
-`D² = 1`, and `D R` has the diagonal `|r_ii| > 0`. -/
+/-- Sign normalization of a triangular factor. Let the index set $n$ be finite and linearly ordered,
+and let $R \in \mathbb{R}^{n \times n}$ be upper triangular with $r_{ii} \ne 0$ for all $i$ and
+$R^T R = A$. Let $D = \operatorname{diag}(\operatorname{sign} r_{ii})$. Then $DR$ is the
+Cholesky factor of $A$: it is upper triangular with the positive diagonal $|r_{ii}|$, and
+$(DR)^T (DR) = A$ because $D^2 = I$. This makes precise the statement "the updated Cholesky
+factor is given by $\tilde G = R^T$" of [golub2013matrix] §6.5.4, which holds up to signs.
+
+The conclusion is `Matrix.IsCholesky A (D * R)`, with $D$ the matrix
+`Matrix.diagonal fun i => SignType.sign (R i i)`. -/
 theorem isCholesky_diagonal_sign_mul {n : Type*} [Fintype n] [LinearOrder n]
     {A R : Matrix n n ℝ} (hR : R.IsUpperTriangular) (hd : ∀ i, R i i ≠ 0) (hA : Rᵀ * R = A) :
     IsCholesky A (diagonal (fun i => (SignType.sign (R i i) : ℝ)) * R) := by
@@ -725,10 +871,10 @@ theorem isCholesky_diagonal_sign_mul {n : Type*} [Fintype n] [LinearOrder n]
       Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _), diagonal_mul_diagonal]
     simp only [hsq, diagonal_one, Matrix.one_mul, hA]
 
-/-- **A sweep through the planes `(0, last), (1, last), …`**: if an invariant `Inv t` of the
-current matrix can be advanced through step `t` by some rotation parameters `p` with `Ok p`, then
-there are parameters for all the steps, and `Inv n` holds after the sweep
-`(E₀ ⋯ E_{n−1})ᵀ M₀ = E_{n−1}ᵀ ⋯ E₀ᵀ M₀`. -/
+/-- A sweep through the planes $(0, \mathrm{last}), (1, \mathrm{last}), \dots$: if each step $t < n$
+can advance an invariant by some admissible rotation parameters, then there are admissible
+parameters for all $n$ steps, and the invariant holds after the sweep $(E_0 \cdots E_{n-1})^T
+M_0 = E_{n-1}^T \cdots E_0^T M_0$. -/
 private theorem exists_ofFn_prod_transpose_mul {ι κ : Type*} [Fintype ι] [DecidableEq ι] {n : ℕ}
     (E : Fin n → ℝ × ℝ → Matrix ι ι ℝ) (Ok : ℝ × ℝ → Prop) (Inv : ℕ → Matrix ι κ ℝ → Prop)
     {M₀ : Matrix ι κ ℝ} (h0 : Inv 0 M₀)
@@ -760,13 +906,20 @@ private theorem exists_ofFn_prod_transpose_mul {ι κ : Type*} [Fintype ι] [Dec
       rw [e, transpose_mul, Matrix.mul_assoc]
       exact hinv'
 
-/-- **Cholesky updating by plane rotations** ([golub2013matrix] §6.5.4, (6.5.5)–(6.5.7)): if
-`A = Hᵀ H` is a Cholesky factorization and `z : Fin n → ℝ`, there are rotations `Q_k` in the
-planes `(k, last)` of the stacked matrix `[H; zᵀ]` (the book: "the `Q_k` update involves only rows
-`k` and `n+1`"), with `Q = Q₀ ⋯ Q_{n−1}` orthogonal and `Qᵀ [H; zᵀ] = [R; 0]`, where `R` is the
-Cholesky factor of `A + z zᵀ`. The rotation `Q_k` is the Givens pair of the current `(k, k)` and
-`(last, k)` entries; the new diagonal entry `√(r_kk² + z_k'²)` is positive, so no sign
-normalization is needed. -/
+/-- Cholesky updating by plane rotations. Let $A = H^T H$ be a Cholesky factorization of
+$A \in \mathbb{R}^{n \times n}$, and let $z \in \mathbb{R}^n$. Then there are
+$c, s \in \mathbb{R}^n$ with $c_k^2 + s_k^2 = 1$ for all $k$, and a matrix
+$R \in \mathbb{R}^{n \times n}$, with the following properties. Let $Q_k$ be the rotation with
+cosine $c_k$ and sine $s_k$ in the plane of row $k$ and the appended last row of the stacked
+matrix $[H; z^T]$, and let $Q = Q_0 Q_1 \cdots Q_{n-1}$. Then $Q$ is orthogonal, $$Q^T [H;
+z^T] = [R; 0],$$ and $A + z z^T = R^T R$ is a Cholesky factorization. This is §6.5.4 of
+[golub2013matrix], (6.5.5)–(6.5.7); in the words of the book, "the $Q_k$ update involves only
+rows $k$ and $n+1$".
+
+The rotation $Q_k$ is `Matrix.planeRotation (Sum.inl k) (Sum.inr ()) (c k) (s k)`, and $Q$ is
+the product of the list `List.ofFn` of these rotations. In the proof, $Q_k$ is
+`Matrix.givensPair` of the current entries $(k, k)$ and $(\mathrm{last}, k)$. The new diagonal
+entry $\sqrt{r_{kk}^2 + z_k'^2}$ is positive, so no sign normalization is needed. -/
 theorem exists_choleskyUpdate {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (hH : IsCholesky A H)
     (z : Fin n → ℝ) :
     ∃ c s : Fin n → ℝ, (∀ k, c k ^ 2 + s k ^ 2 = 1) ∧ ∃ R : Matrix (Fin n) (Fin n) ℝ,
@@ -820,8 +973,9 @@ theorem exists_choleskyUpdate {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (hH :
     ← transpose_mul_self_eq_of_mem_orthogonalGroup hQ hM, transpose_mul_self_fromRows,
     ← hH.conjTranspose_mul_self, conjTranspose_eq_transpose_of_trivial]
 
-/-- The quadratic form of a signed Gram matrix: `xᵀ (Rᵀ R − z zᵀ) x = ‖R x‖² − (z ⬝ x)²`, over
-any commutative ring. -/
+/-- The quadratic form of a signed Gram matrix: over a commutative ring, for a square matrix $R$ and
+vectors $z$, $x$, $$x^T (R^T R - z z^T) x = (Rx) \cdot (Rx) - (z \cdot x)^2.$$
+-/
 theorem dotProduct_transpose_mul_self_sub_mulVec {α n : Type*} [CommRing α] [Fintype n]
     (R : Matrix n n α) (z x : n → α) :
     x ⬝ᵥ ((Rᵀ * R - vecMulVec z z) *ᵥ x) = (R *ᵥ x) ⬝ᵥ (R *ᵥ x) - (z ⬝ᵥ x) ^ 2 := by
@@ -831,10 +985,13 @@ theorem dotProduct_transpose_mul_self_sub_mulVec {α n : Type*} [CommRing α] [F
     rw [dotProduct_mulVec, vecMul_vecMulVec, smul_dotProduct, smul_eq_mul, dotProduct_comm x z, sq]
   rw [sub_mulVec, dotProduct_sub, h1, h2]
 
-/-- **The hyperbolic pair exists at every step of a downdate**: if `R` is upper triangular with
-positive diagonal, `z` vanishes before `k`, and `Rᵀ R − z zᵀ` is positive definite, then
-`z_k² < r_kk²`. Test the form on `x = R⁻¹ e_k`, supported on the indices `≤ k`: `R x = e_k` and
-`z ⬝ x = z_k / r_kk`, so `0 < 1 − z_k²/r_kk²`. -/
+/-- The hyperbolic rotation exists at every step of a downdate. Let the index set $n$ be finite and
+linearly ordered, let $R \in \mathbb{R}^{n \times n}$ be upper triangular with positive
+diagonal, let $k \in n$, and let $z \in \mathbb{R}^n$ with $z_j = 0$ for $j < k$. If
+$R^T R - z z^T$ is positive definite, then $z_k^2 < r_{kk}^2$.
+
+The proof tests the quadratic form on $x = R^{-1} e_k$, which is supported on the indices
+$\le k$. Then $Rx = e_k$ and $z \cdot x = z_k / r_{kk}$, so $0 < 1 - z_k^2 / r_{kk}^2$. -/
 theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [LinearOrder n]
     {R : Matrix n n ℝ} (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) {z : n → ℝ} {k : n}
     (hz : ∀ j < k, z j = 0) (hP : (Rᵀ * R - vecMulVec z z).PosDef) : z k ^ 2 < R k k ^ 2 := by
@@ -879,14 +1036,23 @@ theorem sq_lt_sq_of_posDef_transpose_mul_self_sub {n : Type*} [Fintype n] [Linea
   rw [e]
   nlinarith [sq_nonneg (z k * R⁻¹ k k), pow_pos hr 2]
 
-/-- **Cholesky downdating by hyperbolic rotations** ([golub2013matrix] §6.5.4, "The theorem
-provides the key step in an induction proof that the factorization (6.5.12) exists"): if
-`A = Hᵀ H` is a Cholesky factorization and `A − z zᵀ` is positive definite, there are hyperbolic
-rotations `Hy_k` (`c_k² − s_k² = 1`) in the planes `(k, last)` of `[H; zᵀ]` whose product
-`Hy = Hy₀ ⋯ Hy_{n−1}` is `S`-orthogonal and reduces `[H; zᵀ]` to `[R; 0]`, with `R` the Cholesky
-factor of `A − z zᵀ`. At step `k` the current stacked matrix `[R'; z'ᵀ]` still has
-`R'ᵀ R' − z' z'ᵀ = A − z zᵀ` positive definite, which forces `|z'_k| < r'_kk` (the hyperbolic
-pair (6.5.13) exists), and the new diagonal entry `√(r'_kk² − z'_k²)` is positive. -/
+/-- Cholesky downdating by hyperbolic rotations. Let $A = H^T H$ be a Cholesky factorization of
+$A \in \mathbb{R}^{n \times n}$, and let $z \in \mathbb{R}^n$ be such that $A - z z^T$ is
+positive definite. Then there are $c, s \in \mathbb{R}^n$ with $c_k^2 - s_k^2 = 1$ for all $k$,
+and a matrix $R \in \mathbb{R}^{n \times n}$, with the following properties. Let $Y_k$ be the
+hyperbolic rotation $\begin{bmatrix} c_k & -s_k \\ -s_k & c_k \end{bmatrix}$ in the plane of row
+$k$ and the appended last row of $[H; z^T]$, and let $Y = Y_0 Y_1 \cdots Y_{n-1}$. Then $Y$ is
+$S$-orthogonal, that is, $Y S Y^T = S$ for $S = \operatorname{diag}(I_n, -1)$, $$Y^T [H; z^T] =
+[R; 0],$$ and $A - z z^T = R^T R$ is a Cholesky factorization. This is §6.5.4 of
+[golub2013matrix], where Theorem 6.5.1 "provides the key step in an induction proof that the
+factorization (6.5.12) exists".
+
+The rotation $Y_k$ is `Matrix.hyperbolicRotation (Sum.inl k) (Sum.inr ()) (c k) (s k)`, and
+$S$-orthogonality is `Matrix.IsJOrthogonal` for `LieAlgebra.Orthogonal.indefiniteDiagonal (Fin
+n) Unit ℝ`. At step $k$ the current stacked matrix $[R'; z'^T]$ still has
+$R'^T R' - z' z'^T = A - z z^T$ positive definite. This forces $|z'_k| < r'_{kk}$, so the
+hyperbolic pair (6.5.13) exists, and the new diagonal entry $\sqrt{r_{kk}'^2 - z_k'^2}$ is
+positive. -/
 theorem exists_choleskyDowndate {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (hH : IsCholesky A H)
     {z : Fin n → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     ∃ c s : Fin n → ℝ, (∀ k, c k ^ 2 - s k ^ 2 = 1) ∧ ∃ R : Matrix (Fin n) (Fin n) ℝ,
@@ -967,14 +1133,27 @@ theorem exists_choleskyDowndate {n : ℕ} {A H : Matrix (Fin n) (Fin n) ℝ} (hH
     exact hJ k (hok k)
   · rw [conjTranspose_eq_transpose_of_trivial, hG]
 
-/-- **One hyperbolic downdating step** ([golub2013matrix] Theorem 6.5.1, (6.5.14)–(6.5.15)): let
-`A = Hᵀ H` be a Cholesky factorization on `Fin (n + 1)`, `α = a₀₀`, `μ = z₀`, and `A − z zᵀ`
-positive definite. Then `μ² < α`, and with `c = √α/√(α − μ²)`, `s = μ/√(α − μ²)` (`c² − s² = 1`)
-the hyperbolic rotation in the plane of the first and the appended rows maps `[H; zᵀ]` to
-`[R'; z'ᵀ]` with `z'₀ = 0`, `r'₀₀ > 0`, the rows of `H` after the first unchanged,
-`w₁ = z'_{1:} = −s g₁ + c w`, and `G₁G₁ᵀ − w₁w₁ᵀ` positive definite, where `G₁ᵀ` is the trailing
-block of `H` — it is the Schur complement of the `(0, 0)` entry `α − μ²` of `A − z zᵀ` (the book
-says "of `α`"). -/
+/-- One hyperbolic downdating step. Let $A = H^T H$ be a Cholesky factorization of
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$, and let $z \in \mathbb{R}^{n+1}$ be such that
+$A - z z^T$ is positive definite. Write $\alpha = a_{00}$ and $\mu = z_0$, and let $$c =
+\frac{\sqrt{\alpha}}{\sqrt{\alpha - \mu^2}}, \qquad s = \frac{\mu}{\sqrt{\alpha - \mu^2}}.$$
+Then $\mu^2 < \alpha$ and $c^2 - s^2 = 1$. Let $g_1 = (h_{01}, \dots, h_{0n})$ be the rest of
+the first row of $H$, let $w = (z_1, \dots, z_n)$, and let $G_1^T$ be the trailing $n \times n$
+block of $H$. The hyperbolic rotation $\begin{bmatrix} c & -s \\ -s & c \end{bmatrix}$ in the
+plane of row $0$ and the appended row maps $[H; z^T]$ to a stacked matrix $[R'; z'^T]$ with the
+following properties:
+
+* $z'_0 = 0$ and $r'_{00} > 0$;
+* the rows $1, \dots, n$ of $R'$ are those of $H$;
+* $w_1 = (z'_1, \dots, z'_n)$ is $w_1 = -s g_1 + c w$;
+* $G_1 G_1^T - w_1 w_1^T$ is positive definite.
+
+This is Theorem 6.5.1 of [golub2013matrix], with (6.5.14)–(6.5.15).
+
+The matrix $G_1 G_1^T - w_1 w_1^T$ is the Schur complement of the $(0, 0)$ entry
+$\alpha - \mu^2$ of $A - z z^T$; the book says that it is the Schur complement "of $\alpha$".
+The trailing block $G_1^T$ is `H.submatrix Fin.succ Fin.succ`, and the rotation is
+`Matrix.hyperbolicRotation (Sum.inl 0) (Sum.inr ()) c s`. -/
 theorem hyperbolicDowndate_step {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) {z : Fin (n + 1) → ℝ} (hA : (A - vecMulVec z z).PosDef) {c s : ℝ}
     (hc : c = √(A 0 0) / √(A 0 0 - z 0 ^ 2)) (hs : s = z 0 / √(A 0 0 - z 0 ^ 2)) :

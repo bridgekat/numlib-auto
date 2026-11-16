@@ -8,52 +8,68 @@ import Numlib.Optimization.ModelBased.HighOrderModel
 /-!
 # The high-order adaptive-regularization method ARqp
 
-The ARqp algorithm ([cartis2022evaluation], Algorithm 12.2.2) looks for `(ε, δ)`-approximate
-`q`-th order minimizers by approximately minimizing the regularized `p`-th order model
-(`p ≥ q`). It is an adaptive-regularization method (`Optimization.IsARRun`) whose Step-1 test and
-Step-2 conditions are expressed with decrement measures (`Optimization.decrementMeasure`).
+The method ARqp of [cartis2022evaluation] (Algorithm 12.2.2) looks for
+$(\varepsilon, \delta)$-approximate $q$-th order minimizers of an objective by approximately
+minimizing the regularized model of order $p \ge q$. It is an adaptive-regularization method
+(`Optimization.IsARRun`) whose Step-1 test and Step-2 conditions use decrement measures. For a
+decrement $\Delta$, a radius $\delta$ and a set $S$ of displacements, the decrement measure is
+$\phi = \sup \{\Delta(d) \mid \|d\| \le \delta, \ d \in S\}$, and a $\varsigma$-**approximate
+optimality displacement** is a $d$ with $\|d\| \le \delta$, $d \in S$ and
+$\Delta(d) \ge \varsigma \phi$. At the iterate $x_k$ the decrement of order $j$ is
+$\Delta T_j(x_k, d) = T_j(x_k, 0) - T_j(x_k, d)$. Step 1 stops when, for $j = 1, \ldots, q$, the
+decrease along an approximate optimality displacement $d_{k,j}$ of radius $\delta_{k,j}$ satisfies
+$$\Delta T_j(x_k, d_{k,j}) \le \varsigma \varepsilon_j \frac{\delta_{k,j}^j}{j!},$$
+as in the test (12.2.2) of TRq.
 
-The run predicate `Optimization.IsARqpRun` is generic in
+The run predicate `Optimization.IsARqpRun` is generic in two ingredients. The first is the model
+data of each iteration, bundled in `Optimization.ARqpData`: the Step-1 decrements of the objective's
+model at $x_k$, the regularized model $m_k$, its decrements at a trial step, and the predicted
+decrease of the ratio. Exact ARqp uses `Optimization.ARqpData.ofTaylor` with the Taylor series of
+$f$ at $x_k$, inexact derivatives (Chapter 13) use it with other derivative data, and the composite
+method ARqpC (Algorithm 14.1.1) uses `Optimization.ARqpData.ofComposite` with the objective
+$w = f + h \circ c$. The second is the feasible set $X$ of §14.2. Step-1 measures are taken over
+$\{e \mid x_k + e \in X\}$, steps satisfy $x_k + s_k \in X$, and model measures are taken over
+$\{e \mid x_k + s_k + e \in X\}$. Unconstrained ARqp is the case $X = E$.
 
-* the **model data** of each iteration, bundled in `Optimization.ARqpData`: the Step-1 decrements
-  of the objective's model at `x_k`, the regularized model `m_k`, its decrements at a trial step,
-  and the predicted decrease of the ratio. Exact ARqp uses `ARqpData.ofTaylor (ftaylorSeries ℝ f
-  (x k)) p (σ k)`; inexact derivatives (Chapter 13) `ARqpData.ofTaylor (D k) p (σ k)`; the
-  composite method ARqpC (Algorithm 14.1.1) `ARqpData.ofComposite …` with objective `w = f + h ∘ c`;
-* the **feasible set** `X` (§14.2): Step-1 measures are taken over `{e | x_k + e ∈ X}`, steps
-  satisfy `x_k + s_k ∈ X`, and model measures are taken over `{e | x_k + s_k + e ∈ X}`;
-  unconstrained ARqp is `X = univ`.
+## Main definitions
 
-## Design of the run predicate
+* `Optimization.ARqpParams`: the AR constants and the factors $\theta \in (0, 1)$ and
+  $\varsigma \in (0, 1]$.
+* `Optimization.ARqpData`, `Optimization.ARqpData.ofTaylor`, `Optimization.ARqpData.ofComposite`:
+  the model data of one iteration.
+* `Optimization.ARqpStep`: the Step-2 conditions (12.2.27)–(12.2.29).
+* `Optimization.IsARqpRun`: a run of ARqp.
 
-* The Step-1 test stops when every decrease `ΔT_j(x_k, d_{k,j})` is at most `ς ε_j δ_{k,j}^j/j!`
-  (`Optimization.MeasureTestPasses`), as in the test (12.2.2) of TRq.
-* Step 2 asks (12.2.27) and either the long-step branch `‖s_k‖ ≥ 1` (radii arbitrary in `(0, 1]`;
-  this covers (12.2.28) and Algorithm 12.2.3) or (12.2.29) with witnesses
-  `d^m_{k,j}`.
-* Termination in Step 2 (`m_k(s_k) = m_k(0)`) is allowed only if `0` then globally minimizes the
-  model over the feasible steps, as guaranteed by Algorithm 12.2.3 (12.2.34); without it
-  termination in Step 2 would not certify anything (Lemma 12.2.10).
-* Step 1 is skipped after an unsuccessful iteration: the run keeps `x`, `δ` and the Step-1
-  witnesses. For Taylor data (`ARqpData.ofTaylor`, whose decrements do not depend on `σ`) the test
-  outcome is then unchanged; for model data that change with the iteration in other ways (e.g.
-  re-evaluated inexact derivatives) the Step-1 test is re-evaluated with the kept witnesses, which
-  must still be approximate optimality displacements (the `witness` field).
-* Long steps (`‖s_k‖ ≥ 1`) only constrain the radii to `(0, 1]`; lower bounds on the radii such as
-  (12.2.45), (12.2.50) are not part of the run and are carried separately (as in
-  `exists_isARqpRun`).
-* `ARqpParams` asks `θ ∈ (0, 1)`; the complexity analysis with `ς < 1` needs `θ < ς`, imposed
-  where used.
+## Main results
 
-## Main definitions and results
+* `Optimization.IsARqpRun.mem`: the iterates stay feasible.
+* `Optimization.IsARqpRun.model_lt`: the model decreases strictly before termination.
+* `Optimization.IsARqpRun.delta_mem`: the radii stay in $(0, 1]$.
+* `Optimization.IsARqpRun.of_univ`: an unconstrained run whose points stay in $X$ is a run on $X$.
+* `Optimization.exists_arqpStep_ofTaylor`: Lemma 12.2.9, existence of a step with explicit radii.
+* `Optimization.exists_isARqpRun`: in finite dimension runs of exact ARqp exist, with the radii of
+  Lemma 12.2.9.
 
-* `Optimization.ARqpParams`, `Optimization.ARqpData` (with `ARqpData.ofTaylor`,
-  `ARqpData.ofComposite`), `Optimization.ARqpStep` (the Step-2 conditions),
-  `Optimization.IsARqpRun`;
-* `Optimization.IsARqpRun.mem`, `.model_lt`, `.delta_mem`: iterates stay feasible, the model
-  decreases strictly before termination, and the radii stay in `(0, 1]`;
-* `Optimization.exists_isARqpRun`: runs of exact ARqp exist in finite dimension, with the radii
-  of Lemma 12.2.9.
+## Implementation notes
+
+* The Step-1 test is `Optimization.MeasureTestPasses`, and approximate optimality displacements are
+  `Optimization.IsApproxMeasureStep`. The decrement measure is `Optimization.decrementMeasure`.
+* Step 2 asks the model decrease (12.2.27) and then either the long-step branch $\|s_k\| \ge 1$,
+  with radii arbitrary in $(0, 1]$, or the approximate model optimality (12.2.29) with witnesses
+  $d^m_{k,j}$. The long-step branch covers (12.2.28) and Algorithm 12.2.3.
+* Termination in Step 2 ($m_k(s_k) = m_k(0)$) is allowed only if $0$ then minimizes the model
+  globally over the feasible steps, as Algorithm 12.2.3 guarantees (12.2.34). Without this
+  condition, termination in Step 2 would certify nothing (Lemma 12.2.10).
+* Step 1 is skipped after an unsuccessful iteration: the run keeps $x_k$, the radii $\delta_k$ and
+  the Step-1 witnesses. For Taylor data (`Optimization.ARqpData.ofTaylor`), whose decrements do not
+  depend on $\sigma$, the outcome of the test is then unchanged. For model data that change with the
+  iteration in other ways, such as re-evaluated inexact derivatives, the Step-1 test is evaluated
+  again with the kept witnesses, which must still be approximate optimality displacements.
+* Long steps ($\|s_k\| \ge 1$) only constrain the radii to $(0, 1]$. Lower bounds on the radii such
+  as (12.2.45) and (12.2.50) are not part of the run; they are stated separately, as in
+  `Optimization.exists_isARqpRun`.
+* `Optimization.ARqpParams` asks $\theta \in (0, 1)$. The complexity analysis with $\varsigma < 1$
+  needs $\theta < \varsigma$, which is assumed where it is used.
 -/
 
 open Set Metric Finset
@@ -61,36 +77,45 @@ open scoped Nat
 
 namespace Optimization
 
-/-- The constants of ARqp and ARqpC ([cartis2022evaluation], Algorithms 12.2.2, 14.1.1, Step 0): the
-adaptive-regularization constants and `θ ∈ (0, 1)`, `ς ∈ (0, 1]`. (The complexity analysis also
-needs `θ < ς`, which is imposed where used; for `ς = 1` it is `θ < 1`.) -/
+/-- The constants of ARqp and ARqpC, Step 0 of Algorithms 12.2.2 and 14.1.1 of
+[cartis2022evaluation]. They consist of the AR constants (`Optimization.ARParams`), the
+model-optimality factor $\theta \in (0, 1)$ and the accuracy factor $\varsigma \in (0, 1]$.
+
+The complexity analysis also needs $\theta < \varsigma$, which is assumed where it is used. For
+$\varsigma = 1$ it is $\theta < 1$. -/
 structure ARqpParams extends ARParams where
-  /-- The model-optimality tolerance factor of (12.2.29). -/
+  /-- The model-optimality tolerance factor $\theta$ of (12.2.29). -/
   θ : ℝ
-  /-- The accuracy factor of approximate measure evaluations ((12.2.26), (12.2.29)). -/
+  /-- The accuracy factor $\varsigma$ of approximate measure evaluations, as in (12.2.26) and
+  (12.2.29). -/
   ς : ℝ
-  /-- `θ > 0`. -/
+  /-- The tolerance factor is positive: $\theta > 0$. -/
   θ_pos : 0 < θ
-  /-- `θ < 1`. -/
+  /-- The tolerance factor is less than one: $\theta < 1$. -/
   θ_lt_one : θ < 1
-  /-- `ς > 0`. -/
+  /-- The accuracy factor is positive: $\varsigma > 0$. -/
   ς_pos : 0 < ς
-  /-- `ς ≤ 1`. -/
+  /-- The accuracy factor is at most one: $\varsigma \le 1$. -/
   ς_le_one : ς ≤ 1
 
-/-- The model data of one high-order adaptive-regularization iteration: `dec j` is the order-`j`
-decrement `ΔT_j(x_k, ·)` of the objective's (generalized) Taylor model at the iterate (Step 1),
-`model` is the regularized model `m_k`, `modelDec j s` is the order-`j` decrement
-`ΔT_{m_k,j}(s, ·)` of the model at a trial step `s` (Step 2), and `pred s` is the predicted
-decrease `ΔT_p(x_k, s)` used in the ratio ((12.2.23), (12.2.26)–(12.2.30), (14.1.10)–(14.1.15)). -/
+/-- The **model data** of one iteration of a high-order adaptive-regularization method, as in
+(12.2.23), (12.2.26)–(12.2.30) and (14.1.10)–(14.1.15) of [cartis2022evaluation]. An element
+consists of
+
+* the decrement $\Delta T_j(x_k, \cdot)$ of order $j$ of the objective's model at the iterate,
+  used in Step 1;
+* the regularized model $m_k$;
+* the decrement $\Delta T_{m_k, j}(s, \cdot)$ of order $j$ of the model at a trial step $s$,
+  used in Step 2;
+* the predicted decrease $\Delta T_p(x_k, s)$ used in the ratio. -/
 structure ARqpData (E : Type*) where
-  /-- The order-`j` decrement of the objective's model at the iterate. -/
+  /-- The decrement of order $j$ of the objective's model at the iterate. -/
   dec : ℕ → E → ℝ
-  /-- The regularized model. -/
+  /-- The regularized model $m_k$. -/
   model : E → ℝ
-  /-- The order-`j` decrement of the model at a trial step. -/
+  /-- The decrement of order $j$ of the model at a trial step $s$. -/
   modelDec : ℕ → E → E → ℝ
-  /-- The predicted decrease of the ratio. -/
+  /-- The predicted decrease at a trial step $s$, used in the ratio. -/
   pred : E → ℝ
 
 section Data
@@ -98,9 +123,19 @@ section Data
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- The model data of ARqp for (exact or inexact) Taylor data `D` ([cartis2022evaluation],
-(12.2.23), (12.2.26)–(12.2.30), and (13.1.45) for inexact data): decrements of `D`, the regularized
-model `regularizedModel D p σ` and its decrements, and the predicted decrease `ΔT_p`. -/
+/-- The model data of ARqp for exact or inexact derivative data $D$, as in (12.2.23),
+(12.2.26)–(12.2.30) of [cartis2022evaluation] and (13.1.45) for inexact data. With
+$T_j(s) = \sum_{i \le j} D_i[s]^i / i!$ and $m(s) = T_p(s) + \sigma \|s\|^{p+1} / (p+1)!$, the
+data are
+
+* the decrements $\Delta T_j(d) = T_j(0) - T_j(d)$;
+* the model $m$;
+* the decrements $\Delta T_{m,j}(s, d) = T_{m,j}(s, 0) - T_{m,j}(s, d)$, where
+  $T_{m,j}(s, \cdot)$ is the Taylor polynomial of degree $j$ of $m$ at $s$;
+* the predicted decrease $\Delta T_p(s) = T_p(0) - T_p(s)$.
+
+The model is `Optimization.regularizedModel D p σ`, and the decrements are
+`FormalMultilinearSeries.taylorDecrement`. -/
 @[simps]
 noncomputable def ARqpData.ofTaylor (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ) :
     ARqpData E where
@@ -109,9 +144,19 @@ noncomputable def ARqpData.ofTaylor (D : FormalMultilinearSeries ℝ E ℝ) (p :
   modelDec j s := (ftaylorSeries ℝ (regularizedModel D p σ) s).taylorDecrement j
   pred := D.taylorDecrement p
 
-/-- The model data of ARqpC ([cartis2022evaluation], (14.1.10)–(14.1.15)): composite decrements,
-the composite model `compositeRegularizedModel Df Dc h p σ` and its decrements (14.1.14), and the
-predicted decrease `ΔT_{w,p}`. -/
+/-- The model data of ARqpC, as in (14.1.10)–(14.1.15) of [cartis2022evaluation], for derivative
+data $D_f$ of $f$ and $D_c$ of $c$ and a function $h$. With
+$T_{w,j}(d) = T_{f,j}(d) + h(T_{c,j}(d))$, the data are
+
+* the composite decrements $\Delta T_{w,j}(d) = T_{w,j}(0) - T_{w,j}(d)$;
+* the composite model $\hat m(s) = T_{f,p}(s) + h(T_{c,p}(s)) + \sigma \|s\|^{p+1} / (p+1)!$ of
+  (14.1.11);
+* the model decrements (14.1.14);
+* the predicted decrease $\Delta T_{w,p}$.
+
+The model is `Optimization.compositeRegularizedModel`, the decrements are
+`Optimization.compositeTaylorDecrement`, and the model decrements are
+`Optimization.compositeModelDecrement`. -/
 @[simps]
 noncomputable def ARqpData.ofComposite (Df : FormalMultilinearSeries ℝ E ℝ)
     (Dc : FormalMultilinearSeries ℝ E F) (h : F → ℝ) (p : ℕ) (σ : ℝ) : ARqpData E where
@@ -120,7 +165,8 @@ noncomputable def ARqpData.ofComposite (Df : FormalMultilinearSeries ℝ E ℝ)
   modelDec j s := compositeModelDecrement Df Dc h p σ j s
   pred := compositeTaylorDecrement Df Dc h p
 
-/-- With `h = 0` the composite model data are the Taylor model data. -/
+/-- For $h = 0$ the composite model data are the Taylor model data:
+`Optimization.ARqpData.ofComposite Df Dc 0 p σ = Optimization.ARqpData.ofTaylor Df p σ`. -/
 theorem ARqpData.ofComposite_zero_fun (Df : FormalMultilinearSeries ℝ E ℝ)
     (Dc : FormalMultilinearSeries ℝ E F) (p : ℕ) (σ : ℝ) :
     ARqpData.ofComposite Df Dc (0 : F → ℝ) p σ = ARqpData.ofTaylor Df p σ := by
@@ -131,82 +177,115 @@ end Data
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- **The Step-2 conditions of ARqp** ([cartis2022evaluation], (12.2.27)–(12.2.29), (14.1.12)–
-(14.1.13)) for model data `M` at the iterate `x`, on the feasible set `X`: the trial point
-`x + s` is feasible, the model does not increase, `m(s) = m(0)` only if `0` minimizes the model on
-the feasible steps, the radii `δs j` lie in `(0, 1]`, and either `‖s‖ ≥ 1` or every `dm j` is a
-`ς`-approximate optimality displacement of the model at `s` over `{e | x + s + e ∈ X}` with
-decrease at most `ς θ ε_j δs_j^j/j!`. -/
+/-- **The Step-2 conditions of ARqp**, (12.2.27)–(12.2.29) and (14.1.12)–(14.1.13) of
+[cartis2022evaluation]. Let $X \subseteq E$, let $M$ be model data at the iterate $x$, and let
+$q$ and $\varepsilon_1, \ldots, \varepsilon_q$ be given. A step $s$ with radii $\delta^s_j$ and
+witnesses $d^m_j$ satisfies the conditions if
+
+* the trial point is feasible: $x + s \in X$;
+* the model does not increase (12.2.27): $m(s) \le m(0)$;
+* if $m(s) = m(0)$, then $0$ minimizes $m$ over the feasible steps $\{e \mid x + e \in X\}$;
+* $0 < \delta^s_j \le 1$ for $j = 1, \ldots, q$;
+* either $\|s\| \ge 1$, or for every $j = 1, \ldots, q$ the witness $d^m_j$ is a
+  $\varsigma$-approximate optimality displacement of the model decrement
+  $\Delta T_{m,j}(s, \cdot)$ with radius $\delta^s_j$ over $\{e \mid x + s + e \in X\}$, and
+  (12.2.29)
+$$\Delta T_{m,j}(s, d^m_j) \le \varsigma \theta \varepsilon_j \frac{(\delta^s_j)^j}{j!}.$$
+
+Approximate optimality displacements are `Optimization.IsApproxMeasureStep`. -/
 structure ARqpStep (X : Set E) (P : ARqpParams) (q : ℕ) (ε : ℕ → ℝ) (M : ARqpData E)
     (x s : E) (δs : ℕ → ℝ) (dm : ℕ → E) : Prop where
-  /-- The trial point is feasible. -/
+  /-- The trial point $x + s$ lies in $X$. -/
   mem : x + s ∈ X
-  /-- The model does not increase (12.2.27). -/
+  /-- The model does not increase, (12.2.27): $m(s) \le m(0)$. -/
   model_le : M.model s ≤ M.model 0
-  /-- Termination in Step 2 only at a global model minimizer `0`. -/
+  /-- If $m(s) = m(0)$, so that the method terminates in Step 2, then $0$ minimizes the model over
+  the feasible steps. -/
   isMinOn_of_eq : M.model s = M.model 0 → IsMinOn M.model {e | x + e ∈ X} 0
-  /-- The radii are positive. -/
+  /-- The radii are positive: $\delta^s_j > 0$ for $j = 1, \ldots, q$. -/
   radius_pos : ∀ j ∈ Finset.Icc 1 q, 0 < δs j
-  /-- The radii are at most `1`. -/
+  /-- The radii are at most one: $\delta^s_j \le 1$ for $j = 1, \ldots, q$. -/
   radius_le_one : ∀ j ∈ Finset.Icc 1 q, δs j ≤ 1
-  /-- The long-step branch or the approximate model optimality (12.2.29). -/
+  /-- Either the step is long, $\|s\| \ge 1$, or the approximate model optimality (12.2.29) holds
+  with the witnesses $d^m_j$. -/
   branch : 1 ≤ ‖s‖ ∨ ∀ j ∈ Finset.Icc 1 q,
     IsApproxMeasureStep (M.modelDec j s) (δs j) {e | x + s + e ∈ X} P.ς (dm j) ∧
       M.modelDec j s (dm j) ≤ P.ς * P.θ * ε j * δs j ^ j / j !
 
-/-- The Step-1 test of ARqp at iteration `k` ([cartis2022evaluation], Algorithm 12.2.2, Step 1,
-normalized): every order-`j` decrease along the witness `d k j` is at most
-`ς ε_j δ_{k,j}^j/j!`. -/
+/-- The Step-1 test of ARqp at iteration $k$, Step 1 of Algorithm 12.2.2 of [cartis2022evaluation]
+in normalized form: for every $j = 1, \ldots, q$, the decrease of order $j$ along the witness
+$d_{k,j}$ is at most $\varsigma \varepsilon_j \delta_{k,j}^j / j!$. -/
 abbrev arqpStop₁ (P : ARqpParams) (q : ℕ) (ε : ℕ → ℝ) (M : ℕ → ARqpData E)
     (δ : ℕ → ℕ → ℝ) (d : ℕ → ℕ → E) (k : ℕ) : Prop :=
   MeasureTestPasses (M k).dec q P.ς ε (δ k) (d k)
 
-/-- The Step-2 termination test of ARqp at iteration `k`: `m_k(s_k) = m_k(0)`. -/
+/-- The Step-2 termination test of ARqp at iteration $k$: $m_k(s_k) = m_k(0)$. -/
 abbrev arqpStop₂ (M : ℕ → ARqpData E) (s : ℕ → E) (k : ℕ) : Prop :=
   (M k).model (s k) = (M k).model 0
 
-/-- The ratio (12.2.30), (14.1.15) of ARqp at iteration `k` for the objective `w`. -/
+/-- The ratio (12.2.30), (14.1.15) of ARqp at iteration $k$ for the objective $w$: $\rho_k =
+(w(x_k) - w(x_k + s_k)) / \mathrm{pred}_k(s_k)$, with the predicted decrease of the model data. -/
 noncomputable abbrev arqpRatio (w : E → ℝ) (M : ℕ → ARqpData E) (x s : ℕ → E) (k : ℕ) : ℝ :=
   reductionRatio w (x k) (s k) ((M k).pred (s k))
 
 omit [NormedAddCommGroup E] in
+/-- The Step-1 test of ARqp holds at iteration $k$ if and only if $\Delta T_j(x_k, d_{k,j}) \le
+\varsigma \varepsilon_j \delta_{k,j}^j / j!$ for every $j = 1, \ldots, q$. -/
 theorem arqpStop₁_iff {P : ARqpParams} {q : ℕ} {ε : ℕ → ℝ} {M : ℕ → ARqpData E}
     {δ : ℕ → ℕ → ℝ} {d : ℕ → ℕ → E} {k : ℕ} :
     arqpStop₁ P q ε M δ d k ↔
       ∀ j ∈ Finset.Icc 1 q, (M k).dec j (d k j) ≤ P.ς * ε j * δ k j ^ j / j ! :=
   Iff.rfl
 
+/-- The Step-2 test of ARqp holds at iteration $k$ if and only if $m_k(s_k) = m_k(0)$. -/
 theorem arqpStop₂_iff {M : ℕ → ARqpData E} {s : ℕ → E} {k : ℕ} :
     arqpStop₂ M s k ↔ (M k).model (s k) = (M k).model 0 :=
   Iff.rfl
 
+/-- The ratio of ARqp at iteration $k$ is the reduction ratio of $w$ at $x_k$ and $s_k$ with the
+predicted decrease of the model data. -/
 theorem arqpRatio_eq (w : E → ℝ) (M : ℕ → ARqpData E) (x s : ℕ → E) (k : ℕ) :
     arqpRatio w M x s k = reductionRatio w (x k) (s k) ((M k).pred (s k)) :=
   rfl
 
-/-- **A run of ARqp** ([cartis2022evaluation], Algorithm 12.2.2; with composite data Algorithm
-14.1.1; with a general feasible set the -SC variants of §14.2) for the objective `w`, the closed
-feasible set `X`, constants `P`, criticality order `q`, accuracies `ε`, initial radii `δ₀`, and
-model data `M k` at each iteration. The sequences are the iterates `x`, steps `s`, weights `σ`,
-Step-1 radii `δ` and witnesses `d`, and Step-2 radii `δs` and witnesses `dm`. The run terminates
-at the first `k` with `arqpStop₁ … k ∨ arqpStop₂ … k`. -/
+/-- **A run of ARqp**, Algorithm 12.2.2 of [cartis2022evaluation]; with composite data it is
+Algorithm 14.1.1, and with a general feasible set it is the variant of §14.2. The data are the
+objective $w$, the feasible set $X$, the constants $P$, the order $q$, the accuracies
+$\varepsilon_j$, the initial radii $\delta_{0,j}$, and the model data $M_k$ of each iteration.
+The sequences are the iterates $x_k$, the steps $s_k$, the weights $\sigma_k$, the Step-1 radii
+$\delta_{k,j}$ and witnesses $d_{k,j}$, and the Step-2 radii $\delta^s_{k,j}$ and witnesses
+$d^m_{k,j}$. They form a **run** if
+
+* they form a generic AR run (`Optimization.IsARRun`) with the Step-1 test
+  `Optimization.arqpStop₁`, the Step-2 conditions `Optimization.ARqpStep`, the post-step test
+  $m_k(s_k) = m_k(0)$ and the ratio `Optimization.arqpRatio`;
+* $x_0 \in X$ and $\delta_0$ is the given initial radii;
+* at every reached iteration $k$ and every $j = 1, \ldots, q$, the witness $d_{k,j}$ is a
+  $\varsigma$-approximate optimality displacement of $\Delta T_j(x_k, \cdot)$ with radius
+  $\delta_{k,j}$ over $\{e \mid x_k + e \in X\}$ ((12.2.26), (14.1.10));
+* at every iteration $k$ before termination, a successful iteration sets
+  $\delta_{k+1} = \delta^s_k$, and an unsuccessful one keeps $\delta_{k+1} = \delta_k$ and
+  $d_{k+1} = d_k$.
+
+The run terminates at the first $k$ at which the Step-1 test or the Step-2 test holds. -/
 structure IsARqpRun (w : E → ℝ) (X : Set E) (P : ARqpParams) (q : ℕ) (ε δ₀ : ℕ → ℝ)
     (M : ℕ → ARqpData E) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) :
     Prop where
-  /-- Steps 2–4: the generic adaptive-regularization run. -/
+  /-- Steps 2–4: the sequences form a generic adaptive-regularization run. -/
   toIsARRun : IsARRun P.toARParams (arqpStop₁ P q ε M δ d)
     (fun k => ARqpStep X P q ε (M k) (x k) (s k) (δs k) (dm k)) (arqpStop₂ M s)
     (arqpRatio w M x s) x s σ
-  /-- The initial point is feasible. -/
+  /-- The initial point is feasible: $x_0 \in X$. -/
   mem_zero : x 0 ∈ X
-  /-- The initial radii. -/
+  /-- The initial radii are the given ones. -/
   delta_zero : δ 0 = δ₀
-  /-- Step 1 ((12.2.26), (14.1.10)): the witnesses are `ς`-approximate optimality displacements
-  over the feasible displacements, at every iteration reached (including the last one). -/
+  /-- Step 1, (12.2.26) and (14.1.10): at every reached iteration, including the last one, the
+  witnesses are $\varsigma$-approximate optimality displacements over the feasible
+  displacements. -/
   witness : ∀ k, (∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i) →
     ∀ j ∈ Finset.Icc 1 q, IsApproxMeasureStep ((M k).dec j) (δ k j) {e | x k + e ∈ X} P.ς (d k j)
-  /-- Step 3: successful iterations inherit the Step-2 radii; unsuccessful ones keep the radii
-  and the Step-1 witnesses. -/
+  /-- Step 3: successful iterations take the Step-2 radii, and unsuccessful ones keep the radii and
+  the Step-1 witnesses. -/
   radii : UntilHit (IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s)) fun k =>
     (P.η₁ ≤ arqpRatio w M x s k → δ (k + 1) = δs k) ∧
       (¬ P.η₁ ≤ arqpRatio w M x s k → δ (k + 1) = δ k ∧ d (k + 1) = d k)
@@ -216,13 +295,15 @@ namespace IsARqpRun
 variable {w : E → ℝ} {X : Set E} {P : ARqpParams} {q : ℕ} {ε δ₀ : ℕ → ℝ}
   {M : ℕ → ARqpData E} {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E}
 
-/-- The Step-2 conditions hold at every iteration reached at which the Step-1 test fails. -/
+/-- In a run of ARqp, the Step-2 conditions hold at every reached iteration at which the Step-1 test
+fails. -/
 theorem step (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i)
     (h1 : ¬ arqpStop₁ P q ε M δ d k) : ARqpStep X P q ε (M k) (x k) (s k) (δs k) (dm k) :=
   h.toIsARRun.step k hk h1
 
-/-- **Iterates stay feasible**: `x_k ∈ X` for every iteration reached. -/
+/-- **The iterates stay feasible.** In a run of ARqp, $x_k \in X$ for every reached iteration $k$.
+-/
 theorem mem (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm) :
     ∀ k, (∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i) → x k ∈ X := by
   intro k
@@ -239,17 +320,20 @@ theorem mem (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm) :
     · rw [h']
       exact ih fun i hi => hk' i hi.le
 
-/-- **Strict model decrease before termination**: `m_k(s_k) < m_k(0)` at every iteration before
-termination (from (12.2.27) and the failed Step-2 test); this is the hypothesis of the generic
-`IsARRun.sigma_le`. -/
+/-- **Strict model decrease before termination.** In a run of ARqp, every iteration $k$ before
+termination satisfies $m_k(s_k) < m_k(0)$.
+
+This follows from (12.2.27) and the failed Step-2 test. It is the model-decrease hypothesis of
+`Optimization.IsARRun.sigma_le`. -/
 theorem model_lt (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i) :
     (M k).model (s k) < (M k).model 0 := by
   have hstep := h.step (fun i hi => hk i hi.le) fun h1 => hk k le_rfl (Or.inl h1)
   exact lt_of_le_of_ne hstep.model_le fun h2 => hk k le_rfl (Or.inr h2)
 
-/-- **The radii stay in `(0, 1]`**: if `δ₀ j ∈ (0, 1]` for `j = 1, …, q`, then so is `δ_{k,j}` at
-every iteration reached. -/
+/-- **The radii stay in $(0, 1]$.** In a run of ARqp, let $0 < \delta_{0,j} \le 1$ for
+$j = 1, \ldots, q$. Then $0 < \delta_{k,j} \le 1$ for every reached iteration $k$ and every
+$j = 1, \ldots, q$. -/
 theorem delta_mem (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) :
     ∀ k, (∀ i < k, ¬ IsARRun.Stop (arqpStop₁ P q ε M δ d) (arqpStop₂ M s) i) →
@@ -269,10 +353,13 @@ theorem delta_mem (h : IsARqpRun w X P q ε δ₀ M x s σ δ δs d dm)
     · rw [(hu hρ).1]
       exact ih (fun i hi => hk' i hi.le) j hj
 
-/-- **Restricting an unconstrained run to a feasible set**: an ARqp run on `univ` is a run on `X`
-if its iterates reached, their Step-1 displacements, and the trial points and Step-2
-displacements of its short steps lie in `X`, and the decrements are bounded above on balls (as
-for Taylor data). -/
+/-- **Restricting an unconstrained run to a feasible set.** Consider a run of ARqp with the feasible
+set $E$, and let $X \subseteq E$. Assume that the decrements $\Delta T_j(x_k, \cdot)$ and
+$\Delta T_{m_k, j}(s_k, \cdot)$ are bounded above on every ball, as they are for Taylor data.
+Assume also that for every reached iteration $k$ and every $j = 1, \ldots, q$
+$$x_k \in X, \qquad x_k + d_{k,j} \in X, \qquad x_k + s_k \in X,$$
+and $x_k + s_k + d^m_{k,j} \in X$ if $\|s_k\| < 1$. Then the same sequences form a run of ARqp
+on $X$. -/
 theorem of_univ (h : IsARqpRun w univ P q ε δ₀ M x s σ δ δs d dm) {X : Set E}
     (hdec : ∀ k j r, BddAbove ((M k).dec j '' (closedBall 0 r ∩ {e | x k + e ∈ univ})))
     (hmdec : ∀ k j r, BddAbove
@@ -305,11 +392,15 @@ section Existence
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **Existence of an ARqp step** ([cartis2022evaluation], Lemma 12.2.9, in the form of the
-Step-2 conditions, unconstrained): in finite dimension, for data `D` with `‖D_i‖ ≤ L` for
-`i = 2, …, p` (`L ≥ 0`), `1 ≤ p`, `q ≤ p`, `σ > 0` and `ε_j > 0`, there are a step, radii and
-witnesses satisfying `ARqpStep univ P q ε (ARqpData.ofTaylor D p σ) x …`, with `δs_j = 1` for
-`j ≤ 2` (12.2.44) and `δs_j = min(1, ς θ ε_j/(4 (3 L + σ)))` for `j ≥ 3` (12.2.45). -/
+/-- **Lemma 12.2.9** of [cartis2022evaluation], existence of an ARqp step without constraints. Let
+$E$ be finite-dimensional, let $1 \le p$ and $q \le p$, and let $\varepsilon_j > 0$ for
+$j = 1, \ldots, q$. Let $D$ be derivative data with $\|D_i\| \le L$ for $i = 2, \ldots, p$,
+where $L \ge 0$, and let $\sigma > 0$ and $x \in E$. Then there are a step $s$, radii $\delta^s$
+and witnesses $d^m$ that satisfy the Step-2 conditions `Optimization.ARqpStep` with $X = E$ and
+the model data `Optimization.ARqpData.ofTaylor D p σ`, with
+$$\delta^s_j = 1 \quad (j \le 2), \qquad \delta^s_j = \min\Bigl(1, \frac{\varsigma \theta
+  \varepsilon_j}{4 (3L + \sigma)}\Bigr) \quad (3 \le j \le q),$$
+as in (12.2.44) and (12.2.45). -/
 theorem exists_arqpStep_ofTaylor [FiniteDimensional ℝ E] (P : ARqpParams) {p q : ℕ}
     (hp : 1 ≤ p) (hq : q ≤ p) {ε : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j)
     {D : FormalMultilinearSeries ℝ E ℝ} {L : ℝ} (hL : 0 ≤ L)
@@ -343,14 +434,20 @@ private structure ARqpState (E : Type*) where
   dm : ℕ → E
 
 omit [InnerProductSpace ℝ E] in
-/-- **Existence of ARqp runs from the existence of the steps** (the conceptual algorithm is well
-defined as soon as its steps are): let `M y σ` be model data at the point `y` with weight `σ`,
-let every feasible `y` and radii `δ ∈ (0, 1]^q` admit Step-1 witnesses (`ς`-approximate
-optimality displacements of the decrements `(M y σ).dec j` over `{e | y + e ∈ X}`, valid for
-every weight `σ`), and let every feasible `y` and `σ > 0` admit a Step-2 triple `(s, δs, dm)`
-(`ARqpStep`) with a further property `Q y σ s δs dm`. Then from every `x₀ ∈ X` there is an ARqp
-run with model data `M (x k) (σ k)` whose Step-2 triples satisfy `Q` at every iteration
-reached. -/
+/-- **Existence of ARqp runs from the existence of steps**: the method is well defined as soon as
+its steps exist. Let $M(y, \sigma)$ be model data at the point $y$ with weight $\sigma$, let
+$0 < \delta_{0,j} \le 1$ for $j = 1, \ldots, q$, and let $Q(y, \sigma, s, \delta^s, d^m)$ be a
+property. Assume that
+
+* for every $y \in X$ and all radii $\delta \in (0, 1]^q$ there are Step-1 witnesses $d_j$ that,
+  for every weight $\sigma$, are $\varsigma$-approximate optimality displacements of the
+  decrements of $M(y, \sigma)$ with radius $\delta_j$ over $\{e \mid y + e \in X\}$;
+* for every $y \in X$ and $\sigma > 0$ there is a triple $(s, \delta^s, d^m)$ that satisfies the
+  Step-2 conditions `Optimization.ARqpStep` for $M(y, \sigma)$ and the property
+  $Q(y, \sigma, s, \delta^s, d^m)$.
+
+Then for every $x_0 \in X$ there is a run of ARqp from $x_0$ with the model data
+$M(x_k, \sigma_k)$, whose Step-2 triples satisfy $Q$ at every reached iteration. -/
 theorem exists_isARqpRun_of_forall (w : E → ℝ) (X : Set E) (P : ARqpParams) {q : ℕ}
     {ε δ₀ : ℕ → ℝ} (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (M : E → ℝ → ARqpData E)
     (Q : E → ℝ → E → (ℕ → ℝ) → (ℕ → E) → Prop)
@@ -439,14 +536,19 @@ theorem exists_isARqpRun_of_forall (w : E → ℝ) (X : Set E) (P : ARqpParams) 
     by simp [hr0, ha₀, mk], fun k hk => (hgood k hk).2.2.2.2.1 (r k).σ,
     fun k hk => (hr k hk).2.1.2⟩
 
-/-- **Existence of ARqp runs** ([cartis2022evaluation], Lemmas 12.2.9–12.2.10: the conceptual
-ARqp algorithm is well defined). Let `E` be finite-dimensional, `f : E → ℝ`, `1 ≤ p`, `q ≤ p`,
-`ε_j > 0` and `δ₀_j ∈ (0, 1]` for `j = 1, …, q`, and `L : E → ℝ` a nonnegative bound
-`‖∇^i f(y)‖ ≤ L(y)` for `i = 2, …, p` (a constant under f.D1pL, (12.2.24); any `f` has one, e.g.
-`L(y) = ∑_{i=2}^p ‖∇^i f(y)‖`). Then from every `x₀` there is a run of exact ARqp
-(`X = univ`, `M k = ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)`) whose Step-2 radii
-satisfy (12.2.44)–(12.2.45) with `L(x_k)` at every iteration reached: `δs_{k,j} = 1` for `j ≤ 2`
-and `δs_{k,j} = min(1, ς θ ε_j/(4 (3 L(x_k) + σ_k)))` for `j ≥ 3`. -/
+/-- **Existence of ARqp runs**, Lemmas 12.2.9–12.2.10 of [cartis2022evaluation]: the conceptual ARqp
+algorithm is well defined. Let $E$ be finite-dimensional and $f : E \to \mathbb{R}$, let
+$1 \le p$ and $q \le p$, and let $\varepsilon_j > 0$ and $0 < \delta_{0,j} \le 1$ for
+$j = 1, \ldots, q$. Let $L : E \to \mathbb{R}$ be nonnegative with $\|\nabla^i f(y)\| \le L(y)$
+for all $y$ and $i = 2, \ldots, p$. Then for every $x_0$ there is a run of exact ARqp from
+$x_0$, with $X = E$ and the model data `Optimization.ARqpData.ofTaylor (ftaylorSeries ℝ f (x k))
+p (σ k)`, whose Step-2 radii satisfy at every reached iteration $k$
+$$\delta^s_{k,j} = 1 \quad (j \le 2), \qquad \delta^s_{k,j} = \min\Bigl(1, \frac{\varsigma
+  \theta \varepsilon_j}{4 (3 L(x_k) + \sigma_k)}\Bigr) \quad (3 \le j \le q),$$
+as in (12.2.44)–(12.2.45).
+
+Under assumption f.D1pL (12.2.24) the bound $L$ is a constant. Every $f$ has such a bound, for
+example $L(y) = \sum_{i=2}^p \|\nabla^i f(y)\|$. -/
 theorem exists_isARqpRun [FiniteDimensional ℝ E] (f : E → ℝ) (P : ARqpParams) {p q : ℕ}
     (hp : 1 ≤ p) (hq : q ≤ p) {ε δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (L : E → ℝ) (hL0 : ∀ y, 0 ≤ L y)

@@ -8,51 +8,61 @@ import Numlib.Analysis.Convex.Saddle.Kernel
 /-!
 # Continuity of finite saddle-functions
 
-A finite concave-convex function on `C × D` is Lipschitz on every product of compact subsets of
-`ri C` and `ri D`, hence continuous there; a pointwise bounded *family* of such functions is
-uniformly bounded and equi-Lipschitz on such a rectangle; and the usual convergence and
-Arzelà–Ascoli consequences follow. Each is a statement about convex functions of one variable,
-applied once in each variable and combined.
-
-## Main definitions
-
-* `ConcaveConvexOn C D K` (from `Saddle/Defs.lean`) — `K : U × X → ℝ` is concave in its first
-  argument on `C` for each point of `D` and convex in its second on `D` for each point of `C`. It is
-  also the hypothesis the simple extensions of `Saddle/Kernel.lean` take.
+Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and $D \subseteq X$ be
+convex, and let $K : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$: $K(\cdot, x)$ is
+concave on $C$ for each $x \in D$, and $K(u, \cdot)$ is convex on $D$ for each $u \in C$. Then $K$
+is Lipschitz on every product $S \times T$ of compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$, and hence continuous on
+$\operatorname{ri} C \times \operatorname{ri} D$. A pointwise bounded family of such functions is
+uniformly bounded and equi-Lipschitz on each such rectangle $S \times T$. The usual consequences
+follow: pointwise convergence on a dense set implies uniform convergence on compact rectangles, a
+bounded sequence has a subsequence that converges in this sense, and a function that is
+concave-convex for each value of a parameter and continuous in the parameter is jointly continuous.
+Each result is a statement about convex functions of one variable, applied once in each variable and
+combined. The presentation follows [rockafellar1970convex], §35.
 
 ## Main results
 
-* `exists_forall_abs_le_and_lipschitzOnWith_prod` — a pointwise bounded family, indexed by an
-  arbitrary type, is uniformly bounded and equi-Lipschitz ([rockafellar1970convex] Theorem 35.2);
-  the engine here.
-* `ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact`, `.exists_forall_abs_le_of_isCompact`,
-  `.continuousOn` — the same for a single function, and continuity on `ri C × ri D`.
-* `continuousOn_prod_of_concaveConvexOn`, `continuousOn_prod_of_concaveConvexOn'` — joint
-  continuity in a parameter.
-* `exists_tendstoUniformlyOn_prod_of_dense`, `tendstoUniformlyOn_prod_of_tendsto` — pointwise
-  convergence on a dense set becomes uniform on compact rectangles, and
-  `exists_subseq_tendstoUniformlyOn_prod` is the Arzelà–Ascoli form.
-* `exists_isCompact_mem_nhdsWithin_relint`, `exists_isCompact_collar_relint` — `ri C` is locally
-  compact, and a compact subset of it has a compact relative collar.
+* `ConvexAnalysis.exists_forall_abs_le_and_lipschitzOnWith_prod`: a pointwise bounded family of
+  finite concave-convex functions, indexed by an arbitrary type, is uniformly bounded and
+  equi-Lipschitz on compact rectangles in $\operatorname{ri} C \times \operatorname{ri} D$. This is
+  Theorem 35.2 of [rockafellar1970convex], and the other results of the module rest on it.
+* `ConvexAnalysis.ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact`,
+  `ConvexAnalysis.ConcaveConvexOn.exists_forall_abs_le_of_isCompact`,
+  `ConvexAnalysis.ConcaveConvexOn.continuousOn`: a single finite concave-convex function is
+  Lipschitz and bounded on compact rectangles, and continuous on
+  $\operatorname{ri} C \times \operatorname{ri} D$.
+* `ConvexAnalysis.continuousOn_prod_of_concaveConvexOn`,
+  `ConvexAnalysis.continuousOn_prod_of_concaveConvexOn'`: joint continuity in a parameter from a
+  locally compact space.
+* `ConvexAnalysis.exists_tendstoUniformlyOn_prod_of_dense`,
+  `ConvexAnalysis.tendstoUniformlyOn_prod_of_tendsto`: pointwise convergence on a dense set implies
+  uniform convergence on compact rectangles.
+* `ConvexAnalysis.exists_subseq_tendstoUniformlyOn_prod`: the Arzelà–Ascoli theorem for finite
+  concave-convex functions.
+* `ConvexAnalysis.exists_isCompact_mem_nhdsWithin_relint`,
+  `ConvexAnalysis.exists_isCompact_collar_relint`: $\operatorname{ri} C$ is locally compact, and a
+  compact subset of $\operatorname{ri} C$ has a compact relative collar.
 
 ## Implementation notes
 
-Everything is stated for arbitrary convex `C` and `D`, with `ri C` and `ri D` written out; the
-customary form takes them relatively open, where `ri C = C`. The Lipschitz constant is `α₁ + α₂`
-rather than `2(α₁ + α₂)`, because Mathlib's product metric is the supremum metric and no factor is
-paid passing between the coordinate distances and the distance on the product.
-
-The convergence theorems take an arbitrary dense `A ⊆ ri C ×ˢ ri D` rather than a product
-`C' ×ˢ D'`. The equi-Lipschitz input does need a product, but the diagonal extraction behind the
-Arzelà–Ascoli statement produces a countable dense set that is not a product.
-
-Unlike the one-variable theory, these results cannot be transported from the `interior` case along
-a chart: the chart of `C ×ˢ D` is not the product of the charts of `C` and `D`, and it is the
-product structure that the concave-convex hypothesis lives on. They are proved directly in `ri`.
-
-## References
-
-* [rockafellar1970convex] §35.
+* The hypothesis "concave-convex on $C \times D$" is `ConvexAnalysis.ConcaveConvexOn C D K`, defined
+  in `Numlib.Analysis.Convex.Saddle.Defs`. The simple extensions of
+  `Numlib.Analysis.Convex.Saddle.Kernel` take the same hypothesis.
+* Everything is stated for arbitrary convex $C$ and $D$, with $\operatorname{ri} C$ and
+  $\operatorname{ri} D$ written out. The customary form takes $C$ and $D$ relatively open, so that
+  $\operatorname{ri} C = C$.
+* The Lipschitz constant is $\alpha_1 + \alpha_2$, not $2(\alpha_1 + \alpha_2)$. The reason is that
+  the metric of Mathlib on a product is the maximum of the two distances, so no factor is lost
+  between the coordinate distances and the distance on the product.
+* The convergence theorems take an arbitrary dense set $A \subseteq \operatorname{ri} C \times
+  \operatorname{ri} D$, not only a product $C' \times D'$. The equi-Lipschitz step needs a product,
+  but the diagonal extraction behind the Arzelà–Ascoli theorem produces a countable dense set that
+  is not a product.
+* Unlike the one-variable theory, these results cannot be transported from the case of the interior
+  along a chart. The chart of $C \times D$ is not the product of the charts of $C$ and $D$, and the
+  concave-convex hypothesis is a statement about the product structure. So the results are proved
+  directly for the relative interior.
 -/
 
 open Set Filter Topology Metric
@@ -60,16 +70,19 @@ open scoped NNReal Pointwise
 
 namespace ConvexAnalysis
 
-/-! ### Negation
+/-!
+### Negation
 
-The one-variable results are stated for convex functions; the concave variable reaches them
-through `-K`, and these lemmas carry the conclusions back. -/
+The one-variable results are stated for convex functions. The concave variable reaches them through
+$-K$, and these lemmas carry the conclusions back.
+-/
 
 section Neg
 
 variable {ι : Type*} {g : ι → ℝ}
 
-/-- A family of reals is bounded above iff its negation is bounded below. -/
+/-- A family $(g_i)$ of real numbers is bounded above after negation, that is $\{-g_i\}$ is bounded
+above, if and only if $\{g_i\}$ is bounded below. -/
 theorem bddAbove_range_neg_iff : BddAbove (Set.range fun i => -g i) ↔ BddBelow (Set.range g) := by
   constructor
   · rintro ⟨b, hb⟩
@@ -77,7 +90,8 @@ theorem bddAbove_range_neg_iff : BddAbove (Set.range fun i => -g i) ↔ BddBelow
   · rintro ⟨b, hb⟩
     exact ⟨-b, by rintro _ ⟨i, rfl⟩; exact neg_le_neg (hb ⟨i, rfl⟩)⟩
 
-/-- A family of reals is bounded below iff its negation is bounded above. -/
+/-- A family $(g_i)$ of real numbers is bounded below after negation, that is $\{-g_i\}$ is bounded
+below, if and only if $\{g_i\}$ is bounded above. -/
 theorem bddBelow_range_neg_iff : BddBelow (Set.range fun i => -g i) ↔ BddAbove (Set.range g) := by
   constructor
   · rintro ⟨b, hb⟩
@@ -87,7 +101,7 @@ theorem bddBelow_range_neg_iff : BddBelow (Set.range fun i => -g i) ↔ BddAbove
 
 variable {E : Type*} [PseudoMetricSpace E] {f : E → ℝ} {S : Set E} {k : ℝ≥0}
 
-/-- Negating a real-valued function does not change its Lipschitz constants. -/
+/-- If a real-valued function $f$ is Lipschitz with constant $k$ on $S$, then so is $-f$. -/
 theorem LipschitzOnWith.negReal (h : LipschitzOnWith k f S) :
     LipschitzOnWith k (fun x => -f x) S := by
   refine LipschitzOnWith.of_dist_le_mul fun x hx y hy => ?_
@@ -96,17 +110,19 @@ theorem LipschitzOnWith.negReal (h : LipschitzOnWith k f S) :
   rw [hd]
   exact h.dist_le_mul x hx y hy
 
-/-- `-f` is Lipschitz on `S` exactly when `f` is. -/
+/-- A real-valued function $-f$ is Lipschitz with constant $k$ on $S$ if and only if $f$ is. -/
 theorem lipschitzOnWith_neg_iff : LipschitzOnWith k (fun x => -f x) S ↔ LipschitzOnWith k f S :=
   ⟨fun h => by simpa only [neg_neg] using LipschitzOnWith.negReal h,
     fun h => LipschitzOnWith.negReal h⟩
 
 end Neg
 
-/-! ### Uniform bounds and equi-Lipschitz constants for a family
+/-!
+### Uniform bounds and equi-Lipschitz constants for a family
 
-The engine of the file: one-variable pointwise boundedness applied four times — twice to bound the
-family, once in each variable, and twice to make it equi-Lipschitz. -/
+The main argument of the module applies one-variable pointwise boundedness four times: twice to
+bound the family, once in each variable, and twice to make it equi-Lipschitz.
+-/
 
 section Family
 
@@ -119,14 +135,18 @@ section Snd
 variable [FiniteDimensional ℝ X]
 
 omit [FiniteDimensional ℝ X] in
-/-- The convex slices of a concave-convex family, at a point of `C`, as a family of convex
-functions on `D`. -/
+/-- If each $K_i$ of a family is concave-convex on $C \times D$ and $u \in C$, then each slice
+$K_i(u, \cdot)$ is convex on $D$. -/
 theorem convexOn_slice_snd (hK : ∀ i, ConcaveConvexOn C D (K i)) {u : U} (hu : u ∈ C) (i : ι) :
     ConvexOn ℝ D fun x => K i (u, x) :=
   (hK i).convex_snd u hu
 
-/-- **The first bounding step**: for a fixed `u ∈ C'` the convex slices `K i (u, ·)` are uniformly
-bounded on every compact `T ⊆ ri D`: the one-variable statement, in the second variable. -/
+/-- The first bounding step. Let $X$ be finite-dimensional, let $D \subseteq X$ be convex, and let
+each $K_i : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Let $D' \subseteq
+\operatorname{ri} D \subseteq \operatorname{cl} D'$ and fix $u \in C$ such that
+$\{K_i(u, x)\}_i$ is bounded for every $x \in D'$. Then for every compact
+$T \subseteq \operatorname{ri} D$ there is $M \ge 0$ with $|K_i(u, x)| \le M$ for all $i$ and
+all $x \in T$. This is the one-variable statement, in the second variable. -/
 theorem exists_forall_abs_le_snd {u : U} (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i)) (hD' : D' ⊆ ri D) (hDdense : ri D ⊆ closure D')
     (hbdd : ∀ x ∈ D', Bornology.IsBounded (Set.range fun i => K i (u, x)))
@@ -147,9 +167,12 @@ section Fst
 
 variable [FiniteDimensional ℝ U]
 
-/-- **The second bounding step**: for a fixed `x ∈ D'` the concave slices `K i (·, x)` are uniformly
-bounded on every compact `S ⊆ ri C`: the one-variable statement in the first variable, reached
-through `-K`. -/
+/-- The second bounding step. Let $U$ be finite-dimensional, let $C \subseteq U$ be convex, and let
+each $K_i : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Let $C' \subseteq
+\operatorname{ri} C \subseteq \operatorname{cl} C'$ and fix $x \in D$ such that
+$\{K_i(u, x)\}_i$ is bounded for every $u \in C'$. Then for every compact
+$S \subseteq \operatorname{ri} C$ there is $M \ge 0$ with $|K_i(u, x)| \le M$ for all $i$ and
+all $u \in S$. This is the one-variable statement in the first variable, applied to $-K_i$. -/
 theorem exists_forall_abs_le_fst {x : X} (hC : Convex ℝ C)
     (hK : ∀ i, ConcaveConvexOn C D (K i)) (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
     (hbdd : ∀ u ∈ C', Bornology.IsBounded (Set.range fun i => K i (u, x)))
@@ -174,8 +197,13 @@ section EquiLipschitz
 
 variable [FiniteDimensional ℝ U] [FiniteDimensional ℝ X]
 
-/-- **In the first variable**: the family is uniformly bounded on `S ×ˢ T` and equi-Lipschitz in
-`u`, uniformly in `x ∈ T`. -/
+/-- Let $U$ and $X$ be finite-dimensional, let $C$ and $D$ be convex, let each $K_i$ be
+concave-convex on $C \times D$, and let $C' \subseteq \operatorname{ri} C \subseteq
+\operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D \subseteq \operatorname{cl} D'$.
+Suppose that $\{K_i(u, x)\}_i$ is bounded for every $(u, x) \in C' \times D'$. Then for compact
+$S \subseteq \operatorname{ri} C$ and $T \subseteq \operatorname{ri} D$ there is $M \ge 0$ with
+$|K_i(u, x)| \le M$ on $S \times T$ for all $i$, and there is $k \ge 0$ such that every
+$K_i(\cdot, x)$ with $x \in T$ is Lipschitz with constant $k$ on $S$. -/
 theorem exists_forall_abs_le_and_lipschitzOnWith_fst (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -216,7 +244,12 @@ theorem exists_forall_abs_le_and_lipschitzOnWith_fst (hC : Convex ℝ C) (hD : C
   · simpa only [hg, abs_neg] using hM (i, ⟨x, hx⟩) u hu
   · exact lipschitzOnWith_neg_iff.1 (hk (i, ⟨x, hx⟩))
 
-/-- **In the second variable**: the family is equi-Lipschitz in `x`, uniformly in `u ∈ S`. -/
+/-- Let $U$ and $X$ be finite-dimensional, let $C$ and $D$ be convex, let each $K_i$ be
+concave-convex on $C \times D$, and let $C' \subseteq \operatorname{ri} C \subseteq
+\operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D \subseteq \operatorname{cl} D'$.
+Suppose that $\{K_i(u, x)\}_i$ is bounded for every $(u, x) \in C' \times D'$. Then for compact
+$S \subseteq \operatorname{ri} C$ and $T \subseteq \operatorname{ri} D$ there is $k \ge 0$ such
+that every $K_i(u, \cdot)$ with $u \in S$ is Lipschitz with constant $k$ on $T$. -/
 theorem exists_forall_lipschitzOnWith_snd (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -249,12 +282,24 @@ theorem exists_forall_lipschitzOnWith_snd (hC : Convex ℝ C) (hD : Convex ℝ D
     exists_forall_lipschitzOnWith_of_isCompact_relint hD hgconv hD' hDdense hab hbe hT hTD
   exact ⟨k, fun i u hu => hk (i, ⟨u, hu⟩)⟩
 
-/-- A family of finite concave-convex functions on `C × D`, pointwise bounded on `C' × D'`, is
-uniformly bounded and equi-Lipschitzian on `S ×ˢ T` for every compact `S ⊆ ri C` and `T ⊆ ri D`.
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces and let $C \subseteq U$ and
+$D \subseteq X$ be convex. Let $(K_i)_{i \in I}$ be a family of functions
+$U \times X \to \mathbb{R}$, each concave-convex on $C \times D$, with $I$ an arbitrary index
+set. Let $C' \subseteq \operatorname{ri} C \subseteq \operatorname{cl} C'$ and $D' \subseteq
+\operatorname{ri} D \subseteq \operatorname{cl} D'$, and suppose that the family is pointwise
+bounded on $C' \times D'$: $\{K_i(u, x)\}_{i \in I}$ is bounded for every
+$(u, x) \in C' \times D'$. Then for all compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$ the family is uniformly bounded and equi-Lipschitz on
+$S \times T$: there are $M \ge 0$ and $k \ge 0$ such that for all $i \in I$
+$$|K_i(p)| \le M \text{ for } p \in S \times T, \qquad |K_i(p) - K_i(q)|
+  \le k \operatorname{dist}(p, q) \text{ for } p, q \in S \times T.$$
+This is Theorem 35.2 of [rockafellar1970convex].
 
-The customary hypothesis is `conv (cl (C' × D')) ⊇ C × D` for relatively open `C`, `D`; the form
-used here is `C' ⊆ ri C ⊆ cl C'` and likewise for `D`, and `C' = ri C`, `D' = ri D` gives the
-headline statement. -/
+The source assumes that $C$ and $D$ are relatively open and that $\operatorname{conv}
+(\operatorname{cl} (C' \times D')) \supseteq C \times D$. The form used here is $C' \subseteq
+\operatorname{ri} C \subseteq \operatorname{cl} C'$ and likewise for $D$, and the choice
+$C' = \operatorname{ri} C$, $D' = \operatorname{ri} D$ gives the main case. The distance on
+$U \times X$ is the maximum of the distances of the coordinates. -/
 theorem exists_forall_abs_le_and_lipschitzOnWith_prod (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -299,8 +344,14 @@ section Single
 
 variable [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] {L : U × X → ℝ}
 
-/-- A finite concave-convex function on `C × D` is Lipschitzian on every product of compact
-subsets of `ri C` and `ri D`: the family statement at a one-element family. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $L : U \times X \to \mathbb{R}$ be concave-convex on
+$C \times D$. Then for all compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$ there is $k \ge 0$ such that $L$ is Lipschitz with constant
+$k$ on $S \times T$.
+
+The proof applies `ConvexAnalysis.exists_forall_abs_le_and_lipschitzOnWith_prod` to the family
+with one member. -/
 theorem ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hL : ConcaveConvexOn C D L)
     {S : Set U} (hS : IsCompact S) (hSC : S ⊆ ri C)
@@ -311,8 +362,10 @@ theorem ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact (hC : Convex ℝ C) 
     (fun _ _ _ _ => (Set.finite_range _).isBounded) hS hSC hT hTD
   exact ⟨k, hk ()⟩
 
-/-- A finite concave-convex function is bounded on every product of compact subsets of the
-relative interiors. -/
+/-- Let $U$ and $X$ be finite-dimensional, let $C$ and $D$ be convex, and let
+$L : U \times X \to \mathbb{R}$ be concave-convex on $C \times D$. Then for all compact sets
+$S \subseteq \operatorname{ri} C$ and $T \subseteq \operatorname{ri} D$ there is $M \ge 0$ with
+$|L(p)| \le M$ for all $p \in S \times T$. -/
 theorem ConcaveConvexOn.exists_forall_abs_le_of_isCompact (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hL : ConcaveConvexOn C D L)
     {S : Set U} (hS : IsCompact S) (hSC : S ⊆ ri C)
@@ -327,17 +380,23 @@ end Single
 
 end Family
 
-/-! ### Compact relative neighbourhoods
+/-!
+### Compact relative neighbourhoods
 
-`ri C` is locally compact — being a translate of an open subset of a finite-dimensional subspace —
-which is what turns "Lipschitz on every compact rectangle" into "continuous". -/
+The relative interior $\operatorname{ri} C$ is locally compact, because it is a translate of an open
+subset of a finite-dimensional subspace. This turns "Lipschitz on every compact rectangle" into
+"continuous".
+-/
 
 section LocallyCompact
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C : Set E}
 
-/-- **Every point of `ri C` has a compact relative neighbourhood inside `ri C`.** -/
+/-- Let $E$ be a finite-dimensional real normed space and let $C \subseteq E$ be convex. Every point
+$x \in \operatorname{ri} C$ has a compact neighbourhood relative to $\operatorname{ri} C$ inside
+$\operatorname{ri} C$: there is a compact set $S \subseteq \operatorname{ri} C$ that is a
+neighbourhood of $x$ in the subspace $\operatorname{ri} C$. -/
 theorem exists_isCompact_mem_nhdsWithin_relint (hC : Convex ℝ C) {x : E} (hx : x ∈ ri C) :
     ∃ S : Set E, IsCompact S ∧ S ⊆ ri C ∧ S ∈ 𝓝[ri C] x := by
   obtain ⟨V, r, himg, hmaps, hid⟩ := exists_chart_retraction hC (intrinsicInterior_subset hx)
@@ -370,9 +429,12 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   {C : Set U} {D : Set X} {L : U × X → ℝ}
 
-/-- A finite concave-convex function on `C × D` is continuous relative to `ri C × ri D`.
-Continuity is local, `ri C` and `ri D` are locally compact, and on a compact rectangle the function
-is Lipschitz. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $L : U \times X \to \mathbb{R}$ be concave-convex on
+$C \times D$. Then $L$ is continuous relative to
+$\operatorname{ri} C \times \operatorname{ri} D$. Continuity is a local property,
+$\operatorname{ri} C$ and $\operatorname{ri} D$ are locally compact, and $L$ is Lipschitz on
+each compact rectangle. -/
 theorem ConcaveConvexOn.continuousOn (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hL : ConcaveConvexOn C D L) : ContinuousOn L (ri C ×ˢ ri D) := by
   rintro ⟨u, x⟩ ⟨hu, hx⟩
@@ -386,22 +448,29 @@ theorem ConcaveConvexOn.continuousOn (hC : Convex ℝ C) (hD : Convex ℝ D)
 
 end ContinuousOn
 
-/-! ### The relative collar
+/-!
+### The relative collar
 
-The convergence and joint-continuity theorems need, for a compact `S ⊆ ri C`, a slightly larger
-compact subset of `ri C` containing every point of `ri C` near `S`.
-`IsCompact.exists_cthickening_subset_open` will not serve: `cthickening ε S ⊆ ri C` is false,
-because points off the affine hull of `C` are near `S`. -/
+The convergence and joint-continuity theorems need, for a compact set
+$S \subseteq \operatorname{ri} C$, a slightly larger compact subset of $\operatorname{ri} C$ that
+contains every point of $\operatorname{ri} C$ near $S$. The Mathlib lemma
+`IsCompact.exists_cthickening_subset_open` does not apply: a closed $\varepsilon$-thickening of $S$
+is not contained in $\operatorname{ri} C$, because points off the affine hull of $C$ are near $S$.
+-/
 
 section Collar
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   {C : Set E}
 
-/-- **A compact subset of `ri C` has a relative collar**: an `ε > 0` and a compact `S' ⊆ ri C`
-containing `S` and every point of `ri C` within `ε` of `S`. The relative analogue of
-`IsCompact.exists_cthickening_subset_open`, and what makes the `interior` proofs of the
-one-variable convergence theorems run in `ri`. -/
+/-- Let $E$ be a finite-dimensional real normed space, let $C \subseteq E$ be convex, and let
+$S \subseteq \operatorname{ri} C$ be compact. Then $S$ has a **relative collar**: there are
+$\varepsilon > 0$ and a compact set $S'$ with $S \subseteq S' \subseteq \operatorname{ri} C$
+such that every $y \in \operatorname{ri} C$ with $\operatorname{dist}(y, x) \le \varepsilon$ for
+some $x \in S$ lies in $S'$.
+
+This is the relative analogue of `IsCompact.exists_cthickening_subset_open`. It lets the proofs
+of the one-variable convergence theorems for the interior run in the relative interior. -/
 theorem exists_isCompact_collar_relint (hC : Convex ℝ C) {S : Set E}
     (hS : IsCompact S) (hSC : S ⊆ ri C) :
     ∃ (ε : ℝ) (S' : Set E), 0 < ε ∧ IsCompact S' ∧ S ⊆ S' ∧ S' ⊆ ri C ∧
@@ -444,11 +513,14 @@ theorem exists_isCompact_collar_relint (hC : Convex ℝ C) {S : Set E}
 
 end Collar
 
-/-! ### Convergence
+/-!
+### Convergence
 
-Both are the one-variable statements with the compact set replaced by a compact *rectangle*: the
-family theorem supplies the equi-Lipschitz constant, `exists_isCompact_collar_relint` the room to
-move in, and `uniformCauchySeqOn_of_equiLipschitz` does the rest. -/
+Both convergence theorems are the one-variable statements with the compact set replaced by a compact
+rectangle. The family theorem supplies the equi-Lipschitz constant,
+`ConvexAnalysis.exists_isCompact_collar_relint` the room to move in, and
+`ConvexAnalysis.uniformCauchySeqOn_of_equiLipschitz` does the rest.
+-/
 
 section Convergence
 
@@ -456,9 +528,15 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   {C C' : Set U} {D D' : Set X} {K : ℕ → U × X → ℝ}
 
-/-- **The uniform Cauchy property behind both convergence theorems**: a sequence of finite
-concave-convex functions, pointwise bounded on `C' × D'` and pointwise Cauchy on a set `A` dense in
-`ri C × ri D`, is uniformly Cauchy on every compact rectangle inside `ri C × ri D`. -/
+/-- Let $U$ and $X$ be finite-dimensional, let $C$ and $D$ be convex, let $(K_i)_{i \in \mathbb{N}}$
+be a sequence of functions concave-convex on $C \times D$, and let $C' \subseteq
+\operatorname{ri} C \subseteq \operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D
+\subseteq \operatorname{cl} D'$. Suppose that the sequence is pointwise bounded on
+$C' \times D'$, and that $(K_i(p))_i$ is a Cauchy sequence for every $p$ in a set $A \subseteq
+\operatorname{ri} C \times \operatorname{ri} D$ whose closure contains
+$\operatorname{ri} C \times \operatorname{ri} D$. Then $(K_i)$ is uniformly Cauchy on
+$S \times T$ for all compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$. This is the step common to both convergence theorems. -/
 theorem uniformCauchySeqOn_prod_of_dense (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -481,10 +559,21 @@ theorem uniformCauchySeqOn_prod_of_dense (hC : Convex ℝ C) (hD : Convex ℝ D)
   exact ⟨hcol₁ y.1 hy₁ x.1 hx.1 ((le_max_left _ _).trans (hd.trans (min_le_left _ _))),
     hcol₂ y.2 hy₂ x.2 hx.2 ((le_max_right _ _).trans (hd.trans (min_le_right _ _)))⟩
 
-/-- A sequence of finite concave-convex functions on `C × D`, whose values are bounded at every
-point of a product `C' × D'` dense in `ri C × ri D` and convergent at every point of a dense
-`A ⊆ ri C × ri D`, converges at every point of `ri C × ri D` to a finite concave-convex limit,
-uniformly on every compact rectangle. Taking `A = C' ×ˢ D'` gives the customary statement. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $(K_i)_{i \in \mathbb{N}}$ be a sequence of functions
+$U \times X \to \mathbb{R}$, each concave-convex on $C \times D$. Let $C' \subseteq
+\operatorname{ri} C \subseteq \operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D
+\subseteq \operatorname{cl} D'$, and suppose that $\{K_i(u, x)\}_i$ is bounded for every
+$(u, x) \in C' \times D'$. Let $A \subseteq \operatorname{ri} C \times \operatorname{ri} D$ be a
+set whose closure contains $\operatorname{ri} C \times \operatorname{ri} D$, and suppose that
+$(K_i(p))_i$ converges for every $p \in A$. Then there is $L : U \times X \to \mathbb{R}$,
+concave-convex on $\operatorname{ri} C \times \operatorname{ri} D$, such that $K_i(p) \to L(p)$
+for every $p \in \operatorname{ri} C \times \operatorname{ri} D$, and the convergence is uniform
+on $S \times T$ for all compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$.
+
+The choice $A = C' \times D'$ gives the customary statement,
+`ConvexAnalysis.exists_tendstoUniformlyOn_prod_of_dense'`. -/
 theorem exists_tendstoUniformlyOn_prod_of_dense (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -525,7 +614,16 @@ theorem exists_tendstoUniformlyOn_prod_of_dense (hC : Convex ℝ C) (hD : Convex
     exact ((hK i).convex_snd u (intrinsicInterior_subset hu)).2 (intrinsicInterior_subset hx)
       (intrinsicInterior_subset hy) ha hb hab
 
-/-- The same in its customary form: pointwise convergence on a *product* of dense subsets. -/
+/-- Let $U$ and $X$ be finite-dimensional, let $C$ and $D$ be convex, let $(K_i)_{i \in \mathbb{N}}$
+be a sequence of functions concave-convex on $C \times D$, and let $C' \subseteq
+\operatorname{ri} C \subseteq \operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D
+\subseteq \operatorname{cl} D'$. If $(K_i(u, x))_i$ converges for every
+$(u, x) \in C' \times D'$, then there is $L$, concave-convex on
+$\operatorname{ri} C \times \operatorname{ri} D$, such that $K_i \to L$ pointwise on
+$\operatorname{ri} C \times \operatorname{ri} D$ and uniformly on $S \times T$ for all compact
+sets $S \subseteq \operatorname{ri} C$ and $T \subseteq \operatorname{ri} D$. This is
+`ConvexAnalysis.exists_tendstoUniformlyOn_prod_of_dense` with pointwise convergence on a product
+of dense subsets. -/
 theorem exists_tendstoUniformlyOn_prod_of_dense' (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -543,8 +641,12 @@ theorem exists_tendstoUniformlyOn_prod_of_dense' (hC : Convex ℝ C) (hD : Conve
   rw [closure_prod_eq]
   exact Set.prod_mono hCdense hDdense
 
-/-- With the limit supplied: pointwise convergence on all of `ri C × ri D` upgrades to uniform
-convergence on compact rectangles. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $(K_i)_{i \in \mathbb{N}}$ be a sequence of functions
+$U \times X \to \mathbb{R}$, each concave-convex on $C \times D$. If $K_i(p) \to L(p)$ for every
+$p \in \operatorname{ri} C \times \operatorname{ri} D$, then $K_i \to L$ uniformly on
+$S \times T$ for all compact sets $S \subseteq \operatorname{ri} C$ and
+$T \subseteq \operatorname{ri} D$. -/
 theorem tendstoUniformlyOn_prod_of_tendsto (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i)) {L : U × X → ℝ}
     (hL : ∀ p ∈ ri C ×ˢ ri D, Tendsto (fun i => K i p) atTop (𝓝 (L p)))
@@ -557,13 +659,21 @@ theorem tendstoUniformlyOn_prod_of_tendsto (hC : Convex ℝ C) (hD : Convex ℝ 
   exact (huc hS hSC hT hTD).congr_right fun p hp =>
     tendsto_nhds_unique (hL' p ⟨hSC hp.1, hTD hp.2⟩) (hL p ⟨hSC hp.1, hTD hp.2⟩)
 
-/-- **Arzelà–Ascoli for saddle-functions**: a sequence of finite concave-convex functions on
-`C × D` whose values are bounded at every point of a product `C' × D'` dense in `ri C × ri D` has a
-subsequence converging, uniformly on every compact rectangle inside `ri C × ri D`, to a finite
-concave-convex function.
+/-- The **Arzelà–Ascoli theorem for saddle-functions**. Let $U$ and $X$ be finite-dimensional real
+normed spaces, let $C \subseteq U$ and $D \subseteq X$ be convex, and let
+$(K_i)_{i \in \mathbb{N}}$ be a sequence of functions $U \times X \to \mathbb{R}$, each
+concave-convex on $C \times D$. Let $C' \subseteq \operatorname{ri} C \subseteq
+\operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D \subseteq \operatorname{cl} D'$, and
+suppose that $\{K_i(u, x)\}_i$ is bounded for every $(u, x) \in C' \times D'$. Then there are a
+strictly increasing $\varphi : \mathbb{N} \to \mathbb{N}$ and a function
+$L : U \times X \to \mathbb{R}$, concave-convex on
+$\operatorname{ri} C \times \operatorname{ri} D$, such that $K_{\varphi(i)}(p) \to L(p)$ for
+every $p \in \operatorname{ri} C \times \operatorname{ri} D$, uniformly on $S \times T$ for all
+compact sets $S \subseteq \operatorname{ri} C$ and $T \subseteq \operatorname{ri} D$.
 
-As in one variable the subsequence comes from a countable dense subset of the *product* `C' ×ˢ D'`,
-which is why `exists_tendstoUniformlyOn_prod_of_dense` is stated for a general dense `A`. -/
+As in one variable, the subsequence comes from a countable dense subset of the product
+$C' \times D'$, and this subset is not itself a product. This is why
+`ConvexAnalysis.exists_tendstoUniformlyOn_prod_of_dense` is stated for a general dense set $A$. -/
 theorem exists_subseq_tendstoUniformlyOn_prod (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hK : ∀ i, ConcaveConvexOn C D (K i))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -601,14 +711,21 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDimensi
   [NormedAddCommGroup X] [NormedSpace ℝ X] [FiniteDimensional ℝ X]
   {C C' : Set U} {D D' : Set X} {T : Type*} [TopologicalSpace T] [LocallyCompactSpace T]
 
-/-- A real-valued function of `(u, x, t)` with `T` locally compact, concave-convex in `(u, x)`
-for each `t` and continuous in `t` for each `(u, x)`, is *jointly* continuous relative to
-`ri C × ri D × T`.
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $T$ be a locally compact topological space. Let
+$F : (U \times X) \times T \to \mathbb{R}$ be such that $F(\cdot, t)$ is concave-convex on
+$C \times D$ for every $t \in T$. Let $C' \subseteq \operatorname{ri} C \subseteq
+\operatorname{cl} C'$ and $D' \subseteq \operatorname{ri} D \subseteq \operatorname{cl} D'$, and
+suppose that $t \mapsto F((u, x), t)$ is continuous for every $(u, x) \in C' \times D'$. Then
+$F$ is jointly continuous relative to $(\operatorname{ri} C \times \operatorname{ri} D) \times
+T$.
 
-Continuity in `t` is only needed at the points of dense subsets `C'` and `D'`;
-`continuousOn_prod_of_concaveConvexOn'` is the headline statement. On a compact neighbourhood `T₀`
-of `t₀` the family `{F(·, t) | t ∈ T₀}` is pointwise bounded on `C' × D'`, so the family theorem
-equi-Lipschitz near `(u₀, x₀)`, and a four-term estimate through a nearby point closes it. -/
+Continuity in $t$ is needed only at the points of the dense sets $C'$ and $D'$;
+`ConvexAnalysis.continuousOn_prod_of_concaveConvexOn'` is the case $C' = \operatorname{ri} C$,
+$D' = \operatorname{ri} D$. On a compact neighbourhood $T_0$ of $t_0$ the family
+$\{F(\cdot, t) \mid t \in T_0\}$ is pointwise bounded on $C' \times D'$. So the family theorem
+makes it equi-Lipschitz near $(u_0, x_0)$, and an estimate with four terms through a nearby
+point gives the continuity. -/
 theorem continuousOn_prod_of_concaveConvexOn (hC : Convex ℝ C) (hD : Convex ℝ D)
     {F : (U × X) × T → ℝ} (hF : ∀ t : T, ConcaveConvexOn C D fun p => F (p, t))
     (hC' : C' ⊆ ri C) (hCdense : ri C ⊆ closure C')
@@ -686,7 +803,12 @@ theorem continuousOn_prod_of_concaveConvexOn (hC : Convex ℝ C) (hD : Convex �
       (F (((u₀, x₀) : U × X), t₀))
     linarith
 
-/-- The same with continuity in the parameter assumed at *every* point of `ri C × ri D`. -/
+/-- Let $U$ and $X$ be finite-dimensional real normed spaces, let $C \subseteq U$ and
+$D \subseteq X$ be convex, and let $T$ be a locally compact topological space. Let
+$F : (U \times X) \times T \to \mathbb{R}$ be such that $F(\cdot, t)$ is concave-convex on
+$C \times D$ for every $t \in T$, and such that $t \mapsto F((u, x), t)$ is continuous for every
+$(u, x) \in \operatorname{ri} C \times \operatorname{ri} D$. Then $F$ is jointly continuous
+relative to $(\operatorname{ri} C \times \operatorname{ri} D) \times T$. -/
 theorem continuousOn_prod_of_concaveConvexOn' (hC : Convex ℝ C) (hD : Convex ℝ D)
     {F : (U × X) × T → ℝ} (hF : ∀ t : T, ConcaveConvexOn C D fun p => F (p, t))
     (hcont : ∀ u ∈ ri C, ∀ x ∈ ri D, Continuous fun t => F ((u, x), t)) :

@@ -20,66 +20,66 @@ import Numlib.MeasureTheory.Function.LpInterpolation
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 
 /-!
-# Clarkson's inequalities and the uniform convexity of `L^p`
+# Clarkson's inequalities and the uniform convexity of $L^p$
 
-For `1 < p < ∞` the space `L^p(μ)` of real-valued functions is uniformly convex
-(`MeasureTheory.Lp.instUniformConvexSpace`). The proof is by **Clarkson's inequalities**:
+For $1 < p < \infty$, the space $L^p(\mu)$ of real functions is uniformly convex. The proof uses
+**Clarkson's inequalities**. For $2 \le p < \infty$ the first inequality is
+$$\Big\|\frac{f + g}{2}\Big\|_p^p + \Big\|\frac{f - g}{2}\Big\|_p^p \le \frac{1}{2} \big(\|f\|_p^p +
+  \|g\|_p^p\big).$$
+For $1 < p \le 2$ with the conjugate exponent $q$, the second inequality is
+$$\|f + g\|_p^q + \|f - g\|_p^q \le 2 \big(\|f\|_p^p + \|g\|_p^p\big)^{q/p}.$$
+The presentation follows Theorem 4.10, Remark 3 and Exercise 4.11 in Chapter 4 of
+[brezis2011functional], and Problem 20 of the same book for the proof of the second inequality. The
+file also proves the reverse Minkowski inequality for an exponent in $(0, 1]$ and the inequalities
+of part B of Problem 20.
 
-* for `2 ≤ p < ∞`, the first inequality
-  `‖(f + g)/2‖ₚ ^ p + ‖(f - g)/2‖ₚ ^ p ≤ (‖f‖ₚ ^ p + ‖g‖ₚ ^ p) / 2`
-  (`MeasureTheory.Lp.clarkson_of_two_le`), integrated from the pointwise inequality
-  `|(a + b)/2| ^ p + |(a - b)/2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2`
-  (`Real.clarkson_pointwise_of_two_le`), itself a consequence of the comparison
-  `α ^ p + β ^ p ≤ (α ^ 2 + β ^ 2) ^ (p/2)` of the `ℓ^p` and `ℓ^2` norms on `ℝ²` and of the
-  convexity of `t ↦ t ^ (p/2)`;
-* for `1 < p ≤ 2` with conjugate exponent `q`, the second inequality
-  `‖f + g‖ₚ ^ q + ‖f - g‖ₚ ^ q ≤ 2 (‖f‖ₚ ^ p + ‖g‖ₚ ^ p) ^ (q/p)`
-  (`MeasureTheory.Lp.clarkson_of_le_two`), obtained from the pointwise inequality
-  `|x + y| ^ q + |x - y| ^ q ≤ 2 (|x| ^ p + |y| ^ p) ^ (q/p)`
-  (`Real.abs_add_rpow_add_abs_sub_rpow_le`, stated with the roles of `p` and `q` exchanged, so
-  for an exponent `≥ 2` and its conjugate) raised to the power `p/q ≤ 1`, integrated, and combined
-  with the *reverse* Minkowski inequality for the exponent `p/q ∈ (0, 1]`
-  (`ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one`).
+## Main results
 
-The pointwise inequality behind the second one is the difficult step. By homogeneity and
-symmetry it reduces to a one-variable inequality on `[0, 1]`,
-`(1 + r) ^ p + (1 - r) ^ p ≤ 2 (1 + r ^ q) ^ (p - 1)` (`Real.one_add_rpow_add_one_sub_rpow_le`,
-`2 ≤ p`, `q` conjugate), which is proved as follows: the function
-`F x = (1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p` is concave on `(0, 1)`, because its derivative
-`F' x = (1 + x ^ (-1/p)) ^ (p-1) - (x ^ (-1/p) - 1) ^ (p-1)` is antitone there, so `F` lies below
-its tangent line at any point `y`, `F x ≤ F y + (x - y) F' y`; at `x = r ^ p` and the tangent
-point `y = r ^ (p q)` the right-hand side collapses to `2 (1 + r ^ q) ^ (p - 1)`, because
-`p / q = p - 1` for conjugate exponents. This is the argument of [brezis2011functional]
-Problem 20, part A. The one-variable inequality in the book's form,
-`(1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p ≤ 2 (1 + x ^ (q/p)) ^ (p/q)` on `(0, 1)`, is
-`Real.clarkson_one_var_le`.
+* `Real.clarkson_pointwise_of_two_le`: Clarkson's first inequality for real numbers.
+* `Real.abs_add_rpow_add_abs_sub_rpow_le`: for $p \ge 2$ with conjugate exponent $q$, $|x + y|^p +
+  |x - y|^p \le 2 (|x|^q + |y|^q)^{p/q}$.
+* `Real.one_add_rpow_add_one_sub_rpow_le`: for $p \ge 2$ with conjugate exponent $q$ and
+  $r \in [0, 1]$, $(1 + r)^p + (1 - r)^p \le 2 (1 + r^q)^{p - 1}$.
+* `ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one`: the reverse Minkowski inequality for an exponent
+  in $(0, 1]$.
+* `MeasureTheory.Lp.clarkson_of_two_le`: Clarkson's first inequality in $L^p$, $2 \le p < \infty$.
+* `MeasureTheory.Lp.clarkson_of_le_two`: Clarkson's second inequality in $L^p$, $1 < p \le 2$.
+* `MeasureTheory.Lp.uniformConvexSpace_of_one_lt_of_ne_top`,
+  `MeasureTheory.Lp.instUniformConvexSpace`: $L^p(\mu)$ is uniformly convex for $1 < p < \infty$.
+* `MeasureTheory.Lp.norm_add_rpow_add_norm_sub_rpow_le`,
+  `MeasureTheory.Lp.two_mul_norm_rpow_add_norm_rpow_le`: for $2 \le p < \infty$, $\|f + g\|_p^p +
+  \|f - g\|_p^p \le 2 (\|f\|_p^q + \|g\|_p^q)^{p/q} \le 2^{p - 1} (\|f\|_p^p + \|g\|_p^p)$.
 
-The inequalities of the book's Problem 20, part B — for `2 ≤ p`,
-`‖f + g‖ₚ ^ p + ‖f - g‖ₚ ^ p ≤ 2 (‖f‖ₚ ^ q + ‖g‖ₚ ^ q) ^ (p/q) ≤ 2 ^ (p-1) (‖f‖ₚ ^ p + ‖g‖ₚ ^ p)` —
-are `MeasureTheory.Lp.norm_add_rpow_add_norm_sub_rpow_le` and
-`MeasureTheory.Lp.two_mul_norm_rpow_add_norm_rpow_le`; together they give the first inequality
-again.
+## Proof outline
+
+The first inequality is the integral of the pointwise inequality $|\frac{a + b}{2}|^p + |\frac{a -
+b}{2}|^p \le \frac{1}{2}(|a|^p + |b|^p)$. This follows from the comparison $\alpha^p + \beta^p \le
+(\alpha^2 + \beta^2)^{p/2}$ of the $\ell^p$ and $\ell^2$ norms on $\mathbb{R}^2$ and from the
+convexity of $t \mapsto t^{p/2}$.
+
+The second inequality starts from the pointwise inequality $|x + y|^{q} + |x - y|^{q} \le 2 (|x|^p +
+|y|^p)^{q/p}$, for the exponent $q \ge 2$ and its conjugate $p$. This is raised to the power
+$p/q \le 1$ and integrated, and the reverse Minkowski inequality for the exponent $p/q \in (0, 1]$
+completes the proof. The pointwise inequality is the difficult step. By homogeneity and symmetry it
+reduces to the inequality $(1 + r)^p + (1 - r)^p \le 2 (1 + r^q)^{p - 1}$ for $r \in [0, 1]$,
+$p \ge 2$ and $q$ conjugate to $p$. The function $F(x) = (1 + x^{1/p})^p + (1 - x^{1/p})^p$ is
+concave on $(0, 1)$, because its derivative $F'(x) = (1 + x^{-1/p})^{p - 1} - (x^{-1/p} - 1)^{p -
+1}$ is antitone there. So $F$ lies below its tangent line at every point. At $x = r^p$ and the point
+of tangency $y = r^{pq}$, the tangent line has the value $2 (1 + r^q)^{p - 1}$, because
+$p/q = p - 1$ for conjugate exponents. This is the argument of part A of Problem 20 of
+[brezis2011functional].
 
 ## Implementation notes
 
-The integrated inequalities are first proved at the level of `eLpNorm` for measurable functions
-(`MeasureTheory.eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_two_le` and
-`MeasureTheory.eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_le_two`), where the exponent
-bookkeeping is done once in `ℝ≥0∞`, and then read on `Lp ℝ p μ` through
-`‖f‖ ^ r = (eLpNorm f p μ ^ r).toReal`. The uniform convexity instance is stated with the
-hypotheses `[Fact (1 < p)] [Fact (p ≠ ∞)]`; the theorem form
-`MeasureTheory.Lp.uniformConvexSpace_of_one_lt_of_ne_top` takes them as explicit arguments.
-
-The first inequality and its proof would go through verbatim for functions with values in an
-inner product space (the only input is the parallelogram law); the second is genuinely about
-real scalars, which is why everything is stated for `Lp ℝ p μ`.
-
-## References
-
-Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
-Universitext, Springer, 2011 [brezis2011functional], Theorem 4.10 (Clarkson's first inequality
-and uniform convexity for `2 ≤ p`), Remark 3 of chapter 4 (the second inequality), Problem 20
-(its proof), Exercise 4.11 (the reverse Minkowski inequality).
+* The integrated inequalities are proved first for the `ℝ≥0∞`-valued seminorm
+  `MeasureTheory.eLpNorm` of almost everywhere strongly measurable functions. The computations with
+  exponents are done once there. They are then read on `Lp ℝ p μ` through
+  $\|f\|^r = (\|f\|_p^r)_{\mathbb{R}}$ (`MeasureTheory.Lp.norm_rpow`).
+* The uniform convexity instance takes the hypotheses `[Fact (1 < p)] [Fact (p ≠ ∞)]`. The theorem
+  form `MeasureTheory.Lp.uniformConvexSpace_of_one_lt_of_ne_top` takes them as explicit arguments.
+* The first inequality and its proof hold without change for functions with values in an inner
+  product space, since the only input is the parallelogram law. The second inequality is about real
+  scalars. For this reason all results are stated for `Lp ℝ p μ`.
 -/
 
 open Filter Set Topology MeasureTheory
@@ -87,13 +87,16 @@ open scoped ENNReal NNReal
 
 noncomputable section
 
-/-! ### Pointwise inequalities on `ℝ` -/
+/-! ### Pointwise inequalities on $\mathbb{R}$ -/
 
 namespace Real
 
-/-- Comparison of the `ℓ^p` and `ℓ^2` norms on `ℝ²`: for `2 ≤ p`,
-`α ^ p + β ^ p ≤ (α ^ 2 + β ^ 2) ^ (p / 2)` ([brezis2011functional] Theorem 4.10, inequality
-(10)). This is `NNReal.rpow_add_rpow_le` at the exponents `2 ≤ p`, raised to the power `p`. -/
+/-- Comparison of the $\ell^p$ and $\ell^2$ norms on $\mathbb{R}^2$. Let $\alpha, \beta \ge 0$ and
+$p \ge 2$. Then
+$$\alpha^p + \beta^p \le (\alpha^2 + \beta^2)^{p/2}.$$
+This is inequality (10) in the proof of Theorem 4.10 of [brezis2011functional].
+
+The proof is `NNReal.rpow_add_rpow_le` for the exponents $2 \le p$, raised to the power $p$. -/
 theorem rpow_add_rpow_le_rpow_sq_add_sq {α β p : ℝ} (hα : 0 ≤ α) (hβ : 0 ≤ β) (hp : 2 ≤ p) :
     α ^ p + β ^ p ≤ (α ^ 2 + β ^ 2) ^ (p / 2) := by
   have hp0 : (0:ℝ) < p := by linarith
@@ -107,10 +110,13 @@ theorem rpow_add_rpow_le_rpow_sq_add_sq {α β p : ℝ} (hα : 0 ≤ α) (hβ : 
   rw [h2, h2] at h
   exact_mod_cast h
 
-/-- **Clarkson's first inequality** on `ℝ`: for `2 ≤ p`,
-`|(a + b) / 2| ^ p + |(a - b) / 2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2` ([brezis2011functional]
-Theorem 4.10, inequality (9)). It is `Real.rpow_add_rpow_le_rpow_sq_add_sq` followed by the
-convexity of `t ↦ t ^ (p / 2)`. -/
+/-- **Clarkson's first inequality** for real numbers. Let $p \ge 2$ and $a, b \in \mathbb{R}$. Then
+$$\Big|\frac{a + b}{2}\Big|^p + \Big|\frac{a - b}{2}\Big|^p \le \frac{1}{2} \big(|a|^p +
+  |b|^p\big).$$
+This is inequality (9) in the proof of Theorem 4.10 of [brezis2011functional].
+
+The proof is `Real.rpow_add_rpow_le_rpow_sq_add_sq` followed by the convexity of
+$t \mapsto t^{p/2}$. -/
 theorem clarkson_pointwise_of_two_le {p : ℝ} (hp : 2 ≤ p) (a b : ℝ) :
     |(a + b) / 2| ^ p + |(a - b) / 2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2 := by
   have h1 : (1:ℝ) ≤ p / 2 := by linarith
@@ -129,9 +135,12 @@ theorem clarkson_pointwise_of_two_le {p : ℝ} (hp : 2 ≤ p) (a b : ℝ) :
         (convexOn_rpow h1).2 (sq_nonneg a) (sq_nonneg b) (by norm_num) (by norm_num) (by norm_num)
     _ = (|a| ^ p + |b| ^ p) / 2 := by rw [habs, habs]; ring
 
-/-- [brezis2011functional] Problem 20, inequality (2): for `2 ≤ p` with conjugate exponent `q`,
-`2 (|x| ^ q + |y| ^ q) ^ (p / q) ≤ 2 ^ (p - 1) (|x| ^ p + |y| ^ p)`, by the convexity of
-`t ↦ t ^ (p / q)` (`p / q = p - 1 ≥ 1`). -/
+/-- Let $p \ge 2$ and let $q$ be the conjugate exponent, $1/p + 1/q = 1$. For all
+$x, y \in \mathbb{R}$,
+$$2 \big(|x|^q + |y|^q\big)^{p/q} \le 2^{p - 1} \big(|x|^p + |y|^p\big).$$
+This is inequality (2) of Problem 20 of [brezis2011functional].
+
+The proof is the convexity of $t \mapsto t^{p/q}$, since $p/q = p - 1 \ge 1$. -/
 theorem two_mul_rpow_add_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate q) (x y : ℝ) :
     2 * (|x| ^ q + |y| ^ q) ^ (p / q) ≤ 2 ^ (p - 1) * (|x| ^ p + |y| ^ p) := by
   have hq0 : 0 < q := hpq.symm.pos
@@ -155,9 +164,13 @@ theorem two_mul_rpow_add_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConju
 
 /-! ### The one-variable inequality of Problem 20 -/
 
-/-- A function with an antitone derivative lies below its tangent lines: if
-`HasDerivAt F (F' x) x` on `Ioo a b` and `F'` is antitone there, then
-`F x ≤ F y + (x - y) * F' y` for `x, y ∈ Ioo a b`. This is the mean value theorem. -/
+/-- Let $a, b \in \mathbb{R}$, and let $F, F' \colon \mathbb{R} \to \mathbb{R}$ be such that $F$
+has the derivative $F'(x)$ at every $x \in (a, b)$ and $F'$ is antitone on $(a, b)$. Then for all
+$x, y \in (a, b)$,
+$$F(x) \le F(y) + (x - y) F'(y).$$
+That is, $F$ lies below its tangent lines on $(a, b)$.
+
+The proof is the mean value theorem. -/
 theorem le_add_mul_of_antitoneOn_hasDerivAt {F F' : ℝ → ℝ} {a b : ℝ}
     (hF : ∀ x ∈ Ioo a b, HasDerivAt F (F' x) x) (hF' : AntitoneOn F' (Ioo a b))
     {x y : ℝ} (hx : x ∈ Ioo a b) (hy : y ∈ Ioo a b) : F x ≤ F y + (x - y) * F' y := by
@@ -178,8 +191,10 @@ theorem le_add_mul_of_antitoneOn_hasDerivAt {F F' : ℝ → ℝ} {a b : ℝ}
     rw [hc', div_le_iff₀ (sub_pos.2 hyx)] at hle
     nlinarith
 
-/-- The auxiliary function `v ↦ (1 + v) ^ (p - 1) - (v - 1) ^ (p - 1)` is monotone on `[1, ∞)`
-when `2 ≤ p`: its derivative `(p - 1) ((1 + v) ^ (p - 2) - (v - 1) ^ (p - 2))` is nonnegative. -/
+/-- Let $p \ge 2$. The function $v \mapsto (1 + v)^{p - 1} - (v - 1)^{p - 1}$ is monotone on
+$[1, \infty)$.
+
+Its derivative $(p - 1) \big((1 + v)^{p - 2} - (v - 1)^{p - 2}\big)$ is nonnegative. -/
 theorem monotoneOn_one_add_rpow_sub_sub_one_rpow {p : ℝ} (hp : 2 ≤ p) :
     MonotoneOn (fun v : ℝ => (1 + v) ^ (p - 1) - (v - 1) ^ (p - 1)) (Ici 1) := by
   have h1 : (1:ℝ) ≤ p - 1 := by linarith
@@ -196,8 +211,10 @@ theorem monotoneOn_one_add_rpow_sub_sub_one_rpow {p : ℝ} (hp : 2 ≤ p) :
     Real.rpow_le_rpow (by linarith) (by linarith) (by linarith)
   nlinarith
 
-/-- The derivative of `F x = (1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p` on `(0, 1)`, in the form
-`(1 + x ^ (-1/p)) ^ (p - 1) - (x ^ (-1/p) - 1) ^ (p - 1)` which makes its antitonicity visible. -/
+/-- Let $p \ge 2$ and $x \in (0, 1)$. The function $F(x) = (1 + x^{1/p})^p + (1 - x^{1/p})^p$ has
+the derivative
+$$F'(x) = \big(1 + x^{-1/p}\big)^{p - 1} - \big(x^{-1/p} - 1\big)^{p - 1}$$
+at $x$. This form of the derivative shows that it is antitone. -/
 theorem hasDerivAt_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) {x : ℝ} (hx : x ∈ Ioo 0 1) :
     HasDerivAt (fun x : ℝ => (1 + x ^ (1 / p)) ^ p + (1 - x ^ (1 / p)) ^ p)
       ((1 + x ^ (-(1 / p))) ^ (p - 1) - (x ^ (-(1 / p)) - 1) ^ (p - 1)) x := by
@@ -231,7 +248,9 @@ theorem hasDerivAt_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) {x : �
   field_simp
   ring
 
-/-- The derivative of `F` is antitone on `(0, 1)`, so `F` is concave there. -/
+/-- Let $p \ge 2$. The function $x \mapsto (1 + x^{-1/p})^{p - 1} - (x^{-1/p} - 1)^{p - 1}$ is
+antitone on $(0, 1)$. It is the derivative of $F(x) = (1 + x^{1/p})^p + (1 - x^{1/p})^p$, so $F$
+is concave on $(0, 1)$. -/
 theorem antitoneOn_deriv_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) :
     AntitoneOn (fun x : ℝ => (1 + x ^ (-(1 / p))) ^ (p - 1) - (x ^ (-(1 / p)) - 1) ^ (p - 1))
       (Ioo 0 1) := by
@@ -242,13 +261,15 @@ theorem antitoneOn_deriv_one_add_rpow_add_one_sub_rpow {p : ℝ} (hp : 2 ≤ p) 
   exact monotoneOn_one_add_rpow_sub_sub_one_rpow hp (h1 y hy) (h1 x hx)
     (Real.rpow_le_rpow_of_nonpos hx.1 hxy hneg)
 
-/-- **The one-variable inequality of Clarkson's second inequality** ([brezis2011functional]
-Problem 20, part A, questions 2–3, in the variable `r ∈ [0, 1]`): for `2 ≤ p` with conjugate
-exponent `q`, `(1 + r) ^ p + (1 - r) ^ p ≤ 2 (1 + r ^ q) ^ (p - 1)`.
+/-- **The one-variable inequality behind Clarkson's second inequality.** Let $p \ge 2$, let $q$ be
+the conjugate exponent, $1/p + 1/q = 1$, and let $r \in [0, 1]$. Then
+$$(1 + r)^p + (1 - r)^p \le 2 (1 + r^q)^{p - 1}.$$
+This is questions 2 and 3 of part A of Problem 20 of [brezis2011functional], in the variable
+$r$.
 
-The function `F x = (1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p` is concave on `(0, 1)`, hence lies
-below its tangent line at `y = r ^ (p q)`; evaluated at `x = r ^ p` the tangent line is
-`2 (1 + r ^ q) ^ (p - 1)`, because `p / q = p - 1`. -/
+The function $F(x) = (1 + x^{1/p})^p + (1 - x^{1/p})^p$ is concave on $(0, 1)$, so it lies below
+its tangent line at $y = r^{pq}$. At $x = r^p$ this tangent line has the value
+$2 (1 + r^q)^{p - 1}$, because $p/q = p - 1$. -/
 theorem one_add_rpow_add_one_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate q)
     {r : ℝ} (hr : r ∈ Icc 0 1) : (1 + r) ^ p + (1 - r) ^ p ≤ 2 * (1 + r ^ q) ^ (p - 1) := by
   have hp0 : (0:ℝ) < p := by linarith
@@ -308,10 +329,12 @@ theorem one_add_rpow_add_one_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.Hol
         ring
     _ = 2 * A := by rw [hSA, hSB]; ring
 
-/-- [brezis2011functional] Problem 20, part A, questions 2–3, in the book's form: for `2 ≤ p`
-with conjugate exponent `q` and `x ∈ (0, 1)`,
-`(1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p ≤ 2 (1 + x ^ (q/p)) ^ (p/q)`. This is
-`Real.one_add_rpow_add_one_sub_rpow_le` at `r = x ^ (1/p)`. -/
+/-- Let $p \ge 2$, let $q$ be the conjugate exponent, $1/p + 1/q = 1$, and let $x \in (0, 1)$. Then
+$$\big(1 + x^{1/p}\big)^p + \big(1 - x^{1/p}\big)^p \le 2 \big(1 + x^{q/p}\big)^{p/q}.$$
+This is questions 2 and 3 of part A of Problem 20 of [brezis2011functional], in the form of the
+book.
+
+The proof is `Real.one_add_rpow_add_one_sub_rpow_le` at $r = x^{1/p}$. -/
 theorem clarkson_one_var_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate q) {x : ℝ}
     (hx : x ∈ Ioo 0 1) :
     (1 + x ^ (1 / p)) ^ p + (1 - x ^ (1 / p)) ^ p ≤ 2 * (1 + x ^ (q / p)) ^ (p / q) := by
@@ -320,9 +343,12 @@ theorem clarkson_one_var_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate 
   have h := one_add_rpow_add_one_sub_rpow_le hp hpq hr
   rwa [← Real.rpow_mul hx.1.le, one_div_mul_eq_div, ← hpq.div_conj_eq_sub_one] at h
 
-/-- [brezis2011functional] Problem 20, inequality (1): for `2 ≤ p` with conjugate exponent `q`,
-`|x + y| ^ p + |x - y| ^ p ≤ 2 (|x| ^ q + |y| ^ q) ^ (p / q)` for all real `x`, `y`. By symmetry
-and homogeneity this is `Real.one_add_rpow_add_one_sub_rpow_le`. -/
+/-- Let $p \ge 2$ and let $q$ be the conjugate exponent, $1/p + 1/q = 1$. For all
+$x, y \in \mathbb{R}$,
+$$|x + y|^p + |x - y|^p \le 2 \big(|x|^q + |y|^q\big)^{p/q}.$$
+This is inequality (1) of Problem 20 of [brezis2011functional].
+
+By symmetry and homogeneity, the inequality reduces to `Real.one_add_rpow_add_one_sub_rpow_le`. -/
 theorem abs_add_rpow_add_abs_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.HolderConjugate q)
     (x y : ℝ) : |x + y| ^ p + |x - y| ^ p ≤ 2 * (|x| ^ q + |y| ^ q) ^ (p / q) := by
   have hp0 : (0:ℝ) < p := by linarith
@@ -362,22 +388,26 @@ theorem abs_add_rpow_add_abs_sub_rpow_le {p q : ℝ} (hp : 2 ≤ p) (hpq : p.Hol
 
 end Real
 
-/-! ### The reverse Minkowski inequality for exponents in `(0, 1]` -/
+/-! ### The reverse Minkowski inequality for exponents in $(0, 1]$ -/
 
 namespace ENNReal
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
-/-- **The reverse Minkowski inequality** for an exponent `0 < s ≤ 1`
-([brezis2011functional] Exercise 4.11, question 1): for nonnegative `u`, `v`,
-`(∫⁻ u ^ s) ^ (1/s) + (∫⁻ v ^ s) ^ (1/s) ≤ (∫⁻ (u + v) ^ s) ^ (1/s)`. Mathlib's
-`ENNReal.lintegral_Lp_add_le` is the case `1 ≤ s` with the inequality the other way round, and
-`ENNReal.lintegral_Lp_add_le_of_le_one` is the upper bound with the constant `2 ^ (1/s - 1)`.
+/-- **The reverse Minkowski inequality** for an exponent $0 < s \le 1$. Let $\mu$ be a measure, and
+let $u, v \colon \alpha \to [0, \infty]$, with $u$ almost everywhere measurable. Then
+$$\Big(\int^- u^s \, d\mu\Big)^{1/s} + \Big(\int^- v^s \, d\mu\Big)^{1/s} \le \Big(\int^- (u +
+  v)^s \, d\mu\Big)^{1/s}.$$
+This is question 1 of Exercise 4.11 of [brezis2011functional].
 
-With `a = (∫⁻ u ^ s) ^ (1/s)` and `b = (∫⁻ v ^ s) ^ (1/s)` both nonzero and finite, the concavity
-of `t ↦ t ^ s` with the weights `a / (a + b)` and `b / (a + b)` gives pointwise
-`a/(a+b) (u/a) ^ s + b/(a+b) (v/b) ^ s ≤ ((u + v)/(a + b)) ^ s`; integrating, the left side is
-`1`, so `(a + b) ^ s ≤ ∫⁻ (u + v) ^ s`. Only one of the two functions needs to be measurable. -/
+Only one of the two functions needs to be measurable. Mathlib's `ENNReal.lintegral_Lp_add_le` is
+the case $s \ge 1$, with the inequality in the other direction. Mathlib's
+`ENNReal.lintegral_Lp_add_le_of_le_one` is the upper bound with the constant $2^{1/s - 1}$.
+
+Let $a$ and $b$ be the two terms on the left, and suppose that both are nonzero and finite. The
+concavity of $t \mapsto t^s$ with the weights $a/(a + b)$ and $b/(a + b)$ gives the pointwise
+inequality $\frac{a}{a + b} (u/a)^s + \frac{b}{a + b} (v/b)^s \le ((u + v)/(a + b))^s$. The
+integral of the left side is $1$, so $(a + b)^s \le \int^- (u + v)^s \, d\mu$. -/
 theorem Lp_add_le_lintegral_Lp_add_of_le_one {s : ℝ} (hs0 : 0 < s) (hs1 : s ≤ 1)
     {u v : α → ℝ≥0∞} (hu : AEMeasurable u μ) :
     (∫⁻ x, u x ^ s ∂μ) ^ (1 / s) + (∫⁻ x, v x ^ s ∂μ) ^ (1 / s)
@@ -468,20 +498,25 @@ theorem Lp_add_le_lintegral_Lp_add_of_le_one {s : ℝ} (hs0 : 0 < s) (hs1 : s �
 
 end ENNReal
 
-/-! ### Clarkson's inequalities for `eLpNorm` -/
+/-! ### Clarkson's inequalities for the $L^p$ seminorm -/
 
 namespace MeasureTheory
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α} {p q : ℝ≥0∞}
 
-/-- `‖a‖ₑ ^ t = ENNReal.ofReal (|a| ^ t)` for real `a` and `0 ≤ t`. -/
+/-- For $a \in \mathbb{R}$ and $t \ge 0$, the power $\|a\|^t$ of the `ℝ≥0∞`-valued norm of $a$ is
+the image of $|a|^t$ in $[0, \infty]$. -/
 theorem enorm_rpow_eq_ofReal_abs_rpow (a : ℝ) {t : ℝ} (ht : 0 ≤ t) :
     ‖a‖ₑ ^ t = ENNReal.ofReal (|a| ^ t) := by
   rw [Real.enorm_eq_ofReal_abs, ENNReal.ofReal_rpow_of_nonneg (abs_nonneg a) ht]
 
-/-- **Clarkson's first inequality** for `eLpNorm`, `2 ≤ p < ∞`:
-`‖(f + g)/2‖ₚ ^ p + ‖(f - g)/2‖ₚ ^ p ≤ (‖f‖ₚ ^ p + ‖g‖ₚ ^ p) / 2`, the integrated form of
-`Real.clarkson_pointwise_of_two_le`. -/
+/-- **Clarkson's first inequality** for the $L^p$ seminorm. Let $2 \le p < \infty$ and let
+$f, g \colon \alpha \to \mathbb{R}$ be almost everywhere strongly measurable. Then
+$$\Big\|\frac{f + g}{2}\Big\|_p^p + \Big\|\frac{f - g}{2}\Big\|_p^p \le \frac{1}{2}
+  \big(\|f\|_p^p + \|g\|_p^p\big).$$
+
+The seminorm is the `ℝ≥0∞`-valued `MeasureTheory.eLpNorm`, and the inequality holds in
+$[0, \infty]$. It is the integral of `Real.clarkson_pointwise_of_two_le`. -/
 theorem eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_two_le (hp : 2 ≤ p) (hp' : p ≠ ∞)
     {f g : α → ℝ} (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
     eLpNorm ((2:ℝ)⁻¹ • (f + g)) p μ ^ p.toReal + eLpNorm ((2:ℝ)⁻¹ • (f - g)) p μ ^ p.toReal
@@ -516,12 +551,16 @@ theorem eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_two_le (hp : 2 ≤ p) (hp' :
           ← lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp' hf,
           ← lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp' hg]
 
-/-- **Clarkson's second inequality** for `eLpNorm`, `1 < p ≤ 2` with conjugate exponent `q`:
-`‖f + g‖ₚ ^ q + ‖f - g‖ₚ ^ q ≤ 2 (‖f‖ₚ ^ p + ‖g‖ₚ ^ p) ^ (q/p)`. The pointwise inequality
-`Real.abs_add_rpow_add_abs_sub_rpow_le` at the exponent `q ≥ 2` is raised to the power
-`p/q ≤ 1` and integrated, and the reverse Minkowski inequality
-`ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one` bounds the result from below by
-`(‖f + g‖ₚ ^ q + ‖f - g‖ₚ ^ q) ^ (p/q)`. -/
+/-- **Clarkson's second inequality** for the $L^p$ seminorm. Let $1 < p \le 2$, let $q$ be the
+conjugate exponent, $1/p + 1/q = 1$, and let $f, g \colon \alpha \to \mathbb{R}$ be almost
+everywhere strongly measurable. Then
+$$\|f + g\|_p^q + \|f - g\|_p^q \le 2 \big(\|f\|_p^p + \|g\|_p^p\big)^{q/p}.$$
+
+The seminorm is the `ℝ≥0∞`-valued `MeasureTheory.eLpNorm`, and the inequality holds in
+$[0, \infty]$. The proof raises the pointwise inequality
+`Real.abs_add_rpow_add_abs_sub_rpow_le`, at the exponent $q \ge 2$, to the power $p/q \le 1$ and
+integrates it. The reverse Minkowski inequality `ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one`
+bounds the result from below by $(\|f + g\|_p^q + \|f - g\|_p^q)^{p/q}$. -/
 theorem eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_le_two [p.HolderConjugate q] (hp : 1 < p)
     (hp2 : p ≤ 2) {f g : α → ℝ} (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
     eLpNorm (f + g) p μ ^ q.toReal + eLpNorm (f - g) p μ ^ q.toReal
@@ -592,23 +631,27 @@ theorem eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_le_two [p.HolderConjugate q]
         rw [ENNReal.mul_rpow_of_nonneg _ _ (by positivity), ← ENNReal.rpow_mul,
           mul_one_div_cancel hs0.ne', ENNReal.rpow_one, hinv]
 
-/-! ### Clarkson's inequalities on `Lp` -/
+/-! ### Clarkson's inequalities in $L^p$ -/
 
 namespace Lp
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- `‖f‖ ^ r = (eLpNorm f p μ ^ r).toReal` for `f : Lp E p μ`. -/
+/-- For $f \in L^p(\mu; E)$ and $r \in \mathbb{R}$, $\|f\|^r$ is the real number of the power
+$\|f\|_p^r$ of the `ℝ≥0∞`-valued seminorm, that is, `‖f‖ ^ r = (eLpNorm f p μ ^ r).toReal`. -/
 theorem norm_rpow (f : Lp E p μ) (r : ℝ) : ‖f‖ ^ r = (eLpNorm f p μ ^ r).toReal := by
   rw [Lp.norm_def, ENNReal.toReal_rpow]
 
-/-- `eLpNorm f p μ ^ r` is finite for `f : Lp E p μ` and `0 ≤ r`. -/
+/-- For $f \in L^p(\mu; E)$ and $r \ge 0$, the power $\|f\|_p^r$ of the `ℝ≥0∞`-valued seminorm is
+finite. -/
 theorem eLpNorm_rpow_ne_top (f : Lp E p μ) {r : ℝ} (hr : 0 ≤ r) : eLpNorm f p μ ^ r ≠ ∞ :=
   ENNReal.rpow_ne_top_of_nonneg hr (Lp.memLp f).eLpNorm_ne_top
 
-/-- **Clarkson's first inequality** in `Lp ℝ p μ`, `2 ≤ p < ∞` ([brezis2011functional]
-Theorem 4.10, inequality (8)):
-`‖(f + g)/2‖ ^ p + ‖(f - g)/2‖ ^ p ≤ (‖f‖ ^ p + ‖g‖ ^ p) / 2`. -/
+/-- **Clarkson's first inequality** in $L^p$. Let $2 \le p < \infty$ and let $f, g \in L^p(\mu)$ be
+real. Then
+$$\Big\|\frac{f + g}{2}\Big\|_p^p + \Big\|\frac{f - g}{2}\Big\|_p^p \le \frac{1}{2}
+  \big(\|f\|_p^p + \|g\|_p^p\big).$$
+This is inequality (8) of Theorem 4.10 of [brezis2011functional]. -/
 theorem clarkson_of_two_le (hp : 2 ≤ p) (hp' : p ≠ ∞) (f g : Lp ℝ p μ) :
     ‖(2:ℝ)⁻¹ • (f + g)‖ ^ p.toReal + ‖(2:ℝ)⁻¹ • (f - g)‖ ^ p.toReal
       ≤ (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2 := by
@@ -627,9 +670,11 @@ theorem clarkson_of_two_le (hp : 2 ≤ p) (hp' : p ≠ ∞) (f g : Lp ℝ p μ) 
   exact ENNReal.toReal_mono (ENNReal.div_ne_top
     (ENNReal.add_ne_top.2 ⟨eLpNorm_rpow_ne_top _ hP0, eLpNorm_rpow_ne_top _ hP0⟩) (by simp)) h
 
-/-- **Clarkson's second inequality** in `Lp ℝ p μ`, `1 < p ≤ 2` with conjugate exponent `q`
-([brezis2011functional] Remark 3 of chapter 4, Problem 20, inequality (6)):
-`‖f + g‖ ^ q + ‖f - g‖ ^ q ≤ 2 (‖f‖ ^ p + ‖g‖ ^ p) ^ (q / p)`. -/
+/-- **Clarkson's second inequality** in $L^p$. Let $1 < p \le 2$, let $q$ be the conjugate exponent,
+$1/p + 1/q = 1$, and let $f, g \in L^p(\mu)$ be real. Then
+$$\|f + g\|_p^q + \|f - g\|_p^q \le 2 \big(\|f\|_p^p + \|g\|_p^p\big)^{q/p}.$$
+This is Remark 3 in Chapter 4 of [brezis2011functional], and inequality (6) of Problem 20 of the
+same book. -/
 theorem clarkson_of_le_two [p.HolderConjugate q] (hp : 1 < p) (hp2 : p ≤ 2) (f g : Lp ℝ p μ) :
     ‖f + g‖ ^ q.toReal + ‖f - g‖ ^ q.toReal
       ≤ 2 * (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) ^ (q.toReal / p.toReal) := by
@@ -650,10 +695,15 @@ theorem clarkson_of_le_two [p.HolderConjugate q] (hp : 1 < p) (hp2 : p ≤ 2) (f
 
 /-! ### Uniform convexity -/
 
-/-- **`L^p` is uniformly convex for `1 < p < ∞`** ([brezis2011functional] Theorem 4.10, Step 2,
-for `2 ≤ p`, and Remark 3 of chapter 4 / Problem 20, part C, for `1 < p ≤ 2`), theorem form. For
-`2 ≤ p` the modulus is `δ = 2 - 2 (1 - (ε/2) ^ p) ^ (1/p)` from Clarkson's first inequality, for
-`p ≤ 2` it is `δ = 2 - (2 ^ q - ε ^ q) ^ (1/q)` from the second. -/
+/-- **$L^p$ is uniformly convex for $1 < p < \infty$.** Let $\mu$ be a measure and let
+$1 < p < \infty$. Then the space $L^p(\mu)$ of real functions is uniformly convex. This is Step
+2 of the proof of Theorem 4.10 of [brezis2011functional] for $2 \le p$, and Remark 3 in Chapter
+4 and part C of Problem 20 of the same book for $1 < p \le 2$.
+
+For $2 \le p$, Clarkson's first inequality gives the modulus
+$\delta = 2 - 2 (1 - (\varepsilon/2)^p)^{1/p}$. For $p \le 2$, the second inequality gives
+$\delta = 2 - (2^q - \varepsilon^q)^{1/q}$, with $q$ the conjugate exponent. The hypotheses are
+explicit arguments. The instance form is `MeasureTheory.Lp.instUniformConvexSpace`. -/
 theorem uniformConvexSpace_of_one_lt_of_ne_top [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     UniformConvexSpace (Lp ℝ p μ) := by
   refine ⟨fun ε hε => ?_⟩
@@ -720,19 +770,23 @@ theorem uniformConvexSpace_of_one_lt_of_ne_top [Fact (1 ≤ p)] (hp : 1 < p) (hp
       exact (Real.le_rpow_inv_iff_of_pos (norm_nonneg _) (by linarith) hQ0).2 h2
     linarith
 
-/-- **`L^p` is uniformly convex for `1 < p < ∞`** ([brezis2011functional] Theorem 4.10 and
-Remark 3 of chapter 4), as an instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]`. -/
+/-- **$L^p$ is uniformly convex for $1 < p < \infty$**, as an instance under the hypotheses
+`[Fact (1 < p)] [Fact (p ≠ ∞)]`. This is Theorem 4.10 and Remark 3 in Chapter 4 of
+[brezis2011functional]. -/
 instance instUniformConvexSpace [hp : Fact (1 < p)] [hp' : Fact (p ≠ ∞)] :
     UniformConvexSpace (Lp ℝ p μ) :=
   uniformConvexSpace_of_one_lt_of_ne_top hp.out hp'.out
 
-/-! ### The inequalities of Problem 20, part B -/
+/-! ### The inequalities of part B of Problem 20 -/
 
-/-- [brezis2011functional] Problem 20, inequality (4): for `2 ≤ p < ∞` with conjugate exponent
-`q` and `f g : Lp ℝ p μ`, `‖f + g‖ ^ p + ‖f - g‖ ^ p ≤ 2 (‖f‖ ^ q + ‖g‖ ^ q) ^ (p / q)`. The
-pointwise inequality `Real.abs_add_rpow_add_abs_sub_rpow_le` is integrated and Minkowski's
-inequality in `L^{p/q}` (`ENNReal.lintegral_Lp_add_le`, `p / q = p - 1 ≥ 1`) bounds
-`∫ (|f| ^ q + |g| ^ q) ^ (p/q)` by `(‖f‖ ^ q + ‖g‖ ^ q) ^ (p/q)`. -/
+/-- Let $2 \le p < \infty$, let $q$ be the conjugate exponent, $1/p + 1/q = 1$, and let
+$f, g \in L^p(\mu)$ be real. Then
+$$\|f + g\|_p^p + \|f - g\|_p^p \le 2 \big(\|f\|_p^q + \|g\|_p^q\big)^{p/q}.$$
+This is inequality (4) of Problem 20 of [brezis2011functional].
+
+The proof integrates the pointwise inequality `Real.abs_add_rpow_add_abs_sub_rpow_le`.
+Minkowski's inequality in $L^{p/q}$ (`ENNReal.lintegral_Lp_add_le`, with $p/q = p - 1 \ge 1$)
+bounds $\int (|f|^q + |g|^q)^{p/q}$ by $(\|f\|_p^q + \|g\|_p^q)^{p/q}$. -/
 theorem norm_add_rpow_add_norm_sub_rpow_le [p.HolderConjugate q] (hp : 2 ≤ p) (hp' : p ≠ ∞)
     (f g : Lp ℝ p μ) :
     ‖f + g‖ ^ p.toReal + ‖f - g‖ ^ p.toReal
@@ -808,11 +862,13 @@ theorem norm_add_rpow_add_norm_sub_rpow_le [p.HolderConjugate q] (hp : 2 ≤ p) 
   exact ENNReal.rpow_ne_top_of_nonneg ht0.le
     (ENNReal.add_ne_top.2 ⟨eLpNorm_rpow_ne_top _ hQ0.le, eLpNorm_rpow_ne_top _ hQ0.le⟩)
 
-/-- [brezis2011functional] Problem 20, inequality (5): for `2 ≤ p < ∞` with conjugate exponent
-`q` and `f g : Lp ℝ p μ`,
-`2 (‖f‖ ^ q + ‖g‖ ^ q) ^ (p / q) ≤ 2 ^ (p - 1) (‖f‖ ^ p + ‖g‖ ^ p)`; this is
-`Real.two_mul_rpow_add_rpow_le` at `‖f‖` and `‖g‖`. Together with
-`MeasureTheory.Lp.norm_add_rpow_add_norm_sub_rpow_le` it gives Clarkson's first inequality
+/-- Let $2 \le p < \infty$, let $q$ be the conjugate exponent, $1/p + 1/q = 1$, and let
+$f, g \in L^p(\mu)$ be real. Then
+$$2 \big(\|f\|_p^q + \|g\|_p^q\big)^{p/q} \le 2^{p - 1} \big(\|f\|_p^p + \|g\|_p^p\big).$$
+This is inequality (5) of Problem 20 of [brezis2011functional].
+
+The proof is `Real.two_mul_rpow_add_rpow_le` at $\|f\|_p$ and $\|g\|_p$. With
+`MeasureTheory.Lp.norm_add_rpow_add_norm_sub_rpow_le`, it gives Clarkson's first inequality
 again. -/
 theorem two_mul_norm_rpow_add_norm_rpow_le [Fact (1 ≤ p)] [p.HolderConjugate q] (hp : 2 ≤ p)
     (hp' : p ≠ ∞) (f g : Lp ℝ p μ) :

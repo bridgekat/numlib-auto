@@ -12,108 +12,140 @@ import Numlib.LinearAlgebra.Matrix.QR
 /-!
 # Rounding errors of Householder transformations
 
-The backward error analysis of computations with Householder reflectors, in the relational
-rounding model of `Numlib/FloatingPoint/Model` and in the style of
-`Numlib/FloatingPoint/Substitution`: [higham2002accuracy] §19.3 (Lemmas 19.1–19.3), which is the
-model that the stability statements of [quarteroni2000numerical] §5.6 ((5.46), the Householder
-reduction to Hessenberg form), §5.8.3 and §5.9.2 rest on.
+This module gives the backward error analysis of computations with Householder reflectors over
+$\mathbb{R}$, in the rounding model of `Numlib.FloatingPoint.Model`. It follows
+[higham2002accuracy], §19.3, Lemmas 19.1–19.3, which is the analysis behind the stability statements
+of [quarteroni2000numerical], §5.6 (the Householder reduction to Hessenberg form, (5.46)), §5.8.3
+and §5.9.2. A reflector is $P = I - \beta v v^T$. For $x \in \mathbb{R}^n$ and a pivot $i$, the
+reflector data (19.1) of [higham2002accuracy] are $v = x + s e_i$ with
+$s = \operatorname{sign}(x_i) \|x\|_2$ and $\beta = 1 / (s v_i) = 2 / (v^T v)$; then $Px = -s e_i$.
+A value $\hat x$ is a relative perturbation of order $k$ of $x$ if $\hat x = x (1 + \theta)$ with
+$|\theta| \le \gamma_k = ku / (1 - ku)$. Lemma 19.1: the computed $\hat\beta$ is a relative
+perturbation of order $4n + 8$ of $\beta$, the computed $\hat v_i$ is one of order $n + 2$ of $v_i$,
+and $\hat v_j = v_j$ for $j \neq i$. Lemma 19.2: if the data $(\hat\beta, \hat v)$ are relative
+perturbations of order $k$ of $(\beta, v)$, then a computed $\hat y = \mathrm{fl}(Pb)$ satisfies
+$\|\hat y - Pb\|_2 \le 3 \gamma_{3k+n+3} \|b\|_2$. Lemma 19.3: a sequence of nearly exact orthogonal
+transformations is an exact orthogonal transformation of a nearby vector or matrix.
 
-The algorithms are described by *what is rounded*, for an explicit order of the operations, and
-every statement quantifies over all admissible roundings at once:
+From these lemmas follows the backward stability of the Householder reductions to Hessenberg form
+and to symmetric tridiagonal form: the computed matrix is $Q^T (A + E) Q$ with $Q$ orthogonal and
+$\|E\|_F$ bounded by an explicit multiple of $u \|A\|_F$. The module also treats the variants of
+[golub2013matrix]: the Householder vector of Algorithm 5.1.1 with Parlett's formula, and the
+association $A - (\beta v)(v^T A)$ of the update. Finally it bounds the two-sided triangular solve
+$\hat C = \mathrm{fl}(H^{-T} A H^{-1})$ of the QR–Cholesky algorithm of [quarteroni2000numerical],
+§5.9.2. This bound contains the condition number of the Cholesky factor $H$, in addition to the
+factor $u \|A\|_2 \|B^{-1}\|_2$ of the source. The rounding errors of Givens rotations
+([higham2002accuracy] §19.6) are in `Numlib.FloatingPoint.Givens`.
 
-* `FloatingPoint.RoundsHouseholderVector m x i v̂ β̂` is [higham2002accuracy] Lemma 19.1's
-  construction (19.1) of the reflector data `(v, β)` with `P = I - β v vᵀ`, `v = x + s e_i`,
-  `s = sign(x_i) ‖x‖₂`, `β = 1/(s v_i)`: the norm is `fl(√(fl(xᵀx)))`, the pivot entry
-  `fl(x_i + s)`, and `β̂ = fl(1 / fl(ŝ v̂_i))`. Lemma 19.1 (`RoundsHouseholderVector.isRelPert`)
-  says that `β̂ = β (1 + θ)` with `|θ| ≤ γ_{4n+8}`, `v̂_i = v_i (1 + θ')` with `|θ'| ≤ γ_{n+2}`,
-  and `v̂_j = v_j = x_j` for `j ≠ i` — Higham's constants exactly. The exact `(v, β)` is the
-  backbone's `Matrix.householderAxis x i` and `2 / (v ⬝ᵥ v)`, whose reflector is
-  `Matrix.householder (Matrix.householderVec x i)` (`householder_householderVec_eq`).
-* `FloatingPoint.RoundsHouseholderApply m β v b y` is the update `y = b - v (β (vᵀ b))` of
-  [quarteroni2000numerical] (5.49)–(5.50) with one rounding per operation (the inner product as
-  `RoundsDot`). Lemma 19.2 (`norm_sub_le_of_roundsHouseholderApply`): if the data `(β̂, v̂)` used
-  are relative perturbations of order `k` of exact data `(β, v)` with `|β| ‖v‖₂² ≤ 2` (a
-  reflector, or the degenerate `(0, 0)`), then `‖ŷ - P b‖₂ ≤ 3 γ_{3k+n+3} ‖b‖₂` for the exact
-  `P = I - β v vᵀ`; with Lemma 19.1's `k = 4n + 8` this is Higham's `γ̃_n`, here
-  `3 γ_{13n+27}`.
-* Lemma 19.3, in three forms and with no reference to reflectors at all: a sequence of vectors
-  with `‖x_{k+1} - P_k x_k‖₂ ≤ ε ‖x_k‖₂` for orthogonal `P_k` satisfies
-  `x_r = P_{r-1} ⋯ P_0 (x_0 + Δx)` with `‖Δx‖₂ ≤ ((1 + ε)^r - 1) ‖x_0‖₂ ≤ γ_r(ε) ‖x_0‖₂`
-  (`exists_eq_prodRev_mulVec_add`, `exists_eq_prodRev_mulVec_add_gamma`); the columnwise
-  matrix form `exists_eq_prodRev_mul_add`; and the two-sided Frobenius form
-  `exists_eq_prodRev_mul_add_mul_prodFwd` for `A_{k+1} ≈ L_k A_k R_k`, which is the analogue
-  Higham's §19.10 attributes to Ortega and Wilkinson, with its reflector (symmetric) specialization
-  `exists_eq_transpose_mul_add_mul_prodFwd`. The products are `Matrix.prodRev P r =
-  P_{r-1} ⋯ P_0` and `Matrix.prodFwd P r = P_0 ⋯ P_{r-1}` of
-  `Numlib/LinearAlgebra/Matrix/Products`. The one-step forms `exists_eq_mulVec_add_of_step` and
-  `exists_eq_mul_add_of_step` are the invariant step of a loop of nearly exact orthogonal
-  transformations, and `exists_eq_mulVec_add_of_forall_step`, `exists_eq_mul_add_of_forall_step`
-  (one-sided) and `exists_eq_transpose_mul_add_mul_of_forall_step` (two-sided) choose the
-  transformation of each step.
-* The Householder reduction to Hessenberg form in floating-point arithmetic,
-  `FloatingPoint.RoundsHessenbergStep` and `FloatingPoint.RoundsHessenbergReduce`
-  ([quarteroni2000numerical] §5.6.2, Program 29, as [higham2002accuracy] Theorem 19.4 models
-  such an algorithm): at step `k` the reflector data are computed by `RoundsHouseholderVector`
-  from the tail of column `k` of the current matrix on the active rows `{i // k + 1 ≤ i}`, the
-  columns `j ≥ k` are updated on those rows by `RoundsHouseholderApply`, the entries of column `k`
-  below the first subdiagonal are **set to zero explicitly** (Higham's convention for the
-  annihilated entries, which every implementation storing the reflector in place follows;
-  Program 29 leaves them as roundoff-sized junk), and then the rows are updated on the active
-  columns; rows and columns outside the active block are not re-rounded. It is the instance of
-  the generic step `RoundsHessenbergStepOf` below. The theorem `exists_roundsHessenbergReduce_eq`
-  is (5.46) with the constants explicit: `Ĥ` is upper Hessenberg and `Ĥ = Qᵀ (A + E) Q` with `Q`
-  orthogonal (the product of the exact reflectors of the computed tail columns, extended by the
-  identity) and `‖E‖_F ≤ γ_{2(n-2)}(3 γ_{13n+27}) ‖A‖_F`, which is `c n² u ‖A‖_F` for `u`
-  small.
-* The two-sided triangular solve `Ĉ = fl(H⁻ᵀ A H⁻¹)` of the QR–Cholesky algorithm
-  ([quarteroni2000numerical] §5.9.2, step 2), `FloatingPoint.RoundsTwoSidedSolve`: the
-  columnwise and rowwise forms of [higham2002accuracy] Theorem 8.5 with a matrix right-hand side
-  (`frobenius_norm_sub_le_of_forall_roundsForwardSubst_col`, `…_row`) and the forward bound
-  `‖Ĉ - H⁻ᵀ A H⁻¹‖_F ≤ (2θ/(1 - θ)²) ‖H⁻¹‖_F² ‖A‖_F`, `θ = γ_n ‖H⁻¹‖_F ‖H‖_F`
-  (`frobenius_norm_sub_le_of_roundsTwoSidedSolve`) — the book's `u ‖A‖₂ ‖B⁻¹‖₂` carries the
-  condition number of the Cholesky factor as well. The rounding model of Givens rotations
-  ([higham2002accuracy] §19.6) is `Numlib/FloatingPoint/Givens`.
+## Main definitions
 
-**The [golub2013matrix] variants.** The Householder vector of [golub2013matrix] Algorithm 5.1.1
-(Parlett's formula for `v₁` when `x₁ > 0`, the normalization `v₁ = 1`, and `P x = +‖x‖ e₁`) is a
-different computation from Higham's (19.1) and gets its own relation
-`FloatingPoint.RoundsHouseholderVectorParlett` with its Lemma 19.1 analogue
-(`RoundsHouseholderVectorParlett.isReflectorPert`, order `18 n + 31`). The book's application order
-`A - (β v)(vᵀ A)` associates the product differently from `RoundsHouseholderApply` and gets
-`FloatingPoint.RoundsHouseholderApplyScaled` with the same Lemma 19.2 constant; both are proved
-from one shared lemma, `norm_sub_le_of_forall_rounds_sub_sum`. The two-sided accumulation of Lemma
-19.3 is stated for rectangular `A_k : Matrix ι κ ℝ`
-(`exists_eq_prodRev_mul_add_mul_prodFwd_rect`, [golub2013matrix] (5.1.11)), the square form being
-its instance.
+* `FloatingPoint.RoundsHouseholderVector`: the computed reflector data of (19.1) of
+  [higham2002accuracy].
+* `FloatingPoint.RoundsHouseholderVectorParlett`: the computed reflector data of [golub2013matrix],
+  Algorithm 5.1.1, with Parlett's formula.
+* `FloatingPoint.IsReflectorPert`: computed reflector data that are relative perturbations of exact
+  reflector data, whatever the formula that computed them.
+* `FloatingPoint.RoundsHouseholderApply` and `FloatingPoint.RoundsHouseholderApplyScaled`: the
+  computed update $b - v (\beta (v^T b))$ and $b - (\beta v)(v^T b)$.
+* `FloatingPoint.RoundsSymmRankTwoUpdate`: the computed symmetric rank-two update $P B P$ of
+  [golub2013matrix], Algorithm 8.3.1.
+* `FloatingPoint.RoundsHessenbergStepOf`: one computed step of the Householder reduction to
+  Hessenberg form, for a given reflector formula and a given application.
+* `FloatingPoint.RoundsHessenbergReduce` and `FloatingPoint.RoundsHessenbergReducePert`: the
+  computed reduction to Hessenberg form, in the operation order of [higham2002accuracy] and for any
+  reflector formula in the association of [golub2013matrix].
+* `FloatingPoint.RoundsTridiagonalizePert`: the computed tridiagonalization of a symmetric matrix,
+  for any reflector formula.
+* `FloatingPoint.RoundsTwoSidedSolve`: the computed two-sided triangular solve $H^{-T} A H^{-1}$.
+* `FloatingPoint.extendByZero`: a vector on a subset of the coordinates, extended by zero.
 
-**Householder reductions with any reflector-vector formula.** The reflector data of a step enter
-only through `FloatingPoint.IsReflectorPert` (the computed `(v̂, β̂)` are order-`K` relative
-perturbations of exact reflector data mapping the column to `c e_i`), which Higham's
-`RoundsHouseholderVector` and Golub–Van Loan's `RoundsHouseholderVectorParlett` both provide
-(`IsReflectorPert.mono` raises the order). Both application relations are invariant under
-reindexing (`roundsHouseholderApply_comp_equiv_iff`, `roundsHouseholderApplyScaled_comp_equiv_iff`),
-so a step on a block of coordinates may be stated over any index type of the block. The
-Hessenberg step in the book's association (`RoundsHessenbergStepPert`, [golub2013matrix]
-Algorithm 7.4.2) and the symmetric tridiagonalization step (`RoundsTridiagonalizeStepPert`,
-[golub2013matrix] Algorithm 8.3.1: the trailing block by the symmetric rank-two update
-`RoundsSymmRankTwoUpdate`, one triangle computed and mirrored, the subdiagonal the freshly computed
-`fl(√fl(xᵀx))`) are stated over it on the active block `{i // k + 1 ≤ i}`, each with its Frobenius
-step bound against the exact reflector extended by the identity, and both reductions
-(`exists_roundsHessenbergReducePert_eq`, `exists_roundsTridiagonalizePert_eq`) follow from the one
-accumulation lemma `exists_eq_transpose_mul_add_mul_of_forall_step` (Lemma 19.3, two-sided, the
-reflector of each step chosen). Both Hessenberg steps are instances of one step generic in the
-reflector formula and the application relation, `RoundsHessenbergStepOf`, whose step bound
-(`RoundsHessenbergStepOf.frobenius_norm_sub_le`, the two sweeps combined by
-`frobenius_norm_sub_mul_mul_le_of_col_of_row`) and reduction bound
-(`exists_hessenbergReduce_eq_of_forall_step`) are proved once: `RoundsHessenbergStepPert` with
-`IsReflectorPert` data and `RoundsHouseholderApplyScaled`, the Higham-convention
-`RoundsHessenbergStep` with `RoundsHouseholderVector` and `RoundsHouseholderApply`. A vector on
-the active block is extended to all coordinates by `FloatingPoint.extendByZero`.
+## Main results
 
-The scalar calculus of the constants is that of `Numlib/FloatingPoint/Model`, including the
-one-step forms a Householder computation needs (`IsRelPert.mul_one_add`, `IsRelPert.div_one_add`,
-`IsRelPert.rounds`, `IsRelPert.sqrt`, `isRelPert_of_abs_sub_le`).
-Everything is over `ℝ`, since the statements need the Euclidean and Frobenius norms.
+* `FloatingPoint.RoundsHouseholderVector.isRelPert`: Lemma 19.1 of [higham2002accuracy].
+* `FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert`: the analogue of Lemma 19.1 for
+  Parlett's formula, with the order $18n + 31$.
+* `FloatingPoint.norm_sub_le_of_roundsHouseholderApply` and
+  `FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled`: Lemma 19.2 of [higham2002accuracy],
+  $\|\hat y - Pb\|_2 \le 3 \gamma_{3k+n+3} \|b\|_2$, for both associations.
+* `FloatingPoint.l2_opNorm_reflector_sub_le`: a computed reflector is within $8 \gamma_K$ of the
+  exact one in the spectral norm.
+* `FloatingPoint.exists_eq_prodRev_mulVec_add`, `FloatingPoint.exists_eq_prodRev_mul_add` and
+  `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`: Lemma 19.3 of [higham2002accuracy] for
+  vectors, columnwise for matrices, and two-sided in the Frobenius norm.
+* `FloatingPoint.exists_eq_transpose_mul_add_mul_of_forall_step`: the two-sided accumulation with a
+  symmetric orthogonal transformation chosen at each step.
+* `FloatingPoint.frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate`: the computed symmetric rank-two
+  update is within $9 \gamma_{6k+2n+8} \|B\|_F$ of $P B P$.
+* `FloatingPoint.exists_roundsHessenbergReduce_eq`: (5.46) of [quarteroni2000numerical] with
+  explicit constants; the computed Hessenberg matrix is $Q^T (A + E) Q$ with $\|E\|_F \le
+  \gamma_{2(n-2)}(3 \gamma_{13n+27}) \|A\|_F$.
+* `FloatingPoint.exists_roundsHessenbergReducePert_eq`: the same for any reflector formula, in the
+  association of [golub2013matrix].
+* `FloatingPoint.exists_roundsTridiagonalizePert_eq`: the computed tridiagonalization is
+  $Q^T (A + E) Q$ with $E$ symmetric and $\|E\|_F$ of order $u \|A\|_F$.
+* `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`: the forward error bound of the
+  two-sided triangular solve.
+
+## Proof outline
+
+Lemma 19.2 has the same proof for both associations of the update,
+`FloatingPoint.norm_sub_le_of_forall_rounds_sub_sum`. A step of a two-sided reduction applies the
+reflector to the columns and then to the rows of the active block. Lemma 19.2 bounds each sweep
+columnwise or rowwise, and `FloatingPoint.frobenius_norm_sub_mul_mul_le_of_col_of_row` combines the
+two sweeps into a Frobenius bound on the step. The bound on the whole reduction then follows from
+the two-sided accumulation lemma `FloatingPoint.exists_eq_transpose_mul_add_mul_of_forall_step`.
+
+## Implementation notes
+
+* The exact reflector data are `Matrix.householderAxis x i` and $2 / (v^T v)$. Their reflector is
+  `Matrix.householder (Matrix.householderVec x i)` (`FloatingPoint.householder_householderVec_eq`).
+  The sign is `Matrix.phase`, which is $1$ at $0$.
+* All statements are about an explicit order of the operations, and hold for all admissible
+  roundings at once.
+* The reflector data of a step enter a reduction only through `FloatingPoint.IsReflectorPert`. Both
+  `FloatingPoint.RoundsHouseholderVector` and `FloatingPoint.RoundsHouseholderVectorParlett` provide
+  it, and `FloatingPoint.IsReflectorPert.mono` raises the order.
+* Both Hessenberg steps are instances of `FloatingPoint.RoundsHessenbergStepOf`:
+  `FloatingPoint.RoundsHessenbergStep` with `FloatingPoint.RoundsHouseholderVector` and
+  `FloatingPoint.RoundsHouseholderApply` ([quarteroni2000numerical] §5.6.2, Program 29, in the
+  conventions of [higham2002accuracy], Theorem 19.4), and `FloatingPoint.RoundsHessenbergStepPert`
+  with `FloatingPoint.IsReflectorPert` data and `FloatingPoint.RoundsHouseholderApplyScaled`
+  ([golub2013matrix], Algorithm 7.4.2). The step bound
+  (`FloatingPoint.RoundsHessenbergStepOf.frobenius_norm_sub_le`) and the reduction bound
+  (`FloatingPoint.exists_hessenbergReduce_eq_of_forall_step`) are proved once for the generic step.
+* A step works on the active block $T = \{i : k + 1 \le i\}$ of the index set `Fin N`. Both
+  application relations are invariant under a change of the index type
+  (`FloatingPoint.roundsHouseholderApply_comp_equiv_iff`,
+  `FloatingPoint.roundsHouseholderApplyScaled_comp_equiv_iff`), so a step on a block of coordinates
+  can be stated over any index type of the block. A vector on the block is extended to all
+  coordinates by `FloatingPoint.extendByZero`, and the step bound compares with the exact reflector
+  of the block, extended by the identity. Rows and columns outside the active block are not rounded
+  again.
+* In the Hessenberg step, the entries of column $k$ below the first subdiagonal are set to zero
+  explicitly. This is the convention of [higham2002accuracy] for the annihilated entries, and every
+  implementation that stores the reflector in place follows it. Program 29 of
+  [quarteroni2000numerical] leaves values of the size of the rounding error there.
+* The tridiagonalization step follows [golub2013matrix], Algorithm 8.3.1. The trailing block is
+  computed by the symmetric rank-two update `FloatingPoint.RoundsSymmRankTwoUpdate`: one triangle is
+  computed and mirrored. The subdiagonal entry is the computed norm
+  $\mathrm{fl}(\sqrt{\mathrm{fl}(x^T x)})$ of the tail of the column.
+* With the order $k = 4n + 8$ of Lemma 19.1, the constant of Lemma 19.2 is $3 \gamma_{13n+27}$. It
+  stands for the constant $\tilde\gamma_n$ of [higham2002accuracy].
+* [golub2013matrix] prints $\beta = -2$ in one case of Algorithm 5.1.1. Then
+  $I - \beta v v^T = I + 2 e_i e_i^T$ is not orthogonal.
+  `FloatingPoint.RoundsHouseholderVectorParlett` uses the correct value $\beta = 2$.
+* The accumulation lemmas (Lemma 19.3) do not refer to reflectors. They use the products
+  `prodRev P r` and `prodFwd P r` of `Numlib.LinearAlgebra.Matrix.Products`, which are
+  $P_{r-1} \cdots P_0$ and $P_0 \cdots P_{r-1}$. The two-sided form is the analogue that
+  [higham2002accuracy], §19.10, attributes to Ortega and Wilkinson. It is stated for rectangular
+  matrices, which covers [golub2013matrix] (5.1.11). The one-step forms
+  `FloatingPoint.exists_eq_mulVec_add_of_step` and `FloatingPoint.exists_eq_mul_add_of_step` are the
+  invariant step of a loop of nearly exact orthogonal transformations.
+* The scalar calculus of the constants is that of `Numlib.FloatingPoint.Model`, including the
+  one-step forms `FloatingPoint.IsRelPert.mul_one_add`, `FloatingPoint.IsRelPert.div_one_add`,
+  `FloatingPoint.IsRelPert.rounds`, `FloatingPoint.IsRelPert.sqrt` and
+  `FloatingPoint.isRelPert_of_abs_sub_le`.
+* Everything is over $\mathbb{R}$, because the statements use the Euclidean and the Frobenius norms.
 -/
 
 open Finset Matrix WithLp
@@ -122,30 +154,30 @@ open scoped Matrix
 
 namespace FloatingPoint
 
-/-- The real phase (sign) squares to one. -/
+/-- For real $z$, $\operatorname{sign}(z)^2 = 1$, where the sign is `Matrix.phase`. -/
 theorem phase_mul_phase (z : ℝ) : phase z * phase z = 1 := by
   have h := norm_phase z
   rw [Real.norm_eq_abs] at h
   nlinarith [abs_mul_abs_self (phase z)]
 
-/-- `sign z * z = |z|`. -/
+/-- For real $z$, $\operatorname{sign}(z)\, z = |z|$, where the sign is `Matrix.phase`. -/
 theorem phase_mul_self_real (z : ℝ) : phase z * z = |z| := by
   have h := conj_phase_mul_self z
   simpa using h
 
-/-- The real phase has absolute value one. -/
+/-- For real $z$, $|\operatorname{sign}(z)| = 1$, where the sign is `Matrix.phase`. -/
 theorem abs_phase (z : ℝ) : |phase z| = 1 := by
   have h := norm_phase z
   rwa [Real.norm_eq_abs] at h
 
-/-! ### Euclidean and Frobenius norms: the inequalities the analysis uses -/
+/-! ### Euclidean and Frobenius norms -/
 
 section Norms
 
 variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
 
-/-- `‖|x|‖₂ = ‖x‖₂`. -/
+/-- The entrywise absolute value of a vector has the same Euclidean norm: $\||x|\|_2 = \|x\|_2$. -/
 theorem norm_toLp_abs (x : ι → ℝ) :
     ‖(toLp 2 |x| : EuclideanSpace ℝ ι)‖ = ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
@@ -153,7 +185,8 @@ theorem norm_toLp_abs (x : ι → ℝ) :
   refine Finset.sum_congr rfl fun i _ => ?_
   simp
 
-/-- Cauchy–Schwarz in the form `|x|ᵀ |y| ≤ ‖x‖₂ ‖y‖₂`. -/
+/-- The Cauchy–Schwarz inequality in the form $|x|^T |y| \le \|x\|_2 \|y\|_2$, for
+$x, y \in \mathbb{R}^\iota$. -/
 theorem abs_dotProduct_abs_le (x y : ι → ℝ) :
     |x| ⬝ᵥ |y| ≤ ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ * ‖(toLp 2 y : EuclideanSpace ℝ ι)‖ := by
   have h := abs_real_inner_le_norm (toLp 2 |x| : EuclideanSpace ℝ ι) (toLp 2 |y|)
@@ -161,7 +194,8 @@ theorem abs_dotProduct_abs_le (x y : ι → ℝ) :
   refine le_trans (le_abs_self _) ?_
   rwa [dotProduct_comm] at h
 
-/-- A vector bounded entrywise by `a |b| + c |v|` has Euclidean norm at most `a ‖b‖ + c ‖v‖`. -/
+/-- Let $a, c \ge 0$ and $z, b, v \in \mathbb{R}^\iota$. If $|z_i| \le a |b_i| + c |v_i|$ for every
+$i$, then $\|z\|_2 \le a \|b\|_2 + c \|v\|_2$. -/
 theorem norm_toLp_le_of_abs_le_add {z b v : ι → ℝ} {a c : ℝ} (ha : 0 ≤ a) (hc : 0 ≤ c)
     (h : ∀ i, |z i| ≤ a * |b i| + c * |v i|) :
     ‖(toLp 2 z : EuclideanSpace ℝ ι)‖ ≤
@@ -181,8 +215,9 @@ theorem norm_toLp_le_of_abs_le_add {z b v : ι → ℝ} {a c : ℝ} (ha : 0 ≤ 
           Real.norm_of_nonneg hc, norm_toLp_abs, norm_toLp_abs]
 
 open scoped Matrix.Norms.Frobenius in
-/-- Columnwise bounds give a Frobenius bound: if `‖a_j‖₂ ≤ c ‖b_j‖₂` for every column `j`, then
-`‖A‖_F ≤ c ‖B‖_F` ([higham2002accuracy] Lemma 6.6 (a)). -/
+/-- Let $c \ge 0$ and $A, B \in \mathbb{R}^{\iota \times \kappa}$. If every column satisfies
+$\|a_j\|_2 \le c \|b_j\|_2$, then $\|A\|_F \le c \|B\|_F$. This is Lemma 6.6(a) of
+[higham2002accuracy]. -/
 theorem frobenius_norm_le_of_forall_col_le {A B : Matrix ι κ ℝ} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ j, ‖(toLp 2 (A.col j) : EuclideanSpace ℝ ι)‖ ≤
       c * ‖(toLp 2 (B.col j) : EuclideanSpace ℝ ι)‖) : ‖A‖ ≤ c * ‖B‖ := by
@@ -194,7 +229,8 @@ theorem frobenius_norm_le_of_forall_col_le {A B : Matrix ι κ ℝ} {c : ℝ} (h
   exact pow_le_pow_left₀ (norm_nonneg _) (h j) 2
 
 open scoped Matrix.Norms.Frobenius in
-/-- Rowwise bounds give a Frobenius bound. -/
+/-- Let $c \ge 0$ and $A, B \in \mathbb{R}^{\iota \times \kappa}$. If every row satisfies
+$\|A_{i,:}\|_2 \le c \|B_{i,:}\|_2$, then $\|A\|_F \le c \|B\|_F$. -/
 theorem frobenius_norm_le_of_forall_row_le {A B : Matrix ι κ ℝ} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ i, ‖(toLp 2 (A.row i) : EuclideanSpace ℝ κ)‖ ≤
       c * ‖(toLp 2 (B.row i) : EuclideanSpace ℝ κ)‖) : ‖A‖ ≤ c * ‖B‖ := by
@@ -209,7 +245,10 @@ end Norms
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- `v ⬝ᵥ v = 2 s (x i + s)` for the Householder axis `v = x + s e_i`, `s = sign(x_i) ‖x‖₂`. -/
+/-- For $x \in \mathbb{R}^\iota$ and a pivot $i$, the Householder axis $v = x + s e_i$ with
+$s = \operatorname{sign}(x_i) \|x\|_2$ satisfies
+$$v^T v = 2 s (x_i + s).$$
+The axis is `Matrix.householderAxis x i`, and the sign is `Matrix.phase`. -/
 theorem householderAxis_dotProduct_self (x : ι → ℝ) (i : ι) :
     householderAxis x i ⬝ᵥ householderAxis x i =
       2 * (phase (x i) * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖) *
@@ -226,12 +265,14 @@ theorem householderAxis_dotProduct_self (x : ι → ℝ) (i : ι) :
   have := phase_mul_phase (x i)
   linear_combination (-(N ^ 2)) * this
 
-/-- The pivot entry of the Householder axis. -/
+/-- The pivot entry of the Householder axis is $v_i = x_i + \operatorname{sign}(x_i) \|x\|_2$. -/
 theorem householderAxis_apply_self (x : ι → ℝ) (i : ι) :
     householderAxis x i i = x i + phase (x i) * ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
   simp [householderAxis]
 
-/-- `|x i + sign(x i) ‖x‖| = |x i| + ‖x‖`: no cancellation in the pivot entry of the axis. -/
+/-- The pivot entry of the Householder axis satisfies
+$$|x_i + \operatorname{sign}(x_i) \|x\|_2| = |x_i| + \|x\|_2,$$
+so there is no cancellation in its computation. -/
 theorem abs_householderAxis_apply_self (x : ι → ℝ) (i : ι) :
     |householderAxis x i i| = |x i| + ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ := by
   rw [householderAxis_apply_self]
@@ -242,7 +283,10 @@ theorem abs_householderAxis_apply_self (x : ι → ℝ) (i : ι) :
     rw [abs_mul, abs_phase, one_mul]
   rw [← h2, h1, abs_of_nonneg (by positivity)]
 
-/-- The reflector of the unit axis is `1 - β v vᵀ` with `β = 2 / (vᵀ v)`. -/
+/-- The reflector of the unit axis `Matrix.householderVec x i` is $I - \beta v v^T$, where $v$ is
+the axis `Matrix.householderAxis x i` and $\beta = 2 / (v^T v)$.
+
+When $v = 0$, both sides are the identity, because $2 / 0 = 0$ in Lean. -/
 theorem householder_householderVec_eq (x : ι → ℝ) (i : ι) :
     householder (householderVec x i) =
       1 - (2 / (householderAxis x i ⬝ᵥ householderAxis x i)) •
@@ -265,8 +309,17 @@ theorem householder_householderVec_eq (x : ι → ℝ) (i : ι) :
 
 /-! ### The computed Householder vector -/
 
-/-- **The Householder vector in floating-point arithmetic**, [higham2002accuracy] Lemma 19.1,
-construction (19.1). -/
+/-- The **computed Householder vector** of [higham2002accuracy], Lemma 19.1, construction (19.1).
+For $x \in \mathbb{R}^\iota$ and a pivot $i$, with $\sigma = \operatorname{sign}(x_i)$, the data
+$(\hat v, \hat\beta)$ are computed if there are $\hat s_0$, $\hat\nu$, $\hat w$ and $\hat p$
+with
+$$\hat s_0 = \mathrm{fl}(x^T x), \quad \hat\nu = \mathrm{fl}(\sqrt{\hat s_0}), \quad \hat w =
+  \mathrm{fl}(x_i + \sigma \hat\nu), \quad \hat p = \mathrm{fl}(\sigma \hat\nu \hat w), \quad
+  \hat\beta = \mathrm{fl}(1 / \hat p),$$
+and $\hat v_i = \hat w$ and $\hat v_j = x_j$ for $j \neq i$.
+
+The inner product $\mathrm{fl}(x^T x)$ is a `FloatingPoint.RoundsDot`. The products with
+$\sigma = \pm 1$ are exact. The sign is `Matrix.phase`. -/
 def RoundsHouseholderVector (m : RoundingModel ℝ) (x : ι → ℝ) (i : ι) (vhat : ι → ℝ)
     (βhat : ℝ) : Prop :=
   ∃ s₀ nhat what phat : ℝ, RoundsDot m x x s₀ ∧ m.Rounds (√s₀) nhat ∧
@@ -274,7 +327,15 @@ def RoundsHouseholderVector (m : RoundingModel ℝ) (x : ι → ℝ) (i : ι) (v
     m.Rounds (phase (x i) * nhat * what) phat ∧ m.Rounds (1 / phat) βhat ∧
     vhat i = what ∧ ∀ j, j ≠ i → vhat j = x j
 
-/-- **[higham2002accuracy] Lemma 19.1.** -/
+/-- **Lemma 19.1** of [higham2002accuracy]. Let $\iota$ have $n$ elements and let $(4n + 8) u < 1$.
+Let $(\hat v, \hat\beta)$ be the computed Householder vector of $x$ for the pivot $i$, and let
+$v$ be the Householder axis `Matrix.householderAxis x i`. Then:
+
+* $\hat\beta$ is a relative perturbation of order $4n + 8$ of $\beta = 2 / (v^T v)$;
+* $\hat v_i$ is a relative perturbation of order $n + 2$ of $v_i$;
+* $\hat v_j = v_j$ for every $j \neq i$.
+
+These are the constants of the source. -/
 theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
     (hcard : ((4 * Fintype.card ι + 8 : ℕ) : ℝ) * m.u < 1) {x : ι → ℝ} {i : ι} {vhat : ι → ℝ}
     {βhat : ℝ} (h : RoundsHouseholderVector m x i vhat βhat) :
@@ -394,35 +455,42 @@ theorem RoundsHouseholderVector.isRelPert {m : RoundingModel ℝ}
 
 /-! ### Reflector data, whatever the formula that produced them -/
 
-/-- The entries of `(1 - β v vᵀ) b`. -/
+/-- The entries of $(I - \beta v v^T) b$ are $b_i - \beta v_i (v^T b)$. -/
 theorem one_sub_smul_vecMulVec_mulVec_apply (β : ℝ) (v b : ι → ℝ) (i : ι) :
     ((1 - β • vecMulVec v v) *ᵥ b) i = b i - β * v i * (v ⬝ᵥ b) := by
   rw [sub_mulVec, one_mulVec, smul_mulVec, vecMulVec_mulVec, IsCentralScalar.op_smul_eq_smul,
     Pi.sub_apply, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul]
   ring
 
-/-- `1 - β v vᵀ` with `v` vanishing at `p` fixes `e_p`. -/
+/-- If $v_p = 0$, then $I - \beta v v^T$ fixes the unit vector $e_p$. -/
 theorem one_sub_smul_vecMulVec_mulVec_single {v : ι → ℝ} {p : ι} (hv : v p = 0) (β : ℝ) :
     (1 - β • vecMulVec v v) *ᵥ Pi.single p 1 = Pi.single p 1 := by
   funext i
   rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_single, hv, zero_mul, mul_zero, sub_zero]
 
-/-- **Computed reflector data, whatever the formula that produced them.** For `x : ι → ℝ`, a
-pivot `i : ι` and a target `c : ℝ`, `IsReflectorPert u K x i c v̂ β̂` says that the computed
-`(v̂, β̂)` are relative perturbations of order `K` of exact data `(v, β)` whose matrix
-`1 - β v vᵀ` is orthogonal, sends `x` to `c e_i` (so `|c| = ‖x‖₂`), and has `|β| ‖v‖₂² ≤ 2`.
-This is the only thing a Householder *reduction* needs from the formula that computed the
-vector, so the reductions below are stated over it: [higham2002accuracy] (19.1)
-(`RoundsHouseholderVector.isReflectorPert`) and [golub2013matrix] Algorithm 5.1.1 with Parlett's
-formula (`RoundsHouseholderVectorParlett.isReflectorPert`) both provide it. -/
+/-- **Computed reflector data, whatever the formula that computed them.** Let
+$x \in \mathbb{R}^\iota$, let $i$ be a pivot, let $c \in \mathbb{R}$ be a target, and let
+$K \in \mathbb{N}$. The computed data $(\hat v, \hat\beta)$ are reflector data of order $K$ if
+there are exact data $(v, \beta)$ such that
+
+* the matrix $P = I - \beta v v^T$ is orthogonal and $P x = c e_i$, so that $|c| = \|x\|_2$;
+* $|\beta| \, v^T v \le 2$;
+* $\hat\beta$ is a relative perturbation of order $K$ of $\beta$, and every $\hat v_j$ is one of
+  order $K$ of $v_j$.
+
+A Householder reduction needs nothing else from the formula that computes the vector, so the
+reductions below are stated with this relation. Both (19.1) of [higham2002accuracy]
+(`FloatingPoint.RoundsHouseholderVector.isReflectorPert`) and Algorithm 5.1.1 of
+[golub2013matrix] with Parlett's formula
+(`FloatingPoint.RoundsHouseholderVectorParlett.isReflectorPert`) provide it. -/
 def IsReflectorPert (u : ℝ) (K : ℕ) (x : ι → ℝ) (i : ι) (c : ℝ) (vhat : ι → ℝ) (βhat : ℝ) :
     Prop :=
   ∃ (v : ι → ℝ) (β : ℝ), (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup ι ℝ ∧
     (1 - β • vecMulVec v v) *ᵥ x = c • Pi.single i 1 ∧ |β| * (v ⬝ᵥ v) ≤ 2 ∧
     IsRelPert u K β βhat ∧ ∀ j, IsRelPert u K (v j) (vhat j)
 
-/-- Reflector data of order `K` are reflector data of every larger order `K'` with `K' u < 1`
-(`IsRelPert.mono` on each perturbation). -/
+/-- Reflector data of order $K$ are reflector data of every larger order $K'$ with $K' u < 1$, if
+$u \ge 0$. -/
 theorem IsReflectorPert.mono {u : ℝ} (hu : 0 ≤ u) {K K' : ℕ} (hK : K ≤ K')
     (hK' : (K' : ℝ) * u < 1) {x : ι → ℝ} {i : ι} {c : ℝ} {vhat : ι → ℝ} {βhat : ℝ}
     (h : IsReflectorPert u K x i c vhat βhat) : IsReflectorPert u K' x i c vhat βhat := by
@@ -430,16 +498,21 @@ theorem IsReflectorPert.mono {u : ℝ} (hu : 0 ≤ u) {K K' : ℕ} (hK : K ≤ K
   exact ⟨v, β, hO, hmul, hβv, hβ.mono hu hK hK', fun j => (hv j).mono hu hK hK'⟩
 
 omit [DecidableEq ι] in
-/-- `|2 / (v ⬝ᵥ v)| (v ⬝ᵥ v) ≤ 2`: the normalization of a reflector, `0` included. -/
+/-- For every $v \in \mathbb{R}^\iota$, $|2 / (v^T v)| \, v^T v \le 2$. This includes $v = 0$, where
+$2 / 0 = 0$. -/
 theorem abs_two_div_dotProduct_self_mul_le (v : ι → ℝ) : |2 / (v ⬝ᵥ v)| * (v ⬝ᵥ v) ≤ 2 := by
   have hvv : 0 ≤ v ⬝ᵥ v := Finset.sum_nonneg fun j _ => mul_self_nonneg (v j)
   rcases eq_or_lt_of_le hvv with h0 | hpos
   · rw [← h0]; simp
   · rw [abs_of_pos (by positivity), div_mul_cancel₀ _ hpos.ne']
 
-/-- [higham2002accuracy]'s computed Householder vector is reflector data in the sense of
-`IsReflectorPert`, with the exact data `v = householderAxis x i`, `β = 2 / (vᵀv)` and the target
-`-sign(x_i) ‖x‖₂` (Lemma 19.1, `RoundsHouseholderVector.isRelPert`). -/
+/-- Let $\iota$ have $n$ elements and let $(4n + 8) u < 1$. The computed Householder vector
+$(\hat v, \hat\beta)$ of [higham2002accuracy], (19.1), for $x$ and the pivot $i$ is reflector
+data of order $4n + 8$ (`FloatingPoint.IsReflectorPert`) with the target
+$-\operatorname{sign}(x_i) \|x\|_2$.
+
+The exact data are $v = $ `Matrix.householderAxis x i` and $\beta = 2 / (v^T v)$. The orders
+come from Lemma 19.1, `FloatingPoint.RoundsHouseholderVector.isRelPert`. -/
 theorem RoundsHouseholderVector.isReflectorPert {m : RoundingModel ℝ}
     (hcard : ((4 * Fintype.card ι + 8 : ℕ) : ℝ) * m.u < 1) {x : ι → ℝ} {i : ι} {vhat : ι → ℝ}
     {βhat : ℝ} (h : RoundsHouseholderVector m x i vhat βhat) :
@@ -472,13 +545,17 @@ section ReflectorPert
 open scoped RealInnerProductSpace
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The computed reflector is close to the exact one** ([golub2013matrix] §5.1.5,
-"`‖P̂ - P‖₂ = O(u)`", and §5.1.12, "orthogonal to working precision"): if the axis `v̂` is an
-entrywise relative perturbation of order `K` of a nonzero axis `v`, then
-`‖Matrix.reflector v̂ - Matrix.reflector v‖₂ ≤ 8 γ_K`. With `w = v / ‖v‖₂` and `ŵ = v̂ / ‖v̂‖₂`,
-`‖v̂ - v‖₂ ≤ γ_K ‖v‖₂` gives `‖ŵ - w‖₂ ≤ 2 γ_K`, and the two reflectors `1 - 2 w wᵀ`,
-`1 - 2 ŵ ŵᵀ` differ by at most `2 · 2 ‖ŵ - w‖₂`. No smallness of `γ_K` is needed: the bound is
-trivial once `γ_K ≥ 1/4`, and `v̂ = 0` forces `γ_K ≥ 1`. -/
+/-- Let $v \neq 0$, and let every $\hat v_j$ be a relative perturbation of order $K$ of $v_j$. Then
+the reflectors $\hat P$ of $\hat v$ and $P$ of $v$ (`Matrix.reflector`) satisfy
+$$\|\hat P - P\|_2 \le 8 \gamma_K$$
+in the spectral norm. This is the statement $\|\hat P - P\|_2 = O(u)$ of [golub2013matrix],
+§5.1.5, and the reflector part of "orthogonal to working precision" in §5.1.12.
+
+No smallness of $\gamma_K$ is needed: the bound is trivial when $\gamma_K \ge 1/4$, and
+$\hat v = 0$ forces $\gamma_K \ge 1$. With $w = v / \|v\|_2$ and
+$\hat w = \hat v / \|\hat v\|_2$, the bound $\|\hat v - v\|_2 \le \gamma_K \|v\|_2$ gives
+$\|\hat w - w\|_2 \le 2 \gamma_K$, and the reflectors $I - 2 w w^T$ and $I - 2 \hat w \hat w^T$
+differ by at most $4 \|\hat w - w\|_2$. -/
 theorem l2_opNorm_reflector_sub_le {u : ℝ} {K : ℕ} {v vhat : ι → ℝ} (hv : v ≠ 0)
     (h : ∀ j, IsRelPert u K (v j) (vhat j)) :
     ‖reflector vhat - reflector v‖ ≤ 8 * gamma u K := by
@@ -512,14 +589,21 @@ end ReflectorPert
 
 /-! ### Parlett's formula: [golub2013matrix] Algorithm 5.1.1 -/
 
-/-- **The computed Householder vector of [golub2013matrix] Algorithm 5.1.1** (`house`, with
-Parlett's formula for the pivot entry), as a relation on `x : ι → ℝ`, a pivot `i : ι` and the
-computed `(v̂, β̂)`: the tail inner product `σ̂ = fl(∑_{j ≠ i} x_j²)` is a `RoundsDot`, `v̂_i = 1`,
-and either `σ̂ = 0` and `β̂ = 0` (for `x_i ≥ 0`) or `β̂ = 2` (for `x_i < 0`) with `v̂_j = x_j` off
-the pivot, or `σ̂ ≠ 0` and `μ = fl(√fl(fl(x_i²) + σ̂))`, `v₁ = fl(x_i - μ)` for `x_i ≤ 0` and
-`v₁ = fl(-σ̂ / fl(x_i + μ))` for `x_i > 0`, `β̂ = fl(fl(2 fl(v₁²)) / fl(σ̂ + fl(v₁²)))` and
-`v̂_j = fl(x_j / v₁)` off the pivot. The book prints `β = -2` in the second case, which makes
-`I - β v vᵀ = I + 2 e_i e_iᵀ` not orthogonal; `β = 2` is the correct value. -/
+/-- The **computed Householder vector of [golub2013matrix], Algorithm 5.1.1** (`house`, with
+Parlett's formula for the pivot entry). For $x \in \mathbb{R}^\iota$ and a pivot $i$, let
+$\hat\sigma = \mathrm{fl}(\sum_{j \neq i} x_j^2)$, computed as a `FloatingPoint.RoundsDot`. The
+data $(\hat v, \hat\beta)$ are computed if $\hat v_i = 1$ and one of three cases holds:
+
+* $\hat\sigma = 0$, $x_i \ge 0$, $\hat\beta = 0$, and $\hat v_j = x_j$ for $j \neq i$;
+* $\hat\sigma = 0$, $x_i < 0$, $\hat\beta = 2$, and $\hat v_j = x_j$ for $j \neq i$;
+* $\hat\sigma \neq 0$, $\hat\mu = \mathrm{fl}(\sqrt{\mathrm{fl}(\mathrm{fl}(x_i^2) +
+  \hat\sigma)})$, $\hat v_1 = \mathrm{fl}(x_i - \hat\mu)$ if $x_i \le 0$ and $\hat v_1 =
+  \mathrm{fl}(-\hat\sigma / \mathrm{fl}(x_i + \hat\mu))$ if $x_i > 0$, $\hat\beta =
+  \mathrm{fl}\bigl(\mathrm{fl}(2 \mathrm{fl}(\hat v_1^2)) / \mathrm{fl}(\hat\sigma +
+  \mathrm{fl}(\hat v_1^2))\bigr)$, and $\hat v_j = \mathrm{fl}(x_j / \hat v_1)$ for $j \neq i$.
+
+The source prints $\beta = -2$ in the second case. Then $I - \beta v v^T = I + 2 e_i e_i^T$ is
+not orthogonal, and $\beta = 2$ is the correct value. -/
 def RoundsHouseholderVectorParlett (m : RoundingModel ℝ) (x : ι → ℝ) (i : ι) (vhat : ι → ℝ)
     (βhat : ℝ) : Prop :=
   ∃ σhat, RoundsDot m (fun j : {j // j ≠ i} => x j) (fun j => x j) σhat ∧ vhat i = 1 ∧
@@ -532,17 +616,21 @@ def RoundsHouseholderVectorParlett (m : RoundingModel ℝ) (x : ι → ℝ) (i :
         m.Rounds (v₁ * v₁) q ∧ m.Rounds (2 * q) w ∧ m.Rounds (σhat + q) d ∧
         m.Rounds (w / d) βhat ∧ ∀ j, j ≠ i → m.Rounds (x j / v₁) (vhat j)))
 
-/-- `‖x‖₂² = x_i² + ∑_{j ≠ i} x_j²`. -/
+/-- For $x \in \mathbb{R}^\iota$ and an index $i$, $\|x\|_2^2 = x_i^2 + \sum_{j \neq i} x_j^2$. -/
 theorem norm_toLp_sq_eq_mul_self_add_sum (x : ι → ℝ) (i : ι) :
     ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ ^ 2 = x i * x i + ∑ j : {j // j ≠ i}, x j * x j := by
   rw [← dotProduct_self_eq_norm_sq, dotProduct, Fintype.sum_eq_add_sum_subtype_ne _ i]
 
-/-- **The analogue of [higham2002accuracy] Lemma 19.1 for [golub2013matrix] Algorithm 5.1.1.**
-With `n = card ι` and `(18 n + 31) u < 1`, the computed `(v̂, β̂)` of Parlett's formula have
-`v̂_i = 1` and are reflector data of order `18 n + 31` with the target `+‖x‖₂` (the book's sign):
-the exact `(v, β)` are the exact output of the same branch. With `k = n - 1` terms in `σ̂`: `μ̂` has
-order `k + 2`; `v̂₁` order `k + 3` (`x_i ≤ 0`, a same-sign sum) or `3k + 7` (Parlett's quotient);
-`v̂₁²` order `6k + 15`; `β̂` order `18k + 49`; `v̂_j` order `6k + 15`. -/
+/-- **The analogue of Lemma 19.1 of [higham2002accuracy] for Algorithm 5.1.1 of [golub2013matrix].**
+Let $\iota$ have $n$ elements and let $(18n + 31) u < 1$. If $(\hat v, \hat\beta)$ is the
+computed Householder vector of Parlett's formula for $x$ and the pivot $i$, then $\hat v_i = 1$,
+and $(\hat v, \hat\beta)$ is reflector data of order $18n + 31$
+(`FloatingPoint.IsReflectorPert`) with the target $+\|x\|_2$, the sign of the source.
+
+The exact data $(v, \beta)$ are the exact output of the same branch. With $k = n - 1$ terms in
+$\hat\sigma$, the orders are: $k + 2$ for $\hat\mu$; $k + 3$ for $\hat v_1$ when $x_i \le 0$ (a
+sum of two terms of the same sign) and $3k + 7$ when $x_i > 0$ (Parlett's quotient); $6k + 15$
+for $\hat v_1^2$ and for $\hat v_j$; and $18k + 49 = 18n + 31$ for $\hat\beta$. -/
 theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
     (hcard : ((18 * Fintype.card ι + 31 : ℕ) : ℝ) * m.u < 1) {x : ι → ℝ} {i : ι}
     {vhat : ι → ℝ} {βhat : ℝ} (h : RoundsHouseholderVectorParlett m x i vhat βhat) :
@@ -740,14 +828,19 @@ theorem RoundsHouseholderVectorParlett.isReflectorPert {m : RoundingModel ℝ}
       exact hmono (by omega) (hvj1 j hj)
 
 /-! ### The computed application of a reflector -/
-/-- **The application of a Householder matrix in floating-point arithmetic**,
-[higham2002accuracy] Lemma 19.2: `y = (I - β v vᵀ) b` computed as `b - v (β (vᵀ b))`. -/
+/-- The **computed application of a reflector**, as in Lemma 19.2 of [higham2002accuracy] and
+(5.49)–(5.50) of [quarteroni2000numerical]. For $\beta \in \mathbb{R}$ and
+$v, b \in \mathbb{R}^\iota$, a vector $y$ is a computed value of $(I - \beta v v^T) b$,
+evaluated as $b - v (\beta (v^T b))$, if there are $\hat s$, $\hat t$ and $\hat w$ with
+$$\hat s = \mathrm{fl}(v^T b), \qquad \hat t = \mathrm{fl}(\beta \hat s), \qquad \hat w_i =
+  \mathrm{fl}(v_i \hat t), \qquad y_i = \mathrm{fl}(b_i - \hat w_i).$$
+The inner product is a `FloatingPoint.RoundsDot`. -/
 def RoundsHouseholderApply (m : RoundingModel ℝ) (β : ℝ) (v b y : ι → ℝ) : Prop :=
   ∃ (s t : ℝ) (w : ι → ℝ), RoundsDot m v b s ∧ m.Rounds (β * s) t ∧
     (∀ i, m.Rounds (v i * t) (w i)) ∧ ∀ i, m.Rounds (b i - w i) (y i)
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- One direction of `roundsHouseholderApply_comp_equiv_iff`. -/
+/-- One direction of `FloatingPoint.roundsHouseholderApply_comp_equiv_iff`. -/
 private theorem roundsHouseholderApply_of_comp_equiv {κ : Type*} {m : RoundingModel ℝ}
     (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ}
     (h : RoundsHouseholderApply m β (v ∘ e) (b ∘ e) (y ∘ e)) :
@@ -758,8 +851,10 @@ private theorem roundsHouseholderApply_of_comp_equiv {κ : Type*} {m : RoundingM
   · simpa using hy (e.symm i)
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- **`RoundsHouseholderApply` is invariant under reindexing**, the summation order of the inner
-product being carried along (`roundsDot_comp_equiv_iff`). -/
+/-- Let $e \colon \kappa \to \iota$ be a bijection. Then $y \circ e$ is a computed application of
+$(\beta, v \circ e)$ to $b \circ e$ if and only if $y$ is a computed application of $(\beta, v)$
+to $b$. The order of summation of the inner product is carried along $e$
+(`FloatingPoint.roundsDot_comp_equiv_iff`). -/
 theorem roundsHouseholderApply_comp_equiv_iff {κ : Type*} {m : RoundingModel ℝ} (e : κ ≃ ι)
     {β : ℝ} {v b y : ι → ℝ} :
     RoundsHouseholderApply m β (v ∘ e) (b ∘ e) (y ∘ e) ↔ RoundsHouseholderApply m β v b y := by
@@ -767,11 +862,14 @@ theorem roundsHouseholderApply_comp_equiv_iff {κ : Type*} {m : RoundingModel �
   refine roundsHouseholderApply_of_comp_equiv e.symm ?_
   simpa [Function.comp_assoc] using h
 
-/-- **The core of [higham2002accuracy] Lemma 19.2**, shared by both associations of the update
-(`norm_sub_le_of_roundsHouseholderApply`, `norm_sub_le_of_roundsHouseholderApplyScaled`): if
-`ŷ_i = fl(b_i - w_i)` where `w_i = ∑_j c_ij b_j` and every coefficient `c_ij` is a relative
-perturbation of order `K` of `β v_i v_j`, and `|β| ‖v‖₂² ≤ 2`, then
-`‖ŷ - (1 - β v vᵀ) b‖₂ ≤ 3 γ_{K+1} ‖b‖₂`. -/
+/-- **The common part of Lemma 19.2 of [higham2002accuracy]** for both associations of the update.
+Let $(K + 1) u < 1$, let $\beta \in \mathbb{R}$ and $v, b \in \mathbb{R}^\iota$ with
+$|\beta| \, v^T v \le 2$, and let $c_{ij}$ be relative perturbations of order $K$ of
+$\beta v_i v_j$. If $w_i = \sum_j c_{ij} b_j$ and $y_i$ is an admissible rounding of $b_i - w_i$
+for every $i$, then
+$$\|y - (I - \beta v v^T) b\|_2 \le 3 \gamma_{K+1} \|b\|_2.$$
+`FloatingPoint.norm_sub_le_of_roundsHouseholderApply` and
+`FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled` are its two applications. -/
 theorem norm_sub_le_of_forall_rounds_sub_sum {m : RoundingModel ℝ} {K : ℕ}
     (hK : ((K + 1 : ℕ) : ℝ) * m.u < 1) {β : ℝ} {v b w y : ι → ℝ} {c : ι → ι → ℝ}
     (hc : ∀ i j, IsRelPert m.u K (β * v i * v j) (c i j)) (hwi : ∀ i, w i = ∑ j, c i j * b j)
@@ -868,7 +966,16 @@ theorem norm_sub_le_of_forall_rounds_sub_sum {m : RoundingModel ℝ} {K : ℕ}
     exact mul_le_mul_of_nonneg_right this hb0
   nlinarith [mul_le_mul_of_nonneg_right hug hb0]
 
-/-- **[higham2002accuracy] Lemma 19.2.** -/
+/-- **Lemma 19.2** of [higham2002accuracy]. Let $\iota$ have $n$ elements, let $k \in \mathbb{N}$
+with $(3k + n + 3) u < 1$, and let $\beta \in \mathbb{R}$ and $v \in \mathbb{R}^\iota$ with
+$|\beta| \, v^T v \le 2$. Let $\hat\beta$ and every $\hat v_i$ be relative perturbations of
+order $k$ of $\beta$ and $v_i$. If $y$ is a computed application of $(\hat\beta, \hat v)$ to $b$
+(`FloatingPoint.RoundsHouseholderApply`), then
+$$\|y - (I - \beta v v^T) b\|_2 \le 3 \gamma_{3k+n+3} \|b\|_2.$$
+
+The condition $|\beta| \, v^T v \le 2$ holds for a reflector, $\beta = 2 / (v^T v)$, and for the
+degenerate data $(0, 0)$. With the order $k = 4n + 8$ of Lemma 19.1, the constant is
+$3 \gamma_{13n+27}$. -/
 theorem norm_sub_le_of_roundsHouseholderApply {m : RoundingModel ℝ} {k : ℕ}
     (hcard : ((3 * k + Fintype.card ι + 3 : ℕ) : ℝ) * m.u < 1) {β βhat : ℝ} {v vhat : ι → ℝ}
     (hβ : IsRelPert m.u k β βhat) (hv : ∀ i, IsRelPert m.u k (v i) (vhat i))
@@ -910,16 +1017,22 @@ theorem norm_sub_le_of_roundsHouseholderApply {m : RoundingModel ℝ} {k : ℕ}
     hy hP
   rwa [show 3 * k + n + 2 + 1 = 3 * k + n + 3 by ring] at this
 
-/-- The update `y = b - (β v)(vᵀ b)` in [golub2013matrix]'s association (§5.1.4:
-`P A = A - (β v)(vᵀ A)`, the scaled vector `β v` formed once), with one rounding per operation
-and the inner product as `RoundsDot`. Compare `RoundsHouseholderApply` (`y = b - v (β (vᵀ b))`).
-The row application `A - (A v)(β v)ᵀ` is the same relation on each row. -/
+/-- The **computed application of a reflector in the association of [golub2013matrix]**, §5.1.4,
+$P A = A - (\beta v)(v^T A)$, in which the scaled vector $\beta v$ is formed once. For
+$\beta \in \mathbb{R}$ and $v, b \in \mathbb{R}^\iota$, a vector $y$ is a computed value of
+$b - (\beta v)(v^T b)$ if there are $\hat s$ and $\hat w$ with
+$$\hat s = \mathrm{fl}(v^T b), \qquad \hat w_i = \mathrm{fl}(\beta v_i), \qquad y_i =
+  \mathrm{fl}\bigl(b_i - \mathrm{fl}(\hat w_i \hat s)\bigr).$$
+The inner product is a `FloatingPoint.RoundsDot`.
+
+Compare `FloatingPoint.RoundsHouseholderApply`, which evaluates $b - v (\beta (v^T b))$. The row
+application $A - (A v)(\beta v)^T$ is the same relation on each row. -/
 def RoundsHouseholderApplyScaled (m : RoundingModel ℝ) (β : ℝ) (v b y : ι → ℝ) : Prop :=
   ∃ (s : ℝ) (w : ι → ℝ), RoundsDot m v b s ∧ (∀ i, m.Rounds (β * v i) (w i)) ∧
     ∀ i, ∃ t, m.Rounds (w i * s) t ∧ m.Rounds (b i - t) (y i)
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- One direction of `roundsHouseholderApplyScaled_comp_equiv_iff`. -/
+/-- One direction of `FloatingPoint.roundsHouseholderApplyScaled_comp_equiv_iff`. -/
 private theorem roundsHouseholderApplyScaled_of_comp_equiv {κ : Type*} {m : RoundingModel ℝ}
     (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ}
     (h : RoundsHouseholderApplyScaled m β (v ∘ e) (b ∘ e) (y ∘ e)) :
@@ -930,8 +1043,10 @@ private theorem roundsHouseholderApplyScaled_of_comp_equiv {κ : Type*} {m : Rou
   · simpa using hy (e.symm i)
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- **`RoundsHouseholderApplyScaled` is invariant under reindexing**, the summation order of the
-inner product being carried along (`roundsDot_comp_equiv_iff`). -/
+/-- Let $e \colon \kappa \to \iota$ be a bijection. Then $y \circ e$ is a computed scaled
+application of $(\beta, v \circ e)$ to $b \circ e$ if and only if $y$ is a computed scaled
+application of $(\beta, v)$ to $b$. The order of summation of the inner product is carried along
+$e$ (`FloatingPoint.roundsDot_comp_equiv_iff`). -/
 theorem roundsHouseholderApplyScaled_comp_equiv_iff {κ : Type*} {m : RoundingModel ℝ}
     (e : κ ≃ ι) {β : ℝ} {v b y : ι → ℝ} :
     RoundsHouseholderApplyScaled m β (v ∘ e) (b ∘ e) (y ∘ e) ↔
@@ -940,9 +1055,17 @@ theorem roundsHouseholderApplyScaled_comp_equiv_iff {κ : Type*} {m : RoundingMo
   refine roundsHouseholderApplyScaled_of_comp_equiv e.symm ?_
   simpa [Function.comp_assoc] using h
 
-/-- **[higham2002accuracy] Lemma 19.2 for the scaled association** `b - (β v)(vᵀ b)`, with the
-constant of `norm_sub_le_of_roundsHouseholderApply`: the two associations give coefficients
-`c_ij` of the same order `3k + n + 2` and share `norm_sub_le_of_forall_rounds_sub_sum`. -/
+/-- **Lemma 19.2 of [higham2002accuracy] for the association** $b - (\beta v)(v^T b)$ of
+[golub2013matrix]. Let $\iota$ have $n$ elements, let $k \in \mathbb{N}$ with
+$(3k + n + 3) u < 1$, and let $\beta \in \mathbb{R}$ and $v \in \mathbb{R}^\iota$ with
+$|\beta| \, v^T v \le 2$. Let $\hat\beta$ and every $\hat v_i$ be relative perturbations of
+order $k$ of $\beta$ and $v_i$. If $y$ is a computed scaled application of $(\hat\beta, \hat v)$
+to $b$ (`FloatingPoint.RoundsHouseholderApplyScaled`), then
+$$\|y - (I - \beta v v^T) b\|_2 \le 3 \gamma_{3k+n+3} \|b\|_2.$$
+
+The constant is that of `FloatingPoint.norm_sub_le_of_roundsHouseholderApply`: both associations
+give coefficients of the same order $3k + n + 2$ and use
+`FloatingPoint.norm_sub_le_of_forall_rounds_sub_sum`. -/
 theorem norm_sub_le_of_roundsHouseholderApplyScaled {m : RoundingModel ℝ} {k : ℕ}
     (hcard : ((3 * k + Fintype.card ι + 3 : ℕ) : ℝ) * m.u < 1) {β βhat : ℝ} {v vhat : ι → ℝ}
     (hβ : IsRelPert m.u k β βhat) (hv : ∀ i, IsRelPert m.u k (v i) (vhat i))
@@ -984,23 +1107,27 @@ theorem norm_sub_le_of_roundsHouseholderApplyScaled {m : RoundingModel ℝ} {k :
 
 /-! ### Orthogonal transformations of vectors -/
 
-/-- An orthogonal matrix preserves the Euclidean norm. -/
+/-- An orthogonal matrix $Q$ preserves the Euclidean norm: $\|Qx\|_2 = \|x\|_2$. -/
 theorem norm_toLp_mulVec_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (x : ι → ℝ) :
     ‖(toLp 2 (Q *ᵥ x) : EuclideanSpace ℝ ι)‖ = ‖(toLp 2 x : EuclideanSpace ℝ ι)‖ :=
   norm_toLp_mulVec_of_mem_unitaryGroup hQ x
 
-/-- `Q (Qᵀ x) = x` for an orthogonal `Q`. -/
+/-- For an orthogonal matrix $Q$, $Q (Q^T x) = x$. -/
 theorem mulVec_transpose_mulVec_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (x : ι → ℝ) : Q *ᵥ (Qᵀ *ᵥ x) = x := by
   rw [mulVec_mulVec, (mem_orthogonalGroup_iff _ _).1 hQ, one_mulVec]
 
-/-! ### [higham2002accuracy] Lemma 19.3: accumulation -/
+/-! ### Lemma 19.3 of [higham2002accuracy]: accumulation -/
 
-/-- **One step of [higham2002accuracy] Lemma 19.3**: if `y = Q (x + Δx)` with `Q` orthogonal and
-`‖Δx‖₂ ≤ ((1 + ε)^k - 1) ‖x‖₂`, and `y'` is within `ε ‖y‖₂` of `P y` for an orthogonal `P`, then
-`y' = (P Q) (x + Δx')` with `‖Δx'‖₂ ≤ ((1 + ε)^(k+1) - 1) ‖x‖₂`. The invariant step of every
-loop of nearly exact orthogonal transformations (`SetM.forall_mem_run_foldlM_finRange`). -/
+/-- **One step of Lemma 19.3** of [higham2002accuracy]. Let $P$ and $Q$ be orthogonal, let
+$\varepsilon \ge 0$, and let $y = Q (x + \Delta x)$ with $\|\Delta x\|_2 \le ((1 +
+\varepsilon)^k - 1) \|x\|_2$. If $\|y' - P y\|_2 \le \varepsilon \|y\|_2$, then there is
+$\Delta x'$ with
+$$y' = (P Q)(x + \Delta x'), \qquad \|\Delta x'\|_2 \le ((1 + \varepsilon)^{k+1} - 1) \|x\|_2.$$
+
+This is the invariant step of every loop of nearly exact orthogonal transformations, for example
+with `SetM.forall_mem_run_foldlM_finRange`. -/
 theorem exists_eq_mulVec_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.orthogonalGroup ι ℝ)
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) {x dx y y' : ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) {k : ℕ}
     (hy : y = Q *ᵥ (x + dx))
@@ -1036,10 +1163,15 @@ theorem exists_eq_mulVec_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix
     rw [h4]
     nlinarith
 
-/-- **A sequence of nearly exact orthogonal transformations of a vector is an exact one of a
-nearby vector** ([higham2002accuracy] Lemma 19.3, the core): if `P_k` are orthogonal and
-`‖x_{k+1} - P_k x_k‖₂ ≤ ε ‖x_k‖₂` for `k < r`, then `x_r = P_{r-1} ⋯ P_0 (x_0 + Δx)` with
-`‖Δx‖₂ ≤ ((1 + ε)^r - 1) ‖x_0‖₂`. -/
+/-- **Lemma 19.3** of [higham2002accuracy], vector form: a sequence of nearly exact orthogonal
+transformations of a vector is an exact one of a nearby vector. Let $P_0, P_1, \dots$ be
+orthogonal, let $\varepsilon \ge 0$, and let $x_0, x_1, \dots \in \mathbb{R}^\iota$ satisfy
+$\|x_{k+1} - P_k x_k\|_2 \le \varepsilon \|x_k\|_2$ for every $k < r$. Then there is $\Delta x$
+with
+$$x_r = P_{r-1} \cdots P_0 (x_0 + \Delta x), \qquad \|\Delta x\|_2 \le ((1 + \varepsilon)^r - 1)
+  \|x_0\|_2.$$
+
+The product $P_{r-1} \cdots P_0$ is `prodRev P r`. -/
 theorem exists_eq_prodRev_mulVec_add {P : ℕ → Matrix ι ι ℝ}
     (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) {x : ℕ → ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
     (hx : ∀ k, k < r → ‖(toLp 2 (x (k + 1) - P k *ᵥ x k) : EuclideanSpace ℝ ι)‖ ≤
@@ -1056,9 +1188,12 @@ theorem exists_eq_prodRev_mulVec_add {P : ℕ → Matrix ι ι ℝ}
       hε hxr hdx (hx r (Nat.lt_succ_self r))
     exact ⟨dx', by rw [prodRev_succ]; exact h1, h2⟩
 
-/-- **[higham2002accuracy] Lemma 19.3 with the transformation of each step chosen**, vector form:
-if every step `k < r` has an orthogonal `P` with `‖x_{k+1} - P x_k‖₂ ≤ ε ‖x_k‖₂`, then
-`x_r = Q (x_0 + Δx)` for an orthogonal `Q` with `‖Δx‖₂ ≤ ((1 + ε)^r - 1) ‖x_0‖₂`. -/
+/-- **Lemma 19.3** of [higham2002accuracy], vector form, with the transformation of each step
+chosen. Let $\varepsilon \ge 0$, and let $x_0, x_1, \dots \in \mathbb{R}^\iota$. If for every
+step $k < r$ there is an orthogonal $P$ with $\|x_{k+1} - P x_k\|_2 \le \varepsilon \|x_k\|_2$,
+then there are an orthogonal $Q$ and a $\Delta x$ with
+$$x_r = Q (x_0 + \Delta x), \qquad \|\Delta x\|_2 \le ((1 + \varepsilon)^r - 1) \|x_0\|_2.$$
+-/
 theorem exists_eq_mulVec_add_of_forall_step {x : ℕ → ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
     (h : ∀ k, k < r → ∃ P ∈ Matrix.orthogonalGroup ι ℝ,
       ‖(toLp 2 (x (k + 1) - P *ᵥ x k) : EuclideanSpace ℝ ι)‖ ≤
@@ -1077,8 +1212,12 @@ theorem exists_eq_mulVec_add_of_forall_step {x : ℕ → ι → ℝ} {ε : ℝ} 
   obtain ⟨dx, hdx, hdxn⟩ := exists_eq_prodRev_mulVec_add hP hε r hb
   exact ⟨prodRev P r, prodRev_mem_orthogonalGroup (r := r) fun k _ => hP k, dx, hdx, hdxn⟩
 
-/-- **[higham2002accuracy] Lemma 19.3, vector form with the constant `r γ̃`**: under
-`r ε < 1`, `‖Δx‖₂ ≤ (r ε / (1 - r ε)) ‖x_0‖₂`. -/
+/-- **Lemma 19.3** of [higham2002accuracy], vector form, with the constant $\gamma_r(\varepsilon) =
+r \varepsilon / (1 - r \varepsilon)$. Under the hypotheses of
+`FloatingPoint.exists_eq_prodRev_mulVec_add` and $r \varepsilon < 1$, there is $\Delta x$ with
+$$x_r = P_{r-1} \cdots P_0 (x_0 + \Delta x), \qquad \|\Delta x\|_2 \le \frac{r \varepsilon}{1 -
+  r \varepsilon} \|x_0\|_2.$$
+-/
 theorem exists_eq_prodRev_mulVec_add_gamma {P : ℕ → Matrix ι ι ℝ}
     (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) {x : ℕ → ι → ℝ} {ε : ℝ} (hε : 0 ≤ ε) {r : ℕ}
     (hx : ∀ k, k < r → ‖(toLp 2 (x (k + 1) - P k *ᵥ x k) : EuclideanSpace ℝ ι)‖ ≤
@@ -1095,9 +1234,13 @@ open scoped Matrix.Norms.Frobenius
 
 variable {κ : Type*}
 
-/-- **[higham2002accuracy] Lemma 19.3, matrix form**: if each column of `A_{k+1}` is within
-`ε` (relative, Euclidean) of `P_k` applied to the corresponding column of `A_k`, then
-`A_r = P_{r-1} ⋯ P_0 (A_0 + ΔA)` with `‖Δa_j‖₂ ≤ ((1 + ε)^r - 1) ‖a_j‖₂` for every column. -/
+/-- **Lemma 19.3** of [higham2002accuracy], matrix form, columnwise. Let $P_0, P_1, \dots$ be
+orthogonal, let $\varepsilon \ge 0$, and let $A_0, A_1, \dots \in \mathbb{R}^{\iota \times
+\kappa}$. If every column $j$ satisfies $\|(A_{k+1} - P_k A_k)_{:, j}\|_2 \le \varepsilon
+\|(A_k)_{:, j}\|_2$ for every $k < r$, then there is $\Delta A$ with
+$$A_r = P_{r-1} \cdots P_0 (A_0 + \Delta A), \qquad \|\Delta A_{:, j}\|_2 \le ((1 +
+  \varepsilon)^r - 1) \|(A_0)_{:, j}\|_2 \text{ for every column } j.$$
+-/
 theorem exists_eq_prodRev_mul_add {P : ℕ → Matrix ι ι ℝ}
     (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) {A : ℕ → Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε)
     (r : ℕ) (hA : ∀ k, k < r → ∀ j,
@@ -1122,11 +1265,13 @@ theorem exists_eq_prodRev_mul_add {P : ℕ → Matrix ι ι ℝ}
   refine Finset.sum_congr rfl fun l _ => ?_
   simp [col_apply]
 
-/-- **One step of [higham2002accuracy] Lemma 19.3, columnwise**: if `B = Q (A + E)` with `Q`
-orthogonal and `‖E(:, j)‖₂ ≤ ((1 + ε)^k - 1) ‖A(:, j)‖₂`, and every column of `B'` is within
-`ε` (relative, Euclidean) of the column of `P B` for an orthogonal `P`, then
-`B' = (P Q) (A + E')` with `‖E'(:, j)‖₂ ≤ ((1 + ε)^(k+1) - 1) ‖A(:, j)‖₂`: the invariant step of a
-loop of nearly exact orthogonal transformations of a matrix. -/
+/-- **One step of Lemma 19.3** of [higham2002accuracy], columnwise. Let $P$ and $Q$ be orthogonal,
+let $\varepsilon \ge 0$, and let $B = Q (A + E)$ with $\|E_{:, j}\|_2 \le ((1 +
+\varepsilon)^k - 1) \|A_{:, j}\|_2$ for every column $j$. If every column satisfies $\|(B' - P
+B)_{:, j}\|_2 \le \varepsilon \|B_{:, j}\|_2$, then there is $E'$ with
+$$B' = (P Q)(A + E'), \qquad \|E'_{:, j}\|_2 \le ((1 + \varepsilon)^{k+1} - 1) \|A_{:, j}\|_2
+  \text{ for every column } j.$$
+This is the invariant step of a loop of nearly exact orthogonal transformations of a matrix. -/
 theorem exists_eq_mul_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.orthogonalGroup ι ℝ)
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) {A E B B' : Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε) {k : ℕ}
     (hB : B = Q * (A + E))
@@ -1154,11 +1299,14 @@ theorem exists_eq_mul_add_of_step {P Q : Matrix ι ι ℝ} (hP : P ∈ Matrix.or
   refine Finset.sum_congr rfl fun l _ => ?_
   simp [col_apply]
 
-/-- **[higham2002accuracy] Lemma 19.3 with the transformation of each step chosen**, columnwise:
-if every step `k < r` has an orthogonal `P` such that every column of `A_{k+1}` is within `ε`
-(relative, Euclidean) of the column of `P A_k`, then `A_r = Q (A_0 + ΔA)` for an orthogonal `Q`
-with `‖ΔA(:, j)‖₂ ≤ ((1 + ε)^r - 1) ‖A_0(:, j)‖₂` for every column. The one-sided companion of
-`exists_eq_transpose_mul_add_mul_of_forall_step`. -/
+/-- **Lemma 19.3** of [higham2002accuracy], columnwise, with the transformation of each step chosen.
+Let $\varepsilon \ge 0$ and $A_0, A_1, \dots \in \mathbb{R}^{\iota \times \kappa}$. If for every
+step $k < r$ there is an orthogonal $P$ with $\|(A_{k+1} - P A_k)_{:, j}\|_2 \le \varepsilon
+\|(A_k)_{:, j}\|_2$ for every column $j$, then there are an orthogonal $Q$ and a $\Delta A$ with
+$$A_r = Q (A_0 + \Delta A), \qquad \|\Delta A_{:, j}\|_2 \le ((1 + \varepsilon)^r - 1)
+  \|(A_0)_{:, j}\|_2 \text{ for every column } j.$$
+This is the one-sided companion of
+`FloatingPoint.exists_eq_transpose_mul_add_mul_of_forall_step`. -/
 theorem exists_eq_mul_add_of_forall_step {A : ℕ → Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
     (h : ∀ k, k < r → ∃ P ∈ Matrix.orthogonalGroup ι ℝ, ∀ j,
       ‖(toLp 2 ((A (k + 1) - P * A k).col j) : EuclideanSpace ℝ ι)‖ ≤
@@ -1178,30 +1326,37 @@ theorem exists_eq_mul_add_of_forall_step {A : ℕ → Matrix ι κ ℝ} {ε : �
   exact ⟨prodRev P r, prodRev_mem_orthogonalGroup (r := r) fun k _ => hP k, ΔA, hΔ, hΔn⟩
 
 
-/-- Orthogonal equivalence preserves the Frobenius norm. -/
+/-- Orthogonal equivalence preserves the Frobenius norm: $\|U A V\|_F = \|A\|_F$ for orthogonal $U$
+and $V$. -/
 theorem frobenius_norm_orthogonal_mul_mul_orthogonal [Fintype κ] [DecidableEq κ]
     {U : Matrix ι ι ℝ} {V : Matrix κ κ ℝ}
     (hU : U ∈ Matrix.orthogonalGroup ι ℝ) (A : Matrix ι κ ℝ)
     (hV : V ∈ Matrix.orthogonalGroup κ ℝ) : ‖U * A * V‖ = ‖A‖ :=
   frobenius_norm_unitary_mul_mul_unitary hU A hV
 
-/-- `Q (Qᵀ A) = A` for an orthogonal `Q`. -/
+/-- For an orthogonal matrix $Q$, $Q (Q^T A) = A$. -/
 theorem mul_transpose_mul_of_mem_orthogonalGroup {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (A : Matrix ι κ ℝ) : Q * (Qᵀ * A) = A := by
   rw [← Matrix.mul_assoc, (mem_orthogonalGroup_iff _ _).1 hQ, Matrix.one_mul]
 
-/-- `(A Qᵀ) Q = A` for an orthogonal `Q`. -/
+/-- For an orthogonal matrix $Q$, $(A Q^T) Q = A$. -/
 theorem mul_transpose_mul_of_mem_orthogonalGroup' {Q : Matrix ι ι ℝ}
     (hQ : Q ∈ Matrix.orthogonalGroup ι ℝ) (A : Matrix κ ι ℝ) : A * Qᵀ * Q = A := by
   rw [Matrix.mul_assoc, (mem_orthogonalGroup_iff' _ _).1 hQ, Matrix.mul_one]
 
 variable [Fintype κ] [DecidableEq κ]
 
-/-- **Two-sided accumulation for rectangular matrices** ([higham2002accuracy] §19.10, the
-two-sided analogue of Lemma 19.3, in the Frobenius norm): if `L_k` (on the rows) and `R_k` (on
-the columns) are orthogonal and `‖A_{k+1} - L_k A_k R_k‖_F ≤ ε ‖A_k‖_F` for `k < r`, then
-`A_r = (L_{r-1} ⋯ L_0) (A_0 + E) (R_0 ⋯ R_{r-1})` with `‖E‖_F ≤ ((1 + ε)^r - 1) ‖A_0‖_F`.
-[golub2013matrix] (5.1.11) is an instance. -/
+/-- **Two-sided accumulation for rectangular matrices**, the two-sided analogue of Lemma 19.3 of
+[higham2002accuracy] (§19.10), in the Frobenius norm. Let $L_0, L_1, \dots \in \mathbb{R}^{\iota
+\times \iota}$ and $R_0, R_1, \dots \in \mathbb{R}^{\kappa \times \kappa}$ be orthogonal, let
+$\varepsilon \ge 0$, and let $A_0, A_1, \dots \in \mathbb{R}^{\iota \times \kappa}$ satisfy
+$\|A_{k+1} - L_k A_k R_k\|_F \le \varepsilon \|A_k\|_F$ for every $k < r$. Then there is $E$
+with
+$$A_r = (L_{r-1} \cdots L_0)(A_0 + E)(R_0 \cdots R_{r-1}), \qquad \|E\|_F \le ((1 +
+  \varepsilon)^r - 1) \|A_0\|_F.$$
+(5.1.11) of [golub2013matrix] is an instance.
+
+The products are `prodRev L r` and `prodFwd R r`. -/
 theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ}
     {R : ℕ → Matrix κ κ ℝ} (hL : ∀ k, L k ∈ Matrix.orthogonalGroup ι ℝ)
     (hR : ∀ k, R k ∈ Matrix.orthogonalGroup κ ℝ) {A : ℕ → Matrix ι κ ℝ} {ε : ℝ} (hε : 0 ≤ ε)
@@ -1247,11 +1402,13 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd_rect {L : ℕ → Matrix ι ι ℝ
       rw [h4]
       nlinarith
 
-/-- **Two-sided accumulation** ([higham2002accuracy] §19.10, the two-sided analogue of Lemma
-19.3, in the Frobenius norm): if `L_k`, `R_k` are orthogonal and
-`‖A_{k+1} - L_k A_k R_k‖_F ≤ ε ‖A_k‖_F` for `k < r`, then
-`A_r = (L_{r-1} ⋯ L_0) (A_0 + E) (R_0 ⋯ R_{r-1})` with `‖E‖_F ≤ ((1 + ε)^r - 1) ‖A_0‖_F`: the
-square case of `exists_eq_prodRev_mul_add_mul_prodFwd_rect`. -/
+/-- **Two-sided accumulation** for square matrices, the two-sided analogue of Lemma 19.3 of
+[higham2002accuracy] (§19.10), in the Frobenius norm. Let $L_k$ and $R_k$ be orthogonal, let
+$\varepsilon \ge 0$, and let $\|A_{k+1} - L_k A_k R_k\|_F \le \varepsilon \|A_k\|_F$ for every
+$k < r$. Then there is $E$ with
+$$A_r = (L_{r-1} \cdots L_0)(A_0 + E)(R_0 \cdots R_{r-1}), \qquad \|E\|_F \le ((1 +
+  \varepsilon)^r - 1) \|A_0\|_F.$$
+This is the square case of `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd_rect`. -/
 theorem exists_eq_prodRev_mul_add_mul_prodFwd {L R : ℕ → Matrix ι ι ℝ}
     (hL : ∀ k, L k ∈ Matrix.orthogonalGroup ι ℝ) (hR : ∀ k, R k ∈ Matrix.orthogonalGroup ι ℝ)
     {A : ℕ → Matrix ι ι ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
@@ -1260,9 +1417,11 @@ theorem exists_eq_prodRev_mul_add_mul_prodFwd {L R : ℕ → Matrix ι ι ℝ}
       ‖E‖ ≤ ((1 + ε) ^ r - 1) * ‖A 0‖ :=
   exists_eq_prodRev_mul_add_mul_prodFwd_rect hL hR hε r hA
 
-/-- **Two-sided accumulation by symmetric orthogonal transformations** (reflectors): with
-`L_k = R_k = P_k` symmetric and orthogonal, `A_r = Qᵀ (A_0 + E) Q` for the orthogonal
-`Q = P_0 ⋯ P_{r-1}`. -/
+/-- **Two-sided accumulation by symmetric orthogonal transformations**, such as reflectors. Let
+every $P_k$ be orthogonal and symmetric, let $\varepsilon \ge 0$, and let $\|A_{k+1} - P_k A_k
+P_k\|_F \le \varepsilon \|A_k\|_F$ for every $k < r$. Then there is $E$ with
+$$A_r = Q^T (A_0 + E) Q, \qquad \|E\|_F \le ((1 + \varepsilon)^r - 1) \|A_0\|_F,$$
+where $Q = P_0 \cdots P_{r-1}$ is orthogonal. -/
 theorem exists_eq_transpose_mul_add_mul_prodFwd {P : ℕ → Matrix ι ι ℝ}
     (hP : ∀ k, P k ∈ Matrix.orthogonalGroup ι ℝ) (hPs : ∀ k, (P k)ᵀ = P k)
     {A : ℕ → Matrix ι ι ℝ} {ε : ℝ} (hε : 0 ≤ ε) (r : ℕ)
@@ -1275,11 +1434,14 @@ theorem exists_eq_transpose_mul_add_mul_prodFwd {P : ℕ → Matrix ι ι ℝ}
   congr 2
   exact congrArg (fun Q => prodRev Q r) (funext hPs).symm
 
-/-- **Two-sided accumulation with the reflector of each step chosen** ([higham2002accuracy]
-Lemma 19.3, two-sided, §19.10): if every step `k < r` has an exact symmetric orthogonal `P` with
-`‖A_{k+1} - P A_k P‖_F ≤ ε ‖A_k‖_F`, then `A_r = Qᵀ (A_0 + E) Q` for an orthogonal `Q` and
-`‖E‖_F ≤ ((1 + ε)^r - 1) ‖A_0‖_F`. The lemma every Householder reduction ends with, once its step
-bound is proved. -/
+/-- **Two-sided accumulation with the transformation of each step chosen** (Lemma 19.3 of
+[higham2002accuracy], two-sided, §19.10). Let $\varepsilon \ge 0$ and $A_0, A_1, \dots \in
+\mathbb{R}^{\iota \times \iota}$. If for every step $k < r$ there is a symmetric orthogonal $P$
+with $\|A_{k+1} - P A_k P\|_F \le \varepsilon \|A_k\|_F$, then there are an orthogonal $Q$ and
+an $E$ with
+$$A_r = Q^T (A_0 + E) Q, \qquad \|E\|_F \le ((1 + \varepsilon)^r - 1) \|A_0\|_F.$$
+
+Every Householder reduction ends with this lemma, once its step bound is proved. -/
 theorem exists_eq_transpose_mul_add_mul_of_forall_step {A : ℕ → Matrix ι ι ℝ} {ε : ℝ}
     (hε : 0 ≤ ε) (r : ℕ)
     (h : ∀ k, k < r → ∃ P ∈ Matrix.orthogonalGroup ι ℝ, Pᵀ = P ∧
@@ -1296,10 +1458,13 @@ theorem exists_eq_transpose_mul_add_mul_of_forall_step {A : ℕ → Matrix ι ι
   obtain ⟨E, hE, hEn⟩ := exists_eq_transpose_mul_add_mul_prodFwd hP hPs hε r hb
   exact ⟨prodFwd P r, prodFwd_mem_orthogonalGroup (r := r) fun k _ => hP k, E, hE, hEn⟩
 
-/-- **A two-sided step from its two sweeps**: if `P` is orthogonal, every column of `C` is within
-`ε` (relative, Euclidean) of the column of `P A`, and every row of `B` within `ε` of the row of
-`C P`, then `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`. The combination step of every two-sided
-reduction whose transformations are applied column by column and then row by row. -/
+/-- **A two-sided step from its two sweeps.** Let $P$ be orthogonal and $\varepsilon \ge 0$. If
+every column satisfies $\|(C - P A)_{:, j}\|_2 \le \varepsilon \|A_{:, j}\|_2$ and every row
+satisfies $\|(B - C P)_{i, :}\|_2 \le \varepsilon \|C_{i, :}\|_2$, then
+$$\|B - P A P\|_F \le ((1 + \varepsilon)^2 - 1) \|A\|_F.$$
+
+This combines the two sweeps of every two-sided reduction that applies its transformations first
+to the columns and then to the rows. -/
 theorem frobenius_norm_sub_mul_mul_le_of_col_of_row {P : Matrix ι ι ℝ}
     (hP : P ∈ Matrix.orthogonalGroup ι ℝ) {ε : ℝ} (hε0 : 0 ≤ ε) {A B C : Matrix ι ι ℝ}
     (hcol : ∀ j, ‖(toLp 2 ((C - P * A).col j) : EuclideanSpace ℝ ι)‖ ≤
@@ -1329,11 +1494,16 @@ theorem frobenius_norm_sub_mul_mul_le_of_col_of_row {P : Matrix ι ι ℝ}
     _ = ((1 + ε) ^ 2 - 1) * ‖A‖ := by ring
 
 omit [DecidableEq κ] in
-/-- **The left application of a computed reflector to a matrix**, [golub2013matrix] §5.1.4's
-premultiplication `A - (β v)(vᵀ A)`: if every column of `B` is a computed
-`RoundsHouseholderApplyScaled m β̂ v̂` of the corresponding column of `A`, then columnwise
-`‖(B - P A)_q‖₂ ≤ ε ‖a_q‖₂` and `‖B - P A‖_F ≤ ε ‖A‖_F` for `P = 1 - β v vᵀ` and
-`ε = 3 γ_{3k+n+3}`. -/
+/-- **The left application of a computed reflector to a matrix**, the premultiplication
+$A - (\beta v)(v^T A)$ of [golub2013matrix], §5.1.4. Let $\iota$ have $n$ elements, let
+$(3k + n + 3) u < 1$, let $|\beta| \, v^T v \le 2$, and let $\hat\beta$ and every $\hat v_i$ be
+relative perturbations of order $k$ of $\beta$ and $v_i$. If every column of $B$ is a computed
+scaled application of $(\hat\beta, \hat v)$ to the corresponding column of $A$
+(`FloatingPoint.RoundsHouseholderApplyScaled`), then, with $P = I - \beta v v^T$ and
+$\varepsilon = 3 \gamma_{3k+n+3}$,
+$$\|(B - P A)_{:, q}\|_2 \le \varepsilon \|A_{:, q}\|_2 \text{ for every column } q, \qquad
+  \|B - P A\|_F \le \varepsilon \|A\|_F.$$
+-/
 theorem frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col {m : RoundingModel ℝ}
     {k : ℕ} (hcard : ((3 * k + Fintype.card ι + 3 : ℕ) : ℝ) * m.u < 1) {β βhat : ℝ}
     {v vhat : ι → ℝ} (hβ : IsRelPert m.u k β βhat) (hv : ∀ i, IsRelPert m.u k (v i) (vhat i))
@@ -1351,11 +1521,16 @@ theorem frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_col {m : Ro
     (by have := gamma_nonneg m.u_nonneg hcard; positivity) hcol⟩
 
 omit [DecidableEq κ] in
-/-- **The right application of a computed reflector to a matrix**, [golub2013matrix] §5.1.4's
-postmultiplication `A - (A v)(β v)ᵀ`: if every row of `B` is a computed
-`RoundsHouseholderApplyScaled m β̂ v̂` of the corresponding row of `A`, then rowwise
-`‖(B - A P)_r‖₂ ≤ ε ‖a_r‖₂` and `‖B - A P‖_F ≤ ε ‖A‖_F` for `P = 1 - β v vᵀ` (symmetric, so a
-row of `A P` is `P` applied to the row) and `ε = 3 γ_{3k+n+3}`. -/
+/-- **The right application of a computed reflector to a matrix**, the postmultiplication
+$A - (A v)(\beta v)^T$ of [golub2013matrix], §5.1.4. Let $\iota$ have $n$ elements, let
+$(3k + n + 3) u < 1$, let $|\beta| \, v^T v \le 2$, and let $\hat\beta$ and every $\hat v_i$ be
+relative perturbations of order $k$ of $\beta$ and $v_i$. If every row of $B$ is a computed
+scaled application of $(\hat\beta, \hat v)$ to the corresponding row of $A$, then, with
+$P = I - \beta v v^T$ and $\varepsilon = 3 \gamma_{3k+n+3}$,
+$$\|(B - A P)_{r, :}\|_2 \le \varepsilon \|A_{r, :}\|_2 \text{ for every row } r, \qquad \|B - A
+  P\|_F \le \varepsilon \|A\|_F.$$
+
+The matrix $P$ is symmetric, so a row of $A P$ is $P$ applied to the row of $A$. -/
 theorem frobenius_norm_sub_le_of_forall_roundsHouseholderApplyScaled_row {m : RoundingModel ℝ}
     {k : ℕ} (hcard : ((3 * k + Fintype.card ι + 3 : ℕ) : ℝ) * m.u < 1) {β βhat : ℝ}
     {v vhat : ι → ℝ} (hβ : IsRelPert m.u k β βhat) (hv : ∀ i, IsRelPert m.u k (v i) (vhat i))
@@ -1382,8 +1557,11 @@ open scoped Matrix.Norms.Frobenius
 
 variable {p : ι → Prop} [DecidablePred p]
 
-/-- **A vector on the coordinates `{i // p i}`, extended by zero** to all of `ι`: Mathlib's
-`Function.extend Subtype.val v 0` (`extendByZero_eq_extend`), with a pointwise definition. -/
+/-- **A vector on the coordinates $\{i : p(i)\}$, extended by zero** to all of $\iota$: the value at
+$i$ is $v_i$ if $p(i)$ holds, and $0$ otherwise.
+
+This is Mathlib's `Function.extend Subtype.val v 0` (`FloatingPoint.extendByZero_eq_extend`),
+with a pointwise definition. -/
 def extendByZero (p : ι → Prop) [DecidablePred p] (v : {i // p i} → ℝ) : ι → ℝ :=
   fun i => if h : p i then v ⟨i, h⟩ else 0
 
@@ -1412,7 +1590,8 @@ theorem extendByZero_eq_extend (v : {i // p i} → ℝ) :
       Pi.zero_apply]
 
 omit [DecidableEq ι] in
-/-- The inner product of a zero extension is the inner product on the coordinates. -/
+/-- The inner product of a zero extension of $v$ with $w$ is the inner product of $v$ with the
+restriction of $w$ to the coordinates of $v$. -/
 theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
     extendByZero p v ⬝ᵥ w = v ⬝ᵥ fun a : {i // p i} => w a := by
   rw [dotProduct, ← Fintype.sum_subtype_add_sum_subtype p]
@@ -1422,9 +1601,11 @@ theorem extendByZero_dotProduct (v : {i // p i} → ℝ) (w : ι → ℝ) :
   exact Finset.sum_congr rfl fun a _ => by rw [extendByZero_apply]
 
 omit [DecidableEq ι] [DecidablePred p] in
-/-- A dot product with a vector vanishing off the coordinates `{i // p i}` is the dot product of
-the restrictions (the converse reading of `extendByZero_dotProduct`). Any `Fintype` instance on
-the subtype is allowed. -/
+/-- If $v$ vanishes off the coordinates $\{i : p(i)\}$, then $v^T x$ is the inner product of the
+restrictions of $v$ and $x$ to these coordinates. This is the converse reading of
+`FloatingPoint.extendByZero_dotProduct`.
+
+Any `Fintype` instance on the subtype is allowed. -/
 theorem dotProduct_eq_dotProduct_subtype [hp : Fintype {i // p i}] {v : ι → ℝ}
     (hv : ∀ i, ¬ p i → v i = 0) (x : ι → ℝ) :
     v ⬝ᵥ x = (fun i : {i // p i} => v i) ⬝ᵥ (fun i => x i) := by
@@ -1437,9 +1618,11 @@ theorem dotProduct_eq_dotProduct_subtype [hp : Fintype {i // p i}] {v : ι → �
     · rw [extendByZero_apply_of_not _ hr, hv r hr]
   rw [← extendByZero_dotProduct, hv']
 
-/-- **A rank-one modification supported on `{i // p i}` acts on those coordinates only**: for `v`
-vanishing off `p`, `(1 - β v vᵀ) x` is `x` off `p` and, on `p`, the action of the restricted
-`1 - β v vᵀ` on the restricted `x`. Any `Fintype` instance on the subtype is allowed. -/
+/-- **A rank-one modification supported on $\{i : p(i)\}$ acts on those coordinates only.** If $v$
+vanishes off $p$, then $(I - \beta v v^T) x$ is equal to $x$ off $p$, and on $p$ it is the
+restricted matrix $I - \beta v v^T$ applied to the restriction of $x$.
+
+Any `Fintype` instance on the subtype is allowed. -/
 theorem one_sub_smul_vecMulVec_mulVec_apply_subtype [Fintype {i // p i}] {v : ι → ℝ}
     (hv : ∀ i, ¬ p i → v i = 0) (β : ℝ) (x : ι → ℝ) (i : ι) :
     ((1 - β • vecMulVec v v) *ᵥ x) i =
@@ -1452,8 +1635,12 @@ theorem one_sub_smul_vecMulVec_mulVec_apply_subtype [Fintype {i // p i}] {v : ι
   · rw [one_sub_smul_vecMulVec_mulVec_apply, dotProduct_eq_dotProduct_subtype hv]
   · rw [hv i h, mul_zero, zero_mul, sub_zero]
 
-/-- The reflector of the extended vector acts on the block as the reflector of the vector. Any
-`Fintype` instance on the subtype is allowed (e.g. `List.Subtype.fintype` for `p = (· ∈ l)`). -/
+/-- On the coordinates of the block $\{i : p(i)\}$, the matrix $I - \beta \bar v \bar v^T$ of the
+zero extension $\bar v$ of $v$ acts on $w$ as $I - \beta v v^T$ acts on the restriction of $w$
+to the block.
+
+Any `Fintype` instance on the subtype is allowed, for example `List.Subtype.fintype` for
+$p = (\cdot \in l)$. -/
 theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply [hp : Fintype {i // p i}] (β : ℝ)
     (v : {i // p i} → ℝ) (w : ι → ℝ) (a : {i // p i}) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) *ᵥ w) (a : ι) =
@@ -1462,15 +1649,18 @@ theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply [hp : Fintype {i // p i
   rw [one_sub_smul_vecMulVec_mulVec_apply, one_sub_smul_vecMulVec_mulVec_apply,
     extendByZero_apply, extendByZero_dotProduct]
 
-/-- The reflector of the extended vector fixes the coordinates off the block. -/
+/-- The matrix $I - \beta \bar v \bar v^T$ of the zero extension $\bar v$ of $v$ fixes the
+coordinates off the block. -/
 theorem one_sub_smul_vecMulVec_extendByZero_mulVec_apply_of_not (β : ℝ)
     (v : {i // p i} → ℝ) (w : ι → ℝ) {r : ι} (hr : ¬ p r) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) *ᵥ w) r = w r := by
   rw [one_sub_smul_vecMulVec_mulVec_apply, extendByZero_apply_of_not v hr]
   ring
 
-/-- The extension of an orthogonal reflector of the block by the identity is orthogonal. Any
-`Fintype` instance on the subtype is allowed. -/
+/-- If $I - \beta v v^T$ is orthogonal on the block $\{i : p(i)\}$, then its extension by the
+identity, $I - \beta \bar v \bar v^T$ with the zero extension $\bar v$ of $v$, is orthogonal.
+
+Any `Fintype` instance on the subtype is allowed. -/
 theorem one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup [hp : Fintype {i // p i}]
     {β : ℝ} {v : {i // p i} → ℝ}
     (h : (1 - β • vecMulVec v v) ∈ Matrix.orthogonalGroup {i // p i} ℝ) :
@@ -1500,9 +1690,11 @@ theorem one_sub_smul_vecMulVec_extendByZero_mem_orthogonalGroup [hp : Fintype {i
   rw [h1, add_zero]
 
 omit [DecidableEq ι] [DecidablePred p] in
-/-- The Euclidean norm of the restriction of a vector to the coordinates `{i // p i}` is at most
-its norm. Any `Fintype` instance on the subtype is allowed (e.g. `List.Subtype.fintype` for
-`p = (· ∈ l)`). -/
+/-- The Euclidean norm of the restriction of $w$ to the coordinates $\{i : p(i)\}$ is at most
+$\|w\|_2$.
+
+Any `Fintype` instance on the subtype is allowed, for example `List.Subtype.fintype` for
+$p = (\cdot \in l)$. -/
 theorem norm_toLp_restrict_le [hp : Fintype {i // p i}] (w : ι → ℝ) :
     ‖(toLp 2 (fun a : {i // p i} => w a) : EuclideanSpace ℝ {i // p i})‖ ≤
       ‖(toLp 2 w : EuclideanSpace ℝ ι)‖ := by
@@ -1514,8 +1706,10 @@ theorem norm_toLp_restrict_le [hp : Fintype {i // p i}] (w : ι → ℝ) :
   exact le_add_of_nonneg_right (Finset.sum_nonneg fun _ _ => by positivity)
 
 omit [DecidableEq ι] [DecidablePred p] in
-/-- A vector vanishing off the coordinates `{i // p i}` has the Euclidean norm of its restriction
-to them. Any `Fintype` instance on the subtype is allowed. -/
+/-- A vector that vanishes off the coordinates $\{i : p(i)\}$ has the Euclidean norm of its
+restriction to them.
+
+Any `Fintype` instance on the subtype is allowed. -/
 theorem norm_toLp_eq_restrict [hp : Fintype {i // p i}] {d : ι → ℝ}
     (h : ∀ r, ¬ p r → d r = 0) :
     ‖(toLp 2 d : EuclideanSpace ℝ ι)‖ =
@@ -1527,10 +1721,15 @@ theorem norm_toLp_eq_restrict [hp : Fintype {i // p i}] {d : ι → ℝ}
     Finset.sum_eq_zero fun a _ => by simp [h a a.2]
   rw [h2, add_zero]
 
-/-- **An update of a block of coordinates, against the extended reflector**: if `z` agrees with
-`w` off the block and, on the block, is entrywise at least as close to `P (w|_block)` as a vector
-`y` with `‖y - P (w|_block)‖₂ ≤ ε ‖w|_block‖₂`, then `‖z - P' w‖₂ ≤ ε ‖w‖₂` for the extension
-`P'` of `P = 1 - β v vᵀ` by the identity. Any `Fintype` instance on the subtype is allowed. -/
+/-- **An update of a block of coordinates, against the extended reflector.** Let
+$P = I - \beta v v^T$ on the block $S = \{i : p(i)\}$, let $\varepsilon \ge 0$, let
+$w \in \mathbb{R}^\iota$, and write $w_S$ for the restriction of $w$ to $S$. Let $y$ be a vector
+on $S$ with $\|y - P w_S\|_2 \le \varepsilon \|w_S\|_2$. If $z$ is equal to $w$ off $S$, and
+$|z_a - (P w_S)_a| \le |y_a - (P w_S)_a|$ for every $a \in S$, then
+$$\|z - P' w\|_2 \le \varepsilon \|w\|_2,$$
+where $P'$ is the extension of $P$ by the identity.
+
+Any `Fintype` instance on the subtype is allowed. -/
 theorem norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le [Fintype {i // p i}] {β ε : ℝ}
     (hε : 0 ≤ ε) {v : {i // p i} → ℝ} {w z : ι → ℝ} {y : {i // p i} → ℝ}
     (hout : ∀ r, ¬ p r → z r = w r)
@@ -1552,26 +1751,30 @@ theorem norm_sub_one_sub_smul_vecMulVec_extendByZero_mulVec_le [Fintype {i // p 
   exact hin a
 
 omit [Fintype ι] in
-/-- The extended reflector is the identity on the rows off the block. -/
+/-- The extension of $I - \beta v v^T$ by the identity agrees with the identity in the rows off the
+block. -/
 private theorem one_sub_smul_vecMulVec_extendByZero_apply_of_not (β : ℝ)
     (v : {i // p i} → ℝ) {r : ι} (hr : ¬ p r) (j : ι) :
     (1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) r j = (1 : Matrix ι ι ℝ) r j := by
   simp [vecMulVec_apply, extendByZero_apply_of_not v hr]
 
-/-- Left multiplication by the extended reflector fixes the rows off the block. -/
+/-- Left multiplication by the extension of $I - \beta v v^T$ by the identity fixes the rows off the
+block. -/
 private theorem one_sub_smul_vecMulVec_extendByZero_mul_apply_of_not (β : ℝ)
     (v : {i // p i} → ℝ) (M : Matrix ι ι ℝ) {r : ι} (hr : ¬ p r) (j : ι) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M) r j = M r j :=
   one_sub_smul_vecMulVec_extendByZero_mulVec_apply_of_not β v (fun b => M b j) hr
 
-/-- Left multiplication by the extended reflector acts on the rows of the block. -/
+/-- Left multiplication by the extension of $I - \beta v v^T$ by the identity acts on each column
+restricted to the block as $I - \beta v v^T$. -/
 private theorem one_sub_smul_vecMulVec_extendByZero_mul_apply (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) (a : {i // p i}) (j : ι) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M) (a : ι) j =
       ((1 - β • vecMulVec v v) *ᵥ fun b : {i // p i} => M b j) a :=
   one_sub_smul_vecMulVec_extendByZero_mulVec_apply β v (fun b => M b j) a
 
-/-- Right multiplication by the extended reflector fixes the columns off the block. -/
+/-- Right multiplication by the extension of $I - \beta v v^T$ by the identity fixes the columns off
+the block. -/
 private theorem mul_one_sub_smul_vecMulVec_extendByZero_apply_of_not (β : ℝ)
     (v : {i // p i} → ℝ) (M : Matrix ι ι ℝ) (i : ι) {r : ι} (hr : ¬ p r) :
     (M * (1 - β • vecMulVec (extendByZero p v) (extendByZero p v))) i r = M i r := by
@@ -1579,7 +1782,8 @@ private theorem mul_one_sub_smul_vecMulVec_extendByZero_apply_of_not (β : ℝ)
   rw [transpose_mul, transpose_one_sub_smul_vecMulVec]
   exact one_sub_smul_vecMulVec_extendByZero_mul_apply_of_not β v Mᵀ hr i
 
-/-- Right multiplication by the extended reflector acts on the columns of the block. -/
+/-- Right multiplication by the extension of $I - \beta v v^T$ by the identity acts on each row
+restricted to the block as $I - \beta v v^T$. -/
 private theorem mul_one_sub_smul_vecMulVec_extendByZero_apply (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) (i : ι) (a : {i // p i}) :
     (M * (1 - β • vecMulVec (extendByZero p v) (extendByZero p v))) i (a : ι) =
@@ -1588,7 +1792,8 @@ private theorem mul_one_sub_smul_vecMulVec_extendByZero_apply (β : ℝ) (v : {i
   rw [transpose_mul, transpose_one_sub_smul_vecMulVec]
   exact one_sub_smul_vecMulVec_extendByZero_mul_apply β v Mᵀ a i
 
-/-- Conjugation by the extended reflector, off the block in both indices. -/
+/-- Conjugation by the extension $P'$ of $I - \beta v v^T$ fixes the entries whose row and column
+are both off the block. -/
 private theorem conj_extendByZero_apply_of_not_of_not (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) {i j : ι} (hi : ¬ p i) (hj : ¬ p j) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M *
@@ -1596,7 +1801,8 @@ private theorem conj_extendByZero_apply_of_not_of_not (β : ℝ) (v : {i // p i}
   rw [mul_one_sub_smul_vecMulVec_extendByZero_apply_of_not β v _ i hj,
     one_sub_smul_vecMulVec_extendByZero_mul_apply_of_not β v M hi j]
 
-/-- Conjugation by the extended reflector, a row of the block and a column off it. -/
+/-- Conjugation by the extension $P'$ of $P = I - \beta v v^T$, in a row of the block and a column
+off it, is $P$ applied to that column restricted to the block. -/
 private theorem conj_extendByZero_apply_of_not_right (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) (a : {i // p i}) {j : ι} (hj : ¬ p j) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M *
@@ -1605,7 +1811,8 @@ private theorem conj_extendByZero_apply_of_not_right (β : ℝ) (v : {i // p i} 
   rw [mul_one_sub_smul_vecMulVec_extendByZero_apply_of_not β v _ _ hj,
     one_sub_smul_vecMulVec_extendByZero_mul_apply β v M a j]
 
-/-- Conjugation by the extended reflector, a row off the block and a column of it. -/
+/-- Conjugation by the extension $P'$ of $P = I - \beta v v^T$, in a row off the block and a column
+of it, is $P$ applied to that row restricted to the block. -/
 private theorem conj_extendByZero_apply_of_not_left (β : ℝ) (v : {i // p i} → ℝ)
     (M : Matrix ι ι ℝ) {i : ι} (hi : ¬ p i) (b : {i // p i}) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M *
@@ -1616,7 +1823,8 @@ private theorem conj_extendByZero_apply_of_not_left (β : ℝ) (v : {i // p i} �
   funext c
   exact one_sub_smul_vecMulVec_extendByZero_mul_apply_of_not β v M hi c
 
-/-- Conjugation by the extended reflector on the block is conjugation of the block. -/
+/-- Conjugation by the extension $P'$ of $P = I - \beta v v^T$ on the block is the conjugation
+$P M_{TT} P$ of the block $M_{TT}$. -/
 private theorem conj_extendByZero_apply (β : ℝ) (v : {i // p i} → ℝ) (M : Matrix ι ι ℝ)
     (a b : {i // p i}) :
     ((1 - β • vecMulVec (extendByZero p v) (extendByZero p v)) * M *
@@ -1636,7 +1844,8 @@ private theorem conj_extendByZero_apply (β : ℝ) (v : {i // p i} → ℝ) (M :
   exact Finset.sum_congr rfl fun c _ => by rw [hs c]; ring
 
 omit [Fintype ι] in
-/-- The entries of `δ (e_a e_bᵀ + e_b e_aᵀ)` for `a ≠ b`. -/
+/-- For $a \neq b$, the entries of $\delta (e_a e_b^T + e_b e_a^T)$ are $\delta$ at $(a, b)$ and
+$(b, a)$, and $0$ elsewhere. -/
 private theorem smul_vecMulVec_single_add_apply {a b : ι} (h : b ≠ a) (δ : ℝ) (i j : ι) :
     (δ • (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1) +
       vecMulVec (Pi.single b (1 : ℝ)) (Pi.single a 1))) i j =
@@ -1645,7 +1854,7 @@ private theorem smul_vecMulVec_single_add_apply {a b : ι} (h : b ≠ a) (δ : �
   by_cases h1 : i = a <;> by_cases h2 : j = b <;> by_cases h3 : i = b <;>
     by_cases h4 : j = a <;> simp_all
 
-/-- `‖δ (e_a e_bᵀ + e_b e_aᵀ)‖_F ≤ 2 |δ|`. -/
+/-- $\|\delta (e_a e_b^T + e_b e_a^T)\|_F \le 2 |\delta|$. -/
 private theorem frobenius_norm_smul_vecMulVec_single_add_le (δ : ℝ) (a b : ι) :
     ‖δ • (vecMulVec (Pi.single a (1 : ℝ)) (Pi.single b 1) +
       vecMulVec (Pi.single b (1 : ℝ)) (Pi.single a 1))‖ ≤ 2 * |δ| := by
@@ -1659,8 +1868,9 @@ private theorem frobenius_norm_smul_vecMulVec_single_add_le (δ : ℝ) (a b : ι
   nlinarith
 
 omit [DecidableEq ι] in
-/-- The computed Euclidean norm `fl(√fl(xᵀx))` against `‖x‖₂`: if `n ≤ N` for `n = card κ` and
-`(2N + 2) u < 1`, then `|ν̂ - ‖x‖₂| ≤ γ_{N+1} ‖x‖₂`, and so `≤ γ_{N+1} a` for any `a ≥ ‖x‖₂`. -/
+/-- The computed Euclidean norm $\hat\nu = \mathrm{fl}(\sqrt{\mathrm{fl}(x^T x)})$ of
+$x \in \mathbb{R}^\kappa$: if $\kappa$ has at most $N$ elements and $(2N + 2) u < 1$, then
+$|\hat\nu - \|x\|_2| \le \gamma_{N+1} a$ for every $a \ge \|x\|_2$. -/
 private theorem abs_rounds_sqrt_sub_norm_le {κ : Type*} [Fintype κ] {m : RoundingModel ℝ}
     {N : ℕ} (hN : Fintype.card κ ≤ N) (hcard : ((2 * N + 2 : ℕ) : ℝ) * m.u < 1) {x : κ → ℝ}
     {σ ν : ℝ} (hσ : RoundsDot m x x σ) (hν : m.Rounds (√σ) ν) {a : ℝ}
@@ -1696,13 +1906,18 @@ section SymmRankTwo
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The symmetric rank-two update in floating-point arithmetic** ([golub2013matrix] §8.3.1,
-Algorithm 8.3.1): for computed reflector data `(β, v)` and a symmetric `B`,
-`RoundsSymmRankTwoUpdate m β v B B'` says that `p̂_i = fl(β fl(B_i ⬝ v))` (the inner product a
-`RoundsDot`), `ŝ = fl(p̂ ⬝ v)`, `t̂ = fl(fl(β ŝ) / 2)`, `ŵ_i = fl(p̂_i - fl(t̂ v_i))`, and every
-entry of `B'` is `fl(fl(B_rs - fl(v_r ŵ_s)) - fl(ŵ_r v_s))` for `(r, s)` the entry itself or its
-mirror image, `B'` being symmetric: one triangle is computed and mirrored, as the book says
-(which triangle does not matter). -/
+/-- The **computed symmetric rank-two update** of [golub2013matrix], §8.3.1, Algorithm 8.3.1. For
+computed reflector data $(\beta, v)$ and a symmetric matrix $B$, the matrix $B'$ is a computed
+update if there are $\hat p$, $\hat s$, $\hat t$ and $\hat w$ with
+$$\hat p_i = \mathrm{fl}\bigl(\beta\, \mathrm{fl}(B_{i,:} v)\bigr), \quad \hat s =
+  \mathrm{fl}(\hat p^T v), \quad \hat t = \mathrm{fl}\bigl(\mathrm{fl}(\beta \hat s) / 2\bigr),
+  \quad \hat w_i = \mathrm{fl}\bigl(\hat p_i - \mathrm{fl}(\hat t v_i)\bigr),$$
+where the inner products are `FloatingPoint.RoundsDot`, if every entry $B'_{ij}$ is
+$\mathrm{fl}\bigl(\mathrm{fl}(B_{rs} - \mathrm{fl}(v_r \hat w_s)) - \mathrm{fl}(\hat w_r
+v_s)\bigr)$ for $(r, s) = (i, j)$ or $(r, s) = (j, i)$, and if $B'$ is symmetric.
+
+The exact counterpart is $P B P$ with $P = I - \beta v v^T$. As in the source, one triangle is
+computed and mirrored; the relation does not fix which triangle. -/
 def RoundsSymmRankTwoUpdate (m : RoundingModel ℝ) (β : ℝ) (v : ι → ℝ) (B B' : Matrix ι ι ℝ) :
     Prop :=
   ∃ (phat what : ι → ℝ) (shat that : ℝ),
@@ -1714,17 +1929,21 @@ def RoundsSymmRankTwoUpdate (m : RoundingModel ℝ) (β : ℝ) (v : ι → ℝ) 
       m.Rounds (B r s - a) b ∧ m.Rounds (what r * v s) c ∧ m.Rounds (b - c) (B' i j)) ∧
     ∀ i j, B' j i = B' i j
 
-/-- `|∑ y - ∑ x| ≤ γ_K ∑ |x|` when every `y j` is a relative perturbation of order `K` of
-`x j`. -/
+/-- If every $y_j$ is a relative perturbation of order $K$ of $x_j$, then $|\sum_j y_j - \sum_j x_j|
+\le \gamma_K \sum_j |x_j|$. -/
 private theorem abs_sum_sub_sum_le {κ : Type*} [Fintype κ] {u : ℝ} {K : ℕ} {x y : κ → ℝ}
     (h : ∀ j, IsRelPert u K (x j) (y j)) : |∑ j, y j - ∑ j, x j| ≤ gamma u K * ∑ j, |x j| := by
   rw [← Finset.sum_sub_distrib, Finset.mul_sum]
   exact (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun j _ => (h j).abs_sub_le)
 
-/-- One entry of the computed symmetric rank-two update against its exact value: with `v̂`
-perturbations of order `k` of `v` and `ŵ` within `γ_g W` of `w`, `|w| ≤ W`,
-`|fl(fl(B_rs - fl(v̂_r ŵ_s)) - fl(ŵ_r v̂_s)) - (B_rs - v_r w_s - w_r v_s)|` is at most
-`γ_{g+k+3} (|B_rs| + |v_r| W_s + W_r |v_s|)`. -/
+/-- One entry of the computed symmetric rank-two update against its exact value: if
+$\hat v_r, \hat v_s$ are relative perturbations of order $k$ of $v_r, v_s$, if
+$|\hat w_r - w_r| \le \gamma_g W_r$ and $|w_r| \le W_r$ (and the same for $s$), and
+$(g + k + 3) u < 1$, then
+$$\bigl|\mathrm{fl}\bigl(\mathrm{fl}(B_{rs} - \mathrm{fl}(\hat v_r \hat w_s)) - \mathrm{fl}(\hat
+  w_r \hat v_s)\bigr) - (B_{rs} - v_r w_s - w_r v_s)\bigr| \le \gamma_{g+k+3} (|B_{rs}| + |v_r|
+  W_s + W_r |v_s|).$$
+-/
 private theorem abs_rounds_sub_sub_sub_le {m : RoundingModel ℝ} {k g : ℕ}
     (hcard : ((g + k + 3 : ℕ) : ℝ) * m.u < 1)
     {vr vs vhr vhs wr ws whr whs Wr Ws Brs a b c e : ℝ}
@@ -1833,8 +2052,9 @@ private theorem abs_rounds_sub_sub_sub_le {m : RoundingModel ℝ} {k g : ℕ}
     _ ≤ H * |Brs| + H * (|vr| * Ws) + H * (|vs| * Wr) := by linarith
     _ = H * (|Brs| + |vr| * Ws + Wr * |vs|) := by ring
 
-/-- A Frobenius bound from an entrywise one: `|E_ij| ≤ c (|B_ij| + x_i y_j + y_i x_j)` with `x, y`
-nonnegative gives `‖E‖_F ≤ c (‖B‖_F + 2 ‖x‖₂ ‖y‖₂)`. -/
+/-- A Frobenius bound from an entrywise one: if $x, y \ge 0$ and
+$|E_{ij}| \le c (|B_{ij}| + x_i y_j + y_i x_j)$ for all $i, j$, with $c \ge 0$, then
+$\|E\|_F \le c (\|B\|_F + 2 \|x\|_2 \|y\|_2)$. -/
 private theorem frobenius_norm_le_of_forall_abs_le_add_vecMulVec {E B : Matrix ι ι ℝ}
     {x y : ι → ℝ} {c : ℝ} (hc : 0 ≤ c) (hx : ∀ i, 0 ≤ x i) (hy : ∀ i, 0 ≤ y i)
     (h : ∀ i j, |E i j| ≤ c * (|B i j| + x i * y j + y i * x j)) :
@@ -1860,9 +2080,10 @@ private theorem frobenius_norm_le_of_forall_abs_le_add_vecMulVec {E B : Matrix �
       · exact frobenius_norm_vecMulVec_le _ _
     _ = _ := by ring
 
-/-- The error of `ŵ_i = fl(p̂_i - τ̂_i)` in the symmetric rank-two update: with
-`|p̂ - p| ≤ γ_A X`, `|τ̂ - τ| ≤ γ_C Y`, `|p| ≤ X`, `|τ| ≤ Y`, `γ_A ≤ γ_C` and one more rounding
-`δ`, the error against `p - τ` is at most `(γ_C (1 + u) + u) (X + Y)`. -/
+/-- The error of $\hat w_i = \mathrm{fl}(\hat p_i - \hat\tau_i)$ in the symmetric rank-two update:
+if $|\hat p - p| \le \gamma_A X$, $|\hat\tau - \tau| \le \gamma_C Y$, $|p| \le X$,
+$|\tau| \le Y$, $0 \le \gamma_A \le \gamma_C$, $X, Y \ge 0$ and $|\delta| \le u$, then $|(\hat
+p - \hat\tau)(1 + \delta) - (p - \tau)| \le (\gamma_C (1 + u) + u)(X + Y)$. -/
 private theorem abs_sub_mul_one_add_sub_le {u γA γC X Y ph p τh τ δ : ℝ} (hγA : 0 ≤ γA)
     (hAC : γA ≤ γC) (hX : 0 ≤ X) (hY : 0 ≤ Y) (hp : |ph - p| ≤ γA * X) (hτ : |τh - τ| ≤ γC * Y)
     (hpX : |p| ≤ X) (hτY : |τ| ≤ Y) (hδ : |δ| ≤ u) :
@@ -1885,8 +2106,8 @@ private theorem abs_sub_mul_one_add_sub_le {u γA γC X Y ph p τh τ δ : ℝ} 
     _ ≤ γC * X + γC * Y + (1 + γC) * (X + Y) * u := by linarith
     _ = (γC * (1 + u) + u) * (X + Y) := by ring
 
-/-- The size estimate of the symmetric rank-two update: if `b ‖x‖² ≤ 2` (here `b = |β|`),
-`‖B v‖ ≤ ‖B‖ ‖v‖`, `Q ≤ ‖v‖² ‖B‖` and `‖W‖ ≤ b ‖B v‖ + b² Q ‖v‖ / 2`, then `‖v‖ ‖W‖ ≤ 4 ‖B‖`. -/
+/-- The size estimate of the symmetric rank-two update: if $b, x, N_B \ge 0$, $b x^2 \le 2$,
+$b_v \le N_B x$, $Q \le x (N_B x)$ and $w \le b\, b_v + b^2 Q x / 2$, then $x w \le 4 N_B$. -/
 private theorem mul_le_four_mul_of_le {b x NB bv Q wn : ℝ} (hb : 0 ≤ b) (hx : 0 ≤ x)
     (hNB : 0 ≤ NB) (hbx : b * x ^ 2 ≤ 2) (hbv : bv ≤ NB * x) (hQ : Q ≤ x * (NB * x))
     (hwn : wn ≤ b * bv + b * b * Q / 2 * x) : x * wn ≤ 4 * NB := by
@@ -1908,13 +2129,17 @@ private theorem mul_le_four_mul_of_le {b x NB bv Q wn : ℝ} (hb : 0 ≤ b) (hx 
   have h6 : y ^ 2 * NB ≤ 4 * NB := mul_le_mul_of_nonneg_right h4 hNB
   linarith
 
-/-- **Backward error of the computed symmetric rank-two update** ([golub2013matrix] §8.3.1): if
-`(β̂, v̂)` are relative perturbations of order `k` of exact data `(β, v)` with `|β| ‖v‖₂² ≤ 2`,
-`B` is symmetric, `(6k + 2n + 8) u < 1` and `RoundsSymmRankTwoUpdate m β̂ v̂ B B'`, then `B'` is
-symmetric and `‖B' - P B P‖_F ≤ 9 γ_{6k+2n+8} ‖B‖_F` for `P = 1 - β v vᵀ`. Entrywise,
-`|B'_ij - (P B P)_ij| ≤ γ (|B_ij| + |v_i| W_j + W_i |v_j|)` with `W_i = |β| (|B||v|)_i +
-|β|² (|v|ᵀ|B||v|) |v_i| / 2` bounding `w` and its computed value, and `‖v‖₂ ‖W‖₂ ≤ 4 ‖B‖_F`
-because `|β| ‖v‖₂² ≤ 2`. -/
+/-- **Backward error of the computed symmetric rank-two update** ([golub2013matrix], §8.3.1). Let
+$\iota$ have $n$ elements, let $(6k + 2n + 8) u < 1$, let $\beta \in \mathbb{R}$ and
+$v \in \mathbb{R}^\iota$ with $|\beta| \, v^T v \le 2$, and let $\hat\beta$ and every $\hat v_i$
+be relative perturbations of order $k$ of $\beta$ and $v_i$. If $B$ is symmetric and $B'$ is a
+computed symmetric rank-two update of $B$ with the data $(\hat\beta, \hat v)$, then $B'$ is
+symmetric and
+$$\|B' - P B P\|_F \le 9 \gamma_{6k+2n+8} \|B\|_F, \qquad P = I - \beta v v^T.$$
+
+Entrywise, $|B'_{ij} - (P B P)_{ij}| \le \gamma (|B_{ij}| + |v_i| W_j + W_i |v_j|)$, where
+$W_i = |\beta| (|B| |v|)_i + |\beta|^2 (|v|^T |B| |v|) |v_i| / 2$ bounds both $w$ and its
+computed value. Since $|\beta| \, \|v\|_2^2 \le 2$, $\|v\|_2 \|W\|_2 \le 4 \|B\|_F$. -/
 theorem frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate {m : RoundingModel ℝ} {k : ℕ}
     (hcard : ((6 * k + 2 * Fintype.card ι + 8 : ℕ) : ℝ) * m.u < 1) {β βhat : ℝ}
     {v vhat : ι → ℝ} (hβ : IsRelPert m.u k β βhat) (hv : ∀ i, IsRelPert m.u k (v i) (vhat i))
@@ -2121,17 +2346,26 @@ open scoped Matrix.Norms.Frobenius
 
 variable {N : ℕ}
 
-/-- **One step of the Householder reduction to Hessenberg form, generic in the reflector formula
-and in the application of the reflector** (step `k` of [golub2013matrix] Algorithm 7.4.2 and of
-[quarteroni2000numerical] Program 29). With the active rows `T = {i // k + 1 ≤ i}` and `x` the
-tail of column `k` on `T`: the computed reflector data `(v̂, β̂)` satisfy `Refl x v̂ β̂`; every
-column `j ≥ k` of `A` is updated on `T` by `App β̂ v̂`, the entries of column `k` in the rows
-`≥ k + 2` being set to zero (those entries are never read again), giving `C`, equal to `A` in the
-rows outside `T` and in the columns `< k`; then every row of `C` is updated on the columns of `T`
-by `App β̂ v̂`, giving `B`, equal to `C` in the columns outside `T`. Rows and columns outside `T`
-are not re-rounded, since no program touches them. Instances: `RoundsHessenbergStepPert`
-(any reflector formula, [golub2013matrix]'s association) and `RoundsHessenbergStep`
-([higham2002accuracy]'s vector and association). -/
+/-- **One step of the Householder reduction to Hessenberg form, for a given reflector formula and a
+given application of the reflector** (step $k$ of [golub2013matrix], Algorithm 7.4.2, and of
+[quarteroni2000numerical], Program 29). Let $A, B \in \mathbb{R}^{N \times N}$ with $k + 1 < N$,
+let $T = \{i : k + 1 \le i\}$ be the active rows, and let $x$ be the tail of column $k$ of $A$
+on $T$. The matrix $B$ is a computed step from $A$ if there are $(\hat v, \hat\beta)$ and an
+intermediate matrix $C$ such that:
+
+* the reflector data satisfy $\mathrm{Refl}(x, \hat v, \hat\beta)$;
+* for every column $j \ge k$, column $j$ of $C$ on $T$ is a computed application
+  $\mathrm{App}(\hat\beta, \hat v)$ to column $j$ of $A$ on $T$, except that the entries of
+  column $k$ in the rows $i \ge k + 2$ are $0$;
+* $C_{ij} = A_{ij}$ for the rows $i < k + 1$ and for the columns $j < k$;
+* for every row $i$, row $i$ of $B$ on the columns of $T$ is a computed application
+  $\mathrm{App}(\hat\beta, \hat v)$ to row $i$ of $C$ on the columns of $T$;
+* $B_{ij} = C_{ij}$ for the columns $j < k + 1$.
+
+The zeroed entries are never read again. Rows and columns outside $T$ are not rounded again,
+since no program touches them. `FloatingPoint.RoundsHessenbergStepPert` (any reflector formula,
+the association of [golub2013matrix]) and `FloatingPoint.RoundsHessenbergStep` (the vector and
+the association of [higham2002accuracy]) are instances. -/
 def RoundsHessenbergStepOf {k : ℕ} (hk : k + 1 < N)
     (Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
       Prop)
@@ -2150,8 +2384,8 @@ def RoundsHessenbergStepOf {k : ℕ} (hk : k + 1 < N)
       ∀ j : {i : Fin N // k + 1 ≤ (i : ℕ)}, B i j = z j) ∧
     (∀ i j : Fin N, (j : ℕ) < k + 1 → B i j = C i j)
 
-/-- A computed step keeps the reduced columns: if `A` vanishes below the first subdiagonal in the
-columns `j < k`, then `B` does in the columns `j < k + 1`. -/
+/-- A computed step keeps the reduced columns: if $A$ vanishes below the first subdiagonal in the
+columns $j < k$, then $B$ vanishes below the first subdiagonal in the columns $j < k + 1$. -/
 theorem RoundsHessenbergStepOf.apply_eq_zero {k : ℕ} {hk : k + 1 < N}
     {Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
       Prop}
@@ -2170,14 +2404,24 @@ theorem RoundsHessenbergStepOf.apply_eq_zero {k : ℕ} {hk : k + 1 < N}
     rw [ite_eq_left ⟨hjk, by simp; omega⟩] at this
     exact this
 
-/-- **The backward error of one computed step of the Householder Hessenberg reduction, generic
-in the reflector formula and the application**: if the reflector data of `Refl` are
-`IsReflectorPert` data of some order `K`, and every application `App` of data within order `K`
-of an exact reflector `P` is within `ε` of `P b` (Lemma 19.2 of [higham2002accuracy]), then, when
-`A` vanishes below the first subdiagonal in the columns `< k`, there is a symmetric orthogonal
-`P`, the identity on the rows (and columns) `≤ k` — the exact reflector extended by the
-identity — with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`: the bound on each column and each row
-of the active block, combined through the orthogonal invariance of the Frobenius norm. -/
+/-- **The backward error of one computed step of the Householder reduction to Hessenberg form, for a
+given reflector formula and a given application.** Let $\varepsilon \ge 0$, and assume:
+
+* every output $(\hat v, \hat\beta)$ of $\mathrm{Refl}$ for $x$ is reflector data of order $K$
+  for $x$, the pivot $k + 1$ and some target (`FloatingPoint.IsReflectorPert`);
+* every computed application $\mathrm{App}(\hat\beta, \hat v)$ to $b$, where
+  $(\hat\beta, \hat v)$ are relative perturbations of order $K$ of exact data $(\beta, v)$ with
+  $|\beta| \, v^T v \le 2$, is within $\varepsilon \|b\|_2$ of $(I - \beta v v^T) b$ in the
+  Euclidean norm, as in Lemma 19.2 of [higham2002accuracy].
+
+If $A$ vanishes below the first subdiagonal in the columns $j < k$ and $B$ is a computed step
+from $A$, then there is a symmetric orthogonal $P$ that agrees with the identity in the rows
+$i < k + 1$ with
+$$\|B - P A P\|_F \le ((1 + \varepsilon)^2 - 1) \|A\|_F.$$
+
+The matrix $P$ is the exact reflector of the step, extended by the identity. The bounds on each
+column and on each row of the active block combine through the orthogonal invariance of the
+Frobenius norm. -/
 theorem RoundsHessenbergStepOf.frobenius_norm_sub_le {u : ℝ} {K k : ℕ} {hk : k + 1 < N}
     {Refl : ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ({i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) → ℝ →
       Prop}
@@ -2253,12 +2497,20 @@ theorem RoundsHessenbergStepOf.frobenius_norm_sub_le {u : ℝ} {K k : ℕ} {hk :
   clear_value P
   exact frobenius_norm_sub_mul_mul_le_of_col_of_row hPo hε0 hcolb hrowb
 
-/-- **Wilkinson's bound from the per-step bounds** of a Householder reduction to Hessenberg form
-([higham2002accuracy] Theorem 19.4, [golub2013matrix] §7.4.3): if every step `k < N - 2` keeps
-the reduced columns and, from a matrix reduced in the columns `< k`, is within
-`((1 + ε)² - 1) ‖Â_k‖_F` of `P Â_k P` for a symmetric orthogonal `P`, and `2 (N - 2) ε < 1`, then
-`Â_{N-2}` is upper Hessenberg and `Â_{N-2} = Qᵀ (Â_0 + E) Q` with `Q` orthogonal and
-`‖E‖_F ≤ γ_{2(N-2)}(ε) ‖Â_0‖_F`: the `2 (N - 2)` counts the two sweeps of each step. -/
+/-- **Wilkinson's bound from the bounds on each step** of a Householder reduction to Hessenberg form
+([higham2002accuracy] Theorem 19.4, [golub2013matrix] §7.4.3). Let $\varepsilon \ge 0$ with
+$2 (N - 2) \varepsilon < 1$, and let $\hat A_0, \hat A_1, \dots \in \mathbb{R}^{N \times N}$.
+Assume that for every step $k < N - 2$ with $\hat A_k$ upper Hessenberg in the columns $j < k$:
+
+* $\hat A_{k+1}$ is upper Hessenberg in the columns $j < k + 1$;
+* there is a symmetric orthogonal $P$ with $\|\hat A_{k+1} - P \hat A_k P\|_F \le ((1 +
+  \varepsilon)^2 - 1) \|\hat A_k\|_F$.
+
+Then $\hat A_{N-2}$ is upper Hessenberg, and there are an orthogonal $Q$ and an $E$ with
+$$\hat A_{N-2} = Q^T (\hat A_0 + E) Q, \qquad \|E\|_F \le \gamma_{2(N-2)}(\varepsilon) \|\hat
+  A_0\|_F,$$
+where $\gamma_r(\varepsilon) = r \varepsilon / (1 - r \varepsilon)$. The index $2 (N - 2)$
+counts the two sweeps of each step. -/
 theorem exists_hessenbergReduce_eq_of_forall_step {Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ}
     {ε : ℝ} (hε0 : 0 ≤ ε) (hr : ((2 * (N - 2) : ℕ) : ℝ) * ε < 1)
     (hz : ∀ k, k < N - 2 →
@@ -2285,37 +2537,43 @@ theorem exists_hessenbergReduce_eq_of_forall_step {Ahat : ℕ → Matrix (Fin N)
   rw [hpow]
   exact one_add_pow_sub_one_le_gamma hε0 hr
 
-/-- **One step of the Householder reduction to Hessenberg form, in [golub2013matrix]'s
-association and for any reflector-vector formula** (Algorithm 7.4.2, step `k`): the reflector
-data are `IsReflectorPert` data of order `K` for the tail of column `k`, and every update is
-`RoundsHouseholderApplyScaled` (`RoundsHessenbergStepOf`). -/
+/-- **One step of the Householder reduction to Hessenberg form in the association of
+[golub2013matrix], for any reflector-vector formula** (Algorithm 7.4.2, step $k$). It is
+`FloatingPoint.RoundsHessenbergStepOf` in which the reflector data are reflector data of order
+$K$ (`FloatingPoint.IsReflectorPert`) for the tail of column $k$, the pivot $k + 1$ and some
+target, and every update is `FloatingPoint.RoundsHouseholderApplyScaled`. -/
 def RoundsHessenbergStepPert (m : RoundingModel ℝ) (K : ℕ) {k : ℕ} (hk : k + 1 < N)
     (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
   RoundsHessenbergStepOf hk
     (fun x vhat βhat => ∃ c, IsReflectorPert m.u K x ⟨⟨k + 1, hk⟩, le_rfl⟩ c vhat βhat)
     (RoundsHouseholderApplyScaled m) A B
 
-/-- **The Householder reduction to Hessenberg form, for any reflector formula**:
-`Â_0 = A` and `Â_{k+1}` is a computed step `RoundsHessenbergStepPert` from `Â_k` for the
-`N - 2` steps `k < N - 2`. -/
+/-- **The Householder reduction to Hessenberg form, for any reflector formula**: $\hat A_0 = A$, and
+$\hat A_{k+1}$ is a computed step `FloatingPoint.RoundsHessenbergStepPert` from $\hat A_k$ for
+each of the $N - 2$ steps $k < N - 2$. -/
 def RoundsHessenbergReducePert (m : RoundingModel ℝ) (K : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
   Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
     RoundsHessenbergStepPert m K (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
 
-/-- A computed step keeps the reduced columns: if `A` vanishes below the first subdiagonal in the
-columns `j < k`, then `B` does in the columns `j < k + 1`. -/
+/-- A computed step of `FloatingPoint.RoundsHessenbergStepPert` keeps the reduced columns: if $A$
+vanishes below the first subdiagonal in the columns $j < k$, then $B$ vanishes below the first
+subdiagonal in the columns $j < k + 1$. -/
 theorem RoundsHessenbergStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
     {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStepPert m K hk A B)
     (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
   RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
 
-/-- **The backward error of one computed step of the Householder Hessenberg reduction, for any
-reflector formula**: if `(3K + N + 3) u < 1` and `A` vanishes below the first subdiagonal in the
-columns `< k`, there is a symmetric orthogonal `P`, the identity on the rows (and columns) `≤ k`,
-with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`, `ε = 3 γ_{3K+N+3}`: `RoundsHessenbergStepOf` with
-[higham2002accuracy] Lemma 19.2 (`norm_sub_le_of_roundsHouseholderApplyScaled`) on the active
+/-- **The backward error of one computed step of the Householder reduction to Hessenberg form, for
+any reflector formula.** Let $(3K + N + 3) u < 1$ and $\varepsilon = 3 \gamma_{3K+N+3}$. If $A$
+vanishes below the first subdiagonal in the columns $j < k$ and $B$ is a computed step
+`FloatingPoint.RoundsHessenbergStepPert` from $A$, then there is a symmetric orthogonal $P$ that
+agrees with the identity in the rows $i < k + 1$ with
+$$\|B - P A P\|_F \le ((1 + \varepsilon)^2 - 1) \|A\|_F.$$
+
+This is `FloatingPoint.RoundsHessenbergStepOf.frobenius_norm_sub_le` with Lemma 19.2 of
+[higham2002accuracy] (`FloatingPoint.norm_sub_le_of_roundsHouseholderApplyScaled`) on the active
 block. -/
 theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((3 * K + N + 3 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
@@ -2337,11 +2595,14 @@ theorem RoundsHessenbergStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {
         (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left
           (gamma_mono hu0 (by omega) hcard) (by norm_num)) (norm_nonneg _))) h hA
 
-/-- **Backward stability of the Householder Hessenberg reduction, for any reflector formula**
-([golub2013matrix] §7.4.3, citing Wilkinson; [higham2002accuracy] Theorem 19.4): if
-`(3K + N + 3) u < 1` and `2 (N - 2) ε < 1` for `ε = 3 γ_{3K+N+3}`, the computed
-`Ĥ = Â_{N-2}` of `RoundsHessenbergReducePert` is upper Hessenberg and `Ĥ = Qᵀ (A + E) Q` with `Q`
-orthogonal and `‖E‖_F ≤ γ_{2(N-2)}(ε) ‖A‖_F`, the book's `c n² u ‖A‖_F` with `c` explicit. -/
+/-- **Backward stability of the Householder reduction to Hessenberg form, for any reflector
+formula** ([golub2013matrix] §7.4.3, citing Wilkinson; [higham2002accuracy] Theorem 19.4). Let
+$(3K + N + 3) u < 1$ and $2 (N - 2) \varepsilon < 1$, where $\varepsilon = 3 \gamma_{3K+N+3}$.
+If $\hat A$ is a computed reduction of $A$ (`FloatingPoint.RoundsHessenbergReducePert`), then
+$\hat H = \hat A_{N-2}$ is upper Hessenberg, and there are an orthogonal $Q$ and an $E$ with
+$$\hat H = Q^T (A + E) Q, \qquad \|E\|_F \le \gamma_{2(N-2)}(\varepsilon) \|A\|_F,$$
+where $\gamma_r(\varepsilon) = r \varepsilon / (1 - r \varepsilon)$. This is the bound
+$c n^2 u \|A\|_F$ of the source, with an explicit $c$. -/
 theorem exists_roundsHessenbergReducePert_eq {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((3 * K + N + 3 : ℕ) : ℝ) * m.u < 1)
     (hr : ((2 * (N - 2) : ℕ) : ℝ) * (3 * gamma m.u (3 * K + N + 3)) < 1)
@@ -2357,11 +2618,12 @@ theorem exists_roundsHessenbergReducePert_eq {m : RoundingModel ℝ} {K : ℕ}
       obtain ⟨P, hP, hPs, -, hb⟩ := (hstep k hk).frobenius_norm_sub_le hcard hA
       exact ⟨P, hP, hPs, hb⟩
 
-/-- **One step of the Householder reduction to Hessenberg form in [higham2002accuracy]'s
-operation order** ([quarteroni2000numerical] §5.6.2, Program 29, step `k`; [higham2002accuracy]
-Theorem 19.4's conventions): the reflector data are the computed Householder vector
-`RoundsHouseholderVector` of the tail of column `k` below the pivot `k + 1`, and every update is
-`RoundsHouseholderApply` (`RoundsHessenbergStepOf`). -/
+/-- **One step of the Householder reduction to Hessenberg form in the operation order of
+[higham2002accuracy]** ([quarteroni2000numerical] §5.6.2, Program 29, step $k$, in the
+conventions of [higham2002accuracy], Theorem 19.4). It is `FloatingPoint.RoundsHessenbergStepOf`
+in which the reflector data are the computed Householder vector
+`FloatingPoint.RoundsHouseholderVector` of the tail of column $k$ for the pivot $k + 1$, and
+every update is `FloatingPoint.RoundsHouseholderApply`. -/
 def RoundsHessenbergStep (m : RoundingModel ℝ) {k : ℕ} (hk : k + 1 < N)
     (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
   RoundsHessenbergStepOf hk
@@ -2369,28 +2631,34 @@ def RoundsHessenbergStep (m : RoundingModel ℝ) {k : ℕ} (hk : k + 1 < N)
     (RoundsHouseholderApply m) A B
 
 /-- **The Householder reduction to Hessenberg form in floating-point arithmetic**
-([quarteroni2000numerical] §5.6.2, Program 29): `Â_0 = A` and `Â_{k+1}` is a computed step
-`RoundsHessenbergStep` from `Â_k`, for the `n - 2` steps `k < n - 2`; the computed Hessenberg
-matrix is `Ĥ = Â_{n-2}`. -/
+([quarteroni2000numerical] §5.6.2, Program 29): $\hat A_0 = A$, and $\hat A_{k+1}$ is a computed
+step `FloatingPoint.RoundsHessenbergStep` from $\hat A_k$ for each of the $N - 2$ steps
+$k < N - 2$. The computed Hessenberg matrix is $\hat H = \hat A_{N-2}$. -/
 def RoundsHessenbergReduce (m : RoundingModel ℝ) (A : Matrix (Fin N) (Fin N) ℝ)
     (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
   Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
     RoundsHessenbergStep m (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
 
-/-- A computed step keeps the Hessenberg structure of the columns already reduced and adds
-column `k`. -/
+/-- A computed step of `FloatingPoint.RoundsHessenbergStep` keeps the reduced columns: if $A$
+vanishes below the first subdiagonal in the columns $j < k$, then $B$ vanishes below the first
+subdiagonal in the columns $j < k + 1$. -/
 theorem RoundsHessenbergStep.apply_eq_zero {m : RoundingModel ℝ} {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
     (hA : A.IsUpperHessenbergInCols k) (i j : Fin N)
     (hj : (j : ℕ) < k + 1) (hij : (j : ℕ) + 1 < (i : ℕ)) : B i j = 0 :=
   RoundsHessenbergStepOf.apply_eq_zero h hA i j hj hij
 
-/-- **The backward error of one computed step of the Householder reduction**: if `A` vanishes
-below the first subdiagonal in the columns `j < k` and `(13 n + 27) u < 1`, there is a symmetric
-orthogonal `P`, the identity on the rows `≤ k`, with `‖B - P A P‖_F ≤ ((1 + ε)² - 1) ‖A‖_F`,
-`ε = 3 γ_{13n+27}`: `RoundsHessenbergStepOf` with the computed vector as reflector data of order
-`4n + 8` (Lemma 19.1, `RoundsHouseholderVector.isReflectorPert`) and Lemma 19.2
-(`norm_sub_le_of_roundsHouseholderApply`), `3 (4n + 8) + n + 3 = 13n + 27`. -/
+/-- **The backward error of one computed step of the Householder reduction to Hessenberg form.** Let
+$(13N + 27) u < 1$ and $\varepsilon = 3 \gamma_{13N+27}$. If $A$ vanishes below the first
+subdiagonal in the columns $j < k$ and $B$ is a computed step
+`FloatingPoint.RoundsHessenbergStep` from $A$, then there is a symmetric orthogonal $P$ that
+agrees with the identity in the rows $i < k + 1$ with
+$$\|B - P A P\|_F \le ((1 + \varepsilon)^2 - 1) \|A\|_F.$$
+
+This is `FloatingPoint.RoundsHessenbergStepOf.frobenius_norm_sub_le` with the computed vector as
+reflector data of order $4N + 8$ (Lemma 19.1,
+`FloatingPoint.RoundsHouseholderVector.isReflectorPert`) and Lemma 19.2
+(`FloatingPoint.norm_sub_le_of_roundsHouseholderApply`); $3 (4N + 8) + N + 3 = 13N + 27$. -/
 theorem RoundsHessenbergStep.frobenius_norm_sub_le {m : RoundingModel ℝ}
     (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsHessenbergStep m hk A B)
@@ -2417,14 +2685,18 @@ theorem RoundsHessenbergStep.frobenius_norm_sub_le {m : RoundingModel ℝ}
         (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left
           (gamma_mono hu0 (by omega) hcard) (by norm_num)) (norm_nonneg _))) h hA
 
-/-- **(5.46) of [quarteroni2000numerical], with the constants explicit** (Wilkinson's backward
-error bound for the Householder reduction to Hessenberg form, [higham2002accuracy] §19.10): if
-`(13 n + 27) u < 1` and `2 (n - 2) ε < 1` for `ε = 3 γ_{13n+27}`, the computed matrix
-`Ĥ = Â_{n-2}` of `RoundsHessenbergReduce` is upper Hessenberg and `Ĥ = Qᵀ (A + E) Q` for an
-orthogonal `Q` (the product of the exact reflectors of the computed tail columns, extended by the
-identity) with `‖E‖_F ≤ γ_{2(n-2)}(ε) ‖A‖_F = (2 (n - 2) ε / (1 - 2 (n - 2) ε)) ‖A‖_F`, which is
-`c n² u ‖A‖_F` for `u` small. The `2 (n - 2)` counts the column and the row sweep of each of the
-`n - 2` steps. -/
+/-- **(5.46) of [quarteroni2000numerical], with explicit constants**: Wilkinson's backward error
+bound for the Householder reduction to Hessenberg form ([higham2002accuracy] §19.10). Let
+$(13N + 27) u < 1$ and $2 (N - 2) \varepsilon < 1$, where $\varepsilon = 3 \gamma_{13N+27}$. If
+$\hat A$ is a computed reduction of $A$ (`FloatingPoint.RoundsHessenbergReduce`), then
+$\hat H = \hat A_{N-2}$ is upper Hessenberg, and there are an orthogonal $Q$ and an $E$ with
+$$\hat H = Q^T (A + E) Q, \qquad \|E\|_F \le \gamma_{2(N-2)}(\varepsilon) \|A\|_F = \frac{2
+  (N - 2) \varepsilon}{1 - 2 (N - 2) \varepsilon} \|A\|_F.$$
+For small $u$, this is $c N^2 u \|A\|_F$.
+
+The matrix $Q$ is the product of the exact reflectors of the computed tail columns, extended by
+the identity. The index $2 (N - 2)$ counts the column sweep and the row sweep of each of the
+$N - 2$ steps. -/
 theorem exists_roundsHessenbergReduce_eq {m : RoundingModel ℝ}
     (hcard : ((13 * N + 27 : ℕ) : ℝ) * m.u < 1)
     (hr : ((2 * (N - 2) : ℕ) : ℝ) * (3 * gamma m.u (13 * N + 27)) < 1)
@@ -2441,14 +2713,25 @@ theorem exists_roundsHessenbergReduce_eq {m : RoundingModel ℝ}
       exact ⟨P, hP, hPs, hb⟩
 
 /-- **One step of the Householder tridiagonalization of a symmetric matrix, for any reflector
-formula** ([golub2013matrix] Algorithm 8.3.1, step `k`). With `T = {i // k + 1 ≤ i}` and `x` the
-tail of column `k` on `T`: the computed `(v̂, β̂)` are `IsReflectorPert` data for `x` with the
-target `+‖x‖₂` (the book's sign); the subdiagonal entry is the freshly computed norm,
-`ν̂ = fl(√σ̂)` with `σ̂ = fl(xᵀx)` a `RoundsDot`, stored at `(k + 1, k)` and `(k, k + 1)` (the
-book's `A(k+1, k) = ‖A(k+1:n, k)‖₂`, not the `μ` inside `house`, which `house` does not return); the
-entries `(i, k)`, `(k, i)` for `i ≥ k + 2` are zero (the book leaves the vector there; they are
-never read again); the trailing block `B(T, T)` is a `RoundsSymmRankTwoUpdate` of `A(T, T)`; and
-every other entry — the rows and columns `< k` and the entry `(k, k)` — is copied from `A`. -/
+formula** ([golub2013matrix] Algorithm 8.3.1, step $k$). Let $A, B \in \mathbb{R}^{N \times N}$
+with $k + 1 < N$, let $T = \{i : k + 1 \le i\}$, and let $x$ be the tail of column $k$ of $A$ on
+$T$. The matrix $B$ is a computed step from $A$ if there are $(\hat v, \hat\beta)$, $\hat\sigma$
+and $\hat\nu$ such that:
+
+* $(\hat v, \hat\beta)$ is reflector data of order $K$ (`FloatingPoint.IsReflectorPert`) for
+  $x$, the pivot $k + 1$ and the target $+\|x\|_2$, the sign of the source;
+* $\hat\sigma = \mathrm{fl}(x^T x)$ is a `FloatingPoint.RoundsDot` and
+  $\hat\nu = \mathrm{fl}(\sqrt{\hat\sigma})$;
+* $B_{k+1,k} = B_{k,k+1} = \hat\nu$;
+* $B_{ik} = B_{ki} = 0$ for every $i \ge k + 2$;
+* the trailing block $B_{TT}$ is a computed symmetric rank-two update
+  (`FloatingPoint.RoundsSymmRankTwoUpdate`) of $A_{TT}$ with the data $(\hat\beta, \hat v)$;
+* $B_{ij} = A_{ij}$ when $i < k$, when $j < k$, and when $i = j = k$.
+
+The subdiagonal entry is the computed norm, as in the source, $A(k+1, k) = \|A(k+1{:}n, k)\|_2$.
+It is not the value $\mu$ inside `house`, which `house` does not return. The source leaves the
+Householder vector in the entries $(i, k)$ for $i \ge k + 2$; here they are $0$, since they are
+never read again. -/
 def RoundsTridiagonalizeStepPert (m : RoundingModel ℝ) (K : ℕ) {k : ℕ} (hk : k + 1 < N)
     (A B : Matrix (Fin N) (Fin N) ℝ) : Prop :=
   ∃ (vhat : {i : Fin N // k + 1 ≤ (i : ℕ)} → ℝ) (βhat σhat νhat : ℝ),
@@ -2467,16 +2750,17 @@ def RoundsTridiagonalizeStepPert (m : RoundingModel ℝ) (K : ℕ) {k : ℕ} (hk
     ∀ i j : Fin N, ((i : ℕ) < k ∨ (j : ℕ) < k ∨ ((i : ℕ) = k ∧ (j : ℕ) = k)) → B i j = A i j
 
 /-- **The Householder tridiagonalization of a symmetric matrix, for any reflector formula**:
-`Â_0 = A` and `Â_{k+1}` is a computed step `RoundsTridiagonalizeStepPert` from `Â_k` for the
-`N - 2` steps `k < N - 2`. -/
+$\hat A_0 = A$, and $\hat A_{k+1}$ is a computed step
+`FloatingPoint.RoundsTridiagonalizeStepPert` from $\hat A_k$ for each of the $N - 2$ steps
+$k < N - 2$. -/
 def RoundsTridiagonalizePert (m : RoundingModel ℝ) (K : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (Ahat : ℕ → Matrix (Fin N) (Fin N) ℝ) : Prop :=
   Ahat 0 = A ∧ ∀ k (hk : k < N - 2),
     RoundsTridiagonalizeStepPert m K (show k + 1 < N by omega) (Ahat k) (Ahat (k + 1))
 
-/-- A computed tridiagonalization step of a symmetric matrix is symmetric: the trailing block is
-mirrored, the two subdiagonal entries are both `ν̂`, the entries of row and column `k` beyond are
-both zero, and the rest is copied from the symmetric `A`. -/
+/-- A computed tridiagonalization step from a symmetric matrix is symmetric: the trailing block is
+mirrored, the two subdiagonal entries are both $\hat\nu$, the entries of row and column $k$
+beyond them are both $0$, and the other entries are copied from the symmetric $A$. -/
 theorem RoundsTridiagonalizeStepPert.transpose_eq {m : RoundingModel ℝ} {K k : ℕ}
     {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ}
     (h : RoundsTridiagonalizeStepPert m K hk A B) (hAs : Aᵀ = A) : Bᵀ = B := by
@@ -2504,8 +2788,9 @@ theorem RoundsTridiagonalizeStepPert.transpose_eq {m : RoundingModel ℝ} {K k :
     · rw [hj', (hB0 i hi').1, (hB0 i hi').2]
   · exact hBTs ⟨i, hi⟩ ⟨j, hj⟩
 
-/-- A computed tridiagonalization step keeps the reduced columns: if `A` vanishes below the first
-subdiagonal in the columns `< k`, then `B` does in the columns `< k + 1`. -/
+/-- A computed tridiagonalization step keeps the reduced columns: if $A$ vanishes below the first
+subdiagonal in the columns $j < k$, then $B$ vanishes below the first subdiagonal in the columns
+$j < k + 1$. -/
 theorem RoundsTridiagonalizeStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k : ℕ}
     {hk : k + 1 < N} {A B : Matrix (Fin N) (Fin N) ℝ}
     (h : RoundsTridiagonalizeStepPert m K hk A B)
@@ -2519,12 +2804,16 @@ theorem RoundsTridiagonalizeStepPert.apply_eq_zero {m : RoundingModel ℝ} {K k 
     rw [this]
     exact (hB0 i (by omega)).1
 
-/-- **One computed step of the Householder tridiagonalization**: for a symmetric `A` vanishing
-below the first subdiagonal in the columns `< k` and `(6K + 2N + 8) u < 1`, there is a symmetric
-orthogonal `P` (the exact reflector of the step, extended by the identity) with
-`‖B - P A P‖_F ≤ (9 γ_{6K+2N+8} + 2 γ_{N+1}) ‖A‖_F`: the trailing block by
-`frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate`, the two subdiagonal entries by the error of
-the computed norm (`P x = ‖x‖₂ e_{k+1}` against `ν̂`), everything else exact. -/
+/-- **One computed step of the Householder tridiagonalization.** Let $(6K + 2N + 8) u < 1$, and let
+$A$ be symmetric and vanish below the first subdiagonal in the columns $j < k$. If $B$ is a
+computed step `FloatingPoint.RoundsTridiagonalizeStepPert` from $A$, then there is a symmetric
+orthogonal $P$ with
+$$\|B - P A P\|_F \le (9 \gamma_{6K+2N+8} + 2 \gamma_{N+1}) \|A\|_F.$$
+
+The matrix $P$ is the exact reflector of the step, extended by the identity. The trailing block
+is bounded by `FloatingPoint.frobenius_norm_sub_le_of_roundsSymmRankTwoUpdate`, and the two
+subdiagonal entries by the error of the computed norm against $P x = \|x\|_2 e_{k+1}$. All other
+entries are exact. -/
 theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((6 * K + 2 * N + 8 : ℕ) : ℝ) * m.u < 1) {k : ℕ} {hk : k + 1 < N}
     {A B : Matrix (Fin N) (Fin N) ℝ} (h : RoundsTridiagonalizeStepPert m K hk A B)
@@ -2674,12 +2963,16 @@ theorem RoundsTridiagonalizeStepPert.frobenius_norm_sub_le {m : RoundingModel �
         linarith
     _ = _ := by ring
 
-/-- **The backward stability of the Householder tridiagonalization, for any reflector formula**
-([golub2013matrix] §8.3.1 after Algorithm 8.3.1, citing Wilkinson; [higham2002accuracy]
-Theorem 19.4 for the two-sided form): for a symmetric `A`, `(6K + 2N + 8) u < 1` and
-`(N - 2) ε < 1` with `ε = 9 γ_{6K+2N+8} + 2 γ_{N+1}`, the computed `T̂ = Â_{N-2}` of
-`RoundsTridiagonalizePert` is symmetric tridiagonal and `T̂ = Qᵀ (A + E) Q` with `Q` orthogonal,
-`E` symmetric and `‖E‖_F ≤ γ_{N-2}(ε) ‖A‖_F`, the book's `c u ‖A‖_F` with `c` explicit. -/
+/-- **Backward stability of the Householder tridiagonalization, for any reflector formula**
+([golub2013matrix] §8.3.1 after Algorithm 8.3.1, citing Wilkinson; [higham2002accuracy] Theorem
+19.4 for the two-sided form). Let $A$ be symmetric, let $(6K + 2N + 8) u < 1$, and let
+$(N - 2) \varepsilon < 1$, where $\varepsilon = 9 \gamma_{6K+2N+8} + 2 \gamma_{N+1}$. If
+$\hat A$ is a computed tridiagonalization of $A$ (`FloatingPoint.RoundsTridiagonalizePert`),
+then $\hat T = \hat A_{N-2}$ is symmetric and tridiagonal, and there are an orthogonal $Q$ and a
+symmetric $E$ with
+$$\hat T = Q^T (A + E) Q, \qquad \|E\|_F \le \gamma_{N-2}(\varepsilon) \|A\|_F,$$
+where $\gamma_r(\varepsilon) = r \varepsilon / (1 - r \varepsilon)$. This is the bound
+$c u \|A\|_F$ of the source, with an explicit $c$. -/
 theorem exists_roundsTridiagonalizePert_eq {m : RoundingModel ℝ} {K : ℕ}
     (hcard : ((6 * K + 2 * N + 8 : ℕ) : ℝ) * m.u < 1)
     (hr : ((N - 2 : ℕ) : ℝ) *
@@ -2741,13 +3034,17 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : Type*} [Fintype n] [LinearOrder n]
 
-/-- **The forward error of a triangular solve with a matrix right-hand side**: if every column
-of `Y` is computed by forward substitution from the corresponding column of `A` with the lower
-triangular `T` (nonzero diagonal, `n u < 1`), then `‖Y - T⁻¹ A‖_F ≤ γ_n ‖T⁻¹‖_F ‖T‖_F ‖Y‖_F`.
-Column by column this is [higham2002accuracy] Theorem 8.5, `(T + ΔT_j) y_j = a_j` with
-`|ΔT_j| ≤ γ_n |T|`, solved for `y_j - T⁻¹ a_j = -T⁻¹ ΔT_j y_j`; the perturbation `ΔT_j` depends
-on the column, which is why the result is a forward bound with the condition number
-`‖T⁻¹‖_F ‖T‖_F` and not a single backward perturbation of `T`. -/
+/-- **The forward error of a triangular solve with a matrix right-hand side.** Let the index set be
+finite and linearly ordered with $n$ elements, let $u < 1$ and $nu < 1$, and let $T$ be lower
+triangular with nonzero diagonal entries. If every column of $Y$ is computed by forward
+substitution with $T$ from the corresponding column of $A$ (`FloatingPoint.RoundsForwardSubst`),
+then
+$$\|Y - T^{-1} A\|_F \le \gamma_n \|T^{-1}\|_F \|T\|_F \|Y\|_F.$$
+
+Column by column, Theorem 8.5 of [higham2002accuracy] gives $(T + \Delta T_j) y_j = a_j$ with
+$|\Delta T_j| \le \gamma_n |T|$, so $y_j - T^{-1} a_j = -T^{-1} \Delta T_j y_j$. The
+perturbation $\Delta T_j$ depends on the column. Therefore the result is a forward bound with
+the condition number $\|T^{-1}\|_F \|T\|_F$, and not a single backward perturbation of $T$. -/
 theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_col {m : RoundingModel ℝ}
     (hu : m.u < 1) (hcard : (Fintype.card n : ℝ) * m.u < 1) {T : Matrix n n ℝ}
     (hT : T.IsLowerTriangular) (hd : ∀ i, T i i ≠ 0) {A Y : Matrix n n ℝ}
@@ -2780,9 +3077,11 @@ theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_col {m : RoundingMode
         ring
 
 
-/-- The row form of `frobenius_norm_sub_le_of_forall_roundsForwardSubst_col`: if every row of
-`C` is computed by forward substitution from the corresponding row of `Y` with the lower
-triangular `T`, then `C ≈ Y T⁻ᵀ` with `‖C - Y T⁻ᵀ‖_F ≤ γ_n ‖T⁻¹‖_F ‖T‖_F ‖C‖_F`. -/
+/-- The row form of `FloatingPoint.frobenius_norm_sub_le_of_forall_roundsForwardSubst_col`. Let
+$u < 1$ and $nu < 1$, and let $T$ be lower triangular with nonzero diagonal entries. If every
+row of $C$ is computed by forward substitution with $T$ from the corresponding row of $Y$, then
+$$\|C - Y T^{-T}\|_F \le \gamma_n \|T^{-1}\|_F \|T\|_F \|C\|_F.$$
+-/
 theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_row {m : RoundingModel ℝ}
     (hu : m.u < 1) (hcard : (Fintype.card n : ℝ) * m.u < 1) {T : Matrix n n ℝ}
     (hT : T.IsLowerTriangular) (hd : ∀ i, T i i ≠ 0) {Y C : Matrix n n ℝ}
@@ -2793,27 +3092,34 @@ theorem frobenius_norm_sub_le_of_forall_roundsForwardSubst_row {m : RoundingMode
   rwa [← frobenius_norm_transpose, transpose_sub, transpose_transpose, transpose_mul,
     transpose_transpose, frobenius_norm_transpose C] at this
 
-/-- **The two-sided triangular solve `C = H⁻ᵀ A H⁻¹` in floating-point arithmetic** (step 2 of
-the QR–Cholesky algorithm of [quarteroni2000numerical] §5.9.2, with `H` the computed Cholesky
-factor of `B`): `Y` solves `Hᵀ Y = A` column by column by forward substitution, and `C` solves
-`C H = Y`, that is `Hᵀ Cᵀ = Yᵀ`, row by row by forward substitution. -/
+/-- **The two-sided triangular solve $C = H^{-T} A H^{-1}$ in floating-point arithmetic** (step 2 of
+the QR–Cholesky algorithm of [quarteroni2000numerical], §5.9.2, where $H$ is the computed
+Cholesky factor of $B$). The matrix $C$ is a computed solve if there is $Y$ such that every
+column of $Y$ is computed by forward substitution with $H^T$ from the corresponding column of
+$A$ (so $H^T Y = A$), and every row of $C$ is computed by forward substitution with $H^T$ from
+the corresponding row of $Y$ (so $C H = Y$, that is $H^T C^T = Y^T$). -/
 def RoundsTwoSidedSolve (m : RoundingModel ℝ) (H A C : Matrix n n ℝ) : Prop :=
   ∃ Y : Matrix n n ℝ, (∀ j, RoundsForwardSubst m Hᵀ (A.col j) (Y.col j)) ∧
     ∀ i, RoundsForwardSubst m Hᵀ (Y.row i) (C.row i)
 
-/-- **The forward error of the two-sided triangular solve** `Ĉ = fl(H⁻ᵀ A H⁻¹)`: for an upper
-triangular `H` with nonzero diagonal, `n u < 1` and `θ = γ_n ‖H⁻¹‖_F ‖H‖_F < 1`,
+/-- **The forward error of the two-sided triangular solve** $\hat C = \mathrm{fl}(H^{-T} A H^{-1})$.
+Let the index set be finite and linearly ordered with $n$ elements, let $u < 1$ and $nu < 1$,
+and let $H$ be upper triangular with nonzero diagonal entries and
+$\theta = \gamma_n \|H^{-1}\|_F \|H\|_F < 1$. If $\hat C$ is a computed two-sided solve
+(`FloatingPoint.RoundsTwoSidedSolve`), then
+$$\|\hat C - H^{-T} A H^{-1}\|_F \le \frac{2 \theta}{(1 - \theta)^2} \|H^{-1}\|_F^2 \|A\|_F.$$
 
-`‖Ĉ - H⁻ᵀ A H⁻¹‖_F ≤ (2 θ / (1 - θ)²) ‖H⁻¹‖_F² ‖A‖_F`.
-
-With `H` the Cholesky factor of `B`, `‖H⁻¹‖₂² = ‖B⁻¹‖₂`, so this is the
-`u ‖A‖ ‖B⁻¹‖` of [quarteroni2000numerical] §5.9.2 *times the condition number* `κ(H)` hidden
-in `θ`: the error of computing `C` is governed by `κ(H) = κ(B)^{1/2}` and not by `‖B⁻¹‖` alone,
-which is the precise form of the book's "may become unstable if `B` is ill-conditioned". Each
-solve is [higham2002accuracy] Theorem 8.5 column by column
-(`frobenius_norm_sub_le_of_forall_roundsForwardSubst_col`, `…_row`), the two are combined by
-`Ĉ - H⁻ᵀ A H⁻¹ = (Ĉ - Y H⁻¹) + (Y - H⁻ᵀ A) H⁻¹`, and the sizes of `Y` and `Ĉ` are bounded
-through `‖Y‖ ≤ ‖H⁻¹‖ ‖A‖ / (1 - θ)`, `‖Ĉ‖ ≤ ‖H⁻¹‖ ‖Y‖ / (1 - θ)`. -/
+If $H$ is the Cholesky factor of $B$, then $\|H^{-1}\|_2^2 = \|B^{-1}\|_2$. So the bound is the
+factor $u \|A\| \|B^{-1}\|$ of [quarteroni2000numerical], §5.9.2, times the condition number
+$\kappa(H) = \kappa(B)^{1/2}$ that $\theta$ contains. The error of the computed $C$ thus depends
+on $\kappa(H)$, and not on $\|B^{-1}\|$ alone; this is the precise form of the remark of the
+source that the method "may become unstable if $B$ is ill-conditioned". Each solve is Theorem
+8.5 of [higham2002accuracy] column by column
+(`FloatingPoint.frobenius_norm_sub_le_of_forall_roundsForwardSubst_col` and
+`FloatingPoint.frobenius_norm_sub_le_of_forall_roundsForwardSubst_row`). The two solves are
+combined through $\hat C - H^{-T} A H^{-1} = (\hat C - Y H^{-1}) + (Y - H^{-T} A) H^{-1}$, and
+the sizes of $Y$ and $\hat C$ are bounded by $\|Y\| \le \|H^{-1}\| \|A\| / (1 - \theta)$ and
+$\|\hat C\| \le \|H^{-1}\| \|Y\| / (1 - \theta)$. -/
 theorem frobenius_norm_sub_le_of_roundsTwoSidedSolve {m : RoundingModel ℝ} (hu : m.u < 1)
     (hcard : (Fintype.card n : ℝ) * m.u < 1) {H : Matrix n n ℝ} (hH : H.IsUpperTriangular)
     (hd : ∀ i, H i i ≠ 0) {A C : Matrix n n ℝ} (h : RoundsTwoSidedSolve m H A C)

@@ -15,20 +15,31 @@ import Mathlib.Topology.TietzeExtension
 /-!
 # Interpolating finitely many values by a continuous function of norm at most one
 
-`ContinuousMap.exists_norm_le_one_apply_eq`: on a compact Hausdorff space, prescribed values of
-modulus at most `1` at finitely many distinct points are taken by a continuous real function of
-sup norm at most `1` — the Tietze extension theorem applied to the finite, hence discrete, set of
-nodes. It is what shows that the norm of a quadrature functional is the absolute sum of its
-weights.
+Let $X$ be a compact Hausdorff space, let $x_1, \dots, x_n \in X$ be distinct points, and let
+$\sigma_1, \dots, \sigma_n \in \mathbb{R}$ satisfy $|\sigma_i| \le 1$. This file proves that some
+continuous function $f : X \to \mathbb{R}$ with sup norm $\|f\| \le 1$ takes the value $\sigma_i$ at
+$x_i$ for each $i$. The proof applies the Tietze extension theorem to the finite, hence discrete,
+set of nodes. The result shows that the norm of a quadrature functional is the sum of the absolute
+values of its weights.
+
+## Main results
+
+* `ContinuousMap.exists_norm_le_one_apply_eq`: prescribed values of modulus at most $1$ at finitely
+  many distinct points are taken by a continuous real function of sup norm at most $1$.
 -/
 
 namespace ContinuousMap
 
 variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [T2Space X]
 
-/-- A continuous function of norm at most `1` with prescribed values of modulus at most `1` at
-finitely many distinct points: the values already are a continuous function on the finite, hence
-discrete, set of nodes, and the Tietze extension theorem extends it with values in `[-1, 1]`. -/
+/-- Let $X$ be a compact Hausdorff space, let $x_0, \dots, x_{n-1} \in X$ be distinct, and let
+$\sigma_0, \dots, \sigma_{n-1} \in \mathbb{R}$ with $|\sigma_i| \le 1$ for all $i$. Then there
+is a continuous function $f : X \to \mathbb{R}$ with $\|f\| \le 1$ and $f(x_i) = \sigma_i$ for
+all $i$.
+
+The norm $\|f\|$ is the sup norm. The values $\sigma_i$ define a continuous function on the
+finite, hence discrete, set of nodes, and the Tietze extension theorem extends it to $X$ with
+values in $[-1, 1]$. -/
 theorem exists_norm_le_one_apply_eq {n : ℕ} {x : Fin n → X} (hx : Function.Injective x)
     (σ : Fin n → ℝ) (hσ : ∀ i, |σ i| ≤ 1) : ∃ f : C(X, ℝ), ‖f‖ ≤ 1 ∧ ∀ i, f (x i) = σ i := by
   classical

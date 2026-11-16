@@ -7,31 +7,51 @@ import Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity
 /-!
 # Elementary bounds on evaluation-complexity orders
 
-Real inequalities about the orders `max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]` (written with
-`Optimization.finMax`) that appear in the complexity of two-phase high-order methods
-([cartis2022evaluation], §14.3), for the exponents `π_j = j + 1` and `π_j = arqpPiOf u p j` of
-the regularization methods.
+The evaluation complexity of two-phase high-order methods ([cartis2022evaluation], §14.3) is
+expressed through orders of the form
+$$\max\Bigl[\varepsilon_0^{-1},\ \max_{j \in [1 : q]} \varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}\Bigr],$$
+where $\varepsilon_0, \dots, \varepsilon_q$ are tolerances and $\pi_j$ are exponents. This file
+proves real inequalities about these orders for the exponents $\pi_j = j + 1$ and for the exponents
+$\pi_j = j(p+1)/p$ and $\pi_j = (p+1)/(p-j+1)$ of the regularization methods. It compares the terms
+$(\varepsilon_0 \varepsilon_j)^{-j}$ with $\varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j}$, bounds
+cost terms above and below one evaluation, and shows that the term
+$(\varepsilon_0 \varepsilon_1)^{-1}$ is not dominated by the order when $1 < \pi_1 < 2$ and the
+other exponents are small.
 
 ## Main results
 
-* `Constrained.inv_mul_pow_le_rpow_succ`, `Constrained.inv_mul_mul_pow_le_rpow_succ`,
-  `Constrained.inv_mul_pow_le_add_arqpPiOf`: the terms `(ε₀ ε_j)^{-j}` against
-  `ε₀^{1-π_j} ε_j^{-π_j}`;
-* `Constrained.mul_sum_le_mul_sum_abs_mul`: a weighted sum of the terms is within any order;
-* `Constrained.one_le_mul_sq_div_two_mul_rpow_neg`,
-  `Constrained.exists_mul_sq_div_two_mul_rpow_neg_lt_one`: cost bounds above and below one
-  evaluation;
-* `Constrained.exists_tol_mul_finMax_lt`, `Constrained.exists_tol_mul_finMax_lt_arqpPiOf`,
-  `Constrained.exists_tol_mul_finMax_lt_arqpPiOf_true`: `(ε₀ ε_1)^{-1}` is not dominated by the
-  order when `1 < π_1 < 2` and the other exponents are small.
+* `Constrained.inv_mul_pow_le_rpow_succ`: $(\varepsilon_0 \varepsilon_j)^{-j} \le \varepsilon_0^{-j}
+  \varepsilon_j^{-(j+1)}$ for $\varepsilon_j \in (0, 1]$.
+* `Constrained.inv_mul_mul_pow_le_rpow_succ`: a bad-iteration term with radii
+  $\varepsilon_0 \varepsilon_{\min}$ is at most $\varepsilon_0^{-q} \varepsilon_{\min}^{-(q+1)}$.
+* `Constrained.inv_mul_pow_le_add_arqpPiOf`: $(\varepsilon_0 \varepsilon_j)^{-j} \le
+  \varepsilon_0^{-p} + \varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j}$ for $\pi_j = j(p+1)/p$.
+* `Constrained.mul_sum_le_mul_sum_abs_mul`: a weighted sum of the terms $\varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}$ is within every upper bound $O$ of the terms, up to a constant factor.
+* `Constrained.one_le_mul_sq_div_two_mul_rpow_neg`: for $\pi \ge 2$, $\beta e \le 1$ and
+  $\beta R e \le 1$, a cost bound $\kappa (R^2/2)(\beta R e)^{-\pi}$ with $\kappa \ge 2$ is at least
+  $1$.
+* `Constrained.exists_mul_sq_div_two_mul_rpow_neg_lt_one`: for $0 < \pi < 2$ and every $\kappa$, a
+  cost bound $\kappa (R^2/2)(\beta R)^{-\pi}$ is less than $1$ for some $R \in (0, 1]$.
+* `Constrained.exists_tol_mul_finMax_lt`, `Constrained.exists_tol_mul_finMax_lt_arqpPiOf` and
+  `Constrained.exists_tol_mul_finMax_lt_arqpPiOf_true`: the term
+  $(\varepsilon_0 \varepsilon_1)^{-1}$ is not dominated by the order.
+
+## Implementation notes
+
+* The maximum $\max[b, \max_{j \in [1 : q]} u_j]$ is `Optimization.finMax b u q`, and the exponents
+  of the regularization methods are `Optimization.arqpPiOf`.
 -/
 
 namespace Constrained
 
 open Optimization
 
-/-- `(ε₀ ε_j)^{-j} ≤ ε₀^{1-π_j} ε_j^{-π_j}` for the exponent `π_j = j + 1`, `ε₀ > 0` and
-`ε_j ∈ (0, 1]`. -/
+/-- Let $\varepsilon_0 > 0$, $\varepsilon_j \in (0, 1]$ and $j \in \mathbb{N}$. Then, for the
+exponent $\pi_j = j + 1$,
+$$(\varepsilon_0 \varepsilon_j)^{-j} \le \varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j}.$$
+-/
 theorem inv_mul_pow_le_rpow_succ {ε₀ εj : ℝ} (h0 : 0 < ε₀) (hj0 : 0 < εj) (hj1 : εj ≤ 1)
     (j : ℕ) :
     ((ε₀ * εj) ^ j)⁻¹ ≤ ε₀ ^ (1 - ((j : ℝ) + 1)) * εj ^ (-((j : ℝ) + 1)) := by
@@ -45,9 +65,13 @@ theorem inv_mul_pow_le_rpow_succ {ε₀ εj : ℝ} (h0 : 0 < ε₀) (hj0 : 0 < �
   have : 0 ≤ (ε₀ ^ j)⁻¹ * (εj ^ j)⁻¹ := by positivity
   nlinarith
 
-/-- A bad-iteration term with the radii `ρ'_j = ε₀ ε_min` is within the order with the
-exponents `q + 1`: `(ε₀ ε_j (ε₀ ε_min)^{j-1})^{-1} ≤ ε₀^{-q} ε_min^{-(q+1)}` for `j ∈ [1 : q]`
-and tolerances in `(0, 1]`. -/
+/-- A bad-iteration term with the radii $\rho'_j = \varepsilon_0 \varepsilon_{\min}$ is within the
+order with the exponents $q + 1$. Let $\varepsilon_0, \varepsilon_{\min} \in (0, 1]$, let
+$\varepsilon_{\min} \le \varepsilon_j$, and let $1 \le j \le q$. Then
+$$\bigl(\varepsilon_0 \varepsilon_j (\varepsilon_0 \varepsilon_{\min})^{j-1}\bigr)^{-1} \le
+  \varepsilon_0^{1 - (q+1)} \varepsilon_{\min}^{-(q+1)} = \varepsilon_0^{-q}
+  \varepsilon_{\min}^{-(q+1)}.$$
+-/
 theorem inv_mul_mul_pow_le_rpow_succ {ε₀ εj εm : ℝ} (h0 : 0 < ε₀) (h01 : ε₀ ≤ 1) (hm0 : 0 < εm)
     (hm1 : εm ≤ 1) (hmj : εm ≤ εj) {j q : ℕ} (hj1 : 1 ≤ j) (hjq : j ≤ q) :
     (ε₀ * εj * (ε₀ * εm) ^ (j - 1))⁻¹ ≤ ε₀ ^ (1 - ((q : ℝ) + 1)) * εm ^ (-((q : ℝ) + 1)) := by
@@ -61,9 +85,14 @@ theorem inv_mul_mul_pow_le_rpow_succ {ε₀ εj εm : ℝ} (h0 : 0 < ε₀) (h01
     _ ≤ ((ε₀ * εm) ^ q)⁻¹ := inv_anti₀ (pow_pos hp _) h2
     _ ≤ _ := inv_mul_pow_le_rpow_succ h0 hm0 hm1 q
 
-/-- `(ε₀ ε_j)^{-j} ≤ ε₀^{-p} + ε₀^{1-π_j} ε_j^{-π_j}` for the exponents `π_j = j(p+1)/p`
-(`arqpPiOf False p`) and `ε₀, ε_j > 0`: by the weighted AM–GM inequality, `(ε₀ ε_j)^{-j}` is the
-geometric mean of `ε₀^{-p}` and `ε₀^{1-π_j} ε_j^{-π_j}` with weights `1/(p+1)`, `p/(p+1)`. -/
+/-- Let $\varepsilon_0, \varepsilon_j > 0$, let $p \ge 1$, and let $\pi_j = j(p+1)/p$, which is
+`Optimization.arqpPiOf False p j`. Then
+$$(\varepsilon_0 \varepsilon_j)^{-j} \le \varepsilon_0^{-p} + \varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}.$$
+
+The left side is the weighted geometric mean of $\varepsilon_0^{-p}$ and $\varepsilon_0^{1 -
+\pi_j} \varepsilon_j^{-\pi_j}$ with the weights $1/(p+1)$ and $p/(p+1)$, so the weighted AM–GM
+inequality gives the bound. -/
 theorem inv_mul_pow_le_add_arqpPiOf {ε₀ εj : ℝ} (h0 : 0 < ε₀) (hj0 : 0 < εj) {p j : ℕ}
     (hp : 1 ≤ p) :
     ((ε₀ * εj) ^ j)⁻¹ ≤ (ε₀ ^ p)⁻¹ +
@@ -95,9 +124,13 @@ theorem inv_mul_pow_le_add_arqpPiOf {ε₀ εj : ℝ} (h0 : 0 < ε₀) (hj0 : 0 
   calc _ ≤ w₁ * (ε₀ ^ p)⁻¹ + w₂ * (ε₀ ^ (1 - π) * εj ^ (-π)) := hgm
     _ ≤ _ := add_le_add (mul_le_of_le_one_left hA h1) (mul_le_of_le_one_left hB h2)
 
-/-- `½ κ r ∑_j β₁^{1-2π_j}/(β₁^{1-π_j} - 1) θ^{1-π_j} ε₀^{1-π_j} ε_j^{-π_j} ≤ ½ κ r W O` with
-`W = ∑_j |β₁^{1-2π_j}/(β₁^{1-π_j} - 1) θ^{1-π_j}|`, for `κ, r ≥ 0`, positive tolerances and every
-`O ≥ ε₀^{1-π_j} ε_j^{-π_j}` (the sum of a two-phase Phase-1 bound is within any such order). -/
+/-- The sum in a Phase-1 bound of a two-phase method is within every order that bounds its terms.
+Let $\kappa, r \ge 0$, let $\varepsilon_j > 0$ for $j \in [0 : q]$, and let $O \ge
+\varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j}$ for every $j \in [1 : q]$. Write $a_j =
+\beta_1^{1 - 2\pi_j} / (\beta_1^{1 - \pi_j} - 1) \cdot \theta^{1 - \pi_j}$. Then
+$$\frac12 \kappa r \sum_{j=1}^q a_j\, \varepsilon_0^{1 - \pi_j} \varepsilon_j^{-\pi_j} \le
+  \frac12 \kappa r \Bigl(\sum_{j=1}^q |a_j|\Bigr) O.$$
+-/
 theorem mul_sum_le_mul_sum_abs_mul {q : ℕ} {ε : ℕ → ℝ} {κ r β₁ θ O : ℝ} {π : ℕ → ℝ}
     (hκ : 0 ≤ κ) (hr : 0 ≤ r)
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j)
@@ -117,8 +150,10 @@ theorem mul_sum_le_mul_sum_abs_mul {q : ℕ} {ε : ℕ → ℝ} {κ r β₁ θ O
         (ε 0 ^ (1 - π j) * ε j ^ (-π j)) := mul_le_mul_of_nonneg_right (le_abs_self _) h0
     _ ≤ _ := mul_le_mul_of_nonneg_left (hO j hj) (abs_nonneg _)
 
-/-- `1 ≤ 2 (R²/2) (β R e)^{-π}` for `π ≥ 2`, `β e ≤ 1` and `β R e ≤ 1`: a multiplicative cost
-bound `κ (R²/2) (β R e)^{-π}` with `κ ≥ 2` is at least one evaluation. -/
+/-- Let $\beta, e, R > 0$ with $\beta e \le 1$ and $\beta R e \le 1$, and let $\pi \ge 2$. Then
+$$1 \le 2 \cdot \frac{R^2}{2} (\beta R e)^{-\pi}.$$
+So a multiplicative cost bound $\kappa (R^2/2)(\beta R e)^{-\pi}$ with $\kappa \ge 2$ is at
+least one evaluation. -/
 theorem one_le_mul_sq_div_two_mul_rpow_neg {β e R π : ℝ} (hβ : 0 < β) (he : 0 < e)
     (hβe : β * e ≤ 1)
     (hR : 0 < R) (ha : β * R * e ≤ 1) (hπ : 2 ≤ π) :
@@ -141,9 +176,12 @@ theorem one_le_mul_sq_div_two_mul_rpow_neg {β e R π : ℝ} (hβ : 0 < β) (he 
     _ = 2 * (R ^ 2 / 2) * a ^ (-(2 : ℝ)) := by rw [h2]; ring
     _ ≤ 2 * (R ^ 2 / 2) * a ^ (-π) := by gcongr
 
-/-- **A cost bound below one evaluation**: for `0 < π < 2`, `β ∈ (0, 1)` and every `κ` there is
-`R ∈ (0, 1]` with `κ (R²/2) (β R)^{-π} < 1` (a cost bound `κ μ (β R)^{-π}` at a point where
-`μ = R²/2` and `‖r‖ = R`). -/
+/-- **A cost bound below one evaluation.** Let $0 < \pi < 2$ and $0 < \beta < 1$. Then for every
+$\kappa \in \mathbb{R}$ there is $R \in (0, 1]$ with
+$$\kappa \frac{R^2}{2} (\beta R)^{-\pi} < 1.$$
+
+This is a cost bound $\kappa \mu (\beta R)^{-\pi}$ at a point where the merit function is
+$\mu = R^2/2$ and the residual has norm $R$. -/
 theorem exists_mul_sq_div_two_mul_rpow_neg_lt_one {π β : ℝ} (hπ0 : 0 < π) (hπ2 : π < 2)
     (hβ0 : 0 < β) (hβ1 : β < 1) (κ : ℝ) :
     ∃ R : ℝ, 0 < R ∧ R ≤ 1 ∧ κ * (R ^ 2 / 2) * (β * R) ^ (-π) < 1 := by
@@ -178,11 +216,16 @@ theorem exists_mul_sq_div_two_mul_rpow_neg_lt_one {π β : ℝ} (hπ0 : 0 < π) 
         rw [div_div, div_lt_one (by positivity)]
         linarith
 
-/-- **The term `(ε₀ ε_1)^{-1}` is not dominated by `max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}]`**
-when `1 < π_1 < 2` and
-`π_i - 2 < (2 - π_1)/(π_1 - 1)` for every `i ∈ [1 : q]`: for every `C` there are tolerances
-`ε ∈ (0, 1]^{q+1}` (`ε₀ = δ`, `ε_1 = δ^a`, `ε_i = 1` for `i ≥ 2`, `δ` small) with
-`C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}] < (ε₀ ε_1)^{-1}`. -/
+/-- **The term $(\varepsilon_0 \varepsilon_1)^{-1}$ is not dominated by the order.** Let
+$1 < \pi_1 < 2$, and let $\pi_i - 2 < (2 - \pi_1)/(\pi_1 - 1)$ for every $i \in [1 : q]$. Then
+for every $C \in \mathbb{R}$ there are tolerances with $\varepsilon_j \in (0, 1]$ for
+$j \in [0 : q]$ such that
+$$C \max\Bigl[\varepsilon_0^{-1},\ \max_{j \in [1 : q]} \varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}\Bigr] < (\varepsilon_0 \varepsilon_1)^{-1}.$$
+
+The tolerances are $\varepsilon_0 = \delta$, $\varepsilon_1 = \delta^a$ and $\varepsilon_i = 1$
+for $i \ge 2$, for a suitable exponent $a > 0$ and a small $\delta > 0$. The maximum is
+`Optimization.finMax`. -/
 theorem exists_tol_mul_finMax_lt {π : ℕ → ℝ} {q : ℕ} (hπ1 : 1 < π 1) (hπ2 : π 1 < 2)
     (hπ : ∀ i ∈ Finset.Icc 1 q, π i - 2 < (2 - π 1) / (π 1 - 1)) (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧
@@ -264,10 +307,15 @@ theorem exists_tol_mul_finMax_lt {π : ℕ → ℝ} {q : ℕ} (hπ1 : 1 < π 1) 
     _ ≤ δ ^ (-g) * δ ^ (-γ) := mul_le_mul_of_nonneg_right hδC hγpos.le
     _ = δ ^ (-γ) * δ ^ (-g) := mul_comm _ _
 
-/-- **The term `(ε₀ ε_1)^{-1}` is not dominated by the order of the exponents `j(p+1)/p`** for
-`1 ≤ q < p` (`arqpPiOf False p`): for every `C` there are tolerances with
-`C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}] < (ε₀ ε_1)^{-1}` (`exists_tol_mul_finMax_lt` with
-`π_1 = (p+1)/p`, `(2 - π_1)/(π_1 - 1) = p - 1 > q(p+1)/p - 2`). -/
+/-- **The term $(\varepsilon_0 \varepsilon_1)^{-1}$ is not dominated by the order of the exponents
+$\pi_j = j(p+1)/p$.** Let $1 \le q < p$, and let $\pi_j$ be `Optimization.arqpPiOf False p j`.
+Then for every $C \in \mathbb{R}$ there are tolerances with $\varepsilon_j \in (0, 1]$ for
+$j \in [0 : q]$ such that
+$$C \max\Bigl[\varepsilon_0^{-1},\ \max_{j \in [1 : q]} \varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}\Bigr] < (\varepsilon_0 \varepsilon_1)^{-1}.$$
+
+This is `Constrained.exists_tol_mul_finMax_lt` with $\pi_1 = (p+1)/p$, for which
+$(2 - \pi_1)/(\pi_1 - 1) = p - 1 > q(p+1)/p - 2$. -/
 theorem exists_tol_mul_finMax_lt_arqpPiOf {p q : ℕ} (hq : 1 ≤ q) (hqp : q < p) (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧
       C * finMax (ε 0)⁻¹
@@ -289,10 +337,15 @@ theorem exists_tol_mul_finMax_lt_arqpPiOf {p q : ℕ} (hq : 1 ≤ q) (hqp : q < 
   rw [sub_lt_iff_lt_add, div_lt_iff₀ hp0]
   nlinarith
 
-/-- **The term `(ε₀ ε_1)^{-1}` is not dominated by the order of the exponents
-`(p+1)/(p-j+1)`** for `1 ≤ q ≤ 2`, `q < p` (`arqpPiOf True p`): for every `C` there are tolerances
-with `C max[ε₀^{-1}, max_j ε₀^{1-π_j} ε_j^{-π_j}] < (ε₀ ε_1)^{-1}` (`exists_tol_mul_finMax_lt`;
-`(2 - π_1)/(π_1 - 1) = p - 1`, and `π_2 - 2 = (3 - p)/(p - 1) < p - 1` for `p ≥ 3`). -/
+/-- **The term $(\varepsilon_0 \varepsilon_1)^{-1}$ is not dominated by the order of the exponents
+$\pi_j = (p+1)/(p-j+1)$.** Let $1 \le q \le 2$ and $q < p$, and let $\pi_j$ be
+`Optimization.arqpPiOf True p j`. Then for every $C \in \mathbb{R}$ there are tolerances with
+$\varepsilon_j \in (0, 1]$ for $j \in [0 : q]$ such that
+$$C \max\Bigl[\varepsilon_0^{-1},\ \max_{j \in [1 : q]} \varepsilon_0^{1 - \pi_j}
+  \varepsilon_j^{-\pi_j}\Bigr] < (\varepsilon_0 \varepsilon_1)^{-1}.$$
+
+This is `Constrained.exists_tol_mul_finMax_lt`: here $(2 - \pi_1)/(\pi_1 - 1) = p - 1$, and
+$\pi_2 - 2 = (3 - p)/(p - 1) < p - 1$ for $p \ge 3$. -/
 theorem exists_tol_mul_finMax_lt_arqpPiOf_true {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2)
     (hqp : q < p) (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧

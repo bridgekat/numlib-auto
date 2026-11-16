@@ -12,19 +12,36 @@ import Numlib.Analysis.InnerProductSpace.NormPow
 /-!
 # Diagonal derivatives along lines and of half squared norms
 
-Directional (diagonal) iterated derivatives `∇ⁿg(x)[d]ⁿ` computed along the line `s ↦ x + s d`,
-and the diagonal derivatives of order at most three of `½ ‖u‖²` for `u : E → F` with values in a
-real inner product space.
+Let $E$ be a real normed space and let $F$ be a real inner product space. For a map $g$ on $E$ that
+is $n$ times continuously differentiable at $x$, the diagonal value $\nabla^n g(x)[d]^n$ of its
+$n$-th derivative is the $n$-th derivative of $s \mapsto g(x + s d)$ at $s = 0$. With this reduction
+to one variable, the file computes the diagonal derivatives of order at most three of
+$\tfrac12 \|u\|^2$ for a map $u : E \to F$:
+$$\nabla^2\bigl(\tfrac12 \|u\|^2\bigr)(x)[d]^2 = \|\nabla u(x)[d]\|^2 + \langle u(x), \nabla^2
+  u(x)[d]^2 \rangle,$$
+$$\nabla^3\bigl(\tfrac12 \|u\|^2\bigr)(x)[d]^3 = 3 \langle \nabla u(x)[d], \nabla^2 u(x)[d]^2
+  \rangle + \langle u(x), \nabla^3 u(x)[d]^3 \rangle.$$
+These are the formulas (14.3.38) and (14.3.39) of [cartis2022evaluation].
 
 ## Main results
 
-* `iteratedFDeriv_apply_eq_iteratedDeriv`: for `g` of class `C^n` at `x`,
-  `∇ⁿg(x)[d]ⁿ` is the `n`-th derivative of `s ↦ g(x + s d)` at `0`;
-* `iteratedDeriv_two_half_norm_sq`, `iteratedDeriv_three_half_norm_sq`: one-variable formulas
-  `(½‖ψ‖²)'' = ‖ψ'‖² + ⟪ψ, ψ''⟫` and `(½‖ψ‖²)⁽³⁾ = 3⟪ψ', ψ''⟫ + ⟪ψ, ψ⁽³⁾⟫`;
+* `iteratedFDeriv_apply_eq_iteratedDeriv`: for $g$ of class $C^n$ at $x$, $\nabla^n g(x)[d]^n$ is
+  the $n$-th derivative of $s \mapsto g(x + s d)$ at $0$.
+* `iteratedDeriv_two_half_norm_sq`, `iteratedDeriv_three_half_norm_sq`: for
+  $\psi : \mathbb{R} \to F$, $(\tfrac12 \|\psi\|^2)'' = \|\psi'\|^2 + \langle \psi, \psi'' \rangle$
+  and $(\tfrac12 \|\psi\|^2)''' = 3 \langle \psi', \psi'' \rangle + \langle \psi, \psi''' \rangle$.
 * `fderiv_half_norm_sq_apply`, `iteratedFDeriv_two_half_norm_sq_apply`,
-  `iteratedFDeriv_three_half_norm_sq_apply`: the corresponding diagonal derivatives of
-  `½ ‖u‖²`.
+  `iteratedFDeriv_three_half_norm_sq_apply`: the diagonal derivatives of orders one, two and three
+  of $\tfrac12 \|u\|^2$.
+
+## Notation
+
+* $\nabla^n g(x)[d]^n$: the value `iteratedFDeriv ℝ n g x (fun _ => d)` of the $n$-th derivative of
+  $g$ at $x$ on the tuple $(d, \dots, d)$.
+
+## Implementation notes
+
+* The function $\tfrac12 \|u\|^2$ is written `fun z => ‖u z‖ ^ 2 / 2`.
 -/
 
 open Filter Set
@@ -33,7 +50,9 @@ open scoped Topology RealInnerProductSpace
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [InnerProductSpace ℝ F]
 
-/-- Subtracting a constant does not change derivatives of positive order. -/
+/-- Let $E$ and $G$ be real normed spaces, let $g : E \to G$ be $n$ times continuously
+differentiable at $x$ with $n \ne 0$, and let $e \in G$. Then the $n$-th derivative of
+$z \mapsto g(z) - e$ at $x$ equals the $n$-th derivative of $g$ at $x$. -/
 theorem iteratedFDeriv_sub_const_apply {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     {g : E → G} {x : E} {n : ℕ} (hn : n ≠ 0) (hg : ContDiffAt ℝ n g x) (e : G) :
     iteratedFDeriv ℝ n (fun z => g z - e) x = iteratedFDeriv ℝ n g x := by
@@ -43,8 +62,12 @@ theorem iteratedFDeriv_sub_const_apply {G : Type*} [NormedAddCommGroup G] [Norme
 
 section Diagonal
 
-/-- A pointwise form of `iteratedFDeriv_apply_const_eq_iteratedDeriv`: for `g` of class `C^n` at
-`x`, `∇^n g(x)[d]^n` is the `n`-th derivative of `s ↦ g(x + s d)` at `0`. -/
+/-- Let $E$ and $G$ be real normed spaces and let $g : E \to G$ be $n$ times continuously
+differentiable at $x$. Then for every direction $d \in E$,
+$$\nabla^n g(x)[d]^n = \frac{d^n}{ds^n} g(x + s d) \Big|_{s = 0}.$$
+
+This is a pointwise form of `iteratedFDeriv_apply_const_eq_iteratedDeriv`, which assumes the
+smoothness on an open set. -/
 theorem iteratedFDeriv_apply_eq_iteratedDeriv {G : Type*} [NormedAddCommGroup G]
     [NormedSpace ℝ G] {g : E → G} {x : E} {n : ℕ} (hg : ContDiffAt ℝ n g x) (d : E) :
     iteratedFDeriv ℝ n g x (fun _ => d) = iteratedDeriv n (fun s : ℝ => g (x + s • d)) 0 := by
@@ -52,7 +75,9 @@ theorem iteratedFDeriv_apply_eq_iteratedDeriv {G : Type*} [NormedAddCommGroup G]
   obtain ⟨t, htu, ht, hxt⟩ := mem_nhds_iff.1 hu
   exact iteratedFDeriv_apply_const_eq_iteratedDeriv ht (hgu.mono htu) hxt d
 
-/-- In one variable, a `C^(n+1)` function has a `C^n` derivative. -/
+/-- Let $G$ be a real normed space. If $\psi : \mathbb{R} \to G$ is $n + 1$ times continuously
+differentiable at $a$, then its derivative $\psi'$ is $n$ times continuously differentiable at
+$a$. -/
 theorem contDiffAt_deriv_of_succ {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     {ψ : ℝ → G} {a : ℝ} {n : ℕ} (hψ : ContDiffAt ℝ (n + 1) ψ a) :
     ContDiffAt ℝ n (deriv ψ) a := by
@@ -63,14 +88,18 @@ section OneDim
 
 variable {ψ : ℝ → F} {a : ℝ}
 
-/-- First derivative of `½ ‖ψ‖²` in one variable. -/
+/-- If $\psi : \mathbb{R} \to F$ is differentiable at $a$, then $s \mapsto \tfrac12 \|\psi(s)\|^2$
+has the derivative $\langle \psi(a), \psi'(a) \rangle$ at $a$. -/
 theorem hasDerivAt_half_norm_sq (hψ : DifferentiableAt ℝ ψ a) :
     HasDerivAt (fun s => ‖ψ s‖ ^ 2 / 2) ⟪ψ a, deriv ψ a⟫ a := by
   have h := (hψ.hasDerivAt.norm_sq).div_const 2
   convert h using 1
   ring
 
-/-- Second derivative of `½ ‖ψ‖²` in one variable: `(½ ‖ψ‖²)'' = ‖ψ'‖² + ⟪ψ, ψ''⟫`. -/
+/-- If $\psi : \mathbb{R} \to F$ is twice continuously differentiable at $a$, then the second
+derivative of $s \mapsto \tfrac12 \|\psi(s)\|^2$ at $a$ is
+$$\bigl(\tfrac12 \|\psi\|^2\bigr)''(a) = \|\psi'(a)\|^2 + \langle \psi(a), \psi''(a) \rangle.$$
+-/
 theorem iteratedDeriv_two_half_norm_sq (hψ : ContDiffAt ℝ 2 ψ a) :
     iteratedDeriv 2 (fun s => ‖ψ s‖ ^ 2 / 2) a =
       ‖deriv ψ a‖ ^ 2 + ⟪ψ a, iteratedDeriv 2 ψ a⟫ := by
@@ -84,8 +113,11 @@ theorem iteratedDeriv_two_half_norm_sq (hψ : ContDiffAt ℝ 2 ψ a) :
     iteratedDeriv_one, real_inner_self_eq_norm_sq]
   ring
 
-/-- Third derivative of `½ ‖ψ‖²` in one variable:
-`(½ ‖ψ‖²)⁽³⁾ = 3 ⟪ψ', ψ''⟫ + ⟪ψ, ψ⁽³⁾⟫`. -/
+/-- If $\psi : \mathbb{R} \to F$ is three times continuously differentiable at $a$, then the third
+derivative of $s \mapsto \tfrac12 \|\psi(s)\|^2$ at $a$ is
+$$\bigl(\tfrac12 \|\psi\|^2\bigr)'''(a) = 3 \langle \psi'(a), \psi''(a) \rangle + \langle
+  \psi(a), \psi'''(a) \rangle.$$
+-/
 theorem iteratedDeriv_three_half_norm_sq (hψ : ContDiffAt ℝ 3 ψ a) :
     iteratedDeriv 3 (fun s => ‖ψ s‖ ^ 2 / 2) a =
       3 * ⟪deriv ψ a, iteratedDeriv 2 ψ a⟫ + ⟪ψ a, iteratedDeriv 3 ψ a⟫ := by
@@ -110,7 +142,9 @@ end OneDim
 
 variable {u : E → F} {x d : E}
 
-/-- `∇(½ ‖u‖²)(x)[d] = ⟪u(x), ∇u(x)[d]⟫`. -/
+/-- If $u : E \to F$ is differentiable at $x$, then for every direction $d \in E$,
+$$\nabla\bigl(\tfrac12 \|u\|^2\bigr)(x)[d] = \langle u(x), \nabla u(x)[d] \rangle.$$
+-/
 theorem fderiv_half_norm_sq_apply (hu : DifferentiableAt ℝ u x) :
     fderiv ℝ (fun z => ‖u z‖ ^ 2 / 2) x d = ⟪u x, fderiv ℝ u x d⟫ := by
   have h := (hu.hasFDerivAt.norm_sq.const_smul (2⁻¹ : ℝ))
@@ -121,7 +155,9 @@ theorem fderiv_half_norm_sq_apply (hu : DifferentiableAt ℝ u x) :
   rw [hfun, h.fderiv]
   simp
 
-/-- The line through `x` in the direction `d` is smooth. -/
+/-- Let $G$ be a real normed space. If $g : E \to G$ is $n$ times continuously differentiable at
+$x$, then for every $d \in E$ the map $s \mapsto g(x + s d)$ on $\mathbb{R}$ is $n$ times
+continuously differentiable at $0$. -/
 theorem contDiffAt_comp_line {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] {g : E → G}
     {n : ℕ} (hg : ContDiffAt ℝ n g x) (d : E) :
     ContDiffAt ℝ n (fun s : ℝ => g (x + s • d)) 0 := by
@@ -130,8 +166,11 @@ theorem contDiffAt_comp_line {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ
   have hg' : ContDiffAt ℝ n g (x + (0 : ℝ) • d) := by rwa [zero_smul, add_zero]
   exact hg'.comp 0 hl
 
-/-- The diagonal second derivative of `½ ‖u‖²` ([cartis2022evaluation], (14.3.38)):
-`∇²(½ ‖u‖²)(x)[d]² = ‖∇u(x)[d]‖² + ⟪u(x), ∇²u(x)[d]²⟫`. -/
+/-- If $u : E \to F$ is twice continuously differentiable at $x$, then for every direction $d \in E$
+the diagonal second derivative of $\tfrac12 \|u\|^2$ is
+$$\nabla^2\bigl(\tfrac12 \|u\|^2\bigr)(x)[d]^2 = \|\nabla u(x)[d]\|^2 + \langle u(x), \nabla^2
+  u(x)[d]^2 \rangle.$$
+This is (14.3.38) of [cartis2022evaluation]. -/
 theorem iteratedFDeriv_two_half_norm_sq_apply (hu : ContDiffAt ℝ 2 u x) :
     iteratedFDeriv ℝ 2 (fun z => ‖u z‖ ^ 2 / 2) x (fun _ => d) =
       ‖fderiv ℝ u x d‖ ^ 2 + ⟪u x, iteratedFDeriv ℝ 2 u x (fun _ => d)⟫ := by
@@ -143,8 +182,11 @@ theorem iteratedFDeriv_two_half_norm_sq_apply (hu : ContDiffAt ℝ 2 u x) :
   have := iteratedDeriv_two_half_norm_sq hψ
   simpa only [zero_smul, add_zero] using this
 
-/-- The diagonal third derivative of `½ ‖u‖²` ([cartis2022evaluation], (14.3.39)):
-`∇³(½ ‖u‖²)(x)[d]³ = 3 ⟪∇u(x)[d], ∇²u(x)[d]²⟫ + ⟪u(x), ∇³u(x)[d]³⟫`. -/
+/-- If $u : E \to F$ is three times continuously differentiable at $x$, then for every direction
+$d \in E$ the diagonal third derivative of $\tfrac12 \|u\|^2$ is
+$$\nabla^3\bigl(\tfrac12 \|u\|^2\bigr)(x)[d]^3 = 3 \langle \nabla u(x)[d], \nabla^2 u(x)[d]^2
+  \rangle + \langle u(x), \nabla^3 u(x)[d]^3 \rangle.$$
+This is (14.3.39) of [cartis2022evaluation]. -/
 theorem iteratedFDeriv_three_half_norm_sq_apply (hu : ContDiffAt ℝ 3 u x) :
     iteratedFDeriv ℝ 3 (fun z => ‖u z‖ ^ 2 / 2) x (fun _ => d) =
       3 * ⟪fderiv ℝ u x d, iteratedFDeriv ℝ 2 u x (fun _ => d)⟫ +

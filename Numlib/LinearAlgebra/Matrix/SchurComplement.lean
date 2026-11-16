@@ -18,73 +18,86 @@ import Numlib.Analysis.Matrix.SpectralNorm
 /-!
 # The Schur complement of a block matrix
 
-For `A : Matrix (m ⊕ n) (m ⊕ n) R`, the *Schur complement* of the `(1,1)` block is
+Let $R$ be a commutative ring and let
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}$$
+be a square block matrix over $R$, with $A_{11}$ of order $m$ and $A_{22}$ of order $n$. The **Schur
+complement** of $A_{11}$ in $A$ is $S = A_{22} - A_{21} A_{11}^{-1} A_{12}$. In the notation $A =
+\begin{bmatrix} B & E \\ F & C \end{bmatrix}$ of [saad2003iterative] (14.5) it is
+$S = C - F B^{-1} E$. When $A_{11}$ is nonsingular, $A$ has block LU and block LDU factorizations
+with $S$ in the $(2,2)$ position, $A$ is nonsingular if and only if $S$ is, and the $(2,2)$ block of
+$A^{-1}$ is $S^{-1}$. The last fact lets a preconditioner for the interface system be built out of a
+solver for $A$. For a Hermitian positive definite $A$, the Schur complement is positive definite, it
+satisfies $S \le A_{22}$ in the Loewner order, and it is better conditioned than $A$ in the spectral
+norm. When the interior block $A_{11}$ is block diagonal, the Schur complement is the sum of the
+local Schur complements of the subdomains. Every preconditioner assembled from local Schur
+complements rests on this.
 
-`A.schurComplement = A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂`,
+The module also treats the Schur complement of a single pivot, which is one step of Gaussian
+elimination and the form that incomplete factorizations use ([saad2003iterative] Theorem 10.1), and
+the saddle-point matrix $\begin{bmatrix} A & B \\ B^H & D \end{bmatrix}$ of [golub2013matrix] §4.4.5
+and [saad2003iterative] (8.30).
 
-written `S = C - F B⁻¹ E` in the notation of [saad2003iterative] (14.5). Mathlib's
-`Mathlib.LinearAlgebra.Matrix.SchurComplement` carries the block LDU identity, the determinant
-formulas and the positive *semi*definite criterion, but names no Schur complement and proves nothing
-about its inverse. This file adds the name and the facts a domain-decomposition method needs:
+## Main definitions
 
-* the block LU and LDU factorizations `Matrix.fromBlocks_eq_mul_schurComplement` and
-  `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`;
-* `Matrix.isUnit_schurComplement_iff`: with an invertible `(1,1)` block, the whole matrix is
-  nonsingular exactly when its Schur complement is;
-* `Matrix.inv_fromBlocks_eq`, the block inverse, and `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`:
-  the `(2,2)` block of `A⁻¹` is `S⁻¹`, which is what lets a preconditioner for the interface system
-  be built out of a solver for `A`;
+* `Matrix.schurComplement`: the Schur complement $A_{22} - A_{21} A_{11}^{-1} A_{12}$ of the $(1,1)$
+  block.
+* `Matrix.schurComplementSingle`: for a pivot index $p$, the matrix with entries
+  $a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$ for $i, j \neq p$.
+* `Matrix.saddleMatrix`: the saddle-point matrix $\begin{bmatrix} A & B \\ B^H & D \end{bmatrix}$.
+
+## Main results
+
+* `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`, `Matrix.fromBlocks_eq_mul_schurComplement`:
+  the block LU and block LDU factorizations for a nonsingular $(1,1)$ block.
+* `Matrix.isUnit_schurComplement_iff`: if $A_{11}$ is nonsingular, then $A$ is nonsingular if and
+  only if $S$ is.
+* `Matrix.inv_fromBlocks_eq`, `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`: the block inverse, and
+  $(A^{-1})_{22} = S^{-1}$.
 * `Matrix.PosDef.schurComplement`: the Schur complement of a positive definite matrix is positive
-  definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`;
-* `Matrix.PosDef.schurComplement_loewner_le`: it lies below the `(2,2)` block in the Loewner
-  order, `A₂₂ - S` being positive semidefinite;
-* `Matrix.PosDef.condNumber_schurComplement_le`: in the spectral norm it is better conditioned
-  than the matrix, `‖S‖ ‖S⁻¹‖ ≤ ‖A‖ ‖A⁻¹‖` ([quarteroni2000numerical] Remark 3.6), by way of two
-  general facts about the `ℓ²` operator norm: it is monotone on positive semidefinite matrices
-  (`Matrix.l2_opNorm_le_of_posSemidef_of_posSemidef_sub`) and decreases on passing to a
-  submatrix (`Matrix.l2_opNorm_submatrix_le`);
+  definite.
+* `Matrix.PosDef.schurComplement_loewner_le`: for a positive definite $A$, the matrix $A_{22} - S$
+  is positive semidefinite.
+* `Matrix.l2_opNorm_le_of_posSemidef_of_posSemidef_sub`: if $0 \le X \le Y$ in the Loewner order,
+  then $\|X\|_2 \le \|Y\|_2$.
+* `Matrix.PosDef.condNumber_schurComplement_le`: for a positive definite $A$,
+  $\|S\|_2 \|S^{-1}\|_2 \le \|A\|_2 \|A^{-1}\|_2$ ([quarteroni2000numerical] Remark 3.6).
 * `Matrix.fromBlocks_eq_mul_fromBlocks_of_mul_eq`: the block LDU factorization of
-  [quarteroni2000numerical] §3.8.1, built from a factorization `A₁₁ = L₁₁ D₁ R₁₁` of the leading
-  block;
-* `Matrix.schurComplement_fromBlocks_blockDiagonal'`: the Schur complement is *additive over the
-  subdomains*, `S = ∑ S_i`, when the interior block is block diagonal and the interface block is a
-  sum of local contributions. This is what every preconditioner assembled from local Schur
-  complements rests on, and `Matrix.inv_blockDiagonal'` and `Matrix.mul_blockDiagonal'_mul` are the
-  two block-diagonal identities it is built from; `Matrix.isUnit_blockDiagonal'` is the
-  nonsingularity criterion that goes with them, a block diagonal matrix being nonsingular exactly
-  when each of its blocks is.
-
-`Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
-the form incomplete factorizations use ([saad2003iterative] Theorem 10.1). Its defining property
-`Matrix.schurComplementSingle_mulVec_of_apply_eq_zero` (it reproduces `A x` off the pivot row when
-`(A x)_p = 0`) gives the `1 × 1`-pivot inverse formula `Matrix.inv_schurComplementSingle`,
-`S⁻¹ = (A⁻¹)` restricted to the indices other than the pivot, and nonsingularity
-`Matrix.isUnit_schurComplementSingle`.
-
-`Matrix.saddleMatrix A B D = fromBlocks A B Bᴴ D` is the saddle-point (equilibrium, KKT) matrix
-([golub2013matrix] §4.4.5, [saad2003iterative] (8.30)), with its block equations
-(`Matrix.saddleMatrix_mulVec_elim`), the definiteness of the Schur complement `Bᴴ A⁻¹ B` for
-positive definite `A` and full-column-rank `B` (`Matrix.PosDef.conjTranspose_mul_inv_mul`), the
-nonsingularity of `[A B; Bᴴ 0]` ((4.4.18), `Matrix.isUnit_saddleMatrix_zero`), its triangular
-factorization (`Matrix.saddleMatrix_zero_eq_mul`) and the reduced equation (4.4.20)
-(`Matrix.saddleMatrix_zero_mulVec_snd_eq`).
+  [quarteroni2000numerical] §3.8.1, built from a factorization $A_{11} = L_{11} D_1 R_{11}$ of the
+  leading block.
+* `Matrix.isUnit_blockDiagonal'`, `Matrix.inv_blockDiagonal'`, `Matrix.mul_blockDiagonal'_mul`: a
+  block diagonal matrix with invertible blocks is invertible, its inverse is block diagonal, and a
+  product $F \operatorname{diag}(M_i) E$ is a sum over the blocks.
+* `Matrix.schurComplement_fromBlocks_blockDiagonal'`: if the interior block is block diagonal and
+  the interface block is a sum of local contributions, then $S = \sum_i S_i$ ([saad2003iterative]
+  (14.16)).
+* `Matrix.schurComplementSingle_mulVec_of_apply_eq_zero`: if $(Ax)_p = 0$, then the single-pivot
+  Schur complement applied to the restriction of $x$ reproduces $Ax$ off the pivot row.
+* `Matrix.isUnit_schurComplementSingle`, `Matrix.inv_schurComplementSingle`: the single-pivot Schur
+  complement of a nonsingular matrix is nonsingular, and its inverse is the submatrix of $A^{-1}$ on
+  the indices other than the pivot.
+* `Matrix.saddleMatrix_mulVec_elim`: the block equations of a saddle-point system.
+* `Matrix.PosDef.conjTranspose_mul_inv_mul`: $B^H A^{-1} B$ is positive definite for a positive
+  definite $A$ and a $B$ of full column rank.
+* `Matrix.isUnit_saddleMatrix_zero`, `Matrix.saddleMatrix_zero_eq_mul`,
+  `Matrix.saddleMatrix_zero_mulVec_snd_eq`: the nonsingularity (4.4.18), the triangular
+  factorization and the reduced equation (4.4.20) of the equilibrium matrix
+  $\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ of [golub2013matrix].
 
 ## Implementation notes
 
-The hypotheses are `IsUnit`, not `Invertible`, because that is the form a nonsingularity hypothesis
-takes downstream; each proof turns them into `Invertible` instances internally and
-`Matrix.invOf_eq_nonsing_inv` reconciles `⅟` with `⁻¹`.
-
-Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁ … Matrix.toBlocks₂₂` apply
-and no reindexing equivalence appears in the statements.
-
-## TODO
-
-Connect `Matrix.schurComplementSingle` to `Matrix.schurComplement`, by the identity
-`A.schurComplementSingle p = (A.submatrix e e).schurComplement` for `e = Equiv.sumCompl (· = p) : {i
-// i = p} ⊕ {i // i ≠ p} ≃ n`. It needs the inverse of the `1 × 1` block, which is
-`Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed matrix is `1`) together with
-`Matrix.det_unique`, and then the collapse of a sum over a `Unique` index type.
+* The hypotheses are `IsUnit`, not `Invertible`, because a nonsingularity hypothesis takes that form
+  downstream. Each proof turns them into `Invertible` instances, and `Matrix.invOf_eq_nonsing_inv`
+  identifies `⅟` with `⁻¹`.
+* Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁`, …, `Matrix.toBlocks₂₂`
+  apply and no reindexing equivalence appears in the statements.
+* The inverse is `Matrix.inv`, which is $0$ for a singular matrix. So when $A_{11}$ is singular,
+  `Matrix.schurComplement` is $A_{22}$.
+* Mathlib's `Mathlib.LinearAlgebra.Matrix.SchurComplement` has the block LDU identity, the
+  determinant formulas and the positive semidefinite criterion `Matrix.PosDef.fromBlocks₁₁`, but it
+  does not name the Schur complement and proves nothing about its inverse.
+* `Matrix.schurComplementSingle` is not connected to `Matrix.schurComplement` here. The connecting
+  identity is `A.schurComplementSingle p = (A.submatrix e e).schurComplement` for the reindexing
+  `e = Equiv.sumCompl (· = p)` of `{i // i = p} ⊕ {i // i ≠ p}` as `n`.
 -/
 
 open Function
@@ -98,19 +111,26 @@ section Def
 
 variable [Fintype m] [DecidableEq m] [CommRing R]
 
-/-- The **Schur complement** of the `(1,1)` block of a `2 × 2` block matrix, `S = C - F B⁻¹ E` in
-the notation of [saad2003iterative], (14.5).
+/-- Let $R$ be a commutative ring and let $A$ be a square matrix over $R$ indexed by $m \oplus n$,
+with blocks $A_{11}, A_{12}, A_{21}, A_{22}$. The **Schur complement** of the block $A_{11}$ is
+$$S = A_{22} - A_{21} A_{11}^{-1} A_{12} \in R^{n \times n}.$$
+In the notation of [saad2003iterative] (14.5), this is $S = C - F B^{-1} E$.
 
-It is `noncomputable` because `Matrix.inv` is, and it is junk when the `(1,1)` block is singular,
-`Matrix.inv` being junk there. -/
+When $A_{11}$ is singular, the definition gives $S = A_{22}$, because the inverse `Matrix.inv`
+of a singular matrix is $0$. The definition is `noncomputable` because `Matrix.inv` is. -/
 noncomputable def schurComplement (A : Matrix (m ⊕ n) (m ⊕ n) R) : Matrix n n R :=
   A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂
 
-/-- The Schur complement, unfolded. -/
+/-- The Schur complement of $A$ is $A_{22} - A_{21} A_{11}^{-1} A_{12}$, by definition. -/
 theorem schurComplement_eq (A : Matrix (m ⊕ n) (m ⊕ n) R) :
     A.schurComplement = A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂ := rfl
 
-/-- The Schur complement in terms of the four blocks: the simp-normal form. -/
+/-- Let $B \in R^{m \times m}$, $E \in R^{m \times n}$, $F \in R^{n \times m}$ and
+$C \in R^{n \times n}$. The Schur complement of $B$ in the block matrix
+$\begin{bmatrix} B & E \\ F & C \end{bmatrix}$ is
+$$C - F B^{-1} E.$$
+
+This is the `simp` normal form of the Schur complement of a block matrix. -/
 @[simp]
 theorem schurComplement_fromBlocks (B : Matrix m m R) (E : Matrix m n R) (F : Matrix n m R)
     (C : Matrix n n R) : (fromBlocks B E F C).schurComplement = C - F * B⁻¹ * E := rfl
@@ -122,9 +142,13 @@ section Factorization
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 variable {B : Matrix m m R} {E : Matrix m n R} {F : Matrix n m R} {C : Matrix n n R}
 
-/-- **The block LU factorization** of a block matrix with a nonsingular `(1,1)` block
-([saad2003iterative], (14.6)): the second factor is block upper triangular with the Schur complement
-in its `(2,2)` corner. -/
+/-- The **block LU factorization**. Let $B \in R^{m \times m}$ be invertible, let
+$E \in R^{m \times n}$, $F \in R^{n \times m}$ and $C \in R^{n \times n}$, and let
+$S = C - F B^{-1} E$ be the Schur complement of $B$. Then
+$$\begin{bmatrix} B & E \\ F & C \end{bmatrix}
+  = \begin{bmatrix} I & 0 \\ F B^{-1} & I \end{bmatrix}
+  \begin{bmatrix} B & E \\ 0 & S \end{bmatrix}.$$
+This is (14.6) of [saad2003iterative]. -/
 theorem fromBlocks_eq_mul_fromBlocks_schurComplement (hB : IsUnit B) :
     fromBlocks B E F C
       = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks B E 0 (fromBlocks B E F C).schurComplement := by
@@ -132,9 +156,16 @@ theorem fromBlocks_eq_mul_fromBlocks_schurComplement (hB : IsUnit B) :
   simp only [schurComplement_fromBlocks, fromBlocks_multiply, Matrix.one_mul, Matrix.mul_one,
     Matrix.mul_zero, Matrix.zero_mul, add_zero, Matrix.mul_assoc, hinv, add_sub_cancel]
 
-/-- **The block LDU factorization** of a block matrix with a nonsingular `(1,1)` block
-([saad2003iterative], (14.52)): the middle factor is `1 ⊕ S`, and the two outer factors are
-unipotent block triangular. -/
+/-- The **block LDU factorization**. Let $B \in R^{m \times m}$ be invertible, let
+$E \in R^{m \times n}$, $F \in R^{n \times m}$ and $C \in R^{n \times n}$, and let
+$S = C - F B^{-1} E$ be the Schur complement of $B$. Then
+$$\begin{bmatrix} B & E \\ F & C \end{bmatrix}
+  = \begin{bmatrix} I & 0 \\ F B^{-1} & I \end{bmatrix}
+  \begin{bmatrix} I & 0 \\ 0 & S \end{bmatrix} \begin{bmatrix} B & E \\ 0 & I \end{bmatrix}.$$
+This is (14.52) of [saad2003iterative].
+
+The first factor is unit block lower triangular. The last factor is block upper triangular with
+the diagonal blocks $B$ and $I$, so it is unit block triangular only when $B = I$. -/
 theorem fromBlocks_eq_mul_schurComplement (hB : IsUnit B) :
     fromBlocks B E F C
       = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks 1 0 0 (fromBlocks B E F C).schurComplement
@@ -152,21 +183,29 @@ section IsUnit
 
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 
-/-- **[saad2003iterative] Proposition 14.1 (1)**: with a nonsingular `(1,1)` block, a block matrix
-is nonsingular exactly when its Schur complement is. -/
+/-- Let $A$ be a square matrix over $R$ indexed by $m \oplus n$ whose block $A_{11}$ is invertible.
+Then the Schur complement $S$ of $A_{11}$ is invertible if and only if $A$ is invertible. This
+is part (1) of Proposition 14.1 of [saad2003iterative]. -/
 theorem isUnit_schurComplement_iff {A : Matrix (m ⊕ n) (m ⊕ n) R} (hB : IsUnit A.toBlocks₁₁) :
     IsUnit A.schurComplement ↔ IsUnit A := by
   let _ := hB.invertible
   have h1 : A.toBlocks₁₁⁻¹ = ⅟A.toBlocks₁₁ := (invOf_eq_nonsing_inv _).symm
   rw [schurComplement_eq, h1, ← isUnit_fromBlocks_iff_of_invertible₁₁, fromBlocks_toBlocks]
 
-/-- The Schur complement of a nonsingular block matrix with a nonsingular `(1,1)` block is
-nonsingular ([saad2003iterative], Proposition 14.1 (1)). -/
+/-- Let $A$ be an invertible square matrix over $R$ indexed by $m \oplus n$ whose block $A_{11}$ is
+invertible. Then the Schur complement of $A_{11}$ is invertible. This is part (1) of Proposition
+14.1 of [saad2003iterative].
+
+This is one direction of `Matrix.isUnit_schurComplement_iff`. -/
 theorem isUnit_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) R} (hB : IsUnit A.toBlocks₁₁)
     (hA : IsUnit A) : IsUnit A.schurComplement :=
   (isUnit_schurComplement_iff hB).2 hA
 
-/-- The converse of `Matrix.isUnit_schurComplement`. -/
+/-- Let $A$ be a square matrix over $R$ indexed by $m \oplus n$ whose block $A_{11}$ is invertible.
+If the Schur complement of $A_{11}$ is invertible, then $A$ is invertible.
+
+This is the converse of `Matrix.isUnit_schurComplement`, and the other direction of
+`Matrix.isUnit_schurComplement_iff`. -/
 theorem isUnit_of_isUnit_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) R}
     (hB : IsUnit A.toBlocks₁₁) (hS : IsUnit A.schurComplement) : IsUnit A :=
   (isUnit_schurComplement_iff hB).1 hS
@@ -178,8 +217,13 @@ section Inverse
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 variable {B : Matrix m m R} {E : Matrix m n R} {F : Matrix n m R} {C : Matrix n n R}
 
-/-- **The block inverse** of a nonsingular block matrix with a nonsingular `(1,1)` block
-([saad2003iterative], (14.7)), with `S = C - F B⁻¹ E` the Schur complement in the `(2,2)` corner. -/
+/-- The **block inverse**. Let $B \in R^{m \times m}$ be invertible, let $E \in R^{m \times n}$,
+$F \in R^{n \times m}$ and $C \in R^{n \times n}$, let the block matrix
+$\begin{bmatrix} B & E \\ F & C \end{bmatrix}$ be invertible, and let $S = C - F B^{-1} E$. Then
+$$\begin{bmatrix} B & E \\ F & C \end{bmatrix}^{-1}
+  = \begin{bmatrix} B^{-1} + B^{-1} E S^{-1} F B^{-1} & -B^{-1} E S^{-1} \\
+  -S^{-1} F B^{-1} & S^{-1} \end{bmatrix}.$$
+This is (14.7) of [saad2003iterative]. -/
 theorem inv_fromBlocks_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C)) :
     (fromBlocks B E F C)⁻¹
       = fromBlocks (B⁻¹ + B⁻¹ * E * (C - F * B⁻¹ * E)⁻¹ * F * B⁻¹)
@@ -197,9 +241,14 @@ theorem inv_fromBlocks_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C)) :
     rw [invOf_eq_nonsing_inv, hSB]
   rw [← invOf_eq_nonsing_inv (fromBlocks B E F C), invOf_fromBlocks₁₁_eq B E F C, hSinv, hBinv]
 
-/-- **[saad2003iterative] Proposition 14.1 (3)**: the `(2,2)` block of the inverse of a block matrix
-is the inverse of its Schur complement. This is the identity that lets a preconditioner for the
-interface system `S y = g` be built out of a solver for the whole matrix. -/
+/-- Let $A$ be an invertible square matrix over $R$ indexed by $m \oplus n$ whose block $A_{11}$ is
+invertible, and let $S$ be the Schur complement of $A_{11}$. Then the $(2,2)$ block of the
+inverse is the inverse of the Schur complement:
+$$(A^{-1})_{22} = S^{-1}.$$
+This is part (3) of Proposition 14.1 of [saad2003iterative].
+
+This identity lets a preconditioner for the interface system $Sy = g$ be built out of a solver
+for $A$. -/
 theorem toBlocks₂₂_inv_eq_inv_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) R}
     (hB : IsUnit A.toBlocks₁₁) (hA : IsUnit A) :
     (A⁻¹).toBlocks₂₂ = A.schurComplement⁻¹ := by
@@ -214,7 +263,12 @@ section Additive
 variable {o : Type*} [Fintype o] [DecidableEq o] {m' : o → Type*}
 variable [∀ i, Fintype (m' i)] [∀ i, DecidableEq (m' i)] [CommRing R]
 
-/-- A block diagonal matrix is nonsingular as soon as every one of its blocks is. -/
+/-- Let $o$ be a finite index set, and for each $i \in o$ let $M_i$ be a square matrix over $R$
+indexed by a finite type $m'_i$. If every $M_i$ is invertible, then the block diagonal matrix
+$\operatorname{diag}(M_i)_{i \in o}$ is invertible.
+
+The block diagonal matrix is `Matrix.blockDiagonal'`, indexed by the sigma type
+$\Sigma_i \, m'_i$. Only this direction of the equivalence is stated. -/
 theorem isUnit_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUnit (M i)) :
     IsUnit (blockDiagonal' M) := by
   refine IsUnit.of_mul_eq_one (blockDiagonal' fun i => (M i)⁻¹) ?_
@@ -224,7 +278,11 @@ theorem isUnit_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, I
     exact mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 (hM i))
   rw [h, blockDiagonal'_one]
 
-/-- The inverse of a block diagonal matrix is the block diagonal matrix of the inverses. -/
+/-- Let $o$ be a finite index set, and for each $i \in o$ let $M_i$ be an invertible square matrix
+over $R$ indexed by a finite type $m'_i$. Then the inverse of the block diagonal matrix of the
+$M_i$ is the block diagonal matrix of the inverses:
+$$\operatorname{diag}(M_i)_{i \in o}^{-1} = \operatorname{diag}(M_i^{-1})_{i \in o}.$$
+-/
 theorem inv_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUnit (M i)) :
     (blockDiagonal' M)⁻¹ = blockDiagonal' fun i => (M i)⁻¹ := by
   refine inv_eq_right_inv ?_
@@ -234,8 +292,12 @@ theorem inv_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUn
   rw [← blockDiagonal'_mul, h, blockDiagonal'_one]
 
 omit [∀ i, DecidableEq (m' i)] in
-/-- A product `F D E` whose middle factor is block diagonal is the sum, over the blocks, of the
-products of the corresponding blocks of `F`, `D` and `E`. -/
+/-- Let $o$ be a finite index set, and for each $i \in o$ let $M_i$ be a square matrix over $R$
+indexed by a finite type $m'_i$. Let $F$ be a matrix whose columns are indexed by
+$\Sigma_i \, m'_i$, and $E$ a matrix whose rows are indexed by $\Sigma_i \, m'_i$. Then
+$$F \operatorname{diag}(M_i)_{i \in o} \, E = \sum_{i \in o} F_i M_i E_i,$$
+where $F_i$ is the block of the columns of $F$ in $m'_i$ and $E_i$ is the block of the rows of
+$E$ in $m'_i$. -/
 theorem mul_blockDiagonal'_mul {n : Type*} (F : Matrix n (Σ i, m' i) R)
     (M : ∀ i, Matrix (m' i) (m' i) R) (E : Matrix (Σ i, m' i) n R) :
     F * blockDiagonal' M * E
@@ -250,11 +312,19 @@ theorem mul_blockDiagonal'_mul {n : Type*} (F : Matrix n (Σ i, m' i) R)
   · rw [blockDiagonal'_apply_ne _ _ _ hj, mul_zero]
   · rw [blockDiagonal'_apply_eq]
 
-/-- **The Schur complement is additive over the subdomains**: if the interior block is block
-diagonal, `B = diag(B_1, …, B_s)`, and the interface block is a sum `C = ∑ C_i` of local
-contributions, then the Schur complement is the sum of the local Schur complements,
-`S = ∑ (C_i - F_i B_i⁻¹ E_i)`.  This is [saad2003iterative], (14.16); the derivation there is
-finite-element, but the identity is block algebra and holds for any such decomposition. -/
+/-- The **Schur complement is additive over the subdomains**. Let $o$ be a finite index set, and for
+each $i \in o$ let $B_i$ be an invertible square matrix over $R$ indexed by a finite type $m'_i$
+and let $C_i \in R^{n \times n}$. Let $E$ have rows indexed by $\Sigma_i \, m'_i$ and columns
+indexed by $n$, let $F$ have rows indexed by $n$ and columns indexed by $\Sigma_i \, m'_i$, and
+let $E_i$ and $F_i$ be their blocks of rows and of columns in $m'_i$. Then the Schur complement
+of the interior block $\operatorname{diag}(B_i)_{i \in o}$ in
+$$\begin{bmatrix} \operatorname{diag}(B_i)_{i \in o} & E \\ F & \sum_i C_i \end{bmatrix}$$
+is the sum of the local Schur complements:
+$$S = \sum_{i \in o} \bigl(C_i - F_i B_i^{-1} E_i\bigr).$$
+This is (14.16) of [saad2003iterative].
+
+The derivation in the source is for finite elements, but the identity is block algebra and holds
+for any such decomposition. -/
 theorem schurComplement_fromBlocks_blockDiagonal' {n : Type*} (B : ∀ i, Matrix (m' i) (m' i) R)
     (E : Matrix (Σ i, m' i) n R) (F : Matrix n (Σ i, m' i) R) (C : o → Matrix n n R)
     (hB : ∀ i, IsUnit (B i)) :
@@ -273,13 +343,13 @@ variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
-/-- **[saad2003iterative] Proposition 14.1 (2)**: the Schur complement of a Hermitian positive
-definite matrix is Hermitian positive definite.
+/-- Let $K$ be a field with a partial order and a star operation, and let $A$ be a Hermitian
+positive definite matrix over $K$ indexed by $m \oplus n$. Then the Schur complement of $A_{11}$
+is Hermitian positive definite. This is part (2) of Proposition 14.1 of [saad2003iterative].
 
-Mathlib's `Matrix.PosDef.fromBlocks₁₁` gives only the positive *semi*definite equivalence; the
-strict form comes from `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`, since `A⁻¹` is positive
-definite, a principal submatrix of a positive definite matrix is positive definite, and the inverse
-of a positive definite matrix is positive definite. -/
+Mathlib's `Matrix.PosDef.fromBlocks₁₁` gives only the positive semidefinite equivalence. The
+strict form here comes from `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`: $A^{-1}$ is positive
+definite, so its principal submatrix $S^{-1}$ is positive definite, and so is its inverse $S$. -/
 theorem PosDef.schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) K} (hA : A.PosDef) :
     A.schurComplement.PosDef := by
   have h11 : A.toBlocks₁₁.PosDef := Matrix.PosDef.submatrix hA Sum.inl_injective
@@ -295,20 +365,29 @@ section Single
 
 variable {K : Type*} [Field K]
 
-/-- **One step of Gaussian elimination**, the `1 × 1`-pivot Schur complement: for a pivot index `p`,
-the matrix `A i j - A i p (A p p)⁻¹ A p j` on the indices other than `p`. It is the trailing block
-of the matrix `A₁` of [saad2003iterative], Theorem 10.1 — his `A₁` is square on all `n` indices,
-keeping the pivot row and a zeroed pivot column — and it is the matrix whose incomplete
-factorizations the theory of Chapter 10 studies. -/
+/-- Let $K$ be a field, $A \in K^{n \times n}$, and $p$ an index, the pivot. The **single-pivot
+Schur complement** of $A$ at $p$ is the matrix indexed by the indices $i, j \neq p$ with the
+entries
+$$a_{ij} - a_{ip} \, a_{pp}^{-1} \, a_{pj}.$$
+It is the result of one step of Gaussian elimination with the pivot $a_{pp}$.
+
+It is the trailing block of the matrix $A_1$ of [saad2003iterative] Theorem 10.1. The matrix
+$A_1$ of the source is square on all $n$ indices, keeps the pivot row and has a zero pivot
+column. It is the matrix whose incomplete factorizations Chapter 10 of the source studies. If
+$a_{pp} = 0$, then $a_{pp}^{-1}$ is $0$ in Lean and the entries are $a_{ij}$. -/
 noncomputable def schurComplementSingle (A : Matrix n n K) (p : n) :
     Matrix {i : n // i ≠ p} {i : n // i ≠ p} K :=
   Matrix.of fun i j => A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1
 
+/-- The entry $(i, j)$ of the single-pivot Schur complement of $A$ at $p$ is
+$a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}$. -/
 @[simp]
 theorem schurComplementSingle_apply (A : Matrix n n K) (p : n) (i j : {i : n // i ≠ p}) :
     A.schurComplementSingle p i j = A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1 := rfl
 
-/-- The transpose of a one-step Schur complement is the Schur complement of the transpose. -/
+/-- Let $K$ be a field, $A \in K^{n \times n}$, and $p$ a pivot index. The transpose of the
+single-pivot Schur complement of $A$ at $p$ is the single-pivot Schur complement of $A^T$ at
+$p$. -/
 theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
     (A.schurComplementSingle p)ᵀ = Aᵀ.schurComplementSingle p := by
   ext i j
@@ -317,7 +396,7 @@ theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
 
 variable [Fintype n] [DecidableEq n]
 
-/-- The row of a matrix-vector product, with the pivot term separated off. -/
+/-- For every row $t$, $\sum_{j \neq p} a_{tj} x_j = (Ax)_t - a_{tp} x_p$. -/
 private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) :
     ∑ j : {x : n // x ≠ p}, A t j.1 * X j.1 = (A *ᵥ X) t - A t p * X p := by
   rw [← Finset.sum_subtype (p := fun x => x ≠ p) (Finset.univ.erase p) (fun x => by simp)
@@ -325,12 +404,14 @@ private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) 
     ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
   ring
 
-/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose image
-under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of `X`
-reproduces the remaining rows of `A X`.
+/-- Let $K$ be a field, let $A \in K^{n \times n}$ with $n$ finite, let $p$ be an index with
+$a_{pp} \neq 0$, and let $x \in K^n$ satisfy $(Ax)_p = 0$. Let $S$ be the single-pivot Schur
+complement of $A$ at $p$, and let $x'$ be the restriction of $x$ to the indices other than $p$.
+Then
+$$(S x')_i = (Ax)_i \quad \text{for every } i \neq p.$$
 
-This is the whole content of one step of Gaussian elimination: `X` is recovered from its restriction
-by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
+This is the content of one step of Gaussian elimination: $x$ is recovered from $x'$ by
+back-substitution in the pivot row, $a_{pp} x_p = -\sum_{j \neq p} a_{pj} x_j$. -/
 theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
     (hpp : A p p ≠ 0) {X : n → K} (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
     (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
@@ -353,8 +434,9 @@ theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
   rw [lhs, expand, pull, mul_assoc, hXp, sum_ne_eq_mulVec_sub A X p i.1]
   ring
 
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is inverted by
-the corresponding submatrix of the inverse. -/
+/-- Let $A \in K^{n \times n}$ be invertible with $a_{pp} \neq 0$, and let $S$ be the single-pivot
+Schur complement of $A$ at $p$. Then $S \, (A^{-1})' = I$, where $(A^{-1})'$ is the submatrix of
+$A^{-1}$ on the indices other than $p$. -/
 theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA : IsUnit A)
     (hpp : A p p ≠ 0) :
     A.schurComplementSingle p * A⁻¹.submatrix Subtype.val Subtype.val = 1 := by
@@ -373,15 +455,18 @@ theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA :
     · rw [Matrix.one_apply_ne (Subtype.coe_injective.ne hij), Matrix.one_apply_ne hij]
   exact h.trans hone
 
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is nonsingular.
--/
+/-- Let $A \in K^{n \times n}$ be invertible with $a_{pp} \neq 0$. Then the single-pivot Schur
+complement of $A$ at $p$ is invertible. -/
 theorem isUnit_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
     IsUnit (A.schurComplementSingle p) :=
   have h := schurComplementSingle_mul_submatrix_inv hA hpp
   ⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩
 
-/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the indices
-other than the pivot — the `1 × 1`-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
+/-- Let $A \in K^{n \times n}$ be invertible with $a_{pp} \neq 0$, and let $S$ be the single-pivot
+Schur complement of $A$ at $p$. Then $S^{-1}$ is the submatrix of $A^{-1}$ on the indices other
+than $p$.
+
+This is the single-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
 theorem inv_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
     (A.schurComplementSingle p)⁻¹ = A⁻¹.submatrix Subtype.val Subtype.val :=
   Matrix.inv_eq_right_inv (schurComplementSingle_mul_submatrix_inv hA hpp)
@@ -395,9 +480,17 @@ variable {A₁₁ L₁₁ D₁ R₁₁ : Matrix m m R} {A₁₂ : Matrix m n R} 
   {A₂₂ : Matrix n n R}
 
 omit [Fintype n] [DecidableEq n] in
-/-- The Schur complement written with the factors of `A₁₁ = L₁₁ D₁ R₁₁`: `Δ₂ = A₂₂ - L₂₁ D₁ R₁₂`
-with `L₂₁ = A₂₁ R₁₁⁻¹ D₁⁻¹` and `R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂` ([quarteroni2000numerical] §3.8.1); only
-`D₁` needs to be nonsingular for this identity. -/
+/-- Let $A_{11}, L_{11}, D_1, R_{11} \in R^{m \times m}$, $A_{12} \in R^{m \times n}$,
+$A_{21} \in R^{n \times m}$ and $A_{22} \in R^{n \times n}$, with $D_1$ invertible and
+$A_{11} = L_{11} D_1 R_{11}$. Then the Schur complement of $A_{11}$ in $\begin{bmatrix} A_{11} &
+A_{12} \\ A_{21} & A_{22} \end{bmatrix}$ is
+$$\Delta_2 = A_{22} - L_{21} D_1 R_{12}, \qquad
+  L_{21} = A_{21} R_{11}^{-1} D_1^{-1}, \qquad R_{12} = D_1^{-1} L_{11}^{-1} A_{12}.$$
+This is the Schur complement of [quarteroni2000numerical] §3.8.1.
+
+Only $D_1$ needs to be nonsingular for this identity. If $L_{11}$ or $R_{11}$ is singular, then
+so is $A_{11}$, and both sides are $A_{22}$, because `Matrix.inv` gives $0$ for a singular
+matrix. -/
 theorem schurComplement_fromBlocks_of_mul_eq (hD : IsUnit D₁) (h : A₁₁ = L₁₁ * D₁ * R₁₁) :
     (fromBlocks A₁₁ A₁₂ A₂₁ A₂₂).schurComplement
       = A₂₂ - (A₂₁ * R₁₁⁻¹ * D₁⁻¹) * D₁ * (D₁⁻¹ * L₁₁⁻¹ * A₁₂) := by
@@ -407,11 +500,18 @@ theorem schurComplement_fromBlocks_of_mul_eq (hD : IsUnit D₁) (h : A₁₁ = L
   rw [← Matrix.mul_assoc D₁⁻¹ D₁, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hD),
     Matrix.one_mul]
 
-/-- **The block LDU factorization** ([quarteroni2000numerical] §3.8.1): if the leading block
-factors as `A₁₁ = L₁₁ D₁ R₁₁` with nonsingular factors, then
-`[A₁₁ A₁₂; A₂₁ A₂₂] = [L₁₁ 0; L₂₁ I] [D₁ 0; 0 Δ₂] [R₁₁ R₁₂; 0 I]` with `L₂₁ = A₂₁ R₁₁⁻¹ D₁⁻¹`,
-`R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂` and `Δ₂` the Schur complement of `A₁₁`
-(`Matrix.schurComplement_fromBlocks_of_mul_eq` writes it as `A₂₂ - L₂₁ D₁ R₁₂`). -/
+/-- The **block LDU factorization**. Let $A_{11} = L_{11} D_1 R_{11}$ with
+$L_{11}, D_1, R_{11} \in R^{m \times m}$ invertible, let $A_{12} \in R^{m \times n}$,
+$A_{21} \in R^{n \times m}$ and $A_{22} \in R^{n \times n}$, and let $\Delta_2$ be the Schur
+complement of $A_{11}$. Then
+$$\begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}
+  = \begin{bmatrix} L_{11} & 0 \\ L_{21} & I \end{bmatrix}
+  \begin{bmatrix} D_1 & 0 \\ 0 & \Delta_2 \end{bmatrix}
+  \begin{bmatrix} R_{11} & R_{12} \\ 0 & I \end{bmatrix}$$
+with $L_{21} = A_{21} R_{11}^{-1} D_1^{-1}$ and $R_{12} = D_1^{-1} L_{11}^{-1} A_{12}$. This is
+the factorization of [quarteroni2000numerical] §3.8.1.
+
+`Matrix.schurComplement_fromBlocks_of_mul_eq` writes $\Delta_2$ as $A_{22} - L_{21} D_1 R_{12}$. -/
 theorem fromBlocks_eq_mul_fromBlocks_of_mul_eq (hL : IsUnit L₁₁) (hD : IsUnit D₁) (hR : IsUnit R₁₁)
     (h : A₁₁ = L₁₁ * D₁ * R₁₁) :
     fromBlocks A₁₁ A₁₂ A₂₁ A₂₂
@@ -437,7 +537,8 @@ end BlockLDU
 
 section Loewner
 
-/-- The off-diagonal blocks of a Hermitian matrix are conjugate transposes of each other. -/
+/-- Let $A$ be a Hermitian matrix indexed by $m \oplus n$ over a type with a star operation. Then
+the off-diagonal blocks are conjugate transposes of each other: $A_{12} = A_{21}^H$. -/
 theorem IsHermitian.toBlocks₁₂_eq_conjTranspose {α : Type*} [Star α]
     {A : Matrix (m ⊕ n) (m ⊕ n) α} (hA : A.IsHermitian) : A.toBlocks₁₂ = A.toBlocks₂₁ᴴ := by
   ext i j
@@ -446,11 +547,17 @@ theorem IsHermitian.toBlocks₁₂_eq_conjTranspose {α : Type*} [Star α]
 variable {K : Type*} [Field K] [PartialOrder K] [StarRing K] [Fintype m] [DecidableEq m]
   [Finite n]
 
-/-- **The Schur complement lies below the `(2,2)` block in the Loewner order**: for `A` positive
-definite, `A₂₂ - S = A₂₁ A₁₁⁻¹ A₁₂ = A₂₁ A₁₁⁻¹ A₂₁ᴴ` is positive semidefinite, which is exactly
-`S ≤ A₂₂` for the order `X ≤ Y ↔ (Y - X).PosSemidef` of `Mathlib.Analysis.Matrix.Order` (scoped
-`MatrixOrder`, over `RCLike`; `Matrix.le_iff` is `Iff.rfl`). Stated over any ordered star field,
-without that order, as the positive semidefiniteness of the difference. -/
+/-- **The Schur complement lies below the $(2,2)$ block in the Loewner order.** Let $K$ be a field
+with a partial order and a star operation, let $m$ and $n$ be finite, and let $A$ be a Hermitian
+positive definite matrix over $K$ indexed by $m \oplus n$, with Schur complement $S$ of
+$A_{11}$. Then $A_{22} - S$ is positive semidefinite, that is, $S \le A_{22}$ in the Loewner
+order.
+
+The difference is $A_{22} - S = A_{21} A_{11}^{-1} A_{12} = A_{21} A_{11}^{-1} A_{21}^H$. The
+Loewner order $X \le Y \iff Y - X$ positive semidefinite is in `Mathlib.Analysis.Matrix.Order`
+(scoped `MatrixOrder`, over `RCLike`, where `Matrix.le_iff` is `Iff.rfl`). The statement here is
+over any field with a partial order and a star operation, without that order, as the positive
+semidefiniteness of the difference. -/
 theorem PosDef.schurComplement_loewner_le {A : Matrix (m ⊕ n) (m ⊕ n) K} (hA : A.PosDef) :
     (A.toBlocks₂₂ - A.schurComplement).PosSemidef := by
   have h11 : A.toBlocks₁₁.PosDef := Matrix.PosDef.submatrix hA Sum.inl_injective
@@ -465,10 +572,15 @@ open scoped Matrix.Norms.L2Operator
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The `ℓ²` operator norm is monotone on positive semidefinite matrices**: if `0 ≤ X ≤ Y` in the
-Loewner order — `X` and `Y - X` positive semidefinite — then `‖X‖₂ ≤ ‖Y‖₂`. The norm of a
-Hermitian matrix is the supremum of its Rayleigh quotient, and the Rayleigh quotients of `X` lie
-between `0` and those of `Y`. -/
+/-- **The spectral norm is monotone on positive semidefinite matrices.** Let $\mathbb{K}$ be
+$\mathbb{R}$ or $\mathbb{C}$, and let $X, Y \in \mathbb{K}^{n \times n}$. If $X$ and $Y - X$ are
+positive semidefinite, that is, $0 \le X \le Y$ in the Loewner order, then
+$$\|X\|_2 \le \|Y\|_2,$$
+where $\|\cdot\|_2$ is the operator norm induced by the Euclidean norm.
+
+Here $\mathbb{K}$ is an `RCLike` field, and the norm is the scoped instance
+`Matrix.Norms.L2Operator`. The norm of a Hermitian matrix is the supremum of its Rayleigh
+quotient, and the Rayleigh quotients of $X$ lie between $0$ and those of $Y$. -/
 theorem l2_opNorm_le_of_posSemidef_of_posSemidef_sub {X Y : Matrix n n 𝕜} (hX : X.PosSemidef)
     (hXY : (Y - X).PosSemidef) : ‖X‖ ≤ ‖Y‖ := by
   rw [l2_opNorm_def, l2_opNorm_def]
@@ -513,11 +625,18 @@ open scoped Matrix.Norms.L2Operator
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
 
-/-- **The Schur complement of a positive definite matrix is better conditioned than the matrix**
-([quarteroni2000numerical] Remark 3.6; Axelsson, *Iterative Solution Methods*, Lemma 3.12): in the
-spectral norm, `‖S‖₂ ‖S⁻¹‖₂ ≤ ‖A‖₂ ‖A⁻¹‖₂` for `S = A.schurComplement`. Indeed `0 ≤ S ≤ A₂₂` in the
-Loewner order gives `‖S‖ ≤ ‖A₂₂‖ ≤ ‖A‖`, a principal submatrix having the smaller norm, and
-`S⁻¹ = (A⁻¹)₂₂` gives `‖S⁻¹‖ ≤ ‖A⁻¹‖` for the same reason. -/
+/-- **The Schur complement of a positive definite matrix is better conditioned than the matrix.**
+Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let $A$ be a Hermitian positive definite
+matrix over $\mathbb{K}$ indexed by $m \oplus n$, and let $S$ be the Schur complement of
+$A_{11}$. Then in the spectral norm
+$$\|S\|_2 \, \|S^{-1}\|_2 \le \|A\|_2 \, \|A^{-1}\|_2.$$
+This is Remark 3.6 of [quarteroni2000numerical], and Lemma 3.12 of Axelsson, *Iterative Solution
+Methods*.
+
+The norm is the scoped instance `Matrix.Norms.L2Operator`. The bound $0 \le S \le A_{22}$ in the
+Loewner order gives $\|S\| \le \|A_{22}\| \le \|A\|$, since a principal submatrix has the
+smaller norm (`Matrix.l2_opNorm_submatrix_le`), and $S^{-1} = (A^{-1})_{22}$ gives
+$\|S^{-1}\| \le \|A^{-1}\|$ in the same way. -/
 theorem PosDef.condNumber_schurComplement_le {A : Matrix (m ⊕ n) (m ⊕ n) 𝕜} (hA : A.PosDef) :
     ‖A.schurComplement‖ * ‖A.schurComplement⁻¹‖ ≤ ‖A‖ * ‖A⁻¹‖ := by
   have h11 : A.toBlocks₁₁.PosDef := hA.submatrix Sum.inl_injective
@@ -537,37 +656,60 @@ end CondNumber
 
 section Saddle
 
-/-- **The saddle-point (equilibrium, KKT) matrix** `[A B; Bᴴ D]` ([golub2013matrix] §4.4.5, the
-equilibrium system `[C B; Bᵀ 0]` with `D = 0`; [saad2003iterative] (8.30), with `D = 0` the
-saddle-point matrix itself and `D = ρ C` its regularization). -/
+/-- Let $R$ have a star operation, and let $A \in R^{m \times m}$, $B \in R^{m \times n}$ and
+$D \in R^{n \times n}$. The **saddle-point matrix** (equilibrium matrix, KKT matrix) is
+$$\begin{bmatrix} A & B \\ B^H & D \end{bmatrix},$$
+indexed by $m \oplus n$.
+
+With $D = 0$ it is the equilibrium matrix $\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$ of
+[golub2013matrix] §4.4.5, with $A$ in place of $C$. In [saad2003iterative] (8.30), $D = 0$ gives
+the saddle-point matrix itself and $D = \rho C$ its regularization. -/
 def saddleMatrix [Star R] (A : Matrix m m R) (B : Matrix m n R) (D : Matrix n n R) :
     Matrix (m ⊕ n) (m ⊕ n) R :=
   fromBlocks A B Bᴴ D
 
-/-- The conjugate transpose of a saddle-point matrix is the saddle-point matrix of the conjugate
-transposed diagonal blocks. -/
+/-- Let $R$ have an involutive star operation. The conjugate transpose of a saddle-point matrix is
+the saddle-point matrix of the conjugate transposed diagonal blocks:
+$$\begin{bmatrix} A & B \\ B^H & D \end{bmatrix}^H
+  = \begin{bmatrix} A^H & B \\ B^H & D^H \end{bmatrix}.$$
+-/
 theorem saddleMatrix_conjTranspose [InvolutiveStar R] (A : Matrix m m R) (B : Matrix m n R)
     (D : Matrix n n R) : (saddleMatrix A B D)ᴴ = saddleMatrix Aᴴ B Dᴴ := by
   rw [saddleMatrix, saddleMatrix, fromBlocks_conjTranspose, conjTranspose_conjTranspose]
 
-/-- A saddle-point matrix with Hermitian diagonal blocks is Hermitian. -/
+/-- Let $R$ have an involutive star operation. If $A \in R^{m \times m}$ and $D \in R^{n \times n}$
+are Hermitian, then the saddle-point matrix $\begin{bmatrix} A & B \\ B^H & D \end{bmatrix}$ is
+Hermitian for every $B \in R^{m \times n}$. -/
 theorem IsHermitian.saddleMatrix [InvolutiveStar R] {A : Matrix m m R} {D : Matrix n n R}
     (hA : A.IsHermitian) (B : Matrix m n R) (hD : D.IsHermitian) :
     (saddleMatrix A B D).IsHermitian :=
   hA.fromBlocks rfl hD
 
-/-- **The block equations** of a saddle-point system: `(x, y)` solves
-`[A B; Bᴴ D] (x, y) = (b, c)` exactly when `A x + B y = b` and `Bᴴ x + D y = c`. -/
+/-- **The block equations of a saddle-point system.** Let $R$ be a semiring (not necessarily unital
+or associative) with a star operation, let $m$ and $n$ be finite, and let
+$A \in R^{m \times m}$, $B \in R^{m \times n}$, $D \in R^{n \times n}$, $x, b \in R^m$ and
+$y, c \in R^n$. Then
+$$\begin{bmatrix} A & B \\ B^H & D \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}
+  = \begin{bmatrix} b \\ c \end{bmatrix}$$
+if and only if $Ax + By = b$ and $B^H x + D y = c$.
+
+The stacked vectors are `Sum.elim x y` and `Sum.elim b c`. -/
 theorem saddleMatrix_mulVec_elim [Fintype m] [Fintype n] [NonUnitalNonAssocSemiring R] [Star R]
     (A : Matrix m m R) (B : Matrix m n R) (D : Matrix n n R) (x b : m → R) (y c : n → R) :
     saddleMatrix A B D *ᵥ Sum.elim x y = Sum.elim b c ↔
       A *ᵥ x + B *ᵥ y = b ∧ Bᴴ *ᵥ x + D *ᵥ y = c := by
   rw [saddleMatrix, fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, Sum.elim_eq_iff]
 
-/-- **The triangular factorization of an equilibrium matrix** ([golub2013matrix] §4.4.5): with
-`A = G Gᴴ` (a Cholesky factorization), `G K = B` and `H Hᴴ = Kᴴ K` (a Cholesky factorization of
-`Bᴴ A⁻¹ B = Kᴴ K`), `[A B; Bᴴ 0] = [G 0; Kᴴ H] [Gᴴ K; 0 -Hᴴ]`. The identity needs no
-definiteness. -/
+/-- **The triangular factorization of an equilibrium matrix.** Let $R$ be a ring with a star
+operation, and let $A, G \in R^{m \times m}$, $B, K \in R^{m \times n}$ and
+$H \in R^{n \times n}$ satisfy $A = G G^H$, $G K = B$ and $H H^H = K^H K$. Then
+$$\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}
+  = \begin{bmatrix} G & 0 \\ K^H & H \end{bmatrix}
+  \begin{bmatrix} G^H & K \\ 0 & -H^H \end{bmatrix}.$$
+This is the factorization of [golub2013matrix] §4.4.5.
+
+In the source, $A = G G^H$ is a Cholesky factorization, and $H H^H = K^H K = B^H A^{-1} B$ is a
+Cholesky factorization of the Schur complement. The identity needs no definiteness. -/
 theorem saddleMatrix_zero_eq_mul [Fintype m] [Fintype n] [Ring R] [StarRing R]
     {A G : Matrix m m R} {B K : Matrix m n R} {H : Matrix n n R} (hA : A = G * Gᴴ)
     (hK : G * K = B) (hH : H * Hᴴ = Kᴴ * K) :
@@ -580,25 +722,42 @@ variable {K : Type*} [Field K] [PartialOrder K] [StarRing K]
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 omit [DecidableEq n] in
-/-- **The Schur complement of a saddle-point matrix is definite**: for positive definite `A` and
-`B` of full column rank, `Bᴴ A⁻¹ B` is positive definite ([saad2003iterative] Corollary 8.1). The
-complement of `A` in `[A B; Bᴴ 0]` is its negative (`Matrix.schurComplement_fromBlocks`). -/
+/-- **The Schur complement of a saddle-point matrix is definite.** Let $K$ be a field with a partial
+order and a star operation, let $A \in K^{m \times m}$ be Hermitian positive definite, and let
+$B \in K^{m \times n}$ have full column rank. Then $B^H A^{-1} B$ is Hermitian positive
+definite. This is Corollary 8.1 of [saad2003iterative].
+
+Full column rank is the injectivity of $x \mapsto Bx$, `Function.Injective B.mulVec`. The Schur
+complement of $A$ in $\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ is $-B^H A^{-1} B$
+(`Matrix.schurComplement_fromBlocks`). -/
 theorem PosDef.conjTranspose_mul_inv_mul {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
     (hB : Function.Injective B.mulVec) : (Bᴴ * A⁻¹ * B).PosDef :=
   hA.inv.conjTranspose_mul_mul_same hB
 
-/-- **The equilibrium matrix is nonsingular** ([golub2013matrix] (4.4.18)): for positive definite
-`A` and `B` of full column rank, `[A B; Bᴴ 0]` is nonsingular, since its Schur complement
-`-Bᴴ A⁻¹ B` is negative definite. -/
+/-- **The equilibrium matrix is nonsingular.** Let $K$ be a field with a partial order and a star
+operation, let $A \in K^{m \times m}$ be Hermitian positive definite, and let
+$B \in K^{m \times n}$ have full column rank. Then the matrix
+$\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ is nonsingular. This is (4.4.18) of
+[golub2013matrix].
+
+Its Schur complement $-B^H A^{-1} B$ is negative definite, hence nonsingular. Full column rank
+is `Function.Injective B.mulVec`. -/
 theorem isUnit_saddleMatrix_zero {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
     (hB : Function.Injective B.mulVec) : IsUnit (saddleMatrix A B 0) := by
   refine isUnit_of_isUnit_schurComplement (by simpa [saddleMatrix] using hA.isUnit) ?_
   rw [saddleMatrix, schurComplement_fromBlocks, zero_sub, Matrix.mul_assoc Bᴴ, ← Matrix.mul_assoc]
   exact (hA.conjTranspose_mul_inv_mul hB).isUnit.neg
 
-/-- **The reduced equation of an equilibrium system** ([golub2013matrix] (4.4.20)): for positive
-definite `A` and `B` of full column rank, if `[A B; Bᴴ 0] (x, y) = (f, 0)` then
-`y = (Bᴴ A⁻¹ B)⁻¹ Bᴴ A⁻¹ f`, by eliminating `x = A⁻¹ (f - B y)`. -/
+/-- **The reduced equation of an equilibrium system.** Let $K$ be a field with a partial order and a
+star operation, let $A \in K^{m \times m}$ be Hermitian positive definite, and let
+$B \in K^{m \times n}$ have full column rank. If $x, f \in K^m$ and $y \in K^n$ satisfy
+$$\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}
+  = \begin{bmatrix} f \\ 0 \end{bmatrix},$$
+then
+$$y = (B^H A^{-1} B)^{-1} B^H A^{-1} f.$$
+This is (4.4.20) of [golub2013matrix].
+
+The proof eliminates $x = A^{-1} (f - By)$. Full column rank is `Function.Injective B.mulVec`. -/
 theorem saddleMatrix_zero_mulVec_snd_eq {A : Matrix m m K} {B : Matrix m n K} (hA : A.PosDef)
     (hB : Function.Injective B.mulVec) {x f : m → K} {y : n → K}
     (h : saddleMatrix A B 0 *ᵥ Sum.elim x y = Sum.elim f 0) :

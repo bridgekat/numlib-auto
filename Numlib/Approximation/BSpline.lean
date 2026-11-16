@@ -11,70 +11,104 @@ import Numlib.Approximation.Spline
 /-!
 # B-splines
 
-The normalized B-splines `B_{i,k}` of degree `k` on a nondecreasing knot sequence `x : ℕ → ℝ`,
-*defined* by the Cox–de Boor recursion ([quarteroni2000numerical] (8.54)) and *characterized*, at
-distinct knots, as the scaled divided differences of the truncated power `s ↦ (s - t)_+^k`
-([quarteroni2000numerical] Definition 8.2, (8.51)–(8.53)); their support, nonnegativity, partition
-of unity, piecewise polynomial structure and smoothness; the B-spline basis of the spline space of
-`Numlib/Approximation/Spline` on an extended knot sequence with `k` further knots at each end
-((8.55)–(8.56)); B-splines with coincident knots (Remark 8.3), the cubic B-spline on uniform knots
+Let $x_0 \le x_1 \le x_2 \le \dots$ be a nondecreasing sequence of real knots. The normalized
+B-spline $B_{i,k}$ of degree $k$ is defined by the Cox–de Boor recursion ((8.54) of
+[quarteroni2000numerical]): $B_{i,0}$ is the indicator function of $[x_i, x_{i+1})$, and
+$$B_{i,d+1}(t) = \omega_{i,d+1}(t)\, B_{i,d}(t) + \bigl(1 - \omega_{i+1,d+1}(t)\bigr)\,
+  B_{i+1,d}(t), \qquad \omega_{i,d}(t) = \frac{t - x_i}{x_{i+d} - x_i},$$
+with $\omega_{i,d} = 0$ when $x_{i+d} = x_i$. For distinct knots and $k \ge 1$, $B_{i,k}(t)$ is also
+the scaled divided difference $(x_{i+k+1} - x_i)\, g[x_i, \dots, x_{i+k+1}]$ of the truncated power
+$g(s) = (s - t)_+^k$, which is Definition 8.2 of [quarteroni2000numerical], with (8.51)–(8.53).
+
+The file proves the support, nonnegativity, partition of unity, piecewise polynomial structure and
+smoothness of the B-splines. On an extended knot sequence with $k$ further knots at each end, the
+B-splines form a basis of the spline space of `Numlib.Approximation.Spline` ((8.55)–(8.56)). The
+file also treats B-splines with coincident knots (Remark 8.3), the cubic B-spline on uniform knots
 (Example 8.9), Boehm's knot insertion (Remark 8.4), and parametric B-spline curves with their
-locality and convex-hull properties (§8.7.1). References beyond the book: de Boor, *A Practical
-Guide to Splines*, chapters IX–XI.
+locality and convex-hull properties (§8.7.1). The presentation follows [quarteroni2000numerical],
+with further material from chapters IX–XI of de Boor, *A Practical Guide to Splines*.
 
-## Design
+## Main definitions
 
-* The recursion is the definition because it makes sense for *nondecreasing* knots, coincident
-  ones included, with the convention `0/0 = 0` in the weights
-  `ω_{i,d}(t) = (t - x_i)/(x_{i+d} - x_i)` (`BSpline.weight`). The divided-difference form of
-  Definition 8.2 needs distinct knots and is the theorem `BSpline.bspline_eq_mul_newton_truncPow`.
-  `bspline x k i` is the book's `B_{i,k+1}` (their second index is the *order* `k + 1`).
-* The degree-`0` B-spline is the indicator of the half-open `[x_i, x_{i+1})`, so that the partition
-  of unity holds pointwise on `[x_k, x_{n+1})`; the book's closed interval in (8.54) cannot be right
-  at the shared knots.
-* Knots are indexed by `ℕ`; the book's `x_{-k}, …, x_{n+k}` of (8.55) are shifted by `k`, so the
-  data knots are `x_k = a < x_{k+1} < ⋯ < x_{n+k} = b` and the `n + k` basis splines are
-  `bspline x k i` for `i < n + k`.
-* Curves take values in an arbitrary real vector space `E`; the control points are `P : ℕ → E`.
+* `BSpline.weight`: the Cox–de Boor weight $\omega_{i,d}$.
+* `BSpline.bspline`: the normalized B-spline $B_{i,k}$ of degree $k$.
+* `BSpline.nform`: the divided-difference form $(x_{i+k+1} - x_i)\, g[x_i, \dots, x_{i+k+1}]$ with
+  $g(s) = (s - t)_+^k$.
+* `BSpline.curve`: the parametric B-spline curve $t \mapsto \sum_{i < N} B_{i,k}(t)\, P_i$.
+* `BSpline.insertKnot`, `BSpline.insertKnotWeight`, `BSpline.insertKnotCoeff`: the refined knot
+  sequence, the weights and the new coefficients of Boehm's knot insertion.
 
 ## Main results
 
 * `BSpline.bspline_eq_zero_of_notMem`, `BSpline.bspline_nonneg`, `BSpline.bspline_pos`,
-  `BSpline.sum_bspline`, `BSpline.exists_eqOn_bspline`: support, positivity, partition of unity,
-  piecewise polynomial.
-* `BSpline.bspline_eq_mul_newton_truncPow` and `BSpline.bspline_eq_sum_truncPow`: Definition 8.2
-  and (8.53) as theorems, through the divided-difference form of the Cox–de Boor recursion.
-* `BSpline.contDiff_bspline`, `BSpline.bspline_mem_splineSpace`,
-  `BSpline.linearIndependent_bspline`, `BSpline.exists_basis_bspline`: smoothness `C^{k-1}` at
-  simple knots and the B-spline basis of the spline space.
-* `Polynomial.linearIndependent_X_sub_C_pow`,
-  `Polynomial.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`
-  (`Numlib/RingTheory/Polynomial/ShiftedPowers.lean`),
-  `BSpline.exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn` and `BSpline.exists_eq_smul_bspline`:
-  Schoenberg's characterization of `B_{i,k}` as the unique (up to a scalar) `C^{k-1}` spline of
-  degree `k` supported in `[x_i, x_{i+k+1}]`, through the one-dimensional kernel of
-  `c ↦ ∑_j c_j (X - x_j)^k` on `k + 2` distinct knots (a Vandermonde argument).
+  `BSpline.sum_bspline`, `BSpline.exists_eqOn_bspline`: $B_{i,k}$ vanishes outside
+  $[x_i, x_{i+k+1})$, is nonnegative, and is positive on $(x_i, x_{i+k+1})$ for distinct knots; the
+  B-splines sum to one; and $B_{i,k}$ is a polynomial of degree at most $k$ on each knot interval.
+* `BSpline.bspline_eq_mul_newton_truncPow`, `BSpline.bspline_eq_sum_truncPow`: Definition 8.2 and
+  (8.53) of [quarteroni2000numerical] as theorems, for distinct knots and $k \ge 1$.
+* `BSpline.contDiff_bspline`, `BSpline.bspline_mem_splineSpace`: for distinct knots and $k \ge 1$,
+  $B_{i,k}$ is of class $C^{k-1}$ and is a spline of degree $k$ and smoothness $C^{k-1}$.
+* `BSpline.hasDerivAt_bspline`: the derivative of a B-spline away from the knots.
+* `BSpline.linearIndependent_bspline`, `BSpline.exists_basis_bspline`: the B-splines form a basis of
+  the spline space.
+* `BSpline.exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn`, `BSpline.exists_eq_smul_bspline`:
+  Schoenberg's characterization of $B_{i,k}$ as the unique, up to a scalar factor, $C^{k-1}$ spline
+  of degree $k$ supported in $[x_i, x_{i+k+1}]$.
 * `BSpline.bspline_apply_of_coincident_left`, `BSpline.bspline_apply_of_coincident_right`,
-  `BSpline.sum_smul_bspline_left`, `BSpline.sum_smul_bspline_right`: coincident knots and the
-  endpoint values (8.57); `BSpline.bspline_uniform_cubic`: Example 8.9.
-* `BSpline.insertKnot`, `BSpline.insertKnotCoeff`, `BSpline.bspline_eq_insert_comb` and
-  `BSpline.sum_smul_bspline_insertKnot`: Boehm's knot insertion, for strictly increasing knots
-  and a new knot interior to its panel.
-* `BSpline.tendsto_bspline_of_tendsto`, `BSpline.bspline_eq_insert_comb_of_monotone` and
-  `BSpline.sum_smul_bspline_insertKnot_of_monotone`: continuity of a B-spline in knots approached
-  from below, and Boehm's algorithm on the book's full range — nondecreasing knots and a new knot
-  `y ∈ [x_j, x_{j+1})`, so that an existing knot may have its multiplicity raised.
-* `BSpline.curve`, `BSpline.curve_mem_convexHull`, `BSpline.curve_update_eq_of_notMem`: parametric
-  B-spline curves.
+  `BSpline.bspline_apply_of_coincident`: B-splines with coincident knots.
+* `BSpline.sum_smul_bspline_left`, `BSpline.sum_smul_bspline_right`: the endpoint values (8.57) of
+  [quarteroni2000numerical] of a spline on knots of multiplicity $k + 1$ at the ends.
+* `BSpline.bspline_uniform_cubic`: the cubic B-spline on uniform knots.
+* `BSpline.bspline_eq_insert_comb`, `BSpline.sum_smul_bspline_insertKnot`: Boehm's knot insertion,
+  for strictly increasing knots and a new knot in the interior of its knot interval.
+* `BSpline.tendsto_bspline_of_tendsto`: a B-spline depends continuously on its knots when they are
+  approached from below.
+* `BSpline.bspline_eq_insert_comb_of_monotone`, `BSpline.sum_smul_bspline_insertKnot_of_monotone`:
+  Boehm's knot insertion for nondecreasing knots and a new knot $y \in [x_j, x_{j+1})$, so that an
+  existing knot may have its multiplicity raised.
+* `BSpline.curve_mem_convexHull`, `BSpline.curve_update_eq_of_notMem`: the convex-hull and locality
+  properties of B-spline curves.
+
+## Proof outline
+
+Schoenberg's characterization: a $C^{k-1}$ spline of degree $k$ supported in $[x_i, x_{i+k+1}]$ is
+$\sum_{j \le m} c_j (t - x_{i+j})^k$ on the $m$-th knot interval, and the vanishing to the right of
+$x_{i+k+1}$ puts $(c_j)$ in the kernel of $c \mapsto \sum_{j=0}^{k+1} c_j (X - x_{i+j})^k$. For
+$k + 2$ distinct knots this kernel is one-dimensional, by a Vandermonde argument
+(`Polynomial.linearIndependent_X_sub_C_pow` and
+`Polynomial.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero` of
+`Numlib.RingTheory.Polynomial.ShiftedPowers`).
+
+Boehm's algorithm for nondecreasing knots: the divided-difference proof of the strictly increasing
+case needs distinct knots. Both sides of the identity are limits of the strictly increasing case
+along knots that approach the given ones from below, and `BSpline.tendsto_bspline_of_tendsto` passes
+to the limit.
 
 ## Implementation notes
 
-Two divided-difference identities are used: the recursion `f[x_0, …, x_{m+1}]
-= (f[x_1, …, x_{m+1}] - f[x_0, …, x_m])/(x_{m+1} - x_0)`, which is
-`DividedDifference.newton_succ`, and the Leibniz rule for an affine factor
-`((· - t) g)[x_0, …, x_{m+1}] = (x_0 - t) g[x_0, …, x_{m+1}] + g[x_1, …, x_{m+1}]`, which is proved
-here privately from the explicit sum defining `DividedDifference.newton`; it belongs to
-`Numlib/Approximation/NewtonForm` (`newton_mul`) and should be replaced by that.
+* The recursion is the definition because it makes sense for nondecreasing knots, coincident knots
+  included, with the convention $0/0 = 0$ in the weights (`BSpline.weight`). The divided-difference
+  form of Definition 8.2 of [quarteroni2000numerical] needs distinct knots, and it is the theorem
+  `BSpline.bspline_eq_mul_newton_truncPow`.
+* `BSpline.bspline x k i` is the B-spline $B_{i,k}$ of degree $k$, which [quarteroni2000numerical]
+  writes $B_{i,k+1}$: the second index of the source is the order $k + 1$.
+* The B-spline of degree $0$ is the indicator function of the half-open interval $[x_i, x_{i+1})$,
+  so that the partition of unity holds at every point of $[x_k, x_{n+1})$. The closed interval in
+  (8.54) of [quarteroni2000numerical] cannot be right at the shared knots.
+* Knots are indexed by $\mathbb{N}$. The knots $x_{-k}, \dots, x_{n+k}$ of (8.55) of
+  [quarteroni2000numerical] are shifted by $k$, so the data knots are
+  $x_k = a < x_{k+1} < \dots < x_{n+k} = b$, and the $n + k$ basis B-splines are $B_{i,k}$ for
+  $i < n + k$.
+* Curves take values in an arbitrary real vector space `E`, and the control points are a sequence
+  `P : ℕ → E`.
+* The truncated power $(s - t)_+^k$ is `Quadrature.truncPow k s t`, and the divided difference
+  $g[x_0, \dots, x_m]$ is `DividedDifference.newton`. The proofs use the recursion of divided
+  differences, `DividedDifference.newton_succ`, and the Leibniz rule for an affine factor,
+$$\bigl((\cdot - t)\, g\bigr)[x_0, \dots, x_{m+1}] = (x_0 - t)\, g[x_0, \dots, x_{m+1}] + g[x_1,
+  \dots, x_{m+1}].$$
+The Leibniz rule for an affine factor is proved in this file, privately, from the explicit sum that
+defines `DividedDifference.newton`. It is a special case of the general Leibniz rule
+`DividedDifference.newton_mul`.
 -/
 
 open Filter Polynomial Set
@@ -84,30 +118,39 @@ namespace BSpline
 
 variable {x : ℕ → ℝ} {k i n d : ℕ} {t : ℝ}
 
-/-- The Cox–de Boor weight `ω_{i,d}(t) = (t - x_i)/(x_{i+d} - x_i)`, taken to be `0` when the two
-knots coincide (de Boor's convention `0/0 = 0`). -/
+/-- The Cox–de Boor weight
+$$\omega_{i,d}(t) = \frac{t - x_i}{x_{i+d} - x_i},$$
+taken to be $0$ for all $t$ when $x_{i+d} = x_i$ (de Boor's convention $0/0 = 0$). -/
 noncomputable def weight (x : ℕ → ℝ) (i d : ℕ) (t : ℝ) : ℝ :=
   if x (i + d) = x i then 0 else (t - x i) / (x (i + d) - x i)
 
-/-- **The normalized B-spline of degree `k`** on the knots `x_i, …, x_{i+k+1}`, by the Cox–de Boor
-recursion ([quarteroni2000numerical] (8.54)): `B_{i,0}` is the indicator of `[x_i, x_{i+1})` and
-`B_{i,d+1} = ω_{i,d+1} B_{i,d} + (1 - ω_{i+1,d+1}) B_{i+1,d}`. The book's `B_{i,k+1}` (degree `k`)
-is `bspline x k i`. -/
+/-- **The normalized B-spline of degree $k$** on the knots $x_i, \dots, x_{i+k+1}$, defined by the
+Cox–de Boor recursion ((8.54) of [quarteroni2000numerical]): $B_{i,0}$ is the indicator function
+of $[x_i, x_{i+1})$, and
+$$B_{i,d+1} = \omega_{i,d+1}\, B_{i,d} + (1 - \omega_{i+1,d+1})\, B_{i+1,d}.$$
+
+The source writes $B_{i,k+1}$ for the B-spline of degree $k$, which is `BSpline.bspline x k i`.
+The definition puts no condition on the knots. The results below assume that the knots are
+nondecreasing or strictly increasing. -/
 noncomputable def bspline (x : ℕ → ℝ) : ℕ → ℕ → ℝ → ℝ
   | 0, i, t => if t ∈ Ico (x i) (x (i + 1)) then 1 else 0
   | d + 1, i, t => weight x i (d + 1) t * bspline x d i t
       + (1 - weight x (i + 1) (d + 1) t) * bspline x d (i + 1) t
 
-/-- The degree-`0` B-spline is the indicator of `[x_i, x_{i+1})`. -/
+/-- The B-spline of degree $0$ is the indicator function of $[x_i, x_{i+1})$: $B_{i,0}(t) = 1$ for
+$t \in [x_i, x_{i+1})$, and $B_{i,0}(t) = 0$ otherwise. -/
 theorem bspline_zero (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
     bspline x 0 i t = if t ∈ Ico (x i) (x (i + 1)) then 1 else 0 := rfl
 
-/-- **The Cox–de Boor recursion** ([quarteroni2000numerical] (8.54)). -/
+/-- **The Cox–de Boor recursion** ((8.54) of [quarteroni2000numerical]): for all $d$, $i$ and $t$,
+$$B_{i,d+1}(t) = \omega_{i,d+1}(t)\, B_{i,d}(t) + \bigl(1 - \omega_{i+1,d+1}(t)\bigr)\,
+  B_{i+1,d}(t).$$
+-/
 theorem bspline_succ (x : ℕ → ℝ) (d i : ℕ) (t : ℝ) :
     bspline x (d + 1) i t = weight x i (d + 1) t * bspline x d i t
       + (1 - weight x (i + 1) (d + 1) t) * bspline x d (i + 1) t := rfl
 
-/-- **Support**: a B-spline vanishes outside `[x_i, x_{i+k+1})`. -/
+/-- **Support**: for nondecreasing knots, $B_{i,k}(t) = 0$ for every $t \notin [x_i, x_{i+k+1})$. -/
 theorem bspline_eq_zero_of_notMem (hx : Monotone x) (ht : t ∉ Ico (x i) (x (i + k + 1))) :
     bspline x k i t = 0 := by
   induction k generalizing i with
@@ -120,7 +163,8 @@ theorem bspline_eq_zero_of_notMem (hx : Monotone x) (ht : t ∉ Ico (x i) (x (i 
       ht ⟨(hx (by omega)).trans h.1, by simpa [add_assoc, add_comm, add_left_comm] using h.2⟩
     rw [ih h1, ih h2, mul_zero, mul_zero, add_zero]
 
-/-- On the support of `B_{i,d}` the weight `ω_{i,d+1}` lies in `[0, 1]`. -/
+/-- For nondecreasing knots and $t \in [x_i, x_{i+d+1})$, the support of $B_{i,d}$, the weight
+$\omega_{i,d+1}(t)$ lies in $[0, 1]$. -/
 theorem weight_mem_Icc (hx : Monotone x) (ht : t ∈ Ico (x i) (x (i + d + 1))) :
     weight x i (d + 1) t ∈ Icc (0 : ℝ) 1 := by
   unfold weight
@@ -135,7 +179,8 @@ theorem weight_mem_Icc (hx : Monotone x) (ht : t ∈ Ico (x i) (x (i + d + 1))) 
       rw [show i + d + 1 = i + (d + 1) by omega] at this
       linarith
 
-/-- **Positivity** ([quarteroni2000numerical] §8.6.2, quoted from de Boor): `0 ≤ B_{i,k}(t)`. -/
+/-- **Positivity** (§8.6.2 of [quarteroni2000numerical], where it is quoted from de Boor): for
+nondecreasing knots, $B_{i,k}(t) \ge 0$ for all $i$, $k$ and $t$. -/
 theorem bspline_nonneg (hx : Monotone x) : 0 ≤ bspline x k i t := by
   induction k generalizing i with
   | zero => rw [bspline_zero]; split_ifs <;> norm_num
@@ -149,8 +194,8 @@ theorem bspline_nonneg (hx : Monotone x) : 0 ≤ bspline x k i t := by
       · exact mul_nonneg (sub_nonneg.mpr (weight_mem_Icc hx h).2) ih
       · rw [bspline_eq_zero_of_notMem hx h, mul_zero]
 
-/-- Every point of `[x_0, x_{n+1})` lies in exactly one half-open knot interval `[x_i, x_{i+1})`,
-`i ≤ n`: the degree-`0` B-splines sum to one there. -/
+/-- For nondecreasing knots, every point $t \in [x_0, x_{n+1})$ lies in exactly one half-open knot
+interval $[x_i, x_{i+1})$ with $i \le n$, so $\sum_{i=0}^{n} B_{i,0}(t) = 1$. -/
 theorem sum_bspline_zero (hx : Monotone x) (ht : t ∈ Ico (x 0) (x (n + 1))) :
     ∑ i ∈ Finset.range (n + 1), bspline x 0 i t = 1 := by
   classical
@@ -181,10 +226,13 @@ theorem sum_bspline_zero (hx : Monotone x) (ht : t ∈ Ico (x 0) (x (n + 1))) :
   · intro h
     exact absurd hmr h
 
-/-- **Partition of unity** ([quarteroni2000numerical] §8.6.2): on `[x_k, x_{n+1})` the B-splines
-`B_{0,k}, …, B_{n,k}` sum to one. Each step of the recursion regroups the sum by the degree-`d`
-B-splines, whose coefficients `ω_{j,d+1} + (1 - ω_{j,d+1})` are `1`, the two boundary terms
-vanishing on the range of `t`. -/
+/-- **Partition of unity** (§8.6.2 of [quarteroni2000numerical]): for nondecreasing knots and
+$t \in [x_k, x_{n+1})$,
+$$\sum_{i=0}^{n} B_{i,k}(t) = 1.$$
+
+Each step of the recursion regroups the sum by the B-splines of degree $d$, whose coefficients
+$\omega_{j,d+1} + (1 - \omega_{j,d+1})$ are $1$. The two boundary terms vanish for $t$ in this
+range. -/
 theorem sum_bspline (hx : Monotone x) (ht : t ∈ Ico (x k) (x (n + 1))) :
     ∑ i ∈ Finset.range (n + 1), bspline x k i t = 1 := by
   induction k with
@@ -205,11 +253,12 @@ theorem sum_bspline (hx : Monotone x) (ht : t ∈ Ico (x k) (x (n + 1))) :
       Finset.sum_congr rfl fun i _ => by ring
     rw [this, ← ih ht', Finset.sum_range_succ' (fun i => bspline x d i t), h0, add_zero]
 
-/-- The Cox–de Boor weight as a polynomial in `t`. -/
+/-- The Cox–de Boor weight as a polynomial in $t$: $(X - x_i)/(x_{i+d} - x_i)$, and $0$ when
+$x_{i+d} = x_i$. -/
 noncomputable def weightPoly (x : ℕ → ℝ) (i d : ℕ) : ℝ[X] :=
   if x (i + d) = x i then 0 else C (1 / (x (i + d) - x i)) * (X - C (x i))
 
-/-- The weight polynomial evaluates to the weight. -/
+/-- The weight polynomial evaluated at $t$ is the weight $\omega_{i,d}(t)$. -/
 theorem eval_weightPoly (x : ℕ → ℝ) (i d : ℕ) (t : ℝ) :
     (weightPoly x i d).eval t = weight x i d t := by
   unfold weightPoly weight
@@ -225,8 +274,9 @@ theorem degree_weightPoly_le (x : ℕ → ℝ) (i d : ℕ) : (weightPoly x i d).
             add_le_add degree_C_le (degree_X_sub_C_le _)
         _ = 1 := by simp)
 
-/-- **Piecewise polynomial** ([quarteroni2000numerical] §8.6.2): on each knot interval a B-spline
-of degree `k` is a polynomial of degree at most `k`. -/
+/-- **Piecewise polynomial** (§8.6.2 of [quarteroni2000numerical]): for nondecreasing knots and
+every $j$, there is a real polynomial $p$ of degree at most $k$ such that $B_{i,k} = p$ on the
+knot interval $[x_j, x_{j+1})$. -/
 theorem exists_eqOn_bspline (hx : Monotone x) (j : ℕ) :
     ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn (bspline x k i) p.eval (Ico (x j) (x (j + 1))) := by
   induction k generalizing i with
@@ -260,9 +310,11 @@ theorem exists_eqOn_bspline (hx : Monotone x) (j : ℕ) :
     · simp only [bspline_succ, eval_add, eval_mul, eval_sub, eval_one, eval_weightPoly, hpe ht,
         hqe ht]
 
-/-- **Positivity on the open support**: for strictly increasing knots, `B_{i,k}(t) > 0` for every
-`t ∈ (x_i, x_{i+k+1})`. By induction on `k` through the Cox–de Boor recursion: one of the two
-terms has a positive weight and a positive B-spline of degree `k - 1`, the other is nonnegative. -/
+/-- **Positivity on the open support**: for strictly increasing knots, $B_{i,k}(t) > 0$ for every
+$t \in (x_i, x_{i+k+1})$.
+
+The proof is by induction on $k$ through the Cox–de Boor recursion: one of the two terms has a
+positive weight and a positive B-spline of degree $k - 1$, and the other term is nonnegative. -/
 theorem bspline_pos (hx : StrictMono x) (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
     0 < bspline x k i t := by
   induction k generalizing i with
@@ -315,18 +367,19 @@ theorem bspline_pos (hx : StrictMono x) (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
       have := mul_nonneg hw1 (bspline_nonneg (k := d) (i := i) (t := t) hx.monotone)
       nlinarith [mul_pos hw hB]
 
-/-! ### Divided differences of truncated powers
+/-!
+### Divided differences of truncated powers
 
 The recursion for divided differences is `DividedDifference.newton_succ`. The Leibniz rule for an
-affine factor is proved here from the explicit sum defining `DividedDifference.newton`; it belongs
-to `Numlib/Approximation/NewtonForm` (as `DividedDifference.newton_mul`) and should be replaced by
-that. -/
+affine factor is proved here from the explicit sum that defines `DividedDifference.newton`. It is a
+special case of the general Leibniz rule `DividedDifference.newton_mul`.
+-/
 
 section DividedDifference
 
 open DividedDifference
 
-/-- The weight `∏_{j ≠ i} (v i - v j)` of the node `i` in the Newton divided difference. -/
+/-- The weight $\prod_{j \neq i} (v_i - v_j)$ of the node $v_i$ in the Newton divided difference. -/
 private def wt {m : ℕ} (v : Fin (m + 1) → ℝ) (i : Fin (m + 1)) : ℝ :=
   ∏ j ∈ Finset.univ.erase i, (v i - v j)
 
@@ -344,13 +397,15 @@ private theorem prod_erase_eq_prod_ite {ι : Type*} [Fintype ι] [DecidableEq ι
     ite_eq_left rfl, mul_one]
   exact Finset.prod_congr rfl fun _ hj => by rw [ite_eq_right (Finset.ne_of_mem_erase hj)]
 
-/-- The weight of a node other than the first, relative to the weight in the tail sequence. -/
+/-- The weight of the node $v_{i+1}$ is $(v_{i+1} - v_0)$ times its weight in the node sequence
+$v_1, \dots, v_{m+1}$. -/
 private theorem wt_succ {m : ℕ} (v : Fin (m + 2) → ℝ) (i : Fin (m + 1)) :
     wt v i.succ = (v i.succ - v 0) * wt (Fin.tail v) i := by
   simp only [wt, prod_erase_eq_prod_ite, Fin.prod_univ_succ, Fin.succ_inj, Fin.tail,
     (Fin.succ_ne_zero i).symm, ↓reduceIte]
 
-/-- The weight of a node other than the last, relative to the weight in the initial sequence. -/
+/-- The weight of the node $v_i$, for $i \le m$, is $(v_i - v_{m+1})$ times its weight in the node
+sequence $v_0, \dots, v_m$. -/
 private theorem wt_castSucc {m : ℕ} (v : Fin (m + 2) → ℝ) (i : Fin (m + 1)) :
     wt v i.castSucc = (v i.castSucc - v (Fin.last (m + 1))) * wt (Fin.init v) i := by
   rw [wt, wt, prod_erase_eq_prod_ite, prod_erase_eq_prod_ite,
@@ -361,8 +416,9 @@ private theorem wt_castSucc {m : ℕ} (v : Fin (m + 2) → ℝ) (i : Fin (m + 1)
   ring
 
 -- TODO(NewtonForm): the Leibniz rule `DividedDifference.newton_mul` with an affine first factor.
-/-- **The Leibniz rule for an affine factor**:
-`((· - t) g)[x_0, …, x_{m+1}] = (x_0 - t) g[x_0, …, x_{m+1}] + g[x_1, …, x_{m+1}]`. -/
+/-- **The Leibniz rule for an affine factor**: for distinct nodes $v_0, \dots, v_{m+1}$,
+$\bigl((\cdot - t)\, g\bigr)[v_0, \dots, v_{m+1}] = (v_0 - t)\, g[v_0, \dots, v_{m+1}] + g[v_1,
+\dots, v_{m+1}]$. -/
 private theorem newton_sub_mul {m : ℕ} (g : ℝ → ℝ) (t : ℝ) {v : Fin (m + 2) → ℝ}
     (hv : Function.Injective v) :
     newton (fun s => (s - t) * g s) v = (v 0 - t) * newton g v + newton g (Fin.tail v) := by
@@ -387,26 +443,32 @@ private theorem newton_sub_mul {m : ℕ} (g : ℝ → ℝ) (t : ℝ) {v : Fin (m
 
 end DividedDifference
 
-/-- The truncated power of degree `k + 1` factors as `(s - t) (s - t)_+^k`. -/
+/-- The truncated power of degree $k + 1$ factors as $(s - t)_+^{k+1} = (s - t)\, (s - t)_+^k$. -/
 theorem truncPow_succ (k : ℕ) (s t : ℝ) :
     Quadrature.truncPow (k + 1) s t = (s - t) * Quadrature.truncPow k s t := by
   unfold Quadrature.truncPow
   split_ifs <;> ring
 
-/-- **The divided-difference form of the B-spline** ([quarteroni2000numerical] (8.51)):
-`(x_{i+k+1} - x_i) g[x_i, …, x_{i+k+1}]` with `g(s) = (s - t)_+^k`. It coincides with
-`bspline x k i t` for `1 ≤ k` at distinct knots (`nform_eq_bspline`); for `k = 0` it is the
-indicator of the half-open `(x_i, x_{i+1}]`, which differs from `bspline x 0 i` at the knots. -/
+/-- **The divided-difference form of the B-spline** ((8.51) of [quarteroni2000numerical]): the value
+at $t$ of
+$$(x_{i+k+1} - x_i)\, g[x_i, \dots, x_{i+k+1}], \qquad g(s) = (s - t)_+^k.$$
+For $k \ge 1$ and distinct knots it coincides with $B_{i,k}(t)$ (`BSpline.nform_eq_bspline`).
+For $k = 0$ and $x_i \le x_{i+1}$ it is the indicator function of the half-open interval
+$(x_i, x_{i+1}]$, which differs from $B_{i,0}$ at the knots.
+
+The truncated power $(s - t)_+^k$ is `Quadrature.truncPow k s t`, and the divided difference is
+`DividedDifference.newton`. The definition puts no condition on the knots. -/
 noncomputable def nform (x : ℕ → ℝ) (k i : ℕ) (t : ℝ) : ℝ :=
   (x (i + k + 1) - x i) *
     DividedDifference.newton (fun s => Quadrature.truncPow k s t) fun j : Fin (k + 2) => x (i + j)
 
-/-- The node sequence `x_i, …, x_{i+k+1}` of distinct knots is injective. -/
+/-- For strictly increasing knots, the node sequence $x_i, \dots, x_{i+k+1}$ is injective. -/
 theorem injective_nodes (hx : StrictMono x) (k i : ℕ) :
     Function.Injective fun j : Fin (k + 2) => x (i + j) := fun _ _ h =>
   Fin.ext (by simpa using hx.injective h)
 
-/-- The Newton divided difference at the two nodes `x_i, x_{i+1}`. -/
+/-- The Newton divided difference at the two nodes $x_i$ and $x_{i+1}$ is $g(x_i)/(x_i - x_{i+1}) +
+g(x_{i+1})/(x_{i+1} - x_i)$. -/
 theorem newton_two (g : ℝ → ℝ) (x : ℕ → ℝ) (i : ℕ) :
     DividedDifference.newton g (fun j : Fin (0 + 2) => x (i + j))
       = g (x i) / (x i - x (i + 1)) + g (x (i + 1)) / (x (i + 1) - x i) := by
@@ -416,7 +478,8 @@ theorem newton_two (g : ℝ → ℝ) (x : ℕ → ℝ) (i : ℕ) :
     show (Finset.univ.erase (1 : Fin (0 + 2))) = {0} from rfl]
   simp
 
-/-- The degree-`0` divided-difference form is the indicator of `(x_i, x_{i+1}]`. -/
+/-- For strictly increasing knots, the divided-difference form of degree $0$ is the indicator
+function of $(x_i, x_{i+1}]$. -/
 theorem nform_zero (hx : StrictMono x) (i : ℕ) (t : ℝ) :
     nform x 0 i t = if t ∈ Ioc (x i) (x (i + 1)) then 1 else 0 := by
   have hne : x (i + 1) - x i ≠ 0 := sub_ne_zero.mpr (hx (Nat.lt_succ_self i)).ne'
@@ -435,20 +498,27 @@ theorem nform_zero (hx : StrictMono x) (i : ℕ) (t : ℝ) :
     · rw [ite_eq_right h1, ite_eq_right h2, ite_eq_right (fun h => h2 h.2)]
       simp
 
-/-- The tail of the node sequence `x_i, …, x_{i+d+2}` is the node sequence starting at `i + 1`. -/
+/-- The node sequence $x_i, \dots, x_{i+d+2}$ without its first node is the node sequence
+$x_{i+1}, \dots, x_{i+d+2}$. -/
 theorem tail_nodes (x : ℕ → ℝ) (d i : ℕ) :
     Fin.tail (fun j : Fin (d + 3) => x (i + j)) = fun j : Fin (d + 2) => x (i + 1 + j) :=
   funext fun j => by simp only [Fin.tail, Fin.val_succ]; congr 1; omega
 
-/-- The initial segment of the node sequence `x_i, …, x_{i+d+2}` is the node sequence of one degree
-less. -/
+/-- The node sequence $x_i, \dots, x_{i+d+2}$ without its last node is the node sequence
+$x_i, \dots, x_{i+d+1}$. -/
 theorem init_nodes (x : ℕ → ℝ) (d i : ℕ) :
     Fin.init (fun j : Fin (d + 3) => x (i + j)) = fun j : Fin (d + 2) => x (i + j) :=
   funext fun j => by simp only [Fin.init, Fin.val_castSucc]
 
-/-- **The Cox–de Boor recursion for the divided-difference form** (de Boor, *A Practical Guide to
-Splines*, chapter IX, (13)–(14)): from `(s - t)_+^{d+1} = (s - t) (s - t)_+^d`, the Leibniz rule
-for the affine factor and the recursion for divided differences. -/
+/-- **The Cox–de Boor recursion for the divided-difference form**: for strictly increasing knots,
+the divided-difference form $N_{i,d}$ (`BSpline.nform x d i`) satisfies the recursion of the
+B-splines,
+$$N_{i,d+1}(t) = \omega_{i,d+1}(t)\, N_{i,d}(t) + \bigl(1 - \omega_{i+1,d+1}(t)\bigr)\,
+  N_{i+1,d}(t).$$
+
+This is (13)–(14) of chapter IX of de Boor, *A Practical Guide to Splines*. The proof uses
+$(s - t)_+^{d+1} = (s - t)\,(s - t)_+^d$, the Leibniz rule for the affine factor and the
+recursion for divided differences. -/
 theorem nform_succ (hx : StrictMono x) (d i : ℕ) (t : ℝ) :
     nform x (d + 1) i t = weight x i (d + 1) t * nform x d i t
       + (1 - weight x (i + 1) (d + 1) t) * nform x d (i + 1) t := by
@@ -472,8 +542,8 @@ theorem nform_succ (hx : StrictMono x) (d i : ℕ) (t : ℝ) :
   field_simp
   ring_nf
 
-/-- The divided-difference form and the B-spline agree in degree `1`: both are the hat function of
-the knots `x_i < x_{i+1} < x_{i+2}`. -/
+/-- For strictly increasing knots, the divided-difference form and the B-spline agree in degree $1$:
+both are the hat function of the knots $x_i < x_{i+1} < x_{i+2}$. -/
 theorem nform_one (hx : StrictMono x) (i : ℕ) (t : ℝ) : nform x 1 i t = bspline x 1 i t := by
   rw [nform_succ hx, bspline_succ, nform_zero hx, nform_zero hx, bspline_zero, bspline_zero]
   have h01 : x i < x (i + 1) := hx (by omega)
@@ -495,9 +565,10 @@ theorem nform_one (hx : StrictMono x) (i : ℕ) (t : ℝ) : nform x 1 i t = bspl
   · simp [h, h', not_le.mpr h', not_lt.mpr h'.le, div_self (sub_ne_zero.mpr h12.ne')]
   · simp [h, h', not_le.mpr h', not_lt.mpr h'.le, not_le.mpr h'', not_lt.mpr h''.le]
 
-/-- **Definition 8.2 as a theorem**: at distinct knots and `1 ≤ k`, the B-spline of the Cox–de
-Boor recursion is the divided-difference form `(x_{i+k+1} - x_i) g[x_i, …, x_{i+k+1}]` with
-`g(s) = (s - t)_+^k`. -/
+/-- For strictly increasing knots and $k \ge 1$, the B-spline $B_{i,k}$ of the Cox–de Boor recursion
+is the divided-difference form: $B_{i,k}(t) = (x_{i+k+1} - x_i)\, g_t[x_i, \dots, x_{i+k+1}]$
+with $g_t(s) = (s - t)_+^k$, for every $t$. This is Definition 8.2 of [quarteroni2000numerical],
+stated as a theorem. -/
 theorem nform_eq_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
     nform x k i = bspline x k i := by
   induction k, hk using Nat.le_induction generalizing i with
@@ -506,16 +577,22 @@ theorem nform_eq_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
     funext t
     rw [nform_succ hx, bspline_succ, ih i, ih (i + 1)]
 
-/-- **Definition 8.2** ([quarteroni2000numerical] (8.51)–(8.52)): for strictly increasing knots
-and `1 ≤ k`, `B_{i,k}(t) = (x_{i+k+1} - x_i) g[x_i, …, x_{i+k+1}]` with `g(s) = (s - t)_+^k`. -/
+/-- **The B-spline as a divided difference of a truncated power**: for strictly increasing knots,
+$k \ge 1$, every $i$ and every $t \in \mathbb{R}$,
+$$B_{i,k}(t) = (x_{i+k+1} - x_i)\, g[x_i, \dots, x_{i+k+1}], \qquad g(s) = (s - t)_+^k.$$
+This is Definition 8.2 of [quarteroni2000numerical], with (8.51)–(8.52), where it is the
+definition of the B-spline. -/
 theorem bspline_eq_mul_newton_truncPow (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) (t : ℝ) :
     bspline x k i t = (x (i + k + 1) - x i) *
       DividedDifference.newton (fun s => Quadrature.truncPow k s t)
         (fun j : Fin (k + 2) => x (i + j)) :=
   (congrFun (nform_eq_bspline hx hk i) t).symm
 
-/-- **The explicit form of the B-spline** ([quarteroni2000numerical] (8.53)):
-`B_{i,k}(t) = (x_{i+k+1} - x_i) ∑_{j=0}^{k+1} (x_{i+j} - t)_+^k / ∏_{l ≠ j} (x_{i+j} - x_{i+l})`. -/
+/-- **The explicit form of the B-spline** ((8.53) of [quarteroni2000numerical]): for strictly
+increasing knots, $k \ge 1$, every $i$ and every $t \in \mathbb{R}$,
+$$B_{i,k}(t) = (x_{i+k+1} - x_i) \sum_{j=0}^{k+1} \frac{(x_{i+j} - t)_+^k}{\prod_{l \neq j}
+  (x_{i+j} - x_{i+l})},$$
+where the product is over $l \in \{0, \dots, k + 1\}$ with $l \neq j$. -/
 theorem bspline_eq_sum_truncPow (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) (t : ℝ) :
     bspline x k i t = (x (i + k + 1) - x i) * ∑ j : Fin (k + 2),
       Quadrature.truncPow k (x (i + j)) t / ∏ l ∈ Finset.univ.erase j, (x (i + j) - x (i + l)) :=
@@ -523,7 +600,8 @@ theorem bspline_eq_sum_truncPow (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) (t 
 
 /-! ### Smoothness and membership in the spline space -/
 
-/-- `t ↦ (c - t)_+^k` is of class `C^{k-1}` for `1 ≤ k`. -/
+/-- For $c \in \mathbb{R}$ and $k \ge 1$, the function $t \mapsto (c - t)_+^k$ is of class
+$C^{k-1}$. -/
 theorem contDiff_truncPow_flip (c : ℝ) {k : ℕ} (hk : 1 ≤ k) :
     ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) fun t => Quadrature.truncPow k c t := by
   obtain ⟨s, rfl⟩ : ∃ s, k = s + 1 := ⟨k - 1, by omega⟩
@@ -536,9 +614,10 @@ theorem contDiff_truncPow_flip (c : ℝ) {k : ℕ} (hk : 1 ≤ k) :
   rw [this, Nat.add_sub_cancel]
   exact (Spline.contDiff_max_sub_pow (-c) s).comp contDiff_neg
 
-/-- **Smoothness at simple knots** ([quarteroni2000numerical] §8.6.2): for strictly increasing
-knots and `1 ≤ k`, `B_{i,k}` is of class `C^{k-1}` on `ℝ`, being a combination of the functions
-`t ↦ (x_j - t)_+^k`. -/
+/-- **Smoothness at simple knots** (§8.6.2 of [quarteroni2000numerical]): for strictly increasing
+knots and $k \ge 1$, $B_{i,k}$ is of class $C^{k-1}$ on $\mathbb{R}$.
+
+The proof writes $B_{i,k}$ as a linear combination of the functions $t \mapsto (x_j - t)_+^k$. -/
 theorem contDiff_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
     ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) (bspline x k i) := by
   have : bspline x k i = fun t => (x (i + k + 1) - x i) * ∑ j : Fin (k + 2),
@@ -547,9 +626,9 @@ theorem contDiff_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
   rw [this]
   exact contDiff_const.mul (ContDiff.sum fun j _ => (contDiff_truncPow_flip _ hk).div_const _)
 
-/-- For strictly increasing knots and `1 ≤ k`, `B_{i,k}` agrees with a polynomial of degree at
-most `k` on each closed knot interval `[x_j, x_{j+1}]`: `exists_eqOn_bspline` extended to the
-right endpoint by continuity. -/
+/-- For strictly increasing knots and $k \ge 1$, on each closed knot interval $[x_j, x_{j+1}]$ the
+B-spline $B_{i,k}$ agrees with a real polynomial of degree at most $k$. This extends
+`BSpline.exists_eqOn_bspline` to the right endpoint by continuity. -/
 theorem exists_eqOn_Icc_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i j : ℕ) :
     ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn (bspline x k i) p.eval (Icc (x j) (x (j + 1))) := by
   obtain ⟨p, hpd, hpe⟩ := exists_eqOn_bspline (k := k) (i := i) hx.monotone j
@@ -557,9 +636,15 @@ theorem exists_eqOn_Icc_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i j : ℕ) :
     p.continuous.continuousOn Ico_subset_Icc_self ?_⟩
   rw [closure_Ico (hx (Nat.lt_succ_self j)).ne]
 
-/-- **A B-spline is a spline** ([quarteroni2000numerical] §8.6.2): for strictly increasing knots
-with the data knots `x_k = a < ⋯ < x_{n+k} = b` and `1 ≤ k`, the restriction of `B_{i,k}` to
-`[a, b]` lies in `S_k = S_k^{k-1}` of the partition `j ↦ x (j + k)`. -/
+/-- **A B-spline is a spline** (§8.6.2 of [quarteroni2000numerical]): let the knots be strictly
+increasing, let $k \ge 1$, and let $a, b \in \mathbb{R}$ and $n \in \mathbb{N}$. The restriction
+of $B_{i,k}$ to $[a, b]$ lies in the spline space $S_k^{k-1}$ of degree $k$ and smoothness
+$C^{k-1}$ on $[a, b]$ with the nodes $x_k, x_{k+1}, \dots, x_{n+k}$.
+
+The intended case is that of the data knots $x_k = a < \dots < x_{n+k} = b$, but the statement
+holds for all $a$ and $b$, because $B_{i,k}$ is of class $C^{k-1}$ on $\mathbb{R}$ and agrees
+with a polynomial on every closed knot interval. The spline space is `Spline.splineSpace a b n
+(fun j => x (j + k)) k (k - 1)`. -/
 theorem bspline_mem_splineSpace {a b : ℝ} (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
     (ContinuousMap.mk _ (contDiff_bspline hx hk i).continuous).restrict (Icc a b) ∈
       Spline.splineSpace a b n (fun j => x (j + k)) k (k - 1) := by
@@ -572,7 +657,8 @@ theorem bspline_mem_splineSpace {a b : ℝ} (hx : StrictMono x) (hk : 1 ≤ k) (
 
 /-! ### The derivative recursion and linear independence -/
 
-/-- `t ↦ (c - t)_+^{k+1}` has derivative `-(k + 1) (c - t)_+^k` away from `c`. -/
+/-- For $c \in \mathbb{R}$ and $t \neq c$, the function $t \mapsto (c - t)_+^{k+1}$ has the
+derivative $-(k + 1)\,(c - t)_+^k$ at $t$. -/
 theorem hasDerivAt_truncPow_flip (c : ℝ) (k : ℕ) {t : ℝ} (ht : t ≠ c) :
     HasDerivAt (fun t => Quadrature.truncPow (k + 1) c t)
       (-((k : ℝ) + 1) * Quadrature.truncPow k c t) t := by
@@ -592,7 +678,8 @@ theorem hasDerivAt_truncPow_flip (c : ℝ) (k : ℕ) {t : ℝ} (ht : t ≠ c) :
     rw [this, mul_zero]
     exact (hasDerivAt_const t (0 : ℝ)).congr_of_eventuallyEq hev
 
-/-- Away from the knots the divided-difference form of degree `0` is the B-spline of degree `0`. -/
+/-- For strictly increasing knots and a point $t$ that is not a knot, the divided-difference form of
+every degree $k$ at $t$ equals $B_{i,k}(t)$, the case $k = 0$ included. -/
 theorem nform_eq_bspline_of_ne (hx : StrictMono x) (ht : ∀ m, t ≠ x m) (k i : ℕ) :
     nform x k i t = bspline x k i t := by
   rcases Nat.eq_zero_or_pos k with rfl | hk
@@ -607,9 +694,11 @@ theorem nform_eq_bspline_of_ne (hx : StrictMono x) (ht : ∀ m, t ≠ x m) (k i 
     · rintro ⟨a, b⟩; exact ⟨lt_of_le_of_ne a (Ne.symm h1), b.le⟩
   · exact congrFun (nform_eq_bspline hx hk i) t
 
-/-- **The derivative of a B-spline** (de Boor, *A Practical Guide to Splines*, chapter X, (12)):
-away from the knots,
-`B_{i,k+1}' = (k + 1) (B_{i,k}/(x_{i+k+1} - x_i) - B_{i+1,k}/(x_{i+k+2} - x_{i+1}))`. -/
+/-- **The derivative of a B-spline**: for strictly increasing knots and a point $t$ that is not a
+knot, $B_{i,k+1}$ is differentiable at $t$ with
+$$B_{i,k+1}'(t) = (k + 1) \Bigl(\frac{B_{i,k}(t)}{x_{i+k+1} - x_i} -
+  \frac{B_{i+1,k}(t)}{x_{i+k+2} - x_{i+1}}\Bigr).$$
+This is (12) of chapter X of de Boor, *A Practical Guide to Splines*. -/
 theorem hasDerivAt_bspline (hx : StrictMono x) (ht : ∀ m, t ≠ x m) (k i : ℕ) :
     HasDerivAt (bspline x (k + 1) i)
       (((k : ℝ) + 1) * (bspline x k i t / (x (i + k + 1) - x i)
@@ -651,7 +740,8 @@ theorem hasDerivAt_bspline (hx : StrictMono x) (ht : ∀ m, t ≠ x m) (k i : �
   field_simp
   ring
 
-/-- Points of the open knot interval `(x_j, x_{j+1})` are not knots. -/
+/-- For strictly increasing knots, the points of the open knot interval $(x_j, x_{j+1})$ are not
+knots. -/
 theorem ne_of_mem_Ioo (hx : StrictMono x) {j : ℕ} (ht : t ∈ Ioo (x j) (x (j + 1))) (m : ℕ) :
     t ≠ x m := by
   intro h
@@ -659,25 +749,29 @@ theorem ne_of_mem_Ioo (hx : StrictMono x) {j : ℕ} (ht : t ∈ Ioo (x j) (x (j 
   · exact absurd (h ▸ ht.1) (not_lt.mpr (hx.monotone hm))
   · exact absurd (h ▸ ht.2) (not_lt.mpr (hx.monotone hm))
 
-/-- A B-spline `B_{i,k}` with `i + k + 1 ≤ j` vanishes on `(x_j, x_{j+1})`. -/
+/-- For strictly increasing knots, the B-spline $B_{i,k}$ with $i + k + 1 \le j$ vanishes on
+$(x_j, x_{j+1})$. -/
 theorem bspline_eq_zero_of_add_le (hx : StrictMono x) {j : ℕ} (ht : t ∈ Ioo (x j) (x (j + 1)))
     (hi : i + k + 1 ≤ j) : bspline x k i t = 0 :=
   bspline_eq_zero_of_notMem hx.monotone fun h =>
     absurd h.2 (not_lt.mpr ((hx.monotone hi).trans ht.1.le))
 
-/-- A B-spline `B_{i,k}` with `j < i` vanishes on `(x_j, x_{j+1})`. -/
+/-- For strictly increasing knots, the B-spline $B_{i,k}$ with $j < i$ vanishes on $(x_j, x_{j+1})$.
+-/
 theorem bspline_eq_zero_of_lt (hx : StrictMono x) {j : ℕ} (ht : t ∈ Ioo (x j) (x (j + 1)))
     (hi : j < i) : bspline x k i t = 0 :=
   bspline_eq_zero_of_notMem hx.monotone fun h =>
     absurd h.1 (not_le.mpr (ht.2.trans_le (hx.monotone hi)))
 
-/-- **Local linear independence** (de Boor, *A Practical Guide to Splines*, Theorem IX.1): if a
-combination `∑_{i ≤ j} c_i B_{i,k}` of B-splines vanishes on the knot interval `(x_j, x_{j+1})`,
-`k ≤ j`, then the coefficients of the `k + 1` B-splines `B_{j-k,k}, …, B_{j,k}` that live on that
-interval vanish. By induction on `k` through the derivative recursion: the derivative of the
-combination is a combination of degree-`k` B-splines with coefficients proportional to
-`c_i - c_{i-1}`, so all the coefficients are equal, and the partition of unity forces them to
-vanish. -/
+/-- **Local linear independence**: let the knots be strictly increasing, and let $k \le j$. If a
+combination $\sum_{i=0}^{j} c_i B_{i,k}$ vanishes on the knot interval $(x_j, x_{j+1})$, then
+the coefficients $c_{j-k}, \dots, c_j$ of the $k + 1$ B-splines that do not vanish on that
+interval are $0$.
+
+This is Theorem IX.1 of de Boor, *A Practical Guide to Splines*. The proof is by induction on
+$k$ through the derivative recursion: the derivative of the combination is a combination of
+B-splines of one degree less, with coefficients proportional to $c_i - c_{i-1}$, so all the
+coefficients are equal, and the partition of unity forces them to vanish. -/
 theorem eq_zero_of_sum_mul_bspline_eq_zero (hx : StrictMono x) :
     ∀ (k j : ℕ), k ≤ j → ∀ c : ℕ → ℝ,
       (∀ t ∈ Ioo (x j) (x (j + 1)), ∑ i ∈ Finset.range (j + 1), c i * bspline x k i t = 0) →
@@ -776,9 +870,11 @@ theorem eq_zero_of_sum_mul_bspline_eq_zero (hx : StrictMono x) :
     intro i hi1 hi2
     rw [heq i hi1 hi2, hval]
 
-/-- **Linear independence of the B-splines** ([quarteroni2000numerical] (8.56)): for strictly
-increasing knots, the `n + k` B-splines `B_{0,k}, …, B_{n+k-1,k}` restricted to
-`[x_k, x_{n+k}]` are linearly independent, by the local independence on every knot interval. -/
+/-- **Linear independence of the B-splines** ((8.56) of [quarteroni2000numerical]): for strictly
+increasing knots and $n \ge 1$, the restrictions of the $n + k$ B-splines
+$B_{0,k}, \dots, B_{n+k-1,k}$ to $[x_k, x_{n+k}]$ are linearly independent.
+
+The proof uses the local linear independence on every knot interval. -/
 theorem linearIndependent_bspline (hx : StrictMono x) (hn : 1 ≤ n) :
     LinearIndependent ℝ fun i : Fin (n + k) =>
       fun t : Icc (x k) (x (n + k)) => bspline x k i (t : ℝ) := by
@@ -810,11 +906,16 @@ theorem linearIndependent_bspline (hx : StrictMono x) (hn : 1 ≤ n) :
     · exact key i hi i.2 i (Nat.sub_le i k) le_rfl
   simpa [hc, i.2] using this
 
-/-- **The B-spline basis of the spline space** ([quarteroni2000numerical] (8.56)): for strictly
-increasing knots with `x_k = a < ⋯ < x_{n+k} = b`, the restrictions of `B_{0,k}, …, B_{n+k-1,k}` to
-`[a, b]` form a basis of `S_k` of the partition `j ↦ x (j + k)`: `n + k` independent vectors in a
-space of dimension `n + k`. Every spline is thus uniquely `∑_{i < n+k} c_i B_{i,k}` on `[a, b]`,
-the `c_i` being its B-spline coefficients. -/
+/-- **The B-spline basis of the spline space** ((8.56) of [quarteroni2000numerical]): for strictly
+increasing knots, $n \ge 1$ and $k \ge 1$, the restrictions of $B_{0,k}, \dots, B_{n+k-1,k}$ to
+$[x_k, x_{n+k}]$ form a basis of the spline space $S_k^{k-1}$ of degree $k$ and smoothness
+$C^{k-1}$ on $[x_k, x_{n+k}]$ with the nodes $x_k < x_{k+1} < \dots < x_{n+k}$. Thus every such
+spline is $\sum_{i < n+k} c_i B_{i,k}$ on $[x_k, x_{n+k}]$ with unique coefficients $c_i$, its
+B-spline coefficients.
+
+The proof counts dimensions: the $n + k$ B-splines are linearly independent in a space of
+dimension $n + k$. The spline space is `Spline.splineSpace (x k) (x (n + k)) n (fun j => x (j +
+k)) k (k - 1)`. -/
 theorem exists_basis_bspline (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
     ∃ B : Module.Basis (Fin (n + k)) ℝ
       (Spline.splineSpace (x k) (x (n + k)) n (fun j => x (j + k)) k (k - 1)),
@@ -843,14 +944,19 @@ theorem exists_basis_bspline (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
 
 /-! ### Schoenberg's minimal-support characterization -/
 
-/-- **The jump representation of a `C^{k-1}` piecewise polynomial supported in
-`[x_i, x_{i+k+1}]`**: if `s` is `C^{k-1}` on `ℝ`, vanishes outside `[x_i, x_{i+k+1}]` and is a
-polynomial of degree at most `k` on each knot interval `[x_j, x_{j+1}]`, `i ≤ j ≤ i + k`, then on
-`[x_{i+m}, x_{i+m+1}]` it is `∑_{j ≤ m} c_j (t - x_{i+j})^k`, where `c_j` is the jump of the
-leading coefficient at `x_{i+j}`, and the vanishing to the right of `x_{i+k+1}` says
-`∑_{j ≤ k+1} c_j (X - x_{i+j})^k = 0`. The jump at each knot is a multiple of `(X - x_j)^k`
-because the difference of the adjacent pieces has `C^{k-1}` contact with zero there
-(`Spline.iterate_derivative_eval_eq_zero_of_eqOn`). -/
+/-- **The jump representation of a $C^{k-1}$ piecewise polynomial supported in $[x_i, x_{i+k+1}]$.**
+Let the knots be strictly increasing and $k \ge 1$. Let $s : \mathbb{R} \to \mathbb{R}$ be of
+class $C^{k-1}$, vanish outside $[x_i, x_{i+k+1}]$, and agree with a real polynomial of degree
+at most $k$ on each knot interval $[x_j, x_{j+1}]$, $i \le j \le i + k$. Then there are
+coefficients $c_0, \dots, c_{k+1}$ with
+$$\sum_{j=0}^{k+1} c_j (X - x_{i+j})^k = 0$$
+such that for every $m \le k$ and every $t \in [x_{i+m}, x_{i+m+1}]$
+$$s(t) = \sum_{j=0}^{m} c_j (t - x_{i+j})^k.$$
+
+In the proof, $c_j$ is the jump of the leading coefficient at $x_{i+j}$, and the polynomial
+identity expresses that $s$ vanishes to the right of $x_{i+k+1}$. The jump at each knot is a
+multiple of $(X - x_{i+j})^k$ because the difference of the two adjacent pieces has $C^{k-1}$
+contact with zero there (`Spline.iterate_derivative_eval_eq_zero_of_eqOn`). -/
 theorem exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn (hx : StrictMono x) (hk : 1 ≤ k)
     {s : ℝ → ℝ} (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
     (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
@@ -944,15 +1050,18 @@ theorem exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn (hx : StrictMono x) (hk : 
   · rw [(hp (i + m) (by omega) (by omega)).2 ht, ← hqsucc m hm, htel m (by omega)]
     simp only [eval_finsetSum, eval_mul, eval_C, eval_pow, eval_sub, eval_X]
 
-/-- **Schoenberg's minimal-support characterization of the B-spline** ([quarteroni2000numerical]
-§8.6.2, quoting Schoenberg): for strictly increasing knots and `1 ≤ k`, a function `s : ℝ → ℝ` of
-class `C^{k-1}`, vanishing outside `[x_i, x_{i+k+1}]` and a polynomial of degree at most `k` on
-each knot interval `[x_j, x_{j+1}]`, `i ≤ j ≤ i + k`, is a scalar multiple of `B_{i,k}`. Both `s`
-and `B_{i,k}` are combinations `∑_{j ≤ m} c_j (t - x_{i+j})^k` on the `m`-th knot interval with
-jump coefficients in the kernel of `c ↦ ∑_{j ≤ k+1} c_j (X - x_{i+j})^k`
-(`exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn`), which is one-dimensional
-(`exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`); the B-spline's coefficients are nonzero
-because it is positive on `(x_i, x_{i+k+1})` (`bspline_pos`). -/
+/-- **Schoenberg's minimal-support characterization of the B-spline** (§8.6.2 of
+[quarteroni2000numerical], quoting Schoenberg): let the knots be strictly increasing and
+$k \ge 1$. If $s : \mathbb{R} \to \mathbb{R}$ is of class $C^{k-1}$, vanishes outside
+$[x_i, x_{i+k+1}]$, and agrees with a real polynomial of degree at most $k$ on each knot
+interval $[x_j, x_{j+1}]$, $i \le j \le i + k$, then $s = c\, B_{i,k}$ for some
+$c \in \mathbb{R}$.
+
+Both $s$ and $B_{i,k}$ have the representation of
+`BSpline.exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn`, with coefficients in the kernel of
+$c \mapsto \sum_{j=0}^{k+1} c_j (X - x_{i+j})^k$, which is one-dimensional
+(`Polynomial.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`). The coefficients of $B_{i,k}$
+are not all zero, because $B_{i,k}$ is positive on $(x_i, x_{i+k+1})$ (`BSpline.bspline_pos`). -/
 theorem exists_eq_smul_bspline (hx : StrictMono x) (hk : 1 ≤ k) {s : ℝ → ℝ}
     (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
     (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
@@ -1007,10 +1116,15 @@ theorem exists_eq_smul_bspline (hx : StrictMono x) (hk : 1 ≤ k) {s : ℝ → �
 
 /-! ### Coincident knots -/
 
-/-- **B-splines with `k + 1` coincident knots at the left** ([quarteroni2000numerical] Remark 8.3):
-if `x_i = ⋯ = x_{i+k} < x_{i+k+1}` then `B_{i,k}(t) = ((x_{i+k+1} - t)/(x_{i+k+1} - x_i))^k` on
-`[x_i, x_{i+k+1})` and `0` elsewhere. (The book prints the closed interval, where the formula gives
-`0` at the right end anyway.) -/
+/-- **B-splines with $k + 1$ coincident knots at the left** (Remark 8.3 of
+[quarteroni2000numerical]): if $x_i = x_{i+1} = \dots = x_{i+k} < x_{i+k+1}$, then for every
+$t \in \mathbb{R}$
+$$B_{i,k}(t) = \begin{cases} \Bigl(\dfrac{x_{i+k+1} - t}{x_{i+k+1} - x_i}\Bigr)^k & \text{if } t
+  \in [x_i, x_{i+k+1}), \\ 0 & \text{otherwise.} \end{cases}$$
+
+No other condition on the knots is needed. The source prints the closed interval
+$[x_i, x_{i+k+1}]$. For $k \ge 1$ this makes no difference, because the formula gives $0$ at the
+right end. -/
 theorem bspline_apply_of_coincident_left (hcoin : ∀ j, i ≤ j → j ≤ i + k → x j = x i)
     (hlt : x i < x (i + k + 1)) (t : ℝ) :
     bspline x k i t = if t ∈ Ico (x i) (x (i + k + 1)) then
@@ -1040,9 +1154,12 @@ theorem bspline_apply_of_coincident_left (hcoin : ∀ j, i ≤ j → j ≤ i + k
       ring
     · rw [ite_eq_right h, ite_eq_right h, mul_zero]
 
-/-- **B-splines with `k + 1` coincident knots at the right** ([quarteroni2000numerical] Remark 8.3):
-if `x_i < x_{i+1} = ⋯ = x_{i+k+1}` then `B_{i,k}(t) = ((t - x_i)/(x_{i+k+1} - x_i))^k` on
-`[x_i, x_{i+k+1})` and `0` elsewhere. -/
+/-- **B-splines with $k + 1$ coincident knots at the right** (Remark 8.3 of
+[quarteroni2000numerical]): for nondecreasing knots with $x_i < x_{i+1} = \dots = x_{i+k+1}$ and
+every $t \in \mathbb{R}$,
+$$B_{i,k}(t) = \begin{cases} \Bigl(\dfrac{t - x_i}{x_{i+k+1} - x_i}\Bigr)^k & \text{if } t \in
+  [x_i, x_{i+k+1}), \\ 0 & \text{otherwise.} \end{cases}$$
+-/
 theorem bspline_apply_of_coincident_right (hx : Monotone x)
     (hcoin : ∀ j, i + 1 ≤ j → j ≤ i + k + 1 → x j = x (i + k + 1)) (hlt : x i < x (i + k + 1))
     (t : ℝ) :
@@ -1071,9 +1188,11 @@ theorem bspline_apply_of_coincident_right (hx : Monotone x)
       ring
     · rw [ite_eq_right h, ite_eq_right h, mul_zero]
 
-/-- **Values at a knot of multiplicity `m + 1`**: if `x_0 = ⋯ = x_m < x_{m+1}` then
-`B_{i,d}(x_m) = 1` when `i + d = m` and `0` for every other `i ≤ m`; through the recursion, since
-the weights `ω_{i,d}(x_m)` vanish for `i ≤ m`. -/
+/-- **Values at a knot of multiplicity $m + 1$**: for nondecreasing knots with
+$x_0 = \dots = x_m < x_{m+1}$, every degree $d$ and every $i \le m$,
+$$B_{i,d}(x_m) = \begin{cases} 1 & \text{if } i + d = m, \\ 0 & \text{otherwise.} \end{cases}$$
+The proof goes through the recursion, since the weights $\omega_{i,d}(x_m)$ vanish for
+$i \le m$. -/
 theorem bspline_apply_of_coincident (hx : Monotone x) {m : ℕ} (hcoin : ∀ j ≤ m, x j = x m)
     (hlt : x m < x (m + 1)) :
     ∀ d i, i ≤ m → bspline x d i (x m) = if i + d = m then 1 else 0 := by
@@ -1101,9 +1220,11 @@ theorem bspline_apply_of_coincident (hx : Monotone x) {m : ℕ} (hcoin : ∀ j �
       rw [h1, sub_zero, one_mul, ih (i + 1) (by omega)]
       simp only [show i + 1 + d = i + (d + 1) by omega]
 
-/-- **The value at the left endpoint with `k + 1` coincident knots** ([quarteroni2000numerical]
-(8.57), first half): if `x_0 = ⋯ = x_k < x_{k+1}` and `1 ≤ n` then
-`∑_{i < n+k} c_i B_{i,k}(x_k) = c_0`. -/
+/-- **The value at the left endpoint with $k + 1$ coincident knots** ((8.57) of
+[quarteroni2000numerical], first half): for nondecreasing knots with
+$x_0 = \dots = x_k < x_{k+1}$, for $n \ge 1$ and for all coefficients $c_i$,
+$$\sum_{i=0}^{n+k-1} c_i B_{i,k}(x_k) = c_0.$$
+-/
 theorem sum_smul_bspline_left (hx : Monotone x) (hn : 1 ≤ n) (hcoin : ∀ j ≤ k, x j = x k)
     (hlt : x k < x (k + 1)) (c : ℕ → ℝ) :
     ∑ i ∈ Finset.range (n + k), c i * bspline x k i (x k) = c 0 := by
@@ -1119,12 +1240,14 @@ theorem sum_smul_bspline_left (hx : Monotone x) (hn : 1 ≤ n) (hcoin : ∀ j �
 
 /-! ### The cubic B-spline on uniform knots -/
 
-/-- **The cubic B-spline on uniform knots** ([quarteroni2000numerical] Example 8.9): for
-`x j = x₀ + j h` with `h > 0`, `6 h³ B_{i,3}(t)` is `(t - x_i)³` on `[x_i, x_{i+1})`,
-`h³ + 3h²(t - x_{i+1}) + 3h(t - x_{i+1})² - 3(t - x_{i+1})³` on `[x_{i+1}, x_{i+2})`,
-`h³ + 3h²(x_{i+3} - t) + 3h(x_{i+3} - t)² - 3(x_{i+3} - t)³` on `[x_{i+2}, x_{i+3})`,
-`(x_{i+4} - t)³` on `[x_{i+3}, x_{i+4})`, and `0` elsewhere. The recursion unfolded three times on
-each of the four intervals. -/
+/-- **The cubic B-spline on uniform knots** (Example 8.9 of [quarteroni2000numerical]): let $h > 0$
+and $x_j = x_0 + j h$ for all $j$. Then for every $t \in \mathbb{R}$, $6 h^3 B_{i,3}(t)$ equals
+$$\begin{cases} (t - x_i)^3 & \text{if } t \in [x_i, x_{i+1}), \\ h^3 + 3h^2 (t - x_{i+1}) + 3h
+  (t - x_{i+1})^2 - 3 (t - x_{i+1})^3 & \text{if } t \in [x_{i+1}, x_{i+2}), \\ h^3 + 3h^2
+  (x_{i+3} - t) + 3h (x_{i+3} - t)^2 - 3 (x_{i+3} - t)^3 & \text{if } t \in [x_{i+2}, x_{i+3}),
+  \\ (x_{i+4} - t)^3 & \text{if } t \in [x_{i+3}, x_{i+4}), \\ 0 & \text{otherwise.}
+  \end{cases}$$
+The proof unfolds the recursion three times on each of the four intervals. -/
 theorem bspline_uniform_cubic {x₀ h : ℝ} (hh : 0 < h) (hx : ∀ j, x j = x₀ + j * h) (i : ℕ)
     (t : ℝ) :
     6 * h ^ 3 * bspline x 3 i t =
@@ -1152,14 +1275,17 @@ section Curve
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
-/-- **The parametric B-spline curve** ([quarteroni2000numerical] §8.7.1) with control points
-`P_0, …, P_{N-1}`: `t ↦ ∑_{i < N} B_{i,k}(t) P_i`. -/
+/-- **The parametric B-spline curve** (§8.7.1 of [quarteroni2000numerical]) of degree $k$ with the
+control points $P_0, \dots, P_{N-1}$ in a real vector space $E$:
+$$t \mapsto \sum_{i=0}^{N-1} B_{i,k}(t)\, P_i.$$
+-/
 noncomputable def curve (x : ℕ → ℝ) (k : ℕ) (P : ℕ → E) (N : ℕ) (t : ℝ) : E :=
   ∑ i ∈ Finset.range N, bspline x k i t • P i
 
-/-- **The convex-hull property** ([quarteroni2000numerical] §8.7.1, property 2): on the parameter
-range `[x_k, x_N)` of a curve with `N` control points, the curve lies in the convex hull of its
-control polygon, its coefficients being nonnegative and summing to one. -/
+/-- **The convex-hull property** (§8.7.1 of [quarteroni2000numerical], property 2): for
+nondecreasing knots, $N \ge 1$ control points $P_0, \dots, P_{N-1}$ and $t \in [x_k, x_N)$, the
+point of the curve at $t$ lies in the convex hull of $\{P_0, \dots, P_{N-1}\}$. The reason is
+that the coefficients $B_{i,k}(t)$ are nonnegative and sum to one. -/
 theorem curve_mem_convexHull (hx : Monotone x) (P : ℕ → E) {N : ℕ} (hN : 1 ≤ N)
     (ht : t ∈ Ico (x k) (x N)) : curve x k P N t ∈ convexHull ℝ (P '' Iio N) := by
   refine (convex_convexHull ℝ _).sum_mem (fun i _ => bspline_nonneg hx) ?_
@@ -1167,8 +1293,10 @@ theorem curve_mem_convexHull (hx : Monotone x) (P : ℕ → E) {N : ℕ} (hN : 1
   obtain ⟨m, rfl⟩ : ∃ m, N = m + 1 := ⟨N - 1, by omega⟩
   exact sum_bspline hx ht
 
-/-- **Locality** ([quarteroni2000numerical] §8.7.1, property 1): moving the control point `P_j`
-changes the curve only on `[x_j, x_{j+k+1})`. -/
+/-- **Locality** (§8.7.1 of [quarteroni2000numerical], property 1): for nondecreasing knots, a
+change of the control point $P_j$ changes the curve only on $[x_j, x_{j+k+1})$. That is, for
+$t \notin [x_j, x_{j+k+1})$ and any $Q \in E$, the curve with $P_j$ replaced by $Q$ has the same
+value at $t$ as the original curve, for any number $N$ of control points. -/
 theorem curve_update_eq_of_notMem (hx : Monotone x) (P : ℕ → E) (j : ℕ) (Q : E) {N : ℕ}
     (ht : t ∉ Ico (x j) (x (j + k + 1))) :
     curve x k (Function.update P j Q) N t = curve x k P N t := by
@@ -1182,11 +1310,14 @@ theorem curve_update_eq_of_notMem (hx : Monotone x) (P : ℕ → E) (j : ℕ) (Q
 
 end Curve
 
-/-- **The value at the right endpoint with `k + 1` coincident knots** ([quarteroni2000numerical]
-(8.57), second half): if `x_{n+k-1} < x_{n+k} = ⋯ = x_{n+2k} = b` then
-`∑_{i < n+k} c_i B_{i,k}(t) → c_{n+k-1}` as `t → b⁻`. With the half-open convention every
-`B_{i,k}` vanishes *at* `b`, so the value is the left limit: `B_{n+k-1,k}(t) → 1` by the
-coincident-knot formula, and the other B-splines tend to `0` by the partition of unity. -/
+/-- **The value at the right endpoint with $k + 1$ coincident knots** ((8.57) of
+[quarteroni2000numerical], second half): for nondecreasing knots with $x_{n+k-1} < x_{n+k} =
+x_{n+k+1} = \dots = x_{n+2k}$, for $n \ge 1$ and for all coefficients $c_i$,
+$$\lim_{t \to x_{n+k}^-} \sum_{i=0}^{n+k-1} c_i B_{i,k}(t) = c_{n+k-1}.$$
+
+With the half-open convention every $B_{i,k}$ vanishes at the endpoint $b = x_{n+k}$ itself, so
+the endpoint value is the left limit. By the coincident-knot formula $B_{n+k-1,k}(t) \to 1$, and
+by the partition of unity the other B-splines tend to $0$. -/
 theorem sum_smul_bspline_right (hx : Monotone x) (hn : 1 ≤ n)
     (hcoin : ∀ j, n + k ≤ j → j ≤ n + 2 * k → x j = x (n + k))
     (hlt : x (n + k - 1) < x (n + k)) (c : ℕ → ℝ) :
@@ -1244,16 +1375,20 @@ theorem sum_smul_bspline_right (hx : Monotone x) (hn : 1 ≤ n)
 
 /-! ### Continuity in the knots -/
 
-/-- **B-splines depend continuously on their knots, approached from below**: if the knot sequences
-`X n` are nondecreasing, lie strictly below `x` and converge to it pointwise, then
-`B^{X n}_{i,k}(t) → B^x_{i,k}(t)` for every fixed `t`.
+/-- **B-splines depend continuously on their knots, approached from below.** Let $x$ be a
+nondecreasing knot sequence, and let $X_1, X_2, \dots$ be nondecreasing knot sequences with
+$X_n(m) < x_m$ for all $n$ and $m$, and $X_n(m) \to x_m$ as $n \to \infty$ for every $m$. Then
+for all $k$, $i$ and $t$,
+$$B^{X_n}_{i,k}(t) \to B^{x}_{i,k}(t) \qquad (n \to \infty),$$
+where $B^{X}_{i,k}$ is the B-spline on the knots $X$.
 
-Approaching from below is what makes this true at *every* `t`, the knots included: the degree-`0`
-B-splines are eventually equal, because the half-open panel `[X n i, X n (i+1))` eventually contains
-a given `t ∈ [x i, x (i+1))` and never contains a `t ≥ x (i+1)`. In the Cox-de Boor recursion the
-weight `ω_{i,d+1}` may fail to converge — exactly when `x (i+d+1) = x i` — but then the B-spline it
-multiplies has empty support and is eventually `0`, so the product converges all the same. Used to
-pass from strictly increasing to merely nondecreasing knots in Boehm's algorithm. -/
+The approach from below makes this true at every $t$, the knots included: the B-splines of
+degree $0$ are eventually equal, because the half-open interval $[X_n(i), X_n(i+1))$ eventually
+contains a given $t \in [x_i, x_{i+1})$ and never contains a $t \ge x_{i+1}$. In the Cox–de Boor
+recursion the weight $\omega_{i,d+1}$ may fail to converge, exactly when $x_{i+d+1} = x_i$. But
+then the B-spline that it multiplies has empty support and is eventually $0$, so the product
+converges all the same. The theorem is used to pass from strictly increasing to nondecreasing
+knots in Boehm's algorithm. -/
 theorem tendsto_bspline_of_tendsto {X : ℕ → ℕ → ℝ} (hx : Monotone x) (hX : ∀ n, Monotone (X n))
     (hlt : ∀ n m, X n m < x m) (hto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m)))
     (k i : ℕ) (t : ℝ) :
@@ -1321,23 +1456,31 @@ theorem tendsto_bspline_of_tendsto {X : ℕ → ℕ → ℝ} (hx : Monotone x) (
 
 /-! ### Knot insertion -/
 
-/-- **Boehm's knot insertion** ([quarteroni2000numerical] Remark 8.4): the knot sequence with the
-knot `y ∈ [x_j, x_{j+1})` inserted after position `j`: `y_i = x_i` for `i ≤ j`, `y_{j+1} = y`, and
-`y_i = x_{i-1}` afterwards. -/
+/-- **Boehm's knot insertion** (Remark 8.4 of [quarteroni2000numerical]): the knot sequence $\hat x$
+obtained by inserting a new knot $y$ after position $j$: $\hat x_i = x_i$ for $i \le j$,
+$\hat x_{j+1} = y$, and $\hat x_i = x_{i-1}$ for $i > j + 1$. It is intended for
+$y \in [x_j, x_{j+1})$, but the definition does not require this. -/
 def insertKnot (x : ℕ → ℝ) (j : ℕ) (y : ℝ) (i : ℕ) : ℝ :=
   if i ≤ j then x i else if i = j + 1 then y else x (i - 1)
 
-/-- The weights `ω_i` of Boehm's algorithm: `1` for `i + k ≤ j`, `(y - x_i)/(x_{i+k} - x_i)` for
-`j - k < i ≤ j`, and `0` for `i > j`. -/
+/-- The weights $\omega_i$ of Boehm's algorithm: $\omega_i = 1$ for $i + k \le j$,
+$\omega_i = (y - x_i)/(x_{i+k} - x_i)$ for $j - k < i \le j$, and $\omega_i = 0$ for $i > j$. A
+quotient with denominator $0$ is $0$. -/
 noncomputable def insertKnotWeight (x : ℕ → ℝ) (k j : ℕ) (y : ℝ) (i : ℕ) : ℝ :=
   if i + k ≤ j then 1 else if i ≤ j then (y - x i) / (x (i + k) - x i) else 0
 
-/-- **The new B-spline coefficients of Boehm's algorithm** ([quarteroni2000numerical] Remark 8.4,
-with the misprint `c_i` for `c_{i-1}` corrected): `d_i = ω_i c_i + (1 - ω_i) c_{i-1}`. -/
+/-- **The new B-spline coefficients of Boehm's algorithm** (Remark 8.4 of
+[quarteroni2000numerical]): $d_i = \omega_i c_i + (1 - \omega_i)\, c_{i-1}$, with the weights
+$\omega_i$ of `BSpline.insertKnotWeight`. For $i = 0$ the index $i - 1$ is read as $0$, so
+$d_0 = c_0$.
+
+The source prints $c_i$ in place of $c_{i-1}$ in the second term. This is a misprint, and the
+definition uses $c_{i-1}$. -/
 noncomputable def insertKnotCoeff (x : ℕ → ℝ) (k j : ℕ) (y : ℝ) (c : ℕ → ℝ) (i : ℕ) : ℝ :=
   insertKnotWeight x k j y i * c i + (1 - insertKnotWeight x k j y i) * c (i - 1)
 
-/-- The inserted knot sequence is nondecreasing. -/
+/-- For nondecreasing knots and $y \in [x_j, x_{j+1})$, the refined knot sequence $\hat x$ is
+nondecreasing. -/
 theorem monotone_insertKnot (hx : Monotone x) {j : ℕ} {y : ℝ} (hy : y ∈ Ico (x j) (x (j + 1))) :
     Monotone (insertKnot x j y) := by
   refine monotone_nat_of_le_succ fun i => ?_
@@ -1360,8 +1503,8 @@ section KnotInsertion
 
 variable {j : ℕ} {y : ℝ}
 
-/-- The inserted knot sequence is strictly increasing when the new knot is interior to its
-panel. -/
+/-- For strictly increasing knots and $y \in (x_j, x_{j+1})$, the refined knot sequence $\hat x$ is
+strictly increasing. -/
 theorem strictMono_insertKnot (hx : StrictMono x) (hy : y ∈ Ioo (x j) (x (j + 1))) :
     StrictMono (insertKnot x j y) := by
   refine strictMono_nat_of_lt_succ fun m => ?_
@@ -1380,22 +1523,27 @@ theorem strictMono_insertKnot (hx : StrictMono x) (hy : y ∈ Ioo (x j) (x (j + 
     · rw [ite_eq_right h1, ite_eq_right h4, ite_eq_right (by omega), ite_eq_right (by omega)]
       exact hx (by omega)
 
-/-- The index shift that identifies the original knots inside the inserted sequence. -/
+/-- The index shift $\sigma_j$ with $\sigma_j(m) = m$ for $m \le j$ and $\sigma_j(m) = m + 1$ for
+$m > j$, which identifies the original knots inside the refined sequence. -/
 def insertShift (j m : ℕ) : ℕ := if m ≤ j then m else m + 1
 
-/-- The index shift is injective. -/
+/-- The index shift $\sigma_j$ is injective. -/
 theorem insertShift_injective (j : ℕ) : Function.Injective (insertShift j) := by
   intro a b h
   unfold insertShift at h
   split_ifs at h <;> omega
 
-/-- The inserted sequence, read through the index shift, is the original one. -/
+/-- The refined sequence, read through the index shift, is the original one:
+$\hat x_{\sigma_j(m)} = x_m$ for every $m$. -/
 theorem insertKnot_insertShift (x : ℕ → ℝ) (j : ℕ) (y : ℝ) (m : ℕ) :
     insertKnot x j y (insertShift j m) = x m := by
   unfold insertKnot insertShift
   split_ifs <;> first | rfl | omega
 
-/-- The B-spline as a divided difference over the index interval. -/
+/-- For a strictly increasing knot sequence $v$ and $k \ge 1$, the B-spline is a divided difference
+over the index set $\{i, \dots, i + k + 1\}$:
+$$B_{i,k}(t) = (v_{i+k+1} - v_i)\, g[v_i, \dots, v_{i+k+1}], \qquad g(s) = (s - t)_+^k.$$
+The divided difference is `DividedDifference.newtonOn` over `Finset.Icc i (i + k + 1)`. -/
 theorem bspline_eq_mul_newtonOn {v : ℕ → ℝ} (hv : StrictMono v) (hk : 1 ≤ k) (i : ℕ) (t : ℝ) :
     bspline v k i t = (v (i + k + 1) - v i) *
       DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) v
@@ -1403,8 +1551,8 @@ theorem bspline_eq_mul_newtonOn {v : ℕ → ℝ} (hv : StrictMono v) (hk : 1 �
   rw [bspline_eq_mul_newton_truncPow hv hk i t,
     DividedDifference.newton_shift_eq_newtonOn v _ (k + 1) i, ← Nat.add_assoc]
 
-/-- The index shift carries the original index interval onto the inserted one with the new index
-removed. -/
+/-- For $i \le j \le i + k$, the index shift $\sigma_j$ maps $\{i, \dots, i + k + 1\}$ onto
+$\{i, \dots, i + k + 2\} \setminus \{j + 1\}$. -/
 theorem map_insertShift (hij : i ≤ j) (hjk : j ≤ i + k) :
     (Finset.Icc i (i + k + 1)).map ⟨insertShift j, insertShift_injective j⟩
       = (Finset.Icc i (i + k + 2)).erase (j + 1) := by
@@ -1419,8 +1567,12 @@ theorem map_insertShift (hij : i ≤ j) (hjk : j ≤ i + k) :
     · exact ⟨c, ⟨h1, by omega⟩, by rw [ite_eq_left h]⟩
     · exact ⟨c - 1, ⟨by omega, by omega⟩, by rw [ite_eq_right (by omega)]; omega⟩
 
-/-- **Boehm's knot-insertion formula for one B-spline**, in the main regime `i ≤ j ≤ i + k`
-where the new knot falls inside the support of `B_{i,k}`. -/
+/-- **Boehm's knot-insertion formula for one B-spline, when the new knot lies in its support**: let
+the knots be strictly increasing, let $k \ge 1$, $y \in (x_j, x_{j+1})$ and $i \le j \le i + k$.
+Then
+$$B_{i,k} = \omega_i\, \hat B_{i,k} + (1 - \omega_{i+1})\, \hat B_{i+1,k},$$
+where $\hat B$ are the B-splines on the refined knots $\hat x$ and $\omega$ are the weights of
+`BSpline.insertKnotWeight`. -/
 theorem bspline_eq_insert_comb_of_mem (hx : StrictMono x) (hk : 1 ≤ k)
     (hy : y ∈ Ioo (x j) (x (j + 1))) (hij : i ≤ j) (hjk : j ≤ i + k) (t : ℝ) :
     bspline x k i t
@@ -1507,8 +1659,10 @@ theorem bspline_eq_insert_comb_of_mem (hx : StrictMono x) (hk : 1 ≤ k)
   field_simp
   ring
 
-/-- Boehm's formula when the new knot lies to the right of the support of `B_{i,k}`: the B-spline
-is unchanged. -/
+/-- Boehm's formula when the new knot lies to the right of the support of $B_{i,k}$: for strictly
+increasing knots, $k \ge 1$, $y \in (x_j, x_{j+1})$ and $i + k + 1 \le j$, the identity
+$B_{i,k} = \omega_i\, \hat B_{i,k} + (1 - \omega_{i+1})\, \hat B_{i+1,k}$ holds. Here the
+B-spline is unchanged: $B_{i,k} = \hat B_{i,k}$. -/
 theorem bspline_eq_insert_comb_of_right (hx : StrictMono x) (hk : 1 ≤ k)
     (hy : y ∈ Ioo (x j) (x (j + 1))) (hji : i + k + 1 ≤ j) (t : ℝ) :
     bspline x k i t
@@ -1530,8 +1684,10 @@ theorem bspline_eq_insert_comb_of_right (hx : StrictMono x) (hk : 1 ≤ k)
     hcongr (i + k + 1) (Finset.mem_Icc.2 ⟨by omega, le_rfl⟩),
     hcongr i (Finset.mem_Icc.2 ⟨le_rfl, by omega⟩)]
 
-/-- Boehm's formula when the new knot lies to the left of the support of `B_{i,k}`: the B-spline is
-the shifted one. -/
+/-- Boehm's formula when the new knot lies to the left of the support of $B_{i,k}$: for strictly
+increasing knots, $k \ge 1$, $y \in (x_j, x_{j+1})$ and $j < i$, the identity $B_{i,k} =
+\omega_i\, \hat B_{i,k} + (1 - \omega_{i+1})\, \hat B_{i+1,k}$ holds. Here the B-spline is the
+shifted one: $B_{i,k} = \hat B_{i+1,k}$. -/
 theorem bspline_eq_insert_comb_of_left (hx : StrictMono x) (hk : 1 ≤ k)
     (hy : y ∈ Ioo (x j) (x (j + 1))) (hij : j < i) (t : ℝ) :
     bspline x k i t
@@ -1569,10 +1725,13 @@ theorem bspline_eq_insert_comb_of_left (hx : StrictMono x) (hk : 1 ≤ k)
       hshift i le_rfl]
   rw [h1, h2, zero_mul, zero_add, sub_zero, one_mul, hBY1, bspline_eq_mul_newtonOn hx hk i t]
 
-/-- **Boehm's knot-insertion formula for one B-spline** ([quarteroni2000numerical] Remark 8.4): for
-strictly increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})`,
-`B_{i,k} = ω_i B̂_{i,k} + (1 - ω_{i+1}) B̂_{i+1,k}` with the weights `ω` of `insertKnotWeight`;
-[Boehm, *Inserting new knots into B-spline curves*][boehm1980inserting]. -/
+/-- **Boehm's knot-insertion formula for one B-spline** (Remark 8.4 of [quarteroni2000numerical];
+[Boehm, *Inserting new knots into B-spline curves*][boehm1980inserting]): for strictly
+increasing knots, $k \ge 1$ and a new knot $y$ in the interior of the knot interval
+$(x_j, x_{j+1})$,
+$$B_{i,k} = \omega_i\, \hat B_{i,k} + (1 - \omega_{i+1})\, \hat B_{i+1,k}$$
+for every $i$, where $\hat B$ are the B-splines on the refined knots `BSpline.insertKnot x j y`
+and $\omega$ are the weights of `BSpline.insertKnotWeight`. -/
 theorem bspline_eq_insert_comb (hx : StrictMono x) (hk : 1 ≤ k)
     (hy : y ∈ Ioo (x j) (x (j + 1))) (i : ℕ) (t : ℝ) :
     bspline x k i t
@@ -1584,9 +1743,9 @@ theorem bspline_eq_insert_comb (hx : StrictMono x) (hk : 1 ≤ k)
     · exact bspline_eq_insert_comb_of_mem hx hk hy h h2 t
     · exact bspline_eq_insert_comb_of_right hx hk hy (by omega) t
 
-/-- The Boehm weights converge with the knots, provided the panel `(x_j, x_{j+1})` is nonempty:
-the only knot-dependent branch is `(y - x_i)/(x_{i+k} - x_i)` for `i ≤ j < i + k`, whose
-denominator is then bounded below by `x_{j+1} - x_j > 0`. -/
+/-- The Boehm weights converge with the knots when $x_j < x_{j+1}$, because the only knot-dependent
+case $(y - x_i)/(x_{i+k} - x_i)$, for $i \le j < i + k$, has a denominator of at least
+$x_{j+1} - x_j > 0$. -/
 private theorem tendsto_insertKnotWeight {X : ℕ → ℕ → ℝ} {Z : ℕ → ℝ} (hx : Monotone x)
     (hto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m))) (hZ : Tendsto Z atTop (𝓝 y))
     (hj : x j < x (j + 1)) (i : ℕ) :
@@ -1602,9 +1761,8 @@ private theorem tendsto_insertKnotWeight {X : ℕ → ℕ → ℝ} {Z : ℕ → 
     exact (hZ.sub (hto i)).div ((hto (i + k)).sub (hto i)) hne
   · exact tendsto_const_nhds
 
-/-- Boehm's one-spline formula for a nondecreasing knot sequence, from the strictly increasing
-case by passing to the limit along knots `X n` and inserted knots `Z n` that approach `x` and `y`
-from below. -/
+/-- Boehm's one-spline formula for nondecreasing knots follows from the strictly increasing case by
+passing to the limit along knots $X_n$ and new knots $Z_n$ that approach $x$ and $y$ from below. -/
 private theorem bspline_eq_insert_comb_of_limits {X : ℕ → ℕ → ℝ} {Z : ℕ → ℝ}
     (hx : Monotone x) (hk : 1 ≤ k) (hy : y ∈ Ico (x j) (x (j + 1)))
     (hXmono : ∀ n, StrictMono (X n)) (hXlt : ∀ n m, X n m < x m)
@@ -1661,17 +1819,19 @@ private theorem bspline_eq_insert_comb_of_limits {X : ℕ → ℕ → ℝ} {Z : 
   exact tendsto_nhds_unique
     (hB.congr fun n => bspline_eq_insert_comb (hXmono n) hk (hZmem n) i t) hRHS
 
-/-- **Boehm's knot-insertion formula for one B-spline, at a knot that need not be interior to its
-panel** ([quarteroni2000numerical] Remark 8.4; [boehm1980inserting]): the identity
-`B_{i,k} = ω_i B̂_{i,k} + (1 - ω_{i+1}) B̂_{i+1,k}` for a merely *nondecreasing* knot sequence and
-a new knot `y ∈ [x_j, x_{j+1})`, so that `y = x_j` — raising the multiplicity of an existing knot —
-is allowed.
+/-- **Boehm's knot-insertion formula for one B-spline, for a new knot that need not be interior**
+(Remark 8.4 of [quarteroni2000numerical]; [boehm1980inserting]): for nondecreasing knots,
+$k \ge 1$ and a new knot $y \in [x_j, x_{j+1})$,
+$$B_{i,k} = \omega_i\, \hat B_{i,k} + (1 - \omega_{i+1})\, \hat B_{i+1,k}$$
+for every $i$. The case $y = x_j$, which raises the multiplicity of an existing knot, is
+allowed.
 
-The divided-difference proof of `bspline_eq_insert_comb` needs distinct knots, and at `y = x_j` the
-refined sequence has a double knot. Instead both sides are limits of the strictly increasing case:
-the knots `X n m = x_m - 2^{-m}(x_{j+1} - y)/(n+1)` are strictly increasing and approach `x` from
-below, `Z n = y - (y - X n j)/(n+2)` lies in the panel `(X n j, X n (j+1))` and approaches `y` from
-below, and `tendsto_bspline_of_tendsto` and `tendsto_insertKnotWeight` pass to the limit. -/
+The divided-difference proof of `BSpline.bspline_eq_insert_comb` needs distinct knots, and at
+$y = x_j$ the refined sequence has a double knot. Here both sides are limits of the strictly
+increasing case: the knots $X_n(m) = x_m - 2^{-m}(x_{j+1} - y)/(n + 1)$ are strictly increasing
+and approach $x$ from below, the new knots $Z_n = y - (y - X_n(j))/(n + 2)$ lie in
+$(X_n(j), X_n(j+1))$ and approach $y$ from below, and `BSpline.tendsto_bspline_of_tendsto`
+passes to the limit. -/
 theorem bspline_eq_insert_comb_of_monotone (hx : Monotone x) (hk : 1 ≤ k)
     (hy : y ∈ Ico (x j) (x (j + 1))) (i : ℕ) (t : ℝ) :
     bspline x k i t
@@ -1738,10 +1898,9 @@ theorem bspline_eq_insert_comb_of_monotone (hx : Monotone x) (hk : 1 ≤ k)
   exact bspline_eq_insert_comb_of_limits hx hk hy hXmono hXlt hXto
     (fun n => ⟨hZ1 n, hZ2 n⟩) hZlt hZto i t
 
-/-- The bookkeeping behind `sum_smul_bspline_insertKnot`: given the one-spline identity for every
-index, the spline `∑_{i < N} c_i B_{i,k}` equals `∑_{i < N+1} d_i B̂_{i,k}` with the Boehm
-coefficients `d_i`. The two hypotheses `k ≤ j` and `j < N` are what make the boundary weights
-`ω_0 = 1` and `ω_N = 0`, so that the two shifted sums close up. -/
+/-- Given the one-spline identity of Boehm's algorithm for every index and $k \le j < N$, the spline
+$\sum_{i < N} c_i B_{i,k}$ equals $\sum_{i < N+1} d_i \hat B_{i,k}$ with the Boehm coefficients
+$d_i$, because these hypotheses give the boundary weights $\omega_0 = 1$ and $\omega_N = 0$. -/
 private theorem sum_smul_bspline_insert_of_comb {Y : ℕ → ℝ}
     (hcomb : ∀ i, bspline x k i t = insertKnotWeight x k j y i * bspline Y k i t
       + (1 - insertKnotWeight x k j y (i + 1)) * bspline Y k (i + 1) t)
@@ -1774,21 +1933,28 @@ private theorem sum_smul_bspline_insert_of_comb {Y : ℕ → ℝ}
     ring
   rw [hL, hL1, hL2, hR]
 
-/-- **Knot insertion preserves the spline** ([quarteroni2000numerical] Remark 8.4): for strictly
-increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})` whose index
-satisfies `k ≤ j < N`, the spline `∑_{i < N} c_i B_{i,k}` is `∑_{i < N + 1} d_i B̂_{i,k}` on the
-refined knots, with the coefficients `d_i = ω_i c_i + (1 - ω_i) c_{i-1}` of `insertKnotCoeff`. -/
+/-- **Knot insertion preserves the spline** (Remark 8.4 of [quarteroni2000numerical]): let the knots
+be strictly increasing, let $k \ge 1$, and let the new knot $y$ lie in the interior of the knot
+interval $(x_j, x_{j+1})$, with $k \le j < N$. Then for all coefficients $c_0, \dots, c_{N-1}$
+and every $t \in \mathbb{R}$,
+$$\sum_{i=0}^{N} d_i\, \hat B_{i,k}(t) = \sum_{i=0}^{N-1} c_i B_{i,k}(t),$$
+where $\hat B$ are the B-splines on the refined knots and
+$d_i = \omega_i c_i + (1 - \omega_i)\, c_{i-1}$ are the coefficients of
+`BSpline.insertKnotCoeff`. -/
 theorem sum_smul_bspline_insertKnot (hx : StrictMono x) (hk : 1 ≤ k)
     (hy : y ∈ Ioo (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
     ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t
       = ∑ i ∈ Finset.range N, c i * bspline x k i t :=
   sum_smul_bspline_insert_of_comb (fun i => bspline_eq_insert_comb hx hk hy i t) hkj hjN c
 
-/-- **Knot insertion preserves the spline, at a knot that need not be interior to its panel**
-([quarteroni2000numerical] Remark 8.4): the same identity as `sum_smul_bspline_insertKnot` for a
-merely *nondecreasing* knot sequence and a new knot `y ∈ [x_j, x_{j+1})`, which is the range the
-book states. The case `y = x_j` raises the multiplicity of an existing knot; `x_j < x_{j+1}`, which
-`hy` forces, is exactly the requirement that the panel receiving the knot be nonempty. -/
+/-- **Knot insertion preserves the spline, for a new knot that need not be interior** (Remark 8.4 of
+[quarteroni2000numerical]): the identity of `BSpline.sum_smul_bspline_insertKnot` holds for
+nondecreasing knots, $k \ge 1$ and a new knot $y \in [x_j, x_{j+1})$ with $k \le j < N$, for all
+coefficients and every $t$. This is the range that the source states.
+
+The case $y = x_j$ raises the multiplicity of an existing knot. The condition $x_j < x_{j+1}$,
+which follows from $y \in [x_j, x_{j+1})$, says that the knot interval that receives the new
+knot is nonempty. -/
 theorem sum_smul_bspline_insertKnot_of_monotone (hx : Monotone x) (hk : 1 ≤ k)
     (hy : y ∈ Ico (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
     ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t

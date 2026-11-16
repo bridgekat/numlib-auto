@@ -7,29 +7,32 @@ import Numlib.Analysis.Convex.Subdifferential.Rademacher
 /-!
 # Convergence of gradients
 
-If convex functions, finite and differentiable on an open convex set, converge pointwise there to a
-function that is also finite and differentiable, then their gradients converge too, and uniformly on
-every compact subset. For arbitrary differentiable functions this is false. Convexity is what makes
-it work, through the upper semicontinuity of the subdifferential under pointwise convergence: both
-subdifferentials are singletons, so an inclusion `∂fᵢ x ⊆ ∂f x + εB` *is* a bound on
-`‖∇fᵢ x - ∇f x‖`.
+Let $U$ be an open convex subset of a finite-dimensional real inner product space $E$, and let $f_i$
+and $f$ be proper convex functions that are finite and differentiable on $U$. If $f_i \to f$
+pointwise on $U$, then $\nabla f_i \to \nabla f$ pointwise on $U$, and uniformly on every compact
+subset of $U$. This is Theorem 25.7 of [rockafellar1970convex]. For differentiable functions that
+are not convex, the statement is false.
+
+Convexity enters through the upper semicontinuity of the subdifferential under pointwise
+convergence. Both subdifferentials are singletons, so an inclusion $\partial f_i(x) \subseteq
+\partial f(x) + \varepsilon B$, with $B$ the closed unit ball, is a bound $\|\nabla f_i(x) - \nabla
+f(x)\| \le \varepsilon$.
 
 ## Main results
 
-* `dist_le_of_subdifferential_subset` — an inclusion `∂p u ⊆ ∂q v + ε B` between *singleton*
-  subdifferentials is the bound `‖∇p u - ∇q v‖ ≤ ε`.
-* `tendsto_of_hasGradientAtFn`, `tendstoUniformlyOn_fderiv_toReal` — convergence of the gradients,
-  pointwise and uniformly on every compact subset ([rockafellar1970convex] Theorem 25.7).
+* `ConvexAnalysis.dist_le_of_subdifferential_subset`: an inclusion $\partial p(u) \subseteq \partial
+  q(v) + \varepsilon B$ between singleton subdifferentials is the bound
+  $\|\nabla p(u) - \nabla q(v)\| \le \varepsilon$.
+* `ConvexAnalysis.tendsto_of_hasGradientAtFn`: the gradients converge at every point of $U$
+  ([rockafellar1970convex], Theorem 25.7).
+* `ConvexAnalysis.tendstoUniformlyOn_fderiv_toReal`: the gradients converge uniformly on every
+  compact subset of $U$ ([rockafellar1970convex], Theorem 25.7).
 
 ## Implementation notes
 
-Subgradients are taken for the pairing `innerₗ E`, where they are vectors, while a gradient lives
-in `StrongDual ℝ E`. The Riesz isomorphism translates between the two, and being an isometry it
-costs no constant.
-
-## References
-
-* [rockafellar1970convex] §25.
+* Subgradients are taken for the pairing `innerₗ E`, so they are vectors of $E$, while a gradient is
+  an element of `StrongDual ℝ E`. The Riesz isomorphism translates between the two. It is an
+  isometry, so the translation costs no constant.
 -/
 
 namespace ConvexAnalysis
@@ -41,9 +44,15 @@ section GradientLimit
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {f : ℕ → E → EReal} {g : E → EReal} {U : Set E} {x : E}
 
-/-- An inclusion of singleton subdifferentials is a bound on gradients: if `a` is the only
-subgradient of `p` at `u`, `b` the only one of `q` at `v`, and `∂p u ⊆ ∂q v + ε B`, then
-`‖a - b‖ ≤ ε`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, let
+$p, q \colon E \to [-\infty, +\infty]$ be convex, let $p$ have the gradient $a$ at $u$, and let
+$q$ have the gradient $b$ at $v$. If
+$$\partial p(u) \subseteq \partial q(v) + \bar B(0, \varepsilon),$$
+then $\|a - b\| \le \varepsilon$.
+
+Here $\partial p(u) = \{a\}$ and $\partial q(v) = \{b\}$, as vectors through the Riesz
+isomorphism. The subgradients are taken for the pairing `innerₗ E`, the gradients are elements
+of `StrongDual ℝ E`, and the conclusion is `dist a b ≤ ε`. -/
 theorem dist_le_of_subdifferential_subset {p q : E → EReal} {u v : E} {a b : StrongDual ℝ E} {ε : ℝ}
     (hp : ConvexFn p) (hq : ConvexFn q) (ha : HasGradientAtFn p a u) (hb : HasGradientAtFn q b v)
     (hsub : subdifferential (innerₗ E) p u
@@ -64,8 +73,16 @@ theorem dist_le_of_subdifferential_subset {p q : E → EReal} {u v : E} {a b : S
   rw [hdist, ← hcd, add_sub_cancel_left]
   exact hd
 
-/-- The gradients of convex functions converging pointwise on an open convex set converge at every
-point of it — upper semicontinuity of the subdifferential at the constant sequence `xᵢ = x`. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let $U \subseteq E$ be open and
+convex. Let $f_i$ for $i \in \mathbb{N}$ and $g$ be proper convex functions
+$E \to [-\infty, +\infty]$ that are finite on $U$, and let $f_i(z) \to g(z)$ for every
+$z \in U$. Let $x \in U$, let $f_i$ have the gradient $G_i$ at $x$, and let $g$ have the
+gradient $G'$ at $x$. Then
+$$G_i \to G' \qquad \text{as } i \to \infty.$$
+This is the pointwise part of Theorem 25.7 of [rockafellar1970convex].
+
+The proof is the upper semicontinuity of the subdifferential under pointwise convergence, at the
+constant sequence $x_i = x$. -/
 theorem tendsto_of_hasGradientAtFn (hU : IsOpen U) (hUc : Convex ℝ U) (hf : ∀ i, ConvexFn (f i))
     (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i)) (hg : ConvexFn g)
         (hgp : ProperConvex g)
@@ -78,10 +95,19 @@ theorem tendsto_of_hasGradientAtFn (hU : IsOpen U) (hUc : Convex ℝ U) (hf : �
   filter_upwards [hev] with i hi
   exact lt_of_le_of_lt (dist_le_of_subdifferential_subset (hf i) hg (hG i) hG' hi) (half_lt_self hε)
 
-/-- **Uniform clause**: on every compact subset of the open set the gradients converge uniformly.
-A failure gives points `zₙ` of the compact set with `‖∇f zₙ - ∇f_{φ n} zₙ‖ ≥ ε`; a convergent
-subsequence `zₙ → w` turns the subdifferential inclusion along the subsequence and the upper
-semicontinuity of `∂g` at `w` into two `ε/3` bounds that contradict it. -/
+/-- Let $E$ be a finite-dimensional real inner product space, and let $U \subseteq E$ be open and
+convex. Let $f_i$ for $i \in \mathbb{N}$ and $g$ be proper convex functions
+$E \to [-\infty, +\infty]$ that are finite and differentiable at every point of $U$, and let
+$f_i(z) \to g(z)$ for every $z \in U$. Then for every compact $S \subseteq U$,
+$$\nabla f_i \to \nabla g \qquad \text{uniformly on } S.$$
+This is the uniform part of Theorem 25.7 of [rockafellar1970convex].
+
+The gradients are the Fréchet derivatives `fderiv ℝ` of the real-valued functions
+`fun w => (f i w).toReal` and `fun w => (g w).toReal`. If the convergence is not uniform, there
+are points $z_n \in S$ with $\|\nabla g(z_n) - \nabla f_{\varphi(n)}(z_n)\| \ge \varepsilon$. A
+convergent subsequence $z_n \to w$, the subdifferential inclusion along the subsequence and the
+upper semicontinuity of $\partial g$ at $w$ give two bounds by $\varepsilon/3$ that contradict
+this. -/
 theorem tendstoUniformlyOn_fderiv_toReal (hU : IsOpen U) (hUc : Convex ℝ U)
     (hf : ∀ i, ConvexFn (f i)) (hfp : ∀ i, ProperConvex (f i)) (hfU : ∀ i, U ⊆ convexDom (f i))
     (hg : ConvexFn g) (hgp : ProperConvex g) (hgU : U ⊆ convexDom g)

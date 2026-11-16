@@ -8,32 +8,59 @@ import Numlib.Optimization.ModelBased.QuadraticModel
 /-!
 # Regularized Taylor models
 
-Adaptive-regularization methods of [cartis2022evaluation] (AR1 (2.4.1), AR2 (3.3.1), ARp (4.1.2),
-ARqp (12.2.23), and their inexact variants of Chapter 13) minimize, at each iteration, the model
-`m(s) = T_p(s) + σ/(p+1)! ‖s‖^{p+1}`,
-where `T_p = D.taylorSum p` is the Taylor sum of derivative data `D` (the exact jet
-`ftaylorSeries ℝ f x` of the objective, or inexact data). This is
-`Optimization.regularizedModel D p σ`, the case `r = p + 1` of the real-power model
-`Optimization.powRegularizedModel` (`regularizedModel_eq_powRegularizedModel`).
+Let $E$ be a real inner product space and let $D$ be derivative data on $E$: a sequence of
+continuous multilinear forms $D_i$, where $D_i$ takes $i$ arguments in $E$. Its Taylor sum of degree
+$p$ is $T_p(s) = \sum_{i \le p} \frac{1}{i!} D_i[s]^i$. For the exact jet of a function $f$ at $x$,
+$T_p(s) = T_{f,p}(x, s)$ is the Taylor polynomial of $f$ at $x$; inexact derivative data give the
+models of Chapter 13 of [cartis2022evaluation]. The adaptive-regularization methods AR1 (2.4.1), AR2
+(3.3.1), ARp (4.1.2) and ARqp (12.2.23) of [cartis2022evaluation], and their inexact variants of
+Chapter 13, minimize at each iteration the **regularized Taylor model**
+$$m(s) = T_p(s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1}.$$
+It is the case $r = p + 1$ of the model with a real exponent in
+`Numlib.Optimization.ModelBased.PowRegularizedModel`.
 
-All estimates are for one iteration (point `x`, weight `σ`, step `s`), with explicit constants,
-under a Lipschitz condition on `∇^p f` on a convex set `C` containing `x` and `x + s`:
+All estimates here are for one iteration, with point $x$, weight $\sigma$ and step $s$, and with
+explicit constants. They assume that $\nabla^p f$ is Lipschitz on a convex set $C$ that contains $x$
+and $x + s$. They bound the reduction ratio, the gradient and the least curvature of $f$ at the
+trial point $x + s$, and the difference between the derivatives of $f$ and of the model. In finite
+dimension, the model has global minimizers.
 
-* `Optimization.lt_taylorDecrement_of_regularizedModel_lt`: Lemmas 3.3.1, 4.1.1;
-* `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz`,
-  `Optimization.le_reductionRatio_of_lipschitz`: the ratio estimate behind Lemmas 2.4.2, 3.3.2,
-  4.1.2, with a parameter `c` in the decrease `T_p(0) - T_p(s) ≥ c σ ‖s‖^{p+1}` (`c = 1/(p+1)!` from
-  Lemma 4.1.1, `c = 1` for the exact AR1 step);
-* `Optimization.norm_gradient_add_le_of_lipschitz`: `‖∇f(x+s)‖ ≤ L/2 ‖s‖² + ‖∇f(x) + ∇²f(x) s‖`;
-* `Optimization.norm_fderiv_le_of_regularizedModel`,
+## Main definitions
+
+* `Optimization.regularizedModel`: the model $m(s) = T_p(s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1}$.
+
+## Main results
+
+* `Optimization.lt_taylorDecrement_of_regularizedModel_lt`: if $m(s) < m(0)$, then $T_p(0) -
+  T_p(s) > \frac{\sigma}{(p+1)!} \|s\|^{p+1}$, as in Lemmas 3.3.1 and 4.1.1 of
+  [cartis2022evaluation].
+* `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz` and
+  `Optimization.le_reductionRatio_of_lipschitz`: the ratio estimate behind Lemmas 2.4.2, 3.3.2 and
+  4.1.2 of [cartis2022evaluation]. A parameter $c$ enters through the decrease
+  $T_p(0) - T_p(s) \ge c \sigma \|s\|^{p+1}$; Lemma 4.1.1 gives $c = 1/(p+1)!$, and the exact AR1
+  step gives $c = 1$.
+* `Optimization.norm_gradient_add_le_of_lipschitz`: $\|\nabla f(x + s)\| \le \frac{L}{2} \|s\|^2 +
+  \|\nabla f(x) + \nabla^2 f(x) s\|$.
+* `Optimization.norm_fderiv_le_of_regularizedModel` and
   `Optimization.minCurvature_ge_of_regularizedModel`: the step bounds of Lemmas 3.3.3, 3.3.8 and
-  4.1.3 ((4.1.24)–(4.1.29));
-* `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`: the derivative comparison
-  (4.1.30), (6.2.23) for every order `j ≤ p`;
-* `Optimization.exists_isMinOn_regularizedModel`: global minimizers of the model exist in finite
-  dimension;
-* `Optimization.regularizedModel_two_eq_regModel`: for `p = 2` the model is the cubic
-  regularization model `Subproblem.regModel` of Chapters 8–10.
+  4.1.3 of [cartis2022evaluation], (4.1.24)–(4.1.29).
+* `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel`: the comparison (4.1.30), (6.2.23)
+  of the derivatives of $f$ and of $m$ for every order $j \le p$.
+* `Optimization.exists_isMinOn_regularizedModel`: in finite dimension, the model has a global
+  minimizer.
+* `Optimization.regularizedModel_two_eq_regModel`: for $p = 2$, the model is the cubic
+  regularization model `Subproblem.regModel` of Chapters 8–10 of [cartis2022evaluation].
+
+## Implementation notes
+
+* The derivative data $D$ is a `FormalMultilinearSeries ℝ E ℝ`, and $T_p$ is
+  `FormalMultilinearSeries.taylorSum D p`. The forms $D_i$ need not be symmetric. The exact jet of
+  $f$ at $x$ is `ftaylorSeries ℝ f x`.
+* The equality with the model of real exponent is
+  `Optimization.regularizedModel_eq_powRegularizedModel`.
+* The variants whose names end in `Anchored` or `_anchored` need $\nabla^p f$ to be Lipschitz only
+  at $x$: $\|\nabla^p f(y) - \nabla^p f(x)\| \le L \|y - x\|$ for $y \in C$. This is the condition
+  (14.2.9) of [cartis2022evaluation].
 -/
 
 open Set Filter
@@ -45,49 +72,55 @@ section Model
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The regularized Taylor model of adaptive-regularization methods ([cartis2022evaluation],
-(2.4.1), (3.3.1), (4.1.2), (12.2.23)): `m(s) = T_p(s) + σ/(p+1)! ‖s‖^{p+1}`, with
-`T_p = D.taylorSum p` the Taylor sum of the derivative data `D`. -/
+/-- The **regularized Taylor model** of adaptive-regularization methods, (2.4.1), (3.3.1), (4.1.2)
+and (12.2.23) of [cartis2022evaluation]:
+$$m(s) = T_p(s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1},$$
+where $T_p$ is the Taylor sum of degree $p$ of the derivative data $D$. -/
 noncomputable def regularizedModel (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ) (s : E) :
     ℝ :=
   D.taylorSum p s + σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1)
 
 variable (D : FormalMultilinearSeries ℝ E ℝ) (p : ℕ) (σ : ℝ)
 
+/-- The model is $m(s) = T_p(s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1}$. -/
 theorem regularizedModel_def (s : E) :
     regularizedModel D p σ s = D.taylorSum p s + σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) := rfl
 
-/-- The model at the zero step is `T_p(0)`. -/
+/-- The model at the zero step is $m(0) = T_p(0)$. -/
 @[simp]
 theorem regularizedModel_zero_right : regularizedModel D p σ 0 = D.taylorSum p 0 := by
   simp [regularizedModel_def]
 
-/-- For the exact jet the model at the zero step is `f(x)`. -/
+/-- For the exact jet of $f$ at $x$, the model at the zero step is $m(0) = f(x)$. -/
 theorem regularizedModel_ftaylorSeries_zero_right (f : E → ℝ) (x : E) :
     regularizedModel (ftaylorSeries ℝ f x) p σ 0 = f x := by
   rw [regularizedModel_zero_right, ← taylorPolynomial_eq_taylorSum, taylorPolynomial_zero_right]
 
-/-- The model is the real-power model with `r = p + 1`. -/
+/-- The regularized Taylor model is the model with the real exponent $r = p + 1$,
+`Optimization.powRegularizedModel D p σ (p + 1)`. -/
 theorem regularizedModel_eq_powRegularizedModel :
     regularizedModel D p σ = powRegularizedModel D p σ ((p : ℝ) + 1) := by
   funext s
   rw [regularizedModel_def, powRegularizedModel_def, realFactorial_natCast_add_one,
     show ((p : ℝ) + 1) = ((p + 1 : ℕ) : ℝ) by push_cast; rfl, Real.rpow_natCast]
 
-/-- The model as a sum of the Taylor sum and the regularization term. -/
+/-- The model is the sum of the Taylor sum $T_p$ and the function
+$s \mapsto \frac{\sigma}{(p+1)!} \|s\|^{p+1}$. -/
 theorem regularizedModel_eq_add :
     regularizedModel D p σ =
       D.taylorSum p + fun s : E => (σ / ((p + 1)! : ℝ)) • ‖s‖ ^ (p + 1) := by
   funext s
   simp [regularizedModel_def, smul_eq_mul]
 
+/-- The model is continuous. -/
 theorem continuous_regularizedModel : Continuous (regularizedModel D p σ) :=
   ((D.contDiff_taylorSum p (n := 0)).continuous).add (continuous_const.mul (by fun_prop))
 
 variable {D p σ}
 
-/-- **Lemmas 3.3.1 and 4.1.1** ([cartis2022evaluation], (4.1.18)): `m(s) ≤ m(0)` gives
-`T_p(0) - T_p(s) ≥ σ/(p+1)! ‖s‖^{p+1}`. -/
+/-- Lemmas 3.3.1 and 4.1.1 of [cartis2022evaluation], bound (4.1.18). If $m(s) \le m(0)$, then
+$$T_p(0) - T_p(s) \ge \frac{\sigma}{(p+1)!} \|s\|^{p+1}.$$
+-/
 theorem taylorDecrement_ge_of_regularizedModel_le {s : E}
     (h : regularizedModel D p σ s ≤ regularizedModel D p σ 0) :
     σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) ≤ D.taylorDecrement p s := by
@@ -95,8 +128,12 @@ theorem taylorDecrement_ge_of_regularizedModel_le {s : E}
   rw [FormalMultilinearSeries.taylorDecrement]
   linarith
 
-/-- **Lemmas 3.3.1 and 4.1.1**, strict form: `m(s) < m(0)` (condition (4.1.10)) gives
-`T_p(0) - T_p(s) > σ/(p+1)! ‖s‖^{p+1}`. -/
+/-- Lemmas 3.3.1 and 4.1.1 of [cartis2022evaluation], strict form. Let $D$ be derivative data on a
+real inner product space, $p \in \mathbb{N}$ and $\sigma \in \mathbb{R}$. If the step $s$
+strictly decreases the model, $m(s) < m(0)$, as in condition (4.1.10), then
+$$T_p(0) - T_p(s) > \frac{\sigma}{(p+1)!} \|s\|^{p+1}.$$
+
+The left side is `FormalMultilinearSeries.taylorDecrement D p s`. -/
 theorem lt_taylorDecrement_of_regularizedModel_lt {s : E}
     (h : regularizedModel D p σ s < regularizedModel D p σ 0) :
     σ / ((p + 1)! : ℝ) * ‖s‖ ^ (p + 1) < D.taylorDecrement p s := by
@@ -104,13 +141,14 @@ theorem lt_taylorDecrement_of_regularizedModel_lt {s : E}
   rw [FormalMultilinearSeries.taylorDecrement]
   linarith
 
-/-- A step strictly decreasing the model is nonzero. -/
+/-- A step that strictly decreases the model is nonzero: if $m(s) < m(0)$, then $s \neq 0$. -/
 theorem ne_zero_of_regularizedModel_lt {s : E}
     (h : regularizedModel D p σ s < regularizedModel D p σ 0) : s ≠ 0 := by
   rintro rfl
   exact lt_irrefl _ h
 
-/-- `‖·‖^{p+1}` is `C^j` at `s` if `j ≤ p` or `s ≠ 0`. -/
+/-- On a real inner product space, the function $y \mapsto \|y\|^{p+1}$ is $j$ times continuously
+differentiable at $s$ if $j \le p$ or $s \neq 0$. -/
 theorem contDiffAt_norm_pow_succ {j : ℕ} {s : E} (hj : j ≤ p ∨ s ≠ 0) :
     ContDiffAt ℝ j (fun y : E => ‖y‖ ^ (p + 1)) s := by
   rcases hj with hj | hs
@@ -119,15 +157,19 @@ theorem contDiffAt_norm_pow_succ {j : ℕ} {s : E} (hj : j ≤ p ∨ s ≠ 0) :
     exact this.of_le (by exact_mod_cast hj)
   · exact (contDiffAt_norm_pow (p + 1) hs).of_le le_top
 
-/-- The model is `C^p`. -/
+/-- The model is $p$ times continuously differentiable. -/
 theorem contDiff_regularizedModel : ContDiff ℝ p (regularizedModel D p σ) := by
   rw [regularizedModel_eq_add]
   have := contDiff_norm_pow (E := E) (r := p + 1) (by omega)
   rw [Nat.add_sub_cancel] at this
   exact (D.contDiff_taylorSum p).add (this.const_smul _)
 
-/-- **Derivatives of the model** ([cartis2022evaluation], proof of Lemma 4.1.3): for `j ≤ p`, or
-for every `j` at `s ≠ 0`, `∇^j m(s) = ∇^j T_p(s) + σ/(p+1)! ∇^j(‖·‖^{p+1})(s)`. -/
+/-- **Derivatives of the model**, from the proof of Lemma 4.1.3 of [cartis2022evaluation]. Let
+$j \in \mathbb{N}$ and $s \in E$ with $j \le p$ or $s \neq 0$. Then
+$$\nabla^j m(s) = \nabla^j T_p(s) + \frac{\sigma}{(p+1)!} \nabla^j
+  \big(\|\cdot\|^{p+1}\big)(s).$$
+
+The derivatives are `iteratedFDeriv`. -/
 theorem iteratedFDeriv_regularizedModel {j : ℕ} {s : E} (hj : j ≤ p ∨ s ≠ 0) :
     iteratedFDeriv ℝ j (regularizedModel D p σ) s =
       iteratedFDeriv ℝ j (D.taylorSum p) s +
@@ -136,8 +178,10 @@ theorem iteratedFDeriv_regularizedModel {j : ℕ} {s : E} (hj : j ≤ p ∨ s �
   rw [regularizedModel_eq_add, iteratedFDeriv_add_apply (D.contDiff_taylorSum p).contDiffAt
     (hN.const_smul _), iteratedFDeriv_const_smul_apply' hN]
 
-/-- **Gradient of the model** ([cartis2022evaluation], (3.3.2), proof of Lemma 4.1.3): for
-`p ≥ 1`, `∇m(s) = ∇T_p(s) + σ/p! ‖s‖^{p-1} s`. -/
+/-- The derivative of the model, (3.3.2) of [cartis2022evaluation] and the proof of Lemma 4.1.3. If
+$p \ge 1$, then for every $s$ the model has the derivative
+$$\nabla m(s) = \nabla T_p(s) + \frac{\sigma}{p!} \|s\|^{p-1} s,$$
+where the vector $\|s\|^{p-1} s$ acts by the inner product. -/
 theorem hasFDerivAt_regularizedModel (hp : 1 ≤ p) (s : E) :
     HasFDerivAt (regularizedModel D p σ)
       (fderiv ℝ (D.taylorSum p) s + (σ / (p ! : ℝ) * ‖s‖ ^ (p - 1)) • innerSL ℝ s) s := by
@@ -149,15 +193,21 @@ theorem hasFDerivAt_regularizedModel (hp : 1 ≤ p) (s : E) :
     rw [Nat.cast_sub hp]; push_cast; ring
   rwa [h1, h2, realFactorial_natCast, Real.rpow_natCast] at h
 
-/-- The gradient of the model ([cartis2022evaluation], (3.3.2), (4.1.26)): for `p ≥ 1`,
-`∇m(s) = ∇T_p(s) + σ/p! ‖s‖^{p-1} s`. -/
+/-- The **gradient of the model**, (3.3.2) and (4.1.26) of [cartis2022evaluation]. Let $D$ be
+derivative data on a real inner product space, $\sigma \in \mathbb{R}$ and $p \ge 1$. Then for
+every $s$,
+$$\nabla m(s) = \nabla T_p(s) + \frac{\sigma}{p!} \|s\|^{p-1} s.$$
+
+The statement is about the Fréchet derivative `fderiv`. The vector $\|s\|^{p-1} s$ acts by the
+inner product, through `innerSL ℝ s`. -/
 theorem fderiv_regularizedModel (hp : 1 ≤ p) (s : E) :
     fderiv ℝ (regularizedModel D p σ) s =
       fderiv ℝ (D.taylorSum p) s + (σ / (p ! : ℝ) * ‖s‖ ^ (p - 1)) • innerSL ℝ s :=
   (hasFDerivAt_regularizedModel hp s).fderiv
 
-/-- For the exact jet of a function `C^p` at `x`, `p ≥ 1`, the model has the gradient of `f` at
-the zero step: `∇m(0) = ∇f(x)`. -/
+/-- Let $f$ be $p$ times continuously differentiable at $x$ with $p \ge 1$. For the exact jet of $f$
+at $x$, the derivative of the model at the zero step is the derivative of $f$ at $x$:
+$\nabla m(0) = \nabla f(x)$. -/
 theorem fderiv_regularizedModel_ftaylorSeries_zero {f : E → ℝ} {x : E}
     (hf : ContDiffAt ℝ p f x) (hp : 1 ≤ p) :
     fderiv ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) 0 = fderiv ℝ f x := by
@@ -166,8 +216,11 @@ theorem fderiv_regularizedModel_ftaylorSeries_zero {f : E → ℝ} {x : E}
   have h := congrArg (fun A => A (fun _ => v)) (iteratedFDeriv_taylorPolynomial_zero hf hp)
   simpa [iteratedFDeriv_one_apply, taylorPolynomial_eq_taylorSum] using h
 
-/-- For the exact jet of a function `C^p` at `x`, `p ≥ 2`, the model has the Hessian of `f` at the
-zero step: `∇²m(0) = ∇²f(x)` (the regularization term has zero Hessian at `0` since `p + 1 > 2`). -/
+/-- Let $f$ be $p$ times continuously differentiable at $x$ with $p \ge 2$. For the exact jet of $f$
+at $x$, the second derivative of the model at the zero step is the second derivative of $f$ at
+$x$: $\nabla^2 m(0) = \nabla^2 f(x)$.
+
+The regularization term has second derivative $0$ at $0$, because $p + 1 > 2$. -/
 theorem iteratedFDeriv_two_regularizedModel_ftaylorSeries_zero {f : E → ℝ} {x : E}
     (hf : ContDiffAt ℝ p f x) (hp : 2 ≤ p) :
     iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f x) p σ) 0 =
@@ -184,9 +237,19 @@ section Estimates
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   {f : E → ℝ} {p : ℕ} {L σ : ℝ} {C : Set E} {x s : E}
 
-/-- **The ratio estimate, anchored**: as `abs_reductionRatio_sub_one_le_of_lipschitz`, with
-`∇^p f` only Lipschitz anchored at `x`, `‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C` (the
-condition (14.2.9) of [cartis2022evaluation]). -/
+/-- **The ratio estimate, with an anchored Lipschitz condition.** Let $E$ be a real inner product
+space, $C \subseteq E$ convex with $x, x + s \in C$ and $s \neq 0$, and let
+$f : E \to \mathbb{R}$ be $p$ times continuously differentiable at every point of $C$. Suppose
+that $\nabla^p f$ is Lipschitz at $x$ on $C$ with constant $L$,
+$$\|\nabla^p f(y) - \nabla^p f(x)\| \le L \|y - x\| \quad \text{for all } y \in C,$$
+which is the condition (14.2.9) of [cartis2022evaluation]. Let $c > 0$ and $\sigma > 0$, and
+suppose that the Taylor decrement satisfies $T_{f,p}(x, 0) - T_{f,p}(x, s) \ge c \sigma
+\|s\|^{p+1}$. Then the ratio $\rho = (f(x) - f(x + s)) / (T_{f,p}(x, 0) - T_{f,p}(x, s))$
+satisfies
+$$|\rho - 1| \le \frac{L}{(p+1)! \, c \, \sigma}.$$
+
+This is `Optimization.abs_reductionRatio_sub_one_le_of_lipschitz` with a weaker Lipschitz
+condition. -/
 theorem abs_reductionRatio_sub_one_le_of_lipschitzAnchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖) (hx : x ∈ C)
@@ -212,12 +275,17 @@ theorem abs_reductionRatio_sub_one_le_of_lipschitzAnchored (hC : Convex ℝ C)
         field_simp
     _ ≤ L / ((p + 1)! * c * σ) * Δ := by gcongr
 
-/-- **The ratio estimate** behind Lemmas 2.4.2, 3.3.2 and 4.1.2 ([cartis2022evaluation]): let
-`f` be `C^p` on a convex set `C ∋ x, x + s` with `L`-Lipschitz `p`-th derivative there, `c, σ > 0`,
-`s ≠ 0`, and let the Taylor decrement satisfy `T_p(x, 0) - T_p(x, s) ≥ c σ ‖s‖^{p+1}`. Then the
-ratio `ρ = (f(x) - f(x + s)) / (T_p(x, 0) - T_p(x, s))` satisfies
-`|ρ - 1| ≤ L / ((p+1)! c σ)`. Lemma 4.1.1 gives `c = 1/(p+1)!` (so `|ρ - 1| ≤ L/σ`); the exact AR1
-step gives `c = 1`. -/
+/-- **The ratio estimate** behind Lemmas 2.4.2, 3.3.2 and 4.1.2 of [cartis2022evaluation]. Let $E$
+be a real inner product space, $C \subseteq E$ convex with $x, x + s \in C$ and $s \neq 0$, and
+let $f : E \to \mathbb{R}$ be $p$ times continuously differentiable at every point of $C$, with
+$\nabla^p f$ Lipschitz on $C$ with constant $L$. Let $c > 0$ and $\sigma > 0$, and suppose that
+the Taylor decrement satisfies
+$$T_{f,p}(x, 0) - T_{f,p}(x, s) \ge c \sigma \|s\|^{p+1}.$$
+Then the ratio $\rho = (f(x) - f(x + s)) / (T_{f,p}(x, 0) - T_{f,p}(x, s))$ satisfies
+$$|\rho - 1| \le \frac{L}{(p+1)! \, c \, \sigma}.$$
+
+Lemma 4.1.1 gives $c = 1/(p+1)!$, and then $|\rho - 1| \le L / \sigma$. The exact AR1 step gives
+$c = 1$. The Lipschitz condition is `IteratedFDerivLipschitzOn f p L C`. -/
 theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
@@ -227,8 +295,12 @@ theorem abs_reductionRatio_sub_one_le_of_lipschitz (hC : Convex ℝ C)
   abs_reductionRatio_sub_one_le_of_lipschitzAnchored hC hf
     (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hs hc hσ hdec
 
-/-- **Very successful iterations, anchored**: as `le_reductionRatio_of_lipschitz`, with `∇^p f`
-only Lipschitz anchored at `x` (the condition (14.2.9) of [cartis2022evaluation]). -/
+/-- **Very successful iterations, with an anchored Lipschitz condition.** Under the hypotheses of
+`Optimization.abs_reductionRatio_sub_one_le_of_lipschitzAnchored`, in which $\nabla^p f$ is
+Lipschitz only at $x$ as in the condition (14.2.9) of [cartis2022evaluation], let
+$\eta \in \mathbb{R}$ with
+$$L \le (p+1)! \, c \, \sigma \, (1 - \eta).$$
+Then $\rho \ge \eta$. -/
 theorem le_reductionRatio_of_lipschitzAnchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖) (hx : x ∈ C)
@@ -242,10 +314,13 @@ theorem le_reductionRatio_of_lipschitzAnchored (hC : Convex ℝ C)
     rw [div_le_iff₀ hpos]; linarith
   linarith [neg_abs_le (reductionRatio f x s ((ftaylorSeries ℝ f x).taylorDecrement p s) - 1)]
 
-/-- **Very successful iterations** (the forcing step of Lemmas 2.4.2, 3.3.2, 4.1.2,
-[cartis2022evaluation]): under the hypotheses of
-`Optimization.abs_reductionRatio_sub_one_le_of_lipschitz`, `L ≤ (p+1)! c σ (1 - η)` gives
-`ρ ≥ η`. With `c = 1/(p+1)!` this is `σ ≥ L / (1 - η)`. -/
+/-- **Very successful iterations**, the step that forces a very successful iteration in Lemmas
+2.4.2, 3.3.2 and 4.1.2 of [cartis2022evaluation]. Under the hypotheses of
+`Optimization.abs_reductionRatio_sub_one_le_of_lipschitz`, let $\eta \in \mathbb{R}$ with
+$$L \le (p+1)! \, c \, \sigma \, (1 - \eta).$$
+Then $\rho \ge \eta$.
+
+With $c = 1/(p+1)!$, the condition is $\sigma \ge L / (1 - \eta)$ when $\eta < 1$. -/
 theorem le_reductionRatio_of_lipschitz (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) (hs : s ≠ 0) {c : ℝ} (hc : 0 < c) (hσ : 0 < σ)
@@ -255,8 +330,15 @@ theorem le_reductionRatio_of_lipschitz (hC : Convex ℝ C)
   le_reductionRatio_of_lipschitzAnchored hC hf
     (fun y hy => iteratedFDerivLipschitzOn_iff.1 hL y hy x hx) hx hxs hs hc hσ hdec hη
 
-/-- The model gradient of the Taylor part (Lemma 3.3.7, [cartis2022evaluation], with the step
-condition (3.3.23) on `∇T_p` rather than `∇m`): `‖∇f(x + s)‖ ≤ L/p! ‖s‖^p + ‖∇_s T_p(x, s)‖`. -/
+/-- The gradient at the trial point and the gradient of the Taylor polynomial, Lemma 3.3.7 of
+[cartis2022evaluation] with the step condition (3.3.23) on $\nabla_s T_{f,p}$ instead of
+$\nabla m$. Let $E$ be a real inner product space, $C \subseteq E$ convex with $x, x + s \in C$,
+and let $f : E \to \mathbb{R}$ be $p$ times continuously differentiable at every point of $C$,
+with $p \ge 1$ and $\nabla^p f$ Lipschitz on $C$ with constant $L$. Then
+$$\|\nabla f(x + s)\| \le \frac{L}{p!} \|s\|^p + \|\nabla_s T_{f,p}(x, s)\|.$$
+
+Both sides use the norms of the Fréchet derivatives `fderiv ℝ f (x + s)` and
+`fderiv ℝ (taylorPolynomial f p x) s`. -/
 theorem norm_fderiv_le_of_taylorPolynomial (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hp : 1 ≤ p) (hL : IteratedFDerivLipschitzOn f p L C)
     (hx : x ∈ C) (hxs : x + s ∈ C) :
@@ -267,10 +349,14 @@ theorem norm_fderiv_le_of_taylorPolynomial (hC : Convex ℝ C)
         fderiv ℝ (taylorPolynomial f p x) s‖ := by rw [sub_add_cancel]
     _ ≤ _ := (norm_add_le _ _).trans (by gcongr)
 
-/-- The gradient at the trial point for `p = 2` in vector form: if `f` is `C²` on a convex
-`C ∋ x, x + s` with `L`-Lipschitz Hessian there, then
-`‖∇f(x + s)‖ ≤ L/2 ‖s‖² + ‖∇f(x) + ∇²f(x) s‖` (the step bounds behind Lemmas 3.4.3, 3.4.9 and
-3.5.2 of [cartis2022evaluation]). -/
+/-- The gradient at the trial point for $p = 2$, in vector form. Let $E$ be a real Hilbert space,
+$C \subseteq E$ convex with $x, x + s \in C$, and let $f : E \to \mathbb{R}$ be twice
+continuously differentiable at every point of $C$, with $\nabla^2 f$ Lipschitz on $C$ with
+constant $L$. Then
+$$\|\nabla f(x + s)\| \le \frac{L}{2} \|s\|^2 + \|\nabla f(x) + \nabla^2 f(x) s\|.$$
+
+This is the step bound behind Lemmas 3.4.3, 3.4.9 and 3.5.2 of [cartis2022evaluation]. The
+Hessian $\nabla^2 f(x)$ is `Optimization.hessianOperator f x`. -/
 theorem norm_gradient_add_le_of_lipschitz [CompleteSpace E] (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ 2 f y) (hL : IteratedFDerivLipschitzOn f 2 L C) (hx : x ∈ C)
     (hxs : x + s ∈ C) :
@@ -290,10 +376,14 @@ theorem norm_gradient_add_le_of_lipschitz [CompleteSpace E] (hC : Convex ℝ C)
   rw [norm_gradient_eq]
   linarith [norm_gradient_eq f (x + s)]
 
-/-- **Step bound, first order** ([cartis2022evaluation], (4.1.24)–(4.1.26), Lemma 3.3.3): for
-`p ≥ 1`, `σ ≥ 0`, `f` `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there, and
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ`:
-`‖∇f(x + s)‖ ≤ (L + σ)/p! ‖s‖^p + ‖∇m(s)‖`. -/
+/-- **Step bound, first order**, (4.1.24)–(4.1.26) and Lemma 3.3.3 of [cartis2022evaluation]. Let
+$E$ be a real inner product space, $C \subseteq E$ convex with $x, x + s \in C$, and let
+$f : E \to \mathbb{R}$ be $p$ times continuously differentiable at every point of $C$, with
+$p \ge 1$ and $\nabla^p f$ Lipschitz on $C$ with constant $L$. Let $\sigma \ge 0$ and let $m$ be
+the regularized Taylor model of $f$ at $x$. Then
+$$\|\nabla f(x + s)\| \le \frac{L + \sigma}{p!} \|s\|^p + \|\nabla m(s)\|.$$
+
+Both sides use the norms of Fréchet derivatives. -/
 theorem norm_fderiv_le_of_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hp : 1 ≤ p) (hL : IteratedFDerivLipschitzOn f p L C)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) :
@@ -318,9 +408,15 @@ theorem norm_fderiv_le_of_regularizedModel (hC : Convex ℝ C)
         ‖fderiv ℝ (regularizedModel (ftaylorSeries ℝ f x) p σ) s‖ := h
     _ = _ := by ring
 
-/-- **Step bound, second order** ([cartis2022evaluation], (4.1.27)–(4.1.29), Lemma 3.3.8): for
-`p ≥ 2`, `σ ≥ 0` and the hypotheses of `Optimization.norm_fderiv_le_of_regularizedModel`,
-`λ_min[∇²f(x + s)] ≥ λ_min[∇²m(s)] - (L + σ)/(p-1)! ‖s‖^{p-1}`. -/
+/-- **Step bound, second order**, (4.1.27)–(4.1.29) and Lemma 3.3.8 of [cartis2022evaluation]. Let
+$E$ be a real inner product space, $C \subseteq E$ convex with $x, x + s \in C$, and let
+$f : E \to \mathbb{R}$ be $p$ times continuously differentiable at every point of $C$, with
+$p \ge 2$ and $\nabla^p f$ Lipschitz on $C$ with constant $L$. Let $\sigma \ge 0$ and let $m$ be
+the regularized Taylor model of $f$ at $x$. Then
+$$\lambda_{\min}[\nabla^2 f(x + s)] \ge \lambda_{\min}[\nabla^2 m(s)] - \frac{L +
+  \sigma}{(p-1)!} \|s\|^{p-1}.$$
+
+Here $\lambda_{\min}[A] = \inf_{\|d\| = 1} A[d, d]$ is `minCurvature A` for a bilinear form $A$. -/
 theorem minCurvature_ge_of_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hp : 2 ≤ p) (hL : IteratedFDerivLipschitzOn f p L C)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) :
@@ -347,9 +443,17 @@ theorem minCurvature_ge_of_regularizedModel (hC : Convex ℝ C)
       L / ((p - 1)! : ℝ) * ‖s‖ ^ (p - 1) + σ / ((p - 1)! : ℝ) * ‖s‖ ^ (p - 1) := by ring
   linarith
 
-/-- **Model-versus-function derivatives, anchored** ([cartis2022evaluation], (4.1.30)): as
-`abs_iteratedFDeriv_apply_le_of_regularizedModel`, with `∇^p f` only Lipschitz anchored at `x`:
-`‖∇^p f(y) - ∇^p f(x)‖ ≤ L ‖y - x‖` for `y ∈ C`. -/
+/-- **Derivatives of the model and of the function, with an anchored Lipschitz condition**, (4.1.30)
+of [cartis2022evaluation]. Let $E$ be a real inner product space, $C \subseteq E$ convex with
+$x, x + s \in C$, and let $f : E \to \mathbb{R}$ be $p$ times continuously differentiable at
+every point of $C$, with $\|\nabla^p f(y) - \nabla^p f(x)\| \le L \|y - x\|$ for all $y \in C$.
+Let $\sigma \ge 0$, let $m$ be the regularized Taylor model of $f$ at $x$, and let $j \le p$.
+Then for every $d \in E$,
+$$\big|\nabla^j f(x + s)[d]^j - \nabla^j m(s)[d]^j\big| \le \frac{L + \sigma}{(p - j + 1)!}
+  \|s\|^{p-j+1} \|d\|^j.$$
+
+This is `Optimization.abs_iteratedFDeriv_apply_le_of_regularizedModel` with a weaker Lipschitz
+condition. -/
 theorem abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hL : ∀ y ∈ C, ‖iteratedFDeriv ℝ p f y - iteratedFDeriv ℝ p f x‖ ≤ L * ‖y - x‖)
@@ -388,10 +492,17 @@ theorem abs_iteratedFDeriv_apply_le_of_regularizedModel_anchored (hC : Convex �
     _ = (L + σ) / ((p - j + 1)! : ℝ) * ‖s‖ ^ (p - j + 1) * ‖d‖ ^ j := by
         field_simp
 
-/-- **Model-versus-function derivatives** ([cartis2022evaluation], (4.1.30), (6.2.20)–(6.2.23)):
-for `j ≤ p`, `σ ≥ 0` and `f` `C^p` on a convex `C ∋ x, x + s` with `L`-Lipschitz `∇^p f` there,
-`|∇^j f(x + s)[d]^j - ∇^j m(s)[d]^j| ≤ (L + σ)/(p - j + 1)! ‖s‖^{p-j+1} ‖d‖^j` for every `d`
-(using the diagonal bound of Lemma B.4.1 for `‖·‖^{p+1}`, which holds for natural exponents). -/
+/-- **Derivatives of the model and of the function**, (4.1.30) and (6.2.20)–(6.2.23) of
+[cartis2022evaluation]. Let $E$ be a real inner product space, $C \subseteq E$ convex with
+$x, x + s \in C$, and let $f : E \to \mathbb{R}$ be $p$ times continuously differentiable at
+every point of $C$, with $\nabla^p f$ Lipschitz on $C$ with constant $L$. Let $\sigma \ge 0$,
+let $m$ be the regularized Taylor model of $f$ at $x$, and let $j \le p$. Then for every
+$d \in E$,
+$$\big|\nabla^j f(x + s)[d]^j - \nabla^j m(s)[d]^j\big| \le \frac{L + \sigma}{(p - j + 1)!}
+  \|s\|^{p-j+1} \|d\|^j.$$
+
+The proof uses the bound of Lemma B.4.1 of [cartis2022evaluation] on the diagonal values of the
+derivatives of $\|\cdot\|^{p+1}$, which holds for natural exponents. -/
 theorem abs_iteratedFDeriv_apply_le_of_regularizedModel (hC : Convex ℝ C)
     (hf : ∀ y ∈ C, ContDiffAt ℝ p f y) (hL : IteratedFDerivLipschitzOn f p L C)
     (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) {j : ℕ} (hj : j ≤ p) (d : E) :
@@ -408,10 +519,15 @@ section Existence
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   {D : FormalMultilinearSeries ℝ E ℝ} {p : ℕ} {σ : ℝ}
 
-/-- **Global minimizers of the model** ([cartis2022evaluation], Sections 3.3.1, 4.1.1): in finite
-dimension, for `σ > 0` and `p ≥ 1`, the model (bounded below because the regularization term
-dominates) has a global minimizer `s*`, at which `∇m(s*) = 0`, `λ_min[∇²m(s*)] ≥ 0`, and
-`m(s*) < m(0)` unless `0` is itself a global minimizer. -/
+/-- **Global minimizers of the model**, Sections 3.3.1 and 4.1.1 of [cartis2022evaluation]. Let $E$
+be a finite-dimensional real inner product space, $D$ derivative data on $E$, $\sigma > 0$ and
+$p \ge 1$. Then the model $m$ has a global minimizer $s^*$, and at $s^*$
+* $\nabla m(s^*) = 0$,
+* $\lambda_{\min}[\nabla^2 m(s^*)] \ge 0$, and
+* $m(s^*) < m(0)$, unless $0$ is also a global minimizer.
+
+The model is bounded below because the regularization term dominates. The second derivative is
+`iteratedFDeriv ℝ 2`, which is $0$ where the model is not twice differentiable. -/
 theorem exists_isMinOn_regularizedModel [FiniteDimensional ℝ E] (hσ : 0 < σ) (hp : 1 ≤ p) :
     ∃ s, IsMinOn (regularizedModel D p σ) univ s ∧
       fderiv ℝ (regularizedModel D p σ) s = 0 ∧
@@ -424,7 +540,8 @@ theorem exists_isMinOn_regularizedModel [FiniteDimensional ℝ E] (hσ : 0 < σ)
   rw [← regularizedModel_eq_powRegularizedModel] at hmin hd hc hlt
   exact ⟨s, hmin, hd, hc (by linarith), hlt⟩
 
-/-- A model whose gradient at `0` is nonzero is decreased by any global minimizer. -/
+/-- If the derivative of the model at $0$ is nonzero, then every global minimizer $s$ of the model
+decreases it: $m(s) < m(0)$. -/
 theorem regularizedModel_lt_of_isMinOn_of_fderiv_ne_zero {s : E}
     (hmin : IsMinOn (regularizedModel D p σ) univ s)
     (h0 : fderiv ℝ (regularizedModel D p σ) 0 ≠ 0) :
@@ -434,8 +551,9 @@ theorem regularizedModel_lt_of_isMinOn_of_fderiv_ne_zero {s : E}
   rw [← heq]
   exact hmin (mem_univ y)
 
-/-- A model with negative curvature at `0` is decreased by any global minimizer (for `p ≥ 2`, so
-that the model is `C²`). -/
+/-- Let $p \ge 2$, so that the model is twice continuously differentiable. If the model has negative
+curvature at $0$, $\lambda_{\min}[\nabla^2 m(0)] < 0$, then every global minimizer $s$ of the
+model decreases it: $m(s) < m(0)$. -/
 theorem regularizedModel_lt_of_isMinOn_of_minCurvature_neg {s : E} (hp : 2 ≤ p)
     (hmin : IsMinOn (regularizedModel D p σ) univ s)
     (h0 : minCurvature (iteratedFDeriv ℝ 2 (regularizedModel D p σ) 0) < 0) :
@@ -453,11 +571,16 @@ section Cubic
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
-/-- **The AR2 model is the cubic regularization model** ([cartis2022evaluation], (3.3.1),
-Theorem 8.2.8): for `f` `C²` at `x`,
-`m(s) = T_{f,2}(x, s) + σ/6 ‖s‖³ = f(x) + Subproblem.regModel (∇f(x)) (∇²f(x)) (σ/2) 3 s`
-(`regModel`'s regularization is `σ'/r ‖s‖^r`, here `σ' = σ/2`, `r = 3`). This transfers the
-characterization of global minimizers (`Subproblem.isMinOn_regModel_iff`) to AR2 steps. -/
+/-- **The AR2 model is the cubic regularization model**, (3.3.1) and Theorem 8.2.8 of
+[cartis2022evaluation]. Let $E$ be a real Hilbert space and let $f : E \to \mathbb{R}$ be twice
+continuously differentiable at $x$. Then for all $\sigma \in \mathbb{R}$ and $s \in E$,
+$$m(s) = T_{f,2}(x, s) + \frac{\sigma}{6} \|s\|^3 = f(x) + \langle \nabla f(x), s \rangle +
+  \tfrac12 \langle s, \nabla^2 f(x) s \rangle + \frac{\sigma / 2}{3} \|s\|^3.$$
+
+The right side is `f x + Subproblem.regModel (gradient f x) (hessianOperator f x) (σ / 2) 3 s`.
+The model `Subproblem.regModel` has the regularization term $\frac{\sigma'}{r} \|s\|^r$, here with
+$\sigma' = \sigma/2$ and $r = 3$. This identity transfers the characterization of global
+minimizers, `Subproblem.isMinOn_regModel_iff`, to the steps of AR2. -/
 theorem regularizedModel_two_eq_regModel {f : E → ℝ} {x : E} (hf : ContDiffAt ℝ 2 f x) (σ : ℝ)
     (s : E) :
     regularizedModel (ftaylorSeries ℝ f x) 2 σ s =

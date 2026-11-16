@@ -9,116 +9,129 @@ import Numlib.Analysis.PDE.Elliptic.Dirichlet
 /-!
 # The maximum principle for second-order elliptic equations
 
-Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §9.7: the
-weak maximum principle by Stampacchia's truncation method — Theorem 9.27 (the Dirichlet problem
-for `-Δu + u = f` on an arbitrary open set, in both cases `|Ω| < ∞` and `|Ω| = ∞`),
-Corollary 9.28, Proposition 9.29 (general elliptic operators with `a₀ ≥ 0`, both in the
-drift-free case the book proves and, for `N ≥ 3`, with a drift term) and Proposition 9.30 (the
-Neumann problem), on the spaces
-`H^1(Ω) = SobolevEuclidean N 1 2 Ω` and `H^1_0(Ω) = SobolevEuclideanZero N 1 2 Ω` and with the
-forms of `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`.
+This file proves the weak maximum principle of [brezis2011functional], §9.7, by Stampacchia's
+truncation method. Let $\Omega \subseteq \mathbb{R}^N$ be open, let $f \in L^2(\Omega)$, and let
+$u \in H^1(\Omega)$ be a weak solution of $-\Delta u + u = f$, that is, $\int_\Omega \nabla u \cdot
+\nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi$ for every $\varphi$ in a test space
+$V$. For the Dirichlet problem $V = H^1_0(\Omega)$, and for the Neumann problem $V = H^1(\Omega)$.
+Theorem 9.27 states that if $u$ is continuous on $\bar\Omega$, then $\min\{\inf_\Gamma u,
+\inf_\Omega f\} \le u \le \max\{\sup_\Gamma u, \sup_\Omega f\}$ on $\Omega$, where $\Gamma$ is the
+boundary of $\Omega$, both for $|\Omega| < \infty$ and for $|\Omega| = \infty$. The file also proves
+Corollary 9.28, Proposition 9.30 (the Neumann problem), and Proposition 9.29 for the general
+operator $-\sum_{i,j} \partial_j(a_{ij} \partial_i u) + \sum_i a_i \partial_i u + a_0 u$ with
+$a_0 \ge 0$: in the drift-free case $a_i = 0$ for every $N \ge 1$, and with a drift term for
+$N \ge 3$.
 
-## The shape of the statements
+The general case of Proposition 9.29 is quoted in the source from Gilbarg and Trudinger, *Elliptic
+Partial Differential Equations of Second Order*, Theorem 8.1, and the proof here follows that
+theorem, with its Lemmas 7.6 and 7.7. Remark 27 of [brezis2011functional], the classical maximum
+principle for solutions in $C(\bar\Omega) \cap C^2(\Omega)$ on a bounded $\Omega$, is also proved,
+for the Laplacian and for a general operator. The forms and the weak solutions are those of
+`Numlib.Analysis.PDE.Elliptic.Dirichlet`.
 
-A weak solution is an element `u` of `H^1(Ω)` with `laplaceForm Ω u φ = load Ω f φ` for every
-`φ` of a test space `V` (`Elliptic.IsWeakSolution (laplaceForm Ω) V u f`; `V = H^1_0(Ω)` for
-the Dirichlet problem, all of `H^1(Ω)` for the Neumann problem), and "`u ∈ C(Ω̄)`" is a function
-`ũ : ℝ^N → ℝ`, continuous on `closure Ω`, with `SobolevMultiIndex.fn u =ᵐ[Ω] ũ`; the boundary
-values are the values of `ũ` on `frontier Ω`. The book's `sup_Γ u` and `sup_Ω f` are not formed:
-a bound `K` with `ũ ≤ K` on `frontier Ω` and `f ≤ K` almost everywhere on `Ω` is the hypothesis
-and `ũ ≤ K` on `Ω` the conclusion; lower bounds are the same statements for `-u`, `-f`, `-K`.
-Almost-everywhere bounds are upgraded to every point of the open `Ω` by continuity
-(`Elliptic.forall_le_of_ae_le_of_continuousOn`).
+## Main definitions
 
-## The engine
+* `Elliptic.levelGradSet`: the set $\{u > l\} \cap \{\nabla u \neq 0\}$ for $u \in H^1(\Omega)$ and
+  $l \in \mathbb{R}$.
 
-Every proof of the section is the same three steps, and `Elliptic.le_of_forall_truncation_mem`
-states them once: (1) a Stampacchia truncation `G` (`IsStampacchiaTruncation`: `C¹`,
-`|G'| ≤ M`, `G' ≥ 0`, `G = 0` on `(-∞, 0]`, `G > 0` on `(0, ∞)`; the concrete
-`stampacchiaTruncation` is `s ↦ ∫₀ˢ min (max t 0) 1 dt`); (2) `v = G(u − K') ∈ H^1(Ω)`
-by the chain rule (Proposition 9.5, `MemSobolevMultiIndex.contDiff_comp`), which the engine
-constructs itself in both cases of the proof of Theorem 9.27 — `t ↦ G(t − K') − G(−K')` plus the
-constant `G(−K')` when `|Ω| < ∞`, and `t ↦ G(t − K')` directly when `K' ≥ 0`, the case `|Ω| = ∞`
-forcing `K ≥ 0` (`Elliptic.nonneg_of_ae_le_of_measure_eq_top`) — and whose admissibility `v ∈ V`
-is the hypothesis of the engine; (3) the equation tested with `v` gives
-`∑ᵢ ∫ (∂ᵢu)² G'(u − K') + ∫ (u − f) G(u − K') = 0`, and pointwise
-`0 ≤ (u − K') G(u − K') ≤ (u − f) G(u − K')` as `f ≤ K < K'`, so `(u − K') G(u − K') = 0` almost
-everywhere, so `u ≤ K'`; `K' ↓ K`. Comparing with `(u − f) G(u − K')` rather than subtracting
-`K' ∫ G(u − K')` avoids the integrability bookkeeping of footnote 36.
+## Main results
 
-For the Dirichlet problem `v ∈ H^1_0(Ω)` comes from Theorem 9.17 (i) ⇒ (ii), valid on every open
-set (`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`), the continuous
-representative `G(ũ − K')` vanishing on `frontier Ω`; footnotes 35, 37 and 38 — the assumption
-`u ∈ C(Ω̄)` can be dropped for `u ∈ H^1_0(Ω)` — are the `_of_mem_zero` variants, through
-`SobolevMultiIndexZero.contDiff_comp_mem`; they are what chapter 10's maximum principle for the
-heat equation consumes.
+* `Elliptic.le_of_forall_truncation_mem`: if $u$ solves the weak equation of $-\Delta + 1$ on a test
+  space $V$, $f \le K$ almost everywhere, and $V$ contains the truncations $G(u - K')$ for $K' > K$,
+  then $u \le K$ almost everywhere.
+* `Elliptic.le_of_le_frontier`, `Elliptic.ge_of_ge_frontier`, `Elliptic.le_max_of_isWeakSolution`:
+  Theorem 9.27 for the Dirichlet problem.
+* `Elliptic.le_of_mem_zero`, `Elliptic.ge_of_mem_zero`: Theorem 9.27 for $u \in H^1_0(\Omega)$
+  without a continuity hypothesis.
+* `Elliptic.nonneg_of_nonneg_frontier`, `Elliptic.abs_le_max_of_isWeakSolution`: Corollary 9.28.
+* `Elliptic.le_of_neumann`, `Elliptic.ge_of_neumann`: Proposition 9.30 for the Neumann problem.
+* `Elliptic.nonneg_of_nonneg_frontier_general_zero_drift`,
+  `Elliptic.mem_Icc_of_frontier_general_zero_drift`: Proposition 9.29 without a drift term, for
+  $N \ge 1$.
+* `Elliptic.nonneg_of_nonneg_frontier_general`, `Elliptic.mem_Icc_of_frontier_general`: Proposition
+  9.29 with a drift term, for $N \ge 3$.
+* `SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq`: the weak gradient of a $W^{1,p}$
+  function vanishes almost everywhere on each level set.
+* `Elliptic.le_of_classical_laplacian`, `Elliptic.le_of_classical`: the classical maximum principle
+  of Remark 27.
 
-Proposition 9.29 replaces `∫ |∇u|²` by `∫ ∑ a_ij ∂ᵢu ∂ⱼu G'(u) ≥ α ∫ |∇u|² G'(u)` and, the form
-having no `∫ uv` term, concludes from `|∇u|² G'(u) = 0` by the auxiliary `H(t) = ∫₀ᵗ √G'(s) ds`
-(`stampacchiaTruncationSqrt`): `H(u) ∈ H^1_0(Ω)` has `∇H(u) = 0`, hence `H(u) = 0`
-by footnote 39 (`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`: the extension by zero of a
-`W_0^{1,p}` function with vanishing gradient is a constant `L^p` function on `ℝ^N`, hence zero,
-for `N ≥ 1`), hence `u ≤ 0`.
+## Proof outline
 
-The general statement with a drift term `a_i` is quoted by the book from Gilbarg and Trudinger,
-*Elliptic Partial Differential Equations of Second Order*, Theorem 8.1; that proof is carried out
-here for `N ≥ 3` (`Elliptic.nonpos_of_nonpos_frontier_general`,
-`Elliptic.nonneg_of_nonneg_frontier_general`), and it is a different argument. For a level
-`l ≥ 0` with `sup_Γ u ≤ l` the truncation `v = (u − l)⁺` lies in `H^1_0(Ω)` — it lies in `H^1(Ω)`
-by `MemSobolevMultiIndex.posPart_sub_const` (the positive part of Gilbarg–Trudinger's Lemma 7.6
-after the affine shift `t ↦ t − l`, which the `C¹` chain rule does cover) and its continuous
-representative vanishes on `frontier Ω`. Testing (78) with `v` and dropping the nonnegative
-`∫ a₀ u v` and the nonpositive `∫ f v` gives
-`α ‖∇v‖₂² ≤ ∑ᵢ ∫ a_i ∂ᵢu v ≤ (∑ᵢ ‖a_i‖_∞) ‖∇v‖₂ ‖1_E v‖₂`, the set `E = {u > l} ∩ {∇u ≠ 0}`
-(`Elliptic.levelGradSet`) carrying all of `∇v`; the Sobolev inequality of Remark 20 on an
-arbitrary open set together with Hölder on `E` bounds `‖1_E v‖₂ ≤ C ‖∇v‖₂ |E|^{1/N}`, so either
-`∇v = 0` — and then `v = 0` and `u ≤ l` — or `|E| ≥ c` for a `c > 0` independent of `l`
-(`Elliptic.exists_measure_levelGradSet_ge`). As `l` rises to the least almost-everywhere bound `M`
-of `u` the sets `E` decrease to `{u = M} ∩ {∇u ≠ 0}`, a null set because the weak gradient of a
-`W^{1,p}` function vanishes almost everywhere on each level set
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq`, Gilbarg–Trudinger's Lemma 7.7, proved
-here from the positive parts of `u − M` and `M − u`); hence `M ≤ 0`
-(`Elliptic.nonpos_ae_of_forall_le_measure_levelGradSet`). The clauses (80), (80') and (81) follow
-for a drift term as they do without one, from (79) applied to `u − K` and `K − u`
-(`Elliptic.ge_iInf_frontier_of_nonneg`, `Elliptic.le_iSup_frontier_of_nonpos`,
-`Elliptic.mem_Icc_of_frontier_general`); the drift-free forms, valid for every `N ≥ 1`, are kept
-under their own names.
+The proofs of Theorem 9.27, Corollary 9.28 and Proposition 9.30 use one argument,
+`Elliptic.le_of_forall_truncation_mem`. Let $G$ be a Stampacchia truncation:
+$G \in C^1(\mathbb{R})$, $|G'| \le M$, $G' \ge 0$, $G = 0$ on $(-\infty, 0]$ and $G > 0$ on
+$(0, \infty)$. For $K' > K$ the function $v = G(u - K')$ lies in $H^1(\Omega)$ by the chain rule
+(Proposition 9.5). If $v \in V$, the equation tested with $v$ gives $\sum_i \int (\partial_i u)^2
+G'(u - K') + \int (u - f) G(u - K') = 0$. Since $f \le K < K'$, pointwise
+$0 \le (u - K') G(u - K') \le (u - f) G(u - K')$, so $(u - K') G(u - K') = 0$ almost everywhere and
+$u \le K'$; then $K' \downarrow K$. For the Dirichlet problem, $v \in H^1_0(\Omega)$ by Theorem
+9.17, (i) implies (ii), which holds on every open set, because the continuous representative
+$G(\tilde u - K')$ of $v$ vanishes on the boundary.
 
-Remark 27 is the classical proof, for solutions `ũ ∈ C(Ω̄) ∩ C²(Ω)` on a bounded `Ω`: at an
-interior maximum the gradient vanishes and the Hessian is nonpositive, so the equation gives
-`ũ(x₀) ≤ f(x₀)`. For the Laplacian this is `Elliptic.le_of_classical_laplacian`
-(`IsLocalMax.laplacian_nonpos`); for the general operator `-∑ ∂ⱼ(a_ij ∂ᵢũ) + ∑ b_i ∂ᵢũ + ũ`
-with symmetric positive semidefinite `a_ij(x₀)` it is `Elliptic.le_of_classical`, whose
-Hessian-trace step `∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ 0` (`Matrix.PosSemidef.sum_mul_apply_single_nonpos`)
-goes through the square root of `a(x₀)` (`CFC.sqrt`) instead of the book's diagonalization.
+In the drift-free case of Proposition 9.29 the form has no term $\int uv$. The equation tested with
+$G(u)$ gives $|\nabla u|^2 G'(u) = 0$, and then the function $H(t) = \int_0^t \sqrt{G'(s)}\,ds$
+gives $H(u) \in H^1_0(\Omega)$ with $\nabla H(u) = 0$. Hence $H(u) = 0$ by footnote 39, and
+$u \le 0$.
 
-## Not formalized here
+With a drift term $a_i$, the argument of Gilbarg and Trudinger tests the equation with
+$v = (u - l)^+$ for a level $l \ge 0$ with $u \le l$ on $\Gamma$. This gives $\alpha \|\nabla
+v\|_2^2 \le (\sum_i \|a_i\|_\infty) \|\nabla v\|_2 \|1_E v\|_2$ with
+$E = \{u > l\} \cap \{\nabla u \neq 0\}$. The Sobolev inequality of Remark 20 and Hölder's
+inequality on $E$ give $\|1_E v\|_2 \le C \|\nabla v\|_2 |E|^{1/N}$. So either $\nabla v = 0$, and
+then $u \le l$, or $|E| \ge c$ for a $c > 0$ that does not depend on $l$. As $l$ rises to the least
+almost-everywhere bound $M$ of $u$, the sets $E$ decrease to $\{u = M\} \cap \{\nabla u \neq 0\}$,
+which is a null set. Hence $M \le 0$.
 
-* **Proposition 9.29, (79), (80), (81) with a drift term `a_i ≠ 0` in dimension `N ≤ 2`.** The
-  statements are the ones proved in this file, with `3 ≤ N` weakened to `N ≥ 1`: under the
-  hypotheses of Proposition 9.29 with `a_i ∈ L^∞(Ω)` arbitrary, `u ≥ 0` on `Γ` and `f ≥ 0` in `Ω`
-  give `u ≥ 0` in `Ω`. The only step that fails is the Sobolev inequality
-  `‖v‖_{L^{2^*}(Ω)} ≤ C(2, N) ‖∇v‖_{L²(Ω)}` on `W_0^{1,2}(Ω)` (Remark 20 of Chapter 9,
-  `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`), which needs `2 < N`; what the argument
-  actually consumes is the Faber–Krahn-type bound
-  `‖v‖_{L²(Ω)} ≤ C_N ‖∇v‖_{L²(Ω)} |{v ≠ 0}|^{1/N}` for `v ∈ H^1_0(Ω)` on an arbitrary open `Ω`,
-  and only `N ≥ 3` has it in the library. For `N = 2` it would follow from the Sobolev inequality
-  at the exponent `q = 3/2 < 2` applied to the extension by zero (`q^* = 6`, and Hölder on
-  `{v ≠ 0}` twice), which needs `W_0^{1,2}(Ω) → W_0^{1,3/2}(Ω)` on a set of finite measure and a
-  quantitative form of `SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`
-  (Remark 21, whose constant is existential there); for `N = 1` it would need the one-dimensional
-  `‖v‖_∞ ≤ ‖v'‖_{L¹}` on `W_0^{1,1}` of an open subset of `ℝ`, which lives in the one-dimensional
-  chapter under a different model of `ℝ^1`. Gilbarg and Trudinger state Theorem 8.1 for a bounded
-  domain and treat `n = 2` by replacing `2^*` by an arbitrary `q < ∞`; the book gives no proof at
-  all. Estimate: ~200 lines for `N = 2` on top of a quantitative Remark 21, and the `N = 1` case
-  is a separate bridging exercise.
+## Implementation notes
 
-## References
-
-[brezis2011functional], §9.7: Theorem 9.27, Corollary 9.28, Proposition 9.29, Proposition 9.30,
-footnotes 35–39. The book's "proceed as in the proof of Theorem 8.18" refers to Theorem 8.19.
-The drift term of Proposition 9.29 follows D. Gilbarg and N. Trudinger, *Elliptic Partial
-Differential Equations of Second Order*, Theorem 8.1, with Lemmas 7.6 and 7.7.
+* The space $H^1(\Omega)$ is `SobolevEuclidean N 1 2 Ω`.
+* The space $H^1_0(\Omega)$ is `SobolevEuclideanZero N 1 2 Ω`.
+* A weak solution on the test space `V` is `Elliptic.IsWeakSolution (Elliptic.laplaceForm Ω) V u f`.
+* The hypothesis $u \in C(\bar\Omega)$ is a function $\tilde u : \mathbb{R}^N \to \mathbb{R}$,
+  continuous on `closure Ω`, with `SobolevMultiIndex.fn u =ᵐ[volume.restrict Ω] ũ`. The boundary
+  values of $u$ are the values of $\tilde u$ on `frontier Ω`.
+* The quantities $\sup_\Gamma u$ and $\sup_\Omega f$ of the source are not formed. A number $K$ with
+  $\tilde u \le K$ on `frontier Ω` and $f \le K$ almost everywhere on $\Omega$ is the hypothesis,
+  and $\tilde u \le K$ on $\Omega$ is the conclusion. The lower bounds are the upper bounds for
+  $-u$, $-f$ and $-K$. Almost-everywhere bounds become bounds at every point of $\Omega$ by
+  continuity (`Elliptic.forall_le_of_ae_le_of_continuousOn`).
+* The concrete truncation is `stampacchiaTruncation`,
+  $s \mapsto \int_0^s \min\{\max\{t, 0\}, 1\}\,dt$, and the class of truncations is
+  `IsStampacchiaTruncation`. When $|\Omega| < \infty$, the element $G(u - K')$ of $H^1(\Omega)$ is
+  built from $t \mapsto G(t - K') - G(-K')$ and the constant $G(-K')$. When $|\Omega| = \infty$, the
+  bound $f \le K$ forces $K \ge 0$, and $t \mapsto G(t - K')$ vanishes at $0$.
+* The proof compares $\int (u - K') G(u - K')$ with $\int (u - f) G(u - K')$, instead of subtracting
+  $K' \int G(u - K')$. This avoids the integrability argument of footnote 36 of
+  [brezis2011functional], §9.7.
+* Footnotes 35, 37 and 38 of [brezis2011functional], §9.7, say that the hypothesis
+  $u \in C(\bar\Omega)$ can be dropped for $u \in H^1_0(\Omega)$. These are the variants whose names
+  end in `_of_mem_zero`, proved through `SobolevMultiIndexZero.contDiff_comp_mem`. The maximum
+  principle for the heat equation in Chapter 10 of [brezis2011functional] uses them.
+* In Proposition 9.29 the drift-free statements hold for every $N \ge 1$ and keep their own names
+  (ending in `_zero_drift`). The statements with a drift term need $N \ge 3$. In the source, the
+  reference "proceed as in the proof of Theorem 8.18" means Theorem 8.19.
+* In the drift case, $(u - l)^+ \in H^1(\Omega)$ is `MemSobolevMultiIndex.posPart_sub_const`, the
+  positive part after the shift $t \mapsto t - l$ (Lemma 7.6 of Gilbarg and Trudinger). The
+  vanishing of the gradient on level sets is
+  `SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq` (their Lemma 7.7).
+* The classical proof of Remark 27 for a general operator needs $\sum_{i,j} a_{ij}(x_0) \partial_i
+  \partial_j \tilde u(x_0) \le 0$. The source gets this by a change of coordinates that diagonalizes
+  $(a_{ij}(x_0))$. Here `Matrix.PosSemidef.sum_mul_apply_single_nonpos` gets it from the positive
+  semidefinite square root (`CFC.sqrt`).
+* Proposition 9.29 and its consequences (79), (80), (81) with a drift term $a_i \neq 0$ in dimension
+  $N \le 2$ are not formalized. The statements would be those of this file with $N \ge 3$ replaced
+  by $N \ge 1$. The only step that fails is the Sobolev inequality $\|v\|_{L^{2^*}(\Omega)} \le C
+  \|\nabla v\|_{L^2(\Omega)}$ on $H^1_0(\Omega)$ (Remark 20,
+  `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`), which needs $N > 2$. The argument uses only
+  the bound $\|v\|_{L^2(\Omega)} \le C_N \|\nabla v\|_{L^2(\Omega)} |\{v \neq 0\}|^{1/N}$ for
+  $v \in H^1_0(\Omega)$. For $N = 2$ this would follow from the Sobolev inequality at the exponent
+  $q = 3/2$ applied to the extension by zero, which needs the embedding
+  $W^{1,2}_0(\Omega) \to W^{1,3/2}_0(\Omega)$ on a set of finite measure and a form of Remark 21
+  (`SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`) with an explicit constant. For
+  $N = 1$ it would need $\|v\|_\infty \le \|v'\|_{L^1}$ on $W^{1,1}_0$ of an open subset of
+  $\mathbb{R}$, which the library has only for a different model of $\mathbb{R}^1$. Gilbarg and
+  Trudinger state Theorem 8.1 for a bounded domain and treat $n = 2$ by replacing $2^*$ with an
+  arbitrary $q < \infty$. [brezis2011functional] gives no proof of the case with a drift term.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -136,9 +149,12 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- A function continuous on the open set `Ω` and at most `K` almost everywhere on `Ω` is at most
-`K` everywhere on `Ω`: `max ũ K` and the constant `K` are continuous on `Ω` and agree almost
-everywhere (`MeasureTheory.Measure.eqOn_open_of_ae_eq`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be
+continuous on $\Omega$. If $\tilde u \le K$ almost everywhere on $\Omega$, then
+$\tilde u(x) \le K$ for every $x \in \Omega$.
+
+The functions $\max\{\tilde u, K\}$ and $K$ are continuous on $\Omega$ and agree almost
+everywhere, so they agree on $\Omega$ (`MeasureTheory.Measure.eqOn_open_of_ae_eq`). -/
 theorem forall_le_of_ae_le_of_continuousOn {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hc : ContinuousOn ũ Ω) {K : ℝ}
     (h : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), ũ x ≤ K) :
@@ -151,22 +167,26 @@ theorem forall_le_of_ae_le_of_continuousOn {ũ : EuclideanSpace ℝ (Fin N) → 
   rw [← this]
   exact le_max_left _ _
 
-/-- The function of `-u` is `-fn u`, almost everywhere on `Ω`. -/
+/-- For $u \in H^1(\Omega)$, the function of $-u$ is $-u$: `SobolevMultiIndex.fn (-u)` equals
+`-SobolevMultiIndex.fn u` almost everywhere on $\Omega$. -/
 theorem _root_.SobolevMultiIndex.fn_neg (u : SobolevEuclidean N 1 2 Ω) :
     fn (-u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] -fn u :=
   Lp.coeFn_neg (weakDeriv u 0)
 
-/-- The form of `-Δ + 1` is odd in its first argument. -/
+/-- The form $a(u, \varphi) = \int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi$ of
+$-\Delta + 1$ satisfies $a(-u, \varphi) = -a(u, \varphi)$ for $u, \varphi \in H^1(\Omega)$. -/
 theorem laplaceForm_neg_apply (u φ : SobolevEuclidean N 1 2 Ω) :
     laplaceForm Ω (-u) φ = -laplaceForm Ω u φ :=
   ContinuousLinearMap.map_neg₂ _ u φ
 
-/-- The load of `-f` is the opposite of the load of `f`. -/
+/-- The load functional of $-f$ is the negative of that of $f$: $\int_\Omega (-f) \varphi =
+-\int_\Omega f \varphi$ for $f \in L^2(\Omega)$ and $\varphi \in H^1(\Omega)$. -/
 theorem load_neg_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (φ : SobolevEuclidean N 1 2 Ω) : load Ω (-f) φ = -load Ω f φ := by
   rw [load_apply_inner, load_apply_inner, inner_neg_left]
 
-/-- The weak equation for `-u`, `-f`, from the one for `u`, `f`. -/
+/-- If $u \in H^1(\Omega)$ is a weak solution of $-\Delta u + u = f$ with test space $V$, then $-u$
+is a weak solution of $-\Delta(-u) + (-u) = -f$ with the same test space. -/
 theorem forall_laplaceForm_neg_eq_load_neg (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -174,7 +194,7 @@ theorem forall_laplaceForm_neg_eq_load_neg (V : Submodule ℝ (SobolevEuclidean 
     IsWeakSolution (laplaceForm Ω) V (-u) (-f) := fun φ hφ ↦ by
   rw [laplaceForm_neg_apply, load_neg_apply, heq φ hφ]
 
-/-- `-f ≤ -K` almost everywhere when `K ≤ f` almost everywhere. -/
+/-- If $K \le f$ almost everywhere on $\Omega$, then $-f \le -K$ almost everywhere on $\Omega$. -/
 theorem ae_neg_le_neg {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {K : ℝ}
     (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), K ≤ f x) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), (-f) x ≤ -K := by
@@ -182,7 +202,7 @@ theorem ae_neg_le_neg {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace �
   rw [hx', Pi.neg_apply]
   linarith
 
-/-- `-K ≤ -f` almost everywhere when `f ≤ K` almost everywhere. -/
+/-- If $f \le K$ almost everywhere on $\Omega$, then $-K \le -f$ almost everywhere on $\Omega$. -/
 theorem ae_neg_ge_neg {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {K : ℝ}
     (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), f x ≤ K) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), -K ≤ (-f) x := by
@@ -192,7 +212,7 @@ theorem ae_neg_ge_neg {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace �
 
 end Aux
 
-/-! ### Constants and truncations as elements of `H^1(Ω)` -/
+/-! ### Constants and truncations as elements of $H^1(\Omega)$ -/
 
 section Engine
 
@@ -200,8 +220,9 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **A constant is the function of an element of `H^1(Ω)` when `Ω` has finite measure**, with
-vanishing weak gradient. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| < \infty$ and let $K \in \mathbb{R}$.
+There is $c \in H^1(\Omega)$ whose function is the constant $K$ almost everywhere on $\Omega$
+and whose weak partial derivatives $\partial_i c$ all vanish. -/
 theorem exists_const_of_measure_ne_top (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     (K : ℝ) :
     ∃ c : SobolevEuclidean N 1 2 Ω,
@@ -236,10 +257,16 @@ theorem exists_const_of_measure_ne_top (hΩ : volume (Ω : Set (EuclideanSpace �
   rw [hx0]
   exact hx
 
-/-- **The truncation `G(u − K')` is the function of an element of `H^1(Ω)`** when `Ω` has finite
-measure or `0 ≤ K'` ([brezis2011functional] Theorem 9.27, cases (a) and (b) of the proof): in
-the second case `t ↦ G(t − K')` vanishes at `0` and Proposition 9.5 applies directly; in the
-first, it applies to `t ↦ G(t − K') − G(−K')`, and the constant `G(−K')` lies in `H^1(Ω)`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $G$ be a Stampacchia truncation with bound $M$
+(`IsStampacchiaTruncation G M`), let $u \in H^1(\Omega)$, and let $K' \in \mathbb{R}$. If
+$|\Omega| < \infty$ or $K' \ge 0$, then there is $v \in H^1(\Omega)$ whose function is
+$G(u - K')$ almost everywhere on $\Omega$.
+
+These are the cases (a) and (b) of the proof of Theorem 9.27 of [brezis2011functional]. If
+$K' \ge 0$, the function $t \mapsto G(t - K')$ vanishes at $0$ and the chain rule (Proposition
+9.5, `MemSobolevMultiIndex.contDiff_comp`) applies directly. If $|\Omega| < \infty$, the chain
+rule applies to $t \mapsto G(t - K') - G(-K')$, and the constant $G(-K')$ lies in $H^1(\Omega)$
+by `Elliptic.exists_const_of_measure_ne_top`. -/
 theorem exists_truncation_elem {G : ℝ → ℝ} {M : ℝ} (hG : IsStampacchiaTruncation G M)
     (u : SobolevEuclidean N 1 2 Ω) {K' : ℝ}
     (h : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤ ∨ 0 ≤ K') :
@@ -263,8 +290,13 @@ theorem exists_truncation_elem {G : ℝ → ℝ} {M : ℝ} (hG : IsStampacchiaTr
     refine ⟨v, hv.trans (Eventually.of_forall fun x ↦ ?_)⟩
     simp [hG.eq_zero_of_nonpos (-K') (by linarith)]
 
-/-- The partial derivatives of an element of `H^1(Ω)` with function `G(u − K')` are
-`G'(u − K') ∂ᵢu` almost everywhere on `Ω` (the chain rule, Proposition 9.5). -/
+/-- Let $G$ be a Stampacchia truncation, let $u, v \in H^1(\Omega)$, and let $K' \in \mathbb{R}$. If
+the function of $v$ is $G(u - K')$ almost everywhere on $\Omega$, then for each $i$
+$$\partial_i v = G'(u - K')\, \partial_i u$$
+almost everywhere on $\Omega$.
+
+This is the chain rule, Proposition 9.5 of [brezis2011functional], together with the uniqueness
+of weak derivatives. -/
 theorem weakDeriv_single_ae_eq_of_fn_ae_eq_truncation {G : ℝ → ℝ} {M : ℝ}
     (hG : IsStampacchiaTruncation G M) {u v : SobolevEuclidean N 1 2 Ω} {K' : ℝ}
     (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
@@ -277,9 +309,12 @@ theorem weakDeriv_single_ae_eq_of_fn_ae_eq_truncation {G : ℝ → ℝ} {M : ℝ
   refine this.trans (Eventually.of_forall fun x ↦ ?_)
   simp only [deriv_comp_sub_const]
 
-/-- **`f ≤ K` almost everywhere with `f ∈ L²(Ω)` forces `0 ≤ K` when `|Ω| = ∞`** (the remark
-opening case (b) of the proof of [brezis2011functional] Theorem 9.27): otherwise `|f| ≥ |K| > 0`
-almost everywhere and `f ∉ L²`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| = \infty$ and let
+$f \in L^2(\Omega)$. If $f \le K$ almost everywhere on $\Omega$, then $K \ge 0$.
+
+This is the remark at the start of case (b) of the proof of Theorem 9.27 of
+[brezis2011functional]. If $K < 0$, then $|f| \ge |K| > 0$ almost everywhere on a set of
+infinite measure, and $f \notin L^2(\Omega)$. -/
 theorem nonneg_of_ae_le_of_measure_eq_top
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) = ⊤)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) {K : ℝ}
@@ -300,19 +335,22 @@ theorem nonneg_of_ae_le_of_measure_eq_top
     ENNReal.top_rpow_of_pos (by norm_num), ENNReal.mul_top (by simpa using hK.ne)] at h1
   exact (Lp.eLpNorm_ne_top f) (top_le_iff.1 h1)
 
-/-- **The truncation engine of Stampacchia's method** ([brezis2011functional] §9.7, proof of
-Theorem 9.27, both cases at once). Let `Ω ⊆ ℝ^N` be open, `V` a subspace of `H^1(Ω)`,
-`u ∈ H^1(Ω)` and `f ∈ L²(Ω)` with `laplaceForm Ω u φ = load Ω f φ` for all `φ ∈ V`, `f ≤ K`
-almost everywhere on `Ω`, and suppose that for every `K' > K` and every Stampacchia truncation
-`G` the elements of `H^1(Ω)` carrying `G(u − K')` lie in `V`. Then `u ≤ K` almost everywhere on
-`Ω`.
+/-- The truncation argument of **Stampacchia's method**. Let $\Omega \subseteq \mathbb{R}^N$ be
+open, let $V$ be a subspace of $H^1(\Omega)$, let $f \in L^2(\Omega)$, and let
+$u \in H^1(\Omega)$ satisfy
+$$\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f \varphi
+  \qquad \text{for all } \varphi \in V.$$
+Let $f \le K$ almost everywhere on $\Omega$. Suppose that for every $K' > K$, every Stampacchia
+truncation $G$ and every $v \in H^1(\Omega)$ whose function is $G(u - K')$ almost everywhere,
+$v \in V$. Then $u \le K$ almost everywhere on $\Omega$.
 
-Proof: fix `K' > K`; the element `v` with function `G(u − K')` exists
-(`Elliptic.exists_truncation_elem`, since `|Ω| < ∞` or `K' > K ≥ 0`, the latter forced by
-`|Ω| = ∞`) and lies in `V`; testing the equation with it,
-`∑ᵢ ∫ (∂ᵢu)² G'(u − K') + ∫ (u − f) G(u − K') = 0` with a nonnegative first term, so
-`∫ (u − f) G(u − K') ≤ 0`; pointwise `0 ≤ (u − K') G(u − K') ≤ (u − f) G(u − K')`, so
-`(u − K') G(u − K') = 0` almost everywhere and `u ≤ K'` almost everywhere; let `K' ↓ K`. -/
+This is the common argument of the proofs of Theorem 9.27 of [brezis2011functional], for both
+$|\Omega| < \infty$ and $|\Omega| = \infty$. Fix $K' > K$. The element $v$ with function
+$G(u - K')$ exists by `Elliptic.exists_truncation_elem`, because $|\Omega| < \infty$, or else
+$K' > K \ge 0$ by `Elliptic.nonneg_of_ae_le_of_measure_eq_top`. The equation tested with $v$
+gives $\sum_i \int (\partial_i u)^2 G'(u - K') + \int (u - f) G(u - K') = 0$, so
+$\int (u - f) G(u - K') \le 0$. Pointwise $0 \le (u - K') G(u - K') \le (u - f) G(u - K')$, so
+$(u - K') G(u - K') = 0$ and $u \le K'$ almost everywhere. Then let $K' \downarrow K$. -/
 theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 Ω))
     {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -413,14 +451,19 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **Theorem 9.27 (maximum principle for the Dirichlet problem), upper bound**: for an open
-`Ω ⊆ ℝ^N`, `f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with `laplaceForm Ω u φ = load Ω f φ` for all
-`φ ∈ H^1_0(Ω)`, and a representative `ũ` of `u` continuous on `closure Ω`: if `ũ ≤ K` on
-`frontier Ω` and `f ≤ K` almost everywhere on `Ω`, then `ũ ≤ K` on `Ω`
-([brezis2011functional] Theorem 9.27, the upper bound of (70), for both `|Ω| < ∞` and `|Ω| = ∞`).
-The engine `Elliptic.le_of_forall_truncation_mem` with `V = H^1_0(Ω)`: `G(ũ − K')` is continuous
-on `closure Ω` and vanishes on `frontier Ω`, so its class lies in `H^1_0(Ω)` by Theorem 9.17
-(i) ⇒ (ii), which needs no regularity of `Ω`. -/
+/-- The **weak maximum principle for the Dirichlet problem**, upper bound. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $f \in L^2(\Omega)$, and let $u \in H^1(\Omega)$
+satisfy $\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f
+\varphi$ for all $\varphi \in H^1_0(\Omega)$. Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be
+continuous on $\bar\Omega$ and equal to $u$ almost everywhere on $\Omega$. If $\tilde u \le K$
+on $\partial\Omega$ and $f \le K$ almost everywhere on $\Omega$, then $\tilde u \le K$ on
+$\Omega$. This is the upper bound in (70) of Theorem 9.27 of [brezis2011functional], for both
+$|\Omega| < \infty$ and $|\Omega| = \infty$.
+
+The proof applies `Elliptic.le_of_forall_truncation_mem` with $V = H^1_0(\Omega)$. The function
+$G(\tilde u - K')$ is continuous on $\bar\Omega$ and vanishes on $\partial\Omega$, so its class
+lies in $H^1_0(\Omega)$ by Theorem 9.17, (i) implies (ii), which needs no regularity of $\Omega$
+(`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`). -/
 theorem le_of_le_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -442,8 +485,12 @@ theorem le_of_le_frontier {u : SobolevEuclidean N 1 2 Ω}
       rw [hx, hx']
     · exact hG.eq_zero_of_nonpos _ (by linarith [hΓ x hx])
 
-/-- **Theorem 9.27, lower bound**: `K ≤ ũ` on `frontier Ω` and `K ≤ f` almost everywhere force
-`K ≤ ũ` on `Ω` — the upper bound applied to `-u`, `-f`, `-K`. -/
+/-- The weak maximum principle for the Dirichlet problem, lower bound. Under the hypotheses of
+`Elliptic.le_of_le_frontier` on $\Omega$, $f$, $u$ and $\tilde u$: if $K \le \tilde u$ on
+$\partial\Omega$ and $K \le f$ almost everywhere on $\Omega$, then $K \le \tilde u$ on $\Omega$.
+This is the lower bound in (70) of Theorem 9.27 of [brezis2011functional].
+
+The proof applies the upper bound to $-u$, $-f$ and $-K$. -/
 theorem ge_of_ge_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -458,8 +505,10 @@ theorem ge_of_ge_frontier {u : SobolevEuclidean N 1 2 Ω}
   intro x hx
   simpa using h x hx
 
-/-- **Theorem 9.27, the upper half of (70)**: `ũ ≤ max {K₁, K₂}` on `Ω` when `ũ ≤ K₁` on
-`frontier Ω` and `f ≤ K₂` almost everywhere — the book's `u ≤ max {sup_Γ u, sup_Ω f}`. -/
+/-- Under the hypotheses of `Elliptic.le_of_le_frontier` on $\Omega$, $f$, $u$ and $\tilde u$: if
+$\tilde u \le K_1$ on $\partial\Omega$ and $f \le K_2$ almost everywhere on $\Omega$, then
+$\tilde u \le \max\{K_1, K_2\}$ on $\Omega$. This is the upper half
+$u \le \max\{\sup_\Gamma u, \sup_\Omega f\}$ of (70) in Theorem 9.27 of [brezis2011functional]. -/
 theorem le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -471,13 +520,17 @@ theorem le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
   le_of_le_frontier heq hu hc (fun x hx ↦ (hΓ x hx).trans (le_max_left _ _))
     (hf.mono fun _ hx ↦ hx.trans (le_max_right _ _))
 
-/-- **Theorem 9.27 without the continuity hypothesis, for `u ∈ H^1_0(Ω)`** (footnote 35 of
-[brezis2011functional] §9.7): if `u ∈ H^1_0(Ω)` satisfies `laplaceForm Ω u φ = load Ω f φ` for
-all `φ ∈ H^1_0(Ω)`, `f ≤ K` almost everywhere on `Ω` and `0 ≤ K`, then `fn u ≤ K` almost
-everywhere on `Ω`. The boundary value `0` replaces `sup_Γ u`, which is why `K ≥ 0` is assumed:
-`t ↦ G(t − K')` then vanishes at `0` and `SobolevMultiIndexZero.contDiff_comp_mem` places
-`G(u − K')` in `H^1_0(Ω)`. Chapter 10's maximum principle for the heat equation consumes this
-form. -/
+/-- The weak maximum principle for the Dirichlet problem without a continuity hypothesis, upper
+bound. Let $\Omega \subseteq \mathbb{R}^N$ be open, let $f \in L^2(\Omega)$, and let
+$u \in H^1_0(\Omega)$ satisfy $\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u
+\varphi = \int_\Omega f \varphi$ for all $\varphi \in H^1_0(\Omega)$. If $K \ge 0$ and $f \le K$
+almost everywhere on $\Omega$, then $u \le K$ almost everywhere on $\Omega$. This is footnote 35
+of [brezis2011functional], §9.7.
+
+The boundary value $0$ of $u$ replaces $\sup_\Gamma u$, which is why $K \ge 0$ is assumed. Then
+$t \mapsto G(t - K')$ vanishes at $0$, and `SobolevMultiIndexZero.contDiff_comp_mem` places
+$G(u - K')$ in $H^1_0(\Omega)$. The maximum principle for the heat equation in Chapter 10 of
+[brezis2011functional] uses this form. -/
 theorem le_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f) {K : ℝ}
@@ -488,8 +541,10 @@ theorem le_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclid
   exact SobolevMultiIndexZero.contDiff_comp_mem ENNReal.ofNat_ne_top hu (hG.contDiff_sub K')
     (hG.eq_zero_of_nonpos _ (by linarith)) (hG.abs_deriv_sub_le K') hv
 
-/-- **Theorem 9.27 without the continuity hypothesis, lower bound**: for `u ∈ H^1_0(Ω)`, `K ≤ 0`
-and `K ≤ f` almost everywhere, `K ≤ fn u` almost everywhere on `Ω`. -/
+/-- The weak maximum principle for the Dirichlet problem without a continuity hypothesis, lower
+bound. Under the hypotheses of `Elliptic.le_of_mem_zero` on $\Omega$, $f$ and
+$u \in H^1_0(\Omega)$: if $K \le 0$ and $K \le f$ almost everywhere on $\Omega$, then $K \le u$
+almost everywhere on $\Omega$. -/
 theorem ge_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f) {K : ℝ}
@@ -501,9 +556,10 @@ theorem ge_of_mem_zero {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclid
   rw [hx', Pi.neg_apply] at hx
   linarith
 
-/-- **Corollary 9.28, (73)**: under the hypotheses of `Elliptic.le_of_le_frontier`, if `ũ ≥ 0` on
-`frontier Ω` and `f ≥ 0` almost everywhere on `Ω`, then `ũ ≥ 0` on `Ω`
-([brezis2011functional] Corollary 9.28, first assertion). -/
+/-- Under the hypotheses of `Elliptic.le_of_le_frontier` on $\Omega$, $f$, $u$ and $\tilde u$: if
+$\tilde u \ge 0$ on $\partial\Omega$ and $f \ge 0$ almost everywhere on $\Omega$, then
+$\tilde u \ge 0$ on $\Omega$. This is (73), the first assertion of Corollary 9.28 of
+[brezis2011functional]. -/
 theorem nonneg_of_nonneg_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -514,9 +570,11 @@ theorem nonneg_of_nonneg_frontier {u : SobolevEuclidean N 1 2 Ω}
     ∀ x ∈ Ω, 0 ≤ ũ x :=
   ge_of_ge_frontier heq hu hc hΓ hf
 
-/-- **Corollary 9.28, (74)**: `|ũ| ≤ max {K₁, K₂}` on `Ω` when `|ũ| ≤ K₁` on `frontier Ω` and
-`|f| ≤ K₂` almost everywhere on `Ω` — the book's
-`‖u‖_{L^∞(Ω)} ≤ max {‖u‖_{L^∞(Γ)}, ‖f‖_{L^∞(Ω)}}` ([brezis2011functional] Corollary 9.28). -/
+/-- Under the hypotheses of `Elliptic.le_of_le_frontier` on $\Omega$, $f$, $u$ and $\tilde u$: if
+$|\tilde u| \le K_1$ on $\partial\Omega$ and $|f| \le K_2$ almost everywhere on $\Omega$, then
+$|\tilde u| \le \max\{K_1, K_2\}$ on $\Omega$. This is (74) of Corollary 9.28 of
+[brezis2011functional], $\|u\|_{L^\infty(\Omega)} \le \max\{\|u\|_{L^\infty(\Gamma)},
+\|f\|_{L^\infty(\Omega)}\}$. -/
 theorem abs_le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -536,8 +594,10 @@ theorem abs_le_max_of_isWeakSolution {u : SobolevEuclidean N 1 2 Ω}
       ((hΓ y hy).trans (le_max_left _ _)))
       (hf.mono fun y hy ↦ (le_abs_self _).trans (hy.trans (le_max_right _ _))) x hx
 
-/-- **Corollary 9.28, the case `f = 0`**: `|ũ| ≤ K` on `Ω` when `|ũ| ≤ K` on `frontier Ω` —
-"`‖u‖_{L^∞(Ω)} ≤ ‖u‖_{L^∞(Γ)}`" ([brezis2011functional] Corollary 9.28). -/
+/-- Let $\Omega$, $u$ and $\tilde u$ be as in `Elliptic.le_of_le_frontier` with $f = 0$. If
+$K \ge 0$ and $|\tilde u| \le K$ on $\partial\Omega$, then $|\tilde u| \le K$ on $\Omega$. This
+is the case $f = 0$ of Corollary 9.28 of [brezis2011functional], $\|u\|_{L^\infty(\Omega)} \le
+\|u\|_{L^\infty(\Gamma)}$. -/
 theorem abs_le_of_load_eq_zero {u : SobolevEuclidean N 1 2 Ω}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u 0)
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
@@ -552,8 +612,10 @@ theorem abs_le_of_load_eq_zero {u : SobolevEuclidean N 1 2 Ω}
     rw [hx, Pi.zero_apply, abs_zero]
     exact hK
 
-/-- **Corollary 9.28, the case `u = 0` on `Γ`**: `|ũ| ≤ K` on `Ω` when `|f| ≤ K` almost everywhere
-— "`‖u‖_{L^∞(Ω)} ≤ ‖f‖_{L^∞(Ω)}`" ([brezis2011functional] Corollary 9.28). -/
+/-- Under the hypotheses of `Elliptic.le_of_le_frontier` on $\Omega$, $f$, $u$ and $\tilde u$: if
+$\tilde u = 0$ on $\partial\Omega$, $K \ge 0$ and $|f| \le K$ almost everywhere on $\Omega$,
+then $|\tilde u| \le K$ on $\Omega$. This is the case $u = 0$ on $\Gamma$ of Corollary 9.28 of
+[brezis2011functional], $\|u\|_{L^\infty(\Omega)} \le \|f\|_{L^\infty(\Omega)}$. -/
 theorem abs_le_of_eqOn_zero_frontier {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : IsWeakSolution (laplaceForm Ω) (SobolevEuclideanZero N 1 2 Ω) u f)
@@ -576,12 +638,16 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **Proposition 9.30 (maximum principle for the Neumann problem), upper bound**: for an open
-`Ω ⊆ ℝ^N`, `f ∈ L²(Ω)` and `u ∈ H^1(Ω)` with `laplaceForm Ω u φ = load Ω f φ` for all
-`φ ∈ H^1(Ω)`, if `f ≤ K` almost everywhere on `Ω` then `fn u ≤ K` almost everywhere on `Ω`
-([brezis2011functional] Proposition 9.30, the upper half of (82)): the engine with `V = ⊤`,
-where the admissibility of `G(u − K')` is its membership in `H^1(Ω)`. No boundary values enter,
-so no continuity of `u` is assumed. -/
+/-- The **weak maximum principle for the Neumann problem**, upper bound. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $f \in L^2(\Omega)$, and let $u \in H^1(\Omega)$
+satisfy $\int_\Omega \nabla u \cdot \nabla \varphi + \int_\Omega u \varphi = \int_\Omega f
+\varphi$ for all $\varphi \in H^1(\Omega)$. If $f \le K$ almost everywhere on $\Omega$, then
+$u \le K$ almost everywhere on $\Omega$. This is the upper half of (82) in Proposition 9.30 of
+[brezis2011functional].
+
+The proof applies `Elliptic.le_of_forall_truncation_mem` with $V = H^1(\Omega)$, where every
+truncation $G(u - K')$ is admissible. No boundary values enter, so no continuity of $u$ is
+assumed. -/
 theorem le_of_neumann {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : ∀ φ, laplaceForm Ω u φ = load Ω f φ) {K : ℝ}
@@ -589,8 +655,10 @@ theorem le_of_neumann {u : SobolevEuclidean N 1 2 Ω}
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ K :=
   le_of_forall_truncation_mem ⊤ (fun φ _ ↦ heq φ) hf fun _ _ _ _ _ _ _ ↦ Submodule.mem_top
 
-/-- **Proposition 9.30, lower bound**: `K ≤ f` almost everywhere forces `K ≤ fn u` almost
-everywhere on `Ω`, the lower half of (82). -/
+/-- The weak maximum principle for the Neumann problem, lower bound. Under the hypotheses of
+`Elliptic.le_of_neumann` on $\Omega$, $f$ and $u$: if $K \le f$ almost everywhere on $\Omega$,
+then $K \le u$ almost everywhere on $\Omega$. This is the lower half of (82) in Proposition 9.30
+of [brezis2011functional]. -/
 theorem ge_of_neumann {u : SobolevEuclidean N 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
     (heq : ∀ φ, laplaceForm Ω u φ = load Ω f φ) {K : ℝ}
@@ -615,9 +683,21 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **The core of the proof of Proposition 9.29, (79')**: for `N ≥ 1`, a solution `u ∈ H^1(Ω)`
-of the drift-free equation with `a₀ ≥ 0` and `f ≤ 0`, such that the truncations `G(u)`, for every
-Stampacchia truncation `G`, lie in `H^1_0(Ω)`, satisfies `u ≤ 0` almost everywhere on `Ω`. -/
+/-- Let $N \ge 1$ and let $\Omega \subseteq \mathbb{R}^N$ be open. Let $a_{ij} \in L^\infty(\Omega)$
+be uniformly elliptic with constant $\alpha$, let $a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$
+almost everywhere, and let $f \in L^2(\Omega)$ with $f \le 0$ almost everywhere. Let
+$u \in H^1(\Omega)$ satisfy
+$$\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi + \int_\Omega a_0 u \varphi =
+  \int_\Omega f \varphi \qquad \text{for all } \varphi \in H^1_0(\Omega).$$
+Suppose that for every Stampacchia truncation $G$, every $v \in H^1(\Omega)$ whose function is
+$G(u)$ almost everywhere lies in $H^1_0(\Omega)$. Then $u \le 0$ almost everywhere on $\Omega$.
+This is the core of the proof of (79') in Proposition 9.29 of [brezis2011functional].
+
+The equation tested with $G(u)$ gives $|\nabla u|^2 G'(u) = 0$. The function $H(u)$ with
+$H(t) = \int_0^t \sqrt{G'(s)}\,ds$ (`stampacchiaTruncationSqrt`) lies in $H^1_0(\Omega)$ and has
+$\nabla H(u) = 0$, so $H(u) = 0$ by footnote 39
+(`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`), which needs $N \ge 1$. The form is
+`Elliptic.generalForm Ω A 0 a₀`, and uniform ellipticity is `Elliptic.IsUniformlyElliptic`. -/
 theorem nonpos_ae_of_general_zero_drift_of_forall_mem (hN : N ≠ 0)
     (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
@@ -773,7 +853,9 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- The general form is odd in its first argument. -/
+/-- The general form (41) of [brezis2011functional], $a(u, \varphi) = \sum_{i,j} \int_\Omega a_{ij}
+\partial_i u\, \partial_j \varphi + \sum_i \int_\Omega a_i \partial_i u\, \varphi + \int_\Omega
+a_0 u \varphi$, satisfies $a(-u, \varphi) = -a(u, \varphi)$. -/
 theorem generalForm_neg_apply
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -782,7 +864,9 @@ theorem generalForm_neg_apply
     generalForm Ω A a₁ a₀ (-u) φ = -generalForm Ω A a₁ a₀ u φ :=
   ContinuousLinearMap.map_neg₂ _ u φ
 
-/-- The weak equation for `-u`, `-f`, from the one for `u`, `f` (general form). -/
+/-- If $u \in H^1(\Omega)$ satisfies $a(u, \varphi) = \int_\Omega f \varphi$ for all
+$\varphi \in V$, for the general form $a$ of (41), then
+$a(-u, \varphi) = \int_\Omega (-f) \varphi$ for all $\varphi \in V$. -/
 theorem forall_generalForm_neg_eq_load_neg
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -793,13 +877,18 @@ theorem forall_generalForm_neg_eq_load_neg
     ∀ φ ∈ V, generalForm Ω A a₁ a₀ (-u) φ = load Ω (-f) φ := fun φ hφ ↦ by
   rw [generalForm_neg_apply, load_neg_apply, heq φ hφ]
 
-/-- **Proposition 9.29, (79'), for continuous solutions**: for `N ≥ 1`, an open `Ω ⊆ ℝ^N`,
-`A` uniformly elliptic, `a₀ ∈ L^∞(Ω)` with `a₀ ≥ 0`, `f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with
-`generalForm Ω A 0 a₀ u φ = load Ω f φ` for all `φ ∈ H^1_0(Ω)`, and `ũ` a representative of `u`
-continuous on `closure Ω`: `ũ ≤ 0` on `frontier Ω` and `f ≤ 0` almost everywhere force `ũ ≤ 0` on
-`Ω` ([brezis2011functional] Proposition 9.29, the form (79') its proof establishes). The
-truncations `G(ũ)` are continuous on `closure Ω` and vanish on `frontier Ω`, so their classes lie
-in `H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), and
+/-- Let $N \ge 1$ and let $\Omega \subseteq \mathbb{R}^N$ be open. Let $a_{ij} \in L^\infty(\Omega)$
+be uniformly elliptic with constant $\alpha$, let $a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$
+almost everywhere, let $f \in L^2(\Omega)$, and let $u \in H^1(\Omega)$ satisfy
+$$\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi + \int_\Omega a_0 u \varphi =
+  \int_\Omega f \varphi \qquad \text{for all } \varphi \in H^1_0(\Omega).$$
+Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\bar\Omega$ and equal to $u$
+almost everywhere on $\Omega$. If $\tilde u \le 0$ on $\partial\Omega$ and $f \le 0$ almost
+everywhere on $\Omega$, then $\tilde u \le 0$ on $\Omega$. This is the form (79') that the proof
+of Proposition 9.29 of [brezis2011functional] establishes, without a drift term.
+
+The truncations $G(\tilde u)$ are continuous on $\bar\Omega$ and vanish on $\partial\Omega$, so
+their classes lie in $H^1_0(\Omega)$ by Theorem 9.17, (i) implies (ii), and
 `Elliptic.nonpos_ae_of_general_zero_drift_of_forall_mem` applies. -/
 theorem nonpos_of_nonpos_frontier_general_zero_drift (hN : N ≠ 0)
     (hA : IsUniformlyElliptic Ω A α)
@@ -824,13 +913,15 @@ theorem nonpos_of_nonpos_frontier_general_zero_drift (hN : N ≠ 0)
       rw [hx, hx']
     · exact hG.eq_zero_of_nonpos _ (hΓ x hx)
 
-/-- **Proposition 9.29, (79), in the drift-free case the book proves**: for `N ≥ 1`, an open
-`Ω ⊆ ℝ^N`, `A` uniformly elliptic, `a₀ ∈ L^∞(Ω)` with `a₀ ≥ 0`, `f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with
-`generalForm Ω A 0 a₀ u φ = load Ω f φ` for all `φ ∈ H^1_0(Ω)`, and `ũ` a representative of `u`
-continuous on `closure Ω`: if `ũ ≥ 0` on `frontier Ω` and `f ≥ 0` almost everywhere then `ũ ≥ 0`
-on `Ω` ([brezis2011functional] Proposition 9.29, (79), with `a_i = 0`; the general drift term is
-quoted from Gilbarg–Trudinger, Theorem 8.1, and not proved here). The (79') form
-`Elliptic.nonpos_of_nonpos_frontier_general_zero_drift` applied to `-u`, `-f`. -/
+/-- Under the hypotheses of `Elliptic.nonpos_of_nonpos_frontier_general_zero_drift` on $N \ge 1$,
+$\Omega$, $a_{ij}$, $a_0 \ge 0$, $f$, $u$ and $\tilde u$: if $\tilde u \ge 0$ on
+$\partial\Omega$ and $f \ge 0$ almost everywhere on $\Omega$, then $\tilde u \ge 0$ on $\Omega$.
+This is (79) of Proposition 9.29 of [brezis2011functional] with $a_i = 0$, the case that the
+source proves.
+
+The source quotes the general case with a drift term from Gilbarg and Trudinger, Theorem 8.1;
+that case is `Elliptic.nonneg_of_nonneg_frontier_general`, for $N \ge 3$. The proof applies the
+form (79'), `Elliptic.nonpos_of_nonpos_frontier_general_zero_drift`, to $-u$ and $-f$. -/
 theorem nonneg_of_nonneg_frontier_general_zero_drift (hN : N ≠ 0)
     (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
@@ -848,10 +939,15 @@ theorem nonneg_of_nonneg_frontier_general_zero_drift (hN : N ≠ 0)
   intro x hx
   simpa using h x hx
 
-/-- **Proposition 9.29, (79'), for `u ∈ H^1_0(Ω)`** (footnote 38 of [brezis2011functional]
-§9.7): without a continuous representative, `f ≤ 0` almost everywhere forces `fn u ≤ 0` almost
-everywhere on `Ω`; the truncations `G(u)` lie in `H^1_0(Ω)` by
-`SobolevMultiIndexZero.contDiff_comp_mem`. -/
+/-- Let $N \ge 1$, let $\Omega \subseteq \mathbb{R}^N$ be open, let $a_{ij} \in L^\infty(\Omega)$ be
+uniformly elliptic, let $a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$ almost everywhere, and let
+$f \in L^2(\Omega)$. Let $u \in H^1_0(\Omega)$ satisfy $\sum_{i,j} \int_\Omega a_{ij} \partial_i
+u\, \partial_j \varphi + \int_\Omega a_0 u \varphi = \int_\Omega f \varphi$ for all
+$\varphi \in H^1_0(\Omega)$. If $f \le 0$ almost everywhere on $\Omega$, then $u \le 0$ almost
+everywhere on $\Omega$. This is (79') of Proposition 9.29 of [brezis2011functional] for
+$u \in H^1_0(\Omega)$ without a continuity hypothesis, as in footnote 38 of §9.7.
+
+The truncations $G(u)$ lie in $H^1_0(\Omega)$ by `SobolevMultiIndexZero.contDiff_comp_mem`. -/
 theorem nonpos_of_mem_zero_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
@@ -863,10 +959,14 @@ theorem nonpos_of_mem_zero_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyEl
     SobolevMultiIndexZero.contDiff_comp_mem ENNReal.ofNat_ne_top hu hG.contDiff hG.zero
       hG.abs_deriv_le hv
 
-/-- **Proposition 9.29, (79), for `u ∈ H^1_0(Ω)`** (footnote 38 of [brezis2011functional]
-§9.7): `f ≥ 0` almost everywhere forces `fn u ≥ 0` almost everywhere on `Ω`. This is the
-drift-free instance of Remark 23's second clause: with `f = 0` it gives `u ≥ 0` and `u ≤ 0`, so
-the homogeneous kernel of `generalForm Ω A 0 a₀` on `H^1_0(Ω)` is trivial. -/
+/-- Under the hypotheses of `Elliptic.nonpos_of_mem_zero_general_zero_drift` on $N \ge 1$, $\Omega$,
+$a_{ij}$, $a_0 \ge 0$, $f$ and $u \in H^1_0(\Omega)$: if $f \ge 0$ almost everywhere on
+$\Omega$, then $u \ge 0$ almost everywhere on $\Omega$. This is (79) of Proposition 9.29 of
+[brezis2011functional] for $u \in H^1_0(\Omega)$, as in footnote 38 of §9.7.
+
+This is the drift-free case of the second clause of Remark 23: for $f = 0$ it gives $u \ge 0$
+and $u \le 0$, so the form $\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi +
+\int_\Omega a_0 u \varphi$ has only the trivial homogeneous solution in $H^1_0(\Omega)$. -/
 theorem nonneg_of_mem_zero_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω} (hu : u ∈ SobolevEuclideanZero N 1 2 Ω)
@@ -880,8 +980,9 @@ theorem nonneg_of_mem_zero_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyEl
   rw [hx', Pi.neg_apply] at hx
   linarith
 
-/-- Subtracting an element with vanishing gradient does not change the form (41) with
-`a₁ = 0`, `a₀ = 0`. -/
+/-- Let $c \in H^1(\Omega)$ have $\partial_i c = 0$ for every $i$. Then the form $a(u, \varphi) =
+\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi$, the case $a_i = 0$, $a_0 = 0$
+of (41), satisfies $a(u - c, \varphi) = a(u, \varphi)$ for all $u, \varphi \in H^1(\Omega)$. -/
 theorem generalForm_zero_zero_sub_apply
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     {u c : SobolevEuclidean N 1 2 Ω} (hc : ∀ i, weakDeriv c (MultiIndexLE.single i) = 0)
@@ -896,12 +997,19 @@ theorem generalForm_zero_zero_sub_apply
   simp only [e, Pi.zero_apply, mulL_zero, zero_apply, inner_zero_left, Finset.sum_const_zero,
     add_zero]
 
-/-- **Proposition 9.29, (80), drift-free case**: for `N ≥ 1`, `A` uniformly elliptic, `a₀ = 0`
-and `Ω` of finite measure (the book's bounded `Ω`), `f ≥ 0` almost everywhere and `ũ ≥ K` on
-`frontier Ω` force `ũ ≥ K` on `Ω` — the book's `u ≥ inf_Γ u` ([brezis2011functional]
-Proposition 9.29, (80)): the constant `K` lies in `H^1(Ω)` with zero gradient
-(`Elliptic.exists_const_of_measure_ne_top`), `u − K` satisfies the same equation because the form
-has no zeroth-order term (`Elliptic.generalForm_zero_zero_sub_apply`), and (79) applies to it. -/
+/-- Let $N \ge 1$, let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| < \infty$, let
+$a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic, let $f \in L^2(\Omega)$, and let
+$u \in H^1(\Omega)$ satisfy $\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi =
+\int_\Omega f \varphi$ for all $\varphi \in H^1_0(\Omega)$. Let
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\bar\Omega$ and equal to $u$ almost
+everywhere on $\Omega$. If $f \ge 0$ almost everywhere on $\Omega$ and $K \le \tilde u$ on
+$\partial\Omega$, then $K \le \tilde u$ on $\Omega$. This is $u \ge \inf_\Gamma u$, (80) of
+Proposition 9.29 of [brezis2011functional], with $a_i = 0$ and $a_0 = 0$.
+
+The source assumes $\Omega$ bounded; here $|\Omega| < \infty$ suffices. The constant $K$ lies in
+$H^1(\Omega)$ with zero gradient (`Elliptic.exists_const_of_measure_ne_top`). Then $u - K$
+satisfies the same equation, because the form has no zeroth-order term
+(`Elliptic.generalForm_zero_zero_sub_apply`), and (79) applies to $u - K$. -/
 theorem ge_of_ge_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -924,9 +1032,11 @@ theorem ge_of_ge_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyEll
   · filter_upwards [fn_sub u c, hu, hcK] with x hx hx' hx''
     rw [hx, Pi.sub_apply, hx', hx'']
 
-/-- **Proposition 9.29, (80'), drift-free case**: for `N ≥ 1`, `A` uniformly elliptic, `a₀ = 0`
-and `Ω` of finite measure, `f ≤ 0` almost everywhere and `ũ ≤ K` on `frontier Ω` force `ũ ≤ K` on
-`Ω` — the book's `u ≤ sup_Γ u` ([brezis2011functional] Proposition 9.29, the proof of (80)). -/
+/-- Under the hypotheses of `Elliptic.ge_of_ge_frontier_general_zero_drift` on $N \ge 1$, $\Omega$
+with $|\Omega| < \infty$, $a_{ij}$, $a_0 = 0$, $f$, $u$ and $\tilde u$: if $f \le 0$ almost
+everywhere on $\Omega$ and $\tilde u \le K$ on $\partial\Omega$, then $\tilde u \le K$ on
+$\Omega$. This is $u \le \sup_\Gamma u$, which appears in the proof of (80) in Proposition 9.29
+of [brezis2011functional]. -/
 theorem le_of_le_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -943,10 +1053,14 @@ theorem le_of_le_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyEll
   intro x hx
   simpa using h x hx
 
-/-- **Proposition 9.29, (81), drift-free case**: for `N ≥ 1`, `A` uniformly elliptic, `a₀ = 0`,
-`f = 0` and `Ω` of finite measure, `ũ` lies on `Ω` between any lower and upper bound of `ũ` on
-`frontier Ω` — the book's `inf_Γ u ≤ u ≤ sup_Γ u` ([brezis2011functional] Proposition 9.29,
-(81)). -/
+/-- Let $N \ge 1$, let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| < \infty$, let
+$a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic, and let $u \in H^1(\Omega)$ satisfy
+$\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi = 0$ for all
+$\varphi \in H^1_0(\Omega)$. Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on
+$\bar\Omega$ and equal to $u$ almost everywhere on $\Omega$. If $K_1 \le \tilde u \le K_2$ on
+$\partial\Omega$, then $K_1 \le \tilde u \le K_2$ on $\Omega$. This is
+$\inf_\Gamma u \le u \le \sup_\Gamma u$, (81) of Proposition 9.29 of [brezis2011functional],
+with $a_i = 0$, $a_0 = 0$ and $f = 0$. -/
 theorem mem_Icc_of_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {u : SobolevEuclidean N 1 2 Ω}
     (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, generalForm Ω A 0 0 u φ = load Ω 0 φ)
@@ -966,16 +1080,19 @@ theorem mem_Icc_of_frontier_general_zero_drift (hN : N ≠ 0) (hA : IsUniformlyE
 
 end General
 
-/-! ### The truncation `(u − l)⁺` and the level sets of a `W^{1,p}` function
+/-!
+### The truncation $(u - l)^+$ and the level sets of a $W^{1,p}$ function
 
-Gilbarg–Trudinger's proof of Theorem 8.1 tests the equation with `v = (u − l)⁺` for a constant
-`l ≥ 0`, a Lipschitz but not `C¹` function of `u`. The chain rule of Proposition 9.5 does not
-apply to it directly; the positive part of `Numlib/Analysis/Sobolev/Calculus.lean`
-(`HasWeakIteratedLineDerivOn.posPart`, the `C¹` approximations
-`G_ε(s) = √((max s 0)² + ε²) − ε`) does, after the affine shift `t ↦ t − l`, which the chain rule
-does cover. The same two shifts give the vanishing of the weak gradient on a level set
-(Gilbarg–Trudinger, Lemma 7.7), which is what makes the set `{u > l} ∩ {∇u ≠ 0}` shrink to a null
-set as `l` rises to the essential supremum of `u`. -/
+The proof of Theorem 8.1 of Gilbarg and Trudinger tests the equation with $v = (u - l)^+$ for a
+constant $l \ge 0$. This is a Lipschitz function of $u$, but not a $C^1$ function, so the chain rule
+of Proposition 9.5 of [brezis2011functional] does not apply to it directly. The positive part of
+`Numlib.Analysis.Sobolev.Calculus` (`HasWeakIteratedLineDerivOn.posPart`, through the $C^1$
+approximations $G_\varepsilon(s) = \sqrt{(\max\{s, 0\})^2 + \varepsilon^2} - \varepsilon$) applies
+after the affine shift $t \mapsto t - l$, which the chain rule covers. The same two shifts show that
+the weak gradient vanishes on a level set (Lemma 7.7 of Gilbarg and Trudinger). Because of this, the
+set $\{u > l\} \cap \{\nabla u \neq 0\}$ shrinks to a null set as $l$ rises to the essential
+supremum of $u$.
+-/
 
 section PosPartSubConst
 
@@ -983,8 +1100,12 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace
   [FiniteDimensional ℝ E] [BorelSpace E] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
   {p : ℝ≥0∞} {y : E}
 
-/-- Subtracting a constant does not change the weak derivative along a direction: the chain rule
-`HasWeakIteratedLineDerivOn.contDiff_comp'` for the `C¹` function `t ↦ t − l`, of derivative `1`. -/
+/-- Let $\Omega$ be an open subset of a finite-dimensional real normed space $E$ with an additive
+Haar measure $\mu$, and let $w$ be the weak derivative of $u$ along $y$ on $\Omega$. Then for
+every constant $l$, $w$ is also the weak derivative of $u - l$ along $y$ on $\Omega$.
+
+This is the chain rule `HasWeakIteratedLineDerivOn.contDiff_comp'` for the $C^1$ function
+$t \mapsto t - l$, whose derivative is $1$. -/
 theorem _root_.HasWeakIteratedLineDerivOn.sub_const {u w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (l : ℝ) :
     HasWeakIteratedLineDerivOn ![y] (fun x ↦ u x - l) w Ω μ := by
@@ -994,8 +1115,10 @@ theorem _root_.HasWeakIteratedLineDerivOn.sub_const {u w : E → ℝ}
   filter_upwards with x
   rw [hd, one_mul]
 
-/-- Subtracting from a constant negates the weak derivative along a direction: the chain rule for
-the `C¹` function `t ↦ l − t`, of derivative `−1`. -/
+/-- Let $w$ be the weak derivative of $u$ along $y$ on $\Omega$. Then for every constant $l$, $-w$
+is the weak derivative of $l - u$ along $y$ on $\Omega$.
+
+This is the chain rule for the $C^1$ function $t \mapsto l - t$, whose derivative is $-1$. -/
 theorem _root_.HasWeakIteratedLineDerivOn.const_sub {u w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (l : ℝ) :
     HasWeakIteratedLineDerivOn ![y] (fun x ↦ l - u x) (fun x ↦ -w x) Ω μ := by
@@ -1005,10 +1128,12 @@ theorem _root_.HasWeakIteratedLineDerivOn.const_sub {u w : E → ℝ}
   filter_upwards with x
   rw [hd, neg_one_mul]
 
-/-- **The shifted positive part of a weakly differentiable function**: if `w` is the weak
-derivative of `u` along `y` on `Ω` and `l` is a constant, then `{u > l}.indicator w` is the weak
-derivative of `(u − l)⁺ = max (u − l) 0` (`HasWeakIteratedLineDerivOn.posPart` after
-`HasWeakIteratedLineDerivOn.sub_const`). -/
+/-- Let $w$ be the weak derivative of $u$ along $y$ on $\Omega$, and let $l$ be a constant. Then
+$1_{\{u > l\}} w$ is the weak derivative of $(u - l)^+ = \max\{u - l, 0\}$ along $y$ on
+$\Omega$.
+
+The proof applies `HasWeakIteratedLineDerivOn.posPart` to $u - l$
+(`HasWeakIteratedLineDerivOn.sub_const`). -/
 theorem _root_.HasWeakIteratedLineDerivOn.posPart_sub_const {u w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (l : ℝ) :
     HasWeakIteratedLineDerivOn ![y] (fun x ↦ max (u x - l) 0)
@@ -1018,11 +1143,13 @@ theorem _root_.HasWeakIteratedLineDerivOn.posPart_sub_const {u w : E → ℝ}
     ext x; simp [sub_pos]
   rwa [hset] at h2
 
-/-- **The weak derivative vanishes almost everywhere on every level set** (Gilbarg and Trudinger,
-*Elliptic Partial Differential Equations of Second Order*, Lemma 7.7): `u − c` is the difference
-`(u − c)⁺ − (c − u)⁺` of two positive parts, whose weak derivatives are `1_{u > c} w` and
-`−1_{u < c} w`, so `w = 1_{u > c} w + 1_{u < c} w` almost everywhere and `w` vanishes where
-`u = c`. -/
+/-- Let $w$ be the weak derivative of $u$ along $y$ on $\Omega$, and let $c$ be a constant. Then
+$w = 0$ almost everywhere on the level set $\{u = c\} \cap \Omega$. This is Lemma 7.7 of Gilbarg
+and Trudinger, *Elliptic Partial Differential Equations of Second Order*.
+
+The function $u - c$ is $(u - c)^+ - (c - u)^+$, and the weak derivatives of the two positive
+parts are $1_{\{u > c\}} w$ and $-1_{\{u < c\}} w$. Hence
+$w = 1_{\{u > c\}} w + 1_{\{u < c\}} w$ almost everywhere, and $w$ vanishes where $u = c$. -/
 theorem _root_.HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const {u w : E → ℝ}
     (h : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (c : ℝ) :
     ∀ᵐ x ∂(μ.restrict (Ω : Set E)), u x = c → w x = 0 := by
@@ -1048,10 +1175,13 @@ theorem _root_.HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const {u w : E → �
 
 variable {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E}
 
-/-- **The shifted positive part of a `W^{1,p}` function lies in `W^{1,p}`**: for
-`u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞` and `l ≥ 0`, `(u − l)⁺ = max (u − l) 0 ∈ W^{1,p}(Ω)`, with
-`∂_i (u − l)⁺ = {u > l}.indicator (∂_i u)`. The bound `|(u − l)⁺| ≤ |u|` needs `l ≥ 0`, and is
-what keeps the truncation in `L^p` on an open set of infinite measure. -/
+/-- Let $1 \le p \le \infty$, let $u \in W^{1,p}(\Omega)$, and let $l \ge 0$. Then $(u - l)^+ =
+\max\{u - l, 0\} \in W^{1,p}(\Omega)$.
+
+The hypothesis $l \ge 0$ gives the bound $|(u - l)^+| \le |u|$, which keeps the truncation in
+$L^p$ on an open set of infinite measure. The partial derivatives are $\partial_i (u - l)^+ =
+1_{\{u > l\}} \partial_i u$; this formula is
+`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart_sub_const`. -/
 theorem _root_.MemSobolevMultiIndex.posPart_sub_const {u : E → ℝ} (hp : 1 ≤ p)
     (hu : MemSobolevMultiIndex b u 1 p Ω μ) {l : ℝ} (hl : 0 ≤ l) :
     MemSobolevMultiIndex b (fun x ↦ max (u x - l) 0) 1 p Ω μ := by
@@ -1083,9 +1213,12 @@ theorem _root_.MemSobolevMultiIndex.posPart_sub_const {u : E → ℝ} (hp : 1 �
       ((continuous_id.sub continuous_const).comp_aestronglyMeasurable hum)
       hwp.aestronglyMeasurable
 
-/-- The partial derivative of an element of `W^{1,p}(Ω)` whose function is `(u − l)⁺` is
-`{u > l}.indicator (∂_i u)` almost everywhere on `Ω`
-(`HasWeakIteratedLineDerivOn.posPart_sub_const` and the uniqueness of the weak derivative). -/
+/-- Let $u, v \in W^{1,p}(\Omega)$ and let $l$ be a constant. If the function of $v$ is $(u - l)^+$
+almost everywhere on $\Omega$, then $\partial_i v = 1_{\{u > l\}} \partial_i u$ almost
+everywhere on $\Omega$, for each $i$.
+
+The proof uses `HasWeakIteratedLineDerivOn.posPart_sub_const` and the uniqueness of the weak
+derivative. -/
 theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart_sub_const
     {u v : SobolevMultiIndex ℝ b 1 p Ω μ} {l : ℝ}
     (hv : SobolevMultiIndex.fn v =ᵐ[μ.restrict (Ω : Set E)]
@@ -1097,8 +1230,9 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_posPart_sub_
     (multiIndexTuple_single_perm (b : ι → E) i)).posPart_sub_const l
   exact SobolevMultiIndex.weakDeriv_single_ae_eq_of_hasWeakIteratedLineDerivOn hv i h2
 
-/-- The partial derivatives of an element of `W^{1,p}(Ω)` vanish almost everywhere on each level
-set `{u = c}` (`HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const`). -/
+/-- Let $u \in W^{1,p}(\Omega)$ and let $c$ be a constant. Then each partial derivative
+$\partial_i u$ vanishes almost everywhere on the level set $\{u = c\} \cap \Omega$
+(`HasWeakIteratedLineDerivOn.ae_eq_zero_of_eq_const`). -/
 theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq
     (u : SobolevMultiIndex ℝ b 1 p Ω μ) (c : ℝ) (i : ι) :
     ∀ᵐ x ∂(μ.restrict (Ω : Set E)), SobolevMultiIndex.fn u x = c →
@@ -1108,21 +1242,24 @@ theorem _root_.SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq
 
 end PosPartSubConst
 
-/-! ### Proposition 9.29 with a drift term: Gilbarg–Trudinger's Theorem 8.1
+/-!
+### Proposition 9.29 with a drift term: Theorem 8.1 of Gilbarg and Trudinger
 
-The book proves (79) only for `a_i = 0` and cites Gilbarg and Trudinger,
-*Elliptic Partial Differential Equations of Second Order*, Theorem 8.1, for the general case.
-That proof is the one formalized here, for `N ≥ 3`: for `sup_Γ u ≤ l < sup_Ω u` the truncation
-`v = (u − l)⁺` lies in `H^1_0(Ω)`, and testing the equation with it gives
-`α ∫ |∇v|² ≤ ∫ ∑ a_i ∂_i u v ≤ (∑ᵢ ‖a_i‖_∞) ‖∇v‖₂ ‖1_E v‖₂`, where `E = {u > l} ∩ {∇u ≠ 0}` carries
-the whole of `∇v`. The Sobolev inequality of Remark 20 on an arbitrary open set,
-`‖v‖_{2^*} ≤ C ‖∇v‖₂`, and Hölder on `E` turn this into `α ≤ C' |E|^{1/N}`, so `|E| ≥ c > 0` for a
-`c` independent of `l`, unless `∇v = 0`, in which case `v = 0` and `u ≤ l`. As `l` rises to the
-essential supremum `M` of `u` the sets `E` decrease to `{u = M} ∩ {∇u ≠ 0}`, which is null because
-the weak gradient vanishes on level sets; hence `M ≤ 0`.
+The source proves (79) only for $a_i = 0$, and cites Gilbarg and Trudinger, *Elliptic Partial
+Differential Equations of Second Order*, Theorem 8.1, for the general case. That proof is formalized
+here, for $N \ge 3$. For $\sup_\Gamma u \le l < \sup_\Omega u$ the truncation $v = (u - l)^+$ lies
+in $H^1_0(\Omega)$. The equation tested with $v$ gives $\alpha \int |\nabla v|^2 \le \int \sum_i a_i
+\partial_i u\, v \le (\sum_i \|a_i\|_\infty) \|\nabla v\|_2 \|1_E v\|_2$, where
+$E = \{u > l\} \cap \{\nabla u \neq 0\}$ carries all of $\nabla v$. The Sobolev inequality
+$\|v\|_{2^*} \le C \|\nabla v\|_2$ of Remark 20 on an arbitrary open set and Hölder's inequality on
+$E$ turn this into $\alpha \le C' |E|^{1/N}$. So $|E| \ge c > 0$ for a $c$ independent of $l$,
+unless $\nabla v = 0$; in that case $v = 0$ and $u \le l$. As $l$ rises to the essential supremum
+$M$ of $u$, the sets $E$ decrease to $\{u = M\} \cap \{\nabla u \neq 0\}$. This set is null because
+the weak gradient vanishes on level sets. Hence $M \le 0$.
 
-The restriction `N ≥ 3` is the one the Sobolev inequality `‖v‖_{2^*} ≤ C ‖∇v‖_2` carries: see
-`## Not formalized here` at the end of this file. -/
+The restriction $N \ge 3$ comes from the Sobolev inequality $\|v\|_{2^*} \le C \|\nabla v\|_2$. The
+implementation notes of the module say what the cases $N \le 2$ would need.
+-/
 
 section GeneralDrift
 
@@ -1133,11 +1270,16 @@ variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
 
-/-- **The Sobolev inequality on `H^1_0(Ω)` localized to a set of small measure**, for `N ≥ 3`:
-there is `C` with `‖1_s v‖_{L²(Ω)} ≤ C ‖∇v‖_{L²(Ω)} |s|^{1/N}` for every `v ∈ H^1_0(Ω)` and every
-measurable `s` of finite measure. Hölder at the exponents `(2, 2^*)` on `s`
-(`1/2 = 1/2^* + 1/N`), and Remark 20's `‖v‖_{2^*} ≤ C(2, N) ‖∇v‖_2` on an arbitrary open set
-(`SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`). -/
+/-- Let $N \ge 3$ and let $\Omega \subseteq \mathbb{R}^N$ be open. There is $C \ge 0$ such that for
+every $v \in H^1_0(\Omega)$ and every measurable set $s$ with $|s \cap \Omega| < \infty$,
+$$\|1_s v\|_{L^2(\Omega)} \le C \|\nabla v\|_{L^2(\Omega)} |s \cap \Omega|^{1/N}.$$
+This is the Sobolev inequality on $H^1_0(\Omega)$, localized to a set of small measure.
+
+The proof uses Hölder's inequality with the exponents $2$ and $2^*$ on $s$, where
+$1/2 = 1/2^* + 1/N$, and the inequality $\|v\|_{2^*} \le C(2, N) \|\nabla v\|_2$ of Remark 20 of
+[brezis2011functional] on an arbitrary open set
+(`SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`). The norm $\|\nabla v\|_{L^2(\Omega)}$ is
+`SobolevMultiIndex.gradNorm v`. -/
 theorem exists_norm_indicator_bound (hN : 3 ≤ N) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ v : SobolevEuclidean N 1 2 Ω, v ∈ SobolevEuclideanZero N 1 2 Ω →
       ∀ s : Set (EuclideanSpace ℝ (Fin N)), MeasurableSet s →
@@ -1197,14 +1339,16 @@ theorem exists_norm_indicator_bound (hN : 3 ≤ N) :
   refine (ENNReal.toReal_mono hfin2 key).trans_eq ?_
   rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal hgrad, ← ENNReal.toReal_rpow]
 
-/-- The part of `Ω` where `u` exceeds `l` and the weak gradient of `u` does not vanish. -/
+/-- For $u \in H^1(\Omega)$ and $l \in \mathbb{R}$, the set $\{x : u(x) > l\} \cap \{x : \partial_i
+u(x) \neq 0 \text{ for some } i\}$, where $u$ and $\partial_i u$ are the chosen representatives
+(`SobolevMultiIndex.fn u` and the weak derivatives). -/
 def levelGradSet (u : SobolevEuclidean N 1 2 Ω) (l : ℝ) : Set (EuclideanSpace ℝ (Fin N)) :=
   {x | l < fn u x} ∩ {x | ∃ i, (weakDeriv u (MultiIndexLE.single i) :
     EuclideanSpace ℝ (Fin N) → ℝ) x ≠ 0}
 
-/-- `Elliptic.levelGradSet u l` is measurable: the superlevel set of a strongly measurable
-representative of `u`, intersected with the union over `i` of the sets where `∂ᵢu` does not
-vanish. -/
+/-- The set `Elliptic.levelGradSet u l` is measurable. It is the superlevel set of a strongly
+measurable representative of $u$, intersected with the union over $i$ of the sets where
+$\partial_i u$ does not vanish. -/
 theorem measurableSet_levelGradSet (u : SobolevEuclidean N 1 2 Ω) (l : ℝ) :
     MeasurableSet (levelGradSet u l) := by
   refine MeasurableSet.inter (measurableSet_lt measurable_const ?_) ?_
@@ -1217,17 +1361,25 @@ theorem measurableSet_levelGradSet (u : SobolevEuclidean N 1 2 Ω) (l : ℝ) :
       (Lp.stronglyMeasurable (weakDeriv u (MultiIndexLE.single i))).measurable
         (measurableSet_singleton (0 : ℝ)).compl
 
-/-- Membership in `Elliptic.levelGradSet u l`, unfolded. -/
+/-- A point $x$ lies in `Elliptic.levelGradSet u l` if and only if $u(x) > l$ and
+$\partial_i u(x) \neq 0$ for some $i$. -/
 theorem mem_levelGradSet_iff {u : SobolevEuclidean N 1 2 Ω} {l : ℝ}
     {x : EuclideanSpace ℝ (Fin N)} :
     x ∈ levelGradSet u l ↔ l < fn u x ∧ ∃ i,
       (weakDeriv u (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ) x ≠ 0 := Iff.rfl
 
-/-- **The energy estimate of Gilbarg–Trudinger's Theorem 8.1** for the truncation
-`v = (u − l)⁺ ∈ H^1_0(Ω)`, `l ≥ 0`: testing the equation with `v` and dropping the
-(nonnegative) zeroth-order term and the (nonpositive) load gives
-`α ‖∇v‖₂² ≤ (∑ᵢ ‖a_i‖_∞) ‖∇v‖₂ ‖1_E v‖₂`, where `E` is the part of `Ω` on which `u > l` and
-`∇u ≠ 0` — the only part on which `∇v` does not vanish. -/
+/-- The energy estimate in the proof of Theorem 8.1 of Gilbarg and Trudinger. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, let $a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic
+with constant $\alpha$, let $a_i, a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$ almost everywhere,
+and let $f \in L^2(\Omega)$ with $f \le 0$ almost everywhere. Let $u \in H^1(\Omega)$ satisfy
+$a(u, \varphi) = \int_\Omega f \varphi$ for all $\varphi \in H^1_0(\Omega)$, where $a$ is the
+form (41). Let $l \ge 0$, and let $v \in H^1_0(\Omega)$ have the function $(u - l)^+$. Then
+$$\alpha \|\nabla v\|_2^2 \le \Big(\sum_i \|a_i\|_\infty\Big) \|\nabla v\|_2 \|1_E v\|_2,$$
+where $E = \{u > l\} \cap \{\nabla u \neq 0\}$ is `Elliptic.levelGradSet u l`.
+
+The estimate comes from the equation tested with $v$, after the nonnegative zeroth-order term
+and the nonpositive load are dropped. The set $E$ is the only part of $\Omega$ on which
+$\nabla v$ does not vanish. -/
 theorem gradNorm_sq_le_of_posPart (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1334,10 +1486,14 @@ theorem gradNorm_sq_le_of_posPart (hA : IsUniformlyElliptic Ω A α)
       weakDeriv v 0⟫_ℝ| := neg_le_abs _
   linarith [hPge, hZ, hR, hDbd, hle]
 
-/-- **The truncation `(u − l)⁺` lies in `H^1_0(Ω)`** when `l ≥ 0` and the continuous
-representative `ũ` of `u` is at most `0` on `frontier Ω`: it lies in `H^1(Ω)` by
-`MemSobolevMultiIndex.posPart_sub_const` and its continuous representative `(ũ − l)⁺` vanishes on
-`frontier Ω`, so Theorem 9.17 (i) ⇒ (ii) applies. -/
+/-- Let $u \in H^1(\Omega)$, and let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on
+$\bar\Omega$ and equal to $u$ almost everywhere on $\Omega$, with $\tilde u \le 0$ on
+$\partial\Omega$. Then for every $l \ge 0$ there is $v \in H^1_0(\Omega)$ whose function is
+$(u - l)^+$ almost everywhere on $\Omega$.
+
+The function $(u - l)^+$ lies in $H^1(\Omega)$ by `MemSobolevMultiIndex.posPart_sub_const`. Its
+continuous representative $(\tilde u - l)^+$ vanishes on $\partial\Omega$, so Theorem 9.17, (i)
+implies (ii), of [brezis2011functional] applies. -/
 theorem exists_posPart_mem_zero {u : SobolevEuclidean N 1 2 Ω}
     {ũ : EuclideanSpace ℝ (Fin N) → ℝ}
     (hu : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ)
@@ -1356,12 +1512,21 @@ theorem exists_posPart_mem_zero {u : SobolevEuclidean N 1 2 Ω}
   · exact ((continuous_id.sub continuous_const).max continuous_const).comp_continuousOn hcont
   · exact max_eq_right (by linarith [hΓ x hx])
 
-/-- **The key dichotomy of Gilbarg–Trudinger's Theorem 8.1**: there is a constant `c > 0`,
-depending only on `α`, `‖a_i‖_∞`, `N` and the Sobolev constant, such that for every level
-`l ≥ 0` either `u ≤ l` almost everywhere on `Ω`, or the set on which `u > l` and `∇u ≠ 0` has
-measure at least `c`. The energy estimate `α ‖∇v‖₂² ≤ (∑ᵢ ‖a_i‖_∞) ‖∇v‖₂ ‖1_E v‖₂` for
-`v = (u − l)⁺` is combined with `‖1_E v‖₂ ≤ C ‖∇v‖₂ |E|^{1/N}`; when `∇v = 0` the truncation
-itself vanishes, because `v ∈ H^1_0(Ω)`. -/
+/-- The key dichotomy in the proof of Theorem 8.1 of Gilbarg and Trudinger. Let $N \ge 3$ and let
+$\Omega \subseteq \mathbb{R}^N$ be open. Let $a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic
+with constant $\alpha$, let $a_i, a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$ almost everywhere,
+and let $f \in L^2(\Omega)$ with $f \le 0$ almost everywhere. Let $u \in H^1(\Omega)$ satisfy
+$a(u, \varphi) = \int_\Omega f \varphi$ for all $\varphi \in H^1_0(\Omega)$, where $a$ is the
+form (41). Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\bar\Omega$ and equal
+to $u$ almost everywhere on $\Omega$, with $\tilde u \le 0$ on $\partial\Omega$. Then there is
+$c > 0$ such that for every $l \ge 0$, either $u \le l$ almost everywhere on $\Omega$, or
+$$|\{u > l\} \cap \{\nabla u \neq 0\} \cap \Omega| \ge c.$$
+
+The statement says only that $c$ does not depend on $l$; the proof gives a $c$ that depends only
+on $\alpha$, the norms $\|a_i\|_\infty$, $N$ and the Sobolev constant. The proof combines the
+energy estimate of `Elliptic.gradNorm_sq_le_of_posPart` for $v = (u - l)^+$ with
+$\|1_E v\|_2 \le C \|\nabla v\|_2 |E|^{1/N}$ (`Elliptic.exists_norm_indicator_bound`). When
+$\nabla v = 0$, the truncation $v$ itself vanishes, because $v \in H^1_0(\Omega)$. -/
 theorem exists_measure_levelGradSet_ge (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1439,8 +1604,8 @@ theorem exists_measure_levelGradSet_ge (hN : 3 ≤ N) (hA : IsUniformlyElliptic 
           ENNReal.ofReal_toReal hfin
 
 
-/-- A superlevel set `{u > t}` of an `L²` function has finite measure for `t > 0`
-(Chebyshev's inequality). -/
+/-- For $u \in H^1(\Omega)$ and $t > 0$, the superlevel set $\{u > t\} \cap \Omega$ has finite
+measure. This is Chebyshev's inequality for the $L^2$ function $u$. -/
 theorem measure_lt_fn_ne_top (u : SobolevEuclidean N 1 2 Ω) {t : ℝ} (ht : 0 < t) :
     volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))) {x | t < fn u x} ≠ ⊤ := by
   have hsub : {x | t < fn u x} ⊆ {x | t.toNNReal ≤ ‖fn u x‖₊} := by
@@ -1454,12 +1619,14 @@ theorem measure_lt_fn_ne_top (u : SobolevEuclidean N 1 2 Ω) {t : ℝ} (ht : 0 <
   exact ((SobolevMultiIndex.memLp u).meas_ge_lt_top (by norm_num) ENNReal.ofNat_ne_top
     (by simpa using ht)).ne
 
-/-- The essential supremum of `u` on `Ω` is at most `0` once every level `l ≥ 0` either bounds
-`u` almost everywhere or has `|{u > l} ∩ {∇u ≠ 0}| ≥ c` for a fixed `c > 0`: the infimum `M` of
-the almost-everywhere bounds is attained, and if it were positive the sets
-`{u > M − M/(n+2)} ∩ {∇u ≠ 0}` would all have measure at least `c` while decreasing to
-`{u = M} ∩ {∇u ≠ 0}`, a null set because the weak gradient vanishes on level sets
-(`SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq`). -/
+/-- Let $u \in H^1(\Omega)$ and $c > 0$. Suppose that for every $l \ge 0$, either $u \le l$ almost
+everywhere on $\Omega$, or $|\{u > l\} \cap \{\nabla u \neq 0\} \cap \Omega| \ge c$. Then
+$u \le 0$ almost everywhere on $\Omega$.
+
+The infimum $M$ of the almost-everywhere bounds of $u$ is attained. If $M$ were positive, the
+sets $\{u > M - M/(n+2)\} \cap \{\nabla u \neq 0\}$ would all have measure at least $c$, while
+they decrease to $\{u = M\} \cap \{\nabla u \neq 0\}$. That set is null because the weak
+gradient vanishes on level sets (`SobolevMultiIndex.weakDeriv_single_ae_eq_zero_of_fn_eq`). -/
 theorem nonpos_ae_of_forall_le_measure_levelGradSet {u : SobolevEuclidean N 1 2 Ω} {c : ℝ}
     (hc0 : 0 < c)
     (hdich : ∀ l : ℝ, 0 ≤ l →
@@ -1570,12 +1737,21 @@ theorem nonpos_ae_of_forall_le_measure_levelGradSet {u : SobolevEuclidean N 1 2 
   exact absurd (ge_of_tendsto htend2 (Eventually.of_forall hge)) (by simpa using hcE.ne')
 
 
-/-- **Proposition 9.29, (79'), as stated — with a drift term** (Gilbarg and Trudinger,
-*Elliptic Partial Differential Equations of Second Order*, Theorem 8.1): for `N ≥ 3`, an open
-`Ω ⊆ ℝ^N`, `A` uniformly elliptic, `a₁ ∈ L^∞(Ω)^N` arbitrary, `a₀ ∈ L^∞(Ω)` with `a₀ ≥ 0`,
-`f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with `generalForm Ω A a₁ a₀ u φ = load Ω f φ` for all `φ ∈ H^1_0(Ω)`,
-and `ũ` a representative of `u` continuous on `closure Ω`: `ũ ≤ 0` on `frontier Ω` and `f ≤ 0`
-almost everywhere force `ũ ≤ 0` on `Ω`. -/
+/-- Let $N \ge 3$ and let $\Omega \subseteq \mathbb{R}^N$ be open. Let $a_{ij} \in L^\infty(\Omega)$
+be uniformly elliptic with constant $\alpha$, let $a_i \in L^\infty(\Omega)$ be arbitrary, let
+$a_0 \in L^\infty(\Omega)$ with $a_0 \ge 0$ almost everywhere, and let $f \in L^2(\Omega)$. Let
+$u \in H^1(\Omega)$ satisfy
+$$\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi + \sum_i \int_\Omega a_i
+  \partial_i u\, \varphi + \int_\Omega a_0 u \varphi = \int_\Omega f \varphi \qquad \text{for
+  all } \varphi \in H^1_0(\Omega).$$
+Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\bar\Omega$ and equal to $u$
+almost everywhere on $\Omega$. If $\tilde u \le 0$ on $\partial\Omega$ and $f \le 0$ almost
+everywhere on $\Omega$, then $\tilde u \le 0$ on $\Omega$. This is (79') of Proposition 9.29 of
+[brezis2011functional] in the generality that the source states, proved as Theorem 8.1 of
+Gilbarg and Trudinger, *Elliptic Partial Differential Equations of Second Order*.
+
+The proof combines `Elliptic.exists_measure_levelGradSet_ge` and
+`Elliptic.nonpos_ae_of_forall_le_measure_levelGradSet`. -/
 theorem nonpos_of_nonpos_frontier_general (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1593,12 +1769,14 @@ theorem nonpos_of_nonpos_frontier_general (hN : 3 ≤ N) (hA : IsUniformlyEllipt
   rw [← hx']
   exact hx
 
-/-- **Proposition 9.29, (79), as stated — with a drift term** ([brezis2011functional]
-Proposition 9.29, (79); Gilbarg and Trudinger, *Elliptic Partial Differential Equations of Second
-Order*, Theorem 8.1): for `N ≥ 3`, `A` uniformly elliptic, `a₁ ∈ L^∞(Ω)^N`, `a₀ ∈ L^∞(Ω)` with
-`a₀ ≥ 0`, `f ∈ L²(Ω)` and `u ∈ H^1(Ω) ∩ C(Ω̄)` solving the equation (78), `ũ ≥ 0` on `frontier Ω`
-and `f ≥ 0` almost everywhere force `ũ ≥ 0` on `Ω`. The (79') form
-`Elliptic.nonpos_of_nonpos_frontier_general` applied to `-u`, `-f`. -/
+/-- Under the hypotheses of `Elliptic.nonpos_of_nonpos_frontier_general` on $N \ge 3$, $\Omega$,
+$a_{ij}$, $a_i$, $a_0 \ge 0$, $f$, $u$ and $\tilde u$: if $\tilde u \ge 0$ on $\partial\Omega$
+and $f \ge 0$ almost everywhere on $\Omega$, then $\tilde u \ge 0$ on $\Omega$. This is (79) of
+Proposition 9.29 of [brezis2011functional] for a solution $u \in H^1(\Omega) \cap C(\bar\Omega)$
+of (78), proved as Theorem 8.1 of Gilbarg and Trudinger.
+
+The proof applies the form (79'), `Elliptic.nonpos_of_nonpos_frontier_general`, to $-u$ and
+$-f$. -/
 theorem nonneg_of_nonneg_frontier_general (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), 0 ≤ a₀ x)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1615,8 +1793,11 @@ theorem nonneg_of_nonneg_frontier_general (hN : 3 ≤ N) (hA : IsUniformlyEllipt
   intro x hx
   simpa using h x hx
 
-/-- Subtracting an element with vanishing gradient does not change the form (41) with `a₀ = 0`:
-neither the principal part nor the drift term sees the function itself. -/
+/-- Let $c \in H^1(\Omega)$ have $\partial_i c = 0$ for every $i$. Then the form $a(u, \varphi) =
+\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi + \sum_i \int_\Omega a_i
+\partial_i u\, \varphi$, the case $a_0 = 0$ of (41), satisfies
+$a(u - c, \varphi) = a(u, \varphi)$ for all $u, \varphi \in H^1(\Omega)$. Neither the principal
+part nor the drift term depends on the function itself. -/
 theorem generalForm_zero_sub_apply
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -1631,12 +1812,20 @@ theorem generalForm_zero_sub_apply
   rw [generalForm_apply_inner, generalForm_apply_inner]
   simp only [e, mulL_zero, zero_apply, inner_zero_left, add_zero]
 
-/-- **Proposition 9.29, (80), as stated — with a drift term**: for `N ≥ 3`, `A` uniformly
-elliptic, `a₀ = 0` and `Ω` of finite measure (the book's bounded `Ω`), `f ≥ 0` almost everywhere
-and `ũ ≥ K` on `frontier Ω` force `ũ ≥ K` on `Ω` — the book's `u ≥ inf_Γ u`
-([brezis2011functional] Proposition 9.29, (80)): the constant `K` lies in `H^1(Ω)` with vanishing
-gradient (`Elliptic.exists_const_of_measure_ne_top`), `u − K` satisfies the same equation because
-the form has no zeroth-order term (`Elliptic.generalForm_zero_sub_apply`), and (79) applies. -/
+/-- Let $N \ge 3$, let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| < \infty$, let
+$a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic, let $a_i \in L^\infty(\Omega)$, let
+$f \in L^2(\Omega)$, and let $u \in H^1(\Omega)$ satisfy $\sum_{i,j} \int_\Omega a_{ij}
+\partial_i u\, \partial_j \varphi + \sum_i \int_\Omega a_i \partial_i u\, \varphi = \int_\Omega
+f \varphi$ for all $\varphi \in H^1_0(\Omega)$. Let $\tilde u : \mathbb{R}^N \to \mathbb{R}$ be
+continuous on $\bar\Omega$ and equal to $u$ almost everywhere on $\Omega$. If $f \ge 0$ almost
+everywhere on $\Omega$ and $K \le \tilde u$ on $\partial\Omega$, then $K \le \tilde u$ on
+$\Omega$. This is $u \ge \inf_\Gamma u$, (80) of Proposition 9.29 of [brezis2011functional],
+with $a_0 = 0$.
+
+The source assumes $\Omega$ bounded; here $|\Omega| < \infty$ suffices. The constant $K$ lies in
+$H^1(\Omega)$ with zero gradient (`Elliptic.exists_const_of_measure_ne_top`). Then $u - K$
+satisfies the same equation, because the form has no zeroth-order term
+(`Elliptic.generalForm_zero_sub_apply`), and (79) applies to $u - K$. -/
 theorem ge_iInf_frontier_of_nonneg (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1659,10 +1848,11 @@ theorem ge_iInf_frontier_of_nonneg (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A
   · filter_upwards [fn_sub u cK, hu, hcK] with x hx hx' hx''
     rw [hx, Pi.sub_apply, hx', hx'']
 
-/-- **Proposition 9.29, (80'), as stated — with a drift term**: for `N ≥ 3`, `A` uniformly
-elliptic, `a₀ = 0` and `Ω` of finite measure, `f ≤ 0` almost everywhere and `ũ ≤ K` on
-`frontier Ω` force `ũ ≤ K` on `Ω` — the book's `u ≤ sup_Γ u` ([brezis2011functional]
-Proposition 9.29, the proof of (80)). -/
+/-- Under the hypotheses of `Elliptic.ge_iInf_frontier_of_nonneg` on $N \ge 3$, $\Omega$ with
+$|\Omega| < \infty$, $a_{ij}$, $a_i$, $a_0 = 0$, $f$, $u$ and $\tilde u$: if $f \le 0$ almost
+everywhere on $\Omega$ and $\tilde u \le K$ on $\partial\Omega$, then $\tilde u \le K$ on
+$\Omega$. This is $u \le \sup_\Gamma u$, which appears in the proof of (80) in Proposition 9.29
+of [brezis2011functional]. -/
 theorem le_iSup_frontier_of_nonpos (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
     {u : SobolevEuclidean N 1 2 Ω}
@@ -1679,10 +1869,18 @@ theorem le_iSup_frontier_of_nonpos (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A
   intro x hx
   simpa using h x hx
 
-/-- **Proposition 9.29, (81), as stated — with a drift term**: for `N ≥ 3`, `A` uniformly
-elliptic, `a₀ = 0`, `f = 0` and `Ω` of finite measure, `ũ` lies on `Ω` between any lower and upper
-bound of `ũ` on `frontier Ω` — the book's `inf_Γ u ≤ u ≤ sup_Γ u` ([brezis2011functional]
-Proposition 9.29, (81)), from (80) and (80'). -/
+/-- Let $N \ge 3$, let $\Omega \subseteq \mathbb{R}^N$ be open with $|\Omega| < \infty$, let
+$a_{ij} \in L^\infty(\Omega)$ be uniformly elliptic, let $a_i \in L^\infty(\Omega)$, and let
+$u \in H^1(\Omega)$ satisfy $\sum_{i,j} \int_\Omega a_{ij} \partial_i u\, \partial_j \varphi +
+\sum_i \int_\Omega a_i \partial_i u\, \varphi = 0$ for all $\varphi \in H^1_0(\Omega)$. Let
+$\tilde u : \mathbb{R}^N \to \mathbb{R}$ be continuous on $\bar\Omega$ and equal to $u$ almost
+everywhere on $\Omega$. If $K_1 \le \tilde u \le K_2$ on $\partial\Omega$, then
+$K_1 \le \tilde u \le K_2$ on $\Omega$. This is $\inf_\Gamma u \le u \le \sup_\Gamma u$, (81) of
+Proposition 9.29 of [brezis2011functional], with $a_0 = 0$ and $f = 0$.
+
+The proof combines the lower bound $u \ge \inf_\Gamma u$ of (80),
+`Elliptic.ge_iInf_frontier_of_nonneg`, and the upper bound $u \le \sup_\Gamma u$,
+`Elliptic.le_iSup_frontier_of_nonpos`, both with $f = 0$. -/
 theorem mem_Icc_of_frontier_general (hN : 3 ≤ N) (hA : IsUniformlyElliptic Ω A α)
     (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {u : SobolevEuclidean N 1 2 Ω}
     (heq : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω, generalForm Ω A a₁ 0 u φ = load Ω 0 φ)
@@ -1711,12 +1909,17 @@ open Laplacian
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Remark 27, the classical proof of Theorem 9.27 for the Laplacian**: for a bounded open
-`Ω ⊆ ℝ^N`, a classical solution `ũ` of `-Δũ + ũ = f` on `Ω` — continuous on `closure Ω` and
-`C²` on `Ω` — with `ũ ≤ K` on `frontier Ω` and `f ≤ K` on `Ω` satisfies `ũ ≤ K` on `Ω`
-([brezis2011functional] Chapter 9, Remark 27). The maximum of `ũ` on the compact `closure Ω` is
-attained at some `x₀`; if `x₀ ∈ frontier Ω` there is nothing to prove, and if `x₀ ∈ Ω` then
-`Δũ(x₀) ≤ 0` (`IsLocalMax.laplacian_nonpos`), so `ũ(x₀) = f(x₀) + Δũ(x₀) ≤ f(x₀) ≤ K`. -/
+/-- The **classical maximum principle for the Laplacian**. Let $\Omega \subseteq \mathbb{R}^N$ be
+open and bounded, and let $\tilde u, f : \mathbb{R}^N \to \mathbb{R}$, with $\tilde u$
+continuous on $\bar\Omega$ and of class $C^2$ on $\Omega$, satisfy
+$-\Delta \tilde u + \tilde u = f$ on $\Omega$. If $\tilde u \le K$ on $\partial\Omega$ and
+$f \le K$ on $\Omega$, then $\tilde u \le K$ on $\Omega$. This is the classical proof of Theorem
+9.27 in Remark 27 of [brezis2011functional], Chapter 9, for the Laplacian.
+
+The maximum of $\tilde u$ on the compact set $\bar\Omega$ is attained at some $x_0$. If
+$x_0 \in \partial\Omega$ there is nothing to prove. If $x_0 \in \Omega$, then
+$\Delta \tilde u(x_0) \le 0$ (`IsLocalMax.laplacian_nonpos`), so $\tilde u(x_0) = f(x_0) +
+\Delta \tilde u(x_0) \le f(x_0) \le K$. -/
 theorem le_of_classical_laplacian (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {ũ f : EuclideanSpace ℝ (Fin N) → ℝ} (hc : ContinuousOn ũ (closure Ω))
     (hu : ContDiffOn ℝ 2 ũ Ω) (heq : ∀ x ∈ Ω, -Δ ũ x + ũ x = f x) {K : ℝ}
@@ -1742,10 +1945,12 @@ section ClassicalGeneral
 
 open scoped MatrixOrder ComplexOrder
 
-/-- **The trace of a positive semidefinite matrix against a nonpositive bilinear form is
-nonpositive**: if `A` is positive semidefinite and `D` is a bilinear form on `ℝ^N` with
-`D v v ≤ 0` for every `v`, then `∑ᵢⱼ A_ij D(e_i, e_j) ≤ 0`. With `A = S S` for the positive
-semidefinite square root `S` (`CFC.sqrt`), symmetric, the sum is `∑ₖ D(S e_k, S e_k)`. -/
+/-- Let $A \in \mathbb{R}^{N \times N}$ be positive semidefinite, and let $D$ be a continuous
+bilinear form on $\mathbb{R}^N$ with $D(v, v) \le 0$ for every $v$. Then
+$$\sum_{i,j} A_{ij} D(e_i, e_j) \le 0.$$
+
+Write $A = S S$ with the positive semidefinite square root $S$ of $A$ (`CFC.sqrt`), which is
+symmetric. Then the sum is $\sum_k D(S e_k, S e_k)$. -/
 theorem _root_.Matrix.PosSemidef.sum_mul_apply_single_nonpos {N : ℕ}
     {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.PosSemidef)
     (D : EuclideanSpace ℝ (Fin N) →L[ℝ] EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
@@ -1777,8 +1982,9 @@ theorem _root_.Matrix.PosSemidef.sum_mul_apply_single_nonpos {N : ℕ}
         rw [hSsymm i k]
     _ ≤ 0 := Finset.sum_nonpos fun k _ ↦ hD (w k)
 
-/-- A symmetric matrix of coefficients `a_ij(x)` whose quadratic form is nonnegative is positive
-semidefinite. -/
+/-- Let $(a_{ij}) \in \mathbb{R}^{N \times N}$ be symmetric with
+$\sum_{i,j} a_{ij} \xi_i \xi_j \ge 0$ for every $\xi \in \mathbb{R}^N$. Then the matrix
+$(a_{ij})$ is positive semidefinite. -/
 theorem _root_.Matrix.posSemidef_of_of_symm_of_nonneg {N : ℕ} {a : Fin N → Fin N → ℝ}
     (hsymm : ∀ i j, a i j = a j i)
     (hnn : ∀ ξ : EuclideanSpace ℝ (Fin N), 0 ≤ ∑ i, ∑ j, a i j * ξ i * ξ j) :
@@ -1794,22 +2000,30 @@ theorem _root_.Matrix.posSemidef_of_of_symm_of_nonneg {N : ℕ} {a : Fin N → F
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **Remark 27, the classical maximum principle for a general second-order elliptic operator**
-([brezis2011functional] Chapter 9, Remark 27): for a bounded open `Ω ⊆ ℝ^N`, a classical
-solution `ũ` of `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢũ) + ∑ᵢ b_i ∂ᵢũ + ũ = f` on `Ω` — continuous on `closure Ω` and
-`C²` on `Ω`, with `a_ij` differentiable on `Ω`, symmetric and with nonnegative quadratic form
-(the ellipticity condition, of which only `∑ a_ij(x) ξ_i ξ_j ≥ 0` is used), and arbitrary `b_i`
-— with `ũ ≤ K` on `frontier Ω` and `f ≤ K` on `Ω` satisfies `ũ ≤ K` on `Ω`. The Laplacian is the
-case `a_ij = δ_ij`, `b = 0` (`Elliptic.le_of_classical_laplacian`).
+/-- The **classical maximum principle for a general second-order elliptic operator**. Let
+$\Omega \subseteq \mathbb{R}^N$ be open and bounded. Let $a_{ij} : \mathbb{R}^N \to \mathbb{R}$
+be differentiable on $\Omega$, with $a_{ij} = a_{ji}$ and
+$\sum_{i,j} a_{ij}(x) \xi_i \xi_j \ge 0$ for every $x \in \Omega$ and $\xi \in \mathbb{R}^N$,
+and let $b_i : \mathbb{R}^N \to \mathbb{R}$ be arbitrary. Let
+$\tilde u, f : \mathbb{R}^N \to \mathbb{R}$, with $\tilde u$ continuous on $\bar\Omega$ and of
+class $C^2$ on $\Omega$, satisfy
+$$-\sum_{i,j} \partial_j (a_{ij} \partial_i \tilde u) + \sum_i b_i \partial_i \tilde u + \tilde
+  u = f \qquad \text{on } \Omega.$$
+If $\tilde u \le K$ on $\partial\Omega$ and $f \le K$ on $\Omega$, then $\tilde u \le K$ on
+$\Omega$. This is Remark 27 of [brezis2011functional], Chapter 9. The Laplacian is the case
+$a_{ij} = \delta_{ij}$, $b = 0$ (`Elliptic.le_of_classical_laplacian`).
 
-Proof: the maximum of `ũ` on the compact `closure Ω` is attained at some `x₀`; if
-`x₀ ∈ frontier Ω` there is nothing to prove. If `x₀ ∈ Ω` then `∇ũ(x₀) = 0`
-(`IsLocalMax.fderiv_eq_zero`) and the Hessian is nonpositive
-(`IsLocalMax.fderiv_fderiv_apply_self_nonpos`), so by the product rule
-`∂ⱼ(a_ij ∂ᵢũ)(x₀) = a_ij(x₀) ∂ᵢ∂ⱼũ(x₀)` and the first-order term vanishes; the book's
-"`∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ 0` by a change of coordinates diagonalizing `a_ij(x₀)`" is
-`Matrix.PosSemidef.sum_mul_apply_single_nonpos` (through the square root of `a(x₀)` rather than
-its diagonalization), whence `ũ(x₀) = f(x₀) + ∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ f(x₀) ≤ K`. -/
+Of the ellipticity condition, only $\sum_{i,j} a_{ij}(x) \xi_i \xi_j \ge 0$ is used. The maximum
+of $\tilde u$ on the compact set $\bar\Omega$ is attained at some $x_0$; if
+$x_0 \in \partial\Omega$ there is nothing to prove. If $x_0 \in \Omega$, then
+$\nabla \tilde u(x_0) = 0$ (`IsLocalMax.fderiv_eq_zero`) and the Hessian is nonpositive
+(`IsLocalMax.fderiv_fderiv_apply_self_nonpos`). By the product rule, $\partial_j (a_{ij}
+\partial_i \tilde u)(x_0) = a_{ij}(x_0) \partial_i \partial_j \tilde u(x_0)$, and the
+first-order term vanishes. The source gets $\sum_{i,j} a_{ij}(x_0) \partial_i \partial_j \tilde
+u(x_0) \le 0$ by a change of coordinates that diagonalizes $(a_{ij}(x_0))$; here it is
+`Matrix.PosSemidef.sum_mul_apply_single_nonpos`, through the square root of $(a_{ij}(x_0))$.
+Hence $\tilde u(x_0) = f(x_0) + \sum_{i,j} a_{ij}(x_0) \partial_i \partial_j \tilde u(x_0) \le
+f(x_0) \le K$. -/
 theorem le_of_classical (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     {ũ f : EuclideanSpace ℝ (Fin N) → ℝ} (hc : ContinuousOn ũ (closure Ω))
     (hu : ContDiffOn ℝ 2 ũ Ω) {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}

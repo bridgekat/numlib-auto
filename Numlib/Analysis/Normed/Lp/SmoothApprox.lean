@@ -12,38 +12,44 @@ import Mathlib.Analysis.Normed.Lp.SmoothApprox
 import Mathlib.MeasureTheory.Function.UniformIntegrable
 
 /-!
-# Smooth functions supported in an open set are dense in `Lᵖ` of that set
+# Smooth functions with compact support in an open set are dense in $L^p$ of that set
 
-Mathlib's `MeasureTheory.Lp.dense_hasCompactSupport_contDiff` says that the smooth compactly
-supported functions on a finite-dimensional real normed space `E` are dense in `Lᵖ(μ)`, for
-`1 ≤ p < ∞`. Nothing there restricts the *support*: an approximant to a function of `Lᵖ(Ω)`, for
-`Ω ⊆ E` open, may well spill out of `Ω`. This file removes that spill:
-`MeasureTheory.Lp.dense_contDiff_tsupport_subset` produces approximants whose support is a compact
-subset of `Ω`, which is the density of `C₀^∞(Ω)` in `Lᵖ(Ω)`.
+Let $E$ be a finite-dimensional real normed space and let $1 \le p < \infty$. Mathlib's
+`MeasureTheory.Lp.dense_hasCompactSupport_contDiff` says that the smooth functions with compact
+support are dense in $L^p(E, \mu)$. It puts no condition on the support: for an open set
+$\Omega \subseteq E$, an approximant of a function in $L^p(\Omega)$ may have support outside
+$\Omega$. This module proves the stronger statement
+`MeasureTheory.Lp.dense_contDiff_tsupport_subset`: the approximants can be chosen with compact
+support contained in $\Omega$. This is the density of $C_c^\infty(\Omega)$ in $L^p(\Omega)$.
 
-## Main statements
+## Main results
 
-* `exists_contDiff_one_on_of_isCompact_of_isOpen` — the smooth Urysohn function of a compact set
-  inside an open one: smooth, valued in `[0, 1]`, equal to `1` on the compact set, and with compact
-  support inside the open one.
-* `MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le` — an `Lᵖ(Ω)` function is, up to
-  a small `Lᵖ` error, supported in a compact subset of `Ω`.
-* `MeasureTheory.MemLp.exists_contDiff_tsupport_subset` and
-  `MeasureTheory.Lp.dense_contDiff_tsupport_subset` — the approximation and its `Dense` form.
+* `exists_contDiff_one_on_of_isCompact_of_isOpen`: for a compact set $K$ inside an open set $U$,
+  there is a smooth function with values in $[0, 1]$ that is $1$ on $K$ and has compact support
+  inside $U$.
+* `MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le`: a function in $L^p(\Omega)$ is,
+  up to a small $L^p$ error, supported in a compact subset of $\Omega$.
+* `MeasureTheory.MemLp.exists_contDiff_tsupport_subset`: every function in $L^p(\Omega)$ is
+  approximated in $L^p$ by smooth functions with compact support inside $\Omega$.
+* `MeasureTheory.Lp.dense_contDiff_tsupport_subset`: the same statement as a density in the space
+  $L^p(\Omega)$.
+
+## Proof outline
+
+A function in $L^p(\Omega)$ can fail to have compact support inside $\Omega$ in two ways: it has
+mass far away, and it has mass near the boundary of $\Omega$. Mathlib has a lemma for each.
+`MeasureTheory.MemLp.exists_eLpNorm_indicator_compl_lt` gives a set of finite measure that carries
+all but $\varepsilon$ of the function, and `MeasureTheory.MemLp.eLpNorm_indicator_le` is the
+absolute continuity of the $L^p$ norm. Inner regularity turns the first set into a compact subset of
+$\Omega$. When the function $f_1$ is supported in a compact set $K \subseteq \Omega$, a smooth
+approximant $g$ of $f_1$ is multiplied by a smooth cut-off $\eta$ that is $1$ on $K$ and has support
+in $\Omega$. Since $\eta f_1 = f_1$, the error does not increase: $|\eta (f_1 - g)| \le |f_1 - g|$
+pointwise.
 
 ## Implementation notes
 
-The two ingredients are exactly the two ways an `Lᵖ` function can fail to be compactly supported
-inside `Ω`: mass far away, and mass near the boundary. Mathlib has a lemma for each —
-`MeasureTheory.MemLp.exists_eLpNorm_indicator_compl_lt` gives a set of finite measure carrying all
-but `ε` of the function, and `MeasureTheory.MemLp.eLpNorm_indicator_le` is the absolute continuity
-of the `Lᵖ` norm — and inner regularity turns the first set into a compact subset of `Ω`. Once the
-function is supported in a compact `K ⊆ Ω`, a smooth approximant `g` of it is multiplied by a
-smooth cut-off `η` that is `1` on `K` and supported in `Ω`: since `η` also fixes the localized
-function, the error only shrinks, `η (f₁ - g)` being pointwise no larger than `f₁ - g`.
-
-The cut-off comes from the manifold partition-of-unity API,
-`exists_contMDiffMap_zero_one_of_isClosed`, read back through `contMDiff_iff_contDiff`.
+* The cut-off function comes from the partition of unity API for manifolds,
+  `exists_contMDiffMap_zero_one_of_isClosed`, read back through `contMDiff_iff_contDiff`.
 -/
 
 open MeasureTheory Set Topology
@@ -52,8 +58,10 @@ open scoped ContDiff ENNReal Manifold
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
-/-- **A smooth Urysohn function for a compact set inside an open set**: smooth, valued in `[0, 1]`,
-equal to `1` on `K`, and with compact support contained in `U`. -/
+/-- A **smooth Urysohn function**. Let $E$ be a finite-dimensional real normed space, let
+$K \subseteq E$ be compact, let $U \subseteq E$ be open, and let $K \subseteq U$. Then there is
+a smooth function $\eta \colon E \to \mathbb{R}$ with compact support contained in $U$, such
+that $\eta(x) = 1$ for every $x \in K$ and $0 \le \eta(x) \le 1$ for every $x \in E$. -/
 theorem exists_contDiff_one_on_of_isCompact_of_isOpen {K U : Set E} (hK : IsCompact K)
     (hU : IsOpen U) (hKU : K ⊆ U) :
     ∃ η : E → ℝ, ContDiff ℝ ∞ η ∧ HasCompactSupport η ∧ tsupport η ⊆ U ∧
@@ -75,9 +83,16 @@ theorem exists_contDiff_one_on_of_isCompact_of_isOpen {K U : Set E} (hK : IsComp
 variable {F : Type*} [NormedAddCommGroup F]
 
 omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **An `Lᵖ` function on a set `Ω` is, up to a small `Lᵖ` error, supported in a compact subset of
-`Ω`.** The mass far away is cut by the tightness of a single `Lᵖ` function, the mass near the
-boundary by the absolute continuity of the `Lᵖ` norm together with inner regularity. -/
+/-- Let $E$ be a normed group with its Borel $\sigma$-algebra, let $\mu$ be a measure on $E$ that is
+inner regular with respect to compact sets on the sets of finite measure, let
+$\Omega \subseteq E$ be measurable, and let $1 \le p < \infty$. Let $F$ be a normed group, and
+let $f \colon E \to F$ lie in $L^p$ of the restriction of $\mu$ to $\Omega$. Then for every
+$\varepsilon \in (0, \infty]$ there is a compact set $K \subseteq \Omega$ with
+$$\|f \mathbf{1}_{E \setminus K}\|_{L^p(\Omega, \mu)} \le \varepsilon.$$
+
+The mass of $f$ far away is controlled by the tightness of a single $L^p$ function. The mass
+near the boundary of $\Omega$ is controlled by the absolute continuity of the $L^p$ norm
+together with inner regularity. -/
 theorem MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le
     [MeasurableSpace E] [BorelSpace E] {μ : Measure E} [μ.InnerRegularCompactLTTop]
     {Ω : Set E} (hΩ : MeasurableSet Ω) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp : p ≠ ⊤)
@@ -111,8 +126,14 @@ theorem MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le
       (le_trans (Measure.restrict_apply_le _ _) hKlt.le)
   exact le_trans (add_le_add hs.le h2) (by rw [ENNReal.add_halves])
 
-/-- **Smooth functions compactly supported inside an open set `Ω` approximate every `Lᵖ(Ω)`
-function**, for `1 ≤ p < ∞`. -/
+/-- Let $E$ be a finite-dimensional real normed space with its Borel $\sigma$-algebra, let $F$ be a
+real normed space, and let $\mu$ be a measure on $E$ that is finite on compact sets and inner
+regular with respect to compact sets on the sets of finite measure. Let $\Omega \subseteq E$ be
+open, let $1 \le p < \infty$, and let $f \colon E \to F$ lie in $L^p$ of the restriction of
+$\mu$ to $\Omega$. Then for every $\varepsilon > 0$ there is a smooth function
+$g \colon E \to F$ with compact support contained in $\Omega$ such that
+$$\|f - g\|_{L^p(\Omega, \mu)} \le \varepsilon.$$
+-/
 theorem MeasureTheory.MemLp.exists_contDiff_tsupport_subset
     [MeasurableSpace E] [BorelSpace E] [NormedSpace ℝ F]
     {μ : Measure E} [μ.InnerRegularCompactLTTop] [IsFiniteMeasureOnCompacts μ]
@@ -161,10 +182,14 @@ theorem MeasureTheory.MemLp.exists_contDiff_tsupport_subset
   refine le_trans (add_le_add hK (hsmul.trans hg3)) ?_
   rw [← ENNReal.ofReal_add hε2.le hε2.le, add_halves]
 
-/-- **Smooth functions compactly supported inside an open set `Ω` are dense in `Lᵖ(Ω)`**, for
-`1 ≤ p < ∞`: the `Dense` form of
-`MeasureTheory.MemLp.exists_contDiff_tsupport_subset`, matching Mathlib's
-`MeasureTheory.Lp.dense_hasCompactSupport_contDiff`. -/
+/-- Let $E$ be a finite-dimensional real normed space with its Borel $\sigma$-algebra, let $F$ be a
+real normed space, and let $\mu$ be a measure on $E$ that is finite on compact sets and inner
+regular with respect to compact sets on the sets of finite measure. Let $\Omega \subseteq E$ be
+open and let $1 \le p < \infty$. Then the classes in $L^p(\Omega, \mu; F)$ that have a smooth
+representative with compact support contained in $\Omega$ are dense in $L^p(\Omega, \mu; F)$.
+
+This is the density form of `MeasureTheory.MemLp.exists_contDiff_tsupport_subset`, in the shape
+of Mathlib's `MeasureTheory.Lp.dense_hasCompactSupport_contDiff`. -/
 theorem MeasureTheory.Lp.dense_contDiff_tsupport_subset
     [MeasurableSpace E] [BorelSpace E] [NormedSpace ℝ F]
     {μ : Measure E} [μ.InnerRegularCompactLTTop] [IsFiniteMeasureOnCompacts μ]

@@ -6,46 +6,76 @@ import Numlib.Approximation.Interpolation
 import Numlib.Analysis.Sobolev.Interval
 
 /-!
-# Piecewise Lagrange interpolation in `L²` and `H^m` seminorms
+# Piecewise Lagrange interpolation in $L^2$ and $H^m$ seminorms
 
-The error of piecewise polynomial interpolation of degree `k` on a partition of mesh `h`, measured
-in the `L²` norms of the derivatives of order `m ≤ k` rather than in the supremum norm:
-`‖(f - Π_h^k f)^{(m)}‖_{L²(a,b)} ≤ h^{k+1-m} ‖f^{(k+1)}‖_{L²(a,b)}`. This is
-[quarteroni2000numerical] Theorem 8.3 (proved there for `k = 1`, (8.27)), the approximation
-estimate behind the convergence of the `P_k` finite element method in one dimension. The constant is
-`1` for every `k` and `m`, sharper than the book's unspecified `C`.
+This module bounds the error of piecewise polynomial interpolation in the $L^2$ norms of the
+derivatives, rather than in the supremum norm. Let $a = x_0 < x_1 < \dots < x_{n+1} = b$ be a
+partition of $[a, b]$ whose panels $[x_j, x_{j+1}]$ have length at most $h$, and let $\Pi_h^k f$ be
+the continuous function that agrees on each panel with a polynomial of degree at most $k$ that
+interpolates $f$ at $k + 1$ distinct nodes of the panel. For every derivative order $m \le k$,
+$$\|(f - \Pi_h^k f)^{(m)}\|_{L^2(a, b)} \le h^{k+1-m} \|f^{(k+1)}\|_{L^2(a, b)}.$$
+This is Theorem 8.3 of [quarteroni2000numerical], which proves it there for $k = 1$ in (8.27). It is
+the approximation estimate behind the convergence of the finite element method with elements $P_k$
+in one dimension. The constant is $1$ for every $k$ and $m$, which is sharper than the unspecified
+constant $C$ of the source. For $m \ge 2$ the left side is a sum of integrals over the panels.
 
-## The proof, and why no Sobolev space appears in the core statements
+The core statements do not mention a Sobolev space. They use only the following properties of $f$:
+$f$ is of class $C^k$, and $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ for a square-integrable function
+$g$. This describes the absolutely continuous representative of a function in $H^{k+1}(a, b)$, with
+$g = f^{(k+1)}$. The theorem `SobolevInterval.exists_contDiff_ae_eq` of
+`Numlib.Analysis.Sobolev.Interval` gives such a representative for every element of $H^{k+1}(a, b)$.
+The last two theorems restate the estimate for such an element, with the $H^{k+1}$ seminorm
+`SobolevInterval.seminorm` on the right.
 
-On one panel `[u, v]` of length at most `h`, let `e = f - p` with `p` the interpolant at `k + 1`
+## Main results
+
+* `abs_iteratedDeriv_sub_le`: on one panel of length at most $h$, $|f^{(m)}(t) - p^{(m)}(t)| \le
+  h^{k-m} \sqrt{h} \, \|g\|_{L^2}$ for the interpolating polynomial $p$ of degree at most $k$.
+* `integral_sq_iteratedDeriv_sub_le`: on one panel, $\int (f^{(m)} - p^{(m)})^2 \le h^{2(k+1-m)}
+  \int g^2$.
+* `sum_integral_sq_sub_panelPoly_le`: Theorem 8.3 as a sum over the panels, $\sum_j
+  \int_{x_j}^{x_{j+1}} (f^{(m)} - (\Pi_h^k f)^{(m)})^2 \le h^{2(k+1-m)} \int_a^b g^2$.
+* `integral_sq_sub_piecewisePolyInterpCLM_le`: the case $m = 0$, $\|f - \Pi_h^k f\|_{L^2(a, b)}^2
+  \le h^{2(k+1)} \int_a^b g^2$.
+* `integral_sq_deriv_sub_piecewisePolyInterpCLM_le`: the case $m = 1$ for $k \ge 1$, $\|(f - \Pi_h^k
+  f)'\|_{L^2(a, b)}^2 \le h^{2k} \int_a^b g^2$.
+* `integral_sq_sub_piecewiseLinearInterpCLM_le`: (8.27) for piecewise linear interpolation, $\|f -
+  \Pi_h^1 f\|_{L^2(a, b)}^2 \le h^4 \int_a^b g^2$.
+* `integral_sq_deriv_sub_piecewiseLinearInterpCLM_le`: (8.27) for the derivative, $\|(f - \Pi_h^1
+  f)'\|_{L^2(a, b)}^2 \le h^2 \int_a^b g^2$.
+* `sobolevSeminorm_sub_piecewisePolyInterp_le`: Theorem 8.3 for $u \in H^{k+1}(a, b)$, with the
+  right side $h^{2(k+1-m)} |u|_{H^{k+1}(a, b)}^2$.
+* `integral_sq_sub_piecewisePolyInterpCLM_le_seminorm`: the case $m = 0$ for $u \in H^{k+1}(a, b)$,
+  $\|F - \Pi_h^k F\|_{L^2(a, b)}^2 \le h^{2(k+1)} |u|_{H^{k+1}(a, b)}^2$.
+
+## Proof outline
+
+On one panel $[u, v]$ of length at most $h$, let $e = f - p$, where $p$ interpolates $f$ at $k + 1$
 distinct nodes of the panel. The generalized Rolle theorem
-(`exists_iteratedDeriv_eq_zero_of_forall_eq_zero`, `Numlib/Approximation/Interpolation`) gives zeros
-`ξ_j` of `e^{(j)}` in the panel for every `j ≤ k`. Since `p^{(k+1)} = 0`, `e^{(k)}(t) = ∫_{ξ_k}^t g`
-where `g` is the `(k+1)`-st derivative of `f`, so by Cauchy–Schwarz
-`|e^{(k)}(t)| ≤ √h ‖g‖_{L²(u,v)}`, and each of the `k - m` integrations `e^{(j)}(t) = ∫_{ξ_j}^t
-e^{(j+1)}` gains a factor `h`. Squaring and integrating over the panel gives
-`∫_u^v |e^{(m)}|² ≤ h^{2(k+1-m)} ∫_u^v g²`, and summing over the panels gives the theorem. Nothing
-in this uses more of `f` than: `f` is `C^k` and `f^{(k)}(t) - f^{(k)}(s) = ∫_s^t g` for a square
-integrable `g` — the *absolutely continuous representative* of an `H^{k+1}(a, b)` function. The core
-statements (`abs_iteratedDeriv_sub_le`, `integral_sq_iteratedDeriv_sub_le`,
-`sum_integral_sq_sub_panelPoly_le`, `integral_sq_sub_piecewisePolyInterpCLM_le`,
-`integral_sq_deriv_sub_piecewisePolyInterpCLM_le`, `integral_sq_sub_piecewiseLinearInterpCLM_le`,
-`integral_sq_deriv_sub_piecewiseLinearInterpCLM_le`) take exactly that hypothesis;
-`SobolevInterval.exists_contDiff_ae_eq` produces it from an element of `H^{k+1}(a, b)` of
-`Numlib/Analysis/Sobolev/Interval`, and `sobolevSeminorm_sub_piecewisePolyInterp_le`,
-`integral_sq_sub_piecewisePolyInterpCLM_le_seminorm` restate the theorem for such an element, with
-the `H^{k+1}` seminorm `SobolevInterval.seminorm` on the right.
+`exists_iteratedDeriv_eq_zero_of_forall_eq_zero` gives a zero $\xi_j$ of $e^{(j)}$ in the panel for
+every $j \le k$. Since $p^{(k)}$ is constant, $e^{(k)}(t) = \int_{\xi_k}^t g$, so the Cauchy–Schwarz
+inequality gives $|e^{(k)}(t)| \le \sqrt{h} \, \|g\|_{L^2(u, v)}$. Each of the $k - m$ integrations
+$e^{(j)}(t) = \int_{\xi_j}^t e^{(j+1)}$ gains a factor $h$. Squaring and integrating over the panel
+gives $\int_u^v |e^{(m)}|^2 \le h^{2(k+1-m)} \int_u^v g^2$, and the sum over the panels gives the
+theorem.
 
-## Conventions
+## Implementation notes
 
-The interpolant on the panel `j` is `panelPoly node j F : ℝ[X]` from
-`Numlib/Approximation/Interpolation`, where `F : C(Icc a b, ℝ)` is the restriction of `f`; the
-broken-norm sum `∑_j ∫_{x_j}^{x_{j+1}} |f^{(m)} - (panelPoly node j F)^{(m)}|²` is the statement for
-all `m ≤ k`, and for `m = 0, 1` it is the honest `L²(a, b)` norm of `(f - Π_h^k f)^{(m)}`, which
-`integral_sq_sub_piecewisePolyInterpCLM_le` and `integral_sq_deriv_sub_piecewisePolyInterpCLM_le`
-state through `piecewisePolyInterpCLM`. The square integrability of `g` is carried as the two
-hypotheses `IntervalIntegrable g` and `IntervalIntegrable (g ^ 2)`: with the first alone the
-right-hand side `∫ g²` could be the junk value `0` of a non-integrable function.
+* The core statements `abs_iteratedDeriv_sub_le`, `integral_sq_iteratedDeriv_sub_le`,
+  `sum_integral_sq_sub_panelPoly_le`, `integral_sq_sub_piecewisePolyInterpCLM_le`,
+  `integral_sq_deriv_sub_piecewisePolyInterpCLM_le`, `integral_sq_sub_piecewiseLinearInterpCLM_le`
+  and `integral_sq_deriv_sub_piecewiseLinearInterpCLM_le` assume exactly that $f$ is of class $C^k$
+  and that $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ on $[a, b]$.
+* The interpolant on the panel $j$ is the polynomial `panelPoly node j F` of
+  `Numlib.Approximation.Interpolation`, where `F : C(Set.Icc a b, ℝ)` is the restriction of $f$ to
+  $[a, b]$. With $p_j$ = `panelPoly node j F`, the sum $\sum_j \int_{x_j}^{x_{j+1}} |f^{(m)} -
+  p_j^{(m)}|^2$ over the panels is the statement for every $m \le k$. For $m = 0$ and $m = 1$ it is
+  the $L^2(a, b)$ norm of $(f - \Pi_h^k f)^{(m)}$, and `integral_sq_sub_piecewisePolyInterpCLM_le`
+  and `integral_sq_deriv_sub_piecewisePolyInterpCLM_le` state it with the interpolation operator
+  `piecewisePolyInterpCLM`.
+* The square integrability of $g$ is the pair of hypotheses `IntervalIntegrable g` and
+  `IntervalIntegrable (g ^ 2)`. With the first alone, the right side $\int g^2$ could be the value
+  $0$ that Lean gives to the integral of a non-integrable function.
 -/
 
 open Polynomial MeasureTheory intervalIntegral Set
@@ -53,14 +83,20 @@ open scoped Interval Topology
 
 /-! ### The panel estimates -/
 
-/-- **The pointwise panel estimate** ([quarteroni2000numerical] (8.30)–(8.31) for general `k`): on a
-panel `[u, v]` of length at most `h`, if `p` of degree `≤ k` interpolates `f` at `k + 1` distinct
-points of the panel, `f` is `C^k` and `f^{(k)}(t) - f^{(k)}(s) = ∫_s^t g` on the panel with `g`
-square integrable, then for `m ≤ k` and `t` in the panel
-`|f^{(m)}(t) - p^{(m)}(t)| ≤ h^{k-m} √h ‖g‖_{L²(u,v)}`. Downward induction on `m` from `m = k`:
-the generalized Rolle theorem gives a zero `ξ_j` of `e^{(j)} = (f - p)^{(j)}` in the panel for every
-`j ≤ k`; `e^{(k)}(t) = ∫_{ξ_k}^t g` since `p^{(k)}` is constant, which Cauchy–Schwarz bounds by
-`√h ‖g‖_{L²(u,v)}`, and `e^{(m)}(t) = ∫_{ξ_m}^t e^{(m+1)}` gains a factor `h` each time. -/
+/-- Let $u < v$ and $v - u \le h$, and let $m \le k$ be natural numbers. Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^k$, and let $g$ be a function such that $g$
+and $g^2$ are integrable on $[u, v]$ and
+$$f^{(k)}(t) - f^{(k)}(s) = \int_s^t g(r) \, dr \quad \text{for all } s, t \in [u, v].$$
+Let $p$ be a polynomial of degree at most $k$ with $p(y_i) = f(y_i)$ at $k + 1$ distinct points
+$y_0, \dots, y_k$ of $[u, v]$. Then for every $t \in [u, v]$,
+$$|f^{(m)}(t) - p^{(m)}(t)| \le h^{k-m} \sqrt{h} \left( \int_u^v g^2 \right)^{1/2}.$$
+This is the estimate (8.30)–(8.31) of [quarteroni2000numerical] for general $k$.
+
+The proof is a downward induction on $m$ from $m = k$. The generalized Rolle theorem gives a
+zero $\xi_j$ of $e^{(j)} = (f - p)^{(j)}$ in the panel for every $j \le k$. Since $p^{(k)}$ is
+constant, $e^{(k)}(t) = \int_{\xi_k}^t g$, which the Cauchy–Schwarz inequality bounds by
+$\sqrt{h} \, \|g\|_{L^2(u, v)}$. Each step $e^{(m)}(t) = \int_{\xi_m}^t e^{(m+1)}$ gains a
+factor $h$. -/
 theorem abs_iteratedDeriv_sub_le {k m : ℕ} {u v h : ℝ} (huv : u < v) (hh : v - u ≤ h)
     {f g : ℝ → ℝ} (hf : ContDiff ℝ k f) (hg : IntervalIntegrable g volume u v)
     (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume u v)
@@ -145,10 +181,16 @@ theorem abs_iteratedDeriv_sub_le {k m : ℕ} {u v h : ℝ} (huv : u < v) (hh : v
       _ = h ^ (k - j) * √h * √(∫ t in u..v, g t ^ 2) := by
           rw [show k - j = k - (j + 1) + 1 by omega, pow_succ]; ring
 
-/-- **The panel estimate** ([quarteroni2000numerical] Theorem 8.3 on one panel, constant `1`): under
-the hypotheses of `abs_iteratedDeriv_sub_le`,
-`∫_u^v |f^{(m)} - p^{(m)}|² ≤ h^{2(k+1-m)} ∫_u^v g²` for every `m ≤ k`. (For `m = k + 1` the
-statement would be the trivial `∫ g² ≤ ∫ g²`.) -/
+/-- Let $u < v$ and $v - u \le h$, and let $m \le k$ be natural numbers. Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^k$, and let $g$ be a function such that $g$
+and $g^2$ are integrable on $[u, v]$ and $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ for all
+$s, t \in [u, v]$. Let $p$ be a polynomial of degree at most $k$ that interpolates $f$ at
+$k + 1$ distinct points of $[u, v]$. Then
+$$\int_u^v \bigl(f^{(m)}(t) - p^{(m)}(t)\bigr)^2 \, dt \le h^{2(k+1-m)} \int_u^v g^2.$$
+This is Theorem 8.3 of [quarteroni2000numerical] on one panel, with the constant $1$.
+
+For $m = k + 1$ the statement would be the trivial $\int g^2 \le \int g^2$. The proof squares
+and integrates `abs_iteratedDeriv_sub_le`. -/
 theorem integral_sq_iteratedDeriv_sub_le {k m : ℕ} {u v h : ℝ} (huv : u < v) (hh : v - u ≤ h)
     {f g : ℝ → ℝ} (hf : ContDiff ℝ k f) (hg : IntervalIntegrable g volume u v)
     (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume u v)
@@ -181,14 +223,18 @@ theorem integral_sq_iteratedDeriv_sub_le {k m : ℕ} {u v h : ℝ} (huv : u < v)
 
 /-! ### Theorem 8.3 -/
 
-/-- **Theorem 8.3 in broken form, constant `1`** ([quarteroni2000numerical] Theorem 8.3): for a
-panel node system of degree `k` on `a = x 0 < ⋯ < x (n + 1) = b` whose panels have length at most
-`h`,
-`f` of class `C^k` with `f^{(k)}(t) - f^{(k)}(s) = ∫_s^t g` on `[a, b]`, `g` square integrable, `F`
-the restriction of `f` to `[a, b]`, and `m ≤ k`:
-`∑_j ∫_{x_j}^{x_{j+1}} |f^{(m)} - (Π_h^k f)^{(m)}|² ≤ h^{2(k+1-m)} ∫_a^b g²`, where on the panel `j`
-the interpolant `Π_h^k f` is the polynomial `panelPoly node j F`. The panel estimate
-`integral_sq_iteratedDeriv_sub_le`, summed over the panels. -/
+/-- Let $a = x_0 < x_1 < \dots < x_{n+1} = b$, with nodes `node`, be a panel node system of degree
+$k$ on $[a, b]$, and let $x_{j+1} - x_j \le h$ for $j = 0, \dots, n$. Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^k$, and let $g$ be a function such that $g$
+and $g^2$ are integrable on $[a, b]$ and $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ for all
+$s, t \in [a, b]$. Let $F \in C([a, b])$ be the restriction of $f$, and let $m \le k$. Then
+$$\sum_{j=0}^{n} \int_{x_j}^{x_{j+1}} \bigl(f^{(m)} - (\Pi_h^k f)^{(m)}\bigr)^2 \le h^{2(k+1-m)}
+  \int_a^b g^2,$$
+where on the panel $j$ the interpolant $\Pi_h^k f$ is the polynomial `panelPoly node j F`. This
+is Theorem 8.3 of [quarteroni2000numerical] as a sum over the panels, with the constant $1$.
+
+The panel node system is `IsPanelNodes n k x node`. The proof sums the panel estimate
+`integral_sq_iteratedDeriv_sub_le` over the panels. -/
 theorem sum_integral_sq_sub_panelPoly_le {a b : ℝ} {n k m : ℕ} {x : ℕ → Icc a b}
     {node : ℕ → Fin (k + 1) → Icc a b} (hnode : IsPanelNodes n k x node) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ k f)
@@ -225,10 +271,18 @@ section PiecewisePolynomial
 
 variable {a b : ℝ} {n k : ℕ} {x : ℕ → Icc a b} {node : ℕ → Fin (k + 1) → Icc a b}
 
-/-- **Theorem 8.3 for `m = 0`, in `L²(a, b)`** ([quarteroni2000numerical] (8.26) with `m = 0` and
-`C = 1`): under the hypotheses of `sum_integral_sq_sub_panelPoly_le`, for any function `G` agreeing
-on `[a, b]` with the piecewise polynomial interpolant
-`Π_h^k f = piecewisePolyInterpCLM n k x node F`, `∫_a^b |f - G|² ≤ h^{2(k+1)} ∫_a^b g²`. -/
+/-- Let $a = x_0 < x_1 < \dots < x_{n+1} = b$, with nodes `node`, be a panel node system of degree
+$k$ on $[a, b]$, and let $x_{j+1} - x_j \le h$ for $j = 0, \dots, n$. Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^k$, and let $g$ be a function such that $g$
+and $g^2$ are integrable on $[a, b]$ and $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ for all
+$s, t \in [a, b]$. Let $F \in C([a, b])$ be the restriction of $f$, and let
+$G \colon \mathbb{R} \to \mathbb{R}$ be any function that agrees on $[a, b]$ with the piecewise
+polynomial interpolant $\Pi_h^k F$. Then
+$$\int_a^b (f - G)^2 \le h^{2(k+1)} \int_a^b g^2.$$
+This is (8.26) of [quarteroni2000numerical] with $m = 0$ and the constant $1$.
+
+The panel node system is `IsPanelNodes n k x node`, and $\Pi_h^k F$ is
+`piecewisePolyInterpCLM n k x node F`. -/
 theorem integral_sq_sub_piecewisePolyInterpCLM_le (hnode : IsPanelNodes n k x node) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ k f)
     (hg : IntervalIntegrable g volume a b) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume a b)
@@ -268,11 +322,20 @@ theorem integral_sq_sub_piecewisePolyInterpCLM_le (hnode : IsPanelNodes n k x no
         sum_integral_sq_sub_panelPoly_le hnode hmesh hf hg hg2 hfg hF (Nat.zero_le k)
     _ = h ^ (2 * (k + 1)) * ∫ t in a..b, g t ^ 2 := by rw [Nat.sub_zero]
 
-/-- **Theorem 8.3 for `m = 1`** ([quarteroni2000numerical] (8.26) with `m = 1` and `C = 1`): under
-the hypotheses of `sum_integral_sq_sub_panelPoly_le` with `1 ≤ k`, for any function `G` agreeing on
-`[a, b]` with the piecewise polynomial interpolant, the panelwise `L²` norms of `f' - G'` satisfy
-`∑_j ∫_{x_j}^{x_{j+1}} |f' - G'|² ≤ h^{2k} ∫_a^b g²`. Inside a panel `G` is the panel polynomial, so
-`G'` is its derivative there; the values of `G'` at the breakpoints do not affect the integrals. -/
+/-- Let $a = x_0 < x_1 < \dots < x_{n+1} = b$, with nodes `node`, be a panel node system of degree
+$k \ge 1$ on $[a, b]$, and let $x_{j+1} - x_j \le h$ for $j = 0, \dots, n$. Let
+$f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^k$, and let $g$ be a function such that $g$
+and $g^2$ are integrable on $[a, b]$ and $f^{(k)}(t) - f^{(k)}(s) = \int_s^t g$ for all
+$s, t \in [a, b]$. Let $F \in C([a, b])$ be the restriction of $f$, and let
+$G \colon \mathbb{R} \to \mathbb{R}$ be any function that agrees on $[a, b]$ with the piecewise
+polynomial interpolant $\Pi_h^k F$. Then
+$$\sum_{j=0}^{n} \int_{x_j}^{x_{j+1}} (f' - G')^2 \le h^{2k} \int_a^b g^2.$$
+This is (8.26) of [quarteroni2000numerical] with $m = 1$ and the constant $1$.
+
+The panel node system is `IsPanelNodes n k x node`, $\Pi_h^k F$ is
+`piecewisePolyInterpCLM n k x node F`, and $G'$ is `deriv G`. Inside a panel, $G$ is the panel
+polynomial, so $G'$ is the derivative of that polynomial. The values of $G'$ at the breakpoints
+do not change the integrals. -/
 theorem integral_sq_deriv_sub_piecewisePolyInterpCLM_le (hnode : IsPanelNodes n k x node) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ k f)
     (hg : IntervalIntegrable g volume a b) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume a b)
@@ -310,8 +373,9 @@ section PiecewiseLinear
 
 variable {a b : ℝ} {n : ℕ} {x : ℕ → Icc a b}
 
-/-- The affine interpolant of `f` on `[u, v]`, as a polynomial: its degree, its values, and its
-derivative. -/
+/-- The affine interpolant of $f$ at $u < v$ is a polynomial $p$ of degree at most $1$ with
+$p(t) = f(u) + (f(v) - f(u))(t - u)/(v - u)$ and the constant derivative
+$(f(v) - f(u))/(v - u)$. -/
 private theorem exists_linear_interp {u v : ℝ} (huv : u < v) (f : ℝ → ℝ) :
     ∃ p : ℝ[X], p.degree ≤ 1 ∧ (∀ t, p.eval t = f u + (f v - f u) * ((t - u) / (v - u))) ∧
       (∀ t, (derivative p).eval t = (f v - f u) / (v - u)) ∧ p.eval u = f u ∧ p.eval v = f v := by
@@ -328,9 +392,9 @@ private theorem exists_linear_interp {u v : ℝ} (huv : u < v) (f : ℝ → ℝ)
   · rw [heval, sub_self, zero_div, mul_zero, add_zero]
   · rw [heval, div_self hne, mul_one, add_sub_cancel]
 
-/-- The panel estimate for the piecewise linear interpolant: on the panel `j`, the affine
-interpolant `p` through `(x j, f (x j))` and `(x (j+1), f (x (j+1)))` satisfies
-`∫ |f^{(m)} - p^{(m)}|² ≤ h^{2(2-m)} ∫ g²` for `m ≤ 1`. -/
+/-- On the panel $j$, the affine interpolant $p$ of $f$ at $x_j$ and $x_{j+1}$ satisfies
+$\int_{x_j}^{x_{j+1}} (f^{(m)} - p^{(m)})^2 \le h^{2(2-m)} \int_{x_j}^{x_{j+1}} g^2$ for
+$m \le 1$. -/
 private theorem integral_sq_sub_linear_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ 1 f)
     (hg : IntervalIntegrable g volume a b) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume a b)
@@ -360,11 +424,17 @@ private theorem integral_sq_sub_linear_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x
     · exact hpu
     · exact hpv
 
-/-- **(8.27) of [quarteroni2000numerical] with `C₁ = 1`**: on a partition
-`a = x 0 < ⋯ < x (n+1) = b` of mesh at most `h`, for `f` of class `C¹` with
-`f'(t) - f'(s) = ∫_s^t g` on `[a, b]` and `g` square integrable, `F` the restriction of `f` and `G`
-any function agreeing on `[a, b]` with the piecewise linear interpolant
-`Π_h^1 f = piecewiseLinearInterpCLM n x F`: `∫_a^b |f - G|² ≤ h⁴ ∫_a^b g²`. -/
+/-- Let $a = x_0 < x_1 < \dots < x_{n+1} = b$ be a partition of $[a, b]$ with $x_{j+1} - x_j \le h$
+for $j = 0, \dots, n$. Let $f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^1$, and let $g$
+be a function such that $g$ and $g^2$ are integrable on $[a, b]$ and
+$f'(t) - f'(s) = \int_s^t g$ for all $s, t \in [a, b]$. Let $F \in C([a, b])$ be the restriction
+of $f$, and let $G \colon \mathbb{R} \to \mathbb{R}$ be any function that agrees on $[a, b]$
+with the piecewise linear interpolant $\Pi_h^1 F$. Then
+$$\int_a^b (f - G)^2 \le h^4 \int_a^b g^2.$$
+This is (8.27) of [quarteroni2000numerical] with the constant $C_1 = 1$.
+
+The partition is `IsIntervalPartition a b (n + 1)`, and $\Pi_h^1 F$ is
+`piecewiseLinearInterpCLM n x F`. -/
 theorem integral_sq_sub_piecewiseLinearInterpCLM_le
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h) {f g : ℝ → ℝ} (hf : ContDiff ℝ 1 f)
@@ -410,11 +480,17 @@ theorem integral_sq_sub_piecewiseLinearInterpCLM_le
   exact integral_sq_sub_linear_le hstep hmesh hf hg hg2 hfg hj (hp j hj) (hpu j hj) (hpv j hj)
     (Nat.zero_le 1)
 
-/-- **(8.27) of [quarteroni2000numerical] with `C₂ = 1`**: under the hypotheses of
-`integral_sq_sub_piecewiseLinearInterpCLM_le`, the panelwise `L²` norms of `f' - (Π_h^1 f)'`, the
-derivative of the interpolant on the panel `j` being the difference quotient
-`(f (x (j+1)) - f (x j))/(x (j+1) - x j)`, satisfy
-`∑_j ∫_{x_j}^{x_{j+1}} |f' - (Π_h^1 f)'|² ≤ h² ∫_a^b g²`. -/
+/-- Let $a = x_0 < x_1 < \dots < x_{n+1} = b$ be a partition of $[a, b]$ with $x_{j+1} - x_j \le h$
+for $j = 0, \dots, n$. Let $f \colon \mathbb{R} \to \mathbb{R}$ be of class $C^1$, and let $g$
+be a function such that $g$ and $g^2$ are integrable on $[a, b]$ and
+$f'(t) - f'(s) = \int_s^t g$ for all $s, t \in [a, b]$. On the panel $j$, the derivative of the
+piecewise linear interpolant $\Pi_h^1 f$ is the difference quotient
+$(f(x_{j+1}) - f(x_j))/(x_{j+1} - x_j)$, and
+$$\sum_{j=0}^{n} \int_{x_j}^{x_{j+1}} \left( f'(t) - \frac{f(x_{j+1}) - f(x_j)}{x_{j+1} - x_j}
+  \right)^2 dt \le h^2 \int_a^b g^2.$$
+This is (8.27) of [quarteroni2000numerical] with the constant $C_2 = 1$.
+
+The partition is `IsIntervalPartition a b (n + 1)`. -/
 theorem integral_sq_deriv_sub_piecewiseLinearInterpCLM_le
     (hx : IsIntervalPartition a b (n + 1) fun i => (x i : ℝ)) {h : ℝ}
     (hmesh : ∀ j ≤ n, (x (j + 1) : ℝ) - (x j : ℝ) ≤ h)
@@ -443,24 +519,33 @@ theorem integral_sq_deriv_sub_piecewiseLinearInterpCLM_le
 
 end PiecewiseLinear
 
-/-! ### Theorem 8.3 over `H^{k+1}(a, b)` -/
+/-! ### Theorem 8.3 over $H^{k+1}(a, b)$ -/
 
 section Sobolev
 
 variable {a b : ℝ}
 
 open SobolevInterval in
-/-- **Theorem 8.3 over `H^{k+1}(a, b)`, broken form** ([quarteroni2000numerical] (8.26) with
-`C = 1`): for `u ∈ H^{k+1}(a, b)` with continuous representative `F` (any `F : C([a, b], ℝ)`
-agreeing with `u` almost everywhere), a panel node system of degree `k` of mesh at most `h`, and
-`m ≤ k`, the panelwise `L²` norms of `(F - Π_h^k F)^{(m)}` satisfy
-`∑_j ∫_{x_j}^{x_{j+1}} |F^{(m)} - (Π_h^k F)^{(m)}|² ≤ h^{2(k+1-m)} |u|²_{H^{k+1}(a, b)}`, where
-`F^{(m)}` is the `m`-th derivative of `F` extended by its endpoint values — inside `(a, b)` it is
-the `m`-th derivative of the `C^k` representative of `u`, `SobolevInterval.exists_contDiff_ae_eq` —
-and
-on the panel `j` the interpolant is `panelPoly node j F`. For `m = 0, 1` the left side is the
-`L²(a, b)` norm of `(F - Π_h^k F)^{(m)}`, i.e. the `H^m(a, b)` seminorm of the error;
-`integral_sq_sub_piecewisePolyInterpCLM_le_seminorm` states the case `m = 0` on `[a, b]`. -/
+/-- Let $a < b$, let $u \in H^{k+1}(a, b)$, and let $F \in C([a, b])$ agree with $u$ almost
+everywhere on $(a, b)$. Let $a = x_0 < x_1 < \dots < x_{n+1} = b$, with nodes `node`, be a panel
+node system of degree $k$ on $[a, b]$, with $x_{j+1} - x_j \le h$ for $j = 0, \dots, n$, and let
+$m \le k$. Let $\tilde F$ be the extension of $F$ to $\mathbb{R}$ by its endpoint values:
+$\tilde F(t) = F(a)$ for $t < a$ and $\tilde F(t) = F(b)$ for $t > b$. Then
+$$\sum_{j=0}^{n} \int_{x_j}^{x_{j+1}} \bigl(\tilde F^{(m)} - (\Pi_h^k F)^{(m)}\bigr)^2 \le
+  h^{2(k+1-m)} |u|_{H^{k+1}(a, b)}^2,$$
+where on the panel $j$ the interpolant $\Pi_h^k F$ is the polynomial `panelPoly node j F`, and
+$|u|_{H^{k+1}(a, b)} = \|u^{(k+1)}\|_{L^2(a, b)}$. This is Theorem 8.3 of
+[quarteroni2000numerical] for $u \in H^{k+1}(a, b)$, which is (8.26) with the constant $1$, as a
+sum over the panels.
+
+The panel node system is `IsPanelNodes n k x node`, and the function of $u$ is
+`SobolevIntervalLp.fn u`. The extension of $F$ is `Set.IccExtend`. The seminorm is
+`SobolevInterval.seminorm (k + 1) a b`. Inside $(a, b)$, $\tilde F^{(m)}$ is the $m$-th
+derivative of the $C^k$ representative of $u$ from `SobolevInterval.exists_contDiff_ae_eq`. For
+$m = 0$ and $m = 1$ the left side is the square of the $L^2(a, b)$ norm of
+$(F - \Pi_h^k F)^{(m)}$, that is, of the $H^m(a, b)$ seminorm of the error.
+`integral_sq_sub_piecewisePolyInterpCLM_le_seminorm` states the case $m = 0$ with the
+interpolation operator on $[a, b]$. -/
 theorem sobolevSeminorm_sub_piecewisePolyInterp_le (hab : a < b) {k : ℕ}
     (u : SobolevInterval (k + 1) a b) {n : ℕ} {x : ℕ → Icc a b}
     {node : ℕ → Fin (k + 1) → Icc a b} (hnode : IsPanelNodes n k x node) {h : ℝ}
@@ -499,10 +584,17 @@ theorem sobolevSeminorm_sub_piecewisePolyInterp_le (hab : a < b) {k : ℕ}
         (intervalIntegrable_deriv_sq hab.le u _) hftc hF' hm
 
 open SobolevInterval in
-/-- **Theorem 8.3 over `H^{k+1}(a, b)` in `L²(a, b)`** ([quarteroni2000numerical] (8.26) with
-`m = 0` and `C = 1`): for `u ∈ H^{k+1}(a, b)` with continuous representative `F` and a panel node
-system of degree `k` of mesh at most `h`,
-`‖F - Π_h^k F‖²_{L²(a, b)} ≤ h^{2(k+1)} |u|²_{H^{k+1}(a, b)}`. -/
+/-- Let $a < b$, let $u \in H^{k+1}(a, b)$, and let $F \in C([a, b])$ agree with $u$ almost
+everywhere on $(a, b)$. Let $a = x_0 < x_1 < \dots < x_{n+1} = b$, with nodes `node`, be a panel
+node system of degree $k$ on $[a, b]$, with $x_{j+1} - x_j \le h$ for $j = 0, \dots, n$. Then
+$$\|F - \Pi_h^k F\|_{L^2(a, b)}^2 \le h^{2(k+1)} |u|_{H^{k+1}(a, b)}^2.$$
+This is (8.26) of [quarteroni2000numerical] for $u \in H^{k+1}(a, b)$, with $m = 0$ and the
+constant $1$.
+
+The panel node system is `IsPanelNodes n k x node`, and $\Pi_h^k F$ is
+`piecewisePolyInterpCLM n k x node F`. The left side is the integral over $[a, b]$ of the square
+of the difference of the extensions `Set.IccExtend` of $F$ and $\Pi_h^k F$. The seminorm is
+`SobolevInterval.seminorm (k + 1) a b`. -/
 theorem integral_sq_sub_piecewisePolyInterpCLM_le_seminorm (hab : a < b) {k : ℕ}
     (u : SobolevInterval (k + 1) a b) {n : ℕ} {x : ℕ → Icc a b}
     {node : ℕ → Fin (k + 1) → Icc a b} (hnode : IsPanelNodes n k x node) {h : ℝ}

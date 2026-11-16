@@ -15,40 +15,50 @@ import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 /-!
 # Weak sequential convergence in a normed space
 
-Weak convergence `vₙ ⇀ u` in a normed space `V` is convergence of `toWeakSpace 𝕜 V (vₙ)` in the
-weak topology of `WeakSpace 𝕜 V`, and `tendsto_toWeakSpace_iff` says that this is exactly
-convergence of `ℓ (vₙ)` for every bounded linear functional `ℓ`.
+Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. A sequence $(v_n)$
+**converges weakly** to $u$, written $v_n \rightharpoonup u$, if $\ell(v_n) \to \ell(u)$ for every
+$\ell \in V^*$. This file proves the basic facts on weak convergence: a weakly convergent sequence
+is bounded, the norm is weakly sequentially lower semicontinuous, $\|u\| \le \liminf_n \|v_n\|$, and
+$f_n(v_n) \to g(u)$ when $v_n \rightharpoonup u$ and $f_n \to g$ in norm. It proves the same facts
+for weak-$*$ convergence in the dual of a Banach space, and the sequential Banach–Alaoglu theorem
+for a space isometric to the dual of a separable space. These are Propositions 3.5 and 3.13 and
+Corollary 3.30 of [brezis2011functional].
 
-## Main statements
+## Main results
 
-* `tendsto_toWeakSpace_iff` — weak convergence is pointwise convergence of the bounded linear
-  functionals;
-* `exists_norm_le_of_tendsto_toWeakSpace` — a weakly convergent sequence is bounded in norm, by
-  uniform boundedness applied to its image in the double dual;
-* `norm_le_liminf_norm_of_weak_tendsto` — **the norm is weakly sequentially lower semicontinuous**,
-  `‖u‖ ≤ liminf ‖vₙ‖`, by evaluating a norming functional of `u`. This is what makes a
-  minimization problem over a weakly closed set solvable: a minimizing sequence has a weak limit
-  point whose norm is no larger;
-* `tendsto_apply_of_tendsto_toWeakSpace_of_tendsto` — `fₙ (vₙ) → g u` when `vₙ ⇀ u` and
-  `fₙ → g` in norm;
-* `WeakDual.continuous_weakSpace_toWeakDual` — on the dual, the weak-∗ topology `WeakDual 𝕜 V` is
-  coarser than the weak topology `WeakSpace 𝕜 (StrongDual 𝕜 V)`, and the weak-∗ versions of the
-  three sequential facts, `exists_norm_le_of_tendsto_toWeakDual`,
-  `norm_le_liminf_norm_of_weakStar_tendsto` and `tendsto_apply_of_tendsto_toWeakDual_of_tendsto`,
-  which need `V` complete because the uniform boundedness principle is applied on `V` itself;
-* `LinearIsometryEquiv.exists_subseq_tendsto_apply` — a bounded sequence in a space isometric to
-  the dual of a separable space has a weak-∗ convergent subsequence (the sequential
-  Banach–Alaoglu theorem, transported).
+* `tendsto_toWeakSpace_iff`: weak convergence is convergence of $\ell(v_n)$ for every bounded linear
+  functional $\ell$.
+* `exists_norm_le_of_tendsto_toWeakSpace`: a weakly convergent sequence is bounded in norm.
+* `norm_le_liminf_norm_of_weak_tendsto`: **the norm is weakly sequentially lower semicontinuous**,
+  $\|u\| \le \liminf_n \|v_n\|$. This makes a minimization problem over a weakly closed set
+  solvable: a minimizing sequence has a weak limit point whose norm is not larger.
+* `tendsto_apply_of_tendsto_toWeakSpace_of_tendsto`: $f_n(v_n) \to g(u)$ when
+  $v_n \rightharpoonup u$ and $f_n \to g$ in norm.
+* `WeakDual.continuous_weakSpace_toWeakDual`: on the dual, the weak-$*$ topology is coarser than the
+  weak topology.
+* `exists_norm_le_of_tendsto_toWeakDual`, `norm_le_liminf_norm_of_weakStar_tendsto` and
+  `tendsto_apply_of_tendsto_toWeakDual_of_tendsto`: the weak-$*$ versions of the three sequential
+  facts, for the dual of a Banach space.
+* `LinearIsometryEquiv.exists_subseq_tendsto_apply`: a bounded sequence in a space isometric to the
+  dual of a separable space has a weak-$*$ convergent subsequence.
 
-These are [brezis2011functional] Propositions 3.5 and 3.13 and Corollary 3.30.
+## Implementation notes
+
+* Weak convergence $v_n \rightharpoonup u$ is convergence of `toWeakSpace 𝕜 V (v n)` to
+  `toWeakSpace 𝕜 V u` in the weak topology of `WeakSpace 𝕜 V`, and `tendsto_toWeakSpace_iff` relates
+  it to the definition above. Weak-$*$ convergence in the dual is convergence in `WeakDual 𝕜 V`.
+* The weak-$*$ facts need $V$ complete, because the uniform boundedness principle is applied on $V$
+  itself. The weak facts need no completeness, because the principle is applied on the dual, which
+  is always complete.
 -/
 
 open Filter Topology Bornology
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **Weak convergence is pointwise convergence of the bounded linear functionals**: a net
-converges in `WeakSpace 𝕜 V` if and only if `ℓ (vₙ) → ℓ u` for every `ℓ` in the dual. -/
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $(v_i)$ be a net
+in $V$ along a filter $l$, and let $u \in V$. Then $v_i$ converges to $u$ in the weak topology
+if and only if $\ell(v_i) \to \ell(u)$ for every $\ell \in V^*$. -/
 theorem tendsto_toWeakSpace_iff {ι : Type*} {l : Filter ι} {v : ι → V} {u : V} :
     Tendsto (fun n => toWeakSpace 𝕜 V (v n)) l (𝓝 (toWeakSpace 𝕜 V u)) ↔
       ∀ ℓ : StrongDual 𝕜 V, Tendsto (fun n => ℓ (v n)) l (𝓝 (ℓ u)) :=
@@ -57,11 +67,12 @@ theorem tendsto_toWeakSpace_iff {ι : Type*} {l : Filter ι} {v : ι → V} {u :
     obtain ⟨f, hf⟩ := SeparatingDual.exists_separating_of_ne (R := 𝕜) hne
     exact hf (DFunLike.congr_fun h f)
 
-/-- A weakly convergent sequence is bounded in norm.
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If
+$v_n \rightharpoonup u$ weakly, then there is $C$ with $\|v_n\| \le C$ for all $n$.
 
-This is the uniform boundedness principle applied to the images of the `vₙ` in the double dual,
-which is a family of functionals on the (complete) dual: weak convergence makes the family
-pointwise bounded there, and the isometric inclusion carries the resulting bound back. -/
+The proof applies the uniform boundedness principle to the images of the $v_n$ in the bidual, a
+family of functionals on the complete space $V^*$. Weak convergence makes this family pointwise
+bounded, and the isometric embedding carries the resulting bound back to $V$. -/
 theorem exists_norm_le_of_tendsto_toWeakSpace {v : ℕ → V} {u : V}
     (h : Tendsto (fun n => toWeakSpace 𝕜 V (v n)) atTop (𝓝 (toWeakSpace 𝕜 V u))) :
     ∃ C : ℝ, ∀ n, ‖v n‖ ≤ C := by
@@ -76,13 +87,15 @@ theorem exists_norm_le_of_tendsto_toWeakSpace {v : ℕ → V} {u : V}
   rw [← (NormedSpace.inclusionInDoubleDualLi 𝕜).norm_map (v n)]
   exact hC n
 
-/-- **The norm is weakly sequentially lower semicontinuous**: `vₙ ⇀ u` implies
-`‖u‖ ≤ liminf ‖vₙ‖`.
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If
+$v_n \rightharpoonup u$ weakly, then $$\|u\| \le \liminf_{n \to \infty} \|v_n\|.$$ So the norm
+is weakly sequentially lower semicontinuous.
 
-Equality can fail — an orthonormal sequence in a Hilbert space converges weakly to `0` while every
-term has norm `1` — so the norm is not weakly continuous, only lower semicontinuous. The proof
-evaluates a norming functional `ℓ` of `u`, for which `‖u‖ = ℓ u = lim ℓ (vₙ)` and
-`‖ℓ (vₙ)‖ ≤ ‖vₙ‖`; boundedness of `‖vₙ‖` is what makes the `liminf` comparison legitimate. -/
+Equality can fail: an orthonormal sequence in a Hilbert space converges weakly to $0$, while
+every term has norm $1$. So the norm is not weakly continuous. The proof evaluates a norming
+functional $\ell$ of $u$, for which $\|u\| = \ell(u) = \lim_n \ell(v_n)$ and
+$|\ell(v_n)| \le \|v_n\|$. The boundedness of $(\|v_n\|)$ makes the comparison of the $\liminf$
+valid. -/
 theorem norm_le_liminf_norm_of_weak_tendsto {v : ℕ → V} {u : V}
     (h : Tendsto (fun n => toWeakSpace 𝕜 V (v n)) atTop (𝓝 (toWeakSpace 𝕜 V u))) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop := by
@@ -102,12 +115,14 @@ theorem norm_le_liminf_norm_of_weak_tendsto {v : ℕ → V} {u : V}
     _ ≤ liminf (fun n => ‖v n‖) atTop :=
         liminf_le_liminf (Filter.Eventually.of_forall hle) hlim.isBoundedUnder_ge hcobdd
 
-/-- **A weakly convergent sequence paired with a norm-convergent sequence of functionals
-converges**: if `xₙ ⇀ u` weakly and `fₙ → g` in the dual norm then `fₙ (xₙ) → g u`.
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If
+$x_n \rightharpoonup u$ weakly in $V$ and $f_n \to g$ in the norm of $V^*$, then
+$f_n(x_n) \to g(u)$.
 
-The estimate is `‖fₙ (xₙ) - g u‖ ≤ ‖fₙ - g‖ ‖xₙ‖ + ‖g (xₙ) - g u‖`, where the first term tends to
-`0` because a weakly convergent sequence is bounded (`exists_norm_le_of_tendsto_toWeakSpace`) and
-the second by weak convergence tested against `g`. -/
+The estimate is $|f_n(x_n) - g(u)| \le \|f_n - g\| \, \|x_n\| + |g(x_n) - g(u)|$. The first term
+tends to $0$ because a weakly convergent sequence is bounded
+(`exists_norm_le_of_tendsto_toWeakSpace`), and the second term tends to $0$ by weak convergence
+tested against $g$. -/
 theorem tendsto_apply_of_tendsto_toWeakSpace_of_tendsto {x : ℕ → V} {u : V}
     {f : ℕ → StrongDual 𝕜 V} {g : StrongDual 𝕜 V}
     (hx : Tendsto (fun n => toWeakSpace 𝕜 V (x n)) atTop (𝓝 (toWeakSpace 𝕜 V u)))
@@ -128,21 +143,23 @@ theorem tendsto_apply_of_tendsto_toWeakSpace_of_tendsto {x : ℕ → V} {u : V}
         exact ((f n - g).le_opNorm (x n)).trans (by gcongr; exact hC n)
 
 /-!
-### The weak-∗ topology on the dual
+### The weak-$*$ topology on the dual
 
-On the dual `V'` there are three topologies, norm ≥ weak ≥ weak-∗: the weak topology is
-`WeakSpace 𝕜 (StrongDual 𝕜 V)` and the weak-∗ topology is `WeakDual 𝕜 V`. Mathlib's
-`NormedSpace.Dual.toWeakDual_continuous` compares the first and the third; the statements below
-compare the second and the third, and give the weak-∗ versions of the three sequential facts
-above. Boundedness of a weak-∗ convergent sequence is the uniform boundedness principle on `V`
-itself, so it needs `V` complete, whereas the weak statements needed nothing (they were proved in
-the complete dual).
+On the dual $V^*$ there are three topologies: the norm topology, the weak topology
+`WeakSpace 𝕜 (StrongDual 𝕜 V)`, and the weak-$*$ topology `WeakDual 𝕜 V`, each coarser than the one
+before. The Mathlib theorem `NormedSpace.Dual.toWeakDual_continuous` compares the first and the
+third. The statements below compare the second and the third, and give the weak-$*$ versions of the
+three sequential facts above. Boundedness of a weak-$*$ convergent sequence is the uniform
+boundedness principle on $V$ itself, so it needs $V$ complete, whereas the weak statements need
+nothing, because they apply the principle on the complete dual.
 -/
 
-/-- **The weak-∗ topology is coarser than the weak topology of the dual**: the identity from
-`WeakSpace 𝕜 (StrongDual 𝕜 V)` to `WeakDual 𝕜 V` is continuous. Evaluation at `x : V` is the
-bounded functional `inclusionInDoubleDual 𝕜 V x` on the dual, hence continuous for the dual's
-weak topology. -/
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The identity map from
+$V^*$ with the weak topology $\sigma(V^*, V^{**})$ to $V^*$ with the weak-$*$ topology
+$\sigma(V^*, V)$ is continuous. So the weak-$*$ topology is coarser than the weak topology.
+
+The evaluation at $x \in V$ is the bounded functional `NormedSpace.inclusionInDoubleDual 𝕜 V x`
+on $V^*$, hence continuous for the weak topology of $V^*$. -/
 theorem WeakDual.continuous_weakSpace_toWeakDual :
     Continuous (fun f : WeakSpace 𝕜 (StrongDual 𝕜 V) =>
       StrongDual.toWeakDual ((toWeakSpace 𝕜 (StrongDual 𝕜 V)).symm f)) := by
@@ -150,16 +167,21 @@ theorem WeakDual.continuous_weakSpace_toWeakDual :
   exact WeakBilin.eval_continuous (topDualPairing 𝕜 (StrongDual 𝕜 V)).flip
     (NormedSpace.inclusionInDoubleDual 𝕜 V x)
 
-/-- A sequence of functionals converging weakly (in `σ(V', V'')`) converges weak-∗
-(in `σ(V', V)`). -/
+/-- Let $V$ be a normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If a sequence $(f_n)$
+in $V^*$ converges to $g$ in the weak topology $\sigma(V^*, V^{**})$, then it converges to $g$
+in the weak-$*$ topology $\sigma(V^*, V)$. -/
 theorem tendsto_toWeakDual_of_tendsto_toWeakSpace {f : ℕ → StrongDual 𝕜 V} {g : StrongDual 𝕜 V}
     (h : Tendsto (fun n => toWeakSpace 𝕜 _ (f n)) atTop (𝓝 (toWeakSpace 𝕜 _ g))) :
     Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g)) :=
   (WeakDual.continuous_weakSpace_toWeakDual.tendsto _).comp h
 
-/-- **A weak-∗ convergent sequence in the dual of a Banach space is bounded in norm**: weak-∗
-convergence makes the family `fₙ` pointwise bounded on `V`, and the uniform boundedness principle
-(`banach_steinhaus`, which is where completeness of `V` enters) gives a uniform bound. -/
+/-- Let $V$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If a sequence $(f_n)$
+in $V^*$ converges to $g$ in the weak-$*$ topology, then there is $C$ with $\|f_n\| \le C$ for
+all $n$.
+
+Weak-$*$ convergence makes the family $(f_n)$ pointwise bounded on $V$, and the uniform
+boundedness principle (`banach_steinhaus`, where the completeness of $V$ is used) gives a
+uniform bound. -/
 theorem exists_norm_le_of_tendsto_toWeakDual [CompleteSpace V] {f : ℕ → StrongDual 𝕜 V}
     {g : StrongDual 𝕜 V}
     (h : Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g))) :
@@ -170,12 +192,14 @@ theorem exists_norm_le_of_tendsto_toWeakDual [CompleteSpace V] {f : ℕ → Stro
     exact ⟨C, fun n => hC _ ⟨n, rfl⟩⟩
   exact banach_steinhaus hb
 
-/-- **The dual norm is weak-∗ sequentially lower semicontinuous**: if `fₙ ⇀∗ g` in the dual of a
-Banach space then `‖g‖ ≤ liminf ‖fₙ‖`.
+/-- Let $V$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If a sequence $(f_n)$
+in $V^*$ converges to $g$ in the weak-$*$ topology, then $$\|g\| \le \liminf_{n \to \infty}
+\|f_n\|.$$ So the dual norm is weak-$*$ sequentially lower semicontinuous.
 
-For each `x`, `‖g x‖ = lim ‖fₙ x‖ ≤ liminf (‖fₙ‖ ‖x‖) = (liminf ‖fₙ‖) ‖x‖`, the last step because
-`t ↦ t ‖x‖` is monotone and continuous and the sequence `‖fₙ‖` is bounded
-(`exists_norm_le_of_tendsto_toWeakDual`); then `ContinuousLinearMap.opNorm_le_bound`. -/
+For each $x \in V$, $|g(x)| = \lim_n |f_n(x)| \le \liminf_n (\|f_n\| \, \|x\|) = (\liminf_n
+\|f_n\|) \|x\|$. The last step holds because $t \mapsto t \|x\|$ is monotone and continuous and
+the sequence $(\|f_n\|)$ is bounded (`exists_norm_le_of_tendsto_toWeakDual`). Then
+`ContinuousLinearMap.opNorm_le_bound` concludes. -/
 theorem norm_le_liminf_norm_of_weakStar_tendsto [CompleteSpace V] {f : ℕ → StrongDual 𝕜 V}
     {g : StrongDual 𝕜 V}
     (h : Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g))) :
@@ -202,9 +226,11 @@ theorem norm_le_liminf_norm_of_weakStar_tendsto [CompleteSpace V] {f : ℕ → S
         exact (hmono.map_liminf_of_continuousAt (fun n => ‖f n‖)
           (continuous_id.mul continuous_const).continuousAt hcobdd hbdd).symm
 
-/-- **A weak-∗ convergent sequence of functionals paired with a norm-convergent sequence
-converges**: if `fₙ ⇀∗ g` in the dual of a Banach space and `xₙ → u` in norm then
-`fₙ (xₙ) → g u`. The estimate is `‖fₙ (xₙ) - g u‖ ≤ ‖fₙ‖ ‖xₙ - u‖ + ‖fₙ u - g u‖`, with `‖fₙ‖`
+/-- Let $V$ be a Banach space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. If a sequence $(f_n)$
+in $V^*$ converges to $g$ in the weak-$*$ topology and $x_n \to u$ in norm in $V$, then
+$f_n(x_n) \to g(u)$.
+
+The estimate is $|f_n(x_n) - g(u)| \le \|f_n\| \, \|x_n - u\| + |f_n(u) - g(u)|$, with $\|f_n\|$
 bounded by `exists_norm_le_of_tendsto_toWeakDual`. -/
 theorem tendsto_apply_of_tendsto_toWeakDual_of_tendsto [CompleteSpace V] {f : ℕ → StrongDual 𝕜 V}
     {g : StrongDual 𝕜 V} {x : ℕ → V} {u : V}
@@ -226,12 +252,16 @@ theorem tendsto_apply_of_tendsto_toWeakDual_of_tendsto [CompleteSpace V] {f : �
         gcongr
         exact ((f n).le_opNorm (x n - u)).trans (by gcongr; exact hC n)
 
-/-- **Sequential Banach–Alaoglu for a space isometric to a separable dual**: if
-`e : X ≃ₗᵢ[𝕜] V'` and `V` is separable, every bounded sequence `f` in `X` has a subsequence
-`f ∘ φ` and a `g ∈ X` with `e (f (φ k)) x → e g x` for every `x ∈ V`, convergence in the weak-∗
-topology that `e` transports to `X`.  It is Mathlib's `WeakDual.isSeqCompact_closedBall`
-([brezis2011functional] Corollary 3.30); the case `X = L^∞ = (L^1)'` is
-[brezis2011functional] §4.3 C. -/
+/-- **Sequential Banach–Alaoglu theorem** for a space isometric to a separable dual. Let $V$ be a
+separable normed space over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let $X$ be a normed
+space, and let $e \colon X \to V^*$ be an isometric isomorphism. Let $(f_n)$ be a sequence in
+$X$ with $\|f_n\| \le C$ for all $n$. Then there are a strictly increasing
+$\varphi \colon \mathbb{N} \to \mathbb{N}$ and $g \in X$ with $$e(f_{\varphi(k)})(x) \to e(g)(x)
+\quad \text{for every } x \in V.$$ This is Corollary 3.30 of [brezis2011functional].
+
+The convergence is weak-$*$ convergence, transported to $X$ by $e$. The proof uses the Mathlib
+theorem `WeakDual.isSeqCompact_closedBall`. The case $X = L^\infty = (L^1)^*$ is §4.3 C of
+[brezis2011functional]. -/
 theorem LinearIsometryEquiv.exists_subseq_tendsto_apply [TopologicalSpace.SeparableSpace V]
     {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X] (e : X ≃ₗᵢ[𝕜] StrongDual 𝕜 V)
     {f : ℕ → X} {C : ℝ} (hf : ∀ n, ‖f n‖ ≤ C) :

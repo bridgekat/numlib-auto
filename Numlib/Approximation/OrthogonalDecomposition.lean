@@ -9,36 +9,42 @@ import Mathlib.Order.Interval.Finset.SuccPred
 /-!
 # The orthogonal grading of an increasing chain of subspaces
 
-Let `S : ℕ → Submodule 𝕜 E` be an increasing chain of finite-dimensional subspaces of an inner
-product space. Each level adds to the previous one exactly the part of it orthogonal to that
-previous level, and this module names that part and records what it satisfies: the levels are
-recovered as sups of the components, distinct components are orthogonal, and the dimensions add.
+Let $S_0 \le S_1 \le S_2 \le \cdots$ be an increasing chain of finite-dimensional subspaces of an
+inner product space $E$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The $n$-th **orthogonal
+component** $V_n$ is the part of $S_n$ that is orthogonal to $S_{n-1}$, with $V_0 = S_0$. This
+module proves that distinct components are orthogonal, that each level is the orthogonal direct sum
+$S_n = V_0 \oplus \cdots \oplus V_n$, that the dimensions add, and that the orthogonal projection
+onto $S_n$ is the sum of the projections onto $V_0, \dots, V_n$.
 
-The motivating instance is the chain of spaces of polynomials of total degree at most `n` inside
-`L²` of a domain, where the components are the spaces of "orthogonal polynomials of exact degree
-`n`" of multivariable approximation theory; nothing in the development is special to that case.
+The motivating instance is the chain of spaces of polynomials of total degree at most $n$ in $L^2$
+of a domain. There $V_n$ is the space of orthogonal polynomials of exact degree $n$ of multivariable
+approximation theory. Nothing in the module is special to that case.
 
 ## Main definitions
 
-* `Approximation.orthogonalComponent S n` is `(S (n - 1))ᗮ ⊓ S n`, with `S 0` itself at `n = 0`.
+* `Approximation.orthogonalComponent`: $V_0 = S_0$ and $V_{n+1} = S_n^\perp \cap S_{n+1}$.
 
 ## Main results
 
-* `Approximation.orthogonalComponent_isOrtho`: distinct components are orthogonal, so the family is
-  an `OrthogonalFamily` (`Approximation.orthogonalFamily_orthogonalComponent`) and in particular
-  `iSupIndep` (`Approximation.iSupIndep_orthogonalComponent`).
-* `Approximation.finsetSup_orthogonalComponent`: `S n` is the sup of the components of index at
-  most `n`. Together with the previous item this is the orthogonal direct sum decomposition
-  `S n = V 0 ⊕ ⋯ ⊕ V n`.
-* `Approximation.finrank_orthogonalComponent_add`: the dimension of the `n + 1`-st component is
-  what the `n + 1`-st level adds to the `n`-th.
-* `Approximation.starProjection_eq_sum_orthogonalComponent`: the orthogonal projection onto `S n` is
-  the sum of the projections onto the components, which is a generalized Fourier expansion written
-  without choosing a basis.
-* `Approximation.orthogonal_inf_eq_finsetSup`: `(S k)ᗮ ⊓ S n` is the sup of the components of index
-  in `Set.Ioc k n`, with `Approximation.mem_finsetSup_Icc_of_mem` its membership form. This is what
-  a three-term recursion needs: an element of `S n` orthogonal to `S k` has components only in
-  degrees `k + 1, …, n`.
+* `Approximation.orthogonalComponent_isOrtho`: distinct components are orthogonal. Hence the
+  components form an orthogonal family (`Approximation.orthogonalFamily_orthogonalComponent`) and
+  are independent (`Approximation.iSupIndep_orthogonalComponent`).
+* `Approximation.finsetSup_orthogonalComponent`: $S_n = V_0 + \cdots + V_n$. With the previous item,
+  this is the orthogonal direct sum decomposition $S_n = V_0 \oplus \cdots \oplus V_n$.
+* `Approximation.finrank_orthogonalComponent_add`: $\dim V_{n+1} + \dim S_n = \dim S_{n+1}$.
+* `Approximation.starProjection_eq_sum_orthogonalComponent`: the orthogonal projection onto $S_n$ is
+  the sum of the orthogonal projections onto $V_0, \dots, V_n$, a generalized Fourier expansion that
+  needs no choice of basis.
+* `Approximation.orthogonal_inf_eq_finsetSup`: $S_k^\perp \cap S_n = V_{k+1} + \cdots + V_n$. Its
+  membership form `Approximation.mem_finsetSup_of_mem_of_inner_eq_zero` is what a three-term
+  recurrence needs: an element of $S_n$ orthogonal to $S_k$ has components only in the degrees
+  $k + 1, \dots, n$.
+
+## Implementation notes
+
+* The chain is a sequence `S : ℕ → Submodule 𝕜 E`. Monotonicity of the chain and finite
+  dimensionality of each level are hypotheses of the individual results, not part of the definition.
+* A sum of subspaces is the supremum `Finset.sup` in the lattice of submodules.
 -/
 
 open Module
@@ -48,34 +54,41 @@ namespace Approximation
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   {S : ℕ → Submodule 𝕜 E}
 
-/-- The `n`-th **orthogonal component** of a chain `S` of subspaces: the part of `S n` orthogonal to
-`S (n - 1)`, and `S 0` itself at `n = 0`. For an increasing chain it is what the `n`-th level adds
-to the `n - 1`-st one. -/
+/-- The $n$-th **orthogonal component** $V_n$ of a sequence $(S_k)$ of subspaces: $V_0 = S_0$, and
+$$V_{n+1} = S_n^\perp \cap S_{n+1}.$$
+For an increasing chain, $V_n$ is what the $n$-th level adds to the $(n-1)$-st one. -/
 def orthogonalComponent (S : ℕ → Submodule 𝕜 E) : ℕ → Submodule 𝕜 E
   | 0 => S 0
   | n + 1 => (S n)ᗮ ⊓ S (n + 1)
 
+/-- The zeroth orthogonal component is $V_0 = S_0$. -/
 @[simp]
 theorem orthogonalComponent_zero (S : ℕ → Submodule 𝕜 E) : orthogonalComponent S 0 = S 0 := rfl
 
+/-- The orthogonal component of index $n + 1$ is $V_{n+1} = S_n^\perp \cap S_{n+1}$. -/
 @[simp]
 theorem orthogonalComponent_succ (S : ℕ → Submodule 𝕜 E) (n : ℕ) :
     orthogonalComponent S (n + 1) = (S n)ᗮ ⊓ S (n + 1) := rfl
 
-/-- A component is contained in the level of the same index. -/
+/-- For every sequence $(S_k)$ of subspaces and every $n$, the orthogonal component $V_n$ is
+contained in $S_n$. -/
 theorem orthogonalComponent_le (S : ℕ → Submodule 𝕜 E) (n : ℕ) :
     orthogonalComponent S n ≤ S n := by
   cases n with
   | zero => exact le_rfl
   | succ n => exact inf_le_right
 
-/-- A component of index `> k` is orthogonal to the `k`-th level. -/
+/-- Let $(S_k)$ be an increasing sequence of subspaces, and let $k < n$. Then the orthogonal
+component $V_n$ is orthogonal to $S_k$:
+$$V_n \le S_k^\perp.$$
+-/
 theorem orthogonalComponent_le_orthogonal (hS : Monotone S) {k n : ℕ} (h : k < n) :
     orthogonalComponent S n ≤ (S k)ᗮ := by
   obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
   exact inf_le_left.trans (Submodule.orthogonal_le (hS (by omega)))
 
-/-- Distinct components are orthogonal. -/
+/-- Let $(S_k)$ be an increasing sequence of subspaces, and let $m \neq n$. Then the orthogonal
+components $V_m$ and $V_n$ are orthogonal. -/
 theorem orthogonalComponent_isOrtho (hS : Monotone S) {m n : ℕ} (h : m ≠ n) :
     orthogonalComponent S m ⟂ orthogonalComponent S n := by
   wlog hmn : m < n generalizing m n
@@ -84,21 +97,28 @@ theorem orthogonalComponent_isOrtho (hS : Monotone S) {m n : ℕ} (h : m ≠ n) 
     (Submodule.le_orthogonal_orthogonal (S m)).trans
       (Submodule.orthogonal_le (orthogonalComponent_le_orthogonal hS hmn))
 
-/-- The components form an orthogonal family of subspaces. -/
+/-- Let $(S_k)$ be an increasing sequence of subspaces. Then the orthogonal components
+$(V_n)_{n \in \mathbb{N}}$, each with its inclusion into $E$, form an orthogonal family of
+subspaces in the sense of `OrthogonalFamily`. -/
 theorem orthogonalFamily_orthogonalComponent (hS : Monotone S) :
     OrthogonalFamily 𝕜 (fun n => orthogonalComponent S n)
       fun n => (orthogonalComponent S n).subtypeₗᵢ :=
   OrthogonalFamily.of_pairwise fun _ _ h => orthogonalComponent_isOrtho hS h
 
-/-- The components are independent: a family of vectors taken from distinct components is linearly
-independent. -/
+/-- Let $(S_k)$ be an increasing sequence of subspaces. Then the orthogonal components $(V_n)$ are
+independent in the sense of `iSupIndep`: each $V_n$ meets the sum of the other components only
+in $0$. Equivalently, nonzero vectors taken from distinct components are linearly independent. -/
 theorem iSupIndep_orthogonalComponent (hS : Monotone S) : iSupIndep (orthogonalComponent S) :=
   (orthogonalFamily_orthogonalComponent hS).independent
 
-/-- The orthogonal projection onto a subspace split as a sup of two orthogonal pieces is the sum of
-the projections onto the pieces. The splitting is given as an equation rather than by writing the
-sup, so that the statement never has to transport the `Submodule.HasOrthogonalProjection`
-instance. -/
+/-- Let $K$, $K_1$ and $K_2$ be subspaces of $E$ that admit orthogonal projections, with
+$K_1 + K_2 = K$ and $K_1 \perp K_2$. Then for every $v \in E$,
+$$P_K v = P_{K_1} v + P_{K_2} v,$$
+where $P_L$ is the orthogonal projection onto $L$.
+
+The splitting is a hypothesis $K_1 \sqcup K_2 = K$ rather than a statement about
+$K_1 \sqcup K_2$ itself, so that the statement need not transport the
+`Submodule.HasOrthogonalProjection` instance. The projections are `Submodule.starProjection`. -/
 theorem starProjection_eq_add_of_isOrtho {K K₁ K₂ : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     [K₁.HasOrthogonalProjection] [K₂.HasOrthogonalProjection] (hK : K₁ ⊔ K₂ = K) (h : K₁ ⟂ K₂)
     (v : E) : K.starProjection v = K₁.starProjection v + K₂.starProjection v := by
@@ -122,15 +142,19 @@ section FiniteDimensional
 variable (hS : Monotone S) (hfd : ∀ n, FiniteDimensional 𝕜 (S n))
 include hS hfd
 
-/-- One level and the next component span the next level. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces. Then for every $n$,
+$$S_n + V_{n+1} = S_{n+1}.$$
+-/
 theorem sup_orthogonalComponent_succ (n : ℕ) :
     S n ⊔ orthogonalComponent S (n + 1) = S (n + 1) := by
   have := hfd n
   exact Submodule.sup_orthogonal_inf_of_hasOrthogonalProjection (hS (Nat.le_succ n))
 
-/-- A level is the sup of the components of index at most it. With
-`Approximation.orthogonalComponent_isOrtho` this is the orthogonal decomposition
-`S n = V 0 ⊕ ⋯ ⊕ V n`. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces. Then for every $n$, the
+level $S_n$ is the sum of the orthogonal components of index at most $n$:
+$$V_0 + V_1 + \cdots + V_n = S_n.$$
+With `Approximation.orthogonalComponent_isOrtho`, this is the orthogonal direct sum
+decomposition $S_n = V_0 \oplus \cdots \oplus V_n$. -/
 theorem finsetSup_orthogonalComponent (n : ℕ) :
     (Finset.range (n + 1)).sup (orthogonalComponent S) = S n := by
   induction n with
@@ -139,7 +163,9 @@ theorem finsetSup_orthogonalComponent (n : ℕ) :
     rw [Finset.range_add_one, Finset.sup_insert, sup_comm, ih,
       sup_orthogonalComponent_succ hS hfd]
 
-/-- `(S k)ᗮ ⊓ S n` is the sup of the components of index in `Set.Ioc k n`. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces. Then for all $k$ and $n$,
+$$S_k^\perp \cap S_n = \sum_{k < m \le n} V_m.$$
+For $k \ge n$ both sides are the zero subspace. -/
 theorem orthogonal_inf_eq_finsetSup (k n : ℕ) :
     (S k)ᗮ ⊓ S n = (Finset.Ioc k n).sup (orthogonalComponent S) := by
   have hbot : ∀ j : ℕ, (S j)ᗮ ⊓ S j = ⊥ := fun j =>
@@ -159,8 +185,11 @@ theorem orthogonal_inf_eq_finsetSup (k n : ℕ) :
         sup_inf_assoc_of_le _ hsub, inf_comm (S n) (S k)ᗮ, ih, ← Order.succ_eq_add_one,
         ← Finset.insert_Ioc_right_eq_Ioc_succ hkn, Finset.sup_insert, Order.succ_eq_add_one]
 
-/-- An element of `S n` orthogonal to `S k` lies in the sup of the components of index in
-`Set.Ioc k n`. This is the abstract three-term recursion: if multiplication by a coordinate is
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces, and let $v \in S_n$
+satisfy $\langle w, v \rangle = 0$ for every $w \in S_k$. Then
+$$v \in \sum_{k < m \le n} V_m.$$
+
+This is the abstract form of the three-term recurrence: if multiplication by a coordinate is
 symmetric and raises the level by at most one, it moves a component into the three neighbouring
 ones. -/
 theorem mem_finsetSup_of_mem_of_inner_eq_zero {v : E} {k n : ℕ} (hv : v ∈ S n)
@@ -168,9 +197,12 @@ theorem mem_finsetSup_of_mem_of_inner_eq_zero {v : E} {k n : ℕ} (hv : v ∈ S 
     v ∈ (Finset.Ioc k n).sup (orthogonalComponent S) :=
   orthogonal_inf_eq_finsetSup hS hfd k n ▸ ⟨(Submodule.mem_orthogonal _ _).2 h, hv⟩
 
-/-- The form of the previous lemma that survives at `a = 0`: an element of `S n` orthogonal to
-every level below `a` lies in the sup of the components of index in `Set.Icc a n`. For `a = 0` the
-hypothesis is vacuous and the conclusion is `v ∈ S n`. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces, and let $v \in S_n$
+satisfy $\langle w, v \rangle = 0$ for every $w \in S_k$ and every $k < a$. Then
+$$v \in \sum_{a \le m \le n} V_m.$$
+
+This form of `Approximation.mem_finsetSup_of_mem_of_inner_eq_zero` also covers $a = 0$, where
+the hypothesis is vacuous and the conclusion is $v \in S_n$. -/
 theorem mem_finsetSup_Icc_of_mem {v : E} {a n : ℕ} (hv : v ∈ S n)
     (h : ∀ k, k + 1 ≤ a → ∀ w ∈ S k, inner 𝕜 w v = 0) :
     v ∈ (Finset.Icc a n).sup (orthogonalComponent S) := by
@@ -184,7 +216,9 @@ theorem mem_finsetSup_Icc_of_mem {v : E} {a n : ℕ} (hv : v ∈ S n)
       ext x; simp only [Finset.mem_Icc, Finset.mem_Ioc]; omega]
     exact mem_finsetSup_of_mem_of_inner_eq_zero hS hfd hv (h b le_rfl)
 
-/-- The dimension of the `n + 1`-st component is what the `n + 1`-st level adds to the `n`-th. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces. Then for every $n$,
+$$\dim V_{n+1} + \dim S_n = \dim S_{n+1}.$$
+-/
 theorem finrank_orthogonalComponent_add (n : ℕ) :
     finrank 𝕜 (orthogonalComponent S (n + 1)) + finrank 𝕜 (S n) = finrank 𝕜 (S (n + 1)) := by
   have := hfd n
@@ -209,11 +243,15 @@ instance finiteDimensional_orthogonalComponent (n : ℕ) :
     FiniteDimensional 𝕜 (orthogonalComponent S n) :=
   Submodule.finiteDimensional_of_le (orthogonalComponent_le S n)
 
-/-- The orthogonal projection onto the `n`-th level is the sum of the projections onto the
-components of index at most `n`. With `Approximation.finsetSup_orthogonalComponent` this is the
-abstract generalized Fourier expansion: choosing an orthonormal basis `{φ_{m,ℓ}}_ℓ` of each
-component turns the `m`-th summand into `∑_ℓ ⟪φ_{m,ℓ}, v⟫ φ_{m,ℓ}`, so no basis has to be chosen in
-order to state it. -/
+/-- Let $(S_k)$ be an increasing sequence of finite-dimensional subspaces. Then for every $n$ and
+every $v \in E$, the orthogonal projection of $v$ onto $S_n$ is the sum of its orthogonal
+projections onto the components $V_0, \dots, V_n$:
+$$P_{S_n} v = \sum_{m=0}^{n} P_{V_m} v.$$
+
+With `Approximation.finsetSup_orthogonalComponent`, this is the generalized Fourier expansion
+without a choice of basis: an orthonormal basis $(\varphi_{m,\ell})_\ell$ of each component
+$V_m$ turns the $m$-th summand into $\sum_\ell \langle \varphi_{m,\ell}, v \rangle
+\varphi_{m,\ell}$. The projections are `Submodule.starProjection`. -/
 theorem starProjection_eq_sum_orthogonalComponent (hS : Monotone S) (n : ℕ) (v : E) :
     (S n).starProjection v =
       ∑ m ∈ Finset.range (n + 1), (orthogonalComponent S m).starProjection v := by

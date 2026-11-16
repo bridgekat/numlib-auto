@@ -5,69 +5,99 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Analysis.Convex.Indicator
 
 /-!
-# Operations that preserve convexity: the epigraph-only ones
+# Convexity of suprema, sums, compositions and restrictions
 
-The operations whose convexity proof needs nothing beyond the epigraph API. Those that instead read
-a function off a convex set in `E × ℝ` — infimal convolution, convex hulls of families, images under
-linear maps — live elsewhere.
+Let $E$ be a real vector space. This module proves that the following operations on functions
+$E \to [-\infty, +\infty]$ preserve convexity: pointwise suprema of arbitrary families, finite sums,
+composition with a nondecreasing convex function of one real variable, and restriction to a convex
+set. Constant functions are convex, and so are linear functions. Each proof works with epigraphs
+only. The operations that instead obtain a function from a convex set in $E \times \mathbb{R}$, such
+as infimal convolution, convex hulls of families and images under linear maps, are treated in other
+modules. The presentation follows [rockafellar1970convex], §5.
 
 ## Main results
 
-* `convexFn_iSup`, `ConvexFn.sup` — pointwise suprema, via `epi_iSup`.
-* `ConvexFn.add`, `ConvexFn.sum`, `dom_add` — sums, and the effective domain of a sum.
-* `convexFn_coe_mul` (in `Numlib/Analysis/Convex/Epigraph.lean`) — multiplication by a
-  nonnegative real.
-* `ConvexFn.comp`, `ConvexFn.comp_extendTop` — composition with a nondecreasing convex function of
-  one real variable.
-* `convexFn_const`, `concaveFn_const` — constants.
-* `ConvexFn.convexRestrict`, `ConvexFn.add_indicatorFn` — restriction to a convex set, the same
-  operation as adding an indicator function.
+* `ConvexAnalysis.epi_iSup`: the epigraph of a pointwise supremum is the intersection of the
+  epigraphs.
+* `ConvexAnalysis.convexFn_iSup`, `ConvexAnalysis.ConvexFn.sup`: a pointwise supremum of convex
+  functions is convex.
+* `ConvexAnalysis.ConvexFn.add`, `ConvexAnalysis.ConvexFn.sum`: a sum of convex functions that never
+  take the value $-\infty$ is convex.
+* `ConvexAnalysis.convexDom_add`: the effective domain of such a sum is the intersection of the
+  effective domains.
+* `ConvexAnalysis.ConvexFn.comp`, `ConvexAnalysis.ConvexFn.comp_extendTop`: a nondecreasing convex
+  function of one real variable composed with a convex function is convex.
+* `ConvexAnalysis.convexFn_const`, `ConvexAnalysis.concaveFn_const`: constant functions are convex
+  and concave.
+* `ConvexAnalysis.ConvexFn.convexRestrict`, `ConvexAnalysis.ConvexFn.add_indicatorFn`: restriction
+  to a convex set preserves convexity; this restriction is the same operation as adding the
+  indicator function.
+
+Multiplication by a nonnegative real number is `ConvexAnalysis.convexFn_coe_mul`, in
+`Numlib.Analysis.Convex.Epigraph`.
 
 ## Implementation notes
 
-Sums carry `∀ x, f x ≠ ⊥` where Rockafellar assumes properness: that is the half which avoids
-`∞ - ∞`, and it cannot be dropped. On `ℝ` let `f` be `⊥` on `Ioi 0` and `⊤` elsewhere, `g` be `⊥` on
-`Iio 0` and `⊤` elsewhere; both are convex, but `f + g` is `⊥` off `0` and `⊤` at `0`, with a
-nonconvex epigraph `(ℝ \ {0}) ×ˢ univ`. The other half, `dom f` nonempty, is irrelevant.
-
-## References
-
-* [rockafellar1970convex] §5.
+* Where [rockafellar1970convex] assumes the summands proper, the results on sums assume only that
+  the summands never take the value $-\infty$. This half of properness avoids the undefined sum
+  $\infty - \infty$, and it cannot be dropped. On $\mathbb{R}$, let $f$ be $-\infty$ on
+  $(0, \infty)$ and $+\infty$ elsewhere, and let $g$ be $-\infty$ on $(-\infty, 0)$ and $+\infty$
+  elsewhere. Both are convex, but $f + g$ is $-\infty$ off $0$ and $+\infty$ at $0$, and its
+  epigraph $(\mathbb{R} \setminus \{0\}) \times \mathbb{R}$ is not convex. The other half of
+  properness, a nonempty effective domain, is not needed.
 -/
 
 open Set
 
 namespace ConvexAnalysis
 
-/-! ### Epigraphs of suprema, sums and restrictions: no linear structure on `E` is used -/
+/-!
+### Epigraphs of suprema, sums and restrictions
+
+These results use no linear structure on $E$.
+-/
 
 section Basic
 
 variable {E : Type*}
 
-/-- The epigraph of a pointwise supremum is the intersection of the epigraphs. Support functions
-are computed this way. -/
+/-- The epigraph of a pointwise supremum is the intersection of the epigraphs: for a family
+$f_i : E \to [-\infty, +\infty]$,
+$$\operatorname{epi}\Big(x \mapsto \sup_i f_i(x)\Big) = \bigcap_i \operatorname{epi} f_i.$$
+
+Support functions are computed in this way. -/
 theorem epi_iSup {ι : Sort*} (f : ι → E → EReal) : epi (fun x => ⨆ i, f i x) = ⋂ i, epi (f i) := by
   ext p
   simp [epi, iSup_le_iff]
 
+/-- For a family $f_i : E \to [-\infty, +\infty]$ and an index set $s$, the epigraph of
+$x \mapsto \sup_{i \in s} f_i(x)$ is $\bigcap_{i \in s} \operatorname{epi} f_i$. -/
 theorem epi_biSup {ι : Type*} (s : Set ι) (f : ι → E → EReal) :
     epi (fun x => ⨆ i ∈ s, f i x) = ⋂ i ∈ s, epi (f i) := by
   ext p
   simp [epi, iSup_le_iff]
 
+/-- The epigraph of the pointwise maximum of $f$ and $g$ is
+$\operatorname{epi} f \cap \operatorname{epi} g$. -/
 theorem epi_sup (f g : E → EReal) : epi (f ⊔ g) = epi f ∩ epi g := by
   ext p
   simp [epi, sup_le_iff]
 
-/-- The effective domain of a sum is the intersection of the effective domains. Both `≠ ⊥`
-hypotheses are needed: for `f x = ⊥` and `g x = ⊤`, `x` lies in `dom (f + g)` but not in `dom g`. -/
+/-- Let $f, g : E \to [-\infty, +\infty]$ never take the value $-\infty$. Then the effective domain
+of $f + g$ is the intersection of the effective domains:
+$$\operatorname{dom}(f + g) = \operatorname{dom} f \cap \operatorname{dom} g.$$
+
+Both hypotheses are needed: if $f(x) = -\infty$ and $g(x) = +\infty$, then
+$(f + g)(x) = -\infty$, so $x$ lies in $\operatorname{dom}(f + g)$ but not in
+$\operatorname{dom} g$. -/
 theorem convexDom_add {f g : E → EReal} (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) :
     convexDom (f + g) = convexDom f ∩ convexDom g := by
   ext x
   simp only [mem_convexDom, Pi.add_apply, Set.mem_inter_iff, lt_top_iff_ne_top]
   exact EReal.add_ne_top_iff_ne_top₂ (hf x) (hg x)
 
+/-- The epigraph of the restriction of $f$ to $s$, extended by $+\infty$ off $s$, is
+$\operatorname{epi} f \cap (s \times \mathbb{R})$. -/
 theorem epi_convexRestrict (s : Set E)
     (f : E → EReal) : epi (convexRestrict s f) = epi f ∩ s ×ˢ univ := by
   ext p
@@ -81,6 +111,7 @@ section Module
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
+/-- A constant function $E \to [-\infty, +\infty]$ is convex. -/
 theorem convexFn_const (c : EReal) : ConvexFn (fun _ : E => c) := by
   refine convexFn_of_epi_combo (fun x y μ ν hx hy a b ha hb hab => ?_)
   have hx' : c ≤ (μ : EReal) := hx
@@ -96,12 +127,16 @@ theorem convexFn_const (c : EReal) : ConvexFn (fun _ : E => c) := by
   have h5 : b * r ≤ b * ν := mul_le_mul_of_nonneg_left h2 hb
   exact_mod_cast (by linarith : r ≤ a * μ + b * ν)
 
-/-- Constant functions are concave; the mirror of `convexFn_const`. -/
+/-- A constant function $E \to [-\infty, +\infty]$ is concave. -/
 theorem concaveFn_const (c : EReal) : ConcaveFn (fun _ : E => c) :=
   concaveFn_iff_convexFn_neg.2 (convexFn_const (-c))
 
-/-- Its negative is convex too, which is why the functions both convex and concave are exactly the
-affine ones. The pairing-presented form is `convexFn_affineFn`. -/
+/-- A linear functional $l : E \to \mathbb{R}$, viewed as a function $E \to [-\infty, +\infty]$, is
+convex.
+
+Its negative is also linear, hence convex. This is why the functions that are both convex and
+concave are exactly the affine ones. The form for an affine function given by a pairing is
+`ConvexAnalysis.convexFn_affineFn`. -/
 theorem convexFn_coe_linearMap (l : E →ₗ[ℝ] ℝ) :
     ConvexFn (fun x : E => ((l x : ℝ) : EReal)) := by
   have h := convexFn_add_coe (f := fun _ : E => (0 : EReal)) (convexFn_const 0)
@@ -110,21 +145,26 @@ theorem convexFn_coe_linearMap (l : E →ₗ[ℝ] ℝ) :
 
 /-! #### Pointwise suprema -/
 
-/-- A pointwise supremum of convex functions is convex. The index is a `Sort*`, so the empty family
-is allowed: the supremum is then `⊥`, whose epigraph is all of `E × ℝ`. -/
+/-- A pointwise supremum of convex functions is convex: if every $f_i : E \to [-\infty, +\infty]$ is
+convex, then so is $x \mapsto \sup_i f_i(x)$.
+
+The family may be empty. Its supremum is then the constant $-\infty$, whose epigraph is all of
+$E \times \mathbb{R}$. -/
 theorem convexFn_iSup {ι : Sort*} {f : ι → E → EReal} (h : ∀ i, ConvexFn (f i)) :
     ConvexFn (fun x => ⨆ i, f i x) := by
   refine ⟨?_⟩
   rw [epi_iSup]
   exact convex_iInter fun i => (h i).convex_epi
 
-/-- A pointwise supremum over an index set of convex functions is convex. -/
+/-- Let $s$ be an index set, and let $f_i$ be convex for every $i \in s$. Then
+$x \mapsto \sup_{i \in s} f_i(x)$ is convex. -/
 theorem convexFn_biSup {ι : Type*} {s : Set ι} {f : ι → E → EReal}
     (h : ∀ i ∈ s, ConvexFn (f i)) : ConvexFn (fun x => ⨆ i ∈ s, f i x) := by
   refine ⟨?_⟩
   rw [epi_biSup]
   exact convex_iInter₂ fun i hi => (h i hi).convex_epi
 
+/-- The pointwise maximum of two convex functions is convex. -/
 theorem ConvexFn.sup {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g) : ConvexFn (f ⊔ g) := by
   refine ⟨?_⟩
   rw [epi_sup]
@@ -132,9 +172,12 @@ theorem ConvexFn.sup {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g) : C
 
 /-! #### Sums -/
 
-/-- A sum of two convex functions is convex. Where the classical statement assumes properness this
-needs only its `≠ ⊥` half, which prevents `∞ - ∞` and cannot be dropped; the module docstring has a
-counterexample. -/
+/-- A sum of two convex functions $f, g : E \to [-\infty, +\infty]$ that never take the value
+$-\infty$ is convex.
+
+[rockafellar1970convex] assumes $f$ and $g$ proper. Only the half of properness that excludes
+$-\infty$ is used. It prevents the undefined sum $\infty - \infty$ and cannot be dropped: the
+module doc comment has a counterexample. -/
 theorem ConvexFn.add {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
     (hf' : ∀ x, f x ≠ ⊥) (hg' : ∀ x, g x ≠ ⊥) : ConvexFn (f + g) := by
   refine convexFn_of_epi_combo (fun x y μ ν hx hy a b ha hb hab => ?_)
@@ -166,7 +209,8 @@ theorem ConvexFn.add {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
   have h2 : b * (q₁ + q₂) ≤ b * ν := mul_le_mul_of_nonneg_left hy' hb
   exact_mod_cast (by linarith : a * p₁ + b * q₁ + (a * p₂ + b * q₂) ≤ a * μ + b * ν)
 
-/-- A finite sum of convex functions, none of which takes the value `⊥`, is convex. -/
+/-- Let $s$ be a finite index set, and let $f_i : E \to [-\infty, +\infty]$ be convex and never
+$-\infty$ for every $i \in s$. Then $x \mapsto \sum_{i \in s} f_i(x)$ is convex. -/
 theorem ConvexFn.sum {ι : Type*} {s : Finset ι} {f : ι → E → EReal}
     (hf : ∀ i ∈ s, ConvexFn (f i)) (hf' : ∀ i ∈ s, ∀ x, f i x ≠ ⊥) :
     ConvexFn (fun x => ∑ i ∈ s, f i x) := by
@@ -185,17 +229,25 @@ theorem ConvexFn.sum {ι : Type*} {s : Finset ι} {f : ι → E → EReal}
 
 /-! #### Composition with a nondecreasing convex function -/
 
-/-- `φ : ℝ → EReal` extended to `EReal → EReal` by `φ (+∞) = +∞` and `φ (-∞) = -∞`, the choice that
-keeps the extension monotone; the composition rule never applies `φ` at `⊥`. -/
+/-- The extension of $\varphi : \mathbb{R} \to [-\infty, +\infty]$ to $[-\infty, +\infty]$ by
+$\varphi(+\infty) = +\infty$ and $\varphi(-\infty) = -\infty$.
+
+This choice keeps the extension monotone when $\varphi$ is monotone. The composition rule never
+evaluates the extension at $-\infty$. -/
 noncomputable def extendTop (φ : ℝ → EReal) : EReal → EReal :=
   EReal.rec ⊥ φ ⊤
 
+/-- The extension of $\varphi$ agrees with $\varphi$ at each real number. -/
 @[simp] theorem extendTop_coe (φ : ℝ → EReal) (r : ℝ) : extendTop φ (r : EReal) = φ r := rfl
 
+/-- The extension of $\varphi$ takes the value $+\infty$ at $+\infty$. -/
 @[simp] theorem extendTop_top (φ : ℝ → EReal) : extendTop φ ⊤ = ⊤ := rfl
 
+/-- The extension of $\varphi$ takes the value $-\infty$ at $-\infty$. -/
 @[simp] theorem extendTop_bot (φ : ℝ → EReal) : extendTop φ ⊥ = ⊥ := rfl
 
+/-- If $\varphi : \mathbb{R} \to [-\infty, +\infty]$ is monotone, then its extension
+`ConvexAnalysis.extendTop φ` is monotone. -/
 theorem monotone_extendTop {φ : ℝ → EReal} (h : Monotone φ) : Monotone (extendTop φ) := by
   intro z w hzw
   induction z with
@@ -209,12 +261,18 @@ theorem monotone_extendTop {φ : ℝ → EReal} (h : Monotone φ) : Monotone (ex
     | top => simp
     | coe s => exact h (by exact_mod_cast hzw)
 
-/-- A nondecreasing convex `φ` composed with a convex `f` is convex, stated for `φ : EReal → EReal`
-rather than the classical `φ : ℝ → (-∞, +∞]`. `EReal` is not an `ℝ`-module, so convexity of `φ` is
-required only where it is statable; off the reals the proof uses just monotonicity and `φ ⊤ = ⊤`.
-That last is not decoration — a monotone convex `φ : ℝ → EReal` bounded above is constant, and
-gluing a strictly larger finite value at `⊤` breaks convexity of `φ ∘ f` as soon as `dom f` has
-nonconvex complement. -/
+/-- Let $f : E \to [-\infty, +\infty]$ be convex and never $-\infty$. Let $\varphi : [-\infty,
++\infty] \to [-\infty, +\infty]$ be monotone with $\varphi(+\infty) = +\infty$, and let its
+restriction $r \mapsto \varphi(r)$ to $\mathbb{R}$ be convex. Then $x \mapsto \varphi(f(x))$ is
+convex.
+
+The classical statement takes $\varphi : \mathbb{R} \to (-\infty, +\infty]$. Here $\varphi$ is
+defined on $[-\infty, +\infty]$. This set is not a real vector space, so convexity of $\varphi$
+is required only on $\mathbb{R}$; at the infinite values the proof uses only monotonicity and
+$\varphi(+\infty) = +\infty$. The condition $\varphi(+\infty) = +\infty$ is needed. A monotone
+convex $\varphi : \mathbb{R} \to [-\infty, +\infty]$ that is bounded above is constant, and a
+value at $+\infty$ that is a strictly larger real number makes $\varphi \circ f$ nonconvex when
+$\operatorname{dom} f$ has a nonconvex complement. -/
 theorem ConvexFn.comp {f : E → EReal} {φ : EReal → EReal} (hf : ConvexFn f)
     (hf' : ∀ x, f x ≠ ⊥) (hφ : ConvexFn fun r : ℝ => φ (r : EReal)) (hmono : Monotone φ)
     (htop : φ ⊤ = ⊤) : ConvexFn (fun x => φ (f x)) := by
@@ -241,8 +299,13 @@ theorem ConvexFn.comp {f : E → EReal} {φ : EReal → EReal} (hf : ConvexFn f)
   refine (hmono hcombo).trans ?_
   simpa [smul_eq_mul] using hφ.epi_combo hx' hy' ha hb hab
 
-/-- The same composition rule in its classical shape: `φ` is a nondecreasing convex function of one
-real variable, and `x ↦ φ (f x)` is convex under the convention `φ (+∞) = +∞`. -/
+/-- **The composition rule in its classical form.** Let $f : E \to [-\infty, +\infty]$ be convex and
+never $-\infty$, and let $\varphi : \mathbb{R} \to [-\infty, +\infty]$ be convex and
+nondecreasing. Then $x \mapsto \varphi(f(x))$ is convex, with the convention
+$\varphi(+\infty) = +\infty$.
+
+The extension of $\varphi$ to $[-\infty, +\infty]$ is `ConvexAnalysis.extendTop φ`. This is
+`ConvexAnalysis.ConvexFn.comp` for that extension. -/
 theorem ConvexFn.comp_extendTop {f : E → EReal} {φ : ℝ → EReal} (hf : ConvexFn f)
     (hf' : ∀ x, f x ≠ ⊥) (hφ : ConvexFn φ) (hmono : Monotone φ) :
     ConvexFn (fun x => extendTop φ (f x)) :=
@@ -250,22 +313,29 @@ theorem ConvexFn.comp_extendTop {f : E → EReal} {φ : ℝ → EReal} (hf : Con
 
 /-! #### Restriction to a convex set -/
 
+/-- Let $f : E \to [-\infty, +\infty]$ be convex and $s \subseteq E$ convex. Then the restriction of
+$f$ to $s$, extended by $+\infty$ off $s$ (`ConvexAnalysis.convexRestrict s f`), is convex. -/
 theorem ConvexFn.convexRestrict {f : E → EReal} {s : Set E} (hf : ConvexFn f) (hs : Convex ℝ s) :
     ConvexFn (ConvexAnalysis.convexRestrict s f) := by
   refine ⟨?_⟩
   rw [epi_convexRestrict]
   exact hf.convex_epi.inter (hs.prod convex_univ)
 
-/-- Restricting a concave function to a convex set — extending by `⊥` off it — gives a concave
-function; the mirror of `ConvexFn.convexRestrict`. -/
+/-- Let $g : E \to [-\infty, +\infty]$ be concave and $s \subseteq E$ convex. Then the restriction
+of $g$ to $s$, extended by $-\infty$ off $s$ (`ConvexAnalysis.concaveRestrict s g`), is concave.
+
+This is the concave counterpart of `ConvexAnalysis.ConvexFn.convexRestrict`. -/
 theorem ConcaveFn.concaveRestrict {g : E → EReal} {s : Set E} (hg : ConcaveFn g)
     (hs : Convex ℝ s) : ConcaveFn (ConvexAnalysis.concaveRestrict s g) := by
   refine concaveFn_iff_convexFn_neg.2 ?_
   rw [neg_concaveRestrict]
   exact hg.convexFn_neg.convexRestrict hs
 
-/-- Adding the indicator function of a convex set is restriction to that set, and preserves
-convexity. -/
+/-- Let $f : E \to [-\infty, +\infty]$ be convex and never $-\infty$, and let $s \subseteq E$ be
+convex. Then $f + \delta(\cdot \mid s)$ is convex.
+
+By `ConvexAnalysis.convexRestrict_eq_add_indicatorFn`, adding the indicator function of $s$ is
+the same as restricting $f$ to $s$. -/
 theorem ConvexFn.add_indicatorFn {f : E → EReal} {s : Set E} (hf : ConvexFn f)
     (hf' : ∀ x, f x ≠ ⊥) (hs : Convex ℝ s) : ConvexFn (f + indicatorFn s) := by
   rw [← convexRestrict_eq_add_indicatorFn hf']

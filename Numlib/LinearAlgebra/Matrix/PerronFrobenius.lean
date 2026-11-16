@@ -19,59 +19,79 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Perron–Frobenius theory of entrywise nonnegative matrices
 
-The spectral theory of matrices that are nonnegative for the entrywise order `Matrix.EntrywiseLE` of
-`Numlib/LinearAlgebra/Matrix/Order.lean`. Two groups of results:
+This file studies the spectral theory of real matrices that are nonnegative for the entrywise order
+`Matrix.EntrywiseLE` of `Numlib.LinearAlgebra.Matrix.Order`. The first group of results is
+monotonicity: if $0 \le A \le B$ entrywise, then $A^k \le B^k$ entrywise, the maximum absolute row
+sum norm, the Euclidean operator norm and the spectral radius satisfy $\|A\| \le \|B\|$ and
+$\rho(A) \le \rho(B)$ ([saad2003iterative], Corollary 1.27, Proposition 1.24 and Theorem 1.28).
 
-* **Monotonicity.** Powers (`Matrix.EntrywiseLE.pow`), the maximum-absolute-row-sum norm
-  (`Matrix.EntrywiseLE.linfty_opNorm_le`), the Euclidean operator norm
-  (`Matrix.EntrywiseLE.l2_opNorm_le`) and the spectral radius
-  (`Matrix.complexSpectralRadius_le_of_entrywiseLE`) are all monotone in a nonnegative matrix. The
-  spectral radius here is `Matrix.complexSpectralRadius` of
-  `Numlib/LinearAlgebra/Matrix/Complexify.lean`, the spectral radius of the complexification;
-  `spectralRadius ℝ` of a real matrix is not the spectral radius.
+The second group is the **Perron–Frobenius theorem** for an irreducible matrix ([saad2003iterative],
+Theorem 1.25). Let $A \in \mathbb{R}^{N \times N}$ be irreducible, that is, entrywise nonnegative
+with a strongly connected graph of positive entries, and let $N \ge 1$. Then $A$ has an entrywise
+positive eigenvector and an entrywise positive left eigenvector for the eigenvalue $\rho(A)$. This
+eigenvalue is geometrically and algebraically simple, and it is positive when $N \ge 2$.
 
-* **The Perron–Frobenius theorem for an irreducible matrix.** An irreducible nonnegative matrix on a
-  nonempty index type has an entrywise *positive* eigenvector for its spectral radius
-  (`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius`) and, on the transpose, an
-  entrywise positive *left* eigenvector for the same one
-  (`Matrix.IsIrreducible.exists_pos_vecMul_eq`). That eigenvalue is geometrically simple
-  (`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`), algebraically simple
-  (`Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`) and, on two or more
-  indices, positive (`Matrix.IsIrreducible.complexSpectralRadius_pos`). Irreducibility is Mathlib's
-  `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of its positive entries strongly
-  connected.
+## Main results
+
+* `Matrix.EntrywiseLE.pow`, `Matrix.EntrywiseLE.linfty_opNorm_le`,
+  `Matrix.EntrywiseLE.l2_opNorm_le`, `Matrix.complexSpectralRadius_le_of_entrywiseLE`: powers, the
+  maximum absolute row sum norm, the Euclidean operator norm and the spectral radius are monotone on
+  nonnegative matrices.
+* `Matrix.IsIrreducible.entrywisePos_one_add_pow`: the Wielandt positivity lemma. For an irreducible
+  $A$ on $N$ indices, $(I + A)^{N-1}$ is entrywise positive.
+* `Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius`: an irreducible matrix has
+  an entrywise positive eigenvector for $\rho(A)$.
+* `Matrix.IsIrreducible.exists_pos_vecMul_eq`: an irreducible matrix has an entrywise positive left
+  eigenvector for $\rho(A)$.
+* `Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`: the eigenspace at
+  $\rho(A)$ has dimension one.
+* `Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`: $\rho(A)$ is a simple root
+  of the characteristic polynomial.
+* `Matrix.IsIrreducible.complexSpectralRadius_pos`: $\rho(A) > 0$ when there are at least two
+  indices.
+
+## Proof outline
+
+The combinatorial core is the Wielandt positivity lemma
+`Matrix.IsIrreducible.entrywisePos_one_add_pow`. Its proof follows the reach sets
+$S_k = \{j : ((I + A)^k)_{ij} > 0\}$ as they grow. They are nondecreasing, and $S_{k+1}$ is
+determined by $S_k$, so they are constant as soon as two consecutive sets agree. Irreducibility
+forbids them to become constant before they contain all indices. Hence each step before saturation
+adds at least one index, and $N - 1$ steps suffice. This replaces the usual argument, which shortens
+a path in the graph to length less than $N$ (as in Seneta, *Non-negative Matrices and Markov
+Chains*); Mathlib has no lemma for that argument.
+
+The Perron eigenvector is obtained without a maximization. An eigenvalue $\mu$ of maximal modulus of
+the complexification has an eigenvector $y$, and the entrywise modulus $z = |y|$ is
+**subinvariant**: $\rho z \le Az$, with $z$ nonnegative and nonzero. If the difference $Az - \rho z$
+were nonzero, then the multiplication by the positive matrix $(I + A)^{N-1}$, which commutes with
+$A$, would give a positive $u$ with $(\rho + \varepsilon) u \le Au$ for some $\varepsilon > 0$. Then
+$(\rho + \varepsilon)^k \le \|A^k\|$ for every $k$, and Gelfand's formula gives
+$\rho + \varepsilon \le \rho$, a contradiction. So $Az = \rho z$, and $z$ is positive because
+$(I + A)^{N-1}$ is positive.
+
+Geometric simplicity is an extremal argument. For another eigenvector $w$ of $A$ at $\rho$, the
+scalar $t = \sup_i w_i / x_i$ makes $tx - w$ a nonnegative eigenvector with a zero entry, so
+$tx - w = 0$.
+
+Algebraic simplicity, which is what "simple" means in [saad2003iterative], Theorem 1.25, is proved
+without the derivative of the characteristic polynomial through the adjugate that the usual accounts
+use. It suffices to exclude a Jordan chain of length two. If $Av - \rho v$ is an eigenvector, then
+it is $cx$, because the eigenspace is spanned by the positive Perron vector $x$. The pairing with
+the positive left Perron vector $y$ gives $y^T(Av - \rho v) = \rho\, y^T v - \rho\, y^T v = 0$,
+while $y^T x > 0$, so $c = 0$. By induction on the nilpotency index, every generalized eigenvector
+is then an eigenvector, and `LinearMap.finrank_maxGenEigenspace_eq` turns the one-dimensional
+generalized eigenspace into a simple root of the characteristic polynomial.
 
 ## Implementation notes
 
-The combinatorial core is `Matrix.IsIrreducible.entrywisePos_one_add_pow`: for irreducible `A` on
-`N` indices, `(1 + A) ^ (N - 1)` is entrywise *positive*. It is proved by watching the reach sets
-`Sₖ = {j | 0 < ((1 + A) ^ k) i j}` grow: they are nondecreasing, `Sₖ₊₁` is determined by `Sₖ`, so
-they stabilise as soon as two consecutive ones agree, and irreducibility forbids stabilising short
-of everything. Hence each step before saturation gains at least one index, and `N - 1` steps
-suffice. This replaces the argument the standard accounts give — shortening a quiver path below `N`,
-as in Seneta, *Non-negative Matrices and Markov Chains* — for which Mathlib has no lemma.
-
-The Perron eigenvector is obtained without any maximisation. An eigenvalue `μ` of maximal modulus of
-the complexification has an eigenvector `y`, and the entrywise modulus `z = ‖y ·‖` satisfies the
-*subinvariance* `ρ • z ≤ A *ᵥ z` with `z` nonnegative and nonzero. If the slack were nonzero,
-multiplying by the positive matrix `(1 + A) ^ (N - 1)` — which commutes with `A` — would give a
-positive `u` with `(ρ + ε) • u ≤ A *ᵥ u` for some `ε > 0`, whence `(ρ + ε) ^ k ≤ ‖A ^ k‖` for every
-`k` and `ρ + ε ≤ ρ` by Gelfand's formula. So the slack vanishes, and positivity of `z` follows from
-positivity of `(1 + A) ^ (N - 1)`.
-
-Geometric simplicity is then a one-line extremal argument: for another eigenvector `w` of `A` at
-`ρ`, the scalar `t = sup_i w i / x i` makes `t • x - w` a nonnegative eigenvector with a vanishing
-entry, so it is zero.
-
-*Algebraic* simplicity, which is what "simple" means in [saad2003iterative] Theorem 1.25, is proved
-without the derivative of the characteristic polynomial that the standard accounts differentiate
-through the adjugate. What has to be excluded is a Jordan chain of length two: if `A v - ρ v` is
-itself an eigenvector then, the eigenspace being spanned by the positive Perron vector `x`, it is
-`c • x`, and pairing with the positive *left* Perron vector `y` gives
-`y ᵀ (A v - ρ v) = ρ (y ᵀ v) - ρ (y ᵀ v) = 0` while `y ᵀ x > 0`, so `c = 0`. Every generalized
-eigenvector then collapses to an eigenvector by induction on the nilpotency index, and
-`LinearMap.finrank_maxGenEigenspace_eq` turns the resulting one-dimensional generalized eigenspace
-into a simple root of the characteristic polynomial.
+* The spectral radius $\rho(A)$ is `Matrix.complexSpectralRadius A` of
+  `Numlib.LinearAlgebra.Matrix.Complexify`, the spectral radius of the complexification, with values
+  in `ENNReal`. The eigenvalue statements use its real value `(complexSpectralRadius A).toReal`. The
+  spectral radius `spectralRadius ℝ` of a real matrix is not the spectral radius in the sense of
+  this file.
+* Irreducibility is Mathlib's `Matrix.IsIrreducible`: the matrix is entrywise nonnegative, and the
+  graph of its positive entries is strongly connected.
 -/
 
 open Filter Topology
@@ -87,8 +107,9 @@ section OrderedSemiring
 
 variable {α : Type*} [Semiring α] [PartialOrder α] [IsOrderedRing α]
 
-/-- **Powers are monotone in a nonnegative matrix**: if `0 ≤ₑ A` and `A ≤ₑ B` then `A ^ k ≤ₑ B ^ k`
-([saad2003iterative], Corollary 1.27). -/
+/-- **Powers are monotone in a nonnegative matrix.** Let $A, B$ be square matrices over an ordered
+semiring with $0 \le A$ and $A \le B$ entrywise. Then $A^k \le B^k$ entrywise for every
+$k \in \mathbb{N}$. This is Corollary 1.27 of [saad2003iterative]. -/
 theorem EntrywiseLE.pow [Fintype n] [DecidableEq n] {A B : Matrix n n α}
     (hA : A.EntrywiseNonneg) (hAB : A ≤ₑ B) (k : ℕ) : A ^ k ≤ₑ B ^ k := by
   have hB : B.EntrywiseNonneg := hA.trans hAB
@@ -107,7 +128,7 @@ section Norms
 
 variable [Fintype m] [Fintype n]
 
-/-- Comparison of the absolute values of two comparable nonnegative reals. -/
+/-- For real numbers $0 \le a \le b$, $|a| \le |b|$. -/
 private theorem nnnorm_le_nnnorm_of_le {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b) : ‖a‖₊ ≤ ‖b‖₊ := by
   rw [← NNReal.coe_le_coe]
   simpa only [coe_nnnorm, Real.norm_eq_abs, abs_of_nonneg ha, abs_of_nonneg (ha.trans hab)]
@@ -117,17 +138,24 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
-/-- **The maximum-absolute-row-sum norm is monotone on nonnegative matrices** ([saad2003iterative],
-Proposition 1.24, clause 5): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the norm scoped in
-`Matrix.Norms.Operator`. -/
+/-- **The maximum absolute row sum norm is monotone on nonnegative matrices.** Let
+$A, B \in \mathbb{R}^{m \times n}$ with $0 \le A$ and $A \le B$ entrywise. Then
+$\|A\|_\infty \le \|B\|_\infty$. This is clause 5 of Proposition 1.24 of [saad2003iterative].
+
+The norm is the operator norm scoped in `Matrix.Norms.Operator`, which is the maximum absolute
+row sum. -/
 theorem EntrywiseLE.linfty_opNorm_le {A B : Matrix m n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : ‖A‖ ≤ ‖B‖ := by
   rw [linfty_opNorm_def, linfty_opNorm_def, NNReal.coe_le_coe]
   refine Finset.sup_mono_fun fun i _ => Finset.sum_le_sum fun j _ => ?_
   exact nnnorm_le_nnnorm_of_le (hA.apply i j) (hAB i j)
 
-/-- The transposed form of `Matrix.EntrywiseLE.linfty_opNorm_le`: the maximum absolute *column* sum,
-[saad2003iterative] `‖·‖₁`, is monotone on nonnegative matrices too. -/
+/-- **The maximum absolute column sum norm is monotone on nonnegative matrices.** Let
+$A, B \in \mathbb{R}^{m \times n}$ with $0 \le A$ and $A \le B$ entrywise. Then
+$\|A^T\|_\infty \le \|B^T\|_\infty$, that is, $\|A\|_1 \le \|B\|_1$ in the notation of
+[saad2003iterative].
+
+This is the transposed form of `Matrix.EntrywiseLE.linfty_opNorm_le`. -/
 theorem EntrywiseLE.linfty_opNorm_transpose_le {A B : Matrix m n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : ‖Aᵀ‖ ≤ ‖Bᵀ‖ :=
   EntrywiseLE.linfty_opNorm_le (fun i j => hA.apply j i) fun i j => hAB j i
@@ -138,7 +166,7 @@ section L2Operator
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The Euclidean norm ignores entrywise signs. -/
+/-- The Euclidean norm does not depend on the signs of the entries: $\| |a| \|_2 = \|a\|_2$. -/
 private theorem norm_toLp_abs (a : n → ℝ) :
     ‖(WithLp.toLp 2 (fun i => |a i|) : EuclideanSpace ℝ n)‖
       = ‖(WithLp.toLp 2 a : EuclideanSpace ℝ n)‖ := by
@@ -147,11 +175,12 @@ private theorem norm_toLp_abs (a : n → ℝ) :
 
 variable [DecidableEq n]
 
-/-- **The Euclidean operator norm is monotone on nonnegative matrices** ([saad2003iterative],
-Problem P-1.28): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the norm scoped in
-`Matrix.Norms.L2Operator`.
+/-- **The Euclidean operator norm is monotone on nonnegative matrices.** Let
+$A, B \in \mathbb{R}^{n \times n}$ with $0 \le A$ and $A \le B$ entrywise. Then
+$\|A\|_2 \le \|B\|_2$. This is Problem P-1.28 of [saad2003iterative].
 
-The argument is entrywise: `|A *ᵥ d| ≤ A *ᵥ |d| ≤ B *ᵥ |d|`, and `|d|` has the norm of `d`. -/
+The norm is the operator norm scoped in `Matrix.Norms.L2Operator`. The proof is entrywise:
+$|Ad| \le A|d| \le B|d|$, and $|d|$ has the norm of $d$. -/
 theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : ‖A‖ ≤ ‖B‖ := by
   have hB : B.EntrywiseNonneg := hA.trans hAB
@@ -183,11 +212,12 @@ theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
 /-! ### Monotonicity of the spectral radius -/
 
 omit [DecidableEq n] in
-/-- **The spectral radius is monotone on nonnegative matrices** ([saad2003iterative], Theorem 1.28):
-if `0 ≤ₑ A` and `A ≤ₑ B` then `ρ(A) ≤ ρ(B)`.
+/-- **The spectral radius is monotone on nonnegative matrices.** Let
+$A, B \in \mathbb{R}^{n \times n}$ with $0 \le A$ and $A \le B$ entrywise. Then
+$\rho(A) \le \rho(B)$. This is Theorem 1.28 of [saad2003iterative].
 
-Gelfand's formula turns the monotonicity of the powers and of the operator norm into monotonicity of
-the limit `‖X ^ k‖ ^ (1 / k) → ρ(X)`. -/
+Gelfand's formula $\|X^k\|^{1/k} \to \rho(X)$ turns the monotonicity of the powers and of the
+operator norm into the monotonicity of the limit. -/
 theorem complexSpectralRadius_le_of_entrywiseLE {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : complexSpectralRadius A ≤ complexSpectralRadius B := by
   classical
@@ -210,26 +240,28 @@ section Irreducible
 variable [Fintype n] [DecidableEq n] {A : Matrix n n ℝ}
 
 omit [Fintype n] in
-/-- `1 + A` is entrywise nonnegative when `A` is. -/
+/-- If $A$ is entrywise nonnegative, then so is $I + A$. -/
 private theorem entrywiseNonneg_one_add (hA : A.EntrywiseNonneg) :
     (1 + A : Matrix n n ℝ).EntrywiseNonneg :=
   EntrywiseNonneg.add entrywiseNonneg_one hA
 
 omit [Fintype n] in
-/-- The identity is entrywise below `1 + A` when `A` is nonnegative. -/
+/-- If $A$ is entrywise nonnegative, then $I \le I + A$ entrywise. -/
 private theorem one_entrywiseLE_one_add (hA : A.EntrywiseNonneg) :
     (1 : Matrix n n ℝ) ≤ₑ 1 + A := fun i j => by
   rw [Matrix.add_apply]
   exact le_add_of_nonneg_right (hA i j)
 
 omit [Fintype n] in
-/-- A nonnegative matrix is entrywise below `1 + A`. -/
+/-- Every matrix satisfies $A \le I + A$ entrywise, since the diagonal of $I$ is nonnegative and its
+other entries are zero. -/
 private theorem self_entrywiseLE_one_add (A : Matrix n n ℝ) :
     A ≤ₑ (1 : Matrix n n ℝ) + A := fun i j => by
   rw [Matrix.add_apply]
   exact le_add_of_nonneg_left (by simpa using entrywiseNonneg_one (α := ℝ) (n := n) i j)
 
-/-- The powers of `1 + A` increase entrywise, because `1 + A` dominates the identity. -/
+/-- If $A$ is entrywise nonnegative, then $(I + A)^k \le (I + A)^{k+1}$ entrywise, because $I + A$
+dominates the identity. -/
 private theorem one_add_pow_entrywiseLE_succ (hA : A.EntrywiseNonneg) (k : ℕ) :
     (1 + A : Matrix n n ℝ) ^ k ≤ₑ (1 + A) ^ (k + 1) := by
   have h := EntrywiseLE.mul_of_entrywiseNonneg_left
@@ -237,15 +269,17 @@ private theorem one_add_pow_entrywiseLE_succ (hA : A.EntrywiseNonneg) (k : ℕ) 
   rw [Matrix.mul_one, ← pow_succ] at h
   exact h
 
-/-- A positive entry of `A ^ k` is a positive entry of `(1 + A) ^ k`. -/
+/-- If $A$ is entrywise nonnegative, then $A^k \le (I + A)^k$ entrywise. -/
 private theorem pow_entrywiseLE_one_add_pow (hA : A.EntrywiseNonneg) (k : ℕ) :
     A ^ k ≤ₑ (1 + A : Matrix n n ℝ) ^ k :=
   EntrywiseLE.pow hA (self_entrywiseLE_one_add A) k
 
 open scoped Classical in
-/-- The set of indices reached from `i` in exactly `k` steps of `1 + A`, that is, the support of the
-`i`-th row of `(1 + A) ^ k`. Since `1 + A` dominates the identity, these sets increase with `k`, and
-each one determines the next. -/
+/-- The set of indices reached from $i$ in exactly $k$ steps of $I + A$, that is, the support
+$\{j : ((I + A)^k)_{ij} > 0\}$ of row $i$ of $(I + A)^k$.
+
+Since $I + A$ dominates the identity, these sets increase with $k$, and each one determines the
+next. -/
 private noncomputable def reach (A : Matrix n n ℝ) (i : n) (k : ℕ) : Finset n :=
   Finset.univ.filter fun j => 0 < ((1 + A) ^ k) i j
 
@@ -269,8 +303,8 @@ private theorem reach_mono (hA : A.EntrywiseNonneg) (i : n) {k l : ℕ} (hkl : k
     reach A i k ⊆ reach A i l :=
   monotone_nat_of_le_succ (fun k => reach_subset_succ hA i k) hkl
 
-/-- One step of the reach recursion: `reach A i (k + 1)` is the set of indices adjacent, for `1 +
-A`, to some index of `reach A i k`. -/
+/-- One step of the reach recursion: $l$ is reached from $i$ in $k + 1$ steps if and only if
+$(I + A)_{jl} > 0$ for some $j$ reached in $k$ steps. -/
 private theorem mem_reach_succ_iff (hA : A.EntrywiseNonneg) (i : n) (k : ℕ) (l : n) :
     l ∈ reach A i (k + 1) ↔ ∃ j ∈ reach A i k, 0 < (1 + A) j l := by
   have hB := entrywiseNonneg_one_add hA
@@ -285,7 +319,7 @@ private theorem mem_reach_succ_iff (hA : A.EntrywiseNonneg) (i : n) (k : ℕ) (l
   · rintro ⟨j, hj, hjl⟩
     exact ⟨j, Finset.mem_univ j, mul_pos (mem_reach.1 hj) hjl⟩
 
-/-- Two consecutive reach sets that agree make the whole sequence constant from then on. -/
+/-- If two consecutive reach sets are equal, then all later reach sets are equal to them. -/
 private theorem reach_add_eq (hA : A.EntrywiseNonneg) (i : n) {k : ℕ}
     (heq : reach A i (k + 1) = reach A i k) (mm : ℕ) : reach A i (k + mm) = reach A i k := by
   induction mm with
@@ -294,12 +328,13 @@ private theorem reach_add_eq (hA : A.EntrywiseNonneg) (i : n) {k : ℕ}
     ext l
     rw [← Nat.add_assoc, mem_reach_succ_iff hA, ih, ← mem_reach_succ_iff hA, heq]
 
-/-- Irreducibility says that every index is reached at some time. -/
+/-- If $A$ is irreducible, then every index is reached from $i$ in some number of steps. -/
 private theorem exists_mem_reach (hA : A.IsIrreducible) (i l : n) : ∃ k, l ∈ reach A i k := by
   obtain ⟨k, -, hk⟩ := (isIrreducible_iff_exists_pow_pos hA.nonneg).1 hA i l
   exact ⟨k, mem_reach.2 (hk.trans_le (pow_entrywiseLE_one_add_pow hA.nonneg k i l))⟩
 
-/-- A reach sequence that has stabilised has already reached everything. -/
+/-- If $A$ is irreducible and two consecutive reach sets are equal, then they contain all indices.
+-/
 private theorem reach_eq_univ_of_succ_eq (hA : A.IsIrreducible) (i : n) {k : ℕ}
     (heq : reach A i (k + 1) = reach A i k) : reach A i k = Finset.univ := by
   refine Finset.eq_univ_iff_forall.2 fun l => ?_
@@ -308,7 +343,8 @@ private theorem reach_eq_univ_of_succ_eq (hA : A.IsIrreducible) (i : n) {k : ℕ
     reach_mono hA.nonneg i (Nat.le_add_left mm k)
   exact reach_add_eq hA.nonneg i heq mm ▸ hsub hm
 
-/-- Before saturation, each step of the reach sequence gains at least one index. -/
+/-- If $A$ is irreducible, then the reach set after $k$ steps contains all indices or has at least
+$k + 1$ elements. -/
 private theorem reach_eq_univ_or_card (hA : A.IsIrreducible) (i : n) (k : ℕ) :
     reach A i k = Finset.univ ∨ k + 1 ≤ (reach A i k).card := by
   induction k with
@@ -325,13 +361,14 @@ private theorem reach_eq_univ_or_card (hA : A.IsIrreducible) (i : n) (k : ℕ) :
     have := Finset.card_lt_card hss
     omega
 
-/-- **The Wielandt positivity lemma**: for an irreducible nonnegative matrix on `N` indices, `(1 +
-A) ^ (N - 1)` is entrywise positive.
+/-- The **Wielandt positivity lemma.** Let $A \in \mathbb{R}^{N \times N}$ be irreducible, with
+$N \ge 1$. Then $(I + A)^{N-1}$ is entrywise positive: $$((I + A)^{N-1})_{ij} > 0 \quad
+\text{for all } i, j.$$
 
-Every positive entry of `(1 + A) ^ k` records a walk of length at most `k` in the pattern of `A`,
-and the support of a row of `(1 + A) ^ k` grows by at least one index at every step until it is
-everything, so `N - 1` steps suffice. This is the combinatorial kernel of the Perron–Frobenius
-theorem below. -/
+A positive entry of $(I + A)^k$ records a walk of length at most $k$ in the graph of the
+positive entries of $A$. The support of a row of $(I + A)^k$ grows by at least one index at each
+step until it contains all indices, so $N - 1$ steps suffice. This is the combinatorial core of
+the Perron–Frobenius theorem below. -/
 theorem IsIrreducible.entrywisePos_one_add_pow [Nonempty n] (hA : A.IsIrreducible) (i j : n) :
     0 < ((1 + A) ^ (Fintype.card n - 1)) i j := by
   have huniv : reach A i (Fintype.card n - 1) = Finset.univ := by
@@ -352,7 +389,7 @@ open scoped Matrix.Norms.L2Operator
 
 variable [Fintype n] [DecidableEq n] {A : Matrix n n ℝ}
 
-/-- An eigenvector of `A` for `r` is an eigenvector of `(1 + A) ^ k` for `(1 + r) ^ k`. -/
+/-- If $Az = rz$, then $(I + A)^k z = (1 + r)^k z$ for every $k \in \mathbb{N}$. -/
 private theorem mulVec_one_add_pow_of_mulVec_eq {z : n → ℝ} {r : ℝ} (h : A *ᵥ z = r • z) (k : ℕ) :
     ((1 + A) ^ k) *ᵥ z = (1 + r) ^ k • z := by
   have hstep : (1 + A) *ᵥ z = (1 + r) • z := by
@@ -362,9 +399,10 @@ private theorem mulVec_one_add_pow_of_mulVec_eq {z : n → ℝ} {r : ℝ} (h : A
   | succ k ih => rw [pow_succ', ← mulVec_mulVec, ih, mulVec_smul, hstep, smul_smul, ← pow_succ]
 
 omit [DecidableEq n] in
-/-- **Subinvariance.** The entrywise modulus of a complex eigenvector for an eigenvalue of maximal
-modulus is a nonzero nonnegative real vector `z` with `ρ • z ≤ A *ᵥ z`, because the triangle
-inequality applied to `μ v = A v` reads `|μ| |v| ≤ A |v|` entrywise. -/
+/-- **Subinvariance.** Let $A \in \mathbb{R}^{n \times n}$ be entrywise nonnegative, with $n \ge 1$.
+Then there is a nonzero vector $z \ge 0$ with $\rho(A) z \le Az$ entrywise. The vector $z$ is
+the entrywise modulus of a complex eigenvector $v$ for an eigenvalue $\mu$ of maximal modulus,
+because the triangle inequality applied to $\mu v = Av$ gives $|\mu|\,|v| \le A|v|$ entrywise. -/
 private theorem exists_subinvariant [Nonempty n] (hA : A.EntrywiseNonneg) :
     ∃ z : n → ℝ, (∀ i, 0 ≤ z i) ∧ z ≠ 0 ∧
       ∀ i, (complexSpectralRadius A).toReal * z i ≤ (A *ᵥ z) i := by
@@ -382,11 +420,11 @@ private theorem exists_subinvariant [Nonempty n] (hA : A.EntrywiseNonneg) :
     rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (hA i j)]
 
 omit [DecidableEq n] in
-/-- **A positive subinvariant vector bounds the spectral radius from below**: if `u` is entrywise
-positive and `t • u ≤ A *ᵥ u` for a nonnegative `t`, then `t ≤ ρ(A)`.
-
-Iterating gives `t ^ k • u ≤ A ^ k *ᵥ u`, hence `t ^ k ≤ ‖A ^ k‖`, and Gelfand's formula finishes
-it. -/
+/-- **A positive subinvariant vector bounds the spectral radius from below.** Let
+$A \in \mathbb{R}^{n \times n}$ be entrywise nonnegative, with $n \ge 1$, let $t \ge 0$, and let
+$u$ be an entrywise positive vector with $tu \le Au$ entrywise. Then $t \le \rho(A)$. The
+iteration gives $t^k u \le A^k u$, hence $t^k \le \|A^k\|$, and Gelfand's formula completes the
+proof. -/
 private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : A.EntrywiseNonneg) {t : ℝ}
     (ht : 0 ≤ t) {u : n → ℝ} (hu : ∀ i, 0 < u i) (hle : ∀ i, t * u i ≤ (A *ᵥ u) i) :
     t ≤ (complexSpectralRadius A).toReal := by
@@ -435,14 +473,15 @@ private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : A.EntrywiseNo
         Real.rpow_le_rpow (pow_nonneg ht k) (hnorm k) (by positivity)
 
 omit [DecidableEq n] in
-/-- **The Perron–Frobenius theorem for an irreducible matrix** ([saad2003iterative], Theorem 1.25,
-which the book states without proof): an irreducible nonnegative real matrix on a nonempty index
-type has an entrywise *positive* eigenvector for its spectral radius.
+/-- The **Perron–Frobenius theorem for an irreducible matrix** ([saad2003iterative], Theorem 1.25).
+Let $A \in \mathbb{R}^{n \times n}$ be irreducible, with $n \ge 1$. Then there is a vector
+$x \in \mathbb{R}^n$ with $x_i > 0$ for every $i$ and $$Ax = \rho(A)\, x.$$
 
-The eigenvector is the entrywise modulus of a complex eigenvector for an eigenvalue of maximal
-modulus, which is subinvariant; the Wielandt positivity lemma
-`Matrix.IsIrreducible.entrywisePos_one_add_pow` upgrades subinvariance to invariance, and then
-nonnegativity to positivity. -/
+The source states this theorem without proof. The eigenvector is the entrywise modulus of a
+complex eigenvector for an eigenvalue of maximal modulus, which is subinvariant. The Wielandt
+positivity lemma `Matrix.IsIrreducible.entrywisePos_one_add_pow` turns subinvariance into
+invariance, and then nonnegativity into positivity. The eigenvalue is the real number
+`(complexSpectralRadius A).toReal`. -/
 theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty n]
     (hA : A.IsIrreducible) :
     ∃ x : n → ℝ, (∀ i, 0 < x i) ∧ A *ᵥ x = (complexSpectralRadius A).toReal • x := by
@@ -494,12 +533,15 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
     exact absurd h2 (lt_irrefl 0)
 
 omit [DecidableEq n] in
-/-- **The Perron eigenvalue of an irreducible matrix is geometrically simple**: the eigenspace of
-`A` at its spectral radius, over the reals, has rank one ([saad2003iterative], Theorem 1.25; the
-book says "simple", meaning algebraically simple, which is a stronger statement not proved here).
+/-- **The Perron eigenvalue of an irreducible matrix is geometrically simple.** Let
+$A \in \mathbb{R}^{n \times n}$ be irreducible, with $n \ge 1$. Then the real eigenspace
+$\{v \in \mathbb{R}^n : Av = \rho(A) v\}$ has dimension $1$. This is part of
+[saad2003iterative], Theorem 1.25.
 
-If `w` is another eigenvector and `x` the positive Perron vector, then `t = sup_i (w i / x i)` makes
-`t • x - w` a nonnegative eigenvector with a vanishing entry, so it is zero. -/
+The source says "simple", which means algebraically simple; that is the stronger statement
+`Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`. For the proof, let $w$
+be another eigenvector and $x$ the positive Perron vector. Then $t = \sup_i w_i / x_i$ makes
+$tx - w$ a nonnegative eigenvector with a zero entry, so $tx - w = 0$. -/
 theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty n]
     (hA : A.IsIrreducible) :
     Module.finrank ℝ
@@ -543,12 +585,15 @@ theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty 
       simp at hpos
   rw [hspan, finrank_span_singleton hxne]
 
-/-! ### The Perron eigenvalue is positive, and algebraically simple -/
+/-! ### The Perron eigenvalue is positive and algebraically simple -/
 
 omit [DecidableEq n] in
-/-- The **left** Perron eigenvector of an irreducible nonnegative matrix: an entrywise positive `y`
-with `yᵀ A = ρ(A) yᵀ`.  It is the Perron eigenvector of `Aᵀ`, which is irreducible with the same
-spectral radius. -/
+/-- The **left Perron eigenvector** of an irreducible matrix. Let $A \in \mathbb{R}^{n \times n}$ be
+irreducible, with $n \ge 1$. Then there is a vector $y \in \mathbb{R}^n$ with $y_i > 0$ for
+every $i$ and $$y^T A = \rho(A)\, y^T.$$
+
+The vector $y$ is the Perron eigenvector of $A^T$, which is irreducible with the same spectral
+radius. -/
 theorem IsIrreducible.exists_pos_vecMul_eq [Nonempty n] (hA : A.IsIrreducible) :
     ∃ y : n → ℝ, (∀ i, 0 < y i) ∧ y ᵥ* A = (complexSpectralRadius A).toReal • y := by
   classical
@@ -557,9 +602,11 @@ theorem IsIrreducible.exists_pos_vecMul_eq [Nonempty n] (hA : A.IsIrreducible) :
   exact ⟨y, hypos, hy⟩
 
 omit [DecidableEq n] in
-/-- **The Perron eigenvalue of an irreducible matrix is positive** as soon as there are two
-indices: `ρ(A) = 0` would make the positive Perron vector a null vector of `A`, forcing `A = 0`,
-and the zero matrix on two or more indices is not irreducible. -/
+/-- **The Perron eigenvalue of an irreducible matrix is positive.** Let
+$A \in \mathbb{R}^{n \times n}$ be irreducible, with $n \ge 2$. Then $\rho(A) > 0$.
+
+If $\rho(A) = 0$, the positive Perron vector would be a null vector of the nonnegative matrix
+$A$, which forces $A = 0$, and the zero matrix on two or more indices is not irreducible. -/
 theorem IsIrreducible.complexSpectralRadius_pos [Nontrivial n] (hA : A.IsIrreducible) :
     0 < (complexSpectralRadius A).toReal := by
   classical
@@ -584,12 +631,11 @@ theorem IsIrreducible.complexSpectralRadius_pos [Nontrivial n] (hA : A.IsIrreduc
     simp at hpos
 
 omit [DecidableEq n] in
-/-- **No Jordan chain of length two at the Perron eigenvalue.**  If `A v - ρ v` is itself an
-eigenvector of `A` at `ρ`, then it is zero.
-
-The eigenspace at `ρ` is one-dimensional and spanned by the positive Perron vector `x`, so
-`A v - ρ v = c • x`; pairing with the positive *left* Perron vector `y` gives
-`y ⬝ᵥ (A v - ρ v) = ρ (y ⬝ᵥ v) - ρ (y ⬝ᵥ v) = 0`, while `y ⬝ᵥ x > 0`, so `c = 0`. -/
+/-- **No Jordan chain of length two at the Perron eigenvalue.** Let $A$ be irreducible with
+$n \ge 1$. If $Av - \rho v$ is itself an eigenvector of $A$ at $\rho = \rho(A)$ or zero, then
+$Av = \rho v$. The eigenspace at $\rho$ is spanned by the positive Perron vector $x$, so
+$Av - \rho v = cx$, and the pairing with the positive left Perron vector $y$ gives
+$y^T(Av - \rho v) = 0$ while $y^T x > 0$, so $c = 0$. -/
 private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA : A.IsIrreducible)
     {v : n → ℝ} (hv : A *ᵥ (A *ᵥ v - (complexSpectralRadius A).toReal • v)
       = (complexSpectralRadius A).toReal • (A *ᵥ v - (complexSpectralRadius A).toReal • v)) :
@@ -624,8 +670,11 @@ private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA 
   exact hw0
 
 omit [DecidableEq n] in
-/-- **The generalized eigenspace at the Perron eigenvalue is the eigenspace**: an irreducible
-nonnegative matrix has no generalized eigenvector of rank two or more at `ρ(A)`. -/
+/-- **The generalized eigenspace at the Perron eigenvalue is the eigenspace.** Let
+$A \in \mathbb{R}^{n \times n}$ be irreducible, with $n \ge 1$. Then the maximal generalized
+eigenspace of $A$ at $\rho(A)$ is equal to the eigenspace
+$\{v \in \mathbb{R}^n : Av = \rho(A) v\}$. So $A$ has no generalized eigenvector of rank two or
+more at $\rho(A)$. -/
 theorem IsIrreducible.maxGenEigenspace_complexSpectralRadius [Nonempty n] (hA : A.IsIrreducible) :
     Module.End.maxGenEigenspace A.mulVecLin (complexSpectralRadius A).toReal
       = Module.End.eigenspace A.mulVecLin (complexSpectralRadius A).toReal := by
@@ -654,11 +703,15 @@ theorem IsIrreducible.maxGenEigenspace_complexSpectralRadius [Nonempty n] (hA : 
   rw [hgapp u, sub_eq_zero] at this
   exact Module.End.mem_eigenspace_iff.2 this
 
-/-- **The Perron eigenvalue of an irreducible matrix is algebraically simple**
-([saad2003iterative], Theorem 1.25, where "simple" means exactly this): `ρ(A)` is a simple root of
-the characteristic polynomial. The geometric statement
-`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one` becomes the algebraic one
-because the generalized eigenspace at `ρ(A)` is the eigenspace. -/
+/-- **The Perron eigenvalue of an irreducible matrix is algebraically simple** ([saad2003iterative],
+Theorem 1.25). Let $A \in \mathbb{R}^{n \times n}$ be irreducible, with $n \ge 1$. Then
+$\rho(A)$ is a simple root of the characteristic polynomial of $A$: its multiplicity as a root
+is $1$.
+
+"Simple" in the source means exactly this. The geometric statement
+`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one` gives the algebraic one,
+because the generalized eigenspace at $\rho(A)$ is the eigenspace
+(`Matrix.IsIrreducible.maxGenEigenspace_complexSpectralRadius`). -/
 theorem IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius [Nonempty n]
     (hA : A.IsIrreducible) :
     A.charpoly.rootMultiplicity (complexSpectralRadius A).toReal = 1 := by
